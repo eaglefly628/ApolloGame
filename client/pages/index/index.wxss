@@ -1,0 +1,11 @@
+.subtitle {
+  font-size: 30rpx;
+  color: #999;
+  margin-bottom: 80rpx;
+}
+
+.status-text {
+  margin-top: 40rpx;
+  font-size: 28rpx;
+  color: #667eea;
+}

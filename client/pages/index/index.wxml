@@ -1,0 +1,10 @@
+<view class="container">
+  <text class="title">ApolloGame</text>
+  <text class="subtitle">超休闲双人对战</text>
+
+  <view class="btn-primary" bindtap="onQuickMatch">快速匹配</view>
+  <view class="btn-secondary" bindtap="onCreateRoom">创建房间</view>
+  <view class="btn-secondary" bindtap="onJoinRoom">加入房间</view>
+
+  <view wx:if="{{statusText}}" class="status-text">{{statusText}}</view>
+</view>

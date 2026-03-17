@@ -1,0 +1,21 @@
+<view class="container">
+  <text class="room-title">房间</text>
+  <text class="room-code">{{roomId}}</text>
+  <text class="room-hint">将房间号分享给好友即可加入</text>
+
+  <view class="player-list">
+    <view class="player-slot filled">
+      <text>玩家 1 (房主)</text>
+    </view>
+    <view class="player-slot {{player2Joined ? 'filled' : ''}}">
+      <text>{{player2Joined ? '玩家 2 已加入' : '等待玩家加入...'}}</text>
+    </view>
+  </view>
+
+  <view wx:if="{{isHost && player2Joined}}" class="btn-primary" bindtap="onStartGame">
+    开始游戏
+  </view>
+  <view wx:elif="{{!isHost}}" class="status-text">等待房主开始游戏...</view>
+
+  <view class="btn-secondary" bindtap="onLeaveRoom">离开房间</view>
+</view>

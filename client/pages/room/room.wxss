@@ -1,0 +1,46 @@
+.room-title {
+  font-size: 36rpx;
+  color: #999;
+  margin-bottom: 20rpx;
+}
+
+.room-code {
+  font-size: 80rpx;
+  font-weight: bold;
+  color: #667eea;
+  letter-spacing: 16rpx;
+  margin-bottom: 20rpx;
+}
+
+.room-hint {
+  font-size: 26rpx;
+  color: #666;
+  margin-bottom: 60rpx;
+}
+
+.player-list {
+  width: 80%;
+  margin-bottom: 60rpx;
+}
+
+.player-slot {
+  height: 100rpx;
+  line-height: 100rpx;
+  text-align: center;
+  border: 2rpx dashed #444;
+  border-radius: 16rpx;
+  margin: 20rpx 0;
+  color: #666;
+}
+
+.player-slot.filled {
+  border-style: solid;
+  border-color: #667eea;
+  color: #eee;
+}
+
+.status-text {
+  font-size: 28rpx;
+  color: #999;
+  margin-bottom: 30rpx;
+}

@@ -1,0 +1,21 @@
+<view class="container">
+  <text class="game-info">{{turnText}}</text>
+
+  <!-- Tic-Tac-Toe board as demo -->
+  <view class="board">
+    <view
+      wx:for="{{board}}"
+      wx:key="index"
+      class="cell {{item ? 'filled' : ''}}"
+      bindtap="onCellTap"
+      data-index="{{index}}"
+    >
+      <text class="cell-text">{{item || ''}}</text>
+    </view>
+  </view>
+
+  <view wx:if="{{resultText}}" class="result-panel">
+    <text class="result-text">{{resultText}}</text>
+    <view class="btn-primary" bindtap="onBackToHome">返回首页</view>
+  </view>
+</view>
