@@ -1,3 +1,6 @@
+const { createLogger } = require('../utils/Logger');
+const log = createLogger('Region');
+
 /**
  * Region - 海域节点
  * 每个海域维护独立的 SIR 人口模型
@@ -30,6 +33,7 @@ class Region {
     this.susceptible -= actual;
     this.infected += actual;
     this.isDiscovered = true;
+    log.info(`Seed infection: region=${this.id}, count=${actual}, I=${this.infected}`, { regionId: this.id, actual });
     return actual;
   }
 
@@ -52,9 +56,12 @@ class Region {
     newInfected = Math.min(newInfected, this.susceptible);
     newRemoved = Math.min(newRemoved, this.infected);
 
-    // 至少保证有微量感染扩散（防止 I=1 时停滞）
-    if (newInfected === 0 && this.susceptible > 0 && this.infected > 0 && Math.random() < effectiveBeta * 0.1) {
-      newInfected = 1;
+    // FIX: 微量扩散概率封顶 clamp 到 [0, 1]
+    if (newInfected === 0 && this.susceptible > 0 && this.infected > 0) {
+      const microChance = Math.min(1, effectiveBeta * 0.1);
+      if (Math.random() < microChance) {
+        newInfected = 1;
+      }
     }
 
     this.susceptible -= newInfected;

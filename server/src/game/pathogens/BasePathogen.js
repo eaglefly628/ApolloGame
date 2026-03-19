@@ -1,3 +1,6 @@
+const { createLogger } = require('../../utils/Logger');
+const log = createLogger('Pathogen');
+
 /**
  * BasePathogen - 病原体基类
  * 所有大厂龙虾类型继承此类，覆写 specialTick 实现差异化机制
@@ -20,6 +23,12 @@ class BasePathogen {
 
     // 已解锁的科技节点 ID
     this.unlockedMutations = new Set();
+
+    // 雷总大招临时 buff
+    this._leiJunBoost = 0;
+    this._leiJunExpireDay = 0;
+
+    log.info(`Pathogen created: ${name} (${type})`);
   }
 
   getStats() {
@@ -38,11 +47,18 @@ class BasePathogen {
     this.modSeverity += mutation.modSev || 0;
     this.modLethality += mutation.modGamma || 0;
     this.modCureResistance += mutation.modCureRes || 0;
+    log.debug(`Mutation applied: ${mutation.id}`, { modBeta: mutation.modBeta, modSev: mutation.modSev });
     return true;
   }
 
-  /** 每日特殊 tick，子类覆写 */
+  /** 每日特殊 tick，子类覆写。基类处理雷总大招过期 */
   specialTick(world) {
+    // 处理雷总大招过期
+    if (this._leiJunBoost > 0 && world.day >= this._leiJunExpireDay) {
+      this.modInfectivity -= this._leiJunBoost;
+      log.info(`Lei Jun ultimate expired, infectivity boost removed`, { boost: this._leiJunBoost });
+      this._leiJunBoost = 0;
+    }
     return null;
   }
 

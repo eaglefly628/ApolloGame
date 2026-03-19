@@ -1,25 +1,19 @@
 const { GameSession } = require('./GameSession');
+const { createLogger } = require('../utils/Logger');
+const log = createLogger('InvRouter');
 
 /**
  * InvolutionRouter - 内卷公司游戏的消息路由
- * 扩展现有 MessageRouter，处理游戏专属消息
- *
- * 支持单人模式和双人模式：
- * - 单人：玩家独立创建 GameSession，对抗 AI 解药
- * - 双人：两名玩家在同一个房间各选病原体，同图竞争感染
  */
 class InvolutionRouter {
   constructor(roomManager, connectionManager) {
     this.roomManager = roomManager;
     this.connectionManager = connectionManager;
-    this.sessions = new Map(); // sessionId -> GameSession
-    this.playerSessions = new Map(); // playerId -> sessionId
+    this.sessions = new Map();
+    this.playerSessions = new Map();
 
     this.handlers = {
-      // 单人模式
       solo_start: this.handleSoloStart.bind(this),
-
-      // 通用游戏操作
       inv_select_pathogen: this.handleSelectPathogen.bind(this),
       inv_seed_region: this.handleSeedRegion.bind(this),
       inv_start_sim: this.handleStartSim.bind(this),
@@ -34,18 +28,18 @@ class InvolutionRouter {
 
   route(playerId, msg) {
     const handler = this.handlers[msg.type];
-    if (!handler) return false; // Not our message, let other router handle
+    if (!handler) return false;
+    log.debug(`Routing message`, { playerId, type: msg.type });
     handler(playerId, msg.data || {});
     return true;
   }
-
-  // ─── Solo Mode ───
 
   handleSoloStart(playerId, data) {
     const sessionId = `solo_${playerId}`;
 
     // Clean up existing session
     if (this.sessions.has(sessionId)) {
+      log.info(`Destroying previous session`, { sessionId });
       this.sessions.get(sessionId).destroy();
     }
 
@@ -53,7 +47,6 @@ class InvolutionRouter {
       tickRate: data.tickRate || 1000,
     });
 
-    // Wire up delta push to player
     session.onUpdate((type, report) => {
       this.connectionManager.send(playerId, { type: `inv_${type}`, data: report });
     });
@@ -61,18 +54,18 @@ class InvolutionRouter {
     this.sessions.set(sessionId, session);
     this.playerSessions.set(playerId, sessionId);
 
+    log.info(`Solo session created`, { playerId, sessionId });
     this.connectionManager.send(playerId, {
       type: 'inv_session_created',
       data: { sessionId, mode: 'solo' },
     });
   }
 
-  // ─── Game Operations ───
-
   handleSelectPathogen(playerId, data) {
     const session = this._getSession(playerId);
     if (!session) return;
 
+    log.info(`Selecting pathogen`, { playerId, type: data.pathogenType });
     const result = session.selectPathogen(data.pathogenType);
     this.connectionManager.send(playerId, {
       type: result.error ? 'error' : 'inv_pathogen_selected',
@@ -95,6 +88,7 @@ class InvolutionRouter {
     const session = this._getSession(playerId);
     if (!session) return;
 
+    log.info(`Starting simulation`, { playerId });
     const result = session.startSimulation();
     this.connectionManager.send(playerId, {
       type: result.error ? 'error' : 'inv_sim_started',
@@ -166,12 +160,11 @@ class InvolutionRouter {
     });
   }
 
-  // ─── Helpers ───
-
   _getSession(playerId) {
     const sessionId = this.playerSessions.get(playerId);
     const session = sessionId ? this.sessions.get(sessionId) : null;
     if (!session) {
+      log.warn(`No session found`, { playerId });
       this.connectionManager.send(playerId, {
         type: 'error',
         data: { message: '无游戏会话，请先创建游戏' },
@@ -187,8 +180,19 @@ class InvolutionRouter {
       const session = this.sessions.get(sessionId);
       if (session) session.destroy();
       this.sessions.delete(sessionId);
+      log.info(`Player session cleaned up`, { playerId, sessionId });
     }
     this.playerSessions.delete(playerId);
+  }
+
+  /** Clean up all sessions (called on server shutdown) */
+  destroyAll() {
+    for (const [id, session] of this.sessions) {
+      session.destroy();
+    }
+    this.sessions.clear();
+    this.playerSessions.clear();
+    log.info(`All sessions destroyed`);
   }
 }
 

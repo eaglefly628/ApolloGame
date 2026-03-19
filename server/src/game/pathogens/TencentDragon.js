@@ -1,4 +1,6 @@
 const { BasePathogen } = require('./BasePathogen');
+const { createLogger } = require('../../utils/Logger');
+const log = createLogger('TencentDragon');
 
 /**
  * 私域小绿龙 (腾讯系) - 真菌型
@@ -8,26 +10,32 @@ const { BasePathogen } = require('./BasePathogen');
 class TencentDragon extends BasePathogen {
   constructor() {
     super('tencent', '私域小绿龙');
-    this.baseInfectivity = 0.35;  // 同海域传染力极高
+    this.baseInfectivity = 0.35;
     this.baseSeverity = 0.03;
     this.baseLethality = 0.008;
 
-    // 孢子爆发冷却
     this.sporeBurstCooldown = 0;
-    this.sporeBurstMaxCooldown = 30; // 30天冷却
+    this.sporeBurstMaxCooldown = 30;
+    // FIX: 跨区惩罚系数存在 pathogen 上，不修改 connection 对象
+    this.crossRegionPenalty = 0.4;
   }
 
   specialTick(world) {
     const events = [];
+    // 基类处理雷总大招过期
+    const baseEvents = super.specialTick(world);
+    if (baseEvents) events.push(...baseEvents);
+
     if (this.sporeBurstCooldown > 0) {
       this.sporeBurstCooldown--;
     }
 
-    // 跨海域传播惩罚：所有洋流连接权重降低 60%
+    // FIX: 用 baseWeight 重算，避免累积修改 connection.weight
     for (const [, region] of world.regions) {
       for (const conn of region.connections) {
-        conn._originalWeight = conn._originalWeight || conn.weight;
-        conn.weight = conn._originalWeight * 0.4;
+        if (conn.baseWeight !== undefined) {
+          conn.weight = conn.baseWeight * this.crossRegionPenalty;
+        }
       }
     }
 
@@ -37,6 +45,7 @@ class TencentDragon extends BasePathogen {
   /** 孢子爆发：随机感染 1~3 个未感染海域 */
   sporeBurst(world) {
     if (this.sporeBurstCooldown > 0) {
+      log.debug(`Spore burst on cooldown`, { remaining: this.sporeBurstCooldown });
       return { error: `冷却中，还需 ${this.sporeBurstCooldown} 天` };
     }
 
@@ -62,6 +71,7 @@ class TencentDragon extends BasePathogen {
     }
 
     this.sporeBurstCooldown = this.sporeBurstMaxCooldown;
+    log.info(`Spore burst activated`, { targets: targets.map((t) => t.regionId) });
     return { targets };
   }
 }

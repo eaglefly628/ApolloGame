@@ -1,4 +1,6 @@
 const { BasePathogen } = require('./BasePathogen');
+const { createLogger } = require('../../utils/Logger');
+const log = createLogger('ByteDanceShaker');
 
 /**
  * 算法摇摆虾 (字节系) - 病毒型
@@ -11,37 +13,40 @@ class ByteDanceShaker extends BasePathogen {
     this.baseInfectivity = 0.28;
     this.baseSeverity = 0.06;
     this.baseLethality = 0.012;
-    this.mutationChance = 0.08; // 每日 8% 概率发生随机突变
+    this.mutationChance = 0.08;
+    this.mutationCount = 0;
+    // FIX: 突变上限，防止数值溢出
+    this.maxMutations = 15;
   }
 
   specialTick(world) {
     const events = [];
+    const baseEvents = super.specialTick(world);
+    if (baseEvents) events.push(...baseEvents);
 
-    // 信息茧房效应：已感染海域感染速度额外 +20%
-    // (通过直接影响 world tick 的 beta 实现)
-
-    // 随机突变
-    if (Math.random() < this.mutationChance) {
+    // 随机突变 (有上限)
+    if (this.mutationCount < this.maxMutations && Math.random() < this.mutationChance) {
+      this.mutationCount++;
       const roll = Math.random();
       if (roll < 0.4) {
-        // 有利突变：传染率微升
         this.modInfectivity += 0.01;
+        log.info(`Beneficial mutation #${this.mutationCount}: infectivity +0.01`);
         events.push({
           type: 'mutation',
           subtype: 'beneficial',
           message: '算法推荐突变：传染率 +0.01',
         });
       } else if (roll < 0.7) {
-        // 不利突变：异化度暴增，引发社会关注
         this.modSeverity += 0.03;
+        log.info(`Harmful mutation #${this.mutationCount}: severity +0.03`);
         events.push({
           type: 'mutation',
           subtype: 'harmful',
           message: '信息茧房破裂：异化度 +0.03，解药加速！',
         });
       } else {
-        // 离职率突变
         this.modLethality += 0.005;
+        log.info(`Neutral mutation #${this.mutationCount}: lethality +0.005`);
         events.push({
           type: 'mutation',
           subtype: 'neutral',

@@ -1,3 +1,6 @@
+const { createLogger } = require('../../utils/Logger');
+const log = createLogger('EventSystem');
+
 /**
  * 动态事件系统
  * 每日 tick 检查并触发随机事件，玩家需在限时内响应
@@ -10,13 +13,12 @@ const EVENT_TEMPLATES = [
     desc: '龙虾提起劳动仲裁！3秒内连续点击5次"驳回"，否则扣除大量 KPI',
     type: 'interactive',
     triggerCondition: (world) => {
-      // 异化度超过 0.15 时有概率触发
       const stats = world.pathogen ? world.pathogen.getStats() : { severity: 0 };
       return stats.severity > 0.15 && Math.random() < 0.06;
     },
     kpiPenalty: 15,
     requiredClicks: 5,
-    timeLimit: 3000, // ms
+    timeLimit: 3000,
   },
   {
     id: 'refund_riot',
@@ -24,7 +26,6 @@ const EVENT_TEMPLATES = [
     desc: '下沉海域龙虾集体暴动！需花费 KPI 进行"封号反击"镇压',
     type: 'interactive',
     triggerCondition: (world) => {
-      // 低财富海域感染率 > 50% 时触发
       for (const [, region] of world.regions) {
         if (region.wealthLevel < 0.6 && region.infectionRate > 0.5 && Math.random() < 0.04) {
           return true;
@@ -73,8 +74,8 @@ const EVENT_TEMPLATES = [
 
 class EventSystem {
   constructor() {
-    this.activeEvents = [];      // 当前活跃的限时事件
-    this.activeBuffs = [];       // 当前活跃的持续效果
+    this.activeEvents = [];
+    this.activeBuffs = [];
     this.eventHistory = [];
   }
 
@@ -82,11 +83,34 @@ class EventSystem {
   checkEvents(world) {
     const triggered = [];
 
+    // FIX: 自动过期未响应的交互事件
+    const now = Date.now();
+    const expired = [];
+    this.activeEvents = this.activeEvents.filter((evt) => {
+      if (evt.expiresAt && now > evt.expiresAt) {
+        expired.push(evt);
+        return false;
+      }
+      return true;
+    });
+    for (const evt of expired) {
+      // 过期事件自动执行惩罚
+      if (evt.templateId === 'labor_arbitration') {
+        world.kpiPoints = Math.max(0, world.kpiPoints - evt.kpiPenalty);
+        log.warn(`Event expired with penalty`, { eventId: evt.id, penalty: evt.kpiPenalty });
+      }
+    }
+
     // 清理过期 buff
     this.activeBuffs = this.activeBuffs.filter((buff) => {
       buff.remainingDays--;
       if (buff.remainingDays <= 0) {
-        this._removeBuffEffect(buff, world);
+        try {
+          this._removeBuffEffect(buff, world);
+        } catch (e) {
+          log.error(`Failed to remove buff effect`, { buffType: buff.type, error: e.message });
+        }
+        log.info(`Buff expired`, { type: buff.type, regionId: buff.regionId });
         return false;
       }
       return true;
@@ -99,6 +123,7 @@ class EventSystem {
         if (event) {
           triggered.push(event);
           this.eventHistory.push({ ...event, day: world.day });
+          log.info(`Event triggered`, { eventId: event.id, name: event.name, type: event.type });
         }
       }
     }
@@ -108,7 +133,6 @@ class EventSystem {
 
   _createEvent(template, world) {
     if (template.type === 'interactive') {
-      // 交互事件：等待玩家响应
       const event = {
         id: `${template.id}_${world.day}`,
         templateId: template.id,
@@ -117,6 +141,8 @@ class EventSystem {
         type: 'interactive',
         kpiPenalty: template.kpiPenalty || 0,
         kpiCost: template.kpiCost || 0,
+        kpiPenaltyIfIgnored: template.kpiPenaltyIfIgnored || 0,
+        affectedPop: template.affectedPop || 0,
         requiredClicks: template.requiredClicks || 0,
         timeLimit: template.timeLimit || 5000,
         expiresAt: Date.now() + (template.timeLimit || 5000),
@@ -126,7 +152,6 @@ class EventSystem {
     }
 
     if (template.type === 'auto') {
-      // 自动事件：立即生效
       const event = {
         id: `${template.id}_${world.day}`,
         templateId: template.id,
@@ -134,7 +159,6 @@ class EventSystem {
         desc: template.desc,
         type: 'auto',
       };
-
       this._applyAutoEffect(template, world);
       return event;
     }
@@ -149,11 +173,22 @@ class EventSystem {
 
     const event = this.activeEvents.splice(idx, 1)[0];
 
+    // FIX: 检查是否过期
+    if (event.expiresAt && Date.now() > event.expiresAt) {
+      log.warn(`Player tried to resolve expired event`, { eventId });
+      if (event.kpiPenalty) {
+        world.kpiPoints = Math.max(0, world.kpiPoints - event.kpiPenalty);
+      }
+      return { success: false, message: '响应超时！' };
+    }
+
     if (event.templateId === 'labor_arbitration') {
-      if (action === 'dismiss' && Date.now() <= event.expiresAt) {
+      if (action === 'dismiss') {
+        log.info(`Labor arbitration dismissed successfully`, { eventId });
         return { success: true, message: '仲裁已驳回！' };
       }
       world.kpiPoints = Math.max(0, world.kpiPoints - event.kpiPenalty);
+      log.info(`Labor arbitration penalty applied`, { eventId, penalty: event.kpiPenalty });
       return { success: false, message: `仲裁成功！扣除 ${event.kpiPenalty} KPI` };
     }
 
@@ -161,21 +196,23 @@ class EventSystem {
       if (action === 'suppress') {
         if (world.kpiPoints >= event.kpiCost) {
           world.kpiPoints -= event.kpiCost;
+          log.info(`Refund riot suppressed`, { eventId, cost: event.kpiCost });
           return { success: true, message: `已花费 ${event.kpiCost} KPI 镇压暴乱` };
         }
         return { error: 'KPI 不足' };
       }
       // 忽略暴乱
       world.kpiPoints = Math.max(0, world.kpiPoints - (event.kpiPenaltyIfIgnored || 25));
-      // 部分感染人口脱离控制
+      // FIX: 感染者 → removed (逃离)，不是回归健康
       for (const [, region] of world.regions) {
         if (region.wealthLevel < 0.6 && region.infected > 0) {
           const lost = Math.min(region.infected, event.affectedPop || 500);
           region.infected -= lost;
-          region.susceptible += lost; // 回归健康
+          region.removed += lost;
         }
       }
-      return { success: false, message: '暴乱蔓延，部分打工虾脱离控制！' };
+      log.warn(`Refund riot ignored, infected escaped`, { eventId });
+      return { success: false, message: '暴乱蔓延，部分打工虾逃离了！' };
     }
 
     return { error: '未知事件类型' };
@@ -185,7 +222,6 @@ class EventSystem {
     const effect = template.effect || {};
 
     if (effect.infectivityMult && template.duration) {
-      // 临时传染率加成
       if (world.pathogen) {
         const boost = (world.pathogen.baseInfectivity + world.pathogen.modInfectivity)
           * (effect.infectivityMult - 1);
@@ -195,11 +231,13 @@ class EventSystem {
           value: boost,
           remainingDays: template.duration,
         });
+        log.info(`Infectivity buff applied`, { boost: Math.round(boost * 1000) / 1000, duration: template.duration });
       }
     }
 
     if (effect.cureBoost) {
       world.cure.progress = Math.min(100, world.cure.progress + effect.cureBoost);
+      log.info(`Cure boosted`, { boost: effect.cureBoost, progress: world.cure.progress });
     }
 
     if (effect.severityReduce && world.pathogen) {
@@ -217,7 +255,6 @@ class EventSystem {
         const targetId = infected[Math.floor(Math.random() * infected.length)];
         const region = world.regions.get(targetId);
         region.localStatus = 'lockdown';
-        // 封锁期间传染率归零
         const savedAwareness = region.awarenessLevel;
         region.awarenessLevel = 1.0;
         this.activeBuffs.push({
@@ -226,6 +263,7 @@ class EventSystem {
           savedAwareness,
           remainingDays: template.duration || 10,
         });
+        log.info(`Lockdown applied`, { regionId: targetId, duration: template.duration || 10 });
       }
     }
   }

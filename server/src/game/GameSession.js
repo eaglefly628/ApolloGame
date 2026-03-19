@@ -5,6 +5,8 @@ const { TencentDragon } = require('./pathogens/TencentDragon');
 const { ByteDanceShaker } = require('./pathogens/ByteDanceShaker');
 const { AliSlashDragon } = require('./pathogens/AliSlashDragon');
 const { XiaomiSpeedDragon } = require('./pathogens/XiaomiSpeedDragon');
+const { createLogger } = require('../utils/Logger');
+const log = createLogger('GameSession');
 
 const PATHOGEN_MAP = {
   tencent: TencentDragon,
@@ -27,12 +29,16 @@ class GameSession {
     this.listeners = [];      // callback list for delta push
     this.state = 'selecting'; // selecting | seeding | running | ended
     this.config = config;
+    log.info(`Session created`, { sessionId });
   }
 
   /** 选择病原体 */
   selectPathogen(type) {
     const PathogenClass = PATHOGEN_MAP[type];
-    if (!PathogenClass) return { error: `未知病原体: ${type}` };
+    if (!PathogenClass) {
+      log.warn(`Unknown pathogen type`, { sessionId: this.sessionId, type });
+      return { error: `未知病原体: ${type}` };
+    }
 
     this.pathogen = new PathogenClass();
     this.world.pathogen = this.pathogen;
@@ -40,6 +46,7 @@ class GameSession {
     this.world.initDefaultWorld();
     this.state = 'seeding';
 
+    log.info(`Pathogen selected`, { sessionId: this.sessionId, type, name: this.pathogen.name });
     return {
       pathogen: this.pathogen.toJSON(),
       regions: this._getRegionList(),
@@ -53,22 +60,30 @@ class GameSession {
     const count = this.world.seedRegion(regionId, 5);
     if (count === 0) return { error: '无法感染该海域' };
 
+    log.info(`Infection seeded`, { sessionId: this.sessionId, regionId, count });
     return { regionId, infected: count };
   }
 
   /** 开始模拟 */
   startSimulation() {
     if (this.state !== 'seeding') return { error: '请先选择起始海域' };
+    // FIX: 校验 pathogen 已选
+    if (!this.pathogen) return { error: '请先选择病原体' };
     if (this.world.stats.totalInfected === 0) return { error: '请先种子感染一个海域' };
 
     this.state = 'running';
 
-    // 挂载事件到 tick
-    this.world.on('tick', (report) => this._onTick(report));
-    this.world.on('gameOver', (result) => this._onGameOver(result));
-    this.world.on('cureStarted', (data) => this._broadcast('cure_started', data));
+    // FIX: 保存 bound handlers 以便 destroy 时移除
+    this._onTickHandler = (report) => this._onTick(report);
+    this._onGameOverHandler = (result) => this._onGameOver(result);
+    this._onCureStartedHandler = (data) => this._broadcast('cure_started', data);
+
+    this.world.on('tick', this._onTickHandler);
+    this.world.on('gameOver', this._onGameOverHandler);
+    this.world.on('cureStarted', this._onCureStartedHandler);
 
     this.world.start();
+    log.info(`Simulation started`, { sessionId: this.sessionId, pathogen: this.pathogen.type });
     return { success: true, day: 0 };
   }
 
@@ -76,10 +91,12 @@ class GameSession {
   togglePause() {
     if (this.world.state === 'running') {
       this.world.pause();
+      log.info(`Game paused`, { sessionId: this.sessionId, day: this.world.day });
       return { paused: true };
     }
     if (this.world.state === 'paused') {
       this.world.resume();
+      log.info(`Game resumed`, { sessionId: this.sessionId, day: this.world.day });
       return { paused: false };
     }
     return { error: '游戏未在运行' };
@@ -88,13 +105,21 @@ class GameSession {
   /** 解锁科技树节点 */
   unlockMutation(mutationId) {
     if (this.state !== 'running') return { error: '游戏未在运行' };
-    return this.mutationTree.unlock(mutationId, this.pathogen, this.world);
+    const result = this.mutationTree.unlock(mutationId, this.pathogen, this.world);
+    if (result.success) {
+      log.info(`Mutation unlocked`, { sessionId: this.sessionId, mutationId, kpiRemaining: this.world.kpiPoints });
+    } else {
+      log.debug(`Mutation unlock failed`, { sessionId: this.sessionId, mutationId, error: result.error });
+    }
+    return result;
   }
 
   /** 使用病原体专属技能 */
   useSpecialAbility(abilityName, params = {}) {
     if (this.state !== 'running') return { error: '游戏未在运行' };
     if (!this.pathogen) return { error: '未选择病原体' };
+
+    log.info(`Special ability used`, { sessionId: this.sessionId, ability: abilityName, pathogen: this.pathogen.type });
 
     switch (abilityName) {
       case 'spore_burst':
@@ -116,6 +141,7 @@ class GameSession {
 
   /** 响应动态事件 */
   resolveEvent(eventId, action) {
+    log.info(`Event resolved`, { sessionId: this.sessionId, eventId, action });
     return this.eventSystem.resolveEvent(eventId, action, this.world);
   }
 
@@ -140,8 +166,10 @@ class GameSession {
     this.listeners = this.listeners.filter((cb) => cb !== callback);
   }
 
+  /** FIX: Proper cleanup - remove world EventEmitter listeners + stop intervals */
   destroy() {
-    this.world.stop();
+    log.info(`Session destroyed`, { sessionId: this.sessionId, day: this.world.day, state: this.state });
+    this.world.destroy(); // stops interval + removes all EventEmitter listeners
     this.listeners = [];
   }
 
@@ -152,6 +180,7 @@ class GameSession {
     const events = this.eventSystem.checkEvents(this.world);
     if (events.length > 0) {
       report.triggeredEvents = events;
+      log.info(`Events triggered`, { sessionId: this.sessionId, day: report.day, events: events.map((e) => e.name || e.templateId) });
     }
 
     // 解药抗性同步
@@ -163,6 +192,7 @@ class GameSession {
 
   _onGameOver(result) {
     this.state = 'ended';
+    log.info(`Game over`, { sessionId: this.sessionId, result: result.result, reason: result.reason });
     this._broadcast('game_over', result);
   }
 
@@ -171,7 +201,7 @@ class GameSession {
       try {
         cb(type, data);
       } catch (e) {
-        console.error('[GameSession] Listener error:', e);
+        log.error(`Listener callback error`, { sessionId: this.sessionId, type, error: e.message });
       }
     }
   }

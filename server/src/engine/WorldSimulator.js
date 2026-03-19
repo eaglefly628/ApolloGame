@@ -1,5 +1,7 @@
 const { Region } = require('./Region');
 const { EventEmitter } = require('events');
+const { createLogger } = require('../utils/Logger');
+const log = createLogger('WorldSim');
 
 /**
  * WorldSimulator - 全局模拟引擎
@@ -59,7 +61,6 @@ class WorldSimulator extends EventEmitter {
       { id: 'middle_east', name: '中东海域', totalPop: 25000, wealthLevel: 1.6, climate: 'arid' },
     ];
 
-    // 航线/洋流连接 (双向)
     const connections = [
       ['cn_south', 'cn_east', 0.8],
       ['cn_south', 'southeast_asia', 0.6],
@@ -85,20 +86,25 @@ class WorldSimulator extends EventEmitter {
       const rA = this.regions.get(a);
       const rB = this.regions.get(b);
       if (rA && rB) {
-        rA.connections.push({ regionId: b, weight });
-        rB.connections.push({ regionId: a, weight });
+        rA.connections.push({ regionId: b, weight, baseWeight: weight });
+        rB.connections.push({ regionId: a, weight, baseWeight: weight });
       }
     }
 
     this._updateStats();
+    log.info('World initialized', { regions: regionData.length, connections: connections.length, totalPop: this.stats.totalPopulation });
   }
 
   /** 在指定海域种子感染 */
   seedRegion(regionId, count = 5) {
     const region = this.regions.get(regionId);
-    if (!region) return 0;
+    if (!region) {
+      log.warn(`seedRegion failed: region not found`, { regionId });
+      return 0;
+    }
     const actual = region.seedInfection(count);
     this._updateStats();
+    log.info(`Region seeded`, { regionId, requested: count, actual, totalInfected: this.stats.totalInfected });
     return actual;
   }
 
@@ -107,6 +113,7 @@ class WorldSimulator extends EventEmitter {
     if (this.state === 'running') return;
     this.state = 'running';
     this.tickInterval = setInterval(() => this._tick(), this.tickRate);
+    log.info('Simulation started', { tickRate: this.tickRate });
     this.emit('started', { day: this.day });
   }
 
@@ -114,6 +121,8 @@ class WorldSimulator extends EventEmitter {
     if (this.state !== 'running') return;
     this.state = 'paused';
     clearInterval(this.tickInterval);
+    this.tickInterval = null;
+    log.info('Simulation paused', { day: this.day });
     this.emit('paused', { day: this.day });
   }
 
@@ -121,12 +130,24 @@ class WorldSimulator extends EventEmitter {
     if (this.state !== 'paused') return;
     this.state = 'running';
     this.tickInterval = setInterval(() => this._tick(), this.tickRate);
+    log.info('Simulation resumed', { day: this.day });
     this.emit('resumed', { day: this.day });
   }
 
   stop() {
-    clearInterval(this.tickInterval);
+    if (this.tickInterval) {
+      clearInterval(this.tickInterval);
+      this.tickInterval = null;
+    }
     this.state = 'ended';
+    log.info('Simulation stopped', { day: this.day });
+  }
+
+  /** FIX: Proper cleanup - remove all EventEmitter listeners and stop intervals */
+  destroy() {
+    this.stop();
+    this.removeAllListeners();
+    log.info('WorldSimulator destroyed', { day: this.day });
   }
 
   /** 核心 tick：每个游戏日执行一次 */
@@ -188,22 +209,33 @@ class WorldSimulator extends EventEmitter {
     if (this.cure.progress >= 100) {
       this.stop();
       dayReport.gameOver = { result: 'defeat', reason: '躺平思潮研发完成，龙虾全体觉醒！' };
+      log.info('GAME OVER: cure completed', { day: this.day });
       this.emit('gameOver', dayReport.gameOver);
-    } else if (this.stats.totalInfected === 0 && this.day > 1) {
-      // 所有感染者都离职了，没有健康宿主可传染
-      if (this.stats.totalRemoved > 0) {
-        this.stop();
-        dayReport.gameOver = { result: 'defeat', reason: '所有打工虾已离职，大厂文化断裂！' };
-        this.emit('gameOver', dayReport.gameOver);
-      }
+    } else if (this.stats.totalInfected === 0 && this.day > 1 && this.stats.totalRemoved > 0) {
+      this.stop();
+      dayReport.gameOver = { result: 'defeat', reason: '所有打工虾已离职，大厂文化断裂！' };
+      log.info('GAME OVER: all infected removed', { day: this.day });
+      this.emit('gameOver', dayReport.gameOver);
     } else if (this._isVictory()) {
       this.stop();
       dayReport.gameOver = { result: 'victory', reason: '全球龙虾已被完全同化为打工虾！' };
+      log.info('VICTORY: all susceptible = 0', { day: this.day });
       this.emit('gameOver', dayReport.gameOver);
     }
 
     dayReport.stats = { ...this.stats };
     dayReport.kpiTotal = this.kpiPoints;
+
+    // Periodic summary log every 10 days
+    if (this.day % 10 === 0) {
+      log.info(`Day ${this.day} summary`, {
+        infected: this.stats.totalInfected,
+        removed: this.stats.totalRemoved,
+        discovered: this.stats.regionsDiscovered,
+        cure: Math.round(this.cure.progress * 10) / 10,
+        kpi: this.kpiPoints,
+      });
+    }
 
     this.emit('tick', dayReport);
     return dayReport;
@@ -218,12 +250,12 @@ class WorldSimulator extends EventEmitter {
         const target = this.regions.get(conn.regionId);
         if (!target || target.susceptible <= 0) continue;
 
-        // 传播概率 = 连接权重 × 感染率 × β × 随机因子
         const spreadChance = conn.weight * region.infectionRate * beta * 0.1;
         if (Math.random() < spreadChance) {
           const count = Math.max(1, Math.floor(region.infected * 0.001 * conn.weight));
           const actual = target.seedInfection(count);
           if (actual > 0) {
+            log.info(`Cross-region spread`, { from: id, to: conn.regionId, count: actual });
             infections.push({ from: id, to: conn.regionId, count: actual });
           }
         }
@@ -234,13 +266,13 @@ class WorldSimulator extends EventEmitter {
 
   /** 解药进度计算 */
   _tickCure(severity) {
-    // 检查是否应该启动解药
     if (!this.cure.isStarted) {
       const globalInfRate = this.stats.totalPopulation > 0
         ? this.stats.totalInfected / this.stats.totalPopulation
         : 0;
       if (globalInfRate >= this.cure.startThreshold) {
         this.cure.isStarted = true;
+        log.info('Cure research STARTED', { day: this.day, infectionRate: Math.round(globalInfRate * 1000) / 10 });
         this.emit('cureStarted', { day: this.day, infectionRate: globalInfRate });
       }
     }
@@ -254,7 +286,10 @@ class WorldSimulator extends EventEmitter {
     // dC/dt = k * (Sev * I_global / N_global)^2 * (1 - R_buff)
     const ratio = (severity * Iglobal) / Nglobal;
     const dC = this.cure.baseRate * ratio * ratio * (1 - this.cure.resistance);
-    this.cure.progress = Math.min(100, this.cure.progress + Math.max(0, dC));
+    // FIX: guard against NaN
+    if (!isNaN(dC) && isFinite(dC)) {
+      this.cure.progress = Math.min(100, this.cure.progress + Math.max(0, dC));
+    }
   }
 
   /** 胜利判定：所有海域的健康龙虾为 0 */
