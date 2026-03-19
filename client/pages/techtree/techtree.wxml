@@ -1,0 +1,30 @@
+<view class="tree-container">
+  <text class="tree-title">OKR 对齐面板</text>
+  <text class="kpi-display">可用 KPI: {{kpiPoints}}</text>
+
+  <view class="tree-section" wx:for="{{sections}}" wx:key="type" wx:for-item="section">
+    <text class="section-title">{{section.title}}</text>
+    <view class="node-list">
+      <view
+        wx:for="{{section.nodes}}"
+        wx:key="id"
+        wx:for-item="node"
+        class="tree-node {{node.isUnlocked ? 'unlocked' : ''}} {{node.canUnlock ? 'available' : ''}} {{!node.canUnlock && !node.isUnlocked ? 'locked' : ''}}"
+        bindtap="onUnlockNode"
+        data-id="{{node.id}}"
+        data-cost="{{node.cost}}"
+        data-unlocked="{{node.isUnlocked}}"
+        data-can-unlock="{{node.canUnlock}}"
+      >
+        <view class="node-header">
+          <text class="node-name">{{node.name}}</text>
+          <text class="node-cost" wx:if="{{!node.isUnlocked}}">{{node.cost}} KPI</text>
+          <text class="node-done" wx:else>已解锁</text>
+        </view>
+        <text class="node-desc">{{node.desc}}</text>
+      </view>
+    </view>
+  </view>
+
+  <view class="btn-back" bindtap="onBack">返回战场</view>
+</view>

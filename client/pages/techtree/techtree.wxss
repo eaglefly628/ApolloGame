@@ -1,0 +1,102 @@
+.tree-container {
+  min-height: 100vh;
+  background: #0a0a1a;
+  padding: 40rpx 24rpx;
+  padding-bottom: calc(40rpx + env(safe-area-inset-bottom));
+}
+
+.tree-title {
+  display: block;
+  text-align: center;
+  font-size: 40rpx;
+  font-weight: bold;
+  color: #ffd700;
+  margin-bottom: 12rpx;
+}
+
+.kpi-display {
+  display: block;
+  text-align: center;
+  font-size: 28rpx;
+  color: #ffd700;
+  margin-bottom: 40rpx;
+}
+
+.tree-section {
+  margin-bottom: 40rpx;
+}
+
+.section-title {
+  display: block;
+  font-size: 30rpx;
+  font-weight: bold;
+  color: #667eea;
+  margin-bottom: 16rpx;
+  padding-left: 8rpx;
+  border-left: 6rpx solid #667eea;
+}
+
+.node-list {
+  display: flex;
+  flex-direction: column;
+  gap: 16rpx;
+}
+
+.tree-node {
+  background: #1a1a2e;
+  border: 2rpx solid #333;
+  border-radius: 12rpx;
+  padding: 20rpx;
+}
+
+.tree-node.unlocked {
+  border-color: #4caf50;
+  opacity: 0.7;
+}
+
+.tree-node.available {
+  border-color: #ffd700;
+  background: #1a1a30;
+}
+
+.tree-node.locked {
+  opacity: 0.4;
+}
+
+.node-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 8rpx;
+}
+
+.node-name {
+  font-size: 28rpx;
+  font-weight: bold;
+  color: #eee;
+}
+
+.node-cost {
+  font-size: 24rpx;
+  color: #ffd700;
+}
+
+.node-done {
+  font-size: 24rpx;
+  color: #4caf50;
+}
+
+.node-desc {
+  font-size: 24rpx;
+  color: #999;
+}
+
+.btn-back {
+  margin-top: 40rpx;
+  padding: 24rpx;
+  background: #333;
+  color: #eee;
+  text-align: center;
+  border-radius: 12rpx;
+  font-size: 28rpx;
+}

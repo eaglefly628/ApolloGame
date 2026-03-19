@@ -2,7 +2,10 @@
   "pages": [
     "pages/index/index",
     "pages/room/room",
-    "pages/game/game"
+    "pages/game/game",
+    "pages/world/world",
+    "pages/techtree/techtree",
+    "pages/result/result"
   ],
   "window": {
     "backgroundTextStyle": "dark",

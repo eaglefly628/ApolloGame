@@ -3,6 +3,7 @@ const { WebSocketServer } = require('ws');
 const { ConnectionManager } = require('./core/ConnectionManager');
 const { RoomManager } = require('./core/RoomManager');
 const { MessageRouter } = require('./core/MessageRouter');
+const { InvolutionRouter } = require('./game/InvolutionRouter');
 
 const PORT = process.env.PORT || 3000;
 const HEARTBEAT_INTERVAL = parseInt(process.env.HEARTBEAT_INTERVAL_MS) || 10000;
@@ -11,6 +12,7 @@ const wss = new WebSocketServer({ port: PORT });
 const roomManager = new RoomManager();
 const connectionManager = new ConnectionManager(roomManager);
 const messageRouter = new MessageRouter(roomManager, connectionManager);
+const involutionRouter = new InvolutionRouter(roomManager, connectionManager);
 
 // Heartbeat: detect and clean dead connections
 const heartbeatTimer = setInterval(() => {
@@ -24,7 +26,10 @@ wss.on('connection', (ws, req) => {
   ws.on('message', (raw) => {
     try {
       const msg = JSON.parse(raw);
-      messageRouter.route(playerId, msg);
+      // Try involution game router first, fallback to generic router
+      if (!involutionRouter.route(playerId, msg)) {
+        messageRouter.route(playerId, msg);
+      }
     } catch (e) {
       ws.send(JSON.stringify({ type: 'error', data: { message: 'Invalid message format' } }));
     }
@@ -32,6 +37,7 @@ wss.on('connection', (ws, req) => {
 
   ws.on('close', () => {
     console.log(`[Disconnect] player=${playerId}`);
+    involutionRouter.cleanupPlayer(playerId);
     connectionManager.removeConnection(playerId);
   });
 

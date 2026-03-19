@@ -1,0 +1,25 @@
+.result-icon {
+  font-size: 120rpx;
+  margin-bottom: 30rpx;
+}
+
+.result-title {
+  font-size: 48rpx;
+  font-weight: bold;
+  color: #ffd700;
+  margin-bottom: 20rpx;
+}
+
+.result-reason {
+  font-size: 28rpx;
+  color: #ccc;
+  text-align: center;
+  padding: 0 40rpx;
+  margin-bottom: 20rpx;
+}
+
+.result-day {
+  font-size: 32rpx;
+  color: #667eea;
+  margin-bottom: 60rpx;
+}

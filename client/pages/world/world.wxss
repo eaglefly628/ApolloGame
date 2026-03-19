@@ -1,0 +1,190 @@
+.game-container {
+  width: 100vw;
+  height: 100vh;
+  background: #0a0a1a;
+  position: relative;
+  overflow: hidden;
+}
+
+/* HUD Top */
+.hud-top {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  display: flex;
+  justify-content: space-around;
+  padding: 20rpx 10rpx;
+  background: rgba(0, 0, 0, 0.7);
+  z-index: 10;
+}
+
+.hud-item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.hud-label {
+  font-size: 20rpx;
+  color: #888;
+}
+
+.hud-value {
+  font-size: 32rpx;
+  font-weight: bold;
+  color: #eee;
+}
+
+.hud-item.kpi .hud-value {
+  color: #ffd700;
+}
+
+/* Cure Bar */
+.cure-bar-wrap {
+  position: absolute;
+  top: 100rpx;
+  left: 20rpx;
+  right: 20rpx;
+  z-index: 10;
+}
+
+.cure-label {
+  font-size: 22rpx;
+  color: #4fc3f7;
+  margin-bottom: 6rpx;
+}
+
+.cure-bar-bg {
+  height: 12rpx;
+  background: #222;
+  border-radius: 6rpx;
+  overflow: hidden;
+}
+
+.cure-bar-fill {
+  height: 100%;
+  background: linear-gradient(90deg, #4fc3f7, #29b6f6);
+  border-radius: 6rpx;
+  transition: width 0.3s;
+}
+
+/* World Canvas */
+.world-canvas {
+  width: 100vw;
+  height: 100vh;
+}
+
+/* Region Popup */
+.region-popup {
+  position: absolute;
+  bottom: 180rpx;
+  left: 20rpx;
+  right: 20rpx;
+  background: rgba(20, 20, 40, 0.95);
+  border: 1rpx solid #667eea;
+  border-radius: 16rpx;
+  padding: 24rpx;
+  z-index: 20;
+}
+
+.region-name {
+  font-size: 32rpx;
+  font-weight: bold;
+  color: #667eea;
+  display: block;
+  margin-bottom: 8rpx;
+}
+
+.region-stat {
+  font-size: 24rpx;
+  color: #aaa;
+  display: block;
+  margin-bottom: 16rpx;
+}
+
+/* Event Popup */
+.event-popup {
+  position: absolute;
+  top: 50%;
+  left: 40rpx;
+  right: 40rpx;
+  transform: translateY(-50%);
+  background: rgba(40, 10, 10, 0.95);
+  border: 2rpx solid #e74c3c;
+  border-radius: 20rpx;
+  padding: 32rpx;
+  z-index: 30;
+}
+
+.event-title {
+  font-size: 36rpx;
+  font-weight: bold;
+  color: #e74c3c;
+  display: block;
+  margin-bottom: 12rpx;
+}
+
+.event-desc {
+  font-size: 26rpx;
+  color: #ccc;
+  display: block;
+  margin-bottom: 24rpx;
+}
+
+.event-actions {
+  display: flex;
+  justify-content: center;
+}
+
+.event-btn-row {
+  display: flex;
+  gap: 20rpx;
+}
+
+/* Buttons */
+.btn-small {
+  padding: 16rpx 32rpx;
+  background: #667eea;
+  color: #fff;
+  border-radius: 32rpx;
+  font-size: 26rpx;
+  text-align: center;
+}
+
+.btn-small.danger {
+  background: #e74c3c;
+}
+
+/* Bottom Controls */
+.controls-bottom {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  display: flex;
+  justify-content: space-around;
+  padding: 24rpx 20rpx;
+  padding-bottom: calc(24rpx + env(safe-area-inset-bottom));
+  background: rgba(0, 0, 0, 0.8);
+  z-index: 10;
+}
+
+.ctrl-btn {
+  padding: 16rpx 32rpx;
+  background: #333;
+  color: #eee;
+  border-radius: 12rpx;
+  font-size: 28rpx;
+  text-align: center;
+  min-width: 100rpx;
+}
+
+.ctrl-btn.special {
+  background: #764ba2;
+}
+
+.ctrl-btn.start {
+  background: #e74c3c;
+  font-weight: bold;
+}
