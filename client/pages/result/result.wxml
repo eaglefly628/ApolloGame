@@ -1,8 +1,0 @@
-<view class="container">
-  <text class="result-icon">{{isVictory ? '🏆' : '💀'}}</text>
-  <text class="result-title">{{isVictory ? '感染完成！' : '游戏结束'}}</text>
-  <text class="result-reason">{{reason}}</text>
-  <text class="result-day">存活天数: {{day}}</text>
-
-  <view class="btn-primary" bindtap="onRestart">再来一局</view>
-</view>
