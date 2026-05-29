@@ -10,6 +10,18 @@
 - 当前 AI 游戏 = ChatGPT 写作文（每次从零生成，质量不可控）
 - Apollo 框架 = 乐高 + 智能导购（积木精雕细琢，AI 帮你挑和拼）
 
+### 1.1 护城河与突破点（最重要的战略前提）
+
+经过对竞品和引擎 MCP 现状的调研，确立以下三条不可动摇的定位：
+
+1. **MCP 完整度不是护城河，也不是瓶颈**。截至 2026 年，Unity 6.2 官方 MCP、Unreal 官方 MCP 预览版均已上线，社区版工具数 300+，能创建/操作 GameObject、Blueprint、Actor、材质、运行 PIE。它对所有人开放（包括引擎厂商自己、Rosebud、Astrocade、Cursor）。把差异化建立在"接入完整 MCP"上 = 薄壳，会被引擎厂商在自己地盘碾压。
+
+2. **"一句话成游戏"的真正瓶颈是品质，不是引擎控制力**。业界已验证 LLM 直接驱动引擎只能产出"原型"，且 gameslop 游戏在 Steam 评分低 15–20%、退款高 2–3 倍。LLM 崩在数值平衡、系统耦合、手感整合——而这恰恰是**工业级模块库**预先解决、并由静态校验器锁住的部分。
+
+3. **唯一护城河 = 工业级模块库 + 契约标准 + 静态校验器；引擎是可插拔后端**。模块用引擎无关的逻辑核心实现，写一次、复利增长；每个引擎只需实现一个十几方法的 `EnginePort` 适配器，成本恒定。引擎绑不死你，引擎厂商也无法用"官方 MCP"挤掉你——因为价值在模块层，不在 MCP 层。
+
+> **首发后端选 Cocos Creator + 微信小游戏/Web**：休闲/小游戏/UGC 赛道 gameslop 容忍度高、迭代速度赢、TAM 已被 Astrocade/Rosebud 验证，是模块化打法最锋利的甜区。Unity/Unreal 作为后续 adapter 接入，**不一头扎进 Unreal 的画面军备红海**（那里 Epic 自己是对手）。
+
 ---
 
 ## 2. 架构总览
@@ -39,28 +51,38 @@
                        │ Game Manifest (JSON)
                        ▼
 ┌─────────────────────────────────────────────────────────────┐
-│                   运行时引擎层 (Runtime)                      │
-│                                                              │
-│  ┌──────────────────────────────────────────────────────┐   │
-│  │              Cocos Creator 3.x                       │   │
-│  │                                                      │   │
-│  │  ┌────────┐ ┌────────┐ ┌────────┐ ┌────────┐       │   │
-│  │  │ Module │ │ Module │ │ Module │ │ Module │ ...    │   │
-│  │  │ Node   │ │ Node   │ │ Node   │ │ Node   │       │   │
-│  │  └───┬────┘ └───┬────┘ └───┬────┘ └───┬────┘       │   │
-│  │      └──────────┴──────────┴──────────┘              │   │
-│  │                 Event Bus                             │   │
-│  └──────────────────────────────────────────────────────┘   │
-│                                                              │
-│  目标平台：Web / 微信小游戏 / Android / iOS                    │
-└─────────────────────────────────────────────────────────────┘
+│             逻辑核心层 (Logic Core) —— 纯 TS，零引擎依赖        │
+│                        ★ 护城河 ★                            │
+│  ┌────────┐ ┌────────┐ ┌────────┐ ┌────────┐                │
+│  │ Module │ │ Module │ │ Module │ │ Module │ ...            │
+│  │ .core  │ │ .core  │ │ .core  │ │ .core  │                │
+│  └───┬────┘ └───┬────┘ └───┬────┘ └───┬────┘                │
+│      └──────────┴────┬─────┴──────────┘                      │
+│              类型化 Event Bus（确定性模拟）                     │
+└────────────────────┬─────────────────────────────────────────┘
+                     │ EnginePort（~十几个方法的能力接口）
+        ┌────────────┼────────────┬──────────────┐
+        ▼            ▼            ▼              ▼
+┌─────────────┐┌──────────┐┌───────────┐┌──────────────┐
+│ Cocos Adapter││Unity    ││Unreal     ││ Web Adapter   │
+│ (首发,TS直接)││Adapter   ││Adapter    ││               │
+│             ││(via MCP) ││(via MCP)  ││               │
+└─────────────┘└──────────┘└───────────┘└──────────────┘
+   表现/渲染/音效/输入 —— 每引擎一份薄适配，成本恒定
+        │
+        ▼
+  目标平台：微信小游戏 / Web（首发） · Android / iOS / PC（后续）
 ```
+
+> 引擎只是**可插拔的表现后端**：逻辑核心不依赖任何引擎，引擎仅通过 `EnginePort` 提供渲染、音效、输入等能力。详见第 9 节。
 
 ---
 
 ## 3. 技术选型
 
-### 3.1 运行时引擎：Cocos Creator 3.x
+### 3.1 首发表现后端：Cocos Creator 3.x
+
+> 注意：引擎是**可插拔后端**而非核心绑定（见第 1.1、第 9 节）。下表说明的是"为什么首发选 Cocos"，而非"为什么绑定 Cocos"。
 
 | 维度 | Cocos Creator | Godot | Unity |
 |------|--------------|-------|-------|
@@ -574,39 +596,96 @@ AI 编排器的最终输出是一份 Game Manifest JSON，运行时引擎直接�
 
 ### 8.5 Step 5: 组装 + 加载
 
-输出 Game Manifest JSON → Cocos Creator 运行时加载 → 可玩。
+输出 Game Manifest JSON → 逻辑核心加载并校验 → 绑定当前目标引擎的 Adapter → 可玩。
 
 ---
 
-## 9. Cocos Creator 集成方案
+## 9. 引擎无关架构：逻辑核心 + 表现适配
 
-### 9.1 模块 → Cocos 组件映射
+> 这是整个框架的命门。它决定了模块库能否跨引擎复利、不被任何引擎绑死。
+> **核心原则：核心实现放纯逻辑，引擎只做表现后端。**
 
-每个 Apollo 模块对应一个 Cocos **Prefab + Component**：
+### 9.1 切分原则（Ports & Adapters / 六边形架构）
+
+每个模块沿一条缝切成两半，**绝不**把游戏规则写进引擎组件：
+
+```
+┌─────────────────────────────────────┐
+│  逻辑核心 (core.ts) —— 纯 TS，零引擎依赖   │  ← 护城河，写一次，跨引擎复用
+│  规则 / 状态 / 数值 / 事件流 / 平衡 / 目标选择 │
+└──────────────────┬──────────────────┘
+                   │  EnginePort（能力接口，很小）
+┌──────────────────┴──────────────────┐
+│  表现绑定 (adapter.*.ts) —— 每引擎一份，很薄 │  ← 每个引擎实现一次
+│  渲染 / 动画 / 音效 / 输入 / 粒子        │
+└─────────────────────────────────────┘
+```
+
+成本结构：
+- **逻辑核心 + 模块库**：写一次，越堆越厚，复利增长。
+- **引擎适配**：每引擎一份薄 `EnginePort` 实现，恒定且很小。
+
+**为什么塔防是验证这条缝的最佳题材**：塔防是网格/路径制、确定性模拟。射程判断、目标选择、寻路全部在逻辑侧的网格上计算，**根本不需要引擎的物理/碰撞系统**。引擎被降级成"哑渲染器"——只画状态、放音效、收点击，不参与任何游戏规则。这条缝天然干净。
+
+**这条缝会变脏的地方**（远期再处理）：当玩法本身依赖引擎物理时（紧手感平台跳跃、布娃娃、载具）。对策：把确定性物理库（Rapier/Box2D）编进逻辑核心，物理也归逻辑算；引擎仍只渲染。
+
+### 9.2 EnginePort —— 引擎需要实现的全部能力
+
+整个引擎适配只需实现以下接口（塔防场景约 6 组、十几个方法）：
+
+```typescript
+// 这就是"隐形抽象层"。逻辑核心只通过它与引擎对话。
+interface EnginePort {
+  view: {
+    spawn(entityId: string, visualType: string, pos: Vec2): void;  // 在某位置创建一个可视实体
+    update(entityId: string, pos: Vec2, rot: number): void;        // 更新位置/朝向
+    destroy(entityId: string): void;
+    playAnim(entityId: string, anim: string): void;
+  };
+  audio: { play(soundId: string): void; stop(soundId: string): void; };
+  vfx:   { emit(effectId: string, pos: Vec2): void; };
+  input: { onTap(cb: (cell: GridPos) => void): void; };
+  time:  { onTick(cb: (dt: number) => void): void; };  // 引擎驱动主循环，注入 dt
+  asset: { preload(bundleId: string): Promise<void>; };
+}
+```
+
+- **Cocos Adapter**：直接用 TS 实现，`view.spawn` → 实例化 Prefab；`time.onTick` → 挂到 `update()`。
+- **Unity / Unreal Adapter**：通过官方 MCP 实现，`view.spawn` → MCP 创建 GameObject / Actor。
+- **逻辑核心永远不 import 任何引擎 API**，只持有一个 `EnginePort` 引用。
+
+### 9.3 模块目录结构（修正后）
+
+每个模块 = 纯逻辑核心 + 按需的多引擎适配 + manifest：
 
 ```
 modules/
 ├── map_grid/
-│   ├── manifest.json          # 模块 manifest
-│   ├── MapGridSystem.ts       # Cocos Component（游戏逻辑）
-│   ├── MapGridNode.prefab     # Cocos Prefab（场景节点）
-│   └── content/               # 可选内容数据
+│   ├── manifest.json          # 模块 manifest（能力契约）
+│   ├── core.ts                # ★ 纯逻辑：网格状态、可建造判定（零引擎依赖）
+│   ├── adapters/
+│   │   ├── cocos.ts           # Cocos 表现绑定（薄）
+│   │   ├── unity.ts           # Unity 表现绑定（via MCP，薄）
+│   │   └── unreal.ts          # Unreal 表现绑定（via MCP，薄）
+│   └── content/
 │       └── default_maps.json
 ├── wave_system/
 │   ├── manifest.json
-│   ├── WaveSystem.ts
-│   ├── WaveSystemNode.prefab
+│   ├── core.ts                # ★ 纯逻辑：波次时序、难度递增、出怪
+│   ├── adapters/
+│   │   └── cocos.ts           # 首发只需 Cocos
 │   └── content/
 │       └── default_waves.json
 └── ...
 ```
 
-### 9.2 事件总线
+> 三层模型与这条缝的对应：**System（机制）+ Content（数据）落在逻辑核心（纯）；Skin（美学/手感/juice）落在引擎侧 Adapter。** 手感与特效时序留给引擎发挥，不泄漏进逻辑核心。
 
-基于 Cocos Creator 的 `EventTarget` 扩展类型化事件总线：
+### 9.4 事件总线（引擎无关）
+
+事件总线属于逻辑核心层，**不依赖** Cocos `EventTarget`，纯 TS 实现以保证跨引擎一致：
 
 ```typescript
-// 框架提供的类型化事件总线
 interface GameEventBus {
   emit<T extends keyof GameEvents>(event: T, payload: GameEvents[T]): void;
   on<T extends keyof GameEvents>(event: T, handler: (payload: GameEvents[T]) => void): void;
@@ -624,17 +703,17 @@ type GameEvents = {
 };
 ```
 
-### 9.3 运行时加载流程
+### 9.5 运行时加载流程
 
 ```
 1. 解析 Game Manifest JSON
-2. 校验模块依赖和事件闭合
-3. 按依赖顺序加载模块 Prefab
-4. 将 config 注入各模块 Component
-5. 注册各模块的事件监听
-6. 加载 Content 数据（塔/敌人/波次表）
-7. 加载 Skin 资源包
-8. 初始化完成 → 开始游戏
+2. 校验模块依赖和事件闭合（第 7 节，纯逻辑）
+3. 按依赖顺序实例化各模块的 core.ts，注入 config
+4. 绑定当前目标引擎的 EnginePort 实现（Cocos / Unity / Unreal）
+5. 各模块 core 通过 EnginePort.view.spawn 等创建表现实体
+6. 注册各模块的事件监听
+7. 加载 Content 数据（塔/敌人/波次表）+ Skin 资源包（经 EnginePort.asset）
+8. EnginePort.time.onTick 驱动主循环 → 开始游戏
 ```
 
 ---
@@ -664,18 +743,20 @@ type GameEvents = {
 
 本轮预研（设计文档级）的交付物：
 
+- [x] 战略定位与突破点（护城河 = 模块库；引擎 = 可插拔后端）
 - [x] 架构总览文档
 - [x] 模块 Manifest Schema 标准定义
 - [x] 塔防题材 8 个核心模块定义（含能力契约）
 - [x] Game Manifest 示例（完整可读）
 - [x] 静态校验器规则定义
 - [x] AI 编排流程设计
-- [x] Cocos Creator 集成方案
+- [x] 引擎无关架构（逻辑核心 + EnginePort + 多引擎 Adapter）
 - [x] 泛化路径规划
 
 **下一步（如果推进到原型）**：
-1. 初始化 Cocos Creator 3.x 项目
-2. 实现事件总线 + 模块加载器
-3. 实现 map_grid + path_system 两个最基础模块
-4. 实现 Game Manifest 解析 + 校验器
-5. 一个可运行的最小塔防 demo
+1. 实现引擎无关的逻辑核心运行时：纯 TS 事件总线 + 模块加载器 + `EnginePort` 接口
+2. 实现 Game Manifest 解析 + 静态校验器（纯逻辑，可脱离引擎单测）
+3. 实现 map_grid + path_system 两个最基础模块的 `core.ts`（确定性、可单测）
+4. 实现首个 Cocos Adapter，验证 `EnginePort` 能把逻辑核心渲染出来
+5. 一个可运行的最小塔防 demo（微信小游戏 / Web）
+6. （验证后）实现 Unity Adapter via MCP，证明同一逻辑核心可切换后端
