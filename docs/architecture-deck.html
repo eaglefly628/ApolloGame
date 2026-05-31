@@ -3,13 +3,9 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Apollo Engine — Architecture Deck</title>
+<title>Apollo Engine — Architecture Deck v2</title>
 <style>
-  /* ════════════════════════════════════════════════
-     RESET & BASE
-     ════════════════════════════════════════════════ */
   *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-
   :root {
     --bg:        #0c0e14;
     --surface:   #151821;
@@ -28,101 +24,60 @@
     --font:      'Inter', -apple-system, 'SF Pro Display', 'Helvetica Neue', sans-serif;
     --mono:      'SF Mono', 'Fira Code', 'JetBrains Mono', monospace;
   }
-
   @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap');
-
   html, body { height: 100%; overflow: hidden; background: var(--bg); color: var(--text); font-family: var(--font); }
 
-  /* ════════════════════════════════════════════════
-     SLIDE CONTAINER
-     ════════════════════════════════════════════════ */
-  .deck {
-    width: 100vw; height: 100vh;
-    position: relative;
-  }
+  /* ── Deck ── */
+  .deck { width: 100vw; height: 100vh; position: relative; }
   .slide {
     position: absolute; inset: 0;
-    display: flex; flex-direction: column;
-    justify-content: center; align-items: center;
-    padding: 60px 80px;
-    opacity: 0; pointer-events: none;
-    transition: opacity 0.5s ease;
+    display: flex; flex-direction: column; justify-content: center; align-items: center;
+    padding: 48px 72px; opacity: 0; pointer-events: none; transition: opacity 0.45s ease;
+    overflow-y: auto;
   }
   .slide.active { opacity: 1; pointer-events: all; }
 
-  /* ════════════════════════════════════════════════
-     NAVIGATION
-     ════════════════════════════════════════════════ */
-  .nav {
-    position: fixed; bottom: 24px; left: 50%; transform: translateX(-50%);
-    display: flex; gap: 8px; z-index: 100;
-  }
-  .nav-dot {
-    width: 10px; height: 10px; border-radius: 50%;
-    background: var(--border); cursor: pointer;
-    transition: all 0.3s;
-  }
-  .nav-dot.active { background: var(--accent); transform: scale(1.3); }
+  /* ── Nav ── */
+  .nav { position: fixed; bottom: 22px; left: 50%; transform: translateX(-50%); display: flex; gap: 7px; z-index: 100; }
+  .nav-dot { width: 9px; height: 9px; border-radius: 50%; background: var(--border); cursor: pointer; transition: all 0.3s; }
+  .nav-dot.active { background: var(--accent); transform: scale(1.4); }
   .nav-dot:hover { background: var(--accent2); }
+  .page-num { position: fixed; bottom: 24px; right: 36px; font-size: 12px; color: var(--text-dim); font-family: var(--mono); z-index: 100; }
+  .key-hint { position: fixed; bottom: 24px; left: 36px; font-size: 11px; color: var(--text-dim); font-family: var(--mono); z-index: 100; opacity: 0.4; }
 
-  .page-num {
-    position: fixed; bottom: 26px; right: 40px;
-    font-size: 13px; color: var(--text-dim); font-family: var(--mono);
-    z-index: 100;
-  }
-
-  .key-hint {
-    position: fixed; bottom: 26px; left: 40px;
-    font-size: 12px; color: var(--text-dim); font-family: var(--mono);
-    z-index: 100; opacity: 0.5;
-  }
-
-  /* ════════════════════════════════════════════════
-     TYPOGRAPHY
-     ════════════════════════════════════════════════ */
-  h1 { font-size: 56px; font-weight: 800; letter-spacing: -1.5px; line-height: 1.15; }
-  h2 { font-size: 40px; font-weight: 700; letter-spacing: -1px; line-height: 1.2; margin-bottom: 32px; }
-  h3 { font-size: 24px; font-weight: 600; line-height: 1.3; margin-bottom: 16px; }
-  p  { font-size: 18px; line-height: 1.7; color: var(--text-dim); }
-  .subtitle { font-size: 22px; color: var(--text-dim); font-weight: 400; margin-top: 16px; }
+  /* ── Typography ── */
+  h1 { font-size: 52px; font-weight: 800; letter-spacing: -1.5px; line-height: 1.15; }
+  h2 { font-size: 36px; font-weight: 700; letter-spacing: -0.8px; line-height: 1.2; margin-bottom: 28px; }
+  h3 { font-size: 22px; font-weight: 600; line-height: 1.3; margin-bottom: 14px; }
+  p  { font-size: 16px; line-height: 1.7; color: var(--text-dim); }
+  .subtitle { font-size: 20px; color: var(--text-dim); font-weight: 400; margin-top: 14px; }
   .tag {
     display: inline-block; padding: 4px 14px; border-radius: 20px;
-    font-size: 13px; font-weight: 600; letter-spacing: 0.5px; text-transform: uppercase;
-    background: rgba(108,140,255,0.15); color: var(--accent); margin-bottom: 20px;
+    font-size: 12px; font-weight: 600; letter-spacing: 0.5px; text-transform: uppercase;
+    background: rgba(108,140,255,0.15); color: var(--accent); margin-bottom: 18px;
   }
-  code, .code {
-    font-family: var(--mono); font-size: 14px;
-    background: var(--surface2); padding: 2px 8px; border-radius: 4px;
+  code, .code { font-family: var(--mono); font-size: 13px; background: var(--surface2); padding: 2px 7px; border-radius: 4px; }
+  .gradient-text {
+    background: linear-gradient(135deg, var(--accent), var(--accent2), var(--pink));
+    -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;
   }
 
-  /* ════════════════════════════════════════════════
-     LAYOUT HELPERS
-     ════════════════════════════════════════════════ */
-  .full-w { width: 100%; max-width: 1100px; }
-  .row { display: flex; gap: 32px; width: 100%; max-width: 1100px; }
-  .col { flex: 1; }
+  /* ── Layout ── */
+  .full-w { width: 100%; max-width: 1080px; }
+  .row { display: flex; gap: 24px; width: 100%; max-width: 1080px; }
   .center { text-align: center; }
-  .left-align { align-items: flex-start; }
 
-  /* ════════════════════════════════════════════════
-     CARDS & BOXES
-     ════════════════════════════════════════════════ */
+  /* ── Cards ── */
   .card {
     background: var(--surface); border: 1px solid var(--border);
-    border-radius: 12px; padding: 28px; position: relative;
+    border-radius: 12px; padding: 24px; position: relative;
   }
-  .card h3 { margin-bottom: 12px; }
-  .card p  { font-size: 15px; line-height: 1.6; }
-  .card.accent-border { border-color: var(--accent); }
-  .card.green-border  { border-color: var(--green); }
-  .card.orange-border { border-color: var(--orange); }
-  .card.pink-border   { border-color: var(--pink); }
-  .card.cyan-border   { border-color: var(--cyan); }
-
+  .card h3 { margin-bottom: 10px; }
+  .card p  { font-size: 14px; line-height: 1.6; }
   .card-icon {
-    width: 44px; height: 44px; border-radius: 10px;
+    width: 42px; height: 42px; border-radius: 10px;
     display: flex; align-items: center; justify-content: center;
-    font-size: 22px; margin-bottom: 16px;
+    font-size: 20px; margin-bottom: 14px;
   }
   .card-icon.blue   { background: rgba(108,140,255,0.15); }
   .card-icon.green  { background: rgba(52,211,153,0.15); }
@@ -130,1237 +85,1256 @@
   .card-icon.pink   { background: rgba(244,114,182,0.15); }
   .card-icon.cyan   { background: rgba(34,211,238,0.15); }
   .card-icon.purple { background: rgba(167,139,250,0.15); }
+  .card-icon.yellow { background: rgba(251,191,36,0.15); }
 
-  /* ════════════════════════════════════════════════
-     ARCHITECTURE DIAGRAM — THE BIG ONE
-     ════════════════════════════════════════════════ */
-  .arch-diagram {
-    width: 100%; max-width: 1000px;
-    display: flex; flex-direction: column; gap: 0;
-    position: relative;
+  .glow-accent { box-shadow: 0 0 40px rgba(108,140,255,0.08); }
+  .glow-green  { box-shadow: 0 0 40px rgba(52,211,153,0.08); }
+  .glow-pink   { box-shadow: 0 0 40px rgba(244,114,182,0.08); }
+
+  /* ── Bullet list ── */
+  .bullet-list { list-style: none; padding: 0; }
+  .bullet-list li {
+    position: relative; padding-left: 22px; margin-bottom: 12px;
+    font-size: 15px; line-height: 1.6; color: var(--text);
   }
+  .bullet-list li::before {
+    content: ''; position: absolute; left: 0; top: 9px;
+    width: 7px; height: 7px; border-radius: 2px;
+    background: var(--accent); transform: rotate(45deg);
+  }
+  .bullet-list li span.dim { color: var(--text-dim); }
+
+  /* ── Architecture Layers ── */
+  .arch-diagram { width: 100%; max-width: 980px; display: flex; flex-direction: column; gap: 0; position: relative; }
   .arch-layer {
-    border: 2px solid var(--border);
-    border-radius: 14px; padding: 24px 28px;
-    position: relative;
-    transition: border-color 0.3s;
+    border: 2px solid var(--border); border-radius: 12px; padding: 20px 24px;
+    position: relative; transition: border-color 0.3s;
   }
   .arch-layer:hover { border-color: var(--accent); }
   .arch-layer + .arch-layer { margin-top: -1px; }
   .layer-label {
-    position: absolute; top: -11px; left: 24px;
-    background: var(--bg); padding: 0 12px;
-    font-size: 13px; font-weight: 700; letter-spacing: 1px; text-transform: uppercase;
+    position: absolute; top: -10px; left: 20px;
+    background: var(--bg); padding: 0 10px;
+    font-size: 12px; font-weight: 700; letter-spacing: 1px; text-transform: uppercase;
   }
-  .layer-label.blue   { color: var(--accent); }
-  .layer-label.green  { color: var(--green); }
-  .layer-label.orange { color: var(--orange); }
-  .layer-label.pink   { color: var(--pink); }
-
-  .layer-content {
-    display: flex; gap: 16px; flex-wrap: wrap; margin-top: 8px;
-  }
+  .layer-content { display: flex; gap: 12px; flex-wrap: wrap; margin-top: 6px; }
   .layer-box {
-    background: var(--surface2); border-radius: 8px;
-    padding: 12px 18px; font-size: 14px; font-weight: 500;
-    border: 1px solid transparent;
-    display: flex; align-items: center; gap: 8px;
-    flex: 1; min-width: 140px;
+    background: var(--surface2); border-radius: 8px; padding: 10px 14px;
+    font-size: 13px; font-weight: 500; border: 1px solid transparent;
+    display: flex; align-items: center; gap: 8px; flex: 1; min-width: 120px;
   }
-  .layer-box .icon { font-size: 16px; opacity: 0.7; }
+  .layer-box .icon { font-size: 15px; opacity: 0.7; }
   .layer-box.highlight { border-color: var(--accent); background: rgba(108,140,255,0.08); }
 
-  .arch-arrow {
-    display: flex; justify-content: center; align-items: center;
-    height: 40px; position: relative; z-index: 2;
-  }
-  .arch-arrow::before {
-    content: '';
-    width: 2px; height: 100%;
-    background: linear-gradient(to bottom, var(--accent), var(--green));
-    position: absolute;
-  }
-  .arrow-labels {
-    display: flex; gap: 60px; justify-content: center;
-    position: relative; z-index: 3;
-  }
+  .arch-arrow { display: flex; justify-content: center; align-items: center; height: 36px; position: relative; z-index: 2; }
+  .arch-arrow::before { content: ''; width: 2px; height: 100%; background: linear-gradient(to bottom, var(--accent), var(--green)); position: absolute; }
+  .arrow-labels { display: flex; gap: 48px; justify-content: center; position: relative; z-index: 3; }
   .arrow-label {
-    font-size: 11px; font-weight: 600; letter-spacing: 0.3px;
-    padding: 3px 10px; border-radius: 10px;
+    font-size: 10px; font-weight: 600; letter-spacing: 0.3px;
+    padding: 2px 10px; border-radius: 10px;
     background: var(--surface); border: 1px solid var(--border);
   }
-  .arrow-label.down { color: var(--green); }
-  .arrow-label.up   { color: var(--accent); }
 
-  /* ════════════════════════════════════════════════
-     PIPELINE DIAGRAM
-     ════════════════════════════════════════════════ */
-  .pipeline {
-    display: flex; align-items: center; gap: 0;
-    width: 100%; max-width: 1100px;
-    padding: 20px 0;
-  }
+  /* ── Pipeline ── */
+  .pipeline { display: flex; align-items: center; gap: 0; width: 100%; max-width: 1080px; padding: 16px 0; }
   .pipe-node {
     background: var(--surface); border: 2px solid var(--border);
-    border-radius: 12px; padding: 16px 20px; text-align: center;
-    flex: 1; min-width: 0; position: relative;
+    border-radius: 10px; padding: 14px 16px; text-align: center; flex: 1; min-width: 0;
   }
-  .pipe-node h4 {
-    font-size: 14px; font-weight: 700; margin-bottom: 6px;
-    white-space: nowrap;
-  }
-  .pipe-node p {
-    font-size: 12px; line-height: 1.4; color: var(--text-dim);
-  }
+  .pipe-node h4 { font-size: 13px; font-weight: 700; margin-bottom: 5px; white-space: nowrap; }
+  .pipe-node p { font-size: 11px; line-height: 1.4; color: var(--text-dim); }
   .pipe-node .comp-tag {
-    display: inline-block; margin-top: 8px; padding: 2px 8px;
-    border-radius: 4px; font-size: 11px; font-weight: 600;
-    font-family: var(--mono);
+    display: inline-block; margin-top: 6px; padding: 2px 7px;
+    border-radius: 4px; font-size: 10px; font-weight: 600; font-family: var(--mono);
   }
   .pipe-node.input  { border-color: var(--cyan); }
   .pipe-node.input  h4 { color: var(--cyan); }
   .pipe-node.input  .comp-tag { background: rgba(34,211,238,0.15); color: var(--cyan); }
-
   .pipe-node.logic  { border-color: var(--accent); }
   .pipe-node.logic  h4 { color: var(--accent); }
   .pipe-node.logic  .comp-tag { background: rgba(108,140,255,0.15); color: var(--accent); }
-
   .pipe-node.logic2 { border-color: var(--green); }
   .pipe-node.logic2 h4 { color: var(--green); }
   .pipe-node.logic2 .comp-tag { background: rgba(52,211,153,0.15); color: var(--green); }
-
   .pipe-node.render { border-color: var(--pink); }
   .pipe-node.render h4 { color: var(--pink); }
   .pipe-node.render .comp-tag { background: rgba(244,114,182,0.15); color: var(--pink); }
+  .pipe-node.video { border-color: var(--orange); }
+  .pipe-node.video h4 { color: var(--orange); }
+  .pipe-node.video .comp-tag { background: rgba(251,146,60,0.15); color: var(--orange); }
 
   .pipe-arrow {
-    width: 40px; min-width: 40px; height: 2px;
-    position: relative; flex-shrink: 0;
+    width: 36px; min-width: 36px; height: 2px; position: relative; flex-shrink: 0;
   }
-  .pipe-arrow::before {
-    content: ''; position: absolute; top: 0; left: 0; right: 8px; height: 2px;
-    background: var(--border);
-  }
+  .pipe-arrow::before { content: ''; position: absolute; top: 0; left: 0; right: 8px; height: 2px; background: var(--border); }
   .pipe-arrow::after {
     content: ''; position: absolute; top: -4px; right: 0;
-    border-left: 8px solid var(--border);
-    border-top: 5px solid transparent;
-    border-bottom: 5px solid transparent;
+    border-left: 7px solid var(--border); border-top: 5px solid transparent; border-bottom: 5px solid transparent;
   }
   .pipe-arrow .label {
-    position: absolute; top: -20px; left: 50%; transform: translateX(-50%);
-    font-size: 10px; font-family: var(--mono); color: var(--text-dim);
-    white-space: nowrap;
+    position: absolute; top: -18px; left: 50%; transform: translateX(-50%);
+    font-size: 9px; font-family: var(--mono); color: var(--text-dim); white-space: nowrap;
   }
 
-  /* ════════════════════════════════════════════════
-     COMPONENT TABLE
-     ════════════════════════════════════════════════ */
+  /* ── Component Table ── */
   .comp-table {
-    width: 100%; max-width: 1000px;
-    border-collapse: separate; border-spacing: 0;
-    border: 1px solid var(--border); border-radius: 12px;
-    overflow: hidden; font-size: 14px;
+    width: 100%; max-width: 1000px; border-collapse: separate; border-spacing: 0;
+    border: 1px solid var(--border); border-radius: 10px; overflow: hidden; font-size: 13px;
   }
   .comp-table th {
-    background: var(--surface2); padding: 12px 20px;
-    text-align: left; font-weight: 600; font-size: 13px;
-    color: var(--text-dim); letter-spacing: 0.5px; text-transform: uppercase;
-    border-bottom: 1px solid var(--border);
+    background: var(--surface2); padding: 10px 16px; text-align: left;
+    font-weight: 600; font-size: 11px; color: var(--text-dim);
+    letter-spacing: 0.5px; text-transform: uppercase; border-bottom: 1px solid var(--border);
   }
-  .comp-table td {
-    padding: 10px 20px; border-bottom: 1px solid var(--border);
-    vertical-align: top;
-  }
+  .comp-table td { padding: 8px 16px; border-bottom: 1px solid var(--border); vertical-align: top; }
   .comp-table tr:last-child td { border-bottom: none; }
   .comp-table tr:hover td { background: rgba(108,140,255,0.04); }
   .cat-badge {
-    display: inline-block; padding: 2px 10px; border-radius: 10px;
-    font-size: 12px; font-weight: 600;
+    display: inline-block; padding: 2px 9px; border-radius: 10px; font-size: 11px; font-weight: 600;
   }
   .cat-badge.resource { background: rgba(52,211,153,0.15); color: var(--green); }
   .cat-badge.event    { background: rgba(251,146,60,0.15); color: var(--orange); }
   .cat-badge.intent   { background: rgba(108,140,255,0.15); color: var(--accent); }
   .cat-badge.marker   { background: rgba(244,114,182,0.15); color: var(--pink); }
   .cat-badge.config   { background: rgba(167,139,250,0.15); color: var(--accent2); }
+  .cat-badge.scene    { background: rgba(251,191,36,0.15); color: var(--yellow); }
 
-  /* ════════════════════════════════════════════════
-     MANIFEST CODE BLOCK
-     ════════════════════════════════════════════════ */
+  /* ── Code Block ── */
   .code-block {
     background: var(--surface); border: 1px solid var(--border);
-    border-radius: 12px; padding: 24px 28px; width: 100%;
-    font-family: var(--mono); font-size: 13px; line-height: 1.8;
-    overflow-x: auto; white-space: pre;
-    color: var(--text-dim);
+    border-radius: 10px; padding: 20px 24px; width: 100%;
+    font-family: var(--mono); font-size: 12px; line-height: 1.8;
+    overflow-x: auto; white-space: pre; color: var(--text-dim);
   }
   .code-block .kw  { color: var(--accent); }
   .code-block .str { color: var(--green); }
   .code-block .typ { color: var(--accent2); }
   .code-block .num { color: var(--orange); }
   .code-block .cmt { color: #4a5068; font-style: italic; }
-  .code-block .punc { color: var(--text-dim); }
 
-  /* ════════════════════════════════════════════════
-     CAPABILITY CARD (SLIDE 6)
-     ════════════════════════════════════════════════ */
+  /* ── Capability Cards ── */
   .cap-card {
     background: var(--surface); border: 1px solid var(--border);
-    border-radius: 14px; padding: 0; overflow: hidden; flex: 1;
+    border-radius: 12px; overflow: hidden; flex: 1;
   }
-  .cap-header {
-    padding: 16px 22px; border-bottom: 1px solid var(--border);
-    display: flex; align-items: center; gap: 12px;
-  }
-  .cap-header h3 { margin: 0; font-size: 17px; }
-  .cap-body { padding: 18px 22px; }
-  .cap-section {
-    margin-bottom: 14px;
-  }
+  .cap-header { padding: 14px 18px; border-bottom: 1px solid var(--border); display: flex; align-items: center; gap: 10px; }
+  .cap-header h3 { margin: 0; font-size: 15px; }
+  .cap-body { padding: 14px 18px; }
+  .cap-section { margin-bottom: 12px; }
   .cap-section-title {
-    font-size: 11px; font-weight: 700; letter-spacing: 0.8px;
-    text-transform: uppercase; color: var(--text-dim); margin-bottom: 8px;
+    font-size: 10px; font-weight: 700; letter-spacing: 0.8px;
+    text-transform: uppercase; color: var(--text-dim); margin-bottom: 6px;
   }
-  .cap-tags { display: flex; flex-wrap: wrap; gap: 6px; }
+  .cap-tags { display: flex; flex-wrap: wrap; gap: 5px; }
   .cap-tag {
-    display: inline-block; padding: 3px 10px; border-radius: 6px;
-    font-size: 12px; font-weight: 600; font-family: var(--mono);
+    display: inline-block; padding: 2px 8px; border-radius: 5px;
+    font-size: 11px; font-weight: 600; font-family: var(--mono);
   }
   .cap-tag.provides { background: rgba(52,211,153,0.12); color: var(--green); }
   .cap-tag.reads    { background: rgba(108,140,255,0.12); color: var(--accent); }
   .cap-tag.writes   { background: rgba(251,146,60,0.12); color: var(--orange); }
   .cap-tag.consumes { background: rgba(244,114,182,0.12); color: var(--pink); }
 
-  /* ════════════════════════════════════════════════
-     FLOW / COMPOSABILITY DIAGRAM (SLIDE 7)
-     ════════════════════════════════════════════════ */
-  .compose-demo {
-    width: 100%; max-width: 1000px;
-    display: flex; flex-direction: column; gap: 24px;
+  /* ── Stacking Diagram ── */
+  .stack-visual {
+    width: 100%; max-width: 700px; position: relative; margin: 0 auto;
   }
-  .compose-row {
-    display: flex; gap: 16px; align-items: stretch;
+  .stack-layer {
+    border: 2px solid var(--border); border-radius: 10px;
+    padding: 18px 22px; margin-bottom: -1px; position: relative;
+    display: flex; align-items: center; gap: 16px;
   }
-  .compose-box {
-    background: var(--surface); border: 2px dashed var(--border);
-    border-radius: 12px; padding: 20px; flex: 1;
-    display: flex; flex-direction: column; gap: 10px;
+  .stack-layer .layer-icon { font-size: 28px; flex-shrink: 0; }
+  .stack-layer .layer-info { flex: 1; }
+  .stack-layer .layer-info h4 { font-size: 15px; font-weight: 700; margin-bottom: 3px; }
+  .stack-layer .layer-info p  { font-size: 12px; margin: 0; }
+  .stack-layer .layer-badge {
+    font-size: 10px; font-weight: 700; letter-spacing: 1px; text-transform: uppercase;
+    padding: 3px 10px; border-radius: 8px; flex-shrink: 0;
   }
-  .compose-box.solid { border-style: solid; }
-  .compose-box h4 { font-size: 15px; font-weight: 700; }
+
+  /* ── Screen Mockup ── */
+  .screen-mock {
+    width: 100%; max-width: 520px; aspect-ratio: 16/10;
+    background: var(--surface); border: 2px solid var(--border); border-radius: 14px;
+    position: relative; overflow: hidden;
+  }
+  .screen-mock .video-bg {
+    position: absolute; inset: 0;
+    background: linear-gradient(135deg, #1a2a1a 0%, #0d1a2a 40%, #1a1a2a 100%);
+    display: flex; align-items: center; justify-content: center;
+  }
+  .screen-mock .video-bg .label {
+    font-size: 14px; color: rgba(255,255,255,0.15); font-weight: 700;
+    letter-spacing: 4px; text-transform: uppercase;
+  }
+  .screen-mock .region {
+    position: absolute; border: 2px dashed; border-radius: 8px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 11px; font-weight: 600; font-family: var(--mono);
+  }
+  .screen-mock .ui-element {
+    position: absolute; background: rgba(0,0,0,0.7); border-radius: 6px;
+    padding: 6px 12px; font-size: 11px; font-weight: 600;
+    backdrop-filter: blur(4px); border: 1px solid rgba(255,255,255,0.1);
+  }
+  .screen-mock .relation-line {
+    position: absolute; border-top: 2px dashed var(--yellow); opacity: 0.6;
+  }
+
+  /* ── Compose Demo ── */
   .compose-entity {
-    background: var(--surface2); border-radius: 8px; padding: 12px 16px;
-    font-size: 13px; font-family: var(--mono);
+    background: var(--surface2); border-radius: 8px; padding: 10px 14px;
+    font-size: 12px; font-family: var(--mono);
   }
-  .compose-entity .eid { color: var(--accent); font-weight: 700; }
+  .compose-entity .eid  { color: var(--accent); font-weight: 700; }
   .compose-entity .cname { color: var(--green); }
   .compose-entity .cval  { color: var(--text-dim); }
-  .compose-plus {
-    width: 48px; min-width: 48px; display: flex; align-items: center; justify-content: center;
-    font-size: 28px; font-weight: 300; color: var(--accent);
-  }
-  .compose-equals {
-    width: 48px; min-width: 48px; display: flex; align-items: center; justify-content: center;
-    font-size: 24px; font-weight: 300; color: var(--green);
-  }
-  .compose-box.new-cap {
-    border-color: var(--yellow); border-style: solid;
-    background: rgba(251,191,36,0.04);
-  }
-  .compose-box.result {
-    border-color: var(--green); border-style: solid;
-    background: rgba(52,211,153,0.04);
-  }
 
-  /* ════════════════════════════════════════════════
-     AI SLIDE
-     ════════════════════════════════════════════════ */
-  .ai-flow {
-    display: flex; flex-direction: column; gap: 20px;
-    width: 100%; max-width: 900px;
-  }
-  .ai-step {
-    display: flex; gap: 20px; align-items: center;
-  }
-  .ai-step-num {
-    width: 40px; height: 40px; border-radius: 50%;
-    background: rgba(108,140,255,0.15); color: var(--accent);
-    display: flex; align-items: center; justify-content: center;
-    font-size: 16px; font-weight: 700; flex-shrink: 0;
-  }
-  .ai-step-content {
-    flex: 1; background: var(--surface); border: 1px solid var(--border);
-    border-radius: 10px; padding: 16px 22px;
-  }
-  .ai-step-content h4 { font-size: 15px; margin-bottom: 4px; }
-  .ai-step-content p  { font-size: 14px; }
-  .ai-step-connector {
-    width: 2px; height: 20px; background: var(--border);
-    margin-left: 19px;
-  }
-
-  /* ════════════════════════════════════════════════
-     ROADMAP TIMELINE
-     ════════════════════════════════════════════════ */
-  .timeline {
-    display: flex; gap: 0; width: 100%; max-width: 900px;
-    position: relative;
-  }
+  /* ── Timeline ── */
+  .timeline { display: flex; gap: 0; width: 100%; max-width: 900px; position: relative; }
   .timeline::before {
     content: ''; position: absolute; top: 20px; left: 0; right: 0;
     height: 3px; background: var(--border); border-radius: 2px;
   }
-  .tl-item {
-    flex: 1; text-align: center; position: relative; padding-top: 50px;
-  }
+  .tl-item { flex: 1; text-align: center; position: relative; padding-top: 48px; }
   .tl-dot {
     width: 14px; height: 14px; border-radius: 50%;
     position: absolute; top: 14px; left: 50%; transform: translateX(-50%);
     border: 3px solid var(--bg);
   }
-  .tl-dot.done     { background: var(--green); }
-  .tl-dot.current  { background: var(--accent); box-shadow: 0 0 12px rgba(108,140,255,0.5); }
+  .tl-dot.current { background: var(--accent); box-shadow: 0 0 12px rgba(108,140,255,0.5); }
   .tl-dot.upcoming { background: var(--border); }
-  .tl-label { font-size: 13px; font-weight: 700; color: var(--text-dim); margin-bottom: 8px; }
-  .tl-title { font-size: 16px; font-weight: 600; margin-bottom: 6px; }
-  .tl-desc  { font-size: 13px; color: var(--text-dim); line-height: 1.5; padding: 0 8px; }
+  .tl-label { font-size: 12px; font-weight: 700; color: var(--text-dim); margin-bottom: 6px; }
+  .tl-title { font-size: 15px; font-weight: 600; margin-bottom: 5px; }
+  .tl-desc  { font-size: 12px; color: var(--text-dim); line-height: 1.5; padding: 0 6px; }
 
-  /* ════════════════════════════════════════════════
-     HIGHLIGHT / GLOW EFFECTS
-     ════════════════════════════════════════════════ */
-  .glow-accent { box-shadow: 0 0 40px rgba(108,140,255,0.08); }
-  .glow-green  { box-shadow: 0 0 40px rgba(52,211,153,0.08); }
+  /* ── AI Steps ── */
+  .ai-flow { display: flex; flex-direction: column; gap: 16px; width: 100%; max-width: 880px; }
+  .ai-step { display: flex; gap: 16px; align-items: center; }
+  .ai-step-num {
+    width: 36px; height: 36px; border-radius: 50%;
+    background: rgba(108,140,255,0.15); color: var(--accent);
+    display: flex; align-items: center; justify-content: center;
+    font-size: 15px; font-weight: 700; flex-shrink: 0;
+  }
+  .ai-step-content {
+    flex: 1; background: var(--surface); border: 1px solid var(--border);
+    border-radius: 10px; padding: 14px 20px;
+  }
+  .ai-step-content h4 { font-size: 14px; margin-bottom: 3px; }
+  .ai-step-content p  { font-size: 13px; }
 
-  .gradient-text {
-    background: linear-gradient(135deg, var(--accent), var(--accent2));
-    -webkit-background-clip: text; -webkit-text-fill-color: transparent;
-    background-clip: text;
-  }
-
-  /* ════════════════════════════════════════════════
-     BULLET LIST
-     ════════════════════════════════════════════════ */
-  .bullet-list {
-    list-style: none; padding: 0;
-  }
-  .bullet-list li {
-    position: relative; padding-left: 24px; margin-bottom: 14px;
-    font-size: 16px; line-height: 1.6; color: var(--text);
-  }
-  .bullet-list li::before {
-    content: ''; position: absolute; left: 0; top: 10px;
-    width: 8px; height: 8px; border-radius: 2px;
-    background: var(--accent); transform: rotate(45deg);
-  }
-  .bullet-list li span.dim { color: var(--text-dim); }
-
-  /* ════════════════════════════════════════════════
-     PRESENTER SEPARATION DIAGRAM (SLIDE 8)
-     ════════════════════════════════════════════════ */
-  .sep-diagram {
-    width: 100%; max-width: 1000px;
-    display: flex; gap: 24px;
-  }
-  .sep-col {
-    flex: 1; display: flex; flex-direction: column; gap: 12px;
-  }
+  /* ── Separator ── */
+  .sep-diagram { width: 100%; max-width: 1000px; display: flex; gap: 20px; }
+  .sep-col { flex: 1; display: flex; flex-direction: column; gap: 10px; }
   .sep-col-header {
-    font-size: 13px; font-weight: 700; letter-spacing: 0.8px;
-    text-transform: uppercase; text-align: center; padding-bottom: 12px;
+    font-size: 12px; font-weight: 700; letter-spacing: 0.8px;
+    text-transform: uppercase; text-align: center; padding-bottom: 10px;
     border-bottom: 2px solid var(--border); margin-bottom: 4px;
   }
-  .sep-item {
-    background: var(--surface); border: 1px solid var(--border);
-    border-radius: 10px; padding: 14px 18px;
-  }
-  .sep-item h4 { font-size: 14px; margin-bottom: 4px; }
-  .sep-item p  { font-size: 12px; }
+  .sep-item { background: var(--surface); border: 1px solid var(--border); border-radius: 8px; padding: 12px 16px; }
+  .sep-item h4 { font-size: 13px; margin-bottom: 3px; }
+  .sep-item p  { font-size: 11px; }
   .sep-divider {
-    width: 48px; display: flex; flex-direction: column;
-    align-items: center; justify-content: center; gap: 8px;
-    flex-shrink: 0;
+    width: 44px; display: flex; flex-direction: column;
+    align-items: center; justify-content: center; gap: 6px; flex-shrink: 0;
   }
-  .sep-divider .line {
-    width: 2px; flex: 1; background: var(--border);
-  }
+  .sep-divider .line { width: 2px; flex: 1; background: var(--border); }
   .sep-divider .label {
-    font-size: 10px; font-weight: 700; color: var(--text-dim);
+    font-size: 9px; font-weight: 700; color: var(--text-dim);
     writing-mode: vertical-lr; letter-spacing: 2px;
   }
 
-  /* ════════════════════════════════════════════════
-     RESPONSIVE
-     ════════════════════════════════════════════════ */
   @media (max-width: 900px) {
-    .slide { padding: 40px 32px; }
-    h1 { font-size: 36px; }
-    h2 { font-size: 28px; }
+    .slide { padding: 32px 24px; }
+    h1 { font-size: 32px; } h2 { font-size: 24px; }
     .row { flex-direction: column; }
     .pipeline { flex-direction: column; align-items: stretch; }
-    .pipe-arrow { width: 2px; height: 30px; min-width: 2px; margin: 0 auto; }
+    .pipe-arrow { width: 2px; height: 24px; min-width: 2px; margin: 0 auto; }
     .sep-diagram { flex-direction: column; }
   }
 </style>
 </head>
 <body>
-
 <div class="deck" id="deck">
 
-  <!-- ══════════════════════════════════════════════════════
-       SLIDE 1 — TITLE
-       ══════════════════════════════════════════════════════ -->
-  <div class="slide active" data-slide="0">
-    <div class="center">
-      <div style="font-size:64px; margin-bottom:24px;">&#x1F680;</div>
-      <h1><span class="gradient-text">Apollo Engine</span></h1>
-      <p class="subtitle" style="font-size:26px; margin-top:20px; color:var(--text);">
-        AI-Native Game Capability Framework
+<!-- ████████████████████████████████████████████████████████
+     SLIDE 1 — TITLE
+     ████████████████████████████████████████████████████████ -->
+<div class="slide active" data-slide="0">
+  <div class="center">
+    <div style="font-size:56px; margin-bottom:20px;">&#x1F3AC;</div>
+    <h1><span class="gradient-text">Apollo Engine</span></h1>
+    <p class="subtitle" style="font-size:24px; margin-top:16px; color:var(--text);">
+      AI-Generated Video Game Framework
+    </p>
+    <p class="subtitle" style="font-size:17px; margin-top:10px; max-width:620px; text-align:center;">
+      游戏画面由 AI 视频模型生成 &mdash; 引擎只做语义控制 + UI 叠加
+    </p>
+    <div style="margin-top:40px; display:flex; gap:14px; justify-content:center; flex-wrap:wrap;">
+      <span class="tag">Semantic ECS</span>
+      <span class="tag" style="background:rgba(251,146,60,0.15); color:var(--orange);">Video-AI Renderer</span>
+      <span class="tag" style="background:rgba(52,211,153,0.15); color:var(--green);">Capability Protocol</span>
+      <span class="tag" style="background:rgba(244,114,182,0.15); color:var(--pink);">UI Overlay</span>
+    </div>
+  </div>
+</div>
+
+<!-- ████████████████████████████████████████████████████████
+     SLIDE 2 — THE PARADIGM SHIFT
+     ████████████████████████████████████████████████████████ -->
+<div class="slide" data-slide="1">
+  <div class="full-w" style="display:flex;flex-direction:column;align-items:center;">
+    <span class="tag" style="background:rgba(248,113,113,0.15); color:var(--red);">Paradigm Shift</span>
+    <h2 style="text-align:center;">传统游戏 vs Apollo 游戏</h2>
+
+    <div class="row" style="margin-top:8px;">
+      <div class="card" style="flex:1; border-color:var(--red); opacity:0.85;">
+        <h3 style="color:var(--red); font-size:18px;">&#x274C; 传统游戏引擎</h3>
+        <ul class="bullet-list" style="margin-top:12px;">
+          <li><strong>渲染管线</strong> <span class="dim">— 自己写 Canvas/WebGL/3D 渲染</span></li>
+          <li><strong>美术资产</strong> <span class="dim">— 精灵图、3D 模型、动画序列帧</span></li>
+          <li><strong>逻辑与渲染紧耦合</strong> <span class="dim">— 加个特效改三层代码</span></li>
+          <li><strong>AI 是辅助工具</strong> <span class="dim">— 生成素材，人来集成</span></li>
+        </ul>
+        <div style="margin-top:16px; padding:12px 16px; background:rgba(248,113,113,0.08); border-radius:8px;">
+          <p style="font-size:13px; color:var(--red);">成本：<strong>百万级美术预算</strong>，画面品质锁死在开发时刻</p>
+        </div>
+      </div>
+
+      <div style="display:flex; align-items:center; font-size:28px; color:var(--text-dim);">&#x2192;</div>
+
+      <div class="card glow-accent" style="flex:1; border-color:var(--accent);">
+        <h3 style="color:var(--accent); font-size:18px;">&#x2705; Apollo 模式</h3>
+        <ul class="bullet-list" style="margin-top:12px;">
+          <li><strong>AI 视频模型 = 渲染器</strong> <span class="dim">— 不写一行渲染代码</span></li>
+          <li><strong>语义指令 = 美术资产</strong> <span class="dim">— 描述场景，模型生成画面</span></li>
+          <li><strong>逻辑与画面彻底分离</strong> <span class="dim">— 引擎只管状态和控制</span></li>
+          <li><strong>AI 是核心引擎</strong> <span class="dim">— 视频模型进化 = 画质升级</span></li>
+        </ul>
+        <div style="margin-top:16px; padding:12px 16px; background:rgba(108,140,255,0.08); border-radius:8px;">
+          <p style="font-size:13px; color:var(--accent);">成本：<strong>近乎零美术成本</strong>，画面品质随 AI 模型自动升级</p>
+        </div>
+      </div>
+    </div>
+
+    <div class="card" style="margin-top:24px; max-width:800px; padding:16px 24px; border-color:var(--accent2);">
+      <p style="font-size:15px; text-align:center;">
+        <strong style="color:var(--accent2);">核心洞察：</strong>视频生成模型正在以指数速度进化。<br>
+        不自己写渲染 = <span style="color:var(--green);">搭上了 AI 视觉能力的增长曲线</span>。
       </p>
-      <p class="subtitle" style="font-size:18px; margin-top:12px;">
-        让 AI 成为游戏设计者 — 语义化 ECS 架构
-      </p>
-      <div style="margin-top:48px; display:flex; gap:16px; justify-content:center;">
-        <span class="tag">ECS Architecture</span>
-        <span class="tag" style="background:rgba(52,211,153,0.15); color:var(--green);">Semantic Protocol</span>
-        <span class="tag" style="background:rgba(167,139,250,0.15); color:var(--accent2);">AI-Driven Assembly</span>
-      </div>
     </div>
   </div>
+</div>
 
-  <!-- ══════════════════════════════════════════════════════
-       SLIDE 2 — THE PROBLEM
-       ══════════════════════════════════════════════════════ -->
-  <div class="slide" data-slide="1">
-    <div class="full-w left-align" style="display:flex;flex-direction:column;align-items:flex-start;">
-      <span class="tag" style="background:rgba(248,113,113,0.15); color:var(--red);">Problem</span>
-      <h2>传统游戏开发对 AI 是黑箱</h2>
-      <div class="row" style="margin-top:8px;">
-        <div class="card" style="flex:1;">
-          <div class="card-icon orange">&#x1F6A8;</div>
-          <h3 style="color:var(--orange);">紧耦合</h3>
-          <p>传统引擎的游戏逻辑深度耦合。加一个"中毒"效果，可能需要改战斗系统、UI 系统、存档系统三处代码。</p>
-        </div>
-        <div class="card" style="flex:1;">
-          <div class="card-icon pink">&#x1F9E0;</div>
-          <h3 style="color:var(--pink);">无语义</h3>
-          <p>代码是给人读的，不是给 AI 读的。变量名、函数签名没有标准化语义，AI 无法理解"这个函数是做伤害计算的"。</p>
-        </div>
-        <div class="card" style="flex:1;">
-          <div class="card-icon blue">&#x1F512;</div>
-          <h3 style="color:var(--accent);">不可组合</h3>
-          <p>游戏机制不能像乐高一样拼装。想让 AI 自动设计关卡？它需要先理解整个代码库——这不现实。</p>
-        </div>
-      </div>
-      <p style="margin-top:32px; font-size:20px; color:var(--text); text-align:center; width:100%;">
-        <strong>核心矛盾：</strong>AI 需要<span style="color:var(--accent);">结构化、语义化、可组合</span>的接口，而传统引擎提供的是<span style="color:var(--red);">非结构化、隐式、紧耦合</span>的代码。
-      </p>
-    </div>
-  </div>
+<!-- ████████████████████████████████████████████████████████
+     SLIDE 3 — THE VISION: VIDEO AS RENDERER
+     ████████████████████████████████████████████████████████ -->
+<div class="slide" data-slide="2">
+  <div class="full-w" style="display:flex;flex-direction:column;align-items:center;">
+    <span class="tag" style="background:rgba(251,146,60,0.15); color:var(--orange);">Core Vision</span>
+    <h2 style="text-align:center;">画面层 = AI 视频流 + UI 叠加</h2>
 
-  <!-- ══════════════════════════════════════════════════════
-       SLIDE 3 — THE SOLUTION (ONE LINER)
-       ══════════════════════════════════════════════════════ -->
-  <div class="slide" data-slide="2">
-    <div class="center">
-      <span class="tag" style="background:rgba(52,211,153,0.15); color:var(--green);">Solution</span>
-      <h2 style="font-size:36px; max-width:800px; text-align:center;">
-        Apollo 把游戏拆成<span style="color:var(--green);">可组合的能力单元</span>，<br>
-        用<span style="color:var(--accent);">语义化协议</span>让它们自动协作
-      </h2>
-      <div style="margin-top:48px; display:flex; gap:24px; max-width:900px;">
-        <div class="card glow-accent" style="flex:1; text-align:center;">
-          <h3 style="color:var(--accent); font-size:48px; margin-bottom:8px;">Capability</h3>
-          <p style="font-size:15px;">一个独立的游戏机制<br>（血量、伤害、背包...）</p>
-        </div>
-        <div style="display:flex; align-items:center; font-size:28px; color:var(--text-dim);">+</div>
-        <div class="card glow-green" style="flex:1; text-align:center;">
-          <h3 style="color:var(--green); font-size:48px; margin-bottom:8px;">Protocol</h3>
-          <p style="font-size:15px;">语义化的数据合约<br>（Component 词汇表）</p>
-        </div>
-        <div style="display:flex; align-items:center; font-size:28px; color:var(--text-dim);">=</div>
-        <div class="card" style="flex:1; text-align:center; border-color:var(--accent2);">
-          <h3 style="color:var(--accent2); font-size:48px; margin-bottom:8px;">Game</h3>
-          <p style="font-size:15px;">AI 可理解、可生成、<br>可组合的游戏</p>
-        </div>
-      </div>
-    </div>
-  </div>
-
-  <!-- ══════════════════════════════════════════════════════
-       SLIDE 4 — THREE-LAYER ARCHITECTURE
-       ══════════════════════════════════════════════════════ -->
-  <div class="slide" data-slide="3">
-    <div class="full-w left-align" style="display:flex;flex-direction:column;align-items:center;">
-      <span class="tag">Core Architecture</span>
-      <h2 style="text-align:center;">三层分离架构</h2>
-
-      <div class="arch-diagram">
-        <!-- Presenter Layer -->
-        <div class="arch-layer" style="border-color: var(--pink);">
-          <span class="layer-label pink">Presenter 表现层</span>
-          <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px;">
-            <span style="font-size:14px; color:var(--pink); font-weight:600;">React / Canvas / 微信小游戏</span>
-            <span style="font-size:12px; color:var(--text-dim);">可替换，按平台选型</span>
+    <div class="row" style="gap:32px; align-items:center;">
+      <!-- Screen mockup -->
+      <div style="flex:1.2;">
+        <div class="screen-mock">
+          <!-- Video background layer -->
+          <div class="video-bg">
+            <div class="label">AI Video Stream</div>
           </div>
-          <div class="layer-content">
-            <div class="layer-box"><span class="icon">&#x1F3A8;</span> Templates<br><span style="font-size:11px;color:var(--text-dim);">Bar, Button, Card</span></div>
-            <div class="layer-box"><span class="icon">&#x1F517;</span> Bindings<br><span style="font-size:11px;color:var(--text-dim);">ECS → Template 映射</span></div>
-            <div class="layer-box"><span class="icon">&#x1F3AD;</span> Themes<br><span style="font-size:11px;color:var(--text-dim);">赛博朋克 / 像素风</span></div>
-            <div class="layer-box"><span class="icon">&#x1FA9D;</span> Hooks<br><span style="font-size:11px;color:var(--text-dim);">useEngine, useComponent</span></div>
+          <!-- Scene regions -->
+          <div class="region" style="left:8%; top:15%; width:35%; height:55%; border-color:var(--cyan); color:var(--cyan);">
+            <div style="text-align:center;">SceneRegion<br>"hero"<br><span style="font-size:9px;opacity:0.7;">参考图 + 动作指令</span></div>
           </div>
-        </div>
-
-        <!-- Interface Arrow -->
-        <div class="arch-arrow" style="height:48px;">
-          <div class="arrow-labels">
-            <span class="arrow-label up">&#x2191; dispatch(Intent)</span>
-            <span class="arrow-label down">&#x2193; read World state</span>
+          <div class="region" style="right:8%; top:10%; width:38%; height:60%; border-color:var(--orange); color:var(--orange);">
+            <div style="text-align:center;">SceneRegion<br>"dragon"<br><span style="font-size:9px;opacity:0.7;">参考图 + 动作指令</span></div>
           </div>
-        </div>
-
-        <!-- Engine Layer -->
-        <div class="arch-layer glow-accent" style="border-color: var(--accent);">
-          <span class="layer-label blue">Engine 引擎层</span>
-          <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px;">
-            <span style="font-size:14px; color:var(--accent); font-weight:600;">纯 TypeScript — 零外部依赖</span>
-            <span style="font-size:12px; color:var(--text-dim);">可在任何 JS 环境运行</span>
-          </div>
-          <div class="layer-content">
-            <div class="layer-box highlight"><span class="icon">&#x1F30D;</span> World<br><span style="font-size:11px;color:var(--text-dim);">Entity × Component 二维表</span></div>
-            <div class="layer-box highlight"><span class="icon">&#x2699;&#xFE0F;</span> Systems<br><span style="font-size:11px;color:var(--text-dim);">拓扑排序的纯函数管线</span></div>
-            <div class="layer-box"><span class="icon">&#x1F4E6;</span> Capabilities<br><span style="font-size:11px;color:var(--text-dim);">可插拔的逻辑单元</span></div>
-            <div class="layer-box"><span class="icon">&#x1F4CB;</span> Manifests<br><span style="font-size:11px;color:var(--text-dim);">AI 可读的能力声明</span></div>
-          </div>
-        </div>
-
-        <!-- Protocol Arrow -->
-        <div class="arch-arrow" style="height:48px;">
-          <div class="arrow-labels">
-            <span class="arrow-label" style="color:var(--green);">&#x1F4D6; Component Vocabulary — 共享语义</span>
-          </div>
-        </div>
-
-        <!-- Protocol Layer -->
-        <div class="arch-layer glow-green" style="border-color: var(--green);">
-          <span class="layer-label green">Protocol 协议层</span>
-          <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px;">
-            <span style="font-size:14px; color:var(--green); font-weight:600;">语义化数据合约</span>
-            <span style="font-size:12px; color:var(--text-dim);">所有 Capability 的通信基础</span>
-          </div>
-          <div class="layer-content">
-            <div class="layer-box"><span style="font-size:11px;font-weight:600;color:var(--green);">Resource</span> Health, Mana, Stamina</div>
-            <div class="layer-box"><span style="font-size:11px;font-weight:600;color:var(--orange);">Event</span> DamageEvent, HealEvent</div>
-            <div class="layer-box"><span style="font-size:11px;font-weight:600;color:var(--accent);">Intent</span> AttackIntent, UseItem</div>
-            <div class="layer-box"><span style="font-size:11px;font-weight:600;color:var(--pink);">Marker</span> Dead, Stunned</div>
-          </div>
-        </div>
-      </div>
-    </div>
-  </div>
-
-  <!-- ══════════════════════════════════════════════════════
-       SLIDE 5 — COMPONENT VOCABULARY
-       ══════════════════════════════════════════════════════ -->
-  <div class="slide" data-slide="4">
-    <div class="full-w left-align" style="display:flex;flex-direction:column;align-items:center;">
-      <span class="tag" style="background:rgba(52,211,153,0.15); color:var(--green);">Semantic Protocol</span>
-      <h2 style="text-align:center;">Component 语义词汇表</h2>
-      <p style="text-align:center; margin-bottom:24px; max-width:700px;">
-        每个 Component 有<strong>语义分类</strong>。AI 看到分类就知道如何使用 — 资源绑进度条、事件触发一次后消失、意图来自外部输入。
-      </p>
-
-      <table class="comp-table">
-        <thead>
-          <tr>
-            <th style="width:110px;">语义分类</th>
-            <th style="width:160px;">Component</th>
-            <th style="width:260px;">TypeScript 签名</th>
-            <th>AI 理解</th>
-          </tr>
-        </thead>
-        <tbody>
-          <tr>
-            <td><span class="cat-badge resource">Resource</span></td>
-            <td><code>Health</code></td>
-            <td><code>{ current: number, max: number }</code></td>
-            <td style="font-size:13px;color:var(--text-dim);">有上限的数值 → 绑定进度条 → 可被增减</td>
-          </tr>
-          <tr>
-            <td><span class="cat-badge resource">Resource</span></td>
-            <td><code>Mana</code></td>
-            <td><code>{ current, max, regenRate }</code></td>
-            <td style="font-size:13px;color:var(--text-dim);">同上，可自动回复</td>
-          </tr>
-          <tr>
-            <td><span class="cat-badge event">Event</span></td>
-            <td><code>DamageEvent</code></td>
-            <td><code>{ amount, damageType }</code></td>
-            <td style="font-size:13px;color:var(--text-dim);">一次性触发 → 被 consume 后消失</td>
-          </tr>
-          <tr>
-            <td><span class="cat-badge event">Event</span></td>
-            <td><code>HealEvent</code></td>
-            <td><code>{ amount }</code></td>
-            <td style="font-size:13px;color:var(--text-dim);">一次性触发 → 正向资源变化</td>
-          </tr>
-          <tr>
-            <td><span class="cat-badge intent">Intent</span></td>
-            <td><code>AttackIntent</code></td>
-            <td><code>{ target: EntityId }</code></td>
-            <td style="font-size:13px;color:var(--text-dim);">来自外部输入 → 被 System 转化为 Event</td>
-          </tr>
-          <tr>
-            <td><span class="cat-badge marker">Marker</span></td>
-            <td><code>Dead</code></td>
-            <td><code>{ }</code></td>
-            <td style="font-size:13px;color:var(--text-dim);">存在即有意义 → 触发死亡逻辑/UI</td>
-          </tr>
-          <tr>
-            <td><span class="cat-badge config">Config</span></td>
-            <td><code>Attacker</code></td>
-            <td><code>{ baseDamage, target }</code></td>
-            <td style="font-size:13px;color:var(--text-dim);">长期存在 → 描述实体属性</td>
-          </tr>
-        </tbody>
-      </table>
-    </div>
-  </div>
-
-  <!-- ══════════════════════════════════════════════════════
-       SLIDE 6 — SYSTEM PIPELINE
-       ══════════════════════════════════════════════════════ -->
-  <div class="slide" data-slide="5">
-    <div class="full-w left-align" style="display:flex;flex-direction:column;align-items:center;">
-      <span class="tag">System Pipeline</span>
-      <h2 style="text-align:center;">System 自动拓扑排序</h2>
-      <p style="text-align:center; margin-bottom:24px; max-width:720px;">
-        每个 System 声明它<strong style="color:var(--accent);">读</strong>什么、<strong style="color:var(--orange);">写</strong>什么、<strong style="color:var(--pink);">消费</strong>什么。引擎自动推导出正确的执行顺序。
-      </p>
-
-      <div class="pipeline">
-        <div class="pipe-node input">
-          <h4>&#x1F446; User Click</h4>
-          <p>dispatch(Intent)</p>
-          <span class="comp-tag">AttackIntent</span>
-        </div>
-
-        <div class="pipe-arrow"><span class="label">写入</span></div>
-
-        <div class="pipe-node logic">
-          <h4>&#x2699;&#xFE0F; DamageSystem</h4>
-          <p>reads: AttackIntent<br>writes: DamageEvent<br>consumes: AttackIntent</p>
-          <span class="comp-tag">DamageEvent</span>
-        </div>
-
-        <div class="pipe-arrow"><span class="label">写入</span></div>
-
-        <div class="pipe-node logic2">
-          <h4>&#x1F49A; HealthSystem</h4>
-          <p>reads: DamageEvent, Health<br>writes: Health<br>consumes: DamageEvent</p>
-          <span class="comp-tag">Health &#x2193;</span>
-        </div>
-
-        <div class="pipe-arrow"><span class="label">状态变化</span></div>
-
-        <div class="pipe-node render">
-          <h4>&#x1F3A8; React Binding</h4>
-          <p>reads: Health<br>renders: BarTemplate</p>
-          <span class="comp-tag">HP 90/100</span>
-        </div>
-      </div>
-
-      <div class="row" style="margin-top:24px; gap:16px;">
-        <div class="cap-card">
-          <div class="cap-header" style="background:rgba(34,211,238,0.06);">
-            <span style="font-size:18px;">&#x2694;&#xFE0F;</span>
-            <h3 style="color:var(--cyan);">attack-input</h3>
-          </div>
-          <div class="cap-body">
-            <div class="cap-section">
-              <div class="cap-section-title">Provides</div>
-              <div class="cap-tags"><span class="cap-tag provides">AttackIntent</span></div>
+          <!-- Relation line -->
+          <div style="position:absolute; top:44%; left:40%; width:18%; border-top:2px dashed var(--yellow); opacity:0.7;"></div>
+          <div style="position:absolute; top:40%; left:44%; font-size:9px; color:var(--yellow); font-weight:700;">SceneRelation: "attacks"</div>
+          <!-- UI overlay elements -->
+          <div class="ui-element" style="left:6%; top:78%; color:var(--green);">
+            <div style="width:120px; height:8px; background:#333; border-radius:4px; margin-top:2px;">
+              <div style="width:72%; height:100%; background:var(--green); border-radius:4px;"></div>
             </div>
-            <div class="cap-section">
-              <div class="cap-section-title">Reads</div>
-              <div class="cap-tags"><span style="font-size:12px;color:var(--text-dim);">&#x2014; (user input only)</span></div>
-            </div>
+            <span style="font-size:9px;">HP 72/100</span>
+          </div>
+          <div class="ui-element" style="right:6%; bottom:8%; color:var(--pink);">
+            &#x2694;&#xFE0F; Attack &emsp; &#x1F6E1;&#xFE0F; Defend
+          </div>
+          <div class="ui-element" style="left:50%; top:3%; transform:translateX(-50%); color:var(--yellow); font-size:10px;">
+            Round 3 &mdash; Boss Fight
           </div>
         </div>
-
-        <div class="cap-card">
-          <div class="cap-header" style="background:rgba(108,140,255,0.06);">
-            <span style="font-size:18px;">&#x1F4A5;</span>
-            <h3 style="color:var(--accent);">damage</h3>
-          </div>
-          <div class="cap-body">
-            <div class="cap-section">
-              <div class="cap-section-title">Reads</div>
-              <div class="cap-tags"><span class="cap-tag reads">AttackIntent</span></div>
-            </div>
-            <div class="cap-section">
-              <div class="cap-section-title">Writes</div>
-              <div class="cap-tags"><span class="cap-tag writes">DamageEvent</span></div>
-            </div>
-            <div class="cap-section">
-              <div class="cap-section-title">Consumes</div>
-              <div class="cap-tags"><span class="cap-tag consumes">AttackIntent</span></div>
-            </div>
-          </div>
-        </div>
-
-        <div class="cap-card">
-          <div class="cap-header" style="background:rgba(52,211,153,0.06);">
-            <span style="font-size:18px;">&#x1F49A;</span>
-            <h3 style="color:var(--green);">health</h3>
-          </div>
-          <div class="cap-body">
-            <div class="cap-section">
-              <div class="cap-section-title">Reads</div>
-              <div class="cap-tags">
-                <span class="cap-tag reads">DamageEvent</span>
-                <span class="cap-tag reads">HealEvent</span>
-              </div>
-            </div>
-            <div class="cap-section">
-              <div class="cap-section-title">Writes</div>
-              <div class="cap-tags"><span class="cap-tag writes">Health</span></div>
-            </div>
-            <div class="cap-section">
-              <div class="cap-section-title">Consumes</div>
-              <div class="cap-tags">
-                <span class="cap-tag consumes">DamageEvent</span>
-                <span class="cap-tag consumes">HealEvent</span>
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
-    </div>
-  </div>
-
-  <!-- ══════════════════════════════════════════════════════
-       SLIDE 7 — COMPOSABILITY PROOF
-       ══════════════════════════════════════════════════════ -->
-  <div class="slide" data-slide="6">
-    <div class="full-w left-align" style="display:flex;flex-direction:column;align-items:center;">
-      <span class="tag" style="background:rgba(251,191,36,0.15); color:var(--yellow);">Composability</span>
-      <h2 style="text-align:center;">零改动加能力 — 组合性证明</h2>
-      <p style="text-align:center; margin-bottom:24px; max-width:700px;">
-        已有 3 个 Capability 在运行。现在加一个<strong style="color:var(--yellow);">治疗能力</strong> — 只需新增一个文件，<strong>不改已有代码一行</strong>。
-      </p>
-
-      <div class="compose-demo">
-        <div class="compose-row">
-          <!-- Existing -->
-          <div class="compose-box solid" style="border-color:var(--border);">
-            <h4 style="color:var(--text-dim);">&#x1F4E6; 已有 Assembly</h4>
-            <div class="compose-entity">
-              <span class="eid">capabilities:</span> [<span class="cname">attack-input</span>, <span class="cname">damage</span>, <span class="cname">health</span>]
-            </div>
-            <div class="compose-entity">
-              <span class="eid">entities.dummy:</span> { <span class="cname">Health</span>: <span class="cval">{ current: 100, max: 100 }</span> }
-            </div>
-          </div>
-
-          <div class="compose-plus">+</div>
-
-          <!-- New Capability -->
-          <div class="compose-box new-cap">
-            <h4 style="color:var(--yellow);">&#x2728; 新增 heal-input</h4>
-            <div class="compose-entity" style="border: 1px solid rgba(251,191,36,0.3);">
-              <span class="eid">manifest:</span><br>
-              &nbsp;&nbsp;<span class="cname">provides:</span> <span class="cval">[HealEvent]</span><br>
-              &nbsp;&nbsp;<span class="cname">reads:</span> <span class="cval">[]</span><br>
-              &nbsp;&nbsp;<span class="cname">writes:</span> <span class="cval">[HealEvent]</span>
-            </div>
-            <div class="compose-entity" style="border: 1px solid rgba(251,191,36,0.3);">
-              <span class="eid">system:</span> onClick → add <span class="cname">HealEvent</span>{amount: 20}
-            </div>
-          </div>
-        </div>
-
-        <div style="text-align:center;">
-          <div class="compose-equals" style="width:100%; font-size:20px;">
-            &#x2193; 引擎自动拓扑排序，HealthSystem 已经知道如何处理 HealEvent &#x2193;
-          </div>
-        </div>
-
-        <div class="compose-row">
-          <div class="compose-box result" style="flex:1;">
-            <h4 style="color:var(--green);">&#x2705; 结果：治疗功能即时可用</h4>
-            <div style="display:flex; gap:12px; flex-wrap:wrap;">
-              <div class="compose-entity" style="flex:1;">
-                <span class="eid">Pipeline:</span><br>
-                &#x1F446; Click Heal → <span class="cname">HealEvent</span><br>
-                → <span class="cname">HealthSystem</span> 读取 → HP +20<br>
-                → React 重渲染 &#x2705;
-              </div>
-              <div class="compose-entity" style="flex:1;">
-                <span class="eid">改动量:</span><br>
-                <span class="cval">&#x2022; 新文件: 1 个 (heal-input.ts)</span><br>
-                <span class="cval">&#x2022; 改已有文件: 0 个</span><br>
-                <span class="cval">&#x2022; Assembly 加一行</span>
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
-    </div>
-  </div>
-
-  <!-- ══════════════════════════════════════════════════════
-       SLIDE 8 — PRESENTER SEPARATION
-       ══════════════════════════════════════════════════════ -->
-  <div class="slide" data-slide="7">
-    <div class="full-w left-align" style="display:flex;flex-direction:column;align-items:center;">
-      <span class="tag" style="background:rgba(244,114,182,0.15); color:var(--pink);">Separation</span>
-      <h2 style="text-align:center;">引擎 vs 表现 — 彻底分离</h2>
-
-      <div class="sep-diagram">
-        <!-- Engine Side -->
-        <div class="sep-col">
-          <div class="sep-col-header" style="color:var(--accent);">&#x2699;&#xFE0F; ENGINE (纯 TS，零依赖)</div>
-          <div class="sep-item">
-            <h4 style="color:var(--accent);">core/world.ts</h4>
-            <p>Entity-Component 存储、System 调度器、拓扑排序</p>
-          </div>
-          <div class="sep-item">
-            <h4 style="color:var(--green);">protocol/components.ts</h4>
-            <p>语义化 Component 词汇表类型定义</p>
-          </div>
-          <div class="sep-item">
-            <h4 style="color:var(--accent2);">protocol/manifest.ts</h4>
-            <p>CapabilityManifest 接口 — AI 读取的合约</p>
-          </div>
-          <div class="sep-item">
-            <h4 style="color:var(--cyan);">capabilities/health.ts</h4>
-            <p>HealthSystem: reads DamageEvent → writes Health</p>
-          </div>
-          <div class="sep-item">
-            <h4 style="color:var(--cyan);">capabilities/damage.ts</h4>
-            <p>DamageSystem: reads AttackIntent → writes DamageEvent</p>
-          </div>
-        </div>
-
-        <!-- Divider -->
-        <div class="sep-divider">
-          <div class="line"></div>
-          <div class="label">BOUNDARY</div>
-          <div class="line"></div>
-          <div style="font-size:11px; color:var(--text-dim); text-align:center; writing-mode:horizontal-tb; white-space:nowrap;">
-            dispatch(&#x2191;)<br>read(&#x2193;)
-          </div>
-          <div class="line"></div>
-        </div>
-
-        <!-- Presenter Side -->
-        <div class="sep-col">
-          <div class="sep-col-header" style="color:var(--pink);">&#x1F3A8; PRESENTER (React)</div>
-          <div class="sep-item">
-            <h4 style="color:var(--pink);">hooks/useEngine.ts</h4>
-            <p>创建引擎实例、驱动 tick 循环、触发 React re-render</p>
-          </div>
-          <div class="sep-item">
-            <h4 style="color:var(--pink);">hooks/useComponent.ts</h4>
-            <p>useComponent&lt;Health&gt;(id, 'Health') → 响应式读取</p>
-          </div>
-          <div class="sep-item">
-            <h4 style="color:var(--orange);">templates/Bar.tsx</h4>
-            <p>通用进度条组件 — 不知道 HP/MP，只画 current/max</p>
-          </div>
-          <div class="sep-item">
-            <h4 style="color:var(--orange);">templates/ActionButton.tsx</h4>
-            <p>通用按钮 — 不知道攻击/治疗，只触发 onClick</p>
-          </div>
-          <div class="sep-item">
-            <h4 style="color:var(--yellow);">bindings/HealthBinding.tsx</h4>
-            <p>读 Health Component → 映射到 Bar Template props</p>
-          </div>
-        </div>
-      </div>
-
-      <div style="margin-top:24px; display:flex; gap:20px; max-width:800px;">
-        <div class="card" style="flex:1; padding:16px 20px;">
-          <p style="font-size:13px;"><strong style="color:var(--green);">&#x2705; 换平台</strong>：整个 Presenter 目录替换为微信小游戏 Canvas 版本，Engine 不动</p>
-        </div>
-        <div class="card" style="flex:1; padding:16px 20px;">
-          <p style="font-size:13px;"><strong style="color:var(--green);">&#x2705; 换皮肤</strong>：换一套 Theme CSS，零逻辑改动</p>
-        </div>
-        <div class="card" style="flex:1; padding:16px 20px;">
-          <p style="font-size:13px;"><strong style="color:var(--green);">&#x2705; 无头测试</strong>：在 Node.js 里跑 Engine，不需要浏览器</p>
-        </div>
-      </div>
-    </div>
-  </div>
-
-  <!-- ══════════════════════════════════════════════════════
-       SLIDE 9 — AI INTEGRATION
-       ══════════════════════════════════════════════════════ -->
-  <div class="slide" data-slide="8">
-    <div class="full-w left-align" style="display:flex;flex-direction:column;align-items:center;">
-      <span class="tag" style="background:rgba(167,139,250,0.15); color:var(--accent2);">AI-Native</span>
-      <h2 style="text-align:center;">AI 如何使用 Apollo</h2>
-      <p style="text-align:center; margin-bottom:32px; max-width:700px;">
-        AI 不需要理解整个代码库。它只读 <strong>Manifest</strong>（能力声明），然后生成 <strong>Assembly</strong>（装配蓝图）。
-      </p>
-
-      <div class="ai-flow">
-        <div class="ai-step">
-          <div class="ai-step-num">1</div>
-          <div class="ai-step-content">
-            <h4 style="color:var(--accent);">&#x1F4D6; AI 读取已有 Capability 清单</h4>
-            <p>"有 health（资源类，current/max）、damage（事件类，读 AttackIntent 写 DamageEvent）、shield（资源类，可吸收伤害）..."</p>
-          </div>
-        </div>
-
-        <div class="ai-step-connector"></div>
-
-        <div class="ai-step">
-          <div class="ai-step-num">2</div>
-          <div class="ai-step-content">
-            <h4 style="color:var(--green);">&#x1F9E0; AI 理解语义关系</h4>
-            <p>"DamageEvent 会被 HealthSystem 消费。如果我要加一个护盾，只需在 DamageEvent 到达 HealthSystem 之前拦截它，修改 amount。"</p>
-          </div>
-        </div>
-
-        <div class="ai-step-connector"></div>
-
-        <div class="ai-step">
-          <div class="ai-step-num">3</div>
-          <div class="ai-step-content">
-            <h4 style="color:var(--orange);">&#x1F4DD; AI 生成新 Capability</h4>
-            <p>输出一个 ShieldCapability：声明 reads: [DamageEvent, Shield], writes: [DamageEvent, Shield]。引擎自动把它插到正确的位置。</p>
-          </div>
-        </div>
-
-        <div class="ai-step-connector"></div>
-
-        <div class="ai-step">
-          <div class="ai-step-num">4</div>
-          <div class="ai-step-content">
-            <h4 style="color:var(--accent2);">&#x1F3AE; AI 生成 Assembly 蓝图</h4>
-            <p>JSON 描述：哪些 Capability 组合、创建哪些 Entity、初始 Component 值。一键实例化一个完整游戏。</p>
-          </div>
-        </div>
-      </div>
-
-      <div class="card" style="margin-top:24px; padding:16px 24px; max-width:700px; border-color:var(--accent2);">
-        <p style="font-size:14px; text-align:center;">
-          <strong style="color:var(--accent2);">关键洞察：</strong>AI 操作的粒度是 <code>Capability</code> 和 <code>Assembly</code>，不是源代码。<br>
-          这把 AI 游戏开发从"写代码"提升到"设计游戏"。
+        <p style="text-align:center; margin-top:10px; font-size:12px;">
+          <span style="color:var(--cyan);">&#x25A0;</span> SceneRegion &emsp;
+          <span style="color:var(--yellow);">- - -</span> SceneRelation &emsp;
+          <span style="color:var(--text);">&#x25A0;</span> UI Overlay
         </p>
       </div>
+
+      <!-- Explanation -->
+      <div style="flex:1; display:flex; flex-direction:column; gap:14px;">
+        <div class="card" style="padding:16px 20px;">
+          <div class="card-icon orange" style="margin-bottom:10px;">&#x1F3AC;</div>
+          <h3 style="font-size:15px; color:var(--orange);">Video Layer (底层)</h3>
+          <p>AI 视频模型生成的连续画面流。Engine 通过 <code>SceneDirective</code> 语义指令控制内容 — 不涉及像素级操作。</p>
+        </div>
+        <div class="card" style="padding:16px 20px;">
+          <div class="card-icon cyan" style="margin-bottom:10px;">&#x1F4CD;</div>
+          <h3 style="font-size:15px; color:var(--cyan);">Scene Regions (语义区域)</h3>
+          <p>屏幕被划分为语义区域。每个区域有<strong>参考图</strong>、<strong>动作描述</strong>、<strong>风格指令</strong>。区域间可建立<strong>语义关系</strong>。</p>
+        </div>
+        <div class="card" style="padding:16px 20px;">
+          <div class="card-icon pink" style="margin-bottom:10px;">&#x1F3AE;</div>
+          <h3 style="font-size:15px; color:var(--pink);">UI Overlay (顶层)</h3>
+          <p>React DOM 叠加在视频层之上。血条、按钮、菜单、提示文字 — 所有可交互元素。这是玩家与游戏交互的界面。</p>
+        </div>
+      </div>
     </div>
   </div>
+</div>
 
-  <!-- ══════════════════════════════════════════════════════
-       SLIDE 10 — MANIFEST DEEP DIVE
-       ══════════════════════════════════════════════════════ -->
-  <div class="slide" data-slide="9">
-    <div class="full-w left-align" style="display:flex;flex-direction:column;align-items:center;">
-      <span class="tag">Manifest Spec</span>
-      <h2 style="text-align:center;">Capability Manifest — AI 的接口文档</h2>
+<!-- ████████████████████████████████████████████████████████
+     SLIDE 4 — FOUR-LAYER ARCHITECTURE
+     ████████████████████████████████████████████████████████ -->
+<div class="slide" data-slide="3">
+  <div class="full-w" style="display:flex;flex-direction:column;align-items:center;">
+    <span class="tag">Core Architecture</span>
+    <h2 style="text-align:center;">四层分离架构</h2>
 
-      <div class="row" style="gap:24px;">
-        <div class="code-block" style="flex:1;">
-<span class="cmt">// health.capability.ts — 完整 Manifest 示例</span>
+    <div class="arch-diagram">
+      <!-- Presentation Layer -->
+      <div class="arch-layer" style="border-color:var(--pink);">
+        <span class="layer-label" style="color:var(--pink);">Presentation &#x2014; UI + Video</span>
+        <div style="display:flex; gap:12px; margin-top:8px;">
+          <div style="flex:1; background:rgba(244,114,182,0.06); border:1px solid rgba(244,114,182,0.2); border-radius:8px; padding:10px 14px;">
+            <div style="font-size:12px; font-weight:700; color:var(--pink); margin-bottom:4px;">UI Overlay (React DOM)</div>
+            <div style="font-size:11px; color:var(--text-dim);">血条、按钮、菜单、飘字、所有交互控件</div>
+          </div>
+          <div style="flex:1; background:rgba(251,146,60,0.06); border:1px solid rgba(251,146,60,0.2); border-radius:8px; padding:10px 14px;">
+            <div style="font-size:12px; font-weight:700; color:var(--orange); margin-bottom:4px;">Video Canvas (AI 视频流)</div>
+            <div style="font-size:11px; color:var(--text-dim);">全屏视频输出，由视频生成模型产出</div>
+          </div>
+        </div>
+      </div>
 
-<span class="kw">export const</span> healthCapability = {
-  manifest: {
-    id: <span class="str">'health'</span>,
-    name: <span class="str">'生命值系统'</span>,
-    version: <span class="str">'1.0.0'</span>,
+      <div class="arch-arrow" style="height:40px;">
+        <div class="arrow-labels">
+          <span class="arrow-label" style="color:var(--pink);">&#x2191; dispatch(Intent)</span>
+          <span class="arrow-label" style="color:var(--green);">&#x2193; read World + UI bindings</span>
+        </div>
+      </div>
 
-    <span class="cmt">// 语义标签 — AI 用这些理解能力的本质</span>
-    semantic: [<span class="str">'resource'</span>, <span class="str">'health'</span>, <span class="str">'vital'</span>],
+      <!-- Director Layer -->
+      <div class="arch-layer glow-pink" style="border-color:var(--orange);">
+        <span class="layer-label" style="color:var(--orange);">Director &#x2014; &#x573A;&#x666F;&#x5BFC;&#x6F14;</span>
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:6px;">
+          <span style="font-size:13px; color:var(--orange); font-weight:600;">ECS &#x72B6;&#x6001; &#x2192; &#x89C6;&#x9891;&#x6A21;&#x578B; Prompt</span>
+          <span style="font-size:11px; color:var(--text-dim);">&#x201C;&#x7535;&#x5F71;&#x5BFC;&#x6F14;&#x201D; &#x2014; &#x8BFB;&#x6E38;&#x620F;&#x72B6;&#x6001;&#xFF0C;&#x544A;&#x8BC9;&#x89C6;&#x9891;&#x6A21;&#x578B;&#x8BE5;&#x62CD;&#x4EC0;&#x4E48;</span>
+        </div>
+        <div class="layer-content">
+          <div class="layer-box"><span class="icon">&#x1F4CD;</span> SceneRegion<br><span style="font-size:10px;color:var(--text-dim);">&#x5C4F;&#x5E55;&#x533A;&#x57DF;&#x5212;&#x5206;</span></div>
+          <div class="layer-box"><span class="icon">&#x1F3AC;</span> SceneContent<br><span style="font-size:10px;color:var(--text-dim);">&#x533A;&#x57DF;&#x5185;&#x5BB9;&#x63CF;&#x8FF0;</span></div>
+          <div class="layer-box"><span class="icon">&#x1F517;</span> SceneRelation<br><span style="font-size:10px;color:var(--text-dim);">&#x533A;&#x57DF;&#x95F4;&#x8BED;&#x4E49;&#x5173;&#x7CFB;</span></div>
+          <div class="layer-box"><span class="icon">&#x1F3A5;</span> CameraDirective<br><span style="font-size:10px;color:var(--text-dim);">&#x955C;&#x5934;/&#x8F6C;&#x573A;/&#x7126;&#x70B9;</span></div>
+        </div>
+      </div>
 
-    <span class="cmt">// 数据合约 — System 间的通信声明</span>
-    components: {
-      provides: [<span class="str">'Health'</span>],
-      reads:    [<span class="str">'DamageEvent'</span>, <span class="str">'HealEvent'</span>],
-      writes:   [<span class="str">'Health'</span>],
-      consumes: [<span class="str">'DamageEvent'</span>, <span class="str">'HealEvent'</span>],
-    },
+      <div class="arch-arrow" style="height:40px;">
+        <div class="arrow-labels">
+          <span class="arrow-label" style="color:var(--green);">&#x1F4D6; Scene Components &#x2014; &#x573A;&#x666F;&#x8BED;&#x4E49;&#x534F;&#x8BAE;</span>
+        </div>
+      </div>
 
-    <span class="cmt">// 可调参数 — AI 可以微调</span>
-    config: {
-      minHealth: { type: <span class="str">'number'</span>, default: <span class="num">0</span> },
-      deathThreshold: { type: <span class="str">'number'</span>, default: <span class="num">0</span> },
-    },
+      <!-- Engine Layer -->
+      <div class="arch-layer glow-accent" style="border-color:var(--accent);">
+        <span class="layer-label" style="color:var(--accent);">Engine &#x2014; &#x7EAF; TypeScript&#xFF0C;&#x96F6;&#x4F9D;&#x8D56;</span>
+        <div class="layer-content">
+          <div class="layer-box highlight"><span class="icon">&#x1F30D;</span> World<br><span style="font-size:10px;color:var(--text-dim);">Entity&#xD7;Component</span></div>
+          <div class="layer-box highlight"><span class="icon">&#x2699;&#xFE0F;</span> Systems<br><span style="font-size:10px;color:var(--text-dim);">&#x62D3;&#x6251;&#x6392;&#x5E8F;&#x7BA1;&#x7EBF;</span></div>
+          <div class="layer-box"><span class="icon">&#x1F4E6;</span> Capabilities<br><span style="font-size:10px;color:var(--text-dim);">&#x53EF;&#x63D2;&#x62D4;&#x903B;&#x8F91;</span></div>
+          <div class="layer-box"><span class="icon">&#x1F4CB;</span> Manifests<br><span style="font-size:10px;color:var(--text-dim);">AI &#x53EF;&#x8BFB;&#x58F0;&#x660E;</span></div>
+        </div>
+      </div>
 
-    <span class="cmt">// 表现层建议 — 告诉 Presenter 怎么展示</span>
-    ui: {
-      Health: { template: <span class="str">'Bar'</span>, color: <span class="str">'#4CAF50'</span> }
-    }
+      <div class="arch-arrow" style="height:40px;">
+        <div class="arrow-labels">
+          <span class="arrow-label" style="color:var(--green);">&#x1F4D6; Component Vocabulary &#x2014; &#x5171;&#x4EAB;&#x8BED;&#x4E49;&#x8BCD;&#x6C47;</span>
+        </div>
+      </div>
+
+      <!-- Protocol Layer -->
+      <div class="arch-layer glow-green" style="border-color:var(--green);">
+        <span class="layer-label" style="color:var(--green);">Protocol &#x2014; &#x8BED;&#x4E49;&#x5408;&#x7EA6;</span>
+        <div class="layer-content">
+          <div class="layer-box"><span style="font-size:10px;font-weight:600;color:var(--green);">Resource</span> Health, Mana</div>
+          <div class="layer-box"><span style="font-size:10px;font-weight:600;color:var(--orange);">Event</span> DamageEvent</div>
+          <div class="layer-box"><span style="font-size:10px;font-weight:600;color:var(--accent);">Intent</span> AttackIntent</div>
+          <div class="layer-box"><span style="font-size:10px;font-weight:600;color:var(--yellow);">Scene</span> SceneRegion</div>
+          <div class="layer-box"><span style="font-size:10px;font-weight:600;color:var(--pink);">Marker</span> Dead</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ████████████████████████████████████████████████████████
+     SLIDE 5 — DIRECTOR PROTOCOL DEEP DIVE
+     ████████████████████████████████████████████████████████ -->
+<div class="slide" data-slide="4">
+  <div class="full-w" style="display:flex;flex-direction:column;align-items:center;">
+    <span class="tag" style="background:rgba(251,146,60,0.15); color:var(--orange);">Director Protocol</span>
+    <h2 style="text-align:center;">场景导演 — 语义到视频的桥梁</h2>
+    <p style="text-align:center; margin-bottom:20px; max-width:720px;">
+      Director 不生成像素。它把 ECS 状态翻译成<strong style="color:var(--orange);">视频模型能理解的语义指令</strong>。
+      随着视频模型进化，同样的指令产出越来越好的画面。
+    </p>
+
+    <div class="row" style="gap:20px;">
+      <div class="code-block" style="flex:1.2;">
+<span class="cmt">// Director 输出的场景描述（喂给视频模型）</span>
+
+{
+  <span class="str">"scene"</span>: {
+    <span class="str">"style"</span>: <span class="str">"dark fantasy, cinematic"</span>,
+    <span class="str">"camera"</span>: <span class="str">"side-view, slight low-angle"</span>,
+    <span class="str">"environment"</span>: <span class="str">"ancient stone arena, torchlit"</span>
   },
 
-  systems: [healthSystem],
-}
-        </div>
+  <span class="str">"regions"</span>: [
+    {
+      <span class="str">"id"</span>: <span class="str">"hero"</span>,
+      <span class="str">"bounds"</span>: [<span class="num">0.05</span>, <span class="num">0.15</span>, <span class="num">0.40</span>, <span class="num">0.70</span>],
+      <span class="str">"content"</span>: <span class="str">"armored warrior, standing"</span>,
+      <span class="str">"reference"</span>: <span class="str">"ref://hero-001.png"</span>,
+      <span class="str">"motion"</span>: <span class="str">"raising sword to strike"</span>
+    },
+    {
+      <span class="str">"id"</span>: <span class="str">"boss"</span>,
+      <span class="str">"bounds"</span>: [<span class="num">0.55</span>, <span class="num">0.05</span>, <span class="num">0.95</span>, <span class="num">0.75</span>],
+      <span class="str">"content"</span>: <span class="str">"massive red dragon"</span>,
+      <span class="str">"reference"</span>: <span class="str">"ref://dragon-001.png"</span>,
+      <span class="str">"motion"</span>: <span class="str">"recoiling from hit"</span>
+    }
+  ],
 
-        <div style="flex:0.8; display:flex; flex-direction:column; gap:16px;">
-          <div class="card accent-border">
-            <h3 style="font-size:15px; color:var(--accent);">&#x1F4E1; provides</h3>
-            <p style="font-size:13px;">我定义了哪些 Component 类型。其他 Capability 可以读写这些类型。</p>
+  <span class="str">"relations"</span>: [
+    {
+      <span class="str">"from"</span>: <span class="str">"hero"</span>, <span class="str">"to"</span>: <span class="str">"boss"</span>,
+      <span class="str">"type"</span>: <span class="str">"attacks"</span>,
+      <span class="str">"visual"</span>: <span class="str">"sword slash energy arc"</span>
+    }
+  ]
+}
+      </div>
+
+      <div style="flex:0.8; display:flex; flex-direction:column; gap:12px;">
+        <div class="card" style="border-color:var(--cyan); padding:16px 18px;">
+          <h3 style="font-size:14px; color:var(--cyan);">&#x1F4CD; SceneRegion</h3>
+          <p style="font-size:12px;">屏幕上的语义区域。用归一化坐标 [0,1] 定义。告诉视频模型"这块区域应该出现什么"。</p>
+        </div>
+        <div class="card" style="border-color:var(--orange); padding:16px 18px;">
+          <h3 style="font-size:14px; color:var(--orange);">&#x1F3AC; SceneContent</h3>
+          <p style="font-size:12px;">区域内容描述 + 参考图 + 动作指令。<strong>参考图</strong>保证角色形象一致性。<strong>动作</strong>描述当前状态。</p>
+        </div>
+        <div class="card" style="border-color:var(--yellow); padding:16px 18px;">
+          <h3 style="font-size:14px; color:var(--yellow);">&#x1F517; SceneRelation</h3>
+          <p style="font-size:12px;">区域间的语义关系："攻击"、"治疗"、"连接"。视频模型据此生成<strong>跨区域的视觉效果</strong>（能量弧、光束...）。</p>
+        </div>
+        <div class="card" style="border-color:var(--accent2); padding:16px 18px;">
+          <h3 style="font-size:14px; color:var(--accent2);">&#x1F3A5; CameraDirective</h3>
+          <p style="font-size:12px;">镜头语言：俯视/侧视/特写、平移/缩放/切换。<strong>电影级镜头控制</strong>，无需 3D 引擎。</p>
+        </div>
+        <div class="card" style="border-color:var(--green); padding:16px 18px;">
+          <h3 style="font-size:14px; color:var(--green);">&#x1F504; Temporal Coherence</h3>
+          <p style="font-size:12px;">参考图 + 上一帧输出 = 时间连续性。角色不会帧间突变。随模型进化不断增强。</p>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ████████████████████████████████████████████████████████
+     SLIDE 6 — HOW ECS DRIVES THE DIRECTOR
+     ████████████████████████████████████████████████████████ -->
+<div class="slide" data-slide="5">
+  <div class="full-w" style="display:flex;flex-direction:column;align-items:center;">
+    <span class="tag">Full Pipeline</span>
+    <h2 style="text-align:center;">完整数据流：点击 &#x2192; 逻辑 &#x2192; 画面</h2>
+
+    <div class="pipeline">
+      <div class="pipe-node input">
+        <h4>&#x1F446; UI Click</h4>
+        <p>React 捕获</p>
+        <span class="comp-tag">AttackIntent</span>
+      </div>
+
+      <div class="pipe-arrow"><span class="label">dispatch</span></div>
+
+      <div class="pipe-node logic">
+        <h4>&#x2699;&#xFE0F; DamageSystem</h4>
+        <p>Intent &#x2192; Event</p>
+        <span class="comp-tag">DamageEvent</span>
+      </div>
+
+      <div class="pipe-arrow"><span class="label">writes</span></div>
+
+      <div class="pipe-node logic2">
+        <h4>&#x1F49A; HealthSystem</h4>
+        <p>Event &#x2192; State</p>
+        <span class="comp-tag">Health &#x2193;</span>
+      </div>
+
+      <div class="pipe-arrow"><span class="label">reads</span></div>
+
+      <div class="pipe-node video">
+        <h4>&#x1F3AC; Director</h4>
+        <p>State &#x2192; Scene</p>
+        <span class="comp-tag">SceneDirective</span>
+      </div>
+
+      <div class="pipe-arrow"><span class="label">prompt</span></div>
+
+      <div class="pipe-node render">
+        <h4>&#x1F3A8; Output</h4>
+        <p>Video + UI</p>
+        <span class="comp-tag">&#x1F4FA; + HUD</span>
+      </div>
+    </div>
+
+    <div style="margin-top:16px; max-width:920px; width:100;">
+      <div class="row" style="gap:14px;">
+        <div class="card" style="flex:1; padding:16px 18px;">
+          <h3 style="font-size:14px; color:var(--accent);">&#x2699;&#xFE0F; Engine Systems</h3>
+          <p style="font-size:12px;">纯逻辑。AttackIntent &#x2192; DamageEvent &#x2192; Health -= 10。<br><strong>不知道画面长什么样。</strong></p>
+        </div>
+        <div class="card" style="flex:1; padding:16px 18px;">
+          <h3 style="font-size:14px; color:var(--orange);">&#x1F3AC; Director System</h3>
+          <p style="font-size:12px;">也是一个 ECS System。读逻辑状态 &#x2192; 写 SceneDirective Component。<br>"Health 下降了 &#x2192; hero 动作变为 'recoiling'"</p>
+        </div>
+        <div class="card" style="flex:1; padding:16px 18px;">
+          <h3 style="font-size:14px; color:var(--pink);">&#x1F3A8; Presenter</h3>
+          <p style="font-size:12px;">读 SceneDirective &#x2192; 调视频模型 API。<br>读 Health/UI Components &#x2192; 渲染 React 叠加层。</p>
+        </div>
+      </div>
+    </div>
+
+    <div class="card" style="margin-top:18px; max-width:720px; padding:14px 22px; border-color:var(--yellow);">
+      <p style="font-size:14px; text-align:center;">
+        <strong style="color:var(--yellow);">&#x1F4A1; 关键设计：</strong>Director 本身就是一个 <code>Capability</code>。<br>
+        可以替换不同 Director 来适配不同的视频模型（Sora / Kling / Runway / Pika...）
+      </p>
+    </div>
+  </div>
+</div>
+
+<!-- ████████████████████████████████████████████████████████
+     SLIDE 7 — COMPONENT VOCABULARY (EXPANDED)
+     ████████████████████████████████████████████████████████ -->
+<div class="slide" data-slide="6">
+  <div class="full-w" style="display:flex;flex-direction:column;align-items:center;">
+    <span class="tag" style="background:rgba(52,211,153,0.15); color:var(--green);">Semantic Protocol</span>
+    <h2 style="text-align:center;">Component &#x8BED;&#x4E49;&#x8BCD;&#x6C47;&#x8868;</h2>
+    <p style="text-align:center; margin-bottom:18px; max-width:680px; font-size:14px;">
+      &#x6BCF;&#x4E2A; Component &#x6709;&#x8BED;&#x4E49;&#x5206;&#x7C7B;&#x3002;AI &#x770B;&#x5230;&#x5206;&#x7C7B;&#x5C31;&#x77E5;&#x9053;&#x5982;&#x4F55;&#x4F7F;&#x7528; &#x2014; &#x8D44;&#x6E90;&#x7ED1;&#x8FDB;&#x5EA6;&#x6761;&#xFF0C;&#x573A;&#x666F;&#x559D;&#x89C6;&#x9891;&#x6A21;&#x578B;&#xFF0C;&#x4E8B;&#x4EF6;&#x89E6;&#x53D1;&#x4E00;&#x6B21;&#x540E;&#x6D88;&#x5931;&#x3002;
+    </p>
+
+    <table class="comp-table">
+      <thead>
+        <tr>
+          <th style="width:100px;">&#x8BED;&#x4E49;&#x5206;&#x7C7B;</th>
+          <th style="width:150px;">Component</th>
+          <th style="width:240px;">&#x7C7B;&#x578B;&#x7B7E;&#x540D;</th>
+          <th>&#x7528;&#x9014; / AI &#x7406;&#x89E3;</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td><span class="cat-badge resource">Resource</span></td>
+          <td><code>Health</code></td>
+          <td><code>{ current, max }</code></td>
+          <td style="font-size:12px;color:var(--text-dim);">&#x6709;&#x4E0A;&#x9650;&#x7684;&#x6570;&#x503C; &#x2192; &#x7ED1;&#x5B9A;&#x8FDB;&#x5EA6;&#x6761; &#x2192; &#x53EF;&#x88AB;&#x589E;&#x51CF;</td>
+        </tr>
+        <tr>
+          <td><span class="cat-badge event">Event</span></td>
+          <td><code>DamageEvent</code></td>
+          <td><code>{ amount, damageType }</code></td>
+          <td style="font-size:12px;color:var(--text-dim);">&#x4E00;&#x6B21;&#x6027;&#x89E6;&#x53D1; &#x2192; &#x88AB; consume &#x540E;&#x6D88;&#x5931;</td>
+        </tr>
+        <tr>
+          <td><span class="cat-badge intent">Intent</span></td>
+          <td><code>AttackIntent</code></td>
+          <td><code>{ target: EntityId }</code></td>
+          <td style="font-size:12px;color:var(--text-dim);">&#x6765;&#x81EA;&#x5916;&#x90E8;&#x8F93;&#x5165; &#x2192; &#x88AB; System &#x8F6C;&#x5316;&#x4E3A; Event</td>
+        </tr>
+        <tr>
+          <td><span class="cat-badge marker">Marker</span></td>
+          <td><code>Dead</code></td>
+          <td><code>{ }</code></td>
+          <td style="font-size:12px;color:var(--text-dim);">&#x5B58;&#x5728;&#x5373;&#x6709;&#x610F;&#x4E49; &#x2192; &#x89E6;&#x53D1;&#x6B7B;&#x4EA1;&#x903B;&#x8F91;/UI</td>
+        </tr>
+        <tr style="background:rgba(251,191,36,0.03);">
+          <td><span class="cat-badge scene">Scene</span></td>
+          <td><code>SceneRegion</code></td>
+          <td><code>{ bounds, zIndex }</code></td>
+          <td style="font-size:12px;color:var(--text-dim);">&#x5C4F;&#x5E55;&#x8BED;&#x4E49;&#x533A;&#x57DF; &#x2192; &#x89C6;&#x9891;&#x6A21;&#x578B;&#x7684;&#x7A7A;&#x95F4;&#x6307;&#x5F15;</td>
+        </tr>
+        <tr style="background:rgba(251,191,36,0.03);">
+          <td><span class="cat-badge scene">Scene</span></td>
+          <td><code>SceneContent</code></td>
+          <td><code>{ description, ref, motion }</code></td>
+          <td style="font-size:12px;color:var(--text-dim);">&#x533A;&#x57DF;&#x5185;&#x5BB9;&#x63CF;&#x8FF0; &#x2192; &#x53C2;&#x8003;&#x56FE; + &#x52A8;&#x4F5C;&#x6307;&#x4EE4;</td>
+        </tr>
+        <tr style="background:rgba(251,191,36,0.03);">
+          <td><span class="cat-badge scene">Scene</span></td>
+          <td><code>SceneRelation</code></td>
+          <td><code>{ from, to, type, visual }</code></td>
+          <td style="font-size:12px;color:var(--text-dim);">&#x533A;&#x57DF;&#x95F4;&#x5173;&#x7CFB; &#x2192; &#x8DE8;&#x533A;&#x57DF;&#x89C6;&#x89C9;&#x6548;&#x679C;&#xFF08;&#x5149;&#x675F;&#x3001;&#x653B;&#x51FB;&#xFF09;</td>
+        </tr>
+        <tr style="background:rgba(251,191,36,0.03);">
+          <td><span class="cat-badge scene">Scene</span></td>
+          <td><code>CameraDirective</code></td>
+          <td><code>{ angle, focus, transition }</code></td>
+          <td style="font-size:12px;color:var(--text-dim);">&#x955C;&#x5934;&#x8BED;&#x8A00; &#x2192; &#x7535;&#x5F71;&#x7EA7;&#x53D9;&#x4E8B;&#x63A7;&#x5236;</td>
+        </tr>
+        <tr>
+          <td><span class="cat-badge config">Config</span></td>
+          <td><code>Attacker</code></td>
+          <td><code>{ baseDamage, target }</code></td>
+          <td style="font-size:12px;color:var(--text-dim);">&#x957F;&#x671F;&#x5B58;&#x5728; &#x2192; &#x63CF;&#x8FF0;&#x5B9E;&#x4F53;&#x5C5E;&#x6027;</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<!-- ████████████████████████████████████████████████████████
+     SLIDE 8 — CAPABILITY SYSTEM
+     ████████████████████████████████████████████████████████ -->
+<div class="slide" data-slide="7">
+  <div class="full-w" style="display:flex;flex-direction:column;align-items:center;">
+    <span class="tag">Capability System</span>
+    <h2 style="text-align:center;">&#x80FD;&#x529B;&#x5355;&#x5143; &#x2014; &#x62D3;&#x6251;&#x6392;&#x5E8F;&#x7684;&#x81EA;&#x52A8;&#x534F;&#x4F5C;</h2>
+    <p style="text-align:center; margin-bottom:18px; max-width:700px; font-size:14px;">
+      &#x6BCF;&#x4E2A; System &#x58F0;&#x660E; <strong style="color:var(--accent);">reads</strong> / <strong style="color:var(--orange);">writes</strong> / <strong style="color:var(--pink);">consumes</strong>&#x3002;&#x5F15;&#x64CE;&#x81EA;&#x52A8;&#x63A8;&#x5BFC;&#x6B63;&#x786E;&#x6267;&#x884C;&#x987A;&#x5E8F;&#x3002;
+    </p>
+
+    <div class="row" style="gap:14px;">
+      <div class="cap-card">
+        <div class="cap-header" style="background:rgba(34,211,238,0.06);">
+          <span style="font-size:16px;">&#x2694;&#xFE0F;</span>
+          <h3 style="color:var(--cyan);">attack-input</h3>
+        </div>
+        <div class="cap-body">
+          <div class="cap-section">
+            <div class="cap-section-title">Provides</div>
+            <div class="cap-tags"><span class="cap-tag provides">AttackIntent</span></div>
           </div>
-          <div class="card" style="border-color:var(--cyan);">
-            <h3 style="font-size:15px; color:var(--cyan);">&#x1F440; reads</h3>
-            <p style="font-size:13px;">我需要读取哪些 Component。引擎保证这些 Component 的写入者在我之前执行。</p>
+          <div class="cap-section">
+            <div class="cap-section-title">Source</div>
+            <span style="font-size:11px;color:var(--text-dim);">UI click &#x2192; dispatch</span>
           </div>
-          <div class="card orange-border">
-            <h3 style="font-size:15px; color:var(--orange);">&#x270F;&#xFE0F; writes</h3>
-            <p style="font-size:13px;">我会修改哪些 Component 的数据。引擎检查写冲突。</p>
+        </div>
+      </div>
+
+      <div class="cap-card">
+        <div class="cap-header" style="background:rgba(108,140,255,0.06);">
+          <span style="font-size:16px;">&#x1F4A5;</span>
+          <h3 style="color:var(--accent);">damage</h3>
+        </div>
+        <div class="cap-body">
+          <div class="cap-section">
+            <div class="cap-section-title">Reads</div>
+            <div class="cap-tags"><span class="cap-tag reads">AttackIntent</span></div>
           </div>
-          <div class="card pink-border">
-            <h3 style="font-size:15px; color:var(--pink);">&#x1F4A8; consumes</h3>
-            <p style="font-size:13px;">我读完后会删除。这些是"事件"型 Component — 只活一帧。</p>
+          <div class="cap-section">
+            <div class="cap-section-title">Writes</div>
+            <div class="cap-tags"><span class="cap-tag writes">DamageEvent</span></div>
           </div>
-          <div class="card" style="border-color:var(--accent2);">
-            <h3 style="font-size:15px; color:var(--accent2);">&#x2699;&#xFE0F; config</h3>
-            <p style="font-size:13px;">可调参数。AI 可以在 Assembly 里覆盖这些值来微调行为。</p>
+          <div class="cap-section">
+            <div class="cap-section-title">Consumes</div>
+            <div class="cap-tags"><span class="cap-tag consumes">AttackIntent</span></div>
+          </div>
+        </div>
+      </div>
+
+      <div class="cap-card">
+        <div class="cap-header" style="background:rgba(52,211,153,0.06);">
+          <span style="font-size:16px;">&#x1F49A;</span>
+          <h3 style="color:var(--green);">health</h3>
+        </div>
+        <div class="cap-body">
+          <div class="cap-section">
+            <div class="cap-section-title">Reads</div>
+            <div class="cap-tags"><span class="cap-tag reads">DamageEvent</span><span class="cap-tag reads">HealEvent</span></div>
+          </div>
+          <div class="cap-section">
+            <div class="cap-section-title">Writes</div>
+            <div class="cap-tags"><span class="cap-tag writes">Health</span></div>
+          </div>
+          <div class="cap-section">
+            <div class="cap-section-title">Consumes</div>
+            <div class="cap-tags"><span class="cap-tag consumes">DamageEvent</span><span class="cap-tag consumes">HealEvent</span></div>
+          </div>
+        </div>
+      </div>
+
+      <div class="cap-card" style="border-color:var(--orange);">
+        <div class="cap-header" style="background:rgba(251,146,60,0.06);">
+          <span style="font-size:16px;">&#x1F3AC;</span>
+          <h3 style="color:var(--orange);">director</h3>
+        </div>
+        <div class="cap-body">
+          <div class="cap-section">
+            <div class="cap-section-title">Reads</div>
+            <div class="cap-tags"><span class="cap-tag reads">Health</span><span class="cap-tag reads">Dead</span><span class="cap-tag reads">Attacker</span></div>
+          </div>
+          <div class="cap-section">
+            <div class="cap-section-title">Writes</div>
+            <div class="cap-tags"><span class="cap-tag writes">SceneContent</span><span class="cap-tag writes">SceneRelation</span></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="card" style="margin-top:20px; max-width:800px; padding:14px 22px; border-color:var(--green);">
+      <p style="font-size:14px; text-align:center;">
+        <strong style="color:var(--green);">&#x2705; &#x81EA;&#x52A8;&#x6392;&#x5E8F;&#x7ED3;&#x679C;:</strong>
+        <code>attack-input</code> &#x2192; <code>damage</code> &#x2192; <code>health</code> &#x2192; <code>director</code><br>
+        &#x65B0;&#x589E;&#x4E00;&#x4E2A; ShieldSystem&#xFF08;reads DamageEvent, writes DamageEvent&#xFF09;&#xFF0C;&#x81EA;&#x52A8;&#x63D2;&#x5165;&#x5230; damage &#x548C; health &#x4E4B;&#x95F4;&#x3002;
+      </p>
+    </div>
+  </div>
+</div>
+
+<!-- ████████████████████████████████████████████████████████
+     SLIDE 9 — ENGINE vs PRESENTER SEPARATION
+     ████████████████████████████████████████████████████████ -->
+<div class="slide" data-slide="8">
+  <div class="full-w" style="display:flex;flex-direction:column;align-items:center;">
+    <span class="tag" style="background:rgba(244,114,182,0.15); color:var(--pink);">Separation</span>
+    <h2 style="text-align:center;">&#x5F15;&#x64CE; vs &#x8868;&#x73B0; &#x2014; &#x5F7B;&#x5E95;&#x5206;&#x79BB;</h2>
+
+    <div class="sep-diagram">
+      <div class="sep-col">
+        <div class="sep-col-header" style="color:var(--accent);">&#x2699;&#xFE0F; ENGINE (&#x7EAF; TS&#xFF0C;&#x96F6;&#x4F9D;&#x8D56;)</div>
+        <div class="sep-item">
+          <h4 style="color:var(--accent);">core/world.ts</h4>
+          <p>Entity-Component &#x5B58;&#x50A8;&#x3001;System &#x8C03;&#x5EA6;&#x3001;&#x62D3;&#x6251;&#x6392;&#x5E8F;</p>
+        </div>
+        <div class="sep-item">
+          <h4 style="color:var(--green);">protocol/components.ts</h4>
+          <p>&#x8BED;&#x4E49;&#x8BCD;&#x6C47;&#x8868;&#xFF08;&#x542B; Scene &#x7C7B;&#x578B;&#xFF09;</p>
+        </div>
+        <div class="sep-item">
+          <h4 style="color:var(--cyan);">capabilities/health.ts</h4>
+          <p>HealthSystem: reads DamageEvent &#x2192; writes Health</p>
+        </div>
+        <div class="sep-item">
+          <h4 style="color:var(--cyan);">capabilities/damage.ts</h4>
+          <p>DamageSystem: reads AttackIntent &#x2192; writes DamageEvent</p>
+        </div>
+        <div class="sep-item" style="border-color:var(--orange);">
+          <h4 style="color:var(--orange);">capabilities/director.ts</h4>
+          <p>DirectorSystem: reads game state &#x2192; writes SceneDirectives</p>
+        </div>
+      </div>
+
+      <div class="sep-divider">
+        <div class="line"></div>
+        <div class="label">BOUNDARY</div>
+        <div class="line"></div>
+        <div style="font-size:10px; color:var(--text-dim); text-align:center; writing-mode:horizontal-tb;">
+          dispatch(&#x2191;)<br>read(&#x2193;)
+        </div>
+        <div class="line"></div>
+      </div>
+
+      <div class="sep-col">
+        <div class="sep-col-header" style="color:var(--pink);">&#x1F3A8; PRESENTER (React + Video API)</div>
+        <div class="sep-item">
+          <h4 style="color:var(--pink);">hooks/useEngine.ts</h4>
+          <p>&#x521B;&#x5EFA;&#x5F15;&#x64CE;&#x3001;&#x9A71;&#x52A8; tick&#x3001;&#x89E6;&#x53D1; re-render</p>
+        </div>
+        <div class="sep-item" style="border-color:var(--orange);">
+          <h4 style="color:var(--orange);">video/VideoRenderer.tsx</h4>
+          <p>&#x8BFB; SceneDirective &#x2192; &#x8C03;&#x89C6;&#x9891;&#x6A21;&#x578B; API &#x2192; &#x663E;&#x793A;&#x89C6;&#x9891;&#x6D41;</p>
+        </div>
+        <div class="sep-item">
+          <h4 style="color:var(--pink);">ui/HealthBar.tsx</h4>
+          <p>&#x8BFB; Health Component &#x2192; &#x6E32;&#x67D3;&#x8FDB;&#x5EA6;&#x6761; overlay</p>
+        </div>
+        <div class="sep-item">
+          <h4 style="color:var(--pink);">ui/ActionPanel.tsx</h4>
+          <p>&#x6E32;&#x67D3;&#x64CD;&#x4F5C;&#x6309;&#x94AE; &#x2192; onClick dispatch Intent</p>
+        </div>
+        <div class="sep-item">
+          <h4 style="color:var(--yellow);">templates/Bar.tsx</h4>
+          <p>&#x901A;&#x7528;&#x8FDB;&#x5EA6;&#x6761;&#x3002;&#x4E0D;&#x77E5;&#x9053; HP/MP&#xFF0C;&#x53EA;&#x753B; current/max</p>
+        </div>
+      </div>
+    </div>
+
+    <div style="margin-top:20px; display:flex; gap:16px; max-width:900px; width:100%;">
+      <div class="card" style="flex:1; padding:14px 18px;">
+        <p style="font-size:12px;"><strong style="color:var(--green);">&#x2705; &#x6362;&#x89C6;&#x9891;&#x6A21;&#x578B;</strong>&#xFF1A;&#x66FF;&#x6362; VideoRenderer&#xFF0C;Engine &#x4E0D;&#x52A8;</p>
+      </div>
+      <div class="card" style="flex:1; padding:14px 18px;">
+        <p style="font-size:12px;"><strong style="color:var(--green);">&#x2705; &#x6362; UI &#x4E3B;&#x9898;</strong>&#xFF1A;&#x6362; CSS variables&#xFF0C;&#x96F6;&#x903B;&#x8F91;&#x6539;&#x52A8;</p>
+      </div>
+      <div class="card" style="flex:1; padding:14px 18px;">
+        <p style="font-size:12px;"><strong style="color:var(--green);">&#x2705; &#x65E0;&#x5934;&#x6D4B;&#x8BD5;</strong>&#xFF1A;Node.js &#x91CC;&#x8DD1; Engine&#xFF0C;&#x4E0D;&#x9700;&#x8981;&#x6D4F;&#x89C8;&#x5668;</p>
+      </div>
+      <div class="card" style="flex:1; padding:14px 18px;">
+        <p style="font-size:12px;"><strong style="color:var(--green);">&#x2705; &#x6362;&#x5E73;&#x53F0;</strong>&#xFF1A;&#x5FAE;&#x4FE1;&#x5C0F;&#x6E38;&#x620F; = &#x6362; Presenter &#x5C42;</p>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ████████████████████████████████████████████████████████
+     SLIDE 10 — COMPOSABILITY PROOF
+     ████████████████████████████████████████████████████████ -->
+<div class="slide" data-slide="9">
+  <div class="full-w" style="display:flex;flex-direction:column;align-items:center;">
+    <span class="tag" style="background:rgba(251,191,36,0.15); color:var(--yellow);">Composability</span>
+    <h2 style="text-align:center;">&#x96F6;&#x6539;&#x52A8;&#x52A0;&#x80FD;&#x529B; &#x2014; &#x7EC4;&#x5408;&#x6027;&#x8BC1;&#x660E;</h2>
+
+    <div style="width:100%; max-width:960px;">
+      <div class="row" style="gap:16px; margin-bottom:16px;">
+        <div class="card" style="flex:1; padding:18px 20px; border-style:dashed;">
+          <h3 style="font-size:15px; color:var(--text-dim);">&#x1F4E6; &#x5DF2;&#x6709; 4 &#x4E2A; Capability</h3>
+          <div class="compose-entity" style="margin-top:8px;">
+            <span class="eid">capabilities:</span> [<span class="cname">attack-input</span>, <span class="cname">damage</span>, <span class="cname">health</span>, <span class="cname">director</span>]
+          </div>
+        </div>
+        <div style="display:flex; align-items:center; font-size:28px; color:var(--accent);">+</div>
+        <div class="card" style="flex:1; padding:18px 20px; border-color:var(--yellow);">
+          <h3 style="font-size:15px; color:var(--yellow);">&#x2728; &#x65B0;&#x589E; shield Capability</h3>
+          <div class="compose-entity" style="margin-top:8px; border:1px solid rgba(251,191,36,0.3);">
+            <span class="eid">reads:</span> <span class="cval">[DamageEvent, Shield]</span><br>
+            <span class="eid">writes:</span> <span class="cval">[DamageEvent, Shield]</span><br>
+            <span style="font-size:11px;color:var(--text-dim);">&#x62E6;&#x622A; DamageEvent&#xFF0C;&#x7528; Shield &#x5438;&#x6536;&#x4E00;&#x90E8;&#x5206;</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="card glow-green" style="padding:18px 22px; border-color:var(--green);">
+        <h3 style="font-size:15px; color:var(--green);">&#x2705; &#x7ED3;&#x679C;</h3>
+        <div class="row" style="gap:14px; margin-top:10px;">
+          <div class="compose-entity" style="flex:1;">
+            <span class="eid">&#x81EA;&#x52A8;&#x6392;&#x5E8F;:</span><br>
+            attack-input &#x2192; <span class="cname">damage</span> &#x2192; <strong style="color:var(--yellow);">shield</strong> &#x2192; <span class="cname">health</span> &#x2192; director
+          </div>
+          <div class="compose-entity" style="flex:1;">
+            <span class="eid">&#x6539;&#x52A8;&#x91CF;:</span><br>
+            &#x2022; &#x65B0;&#x6587;&#x4EF6;: <span class="cval">1 &#x4E2A; (shield.ts)</span><br>
+            &#x2022; &#x6539;&#x5DF2;&#x6709;: <span class="cval">0 &#x4E2A;</span><br>
+            &#x2022; Assembly &#x52A0;&#x4E00;&#x884C;
+          </div>
+          <div class="compose-entity" style="flex:1;">
+            <span class="eid">Director &#x81EA;&#x52A8;&#x9002;&#x5E94;:</span><br>
+            &#x770B;&#x5230; Shield &#x5B58;&#x5728; &#x2192;<br>
+            SceneContent.motion = <span class="str">"shield blocking"</span>
           </div>
         </div>
       </div>
     </div>
   </div>
+</div>
 
-  <!-- ══════════════════════════════════════════════════════
-       SLIDE 11 — ASSEMBLY BLUEPRINT
-       ══════════════════════════════════════════════════════ -->
-  <div class="slide" data-slide="10">
-    <div class="full-w left-align" style="display:flex;flex-direction:column;align-items:center;">
-      <span class="tag" style="background:rgba(167,139,250,0.15); color:var(--accent2);">Assembly</span>
-      <h2 style="text-align:center;">World Assembly — AI 的产出物</h2>
-      <p style="text-align:center; margin-bottom:24px; max-width:700px;">
-        这就是 AI 需要生成的东西。一份 JSON/TS 蓝图，描述一个完整的游戏世界。
-      </p>
+<!-- ████████████████████████████████████████████████████████
+     SLIDE 11 — AI INTEGRATION
+     ████████████████████████████████████████████████████████ -->
+<div class="slide" data-slide="10">
+  <div class="full-w" style="display:flex;flex-direction:column;align-items:center;">
+    <span class="tag" style="background:rgba(167,139,250,0.15); color:var(--accent2);">AI-Native</span>
+    <h2 style="text-align:center;">&#x53CC; AI &#x67B6;&#x6784; &#x2014; LLM &#x8BBE;&#x8BA1; + &#x89C6;&#x9891;&#x6A21;&#x578B;&#x6E32;&#x67D3;</h2>
 
-      <div class="row" style="gap:24px;">
-        <div class="code-block" style="flex:1.2;">
-<span class="cmt">// demo.world.ts — Assembly 蓝图</span>
-<span class="cmt">// AI 生成这个文件来 "创造一个游戏"</span>
+    <div class="ai-flow">
+      <div class="ai-step">
+        <div class="ai-step-num" style="background:rgba(167,139,250,0.15); color:var(--accent2);">1</div>
+        <div class="ai-step-content">
+          <h4 style="color:var(--accent2);">&#x1F9E0; LLM &#x8BFB;&#x53D6; Capability &#x6E05;&#x5355;</h4>
+          <p>"&#x6709; health&#xFF08;&#x8D44;&#x6E90;&#xFF0C;current/max&#xFF09;&#x3001;damage&#xFF08;&#x4E8B;&#x4EF6;&#xFF0C;&#x8BFB; AttackIntent &#x5199; DamageEvent&#xFF09;&#x3001;director&#xFF08;&#x573A;&#x666F;&#xFF0C;&#x8BFB;&#x72B6;&#x6001;&#x5199;&#x6307;&#x4EE4;&#xFF09;..."</p>
+        </div>
+      </div>
+      <div class="ai-step">
+        <div class="ai-step-num" style="background:rgba(108,140,255,0.15); color:var(--accent);">2</div>
+        <div class="ai-step-content">
+          <h4 style="color:var(--accent);">&#x1F4DD; LLM &#x751F;&#x6210;&#x65B0; Capability + Assembly</h4>
+          <p>&#x8F93;&#x51FA; PoisonCapability&#xFF1A;&#x58F0;&#x660E; writes: [DamageEvent]&#xFF0C;&#x6BCF;&#x56DE;&#x5408;&#x81EA;&#x52A8;&#x4EA7;&#x751F;&#x4F24;&#x5BB3;&#x3002;&#x540C;&#x65F6;&#x8F93;&#x51FA; Assembly &#x84DD;&#x56FE;&#xFF0C;&#x4E00;&#x952E;&#x5B9E;&#x4F8B;&#x5316;&#x3002;</p>
+        </div>
+      </div>
+      <div class="ai-step">
+        <div class="ai-step-num" style="background:rgba(251,146,60,0.15); color:var(--orange);">3</div>
+        <div class="ai-step-content">
+          <h4 style="color:var(--orange);">&#x1F3AC; &#x89C6;&#x9691;&#x6A21;&#x578B;&#x751F;&#x6210;&#x753B;&#x9762;</h4>
+          <p>Director &#x628A; ECS &#x72B6;&#x6001;&#x7FFB;&#x8BD1;&#x4E3A;&#x573A;&#x666F;&#x63CF;&#x8FF0; &#x2192; &#x89C6;&#x9891;&#x6A21;&#x578B;&#xFF08;Sora / Kling / Runway&#xFF09;&#x751F;&#x6210;&#x8FDE;&#x7EED;&#x753B;&#x9762; &#x2192; &#x53E0;&#x52A0; UI = &#x5B8C;&#x6574;&#x6E38;&#x620F;</p>
+        </div>
+      </div>
+    </div>
+
+    <div class="row" style="margin-top:24px; gap:16px;">
+      <div class="card" style="flex:1; padding:16px 20px; border-color:var(--accent2);">
+        <div class="card-icon purple" style="margin-bottom:8px;">&#x1F9E0;</div>
+        <h3 style="font-size:15px;">LLM = &#x6E38;&#x620F;&#x8BBE;&#x8BA1;&#x5E08;</h3>
+        <p style="font-size:13px;">&#x64CD;&#x4F5C;&#x7C92;&#x5EA6;&#x662F; Capability &#x548C; Assembly&#xFF0C;&#x4E0D;&#x662F;&#x6E90;&#x4EE3;&#x7801;&#x3002;&#x4ECE;&#x201C;&#x5199;&#x4EE3;&#x7801;&#x201D;&#x5347;&#x7EA7;&#x5230;&#x201C;&#x8BBE;&#x8BA1;&#x6E38;&#x620F;&#x201D;&#x3002;</p>
+      </div>
+      <div class="card" style="flex:1; padding:16px 20px; border-color:var(--orange);">
+        <div class="card-icon orange" style="margin-bottom:8px;">&#x1F3AC;</div>
+        <h3 style="font-size:15px;">Video Model = &#x6E32;&#x67D3;&#x5F15;&#x64CE;</h3>
+        <p style="font-size:13px;">&#x4E0D;&#x5199;&#x4E00;&#x884C;&#x6E32;&#x67D3;&#x4EE3;&#x7801;&#x3002;&#x89C6;&#x9891;&#x6A21;&#x578B;&#x8FDB;&#x5316; = &#x753B;&#x8D28;&#x81EA;&#x52A8;&#x5347;&#x7EA7;&#xFF0C;&#x6C38;&#x8FDC;&#x641E;&#x5728;&#x589E;&#x957F;&#x66F2;&#x7EBF;&#x4E0A;&#x3002;</p>
+      </div>
+      <div class="card" style="flex:1; padding:16px 20px; border-color:var(--pink);">
+        <div class="card-icon pink" style="margin-bottom:8px;">&#x1F3AE;</div>
+        <h3 style="font-size:15px;">UI Overlay = &#x4EA4;&#x4E92;&#x5C42;</h3>
+        <p style="font-size:13px;">&#x73A9;&#x5BB6;&#x901A;&#x8FC7; React UI &#x4E0E;&#x6E38;&#x620F;&#x4EA4;&#x4E92;&#x3002;&#x8FD9;&#x662F;&#x6211;&#x4EEC;&#x63A7;&#x5236;&#x7684;&#x3001;&#x786E;&#x5B9A;&#x6027;&#x7684;&#x3001;&#x7CBE;&#x786E;&#x7684;&#x90E8;&#x5206;&#x3002;</p>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ████████████████████████████████████████████████████████
+     SLIDE 12 — ASSEMBLY BLUEPRINT
+     ████████████████████████████████████████████████████████ -->
+<div class="slide" data-slide="11">
+  <div class="full-w" style="display:flex;flex-direction:column;align-items:center;">
+    <span class="tag" style="background:rgba(167,139,250,0.15); color:var(--accent2);">Assembly</span>
+    <h2 style="text-align:center;">World Assembly &#x2014; AI &#x7684;&#x4EA7;&#x51FA;&#x7269;</h2>
+
+    <div class="row" style="gap:20px;">
+      <div class="code-block" style="flex:1.2;">
+<span class="cmt">// demo.world.ts &#x2014; AI &#x751F;&#x6210;&#x8FD9;&#x4E2A;&#x6587;&#x4EF6;&#x6765;&#x201C;&#x521B;&#x9020;&#x4E00;&#x4E2A;&#x6E38;&#x620F;&#x201D;</span>
 
 <span class="kw">export const</span> demoWorld: <span class="typ">WorldBlueprint</span> = {
 
-  <span class="cmt">// 1. 选择要加载的能力</span>
   capabilities: [
     <span class="str">'attack-input'</span>,
     <span class="str">'damage'</span>,
     <span class="str">'health'</span>,
-    <span class="str">'heal-input'</span>,     <span class="cmt">// ← 加一行就有治疗</span>
+    <span class="str">'director'</span>,       <span class="cmt">// &#x573A;&#x666F;&#x5BFC;&#x6F14;</span>
   ],
 
-  <span class="cmt">// 2. 定义实体和初始数据</span>
   entities: {
-    player: {
-      <span class="typ">Attacker</span>: {
-        baseDamage: <span class="num">10</span>,
-        target: <span class="str">'dummy'</span>
-      }
+    hero: {
+      <span class="typ">Attacker</span>:      { baseDamage: <span class="num">10</span>, target: <span class="str">'boss'</span> },
+      <span class="typ">SceneRegion</span>:   { bounds: [<span class="num">.05</span>,<span class="num">.15</span>,<span class="num">.40</span>,<span class="num">.70</span>] },
+      <span class="typ">SceneContent</span>:  {
+        description: <span class="str">'armored warrior'</span>,
+        reference: <span class="str">'ref://hero.png'</span>,
+        motion: <span class="str">'idle-stance'</span>
+      },
     },
-    dummy: {
-      <span class="typ">Health</span>: {
-        current: <span class="num">100</span>,
-        max: <span class="num">100</span>
-      }
-    }
+    boss: {
+      <span class="typ">Health</span>:         { current: <span class="num">200</span>, max: <span class="num">200</span> },
+      <span class="typ">SceneRegion</span>:   { bounds: [<span class="num">.55</span>,<span class="num">.05</span>,<span class="num">.95</span>,<span class="num">.75</span>] },
+      <span class="typ">SceneContent</span>:  {
+        description: <span class="str">'massive red dragon'</span>,
+        reference: <span class="str">'ref://dragon.png'</span>,
+        motion: <span class="str">'breathing-fire'</span>
+      },
+    },
   },
 
-  <span class="cmt">// 3. 覆盖默认配置</span>
-  config: {
-    <span class="str">'damage'</span>: { baseDamage: <span class="num">15</span> },
-    <span class="str">'health'</span>: { deathThreshold: <span class="num">0</span> }
-  }
+  scene: {
+    style: <span class="str">'dark fantasy, cinematic'</span>,
+    camera: { angle: <span class="str">'side-view'</span> },
+    environment: <span class="str">'ancient stone arena'</span>,
+  },
+
+  videoModel: <span class="str">'kling-v2'</span>,
 }
-        </div>
+      </div>
 
-        <div style="flex:0.8; display:flex; flex-direction:column; gap:16px;">
-          <div class="card glow-accent">
-            <div class="card-icon blue">&#x1F9E9;</div>
-            <h3 style="font-size:16px;">声明式</h3>
-            <p style="font-size:13px;">不写逻辑代码。只声明"我要什么能力、有什么实体、初始数据是什么"。</p>
-          </div>
-          <div class="card glow-green">
-            <div class="card-icon green">&#x1F916;</div>
-            <h3 style="font-size:16px;">AI 友好</h3>
-            <p style="font-size:13px;">结构固定、语义明确。AI 不需要理解代码，只需组合已有 Capability。</p>
-          </div>
-          <div class="card">
-            <div class="card-icon orange">&#x1F504;</div>
-            <h3 style="font-size:16px;">热加载</h3>
-            <p style="font-size:13px;">修改 Assembly → 引擎重新实例化 → 游戏即时变化。设计迭代零等待。</p>
-          </div>
-          <div class="card">
-            <div class="card-icon purple">&#x1F50D;</div>
-            <h3 style="font-size:16px;">可验证</h3>
-            <p style="font-size:13px;">引擎检查 Assembly 的合法性：依赖的 Capability 是否存在、Component 类型是否匹配。</p>
-          </div>
+      <div style="flex:0.7; display:flex; flex-direction:column; gap:14px;">
+        <div class="card glow-accent" style="padding:16px 18px;">
+          <div class="card-icon blue" style="margin-bottom:8px;">&#x1F9E9;</div>
+          <h3 style="font-size:15px;">&#x58F0;&#x660E;&#x5F0F;</h3>
+          <p style="font-size:12px;">&#x4E0D;&#x5199;&#x903B;&#x8F91;&#x3002;&#x53EA;&#x8BF4;&#x201C;&#x6211;&#x8981;&#x4EC0;&#x4E48;&#x80FD;&#x529B;&#x3001;&#x6709;&#x4EC0;&#x4E48;&#x5B9E;&#x4F53;&#x3001;&#x573A;&#x666F;&#x957F;&#x4EC0;&#x4E48;&#x6837;&#x201D;&#x3002;</p>
+        </div>
+        <div class="card glow-green" style="padding:16px 18px;">
+          <div class="card-icon green" style="margin-bottom:8px;">&#x1F916;</div>
+          <h3 style="font-size:15px;">AI &#x53CB;&#x597D;</h3>
+          <p style="font-size:12px;">&#x7ED3;&#x6784;&#x56FA;&#x5B9A;&#x3001;&#x8BED;&#x4E49;&#x660E;&#x786E;&#x3002;LLM &#x7EC4;&#x5408; Capability &#x5373;&#x53EF;&#xFF0C;&#x4E0D;&#x9700;&#x7406;&#x89E3;&#x4EE3;&#x7801;&#x3002;</p>
+        </div>
+        <div class="card" style="padding:16px 18px;">
+          <div class="card-icon orange" style="margin-bottom:8px;">&#x1F3AC;</div>
+          <h3 style="font-size:15px;">&#x573A;&#x666F;&#x5185;&#x7F6E;</h3>
+          <p style="font-size:12px;">SceneRegion + SceneContent &#x76F4;&#x63A5;&#x5199;&#x5728; Entity &#x4E0A;&#x3002;&#x6E38;&#x620F;&#x4E16;&#x754C; = &#x903B;&#x8F91; + &#x89C6;&#x89C9;&#x4E00;&#x4F53;&#x5316;&#x63CF;&#x8FF0;&#x3002;</p>
+        </div>
+        <div class="card" style="padding:16px 18px;">
+          <div class="card-icon yellow" style="margin-bottom:8px;">&#x1F504;</div>
+          <h3 style="font-size:15px;">&#x6A21;&#x578B;&#x53EF;&#x6362;</h3>
+          <p style="font-size:12px;"><code>videoModel</code> &#x5B57;&#x6BB5;&#x5207;&#x6362;&#x89C6;&#x9891;&#x540E;&#x7AEF;&#x3002;Sora &#x2192; Kling &#x2192; &#x672A;&#x6765;&#x6A21;&#x578B;&#xFF0C;&#x96F6;&#x903B;&#x8F91;&#x6539;&#x52A8;&#x3002;</p>
         </div>
       </div>
     </div>
   </div>
-
-  <!-- ══════════════════════════════════════════════════════
-       SLIDE 12 — TECH STACK
-       ══════════════════════════════════════════════════════ -->
-  <div class="slide" data-slide="11">
-    <div class="full-w left-align" style="display:flex;flex-direction:column;align-items:center;">
-      <span class="tag">Tech Stack</span>
-      <h2 style="text-align:center;">技术选型</h2>
-
-      <div class="row" style="gap:24px; margin-top:8px;">
-        <div class="card" style="flex:1;">
-          <div class="card-icon blue">&#x1F4A0;</div>
-          <h3>Engine Core</h3>
-          <ul class="bullet-list">
-            <li><strong>TypeScript</strong> <span class="dim">— 类型系统约束 Component Schema</span></li>
-            <li><strong>零依赖</strong> <span class="dim">— 可在 Node/Browser/微信运行</span></li>
-            <li><strong>拓扑排序</strong> <span class="dim">— Kahn's algorithm 基于 reads/writes</span></li>
-            <li><strong>~500 行核心</strong> <span class="dim">— 极简实现，易审计</span></li>
-          </ul>
-        </div>
-
-        <div class="card" style="flex:1;">
-          <div class="card-icon pink">&#x269B;&#xFE0F;</div>
-          <h3>Presenter</h3>
-          <ul class="bullet-list">
-            <li><strong>React 18+</strong> <span class="dim">— Concurrent Mode，无撕裂渲染</span></li>
-            <li><strong>useSyncExternalStore</strong> <span class="dim">— 安全桥接 Engine 状态</span></li>
-            <li><strong>Template + Binding</strong> <span class="dim">— UI 原子与数据映射分离</span></li>
-            <li><strong>CSS Variables</strong> <span class="dim">— 主题系统零 JS 开销</span></li>
-          </ul>
-        </div>
-
-        <div class="card" style="flex:1;">
-          <div class="card-icon green">&#x1F6E0;&#xFE0F;</div>
-          <h3>Tooling</h3>
-          <ul class="bullet-list">
-            <li><strong>Vite</strong> <span class="dim">— 极速 HMR，TypeScript 原生支持</span></li>
-            <li><strong>Vitest</strong> <span class="dim">— Engine 无头测试</span></li>
-            <li><strong>Storybook</strong> <span class="dim">— Template 组件可视化开发</span></li>
-            <li><strong>pnpm workspaces</strong> <span class="dim">— engine/presenter 包隔离</span></li>
-          </ul>
-        </div>
-      </div>
-
-      <div class="card" style="margin-top:28px; max-width:900px; width:100%; padding:20px 28px; border-color:var(--accent);">
-        <p style="font-size:15px; text-align:center;">
-          <strong style="color:var(--accent);">跨平台策略：</strong>
-          Engine 层不变，Presenter 层按平台替换：
-          <code>React DOM</code> → Web&emsp;|&emsp;
-          <code>Canvas 2D</code> → 微信小游戏&emsp;|&emsp;
-          <code>React Native</code> → App
-        </p>
-      </div>
-    </div>
-  </div>
-
-  <!-- ══════════════════════════════════════════════════════
-       SLIDE 13 — ROADMAP
-       ══════════════════════════════════════════════════════ -->
-  <div class="slide" data-slide="12">
-    <div class="full-w left-align" style="display:flex;flex-direction:column;align-items:center;">
-      <span class="tag" style="background:rgba(251,146,60,0.15); color:var(--orange);">Roadmap</span>
-      <h2 style="text-align:center;">里程碑路线图</h2>
-
-      <div class="timeline" style="margin-top:32px;">
-        <div class="tl-item">
-          <div class="tl-dot current"></div>
-          <div class="tl-label">Phase 1 — NOW</div>
-          <div class="tl-title" style="color:var(--accent);">ECS Core MVP</div>
-          <div class="tl-desc">
-            3 Capability 端到端运行<br>
-            React Presenter 概念验证<br>
-            Component 词汇表 v1<br>
-            Assembly 蓝图格式
-          </div>
-        </div>
-        <div class="tl-item">
-          <div class="tl-dot upcoming"></div>
-          <div class="tl-label">Phase 2</div>
-          <div class="tl-title">Capability 扩展</div>
-          <div class="tl-desc">
-            Inventory / Buff / Skill Tree<br>
-            Template Library 20+<br>
-            AI Capability Generator<br>
-            关卡 Assembly 示例
-          </div>
-        </div>
-        <div class="tl-item">
-          <div class="tl-dot upcoming"></div>
-          <div class="tl-label">Phase 3</div>
-          <div class="tl-title">平台适配</div>
-          <div class="tl-desc">
-            微信小游戏 Presenter<br>
-            Canvas 2D 渲染器<br>
-            离线能力包加载<br>
-            性能优化 (Entity pooling)
-          </div>
-        </div>
-        <div class="tl-item">
-          <div class="tl-dot upcoming"></div>
-          <div class="tl-label">Phase 4</div>
-          <div class="tl-title">AI Co-Pilot</div>
-          <div class="tl-desc">
-            自然语言 → Assembly<br>
-            AI 自动生成 Capability<br>
-            可视化 Capability 编辑器<br>
-            Game Design Copilot IDE
-          </div>
-        </div>
-      </div>
-
-      <div style="margin-top:48px; text-align:center;">
-        <h3 style="color:var(--accent); font-size:20px; margin-bottom:8px;">MVP 验收：一个可交互的 Demo</h3>
-        <p style="max-width:600px; margin:0 auto;">
-          点击 Attack → 看到血量下降 → 点击 Heal → 看到血量恢复。<br>
-          背后是 3+1 个独立 Capability 通过 Component 隐式协作。
-        </p>
-      </div>
-    </div>
-  </div>
-
-  <!-- ══════════════════════════════════════════════════════
-       SLIDE 14 — CLOSING
-       ══════════════════════════════════════════════════════ -->
-  <div class="slide" data-slide="13">
-    <div class="center">
-      <div style="font-size:64px; margin-bottom:24px;">&#x2728;</div>
-      <h1 style="font-size:44px;"><span class="gradient-text">Apollo Engine</span></h1>
-      <p class="subtitle" style="font-size:22px; margin-top:16px; max-width:600px; text-align:center;">
-        不是另一个游戏引擎。<br>
-        是让 AI 能理解、能设计、能组合游戏机制的<strong style="color:var(--text);">语义化框架</strong>。
-      </p>
-
-      <div style="margin-top:48px; display:flex; gap:32px; justify-content:center;">
-        <div style="text-align:center;">
-          <div style="font-size:36px; font-weight:800; color:var(--accent);">~500</div>
-          <div style="font-size:14px; color:var(--text-dim);">行核心引擎代码</div>
-        </div>
-        <div style="text-align:center;">
-          <div style="font-size:36px; font-weight:800; color:var(--green);">0</div>
-          <div style="font-size:14px; color:var(--text-dim);">外部引擎依赖</div>
-        </div>
-        <div style="text-align:center;">
-          <div style="font-size:36px; font-weight:800; color:var(--accent2);">&#x221E;</div>
-          <div style="font-size:14px; color:var(--text-dim);">可组合 Capability</div>
-        </div>
-      </div>
-
-      <div style="margin-top:56px;">
-        <p style="font-size:16px; color:var(--text-dim);">
-          <code style="font-size:14px;">github.com/eaglefly628/ApolloGame</code>
-        </p>
-      </div>
-    </div>
-  </div>
-
 </div>
 
-<!-- Navigation -->
+<!-- ████████████████████████████████████████████████████████
+     SLIDE 13 — TECH STACK + ROADMAP
+     ████████████████████████████████████████████████████████ -->
+<div class="slide" data-slide="12">
+  <div class="full-w" style="display:flex;flex-direction:column;align-items:center;">
+    <span class="tag" style="background:rgba(251,146,60,0.15); color:var(--orange);">Roadmap</span>
+    <h2 style="text-align:center;">&#x91CC;&#x7A0B;&#x7891;&#x8DEF;&#x7EBF;&#x56FE;</h2>
+
+    <div class="timeline" style="margin-top:24px;">
+      <div class="tl-item">
+        <div class="tl-dot current"></div>
+        <div class="tl-label">Phase 1 &#x2014; NOW</div>
+        <div class="tl-title" style="color:var(--accent);">ECS + UI Overlay</div>
+        <div class="tl-desc">
+          &#x6838;&#x5FC3; ECS &#x5F15;&#x64CE;<br>
+          3 Capability &#x7AEF;&#x5230;&#x7AEF;<br>
+          React UI Overlay<br>
+          Component &#x8BCD;&#x6C47;&#x8868; v1
+        </div>
+      </div>
+      <div class="tl-item">
+        <div class="tl-dot upcoming"></div>
+        <div class="tl-label">Phase 2</div>
+        <div class="tl-title">Director + Video</div>
+        <div class="tl-desc">
+          Director Protocol &#x5B9E;&#x73B0;<br>
+          &#x63A5;&#x5165;&#x89C6;&#x9891;&#x6A21;&#x578B; API<br>
+          &#x53C2;&#x8003;&#x56FE;&#x4E00;&#x81F4;&#x6027;<br>
+          &#x65F6;&#x95F4;&#x8FDE;&#x7EED;&#x6027;&#x63A7;&#x5236;
+        </div>
+      </div>
+      <div class="tl-item">
+        <div class="tl-dot upcoming"></div>
+        <div class="tl-label">Phase 3</div>
+        <div class="tl-title">AI Game Designer</div>
+        <div class="tl-desc">
+          LLM &#x81EA;&#x52A8;&#x751F;&#x6210; Capability<br>
+          &#x81EA;&#x7136;&#x8BED;&#x8A00; &#x2192; Assembly<br>
+          Capability &#x5E02;&#x573A;<br>
+          &#x53EF;&#x89C6;&#x5316;&#x7F16;&#x8F91;&#x5668;
+        </div>
+      </div>
+      <div class="tl-item">
+        <div class="tl-dot upcoming"></div>
+        <div class="tl-label">Phase 4</div>
+        <div class="tl-title">&#x5E73;&#x53F0;&#x6269;&#x5C55;</div>
+        <div class="tl-desc">
+          &#x5FAE;&#x4FE1;&#x5C0F;&#x6E38;&#x620F;&#x9002;&#x914D;<br>
+          &#x591A;&#x89C6;&#x9891;&#x6A21;&#x578B;&#x540E;&#x7AEF;<br>
+          &#x5B9E;&#x65F6;&#x591A;&#x4EBA;&#x72B6;&#x6001;&#x540C;&#x6B65;<br>
+          &#x5F00;&#x53D1;&#x8005; SDK
+        </div>
+      </div>
+    </div>
+
+    <div style="margin-top:32px; width:100%; max-width:900px;">
+      <div class="row" style="gap:16px;">
+        <div class="card" style="flex:1; padding:16px 18px;">
+          <h3 style="font-size:14px; color:var(--accent);">&#x1F4A0; Engine</h3>
+          <ul class="bullet-list" style="font-size:13px;">
+            <li><strong>TypeScript</strong> <span class="dim">&#x2014; &#x7C7B;&#x578B;&#x7EA6;&#x675F; Component</span></li>
+            <li><strong>&#x96F6;&#x4F9D;&#x8D56;</strong> <span class="dim">&#x2014; ~500 &#x884C;&#x6838;&#x5FC3;</span></li>
+            <li><strong>&#x62D3;&#x6251;&#x6392;&#x5E8F;</strong> <span class="dim">&#x2014; Kahn's algorithm</span></li>
+          </ul>
+        </div>
+        <div class="card" style="flex:1; padding:16px 18px;">
+          <h3 style="font-size:14px; color:var(--pink);">&#x1F3A8; Presenter</h3>
+          <ul class="bullet-list" style="font-size:13px;">
+            <li><strong>React 18+</strong> <span class="dim">&#x2014; UI Overlay</span></li>
+            <li><strong>Video API</strong> <span class="dim">&#x2014; &#x89C6;&#x9891;&#x6A21;&#x578B;&#x63A5;&#x5165;</span></li>
+            <li><strong>CSS Variables</strong> <span class="dim">&#x2014; &#x4E3B;&#x9898;&#x7CFB;&#x7EDF;</span></li>
+          </ul>
+        </div>
+        <div class="card" style="flex:1; padding:16px 18px;">
+          <h3 style="font-size:14px; color:var(--green);">&#x1F6E0;&#xFE0F; Tooling</h3>
+          <ul class="bullet-list" style="font-size:13px;">
+            <li><strong>Vite</strong> <span class="dim">&#x2014; &#x6781;&#x901F; HMR</span></li>
+            <li><strong>Vitest</strong> <span class="dim">&#x2014; &#x65E0;&#x5934;&#x6D4B;&#x8BD5;</span></li>
+            <li><strong>Storybook</strong> <span class="dim">&#x2014; UI &#x7EC4;&#x4EF6;&#x5F00;&#x53D1;</span></li>
+          </ul>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ████████████████████████████████████████████████████████
+     SLIDE 14 — THE MOAT
+     ████████████████████████████████████████████████████████ -->
+<div class="slide" data-slide="13">
+  <div class="full-w" style="display:flex;flex-direction:column;align-items:center;">
+    <span class="tag" style="background:rgba(52,211,153,0.15); color:var(--green);">Competitive Moat</span>
+    <h2 style="text-align:center;">&#x4E3A;&#x4EC0;&#x4E48;&#x662F;&#x73B0;&#x5728;</h2>
+
+    <div class="row" style="gap:20px; margin-top:8px;">
+      <div class="card glow-accent" style="flex:1; padding:20px 22px;">
+        <div style="font-size:36px; margin-bottom:12px;">&#x1F4C8;</div>
+        <h3 style="font-size:17px; color:var(--accent);">&#x89C6;&#x9891;&#x6A21;&#x578B;&#x62D0;&#x70B9;</h3>
+        <p style="font-size:14px;">Sora / Kling / Runway &#x6B63;&#x5728;&#x8FBE;&#x5230;&#x201C;&#x53EF;&#x63A7;&#x201D;&#x7684;&#x4E34;&#x754C;&#x70B9;&#x3002;&#x533A;&#x57DF;&#x63A7;&#x5236;&#x3001;&#x53C2;&#x8003;&#x56FE;&#x4E00;&#x81F4;&#x6027;&#x3001;&#x5E27;&#x95F4;&#x8FDE;&#x8D2F;&#x6027;&#x2014;&#x2014;&#x8FD9;&#x4E9B;&#x80FD;&#x529B;&#x6B63;&#x5728;&#x89E3;&#x9501;&#x3002;<br><br><strong>&#x8C01;&#x5148;&#x5EFA;&#x597D;&#x8BED;&#x4E49;&#x63A7;&#x5236;&#x5C42;&#xFF0C;&#x8C01;&#x5C31;&#x80FD;&#x5403;&#x5230;&#x8FD9;&#x6CE2;&#x7EA2;&#x5229;&#x3002;</strong></p>
+      </div>
+      <div class="card glow-green" style="flex:1; padding:20px 22px;">
+        <div style="font-size:36px; margin-bottom:12px;">&#x1F9E9;</div>
+        <h3 style="font-size:17px; color:var(--green);">Capability &#x7F51;&#x7EDC;&#x6548;&#x5E94;</h3>
+        <p style="font-size:14px;">&#x6BCF;&#x4E2A;&#x65B0; Capability &#x589E;&#x52A0;&#x6240;&#x6709;&#x5DF2;&#x6709;&#x6E38;&#x620F;&#x7684;&#x53EF;&#x80FD;&#x6027;&#x3002;10 &#x4E2A; Capability &#x53EF;&#x4EE5;&#x7EC4;&#x5408;&#x51FA; 1000+ &#x79CD;&#x6E38;&#x620F;&#x73A9;&#x6CD5;&#x3002;<br><br><strong>Capability &#x8D8A;&#x591A;&#xFF0C;&#x62A4;&#x57CE;&#x6CB3;&#x8D8A;&#x6DF1;&#x3002;</strong></p>
+      </div>
+      <div class="card glow-pink" style="flex:1; padding:20px 22px;">
+        <div style="font-size:36px; margin-bottom:12px;">&#x1F680;</div>
+        <h3 style="font-size:17px; color:var(--pink);">&#x96F6;&#x7F16;&#x7A0B;&#x95E8;&#x69DB;</h3>
+        <p style="font-size:14px;">&#x7528;&#x6237;&#x7528;&#x81EA;&#x7136;&#x8BED;&#x8A00;&#x63CF;&#x8FF0;&#x6E38;&#x620F;&#x521B;&#x610F; &#x2192; LLM &#x751F;&#x6210; Assembly &#x2192; &#x89C6;&#x9891;&#x6A21;&#x578B;&#x6E32;&#x67D3;&#x753B;&#x9762; &#x2192; &#x53EF;&#x73A9;&#x6E38;&#x620F;&#x3002;<br><br><strong>&#x4ECE;&#x201C;&#x6709;&#x60F3;&#x6CD5;&#x201D;&#x5230;&#x201C;&#x53EF;&#x4EE5;&#x73A9;&#x201D;&#xFF0C;5 &#x5206;&#x949F;&#x3002;</strong></p>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ████████████████████████████████████████████████████████
+     SLIDE 15 — CLOSING
+     ████████████████████████████████████████████████████████ -->
+<div class="slide" data-slide="14">
+  <div class="center">
+    <div style="font-size:56px; margin-bottom:20px;">&#x2728;</div>
+    <h1 style="font-size:42px;"><span class="gradient-text">Apollo Engine</span></h1>
+    <p class="subtitle" style="font-size:20px; margin-top:14px; max-width:640px; text-align:center;">
+      &#x4E0D;&#x5199;&#x6E32;&#x67D3;&#x4EE3;&#x7801;&#x3002;&#x4E0D;&#x505A;&#x7F8E;&#x672F;&#x8D44;&#x4EA7;&#x3002;<br>
+      &#x7528;<strong style="color:var(--text);">&#x8BED;&#x4E49;&#x63A7;&#x5236;</strong>&#x9A7E;&#x9A6D; <strong style="color:var(--text);">AI &#x89C6;&#x9891;&#x751F;&#x6210;</strong>&#xFF0C;<br>
+      &#x8BA9;&#x4EFB;&#x4F55;&#x4EBA;&#x5C06;&#x60F3;&#x6CD5;&#x53D8;&#x6210;&#x53EF;&#x73A9;&#x7684;&#x6E38;&#x620F;&#x3002;
+    </p>
+
+    <div style="margin-top:44px; display:flex; gap:36px; justify-content:center;">
+      <div style="text-align:center;">
+        <div style="font-size:34px; font-weight:800; color:var(--accent);">~500</div>
+        <div style="font-size:13px; color:var(--text-dim);">&#x884C;&#x6838;&#x5FC3;&#x5F15;&#x64CE;</div>
+      </div>
+      <div style="text-align:center;">
+        <div style="font-size:34px; font-weight:800; color:var(--green);">0</div>
+        <div style="font-size:13px; color:var(--text-dim);">&#x6E32;&#x67D3;&#x4EE3;&#x7801;</div>
+      </div>
+      <div style="text-align:center;">
+        <div style="font-size:34px; font-weight:800; color:var(--orange);">&#x221E;</div>
+        <div style="font-size:13px; color:var(--text-dim);">&#x89C6;&#x89C9;&#x5929;&#x82B1;&#x677F;</div>
+      </div>
+      <div style="text-align:center;">
+        <div style="font-size:34px; font-weight:800; color:var(--accent2);">5min</div>
+        <div style="font-size:13px; color:var(--text-dim);">&#x4ECE;&#x60F3;&#x6CD5;&#x5230;&#x53EF;&#x73A9;</div>
+      </div>
+    </div>
+
+    <div style="margin-top:48px;">
+      <p style="font-size:15px; color:var(--text-dim);">
+        <code style="font-size:13px;">github.com/eaglefly628/ApolloGame</code>
+      </p>
+    </div>
+  </div>
+</div>
+
+</div><!-- /deck -->
+
 <div class="nav" id="nav"></div>
 <div class="page-num" id="pageNum"></div>
-<div class="key-hint">&#x2190; &#x2192; or click to navigate</div>
+<div class="key-hint">&#x2190; &#x2192; or click</div>
 
 <script>
 (function() {
@@ -1368,49 +1342,35 @@
   const nav = document.getElementById('nav');
   const pageNum = document.getElementById('pageNum');
   let current = 0;
-
-  // Create nav dots
   slides.forEach((_, i) => {
-    const dot = document.createElement('div');
-    dot.className = 'nav-dot' + (i === 0 ? ' active' : '');
-    dot.addEventListener('click', () => goTo(i));
-    nav.appendChild(dot);
+    const d = document.createElement('div');
+    d.className = 'nav-dot' + (i === 0 ? ' active' : '');
+    d.addEventListener('click', () => goTo(i));
+    nav.appendChild(d);
   });
-
-  function goTo(index) {
-    if (index < 0 || index >= slides.length) return;
+  function goTo(i) {
+    if (i < 0 || i >= slides.length) return;
     slides[current].classList.remove('active');
     nav.children[current].classList.remove('active');
-    current = index;
+    current = i;
     slides[current].classList.add('active');
     nav.children[current].classList.add('active');
-    pageNum.textContent = (current + 1) + ' / ' + slides.length;
+    pageNum.textContent = (current+1) + ' / ' + slides.length;
   }
-
-  // Keyboard
-  document.addEventListener('keydown', (e) => {
-    if (e.key === 'ArrowRight' || e.key === ' ' || e.key === 'Enter') {
-      e.preventDefault(); goTo(current + 1);
-    }
-    if (e.key === 'ArrowLeft' || e.key === 'Backspace') {
-      e.preventDefault(); goTo(current - 1);
-    }
-    if (e.key === 'Home') goTo(0);
-    if (e.key === 'End') goTo(slides.length - 1);
+  document.addEventListener('keydown', e => {
+    if (e.key==='ArrowRight'||e.key===' '||e.key==='Enter') { e.preventDefault(); goTo(current+1); }
+    if (e.key==='ArrowLeft'||e.key==='Backspace') { e.preventDefault(); goTo(current-1); }
+    if (e.key==='Home') goTo(0);
+    if (e.key==='End') goTo(slides.length-1);
   });
-
-  // Touch swipe
-  let touchStartX = 0;
-  document.addEventListener('touchstart', (e) => { touchStartX = e.touches[0].clientX; });
-  document.addEventListener('touchend', (e) => {
-    const dx = e.changedTouches[0].clientX - touchStartX;
-    if (Math.abs(dx) > 60) goTo(current + (dx < 0 ? 1 : -1));
+  let tx=0;
+  document.addEventListener('touchstart', e => { tx=e.touches[0].clientX; });
+  document.addEventListener('touchend', e => {
+    const dx=e.changedTouches[0].clientX-tx;
+    if (Math.abs(dx)>60) goTo(current+(dx<0?1:-1));
   });
-
-  // Init
   pageNum.textContent = '1 / ' + slides.length;
 })();
 </script>
-
 </body>
 </html>
