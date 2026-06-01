@@ -3,6 +3,8 @@ import type { Component } from '@engine/core/types.js';
 import { keyInputCapability } from '@atom-skills/key-input/index.js';
 import { healthCapability } from '@atom-skills/health/index.js';
 import { statusBarCapability } from '@atom-skills/status-bar/index.js';
+import { poisonCapability } from '@atom-skills/poison/index.js';
+import { shieldCapability } from '@atom-skills/shield/index.js';
 
 export interface EntityBlueprint {
   [componentType: string]: Omit<Component, 'type'>;
@@ -14,11 +16,19 @@ export interface WorldBlueprint {
 }
 
 export const demoBlueprint: WorldBlueprint = {
-  capabilities: [keyInputCapability, healthCapability, statusBarCapability],
+  capabilities: [
+    keyInputCapability,
+    poisonCapability,
+    shieldCapability,
+    healthCapability,
+    statusBarCapability,
+  ],
 
   entities: {
     hero: {
       Health: { current: 100, max: 100 },
+      Shield: { current: 30, max: 30 },
+      Poisoned: { damagePerTick: 2, remainingTicks: 999 },
       KeyboardListener: {},
       StatusBarSource: {
         sourceComponent: 'Health',
