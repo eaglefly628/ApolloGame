@@ -2,7 +2,7 @@ import type { CapabilityDefinition } from '@engine/core/define-capability.js';
 import type { Component } from '@engine/core/types.js';
 import { keyInputCapability } from '@atom-skills/key-input/index.js';
 import { healthCapability } from '@atom-skills/health/index.js';
-import { healthBarCapability } from '@atom-skills/health-bar/index.js';
+import { statusBarCapability } from '@atom-skills/status-bar/index.js';
 
 export interface EntityBlueprint {
   [componentType: string]: Omit<Component, 'type'>;
@@ -14,12 +14,21 @@ export interface WorldBlueprint {
 }
 
 export const demoBlueprint: WorldBlueprint = {
-  capabilities: [keyInputCapability, healthCapability, healthBarCapability],
+  capabilities: [keyInputCapability, healthCapability, statusBarCapability],
 
   entities: {
     hero: {
       Health: { current: 100, max: 100 },
       KeyboardListener: {},
+      StatusBarSource: {
+        sourceComponent: 'Health',
+        label: 'HP',
+        highColor: '#22c55e',
+        midColor: '#eab308',
+        lowColor: '#ef4444',
+        lowThreshold: 0.3,
+        midThreshold: 0.6,
+      },
     },
   },
 };
