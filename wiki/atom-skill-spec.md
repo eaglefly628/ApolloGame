@@ -38,8 +38,16 @@ export const mySkillCapability = defineCapability({
 
   // ② 数据合约 (引擎 + LLM 都读)
   components: {
-    provides:  ['MyComponent'],          // 我定义的组件类型
-    reads:     ['SomeOtherComponent'],   // 我读取的
+    provides: {                            // 我定义的组件 + 完整 Schema
+      MyComponent: {
+        category: 'resource',              // resource | event | intent | marker | config | render
+        describe: '这个组件做什么',
+        fields: {
+          fieldName: { type: 'number', describe: '字段说明' },
+        },
+      },
+    },
+    reads:     ['SomeOtherComponent'],   // 我读取的 (组件名)
     writes:    ['MyComponent'],          // 我写入的
     consumes:  ['SomeEvent'],            // 我读后删除的 (一次性事件)
   },

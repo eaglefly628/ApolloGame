@@ -28,7 +28,21 @@ export const healthCapability = defineCapability({
   },
 
   components: {
-    provides: ['Health', 'Dead'],
+    provides: {
+      Health: {
+        category: 'resource',
+        describe: '生命值资源。current/max 结构，可被 status-bar 等通用 UI 读取。',
+        fields: {
+          current: { type: 'number', describe: '当前生命值' },
+          max: { type: 'number', describe: '最大生命值' },
+        },
+      },
+      Dead: {
+        category: 'marker',
+        describe: '生命值归零标记。存在即表示实体已死亡。',
+        fields: {},
+      },
+    },
     reads: ['HealthModifyEvent'],
     writes: ['Health', 'Dead'],
     consumes: ['HealthModifyEvent'],

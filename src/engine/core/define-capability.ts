@@ -1,5 +1,17 @@
 import type { SystemDeclaration, ComponentType } from './types.js';
 
+export type ComponentCategory = 'resource' | 'event' | 'intent' | 'marker' | 'config' | 'render';
+export type FieldType = 'number' | 'string' | 'boolean' | 'EntityId' | 'string[]' | 'number[]';
+
+export interface ComponentSchema {
+  category: ComponentCategory;
+  describe: string;
+  fields: Record<string, {
+    type: FieldType;
+    describe: string;
+  }>;
+}
+
 export interface CapabilityConfig {
   type: 'number' | 'string' | 'boolean' | 'select';
   default: unknown;
@@ -27,7 +39,7 @@ export interface CapabilityDefinition {
   };
 
   components: {
-    provides: ComponentType[];
+    provides: Record<ComponentType, ComponentSchema>;
     reads: ComponentType[];
     writes: ComponentType[];
     consumes: ComponentType[];

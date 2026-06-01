@@ -39,7 +39,20 @@ export const keyInputCapability = defineCapability({
   },
 
   components: {
-    provides: ['HealthModifyEvent', 'KeyboardListener'],
+    provides: {
+      HealthModifyEvent: {
+        category: 'event',
+        describe: '一次性生命值修改事件。正数=治疗，负数=伤害。任何想修改 Health 的 skill 都可以写这个组件。',
+        fields: {
+          amount: { type: 'number', describe: '修改量，正数治疗，负数伤害' },
+        },
+      },
+      KeyboardListener: {
+        category: 'marker',
+        describe: '标记此实体接受键盘输入。',
+        fields: {},
+      },
+    },
     reads: ['KeyboardListener'],
     writes: ['HealthModifyEvent'],
     consumes: [],

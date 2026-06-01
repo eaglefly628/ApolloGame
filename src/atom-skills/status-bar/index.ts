@@ -38,7 +38,32 @@ export const statusBarCapability = defineCapability({
   },
 
   components: {
-    provides: ['BarDisplay', 'StatusBarSource'],
+    provides: {
+      StatusBarSource: {
+        category: 'config',
+        describe: '配置此条形指向哪个资源组件。通过 sourceComponent 字段动态绑定任意 current/max 资源。',
+        fields: {
+          sourceComponent: { type: 'string', describe: '目标资源组件名（如 Health, Mana）' },
+          label: { type: 'string', describe: '条形标签（如 HP, MP）' },
+          highColor: { type: 'string', describe: '数值充足时的颜色' },
+          midColor: { type: 'string', describe: '数值中等时的颜色' },
+          lowColor: { type: 'string', describe: '数值不足时的颜色' },
+          lowThreshold: { type: 'number', describe: '低值阈值 (0-1)' },
+          midThreshold: { type: 'number', describe: '中值阈值 (0-1)' },
+        },
+      },
+      BarDisplay: {
+        category: 'render',
+        describe: '条形渲染数据。由 status-bar.sync 每帧生成，React UI 层读取此组件渲染条形。',
+        fields: {
+          percentage: { type: 'number', describe: '当前百分比 (0-1)' },
+          color: { type: 'string', describe: '当前应显示的颜色' },
+          label: { type: 'string', describe: '条形标签' },
+          current: { type: 'number', describe: '当前值' },
+          max: { type: 'number', describe: '最大值' },
+        },
+      },
+    },
     reads: ['StatusBarSource'],
     writes: ['BarDisplay'],
     consumes: [],
