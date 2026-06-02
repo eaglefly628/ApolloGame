@@ -171,3 +171,50 @@ export interface Text extends Component {
   anchor: string;
   lineSpacing: number;
 }
+
+// ── I1 input-capture ── 这帧的外部原始信号（由 runtime 注入）
+export interface RawInput extends Component {
+  readonly type: 'RawInput';
+  source: string;
+  key?: string;
+  x?: number;
+  y?: number;
+  phase?: string;
+}
+
+// ── I2 action-map ── 原始信号对应的语义动作
+export interface Action extends Component {
+  readonly type: 'Action';
+  name: string;
+  value: number;
+}
+
+// ── J1 state ── 实体在某状态机的当前离散状态
+export interface State extends Component {
+  readonly type: 'State';
+  fsmId: string;
+  current: string;
+  previous: string;
+}
+
+// ── J1 state ── 状态切换事件（read-then-consume）
+export interface StateChanged extends Component {
+  readonly type: 'StateChanged';
+  fsmId: string;
+  from: string;
+  to: string;
+}
+
+// ── K1 spawn ── 创建新实体的请求（模板展开由 assembly 层负责）
+export interface SpawnRequest extends Component {
+  readonly type: 'SpawnRequest';
+  templateId: string;
+  x: number;
+  y: number;
+}
+
+// ── K2 destroy ── 移除实体的请求（read-then-consume）
+export interface DestroyRequest extends Component {
+  readonly type: 'DestroyRequest';
+  entityId: EntityId;
+}
