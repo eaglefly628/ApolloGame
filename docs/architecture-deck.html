@@ -1,0 +1,1160 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Apollo Engine — Architecture Deck v3</title>
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  :root {
+    --bg:        #0c0e14;
+    --surface:   #151821;
+    --surface2:  #1c2030;
+    --border:    #2a2e3e;
+    --text:      #e0e4f0;
+    --text-dim:  #8890a8;
+    --accent:    #6c8cff;
+    --accent2:   #a78bfa;
+    --green:     #34d399;
+    --red:       #f87171;
+    --orange:    #fb923c;
+    --yellow:    #fbbf24;
+    --cyan:      #22d3ee;
+    --pink:      #f472b6;
+    --font:      'Inter', -apple-system, 'SF Pro Display', 'Helvetica Neue', sans-serif;
+    --mono:      'SF Mono', 'Fira Code', 'JetBrains Mono', monospace;
+  }
+  @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap');
+  html, body { height: 100%; overflow: hidden; background: var(--bg); color: var(--text); font-family: var(--font); }
+
+  .deck { width: 100vw; height: 100vh; position: relative; }
+  .slide {
+    position: absolute; inset: 0; display: flex; flex-direction: column;
+    justify-content: center; align-items: center; padding: 44px 64px;
+    opacity: 0; pointer-events: none; transition: opacity 0.45s ease; overflow-y: auto;
+  }
+  .slide.active { opacity: 1; pointer-events: all; }
+
+  .nav { position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%); display: flex; gap: 6px; z-index: 100; }
+  .nav-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--border); cursor: pointer; transition: all 0.3s; }
+  .nav-dot.active { background: var(--accent); transform: scale(1.4); }
+  .nav-dot:hover { background: var(--accent2); }
+  .page-num { position: fixed; bottom: 22px; right: 32px; font-size: 11px; color: var(--text-dim); font-family: var(--mono); z-index: 100; }
+  .key-hint { position: fixed; bottom: 22px; left: 32px; font-size: 10px; color: var(--text-dim); font-family: var(--mono); z-index: 100; opacity: 0.4; }
+
+  h1 { font-size: 50px; font-weight: 800; letter-spacing: -1.5px; line-height: 1.15; }
+  h2 { font-size: 34px; font-weight: 700; letter-spacing: -0.8px; line-height: 1.2; margin-bottom: 24px; }
+  h3 { font-size: 20px; font-weight: 600; line-height: 1.3; margin-bottom: 12px; }
+  p  { font-size: 15px; line-height: 1.65; color: var(--text-dim); }
+  .subtitle { font-size: 19px; color: var(--text-dim); font-weight: 400; margin-top: 12px; }
+  .tag { display: inline-block; padding: 3px 13px; border-radius: 20px; font-size: 11px; font-weight: 600; letter-spacing: 0.5px; text-transform: uppercase; background: rgba(108,140,255,0.15); color: var(--accent); margin-bottom: 16px; }
+  code { font-family: var(--mono); font-size: 12px; background: var(--surface2); padding: 2px 6px; border-radius: 4px; }
+  .gradient-text { background: linear-gradient(135deg, var(--accent), var(--accent2), var(--pink)); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text; }
+
+  .full-w { width: 100%; max-width: 1060px; }
+  .row { display: flex; gap: 20px; width: 100%; max-width: 1060px; }
+  .center { text-align: center; }
+
+  .card { background: var(--surface); border: 1px solid var(--border); border-radius: 11px; padding: 20px; position: relative; }
+  .card h3 { margin-bottom: 8px; }
+  .card p  { font-size: 13px; line-height: 1.6; }
+  .card-icon { width: 38px; height: 38px; border-radius: 9px; display: flex; align-items: center; justify-content: center; font-size: 18px; margin-bottom: 12px; }
+  .card-icon.blue   { background: rgba(108,140,255,0.15); }
+  .card-icon.green  { background: rgba(52,211,153,0.15); }
+  .card-icon.orange { background: rgba(251,146,60,0.15); }
+  .card-icon.pink   { background: rgba(244,114,182,0.15); }
+  .card-icon.cyan   { background: rgba(34,211,238,0.15); }
+  .card-icon.purple { background: rgba(167,139,250,0.15); }
+  .card-icon.yellow { background: rgba(251,191,36,0.15); }
+  .glow-accent { box-shadow: 0 0 36px rgba(108,140,255,0.08); }
+  .glow-green  { box-shadow: 0 0 36px rgba(52,211,153,0.08); }
+  .glow-pink   { box-shadow: 0 0 36px rgba(244,114,182,0.08); }
+
+  .bullet-list { list-style: none; padding: 0; }
+  .bullet-list li { position: relative; padding-left: 20px; margin-bottom: 10px; font-size: 14px; line-height: 1.6; color: var(--text); }
+  .bullet-list li::before { content: ''; position: absolute; left: 0; top: 8px; width: 6px; height: 6px; border-radius: 2px; background: var(--accent); transform: rotate(45deg); }
+  .bullet-list li span.dim { color: var(--text-dim); }
+
+  /* ── Architecture ── */
+  .arch-diagram { width: 100%; max-width: 960px; display: flex; flex-direction: column; }
+  .arch-layer { border: 2px solid var(--border); border-radius: 11px; padding: 16px 20px; position: relative; transition: border-color 0.3s; }
+  .arch-layer:hover { border-color: var(--accent); }
+  .arch-layer + .arch-layer { margin-top: -1px; }
+  .layer-label { position: absolute; top: -9px; left: 18px; background: var(--bg); padding: 0 9px; font-size: 11px; font-weight: 700; letter-spacing: 1px; text-transform: uppercase; }
+  .layer-content { display: flex; gap: 10px; flex-wrap: wrap; margin-top: 4px; }
+  .layer-box { background: var(--surface2); border-radius: 7px; padding: 8px 12px; font-size: 12px; font-weight: 500; border: 1px solid transparent; flex: 1; min-width: 110px; }
+  .layer-box .icon { font-size: 14px; opacity: 0.7; }
+  .layer-box.highlight { border-color: var(--accent); background: rgba(108,140,255,0.08); }
+  .arch-arrow { display: flex; justify-content: center; align-items: center; height: 30px; position: relative; z-index: 2; }
+  .arch-arrow::before { content: ''; width: 2px; height: 100%; background: linear-gradient(to bottom, var(--accent), var(--green)); position: absolute; }
+  .arrow-labels { display: flex; gap: 40px; justify-content: center; position: relative; z-index: 3; }
+  .arrow-label { font-size: 9px; font-weight: 600; padding: 2px 9px; border-radius: 9px; background: var(--surface); border: 1px solid var(--border); }
+
+  /* ── Pipeline ── */
+  .pipeline { display: flex; align-items: center; gap: 0; width: 100%; max-width: 1060px; padding: 14px 0; }
+  .pipe-node { background: var(--surface); border: 2px solid var(--border); border-radius: 9px; padding: 12px 14px; text-align: center; flex: 1; min-width: 0; }
+  .pipe-node h4 { font-size: 12px; font-weight: 700; margin-bottom: 4px; white-space: nowrap; }
+  .pipe-node p { font-size: 10px; line-height: 1.4; color: var(--text-dim); }
+  .pipe-node .comp-tag { display: inline-block; margin-top: 5px; padding: 2px 6px; border-radius: 4px; font-size: 9px; font-weight: 600; font-family: var(--mono); }
+  .pipe-node.input  { border-color: var(--cyan); }  .pipe-node.input  h4 { color: var(--cyan); }  .pipe-node.input  .comp-tag { background: rgba(34,211,238,0.15); color: var(--cyan); }
+  .pipe-node.logic  { border-color: var(--accent); } .pipe-node.logic  h4 { color: var(--accent); } .pipe-node.logic  .comp-tag { background: rgba(108,140,255,0.15); color: var(--accent); }
+  .pipe-node.logic2 { border-color: var(--green); }  .pipe-node.logic2 h4 { color: var(--green); }  .pipe-node.logic2 .comp-tag { background: rgba(52,211,153,0.15); color: var(--green); }
+  .pipe-node.render { border-color: var(--pink); }   .pipe-node.render h4 { color: var(--pink); }   .pipe-node.render .comp-tag { background: rgba(244,114,182,0.15); color: var(--pink); }
+  .pipe-node.video  { border-color: var(--orange); } .pipe-node.video  h4 { color: var(--orange); } .pipe-node.video  .comp-tag { background: rgba(251,146,60,0.15); color: var(--orange); }
+  .pipe-arrow { width: 32px; min-width: 32px; height: 2px; position: relative; flex-shrink: 0; }
+  .pipe-arrow::before { content: ''; position: absolute; top: 0; left: 0; right: 7px; height: 2px; background: var(--border); }
+  .pipe-arrow::after { content: ''; position: absolute; top: -4px; right: 0; border-left: 6px solid var(--border); border-top: 5px solid transparent; border-bottom: 5px solid transparent; }
+  .pipe-arrow .label { position: absolute; top: -16px; left: 50%; transform: translateX(-50%); font-size: 8px; font-family: var(--mono); color: var(--text-dim); white-space: nowrap; }
+
+  /* ── Comp Table ── */
+  .comp-table { width: 100%; max-width: 980px; border-collapse: separate; border-spacing: 0; border: 1px solid var(--border); border-radius: 9px; overflow: hidden; font-size: 12px; }
+  .comp-table th { background: var(--surface2); padding: 8px 14px; text-align: left; font-weight: 600; font-size: 10px; color: var(--text-dim); letter-spacing: 0.5px; text-transform: uppercase; border-bottom: 1px solid var(--border); }
+  .comp-table td { padding: 7px 14px; border-bottom: 1px solid var(--border); vertical-align: top; }
+  .comp-table tr:last-child td { border-bottom: none; }
+  .cat-badge { display: inline-block; padding: 2px 8px; border-radius: 9px; font-size: 10px; font-weight: 600; }
+  .cat-badge.resource { background: rgba(52,211,153,0.15); color: var(--green); }
+  .cat-badge.event    { background: rgba(251,146,60,0.15); color: var(--orange); }
+  .cat-badge.intent   { background: rgba(108,140,255,0.15); color: var(--accent); }
+  .cat-badge.marker   { background: rgba(244,114,182,0.15); color: var(--pink); }
+  .cat-badge.config   { background: rgba(167,139,250,0.15); color: var(--accent2); }
+  .cat-badge.scene    { background: rgba(251,191,36,0.15); color: var(--yellow); }
+
+  /* ── Code Block ── */
+  .code-block { background: var(--surface); border: 1px solid var(--border); border-radius: 9px; padding: 18px 22px; width: 100%; font-family: var(--mono); font-size: 11px; line-height: 1.75; overflow-x: auto; white-space: pre; color: var(--text-dim); }
+  .code-block .kw { color: var(--accent); } .code-block .str { color: var(--green); } .code-block .typ { color: var(--accent2); } .code-block .num { color: var(--orange); } .code-block .cmt { color: #4a5068; font-style: italic; }
+
+  /* ── Capability Cards ── */
+  .cap-card { background: var(--surface); border: 1px solid var(--border); border-radius: 11px; overflow: hidden; flex: 1; }
+  .cap-header { padding: 12px 16px; border-bottom: 1px solid var(--border); display: flex; align-items: center; gap: 8px; }
+  .cap-header h3 { margin: 0; font-size: 14px; }
+  .cap-body { padding: 12px 16px; }
+  .cap-section { margin-bottom: 10px; }
+  .cap-section-title { font-size: 9px; font-weight: 700; letter-spacing: 0.8px; text-transform: uppercase; color: var(--text-dim); margin-bottom: 5px; }
+  .cap-tags { display: flex; flex-wrap: wrap; gap: 4px; }
+  .cap-tag { display: inline-block; padding: 2px 7px; border-radius: 5px; font-size: 10px; font-weight: 600; font-family: var(--mono); }
+  .cap-tag.provides { background: rgba(52,211,153,0.12); color: var(--green); }
+  .cap-tag.reads    { background: rgba(108,140,255,0.12); color: var(--accent); }
+  .cap-tag.writes   { background: rgba(251,146,60,0.12); color: var(--orange); }
+  .cap-tag.consumes { background: rgba(244,114,182,0.12); color: var(--pink); }
+
+  /* ── Screen Mockup ── */
+  .screen-mock { width: 100%; max-width: 480px; aspect-ratio: 16/10; background: var(--surface); border: 2px solid var(--border); border-radius: 12px; position: relative; overflow: hidden; }
+  .screen-mock .video-bg { position: absolute; inset: 0; background: linear-gradient(135deg, #1a2a1a 0%, #0d1a2a 40%, #1a1a2a 100%); display: flex; align-items: center; justify-content: center; }
+  .screen-mock .video-bg .label { font-size: 13px; color: rgba(255,255,255,0.15); font-weight: 700; letter-spacing: 4px; text-transform: uppercase; }
+  .screen-mock .region { position: absolute; border: 2px dashed; border-radius: 7px; display: flex; align-items: center; justify-content: center; font-size: 10px; font-weight: 600; font-family: var(--mono); }
+  .screen-mock .ui-element { position: absolute; background: rgba(0,0,0,0.7); border-radius: 5px; padding: 5px 10px; font-size: 10px; font-weight: 600; backdrop-filter: blur(4px); border: 1px solid rgba(255,255,255,0.1); }
+
+  /* ── Compose ── */
+  .compose-entity { background: var(--surface2); border-radius: 7px; padding: 9px 12px; font-size: 11px; font-family: var(--mono); }
+  .compose-entity .eid { color: var(--accent); font-weight: 700; }
+  .compose-entity .cname { color: var(--green); }
+  .compose-entity .cval { color: var(--text-dim); }
+
+  /* ── Timeline ── */
+  .timeline { display: flex; gap: 0; width: 100%; max-width: 880px; position: relative; }
+  .timeline::before { content: ''; position: absolute; top: 18px; left: 0; right: 0; height: 3px; background: var(--border); border-radius: 2px; }
+  .tl-item { flex: 1; text-align: center; position: relative; padding-top: 44px; }
+  .tl-dot { width: 12px; height: 12px; border-radius: 50%; position: absolute; top: 13px; left: 50%; transform: translateX(-50%); border: 3px solid var(--bg); }
+  .tl-dot.current { background: var(--accent); box-shadow: 0 0 10px rgba(108,140,255,0.5); }
+  .tl-dot.upcoming { background: var(--border); }
+  .tl-label { font-size: 11px; font-weight: 700; color: var(--text-dim); margin-bottom: 5px; }
+  .tl-title { font-size: 14px; font-weight: 600; margin-bottom: 4px; }
+  .tl-desc  { font-size: 11px; color: var(--text-dim); line-height: 1.5; padding: 0 4px; }
+
+  /* ── AI Steps ── */
+  .ai-step { display: flex; gap: 14px; align-items: center; margin-bottom: 12px; }
+  .ai-step-num { width: 34px; height: 34px; border-radius: 50%; background: rgba(108,140,255,0.15); color: var(--accent); display: flex; align-items: center; justify-content: center; font-size: 14px; font-weight: 700; flex-shrink: 0; }
+  .ai-step-content { flex: 1; background: var(--surface); border: 1px solid var(--border); border-radius: 9px; padding: 12px 18px; }
+  .ai-step-content h4 { font-size: 13px; margin-bottom: 2px; }
+  .ai-step-content p  { font-size: 12px; }
+
+  /* ── Separator ── */
+  .sep-diagram { width: 100%; max-width: 980px; display: flex; gap: 18px; }
+  .sep-col { flex: 1; display: flex; flex-direction: column; gap: 8px; }
+  .sep-col-header { font-size: 11px; font-weight: 700; letter-spacing: 0.8px; text-transform: uppercase; text-align: center; padding-bottom: 8px; border-bottom: 2px solid var(--border); margin-bottom: 3px; }
+  .sep-item { background: var(--surface); border: 1px solid var(--border); border-radius: 7px; padding: 10px 14px; }
+  .sep-item h4 { font-size: 12px; margin-bottom: 2px; }
+  .sep-item p  { font-size: 10px; }
+  .sep-divider { width: 40px; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 5px; flex-shrink: 0; }
+  .sep-divider .line { width: 2px; flex: 1; background: var(--border); }
+  .sep-divider .label { font-size: 8px; font-weight: 700; color: var(--text-dim); writing-mode: vertical-lr; letter-spacing: 2px; }
+
+  /* ════════════════════════════════════════
+     EDITOR MOCKUP STYLES
+     ════════════════════════════════════════ */
+  .editor-mock {
+    width: 100%; max-width: 940px;
+    background: var(--surface); border: 2px solid var(--border); border-radius: 12px;
+    overflow: hidden; display: flex; flex-direction: column;
+  }
+  .editor-toolbar {
+    display: flex; align-items: center; gap: 12px;
+    padding: 8px 16px; border-bottom: 1px solid var(--border);
+    background: var(--surface2); font-size: 12px;
+  }
+  .editor-toolbar .dot { width: 10px; height: 10px; border-radius: 50%; }
+  .editor-body { display: flex; min-height: 320px; }
+  .editor-sidebar {
+    width: 180px; border-right: 1px solid var(--border);
+    padding: 12px; display: flex; flex-direction: column; gap: 6px;
+    flex-shrink: 0;
+  }
+  .editor-sidebar-title { font-size: 10px; font-weight: 700; color: var(--text-dim); letter-spacing: 0.8px; text-transform: uppercase; margin-bottom: 4px; }
+  .editor-cap-item {
+    background: var(--surface2); border: 1px solid var(--border); border-radius: 7px;
+    padding: 8px 10px; font-size: 11px; font-weight: 500; cursor: pointer;
+    display: flex; align-items: center; gap: 6px; transition: all 0.2s;
+  }
+  .editor-cap-item.selected { border-color: var(--green); background: rgba(52,211,153,0.08); }
+  .editor-cap-item .check { width: 14px; height: 14px; border-radius: 3px; border: 2px solid var(--border); display: flex; align-items: center; justify-content: center; font-size: 9px; flex-shrink: 0; }
+  .editor-cap-item.selected .check { border-color: var(--green); background: var(--green); color: var(--bg); }
+  .editor-canvas {
+    flex: 1; position: relative; padding: 20px;
+    background: radial-gradient(circle at 50% 50%, rgba(108,140,255,0.02) 0%, transparent 70%);
+  }
+  .editor-node {
+    position: absolute; background: var(--surface2); border: 2px solid var(--border);
+    border-radius: 9px; padding: 10px 14px; min-width: 110px; text-align: center;
+    font-size: 12px; font-weight: 600;
+  }
+  .editor-node .node-icon { font-size: 16px; margin-bottom: 4px; }
+  .editor-node .node-label { font-size: 11px; }
+  .editor-node .node-port {
+    position: absolute; width: 8px; height: 8px; border-radius: 50%;
+    background: var(--border); border: 2px solid var(--surface2);
+  }
+  .editor-node .node-port.out { right: -5px; top: 50%; transform: translateY(-50%); }
+  .editor-node .node-port.in  { left: -5px; top: 50%; transform: translateY(-50%); }
+
+  .editor-node.n-input  { border-color: var(--cyan); }  .editor-node.n-input  .node-label { color: var(--cyan); }
+  .editor-node.n-logic  { border-color: var(--accent); } .editor-node.n-logic  .node-label { color: var(--accent); }
+  .editor-node.n-health { border-color: var(--green); }  .editor-node.n-health .node-label { color: var(--green); }
+  .editor-node.n-dir    { border-color: var(--orange); } .editor-node.n-dir    .node-label { color: var(--orange); }
+  .editor-node.n-new    { border-color: var(--yellow); border-style: dashed; } .editor-node.n-new .node-label { color: var(--yellow); }
+
+  .editor-edge {
+    position: absolute; pointer-events: none;
+  }
+  .editor-params {
+    width: 200px; border-left: 1px solid var(--border); padding: 12px;
+    display: flex; flex-direction: column; gap: 10px; flex-shrink: 0;
+  }
+  .editor-params-title { font-size: 10px; font-weight: 700; color: var(--text-dim); letter-spacing: 0.8px; text-transform: uppercase; margin-bottom: 2px; }
+  .param-group { display: flex; flex-direction: column; gap: 6px; }
+  .param-row { display: flex; align-items: center; justify-content: space-between; font-size: 11px; }
+  .param-row .param-label { color: var(--text-dim); }
+  .param-row .param-value { color: var(--text); font-weight: 600; font-family: var(--mono); }
+  .param-slider {
+    width: 100%; height: 4px; background: var(--border); border-radius: 2px;
+    position: relative; margin-top: 2px;
+  }
+  .param-slider .fill { height: 100%; border-radius: 2px; position: absolute; left: 0; }
+  .param-slider .thumb {
+    width: 10px; height: 10px; border-radius: 50%; position: absolute; top: -3px;
+    border: 2px solid var(--bg);
+  }
+  .param-toggle {
+    display: flex; gap: 4px;
+  }
+  .param-chip {
+    padding: 2px 8px; border-radius: 4px; font-size: 10px; font-weight: 600;
+    background: var(--surface2); border: 1px solid var(--border); color: var(--text-dim);
+  }
+  .param-chip.on { border-color: var(--green); background: rgba(52,211,153,0.12); color: var(--green); }
+
+  /* ── Chat Mockup ── */
+  .chat-mock {
+    width: 100%; max-width: 480px; background: var(--surface);
+    border: 2px solid var(--border); border-radius: 12px; overflow: hidden;
+  }
+  .chat-header { padding: 10px 16px; border-bottom: 1px solid var(--border); background: var(--surface2); font-size: 12px; font-weight: 700; color: var(--accent); display: flex; align-items: center; gap: 8px; }
+  .chat-body { padding: 14px; display: flex; flex-direction: column; gap: 10px; max-height: 340px; }
+  .chat-msg { max-width: 85%; padding: 8px 12px; border-radius: 10px; font-size: 12px; line-height: 1.5; }
+  .chat-msg.user { background: rgba(108,140,255,0.15); color: var(--text); align-self: flex-end; border-bottom-right-radius: 3px; }
+  .chat-msg.ai { background: var(--surface2); color: var(--text-dim); align-self: flex-start; border-bottom-left-radius: 3px; }
+  .chat-msg .choices { display: flex; gap: 6px; margin-top: 6px; flex-wrap: wrap; }
+  .chat-msg .choice-btn {
+    padding: 4px 10px; border-radius: 6px; font-size: 11px; font-weight: 600;
+    background: var(--surface); border: 1px solid var(--border); color: var(--text-dim); cursor: pointer;
+  }
+  .chat-msg .choice-btn.selected { border-color: var(--green); color: var(--green); background: rgba(52,211,153,0.08); }
+  .chat-input {
+    display: flex; align-items: center; gap: 8px; padding: 10px 14px;
+    border-top: 1px solid var(--border); background: var(--surface2);
+  }
+  .chat-input input {
+    flex: 1; background: var(--surface); border: 1px solid var(--border);
+    border-radius: 8px; padding: 7px 12px; font-size: 12px; color: var(--text);
+    outline: none; font-family: var(--font);
+  }
+  .chat-input .send-btn {
+    width: 30px; height: 30px; border-radius: 8px; background: var(--accent);
+    display: flex; align-items: center; justify-content: center; font-size: 14px;
+    cursor: pointer; flex-shrink: 0;
+  }
+
+  /* ── Component Agent Cards ── */
+  .agent-cards { display: flex; gap: 10px; width: 100%; max-width: 480px; }
+  .agent-card {
+    flex: 1; background: var(--surface); border: 1px solid var(--border);
+    border-radius: 9px; padding: 10px 12px; text-align: center;
+    transition: all 0.2s;
+  }
+  .agent-card.active { border-color: var(--green); box-shadow: 0 0 16px rgba(52,211,153,0.1); }
+  .agent-card.pending { opacity: 0.5; }
+  .agent-card .agent-icon { font-size: 20px; margin-bottom: 4px; }
+  .agent-card .agent-name { font-size: 11px; font-weight: 600; }
+  .agent-card .agent-status { font-size: 9px; color: var(--text-dim); margin-top: 2px; }
+  .agent-card.active .agent-status { color: var(--green); }
+
+  @media (max-width: 900px) {
+    .slide { padding: 28px 20px; }
+    h1 { font-size: 30px; } h2 { font-size: 22px; }
+    .row { flex-direction: column; }
+    .editor-body { flex-direction: column; }
+    .editor-sidebar, .editor-params { width: 100%; }
+  }
+</style>
+</head>
+<body>
+<div class="deck" id="deck">
+
+<!-- ═══ SLIDE 1: TITLE ═══ -->
+<div class="slide active" data-slide="0">
+  <div class="center">
+    <div style="font-size:52px; margin-bottom:18px;">&#x1F3AC;</div>
+    <h1><span class="gradient-text">Apollo Engine</span></h1>
+    <p class="subtitle" style="font-size:22px; margin-top:14px; color:var(--text);">
+      AI-Generated Video Game Framework
+    </p>
+    <p class="subtitle" style="font-size:16px; margin-top:8px; max-width:580px; text-align:center;">
+      用自然语言描述 &rarr; AI 组装游戏逻辑 &rarr; 视频模型生成画面 &rarr; 可玩游戏
+    </p>
+    <div style="margin-top:36px; display:flex; gap:12px; justify-content:center; flex-wrap:wrap;">
+      <span class="tag" style="background:rgba(251,191,36,0.15); color:var(--yellow);">Visual Game Editor</span>
+      <span class="tag">Semantic ECS</span>
+      <span class="tag" style="background:rgba(251,146,60,0.15); color:var(--orange);">Video-AI Renderer</span>
+      <span class="tag" style="background:rgba(244,114,182,0.15); color:var(--pink);">UI Overlay</span>
+    </div>
+  </div>
+</div>
+
+<!-- ═══ SLIDE 2: PARADIGM SHIFT ═══ -->
+<div class="slide" data-slide="1">
+  <div class="full-w" style="display:flex;flex-direction:column;align-items:center;">
+    <span class="tag" style="background:rgba(248,113,113,0.15); color:var(--red);">Paradigm Shift</span>
+    <h2 style="text-align:center;">传统游戏开发 vs Apollo</h2>
+    <div class="row" style="margin-top:4px;">
+      <div class="card" style="flex:1; border-color:var(--red); opacity:0.85;">
+        <h3 style="color:var(--red); font-size:16px;">&#x274C; 传统模式</h3>
+        <ul class="bullet-list" style="margin-top:10px;">
+          <li><strong>需要专业开发者</strong> <span class="dim">&mdash; 策划/程序/美术团队</span></li>
+          <li><strong>自己写渲染</strong> <span class="dim">&mdash; Canvas/WebGL/3D 管线</span></li>
+          <li><strong>美术资产昂贵</strong> <span class="dim">&mdash; 精灵图、模型、动画</span></li>
+          <li><strong>AI 是辅助工具</strong> <span class="dim">&mdash; 生成素材，人来集成</span></li>
+        </ul>
+        <div style="margin-top:14px; padding:10px 14px; background:rgba(248,113,113,0.08); border-radius:7px;">
+          <p style="font-size:12px; color:var(--red);">门槛高、成本高、周期长</p>
+        </div>
+      </div>
+      <div style="display:flex; align-items:center; font-size:24px; color:var(--text-dim);">&rarr;</div>
+      <div class="card glow-accent" style="flex:1; border-color:var(--accent);">
+        <h3 style="color:var(--accent); font-size:16px;">&#x2705; Apollo 模式</h3>
+        <ul class="bullet-list" style="margin-top:10px;">
+          <li><strong>任何人都能做游戏</strong> <span class="dim">&mdash; 自然语言 + 点选</span></li>
+          <li><strong>AI 视频模型 = 渲染器</strong> <span class="dim">&mdash; 零渲染代码</span></li>
+          <li><strong>语义描述 = 美术</strong> <span class="dim">&mdash; 描述场景，AI 生成</span></li>
+          <li><strong>AI 是核心引擎</strong> <span class="dim">&mdash; LLM 设计 + 视频模型渲染</span></li>
+        </ul>
+        <div style="margin-top:14px; padding:10px 14px; background:rgba(108,140,255,0.08); border-radius:7px;">
+          <p style="font-size:12px; color:var(--accent);">零门槛、近零成本、画质随 AI 自动升级</p>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══ SLIDE 3: USER EXPERIENCE — THE CREATION FLOW ═══ -->
+<div class="slide" data-slide="2">
+  <div class="full-w" style="display:flex;flex-direction:column;align-items:center;">
+    <span class="tag" style="background:rgba(251,191,36,0.15); color:var(--yellow);">User Experience</span>
+    <h2 style="text-align:center;">5 分钟，从想法到可玩游戏</h2>
+    <p style="text-align:center; margin-bottom:20px; max-width:680px; font-size:14px;">
+      用户不需要懂代码。<strong>Component Agent</strong> 通过对话引导用户选择、配置每个游戏能力模块。
+    </p>
+
+    <div class="row" style="gap:24px; align-items:flex-start;">
+      <!-- Chat side -->
+      <div style="flex:1; display:flex; flex-direction:column; gap:12px;">
+        <div class="chat-mock">
+          <div class="chat-header">&#x1F916; Apollo Game Designer</div>
+          <div class="chat-body">
+            <div class="chat-msg user">我想做一个回合制 RPG 战斗游戏，勇士大战恶龙</div>
+            <div class="chat-msg ai">
+              好的！我来帮你组装。你的游戏需要这些能力模块：
+              <div class="choices">
+                <span class="choice-btn selected">&#x2705; 生命值</span>
+                <span class="choice-btn selected">&#x2705; 伤害</span>
+                <span class="choice-btn selected">&#x2705; 回合制</span>
+                <span class="choice-btn">&#x2B1C; 护盾</span>
+                <span class="choice-btn">&#x2B1C; 背包</span>
+              </div>
+            </div>
+            <div class="chat-msg ai">
+              <strong style="color:var(--green);">&#x1F49A; 生命值模块</strong> 需要配置：<br>
+              勇士最大生命值？
+              <div class="choices">
+                <span class="choice-btn">50</span>
+                <span class="choice-btn selected">&#x2705; 100</span>
+                <span class="choice-btn">200</span>
+                <span class="choice-btn">自定义...</span>
+              </div>
+            </div>
+            <div class="chat-msg ai">
+              恶龙最大生命值？
+              <div class="choices">
+                <span class="choice-btn">100</span>
+                <span class="choice-btn">300</span>
+                <span class="choice-btn selected">&#x2705; 500</span>
+              </div>
+            </div>
+          </div>
+          <div class="chat-input">
+            <input type="text" placeholder="描述你想要的游戏..." disabled>
+            <div class="send-btn">&#x2191;</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Agent cards + flow -->
+      <div style="flex:0.8; display:flex; flex-direction:column; gap:14px;">
+        <div style="font-size:11px; font-weight:700; color:var(--text-dim); letter-spacing:0.8px; text-transform:uppercase;">Component Agents &mdash; 逐个配置</div>
+        <div class="agent-cards" style="flex-wrap:wrap; max-width:100%;">
+          <div class="agent-card" style="border-color:var(--green);">
+            <div class="agent-icon">&#x1F49A;</div>
+            <div class="agent-name">生命值</div>
+            <div class="agent-status" style="color:var(--green);">&#x2713; 已完成</div>
+          </div>
+          <div class="agent-card active">
+            <div class="agent-icon">&#x1F4A5;</div>
+            <div class="agent-name">伤害</div>
+            <div class="agent-status">&#x25CF; 配置中...</div>
+          </div>
+          <div class="agent-card pending">
+            <div class="agent-icon">&#x1F504;</div>
+            <div class="agent-name">回合制</div>
+            <div class="agent-status">等待中</div>
+          </div>
+        </div>
+
+        <div class="card" style="padding:14px 16px;">
+          <h3 style="font-size:14px; color:var(--yellow);">Component Agent 是什么？</h3>
+          <p style="font-size:12px;">每个 Capability 背后有一个 <strong>Agent</strong>。它知道这个能力需要哪些参数，通过<strong>选择题、滑块、开关</strong>引导用户填完所有配置。</p>
+          <p style="font-size:12px; margin-top:6px;">用户不需要知道"DamageEvent"是什么。Agent 会问：<span style="color:var(--text);">"勇士每次攻击造成多少伤害？"</span></p>
+        </div>
+
+        <div class="card" style="padding:14px 16px; border-color:var(--accent);">
+          <h3 style="font-size:14px; color:var(--accent);">交互方式</h3>
+          <div style="display:flex; gap:8px; flex-wrap:wrap; margin-top:4px;">
+            <span class="param-chip on">&#x1F5B1; Click 选择</span>
+            <span class="param-chip on">&#x2611; Checkbox</span>
+            <span class="param-chip on">&#x1F39A; 滑块</span>
+            <span class="param-chip on">&#x1F504; 开关</span>
+            <span class="param-chip on">&#x1F4AC; 选择题</span>
+          </div>
+          <p style="font-size:11px; margin-top:6px;">零打字。全部通过点击完成。</p>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══ SLIDE 4: VISUAL EDITOR ═══ -->
+<div class="slide" data-slide="3">
+  <div class="full-w" style="display:flex;flex-direction:column;align-items:center;">
+    <span class="tag" style="background:rgba(251,191,36,0.15); color:var(--yellow);">Visual Editor</span>
+    <h2 style="text-align:center;">可视化游戏编辑器</h2>
+    <p style="text-align:center; margin-bottom:16px; max-width:680px; font-size:13px;">
+      Component Agent 对话配置完成后，进入图形化编辑器。拖拽连线、调参数、实时预览。
+    </p>
+
+    <div class="editor-mock">
+      <div class="editor-toolbar">
+        <div class="dot" style="background:#ff5f57;"></div>
+        <div class="dot" style="background:#ffbd2e;"></div>
+        <div class="dot" style="background:#28c940;"></div>
+        <span style="margin-left:8px; color:var(--text-dim);">Apollo Editor &mdash; 勇士大战恶龙.apollo</span>
+        <div style="flex:1;"></div>
+        <span style="padding:3px 10px; background:var(--surface); border-radius:5px; font-size:10px; color:var(--green); border:1px solid rgba(52,211,153,0.3);">&#x25B6; Preview</span>
+        <span style="padding:3px 10px; background:var(--surface); border-radius:5px; font-size:10px; color:var(--accent); border:1px solid rgba(108,140,255,0.3);">&#x1F4BE; Export</span>
+      </div>
+      <div class="editor-body">
+        <!-- Left: Component palette -->
+        <div class="editor-sidebar">
+          <div class="editor-sidebar-title">Capabilities</div>
+          <div class="editor-cap-item selected"><div class="check">&#x2713;</div>&#x1F49A; 生命值</div>
+          <div class="editor-cap-item selected"><div class="check">&#x2713;</div>&#x1F4A5; 伤害</div>
+          <div class="editor-cap-item selected"><div class="check">&#x2713;</div>&#x2694;&#xFE0F; 攻击输入</div>
+          <div class="editor-cap-item selected"><div class="check">&#x2713;</div>&#x1F3AC; 场景导演</div>
+          <div class="editor-cap-item"><div class="check"></div>&#x1F6E1; 护盾</div>
+          <div class="editor-cap-item"><div class="check"></div>&#x1F48A; 治疗</div>
+          <div class="editor-cap-item"><div class="check"></div>&#x1F4E6; 背包</div>
+          <div class="editor-cap-item"><div class="check"></div>&#x2728; 技能树</div>
+          <div style="margin-top:auto; padding:8px; background:rgba(251,191,36,0.06); border:1px dashed var(--yellow); border-radius:7px; font-size:10px; color:var(--yellow); text-align:center;">
+            + AI 生成新 Capability
+          </div>
+        </div>
+
+        <!-- Center: Node canvas -->
+        <div class="editor-canvas">
+          <!-- SVG edges -->
+          <svg style="position:absolute; inset:0; width:100%; height:100%; pointer-events:none;">
+            <defs><marker id="ah" markerWidth="6" markerHeight="6" refX="5" refY="3" orient="auto"><path d="M0,0 L6,3 L0,6 Z" fill="#3a3e50"/></marker></defs>
+            <line x1="170" y1="55" x2="290" y2="55" stroke="#3a3e50" stroke-width="2" marker-end="url(#ah)"/>
+            <line x1="170" y1="55" x2="290" y2="150" stroke="#3a3e50" stroke-width="2" marker-end="url(#ah)"/>
+            <line x1="390" y1="55" x2="290" y2="150" stroke="#3a3e50" stroke-width="2" stroke-dasharray="4,3" marker-end="url(#ah)"/>
+            <line x1="390" y1="55" x2="500" y2="55" stroke="#3a3e50" stroke-width="2" marker-end="url(#ah)"/>
+            <line x1="390" y1="150" x2="500" y2="150" stroke="#3a3e50" stroke-width="2" marker-end="url(#ah)"/>
+            <line x1="500" y1="70" x2="500" y2="135" stroke="#3a3e50" stroke-width="2" stroke-dasharray="4,3"/>
+            <line x1="500" y1="165" x2="500" y2="230" stroke="#3a3e50" stroke-width="2" marker-end="url(#ah)"/>
+          </svg>
+
+          <!-- Nodes -->
+          <div class="editor-node n-input" style="left:40px; top:35px;">
+            <div class="node-icon">&#x2694;&#xFE0F;</div>
+            <div class="node-label">攻击输入</div>
+            <div class="node-port out" style="background:var(--cyan);"></div>
+          </div>
+          <div class="editor-node n-logic" style="left:215px; top:35px;">
+            <div class="node-icon">&#x1F4A5;</div>
+            <div class="node-label">伤害系统</div>
+            <div class="node-port in" style="background:var(--accent);"></div>
+            <div class="node-port out" style="background:var(--accent);"></div>
+          </div>
+          <div class="editor-node n-health" style="left:215px; top:130px;">
+            <div class="node-icon">&#x1F49A;</div>
+            <div class="node-label">生命值</div>
+            <div class="node-port in" style="background:var(--green);"></div>
+            <div class="node-port out" style="background:var(--green);"></div>
+          </div>
+          <div class="editor-node n-dir" style="left:430px; top:35px;">
+            <div class="node-icon">&#x1F3AC;</div>
+            <div class="node-label">场景导演</div>
+            <div class="node-port in" style="background:var(--orange);"></div>
+          </div>
+          <div class="editor-node n-dir" style="left:430px; top:130px;">
+            <div class="node-icon">&#x1F3A8;</div>
+            <div class="node-label">UI 叠加</div>
+            <div class="node-port in" style="background:var(--pink);"></div>
+          </div>
+          <div class="editor-node n-dir" style="left:430px; top:216px;">
+            <div class="node-icon">&#x1F4FA;</div>
+            <div class="node-label" style="color:var(--orange);">视频输出</div>
+          </div>
+          <!-- Dashed new node -->
+          <div class="editor-node n-new" style="left:40px; top:200px;">
+            <div class="node-icon">&#x1F6E1;</div>
+            <div class="node-label">护盾 (拖入)</div>
+          </div>
+        </div>
+
+        <!-- Right: Parameters -->
+        <div class="editor-params">
+          <div class="editor-params-title">&#x1F4A5; 伤害系统 - 参数</div>
+          <div class="param-group">
+            <div class="param-row"><span class="param-label">基础伤害</span><span class="param-value">15</span></div>
+            <div class="param-slider"><div class="fill" style="width:30%; background:var(--accent); border-radius:2px;"></div><div class="thumb" style="left:28%; background:var(--accent);"></div></div>
+          </div>
+          <div class="param-group">
+            <div class="param-row"><span class="param-label">伤害类型</span></div>
+            <div class="param-toggle">
+              <span class="param-chip on">物理</span>
+              <span class="param-chip on">魔法</span>
+              <span class="param-chip">火焰</span>
+            </div>
+          </div>
+          <div class="param-group">
+            <div class="param-row"><span class="param-label">暴击率</span><span class="param-value">10%</span></div>
+            <div class="param-slider"><div class="fill" style="width:10%; background:var(--orange); border-radius:2px;"></div><div class="thumb" style="left:8%; background:var(--orange);"></div></div>
+          </div>
+          <div style="border-top:1px solid var(--border); padding-top:10px; margin-top:4px;">
+            <div class="editor-params-title">&#x1F49A; 生命值 - 参数</div>
+            <div class="param-group">
+              <div class="param-row"><span class="param-label">勇士 HP</span><span class="param-value">100</span></div>
+              <div class="param-slider"><div class="fill" style="width:20%; background:var(--green); border-radius:2px;"></div><div class="thumb" style="left:18%; background:var(--green);"></div></div>
+            </div>
+            <div class="param-group">
+              <div class="param-row"><span class="param-label">恶龙 HP</span><span class="param-value">500</span></div>
+              <div class="param-slider"><div class="fill" style="width:100%; background:var(--green); border-radius:2px;"></div><div class="thumb" style="left:96%; background:var(--green);"></div></div>
+            </div>
+            <div class="param-group">
+              <div class="param-row"><span class="param-label">死亡阈值</span></div>
+              <div class="param-toggle">
+                <span class="param-chip on">0 (正常)</span>
+                <span class="param-chip">-10 (韧性)</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══ SLIDE 5: FIVE-LAYER ARCHITECTURE ═══ -->
+<div class="slide" data-slide="4">
+  <div class="full-w" style="display:flex;flex-direction:column;align-items:center;">
+    <span class="tag">Architecture</span>
+    <h2 style="text-align:center;">五层架构全景</h2>
+
+    <div class="arch-diagram">
+      <!-- Editor Layer -->
+      <div class="arch-layer" style="border-color:var(--yellow);">
+        <span class="layer-label" style="color:var(--yellow);">Editor &mdash; 游戏编辑器</span>
+        <div style="font-size:12px; color:var(--yellow); font-weight:600; margin-bottom:4px;">面向普通用户，零编程门槛</div>
+        <div class="layer-content">
+          <div class="layer-box"><span class="icon">&#x1F916;</span> Component Agent<br><span style="font-size:9px;color:var(--text-dim);">AI 对话引导配置</span></div>
+          <div class="layer-box"><span class="icon">&#x1F5A7;</span> Visual Editor<br><span style="font-size:9px;color:var(--text-dim);">节点拖拽连线</span></div>
+          <div class="layer-box"><span class="icon">&#x1F39A;</span> Param Tweakers<br><span style="font-size:9px;color:var(--text-dim);">滑块/开关/选择</span></div>
+          <div class="layer-box"><span class="icon">&#x1F4CB;</span> Assembly Output<br><span style="font-size:9px;color:var(--text-dim);">生成蓝图 JSON</span></div>
+        </div>
+      </div>
+
+      <div class="arch-arrow" style="height:28px;">
+        <div class="arrow-labels"><span class="arrow-label" style="color:var(--yellow);">&#x2193; produces Assembly Blueprint</span></div>
+      </div>
+
+      <!-- Presentation Layer -->
+      <div class="arch-layer" style="border-color:var(--pink);">
+        <span class="layer-label" style="color:var(--pink);">Presentation &mdash; UI + Video</span>
+        <div class="layer-content">
+          <div class="layer-box"><span style="font-size:9px;font-weight:600;color:var(--pink);">UI Overlay</span> React DOM &mdash; 血条/按钮/HUD</div>
+          <div class="layer-box"><span style="font-size:9px;font-weight:600;color:var(--orange);">Video Canvas</span> AI 视频流 &mdash; 全屏画面</div>
+        </div>
+      </div>
+
+      <div class="arch-arrow" style="height:28px;">
+        <div class="arrow-labels">
+          <span class="arrow-label" style="color:var(--pink);">&#x2191; dispatch(Intent)</span>
+          <span class="arrow-label" style="color:var(--green);">&#x2193; read state</span>
+        </div>
+      </div>
+
+      <!-- Director Layer -->
+      <div class="arch-layer" style="border-color:var(--orange);">
+        <span class="layer-label" style="color:var(--orange);">Director &mdash; 场景导演</span>
+        <div class="layer-content">
+          <div class="layer-box">SceneRegion <span style="font-size:9px;color:var(--text-dim);">屏幕区域</span></div>
+          <div class="layer-box">SceneContent <span style="font-size:9px;color:var(--text-dim);">内容+参考图</span></div>
+          <div class="layer-box">SceneRelation <span style="font-size:9px;color:var(--text-dim);">区域间关系</span></div>
+          <div class="layer-box">CameraDirective <span style="font-size:9px;color:var(--text-dim);">镜头控制</span></div>
+        </div>
+      </div>
+
+      <div class="arch-arrow" style="height:28px;">
+        <div class="arrow-labels"><span class="arrow-label" style="color:var(--green);">&#x1F4D6; Scene Semantic Protocol</span></div>
+      </div>
+
+      <!-- Engine Layer -->
+      <div class="arch-layer glow-accent" style="border-color:var(--accent);">
+        <span class="layer-label" style="color:var(--accent);">Engine &mdash; 纯 TS, 零依赖</span>
+        <div class="layer-content">
+          <div class="layer-box highlight">World <span style="font-size:9px;color:var(--text-dim);">ECS 存储</span></div>
+          <div class="layer-box highlight">Systems <span style="font-size:9px;color:var(--text-dim);">拓扑排序</span></div>
+          <div class="layer-box">Capabilities <span style="font-size:9px;color:var(--text-dim);">可插拔逻辑</span></div>
+          <div class="layer-box">Manifests <span style="font-size:9px;color:var(--text-dim);">AI 合约</span></div>
+        </div>
+      </div>
+
+      <div class="arch-arrow" style="height:28px;">
+        <div class="arrow-labels"><span class="arrow-label" style="color:var(--green);">&#x1F4D6; Component Vocabulary</span></div>
+      </div>
+
+      <!-- Protocol Layer -->
+      <div class="arch-layer glow-green" style="border-color:var(--green);">
+        <span class="layer-label" style="color:var(--green);">Protocol &mdash; 语义合约</span>
+        <div class="layer-content">
+          <div class="layer-box"><span style="font-size:9px;font-weight:600;color:var(--green);">Resource</span> Health, Mana</div>
+          <div class="layer-box"><span style="font-size:9px;font-weight:600;color:var(--orange);">Event</span> DamageEvent</div>
+          <div class="layer-box"><span style="font-size:9px;font-weight:600;color:var(--accent);">Intent</span> AttackIntent</div>
+          <div class="layer-box"><span style="font-size:9px;font-weight:600;color:var(--yellow);">Scene</span> SceneRegion</div>
+          <div class="layer-box"><span style="font-size:9px;font-weight:600;color:var(--pink);">Marker</span> Dead</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══ SLIDE 6: VIDEO AS RENDERER ═══ -->
+<div class="slide" data-slide="5">
+  <div class="full-w" style="display:flex;flex-direction:column;align-items:center;">
+    <span class="tag" style="background:rgba(251,146,60,0.15); color:var(--orange);">Core Innovation</span>
+    <h2 style="text-align:center;">画面层 = AI 视频流 + UI 叠加</h2>
+    <div class="row" style="gap:28px; align-items:center;">
+      <div style="flex:1.2;">
+        <div class="screen-mock">
+          <div class="video-bg"><div class="label">AI Video Stream</div></div>
+          <div class="region" style="left:8%; top:15%; width:34%; height:52%; border-color:var(--cyan); color:var(--cyan);">
+            <div style="text-align:center;">SceneRegion<br>"hero"<br><span style="font-size:8px;opacity:0.7;">参考图 + 动作</span></div>
+          </div>
+          <div class="region" style="right:8%; top:10%; width:36%; height:58%; border-color:var(--orange); color:var(--orange);">
+            <div style="text-align:center;">SceneRegion<br>"dragon"<br><span style="font-size:8px;opacity:0.7;">参考图 + 动作</span></div>
+          </div>
+          <div style="position:absolute; top:42%; left:39%; width:18%; border-top:2px dashed var(--yellow); opacity:0.7;"></div>
+          <div style="position:absolute; top:38%; left:42%; font-size:8px; color:var(--yellow); font-weight:700;">SceneRelation: "attacks"</div>
+          <div class="ui-element" style="left:5%; top:76%; color:var(--green);">
+            <div style="width:110px; height:7px; background:#333; border-radius:3px; margin-top:2px;">
+              <div style="width:72%; height:100%; background:var(--green); border-radius:3px;"></div>
+            </div>
+            <span style="font-size:8px;">HP 72/100</span>
+          </div>
+          <div class="ui-element" style="right:5%; bottom:7%; color:var(--pink);">&#x2694;&#xFE0F; Attack &emsp; &#x1F6E1;&#xFE0F; Defend</div>
+        </div>
+      </div>
+      <div style="flex:1; display:flex; flex-direction:column; gap:12px;">
+        <div class="card" style="padding:14px 16px;">
+          <h3 style="font-size:14px; color:var(--orange);">&#x1F3AC; Video Layer (底层)</h3>
+          <p style="font-size:12px;">AI 视频模型生成的画面流。Engine 通过 SceneDirective 语义指令控制。<strong>不写一行渲染代码。</strong></p>
+        </div>
+        <div class="card" style="padding:14px 16px;">
+          <h3 style="font-size:14px; color:var(--cyan);">&#x1F4CD; Scene Regions (语义区域)</h3>
+          <p style="font-size:12px;">屏幕划分为语义区域。每区域有<strong>参考图 + 动作描述 + 风格指令</strong>。区域间可建立语义关系（攻击、治疗、连接）。</p>
+        </div>
+        <div class="card" style="padding:14px 16px;">
+          <h3 style="font-size:14px; color:var(--pink);">&#x1F3AE; UI Overlay (顶层)</h3>
+          <p style="font-size:12px;">React DOM 叠加在视频之上。血条、按钮、菜单 &mdash; 所有<strong>可交互</strong>、<strong>确定性</strong>的元素。</p>
+        </div>
+        <div class="card" style="padding:14px 16px; border-color:var(--green);">
+          <h3 style="font-size:14px; color:var(--green);">&#x1F504; 未来自动升级</h3>
+          <p style="font-size:12px;">视频模型进化 = 画质自动提升。同一套 SceneDirective，2026 和 2028 生成的画面可以完全不同。</p>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══ SLIDE 7: DIRECTOR PROTOCOL ═══ -->
+<div class="slide" data-slide="6">
+  <div class="full-w" style="display:flex;flex-direction:column;align-items:center;">
+    <span class="tag" style="background:rgba(251,146,60,0.15); color:var(--orange);">Director Protocol</span>
+    <h2 style="text-align:center;">场景导演 &mdash; 语义到视频的桥梁</h2>
+    <div class="row" style="gap:18px;">
+      <div class="code-block" style="flex:1.2;">
+<span class="cmt">// Director 输出 &rarr; 视频模型的输入</span>
+{
+  <span class="str">"scene"</span>: {
+    <span class="str">"style"</span>: <span class="str">"dark fantasy, cinematic"</span>,
+    <span class="str">"camera"</span>: <span class="str">"side-view, slight low-angle"</span>,
+    <span class="str">"environment"</span>: <span class="str">"ancient stone arena, torchlit"</span>
+  },
+  <span class="str">"regions"</span>: [
+    {
+      <span class="str">"id"</span>: <span class="str">"hero"</span>,
+      <span class="str">"bounds"</span>: [<span class="num">0.05</span>, <span class="num">0.15</span>, <span class="num">0.40</span>, <span class="num">0.70</span>],
+      <span class="str">"content"</span>: <span class="str">"armored warrior"</span>,
+      <span class="str">"reference"</span>: <span class="str">"ref://hero-001.png"</span>,
+      <span class="str">"motion"</span>: <span class="str">"raising sword to strike"</span>
+    },
+    {
+      <span class="str">"id"</span>: <span class="str">"boss"</span>,
+      <span class="str">"bounds"</span>: [<span class="num">0.55</span>, <span class="num">0.05</span>, <span class="num">0.95</span>, <span class="num">0.75</span>],
+      <span class="str">"content"</span>: <span class="str">"massive red dragon"</span>,
+      <span class="str">"reference"</span>: <span class="str">"ref://dragon-001.png"</span>,
+      <span class="str">"motion"</span>: <span class="str">"recoiling from hit"</span>
+    }
+  ],
+  <span class="str">"relations"</span>: [
+    { <span class="str">"from"</span>: <span class="str">"hero"</span>, <span class="str">"to"</span>: <span class="str">"boss"</span>,
+      <span class="str">"type"</span>: <span class="str">"attacks"</span>,
+      <span class="str">"visual"</span>: <span class="str">"sword slash energy arc"</span> }
+  ]
+}
+      </div>
+      <div style="flex:0.7; display:flex; flex-direction:column; gap:10px;">
+        <div class="card" style="padding:12px 16px; border-color:var(--cyan);">
+          <h3 style="font-size:13px; color:var(--cyan);">&#x1F4CD; SceneRegion</h3>
+          <p style="font-size:11px;">归一化坐标定义屏幕区域。视频模型知道"这里应该出现什么"。</p>
+        </div>
+        <div class="card" style="padding:12px 16px; border-color:var(--orange);">
+          <h3 style="font-size:13px; color:var(--orange);">&#x1F3AC; SceneContent</h3>
+          <p style="font-size:11px;">描述 + 参考图 + 动作。参考图保证角色一致性。动作描述当前状态。</p>
+        </div>
+        <div class="card" style="padding:12px 16px; border-color:var(--yellow);">
+          <h3 style="font-size:13px; color:var(--yellow);">&#x1F517; SceneRelation</h3>
+          <p style="font-size:11px;">区域间语义关系 &rarr; 视频模型生成跨区域视觉效果（光束、攻击弧线...）。</p>
+        </div>
+        <div class="card" style="padding:12px 16px; border-color:var(--accent2);">
+          <h3 style="font-size:13px; color:var(--accent2);">&#x1F3A5; CameraDirective</h3>
+          <p style="font-size:11px;">镜头语言：俯视/侧视/特写，平移/缩放/切换。电影级叙事控制。</p>
+        </div>
+        <div class="card" style="padding:12px 16px; border-color:var(--green);">
+          <h3 style="font-size:13px; color:var(--green);">&#x1F504; Temporal Coherence</h3>
+          <p style="font-size:11px;">参考图 + 上帧输出 = 时间连续性。角色不会帧间突变。</p>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══ SLIDE 8: FULL PIPELINE ═══ -->
+<div class="slide" data-slide="7">
+  <div class="full-w" style="display:flex;flex-direction:column;align-items:center;">
+    <span class="tag">Full Pipeline</span>
+    <h2 style="text-align:center;">完整数据流：编辑 &rarr; 逻辑 &rarr; 画面</h2>
+    <div class="pipeline">
+      <div class="pipe-node input"><h4>&#x1F446; UI Click</h4><p>React 捕获</p><span class="comp-tag">AttackIntent</span></div>
+      <div class="pipe-arrow"><span class="label">dispatch</span></div>
+      <div class="pipe-node logic"><h4>&#x2699;&#xFE0F; DamageSystem</h4><p>Intent&rarr;Event</p><span class="comp-tag">DamageEvent</span></div>
+      <div class="pipe-arrow"><span class="label">writes</span></div>
+      <div class="pipe-node logic2"><h4>&#x1F49A; HealthSystem</h4><p>Event&rarr;State</p><span class="comp-tag">Health &#x2193;</span></div>
+      <div class="pipe-arrow"><span class="label">reads</span></div>
+      <div class="pipe-node video"><h4>&#x1F3AC; Director</h4><p>State&rarr;Scene</p><span class="comp-tag">SceneDirective</span></div>
+      <div class="pipe-arrow"><span class="label">prompt</span></div>
+      <div class="pipe-node render"><h4>&#x1F3A8; Output</h4><p>Video+UI</p><span class="comp-tag">&#x1F4FA;+HUD</span></div>
+    </div>
+    <div class="row" style="margin-top:12px; gap:12px;">
+      <div class="card" style="flex:1; padding:14px 16px;">
+        <h3 style="font-size:13px; color:var(--accent);">&#x2699;&#xFE0F; Engine Systems</h3>
+        <p style="font-size:11px;">纯逻辑。AttackIntent &rarr; DamageEvent &rarr; Health -= 10。<strong>不知道画面长什么样。</strong></p>
+      </div>
+      <div class="card" style="flex:1; padding:14px 16px;">
+        <h3 style="font-size:13px; color:var(--orange);">&#x1F3AC; Director System</h3>
+        <p style="font-size:11px;">读逻辑状态 &rarr; 写 SceneDirective。"HP 下降 &rarr; hero motion = recoiling"。<strong>也是一个 ECS Capability。</strong></p>
+      </div>
+      <div class="card" style="flex:1; padding:14px 16px;">
+        <h3 style="font-size:13px; color:var(--pink);">&#x1F3A8; Presenter</h3>
+        <p style="font-size:11px;">读 SceneDirective &rarr; 调视频模型 API。读 Health &rarr; React 叠加层。<strong>两层输出合成最终画面。</strong></p>
+      </div>
+    </div>
+    <div class="card" style="margin-top:14px; max-width:700px; padding:12px 18px; border-color:var(--yellow);">
+      <p style="font-size:13px; text-align:center;">
+        <strong style="color:var(--yellow);">&#x1F4A1;</strong> Director 可替换 &mdash; 不同 Director 适配不同视频模型（Sora / Kling / Runway）
+      </p>
+    </div>
+  </div>
+</div>
+
+<!-- ═══ SLIDE 9: CAPABILITY SYSTEM ═══ -->
+<div class="slide" data-slide="8">
+  <div class="full-w" style="display:flex;flex-direction:column;align-items:center;">
+    <span class="tag">Capability System</span>
+    <h2 style="text-align:center;">能力单元 &mdash; 拓扑排序的自动协作</h2>
+    <p style="text-align:center; margin-bottom:14px; max-width:680px; font-size:13px;">
+      每个 System 声明 <strong style="color:var(--accent);">reads</strong> / <strong style="color:var(--orange);">writes</strong> / <strong style="color:var(--pink);">consumes</strong>。引擎自动推导执行顺序。
+    </p>
+    <div class="row" style="gap:10px;">
+      <div class="cap-card">
+        <div class="cap-header" style="background:rgba(34,211,238,0.06);"><span>&#x2694;&#xFE0F;</span><h3 style="color:var(--cyan);">attack-input</h3></div>
+        <div class="cap-body">
+          <div class="cap-section"><div class="cap-section-title">Provides</div><div class="cap-tags"><span class="cap-tag provides">AttackIntent</span></div></div>
+        </div>
+      </div>
+      <div class="cap-card">
+        <div class="cap-header" style="background:rgba(108,140,255,0.06);"><span>&#x1F4A5;</span><h3 style="color:var(--accent);">damage</h3></div>
+        <div class="cap-body">
+          <div class="cap-section"><div class="cap-section-title">Reads</div><div class="cap-tags"><span class="cap-tag reads">AttackIntent</span></div></div>
+          <div class="cap-section"><div class="cap-section-title">Writes</div><div class="cap-tags"><span class="cap-tag writes">DamageEvent</span></div></div>
+          <div class="cap-section"><div class="cap-section-title">Consumes</div><div class="cap-tags"><span class="cap-tag consumes">AttackIntent</span></div></div>
+        </div>
+      </div>
+      <div class="cap-card">
+        <div class="cap-header" style="background:rgba(52,211,153,0.06);"><span>&#x1F49A;</span><h3 style="color:var(--green);">health</h3></div>
+        <div class="cap-body">
+          <div class="cap-section"><div class="cap-section-title">Reads</div><div class="cap-tags"><span class="cap-tag reads">DamageEvent</span><span class="cap-tag reads">HealEvent</span></div></div>
+          <div class="cap-section"><div class="cap-section-title">Writes</div><div class="cap-tags"><span class="cap-tag writes">Health</span></div></div>
+          <div class="cap-section"><div class="cap-section-title">Consumes</div><div class="cap-tags"><span class="cap-tag consumes">DamageEvent</span></div></div>
+        </div>
+      </div>
+      <div class="cap-card" style="border-color:var(--orange);">
+        <div class="cap-header" style="background:rgba(251,146,60,0.06);"><span>&#x1F3AC;</span><h3 style="color:var(--orange);">director</h3></div>
+        <div class="cap-body">
+          <div class="cap-section"><div class="cap-section-title">Reads</div><div class="cap-tags"><span class="cap-tag reads">Health</span><span class="cap-tag reads">Dead</span></div></div>
+          <div class="cap-section"><div class="cap-section-title">Writes</div><div class="cap-tags"><span class="cap-tag writes">SceneContent</span><span class="cap-tag writes">SceneRelation</span></div></div>
+        </div>
+      </div>
+    </div>
+    <div class="card" style="margin-top:14px; max-width:780px; padding:12px 18px; border-color:var(--green);">
+      <p style="font-size:13px; text-align:center;">
+        <strong style="color:var(--green);">&#x2705; 自动排序:</strong>
+        <code>attack-input</code> &rarr; <code>damage</code> &rarr; <code>health</code> &rarr; <code>director</code><br>
+        新增 ShieldSystem（reads DamageEvent, writes DamageEvent），自动插入 damage 和 health 之间。<strong>零改动。</strong>
+      </p>
+    </div>
+  </div>
+</div>
+
+<!-- ═══ SLIDE 10: COMPOSABILITY ═══ -->
+<div class="slide" data-slide="9">
+  <div class="full-w" style="display:flex;flex-direction:column;align-items:center;">
+    <span class="tag" style="background:rgba(251,191,36,0.15); color:var(--yellow);">Composability</span>
+    <h2 style="text-align:center;">零改动加能力 &mdash; 编辑器里拖一下就行</h2>
+    <div style="width:100%; max-width:920px;">
+      <div class="row" style="gap:14px; margin-bottom:14px;">
+        <div class="card" style="flex:1; padding:16px 18px; border-style:dashed;">
+          <h3 style="font-size:14px; color:var(--text-dim);">&#x1F4E6; 已有 4 个 Capability</h3>
+          <div class="compose-entity" style="margin-top:6px;"><span class="eid">caps:</span> [<span class="cname">attack</span>, <span class="cname">damage</span>, <span class="cname">health</span>, <span class="cname">director</span>]</div>
+        </div>
+        <div style="display:flex;align-items:center;font-size:24px;color:var(--accent);">+</div>
+        <div class="card" style="flex:1; padding:16px 18px; border-color:var(--yellow);">
+          <h3 style="font-size:14px; color:var(--yellow);">&#x2728; 编辑器里勾选"护盾"</h3>
+          <div class="compose-entity" style="margin-top:6px; border:1px solid rgba(251,191,36,0.3);">
+            <span class="eid">shield:</span> reads [DamageEvent, Shield]<br>
+            writes [DamageEvent, Shield]<br>
+            <span style="font-size:10px;color:var(--text-dim);">拦截 DamageEvent，吸收一部分</span>
+          </div>
+        </div>
+      </div>
+      <div class="card glow-green" style="padding:16px 20px; border-color:var(--green);">
+        <h3 style="font-size:14px; color:var(--green);">&#x2705; 结果</h3>
+        <div class="row" style="gap:12px; margin-top:8px;">
+          <div class="compose-entity" style="flex:1;">
+            <span class="eid">自动排序:</span> attack &rarr; damage &rarr; <strong style="color:var(--yellow);">shield</strong> &rarr; health &rarr; director
+          </div>
+          <div class="compose-entity" style="flex:1;">
+            <span class="eid">改动:</span> 新文件 1 个 / 改已有 0 个 / 编辑器里勾一个 checkbox
+          </div>
+          <div class="compose-entity" style="flex:1;">
+            <span class="eid">Director 自动适应:</span> 看到 Shield &rarr; motion = <span class="str">"shield blocking"</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══ SLIDE 11: DUAL AI ═══ -->
+<div class="slide" data-slide="10">
+  <div class="full-w" style="display:flex;flex-direction:column;align-items:center;">
+    <span class="tag" style="background:rgba(167,139,250,0.15); color:var(--accent2);">Dual AI</span>
+    <h2 style="text-align:center;">三重 AI 架构</h2>
+    <div class="row" style="gap:16px; margin-top:4px;">
+      <div class="card glow-accent" style="flex:1; padding:18px 20px; border-color:var(--yellow);">
+        <div style="font-size:32px; margin-bottom:10px;">&#x1F916;</div>
+        <h3 style="font-size:16px; color:var(--yellow);">Component Agent</h3>
+        <h3 style="font-size:13px; color:var(--text-dim); font-weight:400; margin-top:-4px;">= 游戏策划助手</h3>
+        <p style="font-size:13px; margin-top:8px;">理解用户自然语言，引导选择 Capability，通过问答填参数。<br><br><strong>输出：Assembly 蓝图</strong></p>
+        <div style="margin-top:10px; padding:8px 12px; background:rgba(251,191,36,0.06); border-radius:6px;">
+          <p style="font-size:11px; color:var(--yellow);">"你的游戏需要战斗吗？" &rarr; &#x2705;</p>
+        </div>
+      </div>
+      <div class="card glow-accent" style="flex:1; padding:18px 20px; border-color:var(--accent2);">
+        <div style="font-size:32px; margin-bottom:10px;">&#x1F9E0;</div>
+        <h3 style="font-size:16px; color:var(--accent2);">LLM Engine</h3>
+        <h3 style="font-size:13px; color:var(--text-dim); font-weight:400; margin-top:-4px;">= 游戏程序员</h3>
+        <p style="font-size:13px; margin-top:8px;">当现有 Capability 不够时，LLM 读 Manifest 合约，自动生成新 Capability 代码。<br><br><strong>输出：新 Capability TS 文件</strong></p>
+        <div style="margin-top:10px; padding:8px 12px; background:rgba(167,139,250,0.06); border-radius:6px;">
+          <p style="font-size:11px; color:var(--accent2);">reads: [X], writes: [Y] &rarr; code</p>
+        </div>
+      </div>
+      <div class="card glow-pink" style="flex:1; padding:18px 20px; border-color:var(--orange);">
+        <div style="font-size:32px; margin-bottom:10px;">&#x1F3AC;</div>
+        <h3 style="font-size:16px; color:var(--orange);">Video Model</h3>
+        <h3 style="font-size:13px; color:var(--text-dim); font-weight:400; margin-top:-4px;">= 渲染引擎</h3>
+        <p style="font-size:13px; margin-top:8px;">Director 把 ECS 状态翻译为场景描述，视频模型生成连续画面。<br><br><strong>输出：实时视频流</strong></p>
+        <div style="margin-top:10px; padding:8px 12px; background:rgba(251,146,60,0.06); border-radius:6px;">
+          <p style="font-size:11px; color:var(--orange);">SceneDirective &rarr; &#x1F4FA; pixels</p>
+        </div>
+      </div>
+    </div>
+    <div class="card" style="margin-top:16px; max-width:720px; padding:14px 20px; border-color:var(--accent);">
+      <p style="font-size:14px; text-align:center;">
+        <strong style="color:var(--accent);">我们构建的核心：</strong>Protocol 层 + Engine 层 + Editor 层。<br>
+        三个 AI 都围绕我们定义的<span style="color:var(--green);"> 语义协议 </span>工作 &mdash; 这是不可替代的基础设施。
+      </p>
+    </div>
+  </div>
+</div>
+
+<!-- ═══ SLIDE 12: ASSEMBLY BLUEPRINT ═══ -->
+<div class="slide" data-slide="11">
+  <div class="full-w" style="display:flex;flex-direction:column;align-items:center;">
+    <span class="tag" style="background:rgba(167,139,250,0.15); color:var(--accent2);">Assembly</span>
+    <h2 style="text-align:center;">编辑器的产出物 &mdash; World Assembly</h2>
+    <div class="row" style="gap:18px;">
+      <div class="code-block" style="flex:1.2;">
+<span class="cmt">// 编辑器/Component Agent 自动生成这个文件</span>
+
+<span class="kw">export const</span> demoWorld: <span class="typ">WorldBlueprint</span> = {
+  capabilities: [
+    <span class="str">'attack-input'</span>,
+    <span class="str">'damage'</span>,
+    <span class="str">'health'</span>,
+    <span class="str">'director'</span>,
+  ],
+
+  entities: {
+    hero: {
+      <span class="typ">Attacker</span>:     { baseDamage: <span class="num">15</span>, target: <span class="str">'boss'</span> },
+      <span class="typ">SceneRegion</span>:  { bounds: [<span class="num">.05</span>,<span class="num">.15</span>,<span class="num">.40</span>,<span class="num">.70</span>] },
+      <span class="typ">SceneContent</span>: {
+        description: <span class="str">'armored warrior'</span>,
+        reference: <span class="str">'ref://hero.png'</span>,
+        motion: <span class="str">'idle-stance'</span>
+      },
+    },
+    boss: {
+      <span class="typ">Health</span>:        { current: <span class="num">500</span>, max: <span class="num">500</span> },
+      <span class="typ">SceneRegion</span>:  { bounds: [<span class="num">.55</span>,<span class="num">.05</span>,<span class="num">.95</span>,<span class="num">.75</span>] },
+      <span class="typ">SceneContent</span>: {
+        description: <span class="str">'massive red dragon'</span>,
+        reference: <span class="str">'ref://dragon.png'</span>,
+      },
+    },
+  },
+
+  scene: {
+    style: <span class="str">'dark fantasy, cinematic'</span>,
+    camera: { angle: <span class="str">'side-view'</span> },
+  },
+
+  videoModel: <span class="str">'kling-v2'</span>,
+}
+      </div>
+      <div style="flex:0.7; display:flex; flex-direction:column; gap:12px;">
+        <div class="card" style="padding:14px 16px;">
+          <div class="card-icon yellow" style="margin-bottom:8px;">&#x1F916;</div>
+          <h3 style="font-size:14px;">编辑器产出</h3>
+          <p style="font-size:12px;">用户在编辑器里点选的所有配置，最终序列化为这份 JSON。<strong>用户不需要看到这个文件。</strong></p>
+        </div>
+        <div class="card" style="padding:14px 16px;">
+          <div class="card-icon green" style="margin-bottom:8px;">&#x1F504;</div>
+          <h3 style="font-size:14px;">双向同步</h3>
+          <p style="font-size:12px;">编辑器修改 &rarr; 更新 JSON &rarr; 引擎重载 &rarr; 实时预览。设计迭代零等待。</p>
+        </div>
+        <div class="card" style="padding:14px 16px;">
+          <div class="card-icon blue" style="margin-bottom:8px;">&#x1F50D;</div>
+          <h3 style="font-size:14px;">可验证</h3>
+          <p style="font-size:12px;">引擎检查合法性：依赖的 Capability 存在吗？Component 类型匹配吗？参数在合理范围内吗？</p>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══ SLIDE 13: COMPETITIVE MOAT ═══ -->
+<div class="slide" data-slide="12">
+  <div class="full-w" style="display:flex;flex-direction:column;align-items:center;">
+    <span class="tag" style="background:rgba(52,211,153,0.15); color:var(--green);">Moat</span>
+    <h2 style="text-align:center;">竞争壁垒</h2>
+    <div class="row" style="gap:16px; margin-top:4px;">
+      <div class="card glow-accent" style="flex:1; padding:18px 20px;">
+        <div style="font-size:30px; margin-bottom:10px;">&#x1F4C8;</div>
+        <h3 style="font-size:16px; color:var(--accent);">视频模型拐点</h3>
+        <p style="font-size:13px;">区域控制、参考图一致性、帧间连贯性 &mdash; 正在解锁。<br><br><strong>谁先建好语义控制层，谁吃红利。</strong></p>
+      </div>
+      <div class="card glow-green" style="flex:1; padding:18px 20px;">
+        <div style="font-size:30px; margin-bottom:10px;">&#x1F9E9;</div>
+        <h3 style="font-size:16px; color:var(--green);">Capability 网络效应</h3>
+        <p style="font-size:13px;">每个新 Capability 增加所有游戏的可能性。10 个 Capability = 1000+ 种玩法。<br><br><strong>越多越强。</strong></p>
+      </div>
+      <div class="card glow-pink" style="flex:1; padding:18px 20px;">
+        <div style="font-size:30px; margin-bottom:10px;">&#x1F680;</div>
+        <h3 style="font-size:16px; color:var(--pink);">零门槛创作</h3>
+        <p style="font-size:13px;">自然语言 + 点选 &rarr; 可玩游戏。从"有想法"到"可以玩"，5 分钟。<br><br><strong>编辑器是增长飞轮。</strong></p>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══ SLIDE 14: ROADMAP ═══ -->
+<div class="slide" data-slide="13">
+  <div class="full-w" style="display:flex;flex-direction:column;align-items:center;">
+    <span class="tag" style="background:rgba(251,146,60,0.15); color:var(--orange);">Roadmap</span>
+    <h2 style="text-align:center;">里程碑路线图</h2>
+    <div class="timeline" style="margin-top:20px;">
+      <div class="tl-item">
+        <div class="tl-dot current"></div>
+        <div class="tl-label">Phase 1</div>
+        <div class="tl-title" style="color:var(--accent);">ECS + UI Overlay</div>
+        <div class="tl-desc">核心 ECS 引擎<br>3 Capability 端到端<br>React UI Overlay<br>Component 词汇表 v1</div>
+      </div>
+      <div class="tl-item">
+        <div class="tl-dot upcoming"></div>
+        <div class="tl-label">Phase 2</div>
+        <div class="tl-title">Director + Video</div>
+        <div class="tl-desc">Director Protocol<br>接入视频模型 API<br>参考图一致性<br>时间连续性控制</div>
+      </div>
+      <div class="tl-item">
+        <div class="tl-dot upcoming"></div>
+        <div class="tl-label">Phase 3</div>
+        <div class="tl-title" style="color:var(--yellow);">Game Editor</div>
+        <div class="tl-desc">Component Agent 对话<br>可视化节点编辑器<br>实时预览<br>模板/社区分享</div>
+      </div>
+      <div class="tl-item">
+        <div class="tl-dot upcoming"></div>
+        <div class="tl-label">Phase 4</div>
+        <div class="tl-title">平台 + 生态</div>
+        <div class="tl-desc">微信小游戏适配<br>Capability 市场<br>多人状态同步<br>开发者 SDK</div>
+      </div>
+    </div>
+    <div style="margin-top:28px; width:100%; max-width:860px;">
+      <div class="row" style="gap:14px;">
+        <div class="card" style="flex:1; padding:14px 16px;">
+          <h3 style="font-size:13px; color:var(--accent);">&#x1F4A0; Engine</h3>
+          <ul class="bullet-list" style="font-size:12px;">
+            <li><strong>TypeScript</strong> <span class="dim">&mdash; 类型约束</span></li>
+            <li><strong>零依赖</strong> <span class="dim">&mdash; ~500 行核心</span></li>
+            <li><strong>拓扑排序</strong> <span class="dim">&mdash; Kahn's algo</span></li>
+          </ul>
+        </div>
+        <div class="card" style="flex:1; padding:14px 16px;">
+          <h3 style="font-size:13px; color:var(--pink);">&#x1F3A8; Presenter</h3>
+          <ul class="bullet-list" style="font-size:12px;">
+            <li><strong>React 18+</strong> <span class="dim">&mdash; UI Overlay</span></li>
+            <li><strong>Video API</strong> <span class="dim">&mdash; 视频模型接入</span></li>
+            <li><strong>CSS Vars</strong> <span class="dim">&mdash; 主题系统</span></li>
+          </ul>
+        </div>
+        <div class="card" style="flex:1; padding:14px 16px;">
+          <h3 style="font-size:13px; color:var(--yellow);">&#x1F5A7; Editor</h3>
+          <ul class="bullet-list" style="font-size:12px;">
+            <li><strong>Component Agent</strong> <span class="dim">&mdash; AI 对话</span></li>
+            <li><strong>Node Editor</strong> <span class="dim">&mdash; 拖拽连线</span></li>
+            <li><strong>Live Preview</strong> <span class="dim">&mdash; 实时预览</span></li>
+          </ul>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══ SLIDE 15: CLOSING ═══ -->
+<div class="slide" data-slide="14">
+  <div class="center">
+    <div style="font-size:52px; margin-bottom:18px;">&#x2728;</div>
+    <h1 style="font-size:40px;"><span class="gradient-text">Apollo Engine</span></h1>
+    <p class="subtitle" style="font-size:19px; margin-top:12px; max-width:620px; text-align:center;">
+      <strong style="color:var(--text);">说出你的想法</strong> &rarr; AI 组装逻辑<br>
+      <strong style="color:var(--text);">视频模型生成画面</strong> &rarr; 叠加 UI<br>
+      <strong style="color:var(--text);">5 分钟</strong>，从创意到可玩游戏
+    </p>
+    <div style="margin-top:40px; display:flex; gap:32px; justify-content:center;">
+      <div style="text-align:center;"><div style="font-size:32px; font-weight:800; color:var(--yellow);">0</div><div style="font-size:12px; color:var(--text-dim);">编程门槛</div></div>
+      <div style="text-align:center;"><div style="font-size:32px; font-weight:800; color:var(--accent);">~500</div><div style="font-size:12px; color:var(--text-dim);">行核心引擎</div></div>
+      <div style="text-align:center;"><div style="font-size:32px; font-weight:800; color:var(--green);">0</div><div style="font-size:12px; color:var(--text-dim);">渲染代码</div></div>
+      <div style="text-align:center;"><div style="font-size:32px; font-weight:800; color:var(--orange);">&infin;</div><div style="font-size:12px; color:var(--text-dim);">视觉天花板</div></div>
+      <div style="text-align:center;"><div style="font-size:32px; font-weight:800; color:var(--accent2);">5min</div><div style="font-size:12px; color:var(--text-dim);">想法到可玩</div></div>
+    </div>
+    <div style="margin-top:44px;">
+      <p style="font-size:14px; color:var(--text-dim);"><code style="font-size:12px;">github.com/eaglefly628/ApolloGame</code></p>
+    </div>
+  </div>
+</div>
+
+</div>
+<div class="nav" id="nav"></div>
+<div class="page-num" id="pageNum"></div>
+<div class="key-hint">&larr; &rarr; or click</div>
+<script>
+(function(){
+  const slides=document.querySelectorAll('.slide'), nav=document.getElementById('nav'), pn=document.getElementById('pageNum');
+  let cur=0;
+  slides.forEach((_,i)=>{const d=document.createElement('div');d.className='nav-dot'+(i===0?' active':'');d.onclick=()=>go(i);nav.appendChild(d);});
+  function go(i){if(i<0||i>=slides.length)return;slides[cur].classList.remove('active');nav.children[cur].classList.remove('active');cur=i;slides[cur].classList.add('active');nav.children[cur].classList.add('active');pn.textContent=(cur+1)+' / '+slides.length;}
+  document.onkeydown=e=>{if(e.key==='ArrowRight'||e.key===' '||e.key==='Enter'){e.preventDefault();go(cur+1);}if(e.key==='ArrowLeft'||e.key==='Backspace'){e.preventDefault();go(cur-1);}if(e.key==='Home')go(0);if(e.key==='End')go(slides.length-1);};
+  let tx=0;document.ontouchstart=e=>{tx=e.touches[0].clientX;};document.ontouchend=e=>{const dx=e.changedTouches[0].clientX-tx;if(Math.abs(dx)>60)go(cur+(dx<0?1:-1));};
+  pn.textContent='1 / '+slides.length;
+})();
+</script>
+</body>
+</html>
