@@ -20,7 +20,7 @@
 //  参见 wiki/atom-skill-periodic-table.md
 // ═══════════════════════════════════════════════════════════════
 
-import type { Component } from '../core/types.js';
+import type { Component, EntityId } from '../core/types.js';
 
 // ── A1 transform ── 实体在世界的位置、朝向和大小
 export interface Transform extends Component {
@@ -82,4 +82,40 @@ export interface TimerDone extends Component {
 export interface Tag extends Component {
   readonly type: 'Tag';
   flags: number;
+}
+
+// ── B2 acceleration ── 实体的速度在怎么变
+export interface Acceleration extends Component {
+  readonly type: 'Acceleration';
+  ax: number;
+  ay: number;
+}
+
+// ── B3 mass ── 实体有多重（0 = 不可移动）
+export interface Mass extends Component {
+  readonly type: 'Mass';
+  value: number;
+}
+
+// ── C1 shape ── 碰撞/占位几何形状
+export interface Shape extends Component {
+  readonly type: 'Shape';
+  kind: 'box' | 'circle';
+  width?: number;
+  height?: number;
+  radius?: number;
+}
+
+// ── G2 relation ── 实体跟谁有什么逻辑关系（非空间）
+export interface Relation extends Component {
+  readonly type: 'Relation';
+  kind: string;
+  targetId: EntityId;
+}
+
+// ── H1 visibility ── 是否可见 / 是否参与系统运算
+export interface Visibility extends Component {
+  readonly type: 'Visibility';
+  visible: boolean;
+  active: boolean;
 }
