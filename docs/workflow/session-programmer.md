@@ -1,52 +1,55 @@
 # Programmer Session 启动手册
 
-> 开启新 session 后，把此文件内容作为第一条消息发给 Claude。
+> 开启新 session 后，把此文件路径发给 Claude 让它读取。
 
 ---
 
-## 启动指令
+## 启动步骤
+
+1. 读以下文件建立全局理解:
+   - `wiki/atom-skill-periodic-table.md` — 26 个原子定义
+   - `docs/workflow/programmer-role.md` — 编码规范和交付标准
+   - `src/engine/core/define-capability.ts` — defineCapability 模式
+   - `src/engine/core/types.ts` — IWorld 接口
+   - `src/engine/core/world.ts` — World 实现
+   - `src/engine/protocol/components.ts` — 共享组件接口
+2. 启动轮询: `/loop 5m` 检查 `docs/workflow/programmer/inbox.md`
+3. 发现 pending 任务 → 执行 → 结果写到 outbox
+
+## /loop 逻辑
 
 ```
-你是 Apollo Engine 的 Programmer。你的工作是按任务写原子 skill。
-
-工作方式:
-1. 先阅读全局上下文（下方列出的文件）
-2. 然后用 /loop 5m 定时检查 docs/workflow/programmer/inbox.md
-3. 发现 pending 任务 → 改状态为 in-progress → 实现它
-4. 完成后:
-   - 代码写到 src/atom-skills/{name}/index.ts
-   - 测试写到 src/atom-skills/{name}/{name}.test.ts  
-   - 运行 npx tsc --noEmit && npx vitest run
-   - 结果写到 docs/workflow/programmer/outbox.md
-   - inbox 中该任务标记为 done
-5. 回到等待状态，/loop 继续下一轮检查
-
-必读文件:
-- wiki/atom-skill-periodic-table.md — 26 个原子定义
-- docs/workflow/programmer-a.md — 编码规范和交付标准
-- src/engine/core/define-capability.ts — defineCapability 模式
-- src/engine/core/types.ts — IWorld 接口
-- src/engine/core/world.ts — World 实现
-- src/engine/protocol/components.ts — 共享组件接口
-
-开始吧。先读文件，然后启动 /loop 5m 轮询 inbox。
-```
-
----
-
-## /loop 执行逻辑
-
-每次 /loop 触发时，Programmer 应:
-
-```
+每次触发:
 1. 读 docs/workflow/programmer/inbox.md
-2. 查找状态为 pending 的任务
-3. 如果没有 → 什么都不做，等下一轮
-4. 如果有:
-   a. 把该任务状态改为 in-progress
-   b. 读周期表中该原子的定义
-   c. 实现 defineCapability + 测试
-   d. 跑 tsc + vitest
-   e. 通过 → 把任务标记 done，写结果到 outbox
-   f. 失败 → 标记 error，写错误信息到 outbox
+2. 查找 pending 任务
+3. 没有 → 等下一轮
+4. 有任务:
+   a. 状态改为 in-progress
+   b. 判断任务类型:
+
+   类型 = write:
+     → 读周期表中该原子定义
+     → 实现 defineCapability + 测试
+     → npx tsc --noEmit && npx vitest run
+     → 通过 → inbox 标记 done，结果写 outbox
+     → 失败 → inbox 标记 error，错误写 outbox
+
+   类型 = review:
+     → 读目标文件 + 对照周期表
+     → 出审核报告 ([PASS] / [ISSUE] / [SUGGEST])
+     → inbox 标记 done，报告写 outbox
 ```
+
+## 加速模式: 内部并行 Agent
+
+如果 inbox 里有多个 pending 任务，可以用 background Agent 并行处理:
+
+```
+发现 inbox 有 3 个 pending →
+  Agent A (background, worktree) → skill 1
+  Agent B (background, worktree) → skill 2
+  Agent C (background, worktree) → skill 3
+等 3 个通知 → 合并 → 批量写 outbox
+```
+
+这样一个 Programmer session 一轮能产出 3 个 skill。

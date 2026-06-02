@@ -1,97 +1,74 @@
 # Lead Session 启动手册
 
-> 主程序员 session 的操作手册。
+> 主程序员 session。调度 Programmer，集成代码。
 
 ---
 
-## 启动指令
+## 架构
 
 ```
-你是 Apollo Engine 的 Lead（主程序员）。
+Session 1 (本 session): Lead — 调度 + review 集成
+Session 2: Programmer — 写 skill + review（通过 inbox/outbox 文件通信）
 
-你的职责是调度 Programmer 和 Reviewer，不直接写 skill 代码。
-
-协作 session 架构:
-- Session 1 (本 session): Lead — 调度 + 集成
-- Session 2: Programmer — 写 skill（通过 inbox/outbox 文件通信）
-- Session 3: Reviewer — 审核代码（通过 inbox/outbox 文件通信）
-
-通信机制: 共享文件系统，无需 git push/pull。
-定时器: /loop 5m 轮询 outbox 文件。
-
-工作流程:
-1. 读 docs/workflow/progress.md 确定当前批次
-2. 把任务写到 docs/workflow/programmer/inbox.md
-3. /loop 5m 检查 docs/workflow/programmer/outbox.md
-4. Programmer 完成 → 写 review 任务到 docs/workflow/reviewer/inbox.md
-5. /loop 5m 检查 docs/workflow/reviewer/outbox.md
-6. Reviewer 完成 → 集成代码 → 更新 progress.md → 下一个任务
-
-必读文件:
-- docs/workflow/lead-protocol.md — 完整工作协议
-- docs/workflow/progress.md — 当前进度
-- wiki/atom-skill-periodic-table.md — 26 个原子定义
-
-开始吧。先读文件，然后派发第一个任务。
+通信: 共享文件系统，直接读写文件，无需 git push/pull
+轮询: /loop 5m 检查 Programmer 的 outbox
 ```
 
----
+## 启动步骤
 
-## Lead 的 /loop 逻辑
+1. 读 `docs/workflow/progress.md` 确定当前进度
+2. 读 `wiki/atom-skill-periodic-table.md` 确认下一批原子
+3. 把任务写到 `docs/workflow/programmer/inbox.md`
+4. 启动轮询: `/loop 5m` 检查 `docs/workflow/programmer/outbox.md`
+5. 发现完成 → 验证 (tsc + vitest) → 集成 → 写下一个任务到 inbox
+
+## /loop 逻辑
 
 ```
-每次 /loop 触发:
+每次触发:
 1. 读 docs/workflow/programmer/outbox.md
-   - 有新完成的 skill → 验证 (tsc + vitest) → 写 review 任务到 reviewer/inbox.md
-2. 读 docs/workflow/reviewer/outbox.md  
-   - 有 review 结果:
-     - [PASS] → 集成，更新 progress.md，派发下一个任务到 programmer/inbox.md
-     - [ISSUE] → 写修复任务到 programmer/inbox.md
-3. 都没有 → 什么都不做，等下一轮
+2. 有新的 done 条目？
+   - 任务类型 = write:
+     → 跑 tsc + vitest 验证
+     → 通过 → 更新 progress.md
+     → 写 review 任务到 programmer/inbox.md (让 Programmer 自审)
+     → 或直接派发下一个 write 任务
+   - 任务类型 = review:
+     → 读 review 结果
+     → [PASS] → 集成，派发下一个 write 任务
+     → [ISSUE] → 写修复任务到 inbox
+3. 没有 → 等下一轮
 ```
 
----
+## 任务格式
 
-## 任务格式规范
-
-### Programmer inbox 任务格式
+### write 任务
 
 ```markdown
 ### TASK-001: A1 transform
-- **状态**: pending | in-progress | done | error
+- **类型**: write
+- **状态**: pending
 - **原子 ID**: A1
 - **原子名**: transform
-- **组件定义**: Transform { x, y, rotation, scaleX, scaleY }
-- **回答的问题**: 实体在世界的位置、朝向和大小？
-- **备注**: 纯数据组件，本原子无系统（数据由其他原子的系统消费）
+- **组件**: Transform { x, y, rotation, scaleX, scaleY }
+- **问题**: 实体在世界的位置、朝向和大小？
 ```
 
-### Programmer outbox 结果格式
+### review 任务
 
 ```markdown
-### TASK-001: A1 transform — done
-- **文件**: src/atom-skills/transform/index.ts
-- **测试**: src/atom-skills/transform/transform.test.ts
-- **tsc**: ✅ pass
-- **vitest**: ✅ pass (3 tests)
-- **备注**: 提供 Transform 组件，无系统
-```
-
-### Reviewer inbox 任务格式
-
-```markdown
-### REVIEW-001: A1 transform
+### TASK-002: review A1 transform
+- **类型**: review
 - **状态**: pending
 - **审核文件**: src/atom-skills/transform/index.ts
 - **测试文件**: src/atom-skills/transform/transform.test.ts
-- **对照**: wiki/atom-skill-periodic-table.md 中 A1 transform 的定义
+- **对照**: wiki/atom-skill-periodic-table.md A1
 ```
 
-### Reviewer outbox 结果格式
+## 扩展到多 Programmer
 
-```markdown
-### REVIEW-001: A1 transform — [PASS]
-- 组件 schema 与周期表一致 ✅
-- defineCapability 完整 ✅
-- 测试覆盖充分 ✅
-```
+如需提速，可开多个 Programmer session:
+- 每个 Programmer 有独立的 inbox/outbox 目录
+- 如: programmer-1/inbox.md, programmer-2/inbox.md
+- 每个 Programmer session 内部还可并行启动 3 个 background Agent
+- 1 Lead + 2 Programmer × 3 Agent = 一次 6 个 skill 并行
