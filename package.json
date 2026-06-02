@@ -9,7 +9,8 @@
     "preview": "vite preview",
     "test": "vitest run",
     "test:watch": "vitest",
-    "demo": "vite-node src/assembly/demo.run.ts"
+    "demo": "vite-node src/assembly/demo.run.ts",
+    "net:demo": "vite-node src/net/lockstep.demo.ts"
   },
   "dependencies": {
     "phaser": "^3.80.1",

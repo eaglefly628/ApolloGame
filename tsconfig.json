@@ -16,7 +16,8 @@
       "@engine/*": ["src/engine/*"],
       "@atom-skills/*": ["src/atom-skills/*"],
       "@renderer/*": ["src/renderer/*"],
-      "@ui/*": ["src/ui/*"]
+      "@ui/*": ["src/ui/*"],
+      "@net/*": ["src/net/*"]
     }
   },
   "include": ["src"],

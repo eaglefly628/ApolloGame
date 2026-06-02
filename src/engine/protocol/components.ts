@@ -189,6 +189,13 @@ export interface Action extends Component {
   value: number;
 }
 
+// ── net: controllable ── 该实体由哪个玩家(playerId)操控；input 命令按 speed 写入其 Velocity
+export interface Controllable extends Component {
+  readonly type: 'Controllable';
+  playerId: string;
+  speed: number;
+}
+
 // ── J1 state ── 实体在某状态机的当前离散状态
 export interface State extends Component {
   readonly type: 'State';

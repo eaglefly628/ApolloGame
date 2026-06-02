@@ -10,6 +10,7 @@ export default defineConfig({
       '@atom-skills': resolve(__dirname, 'src/atom-skills'),
       '@renderer': resolve(__dirname, 'src/renderer'),
       '@ui': resolve(__dirname, 'src/ui'),
+      '@net': resolve(__dirname, 'src/net'),
     },
   },
 });
