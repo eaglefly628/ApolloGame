@@ -1,4 +1,4 @@
-import type { EntityId, ComponentType, Component, SystemDeclaration, IWorld } from './types.js';
+import type { EntityId, ComponentType, Component, SystemDeclaration, IWorld, TickObserver, WorldSnapshot } from './types.js';
 import { topologicalSort } from './topological-sort.js';
 
 export class World implements IWorld {
@@ -7,6 +7,7 @@ export class World implements IWorld {
   private sorted: SystemDeclaration[] = [];
   private needsSort = false;
   private version = 0;
+  private observer?: TickObserver;
 
   // ── Entity operations ──
 
@@ -73,12 +74,20 @@ export class World implements IWorld {
     }
   }
 
+  // ── Debug instrumentation ──
+
+  setObserver(observer?: TickObserver): void {
+    this.observer = observer;
+  }
+
   // ── Game loop ──
 
   tick(): void {
     this.ensureSorted();
+    this.observer?.onTickStart?.(this.version + 1);
 
     for (const system of this.sorted) {
+      this.observer?.onSystemStart?.(system);
       system.execute(this);
 
       // Consume: remove components marked as consumed
@@ -89,9 +98,12 @@ export class World implements IWorld {
           }
         }
       }
+
+      this.observer?.onSystemEnd?.(system);
     }
 
     this.version++;
+    this.observer?.onTickEnd?.(this.version);
   }
 
   getVersion(): number {
@@ -101,5 +113,30 @@ export class World implements IWorld {
   getSortedSystems(): readonly SystemDeclaration[] {
     this.ensureSorted();
     return this.sorted;
+  }
+
+  // ── Snapshot / restore (record / replay / time-travel) ──
+
+  snapshot(): WorldSnapshot {
+    const snap: WorldSnapshot = {};
+    for (const [id, comps] of this.entities) {
+      const components: Record<ComponentType, Component> = {};
+      for (const [type, comp] of comps) {
+        components[type] = structuredClone(comp);
+      }
+      snap[id] = components;
+    }
+    return snap;
+  }
+
+  restore(snapshot: WorldSnapshot): void {
+    this.entities.clear();
+    for (const [id, comps] of Object.entries(snapshot)) {
+      const m = new Map<ComponentType, Component>();
+      for (const [type, comp] of Object.entries(comps)) {
+        m.set(type, structuredClone(comp));
+      }
+      this.entities.set(id, m);
+    }
   }
 }

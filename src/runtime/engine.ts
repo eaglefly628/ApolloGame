@@ -1,11 +1,12 @@
 import { World } from '@engine/core/world.js';
-import type { Component } from '@engine/core/types.js';
+import type { Component, RendererBackend } from '@engine/core/types.js';
 import type { WorldBlueprint } from '../assembly/demo.assembly.js';
 
 export class Engine {
   readonly world: World;
   private rafId: number | null = null;
   private listeners: Array<() => void> = [];
+  private renderer: RendererBackend | null = null;
 
   constructor() {
     this.world = new World();
@@ -26,11 +27,18 @@ export class Engine {
     }
   }
 
+  attachRenderer(renderer: RendererBackend, container: HTMLElement): void {
+    this.renderer = renderer;
+    renderer.init(container);
+    renderer.sync(this.world);
+  }
+
   start(): void {
     if (this.rafId !== null) return;
 
     const loop = () => {
       this.world.tick();
+      this.renderer?.sync(this.world);
       this.notifyListeners();
       this.rafId = requestAnimationFrame(loop);
     };

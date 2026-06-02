@@ -4,6 +4,7 @@ import {
   transformCapability,
   velocityCapability,
   shapeCapability,
+  spriteCapability,
   timerCapability,
   destroyCapability,
   overlapDetectCapability,
@@ -27,6 +28,7 @@ export const demoBlueprint: WorldBlueprint = {
     transformCapability,
     velocityCapability,
     shapeCapability,
+    spriteCapability,
     timerCapability,
     overlapDetectCapability,
     destroyCapability,
@@ -38,6 +40,7 @@ export const demoBlueprint: WorldBlueprint = {
       Transform: { x: 0, y: 100, rotation: 0, scaleX: 1, scaleY: 1 },
       Velocity: { vx: 8, vy: 0, angular: 0 },
       Shape: { kind: 'box', width: 8, height: 8 },
+      Sprite: { textureKey: 'bullet', anchorX: 0.5, anchorY: 0.5, zOrder: 10 },
       Timer: { id: 'life', elapsed: 0, duration: 12, loop: false },
     },
     wall: {

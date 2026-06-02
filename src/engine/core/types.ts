@@ -34,3 +34,14 @@ export interface RendererBackend {
   sync(world: IWorld): void;
   destroy(): void;
 }
+
+// 完整世界状态快照（组件皆 POD，可 JSON 序列化）—— record/replay 与时间旅行调试用
+export type WorldSnapshot = Record<EntityId, Record<ComponentType, Component>>;
+
+// tick 期间的观测钩子 —— Debug 体系据此观察各系统(skill)之间的协作
+export interface TickObserver {
+  onTickStart?(tick: number): void;
+  onSystemStart?(system: SystemDeclaration): void;
+  onSystemEnd?(system: SystemDeclaration): void;
+  onTickEnd?(tick: number): void;
+}

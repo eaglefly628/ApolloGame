@@ -50,7 +50,13 @@
 | W1 random | `RandomSeed{seed,sequence}` + `nextRandom()` 助手 | —（按需取数） | 5 |
 | W2 spatial-query | `SpatialIndex{cellSize,kind}` + `queryRange/queryNearest` 助手 | —（按需查询） | 5 |
 
-进度：**26 / 26** 核心原子 ✅ 全部完成。`tsc --noEmit` 通过，`vitest` 144 passed（含 demo 集成），`npm run build` 通过。
+进度：**26 / 26** 核心原子 ✅ 全部完成。`tsc --noEmit` 通过，`vitest` 151 passed，`npm run build` 通过。
+
+## 调试与渲染基础设施
+
+- **Debug 体系**（`src/debug/`）：`Tracer` 对每个系统执行前后做快照 diff = 各 skill 每 tick 实际改了什么（协作可视）；`Recorder` + `replay` 确定性录制回放，回放逐 tick 对比录制快照即可抓非确定性 bug。core 侧 World 新增 `TickObserver` 钩子 + `snapshot()/restore()`。
+- **渲染**（`src/renderer/`）：`collectRenderables` 为引擎无关的渲染数据提取；`AsciiRenderer`（headless/终端）与 `CanvasRenderer`（浏览器）共用之，均实现/服务于 `RendererBackend` —— 可平滑升级为 Phaser / AI 视频后端而不动引擎逻辑。
+- `npm run demo` 一次性展示：Ascii 可视化 + Tracer 协作日志 + replay 确定性校验（全部通过）。
 
 ## 已知问题
 
