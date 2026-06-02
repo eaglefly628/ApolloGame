@@ -18,7 +18,7 @@ reads: Poisoned → [poison.tick] → writes: HealthModifyEvent, Poisoned(countd
 
 | 组件名 | 语义类型 | 字段 | 描述 |
 |--------|---------|------|------|
-| `Poisoned` | Marker | `damagePerTick: number, remainingTicks: number` | 中毒状态，存在即每帧扣血 |
+| `Poisoned` | Effect | `damagePerTick: number, remainingTicks: number` | 中毒效果，有持续时间，每帧产生伤害事件 |
 
 ## 输入契约
 

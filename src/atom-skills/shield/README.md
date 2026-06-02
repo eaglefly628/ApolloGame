@@ -38,12 +38,10 @@ reads: HealthModifyEvent + Shield
 ## 拓扑排序位置
 
 ```
-poison.tick → shield.absorb → health.apply
-  writes       reads+writes     consumes
-  HealthModify HealthModify     HealthModify
+[任意 HealthModifyEvent writer] → shield.absorb → [任意 HealthModifyEvent consumer]
 ```
 
-shield 自动插入到伤害产生者（poison, key-input）和伤害消费者（health）之间。**零改动已有代码。**
+shield 因为同时 reads 和 writes `HealthModifyEvent`，会被拓扑排序自动插入到所有 writer（产生伤害/治疗事件的 skill）和 consumer（最终处理事件的 skill）之间。**零改动已有代码。**
 
 ## 配置
 
