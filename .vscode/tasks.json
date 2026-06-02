@@ -12,17 +12,18 @@
     },
     {
       "label": "demo (headless)",
-      "detail": "无头跑引擎：ASCII 可视化 + 协作日志 + record/replay",
+      "detail": "无头跑引擎：ASCII 可视化 + skill 协作日志 + record/replay",
       "type": "shell",
       "command": "npm run demo",
-      "problemMatcher": []
+      "problemMatcher": [],
+      "presentation": { "reveal": "always" }
     },
     {
       "label": "test",
       "detail": "vitest 全部单测",
       "type": "shell",
       "command": "npm run test",
-      "group": "test",
+      "group": { "kind": "test", "isDefault": true },
       "problemMatcher": []
     },
     {
@@ -30,7 +31,7 @@
       "detail": "tsc + vite build → dist/",
       "type": "shell",
       "command": "npm run build",
-      "group": "build",
+      "group": { "kind": "build", "isDefault": true },
       "problemMatcher": []
     }
   ]
