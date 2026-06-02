@@ -8,7 +8,7 @@ const WORLD_H = 400;
 
 // demo 专用系统：移动 + 画布环绕，融合成单系统。
 // （故意合一：两个都写 Transform 的系统会让粗粒度拓扑排序判成环。）
-const driftCapability = defineCapability({
+export const driftCapability = defineCapability({
   id: 'demo-drift',
   version: '1.0.0',
   describe: {

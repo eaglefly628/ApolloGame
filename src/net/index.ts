@@ -7,3 +7,8 @@ export type { FixedStepOptions } from './fixed-step.js';
 export { LockstepSession } from './lockstep.js';
 export type { PeerHash, StepReport } from './lockstep.js';
 export { KeyboardInputSource } from './local-input.js';
+// 帧同步（lockstep）双标签页：各端各跑确定性世界，只交换输入。
+export { LockstepClient } from './lockstep-tab.js';
+export type { Channel, NetMsg, ClientView, LockstepOptions, Dir } from './lockstep-tab.js';
+export { buildMpWorld, addPlayer, playerEntityId, renderEnts, PLAYER_COLORS } from './mp-world.js';
+export type { RenderEnt } from './mp-world.js';
