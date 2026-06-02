@@ -218,3 +218,38 @@ export interface DestroyRequest extends Component {
   readonly type: 'DestroyRequest';
   entityId: EntityId;
 }
+
+// ── A2 hierarchy ── 实体挂在谁下面、本地偏移多少
+export interface Hierarchy extends Component {
+  readonly type: 'Hierarchy';
+  parentId: EntityId;
+  localX: number;
+  localY: number;
+  localRotation: number;
+  localScaleX: number;
+  localScaleY: number;
+}
+
+// ── W1 random ── 可控随机数（确定性重放基石），挂在 world 实体
+export interface RandomSeed extends Component {
+  readonly type: 'RandomSeed';
+  seed: number;
+  sequence: number;
+}
+
+// ── D1 overlap-detect ── 哪两个实体重叠了，法线与穿透深度
+export interface Overlap extends Component {
+  readonly type: 'Overlap';
+  entityA: EntityId;
+  entityB: EntityId;
+  normalX: number;
+  normalY: number;
+  depth: number;
+}
+
+// ── W2 spatial-query ── 空间查询服务配置，挂在 world 实体
+export interface SpatialIndex extends Component {
+  readonly type: 'SpatialIndex';
+  cellSize: number;
+  kind: 'grid' | 'quadtree';
+}

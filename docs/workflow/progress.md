@@ -14,20 +14,22 @@
 | 3 | B2 acceleration | G2 relation | H1 visibility | ✅ done |
 | 4 | B3 mass | I1 input-capture | J1 state | ✅ done |
 | 5 | C1 shape | I2 action-map | K1 spawn | ✅ done |
-| 6 | A2 hierarchy | K2 destroy | W1 random | pending |
-| 7 | D1 overlap-detect | L1 sprite | L2 color | pending |
+| 6 | A2 hierarchy | K2 destroy | W1 random | ✅ done |
+| 7 | D1 overlap-detect | L1 sprite | L2 color | ✅ done |
 | 8 | L3 frame | L4 sound | L5 camera | ✅ done |
-| 9 | L6 text | W2 spatial-query | — | pending |
+| 9 | L6 text | W2 spatial-query | — | ✅ done |
 
 ## 已完成原子
 
 | 原子 | 组件 | 系统 | 测试 |
 |------|------|------|------|
 | A1 transform | `Transform{x,y,rotation,scaleX,scaleY}` | —（纯数据） | 16 |
+| A2 hierarchy | `Hierarchy{parentId,localX,localY,localRotation,localScaleX,localScaleY}` | —（resolve 属 Tier 1） | 4 |
 | B1 velocity | `Velocity{vx,vy,angular}` | —（纯数据） | 4 |
 | B2 acceleration | `Acceleration{ax,ay}` | —（纯数据） | 4 |
 | B3 mass | `Mass{value}` | —（纯数据） | 4 |
 | C1 shape | `Shape{kind,width?,height?,radius?}` | —（纯数据） | 5 |
+| D1 overlap-detect | `Overlap{entityA,entityB,normalX,normalY,depth}` | `overlap-detect`（AABB/圆相交） | 5 |
 | E1 timer | `Timer{id,elapsed,duration,loop}` + `TimerDone` | `timer-advance`（tick 计数，fire-once/loop） | 7 |
 | F1 resource | `Resource` + `ResourceModify` | `resource-apply`（clamp） | 12 |
 | F2 flag | `Flag{id,active}` | —（纯数据） | 18 |
@@ -45,8 +47,10 @@
 | L4 sound | `Sound{clipId,volume,loop}` | —（render 数据） | 4 |
 | L5 camera | `Camera{zoom,offsetX,offsetY,rotation,viewportW,viewportH}` | —（render 数据） | 4 |
 | L6 text | `Text{content,fontSize,fontFamily,anchor,lineSpacing}` | —（render 数据） | 4 |
+| W1 random | `RandomSeed{seed,sequence}` + `nextRandom()` 助手 | —（按需取数） | 5 |
+| W2 spatial-query | `SpatialIndex{cellSize,kind}` + `queryRange/queryNearest` 助手 | —（按需查询） | 5 |
 
-进度：**22 / 26** 核心原子。`tsc --noEmit` 通过，`vitest` 123 passed。
+进度：**26 / 26** 核心原子 ✅ 全部完成。`tsc --noEmit` 通过，`vitest` 142 passed。
 
 ## 已知问题
 
@@ -54,3 +58,5 @@
 - **运维 · worktree 基线**：Agent worktree 隔离从 master（空初始提交 `f366c5a`）创建，**不继承当前分支**。Programmer 需先 `git fetch origin claude/mainbranch && git reset --hard origin/claude/mainbranch` 再开工（本批 B/C 自行处理，A 被中断后由 Lead 从 worktree 恢复并提交）。**下批派发 prompt 必须内置此 Step 0**。
 - **运维 · vitest 扫描 worktree**：`.claude/worktrees/` 下的测试副本会被 vitest 重复收集；集成后须 `git worktree remove` 清理（该目录已 gitignore）。
 - **数据型原子无系统**：input-capture / action-map / spawn 只定义组件契约（systems 为空）——其行为（DOM 捕获、按键→动作绑定、模板实例化）依赖运行时/assembly，非通用纯 ECS 逻辑。对比 destroy 有 `destroy-apply`（移除逻辑通用、无需注册表）。
+- **SpatialIndex 字段重命名**：周期表写 `type: 'grid'|'quadtree'`，但 `type` 是引擎 Component 判别字段（保留），故重命名为 `kind`（与 Shape.kind 一致）。
+- **未接线**：26 原子尚未注册进 demo.assembly / 统一导出；Tier 1 涌现层（motion-apply 等）尚未实现。
