@@ -54,3 +54,32 @@ export interface Flag extends Component {
   id: string;
   active: boolean;
 }
+
+// ── B1 velocity ── 实体当前的运动方向、速度和角速度
+export interface Velocity extends Component {
+  readonly type: 'Velocity';
+  vx: number;
+  vy: number;
+  angular: number;
+}
+
+// ── E1 timer ── 倒计时/间隔（按 tick 计数，World 无 dt）
+export interface Timer extends Component {
+  readonly type: 'Timer';
+  id: string;
+  elapsed: number;
+  duration: number;
+  loop: boolean;
+}
+
+// ── E1 timer ── 计时完成事件（read-then-consume，由下游系统消费）
+export interface TimerDone extends Component {
+  readonly type: 'TimerDone';
+  timerId: string;
+}
+
+// ── G1 tag ── 实体属于哪些分类（bitmask，位运算 O(1)）
+export interface Tag extends Component {
+  readonly type: 'Tag';
+  flags: number;
+}
