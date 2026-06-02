@@ -16,7 +16,7 @@
 | 5 | C1 shape | I2 action-map | K1 spawn | pending |
 | 6 | A2 hierarchy | K2 destroy | W1 random | pending |
 | 7 | D1 overlap-detect | L1 sprite | L2 color | pending |
-| 8 | L3 frame | L4 sound | L5 camera | pending |
+| 8 | L3 frame | L4 sound | L5 camera | ✅ done |
 | 9 | L6 text | W2 spatial-query | — | pending |
 
 ## 已完成原子
@@ -34,8 +34,14 @@
 | G1 tag | `Tag{flags}` bitmask | —（纯数据） | 5 |
 | G2 relation | `Relation{kind,targetId}` | —（纯数据） | 3 |
 | H1 visibility | `Visibility{visible,active}` | —（纯数据） | 4 |
+| L1 sprite | `Sprite{textureKey,anchorX,anchorY,zOrder}` | —（render 数据） | 4 |
+| L2 color | `Color{tint,alpha}` | —（render 数据） | 4 |
+| L3 frame | `Frame{index,total}` | —（render 数据） | 4 |
+| L4 sound | `Sound{clipId,volume,loop}` | —（render 数据） | 4 |
+| L5 camera | `Camera{zoom,offsetX,offsetY,rotation,viewportW,viewportH}` | —（render 数据） | 4 |
+| L6 text | `Text{content,fontSize,fontFamily,anchor,lineSpacing}` | —（render 数据） | 4 |
 
-进度：**11 / 26** 核心原子（含提前完成的 B3、C1）。`tsc --noEmit` 通过，`vitest` 82 passed。
+进度：**17 / 26** 核心原子。`tsc --noEmit` 通过，`vitest` 106 passed。
 
 ## 已知问题
 

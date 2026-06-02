@@ -119,3 +119,55 @@ export interface Visibility extends Component {
   visible: boolean;
   active: boolean;
 }
+
+// ── L1 sprite ── 实体用什么图、渲染层级
+export interface Sprite extends Component {
+  readonly type: 'Sprite';
+  textureKey: string;
+  anchorX: number;
+  anchorY: number;
+  zOrder: number;
+}
+
+// ── L2 color ── 实体当前的颜色/透明度
+export interface Color extends Component {
+  readonly type: 'Color';
+  tint: number;
+  alpha: number;
+}
+
+// ── L3 frame ── 精灵的当前帧
+export interface Frame extends Component {
+  readonly type: 'Frame';
+  index: number;
+  total: number;
+}
+
+// ── L4 sound ── 播放什么声音
+export interface Sound extends Component {
+  readonly type: 'Sound';
+  clipId: string;
+  volume: number;
+  loop: boolean;
+}
+
+// ── L5 camera ── 观察窗口参数（世界→屏幕映射基准）
+export interface Camera extends Component {
+  readonly type: 'Camera';
+  zoom: number;
+  offsetX: number;
+  offsetY: number;
+  rotation: number;
+  viewportW: number;
+  viewportH: number;
+}
+
+// ── L6 text ── 显示什么文字
+export interface Text extends Component {
+  readonly type: 'Text';
+  content: string;
+  fontSize: number;
+  fontFamily: string;
+  anchor: string;
+  lineSpacing: number;
+}
