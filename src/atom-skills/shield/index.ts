@@ -1,13 +1,6 @@
 import { defineCapability } from '@engine/core/define-capability.js';
-import type { IWorld, Component } from '@engine/core/types.js';
-
-// ── Components ──
-
-export interface Shield extends Component {
-  readonly type: 'Shield';
-  current: number;
-  max: number;
-}
+import type { IWorld } from '@engine/core/types.js';
+import type { Shield, HealthModifyEvent } from '@engine/protocol/components.js';
 
 // ── Capability Definition ──
 
@@ -61,9 +54,8 @@ export const shieldCapability = defineCapability({
 
         for (const [entityId, comps] of entities) {
           const shield = comps.get('Shield') as Shield;
-          const event = comps.get('HealthModifyEvent') as Component & { amount: number };
+          const event = comps.get('HealthModifyEvent') as HealthModifyEvent;
 
-          // Only intercept damage (negative amount), let heals pass through
           if (event.amount >= 0) continue;
 
           const damage = Math.abs(event.amount);
@@ -74,12 +66,12 @@ export const shieldCapability = defineCapability({
             type: 'Shield',
             current: shield.current - absorbed,
             max: shield.max,
-          } as Shield);
+          } satisfies Shield);
 
           world.addComponent(entityId, {
             type: 'HealthModifyEvent',
             amount: remaining > 0 ? -remaining : 0,
-          } as Component & { amount: number });
+          } satisfies HealthModifyEvent);
         }
       },
     },

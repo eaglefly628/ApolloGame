@@ -70,6 +70,15 @@ world.tick()
 3. 逐个出队，减少邻居入度
 4. 全部出队 = 有效排序；剩余 = 循环依赖
 
+### 已知限制：动态依赖
+
+某些 Skill 通过配置字段动态读取组件（如 `status-bar` 的 `StatusBarSource.sourceComponent` 指向 `Health`），但 `reads` 声明中无法体现这种运行时绑定。拓扑排序不知道 `status-bar` 依赖 `Health`。
+
+**当前处理约定**：
+1. 创建有动态依赖的 Skill 时，开发工具应提示开发者确认执行顺序
+2. 记录到 Assembly 蓝图的备注中，供后续 review
+3. 未来由 Component Agent（主程 Claude）在组装时检测并建议 `reads` 补充声明
+
 ### 示例
 
 ```

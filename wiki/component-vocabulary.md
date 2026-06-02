@@ -1,6 +1,6 @@
 # 组件语义词汇表
 
-Apollo Engine 的组件分为 **6 种语义类型**。每种类型有明确的行为约定，AI 可通过类型推断组件的用途。
+Apollo Engine 的组件分为 **7 种语义类型**。每种类型有明确的行为约定，AI 可通过类型推断组件的用途。
 
 ## 总览
 
@@ -9,6 +9,7 @@ Apollo Engine 的组件分为 **6 种语义类型**。每种类型有明确的�
 | **Resource** | 持久 | `current`, `max` | Health, Mana, Stamina |
 | **Event** | 一次性 (被 consume) | `amount`, `source` | HealthModifyEvent, DamageEvent |
 | **Intent** | 一次性 (被 consume) | `target` | AttackIntent, DefendIntent |
+| **Effect** | 临时, 有持续时间 | `remainingTicks`, 效果参数 | Poisoned, Burning, Stunned |
 | **Marker** | 条件性 | (无字段) | Dead, Defending, CurrentTurn |
 | **Config** | 持久 | 配置参数 | CombatStats, TurnOrder, StatusBarSource |
 | **Render** | 每帧更新 | 渲染数据 | BarDisplay, Sprite, Transform |
@@ -63,6 +64,28 @@ interface AttackIntent {
 - 来自外部（键盘、AI、网络）
 - 被对应的逻辑 System consume 后转化为 Event
 - Intent → Event 的转化过程中应用游戏规则
+
+### Effect — 临时效果, 有字段, 有持续时间
+
+存在于 Entity 上的临时状态，有参数和持续时间。与 Marker 的区别：Effect 有字段（伤害量、剩余时间等）。
+
+```typescript
+interface Poisoned {
+  type: 'Poisoned';
+  damagePerTick: number;     // 效果参数
+  remainingTicks: number;    // 持续时间
+}
+```
+
+**约定**：
+- 必须有 `remainingTicks` 或等价的持续时间字段
+- 对应的 System 每帧递减计时器，归零后自动移除
+- 典型用途：Buff/Debuff（中毒、灼烧、加速、护盾增益等）
+
+**与其他类型的区别**：
+- vs **Marker**：Marker 无字段，Effect 有参数和时间
+- vs **Config**：Config 持久不变，Effect 会过期消失
+- vs **Event**：Event 被 consume 后当帧消失，Effect 跨帧存在
 
 ### Marker — 存在即有意义
 
@@ -123,6 +146,7 @@ LLM 通过组件的语义类型可以推断：
 - **Resource** → 这个实体有一种可变数值
 - **Event** → 这是一次性的事情发生了
 - **Intent** → 这是外部想要做什么
-- **Marker** → 这个实体处于某种状态
+- **Effect** → 这个实体身上有个临时效果，会自动过期
+- **Marker** → 这个实体处于某种状态（无参数）
 - **Config** → 这是实体的固有配置
 - **Render** → 这是给渲染用的数据

@@ -18,7 +18,7 @@ export interface IWorld {
   destroyEntity(id: EntityId): void;
   getAllEntities(): EntityId[];
 
-  addComponent(entityId: EntityId, component: Component): void;
+  addComponent<T extends Component>(entityId: EntityId, component: T): void;
   removeComponent(entityId: EntityId, type: ComponentType): void;
   getComponent<T extends Component>(entityId: EntityId, type: ComponentType): T | undefined;
   hasComponent(entityId: EntityId, type: ComponentType): boolean;

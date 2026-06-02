@@ -1,27 +1,6 @@
 import { defineCapability } from '@engine/core/define-capability.js';
 import type { IWorld, Component } from '@engine/core/types.js';
-
-// ── Components ──
-
-export interface StatusBarSource extends Component {
-  readonly type: 'StatusBarSource';
-  readonly sourceComponent: string;
-  readonly label: string;
-  readonly highColor: string;
-  readonly midColor: string;
-  readonly lowColor: string;
-  readonly lowThreshold: number;
-  readonly midThreshold: number;
-}
-
-export interface BarDisplay extends Component {
-  readonly type: 'BarDisplay';
-  percentage: number;
-  color: string;
-  label: string;
-  current: number;
-  max: number;
-}
+import type { StatusBarSource, BarDisplay } from '@engine/protocol/components.js';
 
 // ── Capability Definition ──
 

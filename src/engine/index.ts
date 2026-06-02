@@ -3,3 +3,7 @@ export { World } from './core/world.js';
 export { defineCapability } from './core/define-capability.js';
 export type { CapabilityDefinition, CapabilityConfig } from './core/define-capability.js';
 export { topologicalSort } from './core/topological-sort.js';
+export type {
+  Health, Shield, HealthModifyEvent, Poisoned,
+  Dead, KeyboardListener, StatusBarSource, BarDisplay,
+} from './protocol/components.js';

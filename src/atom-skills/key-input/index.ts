@@ -1,16 +1,6 @@
 import { defineCapability } from '@engine/core/define-capability.js';
-import type { IWorld, Component } from '@engine/core/types.js';
-
-// ── Components ──
-
-export interface HealthModifyEvent extends Component {
-  readonly type: 'HealthModifyEvent';
-  readonly amount: number;
-}
-
-export interface KeyboardListener extends Component {
-  readonly type: 'KeyboardListener';
-}
+import type { IWorld } from '@engine/core/types.js';
+import type { HealthModifyEvent } from '@engine/protocol/components.js';
 
 // ── Keyboard state (module-level, shared across ticks) ──
 
@@ -95,14 +85,14 @@ export const keyInputCapability = defineCapability({
             world.addComponent(entityId, {
               type: 'HealthModifyEvent',
               amount: 10,
-            } as HealthModifyEvent);
+            } satisfies HealthModifyEvent);
           }
 
           if (pressedKeys.has('ArrowDown') || pressedKeys.has('s') || pressedKeys.has('S')) {
             world.addComponent(entityId, {
               type: 'HealthModifyEvent',
               amount: -10,
-            } as HealthModifyEvent);
+            } satisfies HealthModifyEvent);
           }
         }
 

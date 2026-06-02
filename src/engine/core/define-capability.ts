@@ -1,6 +1,6 @@
 import type { SystemDeclaration, ComponentType } from './types.js';
 
-export type ComponentCategory = 'resource' | 'event' | 'intent' | 'marker' | 'config' | 'render';
+export type ComponentCategory = 'resource' | 'event' | 'intent' | 'marker' | 'config' | 'render' | 'effect';
 export type FieldType = 'number' | 'string' | 'boolean' | 'EntityId' | 'string[]' | 'number[]';
 
 export interface ComponentSchema {

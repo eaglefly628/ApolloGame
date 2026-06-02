@@ -3,8 +3,7 @@ import { Bar } from './templates/Bar.js';
 import { useComponent } from './hooks/use-component.js';
 import { useWorldVersion } from './hooks/use-engine.js';
 import type { Engine } from '../runtime/engine.js';
-import type { BarDisplay } from '../atom-skills/status-bar/index.js';
-import type { Health } from '../atom-skills/health/index.js';
+import type { BarDisplay, Health } from '../engine/protocol/components.js';
 
 interface GameOverlayProps {
   engine: Engine;

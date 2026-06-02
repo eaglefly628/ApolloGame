@@ -1,17 +1,6 @@
 import { defineCapability } from '@engine/core/define-capability.js';
-import type { IWorld, Component } from '@engine/core/types.js';
-
-// ── Components ──
-
-export interface Health extends Component {
-  readonly type: 'Health';
-  current: number;
-  max: number;
-}
-
-export interface Dead extends Component {
-  readonly type: 'Dead';
-}
+import type { IWorld } from '@engine/core/types.js';
+import type { Health, Dead, HealthModifyEvent } from '@engine/protocol/components.js';
 
 // ── Capability Definition ──
 
@@ -70,7 +59,7 @@ export const healthCapability = defineCapability({
 
         for (const [entityId, comps] of entities) {
           const health = comps.get('Health') as Health;
-          const event = comps.get('HealthModifyEvent') as Component & { amount: number };
+          const event = comps.get('HealthModifyEvent') as HealthModifyEvent;
 
           const newCurrent = Math.max(0, Math.min(health.max, health.current + event.amount));
 
@@ -78,10 +67,10 @@ export const healthCapability = defineCapability({
             type: 'Health',
             current: newCurrent,
             max: health.max,
-          } as Health);
+          } satisfies Health);
 
           if (newCurrent <= 0 && !world.hasComponent(entityId, 'Dead')) {
-            world.addComponent(entityId, { type: 'Dead' } as Dead);
+            world.addComponent(entityId, { type: 'Dead' } satisfies Dead);
           }
 
           if (newCurrent > 0 && world.hasComponent(entityId, 'Dead')) {
