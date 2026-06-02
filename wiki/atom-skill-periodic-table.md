@@ -1,127 +1,196 @@
-# Apollo Engine — 原子 Skill 清单 (游戏元素周期表)
+# Apollo Engine — 原子 Skill 清单 v2 (游戏元素周期表)
 
-> 从游戏底层语义出发，列出所有简单 2D 游戏的基础构件。
-> 不为某个具体游戏设计，而是游戏这个**概念本身**的原子能力。
+> 参考 Jason Gregory《Game Engine Architecture》分层模型重构。
+> **原则：只放真正的原子——不能再拆的最小构件。能由两个原子组合出的东西不进此表。**
 >
-> 审核状态: 待审核
+> 审核状态: v2 待审核
 
 ---
 
 ## 分层总览
 
 ```
-Layer 0 — 时空基础    让实体存在于世界中，有位置、有时间
-Layer 1 — 物理交互    让实体能动、能碰、能受力
-Layer 2 — 资源生命    让实体有数值、有状态、能死能活
-Layer 3 — 输入意图    让玩家和 AI 能操控实体
-Layer 4 — 行为状态    让实体有行为模式、有有限状态
-Layer 5 — 视听反馈    让一切变化被看到、听到
+Layer 0 — 存在        实体存在于世界中的最基本属性
+Layer 1 — 运动        实体能动
+Layer 2 — 碰撞        实体能碰
+Layer 3 — 数值        实体有数
+Layer 4 — 输入        外部能控制实体
+Layer 5 — 渲染基础    实体能被看到、听到
+Layer 6 — 行为基础    实体有行为模式
+```
+
+以上为原子层。以下由原子组合而来：
+
+```
+Combo A — 物理组合      gravity = force + velocity, friction = force + velocity, ...
+Combo B — 战斗组合      shield, poison, knockback, invincible, ...
+Combo C — 交互组合      pickup, destroy-on-contact, ...
+Combo D — AI 组合       patrol, chase, flee, ...
 ```
 
 ---
 
-## Layer 0 — 时空基础
+## Layer 0 — 存在 (Entity Primitives)
 
-| # | Atom Skill | 语义 | provides | reads | 说明 |
-|---|-----------|------|----------|-------|------|
-| 0.1 | **transform** | Config/Render | `Transform { x, y, rotation, scaleX, scaleY }` | — | 位置、朝向、缩放。一切空间计算的根。 |
-| 0.2 | **timer** | Resource/Effect | `Timer { elapsed, duration, loop }`, `TimerDoneEvent` | — | 通用倒计时/计时器。冷却、延迟、动画计时的基础。 |
-| 0.3 | **lifetime** | Effect | `Lifetime { remainingTicks }` | — | 实体生存期。归零后自动销毁实体（子弹、特效粒子、临时物体）。 |
-| 0.4 | **tag** | Marker | `Tag { tags: string[] }` | — | 实体标签/分组。碰撞过滤、阵营判断、查询筛选的基础。 |
+一切的根。没有这些，实体不存在于世界中。
 
----
-
-## Layer 1 — 物理交互
-
-| # | Atom Skill | 语义 | provides | reads | 说明 |
-|---|-----------|------|----------|-------|------|
-| 1.1 | **velocity** | Resource | `Velocity { vx, vy }` | `Transform` | 速度。每帧按 vx/vy 更新 Transform 位置。 |
-| 1.2 | **gravity** | Config/Effect | `Gravity { force }` | `Velocity` | 重力。每帧给 Velocity.vy 加力。平台跳跃、抛物线的基础。 |
-| 1.3 | **friction** | Config | `Friction { factor }` | `Velocity` | 摩擦力/阻力。每帧衰减 Velocity。用于地面减速、空气阻力。 |
-| 1.4 | **bounding-box** | Config | `BoundingBox { width, height, offsetX, offsetY }` | `Transform` | 碰撞包围盒。定义实体的物理占位大小。 |
-| 1.5 | **collision-detect** | Event | `CollisionEvent { entityA, entityB, overlapX, overlapY }` | `Transform`, `BoundingBox`, `Tag` | 碰撞检测。每帧扫描重叠，产生 CollisionEvent。不处理响应。 |
-| 1.6 | **collision-resolve** | — (纯逻辑) | — | `CollisionEvent`, `Transform`, `Velocity` | 碰撞响应。消费 CollisionEvent，推开实体或反弹。 |
-| 1.7 | **world-bounds** | Config | `WorldBounds { minX, minY, maxX, maxY }` | `Transform`, `Velocity` | 世界边界。阻止实体出界。 |
+| # | Atom Skill | provides | 说明 |
+|---|-----------|----------|------|
+| 0.1 | **transform** | `Transform { x, y, rotation, scaleX, scaleY }` | 空间位置。一切空间计算的起点。 |
+| 0.2 | **tag** | `Tag { tags: string[] }` | 分类标签。碰撞过滤、阵营、查询的基础。 |
+| 0.3 | **hierarchy** | `Parent { parentId }`, `Children { childIds }` | 父子关系。UI 挂载、武器跟随、编组。 |
 
 ---
 
-## Layer 2 — 资源与生命
+## Layer 1 — 运动 (Kinematics)
 
-| # | Atom Skill | 语义 | provides | reads | 说明 |
-|---|-----------|------|----------|-------|------|
-| 2.1 | **health** | Resource | `Health { current, max }`, `Dead` | `HealthModifyEvent` | 生命值。已实现。 |
-| 2.2 | **shield** | Resource | `Shield { current, max }` | `HealthModifyEvent` | 护盾。拦截伤害。已实现。 |
-| 2.3 | **stamina** | Resource | `Stamina { current, max, regenRate }` | `StaminaCostEvent` | 体力值。跑步、翻滚、重击消耗，自动回复。 |
-| 2.4 | **resource-pool** | Resource (通用) | `ResourcePool { id, current, max, regenRate }` | `ResourceModifyEvent` | 通用资源池。MP、弹药、能量、怒气等都是它的实例。 |
-| 2.5 | **poison** | Effect | `Poisoned { damagePerTick, remainingTicks }` | — | 中毒持续伤害。已实现。 |
-| 2.6 | **cooldown** | Effect | `Cooldown { skillId, remainingTicks }` | — | 技能冷却。阻止同一技能连续使用。 |
-| 2.7 | **invincible** | Effect/Marker | `Invincible { remainingTicks }` | `HealthModifyEvent` | 无敌帧。拦截所有伤害事件。受击后短暂无敌。 |
+让实体能动。纯运动学，不涉及力。
 
----
-
-## Layer 3 — 输入与意图
-
-| # | Atom Skill | 语义 | provides | reads | 说明 |
-|---|-----------|------|----------|-------|------|
-| 3.1 | **key-input** | Event | `KeyboardListener`, `HealthModifyEvent` | — | 键盘输入。已实现（demo 用途，后续会泛化）。 |
-| 3.2 | **input-map** | Config/Event | `InputMap { action→key }`, `ActionEvent { action }` | — | 输入映射。将原始按键转为语义动作（jump, attack, move_left）。解耦键位和逻辑。 |
-| 3.3 | **move-intent** | Intent | `MoveIntent { dirX, dirY }` | `ActionEvent` | 移动意图。将 ActionEvent 转为方向意图，由 velocity 消费。 |
-| 3.4 | **jump-intent** | Intent | `JumpIntent { force }` | `ActionEvent`, `Grounded` | 跳跃意图。仅在 Grounded 状态下生效，给 Velocity.vy 一个冲量。 |
-| 3.5 | **attack-intent** | Intent | `AttackIntent { target, skillId }` | `ActionEvent`, `Cooldown` | 攻击意图。检查冷却后发出攻击。 |
-| 3.6 | **ai-brain** | Intent | `AIBrain { strategy }` | 多种 (Health, Transform, Tag...) | AI 决策。读取世界状态，产出 MoveIntent / AttackIntent 等。 |
+| # | Atom Skill | provides | reads | 说明 |
+|---|-----------|----------|-------|------|
+| 1.1 | **velocity** | `Velocity { vx, vy }` | `Transform` | 线速度。每帧 position += velocity。 |
+| 1.2 | **acceleration** | `Acceleration { ax, ay }` | `Velocity` | 加速度。每帧 velocity += acceleration。力、重力、摩擦都通过写 Acceleration 实现。 |
+| 1.3 | **mass** | `Mass { value, inverseMass }` | — | 质量。碰撞响应、力计算的基础。inverseMass=0 表示不可移动(墙壁/地面)。 |
+| 1.4 | **angular-velocity** | `AngularVelocity { omega }` | `Transform` | 角速度。每帧 rotation += omega。旋转类运动的基础。 |
 
 ---
 
-## Layer 4 — 行为与状态
+## Layer 2 — 碰撞 (Collision)
 
-| # | Atom Skill | 语义 | provides | reads | 说明 |
-|---|-----------|------|----------|-------|------|
-| 4.1 | **state-machine** | Config/Marker | `StateMachine { current, transitions }`, `StateChangeEvent` | 多种触发条件 | 有限状态机。idle→walk→run→jump→attack→hurt→dead。 |
-| 4.2 | **grounded** | Marker | `Grounded` | `CollisionEvent`, `Transform` | 着地检测。是否站在地面上。跳跃、下落状态的判据。 |
-| 4.3 | **knockback** | Effect | `Knockback { vx, vy, remainingTicks }` | `Velocity` | 击退效果。受击后施加瞬间速度偏移。 |
-| 4.4 | **spawn** | Event | `SpawnRequest { templateId, x, y }`, `Spawned` | — | 生成实体。用于发射子弹、召唤物、掉落物。 |
-| 4.5 | **destroy-on-contact** | Marker/Logic | `DestroyOnContact` | `CollisionEvent` | 接触即销毁。子弹命中、陷阱触发、拾取物消失。 |
-| 4.6 | **pickup** | Event | `Pickupable { effectType, amount }`, `PickupEvent` | `CollisionEvent`, `Tag` | 拾取系统。碰到可拾取物 → 触发效果（回血、加弹药、得分）。 |
+让实体能碰。检测与响应严格分离。
+
+| # | Atom Skill | provides | reads | 说明 |
+|---|-----------|----------|-------|------|
+| 2.1 | **bounding-box** | `BoundingBox { width, height, offsetX, offsetY }` | — | AABB 包围盒定义。不做检测，只是形状数据。 |
+| 2.2 | **bounding-circle** | `BoundingCircle { radius }` | — | 圆形包围盒。子弹、球体、爆炸范围。 |
+| 2.3 | **collision-detect** | `CollisionEvent { entityA, entityB, normalX, normalY, depth }` | `Transform`, `BoundingBox`/`BoundingCircle`, `Tag` | 碰撞检测。每帧扫描重叠，产生 CollisionEvent。只检测，不响应。 |
+| 2.4 | **collision-separate** | — | `CollisionEvent`, `Transform`, `Mass` | 碰撞分离。消费 CollisionEvent，按质量比推开重叠实体。最小单位的响应。 |
+| 2.5 | **collision-bounce** | — | `CollisionEvent`, `Velocity`, `Mass` | 碰撞弹性反弹。消费 CollisionEvent，反转/衰减速度分量。 |
+| 2.6 | **world-bounds** | `WorldBounds { minX, minY, maxX, maxY }` | `Transform`, `Velocity` | 世界边界约束。 |
+| 2.7 | **trigger-zone** | `TriggerZone { width, height }`, `TriggerEnterEvent`, `TriggerExitEvent` | `Transform`, `BoundingBox` | 触发区域。不产生物理响应，只产生进入/离开事件。门、陷阱、区域的基础。 |
 
 ---
 
-## Layer 5 — 视听反馈
+## Layer 3 — 数值 (Values)
 
-| # | Atom Skill | 语义 | provides | reads | 说明 |
-|---|-----------|------|----------|-------|------|
-| 5.1 | **status-bar** | Render | `StatusBarSource`, `BarDisplay` | 任意 Resource | 通用状态条。已实现。 |
-| 5.2 | **sprite-render** | Render | `Sprite { textureKey, anchor }` | `Transform` | 精灵渲染。ECS → Phaser Sprite 同步。 |
-| 5.3 | **animation** | Render | `AnimationState { current, loop, speed }` | `StateMachine` / 多种 | 动画控制。状态 → 播放对应动画。 |
-| 5.4 | **screen-shake** | Render/Effect | `ScreenShake { intensity, duration }` | `HealthModifyEvent`, `CollisionEvent` | 屏幕震动。大伤害/碰撞时的镜头反馈。 |
-| 5.5 | **flash-effect** | Render/Effect | `FlashEffect { color, duration }` | `HealthModifyEvent` | 闪白/闪红。受击瞬间的视觉反馈。 |
-| 5.6 | **floating-text** | Render/Event | `FloatingText { text, color, x, y }` | `HealthModifyEvent` 等 | 飘字。伤害数字、治疗数字、经验值。 |
-| 5.7 | **sound-trigger** | Render/Event | `SoundTrigger { soundId }` | 多种 Event | 音效触发。攻击声、受击声、拾取声。 |
+让实体有数。最通用的数值容器。
+
+| # | Atom Skill | provides | reads | 说明 |
+|---|-----------|----------|-------|------|
+| 3.1 | **resource** | `Resource { id, current, max }`, `ResourceModifyEvent { resourceId, amount }` | — | **通用资源容器**。HP、MP、体力、弹药、经验值都是它的实例。一个 skill 解决所有 current/max 数值。 |
+| 3.2 | **resource-regen** | — | `Resource`, `Timer` | 资源自动回复。每隔 N 帧回复 M 点。stamina regen、MP regen 都是它。 |
+| 3.3 | **timer** | `Timer { id, elapsed, duration, loop, paused }`, `TimerDoneEvent { timerId }` | — | **通用计时器**。倒计时、间隔、延迟。cooldown、lifetime、dot 间隔、无敌帧持续时间都从它涌现。 |
+| 3.4 | **counter** | `Counter { id, value }`, `CounterModifyEvent { counterId, delta }` | — | 通用计数器。击杀数、分数、连击数、楼层数。没有 max，纯累加/递减。 |
+| 3.5 | **flag** | `Flag { id, value: boolean }` | — | 通用开关。门是否打开、是否已触发、是否可交互。比 Marker 更灵活（有 id 可多个共存）。 |
+
+---
+
+## Layer 4 — 输入 (Input)
+
+让外部能控制实体。原始信号到语义动作。
+
+| # | Atom Skill | provides | reads | 说明 |
+|---|-----------|----------|-------|------|
+| 4.1 | **keyboard-capture** | `KeyState { pressed: Set, justDown: Set, justUp: Set }` | — | 键盘状态捕获。每帧快照当前按键状态。纯数据，不解释含义。 |
+| 4.2 | **touch-capture** | `TouchState { touches: Array<{x,y,phase}> }` | — | 触摸/鼠标状态捕获。支持多点触控。 |
+| 4.3 | **input-action** | `InputAction { action: string, value: number }` | `KeyState` / `TouchState` | 输入→动作映射。将"按了A键"转为"jump 1.0"。解耦物理按键和游戏语义。 |
+| 4.4 | **intent-move** | `MoveIntent { dirX, dirY, magnitude }` | `InputAction` | 移动意图。将 action 转为方向。 |
+| 4.5 | **intent-interact** | `InteractIntent { targetId? }` | `InputAction`, `TriggerEnterEvent` | 交互意图。"对面前的东西按下交互键"。对话、拾取、开门的基础。 |
+
+---
+
+## Layer 5 — 渲染基础 (Render Primitives)
+
+让实体能被看到、听到。只是最基础的渲染指令，不含状态逻辑。
+
+| # | Atom Skill | provides | reads | 说明 |
+|---|-----------|----------|-------|------|
+| 5.1 | **sprite** | `Sprite { textureKey, anchorX, anchorY, visible }` | `Transform` | 精灵定义。ECS→Phaser Sprite 同步的最小单位。 |
+| 5.2 | **animation-clip** | `AnimClip { clipId, frameStart, frameEnd, fps, loop }` | `Sprite` | **单个**动画片段播放。不管状态切换，只管"播放这段帧序列"。 |
+| 5.3 | **tint** | `Tint { color, alpha }` | `Sprite` | 颜色覆盖。受击变红、中毒变绿、隐身半透明。 |
+| 5.4 | **camera** | `CameraTarget`, `CameraShake { intensity, remaining }` | `Transform` | 摄像机跟随和震动。 |
+| 5.5 | **audio-clip** | `AudioPlay { clipId, volume, loop }` | — | 播放一个音频片段。不管何时播放，只管"播"。 |
+| 5.6 | **status-bar** | `StatusBarSource`, `BarDisplay` | 任意 Resource | 通用状态条。✅ 已实现。 |
+| 5.7 | **floating-text** | `FloatingText { text, color, x, y, lifetime }` | — | 飘字。纯渲染指令——"在这个位置显示这段文字然后消失"。 |
+
+---
+
+## Layer 6 — 行为基础 (Behavior Primitives)
+
+让实体有行为模式。
+
+| # | Atom Skill | provides | reads | 说明 |
+|---|-----------|----------|-------|------|
+| 6.1 | **state-machine** | `FSM { current, previous }`, `StateChangeEvent { from, to }` | — | 有限状态机**骨架**。只管"当前状态是什么、切换时发事件"。不管状态对应什么行为。 |
+| 6.2 | **state-transition** | `TransitionRule { from, to, condition }` | `FSM`, 多种条件组件 | 状态转换规则。"idle→walk when MoveIntent exists"。从 FSM 拆出来的条件判断。 |
+| 6.3 | **spawn** | `SpawnRequest { templateId, x, y, components }` | — | 动态创建实体。消费 SpawnRequest，在世界中创建新实体。 |
+| 6.4 | **destroy** | `DestroyRequest { entityId, delay? }` | `Timer`(optional) | 销毁实体。可立即或延迟销毁。 |
+
+---
+
+## 组合层 (由原子涌现，不在周期表内)
+
+以下是两个或更多原子的组合，**不属于原子表**，但记录在此说明涌现路径。
+
+### Combo A — 物理组合
+| 组合 Skill | 由哪些原子组合 | 说明 |
+|-----------|--------------|------|
+| gravity | acceleration + mass | 每帧给 acceleration.ay += 9.8 * mass |
+| friction | acceleration + velocity | 每帧给 acceleration 加反向力 |
+| lifetime | timer + destroy | timer 到期 → destroy-request |
+| grounded | collision-detect + tag | 检测脚底是否有 tag=ground 的碰撞 |
+
+### Combo B — 战斗组合
+| 组合 Skill | 由哪些原子组合 | 说明 |
+|-----------|--------------|------|
+| health | resource (id=hp) | health 就是 resource 的一个实例 |
+| shield | resource (id=shield) + resource-modify 拦截 | 拦截伤害事件 |
+| poison | timer + resource-modify | 每帧由 timer 触发 resource 扣减 |
+| invincible | timer + flag (id=invincible) | flag 阻止伤害事件 |
+| cooldown | timer + flag (id=cooldown:skillId) | flag 阻止技能使用 |
+| knockback | timer + velocity 覆写 | 强制设定 velocity 持续 N 帧 |
+
+### Combo C — 交互组合
+| 组合 Skill | 由哪些原子组合 | 说明 |
+|-----------|--------------|------|
+| pickup | trigger-zone + intent-interact + destroy | 进入区域+交互→获得效果+销毁物体 |
+| destroy-on-contact | collision-detect + destroy | 碰撞→销毁 |
+| door | trigger-zone + flag + state-machine | 区域内+交互→flag翻转→状态切换 |
+
+### Combo D — AI 组合
+| 组合 Skill | 由哪些原子组合 | 说明 |
+|-----------|--------------|------|
+| ai-patrol | state-machine + intent-move + timer | 定时切换巡逻方向 |
+| ai-chase | state-machine + intent-move + transform(读取目标位置) | 向目标移动 |
+| ai-flee | state-machine + intent-move + transform | 远离目标 |
+| ai-attack | state-machine + attack-intent + timer(cooldown) | 进入范围→攻击 |
 
 ---
 
 ## 统计
 
-| Layer | 数量 | 状态 |
+| Layer | 数量 | 说明 |
 |-------|------|------|
-| 0 — 时空基础 | 4 | 0 已实现 |
-| 1 — 物理交互 | 7 | 0 已实现 |
-| 2 — 资源生命 | 7 | 3 已实现 (health, shield, poison) |
-| 3 — 输入意图 | 6 | 1 已实现 (key-input) |
-| 4 — 行为状态 | 6 | 0 已实现 |
-| 5 — 视听反馈 | 7 | 1 已实现 (status-bar) |
-| **总计** | **37** | **5 已实现** |
+| 0 — 存在 | 3 | transform, tag, hierarchy |
+| 1 — 运动 | 4 | velocity, acceleration, mass, angular-velocity |
+| 2 — 碰撞 | 7 | bbox, bcircle, detect, separate, bounce, world-bounds, trigger-zone |
+| 3 — 数值 | 5 | resource, resource-regen, timer, counter, flag |
+| 4 — 输入 | 5 | keyboard, touch, input-action, intent-move, intent-interact |
+| 5 — 渲染 | 7 | sprite, animation-clip, tint, camera, audio-clip, status-bar, floating-text |
+| 6 — 行为 | 4 | state-machine, state-transition, spawn, destroy |
+| **原子总计** | **35** | |
+| 组合层 | 16+ | 由原子涌现，不计入原子表 |
 
 ---
 
-## 涌现组合示例
+## 涌现验证
 
-当原子 Skill 积累后，游戏从组合中涌现：
+用纯原子组合出游戏，不依赖任何组合层 Skill：
 
-| 游戏类型 | 需要的 Atom Skills |
-|---------|-------------------|
-| **平台跳跃** | transform + velocity + gravity + jump-intent + grounded + collision-detect + collision-resolve + world-bounds + sprite-render + animation |
-| **俯视角 RPG** | transform + velocity + health + stamina + attack-intent + ai-brain + state-machine + collision-detect + pickup + floating-text |
-| **弹幕射击** | transform + velocity + lifetime + spawn + destroy-on-contact + collision-detect + health + input-map + cooldown + screen-shake |
-| **回合制战斗** | health + shield + resource-pool + attack-intent + ai-brain + state-machine + cooldown + status-bar + animation + floating-text |
+| 游戏类型 | 原子 Skills |
+|---------|------------|
+| **平台跳跃** | transform, velocity, acceleration, mass, bbox, collision-detect, collision-separate, world-bounds, keyboard-capture, input-action, intent-move, sprite, animation-clip, camera, state-machine, state-transition, spawn, destroy, timer, counter |
+| **俯视角 RPG** | transform, velocity, mass, bbox, collision-detect, trigger-zone, keyboard-capture, input-action, intent-move, intent-interact, resource, resource-regen, timer, flag, sprite, animation-clip, tint, status-bar, floating-text, state-machine, state-transition, audio-clip |
+| **弹幕射击** | transform, velocity, acceleration, bbox, bcircle, collision-detect, world-bounds, keyboard-capture, input-action, sprite, timer, resource, counter, spawn, destroy, camera, floating-text |
 
-> 同样 37 个原子，不同组合 → 不同游戏类型。这就是涌现。
+> 35 个原子，0 个组合层 Skill，依然能描述完整游戏。这是真正的原子。
