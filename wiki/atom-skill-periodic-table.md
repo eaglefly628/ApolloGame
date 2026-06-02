@@ -1,19 +1,18 @@
-# Apollo Engine — 原子 Skill 清单 v5 (游戏元素周期表)
+# Apollo Engine — 原子 Skill 清单 v6 (游戏元素周期表)
 
 > **判定标准：能用其他原子的组合描述 → 不是原子。每个原子回答一个且仅一个问题。**
 >
-> v5 变更：合并 Claude v4 与 Gemini AIGP 蓝图。
-> Transform 合并回单一组件（采纳 Gemini）。新增 hierarchy。去掉 counter（Tier 1 涌现）。
-> 字段增强（velocity.angular, resource.min, state.fsmId, tag→Bitmask, sprite.zOrder, camera 偏移/旋转）。
-> 新增三层可选扩展（骨骼动画 / 叙事 / AIGP 旁路）。
+> v6 变更：四引擎交叉验证（Bevy / Unity DOTS / Godot / Phaser）。
+> 新增 L6 text（3/4 引擎验证为核心渲染原语）和 W2 spatial-query（所有引擎提供的世界级服务）。
+> 确认 tilemap 为资产格式、pathfinding 为算法服务、CCD 为 D1 系统增强——均不加入原子表。
 >
-> 合并决策详见 `wiki/v5-merge-notes.md`
+> 交叉验证详见 `wiki/v6-cross-engine-validation.md`
 >
-> 审核状态: v5 已审核
+> 审核状态: v6 待审核
 
 ---
 
-## 核心原子表 (23 实体级 + 1 世界级 = 24)
+## 核心原子表 (24 实体级 + 2 世界级 = 26)
 
 ### 空间与层级 — "它在哪？它朝哪？多大？谁是它的父节点？"
 
@@ -119,22 +118,27 @@
 | L3 | **frame** | `Frame { index, total }` | 精灵的当前帧？ |
 | L4 | **sound** | `Sound { clipId, volume, loop }` | 播放什么声音？ |
 | L5 | **camera** | `Camera { zoom, offsetX, offsetY, rotation, viewportW, viewportH }` | 观察窗口参数？世界到屏幕的映射基准？ |
+| L6 | **text** | `Text { content, fontSize, fontFamily, anchor, lineSpacing }` | 显示什么文字？ |
 
 > sprite.zOrder——2D 渲染排序是基础需求。
 > camera 增加 offsetX/Y + rotation——摄像机震动、平移、旋转效果的数据来源。
 > camera 实体同时挂 Transform 组件确定世界位置，Camera 组件只描述投影参数。
+> text 是独立渲染原语——Bevy(Text2d)、Godot(Label)、Phaser(Text) 均为一等公民。伤害飘字、对话气泡、UI 文本不可或缺。不是 Sprite 的特化（渲染管线不同）。
 
 ### 世界级 — "世界本身的属性"
 
 | # | Atom | Component | 回答的问题 |
 |---|------|-----------|-----------|
 | W1 | **random** | `RandomSeed { seed, sequence }` | 可控随机数。确定性重放的基石。 |
+| W2 | **spatial-query** | `SpatialIndex { cellSize, type: 'grid'｜'quadtree' }` | 空间查询服务：射线、范围、最近邻。 |
 
-> 不是实体级组件，而是世界级服务。挂在特殊的"world"实体上，所有系统可读。
+> random / spatial-query 不是实体级组件，而是世界级服务。挂在特殊的"world"实体上，所有系统可读。
+> spatial-query 回答"A 到 B 之间有什么？离我最近的 N 个是谁？"——overlap-detect 无法回答的问题。
+> Unity DOTS 通过 PhysicsWorldSingleton 服务调用实现，Godot 通过 RayCast2D 节点实现。AI 视线、自动索敌不可或缺。
 
 ---
 
-## 核心原子总数：24 (23 实体级 + 1 世界级)
+## 核心原子总数：26 (24 实体级 + 2 世界级)
 
 ```
 空间/层级: A1 transform      A2 hierarchy
@@ -148,8 +152,8 @@
 输入:      I1 input-capture  I2 action-map
 状态:      J1 state
 生命周期:  K1 spawn          K2 destroy
-感知:      L1 sprite  L2 color  L3 frame  L4 sound  L5 camera
-世界级:    W1 random
+感知:      L1 sprite  L2 color  L3 frame  L4 sound  L5 camera  L6 text
+世界级:    W1 random  W2 spatial-query
 ```
 
 ---
@@ -233,6 +237,8 @@ UI 层通过 binding 声明读取这个 resource 并投影为 Bar/Text/任意 UI
 | ui-binding | resource → React overlay | resource → UI (非 ECS) |
 | gravity | mass → acceleration.ay | mass → acceleration |
 | friction | velocity → acceleration(反向) | velocity → acceleration |
+| damage-number | resource-modify → spawn + text + velocity(上飘) + lifetime | resource + text + spawn |
+| range-detect | spatial-query(radius) → relation(target) | spatial-query → relation |
 
 ### Tier 3 — 系统级玩法 (Mechanics)
 
@@ -248,6 +254,8 @@ UI 层通过 binding 声明读取这个 resource 并投影为 Bar/Text/任意 UI
 | pickup-item | trigger-zone + destroy + resource-modify |
 | platformer-jump | action-map + flag(grounded) + velocity |
 | projectile | spawn + velocity + lifetime + overlap-detect + destroy |
+| auto-target | spatial-query(nearest) + tag(enemy) + relation(target) |
+| dialog-popup | trigger-zone + text + state(dialog) |
 
 ### Tier 4 — 心智与黑盒 (Behaviors)
 
@@ -256,7 +264,7 @@ UI 层通过 binding 声明读取这个 resource 并投影为 Bar/Text/任意 UI
 | 组合 | 来源 |
 |------|------|
 | ai-patrol | state + timer + velocity(方向切换) |
-| ai-chase | state + relation(target) + transform + velocity |
+| ai-chase | state + spatial-query(nearest) + relation(target) + transform + velocity |
 | ai-attack-pattern | state + timer(cooldown) + spawn(弹幕) |
 | dialogue | trigger-zone + state + input + string-variable |
 | anim-state-machine | state + transition-rules + animation |
@@ -270,7 +278,7 @@ UI 层通过 binding 声明读取这个 resource 并投影为 Bar/Text/任意 UI
 **答案：Macro 层——预编译的 Tier 2/3 组合，供 AI 快速调用。**
 
 ```
-核心原子 (24)        ← 不可变的基础真理
+核心原子 (26)        ← 不可变的基础真理
 扩展原子 (7)         ← 按需引入
   ↓
 Macro Library        ← 预编译的 Tier 2/3 "积木块"
@@ -290,10 +298,10 @@ Assembly 蓝图        ← 最终游戏
 
 ## 涌现验证
 
-| 游戏类型 | 使用的核心原子 (24个中) |
+| 游戏类型 | 使用的核心原子 (26个中) |
 |---------|----------------------|
-| **平台跳跃** | transform, hierarchy, velocity, acceleration, mass, shape, overlap-detect, timer, resource, flag, tag, input-capture, action-map, state, spawn, destroy, sprite, color, frame, sound, camera (21/24) |
-| **弹幕射击** | transform, velocity, acceleration, shape, overlap-detect, timer, resource, flag, tag, input-capture, action-map, spawn, destroy, sprite, frame, sound, camera, random (18/24) |
-| **回合制 RPG** | transform, hierarchy, resource, flag, tag, relation, input-capture, action-map, state, sprite, color, frame, sound, camera, timer, random (16/24) |
-| **换装/女性向** | transform, hierarchy, resource, flag, tag, relation, input-capture, action-map, state, sprite, color, frame, sound, camera + **扩展: socket, string-variable** (14+2/24+7) |
-| **AI 视频生成** | transform, state, timer, camera, random + **扩展: skeletal-pose, shadow-dictionary, semantic-material, conditioning-mask, latent-anchor** (5+5/24+7) |
+| **平台跳跃** | transform, hierarchy, velocity, acceleration, mass, shape, overlap-detect, timer, resource, flag, tag, input-capture, action-map, state, spawn, destroy, sprite, color, frame, sound, camera, text (22/26) |
+| **弹幕射击** | transform, velocity, acceleration, shape, overlap-detect, timer, resource, flag, tag, input-capture, action-map, spawn, destroy, sprite, frame, sound, camera, text, random, spatial-query (20/26) |
+| **回合制 RPG** | transform, hierarchy, resource, flag, tag, relation, input-capture, action-map, state, sprite, color, frame, sound, camera, timer, text, random (17/26) |
+| **换装/女性向** | transform, hierarchy, resource, flag, tag, relation, input-capture, action-map, state, sprite, color, frame, sound, camera, text + **扩展: socket, string-variable** (15+2/26+7) |
+| **AI 视频生成** | transform, state, timer, camera, random + **扩展: skeletal-pose, shadow-dictionary, semantic-material, conditioning-mask, latent-anchor** (5+5/26+7) |
