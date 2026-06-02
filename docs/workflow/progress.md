@@ -1,6 +1,7 @@
 # 开发进度
 
 > Lead 每完成一批更新此文件。Programmer 读取此文件了解全局进度。
+> **执行模式**：Tier 1 核心原子由 Lead 主程序直接实现；Programmer 派发工作流（后台 Agent / inbox-outbox）留给 Tier 2 组合层。
 
 ---
 
@@ -9,7 +10,7 @@
 | 批次 | A | B | C | 状态 |
 |------|---|---|---|------|
 | 1 | A1 transform | F1 resource | F2 flag | ✅ done |
-| 2 | B1 velocity | E1 timer | G1 tag | pending |
+| 2 | B1 velocity | E1 timer | G1 tag | ✅ done |
 | 3 | B2 acceleration | G2 relation | H1 visibility | pending |
 | 4 | B3 mass | I1 input-capture | J1 state | pending |
 | 5 | C1 shape | I2 action-map | K1 spawn | pending |
@@ -20,13 +21,16 @@
 
 ## 已完成原子
 
-| 原子 | commit | 组件 | 系统 | 测试 |
-|------|--------|------|------|------|
-| A1 transform | cf3ead3 | `Transform{x,y,rotation,scaleX,scaleY}` | —（纯数据） | 16 |
-| F1 resource | 1c4d5ba | `Resource` + `ResourceModify` | `resource-apply`（clamp） | 12 |
-| F2 flag | 92adb3b | `Flag{id,active}` | —（纯数据） | 18 |
+| 原子 | 组件 | 系统 | 测试 |
+|------|------|------|------|
+| A1 transform | `Transform{x,y,rotation,scaleX,scaleY}` | —（纯数据） | 16 |
+| B1 velocity | `Velocity{vx,vy,angular}` | —（纯数据） | 4 |
+| E1 timer | `Timer{id,elapsed,duration,loop}` + `TimerDone` | `timer-advance`（tick 计数，fire-once/loop） | 7 |
+| F1 resource | `Resource` + `ResourceModify` | `resource-apply`（clamp） | 12 |
+| F2 flag | `Flag{id,active}` | —（纯数据） | 18 |
+| G1 tag | `Tag{flags}` bitmask | —（纯数据） | 5 |
 
-进度：**3 / 26** 核心原子。`tsc --noEmit` 通过，`vitest` 46 passed。
+进度：**6 / 26** 核心原子。`tsc --noEmit` 通过，`vitest` 62 passed。
 
 ## 已知问题
 
