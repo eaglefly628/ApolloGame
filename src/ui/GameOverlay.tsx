@@ -1,19 +1,15 @@
 import React from 'react';
-import { Bar } from './templates/Bar.js';
-import { useComponent } from './hooks/use-component.js';
 import { useWorldVersion } from './hooks/use-engine.js';
 import type { Engine } from '../runtime/engine.js';
-import type { BarDisplay, Health } from '../engine/protocol/components.js';
 
 interface GameOverlayProps {
   engine: Engine;
 }
 
+// 占位 overlay —— 旧 skill 已移除。
+// Tier 1 原子实现后，UI binding 在此读取 resource/flag 等组件投影为界面。
 export function GameOverlay({ engine }: GameOverlayProps) {
-  const version = useWorldVersion(engine);
-  const barDisplay = useComponent<BarDisplay>(engine, 'hero', 'BarDisplay');
-  const health = useComponent<Health>(engine, 'hero', 'Health');
-  const isDead = engine.world.hasComponent('hero', 'Dead');
+  useWorldVersion(engine);
 
   return (
     <div style={{
@@ -22,74 +18,19 @@ export function GameOverlay({ engine }: GameOverlayProps) {
       zIndex: 10,
       pointerEvents: 'none',
       display: 'flex',
-      flexDirection: 'column',
-      justifyContent: 'space-between',
-      padding: 24,
-    }}>
-      {/* Top: Health Bar */}
-      <div style={{ width: 280 }}>
-        {barDisplay && (
-          <Bar
-            current={barDisplay.current}
-            max={barDisplay.max}
-            color={barDisplay.color}
-            label={barDisplay.label}
-          />
-        )}
-      </div>
-
-      {/* Center: Status */}
-      {isDead && (
-        <div style={{
-          alignSelf: 'center',
-          fontSize: 32,
-          fontWeight: 'bold',
-          color: '#ef4444',
-          textShadow: '0 2px 8px rgba(0,0,0,0.8)',
-          animation: 'pulse 1s infinite',
-        }}>
-          DEAD
-        </div>
-      )}
-
-      {/* Bottom: Instructions */}
-      <div style={{
-        alignSelf: 'center',
-        display: 'flex',
-        gap: 16,
-        pointerEvents: 'auto',
-      }}>
-        <KeyHint keyName="↑ / W" action="Heal +10" color="#22c55e" />
-        <KeyHint keyName="↓ / S" action="Damage -10" color="#ef4444" />
-      </div>
-    </div>
-  );
-}
-
-function KeyHint({ keyName, action, color }: { keyName: string; action: string; color: string }) {
-  return (
-    <div style={{
-      display: 'flex',
       alignItems: 'center',
-      gap: 8,
-      padding: '8px 16px',
-      background: 'rgba(0,0,0,0.7)',
-      borderRadius: 8,
-      border: `1px solid ${color}44`,
-      fontSize: 13,
-      color: '#e2e8f0',
+      justifyContent: 'center',
     }}>
-      <kbd style={{
-        padding: '2px 8px',
-        background: 'rgba(255,255,255,0.1)',
-        borderRadius: 4,
+      <div style={{
+        padding: '12px 20px',
+        background: 'rgba(0,0,0,0.6)',
+        borderRadius: 8,
+        color: '#94a3b8',
+        fontSize: 13,
         fontFamily: 'monospace',
-        fontWeight: 'bold',
-        color,
       }}>
-        {keyName}
-      </kbd>
-      <span>{action}</span>
+        empty world — 等待 Tier 1 原子 skill
+      </div>
     </div>
   );
 }

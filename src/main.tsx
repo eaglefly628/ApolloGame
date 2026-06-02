@@ -33,9 +33,9 @@ function App() {
               ctx.fillStyle = 'rgba(255,255,255,0.15)';
               ctx.font = '24px sans-serif';
               ctx.textAlign = 'center';
-              ctx.fillText('Apollo Engine — Atom Skill Demo', 320, 200);
+              ctx.fillText('Apollo Engine', 320, 200);
               ctx.font = '14px sans-serif';
-              ctx.fillText('ECS: key-input → health → health-bar', 320, 230);
+              ctx.fillText('empty world — awaiting Tier 1 atom skills', 320, 230);
             }
           }
         }}
