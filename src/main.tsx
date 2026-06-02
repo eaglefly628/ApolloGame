@@ -35,7 +35,7 @@ function App() {
               ctx.textAlign = 'center';
               ctx.fillText('Apollo Engine', 320, 200);
               ctx.font = '14px sans-serif';
-              ctx.fillText('empty world — awaiting Tier 1 atom skills', 320, 230);
+              ctx.fillText('motion demo · live readout in overlay ↑', 320, 230);
             }
           }
         }}

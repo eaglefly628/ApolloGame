@@ -50,7 +50,7 @@
 | W1 random | `RandomSeed{seed,sequence}` + `nextRandom()` 助手 | —（按需取数） | 5 |
 | W2 spatial-query | `SpatialIndex{cellSize,kind}` + `queryRange/queryNearest` 助手 | —（按需查询） | 5 |
 
-进度：**26 / 26** 核心原子 ✅ 全部完成。`tsc --noEmit` 通过，`vitest` 142 passed。
+进度：**26 / 26** 核心原子 ✅ 全部完成。`tsc --noEmit` 通过，`vitest` 144 passed（含 demo 集成），`npm run build` 通过。
 
 ## 已知问题
 
@@ -59,4 +59,5 @@
 - **运维 · vitest 扫描 worktree**：`.claude/worktrees/` 下的测试副本会被 vitest 重复收集；集成后须 `git worktree remove` 清理（该目录已 gitignore）。
 - **数据型原子无系统**：input-capture / action-map / spawn 只定义组件契约（systems 为空）——其行为（DOM 捕获、按键→动作绑定、模板实例化）依赖运行时/assembly，非通用纯 ECS 逻辑。对比 destroy 有 `destroy-apply`（移除逻辑通用、无需注册表）。
 - **SpatialIndex 字段重命名**：周期表写 `type: 'grid'|'quadtree'`，但 `type` 是引擎 Component 判别字段（保留），故重命名为 `kind`（与 Shape.kind 一致）。
-- **未接线**：26 原子尚未注册进 demo.assembly / 统一导出；Tier 1 涌现层（motion-apply 等）尚未实现。
+- **接线 + demo 已完成**：26 原子统一导出于 `src/atom-skills/index.ts`；`demo.assembly` 用真实 Engine 跑通"子弹飞行 → 撞墙检测 → 寿命自毁"，`demo.integration.test` 验证拓扑协作，`npm run build` 通过。
+- **Tier 1 涌现层进度 2/7**：已实现 `motion-apply`、`lifetime`（demo 所需，置于 `src/tier1/`）；待实现 rotation-apply / accel-apply / animation / hierarchy-resolve / counter。
