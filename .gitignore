@@ -5,3 +5,4 @@ dist/
 .DS_Store
 .apollo/registry.json
 .claude/worktrees/
+review-for-gemini.txt
