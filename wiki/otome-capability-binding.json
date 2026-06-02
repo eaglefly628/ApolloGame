@@ -1,0 +1,224 @@
+{
+  "$schema": "aimeng.capability-binding/v0.1",
+  "meta": {
+    "name": "万千心途 · 娱乐圈世界 · 上升主角期",
+    "purpose": "把小喃的乙游玩法语义 ↔ 君白的 Apollo Capability 机械结构 做一一映射。这是引擎的左右腿合并接口层。",
+    "scope": "MVP 链路：项目选择 → 角色弧光 → 拍摄检定 → 播出反馈 → 作品结算（单男主：对手演员）",
+    "ownership": {
+      "domainVocabulary": "邓喃（小喃）— 负责语义词表的内容与品质",
+      "binding": "Ella（暂兼）— 负责语义↔机械的映射，待招到翻译者后移交",
+      "capabilityShell": "李君白 — 负责 Capability 机械实现 + domainSlots 声明"
+    },
+    "howToRead": "每个 binding 条目 = 一条「小喃的高品质语义如何低门槛地灌进君白的通用机械件」。domainConcept 是小喃的话，capability/mapping 是君白能直接吃的结构，presentationHook 是这条语义如何变成画面差异。"
+  },
+
+  "_comment_vocab": "================= 第一部分：领域受控词表（来自小喃文档，是 binding 引用的语义来源）=================",
+  "domainVocabulary": {
+    "statCategories": ["主能力", "准备度", "结果值", "风险值", "关系值"],
+    "stats": {
+      "主能力": ["演技", "台词", "镜头感", "角色理解", "情绪控制"],
+      "准备度": ["角色理解度", "台词熟练度"],
+      "结果值": ["作品完成度", "角色出圈度", "奖项潜力", "名场面数量", "热度", "口碑", "咖位", "人设稳定"],
+      "风险值": ["压力", "疲劳", "黑热搜风险", "公开风险"],
+      "关系值": ["好感", "信任", "默契", "公开风险"]
+    },
+    "relationshipFields": ["好感", "信任", "默契", "公开风险"],
+    "loveInterestArchetypes": {
+      "对手演员": { "type": "对手型", "boundGameplay": ["对手戏", "CP宣传", "片场事件"], "core": "默契与边界" }
+    },
+    "emotionalBeats": ["心动", "试探", "愧疚", "占有欲", "释然", "退让", "崩溃", "和解"],
+    "embedMethods": ["合作加成", "价值观选择", "危机救援", "隐藏选项", "风险反噬", "结局绑定"]
+  },
+
+  "_comment_slots": "================= 第二部分：给君白的 Capability 留的领域插槽声明（扩展他的 describe）=================",
+  "requiredDomainSlots": {
+    "_note": "这是对君白 CapabilityDefinition.describe 的扩展要求。每个乙游 Capability 必须声明它暴露哪些插槽给领域语义灌入。插槽是可选的，机械件不带插槽也能跑，但带了才能承载高品质。",
+    "example": {
+      "id": "check.resolve",
+      "describe": {
+        "summary": "通用检定结算",
+        "semantic": ["check", "resolve"],
+        "domainSlots": [
+          { "slot": "relationshipModifier", "accepts": "relationshipFields", "optional": true, "note": "关系值如何加成检定" },
+          { "slot": "emotionalBeat", "accepts": "emotionalBeats", "optional": true, "note": "本次检定承载的情感节拍，影响表现层" },
+          { "slot": "preparationBonus", "accepts": "准备度", "optional": false, "note": "前置养成结果带入" }
+        ]
+      }
+    }
+  },
+
+  "_comment_components": "================= 第三部分：本世界新增的 Component（沿用君白的六类语义：Resource/Event/Intent/Render/Marker/Config）=================",
+  "components": {
+    "StatBlock": { "category": "Resource", "definedBy": "stat", "fields": { "演技": "number", "台词": "number", "镜头感": "number", "角色理解": "number", "情绪控制": "number" }, "note": "演员主能力，对应君白 Health 那一类有数值的 Resource" },
+    "Relationship": { "category": "Resource", "definedBy": "love-interest", "fields": { "target": "EntityId", "好感": "number", "信任": "number", "默契": "number", "公开风险": "number" } },
+    "RiskState": { "category": "Resource", "definedBy": "risk", "fields": { "压力": "number", "疲劳": "number", "黑热搜风险": "number", "公开风险": "number" } },
+    "WorkProgress": { "category": "Resource", "definedBy": "settlement", "fields": { "作品完成度": "number", "角色出圈度": "number", "奖项潜力": "number", "名场面数量": "number" } },
+    "ProjectSelectIntent": { "category": "Intent", "definedBy": "project", "fields": { "projectId": "string" } },
+    "ArcChoiceIntent": { "category": "Intent", "definedBy": "char-arc", "fields": { "selectedClues": "string[]", "order": "string[]" } },
+    "SceneChoiceIntent": { "category": "Intent", "definedBy": "scene-check", "fields": { "sceneId": "string", "choiceId": "string" } },
+    "PublicityChoiceIntent": { "category": "Intent", "definedBy": "publicity", "fields": { "strategy": "string" } },
+    "ArcResultEvent": { "category": "Event", "definedBy": "char-arc", "fields": { "score": "string", "statGain": "object", "unlockedChoices": "string[]", "relationshipGain": "object" } },
+    "CheckResultEvent": { "category": "Event", "definedBy": "scene-check", "fields": { "resultRank": "string", "resultGain": "object", "relationshipGain": "object", "nextEvents": "string[]" } },
+    "FeedbackEvent": { "category": "Event", "definedBy": "broadcast", "fields": { "热度": "number", "口碑": "number", "角色出圈度": "number", "黑热搜风险": "number" } },
+    "EmotionalBeat": { "category": "Marker", "definedBy": "love-interest", "fields": { "beat": "string", "intensity": "number" }, "note": "一次性标记，被表现层 consume" },
+    "UnlockedActingChoice": { "category": "Marker", "definedBy": "char-arc", "fields": { "choiceId": "string" } },
+    "PresentationCue": { "category": "Render", "definedBy": "render-bridge", "fields": { "animation": "string", "colorGrade": "string", "sfx": "string", "bgm": "string" } }
+  },
+
+  "_comment_bindings": "================= 第四部分：核心 —— 玩法链路逐环节绑定 =================",
+  "bindings": [
+
+    {
+      "bindingId": "stage_01_project_select",
+      "stageName": "项目选择",
+      "domainConcept": "玩家在上升主角期选择一部作品，决定本周期收益方向、难度、男主嵌入点（小喃文档 §6.1）",
+      "capability": "project.select",
+      "trigger": { "on": "ProjectSelectIntent", "category": "Intent" },
+      "mapping": {
+        "reads": ["ProjectSelectIntent"],
+        "writes": ["WorkProgress", "Config:activeProject"],
+        "consumes": ["ProjectSelectIntent"],
+        "logic": "锁定 projectId=《长夜将明》，写入难度4、收益倾向[口碑,奖项]、关联男主[对手演员]、推荐能力[演技,台词,角色理解]"
+      },
+      "domainSlotFills": {
+        "rewardFocus": ["口碑", "奖项"],
+        "riskTags": ["压力高", "播出慢"]
+      },
+      "presentationHook": null,
+      "note": "本环节纯配置，无情感节拍。对应君白的 Config 类 Component。"
+    },
+
+    {
+      "bindingId": "stage_02_character_arc",
+      "stageName": "角色弧光小游戏（情绪递进链）",
+      "domainConcept": "玩家拆解角色弧光链『克制→动摇→崩溃→平静』，理解角色，解锁高级表演选项、推进对手演员默契（小喃文档 §7）",
+      "capability": "char-arc.resolve",
+      "trigger": { "on": "ArcChoiceIntent", "category": "Intent" },
+      "mapping": {
+        "reads": ["ArcChoiceIntent", "StatBlock"],
+        "writes": ["ArcResultEvent", "StatBlock", "UnlockedActingChoice", "Relationship"],
+        "consumes": ["ArcChoiceIntent"],
+        "logic": "评分规则 S/A/B/C/Fail。S → 角色理解+12、台词+4、解锁 UnlockedActingChoice('smile_breakdown')、奖项潜力+；关系张力链成功 → Relationship.默契 += 4 并触发男主事件"
+      },
+      "domainSlotFills": {
+        "miniGameVariant": "情绪递进链",
+        "correctChain": ["克制", "动摇", "崩溃", "平静"],
+        "scoreRule": { "S": "核心线索+顺序+台词全对", "A": "大部分对", "B": "部分对", "C": "错误较多→压力+", "Fail": "核心错→拍摄惩罚" }
+      },
+      "presentationHook": {
+        "whenScore": { "S": { "emotionalBeat": "释然", "cue": { "animation": "理解达成-柔光", "sfx": "顿悟音", "bgm": "暖弦渐入" } } }
+      },
+      "note": "这是娱乐圈世界区别于其他世界的『主手感』Capability。准备度类数值在此产生，下游检定 reads 它。"
+    },
+
+    {
+      "bindingId": "stage_03_scene_check",
+      "stageName": "拍摄关键场次检定（雨夜审讯·情绪爆发戏）",
+      "domainConcept": "用角色筹备结果检验拍摄，产出作品完成度、名场面、对手演员默契、奖项潜力（小喃文档 §8）。底层公式：场次得分 = 演员能力 + 角色筹备加成 + 状态修正 + 表演方向匹配 + 男主默契加成 - 压力/疲劳惩罚",
+      "capability": "check.resolve",
+      "trigger": { "on": "SceneChoiceIntent", "category": "Intent" },
+      "mapping": {
+        "reads": ["SceneChoiceIntent", "StatBlock", "Relationship", "RiskState", "UnlockedActingChoice"],
+        "writes": ["CheckResultEvent", "WorkProgress", "Relationship"],
+        "consumes": ["SceneChoiceIntent"],
+        "formula": "score = (演技 + 情绪控制) + 准备度加成 + 状态修正 + 表演方向匹配度 + (Relationship.默契 * defaultWeight) - (压力 + 疲劳)*riskWeight",
+        "resultRanks": { "highlight": "作品完成度+12, 奖项潜力+6, 名场面+1, 默契+4, 好感+2, nextEvents:[famous_scene_trending]", "normal": "作品完成度小幅+", "ng": "压力+, 完成度低, 触发片场事件" }
+      },
+      "domainSlotFills": {
+        "sceneId": "rain_interrogation",
+        "sceneType": "情绪爆发戏",
+        "checkStats": ["演技", "情绪控制"],
+        "choices": ["克制", "崩溃", "愤怒", "沉默"],
+        "advancedChoiceGate": { "choiceId": "smile_breakdown(笑着崩溃)", "require": "角色理解>=70 且 情绪递进链=S" }
+      },
+      "presentationHook": {
+        "whenChoice": {
+          "smile_breakdown": { "emotionalBeat": "崩溃", "cue": { "animation": "强忍微笑-泪崩", "colorGrade": "低饱和冷调", "sfx": "雨声压低人声", "bgm": "钢琴单音" } }
+        },
+        "whenResult": {
+          "highlight": { "emotionalBeat": "和解", "cue": { "animation": "镜头推近定格", "colorGrade": "暖回升" } }
+        }
+      },
+      "note": "★ 这是整张表的关键验证条 ★ 它同时灌入了 relationshipModifier（默契加成）和 emotionalBeat（崩溃）两个领域插槽到君白的通用 check.resolve。跑通这一条 = 三个文件接口范式成立。"
+    },
+
+    {
+      "bindingId": "stage_03b_love_interest_event",
+      "stageName": "对手演员关系事件（嵌入式恋爱）",
+      "domainConcept": "对手戏默契达阈值 → 男主临场改词，玩家可选『接住』或『回避』。恋爱不是独立送礼系统，嵌在职业节点里（小喃文档 §11.3）",
+      "capability": "love-interest.event",
+      "trigger": { "on": "Relationship.默契 >= threshold", "category": "ResourceThreshold" },
+      "mapping": {
+        "reads": ["Relationship", "CheckResultEvent"],
+        "writes": ["EmotionalBeat", "Relationship", "RiskState"],
+        "logic": "默契>=阈值触发事件。选『接住』→ 好感+, 默契+, 公开风险+; 选『回避』→ 信任-, 公开风险持平"
+      },
+      "domainSlotFills": {
+        "archetype": "对手型",
+        "embedMethod": "合作加成",
+        "choices": { "接住": { "好感": "+", "默契": "+", "公开风险": "+" }, "回避": { "信任": "-" } }
+      },
+      "presentationHook": {
+        "whenChoice": {
+          "接住": { "emotionalBeat": "试探", "cue": { "animation": "对视停顿", "colorGrade": "暖", "bgm": "心跳低鼓" } },
+          "回避": { "emotionalBeat": "退让", "cue": { "animation": "移开视线", "colorGrade": "中性" } }
+        }
+      },
+      "note": "演示『同一个默契+1，在不同情感节拍下画面完全不同』——这正是高品质插槽的价值。"
+    },
+
+    {
+      "bindingId": "stage_04_broadcast_feedback",
+      "stageName": "播出/上映反馈",
+      "domainConcept": "把拍摄成果转化为热度、口碑、角色出圈、舆论风险（小喃文档 §9）",
+      "capability": "broadcast.feedback",
+      "trigger": { "on": "CheckResultEvent", "category": "Event" },
+      "mapping": {
+        "reads": ["CheckResultEvent", "WorkProgress", "RiskState"],
+        "writes": ["FeedbackEvent", "WorkProgress", "RiskState"],
+        "consumes": ["CheckResultEvent"],
+        "logic": "热度←(项目类型+宣传+CP讨论); 口碑←(作品完成度+表演稳定); 角色出圈←名场面数量; 黑热搜风险←(人设不稳+公开风险)。名场面高光 → 触发『名场面出圈』事件"
+      },
+      "domainSlotFills": {
+        "eventPool": ["名场面出圈", "演技争议", "CP爆火", "旧采访被翻出"]
+      },
+      "presentationHook": {
+        "whenEvent": { "名场面出圈": { "cue": { "animation": "热搜弹幕飞入", "sfx": "提示音连击" } } }
+      },
+      "note": "对应君白的 Event 链式传导：CheckResultEvent 被 consume，产出 FeedbackEvent 继续向下游传。拓扑排序天然处理顺序。"
+    },
+
+    {
+      "bindingId": "stage_05_settlement",
+      "stageName": "作品周期结算（三线）",
+      "domainConcept": "周期结束统一结算事业线、舆论线、恋爱线（小喃文档 §12）",
+      "capability": "settlement.resolve",
+      "trigger": { "on": "FeedbackEvent", "category": "Event" },
+      "mapping": {
+        "reads": ["FeedbackEvent", "WorkProgress", "Relationship", "RiskState"],
+        "writes": ["Config:nextCycleUnlock", "Marker:cycleComplete"],
+        "consumes": ["FeedbackEvent"],
+        "logic": "事业线←(作品评级+咖位+奖项潜力); 舆论线←(人设稳定+黑热搜风险); 恋爱线←(好感/信任/默契/公开风险)。三线汇总 → 解锁下一周期 + 写入结局条件进度"
+      },
+      "domainSlotFills": {
+        "endingConditions": { "影后线": "奖项潜力高+口碑高+代表作完成度高", "顶流线": "热度咖位高+奖项不足", "恋爱优先线": "男主线高+冲奖不足" }
+      },
+      "presentationHook": {
+        "whenSettle": { "cue": { "animation": "三线进度条结算", "bgm": "周期主题回响" } }
+      },
+      "note": "结算只写 Config 和 Marker，不产生新 Event，链路在此收束。下一周期由 Config:nextCycleUnlock 驱动重新进入 stage_01。"
+    }
+  ],
+
+  "_comment_validation": "================= 第五部分：验证锚点（给君白的验收标准）=================",
+  "validationAnchor": {
+    "mustPass": "binding 'stage_03_scene_check' 必须端到端跑通：SceneChoiceIntent 输入 → check.resolve 读取 Relationship.默契 作为 modifier、读取 emotionalBeat 影响 PresentationCue → 输出 CheckResultEvent + 画面差异",
+    "provesThreeThings": [
+      "君白的涌现式开发方法论有效（能产出 check.resolve 这个通用机械件）",
+      "他的通用库能承载乙游高品质（domainSlots 接住了默契加成 + 情感节拍）",
+      "三文件接口范式成立（vocabulary → binding → capability 咬合成一台机器）"
+    ],
+    "ifPass": "全面采用君白开发流，定位仍是垂直深度，造引擎方式升级",
+    "ifPartial": "通用件跑通但情感插槽灌不进 → 局部采用，L3编排与领域层不归这套管"
+  }
+}
