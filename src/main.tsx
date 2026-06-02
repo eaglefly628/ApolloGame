@@ -2,13 +2,18 @@ import React, { useEffect, useRef, useState } from 'react';
 import { createRoot } from 'react-dom/client';
 import { Engine } from './runtime/engine.js';
 import { CanvasRenderer } from '@renderer/index.js';
+import { KeyboardInputSource } from '@net/index.js';
 import { GameOverlay } from './ui/GameOverlay.js';
 import { playgroundBlueprint } from './assembly/playground.assembly.js';
 
 function App() {
   const containerRef = useRef<HTMLDivElement>(null);
+  const inputRef = useRef<KeyboardInputSource | null>(null);
   const [engine] = useState(() => {
-    const e = new Engine();
+    // 本地玩家 p1 的键盘输入源；以后换成网络对端，引擎 start() 一行都不用动。
+    const input = new KeyboardInputSource('p1');
+    inputRef.current = input;
+    const e = new Engine({ tickRate: 60, input });
     e.load(playgroundBlueprint);
     return e;
   });
@@ -22,6 +27,7 @@ function App() {
     return () => {
       engine.stop();
       renderer.destroy();
+      inputRef.current?.dispose();
     };
   }, [engine]);
 

@@ -64,5 +64,14 @@ export const playgroundBlueprint: WorldBlueprint = {
       Shape: { kind: 'box', width: 30, height: 30 },
       Color: { tint: 0x22c55e, alpha: 1 },
     },
+    // 玩家方块：速度由键盘输入逐 tick 驱动（applyCommands 写 Velocity，drift 结算位移）。
+    // 这是多人接缝的本地端——把输入源换成网络对端即可联机。
+    player: {
+      Transform: { x: 320, y: 200, rotation: 0, scaleX: 1, scaleY: 1 },
+      Velocity: { vx: 0, vy: 0, angular: 0 },
+      Controllable: { playerId: 'p1', speed: 3 },
+      Shape: { kind: 'box', width: 34, height: 34 },
+      Color: { tint: 0xffffff, alpha: 1 },
+    },
   },
 };
