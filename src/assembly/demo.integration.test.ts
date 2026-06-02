@@ -1,6 +1,7 @@
 import { describe, it, expect } from 'vitest';
 import { Engine } from '../runtime/engine.js';
 import { demoBlueprint } from './demo.assembly.js';
+import { playgroundBlueprint } from './playground.assembly.js';
 import type { Transform, Overlap } from '@engine/protocol/components.js';
 
 // 端到端：通过真实 Engine + World.tick() 跑演示蓝图，验证多个原子系统
@@ -49,5 +50,19 @@ describe('demo integration — bullet motion + collision + lifetime', () => {
     expect(ids.indexOf('timer-advance')).toBeLessThan(ids.indexOf('lifetime'));
     expect(ids.indexOf('lifetime')).toBeLessThan(ids.indexOf('destroy-apply'));
     expect(ids.indexOf('motion-apply')).toBeLessThan(ids.indexOf('overlap-detect'));
+  });
+});
+
+describe('playground (browser scene)', () => {
+  it('loads and drifts entities with no topo cycle and no despawns', () => {
+    const engine = new Engine();
+    engine.load(playgroundBlueprint);
+
+    const before = engine.world.getComponent<Transform>('redBox', 'Transform')!.x;
+    engine.world.tick(); // throws if the drift system formed a topo cycle
+    const after = engine.world.getComponent<Transform>('redBox', 'Transform')!.x;
+
+    expect(after).not.toBe(before); // moved
+    expect(engine.world.getAllEntities()).toHaveLength(3); // continuous, none despawn
   });
 });

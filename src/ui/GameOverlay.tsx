@@ -1,18 +1,15 @@
 import React from 'react';
 import { useWorldVersion } from './hooks/use-engine.js';
 import type { Engine } from '../runtime/engine.js';
-import type { Transform } from '@engine/protocol/components.js';
 
 interface GameOverlayProps {
   engine: Engine;
 }
 
-// Live overlay —— UI binding 读取 world 状态投影为界面。
-// 演示绑定：每 tick 刷新 tick 数 / 实体数 / 子弹世界坐标。
+// Live overlay —— UI binding 读取 world 状态投影为界面，每 tick 刷新。
 export function GameOverlay({ engine }: GameOverlayProps) {
   const version = useWorldVersion(engine);
   const entities = engine.world.getAllEntities();
-  const bullet = engine.world.getComponent<Transform>('bullet', 'Transform');
 
   return (
     <div style={{
@@ -33,8 +30,7 @@ export function GameOverlay({ engine }: GameOverlayProps) {
         fontSize: 13,
         fontFamily: 'monospace',
       }}>
-        tick {version} · entities {entities.length} ·{' '}
-        {bullet ? `bullet x=${Math.round(bullet.x)}` : 'bullet despawned'}
+        tick {version} · entities {entities.length}
       </div>
     </div>
   );

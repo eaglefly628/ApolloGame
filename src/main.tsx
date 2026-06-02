@@ -3,13 +3,13 @@ import { createRoot } from 'react-dom/client';
 import { Engine } from './runtime/engine.js';
 import { CanvasRenderer } from '@renderer/index.js';
 import { GameOverlay } from './ui/GameOverlay.js';
-import { demoBlueprint } from './assembly/demo.assembly.js';
+import { playgroundBlueprint } from './assembly/playground.assembly.js';
 
 function App() {
   const containerRef = useRef<HTMLDivElement>(null);
   const [engine] = useState(() => {
     const e = new Engine();
-    e.load(demoBlueprint);
+    e.load(playgroundBlueprint);
     return e;
   });
 
