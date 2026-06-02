@@ -1,0 +1,2769 @@
+================================================================
+Apollo Engine — 全部原子 Skill 导出 (供外部 Review)
+导出时间: Tue Jun  2 13:01:24 UTC 2026
+================================================================
+
+================================================================
+= 1. 原子周期表 v6 (wiki/atom-skill-periodic-table.md)
+================================================================
+# Apollo Engine — 原子 Skill 清单 v6 (游戏元素周期表)
+
+> **判定标准：能用其他原子的组合描述 → 不是原子。每个原子回答一个且仅一个问题。**
+>
+> v6 变更：四引擎交叉验证（Bevy / Unity DOTS / Godot / Phaser）。
+> 新增 L6 text（3/4 引擎验证为核心渲染原语）和 W2 spatial-query（所有引擎提供的世界级服务）。
+> 确认 tilemap 为资产格式、pathfinding 为算法服务、CCD 为 D1 系统增强——均不加入原子表。
+>
+> 交叉验证详见 `wiki/v6-cross-engine-validation.md`
+>
+> 审核状态: v6 待审核
+
+---
+
+## 核心原子表 (24 实体级 + 2 世界级 = 26)
+
+### 空间与层级 — "它在哪？它朝哪？多大？谁是它的父节点？"
+
+| # | Atom | Component | 回答的问题 |
+|---|------|-----------|-----------|
+| A1 | **transform** | `Transform { x, y, rotation, scaleX, scaleY }` | 实体在世界的位置、朝向和大小？ |
+| A2 | **hierarchy** | `Hierarchy { parentId, localX, localY, localRotation, localScaleX, localScaleY }` | 实体挂在谁下面？本地偏移多少？ |
+
+> transform 回归单一组件——绝大多数实体需要完整空间状态，拆分带来的 query 开销不值得。纯位置需求（触发器等）只填 x/y，rotation 和 scale 使用默认值。
+> hierarchy 从 relation 独立——空间继承是高频操作，localOffset 数据使父子变换计算零额外 query。
+
+### 运动 — "它怎么动？"
+
+| # | Atom | Component | 回答的问题 |
+|---|------|-----------|-----------|
+| B1 | **velocity** | `Velocity { vx, vy, angular }` | 实体当前的运动方向、速度和角速度？ |
+| B2 | **acceleration** | `Acceleration { ax, ay }` | 实体的速度在怎么变？ |
+| B3 | **mass** | `Mass { value }` | 实体有多重？（0=不可移动） |
+
+> velocity.angular——旋转速度是独立自由度（旋转飞行物、自旋特效）。
+> mass 不是 resource 的特化——无 current/max 结构，参与碰撞响应的计算方式完全不同。
+
+### 形状 — "它占多大地方？"
+
+| # | Atom | Component | 回答的问题 |
+|---|------|-----------|-----------|
+| C1 | **shape** | `Shape { kind: 'box'｜'circle', width?, height?, radius? }` | 实体的碰撞/占位几何形状？ |
+
+> 基础几何体用 kind 区分。如未来需要多边形，另加 shape-complex 原子，不膨胀此原子。
+
+### 碰撞 — "它碰到了什么？"
+
+| # | Atom | Component | 回答的问题 |
+|---|------|-----------|-----------|
+| D1 | **overlap-detect** | `Overlap { entityA, entityB, normalX, normalY, depth }` | 哪两个实体重叠了？法线和穿透深度？ |
+
+> 纯检测，纯事实。响应（推开、弹性、触发）全部是消费者，归组合层。
+
+### 时间 — "过了多久？"
+
+| # | Atom | Component | 回答的问题 |
+|---|------|-----------|-----------|
+| E1 | **timer** | `Timer { id, elapsed, duration, loop }`, `TimerDone { timerId }` | 倒计时/间隔走到哪了？到了吗？ |
+
+### 数值 — "它有多少？开还是关？"
+
+| # | Atom | Component | 回答的问题 |
+|---|------|-----------|-----------|
+| F1 | **resource** | `Resource { id, current, min, max }`, `ResourceModify { resourceId, amount }` | 某种有上下限的数值？ |
+| F2 | **flag** | `Flag { id, active }` | 某个条件开还是关？ |
+
+> counter 不再是原子——它是 resource 在 Tier 1 的涌现形态：`Resource { id, min: -Infinity, max: Infinity }` 即为无上限累加值。
+> 或在 Tier 1 定义 counter 宏：`counter = resource(min=-∞, max=+∞)`，语义等价但不占原子位。
+> resource.min——允许非零下限（温度不低于 -50），使 resource 足够通用以覆盖 counter 场景。
+
+### 标识 — "它是谁？跟谁有关？"
+
+| # | Atom | Component | 回答的问题 |
+|---|------|-----------|-----------|
+| G1 | **tag** | `Tag { flags: Bitmask }` | 实体属于哪些分类？ |
+| G2 | **relation** | `Relation { kind, targetId }` | 实体跟谁有什么逻辑关系？（targeting、owned-by） |
+
+> tag 用 Bitmask——60Hz 下位运算 O(1)。
+> relation 只处理非空间逻辑关联，空间父子由 hierarchy(A2) 承担。
+
+### 控制 — "它是否参与世界？"
+
+| # | Atom | Component | 回答的问题 |
+|---|------|-----------|-----------|
+| H1 | **visibility** | `Visibility { visible, active }` | 实体是否可见？是否参与系统运算？ |
+
+> visible 控制渲染跳过，active 控制逻辑跳过。
+> 不能用 flag 替代——flag 是游戏逻辑层面的开关，visibility 是引擎基础设施层面的开关。
+
+### 输入 — "外部说了什么？"
+
+| # | Atom | Component | 回答的问题 |
+|---|------|-----------|-----------|
+| I1 | **input-capture** | `RawInput { source, key?, x?, y?, phase? }` | 这帧有什么外部原始信号？ |
+| I2 | **action-map** | `Action { name, value }` | 原始信号对应什么语义动作？ |
+
+### 状态 — "它处于什么模式？"
+
+| # | Atom | Component | 回答的问题 |
+|---|------|-----------|-----------|
+| J1 | **state** | `State { fsmId, current, previous }`, `StateChanged { fsmId, from, to }` | 实体在某个状态机的当前离散状态？ |
+
+> fsmId 支持多状态机并存——同一实体可有行为状态(idle/attack)和动画状态(walk/jump)。
+
+### 生命周期 — "它存在吗？"
+
+| # | Atom | Component | 回答的问题 |
+|---|------|-----------|-----------|
+| K1 | **spawn** | `SpawnRequest { templateId, x, y }` | 需要创建一个新实体。 |
+| K2 | **destroy** | `DestroyRequest { entityId }` | 需要移除一个实体。 |
+
+### 感知 — "玩家看到/听到什么？"
+
+| # | Atom | Component | 回答的问题 |
+|---|------|-----------|-----------|
+| L1 | **sprite** | `Sprite { textureKey, anchorX, anchorY, zOrder }` | 实体用什么图？渲染层级？ |
+| L2 | **color** | `Color { tint, alpha }` | 实体当前的颜色/透明度？ |
+| L3 | **frame** | `Frame { index, total }` | 精灵的当前帧？ |
+| L4 | **sound** | `Sound { clipId, volume, loop }` | 播放什么声音？ |
+| L5 | **camera** | `Camera { zoom, offsetX, offsetY, rotation, viewportW, viewportH }` | 观察窗口参数？世界到屏幕的映射基准？ |
+| L6 | **text** | `Text { content, fontSize, fontFamily, anchor, lineSpacing }` | 显示什么文字？ |
+
+> sprite.zOrder——2D 渲染排序是基础需求。
+> camera 增加 offsetX/Y + rotation——摄像机震动、平移、旋转效果的数据来源。
+> camera 实体同时挂 Transform 组件确定世界位置，Camera 组件只描述投影参数。
+> text 是独立渲染原语——Bevy(Text2d)、Godot(Label)、Phaser(Text) 均为一等公民。伤害飘字、对话气泡、UI 文本不可或缺。不是 Sprite 的特化（渲染管线不同）。
+
+### 世界级 — "世界本身的属性"
+
+| # | Atom | Component | 回答的问题 |
+|---|------|-----------|-----------|
+| W1 | **random** | `RandomSeed { seed, sequence }` | 可控随机数。确定性重放的基石。 |
+| W2 | **spatial-query** | `SpatialIndex { cellSize, type: 'grid'｜'quadtree' }` | 空间查询服务：射线、范围、最近邻。 |
+
+> random / spatial-query 不是实体级组件，而是世界级服务。挂在特殊的"world"实体上，所有系统可读。
+> spatial-query 回答"A 到 B 之间有什么？离我最近的 N 个是谁？"——overlap-detect 无法回答的问题。
+> Unity DOTS 通过 PhysicsWorldSingleton 服务调用实现，Godot 通过 RayCast2D 节点实现。AI 视线、自动索敌不可或缺。
+
+---
+
+## 核心原子总数：26 (24 实体级 + 2 世界级)
+
+```
+空间/层级: A1 transform      A2 hierarchy
+运动:      B1 velocity       B2 acceleration  B3 mass
+形状:      C1 shape
+碰撞:      D1 overlap-detect
+时间:      E1 timer
+数值:      F1 resource       F2 flag
+标识:      G1 tag            G2 relation
+控制:      H1 visibility
+输入:      I1 input-capture  I2 action-map
+状态:      J1 state
+生命周期:  K1 spawn          K2 destroy
+感知:      L1 sprite  L2 color  L3 frame  L4 sound  L5 camera  L6 text
+世界级:    W1 random  W2 spatial-query
+```
+
+---
+
+## 扩展原子 (可选，按需引入)
+
+### 扩展 A: 骨骼动画
+
+| # | Atom | Component | 回答的问题 |
+|---|------|-----------|-----------|
+| X1 | **skeletal-pose** | `SkeletalPose { skeletonAssetId, boneTransforms }` | 当前帧骨骼姿态快照（纯数据，不含时间轴） |
+
+> 原子性成立——无法由 frame + sprite 组合。动画播放逻辑在 System 层驱动此快照更新。
+> 2D 小游戏通常不需要，3D 或 Spine 动画项目引入。
+
+### 扩展 B: 叙事
+
+| # | Atom | Component | 回答的问题 |
+|---|------|-----------|-----------|
+| X2 | **socket** | `Socket { boneId, offsetTransform, acceptTags: Bitmask }` | 纸娃娃/精准挂载的拓扑锚点 |
+| X3 | **string-variable** | `StringVariable { keyId, value, locId }` | 非数值的语义数据（对话文本、角色名、LLM prompt 片段） |
+
+> 换装/女性向/对话系统刚需。核心原子表只有 number 和 boolean 容器，缺少 string 容器。
+
+### 扩展 C: AIGP 旁路
+
+> AI 视频生成专用层。游离于 60Hz 核心 ECS 之外，通过 Camera 层 Adapter 异步劫持。
+> 不污染核心原子表，详见独立设计文档。
+
+| # | Component | 用途 |
+|---|-----------|------|
+| X4 | `ShadowDictionary { condition → promptFragment }` | ECS 状态到 Prompt 的翻译表 |
+| X5 | `SemanticMaterial { basePrompt, dynamicModifiers, negativePrompt }` | 取代 Texture 的"高维语义外衣" |
+| X6 | `ConditioningMask { maskType, intensity }` | Shape/SkeletalPose → ControlNet 空间约束 |
+| X7 | `LatentAnchor { seed, referenceEmbeddingId }` | 角色特征锚点，防止帧间"换脸" |
+
+---
+
+## UI 层处理
+
+UI **不是原子**。通过 **ui-binding 机制** 处理（属于 Tier 2 组合层）：
+
+```
+ui-binding = resource/flag + 渲染层 React 组件
+
+实体不知道自己的 HP 会被显示为血条——
+它只有 resource(id='hp', current=50, min=0, max=100)。
+UI 层通过 binding 声明读取这个 resource 并投影为 Bar/Text/任意 UI。
+```
+
+---
+
+## 涌现分层 (按数据流方向定义)
+
+### Tier 1 — 直接结算 (Kinematic)
+
+无状态的数值应用。A 写了 X，B 读 X 算出 Y，完毕。
+
+| 组合 | 公式 | 数据流 |
+|------|------|--------|
+| counter | resource(min=-∞, max=+∞) | resource 的无上限特化 |
+| motion-apply | transform.xy += velocity | velocity → transform |
+| rotation-apply | transform.rotation += velocity.angular | velocity.angular → transform |
+| accel-apply | velocity += acceleration | acceleration → velocity |
+| animation | frame.index++ per timer | timer → frame |
+| lifetime | timer done → destroy | timer → destroy |
+| hierarchy-resolve | hierarchy.local + parent.transform → child.transform | hierarchy + transform → transform |
+
+### Tier 2 — 规则与约束 (Resolution)
+
+涉及条件判断或状态修改。需要读检测结果后决定怎么做。
+
+| 组合 | 公式 | 数据流 |
+|------|------|--------|
+| collision-separate | overlap → 按 mass 比推开 transform | overlap + mass → transform |
+| collision-bounce | overlap → 按 mass 反转 velocity | overlap + mass → velocity |
+| grounded-check | overlap + tag(ground) → flag(grounded) | overlap + tag → flag |
+| trigger-zone | overlap + tag(trigger) → event | overlap + tag → flag/event |
+| cooldown | timer → flag(ready) | timer → flag |
+| resource-regen | timer → resource.current++ | timer → resource |
+| ui-binding | resource → React overlay | resource → UI (非 ECS) |
+| gravity | mass → acceleration.ay | mass → acceleration |
+| friction | velocity → acceleration(反向) | velocity → acceleration |
+| damage-number | resource-modify → spawn + text + velocity(上飘) + lifetime | resource + text + spawn |
+| range-detect | spatial-query(radius) → relation(target) | spatial-query → relation |
+
+### Tier 3 — 系统级玩法 (Mechanics)
+
+跨实体的复合逻辑。多个 Tier 2 串联成完整的游戏机制。
+
+| 组合 | 来源 |
+|------|------|
+| health-system | resource(hp) + resource-modify + ui-binding |
+| shield-absorb | resource(shield) + resource-modify 拦截链 |
+| poison-dot | timer + resource-modify(周期) |
+| invincible-frame | timer + flag(block damage) |
+| knockback | timer + velocity(覆写) |
+| pickup-item | trigger-zone + destroy + resource-modify |
+| platformer-jump | action-map + flag(grounded) + velocity |
+| projectile | spawn + velocity + lifetime + overlap-detect + destroy |
+| auto-target | spatial-query(nearest) + tag(enemy) + relation(target) |
+| dialog-popup | trigger-zone + text + state(dialog) |
+
+### Tier 4 — 心智与黑盒 (Behaviors)
+
+包含状态机或决策逻辑。对 LLM 来说是"一句话能描述的行为"。
+
+| 组合 | 来源 |
+|------|------|
+| ai-patrol | state + timer + velocity(方向切换) |
+| ai-chase | state + spatial-query(nearest) + relation(target) + transform + velocity |
+| ai-attack-pattern | state + timer(cooldown) + spawn(弹幕) |
+| dialogue | trigger-zone + state + input + string-variable |
+| anim-state-machine | state + transition-rules + animation |
+
+---
+
+## Macro 机制
+
+> "Claude 面对 Tier 4 时，是用预制件还是每次从原子推演？"
+
+**答案：Macro 层——预编译的 Tier 2/3 组合，供 AI 快速调用。**
+
+```
+核心原子 (26)        ← 不可变的基础真理
+扩展原子 (7)         ← 按需引入
+  ↓
+Macro Library        ← 预编译的 Tier 2/3 "积木块"
+  ├─ physics-body    = transform + velocity + acceleration + mass + shape
+  ├─ health-system   = resource(hp) + resource-modify + ui-binding
+  ├─ platformer-move = input → action → velocity + gravity + grounded
+  ├─ projectile      = spawn + velocity + lifetime + overlap + destroy
+  ├─ counter         = resource(min=-∞, max=+∞)
+  └─ ...
+  ↓
+Tier 4 行为          ← Claude 用 Macro 组装，不回到原子
+  ↓
+Assembly 蓝图        ← 最终游戏
+```
+
+---
+
+## 涌现验证
+
+| 游戏类型 | 使用的核心原子 (26个中) |
+|---------|----------------------|
+| **平台跳跃** | transform, hierarchy, velocity, acceleration, mass, shape, overlap-detect, timer, resource, flag, tag, input-capture, action-map, state, spawn, destroy, sprite, color, frame, sound, camera, text (22/26) |
+| **弹幕射击** | transform, velocity, acceleration, shape, overlap-detect, timer, resource, flag, tag, input-capture, action-map, spawn, destroy, sprite, frame, sound, camera, text, random, spatial-query (20/26) |
+| **回合制 RPG** | transform, hierarchy, resource, flag, tag, relation, input-capture, action-map, state, sprite, color, frame, sound, camera, timer, text, random (17/26) |
+| **换装/女性向** | transform, hierarchy, resource, flag, tag, relation, input-capture, action-map, state, sprite, color, frame, sound, camera, text + **扩展: socket, string-variable** (15+2/26+7) |
+| **AI 视频生成** | transform, state, timer, camera, random + **扩展: skeletal-pose, shadow-dictionary, semantic-material, conditioning-mask, latent-anchor** (5+5/26+7) |
+
+
+================================================================
+= 2. Protocol Layer (src/engine/protocol/components.ts)
+================================================================
+// ═══════════════════════════════════════════════════════════════
+//  Protocol Layer — 共享组件接口
+// ═══════════════════════════════════════════════════════════════
+//
+//  这里集中声明跨 atom-skill 共享的 Component 接口（TypeScript 形状）。
+//  每个原子 skill 拥有自己的组件定义，但需要被多个 skill 读写的组件
+//  在此声明，作为它们之间的契约 (protocol)。
+//
+//  组件语义分类（defineCapability.provides.category 标注）：
+//    Resource — 持久数值，{ current, min, max }
+//    Event    — 一次性，被 consume 后消失
+//    Intent   — 表达"想做某事"的请求
+//    Effect   — 临时状态，有字段、有持续时间
+//    Marker   — 无字段，存在即有意义
+//    Config   — 持久配置
+//    Render   — 每帧更新，驱动 UI/渲染层
+//
+//  约定：World 每个实体每种 type 只存一个组件 (Map<type, Component>)。
+//  契约由 Lead 预先写入，Programmer 直接 import，不在此文件追加，避免合并冲突。
+//  参见 wiki/atom-skill-periodic-table.md
+// ═══════════════════════════════════════════════════════════════
+
+import type { Component, EntityId } from '../core/types.js';
+
+// ── A1 transform ── 实体在世界的位置、朝向和大小
+export interface Transform extends Component {
+  readonly type: 'Transform';
+  x: number;
+  y: number;
+  rotation: number;
+  scaleX: number;
+  scaleY: number;
+}
+
+// ── F1 resource ── 某种有上下限的数值 (hp / mp / stamina ...)
+export interface Resource extends Component {
+  readonly type: 'Resource';
+  id: string;
+  current: number;
+  min: number;
+  max: number;
+}
+
+// ── F1 resource ── 修改某资源的事件 (read-then-consume)
+export interface ResourceModify extends Component {
+  readonly type: 'ResourceModify';
+  resourceId: string;
+  amount: number;
+}
+
+// ── F2 flag ── 某个条件开还是关
+export interface Flag extends Component {
+  readonly type: 'Flag';
+  id: string;
+  active: boolean;
+}
+
+// ── B1 velocity ── 实体当前的运动方向、速度和角速度
+export interface Velocity extends Component {
+  readonly type: 'Velocity';
+  vx: number;
+  vy: number;
+  angular: number;
+}
+
+// ── E1 timer ── 倒计时/间隔（按 tick 计数，World 无 dt）
+export interface Timer extends Component {
+  readonly type: 'Timer';
+  id: string;
+  elapsed: number;
+  duration: number;
+  loop: boolean;
+}
+
+// ── E1 timer ── 计时完成事件（read-then-consume，由下游系统消费）
+export interface TimerDone extends Component {
+  readonly type: 'TimerDone';
+  timerId: string;
+}
+
+// ── G1 tag ── 实体属于哪些分类（bitmask，位运算 O(1)）
+export interface Tag extends Component {
+  readonly type: 'Tag';
+  flags: number;
+}
+
+// ── B2 acceleration ── 实体的速度在怎么变
+export interface Acceleration extends Component {
+  readonly type: 'Acceleration';
+  ax: number;
+  ay: number;
+}
+
+// ── B3 mass ── 实体有多重（0 = 不可移动）
+export interface Mass extends Component {
+  readonly type: 'Mass';
+  value: number;
+}
+
+// ── C1 shape ── 碰撞/占位几何形状
+export interface Shape extends Component {
+  readonly type: 'Shape';
+  kind: 'box' | 'circle';
+  width?: number;
+  height?: number;
+  radius?: number;
+}
+
+// ── G2 relation ── 实体跟谁有什么逻辑关系（非空间）
+export interface Relation extends Component {
+  readonly type: 'Relation';
+  kind: string;
+  targetId: EntityId;
+}
+
+// ── H1 visibility ── 是否可见 / 是否参与系统运算
+export interface Visibility extends Component {
+  readonly type: 'Visibility';
+  visible: boolean;
+  active: boolean;
+}
+
+// ── L1 sprite ── 实体用什么图、渲染层级
+export interface Sprite extends Component {
+  readonly type: 'Sprite';
+  textureKey: string;
+  anchorX: number;
+  anchorY: number;
+  zOrder: number;
+}
+
+// ── L2 color ── 实体当前的颜色/透明度
+export interface Color extends Component {
+  readonly type: 'Color';
+  tint: number;
+  alpha: number;
+}
+
+// ── L3 frame ── 精灵的当前帧
+export interface Frame extends Component {
+  readonly type: 'Frame';
+  index: number;
+  total: number;
+}
+
+// ── L4 sound ── 播放什么声音
+export interface Sound extends Component {
+  readonly type: 'Sound';
+  clipId: string;
+  volume: number;
+  loop: boolean;
+}
+
+// ── L5 camera ── 观察窗口参数（世界→屏幕映射基准）
+export interface Camera extends Component {
+  readonly type: 'Camera';
+  zoom: number;
+  offsetX: number;
+  offsetY: number;
+  rotation: number;
+  viewportW: number;
+  viewportH: number;
+}
+
+// ── L6 text ── 显示什么文字
+export interface Text extends Component {
+  readonly type: 'Text';
+  content: string;
+  fontSize: number;
+  fontFamily: string;
+  anchor: string;
+  lineSpacing: number;
+}
+
+// ── I1 input-capture ── 这帧的外部原始信号（由 runtime 注入）
+export interface RawInput extends Component {
+  readonly type: 'RawInput';
+  source: string;
+  key?: string;
+  x?: number;
+  y?: number;
+  phase?: string;
+}
+
+// ── I2 action-map ── 原始信号对应的语义动作
+export interface Action extends Component {
+  readonly type: 'Action';
+  name: string;
+  value: number;
+}
+
+// ── J1 state ── 实体在某状态机的当前离散状态
+export interface State extends Component {
+  readonly type: 'State';
+  fsmId: string;
+  current: string;
+  previous: string;
+}
+
+// ── J1 state ── 状态切换事件（read-then-consume）
+export interface StateChanged extends Component {
+  readonly type: 'StateChanged';
+  fsmId: string;
+  from: string;
+  to: string;
+}
+
+// ── K1 spawn ── 创建新实体的请求（模板展开由 assembly 层负责）
+export interface SpawnRequest extends Component {
+  readonly type: 'SpawnRequest';
+  templateId: string;
+  x: number;
+  y: number;
+}
+
+// ── K2 destroy ── 移除实体的请求（read-then-consume）
+export interface DestroyRequest extends Component {
+  readonly type: 'DestroyRequest';
+  entityId: EntityId;
+}
+
+// ── A2 hierarchy ── 实体挂在谁下面、本地偏移多少
+export interface Hierarchy extends Component {
+  readonly type: 'Hierarchy';
+  parentId: EntityId;
+  localX: number;
+  localY: number;
+  localRotation: number;
+  localScaleX: number;
+  localScaleY: number;
+}
+
+// ── W1 random ── 可控随机数（确定性重放基石），挂在 world 实体
+export interface RandomSeed extends Component {
+  readonly type: 'RandomSeed';
+  seed: number;
+  sequence: number;
+}
+
+// ── D1 overlap-detect ── 哪两个实体重叠了，法线与穿透深度
+export interface Overlap extends Component {
+  readonly type: 'Overlap';
+  entityA: EntityId;
+  entityB: EntityId;
+  normalX: number;
+  normalY: number;
+  depth: number;
+}
+
+// ── W2 spatial-query ── 空间查询服务配置，挂在 world 实体
+export interface SpatialIndex extends Component {
+  readonly type: 'SpatialIndex';
+  cellSize: number;
+  kind: 'grid' | 'quadtree';
+}
+
+
+================================================================
+= 3. 核心类型 (src/engine/core/types.ts)
+================================================================
+export type EntityId = string;
+export type ComponentType = string;
+
+export interface Component {
+  readonly type: ComponentType;
+}
+
+export interface SystemDeclaration {
+  readonly id: string;
+  readonly reads: ComponentType[];
+  readonly writes: ComponentType[];
+  readonly consumes: ComponentType[];
+  execute(world: IWorld): void;
+}
+
+export interface IWorld {
+  createEntity(id: EntityId): void;
+  destroyEntity(id: EntityId): void;
+  getAllEntities(): EntityId[];
+
+  addComponent<T extends Component>(entityId: EntityId, component: T): void;
+  removeComponent(entityId: EntityId, type: ComponentType): void;
+  getComponent<T extends Component>(entityId: EntityId, type: ComponentType): T | undefined;
+  hasComponent(entityId: EntityId, type: ComponentType): boolean;
+
+  query(...types: ComponentType[]): Array<[EntityId, Map<ComponentType, Component>]>;
+  queryEntities(...types: ComponentType[]): EntityId[];
+
+  getVersion(): number;
+}
+
+export interface RendererBackend {
+  init(container: HTMLElement): void;
+  sync(world: IWorld): void;
+  destroy(): void;
+}
+
+// 完整世界状态快照（组件皆 POD，可 JSON 序列化）—— record/replay 与时间旅行调试用
+export type WorldSnapshot = Record<EntityId, Record<ComponentType, Component>>;
+
+// tick 期间的观测钩子 —— Debug 体系据此观察各系统(skill)之间的协作
+export interface TickObserver {
+  onTickStart?(tick: number): void;
+  onSystemStart?(system: SystemDeclaration): void;
+  onSystemEnd?(system: SystemDeclaration): void;
+  onTickEnd?(tick: number): void;
+}
+
+
+================================================================
+= 4. defineCapability 模式 (src/engine/core/define-capability.ts)
+================================================================
+import type { SystemDeclaration, ComponentType } from './types.js';
+
+export type ComponentCategory = 'resource' | 'event' | 'intent' | 'marker' | 'config' | 'render' | 'effect';
+export type FieldType = 'number' | 'string' | 'boolean' | 'EntityId' | 'string[]' | 'number[]';
+
+export interface ComponentSchema {
+  category: ComponentCategory;
+  describe: string;
+  fields: Record<string, {
+    type: FieldType;
+    describe: string;
+  }>;
+}
+
+export interface CapabilityConfig {
+  type: 'number' | 'string' | 'boolean' | 'select';
+  default: unknown;
+  describe: string;
+  question: string;
+  ui: {
+    control: 'slider' | 'toggle' | 'chips' | 'input';
+    min?: number;
+    max?: number;
+    step?: number;
+    options?: string[];
+  };
+}
+
+export interface CapabilityDefinition {
+  id: string;
+  version: string;
+
+  describe: {
+    name: string;
+    summary: string;
+    semantic: string[];
+    whenToUse: string;
+    examples: string[];
+  };
+
+  components: {
+    provides: Record<ComponentType, ComponentSchema>;
+    reads: ComponentType[];
+    writes: ComponentType[];
+    consumes: ComponentType[];
+  };
+
+  config: Record<string, CapabilityConfig>;
+
+  systems: SystemDeclaration[];
+}
+
+export function defineCapability(def: CapabilityDefinition): CapabilityDefinition {
+  return Object.freeze(def);
+}
+
+
+================================================================
+= 5. 全部原子 Skill 实现
+================================================================
+
+────────────────────────────────────────
+── src/atom-skills/acceleration/index.ts
+────────────────────────────────────────
+import { defineCapability } from '@engine/core/define-capability.js';
+import type { Acceleration } from '@engine/protocol/components.js';
+
+export type { Acceleration };
+
+export const accelerationCapability = defineCapability({
+  id: 'b2-acceleration',
+  version: '1.0.0',
+
+  describe: {
+    name: 'acceleration',
+    summary: '实体的速度在怎么变？',
+    semantic: ['motion', 'kinematics', 'dynamics'],
+    whenToUse:
+      '需要变速运动时：重力、推进、摩擦。accel-apply（Tier 1）每帧把 acceleration 累加到 velocity。',
+    examples: ['重力：ay 恒定，物体加速下落', '飞船推进：朝向方向施加 ax/ay', '摩擦：与 velocity 反向的 acceleration'],
+  },
+
+  components: {
+    provides: {
+      Acceleration: {
+        category: 'config',
+        describe: '每 tick 施加到 velocity 的加速度，纯数据。',
+        fields: {
+          ax: { type: 'number', describe: '沿 X 轴的加速度' },
+          ay: { type: 'number', describe: '沿 Y 轴的加速度' },
+        },
+      },
+    },
+    reads: [],
+    writes: [],
+    consumes: [],
+  },
+
+  config: {
+    ax: { type: 'number', default: 0, describe: '初始 X 加速度', question: '水平加速度？', ui: { control: 'slider', min: -50, max: 50, step: 0.1 } },
+    ay: { type: 'number', default: 0, describe: '初始 Y 加速度', question: '垂直加速度（重力）？', ui: { control: 'slider', min: -50, max: 50, step: 0.1 } },
+  },
+
+  systems: [],
+});
+
+
+────────────────────────────────────────
+── src/atom-skills/action-map/index.ts
+────────────────────────────────────────
+import { defineCapability } from '@engine/core/define-capability.js';
+import type { Action } from '@engine/protocol/components.js';
+
+export type { Action };
+
+export const actionMapCapability = defineCapability({
+  id: 'i2-action-map',
+  version: '1.0.0',
+
+  describe: {
+    name: 'action-map',
+    summary: '原始信号对应什么语义动作？',
+    semantic: ['input', 'intent'],
+    whenToUse:
+      '把 RawInput 翻译成与设备无关的语义动作（move-left、jump、fire）。具体按键→动作的绑定因游戏而异，属 assembly 层；本原子定义 Action 输出契约。',
+    examples: ['Action{name:"move-left", value:1}', 'Action{name:"jump", value:1}', 'Action{name:"aim", value:0.5}（模拟量）'],
+  },
+
+  components: {
+    provides: {
+      Action: {
+        category: 'intent',
+        describe: '与设备无关的语义动作。value 支持模拟量（0~1）或开关（0/1）。',
+        fields: {
+          name: { type: 'string', describe: '动作名（如 "jump"、"move-left"）' },
+          value: { type: 'number', describe: '动作强度：开关用 0/1，模拟量用 0~1' },
+        },
+      },
+    },
+    reads: [],
+    writes: [],
+    consumes: [],
+  },
+
+  config: {},
+
+  systems: [],
+});
+
+
+────────────────────────────────────────
+── src/atom-skills/camera/index.ts
+────────────────────────────────────────
+import { defineCapability } from '@engine/core/define-capability.js';
+import type { Camera } from '@engine/protocol/components.js';
+
+export type { Camera };
+
+export const cameraCapability = defineCapability({
+  id: 'l5-camera',
+  version: '1.0.0',
+
+  describe: {
+    name: 'camera',
+    summary: '观察窗口参数？世界到屏幕的映射基准？',
+    semantic: ['render', 'view'],
+    whenToUse:
+      '定义视口如何观察世界。camera 实体同时挂 Transform 决定世界位置，Camera 描述投影参数。震屏=改 offset，缩放=改 zoom。',
+    examples: ['跟随玩家：Transform 跟随 + zoom=1', '震屏：offsetX/Y 抖动', '放大特写：zoom=2'],
+  },
+
+  components: {
+    provides: {
+      Camera: {
+        category: 'render',
+        describe: '投影参数。与同实体的 Transform 共同决定世界→屏幕映射。',
+        fields: {
+          zoom: { type: 'number', describe: '缩放倍数（1 为原始）' },
+          offsetX: { type: 'number', describe: '屏幕 X 偏移（震屏/平移）' },
+          offsetY: { type: 'number', describe: '屏幕 Y 偏移' },
+          rotation: { type: 'number', describe: '视口旋转（弧度）' },
+          viewportW: { type: 'number', describe: '视口宽度（像素）' },
+          viewportH: { type: 'number', describe: '视口高度（像素）' },
+        },
+      },
+    },
+    reads: [],
+    writes: [],
+    consumes: [],
+  },
+
+  config: {
+    zoom: { type: 'number', default: 1, describe: '缩放', question: '初始缩放倍数？', ui: { control: 'slider', min: 0.1, max: 10, step: 0.1 } },
+    offsetX: { type: 'number', default: 0, describe: 'X 偏移', question: '屏幕 X 偏移？', ui: { control: 'slider', min: -500, max: 500, step: 1 } },
+    offsetY: { type: 'number', default: 0, describe: 'Y 偏移', question: '屏幕 Y 偏移？', ui: { control: 'slider', min: -500, max: 500, step: 1 } },
+    rotation: { type: 'number', default: 0, describe: '视口旋转', question: '视口旋转（弧度）？', ui: { control: 'slider', min: -3.14159, max: 3.14159, step: 0.01 } },
+    viewportW: { type: 'number', default: 800, describe: '视口宽', question: '视口宽度？', ui: { control: 'slider', min: 1, max: 4096, step: 1 } },
+    viewportH: { type: 'number', default: 600, describe: '视口高', question: '视口高度？', ui: { control: 'slider', min: 1, max: 4096, step: 1 } },
+  },
+
+  systems: [],
+});
+
+
+────────────────────────────────────────
+── src/atom-skills/color/index.ts
+────────────────────────────────────────
+import { defineCapability } from '@engine/core/define-capability.js';
+import type { Color } from '@engine/protocol/components.js';
+
+export type { Color };
+
+export const colorCapability = defineCapability({
+  id: 'l2-color',
+  version: '1.0.0',
+
+  describe: {
+    name: 'color',
+    summary: '实体当前的颜色/透明度？',
+    semantic: ['render', 'visual'],
+    whenToUse: '需要染色或淡入淡出时：受击闪红、隐身半透明、状态着色。tint 为 0xRRGGBB，alpha 为 0~1。',
+    examples: ['受击闪红：tint=0xff0000', '淡出：alpha 1→0', '中毒变绿：tint=0x00ff00'],
+  },
+
+  components: {
+    provides: {
+      Color: {
+        category: 'render',
+        describe: '色调与透明度，渲染层与贴图相乘。',
+        fields: {
+          tint: { type: 'number', describe: '色调，0xRRGGBB（0xffffff 为原色）' },
+          alpha: { type: 'number', describe: '透明度 0~1' },
+        },
+      },
+    },
+    reads: [],
+    writes: [],
+    consumes: [],
+  },
+
+  config: {
+    tint: { type: 'number', default: 0xffffff, describe: '色调 0xRRGGBB', question: '色调颜色？', ui: { control: 'input' } },
+    alpha: { type: 'number', default: 1, describe: '透明度', question: '透明度（0~1）？', ui: { control: 'slider', min: 0, max: 1, step: 0.01 } },
+  },
+
+  systems: [],
+});
+
+
+────────────────────────────────────────
+── src/atom-skills/destroy/index.ts
+────────────────────────────────────────
+import { defineCapability } from '@engine/core/define-capability.js';
+import type { DestroyRequest } from '@engine/protocol/components.js';
+
+export const destroyCapability = defineCapability({
+  id: 'k2-destroy',
+  version: '1.0.0',
+
+  describe: {
+    name: 'destroy',
+    summary: '需要移除一个实体。',
+    semantic: ['lifecycle', 'intent'],
+    whenToUse:
+      '子弹出界、敌人死亡、特效播完时发出 DestroyRequest{entityId}。destroy-apply 系统消费请求并移除目标实体。lifetime（Tier 1）= timer done → DestroyRequest。',
+    examples: ['死亡：DestroyRequest{entityId:"enemy-3"}', '子弹出界：自身挂 DestroyRequest{entityId: self}', '特效结束：DestroyRequest{entityId:"boom-7"}'],
+  },
+
+  components: {
+    provides: {
+      DestroyRequest: {
+        category: 'intent',
+        describe: '移除指定实体的请求。destroy-apply 执行后由 World 消费该请求。',
+        fields: {
+          entityId: { type: 'EntityId', describe: '要移除的实体 id' },
+        },
+      },
+    },
+    reads: [],
+    writes: [],
+    consumes: ['DestroyRequest'],
+  },
+
+  config: {},
+
+  systems: [
+    {
+      id: 'destroy-apply',
+      reads: [],
+      writes: [],
+      consumes: ['DestroyRequest'],
+      execute(world) {
+        for (const [holderId] of world.query('DestroyRequest')) {
+          const req = world.getComponent<DestroyRequest>(holderId, 'DestroyRequest');
+          if (req) world.destroyEntity(req.entityId);
+        }
+      },
+    },
+  ],
+});
+
+
+────────────────────────────────────────
+── src/atom-skills/flag/index.ts
+────────────────────────────────────────
+import { defineCapability } from '@engine/core/define-capability.js';
+import type { Flag } from '@engine/protocol/components.js';
+
+export { type Flag };
+
+export const flagCapability = defineCapability({
+  id: 'f2-flag',
+  version: '1.0.0',
+
+  describe: {
+    name: 'flag',
+    summary: '某个条件开还是关？持久布尔状态原子，用 id 区分不同开关。',
+    semantic: ['boolean', 'state', 'condition', 'config'],
+    whenToUse: '需要记录某个条件是否满足时：角色是否着地（grounded）、技能是否就绪（ready）、触发器是否激活（triggered）等任意命名布尔状态。',
+    examples: [
+      'flag(id="grounded", active=true) — 平台跳跃：角色是否站在地面',
+      'flag(id="skill-ready", active=false) — 冷却系统：技能是否可用',
+      'flag(id="door-open", active=false) — 关卡状态：门是否已打开',
+      'flag(id="invincible", active=false) — 无敌帧：角色当前是否无敌',
+    ],
+  },
+
+  components: {
+    provides: {
+      Flag: {
+        category: 'config',
+        describe: '命名布尔开关。id 标识是哪个条件，active 表示该条件当前是否成立。',
+        fields: {
+          id: { type: 'string', describe: '标识这是哪个布尔开关（如 "grounded"、"skill-ready"）' },
+          active: { type: 'boolean', describe: '当前开关状态：true 为开，false 为关' },
+        },
+      },
+    },
+    reads: [],
+    writes: [],
+    consumes: [],
+  },
+
+  config: {
+    id: {
+      type: 'string',
+      default: '',
+      describe: '开关的唯一标识符',
+      question: '这个布尔开关叫什么名字？',
+      ui: { control: 'input' },
+    },
+    active: {
+      type: 'boolean',
+      default: false,
+      describe: '初始状态（开或关）',
+      question: '初始状态是开还是关？',
+      ui: { control: 'toggle' },
+    },
+  },
+
+  systems: [],
+});
+
+
+────────────────────────────────────────
+── src/atom-skills/frame/index.ts
+────────────────────────────────────────
+import { defineCapability } from '@engine/core/define-capability.js';
+import type { Frame } from '@engine/protocol/components.js';
+
+export type { Frame };
+
+export const frameCapability = defineCapability({
+  id: 'l3-frame',
+  version: '1.0.0',
+
+  describe: {
+    name: 'frame',
+    summary: '精灵的当前帧？',
+    semantic: ['render', 'animation'],
+    whenToUse:
+      '序列帧动画的当前帧索引。animation（Tier 1）= frame.index 随 timer 递增；渲染层按 index 选子图。',
+    examples: ['行走：total=8，index 在 0~7 循环', '爆炸：total=12，播完销毁', '静止：total=1, index=0'],
+  },
+
+  components: {
+    provides: {
+      Frame: {
+        category: 'render',
+        describe: '当前帧索引与总帧数，渲染层据此选子图。',
+        fields: {
+          index: { type: 'number', describe: '当前帧索引（0 起）' },
+          total: { type: 'number', describe: '总帧数' },
+        },
+      },
+    },
+    reads: [],
+    writes: [],
+    consumes: [],
+  },
+
+  config: {
+    index: { type: 'number', default: 0, describe: '初始帧', question: '从第几帧开始？', ui: { control: 'slider', min: 0, max: 100, step: 1 } },
+    total: { type: 'number', default: 1, describe: '总帧数', question: '一共多少帧？', ui: { control: 'slider', min: 1, max: 100, step: 1 } },
+  },
+
+  systems: [],
+});
+
+
+────────────────────────────────────────
+── src/atom-skills/hierarchy/index.ts
+────────────────────────────────────────
+import { defineCapability } from '@engine/core/define-capability.js';
+import type { Hierarchy } from '@engine/protocol/components.js';
+
+export type { Hierarchy };
+
+export const hierarchyCapability = defineCapability({
+  id: 'a2-hierarchy',
+  version: '1.0.0',
+
+  describe: {
+    name: 'hierarchy',
+    summary: '实体挂在谁下面？本地偏移多少？',
+    semantic: ['spatial', 'parenting'],
+    whenToUse:
+      '需要空间父子关系时：炮塔挂在车身、手挂在身体、UI 锚定。hierarchy-resolve（Tier 1）用 parent.transform + local 算出 child 的世界 Transform。空间继承用此原子，纯逻辑关联用 relation(G2)。',
+    examples: ['炮塔：parentId="tank", localX=0, localY=-10', '挂饰：parentId="player", local 偏移', '编队：子机相对长机偏移'],
+  },
+
+  components: {
+    provides: {
+      Hierarchy: {
+        category: 'config',
+        describe: '父实体引用 + 本地变换偏移。child 世界变换由 hierarchy-resolve 计算。',
+        fields: {
+          parentId: { type: 'EntityId', describe: '父实体 id' },
+          localX: { type: 'number', describe: '相对父的本地 X 偏移' },
+          localY: { type: 'number', describe: '相对父的本地 Y 偏移' },
+          localRotation: { type: 'number', describe: '相对父的本地旋转（弧度）' },
+          localScaleX: { type: 'number', describe: '相对父的本地 X 缩放' },
+          localScaleY: { type: 'number', describe: '相对父的本地 Y 缩放' },
+        },
+      },
+    },
+    reads: [],
+    writes: [],
+    consumes: [],
+  },
+
+  config: {
+    parentId: { type: 'string', default: '', describe: '父实体 id', question: '挂在哪个实体下？', ui: { control: 'input' } },
+    localX: { type: 'number', default: 0, describe: '本地 X', question: '相对父的 X 偏移？', ui: { control: 'slider', min: -1000, max: 1000, step: 1 } },
+    localY: { type: 'number', default: 0, describe: '本地 Y', question: '相对父的 Y 偏移？', ui: { control: 'slider', min: -1000, max: 1000, step: 1 } },
+    localRotation: { type: 'number', default: 0, describe: '本地旋转', question: '相对父的旋转（弧度）？', ui: { control: 'slider', min: -3.14159, max: 3.14159, step: 0.01 } },
+    localScaleX: { type: 'number', default: 1, describe: '本地 X 缩放', question: '相对父的 X 缩放？', ui: { control: 'slider', min: 0.01, max: 10, step: 0.01 } },
+    localScaleY: { type: 'number', default: 1, describe: '本地 Y 缩放', question: '相对父的 Y 缩放？', ui: { control: 'slider', min: 0.01, max: 10, step: 0.01 } },
+  },
+
+  systems: [],
+});
+
+
+────────────────────────────────────────
+── src/atom-skills/input-capture/index.ts
+────────────────────────────────────────
+import { defineCapability } from '@engine/core/define-capability.js';
+import type { RawInput } from '@engine/protocol/components.js';
+
+export type { RawInput };
+
+export const inputCaptureCapability = defineCapability({
+  id: 'i1-input-capture',
+  version: '1.0.0',
+
+  describe: {
+    name: 'input-capture',
+    summary: '这帧有什么外部原始信号？',
+    semantic: ['input', 'event'],
+    whenToUse:
+      '需要读取键盘/指针/触摸原始信号时。RawInput 由运行时（DOM 监听等副作用层）每帧注入；action-map(I2) 把它翻译成语义动作。本原子只定义契约，捕获本身是运行时职责。',
+    examples: ['键盘：{source:"keyboard", key:"ArrowLeft", phase:"down"}', '指针：{source:"pointer", x:120, y:80, phase:"move"}', '触摸：{source:"touch", x:50, y:50, phase:"down"}'],
+  },
+
+  components: {
+    provides: {
+      RawInput: {
+        category: 'event',
+        describe: '一帧原始输入信号，由运行时注入、被 action-map 消费。',
+        fields: {
+          source: { type: 'string', describe: "信号来源：'keyboard' | 'pointer' | 'touch'" },
+          key: { type: 'string', describe: '按键名（keyboard 时）' },
+          x: { type: 'number', describe: '坐标 X（pointer/touch 时）' },
+          y: { type: 'number', describe: '坐标 Y（pointer/touch 时）' },
+          phase: { type: 'string', describe: "阶段：'down' | 'up' | 'move'" },
+        },
+      },
+    },
+    reads: [],
+    writes: [],
+    consumes: [],
+  },
+
+  config: {},
+
+  systems: [],
+});
+
+
+────────────────────────────────────────
+── src/atom-skills/mass/index.ts
+────────────────────────────────────────
+import { defineCapability } from '@engine/core/define-capability.js';
+import type { Mass } from '@engine/protocol/components.js';
+
+export type { Mass };
+
+export const massCapability = defineCapability({
+  id: 'b3-mass',
+  version: '1.0.0',
+
+  describe: {
+    name: 'mass',
+    summary: '实体有多重？（0 = 不可移动）',
+    semantic: ['physics', 'collision'],
+    whenToUse:
+      '参与碰撞响应的实体需要质量。collision-separate / collision-bounce 按 mass 比例分配位移与反弹。value=0 表示静态不可移动（地面、墙）。',
+    examples: ['玩家：value=1，可被推动', '地面/墙：value=0，碰撞中不动', '重箱子：value=10，难以被轻物推动'],
+  },
+
+  components: {
+    provides: {
+      Mass: {
+        category: 'config',
+        describe: '质量标量。0 表示无穷大（不可移动）。纯数据，碰撞响应读取。',
+        fields: {
+          value: { type: 'number', describe: '质量；0 = 不可移动（视为无穷大）' },
+        },
+      },
+    },
+    reads: [],
+    writes: [],
+    consumes: [],
+  },
+
+  config: {
+    value: { type: 'number', default: 1, describe: '质量', question: '这个实体多重？（0 = 不可移动）', ui: { control: 'slider', min: 0, max: 100, step: 0.1 } },
+  },
+
+  systems: [],
+});
+
+
+────────────────────────────────────────
+── src/atom-skills/overlap-detect/index.ts
+────────────────────────────────────────
+import { defineCapability } from '@engine/core/define-capability.js';
+import type { Transform, Shape, Overlap } from '@engine/protocol/components.js';
+
+export type { Overlap };
+
+interface Hit {
+  nx: number;
+  ny: number;
+  depth: number;
+}
+
+function halfExtents(s: Shape): { hw: number; hh: number } {
+  if (s.kind === 'box') return { hw: (s.width ?? 0) / 2, hh: (s.height ?? 0) / 2 };
+  const r = s.radius ?? 0;
+  return { hw: r, hh: r };
+}
+
+// 法线方向：从 A 指向 B。无重叠返回 null。
+function testOverlap(at: Transform, as: Shape, bt: Transform, bs: Shape): Hit | null {
+  const dx = bt.x - at.x;
+  const dy = bt.y - at.y;
+
+  if (as.kind === 'box' && bs.kind === 'box') {
+    const a = halfExtents(as);
+    const b = halfExtents(bs);
+    const ox = a.hw + b.hw - Math.abs(dx);
+    const oy = a.hh + b.hh - Math.abs(dy);
+    if (ox <= 0 || oy <= 0) return null;
+    if (ox < oy) return { nx: dx < 0 ? -1 : 1, ny: 0, depth: ox };
+    return { nx: 0, ny: dy < 0 ? -1 : 1, depth: oy };
+  }
+
+  if (as.kind === 'circle' && bs.kind === 'circle') {
+    const ar = as.radius ?? 0;
+    const br = bs.radius ?? 0;
+    const dist = Math.hypot(dx, dy);
+    const pen = ar + br - dist;
+    if (pen <= 0) return null;
+    if (dist === 0) return { nx: 1, ny: 0, depth: pen };
+    return { nx: dx / dist, ny: dy / dist, depth: pen };
+  }
+
+  // box vs circle (任意顺序)；sign 把法线统一回 A→B
+  const aIsBox = as.kind === 'box';
+  const boxT = aIsBox ? at : bt;
+  const boxS = aIsBox ? as : bs;
+  const cirT = aIsBox ? bt : at;
+  const cirS = aIsBox ? bs : as;
+  const sign = aIsBox ? 1 : -1;
+
+  const bh = halfExtents(boxS);
+  const r = cirS.radius ?? 0;
+  const cdx = cirT.x - boxT.x;
+  const cdy = cirT.y - boxT.y;
+  const closestX = Math.max(-bh.hw, Math.min(cdx, bh.hw));
+  const closestY = Math.max(-bh.hh, Math.min(cdy, bh.hh));
+  const ddx = cdx - closestX;
+  const ddy = cdy - closestY;
+  const dist = Math.hypot(ddx, ddy);
+  const pen = r - dist;
+  if (pen <= 0) return null;
+  if (dist === 0) return { nx: sign, ny: 0, depth: pen };
+  return { nx: (ddx / dist) * sign, ny: (ddy / dist) * sign, depth: pen };
+}
+
+export const overlapDetectCapability = defineCapability({
+  id: 'd1-overlap-detect',
+  version: '1.0.0',
+
+  describe: {
+    name: 'overlap-detect',
+    summary: '哪两个实体重叠了？法线和穿透深度？',
+    semantic: ['collision', 'detection'],
+    whenToUse:
+      '需要碰撞事实时。纯检测：每帧对所有 Transform+Shape 实体两两测试，为重叠对创建 Overlap 实体（法线 A→B、穿透深度）。响应（推开/弹性/触发）是消费者，归组合层。box 暂按 AABB（不含旋转）。',
+    examples: ['玩家撞墙：Overlap{entityA:player, entityB:wall, normal, depth}', '子弹命中：collision-separate 读 Overlap 推开', '触发区：trigger-zone 读 Overlap + tag'],
+  },
+
+  components: {
+    provides: {
+      Overlap: {
+        category: 'event',
+        describe: '一对重叠实体的事实。法线从 A 指向 B，depth 为穿透深度。每帧重算（挂在 overlap:<a>:<b> 实体上）。',
+        fields: {
+          entityA: { type: 'EntityId', describe: '重叠对的第一个实体' },
+          entityB: { type: 'EntityId', describe: '重叠对的第二个实体' },
+          normalX: { type: 'number', describe: '分离法线 X（A→B）' },
+          normalY: { type: 'number', describe: '分离法线 Y（A→B）' },
+          depth: { type: 'number', describe: '穿透深度' },
+        },
+      },
+    },
+    reads: ['Transform', 'Shape'],
+    writes: ['Overlap'],
+    consumes: [],
+  },
+
+  config: {},
+
+  systems: [
+    {
+      id: 'overlap-detect',
+      reads: ['Transform', 'Shape'],
+      writes: ['Overlap'],
+      consumes: [],
+      execute(world) {
+        for (const [id] of world.query('Overlap')) world.destroyEntity(id);
+
+        const ents = world.query('Transform', 'Shape');
+        for (let i = 0; i < ents.length; i++) {
+          for (let j = i + 1; j < ents.length; j++) {
+            const aId = ents[i][0];
+            const bId = ents[j][0];
+            const at = world.getComponent<Transform>(aId, 'Transform')!;
+            const as = world.getComponent<Shape>(aId, 'Shape')!;
+            const bt = world.getComponent<Transform>(bId, 'Transform')!;
+            const bs = world.getComponent<Shape>(bId, 'Shape')!;
+            const hit = testOverlap(at, as, bt, bs);
+            if (!hit) continue;
+            const lo = aId < bId ? aId : bId;
+            const hi = aId < bId ? bId : aId;
+            const oid = `overlap:${lo}:${hi}`;
+            world.createEntity(oid);
+            const overlap: Overlap = { type: 'Overlap', entityA: aId, entityB: bId, normalX: hit.nx, normalY: hit.ny, depth: hit.depth };
+            world.addComponent(oid, overlap);
+          }
+        }
+      },
+    },
+  ],
+});
+
+
+────────────────────────────────────────
+── src/atom-skills/random/index.ts
+────────────────────────────────────────
+import { defineCapability } from '@engine/core/define-capability.js';
+import type { RandomSeed } from '@engine/protocol/components.js';
+
+export type { RandomSeed };
+
+// 确定性 PRNG (mulberry32)。推进 state.seed/sequence，返回 [0, 1)。
+// 同一初始 seed 必产生同一序列 —— 确定性重放的基石。
+export function nextRandom(state: RandomSeed): number {
+  state.seed = (state.seed + 0x6d2b79f5) | 0;
+  let t = state.seed;
+  t = Math.imul(t ^ (t >>> 15), t | 1);
+  t ^= t + Math.imul(t ^ (t >>> 7), t | 61);
+  state.sequence += 1;
+  return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+}
+
+export function randomInt(state: RandomSeed, minInclusive: number, maxExclusive: number): number {
+  return minInclusive + Math.floor(nextRandom(state) * (maxExclusive - minInclusive));
+}
+
+export const randomCapability = defineCapability({
+  id: 'w1-random',
+  version: '1.0.0',
+
+  describe: {
+    name: 'random',
+    summary: '可控随机数。确定性重放的基石。',
+    semantic: ['world-service', 'determinism'],
+    whenToUse:
+      '需要可复现随机时：掉落、散射、AI 抖动、过程生成。RandomSeed 挂在 world 实体，系统通过 nextRandom(seed) 取值并推进序列。相同 seed → 相同序列。',
+    examples: ['掉落判定：nextRandom(seed) < dropRate', '弹幕散射：randomInt 选角度', '重放：存初始 seed 即可复现整局'],
+  },
+
+  components: {
+    provides: {
+      RandomSeed: {
+        category: 'config',
+        describe: '确定性随机数发生器状态。seed 为当前内部状态，sequence 记录取数次数。',
+        fields: {
+          seed: { type: 'number', describe: 'PRNG 内部状态（取数后推进）' },
+          sequence: { type: 'number', describe: '已取数次数（调试/重放校验）' },
+        },
+      },
+    },
+    reads: [],
+    writes: [],
+    consumes: [],
+  },
+
+  config: {
+    seed: { type: 'number', default: 1, describe: '初始种子', question: '随机种子？（相同种子复现同一局）', ui: { control: 'input' } },
+  },
+
+  systems: [],
+});
+
+
+────────────────────────────────────────
+── src/atom-skills/relation/index.ts
+────────────────────────────────────────
+import { defineCapability } from '@engine/core/define-capability.js';
+import type { Relation } from '@engine/protocol/components.js';
+
+export type { Relation };
+
+export const relationCapability = defineCapability({
+  id: 'g2-relation',
+  version: '1.0.0',
+
+  describe: {
+    name: 'relation',
+    summary: '实体跟谁有什么逻辑关系？（targeting、owned-by 等）',
+    semantic: ['identity', 'link', 'reference'],
+    whenToUse:
+      '需要表达非空间的实体间逻辑关联时：索敌目标、归属者、跟随。空间父子关系用 hierarchy(A2)，不要用此原子。',
+    examples: ['relation(kind="target", targetId="enemy-3")', 'relation(kind="owner", targetId="player")', 'relation(kind="follows", targetId="leader")'],
+  },
+
+  components: {
+    provides: {
+      Relation: {
+        category: 'config',
+        describe: '到另一个实体的具名逻辑引用（非空间）。纯数据。',
+        fields: {
+          kind: { type: 'string', describe: '关系类型（如 "target"、"owner"、"follows"）' },
+          targetId: { type: 'EntityId', describe: '关系指向的实体 id' },
+        },
+      },
+    },
+    reads: [],
+    writes: [],
+    consumes: [],
+  },
+
+  config: {
+    kind: { type: 'string', default: 'target', describe: '关系类型', question: '这是什么关系？', ui: { control: 'input' } },
+    targetId: { type: 'string', default: '', describe: '目标实体 id', question: '关系指向哪个实体？', ui: { control: 'input' } },
+  },
+
+  systems: [],
+});
+
+
+────────────────────────────────────────
+── src/atom-skills/resource/index.ts
+────────────────────────────────────────
+import { defineCapability } from '@engine/core/define-capability.js';
+import type { Resource, ResourceModify } from '@engine/protocol/components.js';
+
+export const resourceCapability = defineCapability({
+  id: 'f1-resource',
+  version: '1.0.0',
+
+  describe: {
+    name: 'resource',
+    summary: '某种有上下限的数值（hp / mp / stamina / shield / ...），支持通过事件组件修改。',
+    semantic: ['numeric', 'clamped', 'stat', 'resource'],
+    whenToUse: '当实体需要跟踪任何带上下限的数值时使用，例如生命值、法力值、耐力、护盾等。min 可为非零（如温度下限 -50）。',
+    examples: [
+      '角色生命值：Resource { id: "hp", current: 100, min: 0, max: 100 }',
+      '法力值：Resource { id: "mp", current: 50, min: 0, max: 100 }',
+      '温度：Resource { id: "temp", current: 20, min: -50, max: 100 }',
+      '受伤：ResourceModify { resourceId: "hp", amount: -10 }',
+      '治疗：ResourceModify { resourceId: "hp", amount: 25 }',
+    ],
+  },
+
+  components: {
+    provides: {
+      Resource: {
+        category: 'resource',
+        describe: '持久有界数值，用 id 区分语义（hp / mp / ...）。每实体每 type 唯一，一个实体一个 Resource。',
+        fields: {
+          id: { type: 'string', describe: '资源语义标识（如 "hp"、"mp"、"stamina"）' },
+          current: { type: 'number', describe: '当前值，始终保持在 [min, max] 范围内' },
+          min: { type: 'number', describe: '允许的最小值，可为非零（如 -50）' },
+          max: { type: 'number', describe: '允许的最大值' },
+        },
+      },
+      ResourceModify: {
+        category: 'event',
+        describe: '请求修改指定 id 资源的一次性事件，执行后由 World 自动删除。',
+        fields: {
+          resourceId: { type: 'string', describe: '目标资源的 id，与 Resource.id 匹配' },
+          amount: { type: 'number', describe: '修改量，正数增加，负数减少' },
+        },
+      },
+    },
+    reads: ['Resource'],
+    writes: ['Resource'],
+    consumes: ['ResourceModify'],
+  },
+
+  config: {
+    id: {
+      type: 'string',
+      default: 'hp',
+      describe: '资源语义标识',
+      question: '这个资源代表什么？（如 hp、mp、stamina）',
+      ui: { control: 'input' },
+    },
+    current: {
+      type: 'number',
+      default: 100,
+      describe: '初始当前值',
+      question: '初始值是多少？',
+      ui: { control: 'slider', min: 0, max: 1000, step: 1 },
+    },
+    min: {
+      type: 'number',
+      default: 0,
+      describe: '最小值下限',
+      question: '最小值是多少？',
+      ui: { control: 'input' },
+    },
+    max: {
+      type: 'number',
+      default: 100,
+      describe: '最大值上限',
+      question: '最大值是多少？',
+      ui: { control: 'slider', min: 1, max: 10000, step: 1 },
+    },
+  },
+
+  systems: [
+    {
+      id: 'resource-apply',
+      reads: ['Resource'],
+      writes: ['Resource'],
+      consumes: ['ResourceModify'],
+      execute(world) {
+        for (const [entityId] of world.query('Resource', 'ResourceModify')) {
+          const resource = world.getComponent<Resource>(entityId, 'Resource');
+          const modify = world.getComponent<ResourceModify>(entityId, 'ResourceModify');
+          if (!resource || !modify) continue;
+          if (modify.resourceId !== resource.id) continue;
+          const next = resource.current + modify.amount;
+          resource.current = next < resource.min ? resource.min : next > resource.max ? resource.max : next;
+        }
+      },
+    },
+  ],
+});
+
+
+────────────────────────────────────────
+── src/atom-skills/shape/index.ts
+────────────────────────────────────────
+import { defineCapability } from '@engine/core/define-capability.js';
+import type { Shape } from '@engine/protocol/components.js';
+
+export type { Shape };
+
+export const shapeCapability = defineCapability({
+  id: 'c1-shape',
+  version: '1.0.0',
+
+  describe: {
+    name: 'shape',
+    summary: '实体的碰撞/占位几何形状？',
+    semantic: ['geometry', 'collision'],
+    whenToUse:
+      '参与碰撞检测或占位的实体需要形状。box 用 width/height，circle 用 radius。overlap-detect 读取此原子做相交测试。',
+    examples: ['玩家碰撞箱：kind="box", width=32, height=48', '子弹：kind="circle", radius=4', '触发区域：kind="box", width=100, height=100'],
+  },
+
+  components: {
+    provides: {
+      Shape: {
+        category: 'config',
+        describe: '碰撞几何。kind=box 用 width/height；kind=circle 用 radius。纯数据。',
+        fields: {
+          kind: { type: 'string', describe: "形状种类：'box' 或 'circle'" },
+          width: { type: 'number', describe: 'box 宽度（kind=box 时有效）' },
+          height: { type: 'number', describe: 'box 高度（kind=box 时有效）' },
+          radius: { type: 'number', describe: 'circle 半径（kind=circle 时有效）' },
+        },
+      },
+    },
+    reads: [],
+    writes: [],
+    consumes: [],
+  },
+
+  config: {
+    kind: { type: 'select', default: 'box', describe: '形状种类', question: '碰撞形状是矩形还是圆？', ui: { control: 'chips', options: ['box', 'circle'] } },
+    width: { type: 'number', default: 32, describe: 'box 宽度', question: '矩形宽度？', ui: { control: 'slider', min: 1, max: 500, step: 1 } },
+    height: { type: 'number', default: 32, describe: 'box 高度', question: '矩形高度？', ui: { control: 'slider', min: 1, max: 500, step: 1 } },
+    radius: { type: 'number', default: 16, describe: 'circle 半径', question: '圆半径？', ui: { control: 'slider', min: 1, max: 250, step: 1 } },
+  },
+
+  systems: [],
+});
+
+
+────────────────────────────────────────
+── src/atom-skills/sound/index.ts
+────────────────────────────────────────
+import { defineCapability } from '@engine/core/define-capability.js';
+import type { Sound } from '@engine/protocol/components.js';
+
+export type { Sound };
+
+export const soundCapability = defineCapability({
+  id: 'l4-sound',
+  version: '1.0.0',
+
+  describe: {
+    name: 'sound',
+    summary: '播放什么声音？',
+    semantic: ['render', 'audio'],
+    whenToUse: '需要音效或背景音乐时。clipId 指向音频资源，volume 0~1，loop 是否循环。表现层读取并播放。',
+    examples: ['跳跃音效：clipId="jump", loop=false', '背景音乐：clipId="bgm", loop=true', '脚步：volume=0.3'],
+  },
+
+  components: {
+    provides: {
+      Sound: {
+        category: 'render',
+        describe: '音频播放指令，表现层读取播放。',
+        fields: {
+          clipId: { type: 'string', describe: '音频资源键' },
+          volume: { type: 'number', describe: '音量 0~1' },
+          loop: { type: 'boolean', describe: '是否循环' },
+        },
+      },
+    },
+    reads: [],
+    writes: [],
+    consumes: [],
+  },
+
+  config: {
+    clipId: { type: 'string', default: '', describe: '音频键', question: '播放哪个音频？', ui: { control: 'input' } },
+    volume: { type: 'number', default: 1, describe: '音量', question: '音量（0~1）？', ui: { control: 'slider', min: 0, max: 1, step: 0.01 } },
+    loop: { type: 'boolean', default: false, describe: '是否循环', question: '是否循环播放？', ui: { control: 'toggle' } },
+  },
+
+  systems: [],
+});
+
+
+────────────────────────────────────────
+── src/atom-skills/spatial-query/index.ts
+────────────────────────────────────────
+import { defineCapability } from '@engine/core/define-capability.js';
+import type { IWorld, EntityId } from '@engine/core/types.js';
+import type { SpatialIndex, Transform } from '@engine/protocol/components.js';
+
+export type { SpatialIndex };
+
+// 范围查询：返回 (x,y) 半径 radius 内、拥有 Transform 的实体。
+export function queryRange(world: IWorld, x: number, y: number, radius: number): EntityId[] {
+  const r2 = radius * radius;
+  const out: EntityId[] = [];
+  for (const [id] of world.query('Transform')) {
+    const t = world.getComponent<Transform>(id, 'Transform')!;
+    const dx = t.x - x;
+    const dy = t.y - y;
+    if (dx * dx + dy * dy <= r2) out.push(id);
+  }
+  return out;
+}
+
+// 最近邻查询：返回离 (x,y) 最近的 count 个实体（按距离升序），可排除某 id。
+export function queryNearest(world: IWorld, x: number, y: number, count: number, excludeId?: EntityId): EntityId[] {
+  const scored: Array<{ id: EntityId; d2: number }> = [];
+  for (const [id] of world.query('Transform')) {
+    if (id === excludeId) continue;
+    const t = world.getComponent<Transform>(id, 'Transform')!;
+    const dx = t.x - x;
+    const dy = t.y - y;
+    scored.push({ id, d2: dx * dx + dy * dy });
+  }
+  scored.sort((a, b) => a.d2 - b.d2);
+  return scored.slice(0, count).map((s) => s.id);
+}
+
+export const spatialQueryCapability = defineCapability({
+  id: 'w2-spatial-query',
+  version: '1.0.0',
+
+  describe: {
+    name: 'spatial-query',
+    summary: '空间查询服务：范围、最近邻（overlap-detect 回答不了的"A 到 B 之间有什么"）。',
+    semantic: ['world-service', 'query'],
+    whenToUse:
+      'AI 视线、自动索敌、范围技能需要"半径内有谁/最近的 N 个是谁"。SpatialIndex 挂在 world 实体声明服务；系统通过 queryRange / queryNearest 查询。当前为暴力实现，cellSize/kind 为后续网格/四叉树加速预留。',
+    examples: ['自动索敌：queryNearest(world, x, y, 1, self)', '范围 AOE：queryRange(world, x, y, 100)', 'AI 警戒：queryRange 判断玩家是否进入视野'],
+  },
+
+  components: {
+    provides: {
+      SpatialIndex: {
+        category: 'config',
+        describe: '空间查询服务配置。cellSize/kind 为加速结构预留；查询经 queryRange/queryNearest 暴露。',
+        fields: {
+          cellSize: { type: 'number', describe: '网格单元大小（加速结构用）' },
+          kind: { type: 'string', describe: "索引类型：'grid' | 'quadtree'" },
+        },
+      },
+    },
+    reads: ['Transform'],
+    writes: [],
+    consumes: [],
+  },
+
+  config: {
+    cellSize: { type: 'number', default: 64, describe: '网格单元大小', question: '空间网格单元多大？', ui: { control: 'slider', min: 1, max: 1024, step: 1 } },
+    kind: { type: 'select', default: 'grid', describe: '索引类型', question: '用哪种空间索引？', ui: { control: 'chips', options: ['grid', 'quadtree'] } },
+  },
+
+  systems: [],
+});
+
+
+────────────────────────────────────────
+── src/atom-skills/spawn/index.ts
+────────────────────────────────────────
+import { defineCapability } from '@engine/core/define-capability.js';
+import type { SpawnRequest } from '@engine/protocol/components.js';
+
+export type { SpawnRequest };
+
+export const spawnCapability = defineCapability({
+  id: 'k1-spawn',
+  version: '1.0.0',
+
+  describe: {
+    name: 'spawn',
+    summary: '需要创建一个新实体。',
+    semantic: ['lifecycle', 'intent'],
+    whenToUse:
+      '发射子弹、刷怪、产生特效时发出 SpawnRequest。模板（templateId → 组件集合）展开由 assembly/runtime 的 spawner 负责，因为它依赖模板注册表；本原子定义请求契约。',
+    examples: ['开火：SpawnRequest{templateId:"bullet", x, y}', '刷怪：SpawnRequest{templateId:"slime", x, y}', '爆炸特效：SpawnRequest{templateId:"boom", x, y}'],
+  },
+
+  components: {
+    provides: {
+      SpawnRequest: {
+        category: 'intent',
+        describe: '在 (x,y) 实例化模板 templateId 的请求。由 spawner（assembly 层）消费。',
+        fields: {
+          templateId: { type: 'string', describe: '要实例化的模板 id' },
+          x: { type: 'number', describe: '生成位置 X' },
+          y: { type: 'number', describe: '生成位置 Y' },
+        },
+      },
+    },
+    reads: [],
+    writes: [],
+    consumes: [],
+  },
+
+  config: {
+    templateId: { type: 'string', default: '', describe: '模板 id', question: '生成哪个模板？', ui: { control: 'input' } },
+    x: { type: 'number', default: 0, describe: '生成 X', question: '生成位置 X？', ui: { control: 'slider', min: -2000, max: 2000, step: 1 } },
+    y: { type: 'number', default: 0, describe: '生成 Y', question: '生成位置 Y？', ui: { control: 'slider', min: -2000, max: 2000, step: 1 } },
+  },
+
+  systems: [],
+});
+
+
+────────────────────────────────────────
+── src/atom-skills/sprite/index.ts
+────────────────────────────────────────
+import { defineCapability } from '@engine/core/define-capability.js';
+import type { Sprite } from '@engine/protocol/components.js';
+
+export type { Sprite };
+
+export const spriteCapability = defineCapability({
+  id: 'l1-sprite',
+  version: '1.0.0',
+
+  describe: {
+    name: 'sprite',
+    summary: '实体用什么图？渲染层级？',
+    semantic: ['render', 'visual'],
+    whenToUse:
+      '任何需要显示贴图的实体。textureKey 指向资源；anchorX/Y 是 0~1 锚点；zOrder 决定 2D 绘制顺序。渲染层读取此组件绘制。',
+    examples: ['玩家：textureKey="player", anchor=(0.5,0.5), zOrder=10', '背景：zOrder=0', 'UI 图标：zOrder=100'],
+  },
+
+  components: {
+    provides: {
+      Sprite: {
+        category: 'render',
+        describe: '贴图与渲染层级。渲染层每帧读取绘制。',
+        fields: {
+          textureKey: { type: 'string', describe: '贴图资源键' },
+          anchorX: { type: 'number', describe: '锚点 X（0~1，0.5 为中心）' },
+          anchorY: { type: 'number', describe: '锚点 Y（0~1，0.5 为中心）' },
+          zOrder: { type: 'number', describe: '绘制顺序，越大越靠前' },
+        },
+      },
+    },
+    reads: [],
+    writes: [],
+    consumes: [],
+  },
+
+  config: {
+    textureKey: { type: 'string', default: '', describe: '贴图键', question: '用哪张贴图？', ui: { control: 'input' } },
+    anchorX: { type: 'number', default: 0.5, describe: '锚点 X', question: '水平锚点（0~1）？', ui: { control: 'slider', min: 0, max: 1, step: 0.01 } },
+    anchorY: { type: 'number', default: 0.5, describe: '锚点 Y', question: '垂直锚点（0~1）？', ui: { control: 'slider', min: 0, max: 1, step: 0.01 } },
+    zOrder: { type: 'number', default: 0, describe: '绘制层级', question: '绘制层级（越大越靠前）？', ui: { control: 'slider', min: 0, max: 1000, step: 1 } },
+  },
+
+  systems: [],
+});
+
+
+────────────────────────────────────────
+── src/atom-skills/state/index.ts
+────────────────────────────────────────
+import { defineCapability } from '@engine/core/define-capability.js';
+import type { State, StateChanged } from '@engine/protocol/components.js';
+
+export const stateCapability = defineCapability({
+  id: 'j1-state',
+  version: '1.0.0',
+
+  describe: {
+    name: 'state',
+    summary: '实体在某个状态机的当前离散状态？',
+    semantic: ['state', 'fsm'],
+    whenToUse:
+      '需要离散状态时：idle/walk/attack、对话/战斗。外部逻辑写 current 切换状态，state-sync 检测变化、发出 StateChanged 并更新 previous。一实体一 State（fsmId 标识），多状态机用多实体。',
+    examples: ['行为：State{fsmId:"behavior", current:"idle"}', '动画：State{fsmId:"anim", current:"walk"}', '切到 attack → StateChanged{from:"idle", to:"attack"}'],
+  },
+
+  components: {
+    provides: {
+      State: {
+        category: 'config',
+        describe: '某状态机的当前/上一离散状态。外部写 current，本 skill 维护 previous 与切换事件。',
+        fields: {
+          fsmId: { type: 'string', describe: '状态机标识（支持多机并存）' },
+          current: { type: 'string', describe: '当前状态名（外部写入以切换）' },
+          previous: { type: 'string', describe: '上一状态名（由 state-sync 维护）' },
+        },
+      },
+      StateChanged: {
+        category: 'event',
+        describe: '状态切换事件，在切换那一 tick 发出，由下游消费。',
+        fields: {
+          fsmId: { type: 'string', describe: '发生切换的状态机 id' },
+          from: { type: 'string', describe: '切换前状态' },
+          to: { type: 'string', describe: '切换后状态' },
+        },
+      },
+    },
+    reads: ['State'],
+    writes: ['State', 'StateChanged'],
+    consumes: [],
+  },
+
+  config: {
+    fsmId: { type: 'string', default: 'default', describe: '状态机标识', question: '这个状态机叫什么？', ui: { control: 'input' } },
+    current: { type: 'string', default: 'idle', describe: '初始状态', question: '初始状态是什么？', ui: { control: 'input' } },
+  },
+
+  systems: [
+    {
+      id: 'state-sync',
+      reads: ['State'],
+      writes: ['State', 'StateChanged'],
+      consumes: [],
+      execute(world) {
+        for (const [entityId] of world.query('State')) {
+          const st = world.getComponent<State>(entityId, 'State');
+          if (!st) continue;
+          if (st.current !== st.previous) {
+            const changed: StateChanged = { type: 'StateChanged', fsmId: st.fsmId, from: st.previous, to: st.current };
+            world.addComponent(entityId, changed);
+            st.previous = st.current;
+          }
+        }
+      },
+    },
+  ],
+});
+
+
+────────────────────────────────────────
+── src/atom-skills/tag/index.ts
+────────────────────────────────────────
+import { defineCapability } from '@engine/core/define-capability.js';
+import type { Tag } from '@engine/protocol/components.js';
+
+export type { Tag };
+
+export const tagCapability = defineCapability({
+  id: 'g1-tag',
+  version: '1.0.0',
+
+  describe: {
+    name: 'tag',
+    summary: '实体属于哪些分类？用 bitmask 表示，位运算 O(1)。',
+    semantic: ['identity', 'classification', 'bitmask'],
+    whenToUse:
+      '需要按类别筛选实体时：碰撞过滤（敌/友/地面）、触发器目标、索敌（tag=enemy）。一个 flags 用不同 bit 表示多个分类。',
+    examples: [
+      'tag(flags = ENEMY) — 索敌系统只锁定带 ENEMY 位的实体',
+      'tag(flags = GROUND | SOLID) — 同时是地面且实心',
+      'tag(flags = PLAYER | DAMAGEABLE) — 玩家且可受伤',
+    ],
+  },
+
+  components: {
+    provides: {
+      Tag: {
+        category: 'config',
+        describe: '分类位掩码。每一位代表一个类别，按位与判断归属。纯数据，由筛选系统读取。',
+        fields: {
+          flags: { type: 'number', describe: '32 位分类掩码；用 | 组合、& 判断、~ 清除' },
+        },
+      },
+    },
+    reads: [],
+    writes: [],
+    consumes: [],
+  },
+
+  config: {
+    flags: {
+      type: 'number',
+      default: 0,
+      describe: '初始分类掩码',
+      question: '这个实体属于哪些分类（位掩码）？',
+      ui: { control: 'input' },
+    },
+  },
+
+  systems: [],
+});
+
+
+────────────────────────────────────────
+── src/atom-skills/text/index.ts
+────────────────────────────────────────
+import { defineCapability } from '@engine/core/define-capability.js';
+import type { Text } from '@engine/protocol/components.js';
+
+export type { Text };
+
+export const textCapability = defineCapability({
+  id: 'l6-text',
+  version: '1.0.0',
+
+  describe: {
+    name: 'text',
+    summary: '显示什么文字？',
+    semantic: ['render', 'text'],
+    whenToUse: '伤害飘字、对话气泡、UI 文本、计分。独立渲染原语（非 sprite 特化，渲染管线不同）。',
+    examples: ['伤害飘字：content="-25"', '对话气泡：content="你好"', '计分：content="Score: 100"'],
+  },
+
+  components: {
+    provides: {
+      Text: {
+        category: 'render',
+        describe: '文本渲染内容与样式，渲染层据此排版绘制。',
+        fields: {
+          content: { type: 'string', describe: '要显示的文字' },
+          fontSize: { type: 'number', describe: '字号（像素）' },
+          fontFamily: { type: 'string', describe: '字体' },
+          anchor: { type: 'string', describe: "对齐锚点：'left' | 'center' | 'right'" },
+          lineSpacing: { type: 'number', describe: '行间距（像素）' },
+        },
+      },
+    },
+    reads: [],
+    writes: [],
+    consumes: [],
+  },
+
+  config: {
+    content: { type: 'string', default: '', describe: '文本内容', question: '显示什么文字？', ui: { control: 'input' } },
+    fontSize: { type: 'number', default: 16, describe: '字号', question: '字号多大？', ui: { control: 'slider', min: 1, max: 128, step: 1 } },
+    fontFamily: { type: 'string', default: 'sans-serif', describe: '字体', question: '用什么字体？', ui: { control: 'input' } },
+    anchor: { type: 'select', default: 'center', describe: '对齐', question: '文字对齐方式？', ui: { control: 'chips', options: ['left', 'center', 'right'] } },
+    lineSpacing: { type: 'number', default: 0, describe: '行间距', question: '行间距？', ui: { control: 'slider', min: 0, max: 50, step: 1 } },
+  },
+
+  systems: [],
+});
+
+
+────────────────────────────────────────
+── src/atom-skills/timer/index.ts
+────────────────────────────────────────
+import { defineCapability } from '@engine/core/define-capability.js';
+import type { Timer, TimerDone } from '@engine/protocol/components.js';
+
+export const timerCapability = defineCapability({
+  id: 'e1-timer',
+  version: '1.0.0',
+
+  describe: {
+    name: 'timer',
+    summary: '倒计时/间隔计时器，按 tick 计数；到时发出 TimerDone 事件。',
+    semantic: ['time', 'countdown', 'interval'],
+    whenToUse:
+      '需要"过了多久 / 到了吗"的任何场景：冷却、生命周期、动画帧推进、周期回血、AI 巡逻切向。World 无 dt，故按 tick 计数。',
+    examples: [
+      '冷却：Timer{ id:"skill-cd", duration:60, loop:false } → TimerDone → flag(ready)',
+      '动画：Timer{ id:"anim", duration:6, loop:true } → 每 6 tick 推一帧',
+      '生命周期：Timer{ id:"life", duration:120 } → TimerDone → destroy',
+    ],
+  },
+
+  components: {
+    provides: {
+      Timer: {
+        category: 'config',
+        describe:
+          '计时器状态。elapsed 每 tick +1，到 duration 发 TimerDone；loop 则归零重来。每实体每 type 唯一，一实体一 Timer，多计时器用多实体。',
+        fields: {
+          id: { type: 'string', describe: '计时器语义标识（如 "skill-cd"、"life"）' },
+          elapsed: { type: 'number', describe: '已经过的 tick 数' },
+          duration: { type: 'number', describe: '触发所需的 tick 数（>= 1）' },
+          loop: { type: 'boolean', describe: '到时是否归零重新计时' },
+        },
+      },
+      TimerDone: {
+        category: 'event',
+        describe: '计时完成事件，在完成那一 tick 发出，由下游系统消费（lifetime / cooldown / animation）。',
+        fields: {
+          timerId: { type: 'string', describe: '完成的计时器 id，与 Timer.id 对应' },
+        },
+      },
+    },
+    reads: ['Timer'],
+    writes: ['Timer', 'TimerDone'],
+    consumes: [],
+  },
+
+  config: {
+    id: {
+      type: 'string',
+      default: 'timer',
+      describe: '计时器标识',
+      question: '这个计时器叫什么名字？',
+      ui: { control: 'input' },
+    },
+    duration: {
+      type: 'number',
+      default: 60,
+      describe: '触发所需 tick 数',
+      question: '多少 tick 后触发？',
+      ui: { control: 'slider', min: 1, max: 600, step: 1 },
+    },
+    loop: {
+      type: 'boolean',
+      default: false,
+      describe: '是否循环',
+      question: '到时是否循环重来？',
+      ui: { control: 'toggle' },
+    },
+  },
+
+  systems: [
+    {
+      id: 'timer-advance',
+      reads: ['Timer'],
+      writes: ['Timer', 'TimerDone'],
+      consumes: [],
+      execute(world) {
+        for (const [entityId] of world.query('Timer')) {
+          const timer = world.getComponent<Timer>(entityId, 'Timer');
+          if (!timer) continue;
+          if (!timer.loop && timer.elapsed >= timer.duration) continue;
+          timer.elapsed += 1;
+          if (timer.elapsed >= timer.duration) {
+            const done: TimerDone = { type: 'TimerDone', timerId: timer.id };
+            world.addComponent(entityId, done);
+            if (timer.loop) timer.elapsed = 0;
+          }
+        }
+      },
+    },
+  ],
+});
+
+
+────────────────────────────────────────
+── src/atom-skills/transform/index.ts
+────────────────────────────────────────
+import { defineCapability } from '@engine/core/define-capability.js';
+import type { Transform } from '@engine/protocol/components.js';
+
+export type { Transform };
+
+export const transformCapability = defineCapability({
+  id: 'a1-transform',
+  version: '1.0.0',
+
+  describe: {
+    name: 'transform',
+    summary: '实体在世界的位置、朝向和大小',
+    semantic: ['spatial', 'position', 'rotation', 'scale', 'foundation'],
+    whenToUse: '任何需要在世界中占据位置、拥有朝向或缩放比例的实体都需要此原子。几乎所有可见实体和参与空间计算的实体都应挂载 Transform。',
+    examples: [
+      '玩家角色：位置 (x, y) 跟随移动，rotation 随方向旋转',
+      '投射物：初始位置由 SpawnRequest 决定，后续由 motion-apply 每帧更新',
+      '摄像机实体：Transform 决定世界位置，Camera 组件描述投影参数',
+      '触发区域：只需设置 (x, y)，rotation/scaleX/scaleY 使用默认值',
+    ],
+  },
+
+  components: {
+    provides: {
+      Transform: {
+        category: 'config',
+        describe: '实体在世界坐标系中的完整空间状态：位置、朝向、缩放',
+        fields: {
+          x: { type: 'number', describe: '世界坐标 X 轴位置' },
+          y: { type: 'number', describe: '世界坐标 Y 轴位置' },
+          rotation: { type: 'number', describe: '朝向角度（弧度），顺时针为正' },
+          scaleX: { type: 'number', describe: 'X 轴缩放比例，默认 1.0' },
+          scaleY: { type: 'number', describe: 'Y 轴缩放比例，默认 1.0' },
+        },
+      },
+    },
+    reads: [],
+    writes: [],
+    consumes: [],
+  },
+
+  config: {
+    x: {
+      type: 'number',
+      default: 0,
+      describe: '初始 X 坐标',
+      question: '实体的初始 X 坐标是多少？',
+      ui: { control: 'slider', min: -2000, max: 2000, step: 1 },
+    },
+    y: {
+      type: 'number',
+      default: 0,
+      describe: '初始 Y 坐标',
+      question: '实体的初始 Y 坐标是多少？',
+      ui: { control: 'slider', min: -2000, max: 2000, step: 1 },
+    },
+    rotation: {
+      type: 'number',
+      default: 0,
+      describe: '初始朝向（弧度）',
+      question: '实体的初始旋转角度是多少（弧度）？',
+      ui: { control: 'slider', min: -3.14159, max: 3.14159, step: 0.01 },
+    },
+    scaleX: {
+      type: 'number',
+      default: 1,
+      describe: '初始 X 轴缩放',
+      question: '实体的初始 X 轴缩放比例是多少？',
+      ui: { control: 'slider', min: 0.01, max: 10, step: 0.01 },
+    },
+    scaleY: {
+      type: 'number',
+      default: 1,
+      describe: '初始 Y 轴缩放',
+      question: '实体的初始 Y 轴缩放比例是多少？',
+      ui: { control: 'slider', min: 0.01, max: 10, step: 0.01 },
+    },
+  },
+
+  systems: [],
+});
+
+
+────────────────────────────────────────
+── src/atom-skills/velocity/index.ts
+────────────────────────────────────────
+import { defineCapability } from '@engine/core/define-capability.js';
+import type { Velocity } from '@engine/protocol/components.js';
+
+export type { Velocity };
+
+export const velocityCapability = defineCapability({
+  id: 'b1-velocity',
+  version: '1.0.0',
+
+  describe: {
+    name: 'velocity',
+    summary: '实体当前的运动方向、速度和角速度。',
+    semantic: ['motion', 'kinematics', 'speed'],
+    whenToUse:
+      '任何会移动或自转的实体都需要此原子。motion-apply（Tier 1）每帧把 velocity 累加到 transform；accel-apply 把 acceleration 累加到 velocity。',
+    examples: [
+      '玩家移动：vx/vy 由输入驱动',
+      '投射物：发射时设定 vx/vy，飞行中由 motion-apply 更新位置',
+      '自旋拾取物：angular 恒定，rotation-apply 持续旋转',
+    ],
+  },
+
+  components: {
+    provides: {
+      Velocity: {
+        category: 'config',
+        describe: '线速度 (vx, vy) 与角速度 (angular)，纯数据，由其它系统读写。',
+        fields: {
+          vx: { type: 'number', describe: '每 tick 沿 X 轴的位移速度' },
+          vy: { type: 'number', describe: '每 tick 沿 Y 轴的位移速度' },
+          angular: { type: 'number', describe: '每 tick 的旋转角速度（弧度）' },
+        },
+      },
+    },
+    reads: [],
+    writes: [],
+    consumes: [],
+  },
+
+  config: {
+    vx: {
+      type: 'number',
+      default: 0,
+      describe: '初始 X 速度',
+      question: '初始水平速度是多少？',
+      ui: { control: 'slider', min: -100, max: 100, step: 0.1 },
+    },
+    vy: {
+      type: 'number',
+      default: 0,
+      describe: '初始 Y 速度',
+      question: '初始垂直速度是多少？',
+      ui: { control: 'slider', min: -100, max: 100, step: 0.1 },
+    },
+    angular: {
+      type: 'number',
+      default: 0,
+      describe: '初始角速度',
+      question: '初始旋转速度是多少（弧度/tick）？',
+      ui: { control: 'slider', min: -3.14159, max: 3.14159, step: 0.01 },
+    },
+  },
+
+  systems: [],
+});
+
+
+────────────────────────────────────────
+── src/atom-skills/visibility/index.ts
+────────────────────────────────────────
+import { defineCapability } from '@engine/core/define-capability.js';
+import type { Visibility } from '@engine/protocol/components.js';
+
+export type { Visibility };
+
+export const visibilityCapability = defineCapability({
+  id: 'h1-visibility',
+  version: '1.0.0',
+
+  describe: {
+    name: 'visibility',
+    summary: '实体是否可见？是否参与系统运算？',
+    semantic: ['control', 'infrastructure'],
+    whenToUse:
+      'visible 控制渲染跳过，active 控制逻辑跳过。引擎基础设施层面的开关，不同于 flag（游戏逻辑开关）。',
+    examples: ['visible=false, active=true — 隐身但仍参与碰撞', 'visible=true, active=false — 显示但冻结', 'visible=false, active=false — 对象池中休眠'],
+  },
+
+  components: {
+    provides: {
+      Visibility: {
+        category: 'config',
+        describe: '渲染与逻辑参与开关。visible→渲染层是否绘制；active→系统是否处理。纯数据。',
+        fields: {
+          visible: { type: 'boolean', describe: '是否渲染' },
+          active: { type: 'boolean', describe: '是否参与系统运算' },
+        },
+      },
+    },
+    reads: [],
+    writes: [],
+    consumes: [],
+  },
+
+  config: {
+    visible: { type: 'boolean', default: true, describe: '是否可见', question: '实体初始是否可见？', ui: { control: 'toggle' } },
+    active: { type: 'boolean', default: true, describe: '是否参与运算', question: '实体初始是否参与系统运算？', ui: { control: 'toggle' } },
+  },
+
+  systems: [],
+});
+
+
+================================================================
+= 6. atom-skills 统一导出 (src/atom-skills/index.ts)
+================================================================
+// ═══════════════════════════════════════════════════════════════
+//  Atom Skills — 26 核心原子统一导出
+//  参见 wiki/atom-skill-periodic-table.md
+// ═══════════════════════════════════════════════════════════════
+import type { CapabilityDefinition } from '@engine/core/define-capability.js';
+
+import { transformCapability } from './transform/index.js';
+import { hierarchyCapability } from './hierarchy/index.js';
+import { velocityCapability } from './velocity/index.js';
+import { accelerationCapability } from './acceleration/index.js';
+import { massCapability } from './mass/index.js';
+import { shapeCapability } from './shape/index.js';
+import { overlapDetectCapability } from './overlap-detect/index.js';
+import { timerCapability } from './timer/index.js';
+import { resourceCapability } from './resource/index.js';
+import { flagCapability } from './flag/index.js';
+import { tagCapability } from './tag/index.js';
+import { relationCapability } from './relation/index.js';
+import { visibilityCapability } from './visibility/index.js';
+import { inputCaptureCapability } from './input-capture/index.js';
+import { actionMapCapability } from './action-map/index.js';
+import { stateCapability } from './state/index.js';
+import { spawnCapability } from './spawn/index.js';
+import { destroyCapability } from './destroy/index.js';
+import { spriteCapability } from './sprite/index.js';
+import { colorCapability } from './color/index.js';
+import { frameCapability } from './frame/index.js';
+import { soundCapability } from './sound/index.js';
+import { cameraCapability } from './camera/index.js';
+import { textCapability } from './text/index.js';
+import { randomCapability } from './random/index.js';
+import { spatialQueryCapability } from './spatial-query/index.js';
+
+export {
+  transformCapability,
+  hierarchyCapability,
+  velocityCapability,
+  accelerationCapability,
+  massCapability,
+  shapeCapability,
+  overlapDetectCapability,
+  timerCapability,
+  resourceCapability,
+  flagCapability,
+  tagCapability,
+  relationCapability,
+  visibilityCapability,
+  inputCaptureCapability,
+  actionMapCapability,
+  stateCapability,
+  spawnCapability,
+  destroyCapability,
+  spriteCapability,
+  colorCapability,
+  frameCapability,
+  soundCapability,
+  cameraCapability,
+  textCapability,
+  randomCapability,
+  spatialQueryCapability,
+};
+
+// 世界级服务的纯函数助手
+export { nextRandom, randomInt } from './random/index.js';
+export { queryRange, queryNearest } from './spatial-query/index.js';
+
+// 全部 26 个核心原子（用于注册到 World 或 assembly 蓝图）
+export const allAtomCapabilities: CapabilityDefinition[] = [
+  transformCapability,
+  hierarchyCapability,
+  velocityCapability,
+  accelerationCapability,
+  massCapability,
+  shapeCapability,
+  overlapDetectCapability,
+  timerCapability,
+  resourceCapability,
+  flagCapability,
+  tagCapability,
+  relationCapability,
+  visibilityCapability,
+  inputCaptureCapability,
+  actionMapCapability,
+  stateCapability,
+  spawnCapability,
+  destroyCapability,
+  spriteCapability,
+  colorCapability,
+  frameCapability,
+  soundCapability,
+  cameraCapability,
+  textCapability,
+  randomCapability,
+  spatialQueryCapability,
+];
+
+
+================================================================
+= 7. Tier 1 涌现组合
+================================================================
+
+── src/tier1/index.ts
+// Tier 1 涌现层（直接结算）。当前仅 demo 所需的两个系统；
+// 其余（rotation-apply / accel-apply / animation / hierarchy-resolve / counter）待实现。
+export { motionApplyCapability } from './motion-apply.js';
+export { lifetimeCapability } from './lifetime.js';
+
+
+── src/tier1/lifetime.ts
+import { defineCapability } from '@engine/core/define-capability.js';
+import type { TimerDone, DestroyRequest } from '@engine/protocol/components.js';
+
+// Tier 1 涌现（直接结算）：名为 "life" 的 Timer 到时 → DestroyRequest。
+export const lifetimeCapability = defineCapability({
+  id: 't1-lifetime',
+  version: '1.0.0',
+
+  describe: {
+    name: 'lifetime',
+    summary: '计时结束即销毁实体（timerId === "life" 的 TimerDone → DestroyRequest）。',
+    semantic: ['tier1', 'lifecycle'],
+    whenToUse: '给实体一个 id 为 "life" 的 Timer，到时自动销毁。子弹、特效、临时实体常用。',
+    examples: ['子弹存活 N tick 后消失', '爆炸特效播完销毁', '临时拾取物超时消失'],
+  },
+
+  components: {
+    provides: {},
+    reads: [],
+    writes: ['DestroyRequest'],
+    consumes: ['TimerDone'],
+  },
+
+  config: {},
+
+  systems: [
+    {
+      id: 'lifetime',
+      reads: [],
+      writes: ['DestroyRequest'],
+      consumes: ['TimerDone'],
+      execute(world) {
+        for (const [id] of world.query('TimerDone')) {
+          const done = world.getComponent<TimerDone>(id, 'TimerDone');
+          if (!done || done.timerId !== 'life') continue;
+          const req: DestroyRequest = { type: 'DestroyRequest', entityId: id };
+          world.addComponent(id, req);
+        }
+      },
+    },
+  ],
+});
+
+
+── src/tier1/motion-apply.ts
+import { defineCapability } from '@engine/core/define-capability.js';
+import type { Transform, Velocity } from '@engine/protocol/components.js';
+
+// Tier 1 涌现（直接结算）：velocity → transform。无新组件，纯系统。
+export const motionApplyCapability = defineCapability({
+  id: 't1-motion-apply',
+  version: '1.0.0',
+
+  describe: {
+    name: 'motion-apply',
+    summary: '每帧把 velocity 累加到 transform（位置）。',
+    semantic: ['tier1', 'kinematic'],
+    whenToUse: '让有 Velocity 的实体按速度移动。读 Transform + Velocity，写 Transform。',
+    examples: ['子弹飞行', '角色平移', '掉落物下坠（配合 accel-apply）'],
+  },
+
+  components: {
+    provides: {},
+    reads: ['Transform', 'Velocity'],
+    writes: ['Transform'],
+    consumes: [],
+  },
+
+  config: {},
+
+  systems: [
+    {
+      id: 'motion-apply',
+      reads: ['Transform', 'Velocity'],
+      writes: ['Transform'],
+      consumes: [],
+      execute(world) {
+        for (const [id] of world.query('Transform', 'Velocity')) {
+          const t = world.getComponent<Transform>(id, 'Transform')!;
+          const v = world.getComponent<Velocity>(id, 'Velocity')!;
+          t.x += v.vx;
+          t.y += v.vy;
+        }
+      },
+    },
+  ],
+});
+
+
+================================================================
+= 8. 进度 (docs/workflow/progress.md)
+================================================================
+# 开发进度
+
+> Lead 每完成一批更新此文件。Programmer 读取此文件了解全局进度。
+> **执行模式**：Tier 1 核心原子由 Lead 主程序直接实现；Programmer 派发工作流（后台 Agent / inbox-outbox）留给 Tier 2 组合层。
+
+---
+
+## 批次状态
+
+| 批次 | A | B | C | 状态 |
+|------|---|---|---|------|
+| 1 | A1 transform | F1 resource | F2 flag | ✅ done |
+| 2 | B1 velocity | E1 timer | G1 tag | ✅ done |
+| 3 | B2 acceleration | G2 relation | H1 visibility | ✅ done |
+| 4 | B3 mass | I1 input-capture | J1 state | ✅ done |
+| 5 | C1 shape | I2 action-map | K1 spawn | ✅ done |
+| 6 | A2 hierarchy | K2 destroy | W1 random | ✅ done |
+| 7 | D1 overlap-detect | L1 sprite | L2 color | ✅ done |
+| 8 | L3 frame | L4 sound | L5 camera | ✅ done |
+| 9 | L6 text | W2 spatial-query | — | ✅ done |
+
+## 已完成原子
+
+| 原子 | 组件 | 系统 | 测试 |
+|------|------|------|------|
+| A1 transform | `Transform{x,y,rotation,scaleX,scaleY}` | —（纯数据） | 16 |
+| A2 hierarchy | `Hierarchy{parentId,localX,localY,localRotation,localScaleX,localScaleY}` | —（resolve 属 Tier 1） | 4 |
+| B1 velocity | `Velocity{vx,vy,angular}` | —（纯数据） | 4 |
+| B2 acceleration | `Acceleration{ax,ay}` | —（纯数据） | 4 |
+| B3 mass | `Mass{value}` | —（纯数据） | 4 |
+| C1 shape | `Shape{kind,width?,height?,radius?}` | —（纯数据） | 5 |
+| D1 overlap-detect | `Overlap{entityA,entityB,normalX,normalY,depth}` | `overlap-detect`（AABB/圆相交） | 5 |
+| E1 timer | `Timer{id,elapsed,duration,loop}` + `TimerDone` | `timer-advance`（tick 计数，fire-once/loop） | 7 |
+| F1 resource | `Resource` + `ResourceModify` | `resource-apply`（clamp） | 12 |
+| F2 flag | `Flag{id,active}` | —（纯数据） | 18 |
+| G1 tag | `Tag{flags}` bitmask | —（纯数据） | 5 |
+| G2 relation | `Relation{kind,targetId}` | —（纯数据） | 3 |
+| H1 visibility | `Visibility{visible,active}` | —（纯数据） | 4 |
+| I1 input-capture | `RawInput{source,key?,x?,y?,phase?}` | —（运行时注入） | 4 |
+| I2 action-map | `Action{name,value}` | —（绑定属 assembly） | 3 |
+| J1 state | `State{fsmId,current,previous}` + `StateChanged` | `state-sync`（切换检测） | 4 |
+| K1 spawn | `SpawnRequest{templateId,x,y}` | —（spawner 属 assembly） | 3 |
+| K2 destroy | `DestroyRequest{entityId}` | `destroy-apply`（移除实体） | 3 |
+| L1 sprite | `Sprite{textureKey,anchorX,anchorY,zOrder}` | —（render 数据） | 4 |
+| L2 color | `Color{tint,alpha}` | —（render 数据） | 4 |
+| L3 frame | `Frame{index,total}` | —（render 数据） | 4 |
+| L4 sound | `Sound{clipId,volume,loop}` | —（render 数据） | 4 |
+| L5 camera | `Camera{zoom,offsetX,offsetY,rotation,viewportW,viewportH}` | —（render 数据） | 4 |
+| L6 text | `Text{content,fontSize,fontFamily,anchor,lineSpacing}` | —（render 数据） | 4 |
+| W1 random | `RandomSeed{seed,sequence}` + `nextRandom()` 助手 | —（按需取数） | 5 |
+| W2 spatial-query | `SpatialIndex{cellSize,kind}` + `queryRange/queryNearest` 助手 | —（按需查询） | 5 |
+
+进度：**26 / 26** 核心原子 ✅ 全部完成。`tsc --noEmit` 通过，`vitest` 151 passed，`npm run build` 通过。
+
+## 调试与渲染基础设施
+
+- **Debug 体系**（`src/debug/`）：`Tracer` 对每个系统执行前后做快照 diff = 各 skill 每 tick 实际改了什么（协作可视）；`Recorder` + `replay` 确定性录制回放，回放逐 tick 对比录制快照即可抓非确定性 bug。core 侧 World 新增 `TickObserver` 钩子 + `snapshot()/restore()`。
+- **渲染**（`src/renderer/`）：`collectRenderables` 为引擎无关的渲染数据提取；`AsciiRenderer`（headless/终端）与 `CanvasRenderer`（浏览器）共用之，均实现/服务于 `RendererBackend` —— 可平滑升级为 Phaser / AI 视频后端而不动引擎逻辑。
+- `npm run demo` 一次性展示：Ascii 可视化 + Tracer 协作日志 + replay 确定性校验（全部通过）。
+
+## 已知问题
+
+- **category 枚举缺 "state" 类**：Transform / Flag 是"持久可变状态"，7 类枚举（resource/event/intent/marker/config/render/effect）无完美匹配，本批统一归 `config`。待定是否给 `ComponentCategory` 增加 `state` 类。
+- **运维 · worktree 基线**：Agent worktree 隔离从 master（空初始提交 `f366c5a`）创建，**不继承当前分支**。Programmer 需先 `git fetch origin claude/mainbranch && git reset --hard origin/claude/mainbranch` 再开工（本批 B/C 自行处理，A 被中断后由 Lead 从 worktree 恢复并提交）。**下批派发 prompt 必须内置此 Step 0**。
+- **运维 · vitest 扫描 worktree**：`.claude/worktrees/` 下的测试副本会被 vitest 重复收集；集成后须 `git worktree remove` 清理（该目录已 gitignore）。
+- **数据型原子无系统**：input-capture / action-map / spawn 只定义组件契约（systems 为空）——其行为（DOM 捕获、按键→动作绑定、模板实例化）依赖运行时/assembly，非通用纯 ECS 逻辑。对比 destroy 有 `destroy-apply`（移除逻辑通用、无需注册表）。
+- **SpatialIndex 字段重命名**：周期表写 `type: 'grid'|'quadtree'`，但 `type` 是引擎 Component 判别字段（保留），故重命名为 `kind`（与 Shape.kind 一致）。
+- **接线 + demo 已完成**：26 原子统一导出于 `src/atom-skills/index.ts`；`demo.assembly` 用真实 Engine 跑通"子弹飞行 → 撞墙检测 → 寿命自毁"，`demo.integration.test` 验证拓扑协作，`npm run build` 通过。
+- **Tier 1 涌现层进度 2/7**：已实现 `motion-apply`、`lifetime`（demo 所需，置于 `src/tier1/`）；待实现 rotation-apply / accel-apply / animation / hierarchy-resolve / counter。
+
+================================================================
+= 9. 交叉验证 (wiki/v6-cross-engine-validation.md)
+================================================================
+# Apollo v6 — 跨引擎交叉验证报告
+
+> 四引擎（Bevy / Unity DOTS / Godot / Phaser）实证研究 × Claude 推演 × Gemini 审核
+> 三方交叉验证，产出最终原子表。
+
+---
+
+## 一、跨引擎组件对照矩阵
+
+### 我们的 v5 原子 vs 四大引擎
+
+| Apollo v5 原子 | Bevy | Unity DOTS | Godot 4 | Phaser 3 | 验证结论 |
+|---------------|------|------------|---------|----------|---------|
+| **A1 transform** | `Transform { translation, rotation, scale }` | `LocalTransform { Position, Rotation, Scale }` | `Node2D.position/rotation/scale` | `GameObject.x/y/angle/scale` | **全票通过** — 所有引擎都是单一组件 |
+| **A2 hierarchy** | `ChildOf(Entity)` + `Children` | `Parent { Value }` + `Child` buffer | `Node.get_parent()` + children | `Container.list` | **全票通过** — 全部独立于 Transform |
+| **B1 velocity** | 无内置 (rapier: `Velocity`) | `PhysicsVelocity { Linear, Angular }` | `RigidBody2D.linear_velocity` | `Body.velocity` | **全票通过** — 含 angular |
+| **B2 acceleration** | 无内置 | 无内置 (通过力实现) | 无内置 | `Body.acceleration` | **3/4 无内置** — 但 Phaser 有，且概念原子性成立 |
+| **B3 mass** | 无内置 (rapier) | `PhysicsMass { InverseMass }` | `RigidBody2D.mass` | `Body.mass` | **3/4 通过** |
+| **C1 shape** | 无内置 (rapier) | `PhysicsCollider { BlobAssetRef }` | `CollisionShape2D.shape` | `Body.setSize/setCircle` | **全票通过** — 碰撞形状是独立概念 |
+| **D1 overlap-detect** | 无内置 (rapier events) | 碰撞事件流 | `Area2D.body_entered` signal | `Physics.overlap()` | **全票通过** — 碰撞检测是基础 |
+| **E1 timer** | `Timer` (struct, 嵌入组件) | 无内置 (用户自定义) | `Timer` node | `TimerEvent` | **全票通过** — 实现方式不同但概念统一 |
+| **F1 resource** | 无内置 (用户自定义) | 无内置 | 无内置 | 无内置 | **0/4 内置** — 但这是游戏逻辑层通用容器，正确 |
+| **F2 flag** | 无内置 (用 marker component) | `Disabled` tag | `Node.visible` | `GameObject.active` | **概念通过** — 引擎用不同机制实现同一概念 |
+| **G1 tag** | Component 类型本身即 tag | `Prefab`, `Disabled` 等 tag 组件 | Groups + Layer | `GameObject.getData()` | **全票通过** |
+| **G2 relation** | `ChildOf` 是 relation 的特例 | 无通用 relation | 无内置 | 无内置 | **概念独立** — ECS 特有，OOP 引擎用引用 |
+| **H1 visibility** | `Visibility { Inherited/Hidden/Visible }` | `Disabled` tag + render layers | `CanvasItem.visible` | `GameObject.visible` | **全票通过** — Bevy 甚至分三级 |
+| **I1 input-capture** | Resource: `ButtonInput<KeyCode>` | 无 DOTS 原生 (手动读取) | `Input` singleton | `InputPlugin` | **全票通过** — 但多数引擎用 Resource 非 Component |
+| **I2 action-map** | 3rd party (leafwing) | 无内置 | `InputMap` | 无内置 | **2/4** — 但概念原子性成立 |
+| **J1 state** | 无内置 (用户自定义) | 无内置 | `AnimationTree.active_state` | 无内置 | **概念通过** — FSM 是游戏逻辑层 |
+| **K1 spawn** | `Commands::spawn()` | `EntityCommandBuffer.CreateEntity()` | `Node.instantiate()` | `scene.add()` | **全票通过** — 但多为 API 而非组件 |
+| **K2 destroy** | `Commands::despawn()` | `EntityCommandBuffer.DestroyEntity()` | `Node.queue_free()` | `GameObject.destroy()` | **全票通过** — 同上 |
+| **L1 sprite** | `Sprite { image, color, flip, custom_size }` | `RenderMesh` + `MaterialMeshInfo` | `Sprite2D { texture, region }` | `Sprite { texture }` | **全票通过** |
+| **L2 color** | Sprite 内嵌 color 字段 | Material 属性覆盖 | `CanvasItem.modulate` | `GameObject.tint` | **全票通过** — 但多数引擎内嵌在 Sprite |
+| **L3 frame** | `TextureAtlas { index, layout }` | 无内置 | `AnimatedSprite2D.frame` | `Sprite.frame` | **全票通过** |
+| **L4 sound** | `AudioPlayer(Handle)` + `PlaybackSettings` | 无内置 | `AudioStreamPlayer2D` | `Sound` | **全票通过** |
+| **L5 camera** | `Camera` + `Camera2d` + `Projection` | `Camera` (GameObject) | `Camera2D` | `Camera { scroll, zoom }` | **全票通过** |
+| **W1 random** | 无内置 (用 rand crate) | 无内置 | `RandomNumberGenerator` | `Phaser.Math.RND` | **概念通过** — 确定性重放需求 |
+
+### 验证总结
+
+| 验证等级 | 原子数 | 详情 |
+|---------|--------|------|
+| 全票通过 (4/4) | 15 | transform, hierarchy, velocity, shape, overlap, timer, tag, visibility, input, spawn, destroy, sprite, frame, sound, camera |
+| 3/4 通过 | 3 | mass, acceleration, flag |
+| 概念独立通过 | 6 | resource, relation, action-map, state, color, random |
+| **共计** | **24** | **v5 全部 24 个原子均通过验证** |
+
+---
+
+## 二、缺口分析 — 引擎有而我们没有的
+
+### 缺口 1: Text 文本渲染 ⭐ 确认缺失
+
+| 引擎 | 实现 | 级别 |
+|------|------|------|
+| Bevy | `Text` / `Text2d` — 一等公民组件，带 `TextFont`, `TextColor`, `TextLayout` | **核心组件** |
+| Godot | `Label` / `RichTextLabel` — 基础节点类型 | **核心节点** |
+| Phaser | `Text` / `BitmapText` — 一等公民 GameObject | **核心对象** |
+| Unity DOTS | 无内置 (被视为已知缺陷，3rd party 补) | 缺失 |
+
+**结论：** 3/4 引擎将 Text 作为基础渲染原语。伤害飘字、UI 文本、对话气泡都依赖它。
+**决策：加入 L6 text 作为核心感知层原子。**
+
+---
+
+### 缺口 2: 空间查询 (Raycast / Nearest) ⭐ 确认缺失
+
+| 引擎 | 实现 | 级别 |
+|------|------|------|
+| Unity DOTS | `PhysicsWorldSingleton.CastRay()` — 服务调用 | **世界级 API** |
+| Godot | `RayCast2D` node, `PhysicsDirectSpaceState2D.intersect_ray()` | **节点 + API** |
+| Phaser | `Physics.Arcade.Body.rayCast()` | **API** |
+| Bevy | 3rd party (rapier query pipeline) | 插件 |
+
+**结论：** 所有引擎都提供空间查询能力，但实现方式是**服务/API**而非组件。
+**决策：加入 W2 spatial-query 作为世界级原子（类似 random — 挂在 world 实体上，存储空间索引配置）。**
+
+---
+
+### 缺口 3: Tilemap 地图数据
+
+| 引擎 | 实现 | 级别 |
+|------|------|------|
+| Godot | `TileMapLayer` — `tile_map_data: PackedByteArray` + `tile_set: TileSet` | **资产 + 节点** |
+| Phaser | `Tilemap` — 从 JSON 加载 (Tiled 格式) | **资产 + 对象** |
+| Bevy | 无内置 (3rd party: bevy_ecs_tilemap) | 插件 |
+| Unity DOTS | 无内置 | 无 |
+
+**结论：** Tilemap 是**资产格式**（二进制/JSON 数据），由引擎加载后供系统消费。不是实体级组件。
+**决策：不加入原子表。作为引擎资产加载 API，类似 serialization。**
+
+---
+
+### 缺口 4: 寻路 (Pathfinding)
+
+| 引擎 | 实现 | 级别 |
+|------|------|------|
+| Godot | `NavigationAgent2D` + `NavigationRegion2D` | **节点（代理 + 区域）** |
+| Unity DOTS | 无内置 (hybrid NavMeshAgent) | 混合 |
+| Bevy | 3rd party | 插件 |
+| Phaser | 无内置 | 无 |
+
+**结论：** 寻路是**算法服务**，依赖空间数据（tilemap + spatial-query），不是组件数据。
+**决策：不加入原子表。作为引擎服务，依赖 W2 spatial-query。**
+
+---
+
+### 缺口 5: CCD 连续碰撞检测
+
+| 引擎 | 实现 | 级别 |
+|------|------|------|
+| Unity DOTS | `ColliderCastInput` — 查询类型 | **API 参数** |
+| Godot | `move_and_collide()` 内置 CCD | **方法内部** |
+| Phaser | 无 (离散) | 无 |
+| Bevy | rapier 提供 | 插件 |
+
+**结论：** CCD 是 overlap-detect **System 的实现增强**。组件数据（Overlap）不变，只是检测算法从离散变为扫掠。
+**决策：不加入原子表。D1 的 System 实现细节。**
+
+---
+
+### 缺口 6: Serialization 序列化
+
+| 引擎 | 实现 | 级别 |
+|------|------|------|
+| Unity DOTS | Subscene baking — 内置序列化管线 | **引擎基础设施** |
+| Bevy | `bevy_scene` — 反射序列化 | **引擎基础设施** |
+| Godot | `ResourceSaver/Loader` | **引擎 API** |
+| Phaser | 无内置 | 无 |
+
+**结论：** 序列化是**引擎层 API**（`world.save()` / `world.load()`），不是组件。
+**决策：不加入原子表。作为引擎基础设施。**
+
+---
+
+### 缺口 7: Light 2D 光照
+
+| 引擎 | 实现 | 级别 |
+|------|------|------|
+| Bevy | `PointLight`, `DirectionalLight`, `SpotLight` — 核心组件 | **核心** |
+| Godot | `PointLight2D`, `DirectionalLight2D` | **核心节点** |
+| Phaser | `Light` (WebGL only) | **可选** |
+| Unity DOTS | 渲染管线处理 | **管线级** |
+
+**结论：** 3D 引擎中光照是核心。但 2D 游戏中动态光照是**可选增强**，大量 2D 游戏不需要。
+**决策：不加入核心原子。放入扩展层。**
+
+---
+
+### 缺口 8: Particle 粒子
+
+| 引擎 | 实现 | 级别 |
+|------|------|------|
+| Bevy | 3rd party (bevy_hanabi): `ParticleEffect` + `EffectAsset` | **插件** |
+| Godot | `GPUParticles2D` | **核心节点** |
+| Phaser | `ParticleEmitter` | **核心对象** |
+| Unity DOTS | 无内置 DOTS 粒子 | 无 |
+
+**结论：** 粒子是 Tier 2 宏的经典案例：`spawn(大量) + transform + velocity + lifetime + color + frame`。
+**决策：不加入原子表。Tier 2 宏。**
+
+---
+
+## 三、Gemini 五面墙 × Claude 推演 × 引擎实证 — 三方裁定
+
+| Gemini 的墙 | Claude 判定 | 引擎实证 | 最终裁定 |
+|------------|-----------|---------|---------|
+| **Raycast/Spatial-Hash** | W2 世界级服务 | Unity DOTS: 服务调用。Godot: 节点+API | **✅ 加入 W2 spatial-query** |
+| **Pathfinding** | W3 世界级服务 | 全部引擎: 算法服务，非组件 | **❌ 不加入原子。引擎服务** |
+| **Text** | L6 感知层原子 | Bevy/Godot/Phaser: 核心一等公民 | **✅ 加入 L6 text** |
+| **CCD** | D1 实现增强 | Unity DOTS: 查询参数类型 | **❌ D1 System 升级** |
+| **Serialization** | 引擎 API | 全部引擎: 基础设施层 | **❌ 引擎 API** |
+
+| Claude 额外发现 | 引擎实证 | 最终裁定 |
+|---------------|---------|---------|
+| **Tilemap** | Godot/Phaser: 资产格式 | **❌ 引擎资产加载** |
+| **Particle** | Bevy: 插件。Godot: 核心但可组合 | **❌ Tier 2 宏** |
+| **Light2D** | Bevy/Godot: 核心。但 2D 可选 | **❌ 扩展原子** |
+
+---
+
+## 四、v6 最终原子表
+
+### 变更摘要 (v5 → v6)
+
+| 变更 | 说明 |
+|------|------|
+| **+L6 text** | 文本渲染原语。3/4 引擎验证为核心一等公民 |
+| **+W2 spatial-query** | 空间查询服务（射线、范围、最近）。所有引擎都提供，AI/索敌不可或缺 |
+| **+扩展 D: light2d** | 2D 动态光照。3D 核心但 2D 可选 |
+
+### 核心原子 (24 实体级 + 2 世界级 = 26)
+
+```
+空间/层级:  A1 transform       A2 hierarchy
+运动:       B1 velocity        B2 acceleration    B3 mass
+形状:       C1 shape
+碰撞:       D1 overlap-detect
+时间:       E1 timer
+数值:       F1 resource        F2 flag
+标识:       G1 tag             G2 relation
+控制:       H1 visibility
+输入:       I1 input-capture   I2 action-map
+状态:       J1 state
+生命周期:   K1 spawn           K2 destroy
+感知:       L1 sprite   L2 color   L3 frame   L4 sound   L5 camera   L6 text
+世界级:     W1 random   W2 spatial-query
+```
+
+### 引擎基础设施 (非原子，引擎 API 层)
+
+| 能力 | 类型 | 说明 |
+|------|------|------|
+| **serialization** | API | `world.save()` / `world.load()` |
+| **pathfinding** | 算法服务 | 依赖 W2 spatial-query + tilemap 资产 |
+| **tilemap-loader** | 资产加载 | 从 JSON/Binary 加载地图数据 |
+| **CCD** | D1 增强 | overlap-detect System 的扫掠检测模式 |
