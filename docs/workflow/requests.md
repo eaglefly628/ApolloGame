@@ -124,6 +124,51 @@
 
 ---
 
+### [2026-06-03] · PA · Game A · status: open · REQ-001 相机 / 卷轴（世界→屏幕变换 + 合作跟随相机）
+
+- **想实现的游戏行为**：
+  合作冒险的关卡要**比屏幕大**（卷轴）。同屏不分屏：相机取两名玩家的中点，**动态缩放**保证两人都在视野内；
+  两人离太远则相机拉远；相机框钳在关卡边界内（不露界外空白）。这是 Game A 整个体验的地基（`game-a-coop-platformer.md` 2.1 明确要求）。
+
+- **已经试了什么**：
+  - v0.1 已用 `bounds-clamp` 在固定 640×400 世界里跑通双人移动/跳跃/平台（`src/games/game-a/`）。
+  - 查渲染器：`src/renderer/canvas-renderer.ts:38` 是 `ctx.translate(r.x, r.y)` —— **世界坐标 1:1 画到固定画布，无任何相机变换**，世界无法比视口大。
+  - 查 `Camera` 组件（L5，`protocol/components.ts`）：字段齐全（zoom/offsetX/offsetY/viewportW/H），但**全工程零消费者**（纯数据，无相机系统、渲染器不读它）。
+
+- **卡在哪 / 缺什么**（引擎做不到的点）：
+  1. **渲染器没有世界→屏幕投影**：无法表现"世界大于视口 + 卷动"。
+  2. **没有相机系统**：`Camera` 组件没人写、没人读。
+
+- **建议方案 / 伪代码**（Lead review 后定；相机跟随放共享层还是做成可复用系统由你决定，渲染器变换肯定属共享层）：
+  ```
+  // ① 渲染器（共享基础设施）施加相机变换：世界投影到屏幕。读"相机实体"(Camera+Transform)或 world 单例。
+  render(world):
+    cam = readCamera(world)                      // center=Transform.xy, zoom, viewport
+    ctx.save()
+    ctx.translate(viewportW/2, viewportH/2)
+    ctx.scale(cam.zoom, cam.zoom)
+    ctx.translate(-cam.centerX, -cam.centerY)    // 世界向相机反方向平移 = 卷轴
+    for r in renderables: drawWorld(r)           // 实体仍用世界坐标，相机统一施加变换
+    ctx.restore()
+
+  // ② 合作跟随相机系统（可复用：跟随被 tag 标记的目标集合）。
+  camera-follow.execute(world):
+    targets = entities tagged CameraTarget       // Game A: 两名玩家
+    aabb = unionAABB(targets.transform)
+    cam.centerX, cam.centerY = aabb.center
+    fitZoom = min(viewportW/(aabb.w+margin), viewportH/(aabb.h+margin))
+    cam.zoom = clamp(fitZoom, minZoom, 1)
+    clampCameraBoxInsideLevelBounds(cam, levelBounds)   // 不露界外
+  ```
+  - 配套：`bounds-clamp` 已支持钳到任意边界（设 Bounds=关卡尺寸即可，纯 config，无需改引擎）。
+  - 确定性：相机若只影响**渲染**就不进哈希、不破坏 lockstep；若写进世界状态需保证算子确定并纳入快照。
+
+- **影响面 / 复用**：Game B（乙女 VN）多半也要相机（对话镜头/平移）。两个游戏共用，适合收敛成通用原子，别为 Game A 做一次性 hack。
+
+- **不阻塞 v0.1**：v0.1（固定屏）已交付可回归；本需求阻塞的是 **v0.2 起的卷轴大关卡**。
+
+---
+
 ## 需求模板（复制这段填写）
 
 ```
