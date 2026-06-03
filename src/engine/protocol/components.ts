@@ -100,10 +100,12 @@ export interface Mass extends Component {
 // ── C1 shape ── 碰撞/占位几何形状
 export interface Shape extends Component {
   readonly type: 'Shape';
-  kind: 'box' | 'circle';
+  kind: 'box' | 'circle' | 'polygon';
   width?: number;
   height?: number;
   radius?: number;
+  // polygon: 局部空间凸多边形顶点，扁平存 [x0,y0,x1,y1,...]（不含旋转，旋转留待刚体阶段）。
+  vertices?: number[];
 }
 
 // ── G2 relation ── 实体跟谁有什么逻辑关系（非空间）

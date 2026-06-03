@@ -70,7 +70,7 @@ export function renderEnts(w: World): RenderEnt[] {
       id,
       x: t.x,
       y: t.y,
-      kind: s?.kind ?? 'box',
+      kind: s && s.kind !== 'polygon' ? s.kind : 'box', // mp 俯视演示不含多边形；归一到 box，不拓宽 RenderEnt 契约
       w: s?.width ?? 20,
       h: s?.height ?? 20,
       r: s?.radius ?? 12,
