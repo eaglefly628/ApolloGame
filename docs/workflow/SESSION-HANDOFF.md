@@ -1,6 +1,9 @@
 # Session 交接总结 · 2026-06-03
 
 > 新 session 先读本文件 + `progress.md` 恢复上下文。
+>
+> **工作目录 = `MemBrain`**（本地 clone 目录名）；GitHub 远端仓库是 `eaglefly628/ApolloGame`。
+> 看到 cwd 是 `MemBrain` 而 git remote 是 `ApolloGame` 属正常,别当成走错仓库。
 
 ## 1. 技术现状
 
