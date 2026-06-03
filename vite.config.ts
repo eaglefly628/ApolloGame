@@ -13,4 +13,9 @@ export default defineConfig({
       '@net': resolve(__dirname, 'src/net'),
     },
   },
+  test: {
+    // 排除并行 Programmer 的 worktree 副本（.claude/worktrees）——否则 vitest 会把副本里的
+    // 测试也扫进来、测试数虚高（曾出现 1515 假象）。保留默认的 node_modules/dist 排除。
+    exclude: ['**/node_modules/**', '**/dist/**', '**/.claude/**'],
+  },
 });
