@@ -4,7 +4,7 @@ import { Engine } from './runtime/engine.js';
 import { CanvasRenderer } from '@renderer/index.js';
 import { KeyboardInputSource } from '@net/index.js';
 import { GameOverlay } from './ui/GameOverlay.js';
-import { playgroundBlueprint } from './assembly/playground.assembly.js';
+import { platformerBlueprint } from './assembly/platformer.assembly.js';
 
 function App() {
   const containerRef = useRef<HTMLDivElement>(null);
@@ -14,7 +14,7 @@ function App() {
     const input = new KeyboardInputSource('p1');
     inputRef.current = input;
     const e = new Engine({ tickRate: 60, input });
-    e.load(playgroundBlueprint);
+    e.load(platformerBlueprint);
     return e;
   });
 

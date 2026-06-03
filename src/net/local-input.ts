@@ -24,7 +24,7 @@ export class KeyboardInputSource implements InputSource {
   private readonly pressed = new Set<string>();
 
   private readonly onDown = (e: KeyboardEvent) => {
-    if (KEYMAP[e.code]) {
+    if (KEYMAP[e.code] || e.code === 'Space') {
       this.pressed.add(e.code);
       e.preventDefault();
     }
@@ -57,8 +57,10 @@ export class KeyboardInputSource implements InputSource {
     }
     dx = Math.sign(dx);
     dy = Math.sign(dy);
-    if (dx === 0 && dy === 0) return [];
-    return [{ playerId: this.playerId, tick, move: { dx, dy } }];
+    const jump = this.pressed.has('Space');
+    if (dx === 0 && dy === 0 && !jump) return [];
+    const cmd: Command = { playerId: this.playerId, tick, move: { dx, dy } };
+    return [jump ? { ...cmd, jump: true } : cmd];
   }
 
   dispose(): void {

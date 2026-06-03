@@ -56,4 +56,20 @@ describe('KeyboardInputSource: 键盘 → 每 tick 命令', () => {
 
     src.dispose();
   });
+
+  it('空格 → 跳跃意图；可边跑边跳；松开即无', () => {
+    const target = new EventTarget();
+    const src = new KeyboardInputSource('p1', target);
+
+    target.dispatchEvent(key('keydown', 'Space'));
+    expect(src.commandsForTick(1)).toEqual([{ playerId: 'p1', tick: 1, move: { dx: 0, dy: 0 }, jump: true }]);
+
+    target.dispatchEvent(key('keydown', 'ArrowRight')); // 边跑边跳：水平 + 跳跃并存
+    expect(src.commandsForTick(2)).toEqual([{ playerId: 'p1', tick: 2, move: { dx: 1, dy: 0 }, jump: true }]);
+
+    target.dispatchEvent(key('keyup', 'Space'));
+    expect(src.commandsForTick(3)).toEqual([{ playerId: 'p1', tick: 3, move: { dx: 1, dy: 0 } }]); // 无 jump 字段
+
+    src.dispose();
+  });
 });
