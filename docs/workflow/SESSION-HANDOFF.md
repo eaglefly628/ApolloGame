@@ -24,6 +24,16 @@
 - **实测代价**：人来回纠正分工 2 次、`1515` 测试假象排查、白扔 PA 域 3 个已跑完产物。本批 PA 最终未交付其 3 个 → Lead 自补完成（rotation/animation/hierarchy），正印证"单 agent 更快"。
 - **建议默认工作模式**：Lead 单 session 顺序写小原子；后台子 Agent 仅在 context 将爆时用（纯为隔离）；inbox/outbox 更适合"跨 session 持久化/续上下文"，不适合"实时并行协作"。
 
+## 协作模型 v2（已敲定 —— 取代上面的"并行 skill programmer"）
+
+不再"把 skill 任务传来传去"（那是过度设计）。新分工：
+
+- **Lead（主程，本 session 角色）= 引擎 owner**：只接需求、实现/扩展引擎、守护确定性与契约、收敛重复需求为通用原子。
+- **Game Creator PA / PB = 引擎使用者**：各做一个小游戏；引擎做不到时**提需求**（写 `requests.md`），**不自己改引擎**。
+- **为什么这才是"对的并行"**：游戏 vs 引擎是不同 context、只通过"需求"窄接口耦合、两个不同游戏多样化压测引擎（需求被真实游戏拉动，避免 YAGNI）。
+- **边界**：引擎/共享层（`engine/**`、`atom-skills/**`、`tier1/**`、`tier2/**`、`protocol`、`SystemPhase`）只接需求（可附建议补丁，**Lead 是合并闸门**）；游戏层 PA/PB 完全自由。
+- **新 Lead session 开局**：读本文件 + `game-creator-role.md`（发给 PA/PB）+ `requests.md`（需求池），然后等 PA/PB 的需求来驱动引擎演化。
+
 ## 3. 待决策 / 下一步
 
 - **相位模型升级**：整数相位已 5 个（每个"改 Transform"的系统独占一阶段），在吃紧。建议升级为**显式 before/after 排序（runsAfter）**。Gemini review 与 Lead 均提过。
