@@ -1,5 +1,7 @@
 # Apollo Engine
 
+> 工作目录(本地 clone)叫 `MemBrain`；GitHub 远端仓库是 `eaglefly628/ApolloGame`。两者不一致属正常。
+
 数据驱动的原子化 ECS 游戏引擎：26 个核心原子 skill + Tier 1 涌现层，确定性 tick 循环，
 可替换渲染后端，内置 debug / record-replay。
 
