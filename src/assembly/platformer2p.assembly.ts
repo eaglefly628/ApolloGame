@@ -1,4 +1,5 @@
 import type { WorldBlueprint } from './demo.assembly.js';
+import type { KeyMap } from '@net/index.js';
 import {
   transformCapability,
   velocityCapability,
@@ -11,31 +12,28 @@ import { accelApplyCapability, motionApplyCapability } from '../tier1/index.js';
 import { collisionResolveCapability, groundSenseCapability, jumpCapability, boundsClampCapability } from '../tier2/index.js';
 
 // ═══════════════════════════════════════════════════════════════
-//  可玩平台跳跃场景 —— ←/→ 移动，空格跳跃
+//  本地双人平台跳跃 —— 同一份引擎，两名玩家各跑各的
 // ═══════════════════════════════════════════════════════════════
-//  画面里的每一个行为都不是某个系统"写死"的，而是 6 个各自独立的原子组合涌现的：
-//    重力(accel-apply) ⊕ 运动(motion-apply) ⊕ 重叠检测(overlap-detect)
-//    ⊕ 落地感知(ground-sense) ⊕ 碰撞解算(collision-resolve) ⊕ 跳跃(jump)
-//  靠 SystemPhase 自动定序成 Update→Resolve→Commit。
+//  双人几乎"免费"：net 层本就为多玩家而建——Controllable 按 playerId 路由，
+//  applyCommands 按 playerId 定序应用。这里只是放第二个 Controllable 实体 +
+//  第二个键位的输入源（见 main.tsx 的 MultiInputSource）。
 //
-//  输入接缝：玩家是 Controllable（横向移动复用既有 applyCommands），同时有 Acceleration（重力）。
-//  因此 applyCommands 只用输入控其水平速度、垂直交给重力；空格 → Action{name:'jump'}，
-//  jump 系统仅在 Grounded（脚下有静态面）时转成向上冲量 → 离地即不可二段跳。
+//  键位：玩家1（橙）A/D 走、W 跳；玩家2（青）←/→ 走、↑ 跳。
 // ═══════════════════════════════════════════════════════════════
+
+export const P1_KEYMAP: KeyMap = { KeyA: { dx: -1 }, KeyD: { dx: 1 }, KeyW: { jump: true } };
+export const P2_KEYMAP: KeyMap = { ArrowLeft: { dx: -1 }, ArrowRight: { dx: 1 }, ArrowUp: { jump: true } };
 
 const GROUND_TINT = 0x4b5563;
 const PLATFORM_TINT = 0x6b7280;
-const PLAYER_TINT = 0xfbbf24;
 
-export const platformerBlueprint: WorldBlueprint = {
+export const platformer2pBlueprint: WorldBlueprint = {
   capabilities: [
-    // 组件契约
     transformCapability,
     velocityCapability,
     accelerationCapability,
     shapeCapability,
     colorCapability,
-    // 系统（带 phase，自动定序）
     accelApplyCapability,
     motionApplyCapability,
     overlapDetectCapability,
@@ -45,7 +43,6 @@ export const platformerBlueprint: WorldBlueprint = {
     boundsClampCapability,
   ],
   entities: {
-    // 静态地面与平台：无 Velocity = 静态。ground-sense 视其为可站立面，collision-resolve 把玩家挡在外面。
     ground: {
       Transform: { x: 320, y: 372, rotation: 0, scaleX: 1, scaleY: 1 },
       Shape: { kind: 'box', width: 620, height: 48 },
@@ -61,14 +58,24 @@ export const platformerBlueprint: WorldBlueprint = {
       Shape: { kind: 'box', width: 150, height: 24 },
       Color: { tint: PLATFORM_TINT, alpha: 1 },
     },
-    // 玩家：动态方块。重力下坠，←/→ 走，空格跳。
-    player: {
-      Transform: { x: 320, y: 80, rotation: 0, scaleX: 1, scaleY: 1 },
+    // 玩家1（橙）：A/D 走、W 跳
+    player1: {
+      Transform: { x: 240, y: 80, rotation: 0, scaleX: 1, scaleY: 1 },
       Velocity: { vx: 0, vy: 0, angular: 0 },
       Acceleration: { ax: 0, ay: 0.6 },
       Controllable: { playerId: 'p1', speed: 3 },
       Shape: { kind: 'box', width: 30, height: 30 },
-      Color: { tint: PLAYER_TINT, alpha: 1 },
+      Color: { tint: 0xfb923c, alpha: 1 },
+      Bounds: { minX: 0, minY: 0, maxX: 640, maxY: 400 },
+    },
+    // 玩家2（青）：←/→ 走、↑ 跳
+    player2: {
+      Transform: { x: 400, y: 80, rotation: 0, scaleX: 1, scaleY: 1 },
+      Velocity: { vx: 0, vy: 0, angular: 0 },
+      Acceleration: { ax: 0, ay: 0.6 },
+      Controllable: { playerId: 'p2', speed: 3 },
+      Shape: { kind: 'box', width: 30, height: 30 },
+      Color: { tint: 0x22d3ee, alpha: 1 },
       Bounds: { minX: 0, minY: 0, maxX: 640, maxY: 400 },
     },
   },

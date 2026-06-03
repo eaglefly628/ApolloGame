@@ -29,6 +29,19 @@ export interface InputSource {
   commandsForTick(tick: number): Command[];
 }
 
+// 合并多个输入源（本地双人：两套键位、两个 playerId 各一个源）。逐 tick 拼接各源命令；
+// applyCommands 已按 playerId 定序并路由，两名玩家互不干扰。
+export class MultiInputSource implements InputSource {
+  constructor(private readonly sources: readonly InputSource[]) {}
+  commandsForTick(tick: number): Command[] {
+    return this.sources.flatMap((s) => s.commandsForTick(tick));
+  }
+  // 转发 dispose 给支持的子源（如 KeyboardInputSource）。
+  dispose(): void {
+    for (const s of this.sources) (s as { dispose?: () => void }).dispose?.();
+  }
+}
+
 // 确定性排序：按 playerId 稳定排序，使应用顺序只由内容决定。
 export function orderCommands(commands: readonly Command[]): Command[] {
   return [...commands].sort((a, b) =>

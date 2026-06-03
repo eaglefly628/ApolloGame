@@ -259,6 +259,15 @@ export interface Grounded extends Component {
   readonly type: 'Grounded';
 }
 
+// ── bounds-clamp ── 实体允许活动的世界矩形（含边界）。bounds-clamp 据此把 AABB 钳进去。
+export interface Bounds extends Component {
+  readonly type: 'Bounds';
+  minX: number;
+  minY: number;
+  maxX: number;
+  maxY: number;
+}
+
 // ── W2 spatial-query ── 空间查询服务配置，挂在 world 实体
 export interface SpatialIndex extends Component {
   readonly type: 'SpatialIndex';

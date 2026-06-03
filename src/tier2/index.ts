@@ -3,3 +3,4 @@
 export { collisionResolveCapability } from './collision-resolve.js';
 export { groundSenseCapability } from './ground-sense.js';
 export { jumpCapability, JUMP_SPEED } from './jump.js';
+export { boundsClampCapability } from './bounds-clamp.js';

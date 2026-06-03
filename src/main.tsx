@@ -2,19 +2,23 @@ import React, { useEffect, useRef, useState } from 'react';
 import { createRoot } from 'react-dom/client';
 import { Engine } from './runtime/engine.js';
 import { CanvasRenderer } from '@renderer/index.js';
-import { KeyboardInputSource } from '@net/index.js';
+import { KeyboardInputSource, MultiInputSource } from '@net/index.js';
 import { GameOverlay } from './ui/GameOverlay.js';
-import { platformerBlueprint } from './assembly/platformer.assembly.js';
+import { platformer2pBlueprint, P1_KEYMAP, P2_KEYMAP } from './assembly/platformer2p.assembly.js';
 
 function App() {
   const containerRef = useRef<HTMLDivElement>(null);
-  const inputRef = useRef<KeyboardInputSource | null>(null);
+  const inputRef = useRef<MultiInputSource | null>(null);
   const [engine] = useState(() => {
-    // 本地玩家 p1 的键盘输入源；以后换成网络对端，引擎 start() 一行都不用动。
-    const input = new KeyboardInputSource('p1');
+    // 本地双人：两套键位、两个 playerId 各一个键盘源，合并成一个输入源喂引擎。
+    // 以后把某个源换成网络对端，引擎 start() 一行都不用动。
+    const input = new MultiInputSource([
+      new KeyboardInputSource('p1', window, P1_KEYMAP),
+      new KeyboardInputSource('p2', window, P2_KEYMAP),
+    ]);
     inputRef.current = input;
     const e = new Engine({ tickRate: 60, input });
-    e.load(platformerBlueprint);
+    e.load(platformer2pBlueprint);
     return e;
   });
 
