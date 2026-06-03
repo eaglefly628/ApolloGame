@@ -1,0 +1,711 @@
+# ════════════════════════════════════════════════════════════
+#  Apollo Engine — 游戏开发技能知识库（完整合并版）
+#  生成时间：2026-06-03 16:09
+#  用途：供项目经理 review 的完整导出
+# ════════════════════════════════════════════════════════════
+
+
+# ──────────────────────────────────────────────────────────
+# 📄 wiki/skills/index.md
+# ──────────────────────────────────────────────────────────
+
+# Apollo 游戏开发技能索引
+
+> Level 0 — 常驻加载。当你需要实现某类功能时，用 Read 工具读取对应文件。
+
+| 分类 | 覆盖原子 | 触发场景 | 路径 |
+|------|---------|---------|------|
+| ECS 架构 | defineCapability, World, Assembly | 新建 skill / 修改引擎结构 | wiki/skills/ecs-architecture.md |
+| 运动 | motion-apply, accel-apply, hierarchy | 实现位移/加速/父子跟随 | wiki/skills/motion.md |
+| 碰撞 | overlap-detect, collision-separate, collision-bounce | 实现碰撞检测或响应 | wiki/skills/collision.md |
+| 物理 | gravity, friction, mass | 实现重力/摩擦/质量相关 | wiki/skills/physics.md |
+| 动画 | animation, frame, anim-state-machine | 实现帧动画/状态机动画 | wiki/skills/animation.md |
+| 输入 | input-capture, action-map, controllable | 处理键盘/触屏/手柄输入 | wiki/skills/input.md |
+| 渲染 | sprite, camera, text, color, visibility | 渲染层/画面/UI 相关 | wiki/skills/rendering.md |
+| 生命周期 | spawn, destroy, timer, lifetime | 实体创建/销毁/计时 | wiki/skills/lifecycle.md |
+| AI 行为 | ai-patrol, ai-chase, state, dialogue | 实现 NPC 行为/决策 | wiki/skills/ai-behavior.md |
+| 资源系统 | resource, resource-modify, damage-number, ui-binding | 血量/MP/伤害数字/UI 绑定 | wiki/skills/resource.md |
+| 空间查询 | spatial-query, range-detect, trigger-zone | 范围检测/空间分区 | wiki/skills/spatial.md |
+| 网络同步 | random-seed, lockstep, determinism | 联机/确定性/帧同步 | wiki/skills/networking.md |
+| 乙游扩展 | check.resolve, love-interest, settlement | Tier 3/4 乙游玩法方向 | wiki/skills/otome.md |
+
+## 使用规则
+
+1. **不要一次性读取所有文件** — 只读当前任务涉及的分类
+2. 每个文件包含：核心原则、编码约定、常见陷阱、参考来源
+3. 具体算法实现不在此收录 — 需要时用 WebSearch 查询
+
+
+# ──────────────────────────────────────────────────────────
+# 📄 wiki/skills/ecs-architecture.md
+# ──────────────────────────────────────────────────────────
+
+# ECS 架构知识
+
+> 覆盖：defineCapability、World、Assembly、拓扑排序、组件语义
+
+## 核心原则
+
+- **Entity = ID**，没有逻辑。Component = 纯数据，没有方法。System = 纯逻辑，没有状态。
+- 组合代替继承：一个实体的行为完全由它挂载的 Component 集合决定。
+- 每个 System 通过 `defineCapability` 自描述它读什么、写什么，引擎用拓扑排序自动排执行顺序。
+
+## 编码约定
+
+- 每种 Component type 在一个实体上只存一份（Map<type, Component>）。
+- 事件型组件（ResourceModify、TimerDone、StateChanged）用 read-then-consume 模式：下游系统读取后移除。
+- Assembly 蓝图是纯声明式数据（实体 + 组件列表），不包含逻辑代码。
+
+## 组件语义分类
+
+| 类别 | 含义 | 生命周期 |
+|------|------|---------|
+| Resource | 持久数值 { current, min, max } | 长期存在 |
+| Event | 一次性信号 | 被消费后移除 |
+| Intent | "想做某事"的请求 | 被处理后移除 |
+| Marker | 无字段，存在即有意义 | 按需添加/移除 |
+| Config | 持久配置 | 不变 |
+| Render | 驱动渲染层 | 每帧更新 |
+
+## 常见陷阱
+
+- System 之间不要直接调用，只通过 Component 通信。
+- 不要在 System 内缓存 Entity 引用 — Entity 可能被 destroy。
+- Assembly 蓝图里的数值要可调，不要硬编码到 System 里。
+
+## 参考来源
+
+- 守望先锋 ECS (GDC 2017) — 工业级 ECS 的确定性设计
+- 地牢围攻数据驱动系统 (GDC 2002) — defineCapability 模式的理论源头
+- Dead Cells ECS — 实体池化 + 组件重用的实战案例
+
+
+# ──────────────────────────────────────────────────────────
+# 📄 wiki/skills/motion.md
+# ──────────────────────────────────────────────────────────
+
+# 运动模块知识
+
+> 覆盖原子：motion-apply、accel-apply、hierarchy-resolve
+
+## 核心原则
+
+- **半隐式欧拉积分**：先更新速度（v += a），再更新位置（p += v）。顺序不能反。
+- 定步长 tick：所有运动按固定 tick 推进，不用 dt 乘法。World 没有 deltaTime 概念。
+- 整数/定点坐标优先：浮点数会累积漂移，确定性重放时两端不一致。能用整数就不用浮点。
+
+## 编码约定
+
+- motion-apply 只做一件事：把 Velocity 加到 Transform 上。不做边界检查、不做碰撞。
+- accel-apply 只做一件事：把 Acceleration 加到 Velocity 上。不做重力（重力有单独 skill）。
+- hierarchy-resolve 用脏标记 + 延迟求解：只有父级 Transform 变了才重算子级。
+
+## 子步进（Sub-stepping）
+
+高速物体（子弹）一帧移动距离可能超过自身体积，导致穿透。解决方案：
+- 把一次大位移拆成多次小位移，每步做碰撞检测。
+- 或用射线检测（raycast）代替离散位移。
+- Apollo 当前用离散步进，高速场景需加子步进。
+
+## 常见陷阱
+
+- 不要用 `Math.hypot` — 它在不同平台实现不同，破坏确定性。用 `Math.sqrt(x*x + y*y)`。
+- 不要在 motion-apply 里读 Acceleration — 职责分离，accel-apply 负责。
+- hierarchy 的矩阵乘法不要每帧全量算 — 用脏标记判断是否需要更新。
+
+## 参考来源
+
+- Celeste 整数物理：platformer 手感的黄金标准
+- *Game Programming Patterns* Ch.2 Game Loop：定步长循环设计
+- *Game Physics Engine Development* (Millington) Ch.3：显式 vs 半隐式欧拉对比
+
+
+# ──────────────────────────────────────────────────────────
+# 📄 wiki/skills/collision.md
+# ──────────────────────────────────────────────────────────
+
+# 碰撞模块知识
+
+> 覆盖原子：overlap-detect、collision-separate、collision-bounce
+
+## 核心原则
+
+- 碰撞分两阶段：**宽相位**（broad phase）快速排除不可能碰的对，**窄相位**（narrow phase）精确计算穿透。
+- 宽相位用空间分区（网格或 AABB 树），窄相位用 AABB 重叠检测。
+- 碰撞响应和碰撞检测是两个独立 skill — 检测只输出 Overlap 组件，响应读取 Overlap 再行动。
+
+## AABB 重叠检测
+
+两个轴对齐矩形重叠条件：四个边界都有交集。
+- overlapX = min(right1, right2) - max(left1, left2)
+- overlapY = min(bottom1, bottom2) - max(top1, top2)
+- 两个 overlap 都 > 0 才算碰撞
+- 穿透法线取 overlap 较小的轴方向
+
+## 分离（Separation）
+
+- 按质量比分配推开距离：质量大的少动，质量小的多动。
+- mass = 0 表示不可移动（地面、墙壁），对方承受全部推开。
+- 分离公式：偏移 = normal × depth × (对方mass / 总mass)
+
+## 弹性碰撞（Bounce）
+
+- 反射速度 = v - 2(v·n)n × restitution
+- restitution = 0：完全非弹性（贴住）；restitution = 1：完全弹性（等速反弹）
+- 先做分离再做弹跳，顺序不能反。
+
+## 碰撞层过滤
+
+- 用 Tag 组件的 bitmask 做层过滤：只有指定 tag 组合才产生碰撞。
+- 常见分层：ground、player、enemy、projectile、trigger。
+- trigger 层只检测重叠，不产生物理响应。
+
+## 常见陷阱
+
+- 浮点精度导致"卡墙"：分离后下一帧又检测到微小穿透，反复弹跳。加一个极小的分离余量（skin width）。
+- 多实体堆叠时的求解顺序：先解静态碰撞（地面），再解动态碰撞（实体间）。
+- 不要在碰撞检测 System 里直接修改 Transform — 输出 Overlap 组件，由 collision-separate 统一处理。
+
+## 参考来源
+
+- *Real-Time Collision Detection* (Ericson) Ch.4 — AABB 碰撞的权威参考
+- Box2D v3 Position Solver — 工业级分离求解
+- Celeste 碰撞系统 — platformer 场景的最佳实践
+- Hollow Knight — Unity 2D Physics + 自定义碰撞层
+
+
+# ──────────────────────────────────────────────────────────
+# 📄 wiki/skills/physics.md
+# ──────────────────────────────────────────────────────────
+
+# 物理模块知识
+
+> 覆盖原子：gravity、friction、mass
+
+## 核心原则
+
+- **重力是常量加速度，不是力**。直接写 `acceleration.ay += gravityValue`，不走 F=ma 积分。
+- 摩擦是速度方向的反向加速度，clamp 到零（不能让摩擦把物体推回去）。
+- mass = 0 表示不可移动的静态物体。碰撞时静态物体不受任何影响。
+
+## 可变重力（Jump Feel）
+
+platformer 的跳跃手感核心：上升和下落用不同的重力值。
+- 上升阶段（vy < 0）：用较小的重力，让角色"飘"一下。
+- 下落阶段（vy > 0）：用较大的重力（通常 2-3 倍），让下落更"脆"。
+- 松开跳跃键时立即切到大重力 — 短按轻跳、长按高跳。
+
+## 摩擦模型
+
+库仑摩擦的游戏简化版：
+- 地面摩擦：每 tick 把水平速度乘一个衰减系数（0.8-0.95）。
+- 空中摩擦：衰减系数接近 1（几乎无摩擦），保持空中操控感。
+- 注意 clamp：`if (Math.abs(vx) < threshold) vx = 0`，避免无限微小滑动。
+
+## 常见陷阱
+
+- 重力不要加在 accel-apply 里 — gravity 是独立 skill，写入 Acceleration 组件，由 accel-apply 统一处理。
+- 不要给静态物体（mass=0）累加重力 — 它们不该受力。
+- 摩擦和输入加速度的交互：摩擦在 motion-apply 之前，输入加速度在 accel-apply 时。注意执行顺序。
+
+## 参考来源
+
+- Celeste 跳跃调优 — 可变重力的标准实现
+- Box2D v3 摩擦模型 — 库仑摩擦在碰撞接触点的实现
+- *Game Physics Cookbook* (Szauer) — 简化摩擦公式推导
+
+
+# ──────────────────────────────────────────────────────────
+# 📄 wiki/skills/animation.md
+# ──────────────────────────────────────────────────────────
+
+# 动画模块知识
+
+> 覆盖原子：animation (frame)、anim-state-machine
+
+## 核心原则
+
+- 帧动画是 timer → frame index 的直接映射：计时器 tick，到时切下一帧。
+- 动画状态机管理"什么时候播什么动画"：state(idle/run/jump) + 转换规则 + 对应动画。
+- 动画数据和游戏逻辑完全分离 — 动画 System 只读 State 和 Timer，不写 Velocity 等游戏组件。
+
+## 帧动画
+
+- Frame 组件：{ index, total }。每次 Timer 触发，index = (index + 1) % total。
+- 播放速度通过 Timer.duration 控制，不是通过跳帧。
+- 非循环动画：播到 total-1 停止，发出 TimerDone 事件。
+
+## 动画状态机
+
+- 每个状态绑定一个动画序列。
+- 转换规则基于游戏状态：grounded + vx!=0 → run，!grounded → jump，vx==0 → idle。
+- 转换时重置 Frame.index = 0。
+- 双轨道混合：身体动画 + 表情动画可以独立控制（用不同的 fsmId）。
+
+## 骨骼动画（扩展层）
+
+- **Spine**：骨骼 + 插值，适合动作类（Hollow Knight、Dead Cells、Hades）。
+  - 集成方式：Spine 输出姿态快照 → 写入扩展组件 → 渲染层读取。
+- **Live2D**：网格变形，适合少量高品质立绘（明日方舟、碧蓝航线、乙游）。
+  - 集成方式：参数快照模式，每帧把 ECS 状态映射为 Live2D 参数。
+  - 性能注意：一个 Live2D 模型的开销远大于 Spine，同屏数量有限。
+
+## 常见陷阱
+
+- 动画切换时忘记重置帧计数器 — 导致新动画从中间帧开始播。
+- 状态机转换条件写太宽松 — 导致动画在两个状态间快速抖动。加一个最小停留时间。
+- 不要用动画 System 驱动游戏逻辑（"攻击帧到了才出伤害"）— 应该反过来，用 Timer 事件触发伤害，动画只是视觉表现。
+
+## 参考来源
+
+- *Game Programming Patterns* Ch.14 Type Object — 帧动画的数据驱动设计
+- Hollow Knight 动画状态机 — 双轨道混合的实战参考
+- Spine AnimationState API — 骨骼动画集成的标准接口
+
+
+# ──────────────────────────────────────────────────────────
+# 📄 wiki/skills/input.md
+# ──────────────────────────────────────────────────────────
+
+# 输入模块知识
+
+> 覆盖原子：input-capture、action-map、controllable
+
+## 核心原则
+
+- 原始输入和语义动作两层分离：RawInput("KeyW") → Action("jump")。
+- 输入源可替换：KeyboardInputSource、TouchInputSource、NetworkInputSource 都实现同一接口。
+- MultiInputSource 合并多个源 — 本地双人各一个键盘源，联机时换成网络源，引擎代码不变。
+
+## 输入缓冲（Input Buffering）
+
+- 玩家在"不能跳"的帧按了跳跃键，缓冲几帧，"能跳"时自动执行。
+- 实现：RawInput 带 timestamp，action-map 检查最近 N 帧内是否有该输入。
+- 标准缓冲窗口：3-6 帧（60fps 下约 50-100ms）。
+
+## Coyote Time
+
+- 玩家离开平台边缘后几帧内仍允许跳跃 — 补偿视觉与操作的时间差。
+- 实现：Grounded marker 移除后，再保留一个 coyote timer（通常 4-6 帧）。
+- 和输入缓冲配合使用效果最佳。
+
+## 触屏输入
+
+- 虚拟摇杆：touch start 记录原点，touch move 计算偏移方向和力度。
+- 点击区域：屏幕分区（左半移动、右半动作），或叠加透明按钮。
+- 触屏没有"按住"和"松开"的天然反馈 — 需要视觉提示。
+
+## 常见陷阱
+
+- 窗口失焦时没有释放按键 — 切 tab 回来发现角色还在走。监听 blur/visibilitychange 清空输入状态。
+- action-map 不要在 System 里硬编码键位 — 键位映射放 Config 组件或 Assembly 蓝图，支持自定义。
+- 网络模式下输入必须标记 tick 编号 — 确定性回放依赖这个。
+
+## 参考来源
+
+- Celeste coyote time — 宽容时间窗的标准实现
+- Apollo MultiInputSource — 本地双人到联机的无缝切换实现
+- *Juice it or Lose it* (GDC 2012) — 输入手感优化的经典演讲
+
+
+# ──────────────────────────────────────────────────────────
+# 📄 wiki/skills/rendering.md
+# ──────────────────────────────────────────────────────────
+
+# 渲染模块知识
+
+> 覆盖原子：sprite、camera、text、color、visibility
+
+## 核心原则
+
+- 渲染层是 ECS 的单向投影：只读 Transform/Sprite/Color 等组件，绝不写回。
+- 渲染后端可替换：Canvas2D → PixiJS → WebGL，collectRenderables 提取逻辑不变。
+- visibility.visible 控制是否渲染，visibility.active 控制是否参与系统运算。
+
+## Canvas2D（当前后端）
+
+- 够用于 MVP 和原型验证。
+- 每帧 clearRect → 按 zOrder 排序 → 逐个绘制。
+- 性能天花板：~500 个精灵开始卡顿（取决于设备）。
+
+## PixiJS 升级路径
+
+- 替换 CanvasRenderer 为 PixiRenderer，接口不变。
+- Sprite 批处理（batching）：相同纹理的精灵合并为一次 draw call，性能提升 10 倍+。
+- 集成方式：ECS 的 Sprite/Transform 每帧同步到 Pixi DisplayObject。
+
+## 相机系统
+
+- Camera 组件定义观察窗口：zoom、offset、viewport 尺寸。
+- 世界坐标 → 屏幕坐标：screenX = (worldX - camera.offsetX) × zoom。
+- 相机跟随：每帧把 camera.offset 插值到目标实体的 Transform。
+- 屏幕抖动：给 camera.offset 加随机偏移 + 衰减 timer。
+
+## 文字渲染
+
+- Text 组件：content、fontSize、fontFamily、anchor。
+- 伤害数字：spawn 一个带 Text + Velocity(上飘) + Lifetime 的实体。
+- 多语言：content 存 key，渲染时查翻译表。
+
+## 常见陷阱
+
+- zOrder 排序每帧都做 — 如果实体多，用插入排序（近乎有序数组上 O(n)）。
+- 不要在渲染 System 里修改 Transform — 渲染是只读操作。
+- 相机 zoom 会影响碰撞判断的视觉 — 确保碰撞在世界坐标做，不受 zoom 影响。
+
+## 参考来源
+
+- PixiJS — 数千款 HTML5 游戏验证的 2D WebGL 引擎
+- Apollo CanvasRenderer — 当前实现，升级时保持接口不变
+
+
+# ──────────────────────────────────────────────────────────
+# 📄 wiki/skills/lifecycle.md
+# ──────────────────────────────────────────────────────────
+
+# 生命周期模块知识
+
+> 覆盖原子：spawn、destroy、timer、lifetime
+
+## 核心原则
+
+- 实体的创建和销毁都是**请求制**：写入 SpawnRequest / DestroyRequest 组件，由专门 System 统一执行。
+- 不要在 System 逻辑中直接调 world.createEntity / world.removeEntity — 破坏执行顺序确定性。
+- Timer 按 tick 计数，没有 dt — `elapsed++` 每 tick 加一，到 duration 发出 TimerDone。
+
+## 对象池（Entity Pooling）
+
+- 频繁 create/destroy 会产生 GC 压力（子弹、粒子、伤害数字）。
+- 池化方案：destroy 时不删除实体，设 visibility.active = false；spawn 时优先从池里取。
+- 复用时必须重置所有组件到初始值 — 否则会带着上一次的状态。
+
+## Timer 模式
+
+- **倒计时**：elapsed 从 0 涨到 duration，触发 TimerDone，loop=false 则停止。
+- **间隔循环**：loop=true，触发后 elapsed 归零继续。用于持续效果（毒/灼烧/回血）。
+- **一次性延迟**：duration=N, loop=false。N tick 后做一件事。
+
+## Lifetime = Timer + Destroy
+
+- lifetime skill 就是：给实体挂一个 timer，TimerDone 时写入 DestroyRequest。
+- 子弹、粒子、伤害数字都用这个模式。
+
+## Spawn 模板
+
+- SpawnRequest.templateId 指向 Assembly 蓝图中的模板 — spawn System 按模板展开组件。
+- 模板里的 x/y 由 SpawnRequest 覆盖（生成位置 = 请求位置）。
+
+## 常见陷阱
+
+- destroy 在当前 tick 立即生效的话，后续 System 可能读到已删除实体。解决：destroy 统一在 tick 末尾执行。
+- Timer 的 elapsed 不要用浮点数 — 整数 tick 保证确定性。
+- 池化时忘记清理 Relation 组件 — 旧的 targetId 可能指向不存在的实体。
+
+## 参考来源
+
+- Dead Cells 实体池 — Haxe ECS 中池化 + 组件重用的实战案例
+- *Game Programming Patterns* Ch.19 Object Pool — 池化模式的经典讲解
+
+
+# ──────────────────────────────────────────────────────────
+# 📄 wiki/skills/ai-behavior.md
+# ──────────────────────────────────────────────────────────
+
+# AI 行为模块知识
+
+> 覆盖原子：ai-patrol、ai-chase、state、dialogue
+
+## 核心原则
+
+- 游戏 AI 不是机器学习 — 是**手写规则让 NPC 看起来聪明**。
+- 三种主流方案：有限状态机（FSM）、行为树（BT）、目标导向行动规划（GOAP）。
+- Apollo 的 State 组件支撑 FSM；复杂 AI 可扩展为 BT 或 GOAP。
+
+## FSM（有限状态机）
+
+- 最简单、最常用。每个 NPC 同一时刻只在一个状态。
+- 状态转换条件基于游戏数据：距离、血量、flag、timer。
+- 适合：巡逻/追击/攻击/逃跑 等状态少于 10 个的 AI。
+- 缺点：状态多了以后转换条件爆炸式增长（"状态机意大利面"）。
+
+## 行为树（Behavior Tree）
+
+- 树形结构：Selector（选一个能跑的）、Sequence（按顺序全跑）、Leaf（具体行动）。
+- 比 FSM 更好组合和复用 — 子树可以插拔。
+- 适合：中等复杂度 AI（10-30 种行为的 NPC）。
+- Apollo 当前不内置 BT，但可以用 State + 自定义 System 模拟。
+
+## GOAP（目标导向行动规划）
+
+- NPC 声明目标（"杀死玩家"）和可用动作（"移动"、"攻击"、"拾取武器"），规划器自动搜索动作链。
+- 适合：高度动态的 AI（F.E.A.R. 的士兵会翻桌子掩护、包抄夹击）。
+- 开发成本高，小游戏不需要。
+
+## 巡逻（Patrol）
+
+- state(patrol) + timer + velocity(方向切换)。
+- 路径点模式：预设 waypoint 列表，到达一个后切换到下一个。
+- 简单模式：左右来回走，碰墙或 timer 到时反向。
+
+## 追击（Chase）
+
+- spatial-query 找最近的 tag(player) → relation(target) → 朝 target 方向设速度。
+- 追击距离阈值：超出范围回到 patrol。
+- 避免完美追踪 — 加一点延迟或预测误差，让 AI 有"反应时间"。
+
+## 对话（Dialogue）
+
+- trigger-zone + state + input → 显示 Text。
+- 分支对话：State 组件 track 对话进度，Action 组件接收玩家选择。
+- 数据驱动：对话内容放在 JSON/Assembly 蓝图里，不硬编码。
+
+## 常见陷阱
+
+- AI System 执行频率不需要每 tick — 可以每 N tick 决策一次，降低 CPU 开销。
+- 追击时忘记检查视线（line of sight）— NPC 穿墙追人。
+- 状态切换太灵敏 — NPC 在边界条件上反复切状态。加滞后（hysteresis）。
+
+## 参考来源
+
+- F.E.A.R. GOAP (GDC 2006) — GOAP 的经典工业实现
+- *AI for Games* (Millington) — FSM/BT/GOAP 选型的权威教材
+- 模拟人生涌现叙事 (GDC) — 事件驱动的 NPC 行为涌现
+
+
+# ──────────────────────────────────────────────────────────
+# 📄 wiki/skills/resource.md
+# ──────────────────────────────────────────────────────────
+
+# 资源系统模块知识
+
+> 覆盖原子：resource、resource-modify、damage-number、ui-binding
+
+## 核心原则
+
+- Resource 是 { current, min, max } 三元组 — 血量、MP、体力、好感度都是这个结构。
+- 修改资源通过 ResourceModify 事件组件 — 不直接写 current，保证修改可追踪。
+- UI 绑定是单向投影：ECS 数据 → UI 层显示。UI 不写回 ECS。
+
+## Resource 生命周期
+
+1. Assembly 蓝图定义初始值：`{ type: 'Resource', id: 'hp', current: 100, min: 0, max: 100 }`
+2. 触发修改：其他 System 写入 `{ type: 'ResourceModify', resourceId: 'hp', amount: -20 }`
+3. resource System 消费 ResourceModify：`current = clamp(current + amount, min, max)`
+4. 下游检查：current <= min → 触发死亡 / current >= max → 触发满血事件
+
+## 伤害数字（Damage Number）
+
+- ResourceModify 触发后 → spawn 一个文字实体：
+  - Text 组件（显示伤害值）
+  - Velocity（向上飘动）
+  - Lifetime（1-2 秒后销毁）
+  - Color（红色伤害 / 绿色治疗）
+- 位置 = 被击中实体的 Transform + 随机偏移（避免重叠）。
+
+## UI 绑定
+
+- 不要在 ECS System 里操作 DOM / React — ECS 层不知道 UI 存在。
+- React 组件通过 useWorldVersion hook 每 tick 读取 World 状态，自行渲染。
+- 血条 = 读 Resource.current / Resource.max → 渲染为进度条。
+
+## 多资源实体
+
+- 一个实体可以有多个 Resource（hp + mp + stamina）。
+- 区分靠 Resource.id 字段。
+- ResourceModify.resourceId 精确指定修改哪个资源。
+
+## 常见陷阱
+
+- 先检查 current <= 0 再消费 ResourceModify — 否则死亡后还能继续受伤。
+- ResourceModify 必须被消费（移除）— 不消费会每 tick 重复扣血。
+- clamp 时注意顺序：先加 amount 再 clamp，不要先 clamp 再加。
+
+## 参考来源
+
+- 暗黑破坏神系列 — 伤害数字的行业标准视觉反馈
+- *Game Programming Patterns* Ch.5 Observer — 资源变化事件链
+- React/Unity UI Toolkit — 单向数据绑定模式
+
+
+# ──────────────────────────────────────────────────────────
+# 📄 wiki/skills/spatial.md
+# ──────────────────────────────────────────────────────────
+
+# 空间查询模块知识
+
+> 覆盖原子：spatial-query、range-detect、trigger-zone
+
+## 核心原则
+
+- 空间查询回答"某点/范围附近有哪些实体"— 不是碰撞检测，是信息检索。
+- 用空间索引加速：网格分区 O(1) 查邻居，暴力遍历 O(n) 不可接受。
+- trigger-zone 是 overlap + tag 过滤 + 事件触发，不产生物理推开。
+
+## 网格分区（Grid Partition）
+
+- 世界划分为固定大小的格子（cellSize），每个实体按 Transform 位置归入格子。
+- 查询时只检查目标格子及相邻格子 — O(1) 时间复杂度。
+- cellSize 选择：大于最大实体的碰撞半径，小于最小查询范围。通常 64-128 像素。
+- 每帧重建 vs 增量更新：实体少（<1000）全量重建更简单；实体多用增量。
+
+## AABB 树（动态）
+
+- 另一种空间索引：平衡二叉树，叶节点是实体 AABB，内部节点是合并 AABB。
+- 查询用 AABB 重叠测试从根往下剪枝。
+- 适合实体大小差异大的场景（大 boss + 小子弹共存）。
+- Apollo 已有 `src/engine/spatial/aabb-tree.ts` 实现。
+
+## 范围检测（Range Detect）
+
+- spatial-query(圆心, 半径) → 返回范围内所有实体。
+- 加 Tag 过滤：只关心 tag(enemy) 的实体。
+- 用途：自动索敌（auto-target）、技能范围、爆炸伤害。
+
+## 触发区域（Trigger Zone）
+
+- 一个不可见实体，有 Shape 但不产生物理响应。
+- overlap-detect 检测到进入 → 发出事件（开门、对话、剧情触发）。
+- 用 Tag.flags 的 trigger 位标记，碰撞 System 跳过物理响应。
+
+## 常见陷阱
+
+- 网格 cellSize 太小 → 一个实体跨多个格子，查询反而变慢。
+- 空间索引在实体移动后没更新 → 查询结果是上一帧的位置。确保在 motion-apply 之后重建索引。
+- range-detect 不要每 tick 对所有实体查 — 只对有 "range-detect" 需求的实体查。
+
+## 参考来源
+
+- Factorio 空间分区 — 百万实体级网格分区优化
+- *Real-Time Collision Detection* (Ericson) Ch.7 — 空间分区数据结构
+- Apollo aabb-tree.ts — 当前项目的 AABB 树实现
+
+
+# ──────────────────────────────────────────────────────────
+# 📄 wiki/skills/networking.md
+# ──────────────────────────────────────────────────────────
+
+# 网络同步模块知识
+
+> 覆盖原子：random-seed、lockstep、determinism
+
+## 核心原则
+
+- Apollo 的联机模型是**确定性锁步（Deterministic Lockstep）**：所有客户端跑相同逻辑，只同步输入。
+- 确定性 = 相同输入 + 相同初始状态 → 相同结果。每 tick 的哈希必须一致。
+- 一旦确定性被破坏，两端状态会永久分叉 — 没有自愈机制。
+
+## 确定性要求
+
+| 允许 | 禁止 |
+|------|------|
+| Math.sqrt(x*x + y*y) | Math.hypot(x, y) — 跨平台实现不同 |
+| 整数运算 | 浮点运算的中间精度差异 |
+| RandomSeed 组件的 PRNG | Math.random() |
+| 固定 tick 步进 | requestAnimationFrame 的 dt |
+| 确定性的遍历顺序 | Map/Set 的插入顺序依赖 |
+
+## 锁步协议
+
+1. 每个客户端收集本地输入，标记 tick 编号。
+2. 发送输入给所有对端。
+3. 等待收到所有对端当前 tick 的输入。
+4. 所有客户端用相同输入推进同一 tick。
+5. 每 N tick 交换哈希，不一致则报错（desync）。
+
+## 输入延迟 vs 回滚
+
+- **输入延迟**（Apollo 当前）：收到所有人的输入才推进。简单可靠，延迟 = 最慢玩家的网络延迟。
+- **回滚（Rollback）**：先用预测输入推进，收到真实输入后回滚重算。延迟更低但实现复杂。
+- 格斗游戏用回滚（GGPO），RTS 用锁步（星际争霸）。
+
+## RandomSeed
+
+- 全局随机数挂在 world 实体上：seed + sequence。
+- PRNG 算法：每次调用 sequence++，输出 = hash(seed, sequence)。
+- 所有需要随机数的 System 必须用这个 PRNG，不能用 Math.random()。
+
+## BroadcastChannel（本地多 tab 联机）
+
+- Apollo 用 BroadcastChannel API 在浏览器多 tab 间同步输入。
+- 适合开发调试：开两个 tab 就是两个玩家。
+- 生产环境替换为 WebSocket 后端，接口不变。
+
+## 常见陷阱
+
+- 新加的 System 如果遍历实体的顺序不确定 → 破坏确定性。用 entityId 排序。
+- 浮点数的 -0 和 +0 哈希不同 — normalize 为 0。
+- console.log 里的 Math.random() 也会影响全局状态 — 调试时注意。
+
+## 参考来源
+
+- 守望先锋 (GDC 2017) — 确定性 63Hz tick + 网络回滚的工业实现
+- 星际争霸 lockstep — RTS 锁步同步的经典案例
+- Apollo frame-sync.md — 当前项目的帧同步设计文档
+
+
+# ──────────────────────────────────────────────────────────
+# 📄 wiki/skills/otome.md
+# ──────────────────────────────────────────────────────────
+
+# 乙游扩展模块知识
+
+> 覆盖原子：check.resolve、love-interest.event、settlement.resolve
+> 开发阶段：Tier 3/4 方向，Tier 1/2 完成后启动
+
+## 核心原则
+
+- 乙游的核心循环是"选择 → 数值变化 → 情感反馈 → 关系进展"。
+- 所有机制复用 ECS 基础原子 — 好感度是 Resource，情感节拍是 Event，关系是 Relation。
+- defineCapability 需要扩展 domainSlot — 让 skill 描述可以插入领域特定的修正值。
+
+## 检定系统（Check Resolve）
+
+- 玩家做选择 → 计算检定分数 → 判定成功/失败 → 触发后果。
+- 分数 = 基础值 + 属性修正 + 关系值修正 + 随机骰子。
+- 效用 AI 的响应曲线（response curve）决定每个因子的权重。
+- 检定类型：魅力检定、智慧检定、体力检定 — 对应不同属性 Resource。
+
+## 情感事件（Love Interest Event）
+
+- Resource 阈值触发：好感度到达 30/60/90 → 解锁对应情感事件。
+- 事件中玩家选择 → 分支后果（好感+10 / 好感-5 + 解锁隐藏线）。
+- 多路径结构：不是单线剧情，是基于数值的分支网络。
+
+## 周期结算（Settlement Resolve）
+
+- 参考信长之野望/Persona 的时间推进模型。
+- 每周期（一天/一周/一幕）结算：三线资源汇总 → 解锁判定 → 配置下一周期。
+- 三线资源示例：事业线 + 社交线 + 个人成长线。
+- 结算结果影响下一周期可用选项和事件池。
+
+## 领域词汇
+
+| 游戏概念 | ECS 映射 |
+|---------|---------|
+| 好感度 | Resource { id: 'affection_角色名' } |
+| 属性（魅力/智慧/体力） | Resource { id: 'charm' / 'wisdom' / 'stamina' } |
+| 角色关系 | Relation { kind: 'love-interest', targetId } |
+| 情感状态 | State { fsmId: 'emotion', current: 'happy' } |
+| 选择 | Action { name: 'choice_1' } |
+| 回合/周期 | Timer { id: 'period', duration: N } |
+
+## 三文件接口范式
+
+乙游实现分三层文件：
+1. **领域词汇** — 定义游戏概念到 ECS 的映射关系
+2. **能力绑定** — 每个 stage 需要哪些 capability，domainSlot 填什么
+3. **表现钩子** — 情感事件触发什么 UI / 动画 / 音效
+
+## 常见陷阱
+
+- 好感度不能只涨不跌 — 需要负面事件和选错的惩罚，否则没有决策张力。
+- 检定系统的随机成分不能太大 — 玩家需要感觉到"我的选择有影响"。
+- 多角色攻略线要防止数值串台 — Resource.id 必须包含角色标识。
+
+## 参考来源
+
+- 火焰纹章支援系统 — 关系值 + 阈值事件的经典实现
+- Persona 系列 — 周期结算 + 日程管理的标杆
+- 效用 AI (Dave Mark, GDC 2010) — 响应曲线用于情感决策
+- wiki/otome-capability-binding.json — Apollo 的乙游能力绑定规范
+
