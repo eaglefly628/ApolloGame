@@ -40,7 +40,7 @@ export function contactBetween(at: Transform, as: Shape, bt: Transform, bs: Shap
   if (as.kind === 'circle' && bs.kind === 'circle') {
     const ar = as.radius ?? 0;
     const br = bs.radius ?? 0;
-    const dist = Math.hypot(dx, dy);
+    const dist = Math.sqrt(dx * dx + dy * dy); // 用 sqrt（IEEE 正确舍入、跨机器确定）而非 hypot（库实现可差最后一位）
     const pen = ar + br - dist;
     if (pen <= 0) return null;
     if (dist === 0) return { nx: 1, ny: 0, depth: pen };
@@ -63,7 +63,7 @@ export function contactBetween(at: Transform, as: Shape, bt: Transform, bs: Shap
   const closestY = Math.max(-bh.hh, Math.min(cdy, bh.hh));
   const ddx = cdx - closestX;
   const ddy = cdy - closestY;
-  const dist = Math.hypot(ddx, ddy);
+  const dist = Math.sqrt(ddx * ddx + ddy * ddy); // 同上：避开 hypot 的跨机器不确定性
   const pen = r - dist;
   if (pen <= 0) return null;
   if (dist === 0) return { nx: sign, ny: 0, depth: pen };
