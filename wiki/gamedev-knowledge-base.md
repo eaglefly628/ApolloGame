@@ -1,236 +1,128 @@
 # Apollo Engine — 游戏开发知识库
 
-> 2D ECS 游戏引擎开发的参考资源，涵盖开源项目、经典书籍、GDC 演讲、技术深挖。
-> 调研时间：2026-06-03
+> 按 Apollo 的 Tier 层级组织，每条资源直接映射到可开发的 skill。
+> 只收录经过 AAA/知名商业游戏验证的方案。调研时间：2026-06-03
 
 ---
 
-## 一、ECS 框架（开源）
+## 原则
 
-| 名称 | 仓库 | Stars | 语言 | 说明 |
-|------|------|-------|------|------|
-| **Bevy ECS** | [bevyengine/bevy](https://github.com/bevyengine/bevy) | ~46k | Rust | Archetype + Sparse Set 混合，并行调度 + 变更检测。ECS 引擎标杆 |
-| **Flecs** | [SanderMertens/flecs](https://github.com/SanderMertens/flecs) | ~8.3k | C | 首个支持 Entity Relationships 的 ECS，v4.1 内存降 5 倍 |
-| **EnTT** | [skypjack/entt](https://github.com/skypjack/entt) | ~12.7k | C++ | Sparse Set 架构，"按需付费"设计，被大量商业项目采用 |
-| **bitECS** | [NateTheGreatt/bitECS](https://github.com/NateTheGreatt/bitECS) | ~1.3k | TS/JS | 极简 SoA 存储，~5KB，零依赖。**与 Apollo 的 Web/TS 方向最直接相关** |
-| **ECSY** | [ecsyjs/ecsy](https://github.com/ecsyjs/ecsy) | ~1.2k | JS | Mozilla 主导，API 清晰。已停维但架构设计仍是 JS ECS 经典 |
-| **miniplex** | [hmans/miniplex](https://github.com/hmans/miniplex) | ~1k | TS | "温和"的实体管理器，注重 DX，适合 React/Three.js 集成 |
-| **Becsy** | [LastOliveGames/becsy](https://github.com/LastOliveGames/becsy) | ~290 | TS | 目标多线程 ECS，融合 Flecs 思路。TS 生态最有野心的 ECS |
-| **Hecs** | [Ralith/hecs](https://github.com/Ralith/hecs) | ~1k | Rust | 轻量 Archetype ECS，API 极简，易读易学 |
-
-### ECS 学习资源
-
-| 资源 | 链接 | 说明 |
-|------|------|------|
-| **ECS FAQ** | [SanderMertens/ecs-faq](https://github.com/SanderMertens/ecs-faq) | Flecs 作者写的 ECS 常见问题合集，必读 |
-| **awesome-ecs** | [jslee02/awesome-entity-component-system](https://github.com/jslee02/awesome-entity-component-system) | ECS 库和资源的精选列表 |
-| **ecs-benchmark (JS)** | [noctjs/ecs-benchmark](https://github.com/noctjs/ecs-benchmark) | JS/TS ECS 库横向性能基准 |
-| **Building an ECS 系列** | [#1](https://ajmmertens.medium.com/building-an-ecs-1-where-are-my-entities-and-components-63d07c7da742) / [#2](https://ajmmertens.medium.com/building-an-ecs-2-archetypes-and-vectorization-fe21690805f9) / [#3](https://ajmmertens.medium.com/building-an-ecs-storage-in-pictures-642b8bfd6e04) | Flecs 作者图解 ECS 内部数据结构 |
+- 只收录有**已上线游戏验证**的方案（标注验证游戏）
+- 每条资源标注它对 Apollo **哪个 Tier / 哪个 skill** 有指导价值
+- "能变成 skill" > "有意思"
 
 ---
 
-## 二、2D 游戏引擎
+## 一、经验证的 ECS 架构参考
 
-| 名称 | 仓库 | Stars | 语言 | 说明 |
-|------|------|-------|------|------|
-| **Phaser** | [phaserjs/phaser](https://github.com/phaserjs/phaser) | ~37.8k | JS | 最流行的 HTML5 2D 框架，内置 Arcade + Matter.js 双物理 |
-| **PixiJS** | [pixijs/pixijs](https://github.com/pixijs/pixijs) | ~44k | TS | 最快的 2D WebGL/WebGPU 渲染库，可作为 Apollo 渲染后端 |
-| **Godot** | [godotengine/godot](https://github.com/godotengine/godot) | ~93k | C++ | 全能 2D/3D 引擎，Node/Scene 树架构 |
-| **LÖVE** | [love2d/love](https://github.com/love2d/love) | ~8.4k | C++/Lua | 极简 2D 框架，参考"最小核心 + 脚本层"思路 |
-| **Defold** | [defold/defold](https://github.com/defold/defold) | ~5.6k | C++/Lua | King 开源，组件化架构，跨平台含 Web |
-| **Cocos Creator** | [cocos/cocos-engine](https://github.com/cocos/cocos-engine) | ~9.1k | TS | Entity-Component 架构，国内生态完善 |
-| **Excalibur** | [excaliburjs/Excalibur](https://github.com/excaliburjs/Excalibur) | ~1.8k | TS | 纯 TS 2D 引擎，API 友好 |
-
----
-
-## 三、2D 物理引擎
-
-| 名称 | 仓库 | 语言 | 说明 |
-|------|------|------|------|
-| **Box2D v3** | [erincatto/box2d](https://github.com/erincatto/box2d) | C | 行业标准，v3.1 纯 C 重写，SIMD + 多线程，性能比 v2 提升 2 倍+ |
-| **Rapier 2D** | [dimforge/rapier](https://github.com/dimforge/rapier) | Rust | 高性能，官方 WASM+JS 绑定，**跨平台确定性**，有 Bevy 官方插件 |
-| **Matter.js** | [liabru/matter-js](https://github.com/liabru/matter-js) | JS | 纯 JS，零依赖，~87KB，API 最简，适合原型 |
-| **Planck.js** | [piqnt/planck.js](https://github.com/piqnt/planck.js) | TS | Box2D v2 的 TS 重写，API 与 Box2D 一致 |
-| **Phaser Box2D** | [phaserjs/phaser-box2d](https://github.com/phaserjs/phaser-box2d) | JS | Box2D v3 的纯 JS 移植，<70KB，MIT |
-| **box2d3-wasm** | [Birch-san/box2d3-wasm](https://github.com/Birch-san/box2d3-wasm) | C→WASM | Box2D v3 WASM 编译，支持 SIMD + Web Workers |
-
-### 物理引擎选型
-
-| 场景 | 推荐 | 理由 |
-|------|------|------|
-| 高性能 2D Web 游戏 | Box2D v3 (Phaser Box2D / box2d3-wasm) | 行业标准，v3 性能优异 |
-| 需要跨平台确定性 | Rapier 2D | 唯一跨平台确定性选项 |
-| 快速原型/教学 | Matter.js | 最简 API，内置渲染 |
-| 同时需要 2D+3D | Rapier | 同引擎提供 2D 和 3D |
-
-### ECS 与物理集成模式
-
-**双世界同步（标准做法）**：物理引擎维护自己的 World，ECS System 每帧双向同步：
-
-```
-PhysicsSystem:
-  1. 将 ECS Kinematic 实体的 Transform 写入物理 Body
-  2. 调用 world.step()
-  3. 将物理 Dynamic 实体的位置/速度写回 TransformComponent
-  4. 碰撞事件 → ECS 事件队列
-```
+| 来源 | 验证游戏 | 核心要点 | 对 Apollo 的价值 |
+|------|---------|---------|-----------------|
+| **守望先锋 ECS** — Timothy Ford, GDC 2017 ([Vault](https://www.gdcvault.com/play/1024001/)) | Overwatch (暴雪) | 混合 ECS + 确定性 63Hz tick + 网络回滚 | Tier 1: motion-apply 的确定性循环设计；W1 random 的确定性种子方案 |
+| **地牢围攻数据驱动对象系统** — Scott Bilas, GDC 2002 ([PDF](https://www.gamedevs.org/uploads/data-driven-game-object-system.pdf)) | Dungeon Siege (Gas Powered Games) | 组合代替继承，处理 7300+ 对象类型 | defineCapability 模式的理论源头；assembly 蓝图设计 |
+| **Celeste 物理与状态机** — Matt Thorson & Noel Berry | Celeste (Matt Makes Games) | 手写整数物理 + 极简状态机 + coyote time | Tier 2: grounded-check, collision-separate；Tier 4: platformer 行为 |
+| **Hollow Knight 2D 碰撞** — Team Cherry | Hollow Knight | Unity 2D Physics + 自定义碰撞层 | Tier 2: collision-separate, trigger-zone；D1 overlap-detect 的 layer 设计 |
+| **Dead Cells ECS 架构** — Sébastien Bénard | Dead Cells (Motion Twin) | Haxe + 自定义 ECS，实体池化 + 组件重用 | 对象池 skill（Tier 2）；spawn/destroy 的生命周期优化 |
+| **Factorio 数据导向优化** — Wube Software | Factorio | 百万实体级 DoD 优化，空间分区 + belt 批处理 | W2 spatial-query 的网格分区实现；大规模实体性能 |
 
 ---
 
-## 四、骨骼动画 & Live2D
+## 二、按 Tier 映射的技术参考
 
-### Spine
+### Tier 1 — 直接结算 (Kinematic)
 
-| 属性 | 详情 |
-|------|------|
-| 版本 | 4.2 |
-| 运行时 | [EsotericSoftware/spine-runtimes](https://github.com/EsotericSoftware/spine-runtimes) (~4.4k stars) |
-| 许可证 | 专有（Essential $69, Professional $379） |
-| Web 集成 | pixi-spine（PixiJS 插件） |
+| Apollo Skill | 参考来源 | 验证 | 要点 |
+|-------------|---------|------|------|
+| **motion-apply** | Celeste source, *Game Programming Patterns* Ch.2 Game Loop | Celeste | 定步长 tick、子步进积分、整数/定点坐标避免浮点漂移 |
+| **accel-apply** | *Game Physics Engine Development* (Millington) Ch.3 | — | 显式欧拉 vs 半隐式欧拉积分，Apollo 用半隐式（先更新速度再更新位置） |
+| **hierarchy-resolve** | Unity Transform 源码, Godot Node2D | Unity/Godot | 脏标记 + 延迟求解；避免每帧全量矩阵乘法 |
+| **animation** | *Game Programming Patterns* Ch.14 Type Object | — | frame.index++ per timer，帧动画是 timer → frame 的直接映射 |
+| **lifetime** | Dead Cells 实体池 | Dead Cells | timer done → destroy，配合对象池回收而非真正 delete |
 
-**ECS 集成**：姿态快照模式——每帧从 Spine 运行时提取骨骼变换写入 `SkeletalPose` 组件（纯数据），后续系统只读快照，不直接访问 Spine 运行时。
+### Tier 2 — 规则与约束 (Resolution)
 
-### Live2D
+| Apollo Skill | 参考来源 | 验证 | 要点 |
+|-------------|---------|------|------|
+| **gravity** | Box2D v3 b2World_Step, Celeste | 多款 | 重力是常量加速度，不是力——直接写 acceleration.ay，不走力学积分 |
+| **collision-separate** | *Real-Time Collision Detection* (Ericson) Ch.4, Box2D Position Solver | 行业标准 | AABB 穿透分离：按 mass 比推开，normal × depth |
+| **collision-bounce** | Box2D Contact Solver, *2D Game Collision Detection* (Schwarzl) | 行业标准 | 弹性碰撞：反射速度 = v - 2(v·n)n × restitution |
+| **grounded-check** | Celeste "coyote time" 实现 | Celeste | overlap + tag(ground) + 宽容时间窗 → flag(grounded) |
+| **trigger-zone** | Hollow Knight 触发区域设计 | Hollow Knight | overlap + tag(trigger) → 事件，不产生物理响应 |
+| **friction** | Box2D v3 摩擦模型, *Game Physics Cookbook* (Szauer) | 行业标准 | 库仑摩擦简化：速度方向的反向加速度，clamp 到零 |
+| **range-detect** | Factorio 空间分区, *Real-Time Collision Detection* Ch.7 | Factorio | spatial-query(radius) → relation(target)，网格分区 O(1) |
+| **damage-number** | 暗黑破坏神系列, 原神 | 多款 | resource-modify → spawn + text + velocity(上飘) + lifetime |
+| **ui-binding** | React/Unity UI Toolkit 数据绑定模式 | 行业通用 | resource → UI 层单向投影，不参与 ECS 内部结算 |
 
-| 属性 | 详情 |
-|------|------|
-| 版本 | Cubism 5 SDK |
-| 技术 | 网格变形动画（非骨骼），参数驱动 |
-| 许可证 | 专有（小企业免费，年销 >2000 万日元需付费） |
-| Web SDK | TypeScript，WebGL 渲染 |
-| PixiJS 插件 | [pixi-live2d-display](https://github.com/guansss/pixi-live2d-display) (~1.4k stars) |
+### Tier 3 — 系统级玩法 (Mechanics)
 
-**ECS 集成**：参数快照模式——组件存储当前参数值 Map，System 更新参数值并传入 Cubism SDK Core 获取网格数据。适合少量高质量角色。
+| Apollo Skill | 参考来源 | 验证 | 要点 |
+|-------------|---------|------|------|
+| **health-system** | *Game Programming Patterns* Ch.5 Observer | 几乎所有游戏 | resource(hp) + resource-modify + ui-binding，事件链 |
+| **platformer-jump** | Celeste 跳跃手感调优, *Juice it or Lose it* (GDC 2012) | Celeste | action-map + flag(grounded) + velocity + 可变重力（上升轻、下落重） |
+| **projectile** | Dead Cells 弹幕系统 | Dead Cells | spawn + velocity + lifetime + overlap + destroy，配合对象池 |
+| **knockback** | Hollow Knight 击退设计 | Hollow Knight | timer + velocity(覆写) + 无敌帧联动 |
+| **auto-target** | Hades 自动索敌 | Hades | spatial-query(nearest) + tag(enemy) + relation(target) |
 
-### DragonBones
+### Tier 4 — 心智与行为 (Behaviors)
 
-免费开源 (MIT) 但 **JS 运行时 2015 年后停止维护**，不建议新项目使用。
+| Apollo Skill | 参考来源 | 验证 | 要点 |
+|-------------|---------|------|------|
+| **ai-patrol** | *AI for Games* (Millington) Ch.3 Steering | 行业通用 | state + timer + velocity(方向切换)，巡逻路径点 |
+| **ai-chase** | F.E.A.R. GOAP — Jeff Orkin, GDC 2006 ([PDF](https://www.gamedevs.org/uploads/three-states-plan-ai-of-fear.pdf)) | F.E.A.R. | state + spatial-query(nearest) + relation(target)，GOAP 比 FSM 更灵活 |
+| **dialogue** | *Procedural Narrative Generation* GDC 2017, 模拟人生涌现叙事 GDC | Sims 系列 | trigger-zone + state + input + string-variable |
+| **anim-state-machine** | Hollow Knight 动画状态机, Spine AnimationState | Hollow Knight | state + transition-rules + animation，双轨道混合 |
 
-### Bullet Physics（2D）
+### 乙游方向 (Tier 3/4 扩展)
 
-Bullet 主要是 3D 引擎，2D 支持有限（`btBox2dShape`）。纯 2D 项目 **Box2D 完胜**。
-
----
-
-## 五、经典书籍
-
-### P0 必读（免费在线）
-
-| 书名 | 作者 | 说明 |
-|------|------|------|
-| **Game Programming Patterns** | Robert Nystrom | [gameprogrammingpatterns.com](https://gameprogrammingpatterns.com/) — 游戏循环、组件模式、对象池、空间分区等核心模式 |
-| **Data-Oriented Design** | Richard Fabian | [dataorienteddesign.com](https://dataorienteddesign.com/dodbook/) — ECS 的理论根基 |
-
-### P1 核心
-
-| 书名 | 作者 | 年份 | 说明 |
-|------|------|------|------|
-| **Game Engine Architecture** | Jason Gregory | 2024 (4e) | 引擎架构圣经，Naughty Dog 首席程序员著 |
-| **Real-Time Collision Detection** | Christer Ericson | 2004 | 碰撞检测金标准，空间分区 + BVH + 相交测试 |
-| **2D Game Collision Detection** | Thomas Schwarzl | 2013 | 专门针对 2D，与 Apollo 定位完全匹配 |
-| **AI for Games** | Ian Millington | 2019 (3e) | 游戏 AI 最全面参考：寻路、行为树、FSM、效用 AI |
-| **Entity-Component System Design Patterns** | Richard Johnson | 2024 | 唯一专门讲 ECS 设计模式的书 |
-
-### P2 按需
-
-| 书名 | 作者 | 年份 | 说明 |
-|------|------|------|------|
-| **Game Physics Engine Development** | Ian Millington | 2010 (2e) | 从零构建物理引擎，含 2D 章节 |
-| **Game Physics Cookbook** | Gabor Szauer | 2017 | 100+ 碰撞检测/物理公式食谱 |
-| **Programming Game AI by Example** | Mat Buckland | 2004 | FSM、steering behaviors、A* 寻路实例 |
-| **Procedural Generation in Game Design** | Short & Adams | 2017 | 矮人要塞作者参与，程序化生成设计 |
-| **Essential Mathematics for Games** | Van Verth & Bishop | 2015 (3e) | 向量、矩阵、插值——引擎背后的数学 |
+| Apollo Skill | 参考来源 | 验证 | 要点 |
+|-------------|---------|------|------|
+| **check.resolve** | 效用 AI — Dave Mark, GDC 2010 ([Vault](https://www.gdcvault.com/play/1012410/)) | 多款策略/RPG | 响应曲线 + 权重计算检定分数，domainSlot 插入关系值修正 |
+| **love-interest.event** | 火焰纹章支援系统, 乙游通用 | FE 系列 | resource 阈值触发 → 情感选择 → 多路径后果 |
+| **settlement.resolve** | 信长之野望/三国志 周期结算, Persona 系列 | 多款 | 三线资源汇总 → 解锁判定 → 下一周期配置 |
 
 ---
 
-## 六、GDC 演讲 & 技术文章
+## 三、物理引擎选型（已验证）
 
-### ECS 与数据导向设计
-
-| 标题 | 演讲者 | 年份 | 链接 |
-|------|--------|------|------|
-| **Data-Oriented Design and C++** | Mike Acton (Insomniac) | CppCon 2014 | [YouTube](https://www.youtube.com/watch?v=rX0ItVEVjHc) |
-| **A Data-Driven Game Object System** | Scott Bilas | GDC 2002 | [PDF](https://www.gamedevs.org/uploads/data-driven-game-object-system.pdf) |
-| **Overwatch Gameplay Architecture and Netcode** | Timothy Ford (Blizzard) | GDC 2017 | [GDC Vault](https://www.gdcvault.com/play/1024001/) |
-| **Data Oriented Approach to Using Component Systems** | Mike Acton (Unity) | GDC 2018 | [YouTube](https://www.youtube.com/watch?v=p65Yt20pw0g) |
-| **Deep Dive into DOD for a Cross-platform UGC Engine** | YAHAHA Studios | GDC 2023 | [GDC Vault](https://www.gdcvault.com/play/1029021/) |
-| **Using Rust For Game Development** | Catherine West | RustConf 2018 | [YouTube](https://www.youtube.com/watch?v=aKLntZcp27M) |
-
-### ECS 性能
-
-| 标题 | 来源 | 链接 |
-|------|------|------|
-| **Sparse-set vs Archetype ECS 性能对比** | CGVC 学术论文 2025 | [PDF](https://diglib.eg.org/bitstreams/766b72a4-70ae-4e8e-935b-949d589ed962/download) |
-| **ECS Benchmark (C/C++)** | abeimler | [GitHub](https://github.com/abeimler/ecs_benchmark) |
-| **Exploring Concurrency in ECS** | arXiv 2025 | [PDF](https://arxiv.org/pdf/2508.15264) |
-
-**核心结论**：Archetype 适合大规模迭代（>10 万实体），Sparse Set 适合频繁增删组件。2D 游戏数千~数万实体时差异不大。
-
-### 游戏 AI
-
-| 标题 | 演讲者 | 年份 | 说明 |
-|------|--------|------|------|
-| **Three States and a Plan: AI of F.E.A.R.** | Jeff Orkin | GDC 2006 | GOAP 标杆案例 |
-| **Improving AI Decision Modeling Through Utility Theory** | Dave Mark & Kevin Dill | GDC 2010 | 效用 AI 奠基演讲 |
-| **AI Arborist: Cultivation of Behavior Trees** | Anguelov et al. | GDC 2017 | 行为树最佳实践 |
-| **Deciding on an AI Architecture** | — | GDC | FSM/行为树/GOAP/效用 AI 选型 |
-
-### 2D 渲染优化
-
-| 标题 | 来源 | 链接 |
-|------|------|------|
-| **GLES2 2D Batching** | Godot 官方 | [文章](https://godotengine.org/article/gles2-renderer-optimization-2d-batching/) |
-| **Unity Tilemap 优化** | Unity 官方 | [文章](https://unity.com/how-to/optimize-performance-2d-games-unity-tilemap) |
-| **Bevy 2D Rendering** | DeepWiki | [文章](https://deepwiki.com/bevyengine/bevy/5.9-2d-rendering-and-sprites) |
-
-### AI 原生游戏开发（2024-2025 前沿）
-
-| 标题 | 来源 | 年份 | 说明 |
-|------|------|------|------|
-| **From Text to Gameplay: GenAI on Behavior Trees** | GDC AI Summit | 2024 | 用 LLM 自动生成行为树 |
-| **LLM as Core Gameplay: 1001 Nights** | GDC AI Summit | 2025 | LLM 作为核心玩法机制 |
-| **Game Generation via LLMs** | arXiv | 2024 | [论文](https://arxiv.org/pdf/2404.08706) |
-| **SEELE: AI-Native Game Dev Platform** | Seeles.ai | 2025 | 文本到游戏全流程生成 |
-
-### 程序化叙事
-
-| 标题 | 来源 | 说明 |
-|------|------|------|
-| **Procedural Narrative Generation** | GDC 2017 | 社会模拟 + 戏剧管理 |
-| **Emergent Storytelling in The Sims** | GDC | 涌现式叙事的经典案例 |
+| 引擎 | 验证游戏 | 推荐场景 | Apollo 集成方式 |
+|------|---------|---------|----------------|
+| **Box2D v3** | Angry Birds, Limbo, Crayon Physics | 标准 2D 物理 | 双世界同步：ECS Transform ↔ Box2D Body |
+| **Rapier 2D** | Bevy 生态游戏 | 需要跨平台确定性 | 同上 + 确定性保证 |
+| **Matter.js** | Phaser 内置 | 快速原型 | 最简集成，性能天花板低 |
+| **自写 AABB** | Celeste, Dead Cells | 平台跳跃类 | Apollo D1 overlap-detect 已有，足够 platformer |
 
 ---
 
-## 七、对 Apollo Engine 的选型建议
+## 四、渲染与动画（已验证）
 
-### 当前阶段（Tier 1/2）
+| 技术 | 验证游戏/引擎 | Apollo 集成 |
+|------|-------------|------------|
+| **PixiJS** | 数千款 HTML5 游戏 | 替换 CanvasRenderer，Sprite 批处理性能提升 10 倍+ |
+| **Spine** | Hollow Knight, Dead Cells, Hades | 扩展层 X1 skeletal-pose 的姿态快照来源 |
+| **Live2D** | 明日方舟, 碧蓝航线, 大量乙游 | 扩展层 ×，参数快照模式，适合少量高品质角色 |
+| **Canvas2D** | Apollo 当前 | 够用于 MVP，后续可平滑升级 |
 
-- **ECS 核心**：Apollo 已有自己的 ECS 实现。参考 **bitECS**（SoA + 函数式 API）和 **Flecs** 的 Entity Relationships 进一步优化
-- **渲染层**：以 **PixiJS** 或 **Canvas2D**（已有）作为渲染后端，与 ECS 完全解耦
-- **物理集成**：推荐 **Rapier2D WASM**（性能 + 确定性）或 **Planck.js**（纯 TS + Box2D 兼容）
+---
 
-### Tier 3/4（乙游方向）
+## 五、必读清单（3 份，按角色）
 
-- **骨骼动画**：**Spine**（如需专业 2D 骨骼）或 **Live2D**（如需高品质角色表现）
-- **AI**：效用 AI（Dave Mark 的响应曲线）最适合乙游的情感决策系统
-- **叙事**：参考 GDC 的程序化叙事演讲 + LLM 原生叙事
+### 给主程序（写 skill 的人）
 
-### 必读资源优先级
+1. [Game Programming Patterns](https://gameprogrammingpatterns.com/) — 免费在线，直接覆盖所有核心模式
+2. [Building an ECS 系列](https://ajmmertens.medium.com/building-an-ecs-1-where-are-my-entities-and-components-63d07c7da742) — ECS 存储层原理
+3. [Mike Acton CppCon 2014](https://www.youtube.com/watch?v=rX0ItVEVjHc) — 1 小时视频，DoD 核心思想
+4. *2D Game Collision Detection* (Schwarzl) — Tier 2 碰撞 skill 的算法参考
+5. Celeste 源码分析 — platformer 手感的黄金标准
 
-```
-P0（立即读）:
-  - Game Programming Patterns (免费在线)
-  - Data-Oriented Design (免费在线)
-  - Mike Acton CppCon 2014 (1 小时视频)
-  - Sander Mertens Building an ECS 系列
+### 给设计师（设计乙游玩法的人）
 
-P1（核心参考）:
-  - Game Engine Architecture (4e)
-  - Real-Time Collision Detection
-  - Overwatch GDC 2017 演讲
+1. 效用 AI — Dave Mark GDC 2010 演讲 — 情感决策系统的数学基础
+2. *AI for Games* (Millington) — FSM/行为树/GOAP 选型
+3. 模拟人生涌现叙事 GDC 演讲 — 涌现式叙事如何实现
+4. 火焰纹章支援系统分析 — 关系值 + 事件触发的经典实现
 
-P2（按需查阅）:
-  - AI for Games — 当需要 AI 系统时
-  - 2D Game Collision Detection — 当做物理时
-  - Procedural Generation in Game Design — 当做 PCG 时
-```
+### 给架构师（设计引擎的人）
+
+1. *Game Engine Architecture* (Gregory 4e) — 引擎全局视野
+2. 守望先锋 GDC 2017 — 工业级 ECS 的确定性 + 网络同步
+3. *Real-Time Collision Detection* (Ericson) — 碰撞与空间分区的金标准
+4. Factorio 技术博客 — 百万实体级优化思路
