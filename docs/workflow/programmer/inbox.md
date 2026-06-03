@@ -3,7 +3,13 @@
 > Lead 写入任务，Programmer 轮询读取。
 > 格式约定：每个任务一个 section，状态标记 pending/in-progress/done。
 
-## 当前任务 · 批次 T1-完结（派给 Programmer A，3-wide 并行）
+## ✅ 批次 T1-完结 —— 已由 Lead 自补完成（2026-06-03），勿重复
+
+> PA 未在本 session 周期内交付该 3 个；按"小型低耦合任务单 agent 更快"的结论，Lead 直接写完并集成到 mainbranch：
+> `rotation-apply`(Rotate) / `animation`(Update,consume TimerDone) / `hierarchy-resolve`(PostResolve)，相位已修正、测试全绿（全量 272 passed）。
+> 下方为原派发存档（保留以备查）。
+
+### 原派发存档 · 批次 T1-完结（派给 Programmer A，3-wide 并行）
 
 > **基线**：`claude/mainbranch`（已含 Lead 写好的契约：`SystemPhase` 加 `Rotate`/`PostResolve`、`Trigger` 组件）。
 > **开工前必做**：`git fetch origin claude/mainbranch && git reset --hard origin/claude/mainbranch`。
