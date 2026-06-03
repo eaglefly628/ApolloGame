@@ -270,6 +270,13 @@ export interface Bounds extends Component {
   maxY: number;
 }
 
+// ── trigger-zone ── 触发事件：实体 other 进入了触发区 zone（每帧重算，read-then-consume 或每帧清重标）。
+export interface Trigger extends Component {
+  readonly type: 'Trigger';
+  zone: EntityId;
+  other: EntityId;
+}
+
 // ── W2 spatial-query ── 空间查询服务配置，挂在 world 实体
 export interface SpatialIndex extends Component {
   readonly type: 'SpatialIndex';

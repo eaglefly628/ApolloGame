@@ -20,9 +20,11 @@ export interface SystemDeclaration {
 // 系统执行阶段（数值越小越早）。绝大多数系统留缺省 Update，靠组件拓扑自动定序；
 // 只有"读完本帧状态后再修正同一状态"的系统（碰撞解算、约束）才排到更后的阶段。
 export const SystemPhase = {
-  Update: 0,   // 默认：积分 / 检测 / 计时 / 生命周期……（组件拓扑自动定序）
-  Resolve: 10, // 解算：读完位置后再修正位置/速度（碰撞推开、约束）
-  Commit: 20,  // 提交：基于解算结果的最终写入
+  Update: 0,       // 默认：积分 / 检测 / 计时 / 生命周期……（组件拓扑自动定序）
+  Rotate: 4,       // 角度积分：rotation-apply 与 motion-apply 同为 Transform 读改写，须各占一阶段
+  Resolve: 10,     // 解算：读完位置后再修正位置/速度（碰撞推开）
+  PostResolve: 14, // 解算后：基于已解算结果再改 Transform/Velocity（层级跟随=改T、摩擦=改V，可同阶段）
+  Commit: 20,      // 提交：基于解算结果的最终写入（跳跃=改V、边界钳制=改T）
 } as const;
 
 export interface IWorld {
