@@ -254,6 +254,11 @@ export interface Overlap extends Component {
   depth: number;
 }
 
+// ── ground-sense ── 实体这帧是否站在地面上（marker，存在即着地，每帧由 ground-sense 重算）
+export interface Grounded extends Component {
+  readonly type: 'Grounded';
+}
+
 // ── W2 spatial-query ── 空间查询服务配置，挂在 world 实体
 export interface SpatialIndex extends Component {
   readonly type: 'SpatialIndex';

@@ -1,3 +1,5 @@
-// Tier 2 涌现层（规则与约束 / Resolution）。读取 Tier 1 与检测原子的结果，施加约束。
-// 跑在 Resolve 阶段，避免与 Update 阶段的"读位置"系统在纯组件拓扑上成环。
+// Tier 2 涌现层（规则与约束 / 感知 / 控制）。读取 Tier 1 与检测原子的结果，施加约束、派生事实、响应输入。
+// 跨阶段用 SystemPhase 显式定序（Update→Resolve→Commit），避免与"读位置/读速度"的系统在纯组件拓扑上成环。
 export { collisionResolveCapability } from './collision-resolve.js';
+export { groundSenseCapability } from './ground-sense.js';
+export { jumpCapability, JUMP_SPEED } from './jump.js';
