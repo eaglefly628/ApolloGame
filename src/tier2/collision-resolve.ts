@@ -1,40 +1,43 @@
 import { defineCapability } from '@engine/core/define-capability.js';
 import { SystemPhase } from '@engine/core/types.js';
-import type { Transform, Velocity, Overlap } from '@engine/protocol/components.js';
+import type { IWorld } from '@engine/core/types.js';
+import type { Velocity, Transform, Shape, Mass, Overlap } from '@engine/protocol/components.js';
+import { contactBetween } from '@engine/spatial/contact.js';
 
-// 把朝"侵入"方向的速度分量清零：落地 → vy 归零，撞墙 → vx 归零。
-// n 为分离法线，intoSign=+1 表示"侵入方向"是 +n，-1 表示 -n。任意法线通用（box/circle）。
-function killIntoVelocity(v: Velocity, nx: number, ny: number, intoSign: number): void {
-  const vn = v.vx * nx + v.vy * ny; // 速度在法线上的投影
-  if (vn * intoSign > 0) {
-    v.vx -= vn * nx;
-    v.vy -= vn * ny;
-  }
+const ITERATIONS = 8;
+
+// 逆质量：无 Velocity = 静态（不可动，0）；有 Mass 用 1/value（value<=0 视为静态）；否则单位质量 1。
+function inverseMass(world: IWorld, id: string): number {
+  if (!world.hasComponent(id, 'Velocity')) return 0;
+  const m = world.getComponent<Mass>(id, 'Mass');
+  if (m) return m.value > 0 ? 1 / m.value : 0;
+  return 1;
 }
 
-// Tier 2 涌现（规则与约束）：读 overlap-detect 产出的 Overlap，把动态实体沿分离法线推出
-// 穿透深度，并清零朝法线的侵入速度（落地/撞墙即停）。这是 overlap-detect 注释里
-// 预留的"响应消费者"。动/静判定：有 Velocity = 动态，无 Velocity = 静态墙地。
-// 动态-静态完整解算；动态-动态对称分离；若一方 Grounded 则当静态支撑（防叠放时挤穿地面）。
+// Tier 2 涌现（约束）：顺序冲量求解器（Bullet/Box2D 风格的最小核）。
+// 读 overlap-detect 的候选接触对，K 遍迭代，每遍重算接触几何（与检测共用 contactBetween）：
+//   1) 速度冲量（restitution=0）：按逆质量消除"接近"的相对法向速度；
+//   2) 位置修正：按逆质量做全量分离。
+// 静态体逆质量=0 → 每遍把动态体完全推出 → 落地/撞墙即停、且叠放不被挤穿地面（迭代收敛，无需特判）。
+// 动态-动态按质量分摊；动态-静态精确退化为"推出穿透 + 清侵入速度"（与旧行为一致，老测试不破）。
 //
-// 必须在 Resolve 阶段：它写 Transform 而 overlap-detect 读 Transform，纯组件拓扑会判成环；
-// phase 把"先检测后解算"显式表达出来。不 consume Overlap —— 其生命周期由 overlap-detect
-// 每帧销毁+重建管理（consume 会让重建时 createEntity 撞已存在实体）。
+// Resolve 阶段：写 Transform/Velocity 而 overlap-detect 读 Transform，纯组件拓扑会成环，phase 显式定序。
+// 接触对按 (idA,idB) 升序处理 → 与实体插入顺序无关的确定性（lockstep 安全）。
 export const collisionResolveCapability = defineCapability({
   id: 't2-collision-resolve',
   version: '1.0.0',
 
   describe: {
     name: 'collision-resolve',
-    summary: '读 Overlap 把动态实体推出静态实体，并清零侵入速度（落地/撞墙）。',
+    summary: '顺序冲量求解器：逆质量 + 速度冲量 + 迭代位置修正，把动态实体推出，且不挤穿静态/堆叠。',
     semantic: ['tier2', 'collision', 'resolution'],
-    whenToUse: '需要实体不穿墙、能站在地面上时。读 Overlap + Transform + Velocity，写 Transform + Velocity，跑在 Resolve 阶段。',
-    examples: ['玩家落在平台上 → vy 归零', '撞墙停住 → vx 归零', '两动态体相撞 → 对称推开'],
+    whenToUse: '需要实体不穿墙/能站立/能稳定堆叠时。读 Overlap+Transform+Shape+Velocity+Mass，写 Transform+Velocity，Resolve 阶段。',
+    examples: ['玩家落在平台上 → vy 归零', '方块叠方块不挤穿地面（迭代收敛）', '不同质量相撞按逆质量分摊'],
   },
 
   components: {
     provides: {},
-    reads: ['Overlap', 'Transform', 'Velocity', 'Grounded'],
+    reads: ['Overlap', 'Transform', 'Shape', 'Velocity', 'Mass'],
     writes: ['Transform', 'Velocity'],
     consumes: [],
   },
@@ -45,56 +48,58 @@ export const collisionResolveCapability = defineCapability({
     {
       id: 'collision-resolve',
       phase: SystemPhase.Resolve,
-      reads: ['Overlap', 'Transform', 'Velocity', 'Grounded'],
+      reads: ['Overlap', 'Transform', 'Shape', 'Velocity', 'Mass'],
       writes: ['Transform', 'Velocity'],
       consumes: [],
       execute(world) {
+        // 候选接触对（来自 overlap-detect），确定序处理。
+        const pairs: Array<[string, string]> = [];
         for (const [oid] of world.query('Overlap')) {
           const o = world.getComponent<Overlap>(oid, 'Overlap')!;
-          const aT = world.getComponent<Transform>(o.entityA, 'Transform');
-          const bT = world.getComponent<Transform>(o.entityB, 'Transform');
-          if (!aT || !bT) continue;
+          pairs.push(o.entityA < o.entityB ? [o.entityA, o.entityB] : [o.entityB, o.entityA]);
+        }
+        pairs.sort((p, q) => (p[0] < q[0] ? -1 : p[0] > q[0] ? 1 : p[1] < q[1] ? -1 : p[1] > q[1] ? 1 : 0));
 
-          // 法线 n 从 A 指向 B。Velocity 存在 = 动态。
-          const aV = world.getComponent<Velocity>(o.entityA, 'Velocity');
-          const bV = world.getComponent<Velocity>(o.entityB, 'Velocity');
-          const nx = o.normalX;
-          const ny = o.normalY;
-          const d = o.depth;
+        for (let iter = 0; iter < ITERATIONS; iter++) {
+          for (const [a, b] of pairs) {
+            const aT = world.getComponent<Transform>(a, 'Transform');
+            const bT = world.getComponent<Transform>(b, 'Transform');
+            const aS = world.getComponent<Shape>(a, 'Shape');
+            const bS = world.getComponent<Shape>(b, 'Shape');
+            if (!aT || !bT || !aS || !bS) continue;
+            const c = contactBetween(aT, aS, bT, bS); // 法线 n: a→b
+            if (!c) continue; // 本遍已分离
 
-          if (aV && !bV) {
-            // A 动 B 静：把 A 沿 -n 推出（远离 B），清零 A 朝 +n 的侵入速度。
-            aT.x -= nx * d;
-            aT.y -= ny * d;
-            killIntoVelocity(aV, nx, ny, +1);
-          } else if (bV && !aV) {
-            // B 动 A 静：把 B 沿 +n 推出，清零 B 朝 -n 的侵入速度。
-            bT.x += nx * d;
-            bT.y += ny * d;
-            killIntoVelocity(bV, nx, ny, -1);
-          } else if (aV && bV) {
-            // 动态-动态。若一方 Grounded（踩在静态硬面上），就把它当作该接触的"静态支撑"，
-            // 全量推开另一方并清其侵入速度，绝不把它往支撑里挤 —— 这样"叠在地面方块上的
-            // 方块"不会把下面那个挤穿地面（复用 ground-sense 算出的事实，而非特判）。
-            const aGrounded = world.hasComponent(o.entityA, 'Grounded');
-            const bGrounded = world.hasComponent(o.entityB, 'Grounded');
-            if (aGrounded && !bGrounded) {
-              bT.x += nx * d;
-              bT.y += ny * d;
-              killIntoVelocity(bV, nx, ny, -1);
-            } else if (bGrounded && !aGrounded) {
-              aT.x -= nx * d;
-              aT.y -= ny * d;
-              killIntoVelocity(aV, nx, ny, +1);
-            } else {
-              // 都不在地上（或都在）→ 对称分离，速度不动。
-              aT.x -= nx * d * 0.5;
-              aT.y -= ny * d * 0.5;
-              bT.x += nx * d * 0.5;
-              bT.y += ny * d * 0.5;
+            const invA = inverseMass(world, a);
+            const invB = inverseMass(world, b);
+            const invSum = invA + invB;
+            if (invSum === 0) continue; // 双静态
+
+            const { nx, ny, depth } = c;
+            const aV = world.getComponent<Velocity>(a, 'Velocity');
+            const bV = world.getComponent<Velocity>(b, 'Velocity');
+
+            // 1) 速度冲量（restitution=0）：消除接近的相对法向速度。
+            const rvn = ((bV?.vx ?? 0) - (aV?.vx ?? 0)) * nx + ((bV?.vy ?? 0) - (aV?.vy ?? 0)) * ny;
+            if (rvn < 0) {
+              const j = -rvn / invSum;
+              if (aV) {
+                aV.vx -= j * invA * nx;
+                aV.vy -= j * invA * ny;
+              }
+              if (bV) {
+                bV.vx += j * invB * nx;
+                bV.vy += j * invB * ny;
+              }
             }
+
+            // 2) 位置修正（全量，按逆质量分摊）。
+            const corr = depth / invSum;
+            aT.x -= nx * corr * invA;
+            aT.y -= ny * corr * invA;
+            bT.x += nx * corr * invB;
+            bT.y += ny * corr * invB;
           }
-          // 双静态：忽略。
         }
       },
     },
