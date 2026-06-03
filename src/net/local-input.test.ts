@@ -43,4 +43,17 @@ describe('KeyboardInputSource: 键盘 → 每 tick 命令', () => {
 
     src.dispose();
   });
+
+  it('丢焦点（blur）清空按下集合 —— 切窗口时 keyup 收不到也不会"卡住"', () => {
+    const target = new EventTarget();
+    const src = new KeyboardInputSource('p1', target);
+
+    target.dispatchEvent(key('keydown', 'ArrowRight')); // 按住右
+    expect(src.commandsForTick(1)).toEqual([{ playerId: 'p1', tick: 1, move: { dx: 1, dy: 0 } }]);
+
+    target.dispatchEvent(new Event('blur')); // 切到别的窗口，没有 keyup
+    expect(src.commandsForTick(2)).toEqual([]); // 焦点丢失后不再持续移动
+
+    src.dispose();
+  });
 });

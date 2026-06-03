@@ -32,6 +32,10 @@ export class KeyboardInputSource implements InputSource {
   private readonly onUp = (e: KeyboardEvent) => {
     this.pressed.delete(e.code);
   };
+  // 丢焦点时 keyup 收不到 → 清空按下集合，防止"按键卡住"持续移动。
+  private readonly onBlur = () => {
+    this.pressed.clear();
+  };
 
   constructor(
     private readonly playerId: string,
@@ -39,6 +43,7 @@ export class KeyboardInputSource implements InputSource {
   ) {
     this.target.addEventListener('keydown', this.onDown as EventListener);
     this.target.addEventListener('keyup', this.onUp as EventListener);
+    this.target.addEventListener('blur', this.onBlur as EventListener);
   }
 
   commandsForTick(tick: number): Command[] {
@@ -59,5 +64,6 @@ export class KeyboardInputSource implements InputSource {
   dispose(): void {
     this.target.removeEventListener('keydown', this.onDown as EventListener);
     this.target.removeEventListener('keyup', this.onUp as EventListener);
+    this.target.removeEventListener('blur', this.onBlur as EventListener);
   }
 }

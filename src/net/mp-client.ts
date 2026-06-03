@@ -43,6 +43,12 @@ window.addEventListener('keydown', (e) => {
 window.addEventListener('keyup', (e) => {
   if (MAPPED.has(e.code)) held.delete(e.code);
 });
+// 丢焦点（切到别的窗口/标签页）时 keyup 收不到 → 清空按下集合，否则按键会"卡住"持续移动。
+const releaseAll = (): void => held.clear();
+window.addEventListener('blur', releaseAll);
+document.addEventListener('visibilitychange', () => {
+  if (document.hidden) releaseAll();
+});
 
 const client = new LockstepClient({ peerId, channel, getInput: readDir, tickRate: 30, inputDelay: 4 });
 window.addEventListener('beforeunload', () => client.dispose());
