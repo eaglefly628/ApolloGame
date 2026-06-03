@@ -15,7 +15,7 @@ function killIntoVelocity(v: Velocity, nx: number, ny: number, intoSign: number)
 // Tier 2 涌现（规则与约束）：读 overlap-detect 产出的 Overlap，把动态实体沿分离法线推出
 // 穿透深度，并清零朝法线的侵入速度（落地/撞墙即停）。这是 overlap-detect 注释里
 // 预留的"响应消费者"。动/静判定：有 Velocity = 动态，无 Velocity = 静态墙地。
-// 最小形态：动态-静态完整解算；动态-动态仅对称分离不改速度。
+// 动态-静态完整解算；动态-动态对称分离；若一方 Grounded 则当静态支撑（防叠放时挤穿地面）。
 //
 // 必须在 Resolve 阶段：它写 Transform 而 overlap-detect 读 Transform，纯组件拓扑会判成环；
 // phase 把"先检测后解算"显式表达出来。不 consume Overlap —— 其生命周期由 overlap-detect
@@ -34,7 +34,7 @@ export const collisionResolveCapability = defineCapability({
 
   components: {
     provides: {},
-    reads: ['Overlap', 'Transform', 'Velocity'],
+    reads: ['Overlap', 'Transform', 'Velocity', 'Grounded'],
     writes: ['Transform', 'Velocity'],
     consumes: [],
   },
@@ -45,7 +45,7 @@ export const collisionResolveCapability = defineCapability({
     {
       id: 'collision-resolve',
       phase: SystemPhase.Resolve,
-      reads: ['Overlap', 'Transform', 'Velocity'],
+      reads: ['Overlap', 'Transform', 'Velocity', 'Grounded'],
       writes: ['Transform', 'Velocity'],
       consumes: [],
       execute(world) {
@@ -73,11 +73,26 @@ export const collisionResolveCapability = defineCapability({
             bT.y += ny * d;
             killIntoVelocity(bV, nx, ny, -1);
           } else if (aV && bV) {
-            // 动态-动态：各推一半，速度暂不处理（最小形态）。
-            aT.x -= nx * d * 0.5;
-            aT.y -= ny * d * 0.5;
-            bT.x += nx * d * 0.5;
-            bT.y += ny * d * 0.5;
+            // 动态-动态。若一方 Grounded（踩在静态硬面上），就把它当作该接触的"静态支撑"，
+            // 全量推开另一方并清其侵入速度，绝不把它往支撑里挤 —— 这样"叠在地面方块上的
+            // 方块"不会把下面那个挤穿地面（复用 ground-sense 算出的事实，而非特判）。
+            const aGrounded = world.hasComponent(o.entityA, 'Grounded');
+            const bGrounded = world.hasComponent(o.entityB, 'Grounded');
+            if (aGrounded && !bGrounded) {
+              bT.x += nx * d;
+              bT.y += ny * d;
+              killIntoVelocity(bV, nx, ny, -1);
+            } else if (bGrounded && !aGrounded) {
+              aT.x -= nx * d;
+              aT.y -= ny * d;
+              killIntoVelocity(aV, nx, ny, +1);
+            } else {
+              // 都不在地上（或都在）→ 对称分离，速度不动。
+              aT.x -= nx * d * 0.5;
+              aT.y -= ny * d * 0.5;
+              bT.x += nx * d * 0.5;
+              bT.y += ny * d * 0.5;
+            }
           }
           // 双静态：忽略。
         }

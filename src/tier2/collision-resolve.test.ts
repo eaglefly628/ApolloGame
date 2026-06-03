@@ -13,9 +13,10 @@ describe('T2 collision-resolve — capability metadata（契约钉死）', () =>
     expect(collisionResolveCapability.systems[0].phase).toBe(SystemPhase.Resolve);
   });
 
-  it('读 Overlap+Transform+Velocity，写 Transform+Velocity，不 consume/provide', () => {
+  it('读 Overlap+Transform+Velocity+Grounded，写 Transform+Velocity，不 consume/provide', () => {
     expect(collisionResolveCapability.components.provides).toEqual({});
-    expect(collisionResolveCapability.components.reads).toEqual(['Overlap', 'Transform', 'Velocity']);
+    // Grounded 为本次修复新增的读（动态-动态时把 Grounded 一方当静态支撑，防叠放挤穿地面）。
+    expect(collisionResolveCapability.components.reads).toEqual(['Overlap', 'Transform', 'Velocity', 'Grounded']);
     expect(collisionResolveCapability.components.writes).toEqual(['Transform', 'Velocity']);
     expect(collisionResolveCapability.components.consumes).toEqual([]);
   });
