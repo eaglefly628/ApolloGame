@@ -9,13 +9,14 @@ import type { RenderEnt } from './mp-world.js';
 export interface Dir {
   dx: number;
   dy: number;
+  jump?: number; // 0/1：平台跳跃用；俯视世界不带（默认 0）
 }
 
 // 对端之间交换的报文（经 BroadcastChannel / 任意 Channel 传输）。
 export type NetMsg =
   | { t: 'hello'; peer: string }
   | { t: 'bye'; peer: string }
-  | { t: 'input'; peer: string; epoch: string; tick: number; dx: number; dy: number }
+  | { t: 'input'; peer: string; epoch: string; tick: number; dx: number; dy: number; jump?: number }
   | { t: 'hash'; peer: string; epoch: string; tick: number; hash: string };
 
 // 传输抽象：浏览器里用 BroadcastChannel，测试里用内存 mock。
@@ -44,6 +45,9 @@ export interface LockstepOptions {
   now?: () => number;
   tickRate?: number;
   inputDelay?: number;
+  // 世界构建器（注入 → 同一套 lockstep 既能跑俯视 mp-world，也能跑平台世界）。
+  // 入参为按 slot 排好的 playerId 列表；缺省构建 mp-world。所有对端必须构建顺序一致 → 同哈希。
+  buildWorld?: (playerIds: string[]) => World;
 }
 
 const HEARTBEAT_MS = 250;
@@ -63,6 +67,7 @@ export class LockstepClient {
   private readonly peerId: string;
   private readonly channel: Channel;
   private readonly getInput: () => Dir;
+  private readonly buildWorld: (playerIds: string[]) => World;
   private readonly now: () => number;
   private readonly inputDelay: number;
   private readonly clock: FixedStepClock;
@@ -84,6 +89,7 @@ export class LockstepClient {
     this.peerId = opts.peerId;
     this.channel = opts.channel;
     this.getInput = opts.getInput;
+    this.buildWorld = opts.buildWorld ?? defaultBuildWorld;
     this.now = opts.now ?? (() => (typeof performance !== 'undefined' ? performance.now() : Date.now()));
     this.inputDelay = Math.max(1, opts.inputDelay ?? 4);
     this.clock = new FixedStepClock(opts.tickRate ?? 30, { maxSteps: 8 });
@@ -138,6 +144,11 @@ export class LockstepClient {
     this.channel.close();
   }
 
+  // 当前确定性世界（只读，供渲染后端 sync）。
+  getWorld(): World {
+    return this.world;
+  }
+
   // ── 成员管理（心跳发现 + 超时剔除；成员串变化即重建 epoch）──
   private recomputeEpoch(): void {
     const t = this.now();
@@ -154,8 +165,7 @@ export class LockstepClient {
     this.epoch = key;
     this.membership = members;
     this.slotOf = new Map(members.map((id, i) => [id, i]));
-    this.world = buildMpWorld();
-    members.forEach((id, i) => addPlayer(this.world, i, playerIdForSlot(i)));
+    this.world = this.buildWorld(members.map((_, i) => playerIdForSlot(i)));
     this.simTick = 0;
     this.committedInputTick = this.inputDelay; // 前 inputDelay 个 tick 视为零输入热身
     if (!this.inputs.has(key)) this.inputs.set(key, new Map());
@@ -175,7 +185,7 @@ export class LockstepClient {
         this.recomputeEpoch();
         break;
       case 'input':
-        if (m.epoch === this.epoch) this.recordInput(m.epoch, m.tick, m.peer, { dx: m.dx, dy: m.dy });
+        if (m.epoch === this.epoch) this.recordInput(m.epoch, m.tick, m.peer, { dx: m.dx, dy: m.dy, jump: m.jump ?? 0 });
         break;
       case 'hash':
         if (m.epoch === this.epoch) this.peerHashAt.set(m.tick, m.hash);
@@ -197,6 +207,7 @@ export class LockstepClient {
         tick: this.committedInputTick,
         dx: inp.dx,
         dy: inp.dy,
+        jump: inp.jump ?? 0,
       });
     }
   }
@@ -216,7 +227,7 @@ export class LockstepClient {
   }
 
   private inputFor(tick: number, peer: string): Dir | undefined {
-    if (tick <= this.inputDelay) return { dx: 0, dy: 0 }; // 热身：全员零输入
+    if (tick <= this.inputDelay) return { dx: 0, dy: 0, jump: 0 }; // 热身：全员零输入
     return this.inputs.get(this.epoch)?.get(tick)?.get(peer);
   }
 
@@ -228,7 +239,7 @@ export class LockstepClient {
     const cmds: Command[] = [];
     for (const peer of this.membership) {
       const inp = this.inputFor(tick, peer)!;
-      cmds.push({ playerId: playerIdForSlot(this.slotOf.get(peer)!), tick, move: { dx: inp.dx, dy: inp.dy } });
+      cmds.push({ playerId: playerIdForSlot(this.slotOf.get(peer)!), tick, move: { dx: inp.dx, dy: inp.dy }, jump: inp.jump === 1 });
     }
     applyCommands(this.world, cmds);
     this.world.tick();
@@ -245,4 +256,11 @@ export class LockstepClient {
 
 function playerIdForSlot(slot: number): string {
   return `p${slot + 1}`;
+}
+
+// 缺省世界：俯视 mp-world + 每个 slot 一个玩家（保持原 lockstep 行为，向后兼容）。
+function defaultBuildWorld(playerIds: string[]): World {
+  const w = buildMpWorld();
+  playerIds.forEach((pid, i) => addPlayer(w, i, pid));
+  return w;
 }

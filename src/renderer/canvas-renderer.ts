@@ -53,6 +53,15 @@ export class CanvasRenderer implements RendererBackend {
         const w = r.shape.width ?? 8;
         const h = r.shape.height ?? 8;
         ctx.fillRect(-w / 2, -h / 2, w, h);
+      } else if (r.shape?.kind === 'polygon') {
+        const v = r.shape.vertices ?? [];
+        if (v.length >= 6) {
+          ctx.beginPath();
+          ctx.moveTo(v[0], v[1]);
+          for (let i = 2; i + 1 < v.length; i += 2) ctx.lineTo(v[i], v[i + 1]);
+          ctx.closePath();
+          ctx.fill();
+        }
       } else if (r.sprite) {
         ctx.fillRect(-8, -8, 16, 16); // 占位方块
       }
