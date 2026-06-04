@@ -55,11 +55,12 @@ describe('Game A v0.1 — 双人平台跳跃核心闭环', () => {
     expect(VY(w, 'playerA')).toBeGreaterThan(-JUMP_SPEED);
   });
 
-  it('命令按 playerId 路由：只给 A 命令时 B 水平不动', () => {
+  it('命令按 playerId 路由：只给 A 命令（向左离开）时 B 水平不动', () => {
     const w = loadGameA();
     for (let i = 0; i < 80; i++) step(w, []);
     const bx = X(w, 'playerB');
-    for (let i = 0; i < 10; i++) step(w, [move(PLAYER_A, 1)]);
+    // A 向左离开 B（两人出生相邻，避免物理推挤干扰"路由"判定）：B 无命令 → vx 归零 → 水平不动
+    for (let i = 0; i < 10; i++) step(w, [move(PLAYER_A, -1)]);
     expect(X(w, 'playerB')).toBe(bx);
   });
 

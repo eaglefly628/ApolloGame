@@ -15,6 +15,7 @@ import {
   boundsClampCapability,
 } from '@skills/tier2/index.js';
 import type { Box, Level, Spawn } from './level.js';
+import { makeCoopGoalCapability, COOP_ENTITY, COOP_CLEAR_FLAG } from './coop-goal.js';
 
 // ═══════════════════════════════════════════════════════════════
 //  Game A v0.1 蓝图 —— 双人协作平台跳跃（核心闭环验证）
@@ -73,14 +74,23 @@ function player(spawn: Spawn, playerId: string, tint: number, level: Level): Ent
   };
 }
 
-// 构建顺序固定（地面 → 平台 → 玩家）→ 相同实体迭代序 → 确定性哈希一致（lockstep 安全）。
+// 玩家实体 id（游戏层规则 / 测试引用；区别于 Controllable.playerId 'A'/'B'）。
+export const PLAYER_A_ENTITY = 'playerA';
+export const PLAYER_B_ENTITY = 'playerB';
+
+// 构建顺序固定（地面 → 平台 → 玩家 → 协作状态）→ 相同实体迭代序 → 确定性哈希一致（lockstep 安全）。
 export function buildGameABlueprint(level: Level): WorldBlueprint {
   const entities: Record<string, EntityBlueprint> = {};
   entities.ground = staticBox(level.ground, GROUND_TINT);
   level.platforms.forEach((p, i) => {
     entities[`platform${i}`] = staticBox(p, PLATFORM_TINT);
   });
-  entities.playerA = player(level.spawnA, PLAYER_A, COLOR_A, level);
-  entities.playerB = player(level.spawnB, PLAYER_B, COLOR_B, level);
-  return { capabilities: GAME_A_CAPABILITIES, entities };
+  entities[PLAYER_A_ENTITY] = player(level.spawnA, PLAYER_A, COLOR_A, level);
+  entities[PLAYER_B_ENTITY] = player(level.spawnB, PLAYER_B, COLOR_B, level);
+  // 协作通关状态实体（coop-goal 规则写它的 Flag）。
+  entities[COOP_ENTITY] = { Flag: { id: COOP_CLEAR_FLAG, active: false } };
+  return {
+    capabilities: [...GAME_A_CAPABILITIES, makeCoopGoalCapability(level.goal, [PLAYER_A_ENTITY, PLAYER_B_ENTITY])],
+    entities,
+  };
 }

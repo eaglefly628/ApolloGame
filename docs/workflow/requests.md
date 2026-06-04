@@ -224,6 +224,26 @@
 
 ---
 
+### [2026-06-04] · PA · Game A · status: open · REQ-002 sensor / 非实心触发体（trigger-zone 与 collision-resolve 抢同一份 Overlap）
+
+- **想实现的游戏行为**：合作机关第一类——A 踩开关/压力板 → 发触发事件（开门、激活）。这是《双人成行》入门核心（踩开关 / 限时门 / 重量台）。
+- **已经试了什么**：按 `trigger-zone` 文档，开关 = `Tag(ZONE_FLAG)` + `Shape` + `Transform`；玩家重叠 → `overlap-detect` 出 `Overlap` → `trigger-zone` 发 `Trigger{zone,other}`。
+- **卡在哪 / 缺什么**：`collision-resolve`（`src/skills/tier2/collision-resolve.ts`）读**所有** `Overlap` 对当实体碰撞解算（只看 Transform/Shape/Velocity/Mass，`invA+invB>0` 即推开），**完全不排除 trigger zone**。后果：开关同时是一堵实心墙——玩家走进去被弹开（站不进区域）；站顶上则被解算到"恰好不重叠"→ 不产 `Overlap` → `trigger-zone` 不触发。`trigger-zone`（要重叠）与 `collision-resolve`（消重叠）抢同一份 `Overlap`，**语义互斥，缺 sensor（非实心碰撞体）概念**。
+- **建议方案**：`collision-resolve` 跳过"任一方是 trigger zone（`Tag.flags & ZONE_FLAG`）"的接触对——只让 `overlap-detect`/`trigger-zone` 消费、不做物理解算。最小改动、复用现有 `ZONE_FLAG` 约定；或更通用引入 `Sensor` 标记 / `Collider{ solid:boolean }`。确定性不受影响（只是少解算一对）。
+- **阻塞**：踩开关 / 限时门 / 重量台（第一批合作机制**全部**）。我**未 hack 绕过**——雏形里开关相关机制暂缺，等本需求落地。
+
+---
+
+### [2026-06-04] · PA · Game A · status: open · REQ-003 ground-sense 支持"站在动态支撑上"（踩搭档/踩箱无法起跳）
+
+- **想实现的游戏行为**：能力差异核心——B 举 A / A 踩在 B 头上 / A 踩 B 推来的箱子 → 再跳上更高平台。
+- **已经试了什么**：让 A 落在 B（动态）或 box（动态 + Mass）上。叠放本身稳（Lead 已让 `collision-resolve` 把"Grounded 的动态体当静态支撑"，堆叠不挤穿）。
+- **卡在哪 / 缺什么**：`ground-sense`（`src/skills/tier2/ground-sense.ts`）只在"对方**无 Velocity**（静态）"时标 `Grounded`（`aDyn && !bDyn` / `bDyn && !aDyn`）。站在**动态**搭档/箱子上时双方都 dynamic → **不标 Grounded** → `jump` 系统（要 `Grounded`）不触发 → **跳不起来**。collision 已认它是支撑、ground-sense 却不认 —— 两者对"什么算落地"的判定不一致。
+- **建议方案**：`ground-sense` 在"脚下动态体本帧也 `Grounded`（或属静态支撑链）"时，也给上方实体标 `Grounded`——与 `collision-resolve` 已有的"Grounded 动态当静态支撑"对齐。按确定序求值支撑链以保 lockstep。
+- **阻塞**：踩搭档垫高 / 推箱垫脚（能力差异批）。同样**未 hack**——雏形不含这类机制，等落地。
+
+---
+
 ## 需求模板（复制这段填写）
 
 ```
