@@ -6,3 +6,5 @@ export { jumpCapability, JUMP_SPEED } from './jump.js';
 export { boundsClampCapability } from './bounds-clamp.js';
 export { triggerZoneCapability, ZONE_FLAG } from './trigger-zone.js';
 export { frictionCapability } from './friction.js';
+export { eventWhenCapability } from './event-when.js';
+export { evaluateCondition } from './condition.js';
