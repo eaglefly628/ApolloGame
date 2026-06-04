@@ -1,15 +1,5 @@
 import { defineCapability } from '@engine/core/define-capability.js';
-import type { IWorld } from '@engine/core/types.js';
 import type { Resource, ResourceModify } from '@engine/protocol/components.js';
-
-// 全局按语义 id 查找资源（与 Condition 求值的读侧对称）。返回第一个匹配，假定 id 全局唯一。
-function findResourceById(world: IWorld, id: string): Resource | undefined {
-  for (const [e] of world.query('Resource')) {
-    const r = world.getComponent<Resource>(e, 'Resource');
-    if (r && r.id === id) return r;
-  }
-  return undefined;
-}
 
 export const resourceCapability = defineCapability({
   id: 'f1-resource',
@@ -93,18 +83,32 @@ export const resourceCapability = defineCapability({
       writes: ['Resource'],
       consumes: ['ResourceModify'],
       execute(world) {
-        // 处理所有 ResourceModify（无论挂在哪个实体）：
-        //   1) 同实体且 id 匹配 → 按实体定位（多角色同名资源各改各的；向后兼容）。
-        //   2) 否则全局按 id 路由（R11）：找第一个 id 匹配的 Resource，无论它挂在哪——
-        //      游戏层"给 affection_S +5"不必先知道它住哪个实体。
+        // 处理所有 ResourceModify（无论挂在哪个实体）。scope 决定寻址（Gemini Q4 防遮蔽）：
+        //   'local'  仅同实体；'global' 强制按 id 全局；缺省 auto=同实体匹配优先，否则全局（R11）。
+        // 全局查找用一次性构建的 id→Resource 索引，O(1)（Reviewer #3）。
         // consume 在本系统跑完后删全表，故必须在这一个系统里把所有 ResourceModify 处理完。
+        let index: Map<string, Resource> | null = null;
+        const globalFind = (id: string): Resource | undefined => {
+          if (!index) {
+            index = new Map();
+            for (const [e] of world.query('Resource')) {
+              const r = world.getComponent<Resource>(e, 'Resource');
+              if (r && !index.has(r.id)) index.set(r.id, r);
+            }
+          }
+          return index.get(id);
+        };
+
         for (const [entityId] of world.query('ResourceModify')) {
           const modify = world.getComponent<ResourceModify>(entityId, 'ResourceModify');
           if (!modify) continue;
-          let resource = world.getComponent<Resource>(entityId, 'Resource');
-          if (!resource || resource.id !== modify.resourceId) {
-            resource = findResourceById(world, modify.resourceId);
+          const scope = modify.scope ?? 'auto';
+          let resource: Resource | undefined;
+          if (scope !== 'global') {
+            const local = world.getComponent<Resource>(entityId, 'Resource');
+            if (local && local.id === modify.resourceId) resource = local;
           }
+          if (!resource && scope !== 'local') resource = globalFind(modify.resourceId);
           if (!resource) continue;
           const next = resource.current + modify.amount;
           resource.current = next < resource.min ? resource.min : next > resource.max ? resource.max : next;

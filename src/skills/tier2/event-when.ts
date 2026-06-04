@@ -1,6 +1,6 @@
 import { defineCapability } from '@engine/core/define-capability.js';
 import type { EventWhen, Signal } from '@engine/protocol/components.js';
-import { evaluateCondition } from './condition.js';
+import { evaluateCondition, buildConditionLookup } from './condition.js';
 
 // event-when —— B 轴逻辑枢纽的最简版：「条件成立 → 发信号」。
 //
@@ -42,7 +42,7 @@ export const eventWhenCapability = defineCapability({
       },
       Signal: {
         category: 'event',
-        describe: '某 EventWhen 这帧触发了。每帧先清后标，挂在 signal:<eid> 实体上，下游 query Signal 消费。',
+        describe: '某 EventWhen 这帧触发了。每帧先清后标，直接挂在该 EventWhen 实体上，下游 query Signal 消费。',
         fields: {
           name: { type: 'string', describe: '信号名（= EventWhen.signal）' },
           source: { type: 'EntityId', describe: '发出信号的 EventWhen 实体 id' },
@@ -63,12 +63,16 @@ export const eventWhenCapability = defineCapability({
       writes: ['Signal'],
       consumes: [],
       execute(world) {
-        // 每帧重算：先清掉上一帧所有 Signal 实体。
-        for (const [sid] of world.query('Signal')) world.destroyEntity(sid);
+        // 每帧重算：先清掉上一帧的 Signal（直接挂在 EventWhen 实体上，removeComponent 即可，
+        // 不销毁/重建实体 → 规避 V8 内存碎片与 GC 停顿，Reviewer #4）。
+        for (const [sid] of world.query('Signal')) world.removeComponent(sid, 'Signal');
+
+        // 本帧按 id 建一次索引，供所有条件求值 O(1) 复用（Reviewer #3）。
+        const lookup = buildConditionLookup(world);
 
         for (const [eid] of world.query('EventWhen')) {
           const ew = world.getComponent<EventWhen>(eid, 'EventWhen')!;
-          const now = evaluateCondition(world, ew.when);
+          const now = evaluateCondition(world, ew.when, lookup);
 
           let fire = false;
           if (ew.mode === 'level') {
@@ -83,10 +87,9 @@ export const eventWhenCapability = defineCapability({
             }
           }
 
+          // 信号直接挂在本 EventWhen 实体上（Signal 逻辑从属于它），下游照样 query('Signal') 消费。
           if (fire) {
-            const sid = `signal:${eid}`;
-            world.createEntity(sid);
-            world.addComponent(sid, { type: 'Signal', name: ew.signal, source: eid } as Signal);
+            world.addComponent(eid, { type: 'Signal', name: ew.signal, source: eid } as Signal);
           }
         }
       },

@@ -1,51 +1,47 @@
-import type { IWorld } from '@engine/core/types.js';
+import type { IWorld, Component } from '@engine/core/types.js';
 import type { ConditionExpr, CmpOp, Resource, Flag, State, Timer, StringVar } from '@engine/protocol/components.js';
 
 // Condition —— 布尔条件树的确定性求值（纯函数，无副作用）。
 //
-// 叶子按「语义 id」在世界里全局查找（Resource.id / Flag.id / State.fsmId），与实体插入顺序无关。
+// 叶子按「语义 id」全局查找（Resource.id / Flag.id / State.fsmId / Timer.id / StringVar.id）。
 // 只做确定性比较（数 / bool / 字符串相等），不碰浮点超越函数 → lockstep / 录放安全。
-// 这是 B 轴的逻辑底座：threshold（resource ≥ N）、状态判定（state == X）、机关门控（flagA ∧ flagB）
-// 都是它的特例；event-when 用它把「条件 → 信号」串起来，Effect 后续再接。
+// 这是 B 轴逻辑底座：threshold/状态判定/定时门控/机关门控都是它的特例。
+//
+// 性能（Reviewer #3）：叶子查找若每次全表扫描是 O(N)；改为**每帧构建一次按 id 的索引**
+// （ConditionLookup，按类型懒加载 + memo），把 N 次全扫降为 O(1) 哈希查。
+// event-when 每 execute 只 buildConditionLookup 一次，传给所有 evaluateCondition 复用。
 
-function findResource(world: IWorld, id: string): Resource | undefined {
-  for (const [e] of world.query('Resource')) {
-    const r = world.getComponent<Resource>(e, 'Resource');
-    if (r && r.id === id) return r;
-  }
-  return undefined;
+export interface ConditionLookup {
+  resource(id: string): Resource | undefined;
+  flag(id: string): Flag | undefined;
+  state(fsmId: string): State | undefined;
+  timer(id: string): Timer | undefined;
+  string(id: string): StringVar | undefined;
 }
 
-function findFlag(world: IWorld, id: string): Flag | undefined {
-  for (const [e] of world.query('Flag')) {
-    const f = world.getComponent<Flag>(e, 'Flag');
-    if (f && f.id === id) return f;
+/** 按 id 建索引（懒加载、按类型 memo）。同 id 多份时取第一份（假定全局唯一）。 */
+export function buildConditionLookup(world: IWorld): ConditionLookup {
+  const tables = new Map<string, Map<string, Component>>();
+  function table(type: string, idField: string): Map<string, Component> {
+    let m = tables.get(type);
+    if (!m) {
+      m = new Map();
+      for (const [e] of world.query(type)) {
+        const c = world.getComponent(e, type) as (Component & Record<string, unknown>) | undefined;
+        const key = c?.[idField];
+        if (c && typeof key === 'string' && !m.has(key)) m.set(key, c);
+      }
+      tables.set(type, m);
+    }
+    return m;
   }
-  return undefined;
-}
-
-function findState(world: IWorld, fsmId: string): State | undefined {
-  for (const [e] of world.query('State')) {
-    const s = world.getComponent<State>(e, 'State');
-    if (s && s.fsmId === fsmId) return s;
-  }
-  return undefined;
-}
-
-function findTimer(world: IWorld, id: string): Timer | undefined {
-  for (const [e] of world.query('Timer')) {
-    const t = world.getComponent<Timer>(e, 'Timer');
-    if (t && t.id === id) return t;
-  }
-  return undefined;
-}
-
-function findStringVar(world: IWorld, id: string): StringVar | undefined {
-  for (const [e] of world.query('StringVar')) {
-    const s = world.getComponent<StringVar>(e, 'StringVar');
-    if (s && s.id === id) return s;
-  }
-  return undefined;
+  return {
+    resource: (id) => table('Resource', 'id').get(id) as Resource | undefined,
+    flag: (id) => table('Flag', 'id').get(id) as Flag | undefined,
+    state: (fsmId) => table('State', 'fsmId').get(fsmId) as State | undefined,
+    timer: (id) => table('Timer', 'id').get(id) as Timer | undefined,
+    string: (id) => table('StringVar', 'id').get(id) as StringVar | undefined,
+  };
 }
 
 function compare(a: number, op: CmpOp, b: number): boolean {
@@ -65,34 +61,41 @@ function compare(a: number, op: CmpOp, b: number): boolean {
   }
 }
 
-/** 求值一棵条件树。缺失的叶子（找不到对应 id）按「不成立」处理。 */
-export function evaluateCondition(world: IWorld, expr: ConditionExpr): boolean {
+/**
+ * 求值一棵条件树。缺失叶子（找不到对应 id）按「不成立」处理。
+ * 可传入 lookup 复用（同一 tick 多次求值只建一次索引）；不传则内部建一次。
+ */
+export function evaluateCondition(
+  world: IWorld,
+  expr: ConditionExpr,
+  lookup: ConditionLookup = buildConditionLookup(world),
+): boolean {
   switch (expr.kind) {
     case 'and':
-      return expr.of.every((e) => evaluateCondition(world, e));
+      return expr.of.every((e) => evaluateCondition(world, e, lookup));
     case 'or':
-      return expr.of.some((e) => evaluateCondition(world, e));
+      return expr.of.some((e) => evaluateCondition(world, e, lookup));
     case 'not':
-      return !evaluateCondition(world, expr.of);
+      return !evaluateCondition(world, expr.of, lookup);
     case 'resource': {
-      const r = findResource(world, expr.id);
+      const r = lookup.resource(expr.id);
       return r ? compare(r.current, expr.cmp, expr.value) : false;
     }
     case 'flag': {
-      const f = findFlag(world, expr.id);
+      const f = lookup.flag(expr.id);
       const want = expr.equals ?? true;
       return (f?.active ?? false) === want;
     }
     case 'state': {
-      const s = findState(world, expr.fsmId);
+      const s = lookup.state(expr.fsmId);
       return s ? s.current === expr.equals : false;
     }
     case 'timer': {
-      const t = findTimer(world, expr.id);
+      const t = lookup.timer(expr.id);
       return t ? compare(t.elapsed, expr.cmp, expr.value) : false;
     }
     case 'string': {
-      const s = findStringVar(world, expr.id);
+      const s = lookup.string(expr.id);
       return s ? s.value === expr.equals : false;
     }
   }

@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import { World } from '@engine/core/world.js';
-import type { Tween, Color, Transform, Resource } from '@engine/protocol/components.js';
+import type { Tween, Color, Transform } from '@engine/protocol/components.js';
 import { tweenCapability } from './tween.js';
 
 function worldWithTween(): World {
@@ -19,10 +19,10 @@ function addTween(w: World, eid: string, t: Partial<Tween> & Pick<Tween, 'target
 }
 
 describe('T1 tween — metadata', () => {
-  it('id / 读 Tween / 写 Transform+Color+Resource', () => {
+  it('id / 读 Tween / 只写 Transform+Color（逻辑数值不走 tween，Gemini Q6）', () => {
     expect(tweenCapability.id).toBe('t1-tween');
     expect(tweenCapability.components.reads).toEqual(['Tween']);
-    expect(tweenCapability.components.writes).toEqual(['Transform', 'Color', 'Resource']);
+    expect(tweenCapability.components.writes).toEqual(['Transform', 'Color']);
   });
 });
 
@@ -41,18 +41,20 @@ describe('T1 tween — 线性插值与收尾', () => {
     w.tick();
     w.tick();
     expect(alpha()).toBeCloseTo(1);
-    expect(w.getComponent<Tween>('portrait', 'Tween')!.done).toBe(true);
+    // 完成即移除 Tween（防僵尸空赋值，Reviewer #2）。
+    expect(w.hasComponent('portrait', 'Tween')).toBe(false);
   });
 
-  it('done 后锁定终值（幂等，不越过 to）', () => {
+  it('完成后 Tween 被移除，终值精确锁定且后续 tick 不再变', () => {
     const w = worldWithTween();
     w.createEntity('p');
     w.addComponent('p', { type: 'Color', tint: 0, alpha: 0 } as Color);
     addTween(w, 'p', { target: 'Color.alpha', from: 0, to: 1, duration: 2, easing: 'linear' });
     w.tick();
-    w.tick(); // 到点 done
-    w.tick(); // 额外 tick
-    w.tick();
+    w.tick(); // 到点：写终值 + 移除
+    expect(w.hasComponent('p', 'Tween')).toBe(false);
+    expect(w.getComponent<Color>('p', 'Color')!.alpha).toBeCloseTo(1);
+    w.tick(); // 无 Tween，不再变
     expect(w.getComponent<Color>('p', 'Color')!.alpha).toBeCloseTo(1);
   });
 
@@ -86,13 +88,3 @@ describe('T1 tween — 缓动曲线', () => {
   });
 });
 
-describe('T1 tween — Resource.current 尊重上下限', () => {
-  it('插值越过 max 时被钳到 max', () => {
-    const w = worldWithTween();
-    w.createEntity('stat');
-    w.addComponent('stat', { type: 'Resource', id: 'charm', current: 90, min: 0, max: 100 } as Resource);
-    addTween(w, 'stat', { target: 'Resource.current', from: 90, to: 200, duration: 1, easing: 'linear' });
-    w.tick(); // value=200 → 钳到 100
-    expect(w.getComponent<Resource>('stat', 'Resource')!.current).toBe(100);
-  });
-});

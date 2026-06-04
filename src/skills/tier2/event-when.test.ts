@@ -23,7 +23,7 @@ function eventWhen(w: World, eid: string, signal: string, when: ConditionExpr, m
   w.addComponent(eid, { type: 'EventWhen', signal, when, mode, armed: false } as EventWhen);
 }
 function signalName(w: World, eid: string): string | undefined {
-  return w.getComponent<Signal>(`signal:${eid}`, 'Signal')?.name;
+  return w.getComponent<Signal>(eid, 'Signal')?.name;
 }
 
 describe('T2 event-when — metadata', () => {
@@ -49,7 +49,7 @@ describe('T2 event-when — level 模式', () => {
 
     flag(w, 'p2', false); // 一人离台
     w.tick();
-    expect(w.hasComponent('signal:plate', 'Signal')).toBe(false);
+    expect(w.hasComponent('plate', 'Signal')).toBe(false);
   });
 });
 
@@ -60,7 +60,7 @@ describe('T2 event-when — edge 模式（迟滞）', () => {
     eventWhen(w, 'love', 'S_love_60', { kind: 'resource', id: 'affection_S', cmp: 'gte', value: 60 }, 'edge');
 
     w.tick(); // 40 < 60 → 不发
-    expect(w.hasComponent('signal:love', 'Signal')).toBe(false);
+    expect(w.hasComponent('love', 'Signal')).toBe(false);
 
     res(w, 'affection_S', 65); // 越线
     w.tick(); // 上升沿 → 发一次
@@ -68,11 +68,11 @@ describe('T2 event-when — edge 模式（迟滞）', () => {
 
     res(w, 'affection_S', 70); // 仍 ≥60
     w.tick(); // 已 armed → 不重复发
-    expect(w.hasComponent('signal:love', 'Signal')).toBe(false);
+    expect(w.hasComponent('love', 'Signal')).toBe(false);
 
     res(w, 'affection_S', 55); // 回落 → 复位
     w.tick();
-    expect(w.hasComponent('signal:love', 'Signal')).toBe(false);
+    expect(w.hasComponent('love', 'Signal')).toBe(false);
 
     res(w, 'affection_S', 80); // 再次越线
     w.tick(); // 再发
@@ -100,12 +100,12 @@ describe('T2 event-when — 每帧先清后标 + 多触发器独立', () => {
 
     w.tick();
     expect(signalName(w, 'ew_a')).toBe('sig_a');
-    expect(w.hasComponent('signal:ew_b', 'Signal')).toBe(false);
+    expect(w.hasComponent('ew_b', 'Signal')).toBe(false);
 
     flag(w, 'a', false);
     flag(w, 'b', true);
     w.tick();
-    expect(w.hasComponent('signal:ew_a', 'Signal')).toBe(false); // 上帧信号被清
+    expect(w.hasComponent('ew_a', 'Signal')).toBe(false); // 上帧信号被清
     expect(signalName(w, 'ew_b')).toBe('sig_b');
   });
 });

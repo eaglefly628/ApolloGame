@@ -58,6 +58,16 @@ describe('T2 effect-apply — 三种效果（信号在场才施加，按 id 全�
     expect(w.getComponent<State>('gs', 'State')!.current).toBe('door_open');
   });
 
+  it('set-flag 值为字符串 "false" → 关掉(防 Boolean("false")===true 陷阱, Reviewer Bug1)', () => {
+    const w = worldWithEffect();
+    w.createEntity('gs');
+    w.addComponent('gs', { type: 'Flag', id: 'door', active: true } as Flag);
+    effect(w, 'ef', { onSignal: 'close', kind: 'set-flag', targetId: 'door', value: 'false' });
+    signal(w, 'close');
+    w.tick();
+    expect(w.getComponent<Flag>('gs', 'Flag')!.active).toBe(false);
+  });
+
   it('信号不在场 → 不施加', () => {
     const w = worldWithEffect();
     w.createEntity('gs');

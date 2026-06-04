@@ -46,6 +46,9 @@ export interface ResourceModify extends Component {
   readonly type: 'ResourceModify';
   resourceId: string;
   amount: number;
+  // 寻址作用域（防"变量遮蔽"，Gemini Q4）：'local'=仅同实体；'global'=强制按 id 全局路由（不被同名局部资源静默抢走）；
+  // 缺省=auto（同实体匹配优先，否则全局）。改全局态时显式写 'global' 更稳。
+  scope?: 'local' | 'global';
 }
 
 // ── F2 flag ── 某个条件开还是关
@@ -317,15 +320,16 @@ export interface Signal extends Component {
 }
 
 // ── tween ── 数值随时间朝目标缓动（B 轴"连续"柱）。定步长：elapsed 每帧 +1，单位=tick。
-// 只驱动高价值字段（避开泛型字段寻址）；缓动用多项式（不碰 sin/cos，确定性）。
+// 缓动用多项式（不碰 sin/cos）。**只驱动不被 Condition 读的"表现/软逻辑"字段**（Transform/Color）：
+// 浮点插值与现有物理同属 IEEE +/-/* 确定性类，但绝不喂给 Condition 比较的逻辑数值（如 Resource.current），
+// 以免跨端 1 ULP 差异造成阈值触发帧错位（Gemini Q6）。逻辑数值渐变请用整数分步（timer + ResourceModify）。
 export type TweenTarget =
   | 'Transform.x'
   | 'Transform.y'
   | 'Transform.rotation'
   | 'Transform.scaleX'
   | 'Transform.scaleY'
-  | 'Color.alpha'
-  | 'Resource.current';
+  | 'Color.alpha';
 
 export type TweenEasing = 'linear' | 'easeIn' | 'easeOut' | 'easeInOut';
 
@@ -363,4 +367,6 @@ export interface StringSet extends Component {
   readonly type: 'StringSet';
   id: string;
   value: string;
+  // 同 ResourceModify.scope：'local'/'global'/缺省 auto。防变量遮蔽（Gemini Q4）。
+  scope?: 'local' | 'global';
 }

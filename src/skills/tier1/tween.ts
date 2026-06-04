@@ -1,16 +1,18 @@
 import { defineCapability } from '@engine/core/define-capability.js';
 import type { IWorld } from '@engine/core/types.js';
-import type { Tween, TweenEasing, Resource } from '@engine/protocol/components.js';
+import type { Tween, Transform, Color } from '@engine/protocol/components.js';
 
 // tween —— B 轴"连续"柱：数值随时间朝目标缓动。
 //
 // 定步长：每帧 elapsed += 1，t = elapsed/duration ∈ [0,1]，value = from + (to-from)*ease(t)，
 // 直接写到同实体上的目标字段。duration<=0 视为立即到 to。到点置 done=true 并锁定在 to。
-// 缓动全用多项式（不碰 sin/cos）→ 确定性、存档重放一致。只驱动高价值字段（见 TweenTarget），
-// 避开泛型字段寻址的复杂度；需要别的字段再按需扩 TweenTarget。
-// 用途：立绘淡入(Color.alpha)、好感条平滑(Resource.current)、立绘滑入/镜头缓动(Transform.x/y)。
+// 缓动全用多项式（不碰 sin/cos）。**目标限定为不被 Condition 读的表现/软逻辑字段**
+// （Transform.{x,y,rotation,scaleX,scaleY} / Color.alpha）——浮点插值与现有物理同属 IEEE 确定性类，
+// 但不喂给 Condition 比较的逻辑数值（如 Resource.current），避免跨端 1 ULP 差异造成阈值帧错位（Gemini Q6）。
+// 逻辑数值渐变请用整数分步（timer + ResourceModify）。
+// 用途：立绘淡入(Color.alpha)、立绘滑入/镜头缓动(Transform.x/y)。
 
-function ease(t: TweenEasing, x: number): number {
+function ease(t: Tween['easing'], x: number): number {
   switch (t) {
     case 'linear':
       return x;
@@ -23,18 +25,39 @@ function ease(t: TweenEasing, x: number): number {
   }
 }
 
+// 硬编码点号访问的单态写入：避免 comp[field]=value 的动态下标让 V8 放弃 JIT 内联（Reviewer #5）。
 function writeField(world: IWorld, eid: string, target: Tween['target'], value: number): void {
-  const dot = target.indexOf('.');
-  const compType = target.slice(0, dot);
-  const field = target.slice(dot + 1);
-  const comp = world.getComponent(eid, compType) as Record<string, number> | undefined;
-  if (!comp) return;
-  if (compType === 'Resource') {
-    // 尊重资源上下限，避免越界破坏 Resource 不变量。
-    const r = comp as unknown as Resource;
-    comp[field] = value < r.min ? r.min : value > r.max ? r.max : value;
-  } else {
-    comp[field] = value;
+  switch (target) {
+    case 'Transform.x': {
+      const c = world.getComponent<Transform>(eid, 'Transform');
+      if (c) c.x = value;
+      break;
+    }
+    case 'Transform.y': {
+      const c = world.getComponent<Transform>(eid, 'Transform');
+      if (c) c.y = value;
+      break;
+    }
+    case 'Transform.rotation': {
+      const c = world.getComponent<Transform>(eid, 'Transform');
+      if (c) c.rotation = value;
+      break;
+    }
+    case 'Transform.scaleX': {
+      const c = world.getComponent<Transform>(eid, 'Transform');
+      if (c) c.scaleX = value;
+      break;
+    }
+    case 'Transform.scaleY': {
+      const c = world.getComponent<Transform>(eid, 'Transform');
+      if (c) c.scaleY = value;
+      break;
+    }
+    case 'Color.alpha': {
+      const c = world.getComponent<Color>(eid, 'Color');
+      if (c) c.alpha = value;
+      break;
+    }
   }
 }
 
@@ -47,11 +70,11 @@ export const tweenCapability = defineCapability({
     summary: '数值随时间朝目标缓动：每帧推进 elapsed，按 easing 把同实体上的目标字段从 from 插到 to。',
     semantic: ['tier1', 'kinematic', 'interpolate', 'animation'],
     whenToUse:
-      '需要某个数值平滑过渡时（淡入淡出 Color.alpha、好感条 Resource.current、滑入/镜头 Transform.x/y）。挂 Tween{target,from,to,duration,easing}；定步长、确定性。',
+      '需要某个表现字段平滑过渡时（淡入淡出 Color.alpha、滑入/镜头 Transform.x/y）。挂 Tween{target,from,to,duration,easing}；定步长。注意：不驱动被 Condition 读的逻辑数值（Resource.current 等），那类用整数分步。',
     examples: [
       '立绘淡入：Tween{ target:"Color.alpha", from:0, to:1, duration:30, easing:"easeOut" }',
-      '好感条平滑到 45：Tween{ target:"Resource.current", from:30, to:45, duration:20, easing:"linear" }',
       '立绘滑入：Tween{ target:"Transform.x", from:-100, to:0, duration:24, easing:"easeInOut" }',
+      '镜头缓动：Tween{ target:"Transform.y", from:0, to:120, duration:18, easing:"easeInOut" }',
     ],
   },
 
@@ -61,7 +84,7 @@ export const tweenCapability = defineCapability({
         category: 'config',
         describe: '一段缓动：把同实体上的 target 字段在 duration 个 tick 内从 from 插值到 to。',
         fields: {
-          target: { type: 'string', describe: '目标字段（Transform.x/y/rotation/scaleX/scaleY、Color.alpha、Resource.current）' },
+          target: { type: 'string', describe: '目标字段（Transform.x/y/rotation/scaleX/scaleY、Color.alpha）' },
           from: { type: 'number', describe: '起始值' },
           to: { type: 'number', describe: '目标值' },
           elapsed: { type: 'number', describe: '已过 tick 数（初始 0，每帧 +1）' },
@@ -72,7 +95,7 @@ export const tweenCapability = defineCapability({
       },
     },
     reads: ['Tween'],
-    writes: ['Transform', 'Color', 'Resource'],
+    writes: ['Transform', 'Color'],
     consumes: [],
   },
 
@@ -82,21 +105,22 @@ export const tweenCapability = defineCapability({
     {
       id: 'tween',
       reads: ['Tween'],
-      writes: ['Transform', 'Color', 'Resource'],
+      writes: ['Transform', 'Color'],
       consumes: [],
       execute(world) {
         for (const [eid] of world.query('Tween')) {
           const tw = world.getComponent<Tween>(eid, 'Tween')!;
-          if (tw.done) {
-            writeField(world, eid, tw.target, tw.to); // 锁定终值（幂等）
-            continue;
-          }
           tw.elapsed += 1;
           const raw = tw.duration <= 0 ? 1 : tw.elapsed / tw.duration;
           const t = raw < 0 ? 0 : raw > 1 ? 1 : raw;
-          const value = tw.from + (tw.to - tw.from) * ease(tw.easing, t);
-          writeField(world, eid, tw.target, value);
-          if (tw.elapsed >= tw.duration) tw.done = true;
+          if (tw.elapsed >= tw.duration) {
+            // 完成：写精确终值并移除 Tween，避免"僵尸"每帧空赋值（Reviewer #2）。
+            writeField(world, eid, tw.target, tw.to);
+            tw.done = true;
+            world.removeComponent(eid, 'Tween');
+          } else {
+            writeField(world, eid, tw.target, tw.from + (tw.to - tw.from) * ease(tw.easing, t));
+          }
         }
       },
     },

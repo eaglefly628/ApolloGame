@@ -1,15 +1,5 @@
 import { defineCapability } from '@engine/core/define-capability.js';
-import type { IWorld } from '@engine/core/types.js';
 import type { StringVar, StringSet } from '@engine/protocol/components.js';
-
-// 全局按 id 查找字符串变量（与 resource 全局路由、Condition 读侧对称）。
-function findStringVar(world: IWorld, id: string): StringVar | undefined {
-  for (const [e] of world.query('StringVar')) {
-    const s = world.getComponent<StringVar>(e, 'StringVar');
-    if (s && s.id === id) return s;
-  }
-  return undefined;
-}
 
 // string-variable —— 命名字符串容器原子（周期表 X3）。核心 26 原子只有数值(Resource)/布尔(Flag)容器，
 // 叙事/换装/结局标识缺一个 string 容器。仿 Resource+ResourceModify+resource-apply 三件套：
@@ -81,13 +71,29 @@ export const stringVariableCapability = defineCapability({
       writes: ['StringVar'],
       consumes: ['StringSet'],
       execute(world) {
+        // scope: 'local'/'global'/缺省 auto（同实体优先→全局）。全局查找用一次性 id 索引，O(1)。
+        let index: Map<string, StringVar> | null = null;
+        const globalFind = (id: string): StringVar | undefined => {
+          if (!index) {
+            index = new Map();
+            for (const [e] of world.query('StringVar')) {
+              const s = world.getComponent<StringVar>(e, 'StringVar');
+              if (s && !index.has(s.id)) index.set(s.id, s);
+            }
+          }
+          return index.get(id);
+        };
+
         for (const [entityId] of world.query('StringSet')) {
           const set = world.getComponent<StringSet>(entityId, 'StringSet');
           if (!set) continue;
-          let target = world.getComponent<StringVar>(entityId, 'StringVar');
-          if (!target || target.id !== set.id) {
-            target = findStringVar(world, set.id);
+          const scope = set.scope ?? 'auto';
+          let target: StringVar | undefined;
+          if (scope !== 'global') {
+            const local = world.getComponent<StringVar>(entityId, 'StringVar');
+            if (local && local.id === set.id) target = local;
           }
+          if (!target && scope !== 'local') target = globalFind(set.id);
           if (!target) continue;
           target.value = set.value;
         }

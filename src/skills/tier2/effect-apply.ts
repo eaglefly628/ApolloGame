@@ -1,7 +1,7 @@
 import { defineCapability } from '@engine/core/define-capability.js';
 import { SystemPhase } from '@engine/core/types.js';
-import type { IWorld } from '@engine/core/types.js';
-import type { Effect, Signal, Flag, Resource, State } from '@engine/protocol/components.js';
+import type { Effect, Signal } from '@engine/protocol/components.js';
+import { buildConditionLookup } from './condition.js';
 
 // effect-apply —— Condition→Event→**Effect** 的 Effect 侧（链的合龙石）。
 //
@@ -14,28 +14,7 @@ import type { Effect, Signal, Flag, Resource, State } from '@engine/protocol/com
 // 定序，且 effect 对 Flag/State/Resource 的写入由**下一 tick** 的条件读到（标准离散反馈，一拍延迟）。
 // "信号 → 置 flag → 下帧条件读 flag → 再触发" 即让多步机制（连锁/开关→门）纯配置涌现。
 // 确定性：只读/写确定状态、按 id 定位（与 Condition 读侧、resource 写侧对称），不碰浮点超越函数。
-
-function findFlag(world: IWorld, id: string): Flag | undefined {
-  for (const [e] of world.query('Flag')) {
-    const f = world.getComponent<Flag>(e, 'Flag');
-    if (f && f.id === id) return f;
-  }
-  return undefined;
-}
-function findResource(world: IWorld, id: string): Resource | undefined {
-  for (const [e] of world.query('Resource')) {
-    const r = world.getComponent<Resource>(e, 'Resource');
-    if (r && r.id === id) return r;
-  }
-  return undefined;
-}
-function findState(world: IWorld, fsmId: string): State | undefined {
-  for (const [e] of world.query('State')) {
-    const s = world.getComponent<State>(e, 'State');
-    if (s && s.fsmId === fsmId) return s;
-  }
-  return undefined;
-}
+// 查找复用 buildConditionLookup 的按 id 索引（O(1)，Reviewer #3）。
 
 export const effectApplyCapability = defineCapability({
   id: 't2-effect-apply',
@@ -90,18 +69,21 @@ export const effectApplyCapability = defineCapability({
         }
         if (signals.size === 0) return;
 
+        const lookup = buildConditionLookup(world);
+
         for (const [eid] of world.query('Effect')) {
           const ef = world.getComponent<Effect>(eid, 'Effect');
           if (!ef || !signals.has(ef.onSignal)) continue;
 
           switch (ef.kind) {
             case 'set-flag': {
-              const f = findFlag(world, ef.targetId);
-              if (f) f.active = Boolean(ef.value);
+              const f = lookup.flag(ef.targetId);
+              // 显式布尔/字符串判定，避免 Boolean("false")===true 的 JS 陷阱（Reviewer Bug1）。
+              if (f) f.active = ef.value === true || ef.value === 'true';
               break;
             }
             case 'modify-resource': {
-              const r = findResource(world, ef.targetId);
+              const r = lookup.resource(ef.targetId);
               if (r) {
                 const next = r.current + Number(ef.value);
                 r.current = next < r.min ? r.min : next > r.max ? r.max : next;
@@ -109,7 +91,7 @@ export const effectApplyCapability = defineCapability({
               break;
             }
             case 'set-state': {
-              const st = findState(world, ef.targetId);
+              const st = lookup.state(ef.targetId);
               if (st) st.current = String(ef.value);
               break;
             }
