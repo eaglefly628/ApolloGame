@@ -32,9 +32,9 @@
 ## 2. 端口层（Ports，确定性之外的边缘）
 | 端口 | 状态 | 说明 |
 |---|---|---|
-| RendererBackend | 🟡 | canvas/ascii ✅；**相机投影 ✅(Batch I)**；多行文本 ❌ |
-| InputSource | 🟡 | 键盘 ✅；**指针/点击 ❌（R3）** |
-| **AudioPort（音乐/音效/语音）** | ⭐❌ | 消费 `Sound`，BGM 循环/音效/声道/淡入淡出（R8） |
+| RendererBackend | ✅ | canvas/ascii ✅；相机投影 ✅(Batch I)；**多行/自动换行文本 ✅(Batch II,Text.maxWidth)** |
+| InputSource | ✅ | 键盘 ✅；**指针/队列输入 ✅(Batch II,R3)**：QueuedInputSource/PointerInputSource→按 tick 落 RawInput |
+| **AudioPort（音乐/音效/语音）** | ✅(Batch II) | `src/services/audio/`：AudioPort + Null/Web 后端 + AudioSync(消费 Sound diff 播/停)（R8） |
 | **StoragePort（存储/文件）** | ✅(Batch I) | `src/services/storage/`：接口 + Memory + LocalStorage 适配器；fs(node) 待 @types/node |
 | NetworkPort | 🟡 | lockstep BroadcastChannel ✅；真 WS/WebRTC ❌ |
 
@@ -90,7 +90,7 @@
 
 ## 执行排程（建议，每批 ~3，可调）
 - **Batch I · 视图与存档**：✅ **已完成** —— camera-follow + 渲染器投影（卷轴）｜ StoragePort(Memory+LocalStorage) + SaveSystem 槽位。(REQ-001 可标 done)
-- **Batch II · IO 端口**：AudioPort（音乐/音效）｜ 指针输入（点击 R3）｜ 渲染器多行文本（R2）。
+- **Batch II · IO 端口**：✅ **已完成** —— AudioPort + AudioSync(R8)｜ QueuedInputSource/PointerInputSource(R3)｜ 多行/自动换行文本(R2)。
 - **Batch III · 资源与消息**：句柄生命周期管理（引用计数/批量释放）｜ 跨层消息总线。
 - **Batch IV · 流程与循环**：scene-transition（场景切换+批量生灭）｜ 主循环 暂停/单步 + 多端口装配。
 

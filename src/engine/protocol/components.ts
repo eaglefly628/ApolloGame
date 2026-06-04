@@ -180,6 +180,8 @@ export interface Text extends Component {
   fontFamily: string;
   anchor: string;
   lineSpacing: number;
+  // 可选：按此像素宽度自动换行（多行）。<=0 或缺省 = 不自动换行（仍按 \n 硬换行）。
+  maxWidth?: number;
 }
 
 // ── I1 input-capture ── 这帧的外部原始信号（由 runtime 注入）

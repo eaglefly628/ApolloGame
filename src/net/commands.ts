@@ -1,5 +1,15 @@
 import type { IWorld, EntityId } from '@engine/core/types.js';
-import type { Velocity, Controllable, Action } from '@engine/protocol/components.js';
+import type { Velocity, Controllable, Action, RawInput } from '@engine/protocol/components.js';
+
+// 一条原始输入事件（指针/点击/自定义），按 tick 确定性注入世界为 RawInput。x/y=世界或屏幕坐标，
+// phase 如 'down'|'up'|'move'|'click'，key 可承载语义动作名（如 'choice:2'）。命中测试归游戏层。
+export interface RawInputData {
+  readonly source: string;
+  readonly key?: string;
+  readonly x?: number;
+  readonly y?: number;
+  readonly phase?: string;
+}
 
 // ═══════════════════════════════════════════════════════════════
 //  输入模型 — 联机的"接缝"
@@ -21,6 +31,8 @@ export interface Command {
   readonly move: { readonly dx: number; readonly dy: number };
   // 跳跃意图（平台类）。true 时 applyCommands 给目标打 Action{name:'jump'}，由 jump 系统在着地时转成向上冲量。
   readonly jump?: boolean;
+  // 原始输入事件（指针/点击/UI 动作）。按 tick 确定性注入为 RawInput 实体供游戏层消费（R3）。
+  readonly actions?: readonly RawInputData[];
 }
 
 // 每 tick 命令的来源。本地键盘 / 脚本 / 网络对端都实现它。
@@ -61,17 +73,32 @@ export function applyCommands(world: IWorld, commands: readonly Command[]): void
     if (!world.hasComponent(id, 'Acceleration')) v.vy = 0;
     world.removeComponent(id, 'Action');
   }
-  for (const cmd of orderCommands(commands)) {
+  // 原始输入事件每 tick 重算：先清上一 tick 的 RawInput 实体（先清后标，与 trigger/signal 同范式）。
+  for (const [id] of world.query('RawInput')) world.destroyEntity(id);
+
+  const ordered = orderCommands(commands);
+  for (const cmd of ordered) {
     const target = findControlled(world, cmd.playerId);
-    if (target === undefined) continue;
-    const v = world.getComponent<Velocity>(target, 'Velocity');
-    const c = world.getComponent<Controllable>(target, 'Controllable');
-    if (!v || !c) continue;
-    v.vx = cmd.move.dx * c.speed;
-    // 俯视实体：vy 也由输入直接控制；平台实体（有重力）：vy 留给重力/跳跃，输入不碰。
-    if (!world.hasComponent(target, 'Acceleration')) v.vy = cmd.move.dy * c.speed;
-    // 跳跃意图 → 语义动作；jump 系统只在 Grounded 时把它转成向上冲量（离地即不可二段跳）。
-    if (cmd.jump) world.addComponent(target, { type: 'Action', name: 'jump', value: 1 } as Action);
+    if (target !== undefined) {
+      const v = world.getComponent<Velocity>(target, 'Velocity');
+      const c = world.getComponent<Controllable>(target, 'Controllable');
+      if (v && c) {
+        v.vx = cmd.move.dx * c.speed;
+        // 俯视实体：vy 也由输入直接控制；平台实体（有重力）：vy 留给重力/跳跃，输入不碰。
+        if (!world.hasComponent(target, 'Acceleration')) v.vy = cmd.move.dy * c.speed;
+        // 跳跃意图 → 语义动作；jump 系统只在 Grounded 时把它转成向上冲量（离地即不可二段跳）。
+        if (cmd.jump) world.addComponent(target, { type: 'Action', name: 'jump', value: 1 } as Action);
+      }
+    }
+    // 原始输入事件 → RawInput 实体（确定性 id：playerId+序号），命中测试/语义解析归游戏层。
+    if (cmd.actions) {
+      for (let i = 0; i < cmd.actions.length; i++) {
+        const a = cmd.actions[i];
+        const rid = `rawinput:${cmd.playerId}:${i}`;
+        world.createEntity(rid);
+        world.addComponent(rid, { type: 'RawInput', source: a.source, key: a.key, x: a.x, y: a.y, phase: a.phase } as RawInput);
+      }
+    }
   }
 }
 

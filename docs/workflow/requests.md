@@ -34,7 +34,10 @@
 
 ---
 
-### R2 · [2026-06-03] · PB · Game B · status: open · 优先级: **P0\***（可被 React-DOM 方案规避）
+### R2 · [2026-06-03] · PB · Game B · status: **done**（2026-06-04，Lead，Batch II）· 优先级: **P0\***
+
+> ✅ Lead 落地：渲染器侧多行/自动换行（采纳方案①）。`Text` 加可选 `maxWidth`；`renderer/text-layout.ts` 的 `wrapLines`（纯函数，可测：硬 \n + 空格断词 + 长 token/CJK 按字符断）；CanvasRenderer 按 fontSize+lineSpacing 逐行绘制。React-DOM 浮层路径仍可用，二选一。6 测试。
+
 
 **标题**：对话文本多行/自动换行渲染
 
@@ -47,7 +50,10 @@
 
 ---
 
-### R3 · [2026-06-03] · PB · Game B · status: open · 优先级: **P0\***（与 R2 方案联动）
+### R3 · [2026-06-03] · PB · Game B · status: **done**（2026-06-04，Lead，Batch II）· 优先级: **P0\***
+
+> ✅ Lead 落地：指针/点击的确定性按 tick 注入接缝。`Command` 加 `actions?: RawInputData[]`；`net/queued-input.ts` 的 `QueuedInputSource`（UI/React onClick 调 `enqueueAction(name,{x,y})`）+ `PointerInputSource`（浏览器 pointer 事件）；`applyCommands` 把 actions 落成 `RawInput` 实体（每 tick 先清后标）。**命中测试/选项解析归游戏层**（可用 spatial-query 或 DOM）。4 测试。
+
 
 **标题**：点击/指针输入接入 + 确定性 per-tick 注入约定
 
@@ -112,7 +118,10 @@
 
 ---
 
-### R8 · [2026-06-03] · PB · Game B · status: open · 优先级: P2（MVP 可静音）
+### R8 · [2026-06-03] · PB · Game B · status: **done**（2026-06-04，Lead，Batch II）· 优先级: P2
+
+> ✅ Lead 落地：`src/services/audio/`——`AudioPort` 端口 + `NullAudioPort`(headless/测试) + `WebAudioPort`(浏览器,clipId→url) + `AudioSync`(读世界 `Sound` 组件 diff → play/stop,"Sound 存在=应在响")。MVP 用 Null 即静音。2 测试。
+
 
 **标题**：音频播放后端 —— 消费 `Sound` 播 BGM/SFX/语音
 

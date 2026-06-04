@@ -2,6 +2,7 @@ import type { IWorld, RendererBackend } from '@engine/core/types.js';
 import type { AssetManager } from '@assets/index.js';
 import { isImageHandle } from '@assets/index.js';
 import { collectRenderables, getCameraView } from './renderable.js';
+import { wrapLines } from './text-layout.js';
 
 export interface CanvasRendererOptions {
   width?: number;
@@ -61,7 +62,12 @@ export class CanvasRenderer implements RendererBackend {
       if (r.text) {
         ctx.font = `${r.text.fontSize}px ${r.text.fontFamily}`;
         ctx.textAlign = (r.text.anchor as CanvasTextAlign) || 'center';
-        ctx.fillText(r.text.content, 0, 0);
+        // 多行：按 \n 硬换行 + 可选 maxWidth 自动换行；逐行按 fontSize+lineSpacing 下移。
+        const lines = wrapLines(r.text.content, r.text.maxWidth ?? 0, (s) => ctx.measureText(s).width);
+        const lineHeight = r.text.fontSize + (r.text.lineSpacing ?? 0);
+        for (let li = 0; li < lines.length; li++) {
+          ctx.fillText(lines[li], 0, li * lineHeight);
+        }
       } else if (r.shape?.kind === 'circle') {
         ctx.beginPath();
         ctx.arc(0, 0, r.shape.radius ?? 4, 0, Math.PI * 2);
