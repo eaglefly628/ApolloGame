@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import { World } from '@engine/core/world.js';
-import type { Resource, Flag, State, ConditionExpr } from '@engine/protocol/components.js';
+import type { Resource, Flag, State, Timer, StringVar, ConditionExpr } from '@engine/protocol/components.js';
 import { evaluateCondition } from './condition.js';
 
 function res(w: World, id: string, current: number): void {
@@ -46,11 +46,29 @@ describe('condition — 叶子', () => {
     expect(evaluateCondition(w, { kind: 'state', fsmId: 'story', equals: 'daily' })).toBe(false);
   });
 
+  it('timer：按 elapsed 比较（限时/冷却门控）', () => {
+    const w = new World();
+    w.createEntity('t');
+    w.addComponent('t', { type: 'Timer', id: 'door', elapsed: 45, duration: 60, loop: false } as Timer);
+    expect(evaluateCondition(w, { kind: 'timer', id: 'door', cmp: 'lt', value: 60 })).toBe(true);
+    expect(evaluateCondition(w, { kind: 'timer', id: 'door', cmp: 'gte', value: 60 })).toBe(false);
+  });
+
+  it('string：字符串变量相等判定', () => {
+    const w = new World();
+    w.createEntity('s');
+    w.addComponent('s', { type: 'StringVar', id: 'story-node', value: 'confession' } as StringVar);
+    expect(evaluateCondition(w, { kind: 'string', id: 'story-node', equals: 'confession' })).toBe(true);
+    expect(evaluateCondition(w, { kind: 'string', id: 'story-node', equals: 'daily' })).toBe(false);
+  });
+
   it('缺失叶子 → 不成立', () => {
     const w = new World();
     expect(evaluateCondition(w, { kind: 'resource', id: 'nope', cmp: 'gte', value: 0 })).toBe(false);
     expect(evaluateCondition(w, { kind: 'flag', id: 'nope' })).toBe(false);
     expect(evaluateCondition(w, { kind: 'state', fsmId: 'nope', equals: 'x' })).toBe(false);
+    expect(evaluateCondition(w, { kind: 'timer', id: 'nope', cmp: 'gte', value: 0 })).toBe(false);
+    expect(evaluateCondition(w, { kind: 'string', id: 'nope', equals: 'x' })).toBe(false);
   });
 });
 

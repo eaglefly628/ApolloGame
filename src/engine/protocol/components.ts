@@ -296,7 +296,9 @@ export type ConditionExpr =
   | { readonly kind: 'not'; readonly of: ConditionExpr }
   | { readonly kind: 'resource'; readonly id: string; readonly cmp: CmpOp; readonly value: number }
   | { readonly kind: 'flag'; readonly id: string; readonly equals?: boolean }
-  | { readonly kind: 'state'; readonly fsmId: string; readonly equals: string };
+  | { readonly kind: 'state'; readonly fsmId: string; readonly equals: string }
+  | { readonly kind: 'timer'; readonly id: string; readonly cmp: CmpOp; readonly value: number }
+  | { readonly kind: 'string'; readonly id: string; readonly equals: string };
 
 // ── event-when ── 条件成立时发信号。逻辑核心层，不直接产生效果(Effect 后置)。
 export interface EventWhen extends Component {
@@ -336,4 +338,29 @@ export interface Tween extends Component {
   duration: number; // 总 tick 数（<=0 视为立即到 to）
   easing: TweenEasing;
   done: boolean; // elapsed>=duration 后置 true（snapshot 友好）
+}
+
+// ── effect-apply ── Condition→Event→**Effect** 的 Effect 侧：信号在场时施加一个声明式效果。
+// 跑在 Commit 阶段（晚于产信号的 event-when=Update），其对 Flag/State/Resource 的写入由下一 tick 的
+// 条件读到（标准离散反馈：一拍延迟）。"信号→置 flag→下帧条件读 flag" 即让多步机制涌现。
+export interface Effect extends Component {
+  readonly type: 'Effect';
+  onSignal: string; // 当本 tick 存在此名 Signal 时触发
+  kind: 'set-flag' | 'modify-resource' | 'set-state';
+  targetId: string; // set-flag→Flag.id；modify-resource→Resource.id；set-state→State.fsmId（均按 id 全局定位）
+  value: number | string | boolean; // modify-resource=数值增量；set-flag=布尔；set-state=目标状态名
+}
+
+// ── string-variable ── 命名字符串容器（周期表 X3：对话/换装/结局标识刚需）。
+export interface StringVar extends Component {
+  readonly type: 'StringVar';
+  id: string; // 语义标识（如 "story-node"、"ending"、"player-name"）
+  value: string;
+}
+
+// ── string-variable 写事件 ── 一次性设置 id=X 的字符串变量（全局按 id 路由，执行后被消费）。
+export interface StringSet extends Component {
+  readonly type: 'StringSet';
+  id: string;
+  value: string;
 }

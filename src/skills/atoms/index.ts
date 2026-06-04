@@ -31,6 +31,9 @@ import { textCapability } from './text/index.js';
 import { randomCapability } from './random/index.js';
 import { spatialQueryCapability } from './spatial-query/index.js';
 
+// 扩展原子（周期表 Extension，非核心 26）
+import { stringVariableCapability } from './string-variable/index.js';
+
 export {
   transformCapability,
   hierarchyCapability,
@@ -58,6 +61,7 @@ export {
   textCapability,
   randomCapability,
   spatialQueryCapability,
+  stringVariableCapability,
 };
 
 // 世界级服务的纯函数助手
@@ -93,3 +97,6 @@ export const allAtomCapabilities: CapabilityDefinition[] = [
   randomCapability,
   spatialQueryCapability,
 ];
+
+// 扩展原子（按需引入，不计入核心 26）。
+export const extensionAtomCapabilities: CapabilityDefinition[] = [stringVariableCapability];

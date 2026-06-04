@@ -1,0 +1,921 @@
+================================================================
+Apollo Engine — 自主涌现基础库 · B 轴(逻辑/数值/时间) 导出供 Gemini Review
+导出日期: 2026-06-04
+分支: claude/mainbranch
+================================================================
+
+# 背景与战略
+
+引擎此前"长歪了":A 轴(空间/物理:transform/velocity/collision/...)很厚,
+B 轴(数值/逻辑/事件/时间)只有一堆"容器原子"(resource/flag/state/timer),
+上面缺一整层"让它们动起来、组合、互相触发"的涌现层。本批是**自主、涌现式**地补 B 轴
+(暂不为某个具体游戏赶工;两个验证游戏=参照而非交付目标)。
+
+# 闭合性论证(为何只需一小撮算子就能张成两个游戏的逻辑)
+
+把两个验证游戏(Game A 双人平台 / Game B 乙女 VN)的全部"游戏逻辑"沿原子→涌现推演,
+发现 26 原子之上仅需 ~6 个算子族即可张满,其中 **Condition→Event→Effect** 是绝对核心:
+threshold(数值越线)、状态机判定、定时事件、空间触发(trigger-zone)、机关门控——全是它的特例。
+落在涌现之外的只有(设计上故意):① IO/表现端口(渲染/输入/音频);② 一个缺失的 string 容器原子;
+③ 两处更深物理(距离约束、刚体旋转,在 A 轴约束求解同一条线上)。
+
+# 本批交付(7 块,均确定性安全:只读/写确定状态、按 id 全局定位、不碰浮点超越函数、纯 POD 进 snapshot)
+
+1. 调度器显式定序 runsAfter/runsBefore (R10) —— topological-sort.ts / types.ts
+   破"两个系统都 read-modify-write 同组件→判成环"的伪环。显式边覆盖相反方向的组件推断边。
+2. Condition 布尔树求值 —— tier2/condition.ts
+   and/or/not + 叶子 resource/flag/state/timer/string,按语义 id 全局查找。纯函数。
+3. event-when(Condition→Event) —— tier2/event-when.ts
+   条件成立产 Signal;mode=level(持续)/edge(上升沿一次+迟滞,armed 进 snapshot)。
+4. effect-apply(Event→Effect) —— tier2/effect-apply.ts
+   信号在场→置 Flag/改 Resource/设 State(按 id 全局)。跑在 Commit(产信号的 event-when 在 Update),
+   效果由下一 tick 条件读到(标准离散反馈,一拍延迟)。"信号→置 flag→下帧条件读 flag"即让多步机制涌现。
+5. tween(连续插值) —— tier1/tween.ts
+   值随时间朝目标缓动;字段白名单(Transform.{x,y,rot,scaleX,scaleY}/Color.alpha/Resource.current);
+   缓动全多项式(不碰 sin/cos)→ 确定性。
+6. resource 全局按 id 路由 (R11) —— atoms/resource/index.ts
+   ResourceModify 同实体优先(多角色同名各改各的,兼容)否则全局按 id 路由。Effect 侧的"按 id 改值"基石。
+7. string-variable 原子 (R4) —— atoms/string-variable/index.ts
+   缺失的命名字符串容器 + StringSet 一次性写(全局按 id) + Condition string 叶子。
+
+# 恳请 Gemini 重点 review 的开放问题
+
+Q1. 一拍反馈模型:effect-apply 放 Commit、靠 phase 与 event-when(Update)定序,效果下一 tick 才被条件读到。
+    多步链(连锁反应)因此每步一 tick 延迟。这个"用 phase 切产/消、用 flag 做跨 tick 链"的范式是否稳妥?
+    有无更优的同 tick 安全合链方式(避免信号生命周期/求值顺序的不确定)?
+Q2. Condition 表达力:目前布尔树(and/or/not)+ 比较叶子,无算术(如 affection+bonus>=N)。
+    暂不做算术(YAGNI)是否合理?将来加算术应走"扩 ConditionExpr"还是"迷你表达式语言"?
+Q3. effect-apply 直接改 Resource(内联 clamp) vs 发 ResourceModify 走 resource-apply:
+    我选了直接改(降延迟、避免跨 phase 消费时序)。是否牺牲了组合性?是否该统一走事件?
+Q4. 全局按 id 路由(resource/string)假定 id 全局唯一,同实体匹配优先以兼容"多角色同名资源"。
+    这个"同实体优先→否则全局"的二段式是否会有歧义陷阱(如同 id 多实体且 modify 非同实体)?
+Q5. runsAfter/runsBefore 仅 phase 内生效、引用跨 phase id 被忽略。是否该支持跨 phase 显式定序,
+    还是保持"跨 phase 一律由 phase 号决定"更清晰?
+Q6. 确定性边界:所有叶子/效果只用整数/字符串/布尔比较与加法。tween 用 IEEE 浮点(from+(to-from)*t)。
+    tween 的浮点是否构成 lockstep 隐患(跨端浮点一致性)?是否该限制为定点/有理?
+
+(用户会同时把这份给我们的 Lead 流程归档;Gemini 的结论将回灌到 requests.md / 设计文档。)
+
+================================================================
+= 以下为本批新增/改动源码全文
+================================================================
+
+
+================================================================
+= FILE: src/engine/core/topological-sort.ts
+================================================================
+import type { SystemDeclaration, ComponentType } from './types.js';
+
+// 系统定序：先按 phase 分桶（缺省 0=Update），phase 升序；桶内按「组件依赖 + 显式定序」拓扑排序；
+// 跨 phase 的顺序由 phase 号决定。
+//
+// 桶内的边有两种来源：
+//   1) 组件依赖（自动）：A 写 X 且 B 读/consume X ⇒ A 在 B 前。
+//   2) 显式定序（runsAfter/runsBefore，按 id）：用于纯组件拓扑无法/不该表达的顺序。
+// 关键：当两个系统都 read-modify-write 同一组件时，组件图会给出互为前驱的两条边 → 判成环；
+// **显式边会覆盖相反方向的组件推断边**，从而以确定顺序打破这种 RMW 伪环（见 R10）。
+export function topologicalSort(systems: SystemDeclaration[]): SystemDeclaration[] {
+  const phases = Array.from(new Set(systems.map((s) => s.phase ?? 0))).sort((a, b) => a - b);
+  if (phases.length <= 1) return sortWithinPhase(systems); // 全缺省 → 与原行为完全一致
+
+  const result: SystemDeclaration[] = [];
+  for (const phase of phases) {
+    result.push(...sortWithinPhase(systems.filter((s) => (s.phase ?? 0) === phase)));
+  }
+  return result;
+}
+
+// 单个阶段内的拓扑排序（Kahn 算法），边 = 组件推断边（经显式定序覆盖后）+ 显式定序边。
+function sortWithinPhase(systems: SystemDeclaration[]): SystemDeclaration[] {
+  const n = systems.length;
+  const idToIndex = new Map<string, number>();
+  for (let i = 0; i < n; i++) idToIndex.set(systems[i].id, i);
+
+  // 1) 组件推断边：writer(X) → reader/consumer(X)。单独存放，便于被显式边覆盖。
+  const writersOf = new Map<ComponentType, number[]>();
+  for (let i = 0; i < n; i++) {
+    for (const w of systems[i].writes) {
+      if (!writersOf.has(w)) writersOf.set(w, []);
+      writersOf.get(w)!.push(i);
+    }
+  }
+  const componentEdges: Set<number>[] = Array.from({ length: n }, () => new Set<number>());
+  for (let i = 0; i < n; i++) {
+    const deps = new Set([...systems[i].reads, ...systems[i].consumes]);
+    for (const dep of deps) {
+      const writers = writersOf.get(dep);
+      if (!writers) continue;
+      for (const w of writers) if (w !== i) componentEdges[w].add(i);
+    }
+  }
+
+  // 2) 显式定序边（仅限本桶内的 id）：runsAfter[X] ⇒ X→self；runsBefore[Y] ⇒ self→Y。
+  const explicitEdges: Array<[number, number]> = [];
+  for (let i = 0; i < n; i++) {
+    for (const afterId of systems[i].runsAfter ?? []) {
+      const j = idToIndex.get(afterId);
+      if (j !== undefined && j !== i) explicitEdges.push([j, i]);
+    }
+    for (const beforeId of systems[i].runsBefore ?? []) {
+      const j = idToIndex.get(beforeId);
+      if (j !== undefined && j !== i) explicitEdges.push([i, j]);
+    }
+  }
+
+  // 3) 显式边覆盖相反方向的组件推断边（打破 RMW 伪环）。
+  for (const [u, v] of explicitEdges) componentEdges[v].delete(u);
+
+  // 4) 合并成最终邻接表（先组件边后显式边，保证缺省情形与原实现逐位一致）。
+  const adj: Set<number>[] = Array.from({ length: n }, () => new Set<number>());
+  for (let u = 0; u < n; u++) for (const v of componentEdges[u]) adj[u].add(v);
+  for (const [u, v] of explicitEdges) adj[u].add(v);
+
+  const inDegree = new Array(n).fill(0);
+  for (let u = 0; u < n; u++) for (const v of adj[u]) inDegree[v]++;
+
+  // Kahn's algorithm（按 index 顺序入队 → 确定性、稳定）
+  const queue: number[] = [];
+  for (let i = 0; i < n; i++) {
+    if (inDegree[i] === 0) queue.push(i);
+  }
+
+  const sorted: SystemDeclaration[] = [];
+  while (queue.length > 0) {
+    const idx = queue.shift()!;
+    sorted.push(systems[idx]);
+    for (const neighbor of adj[idx]) {
+      inDegree[neighbor]--;
+      if (inDegree[neighbor] === 0) queue.push(neighbor);
+    }
+  }
+
+  if (sorted.length !== n) {
+    const missing = systems.filter((_, i) => !sorted.includes(systems[i])).map((s) => s.id);
+    throw new Error(
+      `Circular dependency detected among systems: ${missing.join(', ')}. ` +
+        `若两系统读改写同一组件，用 runsAfter/runsBefore 显式定序打破。`,
+    );
+  }
+
+  return sorted;
+}
+
+
+================================================================
+= FILE: src/engine/core/types.ts
+================================================================
+export type EntityId = string;
+export type ComponentType = string;
+
+export interface Component {
+  readonly type: ComponentType;
+}
+
+export interface SystemDeclaration {
+  readonly id: string;
+  readonly reads: ComponentType[];
+  readonly writes: ComponentType[];
+  readonly consumes: ComponentType[];
+  // 执行阶段。跨阶段按阶段号升序定序，阶段内仍按组件依赖拓扑排序。缺省 = Update(0)。
+  // 用于表达纯组件拓扑无法表达的"读后改"管线（如 collision-resolve 写 Transform
+  // 而 overlap-detect 读 Transform，在组件图上互为前驱会判成环）。
+  readonly phase?: number;
+  // 显式定序（按系统 id，仅在同一 phase 内生效）。用于纯组件拓扑无法/不该表达的顺序，
+  // 尤其是「两个系统都 read-modify-write 同一组件」——组件图会判成环（互为前驱），
+  // 声明 runsAfter/runsBefore 即可打破：显式边会**覆盖相反方向的组件推断边**。
+  // 跨 phase 的先后仍由 phase 号决定；引用了不在本 phase 的 id 会被忽略。
+  readonly runsAfter?: string[]; // 本系统排在这些系统之后
+  readonly runsBefore?: string[]; // 本系统排在这些系统之前
+  execute(world: IWorld): void;
+}
+
+// 系统执行阶段（数值越小越早）。绝大多数系统留缺省 Update，靠组件拓扑自动定序；
+// 只有"读完本帧状态后再修正同一状态"的系统（碰撞解算、约束）才排到更后的阶段。
+export const SystemPhase = {
+  Update: 0,       // 默认：积分 / 检测 / 计时 / 生命周期……（组件拓扑自动定序）
+  Rotate: 4,       // 角度积分：rotation-apply 与 motion-apply 同为 Transform 读改写，须各占一阶段
+  Resolve: 10,     // 解算：读完位置后再修正位置/速度（碰撞推开）
+  PostResolve: 14, // 解算后：基于已解算结果再改 Transform/Velocity（层级跟随=改T、摩擦=改V，可同阶段）
+  Commit: 20,      // 提交：基于解算结果的最终写入（跳跃=改V、边界钳制=改T）
+} as const;
+
+export interface IWorld {
+  createEntity(id: EntityId): void;
+  destroyEntity(id: EntityId): void;
+  getAllEntities(): EntityId[];
+
+  addComponent<T extends Component>(entityId: EntityId, component: T): void;
+  removeComponent(entityId: EntityId, type: ComponentType): void;
+  getComponent<T extends Component>(entityId: EntityId, type: ComponentType): T | undefined;
+  hasComponent(entityId: EntityId, type: ComponentType): boolean;
+
+  query(...types: ComponentType[]): Array<[EntityId, Map<ComponentType, Component>]>;
+  queryEntities(...types: ComponentType[]): EntityId[];
+
+  getVersion(): number;
+}
+
+export interface RendererBackend {
+  init(container: HTMLElement): void;
+  sync(world: IWorld): void;
+  destroy(): void;
+}
+
+// 完整世界状态快照（组件皆 POD，可 JSON 序列化）—— record/replay 与时间旅行调试用
+export type WorldSnapshot = Record<EntityId, Record<ComponentType, Component>>;
+
+// tick 期间的观测钩子 —— Debug 体系据此观察各系统(skill)之间的协作
+export interface TickObserver {
+  onTickStart?(tick: number): void;
+  onSystemStart?(system: SystemDeclaration): void;
+  onSystemEnd?(system: SystemDeclaration): void;
+  onTickEnd?(tick: number): void;
+}
+
+
+================================================================
+= FILE: src/skills/tier2/condition.ts
+================================================================
+import type { IWorld } from '@engine/core/types.js';
+import type { ConditionExpr, CmpOp, Resource, Flag, State, Timer, StringVar } from '@engine/protocol/components.js';
+
+// Condition —— 布尔条件树的确定性求值（纯函数，无副作用）。
+//
+// 叶子按「语义 id」在世界里全局查找（Resource.id / Flag.id / State.fsmId），与实体插入顺序无关。
+// 只做确定性比较（数 / bool / 字符串相等），不碰浮点超越函数 → lockstep / 录放安全。
+// 这是 B 轴的逻辑底座：threshold（resource ≥ N）、状态判定（state == X）、机关门控（flagA ∧ flagB）
+// 都是它的特例；event-when 用它把「条件 → 信号」串起来，Effect 后续再接。
+
+function findResource(world: IWorld, id: string): Resource | undefined {
+  for (const [e] of world.query('Resource')) {
+    const r = world.getComponent<Resource>(e, 'Resource');
+    if (r && r.id === id) return r;
+  }
+  return undefined;
+}
+
+function findFlag(world: IWorld, id: string): Flag | undefined {
+  for (const [e] of world.query('Flag')) {
+    const f = world.getComponent<Flag>(e, 'Flag');
+    if (f && f.id === id) return f;
+  }
+  return undefined;
+}
+
+function findState(world: IWorld, fsmId: string): State | undefined {
+  for (const [e] of world.query('State')) {
+    const s = world.getComponent<State>(e, 'State');
+    if (s && s.fsmId === fsmId) return s;
+  }
+  return undefined;
+}
+
+function findTimer(world: IWorld, id: string): Timer | undefined {
+  for (const [e] of world.query('Timer')) {
+    const t = world.getComponent<Timer>(e, 'Timer');
+    if (t && t.id === id) return t;
+  }
+  return undefined;
+}
+
+function findStringVar(world: IWorld, id: string): StringVar | undefined {
+  for (const [e] of world.query('StringVar')) {
+    const s = world.getComponent<StringVar>(e, 'StringVar');
+    if (s && s.id === id) return s;
+  }
+  return undefined;
+}
+
+function compare(a: number, op: CmpOp, b: number): boolean {
+  switch (op) {
+    case 'lt':
+      return a < b;
+    case 'lte':
+      return a <= b;
+    case 'eq':
+      return a === b;
+    case 'ne':
+      return a !== b;
+    case 'gte':
+      return a >= b;
+    case 'gt':
+      return a > b;
+  }
+}
+
+/** 求值一棵条件树。缺失的叶子（找不到对应 id）按「不成立」处理。 */
+export function evaluateCondition(world: IWorld, expr: ConditionExpr): boolean {
+  switch (expr.kind) {
+    case 'and':
+      return expr.of.every((e) => evaluateCondition(world, e));
+    case 'or':
+      return expr.of.some((e) => evaluateCondition(world, e));
+    case 'not':
+      return !evaluateCondition(world, expr.of);
+    case 'resource': {
+      const r = findResource(world, expr.id);
+      return r ? compare(r.current, expr.cmp, expr.value) : false;
+    }
+    case 'flag': {
+      const f = findFlag(world, expr.id);
+      const want = expr.equals ?? true;
+      return (f?.active ?? false) === want;
+    }
+    case 'state': {
+      const s = findState(world, expr.fsmId);
+      return s ? s.current === expr.equals : false;
+    }
+    case 'timer': {
+      const t = findTimer(world, expr.id);
+      return t ? compare(t.elapsed, expr.cmp, expr.value) : false;
+    }
+    case 'string': {
+      const s = findStringVar(world, expr.id);
+      return s ? s.value === expr.equals : false;
+    }
+  }
+}
+
+
+================================================================
+= FILE: src/skills/tier2/event-when.ts
+================================================================
+import { defineCapability } from '@engine/core/define-capability.js';
+import type { EventWhen, Signal } from '@engine/protocol/components.js';
+import { evaluateCondition } from './condition.js';
+
+// event-when —— B 轴逻辑枢纽的最简版：「条件成立 → 发信号」。
+//
+// 每个 EventWhen 实体声明一棵布尔条件树 `when` + 信号名 `signal` + 触发模式 `mode`：
+//   - level：条件为真时每帧都发信号（如「两人都在台上时台子亮着」）。
+//   - edge ：上升沿（false→true）只发一次，条件回落（→false）后复位再武装（迟滞，如「好感越过 60 只弹一次」）。
+// 触发即在 `signal:<eid>` 实体上产出 Signal{name, source}，每帧先清后标，供下游消费。
+//
+// 设计边界（已与 owner 敲定）：只发信号，不直接改世界（Effect 后置）。`armed` 是纯 POD，
+// 随 world.snapshot() 走 → 边沿检测在 lockstep / 录放下确定。
+export const eventWhenCapability = defineCapability({
+  id: 't2-event-when',
+  version: '1.0.0',
+
+  describe: {
+    name: 'event-when',
+    summary: '条件成立时发信号：读 EventWhen + 求值布尔条件树（resource/flag/state 叶子），edge/level 触发 → 产出 Signal。',
+    semantic: ['tier2', 'logic', 'condition', 'event'],
+    whenToUse:
+      '需要「某组合条件成立时触发一个信号」时。声明 EventWhen{ signal, when, mode }；下游 query Signal 消费。threshold/状态判定/机关门控都用它，不必各写一套。',
+    examples: [
+      '好感越过 60：EventWhen{ signal:"S_love_60", when:{kind:"resource",id:"affection_S",cmp:"gte",value:60}, mode:"edge" }',
+      '机关门控：when = and(flagA, flagB) → 门开信号',
+      '重量台：when = and(plate_p1, plate_p2)，mode:"level" → 台子持续激活',
+    ],
+  },
+
+  components: {
+    provides: {
+      EventWhen: {
+        category: 'config',
+        describe: '声明「条件 → 信号」：条件树 when + 信号名 signal + 触发模式 mode + 边沿状态 armed。',
+        fields: {
+          signal: { type: 'string', describe: '触发时产出的信号名' },
+          when: { type: 'string', describe: '布尔条件树 ConditionExpr（结构化对象：and/or/not + resource/flag/state 叶子）' },
+          mode: { type: 'string', describe: "触发模式 'edge'|'level'：edge=上升沿一次(迟滞)；level=为真时每帧持续" },
+          armed: { type: 'boolean', describe: '边沿检测内部状态（初始 false）' },
+        },
+      },
+      Signal: {
+        category: 'event',
+        describe: '某 EventWhen 这帧触发了。每帧先清后标，挂在 signal:<eid> 实体上，下游 query Signal 消费。',
+        fields: {
+          name: { type: 'string', describe: '信号名（= EventWhen.signal）' },
+          source: { type: 'EntityId', describe: '发出信号的 EventWhen 实体 id' },
+        },
+      },
+    },
+    reads: ['EventWhen', 'Resource', 'Flag', 'State'],
+    writes: ['Signal'],
+    consumes: [],
+  },
+
+  config: {},
+
+  systems: [
+    {
+      id: 'event-when',
+      reads: ['EventWhen', 'Resource', 'Flag', 'State'],
+      writes: ['Signal'],
+      consumes: [],
+      execute(world) {
+        // 每帧重算：先清掉上一帧所有 Signal 实体。
+        for (const [sid] of world.query('Signal')) world.destroyEntity(sid);
+
+        for (const [eid] of world.query('EventWhen')) {
+          const ew = world.getComponent<EventWhen>(eid, 'EventWhen')!;
+          const now = evaluateCondition(world, ew.when);
+
+          let fire = false;
+          if (ew.mode === 'level') {
+            fire = now;
+          } else {
+            // edge：上升沿触发一次，回落复位（迟滞）。
+            if (now && !ew.armed) {
+              fire = true;
+              ew.armed = true;
+            } else if (!now) {
+              ew.armed = false;
+            }
+          }
+
+          if (fire) {
+            const sid = `signal:${eid}`;
+            world.createEntity(sid);
+            world.addComponent(sid, { type: 'Signal', name: ew.signal, source: eid } as Signal);
+          }
+        }
+      },
+    },
+  ],
+});
+
+
+================================================================
+= FILE: src/skills/tier2/effect-apply.ts
+================================================================
+import { defineCapability } from '@engine/core/define-capability.js';
+import { SystemPhase } from '@engine/core/types.js';
+import type { IWorld } from '@engine/core/types.js';
+import type { Effect, Signal, Flag, Resource, State } from '@engine/protocol/components.js';
+
+// effect-apply —— Condition→Event→**Effect** 的 Effect 侧（链的合龙石）。
+//
+// 当本 tick 存在名为 Effect.onSignal 的 Signal 时，施加一个声明式效果（按 id 全局定位）：
+//   - set-flag       ：把 Flag(id=targetId).active 设为 Boolean(value)
+//   - modify-resource ：给 Resource(id=targetId).current 加 Number(value) 并钳进上下限
+//   - set-state      ：把 State(fsmId=targetId).current 设为 String(value)
+//
+// 跑在 Commit 阶段（产信号的 event-when 在 Update）：这样 event-when→effect-apply 的先后由 phase
+// 定序，且 effect 对 Flag/State/Resource 的写入由**下一 tick** 的条件读到（标准离散反馈，一拍延迟）。
+// "信号 → 置 flag → 下帧条件读 flag → 再触发" 即让多步机制（连锁/开关→门）纯配置涌现。
+// 确定性：只读/写确定状态、按 id 定位（与 Condition 读侧、resource 写侧对称），不碰浮点超越函数。
+
+function findFlag(world: IWorld, id: string): Flag | undefined {
+  for (const [e] of world.query('Flag')) {
+    const f = world.getComponent<Flag>(e, 'Flag');
+    if (f && f.id === id) return f;
+  }
+  return undefined;
+}
+function findResource(world: IWorld, id: string): Resource | undefined {
+  for (const [e] of world.query('Resource')) {
+    const r = world.getComponent<Resource>(e, 'Resource');
+    if (r && r.id === id) return r;
+  }
+  return undefined;
+}
+function findState(world: IWorld, fsmId: string): State | undefined {
+  for (const [e] of world.query('State')) {
+    const s = world.getComponent<State>(e, 'State');
+    if (s && s.fsmId === fsmId) return s;
+  }
+  return undefined;
+}
+
+export const effectApplyCapability = defineCapability({
+  id: 't2-effect-apply',
+  version: '1.0.0',
+
+  describe: {
+    name: 'effect-apply',
+    summary: '信号在场时施加声明式效果（置 Flag / 改 Resource / 设 State，均按 id 全局定位）。Condition→Event→Effect 的 Effect 侧。',
+    semantic: ['tier2', 'logic', 'effect'],
+    whenToUse:
+      '想让一个 Signal（由 event-when 产出）直接产生世界改动而不写游戏代码时。挂 Effect{onSignal,kind,targetId,value}。跑在 Commit，效果下一 tick 被条件读到（一拍反馈）。',
+    examples: [
+      '好感越 60 → 解锁告白：Effect{ onSignal:"S_love_60", kind:"set-flag", targetId:"S_confess_unlocked", value:true }',
+      '踩到陷阱信号 → 扣血：Effect{ onSignal:"trap", kind:"modify-resource", targetId:"hp", value:-10 }',
+      '两开关都开 → 推进剧情态：Effect{ onSignal:"both_switches", kind:"set-state", targetId:"story", value:"door_open" }',
+    ],
+  },
+
+  components: {
+    provides: {
+      Effect: {
+        category: 'config',
+        describe: '声明「当 onSignal 在场时施加的效果」。kind 决定改 Flag/Resource/State，targetId 按 id 全局定位。',
+        fields: {
+          onSignal: { type: 'string', describe: '触发该效果的信号名（event-when 产出的 Signal.name）' },
+          kind: { type: 'string', describe: "'set-flag' | 'modify-resource' | 'set-state'" },
+          targetId: { type: 'string', describe: 'Flag.id / Resource.id / State.fsmId（按 id 全局定位）' },
+          value: { type: 'string', describe: 'modify-resource=数值增量；set-flag=布尔；set-state=目标状态名' },
+        },
+      },
+    },
+    reads: ['Effect', 'Signal'],
+    writes: ['Flag', 'Resource', 'State'],
+    consumes: [],
+  },
+
+  config: {},
+
+  systems: [
+    {
+      id: 'effect-apply',
+      phase: SystemPhase.Commit,
+      reads: ['Effect', 'Signal'],
+      writes: ['Flag', 'Resource', 'State'],
+      consumes: [],
+      execute(world) {
+        // 收集本 tick 在场的信号名。
+        const signals = new Set<string>();
+        for (const [sid] of world.query('Signal')) {
+          const s = world.getComponent<Signal>(sid, 'Signal');
+          if (s) signals.add(s.name);
+        }
+        if (signals.size === 0) return;
+
+        for (const [eid] of world.query('Effect')) {
+          const ef = world.getComponent<Effect>(eid, 'Effect');
+          if (!ef || !signals.has(ef.onSignal)) continue;
+
+          switch (ef.kind) {
+            case 'set-flag': {
+              const f = findFlag(world, ef.targetId);
+              if (f) f.active = Boolean(ef.value);
+              break;
+            }
+            case 'modify-resource': {
+              const r = findResource(world, ef.targetId);
+              if (r) {
+                const next = r.current + Number(ef.value);
+                r.current = next < r.min ? r.min : next > r.max ? r.max : next;
+              }
+              break;
+            }
+            case 'set-state': {
+              const st = findState(world, ef.targetId);
+              if (st) st.current = String(ef.value);
+              break;
+            }
+          }
+        }
+      },
+    },
+  ],
+});
+
+
+================================================================
+= FILE: src/skills/tier1/tween.ts
+================================================================
+import { defineCapability } from '@engine/core/define-capability.js';
+import type { IWorld } from '@engine/core/types.js';
+import type { Tween, TweenEasing, Resource } from '@engine/protocol/components.js';
+
+// tween —— B 轴"连续"柱：数值随时间朝目标缓动。
+//
+// 定步长：每帧 elapsed += 1，t = elapsed/duration ∈ [0,1]，value = from + (to-from)*ease(t)，
+// 直接写到同实体上的目标字段。duration<=0 视为立即到 to。到点置 done=true 并锁定在 to。
+// 缓动全用多项式（不碰 sin/cos）→ 确定性、存档重放一致。只驱动高价值字段（见 TweenTarget），
+// 避开泛型字段寻址的复杂度；需要别的字段再按需扩 TweenTarget。
+// 用途：立绘淡入(Color.alpha)、好感条平滑(Resource.current)、立绘滑入/镜头缓动(Transform.x/y)。
+
+function ease(t: TweenEasing, x: number): number {
+  switch (t) {
+    case 'linear':
+      return x;
+    case 'easeIn':
+      return x * x;
+    case 'easeOut':
+      return x * (2 - x);
+    case 'easeInOut':
+      return x < 0.5 ? 2 * x * x : 1 - ((-2 * x + 2) * (-2 * x + 2)) / 2;
+  }
+}
+
+function writeField(world: IWorld, eid: string, target: Tween['target'], value: number): void {
+  const dot = target.indexOf('.');
+  const compType = target.slice(0, dot);
+  const field = target.slice(dot + 1);
+  const comp = world.getComponent(eid, compType) as Record<string, number> | undefined;
+  if (!comp) return;
+  if (compType === 'Resource') {
+    // 尊重资源上下限，避免越界破坏 Resource 不变量。
+    const r = comp as unknown as Resource;
+    comp[field] = value < r.min ? r.min : value > r.max ? r.max : value;
+  } else {
+    comp[field] = value;
+  }
+}
+
+export const tweenCapability = defineCapability({
+  id: 't1-tween',
+  version: '1.0.0',
+
+  describe: {
+    name: 'tween',
+    summary: '数值随时间朝目标缓动：每帧推进 elapsed，按 easing 把同实体上的目标字段从 from 插到 to。',
+    semantic: ['tier1', 'kinematic', 'interpolate', 'animation'],
+    whenToUse:
+      '需要某个数值平滑过渡时（淡入淡出 Color.alpha、好感条 Resource.current、滑入/镜头 Transform.x/y）。挂 Tween{target,from,to,duration,easing}；定步长、确定性。',
+    examples: [
+      '立绘淡入：Tween{ target:"Color.alpha", from:0, to:1, duration:30, easing:"easeOut" }',
+      '好感条平滑到 45：Tween{ target:"Resource.current", from:30, to:45, duration:20, easing:"linear" }',
+      '立绘滑入：Tween{ target:"Transform.x", from:-100, to:0, duration:24, easing:"easeInOut" }',
+    ],
+  },
+
+  components: {
+    provides: {
+      Tween: {
+        category: 'config',
+        describe: '一段缓动：把同实体上的 target 字段在 duration 个 tick 内从 from 插值到 to。',
+        fields: {
+          target: { type: 'string', describe: '目标字段（Transform.x/y/rotation/scaleX/scaleY、Color.alpha、Resource.current）' },
+          from: { type: 'number', describe: '起始值' },
+          to: { type: 'number', describe: '目标值' },
+          elapsed: { type: 'number', describe: '已过 tick 数（初始 0，每帧 +1）' },
+          duration: { type: 'number', describe: '总 tick 数（<=0 立即到 to）' },
+          easing: { type: 'string', describe: 'linear | easeIn | easeOut | easeInOut' },
+          done: { type: 'boolean', describe: '是否已结束（初始 false）' },
+        },
+      },
+    },
+    reads: ['Tween'],
+    writes: ['Transform', 'Color', 'Resource'],
+    consumes: [],
+  },
+
+  config: {},
+
+  systems: [
+    {
+      id: 'tween',
+      reads: ['Tween'],
+      writes: ['Transform', 'Color', 'Resource'],
+      consumes: [],
+      execute(world) {
+        for (const [eid] of world.query('Tween')) {
+          const tw = world.getComponent<Tween>(eid, 'Tween')!;
+          if (tw.done) {
+            writeField(world, eid, tw.target, tw.to); // 锁定终值（幂等）
+            continue;
+          }
+          tw.elapsed += 1;
+          const raw = tw.duration <= 0 ? 1 : tw.elapsed / tw.duration;
+          const t = raw < 0 ? 0 : raw > 1 ? 1 : raw;
+          const value = tw.from + (tw.to - tw.from) * ease(tw.easing, t);
+          writeField(world, eid, tw.target, value);
+          if (tw.elapsed >= tw.duration) tw.done = true;
+        }
+      },
+    },
+  ],
+});
+
+
+================================================================
+= FILE: src/skills/atoms/resource/index.ts
+================================================================
+import { defineCapability } from '@engine/core/define-capability.js';
+import type { IWorld } from '@engine/core/types.js';
+import type { Resource, ResourceModify } from '@engine/protocol/components.js';
+
+// 全局按语义 id 查找资源（与 Condition 求值的读侧对称）。返回第一个匹配，假定 id 全局唯一。
+function findResourceById(world: IWorld, id: string): Resource | undefined {
+  for (const [e] of world.query('Resource')) {
+    const r = world.getComponent<Resource>(e, 'Resource');
+    if (r && r.id === id) return r;
+  }
+  return undefined;
+}
+
+export const resourceCapability = defineCapability({
+  id: 'f1-resource',
+  version: '1.0.0',
+
+  describe: {
+    name: 'resource',
+    summary: '某种有上下限的数值（hp / mp / stamina / shield / ...），支持通过事件组件修改。',
+    semantic: ['numeric', 'clamped', 'stat', 'resource'],
+    whenToUse: '当实体需要跟踪任何带上下限的数值时使用，例如生命值、法力值、耐力、护盾等。min 可为非零（如温度下限 -50）。',
+    examples: [
+      '角色生命值：Resource { id: "hp", current: 100, min: 0, max: 100 }',
+      '法力值：Resource { id: "mp", current: 50, min: 0, max: 100 }',
+      '温度：Resource { id: "temp", current: 20, min: -50, max: 100 }',
+      '受伤（同实体）：ResourceModify { resourceId: "hp", amount: -10 }',
+      '全局路由（R11）：把 ResourceModify{ resourceId: "affection_S", amount: 5 } 挂在任意实体（如对话事件实体）→ 自动改到持有该 id 的资源，无需知道它住哪',
+    ],
+  },
+
+  components: {
+    provides: {
+      Resource: {
+        category: 'resource',
+        describe: '持久有界数值，用 id 区分语义（hp / mp / ...）。每实体每 type 唯一，一个实体一个 Resource。',
+        fields: {
+          id: { type: 'string', describe: '资源语义标识（如 "hp"、"mp"、"stamina"）' },
+          current: { type: 'number', describe: '当前值，始终保持在 [min, max] 范围内' },
+          min: { type: 'number', describe: '允许的最小值，可为非零（如 -50）' },
+          max: { type: 'number', describe: '允许的最大值' },
+        },
+      },
+      ResourceModify: {
+        category: 'event',
+        describe: '请求修改指定 id 资源的一次性事件，执行后由 World 自动删除。',
+        fields: {
+          resourceId: { type: 'string', describe: '目标资源的 id，与 Resource.id 匹配' },
+          amount: { type: 'number', describe: '修改量，正数增加，负数减少' },
+        },
+      },
+    },
+    reads: ['Resource'],
+    writes: ['Resource'],
+    consumes: ['ResourceModify'],
+  },
+
+  config: {
+    id: {
+      type: 'string',
+      default: 'hp',
+      describe: '资源语义标识',
+      question: '这个资源代表什么？（如 hp、mp、stamina）',
+      ui: { control: 'input' },
+    },
+    current: {
+      type: 'number',
+      default: 100,
+      describe: '初始当前值',
+      question: '初始值是多少？',
+      ui: { control: 'slider', min: 0, max: 1000, step: 1 },
+    },
+    min: {
+      type: 'number',
+      default: 0,
+      describe: '最小值下限',
+      question: '最小值是多少？',
+      ui: { control: 'input' },
+    },
+    max: {
+      type: 'number',
+      default: 100,
+      describe: '最大值上限',
+      question: '最大值是多少？',
+      ui: { control: 'slider', min: 1, max: 10000, step: 1 },
+    },
+  },
+
+  systems: [
+    {
+      id: 'resource-apply',
+      reads: ['Resource'],
+      writes: ['Resource'],
+      consumes: ['ResourceModify'],
+      execute(world) {
+        // 处理所有 ResourceModify（无论挂在哪个实体）：
+        //   1) 同实体且 id 匹配 → 按实体定位（多角色同名资源各改各的；向后兼容）。
+        //   2) 否则全局按 id 路由（R11）：找第一个 id 匹配的 Resource，无论它挂在哪——
+        //      游戏层"给 affection_S +5"不必先知道它住哪个实体。
+        // consume 在本系统跑完后删全表，故必须在这一个系统里把所有 ResourceModify 处理完。
+        for (const [entityId] of world.query('ResourceModify')) {
+          const modify = world.getComponent<ResourceModify>(entityId, 'ResourceModify');
+          if (!modify) continue;
+          let resource = world.getComponent<Resource>(entityId, 'Resource');
+          if (!resource || resource.id !== modify.resourceId) {
+            resource = findResourceById(world, modify.resourceId);
+          }
+          if (!resource) continue;
+          const next = resource.current + modify.amount;
+          resource.current = next < resource.min ? resource.min : next > resource.max ? resource.max : next;
+        }
+      },
+    },
+  ],
+});
+
+
+================================================================
+= FILE: src/skills/atoms/string-variable/index.ts
+================================================================
+import { defineCapability } from '@engine/core/define-capability.js';
+import type { IWorld } from '@engine/core/types.js';
+import type { StringVar, StringSet } from '@engine/protocol/components.js';
+
+// 全局按 id 查找字符串变量（与 resource 全局路由、Condition 读侧对称）。
+function findStringVar(world: IWorld, id: string): StringVar | undefined {
+  for (const [e] of world.query('StringVar')) {
+    const s = world.getComponent<StringVar>(e, 'StringVar');
+    if (s && s.id === id) return s;
+  }
+  return undefined;
+}
+
+// string-variable —— 命名字符串容器原子（周期表 X3）。核心 26 原子只有数值(Resource)/布尔(Flag)容器，
+// 叙事/换装/结局标识缺一个 string 容器。仿 Resource+ResourceModify+resource-apply 三件套：
+//   StringVar{id,value}（持久）+ StringSet{id,value}（一次性写事件）+ string-apply（应用并消费）。
+// StringSet 全局按 id 路由（同实体优先，否则全局），与 R11 一致——游戏层"设 story-node=scene_2"不必知道它住哪。
+// 纯 POD，structuredClone 友好 → 自动进 world.snapshot()。可被 Condition 的 string 叶子读。
+export const stringVariableCapability = defineCapability({
+  id: 'x3-string-variable',
+  version: '1.0.0',
+
+  describe: {
+    name: 'string-variable',
+    summary: '命名字符串容器：StringVar{id,value}，经一次性 StringSet 事件修改（全局按 id 路由）。',
+    semantic: ['string', 'narrative', 'variable', 'container'],
+    whenToUse:
+      '需要持久的语义字符串状态时：当前剧情节点 id、玩家取名、结局标识、上次选择。多个并存用多实体。可被 Condition 的 string 叶子门控。',
+    examples: [
+      '剧情指针：StringVar{ id:"story-node", value:"scene_01" }',
+      '推进：StringSet{ id:"story-node", value:"scene_02" }（挂任意实体，按 id 全局路由）',
+      '结局标识：StringVar{ id:"ending", value:"" } → 结局判定时 StringSet 写入',
+    ],
+  },
+
+  components: {
+    provides: {
+      StringVar: {
+        category: 'config',
+        describe: '持久字符串值，用 id 区分语义。每实体每 type 唯一，多个用多实体。',
+        fields: {
+          id: { type: 'string', describe: '语义标识（如 "story-node"、"ending"）' },
+          value: { type: 'string', describe: '当前字符串值' },
+        },
+      },
+      StringSet: {
+        category: 'event',
+        describe: '一次性设置 id 字符串变量的事件，执行后由 World 自动删除。全局按 id 路由。',
+        fields: {
+          id: { type: 'string', describe: '目标 StringVar 的 id' },
+          value: { type: 'string', describe: '要写入的新值' },
+        },
+      },
+    },
+    reads: ['StringVar'],
+    writes: ['StringVar'],
+    consumes: ['StringSet'],
+  },
+
+  config: {
+    id: {
+      type: 'string',
+      default: 'var',
+      describe: '字符串变量标识',
+      question: '这个字符串变量叫什么？（如 story-node、ending）',
+      ui: { control: 'input' },
+    },
+    value: {
+      type: 'string',
+      default: '',
+      describe: '初始值',
+      question: '初始字符串是什么？',
+      ui: { control: 'input' },
+    },
+  },
+
+  systems: [
+    {
+      id: 'string-apply',
+      reads: ['StringVar'],
+      writes: ['StringVar'],
+      consumes: ['StringSet'],
+      execute(world) {
+        for (const [entityId] of world.query('StringSet')) {
+          const set = world.getComponent<StringSet>(entityId, 'StringSet');
+          if (!set) continue;
+          let target = world.getComponent<StringVar>(entityId, 'StringVar');
+          if (!target || target.id !== set.id) {
+            target = findStringVar(world, set.id);
+          }
+          if (!target) continue;
+          target.value = set.value;
+        }
+      },
+    },
+  ],
+});
+
+
+================================================================
+= FILE: src/engine/protocol/components.ts (本批新增类型片段)
+================================================================
+289:export type CmpOp = 'lt' | 'lte' | 'eq' | 'ne' | 'gte' | 'gt';
+293:export type ConditionExpr =
+294:  | { readonly kind: 'and'; readonly of: ConditionExpr[] }
+295:  | { readonly kind: 'or'; readonly of: ConditionExpr[] }
+296:  | { readonly kind: 'not'; readonly of: ConditionExpr }
+297:  | { readonly kind: 'resource'; readonly id: string; readonly cmp: CmpOp; readonly value: number }
+300:  | { readonly kind: 'timer'; readonly id: string; readonly cmp: CmpOp; readonly value: number }
+304:export interface EventWhen extends Component {
+305:  readonly type: 'EventWhen';
+307:  when: ConditionExpr; // 布尔条件树
+312:// ── event-when 产出 ── 信号事件：某 EventWhen 这帧触发了。每帧先清后标。
+313:export interface Signal extends Component {
+315:  name: string; // 信号名（= EventWhen.signal）
+316:  source: EntityId; // 发出该信号的 EventWhen 实体 id
+321:export type TweenTarget =
+330:export type TweenEasing = 'linear' | 'easeIn' | 'easeOut' | 'easeInOut';
+332:export interface Tween extends Component {
+334:  target: TweenTarget; // 驱动同实体上的哪个组件字段
+339:  easing: TweenEasing;
+346:export interface Effect extends Component {
+355:export interface StringVar extends Component {
+362:export interface StringSet extends Component {

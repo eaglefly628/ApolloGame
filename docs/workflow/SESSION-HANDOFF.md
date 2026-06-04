@@ -7,8 +7,10 @@
 
 ## 1. 技术现状
 
-- **337 passed**，`tsc --noEmit` 干净，`npm run build` 通过。分支 `claude/mainbranch`（即默认分支）。
-- **自主基础库进度（B 轴逻辑/数值/时间，2026-06-04 起）**：调度器加**显式 `runsAfter/runsBefore`**（R10，破 RMW 伪环）；**`Condition→Event`**（布尔树 + edge/level 信号，`tier2/condition.ts`+`event-when.ts`）；**`tween`**（连续插值，`tier1/tween.ts`）；**`resource-apply` 全局按 id 路由**（R11，Effect 侧第一块）。闭合性论证见对话/后续 `wiki`。下一步候选：string 容器原子、Effect 侧补全（Condition→Event→Effect 串通）。
+- **348 passed**，`tsc --noEmit` 干净，`npm run build` 通过。分支 `claude/mainbranch`（即默认分支）。
+- **自主基础库进度（B 轴逻辑/数值/时间，2026-06-04）—— Condition→Event→Effect 主链已合龙**：
+  调度器**显式 `runsAfter/runsBefore`**（R10，破 RMW 伪环）；**Condition** 布尔树（叶子 resource/flag/state/**timer/string**，`tier2/condition.ts`）；**event-when**（Condition→Event，edge/level 信号）；**effect-apply**（Event→Effect：置 Flag/改 Resource/设 State，Commit 阶段，一拍反馈，`tier2/effect-apply.ts`）；**tween**（连续插值，`tier1/tween.ts`）；**resource 全局按 id 路由**（R11）；**string-variable** 扩展原子（R4，`atoms/string-variable/`）。
+  闭合性论证 + 待 Gemini review：`review-for-gemini-emergence.txt`（6 个开放问题）。下一步候选：打通多步链/Tier3 机制涌现示例、Effect 扩 spawn/destroy、Game A 侧 emergent（相机跟随/单向平台）。
 - **目录结构（2026-06-04 重组）**：所有 skill 收拢到 `src/skills/{atoms,tier1,tier2,tier3,tier4}`（tier3/tier4 占位待 request 拉动）。别名 `@skills/*`、`@atom-skills/*`(→skills/atoms)、`@assets/*`。见 `src/skills/README.md`。
 - **资产系统（新，表现层）**：`src/assets/` —— `AssetManager` + 可插拔 loader（Stub/Image），描述符分 4 kind（texture/atlas/sprite-sheet/**prerendered-sequence=3D→2D 离线一等公民**），统一归约为「源图+子矩形」。只按 string key 工作、不碰 snapshot → lockstep 安全。3D→2D 的门已留宽（不接 3D 工具链）。`CanvasRenderer` 可选接入。
 - **引擎**：`SystemPhase`（Update/Rotate/Resolve/PostResolve/Commit，先按 phase 分桶再组件拓扑）；

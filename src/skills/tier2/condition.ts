@@ -1,5 +1,5 @@
 import type { IWorld } from '@engine/core/types.js';
-import type { ConditionExpr, CmpOp, Resource, Flag, State } from '@engine/protocol/components.js';
+import type { ConditionExpr, CmpOp, Resource, Flag, State, Timer, StringVar } from '@engine/protocol/components.js';
 
 // Condition —— 布尔条件树的确定性求值（纯函数，无副作用）。
 //
@@ -28,6 +28,22 @@ function findState(world: IWorld, fsmId: string): State | undefined {
   for (const [e] of world.query('State')) {
     const s = world.getComponent<State>(e, 'State');
     if (s && s.fsmId === fsmId) return s;
+  }
+  return undefined;
+}
+
+function findTimer(world: IWorld, id: string): Timer | undefined {
+  for (const [e] of world.query('Timer')) {
+    const t = world.getComponent<Timer>(e, 'Timer');
+    if (t && t.id === id) return t;
+  }
+  return undefined;
+}
+
+function findStringVar(world: IWorld, id: string): StringVar | undefined {
+  for (const [e] of world.query('StringVar')) {
+    const s = world.getComponent<StringVar>(e, 'StringVar');
+    if (s && s.id === id) return s;
   }
   return undefined;
 }
@@ -70,6 +86,14 @@ export function evaluateCondition(world: IWorld, expr: ConditionExpr): boolean {
     case 'state': {
       const s = findState(world, expr.fsmId);
       return s ? s.current === expr.equals : false;
+    }
+    case 'timer': {
+      const t = findTimer(world, expr.id);
+      return t ? compare(t.elapsed, expr.cmp, expr.value) : false;
+    }
+    case 'string': {
+      const s = findStringVar(world, expr.id);
+      return s ? s.value === expr.equals : false;
     }
   }
 }

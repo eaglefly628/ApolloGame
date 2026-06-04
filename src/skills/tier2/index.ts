@@ -8,3 +8,4 @@ export { triggerZoneCapability, ZONE_FLAG } from './trigger-zone.js';
 export { frictionCapability } from './friction.js';
 export { eventWhenCapability } from './event-when.js';
 export { evaluateCondition } from './condition.js';
+export { effectApplyCapability } from './effect-apply.js';

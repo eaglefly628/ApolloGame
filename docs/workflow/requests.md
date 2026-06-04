@@ -60,7 +60,9 @@
 
 ---
 
-### R4 · [2026-06-03] · PB · Game B · status: open · 优先级: P1
+### R4 · [2026-06-03] · PB · Game B · status: **done**（2026-06-04，Lead）· 优先级: P1
+
+> ✅ Lead 落地：`string-variable` 扩展原子（`src/skills/atoms/string-variable/`）—— `StringVar{id,value}` + `StringSet{id,value}` 一次性写事件 + `string-apply` 系统（**全局按 id 路由**，同实体优先，仿 R11）。并加了 Condition 的 `string` 叶子（`{kind:'string',id,equals}`），可直接门控剧情节点/结局标识。不计入核心 26（`extensionAtomCapabilities`）。3 条测试。
 
 **标题**：`string-variable`（周期表 X3 扩展原子，未实现）—— string 容器
 
