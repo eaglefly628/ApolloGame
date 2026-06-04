@@ -2,13 +2,11 @@
 """
 Apollo Engine Launcher
 =====================
-Python 入口，管理所有 Web 服务和工具命令。
-用法：python3 apollo.py [命令]
+Python 入口，同时启动:
+1. Vite 开发服务器（前端）
+2. API 服务器（工具命令后端）
 
-后续扩展：
-- 接入 pywebview 做原生窗口
-- 接入 tkinter/Qt 做编辑器 GUI
-- 接入 Claude API 做一句话生成游戏
+用法：python3 apollo.py [命令]
 """
 
 import subprocess
@@ -20,11 +18,15 @@ import webbrowser
 import json
 import shutil
 from pathlib import Path
-from http.server import HTTPServer, SimpleHTTPRequestHandler
+from http.server import HTTPServer, BaseHTTPRequestHandler
 import threading
+import urllib.request
 
 ROOT = Path(__file__).resolve().parent
 os.chdir(ROOT)
+
+VITE_PORT = 5173
+API_PORT = 4000
 
 # ── 颜色输出 ──
 
@@ -35,7 +37,7 @@ def c(text, color):
 def banner():
     print()
     print(c("  ╔══════════════════════════════════════╗", 'c'))
-    print(c("  ║", 'c') + c("     APOLLO ENGINE LAUNCHER v0.1     ", 'w') + c("║", 'c'))
+    print(c("  ║", 'c') + c("     APOLLO ENGINE LAUNCHER v0.2     ", 'w') + c("║", 'c'))
     print(c("  ║", 'c') + c("     ECS Game Engine · 26 Atoms      ", 'dim') + c("║", 'c'))
     print(c("  ╚══════════════════════════════════════╝", 'c'))
     print()
@@ -45,6 +47,7 @@ def banner():
 _processes: list[subprocess.Popen] = []
 
 def _cleanup(sig=None, frame=None):
+    print(c("\n  [SHUTDOWN]", 'y'), "Stopping all services...")
     for p in _processes:
         try:
             p.terminate()
@@ -56,18 +59,120 @@ def _cleanup(sig=None, frame=None):
 signal.signal(signal.SIGINT, _cleanup)
 signal.signal(signal.SIGTERM, _cleanup)
 
-def run_bg(cmd: list[str], label: str) -> subprocess.Popen:
-    print(c(f"  [{label}]", 'y'), f"Starting: {' '.join(cmd)}")
-    proc = subprocess.Popen(cmd, cwd=ROOT, stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
+# ── 环境检查 ──
+
+def check_env():
+    if not shutil.which('npm') or not shutil.which('node'):
+        print(c("  [ERROR]", 'r'), "npm/node not found.")
+        sys.exit(1)
+    if not (ROOT / 'node_modules').exists():
+        print(c("  [SETUP]", 'y'), "Installing dependencies...")
+        subprocess.call(['npm', 'install'], cwd=ROOT)
+
+# ── 项目信息收集 ──
+
+def get_project_status() -> dict:
+    branch = subprocess.getoutput('git branch --show-current')
+    last_commit = subprocess.getoutput('git log --oneline -1')
+    test_count = subprocess.getoutput("find src -name '*.test.ts' 2>/dev/null | wc -l").strip()
+
+    atom_dir = ROOT / 'src' / 'atom-skills'
+    atoms = len([d for d in atom_dir.iterdir() if d.is_dir() and (d / 'index.ts').exists()]) if atom_dir.exists() else 0
+
+    themes_dir = ROOT / 'src' / 'ui' / 'themes'
+    themes = [d.name for d in themes_dir.iterdir() if d.is_dir() and (d / 'spec.md').exists()] if themes_dir.exists() else []
+
+    skills_dir = ROOT / 'wiki' / 'skills'
+    skill_count = len(list(skills_dir.glob('*.md'))) if skills_dir.exists() else 0
+
+    games_dir = ROOT / 'docs' / 'game-design'
+    games = [f.stem for f in games_dir.glob('*.md')] if games_dir.exists() else []
+
+    return {
+        'branch': branch,
+        'lastCommit': last_commit,
+        'atoms': atoms,
+        'testFiles': int(test_count) if test_count.isdigit() else 0,
+        'themes': themes,
+        'skillModules': skill_count,
+        'games': games,
+    }
+
+def run_command(cmd: list[str], timeout: int = 120) -> dict:
+    try:
+        result = subprocess.run(cmd, cwd=ROOT, capture_output=True, text=True, timeout=timeout)
+        return {
+            'success': result.returncode == 0,
+            'stdout': result.stdout[-4000:] if len(result.stdout) > 4000 else result.stdout,
+            'stderr': result.stderr[-2000:] if len(result.stderr) > 2000 else result.stderr,
+            'code': result.returncode,
+        }
+    except subprocess.TimeoutExpired:
+        return {'success': False, 'stdout': '', 'stderr': 'Command timed out', 'code': -1}
+    except Exception as e:
+        return {'success': False, 'stdout': '', 'stderr': str(e), 'code': -1}
+
+# ── API 服务器 ──
+
+class APIHandler(BaseHTTPRequestHandler):
+    def do_GET(self):
+        self.send_response(200)
+        self.send_header('Content-Type', 'application/json')
+        self.send_header('Access-Control-Allow-Origin', '*')
+        self.end_headers()
+
+        path = self.path.split('?')[0]
+
+        if path == '/api/status':
+            data = get_project_status()
+        elif path == '/api/test':
+            data = run_command(['npx', 'vitest', 'run'])
+        elif path == '/api/typecheck':
+            data = run_command(['npx', 'tsc', '--noEmit'])
+        elif path == '/api/build':
+            data = run_command(['npx', 'vite', 'build'])
+        elif path == '/api/git-log':
+            data = run_command(['git', 'log', '--oneline', '-20'])
+        elif path == '/api/git-status':
+            data = run_command(['git', 'status', '--short'])
+        elif path == '/api/git-pull':
+            data = run_command(['git', 'pull', 'origin', 'claude/mainbranch', '--rebase'])
+        else:
+            data = {'error': 'Unknown endpoint', 'endpoints': [
+                '/api/status', '/api/test', '/api/typecheck',
+                '/api/build', '/api/git-log', '/api/git-status', '/api/git-pull',
+            ]}
+
+        self.wfile.write(json.dumps(data, ensure_ascii=False).encode())
+
+    def do_OPTIONS(self):
+        self.send_response(200)
+        self.send_header('Access-Control-Allow-Origin', '*')
+        self.send_header('Access-Control-Allow-Methods', 'GET, OPTIONS')
+        self.end_headers()
+
+    def log_message(self, format, *args):
+        pass  # 静默日志
+
+def start_api_server():
+    server = HTTPServer(('127.0.0.1', API_PORT), APIHandler)
+    thread = threading.Thread(target=server.serve_forever, daemon=True)
+    thread.start()
+    print(c("  [API]", 'g'), f"Dev tools API on http://localhost:{API_PORT}")
+    return server
+
+# ── Vite 服务器 ──
+
+def start_vite():
+    proc = subprocess.Popen(
+        ['npx', 'vite', '--port', str(VITE_PORT)],
+        cwd=ROOT, stdout=subprocess.PIPE, stderr=subprocess.STDOUT,
+    )
     _processes.append(proc)
+    print(c("  [VITE]", 'g'), f"Starting dev server on http://localhost:{VITE_PORT}")
     return proc
 
-def run_fg(cmd: list[str], label: str) -> int:
-    print(c(f"  [{label}]", 'y'), f"Running: {' '.join(cmd)}")
-    return subprocess.call(cmd, cwd=ROOT)
-
-def wait_for_server(url: str, timeout: int = 15):
-    import urllib.request
+def wait_for_server(url: str, timeout: int = 15) -> bool:
     start = time.time()
     while time.time() - start < timeout:
         try:
@@ -77,163 +182,78 @@ def wait_for_server(url: str, timeout: int = 15):
             time.sleep(0.5)
     return False
 
-# ── 环境检查 ──
-
-def check_env():
-    npm = shutil.which('npm')
-    node = shutil.which('node')
-    if not npm or not node:
-        print(c("  [ERROR]", 'r'), "npm/node not found. Install Node.js first.")
-        sys.exit(1)
-
-    if not (ROOT / 'node_modules').exists():
-        print(c("  [SETUP]", 'y'), "Installing dependencies...")
-        run_fg(['npm', 'install'], 'npm')
-
-def get_vite_port() -> int:
-    """Read port from vite.config if set, otherwise default 5173."""
-    return 5173
-
-# ── 命令实现 ──
+# ── 命令 ──
 
 def cmd_launcher():
-    """启动 Game Library Launcher（默认）"""
     check_env()
-    port = get_vite_port()
-    print(c("  [LAUNCHER]", 'g'), f"Starting Apollo Game Library...")
-    proc = run_bg(['npx', 'vite', '--port', str(port)], 'vite')
+    api = start_api_server()
+    vite = start_vite()
 
-    # 读 vite 输出等 ready
-    url = f"http://localhost:{port}"
+    url = f"http://localhost:{VITE_PORT}"
     if wait_for_server(url):
-        print(c("  [READY]", 'g'), f"Game Library running at {c(url, 'c')}")
+        print(c("  [READY]", 'g'), f"Apollo Launcher: {c(url, 'c')}")
         webbrowser.open(url)
     else:
-        print(c("  [WARN]", 'y'), "Server may still be starting, opening anyway...")
+        print(c("  [WARN]", 'y'), "Opening anyway...")
         webbrowser.open(url)
 
-    print(c("  [INFO]", 'dim'), "Press Ctrl+C to stop")
+    print(c("  [INFO]", 'dim'), "Press Ctrl+C to stop all services")
     try:
-        proc.wait()
-    except KeyboardInterrupt:
-        _cleanup()
-
-def cmd_game(game_id: str):
-    """直接启动某个游戏（跳过 Launcher UI）"""
-    check_env()
-    port = get_vite_port()
-    print(c(f"  [GAME]", 'g'), f"Launching game: {game_id}")
-    proc = run_bg(['npx', 'vite', '--port', str(port)], 'vite')
-    url = f"http://localhost:{port}?game={game_id}"
-    if wait_for_server(f"http://localhost:{port}"):
-        webbrowser.open(url)
-    print(c("  [INFO]", 'dim'), "Press Ctrl+C to stop")
-    try:
-        proc.wait()
+        vite.wait()
     except KeyboardInterrupt:
         _cleanup()
 
 def cmd_test():
-    """运行所有测试"""
     check_env()
-    print(c("  [TEST]", 'g'), "Running vitest...")
-    sys.exit(run_fg(['npx', 'vitest', 'run'], 'vitest'))
+    sys.exit(subprocess.call(['npx', 'vitest', 'run'], cwd=ROOT))
 
 def cmd_typecheck():
-    """TypeScript 类型检查"""
     check_env()
-    print(c("  [TSC]", 'g'), "Type checking...")
-    sys.exit(run_fg(['npx', 'tsc', '--noEmit'], 'tsc'))
+    sys.exit(subprocess.call(['npx', 'tsc', '--noEmit'], cwd=ROOT))
 
 def cmd_build():
-    """生产构建"""
     check_env()
-    print(c("  [BUILD]", 'g'), "Building for production...")
-    sys.exit(run_fg(['npx', 'vite', 'build'], 'vite'))
+    sys.exit(subprocess.call(['npx', 'vite', 'build'], cwd=ROOT))
 
 def cmd_status():
-    """显示项目状态"""
-    print(c("  Project:", 'w'), str(ROOT))
-    print(c("  Branch:", 'w'), subprocess.getoutput('git branch --show-current'))
-    print()
-
-    # 统计
-    atom_dir = ROOT / 'src' / 'atom-skills'
-    atoms = len([d for d in atom_dir.iterdir() if d.is_dir() and (d / 'index.ts').exists()]) if atom_dir.exists() else 0
-
-    test_count = subprocess.getoutput("find src -name '*.test.ts' | wc -l").strip()
-    game_designs = list((ROOT / 'docs' / 'game-design').glob('*.md')) if (ROOT / 'docs' / 'game-design').exists() else []
-    themes = [d.name for d in (ROOT / 'src' / 'ui' / 'themes').iterdir() if d.is_dir() and (d / 'spec.md').exists()] if (ROOT / 'src' / 'ui' / 'themes').exists() else []
-    skill_mods = list((ROOT / 'wiki' / 'skills').glob('*.md')) if (ROOT / 'wiki' / 'skills').exists() else []
-
-    print(c("  Atoms:", 'c'), f"{atoms}/26")
-    print(c("  Test files:", 'c'), test_count)
-    print(c("  Skill modules:", 'c'), f"{len(skill_mods)}")
-    print(c("  UI themes:", 'c'), f"{len(themes)} ({', '.join(themes)})")
-    print(c("  Game designs:", 'c'), f"{len(game_designs)}")
-    for gd in game_designs:
-        print(c("    -", 'dim'), gd.stem)
+    banner()
+    s = get_project_status()
+    print(c("  Branch:", 'w'), s['branch'])
+    print(c("  Last commit:", 'w'), s['lastCommit'])
+    print(c("  Atoms:", 'c'), f"{s['atoms']}/26")
+    print(c("  Test files:", 'c'), s['testFiles'])
+    print(c("  Skill modules:", 'c'), s['skillModules'])
+    print(c("  UI themes:", 'c'), f"{len(s['themes'])} ({', '.join(s['themes'])})")
+    print(c("  Games:", 'c'), ', '.join(s['games']) if s['games'] else '(none)')
     print()
 
 def cmd_help():
-    """显示帮助"""
     banner()
     print(c("  Commands:", 'w'))
+    print(f"    {c('(default)', 'c').ljust(30)} Launch Game Library + Dev Tools")
+    print(f"    {c('test', 'c').ljust(30)} Run all tests")
+    print(f"    {c('typecheck', 'c').ljust(30)} TypeScript type check")
+    print(f"    {c('build', 'c').ljust(30)} Production build")
+    print(f"    {c('status', 'c').ljust(30)} Project stats")
+    print(f"    {c('help', 'c').ljust(30)} This help")
     print()
-    cmds = [
-        ("launcher", "Start Game Library (default)", cmd_launcher),
-        ("game <id>", "Launch a specific game directly", None),
-        ("test", "Run all tests (vitest)", cmd_test),
-        ("typecheck", "TypeScript type check (tsc --noEmit)", cmd_typecheck),
-        ("build", "Production build (vite build)", cmd_build),
-        ("status", "Show project status", cmd_status),
-        ("help", "Show this help", cmd_help),
-    ]
-    for name, desc, _ in cmds:
-        print(f"    {c(name.ljust(16), 'c')} {desc}")
-    print()
-    print(c("  Game IDs:", 'w'))
-    print(f"    {c('platformer', 'c')}      Platformer Demo (playable)")
-    print(f"    {c('game-a', 'c')}          Co-op Adventure (WIP)")
-    print(f"    {c('game-b', 'c')}          Otome VN (WIP)")
-    print()
-    print(c("  Examples:", 'dim'))
-    print(c("    python3 apollo.py", 'dim'), "           # Open game library")
-    print(c("    python3 apollo.py game platformer", 'dim'), " # Launch platformer directly")
-    print(c("    python3 apollo.py test", 'dim'), "            # Run tests")
-    print()
-
-# ── 主入口 ──
 
 def main():
     args = sys.argv[1:]
-
     if not args:
         banner()
         cmd_launcher()
         return
 
-    command = args[0]
-
     dispatch = {
-        'launcher': cmd_launcher,
-        'test': cmd_test,
-        'typecheck': cmd_typecheck,
-        'build': cmd_build,
-        'status': cmd_status,
-        'help': cmd_help,
-        '-h': cmd_help,
-        '--help': cmd_help,
+        'launcher': cmd_launcher, 'test': cmd_test, 'typecheck': cmd_typecheck,
+        'build': cmd_build, 'status': cmd_status, 'help': cmd_help, '-h': cmd_help,
     }
-
-    if command == 'game' and len(args) > 1:
-        banner()
-        cmd_game(args[1])
-    elif command in dispatch:
-        banner()
-        dispatch[command]()
+    cmd = args[0]
+    if cmd in dispatch:
+        dispatch[cmd]()
     else:
-        print(c(f"  Unknown command: {command}", 'r'))
+        print(c(f"  Unknown: {cmd}", 'r'))
         cmd_help()
 
 if __name__ == '__main__':
