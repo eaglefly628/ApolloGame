@@ -139,6 +139,33 @@ describe('resource-apply system', () => {
     expect(res.current).toBe(0);
   });
 
+  it('R11 全局路由：ResourceModify 挂在别的实体，按 id 路由到持有资源的实体', () => {
+    world.createEntity('game-state');
+    world.addComponent('game-state', makeResource('affection_S', 30, 0, 100));
+    // 修改挂在一个完全无关的"事件"实体上，只带 id —— 不知道资源住哪
+    world.createEntity('dialogue-event');
+    world.addComponent('dialogue-event', makeModify('affection_S', 5));
+
+    world.tick();
+
+    expect(world.getComponent<Resource>('game-state', 'Resource')!.current).toBe(35);
+    expect(world.hasComponent('dialogue-event', 'ResourceModify')).toBe(false); // 仍被消费
+  });
+
+  it('R11 同实体优先：多实体同名资源，co-located 改各自的（不被全局路由抢走）', () => {
+    world.createEntity('p1');
+    world.addComponent('p1', makeResource('hp', 50, 0, 100));
+    world.addComponent('p1', makeModify('hp', 20));
+    world.createEntity('p2');
+    world.addComponent('p2', makeResource('hp', 80, 0, 100));
+    world.addComponent('p2', makeModify('hp', -30));
+
+    world.tick();
+
+    expect(world.getComponent<Resource>('p1', 'Resource')!.current).toBe(70);
+    expect(world.getComponent<Resource>('p2', 'Resource')!.current).toBe(50);
+  });
+
   it('multiple entities are processed independently', () => {
     world.createEntity('e1');
     world.addComponent('e1', makeResource('hp', 50, 0, 100));

@@ -7,14 +7,15 @@
 
 ## 1. 技术现状
 
-- **286 passed**，`tsc --noEmit` 干净，`npm run build` 通过。分支 `claude/mainbranch`（即默认分支）。
+- **337 passed**，`tsc --noEmit` 干净，`npm run build` 通过。分支 `claude/mainbranch`（即默认分支）。
+- **自主基础库进度（B 轴逻辑/数值/时间，2026-06-04 起）**：调度器加**显式 `runsAfter/runsBefore`**（R10，破 RMW 伪环）；**`Condition→Event`**（布尔树 + edge/level 信号，`tier2/condition.ts`+`event-when.ts`）；**`tween`**（连续插值，`tier1/tween.ts`）；**`resource-apply` 全局按 id 路由**（R11，Effect 侧第一块）。闭合性论证见对话/后续 `wiki`。下一步候选：string 容器原子、Effect 侧补全（Condition→Event→Effect 串通）。
 - **目录结构（2026-06-04 重组）**：所有 skill 收拢到 `src/skills/{atoms,tier1,tier2,tier3,tier4}`（tier3/tier4 占位待 request 拉动）。别名 `@skills/*`、`@atom-skills/*`(→skills/atoms)、`@assets/*`。见 `src/skills/README.md`。
 - **资产系统（新，表现层）**：`src/assets/` —— `AssetManager` + 可插拔 loader（Stub/Image），描述符分 4 kind（texture/atlas/sprite-sheet/**prerendered-sequence=3D→2D 离线一等公民**），统一归约为「源图+子矩形」。只按 string key 工作、不碰 snapshot → lockstep 安全。3D→2D 的门已留宽（不接 3D 工具链）。`CanvasRenderer` 可选接入。
 - **引擎**：`SystemPhase`（Update/Rotate/Resolve/PostResolve/Commit，先按 phase 分桶再组件拓扑）；
   动态 AABB 树宽相位（每帧从组件重建 → rollback 安全）；`contact.ts`（box/circle 解析 + 凸多边形 **SAT**）；
   `snapshot/restore` + 确定性 `hashSnapshot`；模拟路径只用 IEEE 确定算子（无 hypot/sin/cos）。
-- **Tier 1**：accel-apply、motion-apply、lifetime、rotation-apply、animation、hierarchy-resolve（运动学/挂接收尾；counter→Macro 待定）。
-- **Tier 2**：collision-resolve（顺序冲量求解器：逆质量+速度冲量+NGS 位置迭代）、ground-sense、jump、bounds-clamp、trigger-zone、friction。
+- **Tier 1**：accel-apply、motion-apply、lifetime、rotation-apply、animation、hierarchy-resolve、**tween**（运动学/挂接/缓动）。
+- **Tier 2**：collision-resolve（顺序冲量求解器：逆质量+速度冲量+NGS 位置迭代）、ground-sense、jump、bounds-clamp、trigger-zone、friction、**event-when**（条件→信号）+ **condition**（布尔树求值，供 event-when 用）。
 - **物理**：凸多边形 SAT（仅平移；刚体旋转=接触点+力矩=Stage 2，未做）。
 - **联机**：双标签页帧同步平台跳跃（`LockstepClient`+BroadcastChannel+平台世界+跳跃+斜坡），确定性逐 tick 同哈希。`main.tsx` 即此 demo。
 

@@ -5,3 +5,4 @@ export { lifetimeCapability } from './lifetime.js';
 export { rotationApplyCapability } from './rotation-apply.js';
 export { animationCapability } from './animation.js';
 export { hierarchyResolveCapability } from './hierarchy-resolve.js';
+export { tweenCapability } from './tween.js';

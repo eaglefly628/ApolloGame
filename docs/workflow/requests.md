@@ -88,14 +88,14 @@
 
 ---
 
-### R6 · [2026-06-03] · PB · Game B · status: open · 优先级: P1
+### R6 · [2026-06-03] · PB · Game B · status: **done**（2026-06-04，Lead）· 优先级: P1
 
 **标题**：`tween / interpolate`（Tier 1 候选）—— 数值随时间朝目标缓动
 
 - **想实现的游戏行为**：立绘淡入淡出（`Color.alpha`）、场景切换淡黑、好感条平滑填充、立绘滑入（`Transform.x`）。
 - **已经试了什么**：`animation`（Tier1）只做离散 `frame.index++`；`Bar.tsx` 用 CSS transition；打字机可用 `timer.elapsed` 切片。
 - **卡在哪 / 缺什么**：无 ECS 内**确定性**连续插值（存档重放一致、不靠 CSS）。难点 = 字段寻址（写"哪个组件的哪个字段"）。
-- **建议方案**：`Tween{ target, field, from, to, elapsed, duration, easing }`，Tier1 推进 `value = from+(to-from)*ease(t)`；或退一步只支持 `Resource.current`/`Color.alpha` 高频字段避开泛型寻址。**渲染器已读 `globalAlpha = Color.alpha`，tween 一到淡入即通**。Game A 镜头/击退也用 —— 跨游戏复用价值高。
+- **✅ Lead 落地**：`Tween{ target, from, to, elapsed, duration, easing, done }`（Tier1，`src/skills/tier1/tween.ts`）。定步长：`elapsed` 每帧 +1，`value = from+(to-from)*ease(t)` 写回同实体目标字段；到点 `done` 并锁定终值。**字段寻址按建议收口为高价值白名单**：`Transform.{x,y,rotation,scaleX,scaleY}` / `Color.alpha` / `Resource.current`（写 Resource.current 时尊重上下限）。缓动 `linear/easeIn/easeOut/easeInOut` 全多项式（不碰 sin/cos）→ 确定性、录放一致。7 条测试。
 
 ---
 
@@ -153,13 +153,14 @@
 
 ---
 
-### R11 · [2026-06-04] · PB · Game B · status: open · 优先级: P1 · **类型: 接口摩擦（搭 v0.1 实测）**
+### R11 · [2026-06-04] · PB · Game B · status: **done**（2026-06-04，Lead）· 优先级: P1 · **类型: 接口摩擦（搭 v0.1 实测）**
 
 **标题**：Resource 修改是实体局部的，没有"按 id 全局修改某资源"的路由
 
 - **摩擦**：`ResourceModify` 必须挂在**与目标 `Resource` 同一实体**上（`resource-apply` 要求同实体且 `id` 匹配）。游戏层想"给好感_S +5"时，得先知道好感_S 这个 Resource 住在哪个实体。
 - **我当时的绕过（坦白）**：强行约定 **`entityId === resourceId`**，runner 把 `ResourceModify` `addComponent` 到与资源 id 同名的实体。多资源/多角色好感时这约定脆弱、且把"路由"责任泄漏到游戏层。
-- **请主程分析**：是否提供"修改 id=X 的资源（无论它挂在哪个实体）"的全局事件/路由，或一个 resource 注册表。VN 有 7+ 资源、Game A 也有数值，跨游戏共需。
+- **✅ Lead 落地**：`resource-apply` 改为超集——先看同实体匹配 id（**按实体定位，多角色同名资源各改各的，向后兼容**），否则**全局按 id 路由**到持有该资源的实体（与 Condition 的"按 id 全局读"读侧对称）。`ResourceModify{ resourceId:"affection_S", amount:5 }` 挂在任意实体（如对话事件实体）即可，不必知道资源住哪。撤掉 `entityId===resourceId` 脆弱约定。2 条新测试（全局路由 + 同实体优先）。
+  - 这同时是 **Condition→Event→Effect** 链里 **Effect 侧的第一块**（按 id 改数值）。
 
 ---
 

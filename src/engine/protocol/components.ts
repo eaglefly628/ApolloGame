@@ -313,3 +313,27 @@ export interface Signal extends Component {
   name: string; // 信号名（= EventWhen.signal）
   source: EntityId; // 发出该信号的 EventWhen 实体 id
 }
+
+// ── tween ── 数值随时间朝目标缓动（B 轴"连续"柱）。定步长：elapsed 每帧 +1，单位=tick。
+// 只驱动高价值字段（避开泛型字段寻址）；缓动用多项式（不碰 sin/cos，确定性）。
+export type TweenTarget =
+  | 'Transform.x'
+  | 'Transform.y'
+  | 'Transform.rotation'
+  | 'Transform.scaleX'
+  | 'Transform.scaleY'
+  | 'Color.alpha'
+  | 'Resource.current';
+
+export type TweenEasing = 'linear' | 'easeIn' | 'easeOut' | 'easeInOut';
+
+export interface Tween extends Component {
+  readonly type: 'Tween';
+  target: TweenTarget; // 驱动同实体上的哪个组件字段
+  from: number;
+  to: number;
+  elapsed: number; // 已过 tick 数（每帧 +1）
+  duration: number; // 总 tick 数（<=0 视为立即到 to）
+  easing: TweenEasing;
+  done: boolean; // elapsed>=duration 后置 true（snapshot 友好）
+}
