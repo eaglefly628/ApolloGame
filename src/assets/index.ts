@@ -16,3 +16,14 @@ export type {
 } from './asset-types.js';
 export { AssetManager, StubAssetLoader } from './asset-manager.js';
 export { ImageAssetLoader, isImageHandle, type ImageAssetHandle } from './image-loader.js';
+export {
+  parseAssetIndex,
+  pendingAssets,
+  filledAssets,
+  registerAssetIndex,
+  ASSET_TYPES,
+  type AssetType,
+  type AssetStatus,
+  type AssetIndexEntry,
+  type AssetIndex,
+} from './asset-index.js';
