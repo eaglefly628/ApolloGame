@@ -11,13 +11,14 @@
     "resolveJsonModule": true,
     "isolatedModules": true,
     "noEmit": true,
-    "baseUrl": ".",
     "paths": {
-      "@engine/*": ["src/engine/*"],
-      "@atom-skills/*": ["src/atom-skills/*"],
-      "@renderer/*": ["src/renderer/*"],
-      "@ui/*": ["src/ui/*"],
-      "@net/*": ["src/net/*"]
+      "@engine/*": ["./src/engine/*"],
+      "@skills/*": ["./src/skills/*"],
+      "@atom-skills/*": ["./src/skills/atoms/*"],
+      "@assets/*": ["./src/assets/*"],
+      "@renderer/*": ["./src/renderer/*"],
+      "@ui/*": ["./src/ui/*"],
+      "@net/*": ["./src/net/*"]
     }
   },
   "include": ["src"],
