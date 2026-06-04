@@ -167,6 +167,11 @@ export interface Camera extends Component {
   viewportH: number;
 }
 
+// ── camera-follow ── 标记：相机要跟随的目标（合作相机取所有目标的 AABB 中点）。空 marker。
+export interface CameraTarget extends Component {
+  readonly type: 'CameraTarget';
+}
+
 // ── L6 text ── 显示什么文字
 export interface Text extends Component {
   readonly type: 'Text';

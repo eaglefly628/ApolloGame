@@ -10,6 +10,7 @@ export default defineConfig({
       '@skills': resolve(__dirname, 'src/skills'),
       '@atom-skills': resolve(__dirname, 'src/skills/atoms'),
       '@assets': resolve(__dirname, 'src/assets'),
+      '@services': resolve(__dirname, 'src/services'),
       '@renderer': resolve(__dirname, 'src/renderer'),
       '@ui': resolve(__dirname, 'src/ui'),
       '@net': resolve(__dirname, 'src/net'),

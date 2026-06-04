@@ -1,7 +1,7 @@
 import type { IWorld, RendererBackend } from '@engine/core/types.js';
 import type { AssetManager } from '@assets/index.js';
 import { isImageHandle } from '@assets/index.js';
-import { collectRenderables } from './renderable.js';
+import { collectRenderables, getCameraView } from './renderable.js';
 
 export interface CanvasRendererOptions {
   width?: number;
@@ -40,6 +40,16 @@ export class CanvasRenderer implements RendererBackend {
     ctx.fillStyle = this.opts.background ?? '#16213e';
     ctx.fillRect(0, 0, canvas.width, canvas.height);
 
+    // 世界→屏幕投影（卷轴）：有相机则把世界向相机反方向平移并缩放，使相机中心落在视口中心；
+    // 无相机则世界坐标 1:1（与原行为一致）。整段 renderable 绘制都在此变换下。
+    const cam = getCameraView(world);
+    ctx.save();
+    if (cam) {
+      ctx.translate(canvas.width / 2, canvas.height / 2);
+      ctx.scale(cam.zoom, cam.zoom);
+      ctx.translate(-cam.centerX, -cam.centerY);
+    }
+
     for (const r of collectRenderables(world)) {
       ctx.save();
       ctx.translate(r.x, r.y);
@@ -76,6 +86,8 @@ export class CanvasRenderer implements RendererBackend {
 
       ctx.restore();
     }
+
+    ctx.restore(); // 收尾相机投影变换
   }
 
   // 解析 textureKey → 已加载帧，居中绘制源矩形。成功返回 true，否则 false(退化占位)。

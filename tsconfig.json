@@ -16,6 +16,7 @@
       "@skills/*": ["./src/skills/*"],
       "@atom-skills/*": ["./src/skills/atoms/*"],
       "@assets/*": ["./src/assets/*"],
+      "@services/*": ["./src/services/*"],
       "@renderer/*": ["./src/renderer/*"],
       "@ui/*": ["./src/ui/*"],
       "@net/*": ["./src/net/*"]

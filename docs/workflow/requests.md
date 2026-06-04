@@ -185,7 +185,10 @@
 
 ---
 
-### [2026-06-03] · PA · Game A · status: open · REQ-001 相机 / 卷轴（世界→屏幕变换 + 合作跟随相机）
+### [2026-06-03] · PA · Game A · status: **done**（2026-06-04，Lead，Batch I）· REQ-001 相机 / 卷轴（世界→屏幕变换 + 合作跟随相机）
+
+> ✅ Lead 落地：`tier2/camera-follow`（CameraTarget 目标 AABB 中点 → Camera.offset，贴合 zoom，相机实体挂 Bounds 则钳关卡内）+ CanvasRenderer 世界→屏幕投影（读 Camera 施加 translate+scale，无相机则 1:1）。PA 用法：给两角色挂 `CameraTarget`，建一个挂 `Camera{viewportW/H}`(+可选 `Bounds`=关卡矩形) 的相机实体即可。6 测试。
+
 
 - **想实现的游戏行为**：
   合作冒险的关卡要**比屏幕大**（卷轴）。同屏不分屏：相机取两名玩家的中点，**动态缩放**保证两人都在视野内；

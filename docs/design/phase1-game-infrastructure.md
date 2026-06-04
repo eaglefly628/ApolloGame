@@ -32,10 +32,10 @@
 ## 2. 端口层（Ports，确定性之外的边缘）
 | 端口 | 状态 | 说明 |
 |---|---|---|
-| RendererBackend | 🟡 | canvas/ascii ✅；**相机投影/多行文本 ❌** |
+| RendererBackend | 🟡 | canvas/ascii ✅；**相机投影 ✅(Batch I)**；多行文本 ❌ |
 | InputSource | 🟡 | 键盘 ✅；**指针/点击 ❌（R3）** |
 | **AudioPort（音乐/音效/语音）** | ⭐❌ | 消费 `Sound`，BGM 循环/音效/声道/淡入淡出（R8） |
-| **StoragePort（存储/文件）** | ⭐❌ | snapshot POD → localStorage(web)/fs(node)/IndexedDB 适配器 |
+| **StoragePort（存储/文件）** | ✅(Batch I) | `src/services/storage/`：接口 + Memory + LocalStorage 适配器；fs(node) 待 @types/node |
 | NetworkPort | 🟡 | lockstep BroadcastChannel ✅；真 WS/WebRTC ❌ |
 
 ## 3. 资源 / 句柄管理（Asset & Handle）
@@ -52,7 +52,7 @@
 | snapshot/restore（POD） | ✅ | `world.ts` |
 | 确定性 hash | ✅ | `net/determinism` |
 | record / replay | ✅ | `debug/recorder|replayer` |
-| **存档系统（具名槽位/元数据/自动存档）** | ⭐❌ | StoragePort 之上：slots、时间戳、章节、缩略图 |
+| **存档系统（具名槽位/元数据）** | ✅(Batch I) | `SaveSystem`：snapshot+meta(tick/hash/时间/label) → StoragePort；存/读/列/删。自动存档/缩略图待 |
 
 ## 5. 消息 / 事件（Messaging）
 | 能力 | 状态 | 说明 |
@@ -64,8 +64,8 @@
 ## 6. 视图 / 相机（View）
 | 能力 | 状态 | 说明 |
 |---|---|---|
-| **camera-follow（涌现系统）** | ⭐❌ | 读目标 Transform → 算 Camera（中点+缩放贴合，钳边界）(REQ-001) |
-| **世界→屏幕投影（卷轴，渲染器）** | ⭐❌ | 渲染器施加 Camera 变换，世界可大于视口 |
+| **camera-follow（涌现系统）** | ✅(Batch I) | `tier2/camera-follow`：CameraTarget 目标 AABB 中点→Camera.offset，贴合 zoom，Bounds 钳关卡内 (REQ-001) |
+| **世界→屏幕投影（卷轴，渲染器）** | ✅(Batch I) | CanvasRenderer 读 Camera 施加 translate+scale 投影；无相机则 1:1 |
 
 ## 7. 场景 / 流程（Scene / Flow）
 | 能力 | 状态 | 说明 |
@@ -89,7 +89,7 @@
 ---
 
 ## 执行排程（建议，每批 ~3，可调）
-- **Batch I · 视图与存档**：camera-follow + 渲染器投影（卷轴）｜ StoragePort（web+node）+ 存档槽位。
+- **Batch I · 视图与存档**：✅ **已完成** —— camera-follow + 渲染器投影（卷轴）｜ StoragePort(Memory+LocalStorage) + SaveSystem 槽位。(REQ-001 可标 done)
 - **Batch II · IO 端口**：AudioPort（音乐/音效）｜ 指针输入（点击 R3）｜ 渲染器多行文本（R2）。
 - **Batch III · 资源与消息**：句柄生命周期管理（引用计数/批量释放）｜ 跨层消息总线。
 - **Batch IV · 流程与循环**：scene-transition（场景切换+批量生灭）｜ 主循环 暂停/单步 + 多端口装配。
