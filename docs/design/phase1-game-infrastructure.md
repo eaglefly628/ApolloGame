@@ -6,6 +6,18 @@
 
 图例：✅ 已有 ｜ 🟡 部分 ｜ ❌ 缺 ｜ ⭐ 本阶段要补
 
+## 0. 这是"涌现 skill"吗？—— 不是（重要概念）
+「涌现 skill」= 由原子（周期表）沿 Tier 组合、活在**确定性 sim 内**、读组件→写组件。
+本 Phase 的基础设施**绝大多数不是涌现 skill**，而是"让 skill 运行的机器"。五层：
+- **原子**（数据容器，sim 内）｜ **涌现 skill**（Tier1-4 系统，sim 内、确定性）
+- **端口 Port**（IO 适配器：渲染/输入/音频/存储/文件/网络，sim 外）
+- **引擎服务/运行时**（主循环/消息总线/句柄管理/对象池/本地化，sim 外、跨切面）
+- **表现**（相机投影/多行文本，渲染）
+
+> 全 Phase 里真正算"涌现 skill"的只有 **camera-follow** 和 **scene-transition**（读组件→产组件）；
+> `计时器`已作为**原子**存在（`timer`+`timer-advance`）；其余皆端口/服务/表现。
+> 强行把文件 IO / 对象池 / 音频做成"确定性 Tier 系统"是范畴错误。
+
 ## 1. 运行时 / 主循环（Runtime）
 | 能力 | 状态 | 说明 |
 |---|---|---|
@@ -66,6 +78,13 @@
 |---|---|
 | recorder/replayer/tracer/snapshot | ✅ |
 | debug overlay / dev-tools 面板 | ✅ |
+
+## 9. 引擎核心优化 / 杂项服务（新增，均非涌现 skill）
+| 能力 | 层 | 状态 | 说明 |
+|---|---|---|---|
+| **对象池（object pool）** | 引擎核心 | ⭐❌ | World 内实体/组件复用，避免高频 create/destroy 的 GC 抖动（与 spawn/lifetime 配合） |
+| **本地化（localization）** | 表现/资源服务 | ⭐❌ | sim 只存文案 key（或 `Text`/`StringVar`）；服务按 locale 解析成当地文字（与资产解析同构，sim 外） |
+| **计时器** | 原子（已有） | ✅ | in-sim 确定性 `timer`+`timer-advance`+`TimerDone`；如需"实时回调调度"才属服务，tick 制下一般不需要 |
 
 ---
 
