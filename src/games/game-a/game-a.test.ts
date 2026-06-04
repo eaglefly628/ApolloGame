@@ -4,7 +4,7 @@ import type { Component } from '@engine/core/types.js';
 import type { Transform, Velocity } from '@engine/protocol/components.js';
 import { applyCommands, hashSnapshot } from '@net/index.js';
 import type { Command } from '@net/index.js';
-import { JUMP_SPEED } from '../../tier2/index.js';
+import { JUMP_SPEED } from '@skills/tier2/index.js';
 import { buildGameABlueprint, PLAYER_A, PLAYER_B } from './blueprint.js';
 import { LEVEL_W1_1 } from './level.js';
 

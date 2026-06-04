@@ -20,7 +20,7 @@
 
 ---
 
-### R1 · [2026-06-03] · PB · Game B · status: open · 优先级: **P0**（阻塞一切 VN 画面）
+### R1 · [2026-06-03] · PB · Game B · status: **done**（2026-06-04，Lead，commit asset 系统）· 优先级: **P0**（阻塞一切 VN 画面）
 
 **标题**：贴图精灵渲染 —— 渲染器要能加载并绘制 `Sprite.textureKey`（背景图 + 立绘）
 
@@ -28,6 +28,9 @@
 - **已经试了什么**：给实体挂 `Sprite{textureKey, zOrder}` + `Transform`。
 - **卡在哪 / 缺什么**：`CanvasRenderer.sync` 对 `r.sprite` 只画 `fillRect(-8,-8,16,16)` 占位方块，**完全无视 `textureKey`**，没有任何图片加载/缓存/绘制路径。无图 = VN 没法看。
 - **建议方案**：渲染器（`src/renderer`，共享层）加 image 资产加载缓存（`HTMLImageElement`/`drawImage`），`collectRenderables` 已经把 `sprite` 透出。可配合 `Color.alpha`（渲染器已读 `globalAlpha`）做淡入。这是后端能力，非新原子。
+- **✅ Lead 落地（引擎/共享层部分）**：新建 `src/assets/`（`AssetManager` + `ImageAssetLoader`，加载/缓存/解析），`CanvasRenderer` 接 `assets`：`Sprite.textureKey` 就绪即 `drawImage` 真图、否则退化占位方块；`zOrder` 走原有 `collectRenderables` 排序；淡入用 `Color.alpha`（已支持）。**背景图直接用 `texture` kind；立绘表情差分用 `atlas` kind（一图多帧）**。
+  - **PB 游戏层只需**：写一份 asset manifest（key→src），`new AssetManager(new ImageAssetLoader())` → `registerManifest` → `await loadAll()` → `new CanvasRenderer({ assets })`。给实体挂 `Sprite{textureKey}` 即显图。
+  - **未覆盖（仍 open）**：R2 多行文本、R3 指针输入是另两件事，本条不含。立绘**按帧切换表情**（atlas frame 选择）属 C 范围/可后续小需求——当前 `Sprite` 无 frame 字段，渲染器先按整 key 取整图/默认帧。
 
 ---
 

@@ -7,13 +7,13 @@ import {
   colorCapability,
   overlapDetectCapability,
 } from '@atom-skills/index.js';
-import { accelApplyCapability, motionApplyCapability } from '../../tier1/index.js';
+import { accelApplyCapability, motionApplyCapability } from '@skills/tier1/index.js';
 import {
   collisionResolveCapability,
   groundSenseCapability,
   jumpCapability,
   boundsClampCapability,
-} from '../../tier2/index.js';
+} from '@skills/tier2/index.js';
 import type { Box, Level, Spawn } from './level.js';
 
 // ═══════════════════════════════════════════════════════════════
