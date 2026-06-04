@@ -185,3 +185,14 @@
 ## 已完成存档
 
 （Lead 实现后把需求移到这里，标 done + 对应 commit / 新原子名）
+
+### [2026-06-04] · Owner · 引擎原生 · status: done · 美术资产管理系统（Asset System）
+- 想实现的行为：游戏用字符串键引用美术（贴图/立绘/表情差分/序列帧），引擎负责加载、缓存、解析；并为「后续 3D→2D 渲染」留好门。
+- 缺什么：`Sprite.textureKey` 早有键间接、`Renderable` 后端无关，但**没有任何资产加载/解析层**——键指向的美术没人解析。
+- 落地（B 方案：门留宽、不接 3D 工具链）：
+  - 新模块 `src/assets/`：`AssetManager`（注册/加载/缓存/解析，幂等去重）+ 可插拔 `AssetLoader`（`StubAssetLoader` 无 I/O 供 headless/测试；`ImageAssetLoader` 浏览器真实图片）。
+  - 描述符显式分 4 个 kind：`texture` / `atlas`（图集，对应 Game B 表情差分）/ `sprite-sheet` / **`prerendered-sequence`（3D 模型离线预渲染的 2D 序列，3D→2D 一等公民）**。四种统一归约为「源图 + 子矩形(sx,sy,sw,sh)」。
+  - 句柄**不透明**：换 loader/后端（含未来 3D）不动上层。
+  - `CanvasRenderer` 可选接入 `assets`：贴图就绪画真图，否则退化占位方块（sim 不受影响）。
+- 确定性边界：资产层是表现层，只按 string key 工作，**绝不碰 world/snapshot/hash** → lockstep 安全。
+- 验收：14 条新测试，全绿；总 286 passed，tsc 干净，build 通过。

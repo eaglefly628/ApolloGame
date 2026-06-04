@@ -2,8 +2,11 @@
 
 > 工作目录(本地 clone)叫 `MemBrain`；GitHub 远端仓库是 `eaglefly628/ApolloGame`。两者不一致属正常。
 
-数据驱动的原子化 ECS 游戏引擎：26 个核心原子 skill + Tier 1 涌现层，确定性 tick 循环，
-可替换渲染后端，内置 debug / record-replay。
+数据驱动的原子化 ECS 游戏引擎：26 个核心原子 skill + Tier 1-4 涌现层，确定性 tick 循环，
+可替换渲染后端，内置 debug / record-replay + 美术资产系统。
+
+所有 skill 集中在 `src/skills/{atoms,tier1,tier2,tier3,tier4}`（见 `src/skills/README.md`）；
+美术资产（表现层、不进确定性 sim）在 `src/assets/`。
 
 ## 快速开始
 
