@@ -140,6 +140,45 @@
 
 ---
 
+### R10 · [2026-06-04] · PB · Game B · status: open · 优先级: P1 · **类型: 接口摩擦（搭 v0.1 实测）**
+
+**标题**：System 依赖声明无法表达"两个系统读改写同一组件"——dialogue-runner 与 state-sync 在 `State` 上冲突
+
+- **摩擦**：`dialogue-runner` 真实地读 `State.current` 并写它（推进节点）；`state-sync` 也读改写 `State`。两者都诚实声明 `reads+writes:['State']` → 组件拓扑互为前驱 → **判成环**。
+- **我当时的绕过（坦白）**：runner 声明成 `reads:[]`（**谎报**，实际内部 `getComponent` 读 State.current），只靠 `writes:['State']` 把自己排到 state-sync 前。能跑，但声明不诚实；换个场景（两个游戏系统都要 RMW 同一组件）就没干净出路，只能抢 `SystemPhase`——而整数相位已吃紧（`progress.md` 自己也提了）。
+- **请主程分析**：是否引入**显式 `runsAfter/runsBefore` 排序**，或允许声明"read-modify-write 同组件"而不判环（生产者-消费者之外的第三种关系）。这是会反复撞到的通用问题。
+
+---
+
+### R11 · [2026-06-04] · PB · Game B · status: open · 优先级: P1 · **类型: 接口摩擦（搭 v0.1 实测）**
+
+**标题**：Resource 修改是实体局部的，没有"按 id 全局修改某资源"的路由
+
+- **摩擦**：`ResourceModify` 必须挂在**与目标 `Resource` 同一实体**上（`resource-apply` 要求同实体且 `id` 匹配）。游戏层想"给好感_S +5"时，得先知道好感_S 这个 Resource 住在哪个实体。
+- **我当时的绕过（坦白）**：强行约定 **`entityId === resourceId`**，runner 把 `ResourceModify` `addComponent` 到与资源 id 同名的实体。多资源/多角色好感时这约定脆弱、且把"路由"责任泄漏到游戏层。
+- **请主程分析**：是否提供"修改 id=X 的资源（无论它挂在哪个实体）"的全局事件/路由，或一个 resource 注册表。VN 有 7+ 资源、Game A 也有数值，跨游戏共需。
+
+---
+
+### R12 · [2026-06-04] · PB · Game B · status: open · 优先级: P2 · **类型: DX 摩擦（搭 v0.1 实测）**
+
+**标题**：Blueprint 实体的组件数据不按组件 schema 做类型检查
+
+- **摩擦**：`EntityBlueprint = { [type: string]: Omit<Component,'type'> }` 是 string 索引——蓝图里把 `Resource` 的字段拼错、或组件名打错，`tsc` **不报错**。
+- **我当时的绕过（坦白）**：肉眼对照 `protocol/components.ts` 的 interface 填字段，纯靠人。
+- **请主程分析**：能否让蓝图按 component type 关联到对应 interface 做类型校验（防错/DX）。AI 编排自动生成蓝图时，这层静态校验尤其值钱（呼应框架的"静态校验器"护城河）。
+
+---
+
+### R13 · [2026-06-04] · PB · Game B · status: open · 优先级: P3 · **类型: DX 摩擦（小）**
+
+**标题**：没有"取命名单例/某 fsm 实体"的便捷查询；UI 点击仍走直接改世界（= 已存在的 R3）
+
+- **摩擦 1**：定位对话状态机实体要 `query('State')` 全扫 + 过滤 `fsmId==='dialogue'`，没有"按组件字段取实体/取单例"的助手。绕过：循环过滤（可接受，低优先）。
+- **摩擦 2（重申 R3）**：`VNStage.tsx` 的点击用 `engine.world.addComponent(...)` **直接改世界**（非确定性 per-tick 输入）。这是 **R3** 那条，我在 demo 里**明确是临时 hack**，正式需 R3 的"React 事件→当帧 input source"约定。此处仅标注，不重复开需求。
+
+---
+
 ### [2026-06-03] · PA · Game A · status: open · REQ-001 相机 / 卷轴（世界→屏幕变换 + 合作跟随相机）
 
 - **想实现的游戏行为**：

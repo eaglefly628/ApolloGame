@@ -44,7 +44,7 @@ const GAMES: GameEntry[] = [
     color: '#3a1e3a',
     accentColor: '#e8618c',
     icon: '🌸',
-    status: 'coming-soon',
+    status: 'playable',
     module: './game-b.js',
   },
 ];
@@ -217,14 +217,22 @@ function Launcher() {
   );
 }
 
+// 卡带加载器：gameId → 该游戏的可挂载模块（静态 import 串，Vite 友好）。
+// 新增 game-b（PB）。后续 game-a 等就绪后在此加一行即可。
+const GAME_LOADERS: Record<string, () => Promise<{ mount: (c: HTMLElement) => () => void }>> = {
+  'platformer-lockstep': () => import('./game-platformer.js'),
+  'game-b': () => import('./game-b.js'),
+};
+
 function GameLoader({ gameId }: { gameId: string }) {
   React.useEffect(() => {
     const container = document.getElementById('game-container');
-    if (!container || gameId !== 'platformer-lockstep') return;
+    const load = GAME_LOADERS[gameId];
+    if (!container || !load) return;
 
     let cleanup: (() => void) | undefined;
 
-    import('./game-platformer.js').then(mod => {
+    load().then(mod => {
       cleanup = mod.mount(container);
     });
 
