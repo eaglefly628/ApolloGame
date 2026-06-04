@@ -14,6 +14,12 @@ export interface SystemDeclaration {
   // 用于表达纯组件拓扑无法表达的"读后改"管线（如 collision-resolve 写 Transform
   // 而 overlap-detect 读 Transform，在组件图上互为前驱会判成环）。
   readonly phase?: number;
+  // 显式定序（按系统 id，仅在同一 phase 内生效）。用于纯组件拓扑无法/不该表达的顺序，
+  // 尤其是「两个系统都 read-modify-write 同一组件」——组件图会判成环（互为前驱），
+  // 声明 runsAfter/runsBefore 即可打破：显式边会**覆盖相反方向的组件推断边**。
+  // 跨 phase 的先后仍由 phase 号决定；引用了不在本 phase 的 id 会被忽略。
+  readonly runsAfter?: string[]; // 本系统排在这些系统之后
+  readonly runsBefore?: string[]; // 本系统排在这些系统之前
   execute(world: IWorld): void;
 }
 

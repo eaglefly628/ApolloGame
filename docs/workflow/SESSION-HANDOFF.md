@@ -41,7 +41,7 @@
 
 ## 3. 待决策 / 下一步
 
-- **相位模型升级**：整数相位已 5 个（每个"改 Transform"的系统独占一阶段），在吃紧。建议升级为**显式 before/after 排序（runsAfter）**。Gemini review 与 Lead 均提过。
+- ~~**相位模型升级**：建议升级为显式 before/after 排序（runsAfter）。~~ **✅ 已落地（R10）**：`SystemDeclaration` 增加 `runsAfter`/`runsBefore`（phase 内，显式边覆盖相反方向的组件推断边），可定序两个 RMW 同组件的系统、打破伪环；整数 `SystemPhase` 保留并存。
 - **Stage 2 刚体旋转**：接触点（SAT + 裁剪）+ 力矩 + 转动惯量 → 方块落斜坡能转着贴合。按真实需求再上。
 - **真网络联机**：把 lockstep 的 `Channel` 从 BroadcastChannel 换成 WebRTC/WS（+ 信令/NAT），`LockstepClient` 不动。
 - **玩法层**：用 trigger-zone 做合作目标（开关/钥匙）；friction 让斜坡能站住。

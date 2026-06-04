@@ -140,13 +140,16 @@
 
 ---
 
-### R10 · [2026-06-04] · PB · Game B · status: open · 优先级: P1 · **类型: 接口摩擦（搭 v0.1 实测）**
+### R10 · [2026-06-04] · PB · Game B · status: **done**（2026-06-04，Lead）· 优先级: P1 · **类型: 接口摩擦（搭 v0.1 实测）**
 
 **标题**：System 依赖声明无法表达"两个系统读改写同一组件"——dialogue-runner 与 state-sync 在 `State` 上冲突
 
 - **摩擦**：`dialogue-runner` 真实地读 `State.current` 并写它（推进节点）；`state-sync` 也读改写 `State`。两者都诚实声明 `reads+writes:['State']` → 组件拓扑互为前驱 → **判成环**。
 - **我当时的绕过（坦白）**：runner 声明成 `reads:[]`（**谎报**，实际内部 `getComponent` 读 State.current），只靠 `writes:['State']` 把自己排到 state-sync 前。能跑，但声明不诚实；换个场景（两个游戏系统都要 RMW 同一组件）就没干净出路，只能抢 `SystemPhase`——而整数相位已吃紧（`progress.md` 自己也提了）。
 - **请主程分析**：是否引入**显式 `runsAfter/runsBefore` 排序**，或允许声明"read-modify-write 同组件"而不判环（生产者-消费者之外的第三种关系）。这是会反复撞到的通用问题。
+- **✅ Lead 落地**：`SystemDeclaration` 增加可选 `runsAfter?: string[]` / `runsBefore?: string[]`（按系统 id，phase 内生效）。拓扑排序里**显式边会覆盖相反方向的组件推断边** → 两系统都诚实声明 `reads+writes:['State']` 也能用一句 `runsBefore`/`runsAfter` 确定定序、打破 RMW 伪环；不再需要谎报 reads 或抢 phase。无显式定序时 RMW 仍判环（不掩盖真冲突）；矛盾的显式边也仍判环。
+  - **PB 改法**：`dialogue-runner` 恢复诚实 `reads:['State']`，加 `runsBefore:['state-sync']`（或 state-sync 加 `runsAfter:['dialogue-runner']`）。
+  - 实现：`src/engine/core/topological-sort.ts` + `types.ts`；6 条新测试覆盖（含 dialogue-runner/state-sync 场景）。整数 `SystemPhase` 保留，跨 phase 仍由 phase 号定序。
 
 ---
 
