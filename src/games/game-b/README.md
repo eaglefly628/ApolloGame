@@ -42,6 +42,17 @@ src/games/game-b/
 └── ui/                  # React-DOM：对话框、选项菜单、属性/好感面板、存读档、sakura-otome 主题组件
 ```
 
-## 当前状态
+## 当前状态 — v0.1 骨架已落地 ✅
 
-沙盒已占位。实现待 R1（贴图渲染）+ R3（点击输入约定）落地后开工 v0.1（一个场景 + 一段对话 + 打字机 + 一个改数值的选择）。
+用**现成原子**（`state` + `resource` + `flag` + `text`）+ 游戏层胶水 `dialogue-runner` 拼出了 VN 核心闭环，**验证了"现成 skill 能组合出乙游"**。
+
+| 文件 | 作用 |
+|---|---|
+| `data/dialogue.ts` | 数据驱动对话脚本（第一幕 scene_01：与角色 S 初见 + 一个改好感的选择） |
+| `dialogue-runner.ts` | 游戏层胶水 capability：推进/选择/好感结算/分支，全走现成原子事件链 |
+| `blueprint.ts` | `buildGameBBlueprint()` —— 注册 4 原子 + dialogue-runner，建对话/好感/flag 实体 |
+| `game-b.test.ts` | **7 个集成测试全绿**：拓扑无环、首行渲染、推进发 StateChanged、选择改好感+置 flag+分支、clamp、确定性快照 |
+| `ui/VNStage.tsx` | React-DOM 演出层脚手架（对话框/选项/属性条；规避 R2/R3；背景立绘=占位色块） |
+| `assets/` | 资产占位目录 + TBF 清单草稿（流程待 review 落地） |
+
+**验证结论**：核心数值/状态/分支闭环**不依赖任何引擎新能力**就能跑通。R1（贴图）已由 Lead 落地；R2/R3 用 React-DOM 浮层规避。下一步 v0.2：接 R1 真背景/立绘、扩展多场景与日程循环，按 requests.md 推进。
