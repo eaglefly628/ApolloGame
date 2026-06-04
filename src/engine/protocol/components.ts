@@ -283,3 +283,33 @@ export interface SpatialIndex extends Component {
   cellSize: number;
   kind: 'grid' | 'quadtree';
 }
+
+// ── 逻辑：Condition → Event（B 轴枢纽，离散逻辑层）─────────────────────────────
+// 比较算子（确定性：只比较数/字符串/bool，不碰浮点超越函数）。
+export type CmpOp = 'lt' | 'lte' | 'eq' | 'ne' | 'gte' | 'gt';
+
+// 布尔条件树：and/or/not 组合在「按语义 id 读世界值」的比较叶子上。纯 POD，
+// structuredClone 友好 → 自动进 world.snapshot()。threshold/状态判定/机关门控都是它的特例。
+export type ConditionExpr =
+  | { readonly kind: 'and'; readonly of: ConditionExpr[] }
+  | { readonly kind: 'or'; readonly of: ConditionExpr[] }
+  | { readonly kind: 'not'; readonly of: ConditionExpr }
+  | { readonly kind: 'resource'; readonly id: string; readonly cmp: CmpOp; readonly value: number }
+  | { readonly kind: 'flag'; readonly id: string; readonly equals?: boolean }
+  | { readonly kind: 'state'; readonly fsmId: string; readonly equals: string };
+
+// ── event-when ── 条件成立时发信号。逻辑核心层，不直接产生效果(Effect 后置)。
+export interface EventWhen extends Component {
+  readonly type: 'EventWhen';
+  signal: string; // 触发时产出的信号名
+  when: ConditionExpr; // 布尔条件树
+  mode: 'edge' | 'level'; // edge=上升沿触发一次(迟滞)；level=条件为真时每帧持续触发
+  armed: boolean; // 边沿检测内部状态：true=已在本轮触发、等条件回落后复位
+}
+
+// ── event-when 产出 ── 信号事件：某 EventWhen 这帧触发了。每帧先清后标。
+export interface Signal extends Component {
+  readonly type: 'Signal';
+  name: string; // 信号名（= EventWhen.signal）
+  source: EntityId; // 发出该信号的 EventWhen 实体 id
+}

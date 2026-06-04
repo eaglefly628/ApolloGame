@@ -9,7 +9,7 @@ import {
   destroyCapability,
   overlapDetectCapability,
 } from '@atom-skills/index.js';
-import { motionApplyCapability, lifetimeCapability } from '../tier1/index.js';
+import { motionApplyCapability, lifetimeCapability } from '@skills/tier1/index.js';
 
 export interface EntityBlueprint {
   [componentType: string]: Omit<Component, 'type'>;

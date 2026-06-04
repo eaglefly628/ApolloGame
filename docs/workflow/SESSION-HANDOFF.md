@@ -7,7 +7,9 @@
 
 ## 1. 技术现状
 
-- **272 passed**，`tsc --noEmit` 干净，`npm run build` 通过。分支 `claude/mainbranch`（即默认分支）。
+- **286 passed**，`tsc --noEmit` 干净，`npm run build` 通过。分支 `claude/mainbranch`（即默认分支）。
+- **目录结构（2026-06-04 重组）**：所有 skill 收拢到 `src/skills/{atoms,tier1,tier2,tier3,tier4}`（tier3/tier4 占位待 request 拉动）。别名 `@skills/*`、`@atom-skills/*`(→skills/atoms)、`@assets/*`。见 `src/skills/README.md`。
+- **资产系统（新，表现层）**：`src/assets/` —— `AssetManager` + 可插拔 loader（Stub/Image），描述符分 4 kind（texture/atlas/sprite-sheet/**prerendered-sequence=3D→2D 离线一等公民**），统一归约为「源图+子矩形」。只按 string key 工作、不碰 snapshot → lockstep 安全。3D→2D 的门已留宽（不接 3D 工具链）。`CanvasRenderer` 可选接入。
 - **引擎**：`SystemPhase`（Update/Rotate/Resolve/PostResolve/Commit，先按 phase 分桶再组件拓扑）；
   动态 AABB 树宽相位（每帧从组件重建 → rollback 安全）；`contact.ts`（box/circle 解析 + 凸多边形 **SAT**）；
   `snapshot/restore` + 确定性 `hashSnapshot`；模拟路径只用 IEEE 确定算子（无 hypot/sin/cos）。
@@ -34,7 +36,7 @@
 - **Lead（主程，本 session 角色）= 引擎 owner**：只接需求、实现/扩展引擎、守护确定性与契约、收敛重复需求为通用原子。
 - **Game Creator PA / PB = 引擎使用者**：各做一个小游戏；引擎做不到时**提需求**（写 `requests.md`），**不自己改引擎**。
 - **为什么这才是"对的并行"**：游戏 vs 引擎是不同 context、只通过"需求"窄接口耦合、两个不同游戏多样化压测引擎（需求被真实游戏拉动，避免 YAGNI）。
-- **边界**：引擎/共享层（`engine/**`、`atom-skills/**`、`tier1/**`、`tier2/**`、`protocol`、`SystemPhase`）只接需求（可附建议补丁，**Lead 是合并闸门**）；游戏层 PA/PB 完全自由。
+- **边界**：引擎/共享层（`engine/**`、`skills/**`（atoms+tier1-4）、`assets/**`、`protocol`、`SystemPhase`）只接需求（可附建议补丁，**Lead 是合并闸门**）；游戏层 PA/PB 完全自由。
 - **新 Lead session 开局**：读本文件 + `game-creator-role.md`（发给 PA/PB）+ `requests.md`（需求池），然后等 PA/PB 的需求来驱动引擎演化。
 
 ## 3. 待决策 / 下一步
@@ -48,6 +50,7 @@
 
 - `docs/workflow/progress.md`（全局进度）
 - `src/engine/core/{world,types,topological-sort}.ts`、`src/engine/spatial/{aabb-tree,contact}.ts`
-- `src/tier1/*`、`src/tier2/*`
+- `src/skills/{atoms,tier1,tier2,tier3,tier4}/*`（见 `src/skills/README.md`）
+- `src/assets/*`（资产系统：asset-manager / asset-types / image-loader）
 - `src/net/lockstep-tab.ts`、`src/assembly/platformer-lockstep.ts`、`src/main.tsx`
 - `docs/workflow/{lead-protocol,programmer-role}.md`

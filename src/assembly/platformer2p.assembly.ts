@@ -8,8 +8,8 @@ import {
   colorCapability,
   overlapDetectCapability,
 } from '@atom-skills/index.js';
-import { accelApplyCapability, motionApplyCapability } from '../tier1/index.js';
-import { collisionResolveCapability, groundSenseCapability, jumpCapability, boundsClampCapability } from '../tier2/index.js';
+import { accelApplyCapability, motionApplyCapability } from '@skills/tier1/index.js';
+import { collisionResolveCapability, groundSenseCapability, jumpCapability, boundsClampCapability } from '@skills/tier2/index.js';
 
 // ═══════════════════════════════════════════════════════════════
 //  本地双人平台跳跃 —— 同一份引擎，两名玩家各跑各的

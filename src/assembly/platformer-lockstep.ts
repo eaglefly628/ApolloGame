@@ -1,8 +1,8 @@
 import { World } from '@engine/core/world.js';
 import type { Transform, Velocity, Acceleration, Controllable, Shape, Color, Bounds } from '@engine/protocol/components.js';
 import { overlapDetectCapability } from '@atom-skills/index.js';
-import { accelApplyCapability, motionApplyCapability } from '../tier1/index.js';
-import { collisionResolveCapability, groundSenseCapability, jumpCapability, boundsClampCapability } from '../tier2/index.js';
+import { accelApplyCapability, motionApplyCapability } from '@skills/tier1/index.js';
+import { collisionResolveCapability, groundSenseCapability, jumpCapability, boundsClampCapability } from '@skills/tier2/index.js';
 import { playerEntityId, PLAYER_COLORS } from '../net/mp-world.js';
 
 // 帧同步用的平台跳跃世界构建器（注入给 LockstepClient.buildWorld）。

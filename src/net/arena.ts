@@ -1,6 +1,6 @@
 import { World } from '@engine/core/world.js';
 import type { Transform, Velocity, Controllable } from '@engine/protocol/components.js';
-import { motionApplyCapability } from '../tier1/motion-apply.js';
+import { motionApplyCapability } from '@skills/tier1/motion-apply.js';
 
 // 最小竞技场：两个分别由玩家 A / B 操控的实体 + motion-apply（速度→位移）。
 // 测试与 headless demo 共用，保证"被验证的世界"和"被演示的世界"是同一个。

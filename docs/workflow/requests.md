@@ -8,7 +8,239 @@
 
 ## 待处理 / 进行中
 
-（空 —— 等 Game Creator 提交）
+> **PB 缺口分析综述（2026-06-03，Game B 乙游 VN）**
+> 引擎今天的真实形态 = **确定性 2D 物理/平台跳跃 ECS + debug 渲染器 + 纯键盘输入**。
+> 一个 VN ≈ 叙事引擎 + 演出 + UI + 音频 + 存档。现有 `resource/flag/state/text/timer/random` 是**最底层数据积木**，VN 形状的系统几乎整层缺失。
+> 已对照真实代码验证的硬事实：
+> - `canvas-renderer.ts`：`Sprite` → 画 16×16 **占位方块**，`textureKey` 被忽略（**画不了图片**）；文本 = `fillText` **单行不换行**。
+> - 全项目 **无音频后端**（`Sound` 是死数据，没人播）。
+> - `main.tsx` **只接键盘**；pointer/click 不进世界；`action-map` 无 system，无命中测试。
+> - UI = `useComponent` + `Bar`（1 个 widget）+ `GameOverlay`（debug HUD）；主题是 `spec.md`/类型目录，**无实现组件**。
+> 下列**仅引擎/共享层**需求，按 Game B v0.1→v1.0 的拉动排优先级。游戏层活（对话运行器/菜单/检定/存档界面）我 PB 自己做，附在末尾仅供参考、非需求。
+
+---
+
+### R1 · [2026-06-03] · PB · Game B · status: **done**（2026-06-04，Lead，commit asset 系统）· 优先级: **P0**（阻塞一切 VN 画面）
+
+**标题**：贴图精灵渲染 —— 渲染器要能加载并绘制 `Sprite.textureKey`（背景图 + 立绘）
+
+- **想实现的游戏行为**：画一张背景图（办公室/咖啡厅）+ 角色立绘（带 z 分层、左右站位）。
+- **已经试了什么**：给实体挂 `Sprite{textureKey, zOrder}` + `Transform`。
+- **卡在哪 / 缺什么**：`CanvasRenderer.sync` 对 `r.sprite` 只画 `fillRect(-8,-8,16,16)` 占位方块，**完全无视 `textureKey`**，没有任何图片加载/缓存/绘制路径。无图 = VN 没法看。
+- **建议方案**：渲染器（`src/renderer`，共享层）加 image 资产加载缓存（`HTMLImageElement`/`drawImage`），`collectRenderables` 已经把 `sprite` 透出。可配合 `Color.alpha`（渲染器已读 `globalAlpha`）做淡入。这是后端能力，非新原子。
+- **✅ Lead 落地（引擎/共享层部分）**：新建 `src/assets/`（`AssetManager` + `ImageAssetLoader`，加载/缓存/解析），`CanvasRenderer` 接 `assets`：`Sprite.textureKey` 就绪即 `drawImage` 真图、否则退化占位方块；`zOrder` 走原有 `collectRenderables` 排序；淡入用 `Color.alpha`（已支持）。**背景图直接用 `texture` kind；立绘表情差分用 `atlas` kind（一图多帧）**。
+  - **PB 游戏层只需**：写一份 asset manifest（key→src），`new AssetManager(new ImageAssetLoader())` → `registerManifest` → `await loadAll()` → `new CanvasRenderer({ assets })`。给实体挂 `Sprite{textureKey}` 即显图。
+  - **未覆盖（仍 open）**：R2 多行文本、R3 指针输入是另两件事，本条不含。立绘**按帧切换表情**（atlas frame 选择）属 C 范围/可后续小需求——当前 `Sprite` 无 frame 字段，渲染器先按整 key 取整图/默认帧。
+
+---
+
+### R2 · [2026-06-03] · PB · Game B · status: open · 优先级: **P0\***（可被 React-DOM 方案规避）
+
+**标题**：对话文本多行/自动换行渲染
+
+- **想实现的游戏行为**：对话框里一段长台词按框宽换行、多行显示、可翻页。
+- **已经试了什么**：`Text{content}` 渲染。
+- **卡在哪 / 缺什么**：`fillText(content,0,0)` 单行硬画，**无换行、无多行、无分页**。
+- **建议方案（两条，请 Lead 拍）**：
+  ① 渲染器侧支持按 maxWidth 断词换行（可能需要一个 `TextBox{content,maxWidth,lineHeight}` 渲染概念，区别于点状 `Text`）；或
+  ② **架构规避**：对话框/选项/面板全部用 **React-DOM 浮层**（`GameOverlay` 已是 React DOM，CSS 原生换行），canvas 只画背景+立绘。**这样 R2 直接消失**。我倾向 ②，但需 Lead 确认这是被祝福的 UI 路径（见 R3）。
+
+---
+
+### R3 · [2026-06-03] · PB · Game B · status: open · 优先级: **P0\***（与 R2 方案联动）
+
+**标题**：点击/指针输入接入 + 确定性 per-tick 注入约定
+
+- **想实现的游戏行为**：玩家点选项 → 推进剧情、改好感。
+- **已经试了什么**：`input-capture` schema 支持 pointer，`action-map` 定义 `Action`。
+- **卡在哪 / 缺什么**：`main.tsx` **只 wire 了键盘**，pointer 事件不进 `RawInput`；`action-map` 无 system；无命中测试（点了哪个选项）。点击当前完全断路。
+- **建议方案**：
+  - 若走 R2-① canvas 方案：需 pointer→RawInput 接入 + 屏幕坐标→实体命中测试。
+  - 若走 R2-② React-DOM 方案：UI 用原生 `onClick`，但**点击需作为确定性输入按 tick 灌进世界**（叙事状态仍住世界里，符合 `EnginePort` "输入按 tick 注入" 模型）。请 Lead 给一个"React 事件 → 当帧 input source"的约定/入口（哪怕只是一个 `engine.enqueueAction(name,value)`）。这是确定性边界，归引擎定。
+
+---
+
+### R4 · [2026-06-03] · PB · Game B · status: open · 优先级: P1
+
+**标题**：`string-variable`（周期表 X3 扩展原子，未实现）—— string 容器
+
+- **想实现的游戏行为**：持久化语义字符串状态：当前剧情节点 id、玩家取名、动态文本替换变量、结局标识、上次选择。
+- **已经试了什么**：核心原子只有 number(`Resource`)/bool(`Flag`) 容器；`State.current` 是字符串可临时承载**单个**对话指针；对话内容放 JSON。
+- **卡在哪 / 缺什么**：protocol 无通用 string 容器；`atom-skills/` 无 `string-variable`。周期表扩展 B 已明确预留 X3 并标"对话系统刚需"，只是没实现。多个并存的命名字符串变量无处安放。
+- **建议方案**：仿 `Resource`+`ResourceModify`+`resource-apply` 三件套：
+  ```
+  interface StringVariable extends Component { keyId: string; value: string; locId: string }
+  interface StringSet      extends Component { keyId: string; value: string }   // 一次性写事件
+  // string-apply: query('StringVariable','StringSet') 匹配 keyId → v.value = s.value
+  ```
+  纯 POD + 一次性事件，`structuredClone` 友好 → 自动进 `world.snapshot()`。属扩展原子层，不污染核心 26。
+
+---
+
+### R5 · [2026-06-03] · PB · Game B · status: open · 优先级: P1
+
+**标题**：`condition` 谓词求值（Tier 2 候选）—— 组合条件门控选项/分支
+
+- **想实现的游戏行为**：选项/分支按条件出现："好感_S ≥ 30 且 见过_T 且 非 已拒绝"。
+- **已经试了什么**：`Flag` 是单 bool；`Resource` 是单数值。组合判断只能游戏层硬写 if。
+- **卡在哪 / 缺什么**：无把"读多个 resource/flag → 求一个 bool"产物化的通用能力。VN 分支大量依赖它；Game A 的钥匙/开关门控同理。
+- **建议方案**：一个可声明的谓词组件（`Condition{ clauses:[{kind:'resource'|'flag', id, op, value}], mode:'and'|'or' }` → 输出一个 `Flag`/`Trigger`），由 Tier 2 系统求值。**过度设计风险已知**：若只我用得上，Lead 可判定留游戏层。提出来是为暴露"是否两游戏共需"。
+
+---
+
+### R6 · [2026-06-03] · PB · Game B · status: open · 优先级: P1
+
+**标题**：`tween / interpolate`（Tier 1 候选）—— 数值随时间朝目标缓动
+
+- **想实现的游戏行为**：立绘淡入淡出（`Color.alpha`）、场景切换淡黑、好感条平滑填充、立绘滑入（`Transform.x`）。
+- **已经试了什么**：`animation`（Tier1）只做离散 `frame.index++`；`Bar.tsx` 用 CSS transition；打字机可用 `timer.elapsed` 切片。
+- **卡在哪 / 缺什么**：无 ECS 内**确定性**连续插值（存档重放一致、不靠 CSS）。难点 = 字段寻址（写"哪个组件的哪个字段"）。
+- **建议方案**：`Tween{ target, field, from, to, elapsed, duration, easing }`，Tier1 推进 `value = from+(to-from)*ease(t)`；或退一步只支持 `Resource.current`/`Color.alpha` 高频字段避开泛型寻址。**渲染器已读 `globalAlpha = Color.alpha`，tween 一到淡入即通**。Game A 镜头/击退也用 —— 跨游戏复用价值高。
+
+---
+
+### R7 · [2026-06-03] · PB · Game B · status: open · 优先级: P2
+
+**标题**：`resource-threshold`（Tier 2 候选）—— 资源跨阈值触发
+
+- **想实现的游戏行为**：好感阈值事件（30/60/90）、失败结局（体力归零 / 全好感<20）。
+- **已经试了什么**：`resource-apply` 只 clamp 不产"越线"信号；`trigger-zone` 是空间触发不适用。
+- **卡在哪 / 缺什么**：无"数值跨阈值→事件"通用原子；跨越检测需上一帧值，纯无状态系统做不了，需承载阈值配置+迟滞状态的组件。
+- **建议方案**：`ResourceThreshold{ resourceId, threshold, direction, armed }`，Tier2 越线发 `Trigger`/`Flag` 并 `armed=false`，回落复位（迟滞防抖）。**过度设计风险已知**，可先留游戏层。
+
+---
+
+### R8 · [2026-06-03] · PB · Game B · status: open · 优先级: P2（MVP 可静音）
+
+**标题**：音频播放后端 —— 消费 `Sound` 播 BGM/SFX/语音
+
+- **想实现的游戏行为**：BGM 循环、选择音效、关键台词语音、声道音量、淡入淡出。
+- **已经试了什么**：给实体挂 `Sound{clipId,volume,loop}`。
+- **卡在哪 / 缺什么**：**全项目无任何音频后端**，`Sound` 没人播。
+- **建议方案**：类似渲染器的一个 audio 后端（`EnginePort.audio` 风格：`play/stop`，声道、loop、crossfade），消费 `Sound` 组件。MVP 阶段可静音延后。
+
+---
+
+> **更正存档相关认知（PB 自我修正）**：`world.snapshot()/restore()` 是 JSON 可序列化的 POD（验证属实），机制白送；但**存档系统**（具名槽位/缩略图/章节元数据/自动存档）是**游戏层**的活，且前提是叙事状态全部落成 ECS 组件（依赖 R4）。"白送"指机制，不指系统。
+>
+> **游戏层（PB 自己做，非需求，列此仅供 Lead 了解全貌）**：对话运行器/脚本解释器、选项菜单/属性面板/存读档界面/结局画廊（React-DOM）、检定逻辑、日程循环、结局判定、JSON 对话数据、sakura-otome 主题组件实现。
+
+---
+
+### R9 · [2026-06-03] · PB · 框架级（Game B 首验） · status: open · 优先级: 架构级 · **类型: REVIEW 请求**
+
+**标题**：资产清单 + 资产管理器设计文档 review —— `docs/design/asset-manifest-and-manager.md`
+
+- **背景**：产品愿景"小白一句话成游戏"缺了护城河的另一条腿——**美术/音频资产**。现状：引擎零资产侧（无清单契约、无库、无生成集成、无管理器）。
+- **提案**：引擎附带一个 **TBF（待填充）资产清单数据结构** + **资产管理器工具**。打开即知"还差哪些资产/名字/描述/规格"，用户在引导下**一步步填**，四条 provider（一键生成 / 从库选 / 手动上传 / 程序化占位），人在环、保留掌控；AI 只是其中一条路径。与模块 pipeline 同构（策展+选择+生成增量+占位兜底），与 `EnginePort`/确定性边界对齐（资产是表现层、不进模拟哈希）。
+- **请 Lead review 的点**：见文档 §9 七个开放问题（canonical schema 落点 / Provider 是否并入 EnginePort / X7 锚定实现 / 生成后端+网络策略 / 版权过滤归属 / 占位规格 / 导出策略）。
+- **同步**：用户会另请 **Gemini** 并行 review 本文档。
+- **PB 不阻塞的部分**（收敛后即做）：Game B 槽位契约实例 + `procedural` 占位 provider（见文档 §8）。
+- **关联**：消费端是 R1（贴图渲染）/ R8（音频后端）。
+
+---
+
+### R10 · [2026-06-04] · PB · Game B · status: open · 优先级: P1 · **类型: 接口摩擦（搭 v0.1 实测）**
+
+**标题**：System 依赖声明无法表达"两个系统读改写同一组件"——dialogue-runner 与 state-sync 在 `State` 上冲突
+
+- **摩擦**：`dialogue-runner` 真实地读 `State.current` 并写它（推进节点）；`state-sync` 也读改写 `State`。两者都诚实声明 `reads+writes:['State']` → 组件拓扑互为前驱 → **判成环**。
+- **我当时的绕过（坦白）**：runner 声明成 `reads:[]`（**谎报**，实际内部 `getComponent` 读 State.current），只靠 `writes:['State']` 把自己排到 state-sync 前。能跑，但声明不诚实；换个场景（两个游戏系统都要 RMW 同一组件）就没干净出路，只能抢 `SystemPhase`——而整数相位已吃紧（`progress.md` 自己也提了）。
+- **请主程分析**：是否引入**显式 `runsAfter/runsBefore` 排序**，或允许声明"read-modify-write 同组件"而不判环（生产者-消费者之外的第三种关系）。这是会反复撞到的通用问题。
+
+---
+
+### R11 · [2026-06-04] · PB · Game B · status: open · 优先级: P1 · **类型: 接口摩擦（搭 v0.1 实测）**
+
+**标题**：Resource 修改是实体局部的，没有"按 id 全局修改某资源"的路由
+
+- **摩擦**：`ResourceModify` 必须挂在**与目标 `Resource` 同一实体**上（`resource-apply` 要求同实体且 `id` 匹配）。游戏层想"给好感_S +5"时，得先知道好感_S 这个 Resource 住在哪个实体。
+- **我当时的绕过（坦白）**：强行约定 **`entityId === resourceId`**，runner 把 `ResourceModify` `addComponent` 到与资源 id 同名的实体。多资源/多角色好感时这约定脆弱、且把"路由"责任泄漏到游戏层。
+- **请主程分析**：是否提供"修改 id=X 的资源（无论它挂在哪个实体）"的全局事件/路由，或一个 resource 注册表。VN 有 7+ 资源、Game A 也有数值，跨游戏共需。
+
+---
+
+### R12 · [2026-06-04] · PB · Game B · status: open · 优先级: P2 · **类型: DX 摩擦（搭 v0.1 实测）**
+
+**标题**：Blueprint 实体的组件数据不按组件 schema 做类型检查
+
+- **摩擦**：`EntityBlueprint = { [type: string]: Omit<Component,'type'> }` 是 string 索引——蓝图里把 `Resource` 的字段拼错、或组件名打错，`tsc` **不报错**。
+- **我当时的绕过（坦白）**：肉眼对照 `protocol/components.ts` 的 interface 填字段，纯靠人。
+- **请主程分析**：能否让蓝图按 component type 关联到对应 interface 做类型校验（防错/DX）。AI 编排自动生成蓝图时，这层静态校验尤其值钱（呼应框架的"静态校验器"护城河）。
+
+---
+
+### R13 · [2026-06-04] · PB · Game B · status: open · 优先级: P3 · **类型: DX 摩擦（小）**
+
+**标题**：没有"取命名单例/某 fsm 实体"的便捷查询；UI 点击仍走直接改世界（= 已存在的 R3）
+
+- **摩擦 1**：定位对话状态机实体要 `query('State')` 全扫 + 过滤 `fsmId==='dialogue'`，没有"按组件字段取实体/取单例"的助手。绕过：循环过滤（可接受，低优先）。
+- **摩擦 2（重申 R3）**：`VNStage.tsx` 的点击用 `engine.world.addComponent(...)` **直接改世界**（非确定性 per-tick 输入）。这是 **R3** 那条，我在 demo 里**明确是临时 hack**，正式需 R3 的"React 事件→当帧 input source"约定。此处仅标注，不重复开需求。
+
+---
+
+### [2026-06-03] · PA · Game A · status: open · REQ-001 相机 / 卷轴（世界→屏幕变换 + 合作跟随相机）
+
+- **想实现的游戏行为**：
+  合作冒险的关卡要**比屏幕大**（卷轴）。同屏不分屏：相机取两名玩家的中点，**动态缩放**保证两人都在视野内；
+  两人离太远则相机拉远；相机框钳在关卡边界内（不露界外空白）。这是 Game A 整个体验的地基（`game-a-coop-platformer.md` 2.1 明确要求）。
+
+- **已经试了什么**：
+  - v0.1 已用 `bounds-clamp` 在固定 640×400 世界里跑通双人移动/跳跃/平台（`src/games/game-a/`）。
+  - 查渲染器：`src/renderer/canvas-renderer.ts:38` 是 `ctx.translate(r.x, r.y)` —— **世界坐标 1:1 画到固定画布，无任何相机变换**，世界无法比视口大。
+  - 查 `Camera` 组件（L5，`protocol/components.ts`）：字段齐全（zoom/offsetX/offsetY/viewportW/H），但**全工程零消费者**（纯数据，无相机系统、渲染器不读它）。
+
+- **卡在哪 / 缺什么**（引擎做不到的点）：
+  1. **渲染器没有世界→屏幕投影**：无法表现"世界大于视口 + 卷动"。
+  2. **没有相机系统**：`Camera` 组件没人写、没人读。
+
+- **建议方案 / 伪代码**（Lead review 后定；相机跟随放共享层还是做成可复用系统由你决定，渲染器变换肯定属共享层）：
+  ```
+  // ① 渲染器（共享基础设施）施加相机变换：世界投影到屏幕。读"相机实体"(Camera+Transform)或 world 单例。
+  render(world):
+    cam = readCamera(world)                      // center=Transform.xy, zoom, viewport
+    ctx.save()
+    ctx.translate(viewportW/2, viewportH/2)
+    ctx.scale(cam.zoom, cam.zoom)
+    ctx.translate(-cam.centerX, -cam.centerY)    // 世界向相机反方向平移 = 卷轴
+    for r in renderables: drawWorld(r)           // 实体仍用世界坐标，相机统一施加变换
+    ctx.restore()
+
+  // ② 合作跟随相机系统（可复用：跟随被 tag 标记的目标集合）。
+  camera-follow.execute(world):
+    targets = entities tagged CameraTarget       // Game A: 两名玩家
+    aabb = unionAABB(targets.transform)
+    cam.centerX, cam.centerY = aabb.center
+    fitZoom = min(viewportW/(aabb.w+margin), viewportH/(aabb.h+margin))
+    cam.zoom = clamp(fitZoom, minZoom, 1)
+    clampCameraBoxInsideLevelBounds(cam, levelBounds)   // 不露界外
+  ```
+  - 配套：`bounds-clamp` 已支持钳到任意边界（设 Bounds=关卡尺寸即可，纯 config，无需改引擎）。
+  - 确定性：相机若只影响**渲染**就不进哈希、不破坏 lockstep；若写进世界状态需保证算子确定并纳入快照。
+
+- **影响面 / 复用**：Game B（乙女 VN）多半也要相机（对话镜头/平移）。两个游戏共用，适合收敛成通用原子，别为 Game A 做一次性 hack。
+
+- **不阻塞 v0.1**：v0.1（固定屏）已交付可回归；本需求阻塞的是 **v0.2 起的卷轴大关卡**。
+
+---
+
+### [2026-06-04] · PA · Game A · status: open · REQ-002 sensor / 非实心触发体（trigger-zone 与 collision-resolve 抢同一份 Overlap）
+
+- **想实现的游戏行为**：合作机关第一类——A 踩开关/压力板 → 发触发事件（开门、激活）。这是《双人成行》入门核心（踩开关 / 限时门 / 重量台）。
+- **已经试了什么**：按 `trigger-zone` 文档，开关 = `Tag(ZONE_FLAG)` + `Shape` + `Transform`；玩家重叠 → `overlap-detect` 出 `Overlap` → `trigger-zone` 发 `Trigger{zone,other}`。
+- **卡在哪 / 缺什么**：`collision-resolve`（`src/skills/tier2/collision-resolve.ts`）读**所有** `Overlap` 对当实体碰撞解算（只看 Transform/Shape/Velocity/Mass，`invA+invB>0` 即推开），**完全不排除 trigger zone**。后果：开关同时是一堵实心墙——玩家走进去被弹开（站不进区域）；站顶上则被解算到"恰好不重叠"→ 不产 `Overlap` → `trigger-zone` 不触发。`trigger-zone`（要重叠）与 `collision-resolve`（消重叠）抢同一份 `Overlap`，**语义互斥，缺 sensor（非实心碰撞体）概念**。
+- **建议方案**：`collision-resolve` 跳过"任一方是 trigger zone（`Tag.flags & ZONE_FLAG`）"的接触对——只让 `overlap-detect`/`trigger-zone` 消费、不做物理解算。最小改动、复用现有 `ZONE_FLAG` 约定；或更通用引入 `Sensor` 标记 / `Collider{ solid:boolean }`。确定性不受影响（只是少解算一对）。
+- **阻塞**：踩开关 / 限时门 / 重量台（第一批合作机制**全部**）。我**未 hack 绕过**——雏形里开关相关机制暂缺，等本需求落地。
+
+---
+
+### [2026-06-04] · PA · Game A · status: open · REQ-003 ground-sense 支持"站在动态支撑上"（踩搭档/踩箱无法起跳）
+
+- **想实现的游戏行为**：能力差异核心——B 举 A / A 踩在 B 头上 / A 踩 B 推来的箱子 → 再跳上更高平台。
+- **已经试了什么**：让 A 落在 B（动态）或 box（动态 + Mass）上。叠放本身稳（Lead 已让 `collision-resolve` 把"Grounded 的动态体当静态支撑"，堆叠不挤穿）。
+- **卡在哪 / 缺什么**：`ground-sense`（`src/skills/tier2/ground-sense.ts`）只在"对方**无 Velocity**（静态）"时标 `Grounded`（`aDyn && !bDyn` / `bDyn && !aDyn`）。站在**动态**搭档/箱子上时双方都 dynamic → **不标 Grounded** → `jump` 系统（要 `Grounded`）不触发 → **跳不起来**。collision 已认它是支撑、ground-sense 却不认 —— 两者对"什么算落地"的判定不一致。
+- **建议方案**：`ground-sense` 在"脚下动态体本帧也 `Grounded`（或属静态支撑链）"时，也给上方实体标 `Grounded`——与 `collision-resolve` 已有的"Grounded 动态当静态支撑"对齐。按确定序求值支撑链以保 lockstep。
+- **阻塞**：踩搭档垫高 / 推箱垫脚（能力差异批）。同样**未 hack**——雏形不含这类机制，等落地。
 
 ---
 
@@ -28,3 +260,14 @@
 ## 已完成存档
 
 （Lead 实现后把需求移到这里，标 done + 对应 commit / 新原子名）
+
+### [2026-06-04] · Owner · 引擎原生 · status: done · 美术资产管理系统（Asset System）
+- 想实现的行为：游戏用字符串键引用美术（贴图/立绘/表情差分/序列帧），引擎负责加载、缓存、解析；并为「后续 3D→2D 渲染」留好门。
+- 缺什么：`Sprite.textureKey` 早有键间接、`Renderable` 后端无关，但**没有任何资产加载/解析层**——键指向的美术没人解析。
+- 落地（B 方案：门留宽、不接 3D 工具链）：
+  - 新模块 `src/assets/`：`AssetManager`（注册/加载/缓存/解析，幂等去重）+ 可插拔 `AssetLoader`（`StubAssetLoader` 无 I/O 供 headless/测试；`ImageAssetLoader` 浏览器真实图片）。
+  - 描述符显式分 4 个 kind：`texture` / `atlas`（图集，对应 Game B 表情差分）/ `sprite-sheet` / **`prerendered-sequence`（3D 模型离线预渲染的 2D 序列，3D→2D 一等公民）**。四种统一归约为「源图 + 子矩形(sx,sy,sw,sh)」。
+  - 句柄**不透明**：换 loader/后端（含未来 3D）不动上层。
+  - `CanvasRenderer` 可选接入 `assets`：贴图就绪画真图，否则退化占位方块（sim 不受影响）。
+- 确定性边界：资产层是表现层，只按 string key 工作，**绝不碰 world/snapshot/hash** → lockstep 安全。
+- 验收：14 条新测试，全绿；总 286 passed，tsc 干净，build 通过。

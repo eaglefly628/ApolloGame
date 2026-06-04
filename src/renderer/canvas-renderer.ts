@@ -1,20 +1,27 @@
 import type { IWorld, RendererBackend } from '@engine/core/types.js';
+import type { AssetManager } from '@assets/index.js';
+import { isImageHandle } from '@assets/index.js';
 import { collectRenderables } from './renderable.js';
 
 export interface CanvasRendererOptions {
   width?: number;
   height?: number;
   background?: string;
+  /** 可选资产管理器：提供则 sprite 按 textureKey 画真实贴图，否则退化为占位方块。 */
+  assets?: AssetManager;
 }
 
 // 浏览器渲染后端：把 collectRenderables 的结果画到 Canvas2D。
-// 无真实贴图资产时，sprite 退化为占位方块；shape 直接画几何。
+// 有 AssetManager 且贴图已加载时，sprite 画真实图像；否则退化为占位方块；shape 直接画几何。
 // 升级路径：换成 PhaserBackend / AI 视频后端，collectRenderables 不变。
 export class CanvasRenderer implements RendererBackend {
   private canvas: HTMLCanvasElement | null = null;
   private ctx: CanvasRenderingContext2D | null = null;
+  private readonly assets?: AssetManager;
 
-  constructor(private readonly opts: CanvasRendererOptions = {}) {}
+  constructor(private readonly opts: CanvasRendererOptions = {}) {
+    this.assets = opts.assets;
+  }
 
   init(container: HTMLElement): void {
     const canvas = document.createElement('canvas');
@@ -63,11 +70,22 @@ export class CanvasRenderer implements RendererBackend {
           ctx.fill();
         }
       } else if (r.sprite) {
-        ctx.fillRect(-8, -8, 16, 16); // 占位方块
+        const drawn = this.drawSprite(ctx, r.sprite.textureKey);
+        if (!drawn) ctx.fillRect(-8, -8, 16, 16); // 资产未就绪 → 占位方块
       }
 
       ctx.restore();
     }
+  }
+
+  // 解析 textureKey → 已加载帧，居中绘制源矩形。成功返回 true，否则 false(退化占位)。
+  // (ctx 已被 sync 平移到实体中心；此处按帧尺寸居中绘制。)
+  private drawSprite(ctx: CanvasRenderingContext2D, textureKey: string): boolean {
+    const frame = this.assets?.resolve(textureKey);
+    if (!frame || !isImageHandle(frame.asset.handle)) return false;
+    const { sx, sy, sw, sh } = frame;
+    ctx.drawImage(frame.asset.handle.image, sx, sy, sw, sh, -sw / 2, -sh / 2, sw, sh);
+    return true;
   }
 
   destroy(): void {

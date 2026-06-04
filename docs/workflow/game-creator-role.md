@@ -17,7 +17,7 @@
 | 区域 | 你能做什么 |
 |------|-----------|
 | **你的游戏沙盒** —— `src/games/<你的游戏>/` 或 `src/assembly/<你的游戏>.*`、场景/关卡数据、游戏专属拼装 | **完全自由**：随便建/改/push（只要不碰下面的共享层） |
-| **引擎/共享层** —— `src/engine/**`（core/protocol/spatial）、`src/atom-skills/**`、`src/tier1/**`、`src/tier2/**`、`SystemPhase`、共享组件契约、拓扑排序、碰撞求解器 | **只读 + 只能提需求**，禁止直接改 |
+| **引擎/共享层** —— `src/engine/**`（core/protocol/spatial）、`src/skills/**`（atoms + tier1-4）、`src/assets/**`（资产系统）、`SystemPhase`、共享组件契约、拓扑排序、碰撞求解器 | **只读 + 只能提需求**，禁止直接改 |
 
 **为什么引擎不让你直接改**：它的确定性、相位定序、组件契约、"改一处不涟漪别处"需要**单一 owner（Lead）**守护。
 你为"让我的游戏跑起来"塞的 hack，很可能破坏帧同步确定性、或弄坏另一个 creator 的游戏。我们已经反复验证引擎改动有多微妙（相位成环、浮点确定性、求解器涟漪）。
@@ -29,7 +29,9 @@
 - `docs/workflow/SESSION-HANDOFF.md`、`docs/workflow/progress.md` —— 引擎现状与能力清单
 - `wiki/atom-skill-periodic-table.md` —— 原子周期表（有哪些积木）
 - `src/engine/protocol/components.ts` —— 所有共享组件（你的游戏数据用它们拼）
-- `src/atom-skills/index.ts`、`src/tier1/index.ts`、`src/tier2/index.ts` —— 当前可用能力
+- `src/skills/README.md` + `src/skills/{atoms,tier1,tier2}/index.ts` —— 当前可用能力（四层 taxonomy）
+- **`docs/workflow/asset-flow.md` —— 资产流程（TBF）。⚠️ 从第一个原型起就按它走：声明 id → 蓝图只引用 id → 缺资产也能跑 → 后补真资产。**
+- `assets/README.md` + `assets/index.json` —— raw 资产存储与索引；`src/assets/index.ts` —— 资产系统代码
 - `src/assembly/platformer2p.assembly.ts`、`src/assembly/platformer-lockstep.ts` —— **怎么拼一个游戏（blueprint 范例）**
 - `src/main.tsx` —— 怎么把引擎 + 渲染 + 输入挂起来
 

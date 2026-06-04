@@ -7,7 +7,9 @@ export default defineConfig({
   resolve: {
     alias: {
       '@engine': resolve(__dirname, 'src/engine'),
-      '@atom-skills': resolve(__dirname, 'src/atom-skills'),
+      '@skills': resolve(__dirname, 'src/skills'),
+      '@atom-skills': resolve(__dirname, 'src/skills/atoms'),
+      '@assets': resolve(__dirname, 'src/assets'),
       '@renderer': resolve(__dirname, 'src/renderer'),
       '@ui': resolve(__dirname, 'src/ui'),
       '@net': resolve(__dirname, 'src/net'),
