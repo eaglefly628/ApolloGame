@@ -41,16 +41,6 @@ interface CmdResult {
 
 const GAMES: GameEntry[] = [
   {
-    id: 'platformer-lockstep',
-    title: 'Platformer Demo',
-    subtitle: '双人帧同步平台跳跃',
-    description: '方向键/WASD 移动跳跃，开两个标签页 = 两名玩家联机。引擎基础验证 Demo。',
-    color: '#1e3a5f',
-    accentColor: '#38bdf8',
-    icon: '🎮',
-    status: 'playable',
-  },
-  {
     id: 'game-a',
     title: 'Game A: Co-op Adventure',
     subtitle: '双人协作冒险',
@@ -331,7 +321,6 @@ function GameRunner({ gameId, onBack }: { gameId: string; onBack: () => void }) 
   useEffect(() => {
     if (!containerRef.current) return;
     const loaders: Record<string, () => Promise<{ mount: (el: HTMLElement) => () => void }>> = {
-      'platformer-lockstep': () => import('./game-platformer.js'),
       'game-b': () => import('./game-b.js'),
     };
     const loader = loaders[gameId];
