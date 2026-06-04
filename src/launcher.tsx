@@ -329,9 +329,15 @@ function GameRunner({ gameId, onBack }: { gameId: string; onBack: () => void }) 
   const containerRef = React.useRef<HTMLDivElement>(null);
 
   useEffect(() => {
-    if (!containerRef.current || gameId !== 'platformer-lockstep') return;
+    if (!containerRef.current) return;
+    const loaders: Record<string, () => Promise<{ mount: (el: HTMLElement) => () => void }>> = {
+      'platformer-lockstep': () => import('./game-platformer.js'),
+      'game-b': () => import('./game-b.js'),
+    };
+    const loader = loaders[gameId];
+    if (!loader) return;
     let cleanup: (() => void) | undefined;
-    import('./game-platformer.js').then(mod => {
+    loader().then(mod => {
       if (containerRef.current) cleanup = mod.mount(containerRef.current);
     });
     return () => cleanup?.();
@@ -415,6 +421,11 @@ function Launcher() {
         ))}
       </div>
 
+      {/* Game Creator (AI Generate) */}
+      <div style={{ width: '100%', maxWidth: 880, marginBottom: 12 }}>
+        <GameCreator />
+      </div>
+
       {/* Dev Tools */}
       <div style={{ width: '100%', maxWidth: 880 }}>
         <DevTools />
@@ -430,6 +441,285 @@ function Launcher() {
       }}>
         Apollo Engine v0.6 · 26 Atoms · Tier 1-2 · Deterministic Lockstep
       </div>
+    </div>
+  );
+}
+
+// ══════════════════════════════════════
+//  Game Creator (AI Generate)
+// ══════════════════════════════════════
+
+interface LLMProvider {
+  id: string;
+  name: string;
+  models: string[];
+  available: boolean;
+}
+
+function GameCreator() {
+  const [expanded, setExpanded] = useState(false);
+  const [prompt, setPrompt] = useState('');
+  const [generating, setGenerating] = useState(false);
+  const [provider, setProvider] = useState('anthropic');
+  const [providers, setProviders] = useState<LLMProvider[]>([]);
+  const [presets, setPresets] = useState<Record<string, { name: string; description: string }>>({});
+  const [result, setResult] = useState<{ success: boolean; error?: string; blueprint?: any; warnings?: string[] } | null>(null);
+  const [apiOk, setApiOk] = useState(false);
+
+  useEffect(() => {
+    Promise.all([
+      apiCall('/api/generate/providers').then(d => { setProviders(d); setApiOk(true); }).catch(() => {}),
+      apiCall('/api/generate/presets').then(d => setPresets(d)).catch(() => {}),
+    ]);
+  }, []);
+
+  const generate = useCallback(async () => {
+    if (!prompt.trim()) return;
+    setGenerating(true);
+    setResult(null);
+    try {
+      const res = await fetch(`${API}/api/generate`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ prompt, provider }),
+      });
+      const data = await res.json();
+      setResult(data);
+    } catch (e: any) {
+      setResult({ success: false, error: e.message });
+    }
+    setGenerating(false);
+  }, [prompt, provider]);
+
+  const loadPreset = useCallback(async (name: string) => {
+    setGenerating(true);
+    setResult(null);
+    try {
+      const data = await apiCall(`/api/generate/preset/${name}`);
+      setResult(data);
+    } catch (e: any) {
+      setResult({ success: false, error: e.message });
+    }
+    setGenerating(false);
+  }, []);
+
+  const availableProviders = providers.filter(p => p.available);
+
+  const EXAMPLES = [
+    '做一个双人平台跳跃游戏，有重力和弹跳',
+    'Make a pong game with two paddles',
+    '一个小球在方块间弹跳的物理沙盒',
+    '两个玩家抢夺中间金币的对战游戏',
+  ];
+
+  return (
+    <div style={{
+      background: 'linear-gradient(135deg, rgba(167,139,250,0.08), rgba(56,189,248,0.08))',
+      borderRadius: 10,
+      border: '1px solid rgba(167,139,250,0.15)',
+      padding: 16,
+    }}>
+      <div
+        onClick={() => setExpanded(!expanded)}
+        style={{
+          display: 'flex', justifyContent: 'space-between', alignItems: 'center',
+          cursor: 'pointer', userSelect: 'none',
+        }}
+      >
+        <span style={{ fontSize: 14, fontWeight: 600 }}>
+          <span style={{ color: '#a78bfa' }}>Create Game</span>
+          <span style={{ color: '#64748b', fontWeight: 400, marginLeft: 8, fontSize: 12 }}>
+            Describe a game, AI builds it
+          </span>
+        </span>
+        <span style={{ color: '#475569', fontSize: 18 }}>{expanded ? '−' : '+'}</span>
+      </div>
+
+      {expanded && (
+        <div style={{ marginTop: 16 }}>
+          {/* Provider selector */}
+          {availableProviders.length > 0 && (
+            <div style={{ marginBottom: 12, display: 'flex', gap: 6, flexWrap: 'wrap', alignItems: 'center' }}>
+              <span style={{ color: '#64748b', fontSize: 12 }}>AI Provider:</span>
+              {providers.map(p => (
+                <button
+                  key={p.id}
+                  onClick={() => p.available && setProvider(p.id)}
+                  style={{
+                    padding: '3px 10px',
+                    background: provider === p.id ? 'rgba(167,139,250,0.2)' : 'rgba(255,255,255,0.05)',
+                    color: p.available ? (provider === p.id ? '#a78bfa' : '#94a3b8') : '#334155',
+                    border: `1px solid ${provider === p.id ? 'rgba(167,139,250,0.3)' : 'rgba(255,255,255,0.08)'}`,
+                    borderRadius: 4,
+                    fontSize: 12,
+                    cursor: p.available ? 'pointer' : 'default',
+                    opacity: p.available ? 1 : 0.4,
+                  }}
+                >
+                  {p.name}{!p.available ? ' (no key)' : ''}
+                </button>
+              ))}
+            </div>
+          )}
+
+          {/* Prompt input */}
+          <div style={{ display: 'flex', gap: 8 }}>
+            <input
+              value={prompt}
+              onChange={e => setPrompt(e.target.value)}
+              onKeyDown={e => e.key === 'Enter' && !generating && generate()}
+              placeholder="Describe your game in one sentence..."
+              style={{
+                flex: 1, padding: '10px 14px',
+                background: 'rgba(0,0,0,0.3)',
+                color: '#e2e8f0',
+                border: '1px solid rgba(167,139,250,0.2)',
+                borderRadius: 8,
+                fontSize: 14,
+                outline: 'none',
+              }}
+            />
+            <button
+              onClick={generate}
+              disabled={generating || !prompt.trim()}
+              style={{
+                padding: '10px 20px',
+                background: generating ? 'rgba(167,139,250,0.1)' : 'linear-gradient(135deg, #a78bfa, #38bdf8)',
+                color: generating ? '#64748b' : '#0f172a',
+                border: 'none',
+                borderRadius: 8,
+                fontSize: 14,
+                fontWeight: 700,
+                cursor: generating ? 'wait' : 'pointer',
+                whiteSpace: 'nowrap' as const,
+              }}
+            >
+              {generating ? 'Generating...' : 'Generate'}
+            </button>
+          </div>
+
+          {/* Example prompts */}
+          <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', marginTop: 8 }}>
+            {EXAMPLES.map((ex, i) => (
+              <button
+                key={i}
+                onClick={() => setPrompt(ex)}
+                style={{
+                  padding: '4px 10px',
+                  background: 'rgba(255,255,255,0.04)',
+                  color: '#64748b',
+                  border: '1px solid rgba(255,255,255,0.06)',
+                  borderRadius: 12,
+                  fontSize: 11,
+                  cursor: 'pointer',
+                }}
+              >
+                {ex}
+              </button>
+            ))}
+          </div>
+
+          {/* Presets */}
+          {Object.keys(presets).length > 0 && (
+            <div style={{ marginTop: 12 }}>
+              <div style={{ color: '#64748b', fontSize: 12, marginBottom: 6 }}>Quick presets (no API needed):</div>
+              <div style={{ display: 'flex', gap: 8 }}>
+                {Object.entries(presets).map(([key, p]) => (
+                  <button
+                    key={key}
+                    onClick={() => loadPreset(key)}
+                    style={{
+                      padding: '6px 14px',
+                      background: 'rgba(255,255,255,0.06)',
+                      color: '#94a3b8',
+                      border: '1px solid rgba(255,255,255,0.1)',
+                      borderRadius: 6,
+                      fontSize: 12,
+                      cursor: 'pointer',
+                    }}
+                  >
+                    {p.name}
+                  </button>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* Result */}
+          {result && (
+            <div style={{
+              marginTop: 12, padding: 12,
+              background: result.success ? 'rgba(34,197,94,0.08)' : 'rgba(239,68,68,0.08)',
+              border: `1px solid ${result.success ? 'rgba(34,197,94,0.2)' : 'rgba(239,68,68,0.2)'}`,
+              borderRadius: 8,
+            }}>
+              {result.success ? (
+                <div>
+                  <div style={{ color: '#22c55e', fontSize: 14, fontWeight: 600, marginBottom: 6 }}>
+                    Generated: {result.blueprint?.name}
+                  </div>
+                  <div style={{ color: '#94a3b8', fontSize: 12, marginBottom: 8 }}>
+                    {result.blueprint?.description} · {result.blueprint?.entities?.length ?? 0} entities
+                  </div>
+                  {result.warnings && result.warnings.length > 0 && (
+                    <div style={{
+                      color: '#fbbf24', fontSize: 11, marginBottom: 8,
+                      padding: '6px 10px', background: 'rgba(251,191,36,0.08)',
+                      borderRadius: 4, border: '1px solid rgba(251,191,36,0.15)',
+                    }}>
+                      {result.warnings.map((w, i) => <div key={i}>Warning: {w}</div>)}
+                    </div>
+                  )}
+                  <div style={{ display: 'flex', gap: 8 }}>
+                    <button
+                      onClick={() => {
+                        const blob = new Blob([JSON.stringify(result.blueprint, null, 2)], { type: 'application/json' });
+                        const url = URL.createObjectURL(blob);
+                        const a = document.createElement('a');
+                        a.href = url; a.download = `${result.blueprint?.name || 'game'}.json`;
+                        a.click(); URL.revokeObjectURL(url);
+                      }}
+                      style={{
+                        padding: '6px 14px', background: 'rgba(34,197,94,0.15)', color: '#22c55e',
+                        border: '1px solid rgba(34,197,94,0.3)', borderRadius: 6, fontSize: 12, cursor: 'pointer',
+                      }}
+                    >
+                      Download Blueprint
+                    </button>
+                    <button
+                      onClick={() => navigator.clipboard?.writeText(JSON.stringify(result.blueprint, null, 2))}
+                      style={{
+                        padding: '6px 14px', background: 'rgba(255,255,255,0.05)', color: '#94a3b8',
+                        border: '1px solid rgba(255,255,255,0.1)', borderRadius: 6, fontSize: 12, cursor: 'pointer',
+                      }}
+                    >
+                      Copy JSON
+                    </button>
+                  </div>
+                  <details style={{ marginTop: 8 }}>
+                    <summary style={{ color: '#64748b', fontSize: 11, cursor: 'pointer' }}>View Blueprint JSON</summary>
+                    <pre style={{ color: '#94a3b8', fontSize: 11, lineHeight: 1.4, marginTop: 4, maxHeight: 200, overflow: 'auto' }}>
+                      {JSON.stringify(result.blueprint, null, 2)}
+                    </pre>
+                  </details>
+                </div>
+              ) : (
+                <div style={{ color: '#ef4444', fontSize: 13 }}>
+                  Error: {result.error}
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* API status hint */}
+          {!apiOk && (
+            <div style={{ marginTop: 8, color: '#475569', fontSize: 11 }}>
+              Start with <code style={{ color: '#94a3b8' }}>python3 apollo.py</code> to enable AI generation.
+              Presets work without API.
+            </div>
+          )}
+        </div>
+      )}
     </div>
   );
 }
