@@ -13,6 +13,7 @@ import {
   groundSenseCapability,
   jumpCapability,
   boundsClampCapability,
+  cameraFollowCapability,
 } from '@skills/tier2/index.js';
 import type { Box, Level, Spawn } from './level.js';
 import { makeCoopGoalCapability, COOP_ENTITY, COOP_CLEAR_FLAG } from './coop-goal.js';
@@ -51,6 +52,7 @@ const GAME_A_CAPABILITIES = [
   collisionResolveCapability,
   jumpCapability,
   boundsClampCapability,
+  cameraFollowCapability,
 ];
 
 function staticBox(b: Box, tint: number): EntityBlueprint {
@@ -69,16 +71,23 @@ function player(spawn: Spawn, playerId: string, tint: number, level: Level): Ent
     Controllable: { playerId, speed: PLAYER_SPEED },
     Shape: { kind: 'box', width: PLAYER_SIZE, height: PLAYER_SIZE },
     Color: { tint, alpha: 1 },
-    // v0.1：把玩家钳在关卡世界内（== 视口）。卷轴上线后 bounds = 关卡尺寸，相机管可见区。
+    // 把玩家钳在关卡世界内（卷轴关卡 bounds = 大关卡尺寸；相机管可见区/卷动）。
     Bounds: { minX: 0, minY: 0, maxX: level.bounds.width, maxY: level.bounds.height },
+    // 相机跟随目标：camera-follow 取所有 CameraTarget 的 AABB 中点 + 贴合缩放。
+    CameraTarget: {},
   };
 }
 
 // 玩家实体 id（游戏层规则 / 测试引用；区别于 Controllable.playerId 'A'/'B'）。
 export const PLAYER_A_ENTITY = 'playerA';
 export const PLAYER_B_ENTITY = 'playerB';
+export const CAMERA_ENTITY = 'camera';
 
-// 构建顺序固定（地面 → 平台 → 玩家 → 协作状态）→ 相同实体迭代序 → 确定性哈希一致（lockstep 安全）。
+// 视口尺寸（画布像素）。相机看进世界的窗口；关卡可远大于它 → 卷轴。
+export const VIEWPORT_W = 640;
+export const VIEWPORT_H = 400;
+
+// 构建顺序固定（地面 → 平台 → 玩家 → 协作状态 → 相机）→ 相同实体迭代序 → 确定性哈希一致（lockstep 安全）。
 export function buildGameABlueprint(level: Level): WorldBlueprint {
   const entities: Record<string, EntityBlueprint> = {};
   entities.ground = staticBox(level.ground, GROUND_TINT);
@@ -89,6 +98,12 @@ export function buildGameABlueprint(level: Level): WorldBlueprint {
   entities[PLAYER_B_ENTITY] = player(level.spawnB, PLAYER_B, COLOR_B, level);
   // 协作通关状态实体（coop-goal 规则写它的 Flag）。
   entities[COOP_ENTITY] = { Flag: { id: COOP_CLEAR_FLAG, active: false } };
+  // 相机实体：camera-follow 写它的 offset/zoom（取两人中点、贴合缩放）；Bounds=关卡矩形 → 不露界外。
+  // 纯数据实体（无 Transform/Shape）→ 不参与物理；渲染器读 Camera 做世界→屏幕投影（= 卷轴）。
+  entities[CAMERA_ENTITY] = {
+    Camera: { zoom: 1, offsetX: 0, offsetY: 0, rotation: 0, viewportW: VIEWPORT_W, viewportH: VIEWPORT_H },
+    Bounds: { minX: 0, minY: 0, maxX: level.bounds.width, maxY: level.bounds.height },
+  };
   return {
     capabilities: [...GAME_A_CAPABILITIES, makeCoopGoalCapability(level.goal, [PLAYER_A_ENTITY, PLAYER_B_ENTITY])],
     entities,

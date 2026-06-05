@@ -321,6 +321,7 @@ function GameRunner({ gameId, onBack }: { gameId: string; onBack: () => void }) 
   useEffect(() => {
     if (!containerRef.current) return;
     const loaders: Record<string, () => Promise<{ mount: (el: HTMLElement) => () => void }>> = {
+      'game-a': () => import('./game-a.js'),
       'game-b': () => import('./game-b.js'),
     };
     const loader = loaders[gameId];
