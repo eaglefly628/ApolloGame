@@ -14,9 +14,14 @@ import {
   jumpCapability,
   boundsClampCapability,
   cameraFollowCapability,
+  zoneOccupancyCapability,
 } from '@skills/tier2/index.js';
 import type { Box, Level, Spawn } from './level.js';
-import { makeCoopGoalCapability, COOP_ENTITY, COOP_CLEAR_FLAG } from './coop-goal.js';
+
+// 协作通关状态：挂 Flag/Zone 的实体 id 与旗标名。
+// 原 coop-goal.ts（手写胜负系统）已下沉为通用 zone-occupancy capability（REQ-006）——通关条件现在是纯数据。
+export const COOP_ENTITY = 'coop';
+export const COOP_CLEAR_FLAG = 'coop-clear';
 
 // ═══════════════════════════════════════════════════════════════
 //  Game A v0.1 蓝图 —— 双人协作平台跳跃（核心闭环验证）
@@ -54,6 +59,7 @@ const GAME_A_CAPABILITIES = [
   boundsClampCapability,
   cameraFollowCapability,
   tweenCapability,
+  zoneOccupancyCapability, // 协作通关条件 = 纯数据 Zone（REQ-006，原 coop-goal.ts 下沉）
 ];
 
 function staticBox(b: Box, tint: number): EntityBlueprint {
@@ -120,8 +126,19 @@ export function buildGameABlueprint(level: Level): WorldBlueprint {
       Sprite: { textureKey: level.goalArt, anchorX: 0.5, anchorY: 0.5, zOrder: 5 },
     };
   }
-  // 协作通关状态实体（coop-goal 规则写它的 Flag）。
-  entities[COOP_ENTITY] = { Flag: { id: COOP_CLEAR_FLAG, active: false } };
+  // 协作通关条件 = 纯数据 Zone（两名玩家中心都落入目标区矩形 → zone-occupancy 置 coop-clear 旗标）。
+  // 目标 Box（中心+尺寸）转矩形（含边界），语义与原 coop-goal 的"中心在框内"一致。game-a 不再有手写胜负系统。
+  entities[COOP_ENTITY] = {
+    Flag: { id: COOP_CLEAR_FLAG, active: false },
+    Zone: {
+      outFlag: COOP_CLEAR_FLAG,
+      minX: level.goal.x - level.goal.width / 2,
+      minY: level.goal.y - level.goal.height / 2,
+      maxX: level.goal.x + level.goal.width / 2,
+      maxY: level.goal.y + level.goal.height / 2,
+      requiredEntities: [PLAYER_A_ENTITY, PLAYER_B_ENTITY],
+    },
+  };
   // 相机实体：camera-follow 写它的 offset/zoom（取两人中点、贴合缩放）；Bounds=关卡矩形 → 不露界外。
   // 纯数据实体（无 Transform/Shape）→ 不参与物理；渲染器读 Camera 做世界→屏幕投影（= 卷轴）。
   entities[CAMERA_ENTITY] = {
@@ -129,7 +146,7 @@ export function buildGameABlueprint(level: Level): WorldBlueprint {
     Bounds: { minX: 0, minY: 0, maxX: level.bounds.width, maxY: level.bounds.height },
   };
   return {
-    capabilities: [...GAME_A_CAPABILITIES, makeCoopGoalCapability(level.goal, [PLAYER_A_ENTITY, PLAYER_B_ENTITY])],
+    capabilities: GAME_A_CAPABILITIES,
     entities,
   };
 }

@@ -4,9 +4,10 @@ import type { Component } from '@engine/core/types.js';
 import type { Flag } from '@engine/protocol/components.js';
 import { applyCommands } from '@net/index.js';
 import type { Command } from '@net/index.js';
-import { buildGameABlueprint, PLAYER_A, PLAYER_B } from './blueprint.js';
+import { buildGameABlueprint, PLAYER_A, PLAYER_B, COOP_ENTITY, COOP_CLEAR_FLAG } from './blueprint.js';
 import { LEVEL_W1_1 } from './level.js';
-import { COOP_ENTITY, COOP_CLEAR_FLAG } from './coop-goal.js';
+// 注：原 coop-goal.ts 已下沉为通用 zone-occupancy capability（REQ-006）。本文件现在是「Game A 通关条件
+// 用纯数据 Zone 表达」的端到端集成测试——驱动真实蓝图，验证 coop-clear 旗标随两人进/离目标区翻转。
 
 function loadGameA(): World {
   const w = new World();

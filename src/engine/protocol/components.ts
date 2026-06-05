@@ -319,6 +319,20 @@ export interface Trigger extends Component {
   other: EntityId;
 }
 
+// ── zone-occupancy ── 声明式区域占据目标：区内匹配目标达数量阈值 → 置 outFlag（REQ-006，下沉 coop-goal）。
+// 把「胜负/通关/到达/区域占据/收集齐」表达成纯数据，不写游戏专属系统。判实体中心点是否落入世界矩形。
+export interface Zone extends Component {
+  readonly type: 'Zone';
+  outFlag: string; // 满足时置 true、否则 false 的 Flag id（按 id 全局定位）
+  minX: number;
+  minY: number;
+  maxX: number;
+  maxY: number; // 世界矩形（含边界）
+  requiredTag?: number; // 选择器A：只数 Tag.flags 含此位的实体（位与非零即匹配）
+  requiredEntities?: EntityId[]; // 选择器B：指定实体名单（与 requiredTag 二选一；都缺=所有带 Transform 的实体）
+  count?: number; // 数量阈值。Tag/全体模式缺省=1；entities 模式缺省=名单长度（全部在内）
+}
+
 // ── W2 spatial-query ── 空间查询服务配置，挂在 world 实体
 export interface SpatialIndex extends Component {
   readonly type: 'SpatialIndex';

@@ -12,3 +12,4 @@ export { effectApplyCapability } from './effect-apply.js';
 export { cameraFollowCapability } from './camera-follow.js';
 export { clickableCapability } from './clickable.js';
 export { craftRecipeCapability } from './craft-recipe.js';
+export { zoneOccupancyCapability } from './zone-occupancy.js';
