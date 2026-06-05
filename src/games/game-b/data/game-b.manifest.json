@@ -13,6 +13,7 @@
     "S_warmed_flag": { "Flag": { "id": "S_warmed_flag", "active": false } },
     "S_30_flag": { "Flag": { "id": "S_30_flag", "active": false } },
     "S_60_flag": { "Flag": { "id": "S_60_flag", "active": false } },
+    "T_30_flag": { "Flag": { "id": "T_30_flag", "active": false } },
 
     "warm_watch": { "EventWhen": { "signal": "S_warmed", "when": { "kind": "resource", "id": "affection_S", "cmp": "gte", "value": 5 }, "mode": "edge", "armed": false } },
     "warm_effect": { "Effect": { "onSignal": "S_warmed", "kind": "set-flag", "targetId": "S_warmed_flag", "value": true } },
@@ -21,6 +22,8 @@
     "aff_s_30_effect": { "Effect": { "onSignal": "aff_s_30", "kind": "set-flag", "targetId": "S_30_flag", "value": true } },
     "aff_s_60_watch": { "EventWhen": { "signal": "aff_s_60", "when": { "kind": "resource", "id": "affection_S", "cmp": "gte", "value": 60 }, "mode": "edge", "armed": false } },
     "aff_s_60_effect": { "Effect": { "onSignal": "aff_s_60", "kind": "set-flag", "targetId": "S_60_flag", "value": true } },
+    "aff_t_30_watch": { "EventWhen": { "signal": "aff_t_30", "when": { "kind": "resource", "id": "affection_T", "cmp": "gte", "value": 30 }, "mode": "edge", "armed": false } },
+    "aff_t_30_effect": { "Effect": { "onSignal": "aff_t_30", "kind": "set-flag", "targetId": "T_30_flag", "value": true } },
 
     "cycle_end_watch": { "EventWhen": { "signal": "cycle_over", "when": { "kind": "resource", "id": "cycle", "cmp": "gte", "value": 8 }, "mode": "edge", "armed": false } },
     "cycle_end_effect": { "Effect": { "onSignal": "cycle_over", "kind": "set-state", "targetId": "dialogue", "value": "ending" } },

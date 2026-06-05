@@ -214,6 +214,23 @@ describe('Game B v0.3 — 日程循环 / 周期计数 / 30·60 阈值 / 周期�
     expect(txt(w)).toContain('挚友结局');
   });
 
+  it('多角色线（纯数据扩展，零新代码）：约 T ×4 → affection_T≥30 → T_30_flag → 解锁 T 结局', () => {
+    const w = loadGameB();
+    toHub(w);
+    expect(flag(w, 'T_30_flag')).toBe(false);
+    for (let i = 0; i < 4; i++) act(w, 5); // 约 T 出来 ×4：0 → 32
+    expect(res(w, 'affection_T')).toBe(32);
+    expect(flag(w, 'T_30_flag')).toBe(true); // T 线阈值事件链（与 S 同构，只是数据）
+    for (let i = 0; i < 4; i++) act(w, 3); // 休息把 cycle 推到 8 → ending
+    expect(cur(w)).toBe('ending');
+    const ending = SCENE_01.ending;
+    if (ending.kind !== 'choice') throw new Error('ending choice');
+    expect(optionAvailable(w, ending.options[3])).toBe(true); // T 结局 requires T_30_flag
+    expect(optionAvailable(w, ending.options[1])).toBe(false); // S 挚友 requires S_30（没约过 S）
+    choose(w, 3);
+    expect(cur(w)).toBe('end_t');
+  });
+
   it('确定性：一整轮日程序列两次跑出完全相同快照', () => {
     const play = (): string => {
       const w = loadGameB();

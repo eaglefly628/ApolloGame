@@ -260,6 +260,39 @@
 
 ---
 
+### R17 · [2026-06-05] · PB · 框架级（Game B v0.4 拉动） · status: open · 优先级: 高（v0.4 阻塞）· **类型: 通用模块请求**
+
+**标题**：对话模块加 `check` 节点（确定性骰子检定）—— 概率成功/失败分支
+
+- **想实现的游戏行为（v0.4 检定系统）**：关键节点掷骰：`检定分数 = 基础属性 + 好感修正 + 随机(1..N)`，`≥ 难度` → 成功路线（好感+、解锁），否则失败路线（**失败不是 Game Over，走另一条故事**）。对照 `game-b-otome-vn.md` §2.4 + §五的 `check{attribute,difficulty}/successNext/failNext`。
+
+- **已经试了什么（确认是真缺口，非我没找）**：
+  - **确定性属性门控**已能做（v0.2/v0.3 用 `requires` ConditionExpr）——但那是"达标即过"，无随机方差。
+  - `random` 原子只有 `RandomSeed` 数据 + `nextRandom/randomInt` **辅助函数**，`systems: []`——**没有数据驱动的"掷骰"系统**。
+  - `ConditionExpr` 叶子无 `random`；`event-when`/`effect-apply` 不能掷骰。
+  - 通用 `dialogue` 模块只有 `line`/`choice`，**无 check 节点**（无 successNext/failNext/概率分支）。
+  - 结论：骰子检定**无法用现有数据表达**，且我**不写游戏层掷骰 hack**（守数据驱动宣言）。
+
+- **建议方案（交 Lead 评估；倾向并入通用 dialogue 模块，与 line/choice 并列第三种节点）**：
+  ```
+  // DialogueNode 第三种：check
+  { kind: 'check',
+    attribute: string,        // 基础属性 Resource id（如 'charm'）
+    bonusFrom?: string,       // 好感修正 Resource id（如 'affection_S'，按系数计）
+    bonusDiv?: number,        // 好感修正系数（如 /10），缺省 1
+    dice: number,             // 掷 1..dice（如 20）
+    difficulty: number,
+    successNext: string, failNext: string,
+    successEffects?: DialogueEffect[], failEffects?: DialogueEffect[] }
+  ```
+  - 运行器遇 check 节点（收到 DialogueAdvance 或自动）：从世界的 `RandomSeed` 实体取 `randomInt(seed,1,dice+1)`（推进序列）；`score = resource(attribute) + floor(resource(bonusFrom)/bonusDiv) + roll`；`score≥difficulty` → 施 successEffects、`State.current=successNext`，否则 fail 分支。
+  - **确定性**：用现成 `RandomSeed`（mulberry32，已是确定性 PRNG）+ 进 `world.snapshot()` → 存档/重放结果一致（正是 §四"检定骰子确定性，存档重放结果一致"的验收点）。
+  - 落库后：Game B 的检定节点 = 纯数据（脚本里加 check 节点 + 一个 RandomSeed 实体），零游戏代码。
+
+- **边界**：**阻塞 v0.4**（检定是 v0.4 核心）。是否并入 dialogue vs 独立 `skill-check` 能力，请 Lead 定。这是"图遍历解释器"再加一种节点类型，与 R15 同源。
+
+---
+
 ### [2026-06-03] · PA · Game A · status: **done**（2026-06-04，Lead，Batch I）· REQ-001 相机 / 卷轴（世界→屏幕变换 + 合作跟随相机）
 
 > ✅ Lead 落地：`tier2/camera-follow`（CameraTarget 目标 AABB 中点 → Camera.offset，贴合 zoom，相机实体挂 Bounds 则钳关卡内）+ CanvasRenderer 世界→屏幕投影（读 Camera 施加 translate+scale，无相机则 1:1）。PA 用法：给两角色挂 `CameraTarget`，建一个挂 `Camera{viewportW/H}`(+可选 `Bounds`=关卡矩形) 的相机实体即可。6 测试。
