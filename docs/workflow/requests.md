@@ -314,6 +314,22 @@
 
 ---
 
+### [2026-06-04] · PA · Game A · status: open · 优先级: **高（数据驱动对齐）** · REQ-006 把 coop-goal 下沉成通用能力（通关条件应是数据，不是代码）
+
+> 依据：`data-driven-manifesto.md` §8 已点名 `src/games/game-a/coop-goal.ts` 是**代码债**。按"发现非数据驱动 → 提需求下沉"的纪律主动提出。
+
+- **想实现的游戏行为**：通关条件"两名玩家都进入目标区"应是**数据**（蓝图里一个声明），而不是手写系统。更一般：声明式目标/胜负（区域占据、收集齐、到达点）。
+- **现状（非数据驱动）**：`coop-goal.ts` 是手写 capability —— 系统读两个玩家 `Transform`、判矩形内、写 `Flag`。确定性、能跑，但**是游戏专属代码** = 宣言负债。它存在只因当前没有"把区域占据条件表达成数据"的能力。
+- **为什么现在只能写代码**：(a) 区域进入检测要 **sensor（REQ-002，open）**——否则目标区挂 Shape 会被 collision 推开；(b) "所有目标都满足"的**多源聚合条件（R5 condition 的多目标/计数版，open）**。两块都没落地，故只能游戏层硬读坐标。
+- **建议方案（请 Lead 选）**：
+  - **路径 A（组合现有，待 REQ-002 + R5）**：目标区 = `trigger-zone`(sensor) → 每个玩家进区发 Trigger/Flag；`condition` 聚合"两玩家 Flag 都真"→ 输出 `coop-clear` Flag。全数据，`coop-goal.ts` 删除。
+  - **路径 B（下沉成通用 capability）**：一个 `objective` / `zone-occupancy` 能力 —— 数据声明 `{zone, requiredTags|entities, count, outFlag}`，引擎判"区内满足数量的目标"→ 写 outFlag。Game A 通关 / Game B 到达 / 平台门控都复用。
+- **验收**：`coop-goal.ts` 可删；通关条件用纯数据（蓝图里一个 objective 组件/实体）表达。
+- **关联**：REQ-002(sensor) + R5(condition) 是路径 A 前置；本条是它们的"游戏级目标"消费场景。
+- **附带承认**：宣言 §8 也点名 `*.ts 蓝图`（`blueprint.ts`/`level.ts`）应变**纯数据 Game Manifest** + 通用 loader 解释。我支持该方向（与 Lead 偿还方向一致）；属框架级，可单列，本条聚焦 coop-goal。
+
+---
+
 ## 需求模板（复制这段填写）
 
 ```
