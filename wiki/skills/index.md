@@ -29,6 +29,12 @@
 | 粒子系统 | 发射器, 粒子池, 视觉特效 | 实现爆炸/烟雾/拖尾等特效 | wiki/skills/particles.md |
 | UI 主题化 | CSS tokens, 多风格套装, AI 生成主题 | 设计/切换 UI 视觉风格 | wiki/skills/ui-theming.md |
 
+### 外部参考
+
+| 参考 | 内容 | 触发场景 | 路径 |
+|------|------|---------|------|
+| Claude Game Studios | Hook/Rules/Agent/Skill 工作流模式 | 改进开发流程/加 hook/加 slash command | wiki/skills/reference-claude-game-studios.md |
+
 ## 使用规则
 
 1. **不要一次性读取所有文件** — 只读当前任务涉及的分类
