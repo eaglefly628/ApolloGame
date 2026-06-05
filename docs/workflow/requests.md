@@ -205,6 +205,25 @@
 
 ---
 
+### R15 · [2026-06-04] · PB · 框架级 · status: open · 优先级: **高（架构对齐）** · **类型: 通用模块请求**
+
+**标题**：把"对话/叙事运行器"提升为通用共享模块 —— 让 Game B 归零游戏专属代码（数据驱动原则）
+
+- **背景（与用户+Lead 对齐的原则）**：游戏 = **数据**（manifest + 内容），不是代码。游戏专属 `.ts` 应趋近于零；非写不可的代码必须是**通用、可复用的库模块**，由 manifest 选中+喂数据，不是某个游戏的私货。
+
+- **现状违规**：`src/games/game-b/dialogue-runner.ts` 是**游戏层代码**（脚本解释器 capability）。但它**本质通用**（任何 VN/RPG 都要"跑一棵对话脚本"）。
+
+- **为什么这段代码非有不可（说明）**：现有通用系统表达不了**数据依赖的状态转移**与**表驱动文本**——
+  - `effect-apply` 只能 `set-state` 到**固定值**，做不到"跳到当前节点的 `next`"（next 是逐节点数据）。
+  - 无系统能"按 `State.current` 查脚本表 → 写 `Text.content`"。
+  → 必须有一个**脚本解释器**读对话数据驱动 state/text/effect。
+
+- **请求**：把它收编为**通用"叙事/对话运行器"共享模块**（Lead 拥有，放 `src/skills/` 或服务层），契约 = 一份**声明式对话脚本数据结构**（节点图：line/choice + effects + `requires` 条件树 + next）。我已有可跑实现 + 8 测试（`src/games/game-b/dialogue-runner.ts`），**可直接当建议补丁**，Lead review 后泛化落库。
+  - 落库后：删 game-b 的 `dialogue-runner.ts`，Game B = **纯数据**（对话脚本 JSON + blueprint manifest + 资产清单 + 主题）。
+  - 同理 `ui/VNStage.tsx` 宜泛化为**通用可主题化 VN 演出组件**（sakura 主题=数据），不留作 game 代码（可后续单提）。
+
+- **对齐价值**：叙事运行器是模块库该有的一块（VN/RPG/Galgame 通用），写一次复利。正是护城河。
+
 ### [2026-06-03] · PA · Game A · status: **done**（2026-06-04，Lead，Batch I）· REQ-001 相机 / 卷轴（世界→屏幕变换 + 合作跟随相机）
 
 > ✅ Lead 落地：`tier2/camera-follow`（CameraTarget 目标 AABB 中点 → Camera.offset，贴合 zoom，相机实体挂 Bounds 则钳关卡内）+ CanvasRenderer 世界→屏幕投影（读 Camera 施加 translate+scale，无相机则 1:1）。PA 用法：给两角色挂 `CameraTarget`，建一个挂 `Camera{viewportW/H}`(+可选 `Bounds`=关卡矩形) 的相机实体即可。6 测试。
