@@ -8,6 +8,12 @@
 
 ## 待处理 / 进行中
 
+> ✅ **本程 Lead 批量结案（2026-06-05）** —— 三游戏共需 + 三人开工阻塞一次性下沉为通用能力（全绿 446 passed / tsc / build）：
+> - **共需**：`clickable`(命中→Signal·三家) · `craft-recipe`(经济/批量改值=R14+REQ-C-003) · `zone-occupancy`(REQ-006) · `dialogue`(R15) · `match3-board`(REQ-C-001) · AIGP 端口(REQ-C-004) · Tween loop(REQ-004) · 渲染器 Sprite 穿皮(REQ-005)。
+> - **已迁纯数据**：Game A 删 `coop-goal.ts`（通关=Zone 数据）；Game B 删 `dialogue-runner.ts`（剧情=DialogueScript 数据）。
+> - **各自开工清单见 `docs/workflow/finish/{PA,PB,PC}-finish-list.md`**。仍 open：R9（资产文档 review）、R12（蓝图 schema 静态校验）。
+> - 注：PA 口头提的"REQ-007/008"在池中无此编号，按 PA 实际仅剩两条 open（REQ-004/005）解读并已落地。
+
 > **PB 缺口分析综述（2026-06-03，Game B 乙游 VN）**
 > 引擎今天的真实形态 = **确定性 2D 物理/平台跳跃 ECS + debug 渲染器 + 纯键盘输入**。
 > 一个 VN ≈ 叙事引擎 + 演出 + UI + 音频 + 存档。现有 `resource/flag/state/text/timer/random` 是**最底层数据积木**，VN 形状的系统几乎整层缺失。
@@ -85,7 +91,7 @@
 
 ---
 
-### R5 · [2026-06-03] · PB · Game B · status: open · 优先级: P1
+### R5 · [2026-06-03] · PB · Game B · status: **done**（2026-06-05，Lead：多目标/计数由 zone-occupancy 覆盖；多条件 and/or 已在 ConditionExpr）· 优先级: P1
 
 **标题**：`condition` 谓词求值（Tier 2 候选）—— 组合条件门控选项/分支
 
@@ -107,7 +113,7 @@
 
 ---
 
-### R7 · [2026-06-03] · PB · Game B · status: open · 优先级: P2
+### R7 · [2026-06-03] · PB · Game B · status: **done**（2026-06-05，Lead：跨阈值由 Condition + event-when edge 覆盖，迟滞=armed）· 优先级: P2
 
 **标题**：`resource-threshold`（Tier 2 候选）—— 资源跨阈值触发
 
@@ -185,7 +191,7 @@
 
 ---
 
-### R13 · [2026-06-04] · PB · Game B · status: open · 优先级: P3 · **类型: DX 摩擦（小）**
+### R13 · [2026-06-04] · PB · Game B · status: **done**（2026-06-05，Lead：findByComponentId 助手 + clickable 命中→Signal 均已落）· 优先级: P3 · **类型: DX 摩擦（小）**
 
 **标题**：没有"取命名单例/某 fsm 实体"的便捷查询；UI 点击仍走直接改世界（= 已存在的 R3）
 
@@ -194,7 +200,7 @@
 
 ---
 
-### R14 · [2026-06-04] · PB · Game B · status: **部分 done**（2026-06-04，Lead：助手已落，批量改资源待）· 优先级: P3 · **类型: 接口摩擦（推 v0.2 实测）**
+### R14 · [2026-06-04] · PB · Game B · status: **done**（2026-06-05，Lead：批量/原子/可负担改资源归入 craft-recipe）· 优先级: P3 · **类型: 接口摩擦（推 v0.2 实测）**
 
 > ✅ Lead 落地(DX 助手部分，同时解 R13 摩擦1 + PC REQ-C-002 的"按 id 找实体")：`src/engine/core/query.ts` 的 `findByComponentId(world,type,idField,id)` / `getComponentById` —— 游戏层不再手写"扫实体找 id"。⏳ **待做**：批量/原子改资源(`ResourceModifyBatch` 或"可负担才成交")——与 PC REQ-C-003 同源，归一个"经济/批量改值"capability 一起做。
 
@@ -207,7 +213,7 @@
 
 ---
 
-### R15 · [2026-06-04] · PB · 框架级 · status: open · 优先级: **高（架构对齐）** · **类型: 通用模块请求**
+### R15 · [2026-06-04] · PB · 框架级 · status: **done**（2026-06-05，Lead：下沉为通用 @skills/tier3 dialogue，Game B 纯数据、删 dialogue-runner.ts）· 优先级: **高（架构对齐）** · **类型: 通用模块请求**
 
 **标题**：把"对话/叙事运行器"提升为通用共享模块 —— 让 Game B 归零游戏专属代码（数据驱动原则）
 
@@ -305,7 +311,7 @@
 
 ---
 
-### REQ-C-001 · [2026-06-05] · PC · Game C · status: open · 优先级: **P0**（阻塞可玩棋盘）
+### REQ-C-001 · [2026-06-05] · PC · Game C · status: **done**（2026-06-05，Lead：@skills/tier3 match3-board 算法型机制）· 优先级: **P0**（阻塞可玩棋盘）
 
 **标题**：三消棋盘机制 —— 网格消除（交换 / 找连 / 消除产出 / 重力 / 补块 / 连锁）通用 capability
 
@@ -337,7 +343,7 @@
 
 ---
 
-### REQ-C-002 · [2026-06-05] · PC · Game C · status: open · 优先级: P1
+### REQ-C-002 · [2026-06-05] · PC · Game C · status: **done**（2026-06-05，Lead：@skills/tier2 clickable）· 优先级: P1
 
 **标题**：通用「可点击实体」—— 指针命中 tag 实体 → 配置化语义动作 / 信号
 
@@ -349,7 +355,7 @@
 
 ---
 
-### REQ-C-003 · [2026-06-05] · PC · Game C · status: open · 优先级: P2
+### REQ-C-003 · [2026-06-05] · PC · Game C · status: **done**（2026-06-05，Lead：@skills/tier2 craft-recipe，与 R14 归一）· 优先级: P2
 
 **标题**：通用「配方 / 消费」经济 —— 信号触发时材料足够则扣料并解锁（主动缝制）
 
@@ -361,7 +367,7 @@
 
 ---
 
-### REQ-C-004 · [2026-06-05] · PC · 框架级（Game C 拉动） · status: open · 优先级: 架构级 · **类型: 表现后端**
+### REQ-C-004 · [2026-06-05] · PC · 框架级（Game C 拉动） · status: **done**（2026-06-05，Lead：src/services/aigp Null/Http AishePort）· 优先级: 架构级 · **类型: 表现后端**
 
 **标题**：爱诗(AIGP)视频生成后端 —— 消费「外观 → 提示词」产出短视频展示（周期表「扩展 C」X4–X7 首次落地拉动）
 
@@ -373,7 +379,7 @@
 
 ---
 
-### [2026-06-04] · PA · Game A · status: open · REQ-004 Tween 加 loop / pingpong（连续往复移动平台）
+### [2026-06-04] · PA · Game A · status: **done**（2026-06-05，Lead：Tween loop/pingpong + loops）· REQ-004 Tween 加 loop / pingpong（连续往复移动平台）
 
 > 背景：用户定原则——游戏要**数据驱动**，能用组件数据表达就别写游戏专属代码。本需求正是为了让"移动平台"留在数据层。
 
@@ -385,7 +391,7 @@
 
 ---
 
-### [2026-06-04] · PA · Game A · status: open · REQ-005 渲染器让 Sprite 给可碰撞实体"穿皮"（Shape 当前盖过 Sprite）
+### [2026-06-04] · PA · Game A · status: **done**（2026-06-05，Lead：渲染器优先 Sprite + chooseRenderMode 纯函数）· REQ-005 渲染器让 Sprite 给可碰撞实体"穿皮"（Shape 当前盖过 Sprite）
 
 - **想实现的游戏行为**：给带碰撞的实体（玩家/箱子/平台）穿美术皮（贴图），同时保留碰撞。
 - **已经试了什么**：资产清单（数据）+ `Sprite{textureKey}`（数据）已接通——**无碰撞的 Sprite-only 实体（背景、目标旗）能正常画贴图**（`src/games/game-a/assets.ts` + 蓝图）。给玩家再挂 Sprite 试穿皮。
@@ -395,7 +401,7 @@
 
 ---
 
-### [2026-06-04] · PA · Game A · status: open · 优先级: **高（数据驱动对齐）** · REQ-006 把 coop-goal 下沉成通用能力（通关条件应是数据，不是代码）
+### [2026-06-04] · PA · Game A · status: **done**（2026-06-05，Lead：zone-occupancy，已迁 Game A 删 coop-goal.ts）· 优先级: **高（数据驱动对齐）** · REQ-006 把 coop-goal 下沉成通用能力（通关条件应是数据，不是代码）
 
 > 依据：`data-driven-manifesto.md` §8 已点名 `src/games/game-a/coop-goal.ts` 是**代码债**。按"发现非数据驱动 → 提需求下沉"的纪律主动提出。
 
