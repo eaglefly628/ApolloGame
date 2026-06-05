@@ -1,8 +1,8 @@
 // Game B · 娱乐圈乙游视觉小说（otome VN）。负责人：PB。
-// v0.1：对话 / 选择 / 好感结算 / 分支核心闭环（用现成原子 + dialogue-runner 胶水）。
-// 路线/引擎需求见 README.md / requests.md（R1–R8）。
-export { buildGameBBlueprint } from './blueprint.js';
-export { createDialogueRunnerCapability, renderNodeText, DIALOGUE_FSM } from './dialogue-runner.js';
+// v0.2：对话循环 + 7 属性 + 条件门控选项（检定/阈值解锁，走 Condition→Event→Effect 链）。
+// 路线/引擎需求见 README.md / requests.md。
+export { buildGameBBlueprint, GAME_B_STATS } from './blueprint.js';
+export { createDialogueRunnerCapability, renderNodeText, optionAvailable, resourceValue, DIALOGUE_FSM } from './dialogue-runner.js';
 export type { DialogueAdvance, DialogueChoose } from './dialogue-runner.js';
 export { SCENE_01, START_NODE } from './data/dialogue.js';
 export type { DialogueScript, DialogueNode, ChoiceOption, Effect } from './data/dialogue.js';

@@ -194,6 +194,17 @@
 
 ---
 
+### R14 · [2026-06-04] · PB · Game B · status: open · 优先级: P3 · **类型: 接口摩擦（推 v0.2 实测）**
+
+**标题**：一实体一组件 → 一个 tick 内施加多个 `ResourceModify` 不便
+
+- **摩擦**：一个选项可能同时改多项数值（好感 +5 且 事业 +2）。但「一实体一组件」约束下，一个实体一个 tick 只能挂一个 `ResourceModify`，没法在一个实体上一次性发多个。
+- **我当时的绕过（坦白，已是干净版）**：把每个效果的 `ResourceModify` 挂到**它目标资源各自的实体**上（按 id 扫描定位）——各效果指向不同资源=不同实体，天然不冲突、无孤儿实体。能用，但要 game 层自己扫实体。
+- **请主程分析**（低优先）：是否值得一个"批量改资源"入口，比如 `ResourceModifyBatch{ mods: [{id,amount}] }`，或允许事件型组件在同实体多实例。VN 选项常一次改多项；阈值/检定结算也会。
+- **关联 DX**：和 R13 摩擦 1 同源——game 层反复在写"按 id 找实体"（resource/flag）。一个引擎侧 `world.findByComponentId(type, idField, id)` 助手（或暴露已有的 `buildConditionLookup`）能让两个游戏都少写扫描。
+
+---
+
 ### [2026-06-03] · PA · Game A · status: **done**（2026-06-04，Lead，Batch I）· REQ-001 相机 / 卷轴（世界→屏幕变换 + 合作跟随相机）
 
 > ✅ Lead 落地：`tier2/camera-follow`（CameraTarget 目标 AABB 中点 → Camera.offset，贴合 zoom，相机实体挂 Bounds 则钳关卡内）+ CanvasRenderer 世界→屏幕投影（读 Camera 施加 translate+scale，无相机则 1:1）。PA 用法：给两角色挂 `CameraTarget`，建一个挂 `Camera{viewportW/H}`(+可选 `Bounds`=关卡矩形) 的相机实体即可。6 测试。

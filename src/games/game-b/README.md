@@ -42,7 +42,19 @@ src/games/game-b/
 └── ui/                  # React-DOM：对话框、选项菜单、属性/好感面板、存读档、sakura-otome 主题组件
 ```
 
-## 当前状态 — v0.1 骨架已落地 ✅
+## 当前状态 — v0.2 已落地 ✅（技术债已还清）
+
+在 v0.1 基础上推进，用主程新落地的能力做了三件事：
+- **还清技术债**：R10 `runsBefore` 替掉"谎报 reads"、R11 全局按 id 路由替掉"entityId===resourceId 假设"。
+- **7 属性系统**：魅力/智慧/体力/事业 + 好感 S/T/U，React 属性面板实时显示（ui-binding）。
+- **条件门控选项 + 阈值事件链**：选项支持 `requires`（条件树）；用 `event-when`+`effect-apply`（Condition→Event→Effect）做"好感越线→置位解锁选项"——**纯配置、零游戏代码**。
+- **8 个集成测试全绿**：拓扑无环(runsBefore)、7 属性、全局路由改值、阈值链合龙、阈值未达不触发、门控选项可见性、拒绝选不可用项、确定性快照。
+
+推 v0.2 新提的需求：**R14**（一 tick 多 ResourceModify 不便 + 按 id 找实体的 DX 助手）。
+
+---
+
+## v0.1 骨架 ✅
 
 用**现成原子**（`state` + `resource` + `flag` + `text`）+ 游戏层胶水 `dialogue-runner` 拼出了 VN 核心闭环，**验证了"现成 skill 能组合出乙游"**。
 
