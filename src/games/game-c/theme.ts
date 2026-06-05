@@ -48,6 +48,7 @@ export interface Garment {
   readonly lookId: string; // 解锁后女孩的「当前外观」状态值
   readonly icon: string; // 展示用字形（占位）
   readonly requires: ReadonlyArray<{ readonly material: string; readonly amount: number }>;
+  readonly requiresShopLevel?: number; // 额外门控：缝纫店达到该等级才可解锁（高定专用，体现"升级店铺")
   readonly aishePrompt: string; // 爱诗(AIGP)视频生成提示词片段：穿上这件后女孩身上的样子
 }
 
@@ -103,7 +104,63 @@ export const GARMENTS: readonly Garment[] = [
     ],
     aishePrompt: 'a girl in a shimmering sequin evening gown under a starry sky, glamorous runway, cinematic bokeh',
   },
+  {
+    id: 'couture',
+    name: '高定·真我华裳',
+    tier: 6,
+    lookId: 'look_couture',
+    icon: '👑',
+    // 高定门控：缝纫店升到 4 级（已做出 4 件衣服）+ 顶级材料，才解锁。
+    // 这条「升级店铺 → 解锁更好的衣服」正是用户要的双向养成，且压测多步条件涌现。
+    requires: [
+      { material: 'sequin', amount: 80 },
+      { material: 'lace', amount: 60 },
+      { material: 'ribbon', amount: 50 },
+    ],
+    requiresShopLevel: 4,
+    aishePrompt: 'a girl in a couture haute dress of flowing silk and crystal beading, atelier spotlight, fashion film',
+  },
 ];
+
+// ── 缝纫店等级（养成的"店铺升级"维度，纯数据涌现）─────────────────
+// 每解锁一件衣服 → 缝纫店 +1 级（blueprint 用现成 effect-apply modify-resource 装配）。
+// 高定衣再以 shop_level 阈值反向门控 → "升级店铺才能做更好的衣服"。
+export const SHOP_LEVEL_ID = 'shop_level';
+export const SHOP_LEVEL_NAME = '缝纫店等级';
+export const SHOP_LEVEL_MAX = 20;
+export const SHOP_LEVEL_ENTITY = 'res_shop_level';
+
+// ── 配饰（多槽换装，可叠加）────────────────────────────────────
+// 与衣服并行的独立解锁线：攒够材料 → 解锁该配饰 flag。可与任意衣服叠穿。
+// 爱诗提示词据"已解锁配饰"组合（见 composeFullLook）。
+export interface Accessory {
+  readonly id: string;
+  readonly name: string;
+  readonly icon: string;
+  readonly slot: string; // 槽位（hat / hair / neck / shoes）
+  readonly requires: ReadonlyArray<{ readonly material: string; readonly amount: number }>;
+  readonly promptFragment: string; // 爱诗提示词里追加的配饰描述
+}
+
+export const ACCESSORIES: readonly Accessory[] = [
+  { id: 'straw_hat', name: '宽檐草帽', icon: '👒', slot: 'hat',
+    requires: [{ material: 'ribbon', amount: 15 }, { material: 'cloth', amount: 20 }],
+    promptFragment: 'a wide-brim straw hat with a ribbon band' },
+  { id: 'hair_bow', name: '蝴蝶结发饰', icon: '🎀', slot: 'hair',
+    requires: [{ material: 'ribbon', amount: 10 }, { material: 'lace', amount: 8 }],
+    promptFragment: 'a lace butterfly bow in her hair' },
+  { id: 'pearl_necklace', name: '珍珠项链', icon: '📿', slot: 'neck',
+    requires: [{ material: 'button', amount: 18 }, { material: 'sequin', amount: 12 }],
+    promptFragment: 'a delicate pearl necklace' },
+  { id: 'mary_janes', name: '玛丽珍鞋', icon: '🥿', slot: 'shoes',
+    requires: [{ material: 'cloth', amount: 28 }, { material: 'button', amount: 14 }],
+    promptFragment: 'glossy mary-jane shoes' },
+];
+
+export const accessoryFlagId = (a: Accessory | string): string =>
+  `acc_${typeof a === 'string' ? a : a.id}`;
+export const accessorySignal = (a: Accessory | string): string =>
+  `accsig_${typeof a === 'string' ? a : a.id}`;
 
 // 基础外观（未解锁任何衣服时）。
 export const BASE_LOOK = 'look_base';
@@ -135,4 +192,12 @@ export const AISHE_NEGATIVE = 'lowres, extra fingers, watermark, text artifacts'
 export function composeAishePrompt(lookId: string): string {
   const base = LOOK_PROMPTS[lookId] ?? BASE_LOOK_PROMPT;
   return `${base}, ${AISHE_STYLE_SUFFIX}`;
+}
+
+// 衣服 + 已解锁配饰 → 完整爱诗提示词（表现层数据装配）。配饰按 slot 固定序拼，结果确定。
+export function composeFullLook(lookId: string, unlockedAccessoryIds: readonly string[]): string {
+  const base = LOOK_PROMPTS[lookId] ?? BASE_LOOK_PROMPT;
+  const frags = ACCESSORIES.filter((a) => unlockedAccessoryIds.includes(a.id)).map((a) => a.promptFragment);
+  const accPart = frags.length ? `, ${frags.join(', ')}` : '';
+  return `${base}${accPart}, ${AISHE_STYLE_SUFFIX}`;
 }

@@ -15,8 +15,11 @@ PC 是 **Game Creator**：只做**数据驱动的装配**，不写游戏专属�
 |------|------|---------|
 | 材料经济（6 材料 + 针线币） | ✅ 数据 | `resource`(F1) 原子，各一个 `Resource` |
 | 缝纫店升级链（攒够材料→解锁衣服→推进外观） | ✅ 数据 | `event-when` + `effect-apply`（Condition→Event→Effect），见 `blueprint.ts` |
+| 缝纫店等级（每做出一件衣服 +1，体现"升级店铺"） | ✅ 数据 | `effect-apply` modify-resource（解锁信号 → `shop_level` +1） |
+| 高定衣（缝纫店等级 × 材料 多步门控） | ✅ 数据 | `event-when` AND(资源, `shop_level≥4`)，一拍反馈多步涌现 |
+| 配饰多槽叠穿（帽/发饰/项链/鞋） | ✅ 数据 | 各一条阈值解锁链（`event-when`+`effect-apply` set-flag），可与任意衣服叠 |
 | 当前换装外观（供展示读取） | ✅ 数据 | `state`(J1) + `text`(L6) |
-| 爱诗(AIGP)提示词组装表（外观→视频 prompt） | ✅ 数据 | `theme.ts` 的 `LOOK_PROMPTS` / `composeAishePrompt`（= 周期表 X4 ShadowDictionary 的数据形态） |
+| 爱诗(AIGP)提示词组装表（衣服+配饰 → 视频 prompt） | ✅ 数据 | `theme.ts` 的 `LOOK_PROMPTS` / `composeFullLook`（= 周期表 X4 ShadowDictionary 的数据形态） |
 | **三消棋盘机制**（找连/交换/重力/补块/消除产材料） | ⛔ 引擎缺口 → **已提需求 REQ-C-001** | 待引擎团队下沉为通用 capability |
 | 棋格点击命中 → 语义动作 | ⛔ 缺口 → **REQ-C-002** | 同上 |
 | 主动缝制消费（花材料换衣服） | ⛔ 缺口 → **REQ-C-003** | 同上 |
@@ -30,7 +33,7 @@ PC 是 **Game Creator**：只做**数据驱动的装配**，不写游戏专属�
 theme.ts        纯内容数据：材料 / 衣服阶梯 / 外观 / 爱诗提示词表
 blueprint.ts    纯数据装配：材料 Resource + 升级链(Condition→Event→Effect) + 外观 state
 index.ts        导出
-game-c.test.ts  数据验证：模拟消除掉落 → 断言升级链点亮（5 测试，确定性）
+game-c.test.ts  数据验证：模拟掉落 → 断言升级链/店铺等级/高定多步门控/配饰点亮（10 测试，确定性）
 ../../game-c.tsx        launcher 卡带：工坊预览（表现层，读世界态渲染；标注核心待 REQ-C-001）
 ```
 
