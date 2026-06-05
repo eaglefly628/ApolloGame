@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { createRoot } from 'react-dom/client';
+import { StudioInspector } from './studio/StudioInspector.js';
 
 const API = 'http://localhost:4000';
 
@@ -374,6 +375,11 @@ function GameRunner({ gameId, onBack }: { gameId: string; onBack: () => void }) 
 
 function Launcher() {
   const [launched, setLaunched] = useState<string | null>(null);
+  const [studio, setStudio] = useState(false);
+
+  if (studio) {
+    return <StudioInspector onBack={() => setStudio(false)} />;
+  }
 
   if (launched) {
     return <GameRunner gameId={launched} onBack={() => setLaunched(null)} />;
@@ -406,6 +412,22 @@ function Launcher() {
         <div style={{ fontSize: 13, color: '#64748b', marginTop: 8 }}>
           Select a game to launch — or use Dev Tools below
         </div>
+        <button
+          onClick={() => setStudio(true)}
+          style={{
+            marginTop: 14,
+            padding: '8px 18px',
+            background: 'linear-gradient(135deg, rgba(167,139,250,0.2), rgba(56,189,248,0.2))',
+            color: '#a78bfa',
+            border: '1px solid rgba(167,139,250,0.4)',
+            borderRadius: 8,
+            fontSize: 13,
+            fontWeight: 600,
+            cursor: 'pointer',
+          }}
+        >
+          🔬 数据透视器 · Data Inspector
+        </button>
       </div>
 
       {/* Game Grid */}

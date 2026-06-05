@@ -1,0 +1,477 @@
+import React, { useState, useEffect, useRef, useCallback, useMemo } from 'react';
+import { Engine } from '../runtime/engine.js';
+import { CanvasRenderer } from '@renderer/canvas-renderer.js';
+import { parseAssetIndex, type AssetIndex } from '@assets/index.js';
+import type { WorldSnapshot } from '@engine/core/types.js';
+import type { WorldBlueprint } from '../assembly/demo.assembly.js';
+import { demoBlueprint } from '../assembly/demo.assembly.js';
+import { buildGameABlueprint, LEVEL_SCROLL } from '../games/game-a/index.js';
+import { buildGameBBlueprint } from '../games/game-b/index.js';
+import { buildGameCBlueprint } from '../games/game-c/index.js';
+import {
+  inspectBlueprint,
+  blueprintStats,
+  capabilitySummaries,
+  collectAssetRefs,
+  crossReferenceAssets,
+  setField,
+  coerceValue,
+  exportManifest,
+  type InspectedField,
+} from './inspect.js';
+
+// ═══════════════════════════════════════════════════════════════
+//  游戏数据透视器 (Data Inspector) — 把"游戏=数据"做成可见可改可预览
+//
+//  左：引擎实时预览(画布) + 实时世界状态读出  ｜  右：完整数据树(可改每个字段)
+//  顶：游戏选择 + 统计 + 能力 + 美术资产状态 + 导出纯数据 manifest
+//  改字段 → 改的是初始数据 → 点"重跑"用新数据从 t=0 重启引擎 → 看涌现结果。
+// ═══════════════════════════════════════════════════════════════
+
+interface GameDef {
+  id: string;
+  title: string;
+  build: () => WorldBlueprint;
+}
+
+const GAMES: GameDef[] = [
+  { id: 'game-a', title: 'Game A · 协作平台(卷轴)', build: () => buildGameABlueprint(LEVEL_SCROLL) },
+  { id: 'game-b', title: 'Game B · 乙游 VN', build: () => buildGameBBlueprint() },
+  { id: 'game-c', title: 'Game C · 缝纫物语', build: () => buildGameCBlueprint() },
+  { id: 'demo', title: 'Demo · 子弹撞墙', build: () => demoBlueprint },
+];
+
+const C = {
+  bg: '#0a0f1e',
+  panel: 'rgba(255,255,255,0.03)',
+  border: 'rgba(255,255,255,0.08)',
+  text: '#e2e8f0',
+  dim: '#64748b',
+  dim2: '#94a3b8',
+  accent: '#38bdf8',
+  purple: '#a78bfa',
+  green: '#22c55e',
+  amber: '#fbbf24',
+  red: '#ef4444',
+};
+
+// ── 单字段编辑器（局部缓冲，失焦/回车提交；非法值红框不提交）──
+function FieldEditor({ field, onCommit }: { field: InspectedField; onCommit: (raw: string) => void }) {
+  const initial = field.kind === 'json' ? JSON.stringify(field.value) : String(field.value);
+  const [buf, setBuf] = useState(initial);
+  const [bad, setBad] = useState(false);
+
+  if (field.kind === 'boolean') {
+    return (
+      <input
+        type="checkbox"
+        checked={field.value === true}
+        onChange={(e) => onCommit(e.target.checked ? 'true' : 'false')}
+        style={{ accentColor: C.accent, cursor: 'pointer' }}
+      />
+    );
+  }
+
+  const commit = () => {
+    const res = coerceValue(buf, field.kind);
+    if (res.ok) {
+      setBad(false);
+      onCommit(buf);
+    } else {
+      setBad(true);
+    }
+  };
+
+  const common: React.CSSProperties = {
+    background: 'rgba(0,0,0,0.35)',
+    color: bad ? C.red : C.text,
+    border: `1px solid ${bad ? C.red : C.border}`,
+    borderRadius: 4,
+    fontSize: 12,
+    fontFamily: 'monospace',
+    padding: '3px 6px',
+    outline: 'none',
+  };
+
+  if (field.kind === 'json') {
+    return (
+      <textarea
+        value={buf}
+        onChange={(e) => setBuf(e.target.value)}
+        onBlur={commit}
+        rows={Math.min(6, buf.length > 60 ? 3 : 1)}
+        style={{ ...common, width: '100%', resize: 'vertical' }}
+      />
+    );
+  }
+
+  return (
+    <input
+      type={field.kind === 'number' ? 'text' : 'text'}
+      value={buf}
+      onChange={(e) => setBuf(e.target.value)}
+      onBlur={commit}
+      onKeyDown={(e) => e.key === 'Enter' && (e.target as HTMLInputElement).blur()}
+      style={{ ...common, width: field.kind === 'number' ? 90 : 180 }}
+    />
+  );
+}
+
+// ── 实时世界状态读出（从 world.snapshot 提取动态值）──
+function LiveState({ snapshot, tick }: { snapshot: WorldSnapshot; tick: number }) {
+  const rows: Array<{ k: string; v: string; c: string }> = [];
+  for (const [eid, comps] of Object.entries(snapshot)) {
+    const r = comps['Resource'] as unknown as { id: string; current: number } | undefined;
+    if (r) rows.push({ k: `Resource ${r.id}`, v: String(r.current), c: C.accent });
+    const f = comps['Flag'] as unknown as { id: string; active: boolean } | undefined;
+    if (f) rows.push({ k: `Flag ${f.id}`, v: f.active ? 'on' : 'off', c: f.active ? C.green : C.dim });
+    const s = comps['State'] as unknown as { fsmId: string; current: string } | undefined;
+    if (s) rows.push({ k: `State ${s.fsmId}`, v: String(s.current), c: C.purple });
+    const t = comps['Text'] as unknown as { content: string } | undefined;
+    if (t) rows.push({ k: `Text ${eid}`, v: String(t.content), c: C.dim2 });
+  }
+  return (
+    <div style={{ marginTop: 10 }}>
+      <div style={{ color: C.dim, fontSize: 11, marginBottom: 4 }}>
+        实时世界状态 · tick {tick}{' '}
+        <span style={{ color: C.dim }}>(改资源值→重跑可看 Condition→Event→Effect 涌现)</span>
+      </div>
+      {rows.length === 0 ? (
+        <div style={{ color: C.dim, fontSize: 11 }}>（无 Resource/Flag/State/Text 动态值）</div>
+      ) : (
+        <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
+          {rows.map((r, i) => (
+            <span
+              key={i}
+              style={{
+                fontSize: 11,
+                fontFamily: 'monospace',
+                background: 'rgba(0,0,0,0.3)',
+                border: `1px solid ${C.border}`,
+                borderRadius: 4,
+                padding: '2px 6px',
+                color: C.dim2,
+              }}
+            >
+              {r.k}: <b style={{ color: r.c }}>{r.v}</b>
+            </span>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
+export function StudioInspector({ onBack }: { onBack: () => void }) {
+  const [gameId, setGameId] = useState(GAMES[0].id);
+  const [workingBp, setWorkingBp] = useState<WorldBlueprint>(() => GAMES[0].build());
+  const [appliedBp, setAppliedBp] = useState<WorldBlueprint>(workingBp);
+  const [snapshot, setSnapshot] = useState<WorldSnapshot>({});
+  const [tick, setTick] = useState(0);
+  const [assetIndex, setAssetIndex] = useState<AssetIndex | null>(null);
+  const [treeNonce, setTreeNonce] = useState(0); // 切游戏/重置时强制重挂数据树(刷新输入缓冲)
+  const previewRef = useRef<HTMLDivElement>(null);
+
+  const dirty = workingBp !== appliedBp;
+
+  // 资产索引（dev 下 vite 直接服务根目录的 assets/index.json）。
+  useEffect(() => {
+    fetch('/assets/index.json')
+      .then((r) => r.json())
+      .then((raw) => setAssetIndex(parseAssetIndex(raw)))
+      .catch(() => setAssetIndex(null));
+  }, []);
+
+  // 引擎生命周期：appliedBp 变化(切游戏/重跑/重置)即重建并从 t=0 重启。
+  useEffect(() => {
+    const div = previewRef.current;
+    if (!div) return;
+    div.innerHTML = '';
+    const engine = new Engine({ tickRate: 60 });
+    engine.load(appliedBp);
+    const renderer = new CanvasRenderer({ width: 640, height: 400 });
+    engine.attachRenderer(renderer, div);
+    let last = 0;
+    const unsub = engine.subscribe(() => {
+      const now = performance.now();
+      if (now - last > 150) {
+        last = now;
+        setSnapshot(engine.world.snapshot());
+        setTick(engine.world.getVersion());
+      }
+    });
+    engine.start();
+    setSnapshot(engine.world.snapshot());
+    setTick(0);
+    return () => {
+      unsub();
+      engine.stop();
+      renderer.destroy();
+      div.innerHTML = '';
+    };
+  }, [appliedBp]);
+
+  const selectGame = useCallback((id: string) => {
+    const def = GAMES.find((g) => g.id === id);
+    if (!def) return;
+    const bp = def.build();
+    setGameId(id);
+    setWorkingBp(bp);
+    setAppliedBp(bp);
+    setTreeNonce((n) => n + 1);
+  }, []);
+
+  const apply = useCallback(() => setAppliedBp(workingBp), [workingBp]);
+
+  const reset = useCallback(() => {
+    const def = GAMES.find((g) => g.id === gameId);
+    if (!def) return;
+    const bp = def.build();
+    setWorkingBp(bp);
+    setAppliedBp(bp);
+    setTreeNonce((n) => n + 1);
+  }, [gameId]);
+
+  const commitField = useCallback(
+    (entityId: string, type: string, f: InspectedField, raw: string) => {
+      const res = coerceValue(raw, f.kind);
+      if (!res.ok) return;
+      setWorkingBp((bp) => setField(bp, entityId, type, f.key, res.value));
+    },
+    [],
+  );
+
+  const exportJson = useCallback(() => {
+    const blob = new Blob([exportManifest(workingBp)], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `${gameId}.manifest.json`;
+    a.click();
+    URL.revokeObjectURL(url);
+  }, [workingBp, gameId]);
+
+  const inspected = useMemo(() => inspectBlueprint(workingBp), [workingBp]);
+  const stats = useMemo(() => blueprintStats(workingBp), [workingBp]);
+  const caps = useMemo(() => capabilitySummaries(workingBp.capabilities), [workingBp]);
+  const assets = useMemo(
+    () => crossReferenceAssets(collectAssetRefs(workingBp), assetIndex),
+    [workingBp, assetIndex],
+  );
+
+  const btn = (extra: React.CSSProperties = {}): React.CSSProperties => ({
+    padding: '6px 14px',
+    background: 'rgba(255,255,255,0.06)',
+    color: C.dim2,
+    border: `1px solid ${C.border}`,
+    borderRadius: 6,
+    fontSize: 12,
+    cursor: 'pointer',
+    fontFamily: 'monospace',
+    ...extra,
+  });
+
+  return (
+    <div style={{ position: 'absolute', inset: 0, background: C.bg, color: C.text, overflow: 'auto' }}>
+      {/* Header */}
+      <div
+        style={{
+          position: 'sticky',
+          top: 0,
+          zIndex: 10,
+          background: 'rgba(10,15,30,0.95)',
+          borderBottom: `1px solid ${C.border}`,
+          padding: '12px 20px',
+          backdropFilter: 'blur(8px)',
+        }}
+      >
+        <div style={{ display: 'flex', alignItems: 'center', gap: 12, flexWrap: 'wrap' }}>
+          <span style={{ fontSize: 16, fontWeight: 700, color: C.purple }}>🔬 数据透视器</span>
+          <span style={{ color: C.dim, fontSize: 12 }}>
+            游戏 = 数据 · {stats.entities} 实体 / {stats.components} 组件 / {stats.capabilities} 能力
+          </span>
+          <div style={{ flex: 1 }} />
+          {dirty && <span style={{ color: C.amber, fontSize: 12 }}>● 有未应用的修改</span>}
+          <button onClick={apply} disabled={!dirty} style={btn({
+            background: dirty ? 'rgba(56,189,248,0.18)' : 'rgba(255,255,255,0.04)',
+            color: dirty ? C.accent : C.dim,
+            borderColor: dirty ? 'rgba(56,189,248,0.4)' : C.border,
+            cursor: dirty ? 'pointer' : 'default',
+          })}>↻ 重跑(应用)</button>
+          <button onClick={reset} style={btn()}>重置</button>
+          <button onClick={exportJson} style={btn({ color: C.green, borderColor: 'rgba(34,197,94,0.3)' })}>
+            ⭳ 导出 manifest
+          </button>
+          <button onClick={onBack} style={btn()}>← 返回</button>
+        </div>
+
+        {/* Game selector */}
+        <div style={{ display: 'flex', gap: 6, marginTop: 10, flexWrap: 'wrap' }}>
+          {GAMES.map((g) => (
+            <button
+              key={g.id}
+              onClick={() => selectGame(g.id)}
+              style={btn({
+                background: gameId === g.id ? 'rgba(167,139,250,0.2)' : 'rgba(255,255,255,0.05)',
+                color: gameId === g.id ? C.purple : C.dim2,
+                borderColor: gameId === g.id ? 'rgba(167,139,250,0.4)' : C.border,
+              })}
+            >
+              {g.title}
+            </button>
+          ))}
+        </div>
+      </div>
+
+      {/* Body: two columns */}
+      <div style={{ display: 'flex', gap: 16, padding: 20, alignItems: 'flex-start', flexWrap: 'wrap' }}>
+        {/* Left: preview + state + capabilities + assets */}
+        <div style={{ flex: '0 0 660px', maxWidth: '100%' }}>
+          <div
+            ref={previewRef}
+            style={{
+              width: 640,
+              height: 400,
+              maxWidth: '100%',
+              background: '#16213e',
+              borderRadius: 8,
+              border: `1px solid ${C.border}`,
+              overflow: 'hidden',
+            }}
+          />
+          <div style={{ color: C.dim, fontSize: 11, marginTop: 4 }}>
+            空间预览（画布）：有 Transform/Shape 的实体在此可见；纯逻辑/文字游戏在此为空，看下方实时状态 + 右侧数据。
+          </div>
+
+          <LiveState snapshot={snapshot} tick={tick} />
+
+          {/* Capabilities */}
+          <div style={{ marginTop: 14 }}>
+            <div style={{ color: C.dim, fontSize: 11, marginBottom: 4 }}>启用的引擎能力（解释这些数据的代码）</div>
+            <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
+              {caps.map((c) => (
+                <span
+                  key={c.id}
+                  title={`${c.summary}\n提供组件: ${c.provides.join(', ')}`}
+                  style={{
+                    fontSize: 11,
+                    background: 'rgba(167,139,250,0.1)',
+                    border: '1px solid rgba(167,139,250,0.2)',
+                    borderRadius: 12,
+                    padding: '2px 10px',
+                    color: C.purple,
+                    cursor: 'help',
+                  }}
+                >
+                  {c.name}
+                </span>
+              ))}
+            </div>
+          </div>
+
+          {/* Assets */}
+          <div style={{ marginTop: 14 }}>
+            <div style={{ color: C.dim, fontSize: 11, marginBottom: 4 }}>
+              引用的美术素材 {assetIndex === null && '（未加载到 assets/index.json）'}
+            </div>
+            {assets.length === 0 ? (
+              <div style={{ color: C.dim, fontSize: 11 }}>（此游戏数据未引用任何 texture/sound 资产）</div>
+            ) : (
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
+                {assets.map((a) => {
+                  const color = a.status === 'filled' ? C.green : a.status === 'tbf' ? C.amber : C.red;
+                  const label = a.status === 'filled' ? '已填充' : a.status === 'tbf' ? 'TBF 占位' : '缺失';
+                  return (
+                    <div key={a.id} style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 11 }}>
+                      <span style={{ color, fontFamily: 'monospace' }}>●</span>
+                      <span style={{ fontFamily: 'monospace', color: C.text }}>{a.id}</span>
+                      <span style={{ color: C.dim }}>{a.kind}</span>
+                      <span style={{ color, fontSize: 10 }}>{label}</span>
+                      {a.description && <span style={{ color: C.dim }}>· {a.description}</span>}
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+          </div>
+        </div>
+
+        {/* Right: full editable data tree */}
+        <div style={{ flex: 1, minWidth: 360 }}>
+          <div style={{ color: C.dim, fontSize: 11, marginBottom: 8 }}>
+            完整数据（实体 → 组件 → 字段，全可改；改完点上方"重跑"应用）
+          </div>
+          <div key={`${gameId}:${treeNonce}`} style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+            {inspected.map((ent) => (
+              <details key={ent.id} open style={{ background: C.panel, borderRadius: 8, border: `1px solid ${C.border}` }}>
+                <summary
+                  style={{
+                    cursor: 'pointer',
+                    padding: '8px 12px',
+                    fontFamily: 'monospace',
+                    fontSize: 13,
+                    color: C.accent,
+                    userSelect: 'none',
+                  }}
+                >
+                  {ent.id}{' '}
+                  <span style={{ color: C.dim, fontSize: 11 }}>
+                    {ent.components.map((c) => c.type).join(' · ')}
+                  </span>
+                </summary>
+                <div style={{ padding: '0 12px 10px' }}>
+                  {ent.components.map((comp) => (
+                    <div key={comp.type} style={{ marginTop: 8 }}>
+                      <div style={{ fontSize: 12, fontWeight: 600, color: C.dim2 }}>
+                        {comp.type}
+                        {comp.category && (
+                          <span
+                            style={{
+                              marginLeft: 6,
+                              fontSize: 10,
+                              color: C.dim,
+                              background: 'rgba(255,255,255,0.05)',
+                              borderRadius: 4,
+                              padding: '1px 5px',
+                            }}
+                          >
+                            {comp.category}
+                          </span>
+                        )}
+                        {comp.describe && (
+                          <span style={{ marginLeft: 6, fontSize: 11, color: C.dim, fontWeight: 400 }}>
+                            {comp.describe}
+                          </span>
+                        )}
+                      </div>
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: 4, marginTop: 4, paddingLeft: 8 }}>
+                        {comp.fields.map((f) => (
+                          <div key={f.key} style={{ display: 'flex', alignItems: 'flex-start', gap: 8 }}>
+                            <span
+                              title={f.describe}
+                              style={{
+                                fontSize: 12,
+                                fontFamily: 'monospace',
+                                color: C.dim2,
+                                minWidth: 110,
+                                cursor: f.describe ? 'help' : 'default',
+                              }}
+                            >
+                              {f.key}
+                              {f.declaredType && <span style={{ color: C.dim, fontSize: 10 }}> :{f.declaredType}</span>}
+                            </span>
+                            <FieldEditor field={f} onCommit={(raw) => commitField(ent.id, comp.type, f, raw)} />
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </details>
+            ))}
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
