@@ -88,3 +88,48 @@ describe('T1 tween — 缓动曲线', () => {
   });
 });
 
+describe('T1 tween — loop / pingpong（REQ-004，连续往复）', () => {
+  const x = (w: World) => w.getComponent<Transform>('p', 'Transform')!.x;
+  function movingPlatform(loop: 'restart' | 'pingpong', loops?: number): World {
+    const w = worldWithTween();
+    w.createEntity('p');
+    w.addComponent('p', { type: 'Transform', x: 0, y: 0, rotation: 0, scaleX: 1, scaleY: 1 } as Transform);
+    addTween(w, 'p', { target: 'Transform.x', from: 0, to: 10, duration: 2, easing: 'linear', loop, loops });
+    return w;
+  }
+
+  it('restart：到点写终值后归零重跑（不移除）', () => {
+    const w = movingPlatform('restart');
+    w.tick(); // t=0.5 → 5
+    expect(x(w)).toBeCloseTo(5);
+    w.tick(); // 到点 → 写 to(10)，归零
+    expect(x(w)).toBeCloseTo(10);
+    expect(w.hasComponent('p', 'Tween')).toBe(true); // 仍在循环
+    w.tick(); // 重跑 t=0.5 → 又回到 5
+    expect(x(w)).toBeCloseTo(5);
+  });
+
+  it('pingpong：来回往复（0→10→0→10）', () => {
+    const w = movingPlatform('pingpong');
+    w.tick(); // 5
+    w.tick(); // 到点 → 10，交换 from/to（now 10→0）
+    expect(x(w)).toBeCloseTo(10);
+    w.tick(); // 10→0 的 t=0.5 → 5
+    expect(x(w)).toBeCloseTo(5);
+    w.tick(); // 到点 → 0，再交换（0→10）
+    expect(x(w)).toBeCloseTo(0);
+    expect(w.hasComponent('p', 'Tween')).toBe(true); // 持续往复
+  });
+
+  it('loops：跑满程数后停在终值并移除', () => {
+    const w = movingPlatform('restart', 2);
+    w.tick(); // 5
+    w.tick(); // 第 1 程到点 → 10，loops 2→1，归零
+    expect(w.hasComponent('p', 'Tween')).toBe(true);
+    w.tick(); // 5
+    w.tick(); // 第 2 程到点 → loops<=1 → 写终值、done、移除
+    expect(x(w)).toBeCloseTo(10);
+    expect(w.hasComponent('p', 'Tween')).toBe(false);
+  });
+});
+

@@ -386,6 +386,10 @@ export type TweenTarget =
 
 export type TweenEasing = 'linear' | 'easeIn' | 'easeOut' | 'easeInOut';
 
+// 到点后的循环模式（REQ-004）：none=停（默认，向后兼容）；restart=归零重跑（from→to 往复）；
+// pingpong=交换 from/to 再归零（来回往复，如巡逻台/呼吸立绘）。纯数据、snapshot 友好、确定性不变。
+export type TweenLoop = 'none' | 'restart' | 'pingpong';
+
 export interface Tween extends Component {
   readonly type: 'Tween';
   target: TweenTarget; // 驱动同实体上的哪个组件字段
@@ -395,6 +399,8 @@ export interface Tween extends Component {
   duration: number; // 总 tick 数（<=0 视为立即到 to）
   easing: TweenEasing;
   done: boolean; // elapsed>=duration 后置 true（snapshot 友好）
+  loop?: TweenLoop; // 到点后的循环模式（缺省 none）
+  loops?: number; // 循环程数（restart/pingpong 有效）；缺省=无限。每完成一程递减，到 1 后停在终值
 }
 
 // ── effect-apply ── Condition→Event→**Effect** 的 Effect 侧：信号在场时施加一个声明式效果。

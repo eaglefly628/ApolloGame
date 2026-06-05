@@ -1,7 +1,7 @@
 import type { IWorld, RendererBackend } from '@engine/core/types.js';
 import type { AssetManager } from '@assets/index.js';
 import { isImageHandle } from '@assets/index.js';
-import { collectRenderables, getCameraView } from './renderable.js';
+import { collectRenderables, getCameraView, chooseRenderMode } from './renderable.js';
 import { wrapLines } from './text-layout.js';
 
 export interface CanvasRendererOptions {
@@ -62,7 +62,11 @@ export class CanvasRenderer implements RendererBackend {
       ctx.globalAlpha = r.color?.alpha ?? 1;
       ctx.fillStyle = r.color ? `#${(r.color.tint & 0xffffff).toString(16).padStart(6, '0')}` : '#e2e8f0';
 
-      if (r.text) {
+      // 绘制模式：优先 Sprite（贴图就绪盖过 Shape，给可碰撞实体穿皮，REQ-005），否则退化几何/占位。
+      const spriteReady = r.sprite ? this.spriteReady(r.sprite.textureKey) : false;
+      const mode = chooseRenderMode(r, spriteReady);
+
+      if (mode === 'text' && r.text) {
         const tx = r.text;
         ctx.font = `${tx.fontSize}px ${tx.fontFamily}`;
         ctx.textAlign = (tx.anchor as CanvasTextAlign) || 'center';
@@ -77,15 +81,17 @@ export class CanvasRenderer implements RendererBackend {
         for (let li = 0; li < cached.lines.length; li++) {
           ctx.fillText(cached.lines[li], 0, li * lineHeight);
         }
-      } else if (r.shape?.kind === 'circle') {
+      } else if (mode === 'sprite' && r.sprite) {
+        this.drawSprite(ctx, r.sprite.textureKey); // spriteReady 已确认会成功
+      } else if (mode === 'shape' && r.shape?.kind === 'circle') {
         ctx.beginPath();
         ctx.arc(0, 0, r.shape.radius ?? 4, 0, Math.PI * 2);
         ctx.fill();
-      } else if (r.shape?.kind === 'box') {
+      } else if (mode === 'shape' && r.shape?.kind === 'box') {
         const w = r.shape.width ?? 8;
         const h = r.shape.height ?? 8;
         ctx.fillRect(-w / 2, -h / 2, w, h);
-      } else if (r.shape?.kind === 'polygon') {
+      } else if (mode === 'shape' && r.shape?.kind === 'polygon') {
         const v = r.shape.vertices ?? [];
         if (v.length >= 6) {
           ctx.beginPath();
@@ -94,15 +100,20 @@ export class CanvasRenderer implements RendererBackend {
           ctx.closePath();
           ctx.fill();
         }
-      } else if (r.sprite) {
-        const drawn = this.drawSprite(ctx, r.sprite.textureKey);
-        if (!drawn) ctx.fillRect(-8, -8, 16, 16); // 资产未就绪 → 占位方块
+      } else if (mode === 'placeholder') {
+        ctx.fillRect(-8, -8, 16, 16); // 有 Sprite 但资产未就绪 → 占位方块
       }
 
       ctx.restore();
     }
 
     ctx.restore(); // 收尾相机投影变换
+  }
+
+  // 贴图是否就绪（资产已加载且是图像句柄）。用于绘制模式选择：就绪才让 Sprite 盖过 Shape（REQ-005）。
+  private spriteReady(textureKey: string): boolean {
+    const frame = this.assets?.resolve(textureKey);
+    return !!frame && isImageHandle(frame.asset.handle);
   }
 
   // 解析 textureKey → 已加载帧，居中绘制源矩形。成功返回 true，否则 false(退化占位)。

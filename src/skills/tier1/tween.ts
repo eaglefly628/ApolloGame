@@ -75,6 +75,8 @@ export const tweenCapability = defineCapability({
       '立绘淡入：Tween{ target:"Color.alpha", from:0, to:1, duration:30, easing:"easeOut" }',
       '立绘滑入：Tween{ target:"Transform.x", from:-100, to:0, duration:24, easing:"easeInOut" }',
       '镜头缓动：Tween{ target:"Transform.y", from:0, to:120, duration:18, easing:"easeInOut" }',
+      '巡逻/移动平台往复：Tween{ target:"Transform.x", from:100, to:400, duration:120, easing:"easeInOut", loop:"pingpong" }',
+      '呼吸缩放（3 次）：Tween{ target:"Transform.scaleY", from:1, to:1.1, duration:40, easing:"easeInOut", loop:"pingpong", loops:6 }',
     ],
   },
 
@@ -91,6 +93,8 @@ export const tweenCapability = defineCapability({
           duration: { type: 'number', describe: '总 tick 数（<=0 立即到 to）' },
           easing: { type: 'string', describe: 'linear | easeIn | easeOut | easeInOut' },
           done: { type: 'boolean', describe: '是否已结束（初始 false）' },
+          loop: { type: 'string', describe: '到点后：none(停,默认) | restart(归零重跑) | pingpong(交换 from/to 再归零)' },
+          loops: { type: 'number', describe: '循环程数（restart/pingpong 有效）；缺省=无限' },
         },
       },
     },
@@ -111,14 +115,27 @@ export const tweenCapability = defineCapability({
         for (const [eid] of world.query('Tween')) {
           const tw = world.getComponent<Tween>(eid, 'Tween')!;
           tw.elapsed += 1;
-          const raw = tw.duration <= 0 ? 1 : tw.elapsed / tw.duration;
-          const t = raw < 0 ? 0 : raw > 1 ? 1 : raw;
           if (tw.elapsed >= tw.duration) {
-            // 完成：写精确终值并移除 Tween，避免"僵尸"每帧空赋值（Reviewer #2）。
+            const loop = tw.loop ?? 'none';
+            // 本程视觉到达终值。
             writeField(world, eid, tw.target, tw.to);
-            tw.done = true;
-            world.removeComponent(eid, 'Tween');
+            // 末程（none，或循环计数到最后一程）：锁终值、置 done、移除（避免"僵尸"每帧空赋值，Reviewer #2）。
+            if (loop === 'none' || (tw.loops !== undefined && tw.loops <= 1)) {
+              tw.done = true;
+              world.removeComponent(eid, 'Tween');
+              continue;
+            }
+            // 还有循环：消耗一程计数（缺省无限不计），pingpong 交换 from/to，归零重跑。snapshot 友好、确定性不变。
+            if (tw.loops !== undefined) tw.loops -= 1;
+            if (loop === 'pingpong') {
+              const tmp = tw.from;
+              tw.from = tw.to;
+              tw.to = tmp;
+            }
+            tw.elapsed = 0;
           } else {
+            const raw = tw.duration <= 0 ? 1 : tw.elapsed / tw.duration;
+            const t = raw < 0 ? 0 : raw > 1 ? 1 : raw;
             writeField(world, eid, tw.target, tw.from + (tw.to - tw.from) * ease(tw.easing, t));
           }
         }

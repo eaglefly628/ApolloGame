@@ -1,6 +1,7 @@
 import { describe, it, expect } from 'vitest';
-import { screenToWorld } from './renderable.js';
-import type { CameraView } from './renderable.js';
+import { screenToWorld, chooseRenderMode } from './renderable.js';
+import type { CameraView, Renderable } from './renderable.js';
+import type { Shape, Sprite, Text } from '@engine/protocol/components.js';
 
 describe('screenToWorld — 屏幕→世界逆投影（Q5）', () => {
   const cam: CameraView = { centerX: 100, centerY: 50, zoom: 2 };
@@ -22,5 +23,30 @@ describe('screenToWorld — 屏幕→世界逆投影（Q5）', () => {
 
   it('无相机 → 屏幕即世界', () => {
     expect(screenToWorld(12, 34, null, W, H)).toEqual({ x: 12, y: 34 });
+  });
+});
+
+describe('chooseRenderMode — Sprite 优先盖过 Shape（REQ-005）', () => {
+  const base: Renderable = { entityId: 'e', x: 0, y: 0, rotation: 0, scaleX: 1, scaleY: 1, zOrder: 0 };
+  const shape: Shape = { type: 'Shape', kind: 'box', width: 30, height: 30 };
+  const sprite: Sprite = { type: 'Sprite', textureKey: 'hero', anchorX: 0.5, anchorY: 0.5, zOrder: 0 };
+  const text: Text = { type: 'Text', content: 'hi', fontSize: 16, fontFamily: 'serif', anchor: 'left', lineSpacing: 4 };
+
+  it('可碰撞实体（Shape+Sprite）贴图就绪 → 画 Sprite（穿皮，不再被 Shape 盖）', () => {
+    expect(chooseRenderMode({ ...base, shape, sprite }, true)).toBe('sprite');
+  });
+
+  it('Shape+Sprite 但贴图未就绪 → 退化画 Shape 几何（碰撞体可视化）', () => {
+    expect(chooseRenderMode({ ...base, shape, sprite }, false)).toBe('shape');
+  });
+
+  it('仅 Sprite 且未就绪 → 占位方块', () => {
+    expect(chooseRenderMode({ ...base, sprite }, false)).toBe('placeholder');
+  });
+
+  it('仅 Shape → 几何；文本实体 → 文本优先；空 → none', () => {
+    expect(chooseRenderMode({ ...base, shape }, false)).toBe('shape');
+    expect(chooseRenderMode({ ...base, text, shape }, false)).toBe('text');
+    expect(chooseRenderMode({ ...base }, false)).toBe('none');
   });
 });
