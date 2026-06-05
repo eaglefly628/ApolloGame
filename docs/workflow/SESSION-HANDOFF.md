@@ -1,5 +1,8 @@
 # Session 交接总结 · 2026-06-03
 
+> ⛔ **最高原则（所有 session 先读、不得偏离）：`docs/design/data-driven-manifesto.md`**
+> —— 整个游戏是数据，不是代码；代码只属于引擎这台固定解释器。与它冲突的一律以它为准。
+>
 > 新 session 先读本文件 + `progress.md` 恢复上下文。
 >
 > **工作目录 = `MemBrain`**（本地 clone 目录名）；GitHub 远端仓库是 `eaglefly628/ApolloGame`。

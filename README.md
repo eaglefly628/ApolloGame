@@ -7,6 +7,9 @@
 数据驱动的原子化 ECS 游戏引擎：26 个核心原子 skill + Tier 1-4 涌现层，确定性 tick 循环，
 可替换渲染后端，内置 debug / record-replay + 美术资产系统。
 
+> ⛔ **第一性原则：整个游戏是数据，不是代码**（`docs/design/data-driven-manifesto.md`）。
+> 代码只属于引擎这台固定的确定性解释器；游戏内容全部用数据描述，AI/用户只编辑数据。
+
 所有 skill 集中在 `src/skills/{atoms,tier1,tier2,tier3,tier4}`（见 `src/skills/README.md`）；
 美术资产（表现层、不进确定性 sim）在 `src/assets/`。
 
