@@ -442,3 +442,38 @@ export interface StringSet extends Component {
   // 同 ResourceModify.scope：'local'/'global'/缺省 auto。防变量遮蔽（Gemini Q4）。
   scope?: 'local' | 'global';
 }
+
+// ── match3-board ── 三消棋盘机制（REQ-C-001）：网格消除（交换/找连/消除产出/重力/补块/连锁）。
+// 这是「算法/解释器型机制」大类的代表——Condition→Event→Effect 表达不了"带网格扫描/循环的算法"。
+// 相位状态机：idle（读点击选格/发起交换）→ swapped（首扫，无连线则回退）→ match（找≥3连线）
+// → clear（按 kindResource 发 ResourceModify 产料/币、置 -1）→ fall（按列下沉）→ refill（顶部确定性随机补）
+// → match（连锁）…稳定无连线 → idle。确定性：整数网格 + RandomSeed 整数 PRNG 补块，不碰浮点超越函数。
+// 产出走现成 ResourceModify → resource-apply 结算 → game-c 升级/换装链自动点亮（游戏数据不动一行）。
+export interface MatchBoard extends Component {
+  readonly type: 'MatchBoard';
+  cols: number;
+  rows: number;
+  kindCount: number; // 棋子种类数
+  cells: number[]; // 长 cols*rows，值=种类 0..kindCount-1，-1=空
+  kindResource: string[]; // 种类→产出 Resource id（消该种 → ResourceModify 该 id）
+  matAmount: number; // 每消一格给对应材料的量
+  coinResource: string; // 货币 Resource id（空串=不产币）
+  coinPerTile: number; // 每消一格给的货币
+  kindTint: number[]; // 种类→视图底色（match-view-sync 写 Color.tint）
+  kindLabel: string[]; // 种类→视图文字（match-view-sync 写 Text.content）
+  phase: string; // 'idle'|'swapped'|'match'|'clear'|'fall'|'refill'
+  selIndex: number; // 当前选中格（-1=无）
+  swapA: number; // 本次交换两格（-1=无）
+  swapB: number;
+  stepTimer: number; // 相位推进节拍计数
+  stepDelay: number; // 相位间等待 tick 数（让连锁可见；0=即时）
+  selectAction: string; // 选中格的信号名（clickable 命中格子时发的 Signal.name）
+}
+
+// ── match3-board 视图格 ── 把逻辑格 index 绑到一个可点/可显示的实体（纯数据，游戏蓝图静态建好）。
+// match-view-sync 据 cells 改它的 Color.tint/Text.content；clickable 命中它发选中信号。capability 不创建/销毁实体。
+export interface BoardCell extends Component {
+  readonly type: 'BoardCell';
+  boardId: EntityId;
+  index: number;
+}

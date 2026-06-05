@@ -12,3 +12,7 @@ export {
   DIALOGUE_FSM,
 } from './dialogue.js';
 export type { DialogueScript, DialogueAdvance, DialogueChoose, DialogueNode, DialogueGraph, DialogueChoiceOption, DialogueEffect } from './dialogue.js';
+
+// match3-board（REQ-C-001）：算法/解释器型机制——网格三消（交换/找连/消除产出/重力/补块/连锁），
+// config 驱动、确定性。Condition→Event→Effect 表达不了带网格扫描/循环的算法，这是周期表缺失的「Match-3」格。
+export { match3BoardCapability, findMatches, applyGravity, refillEmpty, adjacent, cellIndex } from './match3-board.js';
