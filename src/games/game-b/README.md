@@ -42,7 +42,25 @@ src/games/game-b/
 └── ui/                  # React-DOM：对话框、选项菜单、属性/好感面板、存读档、sakura-otome 主题组件
 ```
 
-## 当前状态 — v0.2 已落地 ✅（技术债已还清）
+## 数据 vs 代码边界（数据驱动原则 · 给 Lead 泛化通用模块的样本）
+
+**原则**：游戏 = 数据，不是代码。游戏专属 `.ts` 应趋近零；非写不可的代码必须是**通用、可提升为共享模块**的。
+
+| 文件 | 性质 | 说明 |
+|---|---|---|
+| `data/scene_01.json` | **纯数据** | 对话脚本（节点图 + 选项 + 条件 + 效果） |
+| `data/game-b.manifest.json` | **纯数据** | 游戏清单：装哪些模块 + 初始实体(组件数据) + 内容引用 |
+| `assets/asset-manifest.json` | **纯数据** | 资产清单（TBF） |
+| `data/dialogue.ts` | 数据 schema + JSON 加载 shim | 只有类型契约，无逻辑（待并入通用模块的公共契约） |
+| `blueprint.ts` | 薄加载器（**通用、待提升**） | manifest→WorldBlueprint；按 id 解析模块。应由框架通用 module-loader 取代 |
+| `dialogue-runner.ts` | **代码（待提升，R15）** | 脚本解释器。本质通用 → 请 Lead 收编为共享"叙事运行器"模块 |
+| `ui/VNStage.tsx` | **代码（待提升）** | VN 演出。应泛化为通用可主题化组件 |
+
+**目标终态**：R15 落地后删 `dialogue-runner.ts` + `blueprint.ts` + 泛化 `VNStage` → Game B = 纯数据（manifest + 脚本 + 资产 + 主题），零游戏专属代码。
+
+---
+
+## 当前状态 — v0.2 已落地 ✅（技术债已还清 · 内容已数据化）
 
 在 v0.1 基础上推进，用主程新落地的能力做了三件事：
 - **还清技术债**：R10 `runsBefore` 替掉"谎报 reads"、R11 全局按 id 路由替掉"entityId===resourceId 假设"。

@@ -3,5 +3,6 @@
 export { buildGameABlueprint, COLOR_A, COLOR_B, PLAYER_A, PLAYER_B, PLAYER_A_ENTITY, PLAYER_B_ENTITY, CAMERA_ENTITY, VIEWPORT_W, VIEWPORT_H } from './blueprint.js';
 export { KEYMAP_A, KEYMAP_B } from './keymaps.js';
 export { LEVEL_W1_1, LEVEL_SCROLL } from './level.js';
-export type { Level, Box, Spawn } from './level.js';
+export type { Level, Box, Spawn, Mover } from './level.js';
 export { makeCoopGoalCapability, COOP_ENTITY, COOP_CLEAR_FLAG } from './coop-goal.js';
+export { GAME_A_ASSETS, ASSET_BG, ASSET_GOAL } from './assets.js';

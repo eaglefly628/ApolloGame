@@ -7,7 +7,7 @@ import {
   colorCapability,
   overlapDetectCapability,
 } from '@atom-skills/index.js';
-import { accelApplyCapability, motionApplyCapability } from '@skills/tier1/index.js';
+import { accelApplyCapability, motionApplyCapability, tweenCapability } from '@skills/tier1/index.js';
 import {
   collisionResolveCapability,
   groundSenseCapability,
@@ -53,6 +53,7 @@ const GAME_A_CAPABILITIES = [
   jumpCapability,
   boundsClampCapability,
   cameraFollowCapability,
+  tweenCapability,
 ];
 
 function staticBox(b: Box, tint: number): EntityBlueprint {
@@ -96,6 +97,29 @@ export function buildGameABlueprint(level: Level): WorldBlueprint {
   });
   entities[PLAYER_A_ENTITY] = player(level.spawnA, PLAYER_A, COLOR_A, level);
   entities[PLAYER_B_ENTITY] = player(level.spawnB, PLAYER_B, COLOR_B, level);
+  // 移动平台（Tween 驱动，纯数据）：Shape 参与碰撞、无 Velocity=静态支撑、Tween 改位置 → 载人。
+  (level.movers ?? []).forEach((m, i) => {
+    const from = m.target === 'Transform.x' ? m.box.x : m.box.y;
+    entities[`mover${i}`] = {
+      Transform: { x: m.box.x, y: m.box.y, rotation: 0, scaleX: 1, scaleY: 1 },
+      Shape: { kind: 'box', width: m.box.width, height: m.box.height },
+      Color: { tint: 0x8b5cf6, alpha: 1 },
+      Tween: { target: m.target, from, to: m.to, elapsed: 0, duration: m.duration, easing: m.easing ?? 'linear', done: false },
+    };
+  });
+  // 美术（纯数据，Sprite-only 无碰撞 → 渲染器画贴图）：背景最底层、目标旗前景。
+  if (level.background) {
+    entities.background = {
+      Transform: { x: level.bounds.width / 2, y: level.bounds.height / 2, rotation: 0, scaleX: 1, scaleY: 1 },
+      Sprite: { textureKey: level.background, anchorX: 0.5, anchorY: 0.5, zOrder: -100 },
+    };
+  }
+  if (level.goalArt) {
+    entities.goalFlag = {
+      Transform: { x: level.goal.x, y: level.goal.y, rotation: 0, scaleX: 1, scaleY: 1 },
+      Sprite: { textureKey: level.goalArt, anchorX: 0.5, anchorY: 0.5, zOrder: 5 },
+    };
+  }
   // 协作通关状态实体（coop-goal 规则写它的 Flag）。
   entities[COOP_ENTITY] = { Flag: { id: COOP_CLEAR_FLAG, active: false } };
   // 相机实体：camera-follow 写它的 offset/zoom（取两人中点、贴合缩放）；Bounds=关卡矩形 → 不露界外。

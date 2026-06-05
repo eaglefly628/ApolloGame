@@ -4,5 +4,5 @@
 export { buildGameBBlueprint, GAME_B_STATS } from './blueprint.js';
 export { createDialogueRunnerCapability, renderNodeText, optionAvailable, resourceValue, DIALOGUE_FSM } from './dialogue-runner.js';
 export type { DialogueAdvance, DialogueChoose } from './dialogue-runner.js';
-export { SCENE_01, START_NODE } from './data/dialogue.js';
+export { SCENE_01 } from './data/dialogue.js';
 export type { DialogueScript, DialogueNode, ChoiceOption, Effect } from './data/dialogue.js';

@@ -1,9 +1,11 @@
 import { Engine } from './runtime/engine.js';
 import { CanvasRenderer } from './renderer/index.js';
+import { AssetManager, ImageAssetLoader } from '@assets/index.js';
 import { KeyboardInputSource, MultiInputSource } from './net/index.js';
 import {
   buildGameABlueprint,
   LEVEL_SCROLL,
+  GAME_A_ASSETS,
   KEYMAP_A,
   KEYMAP_B,
   PLAYER_A,
@@ -35,9 +37,14 @@ export function mount(container: HTMLElement): () => void {
     new KeyboardInputSource(PLAYER_A, window, KEYMAP_A),
     new KeyboardInputSource(PLAYER_B, window, KEYMAP_B),
   ]);
+  // 美术资产（数据驱动）：注册清单 → 异步加载；就绪前渲染器退化占位方块，就绪后自动画真贴图。
+  const assets = new AssetManager(new ImageAssetLoader());
+  assets.registerManifest(GAME_A_ASSETS);
+  void assets.loadAll();
+
   const engine = new Engine({ tickRate: 60, input });
   engine.load(buildGameABlueprint(LEVEL_SCROLL));
-  engine.attachRenderer(new CanvasRenderer({ width: VIEWPORT_W, height: VIEWPORT_H }), stage);
+  engine.attachRenderer(new CanvasRenderer({ width: VIEWPORT_W, height: VIEWPORT_H, assets }), stage);
   engine.start();
 
   return () => {
