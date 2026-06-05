@@ -1,0 +1,29 @@
+{
+  "s1_l0": { "kind": "line", "speaker": "S", "emotion": "cold", "text": "你就是新来的制作人？", "next": "s1_l1" },
+  "s1_l1": { "kind": "line", "speaker": "S", "emotion": "cold", "text": "我对新人不抱期待。", "next": "s1_choice" },
+  "s1_choice": {
+    "kind": "choice",
+    "speaker": "我",
+    "prompt": "（该怎么回应？）",
+    "options": [
+      { "text": "我会证明自己的。", "effects": [{ "resource": "affection_S", "amount": 5 }], "setFlag": "met_S", "next": "s1_impressed" },
+      { "text": "请多指教。", "effects": [{ "resource": "affection_S", "amount": 2 }], "setFlag": "met_S", "next": "s1_polite" }
+    ]
+  },
+  "s1_impressed": { "kind": "line", "speaker": "S", "emotion": "neutral", "text": "……有点意思。", "next": "s1_probe" },
+  "s1_polite": { "kind": "line", "speaker": "S", "emotion": "neutral", "text": "嗯，客套话谁都会说。", "next": "s1_probe" },
+  "s1_probe": {
+    "kind": "choice",
+    "speaker": "S",
+    "prompt": "S：那你说说，你凭什么？",
+    "options": [
+      { "text": "（自信地阐述我的企划）", "requires": { "kind": "resource", "id": "charm", "cmp": "gte", "value": 12 }, "effects": [{ "resource": "affection_S", "amount": 3 }], "next": "s1_warm" },
+      { "text": "（老实说我还在学）", "effects": [{ "resource": "affection_S", "amount": 1 }], "next": "s1_neutral" },
+      { "text": "（顺势提起他感兴趣的话题）", "requires": { "kind": "flag", "id": "S_warmed_flag" }, "effects": [{ "resource": "affection_S", "amount": 5 }], "next": "s1_special" }
+    ]
+  },
+  "s1_warm": { "kind": "line", "speaker": "S", "emotion": "smile", "text": "（点头）算你有点底气。", "next": "s1_end" },
+  "s1_neutral": { "kind": "line", "speaker": "S", "emotion": "neutral", "text": "诚实，但还不够。", "next": "s1_end" },
+  "s1_special": { "kind": "line", "speaker": "S", "emotion": "blush", "text": "……你倒是会看人。", "next": "s1_end" },
+  "s1_end": { "kind": "line", "speaker": "旁白", "text": "（第一次见面，结束。）", "next": null }
+}

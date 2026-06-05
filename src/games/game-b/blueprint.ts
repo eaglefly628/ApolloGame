@@ -1,65 +1,44 @@
 import type { WorldBlueprint, EntityBlueprint } from '../../assembly/demo.assembly.js';
+import type { CapabilityDefinition } from '@engine/core/define-capability.js';
 import { stateCapability, resourceCapability, flagCapability, textCapability } from '@atom-skills/index.js';
 import { eventWhenCapability, effectApplyCapability } from '@skills/tier2/index.js';
-import { createDialogueRunnerCapability, DIALOGUE_FSM } from './dialogue-runner.js';
-import { SCENE_01, START_NODE, type DialogueScript } from './data/dialogue.js';
+import { createDialogueRunnerCapability } from './dialogue-runner.js';
+import { SCENE_01 } from './data/dialogue.js';
+import manifest from './data/game-b.manifest.json';
 
 // ═══════════════════════════════════════════════════════════════
-//  Game B v0.2 蓝图 —— 乙游对话循环 + 7 属性 + 阈值事件链。
-//  用到的引擎能力全部现成：state/resource/flag/text + event-when + effect-apply（+ 游戏层 dialogue-runner）。
-//  未碰引擎/共享层。背景/立绘待资产流程；本版聚焦系统与数据。
+//  Game B 加载器 —— 把纯数据清单(game-b.manifest.json)装配成 WorldBlueprint。
+//  游戏内容全在数据里：modules(选哪些通用模块) + entities(初始组件数据) + content(脚本引用)。
 //
-//  阈值事件链（Condition→Event→Effect，纯配置、零游戏代码）：
-//    event-when: 好感_S ≥ 5（edge）→ 发信号 'S_warmed'
-//    effect-apply: 信号 'S_warmed' → set-flag 'S_warmed_flag' = true
-//    → 之后 dialogue 的"顺势靠近"选项 requires 该 flag 才出现（阈值解锁）。
+//  ⚠ 本文件是 game-b 仅剩的"代码"，且**本质通用**：按 id 解析模块 + 从数据建实体，
+//    应由引擎/框架的通用 module-loader 承担（见 R15 / modular-game-framework §6 Game Manifest）。
+//    届时本文件删除，Game B = 纯数据。dialogue-runner 也将随 R15 移入共享库。
+//    现保留为 game 层临时桩：唯一的特例是 dialogue-runner 需要喂脚本数据（用工厂注入）。
 // ═══════════════════════════════════════════════════════════════
 
-// 7 属性（对照 game-b-otome-vn.md §2.3）。id 即语义键，全局按 id 路由。
-const STATS: Array<{ id: string; current: number; min: number; max: number }> = [
-  { id: 'charm', current: 10, min: 0, max: 100 }, // 魅力（初始 10 < 12 → 检定选项暂隐藏）
-  { id: 'wisdom', current: 5, min: 0, max: 100 }, // 智慧
-  { id: 'stamina', current: 20, min: 0, max: 20 }, // 体力
-  { id: 'career', current: 0, min: 0, max: 100 }, // 事业值
-  { id: 'affection_S', current: 0, min: 0, max: 100 }, // 好感 S
-  { id: 'affection_T', current: 0, min: 0, max: 100 }, // 好感 T
-  { id: 'affection_U', current: 0, min: 0, max: 100 }, // 好感 U
-];
+// 模块注册表：manifest 里的模块 id → 通用能力。dialogue-runner 用工厂(喂脚本数据)。
+const MODULE_REGISTRY: Record<string, CapabilityDefinition | (() => CapabilityDefinition)> = {
+  state: stateCapability,
+  resource: resourceCapability,
+  flag: flagCapability,
+  text: textCapability,
+  'event-when': eventWhenCapability,
+  'effect-apply': effectApplyCapability,
+  'dialogue-runner': () => createDialogueRunnerCapability(SCENE_01),
+};
 
-export function buildGameBBlueprint(script: DialogueScript = SCENE_01, start: string = START_NODE): WorldBlueprint {
-  const capabilities = [
-    stateCapability, // J1：对话指针状态机 + state-sync
-    resourceCapability, // F1：属性/好感 + resource-apply（全局按 id 路由）
-    flagCapability, // F2：剧情条件位
-    textCapability, // L6：当前对话行
-    eventWhenCapability, // 条件→信号（阈值事件链中段）
-    effectApplyCapability, // 信号→改世界（阈值事件链合龙）
-    createDialogueRunnerCapability(script), // 游戏层胶水
-  ];
-
-  const entities: Record<string, EntityBlueprint> = {
-    dialogue: {
-      State: { fsmId: DIALOGUE_FSM, current: start, previous: start },
-      Text: { content: '', fontSize: 22, fontFamily: 'serif', anchor: 'left', lineSpacing: 6 },
-    },
-    // 剧情 flag。
-    met_S: { Flag: { id: 'met_S', active: false } },
-    S_warmed_flag: { Flag: { id: 'S_warmed_flag', active: false } },
-    // 阈值事件链：好感_S 越过 5（上升沿）→ 信号 → 置 S_warmed_flag。
-    warm_watch: {
-      EventWhen: { signal: 'S_warmed', when: { kind: 'resource', id: 'affection_S', cmp: 'gte', value: 5 }, mode: 'edge', armed: false },
-    },
-    warm_effect: {
-      Effect: { onSignal: 'S_warmed', kind: 'set-flag', targetId: 'S_warmed_flag', value: true },
-    },
-  };
-
-  // 7 属性各占一实体（资源原子约定一实体一 Resource）。
-  for (const s of STATS) {
-    entities[s.id] = { Resource: { id: s.id, current: s.current, min: s.min, max: s.max } };
-  }
-
+export function buildGameBBlueprint(): WorldBlueprint {
+  const capabilities = manifest.modules.map((id) => {
+    const entry = MODULE_REGISTRY[id];
+    if (!entry) throw new Error(`Game B manifest: unknown module "${id}"`);
+    return typeof entry === 'function' ? entry() : entry;
+  });
+  const entities = manifest.entities as unknown as Record<string, EntityBlueprint>;
   return { capabilities, entities };
 }
 
-export const GAME_B_STATS = STATS.map((s) => s.id);
+// 属性 id 列表（供 UI 属性面板），从清单数据派生——不在代码里重复列举。
+const entityData = manifest.entities as unknown as Record<string, { Resource?: { id: string } }>;
+export const GAME_B_STATS: string[] = Object.values(entityData)
+  .map((c) => c.Resource?.id)
+  .filter((id): id is string => typeof id === 'string');
