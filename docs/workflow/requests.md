@@ -194,7 +194,9 @@
 
 ---
 
-### R14 · [2026-06-04] · PB · Game B · status: open · 优先级: P3 · **类型: 接口摩擦（推 v0.2 实测）**
+### R14 · [2026-06-04] · PB · Game B · status: **部分 done**（2026-06-04，Lead：助手已落，批量改资源待）· 优先级: P3 · **类型: 接口摩擦（推 v0.2 实测）**
+
+> ✅ Lead 落地(DX 助手部分，同时解 R13 摩擦1 + PC REQ-C-002 的"按 id 找实体")：`src/engine/core/query.ts` 的 `findByComponentId(world,type,idField,id)` / `getComponentById` —— 游戏层不再手写"扫实体找 id"。⏳ **待做**：批量/原子改资源(`ResourceModifyBatch` 或"可负担才成交")——与 PC REQ-C-003 同源，归一个"经济/批量改值"capability 一起做。
 
 **标题**：一实体一组件 → 一个 tick 内施加多个 `ResourceModify` 不便
 
@@ -272,7 +274,9 @@
 
 ---
 
-### [2026-06-04] · PA · Game A · status: open · REQ-002 sensor / 非实心触发体（trigger-zone 与 collision-resolve 抢同一份 Overlap）
+### [2026-06-04] · PA · Game A · status: **done**（2026-06-04，Lead）· REQ-002 sensor / 非实心触发体（trigger-zone 与 collision-resolve 抢同一份 Overlap）
+
+> ✅ Lead 落地：新增 `Sensor` 标记组件；`collision-resolve` 跳过"任一方挂 Sensor"的接触对（不做物理推开），overlap-detect/trigger-zone 照常消费。开关/压力板/触发区 = 给实体加 `Sensor`(数据)即可站进去。比绑死 ZONE_FLAG 更通用、数据驱动。2 测试(sensor 跳过 + 无 sensor 对照)。
 
 - **想实现的游戏行为**：合作机关第一类——A 踩开关/压力板 → 发触发事件（开门、激活）。这是《双人成行》入门核心（踩开关 / 限时门 / 重量台）。
 - **已经试了什么**：按 `trigger-zone` 文档，开关 = `Tag(ZONE_FLAG)` + `Shape` + `Transform`；玩家重叠 → `overlap-detect` 出 `Overlap` → `trigger-zone` 发 `Trigger{zone,other}`。
@@ -282,7 +286,9 @@
 
 ---
 
-### [2026-06-04] · PA · Game A · status: open · REQ-003 ground-sense 支持"站在动态支撑上"（踩搭档/踩箱无法起跳）
+### [2026-06-04] · PA · Game A · status: **done**（2026-06-04，Lead）· REQ-003 ground-sense 支持"站在动态支撑上"（踩搭档/踩箱无法起跳）
+
+> ✅ Lead 落地：`ground-sense` 改**不动点传播**——骑乘者落地 ⟺ 支撑是静态地面 **或** 支撑本帧也 Grounded（动态搭档/箱子）。链式（A 踩 B 踩地）迭代到稳定，结果与顺序无关 → 确定性/lockstep 安全。与 collision-resolve 已有的"Grounded 动态当静态支撑"对齐。2 测试。
 
 - **想实现的游戏行为**：能力差异核心——B 举 A / A 踩在 B 头上 / A 踩 B 推来的箱子 → 再跳上更高平台。
 - **已经试了什么**：让 A 落在 B（动态）或 box（动态 + Mass）上。叠放本身稳（Lead 已让 `collision-resolve` 把"Grounded 的动态体当静态支撑"，堆叠不挤穿）。
