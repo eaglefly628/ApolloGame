@@ -1,11 +1,22 @@
 import React, { useState, useEffect, useRef, useCallback, useMemo } from 'react';
 import { Engine } from '../runtime/engine.js';
 import { CanvasRenderer } from '@renderer/canvas-renderer.js';
-import { parseAssetIndex, type AssetIndex } from '@assets/index.js';
+import { parseAssetIndex, AssetManager, ImageAssetLoader, type AssetIndex } from '@assets/index.js';
+import { KeyboardInputSource, MultiInputSource, type InputSource } from '@net/index.js';
 import type { WorldSnapshot } from '@engine/core/types.js';
 import type { WorldBlueprint } from '../assembly/demo.assembly.js';
 import { demoBlueprint } from '../assembly/demo.assembly.js';
-import { buildGameABlueprint, LEVEL_SCROLL } from '../games/game-a/index.js';
+import {
+  buildGameABlueprint,
+  LEVEL_SCROLL,
+  KEYMAP_A,
+  KEYMAP_B,
+  PLAYER_A,
+  PLAYER_B,
+  VIEWPORT_W,
+  VIEWPORT_H,
+  GAME_A_ASSETS,
+} from '../games/game-a/index.js';
 import { buildGameBBlueprint } from '../games/game-b/index.js';
 import { buildGameCBlueprint } from '../games/game-c/index.js';
 import {
@@ -23,19 +34,50 @@ import {
 // ═══════════════════════════════════════════════════════════════
 //  游戏数据透视器 (Data Inspector) — 把"游戏=数据"做成可见可改可预览
 //
-//  左：引擎实时预览(画布) + 实时世界状态读出  ｜  右：完整数据树(可改每个字段)
-//  顶：游戏选择 + 统计 + 能力 + 美术资产状态 + 导出纯数据 manifest
-//  改字段 → 改的是初始数据 → 点"重跑"用新数据从 t=0 重启引擎 → 看涌现结果。
+//  左：引擎实时预览(画布，Game A 可点焦后键盘试玩) + 实时世界状态读出
+//  右：完整数据树(可改每个字段)  ｜  顶：游戏选择 + 统计 + 能力 + 资产 + 导出
+//  改字段 → 改的是初始数据 → 点"重跑"用新数据从 t=0 重启 → 看涌现/手感变化。
+//  垂直切片：Game A 打通"数据→透视→编辑→可玩预览"全链。
 // ═══════════════════════════════════════════════════════════════
+
+interface PreviewInput {
+  input: InputSource;
+  dispose: () => void;
+}
 
 interface GameDef {
   id: string;
   title: string;
   build: () => WorldBlueprint;
+  viewport?: { w: number; h: number };
+  /** 交互型游戏(Game A)提供：按 target(画布)建键盘输入源 → 可玩预览。 */
+  makeInput?: (target: EventTarget) => PreviewInput;
+  /** 美术资产管理器（贴图就绪画真图，否则占位方块）。 */
+  makeAssets?: () => AssetManager;
+  inputHint?: string;
 }
 
 const GAMES: GameDef[] = [
-  { id: 'game-a', title: 'Game A · 协作平台(卷轴)', build: () => buildGameABlueprint(LEVEL_SCROLL) },
+  {
+    id: 'game-a',
+    title: 'Game A · 协作平台(卷轴)',
+    build: () => buildGameABlueprint(LEVEL_SCROLL),
+    viewport: { w: VIEWPORT_W, h: VIEWPORT_H },
+    inputHint: '点击画布聚焦后键盘试玩 —— 蓝 A：A/D 移动 · Space 跳　｜　橙 B：←/→ 移动 · / 跳',
+    makeInput: (target) => {
+      const sources = [
+        new KeyboardInputSource(PLAYER_A, target, KEYMAP_A),
+        new KeyboardInputSource(PLAYER_B, target, KEYMAP_B),
+      ];
+      return { input: new MultiInputSource(sources), dispose: () => sources.forEach((s) => s.dispose()) };
+    },
+    makeAssets: () => {
+      const a = new AssetManager(new ImageAssetLoader());
+      a.registerManifest(GAME_A_ASSETS);
+      void a.loadAll();
+      return a;
+    },
+  },
   { id: 'game-b', title: 'Game B · 乙游 VN', build: () => buildGameBBlueprint() },
   { id: 'game-c', title: 'Game C · 缝纫物语', build: () => buildGameCBlueprint() },
   { id: 'demo', title: 'Demo · 子弹撞墙', build: () => demoBlueprint },
@@ -99,7 +141,7 @@ function FieldEditor({ field, onCommit }: { field: InspectedField; onCommit: (ra
         value={buf}
         onChange={(e) => setBuf(e.target.value)}
         onBlur={commit}
-        rows={Math.min(6, buf.length > 60 ? 3 : 1)}
+        rows={buf.length > 60 ? 3 : 1}
         style={{ ...common, width: '100%', resize: 'vertical' }}
       />
     );
@@ -107,7 +149,7 @@ function FieldEditor({ field, onCommit }: { field: InspectedField; onCommit: (ra
 
   return (
     <input
-      type={field.kind === 'number' ? 'text' : 'text'}
+      type="text"
       value={buf}
       onChange={(e) => setBuf(e.target.value)}
       onBlur={commit}
@@ -168,9 +210,12 @@ export function StudioInspector({ onBack }: { onBack: () => void }) {
   const [appliedBp, setAppliedBp] = useState<WorldBlueprint>(workingBp);
   const [snapshot, setSnapshot] = useState<WorldSnapshot>({});
   const [tick, setTick] = useState(0);
+  const [running, setRunning] = useState(true);
   const [assetIndex, setAssetIndex] = useState<AssetIndex | null>(null);
   const [treeNonce, setTreeNonce] = useState(0); // 切游戏/重置时强制重挂数据树(刷新输入缓冲)
   const previewRef = useRef<HTMLDivElement>(null);
+  const engineRef = useRef<Engine | null>(null);
+  const rendererRef = useRef<CanvasRenderer | null>(null);
 
   const dirty = workingBp !== appliedBp;
 
@@ -182,15 +227,21 @@ export function StudioInspector({ onBack }: { onBack: () => void }) {
       .catch(() => setAssetIndex(null));
   }, []);
 
-  // 引擎生命周期：appliedBp 变化(切游戏/重跑/重置)即重建并从 t=0 重启。
+  // 引擎生命周期：appliedBp/gameId 变化(切游戏/重跑/重置)即重建并从 t=0 重启。
   useEffect(() => {
     const div = previewRef.current;
     if (!div) return;
     div.innerHTML = '';
-    const engine = new Engine({ tickRate: 60 });
+    const def = GAMES.find((g) => g.id === gameId);
+    const vp = def?.viewport ?? { w: 640, h: 400 };
+    const assets = def?.makeAssets?.();
+    const pin = def?.makeInput?.(div);
+    const engine = new Engine({ tickRate: 60, input: pin?.input });
     engine.load(appliedBp);
-    const renderer = new CanvasRenderer({ width: 640, height: 400 });
+    const renderer = new CanvasRenderer({ width: vp.w, height: vp.h, assets });
     engine.attachRenderer(renderer, div);
+    engineRef.current = engine;
+    rendererRef.current = renderer;
     let last = 0;
     const unsub = engine.subscribe(() => {
       const now = performance.now();
@@ -201,15 +252,19 @@ export function StudioInspector({ onBack }: { onBack: () => void }) {
       }
     });
     engine.start();
+    setRunning(true);
     setSnapshot(engine.world.snapshot());
     setTick(0);
     return () => {
       unsub();
       engine.stop();
       renderer.destroy();
+      pin?.dispose();
+      engineRef.current = null;
+      rendererRef.current = null;
       div.innerHTML = '';
     };
-  }, [appliedBp]);
+  }, [appliedBp, gameId]);
 
   const selectGame = useCallback((id: string) => {
     const def = GAMES.find((g) => g.id === id);
@@ -232,14 +287,32 @@ export function StudioInspector({ onBack }: { onBack: () => void }) {
     setTreeNonce((n) => n + 1);
   }, [gameId]);
 
-  const commitField = useCallback(
-    (entityId: string, type: string, f: InspectedField, raw: string) => {
-      const res = coerceValue(raw, f.kind);
-      if (!res.ok) return;
-      setWorkingBp((bp) => setField(bp, entityId, type, f.key, res.value));
-    },
-    [],
-  );
+  const togglePlay = useCallback(() => {
+    const e = engineRef.current;
+    if (!e) return;
+    if (running) {
+      e.stop();
+      setRunning(false);
+    } else {
+      e.start();
+      setRunning(true);
+    }
+  }, [running]);
+
+  const stepOnce = useCallback(() => {
+    const e = engineRef.current;
+    if (!e) return;
+    e.world.tick();
+    rendererRef.current?.sync(e.world);
+    setSnapshot(e.world.snapshot());
+    setTick(e.world.getVersion());
+  }, []);
+
+  const commitField = useCallback((entityId: string, type: string, f: InspectedField, raw: string) => {
+    const res = coerceValue(raw, f.kind);
+    if (!res.ok) return;
+    setWorkingBp((bp) => setField(bp, entityId, type, f.key, res.value));
+  }, []);
 
   const exportJson = useCallback(() => {
     const blob = new Blob([exportManifest(workingBp)], { type: 'application/json' });
@@ -258,6 +331,9 @@ export function StudioInspector({ onBack }: { onBack: () => void }) {
     () => crossReferenceAssets(collectAssetRefs(workingBp), assetIndex),
     [workingBp, assetIndex],
   );
+
+  const currentDef = GAMES.find((g) => g.id === gameId);
+  const vp = currentDef?.viewport ?? { w: 640, h: 400 };
 
   const btn = (extra: React.CSSProperties = {}): React.CSSProperties => ({
     padding: '6px 14px',
@@ -292,12 +368,18 @@ export function StudioInspector({ onBack }: { onBack: () => void }) {
           </span>
           <div style={{ flex: 1 }} />
           {dirty && <span style={{ color: C.amber, fontSize: 12 }}>● 有未应用的修改</span>}
-          <button onClick={apply} disabled={!dirty} style={btn({
-            background: dirty ? 'rgba(56,189,248,0.18)' : 'rgba(255,255,255,0.04)',
-            color: dirty ? C.accent : C.dim,
-            borderColor: dirty ? 'rgba(56,189,248,0.4)' : C.border,
-            cursor: dirty ? 'pointer' : 'default',
-          })}>↻ 重跑(应用)</button>
+          <button
+            onClick={apply}
+            disabled={!dirty}
+            style={btn({
+              background: dirty ? 'rgba(56,189,248,0.18)' : 'rgba(255,255,255,0.04)',
+              color: dirty ? C.accent : C.dim,
+              borderColor: dirty ? 'rgba(56,189,248,0.4)' : C.border,
+              cursor: dirty ? 'pointer' : 'default',
+            })}
+          >
+            ↻ 重跑(应用)
+          </button>
           <button onClick={reset} style={btn()}>重置</button>
           <button onClick={exportJson} style={btn({ color: C.green, borderColor: 'rgba(34,197,94,0.3)' })}>
             ⭳ 导出 manifest
@@ -318,6 +400,7 @@ export function StudioInspector({ onBack }: { onBack: () => void }) {
               })}
             >
               {g.title}
+              {g.makeInput && <span style={{ color: C.green, marginLeft: 4 }}>· 可玩</span>}
             </button>
           ))}
         </div>
@@ -329,16 +412,30 @@ export function StudioInspector({ onBack }: { onBack: () => void }) {
         <div style={{ flex: '0 0 660px', maxWidth: '100%' }}>
           <div
             ref={previewRef}
+            tabIndex={0}
+            onClick={(e) => e.currentTarget.focus()}
             style={{
-              width: 640,
-              height: 400,
+              width: vp.w,
+              height: vp.h,
               maxWidth: '100%',
               background: '#16213e',
               borderRadius: 8,
               border: `1px solid ${C.border}`,
               overflow: 'hidden',
+              outline: 'none',
             }}
           />
+
+          {/* Playback controls */}
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginTop: 6 }}>
+            <button onClick={togglePlay} style={btn()}>{running ? '⏸ 暂停' : '▶ 继续'}</button>
+            <button onClick={stepOnce} style={btn()}>⏭ 单步</button>
+            <span style={{ color: C.dim, fontSize: 11 }}>tick {tick}</span>
+          </div>
+
+          {currentDef?.inputHint && (
+            <div style={{ color: C.amber, fontSize: 11, marginTop: 4 }}>{currentDef.inputHint}</div>
+          )}
           <div style={{ color: C.dim, fontSize: 11, marginTop: 4 }}>
             空间预览（画布）：有 Transform/Shape 的实体在此可见；纯逻辑/文字游戏在此为空，看下方实时状态 + 右侧数据。
           </div>
