@@ -232,6 +232,34 @@
 
 - **对齐价值**：叙事运行器是模块库该有的一块（VN/RPG/Galgame 通用），写一次复利。正是护城河。
 
+---
+
+### R16 · [2026-06-05] · PB · 框架级 · status: open · 优先级: 中（架构对齐，非阻塞）· **类型: 通用模块请求（R15 的演出层后续）**
+
+**标题**：把 `VNStage` 泛化为**通用可主题化 VN 演出组件** —— 清掉 Game B 最后一块游戏层代码
+
+- **背景**：R15 已把对话**逻辑**下沉为通用 `@skills/tier3/dialogue`，Game B 内容已纯数据。现在 Game B 仅剩两块 `.ts`：① `blueprint.ts`（通用 manifest→world 加载器桩，应由框架 module-loader 取代）② **`ui/VNStage.tsx`（VN 演出层，本请求对象）**。按数据驱动宣言，演出层也该是**通用、可主题化、数据驱动**的共享组件，而非每个 VN 游戏各写一份 React。
+
+- **VNStage 现在做了什么（本质通用）**：读世界投影成 VN 画面——背景层 + 立绘槽（带表情）+ 属性面板（ui-binding 读 Resource）+ 对话框（打字机、CSS 换行）+ 选项（按 `optionAvailable` 过滤条件门控）。任何 VN/Galgame 都要这套。
+
+- **现在哪些是游戏专属（应外提为数据/config）**：
+  - 硬编码实体名（`'dialogue'` 状态机、`'S_warmed_flag'` 指示灯）；
+  - 属性标签表 `STAT_LABEL`（魅力/智慧/…，中文）；
+  - sakura 配色与布局常量；
+  - 占位立绘/背景（真资产走资产流程 R9）。
+
+- **请求（交 Lead 评估）**：在共享 UI 层（`@ui`）提供一个**通用 `VNStage` 组件**，由**数据/config 驱动**：
+  - `theme`（配色/字体/布局 token = 数据，sakura 只是一份主题数据）；
+  - 绑定描述（哪个对话实体/State、要显示哪些 Resource + 标签、立绘槽位与表情来源）——理想从 manifest 派生；
+  - 选项点击**走 R3 的确定性输入接缝**（`QueuedInputSource.enqueueAction`），而非现在 demo 里直接 `world.addComponent` 改世界（那是我标注过的临时 hack）。
+  - 落库后：Game B 的 `ui/VNStage.tsx` 删除，演出 = 选通用组件 + 一份主题/绑定数据。
+
+- **边界/优先级**：**不阻塞**——当前 VNStage 能跑、Game B v0.3 已可玩。这是"清掉最后一块游戏层代码、把 VN 演出沉淀成模块库资产"的架构收尾。是否值得现在做、以及通用组件的确切契约，**请 Lead 评估**（可能与 sakura-otome 主题、资产流程 R9 一起规划）。
+
+- **对齐价值**：VN 演出组件是 Skin/UI 模块库该有的一块（与 R15 对话运行器对称：逻辑 + 演出两条腿都通用化）。VN/Galgame/RPG 复用，写一次复利。
+
+---
+
 ### [2026-06-03] · PA · Game A · status: **done**（2026-06-04，Lead，Batch I）· REQ-001 相机 / 卷轴（世界→屏幕变换 + 合作跟随相机）
 
 > ✅ Lead 落地：`tier2/camera-follow`（CameraTarget 目标 AABB 中点 → Camera.offset，贴合 zoom，相机实体挂 Bounds 则钳关卡内）+ CanvasRenderer 世界→屏幕投影（读 Camera 施加 translate+scale，无相机则 1:1）。PA 用法：给两角色挂 `CameraTarget`，建一个挂 `Camera{viewportW/H}`(+可选 `Bounds`=关卡矩形) 的相机实体即可。6 测试。
