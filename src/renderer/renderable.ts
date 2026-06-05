@@ -1,38 +1,10 @@
 import type { IWorld } from '@engine/core/types.js';
-import type { Transform, Shape, Color, Sprite, Text, Visibility, Camera } from '@engine/protocol/components.js';
+import type { Transform, Shape, Color, Sprite, Text, Visibility } from '@engine/protocol/components.js';
 
-// 引擎无关的相机视图：世界中心点 + 缩放。渲染后端据此做世界→屏幕投影（卷轴）。
-export interface CameraView {
-  centerX: number;
-  centerY: number;
-  zoom: number;
-}
-
-// 取世界里的相机（第一个挂 Camera 的实体）。无则返回 null（渲染退化为世界坐标 1:1）。
-export function getCameraView(world: IWorld): CameraView | null {
-  for (const [e] of world.query('Camera')) {
-    const c = world.getComponent<Camera>(e, 'Camera');
-    if (c) return { centerX: c.offsetX, centerY: c.offsetY, zoom: c.zoom };
-  }
-  return null;
-}
-
-// 屏幕坐标 → 世界坐标：CanvasRenderer 投影 translate(中心)→scale(zoom)→translate(-center) 的逆变换
-// （Gemini Q5）。指针/点击拿到的是屏幕坐标，命中测试前用它换回世界坐标，免得每个游戏自己手写逆矩阵。
-// 无相机（cam=null）时屏幕即世界。
-export function screenToWorld(
-  screenX: number,
-  screenY: number,
-  cam: CameraView | null,
-  canvasWidth: number,
-  canvasHeight: number,
-): { x: number; y: number } {
-  if (!cam) return { x: screenX, y: screenY };
-  return {
-    x: (screenX - canvasWidth / 2) / cam.zoom + cam.centerX,
-    y: (screenY - canvasHeight / 2) / cam.zoom + cam.centerY,
-  };
-}
+// 相机视图与世界↔屏幕投影已下沉为共享契约（renderer 正向投影 + clickable 逆向命中的单一真相）。
+// 此处重导出，保持既有 `@renderer/renderable` 消费者（canvas-renderer / 测试）的 import 不变。
+export type { CameraView } from '@engine/protocol/camera-view.js';
+export { getCameraView, screenToWorld } from '@engine/protocol/camera-view.js';
 
 // 引擎无关的渲染数据。任何后端（Ascii / Canvas / Phaser / AI 视频）都消费同一份。
 export interface Renderable {

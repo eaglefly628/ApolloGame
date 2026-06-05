@@ -218,6 +218,15 @@ export interface InputQueue extends Component {
   actions: ReadonlyArray<RawInputData>;
 }
 
+// ── clickable ── 指针命中该实体的 Shape 时，在该实体上产出一个配置好的 Signal（命中→信号，REQ-C-002）。
+// 通用「可点击实体」：棋盘格 / 缝纫按钮 / 选项 / 拖拽起点都用它，免得每游戏自己写命中测试（违反数据驱动）。
+// 命中走「读单例 InputQueue 的指针坐标 → screenToWorld 逆投影 → 对 Transform+Shape 做 AABB」，确定性。
+export interface Clickable extends Component {
+  readonly type: 'Clickable';
+  action: string; // 命中时产出的 Signal.name（下游 effect-apply / craft-recipe / match3 等按名消费）
+  phase?: string; // 触发的指针相位 'down'|'up'，缺省 'down'
+}
+
 // ── net: controllable ── 该实体由哪个玩家(playerId)操控；input 命令按 speed 写入其 Velocity
 export interface Controllable extends Component {
   readonly type: 'Controllable';
