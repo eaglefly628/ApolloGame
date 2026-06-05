@@ -1,7 +1,7 @@
 import { describe, it, expect } from 'vitest';
 import { Engine } from '../../runtime/engine.js';
 import { buildGameCBlueprint } from './blueprint.js';
-import { GARMENTS, garmentFlagId, LOOK_FSM } from './theme.js';
+import { GARMENTS, ACCESSORIES, garmentFlagId, accessoryFlagId, LOOK_FSM, SHOP_LEVEL_ID } from './theme.js';
 import type { Resource, Flag, State, ResourceModify } from '@engine/protocol/components.js';
 
 // ─────────────────────────────────────────────────────────────────
@@ -96,6 +96,67 @@ describe('Game C · 缝纫物语 blueprint（纯数据装配）', () => {
       gain(engine, 'cloth', 24);
       gain(engine, 'button', 12);
       for (let i = 0; i < 6; i++) engine.world.tick();
+      return engine.hash();
+    };
+    expect(run()).toBe(run());
+  });
+});
+
+describe('Game C · v0.2 数据深化（缝纫店等级 / 高定多步门控 / 配饰）', () => {
+  it('每解锁一件衣服 → 缝纫店等级 +1（effect-apply modify-resource）', () => {
+    const engine = load();
+    expect(res(engine, SHOP_LEVEL_ID)!.current).toBe(0);
+    gain(engine, 'cloth', 12);
+    gain(engine, 'thread', 8);
+    for (let i = 0; i < 4; i++) engine.world.tick();
+    // 解锁了「初心围裙」一件 → 店铺 1 级。
+    expect(flag(engine, garmentFlagId(GARMENTS[0]))!.active).toBe(true);
+    expect(res(engine, SHOP_LEVEL_ID)!.current).toBe(1);
+  });
+
+  it('高定衣被 shop_level 门控：只有顶级材料、店铺没升级 → 仍锁定', () => {
+    const engine = load();
+    const couture = GARMENTS.find((g) => g.id === 'couture')!;
+    // 只灌高定材料，但不灌能解锁其它衣服的料 → 没有衣服解锁 → shop_level 0。
+    gain(engine, 'sequin', 120);
+    gain(engine, 'lace', 70);
+    gain(engine, 'ribbon', 60);
+    for (let i = 0; i < 8; i++) engine.world.tick();
+    expect(res(engine, SHOP_LEVEL_ID)!.current).toBeLessThan(4);
+    expect(flag(engine, garmentFlagId(couture))!.active).toBe(false); // 材料够但店铺没到 4 级
+  });
+
+  it('多步涌现：攒齐所有材料 → 5 件基础衣解锁(店铺升到 5) → 下游高定再解锁', () => {
+    const engine = load();
+    const couture = GARMENTS.find((g) => g.id === 'couture')!;
+    for (const [id, amt] of Object.entries({
+      cloth: 200, thread: 100, button: 60, ribbon: 80, lace: 100, sequin: 120,
+    })) gain(engine, id, amt);
+    for (let i = 0; i < 12; i++) engine.world.tick();
+    // 5 件基础衣 + 高定。
+    for (const g of GARMENTS) expect(flag(engine, garmentFlagId(g))!.active).toBe(true);
+    expect(res(engine, SHOP_LEVEL_ID)!.current).toBe(GARMENTS.length); // 每件 +1
+    // 外观推进到高定。
+    expect(engine.world.getComponent<State>('girl', 'State')!.current).toBe(couture.lookId);
+  });
+
+  it('配饰是与衣服并行的独立解锁线，可叠加', () => {
+    const engine = load();
+    for (const [id, amt] of Object.entries({
+      cloth: 60, ribbon: 30, lace: 20, button: 30, sequin: 20,
+    })) gain(engine, id, amt);
+    for (let i = 0; i < 4; i++) engine.world.tick();
+    // 全部 4 个配饰应解锁。
+    for (const a of ACCESSORIES) expect(flag(engine, accessoryFlagId(a))!.active).toBe(true);
+  });
+
+  it('确定性：含店铺升级 + 高定多步 + 配饰的完整链，两次运行快照一致', () => {
+    const run = () => {
+      const engine = load();
+      for (const [id, amt] of Object.entries({
+        cloth: 200, thread: 100, button: 60, ribbon: 80, lace: 100, sequin: 120,
+      })) gain(engine, id, amt);
+      for (let i = 0; i < 12; i++) engine.world.tick();
       return engine.hash();
     };
     expect(run()).toBe(run());

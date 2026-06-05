@@ -6,20 +6,23 @@ import { useComponent } from '@ui/hooks/use-component.js';
 import {
   MATERIALS,
   GARMENTS,
+  ACCESSORIES,
   COIN_ID,
   COIN_NAME,
-  composeAishePrompt,
-  garmentFlagId,
+  SHOP_LEVEL_NAME,
+  composeFullLook,
+  accessoryFlagId,
   type Garment,
+  type Accessory,
 } from '../theme.js';
-import { GIRL_ENTITY } from '../blueprint.js';
+import { GIRL_ENTITY, SHOP_LEVEL_ENTITY } from '../blueprint.js';
 
 // ═══════════════════════════════════════════════════════════════
 //  Game C 工坊预览（React-DOM 表现层）。**只读世界态渲染**，不含游戏规则。
-//  三消核心玩法 = 引擎能力 REQ-C-001（建设中）：本预览的棋盘是静态展示，
-//  升级/换装/展示链是真·数据驱动（event-when + effect-apply）——
-//  下方「模拟掉落」按钮只是把 ResourceModify 当数据灌进去（等同未来棋盘的产出），
-//  好让人亲眼看到这条数据链点亮。表现层 .tsx 是对第一性原则的已知负债（同 game-b VNStage）。
+//  三消核心玩法 = 引擎能力 REQ-C-001（建设中）：本预览的棋盘是静态展示；
+//  缝纫店升级 / 换装 / 配饰 / 爱诗展示链是真·数据驱动（event-when + effect-apply）——
+//  下方「模拟掉落」按钮只把 ResourceModify 当数据灌进去（等同未来棋盘的产出），
+//  让人亲眼看到这条数据链点亮。表现层 .tsx 是对第一性原则的已知负债（同 game-b VNStage）。
 // ═══════════════════════════════════════════════════════════════
 
 const PINK = '#ff7aa2';
@@ -30,7 +33,6 @@ function hex(tint: number): string {
   return `#${(tint & 0xffffff).toString(16).padStart(6, '0')}`;
 }
 
-// 预览棋盘的确定性填充（纯表现，不是游戏状态）。
 function previewKind(i: number): number {
   return ((i * 2654435761) >>> 0) % MATERIALS.length;
 }
@@ -56,7 +58,36 @@ function MaterialChip({ engine, id, glyph, name, tint }: {
   );
 }
 
-// ── 缝纫店一件衣服（解锁进度 + 状态）──
+function ReqPill({ engine, material, amount }: { engine: Engine; material: string; amount: number }) {
+  const r = useComponent<Resource>(engine, `mat_${material}`, 'Resource');
+  const m = MATERIALS.find((x) => x.id === material)!;
+  const pct = Math.min(100, Math.round(((r?.current ?? 0) / amount) * 100));
+  const done = (r?.current ?? 0) >= amount;
+  return (
+    <div style={{
+      position: 'relative', overflow: 'hidden', fontSize: 10, color: done ? '#2e7d52' : INK,
+      padding: '3px 8px', borderRadius: 99, background: '#f6eef2',
+      border: `1px solid ${done ? '#7fd6a3' : '#e7d6df'}`,
+    }}>
+      <div style={{ position: 'absolute', inset: 0, width: `${pct}%`, background: `${hex(m.tint)}33`, transition: 'width 0.3s' }} />
+      <span style={{ position: 'relative' }}>{m.glyph} {r?.current ?? 0}/{amount}</span>
+    </div>
+  );
+}
+
+// 高定专用：缝纫店等级门控药丸。
+function ShopLevelPill({ engine, need }: { engine: Engine; need: number }) {
+  const r = useComponent<Resource>(engine, SHOP_LEVEL_ENTITY, 'Resource');
+  const done = (r?.current ?? 0) >= need;
+  return (
+    <div style={{
+      fontSize: 10, color: done ? '#2e7d52' : '#9a6', padding: '3px 8px', borderRadius: 99,
+      background: '#fff7e6', border: `1px solid ${done ? '#7fd6a3' : '#f0d28a'}`,
+    }}>🏪 缝纫店 Lv.{r?.current ?? 0}/{need}</div>
+  );
+}
+
+// ── 缝纫店一件衣服 ──
 function GarmentRow({ engine, g }: { engine: Engine; g: Garment }) {
   const flag = useComponent<Flag>(engine, `flag_${g.id}`, 'Flag');
   const unlocked = flag?.active ?? false;
@@ -65,15 +96,13 @@ function GarmentRow({ engine, g }: { engine: Engine; g: Garment }) {
       padding: 10, borderRadius: 12,
       background: unlocked ? 'linear-gradient(135deg,#fff0f5,#ffe3ef)' : '#fff',
       border: `1px solid ${unlocked ? PINK : '#eedde6'}`,
-      opacity: unlocked ? 1 : 0.95,
     }}>
       <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 6 }}>
         <span style={{ fontSize: 20 }}>{g.icon}</span>
         <span style={{ fontSize: 13, fontWeight: 700, color: INK }}>{g.name}</span>
         <span style={{ fontSize: 10, color: '#a98', marginLeft: 2 }}>· Lv.{g.tier}</span>
         <span style={{
-          marginLeft: 'auto', fontSize: 10, fontWeight: 700,
-          padding: '2px 8px', borderRadius: 99,
+          marginLeft: 'auto', fontSize: 10, fontWeight: 700, padding: '2px 8px', borderRadius: 99,
           background: unlocked ? PINK : '#f0e2ea', color: unlocked ? '#fff' : '#b59',
         }}>{unlocked ? '已解锁 ✓' : '锁定'}</span>
       </div>
@@ -81,29 +110,32 @@ function GarmentRow({ engine, g }: { engine: Engine; g: Garment }) {
         {g.requires.map((req) => (
           <ReqPill key={req.material} engine={engine} material={req.material} amount={req.amount} />
         ))}
+        {g.requiresShopLevel ? <ShopLevelPill engine={engine} need={g.requiresShopLevel} /> : null}
       </div>
     </div>
   );
 }
 
-function ReqPill({ engine, material, amount }: { engine: Engine; material: string; amount: number }) {
-  const r = useComponent<Resource>(engine, `mat_${material}`, 'Resource');
-  const m = MATERIALS.find((x) => x.id === material)!;
-  const cur = Math.min(r?.current ?? 0, amount);
-  const pct = Math.round((cur / amount) * 100);
-  const done = (r?.current ?? 0) >= amount;
+// ── 一个配饰（紧凑卡）──
+function AccessoryCard({ engine, a }: { engine: Engine; a: Accessory }) {
+  const flag = useComponent<Flag>(engine, `accflag_${a.id}`, 'Flag');
+  const unlocked = flag?.active ?? false;
   return (
     <div style={{
-      position: 'relative', overflow: 'hidden',
-      fontSize: 10, color: done ? '#2e7d52' : INK,
-      padding: '3px 8px', borderRadius: 99,
-      background: '#f6eef2', border: `1px solid ${done ? '#7fd6a3' : '#e7d6df'}`,
+      flex: '1 1 calc(50% - 4px)', minWidth: 0, padding: 8, borderRadius: 10,
+      background: unlocked ? 'linear-gradient(135deg,#fff0f5,#ffe3ef)' : '#fff',
+      border: `1px solid ${unlocked ? PINK : '#eedde6'}`,
     }}>
-      <div style={{
-        position: 'absolute', inset: 0, width: `${pct}%`,
-        background: `${hex(m.tint)}33`, transition: 'width 0.3s',
-      }} />
-      <span style={{ position: 'relative' }}>{m.glyph} {r?.current ?? 0}/{amount}</span>
+      <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 5 }}>
+        <span style={{ fontSize: 16 }}>{a.icon}</span>
+        <span style={{ fontSize: 12, fontWeight: 700, color: INK }}>{a.name}</span>
+        <span style={{ marginLeft: 'auto', fontSize: 13 }}>{unlocked ? '✓' : '🔒'}</span>
+      </div>
+      <div style={{ display: 'flex', flexWrap: 'wrap', gap: 4 }}>
+        {a.requires.map((req) => (
+          <ReqPill key={req.material} engine={engine} material={req.material} amount={req.amount} />
+        ))}
+      </div>
     </div>
   );
 }
@@ -112,14 +144,19 @@ function ReqPill({ engine, material, amount }: { engine: Engine; material: strin
 export function AtelierStage({ engine }: { engine: Engine }): React.ReactElement {
   useWorldVersion(engine);
   const look = useComponent<State>(engine, GIRL_ENTITY, 'State');
+  const shopLv = useComponent<Resource>(engine, SHOP_LEVEL_ENTITY, 'Resource');
+  // 读取每个配饰的解锁状态（ACCESSORIES 为常量数组 → hooks 数量/顺序稳定）。
+  const accFlags = ACCESSORIES.map((a) => useComponent<Flag>(engine, `accflag_${a.id}`, 'Flag'));
+  const unlockedAccIds = ACCESSORIES.filter((_, i) => accFlags[i]?.active).map((a) => a.id);
+
   const lookId = look?.current ?? 'look_base';
   const currentGarment = GARMENTS.find((g) => g.lookId === lookId);
-  const prompt = composeAishePrompt(lookId);
+  const prompt = composeFullLook(lookId, unlockedAccIds);
 
   // 预览演示：把材料产出当数据灌进世界（等同未来三消棋盘 REQ-C-001 的消除产出）。
   const simulateDrop = () => {
     const drops: Record<string, number> = {
-      cloth: 22, thread: 16, button: 10, ribbon: 12, lace: 14, sequin: 12, [COIN_ID]: 120,
+      cloth: 200, thread: 100, button: 60, ribbon: 80, lace: 100, sequin: 120, [COIN_ID]: 600,
     };
     for (const [id, amount] of Object.entries(drops)) {
       engine.world.addComponent(`mat_${id}`, { type: 'ResourceModify', resourceId: id, amount } as ResourceModify);
@@ -128,7 +165,7 @@ export function AtelierStage({ engine }: { engine: Engine }): React.ReactElement
 
   return (
     <div style={{
-      width: 920, maxWidth: '96vw', height: 560, maxHeight: '94vh', display: 'flex', gap: 14,
+      width: 960, maxWidth: '96vw', height: 600, maxHeight: '94vh', display: 'flex', gap: 14,
       padding: 16, borderRadius: 18, color: INK,
       background: 'linear-gradient(160deg,#ffe9f1,#fdf6ff)',
       fontFamily: '"PingFang SC","Microsoft YaHei",system-ui,sans-serif',
@@ -138,9 +175,7 @@ export function AtelierStage({ engine }: { engine: Engine }): React.ReactElement
       <div style={{ flex: '0 0 300px', display: 'flex', flexDirection: 'column', gap: 10 }}>
         <Header title="缝纫物语" subtitle="Stitch & Style · 三消工坊" />
         <div style={{ position: 'relative', flex: 1, background: PANEL, borderRadius: 14, padding: 12 }}>
-          <div style={{
-            display: 'grid', gridTemplateColumns: 'repeat(6, 1fr)', gap: 6, height: '100%',
-          }}>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(6, 1fr)', gap: 6, height: '100%' }}>
             {Array.from({ length: 42 }, (_, i) => {
               const m = MATERIALS[previewKind(i)];
               return (
@@ -156,13 +191,12 @@ export function AtelierStage({ engine }: { engine: Engine }): React.ReactElement
             background: 'rgba(91,58,74,0.86)', color: '#fff', fontSize: 11,
             padding: '8px 10px', borderRadius: 10, lineHeight: 1.5,
           }}>
-            🧩 三消核心玩法 = 引擎能力建设中（<b>REQ-C-001</b>）。
-            棋盘交换 / 消除 / 下落 / 补块 / 连锁需引擎下沉为通用 capability，PC 已提需求、不在游戏层 hack。
+            🧩 三消核心玩法 = 引擎能力建设中（<b>REQ-C-001</b>）。棋盘交换 / 消除 / 下落 / 补块 / 连锁需引擎下沉为通用 capability，PC 已提需求、不在游戏层 hack。
           </div>
         </div>
       </div>
 
-      {/* 右：材料 + 缝纫店 + 爱诗展示 */}
+      {/* 右：材料 + 缝纫店 + 配饰 + 爱诗展示 */}
       <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: 12, minWidth: 0, overflow: 'auto' }}>
         {/* 材料 */}
         <Section title="材料仓 · 消除产出">
@@ -174,18 +208,24 @@ export function AtelierStage({ engine }: { engine: Engine }): React.ReactElement
           <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginTop: 8 }}>
             <CoinChip engine={engine} />
             <button onClick={simulateDrop} style={{
-              marginLeft: 'auto', padding: '7px 14px', fontSize: 12, fontWeight: 700,
-              color: '#fff', background: `linear-gradient(135deg,${PINK},#ff9ec7)`,
-              border: 'none', borderRadius: 10, cursor: 'pointer',
-              boxShadow: '0 3px 10px rgba(255,122,162,0.4)',
+              marginLeft: 'auto', padding: '7px 14px', fontSize: 12, fontWeight: 700, color: '#fff',
+              background: `linear-gradient(135deg,${PINK},#ff9ec7)`, border: 'none', borderRadius: 10,
+              cursor: 'pointer', boxShadow: '0 3px 10px rgba(255,122,162,0.4)',
             }}>▶ 模拟一波消除掉落（预览 · 代 REQ-C-001）</button>
           </div>
         </Section>
 
         {/* 缝纫店 */}
-        <Section title="缝纫店 · 升级阶梯（攒够材料自动解锁）">
+        <Section title={`缝纫店 · ${SHOP_LEVEL_NAME} Lv.${shopLv?.current ?? 0}（每做出一件衣服 +1）`}>
           <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
             {GARMENTS.map((g) => <GarmentRow key={g.id} engine={engine} g={g} />)}
+          </div>
+        </Section>
+
+        {/* 配饰 */}
+        <Section title="配饰坊 · 多槽叠穿（与衣服并行解锁）">
+          <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
+            {ACCESSORIES.map((a) => <AccessoryCard key={a.id} engine={engine} a={a} />)}
           </div>
         </Section>
 
@@ -198,23 +238,30 @@ export function AtelierStage({ engine }: { engine: Engine }): React.ReactElement
             <div style={{
               flex: '0 0 96px', height: 150, borderRadius: 10,
               background: 'linear-gradient(160deg,#ffd9ec,#d9b8ff)',
-              display: 'grid', placeItems: 'center', fontSize: 52,
-            }}>{currentGarment?.icon ?? '🧍‍♀️'}</div>
+              display: 'grid', placeItems: 'center', fontSize: 52, position: 'relative',
+            }}>
+              {currentGarment?.icon ?? '🧍‍♀️'}
+              {unlockedAccIds.length > 0 && (
+                <div style={{ position: 'absolute', bottom: 4, fontSize: 16 }}>
+                  {ACCESSORIES.filter((a) => unlockedAccIds.includes(a.id)).map((a) => a.icon).join('')}
+                </div>
+              )}
+            </div>
             <div style={{ flex: 1, minWidth: 0 }}>
               <div style={{ fontSize: 12, opacity: 0.7 }}>当前换装</div>
               <div style={{ fontSize: 16, fontWeight: 800, marginBottom: 6 }}>
                 {currentGarment?.name ?? '练习服'}
+                {unlockedAccIds.length > 0 && <span style={{ fontSize: 11, opacity: 0.7 }}> · 配饰 ×{unlockedAccIds.length}</span>}
               </div>
-              <div style={{ fontSize: 10, opacity: 0.7, marginBottom: 2 }}>爱诗视频提示词（数据驱动 · X4 ShadowDictionary）</div>
+              <div style={{ fontSize: 10, opacity: 0.7, marginBottom: 2 }}>爱诗视频提示词（数据驱动 · X4 ShadowDictionary · 衣服+配饰组合）</div>
               <div style={{
                 fontSize: 11, lineHeight: 1.5, color: '#e9d5ff',
-                background: 'rgba(0,0,0,0.28)', borderRadius: 8, padding: 8,
-                maxHeight: 66, overflow: 'auto',
+                background: 'rgba(0,0,0,0.28)', borderRadius: 8, padding: 8, maxHeight: 70, overflow: 'auto',
               }}>{prompt}</div>
               <button disabled style={{
-                marginTop: 8, padding: '6px 14px', fontSize: 11, fontWeight: 700,
-                color: '#cbb6e6', background: 'rgba(255,255,255,0.08)',
-                border: '1px solid rgba(255,255,255,0.2)', borderRadius: 8, cursor: 'not-allowed',
+                marginTop: 8, padding: '6px 14px', fontSize: 11, fontWeight: 700, color: '#cbb6e6',
+                background: 'rgba(255,255,255,0.08)', border: '1px solid rgba(255,255,255,0.2)',
+                borderRadius: 8, cursor: 'not-allowed',
               }}>🎬 生成爱诗短视频（视频后端待 REQ-C-004）</button>
             </div>
           </div>
