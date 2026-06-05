@@ -99,7 +99,13 @@ const C = {
 
 // ── 单字段编辑器（局部缓冲，失焦/回车提交；非法值红框不提交）──
 function FieldEditor({ field, onCommit }: { field: InspectedField; onCommit: (raw: string) => void }) {
-  const initial = field.kind === 'json' ? JSON.stringify(field.value) : String(field.value);
+  // 值缺省 → 空串（绝不让 buf 为 undefined：JSON.stringify(undefined)===undefined 会让 buf.length 崩）。
+  const initial =
+    field.value === undefined || field.value === null
+      ? ''
+      : field.kind === 'json'
+        ? JSON.stringify(field.value)
+        : String(field.value);
   const [buf, setBuf] = useState(initial);
   const [bad, setBad] = useState(false);
 
@@ -115,6 +121,7 @@ function FieldEditor({ field, onCommit }: { field: InspectedField; onCommit: (ra
   }
 
   const commit = () => {
+    if (buf === initial) return; // 未改动不写：避免聚焦+失焦把未设置(undefined)默认值刷成 0/空
     const res = coerceValue(buf, field.kind);
     if (res.ok) {
       setBad(false);
@@ -141,7 +148,7 @@ function FieldEditor({ field, onCommit }: { field: InspectedField; onCommit: (ra
         value={buf}
         onChange={(e) => setBuf(e.target.value)}
         onBlur={commit}
-        rows={buf.length > 60 ? 3 : 1}
+        rows={(buf ?? '').length > 60 ? 3 : 1}
         style={{ ...common, width: '100%', resize: 'vertical' }}
       />
     );
@@ -151,6 +158,7 @@ function FieldEditor({ field, onCommit }: { field: InspectedField; onCommit: (ra
     <input
       type="text"
       value={buf}
+      placeholder={field.value === undefined || field.value === null ? '(未设置)' : undefined}
       onChange={(e) => setBuf(e.target.value)}
       onBlur={commit}
       onKeyDown={(e) => e.key === 'Enter' && (e.target as HTMLInputElement).blur()}

@@ -66,6 +66,16 @@ function kindOf(v: unknown): FieldKind {
   return 'json';
 }
 
+// 值缺省(undefined/null，如可选的 Tween.loops)时 kindOf 会落到 'json' →
+// JSON.stringify(undefined)===undefined → 编辑器 buf 为 undefined → 崩(白屏)。
+// 改用 schema 声明类型挑编辑器，挑不出就当字符串（空值可填）。
+function fieldKind(v: unknown, declared?: FieldType): FieldKind {
+  if (v !== undefined && v !== null) return kindOf(v);
+  if (declared === 'number') return 'number';
+  if (declared === 'boolean') return 'boolean';
+  return 'string';
+}
+
 /** 把蓝图摊平成 实体 → 组件 → 字段 的可视结构，并贴上 capability 自描述元数据。 */
 export function inspectBlueprint(bp: WorldBlueprint): InspectedEntity[] {
   const reg = buildSchemaRegistry(bp.capabilities);
@@ -73,13 +83,16 @@ export function inspectBlueprint(bp: WorldBlueprint): InspectedEntity[] {
     id,
     components: Object.entries(comps).map(([type, data]) => {
       const entry = reg.get(type);
-      const fields = Object.entries(data as Record<string, unknown>).map(([key, value]) => ({
-        key,
-        value,
-        kind: kindOf(value),
-        declaredType: entry?.schema.fields[key]?.type,
-        describe: entry?.schema.fields[key]?.describe,
-      }));
+      const fields = Object.entries(data as Record<string, unknown>).map(([key, value]) => {
+        const declaredType = entry?.schema.fields[key]?.type;
+        return {
+          key,
+          value,
+          kind: fieldKind(value, declaredType),
+          declaredType,
+          describe: entry?.schema.fields[key]?.describe,
+        };
+      });
       return {
         type,
         category: entry?.schema.category,
