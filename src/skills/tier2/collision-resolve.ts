@@ -40,7 +40,7 @@ export const collisionResolveCapability = defineCapability({
 
   components: {
     provides: {},
-    reads: ['Overlap', 'Transform', 'Shape', 'Velocity', 'Mass'],
+    reads: ['Overlap', 'Transform', 'Shape', 'Velocity', 'Mass', 'Sensor'],
     writes: ['Transform', 'Velocity'],
     consumes: [],
   },
@@ -78,6 +78,8 @@ export const collisionResolveCapability = defineCapability({
         }
         const manifolds: Manifold[] = [];
         for (const [a, b] of pairs) {
+          // REQ-002：非实心 Sensor（开关/压力板/触发区）不做物理解算，只让 overlap-detect/trigger-zone 消费。
+          if (world.hasComponent(a, 'Sensor') || world.hasComponent(b, 'Sensor')) continue;
           const aT = world.getComponent<Transform>(a, 'Transform');
           const bT = world.getComponent<Transform>(b, 'Transform');
           const aS = world.getComponent<Shape>(a, 'Shape');

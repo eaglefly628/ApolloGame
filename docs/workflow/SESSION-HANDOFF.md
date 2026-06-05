@@ -98,3 +98,31 @@ PA、PB **都没 hack，都按规矩提需求等 Lead**(协作模型在生效)�
 - 每完成一批/一轮 review，把新代码拼成 `review-for-gemini-*.txt` 发用户喂 Gemini，结论回灌 requests/docs。
 - 提交署名 `noreply@anthropic.com` / `Claude`(避免 unverified)。
 - 任何"该数据还是代码"用 §0 那把尺子裁决。**别再无脑加宽引擎**——优先：还数据驱动的债(R15) + 证一个真实游戏端到端跑起来。
+
+---
+
+## 8. 本程最后增量 + 第三个游戏（接手前必看，比上文更新）
+
+**测试 385 passed / tsc 干净 / build 通过。** 本程末尾又落地（main `1db5151`）：
+- **REQ-002 sensor**（PA）：新增 `Sensor` 标记；`collision-resolve` 跳过含 Sensor 的接触对 → **Game A 全部第一批合作机制(踩开关/限时门/重量台)解锁**。开关=加 `Sensor` 数据即可站进。
+- **REQ-003 动态支撑**（PA）：`ground-sense` 改不动点传播，踩搭档/踩箱(已 Grounded 的动态支撑)也能起跳；链式确定性。
+- **R14 助手（部分）**：`src/engine/core/query.ts` `findByComponentId/getComponentById` —— 游戏层不再手写"按 id 扫实体"(同解 R13 + PC REQ-C-002)。
+
+**⚠️ 第三个游戏 Game C 存在，且在另一条分支！**
+- **PC（Programmer C）做《缝纫物语》换装三消，在分支 `claude/jolly-allen-ifK1B`（commit `fce4715`），未并进 main。** 代码 `src/games/game-c/`(纯数据装配 blueprint/theme) + 设计文档 + 4 条需求 **REQ-C-001~004（在那条分支的 requests.md，main 上没有）**：
+  - **REQ-C-001 (P0)**：三消棋盘机制下沉为通用 `match3-board` capability。**重要诊断**：`Condition→Event→Effect` 表达不了"带网格扫描/循环的算法"——印证引擎缺一个**"算法/解释器型机制 capability"大类**。
+  - REQ-C-002：点击命中→发 Signal（**和 PB R13/R3 同源**，三家共需）。
+  - REQ-C-003：经济/缝制"可负担才成交+原子扣多料"（**和 PB R14 批量改资源同源**）。
+  - REQ-C-004：视频/AIGP 后端（Game C 的"输出点"，表现层旁路，类比 R1 之前无贴图）。
+
+**三游戏三角验证 → 真实共需高度收敛（下一任据此排程）**：
+1. **"下沉成机制 capability"是共同模式**：`dialogue`(PB R15)、`match3-board`(PC REQ-C-001)、`coop-goal`(PA REQ-006) —— 都是"游戏核心玩法其实是个通用 config 驱动机制"。**这就是数据驱动下复杂玩法的归宿。dialogue/match3 揭示了缺失的"解释器型 capability"大类。**
+2. **点击命中→Signal**：三家共需(REQ-C-002 + R13 + R3 命中侧)。
+3. **批量/原子/可负担改资源**：两家共需(PB R14 + PC REQ-C-003)→ 一个"经济/批量改值"capability。
+
+**下一任建议动作（按性价比）**：
+- (a) **R5 condition 多目标/计数版 → 解锁 REQ-006**（REQ-002 已铺好，短链，让 Game A coop-goal 变纯数据）；顺手复核 R5/R7 标 done/wontfix。
+- (b) **R15 对话运行器下沉成通用 `dialogue` capability**（数据驱动旗舰，让 Game B 变纯数据；工作量最大）。
+- (c) **把 PC 的 REQ-C-001~004 合进 main 的 requests.md**（否则只读 main 会漏掉第三个游戏）；并决定 game-c 分支何时并 main。
+- (d) 共需三件(命中→Signal / 经济批量改值 / match3-board)按三角收敛做，一次复利三家。
+- 始终守 §0 第一性原则 + 先"证一个真实游戏端到端在浏览器跑起来"。

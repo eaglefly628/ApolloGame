@@ -288,6 +288,12 @@ export interface Grounded extends Component {
   readonly type: 'Grounded';
 }
 
+// ── sensor ── 非实心碰撞体标记（REQ-002）。挂了它的实体仍参与 overlap-detect/trigger-zone（感知），
+// 但 collision-resolve **跳过**含它的接触对（不做物理推开）。开关/压力板/触发区 = Sensor，玩家能站进去。
+export interface Sensor extends Component {
+  readonly type: 'Sensor';
+}
+
 // ── bounds-clamp ── 实体允许活动的世界矩形（含边界）。bounds-clamp 据此把 AABB 钳进去。
 export interface Bounds extends Component {
   readonly type: 'Bounds';

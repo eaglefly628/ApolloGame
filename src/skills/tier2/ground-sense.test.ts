@@ -23,7 +23,7 @@ function addOverlap(w: World, a: string, b: string, normalY: number): void {
 describe('T2 ground-sense — capability metadata', () => {
   it('id / 读 Overlap+Velocity / 写 Grounded / provide marker', () => {
     expect(groundSenseCapability.id).toBe('t2-ground-sense');
-    expect(groundSenseCapability.components.reads).toEqual(['Overlap', 'Velocity']);
+    expect(groundSenseCapability.components.reads).toEqual(['Overlap', 'Velocity', 'Grounded']);
     expect(groundSenseCapability.components.writes).toEqual(['Grounded']);
     expect(groundSenseCapability.components.provides.Grounded.category).toBe('marker');
   });
@@ -69,5 +69,29 @@ describe('T2 ground-sense — behavior', () => {
     w.destroyEntity('overlap:dyn:floor');
     w.tick();
     expect(w.hasComponent('dyn', 'Grounded')).toBe(false);
+  });
+});
+
+describe('T2 ground-sense — REQ-003 动态支撑链', () => {
+  it('A 踩 B(动态)、B 踩地 → A 与 B 都 Grounded（链式不动点传播）', () => {
+    const w = worldWithGroundSense();
+    addDyn(w, 'box'); // 动态箱
+    addDyn(w, 'player'); // 动态玩家
+    w.createEntity('floor'); // 静态地面
+    addOverlap(w, 'box', 'floor', 1); // box 踩在 floor 上（静态支撑）
+    addOverlap(w, 'player', 'box', 1); // player 踩在 box（动态支撑）上
+    w.tick();
+    expect(w.hasComponent('box', 'Grounded')).toBe(true);
+    expect(w.hasComponent('player', 'Grounded')).toBe(true); // 经支撑链拿到 Grounded → 可起跳
+  });
+
+  it('支撑的动态体本帧不 Grounded(悬空) → 骑乘者也不 Grounded', () => {
+    const w = worldWithGroundSense();
+    addDyn(w, 'box'); // 箱悬空（无 floor 接触）
+    addDyn(w, 'player');
+    addOverlap(w, 'player', 'box', 1);
+    w.tick();
+    expect(w.hasComponent('box', 'Grounded')).toBe(false);
+    expect(w.hasComponent('player', 'Grounded')).toBe(false);
   });
 });

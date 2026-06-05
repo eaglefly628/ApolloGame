@@ -36,9 +36,32 @@ describe('T2 collision-resolve — capability metadata（契约钉死）', () =>
 
   it('读 Overlap+Transform+Shape+Velocity+Mass，写 Transform+Velocity，不 consume/provide', () => {
     expect(collisionResolveCapability.components.provides).toEqual({});
-    expect(collisionResolveCapability.components.reads).toEqual(['Overlap', 'Transform', 'Shape', 'Velocity', 'Mass']);
+    expect(collisionResolveCapability.components.reads).toEqual(['Overlap', 'Transform', 'Shape', 'Velocity', 'Mass', 'Sensor']);
     expect(collisionResolveCapability.components.writes).toEqual(['Transform', 'Velocity']);
     expect(collisionResolveCapability.components.consumes).toEqual([]);
+  });
+});
+
+describe('T2 collision-resolve — REQ-002 sensor 非实心', () => {
+  it('任一方挂 Sensor → 跳过物理解算（玩家能站进触发区，位置不被推开）', () => {
+    const w = withSolver();
+    addBox(w, 'player', 100, 195, { vy: 8 }); // 与 switch 重叠
+    addBox(w, 'switch', 100, 210, { static: true });
+    w.addComponent('switch', { type: 'Sensor' }); // 开关=非实心
+    manualOverlap(w, 'player', 'switch');
+    const before = TY(w, 'player');
+    w.tick();
+    expect(TY(w, 'player')).toBe(before); // 未被推开
+    expect(w.getComponent<Velocity>('player', 'Velocity')!.vy).toBe(8); // 侵入速度也不清
+  });
+
+  it('无 Sensor → 照常推开（对照）', () => {
+    const w = withSolver();
+    addBox(w, 'player', 100, 195, { vy: 8 });
+    addBox(w, 'wall', 100, 210, { static: true });
+    manualOverlap(w, 'player', 'wall');
+    w.tick();
+    expect(TY(w, 'player')).toBeLessThan(195); // 被推出
   });
 });
 

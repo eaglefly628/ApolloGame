@@ -28,7 +28,7 @@ export const groundSenseCapability = defineCapability({
         fields: {},
       },
     },
-    reads: ['Overlap', 'Velocity'],
+    reads: ['Overlap', 'Velocity', 'Grounded'],
     writes: ['Grounded'],
     consumes: [],
   },
@@ -45,15 +45,39 @@ export const groundSenseCapability = defineCapability({
         // 每帧重算：先清掉上一帧的 Grounded。
         for (const [id] of world.query('Grounded')) world.removeComponent(id, 'Grounded');
 
+        // 从每个接触对抽出"骑乘者(被向上推的动态体) + 支撑者"。法线 A→B；A 被向上推(ny>0.5)=A 骑在 B 上。
+        // REQ-003：支撑者可以是静态地面，**也可以是本帧自己也 Grounded 的动态体**（踩搭档/踩箱）。
+        // 与 collision-resolve 已有的"Grounded 动态当静态支撑"对齐。
+        const claims: Array<{ rider: string; support: string; staticSupport: boolean }> = [];
         for (const [oid] of world.query('Overlap')) {
           const o = world.getComponent<Overlap>(oid, 'Overlap')!;
-          const aDyn = world.hasComponent(o.entityA, 'Velocity');
-          const bDyn = world.hasComponent(o.entityB, 'Velocity');
-          // 法线 A→B。动态体被"向上"推（up=-y）即视为踩在对方（静态地面）上。
-          if (aDyn && !bDyn && o.normalY > 0.5) {
-            world.addComponent(o.entityA, { type: 'Grounded' } as Grounded);
-          } else if (bDyn && !aDyn && o.normalY < -0.5) {
-            world.addComponent(o.entityB, { type: 'Grounded' } as Grounded);
+          let rider: string;
+          let support: string;
+          if (o.normalY > 0.5) {
+            rider = o.entityA;
+            support = o.entityB;
+          } else if (o.normalY < -0.5) {
+            rider = o.entityB;
+            support = o.entityA;
+          } else {
+            continue; // 墙面(ny≈0)，不算落地
+          }
+          if (!world.hasComponent(rider, 'Velocity')) continue; // 骑乘者须是动态体才谈"落地"
+          claims.push({ rider, support, staticSupport: !world.hasComponent(support, 'Velocity') });
+        }
+
+        // 不动点传播：骑乘者落地 ⟺ 支撑是静态、或支撑本帧已 Grounded。迭代到稳定（链式 A 踩 B 踩地）。
+        // 结果是个集合、与 claims 顺序无关 → 确定性、lockstep 安全。迭代上界 = claims 数。
+        let changed = true;
+        let guard = claims.length;
+        while (changed && guard-- >= 0) {
+          changed = false;
+          for (const { rider, support, staticSupport } of claims) {
+            if (world.hasComponent(rider, 'Grounded')) continue;
+            if (staticSupport || world.hasComponent(support, 'Grounded')) {
+              world.addComponent(rider, { type: 'Grounded' } as Grounded);
+              changed = true;
+            }
           }
         }
       },
