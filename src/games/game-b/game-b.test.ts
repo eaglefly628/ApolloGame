@@ -3,11 +3,12 @@ import { World } from '@engine/core/world.js';
 import type { Component } from '@engine/core/types.js';
 import type { State, StateChanged, Text, Resource, Flag } from '@engine/protocol/components.js';
 import { buildGameBBlueprint } from './blueprint.js';
-import { optionAvailable } from './dialogue-runner.js';
+import { optionAvailable } from '@skills/tier3/index.js';
 import { SCENE_01 } from './data/dialogue.js';
 
 // 端到端：真实 World.tick() 跑 Game B v0.2，验证 state/resource/flag/text + event-when/effect-apply
-// + dialogue-runner 协作，涌现 VN 循环 + 阈值事件链 + 条件门控选项。
+// + 通用 dialogue 运行器（R15 下沉，脚本=世界里的 DialogueScript 数据组件）协作，
+// 涌现 VN 循环 + 阈值事件链 + 条件门控选项。Game B = 纯数据（manifest + scene_01.json + 资产 + 主题）。
 function loadGameB(): World {
   const w = new World();
   const bp = buildGameBBlueprint();
@@ -38,8 +39,8 @@ describe('Game B v0.2 — 对话/属性/条件门控/阈值事件链', () => {
     const w = loadGameB();
     w.tick();
     const ids = w.getSortedSystems().map((s) => s.id);
-    expect(ids.indexOf('dialogue-runner')).toBeLessThan(ids.indexOf('resource-apply'));
-    expect(ids.indexOf('dialogue-runner')).toBeLessThan(ids.indexOf('state-sync'));
+    expect(ids.indexOf('dialogue')).toBeLessThan(ids.indexOf('resource-apply'));
+    expect(ids.indexOf('dialogue')).toBeLessThan(ids.indexOf('state-sync'));
     // 阈值链系统都在
     expect(ids).toContain('event-when');
     expect(ids).toContain('effect-apply');

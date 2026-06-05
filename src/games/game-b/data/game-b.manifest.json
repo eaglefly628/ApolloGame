@@ -2,7 +2,7 @@
   "_note": "Game B 游戏清单(manifest) —— 纯数据。描述：装哪些通用模块 + 世界初始实体(组件数据) + 内容引用。理想下整个游戏=本文件+scene_01.json+资产清单+主题，零游戏专属代码。modules 的按 id 解析、entities 的装载，应由引擎/框架的通用 module-loader 完成(见 R15/modular-game-framework)。",
   "id": "game-b-otome",
   "content": { "dialogueScript": "scene_01" },
-  "modules": ["state", "resource", "flag", "text", "event-when", "effect-apply", "dialogue-runner"],
+  "modules": ["state", "resource", "flag", "text", "event-when", "effect-apply", "dialogue"],
   "entities": {
     "dialogue": {
       "State": { "fsmId": "dialogue", "current": "s1_l0", "previous": "s1_l0" },

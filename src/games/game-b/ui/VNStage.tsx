@@ -5,8 +5,9 @@ import type { State, Text, Resource, Flag } from '@engine/protocol/components.js
 import { useWorldVersion } from '@ui/hooks/use-engine.js';
 import { useComponent } from '@ui/hooks/use-component.js';
 import { buildGameBBlueprint, GAME_B_STATS } from '../blueprint.js';
-import { optionAvailable } from '../dialogue-runner.js';
-import { SCENE_01, type DialogueScript } from '../data/dialogue.js';
+import { optionAvailable } from '@skills/tier3/index.js';
+import type { DialogueGraph } from '@skills/tier3/index.js';
+import { SCENE_01 } from '../data/dialogue.js';
 
 // ═══════════════════════════════════════════════════════════════
 //  Game B 演出层（React-DOM 浮层）。v0.2：7 属性面板 + 条件门控选项渲染。
@@ -40,7 +41,7 @@ function StatRow({ engine, id }: { engine: Engine; id: string }) {
   );
 }
 
-export function VNStage({ engine, script }: { engine: Engine; script: DialogueScript }): React.ReactElement {
+export function VNStage({ engine, script }: { engine: Engine; script: DialogueGraph }): React.ReactElement {
   useWorldVersion(engine);
   const state = useComponent<State>(engine, 'dialogue', 'State');
   const text = useComponent<Text>(engine, 'dialogue', 'Text');
