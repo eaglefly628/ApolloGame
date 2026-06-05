@@ -23,6 +23,19 @@ export interface Level {
   spawnA: Spawn; // 蓝（角色 A）起点
   spawnB: Spawn; // 橙（角色 B）起点
   goal: Box; // 协作目标区：两名玩家都进入即过关（v0.2-proto）
+  background?: string; // 背景贴图 textureKey（资产清单里声明）；无则纯色底
+  goalArt?: string; // 目标处装饰贴图 textureKey（如旗帜）
+  movers?: Mover[]; // Tween 驱动的移动平台（纯数据）
+}
+
+// Tween 驱动的移动平台（数据驱动）：平台从 box 起点沿 target 轴缓动到 to。
+// 一次性（连续往复需 Tween loop，见 requests REQ-004）。无 Velocity = 静态支撑，碰撞能载人。
+export interface Mover {
+  box: Box;
+  target: 'Transform.x' | 'Transform.y';
+  to: number;
+  duration: number;
+  easing?: 'linear' | 'easeIn' | 'easeOut' | 'easeInOut';
 }
 
 // 世界 1-1 · 初次配合：地面 + 三块居中平台 + 右侧协作目标区。
@@ -60,4 +73,11 @@ export const LEVEL_SCROLL: Level = {
   spawnA: { x: 60, y: 80 }, // 横跨 [45,75]，左端空地
   spawnB: { x: 110, y: 80 }, // 横跨 [95,125]，左端空地
   goal: { x: 1830, y: 305, width: 160, height: 130 }, // 右端 x[1750,1910]
+  background: 'bg.sky', // 背景贴图（资产清单 GAME_A_ASSETS）
+  goalArt: 'goal.flag', // 目标处旗帜
+  movers: [
+    // 升降平台（Tween 驱动，纯数据）：悬在地面玩家路径之上（不挡通行），作可见的移动平台演示。
+    // 一次性升起；连续往复待 REQ-004（Tween loop）。
+    { box: { x: 500, y: 300, width: 110, height: 18 }, target: 'Transform.y', to: 160, duration: 180, easing: 'easeInOut' },
+  ],
 };
