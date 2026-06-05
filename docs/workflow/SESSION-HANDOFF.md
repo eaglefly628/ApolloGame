@@ -1,62 +1,100 @@
-# Session 交接总结 · 2026-06-03
+# Session 交接 · 2026-06-04 —— 给下一任主程（Lead），读这一份即可无缝接手
 
-> ⛔ **最高原则（所有 session 先读、不得偏离）：`docs/design/data-driven-manifesto.md`**
-> —— 整个游戏是数据，不是代码；代码只属于引擎这台固定解释器。与它冲突的一律以它为准。
+> ⛔ **最高原则（先读，不可偏离）：`docs/design/data-driven-manifesto.md`**
+> —— 整个游戏是**数据**，不是代码；代码只属于引擎这台固定的确定性解释器。所有"该数据还是代码"的争议，
+> 用纲领里那把尺子裁决：**"最弱的 LLM 能不能也产出一模一样的？" 能→数据接口；不能(要写自由代码)→ 拒绝，做成 DSL 或下沉成 capability。**
 >
-> 新 session 先读本文件 + `progress.md` 恢复上下文。
->
-> **工作目录 = `MemBrain`**（本地 clone 目录名）；GitHub 远端仓库是 `eaglefly628/ApolloGame`。
-> 看到 cwd 是 `MemBrain` 而 git remote 是 `ApolloGame` 属正常,别当成走错仓库。
+> **工作目录 = `MemBrain`**(本地 clone 名)；远端 = `eaglefly628/ApolloGame`。两者不一致正常。
+> **分支 = `claude/mainbranch`(默认/主分支)。直接推，不开 PR。** 每次提交前 `fetch → rebase → push`(多 session 并行)。全绿(tsc + vitest + build)才推。
 
-## 1. 技术现状
+---
 
-- **348 passed**，`tsc --noEmit` 干净，`npm run build` 通过。分支 `claude/mainbranch`（即默认分支）。
-- **自主基础库进度（B 轴逻辑/数值/时间，2026-06-04）—— Condition→Event→Effect 主链已合龙**：
-  调度器**显式 `runsAfter/runsBefore`**（R10，破 RMW 伪环）；**Condition** 布尔树（叶子 resource/flag/state/**timer/string**，`tier2/condition.ts`）；**event-when**（Condition→Event，edge/level 信号）；**effect-apply**（Event→Effect：置 Flag/改 Resource/设 State，Commit 阶段，一拍反馈，`tier2/effect-apply.ts`）；**tween**（连续插值，`tier1/tween.ts`）；**resource 全局按 id 路由**（R11）；**string-variable** 扩展原子（R4，`atoms/string-variable/`）。
-  闭合性论证 + 待 Gemini review：`review-for-gemini-emergence.txt`（6 个开放问题）。下一步候选：打通多步链/Tier3 机制涌现示例、Effect 扩 spawn/destroy、Game A 侧 emergent（相机跟随/单向平台）。
-- **目录结构（2026-06-04 重组）**：所有 skill 收拢到 `src/skills/{atoms,tier1,tier2,tier3,tier4}`（tier3/tier4 占位待 request 拉动）。别名 `@skills/*`、`@atom-skills/*`(→skills/atoms)、`@assets/*`。见 `src/skills/README.md`。
-- **资产系统（新，表现层）**：`src/assets/` —— `AssetManager` + 可插拔 loader（Stub/Image），描述符分 4 kind（texture/atlas/sprite-sheet/**prerendered-sequence=3D→2D 离线一等公民**），统一归约为「源图+子矩形」。只按 string key 工作、不碰 snapshot → lockstep 安全。3D→2D 的门已留宽（不接 3D 工具链）。`CanvasRenderer` 可选接入。
-- **引擎**：`SystemPhase`（Update/Rotate/Resolve/PostResolve/Commit，先按 phase 分桶再组件拓扑）；
-  动态 AABB 树宽相位（每帧从组件重建 → rollback 安全）；`contact.ts`（box/circle 解析 + 凸多边形 **SAT**）；
-  `snapshot/restore` + 确定性 `hashSnapshot`；模拟路径只用 IEEE 确定算子（无 hypot/sin/cos）。
-- **Tier 1**：accel-apply、motion-apply、lifetime、rotation-apply、animation、hierarchy-resolve、**tween**（运动学/挂接/缓动）。
-- **Tier 2**：collision-resolve（顺序冲量求解器：逆质量+速度冲量+NGS 位置迭代）、ground-sense、jump、bounds-clamp、trigger-zone、friction、**event-when**（条件→信号）+ **condition**（布尔树求值，供 event-when 用）。
-- **物理**：凸多边形 SAT（仅平移；刚体旋转=接触点+力矩=Stage 2，未做）。
-- **联机**：双标签页帧同步平台跳跃（`LockstepClient`+BroadcastChannel+平台世界+跳跃+斜坡），确定性逐 tick 同哈希。`main.tsx` 即此 demo。
+## 0. 一分钟接手
 
-## 2. 并行多智能体工作流 —— 实验结论（重要）
+引擎广度已经很大(374 passed, tsc 干净, build 通过)，但**战略上刚做了一次重大纠偏**：用户立了"数据驱动第一性原则"，并指出我们**漂离了差异化命题**（见 §3、§4）。
+**下一个最高优先动作 = 接 R15：把 PB 写的"对话运行器"下沉成通用 `dialogue`(叙事解释器) capability** —— 这是数据驱动原则的**第一块试金石**(game 代码 → 通用 capability → 游戏变纯数据)，PB 已附实现+8 测试。详见 §5。
 
-本 session 试了"5 并行"（Lead 2 + PA 3）。结论：
+---
 
-- **小型、低耦合任务上，并行多智能体得不偿失**：协调开销（派发 / inbox-outbox / 跨 session 同步 / 合并 / 交叉 review / 人来回纠正）**远超写代码本身**。单 agent 顺序写更快。
-- **后台子 Agent 的真正价值 = 上下文隔离（省 Lead 的 context），不是提速。** 跨 session（独立 PA）= 纯协调开销，对"快任务"是负收益。
-- **并行只在两种情况值得**：① 总工作量会撑爆单个 context（必须拆给各有独立 context 的子 agent）；② 单块任务本身很大（几小时，墙钟并行收益压过协调）。两者本批都不满足。
-- **低耦合是双刃**：易并行，但也使顺序写很快、并行收益小。
-- **实测代价**：人来回纠正分工 2 次、`1515` 测试假象排查、白扔 PA 域 3 个已跑完产物。本批 PA 最终未交付其 3 个 → Lead 自补完成（rotation/animation/hierarchy），正印证"单 agent 更快"。
-- **建议默认工作模式**：Lead 单 session 顺序写小原子；后台子 Agent 仅在 context 将爆时用（纯为隔离）；inbox/outbox 更适合"跨 session 持久化/续上下文"，不适合"实时并行协作"。
+## 1. 第一性原则（宪法，§0 已指）
+游戏=数据 / 代码=解释器。四层：组合・导演/流程・自定义规则(DSL) 都是**数据**(AI/用户碰)；capability=引擎代码(只有引擎团队加)。缺表达力 → **下沉成通用 capability**，不在游戏写代码。唯一逃生舱=沙箱"自定义能力"(工程师写、非 AI、记债)。硬指标=游戏里"数据 vs 代码占比 → 100% 数据"。
 
-## 协作模型 v2（已敲定 —— 取代上面的"并行 skill programmer"）
+---
 
-不再"把 skill 任务传来传去"（那是过度设计）。新分工：
+## 2. 技术现状（已建）
 
-- **Lead（主程，本 session 角色）= 引擎 owner**：只接需求、实现/扩展引擎、守护确定性与契约、收敛重复需求为通用原子。
-- **Game Creator PA / PB = 引擎使用者**：各做一个小游戏；引擎做不到时**提需求**（写 `requests.md`），**不自己改引擎**。
-- **为什么这才是"对的并行"**：游戏 vs 引擎是不同 context、只通过"需求"窄接口耦合、两个不同游戏多样化压测引擎（需求被真实游戏拉动，避免 YAGNI）。
-- **边界**：引擎/共享层（`engine/**`、`skills/**`（atoms+tier1-4）、`assets/**`、`protocol`、`SystemPhase`）只接需求（可附建议补丁，**Lead 是合并闸门**）；游戏层 PA/PB 完全自由。
-- **新 Lead session 开局**：读本文件 + `game-creator-role.md`（发给 PA/PB）+ `requests.md`（需求池），然后等 PA/PB 的需求来驱动引擎演化。
+**引擎核心**：`World`(ECS, snapshot/restore/确定性 `hashSnapshot`，**Camera 已排除出 hash**=纯表现浮点)；`SystemPhase`(Update/Rotate/Resolve/PostResolve/Commit)+ **显式 `runsAfter/runsBefore`**(R10，破 RMW 伪环)；topological-sort。
 
-## 3. 待决策 / 下一步
+**Skill 库**(`src/skills/{atoms,tier1,tier2,tier3,tier4}`，见 `src/skills/README.md`)：
+- **atoms**：26 核心原子 + 扩展 `string-variable`(R4)。
+- **Tier1**：accel/motion/rotation/animation/hierarchy/lifetime + **tween**(连续插值，只驱动 Transform/Color，逻辑值不走 tween)。
+- **Tier2 物理(A 轴)**：collision-resolve(冲量求解器)/ground-sense/jump/bounds-clamp/trigger-zone/friction。
+- **Tier2 逻辑(B 轴) ⭐主链合龙**：**`condition`**(布尔树，叶子 resource/flag/state/timer/string，按 id 全局查 + `buildConditionLookup` O(1) 索引) → **`event-when`**(条件→Signal，edge/level) → **`effect-apply`**(信号→置 Flag/改 Resource/设 State，Commit 相位，一拍反馈) → 已建 **camera-follow**(涌现系统，写 Camera 纯数据)。
+- **resource 全局按 id 路由**(R11，`scope:'local'|'global'` 防遮蔽)。
+- **Tier3/Tier4**：占位空。
 
-- ~~**相位模型升级**：建议升级为显式 before/after 排序（runsAfter）。~~ **✅ 已落地（R10）**：`SystemDeclaration` 增加 `runsAfter`/`runsBefore`（phase 内，显式边覆盖相反方向的组件推断边），可定序两个 RMW 同组件的系统、打破伪环；整数 `SystemPhase` 保留并存。
-- **Stage 2 刚体旋转**：接触点（SAT + 裁剪）+ 力矩 + 转动惯量 → 方块落斜坡能转着贴合。按真实需求再上。
-- **真网络联机**：把 lockstep 的 `Channel` 从 BroadcastChannel 换成 WebRTC/WS（+ 信令/NAT），`LockstepClient` 不动。
-- **玩法层**：用 trigger-zone 做合作目标（开关/钥匙）；friction 让斜坡能站住。
+**基础设施(Phase 1，命令式服务/端口，sim 之外)** —— 全清单/状态见 `docs/design/phase1-game-infrastructure.md`：
+- **Batch I ✅**：camera-follow + 渲染器世界→屏幕投影(卷轴) ｜ `src/services/storage/`(StoragePort + Memory/LocalStorage + SaveSystem)。
+- **Batch II ✅**：`src/services/audio/`(AudioPort + Null/Web + AudioSync，按 EntityId+引用计数) ｜ 指针输入(`net/queued-input.ts` QueuedInputSource/PointerInputSource → 单例 `InputQueue`) ｜ 多行文本(`renderer/text-layout.ts` wrapLines + 渲染器缓存)。
+- **Batch III/IV 未做**：句柄管理/消息总线 ｜ scene-transition/主循环暂停单步。**(注意 §4：先别急着加宽。)**
+- 运行时：`runtime/engine.ts`(固定步长 + 输入按 tick 注入接缝 + hash)；`net/`(lockstep)；`debug/`(record/replay/snapshot/tracer = Studio 倒带地基)。
 
-## 4. 关键文件
+**两轮外部 review(Gemini)已收敛**：架构级 6 问 + 代码级 5 修，全部落地，归档 `docs/review/2026-06-04-*.md`。导出惯例：每批新代码拼成 `review-for-gemini-*.txt` 发用户喂 Gemini，结论回灌。
 
-- `docs/workflow/progress.md`（全局进度）
-- `src/engine/core/{world,types,topological-sort}.ts`、`src/engine/spatial/{aabb-tree,contact}.ts`
-- `src/skills/{atoms,tier1,tier2,tier3,tier4}/*`（见 `src/skills/README.md`）
-- `src/assets/*`（资产系统：asset-manager / asset-types / image-loader）
-- `src/net/lockstep-tab.ts`、`src/assembly/platformer-lockstep.ts`、`src/main.tsx`
-- `docs/workflow/{lead-protocol,programmer-role}.md`
+---
+
+## 3. 战略处境（诚实）
+
+- **差异化命题**：不是"我们有引擎"(市面一句话生成工具底下也有引擎)。是引擎的**结构**让 AI 生成不一样：**确定性+快照/回放**(产出可验证/可调试/可回滚/可迭代) + **原子→涌现+Condition→Event→Effect 是受约束可校验的组合靶子**(AI 拼合法积木，不裸写代码→杜绝 gameslop) + **TBF 策展资产**(防资产 slop)。
+- **Studio 愿景(真护城河，见 §6 待写文档)**：围绕一个**持久结构化"游戏制品"**的工具——实时预览 + **时间倒带/回放检视** + **外科手术式微调(AI/人，可 diff)** + **回放回归测试** + **TBF 填充到商用**。把市面"看一眼就没了"变成"看得懂/改得动/测得住/填得满/回不退"的闭环。**地基已有一半**(snapshot/replay、debug、TBF 资产、defineCapability describe 元数据、dev-tools 面板雏形)。
+- **垂直切片进行中**：用户已让 PA/PB 做"端到端能跑的真实游戏"。**真验收 = 多少能纯数据表达；必须写代码的地方 = 该下沉哪个 capability 的信号清单。**
+
+---
+
+## 4. 最高强度自审（接手前必读的风险，别被"374 passed"麻痹）
+
+- 🔴 **零集成**：camera-follow / AssetManager / AudioSync / SaveSystem / QueuedInputSource / tween / event-when / effect-apply —— **被真实游戏引用数=0**(已 grep 验证)。所有测试都是**单元级隔离**。集成层一行没写，而集成层是 bug 藏身处。
+- 🔴 **从没在浏览器里真正跑过、看过一帧**。"能 build"≠"能跑能玩画面对"。我们对"它真работает"的信心**全来自类型+单测，没有一次来自眼睛**。
+- 🟠 **曾违背自己的纪律**：从某点起切到"自主把所有基础设施做完"=当初警告的 YAGNI/过度设计。**已用第一性原则纠偏**(别再无脑加宽 Batch III/IV)。
+- 🟠 **性能债**：`World.query` 每次**全表扫描所有实体 + 分配新数组/元组**，每 system 每 tick 多次，无 archetype/索引；`collectRenderables` 每帧分配 N 对象(Gemini #4 已记延后)。N 小没事，上规模会卡。
+- 🟠 **物理浮点跨端确定性从未验证**：真正的 lockstep desync 雷是 collision-resolve(迭代+浮点)进 hash，**跨浏览器一致性一直 hand-wave，没测过**。
+- 🟠 **多 session 架构熵**：launcher/Python API/dev-tools/game-a-b 在不同 session 累积，曾有**冲突标记被提交进 main**。无单一 owner 守全局一致性。
+- **代码债清单**(manifesto §8)：`game-a/coop-goal.ts`、`game-b/dialogue-runner.ts`、`game-b/ui/VNStage.tsx`、`*.ts` 蓝图 —— 都是对第一性原则的负债，偿还=下沉成 capability / 蓝图变纯数据 / UI 变数据描述。
+
+---
+
+## 5. 待处理需求 + 优先级 + 强烈建议（`docs/workflow/requests.md` 全文）
+
+PA、PB **都没 hack，都按规矩提需求等 Lead**(协作模型在生效)。
+
+| 需求 | 提出 | 内容 | 性质 | 权重 |
+|---|---|---|---|---|
+| **R15** | PB | **对话运行器下沉成通用 `dialogue`(叙事解释器) capability** | **数据驱动第一块试金石** + 揭示缺失的"解释器 capability"大类(走声明式数据图：对话/任务/行为树)；PB 附实现+8测试 | 🥇 **最高** |
+| **R12** | PB | 蓝图组件数据**按 schema 静态校验** | AI 生成数据的"**静态校验器**"护城河，数据驱动刚需 | 🥈 高 |
+| REQ-002 | PA | **sensor/非实心触发体**(collision 跳过 trigger zone 接触对) | Game A 物理；**堵死全部第一批合作机制**(踩开关/限时门/重量台) | 🥉 高 |
+| REQ-003 | PA | ground-sense 认**动态支撑**(踩搭档/箱子能跳) | Game A 物理；堵死能力差异批 | 🥉 高 |
+| R14 | PB | 批量改资源 + `world.findByComponentId(type,idField,id)` 助手 | 创作面 DX，两游戏共写"按 id 找实体" | 中 |
+| R5/R7 | PB | condition(已基本被 event-when 覆盖)/resource-threshold(已被 Condition+edge 覆盖) | 多半可标 done/wontfix，复核 | 低 |
+| R9/R13 | PB | 资产 manifest review / 单例查询助手(部分=R3 已done) | — | 低 |
+
+**R15 的深层洞察**：`Condition→Event→Effect` 是**反应式**逻辑(当 X→做 Y)；但 VN/RPG 叙事是**走一张声明式图**，需要**解释器 capability**(读数据图、推进游标、驱动 state/text/effect)。`effect-apply` 只能 set 固定值，跳不到"当前节点的 next"(数据依赖转移)，也做不到"按 state 查脚本表→写 Text"。**对话运行器是这类"图遍历解释器"的第一个**，做它=证明数据驱动原则能落地 + 让 Game B 变纯数据 + 喂饱垂直切片。**Lead 接手该做的事**：review PB 的实现 → 泛化 → 定**声明式对话脚本 schema(契约)** → 落 `src/skills/`(或叙事模块) → game-b 删自己的代码变数据。
+
+---
+
+## 6. 关键文件
+- **宪法**：`docs/design/data-driven-manifesto.md`
+- **基础设施清单**：`docs/design/phase1-game-infrastructure.md`
+- **需求池**：`docs/workflow/requests.md`(R5–R15 + REQ-001~003)
+- **角色**：`docs/workflow/game-creator-role.md`(PA/PB 读，已对齐原则)
+- **review 归档**：`docs/review/2026-06-04-*.md` ｜ **Gemini 导出**：`review-for-gemini-*.txt`
+- **资产设计(PB)**：`docs/design/asset-manifest-and-manager.md`
+- **代码**：`src/skills/`、`src/assets/`、`src/services/{storage,audio}/`、`src/net/`、`src/renderer/`、`src/engine/core/`、`src/debug/`、`src/games/{game-a,game-b}/`
+- **待写(下一任可起)**：`docs/design/studio-vision.md`(§3 的 Studio 闭环) ｜ canonical `Game Manifest` 纯数据 schema(把 .ts 蓝图变数据制品)
+
+---
+
+## 7. 工作规范
+- 推 `claude/mainbranch`，**不开 PR**；每提交 `fetch → rebase → push`；**tsc + vitest + build 全绿才推**。
+- 每完成一批/一轮 review，把新代码拼成 `review-for-gemini-*.txt` 发用户喂 Gemini，结论回灌 requests/docs。
+- 提交署名 `noreply@anthropic.com` / `Claude`(避免 unverified)。
+- 任何"该数据还是代码"用 §0 那把尺子裁决。**别再无脑加宽引擎**——优先：还数据驱动的债(R15) + 证一个真实游戏端到端跑起来。
