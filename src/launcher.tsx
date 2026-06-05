@@ -60,6 +60,16 @@ const GAMES: GameEntry[] = [
     icon: '🌸',
     status: 'playable',
   },
+  {
+    id: 'game-c',
+    title: 'Game C: Stitch & Style',
+    subtitle: '缝纫物语 · 换装三消',
+    description: '针线主题三消攒材料，缝纫店养成做新衣，爱诗视频秀出来。v0.1 工坊预览（三消核心待引擎能力 REQ-C-001）。',
+    color: '#3a1e2c',
+    accentColor: '#ff7aa2',
+    icon: '👗',
+    status: 'playable',
+  },
 ];
 
 // ══════════════════════════════════════
@@ -323,6 +333,7 @@ function GameRunner({ gameId, onBack }: { gameId: string; onBack: () => void }) 
     const loaders: Record<string, () => Promise<{ mount: (el: HTMLElement) => () => void }>> = {
       'game-a': () => import('./game-a.js'),
       'game-b': () => import('./game-b.js'),
+      'game-c': () => import('./game-c.js'),
     };
     const loader = loaders[gameId];
     if (!loader) return;

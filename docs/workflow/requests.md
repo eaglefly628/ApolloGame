@@ -292,6 +292,81 @@
 
 ---
 
+> **PC 缺口分析综述（2026-06-05，Game C《缝纫物语》女孩换装三消）**
+> 引擎今天=确定性 ECS（26 原子 + Tier1-2 + Condition→Event→Effect + tween + 贴图/音频后端 + 按 tick 指针注入）。
+> Game C 要的「网格消除 + 资源养成 + AIGP 视频输出」三条维度，A/B 都没压过。
+> 已对照真实代码确认：**能用现成能力表达的部分我已全部装配成纯数据**（`src/games/game-c/`：材料经济=resource、缝纫店升级链=event-when+effect-apply、外观=state/text、爱诗提示词=数据表；`game-c.test.ts` 5 测试证明升级链确定性点亮，零游戏系统代码）。下列是**真正表达不了、需引擎下沉**的缺口，我**未在游戏层 hack**，按角色规矩提需求。
+
+---
+
+### REQ-C-001 · [2026-06-05] · PC · Game C · status: open · 优先级: **P0**（阻塞可玩棋盘）
+
+**标题**：三消棋盘机制 —— 网格消除（交换 / 找连 / 消除产出 / 重力 / 补块 / 连锁）通用 capability
+
+- **想实现的游戏行为**：6 种材料棋子的网格三消。点选相邻两棋交换；形成 ≥3 同色连线则消除，并产出对应材料；空位上方棋子下落、顶部按确定性随机补新；连锁(cascade)继续结算。
+- **已经试了什么**：用现成原子把**能表达的全做成数据**了——材料经济(`resource`)、缝纫店解锁链(`event-when`+`effect-apply`)、外观(`state`/`text`)，并测试通过(`src/games/game-c/`)。棋盘**表现**(格子摆位/底色/字形)也能用 `transform`+`shape`+`color`+`text` 纯数据摆出来。
+- **卡在哪 / 缺什么**：现有数据底座(原子 + Condition→Event→Effect + tween)**无法表达带「网格邻接扫描 / 循环」的算法**：`Condition` 只求值布尔树，`effect-apply` 只能 set-flag/modify-resource/set-state 到**固定目标**，二者都没有「遍历整盘找 ≥3 连线 / 按列下沉 / 补块」的能力。这不是换种组合能补的，是**缺一格通用机制**——周期表「涌现验证」表里确实没有 Match-3 这格。
+- **建议方案（建议补丁；实现 + 确定性 review 归 Lead）**：下沉为通用 Tier3 capability `match3-board`，**config 驱动**(任意行列 / 种类数 / 产出映射)、**确定性**(用 `RandomSeed` 整数 PRNG 补块，仅 `+−×÷`，不碰浮点超越函数 → lockstep / 录放安全)。最简契约草案：
+
+  ```
+  Component MatchBoard {              // 棋盘单例（config + 相位状态机）
+    cols, rows, kindCount: number
+    cells: number[]                  // 长 cols*rows，值=种类 0..kindCount-1，-1=空
+    kindResource: string[]           // 种类→产出 Resource id（消该种 → ResourceModify 该 id）
+    coinResource: string; coinPerTile: number
+    phase: string                    // 'idle'|'swapped'|'match'|'clear'|'fall'|'refill'
+    selIndex, swapA, swapB: number   // 选中格 / 本次交换两格（无连线则回退）
+    stepTimer, stepDelay: number     // 相位推进节拍（让连锁可见）
+  }
+  Systems（确定性、相位定序）：
+    match-resolve：swapped→match(扫全盘找≥3横/竖) → clear(标记格各按 kindResource
+      发 ResourceModify +coin、置 -1) → fall(每列下沉补空) → refill(顶部空位 nextRandom 补)
+      → match(连锁)；稳定无连线→idle。交换后首扫无连线 → 回退 swapA/swapB → idle。
+    match-view-sync：由 cells 写各「视图格子」实体的 Color.tint/Text.content（Commit 相位）。
+  ```
+  - 产出走现成 `ResourceModify`(写到预建「每材料一个」承载实体，零实体 churn) → `resource-apply` 结算 → **game-c 已装配好的升级 / 换装 / 展示链自动点亮，游戏数据不动一行**。
+  - 「视图格子」实体由游戏蓝图静态建好(纯数据)，capability 只改其外观，不创建 / 销毁实体。
+- **影响面 / 复用**：任何三消 / 连连看 / 网格解谜复用 —— 周期表该补的「Match-3」机制格，写一次复利。
+- **不阻塞**：v0.1 养成 / 展示数据层已独立可回归；本需求阻塞 v0.2 起的可玩棋盘。
+
+---
+
+### REQ-C-002 · [2026-06-05] · PC · Game C · status: open · 优先级: P1
+
+**标题**：通用「可点击实体」—— 指针命中 tag 实体 → 配置化语义动作 / 信号
+
+- **想实现的游戏行为**：点棋盘某格(选中 / 交换)；点缝纫店按钮(缝制)。
+- **已经试了什么**：R3 已落地输入接缝(`PointerInputSource` → 单例 `InputQueue`，屏幕坐标按 tick 确定性注入)；`renderable.ts` 已有 `screenToWorld` 逆投影。
+- **卡在哪 / 缺什么**：R3 明确「命中测试 / 语义解析归游戏层」，且 `action-map` 无 system。没有通用「屏幕点 → 命中世界实体 → 发一个配置好的 `Signal`/`Action`」能力。每个游戏自己写命中 = 游戏层逻辑代码(违反第一性原则)。
+- **建议方案**：通用 `clickable` capability —— 实体挂 `Clickable{ action }` + `Transform` + `Shape`；系统读 `InputQueue` 的 down 坐标 → `screenToWorld`(已有) → AABB / spatial-query(W2) 命中 → 在命中实体上产出 `Action{name}`/`Signal`。确定性(只读 InputQueue + 几何比较)。
+- **复用**：点击器 / 网格 / 按钮 / 拖拽起点通用；也是 REQ-C-001 交换输入的来源。
+
+---
+
+### REQ-C-003 · [2026-06-05] · PC · Game C · status: open · 优先级: P2
+
+**标题**：通用「配方 / 消费」经济 —— 信号触发时材料足够则扣料并解锁（主动缝制）
+
+- **想实现的游戏行为**：玩家点「缝制初心围裙」→ 若材料够，扣掉材料、解锁该衣服(主动养成，区别于 v0.1 的被动阈值解锁)。
+- **已经试了什么**：被动里程碑解锁已用 `event-when` 阈值做到。但「**主动花费**(扣料换衣)」表达不了。
+- **卡在哪 / 缺什么**：`effect-apply` 的 `modify-resource` 是无条件加减，**不校验「是否付得起」**，也不能**原子地「同时扣多项 + 置 flag」**；事件型组件一实体一份(R14)，一次扣多料不便。缺「可负担则成交、否则整单不动」的通用经济能力。
+- **建议方案**：通用 `craft-recipe` capability —— `CraftRecipe{ onSignal, costs:[{id,amount}], grantsFlag, grantsState? }`；系统在 `onSignal` 在场且**所有 costs 可负担**时，一次性扣全部料 + 置 flag(/set-state)，否则整单不动(原子性)。确定性(只读写确定数值)。
+- **复用**：商店 / 合成 / 建造 / 科技树通用。可与 R14「批量改资源」合并考虑。
+
+---
+
+### REQ-C-004 · [2026-06-05] · PC · 框架级（Game C 拉动） · status: open · 优先级: 架构级 · **类型: 表现后端**
+
+**标题**：爱诗(AIGP)视频生成后端 —— 消费「外观 → 提示词」产出短视频展示（周期表「扩展 C」X4–X7 首次落地拉动）
+
+- **想实现的游戏行为**：把女孩当前换装(lookId) → 一段提示词 → 爱诗生成竖屏短视频做展示 / 分享。这是 Game C 的「输出点」。
+- **已经试了什么**：已把「外观 → 视频提示词」做成**纯数据表**(`theme.ts` `LOOK_PROMPTS` / `composeAishePrompt`)，即周期表 **X4 ShadowDictionary** 的数据形态。
+- **卡在哪 / 缺什么**：全项目**无任何视频 / AIGP 后端**(类比 R1 之前无贴图、R8 之前无音频)。提示词只是字符串，没人拿去生成。这是**表现层旁路、不进确定性 sim**。
+- **建议方案**：类比 R1(资产) / R8(音频)，加一个 AIGP 端口(`EnginePort` 风格)：`AishePort.generate(prompt, opts) → videoHandle`，`NullAishePort`(headless / 测试静默) + 真后端(调外部视频生成 API)。周期表「扩展 C」X4–X7(`ShadowDictionary` / `SemanticMaterial` / `ConditioningMask` / `LatentAnchor`)是其数据契约。**确定性边界**：旁路异步、绝不碰 world / snapshot / hash(与资产 / 音频同纪律)。
+- **类型**：框架级(类比 R9 资产文档)，可先出设计文档，再落 Null 端口 + 真后端。
+
+---
+
 ### [2026-06-04] · PA · Game A · status: open · REQ-004 Tween 加 loop / pingpong（连续往复移动平台）
 
 > 背景：用户定原则——游戏要**数据驱动**，能用组件数据表达就别写游戏专属代码。本需求正是为了让"移动平台"留在数据层。
