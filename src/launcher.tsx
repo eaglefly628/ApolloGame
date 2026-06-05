@@ -44,11 +44,11 @@ const GAMES: GameEntry[] = [
     id: 'game-a',
     title: 'Game A: Co-op Adventure',
     subtitle: '双人协作冒险',
-    description: '双人成行风格。踩开关、抛射搭档、绳索摆荡，只有合作才能通关。',
+    description: '双人成行风格卷轴合作平台跳跃：两人携手穿越大关卡、合作相机跟随、踩升降台，到右端会合通关。',
     color: '#1e3a2f',
     accentColor: '#4ade80',
     icon: '🤝',
-    status: 'coming-soon',
+    status: 'playable',
   },
   {
     id: 'game-b',

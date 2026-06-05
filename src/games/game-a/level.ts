@@ -36,6 +36,8 @@ export interface Mover {
   to: number;
   duration: number;
   easing?: 'linear' | 'easeIn' | 'easeOut' | 'easeInOut';
+  loop?: 'none' | 'restart' | 'pingpong'; // 连续往复（REQ-004）；缺省 none = 一次性升降
+  loops?: number; // 程数；缺省无限
 }
 
 // 世界 1-1 · 初次配合：地面 + 三块居中平台 + 右侧协作目标区。
@@ -76,8 +78,7 @@ export const LEVEL_SCROLL: Level = {
   background: 'bg.sky', // 背景贴图（资产清单 GAME_A_ASSETS）
   goalArt: 'goal.flag', // 目标处旗帜
   movers: [
-    // 升降平台（Tween 驱动，纯数据）：悬在地面玩家路径之上（不挡通行），作可见的移动平台演示。
-    // 一次性升起；连续往复待 REQ-004（Tween loop）。
-    { box: { x: 500, y: 300, width: 110, height: 18 }, target: 'Transform.y', to: 160, duration: 180, easing: 'easeInOut' },
+    // 连续升降电梯（Tween pingpong，REQ-004，纯数据）：y 在 300↔160 往复，碰撞载人上下。
+    { box: { x: 500, y: 300, width: 110, height: 18 }, target: 'Transform.y', to: 160, duration: 180, easing: 'easeInOut', loop: 'pingpong' },
   ],
 };

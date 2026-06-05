@@ -10,6 +10,8 @@ const svg = (body: string, w: number, h: number): string =>
 
 export const ASSET_BG = 'bg.sky';
 export const ASSET_GOAL = 'goal.flag';
+export const ASSET_PLAYER_A = 'player.a';
+export const ASSET_PLAYER_B = 'player.b';
 
 export const GAME_A_ASSETS: AssetManifest = [
   {
@@ -38,5 +40,31 @@ export const GAME_A_ASSETS: AssetManifest = [
     ),
     width: 80,
     height: 120,
+  },
+  {
+    kind: 'texture',
+    key: ASSET_PLAYER_A,
+    src: svg(
+      `<rect x="1" y="1" width="28" height="28" rx="8" fill="rgb(59,130,246)"/>` +
+        `<circle cx="10" cy="12" r="4" fill="white"/><circle cx="20" cy="12" r="4" fill="white"/>` +
+        `<circle cx="11" cy="13" r="2" fill="rgb(20,30,60)"/><circle cx="21" cy="13" r="2" fill="rgb(20,30,60)"/>`,
+      30,
+      30,
+    ),
+    width: 30,
+    height: 30,
+  },
+  {
+    kind: 'texture',
+    key: ASSET_PLAYER_B,
+    src: svg(
+      `<rect x="1" y="1" width="28" height="28" rx="8" fill="rgb(251,146,60)"/>` +
+        `<circle cx="10" cy="12" r="4" fill="white"/><circle cx="20" cy="12" r="4" fill="white"/>` +
+        `<circle cx="11" cy="13" r="2" fill="rgb(80,40,10)"/><circle cx="21" cy="13" r="2" fill="rgb(80,40,10)"/>`,
+      30,
+      30,
+    ),
+    width: 30,
+    height: 30,
   },
 ];
