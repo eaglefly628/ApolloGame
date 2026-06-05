@@ -394,6 +394,19 @@ export interface Effect extends Component {
   value: number | string | boolean; // modify-resource=数值增量；set-flag=布尔；set-state=目标状态名
 }
 
+// ── craft-recipe ── 配方/经济：信号到达且所有 costs 可负担时，**原子地**扣全部料 + 产出 gains + 置 flag/state。
+// 「可负担才成交，否则整单不动」(REQ-C-003 主动缝制/商店/合成/建造) + 「一次原子改多项资源」(R14 选项批量改值)
+// 归一为一个经济/批量改值 capability。effect-apply 的 modify-resource 是无条件单项加减；本能力是它的
+// 条件化、原子化、多项化超集。跑在 Commit 阶段（消费 Update 产的 Signal）。确定性：只读/写确定数值。
+export interface CraftRecipe extends Component {
+  readonly type: 'CraftRecipe';
+  onSignal: string; // 触发信号名（通常来自 clickable / event-when）
+  costs: ReadonlyArray<{ id: string; amount: number }>; // 需扣除的资源（amount>0=消耗量）；空数组=无成本（纯批量产出）
+  gains?: ReadonlyArray<{ id: string; amount: number }>; // 成交时同时增加的资源（可选；批量改值/合成产物）
+  grantsFlag?: string; // 成交时置 true 的 Flag id（可选）
+  grantsState?: { fsmId: string; value: string }; // 成交时设置的 State（可选）
+}
+
 // ── string-variable ── 命名字符串容器（周期表 X3：对话/换装/结局标识刚需）。
 export interface StringVar extends Component {
   readonly type: 'StringVar';
