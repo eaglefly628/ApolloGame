@@ -12,12 +12,24 @@ export class LocalStorageStoragePort implements StoragePort {
     return this.prefix + '__index__';
   }
 
+  // 原子性兜底（Gemini Q6）：localStorage 无事务，两步写（数据→索引）任一步可能抛 QuotaExceededError，
+  // 导致索引与数据脱节、整库坏死。这里先存数据，索引写失败则回滚数据写，保持二者一致后再抛错。
+  // 真正的事务/大容量请迁 IndexedDB（后续）。
   async save(slot: string, data: SaveGame): Promise<void> {
-    localStorage.setItem(this.key(slot), JSON.stringify(data));
-    const index = await this.list();
-    const next = index.filter((m) => m.slot !== slot);
-    next.push(data.meta);
-    localStorage.setItem(this.indexKey, JSON.stringify(next));
+    const dataKey = this.key(slot);
+    const prevData = localStorage.getItem(dataKey); // 失败回滚用
+    localStorage.setItem(dataKey, JSON.stringify(data)); // 步骤1：失败则直接抛（无需回滚）
+    try {
+      const index = await this.list();
+      const next = index.filter((m) => m.slot !== slot);
+      next.push(data.meta);
+      localStorage.setItem(this.indexKey, JSON.stringify(next)); // 步骤2
+    } catch (e) {
+      // 步骤2失败 → 回滚步骤1，保证"数据存在但索引无此条"的脱节不会发生。
+      if (prevData === null) localStorage.removeItem(dataKey);
+      else localStorage.setItem(dataKey, prevData);
+      throw e;
+    }
   }
 
   async load(slot: string): Promise<SaveGame | null> {

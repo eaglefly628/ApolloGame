@@ -13,11 +13,16 @@ export function hashSnapshot(snap: WorldSnapshot): string {
   return fnv1a(canonical(snap));
 }
 
+// 纯表现/可由表现层重算的组件不进哈希：它们含浮点（zoom/offset），跨端 JIT/FMA 可能 1 ULP 漂移，
+// 若纳入校验会误判 desync（Gemini Q2）。Camera 即此类——逻辑不读它，渲染期每帧由 camera-follow 重算。
+const NON_DETERMINISTIC = new Set<string>(['Camera']);
+
 function canonical(snap: WorldSnapshot): string {
   const parts: string[] = [];
   for (const entityId of Object.keys(snap).sort()) {
     const comps = snap[entityId];
     for (const type of Object.keys(comps).sort()) {
+      if (NON_DETERMINISTIC.has(type)) continue; // 跳过纯表现组件
       const comp = comps[type] as unknown as Record<string, unknown>;
       const fields = Object.keys(comp)
         .sort()

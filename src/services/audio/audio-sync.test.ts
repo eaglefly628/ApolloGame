@@ -19,7 +19,7 @@ describe('AudioSync — 消费 Sound 驱动 AudioPort', () => {
     sync.sync(w);
     expect(port.playing.has('daily')).toBe(true);
 
-    // 再 sync 一次：已在放 → 不重复 play
+    // 再 sync 一次：同实体已在放 → 不重复 play
     sync.sync(w);
     expect(port.log.filter((l) => l.op === 'play' && l.clipId === 'daily')).toHaveLength(1);
 
@@ -37,5 +37,25 @@ describe('AudioSync — 消费 Sound 驱动 AudioPort', () => {
     addSound(w, 'b', 'sfx');
     sync.sync(w);
     expect(port.playing).toEqual(new Set(['bgm', 'sfx']));
+  });
+
+  it('金币问题（Q4）：同 clip 多实例按 EntityId 独立追踪；引用计数归零才 stop', () => {
+    const port = new NullAudioPort();
+    const sync = new AudioSync(port);
+    const w = new World();
+    addSound(w, 'coin1', 'coin');
+    addSound(w, 'coin2', 'coin');
+    sync.sync(w); // 两个实例 → play 两次
+    expect(port.log.filter((l) => l.op === 'play' && l.clipId === 'coin')).toHaveLength(2);
+
+    // 销毁一个 → 仍有一个在放，不该 stop
+    w.destroyEntity('coin1');
+    sync.sync(w);
+    expect(port.log.filter((l) => l.op === 'stop' && l.clipId === 'coin')).toHaveLength(0);
+
+    // 销毁最后一个 → 引用计数归零 → stop
+    w.destroyEntity('coin2');
+    sync.sync(w);
+    expect(port.log.filter((l) => l.op === 'stop' && l.clipId === 'coin')).toHaveLength(1);
   });
 });

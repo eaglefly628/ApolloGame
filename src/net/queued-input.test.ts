@@ -1,7 +1,7 @@
 import { describe, it, expect } from 'vitest';
 import { World } from '@engine/core/world.js';
-import type { RawInput } from '@engine/protocol/components.js';
-import { QueuedInputSource, applyCommands } from './index.js';
+import type { InputQueue } from '@engine/protocol/components.js';
+import { QueuedInputSource, applyCommands, INPUT_QUEUE_ENTITY } from './index.js';
 
 describe('QueuedInputSource — 异步事件按 tick 确定性释放', () => {
   it('enqueue 的事件在下一 commandsForTick 释放后清空', () => {
@@ -17,19 +17,22 @@ describe('QueuedInputSource — 异步事件按 tick 确定性释放', () => {
   });
 });
 
-describe('applyCommands — actions 落成 RawInput（每 tick 先清后标）', () => {
-  it('命令的 actions → RawInput 实体；下一 tick 无 actions 则清掉', () => {
+describe('applyCommands — actions 落成单例 InputQueue（零实体增删，Q3）', () => {
+  const queue = (w: World) => w.getComponent<InputQueue>(INPUT_QUEUE_ENTITY, 'InputQueue')!;
+
+  it('actions 写进 InputQueue.actions；下一 tick 无 actions 则覆写为空', () => {
     const w = new World();
     const src = new QueuedInputSource('p1');
     src.enqueueAction('choice:1', { x: 10, y: 20 });
 
     applyCommands(w, src.commandsForTick(1));
-    const raw = w.query('RawInput').map(([id]) => w.getComponent<RawInput>(id, 'RawInput'));
-    expect(raw).toHaveLength(1);
-    expect(raw[0]).toMatchObject({ key: 'choice:1', x: 10, y: 20, source: 'p1' });
+    expect(queue(w).actions).toHaveLength(1);
+    expect(queue(w).actions[0]).toMatchObject({ key: 'choice:1', x: 10, y: 20, source: 'p1' });
 
-    // 下一 tick 无输入 → RawInput 被清
+    // 下一 tick 无输入 → 整体覆写为空（不新建/销毁实体）
     applyCommands(w, src.commandsForTick(2));
-    expect(w.query('RawInput')).toHaveLength(0);
+    expect(queue(w).actions).toHaveLength(0);
+    // 仍是同一个单例实体
+    expect(w.queryEntities('InputQueue')).toEqual([INPUT_QUEUE_ENTITY]);
   });
 });

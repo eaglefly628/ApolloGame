@@ -17,6 +17,23 @@ export function getCameraView(world: IWorld): CameraView | null {
   return null;
 }
 
+// 屏幕坐标 → 世界坐标：CanvasRenderer 投影 translate(中心)→scale(zoom)→translate(-center) 的逆变换
+// （Gemini Q5）。指针/点击拿到的是屏幕坐标，命中测试前用它换回世界坐标，免得每个游戏自己手写逆矩阵。
+// 无相机（cam=null）时屏幕即世界。
+export function screenToWorld(
+  screenX: number,
+  screenY: number,
+  cam: CameraView | null,
+  canvasWidth: number,
+  canvasHeight: number,
+): { x: number; y: number } {
+  if (!cam) return { x: screenX, y: screenY };
+  return {
+    x: (screenX - canvasWidth / 2) / cam.zoom + cam.centerX,
+    y: (screenY - canvasHeight / 2) / cam.zoom + cam.centerY,
+  };
+}
+
 // 引擎无关的渲染数据。任何后端（Ascii / Canvas / Phaser / AI 视频）都消费同一份。
 export interface Renderable {
   entityId: string;

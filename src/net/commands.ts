@@ -1,15 +1,11 @@
 import type { IWorld, EntityId } from '@engine/core/types.js';
-import type { Velocity, Controllable, Action, RawInput } from '@engine/protocol/components.js';
+import type { Velocity, Controllable, Action, InputQueue, RawInputData } from '@engine/protocol/components.js';
 
-// 一条原始输入事件（指针/点击/自定义），按 tick 确定性注入世界为 RawInput。x/y=世界或屏幕坐标，
-// phase 如 'down'|'up'|'move'|'click'，key 可承载语义动作名（如 'choice:2'）。命中测试归游戏层。
-export interface RawInputData {
-  readonly source: string;
-  readonly key?: string;
-  readonly x?: number;
-  readonly y?: number;
-  readonly phase?: string;
-}
+// RawInputData 定义在 protocol（与 InputQueue 同处），此处 re-export 保持 @net 调用方不变。
+export type { RawInputData };
+
+// 输入队列单例的实体 id：每 tick 整体覆写其 InputQueue.actions（零实体分配）。
+export const INPUT_QUEUE_ENTITY = 'global-input';
 
 // ═══════════════════════════════════════════════════════════════
 //  输入模型 — 联机的"接缝"
@@ -61,45 +57,48 @@ export function orderCommands(commands: readonly Command[]): Command[] {
   );
 }
 
-// 把"意图"翻译成"世界写入"：input → simulation 的桥。
-// 先把所有 Controllable 实体的速度清零（无输入即静止），再按命令写速度。
-// reset-then-apply 让它无状态：本 tick 没收到某玩家命令 → 其实体速度归零。
+// 把"意图"翻译成"世界写入"：input → simulation 的桥。拆成两件关注点（Gemini Q3）：
+// applyMovement（连续控制：速度/跳跃）+ applyRawActions（离散事件 → 单例 InputQueue）。
 export function applyCommands(world: IWorld, commands: readonly Command[]): void {
-  // reset-then-apply：无输入即静止。但有重力(Acceleration)的实体，其垂直速度归重力/跳跃管，
-  // 输入不清 vy（否则每 tick 抹掉重力，平台跳跃无从谈起）。Action 每 tick 重算，故起跳意图无状态。
+  const ordered = orderCommands(commands);
+  applyMovement(world, ordered);
+  applyRawActions(world, ordered);
+}
+
+// 连续控制：先把所有 Controllable 速度清零（无输入即静止），再按命令写速度/跳跃意图。
+// reset-then-apply 让它无状态：本 tick 没收到某玩家命令 → 其实体速度归零。
+export function applyMovement(world: IWorld, ordered: readonly Command[]): void {
   for (const [id] of world.query('Controllable', 'Velocity')) {
     const v = world.getComponent<Velocity>(id, 'Velocity')!;
     v.vx = 0;
+    // 有重力(Acceleration)的实体，其 vy 归重力/跳跃管，输入不清（否则每 tick 抹掉重力）。
     if (!world.hasComponent(id, 'Acceleration')) v.vy = 0;
     world.removeComponent(id, 'Action');
   }
-  // 原始输入事件每 tick 重算：先清上一 tick 的 RawInput 实体（先清后标，与 trigger/signal 同范式）。
-  for (const [id] of world.query('RawInput')) world.destroyEntity(id);
-
-  const ordered = orderCommands(commands);
   for (const cmd of ordered) {
     const target = findControlled(world, cmd.playerId);
-    if (target !== undefined) {
-      const v = world.getComponent<Velocity>(target, 'Velocity');
-      const c = world.getComponent<Controllable>(target, 'Controllable');
-      if (v && c) {
-        v.vx = cmd.move.dx * c.speed;
-        // 俯视实体：vy 也由输入直接控制；平台实体（有重力）：vy 留给重力/跳跃，输入不碰。
-        if (!world.hasComponent(target, 'Acceleration')) v.vy = cmd.move.dy * c.speed;
-        // 跳跃意图 → 语义动作；jump 系统只在 Grounded 时把它转成向上冲量（离地即不可二段跳）。
-        if (cmd.jump) world.addComponent(target, { type: 'Action', name: 'jump', value: 1 } as Action);
-      }
-    }
-    // 原始输入事件 → RawInput 实体（确定性 id：playerId+序号），命中测试/语义解析归游戏层。
-    if (cmd.actions) {
-      for (let i = 0; i < cmd.actions.length; i++) {
-        const a = cmd.actions[i];
-        const rid = `rawinput:${cmd.playerId}:${i}`;
-        world.createEntity(rid);
-        world.addComponent(rid, { type: 'RawInput', source: a.source, key: a.key, x: a.x, y: a.y, phase: a.phase } as RawInput);
-      }
-    }
+    if (target === undefined) continue;
+    const v = world.getComponent<Velocity>(target, 'Velocity');
+    const c = world.getComponent<Controllable>(target, 'Controllable');
+    if (!v || !c) continue;
+    v.vx = cmd.move.dx * c.speed;
+    if (!world.hasComponent(target, 'Acceleration')) v.vy = cmd.move.dy * c.speed;
+    if (cmd.jump) world.addComponent(target, { type: 'Action', name: 'jump', value: 1 } as Action);
   }
+}
+
+// 离散原始输入事件：整体覆写单例实体上的 InputQueue.actions（零实体创建/销毁，规避 GC 碎片）。
+// 游戏层读 InputQueue.actions 做命中测试/语义解析。每 tick 覆写 = 先清后标的无状态语义。
+export function applyRawActions(world: IWorld, ordered: readonly Command[]): void {
+  const actions: RawInputData[] = [];
+  for (const cmd of ordered) {
+    if (cmd.actions) actions.push(...cmd.actions);
+  }
+  if (!world.hasComponent(INPUT_QUEUE_ENTITY, 'InputQueue')) {
+    world.createEntity(INPUT_QUEUE_ENTITY);
+    world.addComponent(INPUT_QUEUE_ENTITY, { type: 'InputQueue', actions: [] } as InputQueue);
+  }
+  world.getComponent<InputQueue>(INPUT_QUEUE_ENTITY, 'InputQueue')!.actions = actions;
 }
 
 function findControlled(world: IWorld, playerId: string): EntityId | undefined {

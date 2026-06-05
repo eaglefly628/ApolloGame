@@ -1,7 +1,7 @@
 import type { Command, InputSource, RawInputData } from './commands.js';
 
 // 队列输入源 —— 把异步到达的"原始输入事件"(指针/点击/UI onClick)缓冲，在 tick 边界确定性释放（R3）。
-// 这就是 PB 要的"React 事件 → 当帧 input source"接缝：UI 侧 enqueue，引擎按 tick 取走灌进世界为 RawInput。
+// 这就是 PB 要的"React 事件 → 当帧 input source"接缝：UI 侧 enqueue，引擎按 tick 取走写进单例 InputQueue。
 // 异步事件归并到具体 tick 的命令集 = 确定性注入（与键盘源同一 InputSource 契约，可被 MultiInputSource 合并）。
 export class QueuedInputSource implements InputSource {
   private queue: RawInputData[] = [];

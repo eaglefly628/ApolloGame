@@ -201,6 +201,23 @@ export interface Action extends Component {
   value: number;
 }
 
+// 一条原始输入事件（指针/点击/UI 动作）。x/y=屏幕或世界坐标，phase 如 'down'|'up'|'move'|'action'，
+// key 可承载语义动作名（如 'choice:2'）。命中测试/语义解析归游戏层。
+export interface RawInputData {
+  readonly source: string;
+  readonly key?: string;
+  readonly x?: number;
+  readonly y?: number;
+  readonly phase?: string;
+}
+
+// ── 输入队列（单例）── 本 tick 的原始输入事件列表。挂在唯一实体上，每 tick 整体覆写（零实体分配），
+// 取代"每次点击建/毁 RawInput 实体"的高频 GC 范式。游戏层读 actions 做命中/语义解析。
+export interface InputQueue extends Component {
+  readonly type: 'InputQueue';
+  actions: ReadonlyArray<RawInputData>;
+}
+
 // ── net: controllable ── 该实体由哪个玩家(playerId)操控；input 命令按 speed 写入其 Velocity
 export interface Controllable extends Component {
   readonly type: 'Controllable';
