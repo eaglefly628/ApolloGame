@@ -20,12 +20,23 @@ export class WebAudioPort implements AudioPort {
   }
 
   play(clipId: string, opts?: PlayOptions): void {
-    const el = this.element(clipId);
-    if (!el) return;
-    el.loop = opts?.loop ?? false;
-    el.volume = (opts?.volume ?? 1) * this.master;
-    el.currentTime = 0;
-    void el.play().catch(() => {}); // 自动播放策略可能拒绝 → 静默
+    const base = this.element(clipId);
+    if (!base) return;
+    const volume = (opts?.volume ?? 1) * this.master;
+    if (opts?.loop) {
+      // 循环(BGM)：用稳定缓存实例，可被 stop()/setMasterVolume 控制。
+      base.loop = true;
+      base.volume = volume;
+      base.currentTime = 0;
+      void base.play().catch(() => {});
+    } else {
+      // 一次性(SFX)：克隆节点播放，允许同源多重并发，避免把上一声 currentTime=0 暴力掐断
+      // （HTML5 <audio> 单源不支持并发，Gemini 代码级 #1）。克隆 fire-and-forget，播完由 GC 回收。
+      // 长远应转 Web Audio API(AudioContext) 彻底解决并发与精准时序。
+      const clone = base.cloneNode() as HTMLAudioElement;
+      clone.volume = volume;
+      void clone.play().catch(() => {});
+    }
   }
   stop(clipId: string): void {
     const el = this.elements.get(clipId);

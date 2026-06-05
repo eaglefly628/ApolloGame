@@ -34,13 +34,25 @@ export class LocalStorageStoragePort implements StoragePort {
 
   async load(slot: string): Promise<SaveGame | null> {
     const raw = localStorage.getItem(this.key(slot));
-    return raw ? (JSON.parse(raw) as SaveGame) : null;
+    if (!raw) return null;
+    // 玩家可能在 DevTools 篡改/破坏 JSON：解析失败按"损坏存档"处理（返回 null），
+    // 绝不向上抛异常炸毁主循环/存档界面（Gemini 代码级 #5）。
+    try {
+      return JSON.parse(raw) as SaveGame;
+    } catch {
+      return null;
+    }
   }
 
   async list(): Promise<SaveMeta[]> {
     const raw = localStorage.getItem(this.indexKey);
-    const index = raw ? (JSON.parse(raw) as SaveMeta[]) : [];
-    return index.sort((a, b) => b.timestamp - a.timestamp);
+    if (!raw) return [];
+    try {
+      const index = JSON.parse(raw) as SaveMeta[];
+      return Array.isArray(index) ? index.sort((a, b) => b.timestamp - a.timestamp) : [];
+    } catch {
+      return []; // 索引损坏 → 当空，避免存档界面崩溃
+    }
   }
 
   async delete(slot: string): Promise<void> {

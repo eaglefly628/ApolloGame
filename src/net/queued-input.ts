@@ -26,27 +26,46 @@ export class QueuedInputSource implements InputSource {
   }
 }
 
-// 浏览器指针输入源 —— 监听 target 的 pointer 事件，按 tick 确定性注入。仅浏览器；headless/测试用 QueuedInputSource。
+// 视口坐标 → canvas 像素坐标（纯函数，可测）。e.clientX/Y 是相对浏览器视口的，需减去 canvas 的
+// BoundingRect 偏移，再按「buffer 尺寸 / CSS 显示尺寸」缩放（canvas 被 CSS 拉伸时二者不等）。
+// 不做这步，Q5 的屏幕→世界逆投影会全盘错位（Gemini 代码级 #2）。
+export function canvasPointerToScreen(
+  clientX: number,
+  clientY: number,
+  rect: { left: number; top: number; width: number; height: number },
+  bufferW: number,
+  bufferH: number,
+): { x: number; y: number } {
+  return {
+    x: (clientX - rect.left) * (bufferW / rect.width),
+    y: (clientY - rect.top) * (bufferH / rect.height),
+  };
+}
+
+// 浏览器指针输入源 —— 监听 canvas 的 pointer 事件，映射为 canvas 像素坐标后按 tick 确定性注入。
+// 仅浏览器；headless/测试用 QueuedInputSource。
 export class PointerInputSource extends QueuedInputSource {
   private readonly onPointer = (e: PointerEvent) => {
     const phase = e.type === 'pointerdown' ? 'down' : e.type === 'pointerup' ? 'up' : 'move';
-    this.enqueue({ source: this.pid, x: e.clientX, y: e.clientY, phase });
+    const rect = this.canvas.getBoundingClientRect();
+    const p = canvasPointerToScreen(e.clientX, e.clientY, rect, this.canvas.width, this.canvas.height);
+    this.enqueue({ source: this.pid, x: p.x, y: p.y, phase });
   };
 
   constructor(
     private readonly pid: string,
-    private readonly el: HTMLElement,
+    private readonly canvas: HTMLCanvasElement,
     private readonly opts: { move?: boolean } = {},
   ) {
     super(pid);
-    el.addEventListener('pointerdown', this.onPointer as EventListener);
-    el.addEventListener('pointerup', this.onPointer as EventListener);
-    if (opts.move) el.addEventListener('pointermove', this.onPointer as EventListener);
+    canvas.addEventListener('pointerdown', this.onPointer as EventListener);
+    canvas.addEventListener('pointerup', this.onPointer as EventListener);
+    if (opts.move) canvas.addEventListener('pointermove', this.onPointer as EventListener);
   }
 
   dispose(): void {
-    this.el.removeEventListener('pointerdown', this.onPointer as EventListener);
-    this.el.removeEventListener('pointerup', this.onPointer as EventListener);
-    this.el.removeEventListener('pointermove', this.onPointer as EventListener);
+    this.canvas.removeEventListener('pointerdown', this.onPointer as EventListener);
+    this.canvas.removeEventListener('pointerup', this.onPointer as EventListener);
+    this.canvas.removeEventListener('pointermove', this.onPointer as EventListener);
   }
 }

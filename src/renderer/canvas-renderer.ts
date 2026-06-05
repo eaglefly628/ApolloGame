@@ -19,6 +19,9 @@ export class CanvasRenderer implements RendererBackend {
   private canvas: HTMLCanvasElement | null = null;
   private ctx: CanvasRenderingContext2D | null = null;
   private readonly assets?: AssetManager;
+  // 文本布局缓存（渲染器侧，不进 sim）：measureText/wrapLines 极贵，只在 content/font/maxWidth
+  // 变化时重算，否则复用上次的行数组，避免每帧对每个文本实体重跑布局（Gemini 代码级 #3）。
+  private readonly textCache = new Map<string, { sig: string; lines: string[] }>();
 
   constructor(private readonly opts: CanvasRendererOptions = {}) {
     this.assets = opts.assets;
@@ -60,13 +63,19 @@ export class CanvasRenderer implements RendererBackend {
       ctx.fillStyle = r.color ? `#${(r.color.tint & 0xffffff).toString(16).padStart(6, '0')}` : '#e2e8f0';
 
       if (r.text) {
-        ctx.font = `${r.text.fontSize}px ${r.text.fontFamily}`;
-        ctx.textAlign = (r.text.anchor as CanvasTextAlign) || 'center';
-        // 多行：按 \n 硬换行 + 可选 maxWidth 自动换行；逐行按 fontSize+lineSpacing 下移。
-        const lines = wrapLines(r.text.content, r.text.maxWidth ?? 0, (s) => ctx.measureText(s).width);
-        const lineHeight = r.text.fontSize + (r.text.lineSpacing ?? 0);
-        for (let li = 0; li < lines.length; li++) {
-          ctx.fillText(lines[li], 0, li * lineHeight);
+        const tx = r.text;
+        ctx.font = `${tx.fontSize}px ${tx.fontFamily}`;
+        ctx.textAlign = (tx.anchor as CanvasTextAlign) || 'center';
+        // 多行：按 \n 硬换行 + 可选 maxWidth 自动换行。布局缓存：仅 content/font/maxWidth 变化才重算。
+        const sig = `${tx.fontSize}|${tx.fontFamily}|${tx.maxWidth ?? 0}|${tx.content}`;
+        let cached = this.textCache.get(r.entityId);
+        if (!cached || cached.sig !== sig) {
+          cached = { sig, lines: wrapLines(tx.content, tx.maxWidth ?? 0, (s) => ctx.measureText(s).width) };
+          this.textCache.set(r.entityId, cached);
+        }
+        const lineHeight = tx.fontSize + (tx.lineSpacing ?? 0);
+        for (let li = 0; li < cached.lines.length; li++) {
+          ctx.fillText(cached.lines[li], 0, li * lineHeight);
         }
       } else if (r.shape?.kind === 'circle') {
         ctx.beginPath();
