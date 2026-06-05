@@ -136,3 +136,94 @@ describe('Game B v0.2 — 对话/属性/条件门控/阈值事件链', () => {
     expect(run()).toBe(run());
   });
 });
+
+describe('Game B v0.3 — 日程循环 / 周期计数 / 30·60 阈值 / 周期到点进结局（全数据驱动）', () => {
+  // 走完开场抵达日程 hub（开场给 affection_S=3）。
+  function toHub(w: World): void {
+    w.tick(); // s1_l0
+    advance(w); // s1_l1
+    advance(w); // s1_choice
+    choose(w, 1); // 请多指教 +2 → s1_polite
+    advance(w); // s1_probe
+    choose(w, 1); // 老实说 +1 → s1_neutral
+    advance(w); // s1_end
+    advance(w); // → hub
+  }
+  // 在 hub 选一个行动并走完它的小场景回到 hub。
+  function act(w: World, index: number): void {
+    choose(w, index); // hub → sc_*
+    advance(w); // sc_* → hub
+  }
+
+  it('开场结束接入日程 hub（choice，≥4 个常规行动）', () => {
+    const w = loadGameB();
+    toHub(w);
+    expect(cur(w)).toBe('hub');
+    const hub = SCENE_01.hub;
+    if (hub.kind !== 'choice') throw new Error('hub should be choice');
+    expect(hub.options.length).toBeGreaterThanOrEqual(4);
+    expect(res(w, 'cycle')).toBe(0);
+  });
+
+  it('行动推进周期计数 + 结算数值（投入工作：事业↑ 体力↓ 周期+1）', () => {
+    const w = loadGameB();
+    toHub(w);
+    act(w, 0); // 投入工作
+    expect(res(w, 'career')).toBe(8);
+    expect(res(w, 'stamina')).toBe(16); // 20 - 4
+    expect(res(w, 'cycle')).toBe(1);
+    expect(cur(w)).toBe('hub'); // 回到日程
+  });
+
+  it('阈值 30：约会攒到好感≥30 → 置 S_30_flag → 解锁"看展(特别)"选项', () => {
+    const w = loadGameB();
+    toHub(w); // affection_S = 3
+    expect(flag(w, 'S_30_flag')).toBe(false);
+    for (let i = 0; i < 4; i++) act(w, 1); // 约 S 出来 ×4：3 → 35
+    expect(res(w, 'affection_S')).toBe(35);
+    expect(flag(w, 'S_30_flag')).toBe(true); // 阈值事件链置位（纯数据）
+    const hub = SCENE_01.hub;
+    if (hub.kind !== 'choice') throw new Error('hub choice');
+    expect(optionAvailable(w, hub.options[4])).toBe(true); // requires S_30_flag → 解锁
+  });
+
+  it('周期到点（cycle≥8）→ EventWhen→Effect set-state 强制进入 ending', () => {
+    const w = loadGameB();
+    toHub(w);
+    for (let i = 0; i < 7; i++) act(w, 3); // 在家休息 ×7 → cycle 7
+    expect(res(w, 'cycle')).toBe(7);
+    expect(cur(w)).toBe('hub');
+    choose(w, 3); // 第 8 个行动：cycle→8 当 tick event-when 发 cycle_over → effect set-state dialogue=ending
+    expect(res(w, 'cycle')).toBe(8);
+    expect(cur(w)).toBe('ending'); // 被强制跳到结局（Commit 阶段覆写 State.current）
+  });
+
+  it('结局按好感 flag 门控：到 30 可达"挚友"，未到 60 则"真爱"隐藏', () => {
+    const w = loadGameB();
+    toHub(w);
+    for (let i = 0; i < 4; i++) act(w, 1); // 4 次约会 → S_30_flag（好感 35，未到 60）
+    for (let i = 0; i < 4; i++) act(w, 3); // 4 次休息把 cycle 推到 8 → 进 ending
+    expect(cur(w)).toBe('ending');
+    const ending = SCENE_01.ending;
+    if (ending.kind !== 'choice') throw new Error('ending choice');
+    expect(optionAvailable(w, ending.options[0])).toBe(false); // 真爱 requires S_60_flag → 隐藏
+    expect(optionAvailable(w, ending.options[1])).toBe(true); // 挚友 requires S_30_flag → 可达
+    expect(optionAvailable(w, ending.options[2])).toBe(true); // 独立结局 → 保底
+    choose(w, 1); // 选挚友结局
+    expect(cur(w)).toBe('end_s_partner');
+    expect(txt(w)).toContain('挚友结局');
+  });
+
+  it('确定性：一整轮日程序列两次跑出完全相同快照', () => {
+    const play = (): string => {
+      const w = loadGameB();
+      toHub(w);
+      act(w, 1);
+      act(w, 0);
+      act(w, 1);
+      act(w, 3);
+      return JSON.stringify(w.snapshot());
+    };
+    expect(play()).toBe(play());
+  });
+});
