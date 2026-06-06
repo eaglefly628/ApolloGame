@@ -153,41 +153,38 @@ Render: Sprite { textureKey, anchorX, anchorY, zOrder }, Color { tint (hex numbe
 World: RandomSeed { seed, sequence }, SpatialIndex { cellSize, kind }
 Physics: Grounded (marker), Bounds { minX, minY, maxX, maxY }
 
-## Assembly Blueprint Format
+## Output format — a canonical Manifest (JSON ONLY, no markdown, no explanation)
 
-Output ONLY valid JSON, no markdown, no explanation:
 {
   "name": "game name",
-  "description": "one line description",
-  "entities": [
-    {
-      "id": "unique-entity-id",
-      "components": [
-        { "type": "Transform", "x": 100, "y": 300, "rotation": 0, "scaleX": 1, "scaleY": 1 },
-        { "type": "Velocity", "vx": 0, "vy": 0, "angular": 0 },
-        ...more components
-      ]
+  "description": "one line",
+  "capabilities": ["a1-transform","b1-velocity", "..."],
+  "entities": {
+    "entity-id": {
+      "Transform": { "x":100,"y":300,"rotation":0,"scaleX":1,"scaleY":1 },
+      "Velocity":  { "vx":0,"vy":0,"angular":0 }
     }
-  ],
-  "config": {
-    "gravity": 0.5,
-    "worldBounds": { "minX": 0, "minY": 0, "maxX": 640, "maxY": 400 },
-    "background": "#16213e"
   }
 }
 
+KEY: `entities` is an OBJECT keyed by entity id; each entity is an OBJECT keyed by component
+type (NO "type" field inside the component). `capabilities` lists the engine capability ids to enable.
+
+## Capability ids (enable the ones whose components you use)
+a1-transform(Transform) · b1-velocity(Velocity) · b2-acceleration(Acceleration) · c1-shape(Shape) ·
+l2-color(Color) · d1-overlap-detect · t1-accel-apply(gravity Acceleration→Velocity) ·
+t1-motion-apply(Velocity→Transform) · t2-collision-resolve · t2-bounds-clamp(Bounds) · t2-jump · t2-ground-sense
+For a platformer/physics game enable exactly:
+["a1-transform","b1-velocity","b2-acceleration","c1-shape","l2-color","d1-overlap-detect","t1-accel-apply","t1-motion-apply","t2-collision-resolve","t2-bounds-clamp"]
+
 ## Rules
-- Canvas is 640x400 pixels, origin top-left
-- Use Color { tint: 0xRRGGBB (number), alpha: 1.0 } for entity colors
-- Ground/walls use Mass { value: 0 } (immovable)
-- Players use Controllable { playerId: "p1"/"p2", speed: 3 }
-- Add Bounds component to keep entities in world
-- Include at least one Camera entity
-- Gravity is applied as constant Acceleration.ay per tick (0.3-0.8 typical)
-- Create a FUN, playable game that works with the available atoms
+- Canvas 640x400, origin top-left. Include a "camera" entity with Camera centered: offsetX:320, offsetY:200 (so world coords map 1:1 to screen and entities are visible).
+- Color { tint: 0xRRGGBB number, alpha:1 }. Ground/walls Mass{value:0}. Players Controllable{playerId,speed}. Bounds keeps entities on-screen.
+- Gravity = constant Acceleration.ay per tick (0.3-0.8). Keep all entities within 0..640 x 0..400.
+- Unknown capability ids are rejected on load, so only use ids from the list above.
 
 ## Minimal Example (bouncing ball + ground)
-{"name":"bounce","description":"A ball bouncing on the ground","entities":[{"id":"camera","components":[{"type":"Camera","zoom":1,"offsetX":0,"offsetY":0,"rotation":0,"viewportW":640,"viewportH":400}]},{"id":"ball","components":[{"type":"Transform","x":320,"y":50,"rotation":0,"scaleX":1,"scaleY":1},{"type":"Velocity","vx":2,"vy":0,"angular":0},{"type":"Acceleration","ax":0,"ay":0.5},{"type":"Shape","kind":"circle","radius":12},{"type":"Color","tint":4886754,"alpha":1},{"type":"Mass","value":1},{"type":"Bounds","minX":0,"minY":0,"maxX":640,"maxY":400}]},{"id":"ground","components":[{"type":"Transform","x":320,"y":380,"rotation":0,"scaleX":1,"scaleY":1},{"type":"Shape","kind":"box","width":640,"height":40},{"type":"Color","tint":3553598,"alpha":1},{"type":"Mass","value":0}]}],"config":{"gravity":0.5,"worldBounds":{"minX":0,"minY":0,"maxX":640,"maxY":400},"background":"#0f172a"}}
+{"name":"bounce","description":"a ball bounces on the ground","capabilities":["a1-transform","b1-velocity","b2-acceleration","c1-shape","l2-color","d1-overlap-detect","t1-accel-apply","t1-motion-apply","t2-collision-resolve","t2-bounds-clamp"],"entities":{"camera":{"Camera":{"zoom":1,"offsetX":320,"offsetY":200,"rotation":0,"viewportW":640,"viewportH":400}},"ball":{"Transform":{"x":320,"y":60,"rotation":0,"scaleX":1,"scaleY":1},"Velocity":{"vx":2,"vy":0,"angular":0},"Acceleration":{"ax":0,"ay":0.5},"Shape":{"kind":"circle","radius":12},"Color":{"tint":4886754,"alpha":1},"Mass":{"value":1},"Bounds":{"minX":0,"minY":0,"maxX":640,"maxY":400}},"ground":{"Transform":{"x":320,"y":380,"rotation":0,"scaleX":1,"scaleY":1},"Shape":{"kind":"box","width":640,"height":40},"Color":{"tint":3553598,"alpha":1},"Mass":{"value":0}}}}
 """
 
 LLM_PROVIDERS = {
@@ -372,26 +369,27 @@ VALID_COMPONENT_TYPES = {
 }
 
 def _validate_blueprint(bp: dict) -> list[str]:
-    """Validate blueprint structure, return list of warnings (empty = ok)."""
+    """Validate canonical manifest { name, capabilities:[id], entities:{id:{Comp:{...}}} }; return warnings."""
     warnings = []
     if not isinstance(bp.get('name'), str):
         warnings.append('Missing or invalid "name" field')
-    if not isinstance(bp.get('entities'), list):
-        warnings.append('Missing or invalid "entities" array')
+    caps = bp.get('capabilities')
+    if caps is not None and (not isinstance(caps, list) or not all(isinstance(c, str) for c in caps)):
+        warnings.append('"capabilities" must be a list of capability id strings')
+    entities = bp.get('entities')
+    if not isinstance(entities, dict):
+        warnings.append('"entities" must be an object { entityId: { ComponentType: {...} } }')
         return warnings
-    if len(bp['entities']) == 0:
+    if len(entities) == 0:
         warnings.append('Blueprint has zero entities')
     has_camera = False
-    for i, ent in enumerate(bp['entities']):
-        if not isinstance(ent.get('id'), str):
-            warnings.append(f'Entity {i}: missing "id"')
-        comps = ent.get('components', [])
-        if not isinstance(comps, list) or len(comps) == 0:
-            warnings.append(f'Entity "{ent.get("id", i)}": no components')
-        for comp in comps:
-            ctype = comp.get('type', '')
+    for eid, comps in entities.items():
+        if not isinstance(comps, dict) or len(comps) == 0:
+            warnings.append(f'Entity "{eid}": components must be a non-empty object')
+            continue
+        for ctype in comps:
             if ctype not in VALID_COMPONENT_TYPES:
-                warnings.append(f'Entity "{ent.get("id", i)}": unknown component type "{ctype}"')
+                warnings.append(f'Entity "{eid}": unknown component type "{ctype}"')
             if ctype == 'Camera':
                 has_camera = True
     if not has_camera:
@@ -424,98 +422,63 @@ def _do_llm_request(url: str, headers: dict, body: bytes, openai_format: bool = 
     except Exception as e:
         return {'success': False, 'error': str(e), 'blueprint': None}
 
+# 物理/球类预设共用的能力 id 集（与 game-a 同源；相机居中静态 → 世界↔屏幕 1:1，实体可见）。
+_PHYSICS_CAPS = ['a1-transform', 'b1-velocity', 'b2-acceleration', 'c1-shape', 'l2-color',
+                 'd1-overlap-detect', 't1-accel-apply', 't1-motion-apply', 't2-collision-resolve', 't2-bounds-clamp']
+_PONG_CAPS = ['a1-transform', 'b1-velocity', 'c1-shape', 'l2-color', 'd1-overlap-detect',
+              't1-motion-apply', 't2-collision-resolve', 't2-bounds-clamp']
+_CAM = {'Camera': {'zoom': 1, 'offsetX': 320, 'offsetY': 200, 'rotation': 0, 'viewportW': 640, 'viewportH': 400}}
+
+# 预设 = 规范 manifest（entities 为对象、capabilities 为能力 id 列表）→ parseManifest 可直接加载进透视器。
 PRESET_BLUEPRINTS = {
     'platformer': {
         'name': 'Simple Platformer',
-        'description': 'Jump between platforms, collect items',
-        'entities': [
-            {'id': 'camera', 'components': [
-                {'type': 'Camera', 'zoom': 1, 'offsetX': 0, 'offsetY': 0, 'rotation': 0, 'viewportW': 640, 'viewportH': 400},
-            ]},
-            {'id': 'player', 'components': [
-                {'type': 'Transform', 'x': 100, 'y': 300, 'rotation': 0, 'scaleX': 1, 'scaleY': 1},
-                {'type': 'Velocity', 'vx': 0, 'vy': 0, 'angular': 0},
-                {'type': 'Acceleration', 'ax': 0, 'ay': 0.5},
-                {'type': 'Shape', 'kind': 'box', 'width': 20, 'height': 20},
-                {'type': 'Mass', 'value': 1},
-                {'type': 'Color', 'tint': 0x38bdf8, 'alpha': 1},
-                {'type': 'Controllable', 'playerId': 'p1', 'speed': 3},
-                {'type': 'Bounds', 'minX': 0, 'minY': 0, 'maxX': 640, 'maxY': 400},
-            ]},
-            {'id': 'ground', 'components': [
-                {'type': 'Transform', 'x': 320, 'y': 385, 'rotation': 0, 'scaleX': 1, 'scaleY': 1},
-                {'type': 'Shape', 'kind': 'box', 'width': 640, 'height': 30},
-                {'type': 'Mass', 'value': 0},
-                {'type': 'Color', 'tint': 0x334155, 'alpha': 1},
-            ]},
-            {'id': 'platform1', 'components': [
-                {'type': 'Transform', 'x': 200, 'y': 300, 'rotation': 0, 'scaleX': 1, 'scaleY': 1},
-                {'type': 'Shape', 'kind': 'box', 'width': 100, 'height': 12},
-                {'type': 'Mass', 'value': 0},
-                {'type': 'Color', 'tint': 0x475569, 'alpha': 1},
-            ]},
-            {'id': 'platform2', 'components': [
-                {'type': 'Transform', 'x': 420, 'y': 240, 'rotation': 0, 'scaleX': 1, 'scaleY': 1},
-                {'type': 'Shape', 'kind': 'box', 'width': 100, 'height': 12},
-                {'type': 'Mass', 'value': 0},
-                {'type': 'Color', 'tint': 0x475569, 'alpha': 1},
-            ]},
-            {'id': 'platform3', 'components': [
-                {'type': 'Transform', 'x': 150, 'y': 180, 'rotation': 0, 'scaleX': 1, 'scaleY': 1},
-                {'type': 'Shape', 'kind': 'box', 'width': 80, 'height': 12},
-                {'type': 'Mass', 'value': 0},
-                {'type': 'Color', 'tint': 0x475569, 'alpha': 1},
-            ]},
-        ],
-        'config': {'gravity': 0.5, 'worldBounds': {'minX': 0, 'minY': 0, 'maxX': 640, 'maxY': 400}, 'background': '#16213e'},
+        'description': 'Gravity + platforms',
+        'capabilities': _PHYSICS_CAPS,
+        'entities': {
+            'camera': _CAM,
+            'player': {
+                'Transform': {'x': 120, 'y': 100, 'rotation': 0, 'scaleX': 1, 'scaleY': 1},
+                'Velocity': {'vx': 0, 'vy': 0, 'angular': 0},
+                'Acceleration': {'ax': 0, 'ay': 0.5},
+                'Shape': {'kind': 'box', 'width': 20, 'height': 20},
+                'Mass': {'value': 1},
+                'Color': {'tint': 0x38bdf8, 'alpha': 1},
+                'Controllable': {'playerId': 'p1', 'speed': 3},
+                'Bounds': {'minX': 0, 'minY': 0, 'maxX': 640, 'maxY': 400},
+            },
+            'ground': {'Transform': {'x': 320, 'y': 385, 'rotation': 0, 'scaleX': 1, 'scaleY': 1},
+                       'Shape': {'kind': 'box', 'width': 640, 'height': 30}, 'Mass': {'value': 0}, 'Color': {'tint': 0x334155, 'alpha': 1}},
+            'platform1': {'Transform': {'x': 200, 'y': 300, 'rotation': 0, 'scaleX': 1, 'scaleY': 1},
+                          'Shape': {'kind': 'box', 'width': 100, 'height': 12}, 'Mass': {'value': 0}, 'Color': {'tint': 0x475569, 'alpha': 1}},
+            'platform2': {'Transform': {'x': 420, 'y': 240, 'rotation': 0, 'scaleX': 1, 'scaleY': 1},
+                          'Shape': {'kind': 'box', 'width': 100, 'height': 12}, 'Mass': {'value': 0}, 'Color': {'tint': 0x475569, 'alpha': 1}},
+            'platform3': {'Transform': {'x': 150, 'y': 180, 'rotation': 0, 'scaleX': 1, 'scaleY': 1},
+                          'Shape': {'kind': 'box', 'width': 80, 'height': 12}, 'Mass': {'value': 0}, 'Color': {'tint': 0x475569, 'alpha': 1}},
+        },
     },
     'pong': {
         'name': 'Pong',
-        'description': 'Classic two-player pong',
-        'entities': [
-            {'id': 'camera', 'components': [
-                {'type': 'Camera', 'zoom': 1, 'offsetX': 0, 'offsetY': 0, 'rotation': 0, 'viewportW': 640, 'viewportH': 400},
-            ]},
-            {'id': 'ball', 'components': [
-                {'type': 'Transform', 'x': 320, 'y': 200, 'rotation': 0, 'scaleX': 1, 'scaleY': 1},
-                {'type': 'Velocity', 'vx': 3, 'vy': 2, 'angular': 0},
-                {'type': 'Shape', 'kind': 'circle', 'radius': 8},
-                {'type': 'Mass', 'value': 1},
-                {'type': 'Color', 'tint': 0xfbbf24, 'alpha': 1},
-                {'type': 'Bounds', 'minX': 0, 'minY': 0, 'maxX': 640, 'maxY': 400},
-            ]},
-            {'id': 'paddle-left', 'components': [
-                {'type': 'Transform', 'x': 30, 'y': 200, 'rotation': 0, 'scaleX': 1, 'scaleY': 1},
-                {'type': 'Velocity', 'vx': 0, 'vy': 0, 'angular': 0},
-                {'type': 'Shape', 'kind': 'box', 'width': 12, 'height': 60},
-                {'type': 'Mass', 'value': 0},
-                {'type': 'Color', 'tint': 0x38bdf8, 'alpha': 1},
-                {'type': 'Controllable', 'playerId': 'p1', 'speed': 4},
-                {'type': 'Bounds', 'minX': 0, 'minY': 0, 'maxX': 640, 'maxY': 400},
-            ]},
-            {'id': 'paddle-right', 'components': [
-                {'type': 'Transform', 'x': 610, 'y': 200, 'rotation': 0, 'scaleX': 1, 'scaleY': 1},
-                {'type': 'Velocity', 'vx': 0, 'vy': 0, 'angular': 0},
-                {'type': 'Shape', 'kind': 'box', 'width': 12, 'height': 60},
-                {'type': 'Mass', 'value': 0},
-                {'type': 'Color', 'tint': 0xe8618c, 'alpha': 1},
-                {'type': 'Controllable', 'playerId': 'p2', 'speed': 4},
-                {'type': 'Bounds', 'minX': 0, 'minY': 0, 'maxX': 640, 'maxY': 400},
-            ]},
-            {'id': 'wall-top', 'components': [
-                {'type': 'Transform', 'x': 320, 'y': -5, 'rotation': 0, 'scaleX': 1, 'scaleY': 1},
-                {'type': 'Shape', 'kind': 'box', 'width': 640, 'height': 10},
-                {'type': 'Mass', 'value': 0},
-                {'type': 'Color', 'tint': 0x334155, 'alpha': 1},
-            ]},
-            {'id': 'wall-bottom', 'components': [
-                {'type': 'Transform', 'x': 320, 'y': 405, 'rotation': 0, 'scaleX': 1, 'scaleY': 1},
-                {'type': 'Shape', 'kind': 'box', 'width': 640, 'height': 10},
-                {'type': 'Mass', 'value': 0},
-                {'type': 'Color', 'tint': 0x334155, 'alpha': 1},
-            ]},
-        ],
-        'config': {'gravity': 0, 'worldBounds': {'minX': 0, 'minY': 0, 'maxX': 640, 'maxY': 400}, 'background': '#0f172a'},
+        'description': 'Two-player pong',
+        'capabilities': _PONG_CAPS,
+        'entities': {
+            'camera': _CAM,
+            'ball': {'Transform': {'x': 320, 'y': 200, 'rotation': 0, 'scaleX': 1, 'scaleY': 1},
+                     'Velocity': {'vx': 3, 'vy': 2, 'angular': 0}, 'Shape': {'kind': 'circle', 'radius': 8},
+                     'Mass': {'value': 1}, 'Color': {'tint': 0xfbbf24, 'alpha': 1}, 'Bounds': {'minX': 0, 'minY': 0, 'maxX': 640, 'maxY': 400}},
+            'paddle-left': {'Transform': {'x': 30, 'y': 200, 'rotation': 0, 'scaleX': 1, 'scaleY': 1},
+                            'Velocity': {'vx': 0, 'vy': 0, 'angular': 0}, 'Shape': {'kind': 'box', 'width': 12, 'height': 60},
+                            'Mass': {'value': 0}, 'Color': {'tint': 0x38bdf8, 'alpha': 1}, 'Controllable': {'playerId': 'p1', 'speed': 4},
+                            'Bounds': {'minX': 0, 'minY': 0, 'maxX': 640, 'maxY': 400}},
+            'paddle-right': {'Transform': {'x': 610, 'y': 200, 'rotation': 0, 'scaleX': 1, 'scaleY': 1},
+                             'Velocity': {'vx': 0, 'vy': 0, 'angular': 0}, 'Shape': {'kind': 'box', 'width': 12, 'height': 60},
+                             'Mass': {'value': 0}, 'Color': {'tint': 0xe8618c, 'alpha': 1}, 'Controllable': {'playerId': 'p2', 'speed': 4},
+                             'Bounds': {'minX': 0, 'minY': 0, 'maxX': 640, 'maxY': 400}},
+            'wall-top': {'Transform': {'x': 320, 'y': 10, 'rotation': 0, 'scaleX': 1, 'scaleY': 1},
+                         'Shape': {'kind': 'box', 'width': 640, 'height': 10}, 'Mass': {'value': 0}, 'Color': {'tint': 0x334155, 'alpha': 1}},
+            'wall-bottom': {'Transform': {'x': 320, 'y': 390, 'rotation': 0, 'scaleX': 1, 'scaleY': 1},
+                            'Shape': {'kind': 'box', 'width': 640, 'height': 10}, 'Mass': {'value': 0}, 'Color': {'tint': 0x334155, 'alpha': 1}},
+        },
     },
 }
 

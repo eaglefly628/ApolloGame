@@ -1,6 +1,8 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { createRoot } from 'react-dom/client';
 import { StudioInspector } from './studio/StudioInspector.js';
+import { parseManifest } from './assembly/manifest.js';
+import type { WorldBlueprint } from './assembly/demo.assembly.js';
 
 const API = 'http://localhost:4000';
 
@@ -377,9 +379,25 @@ function GameRunner({ gameId, onBack }: { gameId: string; onBack: () => void }) 
 function Launcher() {
   const [launched, setLaunched] = useState<string | null>(null);
   const [studio, setStudio] = useState(false);
+  const [studioExtra, setStudioExtra] = useState<{ id: string; title: string; build: () => WorldBlueprint } | null>(null);
+
+  // 「在透视器里打开」：把生成的 manifest(原始 JSON)接进透视器。build 每次重新 parseManifest
+  // (而非 clone——蓝图含 capability 函数对象，structuredClone/JSON 都会坏)，重置/重跑安全。
+  const openInStudio = useCallback((name: string, raw: unknown) => {
+    setStudioExtra({ id: 'generated', title: `生成 · ${name}`, build: () => parseManifest(raw) });
+    setStudio(true);
+  }, []);
 
   if (studio) {
-    return <StudioInspector onBack={() => setStudio(false)} />;
+    return (
+      <StudioInspector
+        onBack={() => {
+          setStudio(false);
+          setStudioExtra(null);
+        }}
+        extraGame={studioExtra ?? undefined}
+      />
+    );
   }
 
   if (launched) {
@@ -447,7 +465,7 @@ function Launcher() {
 
       {/* Game Creator (AI Generate) */}
       <div style={{ width: '100%', maxWidth: 880, marginBottom: 12 }}>
-        <GameCreator />
+        <GameCreator onOpenInStudio={openInStudio} />
       </div>
 
       {/* Dev Tools */}
@@ -480,7 +498,7 @@ interface LLMProvider {
   available: boolean;
 }
 
-function GameCreator() {
+function GameCreator({ onOpenInStudio }: { onOpenInStudio: (name: string, raw: unknown) => void }) {
   const [expanded, setExpanded] = useState(false);
   const [prompt, setPrompt] = useState('');
   const [generating, setGenerating] = useState(false);
@@ -718,6 +736,22 @@ function GameCreator() {
                       }}
                     >
                       Copy JSON
+                    </button>
+                    <button
+                      onClick={() => {
+                        try {
+                          parseManifest(result.blueprint); // 先校验可加载
+                          onOpenInStudio(result.blueprint?.name || 'game', result.blueprint);
+                        } catch (e: any) {
+                          setResult({ success: false, error: '无法加载到透视器：' + (e?.message ?? String(e)) });
+                        }
+                      }}
+                      style={{
+                        padding: '6px 14px', background: 'rgba(167,139,250,0.18)', color: '#a78bfa',
+                        border: '1px solid rgba(167,139,250,0.4)', borderRadius: 6, fontSize: 12, cursor: 'pointer',
+                      }}
+                    >
+                      🔬 在透视器里打开
                     </button>
                   </div>
                   <details style={{ marginTop: 8 }}>

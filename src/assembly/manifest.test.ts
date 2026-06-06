@@ -52,6 +52,31 @@ describe('manifest 桥接：导出↔导入对称、可加载、可玩', () => {
     expect((bp.entities.e.Transform as Record<string, unknown>).x).toBe(1);
   });
 
+  it('canonical 预设形态(平台跳跃, 相机居中)→ parseManifest→load→过 ApolloBench', () => {
+    // 镜像 apollo.py 的 platformer 预设结构：证明「在透视器里打开」的预设路径可加载可玩。
+    const manifest = {
+      name: 'preset-platformer',
+      capabilities: ['a1-transform', 'b1-velocity', 'b2-acceleration', 'c1-shape', 'l2-color',
+        'd1-overlap-detect', 't1-accel-apply', 't1-motion-apply', 't2-collision-resolve', 't2-bounds-clamp'],
+      entities: {
+        camera: { Camera: { zoom: 1, offsetX: 320, offsetY: 200, rotation: 0, viewportW: 640, viewportH: 400 } },
+        player: {
+          Transform: { x: 120, y: 100, rotation: 0, scaleX: 1, scaleY: 1 },
+          Velocity: { vx: 0, vy: 0, angular: 0 }, Acceleration: { ax: 0, ay: 0.5 },
+          Shape: { kind: 'box', width: 20, height: 20 }, Mass: { value: 1 },
+          Color: { tint: 0x38bdf8, alpha: 1 }, Bounds: { minX: 0, minY: 0, maxX: 640, maxY: 400 },
+        },
+        ground: {
+          Transform: { x: 320, y: 385, rotation: 0, scaleX: 1, scaleY: 1 },
+          Shape: { kind: 'box', width: 640, height: 30 }, Mass: { value: 0 }, Color: { tint: 0x334155, alpha: 1 },
+        },
+      },
+    };
+    const r = benchBlueprint('preset', () => parseManifest(manifest));
+    expect(r.spatial).toBe(true);
+    expect(r.passed, JSON.stringify(r.axes)).toBe(true);
+  });
+
   it('entities-only（无 capabilities）→ 据组件推断，game-c(sim) 可加载运行', () => {
     const entitiesOnly = { entities: JSON.parse(exportManifest(buildGameCBlueprint())).entities };
     const r = parseManifestDetailed(entitiesOnly);
