@@ -116,7 +116,7 @@ function gameCAssets(): StudioAsset[] {
       description: g.aishePrompt, // 爱诗(AIGP)视频提示词即此衣服的"生成式美术"
       status: 'placeholder',
       tags: ['garment', 'aigp', `tier${g.tier}`, ...g.requires.map((r) => r.material)],
-      usedBy: [`flag_${g.id}`, `fx_look_${g.id}`],
+      usedBy: [`flag_${g.id}`, `btn_${g.id}`], // v0.3：解锁 flag + 缝制按钮（均为真实实体）
     });
   }
   for (const a of ACCESSORIES) {
@@ -127,7 +127,7 @@ function gameCAssets(): StudioAsset[] {
       description: a.promptFragment,
       status: 'placeholder',
       tags: ['accessory', 'aigp', a.slot, ...a.requires.map((r) => r.material)],
-      usedBy: [`accflag_${a.id}`],
+      usedBy: [], // 配饰为设计内容，v0.3 蓝图尚未接线 → 无对应实体可定位
     });
   }
   return out;
