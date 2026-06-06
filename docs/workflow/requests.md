@@ -234,7 +234,16 @@
 
 ---
 
-### R16 · [2026-06-05] · PB · 框架级 · status: open · 优先级: 中（架构对齐，非阻塞）· **类型: 通用模块请求（R15 的演出层后续）**
+### R16 · [2026-06-05] · PB · 框架级 · status: **done**（2026-06-06，Lead，全量泛化）· 优先级: 中（架构对齐，非阻塞）· **类型: 通用模块请求（R15 的演出层后续）**
+
+> ✅ **Lead 决议 + 落地（2026-06-06）**：**接受，全量泛化**。Lead 初判"单一 VN 消费者有过度设计风险、建议先做不投机的一刀"，用户（决策者）澄清 **@ui widget 将跨 A/B/C 复用**（非单一消费者）→ rule-of-three 顾虑解除，按 R16 字面全量做。
+> **落地内容**：
+> - **通用 @ui/vn 组件库**（游戏无关、主题+数据驱动）：`VNStage`（编排）+ `StatPanel`/`PortraitSlot`/`DialogBox`/`ChoiceList`（布局中立 widget，A/B/C 可复用）；`types.ts` 定 `VNBinding`/`VNStageProps`。
+> - **主题数据**：`@ui/themes/sakura-otome/theme.ts` 实例化此前**休眠未用**的 `ThemeTokens`/`GameTheme` 类型（色板/排版/形状取自同目录 spec.md）。配色/字体/形状从代码外提为数据。
+> - **binding 从 manifest 派生**：manifest 加 `ui` 段（dialogueEntity/stats[{id,label}]/flags/portrait）；`blueprint.ts` `buildGameBBinding()` 读它。STAT_LABEL/实体名/立绘从硬编码搬进数据。
+> - **R3 确定性输入接缝**：dialogue 能力加读 `InputQueue` 路径——UI 经 `enqueueAction("dialogue.advance"/"dialogue.choose",{x:index})` 在 tick 边界注入（与显式 DialogueAdvance/DialogueChoose 组件等价）；`game-b.tsx` 接 `QueuedInputSource`，**选项点击不再直接 world.addComponent 改世界**（消除原 mid-frame hack）。
+> - **删 `src/games/game-b/ui/VNStage.tsx`**：Game B 演出 = 通用组件 + sakura 主题数据 + manifest 绑定数据，**游戏层零 VNStage 代码**（仅剩 blueprint.ts 加载器桩，待框架 module-loader 取代）。
+> **tsc 干净 / build 通过 / dialogue +4 测试（InputQueue 接缝）共 19 绿；rebase 上游后全量 527 绿**。
 
 **标题**：把 `VNStage` 泛化为**通用可主题化 VN 演出组件** —— 清掉 Game B 最后一块游戏层代码
 
@@ -260,7 +269,13 @@
 
 ---
 
-### R17 · [2026-06-05] · PB · 框架级（Game B v0.4 拉动） · status: open · 优先级: 高（v0.4 阻塞）· **类型: 通用模块请求**
+### R17 · [2026-06-05] · PB · 框架级（Game B v0.4 拉动） · status: **done**（2026-06-06，Lead）· 优先级: 高（v0.4 阻塞）· **类型: 通用模块请求**
+
+> ✅ **Lead 决议 + 落地（2026-06-06）**：**接受**。用宪法尺子核验过现有代码——`choice.requires` 的 `ConditionExpr` 叶子无 random、`random` 原子 `systems:[]`（只有辅助函数无掷骰系统）、`event-when/effect-apply` 都掷不了骰 → 确认是**现有数据真表达不了的缺口**，非重组可解。
+> **形态：并入通用 `@skills/tier3/dialogue` 当第三种节点 `check`，不另起 `skill-check`**——dialogue 本就是「图遍历解释器」，check 与 line/choice 同形（读节点→改 `State.current`+effects），`successNext/failNext` 即同图节点 id；另起独立能力会复制一份 State 游标分支机制=两个解释器，违反 manifesto §4（先重组/扩展）。
+> **确定性**：掷骰用世界现成 `RandomSeed`（mulberry32），进 `world.snapshot()` 重放结果一致（验收点）；系统诚实声明 reads/writes 含 `RandomSeed`。无 RandomSeed 时退化为 roll=0 纯阈值（仍确定）。
+> **落库**：`dialogue.ts` 加 `DialogueCheck` 节点 + `resolveCheck` 纯逻辑；`score = resource(attribute) + floor(resource(bonusFrom)/bonusDiv) + roll(1..dice)`，`≥difficulty`→successNext+successEffects 否则 failNext+failEffects（失败非 Game Over，走另一条故事）。版本 1.0.0→1.1.0，+9 测试（含 dice:1 钉死公式 / 同 seed 重放一致 / 无 seed 退化）。**505 passed / tsc / build 全绿。**
+> **PB 游戏层**：Game B v0.4 的检定节点 = 在 DialogueScript 里加 check 节点 + 一个 RandomSeed 实体，**零游戏代码**。
 
 **标题**：对话模块加 `check` 节点（确定性骰子检定）—— 概率成功/失败分支
 

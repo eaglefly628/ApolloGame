@@ -212,9 +212,11 @@ function LiveState({ snapshot, tick }: { snapshot: WorldSnapshot; tick: number }
   );
 }
 
-export function StudioInspector({ onBack }: { onBack: () => void }) {
-  const [gameId, setGameId] = useState(GAMES[0].id);
-  const [workingBp, setWorkingBp] = useState<WorldBlueprint>(() => GAMES[0].build());
+export function StudioInspector({ onBack, extraGame }: { onBack: () => void; extraGame?: GameDef }) {
+  // 外部注入的游戏(如「在透视器里打开」AI 生成的游戏)排在内置游戏前，默认选中。
+  const allGames = extraGame ? [extraGame, ...GAMES] : GAMES;
+  const [gameId, setGameId] = useState(allGames[0].id);
+  const [workingBp, setWorkingBp] = useState<WorldBlueprint>(() => allGames[0].build());
   const [appliedBp, setAppliedBp] = useState<WorldBlueprint>(workingBp);
   const [snapshot, setSnapshot] = useState<WorldSnapshot>({});
   const [tick, setTick] = useState(0);
@@ -255,7 +257,7 @@ export function StudioInspector({ onBack }: { onBack: () => void }) {
     const div = previewRef.current;
     if (!div) return;
     div.innerHTML = '';
-    const def = GAMES.find((g) => g.id === gameId);
+    const def = allGames.find((g) => g.id === gameId);
     const vp = def?.viewport ?? { w: 640, h: 400 };
     const assets = def?.makeAssets?.();
     const pin = def?.makeInput?.(div);
@@ -290,7 +292,7 @@ export function StudioInspector({ onBack }: { onBack: () => void }) {
   }, [appliedBp, gameId]);
 
   const selectGame = useCallback((id: string) => {
-    const def = GAMES.find((g) => g.id === id);
+    const def = allGames.find((g) => g.id === id);
     if (!def) return;
     const bp = def.build();
     setGameId(id);
@@ -302,7 +304,7 @@ export function StudioInspector({ onBack }: { onBack: () => void }) {
   const apply = useCallback(() => setAppliedBp(workingBp), [workingBp]);
 
   const reset = useCallback(() => {
-    const def = GAMES.find((g) => g.id === gameId);
+    const def = allGames.find((g) => g.id === gameId);
     if (!def) return;
     const bp = def.build();
     setWorkingBp(bp);
@@ -355,7 +357,7 @@ export function StudioInspector({ onBack }: { onBack: () => void }) {
     [gameId, workingBp, assetIndex],
   );
 
-  const currentDef = GAMES.find((g) => g.id === gameId);
+  const currentDef = allGames.find((g) => g.id === gameId);
   const vp = currentDef?.viewport ?? { w: 640, h: 400 };
 
   const btn = (extra: React.CSSProperties = {}): React.CSSProperties => ({
@@ -412,7 +414,7 @@ export function StudioInspector({ onBack }: { onBack: () => void }) {
 
         {/* Game selector */}
         <div style={{ display: 'flex', gap: 6, marginTop: 10, flexWrap: 'wrap' }}>
-          {GAMES.map((g) => (
+          {allGames.map((g) => (
             <button
               key={g.id}
               onClick={() => selectGame(g.id)}

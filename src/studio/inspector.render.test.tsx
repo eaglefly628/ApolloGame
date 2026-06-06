@@ -5,6 +5,7 @@ import { StudioInspector } from './StudioInspector.js';
 import { AssetBrowser } from './AssetBrowser.js';
 import { studioAssets } from './assets-model.js';
 import { inspectBlueprint } from './inspect.js';
+import { parseManifest } from '../assembly/manifest.js';
 import type { WorldBlueprint } from '../assembly/demo.assembly.js';
 import { buildGameABlueprint, LEVEL_SCROLL } from '../games/game-a/index.js';
 import { buildGameBBlueprint } from '../games/game-b/index.js';
@@ -28,6 +29,16 @@ describe('数据透视器 · 渲染回归', () => {
   it('StudioInspector(默认 game-a) renderToString 不抛异常', () => {
     const html = renderToString(<StudioInspector onBack={() => {}} />);
     expect(html.length).toBeGreaterThan(0);
+  });
+
+  it('StudioInspector(注入生成游戏 extraGame) renderToString 不抛异常并选中它', () => {
+    const manifest = {
+      capabilities: ['a1-transform'],
+      entities: { e: { Transform: { x: 1, y: 2, rotation: 0, scaleX: 1, scaleY: 1 } } },
+    };
+    const extraGame = { id: 'gen', title: '生成 · 测试', build: () => parseManifest(manifest) };
+    const html = renderToString(<StudioInspector onBack={() => {}} extraGame={extraGame} />);
+    expect(html).toContain('生成 · 测试');
   });
 
   // 资产透视面板对每个游戏(尤其 pb/pc)都要能渲染（原诉求：B/C 也做好）。

@@ -15,6 +15,8 @@ import {
   boundsClampCapability,
   cameraFollowCapability,
   zoneOccupancyCapability,
+  eventWhenCapability,
+  effectApplyCapability,
 } from '@skills/tier2/index.js';
 import type { Box, Level, Spawn } from './level.js';
 import { ASSET_PLAYER_A, ASSET_PLAYER_B } from './assets.js';
@@ -61,6 +63,8 @@ const GAME_A_CAPABILITIES = [
   cameraFollowCapability,
   tweenCapability,
   zoneOccupancyCapability, // 协作通关条件 = 纯数据 Zone（REQ-006，原 coop-goal.ts 下沉）
+  eventWhenCapability, // flag → signal（开关/门控逻辑枢纽）
+  effectApplyCapability, // signal → 物理改动（set-sensor 开门，REQ-008）
 ];
 
 function staticBox(b: Box, tint: number): EntityBlueprint {
@@ -113,8 +117,40 @@ export function buildGameABlueprint(level: Level): WorldBlueprint {
       Transform: { x: m.box.x, y: m.box.y, rotation: 0, scaleX: 1, scaleY: 1 },
       Shape: { kind: 'box', width: m.box.width, height: m.box.height },
       Color: { tint: 0x8b5cf6, alpha: 1 },
-      Tween: { target: m.target, from, to: m.to, elapsed: 0, duration: m.duration, easing: m.easing ?? 'linear', done: false, loop: m.loop ?? 'none', loops: m.loops },
+      Tween: { target: m.target, from, to: m.to, elapsed: 0, duration: m.duration, easing: m.easing ?? 'linear', done: false, loop: m.loop ?? 'none', ...(m.loops !== undefined ? { loops: m.loops } : {}) },
     };
+  });
+  // 实心门（默认实心；被开关 effect set-sensor 切成可穿过，REQ-008）。
+  (level.doors ?? []).forEach((d) => {
+    entities[d.id] = {
+      Transform: { x: d.box.x, y: d.box.y, rotation: 0, scaleX: 1, scaleY: 1 },
+      Shape: { kind: 'box', width: d.box.width, height: d.box.height },
+      Color: { tint: 0x9ca3af, alpha: 1 },
+    };
+  });
+  // 压力开关（纯能力链，零游戏系统）：占据(zone-occupancy)→flag → event-when(flag→signal) → effect set-sensor(开/合门)。
+  (level.switches ?? []).forEach((s, i) => {
+    const flagId = `switch${i}`;
+    const p = s.plate;
+    const who = s.by === 'A' ? PLAYER_A_ENTITY : PLAYER_B_ENTITY;
+    // 视觉压力板（Sensor 非实心，玩家由地面支撑站其上）。
+    entities[`plate${i}`] = {
+      Transform: { x: p.x, y: p.y, rotation: 0, scaleX: 1, scaleY: 1 },
+      Shape: { kind: 'box', width: p.width, height: p.height },
+      Color: { tint: 0x22c55e, alpha: 0.5 },
+      Sensor: {},
+    };
+    // 占据 → flag。
+    entities[`switchZone${i}`] = {
+      Flag: { id: flagId, active: false },
+      Zone: { outFlag: flagId, minX: p.x - p.width / 2, minY: p.y - p.height / 2, maxX: p.x + p.width / 2, maxY: p.y + p.height / 2, requiredEntities: [who] },
+    };
+    // flag → 开/合信号（level 持续：踩着开、离开合）。
+    entities[`swOpen${i}`] = { EventWhen: { signal: `open:${s.opensDoor}`, when: { kind: 'flag', id: flagId, equals: true }, mode: 'level', armed: false } };
+    entities[`swClose${i}`] = { EventWhen: { signal: `close:${s.opensDoor}`, when: { kind: 'flag', id: flagId, equals: false }, mode: 'level', armed: false } };
+    // 信号 → 门 Sensor 开/合（物理改动，REQ-008）。
+    entities[`swOpenFx${i}`] = { Effect: { onSignal: `open:${s.opensDoor}`, kind: 'set-sensor', targetEntity: s.opensDoor, value: true } };
+    entities[`swCloseFx${i}`] = { Effect: { onSignal: `close:${s.opensDoor}`, kind: 'set-sensor', targetEntity: s.opensDoor, value: false } };
   });
   // 美术（纯数据，Sprite-only 无碰撞 → 渲染器画贴图）：背景最底层、目标旗前景。
   if (level.background) {
@@ -139,7 +175,7 @@ export function buildGameABlueprint(level: Level): WorldBlueprint {
       minY: level.goal.y - level.goal.height / 2,
       maxX: level.goal.x + level.goal.width / 2,
       maxY: level.goal.y + level.goal.height / 2,
-      requiredEntities: [PLAYER_A_ENTITY, PLAYER_B_ENTITY],
+      requiredEntities: (level.goalRequires ?? ['A', 'B']).map((r) => (r === 'A' ? PLAYER_A_ENTITY : PLAYER_B_ENTITY)),
     },
   };
   // 相机实体：camera-follow 写它的 offset/zoom（取两人中点、贴合缩放）；Bounds=关卡矩形 → 不露界外。
