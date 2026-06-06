@@ -2,6 +2,8 @@ import { describe, it, expect } from 'vitest';
 import { renderToString } from 'react-dom/server';
 import React from 'react';
 import { StudioInspector } from './StudioInspector.js';
+import { AssetBrowser } from './AssetBrowser.js';
+import { studioAssets } from './assets-model.js';
 import { inspectBlueprint } from './inspect.js';
 import type { WorldBlueprint } from '../assembly/demo.assembly.js';
 import { buildGameABlueprint, LEVEL_SCROLL } from '../games/game-a/index.js';
@@ -27,6 +29,16 @@ describe('数据透视器 · 渲染回归', () => {
     const html = renderToString(<StudioInspector onBack={() => {}} />);
     expect(html.length).toBeGreaterThan(0);
   });
+
+  // 资产透视面板对每个游戏(尤其 pb/pc)都要能渲染（原诉求：B/C 也做好）。
+  for (const [name, build] of GAMES) {
+    it(`${name}: AssetBrowser 渲染不抛异常`, () => {
+      const html = renderToString(
+        <AssetBrowser assets={studioAssets(name, build(), null)} onLocate={() => false} />,
+      );
+      expect(html.length).toBeGreaterThan(0);
+    });
+  }
 
   for (const [name, build] of GAMES) {
     it(`${name}: 缺省值字段不会被判成 json（白屏崩点不变式）`, () => {

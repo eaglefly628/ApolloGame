@@ -23,13 +23,13 @@ import {
   inspectBlueprint,
   blueprintStats,
   capabilitySummaries,
-  collectAssetRefs,
-  crossReferenceAssets,
   setField,
   coerceValue,
   exportManifest,
   type InspectedField,
 } from './inspect.js';
+import { studioAssets } from './assets-model.js';
+import { AssetBrowser } from './AssetBrowser.js';
 
 // ═══════════════════════════════════════════════════════════════
 //  游戏数据透视器 (Data Inspector) — 把"游戏=数据"做成可见可改可预览
@@ -221,11 +221,26 @@ export function StudioInspector({ onBack }: { onBack: () => void }) {
   const [running, setRunning] = useState(true);
   const [assetIndex, setAssetIndex] = useState<AssetIndex | null>(null);
   const [treeNonce, setTreeNonce] = useState(0); // 切游戏/重置时强制重挂数据树(刷新输入缓冲)
+  const [flashed, setFlashed] = useState<string | null>(null); // 资产双击定位 → 高亮的实体
   const previewRef = useRef<HTMLDivElement>(null);
   const engineRef = useRef<Engine | null>(null);
   const rendererRef = useRef<CanvasRenderer | null>(null);
+  const entityRefs = useRef<Map<string, HTMLDetailsElement>>(new Map()); // 实体 id → 数据树 DOM(定位用)
 
   const dirty = workingBp !== appliedBp;
+
+  // 资产双击定位：滚动右侧数据树到引用该资产的实体并展开+高亮。返回是否命中实体
+  // （game-b 的 usedBy 是场景而非实体 → 命中不了 → 返回 false，仅在资产面板内展示用处）。
+  const locate = useCallback((usedBy: string[]): boolean => {
+    const targetId = usedBy.find((u) => entityRefs.current.has(u));
+    if (!targetId) return false;
+    const el = entityRefs.current.get(targetId)!;
+    el.open = true;
+    el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    setFlashed(targetId);
+    window.setTimeout(() => setFlashed((f) => (f === targetId ? null : f)), 1500);
+    return true;
+  }, []);
 
   // 资产索引（dev 下 vite 直接服务根目录的 assets/index.json）。
   useEffect(() => {
@@ -336,8 +351,8 @@ export function StudioInspector({ onBack }: { onBack: () => void }) {
   const stats = useMemo(() => blueprintStats(workingBp), [workingBp]);
   const caps = useMemo(() => capabilitySummaries(workingBp.capabilities), [workingBp]);
   const assets = useMemo(
-    () => crossReferenceAssets(collectAssetRefs(workingBp), assetIndex),
-    [workingBp, assetIndex],
+    () => studioAssets(gameId, workingBp, assetIndex),
+    [gameId, workingBp, assetIndex],
   );
 
   const currentDef = GAMES.find((g) => g.id === gameId);
@@ -474,30 +489,13 @@ export function StudioInspector({ onBack }: { onBack: () => void }) {
             </div>
           </div>
 
-          {/* Assets */}
+          {/* Assets — 商业引擎风资产透视：分类(可收缩) + tag 搜索 + 双击定位 */}
           <div style={{ marginTop: 14 }}>
-            <div style={{ color: C.dim, fontSize: 11, marginBottom: 4 }}>
-              引用的美术素材 {assetIndex === null && '（未加载到 assets/index.json）'}
+            <div style={{ color: C.dim, fontSize: 11, marginBottom: 6 }}>
+              资产透视 · 这局要哪些美术、填了没、谁在用{' '}
+              {assetIndex === null && <span style={{ color: C.dim }}>（assets/index.json 未加载，状态走数据声明）</span>}
             </div>
-            {assets.length === 0 ? (
-              <div style={{ color: C.dim, fontSize: 11 }}>（此游戏数据未引用任何 texture/sound 资产）</div>
-            ) : (
-              <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
-                {assets.map((a) => {
-                  const color = a.status === 'filled' ? C.green : a.status === 'tbf' ? C.amber : C.red;
-                  const label = a.status === 'filled' ? '已填充' : a.status === 'tbf' ? 'TBF 占位' : '缺失';
-                  return (
-                    <div key={a.id} style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 11 }}>
-                      <span style={{ color, fontFamily: 'monospace' }}>●</span>
-                      <span style={{ fontFamily: 'monospace', color: C.text }}>{a.id}</span>
-                      <span style={{ color: C.dim }}>{a.kind}</span>
-                      <span style={{ color, fontSize: 10 }}>{label}</span>
-                      {a.description && <span style={{ color: C.dim }}>· {a.description}</span>}
-                    </div>
-                  );
-                })}
-              </div>
-            )}
+            <AssetBrowser assets={assets} onLocate={locate} />
           </div>
         </div>
 
@@ -508,7 +506,20 @@ export function StudioInspector({ onBack }: { onBack: () => void }) {
           </div>
           <div key={`${gameId}:${treeNonce}`} style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
             {inspected.map((ent) => (
-              <details key={ent.id} open style={{ background: C.panel, borderRadius: 8, border: `1px solid ${C.border}` }}>
+              <details
+                key={ent.id}
+                open
+                ref={(el) => {
+                  if (el) entityRefs.current.set(ent.id, el);
+                  else entityRefs.current.delete(ent.id);
+                }}
+                style={{
+                  background: flashed === ent.id ? 'rgba(56,189,248,0.12)' : C.panel,
+                  borderRadius: 8,
+                  border: `1px solid ${flashed === ent.id ? C.accent : C.border}`,
+                  transition: 'background 0.4s, border-color 0.4s',
+                }}
+              >
                 <summary
                   style={{
                     cursor: 'pointer',
