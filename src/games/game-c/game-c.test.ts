@@ -70,6 +70,23 @@ describe('Game C v0.3 · 蓝图装配（棋盘 + 材料 + 缝制按钮）', () =
     for (const g of GARMENTS) expect(flag(engine, garmentFlagId(g))?.active).toBe(false);
     expect(res(engine, SHOP_LEVEL_ID)?.current).toBe(0);
   });
+
+  it('开局棋盘非死局：至少存在一个能消除的相邻交换（防 (c+2r)% 那种规则条纹死盘）', () => {
+    const b = getBoard(load());
+    const swapMakesMatch = (i: number, j: number) => {
+      const c = b.cells.slice(); const t = c[i]; c[i] = c[j]; c[j] = t;
+      return findMatches(c, b.cols, b.rows).size > 0;
+    };
+    let hasMove = false;
+    for (let r = 0; r < b.rows && !hasMove; r++) {
+      for (let c = 0; c < b.cols && !hasMove; c++) {
+        const i = r * b.cols + c;
+        if (c + 1 < b.cols && swapMakesMatch(i, i + 1)) hasMove = true;
+        if (r + 1 < b.rows && swapMakesMatch(i, i + b.cols)) hasMove = true;
+      }
+    }
+    expect(hasMove).toBe(true);
+  });
 });
 
 describe('Game C v0.3 · 三消棋盘消除 → 产料（match-resolve → resource-apply）', () => {
