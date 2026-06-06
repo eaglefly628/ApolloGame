@@ -409,9 +409,11 @@ export interface Tween extends Component {
 export interface Effect extends Component {
   readonly type: 'Effect';
   onSignal: string; // 当本 tick 存在此名 Signal 时触发
-  kind: 'set-flag' | 'modify-resource' | 'set-state';
-  targetId: string; // set-flag→Flag.id；modify-resource→Resource.id；set-state→State.fsmId（均按 id 全局定位）
-  value: number | string | boolean; // modify-resource=数值增量；set-flag=布尔；set-state=目标状态名
+  kind: 'set-flag' | 'modify-resource' | 'set-state' | 'set-sensor' | 'set-visible' | 'destroy';
+  targetId: string; // 逻辑 kind：set-flag→Flag.id；modify-resource→Resource.id；set-state→State.fsmId（按 id 全局定位）
+  // 物理 kind（set-sensor/set-visible/destroy，REQ-008）：要改动的目标实体 id（按实体定位，不走全局 id 路由）。
+  targetEntity?: EntityId;
+  value: number | string | boolean; // modify-resource=数值增量；set-flag/set-sensor/set-visible=布尔；set-state=目标状态名
 }
 
 // ── craft-recipe ── 配方/经济：信号到达且所有 costs 可负担时，**原子地**扣全部料 + 产出 gains + 置 flag/state。

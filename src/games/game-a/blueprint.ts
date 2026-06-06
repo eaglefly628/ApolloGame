@@ -17,6 +17,7 @@ import {
   zoneOccupancyCapability,
 } from '@skills/tier2/index.js';
 import type { Box, Level, Spawn } from './level.js';
+import { ASSET_PLAYER_A, ASSET_PLAYER_B } from './assets.js';
 
 // 协作通关状态：挂 Flag/Zone 的实体 id 与旗标名。
 // 原 coop-goal.ts（手写胜负系统）已下沉为通用 zone-occupancy capability（REQ-006）——通关条件现在是纯数据。
@@ -70,7 +71,7 @@ function staticBox(b: Box, tint: number): EntityBlueprint {
   };
 }
 
-function player(spawn: Spawn, playerId: string, tint: number, level: Level): EntityBlueprint {
+function player(spawn: Spawn, playerId: string, tint: number, texture: string, level: Level): EntityBlueprint {
   return {
     Transform: { x: spawn.x, y: spawn.y, rotation: 0, scaleX: 1, scaleY: 1 },
     Velocity: { vx: 0, vy: 0, angular: 0 },
@@ -82,6 +83,8 @@ function player(spawn: Spawn, playerId: string, tint: number, level: Level): Ent
     Bounds: { minX: 0, minY: 0, maxX: level.bounds.width, maxY: level.bounds.height },
     // 相机跟随目标：camera-follow 取所有 CameraTarget 的 AABB 中点 + 贴合缩放。
     CameraTarget: {},
+    // 角色美术皮（REQ-005，渲染器优先 Sprite）：贴图就绪显角色、否则退化 Color 方块；Shape 只管碰撞。
+    Sprite: { textureKey: texture, anchorX: 0.5, anchorY: 0.5, zOrder: 1 },
   };
 }
 
@@ -101,8 +104,8 @@ export function buildGameABlueprint(level: Level): WorldBlueprint {
   level.platforms.forEach((p, i) => {
     entities[`platform${i}`] = staticBox(p, PLATFORM_TINT);
   });
-  entities[PLAYER_A_ENTITY] = player(level.spawnA, PLAYER_A, COLOR_A, level);
-  entities[PLAYER_B_ENTITY] = player(level.spawnB, PLAYER_B, COLOR_B, level);
+  entities[PLAYER_A_ENTITY] = player(level.spawnA, PLAYER_A, COLOR_A, ASSET_PLAYER_A, level);
+  entities[PLAYER_B_ENTITY] = player(level.spawnB, PLAYER_B, COLOR_B, ASSET_PLAYER_B, level);
   // 移动平台（Tween 驱动，纯数据）：Shape 参与碰撞、无 Velocity=静态支撑、Tween 改位置 → 载人。
   (level.movers ?? []).forEach((m, i) => {
     const from = m.target === 'Transform.x' ? m.box.x : m.box.y;
@@ -110,7 +113,7 @@ export function buildGameABlueprint(level: Level): WorldBlueprint {
       Transform: { x: m.box.x, y: m.box.y, rotation: 0, scaleX: 1, scaleY: 1 },
       Shape: { kind: 'box', width: m.box.width, height: m.box.height },
       Color: { tint: 0x8b5cf6, alpha: 1 },
-      Tween: { target: m.target, from, to: m.to, elapsed: 0, duration: m.duration, easing: m.easing ?? 'linear', done: false },
+      Tween: { target: m.target, from, to: m.to, elapsed: 0, duration: m.duration, easing: m.easing ?? 'linear', done: false, loop: m.loop ?? 'none', loops: m.loops },
     };
   });
   // 美术（纯数据，Sprite-only 无碰撞 → 渲染器画贴图）：背景最底层、目标旗前景。

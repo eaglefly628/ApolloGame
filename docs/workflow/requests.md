@@ -232,6 +232,67 @@
 
 - **对齐价值**：叙事运行器是模块库该有的一块（VN/RPG/Galgame 通用），写一次复利。正是护城河。
 
+---
+
+### R16 · [2026-06-05] · PB · 框架级 · status: open · 优先级: 中（架构对齐，非阻塞）· **类型: 通用模块请求（R15 的演出层后续）**
+
+**标题**：把 `VNStage` 泛化为**通用可主题化 VN 演出组件** —— 清掉 Game B 最后一块游戏层代码
+
+- **背景**：R15 已把对话**逻辑**下沉为通用 `@skills/tier3/dialogue`，Game B 内容已纯数据。现在 Game B 仅剩两块 `.ts`：① `blueprint.ts`（通用 manifest→world 加载器桩，应由框架 module-loader 取代）② **`ui/VNStage.tsx`（VN 演出层，本请求对象）**。按数据驱动宣言，演出层也该是**通用、可主题化、数据驱动**的共享组件，而非每个 VN 游戏各写一份 React。
+
+- **VNStage 现在做了什么（本质通用）**：读世界投影成 VN 画面——背景层 + 立绘槽（带表情）+ 属性面板（ui-binding 读 Resource）+ 对话框（打字机、CSS 换行）+ 选项（按 `optionAvailable` 过滤条件门控）。任何 VN/Galgame 都要这套。
+
+- **现在哪些是游戏专属（应外提为数据/config）**：
+  - 硬编码实体名（`'dialogue'` 状态机、`'S_warmed_flag'` 指示灯）；
+  - 属性标签表 `STAT_LABEL`（魅力/智慧/…，中文）；
+  - sakura 配色与布局常量；
+  - 占位立绘/背景（真资产走资产流程 R9）。
+
+- **请求（交 Lead 评估）**：在共享 UI 层（`@ui`）提供一个**通用 `VNStage` 组件**，由**数据/config 驱动**：
+  - `theme`（配色/字体/布局 token = 数据，sakura 只是一份主题数据）；
+  - 绑定描述（哪个对话实体/State、要显示哪些 Resource + 标签、立绘槽位与表情来源）——理想从 manifest 派生；
+  - 选项点击**走 R3 的确定性输入接缝**（`QueuedInputSource.enqueueAction`），而非现在 demo 里直接 `world.addComponent` 改世界（那是我标注过的临时 hack）。
+  - 落库后：Game B 的 `ui/VNStage.tsx` 删除，演出 = 选通用组件 + 一份主题/绑定数据。
+
+- **边界/优先级**：**不阻塞**——当前 VNStage 能跑、Game B v0.3 已可玩。这是"清掉最后一块游戏层代码、把 VN 演出沉淀成模块库资产"的架构收尾。是否值得现在做、以及通用组件的确切契约，**请 Lead 评估**（可能与 sakura-otome 主题、资产流程 R9 一起规划）。
+
+- **对齐价值**：VN 演出组件是 Skin/UI 模块库该有的一块（与 R15 对话运行器对称：逻辑 + 演出两条腿都通用化）。VN/Galgame/RPG 复用，写一次复利。
+
+---
+
+### R17 · [2026-06-05] · PB · 框架级（Game B v0.4 拉动） · status: open · 优先级: 高（v0.4 阻塞）· **类型: 通用模块请求**
+
+**标题**：对话模块加 `check` 节点（确定性骰子检定）—— 概率成功/失败分支
+
+- **想实现的游戏行为（v0.4 检定系统）**：关键节点掷骰：`检定分数 = 基础属性 + 好感修正 + 随机(1..N)`，`≥ 难度` → 成功路线（好感+、解锁），否则失败路线（**失败不是 Game Over，走另一条故事**）。对照 `game-b-otome-vn.md` §2.4 + §五的 `check{attribute,difficulty}/successNext/failNext`。
+
+- **已经试了什么（确认是真缺口，非我没找）**：
+  - **确定性属性门控**已能做（v0.2/v0.3 用 `requires` ConditionExpr）——但那是"达标即过"，无随机方差。
+  - `random` 原子只有 `RandomSeed` 数据 + `nextRandom/randomInt` **辅助函数**，`systems: []`——**没有数据驱动的"掷骰"系统**。
+  - `ConditionExpr` 叶子无 `random`；`event-when`/`effect-apply` 不能掷骰。
+  - 通用 `dialogue` 模块只有 `line`/`choice`，**无 check 节点**（无 successNext/failNext/概率分支）。
+  - 结论：骰子检定**无法用现有数据表达**，且我**不写游戏层掷骰 hack**（守数据驱动宣言）。
+
+- **建议方案（交 Lead 评估；倾向并入通用 dialogue 模块，与 line/choice 并列第三种节点）**：
+  ```
+  // DialogueNode 第三种：check
+  { kind: 'check',
+    attribute: string,        // 基础属性 Resource id（如 'charm'）
+    bonusFrom?: string,       // 好感修正 Resource id（如 'affection_S'，按系数计）
+    bonusDiv?: number,        // 好感修正系数（如 /10），缺省 1
+    dice: number,             // 掷 1..dice（如 20）
+    difficulty: number,
+    successNext: string, failNext: string,
+    successEffects?: DialogueEffect[], failEffects?: DialogueEffect[] }
+  ```
+  - 运行器遇 check 节点（收到 DialogueAdvance 或自动）：从世界的 `RandomSeed` 实体取 `randomInt(seed,1,dice+1)`（推进序列）；`score = resource(attribute) + floor(resource(bonusFrom)/bonusDiv) + roll`；`score≥difficulty` → 施 successEffects、`State.current=successNext`，否则 fail 分支。
+  - **确定性**：用现成 `RandomSeed`（mulberry32，已是确定性 PRNG）+ 进 `world.snapshot()` → 存档/重放结果一致（正是 §四"检定骰子确定性，存档重放结果一致"的验收点）。
+  - 落库后：Game B 的检定节点 = 纯数据（脚本里加 check 节点 + 一个 RandomSeed 实体），零游戏代码。
+
+- **边界**：**阻塞 v0.4**（检定是 v0.4 核心）。是否并入 dialogue vs 独立 `skill-check` 能力，请 Lead 定。这是"图遍历解释器"再加一种节点类型，与 R15 同源。
+
+---
+
 ### [2026-06-03] · PA · Game A · status: **done**（2026-06-04，Lead，Batch I）· REQ-001 相机 / 卷轴（世界→屏幕变换 + 合作跟随相机）
 
 > ✅ Lead 落地：`tier2/camera-follow`（CameraTarget 目标 AABB 中点 → Camera.offset，贴合 zoom，相机实体挂 Bounds 则钳关卡内）+ CanvasRenderer 世界→屏幕投影（读 Camera 施加 translate+scale，无相机则 1:1）。PA 用法：给两角色挂 `CameraTarget`，建一个挂 `Camera{viewportW/H}`(+可选 `Bounds`=关卡矩形) 的相机实体即可。6 测试。
@@ -414,6 +475,20 @@
 - **验收**：`coop-goal.ts` 可删；通关条件用纯数据（蓝图里一个 objective 组件/实体）表达。
 - **关联**：REQ-002(sensor) + R5(condition) 是路径 A 前置；本条是它们的"游戏级目标"消费场景。
 - **附带承认**：宣言 §8 也点名 `*.ts 蓝图`（`blueprint.ts`/`level.ts`）应变**纯数据 Game Manifest** + 通用 loader 解释。我支持该方向（与 Lead 偿还方向一致）；属框架级，可单列，本条聚焦 coop-goal。
+
+---
+
+### REQ-008 · [2026-06-06] · PA · Game A · status: **done**（2026-06-06，Lead）· 优先级: 高 · **类型: 真缺口（信号→物理改动）**
+
+**标题**：`Effect` 缺"物理效果"——开关能检测、但门开不了（踩开关 → 一面墙变可穿过，断在最后一环）
+
+- **Lead 评判（接受，真缺口非冗余）**：`zone-occupancy`/`condition`/`event-when` 能把"踩到了/两人都在"变成 flag/signal（逻辑态），但 `effect-apply` 原来只能改逻辑态（flag/resource/state），**不能改物理**——toggle 门的 Sensor、隐藏/销毁障碍都表达不了。这条"信号→物理改动"现有数据**换种组合也补不出**（尺子：最弱 LLM 也写不出），故下沉，而非回驳。逻辑门控（到达 Zone 才过关）与物理门是两类正当机制，不互相替代。
+- **落地**：`effect-apply` 加物理 kind（按 `targetEntity` 定位）：
+  - `set-sensor`（value 布尔）：给目标实体加/去 `Sensor` → collision-resolve 跳过它 = 可穿过（**踩开关→墙变门**）。
+  - `set-visible`（value 布尔）：切目标 `Visibility.visible`（门消失/出现）。
+  - `destroy`：发 `DestroyRequest` → destroy-apply 移除目标（清障碍）。
+  - 数据写法：`Effect{ onSignal:"plate_on", kind:"set-sensor", targetEntity:"wall_3", value:true }`。Commit 相位，一拍反馈，确定性。5 测试。
+- **延后（按需再提）**：`move`（连续移动门）建议用信号触发 `Tween`（需一个"signal→加 Tween"小能力，另议）；`spawn` 需模板展开（assembly 层），单提。
 
 ---
 

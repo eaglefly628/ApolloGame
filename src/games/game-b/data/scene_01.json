@@ -25,5 +25,41 @@
   "s1_warm": { "kind": "line", "speaker": "S", "emotion": "smile", "text": "（点头）算你有点底气。", "next": "s1_end" },
   "s1_neutral": { "kind": "line", "speaker": "S", "emotion": "neutral", "text": "诚实，但还不够。", "next": "s1_end" },
   "s1_special": { "kind": "line", "speaker": "S", "emotion": "blush", "text": "……你倒是会看人。", "next": "s1_end" },
-  "s1_end": { "kind": "line", "speaker": "旁白", "text": "（第一次见面，结束。）", "next": null }
+  "s1_end": { "kind": "line", "speaker": "旁白", "text": "（第一次见面结束。接下来的日子，要好好经营。）", "next": "hub" },
+
+  "hub": {
+    "kind": "choice",
+    "speaker": "旁白",
+    "prompt": "（本周做什么？）",
+    "options": [
+      { "text": "投入工作", "effects": [{ "resource": "career", "amount": 8 }, { "resource": "stamina", "amount": -4 }, { "resource": "cycle", "amount": 1 }], "next": "sc_work" },
+      { "text": "约 S 出来", "effects": [{ "resource": "affection_S", "amount": 8 }, { "resource": "stamina", "amount": -5 }, { "resource": "cycle", "amount": 1 }], "next": "sc_date_s" },
+      { "text": "进修学习", "effects": [{ "resource": "charm", "amount": 6 }, { "resource": "wisdom", "amount": 4 }, { "resource": "stamina", "amount": -4 }, { "resource": "cycle", "amount": 1 }], "next": "sc_study" },
+      { "text": "在家休息", "effects": [{ "resource": "stamina", "amount": 8 }, { "resource": "cycle", "amount": 1 }], "next": "sc_rest" },
+      { "text": "约 S 去看展（特别）", "requires": { "kind": "flag", "id": "S_30_flag" }, "effects": [{ "resource": "affection_S", "amount": 12 }, { "resource": "stamina", "amount": -6 }, { "resource": "cycle", "amount": 1 }], "next": "sc_date_s_special" },
+      { "text": "约 T 出来", "effects": [{ "resource": "affection_T", "amount": 8 }, { "resource": "stamina", "amount": -5 }, { "resource": "cycle", "amount": 1 }], "next": "sc_date_t" }
+    ]
+  },
+  "sc_work": { "kind": "line", "speaker": "旁白", "text": "你埋头赶进度，项目推进了一截。", "next": "hub" },
+  "sc_date_s": { "kind": "line", "speaker": "S", "emotion": "neutral", "text": "（难得）今天……还算愉快。", "next": "hub" },
+  "sc_study": { "kind": "line", "speaker": "旁白", "text": "你充实了自己，气场都不一样了。", "next": "hub" },
+  "sc_rest": { "kind": "line", "speaker": "旁白", "text": "睡了个好觉，精神恢复。", "next": "hub" },
+  "sc_date_s_special": { "kind": "line", "speaker": "S", "emotion": "smile", "text": "（笑）没想到你还懂这些。", "next": "hub" },
+  "sc_date_t": { "kind": "line", "speaker": "T", "emotion": "smile", "text": "和你聊天总是很开心呀！", "next": "hub" },
+
+  "ending": {
+    "kind": "choice",
+    "speaker": "旁白",
+    "prompt": "（回顾这段日子，故事走向了……）",
+    "options": [
+      { "text": "和 S 走到了一起", "requires": { "kind": "flag", "id": "S_60_flag" }, "next": "end_s_love" },
+      { "text": "成了 S 信赖的搭档", "requires": { "kind": "flag", "id": "S_30_flag" }, "next": "end_s_partner" },
+      { "text": "成为独当一面的制作人", "next": "end_solo" },
+      { "text": "与 T 成为彼此的依靠", "requires": { "kind": "flag", "id": "T_30_flag" }, "next": "end_t" }
+    ]
+  },
+  "end_s_love": { "kind": "line", "speaker": "旁白", "text": "你和 S 的故事，才刚刚开始。【真爱结局】", "next": null },
+  "end_s_partner": { "kind": "line", "speaker": "旁白", "text": "你赢得了 S 的尊重与信赖。【挚友结局】", "next": null },
+  "end_solo": { "kind": "line", "speaker": "旁白", "text": "你在事业上证明了自己。【独立制作人结局】", "next": null },
+  "end_t": { "kind": "line", "speaker": "旁白", "text": "你和阳光的 T 走到了一起。【T 线结局】", "next": null }
 }

@@ -18,7 +18,7 @@ import { SCENE_01 } from '../data/dialogue.js';
 const PANEL = 'rgba(40, 28, 44, 0.92)';
 const ACCENT = '#f9a8d4';
 const STAT_LABEL: Record<string, string> = {
-  charm: '魅力', wisdom: '智慧', stamina: '体力', career: '事业',
+  cycle: '周期', charm: '魅力', wisdom: '智慧', stamina: '体力', career: '事业',
   affection_S: '好感·S', affection_T: '好感·T', affection_U: '好感·U',
 };
 

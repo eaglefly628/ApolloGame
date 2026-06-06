@@ -1,0 +1,58 @@
+import { describe, it, expect } from 'vitest';
+import { renderToString } from 'react-dom/server';
+import React from 'react';
+import { StudioInspector } from './StudioInspector.js';
+import { AssetBrowser } from './AssetBrowser.js';
+import { studioAssets } from './assets-model.js';
+import { inspectBlueprint } from './inspect.js';
+import type { WorldBlueprint } from '../assembly/demo.assembly.js';
+import { buildGameABlueprint, LEVEL_SCROLL } from '../games/game-a/index.js';
+import { buildGameBBlueprint } from '../games/game-b/index.js';
+import { buildGameCBlueprint } from '../games/game-c/index.js';
+import { demoBlueprint } from '../assembly/demo.assembly.js';
+
+// 回归：透视器曾因 game-a 的可选字段 Tween.loops=undefined → kindOf 落 'json' →
+// JSON.stringify(undefined)===undefined → 编辑器 buf 为 undefined → buf.length 崩 → 整个透视器白屏。
+// （tsc/build/单测都没渲染过该组件，所以全绿却白屏。）两道守卫：
+//   ① 真把组件渲染一遍（默认 game-a，正好含崩溃字段）。
+//   ② 不变式：任何"值缺省(undefined/null)"的字段都不能被判成 'json'（否则 JSON.stringify→undefined）。
+
+const GAMES: Array<[string, () => WorldBlueprint]> = [
+  ['game-a', () => buildGameABlueprint(LEVEL_SCROLL)],
+  ['game-b', () => buildGameBBlueprint()],
+  ['game-c', () => buildGameCBlueprint()],
+  ['demo', () => demoBlueprint],
+];
+
+describe('数据透视器 · 渲染回归', () => {
+  it('StudioInspector(默认 game-a) renderToString 不抛异常', () => {
+    const html = renderToString(<StudioInspector onBack={() => {}} />);
+    expect(html.length).toBeGreaterThan(0);
+  });
+
+  // 资产透视面板对每个游戏(尤其 pb/pc)都要能渲染（原诉求：B/C 也做好）。
+  for (const [name, build] of GAMES) {
+    it(`${name}: AssetBrowser 渲染不抛异常`, () => {
+      const html = renderToString(
+        <AssetBrowser assets={studioAssets(name, build(), null)} onLocate={() => false} />,
+      );
+      expect(html.length).toBeGreaterThan(0);
+    });
+  }
+
+  for (const [name, build] of GAMES) {
+    it(`${name}: 缺省值字段不会被判成 json（白屏崩点不变式）`, () => {
+      for (const ent of inspectBlueprint(build())) {
+        for (const comp of ent.components) {
+          for (const f of comp.fields) {
+            const nullish = f.value === undefined || f.value === null;
+            expect(
+              f.kind === 'json' && nullish,
+              `${name} · ${ent.id}.${comp.type}.${f.key} 缺省却被判成 json`,
+            ).toBe(false);
+          }
+        }
+      }
+    });
+  }
+});

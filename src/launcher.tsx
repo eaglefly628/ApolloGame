@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { createRoot } from 'react-dom/client';
+import { StudioInspector } from './studio/StudioInspector.js';
 
 const API = 'http://localhost:4000';
 
@@ -44,11 +45,11 @@ const GAMES: GameEntry[] = [
     id: 'game-a',
     title: 'Game A: Co-op Adventure',
     subtitle: '双人协作冒险',
-    description: '双人成行风格。踩开关、抛射搭档、绳索摆荡，只有合作才能通关。',
+    description: '双人成行风格卷轴合作平台跳跃：两人携手穿越大关卡、合作相机跟随、踩升降台，到右端会合通关。',
     color: '#1e3a2f',
     accentColor: '#4ade80',
     icon: '🤝',
-    status: 'coming-soon',
+    status: 'playable',
   },
   {
     id: 'game-b',
@@ -304,6 +305,7 @@ function DevTools() {
             <ToolButton label="Run Tests" icon="T" running={running === 'Tests'} onClick={() => runTool('/api/test', 'Tests')} />
             <ToolButton label="Type Check" icon="TS" running={running === 'TypeCheck'} onClick={() => runTool('/api/typecheck', 'TypeCheck')} />
             <ToolButton label="Build" icon="B" running={running === 'Build'} onClick={() => runTool('/api/build', 'Build')} />
+            <ToolButton label="Bench" icon="⚡" running={running === 'Bench'} onClick={() => runTool('/api/bench', 'Bench')} />
             <ToolButton label="Git Log" icon="G" running={running === 'Git Log'} onClick={() => runTool('/api/git-log', 'Git Log')} />
             <ToolButton label="Git Status" icon="S" running={running === 'Git Status'} onClick={() => runTool('/api/git-status', 'Git Status')} />
             <ToolButton label="Git Pull" icon="P" running={running === 'Git-pull'} onClick={() => runTool('/api/git-pull', 'Git-pull')} />
@@ -374,6 +376,11 @@ function GameRunner({ gameId, onBack }: { gameId: string; onBack: () => void }) 
 
 function Launcher() {
   const [launched, setLaunched] = useState<string | null>(null);
+  const [studio, setStudio] = useState(false);
+
+  if (studio) {
+    return <StudioInspector onBack={() => setStudio(false)} />;
+  }
 
   if (launched) {
     return <GameRunner gameId={launched} onBack={() => setLaunched(null)} />;
@@ -406,6 +413,22 @@ function Launcher() {
         <div style={{ fontSize: 13, color: '#64748b', marginTop: 8 }}>
           Select a game to launch — or use Dev Tools below
         </div>
+        <button
+          onClick={() => setStudio(true)}
+          style={{
+            marginTop: 14,
+            padding: '8px 18px',
+            background: 'linear-gradient(135deg, rgba(167,139,250,0.2), rgba(56,189,248,0.2))',
+            color: '#a78bfa',
+            border: '1px solid rgba(167,139,250,0.4)',
+            borderRadius: 8,
+            fontSize: 13,
+            fontWeight: 600,
+            cursor: 'pointer',
+          }}
+        >
+          🔬 数据透视器 · Data Inspector
+        </button>
       </div>
 
       {/* Game Grid */}

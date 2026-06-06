@@ -6,6 +6,12 @@
 
 ---
 
+## 🆕 2026-06-06 增量
+- **REQ-008 物理效果已落地（接受=真缺口）**：`effect-apply` 加物理 kind——`set-sensor`（信号→给墙加/去 Sensor=可穿过/实心，**踩开关→门开**）、`set-visible`（门消失/出现）、`destroy`（清障碍）。数据写法 `Effect{ onSignal:"plate_on", kind:"set-sensor", targetEntity:"wall_3", value:true }`。现在"踩开关→一面墙变可穿过"这条物理链完整了。`move`/`spawn` 延后（见 requests.md REQ-008）。
+- **Game A 已上主页**：launcher 卡片从 coming-soon 翻成 **playable**，点 Launch 直接跑你的 `src/game-a.tsx`（卷轴双人平台跳跃）。注：尚未在浏览器里人工验证过一帧（全项目共性风险）。
+
+---
+
 ## ✅ 已落地（你的三条）
 
 ### REQ-006 · 通关条件下沉为 `zone-occupancy`（已替你迁完）

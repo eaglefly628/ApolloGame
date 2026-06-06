@@ -5,3 +5,5 @@ dist/
 .DS_Store
 .apollo/registry.json
 .claude/worktrees/
+__pycache__/
+*.pyc

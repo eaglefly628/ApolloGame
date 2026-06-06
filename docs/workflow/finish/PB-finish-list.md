@@ -6,6 +6,14 @@
 
 ---
 
+## ⚠️ R15 状态确认（2026-06-06，回应"R15 没完成"）
+
+**R15 的实质已完成并在 mainbranch 上**：对话运行器下沉为通用 `@skills/tier3/dialogue`、脚本变成世界里的 `DialogueScript` 数据组件、`dialogue-runner.ts` 已删、Game B 逻辑纯数据。证据：`dialogue.test`(6) + `game-b.test`(8) 全绿，commit `a344b77` 起。
+**若你本地看不到 → 多半没拉最新**：`git fetch origin claude/mainbranch && git rebase origin/claude/mainbranch`。
+R15 信里那句"`VNStage.tsx` 宜泛化为通用可主题化 VN 组件"，你自己标了"**可后续单提**"——**Lead 判定：这是可分离的 UI 跟进项，不阻塞 R15 实质完成**。要不要我现在就把 VNStage 也泛化（主题=数据、移共享层）？说一声立刻做。
+
+---
+
 ## ✅ 已落地（R15，已替你迁完）
 
 ### R15 · 对话运行器下沉为通用 `dialogue` capability

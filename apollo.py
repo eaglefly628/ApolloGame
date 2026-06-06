@@ -28,6 +28,17 @@ os.chdir(ROOT)
 VITE_PORT = 5173
 API_PORT = 4000
 
+# ── 跨平台子进程 ──
+# Windows 上 npm/npx/vite 是 .cmd 批处理外壳；subprocess 直传裸名 ['npm', ...] 会让
+# CreateProcess 找不到可执行映像 → WinError 2。这里在 Windows 经 shell(cmd.exe 按 PATHEXT
+# 解析 .cmd)，POSIX 原样执行（行为不变）。所有 npm/npx/git 调用都走它，单点跨平台。
+IS_WINDOWS = os.name == 'nt'
+
+def _spawn(cmd: list[str]) -> dict:
+    if IS_WINDOWS:
+        return {'args': subprocess.list2cmdline(cmd), 'shell': True}
+    return {'args': cmd, 'shell': False}
+
 # ── 颜色输出 ──
 
 def c(text, color):
@@ -67,14 +78,20 @@ def check_env():
         sys.exit(1)
     if not (ROOT / 'node_modules').exists():
         print(c("  [SETUP]", 'y'), "Installing dependencies...")
-        subprocess.call(['npm', 'install'], cwd=ROOT)
+        subprocess.call(**_spawn(['npm', 'install']), cwd=ROOT)
 
 # ── 项目信息收集 ──
 
 def get_project_status() -> dict:
     branch = subprocess.getoutput('git branch --show-current')
     last_commit = subprocess.getoutput('git log --oneline -1')
-    test_count = subprocess.getoutput("find src -name '*.test.ts' 2>/dev/null | wc -l").strip()
+    # 跨平台数测试文件（原 find|wc 是 unix-ism，在 Windows 上失效 → 计数恒 0）。
+    src_dir = ROOT / 'src'
+    test_count = (
+        len(list(src_dir.rglob('*.test.ts')) + list(src_dir.rglob('*.test.tsx')))
+        if src_dir.exists()
+        else 0
+    )
 
     atom_dir = ROOT / 'src' / 'skills' / 'atoms'
     atoms = len([d for d in atom_dir.iterdir() if d.is_dir() and (d / 'index.ts').exists()]) if atom_dir.exists() else 0
@@ -92,7 +109,7 @@ def get_project_status() -> dict:
         'branch': branch,
         'lastCommit': last_commit,
         'atoms': atoms,
-        'testFiles': int(test_count) if test_count.isdigit() else 0,
+        'testFiles': test_count,
         'themes': themes,
         'skillModules': skill_count,
         'games': games,
@@ -100,7 +117,7 @@ def get_project_status() -> dict:
 
 def run_command(cmd: list[str], timeout: int = 120) -> dict:
     try:
-        result = subprocess.run(cmd, cwd=ROOT, capture_output=True, text=True, timeout=timeout)
+        result = subprocess.run(**_spawn(cmd), cwd=ROOT, capture_output=True, text=True, timeout=timeout)
         return {
             'success': result.returncode == 0,
             'stdout': result.stdout[-4000:] if len(result.stdout) > 4000 else result.stdout,
@@ -521,6 +538,8 @@ class APIHandler(BaseHTTPRequestHandler):
             data = run_command(['npx', 'tsc', '--noEmit'])
         elif path == '/api/build':
             data = run_command(['npx', 'vite', 'build'])
+        elif path == '/api/bench':
+            data = run_command(['npx', 'vite-node', 'src/bench/run-bench.ts'])
         elif path == '/api/git-log':
             data = run_command(['git', 'log', '--oneline', '-20'])
         elif path == '/api/git-status':
@@ -592,7 +611,7 @@ def start_api_server():
 
 def start_vite():
     proc = subprocess.Popen(
-        ['npx', 'vite', '--port', str(VITE_PORT)],
+        **_spawn(['npx', 'vite', '--port', str(VITE_PORT)]),
         cwd=ROOT, stdout=subprocess.PIPE, stderr=subprocess.STDOUT,
     )
     _processes.append(proc)
@@ -632,15 +651,20 @@ def cmd_launcher():
 
 def cmd_test():
     check_env()
-    sys.exit(subprocess.call(['npx', 'vitest', 'run'], cwd=ROOT))
+    sys.exit(subprocess.call(**_spawn(['npx', 'vitest', 'run']), cwd=ROOT))
 
 def cmd_typecheck():
     check_env()
-    sys.exit(subprocess.call(['npx', 'tsc', '--noEmit'], cwd=ROOT))
+    sys.exit(subprocess.call(**_spawn(['npx', 'tsc', '--noEmit']), cwd=ROOT))
 
 def cmd_build():
     check_env()
-    sys.exit(subprocess.call(['npx', 'vite', 'build'], cwd=ROOT))
+    sys.exit(subprocess.call(**_spawn(['npx', 'vite', 'build']), cwd=ROOT))
+
+def cmd_bench():
+    # ApolloBench：执行落地体检（借鉴 OpenGame-Bench）。把每个游戏蓝图喂进真实引擎跑分。
+    check_env()
+    sys.exit(subprocess.call(**_spawn(['npx', 'vite-node', 'src/bench/run-bench.ts']), cwd=ROOT))
 
 def cmd_status():
     banner()
@@ -661,6 +685,7 @@ def cmd_help():
     print(f"    {c('test', 'c').ljust(30)} Run all tests")
     print(f"    {c('typecheck', 'c').ljust(30)} TypeScript type check")
     print(f"    {c('build', 'c').ljust(30)} Production build")
+    print(f"    {c('bench', 'c').ljust(30)} ApolloBench 执行落地体检 (每个游戏跑分)")
     print(f"    {c('status', 'c').ljust(30)} Project stats")
     print(f"    {c('help', 'c').ljust(30)} This help")
     print()
@@ -674,7 +699,7 @@ def main():
 
     dispatch = {
         'launcher': cmd_launcher, 'test': cmd_test, 'typecheck': cmd_typecheck,
-        'build': cmd_build, 'status': cmd_status, 'help': cmd_help, '-h': cmd_help,
+        'build': cmd_build, 'bench': cmd_bench, 'status': cmd_status, 'help': cmd_help, '-h': cmd_help,
     }
     cmd = args[0]
     if cmd in dispatch:
