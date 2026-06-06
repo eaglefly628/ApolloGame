@@ -1,5 +1,6 @@
 import type { WorldBlueprint, EntityBlueprint } from './demo.assembly.js';
 import { resolveCapabilities, inferCapabilityIds } from './capability-registry.js';
+import { validateComponentData, formatIssues } from './validate-manifest.js';
 
 // ═══════════════════════════════════════════════════════════════
 //  Manifest 加载器 —— studio「导出 manifest」的逆运算
@@ -80,6 +81,11 @@ export function parseManifestDetailed(raw: unknown): ParseResult {
   if (missing.size) {
     warnings.push(`这些组件无对应 provider capability（可能不被解释）：${[...missing].join(', ')}`);
   }
+
+  // R12：用各能力声明的 fields 校验组件数据——字段拼错（warning）/ 基元类型不符（error，拒绝加载）。
+  const schema = validateComponentData(capabilities, entities);
+  for (const w of schema.warnings) warnings.push(formatIssues([w]));
+  if (schema.errors.length) fail(`组件数据类型错误（${schema.errors.length} 处）—— ${formatIssues(schema.errors)}`);
 
   return { blueprint: { capabilities, entities }, inferredCapabilities: inferred, warnings };
 }

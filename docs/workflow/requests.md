@@ -144,7 +144,9 @@
 
 ---
 
-### R9 · [2026-06-03] · PB · 框架级（Game B 首验） · status: open · 优先级: 架构级 · **类型: REVIEW 请求**
+### R9 · [2026-06-03] · PB · 框架级（Game B 首验） · status: open（待 Gemini/Lead review）· 优先级: 架构级 · **类型: REVIEW 请求**
+
+> 📦 **review 包已就绪（2026-06-06，Lead）**：生成 `review-for-gemini-assets.txt`（自包含：项目背景 + 设计全文 + §9 七问 + 额外 5 个评估角度 A–E），用户丢给 Gemini review。收敛回灌后 Lead 拍 schema 落点，PB 落地 §8"现在能做"两件（槽位契约 + procedural 占位 provider）。**本条仍 open 直到 review 收敛。**
 
 **标题**：资产清单 + 资产管理器设计文档 review —— `docs/design/asset-manifest-and-manager.md`
 
@@ -181,7 +183,15 @@
 
 ---
 
-### R12 · [2026-06-04] · PB · Game B · status: open · 优先级: P2 · **类型: DX 摩擦（搭 v0.1 实测）**
+### R12 · [2026-06-04] · PB · Game B · status: **done**（2026-06-06，Lead）· 优先级: P2 · **类型: DX 摩擦（搭 v0.1 实测）**
+
+> ✅ **Lead 决议 + 落地（2026-06-06）**：**接受，且升级为护城河**。`parseManifest`（manifest 桥接）已让"AI/预设产的 manifest 直接加载"，这层静态校验正是"最弱 LLM 也能产对数据"的强制点。
+> **落地**：`src/assembly/validate-manifest.ts` `validateComponentData()` —— **复用各 capability 已声明的 `components.provides[Type].fields` 当 schema，绝不另造**：
+> - **error（拒绝加载）**：声明 number/boolean 的字段给了别的基元类型（会坏模拟）。
+> - **warning（不阻断）**：数据字段不在组件声明字段中（疑似拼错，如 `currrent`）；降级因 schema 完整性不保证，且告警反向暴露"未声明完整字段"的组件。
+> - **只严格查 number/boolean**：本引擎 string 被复杂字段当占位用（dialogue.nodes 实为对象图、shape.kind 是枚举），严格查会误报，故跳过。
+> 已接入 `parseManifestDetailed`：类型错抛、未知字段进 warnings。**三游戏真实蓝图零类型 error**；+7 测试，全量 536 绿。
+> 注：当前护住 parseManifest（AI/studio 加载路径）；待 TODO「游戏加载器并入 parseManifest」后，三家手写蓝图也一并纳入校验。
 
 **标题**：Blueprint 实体的组件数据不按组件 schema 做类型检查
 
