@@ -179,12 +179,13 @@ describe('Game B v0.3 — 日程循环 / 周期计数 / 30·60 阈值 / 周期�
     const w = loadGameB();
     toHub(w); // affection_S = 3
     expect(flag(w, 'S_30_flag')).toBe(false);
-    for (let i = 0; i < 4; i++) act(w, 1); // 约 S 出来 ×4：3 → 35
+    for (let i = 0; i < 4; i++) act(w, 1); // 约 S 出来 ×4：3 → 35（耗光体力 20→0）
     expect(res(w, 'affection_S')).toBe(35);
     expect(flag(w, 'S_30_flag')).toBe(true); // 阈值事件链置位（纯数据）
+    act(w, 3); // 休息恢复体力（看展还要 stamina≥6）
     const hub = SCENE_01.hub;
     if (hub.kind !== 'choice') throw new Error('hub choice');
-    expect(optionAvailable(w, hub.options[4])).toBe(true); // requires S_30_flag → 解锁
+    expect(optionAvailable(w, hub.options[4])).toBe(true); // requires S_30_flag 且 体力≥6 → 解锁
   });
 
   it('周期到点（cycle≥8）→ EventWhen→Effect set-state 强制进入 ending', () => {
@@ -206,10 +207,10 @@ describe('Game B v0.3 — 日程循环 / 周期计数 / 30·60 阈值 / 周期�
     expect(cur(w)).toBe('ending');
     const ending = SCENE_01.ending;
     if (ending.kind !== 'choice') throw new Error('ending choice');
-    expect(optionAvailable(w, ending.options[0])).toBe(false); // 真爱 requires S_60_flag → 隐藏
-    expect(optionAvailable(w, ending.options[1])).toBe(true); // 挚友 requires S_30_flag → 可达
-    expect(optionAvailable(w, ending.options[2])).toBe(true); // 独立结局 → 保底
-    choose(w, 1); // 选挚友结局
+    expect(optionAvailable(w, ending.options[1])).toBe(false); // 真爱 requires S_60_flag → 隐藏
+    expect(optionAvailable(w, ending.options[2])).toBe(true); // 挚友 requires S_30_flag → 可达
+    expect(optionAvailable(w, ending.options[6])).toBe(true); // 独立结局 → 保底
+    choose(w, 2); // 选挚友结局
     expect(cur(w)).toBe('end_s_partner');
     expect(txt(w)).toContain('挚友结局');
   });
@@ -226,9 +227,49 @@ describe('Game B v0.3 — 日程循环 / 周期计数 / 30·60 阈值 / 周期�
     const ending = SCENE_01.ending;
     if (ending.kind !== 'choice') throw new Error('ending choice');
     expect(optionAvailable(w, ending.options[3])).toBe(true); // T 结局 requires T_30_flag
-    expect(optionAvailable(w, ending.options[1])).toBe(false); // S 挚友 requires S_30（没约过 S）
+    expect(optionAvailable(w, ending.options[2])).toBe(false); // S 挚友 requires S_30（没约过 S）
     choose(w, 3);
     expect(cur(w)).toBe('end_t');
+  });
+
+  it('数值约束·体力门控：耗光体力 → 耗体力行动不可选(且 runner 拒绝)，休息后恢复', () => {
+    const w = loadGameB();
+    toHub(w);
+    expect(res(w, 'stamina')).toBe(20);
+    for (let i = 0; i < 4; i++) act(w, 1); // 约会 ×4：体力 20→0
+    expect(res(w, 'stamina')).toBe(0);
+    const hub = SCENE_01.hub;
+    if (hub.kind !== 'choice') throw new Error('hub choice');
+    expect(optionAvailable(w, hub.options[1])).toBe(false); // 约会 requires 体力≥5 → 体力 0 不可选
+    expect(optionAvailable(w, hub.options[3])).toBe(true); // 休息 永远可选
+    choose(w, 1); // 试图约会 → runner 拒绝（体力不足）
+    expect(cur(w)).toBe('hub'); // 没跳转，仍在日程
+    act(w, 3); // 休息 → 体力 +8
+    expect(res(w, 'stamina')).toBe(8);
+    expect(optionAvailable(w, hub.options[1])).toBe(true); // 恢复后可约会
+  });
+
+  it('数值决定命运·事业线：攒事业≥40 → career_star → 解锁高回报「主导大项目」与事业结局', () => {
+    const w = loadGameB();
+    toHub(w);
+    for (let i = 0; i < 4; i++) act(w, 0); // 投入工作 ×4：事业 32，体力 20→4
+    expect(res(w, 'career')).toBe(32);
+    act(w, 3); // 休息：体力 4→12
+    const hub = SCENE_01.hub;
+    if (hub.kind !== 'choice') throw new Error('hub choice');
+    expect(optionAvailable(w, hub.options[6])).toBe(true); // 主导大项目 requires 事业≥20 且 体力≥8
+    act(w, 6); // 主导大项目：事业 32+15=47，体力 12-8=4
+    expect(res(w, 'career')).toBe(47);
+    expect(flag(w, 'career_star_flag')).toBe(true); // 事业里程碑事件链（career≥40）
+    act(w, 3); // 休息 cycle7
+    choose(w, 3); // 第 8 个行动 → cycle 8 → 强制进 ending
+    expect(cur(w)).toBe('ending');
+    const ending = SCENE_01.ending;
+    if (ending.kind !== 'choice') throw new Error('ending choice');
+    expect(optionAvailable(w, ending.options[0])).toBe(true); // 事业结局 requires career_star_flag
+    choose(w, 0);
+    expect(cur(w)).toBe('end_career');
+    expect(txt(w)).toContain('事业结局');
   });
 
   it('确定性：一整轮日程序列两次跑出完全相同快照', () => {
