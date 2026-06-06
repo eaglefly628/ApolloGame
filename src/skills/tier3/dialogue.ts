@@ -1,6 +1,6 @@
 import { defineCapability } from '@engine/core/define-capability.js';
 import type { Component, IWorld } from '@engine/core/types.js';
-import type { ConditionExpr, State, Text, Flag, Resource, ResourceModify, RandomSeed } from '@engine/protocol/components.js';
+import type { ConditionExpr, State, Text, Flag, Resource, ResourceModify, RandomSeed, InputQueue } from '@engine/protocol/components.js';
 import { findByComponentId, getComponentById } from '@engine/core/query.js';
 import { evaluateCondition } from '@skills/tier2/index.js';
 import { randomInt } from '@skills/atoms/random/index.js';
@@ -67,6 +67,12 @@ export type DialogueGraph = Record<string, DialogueNode>;
 
 export const DIALOGUE_FSM = 'dialogue';
 
+// UI 经 R3 确定性输入接缝（QueuedInputSource.enqueueAction）发来的对话动作名。
+// 走单例 InputQueue（tick 边界注入），而非 demo 里直接 world.addComponent 改世界——
+// 后者是 mid-frame 副作用、绕过输入接缝、录放不确定（R16 标注的临时 hack）。
+export const DIALOGUE_ACTION_ADVANCE = 'dialogue.advance';
+export const DIALOGUE_ACTION_CHOOSE = 'dialogue.choose'; // 携带 x = 选项下标
+
 // ── 组件 ──────────────────────────────────────────────────────────────────
 // 对话脚本（数据）：一棵声明式节点图 + 关联的状态机 id。挂在对话实体上（与 State/Text 同实体）。
 export interface DialogueScript extends Component {
@@ -116,6 +122,25 @@ function findSeed(world: IWorld): RandomSeed | undefined {
   return undefined;
 }
 
+// 从单例 InputQueue 读本 tick 的对话输入动作（R3 接缝；UI 经 enqueueAction 注入，applyRawActions 落进队列）。
+// advance / choose(index) 与显式 DialogueAdvance/DialogueChoose 组件等价——两条路都能触发，互不排斥。
+// 队列每 tick 被运行时整体覆写，故动作只在注入的那一 tick 可见、被消费一次（无重复推进）。
+function readDialogueActions(world: IWorld): { advance: boolean; chooseIndex?: number } {
+  for (const [e] of world.query('InputQueue')) {
+    const q = world.getComponent<InputQueue>(e, 'InputQueue');
+    if (!q) break;
+    let advance = false;
+    let chooseIndex: number | undefined;
+    for (const a of q.actions) {
+      if (a.phase !== 'action') continue;
+      if (a.key === DIALOGUE_ACTION_ADVANCE) advance = true;
+      else if (a.key === DIALOGUE_ACTION_CHOOSE && a.x !== undefined) chooseIndex = a.x;
+    }
+    return { advance, chooseIndex };
+  }
+  return { advance: false };
+}
+
 // check 节点结算（纯逻辑，便于单测）：返回是否通过 + 实际点数（确定性，roll 已掷）。
 export function resolveCheck(world: IWorld, node: DialogueCheck, roll: number): { pass: boolean; score: number } {
   const base = resourceValue(world, node.attribute) ?? 0;
@@ -133,7 +158,7 @@ export const dialogueCapability = defineCapability({
     summary: '数据驱动对话/叙事运行器：读 DialogueScript 节点图 + State 游标，推进节点、渲染当前行、选择结算（含 requires 条件门控 + effects/flag）+ check 确定性骰子检定分支。',
     semantic: ['tier3', 'narrative', 'dialogue', 'interpreter'],
     whenToUse:
-      'VN/乙游/RPG 对话循环。给对话实体挂 DialogueScript{fsmId,nodes} + State + Text；UI 发 DialogueAdvance/DialogueChoose。整个剧情 = 一棵 JSON 节点图（数据），无游戏专属代码。check 节点需世界里有一个 RandomSeed（确定性骰子）。',
+      'VN/乙游/RPG 对话循环。给对话实体挂 DialogueScript{fsmId,nodes} + State + Text。UI 触发推进/选择有两条等价路径：直接发 DialogueAdvance/DialogueChoose 组件，或经 R3 输入接缝 enqueueAction("dialogue.advance"/"dialogue.choose",{x:index})（确定性，走 tick 边界，录放一致）。整个剧情 = 一棵 JSON 节点图（数据），无游戏专属代码。check 节点需世界里有一个 RandomSeed（确定性骰子）。',
     examples: [
       '推进：line 节点 + DialogueAdvance → State.current = node.next',
       '选择：DialogueChoose{index} → 校验 requires → ResourceModify(好感) + Flag + 跳转 option.next',
@@ -159,7 +184,7 @@ export const dialogueCapability = defineCapability({
         fields: { index: { type: 'number', describe: '选项下标' } },
       },
     },
-    reads: ['DialogueScript', 'State', 'Resource', 'Flag', 'RandomSeed'],
+    reads: ['DialogueScript', 'State', 'Resource', 'Flag', 'RandomSeed', 'InputQueue'],
     writes: ['State', 'Text', 'Flag', 'ResourceModify', 'RandomSeed'],
     consumes: ['DialogueAdvance', 'DialogueChoose'],
   },
@@ -169,13 +194,15 @@ export const dialogueCapability = defineCapability({
   systems: [
     {
       id: 'dialogue',
-      reads: ['DialogueScript', 'State', 'Resource', 'Flag', 'RandomSeed'],
+      reads: ['DialogueScript', 'State', 'Resource', 'Flag', 'RandomSeed', 'InputQueue'],
       writes: ['State', 'Text', 'Flag', 'ResourceModify', 'RandomSeed'],
       consumes: ['DialogueAdvance', 'DialogueChoose'],
       // R10：显式定序打破 RMW 伪环——本系统读 Resource/State 又产 ResourceModify、改 State，
       // 须排在 resource-apply（应用修改）与 state-sync（发切换事件）之前。
       runsBefore: ['resource-apply', 'state-sync'],
       execute(world: IWorld) {
+        // 本 tick 的 UI 输入动作（R3 接缝，全局单例）。约定单一活动对话；多对话机时同一动作作用于各机。
+        const input = readDialogueActions(world);
         // 对话实体 = 同时挂 DialogueScript + State 且 fsmId 一致的实体（支持多对话机各跑各的脚本）。
         for (const [eid] of world.query('DialogueScript', 'State')) {
           const script = world.getComponent<DialogueScript>(eid, 'DialogueScript')!;
@@ -185,8 +212,8 @@ export const dialogueCapability = defineCapability({
           const node = nodes[st.current];
           if (!node) continue;
 
-          // ① 处理输入事件 → 改 State.current
-          const advancing = world.hasComponent(eid, 'DialogueAdvance');
+          // ① 处理输入事件（显式组件 或 R3 InputQueue 动作，二者等价）→ 改 State.current
+          const advancing = world.hasComponent(eid, 'DialogueAdvance') || input.advance;
           if (advancing && node.kind === 'line' && node.next) {
             st.current = node.next;
           } else if (advancing && node.kind === 'check') {
@@ -198,9 +225,10 @@ export const dialogueCapability = defineCapability({
             applyEffects(world, pass ? node.successEffects : node.failEffects);
             st.current = pass ? node.successNext : node.failNext;
           }
-          const choose = world.getComponent<DialogueChoose>(eid, 'DialogueChoose');
-          if (choose && node.kind === 'choice') {
-            const opt = node.options[choose.index];
+          const chooseComp = world.getComponent<DialogueChoose>(eid, 'DialogueChoose');
+          const chooseIndex = chooseComp ? chooseComp.index : input.chooseIndex;
+          if (chooseIndex !== undefined && node.kind === 'choice') {
+            const opt = node.options[chooseIndex];
             if (opt && optionAvailable(world, opt)) {
               // 各效果指向不同资源=不同实体，天然不互相覆盖；无孤儿实体（一实体一组件的约束见 R14）。
               applyEffects(world, opt.effects);

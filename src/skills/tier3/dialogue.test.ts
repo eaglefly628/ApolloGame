@@ -1,9 +1,11 @@
 import { describe, it, expect } from 'vitest';
 import { World } from '@engine/core/world.js';
-import type { State, Text, Flag, Resource, ResourceModify, RandomSeed } from '@engine/protocol/components.js';
+import type { State, Text, Flag, Resource, ResourceModify, RandomSeed, InputQueue, RawInputData } from '@engine/protocol/components.js';
 import {
   dialogueCapability,
   resolveCheck,
+  DIALOGUE_ACTION_ADVANCE,
+  DIALOGUE_ACTION_CHOOSE,
   type DialogueGraph,
   type DialogueScript,
   type DialogueAdvance,
@@ -211,3 +213,41 @@ function advanceReturn(w: World): World {
   advance(w);
   return w;
 }
+
+// ── R16/R3 输入接缝：UI 经 InputQueue 注入对话动作（确定性，等价于显式组件）──────────
+function withQueue(w: World, actions: RawInputData[]): void {
+  w.createEntity('global-input');
+  w.addComponent('global-input', { type: 'InputQueue', actions } as InputQueue);
+}
+
+describe('T3 dialogue — R3 InputQueue 输入接缝', () => {
+  it('advance 动作 = DialogueAdvance（line 推进）', () => {
+    const w = loadDialogue('start');
+    withQueue(w, [{ source: 'p1', key: DIALOGUE_ACTION_ADVANCE, phase: 'action' }]);
+    w.tick();
+    expect(cur(w)).toBe('pick');
+  });
+
+  it('choose 动作(x=index) = DialogueChoose（选择结算 + effects + flag）', () => {
+    const w = loadDialogue('pick');
+    withQueue(w, [{ source: 'p1', key: DIALOGUE_ACTION_CHOOSE, x: 0, phase: 'action' }]);
+    w.tick();
+    expect(cur(w)).toBe('end');
+    expect(w.getComponent<Flag>('met', 'Flag')!.active).toBe(true);
+    expect(w.getComponent<ResourceModify>('aff', 'ResourceModify')!.amount).toBe(5);
+  });
+
+  it('非 action phase（指针 down 等）被忽略，不误触发推进', () => {
+    const w = loadDialogue('start');
+    withQueue(w, [{ source: 'p1', key: DIALOGUE_ACTION_ADVANCE, phase: 'down' }]);
+    w.tick();
+    expect(cur(w)).toBe('start');
+  });
+
+  it('显式组件路径不受影响（无 InputQueue 时照常工作）', () => {
+    const w = loadDialogue('start');
+    w.addComponent('dlg', { type: 'DialogueAdvance' } as DialogueAdvance);
+    w.tick();
+    expect(cur(w)).toBe('pick');
+  });
+});

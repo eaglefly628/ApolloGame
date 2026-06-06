@@ -4,6 +4,7 @@ import { stateCapability, resourceCapability, flagCapability, textCapability } f
 import { eventWhenCapability, effectApplyCapability } from '@skills/tier2/index.js';
 import { dialogueCapability, DIALOGUE_FSM } from '@skills/tier3/index.js';
 import type { DialogueGraph } from '@skills/tier3/index.js';
+import type { VNBinding } from '@ui/vn/types.js';
 import { SCENE_01 } from './data/dialogue.js';
 import manifest from './data/game-b.manifest.json';
 
@@ -57,8 +58,8 @@ export function buildGameBBlueprint(): WorldBlueprint {
   return { capabilities, entities };
 }
 
-// 属性 id 列表（供 UI 属性面板），从清单数据派生——不在代码里重复列举。
-const entityData = manifest.entities as unknown as Record<string, { Resource?: { id: string } }>;
-export const GAME_B_STATS: string[] = Object.values(entityData)
-  .map((c) => c.Resource?.id)
-  .filter((id): id is string => typeof id === 'string');
+// VN 演出绑定（供通用 @ui/vn/VNStage）——从清单 ui 段派生。演出 = 通用组件 + 主题数据 + 这份绑定数据，
+// 游戏层不再有 VNStage 代码（R16）。绑定本身是纯数据（实体名/属性标签/立绘槽），随 manifest 走。
+export function buildGameBBinding(): VNBinding {
+  return manifest.ui as unknown as VNBinding;
+}
