@@ -160,9 +160,8 @@ export function buildGameCBlueprint(): WorldBlueprint {
     };
   });
 
-  // ── 配饰解锁位（内容资产 + 占位）。v0.3 先作为可解锁内容存在；主动缝制配饰 v0.4（见 REQ-C-005）。
-  // 注：本组 flag 实体也是「资产透视」双击定位的落点（studio assets-model 据 accflag_<id> 关联）。
-  for (const a of ACCESSORIES) entities[`accflag_${a.id}`] = { Flag: { id: accessoryFlagId(a), active: false } };
+  // 配饰（帽/发饰/项链/鞋）为设计内容，v0.3 蓝图暂不接线（与主程 studio 资产模型对齐：usedBy 空）；
+  // 主动缝制配饰随组合特殊棋子一并 v0.4 落地（见 REQ-C-005）。
 
   return { capabilities: GAME_C_CAPABILITIES, entities };
 }
