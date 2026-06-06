@@ -64,7 +64,7 @@ const GAMES: GameEntry[] = [
     id: 'game-c',
     title: 'Game C: Stitch & Style',
     subtitle: '缝纫物语 · 换装三消',
-    description: '针线主题三消攒材料，缝纫店养成做新衣，爱诗视频秀出来。v0.1 工坊预览（三消核心待引擎能力 REQ-C-001）。',
+    description: '针线主题三消攒材料 → 主动缝制升级缝纫店做新衣 → 爱诗生成换装短视频。v0.3 可玩：点格消除、缝制解锁、换装展示。',
     color: '#3a1e2c',
     accentColor: '#ff7aa2',
     icon: '👗',
