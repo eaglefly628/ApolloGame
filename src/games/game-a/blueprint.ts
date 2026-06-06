@@ -113,7 +113,7 @@ export function buildGameABlueprint(level: Level): WorldBlueprint {
       Transform: { x: m.box.x, y: m.box.y, rotation: 0, scaleX: 1, scaleY: 1 },
       Shape: { kind: 'box', width: m.box.width, height: m.box.height },
       Color: { tint: 0x8b5cf6, alpha: 1 },
-      Tween: { target: m.target, from, to: m.to, elapsed: 0, duration: m.duration, easing: m.easing ?? 'linear', done: false, loop: m.loop ?? 'none', loops: m.loops },
+      Tween: { target: m.target, from, to: m.to, elapsed: 0, duration: m.duration, easing: m.easing ?? 'linear', done: false, loop: m.loop ?? 'none', ...(m.loops !== undefined ? { loops: m.loops } : {}) },
     };
   });
   // 美术（纯数据，Sprite-only 无碰撞 → 渲染器画贴图）：背景最底层、目标旗前景。
