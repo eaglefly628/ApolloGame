@@ -5,6 +5,7 @@ import { match3BoardCapability } from '@skills/tier3/index.js';
 import {
   MATERIALS,
   GARMENTS,
+  ACCESSORIES,
   COIN_ID,
   COIN_PER_TILE,
   BASE_LOOK,
@@ -14,6 +15,7 @@ import {
   SHOP_LEVEL_ENTITY,
   garmentFlagId,
   garmentSignal,
+  accessoryFlagId,
   type Garment,
 } from './theme.js';
 
@@ -65,41 +67,58 @@ export function garmentButtonPos(i: number): { x: number; y: number } {
 }
 export const CANVAS_H = BTN_ROW_Y0 + Math.ceil(GARMENTS.length / 2) * BTN_ROW_GAP; // 含按钮的画布高
 
-const cellCenter = (col: number, row: number) => ({
-  x: BOARD_PAD + col * BOARD_CELL + BOARD_CELL / 2,
-  y: BOARD_PAD + row * BOARD_CELL + BOARD_CELL / 2,
-});
-// 初始网格：(c+2r)%KINDS —— 每行横向全不同、每列步进 2 → 开局保证无连线。
-const initialCells = (): number[] => {
-  const cells: number[] = [];
-  for (let r = 0; r < BOARD_ROWS; r++) for (let c = 0; c < BOARD_COLS; c++) cells.push((c + 2 * r) % KINDS);
+export function boardCellCenter(index: number): { x: number; y: number } {
+  const col = index % BOARD_COLS;
+  const row = Math.floor(index / BOARD_COLS);
+  return { x: BOARD_PAD + col * BOARD_CELL + BOARD_CELL / 2, y: BOARD_PAD + row * BOARD_CELL + BOARD_CELL / 2 };
+}
+// 确定性生成开局网格：逐格随机、但避开「与左二 / 上二同色」→ 无任何 3 连（开局不自消），
+// 且**非退化**——区别于 (c+2r)% 那种规则条纹（条纹盘任何相邻交换都凑不成连 = 死局）。
+// 随机盘几乎必然存在可行步（健壮的「无可行步→重排」属棋盘能力，见 REQ-C-006）。
+const GEN_SEED = 0x5715c3;
+function genInitialCells(): number[] {
+  let s = GEN_SEED >>> 0;
+  const rnd = () => { s = (Math.imul(s, 1664525) + 1013904223) >>> 0; return s / 4294967296; };
+  const cells = new Array<number>(BOARD_COLS * BOARD_ROWS).fill(-1);
+  for (let r = 0; r < BOARD_ROWS; r++) {
+    for (let c = 0; c < BOARD_COLS; c++) {
+      const i = r * BOARD_COLS + c;
+      let k = 0;
+      for (let tries = 0; tries < 24; tries++) {
+        k = Math.floor(rnd() * KINDS);
+        const h = c >= 2 && cells[i - 1] === k && cells[i - 2] === k;
+        const v = r >= 2 && cells[i - BOARD_COLS] === k && cells[i - 2 * BOARD_COLS] === k;
+        if (!h && !v) break;
+      }
+      cells[i] = k;
+    }
+  }
   return cells;
-};
+}
 
 // 一件衣服的「需求」既是缝制成本（主动花费）。
 const craftCosts = (g: Garment) => g.requires.map((r) => ({ id: r.material, amount: r.amount }));
 
 export function buildGameCBlueprint(): WorldBlueprint {
   const entities: Record<string, EntityBlueprint> = {};
+  const cells0 = genInitialCells();
 
   // ── 三消棋盘单例 + 确定性补块种子。
   entities[BOARD_ENTITY] = {
     MatchBoard: {
-      cols: BOARD_COLS, rows: BOARD_ROWS, kindCount: KINDS, cells: initialCells(),
+      cols: BOARD_COLS, rows: BOARD_ROWS, kindCount: KINDS, cells: cells0.slice(),
       kindResource: MATERIALS.map((m) => m.id), matAmount: 2,
       coinResource: COIN_ID, coinPerTile: COIN_PER_TILE,
       kindTint: MATERIALS.map((m) => m.tint), kindLabel: MATERIALS.map((m) => m.glyph),
-      phase: 'idle', selIndex: -1, swapA: -1, swapB: -1, stepTimer: 0, stepDelay: 6, selectAction: 'cell',
+      phase: 'idle', selIndex: -1, swapA: -1, swapB: -1, stepTimer: 0, stepDelay: 8, selectAction: 'cell',
     },
     RandomSeed: { seed: 20260605, sequence: 0 },
   };
 
   // ── 视图格（静态建好；match3-view-sync 只改 Color.tint；clickable 命中其 Shape）。
   for (let i = 0; i < BOARD_COLS * BOARD_ROWS; i++) {
-    const col = i % BOARD_COLS;
-    const row = Math.floor(i / BOARD_COLS);
-    const { x, y } = cellCenter(col, row);
-    const kind = (col + 2 * row) % KINDS;
+    const { x, y } = boardCellCenter(i);
+    const kind = cells0[i];
     entities[`cell_${i}`] = {
       BoardCell: { boardId: BOARD_ENTITY, index: i },
       Transform: { x, y, rotation: 0, scaleX: 1, scaleY: 1 },
@@ -140,6 +159,10 @@ export function buildGameCBlueprint(): WorldBlueprint {
       },
     };
   });
+
+  // ── 配饰解锁位（内容资产 + 占位）。v0.3 先作为可解锁内容存在；主动缝制配饰 v0.4（见 REQ-C-005）。
+  // 注：本组 flag 实体也是「资产透视」双击定位的落点（studio assets-model 据 accflag_<id> 关联）。
+  for (const a of ACCESSORIES) entities[`accflag_${a.id}`] = { Flag: { id: accessoryFlagId(a), active: false } };
 
   return { capabilities: GAME_C_CAPABILITIES, entities };
 }
