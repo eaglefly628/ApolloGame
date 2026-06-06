@@ -538,6 +538,8 @@ class APIHandler(BaseHTTPRequestHandler):
             data = run_command(['npx', 'tsc', '--noEmit'])
         elif path == '/api/build':
             data = run_command(['npx', 'vite', 'build'])
+        elif path == '/api/bench':
+            data = run_command(['npx', 'vite-node', 'src/bench/run-bench.ts'])
         elif path == '/api/git-log':
             data = run_command(['git', 'log', '--oneline', '-20'])
         elif path == '/api/git-status':
@@ -659,6 +661,11 @@ def cmd_build():
     check_env()
     sys.exit(subprocess.call(**_spawn(['npx', 'vite', 'build']), cwd=ROOT))
 
+def cmd_bench():
+    # ApolloBench：执行落地体检（借鉴 OpenGame-Bench）。把每个游戏蓝图喂进真实引擎跑分。
+    check_env()
+    sys.exit(subprocess.call(**_spawn(['npx', 'vite-node', 'src/bench/run-bench.ts']), cwd=ROOT))
+
 def cmd_status():
     banner()
     s = get_project_status()
@@ -678,6 +685,7 @@ def cmd_help():
     print(f"    {c('test', 'c').ljust(30)} Run all tests")
     print(f"    {c('typecheck', 'c').ljust(30)} TypeScript type check")
     print(f"    {c('build', 'c').ljust(30)} Production build")
+    print(f"    {c('bench', 'c').ljust(30)} ApolloBench 执行落地体检 (每个游戏跑分)")
     print(f"    {c('status', 'c').ljust(30)} Project stats")
     print(f"    {c('help', 'c').ljust(30)} This help")
     print()
@@ -691,7 +699,7 @@ def main():
 
     dispatch = {
         'launcher': cmd_launcher, 'test': cmd_test, 'typecheck': cmd_typecheck,
-        'build': cmd_build, 'status': cmd_status, 'help': cmd_help, '-h': cmd_help,
+        'build': cmd_build, 'bench': cmd_bench, 'status': cmd_status, 'help': cmd_help, '-h': cmd_help,
     }
     cmd = args[0]
     if cmd in dispatch:
