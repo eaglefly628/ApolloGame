@@ -26,6 +26,9 @@ export interface Level {
   background?: string; // 背景贴图 textureKey（资产清单里声明）；无则纯色底
   goalArt?: string; // 目标处装饰贴图 textureKey（如旗帜）
   movers?: Mover[]; // Tween 驱动的移动平台（纯数据）
+  doors?: Door[]; // 实心门（默认实心；被开关 set-sensor 切成可穿过）
+  switches?: Switch[]; // 压力开关（踩上→开门），纯数据 zone-occupancy→event-when→effect
+  goalRequires?: ('A' | 'B')[]; // 通关需哪些角色到达目标区（缺省 ['A','B'] 双人缺一不可）
 }
 
 // Tween 驱动的移动平台（数据驱动）：平台从 box 起点沿 target 轴缓动到 to。
@@ -38,6 +41,20 @@ export interface Mover {
   easing?: 'linear' | 'easeIn' | 'easeOut' | 'easeInOut';
   loop?: 'none' | 'restart' | 'pingpong'; // 连续往复（REQ-004）；缺省 none = 一次性升降
   loops?: number; // 程数；缺省无限
+}
+
+// 实心门（数据驱动）：默认实心墙；被开关的 effect set-sensor 切成可穿过（REQ-008），离开复原。
+export interface Door {
+  id: string; // 实体 id（开关 effect 的 targetEntity 指向它）
+  box: Box;
+}
+
+// 压力开关（数据驱动）：角色 by 踩进 plate 区域 → 开 opensDoor 指的门（站着开、离开合）。
+// 纯能力链：zone-occupancy（占据→flag）→ event-when（flag→signal）→ effect set-sensor（开/合门）。零游戏系统。
+export interface Switch {
+  plate: Box; // 压力板区域（zone 矩形 + 视觉标记）
+  by: 'A' | 'B'; // 哪个角色踩
+  opensDoor: string; // 踩下时打开的门 id
 }
 
 // 世界 1-1 · 初次配合：地面 + 三块居中平台 + 右侧协作目标区。
@@ -80,5 +97,26 @@ export const LEVEL_SCROLL: Level = {
   movers: [
     // 连续升降电梯（Tween pingpong，REQ-004，纯数据）：y 在 300↔160 往复，碰撞载人上下。
     { box: { x: 500, y: 300, width: 110, height: 18 }, target: 'Transform.y', to: 160, duration: 180, easing: 'easeInOut', loop: 'pingpong' },
+  ],
+};
+
+// 世界 1-2 · 你踩我过：A 踩左侧开关板 → 中间实心门变可穿过 → B 通过到右侧目标；A 离开则门复原。
+// 全数据：门 = Door、开关 = Switch（zone-occupancy → event-when → effect set-sensor），无任何游戏系统代码。
+// 通关只需 B 到达（A 的职责是按住开关）→ goalRequires:['B']，体现非对称合作。
+export const LEVEL_SWITCH: Level = {
+  id: 'w1-2',
+  name: '世界1-2 · 你踩我过',
+  bounds: { width: 640, height: 400 },
+  ground: { x: 320, y: 372, width: 620, height: 48 }, // 顶边 348
+  platforms: [],
+  spawnA: { x: 120, y: 80 }, // 落在左侧开关板上
+  spawnB: { x: 240, y: 80 }, // 门左侧，须穿门去右侧目标
+  goal: { x: 580, y: 305, width: 120, height: 130 }, // 右侧目标（门后）
+  goalRequires: ['B'], // 只需 B 到达（A 在按开关）
+  doors: [
+    { id: 'door1', box: { x: 380, y: 300, width: 24, height: 96 } }, // 实心门 x[368,392] y[252,348]
+  ],
+  switches: [
+    { plate: { x: 120, y: 336, width: 80, height: 44 }, by: 'A', opensDoor: 'door1' }, // 板 x[80,160] y[314,358]
   ],
 };
