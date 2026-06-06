@@ -1,0 +1,14 @@
+{
+  "hooks": {
+    "UserPromptSubmit": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "echo '[核心规则] ① data-driven-manifesto 是最高纲领（游戏=数据，代码只属引擎解释器）。② 对 PA/PB/PC 的每条需求先以资深程序员/架构师视角评判「该不该做」——能用现有能力组合或已被覆盖的，带全部理由回驳，不盲从；真表达不了的缺口才下沉成通用 capability。③ 把接受/回驳的结论+全部理由报告给用户。详见 CLAUDE.md。'"
+          }
+        ]
+      }
+    ]
+  }
+}

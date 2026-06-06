@@ -478,6 +478,20 @@
 
 ---
 
+### REQ-008 · [2026-06-06] · PA · Game A · status: **done**（2026-06-06，Lead）· 优先级: 高 · **类型: 真缺口（信号→物理改动）**
+
+**标题**：`Effect` 缺"物理效果"——开关能检测、但门开不了（踩开关 → 一面墙变可穿过，断在最后一环）
+
+- **Lead 评判（接受，真缺口非冗余）**：`zone-occupancy`/`condition`/`event-when` 能把"踩到了/两人都在"变成 flag/signal（逻辑态），但 `effect-apply` 原来只能改逻辑态（flag/resource/state），**不能改物理**——toggle 门的 Sensor、隐藏/销毁障碍都表达不了。这条"信号→物理改动"现有数据**换种组合也补不出**（尺子：最弱 LLM 也写不出），故下沉，而非回驳。逻辑门控（到达 Zone 才过关）与物理门是两类正当机制，不互相替代。
+- **落地**：`effect-apply` 加物理 kind（按 `targetEntity` 定位）：
+  - `set-sensor`（value 布尔）：给目标实体加/去 `Sensor` → collision-resolve 跳过它 = 可穿过（**踩开关→墙变门**）。
+  - `set-visible`（value 布尔）：切目标 `Visibility.visible`（门消失/出现）。
+  - `destroy`：发 `DestroyRequest` → destroy-apply 移除目标（清障碍）。
+  - 数据写法：`Effect{ onSignal:"plate_on", kind:"set-sensor", targetEntity:"wall_3", value:true }`。Commit 相位，一拍反馈，确定性。5 测试。
+- **延后（按需再提）**：`move`（连续移动门）建议用信号触发 `Tween`（需一个"signal→加 Tween"小能力，另议）；`spawn` 需模板展开（assembly 层），单提。
+
+---
+
 ## 需求模板（复制这段填写）
 
 ```

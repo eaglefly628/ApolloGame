@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import { World } from '@engine/core/world.js';
-import type { Effect, Signal, Flag, Resource, State, EventWhen } from '@engine/protocol/components.js';
+import type { Effect, Signal, Flag, Resource, State, EventWhen, Sensor, Visibility, DestroyRequest } from '@engine/protocol/components.js';
 import { effectApplyCapability } from './effect-apply.js';
 import { eventWhenCapability } from './event-when.js';
 
@@ -23,7 +23,7 @@ describe('T2 effect-apply — metadata', () => {
   it('id / 读 Effect+Signal / 写 Flag+Resource+State', () => {
     expect(effectApplyCapability.id).toBe('t2-effect-apply');
     expect(effectApplyCapability.components.reads).toEqual(['Effect', 'Signal']);
-    expect(effectApplyCapability.components.writes).toEqual(['Flag', 'Resource', 'State']);
+    expect(effectApplyCapability.components.writes).toEqual(['Flag', 'Resource', 'State', 'Sensor', 'Visibility', 'DestroyRequest']);
   });
 });
 
@@ -93,5 +93,53 @@ describe('T2 effect-apply — 与 event-when 合链（Condition→Event→Effect
 
     w.tick();
     expect(w.getComponent<Flag>('gs', 'Flag')!.active).toBe(true);
+  });
+});
+
+describe('T2 effect-apply — 物理 kind（REQ-008：信号→物理改动，按 targetEntity）', () => {
+  it('set-sensor true → 目标实体加 Sensor（踩开关 → 墙变可穿过）', () => {
+    const w = worldWithEffect();
+    w.createEntity('wall');
+    effect(w, 'ef', { onSignal: 'plate_on', kind: 'set-sensor', targetId: '', targetEntity: 'wall', value: true });
+    signal(w, 'plate_on');
+    w.tick();
+    expect(w.hasComponent('wall', 'Sensor')).toBe(true);
+  });
+
+  it('set-sensor false → 去掉 Sensor（墙恢复实心）', () => {
+    const w = worldWithEffect();
+    w.createEntity('wall');
+    w.addComponent('wall', { type: 'Sensor' } as Sensor);
+    effect(w, 'ef', { onSignal: 'plate_off', kind: 'set-sensor', targetId: '', targetEntity: 'wall', value: false });
+    signal(w, 'plate_off');
+    w.tick();
+    expect(w.hasComponent('wall', 'Sensor')).toBe(false);
+  });
+
+  it('set-visible false → 切目标 Visibility.visible（门消失）', () => {
+    const w = worldWithEffect();
+    w.createEntity('door');
+    w.addComponent('door', { type: 'Visibility', visible: true, active: true } as Visibility);
+    effect(w, 'ef', { onSignal: 'open', kind: 'set-visible', targetId: '', targetEntity: 'door', value: false });
+    signal(w, 'open');
+    w.tick();
+    expect(w.getComponent<Visibility>('door', 'Visibility')!.visible).toBe(false);
+  });
+
+  it('destroy → 在目标实体发 DestroyRequest（清障碍，destroy-apply 随后移除）', () => {
+    const w = worldWithEffect();
+    w.createEntity('rock');
+    effect(w, 'ef', { onSignal: 'boom', kind: 'destroy', targetId: '', targetEntity: 'rock', value: true });
+    signal(w, 'boom');
+    w.tick();
+    expect(w.getComponent<DestroyRequest>('rock', 'DestroyRequest')?.entityId).toBe('rock');
+  });
+
+  it('信号不在场 → 物理改动也不施加', () => {
+    const w = worldWithEffect();
+    w.createEntity('wall');
+    effect(w, 'ef', { onSignal: 'plate_on', kind: 'set-sensor', targetId: '', targetEntity: 'wall', value: true });
+    w.tick(); // 无信号
+    expect(w.hasComponent('wall', 'Sensor')).toBe(false);
   });
 });

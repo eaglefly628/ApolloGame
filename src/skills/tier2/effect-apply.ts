@@ -1,6 +1,6 @@
 import { defineCapability } from '@engine/core/define-capability.js';
 import { SystemPhase } from '@engine/core/types.js';
-import type { Effect, Signal } from '@engine/protocol/components.js';
+import type { Effect, Signal, Sensor, Visibility, DestroyRequest } from '@engine/protocol/components.js';
 import { buildConditionLookup } from './condition.js';
 
 // effect-apply —— Condition→Event→**Effect** 的 Effect 侧（链的合龙石）。
@@ -30,6 +30,7 @@ export const effectApplyCapability = defineCapability({
       '好感越 60 → 解锁告白：Effect{ onSignal:"S_love_60", kind:"set-flag", targetId:"S_confess_unlocked", value:true }',
       '踩到陷阱信号 → 扣血：Effect{ onSignal:"trap", kind:"modify-resource", targetId:"hp", value:-10 }',
       '两开关都开 → 推进剧情态：Effect{ onSignal:"both_switches", kind:"set-state", targetId:"story", value:"door_open" }',
+      '踩开关 → 墙变可穿过（物理）：Effect{ onSignal:"plate_on", kind:"set-sensor", targetEntity:"wall_3", value:true }',
     ],
   },
 
@@ -40,14 +41,15 @@ export const effectApplyCapability = defineCapability({
         describe: '声明「当 onSignal 在场时施加的效果」。kind 决定改 Flag/Resource/State，targetId 按 id 全局定位。',
         fields: {
           onSignal: { type: 'string', describe: '触发该效果的信号名（event-when 产出的 Signal.name）' },
-          kind: { type: 'string', describe: "'set-flag' | 'modify-resource' | 'set-state'" },
-          targetId: { type: 'string', describe: 'Flag.id / Resource.id / State.fsmId（按 id 全局定位）' },
-          value: { type: 'string', describe: 'modify-resource=数值增量；set-flag=布尔；set-state=目标状态名' },
+          kind: { type: 'string', describe: "逻辑:'set-flag'|'modify-resource'|'set-state'；物理(REQ-008):'set-sensor'|'set-visible'|'destroy'" },
+          targetId: { type: 'string', describe: '逻辑 kind：Flag.id / Resource.id / State.fsmId（按 id 全局定位）' },
+          targetEntity: { type: 'EntityId', describe: '物理 kind：set-sensor/set-visible/destroy 的目标实体 id' },
+          value: { type: 'string', describe: 'modify-resource=数值增量；set-flag/set-sensor/set-visible=布尔；set-state=目标状态名；destroy 忽略' },
         },
       },
     },
     reads: ['Effect', 'Signal'],
-    writes: ['Flag', 'Resource', 'State'],
+    writes: ['Flag', 'Resource', 'State', 'Sensor', 'Visibility', 'DestroyRequest'],
     consumes: [],
   },
 
@@ -58,7 +60,7 @@ export const effectApplyCapability = defineCapability({
       id: 'effect-apply',
       phase: SystemPhase.Commit,
       reads: ['Effect', 'Signal'],
-      writes: ['Flag', 'Resource', 'State'],
+      writes: ['Flag', 'Resource', 'State', 'Sensor', 'Visibility', 'DestroyRequest'],
       consumes: [],
       execute(world) {
         // 收集本 tick 在场的信号名。
@@ -93,6 +95,34 @@ export const effectApplyCapability = defineCapability({
             case 'set-state': {
               const st = lookup.state(ef.targetId);
               if (st) st.current = String(ef.value);
+              break;
+            }
+            // ── 物理 kind（REQ-008）：信号→物理改动，按 targetEntity 定位。补上"踩开关→门开"的最后一环。──
+            case 'set-sensor': {
+              // 给目标实体加/去 Sensor（非实心）→ collision-resolve 跳过它 = 可穿过（踩开关→墙变门）。
+              if (ef.targetEntity) {
+                const on = ef.value === true || ef.value === 'true';
+                if (on) {
+                  if (!world.hasComponent(ef.targetEntity, 'Sensor')) world.addComponent(ef.targetEntity, { type: 'Sensor' } as Sensor);
+                } else {
+                  world.removeComponent(ef.targetEntity, 'Sensor');
+                }
+              }
+              break;
+            }
+            case 'set-visible': {
+              // 切目标实体可见性（门消失/出现）。无 Visibility 则补一个。
+              if (ef.targetEntity) {
+                const visible = ef.value === true || ef.value === 'true';
+                const vis = world.getComponent<Visibility>(ef.targetEntity, 'Visibility');
+                if (vis) vis.visible = visible;
+                else world.addComponent(ef.targetEntity, { type: 'Visibility', visible, active: true } as Visibility);
+              }
+              break;
+            }
+            case 'destroy': {
+              // 发 DestroyRequest，destroy-apply 消费后移除目标实体（清障碍）。
+              if (ef.targetEntity) world.addComponent(ef.targetEntity, { type: 'DestroyRequest', entityId: ef.targetEntity } as DestroyRequest);
               break;
             }
           }
