@@ -598,3 +598,38 @@ export interface BoardCell extends Component {
   boardId: EntityId;
   index: number;
 }
+
+// ── StatModifier ── 属性修正（①，ARPG）：来自具名 source（装备/buff/光环/天赋/boon）的一条加/乘修正。
+// 装备→push 一条（source=装备 id），卸下→按 source 滤除。同一 source 可有多条（改多 stat）。
+export interface StatModifier {
+  stat: string; // 目标 stat 名（如 'attack'、'maxHp'、'moveSpeed'）
+  add?: number; // 加值（缺省 0）
+  mul?: number; // 乘值（缺省 1）
+  source: string; // 来源 id（按它增删，如 'ring_of_power'、'buff_haste'）
+}
+
+// ── Stats ── 属性修正系统（①）：一个组件装多 stat 的「基础值 + 修正列表 → 有效值」分层。
+// 有效值 effective[s] = (base[s] + Σ mods.add) × Π mods.mul。系统 stat-apply 每帧重算 effective。
+// 一组件多 stat → 绕开「一实体一组件」；下游（hitbox 伤害读 attack、steering 读 moveSpeed、maxHp→Resource.max）
+// 读 effective。装备/buff/光环/天赋/Hades-boon 全是"往 mods 里增删条目"=纯数据组合，不写游戏代码。
+// 确定性：纯整数/IEEE 算术，遍历按 stat 名 + 列表序（加性/乘性，序内累加）→ 录放一致。
+export interface Stats extends Component {
+  readonly type: 'Stats';
+  base: Record<string, number>; // 基础值（裸属性）
+  mods: StatModifier[]; // 当前生效的修正（来源增删）
+  effective: Record<string, number>; // 折算结果（stat-apply 每帧重算；下游读这个）
+}
+
+// ── Launch ── 直线弹/抛射（②，ARPG）：发射瞬间定一次方向 → 写一次 Velocity → 自删 Launch，之后由
+// motion-apply 直飞（fire-and-forget）。区别于 steering 的**持续**重定向（那是追踪弹/homing，已被 steering 覆盖）。
+// toward:'target' 朝最近 targetMask 阵营（复用 spatial-query.nearestByTag）；'dir' 朝固定 (dirX,dirY)（归一化）。
+// 飞弹 = prefab 模板{Transform,Shape,Sensor,Tag(ZONE),Hitbox,Velocity,Launch,Timer(life)}，caster 生成即自发射。
+// 确定性：方向归一化用 IEEE sqrt/÷（与 steering 同类，安全）；nearestByTag 按 id tie-break。
+export interface Launch extends Component {
+  readonly type: 'Launch';
+  speed: number; // 初速模长（单位/tick）
+  toward: 'target' | 'dir'; // target=朝最近 targetMask 实体；dir=固定方向
+  targetMask?: number; // toward:'target' 时索敌阵营（Tag.flags & targetMask）
+  dirX?: number; // toward:'dir' 时方向（会归一化；缺省 0）
+  dirY?: number;
+}
