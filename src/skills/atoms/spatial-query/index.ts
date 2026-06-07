@@ -1,8 +1,40 @@
 import { defineCapability } from '@engine/core/define-capability.js';
 import type { IWorld, EntityId } from '@engine/core/types.js';
-import type { SpatialIndex, Transform } from '@engine/protocol/components.js';
+import type { SpatialIndex, Transform, Tag } from '@engine/protocol/components.js';
 
 export type { SpatialIndex };
+
+// 按阵营自动索敌：返回离 (x,y) 最近、且 Tag.flags 含 tagMask 的实体（tagMask=0 → 不限阵营）。
+// opts.excludeId 排除自己；opts.maxRadius>0 限定视野半径。并列距离按 id 升序 tie-break → 确定性。
+// AI 感知（behavior）与自动施法（caster at:'target'）共用，避免各写一遍索敌扫描。
+export function nearestByTag(
+  world: IWorld,
+  x: number,
+  y: number,
+  tagMask: number,
+  opts?: { excludeId?: EntityId; maxRadius?: number },
+): EntityId | undefined {
+  let bestId: EntityId | undefined;
+  let bestD2 = Infinity;
+  const maxR2 = opts?.maxRadius && opts.maxRadius > 0 ? opts.maxRadius * opts.maxRadius : Infinity;
+  for (const [id] of world.query('Transform')) {
+    if (id === opts?.excludeId) continue;
+    if (tagMask) {
+      const tag = world.getComponent<Tag>(id, 'Tag');
+      if (!tag || (tag.flags & tagMask) === 0) continue;
+    }
+    const t = world.getComponent<Transform>(id, 'Transform')!;
+    const dx = t.x - x;
+    const dy = t.y - y;
+    const d2 = dx * dx + dy * dy;
+    if (d2 > maxR2) continue;
+    if (d2 < bestD2 || (d2 === bestD2 && bestId !== undefined && id < bestId)) {
+      bestD2 = d2;
+      bestId = id;
+    }
+  }
+  return bestId;
+}
 
 // 范围查询：返回 (x,y) 半径 radius 内、拥有 Transform 的实体。
 export function queryRange(world: IWorld, x: number, y: number, radius: number): EntityId[] {

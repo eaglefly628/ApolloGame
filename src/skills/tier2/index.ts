@@ -14,3 +14,6 @@ export { clickableCapability } from './clickable.js';
 export { craftRecipeCapability } from './craft-recipe.js';
 export { zoneOccupancyCapability } from './zone-occupancy.js';
 export { hitboxCapability } from './hitbox.js';
+export { overTimeCapability } from './over-time.js';
+export { mortalCapability } from './mortal.js';
+export { steeringCapability } from './steering.js';

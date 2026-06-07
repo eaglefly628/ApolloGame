@@ -23,3 +23,11 @@ export { match3BoardCapability, findMatches, applyGravity, refillEmpty, adjacent
 // prefab（T4 授权层，REQ-ARPG）：数据级预制模板展开——消费 SpawnRequest，从 PrefabLibrary 确定性实例化。
 // 反「YAML→Node 编译器」：宏是数据，引擎展开，AI 不产代码。
 export { prefabCapability, instantiate } from './prefab.js';
+
+// caster（D-002，REQ-ARPG）：信号→生成桥——把按键/点地/条件成立的 Signal 接成算好坐标的 SpawnRequest，
+// 交给 prefab 展开技能/陷阱/掉落。补上 prefab 缺的"运行时按数据释放"入口（REQ-008 延后的那块）。
+export { casterCapability } from './caster.js';
+
+// aggro（D-001，REQ-ARPG）：AI 索敌段——感知最近 targetTag 阵营 → 写 Relation(target)（周期表 auto-target）。
+// 与 tier2/steering 配对成数据驱动追逐/逃跑 AI；目标产物化为通用 Relation，供 steering/caster/朝向复用。
+export { aggroCapability } from './aggro.js';

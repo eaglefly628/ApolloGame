@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import { World } from '@engine/core/world.js';
-import type { Hitbox, Tag, Status, Resource, Trigger, Transform, Shape, Sensor } from '@engine/protocol/components.js';
+import type { Hitbox, Tag, Status, Resource, Trigger, Transform, Shape, Sensor, OverTime } from '@engine/protocol/components.js';
 import { hitboxCapability } from './hitbox.js';
 import { triggerZoneCapability, ZONE_FLAG } from './trigger-zone.js';
 import { resourceCapability } from '@atom-skills/index.js';
@@ -85,6 +85,29 @@ describe('hitbox — 计算伤害 / 状态门（碎冰重锤）', () => {
     trigger(w, 'smash', 'm1');
     w.tick();
     expect(hp(w, 'm1')).toBe(100);
+  });
+});
+
+describe('hitbox — 时间维度（命中挂 OverTime，D-003 集成）', () => {
+  const ot = (w: World, e: string): OverTime | undefined => w.getComponent<OverTime>(e, 'OverTime');
+
+  it('statusDuration：命中置 frozen + 挂"定时清除"OverTime（到期自动解冻，免手动清场）', () => {
+    const w = combatWorld();
+    zone(w, 'nova', { resource: 'hp', amount: 5, targetMask: ENEMY, setMask: FROZEN, statusDuration: 120 });
+    mob(w, 'm1');
+    trigger(w, 'nova', 'm1');
+    w.tick();
+    expect(status(w, 'm1') & FROZEN).toBe(FROZEN);
+    expect(ot(w, 'm1')).toMatchObject({ duration: 120, clearStatusOnEnd: FROZEN });
+  });
+
+  it('dotPerTick：命中挂燃烧 DoT OverTime', () => {
+    const w = combatWorld();
+    zone(w, 'fire', { resource: 'hp', amount: 0, targetMask: ENEMY, dotPerTick: 5, dotPeriod: 30, dotDuration: 180 });
+    mob(w, 'm1');
+    trigger(w, 'fire', 'm1');
+    w.tick();
+    expect(ot(w, 'm1')).toMatchObject({ resource: 'hp', amountPerTick: -5, period: 30, duration: 180 });
   });
 });
 

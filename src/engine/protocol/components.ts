@@ -108,6 +108,25 @@ export interface Hitbox extends Component {
   requireMask?: number; // 仅作用于 Status.flags 含齐此位的目标（如碎冰要求 frozen）
   setMask?: number; // 命中后给目标 Status 置这些位（如 frozen）
   clearMask?: number; // 命中后清目标 Status 这些位（如碎冰解除 frozen）
+  // ── 时间维度（D-003 over-time 集成）：命中时给目标挂 OverTime，把"瞬时命中"延展成"持续效果"。──
+  statusDuration?: number; // >0：命中置 setMask 后，过 N tick 自动清这些位（定时冻结/眩晕，免手动清场）。
+  dotPerTick?: number; // >0：每 dotPeriod tick 对目标 resource 造成此真伤（中毒/燃烧 DoT，挂 OverTime）。
+  dotPeriod?: number; // DoT 结算周期（tick，缺省 1）。
+  dotDuration?: number; // DoT 总时长（tick）。
+}
+
+// ── OverTime ── 限时/持续效果（D-003）：挂在受影响实体自身，逐实体、局部寻址。
+// 每帧 elapsed+1；到 period 的整数倍则对自身 resource 发一条局部 ResourceModify(amountPerTick)
+// （负=DoT 流失 / 正=regen 回复）；elapsed≥duration 到期时清 clearStatusOnEnd 位并自销毁该组件（不毁实体）。
+// 修掉"瞬时位掩码 Status 无时长"的缺口：定时冻结、灼烧、中毒、缓回血全是它的特例。确定性：纯整数 tick 计数。
+export interface OverTime extends Component {
+  readonly type: 'OverTime';
+  resource?: string; // 周期改的资源 id（如 'hp'）；缺省 = 不改资源（纯定时状态，如定时冻结）
+  amountPerTick?: number; // 每 period 改的量（负=DoT，正=regen）；缺省 0
+  period: number; // 每多少 tick 结算一次（>=1）
+  duration: number; // 总时长 tick（>0）；<=0 = 永久（靠外部/clearStatusOnEnd 之外的方式清）
+  elapsed: number; // 已过 tick（每帧 +1，进 snapshot 可重放）
+  clearStatusOnEnd?: number; // 到期时清自身 Status 的这些位（定时冻结到期解冻）
 }
 
 // ── Prefab ── 数据级预制模板（T4 授权层，反 YAML 编译器）。模板 = 一组实体的组件蓝图（纯数据）。
@@ -121,6 +140,49 @@ export interface PrefabLibrary extends Component {
   readonly type: 'PrefabLibrary';
   templates: Record<string, PrefabTemplate>; // 模板库（数据）
   seq: number; // 实例计数器 → 确定性唯一 id（进 snapshot 可重放）
+}
+
+// ── Caster ── 信号→生成桥（D-002）：把"按键/点地/条件成立"的 Signal 变成一条算好坐标的 SpawnRequest，
+// 由 prefab 能力展开成技能/陷阱/召唤/掉落。补上 prefab 缺的"运行时释放"入口（REQ-008 显式延后的那块）。
+// at 决定生成位置：'self'=施法者自身、'pointer'=光标世界坐标(screenToWorld 逆投影)、'target'=最近的 targetTag 阵营。
+// 确定性：只读 Signal/InputQueue/Transform/Tag + 几何比较；按施法者 id 升序结算；坐标取整前为 IEEE 算术（不喂 Condition）。
+export interface Caster extends Component {
+  readonly type: 'Caster';
+  onSignal: string; // 收到此名 Signal 时释放（来自 clickable / event-when / 输入绑定）
+  template: string; // PrefabLibrary 里的模板 id
+  at: 'self' | 'pointer' | 'target'; // 生成位置来源
+  targetTag?: number; // at:'target' 时找最近的 Tag.flags 含此位的实体（缺省找最近任意实体）
+}
+
+// ── Perception ── 数据驱动 AI 的"索敌"原子（D-001，对应周期表 auto-target/range-detect）。逐实体感知
+// sightRadius 内最近的 targetTag 阵营 → 写 Relation{kind:'target', targetId}（无则清）。把"看见谁"产物化成
+// 通用 Relation(target)，供 steering(朝它移动)/朝向/caster(at:'target' 复用) 等多消费者复用——不再各自重扫。
+// 这是库里 ai-chase = state + spatial-query(nearest) + **relation(target)** + transform + velocity 的索敌段。
+export interface Perception extends Component {
+  readonly type: 'Perception';
+  targetTag: number; // 感知的阵营（Tag.flags & targetTag）
+  sightRadius: number; // 感知半径（<=0 = 无限视野）
+}
+
+// ── Steering ── 数据驱动 AI 的"转向"原子（D-001）。读自身 Relation{kind:'target'} → 朝目标 seek（到 stopRange
+// 停=攻击距离）或 flee（远离）→ 写 Velocity（被 motion-apply 积分、受碰撞/摩擦介入）。无目标→停（idle）。
+// 模式(seek/flee)与"巡逻↔追击↔逃跑"的转移交给 state+condition 当**数据**（库 ai-chase 的 state 段），不焊进本组件。
+// 确定性：方向归一化用 IEEE sqrt/÷（Velocity 不被 Condition 读 → lockstep 安全）。
+export interface Steering extends Component {
+  readonly type: 'Steering';
+  mode: 'seek' | 'flee'; // seek=朝 Relation(target)(到 stopRange 停)；flee=远离
+  speed: number; // 移动速度（写入 Velocity 的模长，单位/tick）
+  stopRange: number; // seek 到此距离内即停（攻击/保持距离）；flee 忽略
+  haltStatusMask?: number; // 自身 Status 含这些位时停止行动（冻结/眩晕/定身 CC → 速度归零）；缺省不受控
+}
+
+// ── Mortal ── 逐实体死亡/可破坏（D-001 配套）：自身 resource <= atOrBelow 即发 DestroyRequest 销毁自己。
+// 补"涌现逻辑层是全局-id、表达不了 N 怪各自 hp<=0 死亡"的缺口。怪死/可破坏障碍/到期拾取物通用。
+export interface Mortal extends Component {
+  readonly type: 'Mortal';
+  resource: string; // 监视的资源 id（如 'hp'）
+  atOrBelow: number; // current <= 此值即销毁自身（通常 0）
+  dropTemplate?: string; // 死亡时在原地（自身 Transform）发 SpawnRequest 展开此模板（掉落物/尸体/爆炸）
 }
 
 // ── B2 acceleration ── 实体的速度在怎么变

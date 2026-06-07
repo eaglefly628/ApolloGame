@@ -23,8 +23,11 @@ import {
   craftRecipeCapability,
   zoneOccupancyCapability,
   hitboxCapability,
+  overTimeCapability,
+  mortalCapability,
+  steeringCapability,
 } from '@skills/tier2/index.js';
-import { dialogueCapability, match3BoardCapability, prefabCapability } from '@skills/tier3/index.js';
+import { dialogueCapability, match3BoardCapability, prefabCapability, casterCapability, aggroCapability } from '@skills/tier3/index.js';
 
 // ═══════════════════════════════════════════════════════════════
 //  能力注册表 (Capability Registry) —— manifest 加载的地基
@@ -60,10 +63,15 @@ export const ALL_CAPABILITIES: readonly CapabilityDefinition[] = [
   craftRecipeCapability,
   zoneOccupancyCapability,
   hitboxCapability,
+  overTimeCapability,
+  mortalCapability,
+  steeringCapability,
   // tier3
   dialogueCapability,
   match3BoardCapability,
   prefabCapability,
+  casterCapability,
+  aggroCapability,
 ];
 
 export const CAPABILITY_REGISTRY: ReadonlyMap<string, CapabilityDefinition> = new Map(
