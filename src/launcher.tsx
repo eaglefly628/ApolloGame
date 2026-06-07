@@ -2,6 +2,7 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { createRoot } from 'react-dom/client';
 import { StudioInspector } from './studio/StudioInspector.js';
 import { parseManifest } from './assembly/manifest.js';
+import { deriveAssetIndex } from './assembly/derive-asset-index.js';
 import { buildCapabilityCatalog } from './assembly/capability-catalog.js';
 import { ALL_CAPABILITIES } from './assembly/capability-registry.js';
 import type { WorldBlueprint } from './assembly/demo.assembly.js';
@@ -853,6 +854,23 @@ function GameCreator({ onOpenInStudio }: { onOpenInStudio: (name: string, raw: u
                   <div style={{ color: '#94a3b8', fontSize: 12, marginBottom: 8 }}>
                     {result.blueprint?.description} · {result.blueprint?.entities?.length ?? 0} entities
                   </div>
+                  {/* R9 乙：从 AI 生成的蓝图自动派生「本局所需资产」清单（key 与逻辑同源，缺图自动占位）。 */}
+                  {(() => {
+                    try {
+                      const bp = parseManifest(result.blueprint);
+                      const idx = deriveAssetIndex(bp.capabilities, bp.entities);
+                      if (idx.assets.length === 0) return null;
+                      return (
+                        <div style={{
+                          color: '#a78bfa', fontSize: 11, marginBottom: 8,
+                          padding: '6px 10px', background: 'rgba(167,139,250,0.08)',
+                          borderRadius: 4, border: '1px solid rgba(167,139,250,0.15)',
+                        }}>
+                          🎨 引擎自动提取本局所需资产 {idx.assets.length} 项（待填充，缺图自动占位）：{idx.assets.map(a => a.id).join('、')}
+                        </div>
+                      );
+                    } catch { return null; }
+                  })()}
                   {result.warnings && result.warnings.length > 0 && (
                     <div style={{
                       color: '#fbbf24', fontSize: 11, marginBottom: 8,

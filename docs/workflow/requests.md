@@ -156,6 +156,10 @@
 >   2. ✅ **命名动画 clip 层（资产层）**：`AnimationDescriptor{key,atlas,frames[]}`（独立注册表，不污染 descriptor 联合体）；`resolve(animKey, index)` → 有序帧名 → 委托底层 atlas 取矩形。ECS 不变；顺带把 `Renderable`/渲染器接上 `Frame.index`（此前序列帧根本没逐帧渲染）。无双轨。
 >   3. ✅ **Node 资产打包工具（AOT 离线）**：`src/assets/pack-atlas.ts` 纯转换（FTP JSON→AssetIndex atlas 条目，有单测）+ `registerAssetIndex` 见 spec.frames 即注册成 atlas + `scripts/pack-atlas.mjs` 无依赖 fs 胶水。**唯一输出 AssetIndex**，不造第二个 manifest。
 > - ✅ **代码级 review 修复（Gemini 拿 1546 行真码逐行审，2026-06-07）**：修掉 **AudioSync 切歌 bug**（clipId 原位改不响应——存 clipId 快照而非组件引用）、**CanvasRenderer textCache 无界泄漏**（帧末按本帧渲染集反向清理）、**AssetManager inflight 失败不清理**（catch 清 inflight 留重试活路）、**AssetIndex baseUrl 缺斜杠**（防御补 `/`）；collectRenderables 装箱经裁定为 IPC/Worker/AI 解耦的合理 trade-off，保留不动。+4 回归测试，全量 557 绿。
+> - ✅ **AI 资产闭环收尾（2026-06-07，全量 621 绿）—— 甲+乙**：
+>   - **甲·从蓝图自动派生资产清单**：`deriveAssetIndex/collectAssetRefs`（src/assembly）扫蓝图所有 `assetKey` 字段值 = 这局引用的全部资产 key → tbf 购物单。**与逻辑同源 → textureKey 与资产 id 天生对齐**，根除"逻辑/资产 key 漂移"。字段 schema 加 `assetType` 按类归类。+4 测试。
+>   - **乙·接进 generate→热载**：launcher 生成结果区显示"引擎自动提取本局所需资产 N 项"（缺图自动占位）。+ 生成请求已带 `buildCapabilityCatalog(ALL_CAPABILITIES)` → apollo.py 注入 prompt（引擎自描述，新能力零 prompt 维护、不漂移）。
+>   - 闭环：**一句话 → AI 产蓝图 → 引擎自动列出所需资产(key 与逻辑一致) → 热载即玩(缺图占位)** —— "AI 算力平替"在资产侧的铁证。
 > - **PB 不阻塞部分仍可做**：Game B 槽位契约实例 + procedural 占位 provider（文档 §8）。
 
 **标题**：资产清单 + 资产管理器设计文档 review —— `docs/design/asset-manifest-and-manager.md`
