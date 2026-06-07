@@ -1,5 +1,11 @@
 # Apollo Game Framework - AI 驱动的模块化游戏框架
 
+> ⚠️ **早期愿景文档（2026-06-07 标注）。核心思想已落地，但「具体技术选型」已分叉——按此对照阅读：**
+> - 已**实现**的思想：LLM 编排而非生成 · **Manifest 数据格式**(`src/assembly/manifest.ts`) · **静态校验器**(R12，组件数据 schema 校验) · **引擎无关 Ports/Adapters**(`src/services/{storage,audio,aigp}`) · **Game Manifest=组装产物**(导出/导入对称)。
+> - 已**分叉/未采用**的具体方案：表现后端**不是 Cocos Creator**(实际 Canvas2D + Vite + React) · 首批不是**塔防**(实际 平台/VN/三消三游戏) · §5「塔防模块目录」、§10.3「模块市场」**未实现**。
+> - "模块(module)"在实现里收敛为 **capability/atom**(`src/skills/`)。**当前真相以 `docs/workflow/SESSION-HANDOFF.md` 为准。**
+> 仍被引用的概念章节（§1.1 护城河 / §4 Manifest / §6 Game Manifest / §7 校验器 / §9 Ports）保留有效；具体选型章节当历史读。
+
 ## 1. 愿景
 
 **一句话**：用户用自然语言描述想要的游戏 → AI 从精心打磨的模块库中选择、组装、配参 → 输出一个可玩的、有品质的游戏。
