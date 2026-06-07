@@ -459,6 +459,27 @@ export interface SpatialIndex extends Component {
   kind: 'grid' | 'quadtree';
 }
 
+// ── tilemap ── 瓦片地图（地图=数据：二维数组 + tileset assetKey；引擎=瓦片碰撞 + 渲染两台通用解释器）。
+// 瓦片不是实体、不进 tick；只在碰撞时被查询、被渲染器画。一个 collides 层里**非零**瓦片=实心(mass0 静态体)，
+// 0=空/可通行。多层分工：floor(不挡)/walls(挡)/decoration(不挡)。瓦片在世界里的位置：左上角 (originX,originY)，
+// 瓦片 (c,r) 覆盖世界 [originX+c*tileSize, +tileSize) × [originY+r*tileSize, +tileSize)。
+// 这是 Hades 式拼接的"房间"积木：一份 Tilemap = 一个房间；dungeon 能力(后)按种子拼多份。
+export interface TileLayer {
+  name: string; // 'floor' | 'walls' | 'decoration' | …
+  data: number[]; // 长 cols*rows，row-major，0=空，>0=tileId（tileset 里第几格，1-based）
+  collides: boolean; // 该层非零瓦片是否实心（参与瓦片碰撞）
+  tileset: string; // 图块集 assetKey（R9；渲染器据 tileId 算源矩形）
+}
+export interface Tilemap extends Component {
+  readonly type: 'Tilemap';
+  cols: number; // 横向格数
+  rows: number; // 纵向格数
+  tileSize: number; // 每格像素
+  originX: number; // 瓦片 (0,0) 左上角的世界 x（房间可放任意位置 → Hades 拼接）
+  originY: number;
+  layers: TileLayer[];
+}
+
 // ── 逻辑：Condition → Event（B 轴枢纽，离散逻辑层）─────────────────────────────
 // 比较算子（确定性：只比较数/字符串/bool，不碰浮点超越函数）。
 export type CmpOp = 'lt' | 'lte' | 'eq' | 'ne' | 'gte' | 'gt';

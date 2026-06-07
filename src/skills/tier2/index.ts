@@ -20,3 +20,4 @@ export { steeringCapability } from './steering.js';
 export { keybindCapability } from './keybind.js';
 export { statsCapability, computeEffective } from './stats.js';
 export { launchCapability } from './launch.js';
+export { tilemapCapability, findTilemap, isSolidTile } from './tilemap.js';

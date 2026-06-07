@@ -1,4 +1,5 @@
 import type { IWorld, RendererBackend } from '@engine/core/types.js';
+import type { Tilemap } from '@engine/protocol/components.js';
 import type { AssetManager } from '@assets/index.js';
 import { isImageHandle } from '@assets/index.js';
 import { collectRenderables, getCameraView, chooseRenderMode } from './renderable.js';
@@ -53,6 +54,9 @@ export class CanvasRenderer implements RendererBackend {
       ctx.scale(cam.zoom, cam.zoom);
       ctx.translate(-cam.centerX, -cam.centerY);
     }
+
+    // 瓦片地图（背景层，实体之下）：读 Tilemap 单例，按 tileId 从 tileset 图取源矩形画到世界位置。
+    this.drawTilemap(ctx, world);
 
     const seenText = new Set<string>(); // 本帧被渲染为文本的实体 → 帧末据此清理 textCache（防无界泄漏）
     for (const r of collectRenderables(world)) {
@@ -132,6 +136,35 @@ export class CanvasRenderer implements RendererBackend {
     const { sx, sy, sw, sh } = resolved;
     ctx.drawImage(resolved.asset.handle.image, sx, sy, sw, sh, -sw / 2, -sh / 2, sw, sh);
     return true;
+  }
+
+  // 画瓦片地图（单例 Tilemap）：每层据 tileId 从 tileset 图（按格宽推算每行格数）取源矩形，画到瓦片世界位置。
+  // tileset 未就绪 → 跳过该层（缺资产退化：先无瓦片，加载后自动显示）。瓦片纯表现、只读 world、不写回。
+  // （当前画全图；相机可见区裁剪是 follow-up——demo 房间数百格无压力。）
+  private drawTilemap(ctx: CanvasRenderingContext2D, world: IWorld): void {
+    if (!this.assets) return;
+    let tm: Tilemap | undefined;
+    for (const [e] of world.query('Tilemap')) {
+      tm = world.getComponent<Tilemap>(e, 'Tilemap');
+      break;
+    }
+    if (!tm) return;
+    const ts = tm.tileSize;
+    for (const layer of tm.layers) {
+      const resolved = this.assets.resolve(layer.tileset);
+      if (!resolved || !isImageHandle(resolved.asset.handle)) continue;
+      const img = resolved.asset.handle.image as HTMLImageElement | ImageBitmap; // 仅加载图片/bitmap，二者皆有 width
+      const tilesPerRow = Math.max(1, Math.floor(img.width / ts));
+      for (let r = 0; r < tm.rows; r++) {
+        for (let c = 0; c < tm.cols; c++) {
+          const id = layer.data[r * tm.cols + c] ?? 0;
+          if (id <= 0) continue;
+          const col = (id - 1) % tilesPerRow;
+          const row = Math.floor((id - 1) / tilesPerRow);
+          ctx.drawImage(img, col * ts, row * ts, ts, ts, tm.originX + c * ts, tm.originY + r * ts, ts, ts);
+        }
+      }
+    }
   }
 
   destroy(): void {
