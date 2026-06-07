@@ -83,6 +83,34 @@ export function validateComponentData(
   return { errors, warnings };
 }
 
+/**
+ * 资产引用硬校验（R9 增益 A，护城河）：凡声明为 `assetKey` 类型的组件字段，其值必须是
+ * 资产清单（AssetIndex/Manifest）里已注册的 key——否则 AI 可编造、运行期静默不画/不响。
+ * 把 §五.2 的 prompt 软约束升级成加载期硬校验（与 R12 同源）。未知 key = error（拒绝加载）。
+ * 仅当调用方提供了 assetKeys 集合时才校验；不提供则跳过（opt-in，不影响未接资产索引的路径）。
+ */
+export function validateAssetRefs(
+  capabilities: readonly CapabilityDefinition[],
+  entities: Record<string, EntityBlueprint>,
+  assetKeys: ReadonlySet<string>,
+): SchemaIssue[] {
+  const schemas = collectFieldSchemas(capabilities);
+  const errors: SchemaIssue[] = [];
+  for (const [eid, comps] of Object.entries(entities)) {
+    for (const [ctype, data] of Object.entries(comps as Record<string, unknown>)) {
+      const fields = schemas.get(ctype);
+      if (!fields || typeof data !== 'object' || data === null) continue;
+      for (const [fname, fval] of Object.entries(data as Record<string, unknown>)) {
+        if (fields[fname]?.type !== 'assetKey') continue;
+        if (typeof fval === 'string' && fval.length > 0 && !assetKeys.has(fval)) {
+          errors.push({ entity: eid, component: ctype, field: fname, message: `${ctype}.${fname} 引用了清单中不存在的资产 key "${fval}"（防 AI 编造）` });
+        }
+      }
+    }
+  }
+  return errors;
+}
+
 /** 把若干 issue 拼成一行可读消息（用于告警/抛错）。 */
 export function formatIssues(issues: readonly SchemaIssue[]): string {
   return issues

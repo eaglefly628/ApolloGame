@@ -77,6 +77,18 @@ export type AssetDescriptor =
 export type AssetManifest = readonly AssetDescriptor[];
 
 /**
+ * 命名动画剪辑（R9 增益 B）—— 把"一组**有序的图集命名帧**"当作一个可按 index 播放的资产。
+ * 自身**无图**：`frames` 是底层 `atlas` 里已命名帧的有序名字；`resolve(key, index)` 委托该 atlas 取帧矩形。
+ * 解决 `Frame.index(0..n)` → **非连续命名帧**（hero_attack_A/B/C，可乱序/跳取）的映射，ECS/Frame 组件不变。
+ * 不进 AssetDescriptor 联合体（它无物理图、无需加载），由 AssetManager 单独注册表持有。
+ */
+export interface AnimationDescriptor {
+  readonly key: string;
+  readonly atlas: string; // 底层 atlas 的 key（帧矩形的真正来源）
+  readonly frames: readonly string[]; // 有序帧名（atlas.frames 里的名字）
+}
+
+/**
  * 不透明资产句柄 —— 引擎不关心其具体形态。
  * 2D loader 产出可绘制图像(ImageBitmap / HTMLImageElement)；测试 stub 产出假句柄；
  * 未来 3D 后端可产出自己的句柄类型。这层不透明正是「换后端不动上层」的保证。

@@ -1,5 +1,6 @@
 import type {
   AssetDescriptor,
+  AnimationDescriptor,
   AssetHandle,
   AssetLoader,
   AssetManifest,
@@ -54,6 +55,8 @@ export class AssetManager {
   private readonly descriptors = new Map<string, AssetDescriptor>();
   private readonly loaded = new Map<string, LoadedAsset>();
   private readonly inflight = new Map<string, Promise<LoadedAsset>>();
+  // 命名动画剪辑（R9 增益 B）：逻辑分组、无物理图，故与描述符分开存；resolve 委托底层 atlas。
+  private readonly animations = new Map<string, AnimationDescriptor>();
 
   constructor(private readonly loader: AssetLoader) {}
 
@@ -67,9 +70,14 @@ export class AssetManager {
     for (const d of manifest) this.register(d);
   }
 
-  /** 是否已注册。 */
+  /** 注册命名动画剪辑（按 key；frames 引用底层 atlas 的命名帧）。无需加载（无自有图）。 */
+  registerAnimation(anim: AnimationDescriptor): void {
+    this.animations.set(anim.key, anim);
+  }
+
+  /** 是否已注册（描述符或动画剪辑）。 */
   has(key: string): boolean {
-    return this.descriptors.has(key);
+    return this.descriptors.has(key) || this.animations.has(key);
   }
 
   /** 是否已加载完成。 */
@@ -122,6 +130,13 @@ export class AssetManager {
    * 未加载或越界返回 undefined(渲染层据此退化为占位)。
    */
   resolve(key: string, frame?: FrameRef): ResolvedFrame | undefined {
+    // 命名动画剪辑（R9 增益 B）：index → 有序帧名 → 委托底层 atlas 取矩形（返回 atlas 的已加载资产）。
+    const anim = this.animations.get(key);
+    if (anim) {
+      const idx = typeof frame === 'number' ? frame : 0;
+      const name = anim.frames[idx];
+      return name === undefined ? undefined : this.resolve(anim.atlas, name);
+    }
     const asset = this.loaded.get(key);
     if (!asset) return undefined;
     const d = asset.descriptor;
@@ -160,5 +175,6 @@ export class AssetManager {
     this.descriptors.clear();
     this.loaded.clear();
     this.inflight.clear();
+    this.animations.clear();
   }
 }

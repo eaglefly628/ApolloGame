@@ -10,7 +10,7 @@ describe('sound atom', () => {
 
   it('provides Sound with clipId/volume/loop', () => {
     const f = soundCapability.components.provides.Sound.fields;
-    expect(f.clipId.type).toBe('string');
+    expect(f.clipId.type).toBe('assetKey'); // R9 增益 A：声明为资产 key，加载期对清单硬校验
     expect(f.volume.type).toBe('number');
     expect(f.loop.type).toBe('boolean');
   });

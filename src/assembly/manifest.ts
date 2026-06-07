@@ -1,6 +1,6 @@
 import type { WorldBlueprint, EntityBlueprint } from './demo.assembly.js';
 import { resolveCapabilities, inferCapabilityIds } from './capability-registry.js';
-import { validateComponentData, formatIssues } from './validate-manifest.js';
+import { validateComponentData, validateAssetRefs, formatIssues } from './validate-manifest.js';
 
 // ═══════════════════════════════════════════════════════════════
 //  Manifest 加载器 —— studio「导出 manifest」的逆运算
@@ -26,8 +26,13 @@ function fail(msg: string): never {
   throw new Error(`manifest: ${msg}`);
 }
 
+export interface ParseOptions {
+  /** 资产清单里所有已注册的 key（AssetIndex.assets[].id 等）。提供则对 `assetKey` 字段加载期硬校验（R9 增益 A）。 */
+  assetKeys?: ReadonlySet<string>;
+}
+
 /** 校验 + 加载规范 manifest → 可运行 WorldBlueprint（带推断/告警信息）。 */
-export function parseManifestDetailed(raw: unknown): ParseResult {
+export function parseManifestDetailed(raw: unknown, opts: ParseOptions = {}): ParseResult {
   if (typeof raw !== 'object' || raw === null) fail('根必须是对象');
   const obj = raw as Record<string, unknown>;
 
@@ -87,10 +92,16 @@ export function parseManifestDetailed(raw: unknown): ParseResult {
   for (const w of schema.warnings) warnings.push(formatIssues([w]));
   if (schema.errors.length) fail(`组件数据类型错误（${schema.errors.length} 处）—— ${formatIssues(schema.errors)}`);
 
+  // R9 增益 A：资产 key 硬校验（opt-in——仅当提供 assetKeys 集合时才查，未知 key 拒绝加载，防 AI 编造）。
+  if (opts.assetKeys) {
+    const assetErrors = validateAssetRefs(capabilities, entities, opts.assetKeys);
+    if (assetErrors.length) fail(`资产引用错误（${assetErrors.length} 处）—— ${formatIssues(assetErrors)}`);
+  }
+
   return { blueprint: { capabilities, entities }, inferredCapabilities: inferred, warnings };
 }
 
 /** 便捷版：只取可运行蓝图。 */
-export function parseManifest(raw: unknown): WorldBlueprint {
-  return parseManifestDetailed(raw).blueprint;
+export function parseManifest(raw: unknown, opts?: ParseOptions): WorldBlueprint {
+  return parseManifestDetailed(raw, opts).blueprint;
 }

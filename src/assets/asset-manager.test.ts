@@ -158,3 +158,25 @@ describe('AssetManager — 失败重试（inflight 不卡死）', () => {
     expect(attempts).toBe(2);
   });
 });
+
+describe('AssetManager — 命名动画剪辑（R9 增益 B：index→帧名→委托 atlas）', () => {
+  it('resolve(animKey, index) 按有序帧名委托底层 atlas 取矩形', async () => {
+    const m = makeManager(); // 含 heroine-face atlas（neutral@0 / smile@100 / blush@200，各 100x120）
+    await m.load('heroine-face');
+    m.registerAnimation({ key: 'face_anim', atlas: 'heroine-face', frames: ['neutral', 'smile', 'blush'] });
+    expect(m.has('face_anim')).toBe(true);
+    expect(m.resolve('face_anim', 0)).toMatchObject({ sx: 0, sy: 0, sw: 100, sh: 120 }); // neutral
+    expect(m.resolve('face_anim', 1)).toMatchObject({ sx: 100, sy: 0, sw: 100, sh: 120 }); // smile
+    expect(m.resolve('face_anim', 2)).toMatchObject({ sx: 200, sy: 0, sw: 100, sh: 120 }); // blush
+    expect(m.resolve('face_anim', 3)).toBeUndefined(); // 越界帧
+    expect(m.resolve('face_anim')).toMatchObject({ sx: 0, sy: 0 }); // 默认帧 0
+  });
+
+  it('非连续/乱序命名帧也能映射（hero_attack_A/B/C 任意取）', async () => {
+    const m = makeManager();
+    await m.load('heroine-face');
+    m.registerAnimation({ key: 'wink', atlas: 'heroine-face', frames: ['blush', 'neutral'] }); // 乱序子集
+    expect(m.resolve('wink', 0)).toMatchObject({ sx: 200 }); // blush
+    expect(m.resolve('wink', 1)).toMatchObject({ sx: 0 }); // neutral
+  });
+});

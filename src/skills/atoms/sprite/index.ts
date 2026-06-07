@@ -22,7 +22,7 @@ export const spriteCapability = defineCapability({
         category: 'render',
         describe: '贴图与渲染层级。渲染层每帧读取绘制。',
         fields: {
-          textureKey: { type: 'string', describe: '贴图资源键' },
+          textureKey: { type: 'assetKey', describe: '贴图资源键（须在资产清单中，加载期硬校验）' },
           anchorX: { type: 'number', describe: '锚点 X（0~1，0.5 为中心）' },
           anchorY: { type: 'number', describe: '锚点 Y（0~1，0.5 为中心）' },
           zOrder: { type: 'number', describe: '绘制顺序，越大越靠前' },

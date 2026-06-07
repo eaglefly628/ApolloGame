@@ -1,7 +1,8 @@
 import type { SystemDeclaration, ComponentType } from './types.js';
 
 export type ComponentCategory = 'resource' | 'event' | 'intent' | 'marker' | 'config' | 'render' | 'effect';
-export type FieldType = 'number' | 'string' | 'boolean' | 'EntityId' | 'string[]' | 'number[]';
+// 'assetKey'：值是资产清单(AssetIndex/Manifest)里的 key，加载期可对清单硬校验，防 AI 编造（R9 增益 A）。
+export type FieldType = 'number' | 'string' | 'boolean' | 'EntityId' | 'string[]' | 'number[]' | 'assetKey';
 
 export interface ComponentSchema {
   category: ComponentCategory;

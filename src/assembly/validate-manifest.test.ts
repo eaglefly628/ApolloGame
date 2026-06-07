@@ -1,6 +1,7 @@
 import { describe, it, expect } from 'vitest';
-import { validateComponentData, formatIssues } from './validate-manifest.js';
-import { resourceCapability, flagCapability } from '@atom-skills/index.js';
+import { validateComponentData, validateAssetRefs, formatIssues } from './validate-manifest.js';
+import { parseManifest } from './manifest.js';
+import { resourceCapability, flagCapability, spriteCapability, soundCapability } from '@atom-skills/index.js';
 import type { EntityBlueprint } from './demo.assembly.js';
 import { buildGameABlueprint, LEVEL_SCROLL } from '../games/game-a/index.js';
 import { buildGameBBlueprint } from '../games/game-b/index.js';
@@ -58,5 +59,45 @@ describe('R12 组件数据 schema 校验（复用 provides.fields，不另造）
       const r = validateComponentData(bp.capabilities, bp.entities);
       expect(r.errors, `${name}: ${formatIssues(r.errors)}`).toHaveLength(0);
     }
+  });
+});
+
+describe('R9 增益 A — 资产 key 硬校验（assetKey 字段对清单）', () => {
+  const caps = [spriteCapability, soundCapability];
+  const keys = new Set(['hero_idle', 'snd_coin']);
+
+  it('引用清单中存在的 key → 通过', () => {
+    const errs = validateAssetRefs(caps, ent({
+      h: { Sprite: { textureKey: 'hero_idle', anchorX: 0.5, anchorY: 0.5, zOrder: 0 } },
+      c: { Sound: { clipId: 'snd_coin', volume: 1, loop: false } },
+    }), keys);
+    expect(errs).toHaveLength(0);
+  });
+
+  it('引用清单中不存在的 key（AI 编造）→ error', () => {
+    const errs = validateAssetRefs(caps, ent({
+      h: { Sprite: { textureKey: 'hero_FABRICATED', anchorX: 0.5, anchorY: 0.5, zOrder: 0 } },
+    }), keys);
+    expect(errs).toHaveLength(1);
+    expect(errs[0].field).toBe('textureKey');
+    expect(errs[0].message).toMatch(/不存在的资产 key/);
+  });
+
+  it('非 assetKey 字段不受影响（zOrder 等数值字段不查清单）', () => {
+    const errs = validateAssetRefs(caps, ent({
+      h: { Sprite: { textureKey: 'hero_idle', anchorX: 0.5, anchorY: 0.5, zOrder: 999 } },
+    }), keys);
+    expect(errs).toHaveLength(0);
+  });
+
+  it('parseManifest 提供 assetKeys → 未知 key 拒绝加载（opt-in 硬校验）', () => {
+    // entities-only：能力由组件类型推断（含 sprite），免猜 capability id。
+    const manifest = {
+      entities: { h: { Sprite: { textureKey: 'ghost', anchorX: 0.5, anchorY: 0.5, zOrder: 0 } } },
+    };
+    // 不提供 assetKeys：放行（opt-in）。
+    expect(() => parseManifest(manifest)).not.toThrow();
+    // 提供 assetKeys 且不含 'ghost'：拒绝。
+    expect(() => parseManifest(manifest, { assetKeys: new Set(['hero_idle']) })).toThrow(/资产引用错误|不存在的资产 key/);
   });
 });

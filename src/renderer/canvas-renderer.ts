@@ -64,7 +64,7 @@ export class CanvasRenderer implements RendererBackend {
       ctx.fillStyle = r.color ? `#${(r.color.tint & 0xffffff).toString(16).padStart(6, '0')}` : '#e2e8f0';
 
       // 绘制模式：优先 Sprite（贴图就绪盖过 Shape，给可碰撞实体穿皮，REQ-005），否则退化几何/占位。
-      const spriteReady = r.sprite ? this.spriteReady(r.sprite.textureKey) : false;
+      const spriteReady = r.sprite ? this.spriteReady(r.sprite.textureKey, r.frame?.index) : false;
       const mode = chooseRenderMode(r, spriteReady);
 
       if (mode === 'text' && r.text) {
@@ -84,7 +84,7 @@ export class CanvasRenderer implements RendererBackend {
           ctx.fillText(cached.lines[li], 0, li * lineHeight);
         }
       } else if (mode === 'sprite' && r.sprite) {
-        this.drawSprite(ctx, r.sprite.textureKey); // spriteReady 已确认会成功
+        this.drawSprite(ctx, r.sprite.textureKey, r.frame?.index); // spriteReady 已确认会成功
       } else if (mode === 'shape' && r.shape?.kind === 'circle') {
         ctx.beginPath();
         ctx.arc(0, 0, r.shape.radius ?? 4, 0, Math.PI * 2);
@@ -118,18 +118,19 @@ export class CanvasRenderer implements RendererBackend {
   }
 
   // 贴图是否就绪（资产已加载且是图像句柄）。用于绘制模式选择：就绪才让 Sprite 盖过 Shape（REQ-005）。
-  private spriteReady(textureKey: string): boolean {
-    const frame = this.assets?.resolve(textureKey);
-    return !!frame && isImageHandle(frame.asset.handle);
+  // frameIndex：序列帧/命名动画的当前帧（来自 Frame.index）；整图/atlas 命名帧场景可忽略。
+  private spriteReady(textureKey: string, frameIndex?: number): boolean {
+    const resolved = this.assets?.resolve(textureKey, frameIndex);
+    return !!resolved && isImageHandle(resolved.asset.handle);
   }
 
-  // 解析 textureKey → 已加载帧，居中绘制源矩形。成功返回 true，否则 false(退化占位)。
+  // 解析 (textureKey, frameIndex) → 已加载帧，居中绘制源矩形。成功返回 true，否则 false(退化占位)。
   // (ctx 已被 sync 平移到实体中心；此处按帧尺寸居中绘制。)
-  private drawSprite(ctx: CanvasRenderingContext2D, textureKey: string): boolean {
-    const frame = this.assets?.resolve(textureKey);
-    if (!frame || !isImageHandle(frame.asset.handle)) return false;
-    const { sx, sy, sw, sh } = frame;
-    ctx.drawImage(frame.asset.handle.image, sx, sy, sw, sh, -sw / 2, -sh / 2, sw, sh);
+  private drawSprite(ctx: CanvasRenderingContext2D, textureKey: string, frameIndex?: number): boolean {
+    const resolved = this.assets?.resolve(textureKey, frameIndex);
+    if (!resolved || !isImageHandle(resolved.asset.handle)) return false;
+    const { sx, sy, sw, sh } = resolved;
+    ctx.drawImage(resolved.asset.handle.image, sx, sy, sw, sh, -sw / 2, -sh / 2, sw, sh);
     return true;
   }
 

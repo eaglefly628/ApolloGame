@@ -7,6 +7,7 @@ export type {
   SpriteSheetDescriptor,
   PrerenderedSequenceDescriptor,
   AssetDescriptor,
+  AnimationDescriptor,
   AssetManifest,
   AssetHandle,
   LoadedAsset,
@@ -15,6 +16,7 @@ export type {
   AssetLoader,
 } from './asset-types.js';
 export { AssetManager, StubAssetLoader } from './asset-manager.js';
+export { ftpFrames, ftpToAtlasEntry, mergeAtlasIntoIndex, normalizeFrameName, type FtpAtlasJson } from './pack-atlas.js';
 export { ImageAssetLoader, isImageHandle, type ImageAssetHandle } from './image-loader.js';
 export {
   parseAssetIndex,

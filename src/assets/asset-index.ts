@@ -1,5 +1,5 @@
 import type { AssetManager } from './asset-manager.js';
-import type { TextureDescriptor } from './asset-types.js';
+import type { TextureDescriptor, AtlasDescriptor, Rect } from './asset-types.js';
 
 // 原始资产存储索引（`assets/index.json`）的读取/校验/桥接。
 //
@@ -100,13 +100,13 @@ export function registerAssetIndex(manager: AssetManager, index: AssetIndex, bas
   const sep = baseUrl && !baseUrl.endsWith('/') ? '/' : '';
   for (const e of index.assets) {
     if (e.status !== 'filled' || e.type !== 'texture' || !e.path) continue;
-    const descriptor: TextureDescriptor = {
-      kind: 'texture',
-      key: e.id,
-      src: baseUrl + sep + e.path,
-      width: numOrUndef(e.spec?.width),
-      height: numOrUndef(e.spec?.height),
-    };
+    const src = baseUrl + sep + e.path;
+    // 带 spec.frames（打包工具 ③ 写入）→ 注册成 atlas（命名子矩形）；否则整图 texture。
+    const frames = e.spec?.frames as Record<string, Rect> | undefined;
+    const descriptor: TextureDescriptor | AtlasDescriptor =
+      frames && typeof frames === 'object'
+        ? { kind: 'atlas', key: e.id, src, frames }
+        : { kind: 'texture', key: e.id, src, width: numOrUndef(e.spec?.width), height: numOrUndef(e.spec?.height) };
     manager.register(descriptor);
   }
 }

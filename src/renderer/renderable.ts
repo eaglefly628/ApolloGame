@@ -1,5 +1,5 @@
 import type { IWorld } from '@engine/core/types.js';
-import type { Transform, Shape, Color, Sprite, Text, Visibility } from '@engine/protocol/components.js';
+import type { Transform, Shape, Color, Sprite, Text, Visibility, Frame } from '@engine/protocol/components.js';
 
 // 相机视图与世界↔屏幕投影已下沉为共享契约（renderer 正向投影 + clickable 逆向命中的单一真相）。
 // 此处重导出，保持既有 `@renderer/renderable` 消费者（canvas-renderer / 测试）的 import 不变。
@@ -18,6 +18,7 @@ export interface Renderable {
   shape?: Shape;
   color?: Color;
   sprite?: Sprite;
+  frame?: Frame; // 当前帧索引（序列帧/命名动画用；渲染器据此 resolve(textureKey, frame.index)）
   text?: Text;
 }
 
@@ -53,6 +54,7 @@ export function collectRenderables(world: IWorld): Renderable[] {
       shape: world.getComponent<Shape>(id, 'Shape'),
       color: world.getComponent<Color>(id, 'Color'),
       sprite,
+      frame: world.getComponent<Frame>(id, 'Frame'),
       text: world.getComponent<Text>(id, 'Text'),
     });
   }
