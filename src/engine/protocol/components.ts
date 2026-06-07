@@ -115,18 +115,26 @@ export interface Hitbox extends Component {
   dotDuration?: number; // DoT 总时长（tick）。
 }
 
-// ── OverTime ── 限时/持续效果（D-003）：挂在受影响实体自身，逐实体、局部寻址。
-// 每帧 elapsed+1；到 period 的整数倍则对自身 resource 发一条局部 ResourceModify(amountPerTick)
-// （负=DoT 流失 / 正=regen 回复）；elapsed≥duration 到期时清 clearStatusOnEnd 位并自销毁该组件（不毁实体）。
-// 修掉"瞬时位掩码 Status 无时长"的缺口：定时冻结、灼烧、中毒、缓回血全是它的特例。确定性：纯整数 tick 计数。
-export interface OverTime extends Component {
-  readonly type: 'OverTime';
+// ── TimedEffect ── 一个限时/持续效果（DoT/regen/定时状态）。多个并存在 OverTime.effects 列表里。
+// id：同 id 刷新（重置）而非叠加，防持续源无限叠层；不同 id 共存（燃烧 vs 冰冻 vs 毒，R14 真修 B）。
+export interface TimedEffect {
+  id?: string; // 效果标识（同 id 刷新、不同 id 共存）；缺省=每次都叠加一条
   resource?: string; // 周期改的资源 id（如 'hp'）；缺省 = 不改资源（纯定时状态，如定时冻结）
   amountPerTick?: number; // 每 period 改的量（负=DoT，正=regen）；缺省 0
   period: number; // 每多少 tick 结算一次（>=1）
   duration: number; // 总时长 tick（>0）；<=0 = 永久（靠外部/clearStatusOnEnd 之外的方式清）
   elapsed: number; // 已过 tick（每帧 +1，进 snapshot 可重放）
   clearStatusOnEnd?: number; // 到期时清自身 Status 的这些位（定时冻结到期解冻）
+}
+
+// ── OverTime ── 限时/持续效果容器（D-003 + R14 真修 B）：挂在受影响实体自身，持一个 TimedEffect 列表，
+// 逐实体、局部寻址。每帧每个效果 elapsed+1；到 period 整数倍 → 对自身 resource 发局部 ResourceModify
+// （多个效果的改值经 queueResourceMod 累加）；effect.elapsed≥duration 到期 → 清其 clearStatusOnEnd 位并从列表移除；
+// 列表空 → 自销毁组件（不毁实体）。一实体可同时燃烧+冰冻+中毒（各自计时/到期），修掉"一实体一 OverTime"的缺口。
+// 确定性：纯整数 tick 计数，按列表序处理（加性累加→序无关）。
+export interface OverTime extends Component {
+  readonly type: 'OverTime';
+  effects: TimedEffect[]; // 并存的限时效果（燃烧/冰冻/毒…各自一条）
 }
 
 // ── Prefab ── 数据级预制模板（T4 授权层，反 YAML 编译器）。模板 = 一组实体的组件蓝图（纯数据）。

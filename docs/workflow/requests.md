@@ -595,6 +595,13 @@
 > - **R9 资产**：`game-d/assets.ts` 声明 `GAME_D_ASSETS`（英雄/怪/掉落/三技能 SVG 占位），实体/模板挂 `Sprite` 穿皮；缺真资产退化几何（asset-flow ③）。
 > - **离线看帧**：`render-frame.ts` 复用纯函数 collectRenderables 把世界投影成 SVG（无浏览器也能确定性"看一帧"，缓解交接 §4「没在真浏览器看过一帧」）。**诚实**：仍未在真浏览器跑过（无 playwright/chromium），离线帧是数据级代理，非人眼/VLM 评审。
 
+> **✅ 第四批（2026-06-07，Programmer D，Lead 批 approve&merge 后定调）—— R14 真修（631 passed / tsc / build 全绿）**：
+> 根因 = 引擎"一实体一类型一组件"。Lead 评判：值得现在动（卡真实战斗）。**架构裁决：不动引擎内核**（多实例化全 API 涟漪 + 破确定性 + 反宪法，回驳），**能力层用"单组件持列表"**解（与 MatchBoard.cells / CraftRecipe.costs 同范式）。**爆炸半径锁在战斗簇**，不碰 match3/dialogue/game-b/c：
+> - **A 同帧多段伤害**：**不改 `ResourceModify` 的 shape**（零波及别的游戏），resource 原子加 `queueResourceMod()` 累加助手——同实体+同 resourceId+同 scope 则 `amount+=`。hitbox/over-time 改用它 → N 段命中打同一 hp 累加不丢。已知边界（罕见、战斗不触发）：同实体本帧改多个**不同局部资源**时退化为覆盖（与历史一致，无回归），真撞到再上 list。
+> - **B 燃烧+冰冻并存**：`OverTime` 改持 `TimedEffect[]`（仅 over-time/hitbox 用）。逐效果计时/到期、`id` 同则刷新防叠爆；hitbox 命中可**同时**挂 DoT + 定时状态（不再二选一）。`addTimedEffect` 助手。
+> - **测试**：over-time +"燃烧+冰冻并存各自到期"+"多 DoT 累加不覆盖"；hitbox +"同时挂 DoT+定时状态"。game-d 切片不改自过（读 Status 非 OverTime）。
+> - **Status bitmask 本就支持同时点亮多状态位**——卡的只是计时那半，B 补上。
+
 ---
 
 ## 需求模板（复制这段填写）

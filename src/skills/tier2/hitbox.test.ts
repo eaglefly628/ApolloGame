@@ -91,23 +91,32 @@ describe('hitbox — 计算伤害 / 状态门（碎冰重锤）', () => {
 describe('hitbox — 时间维度（命中挂 OverTime，D-003 集成）', () => {
   const ot = (w: World, e: string): OverTime | undefined => w.getComponent<OverTime>(e, 'OverTime');
 
-  it('statusDuration：命中置 frozen + 挂"定时清除"OverTime（到期自动解冻，免手动清场）', () => {
+  it('statusDuration：命中置 frozen + 挂"定时清除"TimedEffect（到期自动解冻，免手动清场）', () => {
     const w = combatWorld();
     zone(w, 'nova', { resource: 'hp', amount: 5, targetMask: ENEMY, setMask: FROZEN, statusDuration: 120 });
     mob(w, 'm1');
     trigger(w, 'nova', 'm1');
     w.tick();
     expect(status(w, 'm1') & FROZEN).toBe(FROZEN);
-    expect(ot(w, 'm1')).toMatchObject({ duration: 120, clearStatusOnEnd: FROZEN });
+    expect(ot(w, 'm1')!.effects[0]).toMatchObject({ duration: 120, clearStatusOnEnd: FROZEN });
   });
 
-  it('dotPerTick：命中挂燃烧 DoT OverTime', () => {
+  it('dotPerTick：命中挂燃烧 DoT TimedEffect', () => {
     const w = combatWorld();
     zone(w, 'fire', { resource: 'hp', amount: 0, targetMask: ENEMY, dotPerTick: 5, dotPeriod: 30, dotDuration: 180 });
     mob(w, 'm1');
     trigger(w, 'fire', 'm1');
     w.tick();
-    expect(ot(w, 'm1')).toMatchObject({ resource: 'hp', amountPerTick: -5, period: 30, duration: 180 });
+    expect(ot(w, 'm1')!.effects[0]).toMatchObject({ resource: 'hp', amountPerTick: -5, period: 30, duration: 180 });
+  });
+
+  it('R14-B：命中可同时挂 DoT + 定时状态（不再二选一）', () => {
+    const w = combatWorld();
+    zone(w, 'frostfire', { resource: 'hp', amount: 0, targetMask: ENEMY, setMask: FROZEN, statusDuration: 120, dotPerTick: 5, dotPeriod: 30, dotDuration: 180 });
+    mob(w, 'm1');
+    trigger(w, 'frostfire', 'm1');
+    w.tick();
+    expect(ot(w, 'm1')!.effects.length).toBe(2); // DoT + 定时冻结并存
   });
 });
 

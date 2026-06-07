@@ -1,5 +1,31 @@
 import { defineCapability } from '@engine/core/define-capability.js';
+import type { IWorld } from '@engine/core/types.js';
 import type { Resource, ResourceModify } from '@engine/protocol/components.js';
+
+// queueResourceMod —— 对一实体本帧排入一条资源改值，**同实体+同 resourceId+同 scope 则累加**（R14 真修 A）。
+// 解"同帧多段伤害"：N 个 hitbox/over-time 打同一敌人 hp → 各自 +amount 累加，不再后写覆盖前者丢伤害。
+// 加性 → 与生产者执行顺序无关 → 确定性。生产者（hitbox/over-time）改用它替代裸 addComponent。
+// 已知边界（罕见，战斗不触发）：同实体本帧已有**不同 resourceId/scope** 的 ResourceModify 时退化为覆盖
+// （与历史一致，无回归）——引擎一实体一组件，真撞到同帧改多个不同局部资源再上 list 形态。伤害恒为 local 'hp'。
+export function queueResourceMod(
+  world: IWorld,
+  entityId: string,
+  resourceId: string,
+  amount: number,
+  scope?: 'local' | 'global',
+): void {
+  const existing = world.getComponent<ResourceModify>(entityId, 'ResourceModify');
+  if (existing && existing.resourceId === resourceId && existing.scope === scope) {
+    existing.amount += amount; // 累加（同资源同 scope）
+    return;
+  }
+  if (!existing) {
+    world.addComponent(entityId, { type: 'ResourceModify', resourceId, amount, scope } as ResourceModify);
+    return;
+  }
+  // 已知边界：同实体本帧已有不同 (resourceId|scope) 的改值 → 覆盖退化（历史行为，无回归）。
+  world.addComponent(entityId, { type: 'ResourceModify', resourceId, amount, scope } as ResourceModify);
+}
 
 export const resourceCapability = defineCapability({
   id: 'f1-resource',

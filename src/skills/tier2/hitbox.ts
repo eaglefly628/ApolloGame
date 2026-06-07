@@ -1,6 +1,8 @@
 import { defineCapability } from '@engine/core/define-capability.js';
 import type { IWorld } from '@engine/core/types.js';
-import type { Trigger, Hitbox, Tag, Status, Resource, ResourceModify, OverTime } from '@engine/protocol/components.js';
+import type { Trigger, Hitbox, Tag, Status, Resource } from '@engine/protocol/components.js';
+import { queueResourceMod } from '@skills/atoms/resource/index.js';
+import { addTimedEffect } from './over-time.js';
 
 // ═══════════════════════════════════════════════════════════════
 //  hitbox —— 关系型战斗核心（ARPG 能力簇）。把"攻击判定命中 → 对命中目标结算"变成纯数据。
@@ -99,11 +101,11 @@ export const hitboxCapability = defineCapability({
             const st = world.getComponent<Status>(target, 'Status');
             if (!st || (st.flags & hb.requireMask) !== hb.requireMask) continue;
           }
-          // ③ 伤害（固定 + 计算），局部寻址到目标自身
+          // ③ 伤害（固定 + 计算），局部寻址到目标自身。queueResourceMod 累加 → 同帧多段命中不丢伤害（R14 真修 A）。
           let dmg = hb.amount ?? 0;
           if (hb.fracOfMax) dmg += Math.floor(maxOf(world, target, hb.resource) * hb.fracOfMax);
           if (dmg !== 0) {
-            world.addComponent(target, { type: 'ResourceModify', resourceId: hb.resource, amount: -dmg, scope: 'local' } as ResourceModify);
+            queueResourceMod(world, target, hb.resource, -dmg, 'local');
           }
           // ④ Status 置/清位
           if (hb.setMask || hb.clearMask) {
@@ -115,26 +117,26 @@ export const hitboxCapability = defineCapability({
             if (hb.setMask) st.flags |= hb.setMask;
             if (hb.clearMask) st.flags &= ~hb.clearMask;
           }
-          // ⑤ 时间维度（D-003 集成）：命中时挂 OverTime，把瞬时命中延展成持续效果。
-          //    一实体一 OverTime（R14 同源），故 DoT 与"定时状态清除"二选一：有 DoT 配置则挂 DoT，
-          //    否则挂"setMask 定时自动清除"（如定时冻结 → N tick 后自动解冻，免手动清场）。
+          // ⑤ 时间维度（D-003 + R14 真修 B）：命中时 addTimedEffect 追加到目标 OverTime 列表。
+          //    DoT 与"定时状态清除"现在**可同时挂**（各一条 TimedEffect，不再二选一）；同 id 刷新防叠爆。
           if (hb.dotPerTick && hb.dotDuration) {
-            world.addComponent(target, {
-              type: 'OverTime',
+            addTimedEffect(world, target, {
+              id: `dot:${hb.resource}`,
               resource: hb.resource,
               amountPerTick: -hb.dotPerTick,
               period: hb.dotPeriod ?? 1,
               duration: hb.dotDuration,
               elapsed: 0,
-            } as OverTime);
-          } else if (hb.statusDuration && hb.setMask) {
-            world.addComponent(target, {
-              type: 'OverTime',
+            });
+          }
+          if (hb.statusDuration && hb.setMask) {
+            addTimedEffect(world, target, {
+              id: `status:${hb.setMask}`,
               period: 1,
               duration: hb.statusDuration,
               elapsed: 0,
               clearStatusOnEnd: hb.setMask,
-            } as OverTime);
+            });
           }
         }
       },
