@@ -22,6 +22,7 @@ import {
   clickableCapability,
   craftRecipeCapability,
   zoneOccupancyCapability,
+  hitboxCapability,
 } from '@skills/tier2/index.js';
 import { dialogueCapability, match3BoardCapability } from '@skills/tier3/index.js';
 
@@ -58,6 +59,7 @@ export const ALL_CAPABILITIES: readonly CapabilityDefinition[] = [
   clickableCapability,
   craftRecipeCapability,
   zoneOccupancyCapability,
+  hitboxCapability,
   // tier3
   dialogueCapability,
   match3BoardCapability,

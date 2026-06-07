@@ -87,6 +87,29 @@ export interface Tag extends Component {
   flags: number;
 }
 
+// ── Status ── 实体身上的动态状态位掩码（frozen/burning/stunned…），运行时被战斗能力置/清位。
+// 与 Tag（静态身份/阵营）区分：Status 是会变的战斗状态。位语义由游戏数据定义（与 Tag 同风格）。
+export interface Status extends Component {
+  readonly type: 'Status';
+  flags: number;
+}
+
+// ── Hitbox ── 伤害源（攻击判定）。挂在被 ZONE_FLAG 标记的 Sensor+Shape+Transform 实体上：
+// trigger-zone 先产出 Trigger{zone:hitbox, other:目标}，hitbox 能力据此对每个进入的目标——
+// 若 Tag 匹配 targetMask（阵营过滤）且 Status 满足 requireMask（如碎冰要求 frozen）——
+// 按 amount/fracOfMax 算伤害、以局部 ResourceModify 路由到该目标，并可置/清其 Status 位。
+// AOE = 多 Trigger 自然 fan-out；逐目标 = 局部寻址；计算伤害 = fracOfMax；阵营/状态门 = mask。
+export interface Hitbox extends Component {
+  readonly type: 'Hitbox';
+  resource: string; // 目标身上要改的 Resource id（如 'hp'）
+  amount?: number; // 固定伤害（正数 = 伤害；内部按负向施加）
+  fracOfMax?: number; // 计算伤害 = 目标该资源 max 的此分数（如 0.2 = 20% max）
+  targetMask?: number; // 仅作用于 Tag.flags 含此位的目标（阵营过滤；缺省/0 = 不限）
+  requireMask?: number; // 仅作用于 Status.flags 含齐此位的目标（如碎冰要求 frozen）
+  setMask?: number; // 命中后给目标 Status 置这些位（如 frozen）
+  clearMask?: number; // 命中后清目标 Status 这些位（如碎冰解除 frozen）
+}
+
 // ── B2 acceleration ── 实体的速度在怎么变
 export interface Acceleration extends Component {
   readonly type: 'Acceleration';

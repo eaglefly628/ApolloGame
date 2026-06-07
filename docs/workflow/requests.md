@@ -550,6 +550,19 @@
 
 ---
 
+### REQ-ARPG · [2026-06-07] · 用户 · Game D（ARPG PoC，投资路演靶点）· status: **in-progress**（2026-06-07，Lead）· 优先级: 高 · **类型: 战略垂直切片 + 能力簇**
+
+> **背景**：用户提《Apollo AIGP 垂直切片：暗黑类 ARPG PoC》蓝图。Lead 逐层对照真实代码评审，结论：
+> - **T1（Transform/Shape/Mass/Resource/Sprite/Frame/Color/Tween）/ T2-A（collision-resolve）/ T2-B（Condition→Event→Effect）全部已覆盖**；§3 资产管线 ≈ R1+R9；§4 demo 闭环 ≈ studio+parseManifest（已建）。
+> - **回驳 T4 的「YAML→Node.js 编译器」**：违反最高纲领（在确定性引擎外塞自由代码编译器、旁路 parseManifest+R12 数据契约、且反噬 demo "AI 直出引擎数据"的论点）。**用户采纳反提案 B：数据级 `prefab` 能力**（引擎确定性展开，AI 产数据不产代码）。
+> - **真缺口簇「关系型战斗」**：现有涌现层是单例/全局-id 取向（VN flag/单 hp），ARPG 要逐实体（N 怪各自 hp/status、接触路由、计算数值、阵营过滤）。**用户决定：先下沉能力簇，再装配游戏。**
+>
+> **进度**：
+> - ✅ **关系型战斗核心 = `@skills/tier2/hitbox`**（一个能力覆盖 5 缺口）：复用 trigger-zone（伤害区标 ZONE_FLAG → Trigger）→ hitbox 读 Trigger，按 `Tag` 阵营(targetMask) + `Status` 门(requireMask) 过滤，对命中目标施**局部** ResourceModify（逐目标，scope:'local'）+ 置/清 `Status` 位；伤害支持固定 `amount` 与计算 `fracOfMax`(% maxHP)；多 Trigger 自然 AOE fan-out。新增 `Hitbox`/`Status` 组件。顺手补 `ResourceModify.scope` 字段声明（R12）。**7 测试含全链路集成（overlap→trigger→hitbox→resource），全量 543 绿。**
+> - ⏳ **下一步**：数据级 `prefab` 能力（T4 授权层）→ 纯数据装配冰霜新星 + 碎冰重锤（game-d 切片）。
+
+---
+
 ## 需求模板（复制这段填写）
 
 ```

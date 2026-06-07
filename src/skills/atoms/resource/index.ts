@@ -37,6 +37,7 @@ export const resourceCapability = defineCapability({
         fields: {
           resourceId: { type: 'string', describe: '目标资源的 id，与 Resource.id 匹配' },
           amount: { type: 'number', describe: '修改量，正数增加，负数减少' },
+          scope: { type: 'string', describe: "寻址作用域：'local'=仅同实体 / 'global'=强制按 id 全局 / 缺省 auto" },
         },
       },
     },
