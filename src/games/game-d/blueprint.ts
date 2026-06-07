@@ -11,11 +11,15 @@ import {
   overTimeCapability,
   mortalCapability,
   steeringCapability,
+  keybindCapability,
   collisionResolveCapability,
   cameraFollowCapability,
 } from '@skills/tier2/index.js';
 import { prefabCapability, casterCapability, aggroCapability } from '@skills/tier3/index.js';
 import { motionApplyCapability, lifetimeCapability } from '@skills/tier1/index.js';
+import { ASSET_HERO, ASSET_ENEMY, ASSET_LOOT, ASSET_NOVA, ASSET_SMASH, ASSET_FLAME } from './assets.js';
+
+const sprite = (textureKey: string, zOrder: number): Record<string, unknown> => ({ textureKey, anchorX: 0.5, anchorY: 0.5, zOrder });
 
 // ═══════════════════════════════════════════════════════════════
 //  Game D —— 暗黑类 ARPG 垂直切片（PoC）。**纯数据装配**，零游戏专属代码。
@@ -50,6 +54,7 @@ const FROST_NOVA: PrefabTemplate = {
       Tag: { flags: ZONE_FLAG },
       Hitbox: { resource: 'hp', targetMask: TEAM_ENEMY, setMask: STATUS_FROZEN, statusDuration: 90 },
       Timer: { id: 'life', elapsed: 0, duration: 2, loop: false },
+      Sprite: sprite(ASSET_NOVA, 2),
     },
   },
 };
@@ -64,6 +69,7 @@ const SHATTER_SMASH: PrefabTemplate = {
       Tag: { flags: ZONE_FLAG },
       Hitbox: { resource: 'hp', fracOfMax: 0.2, targetMask: TEAM_ENEMY, requireMask: STATUS_FROZEN, clearMask: STATUS_FROZEN },
       Timer: { id: 'life', elapsed: 0, duration: 2, loop: false },
+      Sprite: sprite(ASSET_SMASH, 2),
     },
   },
 };
@@ -78,6 +84,7 @@ const FLAME: PrefabTemplate = {
       Tag: { flags: ZONE_FLAG },
       Hitbox: { resource: 'hp', amount: 3, targetMask: TEAM_ENEMY, dotPerTick: 5, dotPeriod: 20, dotDuration: 120 },
       Timer: { id: 'life', elapsed: 0, duration: 2, loop: false },
+      Sprite: sprite(ASSET_FLAME, 2),
     },
   },
 };
@@ -90,6 +97,7 @@ const LOOT: PrefabTemplate = {
       Shape: { kind: 'box', width: 8, height: 8 },
       Color: { tint: 0xffcc00, alpha: 1 },
       Tag: { flags: LOOT_FLAG },
+      Sprite: sprite(ASSET_LOOT, 1),
     },
   },
 };
@@ -113,6 +121,7 @@ function enemy(x: number, y: number): EntityBlueprint {
     Perception: { targetTag: TEAM_PLAYER, sightRadius: 0 }, // 无限视野（演示用）
     Steering: { mode: 'seek', speed: 1, stopRange: 18, haltStatusMask: STATUS_FROZEN },
     Mortal: { resource: 'hp', atOrBelow: 0, dropTemplate: 'loot' },
+    Sprite: sprite(ASSET_ENEMY, 4),
   } as unknown as EntityBlueprint;
 }
 
@@ -121,7 +130,8 @@ export function buildGameDBlueprint(): WorldBlueprint {
     // 技能库（数据，单例）。
     library: { PrefabLibrary: { templates: GAME_D_TEMPLATES, seq: 0 } } as unknown as EntityBlueprint,
 
-    // 英雄：实心可动 + 相机目标 + 手柄操控 + 会死。Perception(锁敌) 让主动技能 caster(at:'target') 复用 Relation 自动索敌。
+    // 英雄：实心可动 + 相机目标 + WASD 操控 + 会死。Perception 锁最近敌人 → 写 Relation(target)，
+    // 供技能 caster(at:'target', originEntity:'hero') 复用做自动索敌（英雄移动后技能仍从英雄当前位置索敌）。
     hero: {
       Transform: xf(0, 0),
       Velocity: { vx: 0, vy: 0, angular: 0 },
@@ -133,12 +143,19 @@ export function buildGameDBlueprint(): WorldBlueprint {
       Controllable: { playerId: 'p1', speed: 2 },
       Mortal: { resource: 'hp', atOrBelow: 0 },
       Perception: { targetTag: TEAM_ENEMY, sightRadius: 0 },
-      Caster: { onSignal: 'cast_flame', template: 'flame', at: 'target', targetTag: TEAM_ENEMY },
+      Sprite: sprite(ASSET_HERO, 5),
     } as unknown as EntityBlueprint,
 
-    // 技能栏：点地 AoE（point-and-click，暗黑式）。释放 = 输入层发对应 Signal（数据）。
-    bind_nova: { Caster: { onSignal: 'cast_nova', template: 'frost_nova', at: 'pointer' } } as unknown as EntityBlueprint,
-    bind_smash: { Caster: { onSignal: 'cast_smash', template: 'shatter_smash', at: 'pointer' } } as unknown as EntityBlueprint,
+    // 技能栏（数据）：每把技能一个 Caster 实体（引擎一实体一 Caster），at:'target' 锚英雄(originEntity)自动索敌。
+    // 释放链：按键 → keymaps.ts(设备层) 发动作名 → keybind(key_*) 产 Signal → 对应 Caster → prefab 展开。
+    bind_nova: { Caster: { onSignal: 'cast_nova', template: 'frost_nova', at: 'target', targetTag: TEAM_ENEMY, originEntity: 'hero' } } as unknown as EntityBlueprint,
+    bind_smash: { Caster: { onSignal: 'cast_smash', template: 'shatter_smash', at: 'target', targetTag: TEAM_ENEMY, originEntity: 'hero' } } as unknown as EntityBlueprint,
+    bind_flame: { Caster: { onSignal: 'cast_flame', template: 'flame', at: 'target', targetTag: TEAM_ENEMY, originEntity: 'hero' } } as unknown as EntityBlueprint,
+
+    // 键位映射（数据，可重绑）：数字键动作名 → 释放信号。
+    key_1: { KeyBinding: { key: '1', signal: 'cast_nova' } } as unknown as EntityBlueprint,
+    key_2: { KeyBinding: { key: '2', signal: 'cast_smash' } } as unknown as EntityBlueprint,
+    key_3: { KeyBinding: { key: '3', signal: 'cast_flame' } } as unknown as EntityBlueprint,
 
     // 一小波敌人。
     enemy_a: enemy(120, 0),
@@ -151,7 +168,8 @@ export function buildGameDBlueprint(): WorldBlueprint {
 
   return {
     capabilities: [
-      // 释放 / 展开
+      // 输入 → 释放 / 展开
+      keybindCapability,
       prefabCapability,
       casterCapability,
       // AI（数据组合 ai-chase）

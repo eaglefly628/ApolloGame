@@ -587,7 +587,13 @@
 > - **D-003 限时/持续效果**：`@skills/tier2/over-time`（DoT/regen/定时状态，对应周期表 poison-dot/resource-regen），并给 `hitbox` 加 `statusDuration`/`dot*` 字段（命中挂 OverTime）→ **修掉旧切片"手动 destroy 才停冻"的 hack**（定时冻结自动解冻）。定序：`hitbox` runsBefore `over-time`；`steering` runsBefore `hitbox`/`over-time`（CC 读上一拍 Status，破一拍反馈环，R10 同法）。
 > - **game-d = 完整数据切片**：英雄(操控+相机+会死) + 三怪(ai-chase 追逐) + 冰霜新星/碎冰/烈焰/掉落(PrefabTemplate) + 点地/索敌施法(Caster)。6 测试证：AI 追逐、caster 释放、冰冻=定身+90tick 自动解冻、碎冰只打冰冻目标涌现、死亡掉落、确定性——**零 ARPG 专属代码**。
 > - **⚠️ 流程教训（已立规）**：开发前**漏读 `wiki/skills` 游戏开发知识库 + 周期表**（角色文档点名必读），致 `behavior` 一度做成单体、`over-time` 未对齐 poison-dot 框架。已补读并按更严格的原子分解重构。**今后每个新能力先读 wiki/skills 对应模块 + 周期表再设计。**
-> - **follow-up（非阻塞）**：按键→Signal 绑定（键位释放技能纯数据；UI 按钮已可用 clickable）、怪→英雄接触伤害（怪挂子攻击区，已论证可组合）、canvas 渲染/序列帧 VFX、低血逃跑/巡逻等模式（state+condition 数据，待逐实体 condition→state 小能力）。
+> - **follow-up（非阻塞）**：怪→英雄接触伤害（怪挂子攻击区，已论证可组合）、序列帧 VFX、低血逃跑/巡逻等模式（state+condition 数据，待逐实体 condition→state 小能力）。
+
+> **✅ 第三批（2026-06-07，Programmer D）—— 可玩化：按键绑定 + Canvas 渲染 + R9 资产（623 passed / tsc / build 全绿）**：
+> - **按键→Signal**：新 `@skills/tier2/keybind`（`KeyBinding{key,signal}` 数据 → 读 InputQueue 具名动作 → Signal；clickable 的非空间孪生，键位映射=数据，input.md 纪律）。键盘源 `KeyboardInputSource` 加"动作键"（边沿触发具名动作事件）。`caster` 加 `originEntity`（技能绑定实体把锚点/索敌委托英雄，绕过"一实体一 Caster"、不引入定序环）。
+> - **Canvas 渲染**：`game-d.tsx` 挂载（Engine + CanvasRenderer + KeyboardInputSource）+ 注册进 launcher 卡带。WASD 移动、1/2/3 释放冰霜新星/碎冰/烈焰、camera-follow 跟随。渲染器现成（box 几何 + 相机投影）。
+> - **R9 资产**：`game-d/assets.ts` 声明 `GAME_D_ASSETS`（英雄/怪/掉落/三技能 SVG 占位），实体/模板挂 `Sprite` 穿皮；缺真资产退化几何（asset-flow ③）。
+> - **离线看帧**：`render-frame.ts` 复用纯函数 collectRenderables 把世界投影成 SVG（无浏览器也能确定性"看一帧"，缓解交接 §4「没在真浏览器看过一帧」）。**诚实**：仍未在真浏览器跑过（无 playwright/chromium），离线帧是数据级代理，非人眼/VLM 评审。
 
 ---
 
