@@ -25,6 +25,7 @@
 - 分支 `claude/mainbranch`，**直推不开 PR**；每次提交前 `fetch → rebase → push`（多 session 并行）。**tsc + vitest + build 全绿才推**。
 - 提交署名 `Claude <noreply@anthropic.com>`。提交信息以 session URL 结尾。不在产物里写模型标识。
 - 需求池 `docs/workflow/requests.md`（Lead 评审→标状态）；各程序员开工清单 `docs/workflow/finish/{PA,PB,PC}-finish-list.md`。
+- **开发新 capability 前必查知识库**：先读 `wiki/skills/index.md` 找到对应分类，再读该分类的 `.md` 文件，了解行业最佳实践和常见陷阱，再动手实现。按需加载，不要一次性读完所有文件。
 
 ## 关键文件
 - 宪法：`docs/design/data-driven-manifesto.md`
