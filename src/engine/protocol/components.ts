@@ -110,6 +110,19 @@ export interface Hitbox extends Component {
   clearMask?: number; // 命中后清目标 Status 这些位（如碎冰解除 frozen）
 }
 
+// ── Prefab ── 数据级预制模板（T4 授权层，反 YAML 编译器）。模板 = 一组实体的组件蓝图（纯数据）。
+// AI/数据产出 SpawnRequest{templateId,x,y}（复用 spawn 原子的请求契约）→ prefab 能力查库、确定性展开为
+// 实体+组件（唯一 id、Transform 偏移到 x,y、深拷贝隔离）。"AI 写高层数据、引擎确定性展开"，无自由代码。
+export interface PrefabTemplate {
+  // localId → { 组件类型 → 组件数据（不含 type 字段，与 manifest 约定一致） }
+  entities: Record<string, Record<string, Record<string, unknown>>>;
+}
+export interface PrefabLibrary extends Component {
+  readonly type: 'PrefabLibrary';
+  templates: Record<string, PrefabTemplate>; // 模板库（数据）
+  seq: number; // 实例计数器 → 确定性唯一 id（进 snapshot 可重放）
+}
+
 // ── B2 acceleration ── 实体的速度在怎么变
 export interface Acceleration extends Component {
   readonly type: 'Acceleration';

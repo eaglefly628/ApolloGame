@@ -24,7 +24,7 @@ import {
   zoneOccupancyCapability,
   hitboxCapability,
 } from '@skills/tier2/index.js';
-import { dialogueCapability, match3BoardCapability } from '@skills/tier3/index.js';
+import { dialogueCapability, match3BoardCapability, prefabCapability } from '@skills/tier3/index.js';
 
 // ═══════════════════════════════════════════════════════════════
 //  能力注册表 (Capability Registry) —— manifest 加载的地基
@@ -63,6 +63,7 @@ export const ALL_CAPABILITIES: readonly CapabilityDefinition[] = [
   // tier3
   dialogueCapability,
   match3BoardCapability,
+  prefabCapability,
 ];
 
 export const CAPABILITY_REGISTRY: ReadonlyMap<string, CapabilityDefinition> = new Map(

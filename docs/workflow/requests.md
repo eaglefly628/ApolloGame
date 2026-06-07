@@ -559,7 +559,8 @@
 >
 > **进度**：
 > - ✅ **关系型战斗核心 = `@skills/tier2/hitbox`**（一个能力覆盖 5 缺口）：复用 trigger-zone（伤害区标 ZONE_FLAG → Trigger）→ hitbox 读 Trigger，按 `Tag` 阵营(targetMask) + `Status` 门(requireMask) 过滤，对命中目标施**局部** ResourceModify（逐目标，scope:'local'）+ 置/清 `Status` 位；伤害支持固定 `amount` 与计算 `fracOfMax`(% maxHP)；多 Trigger 自然 AOE fan-out。新增 `Hitbox`/`Status` 组件。顺手补 `ResourceModify.scope` 字段声明（R12）。**7 测试含全链路集成（overlap→trigger→hitbox→resource），全量 543 绿。**
-> - ⏳ **下一步**：数据级 `prefab` 能力（T4 授权层）→ 纯数据装配冰霜新星 + 碎冰重锤（game-d 切片）。
+> - ✅ **数据级 `prefab` 能力 = `@skills/tier3/prefab`**（T4 授权层）：复用 spawn 原子的 `SpawnRequest`（请求契约已有、展开系统此前为空）→ 从单例 `PrefabLibrary`（模板=数据）确定性展开实体（唯一 id `tid#seq:local`、Transform 偏移到 (x,y)、深拷贝隔离实例）。新增 `PrefabLibrary`/`PrefabTemplate`。**money-shot 集成测试**：`SpawnRequest{frost_nova}`（数据）→ 展开 nova → overlap→trigger→hitbox→resource → 敌人真扣血 + 冻结，**零游戏代码、零编译器**——正是 PoC 论点。+7 测试，全量 551 绿。
+> - ⏳ **下一步**：纯数据装配 game-d 切片（冰霜新星 + 碎冰重锤），证端到端可玩 demo。
 
 ---
 

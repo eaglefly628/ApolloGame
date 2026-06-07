@@ -19,3 +19,7 @@ export type { DialogueScript, DialogueAdvance, DialogueChoose, DialogueNode, Dia
 // match3-board（REQ-C-001）：算法/解释器型机制——网格三消（交换/找连/消除产出/重力/补块/连锁），
 // config 驱动、确定性。Condition→Event→Effect 表达不了带网格扫描/循环的算法，这是周期表缺失的「Match-3」格。
 export { match3BoardCapability, findMatches, applyGravity, refillEmpty, adjacent, cellIndex } from './match3-board.js';
+
+// prefab（T4 授权层，REQ-ARPG）：数据级预制模板展开——消费 SpawnRequest，从 PrefabLibrary 确定性实例化。
+// 反「YAML→Node 编译器」：宏是数据，引擎展开，AI 不产代码。
+export { prefabCapability, instantiate } from './prefab.js';
