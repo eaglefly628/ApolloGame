@@ -30,6 +30,8 @@ import {
 } from './inspect.js';
 import { studioAssets } from './assets-model.js';
 import { AssetBrowser } from './AssetBrowser.js';
+import { applyEditOps, type Entities } from './edit-ops.js';
+import { resolveEdits, parseCommand } from './edit-resolve.js';
 
 // ═══════════════════════════════════════════════════════════════
 //  游戏数据透视器 (Data Inspector) — 把"游戏=数据"做成可见可改可预览
@@ -224,6 +226,8 @@ export function StudioInspector({ onBack, extraGame }: { onBack: () => void; ext
   const [assetIndex, setAssetIndex] = useState<AssetIndex | null>(null);
   const [treeNonce, setTreeNonce] = useState(0); // 切游戏/重置时强制重挂数据树(刷新输入缓冲)
   const [flashed, setFlashed] = useState<string | null>(null); // 资产双击定位 → 高亮的实体
+  const [nlCmd, setNlCmd] = useState(''); // 自然语言/命令行编辑输入
+  const [nlMsg, setNlMsg] = useState<{ ok: boolean; text: string } | null>(null);
   const previewRef = useRef<HTMLDivElement>(null);
   const engineRef = useRef<Engine | null>(null);
   const rendererRef = useRef<CanvasRenderer | null>(null);
@@ -302,6 +306,34 @@ export function StudioInspector({ onBack, extraGame }: { onBack: () => void; ext
   }, []);
 
   const apply = useCallback(() => setAppliedBp(workingBp), [workingBp]);
+
+  // 自然语言/命令编辑：命令行解析(零模型对照) → 解析吸附 → 强校验应用 → 改 workingBp(点重跑生效)。
+  // LLM 接入后只需把 parseCommand 换成"模型产 LooseEdit[]"，复用同一 resolve/apply 管线。
+  const runNlEdit = useCallback(() => {
+    const line = nlCmd.trim();
+    if (!line) return;
+    const parsed = parseCommand(line);
+    if ('error' in parsed) {
+      setNlMsg({ ok: false, text: parsed.error });
+      return;
+    }
+    const ents = workingBp.entities as unknown as Entities;
+    const { ops, errors } = resolveEdits(ents, [parsed]);
+    if (errors.length) {
+      setNlMsg({ ok: false, text: errors.join('；') });
+      return;
+    }
+    const { entities: next, results } = applyEditOps(ents, ops);
+    const bad = results.filter((r) => !r.ok);
+    if (bad.length) {
+      setNlMsg({ ok: false, text: bad.map((b) => b.reason).join('；') });
+      return;
+    }
+    setWorkingBp((bp) => ({ ...bp, entities: next as typeof bp.entities }));
+    const r0 = results[0];
+    setNlMsg({ ok: true, text: `已改 ${r0.op.entity}：${JSON.stringify(r0.before)} → ${JSON.stringify(r0.after)}（点上方"重跑"看效果）` });
+    setNlCmd('');
+  }, [nlCmd, workingBp]);
 
   const reset = useCallback(() => {
     const def = allGames.find((g) => g.id === gameId);
@@ -501,8 +533,31 @@ export function StudioInspector({ onBack, extraGame }: { onBack: () => void; ext
           </div>
         </div>
 
-        {/* Right: full editable data tree */}
+        {/* Right: NL edit box + full editable data tree */}
         <div style={{ flex: 1, minWidth: 360 }}>
+          {/* 自然语言/命令编辑（模型无关地基：解析→吸附→强校验→应用，零模型可用） */}
+          <div style={{ marginBottom: 10, padding: 10, background: 'rgba(167,139,250,0.06)', border: `1px solid rgba(167,139,250,0.2)`, borderRadius: 8 }}>
+            <div style={{ color: C.purple, fontSize: 12, fontWeight: 600, marginBottom: 6 }}>✎ 自然语言编辑（模型无关）</div>
+            <div style={{ display: 'flex', gap: 6 }}>
+              <input
+                value={nlCmd}
+                onChange={(e) => setNlCmd(e.target.value)}
+                onKeyDown={(e) => e.key === 'Enter' && runNlEdit()}
+                placeholder='如：player 重力 0.9 ｜ player 速度 x1.5 ｜ platform0 变蓝'
+                style={{ flex: 1, background: 'rgba(0,0,0,0.35)', color: C.text, border: `1px solid ${C.border}`, borderRadius: 6, fontSize: 12, padding: '6px 8px', outline: 'none' }}
+              />
+              <button onClick={runNlEdit} style={btn({ background: 'rgba(167,139,250,0.18)', color: C.purple, borderColor: 'rgba(167,139,250,0.4)' })}>应用编辑</button>
+            </div>
+            {nlMsg && (
+              <div style={{ marginTop: 6, fontSize: 11, color: nlMsg.ok ? C.green : C.red }}>
+                {nlMsg.ok ? '✓ ' : '✗ '}{nlMsg.text}
+              </div>
+            )}
+            <div style={{ marginTop: 4, fontSize: 10, color: C.dim }}>
+              格式 <code>实体 目标 值</code>：<code>0.9</code>=设值 · <code>x1.5</code>=相对乘 · <code>+3/-2</code>=相对加 · <code>变蓝/颜色 红</code>=改色。错值会被强校验拦截。
+            </div>
+          </div>
+
           <div style={{ color: C.dim, fontSize: 11, marginBottom: 8 }}>
             完整数据（实体 → 组件 → 字段，全可改；改完点上方"重跑"应用）
           </div>
