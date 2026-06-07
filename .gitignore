@@ -7,3 +7,5 @@ dist/
 .claude/worktrees/
 __pycache__/
 *.pyc
+# Gemini review 导出包是"生成→发一次"的临时产物，别入库占 token（历史包已删，见 git history）。
+review-for-gemini*.txt

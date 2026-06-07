@@ -28,6 +28,6 @@
 
 ## 关键文件
 - 宪法：`docs/design/data-driven-manifesto.md`
-- 交接：`docs/workflow/SESSION-HANDOFF.md`、`SESSION-HANDOFF-claude2.md`
+- 交接/现状：`docs/workflow/SESSION-HANDOFF.md`（单一真相：机制+状态+TODO 审计）
 - 能力库：`src/skills/{atoms,tier1,tier2,tier3}`；组件契约 `src/engine/protocol/components.ts`
 - 游戏（应趋近纯数据）：`src/games/{game-a,game-b,game-c}`
