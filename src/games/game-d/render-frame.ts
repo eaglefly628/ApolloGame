@@ -3,6 +3,7 @@
 //   npx vite-node src/games/game-d/render-frame.ts > game-d-frame.svg
 import { Engine } from '../../runtime/engine.js';
 import { collectRenderables, getCameraView } from '../../renderer/renderable.js';
+import { findTilemap } from '@skills/tier2/index.js';
 import type { Transform, SpawnRequest, Status } from '@engine/protocol/components.js';
 import { buildGameDBlueprint, GAME_D_ASSETS, VIEWPORT_W, VIEWPORT_H, STATUS_FROZEN } from './index.js';
 
@@ -25,6 +26,24 @@ const cam = getCameraView(e.world);
 const cx = cam?.centerX ?? 0;
 const cy = cam?.centerY ?? 0;
 const zoom = cam?.zoom ?? 1;
+
+// 瓦片地图（背景层，实体之下）：按 tileId 上色铺底。
+let tiles = '';
+const tm = findTilemap(e.world);
+if (tm) {
+  const tileColor = (id: number): string => (id === 1 ? '#34343e' : id === 2 ? '#1f1f28' : id === 3 ? '#ff9a32' : '#2a2a32');
+  for (const layer of tm.layers) {
+    for (let r = 0; r < tm.rows; r++) {
+      for (let c = 0; c < tm.cols; c++) {
+        const id = layer.data[r * tm.cols + c] ?? 0;
+        if (id <= 0) continue;
+        const x = tm.originX + c * tm.tileSize;
+        const y = tm.originY + r * tm.tileSize;
+        tiles += `<rect x="${x}" y="${y}" width="${tm.tileSize}" height="${tm.tileSize}" fill="${tileColor(id)}"/>`;
+      }
+    }
+  }
+}
 
 let body = '';
 for (const r of collectRenderables(e.world)) {
@@ -49,7 +68,7 @@ for (const r of collectRenderables(e.world)) {
 const svg =
   `<svg xmlns="http://www.w3.org/2000/svg" width="${VIEWPORT_W}" height="${VIEWPORT_H}">` +
   `<rect width="${VIEWPORT_W}" height="${VIEWPORT_H}" fill="#0a0a14"/>` +
-  `<g transform="translate(${VIEWPORT_W / 2},${VIEWPORT_H / 2}) scale(${zoom}) translate(${-cx},${-cy})">${body}</g>` +
+  `<g transform="translate(${VIEWPORT_W / 2},${VIEWPORT_H / 2}) scale(${zoom}) translate(${-cx},${-cy})">${tiles}${body}</g>` +
   `<text x="12" y="24" font-family="system-ui" font-size="13" fill="#cbd5e1">Game D · 暗黑类 ARPG 切片 —— 怪追英雄 · 冰霜新星冻住范围内怪（纯数据涌现）</text>` +
   `</svg>`;
 

@@ -14,4 +14,5 @@ export {
   STATUS_FROZEN,
 } from './blueprint.js';
 export { KEYMAP_D, PLAYER_D, VIEWPORT_W, VIEWPORT_H } from './keymaps.js';
-export { GAME_D_ASSETS, ASSET_HERO, ASSET_ENEMY, ASSET_LOOT, ASSET_NOVA, ASSET_SMASH, ASSET_FLAME } from './assets.js';
+export { GAME_D_ASSETS, ASSET_HERO, ASSET_ENEMY, ASSET_LOOT, ASSET_NOVA, ASSET_SMASH, ASSET_FLAME, ASSET_TILES } from './assets.js';
+export { buildDungeonRoom, MAP_COLS, MAP_ROWS, MAP_TILE } from './map.js';

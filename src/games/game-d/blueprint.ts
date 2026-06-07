@@ -12,12 +12,14 @@ import {
   mortalCapability,
   steeringCapability,
   keybindCapability,
+  tilemapCapability,
   collisionResolveCapability,
   cameraFollowCapability,
 } from '@skills/tier2/index.js';
 import { prefabCapability, casterCapability, aggroCapability } from '@skills/tier3/index.js';
 import { motionApplyCapability, lifetimeCapability } from '@skills/tier1/index.js';
 import { ASSET_HERO, ASSET_ENEMY, ASSET_LOOT, ASSET_NOVA, ASSET_SMASH, ASSET_FLAME } from './assets.js';
+import { buildDungeonRoom } from './map.js';
 
 const sprite = (textureKey: string, zOrder: number): Record<string, unknown> => ({ textureKey, anchorX: 0.5, anchorY: 0.5, zOrder });
 
@@ -130,6 +132,9 @@ export function buildGameDBlueprint(): WorldBlueprint {
     // 技能库（数据，单例）。
     library: { PrefabLibrary: { templates: GAME_D_TEMPLATES, seq: 0 } } as unknown as EntityBlueprint,
 
+    // 地牢房间（数据，单例）：石地 + 四面围墙(实心) + 火把/地裂装饰。英雄/怪被墙框在房内。
+    map: { Tilemap: buildDungeonRoom() } as unknown as EntityBlueprint,
+
     // 英雄：实心可动 + 相机目标 + WASD 操控 + 会死。Perception 锁最近敌人 → 写 Relation(target)，
     // 供技能 caster(at:'target', originEntity:'hero') 复用做自动索敌（英雄移动后技能仍从英雄当前位置索敌）。
     hero: {
@@ -177,6 +182,8 @@ export function buildGameDBlueprint(): WorldBlueprint {
       steeringCapability,
       motionApplyCapability,
       collisionResolveCapability,
+      tilemapCapability, // 瓦片碰撞：把英雄/怪框在房内（runsAfter collision-resolve）
+
       // 战斗结算
       overlapDetectCapability,
       triggerZoneCapability,

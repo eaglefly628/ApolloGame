@@ -14,6 +14,8 @@ export const ASSET_LOOT = 'd.loot';
 export const ASSET_NOVA = 'd.skill.nova';
 export const ASSET_SMASH = 'd.skill.smash';
 export const ASSET_FLAME = 'd.skill.flame';
+// 图块集（tileset）：横向 4 格条带，每格 32px → tile 1 地板 / 2 墙 / 3 火把 / 4 地裂。
+export const ASSET_TILES = 'd.tiles';
 
 export const GAME_D_ASSETS: AssetManifest = [
   // 英雄：蓝甲骑士占位。
@@ -97,5 +99,29 @@ export const GAME_D_ASSETS: AssetManifest = [
     ),
     width: 80,
     height: 80,
+  },
+  // 图块集 128×32：tile1 地板(石) / tile2 墙(暗砖) / tile3 火把(墙+火) / tile4 地裂。
+  {
+    kind: 'texture',
+    key: ASSET_TILES,
+    src: svg(
+      // tile1 地板 (0-32)
+      `<rect x="0" y="0" width="32" height="32" fill="#34343e"/>` +
+        `<path d="M0 16 H32 M16 0 V32" stroke="#2b2b34" stroke-width="1"/>` +
+        // tile2 墙 (32-64)
+        `<rect x="32" y="0" width="32" height="32" fill="#1f1f28"/>` +
+        `<path d="M32 11 H64 M32 22 H64 M48 0 V11 M40 11 V22 M56 11 V22 M48 22 V32" stroke="#15151c" stroke-width="1.5"/>` +
+        // tile3 火把 (64-96)：墙底 + 火把杆 + 火苗
+        `<rect x="64" y="0" width="32" height="32" fill="#1f1f28"/>` +
+        `<rect x="79" y="16" width="2" height="12" fill="#5a4326"/>` +
+        `<path d="M80 6 Q87 15 80 20 Q73 15 80 6 Z" fill="#ff9a32"/><path d="M80 10 Q84 16 80 20 Q76 16 80 10 Z" fill="#ffe07a"/>` +
+        // tile4 地裂 (96-128)
+        `<rect x="96" y="0" width="32" height="32" fill="#34343e"/>` +
+        `<path d="M100 4 L112 14 L108 20 L120 28" stroke="#22222a" stroke-width="1.5" fill="none"/>`,
+      128,
+      32,
+    ),
+    width: 128,
+    height: 32,
   },
 ];

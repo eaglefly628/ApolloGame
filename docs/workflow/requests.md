@@ -602,6 +602,12 @@
 > - **测试**：over-time +"燃烧+冰冻并存各自到期"+"多 DoT 累加不覆盖"；hitbox +"同时挂 DoT+定时状态"。game-d 切片不改自过（读 Status 非 OverTime）。
 > - **Status bitmask 本就支持同时点亮多状态位**——卡的只是计时那半，B 补上。
 
+> **✅ 第五批（2026-06-07，Programmer D，用户 GDD 评审后对齐）—— 背景/地图：tilemap 能力 + 第一张地牢房（637 passed / tsc / build 全绿）**：
+> 用户提商业级地图/Sprite动作/怪物等级/打击感 GDD。逐条数据驱动评判（见对话）：**地图/动画/怪/VFX 仍全是数据，引擎只加几台通用解释器**。地图生成范式**对齐 Hades 式**（手作房间 tilemap 数据 + 确定性 dungeon 拼接），非 Diablo 纯噪声（商业级靠"设计"非噪声、更数据驱动）。优先级：地图优先。
+> - **`@skills/tier2/tilemap`**（真缺口）：`Tilemap` 组件（数据=cols/rows/tileSize/origin + layers[{data:number[],collides,tileset}]，瓦片非实体）+ `tile-collision` 系统（Resolve 相位、runsAfter collision-resolve，动态体推出实心瓦片）。CanvasRenderer 加画瓦片（按 tileId 从 tileset 取源矩形）。地图=数据，引擎=碰撞+渲染两台通用解释器，零 game-d 专属代码。
+> - **第一张地牢房**：`game-d/map.ts` 一份 Tilemap（石地+四面围墙实心+火把/地裂装饰）+ tileset 资产（R9 SVG 占位条带）。**一份 Tilemap = 一个 Hades 拼接积木**——后续 dungeon 能力按种子拼多份。英雄/怪被墙框在房内。
+> - **后续（已对齐顺序，未做）**：`anim-state`(动作动画 clip→帧) → VFX 打击感(ParticleRequest 粒子+抖屏+闪白+击退,表现层) → dungeon 生成(Hades) → 掉落/装备红黄绿(延后,需 derived-stat)。怪物等级=纯数据(prefab 模板+数值表)，引擎不加码。
+
 ---
 
 ## 需求模板（复制这段填写）
