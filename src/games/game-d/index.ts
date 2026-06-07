@@ -1,6 +1,15 @@
-// Game D · 暗黑类 ARPG 垂直切片（PoC）。负责人：用户/Lead。
-// 纯数据装配：技能 = PrefabTemplate，释放 = SpawnRequest，命中结算 = hitbox（关系型战斗能力簇）。
-// 证蓝图 §3「涌现式系统叠加」：冰霜新星冻住敌人 → 碎冰重锤只对冰冻目标结算 20% maxHP 真伤。
-// 全程零 ARPG 专属代码——战斗由通用能力（prefab/overlap/trigger/hitbox/resource）涌现。
-// follow-up（非本切片）：可玩化（玩家输入/敌人 AI/渲染/VFX）、技能区自毁（lifetime）、接 studio NL 生成路径。
-export { buildGameDBlueprint, GAME_D_TEMPLATES, TEAM_PLAYER, TEAM_ENEMY, STATUS_FROZEN } from './blueprint.js';
+// Game D · 暗黑类 ARPG 垂直切片（PoC）。负责人：Programmer D。
+// 纯数据装配，零 ARPG 专属代码。整套战斗循环由通用能力涌现：
+//   ai-chase = aggro(感知→Relation target) + steering(追逐) + motion-apply（行为=数据组合，对齐周期表 Tier4）
+//   放技能   = Signal → caster → SpawnRequest → prefab 展开（D-002）
+//   冰冻/灼烧/解冻 = hitbox(statusDuration/dot*) → over-time（D-003）；冻=定身 = steering.haltStatusMask
+//   死亡掉落 = resource → mortal(hp≤0 销毁 + dropTemplate) → destroy（D-001 配套）
+// follow-up：玩家输入/canvas 渲染/序列帧 VFX、按键→Signal 绑定、§3 资产管线落地真序列帧。
+export {
+  buildGameDBlueprint,
+  GAME_D_TEMPLATES,
+  TEAM_PLAYER,
+  TEAM_ENEMY,
+  LOOT_FLAG,
+  STATUS_FROZEN,
+} from './blueprint.js';

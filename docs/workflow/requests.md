@@ -577,6 +577,14 @@
 > **Game-D 已派专人（狗程序员，有引擎权限）**：`src/games/game-d` 归他；引擎现为共同所有，我勤 rebase、避让其活面、协作式评审。
 > **follow-up（非阻塞）**：资产 key 校验接进 launcher 热载（R9① 设施已就绪，待生成游戏真引用资产 + launcher 载 AssetIndex）、game-d 可玩化（专人做）、§3 资产管线（R9）落地真序列帧。
 
+> **✅ 第二批（2026-06-07，Programmer D）—— 三缺口下沉 + 完整可玩切片（588 passed / tsc / build 全绿）**：
+> - **D-001 数据驱动 AI**：拆成两个单一职责能力（**对齐 wiki/skills 周期表 ai-chase = state + spatial-query(nearest) + relation(target) + transform + velocity**，而非单体）：`@skills/tier3/aggro`（Perception→`Relation{kind:'target'}`，索敌产物化，复用 spatial-query 新增 `nearestByTag`）+ `@skills/tier2/steering`（读 Relation(target)→Velocity，seek/flee + `haltStatusMask` CC 定身）。AI 行为=数据装配，**Tier4 重新清空**（行为是 Macro 组合，非常驻代码）。配套 `@skills/tier2/mortal`（逐实体 hp≤0 死亡 + `dropTemplate` 掉落）。
+> - **D-002 信号→生成桥**：`@skills/tier3/caster`（Signal + at:self/pointer/target → `SpawnRequest` → prefab 展开；`at:'target'` 复用 aggro 的 Relation(target)）。补上 REQ-008 显式延后的"运行时按数据释放技能"入口。
+> - **D-003 限时/持续效果**：`@skills/tier2/over-time`（DoT/regen/定时状态，对应周期表 poison-dot/resource-regen），并给 `hitbox` 加 `statusDuration`/`dot*` 字段（命中挂 OverTime）→ **修掉旧切片"手动 destroy 才停冻"的 hack**（定时冻结自动解冻）。定序：`hitbox` runsBefore `over-time`；`steering` runsBefore `hitbox`/`over-time`（CC 读上一拍 Status，破一拍反馈环，R10 同法）。
+> - **game-d = 完整数据切片**：英雄(操控+相机+会死) + 三怪(ai-chase 追逐) + 冰霜新星/碎冰/烈焰/掉落(PrefabTemplate) + 点地/索敌施法(Caster)。6 测试证：AI 追逐、caster 释放、冰冻=定身+90tick 自动解冻、碎冰只打冰冻目标涌现、死亡掉落、确定性——**零 ARPG 专属代码**。
+> - **⚠️ 流程教训（已立规）**：开发前**漏读 `wiki/skills` 游戏开发知识库 + 周期表**（角色文档点名必读），致 `behavior` 一度做成单体、`over-time` 未对齐 poison-dot 框架。已补读并按更严格的原子分解重构。**今后每个新能力先读 wiki/skills 对应模块 + 周期表再设计。**
+> - **follow-up（非阻塞）**：按键→Signal 绑定（键位释放技能纯数据；UI 按钮已可用 clickable）、怪→英雄接触伤害（怪挂子攻击区，已论证可组合）、canvas 渲染/序列帧 VFX、低血逃跑/巡逻等模式（state+condition 数据，待逐实体 condition→state 小能力）。
+
 ---
 
 ## 需求模板（复制这段填写）
