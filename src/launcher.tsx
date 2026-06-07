@@ -2,6 +2,8 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { createRoot } from 'react-dom/client';
 import { StudioInspector } from './studio/StudioInspector.js';
 import { parseManifest } from './assembly/manifest.js';
+import { buildCapabilityCatalog } from './assembly/capability-catalog.js';
+import { ALL_CAPABILITIES } from './assembly/capability-registry.js';
 import type { WorldBlueprint } from './assembly/demo.assembly.js';
 
 const API = 'http://localhost:4000';
@@ -658,7 +660,9 @@ function GameCreator({ onOpenInStudio }: { onOpenInStudio: (name: string, raw: u
       const res = await fetch(`${API}/api/generate`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ prompt, provider }),
+        // 从引擎 ALL_CAPABILITIES 自动派生能力目录随请求送出 → apollo.py 注入 System Prompt。
+        // 引擎自描述：任何能力（hitbox/prefab/…）登记即对生成器可见，零 prompt 维护、不漂移。
+        body: JSON.stringify({ prompt, provider, catalog: buildCapabilityCatalog(ALL_CAPABILITIES) }),
       });
       const data = await res.json();
       setResult(data);

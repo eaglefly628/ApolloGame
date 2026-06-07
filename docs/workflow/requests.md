@@ -572,7 +572,10 @@
 > - ✅ **数据级 `prefab` 能力 = `@skills/tier3/prefab`**（T4 授权层）：复用 spawn 原子的 `SpawnRequest`（请求契约已有、展开系统此前为空）→ 从单例 `PrefabLibrary`（模板=数据）确定性展开实体（唯一 id `tid#seq:local`、Transform 偏移到 (x,y)、深拷贝隔离实例）。新增 `PrefabLibrary`/`PrefabTemplate`。**money-shot 集成测试**：`SpawnRequest{frost_nova}`（数据）→ 展开 nova → overlap→trigger→hitbox→resource → 敌人真扣血 + 冻结，**零游戏代码、零编译器**——正是 PoC 论点。+7 测试，全量 551 绿。
 > - ✅ **game-d 纯数据切片 = `src/games/game-d/`**：`buildGameDBlueprint` 装配 PrefabLibrary（frost_nova 冰冻 CC + shatter_smash 碎冰真伤两份模板=数据）+ 敌人。**涌现叠加测试（蓝图 §3）**：冰霜新星冻住范围内 enemy_a（不及范围外 enemy_b）→ 碎冰重锤只对**冰冻的** enemy_a 结算 20% maxHP 真伤并解冻、对范围内但未冰冻的 enemy_b **不结算**——条件组合**涌现自数据**，非硬编码。蓝图可加载 + 确定（hash 一致）。+2 测试，全量 553 绿。
 >
-> **✅ 引擎侧 + 数据切片完成**（hitbox 战斗簇 + prefab 授权层 + game-d 涌现切片，全链路 money-shot 已证）。**follow-up（非阻塞，待用户排期）**：game-d 可玩化（玩家输入/敌人 AI/canvas 渲染/序列帧 VFX）、技能区自毁（lifetime）、接 studio「NL→生成→热载」路演路径、§3 资产管线（R9，评审中）落地真序列帧。
+> **✅ 引擎侧 + 数据切片完成**（hitbox 战斗簇 + prefab 授权层 + game-d 涌现切片，全链路 money-shot 已证）。
+> **✅ studio NL→热载 路演路径（2026-06-07，Lead）**：闭环本已存在；真缺口 = apollo.py 的生成 System Prompt 手维护、只列平台跳跃十来个能力（hitbox/prefab 全缺 → ARPG 战斗无法 NL 生成，且漂移）。修法（引擎自描述）：`buildCapabilityCatalog(ALL_CAPABILITIES)` 从 describe 自动派生目录 → launcher 随 /api/generate 送 → apollo.py 注入 `{CAPABILITY_CATALOG}` 占位符。**任何能力登记即对 AI 可见、零 prompt 维护、不漂移**；ARPG 战斗现可 NL 生成。582 绿。
+> **Game-D 已派专人（狗程序员，有引擎权限）**：`src/games/game-d` 归他；引擎现为共同所有，我勤 rebase、避让其活面、协作式评审。
+> **follow-up（非阻塞）**：资产 key 校验接进 launcher 热载（R9① 设施已就绪，待生成游戏真引用资产 + launcher 载 AssetIndex）、game-d 可玩化（专人做）、§3 资产管线（R9）落地真序列帧。
 
 ---
 

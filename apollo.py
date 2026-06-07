@@ -170,10 +170,8 @@ Physics: Grounded (marker), Bounds { minX, minY, maxX, maxY }
 KEY: `entities` is an OBJECT keyed by entity id; each entity is an OBJECT keyed by component
 type (NO "type" field inside the component). `capabilities` lists the engine capability ids to enable.
 
-## Capability ids (enable the ones whose components you use)
-a1-transform(Transform) · b1-velocity(Velocity) · b2-acceleration(Acceleration) · c1-shape(Shape) ·
-l2-color(Color) · d1-overlap-detect · t1-accel-apply(gravity Acceleration→Velocity) ·
-t1-motion-apply(Velocity→Transform) · t2-collision-resolve · t2-bounds-clamp(Bounds) · t2-jump · t2-ground-sense
+## Capability ids (enable ONLY ids from this catalog; component fields + examples included)
+{CAPABILITY_CATALOG}
 For a platformer/physics game enable exactly:
 ["a1-transform","b1-velocity","b2-acceleration","c1-shape","l2-color","d1-overlap-detect","t1-accel-apply","t1-motion-apply","t2-collision-resolve","t2-bounds-clamp"]
 
@@ -186,6 +184,14 @@ For a platformer/physics game enable exactly:
 ## Minimal Example (bouncing ball + ground)
 {"name":"bounce","description":"a ball bounces on the ground","capabilities":["a1-transform","b1-velocity","b2-acceleration","c1-shape","l2-color","d1-overlap-detect","t1-accel-apply","t1-motion-apply","t2-collision-resolve","t2-bounds-clamp"],"entities":{"camera":{"Camera":{"zoom":1,"offsetX":320,"offsetY":200,"rotation":0,"viewportW":640,"viewportH":400}},"ball":{"Transform":{"x":320,"y":60,"rotation":0,"scaleX":1,"scaleY":1},"Velocity":{"vx":2,"vy":0,"angular":0},"Acceleration":{"ax":0,"ay":0.5},"Shape":{"kind":"circle","radius":12},"Color":{"tint":4886754,"alpha":1},"Mass":{"value":1},"Bounds":{"minX":0,"minY":0,"maxX":640,"maxY":400}},"ground":{"Transform":{"x":320,"y":380,"rotation":0,"scaleX":1,"scaleY":1},"Shape":{"kind":"box","width":640,"height":40},"Color":{"tint":3553598,"alpha":1},"Mass":{"value":0}}}}
 """
+
+# 回退能力目录（前端未送 catalog 时用；正常路径由 TS 的 buildCapabilityCatalog 自动派生送来，
+# 含全部能力 + 组件字段 + 示例，故 hitbox/prefab/dialogue 等都在）。
+_FALLBACK_CATALOG = (
+    "a1-transform(Transform) · b1-velocity(Velocity) · b2-acceleration(Acceleration) · c1-shape(Shape) · "
+    "l2-color(Color) · d1-overlap-detect · t1-accel-apply · t1-motion-apply · t2-collision-resolve · "
+    "t2-bounds-clamp(Bounds) · t2-jump · t2-ground-sense"
+)
 
 LLM_PROVIDERS = {
     'anthropic': {
@@ -241,8 +247,11 @@ def get_available_providers() -> list[dict]:
         })
     return result
 
-def call_llm(prompt: str, provider: str = 'anthropic', model: str | None = None) -> dict:
-    """Call LLM API to generate game blueprint. Supports multiple providers."""
+def call_llm(prompt: str, provider: str = 'anthropic', model: str | None = None, catalog: str | None = None) -> dict:
+    """Call LLM API to generate game blueprint. Supports multiple providers.
+
+    catalog: 前端从引擎 ALL_CAPABILITIES 自动派生的能力目录（buildCapabilityCatalog）。注入 System
+    Prompt 的 {CAPABILITY_CATALOG} 占位符 → 任何能力一登记即对 AI 可见，零 prompt 维护、不漂移。"""
     api_key = get_api_key(provider)
     if not api_key:
         env_key = LLM_PROVIDERS.get(provider, {}).get('env_key', '?')
@@ -264,7 +273,8 @@ def call_llm(prompt: str, provider: str = 'anthropic', model: str | None = None)
         return {'success': False, 'error': f'Unknown provider: {provider}', 'blueprint': None}
 
     default_model = LLM_PROVIDERS[provider]['models'][0]
-    return fn(prompt, api_key, model or default_model)
+    system = GAME_GEN_SYSTEM_PROMPT.replace('{CAPABILITY_CATALOG}', catalog or _FALLBACK_CATALOG)
+    return fn(prompt, api_key, model or default_model, system)
 
 def _extract_json(text: str) -> str:
     if '```json' in text:
@@ -273,7 +283,7 @@ def _extract_json(text: str) -> str:
         text = text.split('```')[1].split('```')[0]
     return text.strip()
 
-def _call_anthropic(prompt: str, api_key: str, model: str) -> dict:
+def _call_anthropic(prompt: str, api_key: str, model: str, system: str) -> dict:
     url = 'https://api.anthropic.com/v1/messages'
     headers = {
         'Content-Type': 'application/json',
@@ -283,12 +293,12 @@ def _call_anthropic(prompt: str, api_key: str, model: str) -> dict:
     body = json.dumps({
         'model': model,
         'max_tokens': 4096,
-        'system': GAME_GEN_SYSTEM_PROMPT,
+        'system': system,
         'messages': [{'role': 'user', 'content': prompt}],
     }).encode()
     return _do_llm_request(url, headers, body)
 
-def _call_qwen(prompt: str, api_key: str, model: str) -> dict:
+def _call_qwen(prompt: str, api_key: str, model: str, system: str) -> dict:
     url = 'https://dashscope.aliyuncs.com/compatible-mode/v1/chat/completions'
     headers = {
         'Content-Type': 'application/json',
@@ -298,13 +308,13 @@ def _call_qwen(prompt: str, api_key: str, model: str) -> dict:
         'model': model,
         'max_tokens': 4096,
         'messages': [
-            {'role': 'system', 'content': GAME_GEN_SYSTEM_PROMPT},
+            {'role': 'system', 'content': system},
             {'role': 'user', 'content': prompt},
         ],
     }).encode()
     return _do_llm_request(url, headers, body, openai_format=True)
 
-def _call_openai_compatible(prompt: str, api_key: str, model: str) -> dict:
+def _call_openai_compatible(prompt: str, api_key: str, model: str, system: str) -> dict:
     base_url = os.environ.get('OPENAI_BASE_URL', 'https://api.openai.com/v1')
     url = f'{base_url}/chat/completions'
     headers = {
@@ -315,13 +325,13 @@ def _call_openai_compatible(prompt: str, api_key: str, model: str) -> dict:
         'model': model,
         'max_tokens': 4096,
         'messages': [
-            {'role': 'system', 'content': GAME_GEN_SYSTEM_PROMPT},
+            {'role': 'system', 'content': system},
             {'role': 'user', 'content': prompt},
         ],
     }).encode()
     return _do_llm_request(url, headers, body, openai_format=True)
 
-def _call_deepseek(prompt: str, api_key: str, model: str) -> dict:
+def _call_deepseek(prompt: str, api_key: str, model: str, system: str) -> dict:
     url = 'https://api.deepseek.com/chat/completions'
     headers = {
         'Content-Type': 'application/json',
@@ -331,20 +341,20 @@ def _call_deepseek(prompt: str, api_key: str, model: str) -> dict:
         'model': model,
         'max_tokens': 4096,
         'messages': [
-            {'role': 'system', 'content': GAME_GEN_SYSTEM_PROMPT},
+            {'role': 'system', 'content': system},
             {'role': 'user', 'content': prompt},
         ],
     }).encode()
     return _do_llm_request(url, headers, body, openai_format=True)
 
-def _call_ollama(prompt: str, _key: str, model: str) -> dict:
+def _call_ollama(prompt: str, _key: str, model: str, system: str) -> dict:
     url = os.environ.get('OLLAMA_URL', 'http://localhost:11434') + '/api/chat'
     headers = {'Content-Type': 'application/json'}
     body = json.dumps({
         'model': model,
         'stream': False,
         'messages': [
-            {'role': 'system', 'content': GAME_GEN_SYSTEM_PROMPT},
+            {'role': 'system', 'content': system},
             {'role': 'user', 'content': prompt},
         ],
     }).encode()
@@ -539,11 +549,12 @@ class APIHandler(BaseHTTPRequestHandler):
             prompt = body.get('prompt', '')
             provider = body.get('provider', 'anthropic')
             model = body.get('model', None)
+            catalog = body.get('catalog', None)  # 前端从引擎 ALL_CAPABILITIES 自动派生的能力目录
             if not prompt:
                 data = {'success': False, 'error': 'No prompt provided', 'blueprint': None}
             else:
                 print(c("  [GENERATE]", 'm'), f"[{provider}] {prompt[:60]}...")
-                data = call_llm(prompt, provider, model)
+                data = call_llm(prompt, provider, model, catalog)
                 if data['success']:
                     print(c("  [GENERATE]", 'g'), f"Generated: {data['blueprint'].get('name', '?')}")
                 else:
