@@ -21,7 +21,7 @@ export const soundCapability = defineCapability({
         category: 'render',
         describe: '音频播放指令，表现层读取播放。',
         fields: {
-          clipId: { type: 'assetKey', describe: '音频资源键（须在资产清单中，加载期硬校验）' },
+          clipId: { type: 'assetKey', assetType: 'sound', describe: '音频资源键（须在资产清单中，加载期硬校验）' },
           volume: { type: 'number', describe: '音量 0~1' },
           loop: { type: 'boolean', describe: '是否循环' },
         },

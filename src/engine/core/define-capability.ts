@@ -10,6 +10,8 @@ export interface ComponentSchema {
   fields: Record<string, {
     type: FieldType;
     describe: string;
+    // 当 type==='assetKey'：该 key 指向的资产类型（'texture'|'sound'|...）。供"从蓝图派生资产清单"按类型归类。
+    assetType?: string;
   }>;
 }
 
