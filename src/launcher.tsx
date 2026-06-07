@@ -85,54 +85,202 @@ async function apiCall(endpoint: string): Promise<any> {
 }
 
 // ══════════════════════════════════════
-//  Components
+//  Cartridge + Carousel
 // ══════════════════════════════════════
 
-function GameCard({ game, onLaunch }: { game: GameEntry; onLaunch: () => void }) {
-  const [hovered, setHovered] = useState(false);
-  const playable = game.status === 'playable';
-
+function Cartridge({ game, isSelected }: { game: GameEntry; isSelected: boolean }) {
   return (
-    <div
-      onMouseEnter={() => setHovered(true)}
-      onMouseLeave={() => setHovered(false)}
-      onClick={playable ? onLaunch : undefined}
-      style={{
-        width: 260,
-        background: hovered ? `linear-gradient(135deg, ${game.color}, ${game.color}dd)` : game.color,
-        borderRadius: 12,
-        border: `1px solid ${hovered && playable ? game.accentColor : 'rgba(255,255,255,0.1)'}`,
-        padding: 20,
-        cursor: playable ? 'pointer' : 'default',
-        transition: 'all 0.25s ease',
-        transform: hovered && playable ? 'translateY(-4px)' : 'none',
-        boxShadow: hovered && playable
-          ? `0 8px 32px rgba(0,0,0,0.4), 0 0 20px ${game.accentColor}33`
-          : '0 4px 16px rgba(0,0,0,0.3)',
-        opacity: playable ? 1 : 0.6,
+    <div style={{
+      width: 160,
+      height: 240,
+      position: 'relative',
+      borderRadius: 10,
+      background: `linear-gradient(160deg, ${game.color}f0 0%, ${game.color} 55%, #08090f 100%)`,
+      border: `2px solid ${isSelected ? game.accentColor : 'rgba(255,255,255,0.13)'}`,
+      boxShadow: isSelected
+        ? `0 0 0 1px ${game.accentColor}44, 0 20px 52px rgba(0,0,0,0.75), 0 0 38px ${game.accentColor}28, inset 0 1px 0 rgba(255,255,255,0.12)`
+        : '0 8px 24px rgba(0,0,0,0.6), inset 0 1px 0 rgba(255,255,255,0.05)',
+      overflow: 'hidden',
+      userSelect: 'none',
+      flexShrink: 0,
+    }}>
+      {/* Label */}
+      <div style={{
+        position: 'absolute',
+        top: 10, left: 8, right: 8, bottom: 52,
+        background: 'rgba(255,255,255,0.04)',
+        border: '1px solid rgba(255,255,255,0.08)',
+        borderRadius: 6,
         display: 'flex',
         flexDirection: 'column' as const,
-        gap: 10,
-      }}
-    >
-      <div style={{ fontSize: 36 }}>{game.icon}</div>
-      <div>
-        <div style={{ fontSize: 16, fontWeight: 700, color: '#f1f5f9' }}>{game.title}</div>
-        <div style={{ fontSize: 12, color: game.accentColor, marginTop: 2 }}>{game.subtitle}</div>
-      </div>
-      <div style={{ fontSize: 12, color: '#94a3b8', lineHeight: 1.5 }}>{game.description}</div>
-      <div style={{ marginTop: 'auto', paddingTop: 8 }}>
-        <div style={{
-          display: 'inline-block',
-          padding: '6px 16px',
-          background: playable ? game.accentColor : 'rgba(255,255,255,0.08)',
-          color: playable ? '#0f172a' : '#64748b',
-          borderRadius: 6,
-          fontSize: 13,
-          fontWeight: 600,
-        }}>
-          {playable ? 'Launch' : 'Coming Soon'}
+        alignItems: 'center',
+        justifyContent: 'center',
+        gap: 8,
+        padding: '10px 8px',
+      }}>
+        <div style={{ fontSize: 42, lineHeight: 1 }}>{game.icon}</div>
+        <div style={{ textAlign: 'center' }}>
+          <div style={{ fontSize: 11, fontWeight: 700, color: '#e2e8f0', lineHeight: 1.3 }}>
+            {game.title}
+          </div>
+          <div style={{ fontSize: 9, color: game.accentColor, marginTop: 3 }}>
+            {game.subtitle}
+          </div>
         </div>
+      </div>
+
+      {/* Connector strip */}
+      <div style={{
+        position: 'absolute',
+        bottom: 0, left: 0, right: 0,
+        height: 48,
+        background: '#060810',
+        borderTop: '1px solid rgba(255,255,255,0.06)',
+        display: 'flex',
+        alignItems: 'center',
+        padding: '0 10px',
+      }}>
+        <div style={{
+          flex: 1, height: 20,
+          backgroundImage: `repeating-linear-gradient(90deg,
+            rgba(160,140,80,0.32) 0px, rgba(160,140,80,0.32) 5px,
+            rgba(0,0,0,0.25) 5px, rgba(0,0,0,0.25) 9px
+          )`,
+          borderRadius: 2,
+          border: '1px solid rgba(255,255,255,0.04)',
+        }} />
+      </div>
+
+      {/* Selected glow */}
+      {isSelected && (
+        <div style={{
+          position: 'absolute', inset: 0,
+          background: `radial-gradient(ellipse at 50% 10%, ${game.accentColor}1c 0%, transparent 62%)`,
+          pointerEvents: 'none',
+        }} />
+      )}
+    </div>
+  );
+}
+
+function CartridgeCarousel({ onLaunch }: { onLaunch: (id: string) => void }) {
+  const [activeIndex, setActiveIndex] = useState(0);
+  const n = GAMES.length;
+  const prevIdx = (activeIndex - 1 + n) % n;
+  const nextIdx = (activeIndex + 1) % n;
+
+  const goLeft = useCallback(() => setActiveIndex((i: number) => (i - 1 + n) % n), [n]);
+  const goRight = useCallback(() => setActiveIndex((i: number) => (i + 1) % n), [n]);
+
+  useEffect(() => {
+    const handler = (e: KeyboardEvent) => {
+      if (e.key === 'ArrowLeft') goLeft();
+      else if (e.key === 'ArrowRight') goRight();
+      else if (e.key === 'Enter') {
+        const g = GAMES[activeIndex];
+        if (g.status === 'playable') onLaunch(g.id);
+      }
+    };
+    window.addEventListener('keydown', handler);
+    return () => window.removeEventListener('keydown', handler);
+  }, [activeIndex, goLeft, goRight, onLaunch]);
+
+  const selected = GAMES[activeIndex];
+
+  const cardStyle = (i: number): React.CSSProperties => {
+    const isCenter = i === activeIndex;
+    const isPrev   = i === prevIdx;
+    const isNext   = i === nextIdx;
+    let tx = '0px', ty = '0px', scale = '0', opacity = 0;
+    if (isCenter)     { tx = '0px';   ty = '0px';  scale = '1';    opacity = 1; }
+    else if (isPrev)  { tx = '-178px'; ty = '22px'; scale = '0.72'; opacity = 0.52; }
+    else if (isNext)  { tx = '178px';  ty = '22px'; scale = '0.72'; opacity = 0.52; }
+    return {
+      position: 'absolute' as const,
+      left: '50%',
+      top: '50%',
+      marginLeft: -80,
+      marginTop: -120,
+      transform: `translateX(${tx}) translateY(${ty}) scale(${scale})`,
+      transition: 'transform 0.38s cubic-bezier(0.25,0.46,0.45,0.94), opacity 0.38s ease',
+      opacity,
+      zIndex: isCenter ? 2 : 1,
+      cursor: (isPrev || isNext) ? 'pointer' : 'default',
+    };
+  };
+
+  const arrowStyle = (side: 'left' | 'right'): React.CSSProperties => ({
+    position: 'absolute' as const,
+    top: '50%',
+    [side]: 8,
+    transform: 'translateY(-50%)',
+    zIndex: 10,
+    width: 36, height: 36,
+    background: 'rgba(255,255,255,0.06)',
+    border: '1px solid rgba(255,255,255,0.12)',
+    borderRadius: '50%',
+    color: '#94a3b8',
+    fontSize: 14,
+    cursor: 'pointer',
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    outline: 'none',
+    transition: 'all 0.18s',
+  });
+
+  return (
+    <div style={{ width: '100%', maxWidth: 880 }}>
+      {/* Stage */}
+      <div style={{ position: 'relative', height: 288, overflow: 'visible' }}>
+        <button onClick={goLeft} style={arrowStyle('left')}>◀</button>
+
+        {GAMES.map((game, i) => (
+          <div
+            key={game.id}
+            style={cardStyle(i)}
+            onClick={i === prevIdx ? goLeft : i === nextIdx ? goRight : undefined}
+          >
+            <Cartridge game={game} isSelected={i === activeIndex} />
+          </div>
+        ))}
+
+        <button onClick={goRight} style={arrowStyle('right')}>▶</button>
+      </div>
+
+      {/* Description */}
+      <div style={{ textAlign: 'center', minHeight: 52, padding: '4px 80px' }}>
+        <div style={{ color: '#94a3b8', fontSize: 13, lineHeight: 1.65, maxWidth: 400, margin: '0 auto' }}>
+          {selected.description}
+        </div>
+      </div>
+
+      {/* Launch */}
+      <div style={{ textAlign: 'center', marginTop: 14 }}>
+        <button
+          onClick={() => selected.status === 'playable' && onLaunch(selected.id)}
+          disabled={selected.status !== 'playable'}
+          style={{
+            padding: '12px 60px',
+            background: selected.status === 'playable'
+              ? `linear-gradient(135deg, ${selected.accentColor}, ${selected.accentColor}cc)`
+              : 'rgba(255,255,255,0.06)',
+            color: selected.status === 'playable' ? '#0f172a' : '#475569',
+            border: 'none',
+            borderRadius: 10,
+            fontSize: 15,
+            fontWeight: 700,
+            letterSpacing: '0.08em',
+            cursor: selected.status === 'playable' ? 'pointer' : 'default',
+            boxShadow: selected.status === 'playable'
+              ? `0 4px 22px ${selected.accentColor}44, 0 0 0 1px ${selected.accentColor}33`
+              : 'none',
+            transition: 'all 0.22s',
+            outline: 'none',
+          }}
+        >
+          {selected.status === 'playable' ? '▶  LAUNCH' : 'COMING SOON'}
+        </button>
       </div>
     </div>
   );
@@ -414,12 +562,12 @@ function Launcher() {
       padding: '32px 20px',
     }}>
       {/* Header */}
-      <div style={{ textAlign: 'center', marginBottom: 36 }}>
-        <div style={{ fontSize: 12, letterSpacing: 4, color: '#475569', marginBottom: 6 }}>
+      <div style={{ textAlign: 'center', marginBottom: 24 }}>
+        <div style={{ fontSize: 11, letterSpacing: 5, color: '#475569', marginBottom: 6 }}>
           APOLLO ENGINE
         </div>
         <h1 style={{
-          fontSize: 32,
+          fontSize: 30,
           fontWeight: 800,
           background: 'linear-gradient(135deg, #38bdf8, #a78bfa)',
           WebkitBackgroundClip: 'text',
@@ -428,40 +576,27 @@ function Launcher() {
         }}>
           Game Library
         </h1>
-        <div style={{ fontSize: 13, color: '#64748b', marginTop: 8 }}>
-          Select a game to launch — or use Dev Tools below
-        </div>
         <button
           onClick={() => setStudio(true)}
           style={{
-            marginTop: 14,
-            padding: '8px 18px',
-            background: 'linear-gradient(135deg, rgba(167,139,250,0.2), rgba(56,189,248,0.2))',
+            marginTop: 12,
+            padding: '7px 16px',
+            background: 'linear-gradient(135deg, rgba(167,139,250,0.15), rgba(56,189,248,0.15))',
             color: '#a78bfa',
-            border: '1px solid rgba(167,139,250,0.4)',
+            border: '1px solid rgba(167,139,250,0.3)',
             borderRadius: 8,
-            fontSize: 13,
+            fontSize: 12,
             fontWeight: 600,
             cursor: 'pointer',
+            outline: 'none',
           }}
         >
-          🔬 数据透视器 · Data Inspector
+          🔬 数据透视器
         </button>
       </div>
 
-      {/* Game Grid */}
-      <div style={{
-        display: 'flex',
-        gap: 20,
-        flexWrap: 'wrap',
-        justifyContent: 'center',
-        maxWidth: 880,
-        marginBottom: 32,
-      }}>
-        {GAMES.map(game => (
-          <GameCard key={game.id} game={game} onLaunch={() => setLaunched(game.id)} />
-        ))}
-      </div>
+      {/* Game Carousel */}
+      <CartridgeCarousel onLaunch={setLaunched} />
 
       {/* Game Creator (AI Generate) */}
       <div style={{ width: '100%', maxWidth: 880, marginBottom: 12 }}>
