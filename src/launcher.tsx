@@ -75,6 +75,16 @@ const GAMES: GameEntry[] = [
     icon: '👗',
     status: 'playable',
   },
+  {
+    id: 'game-d',
+    title: 'Game D: ARPG PoC',
+    subtitle: '暗黑类 ARPG 切片',
+    description: '冰霜新星冻住敌人 → 碎冰重锤只对冰冻目标结算 20% maxHP 真伤。纯数据战斗，零专属代码——由 prefab/overlap/trigger/hitbox/resource 五能力涌现。',
+    color: '#1a0a08',
+    accentColor: '#f97316',
+    icon: '⚔️',
+    status: 'playable',
+  },
 ];
 
 // ══════════════════════════════════════
@@ -488,6 +498,7 @@ function GameRunner({ gameId, onBack }: { gameId: string; onBack: () => void }) 
       'game-a': () => import('./game-a.js'),
       'game-b': () => import('./game-b.js'),
       'game-c': () => import('./game-c.js'),
+      'game-d': () => import('./game-d.js'),
     };
     const loader = loaders[gameId];
     if (!loader) return;
