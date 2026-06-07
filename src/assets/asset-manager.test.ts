@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import { AssetManager, StubAssetLoader } from './asset-manager.js';
-import type { AssetManifest } from './asset-types.js';
+import type { AssetManifest, AssetDescriptor, AssetLoader, AssetHandle } from './asset-types.js';
 
 const manifest: AssetManifest = [
   { kind: 'texture', key: 'player', src: 'player.png', width: 32, height: 48 },
@@ -137,5 +137,24 @@ describe('AssetManager — 边界与不透明句柄', () => {
     m.clear();
     expect(m.has('player')).toBe(false);
     expect(m.isLoaded('player')).toBe(false);
+  });
+});
+
+describe('AssetManager — 失败重试（inflight 不卡死）', () => {
+  it('加载失败后清理 inflight → 允许重试成功（不被死 Promise 永久占位）', async () => {
+    let attempts = 0;
+    const flaky: AssetLoader = {
+      async load(d: AssetDescriptor): Promise<{ handle: AssetHandle; width: number; height: number }> {
+        attempts += 1;
+        if (attempts === 1) throw new Error('network blip');
+        return { handle: { stub: true, key: d.key, kind: d.kind }, width: 1, height: 1 };
+      },
+    };
+    const m = new AssetManager(flaky);
+    m.register({ kind: 'texture', key: 'player', src: 'player.png', width: 1, height: 1 });
+    await expect(m.load('player')).rejects.toThrow('network blip'); // 首次失败
+    const a = await m.load('player'); // 重试：inflight 已清，不再返回死 Promise
+    expect(a.handle).toMatchObject({ key: 'player' });
+    expect(attempts).toBe(2);
   });
 });

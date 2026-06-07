@@ -54,6 +54,7 @@ export class CanvasRenderer implements RendererBackend {
       ctx.translate(-cam.centerX, -cam.centerY);
     }
 
+    const seenText = new Set<string>(); // 本帧被渲染为文本的实体 → 帧末据此清理 textCache（防无界泄漏）
     for (const r of collectRenderables(world)) {
       ctx.save();
       ctx.translate(r.x, r.y);
@@ -77,6 +78,7 @@ export class CanvasRenderer implements RendererBackend {
           cached = { sig, lines: wrapLines(tx.content, tx.maxWidth ?? 0, (s) => ctx.measureText(s).width) };
           this.textCache.set(r.entityId, cached);
         }
+        seenText.add(r.entityId);
         const lineHeight = tx.fontSize + (tx.lineSpacing ?? 0);
         for (let li = 0; li < cached.lines.length; li++) {
           ctx.fillText(cached.lines[li], 0, li * lineHeight);
@@ -105,6 +107,11 @@ export class CanvasRenderer implements RendererBackend {
       }
 
       ctx.restore();
+    }
+
+    // textCache 反向清理：剔除本帧未渲染为文本（已销毁/转其它模式）的实体缓存，杜绝无界增长（Gemini code review）。
+    if (this.textCache.size > seenText.size) {
+      for (const k of this.textCache.keys()) if (!seenText.has(k)) this.textCache.delete(k);
     }
 
     ctx.restore(); // 收尾相机投影变换

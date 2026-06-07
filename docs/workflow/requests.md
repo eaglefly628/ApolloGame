@@ -144,9 +144,19 @@
 
 ---
 
-### R9 · [2026-06-03] · PB · 框架级（Game B 首验） · status: open（待 Gemini/Lead review）· 优先级: 架构级 · **类型: REVIEW 请求**
+### R9 · [2026-06-03] · PB · 框架级（Game B 首验） · status: **in-progress**（2026-06-07，Lead+Gemini 已评审收敛）· 优先级: 架构级 · **类型: REVIEW 请求 → 落地计划**
 
-> 📦 **review 包已就绪（2026-06-06，Lead）**：生成 `review-for-gemini-assets.txt`（自包含：项目背景 + 设计全文 + §9 七问 + 额外 5 个评估角度 A–E），用户丢给 Gemini review。收敛回灌后 Lead 拍 schema 落点，PB 落地 §8"现在能做"两件（槽位契约 + procedural 占位 provider）。**本条仍 open 直到 review 收敛。**
+> 📦 **review 包**：`review-for-gemini-assets.txt`（设计文档）+ `review-for-gemini-asset-addressing.txt`（v6 寻址规范 + Lead 反馈）+ `review-for-gemini-asset-CODE.txt`（1546 行真实实现）。
+>
+> ✅ **Gemini + Lead 评审收敛（2026-06-07）—— 资产寻址规范裁决**：
+> - **现有实现 ~90% 已覆盖，坚决不重做**（双方一致，无漏判）：`AssetManager.resolve` 已归一化 sx/sy/sw/sh、`CanvasRenderer.drawImage` 与规范逐字节同款、`Frame+Timer+animation` 已是确定性 tick 动画、`AssetIndex` 已是清单基建、Sound 已匹配。
+> - **回驳**：`SpriteAnimation` 单体组件（与 Frame+Timer+animation 等价、后者更正交）、`Sprite.spriteId` 改名（无功能差、徒增迁移）。
+> - **落地计划（融入 R9，不另立案号）**：
+>   1. **资产 key 校验（护城河）**：① 加载期（**主**，数据路径的真护城河）——parseManifest/反序列化时，凡引用资产 key 的组件字段（Sprite.textureKey/Sound.clipId/动画 id）对 `AssetIndex` 校验，未知即报错/告警（同 R12 家族）。② 编译期 `.d.ts` 强类型 union（**次**，只助残余手写 .ts；游戏在向纯数据迁移，优先级低）。
+>   2. **命名动画 clip 层（资产层）**：`asset-types` 加 `AnimationDescriptor{name,frames:string[]}`；ECS 不变（Sprite{textureKey} + Frame{index,total}）；渲染期 `assets.resolve(key, frame.index)` → AssetManager 查表把 index 映射到真实命名切片 → 返回 sx/sy/sw/sh。无双轨。
+>   3. **Node 资产打包工具（AOT 离线，合法）**：包 TexturePacker/FTP，**唯一输出到 `assets/index.json`（AssetIndex），不造第二个 manifest**；散图坐标写进对应条目的 `spec`。引擎只认 AssetIndex 一个真理。
+> - ✅ **代码级 review 修复（Gemini 拿 1546 行真码逐行审，2026-06-07）**：修掉 **AudioSync 切歌 bug**（clipId 原位改不响应——存 clipId 快照而非组件引用）、**CanvasRenderer textCache 无界泄漏**（帧末按本帧渲染集反向清理）、**AssetManager inflight 失败不清理**（catch 清 inflight 留重试活路）、**AssetIndex baseUrl 缺斜杠**（防御补 `/`）；collectRenderables 装箱经裁定为 IPC/Worker/AI 解耦的合理 trade-off，保留不动。+4 回归测试，全量 557 绿。
+> - **PB 不阻塞部分仍可做**：Game B 槽位契约实例 + procedural 占位 provider（文档 §8）。
 
 **标题**：资产清单 + 资产管理器设计文档 review —— `docs/design/asset-manifest-and-manager.md`
 

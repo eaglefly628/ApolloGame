@@ -87,12 +87,19 @@ export class AssetManager {
     const descriptor = this.descriptors.get(key);
     if (!descriptor) throw new Error(`AssetManager: 未注册的资产 key "${key}"`);
 
-    const promise = this.loader.load(descriptor).then(({ handle, width, height }) => {
-      const asset: LoadedAsset = { descriptor, handle, width, height };
-      this.loaded.set(key, asset);
-      this.inflight.delete(key);
-      return asset;
-    });
+    const promise = this.loader
+      .load(descriptor)
+      .then(({ handle, width, height }) => {
+        const asset: LoadedAsset = { descriptor, handle, width, height };
+        this.loaded.set(key, asset);
+        this.inflight.delete(key);
+        return asset;
+      })
+      .catch((err) => {
+        // 失败也要清 inflight，否则 rejected promise 永久占位，该 key 整局再也加载不了（Gemini code review）。
+        this.inflight.delete(key);
+        throw err;
+      });
     this.inflight.set(key, promise);
     return promise;
   }

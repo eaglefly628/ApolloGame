@@ -77,6 +77,22 @@ describe('asset-index — 桥接 AssetManager', () => {
     expect(a.descriptor).toMatchObject({ kind: 'texture', key: 'char_S.neutral', src: '/assets/texture/char_S/neutral.png' });
     expect(a.width).toBe(720);
   });
+
+  it('baseUrl 不以 / 结尾 → 防御性补斜杠（不拼成 texhero.png）', async () => {
+    const idx = parseAssetIndex(good);
+    const m = new AssetManager(new StubAssetLoader());
+    registerAssetIndex(m, idx, '/assets'); // 注意：无尾斜杠
+    const a = await m.load('char_S.neutral');
+    expect(a.descriptor.src).toBe('/assets/texture/char_S/neutral.png'); // 正确补斜杠
+  });
+
+  it('baseUrl 为空 → 直接用 path（不画蛇添足加斜杠）', async () => {
+    const idx = parseAssetIndex(good);
+    const m = new AssetManager(new StubAssetLoader());
+    registerAssetIndex(m, idx); // baseUrl 缺省 ''
+    const a = await m.load('char_S.neutral');
+    expect(a.descriptor.src).toBe('texture/char_S/neutral.png');
+  });
 });
 
 describe('asset-index — 真实 assets/index.json 自检', () => {

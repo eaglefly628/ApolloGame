@@ -39,6 +39,21 @@ describe('AudioSync — 消费 Sound 驱动 AudioPort', () => {
     expect(port.playing).toEqual(new Set(['bgm', 'sfx']));
   });
 
+  it('切歌（组件原位改 clipId）：实体不销毁但 clipId 变 → 停旧播新', () => {
+    const port = new NullAudioPort();
+    const sync = new AudioSync(port);
+    const w = new World();
+    addSound(w, 'bgm', 'forest', true);
+    sync.sync(w);
+    expect(port.playing.has('forest')).toBe(true);
+
+    // 走到 Boss 区：逻辑原位改 clipId（实体不销毁）。
+    w.getComponent<Sound>('bgm', 'Sound')!.clipId = 'boss';
+    sync.sync(w);
+    expect(port.playing.has('forest')).toBe(false); // 旧的停了
+    expect(port.playing.has('boss')).toBe(true); // 新的响了
+  });
+
   it('金币问题（Q4）：同 clip 多实例按 EntityId 独立追踪；引用计数归零才 stop', () => {
     const port = new NullAudioPort();
     const sync = new AudioSync(port);

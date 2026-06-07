@@ -96,12 +96,14 @@ function numOrUndef(v: unknown): number | undefined {
  * `baseUrl` 一般为资产根（如 `/assets/`），拼到条目 path 前。
  */
 export function registerAssetIndex(manager: AssetManager, index: AssetIndex, baseUrl = ''): void {
+  // 防御性拼接：baseUrl 非空且不以 '/' 结尾时补一个，避免 "assets/tex" + "hero.png" = "assets/texhero.png"（Gemini code review）。
+  const sep = baseUrl && !baseUrl.endsWith('/') ? '/' : '';
   for (const e of index.assets) {
     if (e.status !== 'filled' || e.type !== 'texture' || !e.path) continue;
     const descriptor: TextureDescriptor = {
       kind: 'texture',
       key: e.id,
-      src: baseUrl + e.path,
+      src: baseUrl + sep + e.path,
       width: numOrUndef(e.spec?.width),
       height: numOrUndef(e.spec?.height),
     };
