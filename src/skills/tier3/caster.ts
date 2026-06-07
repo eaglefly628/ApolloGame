@@ -111,10 +111,12 @@ export const casterCapability = defineCapability({
           const c = world.getComponent<Caster>(id, 'Caster');
           if (!c || !signals.has(c.onSignal)) continue;
 
+          // 锚点实体：缺省=施法者自身；技能绑定实体可委托给英雄（originEntity）。
+          const originId = c.originEntity ?? id;
           let x: number;
           let y: number;
           if (c.at === 'self') {
-            const t = world.getComponent<Transform>(id, 'Transform');
+            const t = world.getComponent<Transform>(originId, 'Transform');
             if (!t) continue;
             x = t.x;
             y = t.y;
@@ -127,13 +129,13 @@ export const casterCapability = defineCapability({
             x = pointer.x;
             y = pointer.y;
           } else {
-            // 'target'：优先复用 aggro 写的 Relation(target)（DRY，与 AI 共用同一锁定目标）；
-            // 没有则以施法者为原点即时索敌（caster 也能独立工作）。
-            const t = world.getComponent<Transform>(id, 'Transform');
+            // 'target'：以锚点实体为原点，优先复用其 aggro 写的 Relation(target)（DRY，与 AI 共用锁定目标）；
+            // 没有则即时索敌。让英雄的多把技能（各自独立 Caster 实体）都从英雄位置自动索敌。
+            const t = world.getComponent<Transform>(originId, 'Transform');
             if (!t) continue;
-            const rel = world.getComponent<Relation>(id, 'Relation');
+            const rel = world.getComponent<Relation>(originId, 'Relation');
             let tid = rel && rel.kind === 'target' ? rel.targetId : undefined;
-            if (!tid) tid = nearestByTag(world, t.x, t.y, c.targetTag ?? 0, { excludeId: id });
+            if (!tid) tid = nearestByTag(world, t.x, t.y, c.targetTag ?? 0, { excludeId: originId });
             if (!tid) continue;
             const tt = world.getComponent<Transform>(tid, 'Transform');
             if (!tt) continue;

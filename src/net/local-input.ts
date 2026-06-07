@@ -14,6 +14,9 @@ export interface KeyBinding {
   dx?: number;
   dy?: number;
   jump?: boolean;
+  // 离散动作键（边沿触发）：按下时发一条具名动作事件 → Command.actions → 单例 InputQueue，
+  // 供 keybind 能力（KeyBinding 组件）匹配 key 产 Signal（技能释放/UI 动作）。区别于 dx/dy 的持续按住。
+  action?: string;
 }
 export type KeyMap = Record<string, KeyBinding>;
 
@@ -32,9 +35,16 @@ export const DEFAULT_KEYMAP: KeyMap = {
 
 export class KeyboardInputSource implements InputSource {
   private readonly pressed = new Set<string>();
+  // 待释放的离散动作事件（边沿触发，下一 tick 取走）。
+  private pendingActions: { source: string; key: string; phase: string }[] = [];
 
   private readonly onDown = (e: KeyboardEvent) => {
-    if (this.keymap[e.code]) {
+    const b = this.keymap[e.code];
+    if (b) {
+      // 动作键：仅在边沿（非 OS 自动重复）发一次具名动作事件。
+      if (b.action && !this.pressed.has(e.code)) {
+        this.pendingActions.push({ source: this.playerId, key: b.action, phase: 'down' });
+      }
       this.pressed.add(e.code);
       e.preventDefault();
     }
@@ -70,9 +80,13 @@ export class KeyboardInputSource implements InputSource {
     }
     dx = Math.sign(dx);
     dy = Math.sign(dy);
-    if (dx === 0 && dy === 0 && !jump) return [];
+    const actions = this.pendingActions;
+    this.pendingActions = [];
+    if (dx === 0 && dy === 0 && !jump && actions.length === 0) return [];
     const cmd: Command = { playerId: this.playerId, tick, move: { dx, dy } };
-    return [jump ? { ...cmd, jump: true } : cmd];
+    if (jump) (cmd as { jump?: boolean }).jump = true;
+    if (actions.length) (cmd as { actions?: typeof actions }).actions = actions;
+    return [cmd];
   }
 
   dispose(): void {

@@ -70,6 +70,23 @@ describe('caster — 位置策略', () => {
     w.tick();
     expect(sr(w, 'hero')).toBeUndefined();
   });
+
+  it("originEntity：独立绑定实体(无 Transform)委托英雄锚点 → at:'target' 从英雄索敌", () => {
+    const w = casterWorld();
+    // 英雄（锚点），有 Transform；敌人 e_near 最近。
+    w.createEntity('hero');
+    w.addComponent('hero', xf(0, 0));
+    for (const [id, x] of [['e_far', 50], ['e_near', 12]] as const) {
+      w.createEntity(id);
+      w.addComponent(id, xf(x, 0));
+      w.addComponent(id, { type: 'Tag', flags: ENEMY } as Tag);
+    }
+    // 绑定实体：无 Transform，靠 originEntity 委托英雄。
+    caster(w, 'bind_smash', { onSignal: 'cast', template: 'smash', at: 'target', targetTag: ENEMY, originEntity: 'hero' });
+    signal(w, 'cast');
+    w.tick();
+    expect(sr(w, 'bind_smash')).toMatchObject({ templateId: 'smash', x: 12, y: 0 }); // 从英雄索敌到 e_near
+  });
 });
 
 describe('caster — 与 prefab 端到端（信号 → 释放 → 展开实体）', () => {

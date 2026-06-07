@@ -148,10 +148,13 @@ export interface PrefabLibrary extends Component {
 // 确定性：只读 Signal/InputQueue/Transform/Tag + 几何比较；按施法者 id 升序结算；坐标取整前为 IEEE 算术（不喂 Condition）。
 export interface Caster extends Component {
   readonly type: 'Caster';
-  onSignal: string; // 收到此名 Signal 时释放（来自 clickable / event-when / 输入绑定）
+  onSignal: string; // 收到此名 Signal 时释放（来自 clickable / event-when / keybind 输入绑定）
   template: string; // PrefabLibrary 里的模板 id
   at: 'self' | 'pointer' | 'target'; // 生成位置来源
   targetTag?: number; // at:'target' 时找最近的 Tag.flags 含此位的实体（缺省找最近任意实体）
+  // 锚点实体（缺省=施法者自身）：at:'self' 在它身上生成、at:'target' 以它为索敌原点并复用它的 Relation(target)。
+  // 让独立的"技能绑定"实体把锚点/索敌委托给英雄，绕过"一实体一 Caster"对多技能的限制，无需 hierarchy。
+  originEntity?: EntityId;
 }
 
 // ── Perception ── 数据驱动 AI 的"索敌"原子（D-001，对应周期表 auto-target/range-detect）。逐实体感知
@@ -314,6 +317,16 @@ export interface RawInputData {
 export interface InputQueue extends Component {
   readonly type: 'InputQueue';
   actions: ReadonlyArray<RawInputData>;
+}
+
+// ── keybind ── 具名输入动作 → Signal（D-步骤1）。clickable 的"非空间孪生"：读单例 InputQueue 的动作事件，
+// 若某事件 key 命中 KeyBinding.key（且相位匹配）→ 产出 Signal{name:signal}。键位映射=数据（蓝图里填，
+// 最弱 LLM 可填、可重绑），下游 caster/craft-recipe/effect 等照常按名消费。确定性：只读 InputQueue + 字符串比较。
+export interface KeyBinding extends Component {
+  readonly type: 'KeyBinding';
+  key: string; // 匹配 InputQueue 事件的 key（物理键如 '1'/'q'，或语义动作名如 'cast_nova'）
+  signal: string; // 命中时产出的 Signal.name
+  phase?: string; // 仅匹配此相位（如 'down'|'action'）；缺省=任意相位
 }
 
 // ── clickable ── 指针命中该实体的 Shape 时，在该实体上产出一个配置好的 Signal（命中→信号，REQ-C-002）。
