@@ -7,7 +7,7 @@ import {
   R_CHIPS, R_MULT, R_MONEY, R_HAND_SCORE, R_ROUND_SCORE, R_HANDS_LEFT, R_DISCARDS_LEFT, R_BLIND, V_HAND_TYPE,
 } from './games/game-e/blueprint.js';
 import {
-  HAND_RANKINGS, shuffledDeck, STARTER_JOKERS, blindRequirement, BLIND_ORDER,
+  HAND_RANKINGS, RANK_ORDER, shuffledDeck, STARTER_JOKERS, blindRequirement, BLIND_ORDER,
   type Card, type Suit, type Rank, type HandType, type JokerCard, type BlindKind,
 } from './games/game-e/index.js';
 import { cardCell, CELL_W, CELL_H, SHEET_W, SHEET_H } from './games/game-e/cards-atlas.js';
@@ -32,6 +32,8 @@ const HANDS_PER_BLIND = 4;
 const DISCARDS_PER_BLIND = 3;
 const JOKER_SLOTS = 5;
 const REROLL_COST = 5;
+
+const RARITY_COLOR: Record<string, string> = { common: '#9ca3af', uncommon: '#34d399', rare: '#60a5fa', legendary: '#f59e0b' };
 
 const BLIND_META: Record<BlindKind, { label: string; icon: string; reward: number }> = {
   small: { label: '小盲注', icon: '🔸', reward: 3 },
@@ -73,12 +75,28 @@ function GameE() {
   const keyOf = (c: Card) => `${c.suit}${c.rank}`;
   const busy = anim !== null;
 
+  const [log, setLog] = useState<string[]>([]); // 算分回馈 log（游戏性流水）
+  const pushLog = (s: string) => setLog((l) => [s, ...l].slice(0, 14));
+
   // 飞入动画播完即清（避免后续重渲染重复触发）。
   useEffect(() => {
     if (newKeys.size === 0) return;
     const t = window.setTimeout(() => setNewKeys(new Set()), 450);
     return () => window.clearTimeout(t);
   }, [newKeys]);
+
+  // 手牌排序（表现层）：按花色或点数；sel 跟着牌一起重排（不错位）。
+  const SUIT_ORD: Record<Suit, number> = { spades: 0, hearts: 1, clubs: 2, diamonds: 3 };
+  const sortHand = useCallback((mode: 'suit' | 'rank') => {
+    setHand((h) => {
+      const paired = h.map((c, i) => ({ c, s: sel[i] ?? false }));
+      paired.sort((a, b) => mode === 'suit'
+        ? (SUIT_ORD[a.c.suit] - SUIT_ORD[b.c.suit]) || (RANK_ORDER[b.c.rank] - RANK_ORDER[a.c.rank])
+        : (RANK_ORDER[b.c.rank] - RANK_ORDER[a.c.rank]) || (SUIT_ORD[a.c.suit] - SUIT_ORD[b.c.suit]));
+      setSel(paired.map((p) => p.s));
+      return paired.map((p) => p.c);
+    });
+  }, [sel]);
 
   // ── 引擎资源读写（输入/投影层）──
   const resOf = useCallback((id: string): Resource | undefined => {
@@ -98,6 +116,7 @@ function GameE() {
   // 一道盲注开局：重置回合资源 + 设盲注线 + 洗牌发 8 张。
   const startBlind = useCallback((a: number, bi: number) => {
     const e = engineRef.current!;
+    setLog([`— Ante ${a} · ${BLIND_META[BLIND_ORDER[bi]].label} 目标 ${blindRequirement(a, BLIND_ORDER[bi]).toLocaleString()} —`]);
     set(R_ROUND_SCORE, 0); set(R_HANDS_LEFT, HANDS_PER_BLIND); set(R_DISCARDS_LEFT, DISCARDS_PER_BLIND);
     set(R_CHIPS, 0); set(R_MULT, 0); set(R_HAND_SCORE, 0);
     set(R_BLIND, blindRequirement(a, BLIND_ORDER[bi]));
@@ -166,8 +185,10 @@ function GameE() {
     engine.world.tick(); // 收尾：disarm 边沿门
 
     setResult({ type, chips, mult, score });
+    pushLog(`▶ ${HAND_RANKINGS[type]?.name ?? type}　${chips.toLocaleString()} × ${mult} = ${score.toLocaleString()}`);
 
     const rs = get(R_ROUND_SCORE);
+    pushLog(`　累计 ${rs.toLocaleString()} / ${get(R_BLIND).toLocaleString()}${rs >= get(R_BLIND) ? '　✅ 过关！' : ''}`);
     if (rs >= get(R_BLIND)) {
       // 过关 → 结算 $（基础 + 剩余手数 + 利息 $1/$5 上限5）→ 商店。
       const reward = BLIND_META[blindKind].reward + get(R_HANDS_LEFT) + Math.min(5, Math.floor(get(R_MONEY) / 5));
@@ -196,6 +217,7 @@ function GameE() {
   const commitDiscard = useCallback(() => {
     set(R_DISCARDS_LEFT, get(R_DISCARDS_LEFT) - 1);
     const kept = hand.filter((_, i) => !sel[i]);
+    pushLog(`♻ 弃 ${hand.length - kept.length} 张，补牌`);
     const next = drawTo(kept);
     setHand(next);
     setSel(new Array(next.length).fill(false));
@@ -231,6 +253,19 @@ function GameE() {
     bump();
   }, [owned, money, engine, set]);
 
+  const rollShop = useCallback((): JokerCard[] => {
+    const tmp = STARTER_JOKERS.filter((j) => !owned.some((o) => o.id === j.id));
+    const offer: JokerCard[] = [];
+    for (let k = 0; k < 3 && tmp.length; k++) offer.push(tmp.splice(Math.floor(Math.random() * tmp.length), 1)[0]);
+    return offer;
+  }, [owned]);
+  const reroll = useCallback(() => {
+    if (money < REROLL_COST) return;
+    set(R_MONEY, money - REROLL_COST);
+    setShopOffer(rollShop());
+    bump();
+  }, [money, set, rollShop]);
+
   const nextBlind = useCallback(() => {
     let a = ante, bi = blindIdx + 1;
     if (bi > 2) { bi = 0; a += 1; setAnte(a); }
@@ -252,6 +287,14 @@ function GameE() {
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 14, padding: 22, color: '#e2e8f0', font: '13px system-ui', width: '100%', maxWidth: 820 }}>
+      {/* 算分回馈 log（右侧固定窗，游戏性流水）*/}
+      <div style={{ position: 'fixed', right: 12, top: 70, width: 210, maxHeight: '70vh', overflowY: 'auto', background: 'rgba(11,28,34,0.92)', border: '1px solid #2b5562', borderRadius: 10, padding: '10px 12px', fontSize: 11, lineHeight: 1.7, zIndex: 20 }}>
+        <div style={{ fontWeight: 700, color: '#ffd166', marginBottom: 6, fontSize: 12 }}>📜 结算日志</div>
+        {log.length === 0 && <div style={{ color: '#475569' }}>（出牌后这里显示算分流水）</div>}
+        {log.map((line, i) => (
+          <div key={i} style={{ color: i === 0 ? '#e2e8f0' : '#7d93a8', borderBottom: line.startsWith('—') ? '1px dashed #2b5562' : 'none', paddingBottom: line.startsWith('—') ? 4 : 0, marginBottom: line.startsWith('—') ? 4 : 0 }}>{line}</div>
+        ))}
+      </div>
       {/* 顶部：Ante / 盲注 / 进度线 / 钱 */}
       <div style={{ width: '100%', maxWidth: 680 }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 13, marginBottom: 4 }}>
@@ -289,33 +332,66 @@ function GameE() {
         </div>
       )}
 
-      {/* ── 商店 ── */}
+      {/* ── 商店（美化：稀有度光晕 + 进场交错 + 悬浮抬升 + 重摇）── */}
       {inShop && (
-        <div style={{ width: '100%', maxWidth: 620, background: '#0b1c22', border: '1px solid #2b5562', borderRadius: 12, padding: 18 }}>
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
-            <span style={{ fontSize: 15, fontWeight: 700, color: '#ffd166' }}>🛒 商店 —— 买小丑（💰${money}）</span>
-            <button onClick={nextBlind} style={{ padding: '8px 20px', borderRadius: 8, fontSize: 13, fontWeight: 700, border: 'none', cursor: 'pointer', background: 'linear-gradient(135deg,#22c55e,#16a34a)', color: '#06210f' }}>
-              下一道盲注 ▶
-            </button>
+        <div style={{ width: '100%', maxWidth: 660, background: 'linear-gradient(160deg,#132a33,#0a1622)', border: '1px solid #2b5562', borderRadius: 16, padding: 20, boxShadow: '0 12px 40px #0008', position: 'relative', overflow: 'hidden' }}>
+          <style>{`
+            @keyframes ge-shopIn { from { transform: translateY(24px) scale(.9); opacity: 0 } to { transform: none; opacity: 1 } }
+            @keyframes ge-coin { 0%{transform:translateY(0)} 50%{transform:translateY(-3px)} 100%{transform:translateY(0)} }
+            @keyframes ge-sheen { from { background-position: -200% 0 } to { background-position: 200% 0 } }
+            .ge-shop-card { transition: transform .18s ease, box-shadow .18s ease; }
+            .ge-shop-card:hover { transform: translateY(-8px) scale(1.03); }
+            .ge-buy:hover:not(:disabled) { filter: brightness(1.12); }
+          `}</style>
+
+          {/* 顶部光带 */}
+          <div style={{ position: 'absolute', top: 0, left: 0, right: 0, height: 3, background: 'linear-gradient(90deg,transparent,#ffd166,#f59e0b,transparent)', backgroundSize: '200% 100%', animation: 'ge-sheen 3s linear infinite' }} />
+
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
+            <span style={{ fontSize: 17, fontWeight: 800, color: '#ffd166', letterSpacing: 1 }}>🛒 商店</span>
+            <span style={{ fontSize: 15, color: '#ffd166', fontWeight: 700, display: 'inline-flex', alignItems: 'center', gap: 4 }}>
+              <span style={{ display: 'inline-block', animation: 'ge-coin 1.6s ease-in-out infinite' }}>💰</span> ${money}
+            </span>
           </div>
-          <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap' }}>
-            {shopOffer.length === 0 && <span style={{ color: '#64748b', fontSize: 12 }}>（无更多小丑可买）</span>}
-            {shopOffer.map((j) => {
+
+          <div style={{ display: 'flex', gap: 14, flexWrap: 'wrap', justifyContent: 'center', minHeight: 200 }}>
+            {shopOffer.length === 0 && <span style={{ color: '#64748b', fontSize: 12, alignSelf: 'center' }}>（已售空 —— 重摇或进入下一道）</span>}
+            {shopOffer.map((j, i) => {
+              const rc = RARITY_COLOR[j.rarity];
               const can = money >= j.cost && owned.length < JOKER_SLOTS;
               return (
-                <div key={j.id} style={{ width: 128, border: '1px solid #3a2a4a', borderRadius: 8, background: '#160f22', padding: 8, display: 'flex', flexDirection: 'column', gap: 6 }}>
-                  <div style={{ width: '100%', height: 96, borderRadius: 6, overflow: 'hidden', position: 'relative', background: '#0d0818' }}>
-                    <div style={{ position: 'absolute', inset: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 30 }}>🃏</div>
+                <div key={j.id} className="ge-shop-card" style={{
+                  width: 150, borderRadius: 12, padding: 10, display: 'flex', flexDirection: 'column', gap: 8,
+                  background: 'linear-gradient(165deg,#1a1226,#0d0818)', border: `1.5px solid ${rc}`,
+                  boxShadow: `0 0 14px ${rc}44, inset 0 0 20px ${rc}11`,
+                  animation: `ge-shopIn .35s ease ${i * 0.08}s both`,
+                }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                    <span style={{ fontSize: 9, fontWeight: 700, color: rc, textTransform: 'uppercase', letterSpacing: 1 }}>{j.rarity}</span>
+                    <span style={{ fontSize: 9, color: '#64748b' }}>{j.jokerType}</span>
+                  </div>
+                  <div style={{ width: '100%', height: 120, borderRadius: 8, overflow: 'hidden', position: 'relative', background: '#0d0818', boxShadow: `inset 0 0 16px ${rc}22` }}>
+                    <div style={{ position: 'absolute', inset: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 36 }}>🃏</div>
                     <img src={JOKER_URL(j.name)} alt={j.name} style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', objectFit: 'cover' }} onError={(e) => { (e.currentTarget as HTMLImageElement).style.display = 'none'; }} />
                   </div>
-                  <div style={{ fontSize: 11, fontWeight: 700, textAlign: 'center' }}>{j.name}</div>
-                  <div style={{ fontSize: 9, color: '#a78bfa', textAlign: 'center', minHeight: 24, lineHeight: 1.3 }}>{j.text}</div>
-                  <button onClick={() => buyJoker(j)} disabled={!can} style={{ padding: '6px', borderRadius: 6, fontSize: 12, fontWeight: 700, border: 'none', cursor: can ? 'pointer' : 'default', background: can ? 'linear-gradient(135deg,#ffd166,#f59e0b)' : '#1e293b', color: can ? '#1a1020' : '#475569' }}>
-                    💰${j.cost}
+                  <div style={{ fontSize: 12, fontWeight: 700, textAlign: 'center', color: '#f1f5f9' }}>{j.name}</div>
+                  <div style={{ fontSize: 9.5, color: '#a78bfa', textAlign: 'center', minHeight: 26, lineHeight: 1.35 }}>{j.text}</div>
+                  <button className="ge-buy" onClick={() => buyJoker(j)} disabled={!can} style={{ padding: '7px', borderRadius: 8, fontSize: 13, fontWeight: 800, border: 'none', cursor: can ? 'pointer' : 'default', background: can ? `linear-gradient(135deg,${rc},#f59e0b)` : '#1e293b', color: can ? '#1a1020' : '#475569', transition: 'filter .15s' }}>
+                    {owned.length >= JOKER_SLOTS ? '槽位已满' : money < j.cost ? `💰$${j.cost}（钱不够）` : `购买 💰$${j.cost}`}
                   </button>
                 </div>
               );
             })}
+          </div>
+
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: 18 }}>
+            <button onClick={reroll} disabled={money < REROLL_COST} style={{ padding: '9px 18px', borderRadius: 9, fontSize: 13, fontWeight: 700, border: '1px solid #475569', cursor: money >= REROLL_COST ? 'pointer' : 'default', background: money >= REROLL_COST ? 'rgba(96,165,250,0.12)' : '#1e293b', color: money >= REROLL_COST ? '#93c5fd' : '#475569' }}>
+              🎲 重摇 💰${REROLL_COST}
+            </button>
+            <span style={{ fontSize: 11, color: '#64748b' }}>小丑槽 {owned.length}/{JOKER_SLOTS}</span>
+            <button onClick={nextBlind} style={{ padding: '10px 24px', borderRadius: 9, fontSize: 14, fontWeight: 800, border: 'none', cursor: 'pointer', background: 'linear-gradient(135deg,#22c55e,#16a34a)', color: '#06210f', boxShadow: '0 4px 16px #22c55e44' }}>
+              下一道盲注 ▶
+            </button>
           </div>
         </div>
       )}
@@ -329,6 +405,13 @@ function GameE() {
             @keyframes ge-flyTrash { from { transform: none; opacity: 1 } to { transform: translate(320px,60px) scale(.45) rotate(40deg); opacity: 0 } }
             @keyframes ge-flyPlay { from { transform: translateY(-12px); opacity: 1 } to { transform: translateY(-170px) scale(1.18); opacity: 0 } }
           `}</style>
+
+          {/* 排序按钮（表现层：按花色 / 按点数重排手牌） */}
+          <div style={{ display: 'flex', gap: 8, alignItems: 'center', fontSize: 11, color: '#64748b' }}>
+            <span>排序</span>
+            <button onClick={() => sortHand('suit')} disabled={busy} style={{ padding: '4px 12px', borderRadius: 6, fontSize: 12, border: '1px solid #334155', background: 'rgba(255,255,255,0.05)', color: '#cbd5e1', cursor: busy ? 'default' : 'pointer' }}>🎨 花色</button>
+            <button onClick={() => sortHand('rank')} disabled={busy} style={{ padding: '4px 12px', borderRadius: 6, fontSize: 12, border: '1px solid #334155', background: 'rgba(255,255,255,0.05)', color: '#cbd5e1', cursor: busy ? 'default' : 'pointer' }}>🔢 点数</button>
+          </div>
 
           {/* 牌堆(左) · 手牌(中) · 垃圾桶(右) */}
           <div style={{ position: 'relative', width: '100%', maxWidth: 760, display: 'flex', justifyContent: 'center', alignItems: 'flex-end', minHeight: CH + 36 }}>
