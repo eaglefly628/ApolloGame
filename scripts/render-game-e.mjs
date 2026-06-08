@@ -58,10 +58,10 @@ HAND.forEach(([suit, rank], i) => {
 });
 
 // 计分 HUD（黑桃皇家同花顺 + 起手小丑：chips 158 × mult 36 = 5688，与整合测试一致）
-const chips = 158, mult = 36, score = chips * mult, money = 4;
+const chips = 209, mult = 36, score = chips * mult, money = 4;
 parts.push(`<rect x="${W / 2 - 320}" y="510" width="640" height="86" rx="12" fill="#0b1c22" stroke="#3a6b78"/>`);
 parts.push(`<text x="${W / 2}" y="548" fill="#fff" font-size="30" text-anchor="middle"><tspan fill="#4cc9f0" font-weight="bold">${chips}</tspan> chips  ×  <tspan fill="#f72585" font-weight="bold">${mult}</tspan> mult  =  <tspan fill="#ffd166" font-weight="bold">${score}</tspan></text>`);
-parts.push(`<text x="${W / 2}" y="582" fill="#90be6d" font-size="18" text-anchor="middle">SCORE ${score}     💰 $${money}     （poker-eval 基础 100/8 → +50c/Bull+8c、(8+4)×3 → 158×36）</text>`);
+parts.push(`<text x="${W / 2}" y="582" fill="#90be6d" font-size="18" text-anchor="middle">SCORE ${score}     💰 $${money}     （基础100/8 +逐张51 +50c +Bull8c、(8+4)×3 → 209×36，与整合测试一致）</text>`);
 
 parts.push(`</svg>`);
 process.stdout.write(parts.join('\n'));
