@@ -23,6 +23,7 @@ import { RANK_ORDER, type Card as DataCard } from './deck.js';
 export const R_CHIPS = 'chips';
 export const R_MULT = 'mult';
 export const R_MONEY = 'money';
+export const R_HAND_SCORE = 'hand_score'; // 本手最终得分 = chips × mult（REQ-013 valueFrom timesResourceId）
 export const V_HAND_TYPE = 'hand_type';
 export const F_SCORING = 'scoring';
 export const SIG_SCORE = 'score';
@@ -83,6 +84,7 @@ export function buildGameEBlueprint(): WorldBlueprint {
     chips: { Resource: { id: R_CHIPS, current: 0, min: 0, max: 1_000_000_000_000 } } as unknown as EntityBlueprint,
     mult: { Resource: { id: R_MULT, current: 0, min: 0, max: 1_000_000_000 } } as unknown as EntityBlueprint,
     money: { Resource: { id: R_MONEY, current: 4, min: -20, max: 1_000_000 } } as unknown as EntityBlueprint,
+    handScore: { Resource: { id: R_HAND_SCORE, current: 0, min: 0, max: 1_000_000_000_000 } } as unknown as EntityBlueprint,
 
     // 牌型名（poker-eval 写；条件类小丑用 condition.string 读）。
     handType: { StringVar: { id: V_HAND_TYPE, value: '' } } as unknown as EntityBlueprint,
@@ -123,6 +125,13 @@ export function buildGameEBlueprint(): WorldBlueprint {
     joker_jolly: { Effect: { onSignal: SIG_JOLLY, kind: 'modify-resource', targetId: R_MULT, op: 'add', value: 8, order: 11 } } as unknown as EntityBlueprint,
     // Cavendish：×3 Mult（无条件，order 最大 → 最后乘，先加后乘）。
     joker_cavendish: { Effect: { onSignal: SIG_SCORE, kind: 'modify-resource', targetId: R_MULT, op: 'mul', value: 3, order: 100 } } as unknown as EntityBlueprint,
+    // Bull：每 $1 +2 Chips（量纲动态值，REQ-013 valueFrom coeff）。
+    joker_bull: { Effect: { onSignal: SIG_SCORE, kind: 'modify-resource', targetId: R_CHIPS, op: 'add', valueFrom: { resourceId: R_MONEY, coeff: 2 }, order: 6 } } as unknown as EntityBlueprint,
+
+    // ── 最终合并（REQ-013 valueFrom timesResourceId）：hand_score = chips × mult。
+    // order 最大(1000) → 在所有小丑改完 chips/mult 之后才读（effect-apply 就地连写，lookup 按引用读最新值）。
+    // op:'set' → 每帧幂等设为当前 chips×mult（累计入总分=另一条边沿信号的后续工作）。
+    score_combine: { Effect: { onSignal: SIG_SCORE, kind: 'modify-resource', targetId: R_HAND_SCORE, op: 'set', valueFrom: { resourceId: R_CHIPS, timesResourceId: R_MULT }, order: 1000 } } as unknown as EntityBlueprint,
   };
 
   return {
