@@ -20,6 +20,7 @@ export interface ArtAsset {
   slot: ArtSlot; // 怎么用（看样图定）
   transparent: boolean;
   variants: number; // 变体张数（如 floor 4 张随机平铺）
+  sample?: string; // 代表帧文件名（真实存在的首张，变体编号非 0 基连续故须存）
   w?: number;
   h?: number; // 仅 ≠ basePixel(32) 时存
 }
@@ -56,6 +57,11 @@ export function artlibDir(index: ArtLibIndex, a: ArtAsset): string {
  */
 export function artlibGlob(index: ArtLibIndex, a: ArtAsset): string {
   return `${artlibDir(index, a)}/${a.subject}${a.variants > 1 ? '*' : ''}.png`;
+}
+
+/** 代表帧文件路径（相对仓库根）：dir/sample。dev 下加前导 '/' 即可 `<img src>`。 */
+export function artlibThumb(index: ArtLibIndex, a: ArtAsset): string {
+  return `${artlibDir(index, a)}/${a.sample ?? `${a.subject}.png`}`;
 }
 
 /** 按 tag/文本检索（空格分词，全部命中）。可选 slot/cat 过滤。 */

@@ -59,7 +59,7 @@ for (const rel of all) {
     const slot = SLOT[cat] ?? 'misc';
     // tags 不入库——它 = cat + sub 各段 + subject 各词（+slot+'dcss'），全可由结构字段推出。
     // 查询时用 artlibTokens() 现算（见 src/assets/artlib.ts），避免每行存冗余字符串（省 ~半体积）。
-    g = { id, cat, sub, subject, slot, transparent: cat !== 'dungeon', variants: 0, w: 32, h: 32 };
+    g = { id, cat, sub, subject, slot, transparent: cat !== 'dungeon', variants: 0, w: 32, h: 32, sample: rel.split('/').pop() };
     groups.set(id, g);
     try {
       const s = pngSize(join(ROOT, rel));
@@ -74,7 +74,7 @@ const assets = [...groups.values()]
   .sort((a, b) => a.id.localeCompare(b.id))
   .map((g) => {
     // 精简：dir 可由 cat+'/'+sub 推出；w/h 仅在 ≠32(basePixel) 时存。
-    const o = { id: g.id, cat: g.cat, sub: g.sub, subject: g.subject, slot: g.slot, transparent: g.transparent, variants: g.variants };
+    const o = { id: g.id, cat: g.cat, sub: g.sub, subject: g.subject, slot: g.slot, transparent: g.transparent, variants: g.variants, sample: g.sample };
     if (g.w !== 32 || g.h !== 32) { o.w = g.w; o.h = g.h; }
     return o;
   });

@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { createRoot } from 'react-dom/client';
 import { StudioInspector } from './studio/StudioInspector.js';
+import { ArtLibBrowser } from './studio/ArtLibBrowser.js';
 import { parseManifest } from './assembly/manifest.js';
 import { deriveAssetIndex } from './assembly/derive-asset-index.js';
 import { buildCapabilityCatalog } from './assembly/capability-catalog.js';
@@ -541,6 +542,7 @@ function GameRunner({ gameId, onBack }: { gameId: string; onBack: () => void }) 
 function Launcher() {
   const [launched, setLaunched] = useState<string | null>(null);
   const [studio, setStudio] = useState(false);
+  const [artlib, setArtlib] = useState(false);
   const [studioExtra, setStudioExtra] = useState<{ id: string; title: string; build: () => WorldBlueprint } | null>(null);
 
   // 「在透视器里打开」：把生成的 manifest(原始 JSON)接进透视器。build 每次重新 parseManifest
@@ -560,6 +562,10 @@ function Launcher() {
         extraGame={studioExtra ?? undefined}
       />
     );
+  }
+
+  if (artlib) {
+    return <ArtLibBrowser onBack={() => setArtlib(false)} />;
   }
 
   if (launched) {
@@ -606,6 +612,24 @@ function Launcher() {
           }}
         >
           🔬 数据透视器
+        </button>
+        <button
+          onClick={() => setArtlib(true)}
+          style={{
+            marginTop: 12,
+            marginLeft: 8,
+            padding: '7px 16px',
+            background: 'linear-gradient(135deg, rgba(56,189,248,0.15), rgba(34,197,94,0.15))',
+            color: '#38bdf8',
+            border: '1px solid rgba(56,189,248,0.3)',
+            borderRadius: 8,
+            fontSize: 12,
+            fontWeight: 600,
+            cursor: 'pointer',
+            outline: 'none',
+          }}
+        >
+          🎨 美术库
         </button>
       </div>
 
