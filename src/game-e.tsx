@@ -3,37 +3,42 @@ import { createRoot } from 'react-dom/client';
 import { Engine } from './runtime/engine.js';
 import type { Resource, PlayedHand, Flag, StringVar } from './engine/protocol/components.js';
 import {
-  buildGameEBlueprint, buildJokerEntities, toEngineCard,
-  R_CHIPS, R_MULT, R_HAND_SCORE, R_ROUND_SCORE, R_HANDS_LEFT, R_BLIND, V_HAND_TYPE,
+  buildGameEBlueprint, buildJokerEntities, jokerToEntities, toEngineCard,
+  R_CHIPS, R_MULT, R_MONEY, R_HAND_SCORE, R_ROUND_SCORE, R_HANDS_LEFT, R_DISCARDS_LEFT, R_BLIND, V_HAND_TYPE,
 } from './games/game-e/blueprint.js';
-import { HAND_RANKINGS, shuffledDeck, STARTER_JOKERS, type Card, type Suit, type Rank, type HandType } from './games/game-e/index.js';
+import {
+  HAND_RANKINGS, shuffledDeck, STARTER_JOKERS, blindRequirement, BLIND_ORDER,
+  type Card, type Suit, type Rank, type HandType, type JokerCard, type BlindKind,
+} from './games/game-e/index.js';
 import { cardCell, CELL_W, CELL_H, SHEET_W, SHEET_H } from './games/game-e/cards-atlas.js';
 
 // ════════════════════════════════════════════════════════════════════════
-//  Game E · 小丑牌 —— 真引擎跑分 + 真美术（MVP-0 单人 vs Boss 核心闭环）。
+//  Game E · 小丑牌 单人 MVP（按设计稿 §五 回合流程：Ante→三盲注→冲线→商店）。
 //
-//  ★ 逻辑全在引擎：牌型/逐张筹码/小丑有序加乘/资源×资源合并/回合累加全由 buildGameEBlueprint 算
-//  （poker-hand REQ-011 + card-scoring REQ-014 + effect-apply REQ-012/013 + 回合循环边沿门）。
-//  本文件是**薄表现层**：① 选牌→写 PlayedHand+scoring（输入层）② 读世界 Resource 投影成画面。
-//  回合态(round_score/hands_left)住 ECS（非 React state）；牌序用确定性种子洗牌（lockstep 铺路）。
+//  顺序：每个 Ante = Small(×1)→Big(×1.5)→Boss(×2) 三道盲注。每道：发 8 张 + hands(4)/discards(3)
+//    → 选≤5 出牌(累加 round_score) 或弃牌(补牌不计分) → round_score≥盲注线 即过关
+//    → 结算 $（基础+剩余手数+利息）→ 商店买小丑 → 下一道盲注；hands 耗尽未过线 = 失败。
+//  ★ 开局 0 小丑（buildJokerEntities([])）；小丑只能在商店买（jokerToEntities 加进运行中的引擎）。
+//  逻辑全在引擎（poker-hand/card-scoring/effect-apply）；本文件是回合流程 + 表现的薄层（读/写世界资源）。
 // ════════════════════════════════════════════════════════════════════════
 
 const CARDS_URL = '/assets/FreeArtLib/cardgame/cards.png';
-const JOKER_URL = (file: string) => `/assets/FreeArtLib/cardgame/card/${file}`;
-const SCALE = 1.15;
+const JOKER_URL = (name: string) => `/assets/FreeArtLib/cardgame/card/${name.replace(/ /g, '_')}.webp`;
+const SCALE = 1.1;
 const CW = Math.round(CELL_W * SCALE);
 const CH = Math.round(CELL_H * SCALE);
 const HAND_SIZE = 8;
+const HANDS_PER_BLIND = 4;
+const DISCARDS_PER_BLIND = 3;
+const JOKER_SLOTS = 5;
+const REROLL_COST = 5;
 
-// 牌桌上的小丑 = 引擎实际接线的 STARTER_JOKERS（全 14 张，buildJokerEntities 派生进蓝图）。
-// 名实一致：UI 显示什么，引擎就按什么计分。art 文件名按官方命名推导，无图 onError fallback emoji。
-const TABLE_JOKERS = STARTER_JOKERS.map((j) => ({
-  name: j.name,
-  file: `${j.name.replace(/ /g, '_')}.webp`,
-  desc: j.text,
-}));
+const BLIND_META: Record<BlindKind, { label: string; icon: string; reward: number }> = {
+  small: { label: '小盲注', icon: '🔸', reward: 3 },
+  big: { label: '大盲注', icon: '🔶', reward: 4 },
+  boss: { label: 'Boss 盲注', icon: '👹', reward: 5 },
+};
 
-// cards.png 单格背景定位（按花色点数取格）。
 function cardBg(suit: Suit, rank: Rank): React.CSSProperties {
   const { col, row } = cardCell(suit, rank);
   return {
@@ -45,48 +50,67 @@ function cardBg(suit: Suit, rank: Rank): React.CSSProperties {
   };
 }
 
+type Phase = 'playing' | 'shop' | 'lost';
+
 function GameE() {
   const engineRef = useRef<Engine | null>(null);
   const seedRef = useRef(20260608);
   const deckRef = useRef<Card[]>([]);
   const deckPtrRef = useRef(0);
 
+  const [ante, setAnte] = useState(1);
+  const [blindIdx, setBlindIdx] = useState(0); // 0 small, 1 big, 2 boss
+  const [owned, setOwned] = useState<JokerCard[]>([]);
+  const [hand, setHand] = useState<Card[]>(() => shuffledDeck(20260608).slice(0, HAND_SIZE));
+  const [sel, setSel] = useState<boolean[]>(() => new Array(HAND_SIZE).fill(false));
+  const [phase, setPhase] = useState<Phase>('playing');
+  const [result, setResult] = useState<{ type: HandType; chips: number; mult: number; score: number } | null>(null);
+  const [shopOffer, setShopOffer] = useState<JokerCard[]>([]);
+  const [, force] = useState(0);
+  const bump = () => force((n) => n + 1);
+
+  // ── 引擎资源读写（输入/投影层）──
+  const resOf = useCallback((id: string): Resource | undefined => {
+    const e = engineRef.current!;
+    for (const [eid] of e.world.query('Resource')) {
+      const r = e.world.getComponent<Resource>(eid, 'Resource');
+      if (r && r.id === id) return r;
+    }
+    return undefined;
+  }, []);
+  const get = useCallback((id: string) => resOf(id)?.current ?? 0, [resOf]);
+  const set = useCallback((id: string, v: number) => {
+    const r = resOf(id);
+    if (r) r.current = Math.max(r.min, Math.min(r.max, v));
+  }, [resOf]);
+
+  // 一道盲注开局：重置回合资源 + 设盲注线 + 洗牌发 8 张。
+  const startBlind = useCallback((a: number, bi: number) => {
+    const e = engineRef.current!;
+    set(R_ROUND_SCORE, 0); set(R_HANDS_LEFT, HANDS_PER_BLIND); set(R_DISCARDS_LEFT, DISCARDS_PER_BLIND);
+    set(R_CHIPS, 0); set(R_MULT, 0); set(R_HAND_SCORE, 0);
+    set(R_BLIND, blindRequirement(a, BLIND_ORDER[bi]));
+    e.world.getComponent<PlayedHand>('table', 'PlayedHand')!.cards = [];
+    seedRef.current += 1;
+    deckRef.current = shuffledDeck(seedRef.current);
+    deckPtrRef.current = HAND_SIZE;
+    setHand(deckRef.current.slice(0, HAND_SIZE));
+    setSel(new Array(HAND_SIZE).fill(false));
+    setResult(null);
+    setPhase('playing');
+    bump();
+  }, [set]);
+
+  // 首次构建引擎（开局 0 小丑）。
   if (engineRef.current === null) {
     const e = new Engine({ tickRate: 60 });
-    e.load(buildGameEBlueprint(buildJokerEntities(STARTER_JOKERS)));
+    e.load(buildGameEBlueprint(buildJokerEntities([])));
     engineRef.current = e;
     deckRef.current = shuffledDeck(seedRef.current);
     deckPtrRef.current = HAND_SIZE;
+    // 初始第一道盲注线（resource 默认 300=ante1 small，对齐）。
   }
   const engine = engineRef.current;
-
-  const [hand, setHand] = useState<Card[]>(() => deckRef.current.slice(0, HAND_SIZE));
-  const [sel, setSel] = useState<boolean[]>(() => new Array(HAND_SIZE).fill(false));
-  const [result, setResult] = useState<{ type: HandType; chips: number; mult: number; score: number } | null>(null);
-  const [, force] = useState(0); // 触发重渲染读最新世界资源
-
-  const resOf = useCallback((id: string): number => {
-    for (const [eid] of engine.world.query('Resource')) {
-      const r = engine.world.getComponent<Resource>(eid, 'Resource');
-      if (r && r.id === id) return r.current;
-    }
-    return 0;
-  }, [engine]);
-
-  const blind = resOf(R_BLIND);
-  const roundScore = resOf(R_ROUND_SCORE);
-  const handsLeft = resOf(R_HANDS_LEFT);
-  const bossHp = Math.max(0, blind - roundScore); // Boss 血 = 盲注线剩余（round_score 由引擎累加）
-  const dead = roundScore >= blind;
-  const lost = !dead && handsLeft <= 0;
-
-  const toggle = useCallback((i: number) => {
-    setSel((prev) => {
-      const cnt = prev.filter(Boolean).length;
-      if (!prev[i] && cnt >= 5) return prev;
-      return prev.map((s, j) => (j === i ? !s : s));
-    });
-  }, []);
 
   const drawTo = useCallback((kept: Card[]): Card[] => {
     const deck = deckRef.current;
@@ -96,133 +120,215 @@ function GameE() {
     return [...kept, ...drawn];
   }, []);
 
-  const play = useCallback(() => {
-    const chosen = hand.filter((_, i) => sel[i]);
-    if (chosen.length === 0 || dead || lost) return;
+  const blindKind = BLIND_ORDER[blindIdx];
+  const target = get(R_BLIND);
+  const roundScore = get(R_ROUND_SCORE);
+  const handsLeft = get(R_HANDS_LEFT);
+  const discardsLeft = get(R_DISCARDS_LEFT);
+  const money = get(R_MONEY);
+  const selCount = sel.filter(Boolean).length;
 
-    // ① 输入层：填出牌 + 开 scoring → tick（引擎认牌型/逐张/小丑/合并 + 边沿累加 round_score、hands_left-1）。
+  const toggle = useCallback((i: number) => {
+    setSel((prev) => {
+      const cnt = prev.filter(Boolean).length;
+      if (!prev[i] && cnt >= 5) return prev;
+      return prev.map((s, j) => (j === i ? !s : s));
+    });
+  }, []);
+
+  const play = useCallback(() => {
+    if (phase !== 'playing') return;
+    const chosen = hand.filter((_, i) => sel[i]);
+    if (chosen.length === 0 || handsLeft <= 0) return;
+
     engine.world.getComponent<PlayedHand>('table', 'PlayedHand')!.cards = chosen.map(toEngineCard);
     engine.world.getComponent<Flag>('scoring', 'Flag')!.active = true;
-    engine.world.tick();
+    engine.world.tick(); // poker-eval + 逐张 + 小丑 + 合并 + 边沿累加 round_score、hands-1
 
-    const chips = resOf(R_CHIPS);
-    const mult = resOf(R_MULT);
-    const score = resOf(R_HAND_SCORE);
+    const chips = get(R_CHIPS), mult = get(R_MULT), score = get(R_HAND_SCORE);
     let type: HandType = 'high_card';
     for (const [eid] of engine.world.query('StringVar')) {
       const v = engine.world.getComponent<StringVar>(eid, 'StringVar');
       if (v && v.id === V_HAND_TYPE) type = v.value.replace(/-/g, '_') as HandType;
     }
-
-    // ② 收尾一拍：清出牌 + 关 scoring（disarm 边沿门，下手可再触发）。
     engine.world.getComponent<PlayedHand>('table', 'PlayedHand')!.cards = [];
     engine.world.getComponent<Flag>('scoring', 'Flag')!.active = false;
-    engine.world.tick();
+    engine.world.tick(); // 收尾：disarm 边沿门
 
     setResult({ type, chips, mult, score });
 
-    // ③ 抽牌补手：移除已出，从牌库补到 8 张。
-    const rest = hand.filter((_, i) => !sel[i]);
-    const next = drawTo(rest);
+    const rs = get(R_ROUND_SCORE);
+    if (rs >= get(R_BLIND)) {
+      // 过关 → 结算 $（基础 + 剩余手数 + 利息 $1/$5 上限5）→ 商店。
+      const reward = BLIND_META[blindKind].reward + get(R_HANDS_LEFT) + Math.min(5, Math.floor(get(R_MONEY) / 5));
+      set(R_MONEY, get(R_MONEY) + reward);
+      const pool = STARTER_JOKERS.filter((j) => !owned.some((o) => o.id === j.id));
+      const offer: JokerCard[] = [];
+      const tmp = [...pool];
+      for (let k = 0; k < 3 && tmp.length; k++) offer.push(tmp.splice(Math.floor(Math.random() * tmp.length), 1)[0]);
+      setShopOffer(offer);
+      setPhase('shop');
+      bump();
+      return;
+    }
+    if (get(R_HANDS_LEFT) <= 0) { setPhase('lost'); bump(); return; }
+
+    const next = drawTo(hand.filter((_, i) => !sel[i]));
     setHand(next);
     setSel(new Array(next.length).fill(false));
-    force((n) => n + 1);
-  }, [hand, sel, dead, lost, engine, resOf, drawTo]);
+    bump();
+  }, [phase, hand, sel, handsLeft, engine, get, set, drawTo, blindKind, owned]);
 
-  const newRun = useCallback(() => {
-    seedRef.current += 1; // 换种子 → 新牌序（仍确定性可复现）
+  const discard = useCallback(() => {
+    if (phase !== 'playing') return;
+    if (selCount === 0 || discardsLeft <= 0) return;
+    set(R_DISCARDS_LEFT, discardsLeft - 1);
+    const next = drawTo(hand.filter((_, i) => !sel[i]));
+    setHand(next);
+    setSel(new Array(next.length).fill(false));
+    bump();
+  }, [phase, selCount, discardsLeft, hand, sel, set, drawTo]);
+
+  // 买小丑：扣 $、加入 owned、把它的实体注入运行中的引擎。
+  const buyJoker = useCallback((j: JokerCard) => {
+    if (owned.length >= JOKER_SLOTS || money < j.cost) return;
+    set(R_MONEY, money - j.cost);
+    const ents = jokerToEntities(j, owned.length);
+    for (const [eid, comps] of Object.entries(ents)) {
+      engine.world.createEntity(eid);
+      for (const [type, data] of Object.entries(comps as Record<string, object>)) {
+        engine.world.addComponent(eid, { type, ...(data as object) } as never);
+      }
+    }
+    setOwned((o) => [...o, j]);
+    setShopOffer((s) => s.filter((x) => x.id !== j.id));
+    bump();
+  }, [owned, money, engine, set]);
+
+  const nextBlind = useCallback(() => {
+    let a = ante, bi = blindIdx + 1;
+    if (bi > 2) { bi = 0; a += 1; setAnte(a); }
+    setBlindIdx(bi);
+    startBlind(a, bi);
+  }, [ante, blindIdx, startBlind]);
+
+  const restart = useCallback(() => {
     const e = new Engine({ tickRate: 60 });
-    e.load(buildGameEBlueprint(buildJokerEntities(STARTER_JOKERS)));
+    e.load(buildGameEBlueprint(buildJokerEntities([])));
     engineRef.current = e;
-    deckRef.current = shuffledDeck(seedRef.current);
-    deckPtrRef.current = HAND_SIZE;
-    setHand(deckRef.current.slice(0, HAND_SIZE));
-    setSel(new Array(HAND_SIZE).fill(false));
-    setResult(null);
-    force((n) => n + 1);
-  }, []);
+    setOwned([]); setAnte(1); setBlindIdx(0);
+    startBlind(1, 0);
+  }, [startBlind]);
 
-  const selCount = sel.filter(Boolean).length;
-  const msg = dead ? '🎉 击败 Boss（round_score ≥ 盲注线）' : lost ? '💀 出牌耗尽，未达盲注线' : '选最多 5 张 → 出牌，真引擎认牌型并结算';
+  const lost = phase === 'lost';
+  const inShop = phase === 'shop';
+  const progress = target > 0 ? Math.min(100, (roundScore / target) * 100) : 0;
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 16, padding: 24, color: '#e2e8f0', font: '13px system-ui', width: '100%', maxWidth: 760 }}>
-      {/* Boss 条（= 盲注线剩余）*/}
-      <div style={{ width: '100%', maxWidth: 620 }}>
+    <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 14, padding: 22, color: '#e2e8f0', font: '13px system-ui', width: '100%', maxWidth: 820 }}>
+      {/* 顶部：Ante / 盲注 / 进度线 / 钱 */}
+      <div style={{ width: '100%', maxWidth: 680 }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 13, marginBottom: 4 }}>
-          <span>👹 Boss{dead ? ' · 击败！' : ''}　<span style={{ color: '#64748b', fontSize: 11 }}>出牌次数 {handsLeft}</span></span>
-          <span style={{ color: '#fca5a5' }}>{bossHp.toLocaleString()} / {blind.toLocaleString()}</span>
+          <span style={{ fontWeight: 700 }}>Ante {ante} · {BLIND_META[blindKind].icon} {BLIND_META[blindKind].label}（{blindIdx + 1}/3）</span>
+          <span>💰 <span style={{ color: '#ffd166', fontWeight: 700 }}>${money}</span>　<span style={{ color: '#64748b', fontSize: 11 }}>出牌 {handsLeft} · 弃牌 {discardsLeft}</span></span>
         </div>
-        <div style={{ height: 16, background: '#2a1118', borderRadius: 8, overflow: 'hidden', border: '1px solid #4b1d24' }}>
-          <div style={{ width: `${blind > 0 ? (bossHp / blind) * 100 : 0}%`, height: '100%', background: 'linear-gradient(90deg,#ef4444,#f87171)', transition: 'width 0.3s' }} />
+        <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 12, color: '#94a3b8', marginBottom: 3 }}>
+          <span>得分 <span style={{ color: '#90be6d', fontWeight: 700 }}>{roundScore.toLocaleString()}</span></span>
+          <span>目标 <span style={{ color: '#fca5a5' }}>{target.toLocaleString()}</span></span>
+        </div>
+        <div style={{ height: 14, background: '#1e293b', borderRadius: 7, overflow: 'hidden', border: '1px solid #334155' }}>
+          <div style={{ width: `${progress}%`, height: '100%', background: 'linear-gradient(90deg,#22c55e,#86efac)', transition: 'width 0.3s' }} />
         </div>
       </div>
 
-      {/* 小丑排（全 14 张，引擎接线；真美术 webp，缺图 emoji 兜底）*/}
-      <div style={{ display: 'flex', gap: 8, alignItems: 'flex-start', flexWrap: 'wrap', justifyContent: 'center', maxWidth: 720 }}>
-        {TABLE_JOKERS.map((j) => (
-          <div key={j.name} title={`${j.name} · ${j.desc}`} style={{ width: 64, height: 92, borderRadius: 8, border: '1px solid #3a2a4a', background: '#160f22', overflow: 'hidden', display: 'flex', flexDirection: 'column', position: 'relative' }}>
-            {/* emoji 兜底层（img 加载成功则覆盖；onError 隐藏 img 露出它）*/}
-            <div style={{ width: '100%', height: 66, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 24 }}>🃏</div>
-            <img
-              src={JOKER_URL(j.file)} alt={j.name}
-              onError={(e) => { e.currentTarget.style.display = 'none'; }}
-              style={{ position: 'absolute', top: 0, left: 0, width: '100%', height: 66, objectFit: 'cover' }}
-            />
-            <div style={{ fontSize: 7, textAlign: 'center', color: '#a78bfa', padding: '2px', lineHeight: 1.2 }}>{j.desc}</div>
+      {/* 小丑排（owned；开局空）*/}
+      <div style={{ display: 'flex', gap: 6, alignItems: 'center', minHeight: 74, flexWrap: 'wrap', justifyContent: 'center' }}>
+        <span style={{ fontSize: 10, color: '#64748b', letterSpacing: 1 }}>小丑 {owned.length}/{JOKER_SLOTS}</span>
+        {owned.length === 0 && <span style={{ fontSize: 11, color: '#475569' }}>（开局无小丑，过盲注进商店购买）</span>}
+        {owned.map((j) => (
+          <div key={j.id} title={`${j.name} · ${j.text}`} style={{ width: 50, height: 70, borderRadius: 6, border: '1px solid #3a2a4a', background: '#160f22', overflow: 'hidden', position: 'relative' }}>
+            <div style={{ position: 'absolute', inset: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 20 }}>🃏</div>
+            <img src={JOKER_URL(j.name)} alt={j.name} style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', objectFit: 'cover' }} onError={(e) => { (e.currentTarget as HTMLImageElement).style.display = 'none'; }} />
           </div>
         ))}
       </div>
 
-      {/* 结算读出（读世界，不在视图算）*/}
-      <div style={{ background: '#0b1c22', border: '1px solid #2b5562', borderRadius: 10, padding: '8px 22px', minWidth: 360, textAlign: 'center' }}>
-        {result ? (
-          <div style={{ fontSize: 15 }}>
-            <span style={{ color: '#ffd166', fontWeight: 700 }}>{HAND_RANKINGS[result.type]?.name ?? result.type}</span>{'  '}
-            <span style={{ color: '#4cc9f0', fontWeight: 700 }}>{result.chips}</span> 筹码 ×{' '}
-            <span style={{ color: '#f72585', fontWeight: 700 }}>{result.mult}</span> 倍 ={' '}
-            <span style={{ color: '#90be6d', fontWeight: 800 }}>{result.score.toLocaleString()}</span>
+      {/* 结算读出 */}
+      {result && !inShop && (
+        <div style={{ background: '#0b1c22', border: '1px solid #2b5562', borderRadius: 10, padding: '6px 20px', fontSize: 14 }}>
+          <span style={{ color: '#ffd166', fontWeight: 700 }}>{HAND_RANKINGS[result.type]?.name ?? result.type}</span>{'  '}
+          <span style={{ color: '#4cc9f0', fontWeight: 700 }}>{result.chips}</span> ×{' '}
+          <span style={{ color: '#f72585', fontWeight: 700 }}>{result.mult}</span> ={' '}
+          <span style={{ color: '#90be6d', fontWeight: 800 }}>{result.score.toLocaleString()}</span>
+        </div>
+      )}
+
+      {/* ── 商店 ── */}
+      {inShop && (
+        <div style={{ width: '100%', maxWidth: 620, background: '#0b1c22', border: '1px solid #2b5562', borderRadius: 12, padding: 18 }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
+            <span style={{ fontSize: 15, fontWeight: 700, color: '#ffd166' }}>🛒 商店 —— 买小丑（💰${money}）</span>
+            <button onClick={nextBlind} style={{ padding: '8px 20px', borderRadius: 8, fontSize: 13, fontWeight: 700, border: 'none', cursor: 'pointer', background: 'linear-gradient(135deg,#22c55e,#16a34a)', color: '#06210f' }}>
+              下一道盲注 ▶
+            </button>
           </div>
-        ) : (
-          <div style={{ color: '#64748b' }}>{msg}</div>
-        )}
-      </div>
+          <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap' }}>
+            {shopOffer.length === 0 && <span style={{ color: '#64748b', fontSize: 12 }}>（无更多小丑可买）</span>}
+            {shopOffer.map((j) => {
+              const can = money >= j.cost && owned.length < JOKER_SLOTS;
+              return (
+                <div key={j.id} style={{ width: 128, border: '1px solid #3a2a4a', borderRadius: 8, background: '#160f22', padding: 8, display: 'flex', flexDirection: 'column', gap: 6 }}>
+                  <div style={{ width: '100%', height: 96, borderRadius: 6, overflow: 'hidden', position: 'relative', background: '#0d0818' }}>
+                    <div style={{ position: 'absolute', inset: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 30 }}>🃏</div>
+                    <img src={JOKER_URL(j.name)} alt={j.name} style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', objectFit: 'cover' }} onError={(e) => { (e.currentTarget as HTMLImageElement).style.display = 'none'; }} />
+                  </div>
+                  <div style={{ fontSize: 11, fontWeight: 700, textAlign: 'center' }}>{j.name}</div>
+                  <div style={{ fontSize: 9, color: '#a78bfa', textAlign: 'center', minHeight: 24, lineHeight: 1.3 }}>{j.text}</div>
+                  <button onClick={() => buyJoker(j)} disabled={!can} style={{ padding: '6px', borderRadius: 6, fontSize: 12, fontWeight: 700, border: 'none', cursor: can ? 'pointer' : 'default', background: can ? 'linear-gradient(135deg,#ffd166,#f59e0b)' : '#1e293b', color: can ? '#1a1020' : '#475569' }}>
+                    💰${j.cost}
+                  </button>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      )}
 
-      {/* 手牌（真牌面 cards.png 切图）*/}
-      <div style={{ display: 'flex', gap: 8, alignItems: 'flex-end', minHeight: CH + 18 }}>
-        {hand.map((c, i) => (
-          <div
-            key={`${c.suit}${c.rank}${i}`}
-            onClick={() => toggle(i)}
-            style={{
-              ...cardBg(c.suit, c.rank),
-              cursor: 'pointer',
-              transform: sel[i] ? 'translateY(-14px)' : 'none',
-              transition: 'transform 0.15s, box-shadow 0.15s',
-              outline: sel[i] ? '3px solid #ffd166' : '1px solid #0008',
-              boxShadow: sel[i] ? '0 8px 22px #ffd16655' : 'none',
-            }}
-          />
-        ))}
-      </div>
+      {/* ── 手牌 + 操作（playing）── */}
+      {phase === 'playing' && (
+        <>
+          <div style={{ display: 'flex', gap: 7, alignItems: 'flex-end', minHeight: CH + 18, flexWrap: 'wrap', justifyContent: 'center' }}>
+            {hand.map((c, i) => (
+              <div key={`${c.suit}${c.rank}${i}`} onClick={() => toggle(i)} style={{
+                ...cardBg(c.suit, c.rank), cursor: 'pointer',
+                transform: sel[i] ? 'translateY(-12px)' : 'none', transition: 'transform 0.15s',
+                outline: sel[i] ? '3px solid #ffd166' : '1px solid #0008',
+                boxShadow: sel[i] ? '0 8px 20px #ffd16655' : 'none',
+              }} />
+            ))}
+          </div>
+          <div style={{ display: 'flex', gap: 12 }}>
+            <button onClick={play} disabled={selCount === 0 || handsLeft <= 0} style={{ padding: '10px 26px', borderRadius: 8, fontSize: 14, fontWeight: 700, border: 'none', cursor: selCount && handsLeft > 0 ? 'pointer' : 'default', background: selCount && handsLeft > 0 ? 'linear-gradient(135deg,#ffd166,#f59e0b)' : '#1e293b', color: selCount && handsLeft > 0 ? '#1a1020' : '#475569' }}>
+              ▶ 出牌（{selCount}）
+            </button>
+            <button onClick={discard} disabled={selCount === 0 || discardsLeft <= 0} style={{ padding: '10px 22px', borderRadius: 8, fontSize: 14, fontWeight: 700, border: 'none', cursor: selCount && discardsLeft > 0 ? 'pointer' : 'default', background: selCount && discardsLeft > 0 ? 'linear-gradient(135deg,#60a5fa,#3b82f6)' : '#1e293b', color: selCount && discardsLeft > 0 ? '#0a1020' : '#475569' }}>
+              ♻ 弃牌（{discardsLeft}）
+            </button>
+          </div>
+        </>
+      )}
 
-      {/* 操作 */}
-      <div style={{ display: 'flex', gap: 12, alignItems: 'center' }}>
-        <button
-          onClick={play}
-          disabled={selCount === 0 || dead || lost}
-          style={{ padding: '10px 28px', borderRadius: 8, fontSize: 14, fontWeight: 700, border: 'none', cursor: selCount && !dead && !lost ? 'pointer' : 'default', background: selCount && !dead && !lost ? 'linear-gradient(135deg,#ffd166,#f59e0b)' : '#1e293b', color: selCount && !dead && !lost ? '#1a1020' : '#475569' }}
-        >
-          ▶ 出牌（{selCount}）
-        </button>
-        <button onClick={newRun} style={{ padding: '10px 18px', borderRadius: 8, fontSize: 13, border: '1px solid #334155', background: 'rgba(255,255,255,0.05)', color: '#94a3b8', cursor: 'pointer' }}>
-          {dead ? '🎉 再来一局' : lost ? '💀 重来' : '新一局'}
-        </button>
-      </div>
+      {/* ── 失败 ── */}
+      {lost && (
+        <div style={{ textAlign: 'center', display: 'flex', flexDirection: 'column', gap: 12, padding: 20 }}>
+          <div style={{ fontSize: 18, color: '#ef4444', fontWeight: 700 }}>💀 出牌耗尽，未达盲注线（{roundScore.toLocaleString()} / {target.toLocaleString()}）</div>
+          <button onClick={restart} style={{ padding: '10px 24px', borderRadius: 8, fontSize: 14, fontWeight: 700, border: 'none', cursor: 'pointer', background: 'linear-gradient(135deg,#ffd166,#f59e0b)', color: '#1a1020', alignSelf: 'center' }}>重新开始</button>
+        </div>
+      )}
 
-      <div style={{ fontSize: 10, color: '#3d4a5c', textAlign: 'center', maxWidth: 520, lineHeight: 1.6 }}>
-        逻辑全在引擎（poker-eval 认牌型 + 逐张筹码 + 小丑 effect 有序加乘 + 资源×资源合并 + 回合边沿累加），本界面只读引擎资源显示。
-        牌面取自 cards.png（按花色点数切 UV），小丑为真美术 webp。种子洗牌确定性可复现。
+      <div style={{ fontSize: 10, color: '#3d4a5c', textAlign: 'center', maxWidth: 560, lineHeight: 1.6 }}>
+        Ante 三盲注(Small×1/Big×1.5/Boss×2) → 选≤5 出牌冲线 / 弃牌换牌 → 过线结算$进商店买小丑 → 下一道。
+        逻辑全在引擎（牌型/计分/小丑），本界面只读写世界资源。开局 0 小丑（Balatro 设定）。
       </div>
     </div>
   );
@@ -230,12 +336,9 @@ function GameE() {
 
 export function mount(container: HTMLElement): () => void {
   const wrapper = document.createElement('div');
-  wrapper.style.cssText = 'position:absolute;inset:0;background:radial-gradient(circle at 50% 30%,#16323a,#0a0714);display:flex;align-items:center;justify-content:center;overflow:auto';
+  wrapper.style.cssText = 'position:absolute;inset:0;background:radial-gradient(circle at 50% 25%,#16323a,#0a0714);display:flex;align-items:flex-start;justify-content:center;overflow:auto;padding:16px 0';
   container.appendChild(wrapper);
   const root = createRoot(wrapper);
   root.render(<GameE />);
-  return () => {
-    root.unmount();
-    wrapper.remove();
-  };
+  return () => { root.unmount(); wrapper.remove(); };
 }
