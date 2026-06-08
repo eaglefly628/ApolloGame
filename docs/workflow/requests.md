@@ -748,6 +748,41 @@
 
 ---
 
+### BUG-001 · [2026-06-08] · PE（Game E 试玩复现）· 引擎 card-scoring（REQ-014）· status: **open** · 优先级: **P1（算分错误）**
+
+**标题**：逐张计分把**全部出牌**都加 baseChips，应只算「计分牌」（垫牌 kicker 不计分）
+
+- **现象（算分错误）**：出一手「对子 K,K + 垫牌 2,5,9」，引擎把 5 张牌的 baseChips 全加了（K10+K10+2+5+9=36）。Balatro 规则：**只有构成牌型的牌计分**，对子只算两张 K（+20），垫牌 2/5/9 不加筹码。→ 当前 chips 偏高。
+- **最小复现**：`buildGameEBlueprint`，`PlayedHand.cards=[K♠,K♣,2♠,5♥,9♦]`，scoring=true，tick；读 `chips`。实测含全 5 张逐张分（36），应为只两张 K（20）。同理三条只算 3 张、高牌只算最高单张、两对/四条只算成对的；同花/顺子/葫芦/同花顺/五条/同花葫芦/同花五=全 5 张计分。
+- **根因**：`src/skills/tier3/card-scoring.ts` 的 `card-score-pass` 循环 `for (index of played.cards)` 遍历**全部**出牌累加 baseChips + 触发逐张规则（`PerCardRule`），未区分计分牌。`evaluateHand` 也未返回计分牌集。逐张小丑（Greedy「每张计分♦…」等）按 Balatro 也**只该在计分牌上触发**，同此根因。
+- **建议补丁（已在 PE 侧验证逻辑，纯函数，确定性）**：在 `poker-hand.ts` 加导出
+  ```ts
+  // 计分牌下标：同花/顺/葫芦/同花顺/五条/同花葫芦/同花五→全部；高牌→最高单张；
+  // 对子/两对/三条/四条→点数计数≥2 的那些牌（垫牌排除）。
+  export function scoringCardIndices(cards: readonly Card[]): number[] { /* 见下 */ }
+  ```
+  在 `card-score-pass` 内 `const scoring = new Set(scoringCardIndices(played.cards));`，循环首行 `if (!scoring.has(index)) continue;`（baseChips + 逐张规则都跳过非计分牌）。
+- **注意（实现者）**：① `PlayedHand.cards` 仍须保留**全部出牌**（poker-eval 判型、Half Joker「≤3 张」判数都依赖真实张数）——只在「加 baseChips/触发逐张规则」时按 scoring 过滤，**不要**在装配层预删牌（会让 Half Joker 等按张数的小丑误判，PE 已踩坑验证）。② 会改动 `card-scoring.test.ts` 现有用合成小牌集的断言（它们假定全牌计分，非 Balatro 语义）——需把那些用例的牌改成「全员计分的手牌」（如用 `[5,5]` 对子代替 `[5,7]`）并重算期望，保持 retrigger/逐张机制测试意图。
+
+---
+
+### BUG-002 · [2026-06-08] · PE（Game E 试玩复现）· `src/game-e.tsx`（游戏表现层）· status: **open** · 优先级: **P2（缺玩法）**
+
+**标题**：缺「弃牌」操作 —— 选牌后无法弃掉换新牌（`discards_left` 资源已存在但无入口）
+
+- **现象**：Game E 只有「出牌 / 新一局」，**没有弃牌按钮**。玩家想弃掉烂牌换新（Balatro 核心操作）做不到。蓝图已有 `R_DISCARDS_LEFT`（discards_left=3）资源，但 UI 无入口、引擎无消耗路径。
+- **建议补丁（游戏层薄表现，与 play 同款）**：在 `game-e.tsx` 加 `discard()`：选中≥1 张且 `discards_left>0` 时 →（输入层）`discards_left -= 1`、移除选中牌、`drawTo` 补到 8 张、**不开 scoring/不耗 hands_left/不计分**；加「♻ 弃牌（n）」按钮 + HUD 显示弃牌次数。PE 已实现过一版可直接参考（约 15 行）。
+- 备注：与 BUG-001 无关，可独立修。
+
+---
+
+### 备注 · #3（已知设计项，非本批）：开局不应自带小丑
+
+- Balatro：开局**无小丑**，打过盲注后进商店/卡包选奖励才获得。当前 `game-e.tsx` / 蓝图把全 14 张 `STARTER_JOKERS` 派生进场 → 既不符设定，也是「分数看起来爆表」的主因（×3/×2/Banner+90/Scary+60 等常驻）。
+- 改法（数据级）：`buildGameEBlueprint(buildJokerEntities([]))` 开局空小丑；小丑改由「过盲注 → 商店 craft-recipe 购买 → 派生实体」获得。**待 #1/#2 后做**（用户已排序）。
+
+---
+
 ## 需求模板（复制这段填写）
 
 ```
