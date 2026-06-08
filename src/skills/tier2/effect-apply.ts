@@ -31,6 +31,7 @@ export const effectApplyCapability = defineCapability({
       '踩到陷阱信号 → 扣血：Effect{ onSignal:"trap", kind:"modify-resource", targetId:"hp", value:-10 }',
       '两开关都开 → 推进剧情态：Effect{ onSignal:"both_switches", kind:"set-state", targetId:"story", value:"door_open" }',
       '踩开关 → 墙变可穿过（物理）：Effect{ onSignal:"plate_on", kind:"set-sensor", targetEntity:"wall_3", value:true }',
+      'Balatro 小丑 ×Mult(REQ-012)：Effect{ onSignal:"score", kind:"modify-resource", targetId:"mult", op:"mul", value:1.5, order:3 }（order 保证先加后乘）',
     ],
   },
 
@@ -44,7 +45,9 @@ export const effectApplyCapability = defineCapability({
           kind: { type: 'string', describe: "逻辑:'set-flag'|'modify-resource'|'set-state'；物理(REQ-008):'set-sensor'|'set-visible'|'destroy'" },
           targetId: { type: 'string', describe: '逻辑 kind：Flag.id / Resource.id / State.fsmId（按 id 全局定位）' },
           targetEntity: { type: 'EntityId', describe: '物理 kind：set-sensor/set-visible/destroy 的目标实体 id' },
-          value: { type: 'string', describe: 'modify-resource=数值增量；set-flag/set-sensor/set-visible=布尔；set-state=目标状态名；destroy 忽略' },
+          value: { type: 'string', describe: 'modify-resource=数值；set-flag/set-sensor/set-visible=布尔；set-state=目标状态名；destroy 忽略' },
+          op: { type: 'string', describe: "modify-resource 运算(REQ-012)：'add'(默认,current+value)|'mul'(current*value,×倍率)|'set'(=value)" },
+          order: { type: 'number', describe: '结算顺序(REQ-012)：同信号命中的 Effect 按 order 升序依次结算（缺省 0）。乘法依赖顺序时必填。' },
         },
       },
     },
@@ -73,10 +76,16 @@ export const effectApplyCapability = defineCapability({
 
         const lookup = buildConditionLookup(world);
 
+        // REQ-012：收集本 tick 命中的 Effect，按 order **升序**（并列按 eid tie-break）依次结算。
+        // 乘法（×mult）引入顺序依赖 → 结算顺序须是显式数据；modify-resource 就地连写 r.current，按此序天然有序确定。
+        const hits: Array<{ eid: string; ef: Effect }> = [];
         for (const [eid] of world.query('Effect')) {
           const ef = world.getComponent<Effect>(eid, 'Effect');
-          if (!ef || !signals.has(ef.onSignal)) continue;
+          if (ef && signals.has(ef.onSignal)) hits.push({ eid, ef });
+        }
+        hits.sort((a, b) => (a.ef.order ?? 0) - (b.ef.order ?? 0) || (a.eid < b.eid ? -1 : a.eid > b.eid ? 1 : 0));
 
+        for (const { ef } of hits) {
           switch (ef.kind) {
             case 'set-flag': {
               const f = lookup.flag(ef.targetId);
@@ -85,9 +94,11 @@ export const effectApplyCapability = defineCapability({
               break;
             }
             case 'modify-resource': {
+              // REQ-012：op 决定运算 —— add(默认 current+value) / mul(current*value，×倍率) / set(value)；钳进 [min,max]。
               const r = lookup.resource(ef.targetId);
               if (r) {
-                const next = r.current + Number(ef.value);
+                const v = Number(ef.value);
+                const next = ef.op === 'mul' ? r.current * v : ef.op === 'set' ? v : r.current + v;
                 r.current = next < r.min ? r.min : next > r.max ? r.max : next;
               }
               break;

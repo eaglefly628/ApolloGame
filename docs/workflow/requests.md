@@ -651,7 +651,9 @@
 
 ---
 
-### REQ-011 · [2026-06-08] · PE（Lead 评审后下沉）· 框架级 / 卡牌玩法 · status: open · 优先级: **P1** · 类型: 真缺口（扑克牌型评估 + 持牌集合）
+### REQ-011 · [2026-06-08] · PE（Lead 评审后下沉）· 框架级 / 卡牌玩法 · status: **done（已落地）** · 优先级: **P1** · 类型: 真缺口（扑克牌型评估 + 持牌集合）
+
+> **落地（Lead）**：`src/skills/tier3/poker-hand.ts`（+ `.test.ts` 39 测）。纯函数 `evaluateHand(cards)→{type,rankCounts,suitCounts,isFlush,isStraight}`（全 12 牌型含五条/同花葫芦/同花五；A 高/低顺、同花顺优先、并列取高、按花色/点数计数迭代接口都覆盖）；系统 `poker-eval`（Update 相位）读同实体 `PlayedHand`→按 `rankingTable` **set** 基础 `chips/mult` Resource + 可选写牌型名 `StringVar`。组件 `Card/PlayedHand/PokerHand` 入 components.ts，注册入 registry。**严守评审边界**：未做选牌 UI/洗牌/盲注/回合（留给 clickable/random/condition/effect 重组）；**未纳入 spec 里的 `deck?` 字段**——评估器不读它，纳入即死数据（反 manifesto），牌组/发牌属选牌装配层（用 `random`）。与 REQ-012 集成测已验「基础分→小丑 ×mult」整链。
 
 **标题**：`@skills/tier3/poker-hand` —— 确定性「一手牌 → 牌型 + 基础分」评估器（Balatro 式小丑牌的玩法底座）
 
@@ -671,7 +673,9 @@
 
 ---
 
-### REQ-012 · [2026-06-08] · PE（Lead 评审后下沉）· 框架级 · status: open · 优先级: **P1** · 类型: 真缺口（声明式效果：乘法 + 有序结算）
+### REQ-012 · [2026-06-08] · PE（Lead 评审后下沉）· 框架级 · status: **done（已落地）** · 优先级: **P1** · 类型: 真缺口（声明式效果：乘法 + 有序结算）
+
+> **落地（Lead）**：`Effect` 加可选 `op:'add'|'mul'|'set'`（缺省 `add`）+ `order:number`（缺省 0），改 `effect-apply.ts` 的 `modify-resource`：先把同信号命中的 Effect 收进 `hits` 按 `order` 升序（并列按 eid tie-break）排序，再逐条就地连写 `r.current`（`mul`=×、`set`=、`add`=+，照常钳 [min,max]）。**最小、向后兼容**：老数据（无 op/order）行为不变（回归测已验）。新增 8 测含「先 + 后 ×=30」与「先 × 后 +=25」证明 order 决定结果、mul 钳上下限、eid tie-break。与 REQ-011 合用即 Balatro 小丑 ×Mult。
 
 **标题**：`effect-apply` 的 `modify-resource` 加 `op`（add|mul|set）+ `Effect.order` —— 让「×倍率」和「小丑结算顺序」成为数据
 

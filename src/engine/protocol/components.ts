@@ -581,6 +581,12 @@ export interface Effect extends Component {
   // 物理 kind（set-sensor/set-visible/destroy，REQ-008）：要改动的目标实体 id（按实体定位，不走全局 id 路由）。
   targetEntity?: EntityId;
   value: number | string | boolean; // modify-resource=数值增量；set-flag/set-sensor/set-visible=布尔；set-state=目标状态名
+  // modify-resource 的运算（REQ-012，让「×倍率」成为数据）：'add'=current+value / 'mul'=current*value / 'set'=value。
+  // 缺省 'add'（老数据零改动）；结算后照常钳进 [min,max]。Balatro 小丑的 ×mult、伤害倍率、属性乘区皆用此。
+  op?: 'add' | 'mul' | 'set';
+  // 结算顺序（REQ-012）：同信号命中的多个 Effect 按 order **升序**依次结算（乘法引入顺序依赖，顺序须是显式数据）。
+  // 缺省 0；并列再按 Effect 所在实体 id 升序 tie-break → 确定、可审计、录放安全。
+  order?: number;
 }
 
 // ── craft-recipe ── 配方/经济：信号到达且所有 costs 可负担时，**原子地**扣全部料 + 产出 gains + 置 flag/state。
@@ -645,6 +651,37 @@ export interface BoardCell extends Component {
   readonly type: 'BoardCell';
   boardId: EntityId;
   index: number;
+}
+
+// ── poker-hand 牌（REQ-011）── 一张牌 = {花色, 点数}，纯整数枚举（确定性：相等/大小比较，不碰浮点）。
+// suit：0..3（♠♥♦♣，仅用于"是否同花"的相等比较，无大小语义）。
+// rank：2..14（J=11,Q=12,K=13,A=14；A 在顺子里也可当 1 凑 A-2-3-4-5 的"轮子"低顺）。
+// 牌不是组件，是被 PlayedHand.cards 持有的纯数据（如 StatModifier 之于 Stats）。
+export interface Card {
+  suit: number;
+  rank: number;
+}
+
+// ── poker-hand 出牌（REQ-011）── 本次"出"的一手牌（有序，供逐张迭代 / 按花色·点数计数）。
+// 由选牌交互（clickable→signal→effect 装配）填充——**不在 poker-hand 能力里做选牌 UI / 洗牌发牌**
+// （那些用现有 clickable/random/effect-apply 重组）。cards 为空=本帧不评估（基础分由装配层在新回合清零）。
+export interface PlayedHand extends Component {
+  readonly type: 'PlayedHand';
+  cards: Card[];
+}
+
+// ── poker-hand 评估器配置（REQ-011；Tier3「算法/解释器型机制」大类，与 match3-board/tilemap 同构）──
+// Condition→Event→Effect 表达不了"5 张是不是同花顺"这种带计数/排序的算法；本配置 + poker-eval 系统补这格缺口。
+// rankingTable = 牌型名→{baseChips, baseMult} 的纯数据表（最弱 LLM 能产；设计可调，不写死在代码）。
+// 系统读同实体上的 PlayedHand → 确定性判定最高牌型 → 把基础 chips/mult **set** 进两个 Resource（基础值），
+// 再由小丑（effect-apply 的 op:'mul'/order，REQ-012）在其上做修正 → score=chips×mult 与盲注线（condition）比。
+// 只算分、不碰渲染、不驱动逻辑外状态。确定性：纯整数/枚举比较与计数，牌型判定是纯函数（有序卡集→稳定输出）。
+export interface PokerHand extends Component {
+  readonly type: 'PokerHand';
+  rankingTable: Record<string, { chips: number; mult: number }>; // 牌型名 → 基础分（纯数据表）
+  chipsResource: string; // 写基础 chips 的 Resource id（按 id 全局定位）
+  multResource: string; // 写基础 mult 的 Resource id
+  handTypeVar?: string; // 可选：写牌型名的 StringVar id（供 condition 的 string 读"打出同花→某小丑触发"）
 }
 
 // ── StatModifier ── 属性修正（①，ARPG）：来自具名 source（装备/buff/光环/天赋/boon）的一条加/乘修正。

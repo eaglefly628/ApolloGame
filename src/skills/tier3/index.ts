@@ -31,3 +31,9 @@ export { casterCapability } from './caster.js';
 // aggro（D-001，REQ-ARPG）：AI 索敌段——感知最近 targetTag 阵营 → 写 Relation(target)（周期表 auto-target）。
 // 与 tier2/steering 配对成数据驱动追逐/逃跑 AI；目标产物化为通用 Relation，供 steering/caster/朝向复用。
 export { aggroCapability } from './aggro.js';
+
+// poker-hand（REQ-011）：算法/解释器型机制——扑克牌型评估（高牌…同花顺/五条/同花葫芦/同花五），
+// 读 PlayedHand 判最高牌型 → 按 rankingTable set 基础 chips/mult。与 match3-board/tilemap 同构（数据=牌，引擎=判型）。
+// 选牌/洗牌/盲注/小丑全用现有 clickable/random/condition/effect-apply(op,REQ-012) 重组——本能力只补"判牌型"真缺口。
+export { pokerHandCapability, evaluateHand, isStraightRanks } from './poker-hand.js';
+export type { HandType, HandEval } from './poker-hand.js';

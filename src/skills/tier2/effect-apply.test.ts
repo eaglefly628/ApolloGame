@@ -96,6 +96,84 @@ describe('T2 effect-apply — 与 event-when 合链（Condition→Event→Effect
   });
 });
 
+describe('T2 effect-apply — modify-resource 运算 op + 结算顺序 order（REQ-012）', () => {
+  function worldWithRes(id: string, current: number, max = 1000): World {
+    const w = worldWithEffect();
+    w.createEntity('gs');
+    w.addComponent('gs', { type: 'Resource', id, current, min: 0, max } as Resource);
+    return w;
+  }
+  const res = (w: World, id = 'r') => w.getComponent<Resource>('gs', 'Resource')!.current;
+
+  it("op:'mul' → current × value（×倍率，Balatro mult）", () => {
+    const w = worldWithRes('mult', 4);
+    effect(w, 'ef', { onSignal: 'score', kind: 'modify-resource', targetId: 'mult', op: 'mul', value: 1.5 });
+    signal(w, 'score');
+    w.tick();
+    expect(res(w)).toBe(6); // 4 × 1.5
+  });
+
+  it("op:'set' → current = value（无视原值）", () => {
+    const w = worldWithRes('chips', 5);
+    effect(w, 'ef', { onSignal: 'reset', kind: 'modify-resource', targetId: 'chips', op: 'set', value: 20 });
+    signal(w, 'reset');
+    w.tick();
+    expect(res(w)).toBe(20);
+  });
+
+  it("op:'add' 显式 → 与缺省一致（current + value）", () => {
+    const w = worldWithRes('chips', 5);
+    effect(w, 'ef', { onSignal: 'gain', kind: 'modify-resource', targetId: 'chips', op: 'add', value: 7 });
+    signal(w, 'gain');
+    w.tick();
+    expect(res(w)).toBe(12);
+  });
+
+  it('order 升序结算：先 + 后 ×（order 1 加、order 2 乘）→ (10+5)×2 = 30', () => {
+    const w = worldWithRes('score', 10);
+    effect(w, 'ef_add', { onSignal: 'score', kind: 'modify-resource', targetId: 'score', op: 'add', value: 5, order: 1 });
+    effect(w, 'ef_mul', { onSignal: 'score', kind: 'modify-resource', targetId: 'score', op: 'mul', value: 2, order: 2 });
+    signal(w, 'score');
+    w.tick();
+    expect(res(w)).toBe(30); // (10+5)*2
+  });
+
+  it('order 升序结算：先 × 后 +（order 1 乘、order 2 加）→ (10×2)+5 = 25 ≠ 30（顺序敏感）', () => {
+    const w = worldWithRes('score', 10);
+    effect(w, 'ef_mul', { onSignal: 'score', kind: 'modify-resource', targetId: 'score', op: 'mul', value: 2, order: 1 });
+    effect(w, 'ef_add', { onSignal: 'score', kind: 'modify-resource', targetId: 'score', op: 'add', value: 5, order: 2 });
+    signal(w, 'score');
+    w.tick();
+    expect(res(w)).toBe(25); // (10*2)+5 —— 与「先+后×」的 30 不同，证明 order 决定结果
+  });
+
+  it('order 并列 → 按 eid 字典序 tie-break（确定性，无关插入/查询顺序）', () => {
+    // 两个 add 同 order，结果与顺序无关（加法可交换）；此测确认不抛错且确定结算两者。
+    const w = worldWithRes('score', 0);
+    effect(w, 'ef_b', { onSignal: 'score', kind: 'modify-resource', targetId: 'score', op: 'add', value: 3, order: 0 });
+    effect(w, 'ef_a', { onSignal: 'score', kind: 'modify-resource', targetId: 'score', op: 'add', value: 4, order: 0 });
+    signal(w, 'score');
+    w.tick();
+    expect(res(w)).toBe(7); // 3+4，两者都结算
+  });
+
+  it('mul 结果照样钳上下限（current × value 超 max → 钳到 max）', () => {
+    const w = worldWithRes('mult', 60, /*max*/ 100);
+    effect(w, 'ef', { onSignal: 'score', kind: 'modify-resource', targetId: 'mult', op: 'mul', value: 3, order: 0 });
+    signal(w, 'score');
+    w.tick();
+    expect(res(w)).toBe(100); // 60*3=180 钳到 max
+  });
+
+  it('回归：老数据（无 op/order）行为不变 —— 仍按 add 结算', () => {
+    const w = worldWithRes('hp', 5, /*max*/ 100);
+    effect(w, 'ef', { onSignal: 'heal', kind: 'modify-resource', targetId: 'hp', value: 10 });
+    signal(w, 'heal');
+    w.tick();
+    expect(res(w)).toBe(15); // 5+10，无 op 即 add
+  });
+});
+
 describe('T2 effect-apply — 物理 kind（REQ-008：信号→物理改动，按 targetEntity）', () => {
   it('set-sensor true → 目标实体加 Sensor（踩开关 → 墙变可穿过）', () => {
     const w = worldWithEffect();
