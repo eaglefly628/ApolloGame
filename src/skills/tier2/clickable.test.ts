@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import { World } from '@engine/core/world.js';
-import type { Transform, Shape, Sprite, Signal, Camera, InputQueue, Clickable, RawInputData } from '@engine/protocol/components.js';
+import type { Transform, Shape, Sprite, Signal, InputQueue, Clickable, RawInputData } from '@engine/protocol/components.js';
 import { clickableCapability } from './clickable.js';
 
 function worldWithClickable(): World {
@@ -13,12 +13,6 @@ function setInput(w: World, actions: RawInputData[]): void {
   const e = 'input';
   if (!w.hasComponent(e, 'InputQueue')) w.createEntity(e);
   w.addComponent(e, { type: 'InputQueue', actions } as InputQueue);
-}
-
-function setCamera(w: World, offsetX: number, offsetY: number, zoom: number, vw: number, vh: number): void {
-  const e = 'cam';
-  if (!w.hasComponent(e, 'Camera')) w.createEntity(e);
-  w.addComponent(e, { type: 'Camera', zoom, offsetX, offsetY, rotation: 0, viewportW: vw, viewportH: vh } as Camera);
 }
 
 function box(w: World, eid: string, x: number, y: number, width: number, height: number, action: string, opts: { phase?: string; z?: number; scaleX?: number } = {}): void {
@@ -65,23 +59,17 @@ describe('T2 clickable — 无相机：屏幕即世界', () => {
   });
 });
 
-describe('T2 clickable — 相机逆投影', () => {
-  it('点屏幕中心 → 世界相机中心命中；缩放/平移正确换算', () => {
+describe('T2 clickable — 世界坐标盲信（逆投影上移采集层，sim 不读相机 → lockstep 安全）', () => {
+  it('输入 x/y 直接当世界坐标命中（不在 sim 内逆投影）', () => {
     const w = worldWithClickable();
-    setCamera(w, 0, 0, 1, 800, 600); // 中心(0,0)，视口 800x600
-    box(w, 'cell', 0, 0, 50, 50, 'cell');
-    setInput(w, [down(400, 300)]); // 屏幕中心 → 世界(0,0)
+    box(w, 'cell', 50, 0, 20, 20, 'cell');
+    setInput(w, [down(50, 0)]); // 世界坐标（PointerInputSource 已在采集期换算好）
     w.tick();
     expect(sig(w, 'cell')).toBe('cell');
   });
 
-  it('zoom=2：屏幕(500,300) → 世界(50,0)', () => {
-    const w = worldWithClickable();
-    setCamera(w, 0, 0, 2, 800, 600);
-    box(w, 'cell', 50, 0, 20, 20, 'cell');
-    setInput(w, [down(500, 300)]); // (500-400)/2 + 0 = 50
-    w.tick();
-    expect(sig(w, 'cell')).toBe('cell');
+  it('sim 不读 Camera（避免本地相机/视口进 hash → 防多端同令异坐标 desync，Gemini 致命级修正）', () => {
+    expect(clickableCapability.components.reads).not.toContain('Camera');
   });
 });
 

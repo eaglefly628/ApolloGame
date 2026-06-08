@@ -44,18 +44,24 @@ export function canvasPointerToScreen(
 
 // 浏览器指针输入源 —— 监听 canvas 的 pointer 事件，映射为 canvas 像素坐标后按 tick 确定性注入。
 // 仅浏览器；headless/测试用 QueuedInputSource。
+//
+// 确定性铁律（Gemini 致命级修正）：**屏幕→世界逆投影在此（本地、入网前）完成**，注入的是**世界坐标**。
+// 传 worldFromScreen（用本地相机做 screenToWorld）→ 世界坐标进 Command/网络 → 多端一致；sim 内绝不再读相机/视口
+// （否则 1080p vs 720p 两端同一指令算出不同出生点 → desync）。不传则注入 canvas 像素（无相机时 = 世界，identity）。
 export class PointerInputSource extends QueuedInputSource {
   private readonly onPointer = (e: PointerEvent) => {
     const phase = e.type === 'pointerdown' ? 'down' : e.type === 'pointerup' ? 'up' : 'move';
     const rect = this.canvas.getBoundingClientRect();
     const p = canvasPointerToScreen(e.clientX, e.clientY, rect, this.canvas.width, this.canvas.height);
-    this.enqueue({ source: this.pid, x: p.x, y: p.y, phase });
+    const w = this.opts.worldFromScreen ? this.opts.worldFromScreen(p.x, p.y) : p; // 采集期逆投影 → 世界坐标
+    this.enqueue({ source: this.pid, x: w.x, y: w.y, phase });
   };
 
   constructor(
     private readonly pid: string,
     private readonly canvas: HTMLCanvasElement,
-    private readonly opts: { move?: boolean } = {},
+    // worldFromScreen：本地相机逆投影 (canvas 像素 → 世界)。带相机的游戏必须传，保证联机确定性。
+    private readonly opts: { move?: boolean; worldFromScreen?: (sx: number, sy: number) => { x: number; y: number } } = {},
   ) {
     super(pid);
     canvas.addEventListener('pointerdown', this.onPointer as EventListener);

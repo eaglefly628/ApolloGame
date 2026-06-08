@@ -1,7 +1,6 @@
 import { defineCapability } from '@engine/core/define-capability.js';
 import type { IWorld } from '@engine/core/types.js';
-import type { Caster, Signal, InputQueue, Camera, Transform, SpawnRequest, Relation } from '@engine/protocol/components.js';
-import { getCameraView, screenToWorld } from '@engine/protocol/camera-view.js';
+import type { Caster, Signal, InputQueue, Transform, SpawnRequest, Relation } from '@engine/protocol/components.js';
 import { nearestByTag } from '@skills/atoms/spatial-query/index.js';
 
 // ═══════════════════════════════════════════════════════════════
@@ -12,18 +11,20 @@ import { nearestByTag } from '@skills/atoms/spatial-query/index.js';
 //  现状：prefab 只消费现成的 SpawnRequest{templateId,x,y}（game-d 测试里靠手注一条）。没有任何东西把
 //  "信号 + 一个位置策略"接成 SpawnRequest。caster 正是这一环：声明 Caster{onSignal,template,at,targetTag?}：
 //    at:'self'   → 施法者自身 Transform（自爆/buff 光环）
-//    at:'pointer'→ 光标世界坐标（screenToWorld 逆投影；暗黑的"点地放冰环/陨石"）
+//    at:'pointer'→ 光标**世界坐标**（输入采集层已逆投影；暗黑的"点地放冰环/陨石"）
 //    at:'target' → 最近的 targetTag 阵营实体坐标（自动索敌技能）
 //  收到名为 onSignal 的 Signal 即在施法者实体上产出 SpawnRequest{template, x, y}，prefab 当帧/次帧展开。
 //
 //  从自然语言到可玩技能全程数据：技能=PrefabTemplate，按键绑定=Signal，释放策略=Caster——零游戏代码。
 //  定序：runsAfter event-when/clickable（信号已就绪）；写 SpawnRequest → prefab-spawn 消费（拓扑自动在其后）。
-//  确定性：只读 Signal/InputQueue/Transform/Tag + 几何；按施法者 id 升序结算；坐标为 IEEE 算术（不喂 Condition）。
+//  确定性（Gemini 致命级修正）：sim 内**绝不读相机/视口**——at:'pointer' 盲信 InputQueue 自带的世界坐标
+//  （逆投影由 PointerInputSource 在本地、入网前完成）。否则多端分辨率/相机不同 → 同令异坐标 → 弹道雪崩 desync。
 //
 //  v1 = 位置策略（点地/自身/索敌）。弹道朝向注入（朝光标/目标给生成体初速度）列 v1.1（见 SESSION-HANDOFF）。
 // ═══════════════════════════════════════════════════════════════
 
-// 取本 tick 光标的世界坐标（InputQueue 里最后一条带 x/y 的指针事件，经相机逆投影）。无则 undefined。
+// 取本 tick 光标的**世界坐标**（InputQueue 里最后一条带 x/y 的指针事件）。无则 undefined。
+// x/y 已是世界坐标——逆投影由输入采集层 PointerInputSource 在本地、入网前完成；sim 内绝不读相机/视口。
 function pointerWorldPos(world: IWorld): { x: number; y: number } | undefined {
   let queue: InputQueue | undefined;
   for (const [e] of world.query('InputQueue')) {
@@ -31,21 +32,10 @@ function pointerWorldPos(world: IWorld): { x: number; y: number } | undefined {
     break;
   }
   if (!queue || queue.actions.length === 0) return undefined;
-  let vw = 0;
-  let vh = 0;
-  for (const [e] of world.query('Camera')) {
-    const c = world.getComponent<Camera>(e, 'Camera');
-    if (c) {
-      vw = c.viewportW;
-      vh = c.viewportH;
-    }
-    break;
-  }
-  const cam = getCameraView(world);
-  // 最后一条带坐标的指针事件 = 本 tick 光标落点。
+  // 最后一条带坐标的指针事件 = 本 tick 光标落点（世界坐标，盲信）。
   for (let i = queue.actions.length - 1; i >= 0; i--) {
     const ev = queue.actions[i];
-    if (ev.x !== undefined && ev.y !== undefined) return screenToWorld(ev.x, ev.y, cam, vw, vh);
+    if (ev.x !== undefined && ev.y !== undefined) return { x: ev.x, y: ev.y };
   }
   return undefined;
 }
@@ -80,7 +70,7 @@ export const casterCapability = defineCapability({
         },
       },
     },
-    reads: ['Caster', 'Signal', 'InputQueue', 'Transform', 'Tag', 'Camera', 'Relation'],
+    reads: ['Caster', 'Signal', 'InputQueue', 'Transform', 'Tag', 'Relation'],
     writes: ['SpawnRequest'],
     consumes: [],
   },
@@ -91,7 +81,7 @@ export const casterCapability = defineCapability({
     {
       id: 'caster',
       runsAfter: ['event-when', 'clickable'],
-      reads: ['Caster', 'Signal', 'InputQueue', 'Transform', 'Tag', 'Camera'],
+      reads: ['Caster', 'Signal', 'InputQueue', 'Transform', 'Tag'],
       writes: ['SpawnRequest'],
       consumes: [],
       execute(world: IWorld) {
