@@ -42,7 +42,7 @@
 | REQ-C-006 | PC | match3-board 健壮性 | P2 |
 | REQ-C-007 | PC | 特效组件（表现层） | P2 |
 
-**🔵 Studio 线未做的 follow-up**（本会话提出，非阻塞）：① 结构编辑（透视器里增删实体/组件，不只改字段值）；② headless 浏览器(playwright)真截图，补"真·视觉可用性"（升级 ApolloBench 的 Visual 轴）；③ GDD-first 两段式生成。
+**🔵 Studio / 编辑器线未做的 follow-up**（本会话提出，非阻塞）：① 结构编辑（透视器里增删实体/组件，不只改字段值）；② headless 浏览器(playwright)真截图，补"真·视觉可用性"（升级 ApolloBench 的 Visual 轴）；③ **结构化意图层（含 GDD-first）**：NL/视频 → 一份小的"游戏意图(对象/规则/节奏)"结构化数据 → 再装配 manifest，**收窄生成空间、降发散**（Soon + OpenGame **双验证**的上下文工程招，见 `docs/ref/jiyi-soon.md`/`opengame.md`；编辑器设计见 `docs/design/ai-data-editor.md`）；④ 给 `Controllable` 等"引擎核心处理、无 provider schema"的组件补声明 schema → 解锁"速度/跳跃"等高频 NL 编辑（edit-eval 已记此缺口）。⭐ 用户已点：③ 结构化意图层最该先做。
 
 ## 4. 最高强度自审（别被"537 passed"麻痹）
 
