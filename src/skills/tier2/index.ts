@@ -21,3 +21,4 @@ export { keybindCapability } from './keybind.js';
 export { statsCapability, computeEffective } from './stats.js';
 export { launchCapability } from './launch.js';
 export { tilemapCapability, findTilemap, isSolidTile } from './tilemap.js';
+export { animStateCapability } from './anim-state.js';

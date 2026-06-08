@@ -257,6 +257,25 @@ export interface Frame extends Component {
   total: number;
 }
 
+// ── anim-state ── 动作动画状态机的 clip 与状态机（表现层；动画只表现、绝不驱动逻辑）。
+// 一个 clip = sprite-sheet 的一段帧区间 [from, from+count) + 节奏(fps=每帧 tick)/是否循环 + 可选 sheet(切贴图)。
+export interface AnimClip {
+  sheet?: string; // 此 clip 用哪张 sprite-sheet（缺省=保持当前 Sprite.textureKey）
+  from: number; // 起始帧索引
+  count: number; // 帧数
+  fps: number; // 每帧停留 tick 数（越大越慢；<1 视为 1）
+  loop: boolean; // 循环 or 播到末帧停
+}
+export interface AnimState extends Component {
+  readonly type: 'AnimState';
+  clips: Record<string, AnimClip>; // 状态名 → clip
+  fsmId?: string; // 设了就读 State{fsmId}.current 当 clip 名；否则按 Velocity 自动 move/idle
+  moveClip: string; // 自动模式：移动时的 clip 名
+  idleClip: string; // 自动模式：静止时的 clip 名
+  current: string; // 内部：当前 clip 名
+  elapsed: number; // 内部：当前帧已播 tick
+}
+
 // ── L4 sound ── 播放什么声音
 export interface Sound extends Component {
   readonly type: 'Sound';
