@@ -28,6 +28,7 @@ export interface Level {
   movers?: Mover[]; // Tween 驱动的移动平台（纯数据）
   doors?: Door[]; // 实心门（默认实心；被开关 set-sensor 切成可穿过）
   switches?: Switch[]; // 压力开关（踩上→开门），纯数据 zone-occupancy→event-when→effect
+  collectibles?: Collectible[]; // 拾取物（金币/宝石）：碰到 → 自毁 + coins++
   goalRequires?: ('A' | 'B')[]; // 通关需哪些角色到达目标区（缺省 ['A','B'] 双人缺一不可）
 }
 
@@ -53,8 +54,17 @@ export interface Door {
 // 纯能力链：zone-occupancy（占据→flag）→ event-when（flag→signal）→ effect set-sensor（开/合门）。零游戏系统。
 export interface Switch {
   plate: Box; // 压力板区域（zone 矩形 + 视觉标记）
-  by: 'A' | 'B'; // 哪个角色踩
-  opensDoor: string; // 踩下时打开的门 id
+  by: 'A' | 'B'; // 视觉色/默认踩者
+  requires?: ('A' | 'B')[]; // 需同时站上才开门的角色（缺省 [by]）；['A','B'] = 重量台（双人缺一不可）
+  opensDoor: string; // 满足时打开的门 id
+}
+
+// 拾取物（数据驱动）：任一玩家碰到 → 自毁 + coins 增 amount。零游戏系统。
+// 纯能力链：zone-occupancy（任一玩家进 box → flag）→ event-when(edge) → effect destroy + effect modify-resource(coins)。
+export interface Collectible {
+  id: string;
+  box: Box; // 位置 + 拾取范围
+  amount?: number; // 拾到加多少 coins（缺省 1）
 }
 
 // 世界 1-1 · 初次配合：地面 + 三块居中平台 + 右侧协作目标区。
@@ -118,5 +128,29 @@ export const LEVEL_SWITCH: Level = {
   ],
   switches: [
     { plate: { x: 120, y: 336, width: 80, height: 44 }, by: 'A', opensDoor: 'door1' }, // 板 x[80,160] y[314,358]
+  ],
+};
+
+// 世界 1-3 · 机关与宝物：演示两类"纯数据组合"出的新玩法（零游戏系统）。
+//  ① 重量台：A、B 须同时站上左侧台 → door1 开（Switch.requires:['A','B']，缺一不可）。
+//  ② 收集：地上的金币，任一玩家碰到 → 自毁 + coins++（zone→event-when→effect destroy+modify-resource）。
+export const LEVEL_W1_3: Level = {
+  id: 'w1-3',
+  name: '世界1-3 · 机关与宝物',
+  bounds: { width: 640, height: 400 },
+  ground: { x: 320, y: 372, width: 620, height: 48 },
+  platforms: [],
+  spawnA: { x: 140, y: 80 }, // 落在重量台上
+  spawnB: { x: 180, y: 80 }, // 也落在重量台上
+  goal: { x: 580, y: 305, width: 120, height: 130 },
+  goalRequires: ['A'],
+  doors: [{ id: 'door1', box: { x: 440, y: 300, width: 24, height: 96 } }],
+  switches: [
+    // 重量台：两人同时站上才开 door1（requires 双人）
+    { plate: { x: 160, y: 336, width: 140, height: 44 }, by: 'A', requires: ['A', 'B'], opensDoor: 'door1' },
+  ],
+  collectibles: [
+    { id: 'gem1', box: { x: 300, y: 333, width: 24, height: 30 } },
+    { id: 'gem2', box: { x: 350, y: 333, width: 24, height: 30 } },
   ],
 };

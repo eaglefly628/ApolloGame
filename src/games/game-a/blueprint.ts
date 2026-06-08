@@ -6,6 +6,7 @@ import {
   shapeCapability,
   colorCapability,
   overlapDetectCapability,
+  destroyCapability,
 } from '@atom-skills/index.js';
 import { accelApplyCapability, motionApplyCapability, tweenCapability } from '@skills/tier1/index.js';
 import {
@@ -65,6 +66,7 @@ const GAME_A_CAPABILITIES = [
   zoneOccupancyCapability, // 协作通关条件 = 纯数据 Zone（REQ-006，原 coop-goal.ts 下沉）
   eventWhenCapability, // flag → signal（开关/门控逻辑枢纽）
   effectApplyCapability, // signal → 物理改动（set-sensor 开门，REQ-008）
+  destroyCapability, // DestroyRequest → 移除实体（收集物拾取后自毁）
 ];
 
 function staticBox(b: Box, tint: number): EntityBlueprint {
@@ -132,7 +134,7 @@ export function buildGameABlueprint(level: Level): WorldBlueprint {
   (level.switches ?? []).forEach((s, i) => {
     const flagId = `switch${i}`;
     const p = s.plate;
-    const who = s.by === 'A' ? PLAYER_A_ENTITY : PLAYER_B_ENTITY;
+    const reqEnts = (s.requires ?? [s.by]).map((rr) => (rr === 'A' ? PLAYER_A_ENTITY : PLAYER_B_ENTITY));
     // 视觉压力板（Sensor 非实心，玩家由地面支撑站其上）。
     entities[`plate${i}`] = {
       Transform: { x: p.x, y: p.y, rotation: 0, scaleX: 1, scaleY: 1 },
@@ -143,7 +145,7 @@ export function buildGameABlueprint(level: Level): WorldBlueprint {
     // 占据 → flag。
     entities[`switchZone${i}`] = {
       Flag: { id: flagId, active: false },
-      Zone: { outFlag: flagId, minX: p.x - p.width / 2, minY: p.y - p.height / 2, maxX: p.x + p.width / 2, maxY: p.y + p.height / 2, requiredEntities: [who] },
+      Zone: { outFlag: flagId, minX: p.x - p.width / 2, minY: p.y - p.height / 2, maxX: p.x + p.width / 2, maxY: p.y + p.height / 2, requiredEntities: reqEnts },
     };
     // flag → 开/合信号（level 持续：踩着开、离开合）。
     entities[`swOpen${i}`] = { EventWhen: { signal: `open:${s.opensDoor}`, when: { kind: 'flag', id: flagId, equals: true }, mode: 'level', armed: false } };
@@ -151,6 +153,24 @@ export function buildGameABlueprint(level: Level): WorldBlueprint {
     // 信号 → 门 Sensor 开/合（物理改动，REQ-008）。
     entities[`swOpenFx${i}`] = { Effect: { onSignal: `open:${s.opensDoor}`, kind: 'set-sensor', targetEntity: s.opensDoor, value: true } };
     entities[`swCloseFx${i}`] = { Effect: { onSignal: `close:${s.opensDoor}`, kind: 'set-sensor', targetEntity: s.opensDoor, value: false } };
+  });
+  // 拾取物（纯能力链，零游戏系统）：zone(任一玩家进 box, count:1)→flag → event-when(edge) → effect destroy + effect modify-resource(coins)。
+  if ((level.collectibles ?? []).length > 0) {
+    entities.score = { Resource: { id: 'coins', current: 0, min: 0, max: 999 } };
+  }
+  (level.collectibles ?? []).forEach((c) => {
+    const r = c.box;
+    entities[c.id] = {
+      Transform: { x: r.x, y: r.y, rotation: 0, scaleX: 1, scaleY: 1 },
+      Shape: { kind: 'box', width: r.width, height: r.height },
+      Color: { tint: 0xfacc15, alpha: 1 },
+      Sensor: {}, // 非实心：玩家穿过即拾
+      Flag: { id: `gem:${c.id}`, active: false },
+      Zone: { outFlag: `gem:${c.id}`, minX: r.x - r.width / 2, minY: r.y - r.height / 2, maxX: r.x + r.width / 2, maxY: r.y + r.height / 2, requiredEntities: [PLAYER_A_ENTITY, PLAYER_B_ENTITY], count: 1 },
+    };
+    entities[`gemGrab:${c.id}`] = { EventWhen: { signal: `grab:${c.id}`, when: { kind: 'flag', id: `gem:${c.id}`, equals: true }, mode: 'edge', armed: false } };
+    entities[`gemKill:${c.id}`] = { Effect: { onSignal: `grab:${c.id}`, kind: 'destroy', targetEntity: c.id, value: true } };
+    entities[`gemScore:${c.id}`] = { Effect: { onSignal: `grab:${c.id}`, kind: 'modify-resource', targetId: 'coins', value: c.amount ?? 1 } };
   });
   // 美术（纯数据，Sprite-only 无碰撞 → 渲染器画贴图）：背景最底层、目标旗前景。
   if (level.background) {
