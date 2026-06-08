@@ -813,6 +813,39 @@
 
 ---
 
+### REQ-016 · [2026-06-08] · PE（合作 vs Boss 联机评审）· 框架级 / 卡牌玩法 · status: **open** · 优先级: **P2（联机/共鸣前置，单人不阻塞）** · 类型: 数据契约扩展（非新能力）
+
+**标题**：「本拍上下文」暴露给 condition —— `Beat{resonantType}` / `Resonance{p1Type,p2Type}`（共鸣/接力小丑底座）
+
+- **背景**：合作 vs Boss 的「共振/接力」小丑要读**本拍跨玩家信息**——"队友这拍打了同花 → 我 ×2"、"本拍共振目标=顺子，两人互补命中 → 暴击"。现有 `condition` 只能按 id 读 resource/flag/state/string，**读不到「双方这拍各打了什么牌型 + 当前共享共振目标」**。
+- **PE 评审（过 manifesto 尺子）**：这是 **数据契约扩展，不是新 Tier3 能力**。poker-eval（REQ-011）已会写「单方牌型名」到 StringVar；只需扩成：① 按玩家写各自这拍牌型（`p1Type/p2Type`，或多份 StringVar/Resource 按 playerId 路由）；② 一个「本拍共振目标」资源/StringVar（由种子 RNG 每拍翻）。共振/接力小丑 = `condition 读这些 + effect 全局路由`，纯数据组合，零新 system。设计稿 `balatro-coop-flow.md` §2/红线①、`balatro-coop-vs-boss.md` §4.6 均已点名此为「唯一引擎小契约」。
+- **建议形态**：`Beat{ resonantType: string }`（单例，种子翻）+ 双方牌型暴露（复用 poker-eval 的 handTypeVar，按 playerId 写两份 StringVar，如 `hand_type_p1`/`hand_type_p2`）。condition 的 `string` 叶子即可读。**不必新组件也行**——纯靠"按 playerId 命名的 StringVar/Resource + 现有 condition"重组；`Beat/Resonance` 只是给个语义壳，二选一。
+- **依赖/不阻塞**：单人 MVP 不需要；做联机/共鸣才需。建议与 REQ-017 一起排。
+
+---
+
+### REQ-017 · [2026-06-08] · PE（单人数据驱动化 + 联机共同前置）· 框架级 / 卡牌玩法 · status: **open** · 优先级: **P1（单人/联机共同地基）** · 类型: 回合流程下沉为数据状态机（评估：重组 vs 小能力）
+
+**标题**：把「回合/拍流程」从 React 命令式下沉成 **sim 内数据状态机**（State + event-when + effect），走统一输入
+
+- **现状（债）**：`src/game-e.tsx` 现在用 **React 命令式驱动**引擎（点按钮 → UI 手动 `world.tick()` + 直接读写 Resource）。能跑单人，但：① 回合流程（发牌→选→出/弃→结算→过线→商店→下一道）是**手写 UI 逻辑**，非数据（违 manifesto，UI 应只是薄层）；② **无法 lockstep 联机**——联机必须「收齐两端输入→同一拍 tick→双端同 hash」，命令式驱动做不到。
+- **PE 评审**：设计稿 §五已给出目标形态——回合流程 = `State{fsmId:'round'}` + `event-when`(条件转移) + `effect`(set-state/改资源) 的**数据状态机**，输入经统一输入层（clickable/keybind/lockstep 队列）进来。**先判定能否纯重组**：转移条件（round_score≥线、hands≤0…）= condition 现成；发牌/补牌 = random+spawn/数据；选牌 = clickable。**大概率纯数据装配，零新能力**；若「多步异步流程编排」确有表达不了的点（如倒计时相位、同时锁定），再评估下沉一个通用 `phase-sequencer`/`turn` 小能力（先别预设，按 YAGNI 装配时再看）。
+- **一鱼两吃**：这块是**单人「数据驱动化」与联机的共同前置**——流程进了 sim 后，联机 = 「加第二组玩家实体 + 接第二路 lockstep 输入」，不重写。**做这一条，单人更纯 + 联机水到渠成。**
+- **同时收编**：把现有 game-e.tsx 里手写的「逐张计分演出/动效」也纳入讨论——理想是引擎吐一条**逐步计分 trace（事件流）**供 UI 回放（或下沉通用 tween/演出表现能力），UI 不再自己重建计分序。（用户已同意「先手写、回头数据驱动化」，此条登记该讨论。）
+
+---
+
+### REQ-018 · [2026-06-08] · PE（联机评审）· 框架级 / 基础设施 · status: **open** · 优先级: **P3（真·远程对战才需，最后做）** · 类型: 网络传输层（infra）
+
+**标题**：真·跨设备远程传输 + 延迟处理（现 lockstep 仿真核已就绪，只差传输/缓冲）
+
+- **现状（核实 `src/net/`）**：确定性 **lockstep 仿真核已落地**（`FixedStepClock` 定步长 + 命令排序 + `hashSnapshot` 双端校验 + 输入队列 + `LockstepSession`）。**传输层只有 `lockstep-tab.ts`（BroadcastChannel，同机两标签）** + `mp-client.ts`；**没有真·互联网传输（WebSocket/WebRTC 信令）**。
+- **缺什么**：① **传输**：WS/WebRTC 信令 + 帧/命令收发（把 BroadcastChannel 换成可跨设备的 channel，复用现有 LockstepSession 接口）；② **延迟处理**：lockstep「收齐两端才推进」遇网络延迟会卡 → 需 **输入延迟缓冲（input-delay）** 或回滚（rollback），目前是无延迟同机模型。
+- **PE 评审**：这是 **基础设施，与游戏数据驱动设计正交**——不缺 game skill。**同机/两标签先验证完全够**（hashSnapshot 双端同步是真的），真·远程对战才提上日程。建议**排在最后**：先单人 MVP（REQ-017）→ 同机两标签验共鸣（现成）→ 调参好玩 → 才做远程传输。
+- **确定性已安全**：卡牌计分是整数+乘法，不碰 REQ-010 的浮点跨架构问题（那只关 steering/sqrt）→ **卡牌 co-op 即使跨平台也确定**，传输层补上即可。
+
+---
+
 ## 需求模板（复制这段填写）
 
 ```
