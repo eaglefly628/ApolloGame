@@ -1,7 +1,7 @@
 import { defineCapability } from '@engine/core/define-capability.js';
 import { SystemPhase } from '@engine/core/types.js';
 import type { IWorld } from '@engine/core/types.js';
-import type { Card, PlayedHand, PokerHand, Resource, StringVar } from '@engine/protocol/components.js';
+import type { Card, PlayedHand, PokerHand, Resource, StringVar, Flag } from '@engine/protocol/components.js';
 import { findByComponentId } from '@engine/core/query.js';
 
 // ═══════════════════════════════════════════════════════════════
@@ -109,6 +109,25 @@ function setHandTypeVar(world: IWorld, varId: string, value: string): void {
   const v = world.getComponent<StringVar>(e, 'StringVar');
   if (v) v.value = value;
 }
+function setFlag(world: IWorld, flagId: string, active: boolean): void {
+  const e = findByComponentId(world, 'Flag', 'id', flagId);
+  if (!e) return;
+  const f = world.getComponent<Flag>(e, 'Flag');
+  if (f) f.active = active;
+}
+
+// 包含谓词原语（REQ-011 完善）：从 rankCounts 折算「最大同点张数」「计数≥2 的种数」。
+// 含对子=rankMaxCount≥2、含三条=≥3、含四条=≥4、含五条=≥5、含两对=pairCount≥2、含葫芦=and(≥3,pairCount≥2)。
+export function rankMaxCount(rankCounts: ReadonlyMap<number, number>): number {
+  let m = 0;
+  for (const c of rankCounts.values()) if (c > m) m = c;
+  return m;
+}
+export function pairCount(rankCounts: ReadonlyMap<number, number>): number {
+  let n = 0;
+  for (const c of rankCounts.values()) if (c >= 2) n += 1;
+  return n;
+}
 
 export const pokerHandCapability = defineCapability({
   id: 't3-poker-hand',
@@ -144,12 +163,17 @@ export const pokerHandCapability = defineCapability({
           rankingTable: { type: 'string', describe: '牌型名→{chips,mult} 的 Record（纯数据表，设计可调，键取自牌型全集）' },
           chipsResource: { type: 'string', describe: '写基础 chips 的 Resource id（按 id 全局定位）' },
           multResource: { type: 'string', describe: '写基础 mult 的 Resource id' },
-          handTypeVar: { type: 'string', describe: '可选：写牌型名的 StringVar id（供 condition string 读"打出某牌型→小丑触发"）' },
+          handTypeVar: { type: 'string', describe: '可选：写**最高**牌型名的 StringVar id（"恰是某型"判定，如打出同花顺）' },
+          rankMaxCountResource: { type: 'string', describe: '可选：最大同点张数写入此 Resource（2=含对子,3=含三条,4=含四条,5=含五条）' },
+          pairCountResource: { type: 'string', describe: '可选：点数计数≥2 的种数写入此 Resource（2=含两对）' },
+          isStraightFlag: { type: 'string', describe: '可选：是否含顺子写入此 Flag.id' },
+          isFlushFlag: { type: 'string', describe: '可选：是否含同花写入此 Flag.id' },
+          handSizeResource: { type: 'string', describe: '可选：本次出牌张数写入此 Resource（Half Joker「出牌≤3张」等）' },
         },
       },
     },
     reads: ['PokerHand', 'PlayedHand', 'Resource'],
-    writes: ['Resource', 'StringVar'],
+    writes: ['Resource', 'StringVar', 'Flag'],
     consumes: [],
   },
 
@@ -162,7 +186,7 @@ export const pokerHandCapability = defineCapability({
       id: 'poker-eval',
       phase: SystemPhase.Update,
       reads: ['PokerHand', 'PlayedHand', 'Resource'],
-      writes: ['Resource', 'StringVar'],
+      writes: ['Resource', 'StringVar', 'Flag'],
       consumes: [],
       execute(world: IWorld) {
         for (const [eid] of world.query('PokerHand', 'PlayedHand')) {
@@ -174,6 +198,12 @@ export const pokerHandCapability = defineCapability({
           setResourceBase(world, cfg.chipsResource, base.chips);
           setResourceBase(world, cfg.multResource, base.mult);
           if (cfg.handTypeVar) setHandTypeVar(world, cfg.handTypeVar, evald.type);
+          // 派生事实（REQ-011 完善，全部可选）：包含谓词原语 + 出牌张数 → 供 condition 组合表达"含某牌型/出牌≤N"。
+          if (cfg.rankMaxCountResource) setResourceBase(world, cfg.rankMaxCountResource, rankMaxCount(evald.rankCounts));
+          if (cfg.pairCountResource) setResourceBase(world, cfg.pairCountResource, pairCount(evald.rankCounts));
+          if (cfg.isStraightFlag) setFlag(world, cfg.isStraightFlag, evald.isStraight);
+          if (cfg.isFlushFlag) setFlag(world, cfg.isFlushFlag, evald.isFlush);
+          if (cfg.handSizeResource) setResourceBase(world, cfg.handSizeResource, played.cards.length);
         }
       },
     },

@@ -587,6 +587,11 @@ export interface Effect extends Component {
   // 结算顺序（REQ-012）：同信号命中的多个 Effect 按 order **升序**依次结算（乘法引入顺序依赖，顺序须是显式数据）。
   // 缺省 0；并列再按 Effect 所在实体 id 升序 tie-break → 确定、可审计、录放安全。
   order?: number;
+  // 值取自资源（REQ-013，量纲动态值 / 两资源相乘）：有则 modify-resource 的 v =
+  //   resource[resourceId].current × (timesResourceId ? resource[timesResourceId].current : coeff ?? 1)，
+  // 否则用静态 value。缺省=用 value（老数据零改动）。解 Balatro 最终计分 score += chips×mult（timesResourceId）、
+  // Bull「每 $1 +2 筹码」chips += coeff×money（coeff）、星球牌升级 chips += level×每级增量。确定性同 op:mul（IEEE 乘，正确舍入）。
+  valueFrom?: { resourceId: string; coeff?: number; timesResourceId?: string };
 }
 
 // ── craft-recipe ── 配方/经济：信号到达且所有 costs 可负担时，**原子地**扣全部料 + 产出 gains + 置 flag/state。
@@ -676,12 +681,21 @@ export interface PlayedHand extends Component {
 // 系统读同实体上的 PlayedHand → 确定性判定最高牌型 → 把基础 chips/mult **set** 进两个 Resource（基础值），
 // 再由小丑（effect-apply 的 op:'mul'/order，REQ-012）在其上做修正 → score=chips×mult 与盲注线（condition）比。
 // 只算分、不碰渲染、不驱动逻辑外状态。确定性：纯整数/枚举比较与计数，牌型判定是纯函数（有序卡集→稳定输出）。
+// 派生事实输出（REQ-011 完善）：poker-eval 把求值器已算出的「包含谓词原语 + 出牌张数」写成 condition 可读的
+// Resource/Flag/StringVar，全部**可选、按需配**（配了且目标存在才写）。有了这组原语，"含对子/含三条/含两对/含顺/含同花/
+// 含葫芦"等**包含**判定就是 condition 的组合表达（如 rankMaxCount≥2=含对子、and(rankMaxCount≥3,pairCount≥2)=含葫芦），
+// 不必为每种牌型写专门 flag。修正「含对子≠最高牌型是对子」（葫芦也含对子）这一真 bug——只看 handTypeVar 会漏触发。
 export interface PokerHand extends Component {
   readonly type: 'PokerHand';
   rankingTable: Record<string, { chips: number; mult: number }>; // 牌型名 → 基础分（纯数据表）
   chipsResource: string; // 写基础 chips 的 Resource id（按 id 全局定位）
   multResource: string; // 写基础 mult 的 Resource id
-  handTypeVar?: string; // 可选：写牌型名的 StringVar id（供 condition 的 string 读"打出同花→某小丑触发"）
+  handTypeVar?: string; // 可选：写**最高**牌型名的 StringVar id（"打出同花顺→某小丑"这类"恰是某型"判定）
+  rankMaxCountResource?: string; // 可选：最大同点张数（2=含对子,3=含三条,4=含四条,5=含五条）写入此 Resource
+  pairCountResource?: string; // 可选：点数计数≥2 的种数（2=含两对）写入此 Resource
+  isStraightFlag?: string; // 可选：是否含顺子写入此 Flag.id
+  isFlushFlag?: string; // 可选：是否含同花写入此 Flag.id
+  handSizeResource?: string; // 可选：本次出牌张数写入此 Resource（Half Joker「出牌≤3张」等）
 }
 
 // ── StatModifier ── 属性修正（①，ARPG）：来自具名 source（装备/buff/光环/天赋/boon）的一条加/乘修正。

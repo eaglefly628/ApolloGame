@@ -694,6 +694,34 @@
 
 ---
 
+### REQ-013 · [2026-06-08] · Lead（Game E 缺口审计后下沉）· 框架级 · status: open · 优先级: **P1 / 核心阻塞** · 类型: 真缺口（声明式效果：值取自资源 / 量纲动态值）
+
+**标题**：`effect-apply` 的 `modify-resource` 加 `valueFrom`（值 = 资源 ×（系数 | 另一资源））—— 让「`score += chips × mult`」「每 \$1 +2 筹码」成为数据
+
+- **背景（Game E 计分链审计暴露）**：Balatro 最终计分 `score += chips × mult`，**两个动态资源相乘**。REQ-012 的 `op:'mul'` 只能 `资源 × 静态常量`，乘不了两个动态资源 → **当前连一分都算不出来**（设计稿 §5 把它误当「mul+add 链」，是错的）。同类还有「量纲动态值」小丑（Bull 每 \$1+2c、Banner 每剩 1 弃牌 +30c）和星球牌升级（chips += level × 增量）。
+- **Lead 评审（过 manifesto 尺子）**：
+  - **回不掉**：`op:mul` 静态常量不行；`stats.ts` 的 `(base+Σadd)×Πmul` 是**单 stat 内**算、乘不了两个不同资源；craft-recipe 也不行 → 现有能力真表达不了。
+  - **不是新能力**，是给现有 capability 补一字段的**微型 DSL 扩展**（同 REQ-012 性质）。尺子：最弱 LLM 能产 `{op:'add', targetId:'score', valueFrom:{resourceId:'chips', timesResourceId:'mult'}}` → 数据接口✓。
+  - **对 PE 提案的修正**：PE 的 `valueFrom:{resourceId,coeff}` 系数是**静态**的，解 Bull/Banner 够、但解不了 `chips×mult`（系数得是资源）→ 必须加 `timesResourceId`（系数也可是资源）。一改**同时解掉**：最终计分、量纲动态值（~15 张）、星球升级。
+- **改动（最小、向后兼容）**：`Effect` 加可选 `valueFrom:{ resourceId:string; coeff?:number; timesResourceId?:string }`；`modify-resource` 取值时若有 `valueFrom` 则 `v = resource[resourceId].current × (timesResourceId ? resource[timesResourceId].current : coeff ?? 1)`，否则照旧 `Number(value)`；再按 `op` 结算、钳 [min,max]。缺 `valueFrom` 老数据零改动。
+- **确定性边界**：double×double 正确舍入（跨平台一致，同 op:mul 纪律），lockstep/录放安全。极高 ante（>2^53）精度退化但**全平台同样退化**（Balatro 自身亦 naninf），不破确定性。
+- **验收**：`score += chips×mult`（两资源相乘）、`chips += coeff×money`（系数×资源）、缺 valueFrom 回归不变；钳上下限；tsc + vitest + build 全绿。
+
+---
+
+### REQ-014 · [2026-06-08] · Lead（Game E 缺口审计后下沉）· 框架级 / 卡牌玩法 · status: open · 优先级: **P2** · 类型: 真缺口（逐张计分迭代器）
+
+**标题**：`@skills/tier3` 逐张计分 pass —— poker-hand 的伴生件：按序走每张计分牌、透出逐张上下文、累加 baseChips、支持 retrigger
+
+- **背景**：Balatro「On Scored」逐张小丑（Greedy 每张♦+3m、Scary Face 每张人头+30c、Even Steven 每张偶+4m、Hanging Chad 首张重触发）+ **核心的逐张 baseChips 累加**（chips = 牌型 base + Σ每张牌 chips）。我落地的 REQ-011 是**最小评估器**，只出牌型 + base，**不做逐张迭代**。
+- **Lead 评审**：**回不掉**——Condition→Event→Effect 是反应式布尔，迭代有序子集合 + 逐元素绑定上下文它做不到，正是 match3-board/poker-hand 那类「算法/解释器型机制」。尺子：逐张规则 `{trigger:on_card_scored, when:{card_suit:♦}, op:add, value:3}` 最弱 LLM 能产；**迭代是算法（引擎）、逐张规则是数据**。→ ACCEPT，作 poker-hand 的 Tier3 伴生 capability。
+- **内容**：出牌时按序遍历每张计分牌 → 累加该牌 baseChips；把「当前牌花色/点数/人头/奇偶/序号」**确定性地透出给现有 condition/effect**（设计难点，要细写：用瞬态 current-card 变量喂条件）；发 `S_card_scored` 信号；支持 `retrigger`（perCard 重复次数，把 Hanging Chad/Red Seal/Mime 折叠进来）。
+- **确定性边界**：纯整数/枚举遍历，牌序确定（PlayedHand.cards 有序），不碰浮点超越函数。
+- **依赖**：建在 REQ-011 之上；与 REQ-013 合用即可点亮起手 14 张中剩余的逐张/动态小丑。
+- **验收**：逐张 baseChips 累加 + 按花色/点数/人头/奇偶逐张触发 + retrigger 重复结算的确定性测试；tsc + vitest + build 全绿。
+
+---
+
 ## 需求模板（复制这段填写）
 
 ```

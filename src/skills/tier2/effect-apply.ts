@@ -32,6 +32,8 @@ export const effectApplyCapability = defineCapability({
       '两开关都开 → 推进剧情态：Effect{ onSignal:"both_switches", kind:"set-state", targetId:"story", value:"door_open" }',
       '踩开关 → 墙变可穿过（物理）：Effect{ onSignal:"plate_on", kind:"set-sensor", targetEntity:"wall_3", value:true }',
       'Balatro 小丑 ×Mult(REQ-012)：Effect{ onSignal:"score", kind:"modify-resource", targetId:"mult", op:"mul", value:1.5, order:3 }（order 保证先加后乘）',
+      'Balatro 最终计分 score += chips×mult(REQ-013)：Effect{ onSignal:"commit", kind:"modify-resource", targetId:"score", op:"add", valueFrom:{ resourceId:"chips", timesResourceId:"mult" } }',
+      'Bull「每 $1 +2 筹码」(REQ-013)：Effect{ onSignal:"score", kind:"modify-resource", targetId:"chips", op:"add", valueFrom:{ resourceId:"money", coeff:2 } }',
     ],
   },
 
@@ -48,6 +50,7 @@ export const effectApplyCapability = defineCapability({
           value: { type: 'string', describe: 'modify-resource=数值；set-flag/set-sensor/set-visible=布尔；set-state=目标状态名；destroy 忽略' },
           op: { type: 'string', describe: "modify-resource 运算(REQ-012)：'add'(默认,current+value)|'mul'(current*value,×倍率)|'set'(=value)" },
           order: { type: 'number', describe: '结算顺序(REQ-012)：同信号命中的 Effect 按 order 升序依次结算（缺省 0）。乘法依赖顺序时必填。' },
+          valueFrom: { type: 'string', describe: "动态值(REQ-013)：{resourceId,coeff?,timesResourceId?}，v=资源×(另一资源|系数)。解 score+=chips×mult、每$1+2c；缺省用静态 value" },
         },
       },
     },
@@ -97,7 +100,19 @@ export const effectApplyCapability = defineCapability({
               // REQ-012：op 决定运算 —— add(默认 current+value) / mul(current*value，×倍率) / set(value)；钳进 [min,max]。
               const r = lookup.resource(ef.targetId);
               if (r) {
-                const v = Number(ef.value);
+                // REQ-013：valueFrom 在场 → v 取自资源（量纲动态值 / 两资源相乘），否则用静态 value。
+                //   v = resource[resourceId].current × (timesResourceId ? resource[timesResourceId].current : coeff ?? 1)
+                // 解最终计分 score += chips×mult、Bull 每$1+2c、星球升级 chips += level×增量。缺资源按 0 处理（无效=不动）。
+                let v: number;
+                if (ef.valueFrom) {
+                  const base = lookup.resource(ef.valueFrom.resourceId)?.current ?? 0;
+                  const factor = ef.valueFrom.timesResourceId
+                    ? (lookup.resource(ef.valueFrom.timesResourceId)?.current ?? 0)
+                    : (ef.valueFrom.coeff ?? 1);
+                  v = base * factor;
+                } else {
+                  v = Number(ef.value);
+                }
                 const next = ef.op === 'mul' ? r.current * v : ef.op === 'set' ? v : r.current + v;
                 r.current = next < r.min ? r.min : next > r.max ? r.max : next;
               }

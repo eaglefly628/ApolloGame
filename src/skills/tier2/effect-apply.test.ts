@@ -174,6 +174,77 @@ describe('T2 effect-apply — modify-resource 运算 op + 结算顺序 order（R
   });
 });
 
+describe('T2 effect-apply — modify-resource 动态值 valueFrom（REQ-013）', () => {
+  function w0(resources: Array<{ id: string; current: number; max?: number }>): World {
+    const w = worldWithEffect();
+    for (const r of resources) {
+      const e = `res:${r.id}`;
+      w.createEntity(e);
+      w.addComponent(e, { type: 'Resource', id: r.id, current: r.current, min: 0, max: r.max ?? 1e12 } as Resource);
+    }
+    return w;
+  }
+  const cur = (w: World, id: string): number => w.getComponent<Resource>(`res:${id}`, 'Resource')!.current;
+
+  it('两资源相乘 score += chips × mult（timesResourceId）—— Balatro 最终计分', () => {
+    const w = w0([{ id: 'chips', current: 15 }, { id: 'mult', current: 3 }, { id: 'score', current: 0 }]);
+    effect(w, 'ef', { onSignal: 'commit', kind: 'modify-resource', targetId: 'score', op: 'add', value: 0, valueFrom: { resourceId: 'chips', timesResourceId: 'mult' } });
+    signal(w, 'commit');
+    w.tick();
+    expect(cur(w, 'score')).toBe(45); // 0 + 15×3
+  });
+
+  it('系数 × 资源 chips += 2 × money（coeff）—— Bull 每 $1 +2c', () => {
+    const w = w0([{ id: 'money', current: 7 }, { id: 'chips', current: 10 }]);
+    effect(w, 'ef', { onSignal: 'score', kind: 'modify-resource', targetId: 'chips', op: 'add', value: 0, valueFrom: { resourceId: 'money', coeff: 2 } });
+    signal(w, 'score');
+    w.tick();
+    expect(cur(w, 'chips')).toBe(24); // 10 + 7×2
+  });
+
+  it('op:set + valueFrom：score = chips × mult（覆盖原值）', () => {
+    const w = w0([{ id: 'chips', current: 10 }, { id: 'mult', current: 4 }, { id: 'score', current: 99 }]);
+    effect(w, 'ef', { onSignal: 'commit', kind: 'modify-resource', targetId: 'score', op: 'set', value: 0, valueFrom: { resourceId: 'chips', timesResourceId: 'mult' } });
+    signal(w, 'commit');
+    w.tick();
+    expect(cur(w, 'score')).toBe(40);
+  });
+
+  it('有序链：order1 +mult 后 order2 提交 score=chips×mult（commit 读到改后 mult）', () => {
+    const w = w0([{ id: 'chips', current: 10 }, { id: 'mult', current: 2 }, { id: 'score', current: 0 }]);
+    effect(w, 'ef_join', { onSignal: 'score', kind: 'modify-resource', targetId: 'mult', op: 'add', value: 3, order: 1 }); // mult 2→5
+    effect(w, 'ef_commit', { onSignal: 'score', kind: 'modify-resource', targetId: 'score', op: 'add', value: 0, valueFrom: { resourceId: 'chips', timesResourceId: 'mult' }, order: 2 });
+    signal(w, 'score');
+    w.tick();
+    expect(cur(w, 'mult')).toBe(5);
+    expect(cur(w, 'score')).toBe(50); // 10 × (2+3)，证明 commit 读的是 join 之后的 mult
+  });
+
+  it('动态值照样钳上下限', () => {
+    const w = w0([{ id: 'chips', current: 100 }, { id: 'mult', current: 100 }, { id: 'score', current: 0, max: 5000 }]);
+    effect(w, 'ef', { onSignal: 'commit', kind: 'modify-resource', targetId: 'score', op: 'add', value: 0, valueFrom: { resourceId: 'chips', timesResourceId: 'mult' } });
+    signal(w, 'commit');
+    w.tick();
+    expect(cur(w, 'score')).toBe(5000); // 10000 钳到 max
+  });
+
+  it('valueFrom 资源缺失 → 取 0（无效不动）', () => {
+    const w = w0([{ id: 'chips', current: 10 }]);
+    effect(w, 'ef', { onSignal: 'score', kind: 'modify-resource', targetId: 'chips', op: 'add', value: 0, valueFrom: { resourceId: 'ghost', coeff: 5 } });
+    signal(w, 'score');
+    w.tick();
+    expect(cur(w, 'chips')).toBe(10); // +（0×5）
+  });
+
+  it('回归：无 valueFrom 仍用静态 value', () => {
+    const w = w0([{ id: 'hp', current: 5 }]);
+    effect(w, 'ef', { onSignal: 'heal', kind: 'modify-resource', targetId: 'hp', value: 10 });
+    signal(w, 'heal');
+    w.tick();
+    expect(cur(w, 'hp')).toBe(15);
+  });
+});
+
 describe('T2 effect-apply — 物理 kind（REQ-008：信号→物理改动，按 targetEntity）', () => {
   it('set-sensor true → 目标实体加 Sensor（踩开关 → 墙变可穿过）', () => {
     const w = worldWithEffect();

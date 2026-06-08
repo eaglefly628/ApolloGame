@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import { World } from '@engine/core/world.js';
-import type { Card, PlayedHand, PokerHand, Resource, StringVar, Signal, Effect } from '@engine/protocol/components.js';
+import type { Card, PlayedHand, PokerHand, Resource, StringVar, Signal, Effect, Flag } from '@engine/protocol/components.js';
 import { pokerHandCapability, evaluateHand, isStraightRanks } from './poker-hand.js';
 import { effectApplyCapability } from '../tier2/effect-apply.js';
 
@@ -184,6 +184,84 @@ describe('poker-eval system — 写基础 chips/mult', () => {
     w.getComponent<Resource>('res:mult', 'Resource')!.current = 5;
     w.tick();
     expect(res(w, 'mult')).toBe(0);
+  });
+});
+
+// ── 派生事实（REQ-011 完善）：包含谓词原语 + 出牌张数 → 修正"含某牌型"判定 ──
+function loadFacts(cards: Card[]): World {
+  const w = new World();
+  for (const s of pokerHandCapability.systems) w.addSystem(s);
+  w.createEntity('table');
+  w.addComponent('table', {
+    type: 'PokerHand', rankingTable: {}, chipsResource: 'chips', multResource: 'mult',
+    rankMaxCountResource: 'rmax', pairCountResource: 'pairs', isStraightFlag: 'isStraight', isFlushFlag: 'isFlush', handSizeResource: 'hsize',
+  } as PokerHand);
+  w.addComponent('table', { type: 'PlayedHand', cards } as PlayedHand);
+  for (const id of ['chips', 'mult', 'rmax', 'pairs', 'hsize']) {
+    w.createEntity(`res:${id}`);
+    w.addComponent(`res:${id}`, { type: 'Resource', id, current: 0, min: 0, max: 99 } as Resource);
+  }
+  for (const id of ['isStraight', 'isFlush']) {
+    w.createEntity(`flag:${id}`);
+    w.addComponent(`flag:${id}`, { type: 'Flag', id, active: false } as Flag);
+  }
+  return w;
+}
+const fres = (w: World, id: string): number => w.getComponent<Resource>(`res:${id}`, 'Resource')!.current;
+const fflag = (w: World, id: string): boolean => w.getComponent<Flag>(`flag:${id}`, 'Flag')!.active;
+
+describe('poker-eval 派生事实 — 包含谓词原语 + 张数（REQ-011 完善）', () => {
+  it('对子：rankMaxCount=2, pairCount=1', () => {
+    const w = loadFacts([c(0, 5), c(1, 5), c(2, 2), c(3, 7), c(0, 9)]);
+    w.tick();
+    expect(fres(w, 'rmax')).toBe(2);
+    expect(fres(w, 'pairs')).toBe(1);
+  });
+  it('两对：rankMaxCount=2, pairCount=2', () => {
+    const w = loadFacts([c(0, 5), c(1, 5), c(2, 9), c(3, 9), c(0, 2)]);
+    w.tick();
+    expect(fres(w, 'rmax')).toBe(2);
+    expect(fres(w, 'pairs')).toBe(2);
+  });
+  it('三条：rankMaxCount=3', () => {
+    const w = loadFacts([c(0, 6), c(1, 6), c(2, 6), c(3, 2), c(0, 9)]);
+    w.tick();
+    expect(fres(w, 'rmax')).toBe(3);
+  });
+  it('★bug 修正：葫芦 含对子（rankMaxCount≥2）且 含两对（pairCount=2，Balatro 语义）—— 只看最高型 StringVar 会漏', () => {
+    const w = loadFacts([c(0, 7), c(1, 7), c(2, 7), c(3, 4), c(0, 4)]);
+    w.tick();
+    expect(fres(w, 'rmax')).toBe(3); // ≥2 → "含对子" 条件 rankMaxCount gte 2 命中（Jolly 打葫芦也触发）
+    expect(fres(w, 'pairs')).toBe(2); // 葫芦含两对（trip 含一对 + 自带一对）
+  });
+  it('四条：rankMaxCount=4, pairCount=1（不含两对）', () => {
+    const w = loadFacts([c(0, 9), c(1, 9), c(2, 9), c(3, 9), c(0, 2)]);
+    w.tick();
+    expect(fres(w, 'rmax')).toBe(4);
+    expect(fres(w, 'pairs')).toBe(1);
+  });
+  it('顺子：isStraight=true, isFlush=false', () => {
+    const w = loadFacts([c(0, 5), c(1, 6), c(2, 7), c(3, 8), c(0, 9)]);
+    w.tick();
+    expect(fflag(w, 'isStraight')).toBe(true);
+    expect(fflag(w, 'isFlush')).toBe(false);
+  });
+  it('同花：isFlush=true, isStraight=false', () => {
+    const w = loadFacts([c(1, 2), c(1, 5), c(1, 7), c(1, 9), c(1, K)]);
+    w.tick();
+    expect(fflag(w, 'isFlush')).toBe(true);
+    expect(fflag(w, 'isStraight')).toBe(false);
+  });
+  it('同花顺：两 flag 皆 true', () => {
+    const w = loadFacts([c(0, 6), c(0, 7), c(0, 8), c(0, 9), c(0, 10)]);
+    w.tick();
+    expect(fflag(w, 'isStraight')).toBe(true);
+    expect(fflag(w, 'isFlush')).toBe(true);
+  });
+  it('handSize：出牌张数（Half Joker「≤3张」靠这个）', () => {
+    const w = loadFacts([c(0, 5), c(1, 5), c(2, 9)]);
+    w.tick();
+    expect(fres(w, 'hsize')).toBe(3);
   });
 });
 
