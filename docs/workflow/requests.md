@@ -651,6 +651,45 @@
 
 ---
 
+### REQ-011 · [2026-06-08] · PE（Lead 评审后下沉）· 框架级 / 卡牌玩法 · status: open · 优先级: **P1** · 类型: 真缺口（扑克牌型评估 + 持牌集合）
+
+**标题**：`@skills/tier3/poker-hand` —— 确定性「一手牌 → 牌型 + 基础分」评估器（Balatro 式小丑牌的玩法底座）
+
+- **想实现的游戏行为**：Balatro 式 roguelike 卡牌。玩家从手牌选若干张「出牌」，引擎判定牌型（高牌/对子/两对/三条/顺子/同花/葫芦/四条/同花顺…），给出该牌型的**基础 chips + 基础 mult**；小丑牌再在此之上按「牌型 / 花色 / 点数 / 逐张」做修正（见 REQ-012）。最终 `score = chips × mult` 与盲注线（一条 `condition: resource gte threshold`）比较。
+- **PE 可行性评审结论（已对照现有能力逐条裁）**：
+  - chips / mult / money / score → 复用 `Resource`（按 id 全局路由）。**不新增**。
+  - 「出牌/弃牌/盲注线/回合状态机/选牌/洗牌发牌/经济」→ 全部用现有 `event-when / condition / effect-apply / state / clickable / spawn / random` **重组**，**回驳任何「新写计分 system / 回合 system」的提法**（manifesto §4：先重组）。Game C 的 `clickable` 选格、`random` 种子 PRNG 即选牌/洗牌的现成料。
+  - **真表达不了的唯一缺口**：没有任何能力持有「这手已出的牌」这个**有序卡集合**，也没有「5 张是不是同花顺」的**牌型检测器**。尺子检验：牌型**分值表**最弱 LLM 能产出（数据）；但「检测牌型」是**算法**，LLM 产不出同一份数据 → 必须下沉成引擎里的确定性解释器。
+  - **有先例**：与已落地的 `match3-board`（数据=棋盘数组，引擎=连消检测）、`tilemap`（数据=瓦片数组，引擎=碰撞）**完全同构** —— 合法的 Tier3 通用能力，非游戏专属代码。
+- **建议组件契约（实现者可调整命名，遵 components.ts 风格）**：
+  - `PokerHand{ rankingTable, deck? }`（config 类）：`rankingTable` = 牌型→{baseChips, baseMult} 的**纯数据表**（设计可调，不写死在代码）；牌定义 = {suit, rank}（数据）。
+  - `PlayedHand{ cards: {suit,rank}[] }`（event/state 类）：本次出的牌（有序，供逐张迭代）。由选牌交互（clickable→signal→effect 装配）填充——**不在本能力里做选牌 UI**。
+  - 系统 `poker-eval`：读 `PlayedHand` → 确定性判定最高牌型 → 写出 `chips`/`mult` 两个 Resource 的基础值（或写 `StringVar/State` 记牌型名供 condition 读，做「打出同花→某小丑触发」）。**只算分、不碰渲染、不驱动逻辑之外的状态**。
+- **确定性边界**：纯整数/枚举比较（点数、花色、计数），不碰浮点超越函数 → lockstep/录放安全。牌型判定是纯函数，输入=有序卡集，输出稳定。
+- **开工前必读**：`wiki/skills/index.md` 找棋盘/匹配类模块 + 细看 `src/skills/tier3/match3-board.ts` 既有范式，别另起炉灶。
+- **验收**：覆盖全部牌型判定（含边界：A 高/低顺、同花顺优先级、并列取高）+ 「逐张/按花色计数」迭代接口的测试；tsc + vitest + build 全绿。
+
+---
+
+### REQ-012 · [2026-06-08] · PE（Lead 评审后下沉）· 框架级 · status: open · 优先级: **P1** · 类型: 真缺口（声明式效果：乘法 + 有序结算）
+
+**标题**：`effect-apply` 的 `modify-resource` 加 `op`（add|mul|set）+ `Effect.order` —— 让「×倍率」和「小丑结算顺序」成为数据
+
+- **想实现的游戏行为**：Balatro 小丑大量是 **`×mult` / `×money`**（如「+50% Mult」「每有 \$5 则 ×0.x Mult」），且**结算顺序语义关键**——Balatro 小丑从左到右依次结算，`×` 在 `+` 之后结果不同。
+- **PE 可行性评审结论**：
+  - 现状 `effect-apply` 的 `modify-resource` 只有 `current + value`（**纯加法**），`×mult` **当前数据组合不出**（乘法依赖 mult 的动态当前值，加法的静态 value 表达不了）→ **真缺口**。
+  - 这**不是新能力**，是给**现有 capability 补一字段的 DSL 扩展**。尺子检验：最弱 LLM 能产出 `{ kind:"modify-resource", op:"mul", value:1.5, order:3 }` → 合格的数据接口，**非自由代码**。
+  - 结算顺序：现状 `effect-apply` 按 `world.query('Effect')` 的 entity 顺序遍历——确定但**隐式、非声明**。乘法引入顺序依赖后，必须把顺序变成**显式数据**（`Effect.order` 升序结算），既对齐 Balatro 语义，又利于审计/确定性。
+- **建议改动（最小、向后兼容）**：
+  - `Effect` 加可选 `op: 'add'|'mul'|'set'`（缺省 `'add'`，**老数据零改动**）；`modify-resource` 分支按 op 结算：`add`→`current+value`、`mul`→`current*value`、`set`→`value`，结算后照常钳进 [min,max]。
+  - `Effect` 加可选 `order: number`（缺省 0）；effect-apply 在施加前**按 order 升序排序**同一信号命中的 Effect，再依次结算 → 顺序即数据。
+  - 同帧多 Effect 改同一 Resource 时，乘法**就地累乘**当前值（不能像加法那样靠 `queueResourceMod` 累加后一次写）——实现者注意：modify-resource 走的是 effect-apply 内联写 `r.current`，不经 `ResourceModify` 队列，按 order 顺序就地连写即可，天然有序确定。
+- **确定性边界**：乘法仍是确定运算（同 order 同输入 → 同输出）；只读/写确定 Resource，不碰浮点超越函数。`order` 进 snapshot 即录放安全。
+- **依赖关系**：与 REQ-011 合用即可拼出完整 Balatro 小丑；单独做也能让现有逻辑链表达「×」类效果（如 Game D 的暴击倍率、Game B 的属性加成乘区）。**可并行实现**。
+- **验收**：add/mul/set 三 op + 多 Effect 按 order 有序结算（含「先 + 后 ×」与「先 × 后 +」结果不同）的测试；老数据（无 op/order）行为不变的回归；tsc + vitest + build 全绿。
+
+---
+
 ## 需求模板（复制这段填写）
 
 ```
