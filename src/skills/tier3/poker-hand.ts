@@ -185,6 +185,9 @@ export const pokerHandCapability = defineCapability({
       // （早于小丑结算的 effect-apply=Commit）：先把"基础值"写进 Resource，再被同 tick 的 ×mult/+chips 修正。
       id: 'poker-eval',
       phase: SystemPhase.Update,
+      // 定序：与 resource-apply/string-apply 同读写 Resource/StringVar 于 Update → 显式 runsBefore 打破拓扑环
+      // （与 dialogue.ts 先例一致）。语义：poker-eval 先 set 基础分，resource-apply 再在其上应用 ResourceModify。
+      runsBefore: ['resource-apply', 'string-apply'],
       reads: ['PokerHand', 'PlayedHand', 'Resource'],
       writes: ['Resource', 'StringVar', 'Flag'],
       consumes: [],
