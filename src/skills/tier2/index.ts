@@ -23,3 +23,5 @@ export { launchCapability } from './launch.js';
 export { tilemapCapability, findTilemap, isSolidTile } from './tilemap.js';
 export { animStateCapability } from './anim-state.js';
 export { facingCapability } from './facing.js';
+// card-play（REQ-016/017）：卡牌「出牌」确定性输入接缝——命令流→按 owner 路由各玩家 PlayedHand + scoring Flag。可 lockstep 多人。
+export { cardPlayCapability, decodeCard, encodeCard } from './card-play.js';

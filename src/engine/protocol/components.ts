@@ -345,6 +345,9 @@ export interface RawInputData {
   readonly x?: number;
   readonly y?: number;
   readonly phase?: string;
+  // 结构化数值载荷（REQ-016/017）：承载列表型输入（如卡牌游戏「出哪几张牌」的牌码 suit*100+rank、菜单多选下标）。
+  // 让富输入（不止指针 x/y）也能经确定性命令流注入 → lockstep 安全。
+  readonly values?: readonly number[];
 }
 
 // ── 输入队列（单例）── 本 tick 的原始输入事件列表。挂在唯一实体上，每 tick 整体覆写（零实体分配），
@@ -673,6 +676,9 @@ export interface Card {
 export interface PlayedHand extends Component {
   readonly type: 'PlayedHand';
   cards: Card[];
+  // 可选归属玩家 id（多人/coop）：card-play 按它把某玩家的「出牌」输入路由到对应牌桌的 PlayedHand。
+  // 单人留空（装配层直接填 cards）。
+  owner?: string;
 }
 
 // ── poker-hand 评估器配置（REQ-011；Tier3「算法/解释器型机制」大类，与 match3-board/tilemap 同构）──

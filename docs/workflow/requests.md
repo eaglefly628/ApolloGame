@@ -813,7 +813,10 @@
 
 ---
 
-### REQ-016 · [2026-06-08] · PE（合作 vs Boss 联机评审）· 框架级 / 卡牌玩法 · status: **open** · 优先级: **P2（联机/共鸣前置，单人不阻塞）** · 类型: 数据契约扩展（非新能力）
+### REQ-016 · [2026-06-08] · PE（合作 vs Boss 联机评审）· 框架级 / 卡牌玩法 · status: **done（重组，无新组件 + card-play 接缝）**（2026-06-08，主程4）· 优先级: **P2** · 类型: 数据契约扩展（非新能力）
+
+> ✅ **主程4 评审 + 落地（过 manifesto 尺子）**：**回驳新 Beat/Resonance 组件——共鸣读侧是纯重组**：每玩家牌型 = 各自 `PokerHand.handTypeVar`（写两份 StringVar `ht_p1`/`ht_p2`，已支持）；跨玩家共鸣 = `condition`(and(string ht_p1=flush, string ht_p2=straight)) + `event-when` + `effect`(boss_hp 全局路由)。**零新 system / 零新组件**。已在 `src/net/coop-cards.test.ts` 真 lockstep 双 peer 证明涌现（共鸣命中 boss 额外 -500、未命中不触发）。
+> **唯一真引擎缺口（已补）= 确定性「出牌」输入**：`RawInputData` 加 `values?:number[]`（结构化载荷，承载牌码 suit*100+rank）；新通用能力 `@skills/tier2/card-play`（命令流→按 `PlayedHand.owner` 路由各玩家出牌 + 置 scoring Flag，reset-then-apply，可 lockstep）。**「本拍共振目标」的每拍随机生成属回合流程（REQ-017）装配**，不在此另立组件。
 
 **标题**：「本拍上下文」暴露给 condition —— `Beat{resonantType}` / `Resonance{p1Type,p2Type}`（共鸣/接力小丑底座）
 
@@ -824,7 +827,10 @@
 
 ---
 
-### REQ-017 · [2026-06-08] · PE（单人数据驱动化 + 联机共同前置）· 框架级 / 卡牌玩法 · status: **open** · 优先级: **P1（单人/联机共同地基）** · 类型: 回合流程下沉为数据状态机（评估：重组 vs 小能力）
+### REQ-017 · [2026-06-08] · PE（单人数据驱动化 + 联机共同前置）· 框架级 / 卡牌玩法 · status: **in-progress（引擎输入接缝已交付；流程装配归 PE）**（2026-06-08，主程4）· 优先级: **P1（单人/联机共同地基）** · 类型: 回合流程下沉为数据状态机（评估：重组 vs 小能力）
+
+> ✅ **主程4（引擎侧）**：交付了 lockstep 回合流程的**确定性输入接缝** `card-play`（REQ-016 同条目）——出牌经命令流注入而非 React 直写，是"流程下沉 sim"得以 lockstep 的前提。**评判：回合状态机本体 = 纯数据装配（State{fsmId:'round'} + condition 转移 + effect set-state + random 发牌 + clickable 选牌），零新能力**，与 PE 现 `game-e.tsx` 命令式流程同构、可逐步迁移；`phase-sequencer`/`turn` 通用能力 **YAGNI 暂不下沉**（装配真撞到"多步异步编排表达不了"再评估）。
+> 🟡 **剩余归 PE（游戏层装配，主程4 不碰 game-e.tsx 避冲突）**：把 game-e 回合流程写成上述数据状态机；「逐步计分 trace 供 UI 回放」的演出下沉留作讨论项。**做完即"加第二组 owner 牌桌 + 第二路命令"=联机**（已由 coop-cards.test 坐实路径）。
 
 **标题**：把「回合/拍流程」从 React 命令式下沉成 **sim 内数据状态机**（State + event-when + effect），走统一输入
 
@@ -843,6 +849,7 @@
 - **缺什么**：① **传输**：WS/WebRTC 信令 + 帧/命令收发（把 BroadcastChannel 换成可跨设备的 channel，复用现有 LockstepSession 接口）；② **延迟处理**：lockstep「收齐两端才推进」遇网络延迟会卡 → 需 **输入延迟缓冲（input-delay）** 或回滚（rollback），目前是无延迟同机模型。
 - **PE 评审**：这是 **基础设施，与游戏数据驱动设计正交**——不缺 game skill。**同机/两标签先验证完全够**（hashSnapshot 双端同步是真的），真·远程对战才提上日程。建议**排在最后**：先单人 MVP（REQ-017）→ 同机两标签验共鸣（现成）→ 调参好玩 → 才做远程传输。
 - **确定性已安全**：卡牌计分是整数+乘法，不碰 REQ-010 的浮点跨架构问题（那只关 steering/sqrt）→ **卡牌 co-op 即使跨平台也确定**，传输层补上即可。
+- ✅ **主程4 进展**：2 人 lockstep coop 卡牌**确定性已在 `src/net/coop-cards.test.ts` 坐实**（两 peer 同 hash + 共享 boss + 共鸣，全经现成 `LockstepSession`）。**只差本条传输层**（同机两标签 `lockstep-tab.ts` 已可用）；真远程仍 P3 最后做。
 
 ---
 
