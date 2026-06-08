@@ -781,6 +781,34 @@
 ### 备注 · #3（已知设计项，非本批）：开局不应自带小丑
 
 - Balatro：开局**无小丑**，打过盲注后进商店/卡包选奖励才获得。当前 `game-e.tsx` / 蓝图把全 14 张 `STARTER_JOKERS` 派生进场 → 既不符设定，也是「分数看起来爆表」的主因（×3/×2/Banner+90/Scary+60 等常驻）。
+- **主程4 备注**：引擎机制 `buildJokerEntities` 本身正确（数据驱动派生）；"开局全 14 张"只是 `game-e.tsx` 的演示装配选择。**PE 改 `game-e.tsx` 的 `buildGameEBlueprint(buildJokerEntities(STARTER_JOKERS))` → 开局传空/curated，打盲注后再装配** 即可（game-e.tsx 是 PE 域，主程4 不动）。
+
+---
+
+> 🔎 **主程4 引擎层 bug 审计（2026-06-08，独立于 PE 提单）** —— 自动审计 + 人工核实，确认以下引擎/能力层真 bug。均为 Lead 域；**因 PE 正并行改 game-e，避免冲突，先登记给 owner 排期，授权后再修**。
+
+### BUG-003 · [2026-06-08] · 主程4（引擎审计）· 引擎 World.consume + tier1 lifetime/animation · status: **open** · 优先级: **P1（静默丢事件）**
+
+**标题**：`TimerDone` 被 `lifetime` 与 `animation` 两系统同时 `consumes` —— 全局消费导致 animation 饿死丢帧
+
+- **根因（已核实）**：`World.tick`（`src/engine/core/world.ts:93-100`）的 consume 是"每个系统执行后从**所有实体**删除该组件类型"（全局）。`TimerDone` 同时被 `lifetime`（`tier1/lifetime.ts:21`）和 `animation`（`tier1/animation.ts:17`）声明 consume，二者同 Update 相位、无定序边，注册序 lifetime 在前 → lifetime 先跑并**全局删光** TimerDone → animation 看不到。
+- **后果**：同一 tick 内只要有 `life` 计时器到点 + 有动画帧计时器到点，**精灵帧停止推进**（静默，非崩溃）。Game D（投射物 life + anim-state 动画并存）会触发。两端同样丢失 → 不致 desync，但行为错误。
+- **修复方向（待授权）**：consume 语义改为"读到即消费"（按系统实际触及实体），或 TimerDone 由 `timer` 在每 tick 起清（仿 event-when 清 Signal），消费方改 `reads`。会动 animation/lifetime 的 consume 测试。**建议同时在 assembly 校验层禁止"同一组件被多系统 consume"**（根除同类隐患）。
+
+### BUG-004 · [2026-06-08] · 主程4（引擎审计）· 引擎 tier2 mortal · status: **open** · 优先级: **P2（实体泄漏）**
+
+**标题**：死亡掉落载体实体 `drop:<id>` 永不回收（长局/刷怪无界增长 + id 复用可抛错）
+
+- **根因**：`tier2/mortal.ts` 死亡时 `createEntity('drop:'+id)` 挂 `SpawnRequest`；`prefab` 只消费 SpawnRequest（删组件）**不销毁载体**，空实体永久残留。若 id 回收复用且同名实体再死，`createEntity('drop:'+id)` 因已存在抛错（`world.ts:15`）。
+- **后果**：每个带 `dropTemplate` 的怪死亡泄漏一个空实体（进 snapshot/hash 拖慢）；极端下抛错中断 tick。
+- **修复方向**：prefab 展开后销毁载体实体，或载体加 `life=1` 自销毁 Timer。
+
+### BUG-005 · [2026-06-08] · 主程4（引擎审计）· 引擎 atoms spatial-query + tier1 tween · status: **open** · 优先级: **P3（确定性脆弱 / 数据健壮性）**
+
+- **spatial-query `queryNearest`**（`atoms/spatial-query/index.ts:62`）：距离相等时 `sort((a,b)=>a.d2-b.d2)` 无 id tie-break，依赖数组（=query 插入）序 + sort 稳定性。同端录放安全，但两端构建序不同（rejoin/快照恢复后追加实体）可能选出不同实体 → **潜在 desync**。同文件 `nearestByTag` 已正确做 id tie-break，**此处不一致**，建议补齐。
+- **tween `duration<=0` 配无限 loop**（`tier1/tween.ts`）：`elapsed>=duration` 恒真，pingpong 每帧抖动、永不收敛（仅表现层，不进 hash）。建议 `duration<=0` 时忽略 loop 或校验层拒绝。
+
+> 确定性总体判断（审计结论）：**地基可信**——模拟内随机=确定 PRNG(mulberry32 纯整数)、超越函数(sin/cos)被刻意排除只用 Math.sqrt(IEEE 跨端一致)、Date.now/Math.random 仅在 net 传输层不进模拟、快照按值 structuredClone、拓扑排序 Kahn 稳定。唯一真威胁是上述 consume 契约(BUG-003)与 queryNearest tie-break(BUG-005)。
 - 改法（数据级）：`buildGameEBlueprint(buildJokerEntities([]))` 开局空小丑；小丑改由「过盲注 → 商店 craft-recipe 购买 → 派生实体」获得。**待 #1/#2 后做**（用户已排序）。
 
 ---
