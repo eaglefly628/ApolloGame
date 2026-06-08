@@ -37,3 +37,8 @@ export { aggroCapability } from './aggro.js';
 // 选牌/洗牌/盲注/小丑全用现有 clickable/random/condition/effect-apply(op,REQ-012) 重组——本能力只补"判牌型"真缺口。
 export { pokerHandCapability, evaluateHand, isStraightRanks } from './poker-hand.js';
 export type { HandType, HandEval } from './poker-hand.js';
+
+// card-scoring（REQ-014）：poker-hand 的逐张计分伴生件——按序遍历 PlayedHand.cards，逐张累加 baseChips +
+// 触发命中该牌的逐张规则（PerCardRule），支持 retrigger（PerCardRetrigger）。聚合计数表达不了 retrigger 的乘性耦合，
+// 故逐张迭代是正确抽象。迭代=引擎算法，逐张规则/重触发=纯数据（与 effect-apply 的 Effect 同构）。
+export { cardScoringCapability, matchPerCardWhen } from './card-scoring.js';

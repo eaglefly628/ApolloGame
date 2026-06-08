@@ -698,6 +698,49 @@ export interface PokerHand extends Component {
   handSizeResource?: string; // 可选：本次出牌张数写入此 Resource（Half Joker「出牌≤3张」等）
 }
 
+// ── card-scoring 逐张谓词（REQ-014）── 对"当前计分牌"求值的小词汇表（纯数据，最弱 LLM 可产）。
+// 刻意只含卡面属性（花色/点数集合/序号）+ 布尔组合；**不烘焙任何 Balatro 常量**：
+//   人头 = rankIn[11,12,13]；偶(Even Steven)=rankIn[2,4,6,8,10]；奇(Odd Todd)=rankIn[3,5,7,9,14]——全由数据表达。
+// 与通用 Condition 不同：Condition 读世界 Flag/Resource/State，这里读的是迭代中瞬态的"当前牌"，故是卡域专用谓词。
+export type PerCardWhen =
+  | { kind: 'always' }
+  | { kind: 'suit'; suit: number } // 该牌花色 == suit（0..3）
+  | { kind: 'rankIn'; ranks: number[] } // 该牌点数 ∈ ranks（人头/偶/奇/具体点数都用它）
+  | { kind: 'index'; eq: number } // 该牌在出牌序列中的序号 == eq（首张=0，供 retrigger/首张型小丑）
+  | { kind: 'and'; of: PerCardWhen[] }
+  | { kind: 'or'; of: PerCardWhen[] }
+  | { kind: 'not'; of: PerCardWhen };
+
+// ── card-scoring 配置（REQ-014；Tier3「算法/解释器型机制」，poker-hand 的逐张伴生件）──
+// 挂"牌桌"单例（与 PlayedHand 同实体）：逐张 pass 按序遍历 PlayedHand.cards，对每张（含 retrigger 重复）
+// 把该牌 baseChips 累加进 chipsResource。Condition→Event→Effect 是反应式布尔、表达不了"有序迭代 + 逐元素上下文 +
+// retrigger 乘性耦合"——正是本能力补的缺口（与 match3-board/poker-hand 同构）。baseChipsByRank 纯数据，引擎不写死。
+export interface PerCardScore extends Component {
+  readonly type: 'PerCardScore';
+  chipsResource: string; // 逐张 baseChips 累加进此 Resource（在 poker-eval set 的牌型基础分之上 add）
+  baseChipsByRank: Record<string, number>; // 点数(字符串键)→该牌基础筹码，如 {"10":10,"11":10,"14":11}；缺键=0
+}
+
+// ── card-scoring 逐张规则（REQ-014）── 一条逐张小丑 = 一个 PerCardRule 组件（与 effect-apply 的 Effect 同构，
+// 每张小丑一个实体）。逐张 pass 遍历每张计分牌，对每条 when 命中当前牌的规则，按 op 改 targetResource（钳上下限）。
+// 例：Greedy{when:{kind:'suit',suit:2},op:'add',targetResource:'mult',value:3}（每张♦+3 倍率）。
+export interface PerCardRule extends Component {
+  readonly type: 'PerCardRule';
+  when: PerCardWhen;
+  op: 'add' | 'mul';
+  targetResource: string;
+  value: number;
+}
+
+// ── card-scoring retrigger（REQ-014）── 重触发规则（Hanging Chad/Red Seal/Mime 折叠于此）。
+// when 命中的牌，在逐张 pass 里被额外计分 extra 次（共 1+extra 次）：该牌的 baseChips 与所有命中它的 PerCardRule
+// 都随之重复结算——这正是聚合计数表达不了、必须逐张迭代的乘性耦合。例：Hanging Chad{when:{kind:'index',eq:0},extra:2}。
+export interface PerCardRetrigger extends Component {
+  readonly type: 'PerCardRetrigger';
+  when: PerCardWhen; // 哪些牌重触发（如 index==0 = 首张）
+  extra: number; // 额外重复次数（Hanging Chad = 2）
+}
+
 // ── StatModifier ── 属性修正（①，ARPG）：来自具名 source（装备/buff/光环/天赋/boon）的一条加/乘修正。
 // 装备→push 一条（source=装备 id），卸下→按 source 滤除。同一 source 可有多条（改多 stat）。
 export interface StatModifier {

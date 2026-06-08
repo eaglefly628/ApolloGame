@@ -694,7 +694,9 @@
 
 ---
 
-### REQ-013 · [2026-06-08] · Lead（Game E 缺口审计后下沉）· 框架级 · status: open · 优先级: **P1 / 核心阻塞** · 类型: 真缺口（声明式效果：值取自资源 / 量纲动态值）
+### REQ-013 · [2026-06-08] · Lead（Game E 缺口审计后下沉）· 框架级 · status: **done**（2026-06-08，Lead；commit 7e0b408/960cf10 已落，本程对账翻牌）· 优先级: **P1 / 核心阻塞** · 类型: 真缺口（声明式效果：值取自资源 / 量纲动态值）
+
+> ✅ **落地（已在代码，本程对账确认）**：`Effect` 加可选 `valueFrom:{resourceId,coeff?,timesResourceId?}`；`effect-apply.ts` 的 `modify-resource` 在场则 `v = resource[resourceId].current × (timesResourceId ? resource[timesResourceId].current : coeff ?? 1)`，否则用静态 `value`，再按 op 结算钳 [min,max]。缺资源按 0。game-e 蓝图 `score_combine`（hand_score=chips×mult，timesResourceId）+ `joker_bull`（每$1+2c，coeff）已用，整合测验过。**注：之前账实不符（commit 已落但状态留 open），本程翻牌。**
 
 **标题**：`effect-apply` 的 `modify-resource` 加 `valueFrom`（值 = 资源 ×（系数 | 另一资源））—— 让「`score += chips × mult`」「每 \$1 +2 筹码」成为数据
 
@@ -709,7 +711,16 @@
 
 ---
 
-### REQ-014 · [2026-06-08] · Lead（Game E 缺口审计后下沉）· 框架级 / 卡牌玩法 · status: open · 优先级: **P2** · 类型: 真缺口（逐张计分迭代器）
+### REQ-014 · [2026-06-08] · Lead（Game E 缺口审计后下沉）· 框架级 / 卡牌玩法 · status: **done**（2026-06-08，主程4：@skills/tier3 card-scoring）· 优先级: **P2** · 类型: 真缺口（逐张计分迭代器）
+
+> ✅ **Lead（主程4）评审 + 落地（2026-06-08，全量 772 绿）**：
+> - **复核 ACCEPT，并点破一个捷径陷阱**：起手 4 张计数小丑（Greedy/Lusty 每♦♥+3m、Scary Face 每人头+30c、Even Steven 每偶+4m）其实能用聚合计数绕过（poker-eval 已算 suitCounts，配 REQ-013 `valueFrom` 写 `mult += count(♦)×3`）。**但聚合是有漏洞的捷径**——决定性反例是 **retrigger（Hanging Chad 首张重触发2次）**：首♦被重触发时 Greedy 在那张牌上要触发 3 次（+9m），`count(♦)×3` 丢了位置身份、永远表达不了。retrigger 与逐张小丑是**乘性耦合**，不可分解为独立聚合 → 逐张迭代是**正确抽象**（且自然涵盖那 4 张计数小丑）。
+> - **落库 `src/skills/tier3/card-scoring.ts`**（poker-hand 伴生件，同属 Tier3「算法/解释器型机制」）：系统 `card-score-pass`（Update，`runsAfter:['poker-eval']` 在牌型基础分之上 add；`runsBefore:['resource-apply','string-apply']`；早于 effect-apply=Commit → 逐张 +mult 先于 hand-level ×mult，对齐 Balatro「逐张计分先于独立小丑」）。
+>   - 组件（入 components.ts + 注册表自动反推）：`PerCardScore{chipsResource,baseChipsByRank}`（逐张 baseChips 累加，纯数据点数表，引擎不写死）、`PerCardRule{when,op,targetResource,value}`（一条逐张小丑=一个实体，与 Effect 同构）、`PerCardRetrigger{when,extra}`（Hanging Chad/Red Seal/Mime 折叠于此）。
+>   - 谓词 `PerCardWhen`：`always/suit/rankIn/index/and/or/not`——**刻意不烘焙 Balatro 常量**：人头=`rankIn[11,12,13]`、偶=`rankIn[2,4,6,8,10]`、奇=`rankIn[3,5,7,9,14]`，全数据表达（A=14 靠数据排除出"偶"，而非 `%2`）。
+> - **幂等**：poker-eval 每 tick 重 set 基础分 → 本 pass 每 tick 重 add → 多 tick 持平（与现有链一致）。**确定性**：卡序由 PlayedHand.cards 定；规则/重触发按实体 id 排序（同 effect-apply eid tie-break）；纯整数/IEEE 加乘。
+> - **接进 game-e**：牌桌挂 `PerCardScore`（chips = 牌型基础 + Σ每张牌 baseChips），6 个既有计分测全部按逐张 baseChips 重算（手工推导）。+18 能力单测（谓词/baseChips/逐张小丑/retrigger 乘性耦合/与 poker-eval 幂等）+2 game-e 真引擎涌现测（Greedy 5♦→+15m→126×69=8694；Hanging Chad×Greedy 首♦重触发→Greedy 7 次+21m→130×87=11310，证聚合表达不了的耦合）。
+> - **未做（YAGNI，留后续）**：把起手 14 张的 on_card_scored 小丑全量接进默认蓝图（会扰动 6 个既有测的算术）；逐张 `S_card_scored` 信号广播给 condition/effect（当前内联结算已覆盖证实需求，相位模型下逐张喂外部 condition 是反模式，暂不做）。
 
 **标题**：`@skills/tier3` 逐张计分 pass —— poker-hand 的伴生件：按序走每张计分牌、透出逐张上下文、累加 baseChips、支持 retrigger
 

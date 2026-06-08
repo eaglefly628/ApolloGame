@@ -2,7 +2,7 @@ import type { WorldBlueprint, EntityBlueprint } from '../../assembly/demo.assemb
 import type { Card } from '@engine/protocol/components.js';
 import { resourceCapability, flagCapability, stringVariableCapability } from '@atom-skills/index.js';
 import { eventWhenCapability, effectApplyCapability } from '@skills/tier2/index.js';
-import { pokerHandCapability } from '@skills/tier3/index.js';
+import { pokerHandCapability, cardScoringCapability } from '@skills/tier3/index.js';
 import { HAND_RANKINGS, type HandType } from './hand-rankings.js';
 import { RANK_ORDER, type Card as DataCard } from './deck.js';
 
@@ -78,6 +78,18 @@ export function toEngineCard(c: DataCard): Card {
 /** 便捷构造引擎牌（直接给数字）。 */
 export const card = (suit: number, rank: number): Card => ({ suit, rank });
 
+// Balatro 标准每牌基础筹码（纯数据，引擎不写死）：2..10=点值，J/Q/K=10，A=11。
+// card-scoring(REQ-014) 逐张 pass 据此累加 chips（= 牌型基础 + Σ每张牌 baseChips）。
+export const BASE_CHIPS_BY_RANK: Record<string, number> = {
+  '2': 2, '3': 3, '4': 4, '5': 5, '6': 6, '7': 7, '8': 8, '9': 9, '10': 10,
+  '11': 10, '12': 10, '13': 10, '14': 11,
+};
+
+/** 一手牌的逐张 baseChips 之和（测试/UI 投影；与 card-score-pass 同源数据）。 */
+export function sumBaseChips(cards: readonly Card[]): number {
+  return cards.reduce((s, c) => s + (BASE_CHIPS_BY_RANK[String(c.rank)] ?? 0), 0);
+}
+
 export function buildGameEBlueprint(): WorldBlueprint {
   const entities: Record<string, EntityBlueprint> = {
     // ── 计分资源（基础值由 poker-eval set，小丑在其上加乘）──
@@ -92,9 +104,11 @@ export function buildGameEBlueprint(): WorldBlueprint {
     // 计分开关（装配层/输入层在「出牌」时置 true → 驱动 score 信号）。
     scoring: { Flag: { id: F_SCORING, active: false } } as unknown as EntityBlueprint,
 
-    // ── 牌桌（单例）：评估器 + 当前出的牌（选牌交互填 cards）。──
+    // ── 牌桌（单例）：评估器 + 逐张计分配置 + 当前出的牌（选牌交互填 cards）。──
+    // PokerHand(REQ-011) 出牌型基础分；PerCardScore(REQ-014) 在其上逐张累加 baseChips（chips = 牌型基础 + Σ每张牌）。
     table: {
       PokerHand: { rankingTable: buildRankingTable(), chipsResource: R_CHIPS, multResource: R_MULT, handTypeVar: V_HAND_TYPE },
+      PerCardScore: { chipsResource: R_CHIPS, baseChipsByRank: BASE_CHIPS_BY_RANK },
       PlayedHand: { cards: [] as Card[] },
     } as unknown as EntityBlueprint,
 
@@ -131,6 +145,7 @@ export function buildGameEBlueprint(): WorldBlueprint {
       flagCapability,
       stringVariableCapability,
       pokerHandCapability,
+      cardScoringCapability, // REQ-014：逐张 baseChips 累加 + 逐张小丑 + retrigger
       eventWhenCapability,
       effectApplyCapability,
     ],
