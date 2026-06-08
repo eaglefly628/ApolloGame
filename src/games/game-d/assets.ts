@@ -28,28 +28,46 @@ const walkLegs = (x: number, ly: number, leg: string, phase: number): string =>
       ? `<rect x="${x + 7}" y="${ly + 1}" width="4" height="4" fill="${leg}"/><rect x="${x + 14}" y="${ly}" width="4" height="5" fill="${leg}"/>`
       : `<rect x="${x + 8}" y="${ly}" width="4" height="5" fill="${leg}"/><rect x="${x + 13}" y="${ly}" width="4" height="5" fill="${leg}"/>`;
 
-// 一帧英雄（蓝甲+眼+摆腿，1/3 身体起伏 -1）。
+// 一帧英雄（蓝甲+眼+摆腿，1/3 身体起伏 -1）。右侧"朝前"亮条 → facing 翻转可读。
 const heroFrame = (x: number, phase: number): string => {
   const bob = phase === 1 || phase === 3 ? -1 : 0;
   return (
     `<rect x="${x + 3}" y="${3 + bob}" width="18" height="14" rx="5" fill="rgb(56,120,230)" stroke="rgb(180,210,255)" stroke-width="1.1"/>` +
-    `<circle cx="${x + 9}" cy="${9 + bob}" r="1.8" fill="white"/><circle cx="${x + 15}" cy="${9 + bob}" r="1.8" fill="white"/>` +
+    `<circle cx="${x + 10}" cy="${9 + bob}" r="1.8" fill="white"/><circle cx="${x + 16}" cy="${9 + bob}" r="1.8" fill="white"/>` +
+    `<rect x="${x + 19}" y="${7 + bob}" width="2.4" height="6" rx="1" fill="rgb(150,205,255)"/>` +
     walkLegs(x, 18 + bob, '#2a5fb0', phase)
   );
 };
-// 一帧敌人（红魔+角+眼+摆腿）。
+// 一帧敌人（红魔+角+眼+摆腿）。右侧"朝前"亮条。
 const enemyFrame = (x: number, phase: number): string => {
   const bob = phase === 1 || phase === 3 ? -1 : 0;
   return (
     `<path d="M${x + 4} ${6 + bob} L${x + 7} ${2 + bob} L${x + 9} ${6 + bob} Z" fill="rgb(120,20,20)"/>` +
     `<path d="M${x + 18} ${6 + bob} L${x + 15} ${2 + bob} L${x + 13} ${6 + bob} Z" fill="rgb(120,20,20)"/>` +
     `<rect x="${x + 4}" y="${4 + bob}" width="16" height="14" rx="4" fill="rgb(210,55,55)" stroke="rgb(120,20,20)" stroke-width="1.1"/>` +
-    `<circle cx="${x + 9}" cy="${10 + bob}" r="1.8" fill="rgb(255,230,120)"/><circle cx="${x + 15}" cy="${10 + bob}" r="1.8" fill="rgb(255,230,120)"/>` +
+    `<circle cx="${x + 10}" cy="${10 + bob}" r="1.8" fill="rgb(255,230,120)"/><circle cx="${x + 16}" cy="${10 + bob}" r="1.8" fill="rgb(255,230,120)"/>` +
+    `<rect x="${x + 19}" y="${8 + bob}" width="2.4" height="6" rx="1" fill="rgb(255,150,120)"/>` +
     walkLegs(x, 18 + bob, '#7a1414', phase)
   );
 };
+// 一帧敌人攻击扑击（身体前倾 + 前爪伸出 + 张口）。phase 0/1 做出击-收回两态。
+const enemyAttackFrame = (x: number, phase: number): string => {
+  const lunge = phase === 0 ? 3 : 1; // 前冲量
+  return (
+    `<path d="M${x + 4} 6 L${x + 7} 2 L${x + 9} 6 Z" fill="rgb(120,20,20)"/>` +
+    `<path d="M${x + 18} 6 L${x + 15} 2 L${x + 13} 6 Z" fill="rgb(120,20,20)"/>` +
+    `<rect x="${x + 3}" y="4" width="16" height="14" rx="4" fill="rgb(225,60,50)" stroke="rgb(120,20,20)" stroke-width="1.1"/>` +
+    `<circle cx="${x + 10}" cy="10" r="2" fill="rgb(255,90,60)"/><circle cx="${x + 16}" cy="10" r="2" fill="rgb(255,90,60)"/>` +
+    // 前爪（向前伸出，随 lunge 更长）
+    `<rect x="${x + 19}" y="9" width="${2 + lunge}" height="2" fill="rgb(255,200,140)"/>` +
+    `<rect x="${x + 19}" y="13" width="${1 + lunge}" height="2" fill="rgb(255,200,140)"/>` +
+    walkLegs(x, 18, '#7a1414', 0)
+  );
+};
 const heroSheetSvg = [0, 1, 2, 3].map((i) => heroFrame(i * 24, i)).join('');
-const enemySheetSvg = [0, 1, 2, 3].map((i) => enemyFrame(i * 24, i)).join('');
+// 敌人 6 帧：0-3 走路，4-5 攻击扑击。
+const enemySheetSvg =
+  [0, 1, 2, 3].map((i) => enemyFrame(i * 24, i)).join('') + [0, 1].map((i) => enemyAttackFrame((4 + i) * 24, i)).join('');
 
 export const GAME_D_ASSETS: AssetManifest = [
   // 英雄：蓝甲骑士占位。
@@ -168,14 +186,14 @@ export const GAME_D_ASSETS: AssetManifest = [
     columns: 4,
     count: 4,
   },
-  // 敌人走路 sheet：4 帧 × 24px。
+  // 敌人 sheet：6 帧 × 24px（0-3 走路、4-5 攻击扑击）。
   {
     kind: 'sprite-sheet',
     key: ASSET_ENEMY_SHEET,
-    src: svg(enemySheetSvg, 96, 24),
+    src: svg(enemySheetSvg, 144, 24),
     frameWidth: 24,
     frameHeight: 24,
-    columns: 4,
-    count: 4,
+    columns: 6,
+    count: 6,
   },
 ];

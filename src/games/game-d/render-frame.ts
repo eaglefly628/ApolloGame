@@ -13,8 +13,8 @@ const innerSvg = (src: string): string => decodeURIComponent(src.slice(PREFIX.le
 const e = new Engine({ tickRate: 60 });
 e.load(buildGameDBlueprint());
 
-// 让怪追近英雄。
-for (let i = 0; i < 26; i++) e.world.tick();
+// 让怪追到英雄身边（部分进入攻击距离 → 播攻击动画）。
+for (let i = 0; i < 100; i++) e.world.tick();
 // 在最近的怪身上放冰霜新星（展示冰环 + 冻住）。
 const a = e.world.getComponent<Transform>('enemy_a', 'Transform')!;
 e.world.createEntity('shot');

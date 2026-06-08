@@ -14,6 +14,7 @@ import {
   keybindCapability,
   tilemapCapability,
   animStateCapability,
+  facingCapability,
   collisionResolveCapability,
   cameraFollowCapability,
 } from '@skills/tier2/index.js';
@@ -23,10 +24,23 @@ import { ASSET_LOOT, ASSET_NOVA, ASSET_SMASH, ASSET_FLAME, ASSET_HERO_SHEET, ASS
 import { buildDungeonRoom } from './map.js';
 
 const sprite = (textureKey: string, zOrder: number): Record<string, unknown> => ({ textureKey, anchorX: 0.5, anchorY: 0.5, zOrder });
-// 走/站动画：走路 4 帧循环、静止单帧。anim-state 按 Velocity 自动切（移动→walk、静止→idle）。
-const ANIM_CLIPS = { walk: { from: 0, count: 4, fps: 6, loop: true }, idle: { from: 0, count: 1, fps: 1, loop: false } };
-const animState = (): Record<string, unknown> => ({ clips: ANIM_CLIPS, moveClip: 'walk', idleClip: 'idle', current: 'idle', elapsed: 0 });
-const frame = (): Record<string, unknown> => ({ index: 0, total: 4 });
+// 动画 clip：走路 4 帧循环、静止单帧、攻击 2 帧（敌人 sheet 第 4-5 帧）。
+// anim-state 自动切：移动→walk、站定且有目标→attack(敌人)、否则 idle。
+const ANIM_CLIPS = {
+  walk: { from: 0, count: 4, fps: 6, loop: true },
+  idle: { from: 0, count: 1, fps: 1, loop: false },
+  attack: { from: 4, count: 2, fps: 5, loop: true },
+};
+const animState = (withAttack: boolean): Record<string, unknown> => ({
+  clips: ANIM_CLIPS,
+  moveClip: 'walk',
+  idleClip: 'idle',
+  ...(withAttack ? { attackClip: 'attack' } : {}),
+  current: 'idle',
+  elapsed: 0,
+});
+const frame = (total: number): Record<string, unknown> => ({ index: 0, total });
+const facing = (mode: 'velocity' | 'target'): Record<string, unknown> => ({ mode });
 
 // ═══════════════════════════════════════════════════════════════
 //  Game D —— 暗黑类 ARPG 垂直切片（PoC）。**纯数据装配**，零游戏专属代码。
@@ -129,8 +143,9 @@ function enemy(x: number, y: number): EntityBlueprint {
     Steering: { mode: 'seek', speed: 1, stopRange: 18, haltStatusMask: STATUS_FROZEN },
     Mortal: { resource: 'hp', atOrBelow: 0, dropTemplate: 'loot' },
     Sprite: sprite(ASSET_ENEMY_SHEET, 4),
-    Frame: frame(),
-    AnimState: animState(), // 追逐时自动播走路动画
+    Frame: frame(6),
+    AnimState: animState(true), // 追逐播走路、追到你身边站定播攻击扑击
+    Facing: facing('target'), // 面朝追逐的目标（英雄）
   } as unknown as EntityBlueprint;
 }
 
@@ -156,8 +171,9 @@ export function buildGameDBlueprint(): WorldBlueprint {
       Mortal: { resource: 'hp', atOrBelow: 0 },
       Perception: { targetTag: TEAM_ENEMY, sightRadius: 0 },
       Sprite: sprite(ASSET_HERO_SHEET, 5),
-      Frame: frame(),
-      AnimState: animState(), // WASD 移动时自动播走路动画
+      Frame: frame(4),
+      AnimState: animState(false), // WASD 移动播走路、静止站立
+      Facing: facing('velocity'), // 面朝移动方向
     } as unknown as EntityBlueprint,
 
     // 技能栏（数据）：每把技能一个 Caster 实体（引擎一实体一 Caster），at:'target' 锚英雄(originEntity)自动索敌。
@@ -206,7 +222,8 @@ export function buildGameDBlueprint(): WorldBlueprint {
       lifetimeCapability,
       // 表现
       cameraFollowCapability,
-      animStateCapability, // 走/站动作动画（Commit 相位，读最终速度）
+      animStateCapability, // 走/站/攻击动作动画（Commit 相位，读最终速度）
+      facingCapability, // 朝向翻转（面朝移动/目标）
     ],
     entities,
   };

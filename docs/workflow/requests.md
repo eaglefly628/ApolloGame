@@ -614,6 +614,13 @@
 > - **game-d**：英雄/怪改用 4 帧走路 sprite-sheet（SVG 占位，摆腿+起伏）+ Frame + AnimState → **移动自动播走路、静止站立**。怪物等级=纯数据（prefab 模板+数值），引擎不加码（已回驳"要新能力"）。
 > - **后续未做**：VFX 打击感 → dungeon 生成(Hades) → 掉落/装备。怪物 AI 深度设计（巡逻/警戒/攻击模式/精英/成群）= 后续，靠 state+condition+aggro/steering **加数据不加代码**。
 
+> **✅ 第七批（2026-06-08，Programmer D）—— 精灵动画加厚：攻击动画 + 朝向（660 passed / tsc / build 全绿）**：
+> 用户定调"动画系统天花板=Live2D"，但**先做精灵动画为主**（Live2D/骨骼搁置，待用户再想）。讨论结论：动画系统是"统一 rig（姿态快照+挂点 Socket+驱动 System+可插拔后端）"，精灵/Spine/Live2D/3D 预渲染都是后端；周期表 X1 skeletal-pose / X2 socket 已预埋；Socket(挂点) 是最该先落的（一箭双雕：动画挂载+装备穿戴），不依赖外部 SDK——**待用户决定**。
+> - **anim-state 加 `attackClip`**：自动派生——站定且有 Relation(target)（追到你身边）→ 播攻击；移动→走；无目标→站。零信号、零新耦合（复用已读 Velocity/Relation）。
+> - **新 `@skills/tier2/facing`**（Commit 相位，表现层）：按移动(velocity)/目标(Relation target)方向翻转 Transform.scaleX（碰撞/命中已 abs，安全）；静止保持上次朝向。
+> - **game-d**：敌人 sheet 加 2 帧攻击扑击（6 帧）+ 朝前亮条让翻转可读；英雄/怪挂 Facing + 敌人 attackClip。怪追到你身边**站定播攻击**、**面朝目标**。
+> - **诚实**：骨骼/Live2D 运行时(Spine/Cubism/Rive)都是外部 SDK+WebGL，本环境(无 chromium)没法验证渲染；能在此做实做绿的是数据层(SkeletalPose+Socket+驱动 System)。
+
 ---
 
 ### REQ-009 · [2026-06-06] · PA · Game A · status: open · 优先级: **P1** · 类型: 真缺口（事件→重置/启动计时器）
