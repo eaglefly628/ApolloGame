@@ -722,6 +722,21 @@
 
 ---
 
+### REQ-015 · [2026-06-08] · 并行 session（coop-vs-Boss MVP 设计稿）· status: **wontfix（已被现有能力覆盖）** · 类型: Lead 对账 / 去重
+
+**标题**：`pattern-score` 新能力提案 —— 回驳，与已落地 `poker-hand`（REQ-011）功能等价
+
+- **背景**：`docs/game-design/balatro-coop-vs-boss.md` 把 `pattern-score`（"对一组牌的花色/点数多重集求值 → 命中最高优先级牌型 → 产 chips/mult"）列为"唯一核心新能力"。但这与周期表已落地的 `poker-hand`（REQ-011）**功能等价**；该提案大概率写于 REQ-011 落地同期、未及对账。
+- **Lead 裁决（manifesto §4：已被现有能力覆盖 → 回驳，给等价数据写法）**：
+  - 等价映射：提案 `patterns:[{name,when:"5 same suit",chips,mult}]` = `poker-hand` 的 `rankingTable:{flush:{chips,mult}}` + 引擎内置牌型求值器；"命中最高优先级" = `poker-hand` 优先链；"产 ScorePacket" = `poker-eval` 写 chips/mult Resource。
+  - **且 `poker-hand` 是更优设计**：牌型判定**固定内置**（12 型 + rankMaxCount/pairCount/isStraight/isFlush 派生原语供 condition 组合"含某型"），**不需要**提案里 `when:"3 of a kind + pair"` 那种**字符串谓词 DSL**（要写解析器 = 逼近自由代码，违纲领）。
+  - 结论：**不另立 `pattern-score`**。coop-vs-Boss 的认牌型直接挂 `poker-hand`（REQ-011），牌型表即数据。若将来出现**非扑克**牌面图案需求（如"凑和=15"），再单独评估——当前 YAGNI。
+- **顺带对账**（同文档另两项）：
+  - `reduce-chain`（顺序敏感小丑 / 有序累加器折叠）：扁平+有序+乘法主流情形**已被 REQ-012（`Effect.order`）+ REQ-013（`valueFrom`）覆盖**。仅"队列小丑/流经站数"这类**跨结算累积状态**是残差，**MVP 缓做**（与文档自评一致）。
+  - `card-pile`（牌库/抽弃/确定性洗牌）：与 REQ-014 备注同——**先验证 random+spawn+state+zone 重组**，别扭再下沉小助手，不预先提单（YAGNI）。
+
+---
+
 ## 需求模板（复制这段填写）
 
 ```
