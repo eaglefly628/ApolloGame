@@ -95,6 +95,31 @@ export function evaluateHand(cards: readonly Card[]): HandEval {
   return { type, rankCounts, suitCounts, isFlush, isStraight };
 }
 
+// 「计分牌」集合（Balatro：只有构成牌型的牌计分，垫牌 kicker 不计分；BUG-001 修复）。
+// 全员计分的牌型（牌都属于牌型）：straight/flush/full-house/straight-flush/five-of-a-kind/flush-house/flush-five。
+// 计数型（只算构成牌型的那几张）：pair/two-pair/three/four=点数计数≥2 的牌；high-card=最高单张。
+// 返回原始出牌下标（有序），供 card-scoring 逐张 pass 只在计分牌上累加 baseChips / 触发逐张小丑。
+const ALL_SCORE_TYPES: ReadonlySet<HandType> = new Set([
+  'straight', 'flush', 'full-house', 'straight-flush', 'five-of-a-kind', 'flush-house', 'flush-five',
+]);
+export function scoringCardIndices(cards: readonly Card[]): number[] {
+  if (cards.length === 0) return [];
+  const e = evaluateHand(cards);
+  if (ALL_SCORE_TYPES.has(e.type)) return cards.map((_, i) => i);
+  // 计数型：计分牌 = 点数计数≥2 的牌（pair 一种点、two-pair 两种、three/four 各一种）。
+  const scoringRanks = new Set<number>();
+  for (const [rank, count] of e.rankCounts) if (count >= 2) scoringRanks.add(rank);
+  if (scoringRanks.size > 0) {
+    const idx: number[] = [];
+    cards.forEach((c, i) => { if (scoringRanks.has(c.rank)) idx.push(i); });
+    return idx;
+  }
+  // 高牌：仅最高单张（A=14 最高；无对子故最高点唯一，取首个匹配下标确定性）。
+  let best = 0;
+  for (let i = 1; i < cards.length; i++) if (cards[i].rank > cards[best].rank) best = i;
+  return [best];
+}
+
 // ── 系统副作用 helper：按 id 全局定位并写 Resource.current（set 基础值，钳 [min,max]）/ StringVar.value。──
 function setResourceBase(world: IWorld, resourceId: string, value: number): void {
   if (!resourceId) return;

@@ -2,6 +2,7 @@ import { defineCapability } from '@engine/core/define-capability.js';
 import { SystemPhase } from '@engine/core/types.js';
 import type { IWorld } from '@engine/core/types.js';
 import type { Card, PlayedHand, PerCardScore, PerCardRule, PerCardRetrigger, PerCardWhen, Resource } from '@engine/protocol/components.js';
+import { scoringCardIndices } from './poker-hand.js';
 
 // ═══════════════════════════════════════════════════════════════
 //  card-scoring —— 「逐张计分 pass」（REQ-014；Tier3「算法/解释器型机制」，poker-hand 的伴生件）。
@@ -152,17 +153,20 @@ export const cardScoringCapability = defineCapability({
           if (played.cards.length === 0) continue; // 无出牌 → 不结算（与 poker-eval 一致）
 
           const lk = lookup();
-          for (let index = 0; index < played.cards.length; index++) {
-            const c = played.cards[index];
+          // BUG-001 修复：只遍历**计分牌**（构成牌型的牌；垫牌 kicker 不计分），按计分序重排下标。
+          // index = 计分序位置（非原始出牌位置）→ "首张计分牌"(Hanging Chad)/逐张小丑都对齐 Balatro 语义。
+          const scoringIdx = scoringCardIndices(played.cards);
+          for (let pos = 0; pos < scoringIdx.length; pos++) {
+            const c = played.cards[scoringIdx[pos]];
             // 本张计分次数 = 1 + Σ 命中该牌的 retrigger.extra。
             let repeats = 1;
-            for (const rt of retriggers) if (matchPerCardWhen(rt.when, c, index)) repeats += rt.extra;
+            for (const rt of retriggers) if (matchPerCardWhen(rt.when, c, pos)) repeats += rt.extra;
             const baseChips = cfg.baseChipsByRank[String(c.rank)] ?? 0;
 
             for (let r = 0; r < repeats; r++) {
               if (baseChips !== 0) applyToResource(lk, cfg.chipsResource, 'add', baseChips);
               for (const { rule } of rules) {
-                if (matchPerCardWhen(rule.when, c, index)) applyToResource(lk, rule.targetResource, rule.op ?? 'add', rule.value);
+                if (matchPerCardWhen(rule.when, c, pos)) applyToResource(lk, rule.targetResource, rule.op ?? 'add', rule.value);
               }
             }
           }

@@ -293,3 +293,33 @@ describe('poker-eval + effect-apply 集成（REQ-011 ⊕ REQ-012 = Balatro 计�
     expect(res(w, 'mult')).toBe(3); // 基础 2 ×1.5 小丑
   });
 });
+
+// ── scoringCardIndices：计分牌集（BUG-001）—— 只有构成牌型的牌计分，垫牌不算 ──
+import { scoringCardIndices } from './poker-hand.js';
+describe('poker scoringCardIndices — 计分牌（垫牌 kicker 不计分）', () => {
+  it('高牌：只最高单张', () => {
+    expect(scoringCardIndices([c(0, 2), c(1, 5), c(2, 7), c(3, 9), c(0, K)])).toEqual([4]); // K 最高
+  });
+  it('对子：成对两张（垫牌不计）', () => {
+    expect(scoringCardIndices([c(0, 5), c(1, 5), c(2, 2), c(3, 7), c(0, 9)])).toEqual([0, 1]);
+  });
+  it('两对：四张（两组对子）', () => {
+    expect(scoringCardIndices([c(0, 5), c(1, 5), c(2, 9), c(3, 9), c(0, 2)])).toEqual([0, 1, 2, 3]);
+  });
+  it('三条：三张（垫牌不计）', () => {
+    expect(scoringCardIndices([c(0, 6), c(1, 6), c(2, 6), c(3, 2), c(0, 9)])).toEqual([0, 1, 2]);
+  });
+  it('四条：四张（第 5 张垫牌不计）', () => {
+    expect(scoringCardIndices([c(0, 9), c(1, 9), c(2, 9), c(3, 9), c(0, 2)])).toEqual([0, 1, 2, 3]);
+  });
+  it('同花：全 5 张计分', () => {
+    expect(scoringCardIndices([c(1, 2), c(1, 5), c(1, 7), c(1, 9), c(1, K)])).toEqual([0, 1, 2, 3, 4]);
+  });
+  it('顺子：全 5 张计分', () => {
+    expect(scoringCardIndices([c(0, 5), c(1, 6), c(2, 7), c(3, 8), c(0, 9)])).toEqual([0, 1, 2, 3, 4]);
+  });
+  it('葫芦：全 5 张计分（3+2 都属牌型）', () => {
+    expect(scoringCardIndices([c(0, 7), c(1, 7), c(2, 7), c(3, 4), c(0, 4)])).toEqual([0, 1, 2, 3, 4]);
+  });
+  it('空手牌 → 空', () => expect(scoringCardIndices([])).toEqual([]));
+});

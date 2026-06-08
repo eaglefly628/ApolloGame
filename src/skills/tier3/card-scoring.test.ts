@@ -89,72 +89,85 @@ describe('card-score-pass — 逐张 baseChips 累加', () => {
     w.tick();
     expect(res(w, 'chips')).toBe(77);
   });
-  it('幂等：重复 tick 不重复累加（每 tick 从 0 重算需上游 set；本测无上游 → 会累加，证明"add 语义"成立）', () => {
-    // 注：本能力是 add；幂等由上游 poker-eval 每 tick set 基础分保证（见集成测）。此处单独 tick 一次验加法本身。
+  it('BUG-001：高牌只计最高单张（垫牌不计分）—— [2,3] → 只加 3', () => {
+    // 高牌 = 只有最高单张是计分牌（Balatro），2 是垫牌不加 baseChips。
     const w = loadPass([c(0, 2), c(0, 3)]);
     w.tick();
-    expect(res(w, 'chips')).toBe(5);
+    expect(res(w, 'chips')).toBe(3);
+  });
+  it('BUG-001：对子只计成对的两张（垫牌不计分）—— [5,5,2,9,K] 只加 5+5=10', () => {
+    const w = loadPass([c(0, 5), c(1, 5), c(2, 2), c(3, 9), c(0, K)]); // 注：非同花，对子 5
+    w.tick();
+    expect(res(w, 'chips')).toBe(10); // 仅两张 5（垫牌 2/9/K 不计）
   });
 });
 
-describe('card-score-pass — 逐张小丑规则（PerCardRule）', () => {
-  it('Greedy：每张♦ +3 mult（手里 3 张♦ → +9）', () => {
-    const w = loadPass([c(DIAMONDS, 2), c(DIAMONDS, 5), c(DIAMONDS, 9), c(HEARTS, 7), c(0, K)], {
+describe('card-score-pass — 逐张小丑规则（PerCardRule，仅计分牌触发）', () => {
+  it('Greedy：每张计分♦ +3 mult（同花♦ 全计分 → 5×3=+15）', () => {
+    // 用♦同花使 5 张全是计分牌（BUG-001 后逐张小丑只在计分牌触发）。
+    const w = loadPass([c(DIAMONDS, 2), c(DIAMONDS, 5), c(DIAMONDS, 7), c(DIAMONDS, 9), c(DIAMONDS, K)], {
       rules: [{ id: 'greedy', rule: { when: { kind: 'suit', suit: DIAMONDS }, op: 'add', targetResource: 'mult', value: 3 } }],
     });
     w.tick();
-    expect(res(w, 'mult')).toBe(9);
+    expect(res(w, 'mult')).toBe(15);
   });
-  it('Scary Face：每张人头 +30 chips（叠加在 baseChips 上）', () => {
-    const w = loadPass([c(0, K), c(0, Q), c(0, 5)], {
+  it('Scary Face：每张计分人头 +30 chips（同花含 K,Q → +60）', () => {
+    const w = loadPass([c(0, K), c(0, Q), c(0, 2), c(0, 5), c(0, 9)], { // 同花，全计分
       rules: [{ id: 'scary', rule: { when: { kind: 'rankIn', ranks: [J, Q, K] }, op: 'add', targetResource: 'chips', value: 30 } }],
     });
     w.tick();
-    // baseChips: K10+Q10+5 = 25；Scary: K,Q 两张人头 ×30 = 60 → 85
-    expect(res(w, 'chips')).toBe(85);
+    // baseChips K10+Q10+2+5+9=36；Scary K,Q 两人头 ×30=60 → 96
+    expect(res(w, 'chips')).toBe(96);
   });
-  it('Even Steven：每张偶(rankIn[2,4,6,8,10]) +4 mult', () => {
-    const w = loadPass([c(0, 2), c(0, 4), c(0, 7), c(0, A)], {
+  it('Even Steven：每张计分偶 +4 mult（同花含 2,4 → +8）', () => {
+    const w = loadPass([c(0, 2), c(0, 4), c(0, 7), c(0, 9), c(0, J)], { // 同花，全计分
       rules: [{ id: 'even', rule: { when: { kind: 'rankIn', ranks: [2, 4, 6, 8, 10] }, op: 'add', targetResource: 'mult', value: 4 } }],
     });
     w.tick();
     expect(res(w, 'mult')).toBe(8); // 2 张偶(2,4) ×4
   });
-  it('钳上下限：mult 超 max 钳住', () => {
-    const w = loadPass([c(DIAMONDS, 2), c(DIAMONDS, 5)], {
+  it('钳上下限：mult 超 max 钳住（♦同花 5×3=15 钳到 5）', () => {
+    const w = loadPass([c(DIAMONDS, 2), c(DIAMONDS, 5), c(DIAMONDS, 7), c(DIAMONDS, 9), c(DIAMONDS, J)], {
       rules: [{ id: 'greedy', rule: { when: { kind: 'suit', suit: DIAMONDS }, op: 'add', targetResource: 'mult', value: 3 } }],
       max: 5,
     });
     w.tick();
-    expect(res(w, 'mult')).toBe(5); // 3+3=6 钳到 5
+    expect(res(w, 'mult')).toBe(5); // 15 钳到 5
+  });
+  it('BUG-001：垫牌上的逐张小丑不触发 —— ♦垫牌在高牌里不算（Greedy +0）', () => {
+    // [♦2,♦5,♦9,♥7,♠K] 是高牌 → 只有最高单张 K(♠) 计分；♦ 都是垫牌 → Greedy 不触发。
+    const w = loadPass([c(DIAMONDS, 2), c(DIAMONDS, 5), c(DIAMONDS, 9), c(HEARTS, 7), c(0, K)], {
+      rules: [{ id: 'greedy', rule: { when: { kind: 'suit', suit: DIAMONDS }, op: 'add', targetResource: 'mult', value: 3 } }],
+    });
+    w.tick();
+    expect(res(w, 'mult')).toBe(0); // 计分牌只有 K(♠)，无♦计分
   });
 });
 
-describe('card-score-pass — retrigger（核心：聚合表达不了的乘性耦合）', () => {
-  it('Hanging Chad：首张 +2 重触发 → 首张 baseChips 计 3 次', () => {
-    const w = loadPass([c(0, 5), c(0, 7)], {
+describe('card-score-pass — retrigger（核心：聚合表达不了的乘性耦合；index=计分序）', () => {
+  it('Hanging Chad：首张计分牌 +2 重触发 → 该牌 baseChips 计 3 次（对子5,5 → 5×3+5=20）', () => {
+    const w = loadPass([c(0, 5), c(1, 5)], { // 对子 5，两张都计分；pos0=首张5
       retriggers: [{ id: 'chad', rt: { when: { kind: 'index', eq: 0 }, extra: 2 } }],
     });
     w.tick();
-    // 首张5 ×3次 = 15；次张7 ×1 = 7 → 22
-    expect(res(w, 'chips')).toBe(22);
+    expect(res(w, 'chips')).toBe(20); // 首5 ×3=15 + 次5 ×1=5
   });
-  it('★retrigger × 逐张小丑 乘性耦合：首张♦被 Greedy 命中，重触发 → +3 ×3 = +9（非 +3）', () => {
-    const w = loadPass([c(DIAMONDS, 5), c(HEARTS, 7)], {
+  it('★retrigger × 逐张小丑 乘性耦合：首张计分♦被 Greedy 命中且重触发 → +3 ×3 = +9', () => {
+    const w = loadPass([c(DIAMONDS, 5), c(HEARTS, 5)], { // 对子5，pos0=♦5（计分），pos1=♥5
       rules: [{ id: 'greedy', rule: { when: { kind: 'suit', suit: DIAMONDS }, op: 'add', targetResource: 'mult', value: 3 } }],
       retriggers: [{ id: 'chad', rt: { when: { kind: 'index', eq: 0 }, extra: 2 } }],
     });
     w.tick();
-    // 首张♦：Greedy 触发 1+2=3 次 → +9 mult。这正是 `count(♦)×3`=3 表达不了的（位置耦合）。
+    // pos0=♦5 被 Greedy 命中 + Chad 重触发 → 3 次 = +9 mult。聚合 count(♦)×3=3 表达不了。
     expect(res(w, 'mult')).toBe(9);
   });
-  it('retrigger 不命中的牌不重复（index!=0 的牌正常 1 次）', () => {
-    const w = loadPass([c(0, 5), c(DIAMONDS, 9)], {
+  it('retrigger 只重触发首张计分牌：♦ 在计分序 pos1（非首）→ Greedy 只 1 次 = +3', () => {
+    const w = loadPass([c(HEARTS, 5), c(DIAMONDS, 5)], { // 对子5，pos0=♥5（被Chad重触发但非♦），pos1=♦5
       rules: [{ id: 'greedy', rule: { when: { kind: 'suit', suit: DIAMONDS }, op: 'add', targetResource: 'mult', value: 3 } }],
       retriggers: [{ id: 'chad', rt: { when: { kind: 'index', eq: 0 }, extra: 2 } }],
     });
     w.tick();
-    // ♦ 在 index1（非首张）→ Greedy 只 1 次 = +3
+    // ♦5 在 pos1（非首）→ Greedy 只 1 次 = +3（首张♥5 重触发但非♦，不加 mult）。
     expect(res(w, 'mult')).toBe(3);
   });
 });

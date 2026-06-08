@@ -748,7 +748,9 @@
 
 ---
 
-### BUG-001 · [2026-06-08] · PE（Game E 试玩复现）· 引擎 card-scoring（REQ-014）· status: **open** · 优先级: **P1（算分错误）**
+### BUG-001 · [2026-06-08] · PE（Game E 试玩复现）· 引擎 card-scoring（REQ-014）· status: **done**（2026-06-08，主程4）· 优先级: **P1（算分错误）**
+
+> ✅ **修复（主程4，按 PE 建议补丁，全绿）**：`poker-hand.ts` 新增导出纯函数 `scoringCardIndices(cards)`（全员计分牌型→全部；计数型→点数计数≥2 的牌；高牌→最高单张）；`card-score-pass` 改为只遍历计分牌（`scoringCardIndices` 过滤），且 `index` 改为**计分序位置**（首张计分牌=pos0，对齐 Balatro retrigger/逐张语义）。**严守 PE 注意点**：`PlayedHand.cards` 保留全部出牌不删（poker-eval 判型 + Half Joker 按张数判数仍准）；只在「加 baseChips/触发逐张规则」时过滤。逐张小丑（Greedy 等）现只在计分牌触发。已重算 card-scoring/joker-wiring/game-e 受影响断言为 Balatro 语义 + 加 BUG-001 回归测（垫牌不计、高牌只计最高单张、对子只计两张）+ poker-hand 加 9 条 scoringCardIndices 直测。tsc+vitest+build 全绿。
 
 **标题**：逐张计分把**全部出牌**都加 baseChips，应只算「计分牌」（垫牌 kicker 不计分）
 

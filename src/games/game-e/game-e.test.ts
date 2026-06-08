@@ -67,14 +67,14 @@ describe('game-e · 真引擎完整一手计分（REQ-011/012/013 全链）', ()
     expect(res(e, R_HAND_SCORE)).toBe(3024); // 126 × 24（REQ-013 资源×资源）
   });
 
-  it('出对子：Jolly 触发，先加后乘 → 104×42=4368', () => {
+  it('出对子：Jolly 触发，先加后乘 → 88×42=3696（BUG-001：仅两张K计分）', () => {
     const e = boot();
     play(e, [card(0, 13), card(3, 13), card(0, 2), card(1, 5), card(2, 9)]);
     tick(e, 5);
     expect(handType(e)).toBe('pair');
-    expect(res(e, R_CHIPS)).toBe(104); // 10 +逐张(K10+K10+2+5+9=36) +50 +8
+    expect(res(e, R_CHIPS)).toBe(88); // 10 +计分牌两张K(10+10=20) +50 +8；垫牌2/5/9 不计
     expect(res(e, R_MULT)).toBe(42); // (2 +4 +8) ×3
-    expect(res(e, R_HAND_SCORE)).toBe(4368);
+    expect(res(e, R_HAND_SCORE)).toBe(3696);
   });
 
   it('order 决定结果：先乘后加会是 (2×3)+4+8=18 ≠ 42 → 有序结算生效', () => {
@@ -99,7 +99,7 @@ describe('game-e · 真引擎完整一手计分（REQ-011/012/013 全链）', ()
     play(e, [card(0, 7), card(1, 7), card(2, 7), card(0, 2), card(3, 9)], false);
     tick(e, 3);
     expect(handType(e)).toBe('three-of-a-kind');
-    expect(res(e, R_CHIPS)).toBe(62); // 30 牌型基础 +逐张(7+7+7+2+9=32)，逐张是基础分预览不门控 scoring
+    expect(res(e, R_CHIPS)).toBe(51); // 30 牌型基础 +计分牌三张7(7+7+7=21)；垫牌2/9 不计（BUG-001）
     expect(res(e, R_MULT)).toBe(3);
     expect(res(e, R_HAND_SCORE)).toBe(0); // 无 score 信号 → 小丑/合并不结算
   });
@@ -186,8 +186,8 @@ describe('game-e · 回合循环（边沿 commit：累加/递减一次）', () =
   it('出两手：round_score 跨手累加、hands_left 递减两次', () => {
     const e = boot();
     commit(e, [card(1, 2), card(1, 5), card(1, 7), card(1, 9), card(1, 11)]); // flush 3024
-    commit(e, [card(0, 13), card(3, 13), card(0, 2), card(1, 5), card(2, 9)]); // pair 4368
-    expect(res(e, R_ROUND_SCORE)).toBe(3024 + 4368);
+    commit(e, [card(0, 13), card(3, 13), card(0, 2), card(1, 5), card(2, 9)]); // pair 3696（BUG-001 后）
+    expect(res(e, R_ROUND_SCORE)).toBe(3024 + 3696);
     expect(res(e, R_HANDS_LEFT)).toBe(2);
   });
 

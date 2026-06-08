@@ -35,7 +35,7 @@ export { aggroCapability } from './aggro.js';
 // poker-hand（REQ-011）：算法/解释器型机制——扑克牌型评估（高牌…同花顺/五条/同花葫芦/同花五），
 // 读 PlayedHand 判最高牌型 → 按 rankingTable set 基础 chips/mult。与 match3-board/tilemap 同构（数据=牌，引擎=判型）。
 // 选牌/洗牌/盲注/小丑全用现有 clickable/random/condition/effect-apply(op,REQ-012) 重组——本能力只补"判牌型"真缺口。
-export { pokerHandCapability, evaluateHand, isStraightRanks } from './poker-hand.js';
+export { pokerHandCapability, evaluateHand, isStraightRanks, scoringCardIndices } from './poker-hand.js';
 export type { HandType, HandEval } from './poker-hand.js';
 
 // card-scoring（REQ-014）：poker-hand 的逐张计分伴生件——按序遍历 PlayedHand.cards，逐张累加 baseChips +

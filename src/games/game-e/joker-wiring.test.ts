@@ -104,11 +104,11 @@ describe('joker-wiring · 真引擎单小丑涌现（手工推导）', () => {
     expect(res(e, R_HAND_SCORE)).toBe(1292);
   });
 
-  it('Jolly 含对子触发：对子 chips 10+36=46, mult 2+8=10 → 460', () => {
+  it('Jolly 含对子触发：对子只计两张K chips 10+20=30, mult 2+8=10 → 300（BUG-001：垫牌不计）', () => {
     const e = playOne(['jolly_joker'], [card(0, 13), card(3, 13), card(0, 2), card(1, 5), card(2, 9)]);
-    expect(res(e, R_CHIPS)).toBe(46);
+    expect(res(e, R_CHIPS)).toBe(30); // 牌型基础10 + 计分牌两张K(10+10=20)；垫牌2/5/9 不计
     expect(res(e, R_MULT)).toBe(10);
-    expect(res(e, R_HAND_SCORE)).toBe(460);
+    expect(res(e, R_HAND_SCORE)).toBe(300);
   });
 
   it('Jolly 高牌不触发：高牌 mult 仍 1（rankMaxCount=1<2，门不开）', () => {
@@ -116,11 +116,11 @@ describe('joker-wiring · 真引擎单小丑涌现（手工推导）', () => {
     expect(res(e, R_MULT)).toBe(1);
   });
 
-  it('Half Joker 出 3 张触发：高牌3张 chips 5+14=19, mult 1+20=21 → 399', () => {
+  it('Half Joker 出 3 张触发：高牌只计最高单张 chips 5+7=12, mult 1+20=21 → 252（BUG-001）', () => {
     const e = playOne(['half_joker'], [card(0, 2), card(1, 5), card(2, 7)]);
-    expect(res(e, R_CHIPS)).toBe(19);
+    expect(res(e, R_CHIPS)).toBe(12); // 高牌基础5 + 计分牌仅最高单张7；垫牌2/5 不计
     expect(res(e, R_MULT)).toBe(21);
-    expect(res(e, R_HAND_SCORE)).toBe(399);
+    expect(res(e, R_HAND_SCORE)).toBe(252);
   });
 
   it('Half Joker 出 5 张不触发：mult 仍 1（hand_size=5>3）', () => {
@@ -128,10 +128,10 @@ describe('joker-wiring · 真引擎单小丑涌现（手工推导）', () => {
     expect(res(e, R_MULT)).toBe(1);
   });
 
-  it('Hanging Chad 单张：首张重触发 → 首牌 baseChips ×3（高牌2张 chips 5+(5×3+7)=27）', () => {
+  it('Hanging Chad 单张：高牌只计最高单张7，重触发×3 → chips 5+(7×3)=26（BUG-001）', () => {
     const e = playOne(['hanging_chad'], [card(0, 5), card(1, 7)]);
-    expect(res(e, R_CHIPS)).toBe(27); // 高牌基础 5 + 逐张(首5×3=15 + 7) = 27
+    expect(res(e, R_CHIPS)).toBe(26); // 高牌基础5 + 计分牌仅7，Chad 重触发×3=21；垫牌5 不计
     expect(res(e, R_MULT)).toBe(1);
-    expect(res(e, R_HAND_SCORE)).toBe(27);
+    expect(res(e, R_HAND_SCORE)).toBe(26);
   });
 });
