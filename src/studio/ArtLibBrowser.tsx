@@ -11,10 +11,10 @@ const C = {
 
 const SLOT_LABEL: Record<string, string> = {
   tile: '瓦片', 'sprite.character': '角色/怪', 'sprite.paperdoll': '纸娃娃',
-  'icon.item': '物品', 'icon.ui': 'UI/法术', fx: '特效', decal: '装饰',
+  'icon.item': '物品', 'icon.ui': 'UI/法术', fx: '特效', decal: '装饰', card: '卡面',
 };
 const CAT_LABEL: Record<string, string> = {
-  dungeon: '地牢', monster: '怪物', player: '玩家', item: '物品', gui: 'GUI', misc: '杂项', effect: '特效', emissaries: '使者',
+  dungeon: '地牢', monster: '怪物', player: '玩家', item: '物品', gui: 'GUI', misc: '杂项', effect: '特效', emissaries: '使者', cardgame: '小丑牌',
 };
 const CAP = 400; // 一次最多渲染多少张缩略图（4761 全渲会卡；靠搜索/过滤收窄）
 

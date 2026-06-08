@@ -36,7 +36,42 @@ const SLOT = {
   effect: 'fx', // 透明特效/投射物
   gui: 'icon.ui', // UI/法术/技能图标
   misc: 'decal', // 血迹/铭牌/旗帜等叠加
+  cardgame: 'card', // Balatro 小丑牌美术
 };
+
+// ── Cardgame webp（Balatro 小丑牌美术；排除浏览器重复/垃圾文件）──
+const CARDGAME_EXCLUDE = new Set([
+  'Download_on_the_App_Store_Badge_opt', 'GetItOnGooglePlay_Badge_Web_color_English',
+  'Fandom_logo_2021_lockup_2', 'fandom-app-icon', 'Site-community-image',
+  'TSSDK_Logo_(Render)', 'VS_Battles_Main_Image_2', 'Tiering_System_Render', 'Titanic_Plains_NA_1',
+  'research',
+  'Goku_whis_gi_by_shallotxl_dh8c3er-375w-2x', 'Homelander-MP', 'Kenjaku_(Anime)',
+  'Megumi_Fushiguro_(Anime_4)', 'Naoya_Zenin_(Anime)', 'Rimuru_Tempest_illustration',
+  'ShokoIeriP', 'Yuji-CE-Fist', 'Yuji_Itadori_(Anime_4)',
+]);
+
+let cardgameAssets = [];
+try {
+  const cardDir = join(ROOT, 'cardgame', 'card');
+  const cardFiles = readdirSync(cardDir)
+    .filter(n => {
+      if (!n.toLowerCase().endsWith('.webp')) return false;      // 跳过 gif 等
+      if (/ \(\d+\)(?:\s*\(\d+\))*\.webp$/i.test(n)) return false; // 跳过浏览器重复下载
+      const stem = n.replace(/\.webp$/i, '');
+      return !CARDGAME_EXCLUDE.has(stem);
+    })
+    .sort();
+  cardgameAssets = cardFiles.map(name => ({
+    id: `cardgame/card/${name.replace(/\.webp$/i, '')}`,
+    cat: 'cardgame',
+    sub: 'card',
+    subject: name.replace(/\.webp$/i, ''),
+    slot: 'card',
+    transparent: true,
+    variants: 1,
+    sample: name,
+  }));
+} catch { /* 目录不存在则跳过 */ }
 
 const all = walk(ROOT)
   .map((p) => relative(ROOT, p).split(/[\\/]/).join('/'))
@@ -70,7 +105,7 @@ for (const rel of all) {
   g.variants++;
 }
 
-const assets = [...groups.values()]
+const pngAssets = [...groups.values()]
   .sort((a, b) => a.id.localeCompare(b.id))
   .map((g) => {
     // 精简：dir 可由 cat+'/'+sub 推出；w/h 仅在 ≠32(basePixel) 时存。
@@ -78,6 +113,8 @@ const assets = [...groups.values()]
     if (g.w !== 32 || g.h !== 32) { o.w = g.w; o.h = g.h; }
     return o;
   });
+
+const assets = [...pngAssets, ...cardgameAssets];
 const cats = {};
 const slots = {};
 for (const a of assets) {
@@ -91,13 +128,13 @@ const index = {
   license: 'CC0 (public domain; attribution appreciated, see LICENSE.txt)',
   root: ROOT,
   basePixel: 32,
-  fileCount: all.length,
+  fileCount: all.length + cardgameAssets.length,
   assetCount: assets.length,
   cats,
   slots,
-  assets, // 每条 = 一个逻辑资产(同 subject 的变体合一)：{id,cat,sub,dir,subject,slot,transparent,variants,w,h,tags}
+  assets,
 };
 writeFileSync(join(ROOT, 'index.json'), JSON.stringify(index));
-console.log(`files=${all.length} assets=${assets.length}`);
+console.log(`files=${all.length + cardgameAssets.length} assets=${assets.length}`);
 console.log('cats:', JSON.stringify(cats));
 console.log('slots:', JSON.stringify(slots));

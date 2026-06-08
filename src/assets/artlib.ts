@@ -10,7 +10,8 @@ export type ArtSlot =
   | 'icon.item' // 透明物品图标
   | 'icon.ui' // UI/法术/技能图标
   | 'fx' // 特效/投射物
-  | 'decal'; // 血迹/铭牌/旗帜等叠加
+  | 'decal' // 血迹/铭牌/旗帜等叠加
+  | 'card'; // 卡牌面（Balatro 小丑牌美术，webp）
 
 export interface ArtAsset {
   id: string; // 稳定 key = cat/sub/subject（变体合一），如 "item/weapon/axe"
