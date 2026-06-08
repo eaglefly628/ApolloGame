@@ -1,4 +1,4 @@
-import React, { useRef, useState, useCallback } from 'react';
+import React, { useRef, useState, useCallback, useEffect } from 'react';
 import { createRoot } from 'react-dom/client';
 import { Engine } from './runtime/engine.js';
 import type { Resource, PlayedHand, Flag, StringVar } from './engine/protocol/components.js';
@@ -66,8 +66,19 @@ function GameE() {
   const [phase, setPhase] = useState<Phase>('playing');
   const [result, setResult] = useState<{ type: HandType; chips: number; mult: number; score: number } | null>(null);
   const [shopOffer, setShopOffer] = useState<JokerCard[]>([]);
+  const [anim, setAnim] = useState<{ idx: number[]; mode: 'play' | 'discard' } | null>(null); // 正在飞出的手牌下标
+  const [newKeys, setNewKeys] = useState<Set<string>>(() => new Set()); // 刚抽到的牌（飞入动画）
   const [, force] = useState(0);
   const bump = () => force((n) => n + 1);
+  const keyOf = (c: Card) => `${c.suit}${c.rank}`;
+  const busy = anim !== null;
+
+  // 飞入动画播完即清（避免后续重渲染重复触发）。
+  useEffect(() => {
+    if (newKeys.size === 0) return;
+    const t = window.setTimeout(() => setNewKeys(new Set()), 450);
+    return () => window.clearTimeout(t);
+  }, [newKeys]);
 
   // ── 引擎资源读写（输入/投影层）──
   const resOf = useCallback((id: string): Resource | undefined => {
@@ -136,10 +147,9 @@ function GameE() {
     });
   }, []);
 
-  const play = useCallback(() => {
-    if (phase !== 'playing') return;
+  const commitPlay = useCallback(() => {
     const chosen = hand.filter((_, i) => sel[i]);
-    if (chosen.length === 0 || handsLeft <= 0) return;
+    if (chosen.length === 0) { setAnim(null); return; }
 
     engine.world.getComponent<PlayedHand>('table', 'PlayedHand')!.cards = chosen.map(toEngineCard);
     engine.world.getComponent<Flag>('scoring', 'Flag')!.active = true;
@@ -168,26 +178,42 @@ function GameE() {
       for (let k = 0; k < 3 && tmp.length; k++) offer.push(tmp.splice(Math.floor(Math.random() * tmp.length), 1)[0]);
       setShopOffer(offer);
       setPhase('shop');
+      setAnim(null);
       bump();
       return;
     }
-    if (get(R_HANDS_LEFT) <= 0) { setPhase('lost'); bump(); return; }
+    if (get(R_HANDS_LEFT) <= 0) { setPhase('lost'); setAnim(null); bump(); return; }
 
-    const next = drawTo(hand.filter((_, i) => !sel[i]));
+    const kept = hand.filter((_, i) => !sel[i]);
+    const next = drawTo(kept);
     setHand(next);
     setSel(new Array(next.length).fill(false));
+    setNewKeys(new Set(next.slice(kept.length).map(keyOf))); // 补抽的牌 → 飞入
+    setAnim(null);
     bump();
-  }, [phase, hand, sel, handsLeft, engine, get, set, drawTo, blindKind, owned]);
+  }, [hand, sel, engine, get, set, drawTo, blindKind, owned]);
 
-  const discard = useCallback(() => {
-    if (phase !== 'playing') return;
-    if (selCount === 0 || discardsLeft <= 0) return;
-    set(R_DISCARDS_LEFT, discardsLeft - 1);
-    const next = drawTo(hand.filter((_, i) => !sel[i]));
+  const commitDiscard = useCallback(() => {
+    set(R_DISCARDS_LEFT, get(R_DISCARDS_LEFT) - 1);
+    const kept = hand.filter((_, i) => !sel[i]);
+    const next = drawTo(kept);
     setHand(next);
     setSel(new Array(next.length).fill(false));
+    setNewKeys(new Set(next.slice(kept.length).map(keyOf)));
+    setAnim(null);
     bump();
-  }, [phase, selCount, discardsLeft, hand, sel, set, drawTo]);
+  }, [hand, sel, get, set, drawTo]);
+
+  // 两段式：先播飞出动画（380ms）→ 再提交（引擎结算 + 补牌飞入）。
+  const beginAction = useCallback((mode: 'play' | 'discard') => {
+    if (phase !== 'playing' || busy) return;
+    const idx = sel.map((s, i) => (s ? i : -1)).filter((i) => i >= 0);
+    if (idx.length === 0) return;
+    if (mode === 'play' && handsLeft <= 0) return;
+    if (mode === 'discard' && discardsLeft <= 0) return;
+    setAnim({ idx, mode });
+    window.setTimeout(() => (mode === 'play' ? commitPlay() : commitDiscard()), 380);
+  }, [phase, busy, sel, handsLeft, discardsLeft, commitPlay, commitDiscard]);
 
   // 买小丑：扣 $、加入 owned、把它的实体注入运行中的引擎。
   const buyJoker = useCallback((j: JokerCard) => {
@@ -297,21 +323,47 @@ function GameE() {
       {/* ── 手牌 + 操作（playing）── */}
       {phase === 'playing' && (
         <>
-          <div style={{ display: 'flex', gap: 7, alignItems: 'flex-end', minHeight: CH + 18, flexWrap: 'wrap', justifyContent: 'center' }}>
-            {hand.map((c, i) => (
-              <div key={`${c.suit}${c.rank}${i}`} onClick={() => toggle(i)} style={{
-                ...cardBg(c.suit, c.rank), cursor: 'pointer',
-                transform: sel[i] ? 'translateY(-12px)' : 'none', transition: 'transform 0.15s',
-                outline: sel[i] ? '3px solid #ffd166' : '1px solid #0008',
-                boxShadow: sel[i] ? '0 8px 20px #ffd16655' : 'none',
-              }} />
-            ))}
+          {/* 出/弃/抽 动画关键帧（表现层）：飞入=从左上牌堆吸过来；飞出=向右垃圾桶；出牌=向上飞 */}
+          <style>{`
+            @keyframes ge-drawIn { from { transform: translate(-340px,-90px) scale(.25) rotate(-28deg); opacity: 0 } to { transform: none; opacity: 1 } }
+            @keyframes ge-flyTrash { from { transform: none; opacity: 1 } to { transform: translate(320px,60px) scale(.45) rotate(40deg); opacity: 0 } }
+            @keyframes ge-flyPlay { from { transform: translateY(-12px); opacity: 1 } to { transform: translateY(-170px) scale(1.18); opacity: 0 } }
+          `}</style>
+
+          {/* 牌堆(左) · 手牌(中) · 垃圾桶(右) */}
+          <div style={{ position: 'relative', width: '100%', maxWidth: 760, display: 'flex', justifyContent: 'center', alignItems: 'flex-end', minHeight: CH + 36 }}>
+            <div style={{ position: 'absolute', left: 8, bottom: 6, textAlign: 'center', color: '#64748b', fontSize: 10 }}>
+              <div style={{ width: 42, height: 58, borderRadius: 6, background: 'linear-gradient(135deg,#1e3a5f,#0b1c33)', border: '1px solid #2b5562', boxShadow: '2px 2px 0 #0b1c33, 4px 4px 0 #0b1c33' }} />
+              <div style={{ marginTop: 4 }}>牌堆</div>
+            </div>
+
+            <div style={{ display: 'flex', gap: 7, alignItems: 'flex-end', flexWrap: 'wrap', justifyContent: 'center', maxWidth: 600 }}>
+              {hand.map((c, i) => {
+                const leaving = anim?.idx.includes(i);
+                const animName = leaving ? (anim!.mode === 'discard' ? 'ge-flyTrash' : 'ge-flyPlay') : (newKeys.has(keyOf(c)) ? 'ge-drawIn' : undefined);
+                return (
+                  <div key={keyOf(c)} onClick={() => !busy && toggle(i)} style={{
+                    ...cardBg(c.suit, c.rank), cursor: busy ? 'default' : 'pointer',
+                    transform: sel[i] && !leaving ? 'translateY(-12px)' : 'none', transition: 'transform 0.15s',
+                    outline: sel[i] ? '3px solid #ffd166' : '1px solid #0008',
+                    boxShadow: sel[i] ? '0 8px 20px #ffd16655' : 'none',
+                    animation: animName ? `${animName} 0.38s ease forwards` : undefined,
+                  }} />
+                );
+              })}
+            </div>
+
+            <div title="弃牌桶" style={{ position: 'absolute', right: 8, bottom: 6, textAlign: 'center', color: '#64748b', fontSize: 10 }}>
+              <div style={{ fontSize: 40, lineHeight: 1, filter: anim?.mode === 'discard' ? 'drop-shadow(0 0 8px #60a5fa)' : 'none', transition: 'filter 0.2s' }}>🗑️</div>
+              <div style={{ marginTop: 2 }}>弃牌</div>
+            </div>
           </div>
+
           <div style={{ display: 'flex', gap: 12 }}>
-            <button onClick={play} disabled={selCount === 0 || handsLeft <= 0} style={{ padding: '10px 26px', borderRadius: 8, fontSize: 14, fontWeight: 700, border: 'none', cursor: selCount && handsLeft > 0 ? 'pointer' : 'default', background: selCount && handsLeft > 0 ? 'linear-gradient(135deg,#ffd166,#f59e0b)' : '#1e293b', color: selCount && handsLeft > 0 ? '#1a1020' : '#475569' }}>
+            <button onClick={() => beginAction('play')} disabled={selCount === 0 || handsLeft <= 0 || busy} style={{ padding: '10px 26px', borderRadius: 8, fontSize: 14, fontWeight: 700, border: 'none', cursor: selCount && handsLeft > 0 && !busy ? 'pointer' : 'default', background: selCount && handsLeft > 0 && !busy ? 'linear-gradient(135deg,#ffd166,#f59e0b)' : '#1e293b', color: selCount && handsLeft > 0 && !busy ? '#1a1020' : '#475569' }}>
               ▶ 出牌（{selCount}）
             </button>
-            <button onClick={discard} disabled={selCount === 0 || discardsLeft <= 0} style={{ padding: '10px 22px', borderRadius: 8, fontSize: 14, fontWeight: 700, border: 'none', cursor: selCount && discardsLeft > 0 ? 'pointer' : 'default', background: selCount && discardsLeft > 0 ? 'linear-gradient(135deg,#60a5fa,#3b82f6)' : '#1e293b', color: selCount && discardsLeft > 0 ? '#0a1020' : '#475569' }}>
+            <button onClick={() => beginAction('discard')} disabled={selCount === 0 || discardsLeft <= 0 || busy} style={{ padding: '10px 22px', borderRadius: 8, fontSize: 14, fontWeight: 700, border: 'none', cursor: selCount && discardsLeft > 0 && !busy ? 'pointer' : 'default', background: selCount && discardsLeft > 0 && !busy ? 'linear-gradient(135deg,#60a5fa,#3b82f6)' : '#1e293b', color: selCount && discardsLeft > 0 && !busy ? '#0a1020' : '#475569' }}>
               ♻ 弃牌（{discardsLeft}）
             </button>
           </div>
