@@ -1,6 +1,8 @@
 // Game A 关卡数据（数据驱动，为多关卡 + 后续卷轴大关卡留好结构）。
 // v0.1：固定屏 640×400 验证核心平台跳跃；真正的大关卡（世界比屏幕大 → 卷轴）
 // 要等引擎相机/渲染器世界→屏幕变换落地（见 ../../../docs/workflow/requests.md REQ-001）。
+import type { ConditionExpr } from '@engine/protocol/components.js';
+
 export interface Box {
   x: number;
   y: number;
@@ -48,15 +50,20 @@ export interface Mover {
 export interface Door {
   id: string; // 实体 id（开关 effect 的 targetEntity 指向它）
   box: Box;
+  // 开门条件（任意布尔树，组合多个开关的 outFlag）。缺省=只靠 Switch.opensDoor 直连。
+  // 例：{ kind:'and', of:[{kind:'flag',id:'cover-left'},{kind:'flag',id:'cover-right'}] } = 两台都踩才开。
+  // 纯数据：直接喂给 event-when 的 when（引擎已支持 and/or/not），无需任何新能力。
+  openWhen?: ConditionExpr;
 }
 
-// 压力开关（数据驱动）：角色 by 踩进 plate 区域 → 开 opensDoor 指的门（站着开、离开合）。
-// 纯能力链：zone-occupancy（占据→flag）→ event-when（flag→signal）→ effect set-sensor（开/合门）。零游戏系统。
+// 压力开关（数据驱动）：角色 by 踩进 plate 区域 → 产出 flag（→ 开门）。站着真、离开假。
+// 纯能力链：zone-occupancy（占据→flag）→ event-when（flag/条件→signal）→ effect set-sensor（开/合门）。零游戏系统。
 export interface Switch {
   plate: Box; // 压力板区域（zone 矩形 + 视觉标记）
   by: 'A' | 'B'; // 视觉色/默认踩者
-  requires?: ('A' | 'B')[]; // 需同时站上才开门的角色（缺省 [by]）；['A','B'] = 重量台（双人缺一不可）
-  opensDoor: string; // 满足时打开的门 id
+  requires?: ('A' | 'B')[]; // 需同时站上才满足的角色（缺省 [by]）；['A','B'] = 重量台（双人缺一不可）
+  opensDoor?: string; // 直连：满足时打开的门 id（站着开、离开合）。与 openWhen 二选一。
+  outFlag?: string; // 命名旗标：满足时置真，供 Door.openWhen 组合（多台联动）。缺省 `switch{i}`。
 }
 
 // 拾取物（数据驱动）：任一玩家碰到 → 自毁 + coins 增 amount。零游戏系统。
@@ -152,5 +159,33 @@ export const LEVEL_W1_3: Level = {
   collectibles: [
     { id: 'gem1', box: { x: 300, y: 333, width: 24, height: 30 } },
     { id: 'gem2', box: { x: 350, y: 333, width: 24, height: 30 } },
+  ],
+};
+
+// 世界 1-4 · 各守一台：A 守左台、B 守右台，两台同时被踩 → 中间闸门打开（缺一即合）。
+// 与重量台（同一台两人同站）不同：这里是【两个分离的开关 outFlag 用 and 组合】驱动一扇门 ——
+// 验证"门的开启条件可以是任意布尔树（多机关联动）"，全部喂给引擎已有的 event-when（and/or/not），零新能力、零游戏系统。
+// 通关只需 A 到达右侧目标（B 的职责是守住右台按住闸门）→ 非对称合作。
+export const LEVEL_W1_4: Level = {
+  id: 'w1-4',
+  name: '世界1-4 · 各守一台',
+  bounds: { width: 640, height: 400 },
+  ground: { x: 320, y: 372, width: 620, height: 48 }, // 顶边 348
+  platforms: [],
+  spawnA: { x: 80, y: 80 }, // 落在左台上
+  spawnB: { x: 560, y: 80 }, // 落在右台上
+  goal: { x: 580, y: 305, width: 120, height: 130 }, // 右侧目标（闸门后）
+  goalRequires: ['A'], // 只需 A 到达（B 守右台）
+  doors: [
+    {
+      id: 'gate',
+      box: { x: 320, y: 300, width: 24, height: 96 }, // 居中闸门 x[308,332] y[252,348]
+      // 两台都被踩（cover-left ∧ cover-right）→ 开；任一松开 → event-when level 模式自动转假 → 合。
+      openWhen: { kind: 'and', of: [{ kind: 'flag', id: 'cover-left' }, { kind: 'flag', id: 'cover-right' }] },
+    },
+  ],
+  switches: [
+    { plate: { x: 80, y: 336, width: 80, height: 44 }, by: 'A', requires: ['A'], outFlag: 'cover-left' }, // 左台 → cover-left
+    { plate: { x: 560, y: 336, width: 80, height: 44 }, by: 'B', requires: ['B'], outFlag: 'cover-right' }, // 右台 → cover-right
   ],
 };

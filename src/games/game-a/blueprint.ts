@@ -129,10 +129,18 @@ export function buildGameABlueprint(level: Level): WorldBlueprint {
       Shape: { kind: 'box', width: d.box.width, height: d.box.height },
       Color: { tint: 0x9ca3af, alpha: 1 },
     };
+    // 组合开门条件（openWhen，多机关联动）：把任意布尔树直接喂给 event-when 的 when（引擎已支持 and/or/not）。
+    // 真→开门信号、其否定→合门信号（level 持续：条件成立时门开、任一松开自动复原）。零新能力、零游戏系统。
+    if (d.openWhen) {
+      entities[`doorOpen:${d.id}`] = { EventWhen: { signal: `open:${d.id}`, when: d.openWhen, mode: 'level', armed: false } };
+      entities[`doorClose:${d.id}`] = { EventWhen: { signal: `close:${d.id}`, when: { kind: 'not', of: d.openWhen }, mode: 'level', armed: false } };
+      entities[`doorOpenFx:${d.id}`] = { Effect: { onSignal: `open:${d.id}`, kind: 'set-sensor', targetEntity: d.id, value: true } };
+      entities[`doorCloseFx:${d.id}`] = { Effect: { onSignal: `close:${d.id}`, kind: 'set-sensor', targetEntity: d.id, value: false } };
+    }
   });
   // 压力开关（纯能力链，零游戏系统）：占据(zone-occupancy)→flag → event-when(flag→signal) → effect set-sensor(开/合门)。
   (level.switches ?? []).forEach((s, i) => {
-    const flagId = `switch${i}`;
+    const flagId = s.outFlag ?? `switch${i}`; // outFlag = 命名旗标供 Door.openWhen 组合；缺省直连用 switch{i}
     const p = s.plate;
     const reqEnts = (s.requires ?? [s.by]).map((rr) => (rr === 'A' ? PLAYER_A_ENTITY : PLAYER_B_ENTITY));
     // 视觉压力板（Sensor 非实心，玩家由地面支撑站其上）。
@@ -142,17 +150,20 @@ export function buildGameABlueprint(level: Level): WorldBlueprint {
       Color: { tint: 0x22c55e, alpha: 0.5 },
       Sensor: {},
     };
-    // 占据 → flag。
+    // 占据 → flag（无论直连还是组合，开关都先产出这个 flag）。
     entities[`switchZone${i}`] = {
       Flag: { id: flagId, active: false },
       Zone: { outFlag: flagId, minX: p.x - p.width / 2, minY: p.y - p.height / 2, maxX: p.x + p.width / 2, maxY: p.y + p.height / 2, requiredEntities: reqEnts },
     };
-    // flag → 开/合信号（level 持续：踩着开、离开合）。
-    entities[`swOpen${i}`] = { EventWhen: { signal: `open:${s.opensDoor}`, when: { kind: 'flag', id: flagId, equals: true }, mode: 'level', armed: false } };
-    entities[`swClose${i}`] = { EventWhen: { signal: `close:${s.opensDoor}`, when: { kind: 'flag', id: flagId, equals: false }, mode: 'level', armed: false } };
-    // 信号 → 门 Sensor 开/合（物理改动，REQ-008）。
-    entities[`swOpenFx${i}`] = { Effect: { onSignal: `open:${s.opensDoor}`, kind: 'set-sensor', targetEntity: s.opensDoor, value: true } };
-    entities[`swCloseFx${i}`] = { Effect: { onSignal: `close:${s.opensDoor}`, kind: 'set-sensor', targetEntity: s.opensDoor, value: false } };
+    // 直连门（opensDoor）：flag → 开/合信号（level 持续：踩着开、离开合）→ 门 Sensor 开/合（REQ-008）。
+    // 组合门（仅 outFlag、无 opensDoor）则不在此连，由 Door.openWhen 统一在门侧组合多台。
+    if (s.opensDoor) {
+      const dn = s.opensDoor;
+      entities[`swOpen${i}`] = { EventWhen: { signal: `open:${dn}`, when: { kind: 'flag', id: flagId, equals: true }, mode: 'level', armed: false } };
+      entities[`swClose${i}`] = { EventWhen: { signal: `close:${dn}`, when: { kind: 'flag', id: flagId, equals: false }, mode: 'level', armed: false } };
+      entities[`swOpenFx${i}`] = { Effect: { onSignal: `open:${dn}`, kind: 'set-sensor', targetEntity: dn, value: true } };
+      entities[`swCloseFx${i}`] = { Effect: { onSignal: `close:${dn}`, kind: 'set-sensor', targetEntity: dn, value: false } };
+    }
   });
   // 拾取物（纯能力链，零游戏系统）：zone(任一玩家进 box, count:1)→flag → event-when(edge) → effect destroy + effect modify-resource(coins)。
   if ((level.collectibles ?? []).length > 0) {
