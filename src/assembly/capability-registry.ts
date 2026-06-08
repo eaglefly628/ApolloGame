@@ -31,6 +31,7 @@ import {
   launchCapability,
   tilemapCapability,
   animStateCapability,
+  facingCapability,
 } from '@skills/tier2/index.js';
 import { dialogueCapability, match3BoardCapability, prefabCapability, casterCapability, aggroCapability } from '@skills/tier3/index.js';
 
@@ -76,6 +77,7 @@ export const ALL_CAPABILITIES: readonly CapabilityDefinition[] = [
   launchCapability,
   tilemapCapability,
   animStateCapability,
+  facingCapability,
   // tier3
   dialogueCapability,
   match3BoardCapability,

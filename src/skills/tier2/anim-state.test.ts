@@ -1,7 +1,7 @@
 import { describe, it, expect } from 'vitest';
 import { World } from '@engine/core/world.js';
 import { SystemPhase } from '@engine/core/types.js';
-import type { AnimState, AnimClip, Frame, Velocity, State } from '@engine/protocol/components.js';
+import type { AnimState, AnimClip, Frame, Velocity, State, Relation } from '@engine/protocol/components.js';
 import { animStateCapability } from './anim-state.js';
 
 const WALK: AnimClip = { from: 0, count: 4, fps: 2, loop: true };
@@ -70,6 +70,35 @@ describe('anim-state — 自动 走/站', () => {
     w.tick();
     expect(cur(w, 'm')).toBe('idle');
     expect(fi(w, 'm')).toBe(0); // 复位
+  });
+});
+
+describe('anim-state — attackClip（站定+有目标→攻击）', () => {
+  it('站定且有 Relation(target) → 播 attack；无目标 → idle', () => {
+    const w = world();
+    w.createEntity('m');
+    w.addComponent('m', { type: 'Frame', index: 0, total: 7 } as Frame);
+    w.addComponent('m', { type: 'Velocity', vx: 0, vy: 0, angular: 0 } as Velocity);
+    w.addComponent('m', {
+      type: 'AnimState',
+      clips: { walk: WALK, idle: IDLE, attack: ATTACK },
+      moveClip: 'walk',
+      idleClip: 'idle',
+      attackClip: 'attack',
+      current: 'idle',
+      elapsed: 0,
+    } as AnimState);
+    // 无 Relation → idle
+    w.tick();
+    expect(cur(w, 'm')).toBe('idle');
+    // 加锁定目标 → 站定即攻击
+    w.addComponent('m', { type: 'Relation', kind: 'target', targetId: 'hero' } as unknown as Relation);
+    w.tick();
+    expect(cur(w, 'm')).toBe('attack');
+    // 动起来 → 走（攻击让位移动）
+    w.getComponent<Velocity>('m', 'Velocity')!.vx = 5;
+    w.tick();
+    expect(cur(w, 'm')).toBe('walk');
   });
 });
 

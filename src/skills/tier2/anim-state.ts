@@ -1,7 +1,7 @@
 import { defineCapability } from '@engine/core/define-capability.js';
 import { SystemPhase } from '@engine/core/types.js';
 import type { IWorld } from '@engine/core/types.js';
-import type { AnimState, AnimClip, Frame, Velocity, State, Sprite } from '@engine/protocol/components.js';
+import type { AnimState, AnimClip, Frame, Velocity, State, Sprite, Relation } from '@engine/protocol/components.js';
 
 // ═══════════════════════════════════════════════════════════════
 //  anim-state —— 动作动画状态机（周期表 anim-state-machine = state + transition-rules + animation）。
@@ -47,12 +47,13 @@ export const animStateCapability = defineCapability({
           fsmId: { type: 'string', describe: '读 State{fsmId}.current 当 clip 名；缺省=按 Velocity 自动' },
           moveClip: { type: 'string', describe: '自动模式：移动时的 clip 名' },
           idleClip: { type: 'string', describe: '自动模式：静止时的 clip 名' },
+          attackClip: { type: 'string', describe: '自动模式：站定且有 Relation(target) 时的 clip 名（攻击）；缺省站立' },
           current: { type: 'string', describe: '内部：当前 clip 名' },
           elapsed: { type: 'number', describe: '内部：当前帧已播 tick' },
         },
       },
     },
-    reads: ['AnimState', 'Frame', 'Velocity', 'State', 'Sprite'],
+    reads: ['AnimState', 'Frame', 'Velocity', 'State', 'Sprite', 'Relation'],
     writes: ['AnimState', 'Frame', 'Sprite'],
     consumes: [],
   },
@@ -81,7 +82,15 @@ export const animStateCapability = defineCapability({
           if (want === undefined || as.clips[want] === undefined) {
             const v = world.getComponent<Velocity>(id, 'Velocity');
             const moving = v !== undefined && v.vx * v.vx + v.vy * v.vy > MOVING_EPS;
-            want = moving ? as.moveClip : as.idleClip;
+            if (moving) {
+              want = as.moveClip; // 移动 → 走
+            } else if (as.attackClip) {
+              // 站定且有锁定目标（追到目标身边）→ 攻击；否则站立。
+              const rel = world.getComponent<Relation>(id, 'Relation');
+              want = rel !== undefined && rel.kind === 'target' ? as.attackClip : as.idleClip;
+            } else {
+              want = as.idleClip;
+            }
           }
           let clip: AnimClip | undefined = as.clips[want];
           if (clip === undefined) {

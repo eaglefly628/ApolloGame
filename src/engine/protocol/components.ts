@@ -272,8 +272,16 @@ export interface AnimState extends Component {
   fsmId?: string; // 设了就读 State{fsmId}.current 当 clip 名；否则按 Velocity 自动 move/idle
   moveClip: string; // 自动模式：移动时的 clip 名
   idleClip: string; // 自动模式：静止时的 clip 名
+  attackClip?: string; // 自动模式：站定且有 Relation(target)（追到目标身边）时的 clip 名；缺省=站立播 idle
   current: string; // 内部：当前 clip 名
   elapsed: number; // 内部：当前帧已播 tick
+}
+
+// ── facing ── 朝向翻转（表现层）：按移动方向(velocity)或目标方向(Relation target)把实体水平翻转
+// （Transform.scaleX 取正=朝右 / 取负=朝左镜像；碰撞/命中已对 scaleX 取绝对值，翻转安全）。静止时保持上次朝向不抖。
+export interface Facing extends Component {
+  readonly type: 'Facing';
+  mode: 'velocity' | 'target'; // 按移动方向 or 按 Relation(target) 方向定朝向
 }
 
 // ── L4 sound ── 播放什么声音

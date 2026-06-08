@@ -22,3 +22,4 @@ export { statsCapability, computeEffective } from './stats.js';
 export { launchCapability } from './launch.js';
 export { tilemapCapability, findTilemap, isSolidTile } from './tilemap.js';
 export { animStateCapability } from './anim-state.js';
+export { facingCapability } from './facing.js';
