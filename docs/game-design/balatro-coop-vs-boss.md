@@ -73,6 +73,33 @@ shop  = { CraftRecipe:{ onSignal:"buy_x", costs:[{id:"money",amount:6}], grantsF
 **诚实定性**：全公开 + 语音 + 长倒计时 = 可解 → **"voice-proof"是旋钮、不是一招毙命**（`倒计时长度 / 分工歧义度 / RNG 强度`）。先按"全公开 + 分工共鸣 + 短倒计时"做出来试玩，再调钮逼出 voice-proof。**判成败 = 语音"非必需、无优势"**（陌生人匹配玩满、有语音也破不了核心张力），不是"语音物理无效"。
 
 
+## 4.6 ★ 随机性 + 双人共鸣牌种
+**铁律**：**输入随机（决策前·共享·看着再决定）多放；输出随机（决策后·骰子定结果）只放"上行惊喜"，绝不惩罚打得好的人**（否则 feel-bad）。随机还**直接喂 voice-proof**：每拍共享一个随机目标 → 最优分工每拍在变 → 口头计划当场过期。
+
+**三层随机**
+| 层 | 类型 | 作用 |
+|---|---|---|
+| 共享骰/随机目标（每拍翻） | 输入·共享 | 「本拍共振型=顺子」「双方各得万能牌」→ 移动焦点 + 变量 |
+| 野牌/塔罗（抽到/打出） | 输入·玩家驱动 | 转机 + 主动操纵的时机博弈 |
+| 共鸣暴击骰（合击触发时） | **输出·只上行** | 协调成功→掷骰 ×2/3/5 jackpot = "出其不意的牛逼" |
+
+**专为双人共鸣的新牌种（数据模板，非新代码）**
+| 牌种 | 干什么 | 例子 |
+|---|---|---|
+| 回声 Echo | 触发看队友这拍 | 队友打同花→我小丑全再触发一次 |
+| 赌约 Pact | 拍前下注协调 | 双方都赌顺子；都成→暴伤，任一失→反伤（承诺+不确定机制化） |
+| 传递 Relay | 跨玩家资源流 | 我的 chips 灌成队友 mult（分工） |
+| 连锁 Chain | 跨玩家触发链 | 队友小丑触发→我这张也触发（级联涌现） |
+| 双生 Twin | 看两人异同 | 同型→共鸣翻倍 / 异型→各 +X |
+| 随机共振 Wild | 每拍随机指定共振型 | 任一人命中→双方暴击 |
+| 双人塔罗（消耗） | 跨玩家操纵 | 把队友最差牌变万能 / 重洗双方手牌 / 复制队友整排小丑 |
+| 骰子 Dice | 上行赌 | 掷骰；6→本拍共鸣 ×5 |
+
+**涌现样例**：A 持 Echo（队友顺子→我小丑全重触发）+ B 持 Relay（chips 灌 A 的 mult）；共享骰翻出"双方各得万能牌"→ B 临时拼出顺子 → 触发 A 的 Echo → A 小丑雪崩 + 暴击骰掷 6 → ×5。**俩人都没完整计划，随机野牌 + 跨玩家链自己滚出来的。**
+
+**⚠️ 工程铁律（标给程序）**：所有随机走**种子化 RNG（`RandomSeed`）**，两端掷同一个数 → lockstep 不分叉。引擎原生确定性 RNG，这点白送，但每个骰子都得引同一种子源。
+**唯一要给引擎加的小契约**：把"本拍上下文（双方已打出的牌型 + 当前共振目标）"暴露成可被 `condition` 读的组件（`Beat{resonantType}` / `Resonance{p1Type,p2Type}`）。**是数据契约扩展，不是新能力。**
+
 ## 5. 出牌顺序（回合循环）—— 同时备牌 → 锁定 → 同步结算
 **设计取向**：合作、**零停顿**、贴 lockstep。各自牌库/小丑（各建引擎），**共享 Boss HP + 团队"共鸣"条**。
 
@@ -126,6 +153,47 @@ shop  = { CraftRecipe:{ onSignal:"buy_x", costs:[{id:"money",amount:6}], grantsF
 
 > Manifesto 提醒：UI = **薄层读世界**。卡牌/小丑/Boss 都是**实体**(Sprite/Text/Clickable→Signal)；布局只做排布与高亮，别写成巨型手写组件（否则就是要消解的"手写 UI"债）。
 
-## 7. 下一步（二选一）
-- **A·引擎层**：`pattern-score` **已落地**（`pokerHandCapability`，并行 session 已做）→ 复核它够不够通用 + 定 `card-pile`(牌库/手牌/抽弃) 是新能力还是重组。
-- **B·策划层**：把 MVP-0 拆成完整数据清单（牌型表 + 12 张扁平小丑 + 一个 Boss 诅咒排程 + 商店 6 项 + Ante 曲线 + 共鸣/接力规则）。
+## 7. 最小试玩切片（数据清单 · 推给实践）
+**目标**：先不联机 / 不完整 Boss / 不商店 / 不 Ante —— **单屏两个玩家区**，一拍循环，只验一件事：**"全公开 + 盲选分工 + 随机 + 上行惊喜" 好不好玩、紧不紧张**。
+
+**一拍循环（State 机 + Timer，全现成能力）**
+```
+翻共振目标(种子RNG) →[select 相·Timer 倒计时] 双方秘密选牌 →
+两人都锁/超时 →[resolve 相] pokerHand 认型→chips×mult → 分工共鸣判定 →
+命中?掷暴击骰(上行) → 合并伤害砸 boss_hp → 补牌 → 下一拍
+```
+
+**实体/数据草图（规范 manifest 形态，可直接照搭）**
+```jsonc
+// —— 共享 ——
+"boss":  { "Resource":{ "id":"boss_hp", "current":300, "min":0, "max":300 } }
+"beat":  { "Beat":{ "index":0, "resonantType":"flush", "phase":"select", "timer":20 },
+           "RandomSeed":{ "seed":20260608, "sequence":0 } }              // 掷共振型 / 暴击骰
+"reson": { "Resonance":{ "rule":"complement", "needTypes":["flush","straight"],
+             "critDie":{ "faces":6, "jackpotFace":6, "jackpotMult":5, "baseMult":2 } } }
+
+// —— 玩家区(P1/P2 各一份；committed 前 cards 对对方隐藏 = 秘密承诺) ——
+"p1_play": { "PlayZone":{ "owner":"p1", "committed":false, "cards":[], "handType":null } }
+"p1_h0":   { "Card":{ "suit":"spade", "rank":11 }, "Sprite":{}, "Clickable":{ "action":"select_p1" } }
+//   …手牌若干；pokerHand 对 PlayZone.cards 求 handType → chips×mult
+
+// —— 起步 5 张牌(数据模板) ——
+"pact":  { "Pact":{ "both":true, "betType":"straight",
+             "onBothDeliver":{ "bossDamage":200 }, "onAnyFail":{ "teamDamage":30 } } }
+"echo":  { "Echo":{ "owner":"p1", "when":{ "partnerHandType":"flush" }, "do":"retrigger_my_jokers" } }
+"relay": { "Relay":{ "owner":"p2", "from":"p2.chips", "to":"p1.mult", "ratio":0.1 } }
+//   随机共振 = beat.resonantType(每拍种子RNG 翻)；暴击骰 = reson.critDie(命中即掷)
+```
+
+**起步内容量**：牌型表（pokerHand 现成 9 型）· 共振规则 1 条（互补：同花+顺子）· 起步牌 5 张（Pact/Echo/Relay/随机共振/暴击骰）· 一个 300 血简化 Boss · 倒计时 20s。
+
+**验收**
+1. **主观**（唯一要回答的）：盲选分工 + 随机暴击，**紧不紧张 / 爽不爽**？
+2. **单测**：pokerHand 牌型识别 + 共鸣判定（互补命中 / 都同花哑火）确定。
+3. **determinism**：种子 RNG 两次同输入同结果（为后续联机铺路）。
+
+**给实践的边界提醒**
+- UI = **薄层读世界**：卡/区/Boss = 实体 + Clickable，别写巨型手写组件。
+- **随机必种子化**（同一 `RandomSeed` 源）。
+- 新牌种是**数据**；引擎只需加一个小契约：**"本拍上下文（双方牌型 + 共振目标）暴露给 `condition` 读"**（`Beat`/`Resonance` 组件），不是新能力。
+- 已落地依赖：`pokerHandCapability`（认牌型）。待定：`card-pile`（牌库/手牌/抽弃）—— 评估是新能力还是 RandomSeed+Tag 重组。
