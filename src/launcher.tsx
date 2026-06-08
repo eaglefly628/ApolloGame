@@ -81,7 +81,7 @@ const GAMES: GameEntry[] = [
     id: 'game-e',
     title: 'Game E: Balatro-like',
     subtitle: '小丑牌 · 卡牌构建',
-    description: '选最多 5 张手牌 → 自动识别牌型（Pair/Flush/Straight…）→ 筹码 × 倍率得分。小丑牌实时叠加效果。卡牌实体数据存于 ECS world，手牌评估为纯函数，零游戏专属代码。',
+    description: '选最多 5 张 → 真引擎认牌型 + 逐张筹码 + 小丑有序加乘 = 分数砸 Boss。牌面取自 cards.png 切图、小丑真美术。计分全由 poker-hand/effect-apply 通用能力涌现，零游戏专属系统。',
     color: '#1a1020',
     accentColor: '#f59e0b',
     icon: '🃏',
