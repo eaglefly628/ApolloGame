@@ -8,7 +8,7 @@ const CARD = `${DIR}/card`;
 const b64 = (p, mime) => `data:${mime};base64,${fs.readFileSync(p).toString('base64')}`;
 
 // cards.png 8×8 网格几何（与 src/games/game-e/cards-atlas.ts 一致）。
-const CELL_W = 71, CELL_H = 84;
+const CELL_W = 71, CELL_H = 96;
 const SUIT_COL = { hearts: 0, clubs: 1, diamonds: 2, spades: 3 };
 const LEFT = ['A', '2', '3', '4', '5', '6', '7'];
 const RIGHT = ['K', 'Q', 'J', '10', '9', '8'];

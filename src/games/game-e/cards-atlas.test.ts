@@ -2,22 +2,24 @@ import { describe, it, expect } from 'vitest';
 import { cardSheetIndex, cardCell, cardRect, COLS, ROWS, CELL_W, CELL_H, SHEET_W, SHEET_H } from './cards-atlas.js';
 import { STANDARD_DECK } from './deck.js';
 
-// cards.png 8×8 网格 UV 切片自洽：52 张牌索引唯一、在 [0,63]、矩形不越界。
+// cards.png 8 列 × 7 行（格 71×96）网格 UV 切片自洽：52 张牌索引唯一、矩形不越界。
 describe('game-e · cards 精灵表 UV', () => {
-  it('整图与网格一致：8×8，格 71×84', () => {
+  it('整图与网格一致：8 列 × 7 行，格 71×96', () => {
     expect(COLS).toBe(8);
-    expect(ROWS).toBe(8);
+    expect(ROWS).toBe(7);
+    expect(CELL_W).toBe(71);
+    expect(CELL_H).toBe(96);
     expect(CELL_W * COLS).toBe(SHEET_W);
     expect(CELL_H * ROWS).toBe(SHEET_H);
   });
 
-  it('52 张牌帧索引唯一、落在 [0,63]', () => {
+  it('52 张牌帧索引唯一、落在 [0, 8×7)', () => {
     const idx = STANDARD_DECK.map((c) => cardSheetIndex(c.suit, c.rank));
     expect(idx.length).toBe(52);
     expect(new Set(idx).size).toBe(52);
     for (const i of idx) {
       expect(i).toBeGreaterThanOrEqual(0);
-      expect(i).toBeLessThan(64);
+      expect(i).toBeLessThan(COLS * ROWS);
     }
   });
 

@@ -3,9 +3,10 @@ import type { Suit, Rank, Card as DataCard } from './deck.js';
 
 // ════════════════════════════════════════════════════════════════════════
 //  Game E · 扑克牌精灵表（cards.png → 网格 UV 切片，纯数据）
-//  一张 568×672 整图含全套牌，8 列 × 8 行网格（每格 71×84）：
-//    左半 4 列 = ♥♣♦♠，行 = A,2,3,4,5,6,7
-//    右半 4 列 = ♥♣♦♠，行 = K,Q,J,10,9,8；末行右 = 两张 Joker + 牌背
+//  一张 568×672 整图含全套牌，**8 列 × 7 行**网格（每格 **71×96**，竖长比例 ≈0.74）：
+//    左半 4 列 = ♥♣♦♠，行 = A,2,3,4,5,6,7（7 行）
+//    右半 4 列 = ♥♣♦♠，行 = K,Q,J,10,9,8（6 行）；末行(row6)右 = 两张 Joker + 牌背
+//  注意：672/7=96（每格高）——不是 672/8=84。普通扑克牌是竖长的，84 那个会纵向切错。
 //  渲染器按 (textureKey, frameIndex) 解析 sprite-sheet（数字索引、按 columns 折行）→ 实体挂
 //  Sprite{textureKey:'cards'} + Frame{index: cardSheetIndex(card)} 即显对应牌。
 //  「划分 UV」= 数据：列/行→索引是确定函数；sim 不碰像素，图活在资产层、不进 hash。
@@ -17,9 +18,9 @@ export const CARDS_PNG = 'assets/FreeArtLib/cardgame/cards.png';
 export const SHEET_W = 568;
 export const SHEET_H = 672;
 export const COLS = 8;
-export const ROWS = 8;
+export const ROWS = 7;
 export const CELL_W = SHEET_W / COLS; // 71
-export const CELL_H = SHEET_H / ROWS; // 84
+export const CELL_H = SHEET_H / ROWS; // 96
 
 // 列内花色顺序（左右两半相同）：♥♣♦♠。
 const SUIT_COL: Record<Suit, number> = { hearts: 0, clubs: 1, diamonds: 2, spades: 3 };
