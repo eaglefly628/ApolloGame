@@ -15,17 +15,17 @@ describe('T1 lifetime — capability metadata（契约钉死）', () => {
     expect(lifetimeCapability.version).toBe('1.0.0');
   });
 
-  it('一个系统：写 DestroyRequest，consume TimerDone，不 provide/read', () => {
+  it('一个系统：写 DestroyRequest，read TimerDone（BUG-003：不再 consume，timer-advance 自清）', () => {
     expect(lifetimeCapability.systems).toHaveLength(1);
     expect(lifetimeCapability.components.provides).toEqual({});
-    expect(lifetimeCapability.components.reads).toEqual([]);
+    expect(lifetimeCapability.components.reads).toEqual(['TimerDone']);
     expect(lifetimeCapability.components.writes).toEqual(['DestroyRequest']);
-    expect(lifetimeCapability.components.consumes).toEqual(['TimerDone']);
+    expect(lifetimeCapability.components.consumes).toEqual([]);
   });
 });
 
 describe('T1 lifetime — behavior', () => {
-  it('名为 "life" 的计时结束 → 对该实体发 DestroyRequest，并 consume 掉 TimerDone', () => {
+  it('名为 "life" 的计时结束 → 对该实体发 DestroyRequest（TimerDone 留存，由 timer-advance 自清）', () => {
     const w = worldWithLifetime();
     w.createEntity('bullet');
     const done: TimerDone = { type: 'TimerDone', timerId: 'life' };
@@ -36,8 +36,8 @@ describe('T1 lifetime — behavior', () => {
     const req = w.getComponent<DestroyRequest>('bullet', 'DestroyRequest');
     expect(req).toBeDefined();
     expect(req!.entityId).toBe('bullet'); // 销毁请求指向自己
-    // 系统声明 consumes:['TimerDone'] → World 在 tick 末清除一次性事件
-    expect(w.getComponent<TimerDone>('bullet', 'TimerDone')).toBeUndefined();
+    // BUG-003：lifetime 不再 consume TimerDone（生产者 timer-advance 每拍自清）→ 此处仍留存。
+    expect(w.getComponent<TimerDone>('bullet', 'TimerDone')).toBeDefined();
   });
 
   it('非 "life" 的计时不触发销毁', () => {

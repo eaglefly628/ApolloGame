@@ -2,8 +2,8 @@ import { defineCapability } from '@engine/core/define-capability.js';
 import type { Frame } from '@engine/protocol/components.js';
 
 // Tier 1（直接结算）：计时到点推进精灵帧。
-// timer-advance 在实体上发 TimerDone（不自清，留给消费者）→ animation 消费它并推进 Frame.index。
-// 读 Frame → 自动排在 timer-advance 之后；consume TimerDone：一次 fire 推进一帧。
+// timer-advance 在实体上发 TimerDone 并每拍自清 → animation 读它推进 Frame.index（一次 fire 一帧）。
+// 读 Frame → 自动排在 timer-advance 之后。BUG-003：改 reads（不再 consume），与 lifetime 共读同一 TimerDone 不抢占。
 export const animationCapability = defineCapability({
   id: 't1-animation',
   version: '1.0.0',
@@ -14,14 +14,14 @@ export const animationCapability = defineCapability({
     whenToUse: '逐帧精灵动画。读 Frame+TimerDone，consume TimerDone，写 Frame，Update 阶段。',
     examples: ['行走循环帧', '爆炸序列帧'],
   },
-  components: { provides: {}, reads: ['Frame', 'TimerDone'], writes: ['Frame'], consumes: ['TimerDone'] },
+  components: { provides: {}, reads: ['Frame', 'TimerDone'], writes: ['Frame'], consumes: [] },
   config: {},
   systems: [
     {
       id: 'animation',
       reads: ['Frame', 'TimerDone'],
       writes: ['Frame'],
-      consumes: ['TimerDone'],
+      consumes: [],
       execute(world) {
         for (const [id] of world.query('Frame', 'TimerDone')) {
           const f = world.getComponent<Frame>(id, 'Frame')!;

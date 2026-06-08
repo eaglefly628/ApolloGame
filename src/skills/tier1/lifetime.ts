@@ -16,9 +16,10 @@ export const lifetimeCapability = defineCapability({
 
   components: {
     provides: {},
-    reads: [],
+    // BUG-003：改 reads（不再 consume）——TimerDone 由生产者 timer-advance 每拍自清，多消费者共读不抢占。
+    reads: ['TimerDone'],
     writes: ['DestroyRequest'],
-    consumes: ['TimerDone'],
+    consumes: [],
   },
 
   config: {},
@@ -26,9 +27,9 @@ export const lifetimeCapability = defineCapability({
   systems: [
     {
       id: 'lifetime',
-      reads: [],
+      reads: ['TimerDone'],
       writes: ['DestroyRequest'],
-      consumes: ['TimerDone'],
+      consumes: [],
       execute(world) {
         for (const [id] of world.query('TimerDone')) {
           const done = world.getComponent<TimerDone>(id, 'TimerDone');

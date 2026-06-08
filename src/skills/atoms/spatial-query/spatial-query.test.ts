@@ -41,4 +41,14 @@ describe('spatial-query atom', () => {
     expect(spatialQueryCapability.config.cellSize.default).toBe(64);
     expect(spatialQueryCapability.config.kind.default).toBe('grid');
   });
+
+  it('BUG-005：等距 tie-break 按 id 升序（确定性，不依赖构建序）', () => {
+    const w = new World();
+    // 两个到 (0,0) 等距的实体，故意按 id 倒序创建。
+    w.createEntity('zzz');
+    w.addComponent('zzz', { type: 'Transform', x: 3, y: 4, rotation: 0, scaleX: 1, scaleY: 1 } as Transform);
+    w.createEntity('aaa');
+    w.addComponent('aaa', { type: 'Transform', x: 4, y: 3, rotation: 0, scaleX: 1, scaleY: 1 } as Transform); // 同 d2=25
+    expect(queryNearest(w, 0, 0, 2)).toEqual(['aaa', 'zzz']); // id 升序，与创建序无关
+  });
 });

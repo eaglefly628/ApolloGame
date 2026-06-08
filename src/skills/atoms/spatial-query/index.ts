@@ -59,7 +59,9 @@ export function queryNearest(world: IWorld, x: number, y: number, count: number,
     const dy = t.y - y;
     scored.push({ id, d2: dx * dx + dy * dy });
   }
-  scored.sort((a, b) => a.d2 - b.d2);
+  // BUG-005：距离相等按 id 升序 tie-break（与 nearestByTag 一致）→ 不依赖实体构建/遍历序，
+  // 两端构建序不同（rejoin/快照恢复后追加实体）也选同一组 → lockstep 不分叉。
+  scored.sort((a, b) => a.d2 - b.d2 || (a.id < b.id ? -1 : a.id > b.id ? 1 : 0));
   return scored.slice(0, count).map((s) => s.id);
 }
 

@@ -85,13 +85,19 @@ export const prefabCapability = defineCapability({
       execute(world: IWorld) {
         const lib = findLibrary(world);
         if (!lib) return;
-        for (const [rid] of world.query('SpawnRequest')) {
+        for (const [rid, comps] of world.query('SpawnRequest')) {
           const req = world.getComponent<SpawnRequest>(rid, 'SpawnRequest');
-          if (!req) continue;
-          const tmpl = lib.templates[req.templateId];
-          if (!tmpl) continue;
-          instantiate(world, tmpl, req.templateId, lib.seq, req.x, req.y);
-          lib.seq += 1;
+          if (req) {
+            const tmpl = lib.templates[req.templateId];
+            if (tmpl) {
+              instantiate(world, tmpl, req.templateId, lib.seq, req.x, req.y);
+              lib.seq += 1;
+            }
+          }
+          // BUG-004：专用请求载体（仅 SpawnRequest 一个组件，如 mortal 的 drop:<id>）展开后销毁回收，
+          // 否则空实体永久残留（长局/刷怪无界增长，进 snapshot 拖慢，id 复用还会抛错）。
+          // caster 等把 SpawnRequest 挂在持久实体上（组件数 >1）→ 不销毁，仅其 SpawnRequest 被 consume。
+          if (comps.size === 1) world.destroyEntity(rid);
         }
       },
     },

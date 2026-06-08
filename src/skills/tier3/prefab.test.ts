@@ -122,3 +122,26 @@ describe('prefab — 全数据链 money shot：SpawnRequest → 展开 nova → 
     expect(enemyStatus & FROZEN).toBe(FROZEN); // 被冻结
   });
 });
+
+// ── BUG-004 回归：专用请求载体展开后回收，持久施法者实体保留 ──
+describe('prefab — BUG-004 载体回收（不泄漏空实体 / 不误删持久实体）', () => {
+  it('专用载体（仅 SpawnRequest）展开后被销毁，不残留空实体', () => {
+    const w = prefabWorld(BOX);
+    w.createEntity('drop:enemy-3');
+    w.addComponent('drop:enemy-3', { type: 'SpawnRequest', templateId: 'box', x: 0, y: 0 } as SpawnRequest);
+    w.tick();
+    expect(w.getAllEntities()).not.toContain('drop:enemy-3'); // 载体已回收
+    expect(w.getComponent<Transform>('box#0:body', 'Transform')).toBeTruthy(); // 掉落已展开
+  });
+
+  it('持久实体（SpawnRequest + 其他组件，如 caster 施法者）不被销毁，仅 SpawnRequest 被消费', () => {
+    const w = prefabWorld(BOX);
+    w.createEntity('caster');
+    w.addComponent('caster', { type: 'Transform', ...xf(0, 0) } as unknown as Transform); // 持久实体有别的组件
+    w.addComponent('caster', { type: 'SpawnRequest', templateId: 'box', x: 0, y: 0 } as SpawnRequest);
+    w.tick();
+    expect(w.getAllEntities()).toContain('caster'); // 持久实体保留
+    expect(w.getComponent('caster', 'SpawnRequest')).toBeUndefined(); // 仅其 SpawnRequest 被 consume
+    expect(w.getComponent<Transform>('caster', 'Transform')).toBeTruthy();
+  });
+});

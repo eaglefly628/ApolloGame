@@ -133,3 +133,15 @@ describe('T1 tween — loop / pingpong（REQ-004，连续往复）', () => {
   });
 });
 
+
+describe('T1 tween — BUG-005：duration<=0 不抖动', () => {
+  it('duration=0 + loop pingpong（无限）→ 即时到终值、done、移除（不每帧抖动）', () => {
+    const w = worldWithTween();
+    w.createEntity('e');
+    w.addComponent('e', { type: 'Transform', x: 0, y: 0, rotation: 0, scaleX: 1, scaleY: 1 } as Transform);
+    addTween(w, 'e', { target: 'Transform.x', from: 0, to: 10, duration: 0, loop: 'pingpong' });
+    w.tick();
+    expect(w.getComponent<Transform>('e', 'Transform')!.x).toBe(10); // 即时终值
+    expect(w.hasComponent('e', 'Tween')).toBe(false); // 已结束移除，不再每帧交换 from/to 抖动
+  });
+});

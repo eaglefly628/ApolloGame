@@ -114,6 +114,13 @@ export const tweenCapability = defineCapability({
       execute(world) {
         for (const [eid] of world.query('Tween')) {
           const tw = world.getComponent<Tween>(eid, 'Tween')!;
+          // BUG-005：duration<=0（无效授权数据）即时到终值并结束，绝不进入"每帧到点→交换/归零"的 loop 抖动死循环。
+          if (tw.duration <= 0) {
+            writeField(world, eid, tw.target, tw.to);
+            tw.done = true;
+            world.removeComponent(eid, 'Tween');
+            continue;
+          }
           tw.elapsed += 1;
           if (tw.elapsed >= tw.duration) {
             const loop = tw.loop ?? 'none';

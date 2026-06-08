@@ -75,6 +75,10 @@ export const timerCapability = defineCapability({
       writes: ['Timer', 'TimerDone'],
       consumes: [],
       execute(world) {
+        // BUG-003 修复：生产者自清——先移除上一拍的 TimerDone（一拍生命周期，仿 event-when 清 Signal）。
+        // 此前由消费者 consume 全局删除，多消费者（lifetime+animation）时先跑者删光、后者饿死丢事件。
+        // 改为生产者清 + 消费者用 reads → 同一 TimerDone 可被多家共读，互不抢占。
+        for (const [id] of world.query('TimerDone')) world.removeComponent(id, 'TimerDone');
         for (const [entityId] of world.query('Timer')) {
           const timer = world.getComponent<Timer>(entityId, 'Timer');
           if (!timer) continue;

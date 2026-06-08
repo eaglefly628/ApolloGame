@@ -787,7 +787,9 @@
 
 > 🔎 **主程4 引擎层 bug 审计（2026-06-08，独立于 PE 提单）** —— 自动审计 + 人工核实，确认以下引擎/能力层真 bug。均为 Lead 域；**因 PE 正并行改 game-e，避免冲突，先登记给 owner 排期，授权后再修**。
 
-### BUG-003 · [2026-06-08] · 主程4（引擎审计）· 引擎 World.consume + tier1 lifetime/animation · status: **open** · 优先级: **P1（静默丢事件）**
+### BUG-003 · [2026-06-08] · 主程4（引擎审计）· 引擎 World.consume + tier1 lifetime/animation · status: **done**（2026-06-08，主程4）· 优先级: **P1（静默丢事件）**
+
+> ✅ **修复（生产者自清模式，仿 event-when 清 Signal）**：`timer-advance` 每拍起先移除上拍 TimerDone；`lifetime`/`animation` 由 `consumes:['TimerDone']` 改 `reads:['TimerDone']` → 同一 TimerDone 可被多消费者共读、不再被先跑者全局删光。`life` 计时 + 动画帧计时同拍触发时 DestroyRequest 与帧推进**并存**（回归测 `timer-consume.test.ts` 钉死）。一拍生命周期不变（次拍 timer-advance 自清，不重复推进）。**未改 World.consume 引擎契约**（最小改动）；"禁止同组件多系统 consume 的校验"留 follow-up。
 
 **标题**：`TimerDone` 被 `lifetime` 与 `animation` 两系统同时 `consumes` —— 全局消费导致 animation 饿死丢帧
 
@@ -795,7 +797,9 @@
 - **后果**：同一 tick 内只要有 `life` 计时器到点 + 有动画帧计时器到点，**精灵帧停止推进**（静默，非崩溃）。Game D（投射物 life + anim-state 动画并存）会触发。两端同样丢失 → 不致 desync，但行为错误。
 - **修复方向（待授权）**：consume 语义改为"读到即消费"（按系统实际触及实体），或 TimerDone 由 `timer` 在每 tick 起清（仿 event-when 清 Signal），消费方改 `reads`。会动 animation/lifetime 的 consume 测试。**建议同时在 assembly 校验层禁止"同一组件被多系统 consume"**（根除同类隐患）。
 
-### BUG-004 · [2026-06-08] · 主程4（引擎审计）· 引擎 tier2 mortal · status: **open** · 优先级: **P2（实体泄漏）**
+### BUG-004 · [2026-06-08] · 主程4（引擎审计）· 引擎 tier2 mortal · status: **done**（2026-06-08，主程4）· 优先级: **P2（实体泄漏）**
+
+> ✅ **修复（在 prefab 侧精准回收，解耦无误删）**：`prefab-spawn` 展开后，若持 SpawnRequest 的实体**仅此一个组件**（`comps.size===1`，即 mortal 的 `drop:<id>` 专用载体）→ `destroyEntity` 回收；caster 等把 SpawnRequest 挂在持久实体（组件数 >1）→ 不动，仅其 SpawnRequest 照常被 consume。根除空实体泄漏 + id 复用抛错，且不误删施法者。回归测 `prefab.test.ts`（载体销毁 / 持久实体保留）。
 
 **标题**：死亡掉落载体实体 `drop:<id>` 永不回收（长局/刷怪无界增长 + id 复用可抛错）
 
@@ -803,7 +807,9 @@
 - **后果**：每个带 `dropTemplate` 的怪死亡泄漏一个空实体（进 snapshot/hash 拖慢）；极端下抛错中断 tick。
 - **修复方向**：prefab 展开后销毁载体实体，或载体加 `life=1` 自销毁 Timer。
 
-### BUG-005 · [2026-06-08] · 主程4（引擎审计）· 引擎 atoms spatial-query + tier1 tween · status: **open** · 优先级: **P3（确定性脆弱 / 数据健壮性）**
+### BUG-005 · [2026-06-08] · 主程4（引擎审计）· 引擎 atoms spatial-query + tier1 tween · status: **done**（2026-06-08，主程4）· 优先级: **P3（确定性脆弱 / 数据健壮性）**
+
+> ✅ **修复**：① `queryNearest` 排序加 id 升序 tie-break（与 `nearestByTag` 一致）→ 等距时不依赖构建/遍历序，两端构建序不同也选同一组，lockstep 不分叉。② `tween` `duration<=0` 即时到终值+done+移除，绝不进入"每帧到点→pingpong 交换"的抖动死循环。各加回归测。
 
 - **spatial-query `queryNearest`**（`atoms/spatial-query/index.ts:62`）：距离相等时 `sort((a,b)=>a.d2-b.d2)` 无 id tie-break，依赖数组（=query 插入）序 + sort 稳定性。同端录放安全，但两端构建序不同（rejoin/快照恢复后追加实体）可能选出不同实体 → **潜在 desync**。同文件 `nearestByTag` 已正确做 id tie-break，**此处不一致**，建议补齐。
 - **tween `duration<=0` 配无限 loop**（`tier1/tween.ts`）：`elapsed>=duration` 恒真，pingpong 每帧抖动、永不收敛（仅表现层，不进 hash）。建议 `duration<=0` 时忽略 loop 或校验层拒绝。
@@ -853,7 +859,15 @@
 
 ---
 
-### REQ-019 · [2026-06-08] · PE（去代码化 #10）· 框架级 / 卡牌玩法 · status: **open** · 优先级: **P1（去代码化关键：消解 game-e.tsx 手算计分演出）** · 类型: 真缺口（小钩子：计分链输出逐步 trace）
+### REQ-019 · [2026-06-08] · PE（去代码化 #10）· 框架级 / 卡牌玩法 · status: **open（主程4 评审：ACCEPT + 设计红线，待实现授权）** · 优先级: **P1（去代码化关键：消解 game-e.tsx 手算计分演出）** · 类型: 真缺口（小钩子：计分链输出逐步 trace）
+
+> 🔎 **主程4 Lead 评审（2026-06-08）**：**ACCEPT**。过尺子核验——「逐步顺序+每步增量+每步后值」只有计分链内部知道，UI 重算就是要消解的专有代码+分叉风险 → 是引擎该补的**输出钩子**，非新 Tier3 能力（poker-eval/card-score-pass/effect-apply 各加几行 append + `ScoreTrace` 组件 + 排除出 hash）。设计稿 `game-e-score-trace.md` 方向正确。
+> **实现前必加的设计红线（交给实现者，含我自己）**：
+> 1. **effect-apply 是通用能力（A/B/C/D 全用）—— trace append 必须 opt-in 门控**：仅当世界存在 `ScoreTrace` 单例时才记录，否则非卡牌游戏每条 effect 都被无谓 append（开销+污染）。在 effect-apply 里 `if (!hasScoreTrace) return 原逻辑`。
+> 2. **限定 modify-resource**：只记数值变更步，不记 set-flag/set-sensor 等（trace 是"计分"叙事）。
+> 3. **排除出 hashSnapshot**（同 Camera 先例，确认 determinism.ts 的排除集加入 `ScoreTrace`）；每次计分起清空 events（建议由计分链首系统 poker-eval 在评估开头清，单一清空点，避免三处各清竞态）。
+> 4. **phase 字段用自由 string 而非 Balatro 专属枚举**，保住"分步结算演出"对遗物/伤害分解的通用复用面。
+> **归属**：引擎部分（ScoreTrace + append + 排除 hash + 单测）属主程域；UI 回放消解属 game-e.tsx(PE)。可与 REQ-017 并行。**本程仅评审，未实现**（用户指示）。
 
 **标题**：计分链吐「逐步计分 trace」事件流 —— UI 只回放，消解手算帧序的专有代码
 

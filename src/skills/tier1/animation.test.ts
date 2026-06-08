@@ -16,18 +16,18 @@ function frame(w: World, index: number, total: number): void {
 const done = (w: World): void => w.addComponent('e', { type: 'TimerDone', timerId: 't' } as TimerDone);
 
 describe('T1 animation', () => {
-  it('契约：读 Frame+TimerDone / consume TimerDone / 写 Frame', () => {
+  it('契约：读 Frame+TimerDone / 写 Frame（BUG-003：不再 consume，TimerDone 由 timer-advance 自清）', () => {
     expect(animationCapability.components.reads).toEqual(['Frame', 'TimerDone']);
-    expect(animationCapability.components.consumes).toEqual(['TimerDone']);
+    expect(animationCapability.components.consumes).toEqual([]);
     expect(animationCapability.components.writes).toEqual(['Frame']);
   });
-  it('TimerDone → index+1，并消费掉 TimerDone', () => {
+  it('TimerDone → index+1（不再由 animation 消费 TimerDone；生产者 timer-advance 负责清）', () => {
     const w = mk();
     frame(w, 0, 3);
     done(w);
     w.tick();
     expect(F(w).index).toBe(1);
-    expect(w.hasComponent('e', 'TimerDone')).toBe(false); // consumed
+    expect(w.hasComponent('e', 'TimerDone')).toBe(true); // BUG-003：animation 不再 consume，留给 timer-advance 自清
   });
   it('loop 环绕 total', () => {
     const w = mk();
