@@ -846,6 +846,18 @@
 
 ---
 
+### REQ-019 · [2026-06-08] · PE（去代码化 #10）· 框架级 / 卡牌玩法 · status: **open** · 优先级: **P1（去代码化关键：消解 game-e.tsx 手算计分演出）** · 类型: 真缺口（小钩子：计分链输出逐步 trace）
+
+**标题**：计分链吐「逐步计分 trace」事件流 —— UI 只回放，消解手算帧序的专有代码
+
+- **背景（去代码化）**：`game-e.tsx` 为做「逐张报分 + 小丑抖动」演出，**自己重算了一遍计分顺序/增量**（专有游戏代码 + 与引擎结果分叉风险）。正确做法：**引擎是唯一真相**，它本就按确定顺序逐步改 chips/mult，把每步**记下来**给 UI 回放即可。详设计稿 `docs/game-design/game-e-score-trace.md`。
+- **PE 评审（重组 vs 缺口）**：重组不够——「逐步顺序 + 每步增量 + 每步后值」只有计分链自己知道，UI 重算就是要消解的代码。故是**引擎该补的输出**；但**不是新 Tier3 能力**，是给已有 `poker-eval`/`card-score-pass`/`effect-apply` 各加几行 append + 一个 `ScoreTrace` 组件。**通用**：任何「分步结算要演出」的玩法（遗物结算/伤害分解）可复用。
+- **建议形态**：`ScoreTrace{ events: ScoreEvent[] }` 挂牌桌单例，计分开头清空；三系统按真实执行序 append `ScoreEvent{ seq, phase, target, op, value, chips, mult, cardIndex?, jokerId?, source? }`（记本步后 chips/mult）。**排除出 hashSnapshot**（表现输出，同 Camera 先例）。单测：trace 末条 == 资源真值；顺序确定。
+- **收益**：game-e.tsx 删掉计分帧序逻辑，改「读 ScoreTrace.events 按时间轴回放」——演出触发点全来自数据，换规则/加小丑 trace 自动变、UI 不改。**这是 #10 那条唯一真缺口；其余去代码化项（#1–9）归 REQ-017。**
+- **依赖**：可与 REQ-017 并行（独立于流程下沉）；建议紧随其后，让 game-e.tsx 一次性退化为零逻辑薄壳。
+
+---
+
 ## 需求模板（复制这段填写）
 
 ```
