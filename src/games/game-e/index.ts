@@ -1,11 +1,11 @@
-// Game E · 《小丑牌·Apollo》Balatro 式扑克 roguelike —— 数据层入口。
-// 设计稿：docs/game-design/game-e-joker-roguelike.md
-// 现状(v0.1)：内容全为纯数据（牌组/牌型/盲注/小丑/美术清单）+ 自验证测试。
-// 计分链待引擎 REQ-011（牌型评估）+ REQ-012（乘法/有序结算）落地后装配 blueprint。
-
-export * from './deck.js';
-export * from './hand-rankings.js';
-export * from './blinds.js';
-export * from './jokers.js';
-export * from './joker-catalog.js';
-export * from './assets.js';
+// Game E · Balatro-like 卡牌构建 PoC。负责人：用户/Lead。
+// 纯数据：卡牌 = Tag(花色+点数编码) + Resource(selected)；小丑 = Tag(JOKER_FLAG) + Resource(效果值)。
+// 手牌评估 + 小丑效果由 UI 层读数据纯函数计算（离散事件驱动，无需专属 system）。
+export {
+  buildGameEBlueprint,
+  SUIT_SPADES, SUIT_HEARTS, SUIT_DIAMONDS, SUIT_CLUBS,
+  SUIT_MASK, RANK_SHIFT, RANK_MASK,
+  CARD_FLAG, JOKER_FLAG,
+  suitOf, rankOf, isCard, isJoker,
+  SUIT_SYMBOL, SUIT_COLOR, RANK_LABEL, RANK_CHIPS,
+} from './blueprint.js';

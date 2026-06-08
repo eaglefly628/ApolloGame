@@ -78,6 +78,16 @@ const GAMES: GameEntry[] = [
     status: 'playable',
   },
   {
+    id: 'game-e',
+    title: 'Game E: Balatro-like',
+    subtitle: '小丑牌 · 卡牌构建',
+    description: '选最多 5 张手牌 → 自动识别牌型（Pair/Flush/Straight…）→ 筹码 × 倍率得分。小丑牌实时叠加效果。卡牌实体数据存于 ECS world，手牌评估为纯函数，零游戏专属代码。',
+    color: '#1a1020',
+    accentColor: '#f59e0b',
+    icon: '🃏',
+    status: 'playable',
+  },
+  {
     id: 'game-d',
     title: 'Game D: Diablo-like ARPG',
     subtitle: '暗黑类 ARPG 切片',
@@ -500,6 +510,7 @@ function GameRunner({ gameId, onBack }: { gameId: string; onBack: () => void }) 
       'game-a': () => import('./game-a.js'),
       'game-b': () => import('./game-b.js'),
       'game-c': () => import('./game-c.js'),
+      'game-e': () => import('./game-e.js'),
       'game-d': () => import('./game-d.js'),
     };
     const loader = loaders[gameId];
