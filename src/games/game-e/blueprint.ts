@@ -28,6 +28,12 @@ export const V_HAND_TYPE = 'hand_type';
 export const F_SCORING = 'scoring';
 export const SIG_SCORE = 'score';
 export const SIG_JOLLY = 'jolly_fire';
+// 回合循环（增量1：可玩切片）。round_score 跨手累加；hands_left 每出一手 -1；blind_target 过关线。
+export const R_ROUND_SCORE = 'round_score';
+export const R_HANDS_LEFT = 'hands_left';
+export const R_DISCARDS_LEFT = 'discards_left';
+export const R_BLIND = 'blind_target';
+export const SIG_COMMIT = 'hand_committed'; // 边沿信号：每"出一手"触发一次（与 score 的 level 区分）
 
 // 数据牌型 id（下划线）→ 引擎 poker-hand 牌型名（连字符）。
 const HAND_TYPE_TO_ENGINE: Record<HandType, string> = {
@@ -104,6 +110,12 @@ export function buildGameEBlueprint(): WorldBlueprint {
     // 计分开关（装配层/输入层在「出牌」时置 true → 驱动 score 信号）。
     scoring: { Flag: { id: F_SCORING, active: false } } as unknown as EntityBlueprint,
 
+    // ── 回合循环资源（增量1：单局可玩切片）。round_score 跨手累加、过 blind_target 即胜；hands_left 出一手 -1。──
+    roundScore: { Resource: { id: R_ROUND_SCORE, current: 0, min: 0, max: 1_000_000_000_000 } } as unknown as EntityBlueprint,
+    handsLeft: { Resource: { id: R_HANDS_LEFT, current: 4, min: 0, max: 99 } } as unknown as EntityBlueprint,
+    discardsLeft: { Resource: { id: R_DISCARDS_LEFT, current: 3, min: 0, max: 99 } } as unknown as EntityBlueprint,
+    blindTarget: { Resource: { id: R_BLIND, current: 300, min: 0, max: 1_000_000_000_000 } } as unknown as EntityBlueprint,
+
     // ── 牌桌（单例）：评估器 + 逐张计分配置 + 当前出的牌（选牌交互填 cards）。──
     // PokerHand(REQ-011) 出牌型基础分；PerCardScore(REQ-014) 在其上逐张累加 baseChips（chips = 牌型基础 + Σ每张牌）。
     table: {
@@ -137,6 +149,14 @@ export function buildGameEBlueprint(): WorldBlueprint {
     joker_bull: { Effect: { onSignal: SIG_SCORE, kind: 'modify-resource', targetId: R_CHIPS, op: 'add', valueFrom: { resourceId: R_MONEY, coeff: 2 }, order: 6 } } as unknown as EntityBlueprint,
 
     score_combine: { Effect: { onSignal: SIG_SCORE, kind: 'modify-resource', targetId: R_HAND_SCORE, op: 'set', valueFrom: { resourceId: R_CHIPS, timesResourceId: R_MULT }, order: 1000 } } as unknown as EntityBlueprint,
+
+    // ── 回合进度（边沿：每"出一手"一次，与计分链的 level 区分）──
+    // gate_commit 在 scoring 上升沿发 hand_committed（一次）；round_accumulate/hands_decrement 监听它，
+    // 故多 tick 持有 scoring 也只累加/递减一次（与计分链每 tick 幂等重算解耦）。
+    gate_commit: { EventWhen: { signal: SIG_COMMIT, when: { kind: 'flag', id: F_SCORING }, mode: 'edge', armed: false } } as unknown as EntityBlueprint,
+    // round_score += hand_score（order>score_combine 的 1000 → 同 tick 读到刚 set 的本手分）。
+    round_accumulate: { Effect: { onSignal: SIG_COMMIT, kind: 'modify-resource', targetId: R_ROUND_SCORE, op: 'add', valueFrom: { resourceId: R_HAND_SCORE }, order: 2000 } } as unknown as EntityBlueprint,
+    hands_decrement: { Effect: { onSignal: SIG_COMMIT, kind: 'modify-resource', targetId: R_HANDS_LEFT, op: 'add', value: -1, order: 2001 } } as unknown as EntityBlueprint,
   };
 
   return {

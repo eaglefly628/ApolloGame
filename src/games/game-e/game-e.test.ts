@@ -9,9 +9,12 @@ import {
   R_MULT,
   R_MONEY,
   R_HAND_SCORE,
+  R_ROUND_SCORE,
+  R_HANDS_LEFT,
+  R_BLIND,
   V_HAND_TYPE,
 } from './blueprint.js';
-import { STANDARD_DECK } from './deck.js';
+import { STANDARD_DECK, shuffledDeck, shuffle } from './deck.js';
 
 // 真引擎整合：证明「数据 + 真能力」涌现出 Balatro 完整一手计分，无游戏 system 代码。
 //   poker-eval(REQ-011) 判牌型给基础分 → effect-apply(REQ-012) 按 order 有序加乘小丑
@@ -154,5 +157,77 @@ describe('game-e · REQ-014 逐张小丑 + retrigger 真引擎涌现', () => {
     // mult：Greedy 7 次 = +21；((4 +21) +4) ×3 = 87。证明 retrigger×逐张耦合（count(♦)×3=15 表达不了）。
     expect(res(e, R_MULT)).toBe(87);
     expect(res(e, R_HAND_SCORE)).toBe(11310); // 130 × 87
+  });
+});
+
+// ── 增量1：回合循环（round_score 累加 / hands_left 递减 / 胜负）—— 引擎驱动，视图零逻辑 ──
+//   commit() 复刻 game-e.tsx 的出牌一拍：写 PlayedHand+scoring=true → tick → 清+scoring=false → tick(disarm)。
+//   round_score/hands_left 走边沿信号 hand_committed（每出一手一次），与计分链的 level 解耦。
+const commit = (e: Engine, cards: Card[]): void => {
+  e.world.getComponent<PlayedHand>('table', 'PlayedHand')!.cards = cards;
+  e.world.getComponent<Flag>('scoring', 'Flag')!.active = true;
+  e.world.tick();
+  e.world.getComponent<PlayedHand>('table', 'PlayedHand')!.cards = [];
+  e.world.getComponent<Flag>('scoring', 'Flag')!.active = false;
+  e.world.tick();
+};
+
+describe('game-e · 回合循环（边沿 commit：累加/递减一次）', () => {
+  it('出一手：round_score += 本手分、hands_left 4→3', () => {
+    const e = boot();
+    expect(res(e, R_ROUND_SCORE)).toBe(0);
+    expect(res(e, R_HANDS_LEFT)).toBe(4);
+    commit(e, [card(1, 2), card(1, 5), card(1, 7), card(1, 9), card(1, 11)]); // flush → 本手 3024
+    expect(res(e, R_HAND_SCORE)).toBe(3024);
+    expect(res(e, R_ROUND_SCORE)).toBe(3024);
+    expect(res(e, R_HANDS_LEFT)).toBe(3);
+  });
+
+  it('出两手：round_score 跨手累加、hands_left 递减两次', () => {
+    const e = boot();
+    commit(e, [card(1, 2), card(1, 5), card(1, 7), card(1, 9), card(1, 11)]); // flush 3024
+    commit(e, [card(0, 13), card(3, 13), card(0, 2), card(1, 5), card(2, 9)]); // pair 4368
+    expect(res(e, R_ROUND_SCORE)).toBe(3024 + 4368);
+    expect(res(e, R_HANDS_LEFT)).toBe(2);
+  });
+
+  it('★边沿幂等：持有 scoring 多 tick 也只累加/递减一次（与计分链 level 解耦）', () => {
+    const e = boot();
+    e.world.getComponent<PlayedHand>('table', 'PlayedHand')!.cards = [card(1, 2), card(1, 5), card(1, 7), card(1, 9), card(1, 11)];
+    e.world.getComponent<Flag>('scoring', 'Flag')!.active = true;
+    e.world.tick();
+    e.world.tick();
+    e.world.tick(); // 连 tick 3 次仍持有 scoring
+    expect(res(e, R_HAND_SCORE)).toBe(3024); // 计分链幂等（level，每 tick 重算同值）
+    expect(res(e, R_ROUND_SCORE)).toBe(3024); // 边沿只累加一次
+    expect(res(e, R_HANDS_LEFT)).toBe(3); // 边沿只递减一次
+  });
+
+  it('达盲注线：累加过 blind_target（300）即视图判胜（这里验资源到位）', () => {
+    const e = boot();
+    expect(res(e, R_BLIND)).toBe(300);
+    commit(e, [card(1, 2), card(1, 5), card(1, 7), card(1, 9), card(1, 11)]); // 3024 ≥ 300
+    expect(res(e, R_ROUND_SCORE)).toBeGreaterThanOrEqual(res(e, R_BLIND));
+  });
+});
+
+describe('game-e · 确定性洗牌（deck）', () => {
+  it('同 seed 同牌序（可复现，为 lockstep 铺路）', () => {
+    expect(shuffledDeck(42)).toEqual(shuffledDeck(42));
+  });
+  it('不同 seed 不同牌序', () => {
+    expect(shuffledDeck(1)).not.toEqual(shuffledDeck(2));
+  });
+  it('洗牌是排列：52 张不增不减、元素同集合', () => {
+    const s = shuffledDeck(7);
+    expect(s.length).toBe(STANDARD_DECK.length);
+    expect([...s].sort((a, b) => (a.suit + a.rank < b.suit + b.rank ? -1 : 1)))
+      .toEqual([...STANDARD_DECK].sort((a, b) => (a.suit + a.rank < b.suit + b.rank ? -1 : 1)));
+  });
+  it('shuffle 不改原数组', () => {
+    const orig = [1, 2, 3, 4, 5];
+    const copy = [...orig];
+    shuffle(orig, 99);
+    expect(orig).toEqual(copy);
   });
 });

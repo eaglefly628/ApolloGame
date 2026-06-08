@@ -1,20 +1,29 @@
-import React, { useState, useRef, useCallback } from 'react';
+import React, { useRef, useState, useCallback } from 'react';
 import { createRoot } from 'react-dom/client';
 import { Engine } from './runtime/engine.js';
 import type { Resource, PlayedHand, Flag, StringVar } from './engine/protocol/components.js';
-import { buildGameEBlueprint, toEngineCard, R_CHIPS, R_MULT, R_HAND_SCORE, V_HAND_TYPE, F_SCORING } from './games/game-e/blueprint.js';
-import { STANDARD_DECK, HAND_RANKINGS, type Card, type Suit, type Rank, type HandType } from './games/game-e/index.js';
+import {
+  buildGameEBlueprint, toEngineCard,
+  R_CHIPS, R_MULT, R_HAND_SCORE, R_ROUND_SCORE, R_HANDS_LEFT, R_BLIND, V_HAND_TYPE,
+} from './games/game-e/blueprint.js';
+import { HAND_RANKINGS, shuffledDeck, type Card, type Suit, type Rank, type HandType } from './games/game-e/index.js';
 import { cardCell, CELL_W, CELL_H, SHEET_W, SHEET_H } from './games/game-e/cards-atlas.js';
 
-// Game E · 小丑牌 —— 真引擎跑分 + 真美术（MVP-0 单人 vs Boss 核心闭环）。
-// 逻辑全在引擎（buildGameEBlueprint：poker-eval 认牌型 + PerCardScore 逐张 + 小丑 effect 有序加乘 + REQ-013 合并）；
-// 本文件只是薄表现层：cards.png 切图出真牌面、小丑用真 webp，读引擎资源显示分数（手写 UI 仅布局，logic=数据）。
+// ════════════════════════════════════════════════════════════════════════
+//  Game E · 小丑牌 —— 真引擎跑分 + 真美术（MVP-0 单人 vs Boss 核心闭环）。
+//
+//  ★ 逻辑全在引擎：牌型/逐张筹码/小丑有序加乘/资源×资源合并/回合累加全由 buildGameEBlueprint 算
+//  （poker-hand REQ-011 + card-scoring REQ-014 + effect-apply REQ-012/013 + 回合循环边沿门）。
+//  本文件是**薄表现层**：① 选牌→写 PlayedHand+scoring（输入层）② 读世界 Resource 投影成画面。
+//  回合态(round_score/hands_left)住 ECS（非 React state）；牌序用确定性种子洗牌（lockstep 铺路）。
+// ════════════════════════════════════════════════════════════════════════
 
 const CARDS_URL = '/assets/FreeArtLib/cardgame/cards.png';
 const JOKER_URL = (file: string) => `/assets/FreeArtLib/cardgame/card/${file}`;
 const SCALE = 1.15;
-const CW = Math.round(CELL_W * SCALE); // 牌显示宽
+const CW = Math.round(CELL_W * SCALE);
 const CH = Math.round(CELL_H * SCALE);
+const HAND_SIZE = 8;
 
 // 牌桌上的小丑（与引擎 buildGameEBlueprint 的计分小丑一致）。file=美术；无图则 fallback。
 const TABLE_JOKERS = [
@@ -25,21 +34,11 @@ const TABLE_JOKERS = [
   { name: 'Bull', file: '', desc: '每 $1 +2 筹码' }, // 素材包暂缺
 ];
 
-const shuffle = <T,>(a: readonly T[]): T[] => {
-  const r = [...a];
-  for (let i = r.length - 1; i > 0; i--) {
-    const j = Math.floor(Math.random() * (i + 1));
-    [r[i], r[j]] = [r[j], r[i]];
-  }
-  return r;
-};
-
 // cards.png 单格背景定位（按花色点数取格）。
 function cardBg(suit: Suit, rank: Rank): React.CSSProperties {
   const { col, row } = cardCell(suit, rank);
   return {
-    width: CW,
-    height: CH,
+    width: CW, height: CH,
     backgroundImage: `url(${CARDS_URL})`,
     backgroundSize: `${SHEET_W * SCALE}px ${SHEET_H * SCALE}px`,
     backgroundPosition: `-${col * CELL_W * SCALE}px -${row * CELL_H * SCALE}px`,
@@ -47,23 +46,25 @@ function cardBg(suit: Suit, rank: Rank): React.CSSProperties {
   };
 }
 
-const BOSS_MAX = 600;
-
 function GameE() {
   const engineRef = useRef<Engine | null>(null);
+  const seedRef = useRef(20260608);
+  const deckRef = useRef<Card[]>([]);
+  const deckPtrRef = useRef(0);
+
   if (engineRef.current === null) {
     const e = new Engine({ tickRate: 60 });
     e.load(buildGameEBlueprint());
     engineRef.current = e;
+    deckRef.current = shuffledDeck(seedRef.current);
+    deckPtrRef.current = HAND_SIZE;
   }
   const engine = engineRef.current;
 
-  const [hand, setHand] = useState<Card[]>(() => shuffle(STANDARD_DECK).slice(0, 8));
-  const [sel, setSel] = useState<boolean[]>(() => new Array(8).fill(false));
+  const [hand, setHand] = useState<Card[]>(() => deckRef.current.slice(0, HAND_SIZE));
+  const [sel, setSel] = useState<boolean[]>(() => new Array(HAND_SIZE).fill(false));
   const [result, setResult] = useState<{ type: HandType; chips: number; mult: number; score: number } | null>(null);
-  const [bossHp, setBossHp] = useState(BOSS_MAX);
-  const [handsLeft, setHandsLeft] = useState(4);
-  const [msg, setMsg] = useState('选最多 5 张 → 出牌，真引擎认牌型并结算');
+  const [, force] = useState(0); // 触发重渲染读最新世界资源
 
   const resOf = useCallback((id: string): number => {
     for (const [eid] of engine.world.query('Resource')) {
@@ -73,6 +74,13 @@ function GameE() {
     return 0;
   }, [engine]);
 
+  const blind = resOf(R_BLIND);
+  const roundScore = resOf(R_ROUND_SCORE);
+  const handsLeft = resOf(R_HANDS_LEFT);
+  const bossHp = Math.max(0, blind - roundScore); // Boss 血 = 盲注线剩余（round_score 由引擎累加）
+  const dead = roundScore >= blind;
+  const lost = !dead && handsLeft <= 0;
+
   const toggle = useCallback((i: number) => {
     setSel((prev) => {
       const cnt = prev.filter(Boolean).length;
@@ -81,14 +89,22 @@ function GameE() {
     });
   }, []);
 
+  const drawTo = useCallback((kept: Card[]): Card[] => {
+    const deck = deckRef.current;
+    const need = HAND_SIZE - kept.length;
+    const drawn = deck.slice(deckPtrRef.current, deckPtrRef.current + need);
+    deckPtrRef.current += drawn.length;
+    return [...kept, ...drawn];
+  }, []);
+
   const play = useCallback(() => {
     const chosen = hand.filter((_, i) => sel[i]);
-    if (chosen.length === 0 || handsLeft <= 0 || bossHp <= 0) return;
+    if (chosen.length === 0 || dead || lost) return;
 
-    // 喂给真引擎：填出牌 + 开 scoring → tick 让 poker-eval/逐张/小丑/合并跑完 → 读结果。
+    // ① 输入层：填出牌 + 开 scoring → tick（引擎认牌型/逐张/小丑/合并 + 边沿累加 round_score、hands_left-1）。
     engine.world.getComponent<PlayedHand>('table', 'PlayedHand')!.cards = chosen.map(toEngineCard);
     engine.world.getComponent<Flag>('scoring', 'Flag')!.active = true;
-    for (let i = 0; i < 5; i++) engine.world.tick();
+    engine.world.tick();
 
     const chips = resOf(R_CHIPS);
     const mult = resOf(R_MULT);
@@ -96,53 +112,54 @@ function GameE() {
     let type: HandType = 'high_card';
     for (const [eid] of engine.world.query('StringVar')) {
       const v = engine.world.getComponent<StringVar>(eid, 'StringVar');
-      if (v && v.id === V_HAND_TYPE) type = (v.value.replace(/-/g, '_') as HandType) ?? 'high_card';
+      if (v && v.id === V_HAND_TYPE) type = v.value.replace(/-/g, '_') as HandType;
     }
 
-    // 收尾：关 scoring + 清出牌（下次重算）。
-    engine.world.getComponent<Flag>('scoring', 'Flag')!.active = false;
+    // ② 收尾一拍：清出牌 + 关 scoring（disarm 边沿门，下手可再触发）。
     engine.world.getComponent<PlayedHand>('table', 'PlayedHand')!.cards = [];
+    engine.world.getComponent<Flag>('scoring', 'Flag')!.active = false;
+    engine.world.tick();
 
     setResult({ type, chips, mult, score });
-    setBossHp((hp) => Math.max(0, hp - score));
-    setHandsLeft((h) => h - 1);
-    setMsg(`${HAND_RANKINGS[type]?.name ?? type}：${chips} × ${mult} = ${score} 砸向 Boss`);
 
-    // 补牌：移除已出，从牌堆补到 8 张。
+    // ③ 抽牌补手：移除已出，从牌库补到 8 张。
     const rest = hand.filter((_, i) => !sel[i]);
-    const used = new Set([...rest, ...chosen].map((c) => `${c.suit}${c.rank}`));
-    const pool = shuffle(STANDARD_DECK.filter((c) => !used.has(`${c.suit}${c.rank}`)));
-    setHand([...rest, ...pool.slice(0, 8 - rest.length)]);
-    setSel(new Array(8).fill(false));
-  }, [hand, sel, handsLeft, bossHp, engine, resOf]);
+    const next = drawTo(rest);
+    setHand(next);
+    setSel(new Array(next.length).fill(false));
+    force((n) => n + 1);
+  }, [hand, sel, dead, lost, engine, resOf, drawTo]);
 
   const newRun = useCallback(() => {
-    setHand(shuffle(STANDARD_DECK).slice(0, 8));
-    setSel(new Array(8).fill(false));
+    seedRef.current += 1; // 换种子 → 新牌序（仍确定性可复现）
+    const e = new Engine({ tickRate: 60 });
+    e.load(buildGameEBlueprint());
+    engineRef.current = e;
+    deckRef.current = shuffledDeck(seedRef.current);
+    deckPtrRef.current = HAND_SIZE;
+    setHand(deckRef.current.slice(0, HAND_SIZE));
+    setSel(new Array(HAND_SIZE).fill(false));
     setResult(null);
-    setBossHp(BOSS_MAX);
-    setHandsLeft(4);
-    setMsg('新一局：选最多 5 张 → 出牌');
+    force((n) => n + 1);
   }, []);
 
   const selCount = sel.filter(Boolean).length;
-  const dead = bossHp <= 0;
-  const lost = !dead && handsLeft <= 0;
+  const msg = dead ? '🎉 击败 Boss（round_score ≥ 盲注线）' : lost ? '💀 出牌耗尽，未达盲注线' : '选最多 5 张 → 出牌，真引擎认牌型并结算';
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 16, padding: 24, color: '#e2e8f0', font: '13px system-ui', width: '100%', maxWidth: 760 }}>
-      {/* Boss 条 */}
+      {/* Boss 条（= 盲注线剩余）*/}
       <div style={{ width: '100%', maxWidth: 620 }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 13, marginBottom: 4 }}>
-          <span>👹 Boss{dead ? ' · 击败！' : ''}</span>
-          <span style={{ color: '#fca5a5' }}>{bossHp} / {BOSS_MAX}</span>
+          <span>👹 Boss{dead ? ' · 击败！' : ''}　<span style={{ color: '#64748b', fontSize: 11 }}>出牌次数 {handsLeft}</span></span>
+          <span style={{ color: '#fca5a5' }}>{bossHp.toLocaleString()} / {blind.toLocaleString()}</span>
         </div>
         <div style={{ height: 16, background: '#2a1118', borderRadius: 8, overflow: 'hidden', border: '1px solid #4b1d24' }}>
-          <div style={{ width: `${(bossHp / BOSS_MAX) * 100}%`, height: '100%', background: 'linear-gradient(90deg,#ef4444,#f87171)', transition: 'width 0.3s' }} />
+          <div style={{ width: `${blind > 0 ? (bossHp / blind) * 100 : 0}%`, height: '100%', background: 'linear-gradient(90deg,#ef4444,#f87171)', transition: 'width 0.3s' }} />
         </div>
       </div>
 
-      {/* 小丑排（真美术） */}
+      {/* 小丑排（真美术）*/}
       <div style={{ display: 'flex', gap: 10, alignItems: 'flex-end' }}>
         <span style={{ fontSize: 10, color: '#64748b', paddingBottom: 50, letterSpacing: 1 }}>JOKERS</span>
         {TABLE_JOKERS.map((j) => (
@@ -157,21 +174,21 @@ function GameE() {
         ))}
       </div>
 
-      {/* 结算读出 */}
+      {/* 结算读出（读世界，不在视图算）*/}
       <div style={{ background: '#0b1c22', border: '1px solid #2b5562', borderRadius: 10, padding: '8px 22px', minWidth: 360, textAlign: 'center' }}>
         {result ? (
           <div style={{ fontSize: 15 }}>
             <span style={{ color: '#ffd166', fontWeight: 700 }}>{HAND_RANKINGS[result.type]?.name ?? result.type}</span>{'  '}
             <span style={{ color: '#4cc9f0', fontWeight: 700 }}>{result.chips}</span> 筹码 ×{' '}
             <span style={{ color: '#f72585', fontWeight: 700 }}>{result.mult}</span> 倍 ={' '}
-            <span style={{ color: '#90be6d', fontWeight: 800 }}>{result.score}</span>
+            <span style={{ color: '#90be6d', fontWeight: 800 }}>{result.score.toLocaleString()}</span>
           </div>
         ) : (
           <div style={{ color: '#64748b' }}>{msg}</div>
         )}
       </div>
 
-      {/* 手牌（真牌面 cards.png 切图） */}
+      {/* 手牌（真牌面 cards.png 切图）*/}
       <div style={{ display: 'flex', gap: 8, alignItems: 'flex-end', minHeight: CH + 18 }}>
         {hand.map((c, i) => (
           <div
@@ -191,7 +208,6 @@ function GameE() {
 
       {/* 操作 */}
       <div style={{ display: 'flex', gap: 12, alignItems: 'center' }}>
-        <div style={{ fontSize: 12, color: handsLeft > 1 ? '#cbd5e1' : '#ef4444' }}>出牌次数 {handsLeft}</div>
         <button
           onClick={play}
           disabled={selCount === 0 || dead || lost}
@@ -205,8 +221,8 @@ function GameE() {
       </div>
 
       <div style={{ fontSize: 10, color: '#3d4a5c', textAlign: 'center', maxWidth: 520, lineHeight: 1.6 }}>
-        逻辑全在引擎（poker-eval 认牌型 + 逐张筹码 + 小丑 effect 有序加乘 + 资源×资源合并），本界面只读引擎资源显示。
-        牌面取自 cards.png（按花色点数切 UV），小丑为真美术 webp。
+        逻辑全在引擎（poker-eval 认牌型 + 逐张筹码 + 小丑 effect 有序加乘 + 资源×资源合并 + 回合边沿累加），本界面只读引擎资源显示。
+        牌面取自 cards.png（按花色点数切 UV），小丑为真美术 webp。种子洗牌确定性可复现。
       </div>
     </div>
   );
