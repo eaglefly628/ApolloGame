@@ -16,6 +16,40 @@ export const ASSET_SMASH = 'd.skill.smash';
 export const ASSET_FLAME = 'd.skill.flame';
 // 图块集（tileset）：横向 4 格条带，每格 32px → tile 1 地板 / 2 墙 / 3 火把 / 4 地裂。
 export const ASSET_TILES = 'd.tiles';
+// 走路循环 sprite-sheet：4 帧 × 24px（摆腿 + 起伏），anim-state 在 [0,4) 内推帧。
+export const ASSET_HERO_SHEET = 'd.hero.sheet';
+export const ASSET_ENEMY_SHEET = 'd.enemy.sheet';
+
+// 走路摆腿（phase 0/2 并拢、1 左腿前、3 右腿前），ly=腿顶 y。
+const walkLegs = (x: number, ly: number, leg: string, phase: number): string =>
+  phase === 1
+    ? `<rect x="${x + 7}" y="${ly}" width="4" height="5" fill="${leg}"/><rect x="${x + 14}" y="${ly + 1}" width="4" height="4" fill="${leg}"/>`
+    : phase === 3
+      ? `<rect x="${x + 7}" y="${ly + 1}" width="4" height="4" fill="${leg}"/><rect x="${x + 14}" y="${ly}" width="4" height="5" fill="${leg}"/>`
+      : `<rect x="${x + 8}" y="${ly}" width="4" height="5" fill="${leg}"/><rect x="${x + 13}" y="${ly}" width="4" height="5" fill="${leg}"/>`;
+
+// 一帧英雄（蓝甲+眼+摆腿，1/3 身体起伏 -1）。
+const heroFrame = (x: number, phase: number): string => {
+  const bob = phase === 1 || phase === 3 ? -1 : 0;
+  return (
+    `<rect x="${x + 3}" y="${3 + bob}" width="18" height="14" rx="5" fill="rgb(56,120,230)" stroke="rgb(180,210,255)" stroke-width="1.1"/>` +
+    `<circle cx="${x + 9}" cy="${9 + bob}" r="1.8" fill="white"/><circle cx="${x + 15}" cy="${9 + bob}" r="1.8" fill="white"/>` +
+    walkLegs(x, 18 + bob, '#2a5fb0', phase)
+  );
+};
+// 一帧敌人（红魔+角+眼+摆腿）。
+const enemyFrame = (x: number, phase: number): string => {
+  const bob = phase === 1 || phase === 3 ? -1 : 0;
+  return (
+    `<path d="M${x + 4} ${6 + bob} L${x + 7} ${2 + bob} L${x + 9} ${6 + bob} Z" fill="rgb(120,20,20)"/>` +
+    `<path d="M${x + 18} ${6 + bob} L${x + 15} ${2 + bob} L${x + 13} ${6 + bob} Z" fill="rgb(120,20,20)"/>` +
+    `<rect x="${x + 4}" y="${4 + bob}" width="16" height="14" rx="4" fill="rgb(210,55,55)" stroke="rgb(120,20,20)" stroke-width="1.1"/>` +
+    `<circle cx="${x + 9}" cy="${10 + bob}" r="1.8" fill="rgb(255,230,120)"/><circle cx="${x + 15}" cy="${10 + bob}" r="1.8" fill="rgb(255,230,120)"/>` +
+    walkLegs(x, 18 + bob, '#7a1414', phase)
+  );
+};
+const heroSheetSvg = [0, 1, 2, 3].map((i) => heroFrame(i * 24, i)).join('');
+const enemySheetSvg = [0, 1, 2, 3].map((i) => enemyFrame(i * 24, i)).join('');
 
 export const GAME_D_ASSETS: AssetManifest = [
   // 英雄：蓝甲骑士占位。
@@ -123,5 +157,25 @@ export const GAME_D_ASSETS: AssetManifest = [
     ),
     width: 128,
     height: 32,
+  },
+  // 英雄走路 sheet：4 帧 × 24px（columns:4）。
+  {
+    kind: 'sprite-sheet',
+    key: ASSET_HERO_SHEET,
+    src: svg(heroSheetSvg, 96, 24),
+    frameWidth: 24,
+    frameHeight: 24,
+    columns: 4,
+    count: 4,
+  },
+  // 敌人走路 sheet：4 帧 × 24px。
+  {
+    kind: 'sprite-sheet',
+    key: ASSET_ENEMY_SHEET,
+    src: svg(enemySheetSvg, 96, 24),
+    frameWidth: 24,
+    frameHeight: 24,
+    columns: 4,
+    count: 4,
   },
 ];

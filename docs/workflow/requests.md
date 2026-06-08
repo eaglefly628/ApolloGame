@@ -608,6 +608,12 @@
 > - **第一张地牢房**：`game-d/map.ts` 一份 Tilemap（石地+四面围墙实心+火把/地裂装饰）+ tileset 资产（R9 SVG 占位条带）。**一份 Tilemap = 一个 Hades 拼接积木**——后续 dungeon 能力按种子拼多份。英雄/怪被墙框在房内。
 > - **后续（已对齐顺序，未做）**：`anim-state`(动作动画 clip→帧) → VFX 打击感(ParticleRequest 粒子+抖屏+闪白+击退,表现层) → dungeon 生成(Hades) → 掉落/装备红黄绿(延后,需 derived-stat)。怪物等级=纯数据(prefab 模板+数值表)，引擎不加码。
 
+> **✅ 第六批（2026-06-07，Programmer D）—— 动作动画 anim-state（655 passed / tsc / build 全绿）**：
+> - **`@skills/tier2/anim-state`**（周期表 anim-state-machine）：`AnimState` 组件（clip 表 状态→{sheet?,from,count,fps,loop}）+ 系统按 `State{fsmId}` 或 `Velocity` 选 clip、在帧区间内推 `Frame.index`。复用现成 sprite-sheet 资产 + 渲染器 resolve(key,frame)，**不重造帧/图**。`animation` 原子只线性循环全帧，anim-state 是 clip 子区间 + 状态选择的补充。
+> - **铁律**：动画**只表现、绝不驱动逻辑**（伤害靠 Timer/逻辑）；Commit 相位读最终速度；只写 Frame/Sprite，无 sim 读其输出→无环；确定（整数 tick + 由 Velocity 派生）。
+> - **game-d**：英雄/怪改用 4 帧走路 sprite-sheet（SVG 占位，摆腿+起伏）+ Frame + AnimState → **移动自动播走路、静止站立**。怪物等级=纯数据（prefab 模板+数值），引擎不加码（已回驳"要新能力"）。
+> - **后续未做**：VFX 打击感 → dungeon 生成(Hades) → 掉落/装备。怪物 AI 深度设计（巡逻/警戒/攻击模式/精英/成群）= 后续，靠 state+condition+aggro/steering **加数据不加代码**。
+
 ---
 
 ## 需求模板（复制这段填写）

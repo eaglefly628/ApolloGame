@@ -17,7 +17,7 @@
 ```
 
 - **引擎核心** `src/engine/`：ECS `World`（snapshot/restore、确定性 `hashSnapshot`、Camera 排除出 hash）；`SystemPhase` + 显式 `runsAfter/runsBefore` 拓扑排序。
-- **能力库** `src/skills/`：26 原子 + 扩展；Tier1（accel/motion/rotation/animation/hierarchy/lifetime/**tween**）；Tier2 物理（collision/ground/jump/bounds/trigger-zone/friction）+ 逻辑链 **Condition→Event→Effect**（event-when→effect-apply，一拍反馈）+ camera-follow/**clickable**/**craft-recipe**/zone-occupancy + **ARPG 战斗簇 hitbox/over-time(限时效果列表,燃烧+冰冻并存)/mortal/steering** + **keybind**(具名按键→Signal) + **tilemap**(瓦片地图:数据=二维数组,引擎=瓦片碰撞+渲染)；Tier3 **dialogue**/**match3-board**/**prefab**(数据级模板展开)/**caster**(信号→生成)/**aggro**(索敌→Relation target)。**Tier4 刻意为空**——AI 行为=数据装配（aggro+steering+state+condition 拼 ai-chase，对齐周期表）。resource 全局按 id 路由；spatial-query 新增 `nearestByTag` 自动索敌。
+- **能力库** `src/skills/`：26 原子 + 扩展；Tier1（accel/motion/rotation/animation/hierarchy/lifetime/**tween**）；Tier2 物理（collision/ground/jump/bounds/trigger-zone/friction）+ 逻辑链 **Condition→Event→Effect**（event-when→effect-apply，一拍反馈）+ camera-follow/**clickable**/**craft-recipe**/zone-occupancy + **ARPG 战斗簇 hitbox/over-time(限时效果列表,燃烧+冰冻并存)/mortal/steering** + **keybind**(具名按键→Signal) + **tilemap**(瓦片地图:数据=二维数组,引擎=瓦片碰撞+渲染) + **anim-state**(动作动画状态机:clip表→Frame,按 State/Velocity 选 clip)；Tier3 **dialogue**/**match3-board**/**prefab**(数据级模板展开)/**caster**(信号→生成)/**aggro**(索敌→Relation target)。**Tier4 刻意为空**——AI 行为=数据装配（aggro+steering+state+condition 拼 ai-chase，对齐周期表）。resource 全局按 id 路由；spatial-query 新增 `nearestByTag` 自动索敌。
 - **Manifest 桥接** `src/assembly/`：`capability-registry`（id→能力对象 + 据组件反推）、`manifest.ts`（`parseManifest`/`exportManifest` 对称）、R12 组件数据 schema 校验器。**这是"游戏=数据"的闭环地基**：AI/预设/手改产同一种数据，引擎直接跑。
 - **Studio 工具链** `src/studio/` + `src/bench/`：数据透视器（透视/改字段/实时预览，Game A 可键盘试玩）、资产浏览器（按类型分组/搜索/双击定位）、**ApolloBench**（把蓝图喂进真引擎跑分：Structure/Load/Determinism/Numeric/Visual，借鉴 OpenGame-Bench）。主页「Create Game」生成的游戏可一键「在透视器里打开」。
 - **表现/服务（sim 之外）** `src/services/`：storage / audio / **aigp(AishePort)**；输入 `net/`（lockstep + queued/pointer）；渲染 `src/renderer/`（Canvas，Sprite 穿皮）。
@@ -28,7 +28,7 @@
 - **Game A · 协作平台(卷轴)**：双人、相机跟随、移动平台(Tween)、压力开关→门(zone-occupancy + event-when + effect set-sensor, REQ-006/008)。通关条件=纯数据 Zone，已删手写胜负系统。
 - **Game B · 乙游 VN**：dialogue capability 驱动（R15，已删 dialogue-runner）；7 属性 + 体力约束 + 属性门控选项 + 掷骰(R17) + 组合条件多结局。
 - **Game C · 缝纫物语 v0.3+**：match3-board 棋盘 + clickable 选格 + craft-recipe 主动缝制（攒料→缝制升级店铺/解衣→换装→爱诗 AIGP 提示词）。配饰内容已定义、v0.4 接线。
-- **Game D · 暗黑类 ARPG 切片(PoC)**：纯数据装配，零 ARPG 代码。ai-chase=aggro(感知→Relation target)+steering(追逐/CC)；技能=PrefabTemplate，释放=keybind(按键→Signal)→caster→prefab；hitbox 关系型结算+over-time(冰冻定时解冻/DoT)；mortal 逐实体死亡+掉落。6 测试证涌现。**已可玩**：launcher 卡带 + `game-d.tsx` 挂载（WASD 移动 + 1/2/3 释放冰/碎/烧）+ camera-follow + **R9 占位 sprite 穿皮** + **tilemap 地牢房间**（石地+四面墙,瓦片碰撞把英雄/怪框在房内；一份 Tilemap=一个 Hades 拼接积木）。离线看帧：`vite-node src/games/game-d/render-frame.ts`。
+- **Game D · 暗黑类 ARPG 切片(PoC)**：纯数据装配，零 ARPG 代码。ai-chase=aggro(感知→Relation target)+steering(追逐/CC)；技能=PrefabTemplate，释放=keybind(按键→Signal)→caster→prefab；hitbox 关系型结算+over-time(冰冻定时解冻/DoT)；mortal 逐实体死亡+掉落。6 测试证涌现。**已可玩**：launcher 卡带 + `game-d.tsx` 挂载（WASD 移动 + 1/2/3 释放冰/碎/烧）+ camera-follow + **R9 占位 sprite 穿皮** + **tilemap 地牢房间**（石地+四面墙,瓦片碰撞把英雄/怪框在房内；一份 Tilemap=一个 Hades 拼接积木）+ **anim-state 走/站动画**（英雄/怪走路 4 帧 sprite-sheet，移动自动播）。离线看帧：`vite-node src/games/game-d/render-frame.ts`。
 
 ## 3. TODO 审计（2026-06-07）
 

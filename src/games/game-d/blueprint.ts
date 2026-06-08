@@ -13,15 +13,20 @@ import {
   steeringCapability,
   keybindCapability,
   tilemapCapability,
+  animStateCapability,
   collisionResolveCapability,
   cameraFollowCapability,
 } from '@skills/tier2/index.js';
 import { prefabCapability, casterCapability, aggroCapability } from '@skills/tier3/index.js';
 import { motionApplyCapability, lifetimeCapability } from '@skills/tier1/index.js';
-import { ASSET_HERO, ASSET_ENEMY, ASSET_LOOT, ASSET_NOVA, ASSET_SMASH, ASSET_FLAME } from './assets.js';
+import { ASSET_LOOT, ASSET_NOVA, ASSET_SMASH, ASSET_FLAME, ASSET_HERO_SHEET, ASSET_ENEMY_SHEET } from './assets.js';
 import { buildDungeonRoom } from './map.js';
 
 const sprite = (textureKey: string, zOrder: number): Record<string, unknown> => ({ textureKey, anchorX: 0.5, anchorY: 0.5, zOrder });
+// 走/站动画：走路 4 帧循环、静止单帧。anim-state 按 Velocity 自动切（移动→walk、静止→idle）。
+const ANIM_CLIPS = { walk: { from: 0, count: 4, fps: 6, loop: true }, idle: { from: 0, count: 1, fps: 1, loop: false } };
+const animState = (): Record<string, unknown> => ({ clips: ANIM_CLIPS, moveClip: 'walk', idleClip: 'idle', current: 'idle', elapsed: 0 });
+const frame = (): Record<string, unknown> => ({ index: 0, total: 4 });
 
 // ═══════════════════════════════════════════════════════════════
 //  Game D —— 暗黑类 ARPG 垂直切片（PoC）。**纯数据装配**，零游戏专属代码。
@@ -123,7 +128,9 @@ function enemy(x: number, y: number): EntityBlueprint {
     Perception: { targetTag: TEAM_PLAYER, sightRadius: 0 }, // 无限视野（演示用）
     Steering: { mode: 'seek', speed: 1, stopRange: 18, haltStatusMask: STATUS_FROZEN },
     Mortal: { resource: 'hp', atOrBelow: 0, dropTemplate: 'loot' },
-    Sprite: sprite(ASSET_ENEMY, 4),
+    Sprite: sprite(ASSET_ENEMY_SHEET, 4),
+    Frame: frame(),
+    AnimState: animState(), // 追逐时自动播走路动画
   } as unknown as EntityBlueprint;
 }
 
@@ -148,7 +155,9 @@ export function buildGameDBlueprint(): WorldBlueprint {
       Controllable: { playerId: 'p1', speed: 2 },
       Mortal: { resource: 'hp', atOrBelow: 0 },
       Perception: { targetTag: TEAM_ENEMY, sightRadius: 0 },
-      Sprite: sprite(ASSET_HERO, 5),
+      Sprite: sprite(ASSET_HERO_SHEET, 5),
+      Frame: frame(),
+      AnimState: animState(), // WASD 移动时自动播走路动画
     } as unknown as EntityBlueprint,
 
     // 技能栏（数据）：每把技能一个 Caster 实体（引擎一实体一 Caster），at:'target' 锚英雄(originEntity)自动索敌。
@@ -197,6 +206,7 @@ export function buildGameDBlueprint(): WorldBlueprint {
       lifetimeCapability,
       // 表现
       cameraFollowCapability,
+      animStateCapability, // 走/站动作动画（Commit 相位，读最终速度）
     ],
     entities,
   };

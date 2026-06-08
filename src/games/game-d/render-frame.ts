@@ -58,6 +58,17 @@ for (const r of collectRenderables(e.world)) {
     if (st && (st.flags & STATUS_FROZEN) !== 0) {
       body += `<circle cx="${r.x}" cy="${r.y}" r="15" fill="none" stroke="rgb(120,220,255)" stroke-width="2.5"/>`;
     }
+  } else if (asset && asset.kind === 'sprite-sheet') {
+    // 用 viewBox 裁到当前帧（fi*frameWidth 起的 frameWidth×frameHeight 区域）。
+    const fw = asset.frameWidth;
+    const fh = asset.frameHeight;
+    const fidx = r.frame?.index ?? 0;
+    const shapes = innerSvg(asset.src).replace(/^<svg[^>]*>/, '').replace(/<\/svg>$/, '');
+    body += `<svg x="${r.x - fw / 2}" y="${r.y - fh / 2}" width="${fw}" height="${fh}" viewBox="${fidx * fw} 0 ${fw} ${fh}">${shapes}</svg>`;
+    const st = e.world.getComponent<Status>(r.entityId, 'Status');
+    if (st && (st.flags & STATUS_FROZEN) !== 0) {
+      body += `<circle cx="${r.x}" cy="${r.y}" r="15" fill="none" stroke="rgb(120,220,255)" stroke-width="2.5"/>`;
+    }
   } else if (r.shape?.kind === 'box') {
     const w = r.shape.width ?? 8;
     const h = r.shape.height ?? 8;
