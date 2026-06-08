@@ -636,6 +636,19 @@
 - **建议方案**：`effect` 加 kind **`reset-timer`**（按 `targetEntity` 定位 Timer：`elapsed=0`，可选 `value`→设 `duration`）。配合现有 `condition{kind:'timer',id,cmp:'gte',value:N}`→event-when→effect 关门，"限时"即纯数据涌现。最小、与 timer/condition/effect 链严丝合缝。
 - **优先级 P1**：限时类机制的通用前置；Game A 限时门/塌陷平台、Game B 限时选择、Game D 技能 CD 都可能用。**不阻塞当前**（其余玩法已能做）；按"落地不口头"规则 back up 入池。
 
+> ✅ **Lead 裁决（2026-06-08）：接受，真缺口**。effect 六种 kind 表达不了"按事件重置/启动计时"，确认组合不出。D 的方案对：`effect` 加 `reset-timer`（按 targetEntity 定位 Timer，elapsed=0、可选设 duration）→ 配 condition(timer.gte N)→event-when→effect 关门，限时纯数据涌现。最小、与 timer/condition 链严丝合缝。**实现者注**：倒计时另有一路可复用——挂 `OverTime{amountPerTick:-1,period:1}`（D-003）做按拍衰减资源，到 0 触发；reset-timer 与它互补（前者定时点、后者连续衰减）。谁接都行（effect-apply 是共享引擎），实现前 fetch+merge。
+
+---
+
+### REQ-010 · [2026-06-08] · Lead（Gemini 复审）· 框架级 · status: open · 优先级: **P3 / future** · 类型: 确定性增强（电竞级 lockstep）
+
+**标题**：浮点 → 定点数 / 整数运算，根除跨架构 1-ULP desync
+
+- **背景**：Gemini 复审指出 steering/launch 的 `Math.sqrt`÷ 归一、以及一切 IEEE 浮点，在不同 CPU 架构（ARM vs x86）或 JIT 激进优化（FMA）下存在 **1-ULP（末位）差异**。这些值经 Velocity 积分进 Transform → 决定 Hitbox/Overlap 相交 → **有几率引发跨端 desync**。
+- **现状裁决（Gemini + Lead 一致）**：**MVP 可容忍，标 tech-debt**。单机 / 同构端 lockstep 无碍；致命级的"sim 读本地相机"已修（226fe1c）。
+- **何时必须做**：要做**跨架构帧同步联机**（如 Windows x86 玩家 ↔ Mac ARM 玩家 P2P lockstep）才需。方案：把向量/距离等关键运算换成**定点数（fixed-point）** + **整数平方根/LUT 查表**，彻底消除浮点不确定性。
+- **范围**：steering/launch/collision-resolve/tile-collision 等所有产出进 hash 的浮点运算；是引擎级系统性改造，**不阻塞当前**。Steam 单机发布完全不需要；跨平台联机对战才提上日程。
+
 ---
 
 ## 需求模板（复制这段填写）
