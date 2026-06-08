@@ -55,6 +55,8 @@ export interface JokerCard {
   readonly value: number;
   /** 量纲动态值（候选 REQ-013）；缺省=静态 value。 */
   readonly valueFrom?: ValueFrom;
+  /** 重触发次数（REQ-014 PerCardRetrigger）：>0 表示首张计分牌额外重触发 N 次（Hanging Chad=2）。 */
+  readonly retrigger?: number;
   /** 美术 key（jokerArtKey(id)）；缺图自动退化占位。 */
   readonly artKey: string;
   /** 人话描述（= 数据的投影，渲染叠在卡面，见 design §七）。 */
@@ -78,7 +80,7 @@ export const STARTER_JOKERS: readonly JokerCard[] = [
   J({ id: 'cavendish', name: 'Cavendish', rarity: 'common', cost: 4, jokerType: 'Xm', trigger: 'on_hand_scored', when: { kind: 'always' }, op: 'mul', target: 'mult', value: 3, text: '×3 倍率' }),
   J({ id: 'the_duo', name: 'The Duo', rarity: 'rare', cost: 8, jokerType: 'Xm', trigger: 'on_hand_scored', when: { kind: 'hand_contains', hand: 'pair' }, op: 'mul', target: 'mult', value: 2, text: '含对子 → ×2 倍率' }),
   J({ id: 'golden_joker', name: 'Golden Joker', rarity: 'common', cost: 6, jokerType: '+$', trigger: 'on_round_end', when: { kind: 'always' }, op: 'add', target: 'money', value: 4, text: '回合结束 +$4' }),
-  J({ id: 'hanging_chad', name: 'Hanging Chad', rarity: 'common', cost: 4, jokerType: '...', trigger: 'on_card_scored', when: { kind: 'always' }, op: 'add', target: 'chips', value: 0, text: '首张计分牌额外重触发 2 次' }),
+  J({ id: 'hanging_chad', name: 'Hanging Chad', rarity: 'common', cost: 4, jokerType: '...', trigger: 'on_card_scored', when: { kind: 'always' }, op: 'add', target: 'chips', value: 0, retrigger: 2, text: '首张计分牌额外重触发 2 次' }),
 ];
 
 /** 按 id 取小丑。 */

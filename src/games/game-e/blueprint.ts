@@ -5,6 +5,7 @@ import { eventWhenCapability, effectApplyCapability } from '@skills/tier2/index.
 import { pokerHandCapability, cardScoringCapability } from '@skills/tier3/index.js';
 import { HAND_RANKINGS, type HandType } from './hand-rankings.js';
 import { RANK_ORDER, type Card as DataCard } from './deck.js';
+import type { JokerCard, ScoreTarget } from './jokers.js';
 
 // ════════════════════════════════════════════════════════════════════════
 //  Game E · 计分链蓝图 —— 纯数据装配真能力，零游戏 system 代码。
@@ -34,6 +35,10 @@ export const R_HANDS_LEFT = 'hands_left';
 export const R_DISCARDS_LEFT = 'discards_left';
 export const R_BLIND = 'blind_target';
 export const SIG_COMMIT = 'hand_committed'; // 边沿信号：每"出一手"触发一次（与 score 的 level 区分）
+// poker-eval 派生事实（供条件类小丑门控："含对子/三条/两对" = rankMaxCount/pairCount 阈值；"出牌≤N" = handSize）。
+export const R_RANK_MAX = 'rank_max_count';
+export const R_PAIR_COUNT = 'pair_count';
+export const R_HAND_SIZE = 'hand_size';
 
 // 数据牌型 id（下划线）→ 引擎 poker-hand 牌型名（连字符）。
 const HAND_TYPE_TO_ENGINE: Record<HandType, string> = {
@@ -96,7 +101,110 @@ export function sumBaseChips(cards: readonly Card[]): number {
   return cards.reduce((s, c) => s + (BASE_CHIPS_BY_RANK[String(c.rank)] ?? 0), 0);
 }
 
-export function buildGameEBlueprint(): WorldBlueprint {
+// ════════════════════════════════════════════════════════════════════════
+//  小丑 = 纯数据 → 蓝图实体（catalog → entities 派生，"加一张小丑 = 加一条数据，零蓝图代码"）。
+//  buildJokerEntities 把 jokers.ts 的 JokerCard 声明映射到引擎实体，严守"逻辑在引擎、小丑是数据"：
+//    - on_hand_scored + always        → Effect(onSignal=score)
+//    - on_hand_scored + hand_contains  → EventWhen(and(scoring, rankMaxCount/pairCount 阈值)) + Effect(该信号)
+//    - on_hand_scored + hand_size_lte  → EventWhen(and(scoring, hand_size lte n)) + Effect
+//    - on_card_scored + card_suit/face/even → PerCardRule（逐张，REQ-014）
+//    - retrigger>0（Hanging Chad）      → PerCardRetrigger（首张重触发，REQ-014）
+//    - on_round_end / on_blind_selected → 暂跳过（切片无回合结束/选盲注信号；后续增量接）
+//  order：加在前(10+idx) / 乘在后(100+idx) → 保证"先加后乘"（组内可交换，结果确定）。
+// ════════════════════════════════════════════════════════════════════════
+
+const TARGET_TO_RES: Record<ScoreTarget, string> = { chips: R_CHIPS, mult: R_MULT, money: R_MONEY };
+// 量纲动态值的资源源（jokers.ts ValueFrom.resourceId → 引擎 Resource id）。
+const VALUEFROM_RES: Record<string, string> = { money: R_MONEY, discards: R_DISCARDS_LEFT };
+
+// 牌型"包含"判定 → 条件（用 poker-eval 派生事实，非字符串牌型名）。含对子=rankMaxCount≥2、含三条=≥3、含两对=pairCount≥2、含四条=≥4。
+function containsCondition(hand: HandType): Record<string, unknown> {
+  switch (hand) {
+    case 'pair': return { kind: 'resource', id: R_RANK_MAX, cmp: 'gte', value: 2 };
+    case 'three_kind': return { kind: 'resource', id: R_RANK_MAX, cmp: 'gte', value: 3 };
+    case 'four_kind': return { kind: 'resource', id: R_RANK_MAX, cmp: 'gte', value: 4 };
+    case 'two_pair': return { kind: 'resource', id: R_PAIR_COUNT, cmp: 'gte', value: 2 };
+    default: throw new Error(`containsCondition: 未支持的牌型包含判定 "${hand}"（需补 isFlush/isStraight 等派生事实）`);
+  }
+}
+
+/** 一张小丑 → 它在蓝图里的实体集（id 以 `j_<jokerId>` 前缀，避免碰撞）。idx 决定结算 order。 */
+export function jokerToEntities(j: JokerCard, idx: number): Record<string, EntityBlueprint> {
+  const out: Record<string, EntityBlueprint> = {};
+  const target = TARGET_TO_RES[j.target];
+  const order = (j.op === 'mul' ? 100 : 10) + idx;
+  const valueFrom = j.valueFrom ? { resourceId: VALUEFROM_RES[j.valueFrom.resourceId] ?? j.valueFrom.resourceId, coeff: j.valueFrom.coeff } : undefined;
+
+  if (j.trigger === 'on_card_scored') {
+    // 逐张：retrigger 优先（Hanging Chad），否则按 when 映射 PerCardRule。
+    if (j.retrigger && j.retrigger > 0) {
+      out[`j_${j.id}`] = { PerCardRetrigger: { when: { kind: 'index', eq: 0 }, extra: j.retrigger } } as unknown as EntityBlueprint;
+      return out;
+    }
+    let pcWhen: Record<string, unknown>;
+    if (j.when.kind === 'card_suit') pcWhen = { kind: 'suit', suit: SUIT_TO_NUM[j.when.suit] };
+    else if (j.when.kind === 'card_face') pcWhen = { kind: 'rankIn', ranks: [11, 12, 13] };
+    else if (j.when.kind === 'card_even') pcWhen = { kind: 'rankIn', ranks: [2, 4, 6, 8, 10] };
+    else pcWhen = { kind: 'always' };
+    out[`j_${j.id}`] = { PerCardRule: { when: pcWhen, op: j.op, targetResource: target, value: j.value } } as unknown as EntityBlueprint;
+    return out;
+  }
+
+  if (j.trigger !== 'on_hand_scored') return out; // on_round_end / on_blind_selected：切片暂不接
+
+  const effect: Record<string, unknown> = { onSignal: SIG_SCORE, kind: 'modify-resource', targetId: target, op: j.op, order };
+  if (valueFrom) effect.valueFrom = valueFrom; else effect.value = j.value;
+
+  if (j.when.kind === 'always') {
+    out[`j_${j.id}`] = { Effect: effect } as unknown as EntityBlueprint;
+    return out;
+  }
+
+  // 条件类：建专属信号门（scoring 且 含某牌型 / 出牌≤N），Effect 监听该门信号。
+  const sig = `js_${j.id}`;
+  let cond: Record<string, unknown>;
+  if (j.when.kind === 'hand_contains') cond = containsCondition(j.when.hand);
+  else if (j.when.kind === 'hand_size_lte') cond = { kind: 'resource', id: R_HAND_SIZE, cmp: 'lte', value: j.when.n };
+  else cond = { kind: 'flag', id: F_SCORING };
+  out[`gate_${j.id}`] = { EventWhen: { signal: sig, when: { kind: 'and', of: [{ kind: 'flag', id: F_SCORING }, cond] }, mode: 'level', armed: false } } as unknown as EntityBlueprint;
+  out[`j_${j.id}`] = { Effect: { ...effect, onSignal: sig } } as unknown as EntityBlueprint;
+  return out;
+}
+
+/** 一组小丑 → 合并的蓝图实体集（供 buildGameEBlueprint 的 jokerEntities 参数）。 */
+export function buildJokerEntities(jokers: readonly JokerCard[]): Record<string, EntityBlueprint> {
+  const out: Record<string, EntityBlueprint> = {};
+  jokers.forEach((j, i) => Object.assign(out, jokerToEntities(j, i)));
+  return out;
+}
+
+// 默认（curated）小丑实体：保留本程之前手调的 5 张 + Jolly 门，作为确定性回归测试的稳定基线。
+// 真游戏（game-e.tsx）传 buildJokerEntities(STARTER_JOKERS) 接全 14 张。
+function curatedJokerEntities(): Record<string, EntityBlueprint> {
+  return {
+    joker_base: { Effect: { onSignal: SIG_SCORE, kind: 'modify-resource', targetId: R_MULT, op: 'add', value: 4, order: 10 } } as unknown as EntityBlueprint,
+    joker_chips: { Effect: { onSignal: SIG_SCORE, kind: 'modify-resource', targetId: R_CHIPS, op: 'add', value: 50, order: 5 } } as unknown as EntityBlueprint,
+    joker_jolly: { Effect: { onSignal: SIG_JOLLY, kind: 'modify-resource', targetId: R_MULT, op: 'add', value: 8, order: 11 } } as unknown as EntityBlueprint,
+    joker_cavendish: { Effect: { onSignal: SIG_SCORE, kind: 'modify-resource', targetId: R_MULT, op: 'mul', value: 3, order: 100 } } as unknown as EntityBlueprint,
+    joker_bull: { Effect: { onSignal: SIG_SCORE, kind: 'modify-resource', targetId: R_CHIPS, op: 'add', valueFrom: { resourceId: R_MONEY, coeff: 2 }, order: 6 } } as unknown as EntityBlueprint,
+    gate_jolly: {
+      EventWhen: {
+        signal: SIG_JOLLY,
+        when: {
+          kind: 'and',
+          of: [
+            { kind: 'flag', id: F_SCORING },
+            { kind: 'or', of: ENGINE_HANDS_CONTAINING_PAIR.map((h) => ({ kind: 'string', id: V_HAND_TYPE, equals: h })) },
+          ],
+        },
+        mode: 'level',
+        armed: false,
+      },
+    } as unknown as EntityBlueprint,
+  };
+}
+
+export function buildGameEBlueprint(jokerEntities: Record<string, EntityBlueprint> = curatedJokerEntities()): WorldBlueprint {
   const entities: Record<string, EntityBlueprint> = {
     // ── 计分资源（基础值由 poker-eval set，小丑在其上加乘）──
     chips: { Resource: { id: R_CHIPS, current: 0, min: 0, max: 1_000_000_000_000 } } as unknown as EntityBlueprint,
@@ -116,38 +224,29 @@ export function buildGameEBlueprint(): WorldBlueprint {
     discardsLeft: { Resource: { id: R_DISCARDS_LEFT, current: 3, min: 0, max: 99 } } as unknown as EntityBlueprint,
     blindTarget: { Resource: { id: R_BLIND, current: 300, min: 0, max: 1_000_000_000_000 } } as unknown as EntityBlueprint,
 
+    // poker-eval 派生事实（条件类小丑门控用）：含对子/三条/两对/出牌张数。
+    rankMax: { Resource: { id: R_RANK_MAX, current: 0, min: 0, max: 5 } } as unknown as EntityBlueprint,
+    pairCount: { Resource: { id: R_PAIR_COUNT, current: 0, min: 0, max: 5 } } as unknown as EntityBlueprint,
+    handSize: { Resource: { id: R_HAND_SIZE, current: 0, min: 0, max: 5 } } as unknown as EntityBlueprint,
+
     // ── 牌桌（单例）：评估器 + 逐张计分配置 + 当前出的牌（选牌交互填 cards）。──
-    // PokerHand(REQ-011) 出牌型基础分；PerCardScore(REQ-014) 在其上逐张累加 baseChips（chips = 牌型基础 + Σ每张牌）。
+    // PokerHand(REQ-011) 出牌型基础分 + 派生事实；PerCardScore(REQ-014) 逐张累加 baseChips（chips = 牌型基础 + Σ每张牌）。
     table: {
-      PokerHand: { rankingTable: buildRankingTable(), chipsResource: R_CHIPS, multResource: R_MULT, handTypeVar: V_HAND_TYPE },
+      PokerHand: {
+        rankingTable: buildRankingTable(), chipsResource: R_CHIPS, multResource: R_MULT, handTypeVar: V_HAND_TYPE,
+        rankMaxCountResource: R_RANK_MAX, pairCountResource: R_PAIR_COUNT, handSizeResource: R_HAND_SIZE,
+      },
       PerCardScore: { chipsResource: R_CHIPS, baseChipsByRank: BASE_CHIPS_BY_RANK },
       PlayedHand: { cards: [] as Card[] },
     } as unknown as EntityBlueprint,
 
-    // ── 信号门：scoring → score（每帧）；hand_type∈含对子 → jolly_fire ──
+    // ── 信号门：scoring → score（每帧 level）──
     gate_score: { EventWhen: { signal: SIG_SCORE, when: { kind: 'flag', id: F_SCORING }, mode: 'level', armed: false } } as unknown as EntityBlueprint,
-    gate_jolly: {
-      EventWhen: {
-        signal: SIG_JOLLY,
-        when: {
-          kind: 'and',
-          of: [
-            { kind: 'flag', id: F_SCORING },
-            { kind: 'or', of: ENGINE_HANDS_CONTAINING_PAIR.map((h) => ({ kind: 'string', id: V_HAND_TYPE, equals: h })) },
-          ],
-        },
-        mode: 'level',
-        armed: false,
-      },
-    } as unknown as EntityBlueprint,
 
-    // ── 小丑 = Effect 数据（按 order 升序结算；order 对乘法是语义关键）──
-    joker_base: { Effect: { onSignal: SIG_SCORE, kind: 'modify-resource', targetId: R_MULT, op: 'add', value: 4, order: 10 } } as unknown as EntityBlueprint,
-    joker_chips: { Effect: { onSignal: SIG_SCORE, kind: 'modify-resource', targetId: R_CHIPS, op: 'add', value: 50, order: 5 } } as unknown as EntityBlueprint,
-    joker_jolly: { Effect: { onSignal: SIG_JOLLY, kind: 'modify-resource', targetId: R_MULT, op: 'add', value: 8, order: 11 } } as unknown as EntityBlueprint,
-    joker_cavendish: { Effect: { onSignal: SIG_SCORE, kind: 'modify-resource', targetId: R_MULT, op: 'mul', value: 3, order: 100 } } as unknown as EntityBlueprint,
-    joker_bull: { Effect: { onSignal: SIG_SCORE, kind: 'modify-resource', targetId: R_CHIPS, op: 'add', valueFrom: { resourceId: R_MONEY, coeff: 2 }, order: 6 } } as unknown as EntityBlueprint,
+    // ── 小丑实体（参数注入：默认 curated 5 张；游戏传 buildJokerEntities(STARTER_JOKERS) 接全 14 张）──
+    ...jokerEntities,
 
+    // ── 最终合并：hand_score = chips × mult（order 1000，在所有小丑加乘之后）──
     score_combine: { Effect: { onSignal: SIG_SCORE, kind: 'modify-resource', targetId: R_HAND_SCORE, op: 'set', valueFrom: { resourceId: R_CHIPS, timesResourceId: R_MULT }, order: 1000 } } as unknown as EntityBlueprint,
 
     // ── 回合进度（边沿：每"出一手"一次，与计分链的 level 区分）──

@@ -3,10 +3,10 @@ import { createRoot } from 'react-dom/client';
 import { Engine } from './runtime/engine.js';
 import type { Resource, PlayedHand, Flag, StringVar } from './engine/protocol/components.js';
 import {
-  buildGameEBlueprint, toEngineCard,
+  buildGameEBlueprint, buildJokerEntities, toEngineCard,
   R_CHIPS, R_MULT, R_HAND_SCORE, R_ROUND_SCORE, R_HANDS_LEFT, R_BLIND, V_HAND_TYPE,
 } from './games/game-e/blueprint.js';
-import { HAND_RANKINGS, shuffledDeck, type Card, type Suit, type Rank, type HandType } from './games/game-e/index.js';
+import { HAND_RANKINGS, shuffledDeck, STARTER_JOKERS, type Card, type Suit, type Rank, type HandType } from './games/game-e/index.js';
 import { cardCell, CELL_W, CELL_H, SHEET_W, SHEET_H } from './games/game-e/cards-atlas.js';
 
 // ════════════════════════════════════════════════════════════════════════
@@ -25,14 +25,13 @@ const CW = Math.round(CELL_W * SCALE);
 const CH = Math.round(CELL_H * SCALE);
 const HAND_SIZE = 8;
 
-// 牌桌上的小丑（与引擎 buildGameEBlueprint 的计分小丑一致）。file=美术；无图则 fallback。
-const TABLE_JOKERS = [
-  { name: 'Joker', file: 'Joker.webp', desc: '+4 倍率' },
-  { name: 'Sly Joker', file: 'Sly_Joker.webp', desc: '+50 筹码' },
-  { name: 'Jolly Joker', file: 'Jolly_Joker.webp', desc: '含对子 +8 倍率' },
-  { name: 'Cavendish', file: 'Cavendish.webp', desc: '×3 倍率' },
-  { name: 'Bull', file: '', desc: '每 $1 +2 筹码' }, // 素材包暂缺
-];
+// 牌桌上的小丑 = 引擎实际接线的 STARTER_JOKERS（全 14 张，buildJokerEntities 派生进蓝图）。
+// 名实一致：UI 显示什么，引擎就按什么计分。art 文件名按官方命名推导，无图 onError fallback emoji。
+const TABLE_JOKERS = STARTER_JOKERS.map((j) => ({
+  name: j.name,
+  file: `${j.name.replace(/ /g, '_')}.webp`,
+  desc: j.text,
+}));
 
 // cards.png 单格背景定位（按花色点数取格）。
 function cardBg(suit: Suit, rank: Rank): React.CSSProperties {
@@ -54,7 +53,7 @@ function GameE() {
 
   if (engineRef.current === null) {
     const e = new Engine({ tickRate: 60 });
-    e.load(buildGameEBlueprint());
+    e.load(buildGameEBlueprint(buildJokerEntities(STARTER_JOKERS)));
     engineRef.current = e;
     deckRef.current = shuffledDeck(seedRef.current);
     deckPtrRef.current = HAND_SIZE;
@@ -133,7 +132,7 @@ function GameE() {
   const newRun = useCallback(() => {
     seedRef.current += 1; // 换种子 → 新牌序（仍确定性可复现）
     const e = new Engine({ tickRate: 60 });
-    e.load(buildGameEBlueprint());
+    e.load(buildGameEBlueprint(buildJokerEntities(STARTER_JOKERS)));
     engineRef.current = e;
     deckRef.current = shuffledDeck(seedRef.current);
     deckPtrRef.current = HAND_SIZE;
@@ -159,17 +158,18 @@ function GameE() {
         </div>
       </div>
 
-      {/* 小丑排（真美术）*/}
-      <div style={{ display: 'flex', gap: 10, alignItems: 'flex-end' }}>
-        <span style={{ fontSize: 10, color: '#64748b', paddingBottom: 50, letterSpacing: 1 }}>JOKERS</span>
+      {/* 小丑排（全 14 张，引擎接线；真美术 webp，缺图 emoji 兜底）*/}
+      <div style={{ display: 'flex', gap: 8, alignItems: 'flex-start', flexWrap: 'wrap', justifyContent: 'center', maxWidth: 720 }}>
         {TABLE_JOKERS.map((j) => (
-          <div key={j.name} title={j.desc} style={{ width: 78, height: 104, borderRadius: 8, border: '1px solid #3a2a4a', background: '#160f22', overflow: 'hidden', display: 'flex', flexDirection: 'column' }}>
-            {j.file ? (
-              <img src={JOKER_URL(j.file)} alt={j.name} style={{ width: '100%', height: 80, objectFit: 'cover' }} />
-            ) : (
-              <div style={{ width: '100%', height: 80, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 26 }}>🃏</div>
-            )}
-            <div style={{ fontSize: 8, textAlign: 'center', color: '#a78bfa', padding: '3px 2px', lineHeight: 1.2 }}>{j.desc}</div>
+          <div key={j.name} title={`${j.name} · ${j.desc}`} style={{ width: 64, height: 92, borderRadius: 8, border: '1px solid #3a2a4a', background: '#160f22', overflow: 'hidden', display: 'flex', flexDirection: 'column', position: 'relative' }}>
+            {/* emoji 兜底层（img 加载成功则覆盖；onError 隐藏 img 露出它）*/}
+            <div style={{ width: '100%', height: 66, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 24 }}>🃏</div>
+            <img
+              src={JOKER_URL(j.file)} alt={j.name}
+              onError={(e) => { e.currentTarget.style.display = 'none'; }}
+              style={{ position: 'absolute', top: 0, left: 0, width: '100%', height: 66, objectFit: 'cover' }}
+            />
+            <div style={{ fontSize: 7, textAlign: 'center', color: '#a78bfa', padding: '2px', lineHeight: 1.2 }}>{j.desc}</div>
           </div>
         ))}
       </div>
