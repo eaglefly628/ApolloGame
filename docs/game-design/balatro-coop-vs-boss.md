@@ -199,3 +199,49 @@ shop  = { CraftRecipe:{ onSignal:"buy_x", costs:[{id:"money",amount:6}], grantsF
 - **随机必种子化**（同一 `RandomSeed` 源）。
 - 新牌种是**数据**；引擎只需加一个小契约：**"本拍上下文（双方牌型 + 共振目标）暴露给 `condition` 读"**（`Beat`/`Resonance` 组件），不是新能力。
 - 已落地依赖：`pokerHandCapability`（认牌型）。待定：`card-pile`（牌库/手牌/抽弃）—— 评估是新能力还是 RandomSeed+Tag 重组。
+
+## 8. 商店经济 + 星球牌 + 牌面标记（参考 Balatro · 含数据模型）
+
+### 8.1 商店：共享货架 + 各自钱包 + roll 抢牌
+**定调**：**共享货架（一个店、有限牌）+ 各自钱包（各买各的小丑、保留独立 build）+ 争夺位用 roll 决高下**。
+- **普通位**：先到先得（谁先锁谁买），各付各钱。
+- **争夺位（有趣的那个）**：1 张稀有牌双方都想要 → **roll 抢**：各掷骰（种子RNG）；**可花钱给自己 +roll**（"押 $3 换 +1 点"）→ 高点者买下，败者得安慰金/小道具。**roll + 押钱 = 抢牌博弈**（随机 + 出其不意 + 取舍）。
+- **合作变体**：双方一起掷，**都 ≥4 → 两人都拿**（共担运气）。
+- 数据：钱=`Resource`；买=`craft-recipe`（够钱才成交）；骰=`RandomSeed`；押钱+roll=effect 改 roll 资源；抢到=effect 把牌给赢家。**全现成，回驳"商店系统"。**
+
+### 8.2 星球牌（Planet）：牌型升级
+**Balatro 参考**：星球牌打出 → 永久升级某**牌型**的底分（chips+mult）。一星=一牌型（冥王星=高牌、水星=对子…木星=同花、土星=顺子…）。
+**我们的设计（co-op）**：
+- 核心 = **牌型等级**：打出星球牌 → 该牌型 `level +1` → 算分 `chips = base + level×perLevel`。
+- **合作定调：队伍共享牌型等级**（任一人升同花，两人都受益）→ 鼓励**收敛到共同牌型**，喂分工共鸣。
+- **双星牌（co-op 专属）**：一次升**两个互补牌型**（同花+顺子）→ 直接强化分工共鸣那一对。
+- 数据：`Planet{ handType:"flush", levels:1 }`；打出=effect `level_flush += 1`。
+  **契约①**：`cardScoring` 算某牌型底分时读 `level_<type>`（现有能力小扩展，非新系统）。
+
+### 8.3 牌面标记（Edition / Seal / Enhancement）：牌上"贴纸"
+**Balatro 参考**：一张牌可叠最多三类标记——
+- **Enhancement 增强**（改打法）：Bonus(+chips)/Mult(+mult)/Wild(任意花色)/Glass(×mult 易碎)/Steel(在手×mult)/Gold($)/Stone…
+- **Edition 版式**（闪光）：Foil(+chips)/Holo(+mult)/Polychrome(×mult)/Negative…
+- **Seal 印章**（触发）：金(产$)/红(重触发)/蓝(生星球牌)/紫(弃牌生塔罗)。
+
+**数据模型（"如何牌上打标记"）**
+- **牌=实体；标记=组件**（ECS 纯数据，每类最多一个）：
+  ```jsonc
+  "card_x": { "Card":{"suit":"spade","rank":11},
+              "Edition":{"kind":"foil"}, "Seal":{"kind":"red"}, "Enhancement":{"kind":"glass"} }
+  ```
+- **打标记的动作** = 一个 effect/塔罗给目标牌实体**挂上标记组件**：
+  `effect{ kind:"mark", target:"card_x", mark:"Edition", value:"foil" }`。
+  **契约②**：`effect-apply` 增一个"给目标实体挂标记组件"的种类。
+- **算分读标记**：`cardScoring` 逐张算分时读该牌 Edition/Seal/Enhancement → 施加加成。
+  **契约③**：`cardScoring` 读牌上标记组件。
+- **视觉**：标记=卡面叠加层（foil 流光、印章图标）—— 渲染薄层读组件，数据驱动。
+- **co-op 标记**：「传递印」=带此印的牌可塞给队友；「共鸣印」=打出时也 buff 队友下一手 → 把标记接进合作。
+
+### 8.4 架构师小结（过纲领尺子）
+- **回驳特设系统**：商店 / 星球 / 标记**没有一个该写成"小丑牌专用 system"**；全是 `Resource / RandomSeed / effect-apply / component` 的数据装配。
+- **真要给引擎加的只有 3 个小口子**（都加在现有 `cardScoring` / `effect-apply`，不另起炉灶）：
+  ① cardScoring 算分读**牌型等级** `level_<type>`（星球牌）；
+  ② cardScoring 算分读**牌上标记组件** Edition/Seal/Enhancement（标记）；
+  ③ effect-apply 增"**给目标牌挂标记组件**"种类（打标记的动作）。
+- 其余（哪张星球、哪种印、商店几位、roll 公式）全是**数据/数值**，弱 LLM 也能填。
