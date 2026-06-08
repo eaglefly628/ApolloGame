@@ -9,3 +9,4 @@ export * from './blinds.js';
 export * from './jokers.js';
 export * from './joker-catalog.js';
 export * from './assets.js';
+export * from './blueprint.js';

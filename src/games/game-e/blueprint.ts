@@ -103,7 +103,6 @@ export function buildGameEBlueprint(): WorldBlueprint {
     gate_jolly: {
       EventWhen: {
         signal: SIG_JOLLY,
-        // 条件类小丑也要被「出牌中」门控：scoring 且 牌型含对子，才发 jolly_fire。
         when: {
           kind: 'and',
           of: [
@@ -117,20 +116,12 @@ export function buildGameEBlueprint(): WorldBlueprint {
     } as unknown as EntityBlueprint,
 
     // ── 小丑 = Effect 数据（按 order 升序结算；order 对乘法是语义关键）──
-    // Joker：+4 Mult（无条件）。
     joker_base: { Effect: { onSignal: SIG_SCORE, kind: 'modify-resource', targetId: R_MULT, op: 'add', value: 4, order: 10 } } as unknown as EntityBlueprint,
-    // Sly Joker 风味：+50 Chips（无条件，演示 +chips）。
     joker_chips: { Effect: { onSignal: SIG_SCORE, kind: 'modify-resource', targetId: R_CHIPS, op: 'add', value: 50, order: 5 } } as unknown as EntityBlueprint,
-    // Jolly Joker：含对子 → +8 Mult（条件，靠 gate_jolly 信号）。
     joker_jolly: { Effect: { onSignal: SIG_JOLLY, kind: 'modify-resource', targetId: R_MULT, op: 'add', value: 8, order: 11 } } as unknown as EntityBlueprint,
-    // Cavendish：×3 Mult（无条件，order 最大 → 最后乘，先加后乘）。
     joker_cavendish: { Effect: { onSignal: SIG_SCORE, kind: 'modify-resource', targetId: R_MULT, op: 'mul', value: 3, order: 100 } } as unknown as EntityBlueprint,
-    // Bull：每 $1 +2 Chips（量纲动态值，REQ-013 valueFrom coeff）。
     joker_bull: { Effect: { onSignal: SIG_SCORE, kind: 'modify-resource', targetId: R_CHIPS, op: 'add', valueFrom: { resourceId: R_MONEY, coeff: 2 }, order: 6 } } as unknown as EntityBlueprint,
 
-    // ── 最终合并（REQ-013 valueFrom timesResourceId）：hand_score = chips × mult。
-    // order 最大(1000) → 在所有小丑改完 chips/mult 之后才读（effect-apply 就地连写，lookup 按引用读最新值）。
-    // op:'set' → 每帧幂等设为当前 chips×mult（累计入总分=另一条边沿信号的后续工作）。
     score_combine: { Effect: { onSignal: SIG_SCORE, kind: 'modify-resource', targetId: R_HAND_SCORE, op: 'set', valueFrom: { resourceId: R_CHIPS, timesResourceId: R_MULT }, order: 1000 } } as unknown as EntityBlueprint,
   };
 
@@ -139,9 +130,9 @@ export function buildGameEBlueprint(): WorldBlueprint {
       resourceCapability,
       flagCapability,
       stringVariableCapability,
-      pokerHandCapability, // REQ-011：判牌型给基础分
-      eventWhenCapability, // 条件 → 信号
-      effectApplyCapability, // REQ-012：op/order 加乘有序结算
+      pokerHandCapability,
+      eventWhenCapability,
+      effectApplyCapability,
     ],
     entities,
   };

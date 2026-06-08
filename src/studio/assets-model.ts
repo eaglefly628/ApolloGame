@@ -2,6 +2,8 @@ import type { WorldBlueprint } from '../assembly/demo.assembly.js';
 import type { AssetIndex } from '@assets/index.js';
 import { GAME_A_ASSETS } from '../games/game-a/index.js';
 import { MATERIALS, GARMENTS, ACCESSORIES } from '../games/game-c/index.js';
+import { JOKER_ART_FILES, JOKER_ART_MISSING, jokerArtKey } from '../games/game-e/assets.js';
+import { JOKER_CATALOG } from '../games/game-e/index.js';
 import gameBManifestRaw from '../games/game-b/assets/asset-manifest.json';
 
 // ═══════════════════════════════════════════════════════════════
@@ -133,6 +135,71 @@ function gameCAssets(): StudioAsset[] {
   return out;
 }
 
+const CARD_DIR = 'assets/FreeArtLib/cardgame/card';
+
+/** 小丑牌额外素材（花色图标 / 参考图 / 灵魂牌 / 塔罗牌 / 星球牌）。 */
+const GAME_E_EXTRA: ReadonlyArray<{ id: string; file: string; sub: string; name: string }> = [
+  { id: 'je.suit.spades',        file: 'Spade_suit_icon.webp',     sub: 'suit-icon',  name: '♠ Spades' },
+  { id: 'je.suit.hearts',        file: 'Heart_suit_icon.webp',     sub: 'suit-icon',  name: '♥ Hearts' },
+  { id: 'je.suit.diamonds',      file: 'Diamond_suit_icon.webp',   sub: 'suit-icon',  name: '♦ Diamonds' },
+  { id: 'je.suit.clubs',         file: 'Club_suit_icon.webp',      sub: 'suit-icon',  name: '♣ Clubs' },
+  { id: 'je.ref.hands',          file: 'BalatroHands.webp',        sub: 'reference',  name: 'Hand Rankings' },
+  { id: 'je.ref.blinds',         file: 'Blinds.webp',              sub: 'reference',  name: 'Blinds' },
+  { id: 'je.ref.editions',       file: 'Editions.webp',            sub: 'reference',  name: 'Editions' },
+  { id: 'je.ref.enhanced_cards', file: 'Enhanced_Cards.webp',      sub: 'reference',  name: 'Enhanced Cards' },
+  { id: 'je.ref.vouchers',       file: 'Vouchers.webp',            sub: 'reference',  name: 'Vouchers' },
+  { id: 'je.spectral.cryptid',   file: 'Spectral_Cryptid.webp',    sub: 'spectral',   name: 'Spectral: Cryptid' },
+  { id: 'je.spectral.grim',      file: 'Spectral_Grim.webp',       sub: 'spectral',   name: 'Spectral: Grim' },
+  { id: 'je.tarot.judgement',    file: 'Tarot_Judgement.webp',     sub: 'tarot',      name: 'Tarot: Judgement' },
+  { id: 'je.tarot.the_fool',     file: 'Tarot_The_Fool.webp',      sub: 'tarot',      name: 'Tarot: The Fool' },
+  { id: 'je.planet.eris',        file: 'Planet_Eris.webp',         sub: 'planet',     name: 'Planet: Eris' },
+];
+
+function gameEAssets(): StudioAsset[] {
+  const rarityMap = new Map(JOKER_CATALOG.map((j) => [j.id, j.rarity]));
+  const out: StudioAsset[] = [];
+
+  for (const { id, file } of JOKER_ART_FILES) {
+    const rarity = rarityMap.get(id) ?? 'common';
+    out.push({
+      id: jokerArtKey(id),
+      type: 'texture',
+      name: id.split('_').map((w) => w.charAt(0).toUpperCase() + w.slice(1)).join(' '),
+      description: `${CARD_DIR}/${file}`,
+      status: 'filled',
+      tags: ['小丑牌', 'joker', rarity],
+      usedBy: [],
+    });
+  }
+
+  for (const id of JOKER_ART_MISSING) {
+    const rarity = rarityMap.get(id) ?? 'common';
+    out.push({
+      id: jokerArtKey(id),
+      type: 'texture',
+      name: id.split('_').map((w) => w.charAt(0).toUpperCase() + w.slice(1)).join(' '),
+      description: '暂缺图片',
+      status: 'tbf',
+      tags: ['小丑牌', 'joker', rarity],
+      usedBy: [],
+    });
+  }
+
+  for (const { id, file, sub, name } of GAME_E_EXTRA) {
+    out.push({
+      id,
+      type: 'texture',
+      name,
+      description: `${CARD_DIR}/${file}`,
+      status: 'filled',
+      tags: ['小丑牌', sub],
+      usedBy: [],
+    });
+  }
+
+  return out;
+}
+
 // 通用扫描（无声明清单的游戏，如 demo）：从实体里扒 textureKey/clipId。
 function scanBlueprintAssets(bp: WorldBlueprint): StudioAsset[] {
   const fields: Array<[string, string]> = [
@@ -195,6 +262,9 @@ export function studioAssets(
       break;
     case 'game-c':
       list = gameCAssets();
+      break;
+    case 'game-e':
+      list = gameEAssets();
       break;
     default:
       list = scanBlueprintAssets(bp);
