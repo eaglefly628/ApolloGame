@@ -39,6 +39,18 @@ const RARITY_COLOR: Record<string, string> = { common: '#9ca3af', uncommon: '#34
 // 逐张/逐小丑计分演出的一帧（纯表现：显示用 chips/mult + 高亮哪张牌 + 抖哪个小丑）。
 interface SeqFrame { chips: number; mult: number; score: number | null; hi: number | null; wiggle: string | null; dur: number; }
 
+// 素材库 GUI 图标（DCSS）：仅用语义贴切的两张——tavern≈商店、scroll≈日志卷轴；加载失败回退 emoji。
+const GUI_TAVERN = '/assets/FreeArtLib/gui/tavern.png';
+const GUI_SCROLL = '/assets/FreeArtLib/gui/spells/components/scroll.png';
+function GuiIcon({ src, emoji, size = 22 }: { src: string; emoji: string; size?: number }) {
+  return (
+    <span style={{ position: 'relative', display: 'inline-block', width: size, height: size, verticalAlign: 'middle' }}>
+      <span style={{ position: 'absolute', inset: 0, fontSize: size - 5, lineHeight: `${size}px`, textAlign: 'center' }}>{emoji}</span>
+      <img src={src} alt="" style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', objectFit: 'contain', imageRendering: 'pixelated' }} onError={(e) => { (e.currentTarget as HTMLImageElement).style.display = 'none'; }} />
+    </span>
+  );
+}
+
 const BLIND_META: Record<BlindKind, { label: string; icon: string; reward: number }> = {
   small: { label: '小盲注', icon: '🔸', reward: 3 },
   big: { label: '大盲注', icon: '🔶', reward: 4 },
@@ -335,7 +347,7 @@ function GameE() {
 
       {/* 算分回馈 log（右侧固定窗，游戏性流水）*/}
       <div style={{ position: 'fixed', right: 12, top: 70, width: 210, maxHeight: '70vh', overflowY: 'auto', background: 'rgba(11,28,34,0.92)', border: '1px solid #2b5562', borderRadius: 10, padding: '10px 12px', fontSize: 11, lineHeight: 1.7, zIndex: 20 }}>
-        <div style={{ fontWeight: 700, color: '#ffd166', marginBottom: 6, fontSize: 12 }}>📜 结算日志</div>
+        <div style={{ fontWeight: 700, color: '#ffd166', marginBottom: 6, fontSize: 12, display: 'flex', alignItems: 'center', gap: 6 }}><GuiIcon src={GUI_SCROLL} emoji="📜" size={18} /> 结算日志</div>
         {log.length === 0 && <div style={{ color: '#475569' }}>（出牌后这里显示算分流水）</div>}
         {log.map((line, i) => (
           <div key={i} style={{ color: i === 0 ? '#e2e8f0' : '#7d93a8', borderBottom: line.startsWith('—') ? '1px dashed #2b5562' : 'none', paddingBottom: line.startsWith('—') ? 4 : 0, marginBottom: line.startsWith('—') ? 4 : 0 }}>{line}</div>
@@ -397,7 +409,7 @@ function GameE() {
           <div style={{ position: 'absolute', top: 0, left: 0, right: 0, height: 3, background: 'linear-gradient(90deg,transparent,#ffd166,#f59e0b,transparent)', backgroundSize: '200% 100%', animation: 'ge-sheen 3s linear infinite' }} />
 
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
-            <span style={{ fontSize: 17, fontWeight: 800, color: '#ffd166', letterSpacing: 1 }}>🛒 商店</span>
+            <span style={{ fontSize: 17, fontWeight: 800, color: '#ffd166', letterSpacing: 1, display: 'inline-flex', alignItems: 'center', gap: 8 }}><GuiIcon src={GUI_TAVERN} emoji="🛒" size={26} /> 商店</span>
             <span style={{ fontSize: 15, color: '#ffd166', fontWeight: 700, display: 'inline-flex', alignItems: 'center', gap: 4 }}>
               <span style={{ display: 'inline-block', animation: 'ge-coin 1.6s ease-in-out infinite' }}>💰</span> ${money}
             </span>
