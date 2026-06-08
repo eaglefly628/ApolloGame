@@ -1,300 +1,213 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useCallback } from 'react';
 import { createRoot } from 'react-dom/client';
-import { Engine } from './runtime/engine.js';
-import {
-  buildGameEBlueprint,
-  CARD_FLAG, JOKER_FLAG,
-  suitOf, rankOf, isCard, isJoker,
-  SUIT_SYMBOL, SUIT_COLOR, RANK_LABEL, RANK_CHIPS,
-} from './games/game-e/index.js';
+import type { Card, Suit, Rank } from './games/game-e/index.js';
+import { SUITS, RANKS, RANK_CHIPS, HAND_RANKINGS } from './games/game-e/index.js';
+import type { HandType } from './games/game-e/index.js';
+import { JOKER_CATALOG } from './games/game-e/index.js';
+import type { JokerCatalogEntry } from './games/game-e/index.js';
 
 // Game E 可挂载模块（launcher 卡带槽契约：export mount(container) → cleanup）。
-// Balatro-like 卡牌构建 PoC：手牌评估 + 小丑效果由此层纯函数计算（离散事件驱动）。
-// 数据：卡牌实体（Tag 编码花色/点数）+ 小丑实体（Tag+Resource 效果值）存于 engine.world。
+// Balatro-like PoC：纯 React 事件驱动（卡牌游戏离散，无需 tick 引擎）。
+// 数据层来自 games/game-e/（deck/hand-rankings/joker-catalog 纯数据）。
+// ECS blueprint 待 REQ-011/012 落地后装配，届时 mount() 切换到 Engine 版本。
 
-// ── 手牌评估 ──
+// ── 演示手牌（8 张）──
+const DEMO_HAND: Card[] = [
+  { suit: 'spades',   rank: 'A'  },
+  { suit: 'spades',   rank: 'K'  },
+  { suit: 'spades',   rank: 'Q'  },
+  { suit: 'hearts',   rank: 'A'  },
+  { suit: 'hearts',   rank: 'K'  },
+  { suit: 'diamonds', rank: '7'  },
+  { suit: 'clubs',    rank: '7'  },
+  { suit: 'spades',   rank: '3'  },
+];
 
-type HandType =
-  | 'High Card' | 'Pair' | 'Two Pair' | 'Three of a Kind'
-  | 'Straight' | 'Flush' | 'Full House' | 'Four of a Kind'
-  | 'Straight Flush' | 'Royal Flush';
+// ── 演示小丑（前 3 张）──
+const DEMO_JOKERS = JOKER_CATALOG.slice(0, 3);
 
-interface HandResult {
-  type: HandType;
-  baseChips: number;
-  baseMult: number;
-  cardChips: number;
-}
+// ── 花色显示 ──
+const SUIT_SYMBOL: Record<Suit, string> = { spades: '♠', hearts: '♥', diamonds: '♦', clubs: '♣' };
+const SUIT_COLOR:  Record<Suit, string> = { spades: '#94a3b8', hearts: '#f87171', diamonds: '#fb923c', clubs: '#4ade80' };
 
-const HAND_TABLE: Record<HandType, { chips: number; mult: number }> = {
-  'High Card':       { chips: 5,   mult: 1  },
-  'Pair':            { chips: 10,  mult: 2  },
-  'Two Pair':        { chips: 20,  mult: 2  },
-  'Three of a Kind': { chips: 30,  mult: 3  },
-  'Straight':        { chips: 30,  mult: 4  },
-  'Flush':           { chips: 35,  mult: 4  },
-  'Full House':      { chips: 40,  mult: 4  },
-  'Four of a Kind':  { chips: 60,  mult: 7  },
-  'Straight Flush':  { chips: 100, mult: 8  },
-  'Royal Flush':     { chips: 100, mult: 8  },
-};
-
-function evalHand(ranks: number[], suits: number[]): HandResult {
-  const n = ranks.length;
-  const rankCount: Record<number, number> = {};
-  const suitCount: Record<number, number> = {};
-  for (let i = 0; i < n; i++) {
-    rankCount[ranks[i]] = (rankCount[ranks[i]] ?? 0) + 1;
-    suitCount[suits[i]] = (suitCount[suits[i]] ?? 0) + 1;
-  }
+// ── 手牌评估（纯函数，适配 games/game-e/hand-rankings.ts HandType）──
+function evalHandType(cards: Card[]): HandType {
+  const n = cards.length;
+  if (n === 0) return 'high_card';
+  const ranks = cards.map(c => c.rank);
+  const suits = cards.map(c => c.suit);
+  const rankCount: Record<string, number> = {};
+  const suitCount: Record<string, number> = {};
+  for (const r of ranks) rankCount[r] = (rankCount[r] ?? 0) + 1;
+  for (const s of suits) suitCount[s] = (suitCount[s] ?? 0) + 1;
   const counts = Object.values(rankCount).sort((a, b) => b - a);
   const flush = n >= 5 && Object.values(suitCount).some(c => c >= 5);
-  const sorted = [...ranks].sort((a, b) => (a === 1 ? 14 : a) - (b === 1 ? 14 : b));
+  const rankOrder: Record<Rank, number> = { '2':2,'3':3,'4':4,'5':5,'6':6,'7':7,'8':8,'9':9,'10':10,'J':11,'Q':12,'K':13,'A':14 };
+  const sorted = [...new Set(ranks.map(r => rankOrder[r]))].sort((a,b) => a-b);
   let straight = false;
-  if (n >= 5) {
-    const uniq = [...new Set(sorted.map(r => r === 1 ? 14 : r))].sort((a, b) => a - b);
-    for (let i = 0; i <= uniq.length - 5; i++) {
-      if (uniq[i + 4] - uniq[i] === 4 && new Set(uniq.slice(i, i + 5)).size === 5) straight = true;
+  if (n >= 5 && sorted.length >= 5) {
+    for (let i = 0; i <= sorted.length - 5; i++) {
+      if (sorted[i+4] - sorted[i] === 4) straight = true;
     }
-    if (!straight && uniq.includes(14)) {
-      const low = uniq.map(r => r === 14 ? 1 : r).sort((a, b) => a - b);
-      if (low[4] - low[0] === 4 && new Set(low.slice(0, 5)).size === 5) straight = true;
+    if (!straight && sorted.includes(14)) {
+      const lo = sorted.map(v => v === 14 ? 1 : v).sort((a,b)=>a-b);
+      if (lo[4] - lo[0] === 4) straight = true;
     }
   }
-  const cardChips = ranks.reduce((s, r) => s + RANK_CHIPS[r], 0);
-  const royal = flush && straight && sorted[sorted.length - 1] === 13 && sorted.includes(1);
-
-  let type: HandType = 'High Card';
-  if (royal)                                   type = 'Royal Flush';
-  else if (straight && flush)                  type = 'Straight Flush';
-  else if (counts[0] === 4)                    type = 'Four of a Kind';
-  else if (counts[0] === 3 && counts[1] === 2) type = 'Full House';
-  else if (flush)                              type = 'Flush';
-  else if (straight)                           type = 'Straight';
-  else if (counts[0] === 3)                    type = 'Three of a Kind';
-  else if (counts[0] === 2 && counts[1] === 2) type = 'Two Pair';
-  else if (counts[0] === 2)                    type = 'Pair';
-
-  const { chips, mult } = HAND_TABLE[type];
-  return { type, baseChips: chips, baseMult: mult, cardChips };
+  if (counts[0] === 5) return flush ? 'flush_five' : 'five_kind';
+  if (flush && straight) return 'straight_flush';
+  if (counts[0] === 4) return 'four_kind';
+  if (counts[0] === 3 && counts[1] === 2) return flush ? 'flush_house' : 'full_house';
+  if (flush) return 'flush';
+  if (straight) return 'straight';
+  if (counts[0] === 3) return 'three_kind';
+  if (counts[0] === 2 && counts[1] === 2) return 'two_pair';
+  if (counts[0] === 2) return 'pair';
+  return 'high_card';
 }
 
-// ── 读世界状态 ──
+// ── UI ──
 
-interface CardState { id: string; suit: number; rank: number; selected: boolean; }
-interface JokerState { id: string; effectType: 'mult_bonus' | 'chip_bonus'; value: number; }
-
-function readCards(world: Engine['world']): CardState[] {
-  const out: CardState[] = [];
-  for (const [eid] of world.query('Tag')) {
-    const tag = world.getComponent<{ type: 'Tag'; flags: number }>(eid, 'Tag');
-    if (!tag || !isCard(tag.flags)) continue;
-    const res = world.getComponent<{ type: 'Resource'; id: string; current: number }>(eid, 'Resource');
-    out.push({ id: eid, suit: suitOf(tag.flags), rank: rankOf(tag.flags), selected: (res?.current ?? 0) > 0 });
-  }
-  return out;
-}
-
-function readJokers(world: Engine['world']): JokerState[] {
-  const out: JokerState[] = [];
-  for (const [eid] of world.query('Tag', 'Resource')) {
-    const tag = world.getComponent<{ type: 'Tag'; flags: number }>(eid, 'Tag');
-    if (!tag || !isJoker(tag.flags)) continue;
-    const res = world.getComponent<{ type: 'Resource'; id: string; current: number }>(eid, 'Resource');
-    if (!res) continue;
-    const effectType = res.id === 'mult_bonus' ? 'mult_bonus' : 'chip_bonus';
-    out.push({ id: eid, effectType, value: res.current });
-  }
-  return out;
-}
-
-// ── Card 组件 ──
-
-function CardView({ card, onClick }: { card: CardState; onClick: () => void }) {
+function CardView({ card, selected, onClick }: { card: Card; selected: boolean; onClick: () => void }) {
   const color = SUIT_COLOR[card.suit];
   return (
-    <div
-      onClick={onClick}
-      style={{
-        width: 72, height: 100,
-        background: card.selected ? '#1e293b' : '#0f1623',
-        border: `2px solid ${card.selected ? color : '#1e293b'}`,
-        borderRadius: 8,
-        cursor: 'pointer',
-        display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
-        gap: 2, userSelect: 'none',
-        transform: card.selected ? 'translateY(-12px)' : 'none',
-        transition: 'transform 0.18s, border-color 0.18s',
-        boxShadow: card.selected ? `0 8px 24px ${color}44` : 'none',
-      }}
-    >
-      <div style={{ fontSize: 22, color, lineHeight: 1 }}>{SUIT_SYMBOL[card.suit]}</div>
-      <div style={{ fontSize: 20, fontWeight: 800, color, lineHeight: 1 }}>{RANK_LABEL[card.rank]}</div>
+    <div onClick={onClick} style={{
+      width: 68, height: 96, background: selected ? '#1e293b' : '#0f1623',
+      border: `2px solid ${selected ? color : '#1e293b'}`, borderRadius: 8, cursor: 'pointer',
+      display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 2,
+      userSelect: 'none', transform: selected ? 'translateY(-14px)' : 'none',
+      transition: 'transform 0.18s, border-color 0.18s',
+      boxShadow: selected ? `0 8px 24px ${color}44` : 'none',
+    }}>
+      <div style={{ fontSize: 20, color, lineHeight: 1 }}>{SUIT_SYMBOL[card.suit]}</div>
+      <div style={{ fontSize: 20, fontWeight: 800, color, lineHeight: 1 }}>{card.rank}</div>
     </div>
   );
 }
 
-// ── Joker 组件 ──
-
-const JOKER_META: Record<string, { name: string; desc: (v: number) => string; color: string }> = {
-  mult_bonus: { name: 'Jolly Joker', desc: v => `每打出一个对子 +${v} 倍率`, color: '#f59e0b' },
-  chip_bonus: { name: 'Scholar',     desc: v => `打出 A 时 +${v} 筹码`,       color: '#a78bfa' },
-};
-
-function JokerCard({ joker }: { joker: JokerState }) {
-  const meta = JOKER_META[joker.effectType] ?? { name: joker.id, desc: v => `+${v}`, color: '#64748b' };
+function JokerView({ joker }: { joker: JokerCatalogEntry }) {
+  const rarityColor = { common: '#94a3b8', uncommon: '#34d399', rare: '#60a5fa', legendary: '#f59e0b' }[joker.rarity];
   return (
     <div style={{
-      width: 80, height: 110,
-      background: 'linear-gradient(160deg, #1a1020, #0d0818)',
-      border: `2px solid ${meta.color}66`,
-      borderRadius: 8,
+      width: 80, height: 110, background: 'linear-gradient(160deg, #1a1020, #0d0818)',
+      border: `2px solid ${rarityColor}55`, borderRadius: 8,
       display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
       gap: 4, padding: '8px 4px',
     }}>
-      <div style={{ fontSize: 26 }}>🃏</div>
-      <div style={{ fontSize: 9, fontWeight: 700, color: meta.color, textAlign: 'center', lineHeight: 1.3 }}>{meta.name}</div>
-      <div style={{ fontSize: 8, color: '#64748b', textAlign: 'center', lineHeight: 1.3 }}>{meta.desc(joker.value)}</div>
+      <div style={{ fontSize: 24 }}>🃏</div>
+      <div style={{ fontSize: 9, fontWeight: 700, color: rarityColor, textAlign: 'center', lineHeight: 1.3 }}>{joker.name}</div>
+      <div style={{ fontSize: 7.5, color: '#64748b', textAlign: 'center', lineHeight: 1.3, padding: '0 4px' }}>{joker.text}</div>
     </div>
   );
 }
 
-// ── Main Panel ──
-
-function GameEPanel({ engine }: { engine: Engine }) {
-  const [cards, setCards] = useState<CardState[]>(() => readCards(engine.world));
-  const [jokers, setJokers] = useState<JokerState[]>(() => readJokers(engine.world));
-  const [lastScore, setLastScore] = useState<{ hand: string; chips: number; mult: number; total: number } | null>(null);
+function GameEPanel() {
+  const [selected, setSelected] = useState<boolean[]>(DEMO_HAND.map(() => false));
+  const [result, setResult] = useState<{ type: HandType; chips: number; mult: number; total: number } | null>(null);
   const [roundScore, setRoundScore] = useState(0);
   const [handsLeft, setHandsLeft] = useState(4);
 
-  useEffect(() => engine.subscribe(() => {
-    setCards(readCards(engine.world));
-    setJokers(readJokers(engine.world));
-  }), [engine]);
-
-  const toggleCard = useCallback((id: string) => {
-    const c = cards.find(c => c.id === id);
-    if (!c) return;
-    const selected = cards.filter(x => x.selected).length;
-    if (!c.selected && selected >= 5) return; // max 5 selected
-    const res = engine.world.getComponent<{ type: 'Resource'; id: string; current: number }>(id, 'Resource');
-    if (res) res.current = c.selected ? 0 : 1;
-    setCards(readCards(engine.world));
-  }, [cards, engine]);
+  const toggleCard = useCallback((i: number) => {
+    const selCount = selected.filter(Boolean).length;
+    setSelected(prev => {
+      if (!prev[i] && selCount >= 5) return prev;
+      return prev.map((s, j) => j === i ? !s : s);
+    });
+  }, [selected]);
 
   const playHand = useCallback(() => {
-    const sel = cards.filter(c => c.selected);
-    if (sel.length < 1 || handsLeft <= 0) return;
-    const result = evalHand(sel.map(c => c.rank), sel.map(c => c.suit));
-
-    // 应用小丑效果
-    let chips = result.baseChips + result.cardChips;
-    let mult  = result.baseMult;
-    for (const j of jokers) {
-      if (j.effectType === 'chip_bonus' && sel.some(c => c.rank === 1)) chips += j.value;
-      if (j.effectType === 'mult_bonus' && result.type === 'Pair')       mult  += j.value;
-    }
+    const sel = DEMO_HAND.filter((_, i) => selected[i]);
+    if (sel.length === 0 || handsLeft <= 0) return;
+    const type = evalHandType(sel);
+    const hr = HAND_RANKINGS[type];
+    const cardChips = sel.reduce((s, c) => s + RANK_CHIPS[c.rank], 0);
+    const chips = hr.baseChips + cardChips;
+    const mult  = hr.baseMult;
     const total = chips * mult;
-    setLastScore({ hand: result.type, chips, mult, total });
+    setResult({ type, chips, mult, total });
     setRoundScore(s => s + total);
     setHandsLeft(h => h - 1);
-
-    // 解除选中状态（写回 world）
-    for (const c of sel) {
-      const res = engine.world.getComponent<{ type: 'Resource'; id: string; current: number }>(c.id, 'Resource');
-      if (res) res.current = 0;
-    }
-    setCards(readCards(engine.world));
-  }, [cards, jokers, handsLeft, engine]);
+    setSelected(DEMO_HAND.map(() => false));
+  }, [selected, handsLeft]);
 
   const reset = useCallback(() => {
-    for (const c of cards) {
-      const res = engine.world.getComponent<{ type: 'Resource'; id: string; current: number }>(c.id, 'Resource');
-      if (res) res.current = 0;
-    }
-    setCards(readCards(engine.world));
-    setLastScore(null);
+    setSelected(DEMO_HAND.map(() => false));
+    setResult(null);
     setRoundScore(0);
     setHandsLeft(4);
-  }, [cards, engine]);
+  }, []);
 
-  const selectedCount = cards.filter(c => c.selected).length;
+  const selCount = selected.filter(Boolean).length;
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 16, padding: '20px 24px', width: '100%', maxWidth: 680 }}>
-      {/* Round info */}
-      <div style={{ display: 'flex', gap: 24, alignItems: 'center' }}>
-        <div style={{ textAlign: 'center' }}>
-          <div style={{ fontSize: 10, color: '#475569' }}>ROUND SCORE</div>
-          <div style={{ fontSize: 28, fontWeight: 800, color: '#f59e0b' }}>{roundScore.toLocaleString()}</div>
-        </div>
-        <div style={{ textAlign: 'center' }}>
-          <div style={{ fontSize: 10, color: '#475569' }}>HANDS LEFT</div>
-          <div style={{ fontSize: 28, fontWeight: 800, color: handsLeft > 1 ? '#e2e8f0' : '#ef4444' }}>{handsLeft}</div>
-        </div>
-        <div style={{ textAlign: 'center' }}>
-          <div style={{ fontSize: 10, color: '#475569' }}>BLIND</div>
-          <div style={{ fontSize: 28, fontWeight: 800, color: '#94a3b8' }}>300</div>
-        </div>
+    <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 14, padding: '20px 24px', width: '100%', maxWidth: 680 }}>
+      {/* 轮次信息 */}
+      <div style={{ display: 'flex', gap: 28 }}>
+        {[
+          { label: 'ROUND SCORE', val: roundScore.toLocaleString(), color: '#f59e0b' },
+          { label: 'HANDS LEFT',  val: String(handsLeft), color: handsLeft > 1 ? '#e2e8f0' : '#ef4444' },
+          { label: 'BLIND',       val: '300', color: '#94a3b8' },
+        ].map(({ label, val, color }) => (
+          <div key={label} style={{ textAlign: 'center' }}>
+            <div style={{ fontSize: 9, color: '#475569', letterSpacing: 1 }}>{label}</div>
+            <div style={{ fontSize: 26, fontWeight: 800, color }}>{val}</div>
+          </div>
+        ))}
       </div>
 
-      {/* Score display */}
-      {lastScore && (
-        <div style={{
-          background: '#0f1623', border: '1px solid #1e293b', borderRadius: 10,
-          padding: '10px 24px', textAlign: 'center',
-        }}>
-          <div style={{ fontSize: 13, color: '#f59e0b', fontWeight: 700 }}>{lastScore.hand}</div>
-          <div style={{ fontSize: 11, color: '#94a3b8', marginTop: 4 }}>
-            <span style={{ color: '#38bdf8' }}>{lastScore.chips}</span>
+      {/* 上次结算 */}
+      {result && (
+        <div style={{ background: '#0f1623', border: '1px solid #1e293b', borderRadius: 10, padding: '8px 24px', textAlign: 'center' }}>
+          <div style={{ fontSize: 13, color: '#f59e0b', fontWeight: 700 }}>{HAND_RANKINGS[result.type].name}</div>
+          <div style={{ fontSize: 11, color: '#94a3b8', marginTop: 3 }}>
+            <span style={{ color: '#38bdf8' }}>{result.chips}</span>
             {' 筹码 × '}
-            <span style={{ color: '#f87171' }}>{lastScore.mult}</span>
-            {' 倍率 = '}
-            <span style={{ color: '#f59e0b', fontWeight: 700 }}>{lastScore.total.toLocaleString()}</span>
+            <span style={{ color: '#f87171' }}>{result.mult}</span>
+            {' = '}
+            <span style={{ color: '#f59e0b', fontWeight: 700 }}>{result.total.toLocaleString()}</span>
           </div>
         </div>
       )}
 
-      {/* Jokers */}
+      {/* 小丑牌 */}
       <div style={{ display: 'flex', gap: 8, alignItems: 'flex-start' }}>
-        <div style={{ fontSize: 10, color: '#475569', paddingTop: 44 }}>JOKERS</div>
-        {jokers.map(j => <JokerCard key={j.id} joker={j} />)}
+        <div style={{ fontSize: 9, color: '#475569', paddingTop: 46, letterSpacing: 1 }}>JOKERS</div>
+        {DEMO_JOKERS.map(j => <JokerView key={j.id} joker={j} />)}
       </div>
 
-      {/* Hand */}
-      <div style={{ display: 'flex', gap: 8, alignItems: 'flex-end', minHeight: 120 }}>
-        {cards.map(c => <CardView key={c.id} card={c} onClick={() => toggleCard(c.id)} />)}
+      {/* 手牌 */}
+      <div style={{ display: 'flex', gap: 7, alignItems: 'flex-end', minHeight: 116 }}>
+        {DEMO_HAND.map((c, i) => (
+          <CardView key={i} card={c} selected={selected[i]} onClick={() => toggleCard(i)} />
+        ))}
       </div>
 
-      {/* Controls */}
+      {/* 操作按钮 */}
       <div style={{ display: 'flex', gap: 10 }}>
         <button
           onClick={playHand}
-          disabled={selectedCount === 0 || handsLeft === 0}
+          disabled={selCount === 0 || handsLeft === 0}
           style={{
-            padding: '10px 32px', borderRadius: 8, fontSize: 14, fontWeight: 700, cursor: selectedCount > 0 && handsLeft > 0 ? 'pointer' : 'default',
-            background: selectedCount > 0 && handsLeft > 0 ? 'linear-gradient(135deg, #f59e0b, #d97706)' : 'rgba(255,255,255,0.06)',
-            color: selectedCount > 0 && handsLeft > 0 ? '#0f172a' : '#475569',
+            padding: '10px 32px', borderRadius: 8, fontSize: 14, fontWeight: 700,
+            cursor: selCount > 0 && handsLeft > 0 ? 'pointer' : 'default',
+            background: selCount > 0 && handsLeft > 0 ? 'linear-gradient(135deg,#f59e0b,#d97706)' : 'rgba(255,255,255,0.06)',
+            color: selCount > 0 && handsLeft > 0 ? '#0f172a' : '#475569',
             border: 'none', transition: 'all 0.18s',
           }}
         >
-          {handsLeft > 0 ? `▶ Play Hand (${selectedCount} selected)` : 'No Hands Left'}
+          {handsLeft > 0 ? `▶ Play Hand  (${selCount} 张)` : '手牌耗尽'}
         </button>
         <button
           onClick={reset}
-          style={{
-            padding: '10px 20px', borderRadius: 8, fontSize: 13, fontWeight: 600, cursor: 'pointer',
-            background: 'rgba(255,255,255,0.06)', color: '#94a3b8', border: '1px solid #1e293b',
-          }}
+          style={{ padding: '10px 20px', borderRadius: 8, fontSize: 13, fontWeight: 600, cursor: 'pointer', background: 'rgba(255,255,255,0.06)', color: '#94a3b8', border: '1px solid #1e293b' }}
         >
-          Reset
+          重置
         </button>
       </div>
 
-      <div style={{ fontSize: 10, color: '#334155', textAlign: 'center', maxWidth: 480, lineHeight: 1.6 }}>
-        点击卡牌选中（最多 5 张）→ Play Hand 结算。小丑牌自动叠加效果。
-        手牌评估 + 小丑效果为 UI 层纯函数（卡牌数据存于 engine.world 实体）。
+      <div style={{ fontSize: 10, color: '#2d3748', textAlign: 'center', maxWidth: 440, lineHeight: 1.6 }}>
+        点击选牌（最多 5 张）→ Play Hand 自动识别牌型并结算。数据来自 games/game-e/（Balatro 官方数据）。
+        ECS blueprint 待引擎 REQ-011/012 落地后装配。
       </div>
     </div>
   );
@@ -304,21 +217,12 @@ export function mount(container: HTMLElement): () => void {
   const wrapper = document.createElement('div');
   wrapper.style.cssText =
     'position:absolute;inset:0;background:linear-gradient(180deg,#080610 0%,#0a0714 100%);display:flex;align-items:center;justify-content:center;color:#cbd5e1;font:13px system-ui';
-
-  const reactWrap = document.createElement('div');
-  reactWrap.style.cssText = 'width:100%;display:flex;justify-content:center';
-  wrapper.appendChild(reactWrap);
   container.appendChild(wrapper);
 
-  const engine = new Engine({ tickRate: 10 }); // 低频 tick：卡牌游戏事件驱动，tick 仅保障状态同步
-  engine.load(buildGameEBlueprint());
-  engine.start();
-
-  const root = createRoot(reactWrap);
-  root.render(<GameEPanel engine={engine} />);
+  const root = createRoot(wrapper);
+  root.render(<GameEPanel />);
 
   return () => {
-    engine.stop();
     root.unmount();
     wrapper.remove();
   };

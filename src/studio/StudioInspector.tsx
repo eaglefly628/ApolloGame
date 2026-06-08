@@ -19,7 +19,6 @@ import {
 } from '../games/game-a/index.js';
 import { buildGameBBlueprint } from '../games/game-b/index.js';
 import { buildGameCBlueprint } from '../games/game-c/index.js';
-import { buildGameEBlueprint } from '../games/game-e/index.js';
 import {
   inspectBlueprint,
   blueprintStats,
@@ -83,7 +82,6 @@ const GAMES: GameDef[] = [
   },
   { id: 'game-b', title: 'Game B · 乙游 VN', build: () => buildGameBBlueprint() },
   { id: 'game-c', title: 'Game C · 缝纫物语', build: () => buildGameCBlueprint() },
-  { id: 'game-e', title: 'Game E · Balatro 小丑牌', build: () => buildGameEBlueprint() },
   { id: 'demo', title: 'Demo · 子弹撞墙', build: () => demoBlueprint },
 ];
 
