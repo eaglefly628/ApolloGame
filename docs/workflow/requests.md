@@ -616,6 +616,21 @@
 
 ---
 
+### REQ-009 · [2026-06-06] · PA · Game A · status: open · 优先级: **P1** · 类型: 真缺口（事件→重置/启动计时器）
+
+**标题**：`effect` 缺"重置/启动计时器" —— 限时类机制（踩下→开门→N 秒自动关）当前组合不出
+
+- **想实现的游戏行为**：限时门 / 限时平台 / 倒计时机关 —— 某事件（踩开关/进区域/拾取）发生**那一刻起**算 N tick，到点触发（关门 / 平台塌陷 / 失败）。
+- **已经试了什么（PA，确认组合不出）**：现有链 `zone-occupancy→flag→event-when→effect` 全跑通；`condition` 能读 `timer.elapsed`。但：
+  - `effect` 的 kind 只有 set-flag/modify-resource/set-state/set-sensor/set-visible/destroy —— **没有"重置/启动 Timer"**。
+  - `Timer` 从创建即自走（timer-advance 每 tick +1），**无法"从踩下那刻重新计时"**。
+  - 也没有"按 tick 衰减 resource"做倒计时（modify-resource 是一次性增量，非每帧）。
+  - → "按下那刻起 N 秒自动关"**当前数据组合不出来**（"按住开/松开关"那种已能做，差的就是"定时自动"）。
+- **建议方案**：`effect` 加 kind **`reset-timer`**（按 `targetEntity` 定位 Timer：`elapsed=0`，可选 `value`→设 `duration`）。配合现有 `condition{kind:'timer',id,cmp:'gte',value:N}`→event-when→effect 关门，"限时"即纯数据涌现。最小、与 timer/condition/effect 链严丝合缝。
+- **优先级 P1**：限时类机制的通用前置；Game A 限时门/塌陷平台、Game B 限时选择、Game D 技能 CD 都可能用。**不阻塞当前**（其余玩法已能做）；按"落地不口头"规则 back up 入池。
+
+---
+
 ## 需求模板（复制这段填写）
 
 ```
