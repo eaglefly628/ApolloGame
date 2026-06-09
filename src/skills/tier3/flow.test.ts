@@ -1,0 +1,85 @@
+import { describe, it, expect } from 'vitest';
+import { World } from '@engine/core/world.js';
+import type { GameFlow, Resource, Flag, State } from '@engine/protocol/components.js';
+import { flowCapability } from './flow.js';
+
+function mk(flow: Omit<GameFlow, 'type'>): World {
+  const w = new World();
+  for (const s of flowCapability.systems) w.addSystem(s);
+  w.createEntity('flow');
+  w.addComponent('flow', { type: 'GameFlow', ...flow } as GameFlow);
+  return w;
+}
+const res = (w: World, id: string, cur: number, min = 0, max = 1e9) => {
+  w.createEntity(`r_${id}`); w.addComponent(`r_${id}`, { type: 'Resource', id, current: cur, min, max } as Resource);
+};
+const flag = (w: World, id: string) => { w.createEntity(`f_${id}`); w.addComponent(`f_${id}`, { type: 'Flag', id, active: false } as Flag); };
+const stateC = (w: World, fsmId: string, cur: string) => { w.createEntity(`s_${fsmId}`); w.addComponent(`s_${fsmId}`, { type: 'State', fsmId, current: cur } as State); };
+const cur = (w: World) => w.getComponent<GameFlow>('flow', 'GameFlow')!.current;
+const rget = (w: World, id: string) => w.getComponent<Resource>(`r_${id}`, 'Resource')!.current;
+const fget = (w: World, id: string) => w.getComponent<Flag>(`f_${id}`, 'Flag')!.active;
+
+describe('flow · 分支转移（回合 won/lost 收成一份 GameFlow，消解散件）', () => {
+  const rounds = (): Omit<GameFlow, 'type'> => ({
+    id: 'round', current: 'playing', states: [
+      { id: 'playing', transitions: [
+        { when: { kind: 'resource', id: 'round_score', cmp: 'gte', value: 0, vsResource: 'blind' }, to: 'won', do: [{ kind: 'set-flag', targetId: 'cleared', value: true }] },
+        { when: { kind: 'resource', id: 'hands_left', cmp: 'lte', value: 0 }, to: 'lost' },
+      ] },
+      { id: 'won' }, { id: 'lost' },
+    ],
+  });
+  it('round_score≥blind → won（带 do 动作置 cleared）', () => {
+    const w = mk(rounds()); res(w, 'round_score', 300); res(w, 'blind', 200); res(w, 'hands_left', 3); flag(w, 'cleared');
+    w.tick();
+    expect(cur(w)).toBe('won');
+    expect(fget(w, 'cleared')).toBe(true);
+  });
+  it('未达线 + hands 耗尽 → lost（按声明序首个命中）', () => {
+    const w = mk(rounds()); res(w, 'round_score', 50); res(w, 'blind', 200); res(w, 'hands_left', 0); flag(w, 'cleared');
+    w.tick();
+    expect(cur(w)).toBe('lost');
+    expect(fget(w, 'cleared')).toBe(false);
+  });
+  it('都不满足 → 停在 playing', () => {
+    const w = mk(rounds()); res(w, 'round_score', 50); res(w, 'blind', 200); res(w, 'hands_left', 3); flag(w, 'cleared');
+    w.tick();
+    expect(cur(w)).toBe('playing');
+  });
+});
+
+describe('flow · 线性瀑布 + onEnter 边沿', () => {
+  it('always 转移把 deal→select→play 线性推进；onEnter 各跑一次', () => {
+    const w = mk({ id: 'f', current: 'deal', states: [
+      { id: 'deal', onEnter: [{ kind: 'modify-resource', targetId: 'dealt', op: 'set', value: 8 }], transitions: [{ when: { kind: 'always' }, to: 'select' }] },
+      { id: 'select', onEnter: [{ kind: 'set-flag', targetId: 'ready', value: true }], transitions: [{ when: { kind: 'always' }, to: 'play' }] },
+      { id: 'play' },
+    ] });
+    res(w, 'dealt', 0); flag(w, 'ready');
+    w.tick(); // deal: onEnter dealt=8 → 转 select
+    w.tick(); // select: onEnter ready=true → 转 play
+    w.tick(); // play 终态
+    expect(cur(w)).toBe('play');
+    expect(rget(w, 'dealt')).toBe(8);
+    expect(fget(w, 'ready')).toBe(true);
+  });
+  it('onEnter 只在进入时跑一次（edge，不每拍重复）', () => {
+    const w = mk({ id: 'f', current: 'A', states: [{ id: 'A', onEnter: [{ kind: 'modify-resource', targetId: 'n', op: 'add', value: 1 }] }] }); // A 无转移，停留
+    res(w, 'n', 0);
+    w.tick(); w.tick(); w.tick();
+    expect(rget(w, 'n')).toBe(1); // onEnter 仅进入 A 时跑一次
+  });
+});
+
+describe('flow · 确定性', () => {
+  it('同数据同输入 → 同 current（snapshot 友好）', () => {
+    const build = () => { const w = mk({ id: 'f', current: 'a', states: [{ id: 'a', transitions: [{ when: { kind: 'always' }, to: 'b' }] }, { id: 'b' }] }); w.tick(); return w; };
+    expect(cur(build())).toBe(cur(build()));
+  });
+  it('set-state 动作可驱动另一个 fsm（流程间联动）', () => {
+    const w = mk({ id: 'f', current: 'go', states: [{ id: 'go', onEnter: [{ kind: 'set-state', targetId: 'other', value: 'opened' }] }] });
+    stateC(w, 'other', 'closed');
+    w.tick();
+    expect(w.getComponent<State>('s_other', 'State')!.current).toBe('opened');
+  });
+});

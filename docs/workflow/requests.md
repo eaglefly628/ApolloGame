@@ -889,6 +889,22 @@
 
 ---
 
+### REQ-020 · [2026-06-09] · 用户（宪法澄清：流程脚本化）· 框架级 · status: **done**（2026-06-09，主程4）· 优先级: **P1（流程可创作性 / 跨所有游戏）** · 类型: 声明式状态机解释器（DSL，非自由代码）
+
+> **用户提案**：游戏流程千差万别、难全拆散件数据；可接受 LLM 为状态流转写"脚本"——前提足够简单、像数据、线性瀑布。
+> **Lead 裁决（ACCEPT，钉死"脚本"=声明式状态机非自由代码）**：见 `docs/design/tier3-skill-governance.md` §4.5（宪法澄清）。要点：① 能接受闭语法声明式状态机（when 复用 ConditionExpr、do 复用 Effect 动词子集），不接受自由代码字符串（不变量②红线）；② 它是 dialogue 的同构，受祝福；③ **治理判据补充：散件能重组但最弱 LLM 难一致产出 → 建"收敛解释器"是正当理由**（加的不是表达力，是可创作性=不变量②本体）。
+> ✅ **落地（855 绿，不碰 game-e.tsx）**：
+> - `@skills/tier3/flow`：解释器读 `GameFlow{id,current,states:[{id,onEnter:FlowAction[],transitions:[{when:ConditionExpr,to,do:FlowAction[]}]}]}` → onEnter(edge) + 按声明序求值转移(首个 when 成立即跳)。FlowAction 动词 = set-flag/set-state/modify-resource(add|set)。确定性、entered 进 snapshot。
+> - ConditionExpr 加 `always` 叶子（线性瀑布转移）。
+> - 组件 GameFlow/FlowState/FlowTransition/FlowAction 入 protocol，注册表自动反推。
+> - `flow.test.ts`(+7)：回合 won/lost 分支**收成一份 GameFlow**（消解 ~10 个散件 EventWhen/Effect）、线性瀑布 deal→select→play、onEnter 边沿只跑一次、流程间 set-state 联动、确定性。
+> - **跨所有游戏复用**（A 通关/失败、B 场景流、C 回合、D 波次、E ante→盲注→商店），非品类专属。
+> 🟡 **后续（归 PE / 后续程）**：game-e.tsx 回合流程改用一份 GameFlow（替代命令式 + 替代我 round-flow.test 里的散件 gate/effect）；与 card-pile + 计分链 + ScoreTrace 合龙成纯数据单人 MVP。
+
+**标题**：声明式「游戏流程状态机」解释器 —— 流程 = 一份 GameFlow 数据（读如线性瀑布脚本，本质数据）
+
+---
+
 ## 需求模板（复制这段填写）
 
 ```

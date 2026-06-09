@@ -42,3 +42,7 @@ export type { HandType, HandEval } from './poker-hand.js';
 // 触发命中该牌的逐张规则（PerCardRule），支持 retrigger（PerCardRetrigger）。聚合计数表达不了 retrigger 的乘性耦合，
 // 故逐张迭代是正确抽象。迭代=引擎算法，逐张规则/重触发=纯数据（与 effect-apply 的 Effect 同构）。
 export { cardScoringCapability, matchPerCardWhen } from './card-scoring.js';
+
+// flow（REQ-020）：声明式游戏流程状态机解释器——流程=一份 GameFlow 数据（状态+带 when 条件的转移），
+// 读如线性瀑布脚本、本质数据（与 dialogue 同构）。消解散落的 EventWhen/Effect 流程实体，跨所有游戏复用。
+export { flowCapability } from './flow.js';

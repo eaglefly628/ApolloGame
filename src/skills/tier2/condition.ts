@@ -71,6 +71,8 @@ export function evaluateCondition(
   lookup: ConditionLookup = buildConditionLookup(world),
 ): boolean {
   switch (expr.kind) {
+    case 'always':
+      return true;
     case 'and':
       return expr.of.every((e) => evaluateCondition(world, e, lookup));
     case 'or':

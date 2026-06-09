@@ -517,6 +517,7 @@ export type CmpOp = 'lt' | 'lte' | 'eq' | 'ne' | 'gte' | 'gt';
 // 布尔条件树：and/or/not 组合在「按语义 id 读世界值」的比较叶子上。纯 POD，
 // structuredClone 友好 → 自动进 world.snapshot()。threshold/状态判定/机关门控都是它的特例。
 export type ConditionExpr =
+  | { readonly kind: 'always' } // 恒真（flow 线性瀑布转移；数据可读）
   | { readonly kind: 'and'; readonly of: ConditionExpr[] }
   | { readonly kind: 'or'; readonly of: ConditionExpr[] }
   | { readonly kind: 'not'; readonly of: ConditionExpr }
@@ -764,6 +765,34 @@ export interface ScoreEvent {
 export interface ScoreTrace extends Component {
   readonly type: 'ScoreTrace';
   events: ScoreEvent[];
+}
+
+// ── game-flow（REQ-020）── 声明式状态机解释器：游戏流程 = 一份「状态 + 带 when 条件的转移」数据，
+// 读起来像线性瀑布脚本，本质是数据（闭语法、固定解释器跑）。消解"散落的 EventWhen/Effect 实体"，
+// 让最弱 LLM 也能一致产出流程（不变量②）。与 dialogue 同构（图遍历解释器），跨所有游戏复用（通关/场景/回合/波次/ante）。
+// 红线：when 复用 ConditionExpr、do/onEnter 复用 Effect 动词子集——**不接受自由代码字符串**。
+export interface FlowAction {
+  kind: 'set-flag' | 'set-state' | 'modify-resource'; // 复用 Effect 动词（流程相关子集）
+  targetId: string; // Flag.id / State.fsmId / Resource.id（按 id 全局定位）
+  value?: number | boolean | string;
+  op?: 'add' | 'set'; // modify-resource：add(默认) | set；钳 [min,max]
+}
+export interface FlowTransition {
+  when: ConditionExpr; // 满足即转移（复用现有条件树；always = {kind:'flag'} 恒真可用 or 专用 always）
+  to: string; // 目标状态 id
+  do?: FlowAction[]; // 转移时一次性动作
+}
+export interface FlowState {
+  id: string;
+  onEnter?: FlowAction[]; // 进入该状态时一次性动作（edge）
+  transitions?: FlowTransition[]; // 按数组序求值，首个 when 成立者转移
+}
+export interface GameFlow extends Component {
+  readonly type: 'GameFlow';
+  id: string; // flow 标识（多 flow 区分）
+  current: string; // 当前状态 id
+  states: FlowState[]; // 状态机（声明式数据）
+  entered?: boolean; // 内部：当前状态 onEnter 是否已跑（转移后置 false → 次拍跑新状态 onEnter）
 }
 
 // ── card-pile（REQ-017）── 牌库/手牌的 sim 内确定性管理（卡牌品类 staple）。
