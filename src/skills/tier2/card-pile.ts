@@ -1,0 +1,131 @@
+import { defineCapability } from '@engine/core/define-capability.js';
+import { SystemPhase } from '@engine/core/types.js';
+import type { IWorld } from '@engine/core/types.js';
+import type { CardPile, PlayedHand, Flag, InputQueue, Card } from '@engine/protocol/components.js';
+import { decodeCard } from './card-play.js';
+import { findByComponentId } from '@engine/core/query.js';
+
+// ═══════════════════════════════════════════════════════════════
+//  card-pile —— 牌库/手牌的 sim 内确定性管理（REQ-017 真引擎缺口；卡牌品类 staple）。
+//
+//  让"发牌→选牌→出/弃→补牌"全进 sim（不再活在 React），是「回合流程下沉数据状态机」+ lockstep 联机的共同前置：
+//  牌库是数据(预洗好的牌码数组)→两端同序、出牌经命令流(按手牌下标)→收齐再 tick→双端同 hash。
+//
+//  系统 card-pile（Update，runsBefore poker-eval/card-score-pass）：
+//    ① 处理输入（InputQueue 的 {key:'play'|'discard', source, values:[手牌下标]}，按 owner 路由）：
+//       play    → 选中手牌 → 写 owner 牌桌的 PlayedHand.cards + 从 hand 移除 + 置 scoring Flag(owner)。
+//       discard → 选中手牌从 hand 移除（不计分、不出牌；弃牌额度由回合 FSM 的 effect 扣，card-pile 只管牌）。
+//       reset-then-apply：本拍没 play 的 owner → 清空其 PlayedHand + 灭 scoring Flag（1 拍脉冲，同 card-play）。
+//    ② 抽牌补手：每个 CardPile 从 deck front 抽到 hand 达 handSize（deck 空则止）。
+//  确定性：下标升序选牌、deck 顺序抽、纯整数解码；多 owner 各填各的，无遍历序依赖。
+//
+//  与 card-play 的分工：card-play=直接喂牌码、无牌库（coop 直注/测试）；card-pile=带牌库的完整出牌管理（下标选牌+补牌）。
+//  （二者同属卡牌包，重叠面待 rule-of-three 复核，见 tier3-skill-governance.md。）
+// ═══════════════════════════════════════════════════════════════
+
+const PLAY = 'play';
+const DISCARD = 'discard';
+
+// 取本 tick 各 source 的 play/discard 下标。
+function collect(world: IWorld): { plays: Map<string, number[]>; discards: Map<string, number[]> } {
+  const plays = new Map<string, number[]>();
+  const discards = new Map<string, number[]>();
+  for (const [qid] of world.query('InputQueue')) {
+    const q = world.getComponent<InputQueue>(qid, 'InputQueue');
+    if (!q) continue;
+    for (const a of q.actions) {
+      if (a.key === PLAY) plays.set(a.source, [...(a.values ?? [])]);
+      else if (a.key === DISCARD) discards.set(a.source, [...(a.values ?? [])]);
+    }
+  }
+  return { plays, discards };
+}
+
+// 从 hand 取出下标集（升序，确定性）→ 返回 {取出的牌码, 剩余 hand}。越界下标忽略。
+function takeFromHand(hand: number[], idxRaw: readonly number[]): { taken: number[]; rest: number[] } {
+  const idx = [...new Set(idxRaw)].filter((i) => i >= 0 && i < hand.length).sort((a, b) => a - b);
+  const pick = new Set(idx);
+  const taken = idx.map((i) => hand[i]);
+  const rest = hand.filter((_, i) => !pick.has(i));
+  return { taken, rest };
+}
+
+export const cardPileCapability = defineCapability({
+  id: 't2-card-pile',
+  version: '1.0.0',
+
+  describe: {
+    name: 'card-pile',
+    summary: '牌库/手牌 sim 内确定性管理：处理 play/discard 输入（按手牌下标选牌→PlayedHand/移除）+ 抽牌补手到 handSize。让发牌→选→出/弃→补全进 sim，支撑回合流程数据状态机化 + lockstep 联机。',
+    semantic: ['tier2', 'cards', 'input', 'multiplayer'],
+    whenToUse:
+      '卡牌游戏要把牌库/手牌放进 sim（确定性发牌、可 lockstep、回合流程数据化）时。给牌桌挂 CardPile{owner,deck(预洗牌码),hand:[],handSize} + 同实体 PlayedHand{owner} + Flag{id:owner}；输入发 {source:owner,key:"play"/"discard",values:[手牌下标]}。',
+    examples: [
+      '发牌：CardPile{owner:"p1",deck:[seeded 洗好的 52 张牌码],hand:[],handSize:8} → 首 tick 自动抽 8 张到 hand',
+      '出牌：Command.actions=[{source:"p1",key:"play",values:[0,2,4]}] → 手牌第 0/2/4 张 → PlayedHand + 从 hand 移除 + Flag(p1)=true → 次 tick 补牌',
+      '弃牌：{source:"p1",key:"discard",values:[1,3]} → 移除手牌第 1/3 张（补牌）；弃牌额度由回合 FSM 的 effect 扣',
+    ],
+  },
+
+  components: {
+    provides: {
+      CardPile: {
+        category: 'config',
+        describe: '牌库+手牌（sim 内确定性管理）。deck 预洗好的牌码堆，hand 当前手牌，handSize 目标手牌数。',
+        fields: {
+          owner: { type: 'string', describe: '归属玩家 id（输入路由 + scoring Flag id）' },
+          deck: { type: 'string', describe: '抽牌堆牌码数组 number[]（suit*100+rank，预洗好，front=下一张）' },
+          hand: { type: 'string', describe: '当前手牌牌码数组 number[]（card-pile 维护）' },
+          handSize: { type: 'number', describe: '目标手牌数（抽牌补到这个数）' },
+        },
+      },
+    },
+    reads: ['CardPile', 'InputQueue', 'PlayedHand', 'Flag'],
+    writes: ['CardPile', 'PlayedHand', 'Flag'],
+    consumes: [],
+  },
+
+  config: {},
+
+  systems: [
+    {
+      id: 'card-pile',
+      phase: SystemPhase.Update,
+      runsBefore: ['poker-eval', 'card-score-pass'],
+      reads: ['CardPile', 'InputQueue', 'PlayedHand', 'Flag'],
+      writes: ['CardPile', 'PlayedHand', 'Flag'],
+      consumes: [],
+      execute(world: IWorld) {
+        const { plays, discards } = collect(world);
+        for (const [eid] of world.query('CardPile')) {
+          const pile = world.getComponent<CardPile>(eid, 'CardPile')!;
+          const owner = pile.owner;
+          // ① 输入：play / discard（按 owner）。
+          const playIdx = owner ? plays.get(owner) : undefined;
+          const discardIdx = owner ? discards.get(owner) : undefined;
+          const ph = world.getComponent<PlayedHand>(eid, 'PlayedHand'); // 出牌区在同实体
+          if (playIdx) {
+            const { taken, rest } = takeFromHand(pile.hand, playIdx);
+            pile.hand = rest;
+            if (ph) ph.cards = taken.map(decodeCard) as Card[];
+          } else if (ph) {
+            ph.cards = []; // reset-then-apply：本拍没出牌 → 清空出牌区
+          }
+          if (discardIdx) {
+            const { rest } = takeFromHand(pile.hand, discardIdx);
+            pile.hand = rest; // 弃牌只移除（额度由 FSM effect 扣）
+          }
+          // scoring Flag(owner) = 本拍是否出牌（1 拍脉冲，驱动计分链 score 信号）。
+          if (owner) {
+            const fe = findByComponentId(world, 'Flag', 'id', owner);
+            if (fe) { const f = world.getComponent<Flag>(fe, 'Flag'); if (f) f.active = playIdx !== undefined; }
+          }
+          // ② 抽牌补手到 handSize（deck front 抽；空则止）。
+          while (pile.hand.length < pile.handSize && pile.deck.length > 0) {
+            pile.hand.push(pile.deck.shift()!);
+          }
+        }
+      },
+    },
+  ],
+});

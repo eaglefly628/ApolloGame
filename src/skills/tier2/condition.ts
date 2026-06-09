@@ -79,7 +79,10 @@ export function evaluateCondition(
       return !evaluateCondition(world, expr.of, lookup);
     case 'resource': {
       const r = lookup.resource(expr.id);
-      return r ? compare(r.current, expr.cmp, expr.value) : false;
+      if (!r) return false;
+      // REQ-017：vsResource 在场 → 与另一资源当前值比（动态阈值 round_score≥blind）；否则与静态 value 比。
+      const threshold = expr.vsResource ? (lookup.resource(expr.vsResource)?.current ?? expr.value) : expr.value;
+      return compare(r.current, expr.cmp, threshold);
     }
     case 'flag': {
       const f = lookup.flag(expr.id);

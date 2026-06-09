@@ -108,4 +108,15 @@ describe('condition — 布尔树组合', () => {
     expect(evaluateCondition(w, { kind: 'and', of: [] })).toBe(true);
     expect(evaluateCondition(w, { kind: 'or', of: [] })).toBe(false);
   });
+
+  it('REQ-017 vsResource：与另一资源比（动态阈值 round_score≥blind）', () => {
+    const w = new World();
+    res(w, 'round_score', 272);
+    res(w, 'blind', 200);
+    expect(evaluateCondition(w, { kind: 'resource', id: 'round_score', cmp: 'gte', value: 999, vsResource: 'blind' })).toBe(true); // 272≥200（忽略静态 999）
+    res(w, 'blind2', 500);
+    expect(evaluateCondition(w, { kind: 'resource', id: 'round_score', cmp: 'gte', value: 0, vsResource: 'blind2' })).toBe(false); // 272<500
+    // vsResource 资源缺失 → 回退静态 value
+    expect(evaluateCondition(w, { kind: 'resource', id: 'round_score', cmp: 'gte', value: 100, vsResource: 'nope' })).toBe(true); // 回退 100，272≥100
+  });
 });

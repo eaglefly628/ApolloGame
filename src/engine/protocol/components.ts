@@ -520,7 +520,9 @@ export type ConditionExpr =
   | { readonly kind: 'and'; readonly of: ConditionExpr[] }
   | { readonly kind: 'or'; readonly of: ConditionExpr[] }
   | { readonly kind: 'not'; readonly of: ConditionExpr }
-  | { readonly kind: 'resource'; readonly id: string; readonly cmp: CmpOp; readonly value: number }
+  // resource 叶子：与静态 value 比；或（REQ-017）与另一资源 vsResource.current 比（动态阈值，如 round_score≥blind）。
+  // vsResource 在场时优先（value 退化为缺资源时的回退）。是 REQ-013 valueFrom 在"条件读侧"的对称扩展。
+  | { readonly kind: 'resource'; readonly id: string; readonly cmp: CmpOp; readonly value: number; readonly vsResource?: string }
   | { readonly kind: 'flag'; readonly id: string; readonly equals?: boolean }
   | { readonly kind: 'state'; readonly fsmId: string; readonly equals: string }
   | { readonly kind: 'timer'; readonly id: string; readonly cmp: CmpOp; readonly value: number }
@@ -762,6 +764,19 @@ export interface ScoreEvent {
 export interface ScoreTrace extends Component {
   readonly type: 'ScoreTrace';
   events: ScoreEvent[];
+}
+
+// ── card-pile（REQ-017）── 牌库/手牌的 sim 内确定性管理（卡牌品类 staple）。
+// deck=抽牌堆（预洗好的牌码数组，front=下一张，纯数据→确定性，lockstep 双端同序）；hand=当前手牌；
+// handSize=目标手牌数。card-pile 系统：处理 play/discard 输入（按手牌**下标**选牌）+ 抽牌补到 handSize。
+// 让"发牌→选→出/弃→补牌"全进 sim（非 React），是回合流程数据状态机化 + lockstep 联机的共同前置。
+// 与 card-play(直接喂牌码、无牌库) 的区别：card-pile 是**带牌库的完整出牌管理**（下标选牌 + 自动补牌）。
+export interface CardPile extends Component {
+  readonly type: 'CardPile';
+  owner?: string; // 输入路由 + scoring Flag id（多人各一份 CardPile）
+  deck: number[]; // 抽牌堆（牌码 suit*100+rank，预洗好；front=下一张）
+  hand: number[]; // 当前手牌（牌码）
+  handSize: number; // 目标手牌数（抽牌补到这个数）
 }
 
 // ── StatModifier ── 属性修正（①，ARPG）：来自具名 source（装备/buff/光环/天赋/boon）的一条加/乘修正。

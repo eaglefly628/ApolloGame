@@ -25,3 +25,5 @@ export { animStateCapability } from './anim-state.js';
 export { facingCapability } from './facing.js';
 // card-play（REQ-016/017）：卡牌「出牌」确定性输入接缝——命令流→按 owner 路由各玩家 PlayedHand + scoring Flag。可 lockstep 多人。
 export { cardPlayCapability, decodeCard, encodeCard } from './card-play.js';
+// card-pile（REQ-017）：牌库/手牌 sim 内确定性管理（发牌/选牌下标/补牌/弃牌）——回合流程数据化 + lockstep 共同前置。
+export { cardPileCapability } from './card-pile.js';

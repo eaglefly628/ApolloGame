@@ -1,0 +1,96 @@
+import { describe, it, expect } from 'vitest';
+import { World } from '@engine/core/world.js';
+import type { CardPile, PlayedHand, Flag, InputQueue, RawInputData } from '@engine/protocol/components.js';
+import { cardPileCapability } from './card-pile.js';
+
+// 牌码：suit*100+rank（这里多用 suit0 → 码=rank，便读）。
+const w0 = (deck: number[], handSize: number, actions: RawInputData[] = []): World => {
+  const w = new World();
+  for (const s of cardPileCapability.systems) w.addSystem(s);
+  w.createEntity('table');
+  w.addComponent('table', { type: 'CardPile', owner: 'p1', deck: [...deck], hand: [], handSize } as CardPile);
+  w.addComponent('table', { type: 'PlayedHand', owner: 'p1', cards: [] } as PlayedHand);
+  w.createEntity('flag');
+  w.addComponent('flag', { type: 'Flag', id: 'p1', active: false } as Flag);
+  w.createEntity('global-input');
+  w.addComponent('global-input', { type: 'InputQueue', actions } as InputQueue);
+  return w;
+};
+const pile = (w: World) => w.getComponent<CardPile>('table', 'CardPile')!;
+const played = (w: World) => w.getComponent<PlayedHand>('table', 'PlayedHand')!.cards;
+const flag = (w: World) => w.getComponent<Flag>('flag', 'Flag')!.active;
+const setInput = (w: World, actions: RawInputData[]) => { w.getComponent<InputQueue>('global-input', 'InputQueue')!.actions = actions; };
+
+describe('card-pile · 发牌补手', () => {
+  it('首 tick 抽牌补到 handSize；deck 相应减少', () => {
+    const w = w0([2, 5, 7, 9, 11, 13, 3, 4], 3);
+    w.tick();
+    expect(pile(w).hand).toEqual([2, 5, 7]); // deck front 3 张
+    expect(pile(w).deck).toEqual([9, 11, 13, 3, 4]);
+  });
+  it('deck 不足 handSize → 抽到空为止', () => {
+    const w = w0([2, 5], 5);
+    w.tick();
+    expect(pile(w).hand).toEqual([2, 5]);
+    expect(pile(w).deck).toEqual([]);
+  });
+});
+
+describe('card-pile · 按下标出牌', () => {
+  it('play 下标 → 选中牌进 PlayedHand + 从 hand 移除 + 补牌 + scoring Flag', () => {
+    const w = w0([2, 5, 7, 9, 11, 13, 3, 4], 5); // tick1 hand=[2,5,7,9,11]
+    w.tick();
+    expect(pile(w).hand).toEqual([2, 5, 7, 9, 11]);
+    setInput(w, [{ source: 'p1', key: 'play', values: [0, 2, 4] }]); // 出第 0/2/4 张 = 2,7,11
+    w.tick();
+    expect(played(w)).toEqual([{ suit: 0, rank: 2 }, { suit: 0, rank: 7 }, { suit: 0, rank: 11 }]);
+    expect(flag(w)).toBe(true);
+    // hand 移除 0/2/4 → 剩 [5,9]，再从 deck([13,3,4]) 补到 5 → [5,9,13,3,4]
+    expect(pile(w).hand).toEqual([5, 9, 13, 3, 4]);
+  });
+  it('下标乱序/重复/越界都安全（升序去重过滤）', () => {
+    const w = w0([2, 5, 7, 9, 11], 5);
+    w.tick();
+    setInput(w, [{ source: 'p1', key: 'play', values: [4, 0, 0, 99] }]); // 99 越界忽略，0 去重
+    w.tick();
+    expect(played(w)).toEqual([{ suit: 0, rank: 2 }, { suit: 0, rank: 11 }]); // 下标 0,4 升序
+  });
+});
+
+describe('card-pile · 弃牌 / reset', () => {
+  it('discard 下标 → 移除手牌 + 补牌；不出牌不计分（Flag 灭）', () => {
+    const w = w0([2, 5, 7, 9, 11, 13], 5);
+    w.tick(); // hand=[2,5,7,9,11], deck=[13]
+    setInput(w, [{ source: 'p1', key: 'discard', values: [1] }]); // 弃第 1 张=5
+    w.tick();
+    expect(pile(w).hand).toEqual([2, 7, 9, 11, 13]); // 移除 5 → 补 13
+    expect(played(w)).toEqual([]);
+    expect(flag(w)).toBe(false);
+  });
+  it('reset-then-apply：出牌后下一拍无输入 → PlayedHand 清空 + Flag 灭', () => {
+    const w = w0([2, 5, 7, 9, 11], 5);
+    w.tick();
+    setInput(w, [{ source: 'p1', key: 'play', values: [0] }]);
+    w.tick();
+    expect(flag(w)).toBe(true);
+    setInput(w, []);
+    w.tick();
+    expect(played(w)).toEqual([]);
+    expect(flag(w)).toBe(false);
+  });
+});
+
+describe('card-pile · 确定性', () => {
+  it('同 deck 同输入 → 同 hand/PlayedHand（lockstep 安全）', () => {
+    const mk = () => {
+      const w = w0([2, 5, 7, 9, 11, 13, 3, 4], 5);
+      w.tick();
+      setInput(w, [{ source: 'p1', key: 'play', values: [1, 3] }]);
+      w.tick();
+      return w;
+    };
+    const a = mk(), b = mk();
+    expect(pile(a).hand).toEqual(pile(b).hand);
+    expect(played(a)).toEqual(played(b));
+  });
+});

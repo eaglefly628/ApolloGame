@@ -833,10 +833,13 @@
 
 ---
 
-### REQ-017 · [2026-06-08] · PE（单人数据驱动化 + 联机共同前置）· 框架级 / 卡牌玩法 · status: **in-progress（引擎输入接缝已交付；流程装配归 PE）**（2026-06-08，主程4）· 优先级: **P1（单人/联机共同地基）** · 类型: 回合流程下沉为数据状态机（评估：重组 vs 小能力）
+### REQ-017 · [2026-06-08] · PE（单人数据驱动化 + 联机共同前置）· 框架级 / 卡牌玩法 · status: **done（引擎侧全交付；game-e.tsx 改写归 PE）**（2026-06-09，主程4）· 优先级: **P1（单人/联机共同地基）** · 类型: 回合流程下沉为数据状态机
 
-> ✅ **主程4（引擎侧）**：交付了 lockstep 回合流程的**确定性输入接缝** `card-play`（REQ-016 同条目）——出牌经命令流注入而非 React 直写，是"流程下沉 sim"得以 lockstep 的前提。**评判：回合状态机本体 = 纯数据装配（State{fsmId:'round'} + condition 转移 + effect set-state + random 发牌 + clickable 选牌），零新能力**，与 PE 现 `game-e.tsx` 命令式流程同构、可逐步迁移；`phase-sequencer`/`turn` 通用能力 **YAGNI 暂不下沉**（装配真撞到"多步异步编排表达不了"再评估）。
-> 🟡 **剩余归 PE（游戏层装配，主程4 不碰 game-e.tsx 避冲突）**：把 game-e 回合流程写成上述数据状态机；「逐步计分 trace 供 UI 回放」的演出下沉留作讨论项。**做完即"加第二组 owner 牌桌 + 第二路命令"=联机**（已由 coop-cards.test 坐实路径）。
+> ✅ **主程4 引擎侧落地（848 绿，不碰 game-e.tsx）**——回合流程"下沉 sim"的引擎缺口全补齐，并证明流程本体是纯数据装配：
+> - **真缺口 1 = 牌库/手牌进 sim**：新 `@skills/tier2/card-pile`（牌库/手牌确定性管理：发牌→按手牌**下标**出牌/弃牌→自动补手）。让"发牌→选→出/弃→补"全进 sim（不再活 React）→ 单人数据化 + lockstep 双端同序。+7 单测。（与 card-play 分工：card-play=直接喂牌码无牌库；card-pile=带牌库的完整出牌管理。重叠面待 rule-of-three 复核，见 `tier3-skill-governance.md`。）
+> - **真缺口 2 = 动态阈值条件**：condition 的 resource 叶子加 `vsResource?`（与另一资源比，如 `round_score≥blind`，盲注随 ante 变是静态值表达不了的）。是 REQ-013 valueFrom 在"条件读侧"的对称扩展。+1 测。
+> - **回合状态机本体 = 纯重组（零新能力，已证）**：`State{fsmId:'round'}` + `event-when(condition)` + `effect set-state` 表达 playing→won/lost 转移；`gate_commit(edge)` 累加 round_score/递减 hands_left。`round-flow.test.ts` 端到端证明：card-pile 发牌→下标出同花→poker/card-scoring 计分→round_score 累加→State 转 won；hands 耗尽→转 lost。**全数据装配、零 game-e.tsx、零新 FSM/phase-sequencer 能力（YAGNI 确认）。**
+> 🟡 **剩余归 PE**：把 game-e.tsx 回合流程改写成上述数据状态机（State+condition+effect+card-pile），删命令式手写逻辑。**做完即"加第二组 owner 牌桌+第二路命令"=联机**（coop-cards.test 已坐实）。
 
 **标题**：把「回合/拍流程」从 React 命令式下沉成 **sim 内数据状态机**（State + event-when + effect），走统一输入
 
