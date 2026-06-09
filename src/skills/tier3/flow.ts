@@ -97,17 +97,23 @@ export const flowCapability = defineCapability({
           const flow = world.getComponent<GameFlow>(eid, 'GameFlow')!;
           const state: FlowState | undefined = flow.states.find((s) => s.id === flow.current);
           if (!state) continue; // 未知状态 id（数据错）→ 不动
-          // ① onEnter（edge）：刚进该状态跑一次。
+          // ① onEnter（edge）：刚进该状态跑一次；同时把"驻留 tick 数" elapsed 归零起算。
           if (!flow.entered) {
             for (const a of state.onEnter ?? []) applyAction(world, lookup, a);
             flow.entered = true;
+            flow.elapsed = 0;
+          } else {
+            flow.elapsed = (flow.elapsed ?? 0) + 1; // 进入后每拍累计（驱动 after 时序门）
           }
-          // ② 转移：按声明序，首个 when 成立者跳。
+          // ② 转移：按声明序，首个「when 成立 且 满 after」者跳。
+          //    when 缺省=always（线性瀑布）；after 缺省=0（无时延）。两者「与」→ Kismet 条件 + Matinee 时间轴。
           for (const t of state.transitions ?? []) {
-            if (evaluateCondition(world, t.when, lookup)) {
+            const cond = t.when ?? { kind: 'always' as const };
+            const timed = t.after === undefined || (flow.elapsed ?? 0) >= t.after;
+            if (timed && evaluateCondition(world, cond, lookup)) {
               for (const a of t.do ?? []) applyAction(world, lookup, a);
               flow.current = t.to;
-              flow.entered = false; // 次拍跑新状态 onEnter
+              flow.entered = false; // 次拍跑新状态 onEnter + elapsed 归零
               break;
             }
           }

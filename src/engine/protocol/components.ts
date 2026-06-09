@@ -778,14 +778,15 @@ export interface FlowAction {
   op?: 'add' | 'set'; // modify-resource：add(默认) | set；钳 [min,max]
 }
 export interface FlowTransition {
-  when: ConditionExpr; // 满足即转移（复用现有条件树；always = {kind:'flag'} 恒真可用 or 专用 always）
+  when?: ConditionExpr; // 满足即转移（复用现有条件树；缺省=always 恒真，线性瀑布用）
+  after?: number; // 时序门（Matinee/sequence "wait"）：进入当前状态满 after 个 tick 才允许转移；与 when 是「与」
   to: string; // 目标状态 id
   do?: FlowAction[]; // 转移时一次性动作
 }
 export interface FlowState {
   id: string;
   onEnter?: FlowAction[]; // 进入该状态时一次性动作（edge）
-  transitions?: FlowTransition[]; // 按数组序求值，首个 when 成立者转移
+  transitions?: FlowTransition[]; // 按数组序求值，首个 (when 成立 且 满 after) 者转移
 }
 export interface GameFlow extends Component {
   readonly type: 'GameFlow';
@@ -793,6 +794,7 @@ export interface GameFlow extends Component {
   current: string; // 当前状态 id
   states: FlowState[]; // 状态机（声明式数据）
   entered?: boolean; // 内部：当前状态 onEnter 是否已跑（转移后置 false → 次拍跑新状态 onEnter）
+  elapsed?: number; // 内部：进入当前状态后经过的 tick 数（驱动 after 时序门；转移时归零）
 }
 
 // ── card-pile（REQ-017）── 牌库/手牌的 sim 内确定性管理（卡牌品类 staple）。

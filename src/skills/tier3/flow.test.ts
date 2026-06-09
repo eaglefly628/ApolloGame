@@ -83,3 +83,36 @@ describe('flow · 确定性', () => {
     expect(w.getComponent<State>('s_other', 'State')!.current).toBe('opened');
   });
 });
+
+describe('flow · Matinee/sequence 时序门（after：等 N 拍再转，零代码时间轴）', () => {
+  it('after:2 → 进入状态后第 3 拍才转移（线性时间轴；when 缺省 always）', () => {
+    const w = mk({ id: 'f', current: 'wait', states: [
+      { id: 'wait', transitions: [{ after: 2, to: 'done' }] }, { id: 'done' },
+    ] });
+    w.tick(); expect(cur(w)).toBe('wait'); // elapsed 0
+    w.tick(); expect(cur(w)).toBe('wait'); // elapsed 1
+    w.tick(); expect(cur(w)).toBe('done'); // elapsed 2 ≥ 2 → 转
+  });
+  it('after 与 when 是「与」：两者都满足才转', () => {
+    const w = mk({ id: 'f', current: 'a', states: [
+      { id: 'a', transitions: [{ after: 1, when: { kind: 'flag', id: 'go' }, to: 'b' }] }, { id: 'b' },
+    ] });
+    flag(w, 'go'); // 初始 false
+    w.tick(); w.tick(); w.tick();
+    expect(cur(w)).toBe('a'); // after 满足但 when(go) 仍 false → 不转
+    w.getComponent<Flag>('f_go', 'Flag')!.active = true;
+    w.tick();
+    expect(cur(w)).toBe('b'); // 两者皆满足 → 转
+  });
+  it('转移后 elapsed 归零：新状态的 after 重新起算', () => {
+    const w = mk({ id: 'f', current: 'a', states: [
+      { id: 'a', transitions: [{ after: 1, to: 'b' }] },
+      { id: 'b', transitions: [{ after: 1, to: 'c' }] },
+      { id: 'c' },
+    ] });
+    w.tick(); expect(cur(w)).toBe('a'); // a elapsed 0
+    w.tick(); expect(cur(w)).toBe('b'); // a elapsed 1 → b（归零）
+    w.tick(); expect(cur(w)).toBe('b'); // b elapsed 0
+    w.tick(); expect(cur(w)).toBe('c'); // b elapsed 1 → c
+  });
+});
