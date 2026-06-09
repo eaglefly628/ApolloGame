@@ -1,12 +1,11 @@
 import React, { useRef, useState, useCallback, useEffect } from 'react';
 import { createRoot } from 'react-dom/client';
 import { Engine } from './runtime/engine.js';
-import type { Resource, PlayedHand, Flag, StringVar } from './engine/protocol/components.js';
+import type { Resource, PlayedHand, Flag, StringVar, ScoreTrace, ScoreEvent } from './engine/protocol/components.js';
 import {
   buildGameEBlueprint, buildJokerEntities, jokerToEntities, toEngineCard, BASE_CHIPS_BY_RANK,
   R_CHIPS, R_MULT, R_MONEY, R_HAND_SCORE, R_ROUND_SCORE, R_HANDS_LEFT, R_DISCARDS_LEFT, R_BLIND, V_HAND_TYPE,
 } from './games/game-e/blueprint.js';
-import { scoringCardIndices } from './skills/tier3/index.js';
 import {
   HAND_RANKINGS, RANK_ORDER, shuffledDeck, STARTER_JOKERS, blindRequirement, BLIND_ORDER,
   type Card, type Suit, type Rank, type HandType, type JokerCard, type BlindKind,
@@ -163,6 +162,7 @@ function GameE() {
   if (engineRef.current === null) {
     const e = new Engine({ tickRate: 60 });
     e.load(buildGameEBlueprint(buildJokerEntities([])));
+    e.world.addComponent('table', { type: 'ScoreTrace', events: [] } as ScoreTrace); // REQ-019：开启逐步 trace（opt-in）
     engineRef.current = e;
     deckRef.current = shuffledDeck(seedRef.current);
     deckPtrRef.current = HAND_SIZE;
@@ -210,33 +210,28 @@ function GameE() {
       const v = engine.world.getComponent<StringVar>(eid, 'StringVar');
       if (v && v.id === V_HAND_TYPE) type = v.value.replace(/-/g, '_') as HandType;
     }
+    // REQ-019：读引擎逐步 trace（必须在第二拍 poker-eval 清空它之前捕获）。UI 只回放、不重算。
+    const traceComp = engine.world.getComponent<ScoreTrace>('table', 'ScoreTrace');
+    const events: ScoreEvent[] = traceComp ? traceComp.events.map((e) => ({ ...e })) : [];
+
     engine.world.getComponent<PlayedHand>('table', 'PlayedHand')!.cards = [];
     engine.world.getComponent<Flag>('scoring', 'Flag')!.active = false;
     engine.world.tick();
 
-    // 建演出帧：基础 → 逐张计分牌 +baseChips → 逐小丑抖动并把计数器推向引擎真值 → 终值大跳。
-    const engChosen = chosen.map(toEngineCard);
-    const scoringIdx = scoringCardIndices(engChosen);
-    const scoringSet = new Set(scoringIdx);
-    const base = HAND_RANKINGS[type] ?? { baseChips: 0, baseMult: 0 };
+    // 由 trace 事件建演出帧（去代码化 #10：顺序/增量全来自引擎，UI 不手算）：
+    //   target=chips/mult → 计数器跳到 after；source='card:i' → 高亮该牌；source='j_<id>' → 抖该小丑。
     const frames: SeqFrame[] = [];
-    let chips = base.baseChips, mult = base.baseMult;
-    frames.push({ chips, mult, score: null, hi: null, wiggle: null, dur: 300 });
-    chosen.forEach((c, i) => {
-      if (!scoringSet.has(i)) return; // 垫牌不计分
-      chips += BASE_CHIPS_BY_RANK[String(RANK_ORDER[c.rank])] ?? 0;
-      frames.push({ chips, mult, score: null, hi: i, wiggle: null, dur: 220 });
-    });
-    const cardsChips = chips;
-    if (owned.length === 0) {
-      if (finalChips !== chips || finalMult !== mult) frames.push({ chips: finalChips, mult: finalMult, score: null, hi: null, wiggle: null, dur: 200 });
-    } else {
-      owned.forEach((j, k) => {
-        const t = (k + 1) / owned.length;
-        chips = Math.round(cardsChips + (finalChips - cardsChips) * t);
-        mult = Math.round((base.baseMult + (finalMult - base.baseMult) * t) * 10) / 10;
-        frames.push({ chips, mult, score: null, hi: null, wiggle: j.id, dur: 260 });
-      });
+    let chips = events.find((e) => e.phase === 'base' && e.target === R_CHIPS)?.after ?? 0;
+    let mult = events.find((e) => e.phase === 'base' && e.target === R_MULT)?.after ?? 0;
+    for (const e of events) {
+      if (e.phase === 'base' && e.target === R_MULT) { mult = e.after; continue; } // 与 base chips 合一帧
+      if (e.target !== R_CHIPS && e.target !== R_MULT && e.target !== R_HAND_SCORE) continue; // 跳过回合记账(round_score/hands_left)
+      if (e.target === R_CHIPS) chips = e.after;
+      else if (e.target === R_MULT) mult = e.after;
+      const isScore = e.target === R_HAND_SCORE;
+      const hi = e.source && e.source.startsWith('card:') ? Number(e.source.slice(5)) : null;
+      const wiggle = e.source && e.source.startsWith('j_') ? e.source.slice(2) : null;
+      frames.push({ chips, mult, score: isScore ? e.after : null, hi, wiggle, dur: hi != null ? 200 : 240 });
     }
     frames.push({ chips: finalChips, mult: finalMult, score: finalScore, hi: null, wiggle: null, dur: 650 });
 
@@ -262,6 +257,8 @@ function GameE() {
       setNewKeys(new Set(next.slice(kept.length).map(keyOf)));
       bump();
     };
+    // 计分牌下标由 trace 派生（percard 事件的 'card:i'）——仍数据驱动，UI 不重算。
+    const scoringIdx = [...new Set(events.filter((e) => e.source?.startsWith('card:')).map((e) => Number(e.source!.slice(5))))];
     seqRef.current = { frames, i: 0, after, cards: chosen, scoringIdx };
     advanceSeq();
   }, [phase, busy, handsLeft, hand, sel, engine, get, set, drawTo, owned, blindKind, advanceSeq]);
@@ -326,6 +323,7 @@ function GameE() {
   const restart = useCallback(() => {
     const e = new Engine({ tickRate: 60 });
     e.load(buildGameEBlueprint(buildJokerEntities([])));
+    e.world.addComponent('table', { type: 'ScoreTrace', events: [] } as ScoreTrace); // REQ-019：开启逐步 trace（opt-in）
     engineRef.current = e;
     setOwned([]); setAnte(1); setBlindIdx(0);
     startBlind(1, 0);
