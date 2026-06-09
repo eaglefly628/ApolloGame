@@ -747,6 +747,23 @@ export interface PerCardRetrigger extends Component {
   extra: number; // 额外重复次数（Hanging Chad = 2）
 }
 
+// ── score-trace（REQ-019）── 逐步计分 trace：计分链各系统按真实执行序 append 每一步，UI 只回放、不重算。
+// 通用「分步结算演出」输出（卡牌计分 / 遗物结算 / 伤害分解皆可复用）。**排除出 hashSnapshot**（纯表现输出，同 Camera）。
+// opt-in：只有世界存在 ScoreTrace 单例时计分链才记录；非此类玩法零开销。每次计分由首系统(poker-eval)清空重建。
+export interface ScoreEvent {
+  seq: number; // 步序（= append 时 events 长度，0,1,2…）
+  phase: string; // 阶段语义（自由 string：'base'|'percard'|'percard-rule'|'effect'…，保通用复用面）
+  target: string; // 本步改的 Resource id（如 'chips'/'mult'/'score'）
+  op: 'set' | 'add' | 'mul'; // 本步运算
+  value: number; // 本步的量（add 加量 / mul 倍率 / set 值）
+  after: number; // 本步后 target 的当前值（供 UI 计数器跳动）
+  source?: string; // 语义来源（牌型名 / 'card:<i>' / Effect 实体 id），UI 据它高亮/抖动
+}
+export interface ScoreTrace extends Component {
+  readonly type: 'ScoreTrace';
+  events: ScoreEvent[];
+}
+
 // ── StatModifier ── 属性修正（①，ARPG）：来自具名 source（装备/buff/光环/天赋/boon）的一条加/乘修正。
 // 装备→push 一条（source=装备 id），卸下→按 source 滤除。同一 source 可有多条（改多 stat）。
 export interface StatModifier {

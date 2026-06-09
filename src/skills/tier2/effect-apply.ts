@@ -2,6 +2,7 @@ import { defineCapability } from '@engine/core/define-capability.js';
 import { SystemPhase } from '@engine/core/types.js';
 import type { Effect, Signal, Sensor, Visibility, DestroyRequest } from '@engine/protocol/components.js';
 import { buildConditionLookup } from './condition.js';
+import { findScoreTrace, appendScoreEvent } from '../score-trace.js';
 
 // effect-apply —— Condition→Event→**Effect** 的 Effect 侧（链的合龙石）。
 //
@@ -88,7 +89,10 @@ export const effectApplyCapability = defineCapability({
         }
         hits.sort((a, b) => (a.ef.order ?? 0) - (b.ef.order ?? 0) || (a.eid < b.eid ? -1 : a.eid > b.eid ? 1 : 0));
 
-        for (const { ef } of hits) {
+        // REQ-019：opt-in 计分 trace（仅当世界有 ScoreTrace 单例；限 modify-resource 数值步，redline）。
+        const trace = findScoreTrace(world);
+
+        for (const { eid, ef } of hits) {
           switch (ef.kind) {
             case 'set-flag': {
               const f = lookup.flag(ef.targetId);
@@ -115,6 +119,8 @@ export const effectApplyCapability = defineCapability({
                 }
                 const next = ef.op === 'mul' ? r.current * v : ef.op === 'set' ? v : r.current + v;
                 r.current = next < r.min ? r.min : next > r.max ? r.max : next;
+                // REQ-019：记一步（target/op/本步量 v/本步后值/来源=Effect 实体 id）。UI 据 target/source 演出小丑抖动。
+                appendScoreEvent(trace, 'effect', ef.targetId, (ef.op ?? 'add') as 'set' | 'add' | 'mul', v, r.current, eid);
               }
               break;
             }

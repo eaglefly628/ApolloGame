@@ -859,7 +859,14 @@
 
 ---
 
-### REQ-019 · [2026-06-08] · PE（去代码化 #10）· 框架级 / 卡牌玩法 · status: **open（主程4 评审：ACCEPT + 设计红线，待实现授权）** · 优先级: **P1（去代码化关键：消解 game-e.tsx 手算计分演出）** · 类型: 真缺口（小钩子：计分链输出逐步 trace）
+### REQ-019 · [2026-06-08] · PE（去代码化 #10）· 框架级 / 卡牌玩法 · status: **done（引擎部分；UI 回放归 PE）**（2026-06-08，主程4）· 优先级: **P1（去代码化关键：消解 game-e.tsx 手算计分演出）** · 类型: 真缺口（小钩子：计分链输出逐步 trace）
+
+> ✅ **引擎部分落地（主程4，按自评 4 条红线，838 绿）**：
+> - 组件 `ScoreTrace{events:ScoreEvent[]}`（通用，`phase` 自由 string）+ 共享 helper `src/skills/score-trace.ts`（`clearScoreTrace`/`appendScoreEvent`，**opt-in**：无 ScoreTrace 单例则全 no-op）。
+> - 三系统按真实执行序 append：`poker-eval`（首系统清空 + 记 `base` set chips/mult，source=牌型名）；`card-score-pass`（每计分牌 `percard` source=`card:<下标>`、命中逐张小丑 `percard-rule` source=规则实体 id）；`effect-apply`（**仅 modify-resource** 记 `effect`，source=Effect 实体 id；含 combine）。每条记本步 `after`（钳后真值）。
+> - **排除出 hashSnapshot**（determinism.ts NON_DETERMINISTIC 加 `ScoreTrace`，同 Camera）→ lockstep 不受影响。每拍由 poker-eval 单点清空重建（不累积）。
+> - 测试 `score-trace.test.ts`：顺序 seq 连续 / 各 target 末步 after==资源真值 / source 语义 / opt-in 无 trace 照常 / 篡改 trace 不变 hash。
+> 🟡 **剩余归 PE**：`game-e.tsx` 删手算计分帧序，改读 `ScoreTrace.events` 按时间轴回放（base/percard 计数器跳+卡高亮、effect 小丑抖动、combine 大跳）。主程不碰 game-e.tsx。
 
 > 🔎 **主程4 Lead 评审（2026-06-08）**：**ACCEPT**。过尺子核验——「逐步顺序+每步增量+每步后值」只有计分链内部知道，UI 重算就是要消解的专有代码+分叉风险 → 是引擎该补的**输出钩子**，非新 Tier3 能力（poker-eval/card-score-pass/effect-apply 各加几行 append + `ScoreTrace` 组件 + 排除出 hash）。设计稿 `game-e-score-trace.md` 方向正确。
 > **实现前必加的设计红线（交给实现者，含我自己）**：

@@ -3,6 +3,7 @@ import { SystemPhase } from '@engine/core/types.js';
 import type { IWorld } from '@engine/core/types.js';
 import type { Card, PlayedHand, PerCardScore, PerCardRule, PerCardRetrigger, PerCardWhen, Resource } from '@engine/protocol/components.js';
 import { scoringCardIndices } from './poker-hand.js';
+import { findScoreTrace, appendScoreEvent } from '../score-trace.js';
 
 // ═══════════════════════════════════════════════════════════════
 //  card-scoring —— 「逐张计分 pass」（REQ-014；Tier3「算法/解释器型机制」，poker-hand 的伴生件）。
@@ -44,12 +45,13 @@ export function matchPerCardWhen(when: PerCardWhen, card: Card, index: number): 
   }
 }
 
-// ── 副作用 helper：按 id 改 Resource.current（钳 [min,max]）。用预建 lookup 避免逐次全表扫描。──
-function applyToResource(lookup: Map<string, Resource>, id: string, op: 'add' | 'mul', value: number): void {
+// ── 副作用 helper：按 id 改 Resource.current（钳 [min,max]）。用预建 lookup 避免逐次全表扫描。返回钳后值（供 REQ-019 trace）。──
+function applyToResource(lookup: Map<string, Resource>, id: string, op: 'add' | 'mul', value: number): number | undefined {
   const r = lookup.get(id);
-  if (!r) return;
+  if (!r) return undefined;
   const next = op === 'mul' ? r.current * value : r.current + value;
   r.current = next < r.min ? r.min : next > r.max ? r.max : next;
+  return r.current;
 }
 
 export const cardScoringCapability = defineCapability({
@@ -147,6 +149,7 @@ export const cardScoringCapability = defineCapability({
           if (rt) retriggers.push(rt);
         }
 
+        const trace = findScoreTrace(world); // REQ-019：poker-eval 已清空，这里只 append（opt-in：无则 no-op）
         for (const [eid] of world.query('PerCardScore', 'PlayedHand')) {
           const cfg = world.getComponent<PerCardScore>(eid, 'PerCardScore')!;
           const played = world.getComponent<PlayedHand>(eid, 'PlayedHand')!;
@@ -158,15 +161,22 @@ export const cardScoringCapability = defineCapability({
           const scoringIdx = scoringCardIndices(played.cards);
           for (let pos = 0; pos < scoringIdx.length; pos++) {
             const c = played.cards[scoringIdx[pos]];
+            const src = `card:${scoringIdx[pos]}`; // REQ-019：UI 据此高亮该牌（原始出牌下标）
             // 本张计分次数 = 1 + Σ 命中该牌的 retrigger.extra。
             let repeats = 1;
             for (const rt of retriggers) if (matchPerCardWhen(rt.when, c, pos)) repeats += rt.extra;
             const baseChips = cfg.baseChipsByRank[String(c.rank)] ?? 0;
 
             for (let r = 0; r < repeats; r++) {
-              if (baseChips !== 0) applyToResource(lk, cfg.chipsResource, 'add', baseChips);
-              for (const { rule } of rules) {
-                if (matchPerCardWhen(rule.when, c, pos)) applyToResource(lk, rule.targetResource, rule.op ?? 'add', rule.value);
+              if (baseChips !== 0) {
+                const after = applyToResource(lk, cfg.chipsResource, 'add', baseChips);
+                if (after !== undefined) appendScoreEvent(trace, 'percard', cfg.chipsResource, 'add', baseChips, after, src);
+              }
+              for (const { eid: ruleEid, rule } of rules) {
+                if (matchPerCardWhen(rule.when, c, pos)) {
+                  const after = applyToResource(lk, rule.targetResource, rule.op ?? 'add', rule.value);
+                  if (after !== undefined) appendScoreEvent(trace, 'percard-rule', rule.targetResource, rule.op ?? 'add', rule.value, after, ruleEid);
+                }
               }
             }
           }

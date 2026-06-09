@@ -3,6 +3,7 @@ import { SystemPhase } from '@engine/core/types.js';
 import type { IWorld } from '@engine/core/types.js';
 import type { Card, PlayedHand, PokerHand, Resource, StringVar, Flag } from '@engine/protocol/components.js';
 import { findByComponentId } from '@engine/core/query.js';
+import { clearScoreTrace, appendScoreEvent } from '../score-trace.js';
 
 // ═══════════════════════════════════════════════════════════════
 //  poker-hand —— 「一手牌 → 牌型 + 基础分」确定性评估器（REQ-011；Tier3「算法/解释器型机制」大类）。
@@ -121,12 +122,14 @@ export function scoringCardIndices(cards: readonly Card[]): number[] {
 }
 
 // ── 系统副作用 helper：按 id 全局定位并写 Resource.current（set 基础值，钳 [min,max]）/ StringVar.value。──
-function setResourceBase(world: IWorld, resourceId: string, value: number): void {
-  if (!resourceId) return;
+function setResourceBase(world: IWorld, resourceId: string, value: number): number {
+  if (!resourceId) return value;
   const e = findByComponentId(world, 'Resource', 'id', resourceId);
-  if (!e) return;
+  if (!e) return value;
   const r = world.getComponent<Resource>(e, 'Resource');
-  if (r) r.current = value < r.min ? r.min : value > r.max ? r.max : value;
+  if (!r) return value;
+  r.current = value < r.min ? r.min : value > r.max ? r.max : value;
+  return r.current; // 返回钳后真值（供 REQ-019 trace 的 after）
 }
 function setHandTypeVar(world: IWorld, varId: string, value: string): void {
   const e = findByComponentId(world, 'StringVar', 'id', varId);
@@ -217,14 +220,18 @@ export const pokerHandCapability = defineCapability({
       writes: ['Resource', 'StringVar', 'Flag'],
       consumes: [],
       execute(world: IWorld) {
+        // REQ-019：计分链首系统 → 清空 trace（单一清空点，opt-in：无 ScoreTrace 则 no-op）。
+        const trace = clearScoreTrace(world);
         for (const [eid] of world.query('PokerHand', 'PlayedHand')) {
           const cfg = world.getComponent<PokerHand>(eid, 'PokerHand')!;
           const played = world.getComponent<PlayedHand>(eid, 'PlayedHand')!;
           if (played.cards.length === 0) continue; // 无出牌 → 不评估（基础分由装配层在新回合清零）
           const evald = evaluateHand(played.cards);
           const base = cfg.rankingTable[evald.type] ?? { chips: 0, mult: 0 };
-          setResourceBase(world, cfg.chipsResource, base.chips);
-          setResourceBase(world, cfg.multResource, base.mult);
+          const chipsAfter = setResourceBase(world, cfg.chipsResource, base.chips);
+          const multAfter = setResourceBase(world, cfg.multResource, base.mult);
+          appendScoreEvent(trace, 'base', cfg.chipsResource, 'set', base.chips, chipsAfter, evald.type);
+          appendScoreEvent(trace, 'base', cfg.multResource, 'set', base.mult, multAfter, evald.type);
           if (cfg.handTypeVar) setHandTypeVar(world, cfg.handTypeVar, evald.type);
           // 派生事实（REQ-011 完善，全部可选）：包含谓词原语 + 出牌张数 → 供 condition 组合表达"含某牌型/出牌≤N"。
           if (cfg.rankMaxCountResource) setResourceBase(world, cfg.rankMaxCountResource, rankMaxCount(evald.rankCounts));
