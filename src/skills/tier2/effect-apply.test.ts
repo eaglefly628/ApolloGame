@@ -22,8 +22,8 @@ function effect(w: World, eid: string, ef: Omit<Effect, 'type'>): void {
 describe('T2 effect-apply — metadata', () => {
   it('id / 读 Effect+Signal / 写 Flag+Resource+State', () => {
     expect(effectApplyCapability.id).toBe('t2-effect-apply');
-    expect(effectApplyCapability.components.reads).toEqual(['Effect', 'Signal']);
-    expect(effectApplyCapability.components.writes).toEqual(['Flag', 'Resource', 'State', 'Sensor', 'Visibility', 'DestroyRequest']);
+    expect(effectApplyCapability.components.reads).toEqual(['Effect', 'Signal', 'Timer']);
+    expect(effectApplyCapability.components.writes).toEqual(['Flag', 'Resource', 'State', 'Sensor', 'Visibility', 'DestroyRequest', 'Timer']);
   });
 });
 
@@ -290,5 +290,45 @@ describe('T2 effect-apply — 物理 kind（REQ-008：信号→物理改动，�
     effect(w, 'ef', { onSignal: 'plate_on', kind: 'set-sensor', targetId: '', targetEntity: 'wall', value: true });
     w.tick(); // 无信号
     expect(w.hasComponent('wall', 'Sensor')).toBe(false);
+  });
+});
+
+// ── REQ-009：reset-timer（事件→重置/启动计时器，限时机制前置）──
+import type { Timer } from '@engine/protocol/components.js';
+describe('T2 effect-apply — reset-timer（REQ-009）', () => {
+  function timer(w: World, eid: string, t: Omit<Timer, 'type'>): void {
+    w.createEntity(eid);
+    w.addComponent(eid, { type: 'Timer', ...t } as Timer);
+  }
+  const T = (w: World, eid: string) => w.getComponent<Timer>(eid, 'Timer')!;
+
+  it('信号在场 → 目标 Timer.elapsed 归零（从此刻重新计时）', () => {
+    const w = worldWithEffect();
+    timer(w, 'door_timer', { id: 'dt', elapsed: 50, duration: 60, loop: false });
+    signal(w, 'plate');
+    effect(w, 'e', { onSignal: 'plate', kind: 'reset-timer', targetId: '', targetEntity: 'door_timer', value: 0 });
+    w.tick();
+    expect(T(w, 'door_timer').elapsed).toBe(0);
+    expect(T(w, 'door_timer').duration).toBe(60); // value≤0 → duration 不变（只重置 elapsed）
+  });
+
+  it('value 给数值 → 一并设 duration（启动一个 N 拍倒计时）', () => {
+    const w = worldWithEffect();
+    timer(w, 'door_timer', { id: 'dt', elapsed: 99, duration: 30, loop: false });
+    signal(w, 'plate');
+    effect(w, 'e', { onSignal: 'plate', kind: 'reset-timer', targetId: '', targetEntity: 'door_timer', value: 120 });
+    w.tick();
+    expect(T(w, 'door_timer').elapsed).toBe(0);
+    expect(T(w, 'door_timer').duration).toBe(120);
+  });
+
+  it('信号不在场 → Timer 不动', () => {
+    const w = worldWithEffect();
+    timer(w, 'door_timer', { id: 'dt', elapsed: 50, duration: 60, loop: false });
+    signal(w, 'other');
+    effect(w, 'e', { onSignal: 'plate', kind: 'reset-timer', targetId: '', targetEntity: 'door_timer', value: 120 });
+    w.tick();
+    expect(T(w, 'door_timer').elapsed).toBe(50); // 未触发
+    expect(T(w, 'door_timer').duration).toBe(60);
   });
 });

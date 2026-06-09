@@ -1,6 +1,6 @@
 import { defineCapability } from '@engine/core/define-capability.js';
 import { SystemPhase } from '@engine/core/types.js';
-import type { Effect, Signal, Sensor, Visibility, DestroyRequest } from '@engine/protocol/components.js';
+import type { Effect, Signal, Sensor, Visibility, DestroyRequest, Timer } from '@engine/protocol/components.js';
 import { buildConditionLookup } from './condition.js';
 import { findScoreTrace, appendScoreEvent } from '../score-trace.js';
 
@@ -35,6 +35,7 @@ export const effectApplyCapability = defineCapability({
       'Balatro 小丑 ×Mult(REQ-012)：Effect{ onSignal:"score", kind:"modify-resource", targetId:"mult", op:"mul", value:1.5, order:3 }（order 保证先加后乘）',
       'Balatro 最终计分 score += chips×mult(REQ-013)：Effect{ onSignal:"commit", kind:"modify-resource", targetId:"score", op:"add", valueFrom:{ resourceId:"chips", timesResourceId:"mult" } }',
       'Bull「每 $1 +2 筹码」(REQ-013)：Effect{ onSignal:"score", kind:"modify-resource", targetId:"chips", op:"add", valueFrom:{ resourceId:"money", coeff:2 } }',
+      '限时门(REQ-009)：踩开关 → 重置/启动计时器：Effect{ onSignal:"plate_on", kind:"reset-timer", targetEntity:"door_timer", value:120 }（elapsed=0、duration=120）→ 配 condition(timer gte 120)→关门',
     ],
   },
 
@@ -45,9 +46,9 @@ export const effectApplyCapability = defineCapability({
         describe: '声明「当 onSignal 在场时施加的效果」。kind 决定改 Flag/Resource/State，targetId 按 id 全局定位。',
         fields: {
           onSignal: { type: 'string', describe: '触发该效果的信号名（event-when 产出的 Signal.name）' },
-          kind: { type: 'string', describe: "逻辑:'set-flag'|'modify-resource'|'set-state'；物理(REQ-008):'set-sensor'|'set-visible'|'destroy'" },
+          kind: { type: 'string', describe: "逻辑:'set-flag'|'modify-resource'|'set-state'；物理(REQ-008):'set-sensor'|'set-visible'|'destroy'；时序(REQ-009):'reset-timer'" },
           targetId: { type: 'string', describe: '逻辑 kind：Flag.id / Resource.id / State.fsmId（按 id 全局定位）' },
-          targetEntity: { type: 'EntityId', describe: '物理 kind：set-sensor/set-visible/destroy 的目标实体 id' },
+          targetEntity: { type: 'EntityId', describe: '物理/时序 kind：set-sensor/set-visible/destroy/reset-timer 的目标实体 id' },
           value: { type: 'string', describe: 'modify-resource=数值；set-flag/set-sensor/set-visible=布尔；set-state=目标状态名；destroy 忽略' },
           op: { type: 'string', describe: "modify-resource 运算(REQ-012)：'add'(默认,current+value)|'mul'(current*value,×倍率)|'set'(=value)" },
           order: { type: 'number', describe: '结算顺序(REQ-012)：同信号命中的 Effect 按 order 升序依次结算（缺省 0）。乘法依赖顺序时必填。' },
@@ -55,8 +56,8 @@ export const effectApplyCapability = defineCapability({
         },
       },
     },
-    reads: ['Effect', 'Signal'],
-    writes: ['Flag', 'Resource', 'State', 'Sensor', 'Visibility', 'DestroyRequest'],
+    reads: ['Effect', 'Signal', 'Timer'],
+    writes: ['Flag', 'Resource', 'State', 'Sensor', 'Visibility', 'DestroyRequest', 'Timer'],
     consumes: [],
   },
 
@@ -66,8 +67,8 @@ export const effectApplyCapability = defineCapability({
     {
       id: 'effect-apply',
       phase: SystemPhase.Commit,
-      reads: ['Effect', 'Signal'],
-      writes: ['Flag', 'Resource', 'State', 'Sensor', 'Visibility', 'DestroyRequest'],
+      reads: ['Effect', 'Signal', 'Timer'],
+      writes: ['Flag', 'Resource', 'State', 'Sensor', 'Visibility', 'DestroyRequest', 'Timer'],
       consumes: [],
       execute(world) {
         // 收集本 tick 在场的信号名。
@@ -155,6 +156,20 @@ export const effectApplyCapability = defineCapability({
             case 'destroy': {
               // 发 DestroyRequest，destroy-apply 消费后移除目标实体（清障碍）。
               if (ef.targetEntity) world.addComponent(ef.targetEntity, { type: 'DestroyRequest', entityId: ef.targetEntity } as DestroyRequest);
+              break;
+            }
+            // ── reset-timer（REQ-009）：事件→重置/启动计时器。按 targetEntity 定位 Timer，elapsed=0
+            // （从此刻重新计时）；value 给了数值则一并设 duration。配 condition(timer gte N)→event-when→effect
+            // 即"踩下那刻起 N 拍自动关门/塌陷"等限时机制纯数据涌现。──
+            case 'reset-timer': {
+              if (ef.targetEntity) {
+                const t = world.getComponent<Timer>(ef.targetEntity, 'Timer');
+                if (t) {
+                  t.elapsed = 0;
+                  const d = Number(ef.value);
+                  if (Number.isFinite(d) && d > 0) t.duration = d;
+                }
+              }
               break;
             }
           }

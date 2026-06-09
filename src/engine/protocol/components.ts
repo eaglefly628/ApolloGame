@@ -582,7 +582,7 @@ export interface Tween extends Component {
 export interface Effect extends Component {
   readonly type: 'Effect';
   onSignal: string; // 当本 tick 存在此名 Signal 时触发
-  kind: 'set-flag' | 'modify-resource' | 'set-state' | 'set-sensor' | 'set-visible' | 'destroy';
+  kind: 'set-flag' | 'modify-resource' | 'set-state' | 'set-sensor' | 'set-visible' | 'destroy' | 'reset-timer';
   targetId: string; // 逻辑 kind：set-flag→Flag.id；modify-resource→Resource.id；set-state→State.fsmId（按 id 全局定位）
   // 物理 kind（set-sensor/set-visible/destroy，REQ-008）：要改动的目标实体 id（按实体定位，不走全局 id 路由）。
   targetEntity?: EntityId;

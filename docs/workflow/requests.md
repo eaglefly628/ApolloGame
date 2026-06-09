@@ -623,7 +623,9 @@
 
 ---
 
-### REQ-009 · [2026-06-06] · PA · Game A · status: open · 优先级: **P1** · 类型: 真缺口（事件→重置/启动计时器）
+### REQ-009 · [2026-06-06] · PA · Game A · status: **done**（2026-06-09，主程4）· 优先级: **P1** · 类型: 真缺口（事件→重置/启动计时器）
+
+> ✅ **落地（主程4，861 绿）**：`effect-apply` 加 kind **`reset-timer`**——信号在场时按 `targetEntity` 定位 Timer，`elapsed=0`（从此刻重新计时）；`value>0` 则一并设 `duration`。配 `condition{kind:'timer',cmp:'gte',value:N}`→event-when→effect 即"踩下那刻起 N 拍自动关门/塌陷"等限时机制**纯数据涌现**。Effect.kind 联合 + reads/writes 加 Timer。+3 测（归零/设 duration/未触发不动）。与 OverTime 按拍衰减互补（前者定时点、后者连续衰减）。
 
 **标题**：`effect` 缺"重置/启动计时器" —— 限时类机制（踩下→开门→N 秒自动关）当前组合不出
 
