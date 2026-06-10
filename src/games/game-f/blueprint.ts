@@ -8,6 +8,7 @@ import { lifetimeCapability, hierarchyResolveCapability, hierarchyCascadeCapabil
 import {
   triggerZoneCapability,
   hitboxCapability,
+  overTimeCapability,
   mortalCapability,
   eventWhenCapability,
   effectApplyCapability,
@@ -17,7 +18,7 @@ import {
   ZONE_FLAG,
 } from '@skills/tier2/index.js';
 import { prefabCapability, casterCapability, aggroCapability, flowCapability } from '@skills/tier3/index.js';
-import { GAME_F_ASSETS, F_HERO, F_FX_STRIKE, F_HEX_WARM, F_HEX_COOL } from './assets.js';
+import { GAME_F_ASSETS, F_HERO, F_FX_STRIKE, F_FX_ARROW, F_FX_BOLT, F_FX_FLAME, F_FX_FROST, F_FX_DRAIN, F_HEX_WARM, F_HEX_COOL } from './assets.js';
 import { boardEntities, project, COLS, ROWS, TILE, ORIGIN_X, ORIGIN_Y, LAYOUT } from './hex.js';
 
 // ═══════════════════════════════════════════════════════════════
@@ -64,8 +65,8 @@ const HP_SCALE = 18; // 全局血量倍率（调战斗时长，目标一局 ~20s
 const xf = (x: number, y: number): Record<string, unknown> => ({ x, y, rotation: 0, scaleX: 1, scaleY: 1 });
 const sprite = (textureKey: string, zOrder: number): Record<string, unknown> => ({ textureKey, anchorX: 0.5, anchorY: 0.5, zOrder });
 
-// 瞬时打击区模板：在目标处生成小 sensor 伤害区，2 tick 自毁。targetMask 决定打哪队，amount=该英雄攻击力。
-const strike = (targetMask: number, amount: number): PrefabTemplate => ({
+// 普攻打击区：目标处小 sensor 伤害区，2 tick 自毁。fxKey=按攻击类型的特效（近战斩/远程箭/法术弹）。
+const strike = (targetMask: number, amount: number, fxKey: string): PrefabTemplate => ({
   entities: {
     area: {
       Transform: xf(0, 0),
@@ -74,22 +75,25 @@ const strike = (targetMask: number, amount: number): PrefabTemplate => ({
       Tag: { flags: ZONE_FLAG },
       Hitbox: { resource: 'hp', amount, targetMask },
       Timer: { id: 'life', elapsed: 0, duration: 2, loop: false },
-      Sprite: sprite(F_FX_STRIKE, 6),
+      Sprite: sprite(fxKey, 6),
     },
   },
 });
 
-// 大招打击区：在目标处展开大范围真伤区（范围 size、伤害 amount），3 tick 自毁。
-const ultTemplate = (targetMask: number, amount: number, size: number): PrefabTemplate => ({
+// DoT（灼烧/吸取）：命中后每 30 tick 掉血、持续 ~4s，由 over-time 处理。
+const DOT = { dotPerTick: 25, dotPeriod: 30, dotDuration: 240 };
+
+// 大招打击区：目标处大范围真伤（范围 size、伤害 amount），fxKey=主题特效，dot=是否附 DoT。
+const ultTemplate = (targetMask: number, amount: number, size: number, fxKey: string, dot = false): PrefabTemplate => ({
   entities: {
     area: {
       Transform: xf(0, 0),
       Shape: { kind: 'box', width: size, height: size },
       Sensor: {},
       Tag: { flags: ZONE_FLAG },
-      Hitbox: { resource: 'hp', amount, targetMask },
+      Hitbox: { resource: 'hp', amount, targetMask, ...(dot ? DOT : {}) },
       Timer: { id: 'life', elapsed: 0, duration: 3, loop: false },
-      Sprite: sprite(F_FX_STRIKE, 7),
+      Sprite: sprite(fxKey, 7),
     },
   },
 });
@@ -110,21 +114,24 @@ interface HeroSpec {
   ult: string; // 大招名（三国感）
   ultDmg: number; // 大招伤害
   ultSize: number; // 大招范围(px)
+  atkType: 'melee' | 'ranged' | 'magic'; // 攻击类型 → 普攻特效（近战斩/远程箭/法术弹）
+  ultFx: string; // 大招主题特效 key
+  ultDot?: boolean; // 大招附 DoT（灼烧/吸取）
   items?: string[]; // 装备（ITEMS id；装配期把 hp/atk 加上）
 }
 
 // 站位金铲铲式 + 各英雄独立血量/攻击 + 职业 + 势力(蜀魏吴) + 专属大招。每方 3 本势力 + 1 吴（跨势力羁绊样本）。
 const ROSTER: HeroSpec[] = [
   // 蜀（TEAM_A，下半场，红）+ 吴·周瑜（绿）
-  { id: 'a_guanyu', name: '关羽', key: F_HERO.guan_yu, team: TEAM_A, enemy: TEAM_B, cls: WARRIOR, faction: FACT_SHU, tint: SHU_RED, q: 4, r: 7, hp: 240, atk: 12, ult: '青龙偃月', ultDmg: 45, ultSize: 80, items: ['yuxi'] },
-  { id: 'a_zhaoyun', name: '赵云', key: F_HERO.zhao_yun, team: TEAM_A, enemy: TEAM_B, cls: WARRIOR, faction: FACT_SHU, tint: SHU_RED, q: 7, r: 7, hp: 165, atk: 18, ult: '七进七出', ultDmg: 75, ultSize: 55, items: ['qinggang'] },
-  { id: 'a_zhuge', name: '诸葛亮', key: F_HERO.zhuge_liang, team: TEAM_A, enemy: TEAM_B, cls: TACTICIAN, faction: FACT_SHU, tint: SHU_RED, q: 5, r: 9, hp: 120, atk: 24, ult: '八阵图', ultDmg: 35, ultSize: 95 },
-  { id: 'a_zhouyu', name: '周瑜', key: F_HERO.zhou_yu, team: TEAM_A, enemy: TEAM_B, cls: TACTICIAN, faction: FACT_WU, tint: WU_GREEN, q: 9, r: 8, hp: 115, atk: 21, ult: '火烧赤壁', ultDmg: 38, ultSize: 92 },
+  { id: 'a_guanyu', name: '关羽', key: F_HERO.guan_yu, team: TEAM_A, enemy: TEAM_B, cls: WARRIOR, faction: FACT_SHU, tint: SHU_RED, q: 4, r: 7, hp: 240, atk: 12, ult: '青龙偃月', ultDmg: 45, ultSize: 80, atkType: 'melee', ultFx: F_FX_STRIKE, items: ['yuxi'] },
+  { id: 'a_zhaoyun', name: '赵云', key: F_HERO.zhao_yun, team: TEAM_A, enemy: TEAM_B, cls: WARRIOR, faction: FACT_SHU, tint: SHU_RED, q: 7, r: 7, hp: 165, atk: 18, ult: '七进七出', ultDmg: 75, ultSize: 55, atkType: 'melee', ultFx: F_FX_STRIKE, items: ['qinggang'] },
+  { id: 'a_zhuge', name: '诸葛亮', key: F_HERO.zhuge_liang, team: TEAM_A, enemy: TEAM_B, cls: TACTICIAN, faction: FACT_SHU, tint: SHU_RED, q: 5, r: 9, hp: 120, atk: 24, ult: '八阵图', ultDmg: 35, ultSize: 95, atkType: 'magic', ultFx: F_FX_FROST },
+  { id: 'a_zhouyu', name: '周瑜', key: F_HERO.zhou_yu, team: TEAM_A, enemy: TEAM_B, cls: TACTICIAN, faction: FACT_WU, tint: WU_GREEN, q: 9, r: 8, hp: 115, atk: 21, ult: '火烧赤壁', ultDmg: 38, ultSize: 92, atkType: 'magic', ultFx: F_FX_FLAME, ultDot: true },
   // 魏（TEAM_B，上半场，蓝）+ 吴·甘宁（绿）
-  { id: 'b_zhangliao', name: '张辽', key: F_HERO.zhang_liao, team: TEAM_B, enemy: TEAM_A, cls: WARRIOR, faction: FACT_WEI, tint: WEI_BLUE, q: 4, r: 4, hp: 200, atk: 15, ult: '突阵', ultDmg: 50, ultSize: 70, items: ['fangtian'] },
-  { id: 'b_xuchu', name: '许褚', key: F_HERO.xu_chu, team: TEAM_B, enemy: TEAM_A, cls: WARRIOR, faction: FACT_WEI, tint: WEI_BLUE, q: 7, r: 4, hp: 270, atk: 11, ult: '裸衣血战', ultDmg: 42, ultSize: 78 },
-  { id: 'b_simayi', name: '司马懿', key: F_HERO.sima_yi, team: TEAM_B, enemy: TEAM_A, cls: TACTICIAN, faction: FACT_WEI, tint: WEI_BLUE, q: 6, r: 2, hp: 130, atk: 23, ult: '鬼谋', ultDmg: 40, ultSize: 88, items: ['qinggang'] },
-  { id: 'b_ganning', name: '甘宁', key: F_HERO.gan_ning, team: TEAM_B, enemy: TEAM_A, cls: ASSASSIN, faction: FACT_WU, tint: WU_GREEN, q: 9, r: 3, hp: 145, atk: 20, ult: '锦帆突袭', ultDmg: 60, ultSize: 50 },
+  { id: 'b_zhangliao', name: '张辽', key: F_HERO.zhang_liao, team: TEAM_B, enemy: TEAM_A, cls: WARRIOR, faction: FACT_WEI, tint: WEI_BLUE, q: 4, r: 4, hp: 200, atk: 15, ult: '突阵', ultDmg: 50, ultSize: 70, atkType: 'melee', ultFx: F_FX_STRIKE, items: ['fangtian'] },
+  { id: 'b_xuchu', name: '许褚', key: F_HERO.xu_chu, team: TEAM_B, enemy: TEAM_A, cls: WARRIOR, faction: FACT_WEI, tint: WEI_BLUE, q: 7, r: 4, hp: 270, atk: 11, ult: '裸衣血战', ultDmg: 42, ultSize: 78, atkType: 'melee', ultFx: F_FX_STRIKE },
+  { id: 'b_simayi', name: '司马懿', key: F_HERO.sima_yi, team: TEAM_B, enemy: TEAM_A, cls: TACTICIAN, faction: FACT_WEI, tint: WEI_BLUE, q: 6, r: 2, hp: 130, atk: 23, ult: '鬼谋', ultDmg: 40, ultSize: 88, atkType: 'magic', ultFx: F_FX_DRAIN, ultDot: true, items: ['qinggang'] },
+  { id: 'b_ganning', name: '甘宁', key: F_HERO.gan_ning, team: TEAM_B, enemy: TEAM_A, cls: ASSASSIN, faction: FACT_WU, tint: WU_GREEN, q: 9, r: 3, hp: 145, atk: 20, ult: '锦帆突袭', ultDmg: 60, ultSize: 50, atkType: 'ranged', ultFx: F_FX_ARROW },
 ];
 
 // 装备（数据）：物品=属性加成；英雄装配期把 hp/atk 加上（静态）。合成(2件→1件)走商店 craft-recipe，待商店阶段。
@@ -137,11 +144,14 @@ const sumItem = (ids: string[] | undefined, k: 'hp' | 'atk'): number => (ids ?? 
 const finalHp = (h: HeroSpec): number => h.hp * HP_SCALE + sumItem(h.items, 'hp');
 const finalAtk = (h: HeroSpec): number => h.atk + sumItem(h.items, 'atk');
 
-// 每英雄两张模板：普攻打击(amount=最终攻击力含装备) + 大招(范围 ultSize、伤害 ultDmg)，targetMask=敌队。
+// 普攻特效按攻击类型：近战斩光 / 远程箭 / 法术弹。
+const FX_BY_TYPE: Record<HeroSpec['atkType'], string> = { melee: F_FX_STRIKE, ranged: F_FX_ARROW, magic: F_FX_BOLT };
+
+// 每英雄两张模板：普攻(amount=最终攻击力，特效按攻击类型) + 大招(范围/伤害/主题特效/可选 DoT)，targetMask=敌队。
 export const GAME_F_TEMPLATES: Record<string, PrefabTemplate> = Object.fromEntries(
   ROSTER.flatMap((h) => [
-    [`strike_${h.id}`, strike(h.enemy, finalAtk(h))],
-    [`ult_${h.id}`, ultTemplate(h.enemy, h.ultDmg, h.ultSize)],
+    [`strike_${h.id}`, strike(h.enemy, finalAtk(h), FX_BY_TYPE[h.atkType])],
+    [`ult_${h.id}`, ultTemplate(h.enemy, h.ultDmg, h.ultSize, h.ultFx, h.ultDot)],
   ]),
 );
 
@@ -283,6 +293,7 @@ export function buildGameFBlueprint(): WorldBlueprint {
       overlapDetectCapability,
       triggerZoneCapability,
       hitboxCapability,
+      overTimeCapability, // 大招 DoT（灼烧/吸取）持续伤害
       resourceCapability,
       // 生命周期：打击区自毁 + 单位死亡
       lifetimeCapability,
