@@ -923,7 +923,13 @@
 - **Lead 裁决（主程4）：ACCEPT·开发**。最普适——所有"实体自治"品类受益。**抽象层级 = 给逻辑链加 self 寻址轴**（不是自走棋专属规则）。
 - **跨游戏用例**：弹幕敌群（每敌自身 AI/死亡）、塔防（每塔自身冷却/索敌）、RTS、组队 RPG（每成员自身 buff/狂暴线）、Game D 怪物自治。
 
-### REQ-022 · [2026-06-09] · 主程4（Game F 拉动，抽象为引擎级）· 框架级 · status: **open** · 优先级: **中（Phase3 羁绊）** · 类型: 真缺口（集合读：按 Tag/归属计数 + 越阈值信号）
+### REQ-022 · [2026-06-09] · 主程4（Game F 拉动，抽象为引擎级）· 框架级 · status: **done**（2026-06-10，Lead，裁剪后落地）· 优先级: **中（Phase3 羁绊）** · 类型: 真缺口（集合读：按 Tag/归属计数 + 越阈值信号）
+
+> ✅ **落地（2026-06-10，Lead，889 绿）**：`@skills/tier2/group-count`——`GroupCount{countResource, requiredTag?}`：按 Tag 掩码数全场实体，每 tick **set** 进 Resource（钳 [min,max]）。多 counter 共享一次遍历；`runsBefore:['resource-apply']` 按库内惯例破 RMW 伪环；写 Resource → 拓扑自动先于 event-when（同 tick 出阈值信号）。+9 测试（含重组证明）。
+> **对原案的两处裁剪（manifesto §4 先重组，测试为证）**：
+> 1. **`thresholds:[{at,signal}]` 回驳**——「越阈值锁存发信号（迟滞）」= `event-when{kind:'resource',cmp,mode:'edge'}` 已有的 armed 语义；多档阈值（3/6/9 羁绊）=多个 EventWhen 实体。集成测试「羁绊阈值信号 = event-when(edge) 重组」钉死：跨线触发一次、持续不重复、跌破复位、再跨再触发。
+> 2. **`owner` 过滤字段回驳**——requiredTag 取「含齐」(ALL-bits，与 Status.requireMask 同款) 后，归属=再加一个 Tag bit（`P1_BIT|WARRIOR_BIT`=「P1 的战士」），无需第二个过滤维度。
+> 用法（羁绊）：`GroupCount{countResource:"warrior_count",requiredTag:WARRIOR}` + `EventWhen{when:{kind:"resource",id:"warrior_count",cmp:"gte",value:3},mode:"edge",signal:"synergy_warrior"}` + Effect/craft-recipe 按名消费。
 
 **标题**：`group-count` —— 对一组实体按 Tag/归属**计数** → 写 count 资源 + 越阈值发信号
 

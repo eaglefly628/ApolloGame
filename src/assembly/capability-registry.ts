@@ -35,6 +35,7 @@ import {
   cardPlayCapability,
   cardPileCapability,
   selfRuleCapability,
+  groupCountCapability,
 } from '@skills/tier2/index.js';
 import { dialogueCapability, match3BoardCapability, prefabCapability, casterCapability, aggroCapability, pokerHandCapability, cardScoringCapability, flowCapability } from '@skills/tier3/index.js';
 

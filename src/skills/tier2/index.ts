@@ -29,3 +29,5 @@ export { cardPlayCapability, decodeCard, encodeCard } from './card-play.js';
 export { cardPileCapability } from './card-pile.js';
 // self-rule（REQ-021）：逻辑链实体本地(self)作用域——对每个实体读自身条件→对自身施效。补动态多实体自治缺口。
 export { selfRuleCapability, evaluateSelfCondition } from './self-rule.js';
+// group-count（REQ-022）：集合读——按 Tag 掩码数全场实体→写数值 Resource（羁绊/波次/人口）。阈值信号=event-when(edge) 重组。
+export { groupCountCapability } from './group-count.js';

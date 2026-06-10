@@ -815,6 +815,18 @@ export interface SelfRule extends Component {
   armed?: boolean; // 内部（once 用）
 }
 
+// ── group-count（REQ-022）── 集合读：按 Tag 位掩码数全场实体 → 把数量写进一个 Resource（按 id 全局路由）。
+// 实体寻址轴的「集合计数」端（self-rule 是 self 端）。羁绊层数/波次存活数/人口/阵营兵力全用它产数值；
+// 越阈值发信号**不在本组件**——那是 event-when{resource cmp, mode:edge} 已有的语义（manifesto §4 先重组）。
+// requiredTag 语义=「含齐」(ALL-bits，(flags&mask)===mask，与 Status.requireMask 同款)：单 bit=按类数（战士），
+// 多 bit=交集（P1 的战士）——owner 维度即「再加一个归属 bit」，无需独立 owner 字段。缺省/0=数所有带 Tag 实体。
+// 确定性：纯计数（与遍历序无关）+ set 写入钳 [min,max]。
+export interface GroupCount extends Component {
+  readonly type: 'GroupCount';
+  countResource: string; // 计数写入的 Resource id（按 id 全局定位；每 tick set+钳限）
+  requiredTag?: number; // Tag.flags 须含齐此掩码（ALL-bits）；缺省/0 = 所有带 Tag 的实体
+}
+
 // ── card-pile（REQ-017）── 牌库/手牌的 sim 内确定性管理（卡牌品类 staple）。
 // deck=抽牌堆（预洗好的牌码数组，front=下一张，纯数据→确定性，lockstep 双端同序）；hand=当前手牌；
 // handSize=目标手牌数。card-pile 系统：处理 play/discard 输入（按手牌**下标**选牌）+ 抽牌补到 handSize。
