@@ -14,11 +14,11 @@
 - **effect-apply 扩展**：REQ-012 `op/order` · REQ-013 `valueFrom`(资源×资源/系数) · REQ-009 `reset-timer`(事件→重置计时器,限时机制) · REQ-019 trace append。`condition` 加 `vsResource`(资源比资源,动态阈值)。
 - **六边形寻路（Game F 拉动,REQ-024）**：`tier2/hex`(纯函数确定性 A* `hexNextStep`,绕障/到相邻停) · `tier2/grid-move`(逐格移动,读 Relation→A*→写 HexPos+投影 Transform) · 组件 HexBoard/HexPos/GridMover。
 - **引擎 bug 修复**：BUG-003(TimerDone 双 consume 饿死 animation→生产者 timer-advance 自清+消费者改 reads) · BUG-004(mortal 掉落载体泄漏→prefab 回收 size==1 载体) · BUG-005(queryNearest tie-break + tween duration≤0 抖动)。顺手补 group-count 漏注册进 ALL_CAPABILITIES。
-- **治理/设计文档**：`docs/design/tier3-skill-governance.md`（**新 skill 决策判据**+genre pack+「散件能重组但最弱 LLM 难产→建收敛解释器是正当理由」宪法澄清+genre skill 重组审计：caster 标可整合、card-play provisional）· `docs/design/query-perf-plan.md`（World.query 全扫优化方案,倒排索引,**未实施**）。
+- **治理/设计文档**：`docs/design/tier3-skill-governance.md`（**新 skill 决策判据**+genre pack+「散件能重组但最弱 LLM 难产→建收敛解释器是正当理由」宪法澄清+genre skill 重组审计：caster 标可整合、card-play provisional）· `docs/design/query-perf-plan.md`（World.query 全扫优化方案,倒排索引——**并行 session 已实施**,见下）。
 
 **未做/待接（按优先）**：
 - 🔴 **REQ-023 group-effect（集合写）**：我**不 greenlit·倾向重组**（group-count+全局 buff 资源绕过）；真出现"非逐单位 fan-out 不可"再下沉。
-- 🟠 **World.query 性能**：方案已出（`query-perf-plan.md`），未实施；N 大才痛，按需。
+- ✅ ~~World.query 性能~~：**并行 session 已实施**（方案 A+单调跳排序/稠密退化；稀有查询 36×，行为逐字节不变，8 条对拍守护；详见 `query-perf-plan.md` 头部实施记录与 §4 自审表）。
 - 🟠 **caster 可整合进 effect-apply（kind:'spawn'）+ 与 aggro 索敌去重**（governance §4 审计发现），排期收敛。
 - 🟡 各游戏 PE 侧"数据换层"（消费这批新能力）：Game E 用 flow/card-pile 重写回合流程(REQ-017)+读 ScoreTrace 回放(REQ-019,PE 已在接)；Game F 用 hex/grid-move 接金铲铲移动(REQ-024)+self-rule/group-count 接自治/羁绊。
 - 🟠 沿用旧自审：**仍没真浏览器看过一帧**；浮点跨端确定性未双端验（卡牌/hex 是整数安全,steering/sqrt 仍 REQ-010 open）。
