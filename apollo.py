@@ -772,13 +772,16 @@ def start_vite():
     return proc
 
 def wait_for_server(url: str, timeout: int = 15) -> bool:
+    # 注意：探测必须打 127.0.0.1（与 Vite 的 IPv4 绑定、is_port_in_use 一致）。
+    # 用 localhost 在很多机器上会先解析到 IPv6 ::1，而 Vite 只听 127.0.0.1 →
+    # 每次 urlopen 直到超时才失败 → 整个 15s 耗尽 → 误打 "Opening anyway"（慢且多开一页）。
     start = time.time()
     while time.time() - start < timeout:
         try:
-            urllib.request.urlopen(url, timeout=2)
+            urllib.request.urlopen(url, timeout=1)
             return True
         except Exception:
-            time.sleep(0.5)
+            time.sleep(0.25)
     return False
 
 # ── 命令 ──
@@ -799,14 +802,15 @@ def cmd_launcher():
     api = start_api_server()
     vite = start_vite()
 
-    if wait_for_server(url):
+    # 就绪探测打 127.0.0.1（见 wait_for_server 注释：localhost→IPv6 会拖满超时）。
+    # 浏览器仍开 localhost（浏览器自带 v6→v4 回退）。无论就绪与否，只开**一次**浏览器。
+    if wait_for_server(f"http://127.0.0.1:{VITE_PORT}"):
         print(c("  [READY]", 'g'), f"Apollo Launcher: {c(url, 'c')}")
-        webbrowser.open(url)
     else:
-        print(c("  [WARN]", 'y'), "Opening anyway...")
-        webbrowser.open(url)
+        print(c("  [WARN]", 'y'), f"就绪探测超时，仍尝试打开 → {c(url, 'c')}")
+    webbrowser.open(url)
 
-    print(c("  [INFO]", 'dim'), "Press Ctrl+C to stop all services")
+    print(c("  [INFO]", 'dim'), "Press Ctrl+C to stop all services（请勿再手动点终端里的链接，已自动打开一页）")
     try:
         vite.wait()
     except KeyboardInterrupt:
