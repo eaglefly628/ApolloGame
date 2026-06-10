@@ -168,14 +168,16 @@ function unitEntity(h: HeroSpec): EntityBlueprint {
   } as unknown as EntityBlueprint;
 }
 
-// 头顶名字（表现，三国感）：Text + 势力色 Color + Hierarchy 跟随单位本体。
+// 头顶名字（表现）：Text + 势力色 Color + Hierarchy 跟随；Sprite 仅用于抬高 zOrder（文本模式不画此图）→ 盖在棋子之上。
+// 去掉死数字（hp/atk 静态不更新、误导）；血量/蓝量改用实时血条/蓝条（待引擎 REQ-F-029 gauge 能力）。
 function labelEntity(h: HeroSpec): EntityBlueprint {
   const p = project(h.q, h.r);
   return {
-    Transform: xf(p.x, p.y - 16),
-    Text: { content: `${h.name}\n${finalHp(h)}/${finalAtk(h)}${h.items?.length ? '\n' + h.items.map((i) => ITEMS[i].name).join('·') : ''}`, fontSize: 9, fontFamily: 'sans-serif', anchor: 'center', lineSpacing: 1 }, // 名字 + 最终血量/攻击 + 装备
+    Transform: xf(p.x, p.y - 22),
+    Text: { content: h.name, fontSize: 9, fontFamily: 'sans-serif', anchor: 'center', lineSpacing: 0 },
     Color: { tint: h.tint, alpha: 1 },
-    Hierarchy: { parentId: h.id, localX: 0, localY: -16, localRotation: 0, localScaleX: 1, localScaleY: 1 },
+    Sprite: { textureKey: F_FX_STRIKE, anchorX: 0.5, anchorY: 0.5, zOrder: 30 }, // 只为 zOrder 抬高（文本模式不绘此贴图）
+    Hierarchy: { parentId: h.id, localX: 0, localY: -22, localRotation: 0, localScaleX: 1, localScaleY: 1 },
   } as unknown as EntityBlueprint;
 }
 

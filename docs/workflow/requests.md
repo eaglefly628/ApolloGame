@@ -1043,6 +1043,18 @@
 
 ---
 
+### REQ-F-029 · [2026-06-10] · Programmer F（用户反馈：要实时血条/蓝条）· 框架级 · status: **open** · 优先级: 中（自走棋观感/可读性）· 类型: 真缺口（Resource → 实时条/gauge 渲染）
+
+> **现象（用户反馈）**：棋子头顶血量/蓝量**不更新**（我的标签是装配期写死的静态数字 Text，无法随 hp/mana 变化）。用户要**绿色血条 + 蓝色蓝条**（别用数字）。
+> **证伪重组**：① 渲染器只画 `Sprite/Text/Shape`，无"按 Resource 比例画条"的路径；② Text.content 静态，无"Resource→Text"更新系统；③ Shape.width/Transform.scaleX 静态，无"Resource→scaleX"系统；④ tween 按时间不按资源。→ 现有数据/能力**画不了随资源变化的条**。**真缺口（每个有血条的游戏都要，通用表现层能力）。**
+> **关键约束**：血条是棋子的**子覆盖物**（Hierarchy parent=棋子，悬头顶）；棋子 hp 用**共享 id 'hp'**（hitbox 局部路由依赖它，不能改唯一 id）→ 子条必须读**父实体**的 Resource（全局按 'hp' 取会取错单位）。mana 已是唯一 id `mp_<英雄>`（可全局取）。
+> **建议（交主程裁，二选一；通用 hp/护盾/蓝/读条皆用）**：
+> - (A) 系统式 `Gauge{ resourceId, fromParent?:bool }`：每 tick 设本实体 `Transform.scaleX = clamp(资源.current/max,0,1)`（资源取自 `fromParent? Hierarchy.parentId 的 Resource : 自身`）；条=Shape/Sprite 子体，颜色用 Color（绿血/蓝蓝）。锚左缩（pivot 左对齐，从右端掉血）。
+> - (B) 渲染器式 `Bar{ resourceId, color, w, h, fromParent? }`：渲染器据资源画填充矩形。
+> 落地后 game-f：每棋子挂 hp 绿条(fromParent,读父'hp') + mana 蓝条(读 `mp_<id>`) 两个子条，纯数据、实时。
+
+---
+
 ## 需求模板（复制这段填写）
 
 ```
