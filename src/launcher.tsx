@@ -562,7 +562,20 @@ function GameRunner({ gameId, onBack }: { gameId: string; onBack: () => void }) 
 // ══════════════════════════════════════
 
 function Launcher() {
-  const [launched, setLaunched] = useState<string | null>(null);
+  // 「正在玩哪个游戏」进 URL（?game=id）：游戏选择若只是 React 状态，任何全页 reload
+  // （HMR 失联恢复 / 依赖再优化 / 手动刷新）都会把人弹回主页——这正是「点游戏几秒后跳回主页」
+  // 系列 bug 的放大器（根因之一 stdout pipe 阻塞已修，此处把"导航被 reload 清零"永久防住）。
+  const [launched, setLaunchedState] = useState<string | null>(() => {
+    const q = new URLSearchParams(window.location.search).get('game');
+    return q && GAMES.some((g) => g.id === q && g.status === 'playable') ? q : null;
+  });
+  const setLaunched = useCallback((id: string | null) => {
+    const url = new URL(window.location.href);
+    if (id) url.searchParams.set('game', id);
+    else url.searchParams.delete('game');
+    window.history.replaceState(null, '', url);
+    setLaunchedState(id);
+  }, []);
   const [studio, setStudio] = useState(false);
   const [artlib, setArtlib] = useState(false);
   const [studioExtra, setStudioExtra] = useState<{ id: string; title: string; build: () => WorldBlueprint } | null>(null);
