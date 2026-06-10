@@ -33,7 +33,7 @@ import { boardEntities, project, COLS, ROWS, TILE, ORIGIN_X, ORIGIN_Y, LAYOUT } 
 //    · 打击自毁 = Timer{id:'life'} → lifetime → destroy（瞬时 burst，无孤儿）
 //    · 死亡     = resource-apply → mortal(hp≤0 销毁自己) → destroy
 //    · 判胜负   = Zone{requiredTag:TEAM, count:1} 数某队存活 → 写 present Flag（存活=0 → flag false）
-//    · 头顶名字 = Text + 势力色 Color + Hierarchy 跟随单位（三国感靠命名+分色，见 art-data.md）
+//    · 头顶名字 = Text + 队伍色 Color + Hierarchy 跟随单位（红=我方蜀/蓝=敌方魏；势力色留羁绊期，user 定）
 //    · 血条蓝条 = gauge(REQ-F-029)：Resource 比例 → 条实体 Shape.width（PostResolve 终态投影，随走随死全自动）
 //    · 控制定身 = 八阵图 Hitbox{setMask:FROZEN,statusDuration} + GridMover.haltStatusMask(REQ-F-030)，到点 over-time 自动解
 //    · 回合重置 = 持久槽位 Caster{overrides} 每 prep 重展开复合棋子模板（'@local:' 内部引用，REQ-F-033）
@@ -66,7 +66,7 @@ export const FROZEN = 1 << 10; // 冰冻定身（REQ-F-030）：GridMover.haltSt
 // 战斗节奏（数据）：30 tick ≈ 0.5s/动作，看得清（此前 10/24 太快）。
 const MOVE_PERIOD = 48; // 每 48 tick 走一格 ≈ 0.8s（慢一点看清走位）
 const ATK_CD = 45; // 普攻间隔 45 tick ≈ 0.75s
-const MANA_FILL = 50; // 每次普攻攒蓝（蓝条 0→100，2 攻放一次大招）
+const MANA_FILL = 20; // 每次普攻攒蓝（0→100 = 5 攻一大招 ≈3.75s）。旧 50=1.5s 整循环：8 子异步充清，满屏蓝条频闪+大招刷屏（用户实测反馈），非 bug 是节奏数据。
 const HP_SCALE = 18; // 全局血量倍率（调战斗时长，目标一局 ~20s；越大越久）
 
 const xf = (x: number, y: number): Record<string, unknown> => ({ x, y, rotation: 0, scaleX: 1, scaleY: 1 });
@@ -114,7 +114,7 @@ interface HeroSpec {
   enemy: number;
   cls: number; // 职业位（WARRIOR/TACTICIAN/ASSASSIN）
   faction: number; // 势力位（FACT_SHU/WEI/WU）—— 羁绊
-  tint: number;
+  tint: number; // 势力色（羁绊期徽记/描边备用；名牌现读队伍色——用户实测三色分不清阵营）
   q: number; // axial q（列）
   r: number; // axial r（行；r0-3=魏上半场, r4-7=蜀下半场，中线 r3/4）
   hp: number; // 血量
@@ -193,11 +193,12 @@ function heroTemplate(h: HeroSpec): PrefabTemplate {
         Caster: { onSignal: atk, template: `strike_${h.id}`, at: 'target', targetTag: h.enemy },
         Sprite: sprite(h.key, 4),
       },
-      // 头顶名牌：Text+势力色；Sprite 仅抬 zOrder（文本模式不绘）。-34 给两条让位。
+      // 头顶名牌：Text+队伍色（我方蜀=红 / 敌方魏=蓝——用户实测"三色势力分不清谁打谁"，名牌只读阵营；
+      // 势力色仍在 ROSTER.tint，留羁绊期徽记/描边用）；Sprite 仅抬 zOrder（文本模式不绘）。-34 给两条让位。
       name: {
         Transform: xf(0, -34),
         Text: { content: h.name, fontSize: 9, fontFamily: 'sans-serif', anchor: 'center', lineSpacing: 0 },
-        Color: { tint: h.tint, alpha: 1 },
+        Color: { tint: h.team === TEAM_A ? SHU_RED : WEI_BLUE, alpha: 1 },
         Sprite: { textureKey: F_FX_STRIKE, anchorX: 0.5, anchorY: 0.5, zOrder: 30 },
         Hierarchy: { ...sidecarLink, localY: -34 },
       },

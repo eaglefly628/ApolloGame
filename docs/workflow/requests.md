@@ -1146,6 +1146,23 @@
 
 ---
 
+### REQ-F-034 · [2026-06-10] · PE-F（用户实测反馈：移动瞬移、要 smooth）· 框架级 · status: **open（待主程评估/落地）** · 优先级: 高（用户点名的观感 bug；任何网格游戏通用）· 类型: 真缺口（grid-move 视觉移动只有"逐格瞬移"）
+
+> **现象（用户实测）**：棋子移动是瞬移——每 `period`（48）拍 Transform 从旧格直接跳到新格（实测 x 一拍跳 18px），观感生硬。要平滑滑行。
+> **现状（读 `grid-move.ts:121,146-148` 证实）**：`syncTransform` **每拍**把 Transform 硬钉到 `project(HexPos)`（不移动也钉，"每拍保持 Transform 与格同步"）；走步拍直接改 HexPos 后再钉到新格投影点。
+> **证伪重组（逐条）**：
+> ① grid-move 每拍独占写 Transform → 数据层任何"平滑器"（tween/velocity/第二个系统）都是 Transform 双 writer，要么打架要么定序耦合——没有数据接缝；
+> ② `tween` 目标是装配期静态数据，追不了每步变化的动态格点；
+> ③ `steering`（连续移动）已被 grid-move 取代且无格占位/A* 语义，回退=丢 REQ-F-024 全部成果。
+> → 游戏层表达不了"格是逻辑真相、视觉连续滑行"。**真缺口**（行业标配语义：logical cell 与 visual position 分离 + 移动补间，战棋/roguelike/推箱子通用）。
+> **建议（交主程裁，PE-F 倾向 A）**：
+> - **(A) `GridMover.glideSpeed?: number`（px/tick）**：设了则 syncTransform 不再硬钉，而是 Transform 以恒速逼近 `project(HexPos)`（`min(glideSpeed, 剩余距离)`，到点即贴齐）；缺省不设 = 现行瞬移，**零迁移**。恒速直线、纯 IEEE 算术（含 sqrt，IEEE-754 正确舍入）→ 确定性不变；HexPos 仍是占位/寻路/hash 的 SIM 真相。
+> - **(B) 定比逼近（每拍走剩余距离的 k%）**：免 sqrt、自带 ease-out，但渐近不达（要 epsilon 贴齐），速度随距离变化、跨格快慢不均。
+> - 附带改善：`caster at:'target'` 在目标 **Transform** 处展开打击区——平滑后打击区落在单位视觉位置上，命中观感同步变好。
+> **YAGNI 自审**：用户当下点名 + 通用形状（任何 HexPos/GridMover 游戏都要），非想象需求。game-f 接入=每棋子 GridMover 加一个字段（纯数据，落地后 PE-F 即接）。
+
+---
+
 ## 需求模板（复制这段填写）
 
 ```
