@@ -41,7 +41,7 @@ Manifest(纯数据) ──parseManifest──▶ WorldBlueprint ──engine.loa
 | REQ-023 | group-effect（集合写）；倾向重组不 greenlit | P3 |
 | caster 整合 | 可整合进 effect-apply(kind:'spawn')+去重 aggro | 排期 |
 | PE-E 数据换层 | flow/card-pile 重写回合流程(REQ-017/020) + ScoreTrace 回放(REQ-019) | PE-E |
-| PE-F 数据换层 | hierarchy-cascade 命名残留(F-026)；offset 棋盘(F-027)；GameFlow 阶段机(F-028)；self-rule/group-count 接羁绊；**gauge 血/蓝条(F-029)** | PE-F |
+| PE-F 数据换层 | hierarchy-cascade 命名残留(F-026)；offset 棋盘(F-027)；GameFlow 阶段机(F-028)；self-rule/group-count 接羁绊；**gauge 血/蓝条(F-029)**；**CC 定身 haltStatusMask(F-030)** | PE-F |
 
 **🔵 Studio/编辑器 follow-up**（非阻塞）：
 ① 结构编辑（透视器增删实体/组件）；② playwright 真截图（升级 ApolloBench Visual）；

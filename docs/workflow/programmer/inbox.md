@@ -75,4 +75,8 @@
   - 蓝条（蓝）：同上，`Gauge{resourceId:'mp_<英雄>', width:~40}`（唯一 id，缺省全局路由），localY 比血条再低 ~5
 - 注意：条实体的 Shape 仅作渲染几何，**别**给条挂 Collider/Velocity/Hitbox（条不参战）；`leftX` 缺省 -width/2 = 满条居中，通常无需设。
 
-> ✅ **引擎侧 REQ-F-026/027/028/029 均已落地、全绿（vitest 951）**。PE-F 上述 F-1~F-5 皆可接，纯数据 / 零游戏代码。不要在游戏层 workaround 引擎行为；若发现新引擎缺口，写 requests.md 提主程。
+#### 任务 F-6 · REQ-F-030 接入 CC 定身（纯数据） — status: pending
+- 引擎已落 `GridMover.haltStatusMask`（对齐 Steering 同名语义，4 测绿）：自身 Status 命中掩码 → 本 tick 不走且**节奏时钟暂停**（解控按剩余节奏恢复、无补步突进）。定序已在引擎侧用 `runsBefore:['hitbox','over-time']` 破环——CC **延迟一帧生效**（与 steering/game-d 同纪律，60tps 不可感知）。
+- 接入：① 每棋子 `GridMover` 加 `haltStatusMask: FROZEN位`；② 控制技（如诸葛"八阵图"）hitbox `setMask=FROZEN + statusDuration=持续 tick` → 被冻定身、over-time 到点解冻。全纯数据，零游戏代码。
+
+> ✅ **引擎侧 REQ-F-026/027/028/029/030 均已落地、全绿**。PE-F 上述 F-1~F-6 皆可接（你交接报告里卡主程的两件——**F-029 血条→接 F-5，F-030 定身→接 F-6——已全部解锁，可继续**），纯数据 / 零游戏代码。不要在游戏层 workaround 引擎行为；若发现新引擎缺口，写 requests.md 提主程。

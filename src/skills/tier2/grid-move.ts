@@ -1,7 +1,7 @@
 import { defineCapability } from '@engine/core/define-capability.js';
 import { SystemPhase } from '@engine/core/types.js';
 import type { IWorld } from '@engine/core/types.js';
-import type { HexBoard, HexPos, GridMover, Relation, Transform } from '@engine/protocol/components.js';
+import type { HexBoard, HexPos, GridMover, Relation, Transform, Status } from '@engine/protocol/components.js';
 import { hexNextStep, type Hex } from './hex.js';
 
 // ═══════════════════════════════════════════════════════════════
@@ -15,6 +15,7 @@ import { hexNextStep, type Hex } from './hex.js';
 //  确定性：A* 纯整数确定(见 hex.ts)；占位集与遍历序无关；HexPos 整数进 hash；Transform 由 HexPos 经
 //  精确二进制分数(1/2,3/4)投影(不碰 sqrt/超越函数)→ 跨端无漂移、lockstep 安全。
 //  节奏：每 period tick 才走一格(整数计数)，免每拍瞬移。
+//  CC 定身(REQ-F-030)：GridMover.haltStatusMask 命中自身 Status → 不走且时钟暂停(同 Steering 语义)。
 // ═══════════════════════════════════════════════════════════════
 
 const TARGET = 'target';
@@ -68,11 +69,15 @@ export const gridMoveCapability = defineCapability({
       },
       GridMover: {
         category: 'config',
-        describe: '网格移动器：每 period tick 沿 A* 走一格。',
-        fields: { period: { type: 'number', describe: '每多少 tick 走一格(>=1)' }, elapsed: { type: 'number', describe: '内部计时' } },
+        describe: '网格移动器：每 period tick 沿 A* 走一格；haltStatusMask 被 CC 时定身。',
+        fields: {
+          period: { type: 'number', describe: '每多少 tick 走一格(>=1)' },
+          elapsed: { type: 'number', describe: '内部计时' },
+          haltStatusMask: { type: 'number', describe: '自身 Status 含这些位时定身不走、节奏时钟暂停（冻结/眩晕 CC；同 Steering.haltStatusMask）' },
+        },
       },
     },
-    reads: ['HexBoard', 'HexPos', 'GridMover', 'Relation'],
+    reads: ['HexBoard', 'HexPos', 'GridMover', 'Relation', 'Status'],
     writes: ['HexPos', 'GridMover', 'Transform'],
     consumes: [],
   },
@@ -87,7 +92,12 @@ export const gridMoveCapability = defineCapability({
       // 显式 runsAfter 覆盖反向的组件推断边（Transform 生产→消费）→ 破环。语义：aggro 本拍选目标→grid-move 据此走；
       // grid-move 写的 Transform 由 aggro 下一拍读（一拍反馈，确定性不变）。同 poker-eval/dialogue 显式定序先例。
       runsAfter: ['aggro'],
-      reads: ['HexBoard', 'HexPos', 'GridMover', 'Relation'],
+      // REQ-F-030：grid-move 读 Status 做 CC 定身，而 Status 由 hitbox/over-time 在
+      // grid-move 写 Transform→overlap→trigger→hitbox 链末尾写 → 否则经第三方成环。
+      // 与 steering 同款破法：声明跑在状态施加者之前 = 读"上一拍"的 Status（CC 延迟一帧生效，
+      // 与 Condition→Effect 同纪律）。无 hitbox/over-time 的世界里这两个 id 被忽略。
+      runsBefore: ['hitbox', 'over-time'],
+      reads: ['HexBoard', 'HexPos', 'GridMover', 'Relation', 'Status'],
       writes: ['HexPos', 'GridMover', 'Transform'],
       consumes: [],
       execute(world: IWorld) {
@@ -108,6 +118,13 @@ export const gridMoveCapability = defineCapability({
           const hp = posOf.get(eid)!;
           const mover = world.getComponent<GridMover>(eid, 'GridMover')!;
           syncTransform(world, eid, board, hp); // 每拍保持 Transform 与格同步（即便不移动）
+
+          // CC 定身（REQ-F-030，对齐 Steering.haltStatusMask）：被控 → 本 tick 不走且时钟暂停
+          // （elapsed 不累计 → 解控后按剩余节奏恢复，无"积攒补步"突进）。
+          if (mover.haltStatusMask) {
+            const st = world.getComponent<Status>(eid, 'Status');
+            if (st && (st.flags & mover.haltStatusMask) !== 0) continue;
+          }
 
           const rel = world.getComponent<Relation>(eid, 'Relation');
           if (!rel || rel.kind !== TARGET) continue;

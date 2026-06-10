@@ -119,6 +119,72 @@ describe('grid-move · REQ-025 与 aggro 同场不成环', () => {
   });
 });
 
+// ── REQ-F-030 回归：CC 定身（GridMover.haltStatusMask，对齐 Steering 既有语义） ──
+import type { Status } from '@engine/protocol/components.js';
+import { overlapDetectCapability } from '@atom-skills/overlap-detect/index.js';
+import { triggerZoneCapability } from './trigger-zone.js';
+import { hitboxCapability } from './hitbox.js';
+import { overTimeCapability } from './over-time.js';
+describe('grid-move · REQ-F-030 CC 定身', () => {
+  const FROZEN = 1 << 3;
+  function frozenUnit(w: World, id: string, q: number, r: number, target: string): void {
+    w.createEntity(id);
+    w.addComponent(id, { type: 'HexPos', q, r } as HexPos);
+    w.addComponent(id, { type: 'GridMover', period: 1, haltStatusMask: FROZEN } as GridMover);
+    w.addComponent(id, { type: 'Relation', kind: 'target', targetId: target } as Relation);
+  }
+  it('被冻不走：Status 命中掩码 → 原地定身；清位 → 恢复走', () => {
+    const w = mk(); board(w);
+    frozenUnit(w, 'hero', 0, 0, 'enemy');
+    unit(w, 'enemy', 5, 0);
+    w.addComponent('hero', { type: 'Status', flags: FROZEN } as Status);
+    for (let i = 0; i < 5; i++) w.tick();
+    expect(pos(w, 'hero').q).toBe(0); // 冻着：一步未动
+    expect(pos(w, 'hero').r).toBe(0);
+    w.getComponent<Status>('hero', 'Status')!.flags = 0; // 解冻
+    w.tick();
+    expect(hexDistance(pos(w, 'hero'), pos(w, 'enemy'))).toBe(4); // 恢复走（5→4）
+  });
+  it('时钟暂停：冻结期 elapsed 不累计，解控后按剩余节奏恢复、无补步突进', () => {
+    const w = mk(); board(w);
+    w.createEntity('hero');
+    w.addComponent('hero', { type: 'HexPos', q: 0, r: 0 } as HexPos);
+    w.addComponent('hero', { type: 'GridMover', period: 3, haltStatusMask: FROZEN } as GridMover);
+    w.addComponent('hero', { type: 'Relation', kind: 'target', targetId: 'enemy' } as Relation);
+    unit(w, 'enemy', 5, 0);
+    w.tick(); // elapsed 1
+    w.addComponent('hero', { type: 'Status', flags: FROZEN } as Status);
+    for (let i = 0; i < 4; i++) w.tick(); // 冻 4 拍：elapsed 仍 1
+    expect(w.getComponent<GridMover>('hero', 'GridMover')!.elapsed).toBe(1);
+    expect(pos(w, 'hero').q).toBe(0);
+    w.getComponent<Status>('hero', 'Status')!.flags = 0; // 解冻
+    w.tick(); // elapsed 2 < 3 → 仍不走（无补步）
+    expect(pos(w, 'hero').q).toBe(0);
+    w.tick(); // elapsed 3 → 走一格
+    expect(hexDistance(pos(w, 'hero'), pos(w, 'enemy'))).toBe(4);
+  });
+  it('掩码不匹配 / 无掩码 → 照走（缺省行为不变）', () => {
+    const w = mk(); board(w);
+    frozenUnit(w, 'a', 0, 0, 'enemy');
+    unit(w, 'enemy', 5, 0);
+    w.addComponent('a', { type: 'Status', flags: 1 << 5 } as Status); // 别的状态位
+    unit(w, 'b', 0, 3, { period: 1, target: 'enemy' }); // 无掩码
+    w.tick();
+    expect(hexDistance(pos(w, 'a'), pos(w, 'enemy'))).toBe(4); // 照走
+  });
+  it('定序守护：grid-move(读 Status) + overlap/trigger/hitbox/over-time 同场拓扑不抛（runsBefore 破第三方环）', () => {
+    const w = new World();
+    for (const cap of [overlapDetectCapability, triggerZoneCapability, hitboxCapability, overTimeCapability, gridMoveCapability]) {
+      for (const s of cap.systems) w.addSystem(s);
+    }
+    board(w);
+    frozenUnit(w, 'hero', 0, 0, 'enemy');
+    unit(w, 'enemy', 4, 0);
+    expect(() => { for (let i = 0; i < 5; i++) w.tick(); }).not.toThrow(); // 无显式 runsBefore 时此处抛环
+    expect(hexDistance(pos(w, 'hero'), pos(w, 'enemy'))).toBe(1); // 未被冻 → 正常寻路到相邻
+  });
+});
+
 // ── REQ-F-027 回归：投影布局 axial(斜→平行四边形) vs offset(规整矩形+六边形交错) ──
 describe('grid-move · REQ-F-027 投影布局', () => {
   function boardL(w: World, layout?: 'axial' | 'offset'): void {

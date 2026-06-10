@@ -866,6 +866,9 @@ export interface GridMover extends Component {
   readonly type: 'GridMover';
   period: number; // 每多少 tick 走一格(>=1；控制移动节奏，免每拍瞬移)
   elapsed?: number; // 内部：距上次移动的 tick
+  // CC 定身(REQ-F-030，对齐 Steering.haltStatusMask 既有语义)：自身 Status 含这些位 → 本 tick 不走，
+  // 且节奏时钟暂停(elapsed 不累计；解控后按剩余节奏恢复，无补步突进)。纯位与，确定性不变。
+  haltStatusMask?: number;
 }
 
 // ── card-pile（REQ-017）── 牌库/手牌的 sim 内确定性管理（卡牌品类 staple）。
