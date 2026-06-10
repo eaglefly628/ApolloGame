@@ -1188,7 +1188,7 @@
 
 ---
 
-### REQ-F-036 · [2026-06-10] · PE-F（按 F-9 处方接入实测暴露）· 框架级 · status: **open（排雷后复测仍有残环，请主程二刷）** · 优先级: **高（F-9 仍被拦死）** · 类型: 系统定序 bug（拓扑成环，同 REQ-F-025/028/031 类）
+### REQ-F-036 · [2026-06-10] · PE-F（按 F-9 处方接入实测暴露）· 框架级 · status: **done（二刷：self-rule 补 runsAfter:['hitbox']，决策坐结算链尾）** · 优先级: **高（F-9 仍被拦死）** · 类型: 系统定序 bug（拓扑成环，同 REQ-F-025/028/031 类）
 
 > **复测补充（2026-06-10，1e875ef 排雷后带 whenGlobal 重接）**：环**缩了没断**——12→10 系统：`flow`/`zone-occupancy` 已被排雷边拆出 ✓，残 SCC = `self-rule, event-when, caster, prefab-spawn, hitbox, over-time, resource-apply, destroy-apply, mortal, hierarchy-cascade`。
 > **残环走向（按组件 writer→reader 边推演）**：`self-rule 写 Flag → event-when 读 Flag → 写 Signal → caster → SpawnRequest → prefab-spawn → …结算链… → hitbox → over-time → resource-apply ——(排雷边 runsAfter)→ self-rule`，主程新加的 `resource-apply 先行` 回边与 `self-rule→event-when` 前向边合围。引擎守护测「五系统同场」没带 caster/prefab/hitbox/cascade 这条链 → 没踩到。
@@ -1201,6 +1201,12 @@
 > - (A) self-rule 加 `runsBefore:['hitbox','over-time']`（必要时含 resource-apply 相关边）——决策系统读**上一拍**状态，与 grid-move/steering 的"CC 一拍延迟"同纪律（60tps 不可感知；普攻本就 45 拍一发）；
 > - (B) 移相位（决策先行相位），结构性与结算链脱钩——代价是 self-rule 读到的 Resource 是上一拍终值（语义同 A）。
 > 注意点：self-rule 写 DestroyRequest 与 mortal 的汇流、写 SpawnRequest 与 caster 的汇流，定序时一并钉死；加一条「self-rule 进完整战斗图不抛环」守护测（F-031 同款）。
+>
+> **Lead 裁决（2026-06-10，二刷）**：**接受复测结论，残环已断；但两个建议方向都未采用，按更紧的根因另裁。**
+> - **真根因比推演更紧**：残环不是经 event-when→caster→prefab 的长链——那串是 Kahn 剩余的**下游受害者**（祖先卡死则后代 in-degree 永不归零，报错把它们一并列出）。真核是**三元环**：`self-rule —(写 Resource 被 hitbox 读：攻防数值)→ hitbox —(ResourceModify)→ resource-apply —(F-035 显式边)→ self-rule`。F-035 守护测的五系统小世界没带 hitbox → 漏网（与 F-031 同型，已补刀）。
+> - **建议 (A)（self-rule runsBefore hitbox/over-time）不可用**：与既有显式链 `hitbox →(runsBefore)→ resource-apply →(F-035 runsAfter)→ self-rule` 合成**显式边环**——显式边互相打架无解，除非推翻 F-035 刚发布的"同帧终值"语义。**(B)（移相位）代价同 A 且动静更大**，回驳。
+> - **落地**：`self-rule` runsAfter 补 `'hitbox'` → 决策系统坐**结算链尾**（flow 定相位 → hitbox 判伤 → resource-apply 落账 → 单位据本拍终值自治），与 F-035 语义一脉；1 行改动。写 SpawnRequest/DestroyRequest 与 caster/mortal 仅为同汇（请求集合语义），writer 间无需定序——采纳提醒但无需新边。
+> - +1 守护测：**15 能力全家桶**（flow/zone/group/resource/overlap/trigger/hitbox/over-time/mortal/event-when/caster/prefab/destroy/cascade/self-rule）同场不抛 + whenGlobal 门同帧。tsc + vitest 1036 + build 全绿。F-9 解锁：PF-finish-list §5.4 的接入 diff 可原样贴回。
 
 ---
 

@@ -208,3 +208,38 @@ describe('self-rule · REQ-F-035 whenGlobal 全局阶段门', () => {
     expect(R(w, 'hero').current).toBe(last); // resolution 期不再行动
   });
 });
+
+// ── REQ-F-036：完整战斗图守护（F-035 五系统守护没带 hitbox 链 → 残三元环漏网，此为补刀） ──
+import { hitboxCapability } from './hitbox.js';
+import { overTimeCapability } from './over-time.js';
+import { triggerZoneCapability } from './trigger-zone.js';
+import { mortalCapability } from './mortal.js';
+import { eventWhenCapability } from './event-when.js';
+import { overlapDetectCapability } from '@atom-skills/overlap-detect/index.js';
+import { destroyCapability } from '@atom-skills/destroy/index.js';
+import { hierarchyCascadeCapability } from '../tier1/hierarchy-cascade.js';
+import { casterCapability } from '../tier3/caster.js';
+import { prefabCapability } from '../tier3/prefab.js';
+describe('self-rule · REQ-F-036 完整战斗图同场不抛（残环二刷）', () => {
+  it('15 能力全家桶 + self-rule：拓扑不抛（修复前 self-rule→hitbox→resource-apply→self-rule 三元环）且 whenGlobal 门仍同帧', () => {
+    const w = new World();
+    const caps = [
+      flowCapability, zoneOccupancyCapability, groupCountCapability, resourceCapability,
+      overlapDetectCapability, triggerZoneCapability, hitboxCapability, overTimeCapability,
+      mortalCapability, eventWhenCapability, casterCapability, prefabCapability,
+      destroyCapability, hierarchyCascadeCapability, selfRuleCapability,
+    ];
+    for (const cap of caps) for (const s of cap.systems) w.addSystem(s as never);
+    w.createEntity('phase'); w.addComponent('phase', flag('in_combat', true) as never);
+    unit(w, 'hero', {
+      when: { kind: 'resource', id: 'mp', cmp: 'gte', value: 0 },
+      whenGlobal: { kind: 'flag', id: 'in_combat' },
+      do: [{ kind: 'modify-resource', op: 'add', value: 1 }],
+    }, [res('mp', 0)]);
+    expect(() => { for (let i = 0; i < 3; i++) w.tick(); }).not.toThrow(); // 修复前抛 10 系统 SCC
+    expect(R(w, 'hero').current).toBe(3); // 门开正常行动
+    F(w, 'phase').active = false;
+    w.tick();
+    expect(R(w, 'hero').current).toBe(3); // 门关同帧停手
+  });
+});

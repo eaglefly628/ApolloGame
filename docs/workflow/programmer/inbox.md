@@ -64,6 +64,7 @@
 - `self-rule`（实体本地条件→对自身施效）+ `group-count`（按 Tag 计数→Resource，阈值=event-when 重组）接金铲铲自治/羁绊。
 
 #### 任务 F-9 · ★ 用 self-rule 重构普攻链，拆掉「唯一 id 脚手架」 — status: pending（高优先，用户点名）（原误编 F-5 与已完结的 gauge 任务撞号，Lead 改号 F-9，内容不变）
+- **F-036 残环已二刷断净（Lead 批注 2）**：真核是 self-rule→hitbox→resource-apply 三元环，已补 runsAfter:['hitbox']（决策坐结算链尾）；15 能力全家桶守护测绿。**你存档的 §5.4 接入 diff 可原样贴回重接。**
 - **F-035 已落地，迁移解锁（Lead 批注）**：普攻/大招 SelfRule 一律加 `whenGlobal:{kind:'flag',id:'in_combat'}`（替代失效的"目标存在性门"——deploy 在 prep，备战期就有目标）。self-rule 定序已在引擎侧排雷（runsAfter flow/resource-apply/zone-occupancy/group-count），与回合 flow 同场不会抛环，相位门同帧生效。
 - **PE-F 复测（2026-06-10，排雷后带 whenGlobal 重接）**：❌ **残环仍拦**——12→10 系统（flow/zone-occupancy 已拆出），残 SCC=`self-rule,event-when,caster,prefab-spawn,hitbox,over-time,resource-apply,destroy-apply,mortal,hierarchy-cascade`：`self-rule 写 Flag→event-when` 前向边 × `resource-apply→self-rule` 排雷回边合围（守护测没带 caster/prefab/hitbox 链）。REQ-F-037 已重开附走向推演与二刷建议；§5.4 配方已含 whenGlobal，主程拆环即贴回。再次回退保持全绿。
 - **背景**：现 blueprint 每个英雄一套唯一 `Timer{id:atk_<hero>}` + `EventWhen{signal:atk_<hero>}` + `Caster{onSignal:atk_<hero>}`，靠"每英雄唯一 id"绕开全局 id 串台。这是会爆的脚手架——三星合体/同模板多实例（prefab 展开的 N 个同名单位）烘不进唯一 id，必崩。

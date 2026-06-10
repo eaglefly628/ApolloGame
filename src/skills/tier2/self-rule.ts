@@ -151,12 +151,15 @@ export const selfRuleCapability = defineCapability({
     {
       id: 'self-rule',
       phase: SystemPhase.Update,
-      // REQ-F-035 排雷：self-rule 与 flow/zone-occupancy/group-count/resource-apply 互为 RMW
-      // （Flag/Resource/State）——同场必成伪环（F-025/028/031 同类，此前因从未同场而潜伏）。
-      // 显式 runsAfter 钉死语义方向：先定相位(flow)/结算伤害(resource-apply)/数清事实(占位/计数)，
-      // 单位再据此自治行动——whenGlobal 的「同帧新鲜阶段门」正依赖 flow 先行。无反向环：四者均
-      // 不读 self-rule 独有写集（SpawnRequest/DestroyRequest/SelfRule）。无这些系统的世界 id 被忽略。
-      runsAfter: ['flow', 'resource-apply', 'zone-occupancy', 'group-count'],
+      // REQ-F-035 排雷 + REQ-F-036 二刷：self-rule 与 flow/zone-occupancy/group-count/resource-apply
+      // 互为 RMW（Flag/Resource/State）；且 self-rule 写 Resource 被 hitbox 读（攻防数值）→ 经
+      // hitbox→(ResourceModify)→resource-apply 闭成三元环（F-036 实测残环的真核，报错列的 10 系统
+      // = 环 + Kahn 剩余下游）。显式 runsAfter 钉死语义方向：**决策系统坐结算链尾**——先定相位(flow)/
+      // 判定伤害(hitbox)/落账(resource-apply)/数清事实(占位/计数)，单位再据**本拍终值**自治行动；
+      // whenGlobal 的同帧阶段门依赖 flow 先行。注意不可反向（runsBefore hitbox 会与既有显式链
+      // hitbox→resource-apply→self-rule 合成显式环，无解）。写 SpawnRequest/DestroyRequest 与
+      // caster/mortal 仅为同汇（请求集合语义，writer 间无需定序）。无这些系统的世界 id 被忽略。
+      runsAfter: ['flow', 'resource-apply', 'hitbox', 'zone-occupancy', 'group-count'],
       reads: ['SelfRule', 'Resource', 'Flag', 'State', 'Timer', 'StringVar', 'Transform', 'Relation'],
       writes: ['SelfRule', 'Flag', 'Resource', 'State', 'DestroyRequest', 'SpawnRequest'],
       consumes: [],
