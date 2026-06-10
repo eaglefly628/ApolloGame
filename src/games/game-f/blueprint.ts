@@ -4,7 +4,7 @@ import { overlapDetectCapability } from '@skills/atoms/overlap-detect/index.js';
 import { destroyCapability } from '@skills/atoms/destroy/index.js';
 import { timerCapability } from '@skills/atoms/timer/index.js';
 import { resourceCapability } from '@atom-skills/index.js';
-import { lifetimeCapability, hierarchyResolveCapability } from '@skills/tier1/index.js';
+import { lifetimeCapability, hierarchyResolveCapability, hierarchyCascadeCapability } from '@skills/tier1/index.js';
 import {
   triggerZoneCapability,
   hitboxCapability,
@@ -175,6 +175,7 @@ export function buildGameFBlueprint(): WorldBlueprint {
       // 胜负 + 表现
       zoneOccupancyCapability,
       hierarchyResolveCapability,
+      hierarchyCascadeCapability, // 子随父死（REQ-F-026）：棋子死亡→头顶名字一并消失
       cameraFollowCapability,
     ],
     entities,
