@@ -12,7 +12,7 @@
 - **进度阶段**：**MVP-0 已完成并超出**（自 `1330299` 起 ~10 个提交，至 `706758e`）：
   战斗涌现链全套（索敌/六角 A* 走位/普攻/攒蓝/大招/DoT/死亡级联）+ 单回合 flow + 六角棋盘 + 8 将（独立血攻/职业/势力位/静态装备）+ DCSS 美术 + **5 个 vitest 全绿**（含确定性 hash）。
 - **角色分工**：**策划/文档/符合性审查 = 策划 PF（本文档维护者）；编程 = 程序员 sessions（mainbranch）**。
-- **缺口需求现状**：**REQ-021 done**（self 寻址，引擎侧）· **REQ-022 done**（group-count，裁剪后落地）· **REQ-023 不 greenlit**（YAGNI，先重组）· REQ-F-024~028 done（六角寻路/级联/正交投影/定序）· REQ-F-029 done 引擎侧（实时血条 t2-gauge；接入被 F-031 阻塞）· REQ-F-030 done（受控停步，接入归 PE-F）· REQ-F-031 open（gauge 定序环）· **REQ-F-032 open（回合重置/实例重生，MVP-1 阻塞点，待主程裁）**。
+- **缺口需求现状**：**REQ-021 done**（self 寻址，引擎侧）· **REQ-022 done**（group-count，裁剪后落地）· **REQ-023 不 greenlit**（YAGNI，先重组）· REQ-F-024~028 done（六角寻路/级联/正交投影/定序）· REQ-F-029/030/031 done（实时血条 t2-gauge / 受控停步 / gauge 定序环已修——三者 game-f 接入归 PE-F，见 inbox F-5/F-6）· **REQ-F-032 open（回合重置/实例重生，MVP-1 阻塞点，待主程裁）**。
 - **下一步 = MVP-1**：多回合 run/round 双层流程 + 商店买人 + 经济三件套 + 关卡表。**全部以《`game-f-flow-spec.md`》为准**（§5 路线 + §6.2 开发队列）。
 
 ---
