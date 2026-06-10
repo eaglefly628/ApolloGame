@@ -61,7 +61,7 @@ describe('Game F — 自走棋 MVP-0 骨架（纯数据装配，零自走棋代�
     e.load(buildGameFBlueprint());
     expect(alive(e, 'a_guanyu_name')).toBe(true); // 死前名字在
     // 给关羽致命局部伤害 → 死亡。
-    e.world.addComponent('a_guanyu', { type: 'ResourceModify', resourceId: 'hp', amount: -999, scope: 'local' } as unknown as Resource);
+    e.world.addComponent('a_guanyu', { type: 'ResourceModify', resourceId: 'hp', amount: -99999, scope: 'local' } as unknown as Resource);
     for (let i = 0; i < 3; i++) e.world.tick();
     expect(alive(e, 'a_guanyu')).toBe(false); // 棋子销毁
     expect(alive(e, 'a_guanyu_name')).toBe(false); // 名字子体随之消失（不再残留）

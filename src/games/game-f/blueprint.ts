@@ -56,9 +56,10 @@ export const FACT_WEI = 1 << 4; // 魏
 export const FACT_WU = 1 << 5; // 吴
 
 // 战斗节奏（数据）：30 tick ≈ 0.5s/动作，看得清（此前 10/24 太快）。
-const MOVE_PERIOD = 30; // 每 30 tick 沿 A* 走一格 ≈ 0.5s
-const ATK_CD = 30; // 普攻间隔 30 tick ≈ 0.5s
+const MOVE_PERIOD = 48; // 每 48 tick 走一格 ≈ 0.8s（慢一点看清走位）
+const ATK_CD = 45; // 普攻间隔 45 tick ≈ 0.75s
 const MANA_FILL = 50; // 每次普攻攒蓝（蓝条 0→100，2 攻放一次大招）
+const HP_SCALE = 18; // 全局血量倍率（调战斗时长，目标一局 ~20s；越大越久）
 
 const xf = (x: number, y: number): Record<string, unknown> => ({ x, y, rotation: 0, scaleX: 1, scaleY: 1 });
 const sprite = (textureKey: string, zOrder: number): Record<string, unknown> => ({ textureKey, anchorX: 0.5, anchorY: 0.5, zOrder });
@@ -68,7 +69,7 @@ const strike = (targetMask: number, amount: number): PrefabTemplate => ({
   entities: {
     area: {
       Transform: xf(0, 0),
-      Shape: { kind: 'box', width: 22, height: 22 },
+      Shape: { kind: 'box', width: 18, height: 18 },
       Sensor: {},
       Tag: { flags: ZONE_FLAG },
       Hitbox: { resource: 'hp', amount, targetMask },
@@ -133,7 +134,7 @@ const ITEMS: Record<string, { name: string; hp?: number; atk?: number }> = {
   fangtian: { name: '方天画戟', hp: 60, atk: 8 }, // +60 血 +8 攻
 };
 const sumItem = (ids: string[] | undefined, k: 'hp' | 'atk'): number => (ids ?? []).reduce((s, id) => s + (ITEMS[id]?.[k] ?? 0), 0);
-const finalHp = (h: HeroSpec): number => h.hp + sumItem(h.items, 'hp');
+const finalHp = (h: HeroSpec): number => h.hp * HP_SCALE + sumItem(h.items, 'hp');
 const finalAtk = (h: HeroSpec): number => h.atk + sumItem(h.items, 'atk');
 
 // 每英雄两张模板：普攻打击(amount=最终攻击力含装备) + 大招(范围 ultSize、伤害 ultDmg)，targetMask=敌队。
