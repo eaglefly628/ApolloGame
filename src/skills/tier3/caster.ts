@@ -67,6 +67,7 @@ export const casterCapability = defineCapability({
           template: { type: 'string', describe: 'PrefabLibrary 里的模板 id' },
           at: { type: 'string', describe: "生成位置：'self'|'pointer'|'target'" },
           targetTag: { type: 'number', describe: "at:'target' 时索敌的阵营位（Tag.flags & targetTag；缺省找最近任意）" },
+          overrides: { type: 'string', describe: '实例参数覆盖(REQ-F-032)：{localId:{组件:{字段:值}}}，透传进 SpawnRequest 由 prefab 合并（槽位实体各自声明棋子 HexPos/Tag/数值）' },
         },
       },
     },
@@ -133,7 +134,8 @@ export const casterCapability = defineCapability({
             y = tt.y;
           }
 
-          world.addComponent(id, { type: 'SpawnRequest', templateId: c.template, x, y } as SpawnRequest);
+          // overrides 原样透传（REQ-F-032）：槽位实体声明自己棋子的 HexPos/Tag/数值补丁，prefab 合并。
+          world.addComponent(id, { type: 'SpawnRequest', templateId: c.template, x, y, ...(c.overrides ? { overrides: c.overrides } : {}) } as SpawnRequest);
         }
       },
     },

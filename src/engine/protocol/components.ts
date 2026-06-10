@@ -163,6 +163,10 @@ export interface Caster extends Component {
   // 锚点实体（缺省=施法者自身）：at:'self' 在它身上生成、at:'target' 以它为索敌原点并复用它的 Relation(target)。
   // 让独立的"技能绑定"实体把锚点/索敌委托给英雄，绕过"一实体一 Caster"对多技能的限制，无需 hierarchy。
   originEntity?: EntityId;
+  // 实例参数覆盖（REQ-F-032）：原样透传进产出的 SpawnRequest.overrides。
+  // 「阵容槽位实体 = Caster{onSignal:'deploy', template:英雄, overrides:{该棋子的 HexPos/Tag/数值}}」——
+  // N 槽各自展开自己的棋子 = 回合制备战重展开，纯重组、零新系统。
+  overrides?: SpawnOverrides;
 }
 
 // ── Perception ── 数据驱动 AI 的"索敌"原子（D-001，对应周期表 auto-target/range-detect）。逐实体感知
@@ -413,11 +417,15 @@ export interface StateChanged extends Component {
 }
 
 // ── K1 spawn ── 创建新实体的请求（模板展开由 assembly 层负责）
+// 实例参数覆盖（REQ-F-032）：localId → 组件类型 → 字段补丁。prefab 深拷贝模板后逐字段合并——
+// 同一模板展开异构实例（每棋子各自 HexPos/Tag/星级数值）全靠它，闭语法纯数据、无自由代码。
+export type SpawnOverrides = Record<string, Record<string, Record<string, unknown>>>;
 export interface SpawnRequest extends Component {
   readonly type: 'SpawnRequest';
   templateId: string;
   x: number;
   y: number;
+  overrides?: SpawnOverrides; // 可选：按模板 localId 定点覆盖组件字段
 }
 
 // ── K2 destroy ── 移除实体的请求（read-then-consume）
@@ -595,7 +603,9 @@ export interface Tween extends Component {
 export interface Effect extends Component {
   readonly type: 'Effect';
   onSignal: string; // 当本 tick 存在此名 Signal 时触发
-  kind: 'set-flag' | 'modify-resource' | 'set-state' | 'set-sensor' | 'set-visible' | 'destroy' | 'reset-timer';
+  // destroy-tagged（REQ-F-032 清场）：value=Tag 掩码，命中者全部发自销毁请求（运行时展开的实例
+  // id 装配期不可知，单 targetEntity 寻址不可用——批量按 Tag 是唯一的数据寻址方式）。
+  kind: 'set-flag' | 'modify-resource' | 'set-state' | 'set-sensor' | 'set-visible' | 'destroy' | 'destroy-tagged' | 'reset-timer';
   targetId: string; // 逻辑 kind：set-flag→Flag.id；modify-resource→Resource.id；set-state→State.fsmId（按 id 全局定位）
   // 物理 kind（set-sensor/set-visible/destroy，REQ-008）：要改动的目标实体 id（按实体定位，不走全局 id 路由）。
   targetEntity?: EntityId;

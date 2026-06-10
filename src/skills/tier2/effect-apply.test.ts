@@ -22,7 +22,7 @@ function effect(w: World, eid: string, ef: Omit<Effect, 'type'>): void {
 describe('T2 effect-apply — metadata', () => {
   it('id / 读 Effect+Signal / 写 Flag+Resource+State', () => {
     expect(effectApplyCapability.id).toBe('t2-effect-apply');
-    expect(effectApplyCapability.components.reads).toEqual(['Effect', 'Signal', 'Timer']);
+    expect(effectApplyCapability.components.reads).toEqual(['Effect', 'Signal', 'Timer', 'Tag']); // Tag：REQ-F-032 destroy-tagged 清场寻址
     expect(effectApplyCapability.components.writes).toEqual(['Flag', 'Resource', 'State', 'Sensor', 'Visibility', 'DestroyRequest', 'Timer']);
   });
 });

@@ -1,6 +1,6 @@
 import { defineCapability } from '@engine/core/define-capability.js';
 import { SystemPhase } from '@engine/core/types.js';
-import type { Effect, Signal, Sensor, Visibility, DestroyRequest, Timer } from '@engine/protocol/components.js';
+import type { Effect, Signal, Sensor, Visibility, DestroyRequest, Timer, Tag } from '@engine/protocol/components.js';
 import { buildConditionLookup } from './condition.js';
 import { findScoreTrace, appendScoreEvent } from '../score-trace.js';
 
@@ -46,7 +46,7 @@ export const effectApplyCapability = defineCapability({
         describe: '声明「当 onSignal 在场时施加的效果」。kind 决定改 Flag/Resource/State，targetId 按 id 全局定位。',
         fields: {
           onSignal: { type: 'string', describe: '触发该效果的信号名（event-when 产出的 Signal.name）' },
-          kind: { type: 'string', describe: "逻辑:'set-flag'|'modify-resource'|'set-state'；物理(REQ-008):'set-sensor'|'set-visible'|'destroy'；时序(REQ-009):'reset-timer'" },
+          kind: { type: 'string', describe: "逻辑:'set-flag'|'modify-resource'|'set-state'；物理(REQ-008):'set-sensor'|'set-visible'|'destroy'；批量(REQ-F-032):'destroy-tagged'(value=Tag掩码,清场)；时序(REQ-009):'reset-timer'" },
           targetId: { type: 'string', describe: '逻辑 kind：Flag.id / Resource.id / State.fsmId（按 id 全局定位）' },
           targetEntity: { type: 'EntityId', describe: '物理/时序 kind：set-sensor/set-visible/destroy/reset-timer 的目标实体 id' },
           value: { type: 'string', describe: 'modify-resource=数值；set-flag/set-sensor/set-visible=布尔；set-state=目标状态名；destroy 忽略' },
@@ -56,7 +56,7 @@ export const effectApplyCapability = defineCapability({
         },
       },
     },
-    reads: ['Effect', 'Signal', 'Timer'],
+    reads: ['Effect', 'Signal', 'Timer', 'Tag'],
     writes: ['Flag', 'Resource', 'State', 'Sensor', 'Visibility', 'DestroyRequest', 'Timer'],
     consumes: [],
   },
@@ -67,7 +67,7 @@ export const effectApplyCapability = defineCapability({
     {
       id: 'effect-apply',
       phase: SystemPhase.Commit,
-      reads: ['Effect', 'Signal', 'Timer'],
+      reads: ['Effect', 'Signal', 'Timer', 'Tag'],
       writes: ['Flag', 'Resource', 'State', 'Sensor', 'Visibility', 'DestroyRequest', 'Timer'],
       consumes: [],
       execute(world) {
@@ -156,6 +156,21 @@ export const effectApplyCapability = defineCapability({
             case 'destroy': {
               // 发 DestroyRequest，destroy-apply 消费后移除目标实体（清障碍）。
               if (ef.targetEntity) world.addComponent(ef.targetEntity, { type: 'DestroyRequest', entityId: ef.targetEntity } as DestroyRequest);
+              break;
+            }
+            // ── destroy-tagged（REQ-F-032 清场）：value=Tag 掩码，命中者全部发自销毁请求。运行时展开
+            // 的实例 id 装配期不可知 → 单 targetEntity 寻址不可用，按 Tag 批量是唯一数据寻址。集合语义
+            // 与遍历序无关；挂件由 hierarchy-cascade 级联；Commit 写请求 → 次拍 destroy-apply 统一移除。──
+            case 'destroy-tagged': {
+              const mask = Number(ef.value);
+              if (Number.isFinite(mask) && mask !== 0) {
+                for (const [tid] of world.query('Tag')) {
+                  const tg = world.getComponent<Tag>(tid, 'Tag');
+                  if (tg && (tg.flags & mask) !== 0 && !world.hasComponent(tid, 'DestroyRequest')) {
+                    world.addComponent(tid, { type: 'DestroyRequest', entityId: tid } as DestroyRequest);
+                  }
+                }
+              }
               break;
             }
             // ── reset-timer（REQ-009）：事件→重置/启动计时器。按 targetEntity 定位 Timer，elapsed=0

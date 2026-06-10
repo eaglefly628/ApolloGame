@@ -83,7 +83,12 @@
 - 引擎已落 `GridMover.haltStatusMask`（对齐 Steering 同名语义，4 测绿）：自身 Status 命中掩码 → 本 tick 不走且**节奏时钟暂停**（解控按剩余节奏恢复、无补步突进）。定序已在引擎侧用 `runsBefore:['hitbox','over-time']` 破环——CC **延迟一帧生效**（与 steering/game-d 同纪律，60tps 不可感知）。
 - 接入：① 每棋子 `GridMover` 加 `haltStatusMask: FROZEN位`；② 控制技（如诸葛"八阵图"）hitbox `setMask=FROZEN + statusDuration=持续 tick` → 被冻定身、over-time 到点解冻。全纯数据，零游戏代码。
 
-> ✅ **引擎侧 REQ-F-026/027/028/029/030 均已落地、全绿**。PE-F 上述 F-1~F-6 皆可接（你交接报告里卡主程的两件——**F-029 血条→接 F-5，F-030 定身→接 F-6——已全部解锁，可继续**），纯数据 / 零游戏代码。不要在游戏层 workaround 引擎行为；若发现新引擎缺口，写 requests.md 提主程。
+#### 任务 F-7 · REQ-F-032 接入回合重置（纯数据，MVP-1 多回合循环解锁） — status: pending
+- 引擎已落（4 验收测绿）：`SpawnRequest.overrides` + `Caster.overrides` 透传（prefab 逐字段合并，同模板异构实例）+ `Effect kind:'destroy-tagged'`（value=Tag 掩码批量清场，cascade 连挂件）。**零新系统**——阵容=槽位实体（持久），每槽 `Caster{onSignal:'deploy', template:英雄, at:'self', overrides:{main:{HexPos:{q,r}, Tag:{flags:阵营}, Resource:{...星级数值}}}}`。
+- 接线清单（flow-spec §3.3 对照）：① 棋子改成 PrefabTemplate 进 `PrefabLibrary`（含 hp Resource/Tag 占位，被 overrides 改写）；② 我方/敌方槽位实体（敌方按关卡分 `deploy_stage_N` 信号）；③ GameFlow 备战态 onEnter 置 Flag → event-when(edge) → 'deploy' 信号；结算态同法发 'wipe'；④ 两条 `Effect{onSignal:'wipe', kind:'destroy-tagged', value:各阵营掩码}`。买/卖/挪位 = 增删改槽实体（纯数据）。
+- 注意：槽位 Transform 直接放 hex 投影坐标（消除展开后一帧跳变）；信号是 edge（event-when 产出单拍），别手放常驻 Signal；星级=overrides 改 Resource max/current（每星一套数值进槽位数据）。
+
+> ✅ **引擎侧 REQ-F-026/027/028/029/030/031/032 均已落地、全绿**。PE-F 上述 F-1~F-7 皆可接（你交接报告里卡主程的两件——**F-029 血条→接 F-5，F-030 定身→接 F-6——已全部解锁，可继续**），纯数据 / 零游戏代码。不要在游戏层 workaround 引擎行为；若发现新引擎缺口，写 requests.md 提主程。
 
 ---
 

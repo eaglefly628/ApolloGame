@@ -1100,7 +1100,7 @@
 
 ---
 
-### REQ-F-032 · [2026-06-10] · 策划 PF（Game F 流转规范拉动）· 框架级 · status: **open（待主程裁决候选路线）** · 优先级: **高（MVP-1 多回合循环的唯一阻塞点）** · 类型: 真缺口（回合重置：棋子战斗实例的批量展开/清场）
+### REQ-F-032 · [2026-06-10] · 策划 PF（Game F 流转规范拉动）· 框架级 · status: **done（引擎侧：A 路线最小化变体——纯重组 + 三处收窄扩展、零新系统；game-f 接入派 PE-F，inbox F-7）** · 优先级: **高（MVP-1 多回合循环的唯一阻塞点）** · 类型: 真缺口（回合重置：棋子战斗实例的批量展开/清场）
 
 > **要表达的语义（金铲铲铁律，见 `game-f-flow-spec.md` §3.3）**：阵容跨回合**持久**（买到的英雄/星级/装备/站位），棋子的**战斗状态每回合归零**（满血满蓝重新开战）；敌方阵容每回合按**关卡表**换装。即「备战进入拍：按 我方阵容数据+关卡表 展开两队棋子实例；结算拍：清掉本回合全部战斗实例」。
 > **证伪重组**：① 现 blueprint 把棋子烘进装配期实体 → 死了就没了，flow 回 prep 也不会复活（单局版根因）；② `flow` 动作只有 set-flag/set-state/modify-resource，**无法生成/销毁实体**；③ `caster` 能按信号展开 prefab，但 `template` 是静态单模板，表达不了「按阵容数据展开 N 个异构棋子到各自 HexPos」；④ `World.snapshot/restore` 是引擎 API，**未暴露为数据可调用**，且恢复会连经济/血量一起回滚（结算 delta 要在快照外记账，语义拧巴）。→ 纯数据重组不出来，**真缺口**。
@@ -1108,6 +1108,16 @@
 > - **(A) 短暂实例式（策划倾向）**：阵容=持久数据（槽位单例：英雄码/星级/HexPos/装备），新通用能力「**按清单展开**」——flow/信号触发时遍历阵容/关卡表条目，逐条 `SpawnRequest`（模板+落点+参数覆盖）；清场=按 Tag 批量销毁（destroy 已有，或 group-effect 窄化为 destroy-by-tag）。展开的实例用 **REQ-021 self 作用域**（已 done）跑棋子内部链 → 顺手消灭「唯一 id 烘不进共享模板」的 MVP 限制，直通 Phase 2 重复棋子。更贴 ECS/确定性。
 > - **(B) 快照恢复式**：把 snapshot/restore 暴露为 flow 动作（快照点=开战拍，恢复点=结算后），结算结果（金币/血量/连胜）记在快照外的「账本」实体再回写。改动小，但「哪些状态在快照外」的边界语义易碎，且帮不到 Phase 2。
 > **YAGNI 自审**：不是为想象需求——没有它，flow-spec §3.2/§3.3 的多回合循环（MVP-1 全部内容）无法落地；且「按清单展开实体」是军团/波次刷怪/关卡装载的通用形状（Game A/D 的波次硬编码在装配期，同样受益）。
+>
+> **Lead 裁决（2026-06-10）**：**缺口成立（四条证伪逐一核实），方向采 (A)，但按宣言铁律再压一遍"先重组"后，(A) 还能更瘦——不建任何新系统。**
+> - **"按清单展开"系统回驳（A 的瘦身）**：阵容槽位本来就可以是**持久实体**，每槽挂 `Caster{onSignal:'deploy', template:英雄, at:'self'}`——N 槽收到同一信号各自展开自己的棋子，"遍历清单"被实体系统天然吃掉。买/卖=增删槽实体、换人=改 template、挪位=改 overrides 里的 HexPos，全是纯数据编辑。重组只差三块真缺口，全部收窄下沉：
+>   1. **`SpawnRequest.overrides`**（localId→组件→字段补丁）+ prefab 深拷贝后逐字段合并——同模板展开异构实例（各自 HexPos/Tag/星级数值），这是任何路线都绕不开的一块；
+>   2. **`Caster.overrides` 透传**——槽位声明自己棋子的补丁；
+>   3. **`Effect kind:'destroy-tagged'`**（value=Tag 掩码）——清场。运行时实例 id 装配期不可知，单 targetEntity 寻址不可用，按 Tag 批量是唯一数据寻址（即 REQ-023 group-effect 当年"倾向重组"的裁决维持：通用集合写仍不收，只收这枚有真实驱动的最窄动词）。
+> - **(B) 快照恢复式回驳**：把 restore 暴露成 flow 动作会击穿「snapshot=全部真相」不变量——"账本在快照外"意味着 hash/lockstep 校验要带豁免名单（确定性雷区，ScoreTrace 当年 opt-in 排除 hash 已是慎之又慎的特例）；restore 还会连 PrefabLibrary.seq / RandomSeed 一起回滚（实例 id 复用、随机序重放错位，皆隐蔽 bug）；且对 Phase 2（同模板重复棋子）毫无帮助。改动小是假象，语义债是真的。
+> - **确定性**：展开按 query 序逐槽产请求、prefab.seq 单调 → 每回合实例 id 全新且可重放；destroy-tagged 集合语义与遍历序无关；清场经 Commit 写请求 → 次拍 cascade（F-026）连挂件一并移除。
+> - 4 验收测（roster-round.integration：overrides 合并+模板隔离 / caster 透传 / **整轮循环** 三槽展开→按阵营清场连名牌→槽位幸存→次回合 id 全新 / 不误伤）。tsc + vitest 961 + build 全绿。
+> - **接入注意（已写进 inbox F-7）**：caster at:'self' 用槽位 Transform 当落点，棋子 Transform 次拍才被 grid-move 按 HexPos 投影对齐——槽位 Transform 直接放投影坐标即可消除一帧跳变；'deploy'/'wipe' 信号由 flow onEnter 置 Flag → event-when(edge) 产出；敌方按关卡换装 = 每阶段一组敌方槽实体用 'deploy_stage_N' 区分信号，纯数据。
 
 ---
 

@@ -1,6 +1,6 @@
 import { defineCapability } from '@engine/core/define-capability.js';
 import type { IWorld, Component } from '@engine/core/types.js';
-import type { SpawnRequest, PrefabLibrary, PrefabTemplate } from '@engine/protocol/components.js';
+import type { SpawnRequest, PrefabLibrary, PrefabTemplate, SpawnOverrides } from '@engine/protocol/components.js';
 
 // ═══════════════════════════════════════════════════════════════
 //  prefab —— 数据级预制模板展开（T4 授权层）。ARPG 评审里回驳了「YAML→Node 编译器」，
@@ -23,17 +23,22 @@ function findLibrary(world: IWorld): PrefabLibrary | undefined {
 }
 
 // 实例化一个模板到 (x,y)，返回新建实体 id 列表（便于测试/调试）。
-export function instantiate(world: IWorld, tmpl: PrefabTemplate, templateId: string, seq: number, x: number, y: number): string[] {
+// overrides（REQ-F-032）：localId→组件→字段补丁，深拷贝+Transform 偏移之后逐字段合并——
+// 同一模板展开异构实例（各自 HexPos/Tag/数值）。补丁亦深拷贝（请求方数据与实例隔离）。
+export function instantiate(world: IWorld, tmpl: PrefabTemplate, templateId: string, seq: number, x: number, y: number, overrides?: SpawnOverrides): string[] {
   const created: string[] = [];
   for (const [localId, comps] of Object.entries(tmpl.entities)) {
     const eid = `${templateId}#${seq}:${localId}`;
     world.createEntity(eid);
+    const patches = overrides?.[localId];
     for (const [ctype, data] of Object.entries(comps)) {
       const copy = JSON.parse(JSON.stringify(data)) as Record<string, unknown>; // 深拷贝隔离实例
       if (ctype === 'Transform') {
         copy.x = ((copy.x as number) ?? 0) + x;
         copy.y = ((copy.y as number) ?? 0) + y;
       }
+      const patch = patches?.[ctype];
+      if (patch) Object.assign(copy, JSON.parse(JSON.stringify(patch)) as Record<string, unknown>);
       world.addComponent(eid, { type: ctype, ...copy } as unknown as Component);
     }
     created.push(eid);
@@ -90,7 +95,7 @@ export const prefabCapability = defineCapability({
           if (req) {
             const tmpl = lib.templates[req.templateId];
             if (tmpl) {
-              instantiate(world, tmpl, req.templateId, lib.seq, req.x, req.y);
+              instantiate(world, tmpl, req.templateId, lib.seq, req.x, req.y, req.overrides);
               lib.seq += 1;
             }
           }
