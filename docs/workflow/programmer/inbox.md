@@ -73,7 +73,7 @@
   - in_combat 门控：优先改用「目标存在性」（aggro 锁敌才有 Relation→才 spawn），可删全局 in_combat 旗标那套；若仍要显式备战/战斗阶段，保留 flow 设 in_combat、但普攻门用 target 存在性。
 - **大招同理**：蓝条满 = 自身 Resource 阈值 → `SelfRule{when:{kind:'resource',id:'mp',cmp:'gte',value:100}, do:[{kind:'spawn',template:'ult_X',at:'target'},{kind:'modify-resource',op:'set',value:0}]}`（攒蓝/清蓝/释放一条规则搞定，替掉 mana EventWhen+Caster+两个 Effect 实体）。
 - **验收**：blueprint 行数应显著下降；`game-f.test` 全绿；同模板多实例（可加一个 2×关羽测试）各自独立攻击不串台。发现引擎不够用 → 写 requests.md 提主程，**不要在游戏层 hack**。
-- **策划审查批注（❌ 必须修复处方后再动工，2026-06-10 第 9 轮）**：上面"in_combat 门控可删/改用目标存在性"**不可照做**，会违反 flow-spec §3.3 铁律（备战/结算不动手）：
+- **策划审查批注（2026-06-10 第 9 轮提出，✅ 第 11 轮已解决——REQ-F-035 落地，按顶部 Lead 批注的 whenGlobal 写法做即可；下文论证留档）**：原处方"in_combat 门控可删/改用目标存在性"**不可照做**，会违反 flow-spec §3.3 铁律（备战/结算不动手）：
   ① deploy 在 **prep** 就展开（§3.3 prep ⑥，玩家备战要看阵），aggro 无门、立刻锁 Relation(target) → "目标存在门"备战期形同虚设，棋子会在备战期开打；结算期 wipe 前 60 拍幸存者也会继续互殴；
   ② `evaluateSelfCondition` **只读自身组件、无全局回退**（self-rule.ts 亲核）→ SelfRule 写不出 `timer ∧ 全局 in_combat`；给每单位发自身 flag 副本=群发写=Gap C 禁区。
   **正确路径**：⑴ **大招半边可立即迁**（蓝由普攻攒、普攻有门 → 备战 `mp≥100` 不可能成立，自身资源阈值天然 self）；⑵ **普攻半边等 REQ-F-035**（已提池：`SelfRule.whenGlobal?: ConditionExpr` 全局门，最小一格），落地后 `when:{timer} + whenGlobal:{flag in_combat}` 即恢复门控。验收请加一条「备战期/结算期无伤害事件」断言，防回归。
