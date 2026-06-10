@@ -194,6 +194,30 @@ describe('World 倒排索引 —— 行为与旧全扫描逐字节等价', () =>
     }
   });
 
+  it('稠密路径 vs 稀有路径 同序：组件 remove→re-add 后两路径结果逐字节一致（审计 #3 反证）', () => {
+    // 审计质疑：稠密退化(扫 entities Map)与稀有剪枝(扫 typeIndex Set 后排序)可能因
+    // remove→re-add 把实体挪到 Set 尾而产生不同序。实证：entities Map 永远是创建序
+    // （组件增删不挪实体、实体 destroy+重建获新 seq 落尾），故两路径恒一致。
+    const w = new World();
+    // 'Dense' 高频(触发稠密退化路径)；'Rare' 低频(触发稀有剪枝路径)。
+    for (let i = 0; i < 20; i++) {
+      w.createEntity(`e${i}`);
+      w.addComponent(`e${i}`, comp('Dense'));
+    }
+    // 给少数实体加稀有组件，然后 remove→re-add 让它们在 typeIndex Set 里挪到尾部。
+    for (const i of [3, 11, 17]) w.addComponent(`e${i}`, comp('Rare'));
+    w.removeComponent('e3', 'Rare');
+    w.addComponent('e3', comp('Rare')); // e3 在 Rare 的 Set 里现在排在 e11/e17 之后
+    w.removeComponent('e11', 'Dense');
+    w.addComponent('e11', comp('Dense')); // e11 在 Dense 的 Set 里挪到尾
+
+    // 稠密路径（Dense 持有者 20/20 > half）与稀有路径（Rare+Dense，候选=Rare 集 3 个）
+    // 都必须返回创建序。
+    expect(ids(w, 'Dense')).toEqual(Array.from({ length: 20 }, (_, i) => `e${i}`));
+    expect(ids(w, 'Rare', 'Dense')).toEqual(['e3', 'e11', 'e17']); // 创建序，非 Set 加入序
+    expect(ids(w, 'Dense', 'Rare')).toEqual(['e3', 'e11', 'e17']);
+  });
+
   it('规模正确性：5000 实体中查 7 个稀有实体（剪枝路径）', () => {
     const w = new World();
     const rare: EntityId[] = [];

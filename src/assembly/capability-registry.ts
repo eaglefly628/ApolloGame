@@ -101,9 +101,16 @@ export const ALL_CAPABILITIES: readonly CapabilityDefinition[] = [
   flowCapability,
 ];
 
-export const CAPABILITY_REGISTRY: ReadonlyMap<string, CapabilityDefinition> = new Map(
-  ALL_CAPABILITIES.map((c) => [c.id, c]),
-);
+export const CAPABILITY_REGISTRY: ReadonlyMap<string, CapabilityDefinition> = (() => {
+  // 重复 id 守卫：Map 构造会让后注册者静默覆盖前者（typo 或误用旧 id 时行为悄悄改变、极难查）。
+  // 注册表是 manifest→引擎的单一真相，重复即配置 bug → 构造期早失败、点名冲突两者。
+  const m = new Map<string, CapabilityDefinition>();
+  for (const cap of ALL_CAPABILITIES) {
+    if (m.has(cap.id)) throw new Error(`能力注册表出现重复 id "${cap.id}"（两个 capability 抢同一 id；改名或删其一）`);
+    m.set(cap.id, cap);
+  }
+  return m;
+})();
 
 /** id 列表 → 能力对象列表；任一 id 未注册即抛错(早失败、信息明确)。 */
 export function resolveCapabilities(ids: readonly string[]): CapabilityDefinition[] {

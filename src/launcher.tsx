@@ -526,11 +526,16 @@ function GameRunner({ gameId, onBack }: { gameId: string; onBack: () => void }) 
     };
     const loader = loaders[gameId];
     if (!loader) return;
+    // 异步竞态防护：若组件在 loader 完成前已卸载（快速切游戏 / 退回主页），late-resolve 不得再 mount
+    // ——否则前一个游戏的引擎在新画面里成孤儿后台空跑（"两个引擎"症状的一种来源）。
+    let disposed = false;
     let cleanup: (() => void) | undefined;
     loader().then(mod => {
-      if (containerRef.current) cleanup = mod.mount(containerRef.current);
+      if (disposed || !containerRef.current) return;
+      cleanup = mod.mount(containerRef.current);
+      if (disposed) { cleanup?.(); cleanup = undefined; } // mount 期间又被卸载 → 立即清
     });
-    return () => cleanup?.();
+    return () => { disposed = true; cleanup?.(); };
   }, [gameId]);
 
   return (
