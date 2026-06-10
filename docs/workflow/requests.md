@@ -1055,6 +1055,15 @@
 
 ---
 
+### REQ-F-030 · [2026-06-10] · Programmer F（Game F 控制技能）· 框架级 · status: **open** · 优先级: 中（自走棋控制/CC）· 类型: 真缺口（grid-move 缺 haltStatusMask，被控不停步）
+
+> **背景**：自走棋要"控制"（冰冻定身/眩晕/定身）——被控单位停步。game-f 已能 hitbox.setMask 置 Status 位 + over-time 定时解除，但**单位照常 grid-move 走位、无视 Status**。
+> **证伪重组（按铁律）**：grid-move 系统 `reads:['HexBoard','HexPos','GridMover','Relation']`——**不读 Status**，每 period 照走，无法被 Status 门控；数据层也停不住它（Relation 无条件删、period 无系统据 Status 改、无"按 Status 跳过移动"接缝）。**先例**：旧 `steering` 有 `haltStatusMask`（自身 Status 含位→速度归零=定身，game-d 冰冻定身即此），grid-move 取代它进网格时**漏带了这半**。→ 现有数据/能力**表达不了"被冻棋子站着不动"**。**真缺口（grid-move 功能缺口，对齐 steering 已有语义）。**
+> **建议（交主程评估/定夺）**：grid-move 加 `haltStatusMask`（读单位 Status，含该掩码则本 tick 不走；reads 加 'Status'）。确定性不变（纯位与）。落地后诸葛"八阵图"等控制技 setMask=FROZEN+statusDuration → 被冻定身、到点解冻（同 game-d，纯数据）。
+> **暂不提（已评估）**：被冻禁攻击=需 condition 加 Status 叶子（次要，先定身）；buff/增益=撞"hitbox 读活属性+self/group 寻址"一簇、非单一原子缺口（YAGNI 待重组）。
+
+---
+
 ## 需求模板（复制这段填写）
 
 ```
