@@ -1188,7 +1188,7 @@
 
 ---
 
-### REQ-F-036 · [2026-06-10] · PE-F（按 F-9 处方接入实测暴露）· 框架级 · status: **done（二刷：self-rule 补 runsAfter:['hitbox']，决策坐结算链尾）** · 优先级: **高（F-9 仍被拦死）** · 类型: 系统定序 bug（拓扑成环，同 REQ-F-025/028/031 类）
+### REQ-F-036 · [2026-06-10] · PE-F（按 F-9 处方接入实测暴露）· 框架级 · status: **done（二刷：self-rule 补 runsAfter:['hitbox']，决策坐结算链尾；game-f 已接入复核 2026-06-10——F-9 贴回 14/14 测绿，含 2×关羽不串台 + 阶段门关停断言）** · 优先级: ~~高~~（已解除） · 类型: 系统定序 bug（拓扑成环，同 REQ-F-025/028/031 类）
 
 > **复测补充（2026-06-10，1e875ef 排雷后带 whenGlobal 重接）**：环**缩了没断**——12→10 系统：`flow`/`zone-occupancy` 已被排雷边拆出 ✓，残 SCC = `self-rule, event-when, caster, prefab-spawn, hitbox, over-time, resource-apply, destroy-apply, mortal, hierarchy-cascade`。
 > **残环走向（按组件 writer→reader 边推演）**：`self-rule 写 Flag → event-when 读 Flag → 写 Signal → caster → SpawnRequest → prefab-spawn → …结算链… → hitbox → over-time → resource-apply ——(排雷边 runsAfter)→ self-rule`，主程新加的 `resource-apply 先行` 回边与 `self-rule→event-when` 前向边合围。引擎守护测「五系统同场」没带 caster/prefab/hitbox/cascade 这条链 → 没踩到。

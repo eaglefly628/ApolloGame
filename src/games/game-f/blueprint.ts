@@ -15,6 +15,7 @@ import {
   zoneOccupancyCapability,
   gaugeCapability,
   clickableCapability,
+  selfRuleCapability,
   cameraFollowCapability,
   gridMoveCapability,
   ZONE_FLAG,
@@ -28,8 +29,8 @@ import { boardEntities, project, offsetToAxial, COLS, ROWS, TILE, ORIGIN_X, ORIG
 //  整套战斗循环由通用能力涌现（= Game D 暗黑切片的数据，减去玩家操控、加一支镜像敌队）：
 //
 //    · 索敌走位 = aggro(Perception→Relation target) + steering(seek) + motion-apply   —— ai-chase（数据）
-//    · 普攻     = 本地 loop Timer → 自身唯一 EventWhen(timer 叶子,edge) 产唯一信号
-//                 → 自身 Caster(at:'target') → prefab 在目标处展开瞬时打击区              —— 自动普攻（数据）
+//    · 普攻     = 自身 loop Timer{id:'atk'} → SelfRule{timer ∧ whenGlobal(in_combat) → spawn strike at:'target'}
+//                 （F-9 self 化，REQ-021/035/036；同模板多实例各按自身节拍不串台）      —— 自动普攻（数据）
 //    · 结算     = overlap-detect → trigger-zone → hitbox(阵营 targetMask 过滤 + 伤害)
 //    · 打击自毁 = Timer{id:'life'} → lifetime → destroy（瞬时 burst，无孤儿）
 //    · 死亡     = resource-apply → mortal(hp≤0 销毁自己) → destroy
@@ -40,8 +41,8 @@ import { boardEntities, project, offsetToAxial, COLS, ROWS, TILE, ORIGIN_X, ORIG
 //    · 回合重置 = 持久槽位 Caster{overrides} 每 prep 重展开复合棋子模板（'@local:' 内部引用，REQ-F-033）
 //                 + resolution 'wipe' → destroy-tagged 按阵营清场，级联连名牌/条/sidecar（REQ-F-032）
 //
-//  MVP-0 用一组**互不相同**的英雄、每英雄**唯一** timer/signal id，规避「逻辑链按全局 id 寻址」串台
-//  （重复棋子/三星合体 待引擎 REQ-021 self 作用域，主程已落地，下一阶段接）。零自走棋 system。
+//  普攻链已 self 化（F-9：timer id 共享 'atk' + SelfRule spawn + whenGlobal 阶段门）——重复棋子/三星的
+//  **普攻与回蓝**不串台；大招半截（mp_<英雄> 蓝满→放→清）仍全局唯一 id，完整 self 化等 REQ-F-039。零自走棋 system。
 //  简化（已知，后续）：① 普攻无距离门（condition 无距离叶子）→ 打击在目标处展开，移动仅表现；
 //  ② 经济/商店/多回合循环 = MVP-1（被 REQ-F-032 回合重置阻塞，落地后按 flow-spec §6.2 队列接，见 inbox F-7）。
 // ═══════════════════════════════════════════════════════════════
@@ -67,7 +68,9 @@ export const FROZEN = 1 << 10; // 冰冻定身（REQ-F-030）：GridMover.haltSt
 // 战斗节奏（数据）：30 tick ≈ 0.5s/动作，看得清（此前 10/24 太快）。
 const MOVE_PERIOD = 48; // 每 48 tick 走一格 ≈ 0.8s（慢一点看清走位）
 const ATK_CD = 45; // 普攻间隔 45 tick ≈ 0.75s
-const MANA_FILL = 20; // 每次普攻攒蓝（0→100 = 5 攻一大招 ≈3.75s）。旧 50=1.5s 整循环：8 子异步充清，满屏蓝条频闪+大招刷屏（用户实测反馈），非 bug 是节奏数据。
+// 回蓝（F-9 后普攻无信号可挂攒蓝 → 时基回蓝，节奏对齐旧"5 攻一大招"≈3.75s 蓝满；整数节拍免浮点累积）。
+// 历史：50/攻=1.5s 整循环（满屏频闪+诸葛近永冻，用户实测）→ 20/攻 → 现 +4/9 拍 ≈0.44/拍。
+const MANA_REGEN = { period: 9, amount: 4 };
 const HP_SCALE = 18; // 全局血量倍率（调战斗时长，目标一局 ~20s；越大越久）
 
 const xf = (x: number, y: number): Record<string, unknown> => ({ x, y, rotation: 0, scaleX: 1, scaleY: 1 });
@@ -169,7 +172,6 @@ const trackColor = 0x18181c;
 const HP_Y = -26, MP_Y = -20;
 const sidecarLink = { parentId: '@local:main', localX: 0, localY: 0, localRotation: 0, localScaleX: 1, localScaleY: 1 };
 function heroTemplate(h: HeroSpec): PrefabTemplate {
-  const atk = `atk_${h.id}`;
   const mp = `mp_${h.id}`;
   const ultSig = `ult_${h.id}`;
   const bar = (localY: number, height: number): Record<string, unknown> => ({
@@ -190,10 +192,12 @@ function heroTemplate(h: HeroSpec): PrefabTemplate {
         // 取值按策划审查：相邻格 ~33px / period 48 ≈ 0.7 px/tick 为追上逻辑步的下限，0.8 留余量（瞬移=不设）。
         GridMover: { period: MOVE_PERIOD, elapsed: 0, haltStatusMask: FROZEN, glideSpeed: 0.8 },
         Mortal: { resource: 'hp', atOrBelow: 0 },
-        // 普攻链（自身闭环）：loop Timer 到点 AND in_combat → 唯一信号 → Caster 在目标处展开打击区。
-        Timer: { id: atk, elapsed: 0, duration: ATK_CD, loop: true },
-        EventWhen: { signal: atk, when: { kind: 'and', of: [{ kind: 'timer', id: atk, cmp: 'gte', value: ATK_CD - 1 }, { kind: 'flag', id: 'in_combat', equals: true }] }, mode: 'edge', armed: false },
-        Caster: { onSignal: atk, template: `strike_${h.id}`, at: 'target', targetTag: h.enemy },
+        // 普攻链（F-9 self 化，REQ-021 spawn + REQ-F-035 whenGlobal 阶段门 + REQ-F-036 二刷定序）：
+        // 自身 loop Timer 到点 ∧ 全局 in_combat → SelfRule 在自身 Relation(target) 处展开打击区。
+        // timer id 共享 'atk'（self 作用域读自身那份，同模板多实例不串台——唯一 id 脚手架已拆）；
+        // 备战/结算不动手 = whenGlobal 门（策划第 9 轮裁定）；目标存在性兜底（胜方目标死光即停手）。
+        Timer: { id: 'atk', elapsed: 0, duration: ATK_CD, loop: true },
+        SelfRule: { when: { kind: 'timer', id: 'atk', cmp: 'gte', value: ATK_CD - 1 }, whenGlobal: { kind: 'flag', id: 'in_combat', equals: true }, do: [{ kind: 'spawn', template: `strike_${h.id}`, at: 'target' }], once: false, armed: false },
         Sprite: sprite(h.key, 4),
       },
       // 头顶名牌：Text+队伍色（我方蜀=红 / 敌方魏=蓝——用户实测"三色势力分不清谁打谁"，名牌只读阵营；
@@ -211,13 +215,17 @@ function heroTemplate(h: HeroSpec): PrefabTemplate {
       hpbar: { ...bar(HP_Y, 5), Color: { tint: 0x33cc33, alpha: 1 }, Gauge: { resourceId: 'hp', fromParent: true, width: BAR_W } },
       mpbg: { ...bar(MP_Y, 3), Color: { tint: trackColor, alpha: 0.85 } },
       mpbar: { ...bar(MP_Y, 3), Color: { tint: 0x3aa0ff, alpha: 1 }, Gauge: { resourceId: mp, width: BAR_W } },
-      // 大招接线（蓝条→大招）：普攻信号攒蓝 → 蓝满发大招信号 → Caster 复用 main 的 aggro 目标展开大招 + 清蓝。
+      // 大招接线（蓝条→大招）：sidecar 时基回蓝（F-9 后普攻无信号可挂，"按攻攒蓝"改"按时回蓝"，节奏等价
+      // ≈0.44/拍；SelfRule 施于自身 mp，同模板多实例各自回蓝不串台）→ 蓝满 EventWhen 发大招信号
+      // → Caster 复用 main 的 aggro 目标展开大招 + 清蓝。
+      // ⚠️ 蓝满→放→清这半截仍走全局 id（mp_<英雄>）：复制棋子时大招会串台——完整 self 化等 REQ-F-039 rules[]。
       mana: {
         Resource: { id: mp, current: 0, min: 0, max: 100 },
+        Timer: { id: 'mana', elapsed: 0, duration: MANA_REGEN.period, loop: true },
+        SelfRule: { when: { kind: 'timer', id: 'mana', cmp: 'gte', value: MANA_REGEN.period - 1 }, do: [{ kind: 'modify-resource', op: 'add', value: MANA_REGEN.amount }], once: false, armed: false },
         EventWhen: { signal: ultSig, when: { kind: 'resource', id: mp, cmp: 'gte', value: 100 }, mode: 'edge', armed: false },
         Hierarchy: { ...sidecarLink },
       },
-      fill: { Effect: { onSignal: atk, kind: 'modify-resource', targetId: mp, op: 'add', value: MANA_FILL }, Hierarchy: { ...sidecarLink } },
       ultcast: { Caster: { onSignal: ultSig, template: `ult_${h.id}`, at: 'target', targetTag: h.enemy, originEntity: '@local:main' }, Hierarchy: { ...sidecarLink } },
       drain: { Effect: { onSignal: ultSig, kind: 'modify-resource', targetId: mp, op: 'set', value: 0 }, Hierarchy: { ...sidecarLink } },
     },
@@ -475,8 +483,10 @@ export function buildGameFBlueprint(): WorldBlueprint {
       // AI：索敌 + 六边形网格寻路走位（aggro 写目标 → grid-move 沿确定性 A* 逐格走，REQ-024）
       aggroCapability,
       gridMoveCapability,
-      // 自动普攻 + 大招：timer → event-when → caster → prefab；蓝条 攒蓝/清蓝 = effect-apply
+      // 自动普攻（F-9 self 化）：timer → self-rule(whenGlobal 门 + spawn at target) → prefab；
+      // 大招半截 + deploy/wipe/banded：event-when → caster/effect-apply（大招完整 self 化等 REQ-F-039）
       timerCapability,
+      selfRuleCapability,
       eventWhenCapability,
       effectApplyCapability,
       casterCapability,

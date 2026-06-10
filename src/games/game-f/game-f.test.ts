@@ -1,7 +1,8 @@
 import { describe, it, expect } from 'vitest';
 import { Engine } from '../../runtime/engine.js';
 import type { Resource, Flag, Shape, Status, Transform } from '@engine/protocol/components.js';
-import { buildGameFBlueprint, GAME_F_HERO_IDS, FROZEN } from './blueprint.js';
+import { buildGameFBlueprint, GAME_F_HERO_IDS, FROZEN, TEAM_A } from './blueprint.js';
+import { offsetToAxial } from './hex.js';
 
 // 棋子=运行时展开的实例（REQ-F-032 回合重置）：id 形如 `hero_<英雄>#<seq>:main`，
 // 名牌/条/大招接线是同模板兄弟实例（REQ-F-033 '@local:' 重映射）→ 测试按前缀/后缀寻址。
@@ -195,6 +196,52 @@ describe('Game F — 自走棋（纯数据装配，零自走棋代码；棋子=�
     }
     expect(moved).toBe(true); // 真在滑（不是站桩）
     expect(maxStep).toBeLessThanOrEqual(0.81); // 每拍 ≤ glideSpeed → 平滑无瞬移
+  });
+
+  it('F-9 同模板多实例普攻不串台：错拍注入第二个关羽 → 一个攻击周期窗（45 拍）内 ≥2 个独立打击区', () => {
+    const e = new Engine({ tickRate: 60 });
+    e.load(buildGameFBlueprint());
+    for (let i = 0; i < 20; i++) e.world.tick(); // 槽位关羽已展开（timer 自 tick~2 起跳）
+    // 注入第二个同模板关羽（错拍 20：两实例 timer 相位错开 → 出手拍必然不同）；坐标视觉(3,7)经 odd-r 换算
+    const a = offsetToAxial(3, 7);
+    e.world.createEntity('req2');
+    e.world.addComponent('req2', {
+      type: 'SpawnRequest',
+      templateId: 'hero_a_guanyu',
+      x: 0,
+      y: 0,
+      overrides: { main: { HexPos: { q: a.q, r: a.r }, Tag: { flags: TEAM_A }, Resource: { current: 5000, max: 5000 } } },
+    } as unknown as Resource);
+    const seen = new Set<string>();
+    for (let i = 20; i < 88; i++) {
+      // 窗口止于 88：槽位关羽的第二击在 ~91，窗内每实例至多 1 击 → ≥2 即证两实例各自出手
+      e.world.tick();
+      for (const id of e.world.getAllEntities()) if (id.startsWith('strike_a_guanyu#')) seen.add(id);
+    }
+    expect(mains(e).filter((id) => id.startsWith('hero_a_guanyu#'))).toHaveLength(2); // 双关羽都活着
+    expect(seen.size).toBeGreaterThanOrEqual(2); // 旧"唯一 id"方案此处必串台（共读首份 timer/同信号齐发）
+  });
+
+  it('whenGlobal 阶段门（REQ-F-035/F-9）：关 in_combat 立即停手（目标仍在），重开恢复出手', () => {
+    const e = new Engine({ tickRate: 60 });
+    e.load(buildGameFBlueprint());
+    for (let i = 0; i < 60; i++) e.world.tick(); // 进入战斗（已交火）
+    const setCombat = (v: boolean): void => {
+      for (const eid of e.world.getAllEntities()) {
+        const f = e.world.getComponent<Flag>(eid, 'Flag');
+        if (f && f.id === 'in_combat') f.active = v;
+      }
+    };
+    const strikes = (): number => e.world.getAllEntities().filter((id) => id.startsWith('strike_')).length;
+    setCombat(false); // 模拟 flow 关门（resolution/prep 即此语义）
+    for (let i = 0; i < 3; i++) { e.world.tick(); setCombat(false); } // 旧打击区 2 拍自毁，清残留
+    let closed = 0;
+    for (let i = 0; i < 60; i++) { e.world.tick(); setCombat(false); closed += strikes(); }
+    expect(closed).toBe(0); // 门关：目标仍在也零出手（备战/结算不动手铁律；窗口短于首个大招 ~225 拍，无 ult 干扰）
+    setCombat(true);
+    let reopened = 0;
+    for (let i = 0; i < 50 && !reopened; i++) { e.world.tick(); reopened = strikes(); }
+    expect(reopened).toBeGreaterThan(0); // 门开恢复出手
   });
 
   it('ready 开战（§3.3 操作表）：注入点击信号 → 备战提前结束进 combat（40 拍倒计时兜底仍在）', () => {
