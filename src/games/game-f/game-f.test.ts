@@ -28,15 +28,16 @@ describe('Game F — 自走棋 MVP-0 骨架（纯数据装配，零自走棋代�
     expect(run()).toBe(run());
   });
 
-  it('两队自动对冲互砍：双方都掉血（aggro+steering + timer→event-when→caster→hitbox 涌现）', () => {
+  it('两队自动对冲互砍：双方都真受伤（aggro + grid-move + timer→event-when→caster→hitbox 涌现）', () => {
     const e = new Engine({ tickRate: 60 });
     e.load(buildGameFBlueprint());
-    for (let i = 0; i < 120; i++) e.world.tick();
-    // 普攻链跑通 → 双方都已交火、有人掉血或阵亡。
-    const aHurt = A_IDS.some((id) => !alive(e, id) || hp(e, id) < 90);
-    const bHurt = B_IDS.some((id) => !alive(e, id) || hp(e, id) < 90);
-    expect(aHurt).toBe(true);
-    expect(bHurt).toBe(true);
+    const hurt = (id: string): boolean => {
+      const r = e.world.getComponent<Resource>(id, 'Resource');
+      return !alive(e, id) || (!!r && r.current < r.max); // 死了 或 current<max（真掉血）
+    };
+    for (let i = 0; i < 400; i++) e.world.tick(); // 慢节奏(0.5s/动作)：走位~1.5s 后交火，给足时间
+    expect(A_IDS.some(hurt)).toBe(true);
+    expect(B_IDS.some(hurt)).toBe(true);
   });
 
   it('战斗收敛到团灭：一方存活=0 → 其 present Flag 落 false（Zone 判胜负）', () => {

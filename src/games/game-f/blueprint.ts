@@ -45,33 +45,27 @@ export const TEAM_B = 1 << 2; // 魏
 export const SHU_RED = 0xb02a28;
 export const WEI_BLUE = 0x2962c8;
 
-// 战斗数值（数据，可调）。
-const HP = 90;
-const ATK_DMG = 11;
-const ATK_CD = 24; // 普攻间隔(tick)
+// 战斗节奏（数据）：30 tick ≈ 0.5s/动作，看得清（此前 10/24 太快）。
+const MOVE_PERIOD = 30; // 每 30 tick 沿 A* 走一格 ≈ 0.5s
+const ATK_CD = 30; // 普攻间隔 30 tick ≈ 0.5s
 
 const xf = (x: number, y: number): Record<string, unknown> => ({ x, y, rotation: 0, scaleX: 1, scaleY: 1 });
 const sprite = (textureKey: string, zOrder: number): Record<string, unknown> => ({ textureKey, anchorX: 0.5, anchorY: 0.5, zOrder });
 
-// 瞬时打击区模板：在目标处生成一个小 sensor 伤害区，2 tick 自毁（lifetime）。targetMask 决定打哪队。
-const strike = (targetMask: number): PrefabTemplate => ({
+// 瞬时打击区模板：在目标处生成小 sensor 伤害区，2 tick 自毁。targetMask 决定打哪队，amount=该英雄攻击力。
+const strike = (targetMask: number, amount: number): PrefabTemplate => ({
   entities: {
     area: {
       Transform: xf(0, 0),
       Shape: { kind: 'box', width: 22, height: 22 },
       Sensor: {},
       Tag: { flags: ZONE_FLAG },
-      Hitbox: { resource: 'hp', amount: ATK_DMG, targetMask },
+      Hitbox: { resource: 'hp', amount, targetMask },
       Timer: { id: 'life', elapsed: 0, duration: 2, loop: false },
       Sprite: sprite(F_FX_STRIKE, 6),
     },
   },
 });
-
-export const GAME_F_TEMPLATES: Record<string, PrefabTemplate> = {
-  strike_vs_a: strike(TEAM_A), // 魏 打 蜀
-  strike_vs_b: strike(TEAM_B), // 蜀 打 魏
-};
 
 interface HeroSpec {
   id: string;
@@ -79,23 +73,29 @@ interface HeroSpec {
   key: string;
   team: number;
   enemy: number;
-  strike: string;
   tint: number;
-  q: number; // axial q（列 0-6）
-  r: number; // axial r（行 0-7；r0-3=魏上半场, r4-7=蜀下半场，中线 r3/4）
+  q: number; // axial q（列）
+  r: number; // axial r（行；r0-3=魏上半场, r4-7=蜀下半场，中线 r3/4）
+  hp: number; // 血量
+  atk: number; // 攻击力（每次普攻伤害）
 }
 
-// 站位按金铲铲惯例：武将前排、谋士后排；两军各据半场、隔无人区(r3/4)相向 → grid-move 寻路对冲。
+// 站位金铲铲式（武将前排、谋士后排，隔无人区相向）+ 各英雄独立血量/攻击力（坦克高血低攻、谋士低血高攻）。
 const ROSTER: HeroSpec[] = [
-  // 蜀（TEAM_A，下半场 r5-7，红）—— 武将前排(r5)、谋士后排(r7)
-  { id: 'a_guanyu', name: '关羽', key: F_HERO.guan_yu, team: TEAM_A, enemy: TEAM_B, strike: 'strike_vs_b', tint: SHU_RED, q: 2, r: 5 },
-  { id: 'a_zhaoyun', name: '赵云', key: F_HERO.zhao_yun, team: TEAM_A, enemy: TEAM_B, strike: 'strike_vs_b', tint: SHU_RED, q: 4, r: 5 },
-  { id: 'a_zhuge', name: '诸葛亮', key: F_HERO.zhuge_liang, team: TEAM_A, enemy: TEAM_B, strike: 'strike_vs_b', tint: SHU_RED, q: 3, r: 7 },
-  // 魏（TEAM_B，上半场 r0-2，蓝）—— 武将前排(r2)、谋士后排(r0)
-  { id: 'b_zhangliao', name: '张辽', key: F_HERO.zhang_liao, team: TEAM_B, enemy: TEAM_A, strike: 'strike_vs_a', tint: WEI_BLUE, q: 2, r: 2 },
-  { id: 'b_xuchu', name: '许褚', key: F_HERO.xu_chu, team: TEAM_B, enemy: TEAM_A, strike: 'strike_vs_a', tint: WEI_BLUE, q: 4, r: 2 },
-  { id: 'b_simayi', name: '司马懿', key: F_HERO.sima_yi, team: TEAM_B, enemy: TEAM_A, strike: 'strike_vs_a', tint: WEI_BLUE, q: 3, r: 0 },
+  // 蜀（TEAM_A，下半场 r5-7，红）
+  { id: 'a_guanyu', name: '关羽', key: F_HERO.guan_yu, team: TEAM_A, enemy: TEAM_B, tint: SHU_RED, q: 2, r: 5, hp: 130, atk: 12 },
+  { id: 'a_zhaoyun', name: '赵云', key: F_HERO.zhao_yun, team: TEAM_A, enemy: TEAM_B, tint: SHU_RED, q: 4, r: 5, hp: 95, atk: 18 },
+  { id: 'a_zhuge', name: '诸葛亮', key: F_HERO.zhuge_liang, team: TEAM_A, enemy: TEAM_B, tint: SHU_RED, q: 3, r: 7, hp: 70, atk: 24 },
+  // 魏（TEAM_B，上半场 r0-2，蓝）
+  { id: 'b_zhangliao', name: '张辽', key: F_HERO.zhang_liao, team: TEAM_B, enemy: TEAM_A, tint: WEI_BLUE, q: 2, r: 2, hp: 110, atk: 15 },
+  { id: 'b_xuchu', name: '许褚', key: F_HERO.xu_chu, team: TEAM_B, enemy: TEAM_A, tint: WEI_BLUE, q: 4, r: 2, hp: 140, atk: 11 },
+  { id: 'b_simayi', name: '司马懿', key: F_HERO.sima_yi, team: TEAM_B, enemy: TEAM_A, tint: WEI_BLUE, q: 3, r: 0, hp: 72, atk: 23 },
 ];
+
+// 每英雄一张打击模板（amount=自身攻击力，targetMask=敌队）。
+export const GAME_F_TEMPLATES: Record<string, PrefabTemplate> = Object.fromEntries(
+  ROSTER.map((h) => [`strike_${h.id}`, strike(h.enemy, h.atk)]),
+);
 
 // 一个棋子（纯数据）：ai-chase + 自动普攻 + 会死。
 function unitEntity(h: HeroSpec): EntityBlueprint {
@@ -105,16 +105,16 @@ function unitEntity(h: HeroSpec): EntityBlueprint {
     Transform: xf(p.x, p.y),
     Shape: { kind: 'box', width: 16, height: 16 }, // 供打击区 overlap 命中
     Tag: { flags: h.team },
-    Resource: { id: 'hp', current: HP, min: 0, max: HP },
+    Resource: { id: 'hp', current: h.hp, min: 0, max: h.hp }, // 各英雄独立血量
     Perception: { targetTag: h.enemy, sightRadius: 0 }, // 无限视野 → aggro 锁最近敌人写 Relation(target)
     // 六边形网格寻路移动（替 steering）：HexPos=格位(SIM 真相,进 hash)；GridMover 每 period tick 沿 A* 走一格。
     HexPos: { q: h.q, r: h.r },
-    GridMover: { period: 10, elapsed: 0 },
+    GridMover: { period: MOVE_PERIOD, elapsed: 0 },
     Mortal: { resource: 'hp', atOrBelow: 0 },
     // 普攻链（自身闭环）：loop Timer 周期到点 → EventWhen(读自身唯一 timer,edge) 发唯一信号 → Caster 在目标处展开打击区。
     Timer: { id: atk, elapsed: 0, duration: ATK_CD, loop: true },
     EventWhen: { signal: atk, when: { kind: 'timer', id: atk, cmp: 'gte', value: ATK_CD - 1 }, mode: 'edge', armed: false },
-    Caster: { onSignal: atk, template: h.strike, at: 'target', targetTag: h.enemy },
+    Caster: { onSignal: atk, template: `strike_${h.id}`, at: 'target', targetTag: h.enemy },
     Sprite: sprite(h.key, 4),
   } as unknown as EntityBlueprint;
 }
@@ -124,7 +124,7 @@ function labelEntity(h: HeroSpec): EntityBlueprint {
   const p = project(h.q, h.r);
   return {
     Transform: xf(p.x, p.y - 16),
-    Text: { content: h.name, fontSize: 9, fontFamily: 'sans-serif', anchor: 'center', lineSpacing: 0 },
+    Text: { content: `${h.name}\n${h.hp}/${h.atk}`, fontSize: 9, fontFamily: 'sans-serif', anchor: 'center', lineSpacing: 1 }, // 名字 + 血量/攻击力
     Color: { tint: h.tint, alpha: 1 },
     Hierarchy: { parentId: h.id, localX: 0, localY: -16, localRotation: 0, localScaleX: 1, localScaleY: 1 },
   } as unknown as EntityBlueprint;
