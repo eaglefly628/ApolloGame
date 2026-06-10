@@ -45,13 +45,14 @@
 | REQ-F-026 | 父销毁→级联销毁子（hierarchy-cascade） | ✅ done，已接（名字随死消失） |
 | REQ-F-027 | grid-move 投影正交化（offset，不再平行四边形） | ✅ done，已接（12×12） |
 | REQ-F-028 | flow↔zone-occupancy 成环 → flow runsAfter | ✅ done，flow 回合机已接 |
-| **REQ-F-029** | **Resource→实时条/gauge 渲染**（绿血条+蓝蓝条） | 🟡 **open** —— 落地后接：每棋子挂 hp 绿条(读父 hp)+mana 蓝条(读 mp_<id>) |
-| **REQ-F-030** | **grid-move haltStatusMask**（被冻定身） | 🟡 **open** —— 落地后接：诸葛八阵图等控制技 setMask=FROZEN 真定身 |
+| REQ-F-029 | Resource→实时条/gauge 渲染（绿血条+蓝蓝条） | ✅ done（引擎 `t2-gauge`）**但 game-f 接入被 REQ-F-031 阻塞**——接入即拓扑成环（gauge 写 Shape↔战斗碰撞链回写 Resource） |
+| **REQ-F-031** | **gauge↔战斗图成环 → 需定序/移相位**（REQ-F-029 接入前置） | 🟡 **open** —— 落地后即可接血条/蓝条（§5.1 已备好整段代码） |
+| **REQ-F-030** | **grid-move haltStatusMask**（被冻定身） | ✅ **done**（主程，`GridMover.haltStatusMask`，对齐 Steering 语义）—— **接入 unblocked**：诸葛八阵图等控制技 setMask=FROZEN + 棋子 `GridMover.haltStatusMask=FROZEN` → 真定身（§5.2） |
 
 ## 4. 已知限制 / 还没做（诚实清单）
 
-- **血量/蓝量不可见**：静态数字误导、已删；**实时血条/蓝条等 REQ-F-029**（这是缺口，纯游戏层做=手写 UI 违反宣言）。
-- **控制不真**：能放冰特效+伤害，但"冻住不动"等 **REQ-F-030**（grid-move 无状态门）。被冻禁攻击=另需 condition 加 Status 叶子（次要）。
+- **血量/蓝量暂不可见**：静态数字误导、已删；**实时血条/蓝条**的引擎能力 REQ-F-029（`t2-gauge`）**已落**，但接进 game-f **触发拓扑环**（gauge 写 Shape ↔ 战斗碰撞链回写 Resource）→ 转 **REQ-F-031**（定序/移相位，主程评估中）。接入代码已写好验过、待 REQ-F-031 落地原样贴回（§5.1）。**纯游戏层做条=手写 UI 违反宣言，不走捷径。**
+- **控制暂未真**：能放冰特效+伤害，但"冻住不动"的引擎门 **REQ-F-030 已落**（`GridMover.haltStatusMask`），**待接**（§5.2，未做）。被冻禁攻击=另需 condition 加 Status 叶子（次要）。
 - **buff/增益**：未做。撞"hitbox 读活属性 + self/group 寻址"一簇，非单一原子缺口（评估为 YAGNI，待真实拉动再重组/提）。
 - **多回合循环**：flow 是**单局**（→done/gameover）。真 TFT 多回合需"棋子阵亡=倒下、回合满血归位"——而现在 mortal 直接销毁、无重生/重置机制（潜在缺口，做时再证伪/提）。
 - **备战期棋子会走动**（grid-move 不被 flow 阶段门控）——小瑕疵。
@@ -62,12 +63,56 @@
 
 ## 5. 下一步 TODO（建议优先级）
 
-1. **REQ-F-029 落地后** → 接绿血条+蓝蓝条（每棋子两个子条，Hierarchy 挂，读父 hp / mp_<id>）。**用户明确想要**。
-2. **REQ-F-030 落地后** → 接冰冻定身（诸葛八阵图真控制）。
+1. **REQ-F-031 落地后** → 接绿血条+蓝蓝条（**用户明确想要**；代码已写好验过、仅因 gauge 拓扑环回退，见 §5.1）。
+2. **REQ-F-030 已落**（`GridMover.haltStatusMask`）→ 接冰冻定身（§5.2，未做，**已 unblocked**）。
 3. **重新平衡数值**（HP_SCALE 退回合理、低攻/适中血、同 ~18s）。
 4. **羁绊**：group-count 数蜀魏吴/武将谋士 → 越阈值 buff（buff 施加先试"全局 buff 资源"重组，真不行才提 group-effect）。
 5. **商店+经济+升星**（card-pile+craft-recipe）把单局扩成 roguelike；星级=独立星星实体叠加（用户提的做法）。
 6. **多回合循环**：需"棋子倒下/复活/回合重置"——做前先证伪重组，真缺口才提。
+
+### 5.1 血条/蓝条接入（已写好验过，REQ-F-031 落地后直接贴）
+
+> 我本轮已把它接进 `blueprint.ts` 并跑测——**tsc 过、但 vitest 拓扑成环**（gauge 写 Shape ↔ 战斗碰撞链回写 Resource，详 REQ-F-031）。已回退保持全绿。**待主程按 REQ-F-031 给 gauge 定序/移相位后，原样贴回即可**（纯数据、约 5 分钟）：
+>
+> **① import**（`@skills/tier2/index.js` 块里加 `gaugeCapability`）。
+> **② capabilities 数组**（"胜负 + 表现"段，`zoneOccupancyCapability` 之后）加一行 `gaugeCapability`。
+> **③ 名字标签上移让位**：`labelEntity` 里 `Transform: xf(p.x, p.y - 34)` 且 `Hierarchy{... localY: -34 ...}`（原 -22，给两条腾头顶空间）。
+> **④ 加 `barEntities` 工厂 + 在 build 循环里 `Object.assign(entities, barEntities(h));`**（紧接 `labelEntity` 之后、`ultEntities` 之前）：
+>
+> ```ts
+> // 头顶实时状态条（REQ-F-029 gauge）：暗轨道(满宽静态,先插=在下) + 彩填充(挂 Gauge,后插=在上)。
+> // 同 zOrder=0，渲染器 stable sort 按插入序 → 填充盖轨道、露出已掉部分。hp 读父共享 'hp'；mana 读各自全局唯一 mp_<id>。
+> const BAR_W = 28;
+> const trackColor = 0x18181c;
+> function barEntities(h: HeroSpec): Record<string, EntityBlueprint> {
+>   const p = project(h.q, h.r);
+>   const bar = (localY: number, height: number): Record<string, unknown> => ({
+>     Transform: xf(p.x, p.y + localY),
+>     Shape: { kind: 'box', width: BAR_W, height },
+>     Hierarchy: { parentId: h.id, localX: 0, localY, localRotation: 0, localScaleX: 1, localScaleY: 1 },
+>   });
+>   const HP_Y = -26, MP_Y = -20;
+>   return {
+>     [`${h.id}_hpbg`]:  { ...bar(HP_Y, 5), Color: { tint: trackColor, alpha: 0.85 } } as unknown as EntityBlueprint,
+>     [`${h.id}_hpbar`]: { ...bar(HP_Y, 5), Color: { tint: 0x33cc33, alpha: 1 }, Gauge: { resourceId: 'hp', fromParent: true, width: BAR_W } } as unknown as EntityBlueprint,
+>     [`${h.id}_mpbg`]:  { ...bar(MP_Y, 3), Color: { tint: trackColor, alpha: 0.85 } } as unknown as EntityBlueprint,
+>     [`${h.id}_mpbar`]: { ...bar(MP_Y, 3), Color: { tint: 0x3aa0ff, alpha: 1 }, Gauge: { resourceId: `mp_${h.id}`, width: BAR_W } } as unknown as EntityBlueprint,
+>   };
+> }
+> ```
+>
+> **验收**：`mp_<id>` 走全局寻址（缺省，非 fromParent）已确认正确（蓝条 sidecar 实体的 Resource id 唯一）；hp 走 `fromParent`（共享 id，读棋子本体）。条随棋子由 hierarchy-resolve 带走、随死由 hierarchy-cascade 一并消失（同名字）。**贴回后务必 tsc+vitest+build 全绿再推**——若仍成环说明 REQ-F-031 未真正解掉，回报主程别硬推。
+
+### 5.2 冰冻定身接入（REQ-F-030 已落地，待接，**未写代码**）
+
+> 主程已落 **`GridMover.haltStatusMask?: number`**（src/engine/protocol/components.ts:871 / grid-move.ts:124）：棋子自身 `Status.flags` 含该掩码 → 本 tick 不走 **且节奏时钟暂停**（解控后按剩余节奏恢复，无补步突进；对齐旧 `Steering.haltStatusMask`、game-d 冰冻即此）。纯位与，确定性不变。
+>
+> **接入草案（先读真实 hitbox 置 Status 的字段再写，别照搬字段名）**：
+> 1. 定个 CC 位常量，与 team/cls/faction 位**不重叠**（现已用 `1<<0..1<<8`，可取 `const FROZEN = 1 << 10`）。
+> 2. **棋子** `GridMover` 加 `haltStatusMask: FROZEN`（被冻即定身）。
+> 3. **控制技**（诸葛"八阵图"等）的 ult 打击区 `Hitbox` 置上 Status=FROZEN + 一个时长（到点自动解冻）——`hitbox` 系统 `writes:['ResourceModify','Status','OverTime']`，**先去 `src/skills/tier2/hitbox.ts` 读它置 Status / 调度 OverTime 解控的真实字段**（我提案里写的 `setMask/statusDuration` 是建议名，未必是落地名），按真实字段填。
+> 4. 可选：被冻禁攻击=普攻 `EventWhen.when` 的 `and` 里再加一条"自身 Status 不含 FROZEN"叶子（次要，先定身就够）。
+> 5. tsc+vitest+build 全绿才推。
 
 ## 6. Gotchas（坑）
 
@@ -79,4 +124,6 @@
 
 ## 7. 分支
 
-本 session 推送到 **`claude/mainbranch`**（用户授权）+ 同步 `claude/cool-gates-4blea8`。下一个模型按其自己的 session 分支规范走；game-f 全部已在 mainbranch（最新 commit 见 git log）。
+上一轮 session 推送到 **`claude/mainbranch`**（用户授权）+ 同步 `claude/cool-gates-4blea8`；game-f 全部已在 mainbranch。
+**本轮（gauge 接入受阻 + 文档）按 session 指令推送到 `claude/cool-gates-4blea8`**（仅文档：requests.md 加 REQ-F-031 + 本交接更新；game-f 代码未改，gauge 接入已回退保持全绿）。
+> ⚠️ **REQ-F-031 / 本交接更新目前只在 `claude/cool-gates-4blea8`**——主程在 mainbranch 工作，需把 REQ-F-031 同步到 mainbranch 才会被评估/落地（同步需用户显式授权跨分支推送）。下一个模型按其自己的 session 分支规范走。

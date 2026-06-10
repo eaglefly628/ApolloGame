@@ -1043,7 +1043,7 @@
 
 ---
 
-### REQ-F-029 · [2026-06-10] · Programmer F（用户反馈：要实时血条/蓝条）· 框架级 · status: **done（引擎侧 t2-gauge；game-f 接入派 PE-F）** · 优先级: 中（自走棋观感/可读性）· 类型: 真缺口（Resource → 实时条/gauge 渲染）
+### REQ-F-029 · [2026-06-10] · Programmer F（用户反馈：要实时血条/蓝条）· 框架级 · status: **done（引擎侧 t2-gauge）；game-f 接入被 REQ-F-031 阻塞（gauge 与战斗图拓扑成环）** · 优先级: 中（自走棋观感/可读性）· 类型: 真缺口（Resource → 实时条/gauge 渲染）
 
 > **现象（用户反馈）**：棋子头顶血量/蓝量**不更新**（我的标签是装配期写死的静态数字 Text，无法随 hp/mana 变化）。用户要**绿色血条 + 蓝色蓝条**（别用数字）。
 > **证伪重组**：① 渲染器只画 `Sprite/Text/Shape`，无"按 Resource 比例画条"的路径；② Text.content 静态，无"Resource→Text"更新系统；③ Shape.width/Transform.scaleX 静态，无"Resource→scaleX"系统；④ tween 按时间不按资源。→ 现有数据/能力**画不了随资源变化的条**。**真缺口（每个有血条的游戏都要，通用表现层能力）。**
@@ -1059,6 +1059,8 @@
 > - **(A) 原载体回驳、方向采纳**：写 `Transform.scaleX` 不可行——`hierarchy-resolve`(PostResolve) 每帧 `c.scaleX = p.scaleX * localScaleX` 重写子 Transform（双 writer 打架、定序敏感）；且渲染 box 中心 pivot，缩放是**对称收缩**，做不出"左端钉死从右端掉血"。
 > - **落地载体**：gauge 写 **`Shape.width` + `Hierarchy.localX`**（localX = leftX + 现宽/2 → 左端恒在 leftX）。两字段装配期之外无并发 writer；phase Update + 组件拓扑自动让资源写者(resource-apply/flow/group-count)先行、hierarchy-resolve(PostResolve) 同帧带走——**零显式定序边、零环、渲染器零改动**。寻址按提案：`fromParent` 读宿主（共享 id 'hp'）；缺省先自身后全局（与 ResourceModify R11 auto 一致）。
 > - 引擎已落：`Gauge{resourceId, fromParent?, width, leftX?}` + `t2-gauge`（10 测：左锚恒定/全局路由/自身优先/clamp+min≠0/健壮跳过/ResourceModify→resource-apply→gauge→resolve 整链同帧/确定性）。tsc + vitest 951 + build 全绿。game-f 两子条接入归 PE-F（inbox F-5，纯数据）。
+>
+> **Programmer F 接入回报（2026-06-10）**：能力本身正确（孤立 10 测全绿），但接进 game-f 实际战斗世界 **tsc 通过、vitest 拓扑成环报错**：`Circular dependency detected among systems: event-when, caster, prefab-spawn, overlap-detect, trigger-zone, hitbox, over-time, resource-apply, destroy-apply, mortal, gauge, hierarchy-cascade`。**game-f 数据层无法自解**（capabilities 数组顺序只是平局 tiebreak、不能覆盖组件推断边；定序属能力定义层，非游戏数据层）。已**回退 game-f 接入**保持全绿，缺口转 **REQ-F-031**（同 REQ-F-025/028 类的系统定序 bug）。
 
 ---
 
@@ -1071,6 +1073,28 @@
 >
 > **Lead 裁决（2026-06-10）**：**接受——按提案落地，零修正。** 缺口核实：grid-move 不读 Status；Effect/SelfAction 闭语法写不了 GridMover.period、删不掉 Relation（aggro 每拍重写）→ 重组确实表达不了；steering 有 `haltStatusMask` 而 grid-move 取代它进网格时漏带，属**功能对齐**而非加宽引擎。落地：`GridMover.haltStatusMask?`（逐实体字段，镜像 Steering）+ grid-move 读 Status、命中掩码本 tick 不走且**节奏时钟暂停**（elapsed 不累计 → 解控按剩余节奏恢复、无补步突进）。定序：读 Status 会经「grid-move 写 Transform→overlap→trigger→hitbox」第三方链成环——**与 steering 同款破法** `runsBefore:['hitbox','over-time']`（读上一拍 Status，CC 延迟一帧生效，与 Condition→Effect 同纪律；无 hitbox 的世界两 id 被忽略）。纯位与，确定性不变。4 测（冻住不走+解冻恢复 / 时钟暂停无补步 / 掩码不匹配照走 / overlap+trigger+hitbox+over-time 五系统同场拓扑守护）。PE-F 接入纯数据：控制技 setMask=FROZEN + statusDuration + GridMover 加 haltStatusMask:FROZEN（inbox F-6）。
 > **附带提醒（CC 一拍延迟）**：与 steering/game-d 完全同纪律——技能拍上 FROZEN 的那一拍单位可能还走最后一步，次拍起定身。60tps 不可感知；lockstep 双端一致。
+
+---
+
+### REQ-F-031 · [2026-06-10] · Programmer F（REQ-F-029 接入暴露）· 框架级 · status: **open** · 优先级: 中（阻塞 game-f 接血条/蓝条；REQ-F-029 的接入前置）· 类型: 系统定序 bug（拓扑成环，同 REQ-F-025/028 类）
+
+> **现象**：把 `t2-gauge`（REQ-F-029）接进 game-f——给每棋子挂"绿 hp 条 + 蓝 mana 条"两个子实体（`Shape`+`Color`+`Gauge`+`Hierarchy`，纯数据）——tsc 过，但 `world.tick()` 抛环：`Circular dependency detected among systems: event-when, caster, prefab-spawn, overlap-detect, trigger-zone, hitbox, over-time, resource-apply, destroy-apply, mortal, gauge, hierarchy-cascade`。回退接入前 game-f 全绿，**仅加 `gaugeCapability` + gauge 子条即复现**。
+>
+> **根因（精确，逐边核过各 capability 的 reads/writes）**：`gauge` 系统 `reads:['Gauge','Resource','Hierarchy']`、`writes:['Shape','Hierarchy']`。在"碰撞→伤害→改血"战斗图里恰好闭成 5 元环（组件推断边 writer(X)→reader(X)）：
+> ```
+> gauge        --writes Shape-->  overlap-detect(reads Transform,Shape)
+> overlap-detect --writes Overlap--> trigger-zone(reads Overlap,Tag)
+> trigger-zone --writes Trigger-->  hitbox(reads Trigger,Hitbox,Tag,Status,Resource)
+> hitbox       --writes ResourceModify--> resource-apply(consumes ResourceModify, writes Resource)
+> resource-apply --writes Resource--> gauge(reads Resource)   ← 闭环
+> ```
+> 即环由 gauge **同时写 `Shape`（被 `overlap-detect` 读）+ 读 `Resource`（被 `resource-apply` 写）** 闭合。REQ-F-029 落地说明的"零环"只核了 Shape 的**直接**读者（collision/clickable/cascade/resolve 不回写 gauge 读集），**漏了 collision→trigger→hitbox→resource 这条把 Shape 经伤害管线绕回 Resource 的传递路径**——而"带血条的战斗单位"正是 gauge 的招牌用例（能力 whenToUse 自陈"血条/蓝条挂受击棋子"），战斗图+gauge 必然共存。游戏数据层无法自解（capabilities 数组序只作平局 tiebreak、覆盖不了组件推断边；显式定序属能力定义层）。
+>
+> **建议（交主程裁，二选一；纯定序/相位，不改 gauge 语义与字段，确定性不变）**：
+> - **(A 首选) gauge 移到 `SystemPhase.PostResolve` + `runsBefore:['hierarchy-resolve']`**：gauge 是**终态表现投影**——跨 phase 定序让它落在所有 Update 变更（overlap/hitbox/resource-apply）之后，读到本帧最终 Resource、写 Shape 时碰撞早已读完（无 Update 内反向边）；同相 `runsBefore` hierarchy-resolve 让 localX 同帧被消费（resolve 读 Hierarchy 写 Transform，不回写 gauge 读集→无新环）。最干净、最贴 gauge 本质。
+> - **(B) 留 Update，给 gauge 系统加 `runsAfter:['overlap-detect']`**：经核 `overlap-detect` 是战斗簇里**唯一**读 `Shape` 又传递回写 Resource 的系统（trigger-zone 读 Overlap、hitbox 读 Trigger/Resource，均不读 Shape；clickable 读 Shape 但不回写 Resource→不成环）。`runsAfter` 显式边覆盖反向组件推断边（topological-sort.ts §60）破掉 gauge→overlap，余下 resource-apply→gauge 自然把 gauge 排到链尾。更省（1 行），但依赖"唯一 Shape 回写者"这一事实，将来若有新 Shape 读者回写 Resource 需再具名（略脆，故列次选）。
+>
+> **落地后 game-f 接入（已备好，纯数据，~5 分钟）**：见交接 `docs/workflow/finish/PF-finish-list.md §5`——每棋子挂"暗轨道+彩填充"两组（hp 绿读父共享 'hp'、mana 蓝读各自 `mp_<id>`）、名字标签上移让位、capabilities 加 `gaugeCapability`，tsc+vitest+build 全绿才推。
 
 ---
 
