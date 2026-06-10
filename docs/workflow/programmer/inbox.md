@@ -55,18 +55,22 @@
 
 ### 给 PE-F（Game F · 金铲铲）
 
-#### 任务 F-1 · REQ-F-026 接入 hierarchy-cascade（1 行数据） — status: pending
+#### 任务 F-1 · REQ-F-026 接入 hierarchy-cascade（1 行数据） — status: **done（策划 PF 审查确认 2026-06-10）**
 - game-f blueprint 的 capabilities 列表加 `hierarchyCascadeCapability`（`@skills/tier1/index.js` 已导出；manifest 用 id `t1-hierarchy-cascade`）。
 - 即修「死棋子头顶名字残留」：父销毁同帧级联清后代，引擎侧已落 `f3fbc89`（8 测绿）。零游戏代码。
+- ✅ 审查证据：blueprint 已挂 `hierarchyCascadeCapability`（commit `8e417ef`）+ 测试「棋子死亡→头顶名字子体随之消失」绿。
 
-#### 任务 F-2 · REQ-021/022 自治/羁绊接线 — status: pending
+#### 任务 F-2 · REQ-021/022 自治/羁绊接线 — status: pending（按 `game-f-flow-spec.md` §5 属 Phase 2/3，**勿先于 MVP-1 动工**）
 - `self-rule`（实体本地条件→对自身施效）+ `group-count`（按 Tag 计数→Resource，阈值=event-when 重组）接金铲铲自治/羁绊。
 
-#### 任务 F-3 · REQ-F-027 接入 offset 棋盘布局（纯数据） — status: pending
+#### 任务 F-3 · REQ-F-027 接入 offset 棋盘布局（纯数据） — status: **done（策划 PF 审查确认 2026-06-10）**
 - HexBoard 加 `layout: 'offset'`（修「棋盘平行四边形」→规整矩形 + 六边形交错,金铲铲观感）+ 按需 cols/rows(~12×12)。引擎已落（缺省 'axial' 不影响现有蓝图）。零游戏代码。
+- ✅ 审查证据：blueprint board 实体已用 `layout: LAYOUT`（offset，commit `b14d109`「正交12×12棋盘」）。
 
-#### 任务 F-4 · REQ-F-028 接入 flow 回合阶段机（纯数据） — status: pending
+#### 任务 F-4 · REQ-F-028 接入 flow 回合阶段机（纯数据） — status: **done（策划 PF 审查确认 2026-06-10；注意：单局版）**
 - 备战→战斗→结算→gameover 用一份 GameFlow 数据接（flow 已加 `runsAfter:['zone-occupancy','group-count']` 破环，引擎侧已落）。
+- ✅ 审查证据：blueprint `flow_ctrl` 实体已挂 GAME_FLOW（prep→combat→resolution→done/gameover，commit `b14d109`）。
+- ⚠️ 当前是**单局版**（resolution 不回 prep）；多回合循环 = MVP-1 主体，**被 REQ-F-032 阻塞**（见下方提请）。
 
 #### 任务 F-5 · REQ-F-029 接入实时血条/蓝条（纯数据，每棋子两个子实体） — status: pending（**F-031 拓扑环已修，解锁可接**；你 PF-finish-list §5 的方案照做即可）
 - 引擎已落 `t2-gauge`（10 测绿）：每 tick 把 Resource 比例写成条实体自身 `Shape.width`，并左锚补偿 `Hierarchy.localX`（左端钉死、从右端缩）。**渲染器零改动**；跟随=hierarchy-resolve、随棋子死=hierarchy-cascade（F-1），全自动。蓝图 capabilities 加 `gaugeCapability`（id `t2-gauge`）。
@@ -80,3 +84,19 @@
 - 接入：① 每棋子 `GridMover` 加 `haltStatusMask: FROZEN位`；② 控制技（如诸葛"八阵图"）hitbox `setMask=FROZEN + statusDuration=持续 tick` → 被冻定身、over-time 到点解冻。全纯数据，零游戏代码。
 
 > ✅ **引擎侧 REQ-F-026/027/028/029/030 均已落地、全绿**。PE-F 上述 F-1~F-6 皆可接（你交接报告里卡主程的两件——**F-029 血条→接 F-5，F-030 定身→接 F-6——已全部解锁，可继续**），纯数据 / 零游戏代码。不要在游戏层 workaround 引擎行为；若发现新引擎缺口，写 requests.md 提主程。
+
+---
+
+## 提请主程裁决 · REQ-F-032 回合重置（2026-06-10，策划 PF，用户拍板提报）
+
+> **背景**：金铲铲对局流转已按真实游戏研究定稿 → **`docs/game-design/game-f-auto-chess.md` 同目录的 `game-f-flow-spec.md`**（程序员看 §3 状态机 + §4 数值表 + §6.2 开发队列）。
+> **MVP-1（多回合 run/round 双层流程 + 商店买人 + 经济三件套 + 关卡表）唯一阻塞点 = REQ-F-032**：
+> 「阵容跨回合持久、棋子战斗实例每回合满状态重开」——flow 动作无法生成/销毁实体、caster 单模板表达不了按阵容展开、snapshot/restore 未暴露为数据且会连经济一起回滚 → 纯数据重组不出来，真缺口。
+> **两条候选路线（详见 `requests.md` REQ-F-032 条目）**：(A) 短暂实例式（按阵容/关卡清单逐条 SpawnRequest 展开 + 按 Tag 清场；策划倾向——复用已 done 的 REQ-021 self 作用域，顺手解锁 Phase 2 重复棋子）；(B) 快照恢复式（snapshot/restore 暴露为 flow 动作 + 结算账本）。
+> **请主程**：裁 A/B（或更优方案）→ 引擎侧落地 → 在此回执；PE-F 据此接 MVP-1（队列见 flow-spec §6.2 P0~P2）。
+
+### 给 PE-F · MVP-1 预告（REQ-F-032 落地后开工）
+
+#### 任务 F-7 · MVP-1 多回合循环 + 商店 + 经济（纯数据） — status: blocked（等 REQ-F-032）
+- 按 `game-f-flow-spec.md` §3.2/§3.3 接 run/round 双层 GameFlow + §3.3 操作表（card-pile 商店 5 槽/craft-recipe 扣价/买经验）+ §4.1 经济三件套（收入爬坡/利息 banded/连胜金）+ §4.5 关卡表前 2 阶段。
+- 全局 id **必须**先登记 flow-spec §3.1 注册表再用（防串台纪律）；验收测试随 §6.2 队列逐项补。
