@@ -3,6 +3,7 @@
 > ⛔ **最高纲领：`docs/design/data-driven-manifesto.md`** —— 游戏=**数据**，代码只属引擎这台**确定性解释器**。
 > 一切"该数据还是代码"的争议用那把尺子裁：**"最弱的 LLM 能不能也产出一模一样的数据？" 能→数据接口；不能→拒绝，做成 DSL 或下沉成 capability。**
 > **工作规范见 `CLAUDE.md`**（分支 `claude/mainbranch` 直推不开 PR；`fetch→rebase→push`；tsc+vitest+build 全绿才推）。本文件只讲"现状/机制/待办"，不重复 CLAUDE.md。
+> **分工边界（用户 2026-06-10 拍板）**：**Lead/主程只动引擎+文档，游戏层 `src/games/**` 一律不动手**——游戏侧任务写进 `docs/workflow/programmer/inbox.md` 派发给对应 PE（PE-E=Game E、PE-F=Game F），PE 完成写 outbox。
 
 ---
 
@@ -22,7 +23,7 @@
 - ✅ ~~World.query 性能~~：**并行 session 已实施**（方案 A+单调跳排序/稠密退化；稀有查询 36×，行为逐字节不变，8 条对拍守护；详见 `query-perf-plan.md` 头部实施记录与 §4 自审表）。
 - ✅ ~~REQ-025 grid-move↔aggro 拓扑成环~~：**并行 session 已修**（`f59d0cd`，主程4 采 PE-F 1 行 `runsAfter:['aggro']` 破环——同 Update 相位 aggro(读 Transform→写 Relation)↔grid-move(读 Relation→写 Transform) 互为前驱抛环；语义：本拍 aggro 选目标→grid-move 据此走，写出的 Transform 下拍才读，确定性不变；+1 对拍守护测，现 vitest 926 绿）。**game-f 接 hex 寻路已解阻塞**（见下 🟡 Game F 项；更彻底可选：grid-move 只写 HexPos + 另设 PostResolve 投影系统，见 `requests.md` REQ-025）。
 - 🟠 **caster 可整合进 effect-apply（kind:'spawn'）+ 与 aggro 索敌去重**（governance §4 审计发现），排期收敛。
-- 🟡 各游戏 PE 侧"数据换层"（消费这批新能力）：Game E 用 flow/card-pile 重写回合流程(REQ-017)+读 ScoreTrace 回放(REQ-019,PE 已在接)；Game F 用 hex/grid-move 接金铲铲移动(REQ-024)+self-rule/group-count 接自治/羁绊。
+- 🟡 各游戏 PE 侧"数据换层"——**已正式派发，见 `programmer/inbox.md` 2026-06-10 批次（Lead 不动手）**：**归 PE-E**：flow/card-pile 重写回合流程(REQ-017/020) + ScoreTrace 回放(REQ-019,已在接)；**归 PE-F**：blueprint 加 1 行 `hierarchyCascadeCapability` 修名字残留(REQ-F-026,引擎侧已落 `f3fbc89`) + self-rule/group-count 接自治/羁绊(REQ-021/022)。（hex/grid-move 接移动 PE-F 已自接完,`3b952fe`。）
 - 🟠 沿用旧自审：**仍没真浏览器看过一帧**；浮点跨端确定性未双端验（卡牌/hex 是整数安全,steering/sqrt 仍 REQ-010 open）。
 
 ---
