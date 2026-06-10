@@ -105,6 +105,7 @@
 | `income_armed` / `dmg_armed` | Flag | §4.1 收入结算窗（prep 臂）/ §4.2 败方伤害结算窗（败方转移臂） | round 流程 → bands |
 | `income_*` / `interest_*` / `streak_*` / `dmg_stage_*` | 信号 | §4.1/§4.2 banded 结算（每窗每带至多一发） | EventWhen → Effect(gold/player_hp) |
 | `stage_up` | 信号 | round_idx>5 进位（stage_idx+1、round_idx=1） | EventWhen → Effect×2 |
+| `ready_btn` | 信号 | 点「开战」按钮（指针命中，单拍） | clickable → Effect(set-flag ready) |
 
 ### 3.2 L1 · Run 流程（局）：`run_flow` 实体一台机
 
@@ -274,7 +275,7 @@ aggro(锁最近敌) → grid-move(六角 A* 逐格走) → loop Timer(攻速) �
 | ~~P1~~ | ✅ **经济三件套落地（2026-06-10）**：收入爬坡/利息/连胜金 = armed 窗 + banded | §4.1 | 带宽注记：同窗后序 band 读改写后的 gold（利息可能含本回合收入），TUNE 改阈值即可 |
 | ~~P1~~ | ✅ **玩家伤害落地（2026-06-10）**：阶段基础伤 + 存活敌数**近似 2** | §4.2 | 真存活数待 REQ-022 group-count 接入（Phase 3 同期），换 band 值即可 |
 | ~~P1~~ | ✅ **关卡表前 2 阶段落地（2026-06-10）**：STAGES 数据 + deploy_stage_N 分流 | §4.5 | 强度暂只缩 HP（攻烘在 strike 模板；按阶段缩攻=每阶段一套 strike 模板，真需要再加）；阶段 3-5 = 填表+加 when 行 |
-| P2 | ready 开战按钮 + 备战期输入域 | §3.3 | 输入路由交主程 |
+| ~~P2~~ | ✅ **ready 开战落地（2026-06-10）**：clickable 按钮 → 'ready_btn' → set-flag ready，prep 的 ready 转移优先、40 拍倒计时兜底（金铲铲本体语义） | §3.3 | 策划批注路线原样；其余备战输入（买/卖/挪子）随商店（REQ-F-038）一起接 |
 | P2 | 等级/经验/商店概率牌袋 | §4.3/§4.4 | 纯数据 banded |
 
 ### 6.3 守住的纪律（审查通过项）

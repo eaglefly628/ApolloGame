@@ -71,7 +71,8 @@
 6. ✅ **已接入（2026-06-10）**：多回合循环/回合重置（inbox F-7）。REQ-F-033（'@local:'，5ca52ec）落地后按 §5.3 草案原样接：复合棋子模板 + 槽位 + deploy/wipe + round_flow 循环；含两回合循环验收测。
 7. ✅ **MVP-1 对齐第一批（2026-06-10，照 flow-spec §3.2/§4.1/§4.2/§4.5）**：L1 run_flow（boot/advance/victory/defeat + round_done 握手 + >5 进位 banded）、经济三件套（收入爬坡/利息/连胜金 = income_armed 窗 + 14 组 band）、阶段伤害（基础 0/2 + 存活近似 2，REQ-022 接真值待 Phase 3）、关卡表前 2 阶段（STAGES 数据：黄巾×0.45 / 董卓全强度，deploy_stage_N 按 stage_idx 分流）。game-f 测 **10/10**。
 8. ✅ **用户实测三 bug 全闭环（2026-06-10）**：蓝条频闪（MANA_FILL 50→20，节奏数据非 bug）/ 三色阵营（名牌改队伍色，art-data 已同步修订）/ 瞬移（REQ-F-034 当日提报→主程落 glideSpeed→接入 0.8，inbox F-8 done）。
-9. **余项与阻塞面（2026-06-10 深夜）**：商店三件套 P0 = **被 REQ-F-038 阻塞**（已购牌码读不出，已提池）；F-9 普攻 self 化 = **被 REQ-F-036 残环阻塞**（035 whenGlobal 已落✓、排雷拆掉 flow/zone 后仍余 10 系统 SCC，已重开附走向推演，等主程二刷；§5.4 配方含 whenGlobal 随时贴回）；大招完整 self 化 = REQ-F-037（Phase 2 才真撞）。**当前唯一可动 = ready 开战输入（P2，策划已改派 PE-F：输入命令→信号→Effect set-flag）**→ 然后 等级/经验/概率牌袋（P2）。
+9. ✅ **ready 开战已接（2026-06-10）**：clickable「开战」按钮（240,170，无 Tag 不参战）→ 'ready_btn' 信号 → Effect 置 ready → prep 的 ready 转移优先开战、40 拍倒计时兜底；验收测走真实 InputQueue 指针路（坑：裸造 Signal 实体会被 event-when 全局先清后标扫掉，活不到 Commit）。
+10. **余项与阻塞面**：商店三件套 P0 = **REQ-F-038**（等主程）；F-9 普攻 self 化 = **REQ-F-036 残环**（等主程二刷，§5.4 配方就绪）；大招 self 化 = REQ-F-037（Phase 2）。**当前可动 = 等级/经验/概率牌袋（P2，§4.3/§4.4 纯数据 banded）**——但其主要消费方是商店（概率牌袋/买经验），建议与 F-038 落地一起接，避免无消费方的空转数据。
 
 ### 5.1 血条/蓝条接入（✅ 已接入 mainbranch 2026-06-10，本节存档备查）
 

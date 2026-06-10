@@ -14,6 +14,7 @@ import {
   effectApplyCapability,
   zoneOccupancyCapability,
   gaugeCapability,
+  clickableCapability,
   cameraFollowCapability,
   gridMoveCapability,
   ZONE_FLAG,
@@ -301,15 +302,20 @@ const GAME_FLOW = {
   elapsed: 0,
   states: [
     {
-      id: 'prep', // 备战：臂收入（§4.1 banded 发钱）+ 臂展开，复位 wipe/伤害臂；40 拍后开战
+      id: 'prep', // 备战：臂收入（§4.1 banded 发钱）+ 臂展开，复位 wipe/伤害/ready；点「开战」提前打或 40 拍兜底
       onEnter: [
         { kind: 'set-flag', targetId: 'in_combat', value: false },
+        { kind: 'set-flag', targetId: 'ready', value: false }, // 每回合重臂（§3.3 操作表「开战」）
         { kind: 'set-flag', targetId: 'wipe_armed', value: false }, // 复位，下次结算再臂（edge 纪律）
         { kind: 'set-flag', targetId: 'dmg_armed', value: false },
         { kind: 'set-flag', targetId: 'deploy_armed', value: true }, // → 'deploy' + 'deploy_stage_<当前阶段>'
         { kind: 'set-flag', targetId: 'income_armed', value: true }, // → 基础收入/利息/连胜金 bands（§4.1）
       ],
-      transitions: [{ when: { kind: 'always' }, after: 40, to: 'combat', do: [{ kind: 'set-flag', targetId: 'in_combat', value: true }, { kind: 'set-flag', targetId: 'deploy_armed', value: false }, { kind: 'set-flag', targetId: 'income_armed', value: false }] }],
+      transitions: [
+        // ready 优先（玩家点「开战」提前开打，§3.3 操作表）；after 40 = PvE 倒计时兜底（金铲铲本体也是倒计时自动开战）
+        { when: { kind: 'flag', id: 'ready', equals: true }, to: 'combat', do: [{ kind: 'set-flag', targetId: 'in_combat', value: true }, { kind: 'set-flag', targetId: 'deploy_armed', value: false }, { kind: 'set-flag', targetId: 'income_armed', value: false }] },
+        { when: { kind: 'always' }, after: 40, to: 'combat', do: [{ kind: 'set-flag', targetId: 'in_combat', value: true }, { kind: 'set-flag', targetId: 'deploy_armed', value: false }, { kind: 'set-flag', targetId: 'income_armed', value: false }] },
+      ],
     },
     {
       id: 'combat', // 战斗：自动互砍 + 蓝满放大招；某队团灭(present flag→false)→结算。胜→连胜+1；败→连胜清零+臂伤害
@@ -403,6 +409,18 @@ export function buildGameFBlueprint(): WorldBlueprint {
     r_stage_idx: { Resource: { id: 'stage_idx', current: 1, min: 0, max: 99 } } as unknown as EntityBlueprint, // 阶段序号（关卡表指针）
     r_win_streak: { Resource: { id: 'win_streak', current: 0, min: 0, max: 999 } } as unknown as EntityBlueprint, // 连胜数（§4.1 连胜金）
     // —— 回合重置接线（REQ-F-032）：flow 臂旗标 → EventWhen(edge) 产单拍信号 → 槽位展开 / destroy-tagged 清场 ——
+    // —— ready 开战（§3.3 操作表，策划批注：输入→信号→set-flag 纯数据）：点按钮 → clickable 产 'ready_btn'
+    // 信号 → Effect 置 ready → prep 的 ready 转移提前开战；不点则 40 拍倒计时兜底。按钮无 Tag 不参战不被清场。
+    f_ready: { Flag: { id: 'ready', active: false } } as unknown as EntityBlueprint,
+    btn_ready: {
+      Transform: xf(240, 170), // 棋盘右下角（视口 ±355×200 内）
+      Shape: { kind: 'box', width: 64, height: 24 },
+      Clickable: { action: 'ready_btn' },
+      Text: { content: '开战', fontSize: 13, fontFamily: 'sans-serif', anchor: 'center', lineSpacing: 0 },
+      Color: { tint: 0xd4a017, alpha: 1 },
+      Sprite: { textureKey: F_FX_STRIKE, anchorX: 0.5, anchorY: 0.5, zOrder: 30 }, // 只为抬 zOrder（文本模式不绘）
+    } as unknown as EntityBlueprint,
+    eff_ready: { Effect: { onSignal: 'ready_btn', kind: 'set-flag', targetId: 'ready', value: true } } as unknown as EntityBlueprint,
     f_deploy_armed: { Flag: { id: 'deploy_armed', active: false } } as unknown as EntityBlueprint,
     f_wipe_armed: { Flag: { id: 'wipe_armed', active: false } } as unknown as EntityBlueprint,
     f_income_armed: { Flag: { id: 'income_armed', active: false } } as unknown as EntityBlueprint, // §4.1 结算窗
@@ -472,9 +490,10 @@ export function buildGameFBlueprint(): WorldBlueprint {
       lifetimeCapability,
       destroyCapability,
       mortalCapability,
-      // 胜负 + 表现
+      // 胜负 + 表现 + 输入
       zoneOccupancyCapability,
       gaugeCapability, // 实时血条/蓝条（REQ-F-029）：Resource 比例 → 条宽，PostResolve 终态投影（REQ-F-031 定序）
+      clickableCapability, // ready 开战按钮：指针命中 → 'ready_btn' 信号（引擎已对 event-when 定序）
       hierarchyResolveCapability,
       hierarchyCascadeCapability, // 子随父死（REQ-F-026）：棋子死亡→头顶名字一并消失
       cameraFollowCapability,

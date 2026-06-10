@@ -197,6 +197,25 @@ describe('Game F — 自走棋（纯数据装配，零自走棋代码；棋子=�
     expect(maxStep).toBeLessThanOrEqual(0.81); // 每拍 ≤ glideSpeed → 平滑无瞬移
   });
 
+  it('ready 开战（§3.3 操作表）：注入点击信号 → 备战提前结束进 combat（40 拍倒计时兜底仍在）', () => {
+    const e = new Engine({ tickRate: 60 });
+    e.load(buildGameFBlueprint());
+    for (let i = 0; i < 10; i++) e.world.tick();
+    expect(flag(e, 'in_combat')).toBe(false); // 备战中
+    // 走真实输入路：InputQueue 指针事件（世界坐标）→ clickable 命中「开战」按钮 → 'ready_btn' Signal → Effect 置 ready。
+    // （裸造 Signal 实体行不通：event-when 每拍全局先清后标，外来信号活不到 Commit 的 effect-apply。）
+    e.world.createEntity('input');
+    e.world.addComponent('input', { type: 'InputQueue', actions: [{ source: 'test', x: 240, y: 170, phase: 'down' }] } as unknown as Resource);
+    e.world.tick(); // 命中 → 信号 → ready=true（同拍 Commit）
+    e.world.addComponent('input', { type: 'InputQueue', actions: [] } as unknown as Resource); // 清空输入（单击语义）
+    let entered = false;
+    for (let i = 0; i < 15 && !entered; i++) {
+      e.world.tick();
+      entered = flag(e, 'in_combat');
+    }
+    expect(entered).toBe(true); // tick ~12-26 已开战 —— 远早于 40 拍兜底（兜底路径由其余测试天然覆盖）
+  });
+
   it('L1 run_flow + §4.1/§4.2 表：回合1收入2金；advance 推进；败方按阶段表扣血；round>5 进位换关卡敌阵', () => {
     const e = new Engine({ tickRate: 60 });
     e.load(buildGameFBlueprint());
