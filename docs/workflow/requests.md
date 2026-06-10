@@ -1043,7 +1043,7 @@
 
 ---
 
-### REQ-F-029 · [2026-06-10] · Programmer F（用户反馈：要实时血条/蓝条）· 框架级 · status: **done（引擎侧 t2-gauge）；game-f 接入被 REQ-F-031 阻塞（gauge 与战斗图拓扑成环）** · 优先级: 中（自走棋观感/可读性）· 类型: 真缺口（Resource → 实时条/gauge 渲染）
+### REQ-F-029 · [2026-06-10] · Programmer F（用户反馈：要实时血条/蓝条）· 框架级 · status: **done（引擎侧 t2-gauge，定序经 REQ-F-031 修正为 PostResolve；接入已解锁，PE-F 按 PF-finish-list §5 接）** · 优先级: 中（自走棋观感/可读性）· 类型: 真缺口（Resource → 实时条/gauge 渲染）
 
 > **现象（用户反馈）**：棋子头顶血量/蓝量**不更新**（我的标签是装配期写死的静态数字 Text，无法随 hp/mana 变化）。用户要**绿色血条 + 蓝色蓝条**（别用数字）。
 > **证伪重组**：① 渲染器只画 `Sprite/Text/Shape`，无"按 Resource 比例画条"的路径；② Text.content 静态，无"Resource→Text"更新系统；③ Shape.width/Transform.scaleX 静态，无"Resource→scaleX"系统；④ tween 按时间不按资源。→ 现有数据/能力**画不了随资源变化的条**。**真缺口（每个有血条的游戏都要，通用表现层能力）。**
@@ -1076,7 +1076,7 @@
 
 ---
 
-### REQ-F-031 · [2026-06-10] · Programmer F（REQ-F-029 接入暴露）· 框架级 · status: **open** · 优先级: 中（阻塞 game-f 接血条/蓝条；REQ-F-029 的接入前置）· 类型: 系统定序 bug（拓扑成环，同 REQ-F-025/028 类）
+### REQ-F-031 · [2026-06-10] · Programmer F（REQ-F-029 接入暴露）· 框架级 · status: **done（gauge 移 PostResolve + runsBefore hierarchy-resolve，采纳 PE-F 方案 A）** · 优先级: 中（阻塞 game-f 接血条/蓝条；REQ-F-029 的接入前置）· 类型: 系统定序 bug（拓扑成环，同 REQ-F-025/028 类）
 
 > **现象**：把 `t2-gauge`（REQ-F-029）接进 game-f——给每棋子挂"绿 hp 条 + 蓝 mana 条"两个子实体（`Shape`+`Color`+`Gauge`+`Hierarchy`，纯数据）——tsc 过，但 `world.tick()` 抛环：`Circular dependency detected among systems: event-when, caster, prefab-spawn, overlap-detect, trigger-zone, hitbox, over-time, resource-apply, destroy-apply, mortal, gauge, hierarchy-cascade`。回退接入前 game-f 全绿，**仅加 `gaugeCapability` + gauge 子条即复现**。
 >
@@ -1095,6 +1095,8 @@
 > - **(B) 留 Update，给 gauge 系统加 `runsAfter:['overlap-detect']`**：经核 `overlap-detect` 是战斗簇里**唯一**读 `Shape` 又传递回写 Resource 的系统（trigger-zone 读 Overlap、hitbox 读 Trigger/Resource，均不读 Shape；clickable 读 Shape 但不回写 Resource→不成环）。`runsAfter` 显式边覆盖反向组件推断边（topological-sort.ts §60）破掉 gauge→overlap，余下 resource-apply→gauge 自然把 gauge 排到链尾。更省（1 行），但依赖"唯一 Shape 回写者"这一事实，将来若有新 Shape 读者回写 Resource 需再具名（略脆，故列次选）。
 >
 > **落地后 game-f 接入（已备好，纯数据，~5 分钟）**：见交接 `docs/workflow/finish/PF-finish-list.md §5`——每棋子挂"暗轨道+彩填充"两组（hp 绿读父共享 'hp'、mana 蓝读各自 `mp_<id>`）、名字标签上移让位、capabilities 加 `gaugeCapability`，tsc+vitest+build 全绿才推。
+>
+> **Lead 裁决（2026-06-10）**：**接受——根因诊断完全正确，采纳首选方案 (A)，已落地。** 自认：F-029 落地说明里的"零环"审计只核了 Shape 的直接读者，漏了 overlap-detect(Update,读 Shape) 经伤害管线传递回写 Resource 的路径——PE-F 逐边核对无误，此环在"战斗单位挂血条"这一招牌场景必现，是我的审计盲区。**(A) 采纳理由**：gauge 本质是终态表现投影，PostResolve 是它语义上的家（"基于已解算结果再改表现"）——跨相位与全部 Update 系统无边，**结构性消环**且读到本帧最终 Resource（伤害已结算，比 Update 内更新鲜）；同相 runsBefore:['hierarchy-resolve'] 钉死"先条宽后投影"。**(B) 回驳理由**：runsAfter:['overlap-detect'] 依赖"overlap-detect 是唯一传递回写者"这一当下事实，未来任何新的 Shape 读者回写 Resource 即复发，逐边补丁治标。代价披露：Update 内 Shape 读者(overlap/clickable)读到上一帧条宽——条不参战不可点，无语义影响（已写进能力头注释）。+1 守护测（gauge+overlap+trigger+hitbox+resource-apply 同场复现环→不抛+同帧缩条）；契约测断言 phase=PostResolve。tsc + vitest 957 + build 全绿。
 
 ---
 

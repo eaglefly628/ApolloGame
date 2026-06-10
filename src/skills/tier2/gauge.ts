@@ -21,9 +21,12 @@ import type { Gauge, Resource, Hierarchy, Shape } from '@engine/protocol/compone
 //
 //  资源寻址：fromParent=true 读 Hierarchy.parentId 宿主实体的 Resource（共享 id 'hp'、hitbox 局部
 //  路由场景，全局取会取错单位）；缺省 = 先自身后全局首个同 id（与 ResourceModify 的 R11 auto 一致）。
-//  定序（零显式边）：phase Update；资源写者(resource-apply / flow / group-count，均 RMW Resource)
-//  经组件拓扑自动排前 → gauge 见本拍终值；hierarchy-resolve 在 PostResolve → localX 同帧生效。
-//  gauge 写 Shape/Hierarchy 的读者(collision/clickable/cascade/resolve)都不回写 gauge 的读集 → 无环。
+//  定序（REQ-F-031 修正）：phase **PostResolve** —— gauge 是终态表现投影。曾放 Update，但 gauge
+//  写 Shape 被 overlap-detect(Update) 读，而 overlap→trigger→hitbox→resource-apply 传递回写
+//  Resource(gauge 读) → Update 内闭成 5 元环（game-f 战斗图实测抛环）。跨相位后与 Update 系统
+//  无边：读到本帧**最终** Resource（伤害已结算），写 Shape 时碰撞早已读完；同相 runsBefore
+//  hierarchy-resolve 让 localX 同帧投影成世界坐标。Update 内 Shape 读者(overlap/clickable)读到
+//  上一帧条宽——条不参战、不可点，无语义影响。
 //  确定性：纯 IEEE +-*/ 与比较（与 camera-follow 同类）；宽度进 snapshot/hash，跨端一致。
 // ═══════════════════════════════════════════════════════════════
 
@@ -68,7 +71,10 @@ export const gaugeCapability = defineCapability({
   systems: [
     {
       id: 'gauge',
-      phase: SystemPhase.Update,
+      // REQ-F-031：终态表现投影 → PostResolve（Update 内会经 overlap→trigger→hitbox→resource-apply 闭环）。
+      phase: SystemPhase.PostResolve,
+      // 同相显式钉死：先算条宽/锚位，hierarchy-resolve 再投影世界坐标（组件拓扑本可推出，声明自文档化）。
+      runsBefore: ['hierarchy-resolve'],
       reads: ['Gauge', 'Resource', 'Hierarchy'],
       writes: ['Shape', 'Hierarchy'],
       consumes: [],

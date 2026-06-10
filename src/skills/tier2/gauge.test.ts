@@ -1,9 +1,13 @@
 import { describe, it, expect } from 'vitest';
 import { World } from '@engine/core/world.js';
+import { SystemPhase } from '@engine/core/types.js';
 import type { Gauge, Resource, Hierarchy, Shape, Transform, ResourceModify } from '@engine/protocol/components.js';
 import { gaugeCapability } from './gauge.js';
 import { hierarchyResolveCapability } from '../tier1/hierarchy-resolve.js';
 import { resourceCapability } from '@atom-skills/resource/index.js';
+import { overlapDetectCapability } from '@atom-skills/overlap-detect/index.js';
+import { triggerZoneCapability } from './trigger-zone.js';
+import { hitboxCapability } from './hitbox.js';
 
 type Cap = { systems: ReadonlyArray<Parameters<World['addSystem']>[0]> };
 function mk(...caps: Cap[]): World {
@@ -30,10 +34,12 @@ const localX = (w: World, id: string) => w.getComponent<Hierarchy>(id, 'Hierarch
 const leftEdge = (w: World, id: string) => localX(w, id) - shapeW(w, id) / 2;
 
 describe('T2 gauge（Resource 比例条，REQ-F-029）', () => {
-  it('契约：读 Gauge+Resource+Hierarchy / 写 Shape+Hierarchy / 不碰 Transform', () => {
+  it('契约：读 Gauge+Resource+Hierarchy / 写 Shape+Hierarchy / 不碰 Transform / PostResolve 终态投影', () => {
     expect(gaugeCapability.components.reads).toEqual(['Gauge', 'Resource', 'Hierarchy']);
     expect(gaugeCapability.components.writes).toEqual(['Shape', 'Hierarchy']);
     expect(gaugeCapability.components.writes).not.toContain('Transform'); // 载体裁决：不与 hierarchy-resolve 抢 Transform
+    expect(gaugeCapability.systems[0].phase).toBe(SystemPhase.PostResolve); // REQ-F-031：跨相位消 Update 战斗图环
+    expect(gaugeCapability.systems[0].runsBefore).toEqual(['hierarchy-resolve']); // 同相：先条宽后投影
   });
 
   it('fromParent 血条：读宿主共享 id "hp"，条宽=比例×满宽', () => {
@@ -138,6 +144,24 @@ describe('T2 gauge（Resource 比例条，REQ-F-029）', () => {
     const t = w.getComponent<Transform>('hpbar', 'Transform')!;
     expect(t.y).toBe(50 - 26); // 悬宿主头顶
     expect(t.x).toBe(100 + localX(w, 'hpbar')); // PostResolve 同帧把左锚补偿落到世界坐标
+  });
+
+  it('REQ-F-031 守护：gauge + overlap/trigger/hitbox/resource-apply 战斗图同场拓扑不抛（修复前 Update 内 5 元环）', () => {
+    const w = mk(
+      overlapDetectCapability as Cap,
+      triggerZoneCapability as Cap,
+      hitboxCapability as Cap,
+      resourceCapability as Cap,
+      gaugeCapability,
+      hierarchyResolveCapability as Cap,
+    );
+    host(w, 'piece', 100);
+    bar(w, 'hpbar', 'piece', { resourceId: 'hp', fromParent: true, width: 40 });
+    expect(() => { for (let i = 0; i < 3; i++) w.tick(); }).not.toThrow(); // 修复前：Circular dependency
+    // PostResolve 终态投影：同帧伤害 → 同帧缩条
+    w.addComponent('piece', { type: 'ResourceModify', resourceId: 'hp', amount: -50 } as ResourceModify);
+    w.tick();
+    expect(shapeW(w, 'hpbar')).toBe(20); // 50/100 → 半条，读到本帧最终 Resource
   });
 
   it('确定性：同数据同输入两次跑 → 同宽同锚', () => {
