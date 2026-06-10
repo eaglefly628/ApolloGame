@@ -998,6 +998,16 @@
 
 ---
 
+### REQ-026 · [2026-06-10] · Programmer F（Game F 表现层暴露）· 框架级 · status: **open** · 优先级: 中（表现 bug：挂件不随宿主死）· 类型: 真缺口（父体销毁 → 级联销毁 Hierarchy 子体）
+
+> **现象（game-f bug：方块死后名字残留）**：棋子头顶名字 = 独立实体 + `Hierarchy{parentId:棋子}` 跟随。棋子被 `mortal`→`destroy-apply` 销毁后，名字实体成**孤儿**（`hierarchy-resolve` 见父无 Transform → skip，留原地）→ **死了的方块名字残留屏幕**。
+> **通用性**：任何"挂件"（名牌/血条/武器/光环/buff 图标）都该**随宿主销毁而销毁**，不止自走棋。
+> **证伪重组（按铁律，附依据）**：① `mortal` 纯本地（要求实体自身有匹配 Resource）——名字无 hp，挂不了；② 名字给 `Mortal{resource:'hp'}` 需全局唯一 hp id，但会破坏 hitbox（按固定 'hp' 局部扣血）；③ 同体不行——一实体 Sprite+Text 互斥（`chooseRenderMode` text 优先盖掉 token）；④ `self-rule` 读自身组件，读不到"父是否还在"。→ 现有数据/能力**表达不了"子随父死"**。**真缺口。**
+> **建议（交主程裁，1 系统/小改）**：`destroy-apply` 移除实体 E 时，**连带移除所有 `Hierarchy.parentId===E` 的实体**（级联，可递归多级）；或等价 `hierarchy-cascade` 系统。确定性：纯按引用删、与遍历序无关。
+> 落地后 game-f 名字即随棋子死亡消失（零游戏改动）。其余两个 bug（名字镜像/720p）我已纯数据修。
+
+---
+
 ## 需求模板（复制这段填写）
 
 ```
