@@ -185,7 +185,9 @@ function heroTemplate(h: HeroSpec): PrefabTemplate {
         Resource: { id: 'hp', current: 1, min: 0, max: 1 }, // 占位 ← 槽位 overrides（星级数值）
         Perception: { targetTag: h.enemy, sightRadius: 0 }, // 无限视野 → aggro 锁最近敌写 Relation(target)
         HexPos: { q: 0, r: 0 }, // 占位 ← 槽位 overrides（grid-move 每拍据 HexPos 重投影）
-        GridMover: { period: MOVE_PERIOD, elapsed: 0, haltStatusMask: FROZEN }, // 被冻定身（REQ-F-030）
+        // 被冻定身（REQ-F-030）；glideSpeed=平滑滑行（REQ-F-034：HexPos 逻辑瞬步不变，Transform 恒速滑向格点）。
+        // 取值按策划审查：相邻格 ~33px / period 48 ≈ 0.7 px/tick 为追上逻辑步的下限，0.8 留余量（瞬移=不设）。
+        GridMover: { period: MOVE_PERIOD, elapsed: 0, haltStatusMask: FROZEN, glideSpeed: 0.8 },
         Mortal: { resource: 'hp', atOrBelow: 0 },
         // 普攻链（自身闭环）：loop Timer 到点 AND in_combat → 唯一信号 → Caster 在目标处展开打击区。
         Timer: { id: atk, elapsed: 0, duration: ATK_CD, loop: true },

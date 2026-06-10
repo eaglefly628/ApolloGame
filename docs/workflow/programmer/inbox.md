@@ -90,7 +90,7 @@
 - 注意：槽位 Transform 直接放 hex 投影坐标（消除展开后一帧跳变）；信号是 edge（event-when 产出单拍），别手放常驻 Signal；星级=overrides 改 Resource max/current（每星一套数值进槽位数据）。
 - **F-033 已修，复合模板解锁**：模板内指兄弟实体一律写 `'@local:<localId>'`（如名牌 `Hierarchy{parentId:'@local:main'}`），展开时自动重映射为实例 id——单位+名牌+血条+大招接线打成**一个模板**整体生灭。**坑**：sidecar（大招接线等）也要挂 `Hierarchy{parentId:'@local:main'}` 才随主体级联（级联只沿 Hierarchy 边走，光有 originEntity 会清场幸存）；未知后缀原样保留（typo 直接可见）。
 
-#### 任务 F-8 · REQ-F-034 接入平滑滑行（纯数据，1 字段/棋子） — status: pending
+#### 任务 F-8 · REQ-F-034 接入平滑滑行（纯数据，1 字段/棋子） — status: **done（PE-F 2026-06-10 回执：棋子模板 GridMover 加 glideSpeed:0.8——取策划审查下限（相邻格 ~33px/48 拍 ≈0.7，留余量）；game-f 测 +1「每拍位移 ≤0.8、真在滑」断言）**
 - 引擎已落 `GridMover.glideSpeed`（px/tick，4 测绿）：HexPos 逻辑瞬步不变（占位/寻路/hash 真相），Transform 恒速滑向格点、到点精确贴齐；缺省不设=原瞬移。冻结时滑行一并停（时间静止）。
 - 接入：每棋子 GridMover 加 `glideSpeed`。**取值**：≥ 格距/period 免视觉掉队（你的盘 tileSize≈18、period 48 → 最小 0.375；建议 0.5~1.0 之间调观感）。名牌/血条挂件经 hierarchy-resolve 自动跟滑，零额外改动；槽位展开的一帧跳变也随之消失。
 

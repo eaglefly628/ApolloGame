@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import { Engine } from '../../runtime/engine.js';
-import type { Resource, Flag, Shape, Status } from '@engine/protocol/components.js';
+import type { Resource, Flag, Shape, Status, Transform } from '@engine/protocol/components.js';
 import { buildGameFBlueprint, GAME_F_HERO_IDS, FROZEN } from './blueprint.js';
 
 // 棋子=运行时展开的实例（REQ-F-032 回合重置）：id 形如 `hero_<英雄>#<seq>:main`，
@@ -173,6 +173,28 @@ describe('Game F — 自走棋（纯数据装配，零自走棋代码；棋子=�
       expect(hp.current).toBe(hp.max); // 满状态重开（战斗状态不跨回合）
       expect(alive(e, childOf(m, 'hpbar'))).toBe(true); // 挂件随新实例整族重生
     }
+  });
+
+  it('平滑滑行（REQ-F-034 接入）：棋子 Transform 每拍位移 ≤ glideSpeed=0.8（旧为 ~18px/格瞬移），逻辑格照走', () => {
+    const e = new Engine({ tickRate: 60 });
+    e.load(buildGameFBlueprint());
+    for (let i = 0; i < 50; i++) e.world.tick(); // 展开完毕、进入走位
+    const m = mainOf(e, 'a_guanyu')!;
+    const t = (): Transform => e.world.getComponent<Transform>(m, 'Transform')!;
+    let prev = { x: t().x, y: t().y };
+    let maxStep = 0;
+    let moved = false;
+    for (let i = 0; i < 300 && alive(e, m); i++) {
+      e.world.tick();
+      if (!alive(e, m)) break;
+      const cur = t();
+      const d = Math.hypot(cur.x - prev.x, cur.y - prev.y);
+      maxStep = Math.max(maxStep, d);
+      moved ||= d > 0;
+      prev = { x: cur.x, y: cur.y };
+    }
+    expect(moved).toBe(true); // 真在滑（不是站桩）
+    expect(maxStep).toBeLessThanOrEqual(0.81); // 每拍 ≤ glideSpeed → 平滑无瞬移
   });
 
   it('L1 run_flow + §4.1/§4.2 表：回合1收入2金；advance 推进；败方按阶段表扣血；round>5 进位换关卡敌阵', () => {

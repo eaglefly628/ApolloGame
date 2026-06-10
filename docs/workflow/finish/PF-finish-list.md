@@ -70,7 +70,8 @@
 5. **商店+经济+升星**（card-pile+craft-recipe）把单局扩成 roguelike；星级=独立星星实体叠加（用户提的做法）。
 6. ✅ **已接入（2026-06-10）**：多回合循环/回合重置（inbox F-7）。REQ-F-033（'@local:'，5ca52ec）落地后按 §5.3 草案原样接：复合棋子模板 + 槽位 + deploy/wipe + round_flow 循环；含两回合循环验收测。
 7. ✅ **MVP-1 对齐第一批（2026-06-10，照 flow-spec §3.2/§4.1/§4.2/§4.5）**：L1 run_flow（boot/advance/victory/defeat + round_done 握手 + >5 进位 banded）、经济三件套（收入爬坡/利息/连胜金 = income_armed 窗 + 14 组 band）、阶段伤害（基础 0/2 + 存活近似 2，REQ-022 接真值待 Phase 3）、关卡表前 2 阶段（STAGES 数据：黄巾×0.45 / 董卓全强度，deploy_stage_N 按 stage_idx 分流）。game-f 测 **10/10**。
-8. **余项**：商店三件套（§6.2 P0，纯数据）→ ready 开战输入（P2，输入路由归主程）→ 等级/经验/概率牌袋（P2）。**用户实测三 bug**：蓝条频闪/三色已修（2faac8d）；**瞬移 = REQ-F-034 已提主程（GridMover.glideSpeed），落地即接**（每棋子模板加一字段）。
+8. ✅ **用户实测三 bug 全闭环（2026-06-10）**：蓝条频闪（MANA_FILL 50→20，节奏数据非 bug）/ 三色阵营（名牌改队伍色，art-data 已同步修订）/ 瞬移（REQ-F-034 当日提报→主程落 glideSpeed→接入 0.8，inbox F-8 done）。
+9. **余项**：商店三件套（§6.2 P0，纯数据）→ ready 开战输入（P2，输入路由归主程）→ 等级/经验/概率牌袋（P2）→ Phase 2 升星（REQ-021 已 done 待接）。
 
 ### 5.1 血条/蓝条接入（✅ 已接入 mainbranch 2026-06-10，本节存档备查）
 

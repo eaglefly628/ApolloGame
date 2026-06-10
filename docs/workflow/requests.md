@@ -1146,7 +1146,7 @@
 
 ---
 
-### REQ-F-034 · [2026-06-10] · PE-F（用户实测反馈：移动瞬移、要 smooth）· 框架级 · status: **done（GridMover.glideSpeed 恒速滑行，采纳 PE-F 方案 A）** · 优先级: 高（用户点名的观感 bug；任何网格游戏通用）· 类型: 真缺口（grid-move 视觉移动只有"逐格瞬移"）
+### REQ-F-034 · [2026-06-10] · PE-F（用户实测反馈：移动瞬移、要 smooth）· 框架级 · status: **done（GridMover.glideSpeed 恒速滑行，采纳 PE-F 方案 A；game-f 已接入 2026-06-10：glideSpeed=0.8（策划建议下限），每拍位移 ≤0.8 测绿）** · 优先级: 高（用户点名的观感 bug；任何网格游戏通用）· 类型: 真缺口（grid-move 视觉移动只有"逐格瞬移"）
 
 > **现象（用户实测）**：棋子移动是瞬移——每 `period`（48）拍 Transform 从旧格直接跳到新格（实测 x 一拍跳 18px），观感生硬。要平滑滑行。
 > **现状（读 `grid-move.ts:121,146-148` 证实）**：`syncTransform` **每拍**把 Transform 硬钉到 `project(HexPos)`（不移动也钉，"每拍保持 Transform 与格同步"）；走步拍直接改 HexPos 后再钉到新格投影点。
