@@ -1202,6 +1202,11 @@
 
 （Lead 实现后把需求移到这里，标 done + 对应 commit / 新原子名）
 
+### [2026-06-10] · 用户（直发 Lead） · 引擎原生 · status: done · 资源库 v1.2：入库主动扫描标注（Claude 视觉管线）
+- 需求：新资产入库时主动扫描打标；并评估存量 4761 张蛮力重扫成本。
+- 落地（`docs/design/asset-library.md` §5.6）：apollo `POST /api/assets/autotag`（contact-sheet 放大 6× → Claude 视觉按受控词表打标 → tags+provenance.autotag 写回索引，单张失败不拖批）；导入向导步骤④默认开「写库后自动扫描标注」。复审抓到并修正 jellyfish 错标（electric→poison）。
+- 成本结论：~$0.003/张（Opus 4.8）；存量回填 ≈$13、Batch 半价 ≈$6.5 —— 蛮扫不贵，贵的是占会话；回填走 Batch 脚本，待用户确认花费后执行。
+
 ### [2026-06-10] · 用户（直发 Lead） · 引擎原生 · status: done · 资源库 v1.1：语义标签上图 + AI 选材（接 cc3265d）
 - 需求：cc3265d 的像素扫描语义标签 ① 能显示在图片上；② 能让 AI 合理选择素材。
 - 落地（见 `docs/design/asset-library.md` §5.5）：

@@ -77,6 +77,20 @@ cc3265d 引入像素扫描语义标签（`artlib-tags.ts`：CAT_TAGS 路径级 +
   query→id+候选，console 审计）。生成 system prompt（apollo.py）已附写法与常用语义词。
   宣言尺子：LLM 产出的只是查询字符串，选材发生在确定性解释器里——同 manifest 同索引永远同图。
 
+## 5.6 入库主动扫描标注（v1.2，2026-06-10）
+
+用户拍板：**新资产入库时自动视觉打标**，与存量回填共用一条管线：
+
+- **apollo.py `POST /api/assets/autotag`**：`{entries:[{id,path}], model?}` →（路径锁 assets/ 子树）
+  每张经 `scripts/contact-sheet.mjs` 放大 6×（最近邻+棋盘底）→ Claude 视觉（默认 `claude-opus-4-8`）
+  按受控词表打 4-10 个语义标签（**只标视觉可见**，禁编设定）→ `tags` 合并写回 index.json
+  （`provenance.autotag={model,at}` 留痕）。单张失败不拖死整批；无 API key 明确报错。
+- **导入向导钩子**：步骤④「✨ 写库后自动扫描标注」默认开，写库成功后异步标注、回显样例标签；
+  标注失败不影响导入（可重试）。
+- **成本**（2026-05 价目）：~$0.003/张（Opus 4.8）；存量 4761 张回填 ≈ $13（Batch API 半价 ≈ $6.5），
+  Sonnet/Haiku 更低。回填脚本走 Batch、产出建议落 `assets/FreeArtLib/tags-scan.json`（生成式数据，
+  与人工精标 artlib-tags.ts 分层）—— 待用户确认花费后执行。
+
 ## 6. 确定性边界（不变）
 
 库与导入全在表现层：sim 只持字符串 key，像素/索引不进模拟哈希 → 填充/导入/重命名不破坏 lockstep 与录放。

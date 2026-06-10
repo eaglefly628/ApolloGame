@@ -93,6 +93,9 @@ export function AssetImportWizard({
   // 步骤④
   const [committing, setCommitting] = useState(false);
   const [result, setResult] = useState<{ ok: boolean; msg: string } | null>(null);
+  // 入库主动扫描标注（Claude 视觉 → tags 写回索引；失败不阻塞导入本身）
+  const [autotag, setAutotag] = useState(true);
+  const [tagMsg, setTagMsg] = useState<string | null>(null);
 
   // ── 文件加载 ──
   const addFiles = useCallback(async (list: FileList | File[]) => {
@@ -300,12 +303,32 @@ export function AssetImportWizard({
       if (!data.success) throw new Error(data.error ?? '未知错误');
       setResult({ ok: true, msg: `已写入 ${data.written} 个文件，索引新增 ${data.indexAdded} 条。` });
       onCommitted();
+
+      // 入库主动扫描标注：写库成功后逐张过 Claude 视觉，tags 合并回索引（异步，失败可重试不影响导入）。
+      if (autotag && entries.length > 0) {
+        setTagMsg('✨ 自动扫描标注中…');
+        try {
+          const tagRes = await fetch(`${API}/api/assets/autotag`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ entries: entries.map((e) => ({ id: e.id, path: `assets/${e.path}` })) }),
+          });
+          const tagData = (await tagRes.json()) as { success?: boolean; error?: string; tagged?: number; results?: Array<{ id: string; tags?: string[]; error?: string }> };
+          if (!tagData.success) throw new Error(tagData.error ?? '未知错误');
+          const failed = (tagData.results ?? []).filter((r) => r.error).length;
+          const sample = (tagData.results ?? []).find((r) => r.tags?.length);
+          setTagMsg(`✨ 已标注 ${tagData.tagged}/${entries.length} 张${failed ? `（${failed} 张失败，可重试）` : ''}${sample ? ` · 如 ${sample.id.split('/').pop()}: ${sample.tags!.slice(0, 5).join(' ')}` : ''}`);
+          onCommitted(); // tags 写回了索引 → 再刷一次资源库
+        } catch (te) {
+          setTagMsg(`自动标注未完成：${te instanceof Error ? te.message : String(te)}（导入不受影响，可稍后重试）`);
+        }
+      }
     } catch (e) {
       setResult({ ok: false, msg: `提交失败：${e instanceof Error ? e.message : String(e)}（需 python3 apollo.py 起 API）` });
     } finally {
       setCommitting(false);
     }
-  }, [mode, sheetFile, grid, sheetId, product, template, dropEmpty, emptyCells, effectiveRows, files, profile, onCommitted]);
+  }, [mode, sheetFile, grid, sheetId, product, template, dropEmpty, emptyCells, effectiveRows, files, profile, onCommitted, autotag]);
 
   // ── 渲染 ──
   const stepDot = (n: Step, label: string) => {
@@ -596,6 +619,10 @@ export function AssetImportWizard({
               <>
                 <div style={{ fontSize: 14 }}>将写入 <b style={{ color: SHELL.gold }}>{importableCount}</b> 个资产到 <span style={{ fontFamily: SHELL.fontMono, color: SHELL.jade }}>assets/</span> 并更新 index.json</div>
                 <div style={{ color: SHELL.dim, fontSize: 12 }}>写盘经 apollo.py API（限定 assets/ 子树）· 条目带来源溯源 provenance · 可在资源库立即看到</div>
+                <label style={{ display: 'flex', alignItems: 'center', gap: 8, color: SHELL.sub, fontSize: 12, cursor: 'pointer' }}>
+                  <input type="checkbox" checked={autotag} onChange={(e) => setAutotag(e.target.checked)} />
+                  ✨ 写库后自动扫描标注（Claude 视觉打语义标签，约 $0.003/张；需 .env 配 ANTHROPIC_API_KEY）
+                </label>
                 <button onClick={() => void commit()} style={{ ...sBtn('primary'), padding: '10px 28px', fontSize: 13 }}>提交写库 ✓</button>
               </>
             )}
@@ -604,6 +631,7 @@ export function AssetImportWizard({
               <>
                 <div style={{ fontSize: 14, color: result.ok ? SHELL.ok : SHELL.danger }}>{result.ok ? '✓ 导入完成' : '✕ 导入失败'}</div>
                 <div style={{ color: SHELL.sub, fontSize: 12, maxWidth: 560, textAlign: 'center' }}>{result.msg}</div>
+                {tagMsg && <div style={{ color: tagMsg.startsWith('✨') ? SHELL.violet : SHELL.warn, fontSize: 12, maxWidth: 560, textAlign: 'center' }}>{tagMsg}</div>}
                 {result.ok ? (
                   <button onClick={onClose} style={sBtn('primary')}>回到资源库</button>
                 ) : (
