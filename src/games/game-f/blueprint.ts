@@ -45,9 +45,15 @@ export const TEAM_B = 1 << 2; // 魏
 // 势力色（Color.tint；drawImage 不吃 tint，由头顶名字 Text 承担分色，见 art-data.md §二）。
 export const SHU_RED = 0xb02a28;
 export const WEI_BLUE = 0x2962c8;
+export const WU_GREEN = 0x1e8c5a;
 // 职业位（Tag.flags，特色/羁绊基础；与队伍位独立，不影响阵营索敌/伤害）。
 export const WARRIOR = 1 << 6; // 武将
 export const TACTICIAN = 1 << 7; // 谋士
+export const ASSASSIN = 1 << 8; // 刺客
+// 势力位（羁绊基础；与队伍/职业位独立，不影响阵营索敌/伤害）。
+export const FACT_SHU = 1 << 3; // 蜀
+export const FACT_WEI = 1 << 4; // 魏
+export const FACT_WU = 1 << 5; // 吴
 
 // 战斗节奏（数据）：30 tick ≈ 0.5s/动作，看得清（此前 10/24 太快）。
 const MOVE_PERIOD = 30; // 每 30 tick 沿 A* 走一格 ≈ 0.5s
@@ -93,7 +99,8 @@ interface HeroSpec {
   key: string;
   team: number;
   enemy: number;
-  cls: number; // 职业位（WARRIOR/TACTICIAN）—— 特色/羁绊
+  cls: number; // 职业位（WARRIOR/TACTICIAN/ASSASSIN）
+  faction: number; // 势力位（FACT_SHU/WEI/WU）—— 羁绊
   tint: number;
   q: number; // axial q（列）
   r: number; // axial r（行；r0-3=魏上半场, r4-7=蜀下半场，中线 r3/4）
@@ -102,24 +109,37 @@ interface HeroSpec {
   ult: string; // 大招名（三国感）
   ultDmg: number; // 大招伤害
   ultSize: number; // 大招范围(px)
+  items?: string[]; // 装备（ITEMS id；装配期把 hp/atk 加上）
 }
 
-// 站位金铲铲式 + 各英雄独立血量/攻击 + 职业(武将/谋士) + 专属大招（坦克高血低攻、谋士低血高攻范围大）。
+// 站位金铲铲式 + 各英雄独立血量/攻击 + 职业 + 势力(蜀魏吴) + 专属大招。每方 3 本势力 + 1 吴（跨势力羁绊样本）。
 const ROSTER: HeroSpec[] = [
-  // 蜀（TEAM_A，下半场 r7-9，红）—— 武将前排(r7)、谋士后排(r9)
-  { id: 'a_guanyu', name: '关羽', key: F_HERO.guan_yu, team: TEAM_A, enemy: TEAM_B, cls: WARRIOR, tint: SHU_RED, q: 4, r: 7, hp: 240, atk: 12, ult: '青龙偃月', ultDmg: 45, ultSize: 80 },
-  { id: 'a_zhaoyun', name: '赵云', key: F_HERO.zhao_yun, team: TEAM_A, enemy: TEAM_B, cls: WARRIOR, tint: SHU_RED, q: 7, r: 7, hp: 165, atk: 18, ult: '七进七出', ultDmg: 75, ultSize: 55 },
-  { id: 'a_zhuge', name: '诸葛亮', key: F_HERO.zhuge_liang, team: TEAM_A, enemy: TEAM_B, cls: TACTICIAN, tint: SHU_RED, q: 5, r: 9, hp: 120, atk: 24, ult: '八阵图', ultDmg: 35, ultSize: 95 },
-  // 魏（TEAM_B，上半场 r2-4，蓝）—— 武将前排(r4)、谋士后排(r2)
-  { id: 'b_zhangliao', name: '张辽', key: F_HERO.zhang_liao, team: TEAM_B, enemy: TEAM_A, cls: WARRIOR, tint: WEI_BLUE, q: 4, r: 4, hp: 200, atk: 15, ult: '突阵', ultDmg: 50, ultSize: 70 },
-  { id: 'b_xuchu', name: '许褚', key: F_HERO.xu_chu, team: TEAM_B, enemy: TEAM_A, cls: WARRIOR, tint: WEI_BLUE, q: 7, r: 4, hp: 270, atk: 11, ult: '裸衣血战', ultDmg: 42, ultSize: 78 },
-  { id: 'b_simayi', name: '司马懿', key: F_HERO.sima_yi, team: TEAM_B, enemy: TEAM_A, cls: TACTICIAN, tint: WEI_BLUE, q: 6, r: 2, hp: 130, atk: 23, ult: '鬼谋', ultDmg: 40, ultSize: 88 },
+  // 蜀（TEAM_A，下半场，红）+ 吴·周瑜（绿）
+  { id: 'a_guanyu', name: '关羽', key: F_HERO.guan_yu, team: TEAM_A, enemy: TEAM_B, cls: WARRIOR, faction: FACT_SHU, tint: SHU_RED, q: 4, r: 7, hp: 240, atk: 12, ult: '青龙偃月', ultDmg: 45, ultSize: 80, items: ['yuxi'] },
+  { id: 'a_zhaoyun', name: '赵云', key: F_HERO.zhao_yun, team: TEAM_A, enemy: TEAM_B, cls: WARRIOR, faction: FACT_SHU, tint: SHU_RED, q: 7, r: 7, hp: 165, atk: 18, ult: '七进七出', ultDmg: 75, ultSize: 55, items: ['qinggang'] },
+  { id: 'a_zhuge', name: '诸葛亮', key: F_HERO.zhuge_liang, team: TEAM_A, enemy: TEAM_B, cls: TACTICIAN, faction: FACT_SHU, tint: SHU_RED, q: 5, r: 9, hp: 120, atk: 24, ult: '八阵图', ultDmg: 35, ultSize: 95 },
+  { id: 'a_zhouyu', name: '周瑜', key: F_HERO.zhou_yu, team: TEAM_A, enemy: TEAM_B, cls: TACTICIAN, faction: FACT_WU, tint: WU_GREEN, q: 9, r: 8, hp: 115, atk: 21, ult: '火烧赤壁', ultDmg: 38, ultSize: 92 },
+  // 魏（TEAM_B，上半场，蓝）+ 吴·甘宁（绿）
+  { id: 'b_zhangliao', name: '张辽', key: F_HERO.zhang_liao, team: TEAM_B, enemy: TEAM_A, cls: WARRIOR, faction: FACT_WEI, tint: WEI_BLUE, q: 4, r: 4, hp: 200, atk: 15, ult: '突阵', ultDmg: 50, ultSize: 70, items: ['fangtian'] },
+  { id: 'b_xuchu', name: '许褚', key: F_HERO.xu_chu, team: TEAM_B, enemy: TEAM_A, cls: WARRIOR, faction: FACT_WEI, tint: WEI_BLUE, q: 7, r: 4, hp: 270, atk: 11, ult: '裸衣血战', ultDmg: 42, ultSize: 78 },
+  { id: 'b_simayi', name: '司马懿', key: F_HERO.sima_yi, team: TEAM_B, enemy: TEAM_A, cls: TACTICIAN, faction: FACT_WEI, tint: WEI_BLUE, q: 6, r: 2, hp: 130, atk: 23, ult: '鬼谋', ultDmg: 40, ultSize: 88, items: ['qinggang'] },
+  { id: 'b_ganning', name: '甘宁', key: F_HERO.gan_ning, team: TEAM_B, enemy: TEAM_A, cls: ASSASSIN, faction: FACT_WU, tint: WU_GREEN, q: 9, r: 3, hp: 145, atk: 20, ult: '锦帆突袭', ultDmg: 60, ultSize: 50 },
 ];
 
-// 每英雄两张模板：普攻打击(amount=攻击力) + 大招(范围 ultSize、伤害 ultDmg)，targetMask=敌队。
+// 装备（数据）：物品=属性加成；英雄装配期把 hp/atk 加上（静态）。合成(2件→1件)走商店 craft-recipe，待商店阶段。
+const ITEMS: Record<string, { name: string; hp?: number; atk?: number }> = {
+  yuxi: { name: '玉玺', hp: 120 }, // +120 血（坦克件）
+  qinggang: { name: '青釭剑', atk: 12 }, // +12 攻（输出件）
+  fangtian: { name: '方天画戟', hp: 60, atk: 8 }, // +60 血 +8 攻
+};
+const sumItem = (ids: string[] | undefined, k: 'hp' | 'atk'): number => (ids ?? []).reduce((s, id) => s + (ITEMS[id]?.[k] ?? 0), 0);
+const finalHp = (h: HeroSpec): number => h.hp + sumItem(h.items, 'hp');
+const finalAtk = (h: HeroSpec): number => h.atk + sumItem(h.items, 'atk');
+
+// 每英雄两张模板：普攻打击(amount=最终攻击力含装备) + 大招(范围 ultSize、伤害 ultDmg)，targetMask=敌队。
 export const GAME_F_TEMPLATES: Record<string, PrefabTemplate> = Object.fromEntries(
   ROSTER.flatMap((h) => [
-    [`strike_${h.id}`, strike(h.enemy, h.atk)],
+    [`strike_${h.id}`, strike(h.enemy, finalAtk(h))],
     [`ult_${h.id}`, ultTemplate(h.enemy, h.ultDmg, h.ultSize)],
   ]),
 );
@@ -131,8 +151,8 @@ function unitEntity(h: HeroSpec): EntityBlueprint {
   return {
     Transform: xf(p.x, p.y),
     Shape: { kind: 'box', width: 16, height: 16 }, // 供打击区 overlap 命中
-    Tag: { flags: h.team | h.cls },
-    Resource: { id: 'hp', current: h.hp, min: 0, max: h.hp }, // 各英雄独立血量
+    Tag: { flags: h.team | h.cls | h.faction },
+    Resource: { id: 'hp', current: finalHp(h), min: 0, max: finalHp(h) }, // 独立血量 + 装备加成
     Perception: { targetTag: h.enemy, sightRadius: 0 }, // 无限视野 → aggro 锁最近敌人写 Relation(target)
     // 六边形网格寻路移动（替 steering）：HexPos=格位(SIM 真相,进 hash)；GridMover 每 period tick 沿 A* 走一格。
     HexPos: { q: h.q, r: h.r },
@@ -152,7 +172,7 @@ function labelEntity(h: HeroSpec): EntityBlueprint {
   const p = project(h.q, h.r);
   return {
     Transform: xf(p.x, p.y - 16),
-    Text: { content: `${h.name}\n${h.hp}/${h.atk}`, fontSize: 9, fontFamily: 'sans-serif', anchor: 'center', lineSpacing: 1 }, // 名字 + 血量/攻击力
+    Text: { content: `${h.name}\n${finalHp(h)}/${finalAtk(h)}${h.items?.length ? '\n' + h.items.map((i) => ITEMS[i].name).join('·') : ''}`, fontSize: 9, fontFamily: 'sans-serif', anchor: 'center', lineSpacing: 1 }, // 名字 + 最终血量/攻击 + 装备
     Color: { tint: h.tint, alpha: 1 },
     Hierarchy: { parentId: h.id, localX: 0, localY: -16, localRotation: 0, localScaleX: 1, localScaleY: 1 },
   } as unknown as EntityBlueprint;

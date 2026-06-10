@@ -19,10 +19,12 @@ const svgUnit = (fill: string, stroke: string, glyph: string): string =>
 
 const GLYPH_WARRIOR = `<rect x="11" y="14" width="2" height="5" fill="#fbbf24"/>`; // 武将=剑条
 const GLYPH_TACTICIAN = `<circle cx="12" cy="16" r="2" fill="#c4b5fd"/>`; // 谋士=法球
+const GLYPH_ASSASSIN = `<path d="M10 14 L14 14 L12 19 Z" fill="#fca5a5"/>`; // 刺客=匕首
 
 // 势力色（占位）。
 const SHU = { fill: 'rgb(176,42,40)', stroke: 'rgb(255,150,130)' }; // 蜀·红
 const WEI = { fill: 'rgb(41,98,200)', stroke: 'rgb(150,190,255)' }; // 魏·蓝
+const WU = { fill: 'rgb(30,140,90)', stroke: 'rgb(130,235,180)' }; // 吴·绿
 
 // 英雄 textureKey（每英雄唯一 → 后期 1:1 换 DCSS 皮，见 art-data.md）。
 export const F_HERO = {
@@ -32,6 +34,8 @@ export const F_HERO = {
   zhang_liao: 'f.hero.zhang_liao',
   xu_chu: 'f.hero.xu_chu',
   sima_yi: 'f.hero.sima_yi',
+  zhou_yu: 'f.hero.zhou_yu',
+  gan_ning: 'f.hero.gan_ning',
 } as const;
 export const F_FX_STRIKE = 'f.fx.strike';
 export const F_HEX_WARM = 'f.hex.warm'; // 蜀半场暖色六边形格
@@ -48,6 +52,8 @@ export const GAME_F_ASSETS: AssetManifest = [
   { kind: 'texture', key: F_HERO.zhang_liao, src: svgUnit(WEI.fill, WEI.stroke, GLYPH_WARRIOR), width: 24, height: 24 },
   { kind: 'texture', key: F_HERO.xu_chu, src: svgUnit(WEI.fill, WEI.stroke, GLYPH_WARRIOR), width: 24, height: 24 },
   { kind: 'texture', key: F_HERO.sima_yi, src: svgUnit(WEI.fill, WEI.stroke, GLYPH_TACTICIAN), width: 24, height: 24 },
+  { kind: 'texture', key: F_HERO.zhou_yu, src: svgUnit(WU.fill, WU.stroke, GLYPH_TACTICIAN), width: 24, height: 24 },
+  { kind: 'texture', key: F_HERO.gan_ning, src: svgUnit(WU.fill, WU.stroke, GLYPH_ASSASSIN), width: 24, height: 24 },
   // 普攻打击特效：黄白斩光。
   {
     kind: 'texture',
