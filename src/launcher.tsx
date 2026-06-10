@@ -97,6 +97,16 @@ const GAMES: GameEntry[] = [
     icon: '⚔️',
     status: 'playable',
   },
+  {
+    id: 'game-f',
+    title: 'Game F: Pixel Three Kingdoms',
+    subtitle: '像素三分天下 · 自走棋',
+    description: '三国自走棋切片：蜀(红) vs 魏(蓝) 全自动对战——棋子索敌、走位、普攻互砍、团灭判胜。AI/普攻/战斗全由通用能力（aggro/steering/caster/hitbox/mortal）涌现，零自走棋专属代码。三国感靠命名+势力分色，美术走 DCSS 换皮。',
+    color: '#2a1f12',
+    accentColor: '#e0a83e',
+    icon: '♟️',
+    status: 'playable',
+  },
 ];
 
 // ══════════════════════════════════════
@@ -512,6 +522,7 @@ function GameRunner({ gameId, onBack }: { gameId: string; onBack: () => void }) 
       'game-c': () => import('./game-c.js'),
       'game-e': () => import('./game-e.js'),
       'game-d': () => import('./game-d.js'),
+      'game-f': () => import('./game-f.js'),
     };
     const loader = loaders[gameId];
     if (!loader) return;
