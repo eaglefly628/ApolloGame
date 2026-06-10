@@ -94,3 +94,64 @@ describe('card-pile · 确定性', () => {
     expect(played(a)).toEqual(played(b));
   });
 });
+
+// ── REQ-F-040：商店三件套的引擎缺口 —— A1 牌码产物化 + A2 可负担门 ──
+import type { Resource } from '@engine/protocol/components.js';
+describe('card-pile · REQ-F-040 据码分发 + 可负担门', () => {
+  const wShop = (deck: number[], gold: number): World => {
+    const w = w0(deck, 1); // 商店语义：一次一张
+    const p = w.getComponent<CardPile>('table', 'CardPile')!;
+    p.playedCodeResource = 'bought_code';
+    p.playCosts = [{ id: 'gold', amount: 3 }];
+    w.createEntity('r_code');
+    w.addComponent('r_code', { type: 'Resource', id: 'bought_code', current: 0, min: 0, max: 9999 } as Resource);
+    w.createEntity('r_gold');
+    w.addComponent('r_gold', { type: 'Resource', id: 'gold', current: gold, min: 0, max: 999 } as Resource);
+    return w;
+  };
+  const rget = (w: World, e: string) => w.getComponent<Resource>(e, 'Resource')!.current;
+
+  it('A1+A2 成交：扣金 + 牌码写进 Resource + 出牌区/补牌照常', () => {
+    const w = wShop([207, 105, 313], 10);
+    w.tick(); // hand=[207]
+    setInput(w, [{ source: 'p1', key: 'play', values: [0] }]);
+    w.tick();
+    expect(rget(w, 'r_gold')).toBe(7); // 扣 3
+    expect(rget(w, 'r_code')).toBe(207); // 码产物化 → banded EventWhen 可分发
+    expect(flag(w)).toBe(true); // 成交脉冲
+    expect(pile(w).hand).toEqual([105]); // 补牌
+  });
+
+  it('A2 拒单：付不起 → 牌不丢、不扣金、不写码、Flag 不脉冲（修"买不起也丢牌"时序硬伤）', () => {
+    const w = wShop([207, 105], 2); // gold 2 < 3
+    w.tick();
+    setInput(w, [{ source: 'p1', key: 'play', values: [0] }]);
+    w.tick();
+    expect(pile(w).hand).toEqual([207]); // 牌还在
+    expect(rget(w, 'r_gold')).toBe(2); // 分文未扣
+    expect(rget(w, 'r_code')).toBe(0); // 码未写
+    expect(flag(w)).toBe(false); // 不脉冲
+    expect(played(w)).toEqual([]); // 出牌区空
+  });
+
+  it('零迁移：不设两字段 → 行为与旧 card-pile 完全一致（无 Resource 也不抛）', () => {
+    const w = w0([2, 5, 7], 2);
+    w.tick();
+    setInput(w, [{ source: 'p1', key: 'play', values: [0] }]);
+    expect(() => w.tick()).not.toThrow();
+    expect(flag(w)).toBe(true);
+  });
+
+  it('定序守护：card-pile(RMW Resource/Flag) + flow/zone/group/self-rule/resource-apply 同场不抛（含潜伏 flow↔card-pile Flag 互锁）', async () => {
+    const { flowCapability } = await import('../tier3/flow.js');
+    const { zoneOccupancyCapability } = await import('./zone-occupancy.js');
+    const { groupCountCapability } = await import('./group-count.js');
+    const { selfRuleCapability } = await import('./self-rule.js');
+    const { resourceCapability } = await import('@atom-skills/resource/index.js');
+    const w = wShop([207], 10);
+    for (const cap of [flowCapability, zoneOccupancyCapability, groupCountCapability, selfRuleCapability, resourceCapability]) {
+      for (const s of cap.systems) w.addSystem(s as never);
+    }
+    expect(() => { for (let i = 0; i < 3; i++) w.tick(); }).not.toThrow(); // 修复前互 RMW 抛环
+  });
+});

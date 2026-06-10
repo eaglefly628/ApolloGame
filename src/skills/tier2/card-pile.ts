@@ -1,7 +1,7 @@
 import { defineCapability } from '@engine/core/define-capability.js';
 import { SystemPhase } from '@engine/core/types.js';
 import type { IWorld } from '@engine/core/types.js';
-import type { CardPile, PlayedHand, Flag, InputQueue, Card } from '@engine/protocol/components.js';
+import type { CardPile, PlayedHand, Flag, InputQueue, Card, Resource } from '@engine/protocol/components.js';
 import { decodeCard } from './card-play.js';
 import { findByComponentId } from '@engine/core/query.js';
 
@@ -80,8 +80,8 @@ export const cardPileCapability = defineCapability({
         },
       },
     },
-    reads: ['CardPile', 'InputQueue', 'PlayedHand', 'Flag'],
-    writes: ['CardPile', 'PlayedHand', 'Flag'],
+    reads: ['CardPile', 'InputQueue', 'PlayedHand', 'Flag', 'Resource'],
+    writes: ['CardPile', 'PlayedHand', 'Flag', 'Resource'],
     consumes: [],
   },
 
@@ -91,12 +91,19 @@ export const cardPileCapability = defineCapability({
     {
       id: 'card-pile',
       phase: SystemPhase.Update,
-      runsBefore: ['poker-eval', 'card-score-pass'],
-      reads: ['CardPile', 'InputQueue', 'PlayedHand', 'Flag'],
-      writes: ['CardPile', 'PlayedHand', 'Flag'],
+      // REQ-F-040：A1/A2 让本系统 RMW Resource（扣代价/写牌码）→ 与 flow/zone-occupancy/group-count/
+      // self-rule/resource-apply 的互 RMW 伪环按「输入先行」纪律一次钉死（含今天就潜伏的 flow↔card-pile
+      // Flag 互锁——E-1 接入必踩，预排雷）。玩家输入应用 → 各方再据本拍事实反应（计数/相位/结算/自治）。
+      runsBefore: ['poker-eval', 'card-score-pass', 'flow', 'zone-occupancy', 'group-count', 'self-rule', 'resource-apply'],
+      reads: ['CardPile', 'InputQueue', 'PlayedHand', 'Flag', 'Resource'],
+      writes: ['CardPile', 'PlayedHand', 'Flag', 'Resource'],
       consumes: [],
       execute(world: IWorld) {
         const { plays, discards } = collect(world);
+        const resBy = (id: string): Resource | undefined => {
+          const e = findByComponentId(world, 'Resource', 'id', id);
+          return e ? world.getComponent<Resource>(e, 'Resource') : undefined;
+        };
         for (const [eid] of world.query('CardPile')) {
           const pile = world.getComponent<CardPile>(eid, 'CardPile')!;
           const owner = pile.owner;
@@ -104,21 +111,45 @@ export const cardPileCapability = defineCapability({
           const playIdx = owner ? plays.get(owner) : undefined;
           const discardIdx = owner ? discards.get(owner) : undefined;
           const ph = world.getComponent<PlayedHand>(eid, 'PlayedHand'); // 出牌区在同实体
-          if (playIdx) {
+          // REQ-F-040(A2) 可负担门：全部代价付得起才执行 play；付不起=本拍视同没出牌（牌不丢、区清空、Flag 灭）。
+          let playAccepted = playIdx !== undefined;
+          if (playAccepted && pile.playCosts?.length) {
+            for (const c of pile.playCosts) {
+              const r = resBy(c.id);
+              if (!r || r.current < c.amount) { playAccepted = false; break; }
+            }
+          }
+          if (playAccepted && playIdx) {
+            if (pile.playCosts?.length) {
+              for (const c of pile.playCosts) {
+                const r = resBy(c.id)!;
+                const next = r.current - c.amount;
+                r.current = next < r.min ? r.min : next; // 验过可负担，钳底仅作防御
+              }
+            }
             const { taken, rest } = takeFromHand(pile.hand, playIdx);
             pile.hand = rest;
             if (ph) ph.cards = taken.map(decodeCard) as Card[];
+            // REQ-F-040(A1)：成交拍把牌码产物化进 Resource（恰取 1 张时写；商店 handSize 语义一次一张）。
+            // banded EventWhen{resource eq 码, mode:edge} 据此分发到每英雄/每卡专属信号。
+            if (pile.playedCodeResource && taken.length === 1) {
+              const cr = resBy(pile.playedCodeResource);
+              if (cr) {
+                const v = taken[0];
+                cr.current = v < cr.min ? cr.min : v > cr.max ? cr.max : v; // 数据侧把 max 设大于最大牌码
+              }
+            }
           } else if (ph) {
-            ph.cards = []; // reset-then-apply：本拍没出牌 → 清空出牌区
+            ph.cards = []; // reset-then-apply：本拍没出牌（含付不起被拒）→ 清空出牌区
           }
           if (discardIdx) {
             const { rest } = takeFromHand(pile.hand, discardIdx);
             pile.hand = rest; // 弃牌只移除（额度由 FSM effect 扣）
           }
-          // scoring Flag(owner) = 本拍是否出牌（1 拍脉冲，驱动计分链 score 信号）。
+          // scoring Flag(owner) = 本拍是否成交出牌（1 拍脉冲，驱动计分链 score 信号；被拒不脉冲）。
           if (owner) {
             const fe = findByComponentId(world, 'Flag', 'id', owner);
-            if (fe) { const f = world.getComponent<Flag>(fe, 'Flag'); if (f) f.active = playIdx !== undefined; }
+            if (fe) { const f = world.getComponent<Flag>(fe, 'Flag'); if (f) f.active = playAccepted; }
           }
           // ② 抽牌补手到 handSize（deck front 抽；空则止）。
           while (pile.hand.length < pile.handSize && pile.deck.length > 0) {

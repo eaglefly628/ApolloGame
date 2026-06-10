@@ -21,13 +21,11 @@ import { hexNextStep, hexCellKey, type Hex } from './hex.js';
 const TARGET = 'target';
 
 // HexPos → Transform 像素(flat-ish hex；1/2、3/4 为精确二进制分数，跨端一致)。
-// 'axial'(缺省) 与 'odd-r'(REQ-F-037) 都用**真投影** x=q·ts+r·ts/2（六边形晶格的忠实嵌入，
-// 视觉相邻=逻辑相邻）；'odd-r' 的"规整矩形"观感来自棋盘形状（每行 q 范围平移），不靠改投影。
-// 'offset'(REQ-F-027，已废弃)：(r&1)*ts/2 投影错位——几何与拓扑不同构（外审 Q5），仅迁移窗口保留。
+// 两种布局都用**真投影** x=q·ts+r·ts/2（六边形晶格的忠实嵌入，视觉相邻=逻辑相邻）；'odd-r' 的
+// "规整矩形"观感来自棋盘形状（每行 q 范围平移），不靠改投影（REQ-F-037，外审 Q5；旧 'offset' 已删）。
 function project(board: HexBoard, q: number, r: number): { x: number; y: number } {
-  const rowOffsetUnits = board.layout === 'offset' ? (r & 1) : r;
   return {
-    x: board.originX + q * board.tileSize + rowOffsetUnits * (board.tileSize / 2),
+    x: board.originX + q * board.tileSize + r * (board.tileSize / 2),
     y: board.originY + r * (board.tileSize * 0.75),
   };
 }
@@ -72,7 +70,7 @@ export const gridMoveCapability = defineCapability({
           cols: { type: 'number', describe: '列数' }, rows: { type: 'number', describe: '行数' },
           tileSize: { type: 'number', describe: '每格像素' },
           originX: { type: 'number', describe: '格(0,0)世界 x' }, originY: { type: 'number', describe: '格(0,0)世界 y' },
-          layout: { type: 'string', describe: "棋盘布局：'axial'(缺省,平行四边形) | 'odd-r'(推荐,错位矩形,几何≡拓扑,REQ-F-037；摆子用 offsetToAxial 换算) | 'offset'(已废弃:视觉≠拓扑,仅迁移窗口)" },
+          layout: { type: 'string', describe: "棋盘布局：'axial'(缺省,平行四边形) | 'odd-r'(推荐,错位矩形,几何≡拓扑,REQ-F-037；摆子用 offsetToAxial 换算)" },
         },
       },
       HexPos: {

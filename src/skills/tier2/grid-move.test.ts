@@ -310,39 +310,3 @@ describe('grid-move · REQ-F-037 odd-r 棋盘（几何与拓扑同构）', () =>
   });
 });
 
-// ── REQ-F-027 回归：投影布局 axial(斜→平行四边形) vs offset(规整矩形+六边形交错，已废弃留迁移窗口) ──
-describe('grid-move · REQ-F-027 投影布局', () => {
-  function boardL(w: World, layout?: 'axial' | 'offset'): void {
-    w.createEntity('board');
-    w.addComponent('board', { type: 'HexBoard', cols: 8, rows: 8, tileSize: 10, originX: 0, originY: 0, ...(layout ? { layout } : {}) } as HexBoard);
-  }
-  it('axial(缺省)：r 累积右移（x 含 r*ts/2）—— 保现有回归', () => {
-    const w = mk(); boardL(w); // 无 layout 字段 = axial
-    unit(w, 'u', 1, 2, { period: 1, transform: true });
-    w.tick();
-    expect(w.getComponent<Transform>('u', 'Transform')!.x).toBe(1 * 10 + 2 * 5); // 20
-  });
-  it('offset：偶行不偏、奇行半格（不累积）', () => {
-    const w = mk(); boardL(w, 'offset');
-    unit(w, 'even', 3, 2, { period: 1, transform: true }); // r 偶
-    unit(w, 'odd', 4, 3, { period: 1, transform: true });  // r 奇
-    w.tick();
-    expect(w.getComponent<Transform>('even', 'Transform')!.x).toBe(3 * 10);     // 偶行 +0 → 30
-    expect(w.getComponent<Transform>('odd', 'Transform')!.x).toBe(4 * 10 + 5);  // 奇行 +半格 → 45
-  });
-  it('offset 不累积：同 q、r=2 与 r=4 的 x 相等（axial 必差 ts）', () => {
-    const w = mk(); boardL(w, 'offset');
-    unit(w, 'a', 2, 2, { period: 1, transform: true });
-    unit(w, 'b', 2, 4, { period: 1, transform: true }); // 同 q、都偶行
-    w.tick();
-    const xa = w.getComponent<Transform>('a', 'Transform')!.x;
-    expect(xa).toBe(w.getComponent<Transform>('b', 'Transform')!.x); // 不累积 → 相等
-    expect(xa).toBe(20);
-  });
-  it('y 投影两布局一致（仅 x 行偏移变）', () => {
-    const w = mk(); boardL(w, 'offset');
-    unit(w, 'u', 1, 3, { period: 1, transform: true });
-    w.tick();
-    expect(w.getComponent<Transform>('u', 'Transform')!.y).toBe(3 * 7.5); // r*ts*0.75 不变
-  });
-});

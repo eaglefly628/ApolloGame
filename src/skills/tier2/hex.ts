@@ -18,9 +18,9 @@ export interface Hex {
   readonly r: number;
 }
 
-// 棋盘布局：'axial' 平行四边形 | 'odd-r' 错位矩形（推荐，几何≡拓扑） | 'offset' 旧投影错位（已废弃：
-// 视觉≠拓扑，外审 Q5；仅为 game-f 迁移窗口保留，迁完即删）。
-export type HexLayout = 'axial' | 'offset' | 'odd-r';
+// 棋盘布局：'axial' 平行四边形 | 'odd-r' 错位矩形（推荐，几何≡拓扑）。
+// （旧 'offset' 投影错位已随 F-10 迁移完成删除——视觉≠拓扑，外审 Q5。）
+export type HexLayout = 'axial' | 'odd-r';
 
 // axial ↔ odd-r offset 坐标换算（r≥0 棋盘内；r>>1 即 floor(r/2)）。游戏侧按 offset (col,row) 摆子
 // 时用 offsetToAxial 换算成 sim 的 axial (q,r)；引擎内部一律 axial。

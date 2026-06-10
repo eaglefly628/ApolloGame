@@ -1210,17 +1210,23 @@
 
 ---
 
-### REQ-F-039 · [2026-06-10] · PE-F（推演 F-9 完整迁移到底时暴露；原编 037 与主程 odd-r 单撞号，让号改 039）· 框架级 · status: **open（待主程评估；不阻塞 F-9 普攻半边）** · 优先级: 中（Phase 2 合体要把大招也去唯一 id 时才真撞上） · 类型: 真缺口（一实体一 SelfRule 装不下"回蓝+放大招"两条自治规则）
+### REQ-F-039 · [2026-06-10] · PE-F（推演 F-9 完整迁移到底时暴露；原编 037 与主程 odd-r 单撞号，让号改 039）· 框架级 · status: **wontfix-covered（回蓝=over-time 现有能力重组；附等价数据写法）** · 优先级: 中（Phase 2 合体要把大招也去唯一 id 时才真撞上） · 类型: 真缺口（一实体一 SelfRule 装不下"回蓝+放大招"两条自治规则）
 
 > **背景**：F-9 批注说"大招半边可先迁（蓝由普攻攒）"——**方向对，但有两个隐藏依赖**，提前钉死防返工：
 > ① **at:'target' 的目标从哪来**：大招 SelfRule 落在蓝 sidecar（mp 在它身上，墙：一实体一 Resource、unit 已被 hp 占用），而 spawn at:'target' 读**自身** Relation——sidecar 没有。**纯数据可解**（无需引擎）：sidecar 挂 `Transform + Hierarchy(随主) + Perception{targetTag:敌}` → aggro 给 sidecar 自己的 Relation（位置=主身位，锁的就是近敌）。此法已可用，记录在案防别人再撞。
 > ② **真缺口在"攒蓝信号源"**：普攻半边迁完后 `atk_<英雄>` 信号消失 → 现 `Effect{onSignal:atk_<id>, mp+20}` 的攒蓝**失去挂点**。改时基回蓝（sidecar `SelfRule{when timer, do:[mp+4]}`）可保节奏——但 sidecar 唯一的 SelfRule 名额已被"蓝满→放→清"占用：**一实体一 SelfRule，回蓝(level)与放大招(once)两条规则挤不下**。挂第二个 sidecar 也不行（do 仅施自身，别人的 mp 写不到）。
 > **建议（交主程裁）**：(A) `SelfRule` 组件化为**规则数组**（`rules:[{when,do,once,armed}]`，单数形态兼容）——任何"一实体多条自治规则"（回蓝+放招、低血狂暴+濒死逃跑）同形；(B) spawn 动作加 `at:'parent-target'`（沿 Hierarchy 借宿主 Relation，免 ① 的 Perception 间接法）——可与 A 并案或独立。
 > **范围**：F-9 普攻半边（035+036 后）不需要本条；大招去唯一 id（Phase 2 合体的另一半）需要。gauge 蓝条的 `mp_<id>` 全局路由届时改 `fromParent` 指 sidecar 即解（纯数据）。
+>
+> **Lead 裁决（2026-06-10）**：**回驳——"挤不下"的前提不成立，回蓝被现有能力字面覆盖（manifesto §4 先重组）。**
+> - **等价数据写法**：时基回蓝不该用 SelfRule，`over-time` 本就是"周期改自身资源"的专职能力且原生支持永久效果——sidecar 挂 `OverTime{effects:[{id:'mp_regen', resource:'mp', amountPerTick:+4, period:30, duration:0, elapsed:0}]}`（`duration<=0=永久`、`amountPerTick 正=regen` 皆为契约注释原文；局部寻址恰中 sidecar 自己的 mp）。SelfRule 名额自然腾给"蓝满→放→清"。
+> - **(A) 规则数组回驳**：上述重组成立 → 当下无真缺口；"一实体多自治规则"待出现 over-time 表达不了的第二例（如两条都需 once 沿语义）再议——届时本条重开。
+> - **(B) at:'parent-target' 回驳**：① 的 Perception sidecar 法你已验证可用（纯数据），单 enum 便利性不值得在重组可用时加宽（YAGNI）；① 写法已沉淀进 inbox F-9 批注防再撞。
+> - 证明回蓝重组的既有测试：over-time 套件（regen/永久效果路径）。零引擎改动。
 
 ---
 
-### REQ-F-040 · [2026-06-10] · PE-F（商店三件套 P0 接入推演暴露；原编 038 顺位让号改 040）· 框架级 · status: **open（待主程评估）** · 优先级: **高（MVP-1 商店 P0 的唯一引擎缺口）** · 类型: 真缺口（已购牌码读不出来——「按数据值分发」缺最后一环）
+### REQ-F-040 · [2026-06-10] · PE-F（商店三件套 P0 接入推演暴露；原编 038 顺位让号改 040）· 框架级 · status: **done（A1 playedCodeResource + A2 playCosts，零新系统；接入派 inbox F-11）** · 优先级: **高（MVP-1 商店 P0 的唯一引擎缺口）** · 类型: 真缺口（已购牌码读不出来——「按数据值分发」缺最后一环）
 
 > **要表达的语义（flow-spec §3.3 操作表 + §4.5）**：买人=点商店槽 i → `play(i)` 从手牌取出**英雄码** + 扣金 → **据码**生成对应英雄的阵容槽实体。发/选/弃/补 card-pile 全包，扣钱 craft-recipe 全包，造槽 Caster+模板全包——**断在"据码"**。
 > **证伪重组（逐条）**：
@@ -1233,6 +1239,12 @@
 > - **(A2) `CardPile.playCosts?: [{id,amount}]`**：可负担才执行 play（取牌+补手+写码原子在 card-pile 内）；否则现序是 card-pile(Update) 先取牌、craft-recipe(Commit) 后查钱——**买不起也丢牌**的时序硬伤，挂两件套修不了（recipe 退不了牌）。
 > - (B) 独立 `card-read` 系统（PlayedHand→Resource）：解耦但多一个系统，A1 一字段可达同效。
 > **YAGNI 自审**：商店 P0 当下卡死；「从手牌选一张→按它是什么生效」是卡牌品类通用形状（商店/锦囊/事件卡全同形）。
+>
+> **Lead 裁决（2026-06-10）**：**接受 A 全套（A1+A2），回驳 B；并预排一窝定序雷。**
+> - 缺口核实四条全对（含对设计稿 §4.5"装配层据码展开"的宪法否决——判定正确）。**(B) 独立 card-read 回驳**：A1 一字段同效，B 多一个系统还引入 PlayedHand 消费时序问题。
+> - **A1**：play 成交拍把牌码写进 `playedCodeResource` 指向的 Resource（恰取 1 张时；全局 id 路由 + 钳 [min,max]，数据侧把 max 设大于最大牌码）→ banded `EventWhen{resource eq 码}` 分发，零新系统。**A2**：`playCosts` 全部付得起才执行（验→扣→取牌单系统原子；被拒=本拍视同没出牌：牌不丢、区清空、scoring Flag 不脉冲）——时序硬伤诊断正确（craft-recipe 在 Commit 退不了 Update 已取的牌）。
+> - **预排雷**：A 使 card-pile RMW Resource → 与 flow/zone-occupancy/group-count/self-rule/resource-apply 互 RMW；且 **flow↔card-pile 的 Flag 互锁今天就潜伏**（双方都 RMW Flag，E-1 回合数据化一接必抛——F-031/035/036 同型第四次）。一次钉死：card-pile `runsBefore` 扩为七件套（输入先行纪律：玩家输入应用→计数/相位/结算/自治再反应，全部同帧新鲜）。
+> - 4 测（成交链 / 拒单五断言 / 零迁移 / 六系统同场守护）。tsc + vitest 1037 + build 全绿。游戏侧接入派 **inbox F-11**。
 
 ### REQ-F-037 · [2026-06-10] · Lead（外审 Q5 裁决 (c) 拉动）· 框架级 · status: **done（'odd-r' 错位矩形棋盘；'offset' 标废弃，迁移派 PE-F inbox F-10）** · 优先级: 高（站位敏感品类的博弈直觉） · 类型: 拓扑同构升级（F-027 的修正案）
 
@@ -1242,6 +1254,7 @@
 > - 附带修了一个**真 bug**：cellKey=r·cols+q 在负 q 下跨行撞键（(-1,2) 与 (7,1) 同键）——A* 内部与 grid-move 占位集统一改用导出的 `hexCellKey`（odd-r 以 col 为键列）。
 > - `offsetToAxial/axialToOffset` 自 hex.ts 导出（游戏侧按 (col,row) 摆子的换算）。'offset' 标废弃仅留迁移窗口，PE-F 迁完（F-10）即删分支。
 > - 4 测（换算往返+交错矩形投影 / 6 邻 <1.05ts / 负 q 行首寻路+边界裁切 / 撞键回归）。tsc + vitest 1035 + build 全绿。
+> - **尾款（2026-06-10）**：F-10 迁移完成（0dc786a）→ 废弃 'offset' 分支已删（类型并集/投影分支/旧回归测一并清，HexLayout='axial'|'odd-r'）。
 >
 > **同包外审其余结论归档**（全文 `docs/review/2026-06-10-f026-028-external-verdict.md`）：F-026 Q1–Q4 全过、代码审查通过；Q7 确认 F-028 同帧新鲜方向（离散逻辑 vs 连续反馈两分法）；**Q6（RMW 推断层治理）回驳**——外审方案"RMW 写降级仅留入边"会把 resource-apply 这类**真生产者**的出边一并删除，下游（gauge/flow/mortal）先后退化为注册序 tie-break，F-028/F-035 特意钉的同帧新鲜保证全部**静默失效**（响亮报错→隐藏一帧滞后 bug）；且该方案只治 mutual-RMW 类，对 F-025（互为纯生产/消费）与 F-031（经第三方传递闭环）两类无效。维持"报错+显式钉边逼出语义决策"纪律；观察阈值：显式边对超 ~10 再重审（现 6 对）。
 
