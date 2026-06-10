@@ -950,7 +950,7 @@
 
 ---
 
-### REQ-024 · [2026-06-10] · Programmer F（用户拉动；Game F 自走棋核心）· 框架级 · status: **done**（2026-06-10，主程4，引擎三件套；game-f 数据换层归 F）· 优先级: 高（TFT 保真核心移动）· 类型: 真缺口（六边形棋盘 + 确定性网格寻路）
+### REQ-F-024 · [2026-06-10] · Programmer F（用户拉动；Game F 自走棋核心）· 框架级 · status: **done**（2026-06-10，主程4，引擎三件套；game-f 数据换层归 F）· 优先级: 高（TFT 保真核心移动）· 类型: 真缺口（六边形棋盘 + 确定性网格寻路）
 
 > ✅ **Lead 复核 ACCEPT + 落地（主程4，925 绿）**：F 的重组证伪成立（库内确无图搜索）；宪法对齐（棋盘=数据、A*=代码）；跨游戏通用。按最小三件套实现：
 > - **hex（纯算法核心）** `src/skills/tier2/hex.ts`：axial 坐标 + hexDistance + 固定 6 邻居序 + **确定性 A* `hexNextStep`**（求"走向目标相邻格的下一步"，避被占格；启发=hex 距离 admissible，open 按 fScore 升/cellKey 升 tie-break → 路径唯一确定，lockstep 安全）。+9 测（绕障/围死=null/确定性/边界）。
@@ -981,7 +981,7 @@
 
 ---
 
-### REQ-025 · [2026-06-10] · Programmer F（Game F 接 grid-move 暴露）· 框架级 · status: **done**（2026-06-10，主程4，采 F 1 行修复）· 优先级: 高（阻塞 game-f 接寻路）· 类型: 系统定序 bug（拓扑成环）
+### REQ-F-025 · [2026-06-10] · Programmer F（Game F 接 grid-move 暴露）· 框架级 · status: **done**（2026-06-10，主程4，采 F 1 行修复）· 优先级: 高（阻塞 game-f 接寻路）· 类型: 系统定序 bug（拓扑成环）
 
 > ✅ **落地（主程4，926 绿）**：`grid-move` 系统加 `runsAfter:['aggro']` —— 显式边覆盖反向的 Transform 组件推断边，破 aggro↔grid-move 2-环（同 poker-eval/dialogue 显式定序先例）。语义：aggro 本拍选目标→grid-move 据此走，Transform 下拍被 aggro 读（一拍反馈，确定性不变）。+1 回归测（aggro+grid-move 同场不抛环 + 单位索敌沿 hex 寻路到相邻）。**F 可接 game-f grid-move 数据换层、推 mainbranch。**
 > 🟡 **follow-up（非阻塞，主程4 记）**：更彻底可拆 `grid-move` 只写 HexPos + 另设 PostResolve 投影系统 HexPos→Transform，根除"移动写 Transform↔索敌读 Transform"环类；当前 1 行已够，待更多 Transform-环案例再做。
@@ -998,7 +998,7 @@
 
 ---
 
-### REQ-026 · [2026-06-10] · Programmer F（Game F 表现层暴露）· 框架级 · status: **open** · 优先级: 中（表现 bug：挂件不随宿主死）· 类型: 真缺口（父体销毁 → 级联销毁 Hierarchy 子体）
+### REQ-F-026 · [2026-06-10] · Programmer F（Game F 表现层暴露）· 框架级 · status: **open** · 优先级: 中（表现 bug：挂件不随宿主死）· 类型: 真缺口（父体销毁 → 级联销毁 Hierarchy 子体）
 
 > **现象（game-f bug：方块死后名字残留）**：棋子头顶名字 = 独立实体 + `Hierarchy{parentId:棋子}` 跟随。棋子被 `mortal`→`destroy-apply` 销毁后，名字实体成**孤儿**（`hierarchy-resolve` 见父无 Transform → skip，留原地）→ **死了的方块名字残留屏幕**。
 > **通用性**：任何"挂件"（名牌/血条/武器/光环/buff 图标）都该**随宿主销毁而销毁**，不止自走棋。
