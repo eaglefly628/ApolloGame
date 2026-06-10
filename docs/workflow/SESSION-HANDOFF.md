@@ -1,6 +1,7 @@
 # Session 交接 / 项目现状（2026-06-10）
 > 纲领：`docs/design/data-driven-manifesto.md`｜规范：`CLAUDE.md`｜需求池：`docs/workflow/requests.md`
 > **分工边界（用户 2026-06-10 拍板）**：Lead/主程只动引擎+文档，游戏层 `src/games/**` 一律不动手——游戏侧任务写进 `docs/workflow/programmer/inbox.md` 派发给对应 PE（PE-E=Game E、PE-F=Game F），PE 完成写 outbox。
+> **引擎只归主程（用户 2026-06-10 拍板）**：反向同样成立——PE/策划 session **不得直接改引擎**（`src/{engine,skills,assembly,renderer,services,net}`），缺口一律 requests.md 提主程裁决；任何提交 rebase 带进新内容后必须重跑全套再推。
 
 ---
 
@@ -41,7 +42,7 @@ Manifest(纯数据) ──parseManifest──▶ WorldBlueprint ──engine.loa
 | REQ-023 | group-effect（集合写）；倾向重组不 greenlit | P3 |
 | caster 整合 | 可整合进 effect-apply(kind:'spawn')+去重 aggro | 排期 |
 | PE-E 数据换层 | flow/card-pile 重写回合流程(REQ-017/020) + ScoreTrace 回放(REQ-019) | PE-E |
-| PE-F 数据换层 | hierarchy-cascade 命名残留(F-026)；offset 棋盘(F-027)；GameFlow 阶段机(F-028)；self-rule/group-count 接羁绊；**gauge 血/蓝条(F-029，定序环 F-031 已修)**；**CC 定身 haltStatusMask(F-030)**；**回合重置 槽位Caster+overrides+destroy-tagged(F-032)**；**复合预制 @local: 引用重映射(F-033)**；**平滑滑行 glideSpeed(F-034)** | PE-F |
+| PE-F 数据换层 | hierarchy-cascade 命名残留(F-026)；offset 棋盘(F-027)；GameFlow 阶段机(F-028)；self-rule/group-count 接羁绊；**gauge 血/蓝条(F-029，定序环 F-031 已修)**；**CC 定身 haltStatusMask(F-030)**；**回合重置 槽位Caster+overrides+destroy-tagged(F-032)**；**复合预制 @local: 引用重映射(F-033)**；**平滑滑行 glideSpeed(F-034)**；**self 全局阶段门 whenGlobal(F-035)** | PE-F |
 
 **🔵 Studio/编辑器 follow-up**（非阻塞）：
 ① 结构编辑（透视器增删实体/组件）；② playwright 真截图（升级 ApolloBench Visual）；

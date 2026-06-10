@@ -64,6 +64,7 @@
 - `self-rule`（实体本地条件→对自身施效）+ `group-count`（按 Tag 计数→Resource，阈值=event-when 重组）接金铲铲自治/羁绊。
 
 #### 任务 F-9 · ★ 用 self-rule 重构普攻链，拆掉「唯一 id 脚手架」 — status: pending（高优先，用户点名）（原误编 F-5 与已完结的 gauge 任务撞号，Lead 改号 F-9，内容不变）
+- **F-035 已落地，迁移解锁（Lead 批注）**：普攻/大招 SelfRule 一律加 `whenGlobal:{kind:'flag',id:'in_combat'}`（替代失效的"目标存在性门"——deploy 在 prep，备战期就有目标）。self-rule 定序已在引擎侧排雷（runsAfter flow/resource-apply/zone-occupancy/group-count），与回合 flow 同场不会抛环，相位门同帧生效。
 - **背景**：现 blueprint 每个英雄一套唯一 `Timer{id:atk_<hero>}` + `EventWhen{signal:atk_<hero>}` + `Caster{onSignal:atk_<hero>}`，靠"每英雄唯一 id"绕开全局 id 串台。这是会爆的脚手架——三星合体/同模板多实例（prefab 展开的 N 个同名单位）烘不进唯一 id，必崩。
 - **引擎已就绪（Lead 2026-06-10 落地）**：`self-rule` 新增 **`spawn` 动作**（self 轴的 caster 对偶）：`{kind:'spawn', template, at:'self'|'target'}` → 自身条件触发，在自身/自身 Relation(target) 处发 SpawnRequest，prefab-spawn 展开。`at:'target'` 无目标则不生成（**目标存在性即战斗门**，可免全局 in_combat 旗标）。9 测绿含「同模板 3 实例各自按自身节拍生成」。
 - **改法（纯数据，零游戏代码）**：每个英雄（及未来同模板单位）的普攻 = 一份 `Timer{id:'atk',loop}` + 一条 `SelfRule{ when:{kind:'timer',id:'atk',cmp:'gte',value:CD-1}, do:[{kind:'spawn',template:'strike_X',at:'target'}] }`。**关键收益**：三星/多实例可共用同一份 SelfRule 数据（不再每英雄唯一 id）。

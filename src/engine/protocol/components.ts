@@ -845,6 +845,10 @@ export interface SelfRule extends Component {
   do: SelfAction[]; // 条件成立时对自身施加
   once?: boolean; // true=上升沿只施一次（armed 迟滞，回落复位）；缺省=条件成立每拍施（level）
   armed?: boolean; // 内部（once 用）
+  // 全局阶段门(REQ-F-035)：按**全局** id 求值的附加条件，与 when 取 AND（先求 whenGlobal，false 即整条跳过）。
+  // 「实体自治但受全局相位约束」的标配：备战/结算不动手(in_combat)、回合制行动门、全场暂停、波次冻结。
+  // 缺省不设=零迁移。同帧新鲜：flow 改相位 flag 当拍即被看见（self-rule runsAfter flow）。
+  whenGlobal?: ConditionExpr;
 }
 
 // ── group-count（REQ-022）── 集合读：按 Tag 位掩码数全场实体 → 把数量写进一个 Resource（按 id 全局路由）。

@@ -133,3 +133,78 @@ describe('self-rule · 确定性（跨实体无干扰）', () => {
     expect(b.hasComponent('alive', 'DestroyRequest')).toBe(false);
   });
 });
+
+// ── REQ-F-035：whenGlobal 全局阶段门（实体自治 ∧ 全局相位约束） ──
+import type { GameFlow, Tag } from '@engine/protocol/components.js';
+import { flowCapability } from '../tier3/flow.js';
+import { zoneOccupancyCapability } from './zone-occupancy.js';
+import { groupCountCapability } from './group-count.js';
+import { resourceCapability } from '@atom-skills/resource/index.js';
+describe('self-rule · REQ-F-035 whenGlobal 全局阶段门', () => {
+  it('门=false 整条跳过（自身条件成立也不施）；门=true 恢复；缺省不设=零迁移', () => {
+    const w = mk();
+    // 全局相位 flag（住独立实体，按 id 全局路由）
+    w.createEntity('phase'); w.addComponent('phase', flag('in_combat', false) as never);
+    const atk = {
+      when: { kind: 'resource' as const, id: 'mp', cmp: 'gte' as const, value: 10 },
+      whenGlobal: { kind: 'flag' as const, id: 'in_combat' },
+      do: [{ kind: 'modify-resource' as const, op: 'set' as const, value: 0 }],
+    };
+    unit(w, 'gated', atk, [res('mp', 50)]);
+    unit(w, 'free', { when: { kind: 'resource', id: 'mp', cmp: 'gte', value: 10 }, do: [{ kind: 'modify-resource', op: 'set', value: 0 }] }, [res('mp', 50)]); // 无门
+    w.tick();
+    expect(R(w, 'gated').current).toBe(50); // 备战：门关，未施
+    expect(R(w, 'free').current).toBe(0); // 零迁移：无门规则照常
+    F(w, 'phase').active = true; // 开战
+    w.tick();
+    expect(R(w, 'gated').current).toBe(0); // 门开，施了
+  });
+
+  it('once + 门：备战期 armed 不动，开战后首个上升沿才触发一次', () => {
+    const w = mk();
+    w.createEntity('phase'); w.addComponent('phase', flag('in_combat', false) as never);
+    unit(w, 'u', {
+      when: { kind: 'resource', id: 'mp', cmp: 'gte', value: 10 },
+      whenGlobal: { kind: 'flag', id: 'in_combat' },
+      once: true,
+      do: [{ kind: 'set-flag', value: true }],
+    }, [res('mp', 99), flag('ulted', false)]);
+    w.tick(); w.tick(); // 备战两拍：门关
+    expect(F(w, 'u').active).toBe(false);
+    F(w, 'phase').active = true;
+    w.tick(); // 开战：上升沿触发一次
+    expect(F(w, 'u').active).toBe(true);
+  });
+
+  it('定序守护：flow+zone-occupancy+group-count+resource-apply+self-rule 同场不抛（互 RMW 潜伏环已排）+ flow 相位同帧生效', () => {
+    const w = new World();
+    for (const cap of [flowCapability, zoneOccupancyCapability, groupCountCapability, resourceCapability, selfRuleCapability]) {
+      for (const s of cap.systems) w.addSystem(s as never);
+    }
+    // flow：combat 态 onEnter 置 in_combat=true；enemies_alive≤0 → resolution 态 onEnter 置 false
+    w.createEntity('phase'); w.addComponent('phase', flag('in_combat', false) as never);
+    const ENEMY = 1 << 2;
+    w.createEntity('gc'); w.addComponent('gc', { type: 'GroupCount', countResource: 'enemies_alive', requiredTag: ENEMY } as never);
+    w.createEntity('cnt'); w.addComponent('cnt', res('enemies_alive', 0) as never);
+    w.createEntity('e1'); w.addComponent('e1', { type: 'Tag', flags: ENEMY } as Tag);
+    w.createEntity('flow'); w.addComponent('flow', { type: 'GameFlow', id: 'g', current: 'combat', entered: false, states: [
+      { id: 'combat', onEnter: [{ kind: 'set-flag', targetId: 'in_combat', value: true }], transitions: [{ when: { kind: 'resource', id: 'enemies_alive', cmp: 'lte', value: 0 }, to: 'resolution' }] },
+      { id: 'resolution', onEnter: [{ kind: 'set-flag', targetId: 'in_combat', value: false }] },
+    ] } as GameFlow);
+    unit(w, 'hero', {
+      when: { kind: 'resource', id: 'mp', cmp: 'gte', value: 0 }, // 自身恒真
+      whenGlobal: { kind: 'flag', id: 'in_combat' },
+      do: [{ kind: 'modify-resource', op: 'add', value: 1 }], // 每个战斗拍 mp+1（可数的"行动"）
+    }, [res('mp', 0)]);
+    expect(() => { for (let i = 0; i < 3; i++) w.tick(); }).not.toThrow(); // 修复前互 RMW 抛环
+    expect(R(w, 'hero').current).toBe(3); // flow 先行：combat 拍门同帧开，行动累计
+    w.destroyEntity('e1'); // 清场 → group-count 写 0 → flow 转 resolution → 门同帧关
+    const before = R(w, 'hero').current;
+    w.tick(); w.tick(); // 转移拍 + 结算拍
+    w.tick();
+    expect(R(w, 'hero').current - before).toBeLessThanOrEqual(1); // 至多转移那一拍仍行动，此后停手
+    const last = R(w, 'hero').current;
+    w.tick();
+    expect(R(w, 'hero').current).toBe(last); // resolution 期不再行动
+  });
+});

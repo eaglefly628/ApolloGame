@@ -2,6 +2,7 @@ import { defineCapability } from '@engine/core/define-capability.js';
 import { SystemPhase } from '@engine/core/types.js';
 import type { IWorld, EntityId } from '@engine/core/types.js';
 import type { SelfRule, SelfAction, ConditionExpr, CmpOp, Resource, Flag, State, Timer, StringVar, DestroyRequest, Transform, Relation, SpawnRequest } from '@engine/protocol/components.js';
+import { evaluateCondition, buildConditionLookup } from './condition.js';
 
 // ═══════════════════════════════════════════════════════════════
 //  self-rule —— 逻辑链的「实体本地(self)」作用域（REQ-021；引擎的"实体寻址轴"）。
@@ -135,6 +136,7 @@ export const selfRuleCapability = defineCapability({
           do: { type: 'string', describe: 'SelfAction[]：{kind:set-flag|modify-resource|set-state|destroy|spawn, value?, op?, template?, at?}，施于自身；spawn 发 SpawnRequest(at self/target)' },
           once: { type: 'boolean', describe: 'true=条件上升沿只施一次（armed 迟滞，回落复位）；缺省=条件成立每拍施' },
           armed: { type: 'boolean', describe: '内部（once 迟滞状态）' },
+          whenGlobal: { type: 'string', describe: 'ConditionExpr，按**全局** id 求值的阶段门(REQ-F-035)，与 when 取 AND：备战/结算不动手(in_combat)、回合行动门、全场暂停。缺省不设=零迁移' },
         },
       },
     },
@@ -149,12 +151,26 @@ export const selfRuleCapability = defineCapability({
     {
       id: 'self-rule',
       phase: SystemPhase.Update,
+      // REQ-F-035 排雷：self-rule 与 flow/zone-occupancy/group-count/resource-apply 互为 RMW
+      // （Flag/Resource/State）——同场必成伪环（F-025/028/031 同类，此前因从未同场而潜伏）。
+      // 显式 runsAfter 钉死语义方向：先定相位(flow)/结算伤害(resource-apply)/数清事实(占位/计数)，
+      // 单位再据此自治行动——whenGlobal 的「同帧新鲜阶段门」正依赖 flow 先行。无反向环：四者均
+      // 不读 self-rule 独有写集（SpawnRequest/DestroyRequest/SelfRule）。无这些系统的世界 id 被忽略。
+      runsAfter: ['flow', 'resource-apply', 'zone-occupancy', 'group-count'],
       reads: ['SelfRule', 'Resource', 'Flag', 'State', 'Timer', 'StringVar', 'Transform', 'Relation'],
       writes: ['SelfRule', 'Flag', 'Resource', 'State', 'DestroyRequest', 'SpawnRequest'],
       consumes: [],
       execute(world: IWorld) {
+        // REQ-F-035 全局阶段门：id→全局容器索引。lazy——仅存在带 whenGlobal 的规则时构建一次。
+        let lookup: ReturnType<typeof buildConditionLookup> | null = null;
         for (const [eid] of world.query('SelfRule')) {
           const rule = world.getComponent<SelfRule>(eid, 'SelfRule')!;
+          // 全局门先求值（与 when 取 AND，短路）：备战/结算期 in_combat=false → 整条跳过
+          // （armed 不动：once 规则跨相位保持待发，开战后首个自身上升沿才触发）。
+          if (rule.whenGlobal) {
+            if (!lookup) lookup = buildConditionLookup(world);
+            if (!evaluateCondition(world, rule.whenGlobal, lookup)) continue;
+          }
           const now = evaluateSelfCondition(world, eid, rule.when);
           let fire = false;
           if (rule.once) {

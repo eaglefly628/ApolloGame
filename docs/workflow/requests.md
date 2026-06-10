@@ -1169,7 +1169,7 @@
 
 ---
 
-### REQ-F-035 · [2026-06-10] · 策划 PF（审查第 9 轮拦截 `299b498` 配套处方）· 框架级 · status: **open（提主程）** · 优先级: **高（阻塞普攻链 self-rule 迁移 = 阻塞 Phase 2 合体路线的一半）** · 类型: 真缺口（self 链缺「全局阶段门」）
+### REQ-F-035 · [2026-06-10] · 策划 PF（审查第 9 轮拦截 `299b498` 配套处方）· 框架级 · status: **done（SelfRule.whenGlobal 全局阶段门 + self-rule 定序排雷）** · 优先级: **高（阻塞普攻链 self-rule 迁移 = 阻塞 Phase 2 合体路线的一半）** · 类型: 真缺口（self 链缺「全局阶段门」）
 
 > **要表达的语义（flow-spec §3.3 铁律）**：备战/结算期**不动手**——普攻只在 `in_combat==true` 期间触发。现普攻链用 `EventWhen{when: timer ∧ flag(in_combat)}` 全局链表达，工作正常；迁到 `SelfRule`（拆唯一 id 脚手架、通向合体）后**此门丢失**。
 > **证伪重组（逐条）**：
@@ -1179,6 +1179,12 @@
 > → 纯数据重组不出来，**真缺口**。
 > **建议（交主程裁，最小形态）**：`SelfRule` 加可选 **`whenGlobal?: ConditionExpr`**（按**全局** id 求值，与 self `when` 取 AND；缺省缺省不设=零迁移）。普攻迁移后写 `whenGlobal:{kind:'flag',id:'in_combat',equals:true}` 即恢复阶段门。通用收益：任何"实体自治但受全局相位/规则约束"的品类（波次刷怪冻结、回合制行动门、暂停）同形。
 > **范围注**：大招半边**不被阻塞**可先迁——蓝条只由普攻攒（普攻有门→备战蓝不涨→`mp≥100` 备战期不可能成立），自身资源阈值天然 self。详见 inbox F-5★ 策划批注。
+>
+> **Lead 裁决（2026-06-10）**：**接受——按提案落地，零修正；并顺手排掉一窝潜伏定序雷。**
+> - 缺口核实：`evaluateSelfCondition` 纯 self 作用域无全局回退（亲核）；策划对 ② 的判定正确——`299b498` 的"目标存在性当战斗门"在本流程失效（deploy 在 prep、aggro 无门 → 备战期即有目标；结算期幸存者续殴），予以采信并修正该提交的处方。③ 群发副本=REQ-023 领域不收，判定一致。
+> - 落地：`SelfRule.whenGlobal?: ConditionExpr`（按全局 id 求值，与 when 取 AND、先求短路；缺省不设零迁移）。once 语义：门关期 armed 不动，跨相位保持待发。复用 buildConditionLookup（lazy，仅有门规则才建索引）。
+> - **附带排雷（实现时发现）**：self-rule 与 flow / zone-occupancy / group-count / resource-apply **互为 RMW**（Flag/Resource/State）且无任何显式边——四个同场拓扑必抛环，此前纯因从未同场而潜伏，PE-F 一接 F-9 必踩（F-031 同款）。已补 `runsAfter:['flow','resource-apply','zone-occupancy','group-count']`：先定相位/结算/数清事实，单位再自治行动——whenGlobal 的**同帧新鲜门**正依赖 flow 先行（combat 拍置 flag 当拍生效、resolution 拍关门当拍停手，守护测试验证）。
+> - +3 测（门关跳过/门开恢复/零迁移；once×门跨相位；五系统同场不抛+相位同帧生效）。tsc + vitest 1031 + build 全绿。F-9 迁移解锁。
 
 ---
 
