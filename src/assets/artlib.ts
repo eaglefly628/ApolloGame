@@ -2,6 +2,7 @@
 // 索引 assets/FreeArtLib/index.json 由 scripts/build-artlib-index.mjs 生成（从名字派生分类）；
 // slot/transparent 语义来自人工看样图（从图像）。标准见 docs/design/art-library-tags.md。
 // 助手是纯函数，index 由调用方传入（按需 fetch/import，避免把 ~700KB 强行打进包）。
+import { CAT_TAGS, SUBJECT_TAGS } from './artlib-tags.js';
 
 export type ArtSlot =
   | 'tile' // 不透明可平铺地形 → Tilemap
@@ -22,6 +23,7 @@ export interface ArtAsset {
   transparent: boolean;
   variants: number; // 变体张数（如 floor 4 张随机平铺）
   sample?: string; // 代表帧文件名（真实存在的首张，变体编号非 0 基连续故须存）
+  tags?: string[]; // 额外语义标签（像素扫描补录；覆盖 CAT_TAGS/SUBJECT_TAGS 无法表达的个例）
   w?: number;
   h?: number; // 仅 ≠ basePixel(32) 时存
 }
@@ -39,10 +41,17 @@ export interface ArtLibIndex {
   assets: ArtAsset[];
 }
 
-/** 一个资产的搜索标签 = cat + sub 各段 + subject 各词 + slot 词根（不入库，现算）。 */
+/** 一个资产的搜索标签 = cat + sub 各段 + subject 各词 + slot 词根 + 语义标签（现算）。 */
 export function artlibTokens(a: ArtAsset): string[] {
+  const subCatKey = a.sub ? `${a.cat}/${a.sub}` : a.cat;
+  const catTags = CAT_TAGS[subCatKey] ?? CAT_TAGS[a.cat] ?? [];
+  const subjectTags = SUBJECT_TAGS[a.subject] ?? [];
+  const extraTags = a.tags ?? [];
   return [
-    ...new Set([a.cat, ...a.sub.split('/'), ...a.subject.split('_'), ...a.slot.split('.')].filter(Boolean)),
+    ...new Set([
+      a.cat, ...a.sub.split('/'), ...a.subject.split('_'), ...a.slot.split('.'),
+      ...catTags, ...subjectTags, ...extraTags,
+    ].filter(Boolean)),
   ].map((t) => t.toLowerCase());
 }
 
