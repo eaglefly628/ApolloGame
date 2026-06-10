@@ -1163,6 +1163,16 @@
 
 （Lead 实现后把需求移到这里，标 done + 对应 commit / 新原子名）
 
+### [2026-06-10] · 用户（直发 Lead） · 引擎原生 · status: done · 资源库重构 v1（统一资产库 + 2D 贴图导入器 + 壳层视觉基调）
+- 需求：资产库不止美术贴图，**全游戏资源统一整合**——按常见游戏资源分类建目录树；浏览器对标成熟资源管理器（搜索/下拉/tag 过滤）；浏览器兼任**数据导入器**，先聚焦 2D 贴图三种来源（散图/未切割精灵表/乱命名目录）的导入归一化。另：主页+资源库+各游戏返回钮统一「清幽·高雅·高级·秩序」视觉基调。
+- 落地（mockup 用户拍板后实施，见 `docs/design/asset-library.md` + `asset-library-mockup.html`）：
+  - 统一模型 `src/assets/library.ts`：LibraryRecord + 三来源适配器（项目 index / FreeArtLib / 游戏清单只读）+ 纯查询 + 7 类型分类法（新增 font）；消解了"三套索引互不兼容、studio 每游戏一个 case"的债。
+  - 导入器纯核心 `src/assets/import/{sniff,profile,normalize,slice}.ts`：字节头嗅探（PNG/JPEG/WebP/GIF 宽高+透明）、归一化 profile（**规则即数据**，可复放）、planImport（变体分组/hash 剔重/slug/冲突改名/分类规则）、网格切割数学。
+  - UI `src/studio/{AssetLibrary,AssetImportWizard}.tsx`（取代 ArtLibBrowser）；写盘 apollo.py `POST /api/assets/import`（路径锁 assets/ 子树、重复 id 整批拒绝、先校验后写）。
+  - AssetIndex v2 可选字段（category/tags/source/license/provenance，向后兼容）+ `spec.sheet` → SpriteSheetDescriptor 注册。
+  - 壳层基调 `src/ui/shell-theme.ts`（青瓷×墨蓝×淡金设计令牌）：launcher 门面 + GameRunner 统一返回浮钮（游戏代码零改）+ 资源库全量取用。
+- 确定性边界不变：全在表现层，sim 只持字符串 key。验收：tsc 干净，983 tests 全绿（新增 ~80），build 通过，apollo 端点冒烟 4/4。
+
 ### [2026-06-04] · Owner · 引擎原生 · status: done · 美术资产管理系统（Asset System）
 - 想实现的行为：游戏用字符串键引用美术（贴图/立绘/表情差分/序列帧），引擎负责加载、缓存、解析；并为「后续 3D→2D 渲染」留好门。
 - 缺什么：`Sprite.textureKey` 早有键间接、`Renderable` 后端无关，但**没有任何资产加载/解析层**——键指向的美术没人解析。

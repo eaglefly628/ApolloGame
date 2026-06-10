@@ -6,21 +6,36 @@
       "type": "texture",
       "description": "背景·制作人办公室（现代娱乐公司，落地窗，黄昏光线，柔粉色调）",
       "status": "tbf",
-      "spec": { "width": 1280, "height": 720, "format": "png" }
+      "spec": {
+        "width": 1280,
+        "height": 720,
+        "format": "png"
+      },
+      "category": "background"
     },
     {
       "id": "char_S.portrait.neutral",
       "type": "texture",
       "description": "立绘·角色S·平静（30代男性，西装，高冷气质，半身，透明背景）",
       "status": "tbf",
-      "spec": { "width": 720, "height": 1280, "transparent": true, "format": "png" }
+      "spec": {
+        "width": 720,
+        "height": 1280,
+        "transparent": true,
+        "format": "png"
+      },
+      "category": "portrait"
     },
     {
       "id": "bgm.daily",
       "type": "sound",
       "description": "BGM·日常（轻松温柔，都市钢琴）",
       "status": "tbf",
-      "spec": { "loop": true, "format": "mp3" }
+      "spec": {
+        "loop": true,
+        "format": "mp3"
+      },
+      "category": "bgm"
     }
   ]
 }

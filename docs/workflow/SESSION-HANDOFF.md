@@ -15,7 +15,7 @@ Manifest(纯数据) ──parseManifest──▶ WorldBlueprint ──engine.loa
 - **引擎** `src/engine/`：ECS World（snapshot/hash）；SystemPhase + runsAfter/runsBefore 拓扑排序
 - **能力库** `src/skills/`：50+ 原子+扩展；Tier1（运动/动画/hierarchy-cascade）/ Tier2（物理/逻辑链/ARPG/tilemap/hex/self-rule/group-count/gauge）/ Tier3（dialogue/match3/prefab/caster/aggro/poker-hand/card-scoring/flow/card-pile）；**Tier4 刻意为空**（AI行为=数据装配）。全列表见 `wiki/skills/` + 周期表
 - **桥接** `src/assembly/`：capability-registry + manifest.ts（parseManifest/exportManifest）+ schema 校验 + validate-references（P0 引用链接器）
-- **Studio** `src/studio/` + `src/bench/`：数据透视器（改字段/实时预览/键盘试玩）、资产浏览器、ApolloBench（Structure/Load/Determinism/Numeric/Visual）
+- **Studio** `src/studio/` + `src/bench/`：数据透视器（改字段/实时预览/键盘试玩）、**资源库**（统一资产库浏览器+导入器，三来源一视图：`docs/design/asset-library.md`）、ApolloBench（Structure/Load/Determinism/Numeric/Visual）；壳层视觉基调 `src/ui/shell-theme.ts`（青瓷×墨蓝×淡金）
 - **启动器** `apollo.py`：Vite+API+多 LLM 生成 manifest；离线预设 platformer/pong；`bench` 命令
 
 ## 2. 五个游戏（已并入 main，趋近纯数据）
@@ -46,7 +46,8 @@ Manifest(纯数据) ──parseManifest──▶ WorldBlueprint ──engine.loa
 **🔵 Studio/编辑器 follow-up**（非阻塞）：
 ① 结构编辑（透视器增删实体/组件）；② playwright 真截图（升级 ApolloBench Visual）；
 ③ **⭐ 结构化意图层**（NL→意图结构→manifest；收窄生成空间；用户已点最该先做，见 `docs/design/ai-data-editor.md`）；
-④ Controllable 等无 schema 组件补声明（解锁速度/跳跃 NL 编辑）
+④ Controllable 等无 schema 组件补声明（解锁速度/跳跃 NL 编辑）；
+⑤ 资源库 v1 follow-up（`docs/design/asset-library.md` §7：音频/字体导入模式、usedBy 溯源并入详情、StudioInspector 换装 shell-theme、游戏 assets.ts 迁纯数据派 PE）
 
 ## 4. 主要技术债
 

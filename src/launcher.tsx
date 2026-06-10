@@ -1,7 +1,8 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { createRoot } from 'react-dom/client';
 import { StudioInspector } from './studio/StudioInspector.js';
-import { ArtLibBrowser } from './studio/ArtLibBrowser.js';
+import { AssetLibrary } from './studio/AssetLibrary.js';
+import { SHELL, sBackPill } from './ui/shell-theme.js';
 import { parseManifest } from './assembly/manifest.js';
 import { deriveAssetIndex } from './assembly/derive-asset-index.js';
 import { buildCapabilityCatalog } from './assembly/capability-catalog.js';
@@ -539,22 +540,11 @@ function GameRunner({ gameId, onBack }: { gameId: string; onBack: () => void }) 
   }, [gameId]);
 
   return (
-    <div style={{ position: 'absolute', inset: 0, background: '#0a0f1e' }}>
-      <div style={{ position: 'absolute', top: 8, right: 8, zIndex: 100 }}>
-        <button
-          onClick={onBack}
-          style={{
-            padding: '6px 16px',
-            background: 'rgba(0,0,0,0.7)',
-            color: '#94a3b8',
-            border: '1px solid rgba(255,255,255,0.15)',
-            borderRadius: 6,
-            fontSize: 13,
-            cursor: 'pointer',
-            fontFamily: 'monospace',
-          }}
-        >
-          Back to Library
+    <div style={{ position: 'absolute', inset: 0, background: SHELL.bg0 }}>
+      {/* 全游戏统一的返回浮钮（壳层所有，游戏代码不掺和）—— 视觉基调见 ui/shell-theme.ts */}
+      <div style={{ position: 'absolute', top: 10, right: 10, zIndex: 100 }}>
+        <button onClick={onBack} style={sBackPill()}>
+          ⟵ 返回主界面
         </button>
       </div>
       <div ref={containerRef} style={{ width: '100%', height: '100%' }} />
@@ -605,7 +595,7 @@ function Launcher() {
   }
 
   if (artlib) {
-    return <ArtLibBrowser onBack={() => setArtlib(false)} />;
+    return <AssetLibrary onBack={() => setArtlib(false)} />;
   }
 
   if (launched) {
@@ -615,38 +605,42 @@ function Launcher() {
   return (
     <div style={{
       minHeight: '100vh',
-      background: 'linear-gradient(180deg, #0a0f1e 0%, #111827 100%)',
+      background: SHELL.pageBg,
       display: 'flex',
       flexDirection: 'column',
       alignItems: 'center',
-      padding: '32px 20px',
+      padding: '36px 20px',
+      fontFamily: SHELL.fontUi,
     }}>
-      {/* Header */}
-      <div style={{ textAlign: 'center', marginBottom: 24 }}>
-        <div style={{ fontSize: 11, letterSpacing: 5, color: '#475569', marginBottom: 6 }}>
-          APOLLO ENGINE
+      {/* Header —— 壳层统一基调（清幽·高雅·秩序）：阔字距铭牌 + 青瓷×黛紫渐变字 + 发丝线分隔 */}
+      <div style={{ textAlign: 'center', marginBottom: 26 }}>
+        <div style={{ fontSize: 11, letterSpacing: 6, color: SHELL.faint, marginBottom: 8 }}>
+          A P O L L O &nbsp;E N G I N E
         </div>
         <h1 style={{
           fontSize: 30,
-          fontWeight: 800,
-          background: 'linear-gradient(135deg, #38bdf8, #a78bfa)',
+          fontWeight: 700,
+          letterSpacing: 2,
+          background: `linear-gradient(135deg, ${SHELL.jade}, ${SHELL.violet})`,
           WebkitBackgroundClip: 'text',
           WebkitTextFillColor: 'transparent',
           margin: 0,
         }}>
           Game Library
         </h1>
+        <div style={{ width: 180, height: 1, background: `linear-gradient(90deg, transparent, ${SHELL.lineStrong}, transparent)`, margin: '14px auto 0' }} />
         <button
           onClick={() => setStudio(true)}
           style={{
-            marginTop: 12,
-            padding: '7px 16px',
-            background: 'linear-gradient(135deg, rgba(167,139,250,0.15), rgba(56,189,248,0.15))',
-            color: '#a78bfa',
-            border: '1px solid rgba(167,139,250,0.3)',
+            marginTop: 14,
+            padding: '7px 18px',
+            background: SHELL.violetWash,
+            color: SHELL.violet,
+            border: `1px solid ${SHELL.violetLine}`,
             borderRadius: 8,
             fontSize: 12,
             fontWeight: 600,
+            letterSpacing: 1,
             cursor: 'pointer',
             outline: 'none',
           }}
@@ -656,20 +650,21 @@ function Launcher() {
         <button
           onClick={() => setArtlib(true)}
           style={{
-            marginTop: 12,
-            marginLeft: 8,
-            padding: '7px 16px',
-            background: 'linear-gradient(135deg, rgba(56,189,248,0.15), rgba(34,197,94,0.15))',
-            color: '#38bdf8',
-            border: '1px solid rgba(56,189,248,0.3)',
+            marginTop: 14,
+            marginLeft: 10,
+            padding: '7px 18px',
+            background: SHELL.jadeWash,
+            color: SHELL.jade,
+            border: `1px solid ${SHELL.jadeLine}`,
             borderRadius: 8,
             fontSize: 12,
             fontWeight: 600,
+            letterSpacing: 1,
             cursor: 'pointer',
             outline: 'none',
           }}
         >
-          🎨 美术库
+          🗃 资源库
         </button>
       </div>
 
@@ -691,8 +686,9 @@ function Launcher() {
         marginTop: 'auto',
         paddingTop: 32,
         textAlign: 'center',
-        color: '#334155',
+        color: SHELL.faint,
         fontSize: 11,
+        letterSpacing: 2,
       }}>
         Apollo Engine v0.6 · 26 Atoms · Tier 1-2 · Deterministic Lockstep
       </div>

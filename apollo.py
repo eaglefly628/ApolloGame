@@ -17,6 +17,7 @@ import time
 import webbrowser
 import json
 import shutil
+import base64
 from pathlib import Path
 from http.server import HTTPServer, BaseHTTPRequestHandler
 import threading
@@ -493,6 +494,55 @@ PRESET_BLUEPRINTS = {
     },
 }
 
+# ── 资产导入（资源库导入器的写盘端，仅本机 dev 用）──
+
+def handle_asset_import(body: dict) -> dict:
+    """文件落 assets/ 子树 + assets/index.json 增量条目。
+
+    body = { files: [{path, dataBase64}], entries: [AssetIndexEntry...] }
+    安全：路径必须归一化后仍在 assets/ 下（防穿越）；索引重复 id 整批拒绝（原子性：先校验后写）。
+    """
+    files = body.get('files', [])
+    entries = body.get('entries', [])
+    if not isinstance(files, list) or not isinstance(entries, list) or not entries:
+        return {'success': False, 'error': 'files/entries 形状非法或为空'}
+
+    # ① 路径安全校验（全部先验，后写）
+    for f in files:
+        rel = str(f.get('path', ''))
+        norm = os.path.normpath(rel).replace('\\', '/')
+        if not norm.startswith('assets/') or '..' in norm.split('/'):
+            return {'success': False, 'error': f'非法路径（必须在 assets/ 下）: {rel}'}
+
+    # ② 索引校验：重复 id 整批拒绝
+    idx_path = ROOT / 'assets' / 'index.json'
+    try:
+        index = json.loads(idx_path.read_text(encoding='utf-8'))
+    except FileNotFoundError:
+        index = {'version': 1, 'assets': []}
+    existing = {a.get('id') for a in index.get('assets', [])}
+    dup = [e.get('id') for e in entries if e.get('id') in existing]
+    if dup:
+        return {'success': False, 'error': f'索引已有同名 id: {", ".join(map(str, dup))}'}
+    for e in entries:
+        if not e.get('id') or not e.get('type') or e.get('status') not in ('tbf', 'filled'):
+            return {'success': False, 'error': f'条目非法: {json.dumps(e, ensure_ascii=False)[:120]}'}
+
+    # ③ 写文件
+    written = 0
+    for f in files:
+        rel = os.path.normpath(str(f.get('path', ''))).replace('\\', '/')
+        target = ROOT / rel
+        target.parent.mkdir(parents=True, exist_ok=True)
+        target.write_bytes(base64.b64decode(f.get('dataBase64', '')))
+        written += 1
+
+    # ④ 写索引
+    index['assets'] = list(index.get('assets', [])) + entries
+    idx_path.write_text(json.dumps(index, ensure_ascii=False, indent=2) + '\n', encoding='utf-8')
+    print(c("  [ASSETS]", 'g'), f"导入 {written} 文件，索引 +{len(entries)} 条")
+    return {'success': True, 'written': written, 'indexAdded': len(entries)}
+
 # ── API 服务器 ──
 
 class APIHandler(BaseHTTPRequestHandler):
@@ -560,6 +610,11 @@ class APIHandler(BaseHTTPRequestHandler):
                     print(c("  [GENERATE]", 'g'), f"Generated: {data['blueprint'].get('name', '?')}")
                 else:
                     print(c("  [GENERATE]", 'r'), f"Failed: {data.get('error', '?')[:80]}")
+        elif path == '/api/assets/import':
+            try:
+                data = handle_asset_import(body)
+            except Exception as e:  # 防御：单次导入失败不拖死 API 进程
+                data = {'success': False, 'error': f'导入异常: {e}'}
         else:
             data = {'error': 'Unknown POST endpoint'}
 

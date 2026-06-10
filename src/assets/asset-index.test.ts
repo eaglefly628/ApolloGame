@@ -95,6 +95,46 @@ describe('asset-index — 桥接 AssetManager', () => {
   });
 });
 
+describe('asset-index — v2 字段（资源库）', () => {
+  it('category/tags/source/license/provenance 可选且校验类型', () => {
+    const idx = parseAssetIndex({
+      version: 1,
+      assets: [{
+        id: 'x', type: 'texture', description: 'a', status: 'tbf',
+        category: 'icon.item', tags: ['sword', 'loot'], source: 'import', license: 'CC0',
+        provenance: { method: 'import-loose', originalFile: 'Sword.PNG' },
+      }],
+    });
+    expect(idx.assets[0]).toMatchObject({ category: 'icon.item', source: 'import', license: 'CC0' });
+    expect(idx.assets[0].tags).toEqual(['sword', 'loot']);
+  });
+
+  it('tags 非字符串数组 → 报错；font 是合法类型', () => {
+    expect(() =>
+      parseAssetIndex({ version: 1, assets: [{ id: 'x', type: 'texture', description: 'a', status: 'tbf', tags: [1] }] }),
+    ).toThrow(/tags/);
+    const idx = parseAssetIndex({ version: 1, assets: [{ id: 'f', type: 'font', description: '字体', status: 'tbf' }] });
+    expect(idx.assets[0].type).toBe('font');
+  });
+
+  it('spec.sheet → 注册成 sprite-sheet（导入器·精灵表切割的运行时消费）', async () => {
+    const idx = parseAssetIndex({
+      version: 1,
+      assets: [{
+        id: 'hero.sheet', type: 'texture', description: '精灵表', status: 'filled',
+        path: 'texture/sheet/hero.png',
+        spec: { sheet: { frameWidth: 48, frameHeight: 64, columns: 16, count: 32 } },
+      }],
+    });
+    const m = new AssetManager(new StubAssetLoader());
+    registerAssetIndex(m, idx, '/assets/');
+    const a = await m.load('hero.sheet');
+    expect(a.descriptor).toMatchObject({ kind: 'sprite-sheet', frameWidth: 48, frameHeight: 64, columns: 16, count: 32 });
+    const frame = m.resolve('hero.sheet', 17); // 第 17 帧 → 第二行第 2 列
+    expect(frame).toMatchObject({ sx: 48, sy: 64, sw: 48, sh: 64 });
+  });
+});
+
 describe('asset-index — 真实 assets/index.json 自检', () => {
   it('仓库里的 index.json 合法可解析', () => {
     const idx = parseAssetIndex(realIndex);
