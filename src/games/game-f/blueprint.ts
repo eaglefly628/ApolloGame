@@ -223,25 +223,58 @@ function heroTemplate(h: HeroSpec): PrefabTemplate {
 
 // ── 阵容槽位（持久数据，REQ-F-032）：无 Tag → wipe 清场不波及；跨回合常驻。──
 // 收到展开信号 → 在自身 Transform（= project(q,r) 投影坐标，消除展开后一帧跳变）处展开自己的棋子，
-// overrides 写真值（站位/阵营/星级数值）。买/卖/挪位/换星 = 增删改槽实体数据（MVP-1 商店接这里）。
-function slotEntity(h: HeroSpec): EntityBlueprint {
-  const p = project(h.q, h.r);
+// overrides 写真值（站位/阵营/数值）。买/卖/挪位/换星 = 增删改槽实体数据（MVP-1 商店接这里）。
+// hpMul：§4.5 敌阵强度 / 未来星级同一口径（全走 overrides，模板不动）。
+function slotEntity(h: HeroSpec, onSignal: string, q: number, r: number, hpMul = 1): EntityBlueprint {
+  const p = project(q, r);
+  const hp = Math.round(finalHp(h) * hpMul);
   return {
     Transform: xf(p.x, p.y),
     Caster: {
-      onSignal: h.team === TEAM_A ? 'deploy' : 'deploy_stage_1', // 敌方按关卡分信号（关卡表多阶段=多组敌槽，纯数据）
+      onSignal,
       template: `hero_${h.id}`,
       at: 'self',
-      overrides: {
-        main: {
-          HexPos: { q: h.q, r: h.r },
-          Tag: { flags: h.team | h.cls | h.faction },
-          Resource: { current: finalHp(h), max: finalHp(h) }, // 星级=换这套数值（Phase 2）
-        },
-      },
+      overrides: { main: { HexPos: { q, r }, Tag: { flags: h.team | h.cls | h.faction }, Resource: { current: hp, max: hp } } },
     },
   } as unknown as EntityBlueprint;
 }
+
+// ── 关卡表（flow-spec §4.5，前 2 阶段）：敌阵=数据条目、与我方槽位同构；扩阶段=加条目+一行 when_deploy_stage_N。──
+// 注：敌方强度暂只缩放 HP（攻击力烘在 strike_<id> 模板 amount 里；按阶段缩攻=每阶段一套 strike 模板，真需要再加）。
+const STAGES: { n: number; comp: { hero: string; q: number; r: number; hpMul: number }[] }[] = [
+  {
+    n: 1, // 阶段1「黄巾散兵」：3 子、弱（×0.45，教学局）
+    comp: [
+      { hero: 'b_zhangliao', q: 4, r: 4, hpMul: 0.45 },
+      { hero: 'b_xuchu', q: 7, r: 4, hpMul: 0.45 },
+      { hero: 'b_ganning', q: 9, r: 3, hpMul: 0.45 },
+    ],
+  },
+  {
+    n: 2, // 阶段2「董卓先锋」：4 子全强度（张辽自带方天画戟 ≈ §4.5 的"+1 件装"）
+    comp: [
+      { hero: 'b_zhangliao', q: 4, r: 4, hpMul: 1 },
+      { hero: 'b_xuchu', q: 7, r: 4, hpMul: 1 },
+      { hero: 'b_simayi', q: 6, r: 2, hpMul: 1 },
+      { hero: 'b_ganning', q: 9, r: 3, hpMul: 1 },
+    ],
+  },
+];
+const heroOf = (id: string): HeroSpec => ROSTER.find((h) => h.id === id)!;
+
+// ── §4.1/§4.2 banded 结算（Game E 已证形态）：armed 旗开窗 → EventWhen(edge) 带条件命中 → Effect 改资源一次。──
+// 带宽语义注记：同窗内资源被前一 band 改写后，后续 band 的阈值按"改写后的值"再判（如利息可能含同回合收入）——
+// 确定性单调、每 band 每窗至多一次；TUNE 嫌宽就调阈值，不改逻辑。
+function band(sig: string, when: Record<string, unknown>, targetId: string, value: number): Record<string, EntityBlueprint> {
+  return {
+    [`when_${sig}`]: { EventWhen: { signal: sig, when, mode: 'edge', armed: false } } as unknown as EntityBlueprint,
+    [`eff_${sig}`]: { Effect: { onSignal: sig, kind: 'modify-resource', targetId, op: 'add', value } } as unknown as EntityBlueprint,
+  };
+}
+const flagIs = (id: string): Record<string, unknown> => ({ kind: 'flag', id, equals: true });
+const resCmp = (id: string, cmp: string, value: number): Record<string, unknown> => ({ kind: 'resource', id, cmp, value });
+const and = (...of: Record<string, unknown>[]): Record<string, unknown> => ({ kind: 'and', of });
+const or = (...of: Record<string, unknown>[]): Record<string, unknown> => ({ kind: 'or', of });
 
 // 每英雄三张模板：普攻打击区 + 大招打击区 + 棋子复合体（REQ-F-032 回合重展开用）。targetMask=敌队。
 export const GAME_F_TEMPLATES: Record<string, PrefabTemplate> = Object.fromEntries(
@@ -254,10 +287,11 @@ export const GAME_F_TEMPLATES: Record<string, PrefabTemplate> = Object.fromEntri
 
 const ARENA = { minX: -280, minY: -200, maxX: 280, maxY: 200 };
 
-// 金铲铲回合流程（flow-spec §3.3 round_flow，多回合循环版）：prep⟲combat⟲resolution 循环到 gameover。
-// 回合重置（REQ-F-032）：prep onEnter 臂 deploy_armed → EventWhen(edge) 发 'deploy'/'deploy_stage_1' →
-// 槽位各自展开满状态棋子；resolution onEnter 臂 wipe_armed → 'wipe' → destroy-tagged 按阵营清场（级联连挂件）。
-// L1 run_flow（§3.2 关卡推进/胜利判定）+ ready 开战输入 = MVP-1 队列后续项；现 prep after 40 自动开战、循环常驻。
+// L2 回合流程（flow-spec §3.3 round_flow 原样）：prep⟲combat⟲resolution⟲done 与 L1 round_done 握手。
+// 回合重置（REQ-F-032）：prep 臂 deploy_armed → EventWhen(edge) → 'deploy'/'deploy_stage_<N>' → 槽位重展开；
+// resolution 臂 wipe_armed → 'wipe' → destroy-tagged 清场。经济/伤害不再写死在 flow：prep 臂 income_armed、
+// 败方臂 dmg_armed，由 banded EventWhen→Effect 按 §4.1/§4.2 表结算（见 goldBand/伤害 bands）。
+// 尚缺 ready 开战输入（§6.2 P2，输入路由归主程）：prep 暂以 after 40 自动开战，接上后改读 ready Flag。
 const GAME_FLOW = {
   id: 'round',
   current: 'prep',
@@ -265,35 +299,78 @@ const GAME_FLOW = {
   elapsed: 0,
   states: [
     {
-      id: 'prep', // 备战：发钱（MVP 占位 +5）+ 回合计数 + 重展开两队（满血满蓝新实例）；40 拍后开战
+      id: 'prep', // 备战：臂收入（§4.1 banded 发钱）+ 臂展开，复位 wipe/伤害臂；40 拍后开战
       onEnter: [
-        { kind: 'modify-resource', targetId: 'gold', op: 'add', value: 5 },
-        { kind: 'modify-resource', targetId: 'round_idx', op: 'add', value: 1 },
         { kind: 'set-flag', targetId: 'in_combat', value: false },
         { kind: 'set-flag', targetId: 'wipe_armed', value: false }, // 复位，下次结算再臂（edge 纪律）
-        { kind: 'set-flag', targetId: 'deploy_armed', value: true }, // → 'deploy' + 'deploy_stage_1'
+        { kind: 'set-flag', targetId: 'dmg_armed', value: false },
+        { kind: 'set-flag', targetId: 'deploy_armed', value: true }, // → 'deploy' + 'deploy_stage_<当前阶段>'
+        { kind: 'set-flag', targetId: 'income_armed', value: true }, // → 基础收入/利息/连胜金 bands（§4.1）
       ],
-      transitions: [{ when: { kind: 'always' }, after: 40, to: 'combat', do: [{ kind: 'set-flag', targetId: 'in_combat', value: true }, { kind: 'set-flag', targetId: 'deploy_armed', value: false }] }],
+      transitions: [{ when: { kind: 'always' }, after: 40, to: 'combat', do: [{ kind: 'set-flag', targetId: 'in_combat', value: true }, { kind: 'set-flag', targetId: 'deploy_armed', value: false }, { kind: 'set-flag', targetId: 'income_armed', value: false }] }],
     },
     {
-      id: 'combat', // 战斗：自动互砍 + 蓝满放大招；某队团灭(present flag→false)→结算
+      id: 'combat', // 战斗：自动互砍 + 蓝满放大招；某队团灭(present flag→false)→结算。胜→连胜+1；败→连胜清零+臂伤害
       transitions: [
-        { when: { kind: 'flag', id: 'team_b_present', equals: false }, to: 'resolution', do: [{ kind: 'set-flag', targetId: 'won', value: true }] },
-        { when: { kind: 'flag', id: 'team_a_present', equals: false }, to: 'resolution', do: [{ kind: 'set-flag', targetId: 'won', value: false }, { kind: 'modify-resource', targetId: 'player_hp', op: 'add', value: -5 }] },
+        { when: { kind: 'flag', id: 'team_b_present', equals: false }, to: 'resolution', do: [{ kind: 'set-flag', targetId: 'won', value: true }, { kind: 'modify-resource', targetId: 'win_streak', op: 'add', value: 1 }] },
+        { when: { kind: 'flag', id: 'team_a_present', equals: false }, to: 'resolution', do: [{ kind: 'set-flag', targetId: 'won', value: false }, { kind: 'modify-resource', targetId: 'win_streak', op: 'set', value: 0 }, { kind: 'set-flag', targetId: 'dmg_armed', value: true }] },
       ],
     },
     {
-      id: 'resolution', // 结算：停战 + 清场（wipe→destroy-tagged）；玩家血尽→gameover，否则 60 拍后回 prep（多回合循环）
+      id: 'resolution', // 结算：停战 + 清场（wipe→destroy-tagged）；玩家血尽→gameover，否则 60 拍后进 done 与 L1 握手
       onEnter: [
         { kind: 'set-flag', targetId: 'in_combat', value: false },
         { kind: 'set-flag', targetId: 'wipe_armed', value: true }, // → 'wipe'
       ],
       transitions: [
         { when: { kind: 'resource', id: 'player_hp', cmp: 'lte', value: 0 }, to: 'gameover' },
-        { when: { kind: 'always' }, after: 60, to: 'prep' },
+        { when: { kind: 'always' }, after: 60, to: 'done' },
       ],
     },
+    {
+      id: 'done', // 通知 L1（round_done=true）；L1 advance 推进指针并复位 round_done → 回 prep 开下一回合
+      onEnter: [{ kind: 'set-flag', targetId: 'round_done', value: true }],
+      transitions: [{ when: { kind: 'flag', id: 'round_done', equals: false }, to: 'prep' }],
+    },
     { id: 'gameover', onEnter: [{ kind: 'set-flag', targetId: 'run_over', value: true }] },
+  ],
+};
+
+// L1 局流程（flow-spec §3.2 run_flow 原样）：boot 初始化 → round（等 L2 写 round_done）→ advance 推进
+// 关卡指针 → 打穿关卡表胜利 / run_over 败北。round_idx>5 的进位（stage+1、round=1）由 when_stage_up banded 处理。
+// 关卡表现含前 2 阶段（§4.5）→ stage_idx>2 即通关；表扩到 5 阶段时改 STAGE_COUNT 与 STAGES 数据即可。
+const STAGE_COUNT = 2;
+const RUN_FLOW = {
+  id: 'run',
+  current: 'boot',
+  entered: false,
+  elapsed: 0,
+  states: [
+    {
+      id: 'boot', // 开局初始化（重开局语义：资源/指针归位；与实体初值幂等）
+      onEnter: [
+        { kind: 'modify-resource', targetId: 'player_hp', op: 'set', value: 100 },
+        { kind: 'modify-resource', targetId: 'stage_idx', op: 'set', value: 1 },
+        { kind: 'modify-resource', targetId: 'round_idx', op: 'set', value: 1 },
+      ],
+      transitions: [{ when: { kind: 'always' }, to: 'round' }],
+    },
+    {
+      id: 'round', // 控制权在 L2 round_flow；其打完写 round_done
+      onEnter: [{ kind: 'set-flag', targetId: 'round_done', value: false }],
+      transitions: [
+        { when: { kind: 'flag', id: 'run_over', equals: true }, to: 'defeat' },
+        { when: { kind: 'and', of: [{ kind: 'flag', id: 'round_done', equals: true }, { kind: 'resource', id: 'stage_idx', cmp: 'gt', value: STAGE_COUNT }] }, to: 'victory' },
+        { when: { kind: 'flag', id: 'round_done', equals: true }, to: 'advance' },
+      ],
+    },
+    {
+      id: 'advance', // 推进：round_idx+1（满 5 进位走 banded；进位后的"空阶段巡场回合"≤1 个，victory 检查在下轮 round_done 拍兜住）
+      onEnter: [{ kind: 'modify-resource', targetId: 'round_idx', op: 'add', value: 1 }],
+      transitions: [{ when: { kind: 'always' }, to: 'round' }],
+    },
+    { id: 'victory', onEnter: [{ kind: 'set-flag', targetId: 'run_won', value: true }] },
+    { id: 'defeat' },
   ],
 };
 
@@ -311,27 +388,63 @@ export function buildGameFBlueprint(): WorldBlueprint {
     zone_a: { Zone: { outFlag: 'team_a_present', ...ARENA, requiredTag: TEAM_A, count: 1 } } as unknown as EntityBlueprint,
     zone_b: { Zone: { outFlag: 'team_b_present', ...ARENA, requiredTag: TEAM_B, count: 1 } } as unknown as EntityBlueprint,
     // —— 金铲铲回合流程（flow）+ 其读写的旗标/资源单例 ——
-    flow_ctrl: { GameFlow: GAME_FLOW } as unknown as EntityBlueprint,
+    flow_ctrl: { GameFlow: GAME_FLOW } as unknown as EntityBlueprint, // L2 round_flow
+    flow_run: { GameFlow: RUN_FLOW } as unknown as EntityBlueprint, // L1 run_flow（§3.2）
     f_in_combat: { Flag: { id: 'in_combat', active: false } } as unknown as EntityBlueprint,
     f_won: { Flag: { id: 'won', active: false } } as unknown as EntityBlueprint,
     f_over: { Flag: { id: 'run_over', active: false } } as unknown as EntityBlueprint,
+    f_round_done: { Flag: { id: 'round_done', active: false } } as unknown as EntityBlueprint, // L1↔L2 握手
+    f_run_won: { Flag: { id: 'run_won', active: false } } as unknown as EntityBlueprint, // 打穿关卡表=通关
     r_gold: { Resource: { id: 'gold', current: 0, min: 0, max: 999 } } as unknown as EntityBlueprint,
-    r_player_hp: { Resource: { id: 'player_hp', current: 20, min: 0, max: 20 } } as unknown as EntityBlueprint,
-    r_round_idx: { Resource: { id: 'round_idx', current: 0, min: 0, max: 999 } } as unknown as EntityBlueprint, // 回合序号（§3.1 已注册；关卡表指针 MVP-1 接）
+    r_player_hp: { Resource: { id: 'player_hp', current: 100, min: 0, max: 100 } } as unknown as EntityBlueprint, // §3.1：0..100（旧 20 是 MVP-0 占位）
+    r_round_idx: { Resource: { id: 'round_idx', current: 1, min: 0, max: 999 } } as unknown as EntityBlueprint, // 回合序号（advance +1，>5 进位）
+    r_stage_idx: { Resource: { id: 'stage_idx', current: 1, min: 0, max: 99 } } as unknown as EntityBlueprint, // 阶段序号（关卡表指针）
+    r_win_streak: { Resource: { id: 'win_streak', current: 0, min: 0, max: 999 } } as unknown as EntityBlueprint, // 连胜数（§4.1 连胜金）
     // —— 回合重置接线（REQ-F-032）：flow 臂旗标 → EventWhen(edge) 产单拍信号 → 槽位展开 / destroy-tagged 清场 ——
     f_deploy_armed: { Flag: { id: 'deploy_armed', active: false } } as unknown as EntityBlueprint,
     f_wipe_armed: { Flag: { id: 'wipe_armed', active: false } } as unknown as EntityBlueprint,
-    when_deploy: { EventWhen: { signal: 'deploy', when: { kind: 'flag', id: 'deploy_armed', equals: true }, mode: 'edge', armed: false } } as unknown as EntityBlueprint,
-    when_deploy_stage1: { EventWhen: { signal: 'deploy_stage_1', when: { kind: 'flag', id: 'deploy_armed', equals: true }, mode: 'edge', armed: false } } as unknown as EntityBlueprint, // 多阶段=按 round_idx/stage_idx 加条件分流（MVP-1 关卡表）
-    when_wipe: { EventWhen: { signal: 'wipe', when: { kind: 'flag', id: 'wipe_armed', equals: true }, mode: 'edge', armed: false } } as unknown as EntityBlueprint,
+    f_income_armed: { Flag: { id: 'income_armed', active: false } } as unknown as EntityBlueprint, // §4.1 结算窗
+    f_dmg_armed: { Flag: { id: 'dmg_armed', active: false } } as unknown as EntityBlueprint, // §4.2 败方结算窗
+    when_deploy: { EventWhen: { signal: 'deploy', when: flagIs('deploy_armed'), mode: 'edge', armed: false } } as unknown as EntityBlueprint,
+    when_deploy_stage1: { EventWhen: { signal: 'deploy_stage_1', when: and(flagIs('deploy_armed'), resCmp('stage_idx', 'eq', 1)), mode: 'edge', armed: false } } as unknown as EntityBlueprint, // 敌阵按 stage_idx 分流
+    when_deploy_stage2: { EventWhen: { signal: 'deploy_stage_2', when: and(flagIs('deploy_armed'), resCmp('stage_idx', 'eq', 2)), mode: 'edge', armed: false } } as unknown as EntityBlueprint,
+    when_wipe: { EventWhen: { signal: 'wipe', when: flagIs('wipe_armed'), mode: 'edge', armed: false } } as unknown as EntityBlueprint,
     wipe_team_a: { Effect: { onSignal: 'wipe', kind: 'destroy-tagged', targetId: '', value: TEAM_A } } as unknown as EntityBlueprint, // 清场：按阵营批量销毁，级联连名牌/条/sidecar
     wipe_team_b: { Effect: { onSignal: 'wipe', kind: 'destroy-tagged', targetId: '', value: TEAM_B } } as unknown as EntityBlueprint,
+    // —— 关卡进位（§3.2 注：advance 只 +1，满 5 进位走 banded）——
+    when_stage_up: { EventWhen: { signal: 'stage_up', when: resCmp('round_idx', 'gt', 5), mode: 'edge', armed: false } } as unknown as EntityBlueprint,
+    eff_stage_up_stage: { Effect: { onSignal: 'stage_up', kind: 'modify-resource', targetId: 'stage_idx', op: 'add', value: 1 } } as unknown as EntityBlueprint,
+    eff_stage_up_round: { Effect: { onSignal: 'stage_up', kind: 'modify-resource', targetId: 'round_idx', op: 'set', value: 1 } } as unknown as EntityBlueprint,
+    // —— §4.1 基础收入（按回合全局序 1,2,3,4,≥5 → 2,2,3,4,5 金；全局序≥5 ⇔ 阶段>1 或 round≥5）——
+    ...band('income_2', and(flagIs('income_armed'), resCmp('stage_idx', 'eq', 1), resCmp('round_idx', 'lte', 2)), 'gold', 2),
+    ...band('income_3', and(flagIs('income_armed'), resCmp('stage_idx', 'eq', 1), resCmp('round_idx', 'eq', 3)), 'gold', 3),
+    ...band('income_4', and(flagIs('income_armed'), resCmp('stage_idx', 'eq', 1), resCmp('round_idx', 'eq', 4)), 'gold', 4),
+    ...band('income_5', and(flagIs('income_armed'), or(resCmp('stage_idx', 'gt', 1), resCmp('round_idx', 'gte', 5))), 'gold', 5),
+    // —— §4.1 利息 ⌊gold/10⌋ 上限 +5（5 条 banded）——
+    ...band('interest_1', and(flagIs('income_armed'), resCmp('gold', 'gte', 10), resCmp('gold', 'lt', 20)), 'gold', 1),
+    ...band('interest_2', and(flagIs('income_armed'), resCmp('gold', 'gte', 20), resCmp('gold', 'lt', 30)), 'gold', 2),
+    ...band('interest_3', and(flagIs('income_armed'), resCmp('gold', 'gte', 30), resCmp('gold', 'lt', 40)), 'gold', 3),
+    ...band('interest_4', and(flagIs('income_armed'), resCmp('gold', 'gte', 40), resCmp('gold', 'lt', 50)), 'gold', 4),
+    ...band('interest_5', and(flagIs('income_armed'), resCmp('gold', 'gte', 50)), 'gold', 5),
+    // —— §4.1 连胜金：2–3 连 +1；4 连 +2；5+ 连 +3 ——
+    ...band('streak_1', and(flagIs('income_armed'), resCmp('win_streak', 'gte', 2), resCmp('win_streak', 'lte', 3)), 'gold', 1),
+    ...band('streak_2', and(flagIs('income_armed'), resCmp('win_streak', 'eq', 4)), 'gold', 2),
+    ...band('streak_3', and(flagIs('income_armed'), resCmp('win_streak', 'gte', 5)), 'gold', 3),
+    // —— §4.2 玩家伤害（败方）：阶段基础伤(1/2 阶段=0/2) + 存活敌数近似 2（REQ-022 group-count 接入后换真值，队列 P1 注记）——
+    ...band('dmg_stage_1', and(flagIs('dmg_armed'), resCmp('stage_idx', 'eq', 1)), 'player_hp', -2),
+    ...band('dmg_stage_2', and(flagIs('dmg_armed'), resCmp('stage_idx', 'gt', 1)), 'player_hp', -4),
     // 静态相机（表现，排除出 hash）。720p 画布 + zoom 把棋盘放大填满视口。
     camera: { Transform: xf(0, 0), Camera: { zoom: 1.8, offsetX: 0, offsetY: 0, rotation: 0, viewportW: 1280, viewportH: 720 } } as unknown as EntityBlueprint,
   };
-  // 棋子不再烘进装配期（REQ-F-032）：每英雄一个持久槽位，prep 拍按信号展开复合实例（单位+名牌+条+大招接线）。
-  for (const h of ROSTER) {
-    entities[`slot_${h.id}`] = slotEntity(h);
+  // 我方阵容槽（持久）：蜀方 4 将；买/卖/挪位/升星 = 改这些槽数据（MVP-1 商店接这里）。
+  for (const h of ROSTER.filter((x) => x.team === TEAM_A)) {
+    entities[`slot_${h.id}`] = slotEntity(h, 'deploy', h.q, h.r);
+  }
+  // 敌方关卡槽（持久）：每阶段一组，prep 按 stage_idx 分流的 deploy_stage_<N> 展开（§4.5 敌阵=数据）。
+  for (const st of STAGES) {
+    for (const c of st.comp) {
+      entities[`slot_s${st.n}_${c.hero}`] = slotEntity(heroOf(c.hero), `deploy_stage_${st.n}`, c.q, c.r, c.hpMul);
+    }
   }
 
   return {

@@ -102,6 +102,9 @@
 | `deploy_armed` / `wipe_armed` | Flag | 展开/清场触发臂（flow onEnter 置位，edge 纪律：下一相位复位） | round 流程 → EventWhen(edge) |
 | `deploy` / `deploy_stage_<N>` | 信号 | 我方/第 N 阶段敌方阵容展开（单拍） | EventWhen → 槽位 Caster |
 | `wipe` | 信号 | 清场（单拍） | EventWhen → destroy-tagged Effect×2 |
+| `income_armed` / `dmg_armed` | Flag | §4.1 收入结算窗（prep 臂）/ §4.2 败方伤害结算窗（败方转移臂） | round 流程 → bands |
+| `income_*` / `interest_*` / `streak_*` / `dmg_stage_*` | 信号 | §4.1/§4.2 banded 结算（每窗每带至多一发） | EventWhen → Effect(gold/player_hp) |
+| `stage_up` | 信号 | round_idx>5 进位（stage_idx+1、round_idx=1） | EventWhen → Effect×2 |
 
 ### 3.2 L1 · Run 流程（局）：`run_flow` 实体一台机
 
@@ -248,13 +251,16 @@ aggro(锁最近敌) → grid-move(六角 A* 逐格走) → loop Timer(攻速) �
 
 ## 六、符合性审查（2026-06-10，对照 mainbranch@`706758e`）
 
-### 6.1 已达成 ✓（全部有测试背书，`src/games/game-f/game-f.test.ts` 9/9 绿）
+### 6.1 已达成 ✓（全部有测试背书，`src/games/game-f/game-f.test.ts` 10/10 绿）
 
 | 本规范条目 | 实现/测试证据 |
 |---|---|
 | §3.4 战斗涌现链全套 | blueprint.ts 纯数据装配；测试「两队自动对冲互砍」「蓝条→大招」 |
 | §3.3 combat→resolution 转移（团灭→present flag→结算） | 测试「战斗收敛到团灭」+ GAME_FLOW combat 转移 |
-| §3.3 prep ⑥ 回合重置 + resolution 清场 + prep⟲resolution 多回合循环（REQ-F-032/033） | 棋子=复合模板实例（'@local:main' 整族生灭）+ 8 持久槽位 + deploy/wipe 信号 + destroy-tagged；测试「备战拍展开」「回合重置：清场无孤儿/槽位库持久/新实例满状态 id 全新」 |
+| §3.3 prep ⑥ 回合重置 + resolution 清场 + 多回合循环（REQ-F-032/033） | 棋子=复合模板实例（'@local:main' 整族生灭）+ 持久槽位 + deploy/wipe 信号 + destroy-tagged；测试「备战拍展开」「回合重置：清场无孤儿/槽位库持久/新实例满状态 id 全新」 |
+| §3.2 L1 run_flow 全套（boot/round/advance/victory/defeat + round_done 握手 + >5 进位 banded） | `flow_run` 实体 + `when_stage_up`；测试「L1 run_flow + §4.1/§4.2 表」（advance 推进 / 进位换敌阵断言） |
+| §4.1 经济三件套（收入爬坡 2,2,3,4,≥5 / 利息 ⌊g/10⌋≤5 / 连胜金）+ §4.2 伤害（阶段基础+存活近似2） | 14 组 band 实体（armed 窗 + EventWhen(edge) + Effect）；测试断言 回合1=2金、回合2=4金、败扣2/4 |
+| §4.5 关卡表前 2 阶段（敌阵=数据条目、deploy_stage_N 按 stage_idx 分流；黄巾散兵×0.45 / 董卓先锋全强度） | STAGES 表 + 阶段敌槽；测试「进位换关卡敌阵：阶段2 4 子」 |
 | 确定性 | 测试「同初值重跑 hash 一致」（注：当前无 RandomSeed，商店接入后升级为真 seed 检验） |
 | `in_combat` 门控、名牌级联死、六角棋盘+A*、独立血攻、大招/DoT、静态装备、势力/职业 Tag 位 | b14d109/674728e/706758e 等提交 + 对应测试 |
 | 工程纪律：唯一 id 防串台、零游戏 system | blueprint 全文 grep 无 system；id 形如 `mp_a_guanyu` |
@@ -263,14 +269,13 @@ aggro(锁最近敌) → grid-move(六角 A* 逐格走) → loop Timer(攻速) �
 
 | # | 差距 | 对应规范 | 备注 |
 |---|---|---|---|
-| P0 | ~~单局版 flow → 多回合~~ **round 循环+回合重置已落（2026-06-10）**；余 **L1 run_flow**（§3.2 关卡推进/胜负/round_done 握手） | §3.2 | REQ-F-032/033 已 done；run_flow=纯数据，接上后 resolution 出口由「直回 prep」改为「done 握手」 |
-| P0 | **商店买人三件套**（card-pile 5 槽 + craft-recipe 扣价 + 买入→阵容） | §3.3 操作表 | 纯数据，零新 capability；「买入→上场」与 030 共用展开语义 |
-| P1 | 经济三件套（收入爬坡表 + 利息 banded + 连胜金） | §4.1 | 纯数据（Game E 已证形态） |
-| P1 | 玩家伤害公式（阶段基础伤 + 存活敌数） | §4.2 | 存活数读取依赖 REQ-022（已 done）或先用固定表近似 |
-| P1 | 关卡表与敌阵装载（前 2 阶段） | §4.5 | 与 030 的展开语义共用 |
+| ~~P0~~ | ✅ **多回合 run/round 双层机全落（2026-06-10）**：round 循环+回合重置+L1 run_flow（victory/defeat/握手/进位 banded） | §3.2/§3.3 | 余 ready 接上后 prep 的 `after 40` 改读 ready Flag（P2）；进位后有 ≤1 个空阶段巡场回合（victory 在下轮 round_done 拍兜住，spec 形状如此） |
+| P0 | **商店买人三件套**（card-pile 5 槽 + craft-recipe 扣价 + 买入→阵容） | §3.3 操作表 | 纯数据，零新 capability；「买入→上场」与 032 共用展开语义（买=造我方槽实体） |
+| ~~P1~~ | ✅ **经济三件套落地（2026-06-10）**：收入爬坡/利息/连胜金 = armed 窗 + banded | §4.1 | 带宽注记：同窗后序 band 读改写后的 gold（利息可能含本回合收入），TUNE 改阈值即可 |
+| ~~P1~~ | ✅ **玩家伤害落地（2026-06-10）**：阶段基础伤 + 存活敌数**近似 2** | §4.2 | 真存活数待 REQ-022 group-count 接入（Phase 3 同期），换 band 值即可 |
+| ~~P1~~ | ✅ **关卡表前 2 阶段落地（2026-06-10）**：STAGES 数据 + deploy_stage_N 分流 | §4.5 | 强度暂只缩 HP（攻烘在 strike 模板；按阶段缩攻=每阶段一套 strike 模板，真需要再加）；阶段 3-5 = 填表+加 when 行 |
 | P2 | ready 开战按钮 + 备战期输入域 | §3.3 | 输入路由交主程 |
 | P2 | 等级/经验/商店概率牌袋 | §4.3/§4.4 | 纯数据 banded |
-| — | 当前 `player_hp` 20/-5 与 prep 发钱 +5 固定值 | §4.1/§4.2 | MVP-0 占位数值，MVP-1 换表 |
 
 ### 6.3 守住的纪律（审查通过项）
 

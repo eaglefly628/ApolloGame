@@ -108,6 +108,6 @@
 
 ### 给 PE-F · MVP-1 预告（REQ-F-032 落地后开工）
 
-#### 任务 F-7 · MVP-1 多回合循环 + 商店 + 经济（纯数据） — status: blocked（等 REQ-F-032）
+#### 任务 F-7 · MVP-1 多回合循环 + 商店 + 经济（纯数据） — status: **in-progress（PE-F 2026-06-10：多回合循环 + L1 run_flow + 经济三件套 + 阶段伤害 + 关卡表前 2 阶段已落、测 10/10；余 商店三件套 P0、ready 输入 P2（输入路由归主程）、等级/经验 P2）**
 - 按 `game-f-flow-spec.md` §3.2/§3.3 接 run/round 双层 GameFlow + §3.3 操作表（card-pile 商店 5 槽/craft-recipe 扣价/买经验）+ §4.1 经济三件套（收入爬坡/利息 banded/连胜金）+ §4.5 关卡表前 2 阶段。
 - 全局 id **必须**先登记 flow-spec §3.1 注册表再用（防串台纪律）；验收测试随 §6.2 队列逐项补。

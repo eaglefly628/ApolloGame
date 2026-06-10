@@ -37,7 +37,7 @@ describe('Game F — 自走棋（纯数据装配，零自走棋代码；棋子=�
     e.load(buildGameFBlueprint());
     for (let i = 0; i < 20; i++) e.world.tick(); // prep 早段已展开（onEnter 臂旗 → edge 信号 → 槽位 Caster → prefab）
     const r1 = mains(e);
-    expect(r1).toHaveLength(8);
+    expect(r1).toHaveLength(7); // 我方 4 + 阶段1「黄巾散兵」敌 3（§4.5 关卡表）
     for (const m of r1) {
       expect(alive(e, childOf(m, 'name'))).toBe(true); // 名牌随模板整体展开
       expect(alive(e, childOf(m, 'hpbar'))).toBe(true); // 血条
@@ -150,7 +150,7 @@ describe('Game F — 自走棋（纯数据装配，零自走棋代码；棋子=�
     e.load(buildGameFBlueprint());
     for (let i = 0; i < 60; i++) e.world.tick();
     const r1 = mains(e);
-    expect(r1).toHaveLength(8); // 回合 1 展开
+    expect(r1).toHaveLength(7); // 回合 1 展开（我方 4 + 阶段1 敌 3）
     // 打到一方团灭 → resolution 'wipe' destroy-tagged 双向清场 → 全场 0 子（挂件级联，下面用名牌验）。
     const r1name = childOf(r1[0], 'name');
     let wiped = false;
@@ -161,17 +161,48 @@ describe('Game F — 自走棋（纯数据装配，零自走棋代码；棋子=�
     expect(wiped).toBe(true);
     expect(alive(e, r1name)).toBe(false); // 名牌等挂件随清场级联，无孤儿
     expect(alive(e, 'slot_a_guanyu')).toBe(true); // 阵容槽位（无 Tag）持久
-    expect(alive(e, 'slot_b_simayi')).toBe(true);
+    expect(alive(e, 'slot_s2_b_simayi')).toBe(true); // 阶段 2 敌槽同样持久（§4.5 关卡表）
     expect(alive(e, 'library')).toBe(true); // 模板库持久
-    // resolution 余下 ≤60 拍 → 回 prep 重展开：+70 拍落在下一回合备战期内。
-    for (let i = 0; i < 70; i++) e.world.tick();
+    // resolution 余下 ≤60 拍 + done 握手数拍 → 回 prep 重展开：+75 拍落在下一回合备战期内。
+    for (let i = 0; i < 75; i++) e.world.tick();
     const r2 = mains(e);
-    expect(r2).toHaveLength(8); // 新一轮 8 子
+    expect(r2).toHaveLength(7); // 新一轮（仍阶段1）7 子
     for (const id of r2) expect(r1).not.toContain(id); // prefab.seq 单调 → 实例 id 全新（确定性可重放）
     for (const m of r2) {
       const hp = e.world.getComponent<Resource>(m, 'Resource')!;
       expect(hp.current).toBe(hp.max); // 满状态重开（战斗状态不跨回合）
       expect(alive(e, childOf(m, 'hpbar'))).toBe(true); // 挂件随新实例整族重生
     }
+  });
+
+  it('L1 run_flow + §4.1/§4.2 表：回合1收入2金；advance 推进；败方按阶段表扣血；round>5 进位换关卡敌阵', () => {
+    const e = new Engine({ tickRate: 60 });
+    e.load(buildGameFBlueprint());
+    const res = (id: string): number => {
+      for (const x of e.world.getAllEntities()) {
+        const r = e.world.getComponent<Resource>(x, 'Resource');
+        if (r && r.id === id) return r.current;
+      }
+      return -1;
+    };
+    for (let i = 0; i < 50; i++) e.world.tick();
+    expect(res('player_hp')).toBe(100); // §3.1 量程（boot 初始化，旧 20 为占位）
+    expect(res('round_idx')).toBe(1);
+    expect(res('stage_idx')).toBe(1);
+    expect(res('gold')).toBe(2); // §4.1 全局回合 1 基础收入 = 2（无利息、无连胜金）
+    // 打完回合 1：L2 done 写 round_done → L1 advance round_idx→2 → 回 prep 发第二笔收入
+    let guard = 0;
+    while (res('round_idx') === 1 && guard++ < 4000) e.world.tick();
+    expect(res('round_idx')).toBe(2);
+    for (let i = 0; i < 50; i++) e.world.tick(); // 回合 2 备战：第二笔收入已发
+    expect(res('gold')).toBe(4); // 2+2（gold<10 无利息；连胜 1 不够 §4.1 连胜金档）
+    expect(res('player_hp')).toBe(flag(e, 'won') ? 100 : 98); // §4.2 阶段1败=基础0+存活近似2
+    // 注入把 round_idx 推到 5（合法 sim 输入），打完该回合验证 >5 进位 banded：stage+1、round=1、敌阵换装
+    e.world.addComponent('r_round_idx', { type: 'ResourceModify', resourceId: 'round_idx', amount: 3, scope: 'local' } as unknown as Resource);
+    let guard2 = 0;
+    while (!(res('round_idx') === 1 && res('stage_idx') === 2) && guard2++ < 4000) e.world.tick();
+    expect(res('stage_idx')).toBe(2); // when_stage_up：进位发生
+    for (let i = 0; i < 50; i++) e.world.tick(); // 阶段 2 备战展开
+    expect(mains(e).filter((id) => id.startsWith('hero_b_'))).toHaveLength(4); // 关卡表换敌阵：「董卓先锋」4 子全强度
   });
 });
