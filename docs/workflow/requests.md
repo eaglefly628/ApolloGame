@@ -998,13 +998,20 @@
 
 ---
 
-### REQ-F-026 · [2026-06-10] · Programmer F（Game F 表现层暴露）· 框架级 · status: **open** · 优先级: 中（表现 bug：挂件不随宿主死）· 类型: 真缺口（父体销毁 → 级联销毁 Hierarchy 子体）
+### REQ-F-026 · [2026-06-10] · Programmer F（Game F 表现层暴露）· 框架级 · status: **done**（2026-06-10，Lead 评审 greenlit + 落地 `t1-hierarchy-cascade`）· 优先级: 中（表现 bug：挂件不随宿主死）· 类型: 真缺口（父体销毁 → 级联销毁 Hierarchy 子体）
 
 > **现象（game-f bug：方块死后名字残留）**：棋子头顶名字 = 独立实体 + `Hierarchy{parentId:棋子}` 跟随。棋子被 `mortal`→`destroy-apply` 销毁后，名字实体成**孤儿**（`hierarchy-resolve` 见父无 Transform → skip，留原地）→ **死了的方块名字残留屏幕**。
 > **通用性**：任何"挂件"（名牌/血条/武器/光环/buff 图标）都该**随宿主销毁而销毁**，不止自走棋。
 > **证伪重组（按铁律，附依据）**：① `mortal` 纯本地（要求实体自身有匹配 Resource）——名字无 hp，挂不了；② 名字给 `Mortal{resource:'hp'}` 需全局唯一 hp id，但会破坏 hitbox（按固定 'hp' 局部扣血）；③ 同体不行——一实体 Sprite+Text 互斥（`chooseRenderMode` text 优先盖掉 token）；④ `self-rule` 读自身组件，读不到"父是否还在"。→ 现有数据/能力**表达不了"子随父死"**。**真缺口。**
 > **建议（交主程裁，1 系统/小改）**：`destroy-apply` 移除实体 E 时，**连带移除所有 `Hierarchy.parentId===E` 的实体**（级联，可递归多级）；或等价 `hierarchy-cascade` 系统。确定性：纯按引用删、与遍历序无关。
 > 落地后 game-f 名字即随棋子死亡消失（零游戏改动）。其余两个 bug（名字镜像/720p）我已纯数据修。
+>
+> **Lead 裁决（主程4）：greenlit，已落地。** 独立复核确认真缺口——除 PE-F 四条外，额外排除了它没提的重组路径：**prefab 载体回收**只回收单组件请求载体、无「按实例分组销毁」；**relation + 收割系统**与提案功能等价且冗余（挂件本就需 Hierarchy）；**lifetime** 表达不了动态父死时刻；**event-when→effect-apply 链**需新增「实体是否存在」condition 叶子 + 每子手写一条 watch 数据 = O(子) 脆弱装配，**过不了「最弱 LLM 一致产出」尺子**。
+> **定性修正**：不是新轴/新 capability，是**补全 `hierarchy` 的生命周期语义**——它此前只做「子跟父变换」(hierarchy-resolve)，漏了「子存活以父为界」；孤儿是 hierarchy 的潜伏 bug。
+> **落地方案**（优于 PE-F 两建议、且不脏引擎核心）：新增 tier1 `hierarchy-cascade` 系统，按**生命周期铁律（请求制销毁）**排在 destroy-apply **之前**，沿 `Hierarchy.parentId` 把 DestroyRequest **传播给后代传递闭包**（多级一帧），destroy-apply 一趟移除父+全部后代 → **同帧、绝不残留一帧孤儿**。**不**把 `'Hierarchy'` 硬编进 `world.destroyEntity`（核心保持组件无知）。
+> 确定性：销毁集 = 后代传递闭包，与遍历序无关；`parentId` 为空 = 根，永不波及（亦即「父死子留」逃生门）；环引用由 doomed 集单调增长保证终止。**零新增数据**（复用挂件本就有的 parentId 边）。**默认级联**（对齐 Unity/Godot/Unreal），罕见保留场景后续用「死前置空 parentId」或 `detachOnParentDestroy` 标志（YAGNI）。
+> 文件：`src/skills/tier1/hierarchy-cascade.ts` + 注册 `capability-registry.ts`/barrel + 8 测（单层/多级/不误伤/根逃生门/环终止/定序无关）；tsc + vitest(934 绿) + build 全绿。
+> **game-f 接入（归 PE-F，1 行数据）**：把 `hierarchyCascadeCapability` 加进 game-f blueprint 的 capabilities 列表即生效，零游戏代码。
 
 ---
 

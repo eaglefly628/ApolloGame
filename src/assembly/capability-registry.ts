@@ -7,6 +7,7 @@ import {
   rotationApplyCapability,
   animationCapability,
   hierarchyResolveCapability,
+  hierarchyCascadeCapability,
   tweenCapability,
 } from '@skills/tier1/index.js';
 import {
@@ -59,6 +60,7 @@ export const ALL_CAPABILITIES: readonly CapabilityDefinition[] = [
   rotationApplyCapability,
   animationCapability,
   hierarchyResolveCapability,
+  hierarchyCascadeCapability,
   tweenCapability,
   // tier2
   collisionResolveCapability,
