@@ -68,7 +68,7 @@
 3. **重新平衡数值**（HP_SCALE 退回合理、低攻/适中血、同 ~18s）。
 4. **羁绊**：group-count 数蜀魏吴/武将谋士 → 越阈值 buff（buff 施加先试"全局 buff 资源"重组，真不行才提 group-effect）。
 5. **商店+经济+升星**（card-pile+craft-recipe）把单局扩成 roguelike；星级=独立星星实体叠加（用户提的做法）。
-6. **多回合循环**：需"棋子倒下/复活/回合重置"——做前先证伪重组，真缺口才提。
+6. **多回合循环（= inbox F-7，当前第一优先）**：REQ-F-032 引擎已落（`Caster.overrides`+`destroy-tagged`，d863f92），但接入暴露前置缺口 **REQ-F-033（prefab 模板内部引用重映射）已提主程、status open**——落地前**勿硬接**（会回退 F-5 条/F-1 名牌）。落地后按 **§5.3 草案**接。
 
 ### 5.1 血条/蓝条接入（✅ 已接入 mainbranch 2026-06-10，本节存档备查）
 
@@ -113,6 +113,17 @@
 > 3. **控制技**（诸葛"八阵图"等）的 ult 打击区 `Hitbox` 置上 Status=FROZEN + 一个时长（到点自动解冻）——`hitbox` 系统 `writes:['ResourceModify','Status','OverTime']`，**先去 `src/skills/tier2/hitbox.ts` 读它置 Status / 调度 OverTime 解控的真实字段**（我提案里写的 `setMask/statusDuration` 是建议名，未必是落地名），按真实字段填。
 > 4. 可选：被冻禁攻击=普攻 `EventWhen.when` 的 `and` 里再加一条"自身 Status 不含 FROZEN"叶子（次要，先定身就够）。
 > 5. tsc+vitest+build 全绿才推。
+
+### 5.3 回合重置接入草案（F-7 / REQ-F-032；**被 REQ-F-033 阻塞**，落地后照此接）
+
+> 引擎已备好（d863f92，4 验收测）：`SpawnRequest.overrides` / `Caster.overrides`（localId→组件→字段补丁，深拷贝后逐字段合并）+ `Effect{kind:'destroy-tagged', value:Tag掩码}`（按 Tag 批量清场，cascade 连挂件）。实例 id = `模板#seq:localId`。**范式见 `roster-round.integration.test.ts`（主程写的整轮循环样例，照抄结构）**。
+>
+> 1. **每英雄一个模板** `hero_<id>` 进 `GAME_F_TEMPLATES`：entities = `main`（现 unitEntity 全套；hp Resource/Tag 占位由槽位 overrides 改写）+ `name` + `hpbg/hpbar/mpbg/mpbar` + `mana/fill/ultcast/drain`。**内部引用（name/条的 `Hierarchy.parentId`、ultcast 的 `Caster.originEntity` → main）按 REQ-F-033 落地语法写**（提案 B 即 `'@local:main'`；以主程最终落地为准）。唯一 id 策略不变（每英雄专属模板，`atk_<id>/mp_<id>` 烘进各自模板）。
+> 2. **槽位实体（持久，无 Tag → wipe 不波及）**：我方 4 槽 `Caster{onSignal:'deploy', template:'hero_<id>', at:'self', overrides:{main:{HexPos:{q,r}, Tag:{flags:team|cls|faction}, Resource:{current/max=星级数值}}}}`；敌方 4 槽同构、onSignal `'deploy_stage_1'`（关卡表多阶段=每阶段一组敌槽，纯数据）。**槽 Transform 直接放 `project(q,r)` 投影坐标**（消除展开后一帧跳变，主程接入注意原话）。
+> 3. **flow 改循环**：prep onEnter `[gold+5, in_combat=false, wipe_armed=false, deploy_armed=true, round+1]`；`deploy_armed` → EventWhen(edge) → 发 `'deploy'`（+按 `round` 条件发 `'deploy_stage_N'`）；combat 同现状（present flag 判胜负）；resolution onEnter `[in_combat=false, deploy_armed=false, wipe_armed=true]`（EventWhen edge → `'wipe'`），转移 `player_hp≤0→gameover`、`after 60 → prep`（**回 prep = 多回合循环**，替掉单局 done）。
+> 4. **清场**：两条常驻 `Effect{onSignal:'wipe', kind:'destroy-tagged', targetId:'', value:TEAM_A / TEAM_B}`。
+> 5. **全局 id 先登记 flow-spec §3.1 注册表**：`deploy` / `wipe` / `deploy_stage_1` / `round` / `deploy_armed` / `wipe_armed`。
+> 6. **测试**：两回合循环（一轮团灭→resolution wipe→prep 重展开：实例 id 全新、名牌/条随生随灭、槽位/库幸存）+ 确定性 hash 双跑；Zone present flag 注意 prep 40 拍内 zone 重新数到人（展开次拍生效，余量足）。
 
 ## 6. Gotchas（坑）
 

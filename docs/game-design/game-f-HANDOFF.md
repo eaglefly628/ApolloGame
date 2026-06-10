@@ -12,7 +12,7 @@
 - **进度阶段**：**MVP-0 已完成并超出**（自 `1330299` 起 ~10 个提交，至 `706758e`）：
   战斗涌现链全套（索敌/六角 A* 走位/普攻/攒蓝/大招/DoT/死亡级联）+ 单回合 flow + 六角棋盘 + 8 将（独立血攻/职业/势力位/静态装备）+ DCSS 美术 + **5 个 vitest 全绿**（含确定性 hash）。
 - **角色分工**：**策划/文档/符合性审查 = 策划 PF（本文档维护者）；编程 = 程序员 sessions（mainbranch）**。
-- **缺口需求现状**：**REQ-021 done**（self 寻址，引擎侧）· **REQ-022 done**（group-count，裁剪后落地）· **REQ-023 不 greenlit**（YAGNI，先重组）· REQ-F-024~028 done（六角寻路/级联/正交投影/定序）· REQ-F-029/030/031 done（实时血条 t2-gauge / 受控停步 / gauge 定序环已修——**三者已接入 game-f**，inbox F-5/F-6 done 2026-06-10）· **REQ-F-032 open（回合重置/实例重生，MVP-1 阻塞点，待主程裁）**。
+- **缺口需求现状**：**REQ-021 done**（self 寻址，引擎侧）· **REQ-022 done**（group-count，裁剪后落地）· **REQ-023 不 greenlit**（YAGNI，先重组）· REQ-F-024~028 done（六角寻路/级联/正交投影/定序）· REQ-F-029/030/031 done（实时血条 t2-gauge / 受控停步 / gauge 定序环已修——**三者已接入 game-f**，inbox F-5/F-6 done 2026-06-10）· REQ-F-032 done（引擎侧 A 瘦身路线：`Caster.overrides`+`destroy-tagged`，d863f92）· **REQ-F-033 open（prefab 模板内部引用重映射——F-7 接入暴露的前置缺口，现 MVP-1 阻塞点，待主程；详 requests.md）**。
 - **下一步 = MVP-1**：多回合 run/round 双层流程 + 商店买人 + 经济三件套 + 关卡表。**全部以《`game-f-flow-spec.md`》为准**（§5 路线 + §6.2 开发队列）。
 
 ---
@@ -103,7 +103,7 @@ PrefabTemplate: { entities: { localId: { Comp: data } } }
 - **MVP-0 ✅ 已达成**（战斗涌现链 + 单回合 flow 单局版；唯一 id 规避串台；5 测试绿）。
   设计期"MVP-0 含商店/经济"的口径**已收窄**：商店/经济划入 MVP-1（见 flow-spec §5 修订理由——它们依赖多回合循环才有意义）。
 - **MVP-1 ⬅ 当前**：run/round 双层流程机 + 商店买人三件套 + 经济三件套 + 关卡表前 2 阶段。
-  **阻塞点 = REQ-F-032（回合重置/棋子实例重生）**，两候选路线已写入 requests.md，待主程裁决后动工。
+  **阻塞点 = REQ-F-033（prefab 模板内部引用重映射）**——REQ-F-032 引擎侧已落（d863f92），但 F-7 接入暴露此前置缺口（详 requests.md），待主程落地后按 PF-finish-list §5.3 草案动工。
 - **Phase 2**：升星合体 + 等级/人口（REQ-021 引擎侧已 done，接入即可）。
 - **Phase 3**：羁绊（REQ-022 已 done；施加侧 Gap C 届时再裁，YAGNI 纪律不变）。
 - **Phase 4**：野怪回合+掉落、选秀(九选一)、装备合成、锦囊、连败金、时限止损。

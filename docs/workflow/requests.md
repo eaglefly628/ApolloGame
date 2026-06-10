@@ -1121,6 +1121,24 @@
 
 ---
 
+### REQ-F-033 · [2026-06-10] · PE-F（接入 F-7/REQ-F-032 时暴露）· 框架级 · status: **open（待主程评估/落地）** · 优先级: **高（F-7 回合重置接入的前置 → 顶替 F-032 成为 MVP-1 阻塞点）** · 类型: 真缺口（prefab 多实体模板的**内部实体引用**不重映射）
+
+> **要表达的语义**：金铲铲棋子 = 「单位 + 头顶名牌 + 血条/蓝条×4 + 蓝量 sidecar + 大招接线」的**复合体**（一族 ~10 实体）。F-7 把棋子改成模板每回合重展开后，这一族必须**整体**随展开而生、随单位而动、随清场而灭——即模板内部 `Hierarchy.parentId` / `Caster.originEntity` 等**实体引用字段**要指向「同一次展开出的兄弟实例」。
+> **现状（读 `prefab.ts:28-47 instantiate` 证实）**：深拷贝逐字段照搬——模板里写 `parentId:'main'`，展开后仍是字面 `'main'`；而实例真名是 `hero_x#<seq>:main`（seq 全局单调、装配期不可知）→ 引用**悬空**。
+> **证伪重组（逐条）**：
+> ① 悬空不是报错而是**静默错**：hierarchy-resolve 见父无 Transform 跳过（条/名牌不跟随）；hierarchy-cascade 只在「父实体收到 DestroyRequest」时传播，而名为 `'main'` 的实体永不存在 → 挂件**永不级联**——每回合在棋盘上多一层永生孤儿；ultcast 的 `originEntity` 悬空 → 读不到 Relation(target)，大招哑火。
+> ② `Caster.overrides` 救不了：补丁值是装配期静态数据，写不出含运行时 seq 的实例 id。
+> ③ 挂件留作持久实体也不行：persistent parentId 只能指向固定 id，棋子实例 id 每回合全新。
+> ④ REQ-F-032 验收测里的「名牌级联」是**运行时手工**挂到实例 id 上（`roster-round.integration.test.ts:117-119`，模拟挂件）——纯数据层没有这条"展开后再附挂"的路；库内既有多实体模板恰好都无内部引用，此前从未踩到。
+> → 现有数据/能力表达不了「带挂件的复合预制」。**真缺口**（即 Unity/Godot nested-prefab 内部引用序列化的标配语义）。
+> **建议（交主程裁，PE-F 倾向 B）**：
+> - **(B) 显式标记**：模板数据里实体引用写 `'@local:main'`；instantiate 时凡字符串字段值带 `@local:` 前缀 → 重写为 `${templateId}#${seq}:${其后缀}`。**显式零误伤**（普通字符串/信号名/资源 id 绝不撞），对任意组件（含未来新组件）一体适用，最弱 LLM 也写得出（口诀："指兄弟就写 @local:"）；overrides 补丁值同样过这层重写（槽位可改指向）。
+> - **(A) 协议注册表**：protocol 维护「实体引用字段」清单（`Hierarchy.parentId` / `Caster.originEntity` / `Effect.targetEntity` / `Zone.requiredEntities` / `Relation.targetId`…），instantiate 对清单内字段、值==某 localId 时重映射。模板数据零新语法，但隐式（localId 偶然叫 'hp'/'main' 这类撞名会误映射），且清单要随协议演进人工维护。
+> - 两案确定性同：纯字符串改写、展开拍即定、随实体进 snapshot/hash；不触碰任何系统执行序。
+> **YAGNI 自审**：非想象需求——F-7 当下就被它卡死；且「复合预制」是通用形状：炮塔+炮管、boss+弱点、单位+血条/名牌、弹幕母体+子弹（子弹要认母体）……Game A/D 波次同受益。不补则 REQ-F-026/029 的头顶挂件与 REQ-F-032 的短暂实例**互斥**（要么有条不能重生、要么重生没条），显然是缺的一块拼图而非加宽引擎。
+
+---
+
 ## 需求模板（复制这段填写）
 
 ```
