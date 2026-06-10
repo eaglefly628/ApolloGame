@@ -196,7 +196,9 @@ export const SUBJECT_TAGS: Record<string, string[]> = {
   hound:              ['mammal', 'small', 'canine', 'melee'],
   ice_beast:          ['elemental', 'ice', 'cold', 'nonliving', 'no_blood'],
   jackal:             ['mammal', 'small', 'canine', 'swarm'],
-  jellyfish:          ['aquatic', 'small', 'electric', 'lightning'],
+  // 2026-06-10 拼图复审（Lead 看图）：青色半透明水母，像素无任何电系特征，DCSS 设定亦为毒刺
+  // —— 原 electric/lightning 视觉与设定两边都站不住 → 改毒系 + 视觉特征。
+  jellyfish:          ['aquatic', 'small', 'translucent', 'poison', 'sting', 'tentacles'],
   jumping_spider:     ['arthropod', 'small', 'leap'],
   killer_bee:         ['insect', 'flying', 'small', 'swarm', 'poison'],
   komodo_dragon:      ['reptile', 'large', 'poison'],
