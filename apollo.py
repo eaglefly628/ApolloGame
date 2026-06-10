@@ -21,6 +21,7 @@ from pathlib import Path
 from http.server import HTTPServer, BaseHTTPRequestHandler
 import threading
 import urllib.request
+import socket
 
 ROOT = Path(__file__).resolve().parent
 os.chdir(ROOT)
@@ -581,6 +582,13 @@ def start_api_server():
     print(c("  [API]", 'g'), f"Dev tools API on http://localhost:{API_PORT}")
     return server
 
+# ── 端口检测 ──
+
+def is_port_in_use(port: int) -> bool:
+    with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
+        s.settimeout(0.5)
+        return s.connect_ex(('127.0.0.1', port)) == 0
+
 # ── Vite 服务器 ──
 
 def start_vite():
@@ -606,10 +614,20 @@ def wait_for_server(url: str, timeout: int = 15) -> bool:
 
 def cmd_launcher():
     check_env()
+
+    url = f"http://localhost:{VITE_PORT}"
+
+    # 防止二次启动重复开浏览器：若 Vite 端口已占用，说明实例已在运行。
+    # 第二个进程的 start_vite() 会因端口冲突立即退出，但 wait_for_server 仍返回 True
+    # 再调 webbrowser.open → 弹出多余新标签。在这里提前退出即可避免。
+    if is_port_in_use(VITE_PORT):
+        print(c("  [INFO]", 'y'), f"Apollo 已在运行 → {c(url, 'c')}")
+        print(c("  [INFO]", 'dim'), "如需重启，请先在原终端按 Ctrl+C 停止服务")
+        return
+
     api = start_api_server()
     vite = start_vite()
 
-    url = f"http://localhost:{VITE_PORT}"
     if wait_for_server(url):
         print(c("  [READY]", 'g'), f"Apollo Launcher: {c(url, 'c')}")
         webbrowser.open(url)
