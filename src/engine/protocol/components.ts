@@ -873,9 +873,14 @@ export interface HexBoard extends Component {
   tileSize: number; // 每格像素(投影 Transform 用)
   originX: number; // 格(0,0)世界 x
   originY: number;
-  // HexPos→Transform 投影布局(REQ-F-027)。缺省 'axial'：x 含 r*ts/2,r 越大越右移→平行四边形。
-  // 'offset'：x 含 (r&1)*ts/2(奇行半格、不累积)→规整矩形外轮廓 + 六边形交错(金铲铲/TFT 观感)。邻接寻路不受影响。
-  layout?: 'axial' | 'offset';
+  // 棋盘布局(REQ-F-027 → REQ-F-037 外审 Q5 升级)。
+  // 'axial'(缺省)：矩形区域 0≤q<cols（axial 空间）→ 真投影下呈平行四边形。
+  // 'odd-r'(推荐)：错位矩形棋盘——每行 axial q 范围随 −(r>>1) 平移（offset col=q+(r>>1)∈[0,cols)）；
+  //   sim 仍严格 axial（距离/邻居/A* 不变），真投影 x=q·ts+r·ts/2 即呈规整矩形+六边形交错，
+  //   **几何与拓扑同构**（视觉相邻=逻辑相邻）。摆子用 hex.ts 的 offsetToAxial(col,row) 换算。
+  // 'offset'(已废弃)：旧投影错位 (r&1)·ts/2——视觉≠拓扑（每格 6 邻中 1 个投影在 1.5ts 外），
+  //   仅为 game-f 迁移窗口保留（inbox F-10），迁完即删。
+  layout?: 'axial' | 'offset' | 'odd-r';
 }
 // 单位当前所在格(axial 整数)。网格移动的 SIM 真相(进 snapshot/hash)。
 export interface HexPos extends Component {

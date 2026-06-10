@@ -250,7 +250,67 @@ describe('grid-move · REQ-F-034 平滑滑行', () => {
   });
 });
 
-// ── REQ-F-027 回归：投影布局 axial(斜→平行四边形) vs offset(规整矩形+六边形交错) ──
+// ── REQ-F-037（外审 Q5 裁决 c）：'odd-r' 错位矩形棋盘 —— sim 纯 axial、几何≡拓扑 ──
+import { offsetToAxial, axialToOffset, hexCellKey } from './hex.js';
+describe('grid-move · REQ-F-037 odd-r 棋盘（几何与拓扑同构）', () => {
+  function boardOddR(w: World, cols = 8, rows = 8, ts = 10): void {
+    w.createEntity('board');
+    w.addComponent('board', { type: 'HexBoard', cols, rows, tileSize: ts, originX: 0, originY: 0, layout: 'odd-r' } as HexBoard);
+  }
+  it('坐标换算往返 + 真投影呈交错矩形：offset(col,row) 摆子 → x = col·ts + (row&1)·ts/2', () => {
+    for (const [col, row] of [[0, 0], [2, 3], [7, 6], [5, 1]]) {
+      const a = offsetToAxial(col, row);
+      expect(axialToOffset(a.q, a.r)).toEqual({ col, row }); // 往返一致
+    }
+    const w = mk(); boardOddR(w);
+    const a = offsetToAxial(2, 3); // 奇行
+    unit(w, 'u', a.q, a.r, { period: 1, transform: true });
+    const b = offsetToAxial(2, 4); // 偶行同列
+    unit(w, 'v', b.q, b.r, { period: 1, transform: true });
+    w.tick();
+    expect(w.getComponent<Transform>('u', 'Transform')!.x).toBe(2 * 10 + 5); // 奇行半格
+    expect(w.getComponent<Transform>('v', 'Transform')!.x).toBe(2 * 10); // 偶行不偏 → 矩形外轮廓
+  });
+  it('几何≡拓扑：6 个 axial 邻居的投影距离全部 < 1.05·ts（旧 offset 投影的 1.5ts 跳格消失）', () => {
+    const w = mk(); boardOddR(w);
+    const board = w.getComponent<HexBoard>('board', 'HexBoard')!;
+    const proj = (q: number, r: number) => ({ x: q * 10 + r * 5, y: r * 7.5 }); // 真投影
+    const c = offsetToAxial(4, 4);
+    for (const d of [[1, 0], [1, -1], [0, -1], [-1, 0], [-1, 1], [0, 1]]) {
+      const p0 = proj(c.q, c.r), p1 = proj(c.q + d[0], c.r + d[1]);
+      const dist = Math.sqrt((p1.x - p0.x) ** 2 + (p1.y - p0.y) ** 2);
+      expect(dist).toBeLessThan(10 * 1.05); // 视觉相邻=逻辑相邻
+    }
+    expect(board.layout).toBe('odd-r');
+  });
+  it('错位矩形边界：行首负 q 可走、行尾越界不可走（A* 按 offset col 裁切）', () => {
+    const w = mk(); boardOddR(w, 8, 8);
+    // 第 5 行（r=5）的合法 axial q 范围是 [-2, 5]（col = q+2 ∈ [0,8)）
+    const u = offsetToAxial(0, 5); // q=-2：行首
+    unit(w, 'walker', u.q, u.r, { period: 1, target: 'enemy' });
+    const e = offsetToAxial(4, 5);
+    unit(w, 'enemy', e.q, e.r);
+    for (let i = 0; i < 10; i++) w.tick();
+    expect(hexDistance(pos(w, 'walker'), pos(w, 'enemy'))).toBe(1); // 从负 q 区正常寻路到相邻
+    expect(axialToOffset(pos(w, 'walker').q, pos(w, 'walker').r).col).toBeGreaterThanOrEqual(0); // 永在板内
+  });
+  it('占位键不撞：负 q 与上一行行尾在旧键 r*cols+q 下同值，hexCellKey 区分', () => {
+    const cols = 8;
+    const oldKey = (q: number, r: number) => r * cols + q;
+    expect(oldKey(-1, 2)).toBe(oldKey(7, 1)); // 旧键撞（2*8-1 = 15 = 1*8+7）
+    expect(hexCellKey(-1, 2, cols, 'odd-r')).not.toBe(hexCellKey(7, 1, cols, 'odd-r')); // 新键不撞
+    // 功能验证：两单位分占这两格，互不视为"同格占位"
+    const w = mk(); boardOddR(w, 8, 8);
+    unit(w, 'a', -1, 2, { period: 1 });
+    unit(w, 'b', 7, 1, { period: 1 });
+    unit(w, 'mover', 0, 2, { period: 1, target: 'tgt' });
+    unit(w, 'tgt', 3, 2);
+    expect(() => { for (let i = 0; i < 10; i++) w.tick(); }).not.toThrow();
+    expect(hexDistance(pos(w, 'mover'), pos(w, 'tgt'))).toBe(1); // 占位语义正常
+  });
+});
+
+// ── REQ-F-027 回归：投影布局 axial(斜→平行四边形) vs offset(规整矩形+六边形交错，已废弃留迁移窗口) ──
 describe('grid-move · REQ-F-027 投影布局', () => {
   function boardL(w: World, layout?: 'axial' | 'offset'): void {
     w.createEntity('board');

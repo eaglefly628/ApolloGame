@@ -2,7 +2,7 @@ import { defineCapability } from '@engine/core/define-capability.js';
 import { SystemPhase } from '@engine/core/types.js';
 import type { IWorld } from '@engine/core/types.js';
 import type { HexBoard, HexPos, GridMover, Relation, Transform, Status } from '@engine/protocol/components.js';
-import { hexNextStep, type Hex } from './hex.js';
+import { hexNextStep, hexCellKey, type Hex } from './hex.js';
 
 // ═══════════════════════════════════════════════════════════════
 //  grid-move —— 六边形网格逐格移动（REQ-024；金铲铲/TFT 式自动战斗移动）。
@@ -21,8 +21,9 @@ import { hexNextStep, type Hex } from './hex.js';
 const TARGET = 'target';
 
 // HexPos → Transform 像素(flat-ish hex；1/2、3/4 为精确二进制分数，跨端一致)。
-// 行偏移(REQ-F-027)：'axial'(缺省)=r*ts/2(累积右移→平行四边形,保现有回归)；
-// 'offset'=(r&1)*ts/2(奇行半格、不累积→规整矩形+六边形交错,金铲铲观感)。r≥0(棋盘内)，r&1 整数确定。
+// 'axial'(缺省) 与 'odd-r'(REQ-F-037) 都用**真投影** x=q·ts+r·ts/2（六边形晶格的忠实嵌入，
+// 视觉相邻=逻辑相邻）；'odd-r' 的"规整矩形"观感来自棋盘形状（每行 q 范围平移），不靠改投影。
+// 'offset'(REQ-F-027，已废弃)：(r&1)*ts/2 投影错位——几何与拓扑不同构（外审 Q5），仅迁移窗口保留。
 function project(board: HexBoard, q: number, r: number): { x: number; y: number } {
   const rowOffsetUnits = board.layout === 'offset' ? (r & 1) : r;
   return {
@@ -71,7 +72,7 @@ export const gridMoveCapability = defineCapability({
           cols: { type: 'number', describe: '列数' }, rows: { type: 'number', describe: '行数' },
           tileSize: { type: 'number', describe: '每格像素' },
           originX: { type: 'number', describe: '格(0,0)世界 x' }, originY: { type: 'number', describe: '格(0,0)世界 y' },
-          layout: { type: 'string', describe: "投影布局：'axial'(缺省,斜投影→平行四边形) | 'offset'(奇行半格、规整矩形+六边形交错,金铲铲观感)" },
+          layout: { type: 'string', describe: "棋盘布局：'axial'(缺省,平行四边形) | 'odd-r'(推荐,错位矩形,几何≡拓扑,REQ-F-037；摆子用 offsetToAxial 换算) | 'offset'(已废弃:视觉≠拓扑,仅迁移窗口)" },
         },
       },
       HexPos: {
@@ -119,12 +120,12 @@ export const gridMoveCapability = defineCapability({
         for (const [bid] of world.query('HexBoard')) { board = world.getComponent<HexBoard>(bid, 'HexBoard'); break; }
         if (!board) return;
 
-        // 占位集：全场 HexPos 单位所在格 cellKey(r*cols+q)。
+        // 占位集：全场 HexPos 单位所在格。键=hexCellKey（与 A* 内部同函数；odd-r 下负 q 不撞键）。
         const occupied = new Set<number>();
         const posOf = new Map<string, HexPos>();
         for (const [eid] of world.query('HexPos')) {
           const hp = world.getComponent<HexPos>(eid, 'HexPos');
-          if (hp) { occupied.add(hp.r * board.cols + hp.q); posOf.set(eid, hp); }
+          if (hp) { occupied.add(hexCellKey(hp.q, hp.r, board.cols, board.layout)); posOf.set(eid, hp); }
         }
 
         for (const [eid] of world.query('HexPos', 'GridMover')) {
@@ -152,14 +153,14 @@ export const gridMoveCapability = defineCapability({
 
           // 占位集排除自身格（自身不挡自己）。
           const blocked = new Set(occupied);
-          blocked.delete(hp.r * board.cols + hp.q);
-          const next: Hex | null = hexNextStep(board.cols, board.rows, hp, tHp, blocked);
+          blocked.delete(hexCellKey(hp.q, hp.r, board.cols, board.layout));
+          const next: Hex | null = hexNextStep(board.cols, board.rows, hp, tHp, blocked, board.layout);
           if (next) {
             // 移动：更新占位(腾出旧格、占新格) + HexPos。瞬移模式当拍贴新格（原行为）；
             // 滑行模式不在步后再滑——次拍循环顶统一滑，保证**每拍恒一次** glideSpeed（速度均匀）。
-            occupied.delete(hp.r * board.cols + hp.q);
+            occupied.delete(hexCellKey(hp.q, hp.r, board.cols, board.layout));
             hp.q = next.q; hp.r = next.r;
-            occupied.add(hp.r * board.cols + hp.q);
+            occupied.add(hexCellKey(hp.q, hp.r, board.cols, board.layout));
             if (!mover.glideSpeed || mover.glideSpeed <= 0) syncTransform(world, eid, board, hp);
             mover.elapsed = 0;
           }

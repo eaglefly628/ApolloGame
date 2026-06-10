@@ -4,7 +4,11 @@
 //  「棋盘布局/站位 = 数据；寻路算法 = 引擎代码能力」（宪法对齐）。本模块只含**确定性纯算法**：
 //  hex 距离、固定邻居序、A* 求"走向目标相邻格的下一步"。供 grid-move 系统调用。
 //
-//  坐标：axial (q,r)。棋盘为矩形区域 0≤q<cols, 0≤r<rows（MVP；非矩形/异形棋盘后续）。
+//  坐标：axial (q,r)。棋盘形状两种（REQ-F-037，外审 Q5 裁决 (c)）：
+//    · 'axial'（缺省）：矩形区域 0≤q<cols, 0≤r<rows（axial 空间的平行四边形棋盘）；
+//    · 'odd-r'：错位矩形——每行 axial q 范围随 −(r>>1) 平移（offset col = q+(r>>1) ∈ [0,cols)）。
+//      sim 仍**严格 axial**（距离/邻居/A* 全部不变，封闭向量算术）；真投影 x=q·ts+r·ts/2 渲染出
+//      规整矩形+六边形交错——几何与拓扑同构，视觉相邻=逻辑相邻。
 //  确定性（lockstep/录放安全）：邻居固定序遍历 + 整数代价(每步 1) + 启发=hex 距离(整数、admissible) +
 //  open 选取按 (fScore 升, cellKey 升) tie-break → 路径唯一确定，不依赖 Map/插入序。
 // ═══════════════════════════════════════════════════════════════
@@ -12,6 +16,19 @@
 export interface Hex {
   readonly q: number;
   readonly r: number;
+}
+
+// 棋盘布局：'axial' 平行四边形 | 'odd-r' 错位矩形（推荐，几何≡拓扑） | 'offset' 旧投影错位（已废弃：
+// 视觉≠拓扑，外审 Q5；仅为 game-f 迁移窗口保留，迁完即删）。
+export type HexLayout = 'axial' | 'offset' | 'odd-r';
+
+// axial ↔ odd-r offset 坐标换算（r≥0 棋盘内；r>>1 即 floor(r/2)）。游戏侧按 offset (col,row) 摆子
+// 时用 offsetToAxial 换算成 sim 的 axial (q,r)；引擎内部一律 axial。
+export function axialToOffset(q: number, r: number): { col: number; row: number } {
+  return { col: q + (r >> 1), row: r };
+}
+export function offsetToAxial(col: number, row: number): Hex {
+  return { q: col - (row >> 1), r: row };
 }
 
 // 六邻居固定方向序（确定性关键：所有端同序遍历）。axial。
@@ -27,9 +44,11 @@ export function hexDistance(a: Hex, b: Hex): number {
   return (Math.abs(dq) + Math.abs(dq + dr) + Math.abs(dr)) / 2;
 }
 
-// 矩形棋盘内的 cell 唯一键（非负：0≤q<cols,0≤r<rows）→ 供确定性 tie-break 与 Set/Map 键。
-function cellKey(q: number, r: number, cols: number): number {
-  return r * cols + q;
+// 棋盘内 cell 唯一键 → 供确定性 tie-break 与 Set/Map 键（grid-move 占位集与 A* 内部必须同函数）。
+// odd-r 下 axial q 可为负：以 offset col（板内恒 0..cols-1）为键列，杜绝跨行撞键（REQ-F-037）。
+export function hexCellKey(q: number, r: number, cols: number, layout?: HexLayout): number {
+  const col = layout === 'odd-r' ? q + (r >> 1) : q;
+  return r * cols + col;
 }
 
 /**
@@ -39,10 +58,15 @@ function cellKey(q: number, r: number, cols: number): number {
  * - 返回 start 的某个邻居（最短路第一步）；无路 → null。
  */
 export function hexNextStep(
-  cols: number, rows: number, start: Hex, target: Hex, blocked: ReadonlySet<number>,
+  cols: number, rows: number, start: Hex, target: Hex, blocked: ReadonlySet<number>, layout?: HexLayout,
 ): Hex | null {
   if (hexDistance(start, target) <= 1) return null; // 已相邻，无需移动
-  const inBounds = (q: number, r: number) => q >= 0 && q < cols && r >= 0 && r < rows;
+  // 边界按棋盘形状：odd-r 以 offset col 检查（每行 axial q 范围随 −(r>>1) 平移）；其余 0≤q<cols。
+  const inBounds = (q: number, r: number) => {
+    const col = layout === 'odd-r' ? q + (r >> 1) : q;
+    return col >= 0 && col < cols && r >= 0 && r < rows;
+  };
+  const cellKey = (q: number, r: number, _cols: number) => hexCellKey(q, r, _cols, layout);
   const isGoal = (q: number, r: number) =>
     hexDistance({ q, r }, target) === 1 && !blocked.has(cellKey(q, r, cols));
 
