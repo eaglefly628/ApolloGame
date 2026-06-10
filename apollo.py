@@ -586,7 +586,7 @@ def start_api_server():
 def start_vite():
     proc = subprocess.Popen(
         **_spawn(['npx', 'vite', '--port', str(VITE_PORT)]),
-        cwd=ROOT, stdout=subprocess.PIPE, stderr=subprocess.STDOUT,
+        cwd=ROOT,
     )
     _processes.append(proc)
     print(c("  [VITE]", 'g'), f"Starting dev server on http://localhost:{VITE_PORT}")
