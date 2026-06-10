@@ -31,3 +31,7 @@ export { cardPileCapability } from './card-pile.js';
 export { selfRuleCapability, evaluateSelfCondition } from './self-rule.js';
 // group-count（REQ-022）：集合读——按 Tag 掩码数全场实体→写数值 Resource（羁绊/波次/人口）。阈值信号=event-when(edge) 重组。
 export { groupCountCapability } from './group-count.js';
+// grid-move + hex（REQ-024）：六边形棋盘确定性 A* 寻路 + 逐格移动（金铲铲式自动战斗；跨游戏战棋/RTS/塔防复用）。
+export { gridMoveCapability } from './grid-move.js';
+export { hexDistance, hexNextStep, HEX_DIRS } from './hex.js';
+export type { Hex } from './hex.js';

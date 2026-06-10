@@ -950,7 +950,15 @@
 
 ---
 
-### REQ-024 · [2026-06-10] · Programmer F（用户拉动；Game F 自走棋核心）· 框架级 · status: **open** · 优先级: 高（TFT 保真核心移动）· 类型: 真缺口（六边形棋盘 + 确定性网格寻路）
+### REQ-024 · [2026-06-10] · Programmer F（用户拉动；Game F 自走棋核心）· 框架级 · status: **done**（2026-06-10，主程4，引擎三件套；game-f 数据换层归 F）· 优先级: 高（TFT 保真核心移动）· 类型: 真缺口（六边形棋盘 + 确定性网格寻路）
+
+> ✅ **Lead 复核 ACCEPT + 落地（主程4，925 绿）**：F 的重组证伪成立（库内确无图搜索）；宪法对齐（棋盘=数据、A*=代码）；跨游戏通用。按最小三件套实现：
+> - **hex（纯算法核心）** `src/skills/tier2/hex.ts`：axial 坐标 + hexDistance + 固定 6 邻居序 + **确定性 A* `hexNextStep`**（求"走向目标相邻格的下一步"，避被占格；启发=hex 距离 admissible，open 按 fScore 升/cellKey 升 tie-break → 路径唯一确定，lockstep 安全）。+9 测（绕障/围死=null/确定性/边界）。
+> - **grid-move（系统）** `src/skills/tier2/grid-move.ts`：读 Relation(target)→占位集→A* 下一格→每 GridMover.period tick 走一格→写 HexPos + 投影 Transform（精确二进制分数 1/2,3/4，跨端无漂移）。取代 steering 在网格场景。+6 测。
+> - **组件**：`HexBoard{cols,rows,tileSize,origin}` / `HexPos{q,r}`（SIM 真相进 hash）/ `GridMover{period}`。SIM 态住整数 HexPos，Transform 仅投影供渲染/战斗距离（aggro/hitbox 仍读 Transform）。
+> - **YAGNI**：加权代价/地形/飞行押后（未拉动）。
+> 🟡 **归 F**：game-f 棋盘=一份 HexBoard 数据、站位=数据、移动 steering→grid-move（aggro/caster/hitbox/mortal/经济不变）。
+> 🔧 **顺手修**：并行 session 的 group-count 漏加进 ALL_CAPABILITIES 列表（只在 import 里）→ manifest 解析不到 GroupCount；已补 groupCount + gridMove 入列表。
 
 > **本程已证伪「能否重组」（按核心铁律，附代码依据）**：
 > - `steering` 是**贪婪直线 seek**（朝 Relation(target) 到 stopRange 停，`src/skills/tier2/steering.ts:113`），**绕不开被占格/友军**。

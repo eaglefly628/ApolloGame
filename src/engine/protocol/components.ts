@@ -827,6 +827,31 @@ export interface GroupCount extends Component {
   requiredTag?: number; // Tag.flags 须含齐此掩码（ALL-bits）；缺省/0 = 所有带 Tag 的实体
 }
 
+// ── hex-grid / grid-move（REQ-024）── 六边形棋盘 + 确定性网格寻路（金铲铲/TFT 式自动战斗移动）。
+// 棋盘布局/站位 = 数据；寻路算法(A*) = 引擎代码（见 hex.ts 纯函数）。SIM 态住 HexPos(整数 q,r → 进 hash 确定)；
+// Transform 由 grid-move 从 HexPos 投影(精确二进制分数 1/2,3/4，跨端无漂移)供渲染/战斗距离(aggro/hitbox 仍读 Transform)。
+export interface HexBoard extends Component {
+  readonly type: 'HexBoard';
+  cols: number; // 棋盘列(0≤q<cols)
+  rows: number; // 棋盘行(0≤r<rows)
+  tileSize: number; // 每格像素(投影 Transform 用)
+  originX: number; // 格(0,0)世界 x
+  originY: number;
+}
+// 单位当前所在格(axial 整数)。网格移动的 SIM 真相(进 snapshot/hash)。
+export interface HexPos extends Component {
+  readonly type: 'HexPos';
+  q: number;
+  r: number;
+}
+// 网格移动器：读自身 Relation(target) → A* 求下一格 → 每 period tick 走一格(避被占格、到相邻停)。
+// 取代 steering 在网格场景(aggro 仍写目标，grid-move 替算"下一格")。
+export interface GridMover extends Component {
+  readonly type: 'GridMover';
+  period: number; // 每多少 tick 走一格(>=1；控制移动节奏，免每拍瞬移)
+  elapsed?: number; // 内部：距上次移动的 tick
+}
+
 // ── card-pile（REQ-017）── 牌库/手牌的 sim 内确定性管理（卡牌品类 staple）。
 // deck=抽牌堆（预洗好的牌码数组，front=下一张，纯数据→确定性，lockstep 双端同序）；hand=当前手牌；
 // handSize=目标手牌数。card-pile 系统：处理 play/discard 输入（按手牌**下标**选牌）+ 抽牌补到 handSize。

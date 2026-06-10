@@ -36,6 +36,7 @@ import {
   cardPileCapability,
   selfRuleCapability,
   groupCountCapability,
+  gridMoveCapability,
 } from '@skills/tier2/index.js';
 import { dialogueCapability, match3BoardCapability, prefabCapability, casterCapability, aggroCapability, pokerHandCapability, cardScoringCapability, flowCapability } from '@skills/tier3/index.js';
 
@@ -85,6 +86,8 @@ export const ALL_CAPABILITIES: readonly CapabilityDefinition[] = [
   cardPlayCapability,
   cardPileCapability,
   selfRuleCapability,
+  groupCountCapability,
+  gridMoveCapability,
   // tier3
   dialogueCapability,
   match3BoardCapability,
