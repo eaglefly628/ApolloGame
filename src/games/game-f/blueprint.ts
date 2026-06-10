@@ -18,7 +18,8 @@ import {
   ZONE_FLAG,
 } from '@skills/tier2/index.js';
 import { prefabCapability, casterCapability, aggroCapability } from '@skills/tier3/index.js';
-import { GAME_F_ASSETS, F_HERO, F_FX_STRIKE } from './assets.js';
+import { GAME_F_ASSETS, F_HERO, F_FX_STRIKE, F_HEX_WARM, F_HEX_COOL } from './assets.js';
+import { hexToPixel, boardEntities } from './hex.js';
 
 // ═══════════════════════════════════════════════════════════════
 //  Game F —— 《像素三分天下》自走棋 MVP-0 骨架。**纯数据装配**，零自走棋专属代码。
@@ -82,26 +83,28 @@ interface HeroSpec {
   enemy: number;
   strike: string;
   tint: number;
-  x: number;
-  y: number;
+  col: number; // 六边形棋盘列(0-6)
+  row: number; // 六边形棋盘行(0-7；row0-3=魏上半场, row4-7=蜀下半场)
 }
 
+// 站位按金铲铲惯例：武将前排（贴中线 row3/4）、谋士后排。蜀据下半场、魏据上半场，前排相向。
 const ROSTER: HeroSpec[] = [
-  // 蜀（TEAM_A，左列，红）
-  { id: 'a_guanyu', name: '关羽', key: F_HERO.guan_yu, team: TEAM_A, enemy: TEAM_B, strike: 'strike_vs_b', tint: SHU_RED, x: -160, y: -45 },
-  { id: 'a_zhaoyun', name: '赵云', key: F_HERO.zhao_yun, team: TEAM_A, enemy: TEAM_B, strike: 'strike_vs_b', tint: SHU_RED, x: -165, y: 0 },
-  { id: 'a_zhuge', name: '诸葛亮', key: F_HERO.zhuge_liang, team: TEAM_A, enemy: TEAM_B, strike: 'strike_vs_b', tint: SHU_RED, x: -195, y: 45 },
-  // 魏（TEAM_B，右列，蓝）
-  { id: 'b_zhangliao', name: '张辽', key: F_HERO.zhang_liao, team: TEAM_B, enemy: TEAM_A, strike: 'strike_vs_a', tint: WEI_BLUE, x: 160, y: -45 },
-  { id: 'b_xuchu', name: '许褚', key: F_HERO.xu_chu, team: TEAM_B, enemy: TEAM_A, strike: 'strike_vs_a', tint: WEI_BLUE, x: 165, y: 0 },
-  { id: 'b_simayi', name: '司马懿', key: F_HERO.sima_yi, team: TEAM_B, enemy: TEAM_A, strike: 'strike_vs_a', tint: WEI_BLUE, x: 195, y: 45 },
+  // 蜀（TEAM_A，下半场 row4-7，红）—— 武将前排(row4)、谋士后排(row6)
+  { id: 'a_guanyu', name: '关羽', key: F_HERO.guan_yu, team: TEAM_A, enemy: TEAM_B, strike: 'strike_vs_b', tint: SHU_RED, col: 2, row: 4 },
+  { id: 'a_zhaoyun', name: '赵云', key: F_HERO.zhao_yun, team: TEAM_A, enemy: TEAM_B, strike: 'strike_vs_b', tint: SHU_RED, col: 4, row: 4 },
+  { id: 'a_zhuge', name: '诸葛亮', key: F_HERO.zhuge_liang, team: TEAM_A, enemy: TEAM_B, strike: 'strike_vs_b', tint: SHU_RED, col: 3, row: 6 },
+  // 魏（TEAM_B，上半场 row0-3，蓝）—— 武将前排(row3)、谋士后排(row1)
+  { id: 'b_zhangliao', name: '张辽', key: F_HERO.zhang_liao, team: TEAM_B, enemy: TEAM_A, strike: 'strike_vs_a', tint: WEI_BLUE, col: 2, row: 3 },
+  { id: 'b_xuchu', name: '许褚', key: F_HERO.xu_chu, team: TEAM_B, enemy: TEAM_A, strike: 'strike_vs_a', tint: WEI_BLUE, col: 4, row: 3 },
+  { id: 'b_simayi', name: '司马懿', key: F_HERO.sima_yi, team: TEAM_B, enemy: TEAM_A, strike: 'strike_vs_a', tint: WEI_BLUE, col: 3, row: 1 },
 ];
 
 // 一个棋子（纯数据）：ai-chase + 自动普攻 + 会死。
 function unitEntity(h: HeroSpec): EntityBlueprint {
   const atk = `atk_${h.id}`; // 每英雄唯一 → 不与他人串台（MVP-0 唯一 id 策略）
+  const p = hexToPixel(h.col, h.row); // 棋子站在六边形格中心（金铲铲布局）
   return {
-    Transform: xf(h.x, h.y),
+    Transform: xf(p.x, p.y),
     Velocity: { vx: 0, vy: 0, angular: 0 },
     Shape: { kind: 'box', width: 16, height: 16 },
     Mass: { value: 1 },
@@ -121,20 +124,23 @@ function unitEntity(h: HeroSpec): EntityBlueprint {
 
 // 头顶名字（表现，三国感）：Text + 势力色 Color + Hierarchy 跟随单位本体。
 function labelEntity(h: HeroSpec): EntityBlueprint {
+  const p = hexToPixel(h.col, h.row);
   return {
-    Transform: xf(h.x, h.y - 16),
+    Transform: xf(p.x, p.y - 16),
     Text: { content: h.name, fontSize: 9, fontFamily: 'sans-serif', anchor: 'center', lineSpacing: 0 },
     Color: { tint: h.tint, alpha: 1 },
     Hierarchy: { parentId: h.id, localX: 0, localY: -16, localRotation: 0, localScaleX: 1, localScaleY: 1 },
   } as unknown as EntityBlueprint;
 }
 
-const ARENA = { minX: -300, minY: -160, maxX: 300, maxY: 160 };
+const ARENA = { minX: -280, minY: -200, maxX: 280, maxY: 200 };
 
 export function buildGameFBlueprint(): WorldBlueprint {
   const entities: Record<string, EntityBlueprint> = {
     // 技能/打击库（数据，单例）。
     library: { PrefabLibrary: { templates: GAME_F_TEMPLATES, seq: 0 } } as unknown as EntityBlueprint,
+    // 六边形棋盘（56 格，表现层底；金铲铲 7×8 布局，蜀半场暖/魏半场冷）。hex 数学待 REQ-024 引擎接管。
+    ...boardEntities(F_HEX_WARM, F_HEX_COOL),
     // 胜负旗标 + 竞技场存活计数 Zone（存活=0 → present flag 落 false；下游接 flow 阶段机，后续）。
     team_a_flag: { Flag: { id: 'team_a_present', active: true } } as unknown as EntityBlueprint,
     team_b_flag: { Flag: { id: 'team_b_present', active: true } } as unknown as EntityBlueprint,

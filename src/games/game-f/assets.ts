@@ -34,6 +34,12 @@ export const F_HERO = {
   sima_yi: 'f.hero.sima_yi',
 } as const;
 export const F_FX_STRIKE = 'f.fx.strike';
+export const F_HEX_WARM = 'f.hex.warm'; // 蜀半场暖色六边形格
+export const F_HEX_COOL = 'f.hex.cool'; // 魏半场冷色六边形格
+
+// 一块六边形棋盘格（pointy-top 尖顶，描边镂空；落在格中心、zOrder 最低=棋子之下）。
+const hexTile = (fill: string, stroke: string): string =>
+  svg(`<polygon points="25,3 47,16 47,42 25,55 3,42 3,16" fill="${fill}" stroke="${stroke}" stroke-width="1.5"/>`, 50, 58);
 
 export const GAME_F_ASSETS: AssetManifest = [
   { kind: 'texture', key: F_HERO.guan_yu, src: svgUnit(SHU.fill, SHU.stroke, GLYPH_WARRIOR), width: 24, height: 24 },
@@ -55,4 +61,7 @@ export const GAME_F_ASSETS: AssetManifest = [
     width: 24,
     height: 24,
   },
+  // 六边形棋盘格（蜀半场暖 / 魏半场冷）。
+  { kind: 'texture', key: F_HEX_WARM, src: hexTile('rgba(48,32,24,0.92)', 'rgb(128,74,58)'), width: 50, height: 58 },
+  { kind: 'texture', key: F_HEX_COOL, src: hexTile('rgba(24,32,48,0.92)', 'rgb(64,92,140)'), width: 50, height: 58 },
 ];
