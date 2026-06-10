@@ -6,25 +6,9 @@ import type { AssetManifest } from '@assets/index.js';
 const svg = (body: string, w: number, h: number): string =>
   `data:image/svg+xml,${encodeURIComponent(`<svg xmlns="http://www.w3.org/2000/svg" width="${w}" height="${h}">${body}</svg>`)}`;
 
-// 一个棋子 token：势力色圆角身 + 眼 + 职业字形 + 右侧朝向亮条（facing 翻转可读）。
-const svgUnit = (fill: string, stroke: string, glyph: string): string =>
-  svg(
-    `<rect x="3" y="3" width="18" height="18" rx="6" fill="${fill}" stroke="${stroke}" stroke-width="1.4"/>` +
-      `<circle cx="9" cy="10" r="1.8" fill="#fff"/><circle cx="15" cy="10" r="1.8" fill="#fff"/>` +
-      glyph +
-      `<rect x="19" y="9" width="2.2" height="6" rx="1" fill="${stroke}"/>`,
-    24,
-    24,
-  );
-
-const GLYPH_WARRIOR = `<rect x="11" y="14" width="2" height="5" fill="#fbbf24"/>`; // 武将=剑条
-const GLYPH_TACTICIAN = `<circle cx="12" cy="16" r="2" fill="#c4b5fd"/>`; // 谋士=法球
-const GLYPH_ASSASSIN = `<path d="M10 14 L14 14 L12 19 Z" fill="#fca5a5"/>`; // 刺客=匕首
-
-// 势力色（占位）。
-const SHU = { fill: 'rgb(176,42,40)', stroke: 'rgb(255,150,130)' }; // 蜀·红
-const WEI = { fill: 'rgb(41,98,200)', stroke: 'rgb(150,190,255)' }; // 魏·蓝
-const WU = { fill: 'rgb(30,140,90)', stroke: 'rgb(130,235,180)' }; // 吴·绿
+// 英雄皮 = 真 DCSS 角色图（assets/FreeArtLib/monster/<name>.png，32×32，CC0；同 game-e 路径加载）。
+// 注：DCSS 是奇幻角色图、固定色；势力(蜀魏吴)由头顶名字颜色 + 棋盘半场体现（drawImage 不吃 tint，见 art-data.md §C）。
+const dcss = (name: string): string => `assets/FreeArtLib/monster/${name}.png`;
 
 // 英雄 textureKey（每英雄唯一 → 后期 1:1 换 DCSS 皮，见 art-data.md）。
 export const F_HERO = {
@@ -46,14 +30,17 @@ const hexTile = (fill: string, stroke: string): string =>
   svg(`<polygon points="25,3 47,16 47,42 25,55 3,42 3,16" fill="${fill}" stroke="${stroke}" stroke-width="1.5"/>`, 50, 58);
 
 export const GAME_F_ASSETS: AssetManifest = [
-  { kind: 'texture', key: F_HERO.guan_yu, src: svgUnit(SHU.fill, SHU.stroke, GLYPH_WARRIOR), width: 24, height: 24 },
-  { kind: 'texture', key: F_HERO.zhao_yun, src: svgUnit(SHU.fill, SHU.stroke, GLYPH_WARRIOR), width: 24, height: 24 },
-  { kind: 'texture', key: F_HERO.zhuge_liang, src: svgUnit(SHU.fill, SHU.stroke, GLYPH_TACTICIAN), width: 24, height: 24 },
-  { kind: 'texture', key: F_HERO.zhang_liao, src: svgUnit(WEI.fill, WEI.stroke, GLYPH_WARRIOR), width: 24, height: 24 },
-  { kind: 'texture', key: F_HERO.xu_chu, src: svgUnit(WEI.fill, WEI.stroke, GLYPH_WARRIOR), width: 24, height: 24 },
-  { kind: 'texture', key: F_HERO.sima_yi, src: svgUnit(WEI.fill, WEI.stroke, GLYPH_TACTICIAN), width: 24, height: 24 },
-  { kind: 'texture', key: F_HERO.zhou_yu, src: svgUnit(WU.fill, WU.stroke, GLYPH_TACTICIAN), width: 24, height: 24 },
-  { kind: 'texture', key: F_HERO.gan_ning, src: svgUnit(WU.fill, WU.stroke, GLYPH_ASSASSIN), width: 24, height: 24 },
+  // 蜀（关羽 死亡骑士 / 赵云 深渊精灵骑士 / 诸葛 深渊精灵法师）
+  { kind: 'texture', key: F_HERO.guan_yu, src: dcss('death_knight'), width: 32, height: 32 },
+  { kind: 'texture', key: F_HERO.zhao_yun, src: dcss('deep_elf_knight_new'), width: 32, height: 32 },
+  { kind: 'texture', key: F_HERO.zhuge_liang, src: dcss('deep_elf_mage'), width: 32, height: 32 },
+  // 魏（张辽 地狱骑士 / 许褚 深渊精灵兵 / 司马 死灵法师）
+  { kind: 'texture', key: F_HERO.zhang_liao, src: dcss('hell_knight_new'), width: 32, height: 32 },
+  { kind: 'texture', key: F_HERO.xu_chu, src: dcss('deep_elf_soldier'), width: 32, height: 32 },
+  { kind: 'texture', key: F_HERO.sima_yi, src: dcss('necromancer_new'), width: 32, height: 32 },
+  // 吴（周瑜 娜迦法师 / 甘宁 娜迦武士）
+  { kind: 'texture', key: F_HERO.zhou_yu, src: dcss('naga_mage'), width: 32, height: 32 },
+  { kind: 'texture', key: F_HERO.gan_ning, src: dcss('naga_warrior'), width: 32, height: 32 },
   // 普攻打击特效：黄白斩光。
   {
     kind: 'texture',

@@ -28,11 +28,19 @@ for (const r of collectRenderables(e.world)) {
   if (asset && asset.kind === 'texture') {
     const aw = asset.width ?? 16;
     const ah = asset.height ?? 16;
-    body += `<g transform="translate(${r.x - aw / 2},${r.y - ah / 2})">${innerSvg(asset.src)}</g>`;
+    if (asset.src.startsWith('data:image/svg')) {
+      body += `<g transform="translate(${r.x - aw / 2},${r.y - ah / 2})">${innerSvg(asset.src)}</g>`;
+    } else {
+      // 真 DCSS png 离屏嵌不了（二进制），退化成方块占位；实机浏览器画真图。
+      body += `<rect x="${r.x - aw / 2}" y="${r.y - ah / 2}" width="${aw}" height="${ah}" rx="5" fill="#566" stroke="#9ab"/>`;
+    }
   } else if (r.text) {
-    // 头顶名字（势力色 = Color.tint）。
+    // 头顶名字（势力色 = Color.tint）；多行按 \n 拆。
     const fill = r.color ? hex(r.color.tint) : '#e2e8f0';
-    body += `<text x="${r.x}" y="${r.y}" font-family="sans-serif" font-size="${r.text.fontSize}" fill="${fill}" text-anchor="middle">${r.text.content}</text>`;
+    const tx = r.text;
+    tx.content.split('\n').forEach((ln, i) => {
+      body += `<text x="${r.x}" y="${r.y + i * (tx.fontSize + 1)}" font-family="sans-serif" font-size="${tx.fontSize}" fill="${fill}" text-anchor="middle">${ln}</text>`;
+    });
   } else if (r.shape?.kind === 'box') {
     const w = r.shape.width ?? 8;
     const h = r.shape.height ?? 8;
