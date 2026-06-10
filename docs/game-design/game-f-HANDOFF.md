@@ -23,7 +23,7 @@
 |---|---|---|
 | 1 | `docs/design/data-driven-manifesto.md` | 宪法。一切裁决的尺子：「最弱 LLM 能否产出同样数据？」 |
 | 2 | `CLAUDE.md` | 工作规范 + **核心规则**（对每条需求先评判该不该做、带理由回驳，不盲从） |
-| 3 | **`docs/game-design/game-f-flow-spec.md`** | ⭐ **对局流转的单一真相**（按真金铲铲研究定稿）：三层状态机 + 数值表 + 符合性审查 + 开发队列 |
+| 3 | **`game-f-tft-reference.md` + `game-f-flow-spec.md`(v2)** | ⭐ **准则**（用户金铲铲流程图全转录，2026-06-10 拍板「严格金铲铲」，冲突以准则为准）+ **流转单一真相**（三层状态机 + 数值表 + 审查 + 队列） |
 | 4 | `docs/game-design/game-f-auto-chess.md` | 设计基线：能力映射（§3）、三缺口评审（§6）、回驳清单（§7）、数据模板（§4） |
 | 5 | `docs/workflow/requests.md` 的 REQ-021/022/023 + REQ-F-024~032 | 缺口需求与裁决现状（021/022 已 done；**032 是 MVP-1 阻塞点**） |
 | 6 | **`src/games/game-f/blueprint.ts` + `game-f.test.ts`** | **当前实现**（纯数据装配 + 5 测试）——改流程前先看它已经怎么跑 |
