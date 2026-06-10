@@ -797,6 +797,24 @@ export interface GameFlow extends Component {
   elapsed?: number; // 内部：进入当前状态后经过的 tick 数（驱动 after 时序门；转移时归零）
 }
 
+// ── self-rule（REQ-021）── 逻辑链的「实体本地(self)」作用域：对**每个挂 SelfRule 的实体**，用其**自身组件**
+// 求 when 条件、对**自身**施 do 动作。补上引擎从没压过的"实体寻址轴"——前 5 游戏逻辑只碰全局单例(按 id 路由)，
+// 自走棋等"动态多实体各自治"(prefab 展开的同模板单位、唯一 id 烘不进去)第一次需要它。mortal(自身≤阈值→死)、
+// over-time 是它的特例；self-rule 是通用化。复用 ConditionExpr（但按 self 实体的组件求值，非全局 id）。
+// 确定性：每实体只读/写**自身**组件 → 跨实体无干扰、与遍历序无关。
+export interface SelfAction {
+  kind: 'set-flag' | 'modify-resource' | 'set-state' | 'destroy'; // 施于自身
+  value?: number | boolean | string;
+  op?: 'add' | 'set'; // modify-resource：add(默认) | set
+}
+export interface SelfRule extends Component {
+  readonly type: 'SelfRule';
+  when: ConditionExpr; // 对**自身**组件求值（resource/flag/state/timer/string 读自身那一份；非全局 id 路由）
+  do: SelfAction[]; // 条件成立时对自身施加
+  once?: boolean; // true=上升沿只施一次（armed 迟滞，回落复位）；缺省=条件成立每拍施（level）
+  armed?: boolean; // 内部（once 用）
+}
+
 // ── card-pile（REQ-017）── 牌库/手牌的 sim 内确定性管理（卡牌品类 staple）。
 // deck=抽牌堆（预洗好的牌码数组，front=下一张，纯数据→确定性，lockstep 双端同序）；hand=当前手牌；
 // handSize=目标手牌数。card-pile 系统：处理 play/discard 输入（按手牌**下标**选牌）+ 抽牌补到 handSize。

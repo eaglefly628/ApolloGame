@@ -27,3 +27,5 @@ export { facingCapability } from './facing.js';
 export { cardPlayCapability, decodeCard, encodeCard } from './card-play.js';
 // card-pile（REQ-017）：牌库/手牌 sim 内确定性管理（发牌/选牌下标/补牌/弃牌）——回合流程数据化 + lockstep 共同前置。
 export { cardPileCapability } from './card-pile.js';
+// self-rule（REQ-021）：逻辑链实体本地(self)作用域——对每个实体读自身条件→对自身施效。补动态多实体自治缺口。
+export { selfRuleCapability, evaluateSelfCondition } from './self-rule.js';
