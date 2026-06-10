@@ -94,3 +94,27 @@ describe('grid-move · 确定性', () => {
     expect(run()).toBe(run());
   });
 });
+
+// ── REQ-025 回归：aggro(读 Transform/写 Relation) + grid-move(读 Relation/写 Transform) 同场不成环 ──
+import { aggroCapability } from '../tier3/aggro.js';
+import type { Perception, Tag } from '@engine/protocol/components.js';
+describe('grid-move · REQ-025 与 aggro 同场不成环', () => {
+  it('aggro+grid-move 同跑：拓扑排序不抛 + 单位索敌并沿 hex 寻路逼近', () => {
+    const w = new World();
+    for (const s of aggroCapability.systems) w.addSystem(s);
+    for (const s of gridMoveCapability.systems) w.addSystem(s);
+    board(w);
+    const ENEMY = 1 << 1;
+    w.createEntity('hero');
+    w.addComponent('hero', { type: 'Perception', targetTag: ENEMY, sightRadius: 0 } as Perception); // 0=无限视野
+    w.addComponent('hero', { type: 'Transform', x: 0, y: 0, rotation: 0, scaleX: 1, scaleY: 1 } as Transform);
+    w.addComponent('hero', { type: 'HexPos', q: 0, r: 0 } as HexPos);
+    w.addComponent('hero', { type: 'GridMover', period: 1 } as GridMover);
+    w.createEntity('enemy');
+    w.addComponent('enemy', { type: 'Tag', flags: ENEMY } as Tag);
+    w.addComponent('enemy', { type: 'Transform', x: 999, y: 0, rotation: 0, scaleX: 1, scaleY: 1 } as Transform);
+    w.addComponent('enemy', { type: 'HexPos', q: 6, r: 0 } as HexPos);
+    expect(() => { for (let i = 0; i < 12; i++) w.tick(); }).not.toThrow(); // 不成环（修复前此处抛环）
+    expect(hexDistance(pos(w, 'hero'), pos(w, 'enemy'))).toBe(1); // 索到敌、寻路到相邻
+  });
+});

@@ -981,7 +981,10 @@
 
 ---
 
-### REQ-025 · [2026-06-10] · Programmer F（Game F 接 grid-move 暴露）· 框架级 · status: **open（已本地确认修复，1 行）** · 优先级: 高（阻塞 game-f 接寻路）· 类型: 系统定序 bug（拓扑成环）
+### REQ-025 · [2026-06-10] · Programmer F（Game F 接 grid-move 暴露）· 框架级 · status: **done**（2026-06-10，主程4，采 F 1 行修复）· 优先级: 高（阻塞 game-f 接寻路）· 类型: 系统定序 bug（拓扑成环）
+
+> ✅ **落地（主程4，926 绿）**：`grid-move` 系统加 `runsAfter:['aggro']` —— 显式边覆盖反向的 Transform 组件推断边，破 aggro↔grid-move 2-环（同 poker-eval/dialogue 显式定序先例）。语义：aggro 本拍选目标→grid-move 据此走，Transform 下拍被 aggro 读（一拍反馈，确定性不变）。+1 回归测（aggro+grid-move 同场不抛环 + 单位索敌沿 hex 寻路到相邻）。**F 可接 game-f grid-move 数据换层、推 mainbranch。**
+> 🟡 **follow-up（非阻塞，主程4 记）**：更彻底可拆 `grid-move` 只写 HexPos + 另设 PostResolve 投影系统 HexPos→Transform，根除"移动写 Transform↔索敌读 Transform"环类；当前 1 行已够，待更多 Transform-环案例再做。
 
 > **现象**：game-f 首次让 `grid-move` 与 `aggro` **同场跑** → 引擎拓扑排序抛环：
 > `aggro`(reads `Transform`, writes `Relation`) ↔ `grid-move`(reads `Relation`, writes `Transform`) **互为前驱**（同 Update 相位，组件推断边成 2-环；连带 13 个系统判进同一 SCC 报错）。

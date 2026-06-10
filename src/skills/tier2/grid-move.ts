@@ -79,6 +79,10 @@ export const gridMoveCapability = defineCapability({
     {
       id: 'grid-move',
       phase: SystemPhase.Update,
+      // REQ-025：与 aggro 互为前驱成环（aggro 读 Transform/写 Relation；grid-move 读 Relation/写 Transform）。
+      // 显式 runsAfter 覆盖反向的组件推断边（Transform 生产→消费）→ 破环。语义：aggro 本拍选目标→grid-move 据此走；
+      // grid-move 写的 Transform 由 aggro 下一拍读（一拍反馈，确定性不变）。同 poker-eval/dialogue 显式定序先例。
+      runsAfter: ['aggro'],
       reads: ['HexBoard', 'HexPos', 'GridMover', 'Relation'],
       writes: ['HexPos', 'GridMover', 'Transform'],
       consumes: [],
