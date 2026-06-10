@@ -1,6 +1,6 @@
 import type { AssetIndex, AssetIndexEntry, AssetType } from './asset-index.js';
 import type { AssetManifest } from './asset-types.js';
-import { artlibThumb, artlibTokens, type ArtLibIndex } from './artlib.js';
+import { artlibThumb, artlibTokens, artlibSemanticTags, type ArtLibIndex } from './artlib.js';
 
 // ═══════════════════════════════════════════════════════════════
 //  资源库统一模型（Library）—— 把三套并存的索引适配成一种记录，供一个浏览器看全部。
@@ -27,6 +27,12 @@ export interface LibraryRecord {
   readonly name: string;
   readonly description: string;
   readonly tags: readonly string[];
+  /**
+   * 语义标签子集（像素扫描：元素/威胁/风格/旗标，见 artlib-tags.ts）。
+   * 浏览器把它们叠加显示在缩略图上；rankRecords 给它们更高匹配权重。
+   * tags 已含全集（搜索面不变），这里只是"值得展示/加权"的精选子集。
+   */
+  readonly semanticTags?: readonly string[];
   readonly source: LibrarySource;
   /** 给人看的来源名："assets/"、"FreeArtLib"、"game-e" 等。 */
   readonly sourceLabel: string;
@@ -166,6 +172,7 @@ export function artlibRecords(index: ArtLibIndex): LibraryRecord[] {
     name: a.subject,
     description: `${a.cat}${a.sub ? '/' + a.sub : ''} · ${index.source.split('—')[0].trim()}`,
     tags: artlibTokens(a),
+    semanticTags: artlibSemanticTags(a),
     source: 'artlib' as const,
     sourceLabel: 'FreeArtLib',
     license: index.license.split('(')[0].trim(),
@@ -216,15 +223,67 @@ export interface LibraryQuery {
   /** 已选 tag 过滤（AND 叠加）。 */
   readonly tags?: readonly string[];
   readonly sources?: readonly LibrarySource[];
-  readonly sort?: 'name' | 'size' | 'variants';
+  /** relevance = 按 rankRecords 相关度（需 text；无 text 回退 name）。 */
+  readonly sort?: 'name' | 'size' | 'variants' | 'relevance';
 }
 
 function haystack(r: LibraryRecord): string {
   return [r.id, r.name, r.description, r.category, r.sourceLabel, ...r.tags].join(' ').toLowerCase();
 }
 
+// ── 相关度排序（单点实现：浏览器搜索 与 AI 选材解析 共用同一个排序器 → 所见即所选）──
+
+export interface RankedRecord {
+  readonly record: LibraryRecord;
+  readonly score: number;
+}
+
+/**
+ * 对记录按查询词打分排序（确定性：同输入同输出，可审计）。
+ * 规则：每个词都必须命中（AND），单词得分取最强命中：
+ *   名称全等 100 ＞ 名称前缀 60 ＞ 语义 tag 全等 50 ＞ 任意 tag 全等 40
+ *   ＞ 名称子串 30 ＞ id 子串 15 ＞ tag 子串 10
+ * 总分 = 各词得分和；同分按 id 字典序（稳定）。
+ */
+export function rankRecords(records: readonly LibraryRecord[], text: string): RankedRecord[] {
+  const terms = text.trim().toLowerCase().split(/\s+/).filter(Boolean);
+  if (terms.length === 0) return [];
+  const out: RankedRecord[] = [];
+  for (const r of records) {
+    const name = r.name.toLowerCase();
+    const id = r.id.toLowerCase();
+    const tags = r.tags.map((t) => t.toLowerCase());
+    const tagSet = new Set(tags);
+    const semSet = new Set((r.semanticTags ?? []).map((t) => t.toLowerCase()));
+    let score = 0;
+    let allHit = true;
+    for (const t of terms) {
+      let s = 0;
+      if (name === t) s = 100;
+      else if (name.startsWith(t)) s = 60;
+      if (s < 50 && semSet.has(t)) s = 50;
+      if (s < 40 && tagSet.has(t)) s = 40;
+      if (s < 30 && name.includes(t)) s = 30;
+      if (s < 15 && id.includes(t)) s = 15;
+      if (s < 10 && tags.some((x) => x.includes(t))) s = 10;
+      if (s === 0) {
+        allHit = false;
+        break;
+      }
+      score += s;
+    }
+    if (allHit) out.push({ record: r, score });
+  }
+  out.sort((a, b) => b.score - a.score || a.record.id.localeCompare(b.record.id));
+  return out;
+}
+
 export function queryLibrary(records: readonly LibraryRecord[], q: LibraryQuery): LibraryRecord[] {
-  const terms = (q.text ?? '').trim().toLowerCase().split(/\s+/).filter(Boolean);
+  const text = (q.text ?? '').trim();
+  const terms = text.toLowerCase().split(/\s+/).filter(Boolean);
+  const sort = q.sort ?? 'name';
+  // 相关度排序时，文本命中交给 rankRecords（评分语义比 haystack 子串更准）；其余维度照常过滤。
+  const useRank = sort === 'relevance' && terms.length > 0;
   const out = records.filter((r) => {
     if (q.sources && !q.sources.includes(r.source)) return false;
     if (q.type && r.type !== q.type) return false;
@@ -234,13 +293,13 @@ export function queryLibrary(records: readonly LibraryRecord[], q: LibraryQuery)
       const hay = haystack(r);
       if (!q.tags.every((t) => hay.includes(t.toLowerCase()))) return false;
     }
-    if (terms.length > 0) {
+    if (!useRank && terms.length > 0) {
       const hay = haystack(r);
       if (!terms.every((t) => hay.includes(t))) return false;
     }
     return true;
   });
-  const sort = q.sort ?? 'name';
+  if (useRank) return rankRecords(out, text).map((x) => x.record);
   out.sort((a, b) => {
     if (sort === 'size') return (b.width ?? 0) * (b.height ?? 0) - (a.width ?? 0) * (a.height ?? 0) || a.id.localeCompare(b.id);
     if (sort === 'variants') return (b.variants ?? 1) - (a.variants ?? 1) || a.id.localeCompare(b.id);

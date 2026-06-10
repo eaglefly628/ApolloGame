@@ -60,6 +60,23 @@ apollo 未启动 → 提交失败给出明确提示（浏览/计划预览不受�
 launcher 门面、GameRunner 统一返回浮钮（壳层所有，游戏代码零改）、资源库/向导全量取用。
 与 `src/ui/themes/`（游戏内 UI 主题包）是两层，不混用。
 
+## 5.5 语义标签上图 + AI 选材（v1.1，2026-06-10）
+
+cc3265d 引入像素扫描语义标签（`artlib-tags.ts`：CAT_TAGS 路径级 + SUBJECT_TAGS 主题级，
+查询时现算合并进 `artlibTokens`）。本期把它接到「人可见、AI 可用」：
+
+- **图上可见**：浏览器网格卡片缩略图底部叠加语义标签条（黛紫，≤2 个 + `+n`，悬停 title 给全量）；
+  详情面板语义标签（紫）与结构词（路径/主题派生）分组显示，均点击即过滤。
+  `artlibSemanticTags()` 与 `artlibTokens()` 合并逻辑严格同构——**显示的 = 搜索/解析用的**。
+- **排序器单点**：`rankRecords`（名称全等 100 > 前缀 60 > 语义 tag 50 > 任意 tag 40 > 名称子串 30
+  > id 子串 15 > tag 子串 10；AND 全中才入选；同分按 id 稳定）。浏览器搜索默认按它出序
+  （sort=relevance），**AI 选材走同一个函数 → 人在浏览器看到的第一名 = AI 选到的那张**。
+- **AI 选材 = `art:` 数据引用**（`src/assembly/resolve-art-refs.ts`）：LLM 在 manifest 里写
+  `Sprite.textureKey: "art:skeleton warrior"`，进透视器前 `resolveArtRefs` 用 rankRecords top-1
+  确定性替换为真实 id；无命中原样保留（渲染占位，不炸加载）；解析全程留痕（resolutions：
+  query→id+候选，console 审计）。生成 system prompt（apollo.py）已附写法与常用语义词。
+  宣言尺子：LLM 产出的只是查询字符串，选材发生在确定性解释器里——同 manifest 同索引永远同图。
+
 ## 6. 确定性边界（不变）
 
 库与导入全在表现层：sim 只持字符串 key，像素/索引不进模拟哈希 → 填充/导入/重命名不破坏 lockstep 与录放。

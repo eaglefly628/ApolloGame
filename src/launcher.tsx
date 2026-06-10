@@ -3,6 +3,9 @@ import { createRoot } from 'react-dom/client';
 import { StudioInspector } from './studio/StudioInspector.js';
 import { AssetLibrary } from './studio/AssetLibrary.js';
 import { SHELL, sBackPill } from './ui/shell-theme.js';
+import { resolveArtRefs } from './assembly/resolve-art-refs.js';
+import { artlibRecords, type LibraryRecord } from '@assets/index.js';
+import type { ArtLibIndex } from '@assets/artlib.js';
 import { parseManifest } from './assembly/manifest.js';
 import { deriveAssetIndex } from './assembly/derive-asset-index.js';
 import { buildCapabilityCatalog } from './assembly/capability-catalog.js';
@@ -575,10 +578,30 @@ function Launcher() {
   const [artlib, setArtlib] = useState(false);
   const [studioExtra, setStudioExtra] = useState<{ id: string; title: string; build: () => WorldBlueprint } | null>(null);
 
+  // 素材库记录（AI 选材解析用）：启动时拉一次索引，失败不阻塞（art: 引用原样留 → 渲染占位）。
+  const artRecordsRef = React.useRef<LibraryRecord[] | null>(null);
+  useEffect(() => {
+    fetch('/assets/FreeArtLib/index.json')
+      .then((r) => r.json())
+      .then((j) => { artRecordsRef.current = artlibRecords(j as ArtLibIndex); })
+      .catch(() => { artRecordsRef.current = null; });
+  }, []);
+
   // 「在透视器里打开」：把生成的 manifest(原始 JSON)接进透视器。build 每次重新 parseManifest
   // (而非 clone——蓝图含 capability 函数对象，structuredClone/JSON 都会坏)，重置/重跑安全。
+  // 进透视器前先过 art: 选材解析（确定性 rankRecords top-1，留痕 console 供审计）。
   const openInStudio = useCallback((name: string, raw: unknown) => {
-    setStudioExtra({ id: 'generated', title: `生成 · ${name}`, build: () => parseManifest(raw) });
+    let manifest = raw;
+    const records = artRecordsRef.current;
+    if (records) {
+      const { manifest: resolved, resolutions } = resolveArtRefs(raw, records);
+      manifest = resolved;
+      if (resolutions.length > 0) {
+        console.info('[art-resolve] AI 选材解析（query → id；同 query 永远同结果）：',
+          resolutions.map((r) => `${r.entity}.${r.component}.${r.field}: "${r.query}" → ${r.id ?? '∅ 无命中(原样保留)'}${r.candidates.length > 1 ? `（候选: ${r.candidates.join(', ')}）` : ''}`));
+      }
+    }
+    setStudioExtra({ id: 'generated', title: `生成 · ${name}`, build: () => parseManifest(manifest) });
     setStudio(true);
   }, []);
 

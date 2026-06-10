@@ -79,7 +79,7 @@ export function AssetLibrary({ onBack }: { onBack: () => void }) {
   const [status, setStatus] = useState<LibraryStatus | ''>('');
   const [tagFilters, setTagFilters] = useState<string[]>([]);
   const [sources, setSources] = useState<Record<LibrarySource, boolean>>({ project: true, artlib: true, game: true });
-  const [sort, setSort] = useState<'name' | 'size' | 'variants'>('name');
+  const [sort, setSort] = useState<'name' | 'size' | 'variants' | 'relevance'>('name');
   const [thumbPx, setThumbPx] = useState(64);
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [copied, setCopied] = useState(false);
@@ -94,9 +94,11 @@ export function AssetLibrary({ onBack }: { onBack: () => void }) {
     [allRecords, enabledSources],
   );
   const counts = useMemo(() => libraryCounts(scoped), [scoped]);
+  // 搜索时默认按相关度（与 AI 选材解析同一个排序器：所见即所选）；用户显式选了尺寸/变体则尊重。
+  const effectiveSort = text.trim() && sort === 'name' ? 'relevance' : sort;
   const results = useMemo(
-    () => queryLibrary(scoped, { text, type: type || undefined, category: category || undefined, status: status || undefined, tags: tagFilters, sort }),
-    [scoped, text, type, category, status, tagFilters, sort],
+    () => queryLibrary(scoped, { text, type: type || undefined, category: category || undefined, status: status || undefined, tags: tagFilters, sort: effectiveSort }),
+    [scoped, text, type, category, status, tagFilters, effectiveSort],
   );
   const shown = results.slice(0, CAP);
   const selected = useMemo(() => allRecords.find((r) => r.id === selectedId) ?? null, [allRecords, selectedId]);
@@ -148,8 +150,9 @@ export function AssetLibrary({ onBack }: { onBack: () => void }) {
           <option value="tbf">待填 tbf</option>
           <option value="placeholder">占位 placeholder</option>
         </select>
-        <select value={sort} onChange={(e) => setSort(e.target.value as typeof sort)} style={sSelect()}>
+        <select value={effectiveSort} onChange={(e) => setSort(e.target.value as typeof sort)} style={sSelect()}>
           <option value="name">排序: 名称</option>
+          <option value="relevance">排序: 相关度（搜索时默认）</option>
           <option value="size">排序: 尺寸</option>
           <option value="variants">排序: 变体数</option>
         </select>
@@ -312,18 +315,36 @@ export function AssetLibrary({ onBack }: { onBack: () => void }) {
                   <div style={{ fontSize: 11, color: SHELL.sub, lineHeight: 1.5, wordBreak: 'break-all' }}>{selected.description}</div>
                 </div>
               )}
-              {selected.tags.length > 0 && (
-                <div>
-                  <div style={{ ...sLabel, marginBottom: 5 }}>tags（点击加为过滤）</div>
-                  <div style={{ display: 'flex', flexWrap: 'wrap', gap: 5 }}>
-                    {selected.tags.slice(0, 16).map((t) => (
-                      <span key={t} onClick={() => setTagFilters((ts) => (ts.includes(t) ? ts : [...ts, t]))} style={sChip(tagFilters.includes(t))}>
-                        #{t}
-                      </span>
-                    ))}
+              {selected.tags.length > 0 && (() => {
+                // 语义标签（像素扫描层）黛紫高亮、排前；结构词（路径/主题派生）常规色——区分"看图所得"与"名字所得"。
+                const sem = selected.semanticTags ?? [];
+                const semSet = new Set(sem);
+                const struct = selected.tags.filter((t) => !semSet.has(t));
+                const chip = (t: string, semantic: boolean) => (
+                  <span
+                    key={t}
+                    onClick={() => setTagFilters((ts) => (ts.includes(t) ? ts : [...ts, t]))}
+                    style={
+                      semantic && !tagFilters.includes(t)
+                        ? { ...sChip(false), background: SHELL.violetWash, color: SHELL.violet, borderColor: SHELL.violetLine }
+                        : sChip(tagFilters.includes(t))
+                    }
+                  >
+                    #{t}
+                  </span>
+                );
+                return (
+                  <div>
+                    <div style={{ ...sLabel, marginBottom: 5 }}>
+                      tags（点击加为过滤{sem.length > 0 ? ' · 紫=语义' : ''}）
+                    </div>
+                    <div style={{ display: 'flex', flexWrap: 'wrap', gap: 5 }}>
+                      {sem.map((t) => chip(t, true))}
+                      {struct.slice(0, Math.max(4, 16 - sem.length)).map((t) => chip(t, false))}
+                    </div>
                   </div>
-                </div>
-              )}
+                );
+              })()}
               <div style={{ display: 'flex', gap: 10 }}>
                 <div style={{ flex: 1 }}>
                   <div style={sLabel}>来源</div>
@@ -355,12 +376,15 @@ export function AssetLibrary({ onBack }: { onBack: () => void }) {
 
 function AssetCard({ r, px, active, onPick }: { r: LibraryRecord; px: number; active: boolean; onPick: () => void }) {
   const [hover, setHover] = useState(false);
+  // 图上标签：语义标签优先（像素扫描层），没有则退回普通 tags；悬停 title 给全量。
+  const overlayTags = (r.semanticTags?.length ? r.semanticTags : r.tags).slice(0, 2);
+  const extra = (r.semanticTags?.length ? r.semanticTags.length : r.tags.length) - overlayTags.length;
   return (
     <div
       onClick={onPick}
       onMouseEnter={() => setHover(true)}
       onMouseLeave={() => setHover(false)}
-      title={r.id}
+      title={`${r.id}${r.semanticTags?.length ? `\n语义: ${r.semanticTags.join(' ')}` : ''}`}
       style={{
         width: px + 28, padding: 6, borderRadius: 8, cursor: 'pointer',
         background: active ? SHELL.jadeWash : hover ? 'rgba(255,255,255,0.04)' : 'rgba(255,255,255,0.015)',
@@ -368,11 +392,25 @@ function AssetCard({ r, px, active, onPick }: { r: LibraryRecord; px: number; ac
         display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 4,
       }}
     >
-      <div style={{ ...sChecker, width: px, height: px, display: 'flex', alignItems: 'center', justifyContent: 'center', borderRadius: 4, overflow: 'hidden' }}>
+      <div style={{ ...sChecker, width: px, height: px, display: 'flex', alignItems: 'center', justifyContent: 'center', borderRadius: 4, overflow: 'hidden', position: 'relative' }}>
         {r.thumb ? (
           <img src={r.thumb} alt={r.name} loading="lazy" style={{ maxWidth: px - 8, maxHeight: px - 8, imageRendering: 'pixelated' }} />
         ) : (
           <span style={{ fontSize: px / 3, opacity: 0.35 }}>❓</span>
+        )}
+        {overlayTags.length > 0 && px >= 56 && (
+          <div style={{
+            position: 'absolute', left: 0, right: 0, bottom: 0,
+            display: 'flex', gap: 2, justifyContent: 'center', alignItems: 'center',
+            padding: '2px 2px', background: 'rgba(6,8,13,0.72)', backdropFilter: 'blur(2px)',
+          }}>
+            {overlayTags.map((t) => (
+              <span key={t} style={{ fontSize: 8, lineHeight: 1.4, padding: '0 4px', borderRadius: 6, background: SHELL.violetWash, color: SHELL.violet, border: `1px solid ${SHELL.violetLine}`, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', maxWidth: px / 2 }}>
+                {t}
+              </span>
+            ))}
+            {extra > 0 && <span style={{ fontSize: 8, color: SHELL.dim }}>+{extra}</span>}
+          </div>
         )}
       </div>
       <div style={{ fontSize: 10, textAlign: 'center', lineHeight: 1.2, wordBreak: 'break-word', maxHeight: 24, overflow: 'hidden', color: SHELL.text }}>

@@ -1186,6 +1186,13 @@
 
 （Lead 实现后把需求移到这里，标 done + 对应 commit / 新原子名）
 
+### [2026-06-10] · 用户（直发 Lead） · 引擎原生 · status: done · 资源库 v1.1：语义标签上图 + AI 选材（接 cc3265d）
+- 需求：cc3265d 的像素扫描语义标签 ① 能显示在图片上；② 能让 AI 合理选择素材。
+- 落地（见 `docs/design/asset-library.md` §5.5）：
+  - `artlibSemanticTags()`（与 artlibTokens 合并逻辑严格同构）→ LibraryRecord.semanticTags；网格卡片缩略图底部叠加语义标签条（黛紫 ≤2+n，悬停全量），详情面板语义/结构分组、点击即过滤。
+  - **排序器单点** `rankRecords`（名称全等>语义tag>任意tag>子串，AND 全中，确定性稳定序）：浏览器搜索默认 relevance 出序，AI 选材走同一个函数——所见即所选。
+  - **AI 选材机制** `resolveArtRefs`（assembly）：manifest 里 `"textureKey":"art:<关键词>"` → 进透视器前确定性替换 top-1 真实 id，无命中原样保留（占位不炸），resolutions 留痕审计；apollo.py 生成 prompt 附写法+常用语义词。宣言尺子：LLM 只产查询字符串，选材在确定性解释器。
+
 ### [2026-06-10] · 用户（直发 Lead） · 引擎原生 · status: done · 资源库重构 v1（统一资产库 + 2D 贴图导入器 + 壳层视觉基调）
 - 需求：资产库不止美术贴图，**全游戏资源统一整合**——按常见游戏资源分类建目录树；浏览器对标成熟资源管理器（搜索/下拉/tag 过滤）；浏览器兼任**数据导入器**，先聚焦 2D 贴图三种来源（散图/未切割精灵表/乱命名目录）的导入归一化。另：主页+资源库+各游戏返回钮统一「清幽·高雅·高级·秩序」视觉基调。
 - 落地（mockup 用户拍板后实施，见 `docs/design/asset-library.md` + `asset-library-mockup.html`）：

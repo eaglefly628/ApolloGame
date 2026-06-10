@@ -55,6 +55,19 @@ export function artlibTokens(a: ArtAsset): string[] {
   ].map((t) => t.toLowerCase());
 }
 
+/**
+ * 仅语义标签子集（像素扫描所得：元素/威胁/风格/特殊旗标），与 artlibTokens 的合并
+ * 逻辑严格同构（cat/sub 命中则用子目录级，否则回退 cat 级）—— 浏览器把它们显示在
+ * 图片上、AI 选材排序给它们更高权重；显示的 = 搜索/解析用的，所见即所选。
+ */
+export function artlibSemanticTags(a: ArtAsset): string[] {
+  const subCatKey = a.sub ? `${a.cat}/${a.sub}` : a.cat;
+  const catTags = CAT_TAGS[subCatKey] ?? CAT_TAGS[a.cat] ?? [];
+  const subjectTags = SUBJECT_TAGS[a.subject] ?? [];
+  const extraTags = a.tags ?? [];
+  return [...new Set([...catTags, ...subjectTags, ...extraTags].filter(Boolean))].map((t) => t.toLowerCase());
+}
+
 /** 资产所在目录（相对仓库根）：root/cat[/sub]。 */
 export function artlibDir(index: ArtLibIndex, a: ArtAsset): string {
   return [index.root, a.cat, a.sub].filter(Boolean).join('/');

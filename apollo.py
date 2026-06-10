@@ -177,6 +177,12 @@ type (NO "type" field inside the component). `capabilities` lists the engine cap
 For a platformer/physics game enable exactly:
 ["a1-transform","b1-velocity","b2-acceleration","c1-shape","l2-color","d1-overlap-detect","t1-accel-apply","t1-motion-apply","t2-collision-resolve","t2-bounds-clamp"]
 
+## Art assets (optional — use for richer visuals)
+- Any Sprite.textureKey may be written as "art:<english keywords>", e.g. Sprite{ "textureKey": "art:skeleton warrior" }.
+- The engine deterministically resolves it against a CC0 32x32 sprite library (4800+ tagged assets); the same query always picks the same sprite. Unresolvable queries fall back to a placeholder, never crash.
+- Useful keywords — monsters: undead/skeleton/zombie/demon/dragon/animal/wolf/spider/boss/flying/fire/ice/poison; terrain: floor/wall/grass/lava/water/door/altar/trap; items: sword/axe/bow/armor/shield/potion/book/gold; fx: arrow/bolt/cloud.
+- Entities with Sprite still need Transform (and Shape if they collide). If no art fits the theme, use Shape+Color instead.
+
 ## Rules
 - Canvas 640x400, origin top-left. Include a "camera" entity with Camera centered: offsetX:320, offsetY:200 (so world coords map 1:1 to screen and entities are visible).
 - Color { tint: 0xRRGGBB number, alpha:1 }. Ground/walls Mass{value:0}. Players Controllable{playerId,speed}. Bounds keeps entities on-screen.

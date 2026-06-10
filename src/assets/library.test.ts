@@ -4,6 +4,7 @@ import {
   artlibRecords,
   manifestRecords,
   queryLibrary,
+  rankRecords,
   libraryCounts,
   inferCategory,
   LIBRARY_TAXONOMY,
@@ -99,6 +100,32 @@ describe('library — 查询/计数', () => {
     expect(c.get('texture')).toBe(7);
     expect(c.get('sound')).toBe(1);
     expect(c.get('texture/sprite.character')).toBe(2);
+  });
+});
+
+describe('library — 语义标签与相关度排序', () => {
+  const arts = artlibRecords(artIndex);
+
+  it('artlibRecords 注入 semanticTags（像素扫描层），且全集 tags 包含它们', () => {
+    const skel = arts.find((r) => r.id === 'monster/undead/skeleton')!;
+    expect(skel.semanticTags).toBeDefined();
+    expect(skel.semanticTags).toContain('undead'); // CAT_TAGS['monster/undead']
+    for (const t of skel.semanticTags!) expect(skel.tags).toContain(t);
+  });
+
+  it('rankRecords：名称精确 > 语义 tag > 子串；AND 全中才入选；确定性同序', () => {
+    const r = rankRecords(arts, 'axe');
+    expect(r[0].record.id).toBe('item/weapon/axe'); // 名称全等 100
+    expect(rankRecords(arts, 'undead')[0].record.id).toBe('monster/undead/skeleton'); // 语义命中
+    expect(rankRecords(arts, 'axe undead_nonsense')).toHaveLength(0);
+    expect(rankRecords(arts, 'monster').map((x) => x.record.id)).toEqual(rankRecords(arts, 'monster').map((x) => x.record.id));
+  });
+
+  it('queryLibrary sort=relevance：按相关度出序，且其余维度过滤仍生效', () => {
+    const all = [...arts, ...projectRecords(projIndex)];
+    const rs = queryLibrary(all, { text: 'undead', sort: 'relevance' });
+    expect(rs[0].id).toBe('monster/undead/skeleton');
+    expect(queryLibrary(all, { text: 'undead', sort: 'relevance', sources: ['project'] })).toHaveLength(0);
   });
 });
 
