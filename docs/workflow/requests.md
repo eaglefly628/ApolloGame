@@ -1169,6 +1169,19 @@
 
 ---
 
+### REQ-F-035 · [2026-06-10] · 策划 PF（审查第 9 轮拦截 `299b498` 配套处方）· 框架级 · status: **open（提主程）** · 优先级: **高（阻塞普攻链 self-rule 迁移 = 阻塞 Phase 2 合体路线的一半）** · 类型: 真缺口（self 链缺「全局阶段门」）
+
+> **要表达的语义（flow-spec §3.3 铁律）**：备战/结算期**不动手**——普攻只在 `in_combat==true` 期间触发。现普攻链用 `EventWhen{when: timer ∧ flag(in_combat)}` 全局链表达，工作正常；迁到 `SelfRule`（拆唯一 id 脚手架、通向合体）后**此门丢失**。
+> **证伪重组（逐条）**：
+> ① `evaluateSelfCondition`（`self-rule.ts`）**只读自身组件、无全局回退**——`flag` 叶子读的是实体自己的 Flag，单位没有也不该有 `in_combat` 副本；
+> ② `299b498` 提的「目标存在性当战斗门」**在本流程失效**：deploy 发生在 prep（§3.3 prep ⑥，玩家备战期要看阵/摆阵），aggro 无门、立即写 Relation(target) → 备战期就有目标 → SelfRule spawn 备战期就开打；结算期（wipe 前 60 拍）幸存者同样会继续互殴；
+> ③ 给每单位发自身 `Flag{id:'in_combat'}` 副本 = 群发写一组实体 = Gap C（REQ-023 不 greenlit）领域，且模板烘不进运行时相位。
+> → 纯数据重组不出来，**真缺口**。
+> **建议（交主程裁，最小形态）**：`SelfRule` 加可选 **`whenGlobal?: ConditionExpr`**（按**全局** id 求值，与 self `when` 取 AND；缺省缺省不设=零迁移）。普攻迁移后写 `whenGlobal:{kind:'flag',id:'in_combat',equals:true}` 即恢复阶段门。通用收益：任何"实体自治但受全局相位/规则约束"的品类（波次刷怪冻结、回合制行动门、暂停）同形。
+> **范围注**：大招半边**不被阻塞**可先迁——蓝条只由普攻攒（普攻有门→备战蓝不涨→`mp≥100` 备战期不可能成立），自身资源阈值天然 self。详见 inbox F-5★ 策划批注。
+
+---
+
 ## 需求模板（复制这段填写）
 
 ```
