@@ -1,10 +1,30 @@
-# Session 交接 / 项目现状 —— 读这一份即可接手（2026-06-09 刷新，杂活程序员）
+# Session 交接 / 项目现状 —— 读这一份即可接手（2026-06-10 刷新，主程4）
 
 > ⛔ **最高纲领：`docs/design/data-driven-manifesto.md`** —— 游戏=**数据**，代码只属引擎这台**确定性解释器**。
 > 一切"该数据还是代码"的争议用那把尺子裁：**"最弱的 LLM 能不能也产出一模一样的数据？" 能→数据接口；不能→拒绝，做成 DSL 或下沉成 capability。**
 > **工作规范见 `CLAUDE.md`**（分支 `claude/mainbranch` 直推不开 PR；`fetch→rebase→push`；tsc+vitest+build 全绿才推）。本文件只讲"现状/机制/待办"，不重复 CLAUDE.md。
 
 ---
+
+## ★ 主程4 本会话交接（2026-06-10；HEAD 492316c；vitest 925 绿 / tsc / build 全绿）
+
+**本会话全是引擎能力下沉 + 评审 + bug 修复，不碰游戏层代码（game-*.tsx 归各 PE）。新增/扩展能力：**
+- **卡牌簇（Game E 拉动）**：`tier3/card-scoring`(REQ-014 逐张计分+retrigger) · `tier3/poker-hand` 加 `scoringCardIndices`(BUG-001 只计「计分牌」) · `tier2/card-play`(REQ-016/017 出牌输入接缝,按 owner 路由) · `tier2/card-pile`(REQ-017 牌库/手牌 sim 内管理:发牌/下标出牌/弃牌/补牌) · `skills/score-trace`(REQ-019 计分链逐步 trace,排除出 hash,opt-in)。
+- **流程/逻辑轴**：`tier3/flow`(REQ-020 声明式状态机解释器=游戏流程数据,onEnter+条件转移+`after` Matinee 时序门;ConditionExpr 加 `always` 叶子) · `tier2/self-rule`(REQ-021 **实体本地 self 作用域**,对每个实体读自身条件→施自身,通用化 mortal) · `tier2/group-count`(REQ-022 **集合读**,按 Tag 计数→count 资源;阈值用 event-when 重组)。
+- **effect-apply 扩展**：REQ-012 `op/order` · REQ-013 `valueFrom`(资源×资源/系数) · REQ-009 `reset-timer`(事件→重置计时器,限时机制) · REQ-019 trace append。`condition` 加 `vsResource`(资源比资源,动态阈值)。
+- **六边形寻路（Game F 拉动,REQ-024）**：`tier2/hex`(纯函数确定性 A* `hexNextStep`,绕障/到相邻停) · `tier2/grid-move`(逐格移动,读 Relation→A*→写 HexPos+投影 Transform) · 组件 HexBoard/HexPos/GridMover。
+- **引擎 bug 修复**：BUG-003(TimerDone 双 consume 饿死 animation→生产者 timer-advance 自清+消费者改 reads) · BUG-004(mortal 掉落载体泄漏→prefab 回收 size==1 载体) · BUG-005(queryNearest tie-break + tween duration≤0 抖动)。顺手补 group-count 漏注册进 ALL_CAPABILITIES。
+- **治理/设计文档**：`docs/design/tier3-skill-governance.md`（**新 skill 决策判据**+genre pack+「散件能重组但最弱 LLM 难产→建收敛解释器是正当理由」宪法澄清+genre skill 重组审计：caster 标可整合、card-play provisional）· `docs/design/query-perf-plan.md`（World.query 全扫优化方案,倒排索引,**未实施**）。
+
+**未做/待接（按优先）**：
+- 🔴 **REQ-023 group-effect（集合写）**：我**不 greenlit·倾向重组**（group-count+全局 buff 资源绕过）；真出现"非逐单位 fan-out 不可"再下沉。
+- 🟠 **World.query 性能**：方案已出（`query-perf-plan.md`），未实施；N 大才痛，按需。
+- 🟠 **caster 可整合进 effect-apply（kind:'spawn'）+ 与 aggro 索敌去重**（governance §4 审计发现），排期收敛。
+- 🟡 各游戏 PE 侧"数据换层"（消费这批新能力）：Game E 用 flow/card-pile 重写回合流程(REQ-017)+读 ScoreTrace 回放(REQ-019,PE 已在接)；Game F 用 hex/grid-move 接金铲铲移动(REQ-024)+self-rule/group-count 接自治/羁绊。
+- 🟠 沿用旧自审：**仍没真浏览器看过一帧**；浮点跨端确定性未双端验（卡牌/hex 是整数安全,steering/sqrt 仍 REQ-010 open）。
+
+---
+
 
 ## 1. 开发机制（这套东西是怎么运转的）
 
