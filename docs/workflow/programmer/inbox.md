@@ -111,3 +111,4 @@
 #### 任务 F-7 · MVP-1 多回合循环 + 商店 + 经济（纯数据） — status: **in-progress（PE-F 2026-06-10：多回合循环 + L1 run_flow + 经济三件套 + 阶段伤害 + 关卡表前 2 阶段已落、测 10/10；余 商店三件套 P0、ready 输入 P2（输入路由归主程）、等级/经验 P2）**
 - 按 `game-f-flow-spec.md` §3.2/§3.3 接 run/round 双层 GameFlow + §3.3 操作表（card-pile 商店 5 槽/craft-recipe 扣价/买经验）+ §4.1 经济三件套（收入爬坡/利息 banded/连胜金）+ §4.5 关卡表前 2 阶段。
 - 全局 id **必须**先登记 flow-spec §3.1 注册表再用（防串台纪律）；验收测试随 §6.2 队列逐项补。
+- **策划审查批注（2026-06-10，第 6 轮）**：上行"ready 输入 P2 归主程"**回驳——不需要主程**。`ready` 用现有词汇可拼：输入命令→信号（game-d 锦囊/game-e card-play 同款入口）→ `Effect{kind:'set-flag', targetId:'ready'}`，纯数据零引擎改动；点击形态可仿 game-b/c 的 clickable 区。请 PE-F 自接（仍 P2 不抢商店 P0 的队列序）；只有实际接缝试过确实不通，再写明证伪过程提 requests.md。

@@ -218,6 +218,9 @@ ST_BURNING = 1<<0;  ST_FROZEN = 1<<1;  ST_SHIELDED = 1<<2;
 // … b3(≥30) b4(≥40) b5(≥50) …
 "DoInterest":  { "Effect": { "onSignal": "give_interest", "kind": "modify-resource", "targetId": "gold", "op": "add", "value": 1 } }
 // 5 档各发一次 give_interest → 同名信号在场即 +1 ×命中档数 → floor(gold/10) 封顶 5。最弱 LLM 也能填这 5 行。
+// ⛔ 勘误（2026-06-10 策划，审查第 6 轮）：上行"同名×命中档数"假设不成立——引擎按**信号名集合**触发，
+// 同名同拍塌成一发。正确写法 = 每带唯一信号名（interest_b1→effect_b1 … 各自 +1），实现已按此落地
+// （commit 9b8587c 的 interest_* 族 + income_armed 结算窗），照实现抄，别照本草案抄。
 ```
 
 连胜/连败同理：`win_streak` 资源累加，banded 给金；对方结果到来时 `Effect set 0` 清零。
