@@ -9,7 +9,6 @@ import {
   triggerZoneCapability,
   hitboxCapability,
   mortalCapability,
-  facingCapability,
   eventWhenCapability,
   zoneOccupancyCapability,
   cameraFollowCapability,
@@ -117,7 +116,6 @@ function unitEntity(h: HeroSpec): EntityBlueprint {
     EventWhen: { signal: atk, when: { kind: 'timer', id: atk, cmp: 'gte', value: ATK_CD - 1 }, mode: 'edge', armed: false },
     Caster: { onSignal: atk, template: h.strike, at: 'target', targetTag: h.enemy },
     Sprite: sprite(h.key, 4),
-    Facing: { mode: 'target' }, // 面朝目标
   } as unknown as EntityBlueprint;
 }
 
@@ -147,8 +145,8 @@ export function buildGameFBlueprint(): WorldBlueprint {
     team_b_flag: { Flag: { id: 'team_b_present', active: true } } as unknown as EntityBlueprint,
     zone_a: { Zone: { outFlag: 'team_a_present', ...ARENA, requiredTag: TEAM_A, count: 1 } } as unknown as EntityBlueprint,
     zone_b: { Zone: { outFlag: 'team_b_present', ...ARENA, requiredTag: TEAM_B, count: 1 } } as unknown as EntityBlueprint,
-    // 静态相机（表现，排除出 hash）。
-    camera: { Transform: xf(0, 0), Camera: { zoom: 1, offsetX: 0, offsetY: 0, rotation: 0, viewportW: 800, viewportH: 600 } } as unknown as EntityBlueprint,
+    // 静态相机（表现，排除出 hash）。720p 画布 + zoom 把棋盘放大填满视口。
+    camera: { Transform: xf(0, 0), Camera: { zoom: 2.4, offsetX: 0, offsetY: 0, rotation: 0, viewportW: 1280, viewportH: 720 } } as unknown as EntityBlueprint,
   };
   for (const h of ROSTER) {
     entities[h.id] = unitEntity(h);
@@ -176,7 +174,6 @@ export function buildGameFBlueprint(): WorldBlueprint {
       mortalCapability,
       // 胜负 + 表现
       zoneOccupancyCapability,
-      facingCapability,
       hierarchyResolveCapability,
       cameraFollowCapability,
     ],

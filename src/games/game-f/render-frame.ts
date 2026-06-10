@@ -5,8 +5,8 @@ import { Engine } from '../../runtime/engine.js';
 import { collectRenderables, getCameraView } from '../../renderer/renderable.js';
 import { buildGameFBlueprint, GAME_F_ASSETS } from './index.js';
 
-const VIEWPORT_W = 800;
-const VIEWPORT_H = 600;
+const VIEWPORT_W = 1280;
+const VIEWPORT_H = 720;
 const PREFIX = 'data:image/svg+xml,';
 const innerSvg = (src: string): string => decodeURIComponent(src.slice(PREFIX.length));
 const hex = (tint: number): string => `#${(tint & 0xffffff).toString(16).padStart(6, '0')}`;

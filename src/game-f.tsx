@@ -6,8 +6,8 @@ import { buildGameFBlueprint, GAME_F_ASSETS } from './games/game-f/index.js';
 // Game F 可挂载模块（launcher 卡带槽契约：export mount(container) → cleanup）。
 // 纯数据切片：引擎跑 buildGameFBlueprint，CanvasRenderer 读静态 Camera 投影。无玩家输入（全自动对战）。
 // 美术走 R9：注册 GAME_F_ASSETS（势力色占位 token），真 DCSS 皮后补同 key 自动穿皮（见 art-data.md）。
-const VIEWPORT_W = 800;
-const VIEWPORT_H = 600;
+const VIEWPORT_W = 1280;
+const VIEWPORT_H = 720;
 
 export function mount(container: HTMLElement): () => void {
   const wrapper = document.createElement('div');
