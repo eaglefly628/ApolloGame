@@ -68,4 +68,11 @@
 #### 任务 F-4 · REQ-F-028 接入 flow 回合阶段机（纯数据） — status: pending
 - 备战→战斗→结算→gameover 用一份 GameFlow 数据接（flow 已加 `runsAfter:['zone-occupancy','group-count']` 破环，引擎侧已落）。
 
-> ✅ **引擎侧 REQ-F-026/027/028 均已落地、全绿（vitest 940）**。PE-F 上述 F-1~F-4 皆可接，纯数据 / 零游戏代码。不要在游戏层 workaround 引擎行为；若发现新引擎缺口，写 requests.md 提主程。
+#### 任务 F-5 · REQ-F-029 接入实时血条/蓝条（纯数据，每棋子两个子实体） — status: pending
+- 引擎已落 `t2-gauge`（10 测绿）：每 tick 把 Resource 比例写成条实体自身 `Shape.width`，并左锚补偿 `Hierarchy.localX`（左端钉死、从右端缩）。**渲染器零改动**；跟随=hierarchy-resolve、随棋子死=hierarchy-cascade（F-1），全自动。蓝图 capabilities 加 `gaugeCapability`（id `t2-gauge`）。
+- 每棋子加两个子实体（替掉静态数字 Text）：
+  - 血条（绿）：`Hierarchy{parentId:棋子, localY:头顶上方} + Shape{kind:'box', height:~4} + Color{tint:绿} + Gauge{resourceId:'hp', fromParent:true, width:~40}`（共享 id 'hp' **必须** fromParent:true，全局取会取错单位）
+  - 蓝条（蓝）：同上，`Gauge{resourceId:'mp_<英雄>', width:~40}`（唯一 id，缺省全局路由），localY 比血条再低 ~5
+- 注意：条实体的 Shape 仅作渲染几何，**别**给条挂 Collider/Velocity/Hitbox（条不参战）；`leftX` 缺省 -width/2 = 满条居中，通常无需设。
+
+> ✅ **引擎侧 REQ-F-026/027/028/029 均已落地、全绿（vitest 951）**。PE-F 上述 F-1~F-5 皆可接，纯数据 / 零游戏代码。不要在游戏层 workaround 引擎行为；若发现新引擎缺口，写 requests.md 提主程。

@@ -1043,7 +1043,7 @@
 
 ---
 
-### REQ-F-029 · [2026-06-10] · Programmer F（用户反馈：要实时血条/蓝条）· 框架级 · status: **open** · 优先级: 中（自走棋观感/可读性）· 类型: 真缺口（Resource → 实时条/gauge 渲染）
+### REQ-F-029 · [2026-06-10] · Programmer F（用户反馈：要实时血条/蓝条）· 框架级 · status: **done（引擎侧 t2-gauge；game-f 接入派 PE-F）** · 优先级: 中（自走棋观感/可读性）· 类型: 真缺口（Resource → 实时条/gauge 渲染）
 
 > **现象（用户反馈）**：棋子头顶血量/蓝量**不更新**（我的标签是装配期写死的静态数字 Text，无法随 hp/mana 变化）。用户要**绿色血条 + 蓝色蓝条**（别用数字）。
 > **证伪重组**：① 渲染器只画 `Sprite/Text/Shape`，无"按 Resource 比例画条"的路径；② Text.content 静态，无"Resource→Text"更新系统；③ Shape.width/Transform.scaleX 静态，无"Resource→scaleX"系统；④ tween 按时间不按资源。→ 现有数据/能力**画不了随资源变化的条**。**真缺口（每个有血条的游戏都要，通用表现层能力）。**
@@ -1052,6 +1052,13 @@
 > - (A) 系统式 `Gauge{ resourceId, fromParent?:bool }`：每 tick 设本实体 `Transform.scaleX = clamp(资源.current/max,0,1)`（资源取自 `fromParent? Hierarchy.parentId 的 Resource : 自身`）；条=Shape/Sprite 子体，颜色用 Color（绿血/蓝蓝）。锚左缩（pivot 左对齐，从右端掉血）。
 > - (B) 渲染器式 `Bar{ resourceId, color, w, h, fromParent? }`：渲染器据资源画填充矩形。
 > 落地后 game-f：每棋子挂 hp 绿条(fromParent,读父'hp') + mana 蓝条(读 `mp_<id>`) 两个子条，纯数据、实时。
+>
+> **Lead 裁决（2026-06-10）**：**接受——真缺口核实成立，但两个提案的载体都回驳，修正后落地为 tier2 `gauge`。**
+> - 缺口核实：渲染器确只画 Sprite/Text/Shape（box 以中心 `fillRect(-w/2..)`）；全库无任何 Resource→视觉投影系统；string-variable 是字符串容器与此无关；tween 按时间。重组确实表达不了 → 收。知识库 `wiki/skills/resource.md` 同向（血条=读 current/max→投影成条；单向 ECS→表现）。
+> - **(B) 渲染器 Bar 回驳**：资源寻址 + 父子寻径是 sim 语义，塞进渲染器 = canvas/ascii/未来后端各自重复实现 + 无头环境测不了 + 破坏 `renderable.ts`「引擎无关纯渲染数据」契约。
+> - **(A) 原载体回驳、方向采纳**：写 `Transform.scaleX` 不可行——`hierarchy-resolve`(PostResolve) 每帧 `c.scaleX = p.scaleX * localScaleX` 重写子 Transform（双 writer 打架、定序敏感）；且渲染 box 中心 pivot，缩放是**对称收缩**，做不出"左端钉死从右端掉血"。
+> - **落地载体**：gauge 写 **`Shape.width` + `Hierarchy.localX`**（localX = leftX + 现宽/2 → 左端恒在 leftX）。两字段装配期之外无并发 writer；phase Update + 组件拓扑自动让资源写者(resource-apply/flow/group-count)先行、hierarchy-resolve(PostResolve) 同帧带走——**零显式定序边、零环、渲染器零改动**。寻址按提案：`fromParent` 读宿主（共享 id 'hp'）；缺省先自身后全局（与 ResourceModify R11 auto 一致）。
+> - 引擎已落：`Gauge{resourceId, fromParent?, width, leftX?}` + `t2-gauge`（10 测：左锚恒定/全局路由/自身优先/clamp+min≠0/健壮跳过/ResourceModify→resource-apply→gauge→resolve 整链同帧/确定性）。tsc + vitest 951 + build 全绿。game-f 两子条接入归 PE-F（inbox F-5，纯数据）。
 
 ---
 

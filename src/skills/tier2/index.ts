@@ -35,3 +35,5 @@ export { groupCountCapability } from './group-count.js';
 export { gridMoveCapability } from './grid-move.js';
 export { hexDistance, hexNextStep, HEX_DIRS } from './hex.js';
 export type { Hex } from './hex.js';
+// gauge（REQ-F-029）：Resource 比例 → 条形 Shape 投影（实时血条/蓝条/读条；左锚从右端缩，渲染器零改动）。
+export { gaugeCapability } from './gauge.js';

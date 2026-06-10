@@ -13,7 +13,7 @@ Manifest(纯数据) ──parseManifest──▶ WorldBlueprint ──engine.loa
 ```
 
 - **引擎** `src/engine/`：ECS World（snapshot/hash）；SystemPhase + runsAfter/runsBefore 拓扑排序
-- **能力库** `src/skills/`：50+ 原子+扩展；Tier1（运动/动画/hierarchy-cascade）/ Tier2（物理/逻辑链/ARPG/tilemap/hex/self-rule/group-count）/ Tier3（dialogue/match3/prefab/caster/aggro/poker-hand/card-scoring/flow/card-pile）；**Tier4 刻意为空**（AI行为=数据装配）。全列表见 `wiki/skills/` + 周期表
+- **能力库** `src/skills/`：50+ 原子+扩展；Tier1（运动/动画/hierarchy-cascade）/ Tier2（物理/逻辑链/ARPG/tilemap/hex/self-rule/group-count/gauge）/ Tier3（dialogue/match3/prefab/caster/aggro/poker-hand/card-scoring/flow/card-pile）；**Tier4 刻意为空**（AI行为=数据装配）。全列表见 `wiki/skills/` + 周期表
 - **桥接** `src/assembly/`：capability-registry + manifest.ts（parseManifest/exportManifest）+ schema 校验 + validate-references（P0 引用链接器）
 - **Studio** `src/studio/` + `src/bench/`：数据透视器（改字段/实时预览/键盘试玩）、资产浏览器、ApolloBench（Structure/Load/Determinism/Numeric/Visual）
 - **启动器** `apollo.py`：Vite+API+多 LLM 生成 manifest；离线预设 platformer/pong；`bench` 命令
@@ -41,7 +41,7 @@ Manifest(纯数据) ──parseManifest──▶ WorldBlueprint ──engine.loa
 | REQ-023 | group-effect（集合写）；倾向重组不 greenlit | P3 |
 | caster 整合 | 可整合进 effect-apply(kind:'spawn')+去重 aggro | 排期 |
 | PE-E 数据换层 | flow/card-pile 重写回合流程(REQ-017/020) + ScoreTrace 回放(REQ-019) | PE-E |
-| PE-F 数据换层 | hierarchy-cascade 命名残留(F-026)；offset 棋盘(F-027)；GameFlow 阶段机(F-028)；self-rule/group-count 接羁绊 | PE-F |
+| PE-F 数据换层 | hierarchy-cascade 命名残留(F-026)；offset 棋盘(F-027)；GameFlow 阶段机(F-028)；self-rule/group-count 接羁绊；**gauge 血/蓝条(F-029)** | PE-F |
 
 **🔵 Studio/编辑器 follow-up**（非阻塞）：
 ① 结构编辑（透视器增删实体/组件）；② playwright 真截图（升级 ApolloBench Visual）；
