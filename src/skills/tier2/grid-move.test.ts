@@ -185,6 +185,71 @@ describe('grid-move · REQ-F-030 CC 定身', () => {
   });
 });
 
+// ── REQ-F-034 回归：视觉滑行（glideSpeed —— 逻辑格瞬步、Transform 恒速滑行） ──
+describe('grid-move · REQ-F-034 平滑滑行', () => {
+  const FROZEN = 1 << 3;
+  function glider(w: World, id: string, q: number, r: number, glideSpeed: number, opts: { period?: number; target?: string; halt?: number } = {}): void {
+    w.createEntity(id);
+    w.addComponent(id, { type: 'HexPos', q, r } as HexPos);
+    w.addComponent(id, { type: 'GridMover', period: opts.period ?? 1, glideSpeed, ...(opts.halt ? { haltStatusMask: opts.halt } : {}) } as GridMover);
+    if (opts.target) w.addComponent(id, { type: 'Relation', kind: 'target', targetId: opts.target } as Relation);
+    w.addComponent(id, { type: 'Transform', x: 0, y: 0, rotation: 0, scaleX: 1, scaleY: 1 } as Transform);
+  }
+  const tx = (w: World, id: string) => w.getComponent<Transform>(id, 'Transform')!.x;
+
+  it('缺省（无 glideSpeed）：仍逐格硬钉（零迁移回归）', () => {
+    const w = mk(); board(w, 8, 8, 10);
+    unit(w, 'u', 2, 0, { period: 1, transform: true });
+    w.tick();
+    expect(tx(w, 'u')).toBe(20); // 直接钉到投影点
+  });
+
+  it('滑行：HexPos 瞬步为 SIM 真相，Transform 恒速逼近、到点精确贴齐（无 epsilon）', () => {
+    const w = mk(); board(w, 8, 8, 10);
+    glider(w, 'u', 0, 0, 3, { target: 'enemy' });
+    unit(w, 'enemy', 3, 0);
+    w.tick(); // 走步拍：HexPos 0→1（逻辑瞬步），视觉次拍起滑（每拍恒一次 glideSpeed）
+    expect(pos(w, 'u').q).toBe(1); // 逻辑格已到（占位/寻路真相）
+    expect(tx(w, 'u')).toBe(0); // 本拍循环顶时格还是 0 → 未滑
+    w.tick(); // 循环顶朝投影 10 滑 3px；随后 HexPos 1→2（到 enemy 相邻停）
+    expect(pos(w, 'u').q).toBe(2);
+    expect(tx(w, 'u')).toBe(3);
+    // 剩余 17px 朝投影 20：3px/拍 × 5 拍 → 18，末拍剩 2 ≤ 3 贴齐
+    for (let i = 0; i < 5; i++) w.tick();
+    expect(tx(w, 'u')).toBe(18);
+    w.tick();
+    expect(tx(w, 'u')).toBe(20); // 精确贴齐投影点，不渐近
+  });
+
+  it('冻结=时间静止：滑行中被冻 Transform 原地停，解冻续滑', () => {
+    const w = mk(); board(w, 8, 8, 10);
+    glider(w, 'u', 0, 0, 2, { target: 'enemy', halt: FROZEN });
+    unit(w, 'enemy', 4, 0);
+    w.tick(); // HexPos→1（视觉未滑）
+    w.tick(); // 滑 2px + HexPos→2
+    expect(tx(w, 'u')).toBe(2);
+    w.addComponent('u', { type: 'Status', flags: FROZEN } as Status);
+    for (let i = 0; i < 3; i++) w.tick(); // 冻 3 拍
+    expect(tx(w, 'u')).toBe(2); // 视觉一并停（不滑）
+    expect(pos(w, 'u').q).toBe(2); // 逻辑也停
+    w.getComponent<Status>('u', 'Status')!.flags = 0;
+    w.tick(); // 解冻：续滑
+    expect(tx(w, 'u')).toBeGreaterThan(2);
+  });
+
+  it('确定性：同输入两次跑滑行轨迹一致', () => {
+    const run = () => {
+      const w = mk(); board(w, 8, 8, 10);
+      glider(w, 'u', 0, 0, 2.5, { target: 'enemy' });
+      unit(w, 'enemy', 5, 2);
+      const trail: number[] = [];
+      for (let i = 0; i < 12; i++) { w.tick(); trail.push(w.getComponent<Transform>('u', 'Transform')!.x, w.getComponent<Transform>('u', 'Transform')!.y); }
+      return trail.join(',');
+    };
+    expect(run()).toBe(run());
+  });
+});
+
 // ── REQ-F-027 回归：投影布局 axial(斜→平行四边形) vs offset(规整矩形+六边形交错) ──
 describe('grid-move · REQ-F-027 投影布局', () => {
   function boardL(w: World, layout?: 'axial' | 'offset'): void {

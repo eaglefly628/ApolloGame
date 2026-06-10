@@ -30,9 +30,21 @@ function project(board: HexBoard, q: number, r: number): { x: number; y: number 
     y: board.originY + r * (board.tileSize * 0.75),
   };
 }
-function syncTransform(world: IWorld, eid: string, board: HexBoard, hp: HexPos): void {
+// Transform 同步（REQ-F-034 平滑滑行）：HexPos 永远是 SIM 真相（占位/寻路/hash），Transform 是它的
+// 视觉投影。glideSpeed 未设 → 硬钉到格点（缺省=原行为，零迁移）；设了 → 以恒速 px/tick 逼近格点，
+// 距离≤步长即精确贴齐（无 epsilon 渐近）。sqrt 为 IEEE-754 正确舍入（项目先例：6b9164a 弃 hypot 改
+// sqrt；与 steering 同确定性类），Transform 不被 Condition 读。逻辑格与视觉位置分离=战棋标配语义。
+function syncTransform(world: IWorld, eid: string, board: HexBoard, hp: HexPos, glideSpeed?: number): void {
   const t = world.getComponent<Transform>(eid, 'Transform');
-  if (t) { const p = project(board, hp.q, hp.r); t.x = p.x; t.y = p.y; }
+  if (!t) return;
+  const p = project(board, hp.q, hp.r);
+  if (!glideSpeed || glideSpeed <= 0) { t.x = p.x; t.y = p.y; return; } // 缺省：瞬移（保全部既有回归）
+  const dx = p.x - t.x;
+  const dy = p.y - t.y;
+  const d = Math.sqrt(dx * dx + dy * dy);
+  if (d <= glideSpeed) { t.x = p.x; t.y = p.y; return; } // 到点贴齐（精确，不渐近）
+  t.x += (dx / d) * glideSpeed;
+  t.y += (dy / d) * glideSpeed;
 }
 
 export const gridMoveCapability = defineCapability({
@@ -74,6 +86,7 @@ export const gridMoveCapability = defineCapability({
           period: { type: 'number', describe: '每多少 tick 走一格(>=1)' },
           elapsed: { type: 'number', describe: '内部计时' },
           haltStatusMask: { type: 'number', describe: '自身 Status 含这些位时定身不走、节奏时钟暂停（冻结/眩晕 CC；同 Steering.haltStatusMask）' },
+          glideSpeed: { type: 'number', describe: '视觉滑行速度 px/tick(REQ-F-034)：Transform 恒速逼近格点投影、到点贴齐；缺省不设=逐格瞬移。建议 ≥ 格距/period 免视觉掉队' },
         },
       },
     },
@@ -117,14 +130,16 @@ export const gridMoveCapability = defineCapability({
         for (const [eid] of world.query('HexPos', 'GridMover')) {
           const hp = posOf.get(eid)!;
           const mover = world.getComponent<GridMover>(eid, 'GridMover')!;
-          syncTransform(world, eid, board, hp); // 每拍保持 Transform 与格同步（即便不移动）
 
           // CC 定身（REQ-F-030，对齐 Steering.haltStatusMask）：被控 → 本 tick 不走且时钟暂停
-          // （elapsed 不累计 → 解控后按剩余节奏恢复，无"积攒补步"突进）。
+          // （elapsed 不累计 → 解控后按剩余节奏恢复，无"积攒补步"突进）。检查在滑行同步**之前**：
+          // 冻结=时间静止，视觉滑行一并停（REQ-F-034），解控后从原地继续滑。
           if (mover.haltStatusMask) {
             const st = world.getComponent<Status>(eid, 'Status');
             if (st && (st.flags & mover.haltStatusMask) !== 0) continue;
           }
+
+          syncTransform(world, eid, board, hp, mover.glideSpeed); // 每拍同步：硬钉或恒速滑行（F-034）
 
           const rel = world.getComponent<Relation>(eid, 'Relation');
           if (!rel || rel.kind !== TARGET) continue;
@@ -140,11 +155,12 @@ export const gridMoveCapability = defineCapability({
           blocked.delete(hp.r * board.cols + hp.q);
           const next: Hex | null = hexNextStep(board.cols, board.rows, hp, tHp, blocked);
           if (next) {
-            // 移动：更新占位(腾出旧格、占新格) + HexPos + Transform。
+            // 移动：更新占位(腾出旧格、占新格) + HexPos。瞬移模式当拍贴新格（原行为）；
+            // 滑行模式不在步后再滑——次拍循环顶统一滑，保证**每拍恒一次** glideSpeed（速度均匀）。
             occupied.delete(hp.r * board.cols + hp.q);
             hp.q = next.q; hp.r = next.r;
             occupied.add(hp.r * board.cols + hp.q);
-            syncTransform(world, eid, board, hp);
+            if (!mover.glideSpeed || mover.glideSpeed <= 0) syncTransform(world, eid, board, hp);
             mover.elapsed = 0;
           }
         }

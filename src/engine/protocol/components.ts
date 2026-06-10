@@ -882,6 +882,9 @@ export interface GridMover extends Component {
   // CC 定身(REQ-F-030，对齐 Steering.haltStatusMask 既有语义)：自身 Status 含这些位 → 本 tick 不走，
   // 且节奏时钟暂停(elapsed 不累计；解控后按剩余节奏恢复，无补步突进)。纯位与，确定性不变。
   haltStatusMask?: number;
+  // 视觉滑行(REQ-F-034)：设了则 Transform 以恒速 px/tick 逼近 HexPos 格点投影（到点精确贴齐），
+  // 缺省不设=逐格瞬移（零迁移）。HexPos 仍是占位/寻路/hash 的 SIM 真相；冻结时滑行一并停（时间静止）。
+  glideSpeed?: number;
 }
 
 // ── card-pile（REQ-017）── 牌库/手牌的 sim 内确定性管理（卡牌品类 staple）。
