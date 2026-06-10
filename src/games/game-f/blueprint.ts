@@ -21,7 +21,7 @@ import {
 } from '@skills/tier2/index.js';
 import { prefabCapability, casterCapability, aggroCapability, flowCapability } from '@skills/tier3/index.js';
 import { GAME_F_ASSETS, F_HERO, F_FX_STRIKE, F_FX_ARROW, F_FX_BOLT, F_FX_FLAME, F_FX_FROST, F_FX_DRAIN, F_HEX_WARM, F_HEX_COOL } from './assets.js';
-import { boardEntities, project, COLS, ROWS, TILE, ORIGIN_X, ORIGIN_Y, LAYOUT } from './hex.js';
+import { boardEntities, project, offsetToAxial, COLS, ROWS, TILE, ORIGIN_X, ORIGIN_Y, LAYOUT } from './hex.js';
 
 // ═══════════════════════════════════════════════════════════════
 //  Game F —— 《像素三分天下》自走棋 MVP-0 骨架 + 多回合循环（REQ-F-032）。**纯数据装配**，零自走棋专属代码。
@@ -116,8 +116,8 @@ interface HeroSpec {
   cls: number; // 职业位（WARRIOR/TACTICIAN/ASSASSIN）
   faction: number; // 势力位（FACT_SHU/WEI/WU）—— 羁绊
   tint: number; // 势力色（羁绊期徽记/描边备用；名牌现读队伍色——用户实测三色分不清阵营）
-  q: number; // axial q（列）
-  r: number; // axial r（行；r0-3=魏上半场, r4-7=蜀下半场，中线 r3/4）
+  q: number; // 视觉列 col（odd-r 迁移后摆子数据用视觉坐标，slotEntity 经 offsetToAxial 换算成 sim 的 axial）
+  r: number; // 视觉行 row（r0-3=魏上半场, r4-7=蜀下半场，中线 r3/4）
   hp: number; // 血量
   atk: number; // 攻击力（每次普攻伤害）
   ult: string; // 大招名（三国感）
@@ -228,8 +228,9 @@ function heroTemplate(h: HeroSpec): PrefabTemplate {
 // 收到展开信号 → 在自身 Transform（= project(q,r) 投影坐标，消除展开后一帧跳变）处展开自己的棋子，
 // overrides 写真值（站位/阵营/数值）。买/卖/挪位/换星 = 增删改槽实体数据（MVP-1 商店接这里）。
 // hpMul：§4.5 敌阵强度 / 未来星级同一口径（全走 overrides，模板不动）。
-function slotEntity(h: HeroSpec, onSignal: string, q: number, r: number, hpMul = 1): EntityBlueprint {
-  const p = project(q, r);
+function slotEntity(h: HeroSpec, onSignal: string, col: number, row: number, hpMul = 1): EntityBlueprint {
+  const a = offsetToAxial(col, row); // 摆子数据=视觉 (col,row)，sim 真相=axial（REQ-F-037 odd-r 迁移）
+  const p = project(a.q, a.r);
   const hp = Math.round(finalHp(h) * hpMul);
   return {
     Transform: xf(p.x, p.y),
@@ -237,7 +238,7 @@ function slotEntity(h: HeroSpec, onSignal: string, q: number, r: number, hpMul =
       onSignal,
       template: `hero_${h.id}`,
       at: 'self',
-      overrides: { main: { HexPos: { q, r }, Tag: { flags: h.team | h.cls | h.faction }, Resource: { current: hp, max: hp } } },
+      overrides: { main: { HexPos: { q: a.q, r: a.r }, Tag: { flags: h.team | h.cls | h.faction }, Resource: { current: hp, max: hp } } },
     },
   } as unknown as EntityBlueprint;
 }

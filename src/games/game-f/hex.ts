@@ -1,25 +1,29 @@
 // Game F · 六边形棋盘配置（喂引擎 hex/grid-move 能力 —— 主程 REQ-024/027 已落地）。
 //
 // hex 数学（坐标/邻接/A* 寻路/投影）由**引擎**拥有：@skills/tier2/hex + grid-move。
-// 本文件只剩纯**数据**：棋盘尺寸/投影常量 + 装饰性棋盘格生成（用引擎同款 offset 投影对齐单位）。
+// 本文件只剩纯**数据**：棋盘尺寸/投影常量 + 装饰性棋盘格生成（用引擎同款 odd-r 真投影对齐单位）。
 //
-// 布局：**offset（REQ-F-027）**——奇行右移半格、不累积 → 规整矩形 + 六边形交错（金铲铲观感，非平行四边形）。
-// 12×12 正交棋盘。axial 坐标 (q,r)，r0-5=魏上半场 / r6-11=蜀下半场，中线在 r5/6 之间。
+// 布局：**odd-r（REQ-F-037 迁移，外审 Q5）**——sim 严格 axial、真投影 x=q·ts+r·ts/2，矩形观感来自
+// 每行 axial q 范围随 −(r>>1) 平移 → **几何≡拓扑（视觉相邻=逻辑相邻）**，绕后/贴身判定不再骗人。
+// （像素位置与旧 'offset' 恒等：col·ts+(r&1)·ts/2 ≡ (col−(r>>1))·ts+r·ts/2，画面不动、只换坐标语义。）
+// 12×12 错位矩形。摆子数据用视觉 (col,row)，经 offsetToAxial 换算成 sim 的 axial (q,r)。
 import type { EntityBlueprint } from '../../assembly/demo.assembly.js';
+import { offsetToAxial } from '@skills/tier2/hex.js';
 
+export { offsetToAxial }; // 供 blueprint/测试以视觉 (col,row) 摆子
 export const COLS = 12;
 export const ROWS = 12;
 export const HALF_ROWS = 6;
 export const TILE = 36; // 每格像素（= HexBoard.tileSize）
-export const LAYOUT = 'offset' as const; // 行偏移布局：规整矩形（REQ-F-027）
+export const LAYOUT = 'odd-r' as const; // 错位矩形（REQ-F-037；旧 'offset' 已废弃待删）
 
-// 居中：让整盘中心落世界 (0,0)。offset 下奇行多半格，取 +TILE/2 计入宽度。
+// 居中：让整盘中心落世界 (0,0)。奇行多半格，取 +TILE/2 计入宽度（像素布局与旧版恒等）。
 export const ORIGIN_X = -((COLS - 1) * TILE + TILE / 2) / 2;
 export const ORIGIN_Y = -((ROWS - 1) * TILE * 0.75) / 2;
 
-// 引擎同款 offset 投影（grid-move layout:'offset' 的复刻；仅用于装饰棋盘格对齐——单位投影由引擎做）。
+// 引擎同款 odd-r 真投影（grid-move layout:'odd-r' 的复刻；仅用于装饰棋盘格/槽位对齐——单位投影由引擎做）。
 export function project(q: number, r: number): { x: number; y: number } {
-  return { x: ORIGIN_X + q * TILE + (r & 1) * (TILE / 2), y: ORIGIN_Y + r * (TILE * 0.75) };
+  return { x: ORIGIN_X + q * TILE + r * (TILE / 2), y: ORIGIN_Y + r * (TILE * 0.75) };
 }
 
 // 棋盘格实体（表现层底）：每格一个六边形贴片，落格中心、zOrder0（棋子之下）。
@@ -28,7 +32,9 @@ export function boardEntities(warmKey: string, coolKey: string): Record<string, 
   const out: Record<string, EntityBlueprint> = {};
   for (let r = 0; r < ROWS; r++) {
     for (let q = 0; q < COLS; q++) {
-      const p = project(q, r);
+      // 装饰格按视觉 (col,row) 遍历，经 axial 投影落位（像素与旧版恒等）；id 维持视觉坐标命名。
+      const a = offsetToAxial(q, r);
+      const p = project(a.q, a.r);
       out[`hex_${q}_${r}`] = {
         Transform: { x: p.x, y: p.y, rotation: 0, scaleX: 1, scaleY: 1 },
         Sprite: { textureKey: r >= HALF_ROWS ? warmKey : coolKey, anchorX: 0.5, anchorY: 0.5, zOrder: 0 },

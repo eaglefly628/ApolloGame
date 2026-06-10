@@ -66,7 +66,7 @@
 #### 任务 F-9 · ★ 用 self-rule 重构普攻链，拆掉「唯一 id 脚手架」 — status: pending（高优先，用户点名）（原误编 F-5 与已完结的 gauge 任务撞号，Lead 改号 F-9，内容不变）
 - **F-036 残环已二刷断净（Lead 批注 2）**：真核是 self-rule→hitbox→resource-apply 三元环，已补 runsAfter:['hitbox']（决策坐结算链尾）；15 能力全家桶守护测绿。**你存档的 §5.4 接入 diff 可原样贴回重接。**
 - **F-035 已落地，迁移解锁（Lead 批注）**：普攻/大招 SelfRule 一律加 `whenGlobal:{kind:'flag',id:'in_combat'}`（替代失效的"目标存在性门"——deploy 在 prep，备战期就有目标）。self-rule 定序已在引擎侧排雷（runsAfter flow/resource-apply/zone-occupancy/group-count），与回合 flow 同场不会抛环，相位门同帧生效。
-- **PE-F 复测（2026-06-10，排雷后带 whenGlobal 重接）**：❌ **残环仍拦**——12→10 系统（flow/zone-occupancy 已拆出），残 SCC=`self-rule,event-when,caster,prefab-spawn,hitbox,over-time,resource-apply,destroy-apply,mortal,hierarchy-cascade`：`self-rule 写 Flag→event-when` 前向边 × `resource-apply→self-rule` 排雷回边合围（守护测没带 caster/prefab/hitbox 链）。REQ-F-037 已重开附走向推演与二刷建议；§5.4 配方已含 whenGlobal，主程拆环即贴回。再次回退保持全绿。
+- **PE-F 复测（2026-06-10，排雷后带 whenGlobal 重接）**：❌ **残环仍拦**——12→10 系统（flow/zone-occupancy 已拆出），残 SCC=`self-rule,event-when,caster,prefab-spawn,hitbox,over-time,resource-apply,destroy-apply,mortal,hierarchy-cascade`：`self-rule 写 Flag→event-when` 前向边 × `resource-apply→self-rule` 排雷回边合围（守护测没带 caster/prefab/hitbox 链）。REQ-F-036 已重开附走向推演与二刷建议；§5.4 配方已含 whenGlobal，主程拆环即贴回。再次回退保持全绿。
 - **背景**：现 blueprint 每个英雄一套唯一 `Timer{id:atk_<hero>}` + `EventWhen{signal:atk_<hero>}` + `Caster{onSignal:atk_<hero>}`，靠"每英雄唯一 id"绕开全局 id 串台。这是会爆的脚手架——三星合体/同模板多实例（prefab 展开的 N 个同名单位）烘不进唯一 id，必崩。
 - **引擎已就绪（Lead 2026-06-10 落地）**：`self-rule` 新增 **`spawn` 动作**（self 轴的 caster 对偶）：`{kind:'spawn', template, at:'self'|'target'}` → 自身条件触发，在自身/自身 Relation(target) 处发 SpawnRequest，prefab-spawn 展开。`at:'target'` 无目标则不生成（**目标存在性即战斗门**，可免全局 in_combat 旗标）。9 测绿含「同模板 3 实例各自按自身节拍生成」。
 - **改法（纯数据，零游戏代码）**：每个英雄（及未来同模板单位）的普攻 = 一份 `Timer{id:'atk',loop}` + 一条 `SelfRule{ when:{kind:'timer',id:'atk',cmp:'gte',value:CD-1}, do:[{kind:'spawn',template:'strike_X',at:'target'}] }`。**关键收益**：三星/多实例可共用同一份 SelfRule 数据（不再每英雄唯一 id）。
@@ -111,7 +111,7 @@
 - 引擎已落 `GridMover.glideSpeed`（px/tick，4 测绿）：HexPos 逻辑瞬步不变（占位/寻路/hash 真相），Transform 恒速滑向格点、到点精确贴齐；缺省不设=原瞬移。冻结时滑行一并停（时间静止）。
 - 接入：每棋子 GridMover 加 `glideSpeed`。**取值**：≥ 格距/period 免视觉掉队（你的盘 tileSize≈18、period 48 → 最小 0.375；建议 0.5~1.0 之间调观感）。名牌/血条挂件经 hierarchy-resolve 自动跟滑，零额外改动；槽位展开的一帧跳变也随之消失。
 
-#### 任务 F-10 · REQ-F-037 迁移 odd-r 棋盘（纯数据，修"视觉≠逻辑相邻"） — status: pending（外审 Q5 裁决，站位直觉修复）
+#### 任务 F-10 · REQ-F-037 迁移 odd-r 棋盘（纯数据，修"视觉≠逻辑相邻"） — status: **done（PE-F 2026-06-10 回执：①hex.ts LAYOUT 'odd-r' + project 改 axial 真投影（像素与旧 offset 恒等，画面不动）②摆子数据保持视觉 (col,row)，slotEntity/装饰格经 offsetToAxial 换算入 sim ③game-f 测 12/12 绿（含确定性 hash/走位/AOE 冻敌——八阵图 95px 大 AOE 命中正常）。'offset' 分支可删，知会主程）**
 - 背景：现 `layout:'offset'` 是投影错位——**视觉相邻≠逻辑相邻**（每格有 1 个邻居看着隔 1.5 格其实一步可达、有 1 个看着贴脸其实隔 2 步），绕后/贴身判定骗人。引擎已落 `'odd-r'`（4 测绿）：sim 纯 axial 不变，矩形观感来自棋盘形状，几何≡拓扑。
 - 迁移三步：① `HexBoard.layout: 'offset' → 'odd-r'`；② 每个棋子坐标从"视觉列" col 换算成 axial：`import { offsetToAxial } from '@skills/tier2/hex.js'`，`{q,r} = offsetToAxial(原q, 原r)`（原 q 在旧语义下就是视觉列）；③ 跑 game-f 测试，目测一局确认站位观感不变、走位不再"跳格"。
 - 注意：大招 AOE 半径（ultSize 像素距离）基于 Transform——真投影下两布局像素位置不同步，迁完抽查 1-2 个 AOE 命中观感。**迁完在本行标 done 并知会主程**：主程随后删除引擎里废弃的 'offset' 分支。
@@ -130,7 +130,7 @@
 
 ### 给 PE-F · MVP-1 预告（REQ-F-032 落地后开工）
 
-#### 任务 F-7 · MVP-1 多回合循环 + 商店 + 经济（纯数据） — status: **in-progress（PE-F 2026-06-10：多回合循环 + L1 run_flow + 经济三件套 + 阶段伤害 + 关卡表前 2 阶段 + ready 开战（按策划批注路线：clickable→'ready_btn'→set-flag，真实输入路验收测）已落、game-f 测 12/12；余 商店三件套 P0=REQ-F-038 等主程、等级/经验 P2）**
+#### 任务 F-7 · MVP-1 多回合循环 + 商店 + 经济（纯数据） — status: **in-progress（PE-F 2026-06-10：多回合循环 + L1 run_flow + 经济三件套 + 阶段伤害 + 关卡表前 2 阶段 + ready 开战（按策划批注路线：clickable→'ready_btn'→set-flag，真实输入路验收测）已落、game-f 测 12/12；余 商店三件套 P0=REQ-F-040 等主程（原 038 撞号让位）、等级/经验 P2）**
 - 按 `game-f-flow-spec.md` §3.2/§3.3 接 run/round 双层 GameFlow + §3.3 操作表（card-pile 商店 5 槽/craft-recipe 扣价/买经验）+ §4.1 经济三件套（收入爬坡/利息 banded/连胜金）+ §4.5 关卡表前 2 阶段。
 - 全局 id **必须**先登记 flow-spec §3.1 注册表再用（防串台纪律）；验收测试随 §6.2 队列逐项补。
 - **策划审查批注（2026-06-10，第 6 轮）**：上行"ready 输入 P2 归主程"**回驳——不需要主程**。`ready` 用现有词汇可拼：输入命令→信号（game-d 锦囊/game-e card-play 同款入口）→ `Effect{kind:'set-flag', targetId:'ready'}`，纯数据零引擎改动；点击形态可仿 game-b/c 的 clickable 区。请 PE-F 自接（仍 P2 不抢商店 P0 的队列序）；只有实际接缝试过确实不通，再写明证伪过程提 requests.md。
