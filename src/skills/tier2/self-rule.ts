@@ -1,7 +1,7 @@
 import { defineCapability } from '@engine/core/define-capability.js';
 import { SystemPhase } from '@engine/core/types.js';
 import type { IWorld, EntityId } from '@engine/core/types.js';
-import type { SelfRule, SelfAction, ConditionExpr, CmpOp, Resource, Flag, State, Timer, StringVar, DestroyRequest } from '@engine/protocol/components.js';
+import type { SelfRule, SelfAction, ConditionExpr, CmpOp, Resource, Flag, State, Timer, StringVar, DestroyRequest, Transform, Relation, SpawnRequest } from '@engine/protocol/components.js';
 
 // ═══════════════════════════════════════════════════════════════
 //  self-rule —— 逻辑链的「实体本地(self)」作用域（REQ-021；引擎的"实体寻址轴"）。
@@ -91,6 +91,20 @@ function applySelfAction(world: IWorld, eid: EntityId, a: SelfAction): void {
       }
       break;
     }
+    case 'spawn': {
+      // self 轴的 caster 对偶：自身条件触发自身生成。位置取自身或自身目标的 Transform。
+      // at:'target' 无 Relation(target) → 不生成（目标存在性天然当战斗门，免全局 in_combat 旗标）。
+      if (!a.template) break;
+      const originId = a.at === 'target'
+        ? (() => { const rel = world.getComponent<Relation>(eid, 'Relation'); return rel && rel.kind === 'target' ? rel.targetId : undefined; })()
+        : eid;
+      if (!originId) break;
+      const t = world.getComponent<Transform>(originId, 'Transform');
+      if (!t) break;
+      // SpawnRequest 挂自身（一实体一组件：同拍多个 spawn 动作会相互覆盖，普攻一拍一发不受影响）。
+      world.addComponent(eid, { type: 'SpawnRequest', templateId: a.template, x: t.x, y: t.y } as SpawnRequest);
+      break;
+    }
   }
 }
 
@@ -118,14 +132,14 @@ export const selfRuleCapability = defineCapability({
         describe: '实体本地规则：对自身组件求 when、对自身施 do。once=上升沿一次（迟滞）；缺省每拍。',
         fields: {
           when: { type: 'string', describe: 'ConditionExpr，按**自身**组件求值（resource/flag/state/timer/string 读自身那份）' },
-          do: { type: 'string', describe: 'SelfAction[]：{kind:set-flag|modify-resource|set-state|destroy, value?, op?}，施于自身' },
+          do: { type: 'string', describe: 'SelfAction[]：{kind:set-flag|modify-resource|set-state|destroy|spawn, value?, op?, template?, at?}，施于自身；spawn 发 SpawnRequest(at self/target)' },
           once: { type: 'boolean', describe: 'true=条件上升沿只施一次（armed 迟滞，回落复位）；缺省=条件成立每拍施' },
           armed: { type: 'boolean', describe: '内部（once 迟滞状态）' },
         },
       },
     },
-    reads: ['SelfRule', 'Resource', 'Flag', 'State', 'Timer', 'StringVar'],
-    writes: ['SelfRule', 'Flag', 'Resource', 'State', 'DestroyRequest'],
+    reads: ['SelfRule', 'Resource', 'Flag', 'State', 'Timer', 'StringVar', 'Transform', 'Relation'],
+    writes: ['SelfRule', 'Flag', 'Resource', 'State', 'DestroyRequest', 'SpawnRequest'],
     consumes: [],
   },
 
@@ -135,8 +149,8 @@ export const selfRuleCapability = defineCapability({
     {
       id: 'self-rule',
       phase: SystemPhase.Update,
-      reads: ['SelfRule', 'Resource', 'Flag', 'State', 'Timer', 'StringVar'],
-      writes: ['SelfRule', 'Flag', 'Resource', 'State', 'DestroyRequest'],
+      reads: ['SelfRule', 'Resource', 'Flag', 'State', 'Timer', 'StringVar', 'Transform', 'Relation'],
+      writes: ['SelfRule', 'Flag', 'Resource', 'State', 'DestroyRequest', 'SpawnRequest'],
       consumes: [],
       execute(world: IWorld) {
         for (const [eid] of world.query('SelfRule')) {

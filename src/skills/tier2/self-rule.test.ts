@@ -73,6 +73,50 @@ describe('self-rule · level modify-resource：满怒清零（每拍检）', () 
   });
 });
 
+describe('self-rule · spawn 动作（self 轴的 caster 对偶，REQ-021 扩展）', () => {
+  const xf = (x: number, y: number) => ({ type: 'Transform', x, y, rotation: 0, scaleX: 1, scaleY: 1 });
+  const target = (id: string) => ({ type: 'Relation', kind: 'target', targetId: id });
+  const spawnReq = (w: World, e: string) =>
+    w.getComponent(e, 'SpawnRequest') as unknown as { templateId: string; x: number; y: number } | undefined;
+
+  it('at:self → 在自身位置发 SpawnRequest', () => {
+    const w = mk();
+    unit(w, 'u', { when: { kind: 'always' }, do: [{ kind: 'spawn', template: 'bolt', at: 'self' }] }, [xf(10, 20)]);
+    w.tick();
+    expect(spawnReq(w, 'u')).toMatchObject({ templateId: 'bolt', x: 10, y: 20 });
+  });
+
+  it('at:target → 在自身 Relation(target) 的位置发 SpawnRequest', () => {
+    const w = mk();
+    w.createEntity('enemy'); w.addComponent('enemy', xf(99, 77) as never);
+    unit(w, 'u', { when: { kind: 'always' }, do: [{ kind: 'spawn', template: 'strike', at: 'target' }] }, [xf(0, 0), target('enemy')]);
+    w.tick();
+    expect(spawnReq(w, 'u')).toMatchObject({ templateId: 'strike', x: 99, y: 77 });
+  });
+
+  it('at:target 无目标 → 不生成（目标存在性即战斗门，免全局 in_combat 旗标）', () => {
+    const w = mk();
+    unit(w, 'u', { when: { kind: 'always' }, do: [{ kind: 'spawn', template: 'strike', at: 'target' }] }, [xf(0, 0)]); // 无 Relation
+    w.tick();
+    expect(spawnReq(w, 'u')).toBeUndefined();
+  });
+
+  it('★ 同模板多实例各自按自身节拍生成（三星合体命门：唯一 id 脚手架表达不了，self-rule 可）', () => {
+    const w = mk();
+    w.createEntity('foe'); w.addComponent('foe', xf(100, 100) as never);
+    // 三个"同一份数据"的单位（模拟 prefab 同模板展开）：完全相同的 SelfRule + 相同 template，区别只在位置/计时。
+    const sameRule: Omit<SelfRule, 'type'> = { when: { kind: 'timer', id: 'atk', cmp: 'gte', value: 30 }, do: [{ kind: 'spawn', template: 'strike', at: 'target' }] };
+    unit(w, 'guan#1', sameRule, [xf(0, 0), target('foe'), { type: 'Timer', id: 'atk', elapsed: 30, duration: 30, loop: true }]);
+    unit(w, 'guan#2', sameRule, [xf(10, 0), target('foe'), { type: 'Timer', id: 'atk', elapsed: 5, duration: 30, loop: true }]); // 未到点
+    unit(w, 'guan#3', sameRule, [xf(20, 0), target('foe'), { type: 'Timer', id: 'atk', elapsed: 30, duration: 30, loop: true }]);
+    w.tick();
+    // #1/#3 各自到点发了一发（不串台、不齐射）；#2 未到点不发。全局 caster+signal 做不到这种"各自节拍"。
+    expect(spawnReq(w, 'guan#1')).toMatchObject({ templateId: 'strike' });
+    expect(spawnReq(w, 'guan#2')).toBeUndefined();
+    expect(spawnReq(w, 'guan#3')).toMatchObject({ templateId: 'strike' });
+  });
+});
+
 describe('self-rule · 确定性（跨实体无干扰）', () => {
   it('两单位同规则同输入 → 同结果，与创建/遍历序无关', () => {
     const build = (order: string[]) => {

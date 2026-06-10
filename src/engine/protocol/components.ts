@@ -829,9 +829,15 @@ export interface GameFlow extends Component {
 // over-time 是它的特例；self-rule 是通用化。复用 ConditionExpr（但按 self 实体的组件求值，非全局 id）。
 // 确定性：每实体只读/写**自身**组件 → 跨实体无干扰、与遍历序无关。
 export interface SelfAction {
-  kind: 'set-flag' | 'modify-resource' | 'set-state' | 'destroy'; // 施于自身
+  kind: 'set-flag' | 'modify-resource' | 'set-state' | 'destroy' | 'spawn'; // 施于自身
   value?: number | boolean | string;
   op?: 'add' | 'set'; // modify-resource：add(默认) | set
+  // kind:'spawn'（REQ-021 扩展，self 轴的 caster 对偶）：自身条件触发自身生成——
+  // 发 SpawnRequest{templateId:template} 由 prefab-spawn 展开。位置 at:'self'=自身 Transform、
+  // 'target'=自身 Relation(target) 的 Transform（无目标则不生成 → 目标存在性天然当作战斗门）。
+  // 解 caster「全局信号」表达不了的"每单位各自按自身节拍生成"（三星合体/prefab 同模板多实例共用一份数据）。
+  template?: string; // 模板 id（PrefabLibrary）
+  at?: 'self' | 'target'; // 生成位置（缺省 'self'）
 }
 export interface SelfRule extends Component {
   readonly type: 'SelfRule';

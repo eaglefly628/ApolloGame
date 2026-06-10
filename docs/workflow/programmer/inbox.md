@@ -63,6 +63,16 @@
 #### 任务 F-2 · REQ-021/022 自治/羁绊接线 — status: pending（按 `game-f-flow-spec.md` §5 属 Phase 2/3，**勿先于 MVP-1 动工**）
 - `self-rule`（实体本地条件→对自身施效）+ `group-count`（按 Tag 计数→Resource，阈值=event-when 重组）接金铲铲自治/羁绊。
 
+#### 任务 F-5 · ★ 用 self-rule 重构普攻链，拆掉「唯一 id 脚手架」 — status: pending（高优先，用户点名）
+- **背景**：现 blueprint 每个英雄一套唯一 `Timer{id:atk_<hero>}` + `EventWhen{signal:atk_<hero>}` + `Caster{onSignal:atk_<hero>}`，靠"每英雄唯一 id"绕开全局 id 串台。这是会爆的脚手架——三星合体/同模板多实例（prefab 展开的 N 个同名单位）烘不进唯一 id，必崩。
+- **引擎已就绪（Lead 2026-06-10 落地）**：`self-rule` 新增 **`spawn` 动作**（self 轴的 caster 对偶）：`{kind:'spawn', template, at:'self'|'target'}` → 自身条件触发，在自身/自身 Relation(target) 处发 SpawnRequest，prefab-spawn 展开。`at:'target'` 无目标则不生成（**目标存在性即战斗门**，可免全局 in_combat 旗标）。9 测绿含「同模板 3 实例各自按自身节拍生成」。
+- **改法（纯数据，零游戏代码）**：每个英雄（及未来同模板单位）的普攻 = 一份 `Timer{id:'atk',loop}` + 一条 `SelfRule{ when:{kind:'timer',id:'atk',cmp:'gte',value:CD-1}, do:[{kind:'spawn',template:'strike_X',at:'target'}] }`。**关键收益**：三星/多实例可共用同一份 SelfRule 数据（不再每英雄唯一 id）。
+  - 普攻打击模板 `strike_X` 的伤害若要随单位不同 → 走 `Stats` 或模板参数；同名同模板单位天然共用一个 `strike` 模板。
+  - timer 到点后的复位：loop Timer 由 timer-advance 自动循环（或配 self-rule reset，按需）。
+  - in_combat 门控：优先改用「目标存在性」（aggro 锁敌才有 Relation→才 spawn），可删全局 in_combat 旗标那套；若仍要显式备战/战斗阶段，保留 flow 设 in_combat、但普攻门用 target 存在性。
+- **大招同理**：蓝条满 = 自身 Resource 阈值 → `SelfRule{when:{kind:'resource',id:'mp',cmp:'gte',value:100}, do:[{kind:'spawn',template:'ult_X',at:'target'},{kind:'modify-resource',op:'set',value:0}]}`（攒蓝/清蓝/释放一条规则搞定，替掉 mana EventWhen+Caster+两个 Effect 实体）。
+- **验收**：blueprint 行数应显著下降；`game-f.test` 全绿；同模板多实例（可加一个 2×关羽测试）各自独立攻击不串台。发现引擎不够用 → 写 requests.md 提主程，**不要在游戏层 hack**。
+
 #### 任务 F-3 · REQ-F-027 接入 offset 棋盘布局（纯数据） — status: **done（策划 PF 审查确认 2026-06-10）**
 - HexBoard 加 `layout: 'offset'`（修「棋盘平行四边形」→规整矩形 + 六边形交错,金铲铲观感）+ 按需 cols/rows(~12×12)。引擎已落（缺省 'axial' 不影响现有蓝图）。零游戏代码。
 - ✅ 审查证据：blueprint board 实体已用 `layout: LAYOUT`（offset，commit `b14d109`「正交12×12棋盘」）。
