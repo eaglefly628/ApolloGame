@@ -1,0 +1,82 @@
+# Programmer F 交接 · Game F《像素三分天下》自走棋（金铲铲/TFT 切片）
+
+> 移交给下一个模型。读这一份即可接手 game-f。最高纲领仍是 `docs/design/data-driven-manifesto.md`（游戏=数据，代码只属引擎）。
+> 工作规范：tsc+vitest+build 全绿才推；提交署名 `Claude <noreply@anthropic.com>`、信息以 session URL 结尾；**不碰引擎**（缺口提需求池给主程）。
+> 本 session 的引擎活全部走 `docs/workflow/requests.md` 的 **REQ-F-024~030**（Programmer F 命名空间）。
+
+---
+
+## 0. 一句话 / 定位
+
+像素三国自走棋，**= Game D 战斗数据 ×2 队 + 六边形寻路 + 经济/技能**。**纯数据装配，零自走棋专属 system**——整套战斗由通用 capability 涌现。当前是「两队全自动对战」可玩切片。
+
+## 1. 当前状态（已落地、可玩，全在 mainbranch）
+
+- **8 将两队**：蜀(关羽/赵云/诸葛 + 吴周瑜) TEAM_A vs 魏(张辽/许褚/司马 + 吴甘宁) TEAM_B。各带独立 **血量/攻击 + 势力(蜀魏吴)/职业(武将/谋士/刺客) Tag + 专属大招 + 装备**。
+- **12×12 六边形棋盘**（offset 布局，规整矩形，REQ-F-027）。棋子 `HexPos` 站格、`grid-move` 沿**确定性 A***（主程 REQ-024）寻路对冲、到相邻停。
+- **战斗循环（全涌现，零 system）**：aggro 索敌 → grid-move 走位 → 普攻(loop Timer→EventWhen(timer 叶子,自身唯一 id)→Caster(at:target)→prefab 展开打击区→hitbox) → mortal 死亡 → **hierarchy-cascade 名字随棋子死消失**(REQ-F-026) → zone-occupancy 数存活写 present Flag。
+- **回合机**（flow，REQ-020）：**备战→战斗→结算→done/gameover**（`in_combat` flag 门控普攻；**单局**，非多回合循环）。
+- **大招（蓝条→大招）**：每英雄 mana sidecar 实体(`mp_<id>`) + 普攻 Effect 攒蓝 + 蓝满 EventWhen 发大招信号 + Caster 展开大招区 + Effect 清蓝。
+- **技能分类 + 特效**：近战=斩光/远程=箭/法术=法弹（普攻按 atkType 选 DCSS 特效图）；大招主题特效（八阵图=冰/火烧赤壁=火+DoT/鬼谋=暗+DoT/…）。DoT 由 over-time。
+- **美术**：8 将 + 5 特效 = 真 DCSS 图（`assets/FreeArtLib/{monster,effect}/*.png`，逐像素验过）；棋盘格=内联 SVG。势力色由**头顶名字颜色**承担（DCSS 固定色，drawImage 不吃 tint）。
+- **头顶名字**：Text+Color，用 Sprite 抬 zOrder=30 盖在棋子上（Text-only 实体 zOrder=0 会被棋子盖住——这是个 hack，见 §6）。
+- **节奏**：MOVE_PERIOD=48、ATK_CD=45、HP_SCALE=18 → 一局约 18s（见 §6 调参）。
+- 挂进 launcher 卡带（♟️ Game F），mount=`src/game-f.tsx`（1280×720 画布，相机 zoom 1.8）。
+
+## 2. 关键文件
+
+| 文件 | 作用 |
+|---|---|
+| `src/games/game-f/blueprint.ts` | **核心装配**：ROSTER（8 将数据）+ strike/ult 模板 + 大招接线 + flow 数据 + capabilities 列表 + 各种常量(HP_SCALE 等) |
+| `src/games/game-f/assets.ts` | 美术清单：DCSS 英雄/特效 png 路径 + 六边形格 SVG |
+| `src/games/game-f/hex.ts` | 棋盘配置（12×12 offset，project 投影；hex 数学归引擎） |
+| `src/games/game-f/index.ts` | 导出 | `game-f.test.ts` | 5 测（确定性/互砍/团灭/名字随死/大招） | `render-frame.ts` | 离屏看帧（DCSS png 显方块，浏览器才真图） |
+| `src/game-f.tsx` | launcher 挂载点 | `src/launcher.tsx` | ♟️ 卡带注册 |
+| `docs/game-design/game-f-art-data.md` | 美术映射（英雄→DCSS id） |
+| `docs/game-design/game-f-auto-chess.md` | **策划案/设计真相**（在 `claude/sharp-curie-hr606s` 分支） |
+| `docs/workflow/requests.md` | REQ-F-024~030 |
+
+## 3. 引擎需求 REQ-F-024~030（已走需求池，评估/落地归主程）
+
+| 编号 | 内容 | 状态 |
+|---|---|---|
+| REQ-F-024 | 六边形棋盘 + 确定性 A* 寻路（hex+grid-move） | ✅ done（主程），game-f 已接 |
+| REQ-F-025 | grid-move↔aggro 拓扑成环 → runsAfter | ✅ done |
+| REQ-F-026 | 父销毁→级联销毁子（hierarchy-cascade） | ✅ done，已接（名字随死消失） |
+| REQ-F-027 | grid-move 投影正交化（offset，不再平行四边形） | ✅ done，已接（12×12） |
+| REQ-F-028 | flow↔zone-occupancy 成环 → flow runsAfter | ✅ done，flow 回合机已接 |
+| **REQ-F-029** | **Resource→实时条/gauge 渲染**（绿血条+蓝蓝条） | 🟡 **open** —— 落地后接：每棋子挂 hp 绿条(读父 hp)+mana 蓝条(读 mp_<id>) |
+| **REQ-F-030** | **grid-move haltStatusMask**（被冻定身） | 🟡 **open** —— 落地后接：诸葛八阵图等控制技 setMask=FROZEN 真定身 |
+
+## 4. 已知限制 / 还没做（诚实清单）
+
+- **血量/蓝量不可见**：静态数字误导、已删；**实时血条/蓝条等 REQ-F-029**（这是缺口，纯游戏层做=手写 UI 违反宣言）。
+- **控制不真**：能放冰特效+伤害，但"冻住不动"等 **REQ-F-030**（grid-move 无状态门）。被冻禁攻击=另需 condition 加 Status 叶子（次要）。
+- **buff/增益**：未做。撞"hitbox 读活属性 + self/group 寻址"一簇，非单一原子缺口（评估为 YAGNI，待真实拉动再重组/提）。
+- **多回合循环**：flow 是**单局**（→done/gameover）。真 TFT 多回合需"棋子阵亡=倒下、回合满血归位"——而现在 mortal 直接销毁、无重生/重置机制（潜在缺口，做时再证伪/提）。
+- **备战期棋子会走动**（grid-move 不被 flow 阶段门控）——小瑕疵。
+- **羁绊未做**：势力/职业 Tag 已贴好（基础在）；计数用 `group-count`(REQ-022 已 done)；但"N 同类→全队 buff"的 **buff 施加** 撞 REQ-023（主程未 greenlit，倾向"全局 buff 资源"重组）。
+- **商店/经济/升星**：未做（gold/player_hp 是 flow 桩）。升星可用 craft-recipe(三合一)+REQ-021 self（重复棋子）；星级显示用"独立星星实体叠加"（用户认可的做法，未做）。
+- **HP_SCALE=18 是时长旋钮**，导致血量数字很大（关羽 4440）——不是真平衡，看完手感后应重新平衡成合理数值（同时长）。
+- **DCSS 美术请在浏览器确认**：离屏 render-frame 嵌不了 png（显方块）。若浏览器也显方块=该路径没被 serve，查 game-e 同款路径是否生效。
+
+## 5. 下一步 TODO（建议优先级）
+
+1. **REQ-F-029 落地后** → 接绿血条+蓝蓝条（每棋子两个子条，Hierarchy 挂，读父 hp / mp_<id>）。**用户明确想要**。
+2. **REQ-F-030 落地后** → 接冰冻定身（诸葛八阵图真控制）。
+3. **重新平衡数值**（HP_SCALE 退回合理、低攻/适中血、同 ~18s）。
+4. **羁绊**：group-count 数蜀魏吴/武将谋士 → 越阈值 buff（buff 施加先试"全局 buff 资源"重组，真不行才提 group-effect）。
+5. **商店+经济+升星**（card-pile+craft-recipe）把单局扩成 roguelike；星级=独立星星实体叠加（用户提的做法）。
+6. **多回合循环**：需"棋子倒下/复活/回合重置"——做前先证伪重组，真缺口才提。
+
+## 6. Gotchas（坑）
+
+- **唯一 id 策略**：每英雄 `atk_<id>/mp_<id>/strike_<id>/ult_<id>` 唯一，规避"逻辑链全局按 id 寻址"串台（MVP-0）。**重复棋子/三星合体**会撞——需接 REQ-021 self 作用域（主程已 done，未接）。
+- **mana 在 sidecar 实体**（一实体一 Resource，棋子本体已占 hp）。
+- **名字 zOrder hack**：Text-only 实体 zOrder=0（被棋子盖）；给名字加个 Sprite（文本模式不绘）只为抬 zOrder=30。REQ 一个"Text 也能设 zOrder"会更干净（未提）。
+- **hp 共享 id 'hp'**：hitbox 局部路由依赖它，**不能改唯一**；所以血条子条要读"父"的 hp（REQ-F-029 已写明）。
+- 调参旋钮都在 `blueprint.ts` 顶部常量：`HP_SCALE / MOVE_PERIOD / ATK_CD / MANA_FILL / DOT`。
+
+## 7. 分支
+
+本 session 推送到 **`claude/mainbranch`**（用户授权）+ 同步 `claude/cool-gates-4blea8`。下一个模型按其自己的 session 分支规范走；game-f 全部已在 mainbranch（最新 commit 见 git log）。
