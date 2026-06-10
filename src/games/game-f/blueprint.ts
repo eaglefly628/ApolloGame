@@ -13,6 +13,7 @@ import {
   eventWhenCapability,
   effectApplyCapability,
   zoneOccupancyCapability,
+  gaugeCapability,
   cameraFollowCapability,
   gridMoveCapability,
   ZONE_FLAG,
@@ -33,11 +34,13 @@ import { boardEntities, project, COLS, ROWS, TILE, ORIGIN_X, ORIGIN_Y, LAYOUT } 
 //    · 死亡     = resource-apply → mortal(hp≤0 销毁自己) → destroy
 //    · 判胜负   = Zone{requiredTag:TEAM, count:1} 数某队存活 → 写 present Flag（存活=0 → flag false）
 //    · 头顶名字 = Text + 势力色 Color + Hierarchy 跟随单位（三国感靠命名+分色，见 art-data.md）
+//    · 血条蓝条 = gauge(REQ-F-029)：Resource 比例 → 条实体 Shape.width（PostResolve 终态投影，随走随死全自动）
+//    · 控制定身 = 八阵图 Hitbox{setMask:FROZEN,statusDuration} + GridMover.haltStatusMask(REQ-F-030)，到点 over-time 自动解
 //
 //  MVP-0 用一组**互不相同**的英雄、每英雄**唯一** timer/signal id，规避「逻辑链按全局 id 寻址」串台
 //  （重复棋子/三星合体 待引擎 REQ-021 self 作用域，主程已落地，下一阶段接）。零自走棋 system。
 //  简化（已知，后续）：① 普攻无距离门（condition 无距离叶子）→ 打击在目标处展开，移动仅表现；
-//  ② 蓝条/大招/经济/商店/flow 阶段机 = 下一轮（本骨架先把"两队自动互砍到团灭"跑通）。
+//  ② 经济/商店/多回合循环 = MVP-1（被 REQ-F-032 回合重置阻塞，落地后按 flow-spec §6.2 队列接，见 inbox F-7）。
 // ═══════════════════════════════════════════════════════════════
 
 // 阵营（Tag.flags）。蜀=TEAM_A，魏=TEAM_B。ZONE_FLAG(=1<<0) 由 trigger-zone 约定，留给打击区。
@@ -55,6 +58,8 @@ export const ASSASSIN = 1 << 8; // 刺客
 export const FACT_SHU = 1 << 3; // 蜀
 export const FACT_WEI = 1 << 4; // 魏
 export const FACT_WU = 1 << 5; // 吴
+// CC 状态位：写在 Status.flags（与 Tag.flags 分属两个字段/位空间；位值仍避开上面 1<<0..1<<8 防读混）。
+export const FROZEN = 1 << 10; // 冰冻定身（REQ-F-030）：GridMover.haltStatusMask 命中 → 不走且节奏时钟暂停
 
 // 战斗节奏（数据）：30 tick ≈ 0.5s/动作，看得清（此前 10/24 太快）。
 const MOVE_PERIOD = 48; // 每 48 tick 走一格 ≈ 0.8s（慢一点看清走位）
@@ -83,15 +88,16 @@ const strike = (targetMask: number, amount: number, fxKey: string): PrefabTempla
 // DoT（灼烧/吸取）：命中后每 30 tick 掉血、持续 ~4s，由 over-time 处理。
 const DOT = { dotPerTick: 25, dotPeriod: 30, dotDuration: 240 };
 
-// 大招打击区：目标处大范围真伤（范围 size、伤害 amount），fxKey=主题特效，dot=是否附 DoT。
-const ultTemplate = (targetMask: number, amount: number, size: number, fxKey: string, dot = false): PrefabTemplate => ({
+// 大招打击区：目标处大范围真伤（范围 size、伤害 amount），fxKey=主题特效，dot=是否附 DoT，
+// freezeTicks>0=命中冰冻 N tick（八阵图类控制技：hitbox 置 FROZEN + 挂 OverTime 到点自动解，REQ-F-030）。
+const ultTemplate = (targetMask: number, amount: number, size: number, fxKey: string, dot = false, freezeTicks = 0): PrefabTemplate => ({
   entities: {
     area: {
       Transform: xf(0, 0),
       Shape: { kind: 'box', width: size, height: size },
       Sensor: {},
       Tag: { flags: ZONE_FLAG },
-      Hitbox: { resource: 'hp', amount, targetMask, ...(dot ? DOT : {}) },
+      Hitbox: { resource: 'hp', amount, targetMask, ...(dot ? DOT : {}), ...(freezeTicks > 0 ? { setMask: FROZEN, statusDuration: freezeTicks } : {}) },
       Timer: { id: 'life', elapsed: 0, duration: 3, loop: false },
       Sprite: sprite(fxKey, 7),
     },
@@ -117,6 +123,7 @@ interface HeroSpec {
   atkType: 'melee' | 'ranged' | 'magic'; // 攻击类型 → 普攻特效（近战斩/远程箭/法术弹）
   ultFx: string; // 大招主题特效 key
   ultDot?: boolean; // 大招附 DoT（灼烧/吸取）
+  ultFreeze?: number; // 大招冰冻时长(tick)：命中置 FROZEN、到点自动解（八阵图类控制技，REQ-F-030）
   items?: string[]; // 装备（ITEMS id；装配期把 hp/atk 加上）
 }
 
@@ -125,7 +132,7 @@ const ROSTER: HeroSpec[] = [
   // 蜀（TEAM_A，下半场，红）+ 吴·周瑜（绿）
   { id: 'a_guanyu', name: '关羽', key: F_HERO.guan_yu, team: TEAM_A, enemy: TEAM_B, cls: WARRIOR, faction: FACT_SHU, tint: SHU_RED, q: 4, r: 7, hp: 240, atk: 12, ult: '青龙偃月', ultDmg: 45, ultSize: 80, atkType: 'melee', ultFx: F_FX_STRIKE, items: ['yuxi'] },
   { id: 'a_zhaoyun', name: '赵云', key: F_HERO.zhao_yun, team: TEAM_A, enemy: TEAM_B, cls: WARRIOR, faction: FACT_SHU, tint: SHU_RED, q: 7, r: 7, hp: 165, atk: 18, ult: '七进七出', ultDmg: 75, ultSize: 55, atkType: 'melee', ultFx: F_FX_STRIKE, items: ['qinggang'] },
-  { id: 'a_zhuge', name: '诸葛亮', key: F_HERO.zhuge_liang, team: TEAM_A, enemy: TEAM_B, cls: TACTICIAN, faction: FACT_SHU, tint: SHU_RED, q: 5, r: 9, hp: 120, atk: 24, ult: '八阵图', ultDmg: 35, ultSize: 95, atkType: 'magic', ultFx: F_FX_FROST },
+  { id: 'a_zhuge', name: '诸葛亮', key: F_HERO.zhuge_liang, team: TEAM_A, enemy: TEAM_B, cls: TACTICIAN, faction: FACT_SHU, tint: SHU_RED, q: 5, r: 9, hp: 120, atk: 24, ult: '八阵图', ultDmg: 35, ultSize: 95, atkType: 'magic', ultFx: F_FX_FROST, ultFreeze: 120 },
   { id: 'a_zhouyu', name: '周瑜', key: F_HERO.zhou_yu, team: TEAM_A, enemy: TEAM_B, cls: TACTICIAN, faction: FACT_WU, tint: WU_GREEN, q: 9, r: 8, hp: 115, atk: 21, ult: '火烧赤壁', ultDmg: 38, ultSize: 92, atkType: 'magic', ultFx: F_FX_FLAME, ultDot: true },
   // 魏（TEAM_B，上半场，蓝）+ 吴·甘宁（绿）
   { id: 'b_zhangliao', name: '张辽', key: F_HERO.zhang_liao, team: TEAM_B, enemy: TEAM_A, cls: WARRIOR, faction: FACT_WEI, tint: WEI_BLUE, q: 4, r: 4, hp: 200, atk: 15, ult: '突阵', ultDmg: 50, ultSize: 70, atkType: 'melee', ultFx: F_FX_STRIKE, items: ['fangtian'] },
@@ -151,7 +158,7 @@ const FX_BY_TYPE: Record<HeroSpec['atkType'], string> = { melee: F_FX_STRIKE, ra
 export const GAME_F_TEMPLATES: Record<string, PrefabTemplate> = Object.fromEntries(
   ROSTER.flatMap((h) => [
     [`strike_${h.id}`, strike(h.enemy, finalAtk(h), FX_BY_TYPE[h.atkType])],
-    [`ult_${h.id}`, ultTemplate(h.enemy, h.ultDmg, h.ultSize, h.ultFx, h.ultDot)],
+    [`ult_${h.id}`, ultTemplate(h.enemy, h.ultDmg, h.ultSize, h.ultFx, h.ultDot, h.ultFreeze)],
   ]),
 );
 
@@ -167,7 +174,7 @@ function unitEntity(h: HeroSpec): EntityBlueprint {
     Perception: { targetTag: h.enemy, sightRadius: 0 }, // 无限视野 → aggro 锁最近敌人写 Relation(target)
     // 六边形网格寻路移动（替 steering）：HexPos=格位(SIM 真相,进 hash)；GridMover 每 period tick 沿 A* 走一格。
     HexPos: { q: h.q, r: h.r },
-    GridMover: { period: MOVE_PERIOD, elapsed: 0 },
+    GridMover: { period: MOVE_PERIOD, elapsed: 0, haltStatusMask: FROZEN }, // 被冻定身：不走且节奏时钟暂停（REQ-F-030）
     Mortal: { resource: 'hp', atOrBelow: 0 },
     // 普攻链（自身闭环）：loop Timer 周期到点 → EventWhen(读自身唯一 timer,edge) 发唯一信号 → Caster 在目标处展开打击区。
     Timer: { id: atk, elapsed: 0, duration: ATK_CD, loop: true },
@@ -179,16 +186,38 @@ function unitEntity(h: HeroSpec): EntityBlueprint {
 }
 
 // 头顶名字（表现）：Text + 势力色 Color + Hierarchy 跟随；Sprite 仅用于抬高 zOrder（文本模式不画此图）→ 盖在棋子之上。
-// 去掉死数字（hp/atk 静态不更新、误导）；血量/蓝量改用实时血条/蓝条（待引擎 REQ-F-029 gauge 能力）。
+// 去掉死数字（hp/atk 静态不更新、误导）；血量/蓝量=实时血条/蓝条（REQ-F-029 gauge，见下 barEntities）。
+// 名字上移到 -34，给头顶两条腾位。
 function labelEntity(h: HeroSpec): EntityBlueprint {
   const p = project(h.q, h.r);
   return {
-    Transform: xf(p.x, p.y - 22),
+    Transform: xf(p.x, p.y - 34),
     Text: { content: h.name, fontSize: 9, fontFamily: 'sans-serif', anchor: 'center', lineSpacing: 0 },
     Color: { tint: h.tint, alpha: 1 },
     Sprite: { textureKey: F_FX_STRIKE, anchorX: 0.5, anchorY: 0.5, zOrder: 30 }, // 只为 zOrder 抬高（文本模式不绘此贴图）
-    Hierarchy: { parentId: h.id, localX: 0, localY: -22, localRotation: 0, localScaleX: 1, localScaleY: 1 },
+    Hierarchy: { parentId: h.id, localX: 0, localY: -34, localRotation: 0, localScaleX: 1, localScaleY: 1 },
   } as unknown as EntityBlueprint;
+}
+
+// 头顶实时状态条（REQ-F-029 gauge）：暗轨道(满宽静态,先插=在下) + 彩填充(挂 Gauge,后插=在上)。
+// 同 zOrder=0，渲染器 stable sort 按插入序 → 填充盖轨道、露出已掉部分。hp 读父共享 'hp'；mana 读各自全局唯一 mp_<id>。
+// 条实体仅 Shape 渲染几何（无 Tag/Sensor/Hitbox，不参战不计 Zone）；随棋子由 hierarchy-resolve 带走、随死由 hierarchy-cascade 消失。
+const BAR_W = 28;
+const trackColor = 0x18181c;
+function barEntities(h: HeroSpec): Record<string, EntityBlueprint> {
+  const p = project(h.q, h.r);
+  const bar = (localY: number, height: number): Record<string, unknown> => ({
+    Transform: xf(p.x, p.y + localY),
+    Shape: { kind: 'box', width: BAR_W, height },
+    Hierarchy: { parentId: h.id, localX: 0, localY, localRotation: 0, localScaleX: 1, localScaleY: 1 },
+  });
+  const HP_Y = -26, MP_Y = -20;
+  return {
+    [`${h.id}_hpbg`]:  { ...bar(HP_Y, 5), Color: { tint: trackColor, alpha: 0.85 } } as unknown as EntityBlueprint,
+    [`${h.id}_hpbar`]: { ...bar(HP_Y, 5), Color: { tint: 0x33cc33, alpha: 1 }, Gauge: { resourceId: 'hp', fromParent: true, width: BAR_W } } as unknown as EntityBlueprint,
+    [`${h.id}_mpbg`]:  { ...bar(MP_Y, 3), Color: { tint: trackColor, alpha: 0.85 } } as unknown as EntityBlueprint,
+    [`${h.id}_mpbar`]: { ...bar(MP_Y, 3), Color: { tint: 0x3aa0ff, alpha: 1 }, Gauge: { resourceId: `mp_${h.id}`, width: BAR_W } } as unknown as EntityBlueprint,
+  };
 }
 
 // 大招接线（蓝条→大招，每英雄唯一 id 防串台）：普攻 Effect 攒蓝 → 蓝满 EventWhen 发大招信号
@@ -273,6 +302,7 @@ export function buildGameFBlueprint(): WorldBlueprint {
   for (const h of ROSTER) {
     entities[h.id] = unitEntity(h);
     entities[`${h.id}_name`] = labelEntity(h);
+    Object.assign(entities, barEntities(h)); // 实时血条/蓝条（REQ-F-029 gauge）
     Object.assign(entities, ultEntities(h)); // 大招接线（蓝条/攒蓝/释放/清蓝）
   }
 
@@ -301,6 +331,7 @@ export function buildGameFBlueprint(): WorldBlueprint {
       mortalCapability,
       // 胜负 + 表现
       zoneOccupancyCapability,
+      gaugeCapability, // 实时血条/蓝条（REQ-F-029）：Resource 比例 → 条宽，PostResolve 终态投影（REQ-F-031 定序）
       hierarchyResolveCapability,
       hierarchyCascadeCapability, // 子随父死（REQ-F-026）：棋子死亡→头顶名字一并消失
       cameraFollowCapability,

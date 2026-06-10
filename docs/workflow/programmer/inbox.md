@@ -72,14 +72,14 @@
 - ✅ 审查证据：blueprint `flow_ctrl` 实体已挂 GAME_FLOW（prep→combat→resolution→done/gameover，commit `b14d109`）。
 - ⚠️ 当前是**单局版**（resolution 不回 prep）；多回合循环 = MVP-1 主体，**被 REQ-F-032 阻塞**（见下方提请）。
 
-#### 任务 F-5 · REQ-F-029 接入实时血条/蓝条（纯数据，每棋子两个子实体） — status: pending（**F-031 拓扑环已修，解锁可接**；你 PF-finish-list §5 的方案照做即可）
+#### 任务 F-5 · REQ-F-029 接入实时血条/蓝条（纯数据，每棋子两个子实体） — status: **done（PE-F 2026-06-10 回执：gaugeCapability + 每棋子 hpbg/hpbar/mpbg/mpbar 四条子实体，PF-finish-list §5.1 方案原样落地；game-f 测 +1「缩条/充条」断言，vitest 959 全绿）**
 - 引擎已落 `t2-gauge`（10 测绿）：每 tick 把 Resource 比例写成条实体自身 `Shape.width`，并左锚补偿 `Hierarchy.localX`（左端钉死、从右端缩）。**渲染器零改动**；跟随=hierarchy-resolve、随棋子死=hierarchy-cascade（F-1），全自动。蓝图 capabilities 加 `gaugeCapability`（id `t2-gauge`）。
 - 每棋子加两个子实体（替掉静态数字 Text）：
   - 血条（绿）：`Hierarchy{parentId:棋子, localY:头顶上方} + Shape{kind:'box', height:~4} + Color{tint:绿} + Gauge{resourceId:'hp', fromParent:true, width:~40}`（共享 id 'hp' **必须** fromParent:true，全局取会取错单位）
   - 蓝条（蓝）：同上，`Gauge{resourceId:'mp_<英雄>', width:~40}`（唯一 id，缺省全局路由），localY 比血条再低 ~5
 - 注意：条实体的 Shape 仅作渲染几何，**别**给条挂 Collider/Velocity/Hitbox（条不参战）；`leftX` 缺省 -width/2 = 满条居中，通常无需设。
 
-#### 任务 F-6 · REQ-F-030 接入 CC 定身（纯数据） — status: pending
+#### 任务 F-6 · REQ-F-030 接入 CC 定身（纯数据） — status: **done（PE-F 2026-06-10 回执：FROZEN=1<<10（Status 位空间）+ 棋子 GridMover.haltStatusMask + 八阵图 Hitbox setMask/statusDuration:120；game-f 测 +1「冻敌」断言，vitest 959 全绿）**
 - 引擎已落 `GridMover.haltStatusMask`（对齐 Steering 同名语义，4 测绿）：自身 Status 命中掩码 → 本 tick 不走且**节奏时钟暂停**（解控按剩余节奏恢复、无补步突进）。定序已在引擎侧用 `runsBefore:['hitbox','over-time']` 破环——CC **延迟一帧生效**（与 steering/game-d 同纪律，60tps 不可感知）。
 - 接入：① 每棋子 `GridMover` 加 `haltStatusMask: FROZEN位`；② 控制技（如诸葛"八阵图"）hitbox `setMask=FROZEN + statusDuration=持续 tick` → 被冻定身、over-time 到点解冻。全纯数据，零游戏代码。
 

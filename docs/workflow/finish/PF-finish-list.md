@@ -63,14 +63,14 @@
 
 ## 5. 下一步 TODO（建议优先级）
 
-1. **REQ-F-031 落地后** → 接绿血条+蓝蓝条（**用户明确想要**；代码已写好验过、仅因 gauge 拓扑环回退，见 §5.1）。
-2. **REQ-F-030 已落**（`GridMover.haltStatusMask`）→ 接冰冻定身（§5.2，未做，**已 unblocked**）。
+1. ✅ **已接入（2026-06-10）**：绿血条+蓝蓝条。主程修 REQ-F-031（c46b0a6，gauge 移 PostResolve，采纳方案 A）后 §5.1 方案**原样落地**；game-f 测 +1 缩条/充条断言。
+2. ✅ **已接入（2026-06-10）**：冰冻定身。§5.2 草案落地，真实字段=建议名（`setMask`/`statusDuration`）；八阵图冻 120 tick；game-f 测 +1 冻敌断言。
 3. **重新平衡数值**（HP_SCALE 退回合理、低攻/适中血、同 ~18s）。
 4. **羁绊**：group-count 数蜀魏吴/武将谋士 → 越阈值 buff（buff 施加先试"全局 buff 资源"重组，真不行才提 group-effect）。
 5. **商店+经济+升星**（card-pile+craft-recipe）把单局扩成 roguelike；星级=独立星星实体叠加（用户提的做法）。
 6. **多回合循环**：需"棋子倒下/复活/回合重置"——做前先证伪重组，真缺口才提。
 
-### 5.1 血条/蓝条接入（已写好验过，REQ-F-031 落地后直接贴）
+### 5.1 血条/蓝条接入（✅ 已接入 mainbranch 2026-06-10，本节存档备查）
 
 > 我本轮已把它接进 `blueprint.ts` 并跑测——**tsc 过、但 vitest 拓扑成环**（gauge 写 Shape ↔ 战斗碰撞链回写 Resource，详 REQ-F-031）。已回退保持全绿。**待主程按 REQ-F-031 给 gauge 定序/移相位后，原样贴回即可**（纯数据、约 5 分钟）：
 >
@@ -103,7 +103,7 @@
 >
 > **验收**：`mp_<id>` 走全局寻址（缺省，非 fromParent）已确认正确（蓝条 sidecar 实体的 Resource id 唯一）；hp 走 `fromParent`（共享 id，读棋子本体）。条随棋子由 hierarchy-resolve 带走、随死由 hierarchy-cascade 一并消失（同名字）。**贴回后务必 tsc+vitest+build 全绿再推**——若仍成环说明 REQ-F-031 未真正解掉，回报主程别硬推。
 
-### 5.2 冰冻定身接入（REQ-F-030 已落地，待接，**未写代码**）
+### 5.2 冰冻定身接入（✅ 已接入 mainbranch 2026-06-10；草案字段即落地字段 `setMask`/`statusDuration`，本节存档备查）
 
 > 主程已落 **`GridMover.haltStatusMask?: number`**（src/engine/protocol/components.ts:871 / grid-move.ts:124）：棋子自身 `Status.flags` 含该掩码 → 本 tick 不走 **且节奏时钟暂停**（解控后按剩余节奏恢复，无补步突进；对齐旧 `Steering.haltStatusMask`、game-d 冰冻即此）。纯位与，确定性不变。
 >
@@ -124,6 +124,6 @@
 
 ## 7. 分支
 
-上一轮 session 推送到 **`claude/mainbranch`**（用户授权）+ 同步 `claude/cool-gates-4blea8`；game-f 全部已在 mainbranch。
-**本轮（gauge 接入受阻 + 文档）按 session 指令推送到 `claude/cool-gates-4blea8`**（仅文档：requests.md 加 REQ-F-031 + 本交接更新；game-f 代码未改，gauge 接入已回退保持全绿）。
-> ⚠️ **REQ-F-031 / 本交接更新目前只在 `claude/cool-gates-4blea8`**——主程在 mainbranch 工作，需把 REQ-F-031 同步到 mainbranch 才会被评估/落地（同步需用户显式授权跨分支推送）。下一个模型按其自己的 session 分支规范走。
+game-f 全部在 **`claude/mainbranch`**（用户授权直推）。REQ-F-031 已同步至 mainbranch 并被主程采纳修复（c46b0a6，方案 A）。
+**本轮（2026-06-10）**：血条/蓝条（F-5）+ 冰冻定身（F-6）两项接入已直推 mainbranch，inbox 已回执。
+> 下一项 = **MVP-1**（inbox F-7：run/round 双层 flow + 商店 + 经济，按 `game-f-flow-spec.md` §6.2 队列）——**被 REQ-F-032 阻塞，等主程裁决落地**（两候选路线见 requests.md REQ-F-032）。

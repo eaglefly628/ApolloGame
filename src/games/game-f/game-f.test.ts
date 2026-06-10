@@ -1,7 +1,7 @@
 import { describe, it, expect } from 'vitest';
 import { Engine } from '../../runtime/engine.js';
-import type { Resource, Flag } from '@engine/protocol/components.js';
-import { buildGameFBlueprint, GAME_F_HERO_IDS } from './blueprint.js';
+import type { Resource, Flag, Shape, Status } from '@engine/protocol/components.js';
+import { buildGameFBlueprint, GAME_F_HERO_IDS, FROZEN } from './blueprint.js';
 
 const A_IDS = GAME_F_HERO_IDS.filter((id) => id.startsWith('a_'));
 const B_IDS = GAME_F_HERO_IDS.filter((id) => id.startsWith('b_'));
@@ -65,6 +65,8 @@ describe('Game F — 自走棋 MVP-0 骨架（纯数据装配，零自走棋代�
     for (let i = 0; i < 3; i++) e.world.tick();
     expect(alive(e, 'a_guanyu')).toBe(false); // 棋子销毁
     expect(alive(e, 'a_guanyu_name')).toBe(false); // 名字子体随之消失（不再残留）
+    expect(alive(e, 'a_guanyu_hpbar')).toBe(false); // 血条/蓝条子体一并消失（同 cascade 机制）
+    expect(alive(e, 'a_guanyu_mpbg')).toBe(false);
   });
 
   it('蓝条→大招：普攻攒蓝 → 蓝满 EventWhen → Caster 展开各自大招区（每英雄唯一 id，纯数据涌现）', () => {
@@ -84,5 +86,35 @@ describe('Game F — 自走棋 MVP-0 骨架（纯数据装配，零自走棋代�
     }
     expect(mp('a_guanyu')).toBeGreaterThanOrEqual(0); // 蓝条存在
     expect(guanyuUlt).toBe(true); // 关羽攒满蓝放出了大招区
+  });
+
+  it('实时血条/蓝条：战斗中 hp 填充条真随掉血缩窄（< 自身满宽轨道）、mp 填充条真随攒蓝充起（REQ-F-029 gauge 接入）', () => {
+    const e = new Engine({ tickRate: 60 });
+    e.load(buildGameFBlueprint());
+    // 比对自身暗轨道宽（=满宽）而非常量：常量改了测试仍真。
+    const w = (id: string): number => e.world.getComponent<Shape>(id, 'Shape')?.width ?? -1;
+    let hpShrank = false;
+    let mpFilled = false;
+    for (let i = 0; i < 400 && !(hpShrank && mpFilled); i++) {
+      e.world.tick();
+      hpShrank ||= GAME_F_HERO_IDS.some((id) => alive(e, `${id}_hpbar`) && w(`${id}_hpbar`) < w(`${id}_hpbg`));
+      mpFilled ||= GAME_F_HERO_IDS.some((id) => alive(e, `${id}_mpbar`) && w(`${id}_mpbar`) > 0);
+    }
+    expect(hpShrank).toBe(true); // 有人掉血 → 绿条窄于轨道
+    expect(mpFilled).toBe(true); // 有人攒蓝 → 蓝条从 0 充起
+  });
+
+  it('八阵图冰冻：诸葛亮大招命中 → 敌方棋子 Status 置 FROZEN（hitbox setMask/statusDuration + GridMover.haltStatusMask，REQ-F-030 接入）', () => {
+    const e = new Engine({ tickRate: 60 });
+    e.load(buildGameFBlueprint());
+    let froze = false;
+    for (let i = 0; i < 600 && !froze; i++) {
+      e.world.tick();
+      froze = B_IDS.some((id) => {
+        const st = e.world.getComponent<Status>(id, 'Status');
+        return !!st && (st.flags & FROZEN) !== 0;
+      });
+    }
+    expect(froze).toBe(true); // 魏方有人被八阵图冻住（定身/解冻语义由引擎 grid-move 4 测覆盖）
   });
 });
