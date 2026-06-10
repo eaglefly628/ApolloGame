@@ -86,31 +86,33 @@ describe('Game F — 自走棋（纯数据装配，零自走棋代码；棋子=�
     for (let i = 0; i < 50; i++) e.world.tick();
     const m = mainOf(e, 'a_guanyu')!;
     expect(m).toBeTruthy();
-    for (const part of ['name', 'hpbar', 'mpbg', 'mana', 'ultcast']) expect(alive(e, childOf(m, part))).toBe(true); // 死前全在
+    for (const part of ['name', 'hpbar', 'mpbg', 'mana']) expect(alive(e, childOf(m, part))).toBe(true); // 死前全在
     // 给关羽实例致命局部伤害 → 死亡。
     e.world.addComponent(m, { type: 'ResourceModify', resourceId: 'hp', amount: -99999, scope: 'local' } as unknown as Resource);
     for (let i = 0; i < 3; i++) e.world.tick();
     expect(alive(e, m)).toBe(false); // 棋子销毁
-    for (const part of ['name', 'hpbar', 'mpbg', 'mana', 'ultcast']) expect(alive(e, childOf(m, part))).toBe(false); // 挂件无残留
+    for (const part of ['name', 'hpbar', 'mpbg', 'mana']) expect(alive(e, childOf(m, part))).toBe(false); // 挂件无残留
   });
 
-  it('蓝条→大招：普攻攒蓝 → 蓝满 EventWhen → Caster 展开各自大招区（每英雄唯一 id，纯数据涌现）', () => {
+  it('蓝条→大招（F-9 完结篇，全 per-instance）：over-time 回蓝 → sidecar SelfRule 蓝满放招清蓝', () => {
     const e = new Engine({ tickRate: 60 });
     e.load(buildGameFBlueprint());
     const mp = (hero: string): number => {
-      for (const x of e.world.getAllEntities()) {
-        const r = e.world.getComponent<Resource>(x, 'Resource');
-        if (r && r.id === `mp_${hero}`) return r.current;
-      }
-      return -1;
+      const m = mainOf(e, hero);
+      if (!m) return -1;
+      return e.world.getComponent<Resource>(childOf(m, 'mana'), 'Resource')?.current ?? -1; // 普通 id 'mp'，实例寻址
     };
     let guanyuUlt = false;
+    let drained = false;
     for (let i = 0; i < 500; i++) {
       e.world.tick();
-      if (e.world.getAllEntities().some((x) => x.startsWith('ult_a_guanyu#'))) guanyuUlt = true;
+      if (e.world.getAllEntities().some((x) => x.startsWith('ult_a_guanyu#'))) {
+        guanyuUlt = true;
+        if (mp('a_guanyu') === 0) drained = true; // 放招拍清蓝（SelfRule do 同拍 set 0）
+      }
     }
-    expect(mp('a_guanyu')).toBeGreaterThanOrEqual(0); // 蓝条资源存在（实例 sidecar 上）
-    expect(guanyuUlt).toBe(true); // 关羽攒满蓝放出了大招区
+    expect(guanyuUlt).toBe(true); // 关羽蓝满放出了大招区
+    expect(drained).toBe(true); // 清蓝随放招原子发生
   });
 
   it('实时血条/蓝条：战斗中 hp 填充条真随掉血缩窄（< 自身满宽轨道）、mp 填充条真随攒蓝充起（REQ-F-029 gauge 接入）', () => {
@@ -261,6 +263,40 @@ describe('Game F — 自走棋（纯数据装配，零自走棋代码；棋子=�
       entered = flag(e, 'in_combat');
     }
     expect(entered).toBe(true); // tick ~12-26 已开战 —— 远早于 40 拍兜底（兜底路径由其余测试天然覆盖）
+  });
+
+  it('商店买入核心（F-11/REQ-F-040 + v2 §4.6）：钱不够原子拒单（牌不丢金不动）；付得起则扣金占席、据码入备战席、bought_code 复位', () => {
+    const e = new Engine({ tickRate: 60 });
+    e.load(buildGameFBlueprint());
+    const res = (id: string): number => {
+      for (const x of e.world.getAllEntities()) {
+        const r = e.world.getComponent<Resource>(x, 'Resource');
+        if (r && r.id === id) return r.current;
+      }
+      return -1;
+    };
+    const play0 = (): void => {
+      if (!e.world.getAllEntities().includes('input')) e.world.createEntity('input');
+      e.world.addComponent('input', { type: 'InputQueue', actions: [{ source: 'shop', key: 'play', values: [0] }] } as unknown as Resource);
+      e.world.tick();
+      e.world.addComponent('input', { type: 'InputQueue', actions: [] } as unknown as Resource);
+    };
+    for (let i = 0; i < 50; i++) e.world.tick(); // 回合1基础收入=2金（<3：买不起）
+    expect(res('gold')).toBe(2);
+    play0();
+    for (let i = 0; i < 3; i++) e.world.tick();
+    expect(res('gold')).toBe(2); // 拒单：金不动
+    expect(res('bench_space')).toBe(9); // 席位不动
+    expect(e.world.getAllEntities().some((id) => id.startsWith('bench_'))).toBe(false); // 无 marker（牌也不丢，引擎拒单五断言盖）
+    // 注资 → 买成：SHOP_DECK[0]=3 → 手牌槽0 = 诸葛亮
+    e.world.addComponent('r_gold', { type: 'ResourceModify', resourceId: 'gold', amount: 10, scope: 'local' } as unknown as Resource);
+    for (let i = 0; i < 2; i++) e.world.tick();
+    play0();
+    for (let i = 0; i < 6; i++) e.world.tick();
+    expect(res('gold')).toBe(9); // 12 - 3
+    expect(res('bench_space')).toBe(8); // 占 1 席
+    expect(e.world.getAllEntities().some((id) => id.startsWith('bench_a_zhuge#'))).toBe(true); // 据码（3=诸葛）入席
+    expect(res('bought_code')).toBe(0); // 复位（防同码二连买 edge 失效）
   });
 
   it('L1 run_flow + §4.1/§4.2 表：回合1收入2金；advance 推进；败方按阶段表扣血；round>5 进位换关卡敌阵', () => {

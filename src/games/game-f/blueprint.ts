@@ -16,6 +16,7 @@ import {
   gaugeCapability,
   clickableCapability,
   selfRuleCapability,
+  cardPileCapability,
   cameraFollowCapability,
   gridMoveCapability,
   ZONE_FLAG,
@@ -162,18 +163,17 @@ const FX_BY_TYPE: Record<HeroSpec['atkType'], string> = { melee: F_FX_STRIKE, ra
 
 // （模板库 GAME_F_TEMPLATES 在 heroTemplate 定义之后构建，见下；普攻/大招/棋子复合 每英雄三张。）
 
-// ── 棋子复合模板（REQ-F-032/033）：单位+名牌+血蓝条×4+蓝 sidecar+大招接线 = 一个 PrefabTemplate 整体生灭 ──
-// 内部互指一律 '@local:main'（REQ-F-033，展开时重映射为实例 id）；sidecar（蓝/攒/放/清）虽无 Transform
+// ── 棋子复合模板（REQ-F-032/033）：单位+名牌+血蓝条×4+蓝 sidecar = 一个 PrefabTemplate 整体生灭 ──
+// 内部互指一律 '@local:main'（REQ-F-033，展开时重映射为实例 id）；sidecar 虽可无 Transform
 // 也必须挂 Hierarchy{parentId:'@local:main'} 才随主体级联（主程坑提示：级联只沿 Hierarchy 边走）。
 // Tag/Resource(hp)/HexPos 是占位，由槽位 Caster.overrides 写真值（星级数值进槽位数据，Phase 2 复用）。
-// 唯一 id 策略不变：atk_<id>/mp_<id>/ult_<id> 烘进各英雄专属模板（一英雄一槽一实例，不串台；重复棋子待 REQ-021 接入）。
+// 全链已 per-instance（F-9 完结）：timer 'atk'/资源 'mp' 皆普通共享 id，self/局部作用域各读各的——
+// 同模板任意多实例（重复购买/三星合体）普攻、回蓝、放大招全不串台，零唯一 id。
 const BAR_W = 28;
 const trackColor = 0x18181c;
 const HP_Y = -26, MP_Y = -20;
 const sidecarLink = { parentId: '@local:main', localX: 0, localY: 0, localRotation: 0, localScaleX: 1, localScaleY: 1 };
 function heroTemplate(h: HeroSpec): PrefabTemplate {
-  const mp = `mp_${h.id}`;
-  const ultSig = `ult_${h.id}`;
   const bar = (localY: number, height: number): Record<string, unknown> => ({
     Transform: xf(0, localY), // instantiate 统一偏移到槽位投影坐标
     Shape: { kind: 'box', width: BAR_W, height },
@@ -214,20 +214,20 @@ function heroTemplate(h: HeroSpec): PrefabTemplate {
       hpbg: { ...bar(HP_Y, 5), Color: { tint: trackColor, alpha: 0.85 } },
       hpbar: { ...bar(HP_Y, 5), Color: { tint: 0x33cc33, alpha: 1 }, Gauge: { resourceId: 'hp', fromParent: true, width: BAR_W } },
       mpbg: { ...bar(MP_Y, 3), Color: { tint: trackColor, alpha: 0.85 } },
-      mpbar: { ...bar(MP_Y, 3), Color: { tint: 0x3aa0ff, alpha: 1 }, Gauge: { resourceId: mp, width: BAR_W } },
-      // 大招接线（蓝条→大招）：sidecar 时基回蓝（F-9 后普攻无信号可挂，"按攻攒蓝"改"按时回蓝"，节奏等价
-      // ≈0.44/拍；SelfRule 施于自身 mp，同模板多实例各自回蓝不串台）→ 蓝满 EventWhen 发大招信号
-      // → Caster 复用 main 的 aggro 目标展开大招 + 清蓝。
-      // ⚠️ 蓝满→放→清这半截仍走全局 id（mp_<英雄>）：复制棋子时大招会串台——完整 self 化等 REQ-F-039 rules[]。
+      mpbar: { ...bar(MP_Y, 3), Color: { tint: 0x3aa0ff, alpha: 1 }, Gauge: { resourceId: 'mp', fromParent: true, width: BAR_W }, Hierarchy: { ...sidecarLink, parentId: '@local:mana', localY: MP_Y } },
+      // 大招接线（F-9 完结篇，REQ-F-039 回驳给的重组路线，全 per-instance 零唯一 id）：
+      // · 回蓝 = over-time 永久 regen（duration<=0、amountPerTick 正、局部寻址自身 mp——现有能力字面覆盖，
+      //   Lead 等价写法原样）；· 蓝满→放→清 = sidecar 仅有的一条 SelfRule（whenGlobal 阶段门同普攻纪律）；
+      // · at:'target' 的目标 = sidecar 自带 Perception 由 aggro 锁敌（位置经 Hierarchy 随主，锁的即近敌）。
+      // mp 为普通共享 id：无全局读者（蓝条 fromParent 读本 sidecar、清蓝施于自身）→ 重复棋子大招不串台。
       mana: {
-        Resource: { id: mp, current: 0, min: 0, max: 100 },
-        Timer: { id: 'mana', elapsed: 0, duration: MANA_REGEN.period, loop: true },
-        SelfRule: { when: { kind: 'timer', id: 'mana', cmp: 'gte', value: MANA_REGEN.period - 1 }, do: [{ kind: 'modify-resource', op: 'add', value: MANA_REGEN.amount }], once: false, armed: false },
-        EventWhen: { signal: ultSig, when: { kind: 'resource', id: mp, cmp: 'gte', value: 100 }, mode: 'edge', armed: false },
+        Transform: xf(0, 0),
+        Resource: { id: 'mp', current: 0, min: 0, max: 100 },
+        OverTime: { effects: [{ id: 'mp_regen', resource: 'mp', amountPerTick: MANA_REGEN.amount, period: MANA_REGEN.period, duration: 0, elapsed: 0 }] },
+        Perception: { targetTag: h.enemy, sightRadius: 0 },
+        SelfRule: { when: { kind: 'resource', id: 'mp', cmp: 'gte', value: 100 }, whenGlobal: { kind: 'flag', id: 'in_combat', equals: true }, do: [{ kind: 'spawn', template: `ult_${h.id}`, at: 'target' }, { kind: 'modify-resource', op: 'set', value: 0 }], once: false, armed: false },
         Hierarchy: { ...sidecarLink },
       },
-      ultcast: { Caster: { onSignal: ultSig, template: `ult_${h.id}`, at: 'target', targetTag: h.enemy, originEntity: '@local:main' }, Hierarchy: { ...sidecarLink } },
-      drain: { Effect: { onSignal: ultSig, kind: 'modify-resource', targetId: mp, op: 'set', value: 0 }, Hierarchy: { ...sidecarLink } },
     },
   } as unknown as PrefabTemplate;
 }
@@ -274,6 +274,11 @@ const STAGES: { n: number; comp: { hero: string; q: number; r: number; hpMul: nu
 ];
 const heroOf = (id: string): HeroSpec => ROSTER.find((h) => h.id === id)!;
 
+// ── 商店（F-11 / REQ-F-040 + v2 §4.6）：英雄码 + 单人有限牌袋（预洗、确定性；§4.4 牌袋语义）──
+// 码 0 保留为「无」（bought_code 复位值）。MVP 袋 = 我方 4 将各 3 张（卖出归还/按等级加权袋 = 后续）。
+const HERO_CODE: Record<string, number> = { a_guanyu: 1, a_zhaoyun: 2, a_zhuge: 3, a_zhouyu: 4 };
+const SHOP_DECK = [3, 1, 4, 2, 2, 4, 1, 3, 1, 2, 3, 4];
+
 // ── §4.1/§4.2 banded 结算（Game E 已证形态）：armed 旗开窗 → EventWhen(edge) 带条件命中 → Effect 改资源一次。──
 // 带宽语义注记：同窗内资源被前一 band 改写后，后续 band 的阈值按"改写后的值"再判（如利息可能含同回合收入）——
 // 确定性单调、每 band 每窗至多一次；TUNE 嫌宽就调阈值，不改逻辑。
@@ -294,7 +299,14 @@ export const GAME_F_TEMPLATES: Record<string, PrefabTemplate> = Object.fromEntri
     [`strike_${h.id}`, strike(h.enemy, finalAtk(h), FX_BY_TYPE[h.atkType])],
     [`ult_${h.id}`, ultTemplate(h.enemy, h.ultDmg, h.ultSize, h.ultFx, h.ultDot, h.ultFreeze)],
     [`hero_${h.id}`, heroTemplate(h)],
-  ]),
+  ]).concat(
+    // 备战席位模板（v2 §4.6 买入→入席）：marker 实体持有英雄（可见、不参战、无 Tag 不被清场）。
+    // 上场=「摆子」输入域把席位换成上场槽（主程输入路由后接）；重复购买同将暂同席位叠放（已知 wart）。
+    ROSTER.filter((x) => x.team === TEAM_A).map((h): [string, PrefabTemplate] => [
+      `bench_${h.id}`,
+      { entities: { seat: { Transform: xf(0, 0), Sprite: sprite(h.key, 2) } } } as unknown as PrefabTemplate,
+    ]),
+  ),
 );
 
 const ARENA = { minX: -280, minY: -200, maxX: 280, maxY: 200 };
@@ -430,6 +442,17 @@ export function buildGameFBlueprint(): WorldBlueprint {
       Sprite: { textureKey: F_FX_STRIKE, anchorX: 0.5, anchorY: 0.5, zOrder: 30 }, // 只为抬 zOrder（文本模式不绘）
     } as unknown as EntityBlueprint,
     eff_ready: { Effect: { onSignal: 'ready_btn', kind: 'set-flag', targetId: 'ready', value: true } } as unknown as EntityBlueprint,
+    // —— 商店（F-11，REQ-F-040；v2 §4.6 五件套之「买入核心」。刷新/锁店/卖出撞新缺口已提 REQ-F-041）——
+    // 买 = 输入 play(槽下标)（点击→play 的指针路由属 launcher 输入域）：playCosts 原子验扣 金3 + 席位1
+    // （钱不够/席满=拒单：牌不丢、金不动）→ 成交牌码写 bought_code → 每将 banded 分发 → marker 入备战席。
+    shop: {
+      // ⚠️ deck 必须取副本：装配是浅拷贝、嵌套数组按引用共享，发牌原地 shift 会跨 Engine/跨测试泄漏（确定性破口，实测踩过）
+      CardPile: { owner: 'shop', deck: [...SHOP_DECK], hand: [], handSize: 5, playCosts: [{ id: 'gold', amount: 3 }, { id: 'bench_space', amount: 1 }], playedCodeResource: 'bought_code' },
+      PlayedHand: { owner: 'shop', cards: [] },
+      Flag: { id: 'shop', active: false },
+    } as unknown as EntityBlueprint,
+    r_bought_code: { Resource: { id: 'bought_code', current: 0, min: 0, max: 9999 } } as unknown as EntityBlueprint, // 最近一次成交牌码（0=无）
+    r_bench_space: { Resource: { id: 'bench_space', current: 9, min: 0, max: 9 } } as unknown as EntityBlueprint, // 备战席 9（§4.6）；作 playCosts 第二货币——席满=0 即原子拒单（卖出时 +1 归还）
     f_deploy_armed: { Flag: { id: 'deploy_armed', active: false } } as unknown as EntityBlueprint,
     f_wipe_armed: { Flag: { id: 'wipe_armed', active: false } } as unknown as EntityBlueprint,
     f_income_armed: { Flag: { id: 'income_armed', active: false } } as unknown as EntityBlueprint, // §4.1 结算窗
@@ -469,6 +492,14 @@ export function buildGameFBlueprint(): WorldBlueprint {
   for (const h of ROSTER.filter((x) => x.team === TEAM_A)) {
     entities[`slot_${h.id}`] = slotEntity(h, 'deploy', h.q, h.r);
   }
+  // 商店买入分发（每将一组，F-11 ②③）：bought_code 命中码 → buy_<将> 信号 → 备战席位生成 marker
+  // + 复位 bought_code=0（F-11 坑：防同码二连买 edge 不触发）。席位 x 按将错开（重复购买同将暂叠同位）。
+  ROSTER.filter((x) => x.team === TEAM_A).forEach((h, i) => {
+    const sig = `buy_${h.id}`;
+    entities[`when_${sig}`] = { EventWhen: { signal: sig, when: resCmp('bought_code', 'eq', HERO_CODE[h.id]), mode: 'edge', armed: false } } as unknown as EntityBlueprint;
+    entities[`buycast_${h.id}`] = { Transform: xf(-66 + i * 44, 178), Caster: { onSignal: sig, template: `bench_${h.id}`, at: 'self' } } as unknown as EntityBlueprint;
+    entities[`eff_${sig}_reset`] = { Effect: { onSignal: sig, kind: 'modify-resource', targetId: 'bought_code', op: 'set', value: 0 } } as unknown as EntityBlueprint;
+  });
   // 敌方关卡槽（持久）：每阶段一组，prep 按 stage_idx 分流的 deploy_stage_<N> 展开（§4.5 敌阵=数据）。
   for (const st of STAGES) {
     for (const c of st.comp) {
@@ -505,6 +536,7 @@ export function buildGameFBlueprint(): WorldBlueprint {
       zoneOccupancyCapability,
       gaugeCapability, // 实时血条/蓝条（REQ-F-029）：Resource 比例 → 条宽，PostResolve 终态投影（REQ-F-031 定序）
       clickableCapability, // ready 开战按钮：指针命中 → 'ready_btn' 信号（引擎已对 event-when 定序）
+      cardPileCapability, // 商店（F-11/REQ-F-040）：牌袋发牌/play 原子验扣/据码写 bought_code（引擎已按"输入先行"钉七件套定序）
       hierarchyResolveCapability,
       hierarchyCascadeCapability, // 子随父死（REQ-F-026）：棋子死亡→头顶名字一并消失
       cameraFollowCapability,

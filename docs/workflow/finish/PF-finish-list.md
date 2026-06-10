@@ -74,7 +74,9 @@
 9. ✅ **ready 开战已接（2026-06-10）**：clickable「开战」按钮（240,170，无 Tag 不参战）→ 'ready_btn' 信号 → Effect 置 ready → prep 的 ready 转移优先开战、40 拍倒计时兜底；验收测走真实 InputQueue 指针路（坑：裸造 Signal 实体会被 event-when 全局先清后标扫掉，活不到 Commit）。
 10. ✅ **odd-r 棋盘迁移（inbox F-10，2026-06-10）**：LAYOUT 'offset'→'odd-r'（视觉相邻=逻辑相邻，绕后/贴身不再骗人）；像素布局数学恒等画面不动；摆子数据维持视觉 (col,row)、入 sim 前 offsetToAxial 换算（slotEntity/装饰格/§5.4 配方注入均已带换算）。主程可删 'offset' 废弃分支。
 11. ✅ **F-9 普攻 self 化落地（2026-06-10，三过家门）**：环(036)→排雷→残环→二刷(runsAfter:['hitbox'])→§5.4 贴回。普攻+回蓝已 per-instance（2×关羽不串台测绿）；唯一 id 脚手架只剩大招半截。
-12. **余项与阻塞面**：商店三件套 P0 = **REQ-F-040**（等主程）；大招 self 化 = **REQ-F-039**（Phase 2 合体前置）。**当前可动 = 等级/经验/概率牌袋（P2）**——但其主要消费方是商店，建议与 F-040 一起接，避免无消费方的空转数据。引擎侧无 PE-F 可推进项时即为收敛态，等池子。
+12. ✅ **商店买入核心（F-11/REQ-F-040，2026-06-10）**：袋12张→5槽→play 原子验扣（金3 + bench_space——备战席9当 playCosts 第二货币，席满=0 拒单零新机制）→ bought_code 据码 banded 分发 → buycast 入席 marker → 码复位。坑×2：deck 必须 [...] 副本（装配浅拷贝、嵌套数组跨 Engine 共享=确定性破口，实测）；capability 加 import 别忘数组（第二次）。
+13. ✅ **大招半截完结（REQ-F-039 回驳的重组路线，2026-06-10）**：over-time 永久 regen（duration<=0）回蓝 + sidecar 自带 Perception 借 aggro 锁敌 + SelfRule{蓝满→spawn ult at target→清蓝}；mp 改普通 id（蓝条 fromParent 指 '@local:mana'）→ **全链 per-instance 零唯一 id，重复购买/三星合体就绪**。
+14. **余项与阻塞面**：商店余三件（刷新/锁店/卖出）= **REQ-F-041**（等主程：信号→card-pile 桥 + '@signal-source' 寻址）；摆子/上场 = 输入路由（主程域）；等级/经验/加权牌袋 P2 与 041 一起接。引擎无可推进项即收敛态，等池子。
 
 ### 5.1 血条/蓝条接入（✅ 已接入 mainbranch 2026-06-10，本节存档备查）
 

@@ -1258,7 +1258,17 @@
 >
 > **同包外审其余结论归档**（全文 `docs/review/2026-06-10-f026-028-external-verdict.md`）：F-026 Q1–Q4 全过、代码审查通过；Q7 确认 F-028 同帧新鲜方向（离散逻辑 vs 连续反馈两分法）；**Q6（RMW 推断层治理）回驳**——外审方案"RMW 写降级仅留入边"会把 resource-apply 这类**真生产者**的出边一并删除，下游（gauge/flow/mortal）先后退化为注册序 tie-break，F-028/F-035 特意钉的同帧新鲜保证全部**静默失效**（响亮报错→隐藏一帧滞后 bug）；且该方案只治 mutual-RMW 类，对 F-025（互为纯生产/消费）与 F-031（经第三方传递闭环）两类无效。维持"报错+显式钉边逼出语义决策"纪律；观察阈值：显式边对超 ~10 再重审（现 6 对）。
 
-## 需求模板（复制这段填写）
+### REQ-F-041 · [2026-06-10] · PE-F（F-11 商店五件套 v2 §4.6 推演暴露）· 框架级 · status: **open（待主程评估）** · 优先级: 高（商店五件套余下三件——刷新/锁店/卖出——的共同前置） · 类型: 真缺口 ×2（信号驱动不了 card-pile 操作；运行时实体无数据可达的销毁寻址）
+
+> **背景**：买入核心已落（playCosts 原子验扣 + bought_code 分发 + bench_space 当 playCosts 第二货币防席满，全纯数据、15 测绿）。v2 §4.6 余下三件全部撞墙：
+> **缺口 A：信号→card-pile 操作桥（刷新/锁店共需）**
+> ① prep 自动刷新 = 弃 5 补 5——`card-pile` 只消费 `InputQueue` 的 `discard` 动作；flow 动作只有 set-flag/set-state/modify-resource，**写不了 InputQueue**；clickable/event-when 产的是 Signal，card-pile **不读 Signal**。2 金手动刷新同断点（craft-recipe 能扣钱，弃牌没有信号消费者）。
+> ② F-11 的"刷新=重写 deck（flow effect）"实测不成立——flow 无此动作类型。
+> **建议 A（最窄动词）**：`CardPile.refreshOnSignal?: string`——信号在场 → 弃全部手牌 + 按 handSize 补满（弃/补是它既有内功，只加一个触发面）；锁店 = 数据侧在信号链上游用 `shop_locked` Flag 条件挡住（既有 EventWhen 重组，零新增）。
+> **缺口 B：卖出的销毁寻址**
+> 买入产生的席位 marker 是**运行时实例**（`bench_<将>#<seq>:seat`，seq 装配期不可知）；`Effect{kind:'destroy', targetEntity}` 是静态数据 → 指不到；destroy-tagged 是**批量**掩码语义（卖一个不能全清）。clickable 点席位产 `Signal{source:被点实体}`——**source 里有精确实例 id，但 Effect 无"作用于信号源"的寻址**。
+> **建议 B（最窄寻址）**：`Effect.targetEntity` 支持哨兵 `'@signal-source'`（destroy/set-* 作用于触发信号的 source 实体）——「点谁卖谁/点谁选谁」是指针品类标配形状（卖棋子/拆塔/弃卡同形）。卖价返还（金 + bench_space+1 + 袋归还）= 既有 Effect/craft-recipe 重组。
+> **YAGNI 自审**：两缺口都是 v2 §4.6 硬性条目的唯一断点；A 是"输入域→sim 操作"的通用桥，B 是指针交互的通用寻址。
 
 ---
 

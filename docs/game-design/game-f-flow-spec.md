@@ -111,6 +111,10 @@
 | `income_*` / `interest_*` / `streak_*` / `dmg_stage_*` | 信号 | §4.1/§4.2 banded 结算（每窗每带至多一发） | EventWhen → Effect(gold/player_hp) |
 | `stage_up` | 信号 | round_idx>5 进位（stage_idx+1、round_idx=1） | EventWhen → Effect×2 |
 | `ready_btn` | 信号 | 点「开战」按钮（指针命中，单拍） | clickable → Effect(set-flag ready) |
+| `bought_code` | Resource 0..9999 | 最近一次商店成交的英雄码（0=无，买后复位防二连买失效） | card-pile(playedCodeResource) → buy_* bands |
+| `bench_space` | Resource 0..9 | 备战席余位（playCosts 第二货币：席满=0 原子拒单；卖出 +1 归还） | card-pile 扣 ↔ 卖出还 |
+| `buy_<将>` | 信号 | 据码分发的买入信号（单拍） | EventWhen(bought_code eq 码) → buycast + 复位 |
+| `shop` | Flag | card-pile 出牌脉冲（契约自带，owner 同名） | card-pile 内部 |
 
 ### 3.2 L1 · Run 流程（局）：`run_flow` 实体一台机
 

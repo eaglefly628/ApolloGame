@@ -116,7 +116,7 @@
 - 迁移三步：① `HexBoard.layout: 'offset' → 'odd-r'`；② 每个棋子坐标从"视觉列" col 换算成 axial：`import { offsetToAxial } from '@skills/tier2/hex.js'`，`{q,r} = offsetToAxial(原q, 原r)`（原 q 在旧语义下就是视觉列）；③ 跑 game-f 测试，目测一局确认站位观感不变、走位不再"跳格"。
 - 注意：大招 AOE 半径（ultSize 像素距离）基于 Transform——真投影下两布局像素位置不同步，迁完抽查 1-2 个 AOE 命中观感。**迁完在本行标 done 并知会主程**：主程随后删除引擎里废弃的 'offset' 分支。
 
-#### 任务 F-11 · REQ-F-040 接入商店三件套（纯数据，MVP-1 商店 P0） — status: pending
+#### 任务 F-11 · REQ-F-040 接入商店三件套（纯数据，MVP-1 商店 P0） — status: **in-progress（PE-F 2026-06-10：①买入核心 done——shop CardPile{袋12张/5槽/playCosts 金3+bench_space1（备战席9当第二货币，席满原子拒单=v2 §4.6 语义零新机制）/playedCodeResource}+每将 banded 分发+buycast 入席+码复位，验收测：拒单原子/扣金占席/据码入席/复位；②大招半截顺手完结（039 重组路线：over-time 永久回蓝+sidecar Perception+SelfRule 放清，mp 普通 id 全链 per-instance）；③余 刷新/锁店/卖出撞双缺口 → REQ-F-041 已提池（信号→card-pile 桥 + '@signal-source' 销毁寻址）。坑×2 记档：deck 必须 [...副本]（装配浅拷贝、嵌套数组共享，跨 Engine 漏确定性实测踩过）；capability 三过家门第二次忘加数组）**
 - 引擎已落（4 测绿）：`CardPile.playedCodeResource`（成交拍把牌码写进该 id 的 Resource，恰取 1 张时）+ `CardPile.playCosts:[{id,amount}]`（全付得起才成交；被拒=牌不丢/不扣钱/Flag 不脉冲）。card-pile 定序已按"输入先行"钉七件套，与 flow/self-rule/group-count 等同场不抛。
 - 接线：① 商店 CardPile{handSize:5(商店槽), playCosts:[{id:'gold',amount:3}], playedCodeResource:'bought_code'} + 牌码 Resource{id:'bought_code', max:9999}；② 每英雄一条 banded `EventWhen{when:{resource:'bought_code', cmp:'eq', value:英雄码}, mode:'edge', signal:'buy_<英雄>'}`；③ `Caster{onSignal:'buy_<英雄>', template:槽位模板, ...}` 造阵容槽。刷新商店=重写 deck（flow effect / 纯数据）。
 - 注意：bought_code 是"最近一次成交"语义（一拍内同码连买需 edge 模式靠码变化触发——商店逐张买天然成立）；买完把 bought_code 复位为 0 可用 Effect{set 0}（防同码二连买不触发 edge）。
