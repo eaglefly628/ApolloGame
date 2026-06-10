@@ -19,6 +19,7 @@
 **未做/待接（按优先）**：
 - 🔴 **REQ-023 group-effect（集合写）**：我**不 greenlit·倾向重组**（group-count+全局 buff 资源绕过）；真出现"非逐单位 fan-out 不可"再下沉。
 - ✅ ~~World.query 性能~~：**并行 session 已实施**（方案 A+单调跳排序/稠密退化；稀有查询 36×，行为逐字节不变，8 条对拍守护；详见 `query-perf-plan.md` 头部实施记录与 §4 自审表）。
+- ✅ ~~REQ-025 grid-move↔aggro 拓扑成环~~：**并行 session 已修**（`f59d0cd`，主程4 采 PE-F 1 行 `runsAfter:['aggro']` 破环——同 Update 相位 aggro(读 Transform→写 Relation)↔grid-move(读 Relation→写 Transform) 互为前驱抛环；语义：本拍 aggro 选目标→grid-move 据此走，写出的 Transform 下拍才读，确定性不变；+1 对拍守护测，现 vitest 926 绿）。**game-f 接 hex 寻路已解阻塞**（见下 🟡 Game F 项；更彻底可选：grid-move 只写 HexPos + 另设 PostResolve 投影系统，见 `requests.md` REQ-025）。
 - 🟠 **caster 可整合进 effect-apply（kind:'spawn'）+ 与 aggro 索敌去重**（governance §4 审计发现），排期收敛。
 - 🟡 各游戏 PE 侧"数据换层"（消费这批新能力）：Game E 用 flow/card-pile 重写回合流程(REQ-017)+读 ScoreTrace 回放(REQ-019,PE 已在接)；Game F 用 hex/grid-move 接金铲铲移动(REQ-024)+self-rule/group-count 接自治/羁绊。
 - 🟠 沿用旧自审：**仍没真浏览器看过一帧**；浮点跨端确定性未双端验（卡牌/hex 是整数安全,steering/sqrt 仍 REQ-010 open）。
