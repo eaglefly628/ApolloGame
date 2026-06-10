@@ -1,6 +1,7 @@
 import type { WorldBlueprint, EntityBlueprint } from './demo.assembly.js';
 import { resolveCapabilities, inferCapabilityIds } from './capability-registry.js';
 import { validateComponentData, validateAssetRefs, formatIssues } from './validate-manifest.js';
+import { validateReferences } from './validate-references.js';
 
 // ═══════════════════════════════════════════════════════════════
 //  Manifest 加载器 —— studio「导出 manifest」的逆运算
@@ -91,6 +92,10 @@ export function parseManifestDetailed(raw: unknown, opts: ParseOptions = {}): Pa
   const schema = validateComponentData(capabilities, entities);
   for (const w of schema.warnings) warnings.push(formatIssues([w]));
   if (schema.errors.length) fail(`组件数据类型错误（${schema.errors.length} 处）—— ${formatIssues(schema.errors)}`);
+
+  // P0 引用链接器：id 交叉引用体检（信号链 / 全局 id / 模板 / 图内跳转）。全部 warning——
+  // id 可在运行时合法出现（prefab 展开 / 代码侧注入），链接器是体检报告，不是闸门。
+  for (const w of validateReferences(entities)) warnings.push(formatIssues([w]));
 
   // R9 增益 A：资产 key 硬校验（opt-in——仅当提供 assetKeys 集合时才查，未知 key 拒绝加载，防 AI 编造）。
   if (opts.assetKeys) {
