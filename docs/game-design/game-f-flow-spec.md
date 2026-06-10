@@ -115,6 +115,10 @@
 | `bench_space` | Resource 0..9 | 备战席余位（playCosts 第二货币：席满=0 原子拒单；卖出 +1 归还） | card-pile 扣 ↔ 卖出还 |
 | `buy_<将>` | 信号 | 据码分发的买入信号（单拍） | EventWhen(bought_code eq 码) → buycast + 复位 |
 | `shop` | Flag | card-pile 出牌脉冲（契约自带，owner 同名） | card-pile 内部 |
+| `shop_refresh` / `shop_refresh_armed` / `shop_gate_done` | 信号/Flag/信号 | 商店刷新（auto=prep 臂；manual=$2）与门判定脉冲（先判后拆） | flow/按钮 → card-pile.refreshOnSignal |
+| `shop_locked` / `lock_btn` / `unlock_btn` | Flag/信号 | 锁店（锁=跳过下个 prep 自动刷新一次，门判定拍自动解锁） | 按钮 → Effect ↔ 刷新门 |
+| `reroll_btn` / `reroll_paid` | 信号/Flag | 手动刷新 $2（craft-recipe 原子扣金，付讫旗→shop_refresh） | 按钮 → craft-recipe → EventWhen |
+| `sell_seat` | 信号 | 点席卖出（source=被点席位 → '@signal-source' 点谁卖谁） | clickable → destroy+返还 Effects |
 
 ### 3.2 L1 · Run 流程（局）：`run_flow` 实体一台机
 
@@ -317,7 +321,7 @@ aggro(锁最近敌) → grid-move(六角 A* 逐格走) → loop Timer(攻速) �
 | # | 差距 | 对应规范 | 备注 |
 |---|---|---|---|
 | ~~P0~~ | ✅ **多回合 run/round 双层机全落（2026-06-10）**：round 循环+回合重置+L1 run_flow（victory/defeat/握手/进位 banded） | §3.2/§3.3 | 余 ready 接上后 prep 的 `after 40` 改读 ready Flag（P2）；进位后有 ≤1 个空阶段巡场回合（victory 在下轮 round_done 拍兜住，spec 形状如此） |
-| P0 | **商店买人三件套**（card-pile 5 槽 + craft-recipe 扣价 + 买入→阵容） | §3.3 操作表 | 纯数据，零新 capability；「买入→上场」与 032 共用展开语义（买=造我方槽实体） |
+| ~~P0~~ | ✅ **商店五件套主体落地（2026-06-10）**：买入（playCosts 金3+bench_space——备战席9当第二货币，席满原子拒单）/ prep 自动刷新 / $2 手动刷新 / 锁店（门判定脉冲先判后拆）/ 点席卖出（'@signal-source'）| §4.6 | 余：袋归还（deck 写回无接缝）、超员自动卖与摆子上场（输入路由主程域）、按等级加权袋（P2 随等级系统） |
 | ~~P1~~ | ✅ **经济三件套落地（2026-06-10）**：收入爬坡/利息/连胜金 = armed 窗 + banded | §4.1 | 带宽注记：同窗后序 band 读改写后的 gold（利息可能含本回合收入），TUNE 改阈值即可 |
 | ~~P1~~ | ✅ **玩家伤害落地（2026-06-10）**：阶段基础伤 + 存活敌数**近似 2** | §4.2 | 真存活数待 REQ-022 group-count 接入（Phase 3 同期），换 band 值即可 |
 | ~~P1~~ | ✅ **关卡表前 2 阶段落地（2026-06-10）**：STAGES 数据 + deploy_stage_N 分流 | §4.5 | 强度暂只缩 HP（攻烘在 strike 模板；按阶段缩攻=每阶段一套 strike 模板，真需要再加）；阶段 3-5 = 填表+加 when 行 |

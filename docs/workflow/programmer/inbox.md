@@ -123,7 +123,7 @@
 
 #### F-9 批注更新（Lead，REQ-F-039 裁决随附）：回蓝**不用** SelfRule——sidecar 挂 `OverTime{effects:[{id:'mp_regen', resource:'mp', amountPerTick:+4, period:30, duration:0, elapsed:0}]}`（永久 regen，现有能力字面覆盖）；SelfRule 名额留给"蓝满→放→清"。at:'target' 用你 ① 的 Perception sidecar 法（已验证）。F-039 标 wontfix-covered。
 
-#### 任务 F-12 · REQ-F-041 接入商店余三件：刷新/锁店/卖出（纯数据） — status: pending
+#### 任务 F-12 · REQ-F-041 接入商店余三件：刷新/锁店/卖出（纯数据） — status: **done（PE-F 2026-06-10 回执：①刷新=refreshOnSignal:'shop_refresh'，prep 自动（armed 旗→edge）+ 手动 $2（clickable→craft-recipe 原子扣金→reroll_paid→同名信号）；②锁店=shop_locked 门 + 锁/解锁两按钮（Effect 无 toggle 的零缺口拼法）+ 「门判定脉冲」shop_gate_done 先判后拆——躲'解锁先于门判定'与'解锁复燃 edge 补刷'双次序坑（锁恰好跳过下一个 prep 刷新一次，v2 §4.6 语义）；③卖出=marker Clickable→'@signal-source' destroy + 金2/席位+1 返还。验收测全链：自动刷新换牌/锁店跳过+自动解锁/手动扣2换牌/点席卖出返还。袋归还与超员自动卖随摆子输入域后补。坑：craftRecipeCapability 漏注册（capability 组件≠能力注册，第三次，已进 Gotchas 清单）**
 - 引擎已落（5 测绿）：`CardPile.refreshOnSignal`（信号→弃全手补满；同拍撞 play 则输入忽略）+ `Effect.targetEntity:'@signal-source'`（destroy/set-* 作用于信号源实体——点谁卖谁）。
 - 接线：① **刷新**：商店 CardPile 加 `refreshOnSignal:'shop_refresh'`；prep 自动刷新=flow onEnter 置 Flag→EventWhen(edge)→'shop_refresh'；2 金手动刷新=clickable 按钮→信号 + craft-recipe 扣 2 金（扣不起就别让按钮发信号：EventWhen 条件含 gold≥2）。② **锁店**：刷新 EventWhen 的 when 加 `not flag(shop_locked)`；锁按钮 toggle 该 Flag（Effect set-flag）。③ **卖出**：席位 marker 挂 `Clickable{action:'sell_seat'}` → `Effect{onSignal:'sell_seat', kind:'destroy', targetEntity:'@signal-source'}` + 返还三连（金按将价 Effect/craft-recipe、bench_space+1、袋归还视设计）。
 - 注意：refreshOnSignal 配 **edge** 信号（常驻 Signal 会每拍刷）；卖出 destroy 经 Commit→次拍 cascade 连席位挂件一并清。

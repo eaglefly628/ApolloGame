@@ -76,7 +76,8 @@
 11. ✅ **F-9 普攻 self 化落地（2026-06-10，三过家门）**：环(036)→排雷→残环→二刷(runsAfter:['hitbox'])→§5.4 贴回。普攻+回蓝已 per-instance（2×关羽不串台测绿）；唯一 id 脚手架只剩大招半截。
 12. ✅ **商店买入核心（F-11/REQ-F-040，2026-06-10）**：袋12张→5槽→play 原子验扣（金3 + bench_space——备战席9当 playCosts 第二货币，席满=0 拒单零新机制）→ bought_code 据码 banded 分发 → buycast 入席 marker → 码复位。坑×2：deck 必须 [...] 副本（装配浅拷贝、嵌套数组跨 Engine 共享=确定性破口，实测）；capability 加 import 别忘数组（第二次）。
 13. ✅ **大招半截完结（REQ-F-039 回驳的重组路线，2026-06-10）**：over-time 永久 regen（duration<=0）回蓝 + sidecar 自带 Perception 借 aggro 锁敌 + SelfRule{蓝满→spawn ult at target→清蓝}；mp 改普通 id（蓝条 fromParent 指 '@local:mana'）→ **全链 per-instance 零唯一 id，重复购买/三星合体就绪**。
-14. **余项与阻塞面**：商店余三件（刷新/锁店/卖出）= **REQ-F-041**（等主程：信号→card-pile 桥 + '@signal-source' 寻址）；摆子/上场 = 输入路由（主程域）；等级/经验/加权牌袋 P2 与 041 一起接。引擎无可推进项即收敛态，等池子。
+14. ✅ **商店余三件（F-12/REQ-F-041，2026-06-10）**：自动/手动刷新 + 锁店 + 点席卖出。核心难点=「门判定脉冲」shop_gate_done：armed 升沿当拍先判（refresh 门读 Commit 前 locked 值）同拍 Commit 拆（撤臂+解锁）——躲开'解锁先于门判定'（锁形同虚设）与'解锁复燃 edge 补刷'两个次序坑；锁语义=恰跳过下一个 prep 刷新一次。
+15. **余项**：摆子/上场（备战席→棋盘）+ 超员自动卖 = 输入路由（主程域）；袋归还（卖出 deck 写回，无数据接缝——候选 REQ）；等级/经验/按等级加权袋 P2。引擎无可推进项即收敛态，等池子。
 
 ### 5.1 血条/蓝条接入（✅ 已接入 mainbranch 2026-06-10，本节存档备查）
 
@@ -151,6 +152,7 @@
 
 ## 6. Gotchas（坑）
 
+- **capability 三件套**：组件挂上 ≠ 能力注册——import、capabilities 数组、（若有）组件 provides 三处都要；本日三次踩坑（selfRule/cardPile/craftRecipe 各一次），接新能力先过这条。
 - **唯一 id 策略**：每英雄 `atk_<id>/mp_<id>/strike_<id>/ult_<id>` 唯一，规避"逻辑链全局按 id 寻址"串台（MVP-0）。**重复棋子/三星合体**会撞——需接 REQ-021 self 作用域（主程已 done，未接）。
 - **mana 在 sidecar 实体**（一实体一 Resource，棋子本体已占 hp）。
 - **名字 zOrder hack**：Text-only 实体 zOrder=0（被棋子盖）；给名字加个 Sprite（文本模式不绘）只为抬 zOrder=30。REQ 一个"Text 也能设 zOrder"会更干净（未提）。

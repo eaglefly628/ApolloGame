@@ -288,15 +288,74 @@ describe('Game F — 自走棋（纯数据装配，零自走棋代码；棋子=�
     expect(res('gold')).toBe(2); // 拒单：金不动
     expect(res('bench_space')).toBe(9); // 席位不动
     expect(e.world.getAllEntities().some((id) => id.startsWith('bench_'))).toBe(false); // 无 marker（牌也不丢，引擎拒单五断言盖）
-    // 注资 → 买成：SHOP_DECK[0]=3 → 手牌槽0 = 诸葛亮
+    // 注资 → 买成：回合1 prep 自动刷新后手牌=[4,1,3,1,2] → 槽0 = 4 = 周瑜
     e.world.addComponent('r_gold', { type: 'ResourceModify', resourceId: 'gold', amount: 10, scope: 'local' } as unknown as Resource);
     for (let i = 0; i < 2; i++) e.world.tick();
     play0();
     for (let i = 0; i < 6; i++) e.world.tick();
     expect(res('gold')).toBe(9); // 12 - 3
     expect(res('bench_space')).toBe(8); // 占 1 席
-    expect(e.world.getAllEntities().some((id) => id.startsWith('bench_a_zhuge#'))).toBe(true); // 据码（3=诸葛）入席
+    expect(e.world.getAllEntities().some((id) => id.startsWith('bench_a_zhouyu#'))).toBe(true); // 据码（自动刷新后槽0=4=周瑜）入席
     expect(res('bought_code')).toBe(0); // 复位（防同码二连买 edge 失效）
+  });
+
+  it('商店余三件（F-12/REQ-F-041）：prep 自动刷新换牌；锁店跳过刷新且开战自动解锁；点席卖出返还金+席位', () => {
+    const e = new Engine({ tickRate: 60 });
+    e.load(buildGameFBlueprint());
+    const res = (id: string): number => {
+      for (const x of e.world.getAllEntities()) {
+        const r = e.world.getComponent<Resource>(x, 'Resource');
+        if (r && r.id === id) return r.current;
+      }
+      return -1;
+    };
+    const hand = (): string => (e.world.getComponent('shop', 'CardPile') as unknown as { hand: number[] }).hand.join(',');
+    const click = (x: number, y: number): void => {
+      if (!e.world.getAllEntities().includes('input')) e.world.createEntity('input');
+      e.world.addComponent('input', { type: 'InputQueue', actions: [{ source: 'test', x, y, phase: 'down' }] } as unknown as Resource);
+      e.world.tick();
+      e.world.addComponent('input', { type: 'InputQueue', actions: [] } as unknown as Resource);
+    };
+    // 回合1 prep 自动刷新：袋前 5 [3,1,4,2,2] 被弃、换下一批 → 手牌 ≠ 初发
+    for (let i = 0; i < 10; i++) { e.world.tick(); console.log(`t${i + 1} hand=[${hand()}]`); }
+    expect(hand()).toBe('4,1,3,1,2'); // 弃 [3,1,4,2,2] 补 deck 第 6-10 张（确定性）
+    // 点「锁店」→ 打完回合1 → 回合2 prep 自动刷新被门挡（手牌不变）→ 开战拍自动解锁
+    click(96, 170);
+    expect(flag(e, 'shop_locked')).toBe(true);
+    let guard = 0;
+    while (res('round_idx') === 1 && guard++ < 4000) e.world.tick();
+    const handAtR2 = hand();
+    for (let i = 0; i < 10; i++) e.world.tick(); // 回合2 prep 早段：刷新窗已过
+    expect(hand()).toBe(handAtR2); // 锁店生效：没换牌
+    let guard2 = 0;
+    while (!flag(e, 'in_combat') && guard2++ < 100) e.world.tick(); // 到开战拍
+    expect(flag(e, 'shop_locked')).toBe(false); // 开战自动解锁（次序在刷新门判定之后）
+    // 手动刷新 $2：注资后点「刷新」→ 扣 2 金 + 换牌（锁着也能花钱换——先验证解锁态即可）
+    e.world.addComponent('r_gold', { type: 'ResourceModify', resourceId: 'gold', amount: 10, scope: 'local' } as unknown as Resource);
+    for (let i = 0; i < 2; i++) e.world.tick();
+    const goldBefore = res('gold');
+    const handBefore = hand();
+    click(150, 170);
+    for (let i = 0; i < 4; i++) e.world.tick();
+    expect(res('gold')).toBe(goldBefore - 2); // 原子扣 2 金
+    expect(hand()).not.toBe(handBefore); // 真换牌
+    // 卖出：先买一个（手牌槽0）→ 点其席位 → marker 没了、金 +2、席位回 9
+    const buyGold = res('gold');
+    if (!e.world.getAllEntities().includes('input')) e.world.createEntity('input');
+    e.world.addComponent('input', { type: 'InputQueue', actions: [{ source: 'shop', key: 'play', values: [0] }] } as unknown as Resource);
+    e.world.tick();
+    e.world.addComponent('input', { type: 'InputQueue', actions: [] } as unknown as Resource);
+    for (let i = 0; i < 6; i++) e.world.tick();
+    expect(res('gold')).toBe(buyGold - 3);
+    expect(res('bench_space')).toBe(8);
+    const marker = e.world.getAllEntities().find((id) => id.startsWith('bench_') && id.endsWith(':seat'))!;
+    expect(marker).toBeTruthy();
+    const mt = e.world.getComponent<Transform>(marker, 'Transform')!;
+    click(mt.x, mt.y); // 点谁卖谁（'@signal-source'）
+    for (let i = 0; i < 4; i++) e.world.tick();
+    expect(e.world.getAllEntities().includes(marker)).toBe(false); // 席位销毁
+    expect(res('gold')).toBe(buyGold - 3 + 2); // 卖价 2 返还
+    expect(res('bench_space')).toBe(9); // 席位归还
   });
 
   it('L1 run_flow + §4.1/§4.2 表：回合1收入2金；advance 推进；败方按阶段表扣血；round>5 进位换关卡敌阵', () => {

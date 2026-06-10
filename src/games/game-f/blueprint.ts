@@ -17,6 +17,7 @@ import {
   clickableCapability,
   selfRuleCapability,
   cardPileCapability,
+  craftRecipeCapability,
   cameraFollowCapability,
   gridMoveCapability,
   ZONE_FLAG,
@@ -277,7 +278,8 @@ const heroOf = (id: string): HeroSpec => ROSTER.find((h) => h.id === id)!;
 // ── 商店（F-11 / REQ-F-040 + v2 §4.6）：英雄码 + 单人有限牌袋（预洗、确定性；§4.4 牌袋语义）──
 // 码 0 保留为「无」（bought_code 复位值）。MVP 袋 = 我方 4 将各 3 张（卖出归还/按等级加权袋 = 后续）。
 const HERO_CODE: Record<string, number> = { a_guanyu: 1, a_zhaoyun: 2, a_zhuge: 3, a_zhouyu: 4 };
-const SHOP_DECK = [3, 1, 4, 2, 2, 4, 1, 3, 1, 2, 3, 4];
+// 每将 6 张（TUNE）：自动刷新每回合弃 5 补 5，有限袋按 v2 §4.6 语义随对局消耗（卖出归还袋 = 后续，见 F-12 回执）。
+const SHOP_DECK = [3, 1, 4, 2, 2, 4, 1, 3, 1, 2, 3, 4, 4, 2, 1, 3, 3, 1, 2, 4, 2, 3, 4, 1];
 
 // ── §4.1/§4.2 banded 结算（Game E 已证形态）：armed 旗开窗 → EventWhen(edge) 带条件命中 → Effect 改资源一次。──
 // 带宽语义注记：同窗内资源被前一 band 改写后，后续 band 的阈值按"改写后的值"再判（如利息可能含同回合收入）——
@@ -304,7 +306,8 @@ export const GAME_F_TEMPLATES: Record<string, PrefabTemplate> = Object.fromEntri
     // 上场=「摆子」输入域把席位换成上场槽（主程输入路由后接）；重复购买同将暂同席位叠放（已知 wart）。
     ROSTER.filter((x) => x.team === TEAM_A).map((h): [string, PrefabTemplate] => [
       `bench_${h.id}`,
-      { entities: { seat: { Transform: xf(0, 0), Sprite: sprite(h.key, 2) } } } as unknown as PrefabTemplate,
+      // seat 可点卖出（F-12）：Clickable 产 sell_seat 信号，source=被点席位 → '@signal-source' 点谁卖谁。
+      { entities: { seat: { Transform: xf(0, 0), Sprite: sprite(h.key, 2), Shape: { kind: 'box', width: 30, height: 30 }, Clickable: { action: 'sell_seat' } } } } as unknown as PrefabTemplate,
     ]),
   ),
 );
@@ -331,6 +334,7 @@ const GAME_FLOW = {
         { kind: 'set-flag', targetId: 'dmg_armed', value: false },
         { kind: 'set-flag', targetId: 'deploy_armed', value: true }, // → 'deploy' + 'deploy_stage_<当前阶段>'
         { kind: 'set-flag', targetId: 'income_armed', value: true }, // → 基础收入/利息/连胜金 bands（§4.1）
+        { kind: 'set-flag', targetId: 'shop_refresh_armed', value: true }, // → 自动刷新（锁店时门挡，v2 §4.6）
       ],
       transitions: [
         // ready 优先（玩家点「开战」提前开打，§3.3 操作表）；after 40 = PvE 倒计时兜底（金铲铲本体也是倒计时自动开战）
@@ -447,12 +451,61 @@ export function buildGameFBlueprint(): WorldBlueprint {
     // （钱不够/席满=拒单：牌不丢、金不动）→ 成交牌码写 bought_code → 每将 banded 分发 → marker 入备战席。
     shop: {
       // ⚠️ deck 必须取副本：装配是浅拷贝、嵌套数组按引用共享，发牌原地 shift 会跨 Engine/跨测试泄漏（确定性破口，实测踩过）
-      CardPile: { owner: 'shop', deck: [...SHOP_DECK], hand: [], handSize: 5, playCosts: [{ id: 'gold', amount: 3 }, { id: 'bench_space', amount: 1 }], playedCodeResource: 'bought_code' },
+      CardPile: { owner: 'shop', deck: [...SHOP_DECK], hand: [], handSize: 5, playCosts: [{ id: 'gold', amount: 3 }, { id: 'bench_space', amount: 1 }], playedCodeResource: 'bought_code', refreshOnSignal: 'shop_refresh' },
       PlayedHand: { owner: 'shop', cards: [] },
       Flag: { id: 'shop', active: false },
     } as unknown as EntityBlueprint,
     r_bought_code: { Resource: { id: 'bought_code', current: 0, min: 0, max: 9999 } } as unknown as EntityBlueprint, // 最近一次成交牌码（0=无）
     r_bench_space: { Resource: { id: 'bench_space', current: 9, min: 0, max: 9 } } as unknown as EntityBlueprint, // 备战席 9（§4.6）；作 playCosts 第二货币——席满=0 即原子拒单（卖出时 +1 归还）
+    // —— 商店余三件（F-12，REQ-F-041）：刷新 / 锁店 / 卖出 ——
+    // 自动刷新：prep 臂 shop_refresh_armed → EventWhen(¬锁店 门) → 'shop_refresh' → CardPile.refreshOnSignal 弃全手补满；
+    // 自动解锁/撤臂 = 门判定脉冲同拍 Commit（见 when_shop_gate 注，躲"解锁先于门判定"与"解锁复燃 edge"双坑）。
+    f_shop_refresh_armed: { Flag: { id: 'shop_refresh_armed', active: false } } as unknown as EntityBlueprint,
+    f_shop_locked: { Flag: { id: 'shop_locked', active: false } } as unknown as EntityBlueprint,
+    when_shop_refresh: { EventWhen: { signal: 'shop_refresh', when: and(flagIs('shop_refresh_armed'), { kind: 'not', of: flagIs('shop_locked') }), mode: 'edge', armed: false } } as unknown as EntityBlueprint,
+    // 门判定脉冲（次序坑正解）：armed 升沿当拍先「判」（上行 refresh 门读 Commit 前的 locked 值），同拍 Commit
+    // 再「拆」（撤臂+解锁）——armed 一拍即逝，解锁不会让 edge 复燃补刷；锁存活到下个 prep 的门判定拍=恰跳过一次（v2 §4.6）。
+    when_shop_gate: { EventWhen: { signal: 'shop_gate_done', when: flagIs('shop_refresh_armed'), mode: 'edge', armed: false } } as unknown as EntityBlueprint,
+    eff_gate_disarm: { Effect: { onSignal: 'shop_gate_done', kind: 'set-flag', targetId: 'shop_refresh_armed', value: false } } as unknown as EntityBlueprint,
+    eff_gate_unlock: { Effect: { onSignal: 'shop_gate_done', kind: 'set-flag', targetId: 'shop_locked', value: false } } as unknown as EntityBlueprint,
+    // 手动刷新（2 金）：按钮信号 → craft-recipe 原子扣 2 金置 reroll_paid → EventWhen(edge) → 'shop_refresh' → 复位。
+    // 扣不起=配方整单不动（inbox 提示"扣不起就别发信号"的原子等价实现）；手动刷新不吃锁店门（锁住时也可花钱换牌）。
+    btn_reroll: {
+      Transform: xf(150, 170),
+      Shape: { kind: 'box', width: 56, height: 20 },
+      Clickable: { action: 'reroll_btn' },
+      CraftRecipe: { onSignal: 'reroll_btn', costs: [{ id: 'gold', amount: 2 }], grantsFlag: 'reroll_paid' },
+      Text: { content: '刷新$2', fontSize: 11, fontFamily: 'sans-serif', anchor: 'center', lineSpacing: 0 },
+      Color: { tint: 0x9ad1ff, alpha: 1 },
+      Sprite: { textureKey: F_FX_STRIKE, anchorX: 0.5, anchorY: 0.5, zOrder: 30 },
+    } as unknown as EntityBlueprint,
+    f_reroll_paid: { Flag: { id: 'reroll_paid', active: false } } as unknown as EntityBlueprint,
+    when_reroll: { EventWhen: { signal: 'shop_refresh', when: flagIs('reroll_paid'), mode: 'edge', armed: false } } as unknown as EntityBlueprint,
+    eff_reroll_reset: { Effect: { onSignal: 'shop_refresh', kind: 'set-flag', targetId: 'reroll_paid', value: false } } as unknown as EntityBlueprint,
+    // 锁店/解锁（v2"翻转"用两按钮达成——Effect 无 toggle，零缺口拼法）；每回合 prep→combat 自动解锁。
+    btn_lock: {
+      Transform: xf(96, 170),
+      Shape: { kind: 'box', width: 40, height: 20 },
+      Clickable: { action: 'lock_btn' },
+      Text: { content: '锁店', fontSize: 11, fontFamily: 'sans-serif', anchor: 'center', lineSpacing: 0 },
+      Color: { tint: 0xd4a017, alpha: 1 },
+      Sprite: { textureKey: F_FX_STRIKE, anchorX: 0.5, anchorY: 0.5, zOrder: 30 },
+    } as unknown as EntityBlueprint,
+    btn_unlock: {
+      Transform: xf(96, 146),
+      Shape: { kind: 'box', width: 40, height: 20 },
+      Clickable: { action: 'unlock_btn' },
+      Text: { content: '解锁', fontSize: 11, fontFamily: 'sans-serif', anchor: 'center', lineSpacing: 0 },
+      Color: { tint: 0x8a8a8a, alpha: 1 },
+      Sprite: { textureKey: F_FX_STRIKE, anchorX: 0.5, anchorY: 0.5, zOrder: 30 },
+    } as unknown as EntityBlueprint,
+    eff_lock: { Effect: { onSignal: 'lock_btn', kind: 'set-flag', targetId: 'shop_locked', value: true } } as unknown as EntityBlueprint,
+    eff_unlock: { Effect: { onSignal: 'unlock_btn', kind: 'set-flag', targetId: 'shop_locked', value: false } } as unknown as EntityBlueprint,
+    // 卖出（点席卖谁）：marker Clickable 产 'sell_seat'（source=被点席位）→ destroy '@signal-source' + 返还（金2/席+1）。
+    // 卖价 MVP 统一 2（买 3 卖 2，TUNE）；袋归还 = 后续（deck 写回无数据接缝，F-12 回执注记）。
+    eff_sell_destroy: { Effect: { onSignal: 'sell_seat', kind: 'destroy', targetId: '', targetEntity: '@signal-source' } } as unknown as EntityBlueprint,
+    eff_sell_gold: { Effect: { onSignal: 'sell_seat', kind: 'modify-resource', targetId: 'gold', op: 'add', value: 2 } } as unknown as EntityBlueprint,
+    eff_sell_space: { Effect: { onSignal: 'sell_seat', kind: 'modify-resource', targetId: 'bench_space', op: 'add', value: 1 } } as unknown as EntityBlueprint,
     f_deploy_armed: { Flag: { id: 'deploy_armed', active: false } } as unknown as EntityBlueprint,
     f_wipe_armed: { Flag: { id: 'wipe_armed', active: false } } as unknown as EntityBlueprint,
     f_income_armed: { Flag: { id: 'income_armed', active: false } } as unknown as EntityBlueprint, // §4.1 结算窗
@@ -537,6 +590,7 @@ export function buildGameFBlueprint(): WorldBlueprint {
       gaugeCapability, // 实时血条/蓝条（REQ-F-029）：Resource 比例 → 条宽，PostResolve 终态投影（REQ-F-031 定序）
       clickableCapability, // ready 开战按钮：指针命中 → 'ready_btn' 信号（引擎已对 event-when 定序）
       cardPileCapability, // 商店（F-11/REQ-F-040）：牌袋发牌/play 原子验扣/据码写 bought_code（引擎已按"输入先行"钉七件套定序）
+      craftRecipeCapability, // 手动刷新 $2（F-12）：reroll_btn 信号 → 原子扣金置 reroll_paid（扣不起整单不动）
       hierarchyResolveCapability,
       hierarchyCascadeCapability, // 子随父死（REQ-F-026）：棋子死亡→头顶名字一并消失
       cameraFollowCapability,
