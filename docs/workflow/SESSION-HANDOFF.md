@@ -7,7 +7,7 @@
 
 ---
 
-## ★ 主程4 本会话交接（2026-06-10；HEAD 492316c；vitest 925 绿 / tsc / build 全绿）
+## ★ 主程4 本会话交接（2026-06-10 持续刷新；**最新全绿：vitest 940 / tsc / build**；原始点位 492316c/925）
 
 **本会话全是引擎能力下沉 + 评审 + bug 修复，不碰游戏层代码（game-*.tsx 归各 PE）。新增/扩展能力：**
 - **卡牌簇（Game E 拉动）**：`tier3/card-scoring`(REQ-014 逐张计分+retrigger) · `tier3/poker-hand` 加 `scoringCardIndices`(BUG-001 只计「计分牌」) · `tier2/card-play`(REQ-016/017 出牌输入接缝,按 owner 路由) · `tier2/card-pile`(REQ-017 牌库/手牌 sim 内管理:发牌/下标出牌/弃牌/补牌) · `skills/score-trace`(REQ-019 计分链逐步 trace,排除出 hash,opt-in)。
@@ -15,6 +15,7 @@
 - **effect-apply 扩展**：REQ-012 `op/order` · REQ-013 `valueFrom`(资源×资源/系数) · REQ-009 `reset-timer`(事件→重置计时器,限时机制) · REQ-019 trace append。`condition` 加 `vsResource`(资源比资源,动态阈值)。
 - **六边形寻路（Game F 拉动,REQ-024）**：`tier2/hex`(纯函数确定性 A* `hexNextStep`,绕障/到相邻停) · `tier2/grid-move`(逐格移动,读 Relation→A*→写 HexPos+投影 Transform) · 组件 HexBoard/HexPos/GridMover。
 - **挂件生命周期（Game F 表现 bug 拉动,REQ-F-026）**：`tier1/hierarchy-cascade`(**子随父死**——父销毁时排在 destroy-apply 之前,沿 `Hierarchy.parentId` 把 DestroyRequest 传给后代传递闭包,destroy-apply 同帧一并移除,绝不残留一帧孤儿)。**定性=补全 hierarchy 生命周期**(此前只做「子跟父变换」hierarchy-resolve、漏了「子存活以父为界」)；默认级联(对齐 Unity/Godot/Unreal),空 parentId=根/「父死子留」逃生门；**零新增数据**(复用挂件本就有的 parentId)。
+- **网格表现 / 流程定序（Game F 接线暴露,REQ-F-027/028）**：`grid-move` 投影加 `HexBoard.layout:'axial'(缺省)|'offset'`(offset=奇行半格、不累积→规整矩形 + 六边形交错,金铲铲观感,修「棋盘平行四边形」;缺省 axial 保现有回归逐字节不变) · `flow` 加 `runsAfter:['zone-occupancy','group-count']`(破 flow↔zone-occupancy 同 RMW Flag、flow↔group-count 同 RMW Resource 两个伪环,同 REQ-F-025;语义=先算占位/羁绊派生事实再判阶段转移)。
 - **引擎 bug 修复**：BUG-003(TimerDone 双 consume 饿死 animation→生产者 timer-advance 自清+消费者改 reads) · BUG-004(mortal 掉落载体泄漏→prefab 回收 size==1 载体) · BUG-005(queryNearest tie-break + tween duration≤0 抖动)。顺手补 group-count 漏注册进 ALL_CAPABILITIES。
 - **治理/设计文档**：`docs/design/tier3-skill-governance.md`（**新 skill 决策判据**+genre pack+「散件能重组但最弱 LLM 难产→建收敛解释器是正当理由」宪法澄清+genre skill 重组审计：caster 标可整合、card-play provisional）· `docs/design/query-perf-plan.md`（World.query 全扫优化方案,倒排索引——**并行 session 已实施**,见下）。
 
@@ -23,7 +24,7 @@
 - ✅ ~~World.query 性能~~：**并行 session 已实施**（方案 A+单调跳排序/稠密退化；稀有查询 36×，行为逐字节不变，8 条对拍守护；详见 `query-perf-plan.md` 头部实施记录与 §4 自审表）。
 - ✅ ~~REQ-025 grid-move↔aggro 拓扑成环~~：**并行 session 已修**（`f59d0cd`，主程4 采 PE-F 1 行 `runsAfter:['aggro']` 破环——同 Update 相位 aggro(读 Transform→写 Relation)↔grid-move(读 Relation→写 Transform) 互为前驱抛环；语义：本拍 aggro 选目标→grid-move 据此走，写出的 Transform 下拍才读，确定性不变；+1 对拍守护测，现 vitest 926 绿）。**game-f 接 hex 寻路已解阻塞**（见下 🟡 Game F 项；更彻底可选：grid-move 只写 HexPos + 另设 PostResolve 投影系统，见 `requests.md` REQ-025）。
 - 🟠 **caster 可整合进 effect-apply（kind:'spawn'）+ 与 aggro 索敌去重**（governance §4 审计发现），排期收敛。
-- 🟡 各游戏 PE 侧"数据换层"——**已正式派发，见 `programmer/inbox.md` 2026-06-10 批次（Lead 不动手）**：**归 PE-E**：flow/card-pile 重写回合流程(REQ-017/020) + ScoreTrace 回放(REQ-019,已在接)；**归 PE-F**：blueprint 加 1 行 `hierarchyCascadeCapability` 修名字残留(REQ-F-026,引擎侧已落 `f3fbc89`) + self-rule/group-count 接自治/羁绊(REQ-021/022)。（hex/grid-move 接移动 PE-F 已自接完,`3b952fe`。）
+- 🟡 各游戏 PE 侧"数据换层"——**已正式派发，见 `programmer/inbox.md` 2026-06-10 批次（Lead 不动手）**：**归 PE-E**：flow/card-pile 重写回合流程(REQ-017/020) + ScoreTrace 回放(REQ-019,已在接)；**归 PE-F**（引擎侧 REQ-F-026/027/028 均已落地全绿,皆纯数据可接）：①`hierarchyCascadeCapability` 修名字残留(F-026) ②`HexBoard.layout:'offset'`+cols/rows 修棋盘平行四边形(F-027) ③`GameFlow` 接备战→战斗→结算阶段机(F-028) ④self-rule/group-count 接自治/羁绊(REQ-021/022)。（hex/grid-move 接移动 PE-F 已自接完,`3b952fe`。）
 - 🟠 沿用旧自审：**仍没真浏览器看过一帧**；浮点跨端确定性未双端验（卡牌/hex 是整数安全,steering/sqrt 仍 REQ-010 open）。
 
 ---

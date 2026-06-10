@@ -62,4 +62,10 @@
 #### 任务 F-2 · REQ-021/022 自治/羁绊接线 — status: pending
 - `self-rule`（实体本地条件→对自身施效）+ `group-count`（按 Tag 计数→Resource，阈值=event-when 重组）接金铲铲自治/羁绊。
 
-> ⚠️ **别在游戏层 workaround 引擎缺口**：REQ-F-027（grid-move 投影正交化）/ REQ-F-028（flow↔zone-occupancy 环）是引擎侧、归主程，落地后另行通知再接线。
+#### 任务 F-3 · REQ-F-027 接入 offset 棋盘布局（纯数据） — status: pending
+- HexBoard 加 `layout: 'offset'`（修「棋盘平行四边形」→规整矩形 + 六边形交错,金铲铲观感）+ 按需 cols/rows(~12×12)。引擎已落（缺省 'axial' 不影响现有蓝图）。零游戏代码。
+
+#### 任务 F-4 · REQ-F-028 接入 flow 回合阶段机（纯数据） — status: pending
+- 备战→战斗→结算→gameover 用一份 GameFlow 数据接（flow 已加 `runsAfter:['zone-occupancy','group-count']` 破环，引擎侧已落）。
+
+> ✅ **引擎侧 REQ-F-026/027/028 均已落地、全绿（vitest 940）**。PE-F 上述 F-1~F-4 皆可接，纯数据 / 零游戏代码。不要在游戏层 workaround 引擎行为；若发现新引擎缺口，写 requests.md 提主程。

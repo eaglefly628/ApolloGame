@@ -1015,7 +1015,7 @@
 
 ---
 
-### REQ-F-027 · [2026-06-10] · Programmer F（用户反馈：棋盘成平行四边形）· 框架级 · status: **open** · 优先级: 中（自走棋棋盘观感）· 类型: grid-move 投影正交化
+### REQ-F-027 · [2026-06-10] · Programmer F（用户反馈：棋盘成平行四边形）· 框架级 · status: **done**（2026-06-10，Lead，HexBoard.layout 加 'offset'）· 优先级: 中（自走棋棋盘观感）· 类型: grid-move 投影正交化
 
 > **现象（用户反馈）**：grid-move 的 HexPos→Transform 投影是 axial 斜投影 `x = ox + q*ts + r*ts/2`——r 越大 x 累积右移 → 整盘渲染成**平行四边形**（斜菱形），不像金铲铲那种规整矩形棋盘。用户要**正交投影**、横竖各 ~12 格。
 > **game-side 修不了**：单位 Transform 由 grid-move 每拍投影写入（game-f 不能覆盖）；改投影 = 改引擎。
@@ -1023,16 +1023,23 @@
 > - 正交方格：`x = ox + q*ts`, `y = oy + r*ts`（矩形棋盘，6 邻接渲染为含斜向）；或
 > - offset-rows（TFT 式六边形矩形）：`x = ox + q*ts + (r&1)*ts/2`（奇数行 +半格、不累积斜）→ 规整矩形 + 仍是六边形观感。
 > 落地后 game-f 设 ~12×12 正交棋盘（纯数据 cols/rows）。寻路逻辑（axial 邻接）不变。
+>
+> **Lead 裁决（主程4）：greenlit，已落地。** 真引擎缺口（投影写死在 grid-move、game 覆盖不了）。**采 offset-rows，不采纯正交方格**——纯方格丢六边形交错观感；offset(奇行半格、不累积)=金铲铲/TFT 那种规整矩形外轮廓 + 六边形交错，正是用户要的。**做成数据开关而非换死公式**：`HexBoard.layout?: 'axial'|'offset'`，**缺省 'axial'**（现有蓝图/测试逐字节不变），game-f 设 `'offset'` 即可。确定性：`(r&1)` 整数 + `ts/2` 精确二进制分数，无 sqrt/超越，跨端一致；**不动 `hexNextStep`**（邻接寻路不变）。`orthogonal` 纯方格 YAGNI 暂不加。
+> 文件：`components.ts`(HexBoard+layout) + `grid-move.ts`(project 按 layout) + 4 测（axial 回归/offset 偶奇行/不累积/y 一致）；tsc+vitest(940)+build 全绿。
+> **game-f 接入（归 PE-F，纯数据）**：HexBoard 加 `layout:'offset'` + 按需 cols/rows(~12×12)。
 
 ---
 
-### REQ-F-028 · [2026-06-10] · Programmer F（Game F 接 flow 暴露）· 框架级 · status: **open（修复方向已确认）** · 优先级: 中（游戏流程阶段机）· 类型: 系统定序 bug（拓扑成环，同 REQ-F-025 类）
+### REQ-F-028 · [2026-06-10] · Programmer F（Game F 接 flow 暴露）· 框架级 · status: **done**（2026-06-10，Lead，采 F 具名 runsAfter）· 优先级: 中（游戏流程阶段机）· 类型: 系统定序 bug（拓扑成环，同 REQ-F-025 类）
 
 > **现象**：game-f 加 `flow`（回合阶段机：备战→战斗→结算）→ 引擎拓扑成环：`flow`(RMW Flag/Resource：写 in_combat、读 present 旗标) ↔ `zone-occupancy`(RMW Flag：读写 present 旗标) 互为前驱。
 > **证伪绕过**：换 `group-count`（计数写 Resource）也不行——它 `reads:['...Resource']` 即 RMW Resource，与 flow（RMW Resource）同样成环。
 > **根因同 REQ-F-025**（grid-move↔aggro）：两个 RMW 同组件的系统无显式定序 → 判环。
 > **建议（交主程裁）**：`flow` 系统加 `runsAfter:['zone-occupancy','group-count']`（语义：先数清存活/羁绊计数，flow 再据此判阶段转移）；或把 flow 作为"流程总控"显式排在所有 Flag/Resource 计数类系统之后（更通用，利于任何"流程读派生事实"的游戏）。
 > 落地后我接 game-f 的 flow 阶段机（备战→战斗→结算→gameover，数据已设计就绪）。
+>
+> **Lead 裁决（主程4）：greenlit，已落地（同 REQ-F-025 类，1 行定序）。** 给 `flow` 加 `runsAfter:['zone-occupancy','group-count']`——显式边覆盖反向组件推断边，破两个 RMW 伪环（flow↔zone-occupancy 同 RMW Flag、flow↔group-count 同 RMW Resource）。**采具名 runsAfter，不采「排在所有计数类之后」的泛化**（无法显式表达 + YAGNI；将来加新计数系统再按需具名）。与 flow 现有 `runsBefore:[event-when,resource-apply,...]` 合成一致偏序链 `zone-occupancy/group-count → flow → event-when/resource-apply`，无新环。语义：先数清占位/羁绊派生事实，flow 再据此判阶段转移。
+> 文件：`flow.ts`(+runsAfter 1 行) + 1 守护测（三者同场不抛环 + flow 据计数转 done）；tsc+vitest(940)+build 全绿。
 
 ---
 

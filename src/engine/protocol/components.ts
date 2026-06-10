@@ -837,6 +837,9 @@ export interface HexBoard extends Component {
   tileSize: number; // 每格像素(投影 Transform 用)
   originX: number; // 格(0,0)世界 x
   originY: number;
+  // HexPos→Transform 投影布局(REQ-F-027)。缺省 'axial'：x 含 r*ts/2,r 越大越右移→平行四边形。
+  // 'offset'：x 含 (r&1)*ts/2(奇行半格、不累积)→规整矩形外轮廓 + 六边形交错(金铲铲/TFT 观感)。邻接寻路不受影响。
+  layout?: 'axial' | 'offset';
 }
 // 单位当前所在格(axial 整数)。网格移动的 SIM 真相(进 snapshot/hash)。
 export interface HexPos extends Component {

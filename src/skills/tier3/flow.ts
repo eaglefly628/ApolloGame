@@ -88,6 +88,10 @@ export const flowCapability = defineCapability({
       phase: SystemPhase.Update,
       // 流程动作（改 flag/state/resource）应先于本拍其余结算被看见；与 condition 读侧同 Update，显式排前。
       runsBefore: ['poker-eval', 'resource-apply', 'string-apply', 'event-when'],
+      // REQ-F-028：flow 与 zone-occupancy(都 RMW Flag)、与 group-count(都 RMW Resource) 各成 RMW 伪环。
+      // 显式 runsAfter 覆盖反向组件推断边破环（同 REQ-F-025）。语义：先数清占位/羁绊等派生事实，
+      // flow 再据此判阶段转移。与上方 runsBefore 合成一致偏序：zone-occupancy/group-count → flow → event-when/resource-apply。
+      runsAfter: ['zone-occupancy', 'group-count'],
       reads: ['GameFlow', 'Resource', 'Flag', 'State'],
       writes: ['GameFlow', 'Resource', 'Flag', 'State'],
       consumes: [],

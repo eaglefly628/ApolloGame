@@ -20,9 +20,12 @@ import { hexNextStep, type Hex } from './hex.js';
 const TARGET = 'target';
 
 // HexPos → Transform 像素(flat-ish hex；1/2、3/4 为精确二进制分数，跨端一致)。
+// 行偏移(REQ-F-027)：'axial'(缺省)=r*ts/2(累积右移→平行四边形,保现有回归)；
+// 'offset'=(r&1)*ts/2(奇行半格、不累积→规整矩形+六边形交错,金铲铲观感)。r≥0(棋盘内)，r&1 整数确定。
 function project(board: HexBoard, q: number, r: number): { x: number; y: number } {
+  const rowOffsetUnits = board.layout === 'offset' ? (r & 1) : r;
   return {
-    x: board.originX + q * board.tileSize + r * (board.tileSize / 2),
+    x: board.originX + q * board.tileSize + rowOffsetUnits * (board.tileSize / 2),
     y: board.originY + r * (board.tileSize * 0.75),
   };
 }
@@ -55,6 +58,7 @@ export const gridMoveCapability = defineCapability({
           cols: { type: 'number', describe: '列数' }, rows: { type: 'number', describe: '行数' },
           tileSize: { type: 'number', describe: '每格像素' },
           originX: { type: 'number', describe: '格(0,0)世界 x' }, originY: { type: 'number', describe: '格(0,0)世界 y' },
+          layout: { type: 'string', describe: "投影布局：'axial'(缺省,斜投影→平行四边形) | 'offset'(奇行半格、规整矩形+六边形交错,金铲铲观感)" },
         },
       },
       HexPos: {
