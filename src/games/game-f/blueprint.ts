@@ -10,14 +10,15 @@ import {
   hitboxCapability,
   mortalCapability,
   eventWhenCapability,
+  effectApplyCapability,
   zoneOccupancyCapability,
   cameraFollowCapability,
   gridMoveCapability,
   ZONE_FLAG,
 } from '@skills/tier2/index.js';
-import { prefabCapability, casterCapability, aggroCapability } from '@skills/tier3/index.js';
+import { prefabCapability, casterCapability, aggroCapability, flowCapability } from '@skills/tier3/index.js';
 import { GAME_F_ASSETS, F_HERO, F_FX_STRIKE, F_HEX_WARM, F_HEX_COOL } from './assets.js';
-import { boardEntities, project, COLS, ROWS, TILE, ORIGIN_X, ORIGIN_Y } from './hex.js';
+import { boardEntities, project, COLS, ROWS, TILE, ORIGIN_X, ORIGIN_Y, LAYOUT } from './hex.js';
 
 // ═══════════════════════════════════════════════════════════════
 //  Game F —— 《像素三分天下》自走棋 MVP-0 骨架。**纯数据装配**，零自走棋专属代码。
@@ -44,10 +45,14 @@ export const TEAM_B = 1 << 2; // 魏
 // 势力色（Color.tint；drawImage 不吃 tint，由头顶名字 Text 承担分色，见 art-data.md §二）。
 export const SHU_RED = 0xb02a28;
 export const WEI_BLUE = 0x2962c8;
+// 职业位（Tag.flags，特色/羁绊基础；与队伍位独立，不影响阵营索敌/伤害）。
+export const WARRIOR = 1 << 6; // 武将
+export const TACTICIAN = 1 << 7; // 谋士
 
 // 战斗节奏（数据）：30 tick ≈ 0.5s/动作，看得清（此前 10/24 太快）。
 const MOVE_PERIOD = 30; // 每 30 tick 沿 A* 走一格 ≈ 0.5s
 const ATK_CD = 30; // 普攻间隔 30 tick ≈ 0.5s
+const MANA_FILL = 50; // 每次普攻攒蓝（蓝条 0→100，2 攻放一次大招）
 
 const xf = (x: number, y: number): Record<string, unknown> => ({ x, y, rotation: 0, scaleX: 1, scaleY: 1 });
 const sprite = (textureKey: string, zOrder: number): Record<string, unknown> => ({ textureKey, anchorX: 0.5, anchorY: 0.5, zOrder });
@@ -67,34 +72,56 @@ const strike = (targetMask: number, amount: number): PrefabTemplate => ({
   },
 });
 
+// 大招打击区：在目标处展开大范围真伤区（范围 size、伤害 amount），3 tick 自毁。
+const ultTemplate = (targetMask: number, amount: number, size: number): PrefabTemplate => ({
+  entities: {
+    area: {
+      Transform: xf(0, 0),
+      Shape: { kind: 'box', width: size, height: size },
+      Sensor: {},
+      Tag: { flags: ZONE_FLAG },
+      Hitbox: { resource: 'hp', amount, targetMask },
+      Timer: { id: 'life', elapsed: 0, duration: 3, loop: false },
+      Sprite: sprite(F_FX_STRIKE, 7),
+    },
+  },
+});
+
 interface HeroSpec {
   id: string;
   name: string;
   key: string;
   team: number;
   enemy: number;
+  cls: number; // 职业位（WARRIOR/TACTICIAN）—— 特色/羁绊
   tint: number;
   q: number; // axial q（列）
   r: number; // axial r（行；r0-3=魏上半场, r4-7=蜀下半场，中线 r3/4）
   hp: number; // 血量
   atk: number; // 攻击力（每次普攻伤害）
+  ult: string; // 大招名（三国感）
+  ultDmg: number; // 大招伤害
+  ultSize: number; // 大招范围(px)
 }
 
-// 站位金铲铲式（武将前排、谋士后排，隔无人区相向）+ 各英雄独立血量/攻击力（坦克高血低攻、谋士低血高攻）。
+// 站位金铲铲式 + 各英雄独立血量/攻击 + 职业(武将/谋士) + 专属大招（坦克高血低攻、谋士低血高攻范围大）。
 const ROSTER: HeroSpec[] = [
-  // 蜀（TEAM_A，下半场 r5-7，红）
-  { id: 'a_guanyu', name: '关羽', key: F_HERO.guan_yu, team: TEAM_A, enemy: TEAM_B, tint: SHU_RED, q: 2, r: 5, hp: 130, atk: 12 },
-  { id: 'a_zhaoyun', name: '赵云', key: F_HERO.zhao_yun, team: TEAM_A, enemy: TEAM_B, tint: SHU_RED, q: 4, r: 5, hp: 95, atk: 18 },
-  { id: 'a_zhuge', name: '诸葛亮', key: F_HERO.zhuge_liang, team: TEAM_A, enemy: TEAM_B, tint: SHU_RED, q: 3, r: 7, hp: 70, atk: 24 },
-  // 魏（TEAM_B，上半场 r0-2，蓝）
-  { id: 'b_zhangliao', name: '张辽', key: F_HERO.zhang_liao, team: TEAM_B, enemy: TEAM_A, tint: WEI_BLUE, q: 2, r: 2, hp: 110, atk: 15 },
-  { id: 'b_xuchu', name: '许褚', key: F_HERO.xu_chu, team: TEAM_B, enemy: TEAM_A, tint: WEI_BLUE, q: 4, r: 2, hp: 140, atk: 11 },
-  { id: 'b_simayi', name: '司马懿', key: F_HERO.sima_yi, team: TEAM_B, enemy: TEAM_A, tint: WEI_BLUE, q: 3, r: 0, hp: 72, atk: 23 },
+  // 蜀（TEAM_A，下半场 r7-9，红）—— 武将前排(r7)、谋士后排(r9)
+  { id: 'a_guanyu', name: '关羽', key: F_HERO.guan_yu, team: TEAM_A, enemy: TEAM_B, cls: WARRIOR, tint: SHU_RED, q: 4, r: 7, hp: 240, atk: 12, ult: '青龙偃月', ultDmg: 45, ultSize: 80 },
+  { id: 'a_zhaoyun', name: '赵云', key: F_HERO.zhao_yun, team: TEAM_A, enemy: TEAM_B, cls: WARRIOR, tint: SHU_RED, q: 7, r: 7, hp: 165, atk: 18, ult: '七进七出', ultDmg: 75, ultSize: 55 },
+  { id: 'a_zhuge', name: '诸葛亮', key: F_HERO.zhuge_liang, team: TEAM_A, enemy: TEAM_B, cls: TACTICIAN, tint: SHU_RED, q: 5, r: 9, hp: 120, atk: 24, ult: '八阵图', ultDmg: 35, ultSize: 95 },
+  // 魏（TEAM_B，上半场 r2-4，蓝）—— 武将前排(r4)、谋士后排(r2)
+  { id: 'b_zhangliao', name: '张辽', key: F_HERO.zhang_liao, team: TEAM_B, enemy: TEAM_A, cls: WARRIOR, tint: WEI_BLUE, q: 4, r: 4, hp: 200, atk: 15, ult: '突阵', ultDmg: 50, ultSize: 70 },
+  { id: 'b_xuchu', name: '许褚', key: F_HERO.xu_chu, team: TEAM_B, enemy: TEAM_A, cls: WARRIOR, tint: WEI_BLUE, q: 7, r: 4, hp: 270, atk: 11, ult: '裸衣血战', ultDmg: 42, ultSize: 78 },
+  { id: 'b_simayi', name: '司马懿', key: F_HERO.sima_yi, team: TEAM_B, enemy: TEAM_A, cls: TACTICIAN, tint: WEI_BLUE, q: 6, r: 2, hp: 130, atk: 23, ult: '鬼谋', ultDmg: 40, ultSize: 88 },
 ];
 
-// 每英雄一张打击模板（amount=自身攻击力，targetMask=敌队）。
+// 每英雄两张模板：普攻打击(amount=攻击力) + 大招(范围 ultSize、伤害 ultDmg)，targetMask=敌队。
 export const GAME_F_TEMPLATES: Record<string, PrefabTemplate> = Object.fromEntries(
-  ROSTER.map((h) => [`strike_${h.id}`, strike(h.enemy, h.atk)]),
+  ROSTER.flatMap((h) => [
+    [`strike_${h.id}`, strike(h.enemy, h.atk)],
+    [`ult_${h.id}`, ultTemplate(h.enemy, h.ultDmg, h.ultSize)],
+  ]),
 );
 
 // 一个棋子（纯数据）：ai-chase + 自动普攻 + 会死。
@@ -104,7 +131,7 @@ function unitEntity(h: HeroSpec): EntityBlueprint {
   return {
     Transform: xf(p.x, p.y),
     Shape: { kind: 'box', width: 16, height: 16 }, // 供打击区 overlap 命中
-    Tag: { flags: h.team },
+    Tag: { flags: h.team | h.cls },
     Resource: { id: 'hp', current: h.hp, min: 0, max: h.hp }, // 各英雄独立血量
     Perception: { targetTag: h.enemy, sightRadius: 0 }, // 无限视野 → aggro 锁最近敌人写 Relation(target)
     // 六边形网格寻路移动（替 steering）：HexPos=格位(SIM 真相,进 hash)；GridMover 每 period tick 沿 A* 走一格。
@@ -113,7 +140,8 @@ function unitEntity(h: HeroSpec): EntityBlueprint {
     Mortal: { resource: 'hp', atOrBelow: 0 },
     // 普攻链（自身闭环）：loop Timer 周期到点 → EventWhen(读自身唯一 timer,edge) 发唯一信号 → Caster 在目标处展开打击区。
     Timer: { id: atk, elapsed: 0, duration: ATK_CD, loop: true },
-    EventWhen: { signal: atk, when: { kind: 'timer', id: atk, cmp: 'gte', value: ATK_CD - 1 }, mode: 'edge', armed: false },
+    // 普攻只在战斗阶段(in_combat)触发：timer 到点 AND in_combat → 信号（备战/结算期不打、不攒蓝）。
+    EventWhen: { signal: atk, when: { kind: 'and', of: [{ kind: 'timer', id: atk, cmp: 'gte', value: ATK_CD - 1 }, { kind: 'flag', id: 'in_combat', equals: true }] }, mode: 'edge', armed: false },
     Caster: { onSignal: atk, template: `strike_${h.id}`, at: 'target', targetTag: h.enemy },
     Sprite: sprite(h.key, 4),
   } as unknown as EntityBlueprint;
@@ -130,7 +158,60 @@ function labelEntity(h: HeroSpec): EntityBlueprint {
   } as unknown as EntityBlueprint;
 }
 
+// 大招接线（蓝条→大招，每英雄唯一 id 防串台）：普攻 Effect 攒蓝 → 蓝满 EventWhen 发大招信号
+// → Caster 在目标处展开大招(originEntity=自身，复用 aggro 锁定目标) + Effect 清蓝归零。全数据，复用通用能力。
+function ultEntities(h: HeroSpec): Record<string, EntityBlueprint> {
+  const mp = `mp_${h.id}`;
+  const atkSig = `atk_${h.id}`;
+  const ultSig = `ult_${h.id}`;
+  return {
+    [`mana_${h.id}`]: {
+      Resource: { id: mp, current: 0, min: 0, max: 100 },
+      EventWhen: { signal: ultSig, when: { kind: 'resource', id: mp, cmp: 'gte', value: 100 }, mode: 'edge', armed: false },
+    } as unknown as EntityBlueprint,
+    [`fill_${h.id}`]: { Effect: { onSignal: atkSig, kind: 'modify-resource', targetId: mp, op: 'add', value: MANA_FILL } } as unknown as EntityBlueprint,
+    [`ultcast_${h.id}`]: { Caster: { onSignal: ultSig, template: `ult_${h.id}`, at: 'target', targetTag: h.enemy, originEntity: h.id } } as unknown as EntityBlueprint,
+    [`drain_${h.id}`]: { Effect: { onSignal: ultSig, kind: 'modify-resource', targetId: mp, op: 'set', value: 0 } } as unknown as EntityBlueprint,
+  };
+}
+
 const ARENA = { minX: -280, minY: -200, maxX: 280, maxY: 200 };
+
+// 金铲铲回合流程（flow 能力，参策划案 §二）：备战→战斗→结算→结束/gameover。读如线性瀑布脚本，纯数据。
+// 单局版（多回合循环需「回合重置/棋子重生」引擎能力，后续）。战斗用 in_combat 门控普攻/攒蓝（备战期不动手）。
+const GAME_FLOW = {
+  id: 'round',
+  current: 'prep',
+  entered: false,
+  elapsed: 0,
+  states: [
+    {
+      id: 'prep', // 备战：发钱 + 列阵（in_combat 关）；40 拍后开战
+      onEnter: [
+        { kind: 'modify-resource', targetId: 'gold', op: 'add', value: 5 },
+        { kind: 'set-flag', targetId: 'in_combat', value: false },
+      ],
+      transitions: [{ when: { kind: 'always' }, after: 40, to: 'combat', do: [{ kind: 'set-flag', targetId: 'in_combat', value: true }] }],
+    },
+    {
+      id: 'combat', // 战斗：自动互砍 + 蓝满放大招；某队团灭(present flag→false)→结算
+      transitions: [
+        { when: { kind: 'flag', id: 'team_b_present', equals: false }, to: 'resolution', do: [{ kind: 'set-flag', targetId: 'won', value: true }] },
+        { when: { kind: 'flag', id: 'team_a_present', equals: false }, to: 'resolution', do: [{ kind: 'set-flag', targetId: 'won', value: false }, { kind: 'modify-resource', targetId: 'player_hp', op: 'add', value: -5 }] },
+      ],
+    },
+    {
+      id: 'resolution', // 结算：停战；玩家血量归零→gameover，否则 60 拍后→结束（单局）
+      onEnter: [{ kind: 'set-flag', targetId: 'in_combat', value: false }],
+      transitions: [
+        { when: { kind: 'resource', id: 'player_hp', cmp: 'lte', value: 0 }, to: 'gameover' },
+        { when: { kind: 'always' }, after: 60, to: 'done' },
+      ],
+    },
+    { id: 'gameover', onEnter: [{ kind: 'set-flag', targetId: 'run_over', value: true }] },
+    { id: 'done', onEnter: [{ kind: 'set-flag', targetId: 'round_done', value: true }] },
+  ],
+};
 
 export function buildGameFBlueprint(): WorldBlueprint {
   const entities: Record<string, EntityBlueprint> = {
@@ -139,28 +220,40 @@ export function buildGameFBlueprint(): WorldBlueprint {
     // 六边形棋盘（56 格，表现层底；金铲铲 7×8 布局，蜀半场暖/魏半场冷）。
     ...boardEntities(F_HEX_WARM, F_HEX_COOL),
     // 棋盘配置单例（喂引擎 grid-move：尺寸 + 投影原点）。
-    board: { HexBoard: { cols: COLS, rows: ROWS, tileSize: TILE, originX: ORIGIN_X, originY: ORIGIN_Y } } as unknown as EntityBlueprint,
+    board: { HexBoard: { cols: COLS, rows: ROWS, tileSize: TILE, originX: ORIGIN_X, originY: ORIGIN_Y, layout: LAYOUT } } as unknown as EntityBlueprint,
     // 胜负旗标 + 竞技场存活计数 Zone（存活=0 → present flag 落 false；下游接 flow 阶段机，后续）。
     team_a_flag: { Flag: { id: 'team_a_present', active: true } } as unknown as EntityBlueprint,
     team_b_flag: { Flag: { id: 'team_b_present', active: true } } as unknown as EntityBlueprint,
     zone_a: { Zone: { outFlag: 'team_a_present', ...ARENA, requiredTag: TEAM_A, count: 1 } } as unknown as EntityBlueprint,
     zone_b: { Zone: { outFlag: 'team_b_present', ...ARENA, requiredTag: TEAM_B, count: 1 } } as unknown as EntityBlueprint,
+    // —— 金铲铲回合流程（flow）+ 其读写的旗标/资源单例 ——
+    flow_ctrl: { GameFlow: GAME_FLOW } as unknown as EntityBlueprint,
+    f_in_combat: { Flag: { id: 'in_combat', active: false } } as unknown as EntityBlueprint,
+    f_won: { Flag: { id: 'won', active: false } } as unknown as EntityBlueprint,
+    f_over: { Flag: { id: 'run_over', active: false } } as unknown as EntityBlueprint,
+    f_done: { Flag: { id: 'round_done', active: false } } as unknown as EntityBlueprint,
+    r_gold: { Resource: { id: 'gold', current: 0, min: 0, max: 999 } } as unknown as EntityBlueprint,
+    r_player_hp: { Resource: { id: 'player_hp', current: 20, min: 0, max: 20 } } as unknown as EntityBlueprint,
     // 静态相机（表现，排除出 hash）。720p 画布 + zoom 把棋盘放大填满视口。
-    camera: { Transform: xf(0, 0), Camera: { zoom: 2.4, offsetX: 0, offsetY: 0, rotation: 0, viewportW: 1280, viewportH: 720 } } as unknown as EntityBlueprint,
+    camera: { Transform: xf(0, 0), Camera: { zoom: 1.8, offsetX: 0, offsetY: 0, rotation: 0, viewportW: 1280, viewportH: 720 } } as unknown as EntityBlueprint,
   };
   for (const h of ROSTER) {
     entities[h.id] = unitEntity(h);
     entities[`${h.id}_name`] = labelEntity(h);
+    Object.assign(entities, ultEntities(h)); // 大招接线（蓝条/攒蓝/释放/清蓝）
   }
 
   return {
     capabilities: [
+      // 金铲铲回合流程机（备战→战斗→结算→结束/gameover；战斗用 in_combat 门控普攻/攒蓝）
+      flowCapability,
       // AI：索敌 + 六边形网格寻路走位（aggro 写目标 → grid-move 沿确定性 A* 逐格走，REQ-024）
       aggroCapability,
       gridMoveCapability,
-      // 自动普攻：timer → event-when → caster → prefab 展开打击区
+      // 自动普攻 + 大招：timer → event-when → caster → prefab；蓝条 攒蓝/清蓝 = effect-apply
       timerCapability,
       eventWhenCapability,
+      effectApplyCapability,
       casterCapability,
       prefabCapability,
       // 结算：overlap → trigger-zone → hitbox → resource

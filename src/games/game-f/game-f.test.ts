@@ -66,4 +66,23 @@ describe('Game F — 自走棋 MVP-0 骨架（纯数据装配，零自走棋代�
     expect(alive(e, 'a_guanyu')).toBe(false); // 棋子销毁
     expect(alive(e, 'a_guanyu_name')).toBe(false); // 名字子体随之消失（不再残留）
   });
+
+  it('蓝条→大招：普攻攒蓝 → 蓝满 EventWhen → Caster 展开各自大招区（每英雄唯一 id，纯数据涌现）', () => {
+    const e = new Engine({ tickRate: 60 });
+    e.load(buildGameFBlueprint());
+    const mp = (id: string): number => {
+      for (const x of e.world.getAllEntities()) {
+        const r = e.world.getComponent<Resource>(x, 'Resource');
+        if (r && r.id === `mp_${id}`) return r.current;
+      }
+      return -1;
+    };
+    let guanyuUlt = false;
+    for (let i = 0; i < 500; i++) {
+      e.world.tick();
+      if (e.world.getAllEntities().some((x) => x.startsWith('ult_a_guanyu#'))) guanyuUlt = true;
+    }
+    expect(mp('a_guanyu')).toBeGreaterThanOrEqual(0); // 蓝条存在
+    expect(guanyuUlt).toBe(true); // 关羽攒满蓝放出了大招区
+  });
 });
