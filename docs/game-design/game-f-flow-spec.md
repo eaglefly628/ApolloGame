@@ -99,6 +99,9 @@
 | `won` | Flag | 本回合胜负 | round 流程 → 结算分支 |
 | `round_done` / `run_over` / `run_won` | Flag | 回合完 / 败局 / 通关 | round ↔ run 两台机的握手 |
 | `mp_<棋子实例>` / `atk_<实例>` / `ult_<实例>` | Resource/信号 | 棋子蓝条/普攻/大招（**每实例唯一**或 self 作用域） | 棋子内部闭环 |
+| `deploy_armed` / `wipe_armed` | Flag | 展开/清场触发臂（flow onEnter 置位，edge 纪律：下一相位复位） | round 流程 → EventWhen(edge) |
+| `deploy` / `deploy_stage_<N>` | 信号 | 我方/第 N 阶段敌方阵容展开（单拍） | EventWhen → 槽位 Caster |
+| `wipe` | 信号 | 清场（单拍） | EventWhen → destroy-tagged Effect×2 |
 
 ### 3.2 L1 · Run 流程（局）：`run_flow` 实体一台机
 
@@ -236,7 +239,7 @@ aggro(锁最近敌) → grid-move(六角 A* 逐格走) → loop Timer(攻速) �
 | 阶段 | 流转切片（本文坐标） | 新 capability |
 |---|---|---|
 | **MVP-0 ✅ 已达成** | §3.4 战斗涌现链 + 单回合 prep→combat→resolution 单局版 | 0（实际还顺手还了 REQ-F-024~028） |
-| **MVP-1 ⬅ 下一步** | §3.2 run_flow + §3.3 round_flow 完整多回合循环 + §4.1 经济三件套 + §4.5 关卡表前 2 阶段 + 商店买人（§3.3 操作表前三行） | **REQ-F-032 待裁**（回合重置/实例重生，见 requests.md） |
+| **MVP-1 ⬅ 进行中** | §3.2 run_flow + §3.3 round_flow 完整多回合循环 + §4.1 经济三件套 + §4.5 关卡表前 2 阶段 + 商店买人（§3.3 操作表前三行） | **0 新增**——REQ-F-032/033 已 done 且回合重置底座已接入（2026-06-10，多回合循环跑通）；余项全纯数据 |
 | **Phase 2** | §4.6 升星合体 + §4.3 等级/人口 + 卖人/归还卡池 | 0（REQ-021 已 done，接入即可） |
 | **Phase 3** | 羁绊：prep→combat 转移拍锁存（§3.3 注） | 0–1（REQ-022 已 done；Gap C 届时再裁） |
 | **Phase 4** | 野怪回合+掉落、选秀(九选一)、装备合成、锦囊、连败金、时限止损 | 按届时评审 |
@@ -245,12 +248,13 @@ aggro(锁最近敌) → grid-move(六角 A* 逐格走) → loop Timer(攻速) �
 
 ## 六、符合性审查（2026-06-10，对照 mainbranch@`706758e`）
 
-### 6.1 已达成 ✓（全部有测试背书，`src/games/game-f/game-f.test.ts` 5/5 绿）
+### 6.1 已达成 ✓（全部有测试背书，`src/games/game-f/game-f.test.ts` 9/9 绿）
 
 | 本规范条目 | 实现/测试证据 |
 |---|---|
 | §3.4 战斗涌现链全套 | blueprint.ts 纯数据装配；测试「两队自动对冲互砍」「蓝条→大招」 |
 | §3.3 combat→resolution 转移（团灭→present flag→结算） | 测试「战斗收敛到团灭」+ GAME_FLOW combat 转移 |
+| §3.3 prep ⑥ 回合重置 + resolution 清场 + prep⟲resolution 多回合循环（REQ-F-032/033） | 棋子=复合模板实例（'@local:main' 整族生灭）+ 8 持久槽位 + deploy/wipe 信号 + destroy-tagged；测试「备战拍展开」「回合重置：清场无孤儿/槽位库持久/新实例满状态 id 全新」 |
 | 确定性 | 测试「同初值重跑 hash 一致」（注：当前无 RandomSeed，商店接入后升级为真 seed 检验） |
 | `in_combat` 门控、名牌级联死、六角棋盘+A*、独立血攻、大招/DoT、静态装备、势力/职业 Tag 位 | b14d109/674728e/706758e 等提交 + 对应测试 |
 | 工程纪律：唯一 id 防串台、零游戏 system | blueprint 全文 grep 无 system；id 形如 `mp_a_guanyu` |
@@ -259,7 +263,7 @@ aggro(锁最近敌) → grid-move(六角 A* 逐格走) → loop Timer(攻速) �
 
 | # | 差距 | 对应规范 | 备注 |
 |---|---|---|---|
-| P0 | **单局版 flow → 多回合 run/round 双层机** | §3.2/§3.3 | 阻塞点 = REQ-F-032（棋子每回合满状态重开）。先裁 030 再动工 |
+| P0 | ~~单局版 flow → 多回合~~ **round 循环+回合重置已落（2026-06-10）**；余 **L1 run_flow**（§3.2 关卡推进/胜负/round_done 握手） | §3.2 | REQ-F-032/033 已 done；run_flow=纯数据，接上后 resolution 出口由「直回 prep」改为「done 握手」 |
 | P0 | **商店买人三件套**（card-pile 5 槽 + craft-recipe 扣价 + 买入→阵容） | §3.3 操作表 | 纯数据，零新 capability；「买入→上场」与 030 共用展开语义 |
 | P1 | 经济三件套（收入爬坡表 + 利息 banded + 连胜金） | §4.1 | 纯数据（Game E 已证形态） |
 | P1 | 玩家伤害公式（阶段基础伤 + 存活敌数） | §4.2 | 存活数读取依赖 REQ-022（已 done）或先用固定表近似 |

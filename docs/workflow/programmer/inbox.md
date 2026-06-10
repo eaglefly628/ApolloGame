@@ -83,7 +83,7 @@
 - 引擎已落 `GridMover.haltStatusMask`（对齐 Steering 同名语义，4 测绿）：自身 Status 命中掩码 → 本 tick 不走且**节奏时钟暂停**（解控按剩余节奏恢复、无补步突进）。定序已在引擎侧用 `runsBefore:['hitbox','over-time']` 破环——CC **延迟一帧生效**（与 steering/game-d 同纪律，60tps 不可感知）。
 - 接入：① 每棋子 `GridMover` 加 `haltStatusMask: FROZEN位`；② 控制技（如诸葛"八阵图"）hitbox `setMask=FROZEN + statusDuration=持续 tick` → 被冻定身、over-time 到点解冻。全纯数据，零游戏代码。
 
-#### 任务 F-7 · REQ-F-032 接入回合重置（纯数据，MVP-1 多回合循环解锁） — status: **blocked（PE-F 2026-06-10：接入时发现前置缺口 → REQ-F-033）**
+#### 任务 F-7 · REQ-F-032 接入回合重置（纯数据，MVP-1 多回合循环解锁） — status: **done（PE-F 2026-06-10 回执：F-033 落地后按清单接入——每英雄复合模板（10 实体，'@local:main' 互指）+ 8 持久槽位（Caster.overrides 写站位/阵营/数值）+ deploy/deploy_stage_1/wipe 三信号 + round_flow 改 prep⟲combat⟲resolution 循环 + destroy-tagged×2 清场；全局 id 已登记 flow-spec §3.1；game-f 测 9/9 绿（含两回合循环：清场无孤儿、槽位/库持久、新实例 id 全新满状态），vitest 967 全绿）**
 > **PE-F 回报**：棋子不是裸单位，是「单位+名牌+条×4+蓝 sidecar+大招接线」复合体；prefab `instantiate` 深拷贝**不重映射**模板内部实体引用（`Hierarchy.parentId`/`Caster.originEntity` 展开后悬空 → 条不跟随、**永不级联**（cascade 只认真实父 id）、大招哑火），`overrides` 也写不出含运行时 seq 的实例 id。硬接 = 棋子模板只能装裸 main，**当场回退刚上线的 F-5 血条/F-1 名牌**。已写 `requests.md` REQ-F-033（含证伪四条 + 候选 A/B），落地后按本清单 + PF-finish-list §5.3 草案即接。
 - 引擎已落（4 验收测绿）：`SpawnRequest.overrides` + `Caster.overrides` 透传（prefab 逐字段合并，同模板异构实例）+ `Effect kind:'destroy-tagged'`（value=Tag 掩码批量清场，cascade 连挂件）。**零新系统**——阵容=槽位实体（持久），每槽 `Caster{onSignal:'deploy', template:英雄, at:'self', overrides:{main:{HexPos:{q,r}, Tag:{flags:阵营}, Resource:{...星级数值}}}}`。
 - 接线清单（flow-spec §3.3 对照）：① 棋子改成 PrefabTemplate 进 `PrefabLibrary`（含 hp Resource/Tag 占位，被 overrides 改写）；② 我方/敌方槽位实体（敌方按关卡分 `deploy_stage_N` 信号）；③ GameFlow 备战态 onEnter 置 Flag → event-when(edge) → 'deploy' 信号；结算态同法发 'wipe'；④ 两条 `Effect{onSignal:'wipe', kind:'destroy-tagged', value:各阵营掩码}`。买/卖/挪位 = 增删改槽实体（纯数据）。

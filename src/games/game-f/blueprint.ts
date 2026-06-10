@@ -23,7 +23,7 @@ import { GAME_F_ASSETS, F_HERO, F_FX_STRIKE, F_FX_ARROW, F_FX_BOLT, F_FX_FLAME, 
 import { boardEntities, project, COLS, ROWS, TILE, ORIGIN_X, ORIGIN_Y, LAYOUT } from './hex.js';
 
 // ═══════════════════════════════════════════════════════════════
-//  Game F —— 《像素三分天下》自走棋 MVP-0 骨架。**纯数据装配**，零自走棋专属代码。
+//  Game F —— 《像素三分天下》自走棋 MVP-0 骨架 + 多回合循环（REQ-F-032）。**纯数据装配**，零自走棋专属代码。
 //  整套战斗循环由通用能力涌现（= Game D 暗黑切片的数据，减去玩家操控、加一支镜像敌队）：
 //
 //    · 索敌走位 = aggro(Perception→Relation target) + steering(seek) + motion-apply   —— ai-chase（数据）
@@ -36,6 +36,8 @@ import { boardEntities, project, COLS, ROWS, TILE, ORIGIN_X, ORIGIN_Y, LAYOUT } 
 //    · 头顶名字 = Text + 势力色 Color + Hierarchy 跟随单位（三国感靠命名+分色，见 art-data.md）
 //    · 血条蓝条 = gauge(REQ-F-029)：Resource 比例 → 条实体 Shape.width（PostResolve 终态投影，随走随死全自动）
 //    · 控制定身 = 八阵图 Hitbox{setMask:FROZEN,statusDuration} + GridMover.haltStatusMask(REQ-F-030)，到点 over-time 自动解
+//    · 回合重置 = 持久槽位 Caster{overrides} 每 prep 重展开复合棋子模板（'@local:' 内部引用，REQ-F-033）
+//                 + resolution 'wipe' → destroy-tagged 按阵营清场，级联连名牌/条/sidecar（REQ-F-032）
 //
 //  MVP-0 用一组**互不相同**的英雄、每英雄**唯一** timer/signal id，规避「逻辑链按全局 id 寻址」串台
 //  （重复棋子/三星合体 待引擎 REQ-021 self 作用域，主程已落地，下一阶段接）。零自走棋 system。
@@ -154,93 +156,107 @@ const finalAtk = (h: HeroSpec): number => h.atk + sumItem(h.items, 'atk');
 // 普攻特效按攻击类型：近战斩光 / 远程箭 / 法术弹。
 const FX_BY_TYPE: Record<HeroSpec['atkType'], string> = { melee: F_FX_STRIKE, ranged: F_FX_ARROW, magic: F_FX_BOLT };
 
-// 每英雄两张模板：普攻(amount=最终攻击力，特效按攻击类型) + 大招(范围/伤害/主题特效/可选 DoT)，targetMask=敌队。
+// （模板库 GAME_F_TEMPLATES 在 heroTemplate 定义之后构建，见下；普攻/大招/棋子复合 每英雄三张。）
+
+// ── 棋子复合模板（REQ-F-032/033）：单位+名牌+血蓝条×4+蓝 sidecar+大招接线 = 一个 PrefabTemplate 整体生灭 ──
+// 内部互指一律 '@local:main'（REQ-F-033，展开时重映射为实例 id）；sidecar（蓝/攒/放/清）虽无 Transform
+// 也必须挂 Hierarchy{parentId:'@local:main'} 才随主体级联（主程坑提示：级联只沿 Hierarchy 边走）。
+// Tag/Resource(hp)/HexPos 是占位，由槽位 Caster.overrides 写真值（星级数值进槽位数据，Phase 2 复用）。
+// 唯一 id 策略不变：atk_<id>/mp_<id>/ult_<id> 烘进各英雄专属模板（一英雄一槽一实例，不串台；重复棋子待 REQ-021 接入）。
+const BAR_W = 28;
+const trackColor = 0x18181c;
+const HP_Y = -26, MP_Y = -20;
+const sidecarLink = { parentId: '@local:main', localX: 0, localY: 0, localRotation: 0, localScaleX: 1, localScaleY: 1 };
+function heroTemplate(h: HeroSpec): PrefabTemplate {
+  const atk = `atk_${h.id}`;
+  const mp = `mp_${h.id}`;
+  const ultSig = `ult_${h.id}`;
+  const bar = (localY: number, height: number): Record<string, unknown> => ({
+    Transform: xf(0, localY), // instantiate 统一偏移到槽位投影坐标
+    Shape: { kind: 'box', width: BAR_W, height },
+    Hierarchy: { ...sidecarLink, localY },
+  });
+  return {
+    entities: {
+      main: {
+        Transform: xf(0, 0),
+        Shape: { kind: 'box', width: 16, height: 16 }, // 供打击区 overlap 命中
+        Tag: { flags: 0 }, // 占位 ← 槽位 overrides
+        Resource: { id: 'hp', current: 1, min: 0, max: 1 }, // 占位 ← 槽位 overrides（星级数值）
+        Perception: { targetTag: h.enemy, sightRadius: 0 }, // 无限视野 → aggro 锁最近敌写 Relation(target)
+        HexPos: { q: 0, r: 0 }, // 占位 ← 槽位 overrides（grid-move 每拍据 HexPos 重投影）
+        GridMover: { period: MOVE_PERIOD, elapsed: 0, haltStatusMask: FROZEN }, // 被冻定身（REQ-F-030）
+        Mortal: { resource: 'hp', atOrBelow: 0 },
+        // 普攻链（自身闭环）：loop Timer 到点 AND in_combat → 唯一信号 → Caster 在目标处展开打击区。
+        Timer: { id: atk, elapsed: 0, duration: ATK_CD, loop: true },
+        EventWhen: { signal: atk, when: { kind: 'and', of: [{ kind: 'timer', id: atk, cmp: 'gte', value: ATK_CD - 1 }, { kind: 'flag', id: 'in_combat', equals: true }] }, mode: 'edge', armed: false },
+        Caster: { onSignal: atk, template: `strike_${h.id}`, at: 'target', targetTag: h.enemy },
+        Sprite: sprite(h.key, 4),
+      },
+      // 头顶名牌：Text+势力色；Sprite 仅抬 zOrder（文本模式不绘）。-34 给两条让位。
+      name: {
+        Transform: xf(0, -34),
+        Text: { content: h.name, fontSize: 9, fontFamily: 'sans-serif', anchor: 'center', lineSpacing: 0 },
+        Color: { tint: h.tint, alpha: 1 },
+        Sprite: { textureKey: F_FX_STRIKE, anchorX: 0.5, anchorY: 0.5, zOrder: 30 },
+        Hierarchy: { ...sidecarLink, localY: -34 },
+      },
+      // 实时血条/蓝条（REQ-F-029 gauge）：暗轨道(先插=在下)+彩填充(后插=在上)，同 zOrder 按插入序叠放。
+      // hp 读父（共享 id，fromParent）；mp 读全局唯一 mp_<id>。条无 Tag/Sensor/Hitbox：不参战不计 Zone 不被 wipe 直击（随级联走）。
+      hpbg: { ...bar(HP_Y, 5), Color: { tint: trackColor, alpha: 0.85 } },
+      hpbar: { ...bar(HP_Y, 5), Color: { tint: 0x33cc33, alpha: 1 }, Gauge: { resourceId: 'hp', fromParent: true, width: BAR_W } },
+      mpbg: { ...bar(MP_Y, 3), Color: { tint: trackColor, alpha: 0.85 } },
+      mpbar: { ...bar(MP_Y, 3), Color: { tint: 0x3aa0ff, alpha: 1 }, Gauge: { resourceId: mp, width: BAR_W } },
+      // 大招接线（蓝条→大招）：普攻信号攒蓝 → 蓝满发大招信号 → Caster 复用 main 的 aggro 目标展开大招 + 清蓝。
+      mana: {
+        Resource: { id: mp, current: 0, min: 0, max: 100 },
+        EventWhen: { signal: ultSig, when: { kind: 'resource', id: mp, cmp: 'gte', value: 100 }, mode: 'edge', armed: false },
+        Hierarchy: { ...sidecarLink },
+      },
+      fill: { Effect: { onSignal: atk, kind: 'modify-resource', targetId: mp, op: 'add', value: MANA_FILL }, Hierarchy: { ...sidecarLink } },
+      ultcast: { Caster: { onSignal: ultSig, template: `ult_${h.id}`, at: 'target', targetTag: h.enemy, originEntity: '@local:main' }, Hierarchy: { ...sidecarLink } },
+      drain: { Effect: { onSignal: ultSig, kind: 'modify-resource', targetId: mp, op: 'set', value: 0 }, Hierarchy: { ...sidecarLink } },
+    },
+  } as unknown as PrefabTemplate;
+}
+
+// ── 阵容槽位（持久数据，REQ-F-032）：无 Tag → wipe 清场不波及；跨回合常驻。──
+// 收到展开信号 → 在自身 Transform（= project(q,r) 投影坐标，消除展开后一帧跳变）处展开自己的棋子，
+// overrides 写真值（站位/阵营/星级数值）。买/卖/挪位/换星 = 增删改槽实体数据（MVP-1 商店接这里）。
+function slotEntity(h: HeroSpec): EntityBlueprint {
+  const p = project(h.q, h.r);
+  return {
+    Transform: xf(p.x, p.y),
+    Caster: {
+      onSignal: h.team === TEAM_A ? 'deploy' : 'deploy_stage_1', // 敌方按关卡分信号（关卡表多阶段=多组敌槽，纯数据）
+      template: `hero_${h.id}`,
+      at: 'self',
+      overrides: {
+        main: {
+          HexPos: { q: h.q, r: h.r },
+          Tag: { flags: h.team | h.cls | h.faction },
+          Resource: { current: finalHp(h), max: finalHp(h) }, // 星级=换这套数值（Phase 2）
+        },
+      },
+    },
+  } as unknown as EntityBlueprint;
+}
+
+// 每英雄三张模板：普攻打击区 + 大招打击区 + 棋子复合体（REQ-F-032 回合重展开用）。targetMask=敌队。
 export const GAME_F_TEMPLATES: Record<string, PrefabTemplate> = Object.fromEntries(
-  ROSTER.flatMap((h) => [
+  ROSTER.flatMap((h): [string, PrefabTemplate][] => [
     [`strike_${h.id}`, strike(h.enemy, finalAtk(h), FX_BY_TYPE[h.atkType])],
     [`ult_${h.id}`, ultTemplate(h.enemy, h.ultDmg, h.ultSize, h.ultFx, h.ultDot, h.ultFreeze)],
+    [`hero_${h.id}`, heroTemplate(h)],
   ]),
 );
 
-// 一个棋子（纯数据）：ai-chase + 自动普攻 + 会死。
-function unitEntity(h: HeroSpec): EntityBlueprint {
-  const atk = `atk_${h.id}`; // 每英雄唯一 → 不与他人串台（MVP-0 唯一 id 策略）
-  const p = project(h.q, h.r); // 初始 Transform（grid-move 每拍据 HexPos 重投影）
-  return {
-    Transform: xf(p.x, p.y),
-    Shape: { kind: 'box', width: 16, height: 16 }, // 供打击区 overlap 命中
-    Tag: { flags: h.team | h.cls | h.faction },
-    Resource: { id: 'hp', current: finalHp(h), min: 0, max: finalHp(h) }, // 独立血量 + 装备加成
-    Perception: { targetTag: h.enemy, sightRadius: 0 }, // 无限视野 → aggro 锁最近敌人写 Relation(target)
-    // 六边形网格寻路移动（替 steering）：HexPos=格位(SIM 真相,进 hash)；GridMover 每 period tick 沿 A* 走一格。
-    HexPos: { q: h.q, r: h.r },
-    GridMover: { period: MOVE_PERIOD, elapsed: 0, haltStatusMask: FROZEN }, // 被冻定身：不走且节奏时钟暂停（REQ-F-030）
-    Mortal: { resource: 'hp', atOrBelow: 0 },
-    // 普攻链（自身闭环）：loop Timer 周期到点 → EventWhen(读自身唯一 timer,edge) 发唯一信号 → Caster 在目标处展开打击区。
-    Timer: { id: atk, elapsed: 0, duration: ATK_CD, loop: true },
-    // 普攻只在战斗阶段(in_combat)触发：timer 到点 AND in_combat → 信号（备战/结算期不打、不攒蓝）。
-    EventWhen: { signal: atk, when: { kind: 'and', of: [{ kind: 'timer', id: atk, cmp: 'gte', value: ATK_CD - 1 }, { kind: 'flag', id: 'in_combat', equals: true }] }, mode: 'edge', armed: false },
-    Caster: { onSignal: atk, template: `strike_${h.id}`, at: 'target', targetTag: h.enemy },
-    Sprite: sprite(h.key, 4),
-  } as unknown as EntityBlueprint;
-}
-
-// 头顶名字（表现）：Text + 势力色 Color + Hierarchy 跟随；Sprite 仅用于抬高 zOrder（文本模式不画此图）→ 盖在棋子之上。
-// 去掉死数字（hp/atk 静态不更新、误导）；血量/蓝量=实时血条/蓝条（REQ-F-029 gauge，见下 barEntities）。
-// 名字上移到 -34，给头顶两条腾位。
-function labelEntity(h: HeroSpec): EntityBlueprint {
-  const p = project(h.q, h.r);
-  return {
-    Transform: xf(p.x, p.y - 34),
-    Text: { content: h.name, fontSize: 9, fontFamily: 'sans-serif', anchor: 'center', lineSpacing: 0 },
-    Color: { tint: h.tint, alpha: 1 },
-    Sprite: { textureKey: F_FX_STRIKE, anchorX: 0.5, anchorY: 0.5, zOrder: 30 }, // 只为 zOrder 抬高（文本模式不绘此贴图）
-    Hierarchy: { parentId: h.id, localX: 0, localY: -34, localRotation: 0, localScaleX: 1, localScaleY: 1 },
-  } as unknown as EntityBlueprint;
-}
-
-// 头顶实时状态条（REQ-F-029 gauge）：暗轨道(满宽静态,先插=在下) + 彩填充(挂 Gauge,后插=在上)。
-// 同 zOrder=0，渲染器 stable sort 按插入序 → 填充盖轨道、露出已掉部分。hp 读父共享 'hp'；mana 读各自全局唯一 mp_<id>。
-// 条实体仅 Shape 渲染几何（无 Tag/Sensor/Hitbox，不参战不计 Zone）；随棋子由 hierarchy-resolve 带走、随死由 hierarchy-cascade 消失。
-const BAR_W = 28;
-const trackColor = 0x18181c;
-function barEntities(h: HeroSpec): Record<string, EntityBlueprint> {
-  const p = project(h.q, h.r);
-  const bar = (localY: number, height: number): Record<string, unknown> => ({
-    Transform: xf(p.x, p.y + localY),
-    Shape: { kind: 'box', width: BAR_W, height },
-    Hierarchy: { parentId: h.id, localX: 0, localY, localRotation: 0, localScaleX: 1, localScaleY: 1 },
-  });
-  const HP_Y = -26, MP_Y = -20;
-  return {
-    [`${h.id}_hpbg`]:  { ...bar(HP_Y, 5), Color: { tint: trackColor, alpha: 0.85 } } as unknown as EntityBlueprint,
-    [`${h.id}_hpbar`]: { ...bar(HP_Y, 5), Color: { tint: 0x33cc33, alpha: 1 }, Gauge: { resourceId: 'hp', fromParent: true, width: BAR_W } } as unknown as EntityBlueprint,
-    [`${h.id}_mpbg`]:  { ...bar(MP_Y, 3), Color: { tint: trackColor, alpha: 0.85 } } as unknown as EntityBlueprint,
-    [`${h.id}_mpbar`]: { ...bar(MP_Y, 3), Color: { tint: 0x3aa0ff, alpha: 1 }, Gauge: { resourceId: `mp_${h.id}`, width: BAR_W } } as unknown as EntityBlueprint,
-  };
-}
-
-// 大招接线（蓝条→大招，每英雄唯一 id 防串台）：普攻 Effect 攒蓝 → 蓝满 EventWhen 发大招信号
-// → Caster 在目标处展开大招(originEntity=自身，复用 aggro 锁定目标) + Effect 清蓝归零。全数据，复用通用能力。
-function ultEntities(h: HeroSpec): Record<string, EntityBlueprint> {
-  const mp = `mp_${h.id}`;
-  const atkSig = `atk_${h.id}`;
-  const ultSig = `ult_${h.id}`;
-  return {
-    [`mana_${h.id}`]: {
-      Resource: { id: mp, current: 0, min: 0, max: 100 },
-      EventWhen: { signal: ultSig, when: { kind: 'resource', id: mp, cmp: 'gte', value: 100 }, mode: 'edge', armed: false },
-    } as unknown as EntityBlueprint,
-    [`fill_${h.id}`]: { Effect: { onSignal: atkSig, kind: 'modify-resource', targetId: mp, op: 'add', value: MANA_FILL } } as unknown as EntityBlueprint,
-    [`ultcast_${h.id}`]: { Caster: { onSignal: ultSig, template: `ult_${h.id}`, at: 'target', targetTag: h.enemy, originEntity: h.id } } as unknown as EntityBlueprint,
-    [`drain_${h.id}`]: { Effect: { onSignal: ultSig, kind: 'modify-resource', targetId: mp, op: 'set', value: 0 } } as unknown as EntityBlueprint,
-  };
-}
-
 const ARENA = { minX: -280, minY: -200, maxX: 280, maxY: 200 };
 
-// 金铲铲回合流程（flow 能力，参策划案 §二）：备战→战斗→结算→结束/gameover。读如线性瀑布脚本，纯数据。
-// 单局版（多回合循环需「回合重置/棋子重生」引擎能力，后续）。战斗用 in_combat 门控普攻/攒蓝（备战期不动手）。
+// 金铲铲回合流程（flow-spec §3.3 round_flow，多回合循环版）：prep⟲combat⟲resolution 循环到 gameover。
+// 回合重置（REQ-F-032）：prep onEnter 臂 deploy_armed → EventWhen(edge) 发 'deploy'/'deploy_stage_1' →
+// 槽位各自展开满状态棋子；resolution onEnter 臂 wipe_armed → 'wipe' → destroy-tagged 按阵营清场（级联连挂件）。
+// L1 run_flow（§3.2 关卡推进/胜利判定）+ ready 开战输入 = MVP-1 队列后续项；现 prep after 40 自动开战、循环常驻。
 const GAME_FLOW = {
   id: 'round',
   current: 'prep',
@@ -248,12 +264,15 @@ const GAME_FLOW = {
   elapsed: 0,
   states: [
     {
-      id: 'prep', // 备战：发钱 + 列阵（in_combat 关）；40 拍后开战
+      id: 'prep', // 备战：发钱（MVP 占位 +5）+ 回合计数 + 重展开两队（满血满蓝新实例）；40 拍后开战
       onEnter: [
         { kind: 'modify-resource', targetId: 'gold', op: 'add', value: 5 },
+        { kind: 'modify-resource', targetId: 'round_idx', op: 'add', value: 1 },
         { kind: 'set-flag', targetId: 'in_combat', value: false },
+        { kind: 'set-flag', targetId: 'wipe_armed', value: false }, // 复位，下次结算再臂（edge 纪律）
+        { kind: 'set-flag', targetId: 'deploy_armed', value: true }, // → 'deploy' + 'deploy_stage_1'
       ],
-      transitions: [{ when: { kind: 'always' }, after: 40, to: 'combat', do: [{ kind: 'set-flag', targetId: 'in_combat', value: true }] }],
+      transitions: [{ when: { kind: 'always' }, after: 40, to: 'combat', do: [{ kind: 'set-flag', targetId: 'in_combat', value: true }, { kind: 'set-flag', targetId: 'deploy_armed', value: false }] }],
     },
     {
       id: 'combat', // 战斗：自动互砍 + 蓝满放大招；某队团灭(present flag→false)→结算
@@ -263,15 +282,17 @@ const GAME_FLOW = {
       ],
     },
     {
-      id: 'resolution', // 结算：停战；玩家血量归零→gameover，否则 60 拍后→结束（单局）
-      onEnter: [{ kind: 'set-flag', targetId: 'in_combat', value: false }],
+      id: 'resolution', // 结算：停战 + 清场（wipe→destroy-tagged）；玩家血尽→gameover，否则 60 拍后回 prep（多回合循环）
+      onEnter: [
+        { kind: 'set-flag', targetId: 'in_combat', value: false },
+        { kind: 'set-flag', targetId: 'wipe_armed', value: true }, // → 'wipe'
+      ],
       transitions: [
         { when: { kind: 'resource', id: 'player_hp', cmp: 'lte', value: 0 }, to: 'gameover' },
-        { when: { kind: 'always' }, after: 60, to: 'done' },
+        { when: { kind: 'always' }, after: 60, to: 'prep' },
       ],
     },
     { id: 'gameover', onEnter: [{ kind: 'set-flag', targetId: 'run_over', value: true }] },
-    { id: 'done', onEnter: [{ kind: 'set-flag', targetId: 'round_done', value: true }] },
   ],
 };
 
@@ -293,17 +314,23 @@ export function buildGameFBlueprint(): WorldBlueprint {
     f_in_combat: { Flag: { id: 'in_combat', active: false } } as unknown as EntityBlueprint,
     f_won: { Flag: { id: 'won', active: false } } as unknown as EntityBlueprint,
     f_over: { Flag: { id: 'run_over', active: false } } as unknown as EntityBlueprint,
-    f_done: { Flag: { id: 'round_done', active: false } } as unknown as EntityBlueprint,
     r_gold: { Resource: { id: 'gold', current: 0, min: 0, max: 999 } } as unknown as EntityBlueprint,
     r_player_hp: { Resource: { id: 'player_hp', current: 20, min: 0, max: 20 } } as unknown as EntityBlueprint,
+    r_round_idx: { Resource: { id: 'round_idx', current: 0, min: 0, max: 999 } } as unknown as EntityBlueprint, // 回合序号（§3.1 已注册；关卡表指针 MVP-1 接）
+    // —— 回合重置接线（REQ-F-032）：flow 臂旗标 → EventWhen(edge) 产单拍信号 → 槽位展开 / destroy-tagged 清场 ——
+    f_deploy_armed: { Flag: { id: 'deploy_armed', active: false } } as unknown as EntityBlueprint,
+    f_wipe_armed: { Flag: { id: 'wipe_armed', active: false } } as unknown as EntityBlueprint,
+    when_deploy: { EventWhen: { signal: 'deploy', when: { kind: 'flag', id: 'deploy_armed', equals: true }, mode: 'edge', armed: false } } as unknown as EntityBlueprint,
+    when_deploy_stage1: { EventWhen: { signal: 'deploy_stage_1', when: { kind: 'flag', id: 'deploy_armed', equals: true }, mode: 'edge', armed: false } } as unknown as EntityBlueprint, // 多阶段=按 round_idx/stage_idx 加条件分流（MVP-1 关卡表）
+    when_wipe: { EventWhen: { signal: 'wipe', when: { kind: 'flag', id: 'wipe_armed', equals: true }, mode: 'edge', armed: false } } as unknown as EntityBlueprint,
+    wipe_team_a: { Effect: { onSignal: 'wipe', kind: 'destroy-tagged', targetId: '', value: TEAM_A } } as unknown as EntityBlueprint, // 清场：按阵营批量销毁，级联连名牌/条/sidecar
+    wipe_team_b: { Effect: { onSignal: 'wipe', kind: 'destroy-tagged', targetId: '', value: TEAM_B } } as unknown as EntityBlueprint,
     // 静态相机（表现，排除出 hash）。720p 画布 + zoom 把棋盘放大填满视口。
     camera: { Transform: xf(0, 0), Camera: { zoom: 1.8, offsetX: 0, offsetY: 0, rotation: 0, viewportW: 1280, viewportH: 720 } } as unknown as EntityBlueprint,
   };
+  // 棋子不再烘进装配期（REQ-F-032）：每英雄一个持久槽位，prep 拍按信号展开复合实例（单位+名牌+条+大招接线）。
   for (const h of ROSTER) {
-    entities[h.id] = unitEntity(h);
-    entities[`${h.id}_name`] = labelEntity(h);
-    Object.assign(entities, barEntities(h)); // 实时血条/蓝条（REQ-F-029 gauge）
-    Object.assign(entities, ultEntities(h)); // 大招接线（蓝条/攒蓝/释放/清蓝）
+    entities[`slot_${h.id}`] = slotEntity(h);
   }
 
   return {

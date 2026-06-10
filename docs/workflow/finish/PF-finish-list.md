@@ -68,7 +68,7 @@
 3. **重新平衡数值**（HP_SCALE 退回合理、低攻/适中血、同 ~18s）。
 4. **羁绊**：group-count 数蜀魏吴/武将谋士 → 越阈值 buff（buff 施加先试"全局 buff 资源"重组，真不行才提 group-effect）。
 5. **商店+经济+升星**（card-pile+craft-recipe）把单局扩成 roguelike；星级=独立星星实体叠加（用户提的做法）。
-6. **多回合循环（= inbox F-7，当前第一优先）**：REQ-F-032 引擎已落（`Caster.overrides`+`destroy-tagged`，d863f92），但接入暴露前置缺口 **REQ-F-033（prefab 模板内部引用重映射）已提主程、status open**——落地前**勿硬接**（会回退 F-5 条/F-1 名牌）。落地后按 **§5.3 草案**接。
+6. ✅ **已接入（2026-06-10）**：多回合循环/回合重置（inbox F-7）。REQ-F-033（'@local:'，5ca52ec）落地后按 §5.3 草案原样接：复合棋子模板 + 8 槽位 + deploy/wipe + round_flow 循环；game-f 测 9/9（含两回合循环验收）。**下一步 = MVP-1 余项**（L1 run_flow + 商店 + 经济 + 关卡表 + ready 输入，flow-spec §6.2 队列，全纯数据已无引擎阻塞）。
 
 ### 5.1 血条/蓝条接入（✅ 已接入 mainbranch 2026-06-10，本节存档备查）
 
@@ -114,7 +114,7 @@
 > 4. 可选：被冻禁攻击=普攻 `EventWhen.when` 的 `and` 里再加一条"自身 Status 不含 FROZEN"叶子（次要，先定身就够）。
 > 5. tsc+vitest+build 全绿才推。
 
-### 5.3 回合重置接入草案（F-7 / REQ-F-032；**被 REQ-F-033 阻塞**，落地后照此接）
+### 5.3 回合重置接入草案（✅ 已按此接入 mainbranch 2026-06-10；REQ-F-033 落地语法='@local:'，本节存档备查）
 
 > 引擎已备好（d863f92，4 验收测）：`SpawnRequest.overrides` / `Caster.overrides`（localId→组件→字段补丁，深拷贝后逐字段合并）+ `Effect{kind:'destroy-tagged', value:Tag掩码}`（按 Tag 批量清场，cascade 连挂件）。实例 id = `模板#seq:localId`。**范式见 `roster-round.integration.test.ts`（主程写的整轮循环样例，照抄结构）**。
 >
@@ -135,6 +135,6 @@
 
 ## 7. 分支
 
-game-f 全部在 **`claude/mainbranch`**（用户授权直推）。REQ-F-031 已同步至 mainbranch 并被主程采纳修复（c46b0a6，方案 A）。
-**本轮（2026-06-10）**：血条/蓝条（F-5）+ 冰冻定身（F-6）两项接入已直推 mainbranch，inbox 已回执。
-> 下一项 = **MVP-1**（inbox F-7：run/round 双层 flow + 商店 + 经济，按 `game-f-flow-spec.md` §6.2 队列）——**被 REQ-F-032 阻塞，等主程裁决落地**（两候选路线见 requests.md REQ-F-032）。
+game-f 全部在 **`claude/mainbranch`**（用户授权直推）。REQ-F-031/032/033 均为本席位上报→主程落地→本席位接入的完整闭环（031 方案 A / 033 方案 B 皆被采纳）。
+**本轮（2026-06-10）**：F-5 血条/蓝条 + F-6 冰冻定身 + F-7 回合重置（多回合循环）三项接入已直推 mainbranch，inbox 均已回执；game-f 测 9/9。
+> 下一项 = **MVP-1 余项**（flow-spec §6.2：L1 run_flow、商店三件套、经济三件套、关卡表前 2 阶段、ready 输入）——**全纯数据、无引擎阻塞**，照 §6.2 队列逐项接、逐项补测。
