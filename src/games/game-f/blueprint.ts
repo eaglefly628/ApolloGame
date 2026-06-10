@@ -4,22 +4,21 @@ import { overlapDetectCapability } from '@skills/atoms/overlap-detect/index.js';
 import { destroyCapability } from '@skills/atoms/destroy/index.js';
 import { timerCapability } from '@skills/atoms/timer/index.js';
 import { resourceCapability } from '@atom-skills/index.js';
-import { motionApplyCapability, lifetimeCapability, hierarchyResolveCapability } from '@skills/tier1/index.js';
+import { lifetimeCapability, hierarchyResolveCapability } from '@skills/tier1/index.js';
 import {
   triggerZoneCapability,
   hitboxCapability,
   mortalCapability,
-  steeringCapability,
   facingCapability,
-  collisionResolveCapability,
   eventWhenCapability,
   zoneOccupancyCapability,
   cameraFollowCapability,
+  gridMoveCapability,
   ZONE_FLAG,
 } from '@skills/tier2/index.js';
 import { prefabCapability, casterCapability, aggroCapability } from '@skills/tier3/index.js';
 import { GAME_F_ASSETS, F_HERO, F_FX_STRIKE, F_HEX_WARM, F_HEX_COOL } from './assets.js';
-import { hexToPixel, boardEntities } from './hex.js';
+import { boardEntities, project, COLS, ROWS, TILE, ORIGIN_X, ORIGIN_Y } from './hex.js';
 
 // ═══════════════════════════════════════════════════════════════
 //  Game F —— 《像素三分天下》自走棋 MVP-0 骨架。**纯数据装配**，零自走棋专属代码。
@@ -83,35 +82,35 @@ interface HeroSpec {
   enemy: number;
   strike: string;
   tint: number;
-  col: number; // 六边形棋盘列(0-6)
-  row: number; // 六边形棋盘行(0-7；row0-3=魏上半场, row4-7=蜀下半场)
+  q: number; // axial q（列 0-6）
+  r: number; // axial r（行 0-7；r0-3=魏上半场, r4-7=蜀下半场，中线 r3/4）
 }
 
-// 站位按金铲铲惯例：武将前排（贴中线 row3/4）、谋士后排。蜀据下半场、魏据上半场，前排相向。
+// 站位按金铲铲惯例：武将前排、谋士后排；两军各据半场、隔无人区(r3/4)相向 → grid-move 寻路对冲。
 const ROSTER: HeroSpec[] = [
-  // 蜀（TEAM_A，下半场 row4-7，红）—— 武将前排(row4)、谋士后排(row6)
-  { id: 'a_guanyu', name: '关羽', key: F_HERO.guan_yu, team: TEAM_A, enemy: TEAM_B, strike: 'strike_vs_b', tint: SHU_RED, col: 2, row: 4 },
-  { id: 'a_zhaoyun', name: '赵云', key: F_HERO.zhao_yun, team: TEAM_A, enemy: TEAM_B, strike: 'strike_vs_b', tint: SHU_RED, col: 4, row: 4 },
-  { id: 'a_zhuge', name: '诸葛亮', key: F_HERO.zhuge_liang, team: TEAM_A, enemy: TEAM_B, strike: 'strike_vs_b', tint: SHU_RED, col: 3, row: 6 },
-  // 魏（TEAM_B，上半场 row0-3，蓝）—— 武将前排(row3)、谋士后排(row1)
-  { id: 'b_zhangliao', name: '张辽', key: F_HERO.zhang_liao, team: TEAM_B, enemy: TEAM_A, strike: 'strike_vs_a', tint: WEI_BLUE, col: 2, row: 3 },
-  { id: 'b_xuchu', name: '许褚', key: F_HERO.xu_chu, team: TEAM_B, enemy: TEAM_A, strike: 'strike_vs_a', tint: WEI_BLUE, col: 4, row: 3 },
-  { id: 'b_simayi', name: '司马懿', key: F_HERO.sima_yi, team: TEAM_B, enemy: TEAM_A, strike: 'strike_vs_a', tint: WEI_BLUE, col: 3, row: 1 },
+  // 蜀（TEAM_A，下半场 r5-7，红）—— 武将前排(r5)、谋士后排(r7)
+  { id: 'a_guanyu', name: '关羽', key: F_HERO.guan_yu, team: TEAM_A, enemy: TEAM_B, strike: 'strike_vs_b', tint: SHU_RED, q: 2, r: 5 },
+  { id: 'a_zhaoyun', name: '赵云', key: F_HERO.zhao_yun, team: TEAM_A, enemy: TEAM_B, strike: 'strike_vs_b', tint: SHU_RED, q: 4, r: 5 },
+  { id: 'a_zhuge', name: '诸葛亮', key: F_HERO.zhuge_liang, team: TEAM_A, enemy: TEAM_B, strike: 'strike_vs_b', tint: SHU_RED, q: 3, r: 7 },
+  // 魏（TEAM_B，上半场 r0-2，蓝）—— 武将前排(r2)、谋士后排(r0)
+  { id: 'b_zhangliao', name: '张辽', key: F_HERO.zhang_liao, team: TEAM_B, enemy: TEAM_A, strike: 'strike_vs_a', tint: WEI_BLUE, q: 2, r: 2 },
+  { id: 'b_xuchu', name: '许褚', key: F_HERO.xu_chu, team: TEAM_B, enemy: TEAM_A, strike: 'strike_vs_a', tint: WEI_BLUE, q: 4, r: 2 },
+  { id: 'b_simayi', name: '司马懿', key: F_HERO.sima_yi, team: TEAM_B, enemy: TEAM_A, strike: 'strike_vs_a', tint: WEI_BLUE, q: 3, r: 0 },
 ];
 
 // 一个棋子（纯数据）：ai-chase + 自动普攻 + 会死。
 function unitEntity(h: HeroSpec): EntityBlueprint {
   const atk = `atk_${h.id}`; // 每英雄唯一 → 不与他人串台（MVP-0 唯一 id 策略）
-  const p = hexToPixel(h.col, h.row); // 棋子站在六边形格中心（金铲铲布局）
+  const p = project(h.q, h.r); // 初始 Transform（grid-move 每拍据 HexPos 重投影）
   return {
     Transform: xf(p.x, p.y),
-    Velocity: { vx: 0, vy: 0, angular: 0 },
-    Shape: { kind: 'box', width: 16, height: 16 },
-    Mass: { value: 1 },
+    Shape: { kind: 'box', width: 16, height: 16 }, // 供打击区 overlap 命中
     Tag: { flags: h.team },
     Resource: { id: 'hp', current: HP, min: 0, max: HP },
-    Perception: { targetTag: h.enemy, sightRadius: 0 }, // 无限视野 → 锁最近敌人写 Relation(target)
-    Steering: { mode: 'seek', speed: 0.8, stopRange: 26 },
+    Perception: { targetTag: h.enemy, sightRadius: 0 }, // 无限视野 → aggro 锁最近敌人写 Relation(target)
+    // 六边形网格寻路移动（替 steering）：HexPos=格位(SIM 真相,进 hash)；GridMover 每 period tick 沿 A* 走一格。
+    HexPos: { q: h.q, r: h.r },
+    GridMover: { period: 10, elapsed: 0 },
     Mortal: { resource: 'hp', atOrBelow: 0 },
     // 普攻链（自身闭环）：loop Timer 周期到点 → EventWhen(读自身唯一 timer,edge) 发唯一信号 → Caster 在目标处展开打击区。
     Timer: { id: atk, elapsed: 0, duration: ATK_CD, loop: true },
@@ -124,7 +123,7 @@ function unitEntity(h: HeroSpec): EntityBlueprint {
 
 // 头顶名字（表现，三国感）：Text + 势力色 Color + Hierarchy 跟随单位本体。
 function labelEntity(h: HeroSpec): EntityBlueprint {
-  const p = hexToPixel(h.col, h.row);
+  const p = project(h.q, h.r);
   return {
     Transform: xf(p.x, p.y - 16),
     Text: { content: h.name, fontSize: 9, fontFamily: 'sans-serif', anchor: 'center', lineSpacing: 0 },
@@ -139,8 +138,10 @@ export function buildGameFBlueprint(): WorldBlueprint {
   const entities: Record<string, EntityBlueprint> = {
     // 技能/打击库（数据，单例）。
     library: { PrefabLibrary: { templates: GAME_F_TEMPLATES, seq: 0 } } as unknown as EntityBlueprint,
-    // 六边形棋盘（56 格，表现层底；金铲铲 7×8 布局，蜀半场暖/魏半场冷）。hex 数学待 REQ-024 引擎接管。
+    // 六边形棋盘（56 格，表现层底；金铲铲 7×8 布局，蜀半场暖/魏半场冷）。
     ...boardEntities(F_HEX_WARM, F_HEX_COOL),
+    // 棋盘配置单例（喂引擎 grid-move：尺寸 + 投影原点）。
+    board: { HexBoard: { cols: COLS, rows: ROWS, tileSize: TILE, originX: ORIGIN_X, originY: ORIGIN_Y } } as unknown as EntityBlueprint,
     // 胜负旗标 + 竞技场存活计数 Zone（存活=0 → present flag 落 false；下游接 flow 阶段机，后续）。
     team_a_flag: { Flag: { id: 'team_a_present', active: true } } as unknown as EntityBlueprint,
     team_b_flag: { Flag: { id: 'team_b_present', active: true } } as unknown as EntityBlueprint,
@@ -156,11 +157,9 @@ export function buildGameFBlueprint(): WorldBlueprint {
 
   return {
     capabilities: [
-      // AI：索敌 + 走位（ai-chase = aggro + steering + motion）
+      // AI：索敌 + 六边形网格寻路走位（aggro 写目标 → grid-move 沿确定性 A* 逐格走，REQ-024）
       aggroCapability,
-      steeringCapability,
-      motionApplyCapability,
-      collisionResolveCapability,
+      gridMoveCapability,
       // 自动普攻：timer → event-when → caster → prefab 展开打击区
       timerCapability,
       eventWhenCapability,
