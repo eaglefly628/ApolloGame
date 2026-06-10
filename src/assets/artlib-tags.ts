@@ -139,9 +139,10 @@ export const CAT_TAGS: Record<string, string[]> = {
   'misc':                     ['decal', 'overlay', 'environmental'],
   'misc/blood':               ['blood', 'gore', 'decal', 'death_marker'],
   'misc/brands':              ['brand', 'overlay', 'enchant_visual'],
+  'misc/numbers':             ['number', 'digit', 'hud', 'quantity', 'overlay'],
 
-  // ── emissaries ────────────────────────────────────────────────────────────
-  'emissaries':               ['emissary', 'special', 'messenger'],
+  // ── emissaries (DCSS 神明 — 分体精灵 top+bottom) ──────────────────────────
+  'emissaries':               ['deity', 'god', 'divine', 'npc', 'two_tile', 'large'],
 
   // ── cardgame ──────────────────────────────────────────────────────────────
   'cardgame':                 ['card', 'balatro', 'joker', '小丑牌'],
@@ -560,4 +561,36 @@ export const SUBJECT_TAGS: Record<string, string[]> = {
   altar_lugonu:       ['altar', 'chaos', 'abyss', 'dark', 'purple'],
   altar_beogh:        ['altar', 'orc', 'tribal'],
   altar_ashenzari:    ['altar', 'knowledge', 'chains', 'necromancy'],
+
+  // ── emissaries — DCSS 六神明（分体精灵，top+bottom 搭配使用）──────────────
+  elyvilon_top:       ['deity', 'god', 'healing', 'peaceful', 'white', 'two_tile'],
+  elyvilon_bottom:    ['deity', 'god', 'healing', 'peaceful', 'white', 'two_tile'],
+  okawaru_top:        ['deity', 'god', 'combat', 'warrior', 'armor', 'two_tile'],
+  okawaru_bottom:     ['deity', 'god', 'combat', 'warrior', 'armor', 'two_tile'],
+  trog_top:           ['deity', 'god', 'berserker', 'rage', 'warrior', 'red', 'two_tile'],
+  trog_bottom:        ['deity', 'god', 'berserker', 'rage', 'warrior', 'red', 'two_tile'],
+  tso_top:            ['deity', 'god', 'holy', 'divine', 'gold', 'light', 'two_tile'],
+  tso_bottom:         ['deity', 'god', 'holy', 'divine', 'gold', 'light', 'two_tile'],
+  vehumet_top:        ['deity', 'god', 'fire', 'magic', 'conjuration', 'blue', 'two_tile'],
+  vehumet_bottom:     ['deity', 'god', 'fire', 'magic', 'conjuration', 'blue', 'two_tile'],
+  zin_top:            ['deity', 'god', 'law', 'purity', 'order', 'silver', 'two_tile'],
+  zin_bottom:         ['deity', 'god', 'law', 'purity', 'order', 'silver', 'two_tile'],
+
+  // ── Balatro 花色图标 & 特殊卡牌 ──────────────────────────────────────────
+  Club_suit_icon:     ['suit', 'club', 'playing_card', 'poker', 'black'],
+  Diamond_suit_icon:  ['suit', 'diamond', 'playing_card', 'poker', 'red'],
+  Heart_suit_icon:    ['suit', 'heart', 'playing_card', 'poker', 'red'],
+  Spade_suit_icon:    ['suit', 'spade', 'playing_card', 'poker', 'black'],
+  BalatroHands:       ['poker_hand', 'reference', 'game_guide', 'chart'],
+  Blinds:             ['blind', 'boss_blind', 'ante', 'objective'],
+  Editions:           ['edition', 'foil', 'holographic', 'polychrome', 'negative'],
+  Enhanced_Cards:     ['enhanced', 'seal', 'card_modifier', 'bonus'],
+  Vouchers:           ['voucher', 'shop_item', 'permanent_buff'],
+  Locked_Deck:        ['deck', 'locked', 'unlock', 'game_mode'],
+  Tarot_Judgement:    ['tarot', 'consumable', 'special_card', 'soul_card'],
+  Tarot_The_Fool:     ['tarot', 'consumable', 'special_card', 'soul_card'],
+  Planet_Eris:        ['planet', 'hand_level', 'consumable', 'rare'],
+  Spectral_Cryptid:   ['spectral', 'consumable', 'special_card', 'rare'],
+  Spectral_Grim:      ['spectral', 'consumable', 'special_card', 'rare'],
+  Pair_of_4:          ['poker_hand', 'pair', 'playing_card', 'hand_example'],
 };
