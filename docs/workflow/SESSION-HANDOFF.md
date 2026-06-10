@@ -49,7 +49,7 @@
 
 - 🔴 **仍没在真浏览器里看过一帧**。"build 过 / 测试绿 / ApolloBench 过"都不等于"画面对"。ApolloBench 的 Visual 轴是**数据级代理**（渲染项有限且落在视口内），不是人眼/VLM 评审。→ follow-up ②。
 - 🟠 **物理浮点跨端确定性**未在真双端验证（collision-resolve 进 hash）。
-- 🟠 **性能债**：`World.query` 全表扫描 + 每 tick 分配；N 大会卡（无 archetype/索引）。
+- ✅ ~~**性能债**：`World.query` 全表扫描~~ → **已还（2026-06-10）**：倒排组件索引 + creationSeq 保序（`query-perf-plan.md` 方案 A + 单调跳排序/稠密退化两增强）。稀有查询 36×（E=5000 实测 103→2.9µs），稠密持平，行为逐字节不变（880 绿 + 8 条对拍守护）。每 tick 结果数组分配仍在（queryEach 按需后置）。
 - 🟠 **多 session 架构熵**：launcher/apollo.py/studio/三游戏在并行 session 累积，push 前务必 rebase。
 
 ## 5. 关键文件
