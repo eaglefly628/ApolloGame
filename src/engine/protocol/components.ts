@@ -140,6 +140,9 @@ export interface OverTime extends Component {
 // ── Prefab ── 数据级预制模板（T4 授权层，反 YAML 编译器）。模板 = 一组实体的组件蓝图（纯数据）。
 // AI/数据产出 SpawnRequest{templateId,x,y}（复用 spawn 原子的请求契约）→ prefab 能力查库、确定性展开为
 // 实体+组件（唯一 id、Transform 偏移到 x,y、深拷贝隔离）。"AI 写高层数据、引擎确定性展开"，无自由代码。
+// 内部引用（REQ-F-033）：模板里指「同一次展开的兄弟实体」的字段（Hierarchy.parentId / Caster.originEntity
+// / Zone.requiredEntities…任意组件任意深度）一律写 '@local:<localId>'，展开时重写为兄弟实例 id——
+// 复合预制（单位+名牌+血条、炮塔+炮管、母体+子弹）整体生灭跟随的标配语义。口诀：指兄弟就写 @local:。
 export interface PrefabTemplate {
   // localId → { 组件类型 → 组件数据（不含 type 字段，与 manifest 约定一致） }
   entities: Record<string, Record<string, Record<string, unknown>>>;

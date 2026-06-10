@@ -88,6 +88,7 @@
 - 引擎已落（4 验收测绿）：`SpawnRequest.overrides` + `Caster.overrides` 透传（prefab 逐字段合并，同模板异构实例）+ `Effect kind:'destroy-tagged'`（value=Tag 掩码批量清场，cascade 连挂件）。**零新系统**——阵容=槽位实体（持久），每槽 `Caster{onSignal:'deploy', template:英雄, at:'self', overrides:{main:{HexPos:{q,r}, Tag:{flags:阵营}, Resource:{...星级数值}}}}`。
 - 接线清单（flow-spec §3.3 对照）：① 棋子改成 PrefabTemplate 进 `PrefabLibrary`（含 hp Resource/Tag 占位，被 overrides 改写）；② 我方/敌方槽位实体（敌方按关卡分 `deploy_stage_N` 信号）；③ GameFlow 备战态 onEnter 置 Flag → event-when(edge) → 'deploy' 信号；结算态同法发 'wipe'；④ 两条 `Effect{onSignal:'wipe', kind:'destroy-tagged', value:各阵营掩码}`。买/卖/挪位 = 增删改槽实体（纯数据）。
 - 注意：槽位 Transform 直接放 hex 投影坐标（消除展开后一帧跳变）；信号是 edge（event-when 产出单拍），别手放常驻 Signal；星级=overrides 改 Resource max/current（每星一套数值进槽位数据）。
+- **F-033 已修，复合模板解锁**：模板内指兄弟实体一律写 `'@local:<localId>'`（如名牌 `Hierarchy{parentId:'@local:main'}`），展开时自动重映射为实例 id——单位+名牌+血条+大招接线打成**一个模板**整体生灭。**坑**：sidecar（大招接线等）也要挂 `Hierarchy{parentId:'@local:main'}` 才随主体级联（级联只沿 Hierarchy 边走，光有 originEntity 会清场幸存）；未知后缀原样保留（typo 直接可见）。
 
 > ✅ **引擎侧 REQ-F-026/027/028/029/030/031/032 均已落地、全绿**。PE-F 上述 F-1~F-7 皆可接（你交接报告里卡主程的两件——**F-029 血条→接 F-5，F-030 定身→接 F-6——已全部解锁，可继续**），纯数据 / 零游戏代码。不要在游戏层 workaround 引擎行为；若发现新引擎缺口，写 requests.md 提主程。
 

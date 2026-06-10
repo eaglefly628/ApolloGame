@@ -22,11 +22,37 @@ function findLibrary(world: IWorld): PrefabLibrary | undefined {
   return undefined;
 }
 
+// ── REQ-F-033：模板内部实体引用重映射（Unity/Godot nested-prefab 标配语义）──
+// 模板里指「同一次展开的兄弟实体」一律写 '@local:<localId>'（口诀：指兄弟就写 @local:）。
+// instantiate 深 walk 组件数据（含数组/嵌套，Zone.requiredEntities 等一体适用）：
+//   值为字符串且以 '@local:' 开头、后缀是本模板 localId → 重写为该兄弟的实例 id。
+// 显式标记 → 零误伤（信号名/资源 id/普通字符串绝不撞）；未知后缀保留原样（typo 在数据里显眼可 grep）。
+// overrides 补丁在重映射**之前**合并 → 槽位数据同样可用 '@local:' 改指向。纯字符串改写，展开拍即定、
+// 随实体进 snapshot/hash，确定性不变。
+export const LOCAL_REF_PREFIX = '@local:';
+function remapLocalRefs(v: unknown, templateId: string, seq: number, locals: ReadonlySet<string>): unknown {
+  if (typeof v === 'string' && v.startsWith(LOCAL_REF_PREFIX)) {
+    const suffix = v.slice(LOCAL_REF_PREFIX.length);
+    return locals.has(suffix) ? `${templateId}#${seq}:${suffix}` : v;
+  }
+  if (Array.isArray(v)) {
+    for (let i = 0; i < v.length; i++) v[i] = remapLocalRefs(v[i], templateId, seq, locals);
+    return v;
+  }
+  if (v && typeof v === 'object') {
+    const o = v as Record<string, unknown>;
+    for (const k of Object.keys(o)) o[k] = remapLocalRefs(o[k], templateId, seq, locals);
+    return v;
+  }
+  return v;
+}
+
 // 实例化一个模板到 (x,y)，返回新建实体 id 列表（便于测试/调试）。
 // overrides（REQ-F-032）：localId→组件→字段补丁，深拷贝+Transform 偏移之后逐字段合并——
 // 同一模板展开异构实例（各自 HexPos/Tag/数值）。补丁亦深拷贝（请求方数据与实例隔离）。
 export function instantiate(world: IWorld, tmpl: PrefabTemplate, templateId: string, seq: number, x: number, y: number, overrides?: SpawnOverrides): string[] {
   const created: string[] = [];
+  const locals = new Set(Object.keys(tmpl.entities)); // REQ-F-033：本模板兄弟 localId 集
   for (const [localId, comps] of Object.entries(tmpl.entities)) {
     const eid = `${templateId}#${seq}:${localId}`;
     world.createEntity(eid);
@@ -39,6 +65,7 @@ export function instantiate(world: IWorld, tmpl: PrefabTemplate, templateId: str
       }
       const patch = patches?.[ctype];
       if (patch) Object.assign(copy, JSON.parse(JSON.stringify(patch)) as Record<string, unknown>);
+      remapLocalRefs(copy, templateId, seq, locals); // REQ-F-033：'@local:x' → 兄弟实例 id（补丁后，补丁同享）
       world.addComponent(eid, { type: ctype, ...copy } as unknown as Component);
     }
     created.push(eid);
