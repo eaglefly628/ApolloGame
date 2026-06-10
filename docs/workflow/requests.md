@@ -1008,6 +1008,27 @@
 
 ---
 
+### REQ-F-027 · [2026-06-10] · Programmer F（用户反馈：棋盘成平行四边形）· 框架级 · status: **open** · 优先级: 中（自走棋棋盘观感）· 类型: grid-move 投影正交化
+
+> **现象（用户反馈）**：grid-move 的 HexPos→Transform 投影是 axial 斜投影 `x = ox + q*ts + r*ts/2`——r 越大 x 累积右移 → 整盘渲染成**平行四边形**（斜菱形），不像金铲铲那种规整矩形棋盘。用户要**正交投影**、横竖各 ~12 格。
+> **game-side 修不了**：单位 Transform 由 grid-move 每拍投影写入（game-f 不能覆盖）；改投影 = 改引擎。
+> **建议（交主程裁，投影换式/加模式，不动 hexNextStep 邻接）**：
+> - 正交方格：`x = ox + q*ts`, `y = oy + r*ts`（矩形棋盘，6 邻接渲染为含斜向）；或
+> - offset-rows（TFT 式六边形矩形）：`x = ox + q*ts + (r&1)*ts/2`（奇数行 +半格、不累积斜）→ 规整矩形 + 仍是六边形观感。
+> 落地后 game-f 设 ~12×12 正交棋盘（纯数据 cols/rows）。寻路逻辑（axial 邻接）不变。
+
+---
+
+### REQ-F-028 · [2026-06-10] · Programmer F（Game F 接 flow 暴露）· 框架级 · status: **open（修复方向已确认）** · 优先级: 中（游戏流程阶段机）· 类型: 系统定序 bug（拓扑成环，同 REQ-F-025 类）
+
+> **现象**：game-f 加 `flow`（回合阶段机：备战→战斗→结算）→ 引擎拓扑成环：`flow`(RMW Flag/Resource：写 in_combat、读 present 旗标) ↔ `zone-occupancy`(RMW Flag：读写 present 旗标) 互为前驱。
+> **证伪绕过**：换 `group-count`（计数写 Resource）也不行——它 `reads:['...Resource']` 即 RMW Resource，与 flow（RMW Resource）同样成环。
+> **根因同 REQ-F-025**（grid-move↔aggro）：两个 RMW 同组件的系统无显式定序 → 判环。
+> **建议（交主程裁）**：`flow` 系统加 `runsAfter:['zone-occupancy','group-count']`（语义：先数清存活/羁绊计数，flow 再据此判阶段转移）；或把 flow 作为"流程总控"显式排在所有 Flag/Resource 计数类系统之后（更通用，利于任何"流程读派生事实"的游戏）。
+> 落地后我接 game-f 的 flow 阶段机（备战→战斗→结算→gameover，数据已设计就绪）。
+
+---
+
 ## 需求模板（复制这段填写）
 
 ```
