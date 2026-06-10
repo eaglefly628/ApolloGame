@@ -71,7 +71,7 @@
 6. ✅ **已接入（2026-06-10）**：多回合循环/回合重置（inbox F-7）。REQ-F-033（'@local:'，5ca52ec）落地后按 §5.3 草案原样接：复合棋子模板 + 槽位 + deploy/wipe + round_flow 循环；含两回合循环验收测。
 7. ✅ **MVP-1 对齐第一批（2026-06-10，照 flow-spec §3.2/§4.1/§4.2/§4.5）**：L1 run_flow（boot/advance/victory/defeat + round_done 握手 + >5 进位 banded）、经济三件套（收入爬坡/利息/连胜金 = income_armed 窗 + 14 组 band）、阶段伤害（基础 0/2 + 存活近似 2，REQ-022 接真值待 Phase 3）、关卡表前 2 阶段（STAGES 数据：黄巾×0.45 / 董卓全强度，deploy_stage_N 按 stage_idx 分流）。game-f 测 **10/10**。
 8. ✅ **用户实测三 bug 全闭环（2026-06-10）**：蓝条频闪（MANA_FILL 50→20，节奏数据非 bug）/ 三色阵营（名牌改队伍色，art-data 已同步修订）/ 瞬移（REQ-F-034 当日提报→主程落 glideSpeed→接入 0.8，inbox F-8 done）。
-9. **余项与阻塞面（2026-06-10 晚）**：商店三件套 P0 = **被 REQ-F-038 阻塞**（已购牌码读不出，已提池）；F-9 普攻 self 化 = **被 REQ-F-035+036 双阻塞**（语义门+拓扑环，§5.4 配方已存档）；大招完整 self 化 = REQ-F-037（不急，Phase 2 才真撞）。**当前唯一可动 = ready 开战输入（P2，策划已回驳"归主程"改派 PE-F：输入命令→信号→Effect set-flag，仿 game-b/c clickable）**→ 然后 等级/经验/概率牌袋（P2）。
+9. **余项与阻塞面（2026-06-10 深夜）**：商店三件套 P0 = **被 REQ-F-038 阻塞**（已购牌码读不出，已提池）；F-9 普攻 self 化 = **被 REQ-F-036 残环阻塞**（035 whenGlobal 已落✓、排雷拆掉 flow/zone 后仍余 10 系统 SCC，已重开附走向推演，等主程二刷；§5.4 配方含 whenGlobal 随时贴回）；大招完整 self 化 = REQ-F-037（Phase 2 才真撞）。**当前唯一可动 = ready 开战输入（P2，策划已改派 PE-F：输入命令→信号→Effect set-flag）**→ 然后 等级/经验/概率牌袋（P2）。
 
 ### 5.1 血条/蓝条接入（✅ 已接入 mainbranch 2026-06-10，本节存档备查）
 
@@ -128,7 +128,7 @@
 > 5. **全局 id 先登记 flow-spec §3.1 注册表**：`deploy` / `wipe` / `deploy_stage_1` / `round` / `deploy_armed` / `wipe_armed`。
 > 6. **测试**：两回合循环（一轮团灭→resolution wipe→prep 重展开：实例 id 全新、名牌/条随生随灭、槽位/库幸存）+ 确定性 hash 双跑；Zone present flag 注意 prep 40 拍内 zone 重新数到人（展开次拍生效，余量足）。
 
-### 5.4 F-9 普攻 self 化接入配方（**被 REQ-F-035+036 双阻塞**，两条落地后照此贴回；本轮已写好实测过、因拓扑环回退）
+### 5.4 F-9 普攻 self 化接入配方（**被 REQ-F-036 残环阻塞**——035 已落、whenGlobal 语法已并入下方第 2 步；带门重接复测 10 系统残环（详 036 复测补充），主程拆环后照此贴回 + 第 4 步两断言 + 阶段门"关门零出手/开门恢复"测）
 
 > 实测：按 inbox F-9 处方接入，tsc 过、12 测全编出，但 **selfRuleCapability 一进战斗图抛 12 系统 SCC**（详 REQ-F-036，根因=self-rule RMW Resource/Flag 零显式定序边）。回退保持全绿。贴回步骤：
 >

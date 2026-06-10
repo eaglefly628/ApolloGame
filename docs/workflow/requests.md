@@ -1188,7 +1188,11 @@
 
 ---
 
-### REQ-F-036 · [2026-06-10] · PE-F（按 F-9 处方接入实测暴露）· 框架级 · status: **done-covered（与主程相向而行：本单在途时 1e875ef 落 035 已附带同向排雷 runsAfter:['flow','resource-apply','zone-occupancy','group-count'] + 五系统同场守护测——实测复核见 F-9 回执。本单留档 SCC 现场证据）** · 优先级: ~~高~~ · 类型: 系统定序 bug（拓扑成环，同 REQ-F-025/028/031 类）
+### REQ-F-036 · [2026-06-10] · PE-F（按 F-9 处方接入实测暴露）· 框架级 · status: **open（排雷后复测仍有残环，请主程二刷）** · 优先级: **高（F-9 仍被拦死）** · 类型: 系统定序 bug（拓扑成环，同 REQ-F-025/028/031 类）
+
+> **复测补充（2026-06-10，1e875ef 排雷后带 whenGlobal 重接）**：环**缩了没断**——12→10 系统：`flow`/`zone-occupancy` 已被排雷边拆出 ✓，残 SCC = `self-rule, event-when, caster, prefab-spawn, hitbox, over-time, resource-apply, destroy-apply, mortal, hierarchy-cascade`。
+> **残环走向（按组件 writer→reader 边推演）**：`self-rule 写 Flag → event-when 读 Flag → 写 Signal → caster → SpawnRequest → prefab-spawn → …结算链… → hitbox → over-time → resource-apply ——(排雷边 runsAfter)→ self-rule`，主程新加的 `resource-apply 先行` 回边与 `self-rule→event-when` 前向边合围。引擎守护测「五系统同场」没带 caster/prefab/hitbox/cascade 这条链 → 没踩到。
+> **建议二刷方向（仍交主程裁）**：环里 self-rule 的**出边**只有"写 Flag/State 被 event-when 读"这一类（SpawnRequest/DestroyRequest 是 consume 单向）。可裁 (A) `event-when runsBefore self-rule` 显式边——self 写的 Flag 晚一拍才被全局链看见，与 grid-move/steering"一拍延迟"同纪律；(B) 收窄 self-rule 声明（若 do 动作集可静态推导：不含 set-flag 的规则世界无该写边——动静较大）。复现条件照旧：game-f 蓝图 + selfRuleCapability 即抛。
 
 > **现象（最小复现=game-f 蓝图 + selfRuleCapability）**：按 F-9 处方迁普攻（unit 挂 `Timer{id:'atk'}+SelfRule{spawn strike at:'target'}`），capabilities 加 `selfRuleCapability` → `world.tick()` 抛 **12 系统 SCC**：`flow, self-rule, event-when, caster, prefab-spawn, hitbox, over-time, resource-apply, destroy-apply, mortal, zone-occupancy, hierarchy-cascade`。去掉 selfRuleCapability 即恢复全绿；**接入 diff 已存档 PF-finish-list §5.4，修后原样贴回**。
 > **根因（读 self-rule.ts 系统声明）**：self-rule `reads:[SelfRule,Resource,Flag,State,Timer,StringVar,Transform,Relation]`、`writes:[SelfRule,Flag,Resource,State,DestroyRequest,SpawnRequest]`——**对 Resource/Flag 是 RMW**，与战斗图里同样 RMW 这两组件的 flow / resource-apply / effect-apply 互为前驱成环；写 DestroyRequest/SpawnRequest 又汇入 mortal/cascade/caster→prefab 链。能力定义**零显式定序边**；引擎侧 9+4 验收测的小世界没有完整战斗图，踩不到（与 REQ-F-031 gauge 当年完全同型）。
