@@ -1,7 +1,7 @@
 import { defineCapability } from '@engine/core/define-capability.js';
 import { SystemPhase } from '@engine/core/types.js';
 import type { IWorld } from '@engine/core/types.js';
-import type { CardPile, PlayedHand, Flag, InputQueue, Card, Resource } from '@engine/protocol/components.js';
+import type { CardPile, PlayedHand, Flag, InputQueue, Card, Resource, Signal } from '@engine/protocol/components.js';
 import { decodeCard } from './card-play.js';
 import { findByComponentId } from '@engine/core/query.js';
 
@@ -80,7 +80,7 @@ export const cardPileCapability = defineCapability({
         },
       },
     },
-    reads: ['CardPile', 'InputQueue', 'PlayedHand', 'Flag', 'Resource'],
+    reads: ['CardPile', 'InputQueue', 'PlayedHand', 'Flag', 'Resource', 'Signal'],
     writes: ['CardPile', 'PlayedHand', 'Flag', 'Resource'],
     consumes: [],
   },
@@ -94,8 +94,11 @@ export const cardPileCapability = defineCapability({
       // REQ-F-040：A1/A2 让本系统 RMW Resource（扣代价/写牌码）→ 与 flow/zone-occupancy/group-count/
       // self-rule/resource-apply 的互 RMW 伪环按「输入先行」纪律一次钉死（含今天就潜伏的 flow↔card-pile
       // Flag 互锁——E-1 接入必踩，预排雷）。玩家输入应用 → 各方再据本拍事实反应（计数/相位/结算/自治）。
-      runsBefore: ['poker-eval', 'card-score-pass', 'flow', 'zone-occupancy', 'group-count', 'self-rule', 'resource-apply'],
-      reads: ['CardPile', 'InputQueue', 'PlayedHand', 'Flag', 'Resource'],
+      // REQ-F-041：读 Signal（refreshOnSignal）→ 与 event-when（读 Flag 写 Signal）互锁，且 clickable
+      // 自带 runsAfter:['event-when']（先清后标）——cp→ew→clickable→(Signal)→cp 三元环。补 'event-when'
+      // 'clickable' 维持输入先行：刷新读到的是上一拍信号（prep/点击级操作，16ms 不可感知）。
+      runsBefore: ['poker-eval', 'card-score-pass', 'flow', 'zone-occupancy', 'group-count', 'self-rule', 'resource-apply', 'event-when', 'clickable'],
+      reads: ['CardPile', 'InputQueue', 'PlayedHand', 'Flag', 'Resource', 'Signal'],
       writes: ['CardPile', 'PlayedHand', 'Flag', 'Resource'],
       consumes: [],
       execute(world: IWorld) {
@@ -104,12 +107,22 @@ export const cardPileCapability = defineCapability({
           const e = findByComponentId(world, 'Resource', 'id', id);
           return e ? world.getComponent<Resource>(e, 'Resource') : undefined;
         };
+        // 本 tick 在场信号名（REQ-F-041 refreshOnSignal 用）。
+        const sigNames = new Set<string>();
+        for (const [sid] of world.query('Signal')) {
+          const sg = world.getComponent<Signal>(sid, 'Signal');
+          if (sg) sigNames.add(sg.name);
+        }
         for (const [eid] of world.query('CardPile')) {
           const pile = world.getComponent<CardPile>(eid, 'CardPile')!;
           const owner = pile.owner;
-          // ① 输入：play / discard（按 owner）。
-          const playIdx = owner ? plays.get(owner) : undefined;
-          const discardIdx = owner ? discards.get(owner) : undefined;
+          // REQ-F-041(A)：信号刷新——弃全部手牌，② 再按 handSize 补满（弃/补皆既有内功，只加触发面）。
+          // 同拍撞上 play/discard 输入 → 退化输入，本拍忽略（刷新优先，下标语义已失效；确定性明确）。
+          const refreshed = !!(pile.refreshOnSignal && sigNames.has(pile.refreshOnSignal));
+          if (refreshed) pile.hand = [];
+          // ① 输入：play / discard（按 owner；刷新拍忽略）。
+          const playIdx = owner && !refreshed ? plays.get(owner) : undefined;
+          const discardIdx = owner && !refreshed ? discards.get(owner) : undefined;
           const ph = world.getComponent<PlayedHand>(eid, 'PlayedHand'); // 出牌区在同实体
           // REQ-F-040(A2) 可负担门：全部代价付得起才执行 play；付不起=本拍视同没出牌（牌不丢、区清空、Flag 灭）。
           let playAccepted = playIdx !== undefined;

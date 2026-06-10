@@ -71,13 +71,22 @@ export const effectApplyCapability = defineCapability({
       writes: ['Flag', 'Resource', 'State', 'Sensor', 'Visibility', 'DestroyRequest', 'Timer'],
       consumes: [],
       execute(world) {
-        // 收集本 tick 在场的信号名。
+        // 收集本 tick 在场的信号名 + 各名的 source 实体列表（REQ-F-041：'@signal-source' 寻址用；query 序确定）。
         const signals = new Set<string>();
+        const sources = new Map<string, string[]>();
         for (const [sid] of world.query('Signal')) {
           const s = world.getComponent<Signal>(sid, 'Signal');
-          if (s) signals.add(s.name);
+          if (s) {
+            signals.add(s.name);
+            const list = sources.get(s.name);
+            if (list) list.push(s.source); else sources.set(s.name, [s.source]);
+          }
         }
         if (signals.size === 0) return;
+        // 目标解析（REQ-F-041）：targetEntity='@signal-source' → 触发信号的 source 实体（可多个，如同拍点两个席位）。
+        // 「点谁卖谁/点谁选谁」的指针标配寻址——运行时实例 id 装配期不可知，信号源是唯一的数据可达句柄。
+        const targetsOf = (ef: Effect): string[] =>
+          ef.targetEntity === '@signal-source' ? (sources.get(ef.onSignal) ?? []) : ef.targetEntity ? [ef.targetEntity] : [];
 
         const lookup = buildConditionLookup(world);
 
@@ -133,29 +142,33 @@ export const effectApplyCapability = defineCapability({
             // ── 物理 kind（REQ-008）：信号→物理改动，按 targetEntity 定位。补上"踩开关→门开"的最后一环。──
             case 'set-sensor': {
               // 给目标实体加/去 Sensor（非实心）→ collision-resolve 跳过它 = 可穿过（踩开关→墙变门）。
-              if (ef.targetEntity) {
-                const on = ef.value === true || ef.value === 'true';
+              const on = ef.value === true || ef.value === 'true';
+              for (const te of targetsOf(ef)) {
                 if (on) {
-                  if (!world.hasComponent(ef.targetEntity, 'Sensor')) world.addComponent(ef.targetEntity, { type: 'Sensor' } as Sensor);
+                  if (!world.hasComponent(te, 'Sensor')) world.addComponent(te, { type: 'Sensor' } as Sensor);
                 } else {
-                  world.removeComponent(ef.targetEntity, 'Sensor');
+                  world.removeComponent(te, 'Sensor');
                 }
               }
               break;
             }
             case 'set-visible': {
               // 切目标实体可见性（门消失/出现）。无 Visibility 则补一个。
-              if (ef.targetEntity) {
-                const visible = ef.value === true || ef.value === 'true';
-                const vis = world.getComponent<Visibility>(ef.targetEntity, 'Visibility');
+              const visible = ef.value === true || ef.value === 'true';
+              for (const te of targetsOf(ef)) {
+                const vis = world.getComponent<Visibility>(te, 'Visibility');
                 if (vis) vis.visible = visible;
-                else world.addComponent(ef.targetEntity, { type: 'Visibility', visible, active: true } as Visibility);
+                else world.addComponent(te, { type: 'Visibility', visible, active: true } as Visibility);
               }
               break;
             }
             case 'destroy': {
-              // 发 DestroyRequest，destroy-apply 消费后移除目标实体（清障碍）。
-              if (ef.targetEntity) world.addComponent(ef.targetEntity, { type: 'DestroyRequest', entityId: ef.targetEntity } as DestroyRequest);
+              // 发 DestroyRequest，destroy-apply 消费后移除目标实体（清障碍/点谁卖谁）。
+              for (const te of targetsOf(ef)) {
+                if (!world.hasComponent(te, 'DestroyRequest')) {
+                  world.addComponent(te, { type: 'DestroyRequest', entityId: te } as DestroyRequest);
+                }
+              }
               break;
             }
             // ── destroy-tagged（REQ-F-032 清场）：value=Tag 掩码，命中者全部发自销毁请求。运行时展开
@@ -177,8 +190,8 @@ export const effectApplyCapability = defineCapability({
             // （从此刻重新计时）；value 给了数值则一并设 duration。配 condition(timer gte N)→event-when→effect
             // 即"踩下那刻起 N 拍自动关门/塌陷"等限时机制纯数据涌现。──
             case 'reset-timer': {
-              if (ef.targetEntity) {
-                const t = world.getComponent<Timer>(ef.targetEntity, 'Timer');
+              for (const te of targetsOf(ef)) {
+                const t = world.getComponent<Timer>(te, 'Timer');
                 if (t) {
                   t.elapsed = 0;
                   const d = Number(ef.value);

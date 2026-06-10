@@ -1258,7 +1258,7 @@
 >
 > **同包外审其余结论归档**（全文 `docs/review/2026-06-10-f026-028-external-verdict.md`）：F-026 Q1–Q4 全过、代码审查通过；Q7 确认 F-028 同帧新鲜方向（离散逻辑 vs 连续反馈两分法）；**Q6（RMW 推断层治理）回驳**——外审方案"RMW 写降级仅留入边"会把 resource-apply 这类**真生产者**的出边一并删除，下游（gauge/flow/mortal）先后退化为注册序 tie-break，F-028/F-035 特意钉的同帧新鲜保证全部**静默失效**（响亮报错→隐藏一帧滞后 bug）；且该方案只治 mutual-RMW 类，对 F-025（互为纯生产/消费）与 F-031（经第三方传递闭环）两类无效。维持"报错+显式钉边逼出语义决策"纪律；观察阈值：显式边对超 ~10 再重审（现 6 对）。
 
-### REQ-F-041 · [2026-06-10] · PE-F（F-11 商店五件套 v2 §4.6 推演暴露）· 框架级 · status: **open（待主程评估）** · 优先级: 高（商店五件套余下三件——刷新/锁店/卖出——的共同前置） · 类型: 真缺口 ×2（信号驱动不了 card-pile 操作；运行时实体无数据可达的销毁寻址）
+### REQ-F-041 · [2026-06-10] · PE-F（F-11 商店五件套 v2 §4.6 推演暴露）· 框架级 · status: **done（A refreshOnSignal + B '@signal-source' 哨兵；接入派 inbox F-12）** · 优先级: 高（商店五件套余下三件——刷新/锁店/卖出——的共同前置） · 类型: 真缺口 ×2（信号驱动不了 card-pile 操作；运行时实体无数据可达的销毁寻址）
 
 > **背景**：买入核心已落（playCosts 原子验扣 + bought_code 分发 + bench_space 当 playCosts 第二货币防席满，全纯数据、15 测绿）。v2 §4.6 余下三件全部撞墙：
 > **缺口 A：信号→card-pile 操作桥（刷新/锁店共需）**
@@ -1269,6 +1269,11 @@
 > 买入产生的席位 marker 是**运行时实例**（`bench_<将>#<seq>:seat`，seq 装配期不可知）；`Effect{kind:'destroy', targetEntity}` 是静态数据 → 指不到；destroy-tagged 是**批量**掩码语义（卖一个不能全清）。clickable 点席位产 `Signal{source:被点实体}`——**source 里有精确实例 id，但 Effect 无"作用于信号源"的寻址**。
 > **建议 B（最窄寻址）**：`Effect.targetEntity` 支持哨兵 `'@signal-source'`（destroy/set-* 作用于触发信号的 source 实体）——「点谁卖谁/点谁选谁」是指针品类标配形状（卖棋子/拆塔/弃卡同形）。卖价返还（金 + bench_space+1 + 袋归还）= 既有 Effect/craft-recipe 重组。
 > **YAGNI 自审**：两缺口都是 v2 §4.6 硬性条目的唯一断点；A 是"输入域→sim 操作"的通用桥，B 是指针交互的通用寻址。
+>
+> **Lead 裁决（2026-06-10）**：**A、B 均按提案接受（双缺口核实，重组路径确不存在）；并自认一笔——F-11 批注里我写的"刷新=flow effect 重写 deck"不可实现（flow 无此动作），PE-F 纠错正确。**
+> - **A `CardPile.refreshOnSignal`**：完全贴合 caster/Effect 的 onSignal 既有惯用法（组件声明触发面，零新系统）；弃/补皆 card-pile 既有内功。锁店=信号链上游 Flag 条件挡（EventWhen 重组）判定正确，零引擎。**语义钉死**：① 同拍撞 play/discard 输入 → 输入忽略（刷新优先，下标已失效，退化输入要确定性明确）；② 定序——card-pile 读 Signal 与 event-when（读 Flag 写 Signal）互锁，按输入先行补 `runsBefore:['event-when','clickable']`：clickable 自带 runsAfter:['event-when']（先清后标），仅钉 ew 会合成 cp→ew→clickable→(Signal)→cp 三元环（game-f 全家桶 15 测当场抓出）——两个都钉，刷新读上一拍信号（prep/点击级操作 16ms 不可感知）。
+> - **B `Effect.targetEntity:'@signal-source'`**：F-033 '@local:' 开创的闭语法哨兵家族第二员；信号源是运行时实例唯一的数据可达句柄，判定正确。实现为全部实体寻址 kind（destroy/set-sensor/set-visible/reset-timer）统一过 targetsOf 解析——同拍多源各自生效（点两个席位都卖，集合语义）；静态 targetEntity 行为不变。
+> - 5 测（换批 / 零迁移+撞拍输入忽略 / event-when 互锁守护 / 点谁卖谁 / 双源+静态回归）。tsc + vitest 1045（含 game-f 全家桶 15 测）+ build 全绿。卖出返还（金+bench_space+袋归还）= 既有 Effect/craft-recipe 重组，随接入派 **inbox F-12**。
 
 ---
 

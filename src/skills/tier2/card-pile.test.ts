@@ -155,3 +155,47 @@ describe('card-pile · REQ-F-040 据码分发 + 可负担门', () => {
     expect(() => { for (let i = 0; i < 3; i++) w.tick(); }).not.toThrow(); // 修复前互 RMW 抛环
   });
 });
+
+// ── REQ-F-041(A)：refreshOnSignal 信号刷新桥（商店刷新/prep 自动换批） ──
+import type { Signal } from '@engine/protocol/components.js';
+describe('card-pile · REQ-F-041 信号刷新', () => {
+  const wRef = (deck: number[]): World => {
+    const w = w0(deck, 2);
+    w.getComponent<CardPile>('table', 'CardPile')!.refreshOnSignal = 'shop_refresh';
+    return w;
+  };
+  const fire = (w: World) => { w.createEntity('sig'); w.addComponent('sig', { type: 'Signal', name: 'shop_refresh', source: 'sig' } as Signal); };
+  const unfire = (w: World) => w.destroyEntity('sig');
+
+  it('信号在场 → 弃全部手牌 + 从 deck 补满（换一批）', () => {
+    const w = wRef([2, 5, 7, 9]);
+    w.tick(); // hand=[2,5]
+    expect(pile(w).hand).toEqual([2, 5]);
+    fire(w);
+    w.tick(); // 弃 [2,5] → 补 [7,9]
+    unfire(w);
+    expect(pile(w).hand).toEqual([7, 9]);
+    expect(pile(w).deck).toEqual([]);
+  });
+
+  it('无信号 → 不刷新（缺省零迁移）；同拍 play 撞刷新 → 输入忽略（牌区空、Flag 不脉冲）', () => {
+    const w = wRef([2, 5, 7, 9]);
+    w.tick();
+    w.tick(); // 无信号多拍 → hand 不变
+    expect(pile(w).hand).toEqual([2, 5]);
+    fire(w);
+    setInput(w, [{ source: 'p1', key: 'play', values: [0] }]); // 刷新拍撞出牌
+    w.tick();
+    unfire(w);
+    expect(pile(w).hand).toEqual([7, 9]); // 刷新生效
+    expect(played(w)).toEqual([]); // play 被忽略
+    expect(flag(w)).toBe(false); // 不脉冲
+  });
+
+  it('定序守护：card-pile(读 Signal) + event-when(读 Flag 写 Signal) 同场不抛（互锁已钉）', async () => {
+    const { eventWhenCapability } = await import('./event-when.js');
+    const w = wRef([2, 5, 7]);
+    for (const s of eventWhenCapability.systems) w.addSystem(s as never);
+    expect(() => { for (let i = 0; i < 3; i++) w.tick(); }).not.toThrow();
+  });
+});

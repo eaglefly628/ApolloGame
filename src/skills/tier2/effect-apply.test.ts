@@ -332,3 +332,46 @@ describe('T2 effect-apply — reset-timer（REQ-009）', () => {
     expect(T(w, 'door_timer').duration).toBe(60);
   });
 });
+
+// ── REQ-F-041(B)：targetEntity='@signal-source' 哨兵寻址（点谁卖谁/点谁选谁） ──
+import { World as W41 } from '@engine/core/world.js';
+import type { Signal as Sig41, Effect as Ef41 } from '@engine/protocol/components.js';
+import { destroyCapability as destroy41 } from '@atom-skills/destroy/index.js';
+describe('effect-apply · REQ-F-041 @signal-source 寻址', () => {
+  const mk41 = (): W41 => {
+    const w = new W41();
+    for (const s of effectApplyCapability.systems) w.addSystem(s);
+    for (const s of destroy41.systems) w.addSystem(s);
+    w.createEntity('fx');
+    w.addComponent('fx', { type: 'Effect', onSignal: 'sell', kind: 'destroy', targetId: '', targetEntity: '@signal-source', value: 0 } as Ef41);
+    return w;
+  };
+  const click = (w: W41, eid: string) => w.addComponent(eid, { type: 'Signal', name: 'sell', source: eid } as Sig41);
+  const alive41 = (w: W41, id: string) => w.getAllEntities().includes(id);
+
+  it('点谁卖谁：destroy 作用于信号源实体（运行时实例 id 无需写进数据）', () => {
+    const w = mk41();
+    w.createEntity('seat#7'); // 模拟运行时席位实例
+    w.createEntity('seat#8');
+    click(w, 'seat#7');
+    w.tick(); // Commit 写 DestroyRequest（信号被 event-when 域外手注，自行清理）
+    w.getComponent<Sig41>('seat#7', 'Signal') && w.removeComponent('seat#7', 'Signal');
+    w.tick(); // destroy-apply 消费
+    expect(alive41(w, 'seat#7')).toBe(false); // 点的没了
+    expect(alive41(w, 'seat#8')).toBe(true); // 没点的还在
+  });
+
+  it('同拍点两个 → 双源各自生效；静态 targetEntity 行为不变（回归）', () => {
+    const w = mk41();
+    w.createEntity('a'); w.createEntity('b'); w.createEntity('wall');
+    w.createEntity('fx2');
+    w.addComponent('fx2', { type: 'Effect', onSignal: 'sell', kind: 'destroy', targetId: '', targetEntity: 'wall', value: 0 } as Ef41);
+    click(w, 'a'); click(w, 'b');
+    w.tick();
+    w.removeComponent('a', 'Signal'); w.removeComponent('b', 'Signal');
+    w.tick();
+    expect(alive41(w, 'a')).toBe(false);
+    expect(alive41(w, 'b')).toBe(false);
+    expect(alive41(w, 'wall')).toBe(false); // 静态寻址照常
+  });
+});

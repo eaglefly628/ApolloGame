@@ -611,6 +611,8 @@ export interface Effect extends Component {
   kind: 'set-flag' | 'modify-resource' | 'set-state' | 'set-sensor' | 'set-visible' | 'destroy' | 'destroy-tagged' | 'reset-timer';
   targetId: string; // 逻辑 kind：set-flag→Flag.id；modify-resource→Resource.id；set-state→State.fsmId（按 id 全局定位）
   // 物理 kind（set-sensor/set-visible/destroy，REQ-008）：要改动的目标实体 id（按实体定位，不走全局 id 路由）。
+  // 哨兵 '@signal-source'（REQ-F-041）：作用于触发本 onSignal 的 Signal.source 实体（可多个，同拍点两个席位
+  // 各自生效）——「点谁卖谁/点谁选谁」的指针标配寻址；运行时实例 id 装配期不可知，信号源是唯一数据可达句柄。
   targetEntity?: EntityId;
   value: number | string | boolean; // modify-resource=数值增量；set-flag/set-sensor/set-visible=布尔；set-state=目标状态名
   // modify-resource 的运算（REQ-012，让「×倍率」成为数据）：'add'=current+value / 'mul'=current*value / 'set'=value。
@@ -920,6 +922,10 @@ export interface CardPile extends Component {
   // REQ-F-040(A2) 可负担门：全部代价付得起才执行 play（验→扣→取牌原子在本系统内完成；
   // 付不起则整次 play 不执行、牌不丢——修"card-pile 先取牌、craft-recipe(Commit) 后查钱"的时序硬伤）。
   playCosts?: Array<{ id: string; amount: number }>;
+  // REQ-F-041(A) 信号刷新桥：该名 Signal 在场 → 弃全部手牌 + 按 handSize 补满（商店刷新/prep 自动换批）。
+  // 配 edge 信号（event-when/clickable 一拍脉冲）；锁店=信号链上游用 Flag 条件挡（EventWhen 重组，零引擎）。
+  // 同拍撞上 play/discard 输入则忽略该输入（刷新优先，下标已失效）。
+  refreshOnSignal?: string;
 }
 
 // ── StatModifier ── 属性修正（①，ARPG）：来自具名 source（装备/buff/光环/天赋/boon）的一条加/乘修正。
