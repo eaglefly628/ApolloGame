@@ -76,6 +76,8 @@
   ① deploy 在 **prep** 就展开（§3.3 prep ⑥，玩家备战要看阵），aggro 无门、立刻锁 Relation(target) → "目标存在门"备战期形同虚设，棋子会在备战期开打；结算期 wipe 前 60 拍幸存者也会继续互殴；
   ② `evaluateSelfCondition` **只读自身组件、无全局回退**（self-rule.ts 亲核）→ SelfRule 写不出 `timer ∧ 全局 in_combat`；给每单位发自身 flag 副本=群发写=Gap C 禁区。
   **正确路径**：⑴ **大招半边可立即迁**（蓝由普攻攒、普攻有门 → 备战 `mp≥100` 不可能成立，自身资源阈值天然 self）；⑵ **普攻半边等 REQ-F-035**（已提池：`SelfRule.whenGlobal?: ConditionExpr` 全局门，最小一格），落地后 `when:{timer} + whenGlobal:{flag in_combat}` 即恢复门控。验收请加一条「备战期/结算期无伤害事件」断言，防回归。
+
+#### 任务 F-3 · REQ-F-027 接入 offset 棋盘布局（纯数据） — status: **done（策划 PF 审查确认 2026-06-10）**
 - HexBoard 加 `layout: 'offset'`（修「棋盘平行四边形」→规整矩形 + 六边形交错,金铲铲观感）+ 按需 cols/rows(~12×12)。引擎已落（缺省 'axial' 不影响现有蓝图）。零游戏代码。
 - ✅ 审查证据：blueprint board 实体已用 `layout: LAYOUT`（offset，commit `b14d109`「正交12×12棋盘」）。
 
