@@ -1188,6 +1188,44 @@
 
 ---
 
+### REQ-F-036 · [2026-06-10] · PE-F（按 F-9 处方接入实测暴露）· 框架级 · status: **done-covered（与主程相向而行：本单在途时 1e875ef 落 035 已附带同向排雷 runsAfter:['flow','resource-apply','zone-occupancy','group-count'] + 五系统同场守护测——实测复核见 F-9 回执。本单留档 SCC 现场证据）** · 优先级: ~~高~~ · 类型: 系统定序 bug（拓扑成环，同 REQ-F-025/028/031 类）
+
+> **现象（最小复现=game-f 蓝图 + selfRuleCapability）**：按 F-9 处方迁普攻（unit 挂 `Timer{id:'atk'}+SelfRule{spawn strike at:'target'}`），capabilities 加 `selfRuleCapability` → `world.tick()` 抛 **12 系统 SCC**：`flow, self-rule, event-when, caster, prefab-spawn, hitbox, over-time, resource-apply, destroy-apply, mortal, zone-occupancy, hierarchy-cascade`。去掉 selfRuleCapability 即恢复全绿；**接入 diff 已存档 PF-finish-list §5.4，修后原样贴回**。
+> **根因（读 self-rule.ts 系统声明）**：self-rule `reads:[SelfRule,Resource,Flag,State,Timer,StringVar,Transform,Relation]`、`writes:[SelfRule,Flag,Resource,State,DestroyRequest,SpawnRequest]`——**对 Resource/Flag 是 RMW**，与战斗图里同样 RMW 这两组件的 flow / resource-apply / effect-apply 互为前驱成环；写 DestroyRequest/SpawnRequest 又汇入 mortal/cascade/caster→prefab 链。能力定义**零显式定序边**；引擎侧 9+4 验收测的小世界没有完整战斗图，踩不到（与 REQ-F-031 gauge 当年完全同型）。
+> **游戏层无解**：capabilities 数组只是平局 tiebreak、覆盖不了组件推断边（F-031 已证）；定序属能力定义层。
+> **建议（交主程按 F-031/F-030 方法论裁）**：
+> - (A) self-rule 加 `runsBefore:['hitbox','over-time']`（必要时含 resource-apply 相关边）——决策系统读**上一拍**状态，与 grid-move/steering 的"CC 一拍延迟"同纪律（60tps 不可感知；普攻本就 45 拍一发）；
+> - (B) 移相位（决策先行相位），结构性与结算链脱钩——代价是 self-rule 读到的 Resource 是上一拍终值（语义同 A）。
+> 注意点：self-rule 写 DestroyRequest 与 mortal 的汇流、写 SpawnRequest 与 caster 的汇流，定序时一并钉死；加一条「self-rule 进完整战斗图不抛环」守护测（F-031 同款）。
+
+---
+
+### REQ-F-037 · [2026-06-10] · PE-F（推演 F-9 完整迁移到底时暴露）· 框架级 · status: **open（待主程评估；不阻塞 F-9 普攻半边）** · 优先级: 中（Phase 2 合体要把大招也去唯一 id 时才真撞上） · 类型: 真缺口（一实体一 SelfRule 装不下"回蓝+放大招"两条自治规则）
+
+> **背景**：F-9 批注说"大招半边可先迁（蓝由普攻攒）"——**方向对，但有两个隐藏依赖**，提前钉死防返工：
+> ① **at:'target' 的目标从哪来**：大招 SelfRule 落在蓝 sidecar（mp 在它身上，墙：一实体一 Resource、unit 已被 hp 占用），而 spawn at:'target' 读**自身** Relation——sidecar 没有。**纯数据可解**（无需引擎）：sidecar 挂 `Transform + Hierarchy(随主) + Perception{targetTag:敌}` → aggro 给 sidecar 自己的 Relation（位置=主身位，锁的就是近敌）。此法已可用，记录在案防别人再撞。
+> ② **真缺口在"攒蓝信号源"**：普攻半边迁完后 `atk_<英雄>` 信号消失 → 现 `Effect{onSignal:atk_<id>, mp+20}` 的攒蓝**失去挂点**。改时基回蓝（sidecar `SelfRule{when timer, do:[mp+4]}`）可保节奏——但 sidecar 唯一的 SelfRule 名额已被"蓝满→放→清"占用：**一实体一 SelfRule，回蓝(level)与放大招(once)两条规则挤不下**。挂第二个 sidecar 也不行（do 仅施自身，别人的 mp 写不到）。
+> **建议（交主程裁）**：(A) `SelfRule` 组件化为**规则数组**（`rules:[{when,do,once,armed}]`，单数形态兼容）——任何"一实体多条自治规则"（回蓝+放招、低血狂暴+濒死逃跑）同形；(B) spawn 动作加 `at:'parent-target'`（沿 Hierarchy 借宿主 Relation，免 ① 的 Perception 间接法）——可与 A 并案或独立。
+> **范围**：F-9 普攻半边（035+036 后）不需要本条；大招去唯一 id（Phase 2 合体的另一半）需要。gauge 蓝条的 `mp_<id>` 全局路由届时改 `fromParent` 指 sidecar 即解（纯数据）。
+
+---
+
+### REQ-F-038 · [2026-06-10] · PE-F（商店三件套 P0 接入推演暴露）· 框架级 · status: **open（待主程评估）** · 优先级: **高（MVP-1 商店 P0 的唯一引擎缺口）** · 类型: 真缺口（已购牌码读不出来——「按数据值分发」缺最后一环）
+
+> **要表达的语义（flow-spec §3.3 操作表 + §4.5）**：买人=点商店槽 i → `play(i)` 从手牌取出**英雄码** + 扣金 → **据码**生成对应英雄的阵容槽实体。发/选/弃/补 card-pile 全包，扣钱 craft-recipe 全包，造槽 Caster+模板全包——**断在"据码"**。
+> **证伪重组（逐条）**：
+> ① 牌码躺在 `PlayedHand.cards`，全库**无任何系统按值分发**（poker-eval 是德州牌型判定，读 cards 只产 chips/mult）；
+> ② `Caster.template`/`SpawnRequest.templateId` 是静态字符串，无按值选模板的形态；
+> ③ ConditionExpr 叶子只有 resource/flag/state/timer/string——**读不到 PlayedHand** → 现成的 banded EventWhen 分发模式（经济三件套同款）缺"码→Resource"最后一环；
+> ④ 设计稿 §4.5 原案写的是"选购的英雄落到 PlayedHand → **装配层据码展开**"——即游戏代码做分发，宪法禁区，不可照做。
+> **建议（交主程裁，PE-F 倾向 A 全套）**：
+> - **(A1) `CardPile.playedCodeResource?: string`**：play 成交拍把取出的牌码写进该 Resource（单张=该码；商店 handSize 语义一次买一张）→ 既有 banded `EventWhen{resource eq 码}` 即可分发到每英雄专属信号 → `Caster` 造槽。零新系统、最弱 LLM 可写（每英雄一行 band）。
+> - **(A2) `CardPile.playCosts?: [{id,amount}]`**：可负担才执行 play（取牌+补手+写码原子在 card-pile 内）；否则现序是 card-pile(Update) 先取牌、craft-recipe(Commit) 后查钱——**买不起也丢牌**的时序硬伤，挂两件套修不了（recipe 退不了牌）。
+> - (B) 独立 `card-read` 系统（PlayedHand→Resource）：解耦但多一个系统，A1 一字段可达同效。
+> **YAGNI 自审**：商店 P0 当下卡死；「从手牌选一张→按它是什么生效」是卡牌品类通用形状（商店/锦囊/事件卡全同形）。
+
+---
+
 ## 需求模板（复制这段填写）
 
 ```
