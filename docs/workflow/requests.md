@@ -1184,6 +1184,9 @@
 
 ## 已完成存档
 
+> **存证（2026-06-10）**：REQ-021 self-rule 扩展 `spawn` 动作（self 轴的 caster 对偶，`{kind:'spawn',template,at:'self'|'target'}`）已由并行 Lead session 落地 @ `299b498`——同模板多实例各自节拍生成、不齐射，解 Game F「每英雄唯一 id 脚手架」。本 Lead 复审：方向符合宣言（既有动词集收窄扩展、非新系统），组合后 tsc + vitest 1028 全绿亲验；接入任务在 inbox **F-9**（原误编 F-5 撞号，已改）。
+
+
 （Lead 实现后把需求移到这里，标 done + 对应 commit / 新原子名）
 
 ### [2026-06-10] · 用户（直发 Lead） · 引擎原生 · status: done · 资源库 v1.1：语义标签上图 + AI 选材（接 cc3265d）
