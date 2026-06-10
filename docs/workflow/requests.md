@@ -981,6 +981,20 @@
 
 ---
 
+### REQ-025 · [2026-06-10] · Programmer F（Game F 接 grid-move 暴露）· 框架级 · status: **open（已本地确认修复，1 行）** · 优先级: 高（阻塞 game-f 接寻路）· 类型: 系统定序 bug（拓扑成环）
+
+> **现象**：game-f 首次让 `grid-move` 与 `aggro` **同场跑** → 引擎拓扑排序抛环：
+> `aggro`(reads `Transform`, writes `Relation`) ↔ `grid-move`(reads `Relation`, writes `Transform`) **互为前驱**（同 Update 相位，组件推断边成 2-环；连带 13 个系统判进同一 SCC 报错）。
+> `grid-move.test` 手注 Relation、未带 aggro，故未撞上；自走棋 aggro+grid-move **必同场 → 必现**。
+> **已本地确认修复（1 行；加后 game-f 3 测全过、棋子正常沿 hex A\* 寻路对冲）**：grid-move 系统加 `runsAfter: ['aggro']`
+> —— 语义正确：aggro 本拍选目标 → grid-move 据此走；grid-move 写的 Transform 由 aggro **下一拍**读，打破同拍反向边。确定性不变。
+> **请主程定夺落地（我不改引擎）**：
+> - 最小：grid-move system 声明 `runsAfter:['aggro']`。
+> - 更彻底（可选）：grid-move 只写 HexPos，另设一个 PostResolve 投影系统 HexPos→Transform，**根除**「移动写 Transform ↔ 索敌读 Transform」这类环。
+> 落地后我即把 game-f 的 grid-move 数据换层（已就绪、stash 待接）接上 → 推 mainbranch。
+
+---
+
 ## 需求模板（复制这段填写）
 
 ```
