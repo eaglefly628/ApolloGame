@@ -197,8 +197,8 @@
 > UI 简报 `docs/design/game-f-coop-ui-brief.md`（**给 Claude designer**——同视角同 UI/组件清单/交付格式）。
 > 单机主线不受打乱：C1 起步在 MVP 收尾后；**即时生效的只有下面纪律项**。
 
-#### 给主程 · C0 任务 · REQ-F-056 战斗跨端确定性探针 — status: pending（随时可做，便宜，先证不赌）
-- 扩既有 lockstep 双实例对拍：跑 game-f 战斗蓝图 3000 拍逐拍比 hash；绿=联机地基就绪，红=报首个发散拍定位。详见 requests.md F-056。
+#### 给主程 · C0 任务 · REQ-F-057 战斗跨端确定性探针 — status: pending（随时可做，便宜，先证不赌）
+- 扩既有 lockstep 双实例对拍：跑 game-f 战斗蓝图 3000 拍逐拍比 hash；绿=联机地基就绪，红=报首个发散拍定位。详见 requests.md F-057。
 
 #### 给 PE-F · 即时纪律四条（N 阵营原则，违者审查拦）— status: 长期生效
 - ① 索敌/伤害的"敌方"写成掩码数据，**勿写死两队**；② 操作区/HUD 数据模板按 owner 参数化；③ 上阵合法区=deploy zone 数据；④ lockstep 三纪律照守（整数 SIM/命令输入/表现不进 hash）。
