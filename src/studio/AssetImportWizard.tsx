@@ -414,12 +414,13 @@ export function AssetImportWizard({
 
         {step === 2 && (
           <>
-            {/* 模式选择 */}
+            {/* 模式选择（不带数字——曾与步骤条①②③撞语义，用户把模式卡当"下一步"点，
+                落在精灵表模式后批量文件被静默只取第一张） */}
             <div style={{ display: 'flex', gap: 8, padding: '14px 20px 0' }}>
               {([
-                ['loose', '① 散图批量', '变体分组 · 重复剔除 · 批量命名'],
-                ['sheet', '② 精灵表切割', '网格参数 · 叠加预览 · 命名帧'],
-                ['rename', '③ 乱目录归一', '关键词→分类规则 · 映射表 · 冲突检查'],
+                ['loose', '🖼 散图批量', '多张独立图片入库：变体分组 · 重复剔除 · 批量命名'],
+                ['sheet', '✂️ 精灵表切割', '一张大图切成多帧（只处理第一张图）'],
+                ['rename', '🗂 乱目录归一', '散图批量 + 关键词→分类规则 · 冲突检查'],
               ] as const).map(([m, title, desc]) => (
                 <div key={m} onClick={() => setMode(m)} style={{
                   flex: 1, padding: '10px 14px', borderRadius: 9, cursor: 'pointer',
@@ -442,6 +443,11 @@ export function AssetImportWizard({
                   )}
                 </div>
                 <div style={{ width: 320, flex: 'none', borderLeft: `1px solid ${SHELL.line}`, background: SHELL.bg1, padding: 16, display: 'flex', flexDirection: 'column', gap: 10, fontSize: 12 }}>
+                  {files.length > 1 && (
+                    <div style={{ color: SHELL.warn, fontSize: 12, lineHeight: 1.5, padding: '8px 10px', background: SHELL.warnWash, borderRadius: 6 }}>
+                      ⚠ 已放入 {files.length} 个文件，本模式<b>只切割第一张</b>，其余 {files.length - 1} 张不会入库——多张独立图片请用「散图批量」。
+                    </div>
+                  )}
                   {sheetFile?.info && (
                     <div style={{ color: SHELL.dim, fontSize: 11 }}>
                       {sheetFile.name.split(/[\\/]/).pop()} · {sheetFile.info.width}×{sheetFile.info.height} · {sheetFile.info.format}
@@ -652,6 +658,9 @@ export function AssetImportWizard({
             <> → <b style={{ color: SHELL.ok }}>{effectiveRows.filter((r) => r.action === 'import').length} 导入</b>
               · <b style={{ color: SHELL.warn }}>{effectiveRows.filter((r) => r.action === 'rename').length} 改名</b>
               · {effectiveRows.filter((r) => r.action.startsWith('skip')).length} 跳过</>
+          )}
+          {mode === 'sheet' && files.length > 1 && (
+            <b style={{ color: SHELL.warn }}> → 精灵表模式只取第 1 张，{files.length - 1} 张未选用</b>
           )}
         </span>
         {step > 1 && step < 4 && <button onClick={() => setStep((s) => (s - 1) as Step)} style={sBtn('ghost')}>← 上一步</button>}
