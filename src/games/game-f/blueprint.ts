@@ -335,6 +335,7 @@ const GAME_FLOW = {
         { kind: 'set-flag', targetId: 'deploy_armed', value: true }, // → 'deploy' + 'deploy_stage_<当前阶段>'
         { kind: 'set-flag', targetId: 'income_armed', value: true }, // → 基础收入/利息/连胜金 bands（§4.1）
         { kind: 'set-flag', targetId: 'shop_refresh_armed', value: true }, // → 自动刷新（锁店时门挡，v2 §4.6）
+        { kind: 'modify-resource', targetId: 'xp', op: 'add', value: 2 }, // 每回合自动 +2 XP（§4.3）
       ],
       transitions: [
         // ready 优先（玩家点「开战」提前开打，§3.3 操作表）；after 40 = PvE 倒计时兜底（金铲铲本体也是倒计时自动开战）
@@ -345,8 +346,8 @@ const GAME_FLOW = {
     {
       id: 'combat', // 战斗：自动互砍 + 蓝满放大招；某队团灭(present flag→false)→结算。胜→连胜+1；败→连胜清零+臂伤害
       transitions: [
-        { when: { kind: 'flag', id: 'team_b_present', equals: false }, to: 'resolution', do: [{ kind: 'set-flag', targetId: 'won', value: true }, { kind: 'modify-resource', targetId: 'win_streak', op: 'add', value: 1 }] },
-        { when: { kind: 'flag', id: 'team_a_present', equals: false }, to: 'resolution', do: [{ kind: 'set-flag', targetId: 'won', value: false }, { kind: 'modify-resource', targetId: 'win_streak', op: 'set', value: 0 }, { kind: 'set-flag', targetId: 'dmg_armed', value: true }] },
+        { when: { kind: 'flag', id: 'team_b_present', equals: false }, to: 'resolution', do: [{ kind: 'set-flag', targetId: 'won', value: true }, { kind: 'modify-resource', targetId: 'win_streak', op: 'add', value: 1 }, { kind: 'modify-resource', targetId: 'lose_streak', op: 'set', value: 0 }] },
+        { when: { kind: 'flag', id: 'team_a_present', equals: false }, to: 'resolution', do: [{ kind: 'set-flag', targetId: 'won', value: false }, { kind: 'modify-resource', targetId: 'win_streak', op: 'set', value: 0 }, { kind: 'modify-resource', targetId: 'lose_streak', op: 'add', value: 1 }, { kind: 'set-flag', targetId: 'dmg_armed', value: true }] },
       ],
     },
     {
@@ -433,6 +434,9 @@ export function buildGameFBlueprint(): WorldBlueprint {
     r_round_idx: { Resource: { id: 'round_idx', current: 1, min: 0, max: 999 } } as unknown as EntityBlueprint, // 回合序号（advance +1，>5 进位）
     r_stage_idx: { Resource: { id: 'stage_idx', current: 1, min: 0, max: 99 } } as unknown as EntityBlueprint, // 阶段序号（关卡表指针）
     r_win_streak: { Resource: { id: 'win_streak', current: 0, min: 0, max: 999 } } as unknown as EntityBlueprint, // 连胜数（§4.1 连胜金）
+    r_lose_streak: { Resource: { id: 'lose_streak', current: 0, min: 0, max: 999 } } as unknown as EntityBlueprint, // 连败数（§4.1 连败金，准则 P2 与连胜同形）
+    r_xp: { Resource: { id: 'xp', current: 0, min: 0, max: 999 } } as unknown as EntityBlueprint, // 经验（每回合 +2；买经验 $4=+4，§4.3）
+    r_level: { Resource: { id: 'level', current: 4, min: 1, max: 8 } } as unknown as EntityBlueprint, // 等级=人口上限（起始 4=现固定阵容；摆子约束=输入域）
     // —— 回合重置接线（REQ-F-032）：flow 臂旗标 → EventWhen(edge) 产单拍信号 → 槽位展开 / destroy-tagged 清场 ——
     // —— ready 开战（§3.3 操作表，策划批注：输入→信号→set-flag 纯数据）：点按钮 → clickable 产 'ready_btn'
     // 信号 → Effect 置 ready → prep 的 ready 转移提前开战；不点则 40 拍倒计时兜底。按钮无 Tag 不参战不被清场。
@@ -468,6 +472,20 @@ export function buildGameFBlueprint(): WorldBlueprint {
     when_shop_gate: { EventWhen: { signal: 'shop_gate_done', when: flagIs('shop_refresh_armed'), mode: 'edge', armed: false } } as unknown as EntityBlueprint,
     eff_gate_disarm: { Effect: { onSignal: 'shop_gate_done', kind: 'set-flag', targetId: 'shop_refresh_armed', value: false } } as unknown as EntityBlueprint,
     eff_gate_unlock: { Effect: { onSignal: 'shop_gate_done', kind: 'set-flag', targetId: 'shop_locked', value: false } } as unknown as EntityBlueprint,
+    // —— 买经验/等级（§4.3，MVP-1 尾）：$4=+4XP（craft-recipe 原子）；升级=banded（xp 阈值→level set N，单调不回退）——
+    btn_xp: {
+      Transform: xf(96, 122),
+      Shape: { kind: 'box', width: 40, height: 20 },
+      Clickable: { action: 'buyxp_btn' },
+      CraftRecipe: { onSignal: 'buyxp_btn', costs: [{ id: 'gold', amount: 4 }], gains: [{ id: 'xp', amount: 4 }] },
+      Text: { content: '经验$4', fontSize: 11, fontFamily: 'sans-serif', anchor: 'center', lineSpacing: 0 },
+      Color: { tint: 0x7ad17a, alpha: 1 },
+      Sprite: { textureKey: F_FX_STRIKE, anchorX: 0.5, anchorY: 0.5, zOrder: 30 },
+    } as unknown as EntityBlueprint,
+    ...band('lvl_5', resCmp('xp', 'gte', 20), 'level', 1),
+    ...band('lvl_6', resCmp('xp', 'gte', 36), 'level', 1),
+    ...band('lvl_7', resCmp('xp', 'gte', 56), 'level', 1),
+    ...band('lvl_8', resCmp('xp', 'gte', 80), 'level', 1), // §4.3 阈值表（升到5/6/7/8）；edge 单发+1，单调封顶 8
     // 手动刷新（2 金）：按钮信号 → craft-recipe 原子扣 2 金置 reroll_paid → EventWhen(edge) → 'shop_refresh' → 复位。
     // 扣不起=配方整单不动（inbox 提示"扣不起就别发信号"的原子等价实现）；手动刷新不吃锁店门（锁住时也可花钱换牌）。
     btn_reroll: {
@@ -556,6 +574,10 @@ export function buildGameFBlueprint(): WorldBlueprint {
     ...band('streak_1', and(flagIs('income_armed'), resCmp('win_streak', 'gte', 2), resCmp('win_streak', 'lte', 3)), 'gold', 1),
     ...band('streak_2', and(flagIs('income_armed'), resCmp('win_streak', 'eq', 4)), 'gold', 2),
     ...band('streak_3', and(flagIs('income_armed'), resCmp('win_streak', 'gte', 5)), 'gold', 3),
+    // —— §4.1 连败金（准则 P2，与连胜同形档位）——
+    ...band('lstreak_1', and(flagIs('income_armed'), resCmp('lose_streak', 'gte', 2), resCmp('lose_streak', 'lte', 3)), 'gold', 1),
+    ...band('lstreak_2', and(flagIs('income_armed'), resCmp('lose_streak', 'eq', 4)), 'gold', 2),
+    ...band('lstreak_3', and(flagIs('income_armed'), resCmp('lose_streak', 'gte', 5)), 'gold', 3),
     // —— §4.2 玩家伤害（败方）：阶段基础伤(1/2 阶段=0/2) + 存活敌数近似 2（REQ-022 group-count 接入后换真值，队列 P1 注记）——
     ...band('dmg_stage_1', and(flagIs('dmg_armed'), resCmp('stage_idx', 'eq', 1)), 'player_hp', -2),
     ...band('dmg_stage_2', and(flagIs('dmg_armed'), resCmp('stage_idx', 'gt', 1)), 'player_hp', -4),

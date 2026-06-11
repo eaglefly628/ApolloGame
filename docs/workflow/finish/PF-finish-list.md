@@ -152,6 +152,7 @@
 
 ## 6. Gotchas（坑）
 
+- **利息区间带的带宽语义**：armed 窗内 gold 上穿/下落入带都触发一次 edge（注资或消费会蹭到 ±一档利息）——确定性、每带每窗至多一次，但经济偏宽；TUNE 候选=利息带挪到 armed 升沿前快照（需引擎拍照语义）或接受现状。测试一律在窗外（combat 期）做金币操作。
 - **capability 三件套**：组件挂上 ≠ 能力注册——import、capabilities 数组、（若有）组件 provides 三处都要；本日三次踩坑（selfRule/cardPile/craftRecipe 各一次），接新能力先过这条。
 - **唯一 id 策略**：每英雄 `atk_<id>/mp_<id>/strike_<id>/ult_<id>` 唯一，规避"逻辑链全局按 id 寻址"串台（MVP-0）。**重复棋子/三星合体**会撞——需接 REQ-021 self 作用域（主程已 done，未接）。
 - **mana 在 sidecar 实体**（一实体一 Resource，棋子本体已占 hp）。

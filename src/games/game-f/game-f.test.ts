@@ -358,6 +358,41 @@ describe('Game F — 自走棋（纯数据装配，零自走棋代码；棋子=�
     expect(res('bench_space')).toBe(9); // 席位归还
   });
 
+  it('MVP-1 尾款（§4.1/§4.3）：买经验$4=+4XP且 xp 阈值升级；连败计数随败累加（连败金 band 与连胜同形）', () => {
+    const e = new Engine({ tickRate: 60 });
+    e.load(buildGameFBlueprint());
+    const res = (id: string): number => {
+      for (const x of e.world.getAllEntities()) {
+        const r = e.world.getComponent<Resource>(x, 'Resource');
+        if (r && r.id === id) return r.current;
+      }
+      return -1;
+    };
+    const click = (x: number, y: number): void => {
+      if (!e.world.getAllEntities().includes('input')) e.world.createEntity('input');
+      e.world.addComponent('input', { type: 'InputQueue', actions: [{ source: 'test', x, y, phase: 'down' }] } as unknown as Resource);
+      e.world.tick();
+      e.world.addComponent('input', { type: 'InputQueue', actions: [] } as unknown as Resource);
+    };
+    for (let i = 0; i < 50; i++) e.world.tick(); // 进战斗（income_armed 已关：避开利息区间带对注资/消费的边沿响应——带宽语义见 finish-list Gotchas）
+    expect(res('xp')).toBe(2); // 回合1 prep 自动 +2 XP（§4.3）
+    expect(res('level')).toBe(4); // 起始等级=现固定阵容人口
+    e.world.addComponent('r_gold', { type: 'ResourceModify', resourceId: 'gold', amount: 30, scope: 'local' } as unknown as Resource);
+    for (let i = 0; i < 2; i++) e.world.tick();
+    const g0 = res('gold');
+    for (let k = 0; k < 5; k++) { click(96, 122); for (let i = 0; i < 2; i++) e.world.tick(); } // 买经验 ×5
+    expect(res('xp')).toBe(22); // 2 + 5×4
+    expect(res('gold')).toBe(g0 - 20); // $4×5 原子扣费
+    expect(res('level')).toBe(5); // xp≥20 → 升 5（§4.3 阈值表）
+    // 连败计数：杀光我方 → 败方路径 → lose_streak +1（连败金 band 与连胜金同构同测法）
+    for (const m of mains(e).filter((id) => id.startsWith('hero_a_'))) {
+      e.world.addComponent(m, { type: 'ResourceModify', resourceId: 'hp', amount: -99999, scope: 'local' } as unknown as Resource);
+    }
+    let guard = 0;
+    while (res('lose_streak') === 0 && guard++ < 200) e.world.tick();
+    expect(res('lose_streak')).toBe(1); // 败 → 连败+1（胜路清零由 flow 同一转移对称保证）
+  });
+
   it('L1 run_flow + §4.1/§4.2 表：回合1收入2金；advance 推进；败方按阶段表扣血；round>5 进位换关卡敌阵', () => {
     const e = new Engine({ tickRate: 60 });
     e.load(buildGameFBlueprint());
