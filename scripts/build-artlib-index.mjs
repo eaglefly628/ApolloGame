@@ -114,17 +114,24 @@ const pngAssets = [...groups.values()]
     return o;
   });
 
-// ── 像素扫描事实标签（scripts/scan-pixels.ts 产出；存在则并入每条资产的 tags 字段）──
+// ── 生成式标签层并入（存在则并入每条资产的 tags 字段；vision 语义在前、pixel 事实在后）──
+// tags-vision.json = 沙盒内逐格看图的语义标签；tags-scan.json = 确定性像素扫描的事实标签。
 // artlibTokens()/artlibSemanticTags() 已经合并 a.tags → 搜索/浏览器/AI 选材零改动直接吃到。
-try {
-  const scan = JSON.parse(readFileSync(join(ROOT, 'tags-scan.json'), 'utf8'));
-  let merged = 0;
-  for (const a of pngAssets) {
-    const t = scan.tags?.[a.id];
-    if (Array.isArray(t) && t.length) { a.tags = t; merged++; }
-  }
-  console.log(`像素扫描标签并入：${merged} 条（assets/FreeArtLib/tags-scan.json）`);
-} catch { /* 没跑过扫描则跳过 */ }
+for (const [file, label] of [['tags-vision.json', '视觉语义'], ['tags-scan.json', '像素事实']]) {
+  try {
+    const layer = JSON.parse(readFileSync(join(ROOT, file), 'utf8'));
+    let merged = 0;
+    for (const a of pngAssets) {
+      const t = layer.tags?.[a.id];
+      if (Array.isArray(t) && t.length) {
+        const old = a.tags ?? [];
+        a.tags = [...old, ...t.filter((x) => !old.includes(x))];
+        merged++;
+      }
+    }
+    console.log(`${label}标签并入：${merged} 条（${file}）`);
+  } catch { /* 该层未生成则跳过 */ }
+}
 
 const assets = [...pngAssets, ...cardgameAssets];
 const cats = {};
