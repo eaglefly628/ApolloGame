@@ -14,7 +14,8 @@ const B_HEROES = GAME_F_HERO_IDS.filter((id) => id.startsWith('b_'));
 
 const alive = (e: Engine, id: string): boolean => e.world.getAllEntities().includes(id);
 // 注意：overlap/trigger 碰撞对实体的 id 形如 `overlap:<甲>:<乙>`，乙可能是 ...:main 结尾 → 必须再按 hero_ 前缀过滤。
-const mains = (e: Engine): string[] => e.world.getAllEntities().filter((id) => id.startsWith('hero_') && id.endsWith(':main'));
+const mains = (e: Engine): string[] => e.world.getAllEntities().filter((id) => (id.startsWith('hero_') || id.startsWith('mob_')) && id.endsWith(':main')); // 棋子=英雄+野怪（批B：阶段1 全野怪）
+const isBSide = (id: string): boolean => id.startsWith('hero_b_') || id.startsWith('mob_'); // B 方=魏将∪野怪
 const mainOf = (e: Engine, hero: string): string | undefined => mains(e).find((id) => id.startsWith(`hero_${hero}#`));
 const childOf = (mainId: string, part: string): string => mainId.replace(/:main$/, `:${part}`);
 const flag = (e: Engine, id: string): boolean => {
@@ -45,7 +46,7 @@ describe('Game F — 自走棋（纯数据装配，零自走棋代码；棋子=�
     for (const m of r1) {
       expect(alive(e, childOf(m, 'name'))).toBe(true); // 名牌随模板整体展开
       expect(alive(e, childOf(m, 'hpbar'))).toBe(true); // 血条
-      expect(alive(e, childOf(m, 'mana'))).toBe(true); // 蓝 sidecar
+      if (m.startsWith('hero_')) expect(alive(e, childOf(m, 'mana'))).toBe(true); // 蓝 sidecar（野怪无大招链）
       const hp = e.world.getComponent<Resource>(m, 'Resource')!;
       expect(hp.current).toBe(hp.max); // 槽位 overrides 写入星级数值，满状态
       expect(hp.max).toBeGreaterThan(1); // 不是模板占位值（overrides 真生效）
@@ -69,13 +70,14 @@ describe('Game F — 自走棋（纯数据装配，零自走棋代码；棋子=�
   it('战斗收敛到团灭：一方存活=0 → 其 present Flag 落 false（Zone 判胜负）', () => {
     const e = new Engine({ tickRate: 60 });
     e.load(buildGameFBlueprint(FAST));
-    const living = (prefix: string): number => mains(e).filter((id) => id.startsWith(prefix)).length;
+    const livingA = (): number => mains(e).filter((id) => id.startsWith('hero_a_')).length;
+    const livingB = (): number => mains(e).filter(isBSide).length;
     for (let i = 0; i < 50; i++) e.world.tick(); // 先让回合 1 展开
     let loser = ''; // 先团灭的那队（resolution 的 wipe 随后会把胜方也清掉，只有败方 flag 判定是本测的语义）
     for (let i = 0; i < 3000 && !loser; i++) {
       e.world.tick();
-      if (living('hero_a_') === 0) loser = 'a';
-      else if (living('hero_b_') === 0) loser = 'b';
+      if (livingA() === 0) loser = 'a';
+      else if (livingB() === 0) loser = 'b';
     }
     expect(loser).not.toBe('');
     // 收敛后再跑几拍让 zone-occupancy 把 present flag 落定（mortal 销毁与 zone 计数差一拍）。
@@ -146,7 +148,7 @@ describe('Game F — 自走棋（纯数据装配，零自走棋代码；棋子=�
     let froze = false;
     for (let i = 0; i < 600 && !froze; i++) {
       e.world.tick();
-      froze = mains(e).some((id) => id.startsWith('hero_b_') && ((e.world.getComponent<Status>(id, 'Status')?.flags ?? 0) & FROZEN) !== 0);
+      froze = mains(e).some((id) => isBSide(id) && ((e.world.getComponent<Status>(id, 'Status')?.flags ?? 0) & FROZEN) !== 0);
     }
     expect(froze).toBe(true); // 魏方有人被八阵图冻住（定身/解冻语义由引擎 grid-move 4 测覆盖）
   });
@@ -167,7 +169,7 @@ describe('Game F — 自走棋（纯数据装配，零自走棋代码；棋子=�
     expect(wiped).toBe(true);
     expect(alive(e, r1name)).toBe(false); // 名牌等挂件随清场级联，无孤儿
     expect(alive(e, 'slot_a_guanyu')).toBe(true); // 阵容槽位（无 Tag）持久
-    expect(alive(e, 'slot_s2_b_simayi')).toBe(true); // 阶段 2 敌槽同样持久（§4.5 关卡表）
+    expect(alive(e, 'slot_s2_2_b_simayi')).toBe(true); // 阶段 2 敌槽同样持久（槽位 id 带序号防同名撞键）
     expect(alive(e, 'library')).toBe(true); // 模板库持久
     // resolution 余下 ≤60 拍 + done 握手数拍 → 回 prep 重展开：+75 拍落在下一回合备战期内。
     for (let i = 0; i < 75; i++) e.world.tick();
@@ -394,6 +396,23 @@ describe('Game F — 自走棋（纯数据装配，零自走棋代码；棋子=�
     let guard = 0;
     while (res('lose_streak') === 0 && guard++ < 200) e.world.tick();
     expect(res('lose_streak')).toBe(1); // 败 → 连败+1（胜路清零由 flow 同一转移对称保证）
+  });
+
+  it('野怪回合+法球（批B，一图流）：阶段1 全野怪（黄巾波次）；野怪死亡掉法球；结算清场含未拾法球', () => {
+    const e = new Engine({ tickRate: 60 });
+    e.load(buildGameFBlueprint(FAST));
+    for (let i = 0; i < 50; i++) e.world.tick();
+    expect(mains(e).filter((m) => m.startsWith('mob_'))).toHaveLength(3); // 阶段1=PVE_WAVES[0] 黄巾×3
+    expect(mains(e).filter((m) => m.startsWith('hero_b_'))).toHaveLength(0); // 无 PvP 敌阵（整段野怪化）
+    const mob = mains(e).find((m) => m.startsWith('mob_'))!;
+    e.world.addComponent(mob, { type: 'ResourceModify', resourceId: 'hp', amount: -99999, scope: 'local' } as unknown as Resource);
+    for (let i = 0; i < 4; i++) e.world.tick();
+    expect(e.world.getAllEntities().some((id) => id.startsWith('loot_orb#'))).toBe(true); // 死亡掉法球（Mortal.dropTemplate）
+    let wiped = false;
+    for (let i = 0; i < 4000 && !wiped; i++) { e.world.tick(); wiped = mains(e).length === 0; }
+    expect(wiped).toBe(true);
+    for (let i = 0; i < 5; i++) e.world.tick();
+    expect(e.world.getAllEntities().some((id) => id.startsWith('loot_orb#'))).toBe(false); // 未拾法球随 wipe 清（主角拾取=批C）
   });
 
   it('商店面板可视可点 + HUD 数字（F-14/F-15，REQ-F-042/043）：5 卡面随镜像重铺；点卡即买；金币数字实时', () => {

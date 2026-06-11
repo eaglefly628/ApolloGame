@@ -38,11 +38,11 @@
                                          ▼                                                        │
  ╔══════════════ 自动战斗 combat ✅（羁绊开战拍锁定⬜3；战斗期可买/刷/卖,不可摆⬜）═════╗             │
  ║   回合种类（按关卡表）：                                                            ║            │
- ║   ├─ 普通回合 ──▶ 对战剧本敌阵 ✅（阶段1黄巾✅/阶段2董卓✅/3-5⬜4）                  ║            │
- ║   ├─ 野怪回合 ⬜2.5（阶段1×4回合+每阶段末回合；固定阵容；死亡掉法球💰）              ║            │
+ ║   ├─ 普通回合 ──▶ 对战剧本敌阵 ✅（阶段2董卓/3吕布/4官渡/5赤壁Boss 全五阶段✅）        ║            │
+ ║   ├─ 野怪回合 ✅（阶段1全部+各阶段r5；黄巾波次5档强度；死亡掉法球💰,未拾随结算清）     ║            │
  ║   └─ 选秀回合 ⬜3.5（单人版九选一：棋子/装备）                                      ║            │
  ║   战斗涌现链 ✅：索敌→六角A*走位(滑行✅)→普攻→攒蓝→大招(DoT/冰冻✅)→死亡级联✅       ║            │
- ║   终止：一方团灭 ✅ ｜ 30s+加时15s强制双伤 ⬜4                                      ║            │
+ ║   终止：一方团灭 ✅ ｜ 30s+15s加时强制结束 ✅（单人改编=按败方路径结算,combat_clock）  ║            │
  ║   🧍 主角(小小英雄) ⬜2.5：场上可控,不参战不被锁定,走过去捡法球→金币入账             ║            │
  ╚══════════════════════════════════════┬═══════════════════════════════════════════╝            │
                                          ▼                                                        │
@@ -162,6 +162,10 @@
 | `shop_locked` / `lock_btn` / `unlock_btn` | Flag/信号 | 锁店（锁=跳过下个 prep 自动刷新一次，门判定拍自动解锁） | 按钮 → Effect ↔ 刷新门 |
 | `reroll_btn` / `reroll_paid` | 信号/Flag | 手动刷新 $2（craft-recipe 原子扣金，付讫旗→shop_refresh） | 按钮 → craft-recipe → EventWhen |
 | `sell_seat` | 信号 | 点席卖出（source=被点席位 → '@signal-source' 点谁卖谁） | clickable → destroy+返还 Effects |
+| `shop_slot_1..5` / `buy_slot_1..5` | Resource/信号 | 商店 5 槽手牌码镜像（F-042 终态）/ 点卡购买 | card-pile ↔ 面板带/playOnSignals |
+| `shop_marks_armed` / `shop_marks2_armed` / `shop_marks` / `shop_marks2` | Flag/信号 | 面板两段脉冲（T+1 整槽清 / T+2 按码重铺，错拍防同拍误杀） | 刷新/买入 → destroy-tagged/重铺带 |
+| `round_ui` | State | 相位镜像（prep/combat/resolution/gameover），横幅/未来 UI 读 | round 流程 set-state → state 叶 |
+| `ph_*` 信号 / `buyxp_btn` / `lose_streak` / `deploy_pve_<N>` / `ot_reset` / `combat_clock` | 信号/Resource/Timer | 横幅切换 / 买经验 / 连败 / 野怪分流 / 加时钟 | 各对应链 |
 
 ### 3.2 L1 · Run 流程（局）：`run_flow` 实体一台机
 

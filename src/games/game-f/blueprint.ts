@@ -68,6 +68,8 @@ export const FACT_WU = 1 << 5; // 吴
 // CC 状态位：写在 Status.flags（与 Tag.flags 分属两个字段/位空间；位值仍避开上面 1<<0..1<<8 防读混）。
 export const FROZEN = 1 << 10; // 冰冻定身（REQ-F-030）：GridMover.haltStatusMask 命中 → 不走且节奏时钟暂停
 // 预留：PROTAG=1<<11 主角 / LOOT=1<<12 法球（§4.7，Phase 2.5）。商店面板槽位位 1<<13..1<<17（F-14 整槽清/重铺用）。
+export const PROTAG = 1 << 11; // 主角（小小英雄，§4.7；Phase 2.5 批 C 接操控/拾取）
+export const LOOT = 1 << 12; // 法球/掉落（野怪死亡掉，主角拾取）
 const SHOPSLOT_BITS = [1 << 13, 1 << 14, 1 << 15, 1 << 16, 1 << 17];
 const SHOPSLOT_ALL = SHOPSLOT_BITS.reduce((a, b) => a | b, 0);
 
@@ -259,14 +261,7 @@ function slotEntity(h: HeroSpec, onSignal: string, col: number, row: number, hpM
 // ── 关卡表（flow-spec §4.5，前 2 阶段）：敌阵=数据条目、与我方槽位同构；扩阶段=加条目+一行 when_deploy_stage_N。──
 // 注：敌方强度暂只缩放 HP（攻击力烘在 strike_<id> 模板 amount 里；按阶段缩攻=每阶段一套 strike 模板，真需要再加）。
 const STAGES: { n: number; comp: { hero: string; q: number; r: number; hpMul: number }[] }[] = [
-  {
-    n: 1, // 阶段1「黄巾散兵」：3 子、弱（×0.45，教学局）
-    comp: [
-      { hero: 'b_zhangliao', q: 4, r: 4, hpMul: 0.45 },
-      { hero: 'b_xuchu', q: 7, r: 4, hpMul: 0.45 },
-      { hero: 'b_ganning', q: 9, r: 3, hpMul: 0.45 },
-    ],
-  },
+  // （阶段1 无 PvP 敌阵——按准则整段野怪化，黄巾散兵=PVE_WAVES[0]，见下）
   {
     n: 2, // 阶段2「董卓先锋」：4 子全强度（张辽自带方天画戟 ≈ §4.5 的"+1 件装"）
     comp: [
@@ -276,8 +271,81 @@ const STAGES: { n: number; comp: { hero: string; q: number; r: number; hpMul: nu
       { hero: 'b_ganning', q: 9, r: 3, hpMul: 1 },
     ],
   },
+  {
+    n: 3, // 阶段3「吕布陷阵」：5 子 + 2 星点缀（hpMul1.8≈2星，真星级 Phase 2 换 overrides）——同模板多实例（F-9 per-instance）
+    comp: [
+      { hero: 'b_zhangliao', q: 3, r: 4, hpMul: 1.8 },
+      { hero: 'b_zhangliao', q: 8, r: 4, hpMul: 1 },
+      { hero: 'b_xuchu', q: 5, r: 4, hpMul: 1 },
+      { hero: 'b_simayi', q: 6, r: 2, hpMul: 1 },
+      { hero: 'b_ganning', q: 9, r: 3, hpMul: 1 },
+    ],
+  },
+  {
+    n: 4, // 阶段4「官渡精锐」：6 子、整体 1.4×（羁绊成型近似——羁绊机制 Phase 3）
+    comp: [
+      { hero: 'b_zhangliao', q: 3, r: 4, hpMul: 1.4 },
+      { hero: 'b_zhangliao', q: 8, r: 4, hpMul: 1.4 },
+      { hero: 'b_xuchu', q: 5, r: 4, hpMul: 1.4 },
+      { hero: 'b_xuchu', q: 6, r: 4, hpMul: 1.4 },
+      { hero: 'b_simayi', q: 6, r: 2, hpMul: 1.4 },
+      { hero: 'b_ganning', q: 9, r: 3, hpMul: 1.4 },
+    ],
+  },
+  {
+    n: 5, // 阶段5「赤壁决战」：7 子 + Boss 许褚（hpMul3，终关）
+    comp: [
+      { hero: 'b_xuchu', q: 6, r: 3, hpMul: 3 },
+      { hero: 'b_zhangliao', q: 3, r: 4, hpMul: 1.8 },
+      { hero: 'b_zhangliao', q: 8, r: 4, hpMul: 1.8 },
+      { hero: 'b_xuchu', q: 4, r: 4, hpMul: 1.4 },
+      { hero: 'b_simayi', q: 5, r: 2, hpMul: 1.8 },
+      { hero: 'b_simayi', q: 7, r: 2, hpMul: 1.4 },
+      { hero: 'b_ganning', q: 9, r: 3, hpMul: 1.8 },
+    ],
+  },
 ];
 const heroOf = (id: string): HeroSpec => ROSTER.find((h) => h.id === id)!;
+
+// ── 野怪波次（一图流：阶段1×4回合+每阶段末回合(r5)；固定阵容、死亡掉法球💰）──
+// 强度随阶段爬坡；图暂借甘宁（真野怪皮=美术 pass，见 art-data 待办）。掉落链：Mortal.dropTemplate（引擎现成）。
+const PVE_WAVES: { stage: number; count: number; hpMul: number; atk: number }[] = [
+  { stage: 1, count: 3, hpMul: 0.35, atk: 6 },
+  { stage: 2, count: 4, hpMul: 0.6, atk: 9 },
+  { stage: 3, count: 4, hpMul: 0.9, atk: 13 },
+  { stage: 4, count: 5, hpMul: 1.2, atk: 17 },
+  { stage: 5, count: 6, hpMul: 1.6, atk: 22 },
+];
+const MOB_BASE_HP = 90; // ×HP_SCALE×hpMul = 实际血量
+// 野怪模板：简化棋子（无大招/蓝条；带血条+名牌；死亡掉法球）。Tag/血量由槽位 overrides 写。
+function mobTemplate(atk: number): PrefabTemplate {
+  return {
+    entities: {
+      main: {
+        Transform: xf(0, 0),
+        Shape: { kind: 'box', width: 16, height: 16 },
+        Tag: { flags: 0 },
+        Resource: { id: 'hp', current: 1, min: 0, max: 1 },
+        Perception: { targetTag: TEAM_A, sightRadius: 0 },
+        HexPos: { q: 0, r: 0 },
+        GridMover: { period: MOVE_PERIOD, elapsed: 0, haltStatusMask: FROZEN, glideSpeed: 0.8 },
+        Mortal: { resource: 'hp', atOrBelow: 0, dropTemplate: 'loot_orb' }, // 死亡掉法球（§4.7 掉落源）
+        Timer: { id: 'atk', elapsed: 0, duration: ATK_CD, loop: true },
+        SelfRule: { when: { kind: 'timer', id: 'atk', cmp: 'gte', value: ATK_CD - 1 }, whenGlobal: { kind: 'flag', id: 'in_combat', equals: true }, do: [{ kind: 'spawn', template: `strike_mob_${atk}`, at: 'target' }], once: false, armed: false },
+        Sprite: sprite(F_HERO.gan_ning, 4),
+      },
+      name: {
+        Transform: xf(0, -34),
+        Text: { content: '黄巾賊', fontSize: 9, fontFamily: 'sans-serif', anchor: 'center', lineSpacing: 0 },
+        Color: { tint: 0xc9a86a, alpha: 1 },
+        Sprite: { textureKey: F_FX_STRIKE, anchorX: 0.5, anchorY: 0.5, zOrder: 30 },
+        Hierarchy: { ...sidecarLink, localY: -34 },
+      },
+      hpbg: { Transform: xf(0, HP_Y), Shape: { kind: 'box', width: BAR_W, height: 5 }, Hierarchy: { ...sidecarLink, localY: HP_Y }, Color: { tint: trackColor, alpha: 0.85 } },
+      hpbar: { Transform: xf(0, HP_Y), Shape: { kind: 'box', width: BAR_W, height: 5 }, Hierarchy: { ...sidecarLink, localY: HP_Y }, Color: { tint: 0x33cc33, alpha: 1 }, Gauge: { resourceId: 'hp', fromParent: true, width: BAR_W } },
+    },
+  } as unknown as PrefabTemplate;
+}
 
 // ── 商店（F-11 / REQ-F-040 + v2 §4.6）：英雄码 + 单人有限牌袋（预洗、确定性；§4.4 牌袋语义）──
 // 码 0 保留为「无」（bought_code 复位值）。MVP 袋 = 我方 4 将各 3 张（卖出归还/按等级加权袋 = 后续）。
@@ -323,6 +391,13 @@ export const GAME_F_TEMPLATES: Record<string, PrefabTemplate> = Object.fromEntri
       // seat 可点卖出（F-12）：Clickable 产 sell_seat 信号，source=被点席位 → '@signal-source' 点谁卖谁。
       { entities: { seat: { Transform: xf(0, 0), Sprite: sprite(h.key, 2), Shape: { kind: 'box', width: 30, height: 30 }, Clickable: { action: 'sell_seat' } } } } as unknown as PrefabTemplate,
     ]),
+    // 野怪（批B）：每档攻一张 strike + 一张 mob 模板；法球=死亡掉落（LOOT 标记，主角拾取=批C；结算清场兜底）。
+    PVE_WAVES.map((w): [string, PrefabTemplate] => [`strike_mob_${w.atk}`, strike(TEAM_A, w.atk, F_FX_BOLT)]),
+    PVE_WAVES.map((w): [string, PrefabTemplate] => [`mob_s${w.stage}`, mobTemplate(w.atk)]),
+    [[
+      'loot_orb',
+      { entities: { orb: { Transform: xf(0, 0), Shape: { kind: 'box', width: 10, height: 10 }, Sprite: sprite(F_FX_DRAIN, 5), Color: { tint: 0xffd700, alpha: 1 }, Tag: { flags: LOOT }, Resource: { id: 'hp', current: 1, min: 0, max: 1 }, Mortal: { resource: 'hp', atOrBelow: 0 }, Hitbox: { resource: 'loot', amount: 5, targetMask: PROTAG } } } } as unknown as PrefabTemplate,
+    ]] as [string, PrefabTemplate][],
     // 商店卡（F-14/REQ-F-042）：在售英雄的可点卡面；Clickable.action(买哪槽)/Tag(槽位掩码) 由持位 Caster overrides 注入。
     ROSTER.filter((x) => x.team === TEAM_A).map((h): [string, PrefabTemplate] => [
       `shopcard_${h.id}`,
@@ -369,6 +444,8 @@ const makeRoundFlow = (PREP_TICKS: number, RESOLUTION_TICKS: number) => ({
       transitions: [
         { when: { kind: 'flag', id: 'team_b_present', equals: false }, to: 'resolution', do: [{ kind: 'set-flag', targetId: 'won', value: true }, { kind: 'modify-resource', targetId: 'win_streak', op: 'add', value: 1 }, { kind: 'modify-resource', targetId: 'lose_streak', op: 'set', value: 0 }] },
         { when: { kind: 'flag', id: 'team_a_present', equals: false }, to: 'resolution', do: [{ kind: 'set-flag', targetId: 'won', value: false }, { kind: 'modify-resource', targetId: 'win_streak', op: 'set', value: 0 }, { kind: 'modify-resource', targetId: 'lose_streak', op: 'add', value: 1 }, { kind: 'set-flag', targetId: 'dmg_armed', value: true }] },
+        // 加时强制结束（30s+15s=2700拍，一图流；单人改编=按败方路径结算+连败，准则双伤的单人合理化）
+        { when: { kind: 'timer', id: 'combat_clock', cmp: 'gte', value: 2700 }, to: 'resolution', do: [{ kind: 'set-flag', targetId: 'won', value: false }, { kind: 'modify-resource', targetId: 'win_streak', op: 'set', value: 0 }, { kind: 'modify-resource', targetId: 'lose_streak', op: 'add', value: 1 }, { kind: 'set-flag', targetId: 'dmg_armed', value: true }] },
       ],
     },
     {
@@ -394,8 +471,8 @@ const makeRoundFlow = (PREP_TICKS: number, RESOLUTION_TICKS: number) => ({
 
 // L1 局流程（flow-spec §3.2 run_flow 原样）：boot 初始化 → round（等 L2 写 round_done）→ advance 推进
 // 关卡指针 → 打穿关卡表胜利 / run_over 败北。round_idx>5 的进位（stage+1、round=1）由 when_stage_up banded 处理。
-// 关卡表现含前 2 阶段（§4.5）→ stage_idx>2 即通关；表扩到 5 阶段时改 STAGE_COUNT 与 STAGES 数据即可。
-const STAGE_COUNT = 2;
+// 关卡表全 5 阶段（§4.5）→ stage_idx>5 即通关。
+const STAGE_COUNT = 5;
 const RUN_FLOW = {
   id: 'run',
   current: 'boot',
@@ -621,8 +698,21 @@ export function buildGameFBlueprint(pacing: GameFPacing = {}): WorldBlueprint {
     f_income_armed: { Flag: { id: 'income_armed', active: false } } as unknown as EntityBlueprint, // §4.1 结算窗
     f_dmg_armed: { Flag: { id: 'dmg_armed', active: false } } as unknown as EntityBlueprint, // §4.2 败方结算窗
     when_deploy: { EventWhen: { signal: 'deploy', when: flagIs('deploy_armed'), mode: 'edge', armed: false } } as unknown as EntityBlueprint,
-    when_deploy_stage1: { EventWhen: { signal: 'deploy_stage_1', when: and(flagIs('deploy_armed'), resCmp('stage_idx', 'eq', 1)), mode: 'edge', armed: false } } as unknown as EntityBlueprint, // 敌阵按 stage_idx 分流
-    when_deploy_stage2: { EventWhen: { signal: 'deploy_stage_2', when: and(flagIs('deploy_armed'), resCmp('stage_idx', 'eq', 2)), mode: 'edge', armed: false } } as unknown as EntityBlueprint,
+    when_deploy_stage2: { EventWhen: { signal: 'deploy_stage_2', when: and(flagIs('deploy_armed'), resCmp('stage_idx', 'eq', 2), resCmp('round_idx', 'lte', 4)), mode: 'edge', armed: false } } as unknown as EntityBlueprint, // 普通回合=各阶段 r1-4（r5 野怪）
+    when_deploy_stage3: { EventWhen: { signal: 'deploy_stage_3', when: and(flagIs('deploy_armed'), resCmp('stage_idx', 'eq', 3), resCmp('round_idx', 'lte', 4)), mode: 'edge', armed: false } } as unknown as EntityBlueprint, // 普通回合=各阶段 r1-4（r5 野怪）
+    when_deploy_stage4: { EventWhen: { signal: 'deploy_stage_4', when: and(flagIs('deploy_armed'), resCmp('stage_idx', 'eq', 4), resCmp('round_idx', 'lte', 4)), mode: 'edge', armed: false } } as unknown as EntityBlueprint, // 普通回合=各阶段 r1-4（r5 野怪）
+    when_deploy_stage5: { EventWhen: { signal: 'deploy_stage_5', when: and(flagIs('deploy_armed'), resCmp('stage_idx', 'eq', 5), resCmp('round_idx', 'lte', 4)), mode: 'edge', armed: false } } as unknown as EntityBlueprint, // 普通回合=各阶段 r1-4（r5 野怪）
+    // —— 野怪回合分流（一图流：阶段1 全部 + 各阶段 r5）——
+    when_deploy_pve1: { EventWhen: { signal: 'deploy_pve_1', when: and(flagIs('deploy_armed'), resCmp('stage_idx', 'eq', 1)), mode: 'edge', armed: false } } as unknown as EntityBlueprint,
+    when_deploy_pve2: { EventWhen: { signal: 'deploy_pve_2', when: and(flagIs('deploy_armed'), resCmp('stage_idx', 'eq', 2), resCmp('round_idx', 'gte', 5)), mode: 'edge', armed: false } } as unknown as EntityBlueprint,
+    when_deploy_pve3: { EventWhen: { signal: 'deploy_pve_3', when: and(flagIs('deploy_armed'), resCmp('stage_idx', 'eq', 3), resCmp('round_idx', 'gte', 5)), mode: 'edge', armed: false } } as unknown as EntityBlueprint,
+    when_deploy_pve4: { EventWhen: { signal: 'deploy_pve_4', when: and(flagIs('deploy_armed'), resCmp('stage_idx', 'eq', 4), resCmp('round_idx', 'gte', 5)), mode: 'edge', armed: false } } as unknown as EntityBlueprint,
+    when_deploy_pve5: { EventWhen: { signal: 'deploy_pve_5', when: and(flagIs('deploy_armed'), resCmp('stage_idx', 'eq', 5), resCmp('round_idx', 'gte', 5)), mode: 'edge', armed: false } } as unknown as EntityBlueprint,
+    wipe_loot: { Effect: { onSignal: 'wipe', kind: 'destroy-tagged', targetId: '', value: LOOT } } as unknown as EntityBlueprint, // 未拾取法球随结算清（主角拾取=批C）
+    // —— 加时强制结束（一图流：30s+15s；单人改编=超时按败方路径结算，注记于 flow-spec）——
+    overtime_clock: { Timer: { id: 'combat_clock', elapsed: 0, duration: 999999, loop: false } } as unknown as EntityBlueprint,
+    when_ot_reset: { EventWhen: { signal: 'ot_reset', when: { kind: 'state', fsmId: 'round_ui', equals: 'combat' }, mode: 'edge', armed: false } } as unknown as EntityBlueprint,
+    eff_ot_reset: { Effect: { onSignal: 'ot_reset', kind: 'reset-timer', targetId: '', targetEntity: 'overtime_clock' } } as unknown as EntityBlueprint,
     when_wipe: { EventWhen: { signal: 'wipe', when: flagIs('wipe_armed'), mode: 'edge', armed: false } } as unknown as EntityBlueprint,
     wipe_team_a: { Effect: { onSignal: 'wipe', kind: 'destroy-tagged', targetId: '', value: TEAM_A } } as unknown as EntityBlueprint, // 清场：按阵营批量销毁，级联连名牌/条/sidecar
     wipe_team_b: { Effect: { onSignal: 'wipe', kind: 'destroy-tagged', targetId: '', value: TEAM_B } } as unknown as EntityBlueprint,
@@ -682,8 +772,22 @@ export function buildGameFBlueprint(pacing: GameFPacing = {}): WorldBlueprint {
   }
   // 敌方关卡槽（持久）：每阶段一组，prep 按 stage_idx 分流的 deploy_stage_<N> 展开（§4.5 敌阵=数据）。
   for (const st of STAGES) {
-    for (const c of st.comp) {
-      entities[`slot_s${st.n}_${c.hero}`] = slotEntity(heroOf(c.hero), `deploy_stage_${st.n}`, c.q, c.r, c.hpMul);
+    st.comp.forEach((c, ci) => {
+      // id 带序号：同阶段同名敌将（F-9 后同模板多实例合法）不撞键
+      entities[`slot_s${st.n}_${ci}_${c.hero}`] = slotEntity(heroOf(c.hero), `deploy_stage_${st.n}`, c.q, c.r, c.hpMul);
+    });
+  }
+  // 野怪槽（批B）：每阶段一组，count 只横向铺位；血量=MOB_BASE_HP×HP_SCALE×hpMul 经 overrides
+  for (const w of PVE_WAVES) {
+    for (let i = 0; i < w.count; i++) {
+      const col = 3 + i;
+      const a = offsetToAxial(col, 3);
+      const p2 = project(a.q, a.r);
+      const hp = Math.round(MOB_BASE_HP * HP_SCALE * w.hpMul);
+      entities[`pveslot_s${w.stage}_${i}`] = {
+        Transform: xf(p2.x, p2.y),
+        Caster: { onSignal: `deploy_pve_${w.stage}`, template: `mob_s${w.stage}`, at: 'self', overrides: { main: { HexPos: { q: a.q, r: a.r }, Tag: { flags: TEAM_B }, Resource: { current: hp, max: hp } } } },
+      } as unknown as EntityBlueprint;
     }
   }
 
