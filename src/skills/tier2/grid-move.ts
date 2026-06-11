@@ -2,7 +2,7 @@ import { defineCapability } from '@engine/core/define-capability.js';
 import { SystemPhase } from '@engine/core/types.js';
 import type { IWorld } from '@engine/core/types.js';
 import type { HexBoard, HexPos, GridMover, Relation, Transform, Status } from '@engine/protocol/components.js';
-import { hexNextStep, hexCellKey, type Hex } from './hex.js';
+import { hexNextStep, hexCellKey, hexDistance, type Hex } from './hex.js';
 
 // ═══════════════════════════════════════════════════════════════
 //  grid-move —— 六边形网格逐格移动（REQ-024；金铲铲/TFT 式自动战斗移动）。
@@ -99,6 +99,7 @@ export const gridMoveCapability = defineCapability({
         describe: '网格移动器：每 period tick 沿 A* 走一格；haltStatusMask 被 CC 时定身。',
         fields: {
           period: { type: 'number', describe: '每多少 tick 走一格(>=1)' },
+          range: { type: 'number', describe: '射程驻足(REQ-F-060)：与目标 hex 距离≤此值即停走；缺省 1=走到贴脸' },
           elapsed: { type: 'number', describe: '内部计时' },
           haltStatusMask: { type: 'number', describe: '自身 Status 含这些位时定身不走、节奏时钟暂停（冻结/眩晕 CC；同 Steering.haltStatusMask）' },
           glideSpeed: { type: 'number', describe: '视觉滑行速度 px/tick(REQ-F-034)：Transform 恒速逼近格点投影、到点贴齐；缺省不设=逐格瞬移。建议 ≥ 格距/period 免视觉掉队' },
@@ -167,6 +168,10 @@ export const gridMoveCapability = defineCapability({
           if (!rel || rel.kind !== TARGET) continue;
           const tHp = posOf.get(rel.targetId);
           if (!tHp) continue;
+
+          // 射程驻足（REQ-F-060）：与目标距离 ≤ range 即停走（节奏时钟暂停，同 CC 语义——目标走远按剩余
+          // 节奏恢复追击）。缺省 1=贴脸原行为零迁移；远程/法师 3~4 站射程外输出（金铲铲站位）。
+          if (hexDistance(hp, tHp) <= (mover.range ?? 1)) continue;
 
           // 节奏：未到 period 不移动（但 elapsed 累计）。
           mover.elapsed = (mover.elapsed ?? 0) + 1;

@@ -201,6 +201,14 @@ export interface TraySeat extends Component {
   index: number; // 所在槽下标（0 起）
 }
 
+// ── DropZone（REQ-F-058 垃圾桶/出售槽）── 拖放落点区：drag-place 自由落点命中本实体 Shape →
+// **替被拖实体"代点"一下**（发 Signal{name: 被拖者 Clickable.action, source: 被拖者}）——
+// 「扔进垃圾桶=卖出」零新链路：既有 '@signal-source' 卖出效果原样复用；被拖者无 Clickable 则无事发生。
+// 代点绕过 Clickable.onlyFlag 指针门（拖进区=明确意图，与误点防护不冲突）。
+export interface DropZone extends Component {
+  readonly type: 'DropZone';
+}
+
 // ── MergeRule（REQ-F-046 升星合成）── 「N 换 1」声明式合成规则（卡牌/合成品类通用）。
 // merge-rule 系统每拍：数 PrefabOrigin.templateId===template 的**存活实例数**（按 distinct seq）；
 // ≥need → 取 seq 最小的 need 个（最老先合，确定性），其全部实体发 DestroyRequest（挂件随 cascade），
@@ -458,6 +466,9 @@ export interface KeyBinding extends Component {
 // 命中走「读单例 InputQueue 的指针坐标 → screenToWorld 逆投影 → 对 Transform+Shape 做 AABB」，确定性。
 export interface Clickable extends Component {
   readonly type: 'Clickable';
+  // 相位/模式门（REQ-F-059，与 Draggable.onlyFlag 同款纪律）：设了且全局 Flag 非真 → 点击不产信号。
+  // 「卖出模式才可点卖」「选秀期才可选」等模式化点击的数据门；读上一拍 Flag（人手速不可感知）。
+  onlyFlag?: string;
   action: string; // 命中时产出的 Signal.name（下游 effect-apply / craft-recipe / match3 等按名消费）
   phase?: string; // 触发的指针相位 'down'|'up'，缺省 'down'
 }
@@ -986,6 +997,9 @@ export interface GridMover extends Component {
   // CC 定身(REQ-F-030，对齐 Steering.haltStatusMask 既有语义)：自身 Status 含这些位 → 本 tick 不走，
   // 且节奏时钟暂停(elapsed 不累计；解控后按剩余节奏恢复，无补步突进)。纯位与，确定性不变。
   haltStatusMask?: number;
+  // 射程驻足(REQ-F-060)：与目标 hex 距离 ≤ range 即停走（节奏时钟同 CC 暂停语义）。缺省 1=贴脸
+  // （走到相邻，原行为零迁移）。远程/法师=3~4：站在射程外输出，不再贴脸——金铲铲站位语义。
+  range?: number;
   // 视觉滑行(REQ-F-034)：设了则 Transform 以恒速 px/tick 逼近 HexPos 格点投影（到点精确贴齐），
   // 缺省不设=逐格瞬移（零迁移）。HexPos 仍是占位/寻路/hash 的 SIM 真相；冻结时滑行一并停（时间静止）。
   glideSpeed?: number;

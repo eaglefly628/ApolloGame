@@ -1471,6 +1471,18 @@
 
 ---
 
+### REQ-F-058/059/060 · [2026-06-11] · 用户实测批二（换位/垃圾桶/点卖陷阱/远程贴脸/战后残留/动态结算）· 框架级 · status: **done（同日，代理主程落地）** · 类型: 窄缺口 ×3 + 数据重组
+
+> **用户原话**：①拖到另一个身上俩都消失、再点啥都消失（应=换位）；②远程兵不该贴脸；③死亡时机怪+战后残留一坨；④结算要动态过程列成绩；⑤不想要的英雄扔垃圾桶。
+> **F-058 换位+垃圾桶（drag-place 两件）**：(a) 拖到被占格=**两子交换**（板→板对调格；席→板=对方失格回席 tray 捡座；净在板数不变绕过限额门）；(b) `DropZone` 组件 + 独立 **drop-zone 系统**——落点命中投放区 → 替被拖者发它自带 Clickable.action 信号（**种在区实体上**，source=被拖者：'@signal-source' 卖出链原样吃；先于相位门=任何相位可卖，操作表「战斗期可卖不可摆」由此分野）。**评审三次自纠的定序教训（已档 Gotchas）**：① effect-apply 是 Commit 相位，对它的 runsBefore 全是空炮；② event-when 每拍**全局**横扫 Signal（亲核 line 68）→ 信号写者必须排其后；③ drag-place 不可能既早于结算链又晚于 event-when（card→ew→drag→card 三角实测）——**拆系统**：drop-zone 只写 Signal 零 Transform/Resource 牵连=链条死端，drag-place 保持绿基线定序、命中投放区只负责"不动"。环路定位改用**最短环打印探针**（复刻引擎建边 BFS 路径+边由来），告别瞎猜。
+> **F-059 Clickable.onlyFlag**：点击的全局 Flag 门（与 Draggable.onlyFlag 同款）。game-f 用它**停用点选卖出**（onlyFlag 指向恒假旗——用户实测「点谁谁消失」陷阱；卖出唯一通路=垃圾桶，代点绕过此门）。定序：clickable 改排 Flag 写者（flow/zone/self-rule）**之后**读本拍相位——反向 runsBefore 会与 flow→self-rule 既有显式边合围（实测环：self→click→flow→self）。
+> **F-060 GridMover.range**：射程驻足——与目标 hex 距离 ≤range 即停走（节奏时钟同 CC 暂停语义）；缺省 1=贴脸零迁移。game-f：近战 1/法师 3/弓手 4——远程站射程外输出。
+> **③战后残留**：PROJ 位 + 庆祝拍 destroy-tagged 清在飞弹道（战斗分胜负后不许补刀/暴毙——「死亡时机怪」主因）。
+> **④动态结算（纯数据）**：收入窗从 prep 移到 **resolution**（结算当面进账=TFT 语义；备战金额波动不再蹭利息带，符文测试断言随之简化）+ 战果面板（result_win/lose 模板：胜负/金币/连胜/血量逐行错速淡入，TextBinding 实时跳动；RESULT 位 ph_prep 收走）。
+> 验收：drag-place/clickable/grid-move 引擎测扩；game-f 26/26（垃圾桶卖/换位/射程/动态结算时点全链改测）。全套 1102 绿。
+
+---
+
 ## 需求模板（复制这段填写）
 
 ```

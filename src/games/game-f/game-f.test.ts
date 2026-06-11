@@ -249,9 +249,19 @@ describe('Game F — 自走棋（纯数据装配，零自走棋代码；棋子=�
   it('平滑滑行（REQ-F-034 接入）：棋子 Transform 每拍位移 ≤ glideSpeed=0.8（旧为 ~18px/格瞬移），逻辑格照走', () => {
     const e = new Engine({ tickRate: 60 });
     e.load(buildGameFBlueprint(FAST));
-    for (let i = 0; i < 50; i++) e.world.tick(); // 展开完毕、进入走位
-    // 7×8 真盘后前排（关羽 r4）出生即与敌前排 r3 贴脸=到位不走；抽样后排诸葛（r6，必须走两步入场）
-    const m = mainOf(e, 'a_zhuge')!;
+    // 7×8 真盘 + 射程驻足（F-060）后：前排出生即贴脸、法师站射程外——开局阵无人需要走位。
+    // 备战期把关羽 marker 拖去后排 (2,7) → 开战后近战必须步行入场，借此采样滑行。
+    for (let i = 0; i < 10; i++) e.world.tick();
+    const gseat = e.world.getAllEntities().find((id) => id.startsWith('bench_a_guanyu#') && id.endsWith(':seat'))!;
+    const gt = e.world.getComponent<Transform>(gseat, 'Transform')!;
+    const back = offsetToAxial(2, 7);
+    const bp2 = project(back.q, back.r);
+    e.world.createEntity('input');
+    e.world.addComponent('input', { type: 'InputQueue', actions: [{ source: 'test', key: 'drag', x: gt.x, y: gt.y, values: [bp2.x, bp2.y], phase: 'drag' }] } as unknown as Resource);
+    e.world.tick();
+    e.world.addComponent('input', { type: 'InputQueue', actions: [] } as unknown as Resource);
+    for (let i = 0; i < 39; i++) e.world.tick(); // 入战拍展开
+    const m = mainOf(e, 'a_guanyu')!;
     const t = (): Transform => e.world.getComponent<Transform>(m, 'Transform')!;
     let prev = { x: t().x, y: t().y };
     let maxStep = 0;
@@ -352,21 +362,26 @@ describe('Game F — 自走棋（纯数据装配，零自走棋代码；棋子=�
       e.world.tick();
       e.world.addComponent('input', { type: 'InputQueue', actions: [] } as unknown as Resource);
     };
-    for (let i = 0; i < 50; i++) e.world.tick(); // 回合1基础收入=2金（<3：买不起）
-    expect(res('gold')).toBe(2);
+    let g0guard = 0;
+    while (res('gold') < 2 && g0guard++ < 3000) e.world.tick(); // 收入移到结算窗（动态进账）：打完回合1拿到 2 金
+    expect(res('gold')).toBe(2); // §4.1 全局回合1基础收入=2（<3 买不起）
     play0();
     for (let i = 0; i < 3; i++) e.world.tick();
     expect(res('gold')).toBe(2); // 拒单：金不动
     expect(res('bench_space')).toBe(9); // 席位不动
     expect(e.world.getAllEntities().filter((id) => id.startsWith('bench_') && id.endsWith(':seat'))).toHaveLength(4); // 无新 marker（只有开局 4 个在板，牌也不丢——引擎拒单五断言盖）
-    // 注资 → 买成：回合1 prep 自动刷新（旧手回袋底）后手牌=[2,2,4] → 槽0 = 2 = 赵云
+    // 注资 → 买成：等到 r2 备战（结算窗外注资才不蹭利息带）；r2 自动刷新后手牌=[1,3,1] → 槽0 = 1 = 关羽
+    let r2guard = 0;
+    while (res('round_idx') === 1 && r2guard++ < 4000) e.world.tick();
+    for (let i = 0; i < 10; i++) e.world.tick(); // r2 备战早段（刷新已过）
     e.world.addComponent('r_gold', { type: 'ResourceModify', resourceId: 'gold', amount: 10, scope: 'local' } as unknown as Resource);
     for (let i = 0; i < 2; i++) e.world.tick();
+    const gFunded = res('gold');
     play0();
     for (let i = 0; i < 6; i++) e.world.tick();
-    expect(res('gold')).toBe(9); // 12 - 3
+    expect(res('gold')).toBe(gFunded - 3); // 原子扣价
     expect(res('bench_space')).toBe(8); // 占 1 席
-    expect(e.world.getAllEntities().some((id) => id.startsWith('bench_a_zhaoyun#') && id.endsWith(':seat') && !e.world.getComponent(id, 'HexPos'))).toBe(true); // 据码（刷新后槽0=2=赵云）入**席**（开局在板的赵云 marker 带格，不混；托盘自动落座）
+    expect(e.world.getAllEntities().some((id) => id.startsWith('bench_a_guanyu#') && id.endsWith(':seat') && !e.world.getComponent(id, 'HexPos'))).toBe(true); // 据码（r2 刷新后槽0=1=关羽）入**席**（开局在板关羽带格不混；托盘自动落座）
     expect(res('bought_code')).toBe(0); // 复位（防同码二连买 edge 失效）
   });
 
@@ -423,10 +438,10 @@ describe('Game F — 自走棋（纯数据装配，零自走棋代码；棋子=�
     const marker = e.world.getAllEntities().find((id) => id.startsWith('bench_') && id.endsWith(':seat') && !e.world.getComponent(id, 'HexPos'))!;
     expect(marker).toBeTruthy();
     const mt = e.world.getComponent<Transform>(marker, 'Transform')!;
-    e.world.addComponent('input', { type: 'InputQueue', actions: [{ source: 'test', x: mt.x, y: mt.y, phase: 'up' }] } as unknown as Resource); // 卖出监听 'up'（点拖互斥）
+    e.world.addComponent('input', { type: 'InputQueue', actions: [{ source: 'test', key: 'drag', x: mt.x, y: mt.y, values: [245, 118], phase: 'drag' }] } as unknown as Resource); // 拖进垃圾桶=卖出（REQ-F-058；点选卖出已停用）
     e.world.tick();
     e.world.addComponent('input', { type: 'InputQueue', actions: [] } as unknown as Resource);
-    for (let i = 0; i < 4; i++) e.world.tick();
+    for (let i = 0; i < 5; i++) e.world.tick();
     expect(e.world.getAllEntities().includes(marker)).toBe(false); // 席位销毁（点谁卖谁 '@signal-source'）
     expect(res('gold')).toBe(buyGold - 3 + 2); // 卖价 2 返还
     expect(res('bench_space')).toBe(9); // 席位归还
@@ -498,7 +513,7 @@ describe('Game F — 自走棋（纯数据装配，零自走棋代码；棋子=�
     const afterBuy = deckLen();
     const seat = e.world.getAllEntities().find((id) => id.startsWith('bench_') && id.endsWith(':seat') && !e.world.getComponent(id, 'HexPos'))!; // 刚买的在席（开局 4 marker 在板，过滤）
     const st = e.world.getComponent<Transform>(seat, 'Transform')!;
-    input([{ source: 'test', x: st.x, y: st.y, phase: 'up' }]); // 卖出监听 'up'（点拖互斥）
+    input([{ source: 'test', key: 'drag', x: st.x, y: st.y, values: [245, 118], phase: 'drag' }]); // 拖进垃圾桶=卖出（REQ-F-058）
     for (let i = 0; i < 6; i++) e.world.tick();
     expect(e.world.getAllEntities().includes(seat)).toBe(false); // 席位售出销毁
     expect(deckLen()).toBe(afterBuy + 1); // 码归还袋底（§4.6 有限袋语义保真）
@@ -526,7 +541,7 @@ describe('Game F — 自走棋（纯数据装配，零自走棋代码；棋子=�
     const g0 = res('gold');
     click(-110, -100); // 选「屯粮」
     for (let i = 0; i < 4; i++) e.world.tick();
-    expect(res('gold')).toBe(g0 + 10 + 1); // 生效（+1=备战窗内 2→12 上穿利息 10 档的带宽语义，已知 TUNE 项见 Gotchas）
+    expect(res('gold')).toBe(g0 + 10); // 生效（收入/利息窗已移到结算，备战金额波动不再蹭利息带）
     expect(alive(e, 'rune_a')).toBe(false); // 整组收走（含被点那张）
     expect(alive(e, 'rune_b')).toBe(false);
     expect(alive(e, 'rune_c')).toBe(false);
@@ -597,7 +612,7 @@ describe('Game F — 自走棋（纯数据装配，零自走棋代码；棋子=�
     };
     for (let i = 0; i < 12; i++) e.world.tick(); // 刷新 → 两段脉冲 → 重铺完毕
     expect(cards()).toHaveLength(3); // 三大框在售卡面可见（用户钦定小丑牌式）
-    expect(hudGold()).toBe('金币 2'); // HUD 数字=回合1收入（text-binding 实时投影）
+    expect(hudGold()).toBe('金币 0'); // 收入移结算：备战开局 0 金（text-binding 实时投影）
     e.world.addComponent('r_gold', { type: 'ResourceModify', resourceId: 'gold', amount: 20, scope: 'local' } as unknown as Resource);
     for (let i = 0; i < 3; i++) e.world.tick();
     const g0 = res('gold');
@@ -624,13 +639,14 @@ describe('Game F — 自走棋（纯数据装配，零自走棋代码；棋子=�
     expect(res('player_hp')).toBe(100); // §3.1 量程（boot 初始化，旧 20 为占位）
     expect(res('round_idx')).toBe(1);
     expect(res('stage_idx')).toBe(1);
-    expect(res('gold')).toBe(2); // §4.1 全局回合 1 基础收入 = 2（无利息、无连胜金）
-    // 打完回合 1：L2 done 写 round_done → L1 advance round_idx→2 → 回 prep 发第二笔收入
+    expect(res('gold')).toBe(0); // 收入窗移到结算（动态进账=TFT 语义）：备战期未发钱
+    // 打完回合 1：r1 结算窗发第一笔 2 金 → L1 advance → 回合 2
     let guard = 0;
     while (res('round_idx') === 1 && guard++ < 4000) e.world.tick();
     expect(res('round_idx')).toBe(2);
-    for (let i = 0; i < 50; i++) e.world.tick(); // 回合 2 备战：第二笔收入已发
-    expect(res('gold')).toBe(4); // 2+2（gold<10 无利息；连胜 1 不够 §4.1 连胜金档）
+    expect(res('gold')).toBe(2); // r1 结算：基础收入 2（无利息、无连胜金档）
+    for (let i = 0; i < 50; i++) e.world.tick(); // 回合 2 备战（收入要等 r2 结算）
+    expect(res('gold')).toBe(2);
     expect(res('player_hp')).toBe(flag(e, 'won') ? 100 : 98); // §4.2 阶段1败=基础0+存活近似2
     // 注入把 round_idx 推到 5（合法 sim 输入），打完该回合验证 >5 进位 banded：stage+1、round=1、敌阵换装
     e.world.addComponent('r_round_idx', { type: 'ResourceModify', resourceId: 'round_idx', amount: 3, scope: 'local' } as unknown as Resource);
@@ -657,7 +673,7 @@ describe('Game F — 自走棋（纯数据装配，零自走棋代码；棋子=�
       e.world.tick();
       e.world.addComponent('input', { type: 'InputQueue', actions: [] } as unknown as Resource);
     };
-    const clickUp = (x: number, y: number): void => act({ x, y, phase: 'up' }); // marker 卖出监听 'up'（点拖互斥）
+    const drag = (fx: number, fy: number, tx: number, ty: number): void => act({ key: 'drag', x: fx, y: fy, values: [tx, ty], phase: 'drag' }); // 壳层合成同形
     for (let i = 0; i < 10; i++) e.world.tick(); // 回合1 备战
     // 直注 3 张关羽席位 marker（绕过商店牌序的购买路径——merge 只认 PrefabOrigin 家族，与来源无关）
     [-66, -22, 22].forEach((x, i) => {
@@ -687,7 +703,7 @@ describe('Game F — 自走棋（纯数据装配，零自走棋代码；棋子=�
     // 星级卖价（战斗窗卖：income 窗已关，金额断言不吃利息带宽）：点板上二星席=sell2 → +8 金（棋子本回合继续打）
     const g0 = res('gold');
     const p = project(home.q, home.r);
-    clickUp(p.x, p.y);
+    drag(p.x, p.y, 245, 118); // 板上二星拖进垃圾桶=卖出（任何相位可卖，REQ-F-058）
     for (let i = 0; i < 5; i++) e.world.tick();
     expect(e.world.getAllEntities().includes(b2)).toBe(false); // 点谁卖谁（板上也可卖）
     expect(res('gold')).toBe(g0 + 8); // 2星卖价 = 3×3−1（§4.6）
@@ -728,7 +744,7 @@ describe('Game F — 自走棋（纯数据装配，零自走棋代码；棋子=�
     const zhaoSeat = e.world.getAllEntities().find((id) => id.startsWith('bench_a_zhaoyun#') && id.endsWith(':seat') && id !== seat && e.world.getComponent(id, 'HexPos'))!;
     expect(zhaoSeat).toBeTruthy();
     const zt = pos(zhaoSeat);
-    drag(zt.x, zt.y, 250, 118); // 拖出板（落点在托盘带外也无妨——失格即回席，托盘自动落座）
+    drag(zt.x, zt.y, -250, 118); // 拖出板（落点避开右侧垃圾桶；失格即回席，托盘自动落座）
     expect(e.world.getComponent(zhaoSeat, 'HexPos')).toBeFalsy(); // 回席（板外落点移除 HexPos）
     e.world.tick();
     expect(e.world.getComponent(zhaoSeat, 'TraySeat')).toBeTruthy(); // 托盘把回席者捡进空槽

@@ -1,7 +1,7 @@
 import { defineCapability } from '@engine/core/define-capability.js';
 import { SystemPhase } from '@engine/core/types.js';
 import type { IWorld } from '@engine/core/types.js';
-import type { Draggable, InputQueue, Transform, Shape, HexBoard, HexPos, Tag, Flag, Resource, Tween } from '@engine/protocol/components.js';
+import type { Draggable, InputQueue, Transform, Shape, HexBoard, HexPos, Tag, Flag, Resource, Tween, Clickable, DropZone, Signal } from '@engine/protocol/components.js';
 import { hexCellToPoint, hexPointToCell } from './grid-move.js';
 import { findByComponentId } from '@engine/core/query.js';
 
@@ -29,6 +29,21 @@ import { findByComponentId } from '@engine/core/query.js';
 function replayTween(world: IWorld, eid: string): void {
   const tw = world.getComponent<Tween>(eid, 'Tween');
   if (tw) { tw.elapsed = 0; tw.done = false; }
+}
+
+// 投放区命中（多区按 id 升序首中，确定）。
+function hitDropZone(world: IWorld, x: number, y: number): string | null {
+  const zones: string[] = [];
+  for (const [zid] of world.query('DropZone')) zones.push(zid);
+  zones.sort();
+  for (const zid of zones) {
+    const zt = world.getComponent<Transform>(zid, 'Transform');
+    const zs = world.getComponent<Shape>(zid, 'Shape');
+    if (!zt || !zs) continue;
+    const hw = ((zs.width ?? 16) / 2) * Math.abs(zt.scaleX), hh = ((zs.height ?? 16) / 2) * Math.abs(zt.scaleY);
+    if (Math.abs(x - zt.x) <= hw && Math.abs(y - zt.y) <= hh) return zid;
+  }
+  return null;
 }
 
 function hitDraggable(world: IWorld, x: number, y: number): string | null {
@@ -78,6 +93,11 @@ export const dragPlaceCapability = defineCapability({
           capResource: { type: 'string', describe: '上板限额资源 id（如 level）；从板外进板且已满 → 整次拒绝' },
         },
       },
+      DropZone: {
+        category: 'marker',
+        describe: '拖放投放区（REQ-F-058 垃圾桶/出售槽）：自由落点命中本实体 Shape → 替被拖者发它自带 Clickable.action 的 Signal（source=被拖者）。',
+        fields: {},
+      },
     },
     reads: ['Draggable', 'InputQueue', 'Transform', 'Shape', 'HexBoard', 'HexPos', 'Tag', 'Flag', 'Resource'],
     writes: ['Transform', 'HexPos'],
@@ -95,8 +115,11 @@ export const dragPlaceCapability = defineCapability({
       // group-count/self-rule/resource-apply 的 Resource）。读上一拍相位/限额，备战级操作不可感知。
       // 'motion-apply'：REQ-F-050——与 grid-move 同类的 Transform RMW 对，首个两者同场的世界（game-f
       // 主角自由移动+拖拽）即成 22 系统 SCC；输入先行语义不变（先落拖拽终点、同拍再积分速度）。
+      // REQ-F-058 注：投放区命中时本系统**只负责不动**（信号由下方独立 drop-zone 小系统种——它只写
+      // Signal、零 Transform/Resource 牵连，可安然排在 event-when 全局清扫之后；本系统若兼职写 Signal
+      // 会陷入「既要早于结算链、又要晚于 event-when」的死结，实测三角环）。
       runsBefore: ['grid-move', 'motion-apply', 'tween', 'flow', 'zone-occupancy', 'group-count', 'self-rule', 'resource-apply'],
-      reads: ['Draggable', 'InputQueue', 'Transform', 'Shape', 'HexBoard', 'HexPos', 'Tag', 'Flag', 'Resource', 'Tween'],
+      reads: ['Draggable', 'InputQueue', 'Transform', 'Shape', 'HexBoard', 'HexPos', 'Tag', 'Flag', 'Resource', 'Tween', 'Clickable', 'DropZone'],
       writes: ['Transform', 'HexPos', 'Tween'],
       consumes: [],
       execute(world: IWorld) {
@@ -119,6 +142,10 @@ export const dragPlaceCapability = defineCapability({
         if (!eid) return;
         const d = world.getComponent<Draggable>(eid, 'Draggable')!;
 
+        // 投放区命中（REQ-F-058，**先于相位门**——拖进垃圾桶任何相位可投）：本系统只负责「被拖者原地
+        // 不动」，代点信号由独立 drop-zone 系统种（见下方第二系统）。
+        if (hitDropZone(world, drag.tx, drag.ty)) return;
+
         // 相位门（读上一拍全局 Flag）。
         if (d.onlyFlag) {
           const fe = findByComponentId(world, 'Flag', 'id', d.onlyFlag);
@@ -135,9 +162,35 @@ export const dragPlaceCapability = defineCapability({
         const cell = d.snap === 'hex' && board ? hexPointToCell(board, drag.tx, drag.ty) : null;
 
         if (cell) {
-          // 进板/调位：限额只在「从板外进板」时强制（板内调位不重复计数自己）。
+          // 换位（REQ-F-058 ①）：目标格被同族占（Tag&capTagMask 的另一可拖单位）→ 两子交换：
+          // 板→板=对方去我原格；席→板=对方失格回席（tray 自动落座）。净在板数不变 → 不过限额门。
           const hadPos = world.hasComponent(eid, 'HexPos');
-          if (!hadPos && d.capTagMask && d.capResource) {
+          let occupant: string | null = null;
+          if (d.capTagMask) {
+            const occIds: string[] = [];
+            for (const [uid] of world.query('HexPos')) {
+              if (uid === eid) continue;
+              const uhp = world.getComponent<HexPos>(uid, 'HexPos')!;
+              const utg = world.getComponent<Tag>(uid, 'Tag');
+              if (uhp.q === cell.q && uhp.r === cell.r && utg && (utg.flags & d.capTagMask) !== 0) occIds.push(uid);
+            }
+            occIds.sort();
+            occupant = occIds[0] ?? null;
+          }
+          if (occupant) {
+            const ot = world.getComponent<Transform>(occupant, 'Transform');
+            if (hadPos) {
+              const myCell = world.getComponent<HexPos>(eid, 'HexPos')!;
+              const op = world.getComponent<HexPos>(occupant, 'HexPos')!;
+              op.q = myCell.q; op.r = myCell.r;
+              if (ot && board) { const pp = hexCellToPoint(board, op.q, op.r); ot.x = pp.x; ot.y = pp.y; }
+            } else {
+              world.removeComponent(occupant, 'HexPos'); // 席→板：对方回席（tray 捡座）
+            }
+            replayTween(world, occupant);
+          }
+          // 进板/调位：限额只在「从板外进板且非换位」时强制（板内调位/换位不改在板数）。
+          if (!hadPos && !occupant && d.capTagMask && d.capResource) {
             const capRe = findByComponentId(world, 'Resource', 'id', d.capResource);
             const cap = capRe ? world.getComponent<Resource>(capRe, 'Resource')!.current : 0;
             let onBoard = 0;
@@ -161,6 +214,43 @@ export const dragPlaceCapability = defineCapability({
           t.x = drag.tx; t.y = drag.ty;
           if (world.hasComponent(eid, 'HexPos')) world.removeComponent(eid, 'HexPos');
           replayTween(world, eid);
+        }
+      },
+    },
+    {
+      // ── drop-zone（REQ-F-058 ②）：投放代点——drag 落点命中 DropZone → 替被拖者发它自带的
+      // Clickable.action 信号（**种在区实体上**，source=被拖者：'@signal-source' 解析 source 字段，
+      // 载体无所谓；种在被拖者身上会被 clickable 步①自清扫）。绕过 Clickable.onlyFlag 指针门与
+      // Draggable.onlyFlag 相位门（拖进垃圾桶=明确意图，任何相位可卖=自走棋操作表）。
+      // 定序：只写 Signal、不碰 Transform/Resource → 排 event-when（全局先清后标）与 card-pile
+      // （读 Signal 又写 Flag/Resource，先行会与 card→event-when 合围）之后即链条死端，零环面。
+      id: 'drop-zone',
+      phase: SystemPhase.Update,
+      runsAfter: ['event-when', 'card-pile'],
+      reads: ['InputQueue', 'DropZone', 'Draggable', 'Clickable', 'Transform', 'Shape'],
+      writes: ['Signal'],
+      consumes: [],
+      execute(world: IWorld) {
+        let drag: { fx: number; fy: number; tx: number; ty: number } | null = null;
+        for (const [qid] of world.query('InputQueue')) {
+          const q = world.getComponent<InputQueue>(qid, 'InputQueue');
+          if (!q) continue;
+          for (const a of q.actions) {
+            if (a.key === 'drag' && a.x !== undefined && a.y !== undefined && a.values && a.values.length >= 2) {
+              drag = { fx: a.x, fy: a.y, tx: a.values[0], ty: a.values[1] };
+              break;
+            }
+          }
+          if (drag) break;
+        }
+        if (!drag) return;
+        const zid = hitDropZone(world, drag.tx, drag.ty);
+        if (!zid) return;
+        const eid = hitDraggable(world, drag.fx, drag.fy);
+        if (!eid) return;
+        const click = world.getComponent<Clickable>(eid, 'Clickable');
+        if (click && !world.hasComponent(zid, 'Signal')) {
+          world.addComponent(zid, { type: 'Signal', name: click.action, source: eid } as Signal);
         }
       },
     },

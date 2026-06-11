@@ -85,6 +85,8 @@ const BENCH_OCC = 1 << 25;
 // marker 显隐位（REQ-F-056）：seat + ★ 角标都带 → 战斗期 set-visible-tagged 隐藏（消除「武将复制、老的没删」
 // 幽灵——marker 持久记布阵不能删，只能藏）、备战期再显。不与 BENCH_OCC 重叠（★ 角标不计席位占用）。
 const MARKER_VIS = 1 << 19;
+const PROJ = 1 << 26; // 在飞弹道（庆祝拍清扫——战斗结束后不许还有箭在天上杀人，用户「死亡时机怪」主因之一）
+const RESULT = 1 << 27; // 战果面板行（ph_prep 整组收走）
 
 // 战斗节奏（数据）：30 tick ≈ 0.5s/动作，看得清（此前 10/24 太快）。
 const MOVE_PERIOD = 48; // 每 48 tick 走一格 ≈ 0.8s（慢一点看清走位）
@@ -146,7 +148,7 @@ const projectile = (targetMask: number, amount: number, fxKey: string, scaleId =
       Transform: xf(0, 0),
       Shape: { kind: 'box', width: 10, height: 10 },
       Sensor: {},
-      Tag: { flags: ZONE_FLAG },
+      Tag: { flags: ZONE_FLAG | PROJ }, // PROJ：庆祝拍 destroy-tagged 清在飞弹（战后不补刀）
       Velocity: { vx: 0, vy: 0, angular: 0 },
       Perception: { targetTag: targetMask, sightRadius: 0 },
       Steering: { mode: 'seek', speed: 3.2, stopRange: 0 },
@@ -268,7 +270,8 @@ function heroTemplate(h: HeroSpec): PrefabTemplate {
         HexPos: { q: 0, r: 0 }, // 占位 ← 槽位 overrides（grid-move 每拍据 HexPos 重投影）
         // 被冻定身（REQ-F-030）；glideSpeed=平滑滑行（REQ-F-034：HexPos 逻辑瞬步不变，Transform 恒速滑向格点）。
         // 取值按策划审查：相邻格 ~33px / period 48 ≈ 0.7 px/tick 为追上逻辑步的下限，0.8 留余量（瞬移=不设）。
-        GridMover: { period: MOVE_PERIOD, elapsed: 0, haltStatusMask: FROZEN, glideSpeed: 0.8 },
+        // 射程驻足（REQ-F-060，用户「远程兵别贴脸」）：近战贴脸 1 / 法师 3 / 弓手 4——站射程外输出。
+        GridMover: { period: MOVE_PERIOD, elapsed: 0, haltStatusMask: FROZEN, glideSpeed: 0.8, range: h.atkType === 'melee' ? 1 : h.atkType === 'magic' ? 3 : 4 },
         Mortal: { resource: 'hp', atOrBelow: 0, dropTemplate: `death_${h.id}` }, // 死亡碎裂特效（用户打击感批：四分碎片飞散）
         // 普攻链（F-9 self 化，REQ-021 spawn + REQ-F-035 whenGlobal 阶段门 + REQ-F-036 二刷定序）：
         // 自身 loop Timer 到点 ∧ 全局 in_combat → SelfRule 在自身 Relation(target) 处展开打击区。
@@ -509,7 +512,9 @@ export const GAME_F_TEMPLATES: Record<string, PrefabTemplate> = Object.fromEntri
               Transform: { x: 0, y: 0, rotation: 0, scaleX: STAR_SCALE[s], scaleY: STAR_SCALE[s] },
               Sprite: sprite(h.key, 2),
               Shape: { kind: 'box', width: 30, height: 30 },
-              Clickable: { action: s === 1 ? `sell_${h.id}` : `sell${s}_${h.id}`, phase: 'up' }, // 'up'=点拖互斥（REQ-F-053）：拖拽不产 up，按住起拖不会误卖
+              // 卖出动作数据（REQ-F-058）：指针点击已停用（onlyFlag 指向恒假旗——用户实测「点谁谁消失」陷阱）；
+              // 唯一卖出通路=拖进垃圾桶（DropZone 代点本 action，绕过指针门；任何相位可卖=操作表）。
+              Clickable: { action: s === 1 ? `sell_${h.id}` : `sell${s}_${h.id}`, phase: 'up', onlyFlag: 'click_sell_off' },
               Tag: { flags: BENCH_OCC | MARKER_VIS }, // MARKER_VIS：战斗期隐藏（REQ-F-056，消幽灵）
               Visibility: { visible: true, active: true }, // 备战可见；ph_combat→隐藏 / ph_prep→显
               Draggable: { snap: 'hex', onlyFlag: 'in_prep', capTagMask: BENCH_OCC, capResource: 'level' },
@@ -588,6 +593,27 @@ export const GAME_F_TEMPLATES: Record<string, PrefabTemplate> = Object.fromEntri
         Sprite: zlift(33),
       }])) } as unknown as PrefabTemplate,
     ]] as [string, PrefabTemplate][],
+    // 战果面板（动态结算过程）：逐行错速淡入（duration 阶梯=stagger 近似），数字 TextBinding 实时跳
+    [[
+      'result_win',
+      { entities: {
+        head: { Transform: xf(0, 0), Text: { content: '— 战 果 —', fontSize: 14, fontFamily: 'sans-serif', anchor: 'center', lineSpacing: 0 }, Color: { tint: 0xffe28a, alpha: 0 }, Tween: { target: 'Color.alpha', from: 0, to: 1, elapsed: 0, duration: 8, easing: 'easeOut', done: false }, Tag: { flags: RESULT }, Sprite: { textureKey: F_FX_STRIKE, anchorX: 0.5, anchorY: 0.5, zOrder: 34 } },
+        verdict: { Transform: xf(0, 20), Text: { content: '🏆 本回合胜利', fontSize: 15, fontFamily: 'sans-serif', anchor: 'center', lineSpacing: 0 }, Color: { tint: 0xffd24a, alpha: 0 }, Tween: { target: 'Color.alpha', from: 0, to: 1, elapsed: 0, duration: 16, easing: 'easeOut', done: false }, Tag: { flags: RESULT }, Sprite: { textureKey: F_FX_STRIKE, anchorX: 0.5, anchorY: 0.5, zOrder: 34 } },
+        gline: { Transform: xf(0, 40), Text: { content: '金币 0', fontSize: 12, fontFamily: 'sans-serif', anchor: 'center', lineSpacing: 0 }, TextBinding: { resourceId: 'gold', prefix: '金币 ' }, Color: { tint: 0xf0d27a, alpha: 0 }, Tween: { target: 'Color.alpha', from: 0, to: 1, elapsed: 0, duration: 26, easing: 'easeOut', done: false }, Tag: { flags: RESULT }, Sprite: { textureKey: F_FX_STRIKE, anchorX: 0.5, anchorY: 0.5, zOrder: 34 } },
+        sline: { Transform: xf(0, 58), Text: { content: '', fontSize: 12, fontFamily: 'sans-serif', anchor: 'center', lineSpacing: 0 }, TextBinding: { resourceId: 'win_streak', prefix: '连胜 ' }, Color: { tint: 0x9ad1ff, alpha: 0 }, Tween: { target: 'Color.alpha', from: 0, to: 1, elapsed: 0, duration: 36, easing: 'easeOut', done: false }, Tag: { flags: RESULT }, Sprite: { textureKey: F_FX_STRIKE, anchorX: 0.5, anchorY: 0.5, zOrder: 34 } },
+        hline: { Transform: xf(0, 76), Text: { content: '血量 100', fontSize: 12, fontFamily: 'sans-serif', anchor: 'center', lineSpacing: 0 }, TextBinding: { resourceId: 'player_hp', prefix: '血量 ' }, Color: { tint: 0xff8a8a, alpha: 0 }, Tween: { target: 'Color.alpha', from: 0, to: 1, elapsed: 0, duration: 46, easing: 'easeOut', done: false }, Tag: { flags: RESULT }, Sprite: { textureKey: F_FX_STRIKE, anchorX: 0.5, anchorY: 0.5, zOrder: 34 } },
+      } } as unknown as PrefabTemplate,
+    ]] as [string, PrefabTemplate][],
+    [[
+      'result_lose',
+      { entities: {
+        head: { Transform: xf(0, 0), Text: { content: '— 战 果 —', fontSize: 14, fontFamily: 'sans-serif', anchor: 'center', lineSpacing: 0 }, Color: { tint: 0xffe28a, alpha: 0 }, Tween: { target: 'Color.alpha', from: 0, to: 1, elapsed: 0, duration: 8, easing: 'easeOut', done: false }, Tag: { flags: RESULT }, Sprite: { textureKey: F_FX_STRIKE, anchorX: 0.5, anchorY: 0.5, zOrder: 34 } },
+        verdict: { Transform: xf(0, 20), Text: { content: '💔 本回合战败', fontSize: 15, fontFamily: 'sans-serif', anchor: 'center', lineSpacing: 0 }, Color: { tint: 0xc06060, alpha: 0 }, Tween: { target: 'Color.alpha', from: 0, to: 1, elapsed: 0, duration: 16, easing: 'easeOut', done: false }, Tag: { flags: RESULT }, Sprite: { textureKey: F_FX_STRIKE, anchorX: 0.5, anchorY: 0.5, zOrder: 34 } },
+        gline: { Transform: xf(0, 40), Text: { content: '金币 0', fontSize: 12, fontFamily: 'sans-serif', anchor: 'center', lineSpacing: 0 }, TextBinding: { resourceId: 'gold', prefix: '金币 ' }, Color: { tint: 0xf0d27a, alpha: 0 }, Tween: { target: 'Color.alpha', from: 0, to: 1, elapsed: 0, duration: 26, easing: 'easeOut', done: false }, Tag: { flags: RESULT }, Sprite: { textureKey: F_FX_STRIKE, anchorX: 0.5, anchorY: 0.5, zOrder: 34 } },
+        sline: { Transform: xf(0, 58), Text: { content: '', fontSize: 12, fontFamily: 'sans-serif', anchor: 'center', lineSpacing: 0 }, TextBinding: { resourceId: 'lose_streak', prefix: '连败 ' }, Color: { tint: 0x9ad1ff, alpha: 0 }, Tween: { target: 'Color.alpha', from: 0, to: 1, elapsed: 0, duration: 36, easing: 'easeOut', done: false }, Tag: { flags: RESULT }, Sprite: { textureKey: F_FX_STRIKE, anchorX: 0.5, anchorY: 0.5, zOrder: 34 } },
+        hline: { Transform: xf(0, 76), Text: { content: '血量 100', fontSize: 12, fontFamily: 'sans-serif', anchor: 'center', lineSpacing: 0 }, TextBinding: { resourceId: 'player_hp', prefix: '血量 ' }, Color: { tint: 0xff8a8a, alpha: 0 }, Tween: { target: 'Color.alpha', from: 0, to: 1, elapsed: 0, duration: 46, easing: 'easeOut', done: false }, Tag: { flags: RESULT }, Sprite: { textureKey: F_FX_STRIKE, anchorX: 0.5, anchorY: 0.5, zOrder: 34 } },
+      } } as unknown as PrefabTemplate,
+    ]] as [string, PrefabTemplate][],
     // 商店大卡（F-14 重排/用户钦定）：在售英雄的可点大卡面（60×68 占满大框）+ 名字签 + **价签**（用户报缺）；
     // Clickable.action(买哪框)/Tag(槽位掩码) 由持位 Caster overrides 注入。价 = playCosts 金 3（统一费）。
     ROSTER.filter((x) => x.team === TEAM_A).map((h): [string, PrefabTemplate] => [
@@ -624,7 +650,6 @@ const makeRoundFlow = (PREP_TICKS: number, RESOLUTION_TICKS: number, CELEBRATE_T
     { kind: 'set-flag', targetId: 'in_prep', value: false },
     { kind: 'set-flag', targetId: 'cap_armed', value: true },
     { kind: 'set-flag', targetId: 'deploy_armed', value: true }, // 入战拍臂 deploy：双方棋子此拍从 marker/敌槽成型
-    { kind: 'set-flag', targetId: 'income_armed', value: false }, // 收入窗随备战关（利息带不吃战斗期金额波动）
     { kind: 'modify-resource', targetId: 'prep_left', op: 'set', value: 0 },
   ];
   return {
@@ -644,7 +669,7 @@ const makeRoundFlow = (PREP_TICKS: number, RESOLUTION_TICKS: number, CELEBRATE_T
         { kind: 'set-flag', targetId: 'dmg_armed', value: false },
         { kind: 'set-flag', targetId: 'cap_armed', value: false }, // 超员检查窗复位（F-17，入战拍再臂）
         { kind: 'set-flag', targetId: 'deploy_armed', value: false }, // 复位；部署窗在入战拍（REQ-F-049 拖拽即时反馈）
-        { kind: 'set-flag', targetId: 'income_armed', value: true }, // → 基础收入/利息/连胜金 bands（§4.1）
+        { kind: 'set-flag', targetId: 'income_armed', value: false }, // 收入窗移到 resolution（结算当面进账=动态过程+TFT 语义）
         { kind: 'set-flag', targetId: 'shop_refresh_armed', value: true }, // → 自动刷新（锁店时门挡，v2 §4.6）
         { kind: 'modify-resource', targetId: 'prep_left', op: 'set', value: PREP_SECONDS }, // 倒计时表归位（OverTime -1/秒，0 钳停）
         { kind: 'modify-resource', targetId: 'xp', op: 'add', value: 2 }, // 每回合自动 +2 XP（§4.3）
@@ -686,6 +711,7 @@ const makeRoundFlow = (PREP_TICKS: number, RESOLUTION_TICKS: number, CELEBRATE_T
         // 关部署窗（实测坑）：窗若跨 resolution 活到 advance，stage/round 指针翻转会让 deploy_stage_N 带
         // 在窗内 false→true 误发（清场后多铺一波=双倍敌阵）。窗语义=「恰本场战斗的入战拍」，结算即关。
         { kind: 'set-flag', targetId: 'deploy_armed', value: false },
+        { kind: 'set-flag', targetId: 'income_armed', value: true }, // 结算窗发钱（§4.1 收入/利息/连胜带；战果面板看着金币进账）
         { kind: 'set-flag', targetId: 'wipe_armed', value: true }, // → 'wipe'
       ],
       transitions: [
@@ -957,6 +983,26 @@ export function buildGameFBlueprint(pacing: GameFPacing = {}): WorldBlueprint {
       Visibility: { visible: false },
       Sprite: { textureKey: F_FX_STRIKE, anchorX: 0.5, anchorY: 0.5, zOrder: 32 },
     } as unknown as EntityBlueprint,
+    // —— 垃圾桶（REQ-F-058，用户「不想要的英雄扔垃圾桶」）：拖 marker 进桶=卖出（DropZone 代点其
+    // sell 动作，任何相位可卖）；指针点选卖出停用（click_sell_off 恒假——「点谁谁消失」陷阱已除）。——
+    f_click_sell_off: { Flag: { id: 'click_sell_off', active: false } } as unknown as EntityBlueprint, // 恒假：点选卖出永闭
+    trash_bin: {
+      Transform: xf(245, 118),
+      Shape: { kind: 'box', width: 44, height: 44 },
+      DropZone: {},
+      Text: { content: '🗑', fontSize: 24, fontFamily: 'sans-serif', anchor: 'center', lineSpacing: 0 },
+      Color: { tint: 0xb05050, alpha: 0.95 },
+      Sprite: { textureKey: F_FX_STRIKE, anchorX: 0.5, anchorY: 0.5, zOrder: 27 },
+    } as unknown as EntityBlueprint,
+    trash_label: { Transform: xf(245, 146), Text: { content: '拖到此卖出', fontSize: 9, fontFamily: 'sans-serif', anchor: 'center', lineSpacing: 0 }, Color: { tint: 0x9a8a7a, alpha: 1 }, Sprite: { textureKey: F_FX_STRIKE, anchorX: 0.5, anchorY: 0.5, zOrder: 27 } } as unknown as EntityBlueprint,
+    // —— 战后清扫（用户「死亡时机/残留一坨」）：庆祝拍清在飞弹道——战斗已分胜负，不许补刀/暴毙。——
+    eff_projsweep_w: { Effect: { onSignal: 'ph_win', kind: 'destroy-tagged', targetId: '', value: PROJ } } as unknown as EntityBlueprint,
+    eff_projsweep_l: { Effect: { onSignal: 'ph_lose', kind: 'destroy-tagged', targetId: '', value: PROJ } } as unknown as EntityBlueprint,
+    // —— 战果面板（用户「结算要动态过程，把成绩列出来」）：庆祝/结算期右侧逐行淡入战果，金币/连胜/血量
+    // 数字 TextBinding 实时跳动（收入窗已移至 resolution=进账当面发生）；下个 prep 整组收走。——
+    rescast_w: { Transform: xf(210, -26), Caster: { onSignal: 'ph_win', template: 'result_win', at: 'self' } } as unknown as EntityBlueprint,
+    rescast_l: { Transform: xf(210, -26), Caster: { onSignal: 'ph_lose', template: 'result_lose', at: 'self' } } as unknown as EntityBlueprint,
+    eff_result_sweep: { Effect: { onSignal: 'ph_prep', kind: 'destroy-tagged', targetId: '', value: RESULT } } as unknown as EntityBlueprint,
     // 庆祝相位带（celebrate 进场拍按胜负分流一次）：横幅三选一 + 胜方金彩喷洒（3 个 Caster 同信号齐喷）。
     when_ph_win: { EventWhen: { signal: 'ph_win', when: and({ kind: 'state', fsmId: 'round_ui', equals: 'celebrate' }, flagIs('won')), mode: 'edge', armed: false } } as unknown as EntityBlueprint,
     when_ph_lose: { EventWhen: { signal: 'ph_lose', when: and({ kind: 'state', fsmId: 'round_ui', equals: 'celebrate' }, { kind: 'not', of: flagIs('won') }), mode: 'edge', armed: false } } as unknown as EntityBlueprint,

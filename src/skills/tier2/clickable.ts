@@ -1,5 +1,5 @@
 import { defineCapability } from '@engine/core/define-capability.js';
-import type { Transform, Shape, Sprite, Signal, InputQueue, Clickable } from '@engine/protocol/components.js';
+import type { Transform, Shape, Sprite, Signal, InputQueue, Clickable, Flag } from '@engine/protocol/components.js';
 
 // clickable —— 通用「可点击实体」：指针命中 → 配置好的 Signal（REQ-C-002，三游戏共需的输入→逻辑桥）。
 //
@@ -57,8 +57,12 @@ export const clickableCapability = defineCapability({
     {
       id: 'clickable',
       // 与 event-when 同在 Update：排其后，使本帧命中的 Signal 不被 event-when 的全局清扫误删。
-      runsAfter: ['event-when'],
-      reads: ['Clickable', 'Transform', 'Shape', 'Sprite', 'InputQueue'],
+      // REQ-F-059 onlyFlag 门读全局 Flag：排在 Update 段 Flag 写者（flow/zone/self-rule）**之后**=读本拍
+      // 相位（更新鲜且链条死端安全——clickable 唯一下游是 Signal 消费者，不会回流到 Flag 写者；
+      // 反向 runsBefore 会与 flow→self-rule 既有显式边合围成环，实测踩过）。effect-apply 在 Commit 相位，
+      // 跨相位天然有序无需声明。
+      runsAfter: ['event-when', 'flow', 'zone-occupancy', 'self-rule'],
+      reads: ['Clickable', 'Transform', 'Shape', 'Sprite', 'InputQueue', 'Flag'],
       writes: ['Signal'],
       consumes: [],
       execute(world) {
@@ -73,10 +77,17 @@ export const clickableCapability = defineCapability({
         }
         if (!queue || queue.actions.length === 0) return;
 
-        // ③ 预收集可点击实体（带 Transform + Shape）。
+        // 全局 Flag 表（REQ-F-059 onlyFlag 门用；一次收集，O(flags)）。
+        const flags = new Map<string, boolean>();
+        for (const [fid] of world.query('Flag')) {
+          const f = world.getComponent<Flag>(fid, 'Flag');
+          if (f) flags.set(f.id, f.active);
+        }
+        // ③ 预收集可点击实体（带 Transform + Shape）；onlyFlag 非真者整体不参与命中。
         const targets: Array<{ eid: string; t: Transform; s: Shape; z: number; click: Clickable }> = [];
         for (const [eid] of world.query('Clickable', 'Transform', 'Shape')) {
           const click = world.getComponent<Clickable>(eid, 'Clickable')!;
+          if (click.onlyFlag && !flags.get(click.onlyFlag)) continue; // 门关：不可点（读上一拍 Flag）
           const t = world.getComponent<Transform>(eid, 'Transform')!;
           const s = world.getComponent<Shape>(eid, 'Shape')!;
           const spr = world.getComponent<Sprite>(eid, 'Sprite');
