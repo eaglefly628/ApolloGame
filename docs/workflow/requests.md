@@ -1303,6 +1303,15 @@
 
 ---
 
+### REQ-F-044 · [2026-06-10] · PE-F（批C 主角拾取接入，§4.7 预案兑现）· 框架级 · status: **open（待主程评估）** · 优先级: 高（主角拾取入账=Phase 2.5 收口件；"一次性触碰结算"是拾取/独头弹/踩雷通用形状） · 类型: 真缺口（hitbox 无"结算即耗尽"；trigger-zone 双 zone 互斥使"双向两清"不可表达）
+
+> **现象（实测）**：§4.7 的"双向 hitbox 两清"映射有隐藏假设破产——`trigger-zone` 规则=**恰好一方** ZONE_FLAG（两方都 zone → 不产 Trigger，源码注释原文），而球(要写主角 loot)与主角(要杀球)都得是 zone 才能互相结算 → 死锁。单 zone 方向则：球作 zone 写 loot=**每拍重复入账**（站着不走=金币泵）；主角作 zone 杀球=拿不到赏金。
+> **证伪重组**：① 让球带 Timer 寿命=未拾取也消失（语义错）；② loot 钳 max+清零链=泵变慢仍是泵；③ 死亡掉"信用区"二段 drop=寿命 1 拍的结算竞态不可靠且三件套绕行（baroque，审查必拍）。→ 缺的是**单发结算**原子语义。
+> **建议（交主程裁，倾向 A）**：(A) `Hitbox.consumeOnHit?: boolean`——本拍有任一命中结算后，对**自身（zone 实体）**发 DestroyRequest（cascade 连挂件）。拾取品/独头弹/一次性陷阱同形，最弱 LLM 一个布尔。球=zone{Hitbox{resource:'loot', amount:-5, targetMask:PROTAG}, consumeOnHit}（hitbox amount=伤害语义，入账=负数；§4.7 草图符号反了，已实测钉死），主角零附件。(B) trigger-zone 允许双 zone 配对（影响所有既有 zone 语义，面大，预期回驳）。
+> **YAGNI 自审**：批C 当下卡死入账；"碰一下结算一次然后消失"在任何带拾取/弹药的品类都是标配。
+
+---
+
 ## 需求模板（复制这段填写）
 
 ```

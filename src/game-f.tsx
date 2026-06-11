@@ -1,6 +1,6 @@
 import { Engine } from './runtime/engine.js';
 import { CanvasRenderer } from './renderer/index.js';
-import { PointerInputSource } from './net/index.js';
+import { PointerInputSource, KeyboardInputSource } from './net/index.js';
 import type { InputSource } from './net/commands.js';
 import { AssetManager, ImageAssetLoader } from '@assets/index.js';
 import { buildGameFBlueprint, GAME_F_ASSETS } from './games/game-f/index.js';
@@ -37,8 +37,10 @@ export function mount(container: HTMLElement): () => void {
   void assets.loadAll();
 
   // 输入源懒适配：Engine 的 input 是构造期只读，而 canvas 由 attachRenderer 挂载时才创建 → 占位转发。
+  // 键盘（批C 主角移动：WASD/方向键）即时可挂 window；指针等 canvas 就绪。
+  const keyboard = new KeyboardInputSource('p1', window);
   let pointer: PointerInputSource | null = null;
-  const lazyInput: InputSource = { commandsForTick: (tick) => (pointer ? pointer.commandsForTick(tick) : []) };
+  const lazyInput: InputSource = { commandsForTick: (tick) => [...keyboard.commandsForTick(tick), ...(pointer ? pointer.commandsForTick(tick) : [])] };
   const engine = new Engine({ tickRate: 60, input: lazyInput });
   engine.load(buildGameFBlueprint());
   engine.attachRenderer(new CanvasRenderer({ width: VIEWPORT_W, height: VIEWPORT_H, background: '#0c0a08', assets }), stage);
@@ -54,6 +56,7 @@ export function mount(container: HTMLElement): () => void {
 
   return () => {
     engine.stop();
+    keyboard.dispose();
     pointer?.dispose();
     if (wrapper.parentNode === container) container.removeChild(wrapper);
   };

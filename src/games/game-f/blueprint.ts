@@ -4,7 +4,7 @@ import { overlapDetectCapability } from '@skills/atoms/overlap-detect/index.js';
 import { destroyCapability } from '@skills/atoms/destroy/index.js';
 import { timerCapability } from '@skills/atoms/timer/index.js';
 import { resourceCapability } from '@atom-skills/index.js';
-import { lifetimeCapability, hierarchyResolveCapability, hierarchyCascadeCapability } from '@skills/tier1/index.js';
+import { lifetimeCapability, hierarchyResolveCapability, hierarchyCascadeCapability, motionApplyCapability } from '@skills/tier1/index.js';
 import {
   triggerZoneCapability,
   hitboxCapability,
@@ -709,6 +709,31 @@ export function buildGameFBlueprint(pacing: GameFPacing = {}): WorldBlueprint {
     when_deploy_pve4: { EventWhen: { signal: 'deploy_pve_4', when: and(flagIs('deploy_armed'), resCmp('stage_idx', 'eq', 4), resCmp('round_idx', 'gte', 5)), mode: 'edge', armed: false } } as unknown as EntityBlueprint,
     when_deploy_pve5: { EventWhen: { signal: 'deploy_pve_5', when: and(flagIs('deploy_armed'), resCmp('stage_idx', 'eq', 5), resCmp('round_idx', 'gte', 5)), mode: 'edge', armed: false } } as unknown as EntityBlueprint,
     wipe_loot: { Effect: { onSignal: 'wipe', kind: 'destroy-tagged', targetId: '', value: LOOT } } as unknown as EntityBlueprint, // 未拾取法球随结算清（主角拾取=批C）
+    // —— 主角小小英雄（批C，§4.7 映射零新能力）：WASD/方向键自由移动（Controllable→Velocity→motion-apply）。
+    // 不带队伍位 → 不被 aggro 锁/打击区命中/wipe 清场；常驻跨回合。拾取（过渡版）：主角=zone，碰球即收走
+    // （trigger-zone"恰好一方 zone"互斥 + hitbox 无 consume 语义 → 赏金两清的原子缺口已提 REQ-F-044
+    //  `Hitbox.consumeOnHit`；落地后球改 zone 单发写 loot 自毁，下方入账链即时生效——链已就位）。
+    protag: {
+      Transform: xf(0, 120),
+      Velocity: { vx: 0, vy: 0, angular: 0 },
+      Controllable: { playerId: 'p1', speed: 1.6 },
+      Shape: { kind: 'box', width: 14, height: 14 },
+      Sensor: {},
+      Tag: { flags: PROTAG | ZONE_FLAG }, // ZONE_FLAG=进 trigger-zone 结算（自身 Hitbox 只认 LOOT，过滤掉一切误伤）
+      Resource: { id: 'loot', current: 0, min: 0, max: 999 },
+      Hitbox: { resource: 'hp', amount: 9999, targetMask: LOOT }, // amount=伤害（正数扣减）——§4.7 草图的 -9999 是反的，实测会奶满球
+      Sprite: sprite(F_FX_DRAIN, 12),
+    } as unknown as EntityBlueprint,
+    protag_name: {
+      Transform: xf(0, 104),
+      Text: { content: '主公', fontSize: 10, fontFamily: 'sans-serif', anchor: 'center', lineSpacing: 0 },
+      Color: { tint: 0xffe28a, alpha: 1 },
+      Sprite: { textureKey: F_FX_STRIKE, anchorX: 0.5, anchorY: 0.5, zOrder: 30 },
+      Hierarchy: { parentId: 'protag', localX: 0, localY: -16, localRotation: 0, localScaleX: 1, localScaleY: 1 },
+    } as unknown as EntityBlueprint,
+    when_loot: { EventWhen: { signal: 'loot_cash', when: resCmp('loot', 'gt', 0), mode: 'edge', armed: false } } as unknown as EntityBlueprint,
+    eff_loot_gold: { Effect: { onSignal: 'loot_cash', kind: 'modify-resource', targetId: 'gold', op: 'add', value: 0, valueFrom: { resourceId: 'loot' } } } as unknown as EntityBlueprint,
+    eff_loot_clear: { Effect: { onSignal: 'loot_cash', kind: 'modify-resource', targetId: 'loot', op: 'set', value: 0 } } as unknown as EntityBlueprint,
     // —— 加时强制结束（一图流：30s+15s；单人改编=超时按败方路径结算，注记于 flow-spec）——
     overtime_clock: { Timer: { id: 'combat_clock', elapsed: 0, duration: 999999, loop: false } } as unknown as EntityBlueprint,
     when_ot_reset: { EventWhen: { signal: 'ot_reset', when: { kind: 'state', fsmId: 'round_ui', equals: 'combat' }, mode: 'edge', armed: false } } as unknown as EntityBlueprint,
@@ -798,6 +823,7 @@ export function buildGameFBlueprint(pacing: GameFPacing = {}): WorldBlueprint {
       // AI：索敌 + 六边形网格寻路走位（aggro 写目标 → grid-move 沿确定性 A* 逐格走，REQ-024）
       aggroCapability,
       gridMoveCapability,
+      motionApplyCapability, // 主角自由移动（批C：Controllable dx/dy→Velocity→Transform；棋子仍走 grid-move）
       // 自动普攻（F-9 self 化）：timer → self-rule(whenGlobal 门 + spawn at target) → prefab；
       // 大招半截 + deploy/wipe/banded：event-when → caster/effect-apply（大招完整 self 化等 REQ-F-039）
       timerCapability,

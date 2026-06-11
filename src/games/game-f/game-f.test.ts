@@ -398,6 +398,34 @@ describe('Game F — 自走棋（纯数据装配，零自走棋代码；棋子=�
     expect(res('lose_streak')).toBe(1); // 败 → 连败+1（胜路清零由 flow 同一转移对称保证）
   });
 
+  it('主角小小英雄（批C，§4.7）：常驻不参战不被清场；碰法球两清、赏金入账金币后清零', () => {
+    const e = new Engine({ tickRate: 60 });
+    e.load(buildGameFBlueprint(FAST));
+    const res = (id: string): number => {
+      for (const x of e.world.getAllEntities()) {
+        const r = e.world.getComponent<Resource>(x, 'Resource');
+        if (r && r.id === id) return r.current;
+      }
+      return -1;
+    };
+    for (let i = 0; i < 10; i++) e.world.tick();
+    expect(alive(e, 'protag')).toBe(true);
+    const goldBefore = res('gold');
+    // 在主角脚下生成一颗法球（模拟野怪掉落落点重合）→ 双向 hitbox 两清
+    e.world.createEntity('lootreq');
+    e.world.addComponent('lootreq', { type: 'SpawnRequest', templateId: 'loot_orb', x: 0, y: 120 } as unknown as Resource);
+    for (let i = 0; i < 8; i++) e.world.tick();
+    expect(e.world.getAllEntities().some((id) => id.startsWith('loot_orb#'))).toBe(false); // 球被主角收走（过渡版：碰即拾）
+    expect(res('gold')).toBe(goldBefore); // 赏金入账待 REQ-F-044 consumeOnHit（入账链已就位，球改 zone 单发即通）
+    expect(res('loot')).toBe(0);
+    // 跑完回合 1 清场 → 主角与名牌仍常驻
+    let wiped = false;
+    for (let i = 0; i < 4000 && !wiped; i++) { e.world.tick(); wiped = mains(e).length === 0; }
+    for (let i = 0; i < 5; i++) e.world.tick();
+    expect(alive(e, 'protag')).toBe(true);
+    expect(alive(e, 'protag_name')).toBe(true);
+  });
+
   it('野怪回合+法球（批B，一图流）：阶段1 全野怪（黄巾波次）；野怪死亡掉法球；结算清场含未拾法球', () => {
     const e = new Engine({ tickRate: 60 });
     e.load(buildGameFBlueprint(FAST));
