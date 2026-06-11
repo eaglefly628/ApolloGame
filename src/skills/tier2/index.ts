@@ -41,4 +41,5 @@ export { gaugeCapability } from './gauge.js';
 export { textBindingCapability } from './text-binding.js';
 // drag-place（REQ-F-045）：拖拽摆放输入桥——壳层合成 drag 动作→命中 Draggable→hex 吸附/回席/限额（摆子/放塔通用）。
 export { dragPlaceCapability } from './drag-place.js';
+export { trayCapability } from './tray.js';
 export { hexCellToPoint, hexPointToCell } from './grid-move.js';

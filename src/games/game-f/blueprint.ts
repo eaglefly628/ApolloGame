@@ -6,6 +6,7 @@ import { timerCapability } from '@skills/atoms/timer/index.js';
 import { resourceCapability } from '@atom-skills/index.js';
 import { lifetimeCapability, hierarchyResolveCapability, hierarchyCascadeCapability, motionApplyCapability } from '@skills/tier1/index.js';
 import {
+  trayCapability,
   triggerZoneCapability,
   hitboxCapability,
   overTimeCapability,
@@ -72,7 +73,7 @@ export const FROZEN = 1 << 10; // 冰冻定身（REQ-F-030）：GridMover.haltSt
 // 预留：PROTAG=1<<11 主角 / LOOT=1<<12 法球（§4.7，Phase 2.5）。商店面板槽位位 1<<13..1<<17（F-14 整槽清/重铺用）。
 export const PROTAG = 1 << 11; // 主角（小小英雄，§4.7；Phase 2.5 批 C 接操控/拾取）
 export const LOOT = 1 << 12; // 法球/掉落（野怪死亡掉，主角拾取）
-const SHOPSLOT_BITS = [1 << 13, 1 << 14, 1 << 15, 1 << 16, 1 << 17];
+const SHOPSLOT_BITS = [1 << 13, 1 << 14, 1 << 15]; // 三大框（用户钦定小丑牌式；1<<16/17 随 5 槽裁撤回收）
 const RUNE = 1 << 18; // 开局符文卡（批D；选一发效后 destroy-tagged 整组收走=天然一次性）
 const SHOPSLOT_ALL = SHOPSLOT_BITS.reduce((a, b) => a | b, 0);
 // 席位 marker 位（F-17/F-18 统一架构，REQ-F-049 后）：所有星级 marker 都带；不含 TEAM 位 → 不被
@@ -149,18 +150,19 @@ interface HeroSpec {
   items?: string[]; // 装备（ITEMS id；装配期把 hp/atk 加上）
 }
 
-// 站位金铲铲式 + 各英雄独立血量/攻击 + 职业 + 势力(蜀魏吴) + 专属大招。每方 3 本势力 + 1 吴（跨势力羁绊样本）。
+// 站位金铲铲式（7×8 真规格：魏上半场 r0..3 / 蜀下半场 r4..7，中线 r3|r4 贴脸）+ 各英雄独立血量/攻击
+// + 职业 + 势力(蜀魏吴) + 专属大招。每方 3 本势力 + 1 吴（跨势力羁绊样本）。
 const ROSTER: HeroSpec[] = [
-  // 蜀（TEAM_A，下半场，红）+ 吴·周瑜（绿）
-  { id: 'a_guanyu', name: '关羽', key: F_HERO.guan_yu, team: TEAM_A, enemy: TEAM_B, cls: WARRIOR, faction: FACT_SHU, tint: SHU_RED, q: 4, r: 7, hp: 240, atk: 12, ult: '青龙偃月', ultDmg: 45, ultSize: 80, atkType: 'melee', ultFx: F_FX_STRIKE, items: ['yuxi'] },
-  { id: 'a_zhaoyun', name: '赵云', key: F_HERO.zhao_yun, team: TEAM_A, enemy: TEAM_B, cls: WARRIOR, faction: FACT_SHU, tint: SHU_RED, q: 7, r: 7, hp: 165, atk: 18, ult: '七进七出', ultDmg: 75, ultSize: 55, atkType: 'melee', ultFx: F_FX_STRIKE, items: ['qinggang'] },
-  { id: 'a_zhuge', name: '诸葛亮', key: F_HERO.zhuge_liang, team: TEAM_A, enemy: TEAM_B, cls: TACTICIAN, faction: FACT_SHU, tint: SHU_RED, q: 5, r: 9, hp: 120, atk: 24, ult: '八阵图', ultDmg: 35, ultSize: 95, atkType: 'magic', ultFx: F_FX_FROST, ultFreeze: 120 },
-  { id: 'a_zhouyu', name: '周瑜', key: F_HERO.zhou_yu, team: TEAM_A, enemy: TEAM_B, cls: TACTICIAN, faction: FACT_WU, tint: WU_GREEN, q: 9, r: 8, hp: 115, atk: 21, ult: '火烧赤壁', ultDmg: 38, ultSize: 92, atkType: 'magic', ultFx: F_FX_FLAME, ultDot: true },
-  // 魏（TEAM_B，上半场，蓝）+ 吴·甘宁（绿）
-  { id: 'b_zhangliao', name: '张辽', key: F_HERO.zhang_liao, team: TEAM_B, enemy: TEAM_A, cls: WARRIOR, faction: FACT_WEI, tint: WEI_BLUE, q: 4, r: 4, hp: 200, atk: 15, ult: '突阵', ultDmg: 50, ultSize: 70, atkType: 'melee', ultFx: F_FX_STRIKE, items: ['fangtian'] },
-  { id: 'b_xuchu', name: '许褚', key: F_HERO.xu_chu, team: TEAM_B, enemy: TEAM_A, cls: WARRIOR, faction: FACT_WEI, tint: WEI_BLUE, q: 7, r: 4, hp: 270, atk: 11, ult: '裸衣血战', ultDmg: 42, ultSize: 78, atkType: 'melee', ultFx: F_FX_STRIKE },
-  { id: 'b_simayi', name: '司马懿', key: F_HERO.sima_yi, team: TEAM_B, enemy: TEAM_A, cls: TACTICIAN, faction: FACT_WEI, tint: WEI_BLUE, q: 6, r: 2, hp: 130, atk: 23, ult: '鬼谋', ultDmg: 40, ultSize: 88, atkType: 'magic', ultFx: F_FX_DRAIN, ultDot: true, items: ['qinggang'] },
-  { id: 'b_ganning', name: '甘宁', key: F_HERO.gan_ning, team: TEAM_B, enemy: TEAM_A, cls: ASSASSIN, faction: FACT_WU, tint: WU_GREEN, q: 9, r: 3, hp: 145, atk: 20, ult: '锦帆突袭', ultDmg: 60, ultSize: 50, atkType: 'ranged', ultFx: F_FX_ARROW },
+  // 蜀（TEAM_A，下半场 r4..7，红）+ 吴·周瑜（绿）：武将顶前排 r4、谋士蹲后排 r6
+  { id: 'a_guanyu', name: '关羽', key: F_HERO.guan_yu, team: TEAM_A, enemy: TEAM_B, cls: WARRIOR, faction: FACT_SHU, tint: SHU_RED, q: 2, r: 4, hp: 240, atk: 12, ult: '青龙偃月', ultDmg: 45, ultSize: 80, atkType: 'melee', ultFx: F_FX_STRIKE, items: ['yuxi'] },
+  { id: 'a_zhaoyun', name: '赵云', key: F_HERO.zhao_yun, team: TEAM_A, enemy: TEAM_B, cls: WARRIOR, faction: FACT_SHU, tint: SHU_RED, q: 4, r: 4, hp: 165, atk: 18, ult: '七进七出', ultDmg: 75, ultSize: 55, atkType: 'melee', ultFx: F_FX_STRIKE, items: ['qinggang'] },
+  { id: 'a_zhuge', name: '诸葛亮', key: F_HERO.zhuge_liang, team: TEAM_A, enemy: TEAM_B, cls: TACTICIAN, faction: FACT_SHU, tint: SHU_RED, q: 2, r: 6, hp: 120, atk: 24, ult: '八阵图', ultDmg: 35, ultSize: 95, atkType: 'magic', ultFx: F_FX_FROST, ultFreeze: 120 },
+  { id: 'a_zhouyu', name: '周瑜', key: F_HERO.zhou_yu, team: TEAM_A, enemy: TEAM_B, cls: TACTICIAN, faction: FACT_WU, tint: WU_GREEN, q: 4, r: 6, hp: 115, atk: 21, ult: '火烧赤壁', ultDmg: 38, ultSize: 92, atkType: 'magic', ultFx: F_FX_FLAME, ultDot: true },
+  // 魏（TEAM_B，上半场 r0..3，蓝）+ 吴·甘宁（绿）：武将压中线 r3、谋士/刺客缩后排 r1
+  { id: 'b_zhangliao', name: '张辽', key: F_HERO.zhang_liao, team: TEAM_B, enemy: TEAM_A, cls: WARRIOR, faction: FACT_WEI, tint: WEI_BLUE, q: 2, r: 3, hp: 200, atk: 15, ult: '突阵', ultDmg: 50, ultSize: 70, atkType: 'melee', ultFx: F_FX_STRIKE, items: ['fangtian'] },
+  { id: 'b_xuchu', name: '许褚', key: F_HERO.xu_chu, team: TEAM_B, enemy: TEAM_A, cls: WARRIOR, faction: FACT_WEI, tint: WEI_BLUE, q: 4, r: 3, hp: 270, atk: 11, ult: '裸衣血战', ultDmg: 42, ultSize: 78, atkType: 'melee', ultFx: F_FX_STRIKE },
+  { id: 'b_simayi', name: '司马懿', key: F_HERO.sima_yi, team: TEAM_B, enemy: TEAM_A, cls: TACTICIAN, faction: FACT_WEI, tint: WEI_BLUE, q: 3, r: 1, hp: 130, atk: 23, ult: '鬼谋', ultDmg: 40, ultSize: 88, atkType: 'magic', ultFx: F_FX_DRAIN, ultDot: true, items: ['qinggang'] },
+  { id: 'b_ganning', name: '甘宁', key: F_HERO.gan_ning, team: TEAM_B, enemy: TEAM_A, cls: ASSASSIN, faction: FACT_WU, tint: WU_GREEN, q: 5, r: 1, hp: 145, atk: 20, ult: '锦帆突袭', ultDmg: 60, ultSize: 50, atkType: 'ranged', ultFx: F_FX_ARROW },
 ];
 
 // 装备（数据）：物品=属性加成；英雄装配期把 hp/atk 加上（静态）。合成(2件→1件)走商店 craft-recipe，待商店阶段。
@@ -278,47 +280,47 @@ function slotEntity(h: HeroSpec, onSignal: string, col: number, row: number, hpM
 // ── 关卡表（flow-spec §4.5，前 2 阶段）：敌阵=数据条目、与我方槽位同构；扩阶段=加条目+一行 when_deploy_stage_N。──
 // 注：敌方强度暂只缩放 HP（攻击力烘在 strike_<id> 模板 amount 里；按阶段缩攻=每阶段一套 strike 模板，真需要再加）。
 const STAGES: { n: number; comp: { hero: string; q: number; r: number; hpMul: number }[] }[] = [
-  // （阶段1 无 PvP 敌阵——按准则整段野怪化，黄巾散兵=PVE_WAVES[0]，见下）
+  // （阶段1 无 PvP 敌阵——按准则整段野怪化，黄巾散兵=PVE_WAVES[0]，见下；坐标=7×8 视觉 col 0..6 / row 0..3 敌半场）
   {
     n: 2, // 阶段2「董卓先锋」：4 子全强度（张辽自带方天画戟 ≈ §4.5 的"+1 件装"）
     comp: [
-      { hero: 'b_zhangliao', q: 4, r: 4, hpMul: 1 },
-      { hero: 'b_xuchu', q: 7, r: 4, hpMul: 1 },
-      { hero: 'b_simayi', q: 6, r: 2, hpMul: 1 },
-      { hero: 'b_ganning', q: 9, r: 3, hpMul: 1 },
+      { hero: 'b_zhangliao', q: 2, r: 3, hpMul: 1 },
+      { hero: 'b_xuchu', q: 4, r: 3, hpMul: 1 },
+      { hero: 'b_simayi', q: 3, r: 1, hpMul: 1 },
+      { hero: 'b_ganning', q: 5, r: 1, hpMul: 1 },
     ],
   },
   {
-    n: 3, // 阶段3「吕布陷阵」：5 子 + 2 星点缀（hpMul1.8≈2星，真星级 Phase 2 换 overrides）——同模板多实例（F-9 per-instance）
+    n: 3, // 阶段3「吕布陷阵」：5 子 + 2 星点缀（hpMul1.8≈2星）——同模板多实例（F-9 per-instance）
     comp: [
-      { hero: 'b_zhangliao', q: 3, r: 4, hpMul: 1.8 },
-      { hero: 'b_zhangliao', q: 8, r: 4, hpMul: 1 },
-      { hero: 'b_xuchu', q: 5, r: 4, hpMul: 1 },
-      { hero: 'b_simayi', q: 6, r: 2, hpMul: 1 },
-      { hero: 'b_ganning', q: 9, r: 3, hpMul: 1 },
+      { hero: 'b_zhangliao', q: 1, r: 3, hpMul: 1.8 },
+      { hero: 'b_zhangliao', q: 5, r: 3, hpMul: 1 },
+      { hero: 'b_xuchu', q: 3, r: 3, hpMul: 1 },
+      { hero: 'b_simayi', q: 3, r: 1, hpMul: 1 },
+      { hero: 'b_ganning', q: 5, r: 1, hpMul: 1 },
     ],
   },
   {
     n: 4, // 阶段4「官渡精锐」：6 子、整体 1.4×（羁绊成型近似——羁绊机制 Phase 3）
     comp: [
-      { hero: 'b_zhangliao', q: 3, r: 4, hpMul: 1.4 },
-      { hero: 'b_zhangliao', q: 8, r: 4, hpMul: 1.4 },
-      { hero: 'b_xuchu', q: 5, r: 4, hpMul: 1.4 },
-      { hero: 'b_xuchu', q: 6, r: 4, hpMul: 1.4 },
-      { hero: 'b_simayi', q: 6, r: 2, hpMul: 1.4 },
-      { hero: 'b_ganning', q: 9, r: 3, hpMul: 1.4 },
+      { hero: 'b_zhangliao', q: 1, r: 3, hpMul: 1.4 },
+      { hero: 'b_zhangliao', q: 5, r: 3, hpMul: 1.4 },
+      { hero: 'b_xuchu', q: 2, r: 3, hpMul: 1.4 },
+      { hero: 'b_xuchu', q: 4, r: 3, hpMul: 1.4 },
+      { hero: 'b_simayi', q: 3, r: 1, hpMul: 1.4 },
+      { hero: 'b_ganning', q: 5, r: 1, hpMul: 1.4 },
     ],
   },
   {
     n: 5, // 阶段5「赤壁决战」：7 子 + Boss 许褚（hpMul3，终关）
     comp: [
-      { hero: 'b_xuchu', q: 6, r: 3, hpMul: 3 },
-      { hero: 'b_zhangliao', q: 3, r: 4, hpMul: 1.8 },
-      { hero: 'b_zhangliao', q: 8, r: 4, hpMul: 1.8 },
-      { hero: 'b_xuchu', q: 4, r: 4, hpMul: 1.4 },
-      { hero: 'b_simayi', q: 5, r: 2, hpMul: 1.8 },
-      { hero: 'b_simayi', q: 7, r: 2, hpMul: 1.4 },
-      { hero: 'b_ganning', q: 9, r: 3, hpMul: 1.8 },
+      { hero: 'b_xuchu', q: 3, r: 2, hpMul: 3 },
+      { hero: 'b_zhangliao', q: 1, r: 3, hpMul: 1.8 },
+      { hero: 'b_zhangliao', q: 5, r: 3, hpMul: 1.8 },
+      { hero: 'b_xuchu', q: 2, r: 3, hpMul: 1.4 },
+      { hero: 'b_simayi', q: 2, r: 1, hpMul: 1.8 },
+      { hero: 'b_simayi', q: 4, r: 1, hpMul: 1.4 },
+      { hero: 'b_ganning', q: 5, r: 0, hpMul: 1.8 },
     ],
   },
 ];
@@ -458,29 +460,49 @@ export const GAME_F_TEMPLATES: Record<string, PrefabTemplate> = Object.fromEntri
       'loot_orb',
       { entities: { orb: { Transform: xf(0, 0), Shape: { kind: 'box', width: 10, height: 10 }, Sensor: {}, Sprite: sprite(F_FX_DRAIN, 5), Color: { tint: 0xffd700, alpha: 1 }, Tag: { flags: LOOT | ZONE_FLAG }, Hitbox: { resource: 'loot', amount: -5, targetMask: PROTAG, consumeOnHit: true } } } } as unknown as PrefabTemplate, // 044：真结算一次入账-5(负=给予)同拍自毁；主角零附件
     ]] as [string, PrefabTemplate][],
-    // 商店卡（F-14/REQ-F-042）：在售英雄的可点卡面；Clickable.action(买哪槽)/Tag(槽位掩码) 由持位 Caster overrides 注入。
+    // 商店大卡（F-14 重排/用户钦定）：在售英雄的可点大卡面（60×68 占满大框）；
+    // Clickable.action(买哪框)/Tag(槽位掩码) 由持位 Caster overrides 注入。
     ROSTER.filter((x) => x.team === TEAM_A).map((h): [string, PrefabTemplate] => [
       `shopcard_${h.id}`,
-      { entities: { card: { Transform: xf(0, 0), Shape: { kind: 'box', width: 36, height: 44 }, Sprite: sprite(h.key, 28), Color: { tint: 0xf0d27a, alpha: 1 }, Clickable: { action: 'ph' }, Tag: { flags: 0 } } } } as unknown as PrefabTemplate,
+      { entities: { card: { Transform: xf(0, 0), Shape: { kind: 'box', width: 58, height: 68 }, Sprite: sprite(h.key, 28), Color: { tint: 0xf0d27a, alpha: 1 }, Clickable: { action: 'ph' }, Tag: { flags: 0 } } } } as unknown as PrefabTemplate,
     ]),
   ),
 );
 
-const ARENA = { minX: -280, minY: -200, maxX: 280, maxY: 200 };
+// 竞技场=棋盘区（7×8 盘 x≈±150 / y≈-155..95；下方托盘/商店带不在内——席上 marker 本就无 TEAM 位，双保险）。
+const ARENA = { minX: -170, minY: -165, maxX: 170, maxY: 110 };
+// 备战席托盘（用户钦定：下排英雄平台，非六角格；9 槽、可互换、买入自动落座；皮=placeholder 待 UI 资源）。
+const TRAY = { originX: -176, originY: 118, gap: 44, capacity: 9 };
+// 商店三大框（用户钦定：小丑牌式选卡页，替代金铲铲 5 小槽——形态偏离准则，按用户指令执行）。
+const SHOP_XS = [-70, 0, 70];
+const SHOP_Y = 168;
 
 // L2 回合流程（flow-spec §3.3 round_flow 原样）：prep⟲combat⟲resolution⟲done 与 L1 round_done 握手。
 // 回合重置（REQ-F-032）：prep 臂 deploy_armed → EventWhen(edge) → 'deploy'/'deploy_stage_<N>' → 槽位重展开；
 // resolution 臂 wipe_armed → 'wipe' → destroy-tagged 清场。经济/伤害不再写死在 flow：prep 臂 income_armed、
 // 败方臂 dmg_armed，由 banded EventWhen→Effect 按 §4.1/§4.2 表结算（见 goldBand/伤害 bands）。
 // 尚缺 ready 开战输入（§6.2 P2，输入路由归主程）：prep 暂以 after 40 自动开战，接上后改读 ready Flag。
-const makeRoundFlow = (PREP_TICKS: number, RESOLUTION_TICKS: number) => ({
+const makeRoundFlow = (PREP_TICKS: number, RESOLUTION_TICKS: number) => {
+  // 开战倒计时（用户第 3 条）：prep 末尾恒有 3 秒读数（玩家档 180 拍；快速档按比例缩、总时长不变=
+  // 既有时序断言零漂移）。ready 提前 → 也先进 countdown 数完再打，不许瞬开。
+  const CD_TICKS = Math.min(180, Math.max(6, Math.floor(PREP_TICKS / 4)));
+  const PREP_SECONDS = Math.max(3, Math.round(PREP_TICKS / 60));
+  const TO_COMBAT = [
+    { kind: 'set-flag', targetId: 'in_combat', value: true },
+    { kind: 'set-flag', targetId: 'in_prep', value: false },
+    { kind: 'set-flag', targetId: 'cap_armed', value: true },
+    { kind: 'set-flag', targetId: 'deploy_armed', value: true }, // 入战拍臂 deploy：双方棋子此拍从 marker/敌槽成型
+    { kind: 'set-flag', targetId: 'income_armed', value: false }, // 收入窗随备战关（利息带不吃战斗期金额波动）
+    { kind: 'modify-resource', targetId: 'prep_left', op: 'set', value: 0 },
+  ];
+  return {
   id: 'round',
   current: 'prep',
   entered: false,
   elapsed: 0,
   states: [
     {
-      id: 'prep', // 备战：臂收入（§4.1 banded 发钱）+ 臂展开，复位 wipe/伤害/ready；点「开战」提前打或倒计时兜底
+      id: 'prep', // 备战：臂收入（§4.1 banded 发钱），复位 wipe/伤害/ready；点「开战」或倒计时耗尽 → 3 秒读数 → 开打
       onEnter: [
         { kind: 'set-state', targetId: 'round_ui', value: 'prep' },
         { kind: 'set-flag', targetId: 'in_combat', value: false },
@@ -489,18 +511,22 @@ const makeRoundFlow = (PREP_TICKS: number, RESOLUTION_TICKS: number) => ({
         { kind: 'set-flag', targetId: 'wipe_armed', value: false }, // 复位，下次结算再臂（edge 纪律）
         { kind: 'set-flag', targetId: 'dmg_armed', value: false },
         { kind: 'set-flag', targetId: 'cap_armed', value: false }, // 超员检查窗复位（F-17，入战拍再臂）
-        { kind: 'set-flag', targetId: 'deploy_armed', value: false }, // 复位；部署窗移到入战拍（REQ-F-049 拖拽即时反馈：备战期摆的是 marker 本体，棋子开战才成型）
+        { kind: 'set-flag', targetId: 'deploy_armed', value: false }, // 复位；部署窗在入战拍（REQ-F-049 拖拽即时反馈）
         { kind: 'set-flag', targetId: 'income_armed', value: true }, // → 基础收入/利息/连胜金 bands（§4.1）
         { kind: 'set-flag', targetId: 'shop_refresh_armed', value: true }, // → 自动刷新（锁店时门挡，v2 §4.6）
+        { kind: 'modify-resource', targetId: 'prep_left', op: 'set', value: PREP_SECONDS }, // 倒计时表归位（OverTime -1/秒，0 钳停）
         { kind: 'modify-resource', targetId: 'xp', op: 'add', value: 2 }, // 每回合自动 +2 XP（§4.3）
         { kind: 'modify-resource', targetId: 'dmg_scale_a', op: 'set', value: 1 }, // 羁绊系数回 1（开战拍重新锁存）
       ],
       transitions: [
-        // ready 优先（玩家点「开战」提前开打，§3.3 操作表）；after 40 = PvE 倒计时兜底（金铲铲本体也是倒计时自动开战）。
-        // 入战拍臂 deploy（双方棋子此拍从 marker/敌槽成型——备战期板上站的是可拖 marker，拖完开打才出兵）+ 臂超员检查。
-        { when: { kind: 'flag', id: 'ready', equals: true }, to: 'combat', do: [{ kind: 'set-flag', targetId: 'in_combat', value: true }, { kind: 'set-flag', targetId: 'in_prep', value: false }, { kind: 'set-flag', targetId: 'cap_armed', value: true }, { kind: 'set-flag', targetId: 'deploy_armed', value: true }, { kind: 'set-flag', targetId: 'income_armed', value: false }] },
-        { when: { kind: 'always' }, after: PREP_TICKS, to: 'combat', do: [{ kind: 'set-flag', targetId: 'in_combat', value: true }, { kind: 'set-flag', targetId: 'in_prep', value: false }, { kind: 'set-flag', targetId: 'cap_armed', value: true }, { kind: 'set-flag', targetId: 'deploy_armed', value: true }, { kind: 'set-flag', targetId: 'income_armed', value: false }] },
+        { when: { kind: 'flag', id: 'ready', equals: true }, to: 'countdown' }, // 点「开战」→ 3 秒读数（不瞬开）
+        { when: { kind: 'always' }, after: Math.max(1, PREP_TICKS - CD_TICKS), to: 'countdown' }, // 倒计时兜底（总时长 = PREP_TICKS 不变）
       ],
+    },
+    {
+      id: 'countdown', // 开战读数 3-2-1（round_ui 仍 prep：横幅/商店不变，仅 hud_timer 跳数；摆子在读数期仍可调）
+      onEnter: [{ kind: 'modify-resource', targetId: 'prep_left', op: 'set', value: 3 }],
+      transitions: [{ when: { kind: 'always' }, after: CD_TICKS, to: 'combat', do: TO_COMBAT }],
     },
     {
       id: 'combat', // 战斗：自动互砍 + 蓝满放大招；某队团灭(present flag→false)→结算。胜→连胜+1；败→连胜清零+臂伤害
@@ -536,7 +562,8 @@ const makeRoundFlow = (PREP_TICKS: number, RESOLUTION_TICKS: number) => ({
     },
     { id: 'gameover', onEnter: [{ kind: 'set-state', targetId: 'round_ui', value: 'gameover' }, { kind: 'set-flag', targetId: 'run_over', value: true }] },
   ],
-});
+  };
+};
 
 // L1 局流程（flow-spec §3.2 run_flow 原样）：boot 初始化 → round（等 L2 写 round_done）→ advance 推进
 // 关卡指针 → 打穿关卡表胜利 / run_over 败北。round_idx>5 的进位（stage+1、round=1）由 when_stage_up banded 处理。
@@ -616,7 +643,7 @@ export function buildGameFBlueprint(pacing: GameFPacing = {}): WorldBlueprint {
     // 信号 → Effect 置 ready → prep 的 ready 转移提前开战；不点则 40 拍倒计时兜底。按钮无 Tag 不参战不被清场。
     f_ready: { Flag: { id: 'ready', active: false } } as unknown as EntityBlueprint,
     btn_ready: {
-      Transform: xf(240, 170), // 棋盘右下角（视口 ±355×200 内）
+      Transform: xf(300, 180), // 右下按钮列（视口 ±355×200；商店三大框居中后按钮整列右移）
       Shape: { kind: 'box', width: 64, height: 24 },
       Clickable: { action: 'ready_btn' },
       Text: { content: '开战', fontSize: 13, fontFamily: 'sans-serif', anchor: 'center', lineSpacing: 0 },
@@ -624,12 +651,31 @@ export function buildGameFBlueprint(pacing: GameFPacing = {}): WorldBlueprint {
       Sprite: { textureKey: F_FX_STRIKE, anchorX: 0.5, anchorY: 0.5, zOrder: 30 }, // 只为抬 zOrder（文本模式不绘）
     } as unknown as EntityBlueprint,
     eff_ready: { Effect: { onSignal: 'ready_btn', kind: 'set-flag', targetId: 'ready', value: true } } as unknown as EntityBlueprint,
+    // —— 开战倒计时（用户第 3 条：按下开战不许瞬开，要数 3-2-1；备战全程也有可见倒计时）——
+    // 零引擎件重组：prep_left 资源被 min=0 钳住即自停 → OverTime 永久 -1/秒 = 自终止秒表；
+    // flow 各相位 set 30 / 3 / 0（prep 进 / countdown 进 / combat 进）。HUD 数字 TextBinding 实时投影。
+    r_prep_left: {
+      Resource: { id: 'prep_left', current: 30, min: 0, max: 99 },
+      OverTime: { effects: [{ id: 'cd_tick', resource: 'prep_left', amountPerTick: -1, period: 60, duration: 0, elapsed: 0 }] },
+    } as unknown as EntityBlueprint,
+    hud_timer: {
+      Transform: xf(0, -160),
+      Text: { content: '开战 30', fontSize: 18, fontFamily: 'sans-serif', anchor: 'center', lineSpacing: 0 },
+      TextBinding: { resourceId: 'prep_left', prefix: '开战 ' },
+      Color: { tint: 0xffd700, alpha: 1 },
+      Visibility: { visible: true },
+      Sprite: { textureKey: F_FX_STRIKE, anchorX: 0.5, anchorY: 0.5, zOrder: 31 },
+    } as unknown as EntityBlueprint,
+    eff_timer_show: { Effect: { onSignal: 'ph_prep', kind: 'set-visible', targetId: '', targetEntity: 'hud_timer', value: true } } as unknown as EntityBlueprint,
+    eff_timer_hide: { Effect: { onSignal: 'ph_combat', kind: 'set-visible', targetId: '', targetEntity: 'hud_timer', value: false } } as unknown as EntityBlueprint,
+    eff_timer_hide2: { Effect: { onSignal: 'ph_res', kind: 'set-visible', targetId: '', targetEntity: 'hud_timer', value: false } } as unknown as EntityBlueprint,
     // —— 商店（F-11，REQ-F-040；v2 §4.6 五件套之「买入核心」。刷新/锁店/卖出撞新缺口已提 REQ-F-041）——
     // 买 = 输入 play(槽下标)（点击→play 的指针路由属 launcher 输入域）：playCosts 原子验扣 金3 + 席位1
     // （钱不够/席满=拒单：牌不丢、金不动）→ 成交牌码写 bought_code → 每将 banded 分发 → marker 入备战席。
     shop: {
       // ⚠️ deck 必须取副本：装配是浅拷贝、嵌套数组按引用共享，发牌原地 shift 会跨 Engine/跨测试泄漏（确定性破口，实测踩过）
-      CardPile: { owner: 'shop', deck: [...SHOP_DECK], hand: [], handSize: 5, playCosts: [{ id: 'gold', amount: 3 }, { id: 'bench_space', amount: 1 }], playedCodeResource: 'bought_code', refreshOnSignal: 'shop_refresh', returnOnSignal: 'card_sold', returnCodeResource: 'sold_code', handCodeResources: ['shop_slot_1', 'shop_slot_2', 'shop_slot_3', 'shop_slot_4', 'shop_slot_5'], playOnSignals: ['buy_slot_1', 'buy_slot_2', 'buy_slot_3', 'buy_slot_4', 'buy_slot_5'] },
+      // 三大框（用户钦定小丑牌式）：handSize 3；刷新=旧手回袋底（REQ-F-054 卡池守恒，连刷不枯竭）。
+      CardPile: { owner: 'shop', deck: [...SHOP_DECK], hand: [], handSize: 3, playCosts: [{ id: 'gold', amount: 3 }, { id: 'bench_space', amount: 1 }], playedCodeResource: 'bought_code', refreshOnSignal: 'shop_refresh', returnOnSignal: 'card_sold', returnCodeResource: 'sold_code', handCodeResources: ['shop_slot_1', 'shop_slot_2', 'shop_slot_3'], playOnSignals: ['buy_slot_1', 'buy_slot_2', 'buy_slot_3'] },
       PlayedHand: { owner: 'shop', cards: [] },
       Flag: { id: 'shop', active: false },
     } as unknown as EntityBlueprint,
@@ -657,7 +703,7 @@ export function buildGameFBlueprint(pacing: GameFPacing = {}): WorldBlueprint {
     eff_gate_unlock: { Effect: { onSignal: 'shop_gate_done', kind: 'set-flag', targetId: 'shop_locked', value: false } } as unknown as EntityBlueprint,
     // —— 买经验/等级（§4.3，MVP-1 尾）：$4=+4XP（craft-recipe 原子）；升级=banded（xp 阈值→level set N，单调不回退）——
     btn_xp: {
-      Transform: xf(96, 122),
+      Transform: xf(300, 64),
       Shape: { kind: 'box', width: 40, height: 20 },
       Clickable: { action: 'buyxp_btn' },
       CraftRecipe: { onSignal: 'buyxp_btn', costs: [{ id: 'gold', amount: 4 }], gains: [{ id: 'xp', amount: 4 }] },
@@ -672,7 +718,7 @@ export function buildGameFBlueprint(pacing: GameFPacing = {}): WorldBlueprint {
     // 手动刷新（2 金）：按钮信号 → craft-recipe 原子扣 2 金置 reroll_paid → EventWhen(edge) → 'shop_refresh' → 复位。
     // 扣不起=配方整单不动（inbox 提示"扣不起就别发信号"的原子等价实现）；手动刷新不吃锁店门（锁住时也可花钱换牌）。
     btn_reroll: {
-      Transform: xf(150, 170),
+      Transform: xf(300, 150),
       Shape: { kind: 'box', width: 56, height: 20 },
       Clickable: { action: 'reroll_btn' },
       CraftRecipe: { onSignal: 'reroll_btn', costs: [{ id: 'gold', amount: 2 }], grantsFlag: 'reroll_paid' },
@@ -685,7 +731,7 @@ export function buildGameFBlueprint(pacing: GameFPacing = {}): WorldBlueprint {
     eff_reroll_reset: { Effect: { onSignal: 'shop_refresh', kind: 'set-flag', targetId: 'reroll_paid', value: false } } as unknown as EntityBlueprint,
     // 锁店/解锁（v2"翻转"用两按钮达成——Effect 无 toggle，零缺口拼法）；每回合 prep→combat 自动解锁。
     btn_lock: {
-      Transform: xf(96, 170),
+      Transform: xf(300, 120),
       Shape: { kind: 'box', width: 40, height: 20 },
       Clickable: { action: 'lock_btn' },
       Text: { content: '锁店', fontSize: 11, fontFamily: 'sans-serif', anchor: 'center', lineSpacing: 0 },
@@ -693,7 +739,7 @@ export function buildGameFBlueprint(pacing: GameFPacing = {}): WorldBlueprint {
       Sprite: { textureKey: F_FX_STRIKE, anchorX: 0.5, anchorY: 0.5, zOrder: 30 },
     } as unknown as EntityBlueprint,
     btn_unlock: {
-      Transform: xf(96, 146),
+      Transform: xf(300, 92),
       Shape: { kind: 'box', width: 40, height: 20 },
       Clickable: { action: 'unlock_btn' },
       Text: { content: '解锁', fontSize: 11, fontFamily: 'sans-serif', anchor: 'center', lineSpacing: 0 },
@@ -803,7 +849,7 @@ export function buildGameFBlueprint(pacing: GameFPacing = {}): WorldBlueprint {
     // （trigger-zone"恰好一方 zone"互斥 + hitbox 无 consume 语义 → 赏金两清的原子缺口已提 REQ-F-044
     //  `Hitbox.consumeOnHit`；落地后球改 zone 单发写 loot 自毁，下方入账链即时生效——链已就位）。
     protag: {
-      Transform: xf(0, 120),
+      Transform: xf(-250, 40),
       Velocity: { vx: 0, vy: 0, angular: 0 },
       Controllable: { playerId: 'p1', speed: 1.6 },
       Shape: { kind: 'box', width: 14, height: 14 },
@@ -812,7 +858,7 @@ export function buildGameFBlueprint(pacing: GameFPacing = {}): WorldBlueprint {
       Sprite: sprite(F_FX_DRAIN, 12),
     } as unknown as EntityBlueprint,
     protag_name: {
-      Transform: xf(0, 104),
+      Transform: xf(-250, 24),
       Text: { content: '主公', fontSize: 10, fontFamily: 'sans-serif', anchor: 'center', lineSpacing: 0 },
       Color: { tint: 0xffe28a, alpha: 1 },
       Sprite: { textureKey: F_FX_STRIKE, anchorX: 0.5, anchorY: 0.5, zOrder: 30 },
@@ -895,7 +941,7 @@ export function buildGameFBlueprint(pacing: GameFPacing = {}): WorldBlueprint {
   ROSTER.filter((x) => x.team === TEAM_A).forEach((h, i) => {
     const sig = `buy_${h.id}`;
     entities[`when_${sig}`] = { EventWhen: { signal: sig, when: resCmp('bought_code', 'eq', HERO_CODE[h.id]), mode: 'edge', armed: false } } as unknown as EntityBlueprint;
-    entities[`buycast_${h.id}`] = { Transform: xf(-66 + i * 44, 178), Caster: { onSignal: sig, template: `bench_${h.id}`, at: 'self' } } as unknown as EntityBlueprint;
+    entities[`buycast_${h.id}`] = { Transform: xf(0, TRAY.originY), Caster: { onSignal: sig, template: `bench_${h.id}`, at: 'self' } } as unknown as EntityBlueprint;
     entities[`eff_${sig}_reset`] = { Effect: { onSignal: sig, kind: 'modify-resource', targetId: 'bought_code', op: 'set', value: 0 } } as unknown as EntityBlueprint;
     // 048② 每将卖出链（点席=sell_<将>）；席位归还不再手工 +1——bench_space 派生自 marker 计数（F-17）
     const sell = `sell_${h.id}`;
@@ -915,15 +961,25 @@ export function buildGameFBlueprint(pacing: GameFPacing = {}): WorldBlueprint {
       entities[`eff_${sk}_gold`] = { Effect: { onSignal: sk, kind: 'modify-resource', targetId: 'gold', op: 'add', value: SELL_PRICE[s] } } as unknown as EntityBlueprint;
     }
   });
-  // 商店面板（F-14）：5 槽镜像资源 + 每槽×每将 重铺带（and(臂2, 槽码=将码) edge → 持位 Caster 展开卡面）
-  // + 买入后面板再臂（买走→补牌→镜像变 → 全槽重铺）。卡面 Clickable=buy_slot_i → playOnSignals 即购买。
-  for (let i = 0; i < 5; i++) {
+  // 商店三大框（F-14 重排，用户钦定小丑牌式选卡页）：3 槽镜像资源 + 每槽×每将 重铺带
+  // （and(臂2, 槽码=将码) edge → 持位 Caster 展开大卡面）+ 买入后面板再臂。卡面 Clickable=buy_slot_i 即购买。
+  for (let i = 0; i < 3; i++) {
     entities[`r_shop_slot_${i + 1}`] = { Resource: { id: `shop_slot_${i + 1}`, current: 0, min: 0, max: 9999 } } as unknown as EntityBlueprint;
     ROSTER.filter((x) => x.team === TEAM_A).forEach((h) => {
       const sig = `s${i + 1}_${h.id}`;
       entities[`when_${sig}`] = { EventWhen: { signal: sig, when: and(flagIs('shop_marks2_armed'), resCmp(`shop_slot_${i + 1}`, 'eq', HERO_CODE[h.id])), mode: 'edge', armed: false } } as unknown as EntityBlueprint;
-      entities[`cardcast_${sig}`] = { Transform: xf(-170 + i * 40, 148), Caster: { onSignal: sig, template: `shopcard_${h.id}`, at: 'self', overrides: { card: { Clickable: { action: `buy_slot_${i + 1}` }, Tag: { flags: SHOPSLOT_BITS[i] } } } } } as unknown as EntityBlueprint;
+      entities[`cardcast_${sig}`] = { Transform: xf(SHOP_XS[i], SHOP_Y), Caster: { onSignal: sig, template: `shopcard_${h.id}`, at: 'self', overrides: { card: { Clickable: { action: `buy_slot_${i + 1}` }, Tag: { flags: SHOPSLOT_BITS[i] } } } } } as unknown as EntityBlueprint;
     });
+  }
+  // 商店页底板 + 三个大框（placeholder：Shape+Color 占位，待用户给 UI 资源后换皮）。
+  entities['shop_panel'] = { Transform: xf(0, SHOP_Y), Shape: { kind: 'box', width: 240, height: 80 }, Color: { tint: 0x141a22, alpha: 0.92 }, Sprite: { textureKey: F_FX_STRIKE, anchorX: 0.5, anchorY: 0.5, zOrder: 26 } } as unknown as EntityBlueprint;
+  for (let i = 0; i < 3; i++) {
+    entities[`shop_frame_${i + 1}`] = { Transform: xf(SHOP_XS[i], SHOP_Y), Shape: { kind: 'box', width: 62, height: 72 }, Color: { tint: 0x2a3442, alpha: 1 }, Sprite: { textureKey: F_FX_STRIKE, anchorX: 0.5, anchorY: 0.5, zOrder: 27 } } as unknown as EntityBlueprint;
+  }
+  // 备战席托盘（REQ-F-055）：9 槽英雄平台（非六角；placeholder 槽框）。买入自动落座/席内拖拽互换/上板让座。
+  entities['bench_tray'] = { Tray: { ...TRAY, requiredTag: BENCH_OCC } } as unknown as EntityBlueprint;
+  for (let i = 0; i < TRAY.capacity; i++) {
+    entities[`bench_frame_${i}`] = { Transform: xf(TRAY.originX + i * TRAY.gap, TRAY.originY), Shape: { kind: 'box', width: 38, height: 38 }, Color: { tint: 0x223041, alpha: 0.95 }, Sprite: { textureKey: F_FX_STRIKE, anchorX: 0.5, anchorY: 0.5, zOrder: 1 } } as unknown as EntityBlueprint;
   }
   for (const h of ROSTER.filter((x) => x.team === TEAM_A)) {
     entities[`eff_marks_on_buy_${h.id}`] = { Effect: { onSignal: `buy_${h.id}`, kind: 'set-flag', targetId: 'shop_marks_armed', value: true } } as unknown as EntityBlueprint;
@@ -935,10 +991,10 @@ export function buildGameFBlueprint(pacing: GameFPacing = {}): WorldBlueprint {
       entities[`slot_s${st.n}_${ci}_${c.hero}`] = slotEntity(heroOf(c.hero), `deploy_stage_${st.n}`, c.q, c.r, c.hpMul);
     });
   }
-  // 野怪槽（批B）：每阶段一组，count 只横向铺位；血量=MOB_BASE_HP×HP_SCALE×hpMul 经 overrides
+  // 野怪槽（批B）：每阶段一组，count 只横向铺位（7×8 盘敌前排 r3、col 1 起）；血量=MOB_BASE_HP×HP_SCALE×hpMul 经 overrides
   for (const w of PVE_WAVES) {
     for (let i = 0; i < w.count; i++) {
-      const col = 3 + i;
+      const col = 1 + i;
       const a = offsetToAxial(col, 3);
       const p2 = project(a.q, a.r);
       const hp = Math.round(MOB_BASE_HP * HP_SCALE * w.hpMul);
@@ -985,6 +1041,7 @@ export function buildGameFBlueprint(pacing: GameFPacing = {}): WorldBlueprint {
       groupCountCapability, // 羁绊计数（F-16/REQ-022+047）+ 升星 marker 计数 + 备战席占用派生（F-17）
       mergeRuleCapability, // 升星合成（F-17/REQ-F-046）：席位 marker 三连 N 换 1（最老先合、挂件级联、出身格继承）
       dragPlaceCapability, // 摆子拖拽（F-18/REQ-F-045+049+050）：备战期拖 marker 上板/调位/回席；snap 六角格+人口限额
+      trayCapability, // 备战席托盘（REQ-F-055）：9 槽英雄平台——买入自动落座/席内拖拽互换/上板让座/无效落点弹回
       hierarchyResolveCapability,
       hierarchyCascadeCapability, // 子随父死（REQ-F-026）：棋子死亡→头顶名字一并消失
       cameraFollowCapability,

@@ -116,10 +116,15 @@ export const cardPileCapability = defineCapability({
         for (const [eid] of world.query('CardPile')) {
           const pile = world.getComponent<CardPile>(eid, 'CardPile')!;
           const owner = pile.owner;
-          // REQ-F-041(A)：信号刷新——弃全部手牌，② 再按 handSize 补满（弃/补皆既有内功，只加触发面）。
+          // REQ-F-041(A)→REQ-F-054 修订：信号刷新——旧手牌**回袋底**再按 handSize 补满（卡池守恒：
+          // 没被买走的牌归还公共池=TFT 语义；旧实现直接丢弃 → 有限袋只出不进，连刷数次商店即空，
+          // 用户实测「人物越刷越少最后没了」）。弃/补皆既有内功，只改弃牌去向。
           // 同拍撞上 play/discard 输入 → 退化输入，本拍忽略（刷新优先，下标语义已失效；确定性明确）。
           const refreshed = !!(pile.refreshOnSignal && sigNames.has(pile.refreshOnSignal));
-          if (refreshed) pile.hand = [];
+          if (refreshed) {
+            for (const c of pile.hand) pile.deck.push(c);
+            pile.hand = [];
+          }
           // ① 输入：play / discard（按 owner；刷新拍忽略）。
           let playIdx = owner && !refreshed ? plays.get(owner) : undefined;
           const discardIdx = owner && !refreshed ? discards.get(owner) : undefined;

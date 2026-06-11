@@ -183,6 +183,24 @@ export interface Draggable extends Component {
   capResource?: string; // 上板限额资源 id（如 'level'）
 }
 
+// ── Tray / TraySeat（REQ-F-055 托盘落座）── 「一排槽位」的自动落座/拖拽互换/离座原语。
+// 自走棋备战席、手牌排、背包栏的共同形：成员（Tag 含齐 requiredTag 且**无 HexPos**=不在板上）自动
+// 落进最小空槽；拖到另一槽=互换（被占）或挪空槽；拖上板（获得 HexPos）=离座让位；落点不在托盘带上
+// =弹回原槽（地上不留单位，TFT 语义）。槽位几何 = originX + index*gap（y=originY 一排）。
+// TraySeat=运行时落座状态（POD 进 snapshot）；确定性：成员按实体 id 升序处理、空槽取最小下标。
+export interface Tray extends Component {
+  readonly type: 'Tray';
+  originX: number; // 0 号槽世界 x
+  originY: number; // 槽排世界 y
+  gap: number; // 槽距（px）
+  capacity: number; // 槽数（满则新成员顺延排出=已知豁口，入口处由容量资源把门）
+  requiredTag: number; // 成员掩码（Tag.flags 含齐；含齐语义同 GroupCount）
+}
+export interface TraySeat extends Component {
+  readonly type: 'TraySeat';
+  index: number; // 所在槽下标（0 起）
+}
+
 // ── MergeRule（REQ-F-046 升星合成）── 「N 换 1」声明式合成规则（卡牌/合成品类通用）。
 // merge-rule 系统每拍：数 PrefabOrigin.templateId===template 的**存活实例数**（按 distinct seq）；
 // ≥need → 取 seq 最小的 need 个（最老先合，确定性），其全部实体发 DestroyRequest（挂件随 cascade），

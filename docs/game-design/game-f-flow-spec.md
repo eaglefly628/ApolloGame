@@ -27,8 +27,11 @@
  ╔════════ 准备阶段 prep ✅（玩家档 30s 倒计时兜底+ready键✅；测试走快速档参数）════════╗             │
  ║ 回合数+1✅ 棋子满状态重展开✅(deploy 移**入战拍**:备战板上=可拖marker本体,开战才出兵成型——拖拽即时反馈;关卡表选敌阵✅) ║             │
  ║ 经济：基础收入✅ 利息✅ 连胜金✅ 连败金✅(lstreak 与连胜同形带)                      ║             │
- ║ 商店：自动刷新✅ 2金手动刷✅ 锁店(门判定拍自动解锁)✅ 买棋子→备战席9格✅(e4c91db/248ca4d)  ║
- ║   商店5槽可视化+点击购买✅(F-14 两段脉冲重铺) 金币/回合/空席等七数字HUD✅(F-15 text-binding)     ║             │
+ ║ 商店：**三大框选卡页**✅(用户2026-06-11钦定小丑牌式,替代5小槽;handSize 3) 自动刷新✅      ║
+ ║   (刷新=旧手回袋底,卡池守恒REQ-F-054——修复「越刷人越少」) 2金手动刷✅ 锁店✅              ║
+ ║ 备战席：**9槽英雄平台托盘**✅(REQ-F-055:买入自动落座/席内拖拽互换/上板让座/无效落点弹回)   ║
+ ║ 开战倒计时✅(用户钦定:备战全程读秒+按「开战」数3-2-1再开打,不许瞬开;prep_left 钳停秒表)   ║
+ ║   大框可视可点✅(F-14 两段脉冲重铺,placeholder 框/底板待 UI 资源) 金币/回合/空席等七数字HUD✅   ║             │
  ║ 经验：买经验4金→等级=人口上限 ✅($4=+4XP 配方 + xp 阈值带升级5/6/7/8)               ║             │
  ║ 装备：分配/拆卸器回收 ⬜4（静态预配装备✅）                                         ║             │
  ║ 摆阵：✅全量(F-049/050 统一架构)——席位marker即上场槽:拖上板=吸附格出兵点('@origin-hex' ║             │
@@ -177,6 +180,10 @@
 | Tag 位 `BENCH_OCC`(1<<25) | Tag.flags | 席位 marker 位（全星级；与 TEAM/职业/势力/面板位不相交——不参战不被清场不挡寻路 F-051） | marker 模板 → group-count/拖拽限额域 |
 | `'@origin-hex'` | overrides 哨兵 | 实例 HexPos=发起者（caster 锚点/merge 最老锚点）当拍格；模板缺件仅此路径补建（REQ-F-049） | caster/merge 盖 originHex → prefab 解析 |
 | ~~`star_<将>` / `cb2/3_<将>` / `star1/2/3_<将>` / `deploy_<将>_s<n>` / STAR2/STAR3/每将位~~ | （已删除） | F-17 受限版星级带契约——F-049 统一架构后**模板家族即星级**，整段回收（位 1<<19..24 可复用） | — |
+| `prep_left` | Resource 0..99 | 开战倒计时秒表（OverTime 永久 -1/秒、min=0 钳停=自终止；prep 进 set 30 / countdown 进 set 3 / combat 进 set 0；HUD TextBinding） | flow ↔ hud_timer |
+| `Tray`/`TraySeat`（bench_tray 实体） | 组件 | 备战席 9 槽托盘（REQ-F-055）：requiredTag=BENCH_OCC；TraySeat.index=落座状态 | tray 系统 ↔ drag-place |
+| L2 状态 `countdown` | flow 状态 | prep 末尾 3 秒读数（ready 或倒计时耗尽进入；round_ui 仍 prep）→ combat | round 流程 |
+| 棋盘规格（修正注记） | — | **7×8=56 格（用户 2026-06-11 钦定金铲铲真规格）**：单边 4×7、中线 r3\|r4；旧 12×12=144 是注释与实现失配的错版；SHOPSLOT 位裁回 3 个（1<<13..15） | hex.ts ↔ 全部站位 |
 | 部署窗语义（变更注记） | — | `deploy_armed` 改**入战拍**臂（prep→combat do）、resolution onEnter 关窗（跨窗指针翻转防误发）；combat 判定转移加 after:30 最短驻留护 present 旗落定 | flow ↔ deploy 带 |
 
 ### 3.2 L1 · Run 流程（局）：`run_flow` 实体一台机

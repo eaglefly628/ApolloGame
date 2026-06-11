@@ -167,15 +167,20 @@ describe('card-pile · REQ-F-041 信号刷新', () => {
   const fire = (w: World) => { w.createEntity('sig'); w.addComponent('sig', { type: 'Signal', name: 'shop_refresh', source: 'sig' } as Signal); };
   const unfire = (w: World) => w.destroyEntity('sig');
 
-  it('信号在场 → 弃全部手牌 + 从 deck 补满（换一批）', () => {
+  it('信号在场 → 旧手牌回袋底 + 从 deck 补满（换一批；卡池守恒，REQ-F-054）', () => {
     const w = wRef([2, 5, 7, 9]);
     w.tick(); // hand=[2,5]
     expect(pile(w).hand).toEqual([2, 5]);
     fire(w);
-    w.tick(); // 弃 [2,5] → 补 [7,9]
+    w.tick(); // [2,5] 回袋底 → deck=[7,9,2,5] → 补 [7,9]
     unfire(w);
     expect(pile(w).hand).toEqual([7, 9]);
-    expect(pile(w).deck).toEqual([]);
+    expect(pile(w).deck).toEqual([2, 5]); // 守恒：没买走的牌还在池里（旧语义=烧掉 → 连刷即空）
+    fire(w);
+    w.tick(); // 再刷：[7,9] 回底 → 补 [2,5]——无限轮换，永不枯竭
+    unfire(w);
+    expect(pile(w).hand).toEqual([2, 5]);
+    expect(pile(w).deck).toEqual([7, 9]);
   });
 
   it('无信号 → 不刷新（缺省零迁移）；同拍 play 撞刷新 → 输入忽略（牌区空、Flag 不脉冲）', () => {
