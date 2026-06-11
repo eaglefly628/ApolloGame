@@ -1,0 +1,261 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Silkscreen:wght@400;700&family=Rajdhani:wght@500;600;700&family=Cormorant+Garamond:wght@500;600;700&family=Noto+Sans+SC:wght@400;500;700;900&family=Noto+Serif+SC:wght@500;700;900&family=Zhi+Mang+Xing&family=Ma+Shan+Zheng&display=swap" rel="stylesheet">
+<style>
+  * { box-sizing: border-box; }
+  body { margin: 0; background: #e9eaf0; }
+  @keyframes f-pulse { 0%,100% { opacity: .55; transform: scale(.9); } 50% { opacity: 1; transform: scale(1.15); } }
+  @keyframes f-glow { 0%,100% { box-shadow: var(--ready-shadow); } 50% { box-shadow: 0 0 30px var(--accent), inset 0 1px 0 rgba(255,255,255,.4); } }
+</style>
+</helmet>
+
+<div style="{{ pageStyle }}">
+  <div style="max-width:1200px; margin:0 auto;">
+
+    <div style="margin-bottom:26px;">
+      <div style="font-size:12px; letter-spacing:.28em; text-transform:uppercase; color:#9698a6; font-family:'Rajdhani',sans-serif; font-weight:600;">Game F · 孙刘抗曹 Co-op</div>
+      <div style="font-family:'Rajdhani',sans-serif; font-weight:700; font-size:38px; color:#23242e; line-height:1.05; margin-top:4px;">按钮 &amp; 图标原型 · 古风玉印</div>
+      <div style="font-size:14.5px; color:#6c6e7a; margin-top:8px; max-width:680px; line-height:1.5;">合作模式全部操作按钮 + 八角玉印图标库。图标采用双线古金描边的八角玺框 + 毛笔篆意字心,两套皮肤通用。</div>
+    </div>
+
+    <!-- ===== 主操作 · 开战 / 赠予 / 标记 ===== -->
+    <div style="{{ cardStyle }}">
+      <div style="{{ headRow }}"><span style="{{ numBadge }}">A</span><div style="{{ cardTitle }}">主操作 · 开战 / 赠予 / 标记</div></div>
+      <div style="{{ cardDesc }}">双 ready 开战键三态:我未就绪 → 已就绪等待盟友(脉冲) → 双方就绪起战(发光)。赠予/标记为合作专属。</div>
+      <div style="{{ wellsRow }}">
+        <sc-for list="{{ skins }}" as="sk" hint-placeholder-count="2">
+          <div style="{{ sk.wellStyle }}">
+            <div style="{{ skinTag }}"><span style="{{ sk.dot }}"></span>{{ sk.name }} · {{ sk.full }}</div>
+            <div style="display:flex; flex-direction:column; gap:12px;">
+              <div style="{{ readyIdle }}" style-hover="{{ pillHover }}" style-active="{{ btnPress }}">
+                <div style="{{ sealOuter }}"><div style="{{ sealInner }}"><span style="{{ glyphInk }}">战</span></div></div>
+                <div style="display:flex; flex-direction:column; line-height:1.25;"><span style="{{ pillTitle }}">开战</span><span style="{{ pillSub }}">我未就绪</span></div>
+              </div>
+              <div style="{{ readyWait }}" style-active="{{ btnPress }}">
+                <div style="{{ sealOuter }}"><div style="{{ sealInner }}"><span style="{{ glyphAccent }}">战</span></div></div>
+                <div style="display:flex; flex-direction:column; line-height:1.25;"><span style="{{ pillTitleA }}">已就绪</span><span style="{{ pillSubA }}">等待盟友…</span></div>
+                <span style="{{ waitDot }}"></span>
+              </div>
+              <div style="{{ readyGo }}" style-active="{{ btnPress }}">
+                <div style="{{ sealOuterGo }}"><div style="{{ sealInnerGo }}"><span style="{{ glyphGo }}">战</span></div></div>
+                <div style="display:flex; flex-direction:column; line-height:1.25;"><span style="{{ pillTitleGo }}">双方就绪</span><span style="{{ pillSubGo }}">出击 · 火烧赤壁</span></div>
+              </div>
+              <div style="display:flex; gap:12px; margin-top:4px;">
+                <div style="{{ secPill }}" style-hover="{{ pillHover }}" style-active="{{ btnPress }}">
+                  <div style="{{ sealOuter }}"><div style="{{ sealInner }}"><span style="{{ glyphInk }}">赠</span></div></div>
+                  <span style="{{ pillTitle }}">赠予盟友</span>
+                </div>
+                <div style="{{ secPill }}" style-hover="{{ pillHover }}" style-active="{{ btnPress }}">
+                  <div style="{{ sealOuter }}"><div style="{{ sealInner }}"><span style="{{ glyphInk }}">旗</span></div></div>
+                  <span style="{{ pillTitle }}">战场标记</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </sc-for>
+      </div>
+    </div>
+
+    <!-- ===== 行动条 · 图标按钮 ===== -->
+    <div style="{{ cardStyle }}">
+      <div style="{{ headRow }}"><span style="{{ numBadge }}">B</span><div style="{{ cardTitle }}">行动条 · 图标按钮</div></div>
+      <div style="{{ cardDesc }}">商店/席位操作。带金币消耗角标;hover 抬升、press 机械下沉。</div>
+      <div style="{{ wellsRow }}">
+        <sc-for list="{{ skins }}" as="sk" hint-placeholder-count="2">
+          <div style="{{ sk.wellStyle }}">
+            <div style="{{ skinTag }}"><span style="{{ sk.dot }}"></span>{{ sk.name }} · {{ sk.full }}</div>
+            <div style="display:flex; gap:12px; flex-wrap:wrap;">
+              <sc-for list="{{ actionBtns }}" as="b" hint-placeholder-count="6">
+                <div style="{{ iconBtn }}" style-hover="{{ iconBtnHover }}" style-active="{{ btnPress }}">
+                  <div style="{{ sealOuter }}"><div style="{{ sealInner }}"><span style="{{ glyphInk }}">{{ b.ch }}</span></div></div>
+                  <span style="{{ btnLabel }}">{{ b.label }}</span>
+                  <span style="{{ b.costStyle }}">{{ b.cost }}</span>
+                </div>
+              </sc-for>
+            </div>
+          </div>
+        </sc-for>
+      </div>
+    </div>
+
+    <!-- ===== 古风图标库 ===== -->
+    <div style="{{ cardStyle }}">
+      <div style="{{ headRow }}"><span style="{{ numBadge }}">C</span><div style="{{ cardTitle }}">古风玉印图标库</div></div>
+      <div style="{{ cardDesc }}">八角玺框 + 双线古金描边 + 毛笔字心 —— 统一图标语言,新增动作照此扩。</div>
+      <div style="{{ wellsRow }}">
+        <sc-for list="{{ skins }}" as="sk" hint-placeholder-count="2">
+          <div style="{{ sk.wellStyle }}">
+            <div style="{{ skinTag }}"><span style="{{ sk.dot }}"></span>{{ sk.name }} · {{ sk.full }}</div>
+            <div style="display:grid; grid-template-columns:repeat(8,1fr); gap:14px;">
+              <sc-for list="{{ iconLib }}" as="ic" hint-placeholder-count="16">
+                <div style="display:flex; flex-direction:column; align-items:center; gap:7px;">
+                  <div style="{{ sealOuter }}"><div style="{{ sealInner }}"><span style="{{ glyphInk }}">{{ ic.ch }}</span></div></div>
+                  <span style="{{ iconCaption }}">{{ ic.label }}</span>
+                </div>
+              </sc-for>
+            </div>
+          </div>
+        </sc-for>
+      </div>
+    </div>
+
+    <!-- ===== 势力徽记 ===== -->
+    <div style="{{ cardStyle }}">
+      <div style="{{ headRow }}"><span style="{{ numBadge }}">D</span><div style="{{ cardTitle }}">势力徽记 · 蜀 / 吴 / 魏</div></div>
+      <div style="{{ cardDesc }}">所有权语言:蜀红(玩家A)/ 吴绿(玩家B)/ 魏蓝(AI敌)。徽记用于棋子归属、名牌、镜像条。</div>
+      <div style="{{ wellsRow }}">
+        <sc-for list="{{ skins }}" as="sk" hint-placeholder-count="2">
+          <div style="{{ sk.wellStyle }}">
+            <div style="{{ skinTag }}"><span style="{{ sk.dot }}"></span>{{ sk.name }} · {{ sk.full }}</div>
+            <div style="display:flex; gap:26px;">
+              <sc-for list="{{ factions }}" as="f" hint-placeholder-count="3">
+                <div style="display:flex; flex-direction:column; align-items:center; gap:9px;">
+                  <div style="{{ f.outer }}"><div style="{{ f.inner }}"><span style="{{ f.glyph }}">{{ f.ch }}</span></div></div>
+                  <span style="{{ iconCaption }}">{{ f.name }}</span>
+                </div>
+              </sc-for>
+            </div>
+          </div>
+        </sc-for>
+      </div>
+    </div>
+
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script>
+class Component extends DCLogic {
+  themes() {
+    return {
+      onyx: {
+        '--app-bg': 'radial-gradient(120% 120% at 50% -10%, #1a2230 0%, #0a0d12 55%, #06080b 100%)',
+        '--texture': 'repeating-linear-gradient(45deg, rgba(135,175,215,.05) 0 1px, transparent 1px 9px), repeating-linear-gradient(-45deg, rgba(135,175,215,.04) 0 1px, transparent 1px 9px)',
+        '--panel-grad': 'linear-gradient(180deg,#1c2531,#121821)',
+        '--panel-border': '#33404f', '--hairline': 'rgba(255,214,150,.12)', '--chip-bg': 'rgba(255,255,255,.05)',
+        '--ink': '#e7edf3', '--ink-dim': '#7e8c9b',
+        '--accent': '#ff5d2e', '--accent-grad': 'linear-gradient(180deg,#ff7a45,#ee4515)', '--accent-soft': 'rgba(255,93,46,.18)', '--accent-ink': '#1c0d06',
+        '--gold': '#ffcb3d', '--seal-edge': '#caa24e', '--seal-edge-soft': 'rgba(202,162,78,.5)', '--danger': '#ff404f',
+        '--btn-bg': 'linear-gradient(180deg,#283341,#1a222c)', '--btn-edge': '#3d4b5b', '--btn-text': '#dfe7ef',
+        '--btn-radius': '12px', '--radius-lg': '8px',
+        '--ready-bg': 'linear-gradient(180deg,#ff7a45,#e8420f)', '--ready-text': '#1c0d06', '--ready-shadow': '0 0 22px rgba(255,93,46,.5), inset 0 1px 0 rgba(255,255,255,.4)',
+        '--font-display': "'Zhi Mang Xing', cursive", '--font-heading': "'Rajdhani', sans-serif", '--font-body': "'Noto Sans SC', sans-serif", '--font-num': "'Silkscreen', monospace",
+      },
+      brocade: {
+        '--app-bg': 'radial-gradient(120% 120% at 50% -10%, #fdf4ee 0%, #f3e2dc 60%, #ecd6cf 100%)',
+        '--texture': 'radial-gradient(circle, rgba(201,148,72,.15) 1px, transparent 1.7px) 0 0 / 26px 26px, repeating-linear-gradient(45deg, rgba(201,148,72,.06) 0 1px, transparent 1px 26px), repeating-linear-gradient(-45deg, rgba(201,148,72,.06) 0 1px, transparent 1px 26px)',
+        '--panel-grad': 'linear-gradient(180deg,#fffdfa,#fbeee4)',
+        '--panel-border': '#e3c896', '--hairline': 'rgba(216,164,78,.4)', '--chip-bg': 'rgba(255,255,255,.55)',
+        '--ink': '#5a3f44', '--ink-dim': '#a98b8f',
+        '--accent': '#d8607b', '--accent-grad': 'linear-gradient(180deg,#e887a0,#cf5070)', '--accent-soft': 'rgba(216,96,123,.16)', '--accent-ink': '#fff',
+        '--gold': '#cf9a3f', '--seal-edge': '#d8a44e', '--seal-edge-soft': 'rgba(216,164,78,.55)', '--danger': '#d65668',
+        '--btn-bg': 'linear-gradient(180deg,#fffaf4,#fbece1)', '--btn-edge': '#ecd3b2', '--btn-text': '#6a4a4f',
+        '--btn-radius': '16px', '--radius-lg': '20px',
+        '--ready-bg': 'linear-gradient(180deg,#ec9f6f,#d77a86)', '--ready-text': '#fff', '--ready-shadow': '0 8px 24px rgba(208,120,120,.4), inset 0 1px 0 rgba(255,255,255,.6)',
+        '--font-display': "'Ma Shan Zheng', cursive", '--font-heading': "'Cormorant Garamond', serif", '--font-body': "'Noto Serif SC', serif", '--font-num': "'Silkscreen', monospace",
+      },
+    };
+  }
+
+  renderVals() {
+    const TH = this.themes();
+    const OCTA = 'polygon(22% 0, 78% 0, 100% 22%, 100% 78%, 78% 100%, 22% 100%, 0 78%, 0 22%)';
+
+    const mkWell = (vars) => Object.assign({}, vars, {
+      background: 'var(--texture), var(--app-bg)', color: 'var(--ink)', fontFamily: 'var(--font-body)',
+      borderRadius: '14px', padding: '22px', border: '1px solid rgba(0,0,0,.1)', flex: 1, minWidth: '420px', boxShadow: 'inset 0 0 50px rgba(0,0,0,.08)',
+    });
+    const skins = [
+      { key: 'onyx', name: '玄铁', full: '暗黑金属硬核', wellStyle: mkWell(TH.onyx), dot: { width: '9px', height: '9px', borderRadius: '3px', background: 'var(--accent)' } },
+      { key: 'brocade', name: '锦霞', full: '宫廷锦绣', wellStyle: mkWell(TH.brocade), dot: { width: '9px', height: '9px', borderRadius: '3px', background: 'var(--accent)' } },
+    ];
+
+    // ---- seal frame (octagon jade seal) ----
+    const sealOuter = { position: 'relative', width: '52px', height: '52px', flex: 'none', clipPath: OCTA, background: 'var(--seal-edge)', display: 'flex', alignItems: 'center', justifyContent: 'center' };
+    const sealInner = { position: 'absolute', inset: '2.5px', clipPath: OCTA, background: 'var(--panel-grad)', boxShadow: 'inset 0 0 0 1.5px var(--seal-edge-soft)', display: 'flex', alignItems: 'center', justifyContent: 'center' };
+    const glyphInk = { fontFamily: 'var(--font-display)', fontSize: '27px', color: 'var(--ink)', lineHeight: 1 };
+    const glyphAccent = Object.assign({}, glyphInk, { color: 'var(--accent)' });
+    // "go" seal (lit)
+    const sealOuterGo = Object.assign({}, sealOuter, { background: 'var(--gold)' });
+    const sealInnerGo = Object.assign({}, sealInner, { background: 'var(--accent-grad)', boxShadow: 'inset 0 0 0 1.5px rgba(255,255,255,.4)' });
+    const glyphGo = Object.assign({}, glyphInk, { color: 'var(--ready-text)' });
+
+    // ---- ready pills ----
+    const pillBase = { display: 'flex', alignItems: 'center', gap: '13px', padding: '11px 18px 11px 11px', borderRadius: 'calc(var(--btn-radius) + 4px)', cursor: 'pointer', transition: 'all .16s cubic-bezier(.2,.7,.3,1)', minWidth: '240px' };
+    const readyIdle = Object.assign({}, pillBase, { background: 'var(--btn-bg)', border: '1px solid var(--btn-edge)', boxShadow: 'inset 0 1px 0 var(--hairline)' });
+    const readyWait = Object.assign({}, pillBase, { background: 'var(--accent-soft)', border: '1px solid var(--accent)' });
+    const readyGo = Object.assign({}, pillBase, { background: 'var(--ready-bg)', border: 'none', animation: 'f-glow 1.6s ease-in-out infinite' });
+    const pillTitle = { fontFamily: 'var(--font-heading)', fontWeight: 700, fontSize: '17px', color: 'var(--ink)', letterSpacing: '.03em' };
+    const pillSub = { fontFamily: 'var(--font-body)', fontSize: '11.5px', color: 'var(--ink-dim)' };
+    const pillTitleA = Object.assign({}, pillTitle, { color: 'var(--accent)' });
+    const pillSubA = Object.assign({}, pillSub, { color: 'var(--accent)' });
+    const pillTitleGo = Object.assign({}, pillTitle, { color: 'var(--ready-text)' });
+    const pillSubGo = Object.assign({}, pillSub, { color: 'var(--ready-text)', opacity: .85 });
+    const waitDot = { width: '10px', height: '10px', borderRadius: '50%', background: 'var(--accent)', marginLeft: 'auto', animation: 'f-pulse 1s ease-in-out infinite' };
+    const secPill = Object.assign({}, pillBase, { minWidth: '0', flex: 1, background: 'var(--btn-bg)', border: '1px solid var(--btn-edge)', boxShadow: 'inset 0 1px 0 var(--hairline)' });
+    const pillHover = { transform: 'translateY(-2px)', borderColor: 'var(--accent)', boxShadow: '0 8px 20px rgba(0,0,0,.2)' };
+    const btnPress = { transform: 'translateY(1px) scale(.97)', filter: 'brightness(.95)' };
+
+    // ---- action icon buttons ----
+    const iconBtn = { display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '8px', padding: '13px 12px 11px', borderRadius: 'var(--btn-radius)', background: 'var(--btn-bg)', border: '1px solid var(--btn-edge)', cursor: 'pointer', transition: 'all .16s cubic-bezier(.2,.7,.3,1)', boxShadow: 'inset 0 1px 0 var(--hairline)', minWidth: '84px' };
+    const iconBtnHover = { transform: 'translateY(-3px)', borderColor: 'var(--accent)', boxShadow: '0 9px 20px rgba(0,0,0,.2)' };
+    const btnLabel = { fontFamily: 'var(--font-body)', fontWeight: 600, fontSize: '12.5px', color: 'var(--ink)' };
+    const costGold = { fontFamily: 'var(--font-num)', fontSize: '10px', color: 'var(--gold)' };
+    const costNone = { display: 'none' };
+    const actionBtns = [
+      { ch: '刷', label: '刷新', cost: '2 金', costStyle: costGold },
+      { ch: '验', label: '买经验', cost: '4 金', costStyle: costGold },
+      { ch: '锁', label: '锁店', cost: '', costStyle: costNone },
+      { ch: '售', label: '卖出', cost: '', costStyle: costNone },
+      { ch: '降', label: '招降', cost: '', costStyle: costNone },
+      { ch: '设', label: '设置', cost: '', costStyle: costNone },
+    ];
+
+    // ---- icon library ----
+    const iconLib = [
+      { ch: '战', label: '开战' }, { ch: '赠', label: '赠予' }, { ch: '旗', label: '标记' }, { ch: '刷', label: '刷新' },
+      { ch: '验', label: '经验' }, { ch: '锁', label: '锁店' }, { ch: '售', label: '卖出' }, { ch: '降', label: '招降' },
+      { ch: '盟', label: '联盟' }, { ch: '命', label: '团队血' }, { ch: '符', label: '强化' }, { ch: '星', label: '升星' },
+      { ch: '金', label: '金币' }, { ch: '设', label: '设置' }, { ch: '援', label: '增援' }, { ch: '退', label: '撤退' },
+    ];
+
+    // ---- faction seals ----
+    const facBase = [{ ch: '蜀', c: '#d8504e', name: '蜀 · 玩家A' }, { ch: '吴', c: '#3fae6e', name: '吴 · 玩家B' }, { ch: '魏', c: '#3a86d4', name: '魏 · AI敌' }];
+    const factions = facBase.map((f) => ({
+      ch: f.ch, name: f.name,
+      outer: { position: 'relative', width: '66px', height: '66px', flex: 'none', clipPath: OCTA, background: f.c, display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: '0 0 16px ' + f.c + '66' },
+      inner: { position: 'absolute', inset: '3px', clipPath: OCTA, background: 'var(--panel-grad)', boxShadow: 'inset 0 0 0 1.5px ' + f.c + '88', display: 'flex', alignItems: 'center', justifyContent: 'center' },
+      glyph: { fontFamily: 'var(--font-display)', fontSize: '34px', color: f.c, lineHeight: 1 },
+    }));
+
+    // ---- neutral chrome ----
+    const pageStyle = { background: '#e9eaf0', minHeight: '100vh', padding: '40px 32px 70px', fontFamily: "'Noto Sans SC', sans-serif" };
+    const cardStyle = { background: '#fff', borderRadius: '18px', border: '1px solid #e3e4ec', boxShadow: '0 2px 16px rgba(40,40,70,.05)', padding: '24px 26px', marginBottom: '22px' };
+    const headRow = { display: 'flex', alignItems: 'center', gap: '11px' };
+    const cardTitle = { fontFamily: "'Rajdhani',sans-serif", fontWeight: 700, fontSize: '21px', color: '#23242e', whiteSpace: 'nowrap' };
+    const cardDesc = { fontSize: '13.5px', color: '#74767f', marginTop: '7px', lineHeight: 1.5, maxWidth: '780px' };
+    const wellsRow = { display: 'flex', gap: '16px', marginTop: '18px', flexWrap: 'wrap' };
+    const skinTag = { display: 'flex', alignItems: 'center', gap: '8px', fontFamily: 'var(--font-heading)', fontWeight: 700, fontSize: '12px', letterSpacing: '.06em', color: 'var(--ink-dim)', marginBottom: '16px', paddingBottom: '11px', borderBottom: '1px solid var(--panel-border)' };
+    const numBadge = { fontFamily: "'Silkscreen',monospace", fontSize: '12px', color: '#fff', background: '#23242e', borderRadius: '7px', padding: '4px 9px' };
+    const iconCaption = { fontFamily: 'var(--font-body)', fontSize: '11.5px', color: 'var(--ink-dim)' };
+
+    return {
+      pageStyle, cardStyle, headRow, cardTitle, cardDesc, wellsRow, skinTag, numBadge, iconCaption,
+      skins, sealOuter, sealInner, glyphInk, glyphAccent, sealOuterGo, sealInnerGo, glyphGo,
+      readyIdle, readyWait, readyGo, pillTitle, pillSub, pillTitleA, pillSubA, pillTitleGo, pillSubGo, waitDot, secPill, pillHover, btnPress,
+      iconBtn, iconBtnHover, btnLabel, actionBtns, iconLib, factions,
+    };
+  }
+}
+</script>
+</body>
+</html>
