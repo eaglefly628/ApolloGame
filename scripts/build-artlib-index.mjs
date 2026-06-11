@@ -4,7 +4,7 @@
 // 「从名字」：目录结构 + 文件名已是 DCSS 的精细分类（cat/sub/subject_variant）。
 // 「从图像」：slot 语义（瓦片不透明可平铺 / 精灵透明 / 纸娃娃分层 / 图标 / 特效）来自人工看样图，
 //   编码进下面的 SLOT/transparent 规则（见 docs/design/art-library-tags.md）。
-import { readdirSync, statSync, writeFileSync, openSync, readSync, closeSync } from 'node:fs';
+import { readdirSync, statSync, writeFileSync, readFileSync, openSync, readSync, closeSync } from 'node:fs';
 import { join, relative } from 'node:path';
 
 const ROOT = 'assets/FreeArtLib';
@@ -113,6 +113,18 @@ const pngAssets = [...groups.values()]
     if (g.w !== 32 || g.h !== 32) { o.w = g.w; o.h = g.h; }
     return o;
   });
+
+// ── 像素扫描事实标签（scripts/scan-pixels.ts 产出；存在则并入每条资产的 tags 字段）──
+// artlibTokens()/artlibSemanticTags() 已经合并 a.tags → 搜索/浏览器/AI 选材零改动直接吃到。
+try {
+  const scan = JSON.parse(readFileSync(join(ROOT, 'tags-scan.json'), 'utf8'));
+  let merged = 0;
+  for (const a of pngAssets) {
+    const t = scan.tags?.[a.id];
+    if (Array.isArray(t) && t.length) { a.tags = t; merged++; }
+  }
+  console.log(`像素扫描标签并入：${merged} 条（assets/FreeArtLib/tags-scan.json）`);
+} catch { /* 没跑过扫描则跳过 */ }
 
 const assets = [...pngAssets, ...cardgameAssets];
 const cats = {};

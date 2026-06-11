@@ -91,6 +91,24 @@ cc3265d 引入像素扫描语义标签（`artlib-tags.ts`：CAT_TAGS 路径级 +
   Sonnet/Haiku 更低。回填脚本走 Batch、产出建议落 `assets/FreeArtLib/tags-scan.json`（生成式数据，
   与人工精标 artlib-tags.ts 分层）—— 待用户确认花费后执行。
 
+## 5.7 确定性像素扫描层（v1.3，2026-06-10 · 用户拍板「不用 API，写程序扫」）
+
+**零 API、零花费、同输入永远同输出**的事实标签层，与语义层（文件名结构 + artlib-tags 人工精标 +
+可选 Claude 视觉）分层互补。程序诚实边界：能读颜色构成/明暗/鲜艳度/透明半透明/主体体量形状/暖冷调，
+**不做主体识别**（"这是骷髅战士"归语义层）。
+
+- 纯核心（已单测）：`src/assets/import/png-decode.ts`（零依赖 PNG 解码）+ `pixel-tags.ts`
+  （HSV 色桶统计 → 定序事实标签；`auditSemanticTags` 语义↔色证对账）。
+- 壳：`scripts/scan-pixels.ts`（vite-node）两种模式——全量扫 FreeArtLib → `tags-scan.json`
+  （生成式数据：id→标签 + 嫌疑单）；`--assets` 扫项目 index.json 已填贴图并合并写回。
+- 合并：`build-artlib-index.mjs` 读 tags-scan.json 并入每条资产 `tags` 字段 →
+  `artlibTokens`/`artlibSemanticTags` 已合并 a.tags → **搜索/浏览器/AI 选材零改动直接吃到**。
+- 入库挂钩：apollo `handle_asset_import` 写完索引后 best-effort 跑 `--assets` 模式
+  （免费必跑）；API 视觉标注降级为「✨ 追加语义标注」可选项。
+- 首扫结果：**4687/4892 张打标并入**（跳过 205 张非 PNG，主要是 cardgame webp 卡面），
+  index.json 894KB→1.1MB；语义对账嫌疑 **39 条**存 tags-scan.json `suspects`（混有真错标与
+  "功能性标签 vs 画面色证"两类，待人工裁决——audit 规则只审视觉性声称，divine/religion 等功能语义不审）。
+
 ## 6. 确定性边界（不变）
 
 库与导入全在表现层：sim 只持字符串 key，像素/索引不进模拟哈希 → 填充/导入/重命名不破坏 lockstep 与录放。

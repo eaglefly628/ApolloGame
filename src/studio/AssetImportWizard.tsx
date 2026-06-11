@@ -619,9 +619,10 @@ export function AssetImportWizard({
               <>
                 <div style={{ fontSize: 14 }}>将写入 <b style={{ color: SHELL.gold }}>{importableCount}</b> 个资产到 <span style={{ fontFamily: SHELL.fontMono, color: SHELL.jade }}>assets/</span> 并更新 index.json</div>
                 <div style={{ color: SHELL.dim, fontSize: 12 }}>写盘经 apollo.py API（限定 assets/ 子树）· 条目带来源溯源 provenance · 可在资源库立即看到</div>
+                <div style={{ color: SHELL.dim, fontSize: 12 }}>颜色/明暗/体量等<b style={{ color: SHELL.sub }}>事实标签</b>由本地像素扫描自动打（免费·确定性·必跑）</div>
                 <label style={{ display: 'flex', alignItems: 'center', gap: 8, color: SHELL.sub, fontSize: 12, cursor: 'pointer' }}>
                   <input type="checkbox" checked={autotag} onChange={(e) => setAutotag(e.target.checked)} />
-                  ✨ 写库后自动扫描标注（Claude 视觉打语义标签，约 $0.003/张；需 .env 配 ANTHROPIC_API_KEY）
+                  ✨ 追加语义标注（Claude 视觉认主体，约 $0.003/张；需 .env 配 ANTHROPIC_API_KEY）
                 </label>
                 <button onClick={() => void commit()} style={{ ...sBtn('primary'), padding: '10px 28px', fontSize: 13 }}>提交写库 ✓</button>
               </>

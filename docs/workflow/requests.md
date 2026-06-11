@@ -1314,6 +1314,11 @@
 
 （Lead 实现后把需求移到这里，标 done + 对应 commit / 新原子名）
 
+### [2026-06-10] · 用户（直发 Lead） · 引擎原生 · status: done · 资源库 v1.3：确定性像素扫描层（不用 API 的程序扫）
+- 需求：不花 API 钱，写程序在库里一张张扫、自动打标。
+- 落地（`docs/design/asset-library.md` §5.7）：纯核心 png-decode + pixel-tags（HSV 色桶→定序事实标签：颜色/明暗/透明/体量/暖冷调；零随机零 I/O 已单测）+ scan-pixels 脚本双模式（FreeArtLib 全量→tags-scan.json；--assets 合并项目索引）+ build-artlib-index 自动并入 → 搜索/AI 选材零改动吃到；apollo 导入钩子免费必跑。诚实边界：程序只出事实层，主体识别归语义层。
+- 首扫：4687/4892 张并入；语义↔色证对账嫌疑 39 条（待人工裁决）。15 条新测试，1039 全绿。
+
 ### [2026-06-10] · 用户（直发 Lead） · 引擎原生 · status: done · 资源库 v1.2：入库主动扫描标注（Claude 视觉管线）
 - 需求：新资产入库时主动扫描打标；并评估存量 4761 张蛮力重扫成本。
 - 落地（`docs/design/asset-library.md` §5.6）：apollo `POST /api/assets/autotag`（contact-sheet 放大 6× → Claude 视觉按受控词表打标 → tags+provenance.autotag 写回索引，单张失败不拖批）；导入向导步骤④默认开「写库后自动扫描标注」。复审抓到并修正 jellyfish 错标（electric→poison）。

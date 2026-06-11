@@ -548,6 +548,17 @@ def handle_asset_import(body: dict) -> dict:
     index['assets'] = list(index.get('assets', [])) + entries
     idx_path.write_text(json.dumps(index, ensure_ascii=False, indent=2) + '\n', encoding='utf-8')
     print(c("  [ASSETS]", 'g'), f"导入 {written} 文件，索引 +{len(entries)} 条")
+
+    # ⑤ 入库主动扫描（本地像素层，零 API 花费、确定性）：颜色/明暗/体量等事实标签合并进新条目。
+    #    失败不影响导入（语义层另有可选的 /api/assets/autotag）。
+    try:
+        subprocess.run(
+            **_spawn(['npx', 'vite-node', 'scripts/scan-pixels.ts', '--assets']),
+            cwd=ROOT, capture_output=True, timeout=120,
+        )
+        print(c("  [ASSETS]", 'g'), "像素扫描标签已合并（本地、免费）")
+    except Exception:
+        pass
     return {'success': True, 'written': written, 'indexAdded': len(entries)}
 
 # ── 资产自动标注（入库主动扫描 / 存量回填共用一条管线；Claude 视觉打语义标签）──
