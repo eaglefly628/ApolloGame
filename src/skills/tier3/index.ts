@@ -46,3 +46,5 @@ export { cardScoringCapability, matchPerCardWhen } from './card-scoring.js';
 // flow（REQ-020）：声明式游戏流程状态机解释器——流程=一份 GameFlow 数据（状态+带 when 条件的转移），
 // 读如线性瀑布脚本、本质数据（与 dialogue 同构）。消解散落的 EventWhen/Effect 流程实体，跨所有游戏复用。
 export { flowCapability } from './flow.js';
+// merge-rule（REQ-F-046）：「N 换 1」声明式合成——升星/合成/进化通用（PrefabOrigin 计数+按入场序原子替换）。
+export { mergeRuleCapability } from './merge-rule.js';

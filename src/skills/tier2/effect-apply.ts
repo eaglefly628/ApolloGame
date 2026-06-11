@@ -1,6 +1,6 @@
 import { defineCapability } from '@engine/core/define-capability.js';
 import { SystemPhase } from '@engine/core/types.js';
-import type { Effect, Signal, Sensor, Visibility, DestroyRequest, Timer, Tag } from '@engine/protocol/components.js';
+import type { Effect, Signal, Sensor, Visibility, DestroyRequest, Timer, Tag, PrefabOrigin } from '@engine/protocol/components.js';
 import { buildConditionLookup } from './condition.js';
 import { findScoreTrace, appendScoreEvent } from '../score-trace.js';
 
@@ -56,7 +56,7 @@ export const effectApplyCapability = defineCapability({
         },
       },
     },
-    reads: ['Effect', 'Signal', 'Timer', 'Tag'],
+    reads: ['Effect', 'Signal', 'Timer', 'Tag', 'PrefabOrigin'],
     writes: ['Flag', 'Resource', 'State', 'Sensor', 'Visibility', 'DestroyRequest', 'Timer'],
     consumes: [],
   },
@@ -67,7 +67,7 @@ export const effectApplyCapability = defineCapability({
     {
       id: 'effect-apply',
       phase: SystemPhase.Commit,
-      reads: ['Effect', 'Signal', 'Timer', 'Tag'],
+      reads: ['Effect', 'Signal', 'Timer', 'Tag', 'PrefabOrigin'],
       writes: ['Flag', 'Resource', 'State', 'Sensor', 'Visibility', 'DestroyRequest', 'Timer'],
       consumes: [],
       execute(world) {
@@ -177,9 +177,25 @@ export const effectApplyCapability = defineCapability({
             case 'destroy-tagged': {
               const mask = Number(ef.value);
               if (Number.isFinite(mask) && mask !== 0) {
+                // REQ-F-048①：keepResource 设了 → 按 PrefabOrigin.seq 升序（无戳者排最后、同序按 id）
+                // 保留前 N 个（N=该资源 current），只清多余=入场逆序（超员自动卖/波次限额）。缺省全清。
+                const matched: Array<{ tid: string; seq: number }> = [];
                 for (const [tid] of world.query('Tag')) {
                   const tg = world.getComponent<Tag>(tid, 'Tag');
-                  if (tg && (tg.flags & mask) !== 0 && !world.hasComponent(tid, 'DestroyRequest')) {
+                  if (tg && (tg.flags & mask) !== 0) {
+                    const po = world.getComponent<PrefabOrigin>(tid, 'PrefabOrigin');
+                    matched.push({ tid, seq: po ? po.seq : Number.MAX_SAFE_INTEGER });
+                  }
+                }
+                let doomedList = matched;
+                if (ef.keepResource) {
+                  const keepRes = lookup.resource(ef.keepResource);
+                  const keep = keepRes ? Math.max(0, Math.floor(keepRes.current)) : 0;
+                  matched.sort((a, b) => a.seq - b.seq || (a.tid < b.tid ? -1 : a.tid > b.tid ? 1 : 0));
+                  doomedList = matched.slice(keep);
+                }
+                for (const { tid } of doomedList) {
+                  if (!world.hasComponent(tid, 'DestroyRequest')) {
                     world.addComponent(tid, { type: 'DestroyRequest', entityId: tid } as DestroyRequest);
                   }
                 }

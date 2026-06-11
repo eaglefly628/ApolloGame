@@ -240,3 +240,58 @@ describe('REQ-F-032 · 回合循环：展开 → 清场 → 再展开', () => {
     expect(alive(w, 'bystander')).toBe(true);
   });
 });
+
+// ── REQ-F-046/048①：升星合成 + 超员保额清场（PrefabOrigin 出身戳家族） ──
+import { mergeRuleCapability } from './merge-rule.js';
+import type { MergeRule, PrefabOrigin } from '@engine/protocol/components.js';
+describe('REQ-F-046 · merge-rule N 换 1 升星', () => {
+  const mkMerge = (): World => {
+    const w = mk();
+    for (const s of (mergeRuleCapability as unknown as Cap).systems) w.addSystem(s);
+    const lib = w.getComponent<PrefabLibrary>('lib', 'PrefabLibrary')!;
+    lib.templates.g1 = { entities: { main: { Transform: { x: 0, y: 0, rotation: 0, scaleX: 1, scaleY: 1 }, Tag: { flags: ALLY }, Resource: { id: 'hp', current: 100, min: 0, max: 100 } } } };
+    lib.templates.g2 = { entities: { main: { Transform: { x: 0, y: 0, rotation: 0, scaleX: 1, scaleY: 1 }, Tag: { flags: ALLY }, Resource: { id: 'hp', current: 240, min: 0, max: 240 } } } };
+    w.createEntity('mr');
+    w.addComponent('mr', { type: 'MergeRule', template: 'g1', need: 3, into: 'g2' } as MergeRule);
+    return w;
+  };
+  const buy = (w: World, n: number) => { for (let i = 0; i < n; i++) { const c = `req${Math.random()}`; w.createEntity(c); w.addComponent(c, { type: 'SpawnRequest', templateId: 'g1', x: i * 10, y: 0 } as SpawnRequest); } };
+  const countT = (w: World, t: string) => w.getAllEntities().filter((e) => w.getComponent<PrefabOrigin>(e, 'PrefabOrigin')?.templateId === t).length;
+
+  it('凑 3 → 最老 3 个原子替换为 g2（锚在最老位置）；第 4 个不动；封顶无规则即止', () => {
+    const w = mkMerge();
+    buy(w, 2);
+    w.tick(); // 展开 2 个 g1（seq 0,1）
+    w.tick(); // merge 读上一拍实例：2 < 3 不合
+    expect(countT(w, 'g1')).toBe(2);
+    buy(w, 2); // 第 3、4 个
+    w.tick(); // 展开（seq 2,3）
+    w.tick(); // merge：取 seq 0,1,2 → 替换；prefab 同拍展开 g2
+    w.tick(); // destroy-apply 上拍已清；再走一拍稳定
+    expect(countT(w, 'g1')).toBe(1); // 第 4 个幸存
+    expect(countT(w, 'g2')).toBe(1); // 升星产物
+    const g2e = w.getAllEntities().find((e) => w.getComponent<PrefabOrigin>(e, 'PrefabOrigin')?.templateId === 'g2')!;
+    expect(w.getComponent<Transform>(g2e, 'Transform')!.x).toBe(0); // 锚在最老（seq0 @ x=0）
+  });
+});
+
+describe('REQ-F-048① · destroy-tagged keepResource 超员保额', () => {
+  it('保最老 N 个（按 seq 升序），清多余=入场逆序', () => {
+    const w = mk();
+    const lib = w.getComponent<PrefabLibrary>('lib', 'PrefabLibrary')!;
+    lib.templates.u = { entities: { main: { Tag: { flags: ALLY }, Transform: { x: 0, y: 0, rotation: 0, scaleX: 1, scaleY: 1 } } } };
+    for (let i = 0; i < 5; i++) { w.createEntity(`q${i}`); w.addComponent(`q${i}`, { type: 'SpawnRequest', templateId: 'u', x: 0, y: 0 } as SpawnRequest); }
+    w.tick(); // 5 实例（seq 0..4）
+    w.createEntity('cap'); w.addComponent('cap', { type: 'Resource', id: 'unit_cap', current: 3, min: 0, max: 9 } as Resource);
+    w.createEntity('fx'); w.addComponent('fx', { type: 'Effect', onSignal: 'enforce_cap', kind: 'destroy-tagged', targetId: '', value: ALLY, keepResource: 'unit_cap' } as Effect);
+    signal(w, 'enforce_cap');
+    w.tick(); // Commit 写请求（保 seq 0,1,2；清 3,4）
+    unsignal(w, 'enforce_cap');
+    w.tick();
+    const seqs = w.getAllEntities()
+      .map((e) => w.getComponent<PrefabOrigin>(e, 'PrefabOrigin'))
+      .filter((p): p is PrefabOrigin => !!p && p.templateId === 'u')
+      .map((p) => p.seq).sort();
+    expect(seqs).toEqual([0, 1, 2]); // 最老 3 个幸存，最新 2 个被卖
+  });
+});

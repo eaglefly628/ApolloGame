@@ -68,6 +68,8 @@ export function instantiate(world: IWorld, tmpl: PrefabTemplate, templateId: str
       remapLocalRefs(copy, templateId, seq, locals); // REQ-F-033：'@local:x' → 兄弟实例 id（补丁后，补丁同享）
       world.addComponent(eid, { type: ctype, ...copy } as unknown as Component);
     }
+    // REQ-F-046/048①：出身戳（同模板计数/入场顺序的数据钥匙；POD 进 snapshot，确定可重放）。
+    world.addComponent(eid, { type: 'PrefabOrigin', templateId, seq, localId } as unknown as Component);
     created.push(eid);
   }
   return created;

@@ -141,7 +141,13 @@
 - 引擎已落（5 测绿）：① `Hitbox.consumeOnHit:true`——法球=zone{Hitbox{resource:'loot',amount:-5,targetMask:PROTAG}, consumeOnHit}，碰一下入账一次**同拍消失**（cascade 连挂件），主角零附件；② `Hitbox.scaleByResource:'<系数资源id>'`——羁绊链=group-count 计数→EventWhen 阈值→Effect 写系数资源→普攻/大招 strike 模板挂此字段（两阵营各自系数用槽位 overrides 改指向）；③ `CardPile.returnOnSignal:'card_sold'+returnCodeResource:'sold_code'`——卖出链每将 banded Effect{set sold_code=码}→袋底归还+清零。
 - 注意：consumeOnHit 的"真结算"=过了阵营/状态门（空挥不消耗）；scaleByResource 只乘 amount 不乘 fracOfMax；sold_code 复位由引擎清零、无需手工 Effect。
 
-> ✅ **引擎侧 REQ-F-026~037 + F-040~044/047/048② 均已落地、全绿（F-038 空缺、F-039 重组覆盖；F-045 输入域/F-046+048① 选N原子 设计中下一轮）**。PE-F 上述 F-1~F-16 皆可接（你交接报告里卡主程的两件——**F-029 血条→接 F-5，F-030 定身→接 F-6——已全部解锁，可继续**），纯数据 / 零游戏代码。不要在游戏层 workaround 引擎行为；若发现新引擎缺口，写 requests.md 提主程。
+#### 任务 F-17 · REQ-F-046/048① 接入：升星合成 + 超员自动卖（纯数据） — status: pending
+- 引擎已落（3 测绿）：`PrefabOrigin` 出身戳（prefab 自动盖，零接线）+ `t3-merge-rule`（蓝图 capabilities 加 `mergeRuleCapability`，id `t3-merge-rule`）+ `Effect.keepResource`。
+- 升星接线：每将每级一条 `MergeRule{template:'<将>_1', need:3, into:'<将>_2', intoOverrides:{main:{Resource:{...二星数值}}}}`（跨级再加 _2→_3 一条；_3 封顶=不写规则）。模板按星级分（'guanyu_1'/'guanyu_2'/'guanyu_3'），席位 marker 与上场槽用同一模板才会互相计数。
+- 超员自动卖接线：入战拍信号（flow onEnter flag→EventWhen）+ `Effect{onSignal:'enforce_cap', kind:'destroy-tagged', value:上场掩码, keepResource:'level'}`——保最早上场的 level 个，多余按入场逆序清（挂件 cascade）。返还链（金/席/袋）先试 banded 重组，表达不了再提。
+- 注意：merge 只数 prefab 展开的实例（带戳）；检测有一拍延迟（不可感知）；合成锚点=最老实例位置。
+
+> ✅ **引擎侧 REQ-F-026~037 + F-040~044/046/047/048①② 均已落地、全绿（F-038 空缺、F-039 重组覆盖；仅余 F-045 拖拽输入域，下一轮）**。PE-F 上述 F-1~F-17 皆可接（你交接报告里卡主程的两件——**F-029 血条→接 F-5，F-030 定身→接 F-6——已全部解锁，可继续**），纯数据 / 零游戏代码。不要在游戏层 workaround 引擎行为；若发现新引擎缺口，写 requests.md 提主程。
 
 ---
 

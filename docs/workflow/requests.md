@@ -1323,12 +1323,16 @@
 
 ---
 
-### REQ-F-046 · [2026-06-10] · PE-F（§4.6 升星，Phase 2 收口件）· 框架级 · status: **greenlit（缺口认可；与 F-048① 同根"按序选 N"，并案设计下一轮落地）** · 优先级: 高（构筑深度的另一半；三星可达性已由有限袋保真） · 类型: 真缺口（"同名同星 ×3 → 原子替换为高一星"无计数与替换动词）
+### REQ-F-046 · [2026-06-10] · PE-F（§4.6 升星，Phase 2 收口件）· 框架级 · status: **done（PrefabOrigin 出身戳 + t3-merge-rule；接入派 inbox F-17）** · 优先级: 高（构筑深度的另一半；三星可达性已由有限袋保真） · 类型: 真缺口（"同名同星 ×3 → 原子替换为高一星"无计数与替换动词）
 
 > **证伪重组**：① group-count 按 Tag 计数——8 将×3 星超出可用位空间，且"同名"是模板维度非 Tag；② 合成=确定性选 3 销毁+生成 1 高星：destroy-tagged 是全量掩码语义，无"恰好 N 个按 id 序"选择；③ 星级=槽位 overrides 数值——运行时改 Caster.overrides 无动词。
 > **建议**：窄合成原子（形如 `MergeRule{template, need:3, intoOverrides}`：引擎按实例 id 序数同模板存量(席+场)、达 3 原子替换、连锁直至封顶）——"N 换 1"在卡牌/合成品类通用。
 >
 > **Lead 裁决（2026-06-10）**：**缺口认可（三条证伪全对：Tag 位空间/掩码全量语义/运行时 overrides 无动词）。与 F-048①「超员自动卖的按序选 N」同根——并案成一个"确定性按 id 序选 N + 原子动作"的窄原子统一设计，下一轮落地**（避免两个相似但不同构的选择器进引擎，违 manifesto 复用纪律）。
+> **落地（同日第二轮）**：同根抽象定为 **`PrefabOrigin{templateId, seq, localId}` 出身戳**（prefab 展开时盖在每个实体上，Unity prefab link 同款语义；POD 进 snapshot）——「同模板计数」与「入场顺序」两把钥匙一次到手，免解析实例 id 字符串。其上落两件：
+> - **`t3-merge-rule`**：`MergeRule{template, need, into, intoOverrides?}`——按 distinct seq 数存活实例，≥need 取**最老** need 个（seq 升序，确定），全部实体发 DestroyRequest（挂件 cascade）、在最老实例锚点（localId 字典序首个带 Transform 者）发 SpawnRequest{into}，prefab **同拍**展开（writer→consumer 定序）；while 连锁同级、跨级次拍接力。范围注：只数带戳实例（装配期烘死实体不参与；商店经济模式全员经购买展开天然全覆盖）；检测一拍延迟（merge 在 prefab 前跑），不可感知。
+> - F-048① 见该条（keepResource 用同一把 seq 钥匙）。
+> 2 测（凑3换1·锚点·第4个幸存·封顶 / 保额清场）。tsc + vitest 1077 + build 全绿。
 
 ---
 
@@ -1341,11 +1345,12 @@
 
 ---
 
-### REQ-F-048 · [2026-06-10] · PE-F（§4.6 收尾两件）· 框架级 · status: **②done（CardPile.returnOnSignal+returnCodeResource）；①并入 F-046 同根原子下一轮** · 优先级: 中（体验完整性件） · 类型: 真缺口 ×2（运行时实例的"挑 N 个"选择；deck 外部写回）
+### REQ-F-048 · [2026-06-10] · PE-F（§4.6 收尾两件）· 框架级 · status: **done×2（②returnOnSignal；①destroy-tagged+keepResource 保额清场）** · 优先级: 中（体验完整性件） · 类型: 真缺口 ×2（运行时实例的"挑 N 个"选择；deck 外部写回）
 
 > ① **超员自动卖**（入战拍 场上>level 且席满→按入场逆序卖多余）：运行时实例排序选择无动词（与 REQ-F-046 的"选 N"同根，可共用同一原子）。② **卖出袋归还**（§4.6 有限袋语义保真）：CardPile deck 无外部写动词——建议 `CardPile.returnOnSignal?: string`（信号携 bought_code 同款码资源回插袋底，与 refreshOnSignal 同族触发面）。
 >
 > **Lead 裁决（2026-06-10）**：**② 接受落地**：`returnOnSignal + returnCodeResource` 两字段（信号在场→读码资源>0 插回 deck **底部**+清零防重复；码由卖出链每将 banded Effect set 写入，纯数据）。"信号携码"在引擎里实为"信号+码资源"两件套——Signal 无载荷是既定设计（载荷走 Resource 容器），照此落。**① 并入 F-046**（同根"按序选 N"，一个原子两处用，下一轮）。1 测（归还袋底+清零 / 码 0 不动）。
+> **①落地（同日第二轮）**：`Effect.keepResource?: string`——destroy-tagged 设了则按 **PrefabOrigin.seq 升序**（无戳者排最后、同序按 id tie-break）保留前 N 个（N=该全局 Resource.current，如 'level'），只清多余=**入场逆序**。超员自动卖=入战拍信号 + 一条 Effect{destroy-tagged, value:上场掩码, keepResource:'level'}，纯数据。注：自动卖的返还（金/席/袋）若 banded 链表达不了再单提。1 测（5 实例保 3 清 2，按 seq 序）。
 
 ---
 

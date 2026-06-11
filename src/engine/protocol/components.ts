@@ -154,10 +154,32 @@ export interface PrefabTemplate {
   // localId → { 组件类型 → 组件数据（不含 type 字段，与 manifest 约定一致） }
   entities: Record<string, Record<string, Record<string, unknown>>>;
 }
+// ── PrefabOrigin（REQ-F-046/048①）── 实例出身戳：prefab 展开时盖在每个实体上（Unity prefab link 同款语义）。
+// 同模板计数（升星）靠 templateId、入场顺序（超员逆序卖）靠 seq——运行时实例的两把数据钥匙，免解析 id 字符串。
+export interface PrefabOrigin extends Component {
+  readonly type: 'PrefabOrigin';
+  templateId: string; // 出自哪个模板
+  seq: number; // 第几次展开（PrefabLibrary.seq，全局单调=入场顺序）
+  localId: string; // 模板内 localId
+}
+
 export interface PrefabLibrary extends Component {
   readonly type: 'PrefabLibrary';
   templates: Record<string, PrefabTemplate>; // 模板库（数据）
   seq: number; // 实例计数器 → 确定性唯一 id（进 snapshot 可重放）
+}
+
+// ── MergeRule（REQ-F-046 升星合成）── 「N 换 1」声明式合成规则（卡牌/合成品类通用）。
+// merge-rule 系统每拍：数 PrefabOrigin.templateId===template 的**存活实例数**（按 distinct seq）；
+// ≥need → 取 seq 最小的 need 个（最老先合，确定性），其全部实体发 DestroyRequest（挂件随 cascade），
+// 并在最老实例的锚点 Transform 处发 SpawnRequest{into, intoOverrides}；while 连锁直至 <need。
+// 跨级连锁（into 模板自己的 MergeRule）次拍接力。
+export interface MergeRule extends Component {
+  readonly type: 'MergeRule';
+  template: string; // 监视的模板 id（如 'guanyu_1star'）
+  need: number; // 凑几换一（金铲铲=3）
+  into: string; // 替换成的模板 id（如 'guanyu_2star'）
+  intoOverrides?: SpawnOverrides; // 新实例的参数补丁（@local:/槽位语义同 F-032/033 管道）
 }
 
 // ── Caster ── 信号→生成桥（D-002）：把"按键/点地/条件成立"的 Signal 变成一条算好坐标的 SpawnRequest，
@@ -621,6 +643,9 @@ export interface Effect extends Component {
   // 哨兵 '@signal-source'（REQ-F-041）：作用于触发本 onSignal 的 Signal.source 实体（可多个，同拍点两个席位
   // 各自生效）——「点谁卖谁/点谁选谁」的指针标配寻址；运行时实例 id 装配期不可知，信号源是唯一数据可达句柄。
   targetEntity?: EntityId;
+  // destroy-tagged 的保额（REQ-F-048①）：设了则不全清——按 PrefabOrigin.seq 升序（无戳者排最后）保留
+  // 前 N 个（N=该全局 Resource.current），只清多余=**入场逆序**（超员自动卖/波次限额）。缺省=全清（原语义）。
+  keepResource?: string;
   value: number | string | boolean; // modify-resource=数值增量；set-flag/set-sensor/set-visible=布尔；set-state=目标状态名
   // modify-resource 的运算（REQ-012，让「×倍率」成为数据）：'add'=current+value / 'mul'=current*value / 'set'=value。
   // 缺省 'add'（老数据零改动）；结算后照常钳进 [min,max]。Balatro 小丑的 ×mult、伤害倍率、属性乘区皆用此。
