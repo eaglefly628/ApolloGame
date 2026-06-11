@@ -20,6 +20,9 @@ export class CanvasRenderer implements RendererBackend {
   private canvas: HTMLCanvasElement | null = null;
   private ctx: CanvasRenderingContext2D | null = null;
   private readonly assets?: AssetManager;
+  private dpr = 1; // 高分屏适配（用户实测「字好糊」）：缓冲=逻辑尺寸×devicePixelRatio，CSS 钉逻辑尺寸
+  private logicalW = 640;
+  private logicalH = 400;
   // 文本布局缓存（渲染器侧，不进 sim）：measureText/wrapLines 极贵，只在 content/font/maxWidth
   // 变化时重算，否则复用上次的行数组，避免每帧对每个文本实体重跑布局（Gemini 代码级 #3）。
   private readonly textCache = new Map<string, { sig: string; lines: string[] }>();
@@ -30,8 +33,15 @@ export class CanvasRenderer implements RendererBackend {
 
   init(container: HTMLElement): void {
     const canvas = document.createElement('canvas');
-    canvas.width = this.opts.width ?? 640;
-    canvas.height = this.opts.height ?? 400;
+    this.logicalW = this.opts.width ?? 640;
+    this.logicalH = this.opts.height ?? 400;
+    // DPR 适配：内部缓冲按物理像素分配、绘制端用 setTransform 缩回逻辑坐标——Retina 上文字/几何
+    // 以原生分辨率光栅化（修「字好糊」）。headless/jsdom dpr=1 → 行为与旧版逐位一致。
+    this.dpr = (typeof window !== 'undefined' && window.devicePixelRatio) || 1;
+    canvas.width = Math.round(this.logicalW * this.dpr);
+    canvas.height = Math.round(this.logicalH * this.dpr);
+    canvas.style.width = `${this.logicalW}px`;
+    canvas.style.height = `${this.logicalH}px`;
     container.appendChild(canvas);
     this.canvas = canvas;
     this.ctx = canvas.getContext('2d');
@@ -42,15 +52,17 @@ export class CanvasRenderer implements RendererBackend {
     const canvas = this.canvas;
     if (!ctx || !canvas) return;
 
+    ctx.setTransform(this.dpr, 0, 0, this.dpr, 0, 0); // 帧首回到「逻辑坐标系×DPR」基变换
+    ctx.imageSmoothingEnabled = false; // 像素图最近邻放大（DCSS 32×32 像素画风，平滑=糊）
     ctx.fillStyle = this.opts.background ?? '#16213e';
-    ctx.fillRect(0, 0, canvas.width, canvas.height);
+    ctx.fillRect(0, 0, this.logicalW, this.logicalH);
 
     // 世界→屏幕投影（卷轴）：有相机则把世界向相机反方向平移并缩放，使相机中心落在视口中心；
     // 无相机则世界坐标 1:1（与原行为一致）。整段 renderable 绘制都在此变换下。
     const cam = getCameraView(world);
     ctx.save();
     if (cam) {
-      ctx.translate(canvas.width / 2, canvas.height / 2);
+      ctx.translate(this.logicalW / 2, this.logicalH / 2);
       ctx.scale(cam.zoom, cam.zoom);
       ctx.translate(-cam.centerX, -cam.centerY);
     }

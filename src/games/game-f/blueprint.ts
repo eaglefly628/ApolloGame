@@ -106,6 +106,11 @@ const sprite = (textureKey: string, zOrder: number): Record<string, unknown> => 
 // Shape 抬层 hack：故意用永不注册的贴图 key —— spriteReady 恒 false → 退化画 Shape，但 zOrder 取自 Sprite。
 // （名牌的 Text 抬层是同族 hack；真解=Shape 自带 zOrder，REQ 候选。）headless/浏览器行为一致（都不就绪）。
 const zlift = (zOrder: number): Record<string, unknown> => ({ textureKey: '__zlift__', anchorX: 0.5, anchorY: 0.5, zOrder });
+// 棋盘内组件底盘（kit button/panel 的 canvas 形）：描边层(外扩)+底盘层 双 Shape——修「按钮是裸文字」。
+const chrome = (id: string, x: number, y: number, w: number, h: number, fill: number, edge: number, z = 28.5, tag = 0): Record<string, EntityBlueprint> => ({
+  [`${id}_edge`]: { Transform: xf(x, y), Shape: { kind: 'box', width: w + 4, height: h + 4 }, Color: { tint: edge, alpha: 1 }, ...(tag ? { Tag: { flags: tag } } : {}), Sprite: zlift(z) } as unknown as EntityBlueprint,
+  [`${id}_bg`]: { Transform: xf(x, y), Shape: { kind: 'box', width: w, height: h }, Color: { tint: fill, alpha: 1 }, ...(tag ? { Tag: { flags: tag } } : {}), Sprite: zlift(z + 0.1) } as unknown as EntityBlueprint,
+});
 
 // 普攻打击区：目标处小 sensor 伤害区，2 tick 自毁 + 表现两件（用户打击感批）：
 // redflash=被击红闪（红 Shape 盖在受击位上方 alpha 速褪）；fx=斩光余韵（特效图 alpha 慢褪）。
@@ -812,12 +817,18 @@ export function buildGameFBlueprint(pacing: GameFPacing = {}): WorldBlueprint {
     // —— ready 开战（§3.3 操作表，策划批注：输入→信号→set-flag 纯数据）：点按钮 → clickable 产 'ready_btn'
     // 信号 → Effect 置 ready → prep 的 ready 转移提前开战；不点则 40 拍倒计时兜底。按钮无 Tag 不参战不被清场。
     f_ready: { Flag: { id: 'ready', active: false } } as unknown as EntityBlueprint,
+    // 按钮底盘（kit 规格：主=accent 实底白字 / 次=btn-bg+btn-edge；修「右下角裸文字」）
+    ...chrome('btn_ready', 300, 180, 68, 26, 0xd8607b, 0xb84a62),
+    ...chrome('btn_reroll', 300, 150, 60, 22, 0xfdf3ea, 0xecd3b2),
+    ...chrome('btn_lock', 300, 120, 46, 22, 0xfdf3ea, 0xecd3b2),
+    ...chrome('btn_unlock', 300, 92, 46, 22, 0xfdf3ea, 0xecd3b2),
+    ...chrome('btn_xp', 300, 64, 46, 22, 0xfdf3ea, 0xecd3b2),
     btn_ready: {
       Transform: xf(300, 180), // 右下按钮列（视口 ±355×200；商店三大框居中后按钮整列右移）
       Shape: { kind: 'box', width: 64, height: 24 },
       Clickable: { action: 'ready_btn' },
-      Text: { content: '开战', fontSize: 13, fontFamily: FONT_BODY, anchor: 'center', lineSpacing: 0 },
-      Color: { tint: 0xd8607b, alpha: 1 },
+      Text: { content: '开战', fontSize: 13, fontFamily: FONT_DISPLAY, anchor: 'center', lineSpacing: 0 },
+      Color: { tint: 0xffffff, alpha: 1 },
       Sprite: { textureKey: F_FX_STRIKE, anchorX: 0.5, anchorY: 0.5, zOrder: 30 }, // 只为抬 zOrder（文本模式不绘）
     } as unknown as EntityBlueprint,
     eff_ready: { Effect: { onSignal: 'ready_btn', kind: 'set-flag', targetId: 'ready', value: true } } as unknown as EntityBlueprint,
@@ -882,7 +893,7 @@ export function buildGameFBlueprint(pacing: GameFPacing = {}): WorldBlueprint {
       Clickable: { action: 'buyxp_btn' },
       CraftRecipe: { onSignal: 'buyxp_btn', costs: [{ id: 'gold', amount: 4 }], gains: [{ id: 'xp', amount: 4 }] },
       Text: { content: '经验$4', fontSize: 11, fontFamily: FONT_BODY, anchor: 'center', lineSpacing: 0 },
-      Color: { tint: 0xc98fc4, alpha: 1 },
+      Color: { tint: 0x6a4a4f, alpha: 1 },
       Sprite: { textureKey: F_FX_STRIKE, anchorX: 0.5, anchorY: 0.5, zOrder: 30 },
     } as unknown as EntityBlueprint,
     ...band('lvl_5', resCmp('xp', 'gte', 20), 'level', 1),
@@ -897,7 +908,7 @@ export function buildGameFBlueprint(pacing: GameFPacing = {}): WorldBlueprint {
       Clickable: { action: 'reroll_btn' },
       CraftRecipe: { onSignal: 'reroll_btn', costs: [{ id: 'gold', amount: 2 }], grantsFlag: 'reroll_paid' },
       Text: { content: '刷新$2', fontSize: 11, fontFamily: FONT_BODY, anchor: 'center', lineSpacing: 0 },
-      Color: { tint: 0x8aa0e6, alpha: 1 },
+      Color: { tint: 0x6a4a4f, alpha: 1 },
       Sprite: { textureKey: F_FX_STRIKE, anchorX: 0.5, anchorY: 0.5, zOrder: 30 },
     } as unknown as EntityBlueprint,
     f_reroll_paid: { Flag: { id: 'reroll_paid', active: false } } as unknown as EntityBlueprint,
@@ -917,7 +928,7 @@ export function buildGameFBlueprint(pacing: GameFPacing = {}): WorldBlueprint {
       Shape: { kind: 'box', width: 40, height: 20 },
       Clickable: { action: 'unlock_btn' },
       Text: { content: '解锁', fontSize: 11, fontFamily: FONT_BODY, anchor: 'center', lineSpacing: 0 },
-      Color: { tint: 0xa98b8f, alpha: 1 },
+      Color: { tint: 0x6a4a4f, alpha: 1 },
       Sprite: { textureKey: F_FX_STRIKE, anchorX: 0.5, anchorY: 0.5, zOrder: 30 },
     } as unknown as EntityBlueprint,
     eff_lock: { Effect: { onSignal: 'lock_btn', kind: 'set-flag', targetId: 'shop_locked', value: true } } as unknown as EntityBlueprint,
@@ -991,6 +1002,7 @@ export function buildGameFBlueprint(pacing: GameFPacing = {}): WorldBlueprint {
     // —— 垃圾桶（REQ-F-058，用户「不想要的英雄扔垃圾桶」）：拖 marker 进桶=卖出（DropZone 代点其
     // sell 动作，任何相位可卖）；指针点选卖出停用（click_sell_off 恒假——「点谁谁消失」陷阱已除）。——
     f_click_sell_off: { Flag: { id: 'click_sell_off', active: false } } as unknown as EntityBlueprint, // 恒假：点选卖出永闭
+    ...chrome('trash_bin', 245, 118, 46, 46, 0xfbeee4, 0xd65668, 26.5),
     trash_bin: {
       Transform: xf(245, 118),
       Shape: { kind: 'box', width: 44, height: 44 },
@@ -1087,6 +1099,10 @@ export function buildGameFBlueprint(pacing: GameFPacing = {}): WorldBlueprint {
     // 整组 destroy-tagged 收走（天然一次性，无需 armed 旗）。效果=经济型（全现有词汇，无 buff 施加依赖）。
     // 开局强化三选一（一次性，仅回合1）：加标题说明 + 开战拍自动收走（用户报「永远在中央、不知何意」——
     // 真打的时候就去掉）。Tag RUNE → 点选生效后 destroy-tagged 整组收（含标题），没点则 ph_combat 兜底收走。
+    ...chrome('rune_title', 0, -128, 344, 22, 0xfffdfa, 0xe3c896, 32.5, RUNE), // 底盘随符文整组收走
+    ...chrome('rune_a', -110, -100, 100, 44, 0xfffdfa, 0xe3c896, 32.5, RUNE), // 底盘随符文整组收走
+    ...chrome('rune_b', 0, -100, 100, 44, 0xfffdfa, 0xe3c896, 32.5, RUNE), // 底盘随符文整组收走
+    ...chrome('rune_c', 110, -100, 100, 44, 0xfffdfa, 0xe3c896, 32.5, RUNE), // 底盘随符文整组收走
     rune_title: { Transform: xf(0, -128), Shape: { kind: 'box', width: 340, height: 18 }, Tag: { flags: RUNE }, Text: { content: '◆ 开局强化 · 三选一（点击生效，开战后消失）', fontSize: 13, fontFamily: FONT_DISPLAY, anchor: 'center', lineSpacing: 0 }, Color: { tint: 0xcf9a3f, alpha: 1 }, Sprite: { textureKey: F_FX_STRIKE, anchorX: 0.5, anchorY: 0.5, zOrder: 33 } } as unknown as EntityBlueprint,
     rune_a: { Transform: xf(-110, -100), Shape: { kind: 'box', width: 96, height: 40 }, Clickable: { action: 'rune_a' }, Tag: { flags: RUNE }, Text: { content: '屯粮：+10 金', fontSize: 12, fontFamily: FONT_BODY, anchor: 'center', lineSpacing: 0 }, Color: { tint: 0xcf9a3f, alpha: 1 }, Sprite: { textureKey: F_FX_STRIKE, anchorX: 0.5, anchorY: 0.5, zOrder: 33 } } as unknown as EntityBlueprint,
     rune_b: { Transform: xf(0, -100), Shape: { kind: 'box', width: 96, height: 40 }, Clickable: { action: 'rune_b' }, Tag: { flags: RUNE }, Text: { content: '砺兵：+8 经验', fontSize: 12, fontFamily: FONT_BODY, anchor: 'center', lineSpacing: 0 }, Color: { tint: 0xc98fc4, alpha: 1 }, Sprite: { textureKey: F_FX_STRIKE, anchorX: 0.5, anchorY: 0.5, zOrder: 33 } } as unknown as EntityBlueprint,
