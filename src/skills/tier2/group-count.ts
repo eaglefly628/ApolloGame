@@ -58,8 +58,10 @@ export const groupCountCapability = defineCapability({
       id: 'group-count',
       // 与 resource-apply 同为 Update 段 Resource 读改写 → 按库内惯例显式 runsBefore 打破 RMW 伪环
       // （同 poker-eval/card-score-pass/dialogue/match3）。写 Resource → 拓扑自动排在 event-when（读侧）之前。
+      // REQ-F-052：onBoard 过滤读 HexPos **存在性**——HexPos 由 drag-place/grid-move 在 Update 写，
+      // 此处申报读侧让调度器知情（同拍读到拖拽后的最新放置状态）。
       runsBefore: ['resource-apply'],
-      reads: ['GroupCount', 'Tag', 'Resource'],
+      reads: ['GroupCount', 'Tag', 'Resource', 'HexPos'],
       writes: ['Resource'],
       consumes: [],
       execute(world) {
@@ -68,11 +70,17 @@ export const groupCountCapability = defineCapability({
 
         // 一次扫描 Tag 实体，逐 counter 累加（多 counter 共享同一遍历；计数与序无关 → 确定性）。
         const counts = new Array<number>(counters.length).fill(0);
-        const masks = counters.map(([cid]) => world.getComponent<GroupCount>(cid, 'GroupCount')?.requiredTag ?? 0);
+        const specs = counters.map(([cid]) => {
+          const gc = world.getComponent<GroupCount>(cid, 'GroupCount');
+          return { mask: gc?.requiredTag ?? 0, onBoard: gc?.onBoard };
+        });
         for (const [eid] of world.query('Tag')) {
           const flags = world.getComponent<Tag>(eid, 'Tag')!.flags;
           for (let i = 0; i < counters.length; i++) {
-            if ((flags & masks[i]) === masks[i]) counts[i]++;
+            if ((flags & specs[i].mask) !== specs[i].mask) continue;
+            // 上板过滤（REQ-F-052）：true=须在板（带 HexPos）、false=须在席（不带）、缺省=不过滤。
+            if (specs[i].onBoard !== undefined && world.hasComponent(eid, 'HexPos') !== specs[i].onBoard) continue;
+            counts[i]++;
           }
         }
 

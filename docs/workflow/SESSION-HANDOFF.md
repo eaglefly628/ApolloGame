@@ -5,6 +5,26 @@
 
 ---
 
+## 0. 给主程的出差汇报（2026-06-11 晚，PE-F 代行；你回来从这读起）
+
+> **授权背景**：用户今晚拍板「赋予 PE-F 主程职责（出差期间）、可改引擎、评审须换位不得自批自过」。本节=完整移交账：动了什么引擎、为什么、哪里换位砍过自己的方案。全部细节在 requests.md REQ-F-049~053 五个条目（每条含裁决理由与回驳记录），此处为索引。
+
+**引擎改动五件（全部最窄形态、带验收测，1093 全绿）：**
+
+| 件 | 文件 | 一句话 | 换位评审里砍掉的 |
+|---|---|---|---|
+| F-049 部署门+出身格 | components/caster/prefab/merge-rule | `Caster.requireHexPos` 门 + `SpawnRequest.originHex` POD + overrides 哨兵 `HexPos:'@origin-hex'`（prefab 解析、仅哨兵可补建缺件）+ merge 出身格继承 | 通用 requireComponent（动态读无法申报）；caster 端解析（许可泄漏）；overrides 通用 create-if-absent（半截组件投毒 snapshot） |
+| F-050 定序补丁 | drag-place | runsBefore 补 'motion-apply'（Transform RMW 对，七件套）+ 守护测升级含 motion-apply | 无（探针 spread-clone 先验后落，未盲改） |
+| F-051 占位收窄 | grid-move | occupied 只数单位（HexPos∧GridMover），posOf 保全量，目标格显式入 blocked | **自己的 v1 被既有测试打回**：一刀切毁了"静止目标"契约——拆成阻挡/查找两用途后重落 |
+| F-052 席板分账 | group-count | `GroupCount.onBoard?: boolean`（true/false/缺省） | 通用 has/lacksComponent（同 F-049 申报纪律） |
+| F-053 点拖互斥 | net/queued-input | pointerup 二选一：超阈值只发 drag（吞裸 up）、阈值内发 up；约定可拖可点实体用 Clickable{phase:'up'} | 单改 marker 监听 'up'（不够：拖拽收手 up 在落点照样误点）|
+
+**连带的 game-f 终态（PE-F 帽子，纯数据）**：席位 marker 即上场槽（拖上板=出兵点/拖回=收兵/3 连原地升星/星级=模板族）；开局 4 将=播种在板 marker；部署窗移入战拍（备战摆 marker 本体、开战出兵——拖拽即时反馈）+ resolution 关窗（防跨窗指针翻转误发双倍敌阵，实测踩过）+ combat after:30 最短驻留；F-17 受限版 12 槽位×星级带契约整段删除。
+
+**给你复核的钩子**：① F-053 的壳层 up/drag 互斥改了命令流形态（本地采集期判定，lockstep 安全）——若你对输入域有别的收口构想，这条最值得复看；② F-051 的「静止可占位单位=挂 GridMover」约定是否要进 wiki/skills 文档；③ deploy 移入战拍偏离了 flow-spec §3.3 原文（一图流已同步改、策划 PF 尚未复核——他回来请他过目）；④ 位 1<<19..24 已回收可复用。
+
+---
+
 ## 1. 架构一句话
 
 ```

@@ -95,15 +95,18 @@ describe('T2 drag-place（拖拽摆放，REQ-F-045）', () => {
     expect(run()).toBe(run());
   });
 
-  it('定序守护：与 grid-move/flow/zone/group/self-rule/resource-apply 同场不抛（输入先行六件套）', async () => {
+  it('定序守护：与 grid-move/motion-apply/flow/zone/group/self-rule/resource-apply 同场不抛（输入先行七件套，REQ-F-050 补 motion-apply）', async () => {
     const { gridMoveCapability } = await import('./grid-move.js');
     const { flowCapability } = await import('../tier3/flow.js');
     const { zoneOccupancyCapability } = await import('./zone-occupancy.js');
     const { groupCountCapability } = await import('./group-count.js');
     const { selfRuleCapability } = await import('./self-rule.js');
     const { resourceCapability } = await import('@atom-skills/resource/index.js');
+    // REQ-F-050 回归锁：motion-apply（主角自由移动）与 drag-place 互为 Transform RMW 对——
+    // 首个同场世界（game-f）曾成 22 系统 SCC；six 件套补成七件套后此图必须可排。
+    const { motionApplyCapability } = await import('../tier1/index.js');
     const w = mk();
-    for (const cap of [gridMoveCapability, flowCapability, zoneOccupancyCapability, groupCountCapability, selfRuleCapability, resourceCapability]) {
+    for (const cap of [gridMoveCapability, motionApplyCapability, flowCapability, zoneOccupancyCapability, groupCountCapability, selfRuleCapability, resourceCapability]) {
       for (const s of cap.systems) w.addSystem(s as never);
     }
     seat(w, 's1', 200, 200);

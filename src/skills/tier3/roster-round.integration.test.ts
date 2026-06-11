@@ -275,6 +275,87 @@ describe('REQ-F-046 · merge-rule N 换 1 升星', () => {
   });
 });
 
+// ── REQ-F-049：部署门（Caster.requireHexPos）+ 出身格继承（SpawnRequest.originHex + '@origin-hex' 哨兵）──
+describe('REQ-F-049 · 在板才出兵 + 实例落在持位者的格', () => {
+  const mkSlot = (w: World, id: string, opts: { hex?: { q: number; r: number }; overrides?: object } = {}): void => {
+    w.createEntity(id);
+    w.addComponent(id, { type: 'Transform', x: 50, y: 60, rotation: 0, scaleX: 1, scaleY: 1 } as never);
+    if (opts.hex) w.addComponent(id, { type: 'HexPos', ...opts.hex } as never);
+    w.addComponent(id, {
+      type: 'Caster', onSignal: 'deploy', template: 'hero', at: 'self', requireHexPos: true,
+      overrides: opts.overrides ?? { main: { HexPos: '@origin-hex', Tag: { flags: ALLY } } },
+    } as never);
+  };
+
+  it('部署门：锚点无 HexPos（在席）收信号静默；有 HexPos（在板）正常展开', () => {
+    const w = mk();
+    mkSlot(w, 'benched'); // 无 HexPos
+    signal(w, 'deploy');
+    w.tick();
+    unsignal(w, 'deploy');
+    expect(tagged(w, ALLY)).toHaveLength(0); // 在席不出兵
+    w.addComponent('benched', { type: 'HexPos', q: 2, r: 3 } as never); // 拖上板（drag-place 同款写法）
+    signal(w, 'deploy');
+    w.tick();
+    unsignal(w, 'deploy');
+    expect(tagged(w, ALLY)).toHaveLength(1); // 上板即出兵
+  });
+
+  it("'@origin-hex' 哨兵：实例 HexPos=持位者当拍格（模板有 HexPos 整体覆写；显式静态 overrides 不受影响）", () => {
+    const w = mk();
+    mkSlot(w, 'slot1', { hex: { q: 4, r: 5 } });
+    signal(w, 'deploy');
+    w.tick();
+    unsignal(w, 'deploy');
+    const id = 'hero#0:main';
+    expect(w.getComponent<HexPos>(id, 'HexPos')).toMatchObject({ q: 4, r: 5 }); // 哨兵代入持位者格
+    // 持位者挪格（拖拽调位语义）→ 下次展开跟手
+    const hp = w.getComponent<HexPos>('slot1', 'HexPos')!;
+    hp.q = 6; hp.r = 1;
+    signal(w, 'deploy');
+    w.tick();
+    unsignal(w, 'deploy');
+    expect(w.getComponent<HexPos>('hero#1:main', 'HexPos')).toMatchObject({ q: 6, r: 1 });
+  });
+
+  it('哨兵补建：模板**无** HexPos 的实体也可经哨兵上板（仅哨兵路径建缺件）；无 originHex 则整条跳过', () => {
+    const w = mk();
+    const lib = w.getComponent<PrefabLibrary>('lib', 'PrefabLibrary')!;
+    lib.templates.marker = { entities: { seat: { Transform: { x: 0, y: 0, rotation: 0, scaleX: 1, scaleY: 1 }, Tag: { flags: ALLY } } } }; // 模板不带 HexPos
+    // 路径 A：请求带 originHex → 补建
+    w.createEntity('reqA');
+    w.addComponent('reqA', { type: 'SpawnRequest', templateId: 'marker', x: 0, y: 0, originHex: { q: 3, r: 3 }, overrides: { seat: { HexPos: '@origin-hex' } } } as SpawnRequest);
+    // 路径 B：同模板无 originHex → 哨兵跳过，不建半截组件
+    w.createEntity('reqB');
+    w.addComponent('reqB', { type: 'SpawnRequest', templateId: 'marker', x: 10, y: 0, overrides: { seat: { HexPos: '@origin-hex' } } } as SpawnRequest);
+    w.tick();
+    expect(w.getComponent<HexPos>('marker#0:seat', 'HexPos')).toMatchObject({ q: 3, r: 3 });
+    expect(w.getComponent<HexPos>('marker#1:seat', 'HexPos')).toBeUndefined();
+  });
+
+  it('merge-rule 出身格继承：板上 3 连合成 → 产物留在最老实例的格（席上合成无格→产物留席）', async () => {
+    const w = mk();
+    const { mergeRuleCapability: mrc } = await import('./merge-rule.js');
+    for (const s of (mrc as unknown as Cap).systems) w.addSystem(s);
+    const lib = w.getComponent<PrefabLibrary>('lib', 'PrefabLibrary')!;
+    lib.templates.m1 = { entities: { seat: { Transform: { x: 0, y: 0, rotation: 0, scaleX: 1, scaleY: 1 }, Tag: { flags: ALLY } } } };
+    lib.templates.m2 = { entities: { seat: { Transform: { x: 0, y: 0, rotation: 0, scaleX: 1, scaleY: 1 }, Tag: { flags: ALLY } } } };
+    w.createEntity('mr');
+    w.addComponent('mr', { type: 'MergeRule', template: 'm1', need: 3, into: 'm2', intoOverrides: { seat: { HexPos: '@origin-hex' } } } as MergeRule);
+    for (let i = 0; i < 3; i++) {
+      w.createEntity(`r${i}`);
+      w.addComponent(`r${i}`, { type: 'SpawnRequest', templateId: 'm1', x: i * 10, y: 0 } as SpawnRequest);
+    }
+    w.tick(); // 展开 3 个 m1
+    w.addComponent('m1#0:seat', { type: 'HexPos', q: 5, r: 2 } as never); // 最老那只在板上（拖上板语义）
+    w.tick(); // merge：销 3 spawn 1（originHex=最老实例的格）
+    w.tick();
+    const m2 = w.getAllEntities().find((e) => w.getComponent<PrefabOrigin>(e, 'PrefabOrigin')?.templateId === 'm2')!;
+    expect(m2).toBeTruthy();
+    expect(w.getComponent<HexPos>(m2, 'HexPos')).toMatchObject({ q: 5, r: 2 }); // 产物继承板位
+  });
+});
+
 describe('REQ-F-048① · destroy-tagged keepResource 超员保额', () => {
   it('保最老 N 个（按 seq 升序），清多余=入场逆序', () => {
     const w = mk();

@@ -91,6 +91,11 @@
    - **星级卖价**：sell2/sell3_<将> 链 8/26 金（=3×3−1/3×9−1）；2/3 星卖出袋不归还（3 张已熔毁，按张语义不成立）——TUNE 注记。
    - **F-18 数据侧**：marker 全星级挂 Draggable{onlyFlag:'in_prep'}（惰性零开销）+ in_prep 门旗 flow 维护 + 就绪度测试。**系统注册被 SCC 挡**：drag-place↔motion-apply 互为 Transform RMW 对（六件套漏 'motion-apply'，game-f 是首个两者同场的世界）——探针二分定位 + 补丁假设克隆验证 60 拍绿 → **REQ-F-050（一行 runsBefore）**；「部署链随新位置展开」三路纯数据证伪（grid-move 双键查询罚站/overrides 静态/常驻 Caster 在席出兵）→ **REQ-F-049（Caster.requireHexPos + HexPos 继承）**。两单落地后解注一行+补 snap/cap 字段即全通。
    - game-f 测 24/24（升星/拖拽预备/超员相关 3 新测），全套 1087 + build 绿。HUD 第七行「空席」。
+21. ✅ **代行主程批（2026-06-11 晚，用户授权出差代行；引擎五件+统一架构终态）**：
+   - **引擎**（细节+换位评审记录全在 requests.md F-049~053）：部署门+出身格哨兵（049）/drag-place 定序一行（050）/占位收窄三分法（051——自己的 v1 被既有"静止目标"测试打回后重落，阻挡/查找两用途分治）/GroupCount.onBoard 席板分账（052）/壳层点拖互斥（053——实测抓获：按住 marker 起拖即被 down-click 卖掉，真实指针同病）。
+   - **game-f 终态**：marker=上场槽（Caster{requireHexPos}+'@origin-hex' 跟手+Draggable snap/cap+Clickable up）；开局=bootcast 播种 4 在板 marker（与买入同族）；部署窗移入战拍+resolution 关窗+combat after:30；条目 20 的受限版（12 槽位/星级资源/升降带/门脉冲）**整段删除**——星级=模板族本身。
+   - **新坑入档**：①部署窗跨 resolution=指针翻转误发双倍敌阵（窗语义=恰本场入战拍，结算即关）；②可拖+可点实体必须 Clickable{phase:'up'}（壳层 up/drag 互斥的配套约定）；③合成测试断言锚点前先想清「最老实例在哪」——板上的开局 marker seq 最小，合成会**原地升星**而不是在席上出现。
+   - game-f 24/24（开局播种/入战拍展开/升星全链含原地升星/拖拽全量含限额拒超）；全套 1093 + build 绿。
 
 ### 5.1 血条/蓝条接入（✅ 已接入 mainbranch 2026-06-10，本节存档备查）
 

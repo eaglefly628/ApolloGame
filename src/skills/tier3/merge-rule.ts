@@ -1,7 +1,7 @@
 import { defineCapability } from '@engine/core/define-capability.js';
 import { SystemPhase } from '@engine/core/types.js';
 import type { IWorld } from '@engine/core/types.js';
-import type { MergeRule, PrefabOrigin, Transform, DestroyRequest, SpawnRequest } from '@engine/protocol/components.js';
+import type { MergeRule, PrefabOrigin, Transform, HexPos, DestroyRequest, SpawnRequest } from '@engine/protocol/components.js';
 
 // ═══════════════════════════════════════════════════════════════
 //  merge-rule —— 「N 换 1」声明式合成（REQ-F-046 升星；卡牌/合成品类通用原子）。
@@ -50,7 +50,7 @@ export const mergeRuleCapability = defineCapability({
         },
       },
     },
-    reads: ['MergeRule', 'PrefabOrigin', 'Transform'],
+    reads: ['MergeRule', 'PrefabOrigin', 'Transform', 'HexPos'],
     writes: ['DestroyRequest', 'SpawnRequest'],
     consumes: [],
   },
@@ -61,7 +61,7 @@ export const mergeRuleCapability = defineCapability({
     {
       id: 'merge-rule',
       phase: SystemPhase.Update,
-      reads: ['MergeRule', 'PrefabOrigin', 'Transform'],
+      reads: ['MergeRule', 'PrefabOrigin', 'Transform', 'HexPos'],
       writes: ['DestroyRequest', 'SpawnRequest'],
       consumes: [],
       execute(world: IWorld) {
@@ -93,11 +93,18 @@ export const mergeRuleCapability = defineCapability({
             if (alive.length < rule.need) break;
             const chosen = alive.slice(0, rule.need); // 最老 need 个
             // 锚点：最老实例中 localId 字典序最小且带 Transform 的实体（确定）。
+            // 出身格（REQ-F-049）：最老实例首个带 HexPos 的实体之格随产物继承（板上合成→产物留板上，
+            // '@origin-hex' 哨兵代入；席上合成无 HexPos→产物留席，哨兵跳过）。
             const oldest = seqs.get(chosen[0])!.slice().sort();
             let ax = 0, ay = 0;
+            let originHex: { q: number; r: number } | undefined;
             for (const eid of oldest) {
               const t = world.getComponent<Transform>(eid, 'Transform');
               if (t) { ax = t.x; ay = t.y; break; }
+            }
+            for (const eid of oldest) {
+              const hp = world.getComponent<HexPos>(eid, 'HexPos');
+              if (hp) { originHex = { q: hp.q, r: hp.r }; break; }
             }
             // 销毁选中实例的全部实体（挂件经 cascade；hasComponent 防御不覆盖既有意图）。
             for (const seq of chosen) {
@@ -113,6 +120,7 @@ export const mergeRuleCapability = defineCapability({
             world.createEntity(carrier);
             world.addComponent(carrier, {
               type: 'SpawnRequest', templateId: rule.into, x: ax, y: ay,
+              ...(originHex ? { originHex } : {}),
               ...(rule.intoOverrides ? { overrides: rule.intoOverrides } : {}),
             } as SpawnRequest);
           }

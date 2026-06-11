@@ -84,9 +84,11 @@ export const dragPlaceCapability = defineCapability({
       id: 'drag-place',
       phase: SystemPhase.Update,
       // 输入先行（同 card-pile 纪律）：写 Transform 汇入 overlap→…→resource-apply 链、又读 Flag/Resource
-      // → runsBefore 删反向边（grid-move 同写 HexPos/Transform 的 RMW 对、flow/zone 的 Flag、
+      // → runsBefore 删反向边（grid-move/motion-apply 同写 Transform 的 RMW 对、flow/zone 的 Flag、
       // group-count/self-rule/resource-apply 的 Resource）。读上一拍相位/限额，备战级操作不可感知。
-      runsBefore: ['grid-move', 'flow', 'zone-occupancy', 'group-count', 'self-rule', 'resource-apply'],
+      // 'motion-apply'：REQ-F-050——与 grid-move 同类的 Transform RMW 对，首个两者同场的世界（game-f
+      // 主角自由移动+拖拽）即成 22 系统 SCC；输入先行语义不变（先落拖拽终点、同拍再积分速度）。
+      runsBefore: ['grid-move', 'motion-apply', 'flow', 'zone-occupancy', 'group-count', 'self-rule', 'resource-apply'],
       reads: ['Draggable', 'InputQueue', 'Transform', 'Shape', 'HexBoard', 'HexPos', 'Tag', 'Flag', 'Resource'],
       writes: ['Transform', 'HexPos'],
       consumes: [],

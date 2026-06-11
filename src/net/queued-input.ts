@@ -70,14 +70,19 @@ export class PointerInputSource extends QueuedInputSource {
     const rect = this.canvas.getBoundingClientRect();
     const p = canvasPointerToScreen(e.clientX, e.clientY, rect, this.canvas.width, this.canvas.height);
     const w = this.opts.worldFromScreen ? this.opts.worldFromScreen(p.x, p.y) : p; // 采集期逆投影 → 世界坐标
-    this.enqueue({ source: this.pid, x: w.x, y: w.y, phase });
-    // REQ-F-045：down→up 合成 drag 动作（超过阈值才算拖，阈值内仍是点击）。
-    if (phase === 'down') this.downAt = { x: w.x, y: w.y };
-    else if (phase === 'up' && this.downAt) {
+    // REQ-F-053 点拖互斥：'up' 与 drag 二选一——超阈值=拖（只发 drag，裸 up 吞掉），阈值内=真点击（发 up）。
+    // 否则拖拽起手的 down/收手的 up 会被 clickable 当点击消费（按住即卖、落点误点）。可拖又可点的实体
+    // （席位 marker 等）配 Clickable{phase:'up'}：down 永不触发、真点击靠 up、拖拽不产 up → 天然互斥。
+    // 判定全在本地采集期、入流前完成（与逆投影/drag 合成同纪律）→ 命令流确定、lockstep 安全。
+    if (phase === 'up' && this.downAt) {
       const d = synthesizeDrag(this.pid, this.downAt, { x: w.x, y: w.y }, this.opts.dragThreshold);
       if (d) this.enqueue(d);
+      else this.enqueue({ source: this.pid, x: w.x, y: w.y, phase });
       this.downAt = null;
+      return;
     }
+    this.enqueue({ source: this.pid, x: w.x, y: w.y, phase });
+    if (phase === 'down') this.downAt = { x: w.x, y: w.y }; // REQ-F-045：拖拽起点
   };
 
   constructor(

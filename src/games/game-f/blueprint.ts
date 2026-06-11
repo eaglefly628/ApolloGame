@@ -22,6 +22,7 @@ import {
   groupCountCapability,
   cameraFollowCapability,
   gridMoveCapability,
+  dragPlaceCapability,
   ZONE_FLAG,
 } from '@skills/tier2/index.js';
 import { prefabCapability, casterCapability, aggroCapability, flowCapability, mergeRuleCapability } from '@skills/tier3/index.js';
@@ -74,12 +75,11 @@ export const LOOT = 1 << 12; // 法球/掉落（野怪死亡掉，主角拾取�
 const SHOPSLOT_BITS = [1 << 13, 1 << 14, 1 << 15, 1 << 16, 1 << 17];
 const RUNE = 1 << 18; // 开局符文卡（批D；选一发效后 destroy-tagged 整组收走=天然一次性）
 const SHOPSLOT_ALL = SHOPSLOT_BITS.reduce((a, b) => a | b, 0);
-// 升星家族位（F-17/REQ-F-046）：席位 marker 的星级 + 每将识别位（group-count 含齐语义组合：STAR2|每将位
-// = 「该将的二星 marker」）。不含 TEAM 位 → 不被 aggro 锁/打击命中/zone 计存活/wipe 清场。
-const STAR2 = 1 << 19; // 二星席位 marker
-const STAR3 = 1 << 20; // 三星席位 marker
-const BH_BIT: Record<string, number> = { a_guanyu: 1 << 21, a_zhaoyun: 1 << 22, a_zhuge: 1 << 23, a_zhouyu: 1 << 24 };
-const BENCH_OCC = 1 << 25; // 备战席占用位：所有星级 marker 都带 → group-count 派生「席位空余」（合成 3→1 自动回 2 席）
+// 席位 marker 位（F-17/F-18 统一架构，REQ-F-049 后）：所有星级 marker 都带；不含 TEAM 位 → 不被
+// aggro 锁/打击命中/zone 计存活/wipe 清场。在席（无 HexPos）= 计备战席占用（gc onBoard:false）；
+// 在板（有 HexPos）= 计上场人口（Draggable cap 数 Tag&此位∧HexPos ≤ level）。
+// （旧 STAR2/STAR3/每将位 1<<19..24 随星级资源带契约删除回收——星级=模板家族本身，无需位面计数。）
+const BENCH_OCC = 1 << 25;
 
 // 战斗节奏（数据）：30 tick ≈ 0.5s/动作，看得清（此前 10/24 太快）。
 const MOVE_PERIOD = 48; // 每 48 tick 走一格 ≈ 0.8s（慢一点看清走位）
@@ -247,31 +247,31 @@ function heroTemplate(h: HeroSpec): PrefabTemplate {
   } as unknown as PrefabTemplate;
 }
 
-// ── 阵容槽位（持久数据，REQ-F-032）：无 TEAM 位 → wipe 清场不波及；跨回合常驻。──
-// 收到展开信号 → 在自身 Transform（= project(q,r) 投影坐标，消除展开后一帧跳变）处展开自己的棋子，
-// overrides 写真值（站位/阵营/数值）。买/卖/挪位/换星 = 增删改槽实体数据（MVP-1 商店接这里）。
-// hpMul：§4.5 敌阵强度口径；star（F-17）：星级数值同一 overrides 管道——血 ×1.8^(星-1)，
-// 普攻/大招换 ×1.5^(星-1) 的 strike/ult_s<星> 模板（SelfRule.do 字段级补丁，when/whenGlobal 保模板值）。
-function slotEntity(h: HeroSpec, onSignal: string, col: number, row: number, hpMul = 1, star = 1): EntityBlueprint {
-  const a = offsetToAxial(col, row); // 摆子数据=视觉 (col,row)，sim 真相=axial（REQ-F-037 odd-r 迁移）
-  const p = project(a.q, a.r);
+// ── 棋子 overrides 包（统一管道）：星级数值（血 ×1.8^(星-1)、strike/ult_s<星> 换弹=伤 ×1.5^(星-1)，
+// SelfRule.do 字段级补丁保 when/whenGlobal）+ 阵营 Tag + HexPos——静态 {q,r}（敌槽烘死）或
+// '@origin-hex' 哨兵（席位 marker 跟手，REQ-F-049：prefab 以持位者当拍格代入）。hpMul=§4.5 敌阵强度口径。
+function heroOverrides(h: HeroSpec, star: number, hexPos: Record<string, unknown> | string, hpMul = 1): Record<string, unknown> {
   const hp = Math.round(finalHp(h) * hpMul * STAR_HP_MUL[star]);
   return {
-    Transform: xf(p.x, p.y),
-    Caster: {
-      onSignal,
-      template: `hero_${h.id}`,
-      at: 'self',
-      overrides: {
-        main: {
-          HexPos: { q: a.q, r: a.r },
-          Tag: { flags: h.team | h.cls | h.faction },
-          Resource: { current: hp, max: hp },
-          ...(star >= 2 ? { SelfRule: { do: [{ kind: 'spawn', template: `strike_${h.id}_s${star}`, at: 'target' }] } } : {}),
-        },
-        ...(star >= 2 ? { mana: { SelfRule: { do: [{ kind: 'spawn', template: `ult_${h.id}_s${star}`, at: 'target' }, { kind: 'modify-resource', op: 'set', value: 0 }] } } } : {}),
-      },
+    main: {
+      HexPos: hexPos,
+      Tag: { flags: h.team | h.cls | h.faction },
+      Resource: { current: hp, max: hp },
+      ...(star >= 2 ? { SelfRule: { do: [{ kind: 'spawn', template: `strike_${h.id}_s${star}`, at: 'target' }] } } : {}),
     },
+    ...(star >= 2 ? { mana: { SelfRule: { do: [{ kind: 'spawn', template: `ult_${h.id}_s${star}`, at: 'target' }, { kind: 'modify-resource', op: 'set', value: 0 }] } } } : {}),
+  };
+}
+
+// ── 敌方阵容槽位（持久数据，REQ-F-032）：无 TEAM 位 → wipe 清场不波及；跨回合常驻。──
+// 收到展开信号 → 在自身 Transform（= project(q,r) 投影坐标，消除展开后一帧跳变）处展开自己的棋子，
+// overrides 写真值（站位/阵营/数值）。我方不再用固定槽——席位 marker 即部署源（REQ-F-049 统一），见模板。
+function slotEntity(h: HeroSpec, onSignal: string, col: number, row: number, hpMul = 1): EntityBlueprint {
+  const a = offsetToAxial(col, row); // 摆子数据=视觉 (col,row)，sim 真相=axial（REQ-F-037 odd-r 迁移）
+  const p = project(a.q, a.r);
+  return {
+    Transform: xf(p.x, p.y),
+    Caster: { onSignal, template: `hero_${h.id}`, at: 'self', overrides: heroOverrides(h, 1, { q: a.q, r: a.r }, hpMul) },
   } as unknown as EntityBlueprint;
 }
 
@@ -407,11 +407,14 @@ export const GAME_F_TEMPLATES: Record<string, PrefabTemplate> = Object.fromEntri
     [`ult_${h.id}`, ultTemplate(h.enemy, h.ultDmg, h.ultSize, h.ultFx, h.ultDot, h.ultFreeze, h.team === TEAM_A ? 'dmg_scale_a' : 'dmg_scale_b')],
     [`hero_${h.id}`, heroTemplate(h)],
   ]).concat(
-    // 备战席位模板（v2 §4.6 买入→入席 + F-17 升星家族）：marker 实体持有英雄（可见、不参战、Tag 只带
-    // marker 位不被清场）。每将三档星级模板（bench/bench2/bench3）= merge-rule 的「同模板才互相计数」家族；
-    // 三连合成由 MergeRule 声明（见 entities），二/三星附 ★ 角标子体（cascade 随席同灭）。
-    // seat 可点卖出（F-12/F-17）：Clickable 产 sell[星]_<将> 信号，source=被点席位 → '@signal-source' 点谁卖谁。
-    // seat 可拖整理（F-18）：Draggable 备战相位门 in_prep；snap/上板=REQ-F-049（部署门）落地后再开。
+    // 备战席位模板（v2 §4.6 + F-17 升星家族 + F-18/REQ-F-049 统一架构）：**席位 marker 即上场槽**。
+    // 每将三档星级模板（bench/bench2/bench3）= merge-rule「同模板才互相计数」家族（策划 F-17 原批注语义），
+    // 星级数值烘在各档模板的 Caster.overrides 里——无星级资源/计数带，模板家族本身就是星级。
+    // · 部署源：Caster{onSignal:'deploy', requireHexPos}——拖上板（有 HexPos）= 入战拍在自己格出兵
+    //   （main.HexPos='@origin-hex' 哨兵跟手）；在席/拖回（无 HexPos）= 静默。
+    // · 可拖（F-18/REQ-F-045 全量）：snap 六角格 + in_prep 相位门 + 上板限额（Tag&BENCH_OCC∧HexPos ≤ level）。
+    // · 可点卖出（F-12/F-17）：sell[星]_<将> 信号 '@signal-source' 点谁卖谁（板上/席上均可卖）。
+    // · 不参战：无 TEAM 位（zone/aggro/hitbox/wipe 全不沾）；REQ-F-051 后在板也不挡棋子寻路。
     ROSTER.filter((x) => x.team === TEAM_A).flatMap((h): [string, PrefabTemplate][] =>
       [1, 2, 3].map((s): [string, PrefabTemplate] => [
         s === 1 ? `bench_${h.id}` : `bench${s}_${h.id}`,
@@ -421,9 +424,10 @@ export const GAME_F_TEMPLATES: Record<string, PrefabTemplate> = Object.fromEntri
               Transform: xf(0, 0),
               Sprite: sprite(h.key, 2),
               Shape: { kind: 'box', width: 30, height: 30 },
-              Clickable: { action: s === 1 ? `sell_${h.id}` : `sell${s}_${h.id}` },
-              Tag: { flags: BENCH_OCC | (s === 2 ? STAR2 | BH_BIT[h.id] : s === 3 ? STAR3 | BH_BIT[h.id] : 0) },
-              Draggable: { onlyFlag: 'in_prep' },
+              Clickable: { action: s === 1 ? `sell_${h.id}` : `sell${s}_${h.id}`, phase: 'up' }, // 'up'=点拖互斥（REQ-F-053）：拖拽不产 up，按住起拖不会误卖
+              Tag: { flags: BENCH_OCC },
+              Draggable: { snap: 'hex', onlyFlag: 'in_prep', capTagMask: BENCH_OCC, capResource: 'level' },
+              Caster: { onSignal: 'deploy', template: `hero_${h.id}`, at: 'self', requireHexPos: true, overrides: heroOverrides(h, s, '@origin-hex') },
             },
             ...(s >= 2
               ? {
@@ -485,24 +489,27 @@ const makeRoundFlow = (PREP_TICKS: number, RESOLUTION_TICKS: number) => ({
         { kind: 'set-flag', targetId: 'wipe_armed', value: false }, // 复位，下次结算再臂（edge 纪律）
         { kind: 'set-flag', targetId: 'dmg_armed', value: false },
         { kind: 'set-flag', targetId: 'cap_armed', value: false }, // 超员检查窗复位（F-17，入战拍再臂）
-        { kind: 'set-flag', targetId: 'deploy_armed', value: true }, // → 部署窗（敌阵/野怪/我方按星分流 bands；同拍门脉冲撤臂）
+        { kind: 'set-flag', targetId: 'deploy_armed', value: false }, // 复位；部署窗移到入战拍（REQ-F-049 拖拽即时反馈：备战期摆的是 marker 本体，棋子开战才成型）
         { kind: 'set-flag', targetId: 'income_armed', value: true }, // → 基础收入/利息/连胜金 bands（§4.1）
         { kind: 'set-flag', targetId: 'shop_refresh_armed', value: true }, // → 自动刷新（锁店时门挡，v2 §4.6）
         { kind: 'modify-resource', targetId: 'xp', op: 'add', value: 2 }, // 每回合自动 +2 XP（§4.3）
         { kind: 'modify-resource', targetId: 'dmg_scale_a', op: 'set', value: 1 }, // 羁绊系数回 1（开战拍重新锁存）
       ],
       transitions: [
-        // ready 优先（玩家点「开战」提前开打，§3.3 操作表）；after 40 = PvE 倒计时兜底（金铲铲本体也是倒计时自动开战）
-        { when: { kind: 'flag', id: 'ready', equals: true }, to: 'combat', do: [{ kind: 'set-flag', targetId: 'in_combat', value: true }, { kind: 'set-flag', targetId: 'in_prep', value: false }, { kind: 'set-flag', targetId: 'cap_armed', value: true }, { kind: 'set-flag', targetId: 'deploy_armed', value: false }, { kind: 'set-flag', targetId: 'income_armed', value: false }] },
-        { when: { kind: 'always' }, after: PREP_TICKS, to: 'combat', do: [{ kind: 'set-flag', targetId: 'in_combat', value: true }, { kind: 'set-flag', targetId: 'in_prep', value: false }, { kind: 'set-flag', targetId: 'cap_armed', value: true }, { kind: 'set-flag', targetId: 'deploy_armed', value: false }, { kind: 'set-flag', targetId: 'income_armed', value: false }] },
+        // ready 优先（玩家点「开战」提前开打，§3.3 操作表）；after 40 = PvE 倒计时兜底（金铲铲本体也是倒计时自动开战）。
+        // 入战拍臂 deploy（双方棋子此拍从 marker/敌槽成型——备战期板上站的是可拖 marker，拖完开打才出兵）+ 臂超员检查。
+        { when: { kind: 'flag', id: 'ready', equals: true }, to: 'combat', do: [{ kind: 'set-flag', targetId: 'in_combat', value: true }, { kind: 'set-flag', targetId: 'in_prep', value: false }, { kind: 'set-flag', targetId: 'cap_armed', value: true }, { kind: 'set-flag', targetId: 'deploy_armed', value: true }, { kind: 'set-flag', targetId: 'income_armed', value: false }] },
+        { when: { kind: 'always' }, after: PREP_TICKS, to: 'combat', do: [{ kind: 'set-flag', targetId: 'in_combat', value: true }, { kind: 'set-flag', targetId: 'in_prep', value: false }, { kind: 'set-flag', targetId: 'cap_armed', value: true }, { kind: 'set-flag', targetId: 'deploy_armed', value: true }, { kind: 'set-flag', targetId: 'income_armed', value: false }] },
       ],
     },
     {
       id: 'combat', // 战斗：自动互砍 + 蓝满放大招；某队团灭(present flag→false)→结算。胜→连胜+1；败→连胜清零+臂伤害
       onEnter: [{ kind: 'set-state', targetId: 'round_ui', value: 'combat' }],
       transitions: [
-        { when: { kind: 'flag', id: 'team_b_present', equals: false }, to: 'resolution', do: [{ kind: 'set-flag', targetId: 'won', value: true }, { kind: 'modify-resource', targetId: 'win_streak', op: 'add', value: 1 }, { kind: 'modify-resource', targetId: 'lose_streak', op: 'set', value: 0 }] },
-        { when: { kind: 'flag', id: 'team_a_present', equals: false }, to: 'resolution', do: [{ kind: 'set-flag', targetId: 'won', value: false }, { kind: 'modify-resource', targetId: 'win_streak', op: 'set', value: 0 }, { kind: 'modify-resource', targetId: 'lose_streak', op: 'add', value: 1 }, { kind: 'set-flag', targetId: 'dmg_armed', value: true }] },
+        // after 30 = 最短驻留（部署移入战拍后，棋子成型前 present 旗仍是备战期的 false——给 deploy→prefab→zone
+        // 链 ~4 拍落定 + 余量；0.5s 玩家不可感知，真团灭以「拍」计照常生效）。
+        { when: { kind: 'flag', id: 'team_b_present', equals: false }, after: 30, to: 'resolution', do: [{ kind: 'set-flag', targetId: 'won', value: true }, { kind: 'modify-resource', targetId: 'win_streak', op: 'add', value: 1 }, { kind: 'modify-resource', targetId: 'lose_streak', op: 'set', value: 0 }] },
+        { when: { kind: 'flag', id: 'team_a_present', equals: false }, after: 30, to: 'resolution', do: [{ kind: 'set-flag', targetId: 'won', value: false }, { kind: 'modify-resource', targetId: 'win_streak', op: 'set', value: 0 }, { kind: 'modify-resource', targetId: 'lose_streak', op: 'add', value: 1 }, { kind: 'set-flag', targetId: 'dmg_armed', value: true }] },
         // 加时强制结束（30s+15s=2700拍，一图流；单人改编=按败方路径结算+连败，准则双伤的单人合理化）
         { when: { kind: 'timer', id: 'combat_clock', cmp: 'gte', value: 2700 }, to: 'resolution', do: [{ kind: 'set-flag', targetId: 'won', value: false }, { kind: 'modify-resource', targetId: 'win_streak', op: 'set', value: 0 }, { kind: 'modify-resource', targetId: 'lose_streak', op: 'add', value: 1 }, { kind: 'set-flag', targetId: 'dmg_armed', value: true }] },
       ],
@@ -512,6 +519,9 @@ const makeRoundFlow = (PREP_TICKS: number, RESOLUTION_TICKS: number) => ({
       onEnter: [
         { kind: 'set-state', targetId: 'round_ui', value: 'resolution' },
         { kind: 'set-flag', targetId: 'in_combat', value: false },
+        // 关部署窗（实测坑）：窗若跨 resolution 活到 advance，stage/round 指针翻转会让 deploy_stage_N 带
+        // 在窗内 false→true 误发（清场后多铺一波=双倍敌阵）。窗语义=「恰本场战斗的入战拍」，结算即关。
+        { kind: 'set-flag', targetId: 'deploy_armed', value: false },
         { kind: 'set-flag', targetId: 'wipe_armed', value: true }, // → 'wipe'
       ],
       transitions: [
@@ -630,7 +640,7 @@ export function buildGameFBlueprint(pacing: GameFPacing = {}): WorldBlueprint {
     r_bench_space: { Resource: { id: 'bench_space', current: 9, min: 0, max: 11 } } as unknown as EntityBlueprint,
     r_bench_cap: { Resource: { id: 'bench_cap', current: 9, min: 0, max: 11 } } as unknown as EntityBlueprint, // 容量（§4.6 席 9；符文「广纳」+2 改这里）
     r_bench_occupied: { Resource: { id: 'bench_occupied', current: 0, min: 0, max: 99 } } as unknown as EntityBlueprint,
-    gc_bench: { GroupCount: { countResource: 'bench_occupied', requiredTag: BENCH_OCC } } as unknown as EntityBlueprint, // 在席 marker 数（全星级都带占用位）
+    gc_bench: { GroupCount: { countResource: 'bench_occupied', requiredTag: BENCH_OCC, onBoard: false } } as unknown as EntityBlueprint, // **在席**（无 HexPos）marker 数（REQ-F-052 onBoard:false——拖上板即让席，TFT 席/板分账）
     when_bench_sync: { EventWhen: { signal: 'bench_sync', when: resCmp('bench_cap', 'gte', 0), mode: 'level', armed: false } } as unknown as EntityBlueprint, // 恒真 level=每拍重算
     eff_bench_set: { Effect: { onSignal: 'bench_sync', kind: 'modify-resource', targetId: 'bench_space', op: 'set', value: 0, valueFrom: { resourceId: 'bench_cap' }, order: 1 } } as unknown as EntityBlueprint,
     eff_bench_sub: { Effect: { onSignal: 'bench_sync', kind: 'modify-resource', targetId: 'bench_space', op: 'add', value: 0, valueFrom: { resourceId: 'bench_occupied', coeff: -1 }, order: 2 } } as unknown as EntityBlueprint,
@@ -766,14 +776,16 @@ export function buildGameFBlueprint(pacing: GameFPacing = {}): WorldBlueprint {
     f_wipe_armed: { Flag: { id: 'wipe_armed', active: false } } as unknown as EntityBlueprint,
     f_income_armed: { Flag: { id: 'income_armed', active: false } } as unknown as EntityBlueprint, // §4.1 结算窗
     f_dmg_armed: { Flag: { id: 'dmg_armed', active: false } } as unknown as EntityBlueprint, // §4.2 败方结算窗
-    // 部署窗门脉冲（F-17 升星防重铺，同 shop_gate_done 纪律）：窗开判定拍全部 deploy 带同拍齐发，同拍 Commit
-    // 撤臂——armed 一拍即逝；备战中途合成改写 star_<将> 不会让升星带迟到复燃（新星级下回合部署生效，known wart）。
-    when_deploy_done: { EventWhen: { signal: 'deploy_gate_done', when: flagIs('deploy_armed'), mode: 'edge', armed: false } } as unknown as EntityBlueprint,
-    eff_deploy_disarm: { Effect: { onSignal: 'deploy_gate_done', kind: 'set-flag', targetId: 'deploy_armed', value: false } } as unknown as EntityBlueprint,
+    // 我方部署带：入战拍窗（deploy_armed 于 prep→combat 臂）→ 'deploy' → 全部在板 marker 的 Caster
+    // （requireHexPos 门：在席不响应）各自出兵。窗内无其它条件叶 → edge 一窗一发，无复燃面。
+    when_deploy: { EventWhen: { signal: 'deploy', when: flagIs('deploy_armed'), mode: 'edge', armed: false } } as unknown as EntityBlueprint,
     // —— 超员自动卖（F-17/REQ-F-048①）：入战拍 destroy-tagged 保额——保最早入场的 level 个我方（挂件级联）。
-    // 现 4 槽各出 1 子 ≤ level(≥4) 恒不触发=休眠保险丝；REQ-F-049 席位统一上场后即真生效。
+    // 棋子在部署后 ~3 拍才成型 → 检查带以 count_team_a≥1 为门（部署落地才查，不空放）；拖拽限额已在执行点
+    // 强制 ≤level，此带=纵深保险丝（level 中途掉档/未来多源入场仍兜得住）。
     f_cap_armed: { Flag: { id: 'cap_armed', active: false } } as unknown as EntityBlueprint,
-    when_cap: { EventWhen: { signal: 'enforce_cap', when: flagIs('cap_armed'), mode: 'edge', armed: false } } as unknown as EntityBlueprint,
+    r_count_team_a: { Resource: { id: 'count_team_a', current: 0, min: 0, max: 99 } } as unknown as EntityBlueprint,
+    gc_team_a: { GroupCount: { countResource: 'count_team_a', requiredTag: TEAM_A } } as unknown as EntityBlueprint, // 我方在场棋子数（§4.2 真值伤害将来同源）
+    when_cap: { EventWhen: { signal: 'enforce_cap', when: and(flagIs('cap_armed'), resCmp('count_team_a', 'gte', 1)), mode: 'edge', armed: false } } as unknown as EntityBlueprint,
     eff_cap: { Effect: { onSignal: 'enforce_cap', kind: 'destroy-tagged', targetId: '', value: TEAM_A, keepResource: 'level' } } as unknown as EntityBlueprint,
     when_deploy_stage2: { EventWhen: { signal: 'deploy_stage_2', when: and(flagIs('deploy_armed'), resCmp('stage_idx', 'eq', 2), resCmp('round_idx', 'lte', 4)), mode: 'edge', armed: false } } as unknown as EntityBlueprint, // 普通回合=各阶段 r1-4（r5 野怪）
     when_deploy_stage3: { EventWhen: { signal: 'deploy_stage_3', when: and(flagIs('deploy_armed'), resCmp('stage_idx', 'eq', 3), resCmp('round_idx', 'lte', 4)), mode: 'edge', armed: false } } as unknown as EntityBlueprint, // 普通回合=各阶段 r1-4（r5 野怪）
@@ -864,13 +876,19 @@ export function buildGameFBlueprint(pacing: GameFPacing = {}): WorldBlueprint {
     // 静态相机（表现，排除出 hash）。720p 画布 + zoom 把棋盘放大填满视口。
     camera: { Transform: xf(0, 0), Camera: { zoom: 1.8, offsetX: 0, offsetY: 0, rotation: 0, viewportW: 1280, viewportH: 720 } } as unknown as EntityBlueprint,
   };
-  // 我方阵容槽（持久，F-17 星级分流）：每将 ×3 星级一组持位 Caster，部署窗按 star_<将> 资源恰发一档信号
-  // → 恰一个槽展开（同位同将，数值/弹药按星）。星级=升星带从 marker 计数派生（见下方每将链）。
+  // 开局阵容播种（REQ-F-049 统一架构）：4 个 bootcast 在经典站位上各放一个 **在板** 1 星 marker
+  // （'@origin-hex' 哨兵把 bootcast 自身的格写进 seat——marker 经 prefab 出身戳，与买入 marker 同族可合成）。
+  // when_boot：stage_idx≥1 自世界首拍恒真 → edge 恰发一次。旧固定槽 slot_<将> 系列由此整段替代：
+  // 上场=「板上有 marker」一个事实源，拖动/买卖/合成全自动跟。
+  entities['when_boot'] = { EventWhen: { signal: 'boot_roster', when: resCmp('stage_idx', 'gte', 1), mode: 'edge', armed: false } } as unknown as EntityBlueprint;
   for (const h of ROSTER.filter((x) => x.team === TEAM_A)) {
-    for (let s = 1; s <= 3; s++) {
-      entities[`slot_${h.id}_s${s}`] = slotEntity(h, `deploy_${h.id}_s${s}`, h.q, h.r, 1, s);
-      entities[`when_deploy_${h.id}_s${s}`] = { EventWhen: { signal: `deploy_${h.id}_s${s}`, when: and(flagIs('deploy_armed'), resCmp(`star_${h.id}`, 'eq', s)), mode: 'edge', armed: false } } as unknown as EntityBlueprint;
-    }
+    const a = offsetToAxial(h.q, h.r);
+    const p = project(a.q, a.r);
+    entities[`bootcast_${h.id}`] = {
+      Transform: xf(p.x, p.y),
+      HexPos: { q: a.q, r: a.r }, // 持位者的格（无 GridMover → F-051 不占格不挡路）
+      Caster: { onSignal: 'boot_roster', template: `bench_${h.id}`, at: 'self', requireHexPos: true, overrides: { seat: { HexPos: '@origin-hex' } } },
+    } as unknown as EntityBlueprint;
   }
   // 商店买入分发（每将一组，F-11 ②③）：bought_code 命中码 → buy_<将> 信号 → 备战席位生成 marker
   // + 复位 bought_code=0（F-11 坑：防同码二连买 edge 不触发）。席位 x 按将错开（重复购买同将暂叠同位）。
@@ -884,22 +902,11 @@ export function buildGameFBlueprint(pacing: GameFPacing = {}): WorldBlueprint {
     entities[`eff_${sell}_destroy`] = { Effect: { onSignal: sell, kind: 'destroy', targetId: '', targetEntity: '@signal-source' } } as unknown as EntityBlueprint;
     entities[`eff_${sell}_gold`] = { Effect: { onSignal: sell, kind: 'modify-resource', targetId: 'gold', op: 'add', value: SELL_PRICE[1] } } as unknown as EntityBlueprint;
     entities[`eff_${sell}_code`] = { Effect: { onSignal: sell, kind: 'modify-resource', targetId: 'sold_code', op: 'set', value: HERO_CODE[h.id] } } as unknown as EntityBlueprint;
-    // —— F-17 升星（REQ-F-046 接入）：席位 marker 三连合成（最老 3 个原子换 1，挂件级联、while 连锁）——
-    entities[`mr2_${h.id}`] = { MergeRule: { template: `bench_${h.id}`, need: 3, into: `bench2_${h.id}` } } as unknown as EntityBlueprint;
-    entities[`mr3_${h.id}`] = { MergeRule: { template: `bench2_${h.id}`, need: 3, into: `bench3_${h.id}` } } as unknown as EntityBlueprint;
-    // 星级资源（部署带据此选档）：手里最高星 marker 决定上场星级——3星在手>2星在手>全无（升降全转移 edge 覆盖，
-    // 含「卖掉唯一二星回 1 星」「三星熔毁后回落」；boot 拍 (0,0)→置 1 与初值幂等）。
-    entities[`r_star_${h.id}`] = { Resource: { id: `star_${h.id}`, current: 1, min: 1, max: 3 } } as unknown as EntityBlueprint;
-    entities[`r_cb2_${h.id}`] = { Resource: { id: `cb2_${h.id}`, current: 0, min: 0, max: 99 } } as unknown as EntityBlueprint;
-    entities[`r_cb3_${h.id}`] = { Resource: { id: `cb3_${h.id}`, current: 0, min: 0, max: 99 } } as unknown as EntityBlueprint;
-    entities[`gc_b2_${h.id}`] = { GroupCount: { countResource: `cb2_${h.id}`, requiredTag: STAR2 | BH_BIT[h.id] } } as unknown as EntityBlueprint;
-    entities[`gc_b3_${h.id}`] = { GroupCount: { countResource: `cb3_${h.id}`, requiredTag: STAR3 | BH_BIT[h.id] } } as unknown as EntityBlueprint;
-    entities[`when_star3_${h.id}`] = { EventWhen: { signal: `star3_${h.id}`, when: resCmp(`cb3_${h.id}`, 'gte', 1), mode: 'edge', armed: false } } as unknown as EntityBlueprint;
-    entities[`eff_star3_${h.id}`] = { Effect: { onSignal: `star3_${h.id}`, kind: 'modify-resource', targetId: `star_${h.id}`, op: 'set', value: 3 } } as unknown as EntityBlueprint;
-    entities[`when_star2_${h.id}`] = { EventWhen: { signal: `star2_${h.id}`, when: and(resCmp(`cb2_${h.id}`, 'gte', 1), resCmp(`cb3_${h.id}`, 'eq', 0)), mode: 'edge', armed: false } } as unknown as EntityBlueprint;
-    entities[`eff_star2_${h.id}`] = { Effect: { onSignal: `star2_${h.id}`, kind: 'modify-resource', targetId: `star_${h.id}`, op: 'set', value: 2 } } as unknown as EntityBlueprint;
-    entities[`when_star1_${h.id}`] = { EventWhen: { signal: `star1_${h.id}`, when: and(resCmp(`cb2_${h.id}`, 'eq', 0), resCmp(`cb3_${h.id}`, 'eq', 0)), mode: 'edge', armed: false } } as unknown as EntityBlueprint;
-    entities[`eff_star1_${h.id}`] = { Effect: { onSignal: `star1_${h.id}`, kind: 'modify-resource', targetId: `star_${h.id}`, op: 'set', value: 1 } } as unknown as EntityBlueprint;
+    // —— F-17 升星（REQ-F-046 接入）：席位 marker 三连合成（最老 3 个原子换 1，挂件级联、while 连锁；
+    // 板上合成产物留板上原格、席上合成留席——merge-rule 出身格继承，REQ-F-049）。星级数值烘在
+    // bench2/bench3 模板的 Caster.overrides 里（模板家族即星级，旧星级资源带契约已删）。——
+    entities[`mr2_${h.id}`] = { MergeRule: { template: `bench_${h.id}`, need: 3, into: `bench2_${h.id}`, intoOverrides: { seat: { HexPos: '@origin-hex' } } } } as unknown as EntityBlueprint;
+    entities[`mr3_${h.id}`] = { MergeRule: { template: `bench2_${h.id}`, need: 3, into: `bench3_${h.id}`, intoOverrides: { seat: { HexPos: '@origin-hex' } } } } as unknown as EntityBlueprint;
     // 合成品卖出链（点席=sell<星>_<将>，@signal-source 点谁卖谁）：星级卖价；袋**不**归还
     // ——3 张已熔毁成 1 个高星 marker，按张归还语义不成立（known wart，回执/TUNE 注记）。
     for (const s of [2, 3]) {
@@ -976,10 +983,8 @@ export function buildGameFBlueprint(pacing: GameFPacing = {}): WorldBlueprint {
       craftRecipeCapability, // 手动刷新 $2（F-12）：reroll_btn 信号 → 原子扣金置 reroll_paid（扣不起整单不动）
       textBindingCapability, // HUD 数字（F-15/REQ-F-043）：Resource → Text.content 投影
       groupCountCapability, // 羁绊计数（F-16/REQ-022+047）+ 升星 marker 计数 + 备战席占用派生（F-17）
-      mergeRuleCapability, // 升星合成（F-17/REQ-F-046）：席位 marker 三连 N 换 1（最老先合、挂件级联、while 连锁）
-      // dragPlaceCapability（F-18）：暂缓注册——game-f 全图首次同挂 drag-place + motion-apply，Transform RMW 对
-      // 成 22 系统 SCC（drag-place runsBefore 六件套漏 'motion-apply' 这条，REQ-F-050 已提主程，一行定序补丁）。
-      // marker 的 Draggable 组件是惰性数据（无系统消费=零开销），落地后此行解注即全通（in_prep 门/测试均已就位）。
+      mergeRuleCapability, // 升星合成（F-17/REQ-F-046）：席位 marker 三连 N 换 1（最老先合、挂件级联、出身格继承）
+      dragPlaceCapability, // 摆子拖拽（F-18/REQ-F-045+049+050）：备战期拖 marker 上板/调位/回席；snap 六角格+人口限额
       hierarchyResolveCapability,
       hierarchyCascadeCapability, // 子随父死（REQ-F-026）：棋子死亡→头顶名字一并消失
       cameraFollowCapability,

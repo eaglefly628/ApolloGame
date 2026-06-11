@@ -47,10 +47,17 @@ function remapLocalRefs(v: unknown, templateId: string, seq: number, locals: Rea
   return v;
 }
 
+// ── REQ-F-049：出身格哨兵 ──
+// overrides 里某 localId 写 `HexPos: '@origin-hex'`（组件级字符串哨兵）→ 以 SpawnRequest.originHex 的
+// {q,r} 值代入：模板该实体有 HexPos 则整体覆写；没有则**仅此哨兵路径**补建该组件（值恒完整 {q,r}）。
+// 请求无 originHex（发起者不在板上）→ 哨兵补丁整条跳过（实例不上板）。通用字段补丁仍不建缺件——
+// 半截组件的 undefined 字段会污染 snapshot/hash（评审收窄，见 requests.md F-049）。
+export const ORIGIN_HEX_SENTINEL = '@origin-hex';
+
 // 实例化一个模板到 (x,y)，返回新建实体 id 列表（便于测试/调试）。
 // overrides（REQ-F-032）：localId→组件→字段补丁，深拷贝+Transform 偏移之后逐字段合并——
 // 同一模板展开异构实例（各自 HexPos/Tag/数值）。补丁亦深拷贝（请求方数据与实例隔离）。
-export function instantiate(world: IWorld, tmpl: PrefabTemplate, templateId: string, seq: number, x: number, y: number, overrides?: SpawnOverrides): string[] {
+export function instantiate(world: IWorld, tmpl: PrefabTemplate, templateId: string, seq: number, x: number, y: number, overrides?: SpawnOverrides, originHex?: { q: number; r: number }): string[] {
   const created: string[] = [];
   const locals = new Set(Object.keys(tmpl.entities)); // REQ-F-033：本模板兄弟 localId 集
   for (const [localId, comps] of Object.entries(tmpl.entities)) {
@@ -63,10 +70,18 @@ export function instantiate(world: IWorld, tmpl: PrefabTemplate, templateId: str
         copy.x = ((copy.x as number) ?? 0) + x;
         copy.y = ((copy.y as number) ?? 0) + y;
       }
-      const patch = patches?.[ctype];
-      if (patch) Object.assign(copy, JSON.parse(JSON.stringify(patch)) as Record<string, unknown>);
+      let patch = patches?.[ctype];
+      if (ctype === 'HexPos' && patch === ORIGIN_HEX_SENTINEL) {
+        patch = originHex ? { q: originHex.q, r: originHex.r } : undefined; // 哨兵：有出身格代入，无则跳过
+      }
+      // 字段补丁须是对象（组件级字符串只有 '@origin-hex' 一个合法哨兵；其余字符串=typo，不展开不污染）。
+      if (patch && typeof patch === 'object') Object.assign(copy, JSON.parse(JSON.stringify(patch)) as Record<string, unknown>);
       remapLocalRefs(copy, templateId, seq, locals); // REQ-F-033：'@local:x' → 兄弟实例 id（补丁后，补丁同享）
       world.addComponent(eid, { type: ctype, ...copy } as unknown as Component);
+    }
+    // 哨兵补建（仅当模板该实体**没有** HexPos 组件且出身格在手）：上面的循环只走模板已有组件。
+    if (!('HexPos' in comps) && (patches?.HexPos as unknown) === ORIGIN_HEX_SENTINEL && originHex) {
+      world.addComponent(eid, { type: 'HexPos', q: originHex.q, r: originHex.r } as unknown as Component);
     }
     // REQ-F-046/048①：出身戳（同模板计数/入场顺序的数据钥匙；POD 进 snapshot，确定可重放）。
     world.addComponent(eid, { type: 'PrefabOrigin', templateId, seq, localId } as unknown as Component);
@@ -124,7 +139,7 @@ export const prefabCapability = defineCapability({
           if (req) {
             const tmpl = lib.templates[req.templateId];
             if (tmpl) {
-              instantiate(world, tmpl, req.templateId, lib.seq, req.x, req.y, req.overrides);
+              instantiate(world, tmpl, req.templateId, lib.seq, req.x, req.y, req.overrides, req.originHex);
               lib.seq += 1;
             }
           }

@@ -47,8 +47,9 @@ describe('grid-move · 逐格寻路移动', () => {
     const w = mk(); board(w);
     unit(w, 'hero', 0, 0, { period: 1, target: 'enemy' });
     unit(w, 'enemy', 4, 0);
-    // 直线上塞静止友军/敌占格
-    unit(w, 'block1', 2, 0); unit(w, 'block2', 2, -1); unit(w, 'block3', 2, 1);
+    // 直线上塞静止友军/敌占格——占位契约的主体是「单位」（HexPos∧GridMover，REQ-F-051）：
+    // 静立单位 = 挂 GridMover 不给目标（period 任意，无 Relation 永不走）。
+    unit(w, 'block1', 2, 0, { period: 999 }); unit(w, 'block2', 2, -1, { period: 999 }); unit(w, 'block3', 2, 1, { period: 999 });
     const occupiedKeys = new Set<string>();
     for (let i = 0; i < 25; i++) {
       w.tick();
@@ -58,6 +59,19 @@ describe('grid-move · 逐格寻路移动', () => {
       expect([[2, 0], [2, -1], [2, 1], [4, 0]].some(([q, r]) => q === p.q && r === p.r)).toBe(false);
     }
     expect(hexDistance(pos(w, 'hero'), pos(w, 'enemy'))).toBe(1); // 绕过仍到相邻
+  });
+
+  it('REQ-F-051：placement 数据实体（HexPos 无 GridMover）不占格——单位径直穿行其格；静止目标仍停相邻', () => {
+    const w = mk(); board(w);
+    unit(w, 'hero', 0, 0, { period: 1, target: 'enemy' });
+    unit(w, 'enemy', 4, 0); // 静止目标（无 GridMover）——既有契约不变
+    // 直线必经之路上放三个「席位 marker」类实体（带 HexPos 不带 GridMover）：不挡路
+    unit(w, 'm1', 1, 0); unit(w, 'm2', 2, 0); unit(w, 'm3', 3, 0);
+    const visited = new Set<string>();
+    for (let i = 0; i < 12; i++) { w.tick(); const p = pos(w, 'hero'); visited.add(`${p.q},${p.r}`); }
+    expect(hexDistance(pos(w, 'hero'), pos(w, 'enemy'))).toBe(1); // 到相邻（目标格显式入阻挡，不踏上）
+    expect(pos(w, 'hero')).not.toEqual(pos(w, 'enemy'));
+    expect(visited.has('2,0') || visited.has('1,0') || visited.has('3,0')).toBe(true); // 真穿行过 marker 格（直线未绕）
   });
 
   it('Transform 由 HexPos 投影同步（供渲染/战斗距离）', () => {

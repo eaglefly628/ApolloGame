@@ -1,6 +1,6 @@
 import { defineCapability } from '@engine/core/define-capability.js';
 import type { IWorld } from '@engine/core/types.js';
-import type { Caster, Signal, InputQueue, Transform, SpawnRequest, Relation } from '@engine/protocol/components.js';
+import type { Caster, Signal, InputQueue, Transform, SpawnRequest, Relation, HexPos } from '@engine/protocol/components.js';
 import { nearestByTag } from '@skills/atoms/spatial-query/index.js';
 
 // ═══════════════════════════════════════════════════════════════
@@ -68,10 +68,11 @@ export const casterCapability = defineCapability({
           at: { type: 'string', describe: "生成位置：'self'|'pointer'|'target'" },
           targetTag: { type: 'number', describe: "at:'target' 时索敌的阵营位（Tag.flags & targetTag；缺省找最近任意）" },
           overrides: { type: 'string', describe: '实例参数覆盖(REQ-F-032)：{localId:{组件:{字段:值}}}，透传进 SpawnRequest 由 prefab 合并（槽位实体各自声明棋子 HexPos/Tag/数值）' },
+          requireHexPos: { type: 'boolean', describe: '部署门(REQ-F-049)：true=锚点实体无 HexPos 则收信号不展开（在板=部署源、离板=静默；拖上板/回席即天然开关）' },
         },
       },
     },
-    reads: ['Caster', 'Signal', 'InputQueue', 'Transform', 'Tag', 'Relation'],
+    reads: ['Caster', 'Signal', 'InputQueue', 'Transform', 'Tag', 'Relation', 'HexPos'],
     writes: ['SpawnRequest'],
     consumes: [],
   },
@@ -82,7 +83,7 @@ export const casterCapability = defineCapability({
     {
       id: 'caster',
       runsAfter: ['event-when', 'clickable'],
-      reads: ['Caster', 'Signal', 'InputQueue', 'Transform', 'Tag'],
+      reads: ['Caster', 'Signal', 'InputQueue', 'Transform', 'Tag', 'HexPos'],
       writes: ['SpawnRequest'],
       consumes: [],
       execute(world: IWorld) {
@@ -104,6 +105,10 @@ export const casterCapability = defineCapability({
 
           // 锚点实体：缺省=施法者自身；技能绑定实体可委托给英雄（originEntity）。
           const originId = c.originEntity ?? id;
+          // 部署门 + 出身格（REQ-F-049）：锚点的 HexPos = 板上身份。requireHexPos 且不在板 → 静默；
+          // 在板则把格值（POD 整数快照）盖进请求，供 overrides 的 '@origin-hex' 哨兵代入。
+          const originHex = world.getComponent<HexPos>(originId, 'HexPos');
+          if (c.requireHexPos && !originHex) continue;
           let x: number;
           let y: number;
           if (c.at === 'self') {
@@ -135,7 +140,7 @@ export const casterCapability = defineCapability({
           }
 
           // overrides 原样透传（REQ-F-032）：槽位实体声明自己棋子的 HexPos/Tag/数值补丁，prefab 合并。
-          world.addComponent(id, { type: 'SpawnRequest', templateId: c.template, x, y, ...(c.overrides ? { overrides: c.overrides } : {}) } as SpawnRequest);
+          world.addComponent(id, { type: 'SpawnRequest', templateId: c.template, x, y, ...(originHex ? { originHex: { q: originHex.q, r: originHex.r } } : {}), ...(c.overrides ? { overrides: c.overrides } : {}) } as SpawnRequest);
         }
       },
     },

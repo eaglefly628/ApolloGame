@@ -54,6 +54,27 @@ describe('group-count —— 集合计数→数值资源（REQ-022）', () => {
     expect(res(w, 'gc')).toBe(1);
   });
 
+  it('REQ-F-052 onBoard 上板过滤：true=只数带 HexPos 者、false=只数不带者、缺省=不过滤（席/板分账）', () => {
+    const w = new World();
+    addSystems(w, groupCountCapability);
+    counter(w, 'gc_board', 'on_board', WARRIOR);
+    w.getComponent<GroupCount>('gc_board', 'GroupCount')!.onBoard = true;
+    counter(w, 'gc_bench', 'on_bench', WARRIOR);
+    w.getComponent<GroupCount>('gc_bench', 'GroupCount')!.onBoard = false;
+    counter(w, 'gc_all', 'all_w', WARRIOR);
+    unit(w, 'u1', WARRIOR); // 在席（无 HexPos）
+    unit(w, 'u2', WARRIOR); // 在板
+    w.addComponent('u2', { type: 'HexPos', q: 3, r: 2 } as unknown as Tag);
+    unit(w, 'u3', WARRIOR); // 在板
+    w.addComponent('u3', { type: 'HexPos', q: 4, r: 2 } as unknown as Tag);
+    unit(w, 'u4', MAGE); // 在板但非战士 → 谁都不算
+    w.addComponent('u4', { type: 'HexPos', q: 5, r: 2 } as unknown as Tag);
+    w.tick();
+    expect(res(w, 'gc_board')).toBe(2);
+    expect(res(w, 'gc_bench')).toBe(1);
+    expect(res(w, 'gc_all')).toBe(3);
+  });
+
   it('缺省掩码（不填）= 数所有带 Tag 实体；钳进 Resource.max', () => {
     const w = new World();
     addSystems(w, groupCountCapability);

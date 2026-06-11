@@ -22,7 +22,7 @@ export function mount(container: HTMLElement): () => void {
   const hint = document.createElement('div');
   hint.style.cssText = 'max-width:800px;text-align:center;line-height:1.5';
   hint.textContent =
-    '《像素三分天下》自走棋 —— 多回合循环：备战(发钱/商店刷新/锁店/卖出)→点「开战」或倒计时→自动战斗→结算扣血→下一回合；打穿关卡=通关。按钮可点（开战/刷新$2/锁店/解锁；点备战席棋子=卖出）。商店 5 槽可视化与点击购买待引擎件(REQ-F-042/043)。';
+    '《像素三分天下》自走棋 —— 备战：买棋子(点商店卡)→拖上棋盘摆阵(场上≤等级)/拖回备战席/拖动调位；3 同名自动升星(★★/★★★,板上原地升)；点棋子=卖出(按星级返金)；刷新$2/锁店/买经验。点「开战」或等倒计时→自动战斗→结算扣血→下一回合；野怪回合掉宝(WASD 移动主公拾取)；打穿 5 阶段=通关。';
 
   const stage = document.createElement('div');
   stage.style.cssText = `width:${VIEWPORT_W}px;height:${VIEWPORT_H}px;border:1px solid #3a2e22;border-radius:6px;overflow:hidden`;

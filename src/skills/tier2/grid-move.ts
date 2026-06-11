@@ -134,12 +134,19 @@ export const gridMoveCapability = defineCapability({
         for (const [bid] of world.query('HexBoard')) { board = world.getComponent<HexBoard>(bid, 'HexBoard'); break; }
         if (!board) return;
 
-        // 占位集：全场 HexPos 单位所在格。键=hexCellKey（与 A* 内部同函数；odd-r 下负 q 不撞键）。
+        // 占位集 vs 位置表（REQ-F-051 收窄，评审修正版）：两种用途分开——
+        // · occupied（阻挡）：只数**单位**（HexPos∧GridMover）。带 HexPos 不带 GridMover 的「placement
+        //   数据实体」（备战席位 marker 等部署源）不挡路：其格上真正阻挡的是它展开的棋子本身。
+        //   未来真要静止可占位单位（炮塔类）：挂 GridMover{period 大/haltStatusMask 恒置} 即归队。
+        // · posOf（位置查找，含寻路目标）：仍收**全量** HexPos——静止目标（无 GridMover）是既有受测契约；
+        //   「到目标相邻停」由下方逐 mover 把目标格显式加进 blocked 保证（与目标是否为单位无关）。
         const occupied = new Set<number>();
         const posOf = new Map<string, HexPos>();
         for (const [eid] of world.query('HexPos')) {
           const hp = world.getComponent<HexPos>(eid, 'HexPos');
-          if (hp) { occupied.add(hexCellKey(hp.q, hp.r, board.cols, board.layout)); posOf.set(eid, hp); }
+          if (!hp) continue;
+          posOf.set(eid, hp);
+          if (world.hasComponent(eid, 'GridMover')) occupied.add(hexCellKey(hp.q, hp.r, board.cols, board.layout));
         }
 
         for (const [eid] of world.query('HexPos', 'GridMover')) {
@@ -165,9 +172,11 @@ export const gridMoveCapability = defineCapability({
           mover.elapsed = (mover.elapsed ?? 0) + 1;
           if (mover.elapsed < mover.period) continue;
 
-          // 占位集排除自身格（自身不挡自己）。
+          // 占位集排除自身格（自身不挡自己）；目标格显式补进（「不踏上目标、停相邻」对静止目标同样成立——
+          // 旧实现靠目标在全量占位集里自然在内，F-051 占位收窄后改为显式语义）。
           const blocked = new Set(occupied);
           blocked.delete(hexCellKey(hp.q, hp.r, board.cols, board.layout));
+          blocked.add(hexCellKey(tHp.q, tHp.r, board.cols, board.layout));
           const next: Hex | null = hexNextStep(board.cols, board.rows, hp, tHp, blocked, board.layout);
           if (next) {
             // 移动：更新占位(腾出旧格、占新格) + HexPos。瞬移模式当拍贴新格（原行为）；

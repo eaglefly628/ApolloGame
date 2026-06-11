@@ -1360,7 +1360,7 @@
 
 ---
 
-### REQ-F-049 · [2026-06-11] · PE-F（F-18 注③预告兑现：「部署链随新位置展开」）· 框架级 · status: open · 优先级: 高（拖拽上场=备战核心闭环的最后一环；F-17 升星已落、席位/槽位统一也等它） · 类型: 真缺口（持位者运行时 HexPos 进不了展开实例；Caster 无"在板才展开"门）
+### REQ-F-049 · [2026-06-11] · PE-F（F-18 注③预告兑现：「部署链随新位置展开」）· 框架级 · status: **done（同日，代理主程裁决+落地；用户授权出差代行）** · 优先级: 高（拖拽上场=备战核心闭环的最后一环） · 类型: 真缺口（持位者运行时 HexPos 进不了展开实例；Caster 无"在板才展开"门）
 
 > **目标行为（v2 §3.3 摆子）**：席位 marker 拖上板某格 → 该将从那格上场参战；拖回席 → 不再上场。即「**被拖槽位直接充当上场单位的部署源**」。
 > **证伪重组（F-18 注③要求的纯数据先试，三路全断）**：
@@ -1371,16 +1371,47 @@
 > - `Caster.requireHexPos?: boolean`——持位者**自身无 HexPos 组件则收信号不展开**（在板=部署源，离板=静默）。拖上板/拖回席（drag-place 已写/删 HexPos）即天然开关，零新输入。
 > - 展开实例 **HexPos 继承**：requireHexPos 成立时，SpawnRequest 自动携持位者当拍 HexPos 写进实例 main（或 overrides 哨兵 `'@self-hex'`，与 '@local:'/'@signal-source' 同族哨兵语义）——「spawn 继承施法者组件」即 F-045 落地注预告的 F-049 本体。
 > **落地后 PE-F 收口路线（预告，零额外引擎件）**：席位 marker 模板并入 Caster{requireHexPos}+星级数值 → 槽位/席位统一为一族（F-17 受限版的 12 槽位×星级带可整段删除，merge 直接在上场单位族计数=真·金铲铲语义）；Draggable 补 snap:'hex'+capTagMask/capResource（人口限额引擎已有，F-045 ④）。
+>
+> **代理主程裁决+落地（2026-06-11 晚，用户拍板代行；换位评审记录——含对自己原建议的两处否决）**：
+> - **①门采纳**，定形 `Caster.requireHexPos?: boolean`（锚点=originEntity??self 无 HexPos 即静默）；**回驳**"通用 requireComponent"——动态组件名读无法静态申报给调度器（未申报读违确定性纪律）；HexPos=板上身份是 grid-move 既定语义，专字段可申报 reads:['HexPos']（caster 既有 Transform 读与 HexPos 写者完全同源 → 零新边类，拓扑安全）。
+> - **②继承采纳但改形两轮（评审自纠）**：(a) 否决"caster 端解析哨兵"——解析在写者侧会让 prefab 分不清哨兵补丁与普通补丁，"缺件即建"的窄许可会泄漏给全部补丁；(b) **回驳**"overrides 通用 create-if-absent"——残缺补丁建出半截组件、undefined 字段进 snapshot/hash（投毒面）。终形：`SpawnRequest.originHex?:{q,r}`（POD；caster/merge-rule 各自盖章自家锚点的格）+ overrides 组件级哨兵 `HexPos:'@origin-hex'` 由 **prefab** 解析（"谁有数据谁解析"，与 '@local:'/'@signal-source' 同族）——**仅哨兵路径**允许补建缺件（值恒完整 {q,r}）；无 originHex 整条跳过（发起者不在板=实例不上板）。SpawnOverrides 类型升格承认组件级字符串哨兵，非哨兵字符串补丁不展开（typo 防御）。
+> - **附带半件**：merge-rule 出身格继承（最老实例首个带 HexPos 实体之格随产物盖进 SpawnRequest.originHex）——板上 3 连=**原地升星**、席上合成=留席；intoOverrides 写同一哨兵即启用，零新字段。
+> - 4 引擎验收测（门开闭 / 哨兵跟手两连拖 / 缺件补建+无格跳过 / merge 板位继承）；game-f 全链改接（见 inbox F-17/F-18 终版回执）。tsc + vitest 1093 + build 全绿。
 
 ---
 
-### REQ-F-050 · [2026-06-11] · PE-F（F-18 接入实测）· 框架级 · status: open · 优先级: 高（一行定序补丁；不落 drag-place 在 game-f 无法注册） · 类型: 引擎缺陷（定序声明漏一条 RMW 边，首个同场世界才暴露）
+### REQ-F-050 · [2026-06-11] · PE-F（F-18 接入实测）· 框架级 · status: **done（同日，代理主程落地）** · 优先级: 高（一行定序补丁；不落 drag-place 在 game-f 无法注册） · 类型: 引擎缺陷（定序声明漏一条 RMW 边，首个同场世界才暴露）
 
 > **症状**：game-f 蓝图 capabilities 加 `dragPlaceCapability` → `Circular dependency detected`，22 系统 SCC（flow…drag-place…camera-follow 全段）。F-045 守护测七系统同场不抛，但那张图没有 motion-apply。
 > **定位（探针二分，全过程可复现）**：① 全图去 drag-place=绿、去 merge-rule 仍炸 → 元凶=drag-place；② 克隆 capability 补 runsBefore 逐项试：`+['effect-apply']` 炸、`+['effect-apply','card-pile']` 炸、**`+['motion-apply']` 60 拍绿**。
 > **根因**：drag-place（读+写 Transform）与 motion-apply（读 Transform+Velocity、写 Transform）互为 Transform RMW 对 → 组件推断双向边成环。与既有六件套里 grid-move 那条同类同病——六件套漏列 motion-apply 而已（game-f 是首个 drag-place 与 motion-apply【主角自由移动】同场的世界）。
 > **建议（一行）**：`src/skills/tier2/drag-place.ts` 系统 `runsBefore` 数组补 `'motion-apply'`。语义自洽：drag 是输入先行（与既有纪律同句），先落拖拽终点、motion-apply 同拍在其上积分速度；marker 无 Velocity、主角无 Draggable，两系统实际操作集不相交，纯解环零行为差。
 > **PE-F 侧已就位（落地即活）**：蓝图注释行解注 + marker Draggable{onlyFlag:'in_prep'} 数据已挂 + in_prep 门旗已由 flow 维护 + 数据侧测试已锁（交互断言脚本在 F-18 回执存档）。
+>
+> **代理主程落地（2026-06-11 晚）**：按建议原样一行落地；F-045 守护测从六件套图升级为**七件套含 motion-apply**（回归锁：该图曾 22 系统 SCC，今后必须可排）。评审注：补丁假设先在探针里以 spread-clone capability 验证 60 拍绿才动引擎源——"猜的修法"与"验过的修法"之别，记入 Gotchas。
+
+---
+
+### REQ-F-051 · [2026-06-11] · 代理主程（F-049 统一架构连带件，自查自报自落）· 框架级 · status: **done（同日）** · 优先级: 高（不修则 marker 上板=永久幽灵墙） · 类型: 语义收窄（占位契约的"单位"判据从未显式化）
+
+> **症状（架构推演先于实测抓到）**：marker 带 HexPos 上板后进 grid-move 占位集——其棋子开战走位离格，marker 仍钉在家格当**隐形墙**：敌我寻路绕空格、阵型内格子永久不可过（4+ marker = 自家阵地一片墙阵）。
+> **裁决（换位评审，第一版被自己测试打回）**：v1"占位+目标位置查找都收窄到 HexPos∧GridMover"——**跑既有测试即打脸**：`静止目标（无 GridMover）`是受测契约（敌方静立靶），一刀切毁约。复盘分清两种用途：**occupied（阻挡）**=单位（HexPos∧GridMover——"一格一单位"注释的本义；既有"塞静止友军"测试的 blocker 改挂 GridMover{period:999} 是测试帮手偷懒的修正、非契约改写）；**posOf（位置/寻路目标）**=全量 HexPos（静止目标契约保住）；"到目标相邻停"从"目标自然在占位集"改为**逐 mover 显式把目标格加进 blocked**（语义从隐式变显式，静止目标同样不被踏）。
+> 落地 grid-move 单文件 + 2 测（marker 三连格直线穿行不绕 / 静止目标仍停相邻不重叠）。未来真要静止可占位单位（炮塔）：挂 GridMover 即归队（文档已注）。
+
+---
+
+### REQ-F-052 · [2026-06-11] · 代理主程（F-049 统一架构连带件）· 框架级 · status: **done（同日）** · 优先级: 中（席/板分账的唯一缺口） · 类型: 真缺口（按组件存在性分组计数无词汇）
+
+> **缺口**：统一架构下 marker 的"在席/在板"只差一个 HexPos 组件——备战席空余 = 数**在席** marker（占席），在板的不占席（TFT 席/板分账）。group-count 只有 Tag 掩码维度；Zone 是空间+布尔。"总数−在板"派生链同样要先有"在板数"——同一面墙。
+> **裁决**：`GroupCount.onBoard?: boolean`（true=只数带 HexPos / false=只数不带 / 缺省=不过滤）。**回驳**"通用 hasComponent/lacksComponent 字段"——动态组件名读无法静态申报（与 F-049 门同一条申报纪律）；HexPos 的"放置状态"是引擎已有语义轴，专字段申报 reads:['HexPos'] 干净。1 测（三计数器同场：板上/席上/全量）。game-f 接线：gc_bench 加 onBoard:false——拖上板自动让席、买入占席、合成 3→1 回 2 席，全派生零手账。
+
+---
+
+### REQ-F-053 · [2026-06-11] · 代理主程（F-18 接入实测抓获，本会自查自报自落）· 框架级 · status: **done（同日）** · 优先级: 高（真实玩家按住棋子准备拖 → 当场被卖掉） · 类型: 引擎缺陷（点/拖输入不互斥，F-045 落地时无既可点又可拖的实体故未暴露）
+
+> **症状（测试注入复现，真实指针路同病）**：壳层 pointerdown **无条件**入队 phase:'down' 动作 → clickable（缺省 down 触发）当点击消费——可点+可拖的实体（席位 marker：点=卖、拖=摆）一按住就触发卖出；拖拽收手的裸 'up' 也会在落点误点。
+> **裁决（两案对比）**：(а) "marker 改 phase:'up' 监听"单独不够——真实拖拽也以 pointerup 收手，落点若有 clickable 照样误触；(б) **壳层点拖互斥**（落地案）：pointerup 时**二选一**——超阈值=只发合成 drag（裸 up 吞掉），阈值内=真点击发 up。判定全在本地采集期、入流前完成（与逆投影/drag 合成同纪律）→ 命令流确定、lockstep 安全。配套约定：**可拖又可点的实体一律 Clickable{phase:'up'}**（down 永不触发、真点击靠 up、拖拽不产 up → 天然互斥）；纯按钮保持缺省 down（即按即响）。
+> 落地：queued-input.ts onPointer 重排（up 分支先判合成）；game-f marker 三档模板 Clickable 加 phase:'up'；存量检索证明全库零 phase:'up' 在用（零迁移面）。覆盖：F-18 全量交互测的拖/点共存即此契约的活体验收。
 
 ---
 

@@ -213,6 +213,11 @@ export interface Caster extends Component {
   // 「阵容槽位实体 = Caster{onSignal:'deploy', template:英雄, overrides:{该棋子的 HexPos/Tag/数值}}」——
   // N 槽各自展开自己的棋子 = 回合制备战重展开，纯重组、零新系统。
   overrides?: SpawnOverrides;
+  // 部署门（REQ-F-049）：true=锚点实体（originEntity ?? 自身）**无 HexPos 组件则收信号不展开**。
+  // 「在板=部署源、离板=静默」——拖上板/拖回席（drag-place 写/删 HexPos）即天然开关，零新输入。
+  // HexPos=板上身份是引擎既定语义（grid-move 的 SIM 真相），故收窄为专字段而非通用 requireComponent
+  // （动态组件名读无法静态申报给调度器，未申报读违确定性纪律——评审记录见 requests.md F-049）。
+  requireHexPos?: boolean;
 }
 
 // ── Perception ── 数据驱动 AI 的"索敌"原子（D-001，对应周期表 auto-target/range-detect）。逐实体感知
@@ -465,13 +470,19 @@ export interface StateChanged extends Component {
 // ── K1 spawn ── 创建新实体的请求（模板展开由 assembly 层负责）
 // 实例参数覆盖（REQ-F-032）：localId → 组件类型 → 字段补丁。prefab 深拷贝模板后逐字段合并——
 // 同一模板展开异构实例（每棋子各自 HexPos/Tag/星级数值）全靠它，闭语法纯数据、无自由代码。
-export type SpawnOverrides = Record<string, Record<string, Record<string, unknown>>>;
+// 组件级字符串=哨兵（REQ-F-049：HexPos:'@origin-hex' 以请求的出身格代入）；其余字符串补丁不展开（typo 防御）。
+export type SpawnOverrides = Record<string, Record<string, Record<string, unknown> | string>>;
 export interface SpawnRequest extends Component {
   readonly type: 'SpawnRequest';
   templateId: string;
   x: number;
   y: number;
   overrides?: SpawnOverrides; // 可选：按模板 localId 定点覆盖组件字段
+  // 出身格（REQ-F-049）：发起者所在棋盘格（POD 整数，写者各自盖章：caster=锚点 HexPos、merge-rule=最老
+  // 实例锚点 HexPos）。overrides 里某 localId 写 `HexPos: '@origin-hex'` 哨兵 → prefab 以此值代入；
+  // 模板缺 HexPos 组件时**仅哨兵路径**允许补建（值恒完整 {q,r}；通用补丁不建缺件——半截组件的
+  // undefined 字段会进 snapshot/hash）。缺 originHex → 哨兵补丁整条跳过（发起者不在板上=实例不上板）。
+  originHex?: { q: number; r: number };
 }
 
 // ── K2 destroy ── 移除实体的请求（read-then-consume）
@@ -909,6 +920,10 @@ export interface GroupCount extends Component {
   readonly type: 'GroupCount';
   countResource: string; // 计数写入的 Resource id（按 id 全局定位；每 tick set+钳限）
   requiredTag?: number; // Tag.flags 须含齐此掩码（ALL-bits）；缺省/0 = 所有带 Tag 的实体
+  // 上板过滤（REQ-F-052）：true=只数带 HexPos 者（在板）；false=只数不带者（在席）；缺省=不过滤。
+  // 「席/板分账」（自走棋备战席空余、在板人口）这类按放置状态分组的数量事实由此表达。
+  // 专字段而非通用 with/withoutComponent——动态组件名读无法静态申报，同 F-049 申报纪律。
+  onBoard?: boolean;
 }
 
 // ── hex-grid / grid-move（REQ-024）── 六边形棋盘 + 确定性网格寻路（金铲铲/TFT 式自动战斗移动）。
