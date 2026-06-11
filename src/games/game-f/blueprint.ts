@@ -58,9 +58,9 @@ import { boardEntities, project, offsetToAxial, COLS, ROWS, TILE, ORIGIN_X, ORIG
 export const TEAM_A = 1 << 1; // 蜀
 export const TEAM_B = 1 << 2; // 魏
 // 势力色（Color.tint；drawImage 不吃 tint，由头顶名字 Text 承担分色，见 art-data.md §二）。
-export const SHU_RED = 0xb02a28;
-export const WEI_BLUE = 0x2962c8;
-export const WU_GREEN = 0x1e8c5a;
+export const SHU_RED = 0xd8504e; // 蜀红（design 内容色）
+export const WEI_BLUE = 0x3a86d4; // 魏蓝
+export const WU_GREEN = 0x3fae6e; // 吴绿
 // 职业位（Tag.flags，特色/羁绊基础；与队伍位独立，不影响阵营索敌/伤害）。
 export const WARRIOR = 1 << 6; // 武将
 export const TACTICIAN = 1 << 7; // 谋士
@@ -96,6 +96,11 @@ const ATK_CD = 45; // 普攻间隔 45 tick ≈ 0.75s
 const MANA_REGEN = { period: 9, amount: 4 };
 const HP_SCALE = 18; // 全局血量倍率（调战斗时长，目标一局 ~20s；越大越久）
 
+// 锦霞（Aurora）字体槽（design_handoff §Typography；字体文件由壳层 game-f.tsx 加载，canvas 仅引用族名）
+const FONT_DISPLAY = "'Ma Shan Zheng','Noto Serif SC',serif"; // 大标题/横幅（行楷毛笔）
+const FONT_BODY = "'Noto Serif SC',serif"; // 正文/名牌
+const FONT_NUM = "'Silkscreen','Noto Serif SC',monospace"; // 数字（像素风，呼应题材）
+
 const xf = (x: number, y: number): Record<string, unknown> => ({ x, y, rotation: 0, scaleX: 1, scaleY: 1 });
 const sprite = (textureKey: string, zOrder: number): Record<string, unknown> => ({ textureKey, anchorX: 0.5, anchorY: 0.5, zOrder });
 // Shape 抬层 hack：故意用永不注册的贴图 key —— spriteReady 恒 false → 退化画 Shape，但 zOrder 取自 Sprite。
@@ -119,7 +124,7 @@ const strike = (targetMask: number, amount: number, fxKey: string, scaleId = 'dm
     redflash: {
       Transform: xf(0, 0),
       Shape: { kind: 'box', width: 26, height: 26 },
-      Color: { tint: 0xff2a2a, alpha: 0.7 },
+      Color: { tint: 0xd65668, alpha: 0.7 },
       Tween: { target: 'Color.alpha', from: 0.7, to: 0, elapsed: 0, duration: 9, easing: 'easeOut', done: false },
       Timer: { id: 'life', elapsed: 0, duration: 10, loop: false },
       Sprite: zlift(9),
@@ -175,7 +180,7 @@ const ultTemplate = (targetMask: number, amount: number, size: number, fxKey: st
     redflash: {
       Transform: xf(0, 0),
       Shape: { kind: 'box', width: Math.round(size * 0.7), height: Math.round(size * 0.7) },
-      Color: { tint: 0xff2a2a, alpha: 0.5 },
+      Color: { tint: 0xd65668, alpha: 0.5 },
       Tween: { target: 'Color.alpha', from: 0.5, to: 0, elapsed: 0, duration: 12, easing: 'easeOut', done: false },
       Timer: { id: 'life', elapsed: 0, duration: 13, loop: false },
       Sprite: zlift(9),
@@ -250,7 +255,7 @@ const FX_BY_TYPE: Record<HeroSpec['atkType'], string> = { melee: F_FX_STRIKE, ra
 // 全链已 per-instance（F-9 完结）：timer 'atk'/资源 'mp' 皆普通共享 id，self/局部作用域各读各的——
 // 同模板任意多实例（重复购买/三星合体）普攻、回蓝、放大招全不串台，零唯一 id。
 const BAR_W = 28;
-const trackColor = 0x18181c;
+const trackColor = 0xd9c4b8; // 锦霞 --track（浅底深槽）
 const HP_Y = -26, MP_Y = -20;
 const sidecarLink = { parentId: '@local:main', localX: 0, localY: 0, localRotation: 0, localScaleX: 1, localScaleY: 1 };
 function heroTemplate(h: HeroSpec): PrefabTemplate {
@@ -289,7 +294,7 @@ function heroTemplate(h: HeroSpec): PrefabTemplate {
       // 势力色仍在 ROSTER.tint，留羁绊期徽记/描边用）；Sprite 仅抬 zOrder（文本模式不绘）。-34 给两条让位。
       name: {
         Transform: xf(0, -34),
-        Text: { content: h.name, fontSize: 9, fontFamily: 'sans-serif', anchor: 'center', lineSpacing: 0 },
+        Text: { content: h.name, fontSize: 9, fontFamily: FONT_BODY, anchor: 'center', lineSpacing: 0 },
         Color: { tint: h.team === TEAM_A ? SHU_RED : WEI_BLUE, alpha: 1 },
         Sprite: { textureKey: F_FX_STRIKE, anchorX: 0.5, anchorY: 0.5, zOrder: 30 },
         Hierarchy: { ...sidecarLink, localY: -34 },
@@ -297,9 +302,9 @@ function heroTemplate(h: HeroSpec): PrefabTemplate {
       // 实时血条/蓝条（REQ-F-029 gauge）：暗轨道(先插=在下)+彩填充(后插=在上)，同 zOrder 按插入序叠放。
       // hp 读父（共享 id，fromParent）；mp 读全局唯一 mp_<id>。条无 Tag/Sensor/Hitbox：不参战不计 Zone 不被 wipe 直击（随级联走）。
       hpbg: { ...bar(HP_Y, 5), Color: { tint: trackColor, alpha: 0.85 } },
-      hpbar: { ...bar(HP_Y, 5), Color: { tint: 0x33cc33, alpha: 1 }, Gauge: { resourceId: 'hp', fromParent: true, width: BAR_W } },
+      hpbar: { ...bar(HP_Y, 5), Color: { tint: 0x54ad8e, alpha: 1 }, Gauge: { resourceId: 'hp', fromParent: true, width: BAR_W } },
       mpbg: { ...bar(MP_Y, 3), Color: { tint: trackColor, alpha: 0.85 } },
-      mpbar: { ...bar(MP_Y, 3), Color: { tint: 0x3aa0ff, alpha: 1 }, Gauge: { resourceId: 'mp', fromParent: true, width: BAR_W }, Hierarchy: { ...sidecarLink, parentId: '@local:mana', localY: MP_Y } },
+      mpbar: { ...bar(MP_Y, 3), Color: { tint: 0x8aa0e6, alpha: 1 }, Gauge: { resourceId: 'mp', fromParent: true, width: BAR_W }, Hierarchy: { ...sidecarLink, parentId: '@local:mana', localY: MP_Y } },
       // 大招接线（F-9 完结篇，REQ-F-039 回驳给的重组路线，全 per-instance 零唯一 id）：
       // · 回蓝 = over-time 永久 regen（duration<=0、amountPerTick 正、局部寻址自身 mp——现有能力字面覆盖，
       //   Lead 等价写法原样）；· 蓝满→放→清 = sidecar 仅有的一条 SelfRule（whenGlobal 阶段门同普攻纪律）；
@@ -424,13 +429,13 @@ function mobTemplate(atk: number): PrefabTemplate {
       },
       name: {
         Transform: xf(0, -34),
-        Text: { content: '黄巾賊', fontSize: 9, fontFamily: 'sans-serif', anchor: 'center', lineSpacing: 0 },
-        Color: { tint: 0xc9a86a, alpha: 1 },
+        Text: { content: '黄巾賊', fontSize: 9, fontFamily: FONT_BODY, anchor: 'center', lineSpacing: 0 },
+        Color: { tint: 0xa98b8f, alpha: 1 },
         Sprite: { textureKey: F_FX_STRIKE, anchorX: 0.5, anchorY: 0.5, zOrder: 30 },
         Hierarchy: { ...sidecarLink, localY: -34 },
       },
       hpbg: { Transform: xf(0, HP_Y), Shape: { kind: 'box', width: BAR_W, height: 5 }, Hierarchy: { ...sidecarLink, localY: HP_Y }, Color: { tint: trackColor, alpha: 0.85 } },
-      hpbar: { Transform: xf(0, HP_Y), Shape: { kind: 'box', width: BAR_W, height: 5 }, Hierarchy: { ...sidecarLink, localY: HP_Y }, Color: { tint: 0x33cc33, alpha: 1 }, Gauge: { resourceId: 'hp', fromParent: true, width: BAR_W } },
+      hpbar: { Transform: xf(0, HP_Y), Shape: { kind: 'box', width: BAR_W, height: 5 }, Hierarchy: { ...sidecarLink, localY: HP_Y }, Color: { tint: 0x54ad8e, alpha: 1 }, Gauge: { resourceId: 'hp', fromParent: true, width: BAR_W } },
     },
   } as unknown as PrefabTemplate;
 }
@@ -528,7 +533,7 @@ export const GAME_F_TEMPLATES: Record<string, PrefabTemplate> = Object.fromEntri
                   // 出生瞬间金光炸开渐隐（买入的 1 星无此件）。无 Hierarchy 不级联，lifetime 自清。
                   flash: {
                     Transform: { x: 0, y: 0, rotation: 0, scaleX: 2.4, scaleY: 2.4 },
-                    Color: { tint: 0xffd24a, alpha: 0.95 },
+                    Color: { tint: 0xcf9a3f, alpha: 0.95 },
                     Tween: { target: 'Color.alpha', from: 0.95, to: 0, elapsed: 0, duration: 22, easing: 'easeOut', done: false },
                     Timer: { id: 'life', elapsed: 0, duration: 24, loop: false },
                     Sprite: sprite(F_FX_FLAME, 32),
@@ -536,8 +541,8 @@ export const GAME_F_TEMPLATES: Record<string, PrefabTemplate> = Object.fromEntri
                   // ★ 角标：2 星银 / 3 星金，字号加大，带描边底板 —— 升星辨识度（合成功能本身已验证正确，纯视觉强化）。
                   star: {
                     Transform: xf(0, -26),
-                    Text: { content: STAR_GLYPH[s], fontSize: s === 3 ? 16 : 14, fontFamily: 'sans-serif', anchor: 'center', lineSpacing: 0 },
-                    Color: { tint: s === 3 ? 0xffd24a : 0xe8e8f0, alpha: 1 }, // 3星金 / 2星银
+                    Text: { content: STAR_GLYPH[s], fontSize: s === 3 ? 16 : 14, fontFamily: FONT_BODY, anchor: 'center', lineSpacing: 0 },
+                    Color: { tint: s === 3 ? 0xcf9a3f : 0x8aa0e6, alpha: 1 }, // 3星金 / 2星银
                     Tag: { flags: MARKER_VIS }, // ★ 角标随 seat 一起隐显（不带 BENCH_OCC=不计席位占用）
                     Visibility: { visible: true, active: true },
                     Sprite: { textureKey: F_FX_STRIKE, anchorX: 0.5, anchorY: 0.5, zOrder: 31 },
@@ -563,13 +568,13 @@ export const GAME_F_TEMPLATES: Record<string, PrefabTemplate> = Object.fromEntri
     PVE_WAVES.map((w): [string, PrefabTemplate] => [`mob_s${w.stage}`, mobTemplate(w.atk)]),
     [[
       'loot_orb',
-      { entities: { orb: { Transform: xf(0, 0), Shape: { kind: 'box', width: 10, height: 10 }, Sensor: {}, Sprite: sprite(F_FX_DRAIN, 5), Color: { tint: 0xffd700, alpha: 1 }, Tag: { flags: LOOT | ZONE_FLAG }, Hitbox: { resource: 'loot', amount: -5, targetMask: PROTAG, consumeOnHit: true } } } } as unknown as PrefabTemplate, // 044：真结算一次入账-5(负=给予)同拍自毁；主角零附件
+      { entities: { orb: { Transform: xf(0, 0), Shape: { kind: 'box', width: 10, height: 10 }, Sensor: {}, Sprite: sprite(F_FX_DRAIN, 5), Color: { tint: 0xd8607b, alpha: 1 }, Tag: { flags: LOOT | ZONE_FLAG }, Hitbox: { resource: 'loot', amount: -5, targetMask: PROTAG, consumeOnHit: true } } } } as unknown as PrefabTemplate, // 044：真结算一次入账-5(负=给予)同拍自毁；主角零附件
     ]] as [string, PrefabTemplate][],
     // 野怪死亡复合（掉法球 + 四分碎裂；Mortal.dropTemplate 单口 → 复合模板一口出两件）
     [[
       'mob_death',
       { entities: Object.assign(
-        { orb: { Transform: xf(0, 0), Shape: { kind: 'box', width: 10, height: 10 }, Sensor: {}, Sprite: sprite(F_FX_DRAIN, 5), Color: { tint: 0xffd700, alpha: 1 }, Tag: { flags: LOOT | ZONE_FLAG }, Hitbox: { resource: 'loot', amount: -5, targetMask: PROTAG, consumeOnHit: true } } },
+        { orb: { Transform: xf(0, 0), Shape: { kind: 'box', width: 10, height: 10 }, Sensor: {}, Sprite: sprite(F_FX_DRAIN, 5), Color: { tint: 0xd8607b, alpha: 1 }, Tag: { flags: LOOT | ZONE_FLAG }, Hitbox: { resource: 'loot', amount: -5, targetMask: PROTAG, consumeOnHit: true } } },
         Object.fromEntries([[-1, -1], [1, -1], [-1, 1], [1, 1]].map(([dx, dy], i) => [`q${i}`, {
           Transform: { x: dx * 5, y: dy * 5, rotation: 0, scaleX: 0.5, scaleY: 0.5 },
           Velocity: { vx: dx * 2.0, vy: dy * 1.6 - 0.6, angular: 0 },
@@ -587,7 +592,7 @@ export const GAME_F_TEMPLATES: Record<string, PrefabTemplate> = Object.fromEntri
         Transform: { x: (i - 1.5) * 8, y: 0, rotation: 0, scaleX: 1, scaleY: 1 },
         Shape: { kind: 'circle', radius: 4 },
         Velocity: { vx, vy, angular: 0 },
-        Color: { tint: i % 2 === 0 ? 0xffd24a : 0xff8a4a, alpha: 0.95 },
+        Color: { tint: i % 2 === 0 ? 0xcf9a3f : 0xe887a0, alpha: 0.95 },
         Tween: { target: 'Color.alpha', from: 0.95, to: 0, elapsed: 0, duration: 38, easing: 'easeOut', done: false },
         Timer: { id: 'life', elapsed: 0, duration: 42, loop: false },
         Sprite: zlift(33),
@@ -597,21 +602,21 @@ export const GAME_F_TEMPLATES: Record<string, PrefabTemplate> = Object.fromEntri
     [[
       'result_win',
       { entities: {
-        head: { Transform: xf(0, 0), Text: { content: '— 战 果 —', fontSize: 14, fontFamily: 'sans-serif', anchor: 'center', lineSpacing: 0 }, Color: { tint: 0xffe28a, alpha: 0 }, Tween: { target: 'Color.alpha', from: 0, to: 1, elapsed: 0, duration: 8, easing: 'easeOut', done: false }, Tag: { flags: RESULT }, Sprite: { textureKey: F_FX_STRIKE, anchorX: 0.5, anchorY: 0.5, zOrder: 34 } },
-        verdict: { Transform: xf(0, 20), Text: { content: '🏆 本回合胜利', fontSize: 15, fontFamily: 'sans-serif', anchor: 'center', lineSpacing: 0 }, Color: { tint: 0xffd24a, alpha: 0 }, Tween: { target: 'Color.alpha', from: 0, to: 1, elapsed: 0, duration: 16, easing: 'easeOut', done: false }, Tag: { flags: RESULT }, Sprite: { textureKey: F_FX_STRIKE, anchorX: 0.5, anchorY: 0.5, zOrder: 34 } },
-        gline: { Transform: xf(0, 40), Text: { content: '金币 0', fontSize: 12, fontFamily: 'sans-serif', anchor: 'center', lineSpacing: 0 }, TextBinding: { resourceId: 'gold', prefix: '金币 ' }, Color: { tint: 0xf0d27a, alpha: 0 }, Tween: { target: 'Color.alpha', from: 0, to: 1, elapsed: 0, duration: 26, easing: 'easeOut', done: false }, Tag: { flags: RESULT }, Sprite: { textureKey: F_FX_STRIKE, anchorX: 0.5, anchorY: 0.5, zOrder: 34 } },
-        sline: { Transform: xf(0, 58), Text: { content: '', fontSize: 12, fontFamily: 'sans-serif', anchor: 'center', lineSpacing: 0 }, TextBinding: { resourceId: 'win_streak', prefix: '连胜 ' }, Color: { tint: 0x9ad1ff, alpha: 0 }, Tween: { target: 'Color.alpha', from: 0, to: 1, elapsed: 0, duration: 36, easing: 'easeOut', done: false }, Tag: { flags: RESULT }, Sprite: { textureKey: F_FX_STRIKE, anchorX: 0.5, anchorY: 0.5, zOrder: 34 } },
-        hline: { Transform: xf(0, 76), Text: { content: '血量 100', fontSize: 12, fontFamily: 'sans-serif', anchor: 'center', lineSpacing: 0 }, TextBinding: { resourceId: 'player_hp', prefix: '血量 ' }, Color: { tint: 0xff8a8a, alpha: 0 }, Tween: { target: 'Color.alpha', from: 0, to: 1, elapsed: 0, duration: 46, easing: 'easeOut', done: false }, Tag: { flags: RESULT }, Sprite: { textureKey: F_FX_STRIKE, anchorX: 0.5, anchorY: 0.5, zOrder: 34 } },
+        head: { Transform: xf(0, 0), Text: { content: '— 战 果 —', fontSize: 14, fontFamily: FONT_DISPLAY, anchor: 'center', lineSpacing: 0 }, Color: { tint: 0xcf9a3f, alpha: 0 }, Tween: { target: 'Color.alpha', from: 0, to: 1, elapsed: 0, duration: 8, easing: 'easeOut', done: false }, Tag: { flags: RESULT }, Sprite: { textureKey: F_FX_STRIKE, anchorX: 0.5, anchorY: 0.5, zOrder: 34 } },
+        verdict: { Transform: xf(0, 20), Text: { content: '🏆 本回合胜利', fontSize: 15, fontFamily: FONT_DISPLAY, anchor: 'center', lineSpacing: 0 }, Color: { tint: 0xcf9a3f, alpha: 0 }, Tween: { target: 'Color.alpha', from: 0, to: 1, elapsed: 0, duration: 16, easing: 'easeOut', done: false }, Tag: { flags: RESULT }, Sprite: { textureKey: F_FX_STRIKE, anchorX: 0.5, anchorY: 0.5, zOrder: 34 } },
+        gline: { Transform: xf(0, 40), Text: { content: '金币 0', fontSize: 12, fontFamily: FONT_NUM, anchor: 'center', lineSpacing: 0 }, TextBinding: { resourceId: 'gold', prefix: '金币 ' }, Color: { tint: 0xcf9a3f, alpha: 0 }, Tween: { target: 'Color.alpha', from: 0, to: 1, elapsed: 0, duration: 26, easing: 'easeOut', done: false }, Tag: { flags: RESULT }, Sprite: { textureKey: F_FX_STRIKE, anchorX: 0.5, anchorY: 0.5, zOrder: 34 } },
+        sline: { Transform: xf(0, 58), Text: { content: '', fontSize: 12, fontFamily: FONT_BODY, anchor: 'center', lineSpacing: 0 }, TextBinding: { resourceId: 'win_streak', prefix: '连胜 ' }, Color: { tint: 0x8aa0e6, alpha: 0 }, Tween: { target: 'Color.alpha', from: 0, to: 1, elapsed: 0, duration: 36, easing: 'easeOut', done: false }, Tag: { flags: RESULT }, Sprite: { textureKey: F_FX_STRIKE, anchorX: 0.5, anchorY: 0.5, zOrder: 34 } },
+        hline: { Transform: xf(0, 76), Text: { content: '血量 100', fontSize: 12, fontFamily: FONT_NUM, anchor: 'center', lineSpacing: 0 }, TextBinding: { resourceId: 'player_hp', prefix: '血量 ' }, Color: { tint: 0xd65668, alpha: 0 }, Tween: { target: 'Color.alpha', from: 0, to: 1, elapsed: 0, duration: 46, easing: 'easeOut', done: false }, Tag: { flags: RESULT }, Sprite: { textureKey: F_FX_STRIKE, anchorX: 0.5, anchorY: 0.5, zOrder: 34 } },
       } } as unknown as PrefabTemplate,
     ]] as [string, PrefabTemplate][],
     [[
       'result_lose',
       { entities: {
-        head: { Transform: xf(0, 0), Text: { content: '— 战 果 —', fontSize: 14, fontFamily: 'sans-serif', anchor: 'center', lineSpacing: 0 }, Color: { tint: 0xffe28a, alpha: 0 }, Tween: { target: 'Color.alpha', from: 0, to: 1, elapsed: 0, duration: 8, easing: 'easeOut', done: false }, Tag: { flags: RESULT }, Sprite: { textureKey: F_FX_STRIKE, anchorX: 0.5, anchorY: 0.5, zOrder: 34 } },
-        verdict: { Transform: xf(0, 20), Text: { content: '💔 本回合战败', fontSize: 15, fontFamily: 'sans-serif', anchor: 'center', lineSpacing: 0 }, Color: { tint: 0xc06060, alpha: 0 }, Tween: { target: 'Color.alpha', from: 0, to: 1, elapsed: 0, duration: 16, easing: 'easeOut', done: false }, Tag: { flags: RESULT }, Sprite: { textureKey: F_FX_STRIKE, anchorX: 0.5, anchorY: 0.5, zOrder: 34 } },
-        gline: { Transform: xf(0, 40), Text: { content: '金币 0', fontSize: 12, fontFamily: 'sans-serif', anchor: 'center', lineSpacing: 0 }, TextBinding: { resourceId: 'gold', prefix: '金币 ' }, Color: { tint: 0xf0d27a, alpha: 0 }, Tween: { target: 'Color.alpha', from: 0, to: 1, elapsed: 0, duration: 26, easing: 'easeOut', done: false }, Tag: { flags: RESULT }, Sprite: { textureKey: F_FX_STRIKE, anchorX: 0.5, anchorY: 0.5, zOrder: 34 } },
-        sline: { Transform: xf(0, 58), Text: { content: '', fontSize: 12, fontFamily: 'sans-serif', anchor: 'center', lineSpacing: 0 }, TextBinding: { resourceId: 'lose_streak', prefix: '连败 ' }, Color: { tint: 0x9ad1ff, alpha: 0 }, Tween: { target: 'Color.alpha', from: 0, to: 1, elapsed: 0, duration: 36, easing: 'easeOut', done: false }, Tag: { flags: RESULT }, Sprite: { textureKey: F_FX_STRIKE, anchorX: 0.5, anchorY: 0.5, zOrder: 34 } },
-        hline: { Transform: xf(0, 76), Text: { content: '血量 100', fontSize: 12, fontFamily: 'sans-serif', anchor: 'center', lineSpacing: 0 }, TextBinding: { resourceId: 'player_hp', prefix: '血量 ' }, Color: { tint: 0xff8a8a, alpha: 0 }, Tween: { target: 'Color.alpha', from: 0, to: 1, elapsed: 0, duration: 46, easing: 'easeOut', done: false }, Tag: { flags: RESULT }, Sprite: { textureKey: F_FX_STRIKE, anchorX: 0.5, anchorY: 0.5, zOrder: 34 } },
+        head: { Transform: xf(0, 0), Text: { content: '— 战 果 —', fontSize: 14, fontFamily: FONT_DISPLAY, anchor: 'center', lineSpacing: 0 }, Color: { tint: 0xcf9a3f, alpha: 0 }, Tween: { target: 'Color.alpha', from: 0, to: 1, elapsed: 0, duration: 8, easing: 'easeOut', done: false }, Tag: { flags: RESULT }, Sprite: { textureKey: F_FX_STRIKE, anchorX: 0.5, anchorY: 0.5, zOrder: 34 } },
+        verdict: { Transform: xf(0, 20), Text: { content: '💔 本回合战败', fontSize: 15, fontFamily: FONT_DISPLAY, anchor: 'center', lineSpacing: 0 }, Color: { tint: 0xd65668, alpha: 0 }, Tween: { target: 'Color.alpha', from: 0, to: 1, elapsed: 0, duration: 16, easing: 'easeOut', done: false }, Tag: { flags: RESULT }, Sprite: { textureKey: F_FX_STRIKE, anchorX: 0.5, anchorY: 0.5, zOrder: 34 } },
+        gline: { Transform: xf(0, 40), Text: { content: '金币 0', fontSize: 12, fontFamily: FONT_NUM, anchor: 'center', lineSpacing: 0 }, TextBinding: { resourceId: 'gold', prefix: '金币 ' }, Color: { tint: 0xcf9a3f, alpha: 0 }, Tween: { target: 'Color.alpha', from: 0, to: 1, elapsed: 0, duration: 26, easing: 'easeOut', done: false }, Tag: { flags: RESULT }, Sprite: { textureKey: F_FX_STRIKE, anchorX: 0.5, anchorY: 0.5, zOrder: 34 } },
+        sline: { Transform: xf(0, 58), Text: { content: '', fontSize: 12, fontFamily: FONT_BODY, anchor: 'center', lineSpacing: 0 }, TextBinding: { resourceId: 'lose_streak', prefix: '连败 ' }, Color: { tint: 0x8aa0e6, alpha: 0 }, Tween: { target: 'Color.alpha', from: 0, to: 1, elapsed: 0, duration: 36, easing: 'easeOut', done: false }, Tag: { flags: RESULT }, Sprite: { textureKey: F_FX_STRIKE, anchorX: 0.5, anchorY: 0.5, zOrder: 34 } },
+        hline: { Transform: xf(0, 76), Text: { content: '血量 100', fontSize: 12, fontFamily: FONT_NUM, anchor: 'center', lineSpacing: 0 }, TextBinding: { resourceId: 'player_hp', prefix: '血量 ' }, Color: { tint: 0xd65668, alpha: 0 }, Tween: { target: 'Color.alpha', from: 0, to: 1, elapsed: 0, duration: 46, easing: 'easeOut', done: false }, Tag: { flags: RESULT }, Sprite: { textureKey: F_FX_STRIKE, anchorX: 0.5, anchorY: 0.5, zOrder: 34 } },
       } } as unknown as PrefabTemplate,
     ]] as [string, PrefabTemplate][],
     // 商店大卡（F-14 重排/用户钦定）：在售英雄的可点大卡面（60×68 占满大框）+ 名字签 + **价签**（用户报缺）；
@@ -619,9 +624,9 @@ export const GAME_F_TEMPLATES: Record<string, PrefabTemplate> = Object.fromEntri
     ROSTER.filter((x) => x.team === TEAM_A).map((h): [string, PrefabTemplate] => [
       `shopcard_${h.id}`,
       { entities: {
-        card: { Transform: xf(0, 0), Shape: { kind: 'box', width: 58, height: 68 }, Sprite: sprite(h.key, 28), Color: { tint: 0xf0d27a, alpha: 1 }, Clickable: { action: 'ph' }, Tag: { flags: 0 } },
-        cardname: { Transform: xf(0, -26), Text: { content: h.name, fontSize: 9, fontFamily: 'sans-serif', anchor: 'center', lineSpacing: 0 }, Color: { tint: 0x20140a, alpha: 1 }, Sprite: { textureKey: F_FX_STRIKE, anchorX: 0.5, anchorY: 0.5, zOrder: 29 }, Hierarchy: { parentId: '@local:card', localX: 0, localY: -26, localRotation: 0, localScaleX: 1, localScaleY: 1 } },
-        cardprice: { Transform: xf(0, 28), Text: { content: '💰3', fontSize: 11, fontFamily: 'sans-serif', anchor: 'center', lineSpacing: 0 }, Color: { tint: 0xffe28a, alpha: 1 }, Sprite: { textureKey: F_FX_STRIKE, anchorX: 0.5, anchorY: 0.5, zOrder: 29 }, Hierarchy: { parentId: '@local:card', localX: 0, localY: 28, localRotation: 0, localScaleX: 1, localScaleY: 1 } },
+        card: { Transform: xf(0, 0), Shape: { kind: 'box', width: 58, height: 68 }, Sprite: sprite(h.key, 28), Color: { tint: 0xcf9a3f, alpha: 1 }, Clickable: { action: 'ph' }, Tag: { flags: 0 } },
+        cardname: { Transform: xf(0, -26), Text: { content: h.name, fontSize: 9, fontFamily: FONT_BODY, anchor: 'center', lineSpacing: 0 }, Color: { tint: 0x5a3f44, alpha: 1 }, Sprite: { textureKey: F_FX_STRIKE, anchorX: 0.5, anchorY: 0.5, zOrder: 29 }, Hierarchy: { parentId: '@local:card', localX: 0, localY: -26, localRotation: 0, localScaleX: 1, localScaleY: 1 } },
+        cardprice: { Transform: xf(0, 28), Text: { content: '💰3', fontSize: 11, fontFamily: FONT_NUM, anchor: 'center', lineSpacing: 0 }, Color: { tint: 0xcf9a3f, alpha: 1 }, Sprite: { textureKey: F_FX_STRIKE, anchorX: 0.5, anchorY: 0.5, zOrder: 29 }, Hierarchy: { parentId: '@local:card', localX: 0, localY: 28, localRotation: 0, localScaleX: 1, localScaleY: 1 } },
       } } as unknown as PrefabTemplate,
     ]),
   ),
@@ -811,8 +816,8 @@ export function buildGameFBlueprint(pacing: GameFPacing = {}): WorldBlueprint {
       Transform: xf(300, 180), // 右下按钮列（视口 ±355×200；商店三大框居中后按钮整列右移）
       Shape: { kind: 'box', width: 64, height: 24 },
       Clickable: { action: 'ready_btn' },
-      Text: { content: '开战', fontSize: 13, fontFamily: 'sans-serif', anchor: 'center', lineSpacing: 0 },
-      Color: { tint: 0xd4a017, alpha: 1 },
+      Text: { content: '开战', fontSize: 13, fontFamily: FONT_BODY, anchor: 'center', lineSpacing: 0 },
+      Color: { tint: 0xd8607b, alpha: 1 },
       Sprite: { textureKey: F_FX_STRIKE, anchorX: 0.5, anchorY: 0.5, zOrder: 30 }, // 只为抬 zOrder（文本模式不绘）
     } as unknown as EntityBlueprint,
     eff_ready: { Effect: { onSignal: 'ready_btn', kind: 'set-flag', targetId: 'ready', value: true } } as unknown as EntityBlueprint,
@@ -825,9 +830,9 @@ export function buildGameFBlueprint(pacing: GameFPacing = {}): WorldBlueprint {
     } as unknown as EntityBlueprint,
     hud_timer: {
       Transform: xf(0, -160),
-      Text: { content: '开战 30', fontSize: 18, fontFamily: 'sans-serif', anchor: 'center', lineSpacing: 0 },
+      Text: { content: '开战 30', fontSize: 18, fontFamily: FONT_NUM, anchor: 'center', lineSpacing: 0 },
       TextBinding: { resourceId: 'prep_left', prefix: '开战 ' },
-      Color: { tint: 0xffd700, alpha: 1 },
+      Color: { tint: 0xd8607b, alpha: 1 },
       Visibility: { visible: true },
       Sprite: { textureKey: F_FX_STRIKE, anchorX: 0.5, anchorY: 0.5, zOrder: 31 },
     } as unknown as EntityBlueprint,
@@ -876,8 +881,8 @@ export function buildGameFBlueprint(pacing: GameFPacing = {}): WorldBlueprint {
       Shape: { kind: 'box', width: 40, height: 20 },
       Clickable: { action: 'buyxp_btn' },
       CraftRecipe: { onSignal: 'buyxp_btn', costs: [{ id: 'gold', amount: 4 }], gains: [{ id: 'xp', amount: 4 }] },
-      Text: { content: '经验$4', fontSize: 11, fontFamily: 'sans-serif', anchor: 'center', lineSpacing: 0 },
-      Color: { tint: 0x7ad17a, alpha: 1 },
+      Text: { content: '经验$4', fontSize: 11, fontFamily: FONT_BODY, anchor: 'center', lineSpacing: 0 },
+      Color: { tint: 0xc98fc4, alpha: 1 },
       Sprite: { textureKey: F_FX_STRIKE, anchorX: 0.5, anchorY: 0.5, zOrder: 30 },
     } as unknown as EntityBlueprint,
     ...band('lvl_5', resCmp('xp', 'gte', 20), 'level', 1),
@@ -891,8 +896,8 @@ export function buildGameFBlueprint(pacing: GameFPacing = {}): WorldBlueprint {
       Shape: { kind: 'box', width: 56, height: 20 },
       Clickable: { action: 'reroll_btn' },
       CraftRecipe: { onSignal: 'reroll_btn', costs: [{ id: 'gold', amount: 2 }], grantsFlag: 'reroll_paid' },
-      Text: { content: '刷新$2', fontSize: 11, fontFamily: 'sans-serif', anchor: 'center', lineSpacing: 0 },
-      Color: { tint: 0x9ad1ff, alpha: 1 },
+      Text: { content: '刷新$2', fontSize: 11, fontFamily: FONT_BODY, anchor: 'center', lineSpacing: 0 },
+      Color: { tint: 0x8aa0e6, alpha: 1 },
       Sprite: { textureKey: F_FX_STRIKE, anchorX: 0.5, anchorY: 0.5, zOrder: 30 },
     } as unknown as EntityBlueprint,
     f_reroll_paid: { Flag: { id: 'reroll_paid', active: false } } as unknown as EntityBlueprint,
@@ -903,16 +908,16 @@ export function buildGameFBlueprint(pacing: GameFPacing = {}): WorldBlueprint {
       Transform: xf(300, 120),
       Shape: { kind: 'box', width: 40, height: 20 },
       Clickable: { action: 'lock_btn' },
-      Text: { content: '锁店', fontSize: 11, fontFamily: 'sans-serif', anchor: 'center', lineSpacing: 0 },
-      Color: { tint: 0xd4a017, alpha: 1 },
+      Text: { content: '锁店', fontSize: 11, fontFamily: FONT_BODY, anchor: 'center', lineSpacing: 0 },
+      Color: { tint: 0xd8607b, alpha: 1 },
       Sprite: { textureKey: F_FX_STRIKE, anchorX: 0.5, anchorY: 0.5, zOrder: 30 },
     } as unknown as EntityBlueprint,
     btn_unlock: {
       Transform: xf(300, 92),
       Shape: { kind: 'box', width: 40, height: 20 },
       Clickable: { action: 'unlock_btn' },
-      Text: { content: '解锁', fontSize: 11, fontFamily: 'sans-serif', anchor: 'center', lineSpacing: 0 },
-      Color: { tint: 0x8a8a8a, alpha: 1 },
+      Text: { content: '解锁', fontSize: 11, fontFamily: FONT_BODY, anchor: 'center', lineSpacing: 0 },
+      Color: { tint: 0xa98b8f, alpha: 1 },
       Sprite: { textureKey: F_FX_STRIKE, anchorX: 0.5, anchorY: 0.5, zOrder: 30 },
     } as unknown as EntityBlueprint,
     eff_lock: { Effect: { onSignal: 'lock_btn', kind: 'set-flag', targetId: 'shop_locked', value: true } } as unknown as EntityBlueprint,
@@ -936,50 +941,50 @@ export function buildGameFBlueprint(pacing: GameFPacing = {}): WorldBlueprint {
     f_round_state: { State: { fsmId: 'round_ui', current: 'prep' } } as unknown as EntityBlueprint,
     banner_prep: {
       Transform: xf(0, -186),
-      Text: { content: '备 战 —— 买人/刷新/锁店，点「开战」或等倒计时', fontSize: 15, fontFamily: 'sans-serif', anchor: 'center', lineSpacing: 0 },
-      Color: { tint: 0xf0d27a, alpha: 1 },
+      Text: { content: '备 战 —— 买人/刷新/锁店，点「开战」或等倒计时', fontSize: 15, fontFamily: FONT_DISPLAY, anchor: 'center', lineSpacing: 0 },
+      Color: { tint: 0xcf9a3f, alpha: 1 },
       Visibility: { visible: true },
       Sprite: { textureKey: F_FX_STRIKE, anchorX: 0.5, anchorY: 0.5, zOrder: 31 },
     } as unknown as EntityBlueprint,
     banner_combat: {
       Transform: xf(0, -186),
-      Text: { content: '战 斗 中', fontSize: 16, fontFamily: 'sans-serif', anchor: 'center', lineSpacing: 0 },
-      Color: { tint: 0xff7a6a, alpha: 1 },
+      Text: { content: '战 斗 中', fontSize: 16, fontFamily: FONT_DISPLAY, anchor: 'center', lineSpacing: 0 },
+      Color: { tint: 0xd8607b, alpha: 1 },
       Visibility: { visible: false },
       Sprite: { textureKey: F_FX_STRIKE, anchorX: 0.5, anchorY: 0.5, zOrder: 31 },
     } as unknown as EntityBlueprint,
     banner_resolution: {
       Transform: xf(0, -186),
-      Text: { content: '回 合 结 算', fontSize: 15, fontFamily: 'sans-serif', anchor: 'center', lineSpacing: 0 },
-      Color: { tint: 0x9ad1ff, alpha: 1 },
+      Text: { content: '回 合 结 算', fontSize: 15, fontFamily: FONT_DISPLAY, anchor: 'center', lineSpacing: 0 },
+      Color: { tint: 0x8aa0e6, alpha: 1 },
       Visibility: { visible: false },
       Sprite: { textureKey: F_FX_STRIKE, anchorX: 0.5, anchorY: 0.5, zOrder: 31 },
     } as unknown as EntityBlueprint,
     banner_gameover: {
       Transform: xf(0, -60),
-      Text: { content: '败 局 —— 玩家血量耗尽', fontSize: 22, fontFamily: 'sans-serif', anchor: 'center', lineSpacing: 0 },
-      Color: { tint: 0xff5050, alpha: 1 },
+      Text: { content: '败 局 —— 玩家血量耗尽', fontSize: 22, fontFamily: FONT_DISPLAY, anchor: 'center', lineSpacing: 0 },
+      Color: { tint: 0xd65668, alpha: 1 },
       Visibility: { visible: false },
       Sprite: { textureKey: F_FX_STRIKE, anchorX: 0.5, anchorY: 0.5, zOrder: 32 },
     } as unknown as EntityBlueprint,
     banner_victory: {
       Transform: xf(0, -60),
-      Text: { content: '通 关 —— 打穿关卡表！', fontSize: 22, fontFamily: 'sans-serif', anchor: 'center', lineSpacing: 0 },
-      Color: { tint: 0x77e08a, alpha: 1 },
+      Text: { content: '通 关 —— 打穿关卡表！', fontSize: 22, fontFamily: FONT_DISPLAY, anchor: 'center', lineSpacing: 0 },
+      Color: { tint: 0x54ad8e, alpha: 1 },
       Visibility: { visible: false },
       Sprite: { textureKey: F_FX_STRIKE, anchorX: 0.5, anchorY: 0.5, zOrder: 32 },
     } as unknown as EntityBlueprint,
     banner_win: {
       Transform: xf(0, -60),
-      Text: { content: '🎉 胜 利 ！', fontSize: 26, fontFamily: 'sans-serif', anchor: 'center', lineSpacing: 0 },
-      Color: { tint: 0xffd24a, alpha: 1 },
+      Text: { content: '🎉 胜 利 ！', fontSize: 26, fontFamily: FONT_DISPLAY, anchor: 'center', lineSpacing: 0 },
+      Color: { tint: 0xcf9a3f, alpha: 1 },
       Visibility: { visible: false },
       Sprite: { textureKey: F_FX_STRIKE, anchorX: 0.5, anchorY: 0.5, zOrder: 32 },
     } as unknown as EntityBlueprint,
     banner_lose: {
       Transform: xf(0, -60),
-      Text: { content: '败 阵 …', fontSize: 22, fontFamily: 'sans-serif', anchor: 'center', lineSpacing: 0 },
-      Color: { tint: 0xc06060, alpha: 1 },
+      Text: { content: '败 阵 …', fontSize: 22, fontFamily: FONT_DISPLAY, anchor: 'center', lineSpacing: 0 },
+      Color: { tint: 0xd65668, alpha: 1 },
       Visibility: { visible: false },
       Sprite: { textureKey: F_FX_STRIKE, anchorX: 0.5, anchorY: 0.5, zOrder: 32 },
     } as unknown as EntityBlueprint,
@@ -990,11 +995,11 @@ export function buildGameFBlueprint(pacing: GameFPacing = {}): WorldBlueprint {
       Transform: xf(245, 118),
       Shape: { kind: 'box', width: 44, height: 44 },
       DropZone: {},
-      Text: { content: '🗑', fontSize: 24, fontFamily: 'sans-serif', anchor: 'center', lineSpacing: 0 },
-      Color: { tint: 0xb05050, alpha: 0.95 },
+      Text: { content: '🗑', fontSize: 24, fontFamily: FONT_BODY, anchor: 'center', lineSpacing: 0 },
+      Color: { tint: 0xd65668, alpha: 0.95 },
       Sprite: { textureKey: F_FX_STRIKE, anchorX: 0.5, anchorY: 0.5, zOrder: 27 },
     } as unknown as EntityBlueprint,
-    trash_label: { Transform: xf(245, 146), Text: { content: '拖到此卖出', fontSize: 9, fontFamily: 'sans-serif', anchor: 'center', lineSpacing: 0 }, Color: { tint: 0x9a8a7a, alpha: 1 }, Sprite: { textureKey: F_FX_STRIKE, anchorX: 0.5, anchorY: 0.5, zOrder: 27 } } as unknown as EntityBlueprint,
+    trash_label: { Transform: xf(245, 146), Text: { content: '拖到此卖出', fontSize: 9, fontFamily: FONT_BODY, anchor: 'center', lineSpacing: 0 }, Color: { tint: 0xa98b8f, alpha: 1 }, Sprite: { textureKey: F_FX_STRIKE, anchorX: 0.5, anchorY: 0.5, zOrder: 27 } } as unknown as EntityBlueprint,
     // —— 战后清扫（用户「死亡时机/残留一坨」）：庆祝拍清在飞弹道——战斗已分胜负，不许补刀/暴毙。——
     eff_projsweep_w: { Effect: { onSignal: 'ph_win', kind: 'destroy-tagged', targetId: '', value: PROJ } } as unknown as EntityBlueprint,
     eff_projsweep_l: { Effect: { onSignal: 'ph_lose', kind: 'destroy-tagged', targetId: '', value: PROJ } } as unknown as EntityBlueprint,
@@ -1022,13 +1027,13 @@ export function buildGameFBlueprint(pacing: GameFPacing = {}): WorldBlueprint {
     ...visSwap('ph_over', 'banner_gameover', []),
     ...visSwap('ph_won', 'banner_victory', []),
     // —— HUD 数字（F-15 / REQ-F-043 t2-text-binding）：左上角金币/血/等级/经验 + 阶段-回合 ——
-    hud_gold: { Transform: xf(-340, -186), Text: { content: '金币 0', fontSize: 13, fontFamily: 'sans-serif', anchor: 'left', lineSpacing: 0 }, TextBinding: { resourceId: 'gold', prefix: '金币 ' }, Color: { tint: 0xf0d27a, alpha: 1 }, Sprite: { textureKey: F_FX_STRIKE, anchorX: 0.5, anchorY: 0.5, zOrder: 30 } } as unknown as EntityBlueprint,
-    hud_hp: { Transform: xf(-340, -168), Text: { content: '血量 100', fontSize: 13, fontFamily: 'sans-serif', anchor: 'left', lineSpacing: 0 }, TextBinding: { resourceId: 'player_hp', prefix: '血量 ' }, Color: { tint: 0xff8a8a, alpha: 1 }, Sprite: { textureKey: F_FX_STRIKE, anchorX: 0.5, anchorY: 0.5, zOrder: 30 } } as unknown as EntityBlueprint,
-    hud_level: { Transform: xf(-340, -150), Text: { content: '等级 4', fontSize: 13, fontFamily: 'sans-serif', anchor: 'left', lineSpacing: 0 }, TextBinding: { resourceId: 'level', prefix: '等级 ' }, Color: { tint: 0x9ad1ff, alpha: 1 }, Sprite: { textureKey: F_FX_STRIKE, anchorX: 0.5, anchorY: 0.5, zOrder: 30 } } as unknown as EntityBlueprint,
-    hud_xp: { Transform: xf(-340, -132), Text: { content: '经验 0', fontSize: 13, fontFamily: 'sans-serif', anchor: 'left', lineSpacing: 0 }, TextBinding: { resourceId: 'xp', prefix: '经验 ' }, Color: { tint: 0x7ad17a, alpha: 1 }, Sprite: { textureKey: F_FX_STRIKE, anchorX: 0.5, anchorY: 0.5, zOrder: 30 } } as unknown as EntityBlueprint,
-    hud_stage: { Transform: xf(-340, -114), Text: { content: '阶段 1', fontSize: 13, fontFamily: 'sans-serif', anchor: 'left', lineSpacing: 0 }, TextBinding: { resourceId: 'stage_idx', prefix: '阶段 ' }, Color: { tint: 0xd0d0d0, alpha: 1 }, Sprite: { textureKey: F_FX_STRIKE, anchorX: 0.5, anchorY: 0.5, zOrder: 30 } } as unknown as EntityBlueprint,
-    hud_round: { Transform: xf(-275, -114), Text: { content: '回合 1', fontSize: 13, fontFamily: 'sans-serif', anchor: 'left', lineSpacing: 0 }, TextBinding: { resourceId: 'round_idx', prefix: '回合 ' }, Color: { tint: 0xd0d0d0, alpha: 1 }, Sprite: { textureKey: F_FX_STRIKE, anchorX: 0.5, anchorY: 0.5, zOrder: 30 } } as unknown as EntityBlueprint,
-    hud_bench: { Transform: xf(-340, -96), Text: { content: '空席 9', fontSize: 13, fontFamily: 'sans-serif', anchor: 'left', lineSpacing: 0 }, TextBinding: { resourceId: 'bench_space', prefix: '空席 ' }, Color: { tint: 0xc9a86a, alpha: 1 }, Sprite: { textureKey: F_FX_STRIKE, anchorX: 0.5, anchorY: 0.5, zOrder: 30 } } as unknown as EntityBlueprint, // F-17：席位空余可视（派生资源）
+    hud_gold: { Transform: xf(-340, -186), Text: { content: '金币 0', fontSize: 13, fontFamily: FONT_NUM, anchor: 'left', lineSpacing: 0 }, TextBinding: { resourceId: 'gold', prefix: '金币 ' }, Color: { tint: 0xcf9a3f, alpha: 1 }, Sprite: { textureKey: F_FX_STRIKE, anchorX: 0.5, anchorY: 0.5, zOrder: 30 } } as unknown as EntityBlueprint,
+    hud_hp: { Transform: xf(-340, -168), Text: { content: '血量 100', fontSize: 13, fontFamily: FONT_NUM, anchor: 'left', lineSpacing: 0 }, TextBinding: { resourceId: 'player_hp', prefix: '血量 ' }, Color: { tint: 0xd65668, alpha: 1 }, Sprite: { textureKey: F_FX_STRIKE, anchorX: 0.5, anchorY: 0.5, zOrder: 30 } } as unknown as EntityBlueprint,
+    hud_level: { Transform: xf(-340, -150), Text: { content: '等级 4', fontSize: 13, fontFamily: FONT_NUM, anchor: 'left', lineSpacing: 0 }, TextBinding: { resourceId: 'level', prefix: '等级 ' }, Color: { tint: 0x8aa0e6, alpha: 1 }, Sprite: { textureKey: F_FX_STRIKE, anchorX: 0.5, anchorY: 0.5, zOrder: 30 } } as unknown as EntityBlueprint,
+    hud_xp: { Transform: xf(-340, -132), Text: { content: '经验 0', fontSize: 13, fontFamily: FONT_NUM, anchor: 'left', lineSpacing: 0 }, TextBinding: { resourceId: 'xp', prefix: '经验 ' }, Color: { tint: 0xc98fc4, alpha: 1 }, Sprite: { textureKey: F_FX_STRIKE, anchorX: 0.5, anchorY: 0.5, zOrder: 30 } } as unknown as EntityBlueprint,
+    hud_stage: { Transform: xf(-340, -114), Text: { content: '阶段 1', fontSize: 13, fontFamily: FONT_NUM, anchor: 'left', lineSpacing: 0 }, TextBinding: { resourceId: 'stage_idx', prefix: '阶段 ' }, Color: { tint: 0xa98b8f, alpha: 1 }, Sprite: { textureKey: F_FX_STRIKE, anchorX: 0.5, anchorY: 0.5, zOrder: 30 } } as unknown as EntityBlueprint,
+    hud_round: { Transform: xf(-275, -114), Text: { content: '回合 1', fontSize: 13, fontFamily: FONT_NUM, anchor: 'left', lineSpacing: 0 }, TextBinding: { resourceId: 'round_idx', prefix: '回合 ' }, Color: { tint: 0xa98b8f, alpha: 1 }, Sprite: { textureKey: F_FX_STRIKE, anchorX: 0.5, anchorY: 0.5, zOrder: 30 } } as unknown as EntityBlueprint,
+    hud_bench: { Transform: xf(-340, -96), Text: { content: '空席 9', fontSize: 13, fontFamily: FONT_NUM, anchor: 'left', lineSpacing: 0 }, TextBinding: { resourceId: 'bench_space', prefix: '空席 ' }, Color: { tint: 0xa98b8f, alpha: 1 }, Sprite: { textureKey: F_FX_STRIKE, anchorX: 0.5, anchorY: 0.5, zOrder: 30 } } as unknown as EntityBlueprint, // F-17：席位空余可视（派生资源）
     f_deploy_armed: { Flag: { id: 'deploy_armed', active: false } } as unknown as EntityBlueprint,
     f_wipe_armed: { Flag: { id: 'wipe_armed', active: false } } as unknown as EntityBlueprint,
     f_income_armed: { Flag: { id: 'income_armed', active: false } } as unknown as EntityBlueprint, // §4.1 结算窗
@@ -1070,8 +1075,8 @@ export function buildGameFBlueprint(pacing: GameFPacing = {}): WorldBlueprint {
     } as unknown as EntityBlueprint,
     protag_name: {
       Transform: xf(-250, 24),
-      Text: { content: '主公', fontSize: 10, fontFamily: 'sans-serif', anchor: 'center', lineSpacing: 0 },
-      Color: { tint: 0xffe28a, alpha: 1 },
+      Text: { content: '主公', fontSize: 10, fontFamily: FONT_BODY, anchor: 'center', lineSpacing: 0 },
+      Color: { tint: 0xcf9a3f, alpha: 1 },
       Sprite: { textureKey: F_FX_STRIKE, anchorX: 0.5, anchorY: 0.5, zOrder: 30 },
       Hierarchy: { parentId: 'protag', localX: 0, localY: -16, localRotation: 0, localScaleX: 1, localScaleY: 1 },
     } as unknown as EntityBlueprint,
@@ -1082,10 +1087,10 @@ export function buildGameFBlueprint(pacing: GameFPacing = {}): WorldBlueprint {
     // 整组 destroy-tagged 收走（天然一次性，无需 armed 旗）。效果=经济型（全现有词汇，无 buff 施加依赖）。
     // 开局强化三选一（一次性，仅回合1）：加标题说明 + 开战拍自动收走（用户报「永远在中央、不知何意」——
     // 真打的时候就去掉）。Tag RUNE → 点选生效后 destroy-tagged 整组收（含标题），没点则 ph_combat 兜底收走。
-    rune_title: { Transform: xf(0, -128), Shape: { kind: 'box', width: 340, height: 18 }, Tag: { flags: RUNE }, Text: { content: '◆ 开局强化 · 三选一（点击生效，开战后消失）', fontSize: 13, fontFamily: 'sans-serif', anchor: 'center', lineSpacing: 0 }, Color: { tint: 0xffe28a, alpha: 1 }, Sprite: { textureKey: F_FX_STRIKE, anchorX: 0.5, anchorY: 0.5, zOrder: 33 } } as unknown as EntityBlueprint,
-    rune_a: { Transform: xf(-110, -100), Shape: { kind: 'box', width: 96, height: 40 }, Clickable: { action: 'rune_a' }, Tag: { flags: RUNE }, Text: { content: '屯粮：+10 金', fontSize: 12, fontFamily: 'sans-serif', anchor: 'center', lineSpacing: 0 }, Color: { tint: 0xf0d27a, alpha: 1 }, Sprite: { textureKey: F_FX_STRIKE, anchorX: 0.5, anchorY: 0.5, zOrder: 33 } } as unknown as EntityBlueprint,
-    rune_b: { Transform: xf(0, -100), Shape: { kind: 'box', width: 96, height: 40 }, Clickable: { action: 'rune_b' }, Tag: { flags: RUNE }, Text: { content: '砺兵：+8 经验', fontSize: 12, fontFamily: 'sans-serif', anchor: 'center', lineSpacing: 0 }, Color: { tint: 0x7ad17a, alpha: 1 }, Sprite: { textureKey: F_FX_STRIKE, anchorX: 0.5, anchorY: 0.5, zOrder: 33 } } as unknown as EntityBlueprint,
-    rune_c: { Transform: xf(110, -100), Shape: { kind: 'box', width: 96, height: 40 }, Clickable: { action: 'rune_c' }, Tag: { flags: RUNE }, Text: { content: '广纳：备战席 +2', fontSize: 12, fontFamily: 'sans-serif', anchor: 'center', lineSpacing: 0 }, Color: { tint: 0x9ad1ff, alpha: 1 }, Sprite: { textureKey: F_FX_STRIKE, anchorX: 0.5, anchorY: 0.5, zOrder: 33 } } as unknown as EntityBlueprint,
+    rune_title: { Transform: xf(0, -128), Shape: { kind: 'box', width: 340, height: 18 }, Tag: { flags: RUNE }, Text: { content: '◆ 开局强化 · 三选一（点击生效，开战后消失）', fontSize: 13, fontFamily: FONT_DISPLAY, anchor: 'center', lineSpacing: 0 }, Color: { tint: 0xcf9a3f, alpha: 1 }, Sprite: { textureKey: F_FX_STRIKE, anchorX: 0.5, anchorY: 0.5, zOrder: 33 } } as unknown as EntityBlueprint,
+    rune_a: { Transform: xf(-110, -100), Shape: { kind: 'box', width: 96, height: 40 }, Clickable: { action: 'rune_a' }, Tag: { flags: RUNE }, Text: { content: '屯粮：+10 金', fontSize: 12, fontFamily: FONT_BODY, anchor: 'center', lineSpacing: 0 }, Color: { tint: 0xcf9a3f, alpha: 1 }, Sprite: { textureKey: F_FX_STRIKE, anchorX: 0.5, anchorY: 0.5, zOrder: 33 } } as unknown as EntityBlueprint,
+    rune_b: { Transform: xf(0, -100), Shape: { kind: 'box', width: 96, height: 40 }, Clickable: { action: 'rune_b' }, Tag: { flags: RUNE }, Text: { content: '砺兵：+8 经验', fontSize: 12, fontFamily: FONT_BODY, anchor: 'center', lineSpacing: 0 }, Color: { tint: 0xc98fc4, alpha: 1 }, Sprite: { textureKey: F_FX_STRIKE, anchorX: 0.5, anchorY: 0.5, zOrder: 33 } } as unknown as EntityBlueprint,
+    rune_c: { Transform: xf(110, -100), Shape: { kind: 'box', width: 96, height: 40 }, Clickable: { action: 'rune_c' }, Tag: { flags: RUNE }, Text: { content: '广纳：备战席 +2', fontSize: 12, fontFamily: FONT_BODY, anchor: 'center', lineSpacing: 0 }, Color: { tint: 0x8aa0e6, alpha: 1 }, Sprite: { textureKey: F_FX_STRIKE, anchorX: 0.5, anchorY: 0.5, zOrder: 33 } } as unknown as EntityBlueprint,
     eff_rune_a: { Effect: { onSignal: 'rune_a', kind: 'modify-resource', targetId: 'gold', op: 'add', value: 10 } } as unknown as EntityBlueprint,
     eff_rune_b: { Effect: { onSignal: 'rune_b', kind: 'modify-resource', targetId: 'xp', op: 'add', value: 8 } } as unknown as EntityBlueprint,
     eff_rune_c: { Effect: { onSignal: 'rune_c', kind: 'modify-resource', targetId: 'bench_cap', op: 'add', value: 2 } } as unknown as EntityBlueprint, // F-17 后席位空余是派生值 → 扩容改容量源
@@ -1188,14 +1193,14 @@ export function buildGameFBlueprint(pacing: GameFPacing = {}): WorldBlueprint {
     });
   }
   // 商店页底板 + 三个大框（placeholder：Shape+Color 占位，待用户给 UI 资源后换皮）。
-  entities['shop_panel'] = { Transform: xf(0, SHOP_Y), Shape: { kind: 'box', width: 240, height: 80 }, Color: { tint: 0x141a22, alpha: 0.92 }, Sprite: { textureKey: F_FX_STRIKE, anchorX: 0.5, anchorY: 0.5, zOrder: 26 } } as unknown as EntityBlueprint;
+  entities['shop_panel'] = { Transform: xf(0, SHOP_Y), Shape: { kind: 'box', width: 240, height: 80 }, Color: { tint: 0xfffdfa, alpha: 0.92 }, Sprite: { textureKey: F_FX_STRIKE, anchorX: 0.5, anchorY: 0.5, zOrder: 26 } } as unknown as EntityBlueprint;
   for (let i = 0; i < 3; i++) {
-    entities[`shop_frame_${i + 1}`] = { Transform: xf(SHOP_XS[i], SHOP_Y), Shape: { kind: 'box', width: 62, height: 72 }, Color: { tint: 0x2a3442, alpha: 1 }, Sprite: { textureKey: F_FX_STRIKE, anchorX: 0.5, anchorY: 0.5, zOrder: 27 } } as unknown as EntityBlueprint;
+    entities[`shop_frame_${i + 1}`] = { Transform: xf(SHOP_XS[i], SHOP_Y), Shape: { kind: 'box', width: 62, height: 72 }, Color: { tint: 0xf3dcc8, alpha: 1 }, Sprite: { textureKey: F_FX_STRIKE, anchorX: 0.5, anchorY: 0.5, zOrder: 27 } } as unknown as EntityBlueprint;
   }
   // 备战席托盘（REQ-F-055）：9 槽英雄平台（非六角；placeholder 槽框）。买入自动落座/席内拖拽互换/上板让座。
   entities['bench_tray'] = { Tray: { ...TRAY, requiredTag: BENCH_OCC } } as unknown as EntityBlueprint;
   for (let i = 0; i < TRAY.capacity; i++) {
-    entities[`bench_frame_${i}`] = { Transform: xf(TRAY.originX + i * TRAY.gap, TRAY.originY), Shape: { kind: 'box', width: 38, height: 38 }, Color: { tint: 0x223041, alpha: 0.95 }, Sprite: { textureKey: F_FX_STRIKE, anchorX: 0.5, anchorY: 0.5, zOrder: 1 } } as unknown as EntityBlueprint;
+    entities[`bench_frame_${i}`] = { Transform: xf(TRAY.originX + i * TRAY.gap, TRAY.originY), Shape: { kind: 'box', width: 38, height: 38 }, Color: { tint: 0xf3e2dc, alpha: 0.95 }, Sprite: { textureKey: F_FX_STRIKE, anchorX: 0.5, anchorY: 0.5, zOrder: 1 } } as unknown as EntityBlueprint;
   }
   for (const h of ROSTER.filter((x) => x.team === TEAM_A)) {
     entities[`eff_marks_on_buy_${h.id}`] = { Effect: { onSignal: `buy_${h.id}`, kind: 'set-flag', targetId: 'shop_marks_armed', value: true } } as unknown as EntityBlueprint;

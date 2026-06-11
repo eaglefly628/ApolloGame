@@ -31,9 +31,10 @@ export const F_FX_DRAIN = 'f.fx.drain'; // 暗/吸取（含 DoT）
 export const F_HEX_WARM = 'f.hex.warm'; // 蜀半场暖色六边形格
 export const F_HEX_COOL = 'f.hex.cool'; // 魏半场冷色六边形格
 
-// 一块六边形棋盘格（pointy-top 尖顶，描边镂空；尺寸 36×42 贴合格距 TILE=36/行距27，不重叠）。
+// 一块六边形棋盘格（pointy-top 尖顶，描边镂空；尺寸 40×46 贴合格距 TILE=40/行距30，不重叠）。
+// 锦霞（Aurora）重染：半透明让战场底透出（design §3 中战场），描金细线 = --hairline 语言。
 const hexTile = (fill: string, stroke: string): string =>
-  svg(`<polygon points="18,1 35,11 35,31 18,41 1,31 1,11" fill="${fill}" stroke="${stroke}" stroke-width="1.2"/>`, 36, 42);
+  svg(`<polygon points="20,1 39,12 39,34 20,45 1,34 1,12" fill="${fill}" stroke="${stroke}" stroke-width="1.3"/>`, 40, 46);
 
 export const GAME_F_ASSETS: AssetManifest = [
   // 蜀（关羽 死亡骑士 / 赵云 深渊精灵骑士 / 诸葛 深渊精灵法师）
@@ -67,6 +68,6 @@ export const GAME_F_ASSETS: AssetManifest = [
   { kind: 'texture', key: F_FX_FROST, src: fx('frost_0'), width: 32, height: 32 },
   { kind: 'texture', key: F_FX_DRAIN, src: fx('drain_0_new'), width: 32, height: 32 },
   // 六边形棋盘格（蜀半场暖 / 魏半场冷）。
-  { kind: 'texture', key: F_HEX_WARM, src: hexTile('rgba(48,32,24,0.92)', 'rgb(128,74,58)'), width: 36, height: 42 },
-  { kind: 'texture', key: F_HEX_COOL, src: hexTile('rgba(24,32,48,0.92)', 'rgb(64,92,140)'), width: 36, height: 42 },
+  { kind: 'texture', key: F_HEX_WARM, src: hexTile('rgba(251,238,228,0.85)', 'rgba(216,164,78,0.75)'), width: 40, height: 46 }, // 蜀半场：暖珍珠+描金（锦霞）
+  { kind: 'texture', key: F_HEX_COOL, src: hexTile('rgba(233,236,246,0.85)', 'rgba(138,160,230,0.7)'), width: 40, height: 46 }, // 魏半场：雾青+柔蓝描线（锦霞）
 ];
