@@ -792,8 +792,17 @@ def wait_for_server(url: str, timeout: int = 15) -> bool:
             urllib.request.urlopen(url, timeout=1)
             return True
         except Exception:
-            time.sleep(0.25)
+            time.sleep(0.1)  # 收紧轮询 → 就绪后最快 ~0.1s 内开页
     return False
+
+def _open_browser_when_ready(open_url: str, probe_url: str) -> None:
+    # 后台线程：HTTP 探测一成功就立刻开浏览器（= 页面最早能正常加载的瞬间），主线程不阻塞终端。
+    # 比"阻塞 wait 完再开"快在：不占住主线程、轮询 0.1s 粒度、就绪即弹（不等满 wait 返回）。
+    if wait_for_server(probe_url):
+        print(c("  [READY]", 'g'), f"Apollo Launcher: {c(open_url, 'c')}")
+    else:
+        print(c("  [WARN]", 'y'), f"就绪探测超时，仍尝试打开 → {c(open_url, 'c')}")
+    webbrowser.open(open_url)
 
 # ── 命令 ──
 
@@ -813,15 +822,16 @@ def cmd_launcher():
     api = start_api_server()
     vite = start_vite()
 
-    # 就绪探测打 127.0.0.1（见 wait_for_server 注释：localhost→IPv6 会拖满超时）。
-    # 浏览器仍开 localhost（浏览器自带 v6→v4 回退）。无论就绪与否，只开**一次**浏览器。
-    if wait_for_server(f"http://127.0.0.1:{VITE_PORT}"):
-        print(c("  [READY]", 'g'), f"Apollo Launcher: {c(url, 'c')}")
-    else:
-        print(c("  [WARN]", 'y'), f"就绪探测超时，仍尝试打开 → {c(url, 'c')}")
-    webbrowser.open(url)
+    # 开浏览器丢后台线程：就绪即弹、主线程不阻塞（探测打 127.0.0.1，浏览器开 localhost 自带 v6→v4 回退）。
+    # 只开一次（线程内单次 webbrowser.open）。
+    threading.Thread(
+        target=_open_browser_when_ready,
+        args=(url, f"http://127.0.0.1:{VITE_PORT}"),
+        daemon=True,
+    ).start()
 
-    print(c("  [INFO]", 'dim'), "Press Ctrl+C to stop all services（请勿再手动点终端里的链接，已自动打开一页）")
+    print(c("  [INFO]", 'dim'), "服务启动中，就绪即自动开页…（请勿再手动点终端里的链接，会多开一页）")
+    print(c("  [INFO]", 'dim'), "Press Ctrl+C to stop all services")
     try:
         vite.wait()
     except KeyboardInterrupt:
