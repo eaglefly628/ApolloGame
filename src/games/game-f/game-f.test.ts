@@ -398,6 +398,33 @@ describe('Game F — 自走棋（纯数据装配，零自走棋代码；棋子=�
     expect(res('lose_streak')).toBe(1); // 败 → 连败+1（胜路清零由 flow 同一转移对称保证）
   });
 
+  it('开局符文三选一（批D）：点「屯粮」金+10、三卡整组收走（一次性）；不点不影响流程', () => {
+    const e = new Engine({ tickRate: 60 });
+    e.load(buildGameFBlueprint(FAST));
+    const res = (id: string): number => {
+      for (const x of e.world.getAllEntities()) {
+        const r = e.world.getComponent<Resource>(x, 'Resource');
+        if (r && r.id === id) return r.current;
+      }
+      return -1;
+    };
+    const click = (x: number, y: number): void => {
+      if (!e.world.getAllEntities().includes('input')) e.world.createEntity('input');
+      e.world.addComponent('input', { type: 'InputQueue', actions: [{ source: 'test', x, y, phase: 'down' }] } as unknown as Resource);
+      e.world.tick();
+      e.world.addComponent('input', { type: 'InputQueue', actions: [] } as unknown as Resource);
+    };
+    for (let i = 0; i < 5; i++) e.world.tick();
+    expect(alive(e, 'rune_a')).toBe(true); // 三卡在场
+    const g0 = res('gold');
+    click(-110, -100); // 选「屯粮」
+    for (let i = 0; i < 4; i++) e.world.tick();
+    expect(res('gold')).toBe(g0 + 10 + 1); // 生效（+1=备战窗内 2→12 上穿利息 10 档的带宽语义，已知 TUNE 项见 Gotchas）
+    expect(alive(e, 'rune_a')).toBe(false); // 整组收走（含被点那张）
+    expect(alive(e, 'rune_b')).toBe(false);
+    expect(alive(e, 'rune_c')).toBe(false);
+  });
+
   it('主角小小英雄（批C，§4.7）：常驻不参战不被清场；碰法球两清、赏金入账金币后清零', () => {
     const e = new Engine({ tickRate: 60 });
     e.load(buildGameFBlueprint(FAST));

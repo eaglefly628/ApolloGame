@@ -71,6 +71,7 @@ export const FROZEN = 1 << 10; // 冰冻定身（REQ-F-030）：GridMover.haltSt
 export const PROTAG = 1 << 11; // 主角（小小英雄，§4.7；Phase 2.5 批 C 接操控/拾取）
 export const LOOT = 1 << 12; // 法球/掉落（野怪死亡掉，主角拾取）
 const SHOPSLOT_BITS = [1 << 13, 1 << 14, 1 << 15, 1 << 16, 1 << 17];
+const RUNE = 1 << 18; // 开局符文卡（批D；选一发效后 destroy-tagged 整组收走=天然一次性）
 const SHOPSLOT_ALL = SHOPSLOT_BITS.reduce((a, b) => a | b, 0);
 
 // 战斗节奏（数据）：30 tick ≈ 0.5s/动作，看得清（此前 10/24 太快）。
@@ -564,7 +565,7 @@ export function buildGameFBlueprint(pacing: GameFPacing = {}): WorldBlueprint {
       Flag: { id: 'shop', active: false },
     } as unknown as EntityBlueprint,
     r_bought_code: { Resource: { id: 'bought_code', current: 0, min: 0, max: 9999 } } as unknown as EntityBlueprint, // 最近一次成交牌码（0=无）
-    r_bench_space: { Resource: { id: 'bench_space', current: 9, min: 0, max: 9 } } as unknown as EntityBlueprint, // 备战席 9（§4.6）；作 playCosts 第二货币——席满=0 即原子拒单（卖出时 +1 归还）
+    r_bench_space: { Resource: { id: 'bench_space', current: 9, min: 0, max: 11 } } as unknown as EntityBlueprint, // 备战席 9（§4.6）；作 playCosts 第二货币——席满=0 即原子拒单（卖出时 +1 归还）
     // —— 商店余三件（F-12，REQ-F-041）：刷新 / 锁店 / 卖出 ——
     // 自动刷新：prep 臂 shop_refresh_armed → EventWhen(¬锁店 门) → 'shop_refresh' → CardPile.refreshOnSignal 弃全手补满；
     // 自动解锁/撤臂 = 门判定脉冲同拍 Commit（见 when_shop_gate 注，躲"解锁先于门判定"与"解锁复燃 edge"双坑）。
@@ -734,6 +735,17 @@ export function buildGameFBlueprint(pacing: GameFPacing = {}): WorldBlueprint {
     when_loot: { EventWhen: { signal: 'loot_cash', when: resCmp('loot', 'gt', 0), mode: 'edge', armed: false } } as unknown as EntityBlueprint,
     eff_loot_gold: { Effect: { onSignal: 'loot_cash', kind: 'modify-resource', targetId: 'gold', op: 'add', value: 0, valueFrom: { resourceId: 'loot' } } } as unknown as EntityBlueprint,
     eff_loot_clear: { Effect: { onSignal: 'loot_cash', kind: 'modify-resource', targetId: 'loot', op: 'set', value: 0 } } as unknown as EntityBlueprint,
+    // —— 开局强化符文三选一（批D，一图流入口；单人化=三选一无争抢）：回合1备战期顶部三卡，点选即生效，
+    // 整组 destroy-tagged 收走（天然一次性，无需 armed 旗）。效果=经济型（全现有词汇，无 buff 施加依赖）。
+    rune_a: { Transform: xf(-110, -100), Shape: { kind: 'box', width: 96, height: 40 }, Clickable: { action: 'rune_a' }, Tag: { flags: RUNE }, Text: { content: '屯粮：+10 金', fontSize: 12, fontFamily: 'sans-serif', anchor: 'center', lineSpacing: 0 }, Color: { tint: 0xf0d27a, alpha: 1 }, Sprite: { textureKey: F_FX_STRIKE, anchorX: 0.5, anchorY: 0.5, zOrder: 33 } } as unknown as EntityBlueprint,
+    rune_b: { Transform: xf(0, -100), Shape: { kind: 'box', width: 96, height: 40 }, Clickable: { action: 'rune_b' }, Tag: { flags: RUNE }, Text: { content: '砺兵：+8 经验', fontSize: 12, fontFamily: 'sans-serif', anchor: 'center', lineSpacing: 0 }, Color: { tint: 0x7ad17a, alpha: 1 }, Sprite: { textureKey: F_FX_STRIKE, anchorX: 0.5, anchorY: 0.5, zOrder: 33 } } as unknown as EntityBlueprint,
+    rune_c: { Transform: xf(110, -100), Shape: { kind: 'box', width: 96, height: 40 }, Clickable: { action: 'rune_c' }, Tag: { flags: RUNE }, Text: { content: '广纳：备战席 +2', fontSize: 12, fontFamily: 'sans-serif', anchor: 'center', lineSpacing: 0 }, Color: { tint: 0x9ad1ff, alpha: 1 }, Sprite: { textureKey: F_FX_STRIKE, anchorX: 0.5, anchorY: 0.5, zOrder: 33 } } as unknown as EntityBlueprint,
+    eff_rune_a: { Effect: { onSignal: 'rune_a', kind: 'modify-resource', targetId: 'gold', op: 'add', value: 10 } } as unknown as EntityBlueprint,
+    eff_rune_b: { Effect: { onSignal: 'rune_b', kind: 'modify-resource', targetId: 'xp', op: 'add', value: 8 } } as unknown as EntityBlueprint,
+    eff_rune_c: { Effect: { onSignal: 'rune_c', kind: 'modify-resource', targetId: 'bench_space', op: 'add', value: 2 } } as unknown as EntityBlueprint,
+    eff_rune_a_done: { Effect: { onSignal: 'rune_a', kind: 'destroy-tagged', targetId: '', value: RUNE } } as unknown as EntityBlueprint,
+    eff_rune_b_done: { Effect: { onSignal: 'rune_b', kind: 'destroy-tagged', targetId: '', value: RUNE } } as unknown as EntityBlueprint,
+    eff_rune_c_done: { Effect: { onSignal: 'rune_c', kind: 'destroy-tagged', targetId: '', value: RUNE } } as unknown as EntityBlueprint,
     // —— 加时强制结束（一图流：30s+15s；单人改编=超时按败方路径结算，注记于 flow-spec）——
     overtime_clock: { Timer: { id: 'combat_clock', elapsed: 0, duration: 999999, loop: false } } as unknown as EntityBlueprint,
     when_ot_reset: { EventWhen: { signal: 'ot_reset', when: { kind: 'state', fsmId: 'round_ui', equals: 'combat' }, mode: 'edge', armed: false } } as unknown as EntityBlueprint,
