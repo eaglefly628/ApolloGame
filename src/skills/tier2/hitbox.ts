@@ -1,8 +1,15 @@
 import { defineCapability } from '@engine/core/define-capability.js';
 import type { IWorld } from '@engine/core/types.js';
-import type { Trigger, Hitbox, Tag, Status, Resource } from '@engine/protocol/components.js';
+import type { Trigger, Hitbox, Tag, Status, Resource, DestroyRequest } from '@engine/protocol/components.js';
+import { findByComponentId } from '@engine/core/query.js';
 import { queueResourceMod } from '@skills/atoms/resource/index.js';
 import { addTimedEffect } from './over-time.js';
+
+// 全局按 id 找 Resource（REQ-F-047 系数乘区；R11 路由的只读侧）。
+function findResourceById(world: IWorld, id: string): Resource | undefined {
+  const e = findByComponentId(world, 'Resource', 'id', id);
+  return e ? world.getComponent<Resource>(e, 'Resource') : undefined;
+}
 
 // ═══════════════════════════════════════════════════════════════
 //  hitbox —— 关系型战斗核心（ARPG 能力簇）。把"攻击判定命中 → 对命中目标结算"变成纯数据。
@@ -68,7 +75,7 @@ export const hitboxCapability = defineCapability({
       },
     },
     reads: ['Trigger', 'Hitbox', 'Tag', 'Status', 'Resource'],
-    writes: ['ResourceModify', 'Status', 'OverTime'],
+    writes: ['ResourceModify', 'Status', 'OverTime', 'DestroyRequest'],
     consumes: [],
   },
 
@@ -78,13 +85,16 @@ export const hitboxCapability = defineCapability({
     {
       id: 'hitbox',
       reads: ['Trigger', 'Hitbox', 'Tag', 'Status', 'Resource'],
-      writes: ['ResourceModify', 'Status', 'OverTime'],
+      // DestroyRequest：REQ-F-044 consumeOnHit 自毁（写者→cascade/destroy-apply 单向汇入，无回边）。
+      writes: ['ResourceModify', 'Status', 'OverTime', 'DestroyRequest'],
       consumes: [],
       runsAfter: ['trigger-zone'],
       // 先施加伤害/状态/挂 OverTime，再让 over-time tick 既有状态效果，最后 resource-apply 结算。
       // hitbox 与 over-time 都 read-modify-write Status → 组件拓扑互为前驱=环，显式定序打破（R10 同法）。
       runsBefore: ['resource-apply', 'over-time'],
       execute(world: IWorld) {
+        // REQ-F-044：本拍真正结算过命中的 zone 实体集（consumeOnHit 结算后自毁；集合语义与遍历序无关）。
+        const settled = new Set<string>();
         for (const [tid] of world.query('Trigger')) {
           const trig = world.getComponent<Trigger>(tid, 'Trigger')!;
           const hb = world.getComponent<Hitbox>(trig.zone, 'Hitbox');
@@ -102,11 +112,18 @@ export const hitboxCapability = defineCapability({
             if (!st || (st.flags & hb.requireMask) !== hb.requireMask) continue;
           }
           // ③ 伤害（固定 + 计算），局部寻址到目标自身。queueResourceMod 累加 → 同帧多段命中不丢伤害（R14 真修 A）。
-          let dmg = hb.amount ?? 0;
+          // REQ-F-047 活系数乘区：amount × 全局系数资源（缺省 ×1）；fracOfMax 不乘（保"按目标 max"语义）。
+          let base = hb.amount ?? 0;
+          if (hb.scaleByResource) {
+            const coef = findResourceById(world, hb.scaleByResource);
+            if (coef) base = base * coef.current;
+          }
+          let dmg = base;
           if (hb.fracOfMax) dmg += Math.floor(maxOf(world, target, hb.resource) * hb.fracOfMax);
           if (dmg !== 0) {
             queueResourceMod(world, target, hb.resource, -dmg, 'local');
           }
+          settled.add(trig.zone); // 过了阵营/状态门=真结算（含纯状态命中）
           // ④ Status 置/清位
           if (hb.setMask || hb.clearMask) {
             let st = world.getComponent<Status>(target, 'Status');
@@ -137,6 +154,14 @@ export const hitboxCapability = defineCapability({
               elapsed: 0,
               clearStatusOnEnd: hb.setMask,
             });
+          }
+        }
+        // REQ-F-044：单发结算——结算过的 consumeOnHit zone 自毁（DestroyRequest 请求制，cascade 连挂件，
+        // 次拍 destroy-apply 移除；站桩金币泵的原子解）。
+        for (const zid of settled) {
+          const hb = world.getComponent<Hitbox>(zid, 'Hitbox');
+          if (hb?.consumeOnHit && !world.hasComponent(zid, 'DestroyRequest')) {
+            world.addComponent(zid, { type: 'DestroyRequest', entityId: zid } as DestroyRequest);
           }
         }
       },

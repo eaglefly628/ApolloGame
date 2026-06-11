@@ -113,6 +113,13 @@ export interface Hitbox extends Component {
   dotPerTick?: number; // >0：每 dotPeriod tick 对目标 resource 造成此真伤（中毒/燃烧 DoT，挂 OverTime）。
   dotPeriod?: number; // DoT 结算周期（tick，缺省 1）。
   dotDuration?: number; // DoT 总时长（tick）。
+  // 单发结算（REQ-F-044）：本拍有任一命中结算后，对自身（zone 实体）发 DestroyRequest（cascade 连挂件）。
+  // 拾取品/独头弹/一次性陷阱标配——金币泵（站桩每拍重复入账）的原子解。
+  consumeOnHit?: boolean;
+  // 活系数乘区（REQ-F-047，REQ-023 簇最窄落点）：结算时 amount × 该全局 Resource.current（缺省=×1 零迁移）。
+  // 羁绊/战斗符文 = group-count 计数 → EventWhen 阈值 → Effect 写系数资源 → 此处生效；同模板两阵营
+  // 各自系数用槽位 overrides 改本字段指向各自资源 id（纯数据）。fracOfMax 部分不乘（保"按目标max"语义）。
+  scaleByResource?: string;
 }
 
 // ── TimedEffect ── 一个限时/持续效果（DoT/regen/定时状态）。多个并存在 OverTime.effects 列表里。
@@ -932,6 +939,10 @@ export interface CardPile extends Component {
   // REQ-F-042(B) 信号出牌桥：第 i 个名字的 Signal 在场 = play(i)（clickable 槽位按钮→信号→购买）。
   // 每拍至多处理一个（最低下标优先；同拍双击=退化输入）；刷新拍忽略；照常过 playCosts 可负担门。
   playOnSignals?: string[];
+  // REQ-F-048② 袋归还：returnOnSignal 在场 → 读 returnCodeResource 的牌码（>0），插回 deck **底部**并清零
+  // （有限袋语义保真：卖出的将回袋可再抽）。码由卖出链写入（每将 banded sell Effect set 该资源，纯数据）。
+  returnOnSignal?: string;
+  returnCodeResource?: string;
 }
 
 // ── text-binding（REQ-F-043）── Resource 数字 → Text 投影（gauge 的姊妹件；HUD 金币/回合/等级/楼层）。

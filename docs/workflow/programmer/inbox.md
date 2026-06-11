@@ -137,7 +137,11 @@
 - 引擎已落 `t2-text-binding`（6 测绿）：实体挂 `Text + TextBinding{resourceId, prefix?, suffix?}` 每拍 content=prefix+值+suffix；蓝图 capabilities 加 `textBindingCapability`（id `t2-text-binding`）。
 - 接线：金币 `TextBinding{resourceId:'gold', prefix:'金币 '}`；玩家血/等级同理；回合「3-2」两个数=两个 Text 实体并排（引擎单资源单绑定，保闭语法）。头顶等级用 fromParent:true（同 gauge）。
 
-> ✅ **引擎侧 REQ-F-026~037 + F-040/041/042/043 均已落地、全绿（F-038 空缺、F-039 重组覆盖）**。PE-F 上述 F-1~F-15 皆可接（你交接报告里卡主程的两件——**F-029 血条→接 F-5，F-030 定身→接 F-6——已全部解锁，可继续**），纯数据 / 零游戏代码。不要在游戏层 workaround 引擎行为；若发现新引擎缺口，写 requests.md 提主程。
+#### 任务 F-16 · REQ-F-044/047/048② 接入：拾取两清 + 羁绊乘区 + 卖出袋归还（纯数据） — status: pending
+- 引擎已落（5 测绿）：① `Hitbox.consumeOnHit:true`——法球=zone{Hitbox{resource:'loot',amount:-5,targetMask:PROTAG}, consumeOnHit}，碰一下入账一次**同拍消失**（cascade 连挂件），主角零附件；② `Hitbox.scaleByResource:'<系数资源id>'`——羁绊链=group-count 计数→EventWhen 阈值→Effect 写系数资源→普攻/大招 strike 模板挂此字段（两阵营各自系数用槽位 overrides 改指向）；③ `CardPile.returnOnSignal:'card_sold'+returnCodeResource:'sold_code'`——卖出链每将 banded Effect{set sold_code=码}→袋底归还+清零。
+- 注意：consumeOnHit 的"真结算"=过了阵营/状态门（空挥不消耗）；scaleByResource 只乘 amount 不乘 fracOfMax；sold_code 复位由引擎清零、无需手工 Effect。
+
+> ✅ **引擎侧 REQ-F-026~037 + F-040~044/047/048② 均已落地、全绿（F-038 空缺、F-039 重组覆盖；F-045 输入域/F-046+048① 选N原子 设计中下一轮）**。PE-F 上述 F-1~F-16 皆可接（你交接报告里卡主程的两件——**F-029 血条→接 F-5，F-030 定身→接 F-6——已全部解锁，可继续**），纯数据 / 零游戏代码。不要在游戏层 workaround 引擎行为；若发现新引擎缺口，写 requests.md 提主程。
 
 ---
 

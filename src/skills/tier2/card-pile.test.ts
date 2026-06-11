@@ -246,3 +246,24 @@ describe('card-pile · REQ-F-042 手牌镜像 + 信号出牌', () => {
     expect(played(w).length).toBe(1); // 只成交一单（最低下标）
   });
 });
+
+// ── REQ-F-048②：returnOnSignal 袋归还 ──
+describe('card-pile · REQ-F-048② 袋归还', () => {
+  it('信号在场 → 码资源插回 deck 底部并清零；码为 0 → 不动', () => {
+    const w = w0([2, 5], 1);
+    const p = w.getComponent<CardPile>('table', 'CardPile')!;
+    p.returnOnSignal = 'card_sold';
+    p.returnCodeResource = 'sold_code';
+    w.createEntity('r_sold');
+    w.addComponent('r_sold', { type: 'Resource', id: 'sold_code', current: 0, min: 0, max: 9999 } as Resource);
+    w.tick(); // hand=[2], deck=[5]
+    w.createEntity('s1'); w.addComponent('s1', { type: 'Signal', name: 'card_sold', source: 's1' } as Signal);
+    w.tick(); // 码=0 → 不动
+    expect(pile(w).deck).toEqual([5]);
+    w.getComponent<Resource>('r_sold', 'Resource')!.current = 313; // 卖出链写码
+    w.tick();
+    expect(pile(w).deck).toEqual([5, 313]); // 袋底
+    expect(w.getComponent<Resource>('r_sold', 'Resource')!.current).toBe(0); // 清零防重复归还
+    w.destroyEntity('s1');
+  });
+});

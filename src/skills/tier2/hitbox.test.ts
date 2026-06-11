@@ -163,3 +163,57 @@ describe('hitbox — 全链路集成（overlap-detect→trigger-zone→hitbox→
     expect(status(w, 'enemy') & FROZEN).toBe(FROZEN);
   });
 });
+
+// ── REQ-F-044 consumeOnHit + REQ-F-047 scaleByResource ──
+import { World as W44 } from '@engine/core/world.js';
+import type { Resource as R44, DestroyRequest as DR44 } from '@engine/protocol/components.js';
+import { destroyCapability as destroy44 } from '@atom-skills/destroy/index.js';
+import { resourceCapability as resource44 } from '@atom-skills/resource/index.js';
+describe('hitbox · REQ-F-044/047 单发结算 + 活系数乘区', () => {
+  const PROTAG = 1 << 4;
+  const mk44 = (hbExtra: Record<string, unknown>): W44 => {
+    const w = new W44();
+    for (const cap of [hitboxCapability, resource44, destroy44]) for (const s of cap.systems) w.addSystem(s as never);
+    w.createEntity('orb'); // 拾取球 = zone
+    w.addComponent('orb', { type: 'Hitbox', resource: 'loot', amount: -5, targetMask: PROTAG, ...hbExtra } as never);
+    w.createEntity('hero');
+    w.addComponent('hero', { type: 'Tag', flags: PROTAG } as never);
+    w.addComponent('hero', { type: 'Resource', id: 'loot', current: 0, min: 0, max: 999 } as R44);
+    return w;
+  };
+  const touch = (w: W44) => { w.createEntity('t1'); w.addComponent('t1', { type: 'Trigger', zone: 'orb', other: 'hero' } as never); };
+  const loot = (w: W44) => w.getComponent<R44>('hero', 'Resource')!.current;
+  const alive44 = (w: W44, id: string) => w.getAllEntities().includes(id);
+
+  it('consumeOnHit：碰一下入账一次，球自毁 → 站桩不再重复入账（金币泵关死）', () => {
+    const w = mk44({ consumeOnHit: true });
+    touch(w);
+    w.tick(); // 结算 +5 且球**同拍**被移除（hitbox 写请求 → destroy-apply 同拍消费，不留尾拍）
+    expect(loot(w)).toBe(5);
+    expect(alive44(w, 'orb')).toBe(false);
+    w.destroyEntity('t1');
+    w.tick();
+    expect(loot(w)).toBe(5); // 不再涨
+  });
+
+  it('缺省（无 consumeOnHit）：行为不变——持续接触持续结算（回归）', () => {
+    const w = mk44({});
+    touch(w);
+    w.tick(); w.tick();
+    expect(loot(w)).toBe(10); // 两拍两次（旧语义）
+    expect(alive44(w, 'orb')).toBe(true);
+  });
+
+  it('scaleByResource：amount × 全局系数资源；缺资源 → ×1 零迁移', () => {
+    const w = mk44({ scaleByResource: 'buff_coef', consumeOnHit: true });
+    w.createEntity('coef');
+    w.addComponent('coef', { type: 'Resource', id: 'buff_coef', current: 3, min: 0, max: 99 } as R44);
+    touch(w);
+    w.tick();
+    expect(loot(w)).toBe(15); // -5×3 → +15
+    const w2 = mk44({ scaleByResource: 'nope', consumeOnHit: true });
+    touch(w2);
+    w2.tick();
+    expect(loot(w2)).toBe(5); // 找不到系数 → 原值
+  });
+});

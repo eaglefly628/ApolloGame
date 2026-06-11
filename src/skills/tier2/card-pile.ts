@@ -175,6 +175,14 @@ export const cardPileCapability = defineCapability({
           while (pile.hand.length < pile.handSize && pile.deck.length > 0) {
             pile.hand.push(pile.deck.shift()!);
           }
+          // REQ-F-048②：袋归还——returnOnSignal 在场 → 读码资源（>0）插回 deck 底部并清零（有限袋保真）。
+          if (pile.returnOnSignal && pile.returnCodeResource && sigNames.has(pile.returnOnSignal)) {
+            const cr = resBy(pile.returnCodeResource);
+            if (cr && cr.current > 0) {
+              pile.deck.push(cr.current); // 袋底（再抽轮候最末）
+              cr.current = cr.min;
+            }
+          }
           // REQ-F-042(A)：手牌镜像——补牌后的终态逐槽写进 Resource（空槽 0），marker 链当拍见最新。
           if (pile.handCodeResources?.length) {
             for (let i = 0; i < pile.handCodeResources.length; i++) {
