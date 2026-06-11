@@ -95,6 +95,26 @@ describe('T2 drag-place（拖拽摆放，REQ-F-045）', () => {
     expect(run()).toBe(run());
   });
 
+  it('REQ-F-057 落子重放：成功落点把实体自带 keep Tween 倒带（elapsed=0/done=false）；被拒不重放', () => {
+    const w = mk();
+    seat(w, 's1', 200, 200);
+    w.addComponent('s1', { type: 'Tween', target: 'Transform.scaleY', from: 1.4, to: 1, elapsed: 12, duration: 12, easing: 'easeOut', done: true, keep: true } as never);
+    dragTo(w, 200, 200, 35, 35); // 上板成功
+    w.tick();
+    const tw = w.getComponent('s1', 'Tween') as unknown as { elapsed: number; done: boolean };
+    expect(tw.done).toBe(false); // 倒带重放
+    expect(tw.elapsed).toBe(0); // 归零（本测试世界未挂 tween 系统，纯验钩子写入）
+    // 相位门拒绝 → 不重放
+    clearIn(w);
+    tw.done = true; tw.elapsed = 12; // 模拟播完态
+    w.createEntity('gate');
+    w.addComponent('gate', { type: 'Flag', id: 'in_prep', active: false } as Flag);
+    (w.getComponent('s1', 'Draggable') as unknown as { onlyFlag?: string }).onlyFlag = 'in_prep';
+    dragTo(w, 35, 35, 65, 35);
+    w.tick();
+    expect((w.getComponent('s1', 'Tween') as unknown as { done: boolean }).done).toBe(true); // 门拒 → 没倒带
+  });
+
   it('定序守护：与 grid-move/motion-apply/flow/zone/group/self-rule/resource-apply 同场不抛（输入先行七件套，REQ-F-050 补 motion-apply）', async () => {
     const { gridMoveCapability } = await import('./grid-move.js');
     const { flowCapability } = await import('../tier3/flow.js');

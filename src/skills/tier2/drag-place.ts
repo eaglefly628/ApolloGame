@@ -1,7 +1,7 @@
 import { defineCapability } from '@engine/core/define-capability.js';
 import { SystemPhase } from '@engine/core/types.js';
 import type { IWorld } from '@engine/core/types.js';
-import type { Draggable, InputQueue, Transform, Shape, HexBoard, HexPos, Tag, Flag, Resource } from '@engine/protocol/components.js';
+import type { Draggable, InputQueue, Transform, Shape, HexBoard, HexPos, Tag, Flag, Resource, Tween } from '@engine/protocol/components.js';
 import { hexCellToPoint, hexPointToCell } from './grid-move.js';
 import { findByComponentId } from '@engine/core/query.js';
 
@@ -23,6 +23,13 @@ import { findByComponentId } from '@engine/core/query.js';
 //  读上一拍相位/限额（备战级操作，一拍不可感知）。写 HexPos 与 grid-move 互为 RMW → 同钉。
 //  确定性：命中按实体 id 升序、反拾取纯算术、限额计数集合语义——全部确定。
 // ═══════════════════════════════════════════════════════════════
+
+// 落子 juice（REQ-F-057）：成功落点后倒带重放实体自带的 Tween（keep:true 的压扁回弹等）——
+// 「拖放重播自带动画」的通用钩子；实体没挂 Tween 则零开销。被拒（相位门/限额/未命中）不重放。
+function replayTween(world: IWorld, eid: string): void {
+  const tw = world.getComponent<Tween>(eid, 'Tween');
+  if (tw) { tw.elapsed = 0; tw.done = false; }
+}
 
 function hitDraggable(world: IWorld, x: number, y: number): string | null {
   const ids: string[] = [];
@@ -88,9 +95,9 @@ export const dragPlaceCapability = defineCapability({
       // group-count/self-rule/resource-apply 的 Resource）。读上一拍相位/限额，备战级操作不可感知。
       // 'motion-apply'：REQ-F-050——与 grid-move 同类的 Transform RMW 对，首个两者同场的世界（game-f
       // 主角自由移动+拖拽）即成 22 系统 SCC；输入先行语义不变（先落拖拽终点、同拍再积分速度）。
-      runsBefore: ['grid-move', 'motion-apply', 'flow', 'zone-occupancy', 'group-count', 'self-rule', 'resource-apply'],
-      reads: ['Draggable', 'InputQueue', 'Transform', 'Shape', 'HexBoard', 'HexPos', 'Tag', 'Flag', 'Resource'],
-      writes: ['Transform', 'HexPos'],
+      runsBefore: ['grid-move', 'motion-apply', 'tween', 'flow', 'zone-occupancy', 'group-count', 'self-rule', 'resource-apply'],
+      reads: ['Draggable', 'InputQueue', 'Transform', 'Shape', 'HexBoard', 'HexPos', 'Tag', 'Flag', 'Resource', 'Tween'],
+      writes: ['Transform', 'HexPos', 'Tween'],
       consumes: [],
       execute(world: IWorld) {
         // 取本拍首条 drag（每拍至多一条，确定）。
@@ -148,10 +155,12 @@ export const dragPlaceCapability = defineCapability({
           }
           const p = hexCellToPoint(board!, cell.q, cell.r);
           t.x = p.x; t.y = p.y;
+          replayTween(world, eid);
         } else {
           // 落板外（或无 snap/无板）：自由落点 + 离板失格（回席）。
           t.x = drag.tx; t.y = drag.ty;
           if (world.hasComponent(eid, 'HexPos')) world.removeComponent(eid, 'HexPos');
+          replayTween(world, eid);
         }
       },
     },

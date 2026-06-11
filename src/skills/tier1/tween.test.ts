@@ -145,3 +145,24 @@ describe('T1 tween — BUG-005：duration<=0 不抖动', () => {
     expect(w.hasComponent('e', 'Tween')).toBe(false); // 已结束移除，不再每帧交换 from/to 抖动
   });
 });
+
+// ── REQ-F-057：keep 重放保留 ──
+import { World as WK } from '@engine/core/world.js';
+import { tweenCapability as twCapK } from './tween.js';
+describe('tween · keep 重放保留（REQ-F-057）', () => {
+  it('keep:true 到点不移除：停终值置 done、每帧零写；倒带（elapsed=0/done=false）即重播', () => {
+    const w = new WK();
+    for (const s of twCapK.systems) w.addSystem(s);
+    w.createEntity('e');
+    w.addComponent('e', { type: 'Transform', x: 0, y: 0, rotation: 0, scaleX: 1, scaleY: 2, } as never);
+    w.addComponent('e', { type: 'Tween', target: 'Transform.scaleY', from: 2, to: 1, elapsed: 0, duration: 4, easing: 'linear', done: false, keep: true } as never);
+    for (let i = 0; i < 6; i++) w.tick();
+    const tw = w.getComponent('e', 'Tween') as unknown as { done: boolean; elapsed: number; from: number };
+    expect(tw).toBeTruthy(); // keep：组件保留（缺省语义=到点移除）
+    expect(tw.done).toBe(true);
+    expect((w.getComponent('e', 'Transform') as unknown as { scaleY: number }).scaleY).toBe(1); // 锁终值
+    tw.done = false; (tw as unknown as { elapsed: number }).elapsed = 0; // 倒带（drag-place 落子钩子同款）
+    w.tick();
+    expect((w.getComponent('e', 'Transform') as unknown as { scaleY: number }).scaleY).toBeGreaterThan(1); // 重播中（从 from 落回）
+  });
+});

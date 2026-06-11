@@ -72,7 +72,7 @@ export const trayCapability = defineCapability({
       // 写 Transform 与 grid-move/motion-apply 互 RMW → runsBefore 删反向边（成员无 HexPos/Velocity，
       // 实际不相交；同 drag-place/REQ-F-050 纪律）。
       runsAfter: ['drag-place'],
-      runsBefore: ['grid-move', 'motion-apply'],
+      runsBefore: ['grid-move', 'motion-apply', 'tween'],
       reads: ['Tray', 'TraySeat', 'Tag', 'Transform', 'HexPos'],
       writes: ['TraySeat', 'Transform'],
       consumes: [],

@@ -670,6 +670,9 @@ export interface Tween extends Component {
   done: boolean; // elapsed>=duration 后置 true（snapshot 友好）
   loop?: TweenLoop; // 到点后的循环模式（缺省 none）
   loops?: number; // 循环程数（restart/pingpong 有效）；缺省=无限。每完成一程递减，到 1 后停在终值
+  // 重放保留（REQ-F-057 落子 juice）：true=到点后**不移除组件**、停在终值置 done（done 实体每帧零开销跳过），
+  // 供运行时倒带重放（drag-place 落子把 elapsed=0/done=false → 压扁回弹再播一次）。缺省=到点移除（原语义）。
+  keep?: boolean;
 }
 
 // ── effect-apply ── Condition→Event→**Effect** 的 Effect 侧：信号在场时施加一个声明式效果。

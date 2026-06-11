@@ -4,9 +4,10 @@ import { overlapDetectCapability } from '@skills/atoms/overlap-detect/index.js';
 import { destroyCapability } from '@skills/atoms/destroy/index.js';
 import { timerCapability } from '@skills/atoms/timer/index.js';
 import { resourceCapability } from '@atom-skills/index.js';
-import { lifetimeCapability, hierarchyResolveCapability, hierarchyCascadeCapability, motionApplyCapability } from '@skills/tier1/index.js';
+import { lifetimeCapability, hierarchyResolveCapability, hierarchyCascadeCapability, motionApplyCapability, tweenCapability } from '@skills/tier1/index.js';
 import {
   trayCapability,
+  steeringCapability,
   triggerZoneCapability,
   hitboxCapability,
   overTimeCapability,
@@ -95,8 +96,13 @@ const HP_SCALE = 18; // 全局血量倍率（调战斗时长，目标一局 ~20s
 
 const xf = (x: number, y: number): Record<string, unknown> => ({ x, y, rotation: 0, scaleX: 1, scaleY: 1 });
 const sprite = (textureKey: string, zOrder: number): Record<string, unknown> => ({ textureKey, anchorX: 0.5, anchorY: 0.5, zOrder });
+// Shape 抬层 hack：故意用永不注册的贴图 key —— spriteReady 恒 false → 退化画 Shape，但 zOrder 取自 Sprite。
+// （名牌的 Text 抬层是同族 hack；真解=Shape 自带 zOrder，REQ 候选。）headless/浏览器行为一致（都不就绪）。
+const zlift = (zOrder: number): Record<string, unknown> => ({ textureKey: '__zlift__', anchorX: 0.5, anchorY: 0.5, zOrder });
 
-// 普攻打击区：目标处小 sensor 伤害区，2 tick 自毁。fxKey=按攻击类型的特效（近战斩/远程箭/法术弹）。
+// 普攻打击区：目标处小 sensor 伤害区，2 tick 自毁 + 表现两件（用户打击感批）：
+// redflash=被击红闪（红 Shape 盖在受击位上方 alpha 速褪）；fx=斩光余韵（特效图 alpha 慢褪）。
+// 表现实体无 Tag/Sensor/Hitbox 不参战，Timer+lifetime 自清。fxKey=按攻击类型的特效（近战斩/远程箭/法术弹）。
 const strike = (targetMask: number, amount: number, fxKey: string, scaleId = 'dmg_scale_b'): PrefabTemplate => ({
   entities: {
     area: {
@@ -108,11 +114,48 @@ const strike = (targetMask: number, amount: number, fxKey: string, scaleId = 'dm
       Timer: { id: 'life', elapsed: 0, duration: 2, loop: false },
       Sprite: sprite(fxKey, 6),
     },
+    redflash: {
+      Transform: xf(0, 0),
+      Shape: { kind: 'box', width: 26, height: 26 },
+      Color: { tint: 0xff2a2a, alpha: 0.7 },
+      Tween: { target: 'Color.alpha', from: 0.7, to: 0, elapsed: 0, duration: 9, easing: 'easeOut', done: false },
+      Timer: { id: 'life', elapsed: 0, duration: 10, loop: false },
+      Sprite: zlift(9),
+    },
+    fx: {
+      Transform: xf(0, 0),
+      Color: { tint: 0xffffff, alpha: 0.9 },
+      Tween: { target: 'Color.alpha', from: 0.9, to: 0, elapsed: 0, duration: 14, easing: 'easeOut', done: false },
+      Timer: { id: 'life', elapsed: 0, duration: 15, loop: false },
+      Sprite: sprite(fxKey, 8),
+    },
   },
 });
 
 // DoT（灼烧/吸取）：命中后每 30 tick 掉血、持续 ~4s，由 over-time 处理。
 const DOT = { dotPerTick: 25, dotPeriod: 30, dotDuration: 240 };
+
+// 远程/法术弹道（用户打击感批「远程要有弹道」）：从攻击者自身射出的**追踪弹**——全现有词汇拼装：
+// Perception(敌方)+aggro 锁最近敌 → Steering{seek} 追 → 命中(consumeOnHit 真结算)即灭 + 命中处红闪由
+// strike 同款表现实体补（弹体自带 redflash 子实体不可行——单实体单 Tween，红闪随弹体走会提前闪）→
+// 弹体只带 Hitbox，命中即消失（视觉=弹道飞行+消失在目标身上）。目标死于途中=aggro 重锁最近敌（追踪续航）；
+// 无敌可锁=滞空到 lifetime 自清（120 拍）。无 TEAM 位：不被 zone 计存活/不被锁/不被 wipe。
+const projectile = (targetMask: number, amount: number, fxKey: string, scaleId = 'dmg_scale_b'): PrefabTemplate => ({
+  entities: {
+    p: {
+      Transform: xf(0, 0),
+      Shape: { kind: 'box', width: 10, height: 10 },
+      Sensor: {},
+      Tag: { flags: ZONE_FLAG },
+      Velocity: { vx: 0, vy: 0, angular: 0 },
+      Perception: { targetTag: targetMask, sightRadius: 0 },
+      Steering: { mode: 'seek', speed: 3.2, stopRange: 0 },
+      Hitbox: { resource: 'hp', amount, targetMask, scaleByResource: scaleId, consumeOnHit: true },
+      Timer: { id: 'life', elapsed: 0, duration: 120, loop: false },
+      Sprite: sprite(fxKey, 7),
+    },
+  },
+});
 
 // 大招打击区：目标处大范围真伤（范围 size、伤害 amount），fxKey=主题特效，dot=是否附 DoT，
 // freezeTicks>0=命中冰冻 N tick（八阵图类控制技：hitbox 置 FROZEN + 挂 OverTime 到点自动解，REQ-F-030）。
@@ -126,6 +169,21 @@ const ultTemplate = (targetMask: number, amount: number, size: number, fxKey: st
       Hitbox: { resource: 'hp', amount, targetMask, scaleByResource: scaleId, ...(dot ? DOT : {}), ...(freezeTicks > 0 ? { setMask: FROZEN, statusDuration: freezeTicks } : {}) },
       Timer: { id: 'life', elapsed: 0, duration: 3, loop: false },
       Sprite: sprite(fxKey, 7),
+    },
+    redflash: {
+      Transform: xf(0, 0),
+      Shape: { kind: 'box', width: Math.round(size * 0.7), height: Math.round(size * 0.7) },
+      Color: { tint: 0xff2a2a, alpha: 0.5 },
+      Tween: { target: 'Color.alpha', from: 0.5, to: 0, elapsed: 0, duration: 12, easing: 'easeOut', done: false },
+      Timer: { id: 'life', elapsed: 0, duration: 13, loop: false },
+      Sprite: zlift(9),
+    },
+    fx: {
+      Transform: xf(0, 0),
+      Color: { tint: 0xffffff, alpha: 0.95 },
+      Tween: { target: 'Color.alpha', from: 0.95, to: 0, elapsed: 0, duration: 22, easing: 'easeOut', done: false },
+      Timer: { id: 'life', elapsed: 0, duration: 23, loop: false },
+      Sprite: sprite(fxKey, 8),
     },
   },
 });
@@ -211,13 +269,17 @@ function heroTemplate(h: HeroSpec): PrefabTemplate {
         // 被冻定身（REQ-F-030）；glideSpeed=平滑滑行（REQ-F-034：HexPos 逻辑瞬步不变，Transform 恒速滑向格点）。
         // 取值按策划审查：相邻格 ~33px / period 48 ≈ 0.7 px/tick 为追上逻辑步的下限，0.8 留余量（瞬移=不设）。
         GridMover: { period: MOVE_PERIOD, elapsed: 0, haltStatusMask: FROZEN, glideSpeed: 0.8 },
-        Mortal: { resource: 'hp', atOrBelow: 0 },
+        Mortal: { resource: 'hp', atOrBelow: 0, dropTemplate: `death_${h.id}` }, // 死亡碎裂特效（用户打击感批：四分碎片飞散）
         // 普攻链（F-9 self 化，REQ-021 spawn + REQ-F-035 whenGlobal 阶段门 + REQ-F-036 二刷定序）：
         // 自身 loop Timer 到点 ∧ 全局 in_combat → SelfRule 在自身 Relation(target) 处展开打击区。
         // timer id 共享 'atk'（self 作用域读自身那份，同模板多实例不串台——唯一 id 脚手架已拆）；
         // 备战/结算不动手 = whenGlobal 门（策划第 9 轮裁定）；目标存在性兜底（胜方目标死光即停手）。
         Timer: { id: 'atk', elapsed: 0, duration: ATK_CD, loop: true },
-        SelfRule: { when: { kind: 'timer', id: 'atk', cmp: 'gte', value: ATK_CD - 1 }, whenGlobal: { kind: 'flag', id: 'in_combat', equals: true }, do: [{ kind: 'spawn', template: `strike_${h.id}`, at: 'target' }], once: false, armed: false },
+        // 普攻按攻击类型分流（用户打击感批）：近战=瞬时打击区展开在目标（斩光+红闪）；远程/法术=追踪弹
+        // 从自身射出（真弹道，命中才结算）。两路同受 whenGlobal in_combat 门。
+        SelfRule: { when: { kind: 'timer', id: 'atk', cmp: 'gte', value: ATK_CD - 1 }, whenGlobal: { kind: 'flag', id: 'in_combat', equals: true }, do: [h.atkType === 'melee' ? { kind: 'spawn', template: `strike_${h.id}`, at: 'target' } : { kind: 'spawn', template: `proj_${h.id}`, at: 'self' }], once: false, armed: false },
+        // 呼吸微动（用户「移动轻微抖动」的常驻近似）：scaleY 1↔1.05 往复，活物感；幅度小不碍判读。
+        Tween: { target: 'Transform.scaleY', from: 1, to: 1.05, elapsed: 0, duration: 26, easing: 'easeInOut', done: false, loop: 'pingpong' },
         Sprite: sprite(h.key, 4),
       },
       // 头顶名牌：Text+队伍色（我方蜀=红 / 敌方魏=蓝——用户实测"三色势力分不清谁打谁"，名牌只读阵营；
@@ -262,7 +324,7 @@ function heroOverrides(h: HeroSpec, star: number, hexPos: Record<string, unknown
       HexPos: hexPos,
       Tag: { flags: h.team | h.cls | h.faction },
       Resource: { current: hp, max: hp },
-      ...(star >= 2 ? { SelfRule: { do: [{ kind: 'spawn', template: `strike_${h.id}_s${star}`, at: 'target' }] } } : {}),
+      ...(star >= 2 ? { SelfRule: { do: [h.atkType === 'melee' ? { kind: 'spawn', template: `strike_${h.id}_s${star}`, at: 'target' } : { kind: 'spawn', template: `proj_${h.id}_s${star}`, at: 'self' }] } } : {}),
     },
     ...(star >= 2 ? { mana: { SelfRule: { do: [{ kind: 'spawn', template: `ult_${h.id}_s${star}`, at: 'target' }, { kind: 'modify-resource', op: 'set', value: 0 }] } } } : {}),
   };
@@ -351,9 +413,10 @@ function mobTemplate(atk: number): PrefabTemplate {
         Perception: { targetTag: TEAM_A, sightRadius: 0 },
         HexPos: { q: 0, r: 0 },
         GridMover: { period: MOVE_PERIOD, elapsed: 0, haltStatusMask: FROZEN, glideSpeed: 0.8 },
-        Mortal: { resource: 'hp', atOrBelow: 0, dropTemplate: 'loot_orb' }, // 死亡掉法球（§4.7 掉落源）
+        Mortal: { resource: 'hp', atOrBelow: 0, dropTemplate: 'mob_death' }, // 死亡=掉法球+碎裂特效（mob_death 复合模板）
         Timer: { id: 'atk', elapsed: 0, duration: ATK_CD, loop: true },
         SelfRule: { when: { kind: 'timer', id: 'atk', cmp: 'gte', value: ATK_CD - 1 }, whenGlobal: { kind: 'flag', id: 'in_combat', equals: true }, do: [{ kind: 'spawn', template: `strike_mob_${atk}`, at: 'target' }], once: false, armed: false },
+        Tween: { target: 'Transform.scaleY', from: 1, to: 1.05, elapsed: 0, duration: 26, easing: 'easeInOut', done: false, loop: 'pingpong' },
         Sprite: sprite(F_HERO.gan_ning, 4),
       },
       name: {
@@ -409,9 +472,24 @@ function visSwap(sig: string, show: string, hides: string[]): Record<string, Ent
 // 每英雄三张模板：普攻打击区 + 大招打击区 + 棋子复合体（REQ-F-032 回合重展开用）。targetMask=敌队。
 export const GAME_F_TEMPLATES: Record<string, PrefabTemplate> = Object.fromEntries(
   ROSTER.flatMap((h): [string, PrefabTemplate][] => [
-    [`strike_${h.id}`, strike(h.enemy, finalAtk(h), FX_BY_TYPE[h.atkType], h.team === TEAM_A ? 'dmg_scale_a' : 'dmg_scale_b')],
+    // 近战=瞬时打击区；远程/法术=追踪弹道（用户打击感批）。两类只发各自用到的武器模板。
+    h.atkType === 'melee'
+      ? [`strike_${h.id}`, strike(h.enemy, finalAtk(h), FX_BY_TYPE[h.atkType], h.team === TEAM_A ? 'dmg_scale_a' : 'dmg_scale_b')] as [string, PrefabTemplate]
+      : [`proj_${h.id}`, projectile(h.enemy, finalAtk(h), FX_BY_TYPE[h.atkType], h.team === TEAM_A ? 'dmg_scale_a' : 'dmg_scale_b')] as [string, PrefabTemplate],
     [`ult_${h.id}`, ultTemplate(h.enemy, h.ultDmg, h.ultSize, h.ultFx, h.ultDot, h.ultFreeze, h.team === TEAM_A ? 'dmg_scale_a' : 'dmg_scale_b')],
     [`hero_${h.id}`, heroTemplate(h)],
+    // 死亡碎裂（用户打击感批「被杀死时切成四半」）：4 个 0.55 倍迷你分身向四角飞散+渐隐（Velocity 四向
+    // + alpha Tween + lifetime 自清；表现实体无 Tag 不参战不计存活）。
+    [`death_${h.id}`, {
+      entities: Object.fromEntries([[-1, -1], [1, -1], [-1, 1], [1, 1]].map(([dx, dy], i) => [`q${i}`, {
+        Transform: { x: dx * 5, y: dy * 5, rotation: 0, scaleX: 0.55, scaleY: 0.55 },
+        Velocity: { vx: dx * 2.0, vy: dy * 1.6 - 0.6, angular: 0 },
+        Color: { tint: 0xffffff, alpha: 0.95 },
+        Tween: { target: 'Color.alpha', from: 0.95, to: 0, elapsed: 0, duration: 26, easing: 'easeOut', done: false },
+        Timer: { id: 'life', elapsed: 0, duration: 30, loop: false },
+        Sprite: sprite(h.key, 6),
+      }])),
+    } as unknown as PrefabTemplate],
   ]).concat(
     // 备战席位模板（v2 §4.6 + F-17 升星家族 + F-18/REQ-F-049 统一架构）：**席位 marker 即上场槽**。
     // 每将三档星级模板（bench/bench2/bench3）= merge-rule「同模板才互相计数」家族（策划 F-17 原批注语义），
@@ -435,10 +513,21 @@ export const GAME_F_TEMPLATES: Record<string, PrefabTemplate> = Object.fromEntri
               Tag: { flags: BENCH_OCC | MARKER_VIS }, // MARKER_VIS：战斗期隐藏（REQ-F-056，消幽灵）
               Visibility: { visible: true, active: true }, // 备战可见；ph_combat→隐藏 / ph_prep→显
               Draggable: { snap: 'hex', onlyFlag: 'in_prep', capTagMask: BENCH_OCC, capResource: 'level' },
+              // 落子弹跳（REQ-F-057）：压扁回弹 keep Tween——买入出生播一次，每次拖放落点由 drag-place 倒带重放。
+              Tween: { target: 'Transform.scaleY', from: STAR_SCALE[s] * 1.35, to: STAR_SCALE[s], elapsed: 0, duration: 12, easing: 'easeOut', done: false, keep: true },
               Caster: { onSignal: 'deploy', template: `hero_${h.id}`, at: 'self', requireHexPos: true, overrides: heroOverrides(h, s, '@origin-hex') },
             },
             ...(s >= 2
               ? {
+                  // 合成闪光（用户「合在一起要有效果、skill 一下」）：仅 2/3 星模板自带 → 恰在合成产物
+                  // 出生瞬间金光炸开渐隐（买入的 1 星无此件）。无 Hierarchy 不级联，lifetime 自清。
+                  flash: {
+                    Transform: { x: 0, y: 0, rotation: 0, scaleX: 2.4, scaleY: 2.4 },
+                    Color: { tint: 0xffd24a, alpha: 0.95 },
+                    Tween: { target: 'Color.alpha', from: 0.95, to: 0, elapsed: 0, duration: 22, easing: 'easeOut', done: false },
+                    Timer: { id: 'life', elapsed: 0, duration: 24, loop: false },
+                    Sprite: sprite(F_FX_FLAME, 32),
+                  },
                   // ★ 角标：2 星银 / 3 星金，字号加大，带描边底板 —— 升星辨识度（合成功能本身已验证正确，纯视觉强化）。
                   star: {
                     Transform: xf(0, -26),
@@ -455,10 +544,12 @@ export const GAME_F_TEMPLATES: Record<string, PrefabTemplate> = Object.fromEntri
         } as unknown as PrefabTemplate,
       ]),
     ),
-    // 升星武器模板（F-17）：二/三星普攻与大招打击区（伤害 ×1.5/×2.25），槽位 overrides 给棋子换弹（SelfRule.do）。
+    // 升星武器模板（F-17）：二/三星普攻（近战打击区/远程弹道按类型）与大招（×1.5/×2.25），槽位 overrides 换弹。
     ROSTER.filter((x) => x.team === TEAM_A).flatMap((h): [string, PrefabTemplate][] =>
       [2, 3].flatMap((s): [string, PrefabTemplate][] => [
-        [`strike_${h.id}_s${s}`, strike(h.enemy, Math.round(finalAtk(h) * STAR_DMG_MUL[s]), FX_BY_TYPE[h.atkType], 'dmg_scale_a')],
+        h.atkType === 'melee'
+          ? [`strike_${h.id}_s${s}`, strike(h.enemy, Math.round(finalAtk(h) * STAR_DMG_MUL[s]), FX_BY_TYPE[h.atkType], 'dmg_scale_a')] as [string, PrefabTemplate]
+          : [`proj_${h.id}_s${s}`, projectile(h.enemy, Math.round(finalAtk(h) * STAR_DMG_MUL[s]), FX_BY_TYPE[h.atkType], 'dmg_scale_a')] as [string, PrefabTemplate],
         [`ult_${h.id}_s${s}`, ultTemplate(h.enemy, Math.round(h.ultDmg * STAR_DMG_MUL[s]), h.ultSize, h.ultFx, h.ultDot, h.ultFreeze, 'dmg_scale_a')],
       ]),
     ),
@@ -468,6 +559,34 @@ export const GAME_F_TEMPLATES: Record<string, PrefabTemplate> = Object.fromEntri
     [[
       'loot_orb',
       { entities: { orb: { Transform: xf(0, 0), Shape: { kind: 'box', width: 10, height: 10 }, Sensor: {}, Sprite: sprite(F_FX_DRAIN, 5), Color: { tint: 0xffd700, alpha: 1 }, Tag: { flags: LOOT | ZONE_FLAG }, Hitbox: { resource: 'loot', amount: -5, targetMask: PROTAG, consumeOnHit: true } } } } as unknown as PrefabTemplate, // 044：真结算一次入账-5(负=给予)同拍自毁；主角零附件
+    ]] as [string, PrefabTemplate][],
+    // 野怪死亡复合（掉法球 + 四分碎裂；Mortal.dropTemplate 单口 → 复合模板一口出两件）
+    [[
+      'mob_death',
+      { entities: Object.assign(
+        { orb: { Transform: xf(0, 0), Shape: { kind: 'box', width: 10, height: 10 }, Sensor: {}, Sprite: sprite(F_FX_DRAIN, 5), Color: { tint: 0xffd700, alpha: 1 }, Tag: { flags: LOOT | ZONE_FLAG }, Hitbox: { resource: 'loot', amount: -5, targetMask: PROTAG, consumeOnHit: true } } },
+        Object.fromEntries([[-1, -1], [1, -1], [-1, 1], [1, 1]].map(([dx, dy], i) => [`q${i}`, {
+          Transform: { x: dx * 5, y: dy * 5, rotation: 0, scaleX: 0.5, scaleY: 0.5 },
+          Velocity: { vx: dx * 2.0, vy: dy * 1.6 - 0.6, angular: 0 },
+          Color: { tint: 0xffffff, alpha: 0.9 },
+          Tween: { target: 'Color.alpha', from: 0.9, to: 0, elapsed: 0, duration: 24, easing: 'easeOut', done: false },
+          Timer: { id: 'life', elapsed: 0, duration: 28, loop: false },
+          Sprite: sprite(F_HERO.gan_ning, 6),
+        }])),
+      ) } as unknown as PrefabTemplate,
+    ]] as [string, PrefabTemplate][],
+    // 胜利彩点（庆祝相位喷洒）：金色圆点四散上抛+渐隐（Velocity+Tween+lifetime；zlift 抬层画 Shape）。
+    [[
+      'win_burst',
+      { entities: Object.fromEntries([[-1.8, -1.2], [-0.6, -2.0], [0.6, -2.0], [1.8, -1.2]].map(([vx, vy], i) => [`c${i}`, {
+        Transform: { x: (i - 1.5) * 8, y: 0, rotation: 0, scaleX: 1, scaleY: 1 },
+        Shape: { kind: 'circle', radius: 4 },
+        Velocity: { vx, vy, angular: 0 },
+        Color: { tint: i % 2 === 0 ? 0xffd24a : 0xff8a4a, alpha: 0.95 },
+        Tween: { target: 'Color.alpha', from: 0.95, to: 0, elapsed: 0, duration: 38, easing: 'easeOut', done: false },
+        Timer: { id: 'life', elapsed: 0, duration: 42, loop: false },
+        Sprite: zlift(33),
+      }])) } as unknown as PrefabTemplate,
     ]] as [string, PrefabTemplate][],
     // 商店大卡（F-14 重排/用户钦定）：在售英雄的可点大卡面（60×68 占满大框）+ 名字签 + **价签**（用户报缺）；
     // Clickable.action(买哪框)/Tag(槽位掩码) 由持位 Caster overrides 注入。价 = playCosts 金 3（统一费）。
@@ -495,7 +614,7 @@ const SHOP_Y = 168;
 // resolution 臂 wipe_armed → 'wipe' → destroy-tagged 清场。经济/伤害不再写死在 flow：prep 臂 income_armed、
 // 败方臂 dmg_armed，由 banded EventWhen→Effect 按 §4.1/§4.2 表结算（见 goldBand/伤害 bands）。
 // 尚缺 ready 开战输入（§6.2 P2，输入路由归主程）：prep 暂以 after 40 自动开战，接上后改读 ready Flag。
-const makeRoundFlow = (PREP_TICKS: number, RESOLUTION_TICKS: number) => {
+const makeRoundFlow = (PREP_TICKS: number, RESOLUTION_TICKS: number, CELEBRATE_TICKS: number) => {
   // 开战倒计时（用户第 3 条）：prep 末尾恒有 3 秒读数（玩家档 180 拍；快速档按比例缩、总时长不变=
   // 既有时序断言零漂移）。ready 提前 → 也先进 countdown 数完再打，不许瞬开。
   const CD_TICKS = Math.min(180, Math.max(6, Math.floor(PREP_TICKS / 4)));
@@ -547,11 +666,17 @@ const makeRoundFlow = (PREP_TICKS: number, RESOLUTION_TICKS: number) => {
       transitions: [
         // after 30 = 最短驻留（部署移入战拍后，棋子成型前 present 旗仍是备战期的 false——给 deploy→prefab→zone
         // 链 ~4 拍落定 + 余量；0.5s 玩家不可感知，真团灭以「拍」计照常生效）。
-        { when: { kind: 'flag', id: 'team_b_present', equals: false }, after: 30, to: 'resolution', do: [{ kind: 'set-flag', targetId: 'won', value: true }, { kind: 'modify-resource', targetId: 'win_streak', op: 'add', value: 1 }, { kind: 'modify-resource', targetId: 'lose_streak', op: 'set', value: 0 }] },
-        { when: { kind: 'flag', id: 'team_a_present', equals: false }, after: 30, to: 'resolution', do: [{ kind: 'set-flag', targetId: 'won', value: false }, { kind: 'modify-resource', targetId: 'win_streak', op: 'set', value: 0 }, { kind: 'modify-resource', targetId: 'lose_streak', op: 'add', value: 1 }, { kind: 'set-flag', targetId: 'dmg_armed', value: true }] },
+        { when: { kind: 'flag', id: 'team_b_present', equals: false }, after: 30, to: 'celebrate', do: [{ kind: 'set-flag', targetId: 'won', value: true }, { kind: 'modify-resource', targetId: 'win_streak', op: 'add', value: 1 }, { kind: 'modify-resource', targetId: 'lose_streak', op: 'set', value: 0 }] },
+        { when: { kind: 'flag', id: 'team_a_present', equals: false }, after: 30, to: 'celebrate', do: [{ kind: 'set-flag', targetId: 'won', value: false }, { kind: 'modify-resource', targetId: 'win_streak', op: 'set', value: 0 }, { kind: 'modify-resource', targetId: 'lose_streak', op: 'add', value: 1 }, { kind: 'set-flag', targetId: 'dmg_armed', value: true }] },
         // 加时强制结束（30s+15s=2700拍，一图流；单人改编=按败方路径结算+连败，准则双伤的单人合理化）
-        { when: { kind: 'timer', id: 'combat_clock', cmp: 'gte', value: 2700 }, to: 'resolution', do: [{ kind: 'set-flag', targetId: 'won', value: false }, { kind: 'modify-resource', targetId: 'win_streak', op: 'set', value: 0 }, { kind: 'modify-resource', targetId: 'lose_streak', op: 'add', value: 1 }, { kind: 'set-flag', targetId: 'dmg_armed', value: true }] },
+        { when: { kind: 'timer', id: 'combat_clock', cmp: 'gte', value: 2700 }, to: 'celebrate', do: [{ kind: 'set-flag', targetId: 'won', value: false }, { kind: 'modify-resource', targetId: 'win_streak', op: 'set', value: 0 }, { kind: 'modify-resource', targetId: 'lose_streak', op: 'add', value: 1 }, { kind: 'set-flag', targetId: 'dmg_armed', value: true }] },
       ],
+    },
+    {
+      id: 'celebrate', // 庆祝亮相（用户「打完不要瞬间全消失，要有 win 展示」）：幸存棋子留板、胜/败横幅 +
+      // 胜方金彩喷洒（ph_win 信号 → 彩点 Caster），停 CELEBRATE_TICKS 再进结算清场。
+      onEnter: [{ kind: 'set-state', targetId: 'round_ui', value: 'celebrate' }],
+      transitions: [{ when: { kind: 'always' }, after: CELEBRATE_TICKS, to: 'resolution' }],
     },
     {
       id: 'resolution', // 结算：停战 + 清场（wipe→destroy-tagged）；玩家血尽→gameover，否则数拍后进 done 与 L1 握手
@@ -618,10 +743,11 @@ const RUN_FLOW = {
 
 // 节奏档（玩家视角修正：备战 ~30s 给操作时间——准则 §1.2；ready 可跳过；结算 4s 可读）。
 // 测试传快速档 {prepTicks:40, resolutionTicks:60} 保持既有时序断言；缺省=玩家档。
-export interface GameFPacing { prepTicks?: number; resolutionTicks?: number }
+export interface GameFPacing { prepTicks?: number; resolutionTicks?: number; celebrateTicks?: number }
 export function buildGameFBlueprint(pacing: GameFPacing = {}): WorldBlueprint {
   const PREP_TICKS = pacing.prepTicks ?? 1800; // 30s@60tps
   const RESOLUTION_TICKS = pacing.resolutionTicks ?? 240; // 4s
+  const CELEBRATE_TICKS = pacing.celebrateTicks ?? 110; // ~1.8s 战后亮相（横幅+彩点；测试快速档传小值）
   const entities: Record<string, EntityBlueprint> = {
     // 技能/打击库（数据，单例）。
     library: { PrefabLibrary: { templates: GAME_F_TEMPLATES, seq: 0 } } as unknown as EntityBlueprint,
@@ -635,7 +761,7 @@ export function buildGameFBlueprint(pacing: GameFPacing = {}): WorldBlueprint {
     zone_a: { Zone: { outFlag: 'team_a_present', ...ARENA, requiredTag: TEAM_A, count: 1 } } as unknown as EntityBlueprint,
     zone_b: { Zone: { outFlag: 'team_b_present', ...ARENA, requiredTag: TEAM_B, count: 1 } } as unknown as EntityBlueprint,
     // —— 金铲铲回合流程（flow）+ 其读写的旗标/资源单例 ——
-    flow_ctrl: { GameFlow: makeRoundFlow(PREP_TICKS, RESOLUTION_TICKS) } as unknown as EntityBlueprint, // L2 round_flow（节奏=装配参数）
+    flow_ctrl: { GameFlow: makeRoundFlow(PREP_TICKS, RESOLUTION_TICKS, CELEBRATE_TICKS) } as unknown as EntityBlueprint, // L2 round_flow（节奏=装配参数）
     flow_run: { GameFlow: RUN_FLOW } as unknown as EntityBlueprint, // L1 run_flow（§3.2）
     f_in_combat: { Flag: { id: 'in_combat', active: false } } as unknown as EntityBlueprint,
     f_in_prep: { Flag: { id: 'in_prep', active: false } } as unknown as EntityBlueprint, // 备战相位（F-18 拖拽门；flow prep 进出维护）
@@ -817,14 +943,36 @@ export function buildGameFBlueprint(pacing: GameFPacing = {}): WorldBlueprint {
       Visibility: { visible: false },
       Sprite: { textureKey: F_FX_STRIKE, anchorX: 0.5, anchorY: 0.5, zOrder: 32 },
     } as unknown as EntityBlueprint,
+    banner_win: {
+      Transform: xf(0, -60),
+      Text: { content: '🎉 胜 利 ！', fontSize: 26, fontFamily: 'sans-serif', anchor: 'center', lineSpacing: 0 },
+      Color: { tint: 0xffd24a, alpha: 1 },
+      Visibility: { visible: false },
+      Sprite: { textureKey: F_FX_STRIKE, anchorX: 0.5, anchorY: 0.5, zOrder: 32 },
+    } as unknown as EntityBlueprint,
+    banner_lose: {
+      Transform: xf(0, -60),
+      Text: { content: '败 阵 …', fontSize: 22, fontFamily: 'sans-serif', anchor: 'center', lineSpacing: 0 },
+      Color: { tint: 0xc06060, alpha: 1 },
+      Visibility: { visible: false },
+      Sprite: { textureKey: F_FX_STRIKE, anchorX: 0.5, anchorY: 0.5, zOrder: 32 },
+    } as unknown as EntityBlueprint,
+    // 庆祝相位带（celebrate 进场拍按胜负分流一次）：横幅三选一 + 胜方金彩喷洒（3 个 Caster 同信号齐喷）。
+    when_ph_win: { EventWhen: { signal: 'ph_win', when: and({ kind: 'state', fsmId: 'round_ui', equals: 'celebrate' }, flagIs('won')), mode: 'edge', armed: false } } as unknown as EntityBlueprint,
+    when_ph_lose: { EventWhen: { signal: 'ph_lose', when: and({ kind: 'state', fsmId: 'round_ui', equals: 'celebrate' }, { kind: 'not', of: flagIs('won') }), mode: 'edge', armed: false } } as unknown as EntityBlueprint,
+    burst_l: { Transform: xf(-70, -50), Caster: { onSignal: 'ph_win', template: 'win_burst', at: 'self' } } as unknown as EntityBlueprint,
+    burst_m: { Transform: xf(0, -80), Caster: { onSignal: 'ph_win', template: 'win_burst', at: 'self' } } as unknown as EntityBlueprint,
+    burst_r: { Transform: xf(70, -50), Caster: { onSignal: 'ph_win', template: 'win_burst', at: 'self' } } as unknown as EntityBlueprint,
     when_ph_prep: { EventWhen: { signal: 'ph_prep', when: { kind: 'state', fsmId: 'round_ui', equals: 'prep' }, mode: 'edge', armed: false } } as unknown as EntityBlueprint,
     when_ph_combat: { EventWhen: { signal: 'ph_combat', when: { kind: 'state', fsmId: 'round_ui', equals: 'combat' }, mode: 'edge', armed: false } } as unknown as EntityBlueprint,
     when_ph_res: { EventWhen: { signal: 'ph_res', when: { kind: 'state', fsmId: 'round_ui', equals: 'resolution' }, mode: 'edge', armed: false } } as unknown as EntityBlueprint,
     when_ph_over: { EventWhen: { signal: 'ph_over', when: flagIs('run_over'), mode: 'edge', armed: false } } as unknown as EntityBlueprint,
     when_ph_won: { EventWhen: { signal: 'ph_won', when: flagIs('run_won'), mode: 'edge', armed: false } } as unknown as EntityBlueprint,
-    ...visSwap('ph_prep', 'banner_prep', ['banner_combat', 'banner_resolution']),
+    ...visSwap('ph_prep', 'banner_prep', ['banner_combat', 'banner_resolution', 'banner_win', 'banner_lose']),
     ...visSwap('ph_combat', 'banner_combat', ['banner_prep', 'banner_resolution']),
-    ...visSwap('ph_res', 'banner_resolution', ['banner_prep', 'banner_combat']),
+    ...visSwap('ph_res', 'banner_resolution', ['banner_prep', 'banner_combat', 'banner_win', 'banner_lose']),
+    ...visSwap('ph_win', 'banner_win', ['banner_combat']),
+    ...visSwap('ph_lose', 'banner_lose', ['banner_combat']),
     ...visSwap('ph_over', 'banner_gameover', []),
     ...visSwap('ph_won', 'banner_victory', []),
     // —— HUD 数字（F-15 / REQ-F-043 t2-text-binding）：左上角金币/血/等级/经验 + 阶段-回合 ——
@@ -1034,6 +1182,7 @@ export function buildGameFBlueprint(pacing: GameFPacing = {}): WorldBlueprint {
       // AI：索敌 + 六边形网格寻路走位（aggro 写目标 → grid-move 沿确定性 A* 逐格走，REQ-024）
       aggroCapability,
       gridMoveCapability,
+      steeringCapability, // 远程/法术弹道（用户打击感批）：追踪弹 seek（aggro 锁敌 → Velocity → motion-apply）
       motionApplyCapability, // 主角自由移动（批C：Controllable dx/dy→Velocity→Transform；棋子仍走 grid-move）
       // 自动普攻（F-9 self 化）：timer → self-rule(whenGlobal 门 + spawn at target) → prefab；
       // 大招半截 + deploy/wipe/banded：event-when → caster/effect-apply（大招完整 self 化等 REQ-F-039）
@@ -1067,6 +1216,7 @@ export function buildGameFBlueprint(pacing: GameFPacing = {}): WorldBlueprint {
       hierarchyResolveCapability,
       hierarchyCascadeCapability, // 子随父死（REQ-F-026）：棋子死亡→头顶名字一并消失
       cameraFollowCapability,
+      tweenCapability, // 表现缓动（打击感批）：红闪/余韵/碎裂渐隐/呼吸微动/落子弹跳(keep 重放)/合成闪光/胜利彩点
     ],
     entities,
   };

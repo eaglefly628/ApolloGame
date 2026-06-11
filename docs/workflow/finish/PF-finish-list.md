@@ -96,6 +96,7 @@
    - **game-f 终态**：marker=上场槽（Caster{requireHexPos}+'@origin-hex' 跟手+Draggable snap/cap+Clickable up）；开局=bootcast 播种 4 在板 marker（与买入同族）；部署窗移入战拍+resolution 关窗+combat after:30；条目 20 的受限版（12 槽位/星级资源/升降带/门脉冲）**整段删除**——星级=模板族本身。
    - **新坑入档**：①部署窗跨 resolution=指针翻转误发双倍敌阵（窗语义=恰本场入战拍，结算即关）；②可拖+可点实体必须 Clickable{phase:'up'}（壳层 up/drag 互斥的配套约定）；③合成测试断言锚点前先想清「最老实例在哪」——板上的开局 marker seq 最小，合成会**原地升星**而不是在席上出现。
    - game-f 24/24（开局播种/入战拍展开/升星全链含原地升星/拖拽全量含限额拒超）；全套 1093 + build 绿。
+23. ✅ **表现/打击感批（2026-06-11 晚，用户口述八条 + 四 bug 批）**：幽灵 marker 战斗期隐藏（REQ-F-056 set-visible-tagged）/商店价签/符文标题+开战收走/星级放大辨识；落子压扁回弹（REQ-F-057 Tween.keep+drag-place 重放钩）/战后 celebrate 相位（胜败横幅+金彩喷洒+幸存亮相）/合成金闪/呼吸微动/远程法术真弹道（纯数据追踪弹：Perception+Steering+consumeOnHit）/被击红闪+斩光余韵（zlift Shape 抬层 hack）/死亡四分碎裂（dropTemplate 管道；野怪 mob_death 复合=法球+碎片）。follow-up 记档：攻击者前刺、三幻影聚拢、「仅移动时」抖动门。全套 1102 绿。
 22. ✅ **用户五条钦定批（2026-06-11 晚）**：①棋盘改 **7×8=56 格真规格**（旧 12×12 是注释与实现失配的错版；全站位压进 col0..6/row0..7、中线 r3|r4 贴脸、TILE 40、ARENA/主角/按钮全反流）；②商店改**三大框选卡页**（小丑牌式，handSize 3、大卡 58×68、底板+框 placeholder 待 UI 资源；SHOPSLOT 位裁回 3）；③**开战倒计时**（零引擎件：prep_left 资源 OverTime -1/秒 min=0 钳停自终止 + L2 新 countdown 状态——ready 也要数 3-2-1，不许瞬开；HUD 金色读秒、战斗期隐藏）；④**刷新枯竭 bug 根治**（REQ-F-054：refresh 旧手回袋底，卡池守恒）；⑤**备战席托盘**（REQ-F-055 t2-tray：9 槽平台、买入自动落最小空槽、席内拖拽互换、上板让座、无效落点弹回；9 槽框 placeholder）。坑（新）：toolbar 类按钮坐标被布局反流牵连的测试要整批跟手；7×8 中线贴脸后「前排出生即相邻不走位」——滑行/走位类断言要抽样后排单位。game-f 24/24；全套 1097 + build 绿。
 
 ### 5.1 血条/蓝条接入（✅ 已接入 mainbranch 2026-06-10，本节存档备查）

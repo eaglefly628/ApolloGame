@@ -5,7 +5,7 @@ import { buildGameFBlueprint, GAME_F_HERO_IDS, FROZEN, TEAM_A } from './blueprin
 import { offsetToAxial, project } from './hex.js';
 
 // 节奏：缺省=玩家档（备战30s）；测试统一快速档维持既有时序断言。
-const FAST = { prepTicks: 40, resolutionTicks: 60 };
+const FAST = { prepTicks: 40, resolutionTicks: 60, celebrateTicks: 12 };
 
 // 棋子=运行时展开的实例（REQ-F-032 回合重置）：id 形如 `hero_<英雄>#<seq>:main`，
 // 名牌/条/大招接线是同模板兄弟实例（REQ-F-033 '@local:' 重映射）→ 测试按前缀/后缀寻址。
@@ -128,6 +128,38 @@ describe('Game F — 自走棋（纯数据装配，零自走棋代码；棋子=�
     for (let i = 0; i < 3; i++) e.world.tick();
     expect(alive(e, m)).toBe(false); // 棋子销毁
     for (const part of ['name', 'hpbar', 'mpbg', 'mana']) expect(alive(e, childOf(m, part))).toBe(false); // 挂件无残留
+    // 死亡碎裂（打击感批）：Mortal.dropTemplate 在尸位炸出 4 个迷你分身飞散渐隐，lifetime 自清
+    expect(e.world.getAllEntities().filter((id) => id.startsWith('death_a_guanyu#')).length).toBe(4);
+    for (let i = 0; i < 40; i++) e.world.tick();
+    expect(e.world.getAllEntities().some((id) => id.startsWith('death_a_guanyu#'))).toBe(false); // 自清无残留
+  });
+
+  it('战后庆祝相位（用户「打完不要瞬间全消失」）：胜方横幅+彩点、幸存棋子留板亮相，停拍后才清场；远程弹道在飞', () => {
+    const e = new Engine({ tickRate: 60 });
+    e.load(buildGameFBlueprint(FAST));
+    const ui = (): string => { for (const x of e.world.getAllEntities()) { const st = e.world.getComponent(x, 'State') as { fsmId: string; current: string } | undefined; if (st && st.fsmId === 'round_ui') return st.current; } return '?'; };
+    const vis = (id: string): boolean => (e.world.getComponent(id, 'Visibility') as { visible: boolean } | undefined)?.visible ?? true;
+    // 战斗中：远程/法术棋子有真弹道（追踪弹实体在场）
+    let sawProj = false;
+    let guard = 0;
+    while (ui() !== 'celebrate' && guard++ < 4000) {
+      e.world.tick();
+      sawProj ||= e.world.getAllEntities().some((id) => id.startsWith('proj_'));
+    }
+    expect(ui()).toBe('celebrate'); // 团灭后先进庆祝亮相，不直接清场
+    expect(sawProj).toBe(true); // 法术/远程=追踪弹道（诸葛/周瑜/野怪对手里至少一方射过）
+    expect(mains(e).length).toBeGreaterThan(0); // 幸存棋子留板亮相（没瞬间全消失）
+    for (let i = 0; i < 3; i++) e.world.tick();
+    const won = flag(e, 'won');
+    expect(vis(won ? 'banner_win' : 'banner_lose')).toBe(true); // 胜/败横幅亮起
+    if (won) expect(e.world.getAllEntities().some((id) => id.startsWith('win_burst#'))).toBe(true); // 金彩喷洒
+    let guard2 = 0;
+    while (ui() === 'celebrate' && guard2++ < 200) e.world.tick();
+    for (let i = 0; i < 6; i++) e.world.tick();
+    expect(ui()).toBe('resolution');
+    expect(mains(e)).toHaveLength(0); // 亮相结束才清场
+    expect(vis('banner_win')).toBe(false); // 横幅随相位收走
+    expect(vis('banner_lose')).toBe(false);
   });
 
   it('蓝条→大招（F-9 完结篇，全 per-instance）：over-time 回蓝 → sidecar SelfRule 蓝满放招清蓝', () => {
@@ -537,12 +569,12 @@ describe('Game F — 自走棋（纯数据装配，零自走棋代码；棋子=�
     const mob = mains(e).find((m) => m.startsWith('mob_'))!;
     e.world.addComponent(mob, { type: 'ResourceModify', resourceId: 'hp', amount: -99999, scope: 'local' } as unknown as Resource);
     for (let i = 0; i < 4; i++) e.world.tick();
-    expect(e.world.getAllEntities().some((id) => id.startsWith('loot_orb#'))).toBe(true); // 死亡掉法球（Mortal.dropTemplate）
+    expect(e.world.getAllEntities().some((id) => id.startsWith('mob_death#') && id.endsWith(':orb'))).toBe(true); // 死亡掉法球+碎裂（mob_death 复合模板）
     let wiped = false;
     for (let i = 0; i < 4000 && !wiped; i++) { e.world.tick(); wiped = mains(e).length === 0; }
     expect(wiped).toBe(true);
     for (let i = 0; i < 5; i++) e.world.tick();
-    expect(e.world.getAllEntities().some((id) => id.startsWith('loot_orb#'))).toBe(false); // 未拾法球随 wipe 清（主角拾取=批C）
+    expect(e.world.getAllEntities().some((id) => id.endsWith(':orb') && id.startsWith('mob_death#'))).toBe(false); // 未拾法球随 wipe 清（Tag LOOT 不看模板名）
   });
 
   it('商店面板可视可点 + HUD 数字（F-14/F-15，REQ-F-042/043）：5 卡面随镜像重铺；点卡即买；金币数字实时', () => {

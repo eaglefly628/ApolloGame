@@ -1453,6 +1453,24 @@
 
 ---
 
+### REQ-F-057 · [2026-06-11] · 用户表现批（落子震动 + 全套打击感）· 框架级 · status: **done（同日，代理主程落地）** · 优先级: 中（juice/手感） · 类型: 窄缺口 ×2（一次性 Tween 不可重放；拖放无重播钩子）+ 其余全纯数据重组
+
+> **用户原话批**：①拖棋子要有「拿起来落下去」的震动（Tween）；②打完不要瞬间全消失，要 win/庆祝展示；③合成要有效果+被升级者闪一下；④移动轻微抖动；⑤进攻前刺；⑥远程要弹道；⑦被打红闪；⑧死亡切四半特效。
+> **逐条裁决（重组优先，引擎只动两小处）**：
+> - **引擎 a**：`Tween.keep?: boolean`——证伪：一次性 Tween 到点即移除组件（防僵尸帧写，Reviewer #2 旧裁），落子重放找不到组件可倒带。keep=到点保留+置 done（顶部 done 跳过保零开销），运行时倒带（elapsed=0/done=false）即重播。
+> - **引擎 b**：drag-place 成功落点后倒带实体自带 Tween（「拖放重播自带动画」通用钩子；被拒/未中不重放）；定序补 runsBefore 'tween'（Transform RMW 对，同 F-050 纪律；tray 同补）。
+> - **①落子震动**=marker 自带 scaleY 压扁回弹 keep Tween（买入出生播、每次落点重放）——纯数据+上面两件。
+> - **②庆祝**=L2 新 celebrate 相位（combat→celebrate→resolution，CELEBRATE_TICKS 节奏参数）：幸存棋子留板亮相 + 胜/败横幅（state+won 分流带）+ 胜方金彩喷洒（ph_win→3 Caster→win_burst 模板：Velocity 四散+alpha Tween+lifetime）——**全纯数据**。
+> - **③合成闪光**=bench2/3 模板自带 flash 实体（仅合成产物带 → 恰在合成瞬间金光炸开）——纯数据。「三幻影聚拢」需 merge-rule 知道被熔三者位置 → 记 follow-up（MergeRule.fxTemplate 候选），本批以产物闪光达意。
+> - **④移动抖动**=常驻呼吸微动近似（scaleY 1↔1.05 pingpong；Tween 无相位门，「仅移动时」不可表达——记 TUNE）。
+> - **⑤前刺**：攻击者朝目标的瞬时位移需按目标注入动画（运行时向量）→ 无词汇，**记 follow-up**（候选：SelfRule do kind:'nudge-to-target'）；本批以打击点表现（红闪+余韵）补偿打击感。
+> - **⑥弹道**=**纯数据拼装**（零引擎件！）：远程/法术普攻改「追踪弹」模板——Perception+aggro 锁敌 → Steering{seek} 追 → Hitbox consumeOnHit 真结算即灭 + lifetime 兜底；目标死于途中自动重锁。近战保持瞬时打击区。
+> - **⑦被打红闪**=strike/ult 模板加 redflash 实体（红 Shape 盖受击位 alpha 速褪；Shape 抬层用「永不就绪贴图 key」hack——chooseRenderMode 不就绪即退化画 Shape 而 zOrder 取自 Sprite，与名牌 Text 抬层同族）。**回驳**了 status-tint 新能力路线：renderer drawImage 不吃 tint，按 Status 染色出不来，按需求红闪在受击位等效。
+> - **⑧死亡四分**=Mortal.dropTemplate 现成管道：death_<将> 模板=4 个 0.55 倍迷你分身 Velocity 四角飞散+alpha 渐隐+lifetime 自清；野怪 dropTemplate 改 mob_death 复合（法球+碎片一口出）。
+> 引擎测 2（keep 语义/落子倒带+门拒不重放）+ game-f 庆祝/碎裂/弹道/收尾验收。全套 1102 绿。
+
+---
+
 ## 需求模板（复制这段填写）
 
 ```

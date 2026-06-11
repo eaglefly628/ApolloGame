@@ -114,11 +114,13 @@ export const tweenCapability = defineCapability({
       execute(world) {
         for (const [eid] of world.query('Tween')) {
           const tw = world.getComponent<Tween>(eid, 'Tween')!;
+          // REQ-F-057：keep 重放保留——done 实体零开销跳过（不再每帧空赋值），等运行时倒带（elapsed=0/done=false）。
+          if (tw.done) continue;
           // BUG-005：duration<=0（无效授权数据）即时到终值并结束，绝不进入"每帧到点→交换/归零"的 loop 抖动死循环。
           if (tw.duration <= 0) {
             writeField(world, eid, tw.target, tw.to);
             tw.done = true;
-            world.removeComponent(eid, 'Tween');
+            if (!tw.keep) world.removeComponent(eid, 'Tween');
             continue;
           }
           tw.elapsed += 1;
@@ -126,10 +128,11 @@ export const tweenCapability = defineCapability({
             const loop = tw.loop ?? 'none';
             // 本程视觉到达终值。
             writeField(world, eid, tw.target, tw.to);
-            // 末程（none，或循环计数到最后一程）：锁终值、置 done、移除（避免"僵尸"每帧空赋值，Reviewer #2）。
+            // 末程（none，或循环计数到最后一程）：锁终值、置 done；keep=保留组件供重放（REQ-F-057），
+            // 否则移除（避免"僵尸"每帧空赋值，Reviewer #2——keep 的零开销由顶部 done 跳过保证）。
             if (loop === 'none' || (tw.loops !== undefined && tw.loops <= 1)) {
               tw.done = true;
-              world.removeComponent(eid, 'Tween');
+              if (!tw.keep) world.removeComponent(eid, 'Tween');
               continue;
             }
             // 还有循环：消耗一程计数（缺省无限不计），pingpong 交换 from/to，归零重跑。snapshot 友好、确定性不变。
