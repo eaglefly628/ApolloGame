@@ -1312,6 +1312,33 @@
 
 ---
 
+### REQ-F-045 · [2026-06-10] · PE-F（v2 §3.3 摆子操作）· 框架级 · status: **open（待主程裁输入域方案）** · 优先级: 高（备战核心交互：上场/调位/回席） · 类型: 真缺口（拖拽输入无采集形态；落点坐标无数据载荷；运行时实体无"改阵容数据"动词）
+
+> **证伪重组**：① clickable 只有"命中→具名信号"，无 drag 语义、信号不携带坐标 → 拖谁/放哪都表达不了；② 给 144 棋盘格各挂 Clickable 做"两段点击"重组 = 信号风暴 + 格→HexPos 映射仍无载荷；③ 上场=把席位 marker 变成带 Caster/HexPos 的上场槽 = 运行时改实体组件，无数据动词。
+> **建议**：输入域扩展（v2 操作表原话"约束执行点交主程"）——PointerInputSource 产 `drag{from,to}` 命令 + 窄系统 `drag-place`（Draggable 标记 + snap 六角格 + 写 HexPos/槽数据；场上数≤level 的约束同处执行）。
+
+---
+
+### REQ-F-046 · [2026-06-10] · PE-F（§4.6 升星，Phase 2 收口件）· 框架级 · status: **open（待主程评估）** · 优先级: 高（构筑深度的另一半；三星可达性已由有限袋保真） · 类型: 真缺口（"同名同星 ×3 → 原子替换为高一星"无计数与替换动词）
+
+> **证伪重组**：① group-count 按 Tag 计数——8 将×3 星超出可用位空间，且"同名"是模板维度非 Tag；② 合成=确定性选 3 销毁+生成 1 高星：destroy-tagged 是全量掩码语义，无"恰好 N 个按 id 序"选择；③ 星级=槽位 overrides 数值——运行时改 Caster.overrides 无动词。
+> **建议**：窄合成原子（形如 `MergeRule{template, need:3, intoOverrides}`：引擎按实例 id 序数同模板存量(席+场)、达 3 原子替换、连锁直至封顶）——"N 换 1"在卡牌/合成品类通用。
+
+---
+
+### REQ-F-047 · [2026-06-10] · PE-F（§一.4 羁绊 + 战斗型符文共同前置）· 框架级 · status: **open（待主程裁 REQ-023 簇最窄落点）** · 优先级: 高（Phase 3 主体） · 类型: 真缺口（伤害读不了活属性——buff 无处施加）
+
+> **证伪重组**：① 计数侧 OK：group-count（REQ-022 done）开战拍锁存势力/职业数→Resource；② **施加侧断**：普攻/大招伤害=strike/ult 模板烘死 amount，hitbox 不读 Stats/任何活系数；③ 逐单位发 buff 实体=群发写=Gap C 旧裁回驳域。
+> **建议**：hitbox 伤害公式接一个最窄乘区——(A) `Hitbox.scaleByResource?: string`（结算时 amount×该全局 Resource，缺省 1 零迁移；羁绊=group-count 阈值带写系数资源）или (B) hitbox 读攻方 Stats。A 即"全局 buff 资源"重组的最后一环。
+
+---
+
+### REQ-F-048 · [2026-06-10] · PE-F（§4.6 收尾两件）· 框架级 · status: **open（待主程评估）** · 优先级: 中（体验完整性件） · 类型: 真缺口 ×2（运行时实例的"挑 N 个"选择；deck 外部写回）
+
+> ① **超员自动卖**（入战拍 场上>level 且席满→按入场逆序卖多余）：运行时实例排序选择无动词（与 REQ-F-046 的"选 N"同根，可共用同一原子）。② **卖出袋归还**（§4.6 有限袋语义保真）：CardPile deck 无外部写动词——建议 `CardPile.returnOnSignal?: string`（信号携 bought_code 同款码资源回插袋底，与 refreshOnSignal 同族触发面）。
+
+---
+
 ## 需求模板（复制这段填写）
 
 ```
