@@ -143,3 +143,22 @@ describe('png-decode — 真字节解码', () => {
     expect(() => decodePng(new Uint8Array([1, 2, 3]))).toThrow(/png/);
   });
 });
+
+describe('png-decode — Adam7 隔行（真实仓库文件冒烟）', () => {
+  it('elephant_old.png（隔行）解码出连贯主体而非噪点', async () => {
+    const { readFileSync } = await import('node:fs');
+    const buf = readFileSync('assets/FreeArtLib/monster/animals/elephant_old.png');
+    expect(buf[28]).toBe(1); // IHDR interlace 标志确为 Adam7
+    const { w, h, px } = decodePng(buf);
+    expect([w, h]).toEqual([32, 32]);
+    // 噪点的特征是几乎逐像素独立随机；正常精灵相邻像素高度相关。
+    // 用「相邻像素完全相等的比例」做代理：解码正确时应显著 > 0.3。
+    let same = 0, cnt = 0;
+    for (let y = 0; y < h; y++) for (let x = 1; x < w; x++) {
+      const a = (y * w + x) * 4, b = (y * w + x - 1) * 4;
+      cnt++;
+      if (px[a] === px[b] && px[a + 1] === px[b + 1] && px[a + 2] === px[b + 2] && px[a + 3] === px[b + 3]) same++;
+    }
+    expect(same / cnt).toBeGreaterThan(0.3);
+  });
+});

@@ -8,14 +8,37 @@ import { inflateSync, deflateSync } from 'node:zlib';
 // ── PNG 解码（支持 bitDepth 8 的 gray/RGB/palette/gray+A/RGBA；DCSS 全在此范围）──
 function u32(b, o) { return (b[o] << 24 | b[o + 1] << 16 | b[o + 2] << 8 | b[o + 3]) >>> 0; }
 
+const paeth = (a, b, c) => {
+  const pa = Math.abs(b - c), pb = Math.abs(a - c), pc = Math.abs(a + b - 2 * c);
+  return pa <= pb && pa <= pc ? a : pb <= pc ? b : c;
+};
+function unfilter(raw, offset, w, h, CH) {
+  const stride = w * CH;
+  const out = Buffer.alloc(h * stride);
+  let p = offset;
+  for (let y = 0; y < h; y++) {
+    const ft = raw[p++];
+    const prevOff = (y - 1) * stride, curOff = y * stride;
+    for (let x = 0; x < stride; x++) {
+      const a = x >= CH ? out[curOff + x - CH] : 0, b = y > 0 ? out[prevOff + x] : 0, c = x >= CH && y > 0 ? out[prevOff + x - CH] : 0;
+      let v = raw[p + x];
+      if (ft === 1) v += a; else if (ft === 2) v += b; else if (ft === 3) v += (a + b) >> 1; else if (ft === 4) v += paeth(a, b, c);
+      out[curOff + x] = v & 0xff;
+    }
+    p += stride;
+  }
+  return { data: out, next: p };
+}
+const ADAM7 = [[0, 0, 8, 8], [4, 0, 8, 8], [0, 4, 4, 8], [2, 0, 4, 4], [0, 2, 2, 4], [1, 0, 2, 2], [0, 1, 1, 2]];
+
 function decodePng(buf) {
   if (u32(buf, 0) !== 0x89504e47) throw new Error('not png');
-  let w = 0, h = 0, depth = 0, color = 0, plte = null, trns = null;
+  let w = 0, h = 0, depth = 0, color = 0, interlace = 0, plte = null, trns = null;
   const idat = [];
   for (let p = 8; p + 8 <= buf.length;) {
     const len = u32(buf, p), type = buf.toString('latin1', p + 4, p + 8);
     const data = buf.subarray(p + 8, p + 8 + len);
-    if (type === 'IHDR') { w = u32(data, 0); h = u32(data, 4); depth = data[8]; color = data[9]; }
+    if (type === 'IHDR') { w = u32(data, 0); h = u32(data, 4); depth = data[8]; color = data[9]; interlace = data[12]; }
     else if (type === 'PLTE') plte = data;
     else if (type === 'tRNS') trns = data;
     else if (type === 'IDAT') idat.push(data);
@@ -27,22 +50,23 @@ function decodePng(buf) {
   if (!CH) throw new Error(`unsupported color type ${color}`);
   const raw = inflateSync(Buffer.concat(idat));
   const stride = w * CH;
-  const out = Buffer.alloc(h * stride);
-  const paeth = (a, b, c) => {
-    const pa = Math.abs(b - c), pb = Math.abs(a - c), pc = Math.abs(a + b - 2 * c);
-    return pa <= pb && pa <= pc ? a : pb <= pc ? b : c;
-  };
-  for (let y = 0; y < h; y++) {
-    const ft = raw[y * (stride + 1)];
-    const line = raw.subarray(y * (stride + 1) + 1, (y + 1) * (stride + 1));
-    const prev = y > 0 ? out.subarray((y - 1) * stride, y * stride) : null;
-    const cur = out.subarray(y * stride, (y + 1) * stride);
-    for (let x = 0; x < stride; x++) {
-      const a = x >= CH ? cur[x - CH] : 0, b = prev ? prev[x] : 0, c = x >= CH && prev ? prev[x - CH] : 0;
-      let v = line[x];
-      if (ft === 1) v += a; else if (ft === 2) v += b; else if (ft === 3) v += (a + b) >> 1; else if (ft === 4) v += paeth(a, b, c);
-      cur[x] = v & 0xff;
+  let out;
+  if (interlace === 1) {
+    // Adam7 隔行：逐趟解滤波再散布（曾忽略此标志 → 隔行图渲染成噪点）。
+    out = Buffer.alloc(h * stride);
+    let pos = 0;
+    for (const [x0, y0, dx, dy] of ADAM7) {
+      const pw = Math.ceil((w - x0) / dx), ph = Math.ceil((h - y0) / dy);
+      if (pw <= 0 || ph <= 0) continue;
+      const r = unfilter(raw, pos, pw, ph, CH);
+      pos = r.next;
+      for (let j = 0; j < ph; j++) for (let i = 0; i < pw; i++) {
+        const src = (j * pw + i) * CH, dst = ((y0 + j * dy) * w + (x0 + i * dx)) * CH;
+        for (let ch = 0; ch < CH; ch++) out[dst + ch] = r.data[src + ch];
+      }
     }
+  } else {
+    out = unfilter(raw, 0, w, h, CH).data;
   }
   // → RGBA
   const px = Buffer.alloc(w * h * 4);

@@ -19,13 +19,51 @@ function ascii(b: Uint8Array, o: number, n: number): string {
   return s;
 }
 
-/** 解码 PNG 字节 → RGBA。非 PNG / 不支持的位深抛错（调用方决定跳过策略）。 */
+const paeth = (a: number, b: number, c: number): number => {
+  const pa = Math.abs(b - c);
+  const pb = Math.abs(a - c);
+  const pc = Math.abs(a + b - 2 * c);
+  return pa <= pb && pa <= pc ? a : pb <= pc ? b : c;
+};
+
+/** 解滤波一个子图（宽 w × 高 h，CH 通道），从 raw[offset] 起读，返回重建字节与新偏移。 */
+function unfilter(raw: Uint8Array, offset: number, w: number, h: number, CH: number): { data: Uint8Array; next: number } {
+  const stride = w * CH;
+  const out = new Uint8Array(h * stride);
+  let p = offset;
+  for (let y = 0; y < h; y++) {
+    const ft = raw[p++];
+    const prevOff = (y - 1) * stride;
+    const curOff = y * stride;
+    for (let x = 0; x < stride; x++) {
+      const a = x >= CH ? out[curOff + x - CH] : 0;
+      const b = y > 0 ? out[prevOff + x] : 0;
+      const c = x >= CH && y > 0 ? out[prevOff + x - CH] : 0;
+      let v = raw[p + x];
+      if (ft === 1) v += a;
+      else if (ft === 2) v += b;
+      else if (ft === 3) v += (a + b) >> 1;
+      else if (ft === 4) v += paeth(a, b, c);
+      out[curOff + x] = v & 0xff;
+    }
+    p += stride;
+  }
+  return { data: out, next: p };
+}
+
+// Adam7 七趟：起点 (x0,y0) 与步长 (dx,dy)。
+const ADAM7: ReadonlyArray<readonly [number, number, number, number]> = [
+  [0, 0, 8, 8], [4, 0, 8, 8], [0, 4, 4, 8], [2, 0, 4, 4], [0, 2, 2, 4], [1, 0, 2, 2], [0, 1, 1, 2],
+];
+
+/** 解码 PNG 字节 → RGBA。支持顺序与 Adam7 隔行；非 PNG / 不支持的位深抛错（调用方决定跳过策略）。 */
 export function decodePng(buf: Uint8Array): DecodedPng {
   if (buf.length < 8 || u32be(buf, 0) !== 0x89504e47) throw new Error('not a png');
   let w = 0;
   let h = 0;
   let depth = 0;
   let color = 0;
+  let interlace = 0;
   let plte: Uint8Array | null = null;
   let trns: Uint8Array | null = null;
   const idat: Uint8Array[] = [];
@@ -38,6 +76,7 @@ export function decodePng(buf: Uint8Array): DecodedPng {
       h = u32be(data, 4);
       depth = data[8];
       color = data[9];
+      interlace = data[12];
     } else if (type === 'PLTE') plte = data;
     else if (type === 'tRNS') trns = data;
     else if (type === 'IDAT') idat.push(data);
@@ -58,29 +97,27 @@ export function decodePng(buf: Uint8Array): DecodedPng {
   const raw = inflateSync(joined);
 
   const stride = w * CH;
-  const out = new Uint8Array(h * stride);
-  const paeth = (a: number, b: number, c: number): number => {
-    const pa = Math.abs(b - c);
-    const pb = Math.abs(a - c);
-    const pc = Math.abs(a + b - 2 * c);
-    return pa <= pb && pa <= pc ? a : pb <= pc ? b : c;
-  };
-  for (let y = 0; y < h; y++) {
-    const ft = raw[y * (stride + 1)];
-    const lineOff = y * (stride + 1) + 1;
-    const prevOff = (y - 1) * stride;
-    const curOff = y * stride;
-    for (let x = 0; x < stride; x++) {
-      const a = x >= CH ? out[curOff + x - CH] : 0;
-      const b = y > 0 ? out[prevOff + x] : 0;
-      const c = x >= CH && y > 0 ? out[prevOff + x - CH] : 0;
-      let v = raw[lineOff + x];
-      if (ft === 1) v += a;
-      else if (ft === 2) v += b;
-      else if (ft === 3) v += (a + b) >> 1;
-      else if (ft === 4) v += paeth(a, b, c);
-      out[curOff + x] = v & 0xff;
+  let out: Uint8Array;
+  if (interlace === 1) {
+    // Adam7：逐趟解滤波后按步长散布回全图（曾因忽略此标志把隔行图渲染成噪点）。
+    out = new Uint8Array(h * stride);
+    let pos = 0;
+    for (const [x0, y0, dx, dy] of ADAM7) {
+      const pw = Math.ceil((w - x0) / dx);
+      const ph = Math.ceil((h - y0) / dy);
+      if (pw <= 0 || ph <= 0) continue;
+      const { data, next } = unfilter(raw, pos, pw, ph, CH);
+      pos = next;
+      for (let j = 0; j < ph; j++) {
+        for (let i = 0; i < pw; i++) {
+          const src = (j * pw + i) * CH;
+          const dst = ((y0 + j * dy) * w + (x0 + i * dx)) * CH;
+          for (let ch = 0; ch < CH; ch++) out[dst + ch] = data[src + ch];
+        }
+      }
     }
+  } else {
+    out = unfilter(raw, 0, w, h, CH).data;
   }
 
   const px = new Uint8Array(w * h * 4);
