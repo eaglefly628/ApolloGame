@@ -4,6 +4,9 @@ import type { Resource, Flag, Shape, Status, Transform } from '@engine/protocol/
 import { buildGameFBlueprint, GAME_F_HERO_IDS, FROZEN, TEAM_A } from './blueprint.js';
 import { offsetToAxial } from './hex.js';
 
+// 节奏：缺省=玩家档（备战30s）；测试统一快速档维持既有时序断言。
+const FAST = { prepTicks: 40, resolutionTicks: 60 };
+
 // 棋子=运行时展开的实例（REQ-F-032 回合重置）：id 形如 `hero_<英雄>#<seq>:main`，
 // 名牌/条/大招接线是同模板兄弟实例（REQ-F-033 '@local:' 重映射）→ 测试按前缀/后缀寻址。
 const A_HEROES = GAME_F_HERO_IDS.filter((id) => id.startsWith('a_'));
@@ -26,7 +29,7 @@ describe('Game F — 自走棋（纯数据装配，零自走棋代码；棋子=�
   it('蓝图可加载且确定（同初值重跑 hash 一致，含 prep 展开拍）', () => {
     const run = (): string => {
       const e = new Engine({ tickRate: 60 });
-      e.load(buildGameFBlueprint());
+      e.load(buildGameFBlueprint(FAST));
       for (let i = 0; i < 80; i++) e.world.tick();
       return e.hash();
     };
@@ -35,7 +38,7 @@ describe('Game F — 自走棋（纯数据装配，零自走棋代码；棋子=�
 
   it('备战拍展开：8 槽位 → 8 个复合棋子实例（单位+名牌+血蓝条齐活，REQ-F-032/033）', () => {
     const e = new Engine({ tickRate: 60 });
-    e.load(buildGameFBlueprint());
+    e.load(buildGameFBlueprint(FAST));
     for (let i = 0; i < 20; i++) e.world.tick(); // prep 早段已展开（onEnter 臂旗 → edge 信号 → 槽位 Caster → prefab）
     const r1 = mains(e);
     expect(r1).toHaveLength(7); // 我方 4 + 阶段1「黄巾散兵」敌 3（§4.5 关卡表）
@@ -51,7 +54,7 @@ describe('Game F — 自走棋（纯数据装配，零自走棋代码；棋子=�
 
   it('两队自动对冲互砍：双方都真受伤（aggro + grid-move + timer→event-when→caster→hitbox 涌现）', () => {
     const e = new Engine({ tickRate: 60 });
-    e.load(buildGameFBlueprint());
+    e.load(buildGameFBlueprint(FAST));
     const hurt = (hero: string): boolean => {
       const m = mainOf(e, hero);
       if (!m) return true; // 实例没了 = 战死（也算真受伤）
@@ -65,7 +68,7 @@ describe('Game F — 自走棋（纯数据装配，零自走棋代码；棋子=�
 
   it('战斗收敛到团灭：一方存活=0 → 其 present Flag 落 false（Zone 判胜负）', () => {
     const e = new Engine({ tickRate: 60 });
-    e.load(buildGameFBlueprint());
+    e.load(buildGameFBlueprint(FAST));
     const living = (prefix: string): number => mains(e).filter((id) => id.startsWith(prefix)).length;
     for (let i = 0; i < 50; i++) e.world.tick(); // 先让回合 1 展开
     let loser = ''; // 先团灭的那队（resolution 的 wipe 随后会把胜方也清掉，只有败方 flag 判定是本测的语义）
@@ -82,7 +85,7 @@ describe('Game F — 自走棋（纯数据装配，零自走棋代码；棋子=�
 
   it('棋子死亡 → 名牌/条/sidecar 全族随之消失（hierarchy-cascade 经 @local: 重映射的真实父 id）', () => {
     const e = new Engine({ tickRate: 60 });
-    e.load(buildGameFBlueprint());
+    e.load(buildGameFBlueprint(FAST));
     for (let i = 0; i < 50; i++) e.world.tick();
     const m = mainOf(e, 'a_guanyu')!;
     expect(m).toBeTruthy();
@@ -96,7 +99,7 @@ describe('Game F — 自走棋（纯数据装配，零自走棋代码；棋子=�
 
   it('蓝条→大招（F-9 完结篇，全 per-instance）：over-time 回蓝 → sidecar SelfRule 蓝满放招清蓝', () => {
     const e = new Engine({ tickRate: 60 });
-    e.load(buildGameFBlueprint());
+    e.load(buildGameFBlueprint(FAST));
     const mp = (hero: string): number => {
       const m = mainOf(e, hero);
       if (!m) return -1;
@@ -117,7 +120,7 @@ describe('Game F — 自走棋（纯数据装配，零自走棋代码；棋子=�
 
   it('实时血条/蓝条：战斗中 hp 填充条真随掉血缩窄（< 自身满宽轨道）、mp 填充条真随攒蓝充起（REQ-F-029 gauge 接入）', () => {
     const e = new Engine({ tickRate: 60 });
-    e.load(buildGameFBlueprint());
+    e.load(buildGameFBlueprint(FAST));
     // 比对自身暗轨道宽（=满宽）而非常量：常量改了测试仍真。
     const w = (id: string): number => e.world.getComponent<Shape>(id, 'Shape')?.width ?? -1;
     let hpShrank = false;
@@ -139,7 +142,7 @@ describe('Game F — 自走棋（纯数据装配，零自走棋代码；棋子=�
 
   it('八阵图冰冻：诸葛亮大招命中 → 敌方棋子 Status 置 FROZEN（hitbox setMask/statusDuration + GridMover.haltStatusMask，REQ-F-030 接入）', () => {
     const e = new Engine({ tickRate: 60 });
-    e.load(buildGameFBlueprint());
+    e.load(buildGameFBlueprint(FAST));
     let froze = false;
     for (let i = 0; i < 600 && !froze; i++) {
       e.world.tick();
@@ -150,7 +153,7 @@ describe('Game F — 自走棋（纯数据装配，零自走棋代码；棋子=�
 
   it('回合重置（REQ-F-032/033 接入）：团灭→resolution 清场→prep 重展开满状态新实例；槽位/模板库跨回合持久', () => {
     const e = new Engine({ tickRate: 60 });
-    e.load(buildGameFBlueprint());
+    e.load(buildGameFBlueprint(FAST));
     for (let i = 0; i < 60; i++) e.world.tick();
     const r1 = mains(e);
     expect(r1).toHaveLength(7); // 回合 1 展开（我方 4 + 阶段1 敌 3）
@@ -180,7 +183,7 @@ describe('Game F — 自走棋（纯数据装配，零自走棋代码；棋子=�
 
   it('平滑滑行（REQ-F-034 接入）：棋子 Transform 每拍位移 ≤ glideSpeed=0.8（旧为 ~18px/格瞬移），逻辑格照走', () => {
     const e = new Engine({ tickRate: 60 });
-    e.load(buildGameFBlueprint());
+    e.load(buildGameFBlueprint(FAST));
     for (let i = 0; i < 50; i++) e.world.tick(); // 展开完毕、进入走位
     const m = mainOf(e, 'a_guanyu')!;
     const t = (): Transform => e.world.getComponent<Transform>(m, 'Transform')!;
@@ -202,7 +205,7 @@ describe('Game F — 自走棋（纯数据装配，零自走棋代码；棋子=�
 
   it('F-9 同模板多实例普攻不串台：错拍注入第二个关羽 → 一个攻击周期窗（45 拍）内 ≥2 个独立打击区', () => {
     const e = new Engine({ tickRate: 60 });
-    e.load(buildGameFBlueprint());
+    e.load(buildGameFBlueprint(FAST));
     for (let i = 0; i < 20; i++) e.world.tick(); // 槽位关羽已展开（timer 自 tick~2 起跳）
     // 注入第二个同模板关羽（错拍 20：两实例 timer 相位错开 → 出手拍必然不同）；坐标视觉(3,7)经 odd-r 换算
     const a = offsetToAxial(3, 7);
@@ -226,7 +229,7 @@ describe('Game F — 自走棋（纯数据装配，零自走棋代码；棋子=�
 
   it('whenGlobal 阶段门（REQ-F-035/F-9）：关 in_combat 立即停手（目标仍在），重开恢复出手', () => {
     const e = new Engine({ tickRate: 60 });
-    e.load(buildGameFBlueprint());
+    e.load(buildGameFBlueprint(FAST));
     for (let i = 0; i < 60; i++) e.world.tick(); // 进入战斗（已交火）
     const setCombat = (v: boolean): void => {
       for (const eid of e.world.getAllEntities()) {
@@ -248,7 +251,7 @@ describe('Game F — 自走棋（纯数据装配，零自走棋代码；棋子=�
 
   it('ready 开战（§3.3 操作表）：注入点击信号 → 备战提前结束进 combat（40 拍倒计时兜底仍在）', () => {
     const e = new Engine({ tickRate: 60 });
-    e.load(buildGameFBlueprint());
+    e.load(buildGameFBlueprint(FAST));
     for (let i = 0; i < 10; i++) e.world.tick();
     expect(flag(e, 'in_combat')).toBe(false); // 备战中
     // 走真实输入路：InputQueue 指针事件（世界坐标）→ clickable 命中「开战」按钮 → 'ready_btn' Signal → Effect 置 ready。
@@ -267,7 +270,7 @@ describe('Game F — 自走棋（纯数据装配，零自走棋代码；棋子=�
 
   it('商店买入核心（F-11/REQ-F-040 + v2 §4.6）：钱不够原子拒单（牌不丢金不动）；付得起则扣金占席、据码入备战席、bought_code 复位', () => {
     const e = new Engine({ tickRate: 60 });
-    e.load(buildGameFBlueprint());
+    e.load(buildGameFBlueprint(FAST));
     const res = (id: string): number => {
       for (const x of e.world.getAllEntities()) {
         const r = e.world.getComponent<Resource>(x, 'Resource');
@@ -301,7 +304,7 @@ describe('Game F — 自走棋（纯数据装配，零自走棋代码；棋子=�
 
   it('商店余三件（F-12/REQ-F-041）：prep 自动刷新换牌；锁店跳过刷新且开战自动解锁；点席卖出返还金+席位', () => {
     const e = new Engine({ tickRate: 60 });
-    e.load(buildGameFBlueprint());
+    e.load(buildGameFBlueprint(FAST));
     const res = (id: string): number => {
       for (const x of e.world.getAllEntities()) {
         const r = e.world.getComponent<Resource>(x, 'Resource');
@@ -360,7 +363,7 @@ describe('Game F — 自走棋（纯数据装配，零自走棋代码；棋子=�
 
   it('MVP-1 尾款（§4.1/§4.3）：买经验$4=+4XP且 xp 阈值升级；连败计数随败累加（连败金 band 与连胜同形）', () => {
     const e = new Engine({ tickRate: 60 });
-    e.load(buildGameFBlueprint());
+    e.load(buildGameFBlueprint(FAST));
     const res = (id: string): number => {
       for (const x of e.world.getAllEntities()) {
         const r = e.world.getComponent<Resource>(x, 'Resource');
@@ -393,9 +396,42 @@ describe('Game F — 自走棋（纯数据装配，零自走棋代码；棋子=�
     expect(res('lose_streak')).toBe(1); // 败 → 连败+1（胜路清零由 flow 同一转移对称保证）
   });
 
+  it('商店面板可视可点 + HUD 数字（F-14/F-15，REQ-F-042/043）：5 卡面随镜像重铺；点卡即买；金币数字实时', () => {
+    const e = new Engine({ tickRate: 60 });
+    e.load(buildGameFBlueprint(FAST));
+    const res = (id: string): number => {
+      for (const x of e.world.getAllEntities()) {
+        const r = e.world.getComponent<Resource>(x, 'Resource');
+        if (r && r.id === id) return r.current;
+      }
+      return -1;
+    };
+    const cards = (): string[] => e.world.getAllEntities().filter((id) => id.startsWith('shopcard_') && id.endsWith(':card'));
+    const hudGold = (): string => (e.world.getComponent('hud_gold', 'Text') as unknown as { content: string }).content;
+    const click = (x: number, y: number): void => {
+      if (!e.world.getAllEntities().includes('input')) e.world.createEntity('input');
+      e.world.addComponent('input', { type: 'InputQueue', actions: [{ source: 'test', x, y, phase: 'down' }] } as unknown as Resource);
+      e.world.tick();
+      e.world.addComponent('input', { type: 'InputQueue', actions: [] } as unknown as Resource);
+    };
+    for (let i = 0; i < 12; i++) e.world.tick(); // 刷新 → 两段脉冲 → 重铺完毕
+    expect(cards()).toHaveLength(5); // 5 张在售卡面可见
+    expect(hudGold()).toBe('金币 2'); // HUD 数字=回合1收入（text-binding 实时投影）
+    e.world.addComponent('r_gold', { type: 'ResourceModify', resourceId: 'gold', amount: 20, scope: 'local' } as unknown as Resource);
+    for (let i = 0; i < 3; i++) e.world.tick();
+    const g0 = res('gold');
+    click(-170, 148); // 点第 1 张卡 = buy_slot_1 → playOnSignals 购买
+    for (let i = 0; i < 10; i++) e.world.tick();
+    expect(res('gold')).toBe(g0 - 3); // 扣金
+    expect(res('bench_space')).toBe(8); // 占席
+    expect(e.world.getAllEntities().some((id) => id.startsWith('bench_') && id.endsWith(':seat'))).toBe(true); // 入席可见
+    expect(cards()).toHaveLength(5); // 买走→补牌→镜像变 → 面板整体重铺仍 5 张
+    expect(hudGold()).toBe(`金币 ${g0 - 3}`); // HUD 跟跳
+  });
+
   it('L1 run_flow + §4.1/§4.2 表：回合1收入2金；advance 推进；败方按阶段表扣血；round>5 进位换关卡敌阵', () => {
     const e = new Engine({ tickRate: 60 });
-    e.load(buildGameFBlueprint());
+    e.load(buildGameFBlueprint(FAST));
     const res = (id: string): number => {
       for (const x of e.world.getAllEntities()) {
         const r = e.world.getComponent<Resource>(x, 'Resource');

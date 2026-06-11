@@ -18,6 +18,7 @@ import {
   selfRuleCapability,
   cardPileCapability,
   craftRecipeCapability,
+  textBindingCapability,
   cameraFollowCapability,
   gridMoveCapability,
   ZONE_FLAG,
@@ -66,6 +67,9 @@ export const FACT_WEI = 1 << 4; // 魏
 export const FACT_WU = 1 << 5; // 吴
 // CC 状态位：写在 Status.flags（与 Tag.flags 分属两个字段/位空间；位值仍避开上面 1<<0..1<<8 防读混）。
 export const FROZEN = 1 << 10; // 冰冻定身（REQ-F-030）：GridMover.haltStatusMask 命中 → 不走且节奏时钟暂停
+// 预留：PROTAG=1<<11 主角 / LOOT=1<<12 法球（§4.7，Phase 2.5）。商店面板槽位位 1<<13..1<<17（F-14 整槽清/重铺用）。
+const SHOPSLOT_BITS = [1 << 13, 1 << 14, 1 << 15, 1 << 16, 1 << 17];
+const SHOPSLOT_ALL = SHOPSLOT_BITS.reduce((a, b) => a | b, 0);
 
 // 战斗节奏（数据）：30 tick ≈ 0.5s/动作，看得清（此前 10/24 太快）。
 const MOVE_PERIOD = 48; // 每 48 tick 走一格 ≈ 0.8s（慢一点看清走位）
@@ -294,6 +298,16 @@ const flagIs = (id: string): Record<string, unknown> => ({ kind: 'flag', id, equ
 const resCmp = (id: string, cmp: string, value: number): Record<string, unknown> => ({ kind: 'resource', id, cmp, value });
 const and = (...of: Record<string, unknown>[]): Record<string, unknown> => ({ kind: 'and', of });
 const or = (...of: Record<string, unknown>[]): Record<string, unknown> => ({ kind: 'or', of });
+// 横幅三选一：信号到 → 显 show、藏 hides（set-visible 矩阵，纯数据）。
+function visSwap(sig: string, show: string, hides: string[]): Record<string, EntityBlueprint> {
+  const out: Record<string, EntityBlueprint> = {
+    [`eff_${sig}_show`]: { Effect: { onSignal: sig, kind: 'set-visible', targetId: '', targetEntity: show, value: true } } as unknown as EntityBlueprint,
+  };
+  hides.forEach((h, i) => {
+    out[`eff_${sig}_hide${i}`] = { Effect: { onSignal: sig, kind: 'set-visible', targetId: '', targetEntity: h, value: false } } as unknown as EntityBlueprint;
+  });
+  return out;
+}
 
 // 每英雄三张模板：普攻打击区 + 大招打击区 + 棋子复合体（REQ-F-032 回合重展开用）。targetMask=敌队。
 export const GAME_F_TEMPLATES: Record<string, PrefabTemplate> = Object.fromEntries(
@@ -309,6 +323,11 @@ export const GAME_F_TEMPLATES: Record<string, PrefabTemplate> = Object.fromEntri
       // seat 可点卖出（F-12）：Clickable 产 sell_seat 信号，source=被点席位 → '@signal-source' 点谁卖谁。
       { entities: { seat: { Transform: xf(0, 0), Sprite: sprite(h.key, 2), Shape: { kind: 'box', width: 30, height: 30 }, Clickable: { action: 'sell_seat' } } } } as unknown as PrefabTemplate,
     ]),
+    // 商店卡（F-14/REQ-F-042）：在售英雄的可点卡面；Clickable.action(买哪槽)/Tag(槽位掩码) 由持位 Caster overrides 注入。
+    ROSTER.filter((x) => x.team === TEAM_A).map((h): [string, PrefabTemplate] => [
+      `shopcard_${h.id}`,
+      { entities: { card: { Transform: xf(0, 0), Shape: { kind: 'box', width: 36, height: 44 }, Sprite: sprite(h.key, 28), Color: { tint: 0xf0d27a, alpha: 1 }, Clickable: { action: 'ph' }, Tag: { flags: 0 } } } } as unknown as PrefabTemplate,
+    ]),
   ),
 );
 
@@ -319,15 +338,16 @@ const ARENA = { minX: -280, minY: -200, maxX: 280, maxY: 200 };
 // resolution 臂 wipe_armed → 'wipe' → destroy-tagged 清场。经济/伤害不再写死在 flow：prep 臂 income_armed、
 // 败方臂 dmg_armed，由 banded EventWhen→Effect 按 §4.1/§4.2 表结算（见 goldBand/伤害 bands）。
 // 尚缺 ready 开战输入（§6.2 P2，输入路由归主程）：prep 暂以 after 40 自动开战，接上后改读 ready Flag。
-const GAME_FLOW = {
+const makeRoundFlow = (PREP_TICKS: number, RESOLUTION_TICKS: number) => ({
   id: 'round',
   current: 'prep',
   entered: false,
   elapsed: 0,
   states: [
     {
-      id: 'prep', // 备战：臂收入（§4.1 banded 发钱）+ 臂展开，复位 wipe/伤害/ready；点「开战」提前打或 40 拍兜底
+      id: 'prep', // 备战：臂收入（§4.1 banded 发钱）+ 臂展开，复位 wipe/伤害/ready；点「开战」提前打或倒计时兜底
       onEnter: [
+        { kind: 'set-state', targetId: 'round_ui', value: 'prep' },
         { kind: 'set-flag', targetId: 'in_combat', value: false },
         { kind: 'set-flag', targetId: 'ready', value: false }, // 每回合重臂（§3.3 操作表「开战」）
         { kind: 'set-flag', targetId: 'wipe_armed', value: false }, // 复位，下次结算再臂（edge 纪律）
@@ -340,25 +360,27 @@ const GAME_FLOW = {
       transitions: [
         // ready 优先（玩家点「开战」提前开打，§3.3 操作表）；after 40 = PvE 倒计时兜底（金铲铲本体也是倒计时自动开战）
         { when: { kind: 'flag', id: 'ready', equals: true }, to: 'combat', do: [{ kind: 'set-flag', targetId: 'in_combat', value: true }, { kind: 'set-flag', targetId: 'deploy_armed', value: false }, { kind: 'set-flag', targetId: 'income_armed', value: false }] },
-        { when: { kind: 'always' }, after: 40, to: 'combat', do: [{ kind: 'set-flag', targetId: 'in_combat', value: true }, { kind: 'set-flag', targetId: 'deploy_armed', value: false }, { kind: 'set-flag', targetId: 'income_armed', value: false }] },
+        { when: { kind: 'always' }, after: PREP_TICKS, to: 'combat', do: [{ kind: 'set-flag', targetId: 'in_combat', value: true }, { kind: 'set-flag', targetId: 'deploy_armed', value: false }, { kind: 'set-flag', targetId: 'income_armed', value: false }] },
       ],
     },
     {
       id: 'combat', // 战斗：自动互砍 + 蓝满放大招；某队团灭(present flag→false)→结算。胜→连胜+1；败→连胜清零+臂伤害
+      onEnter: [{ kind: 'set-state', targetId: 'round_ui', value: 'combat' }],
       transitions: [
         { when: { kind: 'flag', id: 'team_b_present', equals: false }, to: 'resolution', do: [{ kind: 'set-flag', targetId: 'won', value: true }, { kind: 'modify-resource', targetId: 'win_streak', op: 'add', value: 1 }, { kind: 'modify-resource', targetId: 'lose_streak', op: 'set', value: 0 }] },
         { when: { kind: 'flag', id: 'team_a_present', equals: false }, to: 'resolution', do: [{ kind: 'set-flag', targetId: 'won', value: false }, { kind: 'modify-resource', targetId: 'win_streak', op: 'set', value: 0 }, { kind: 'modify-resource', targetId: 'lose_streak', op: 'add', value: 1 }, { kind: 'set-flag', targetId: 'dmg_armed', value: true }] },
       ],
     },
     {
-      id: 'resolution', // 结算：停战 + 清场（wipe→destroy-tagged）；玩家血尽→gameover，否则 60 拍后进 done 与 L1 握手
+      id: 'resolution', // 结算：停战 + 清场（wipe→destroy-tagged）；玩家血尽→gameover，否则数拍后进 done 与 L1 握手
       onEnter: [
+        { kind: 'set-state', targetId: 'round_ui', value: 'resolution' },
         { kind: 'set-flag', targetId: 'in_combat', value: false },
         { kind: 'set-flag', targetId: 'wipe_armed', value: true }, // → 'wipe'
       ],
       transitions: [
         { when: { kind: 'resource', id: 'player_hp', cmp: 'lte', value: 0 }, to: 'gameover' },
-        { when: { kind: 'always' }, after: 60, to: 'done' },
+        { when: { kind: 'always' }, after: RESOLUTION_TICKS, to: 'done' },
       ],
     },
     {
@@ -366,9 +388,9 @@ const GAME_FLOW = {
       onEnter: [{ kind: 'set-flag', targetId: 'round_done', value: true }],
       transitions: [{ when: { kind: 'flag', id: 'round_done', equals: false }, to: 'prep' }],
     },
-    { id: 'gameover', onEnter: [{ kind: 'set-flag', targetId: 'run_over', value: true }] },
+    { id: 'gameover', onEnter: [{ kind: 'set-state', targetId: 'round_ui', value: 'gameover' }, { kind: 'set-flag', targetId: 'run_over', value: true }] },
   ],
-};
+});
 
 // L1 局流程（flow-spec §3.2 run_flow 原样）：boot 初始化 → round（等 L2 写 round_done）→ advance 推进
 // 关卡指针 → 打穿关卡表胜利 / run_over 败北。round_idx>5 的进位（stage+1、round=1）由 when_stage_up banded 处理。
@@ -408,7 +430,12 @@ const RUN_FLOW = {
   ],
 };
 
-export function buildGameFBlueprint(): WorldBlueprint {
+// 节奏档（玩家视角修正：备战 ~30s 给操作时间——准则 §1.2；ready 可跳过；结算 4s 可读）。
+// 测试传快速档 {prepTicks:40, resolutionTicks:60} 保持既有时序断言；缺省=玩家档。
+export interface GameFPacing { prepTicks?: number; resolutionTicks?: number }
+export function buildGameFBlueprint(pacing: GameFPacing = {}): WorldBlueprint {
+  const PREP_TICKS = pacing.prepTicks ?? 1800; // 30s@60tps
+  const RESOLUTION_TICKS = pacing.resolutionTicks ?? 240; // 4s
   const entities: Record<string, EntityBlueprint> = {
     // 技能/打击库（数据，单例）。
     library: { PrefabLibrary: { templates: GAME_F_TEMPLATES, seq: 0 } } as unknown as EntityBlueprint,
@@ -422,7 +449,7 @@ export function buildGameFBlueprint(): WorldBlueprint {
     zone_a: { Zone: { outFlag: 'team_a_present', ...ARENA, requiredTag: TEAM_A, count: 1 } } as unknown as EntityBlueprint,
     zone_b: { Zone: { outFlag: 'team_b_present', ...ARENA, requiredTag: TEAM_B, count: 1 } } as unknown as EntityBlueprint,
     // —— 金铲铲回合流程（flow）+ 其读写的旗标/资源单例 ——
-    flow_ctrl: { GameFlow: GAME_FLOW } as unknown as EntityBlueprint, // L2 round_flow
+    flow_ctrl: { GameFlow: makeRoundFlow(PREP_TICKS, RESOLUTION_TICKS) } as unknown as EntityBlueprint, // L2 round_flow（节奏=装配参数）
     flow_run: { GameFlow: RUN_FLOW } as unknown as EntityBlueprint, // L1 run_flow（§3.2）
     f_in_combat: { Flag: { id: 'in_combat', active: false } } as unknown as EntityBlueprint,
     f_won: { Flag: { id: 'won', active: false } } as unknown as EntityBlueprint,
@@ -455,7 +482,7 @@ export function buildGameFBlueprint(): WorldBlueprint {
     // （钱不够/席满=拒单：牌不丢、金不动）→ 成交牌码写 bought_code → 每将 banded 分发 → marker 入备战席。
     shop: {
       // ⚠️ deck 必须取副本：装配是浅拷贝、嵌套数组按引用共享，发牌原地 shift 会跨 Engine/跨测试泄漏（确定性破口，实测踩过）
-      CardPile: { owner: 'shop', deck: [...SHOP_DECK], hand: [], handSize: 5, playCosts: [{ id: 'gold', amount: 3 }, { id: 'bench_space', amount: 1 }], playedCodeResource: 'bought_code', refreshOnSignal: 'shop_refresh' },
+      CardPile: { owner: 'shop', deck: [...SHOP_DECK], hand: [], handSize: 5, playCosts: [{ id: 'gold', amount: 3 }, { id: 'bench_space', amount: 1 }], playedCodeResource: 'bought_code', refreshOnSignal: 'shop_refresh', handCodeResources: ['shop_slot_1', 'shop_slot_2', 'shop_slot_3', 'shop_slot_4', 'shop_slot_5'], playOnSignals: ['buy_slot_1', 'buy_slot_2', 'buy_slot_3', 'buy_slot_4', 'buy_slot_5'] },
       PlayedHand: { owner: 'shop', cards: [] },
       Flag: { id: 'shop', active: false },
     } as unknown as EntityBlueprint,
@@ -524,10 +551,22 @@ export function buildGameFBlueprint(): WorldBlueprint {
     eff_sell_destroy: { Effect: { onSignal: 'sell_seat', kind: 'destroy', targetId: '', targetEntity: '@signal-source' } } as unknown as EntityBlueprint,
     eff_sell_gold: { Effect: { onSignal: 'sell_seat', kind: 'modify-resource', targetId: 'gold', op: 'add', value: 2 } } as unknown as EntityBlueprint,
     eff_sell_space: { Effect: { onSignal: 'sell_seat', kind: 'modify-resource', targetId: 'bench_space', op: 'add', value: 1 } } as unknown as EntityBlueprint,
-    // —— 阶段横幅（HUD 快赢：现有词汇 set-visible 可拼；金币/回合数字与商店 5 槽可视化 = REQ-F-042/043 待引擎）——
+    // —— 商店 5 槽面板（F-14/REQ-F-042）：handCodeResources 终态镜像 → 两段脉冲（先整槽清、后按码重铺）→ 可点卡面。
+    // 脉冲时序：刷新/买入信号 → 臂1 → T+1 'shop_marks'(destroy-tagged 全槽卡 + 臂2) → T+2 重铺带按码展开（清已落地，无同拍误杀）。
+    f_marks_armed: { Flag: { id: 'shop_marks_armed', active: false } } as unknown as EntityBlueprint,
+    f_marks2_armed: { Flag: { id: 'shop_marks2_armed', active: false } } as unknown as EntityBlueprint,
+    eff_marks_on_refresh: { Effect: { onSignal: 'shop_refresh', kind: 'set-flag', targetId: 'shop_marks_armed', value: true } } as unknown as EntityBlueprint,
+    when_marks: { EventWhen: { signal: 'shop_marks', when: flagIs('shop_marks_armed'), mode: 'edge', armed: false } } as unknown as EntityBlueprint,
+    eff_marks_clear: { Effect: { onSignal: 'shop_marks', kind: 'destroy-tagged', targetId: '', value: SHOPSLOT_ALL } } as unknown as EntityBlueprint,
+    eff_marks_disarm: { Effect: { onSignal: 'shop_marks', kind: 'set-flag', targetId: 'shop_marks_armed', value: false } } as unknown as EntityBlueprint,
+    eff_marks2_arm: { Effect: { onSignal: 'shop_marks', kind: 'set-flag', targetId: 'shop_marks2_armed', value: true } } as unknown as EntityBlueprint,
+    when_marks2: { EventWhen: { signal: 'shop_marks2', when: flagIs('shop_marks2_armed'), mode: 'edge', armed: false } } as unknown as EntityBlueprint,
+    eff_marks2_disarm: { Effect: { onSignal: 'shop_marks2', kind: 'set-flag', targetId: 'shop_marks2_armed', value: false } } as unknown as EntityBlueprint,
+    // —— 相位横幅（F-15 配套）：round_ui 状态镜像 → state 叶 edge → set-visible 三选一；胜/败终幕横幅走旗标。——
+    f_round_state: { State: { fsmId: 'round_ui', current: 'prep' } } as unknown as EntityBlueprint,
     banner_prep: {
       Transform: xf(0, -186),
-      Text: { content: '备 战 —— 点「开战」或等待倒计时（商店：刷新/锁店/卖出可用）', fontSize: 15, fontFamily: 'sans-serif', anchor: 'center', lineSpacing: 0 },
+      Text: { content: '备 战 —— 买人/刷新/锁店，点「开战」或等倒计时', fontSize: 15, fontFamily: 'sans-serif', anchor: 'center', lineSpacing: 0 },
       Color: { tint: 0xf0d27a, alpha: 1 },
       Visibility: { visible: true },
       Sprite: { textureKey: F_FX_STRIKE, anchorX: 0.5, anchorY: 0.5, zOrder: 31 },
@@ -539,12 +578,44 @@ export function buildGameFBlueprint(): WorldBlueprint {
       Visibility: { visible: false },
       Sprite: { textureKey: F_FX_STRIKE, anchorX: 0.5, anchorY: 0.5, zOrder: 31 },
     } as unknown as EntityBlueprint,
-    when_phase_combat: { EventWhen: { signal: 'phase_combat', when: flagIs('in_combat'), mode: 'edge', armed: false } } as unknown as EntityBlueprint,
-    when_phase_prep: { EventWhen: { signal: 'phase_prep', when: { kind: 'flag', id: 'in_combat', equals: false }, mode: 'edge', armed: false } } as unknown as EntityBlueprint,
-    eff_pc_show: { Effect: { onSignal: 'phase_combat', kind: 'set-visible', targetId: '', targetEntity: 'banner_combat', value: true } } as unknown as EntityBlueprint,
-    eff_pc_hide: { Effect: { onSignal: 'phase_combat', kind: 'set-visible', targetId: '', targetEntity: 'banner_prep', value: false } } as unknown as EntityBlueprint,
-    eff_pp_show: { Effect: { onSignal: 'phase_prep', kind: 'set-visible', targetId: '', targetEntity: 'banner_prep', value: true } } as unknown as EntityBlueprint,
-    eff_pp_hide: { Effect: { onSignal: 'phase_prep', kind: 'set-visible', targetId: '', targetEntity: 'banner_combat', value: false } } as unknown as EntityBlueprint,
+    banner_resolution: {
+      Transform: xf(0, -186),
+      Text: { content: '回 合 结 算', fontSize: 15, fontFamily: 'sans-serif', anchor: 'center', lineSpacing: 0 },
+      Color: { tint: 0x9ad1ff, alpha: 1 },
+      Visibility: { visible: false },
+      Sprite: { textureKey: F_FX_STRIKE, anchorX: 0.5, anchorY: 0.5, zOrder: 31 },
+    } as unknown as EntityBlueprint,
+    banner_gameover: {
+      Transform: xf(0, -60),
+      Text: { content: '败 局 —— 玩家血量耗尽', fontSize: 22, fontFamily: 'sans-serif', anchor: 'center', lineSpacing: 0 },
+      Color: { tint: 0xff5050, alpha: 1 },
+      Visibility: { visible: false },
+      Sprite: { textureKey: F_FX_STRIKE, anchorX: 0.5, anchorY: 0.5, zOrder: 32 },
+    } as unknown as EntityBlueprint,
+    banner_victory: {
+      Transform: xf(0, -60),
+      Text: { content: '通 关 —— 打穿关卡表！', fontSize: 22, fontFamily: 'sans-serif', anchor: 'center', lineSpacing: 0 },
+      Color: { tint: 0x77e08a, alpha: 1 },
+      Visibility: { visible: false },
+      Sprite: { textureKey: F_FX_STRIKE, anchorX: 0.5, anchorY: 0.5, zOrder: 32 },
+    } as unknown as EntityBlueprint,
+    when_ph_prep: { EventWhen: { signal: 'ph_prep', when: { kind: 'state', fsmId: 'round_ui', equals: 'prep' }, mode: 'edge', armed: false } } as unknown as EntityBlueprint,
+    when_ph_combat: { EventWhen: { signal: 'ph_combat', when: { kind: 'state', fsmId: 'round_ui', equals: 'combat' }, mode: 'edge', armed: false } } as unknown as EntityBlueprint,
+    when_ph_res: { EventWhen: { signal: 'ph_res', when: { kind: 'state', fsmId: 'round_ui', equals: 'resolution' }, mode: 'edge', armed: false } } as unknown as EntityBlueprint,
+    when_ph_over: { EventWhen: { signal: 'ph_over', when: flagIs('run_over'), mode: 'edge', armed: false } } as unknown as EntityBlueprint,
+    when_ph_won: { EventWhen: { signal: 'ph_won', when: flagIs('run_won'), mode: 'edge', armed: false } } as unknown as EntityBlueprint,
+    ...visSwap('ph_prep', 'banner_prep', ['banner_combat', 'banner_resolution']),
+    ...visSwap('ph_combat', 'banner_combat', ['banner_prep', 'banner_resolution']),
+    ...visSwap('ph_res', 'banner_resolution', ['banner_prep', 'banner_combat']),
+    ...visSwap('ph_over', 'banner_gameover', []),
+    ...visSwap('ph_won', 'banner_victory', []),
+    // —— HUD 数字（F-15 / REQ-F-043 t2-text-binding）：左上角金币/血/等级/经验 + 阶段-回合 ——
+    hud_gold: { Transform: xf(-340, -186), Text: { content: '金币 0', fontSize: 13, fontFamily: 'sans-serif', anchor: 'left', lineSpacing: 0 }, TextBinding: { resourceId: 'gold', prefix: '金币 ' }, Color: { tint: 0xf0d27a, alpha: 1 }, Sprite: { textureKey: F_FX_STRIKE, anchorX: 0.5, anchorY: 0.5, zOrder: 30 } } as unknown as EntityBlueprint,
+    hud_hp: { Transform: xf(-340, -168), Text: { content: '血量 100', fontSize: 13, fontFamily: 'sans-serif', anchor: 'left', lineSpacing: 0 }, TextBinding: { resourceId: 'player_hp', prefix: '血量 ' }, Color: { tint: 0xff8a8a, alpha: 1 }, Sprite: { textureKey: F_FX_STRIKE, anchorX: 0.5, anchorY: 0.5, zOrder: 30 } } as unknown as EntityBlueprint,
+    hud_level: { Transform: xf(-340, -150), Text: { content: '等级 4', fontSize: 13, fontFamily: 'sans-serif', anchor: 'left', lineSpacing: 0 }, TextBinding: { resourceId: 'level', prefix: '等级 ' }, Color: { tint: 0x9ad1ff, alpha: 1 }, Sprite: { textureKey: F_FX_STRIKE, anchorX: 0.5, anchorY: 0.5, zOrder: 30 } } as unknown as EntityBlueprint,
+    hud_xp: { Transform: xf(-340, -132), Text: { content: '经验 0', fontSize: 13, fontFamily: 'sans-serif', anchor: 'left', lineSpacing: 0 }, TextBinding: { resourceId: 'xp', prefix: '经验 ' }, Color: { tint: 0x7ad17a, alpha: 1 }, Sprite: { textureKey: F_FX_STRIKE, anchorX: 0.5, anchorY: 0.5, zOrder: 30 } } as unknown as EntityBlueprint,
+    hud_stage: { Transform: xf(-340, -114), Text: { content: '阶段 1', fontSize: 13, fontFamily: 'sans-serif', anchor: 'left', lineSpacing: 0 }, TextBinding: { resourceId: 'stage_idx', prefix: '阶段 ' }, Color: { tint: 0xd0d0d0, alpha: 1 }, Sprite: { textureKey: F_FX_STRIKE, anchorX: 0.5, anchorY: 0.5, zOrder: 30 } } as unknown as EntityBlueprint,
+    hud_round: { Transform: xf(-275, -114), Text: { content: '回合 1', fontSize: 13, fontFamily: 'sans-serif', anchor: 'left', lineSpacing: 0 }, TextBinding: { resourceId: 'round_idx', prefix: '回合 ' }, Color: { tint: 0xd0d0d0, alpha: 1 }, Sprite: { textureKey: F_FX_STRIKE, anchorX: 0.5, anchorY: 0.5, zOrder: 30 } } as unknown as EntityBlueprint,
     f_deploy_armed: { Flag: { id: 'deploy_armed', active: false } } as unknown as EntityBlueprint,
     f_wipe_armed: { Flag: { id: 'wipe_armed', active: false } } as unknown as EntityBlueprint,
     f_income_armed: { Flag: { id: 'income_armed', active: false } } as unknown as EntityBlueprint, // §4.1 结算窗
@@ -596,6 +667,19 @@ export function buildGameFBlueprint(): WorldBlueprint {
     entities[`buycast_${h.id}`] = { Transform: xf(-66 + i * 44, 178), Caster: { onSignal: sig, template: `bench_${h.id}`, at: 'self' } } as unknown as EntityBlueprint;
     entities[`eff_${sig}_reset`] = { Effect: { onSignal: sig, kind: 'modify-resource', targetId: 'bought_code', op: 'set', value: 0 } } as unknown as EntityBlueprint;
   });
+  // 商店面板（F-14）：5 槽镜像资源 + 每槽×每将 重铺带（and(臂2, 槽码=将码) edge → 持位 Caster 展开卡面）
+  // + 买入后面板再臂（买走→补牌→镜像变 → 全槽重铺）。卡面 Clickable=buy_slot_i → playOnSignals 即购买。
+  for (let i = 0; i < 5; i++) {
+    entities[`r_shop_slot_${i + 1}`] = { Resource: { id: `shop_slot_${i + 1}`, current: 0, min: 0, max: 9999 } } as unknown as EntityBlueprint;
+    ROSTER.filter((x) => x.team === TEAM_A).forEach((h) => {
+      const sig = `s${i + 1}_${h.id}`;
+      entities[`when_${sig}`] = { EventWhen: { signal: sig, when: and(flagIs('shop_marks2_armed'), resCmp(`shop_slot_${i + 1}`, 'eq', HERO_CODE[h.id])), mode: 'edge', armed: false } } as unknown as EntityBlueprint;
+      entities[`cardcast_${sig}`] = { Transform: xf(-170 + i * 40, 148), Caster: { onSignal: sig, template: `shopcard_${h.id}`, at: 'self', overrides: { card: { Clickable: { action: `buy_slot_${i + 1}` }, Tag: { flags: SHOPSLOT_BITS[i] } } } } } as unknown as EntityBlueprint;
+    });
+  }
+  for (const h of ROSTER.filter((x) => x.team === TEAM_A)) {
+    entities[`eff_marks_on_buy_${h.id}`] = { Effect: { onSignal: `buy_${h.id}`, kind: 'set-flag', targetId: 'shop_marks_armed', value: true } } as unknown as EntityBlueprint;
+  }
   // 敌方关卡槽（持久）：每阶段一组，prep 按 stage_idx 分流的 deploy_stage_<N> 展开（§4.5 敌阵=数据）。
   for (const st of STAGES) {
     for (const c of st.comp) {
@@ -634,6 +718,7 @@ export function buildGameFBlueprint(): WorldBlueprint {
       clickableCapability, // ready 开战按钮：指针命中 → 'ready_btn' 信号（引擎已对 event-when 定序）
       cardPileCapability, // 商店（F-11/REQ-F-040）：牌袋发牌/play 原子验扣/据码写 bought_code（引擎已按"输入先行"钉七件套定序）
       craftRecipeCapability, // 手动刷新 $2（F-12）：reroll_btn 信号 → 原子扣金置 reroll_paid（扣不起整单不动）
+      textBindingCapability, // HUD 数字（F-15/REQ-F-043）：Resource → Text.content 投影
       hierarchyResolveCapability,
       hierarchyCascadeCapability, // 子随父死（REQ-F-026）：棋子死亡→头顶名字一并消失
       cameraFollowCapability,

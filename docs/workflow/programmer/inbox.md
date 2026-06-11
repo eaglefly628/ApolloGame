@@ -128,12 +128,12 @@
 - 接线：① **刷新**：商店 CardPile 加 `refreshOnSignal:'shop_refresh'`；prep 自动刷新=flow onEnter 置 Flag→EventWhen(edge)→'shop_refresh'；2 金手动刷新=clickable 按钮→信号 + craft-recipe 扣 2 金（扣不起就别让按钮发信号：EventWhen 条件含 gold≥2）。② **锁店**：刷新 EventWhen 的 when 加 `not flag(shop_locked)`；锁按钮 toggle 该 Flag（Effect set-flag）。③ **卖出**：席位 marker 挂 `Clickable{action:'sell_seat'}` → `Effect{onSignal:'sell_seat', kind:'destroy', targetEntity:'@signal-source'}` + 返还三连（金按将价 Effect/craft-recipe、bench_space+1、袋归还视设计）。
 - 注意：refreshOnSignal 配 **edge** 信号（常驻 Signal 会每拍刷）；卖出 destroy 经 Commit→次拍 cascade 连席位挂件一并清。
 
-#### 任务 F-14 · REQ-F-042 接入商店可视化与点击购买（纯数据） — status: pending（高优先：用户"看不到商店"）
+#### 任务 F-14 · REQ-F-042 接入商店可视化与点击购买（纯数据） — status: **done（PE-F 2026-06-10 回执：5 槽镜像资源 + 两段脉冲（T+1 destroy-tagged 全槽卡/T+2 按码重铺——错拍避免同拍误杀新卡）+ 每槽×每将 20 重铺带 + 持位 Caster overrides 注入槽专 Clickable/Tag + 点卡=buy_slot_i→playOnSignals 购买 + 买入再臂全板重铺；验收测：5 卡面可见/点卡扣金占席入席/面板重铺。同提交顺带：节奏玩家档（备战 30s 可 ready 跳过、结算 4s——用户实测'备战一闪而过'修复，测试走快速参数）+ 三态相位横幅 + 胜败终幕横幅）**
 - 引擎已落（2 测绿）：`CardPile.handCodeResources:['shop_slot_1'..'shop_slot_5']`（每拍终态镜像，空槽 0）+ `CardPile.playOnSignals:['buy_slot_1'..'buy_slot_5']`（信号=play(i)，每拍至多一单、照过 playCosts 门）。
 - 接线：① 5 个槽位 Resource{id:'shop_slot_i', max:9999}；② 每槽每将一条 banded EventWhen{resource:'shop_slot_i' eq 码, mode:edge, signal:'si_show_<将>'} → Caster 展开该将的商店 marker（复合模板：头像 Sprite+价格 Text+Clickable）；槽空(0)/换码 → 旧 marker 用 '@signal-source' 或 destroy-tagged 槽位掩码清。③ marker 挂 Clickable{action:'buy_slot_i'} → 信号即购买。
 - 注意：镜像是"终态"（含补牌），买走后该槽当拍换新码——marker 展开/销毁链要按码变化的 edge 驱动，常驻不重复展开。
 
-#### 任务 F-15 · REQ-F-043 接入 HUD 数字（纯数据） — status: pending（高优先：用户"看不到金币/回合"）
+#### 任务 F-15 · REQ-F-043 接入 HUD 数字（纯数据） — status: **done（PE-F 2026-06-10 回执：金币/血量/等级/经验/阶段+回合 六枚 TextBinding 左上角实时投影；验收测：'金币 2'→买后跟跳）**
 - 引擎已落 `t2-text-binding`（6 测绿）：实体挂 `Text + TextBinding{resourceId, prefix?, suffix?}` 每拍 content=prefix+值+suffix；蓝图 capabilities 加 `textBindingCapability`（id `t2-text-binding`）。
 - 接线：金币 `TextBinding{resourceId:'gold', prefix:'金币 '}`；玩家血/等级同理；回合「3-2」两个数=两个 Text 实体并排（引擎单资源单绑定，保闭语法）。头顶等级用 fromParent:true（同 gauge）。
 
