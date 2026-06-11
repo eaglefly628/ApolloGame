@@ -19,6 +19,7 @@ import {
   cardPileCapability,
   craftRecipeCapability,
   textBindingCapability,
+  groupCountCapability,
   cameraFollowCapability,
   gridMoveCapability,
   ZONE_FLAG,
@@ -86,14 +87,14 @@ const xf = (x: number, y: number): Record<string, unknown> => ({ x, y, rotation:
 const sprite = (textureKey: string, zOrder: number): Record<string, unknown> => ({ textureKey, anchorX: 0.5, anchorY: 0.5, zOrder });
 
 // 普攻打击区：目标处小 sensor 伤害区，2 tick 自毁。fxKey=按攻击类型的特效（近战斩/远程箭/法术弹）。
-const strike = (targetMask: number, amount: number, fxKey: string): PrefabTemplate => ({
+const strike = (targetMask: number, amount: number, fxKey: string, scaleId = 'dmg_scale_b'): PrefabTemplate => ({
   entities: {
     area: {
       Transform: xf(0, 0),
       Shape: { kind: 'box', width: 18, height: 18 },
       Sensor: {},
       Tag: { flags: ZONE_FLAG },
-      Hitbox: { resource: 'hp', amount, targetMask },
+      Hitbox: { resource: 'hp', amount, targetMask, scaleByResource: scaleId }, // 047 羁绊乘区：×系数资源（缺省 1 零迁移）
       Timer: { id: 'life', elapsed: 0, duration: 2, loop: false },
       Sprite: sprite(fxKey, 6),
     },
@@ -105,14 +106,14 @@ const DOT = { dotPerTick: 25, dotPeriod: 30, dotDuration: 240 };
 
 // 大招打击区：目标处大范围真伤（范围 size、伤害 amount），fxKey=主题特效，dot=是否附 DoT，
 // freezeTicks>0=命中冰冻 N tick（八阵图类控制技：hitbox 置 FROZEN + 挂 OverTime 到点自动解，REQ-F-030）。
-const ultTemplate = (targetMask: number, amount: number, size: number, fxKey: string, dot = false, freezeTicks = 0): PrefabTemplate => ({
+const ultTemplate = (targetMask: number, amount: number, size: number, fxKey: string, dot = false, freezeTicks = 0, scaleId = 'dmg_scale_b'): PrefabTemplate => ({
   entities: {
     area: {
       Transform: xf(0, 0),
       Shape: { kind: 'box', width: size, height: size },
       Sensor: {},
       Tag: { flags: ZONE_FLAG },
-      Hitbox: { resource: 'hp', amount, targetMask, ...(dot ? DOT : {}), ...(freezeTicks > 0 ? { setMask: FROZEN, statusDuration: freezeTicks } : {}) },
+      Hitbox: { resource: 'hp', amount, targetMask, scaleByResource: scaleId, ...(dot ? DOT : {}), ...(freezeTicks > 0 ? { setMask: FROZEN, statusDuration: freezeTicks } : {}) },
       Timer: { id: 'life', elapsed: 0, duration: 3, loop: false },
       Sprite: sprite(fxKey, 7),
     },
@@ -381,8 +382,8 @@ function visSwap(sig: string, show: string, hides: string[]): Record<string, Ent
 // 每英雄三张模板：普攻打击区 + 大招打击区 + 棋子复合体（REQ-F-032 回合重展开用）。targetMask=敌队。
 export const GAME_F_TEMPLATES: Record<string, PrefabTemplate> = Object.fromEntries(
   ROSTER.flatMap((h): [string, PrefabTemplate][] => [
-    [`strike_${h.id}`, strike(h.enemy, finalAtk(h), FX_BY_TYPE[h.atkType])],
-    [`ult_${h.id}`, ultTemplate(h.enemy, h.ultDmg, h.ultSize, h.ultFx, h.ultDot, h.ultFreeze)],
+    [`strike_${h.id}`, strike(h.enemy, finalAtk(h), FX_BY_TYPE[h.atkType], h.team === TEAM_A ? 'dmg_scale_a' : 'dmg_scale_b')],
+    [`ult_${h.id}`, ultTemplate(h.enemy, h.ultDmg, h.ultSize, h.ultFx, h.ultDot, h.ultFreeze, h.team === TEAM_A ? 'dmg_scale_a' : 'dmg_scale_b')],
     [`hero_${h.id}`, heroTemplate(h)],
   ]).concat(
     // 备战席位模板（v2 §4.6 买入→入席）：marker 实体持有英雄（可见、不参战、无 Tag 不被清场）。
@@ -390,14 +391,14 @@ export const GAME_F_TEMPLATES: Record<string, PrefabTemplate> = Object.fromEntri
     ROSTER.filter((x) => x.team === TEAM_A).map((h): [string, PrefabTemplate] => [
       `bench_${h.id}`,
       // seat 可点卖出（F-12）：Clickable 产 sell_seat 信号，source=被点席位 → '@signal-source' 点谁卖谁。
-      { entities: { seat: { Transform: xf(0, 0), Sprite: sprite(h.key, 2), Shape: { kind: 'box', width: 30, height: 30 }, Clickable: { action: 'sell_seat' } } } } as unknown as PrefabTemplate,
+      { entities: { seat: { Transform: xf(0, 0), Sprite: sprite(h.key, 2), Shape: { kind: 'box', width: 30, height: 30 }, Clickable: { action: `sell_${h.id}` } } } } as unknown as PrefabTemplate, // 048②：每将卖出信号（袋归还要知道码）
     ]),
     // 野怪（批B）：每档攻一张 strike + 一张 mob 模板；法球=死亡掉落（LOOT 标记，主角拾取=批C；结算清场兜底）。
     PVE_WAVES.map((w): [string, PrefabTemplate] => [`strike_mob_${w.atk}`, strike(TEAM_A, w.atk, F_FX_BOLT)]),
     PVE_WAVES.map((w): [string, PrefabTemplate] => [`mob_s${w.stage}`, mobTemplate(w.atk)]),
     [[
       'loot_orb',
-      { entities: { orb: { Transform: xf(0, 0), Shape: { kind: 'box', width: 10, height: 10 }, Sprite: sprite(F_FX_DRAIN, 5), Color: { tint: 0xffd700, alpha: 1 }, Tag: { flags: LOOT }, Resource: { id: 'hp', current: 1, min: 0, max: 1 }, Mortal: { resource: 'hp', atOrBelow: 0 }, Hitbox: { resource: 'loot', amount: 5, targetMask: PROTAG } } } } as unknown as PrefabTemplate,
+      { entities: { orb: { Transform: xf(0, 0), Shape: { kind: 'box', width: 10, height: 10 }, Sensor: {}, Sprite: sprite(F_FX_DRAIN, 5), Color: { tint: 0xffd700, alpha: 1 }, Tag: { flags: LOOT | ZONE_FLAG }, Hitbox: { resource: 'loot', amount: -5, targetMask: PROTAG, consumeOnHit: true } } } } as unknown as PrefabTemplate, // 044：真结算一次入账-5(负=给予)同拍自毁；主角零附件
     ]] as [string, PrefabTemplate][],
     // 商店卡（F-14/REQ-F-042）：在售英雄的可点卡面；Clickable.action(买哪槽)/Tag(槽位掩码) 由持位 Caster overrides 注入。
     ROSTER.filter((x) => x.team === TEAM_A).map((h): [string, PrefabTemplate] => [
@@ -432,6 +433,7 @@ const makeRoundFlow = (PREP_TICKS: number, RESOLUTION_TICKS: number) => ({
         { kind: 'set-flag', targetId: 'income_armed', value: true }, // → 基础收入/利息/连胜金 bands（§4.1）
         { kind: 'set-flag', targetId: 'shop_refresh_armed', value: true }, // → 自动刷新（锁店时门挡，v2 §4.6）
         { kind: 'modify-resource', targetId: 'xp', op: 'add', value: 2 }, // 每回合自动 +2 XP（§4.3）
+        { kind: 'modify-resource', targetId: 'dmg_scale_a', op: 'set', value: 1 }, // 羁绊系数回 1（开战拍重新锁存）
       ],
       transitions: [
         // ready 优先（玩家点「开战」提前开打，§3.3 操作表）；after 40 = PvE 倒计时兜底（金铲铲本体也是倒计时自动开战）
@@ -560,7 +562,7 @@ export function buildGameFBlueprint(pacing: GameFPacing = {}): WorldBlueprint {
     // （钱不够/席满=拒单：牌不丢、金不动）→ 成交牌码写 bought_code → 每将 banded 分发 → marker 入备战席。
     shop: {
       // ⚠️ deck 必须取副本：装配是浅拷贝、嵌套数组按引用共享，发牌原地 shift 会跨 Engine/跨测试泄漏（确定性破口，实测踩过）
-      CardPile: { owner: 'shop', deck: [...SHOP_DECK], hand: [], handSize: 5, playCosts: [{ id: 'gold', amount: 3 }, { id: 'bench_space', amount: 1 }], playedCodeResource: 'bought_code', refreshOnSignal: 'shop_refresh', handCodeResources: ['shop_slot_1', 'shop_slot_2', 'shop_slot_3', 'shop_slot_4', 'shop_slot_5'], playOnSignals: ['buy_slot_1', 'buy_slot_2', 'buy_slot_3', 'buy_slot_4', 'buy_slot_5'] },
+      CardPile: { owner: 'shop', deck: [...SHOP_DECK], hand: [], handSize: 5, playCosts: [{ id: 'gold', amount: 3 }, { id: 'bench_space', amount: 1 }], playedCodeResource: 'bought_code', refreshOnSignal: 'shop_refresh', returnOnSignal: 'card_sold', returnCodeResource: 'sold_code', handCodeResources: ['shop_slot_1', 'shop_slot_2', 'shop_slot_3', 'shop_slot_4', 'shop_slot_5'], playOnSignals: ['buy_slot_1', 'buy_slot_2', 'buy_slot_3', 'buy_slot_4', 'buy_slot_5'] },
       PlayedHand: { owner: 'shop', cards: [] },
       Flag: { id: 'shop', active: false },
     } as unknown as EntityBlueprint,
@@ -624,11 +626,10 @@ export function buildGameFBlueprint(pacing: GameFPacing = {}): WorldBlueprint {
     } as unknown as EntityBlueprint,
     eff_lock: { Effect: { onSignal: 'lock_btn', kind: 'set-flag', targetId: 'shop_locked', value: true } } as unknown as EntityBlueprint,
     eff_unlock: { Effect: { onSignal: 'unlock_btn', kind: 'set-flag', targetId: 'shop_locked', value: false } } as unknown as EntityBlueprint,
-    // 卖出（点席卖谁）：marker Clickable 产 'sell_seat'（source=被点席位）→ destroy '@signal-source' + 返还（金2/席+1）。
-    // 卖价 MVP 统一 2（买 3 卖 2，TUNE）；袋归还 = 后续（deck 写回无数据接缝，F-12 回执注记）。
-    eff_sell_destroy: { Effect: { onSignal: 'sell_seat', kind: 'destroy', targetId: '', targetEntity: '@signal-source' } } as unknown as EntityBlueprint,
-    eff_sell_gold: { Effect: { onSignal: 'sell_seat', kind: 'modify-resource', targetId: 'gold', op: 'add', value: 2 } } as unknown as EntityBlueprint,
-    eff_sell_space: { Effect: { onSignal: 'sell_seat', kind: 'modify-resource', targetId: 'bench_space', op: 'add', value: 1 } } as unknown as EntityBlueprint,
+    // 卖出（048② 袋归还版）：点席 → sell_<将>（source=被点席位）→ destroy '@signal-source' + 金2 + 席+1
+    // + sold_code=码 → sold_code>0 边沿 → 'card_sold' → CardPile.returnOnSignal 袋底归还（引擎自清 sold_code）。
+    r_sold_code: { Resource: { id: 'sold_code', current: 0, min: 0, max: 9999 } } as unknown as EntityBlueprint,
+    when_sold: { EventWhen: { signal: 'card_sold', when: resCmp('sold_code', 'gt', 0), mode: 'edge', armed: false } } as unknown as EntityBlueprint,
     // —— 商店 5 槽面板（F-14/REQ-F-042）：handCodeResources 终态镜像 → 两段脉冲（先整槽清、后按码重铺）→ 可点卡面。
     // 脉冲时序：刷新/买入信号 → 臂1 → T+1 'shop_marks'(destroy-tagged 全槽卡 + 臂2) → T+2 重铺带按码展开（清已落地，无同拍误杀）。
     f_marks_armed: { Flag: { id: 'shop_marks_armed', active: false } } as unknown as EntityBlueprint,
@@ -719,10 +720,8 @@ export function buildGameFBlueprint(pacing: GameFPacing = {}): WorldBlueprint {
       Velocity: { vx: 0, vy: 0, angular: 0 },
       Controllable: { playerId: 'p1', speed: 1.6 },
       Shape: { kind: 'box', width: 14, height: 14 },
-      Sensor: {},
-      Tag: { flags: PROTAG | ZONE_FLAG }, // ZONE_FLAG=进 trigger-zone 结算（自身 Hitbox 只认 LOOT，过滤掉一切误伤）
+      Tag: { flags: PROTAG }, // 044 后主角零附件：球自带 consumeOnHit 两清
       Resource: { id: 'loot', current: 0, min: 0, max: 999 },
-      Hitbox: { resource: 'hp', amount: 9999, targetMask: LOOT }, // amount=伤害（正数扣减）——§4.7 草图的 -9999 是反的，实测会奶满球
       Sprite: sprite(F_FX_DRAIN, 12),
     } as unknown as EntityBlueprint,
     protag_name: {
@@ -733,8 +732,8 @@ export function buildGameFBlueprint(pacing: GameFPacing = {}): WorldBlueprint {
       Hierarchy: { parentId: 'protag', localX: 0, localY: -16, localRotation: 0, localScaleX: 1, localScaleY: 1 },
     } as unknown as EntityBlueprint,
     when_loot: { EventWhen: { signal: 'loot_cash', when: resCmp('loot', 'gt', 0), mode: 'edge', armed: false } } as unknown as EntityBlueprint,
-    eff_loot_gold: { Effect: { onSignal: 'loot_cash', kind: 'modify-resource', targetId: 'gold', op: 'add', value: 0, valueFrom: { resourceId: 'loot' } } } as unknown as EntityBlueprint,
-    eff_loot_clear: { Effect: { onSignal: 'loot_cash', kind: 'modify-resource', targetId: 'loot', op: 'set', value: 0 } } as unknown as EntityBlueprint,
+    eff_loot_gold: { Effect: { onSignal: 'loot_cash', kind: 'modify-resource', targetId: 'gold', op: 'add', value: 0, valueFrom: { resourceId: 'loot' }, order: 1 } } as unknown as EntityBlueprint, // order 钉死：先搬运后清零（effect-apply 按 id 序，'clear'<'gold' 会先清——实测踩到的搬运 0 坑）
+    eff_loot_clear: { Effect: { onSignal: 'loot_cash', kind: 'modify-resource', targetId: 'loot', op: 'set', value: 0, order: 2 } } as unknown as EntityBlueprint,
     // —— 开局强化符文三选一（批D，一图流入口；单人化=三选一无争抢）：回合1备战期顶部三卡，点选即生效，
     // 整组 destroy-tagged 收走（天然一次性，无需 armed 旗）。效果=经济型（全现有词汇，无 buff 施加依赖）。
     rune_a: { Transform: xf(-110, -100), Shape: { kind: 'box', width: 96, height: 40 }, Clickable: { action: 'rune_a' }, Tag: { flags: RUNE }, Text: { content: '屯粮：+10 金', fontSize: 12, fontFamily: 'sans-serif', anchor: 'center', lineSpacing: 0 }, Color: { tint: 0xf0d27a, alpha: 1 }, Sprite: { textureKey: F_FX_STRIKE, anchorX: 0.5, anchorY: 0.5, zOrder: 33 } } as unknown as EntityBlueprint,
@@ -746,6 +745,14 @@ export function buildGameFBlueprint(pacing: GameFPacing = {}): WorldBlueprint {
     eff_rune_a_done: { Effect: { onSignal: 'rune_a', kind: 'destroy-tagged', targetId: '', value: RUNE } } as unknown as EntityBlueprint,
     eff_rune_b_done: { Effect: { onSignal: 'rune_b', kind: 'destroy-tagged', targetId: '', value: RUNE } } as unknown as EntityBlueprint,
     eff_rune_c_done: { Effect: { onSignal: 'rune_c', kind: 'destroy-tagged', targetId: '', value: RUNE } } as unknown as EntityBlueprint,
+    // —— 羁绊（F-16/REQ-F-047，Phase 3 先行最小版）：蜀魂——场上蜀将 ≥3 → 我方伤害 ×1.2（开战拍 edge 锁存，
+    // 战斗中减员不掉档；prep 复位 ×1）。计数=group-count（REQ-022）；施加=hitbox scaleByResource 乘区。——
+    bond_counter_shu: { GroupCount: { countResource: 'count_shu', requiredTag: FACT_SHU } } as unknown as EntityBlueprint,
+    r_count_shu: { Resource: { id: 'count_shu', current: 0, min: 0, max: 99 } } as unknown as EntityBlueprint,
+    r_dmg_scale_a: { Resource: { id: 'dmg_scale_a', current: 1, min: 0, max: 9 } } as unknown as EntityBlueprint,
+    r_dmg_scale_b: { Resource: { id: 'dmg_scale_b', current: 1, min: 0, max: 9 } } as unknown as EntityBlueprint, // 敌方系数占位（关卡羁绊 TUNE 位）
+    when_bond_shu: { EventWhen: { signal: 'bond_shu', when: and({ kind: 'state', fsmId: 'round_ui', equals: 'combat' }, resCmp('count_shu', 'gte', 3)), mode: 'edge', armed: false } } as unknown as EntityBlueprint,
+    eff_bond_shu: { Effect: { onSignal: 'bond_shu', kind: 'modify-resource', targetId: 'dmg_scale_a', op: 'set', value: 1.2 } } as unknown as EntityBlueprint,
     // —— 加时强制结束（一图流：30s+15s；单人改编=超时按败方路径结算，注记于 flow-spec）——
     overtime_clock: { Timer: { id: 'combat_clock', elapsed: 0, duration: 999999, loop: false } } as unknown as EntityBlueprint,
     when_ot_reset: { EventWhen: { signal: 'ot_reset', when: { kind: 'state', fsmId: 'round_ui', equals: 'combat' }, mode: 'edge', armed: false } } as unknown as EntityBlueprint,
@@ -793,6 +800,12 @@ export function buildGameFBlueprint(pacing: GameFPacing = {}): WorldBlueprint {
     entities[`when_${sig}`] = { EventWhen: { signal: sig, when: resCmp('bought_code', 'eq', HERO_CODE[h.id]), mode: 'edge', armed: false } } as unknown as EntityBlueprint;
     entities[`buycast_${h.id}`] = { Transform: xf(-66 + i * 44, 178), Caster: { onSignal: sig, template: `bench_${h.id}`, at: 'self' } } as unknown as EntityBlueprint;
     entities[`eff_${sig}_reset`] = { Effect: { onSignal: sig, kind: 'modify-resource', targetId: 'bought_code', op: 'set', value: 0 } } as unknown as EntityBlueprint;
+    // 048② 每将卖出链（点席=sell_<将>）
+    const sell = `sell_${h.id}`;
+    entities[`eff_${sell}_destroy`] = { Effect: { onSignal: sell, kind: 'destroy', targetId: '', targetEntity: '@signal-source' } } as unknown as EntityBlueprint;
+    entities[`eff_${sell}_gold`] = { Effect: { onSignal: sell, kind: 'modify-resource', targetId: 'gold', op: 'add', value: 2 } } as unknown as EntityBlueprint;
+    entities[`eff_${sell}_space`] = { Effect: { onSignal: sell, kind: 'modify-resource', targetId: 'bench_space', op: 'add', value: 1 } } as unknown as EntityBlueprint;
+    entities[`eff_${sell}_code`] = { Effect: { onSignal: sell, kind: 'modify-resource', targetId: 'sold_code', op: 'set', value: HERO_CODE[h.id] } } as unknown as EntityBlueprint;
   });
   // 商店面板（F-14）：5 槽镜像资源 + 每槽×每将 重铺带（and(臂2, 槽码=将码) edge → 持位 Caster 展开卡面）
   // + 买入后面板再臂（买走→补牌→镜像变 → 全槽重铺）。卡面 Clickable=buy_slot_i → playOnSignals 即购买。
@@ -861,6 +874,7 @@ export function buildGameFBlueprint(pacing: GameFPacing = {}): WorldBlueprint {
       cardPileCapability, // 商店（F-11/REQ-F-040）：牌袋发牌/play 原子验扣/据码写 bought_code（引擎已按"输入先行"钉七件套定序）
       craftRecipeCapability, // 手动刷新 $2（F-12）：reroll_btn 信号 → 原子扣金置 reroll_paid（扣不起整单不动）
       textBindingCapability, // HUD 数字（F-15/REQ-F-043）：Resource → Text.content 投影
+      groupCountCapability, // 羁绊计数（F-16/REQ-022+047）：场上势力数 → 阈值带写伤害系数
       hierarchyResolveCapability,
       hierarchyCascadeCapability, // 子随父死（REQ-F-026）：棋子死亡→头顶名字一并消失
       cameraFollowCapability,

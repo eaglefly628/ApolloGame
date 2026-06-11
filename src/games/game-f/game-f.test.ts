@@ -398,6 +398,44 @@ describe('Game F — 自走棋（纯数据装配，零自走棋代码；棋子=�
     expect(res('lose_streak')).toBe(1); // 败 → 连败+1（胜路清零由 flow 同一转移对称保证）
   });
 
+  it('F-16 三件（REQ-F-044/047/048②）：蜀魂羁绊开战锁存 ×1.2；卖出归还牌袋（deck 回长）', () => {
+    const e = new Engine({ tickRate: 60 });
+    e.load(buildGameFBlueprint(FAST));
+    const res = (id: string): number => {
+      for (const x of e.world.getAllEntities()) {
+        const r = e.world.getComponent<Resource>(x, 'Resource');
+        if (r && r.id === id) return r.current;
+      }
+      return -1;
+    };
+    const deckLen = (): number => (e.world.getComponent('shop', 'CardPile') as unknown as { deck: number[] }).deck.length;
+    const input = (actions: unknown[]): void => {
+      if (!e.world.getAllEntities().includes('input')) e.world.createEntity('input');
+      e.world.addComponent('input', { type: 'InputQueue', actions } as unknown as Resource);
+      e.world.tick();
+      e.world.addComponent('input', { type: 'InputQueue', actions: [] } as unknown as Resource);
+    };
+    // 羁绊：场上蜀将 3（关羽/赵云/诸葛；周瑜=吴不计）→ 开战拍锁存 dmg_scale_a=1.2
+    let guard = 0;
+    while (!flag(e, 'in_combat') && guard++ < 100) e.world.tick();
+    for (let i = 0; i < 3; i++) e.world.tick();
+    expect(res('count_shu')).toBe(3); // group-count 按 FACT_SHU 计场上
+    expect(res('dmg_scale_a')).toBeCloseTo(1.2); // 蜀魂 ≥3 锁存（prep 复位 ×1，下回合重判）
+    // 卖出袋归还：注资买 1（deck 抽 1 补手 → 净 -1）→ 点席卖 → 码归还袋底（净回 +1）
+    e.world.addComponent('r_gold', { type: 'ResourceModify', resourceId: 'gold', amount: 10, scope: 'local' } as unknown as Resource);
+    for (let i = 0; i < 2; i++) e.world.tick();
+    input([{ source: 'shop', key: 'play', values: [0] }]);
+    for (let i = 0; i < 6; i++) e.world.tick();
+    const afterBuy = deckLen();
+    const seat = e.world.getAllEntities().find((id) => id.startsWith('bench_') && id.endsWith(':seat'))!;
+    const st = e.world.getComponent<Transform>(seat, 'Transform')!;
+    input([{ source: 'test', x: st.x, y: st.y, phase: 'down' }]);
+    for (let i = 0; i < 6; i++) e.world.tick();
+    expect(e.world.getAllEntities().includes(seat)).toBe(false); // 席位售出销毁
+    expect(deckLen()).toBe(afterBuy + 1); // 码归还袋底（§4.6 有限袋语义保真）
+    expect(res('sold_code')).toBe(0); // 引擎自清
+  });
+
   it('开局符文三选一（批D）：点「屯粮」金+10、三卡整组收走（一次性）；不点不影响流程', () => {
     const e = new Engine({ tickRate: 60 });
     e.load(buildGameFBlueprint(FAST));
@@ -442,9 +480,9 @@ describe('Game F — 自走棋（纯数据装配，零自走棋代码；棋子=�
     e.world.createEntity('lootreq');
     e.world.addComponent('lootreq', { type: 'SpawnRequest', templateId: 'loot_orb', x: 0, y: 120 } as unknown as Resource);
     for (let i = 0; i < 8; i++) e.world.tick();
-    expect(e.world.getAllEntities().some((id) => id.startsWith('loot_orb#'))).toBe(false); // 球被主角收走（过渡版：碰即拾）
-    expect(res('gold')).toBe(goldBefore); // 赏金入账待 REQ-F-044 consumeOnHit（入账链已就位，球改 zone 单发即通）
-    expect(res('loot')).toBe(0);
+    expect(e.world.getAllEntities().some((id) => id.startsWith('loot_orb#'))).toBe(false); // 球真结算一次后同拍自毁（044 consumeOnHit）
+    expect(res('gold')).toBe(goldBefore + 5); // 赏金入账（loot→valueFrom→gold）
+    expect(res('loot')).toBe(0); // 本地袋清零
     // 跑完回合 1 清场 → 主角与名牌仍常驻
     let wiped = false;
     for (let i = 0; i < 4000 && !wiped; i++) { e.world.tick(); wiped = mains(e).length === 0; }

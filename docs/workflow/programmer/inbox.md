@@ -137,7 +137,7 @@
 - 引擎已落 `t2-text-binding`（6 测绿）：实体挂 `Text + TextBinding{resourceId, prefix?, suffix?}` 每拍 content=prefix+值+suffix；蓝图 capabilities 加 `textBindingCapability`（id `t2-text-binding`）。
 - 接线：金币 `TextBinding{resourceId:'gold', prefix:'金币 '}`；玩家血/等级同理；回合「3-2」两个数=两个 Text 实体并排（引擎单资源单绑定，保闭语法）。头顶等级用 fromParent:true（同 gauge）。
 
-#### 任务 F-16 · REQ-F-044/047/048② 接入：拾取两清 + 羁绊乘区 + 卖出袋归还（纯数据） — status: pending
+#### 任务 F-16 · REQ-F-044/047/048② 接入：拾取两清 + 羁绊乘区 + 卖出袋归还（纯数据） — status: **done（PE-F 2026-06-10 回执：①法球 zone+consumeOnHit+amount:-5 真结算一次同拍自毁、主角零附件，赏金 gold+5 测绿——坑：入账/清零两 Effect 必须 order 钉序（effect-apply 按实体 id 序，'clear'<'gold' 先清=搬运 0，实测）；②蜀魂羁绊最小版：group-count(FACT_SHU)→combat 态 edge 锁存 dmg_scale_a=1.2→strike/ult 全挂 scaleByResource（a/b 双系数资源，prep 复位）；③卖出链改每将信号四件套+sold_code>0 边沿→card_sold→returnOnSignal 袋底归还，deck 回长测绿）**
 - 引擎已落（5 测绿）：① `Hitbox.consumeOnHit:true`——法球=zone{Hitbox{resource:'loot',amount:-5,targetMask:PROTAG}, consumeOnHit}，碰一下入账一次**同拍消失**（cascade 连挂件），主角零附件；② `Hitbox.scaleByResource:'<系数资源id>'`——羁绊链=group-count 计数→EventWhen 阈值→Effect 写系数资源→普攻/大招 strike 模板挂此字段（两阵营各自系数用槽位 overrides 改指向）；③ `CardPile.returnOnSignal:'card_sold'+returnCodeResource:'sold_code'`——卖出链每将 banded Effect{set sold_code=码}→袋底归还+清零。
 - 注意：consumeOnHit 的"真结算"=过了阵营/状态门（空挥不消耗）；scaleByResource 只乘 amount 不乘 fracOfMax；sold_code 复位由引擎清零、无需手工 Effect。
 
