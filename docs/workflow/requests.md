@@ -1277,6 +1277,23 @@
 
 ---
 
+### REQ-F-042 · [2026-06-10] · PE-F（用户实测"看不到商店"）· 框架级 · status: **open（待主程评估）** · 优先级: **高（商店玩法已全通但不可见不可点——用户体验断层的主因之一）** · 类型: 真缺口 ×2（手牌内容无数据出口；点击→出牌无路由）
+
+> **现象（用户实测）**：商店买/刷/锁/卖 sim 全通（16 测绿），但屏幕上**没有商店**——5 个在售英雄无可视化、无法点击购买。
+> **证伪重组**：① 手牌是 `CardPile.hand: number[]` 纯数据，**无任何系统把牌码投影成可见实体**（Sprite.textureKey 静态、无"据码换贴图"形态）；② 购买输入是 `InputQueue {key:'play', values:[i]}`——clickable 只产 Signal，**无 Signal→play 路由**；launcher 指针层只发坐标事件。
+> **建议（最窄两件，交主程裁）**：(A) `CardPile.handCodeResources?: string[]`——每槽牌码实时写进对应 Resource（如 shop_slot_1..5；0=空）→ 现成 banded EventWhen 即可驱动每槽 marker 展开/销毁（与买入分发同构）；(B) `CardPile.playOnSignals?: string[]`——第 i 个信号在场=play(i)（clickable 槽位按钮 → 信号 → 出牌），与 refreshOnSignal 同族触发面。
+> **YAGNI 自审**：任何带手牌/商店 UI 的卡牌品类同形；是"sim 全数据"路线下 UI 可见性的必经缺口。
+
+---
+
+### REQ-F-043 · [2026-06-10] · PE-F（用户实测"看不到金币/回合"）· 框架级 · status: **open（待主程评估）** · 优先级: 高（HUD 数字全员不可见：金币/回合/玩家血/等级） · 类型: 真缺口（Resource→Text 数字投影缺位）
+
+> **证伪重组**：`Text.content` 装配期静态（REQ-F-029 证伪原文已钉过"无 Resource→Text 更新系统"）；gauge 只投影成**条宽**——血条蓝条够用，金币/回合数需要**数字**。
+> **建议**：tier2 `text-binding`（或 gauge 姊妹件）：`TextBinding{resourceId, prefix?, suffix?}` 每拍把 Resource.current 写成自身 Text.content（如「金币 12」「回合 3-2」）。确定性同 gauge（表现投影、进/不进 hash 由主程按 Text 现状裁）。
+> **YAGNI 自审**：金币/回合/血量/等级四处当下就要；任何有数字 HUD 的游戏同形。
+
+---
+
 ## 需求模板（复制这段填写）
 
 ```

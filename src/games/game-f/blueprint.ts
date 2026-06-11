@@ -506,6 +506,27 @@ export function buildGameFBlueprint(): WorldBlueprint {
     eff_sell_destroy: { Effect: { onSignal: 'sell_seat', kind: 'destroy', targetId: '', targetEntity: '@signal-source' } } as unknown as EntityBlueprint,
     eff_sell_gold: { Effect: { onSignal: 'sell_seat', kind: 'modify-resource', targetId: 'gold', op: 'add', value: 2 } } as unknown as EntityBlueprint,
     eff_sell_space: { Effect: { onSignal: 'sell_seat', kind: 'modify-resource', targetId: 'bench_space', op: 'add', value: 1 } } as unknown as EntityBlueprint,
+    // —— 阶段横幅（HUD 快赢：现有词汇 set-visible 可拼；金币/回合数字与商店 5 槽可视化 = REQ-F-042/043 待引擎）——
+    banner_prep: {
+      Transform: xf(0, -186),
+      Text: { content: '备 战 —— 点「开战」或等待倒计时（商店：刷新/锁店/卖出可用）', fontSize: 15, fontFamily: 'sans-serif', anchor: 'center', lineSpacing: 0 },
+      Color: { tint: 0xf0d27a, alpha: 1 },
+      Visibility: { visible: true },
+      Sprite: { textureKey: F_FX_STRIKE, anchorX: 0.5, anchorY: 0.5, zOrder: 31 },
+    } as unknown as EntityBlueprint,
+    banner_combat: {
+      Transform: xf(0, -186),
+      Text: { content: '战 斗 中', fontSize: 16, fontFamily: 'sans-serif', anchor: 'center', lineSpacing: 0 },
+      Color: { tint: 0xff7a6a, alpha: 1 },
+      Visibility: { visible: false },
+      Sprite: { textureKey: F_FX_STRIKE, anchorX: 0.5, anchorY: 0.5, zOrder: 31 },
+    } as unknown as EntityBlueprint,
+    when_phase_combat: { EventWhen: { signal: 'phase_combat', when: flagIs('in_combat'), mode: 'edge', armed: false } } as unknown as EntityBlueprint,
+    when_phase_prep: { EventWhen: { signal: 'phase_prep', when: { kind: 'flag', id: 'in_combat', equals: false }, mode: 'edge', armed: false } } as unknown as EntityBlueprint,
+    eff_pc_show: { Effect: { onSignal: 'phase_combat', kind: 'set-visible', targetId: '', targetEntity: 'banner_combat', value: true } } as unknown as EntityBlueprint,
+    eff_pc_hide: { Effect: { onSignal: 'phase_combat', kind: 'set-visible', targetId: '', targetEntity: 'banner_prep', value: false } } as unknown as EntityBlueprint,
+    eff_pp_show: { Effect: { onSignal: 'phase_prep', kind: 'set-visible', targetId: '', targetEntity: 'banner_prep', value: true } } as unknown as EntityBlueprint,
+    eff_pp_hide: { Effect: { onSignal: 'phase_prep', kind: 'set-visible', targetId: '', targetEntity: 'banner_combat', value: false } } as unknown as EntityBlueprint,
     f_deploy_armed: { Flag: { id: 'deploy_armed', active: false } } as unknown as EntityBlueprint,
     f_wipe_armed: { Flag: { id: 'wipe_armed', active: false } } as unknown as EntityBlueprint,
     f_income_armed: { Flag: { id: 'income_armed', active: false } } as unknown as EntityBlueprint, // §4.1 结算窗
