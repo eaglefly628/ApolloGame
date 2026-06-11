@@ -61,6 +61,27 @@ describe('Game F — 自走棋（纯数据装配，零自走棋代码；棋子=�
     const seatHex = e.world.getComponent<Resource>(guanyuSeat, 'HexPos') as unknown as { q: number; r: number };
     const heroHex = e.world.getComponent<Resource>(mains(e).find((m) => m.startsWith('hero_a_guanyu#'))!, 'HexPos') as unknown as { q: number; r: number };
     expect([heroHex.q, heroHex.r]).toEqual([seatHex.q, seatHex.r]);
+    // REQ-F-056：战斗期 marker 隐藏（消「武将复制、老的没删」幽灵）——seat 持久但 Visibility=false。
+    const vis = (id: string): boolean => (e.world.getComponent(id, 'Visibility') as { visible: boolean } | undefined)?.visible ?? true;
+    expect(alive(e, guanyuSeat)).toBe(true); // marker 持久（记布阵不删）
+    expect(vis(guanyuSeat)).toBe(false); // 战斗期隐藏（只剩会动的战斗棋子可见，无双重显示）
+  });
+
+  it('开局符文开战自动收走（用户报「永远在屏幕中央」）+ 商店卡带价签（用户报「没有价格」）', () => {
+    const e = new Engine({ tickRate: 60 });
+    e.load(buildGameFBlueprint(FAST));
+    for (let i = 0; i < 12; i++) e.world.tick();
+    expect(alive(e, 'rune_a')).toBe(true); // 回合1备战：符文三选一在场
+    expect(alive(e, 'rune_title')).toBe(true); // 标题说明
+    // 商店卡价签：在售大卡有价格子实体（💰3）
+    const priceCards = e.world.getAllEntities().filter((id) => id.startsWith('shopcard_') && id.endsWith(':cardprice'));
+    expect(priceCards.length).toBeGreaterThan(0);
+    // 不点符文 → 开战拍 ph_combat 兜底收走（真打的时候去掉）
+    let guard = 0;
+    while (!flag(e, 'in_combat') && guard++ < 200) e.world.tick();
+    for (let i = 0; i < 4; i++) e.world.tick();
+    expect(alive(e, 'rune_a')).toBe(false); // 开战即清
+    expect(alive(e, 'rune_title')).toBe(false);
   });
 
   it('两队自动对冲互砍：双方都真受伤（aggro + grid-move + timer→event-when→caster→hitbox 涌现）', () => {

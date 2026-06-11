@@ -81,6 +81,9 @@ const SHOPSLOT_ALL = SHOPSLOT_BITS.reduce((a, b) => a | b, 0);
 // 在板（有 HexPos）= 计上场人口（Draggable cap 数 Tag&此位∧HexPos ≤ level）。
 // （旧 STAR2/STAR3/每将位 1<<19..24 随星级资源带契约删除回收——星级=模板家族本身，无需位面计数。）
 const BENCH_OCC = 1 << 25;
+// marker 显隐位（REQ-F-056）：seat + ★ 角标都带 → 战斗期 set-visible-tagged 隐藏（消除「武将复制、老的没删」
+// 幽灵——marker 持久记布阵不能删，只能藏）、备战期再显。不与 BENCH_OCC 重叠（★ 角标不计席位占用）。
+const MARKER_VIS = 1 << 19;
 
 // 战斗节奏（数据）：30 tick ≈ 0.5s/动作，看得清（此前 10/24 太快）。
 const MOVE_PERIOD = 48; // 每 48 tick 走一格 ≈ 0.8s（慢一点看清走位）
@@ -377,6 +380,7 @@ const STAR_HP_MUL = [0, 1, 1.8, 3.24]; // 索引=星级
 const STAR_DMG_MUL = [0, 1, 1.5, 2.25];
 const SELL_PRICE = [0, 2, 8, 26];
 const STAR_GLYPH = ['', '', '★★', '★★★'];
+const STAR_SCALE = [1, 1, 1.18, 1.38]; // marker 按星级放大（索引=星级）——升星一眼可辨（用户报「看不出升级」）
 
 // ── §4.1/§4.2 banded 结算（Game E 已证形态）：armed 旗开窗 → EventWhen(edge) 带条件命中 → Effect 改资源一次。──
 // 带宽语义注记：同窗内资源被前一 band 改写后，后续 band 的阈值按"改写后的值"再判（如利息可能含同回合收入）——
@@ -422,23 +426,28 @@ export const GAME_F_TEMPLATES: Record<string, PrefabTemplate> = Object.fromEntri
         s === 1 ? `bench_${h.id}` : `bench${s}_${h.id}`,
         {
           entities: {
+            // 星级放大（用户报「升星看不出、像没发生」）：1/2/3 星 marker 按 1.0/1.18/1.38 缩放 → 一眼见大小差。
             seat: {
-              Transform: xf(0, 0),
+              Transform: { x: 0, y: 0, rotation: 0, scaleX: STAR_SCALE[s], scaleY: STAR_SCALE[s] },
               Sprite: sprite(h.key, 2),
               Shape: { kind: 'box', width: 30, height: 30 },
               Clickable: { action: s === 1 ? `sell_${h.id}` : `sell${s}_${h.id}`, phase: 'up' }, // 'up'=点拖互斥（REQ-F-053）：拖拽不产 up，按住起拖不会误卖
-              Tag: { flags: BENCH_OCC },
+              Tag: { flags: BENCH_OCC | MARKER_VIS }, // MARKER_VIS：战斗期隐藏（REQ-F-056，消幽灵）
+              Visibility: { visible: true, active: true }, // 备战可见；ph_combat→隐藏 / ph_prep→显
               Draggable: { snap: 'hex', onlyFlag: 'in_prep', capTagMask: BENCH_OCC, capResource: 'level' },
               Caster: { onSignal: 'deploy', template: `hero_${h.id}`, at: 'self', requireHexPos: true, overrides: heroOverrides(h, s, '@origin-hex') },
             },
             ...(s >= 2
               ? {
+                  // ★ 角标：2 星银 / 3 星金，字号加大，带描边底板 —— 升星辨识度（合成功能本身已验证正确，纯视觉强化）。
                   star: {
-                    Transform: xf(0, -22),
-                    Text: { content: STAR_GLYPH[s], fontSize: 10, fontFamily: 'sans-serif', anchor: 'center', lineSpacing: 0 },
-                    Color: { tint: 0xf0d27a, alpha: 1 },
-                    Sprite: { textureKey: F_FX_STRIKE, anchorX: 0.5, anchorY: 0.5, zOrder: 29 },
-                    Hierarchy: { parentId: '@local:seat', localX: 0, localY: -22, localRotation: 0, localScaleX: 1, localScaleY: 1 },
+                    Transform: xf(0, -26),
+                    Text: { content: STAR_GLYPH[s], fontSize: s === 3 ? 16 : 14, fontFamily: 'sans-serif', anchor: 'center', lineSpacing: 0 },
+                    Color: { tint: s === 3 ? 0xffd24a : 0xe8e8f0, alpha: 1 }, // 3星金 / 2星银
+                    Tag: { flags: MARKER_VIS }, // ★ 角标随 seat 一起隐显（不带 BENCH_OCC=不计席位占用）
+                    Visibility: { visible: true, active: true },
+                    Sprite: { textureKey: F_FX_STRIKE, anchorX: 0.5, anchorY: 0.5, zOrder: 31 },
+                    Hierarchy: { parentId: '@local:seat', localX: 0, localY: -26, localRotation: 0, localScaleX: 1, localScaleY: 1 },
                   },
                 }
               : {}),
@@ -460,11 +469,15 @@ export const GAME_F_TEMPLATES: Record<string, PrefabTemplate> = Object.fromEntri
       'loot_orb',
       { entities: { orb: { Transform: xf(0, 0), Shape: { kind: 'box', width: 10, height: 10 }, Sensor: {}, Sprite: sprite(F_FX_DRAIN, 5), Color: { tint: 0xffd700, alpha: 1 }, Tag: { flags: LOOT | ZONE_FLAG }, Hitbox: { resource: 'loot', amount: -5, targetMask: PROTAG, consumeOnHit: true } } } } as unknown as PrefabTemplate, // 044：真结算一次入账-5(负=给予)同拍自毁；主角零附件
     ]] as [string, PrefabTemplate][],
-    // 商店大卡（F-14 重排/用户钦定）：在售英雄的可点大卡面（60×68 占满大框）；
-    // Clickable.action(买哪框)/Tag(槽位掩码) 由持位 Caster overrides 注入。
+    // 商店大卡（F-14 重排/用户钦定）：在售英雄的可点大卡面（60×68 占满大框）+ 名字签 + **价签**（用户报缺）；
+    // Clickable.action(买哪框)/Tag(槽位掩码) 由持位 Caster overrides 注入。价 = playCosts 金 3（统一费）。
     ROSTER.filter((x) => x.team === TEAM_A).map((h): [string, PrefabTemplate] => [
       `shopcard_${h.id}`,
-      { entities: { card: { Transform: xf(0, 0), Shape: { kind: 'box', width: 58, height: 68 }, Sprite: sprite(h.key, 28), Color: { tint: 0xf0d27a, alpha: 1 }, Clickable: { action: 'ph' }, Tag: { flags: 0 } } } } as unknown as PrefabTemplate,
+      { entities: {
+        card: { Transform: xf(0, 0), Shape: { kind: 'box', width: 58, height: 68 }, Sprite: sprite(h.key, 28), Color: { tint: 0xf0d27a, alpha: 1 }, Clickable: { action: 'ph' }, Tag: { flags: 0 } },
+        cardname: { Transform: xf(0, -26), Text: { content: h.name, fontSize: 9, fontFamily: 'sans-serif', anchor: 'center', lineSpacing: 0 }, Color: { tint: 0x20140a, alpha: 1 }, Sprite: { textureKey: F_FX_STRIKE, anchorX: 0.5, anchorY: 0.5, zOrder: 29 }, Hierarchy: { parentId: '@local:card', localX: 0, localY: -26, localRotation: 0, localScaleX: 1, localScaleY: 1 } },
+        cardprice: { Transform: xf(0, 28), Text: { content: '💰3', fontSize: 11, fontFamily: 'sans-serif', anchor: 'center', lineSpacing: 0 }, Color: { tint: 0xffe28a, alpha: 1 }, Sprite: { textureKey: F_FX_STRIKE, anchorX: 0.5, anchorY: 0.5, zOrder: 29 }, Hierarchy: { parentId: '@local:card', localX: 0, localY: 28, localRotation: 0, localScaleX: 1, localScaleY: 1 } },
+      } } as unknown as PrefabTemplate,
     ]),
   ),
 );
@@ -669,6 +682,10 @@ export function buildGameFBlueprint(pacing: GameFPacing = {}): WorldBlueprint {
     eff_timer_show: { Effect: { onSignal: 'ph_prep', kind: 'set-visible', targetId: '', targetEntity: 'hud_timer', value: true } } as unknown as EntityBlueprint,
     eff_timer_hide: { Effect: { onSignal: 'ph_combat', kind: 'set-visible', targetId: '', targetEntity: 'hud_timer', value: false } } as unknown as EntityBlueprint,
     eff_timer_hide2: { Effect: { onSignal: 'ph_res', kind: 'set-visible', targetId: '', targetEntity: 'hud_timer', value: false } } as unknown as EntityBlueprint,
+    // —— marker 战斗期隐藏（REQ-F-056，消「武将复制、老的没删」幽灵）：开战拍藏全部 marker（seat+★），
+    // 备战拍再显。marker 持久（记布阵不删），战斗期它的 Caster 生成会动的战斗棋子 → 不藏就双重显示。
+    eff_marker_hide: { Effect: { onSignal: 'ph_combat', kind: 'set-visible-tagged', targetId: '', tagMask: MARKER_VIS, value: false } } as unknown as EntityBlueprint,
+    eff_marker_show: { Effect: { onSignal: 'ph_prep', kind: 'set-visible-tagged', targetId: '', tagMask: MARKER_VIS, value: true } } as unknown as EntityBlueprint,
     // —— 商店（F-11，REQ-F-040；v2 §4.6 五件套之「买入核心」。刷新/锁店/卖出撞新缺口已提 REQ-F-041）——
     // 买 = 输入 play(槽下标)（点击→play 的指针路由属 launcher 输入域）：playCosts 原子验扣 金3 + 席位1
     // （钱不够/席满=拒单：牌不丢、金不动）→ 成交牌码写 bought_code → 每将 banded 分发 → marker 入备战席。
@@ -869,6 +886,9 @@ export function buildGameFBlueprint(pacing: GameFPacing = {}): WorldBlueprint {
     eff_loot_clear: { Effect: { onSignal: 'loot_cash', kind: 'modify-resource', targetId: 'loot', op: 'set', value: 0, order: 2 } } as unknown as EntityBlueprint,
     // —— 开局强化符文三选一（批D，一图流入口；单人化=三选一无争抢）：回合1备战期顶部三卡，点选即生效，
     // 整组 destroy-tagged 收走（天然一次性，无需 armed 旗）。效果=经济型（全现有词汇，无 buff 施加依赖）。
+    // 开局强化三选一（一次性，仅回合1）：加标题说明 + 开战拍自动收走（用户报「永远在中央、不知何意」——
+    // 真打的时候就去掉）。Tag RUNE → 点选生效后 destroy-tagged 整组收（含标题），没点则 ph_combat 兜底收走。
+    rune_title: { Transform: xf(0, -128), Shape: { kind: 'box', width: 340, height: 18 }, Tag: { flags: RUNE }, Text: { content: '◆ 开局强化 · 三选一（点击生效，开战后消失）', fontSize: 13, fontFamily: 'sans-serif', anchor: 'center', lineSpacing: 0 }, Color: { tint: 0xffe28a, alpha: 1 }, Sprite: { textureKey: F_FX_STRIKE, anchorX: 0.5, anchorY: 0.5, zOrder: 33 } } as unknown as EntityBlueprint,
     rune_a: { Transform: xf(-110, -100), Shape: { kind: 'box', width: 96, height: 40 }, Clickable: { action: 'rune_a' }, Tag: { flags: RUNE }, Text: { content: '屯粮：+10 金', fontSize: 12, fontFamily: 'sans-serif', anchor: 'center', lineSpacing: 0 }, Color: { tint: 0xf0d27a, alpha: 1 }, Sprite: { textureKey: F_FX_STRIKE, anchorX: 0.5, anchorY: 0.5, zOrder: 33 } } as unknown as EntityBlueprint,
     rune_b: { Transform: xf(0, -100), Shape: { kind: 'box', width: 96, height: 40 }, Clickable: { action: 'rune_b' }, Tag: { flags: RUNE }, Text: { content: '砺兵：+8 经验', fontSize: 12, fontFamily: 'sans-serif', anchor: 'center', lineSpacing: 0 }, Color: { tint: 0x7ad17a, alpha: 1 }, Sprite: { textureKey: F_FX_STRIKE, anchorX: 0.5, anchorY: 0.5, zOrder: 33 } } as unknown as EntityBlueprint,
     rune_c: { Transform: xf(110, -100), Shape: { kind: 'box', width: 96, height: 40 }, Clickable: { action: 'rune_c' }, Tag: { flags: RUNE }, Text: { content: '广纳：备战席 +2', fontSize: 12, fontFamily: 'sans-serif', anchor: 'center', lineSpacing: 0 }, Color: { tint: 0x9ad1ff, alpha: 1 }, Sprite: { textureKey: F_FX_STRIKE, anchorX: 0.5, anchorY: 0.5, zOrder: 33 } } as unknown as EntityBlueprint,
@@ -878,6 +898,8 @@ export function buildGameFBlueprint(pacing: GameFPacing = {}): WorldBlueprint {
     eff_rune_a_done: { Effect: { onSignal: 'rune_a', kind: 'destroy-tagged', targetId: '', value: RUNE } } as unknown as EntityBlueprint,
     eff_rune_b_done: { Effect: { onSignal: 'rune_b', kind: 'destroy-tagged', targetId: '', value: RUNE } } as unknown as EntityBlueprint,
     eff_rune_c_done: { Effect: { onSignal: 'rune_c', kind: 'destroy-tagged', targetId: '', value: RUNE } } as unknown as EntityBlueprint,
+    // 兜底收走：没点也在开战拍清掉（回合1 后无 RUNE 实体 → 后续 ph_combat 空转无害）。
+    eff_rune_sweep: { Effect: { onSignal: 'ph_combat', kind: 'destroy-tagged', targetId: '', value: RUNE } } as unknown as EntityBlueprint,
     // —— 羁绊（F-16/REQ-F-047，Phase 3 先行最小版）：蜀魂——场上蜀将 ≥3 → 我方伤害 ×1.2（开战拍 edge 锁存，
     // 战斗中减员不掉档；prep 复位 ×1）。计数=group-count（REQ-022）；施加=hitbox scaleByResource 乘区。——
     bond_counter_shu: { GroupCount: { countResource: 'count_shu', requiredTag: FACT_SHU } } as unknown as EntityBlueprint,

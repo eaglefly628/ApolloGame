@@ -1436,6 +1436,23 @@
 
 ---
 
+### REQ-F-056 · [2026-06-11] · 用户实测 bug（「开战时我方武将复制出去移动、原来的没删除」）· 框架级 · status: **done（同日，代理主程落地）** · 优先级: 高（核心观感 bug） · 类型: 真缺口（按 Tag 批量改可见性无词汇 = destroy-tagged 的可见性孪生缺位）
+
+> **根因**：席位 marker（bench_<将> 的 seat）带 Sprite、持久（记布阵不能删，无 TEAM 位躲 wipe）。开战拍它的 Caster 在同格生成会动的战斗棋子，marker 自己留在原地 → 玩家看到「一个站着的旧图标 + 一个走出去打架的新棋子」= 双重显示/幽灵。正解=战斗期把 marker 藏起来、备战期再显。
+> **证伪重组**：① `set-visible` Effect 按 targetEntity（具体 id）寻址——marker 是运行时展开实例，id 装配期不可知，无法点名；② SelfRule 的 do-kinds（set-flag/modify-resource/set-state/destroy/spawn）无 set-visible，marker 不能自藏；③ destroy-tagged 能按 Tag 批量但是**不可逆销毁**（marker 删了布阵就丢）。「按 Tag 批量切可见」无任何现有词汇——正是 destroy-tagged（REQ-F-032）的可见性孪生缺位。
+> **裁决+落地**：`Effect.kind:'set-visible-tagged'` + `Effect.tagMask`——tagMask 命中者批量把 Visibility.visible 设为 value；只触**已有 Visibility** 的实体（不凭空 add，避免给纯逻辑实体塞渲染组件）。与 destroy-tagged 同住 effect-apply、同按 Tag 寻址，一致最小。游戏侧：seat+★ 角标带 MARKER_VIS 位 + Visibility，`Effect{onSignal:'ph_combat', set-visible-tagged, tagMask:MARKER_VIS, value:false}`（开战藏）+ ph_prep value:true（备战显）——复用既有相位信号，零新旗。1 引擎测（批量切/只触有 Visibility 者/别的 tag 不动）+ game-f 验收（战斗期 marker.visible=false 且仍 alive）。
+> 已知取舍：备战席 marker 战斗期也一并隐藏（bench 在 30s 战斗中看不到）——可接受（看战斗为主）；要 bench 战斗期可见再加 onBoard 过滤（但 ★ 角标无 HexPos 会漏，留作 TUNE）。
+
+---
+
+### 调查存档 · 用户报「2 个一星 + 场上两星合成新两星替换了」（2026-06-11）· status: **不复现（引擎合并逻辑正确）**
+
+> **用户描述**：场上 1 个两星 + 商店买 2 个一星 → 这 2 个一星和场上两星合并成新两星、替换了场上两星。期望：2 个一星应留在备战栏当一星，攒到第 3 个两星时 3 个两星才合并成三星。
+> **复现结论（两条路径均证伪）**：① 同回合：开局关羽 bench1 在板 → 买 2 个 → 3 个一星合成 1 个两星在板（b2=1，正确）→ 再买 2 个一星 → **b1=2 b2=1，无合并**（2 个一星 + 场上两星没有合并，正确）；② 跨回合：合出两星 → 打完整一场 → R2 买 2 个一星 → b1=2 b2=1，同样无误合。merge-rule 按 PrefabOrigin.templateId 计数，bench1（'bench_<将>'）与 bench2（'bench2_<将>'）是不同模板，2 个 bench1 < need(3) 不触发、且永不与 bench2 混算——完全符合金铲铲。
+> **可能误判源**：升星辨识度低——★★ 与 ★★★ 角标原字号 10、同色，升级「像没发生」。已强化（REQ-F-056 同批）：marker 按星级放大 1.0/1.18/1.38、★ 角标 2 星银 14 号 / 3 星金 16 号。**请用户用新 build 复测**；若仍现，请给出当时该将的精确张数（含开局自带的 1 张）与每次点击序列。
+
+---
+
 ## 需求模板（复制这段填写）
 
 ```

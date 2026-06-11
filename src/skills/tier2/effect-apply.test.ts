@@ -275,6 +275,23 @@ describe('T2 effect-apply — 物理 kind（REQ-008：信号→物理改动，�
     expect(w.getComponent<Visibility>('door', 'Visibility')!.visible).toBe(false);
   });
 
+  it('set-visible-tagged（REQ-F-056）：Tag 掩码命中者批量切 Visibility；只触有 Visibility 者；缺省不命中不动', () => {
+    const w = worldWithEffect();
+    const TOKEN = 1 << 3;
+    // 三个带 token tag：a/b 有 Visibility，c 无 Visibility（不应被凭空 add）
+    w.createEntity('a'); w.addComponent('a', { type: 'Tag', flags: TOKEN } as never); w.addComponent('a', { type: 'Visibility', visible: true, active: true } as Visibility);
+    w.createEntity('b'); w.addComponent('b', { type: 'Tag', flags: TOKEN } as never); w.addComponent('b', { type: 'Visibility', visible: true, active: true } as Visibility);
+    w.createEntity('c'); w.addComponent('c', { type: 'Tag', flags: TOKEN } as never);
+    w.createEntity('d'); w.addComponent('d', { type: 'Tag', flags: 1 << 4 } as never); w.addComponent('d', { type: 'Visibility', visible: true, active: true } as Visibility); // 别的 tag
+    effect(w, 'ef', { onSignal: 'hide', kind: 'set-visible-tagged', targetId: '', tagMask: TOKEN, value: false });
+    signal(w, 'hide');
+    w.tick();
+    expect(w.getComponent<Visibility>('a', 'Visibility')!.visible).toBe(false); // 命中
+    expect(w.getComponent<Visibility>('b', 'Visibility')!.visible).toBe(false); // 命中
+    expect(w.hasComponent('c', 'Visibility')).toBe(false); // 无 Visibility 不凭空 add
+    expect(w.getComponent<Visibility>('d', 'Visibility')!.visible).toBe(true); // 别的 tag 不动
+  });
+
   it('destroy → 在目标实体发 DestroyRequest（清障碍，destroy-apply 随后移除）', () => {
     const w = worldWithEffect();
     w.createEntity('rock');

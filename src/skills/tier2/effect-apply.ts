@@ -162,6 +162,23 @@ export const effectApplyCapability = defineCapability({
               }
               break;
             }
+            // ── set-visible-tagged（REQ-F-056，destroy-tagged 的可见性孪生）：tagMask 命中者 Visibility.visible=value。
+            // 运行时实例 id 装配期不可知 → 按 Tag 批量寻址（同 destroy-tagged）。集合语义与遍历序无关；只触有 Visibility
+            // 的实体（不凭空 add，避免给纯逻辑实体塞渲染组件）。备战 token 战斗期隐藏 / 相位 gizmo 等"阶段性显隐"用。
+            case 'set-visible-tagged': {
+              const mask = Number(ef.tagMask);
+              if (Number.isFinite(mask) && mask !== 0) {
+                const visible = ef.value === true || ef.value === 'true';
+                for (const [tid] of world.query('Tag')) {
+                  const tg = world.getComponent<Tag>(tid, 'Tag');
+                  if (tg && (tg.flags & mask) !== 0) {
+                    const vis = world.getComponent<Visibility>(tid, 'Visibility');
+                    if (vis) vis.visible = visible;
+                  }
+                }
+              }
+              break;
+            }
             case 'destroy': {
               // 发 DestroyRequest，destroy-apply 消费后移除目标实体（清障碍/点谁卖谁）。
               for (const te of targetsOf(ef)) {
