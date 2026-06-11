@@ -147,7 +147,12 @@
 - 超员自动卖接线：入战拍信号（flow onEnter flag→EventWhen）+ `Effect{onSignal:'enforce_cap', kind:'destroy-tagged', value:上场掩码, keepResource:'level'}`——保最早上场的 level 个，多余按入场逆序清（挂件 cascade）。返还链（金/席/袋）先试 banded 重组，表达不了再提。
 - 注意：merge 只数 prefab 展开的实例（带戳）；检测有一拍延迟（不可感知）；合成锚点=最老实例位置。
 
-> ✅ **引擎侧 REQ-F-026~037 + F-040~044/046/047/048①② 均已落地、全绿（F-038 空缺、F-039 重组覆盖；仅余 F-045 拖拽输入域，下一轮）**。PE-F 上述 F-1~F-17 皆可接（你交接报告里卡主程的两件——**F-029 血条→接 F-5，F-030 定身→接 F-6——已全部解锁，可继续**），纯数据 / 零游戏代码。不要在游戏层 workaround 引擎行为；若发现新引擎缺口，写 requests.md 提主程。
+#### 任务 F-18 · REQ-F-045 接入摆子拖拽（纯数据+1 行壳层参数） — status: pending（备战核心交互）
+- 引擎已落（7 测绿）：壳层 `PointerInputSource` 已自动合成 drag 动作（如需调灵敏度传 `dragThreshold`）；sim 端蓝图 capabilities 加 `dragPlaceCapability`（id `t2-drag-place`）。
+- 接线：席位/上场槽实体挂 `Draggable{snap:'hex', onlyFlag:'in_prep', capTagMask:我方位, capResource:'level'}`（+已有 Transform/Shape 作命中体）。拖上板=自动写 HexPos+吸附 Transform；拖下板=移除 HexPos 回席；超 level 整次拒绝。
+- 注意：① in_prep Flag 由 flow onEnter 维护（备战 true/其余 false）；② 限额只数「Tag&mask 且带 HexPos」——席位 marker **别**在席上时挂 HexPos；③ 「部署链随新位置展开」先试纯数据（部署模板不带 HexPos / 被拖槽位直接充当上场单位），表达不了再提 F-049。
+
+> ✅ **引擎侧 REQ-F-026~048 全系列均已落地、全绿（F-038 空缺、F-039 重组覆盖）——五单批清零，PE-F 无引擎欠账**。PE-F 上述 F-1~F-18 皆可接（你交接报告里卡主程的两件——**F-029 血条→接 F-5，F-030 定身→接 F-6——已全部解锁，可继续**），纯数据 / 零游戏代码。不要在游戏层 workaround 引擎行为；若发现新引擎缺口，写 requests.md 提主程。
 
 ---
 

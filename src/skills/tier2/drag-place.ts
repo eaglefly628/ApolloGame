@@ -1,0 +1,157 @@
+import { defineCapability } from '@engine/core/define-capability.js';
+import { SystemPhase } from '@engine/core/types.js';
+import type { IWorld } from '@engine/core/types.js';
+import type { Draggable, InputQueue, Transform, Shape, HexBoard, HexPos, Tag, Flag, Resource } from '@engine/protocol/components.js';
+import { hexCellToPoint, hexPointToCell } from './grid-move.js';
+import { findByComponentId } from '@engine/core/query.js';
+
+// ═══════════════════════════════════════════════════════════════
+//  drag-place —— 拖拽摆放（REQ-F-045；备战上场/调位/回席的输入桥，战棋/卡牌摆子通用）。
+//
+//  消费 InputQueue 的 drag 动作（壳层 pointerup 合成：{key:'drag', x/y:起点世界坐标,
+//  values:[终点x,终点y]}，坐标已在采集期逆投影——与 pointer 同纪律，lockstep 安全）：
+//    ① 命中：起点对全部 Draggable 实体做 Shape 命中（box AABB / circle；实体 id 升序首中，确定）；
+//    ② 门：Draggable.onlyFlag 设了且全局 Flag 非真 → 忽略（备战期专用；读上一拍相位，人手速不可感知）；
+//    ③ 落点：snap:'hex' 且终点落板内 → 吸附棋盘格，写 HexPos{q,r} + Transform=格投影（上场/调位）；
+//       落板外（或无 snap）→ 写原始 Transform，并移除 HexPos（回席=离板失格）；
+//    ④ 限额：从「无 HexPos」进板且 capTagMask/capResource 设了 → 数「Tag&mask 且带 HexPos」的在板
+//       单位，≥cap 资源值 → 整次拒绝（场上数≤level 在执行点强制，v2 操作表原话）。
+//
+//  每拍至多处理一条 drag（人手速操作；同拍多条=退化输入，取 InputQueue 首条，确定）。
+//  定序（输入先行纪律，同 card-pile）：本系统写 Transform 会汇入 overlap→trigger→hitbox→
+//  resource-apply 结算链，而它又读 Flag/Resource（门/限额）——runsBefore 六件套删反向边，
+//  读上一拍相位/限额（备战级操作，一拍不可感知）。写 HexPos 与 grid-move 互为 RMW → 同钉。
+//  确定性：命中按实体 id 升序、反拾取纯算术、限额计数集合语义——全部确定。
+// ═══════════════════════════════════════════════════════════════
+
+function hitDraggable(world: IWorld, x: number, y: number): string | null {
+  const ids: string[] = [];
+  for (const [eid] of world.query('Draggable')) ids.push(eid);
+  ids.sort();
+  for (const eid of ids) {
+    const t = world.getComponent<Transform>(eid, 'Transform');
+    const sh = world.getComponent<Shape>(eid, 'Shape');
+    if (!t || !sh) continue;
+    if (sh.kind === 'circle') {
+      const rr = sh.radius ?? 8;
+      const dx = x - t.x, dy = y - t.y;
+      if (dx * dx + dy * dy <= rr * rr) return eid;
+    } else {
+      const w = (sh.width ?? 16) / 2, h = (sh.height ?? 16) / 2;
+      if (Math.abs(x - t.x) <= w && Math.abs(y - t.y) <= h) return eid;
+    }
+  }
+  return null;
+}
+
+export const dragPlaceCapability = defineCapability({
+  id: 't2-drag-place',
+  version: '1.0.0',
+
+  describe: {
+    name: 'drag-place',
+    summary: '拖拽摆放：消费壳层合成的 drag 动作，命中 Draggable 实体 → 落板内吸附六角格写 HexPos+Transform（上场/调位），落板外回席（移除 HexPos）；上板限额在执行点强制。',
+    semantic: ['tier2', 'input', 'drag', 'grid'],
+    whenToUse:
+      '备战摆子/卡牌拖放/塔防放塔。可拖实体挂 Draggable{snap:"hex", onlyFlag:"in_prep", capTagMask, capResource} + Transform + Shape（命中体）。壳层 PointerInputSource 自动合成 drag 动作。',
+    examples: [
+      "摆子：席位实体 Draggable{snap:'hex', onlyFlag:'in_prep', capTagMask:ALLY位, capResource:'level'} → 拖上板吸附格、超 level 拒绝、拖下板回席",
+    ],
+  },
+
+  components: {
+    provides: {
+      Draggable: {
+        category: 'config',
+        describe: '可拖实体标记+落点规则：snap 吸附棋盘、onlyFlag 相位门、capTagMask/capResource 上板限额。',
+        fields: {
+          snap: { type: 'string', describe: "'hex'=落点吸附 HexBoard 格（写 HexPos+投影 Transform）；缺省自由落点" },
+          onlyFlag: { type: 'string', describe: '全局 Flag id：为真才可拖（如 in_prep 备战门）' },
+          capTagMask: { type: 'number', describe: '上板限额计数掩码（数 Tag&mask 且带 HexPos 的在板单位）' },
+          capResource: { type: 'string', describe: '上板限额资源 id（如 level）；从板外进板且已满 → 整次拒绝' },
+        },
+      },
+    },
+    reads: ['Draggable', 'InputQueue', 'Transform', 'Shape', 'HexBoard', 'HexPos', 'Tag', 'Flag', 'Resource'],
+    writes: ['Transform', 'HexPos'],
+    consumes: [],
+  },
+
+  config: {},
+
+  systems: [
+    {
+      id: 'drag-place',
+      phase: SystemPhase.Update,
+      // 输入先行（同 card-pile 纪律）：写 Transform 汇入 overlap→…→resource-apply 链、又读 Flag/Resource
+      // → runsBefore 删反向边（grid-move 同写 HexPos/Transform 的 RMW 对、flow/zone 的 Flag、
+      // group-count/self-rule/resource-apply 的 Resource）。读上一拍相位/限额，备战级操作不可感知。
+      runsBefore: ['grid-move', 'flow', 'zone-occupancy', 'group-count', 'self-rule', 'resource-apply'],
+      reads: ['Draggable', 'InputQueue', 'Transform', 'Shape', 'HexBoard', 'HexPos', 'Tag', 'Flag', 'Resource'],
+      writes: ['Transform', 'HexPos'],
+      consumes: [],
+      execute(world: IWorld) {
+        // 取本拍首条 drag（每拍至多一条，确定）。
+        let drag: { fx: number; fy: number; tx: number; ty: number } | null = null;
+        for (const [qid] of world.query('InputQueue')) {
+          const q = world.getComponent<InputQueue>(qid, 'InputQueue');
+          if (!q) continue;
+          for (const a of q.actions) {
+            if (a.key === 'drag' && a.x !== undefined && a.y !== undefined && a.values && a.values.length >= 2) {
+              drag = { fx: a.x, fy: a.y, tx: a.values[0], ty: a.values[1] };
+              break;
+            }
+          }
+          if (drag) break;
+        }
+        if (!drag) return;
+
+        const eid = hitDraggable(world, drag.fx, drag.fy);
+        if (!eid) return;
+        const d = world.getComponent<Draggable>(eid, 'Draggable')!;
+
+        // 相位门（读上一拍全局 Flag）。
+        if (d.onlyFlag) {
+          const fe = findByComponentId(world, 'Flag', 'id', d.onlyFlag);
+          const f = fe ? world.getComponent<Flag>(fe, 'Flag') : undefined;
+          if (!f?.active) return;
+        }
+
+        // 棋盘单例（snap 用；无板=自由落点）。
+        let board: HexBoard | undefined;
+        for (const [bid] of world.query('HexBoard')) { board = world.getComponent<HexBoard>(bid, 'HexBoard'); break; }
+
+        const t = world.getComponent<Transform>(eid, 'Transform');
+        if (!t) return;
+        const cell = d.snap === 'hex' && board ? hexPointToCell(board, drag.tx, drag.ty) : null;
+
+        if (cell) {
+          // 进板/调位：限额只在「从板外进板」时强制（板内调位不重复计数自己）。
+          const hadPos = world.hasComponent(eid, 'HexPos');
+          if (!hadPos && d.capTagMask && d.capResource) {
+            const capRe = findByComponentId(world, 'Resource', 'id', d.capResource);
+            const cap = capRe ? world.getComponent<Resource>(capRe, 'Resource')!.current : 0;
+            let onBoard = 0;
+            for (const [uid] of world.query('HexPos')) {
+              const tg = world.getComponent<Tag>(uid, 'Tag');
+              if (tg && (tg.flags & d.capTagMask) !== 0) onBoard++;
+            }
+            if (onBoard >= cap) return; // 场上已满 → 整次拒绝（牌不动）
+          }
+          if (hadPos) {
+            const hp = world.getComponent<HexPos>(eid, 'HexPos')!;
+            hp.q = cell.q; hp.r = cell.r;
+          } else {
+            world.addComponent(eid, { type: 'HexPos', q: cell.q, r: cell.r } as HexPos);
+          }
+          const p = hexCellToPoint(board!, cell.q, cell.r);
+          t.x = p.x; t.y = p.y;
+        } else {
+          // 落板外（或无 snap/无板）：自由落点 + 离板失格（回席）。
+          t.x = drag.tx; t.y = drag.ty;
+          if (world.hasComponent(eid, 'HexPos')) world.removeComponent(eid, 'HexPos');
+        }
+      },
+    },
+  ],
+});

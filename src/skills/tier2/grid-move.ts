@@ -23,11 +23,27 @@ const TARGET = 'target';
 // HexPos → Transform 像素(flat-ish hex；1/2、3/4 为精确二进制分数，跨端一致)。
 // 两种布局都用**真投影** x=q·ts+r·ts/2（六边形晶格的忠实嵌入，视觉相邻=逻辑相邻）；'odd-r' 的
 // "规整矩形"观感来自棋盘形状（每行 q 范围平移），不靠改投影（REQ-F-037，外审 Q5；旧 'offset' 已删）。
-function project(board: HexBoard, q: number, r: number): { x: number; y: number } {
+export function hexCellToPoint(board: Pick<HexBoard, 'tileSize' | 'originX' | 'originY'>, q: number, r: number): { x: number; y: number } {
   return {
     x: board.originX + q * board.tileSize + r * (board.tileSize / 2),
     y: board.originY + r * (board.tileSize * 0.75),
   };
+}
+const project = hexCellToPoint;
+
+// 世界点 → 棋盘格（REQ-F-045 拖拽反拾取；矩形近似——TFT 级大格容差足够，cube-round 待真需要再上）。
+// 板外/越界 → null。odd-r：先按视觉列反推 col，再换 axial q=col-(r>>1)；axial 板：col 即 q。
+export function hexPointToCell(
+  board: Pick<HexBoard, 'cols' | 'rows' | 'tileSize' | 'originX' | 'originY' | 'layout'>,
+  x: number, y: number,
+): { q: number; r: number } | null {
+  const r = Math.round((y - board.originY) / (board.tileSize * 0.75));
+  if (r < 0 || r >= board.rows) return null;
+  const colF = (x - board.originX) / board.tileSize - (board.layout === 'odd-r' ? (r & 1) * 0.5 : 0);
+  const col = Math.round(board.layout === 'odd-r' ? colF : colF - r * 0.5);
+  if (col < 0 || col >= board.cols) return null;
+  const q = board.layout === 'odd-r' ? col - (r >> 1) : col;
+  return { q, r };
 }
 // Transform 同步（REQ-F-034 平滑滑行）：HexPos 永远是 SIM 真相（占位/寻路/hash），Transform 是它的
 // 视觉投影。glideSpeed 未设 → 硬钉到格点（缺省=原行为，零迁移）；设了 → 以恒速 px/tick 逼近格点，

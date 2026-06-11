@@ -42,6 +42,20 @@ export function canvasPointerToScreen(
   };
 }
 
+// 拖拽合成（REQ-F-045，纯函数可测）：down→up 距离超过阈值 → 合成一条 drag 动作
+// {key:'drag', x/y:起点世界坐标, values:[终点x,终点y]}；阈值内=点击（既有 clickable 路径不变）。
+// 世界坐标已在采集期逆投影（与 pointer 同纪律）→ 命令流确定、lockstep 安全。
+export function synthesizeDrag(
+  source: string,
+  down: { x: number; y: number },
+  up: { x: number; y: number },
+  threshold = 6,
+): RawInputData | null {
+  const dx = up.x - down.x, dy = up.y - down.y;
+  if (dx * dx + dy * dy < threshold * threshold) return null;
+  return { source, key: 'drag', x: down.x, y: down.y, values: [up.x, up.y], phase: 'drag' };
+}
+
 // 浏览器指针输入源 —— 监听 canvas 的 pointer 事件，映射为 canvas 像素坐标后按 tick 确定性注入。
 // 仅浏览器；headless/测试用 QueuedInputSource。
 //
@@ -49,19 +63,28 @@ export function canvasPointerToScreen(
 // 传 worldFromScreen（用本地相机做 screenToWorld）→ 世界坐标进 Command/网络 → 多端一致；sim 内绝不再读相机/视口
 // （否则 1080p vs 720p 两端同一指令算出不同出生点 → desync）。不传则注入 canvas 像素（无相机时 = 世界，identity）。
 export class PointerInputSource extends QueuedInputSource {
+  private downAt: { x: number; y: number } | null = null; // REQ-F-045：拖拽起点（down 记录、up 合成）
+
   private readonly onPointer = (e: PointerEvent) => {
     const phase = e.type === 'pointerdown' ? 'down' : e.type === 'pointerup' ? 'up' : 'move';
     const rect = this.canvas.getBoundingClientRect();
     const p = canvasPointerToScreen(e.clientX, e.clientY, rect, this.canvas.width, this.canvas.height);
     const w = this.opts.worldFromScreen ? this.opts.worldFromScreen(p.x, p.y) : p; // 采集期逆投影 → 世界坐标
     this.enqueue({ source: this.pid, x: w.x, y: w.y, phase });
+    // REQ-F-045：down→up 合成 drag 动作（超过阈值才算拖，阈值内仍是点击）。
+    if (phase === 'down') this.downAt = { x: w.x, y: w.y };
+    else if (phase === 'up' && this.downAt) {
+      const d = synthesizeDrag(this.pid, this.downAt, { x: w.x, y: w.y }, this.opts.dragThreshold);
+      if (d) this.enqueue(d);
+      this.downAt = null;
+    }
   };
 
   constructor(
     private readonly pid: string,
     private readonly canvas: HTMLCanvasElement,
     // worldFromScreen：本地相机逆投影 (canvas 像素 → 世界)。带相机的游戏必须传，保证联机确定性。
-    private readonly opts: { move?: boolean; worldFromScreen?: (sx: number, sy: number) => { x: number; y: number } } = {},
+    private readonly opts: { move?: boolean; dragThreshold?: number; worldFromScreen?: (sx: number, sy: number) => { x: number; y: number } } = {},
   ) {
     super(pid);
     canvas.addEventListener('pointerdown', this.onPointer as EventListener);

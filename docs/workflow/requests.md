@@ -1314,12 +1314,18 @@
 
 ---
 
-### REQ-F-045 · [2026-06-10] · PE-F（v2 §3.3 摆子操作）· 框架级 · status: **greenlit（方向认可，输入域方案设计中——本批唯一动 net 壳层件，单独一轮落地）** · 优先级: 高（备战核心交互：上场/调位/回席） · 类型: 真缺口（拖拽输入无采集形态；落点坐标无数据载荷；运行时实体无"改阵容数据"动词）
+### REQ-F-045 · [2026-06-10] · PE-F（v2 §3.3 摆子操作）· 框架级 · status: **done（synthesizeDrag 壳层合成 + t2-drag-place；接入派 inbox F-18）** · 优先级: 高（备战核心交互：上场/调位/回席） · 类型: 真缺口（拖拽输入无采集形态；落点坐标无数据载荷；运行时实体无"改阵容数据"动词）
 
 > **证伪重组**：① clickable 只有"命中→具名信号"，无 drag 语义、信号不携带坐标 → 拖谁/放哪都表达不了；② 给 144 棋盘格各挂 Clickable 做"两段点击"重组 = 信号风暴 + 格→HexPos 映射仍无载荷；③ 上场=把席位 marker 变成带 Caster/HexPos 的上场槽 = 运行时改实体组件，无数据动词。
 > **建议**：输入域扩展（v2 操作表原话"约束执行点交主程"）——PointerInputSource 产 `drag{from,to}` 命令 + 窄系统 `drag-place`（Draggable 标记 + snap 六角格 + 写 HexPos/槽数据；场上数≤level 的约束同处执行）。
 >
 > **Lead 裁决（2026-06-10）**：**接受方向，单列一轮落地**（本批五单里唯一要动 net 壳层=lockstep 命令流的，与三个一字段件分开，防把输入域改动夹带进结算批）。设计要点预告：drag 必须走 InputQueue 命令流（坐标在入网前由本地逆投影，与 pointer 既有纪律一致）；drag-place 落点 snap 用 hex.ts 既有 offsetToAxial；"改阵容数据"=写槽位实体组件字段（运行时数据写，确定性经命令流保证）。落地后连同 F-046/048① 一起派接入。
+> **落地（同日第三轮）**：
+> - **壳层**：`PointerInputSource` down→up 合成 drag 动作（`synthesizeDrag` 纯函数可测；阈值内仍是点击，clickable 路径零扰动）；坐标沿用采集期逆投影纪律——`RawInputData{x,y,values[]}` 现成可载，**契约零改动**，drag 经命令流 lockstep 安全。
+> - **sim**：`t2-drag-place` + `Draggable{snap:'hex', onlyFlag?, capTagMask?, capResource?}`——起点命中（id 升序首中，确定）→ 终点 `hexPointToCell` 反拾取（矩形近似，TFT 格级容差；投影/反拾取自 grid-move 导出为单一真相）→ 板内 snap 写 HexPos+Transform（上场/调位）、板外移除 HexPos（回席）；**场上数≤level 在执行点强制**（从板外进板才计数，板内调位不卡）；onlyFlag 备战门。每拍至多一条 drag（人手速；同拍多条=退化输入取首条）。
+> - **定序**：写 Transform 汇入结算链 + 读 Flag/Resource → 按 card-pile「输入先行」纪律 runsBefore 六件套（grid-move/flow/zone/group/self-rule/resource-apply），读上一拍相位/限额（备战级操作不可感知）。守护测七系统同场不抛。
+> - 7 测（合成阈值/上场/调位+回席/相位门/限额拒绝+板内不卡/确定性/定序守护）。tsc + vitest 1084 + build 全绿。
+> - **范围注（诚实交底）**：本条解决「拖到哪+写谁的 HexPos/Transform」；「部署链随槽位新位置展开」一环——若 Caster.overrides 的静态 HexPos 跟不上动态槽位——先试纯数据重组（如部署模板不带 HexPos、上板单位直接由被拖槽位充当），表达不了再提（预计 F-049：spawn 继承施法者组件）。
 
 ---
 

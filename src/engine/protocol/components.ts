@@ -169,6 +169,20 @@ export interface PrefabLibrary extends Component {
   seq: number; // 实例计数器 → 确定性唯一 id（进 snapshot 可重放）
 }
 
+// ── Draggable（REQ-F-045 摆子拖拽）── 可拖实体标记 + 落点规则。drag-place 系统消费 InputQueue 的
+// drag 动作（壳层在 pointerup 时合成 {key:'drag', x:起点世界坐标, values:[终点x,终点y]}）：
+// 命中本实体 → 终点落板内（HexBoard）则 snap 六角格写 HexPos+Transform（上场/调位）；落板外则写
+// 原始 Transform 并移除 HexPos（回席）。capTagMask/capResource：从板外进板时数「Tag&mask 且带
+// HexPos」的在板单位，≥cap 资源值则整次拒绝（场上数≤level 在执行点强制）。onlyFlag：全局 Flag
+// 为真才响应（备战期专用门，读上一拍相位——拖拽是人手速操作，一拍不可感知）。
+export interface Draggable extends Component {
+  readonly type: 'Draggable';
+  snap?: 'hex'; // 'hex'=落点吸附棋盘格（写 HexPos+投影 Transform）；缺省=自由落点（只写 Transform）
+  onlyFlag?: string; // 全局 Flag id：为真才可拖（如 'in_prep'）
+  capTagMask?: number; // 上板限额的计数掩码（与 capResource 成对）
+  capResource?: string; // 上板限额资源 id（如 'level'）
+}
+
 // ── MergeRule（REQ-F-046 升星合成）── 「N 换 1」声明式合成规则（卡牌/合成品类通用）。
 // merge-rule 系统每拍：数 PrefabOrigin.templateId===template 的**存活实例数**（按 distinct seq）；
 // ≥need → 取 seq 最小的 need 个（最老先合，确定性），其全部实体发 DestroyRequest（挂件随 cascade），
