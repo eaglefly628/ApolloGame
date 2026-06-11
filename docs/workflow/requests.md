@@ -1360,6 +1360,30 @@
 
 ---
 
+### REQ-F-049 · [2026-06-11] · PE-F（F-18 注③预告兑现：「部署链随新位置展开」）· 框架级 · status: open · 优先级: 高（拖拽上场=备战核心闭环的最后一环；F-17 升星已落、席位/槽位统一也等它） · 类型: 真缺口（持位者运行时 HexPos 进不了展开实例；Caster 无"在板才展开"门）
+
+> **目标行为（v2 §3.3 摆子）**：席位 marker 拖上板某格 → 该将从那格上场参战；拖回席 → 不再上场。即「**被拖槽位直接充当上场单位的部署源**」。
+> **证伪重组（F-18 注③要求的纯数据先试，三路全断）**：
+> ① **部署模板不带 HexPos**（让棋子在槽位新 Transform 处成型）：grid-move `query('HexPos','GridMover')` 双键——无 HexPos 的单位整段跳过，不走位、不进占位集，敌方寻路 `posOf.get(targetId)` 取不到格也集体罚站（攻击虽无距离门仍能打=全场站桩互射）。走位是用户点名修过的体验（REQ-F-034 平滑滑行），不可牺牲。
+> ② **槽位 Caster.overrides 写 HexPos**：overrides 是装配期静态数据，drag-place 运行时写的是**槽位自身**的 HexPos/Transform 组件——展开的实例仍拿烘死的旧格，落地即滑回原位（实测口径：spawn 位置跟手、HexPos 不跟手）。
+> ③ **席位 marker 自带 Caster 常驻部署**：Caster 收信号无条件展开——在席（板外）的 marker 也会在席位坐标出兵参战（席位 y=178 在 ARENA 矩形内，会被索敌/被打/计存活），「备战席不参战」破防。
+> **建议（最窄两件，同条落地）**：
+> - `Caster.requireHexPos?: boolean`——持位者**自身无 HexPos 组件则收信号不展开**（在板=部署源，离板=静默）。拖上板/拖回席（drag-place 已写/删 HexPos）即天然开关，零新输入。
+> - 展开实例 **HexPos 继承**：requireHexPos 成立时，SpawnRequest 自动携持位者当拍 HexPos 写进实例 main（或 overrides 哨兵 `'@self-hex'`，与 '@local:'/'@signal-source' 同族哨兵语义）——「spawn 继承施法者组件」即 F-045 落地注预告的 F-049 本体。
+> **落地后 PE-F 收口路线（预告，零额外引擎件）**：席位 marker 模板并入 Caster{requireHexPos}+星级数值 → 槽位/席位统一为一族（F-17 受限版的 12 槽位×星级带可整段删除，merge 直接在上场单位族计数=真·金铲铲语义）；Draggable 补 snap:'hex'+capTagMask/capResource（人口限额引擎已有，F-045 ④）。
+
+---
+
+### REQ-F-050 · [2026-06-11] · PE-F（F-18 接入实测）· 框架级 · status: open · 优先级: 高（一行定序补丁；不落 drag-place 在 game-f 无法注册） · 类型: 引擎缺陷（定序声明漏一条 RMW 边，首个同场世界才暴露）
+
+> **症状**：game-f 蓝图 capabilities 加 `dragPlaceCapability` → `Circular dependency detected`，22 系统 SCC（flow…drag-place…camera-follow 全段）。F-045 守护测七系统同场不抛，但那张图没有 motion-apply。
+> **定位（探针二分，全过程可复现）**：① 全图去 drag-place=绿、去 merge-rule 仍炸 → 元凶=drag-place；② 克隆 capability 补 runsBefore 逐项试：`+['effect-apply']` 炸、`+['effect-apply','card-pile']` 炸、**`+['motion-apply']` 60 拍绿**。
+> **根因**：drag-place（读+写 Transform）与 motion-apply（读 Transform+Velocity、写 Transform）互为 Transform RMW 对 → 组件推断双向边成环。与既有六件套里 grid-move 那条同类同病——六件套漏列 motion-apply 而已（game-f 是首个 drag-place 与 motion-apply【主角自由移动】同场的世界）。
+> **建议（一行）**：`src/skills/tier2/drag-place.ts` 系统 `runsBefore` 数组补 `'motion-apply'`。语义自洽：drag 是输入先行（与既有纪律同句），先落拖拽终点、motion-apply 同拍在其上积分速度；marker 无 Velocity、主角无 Draggable，两系统实际操作集不相交，纯解环零行为差。
+> **PE-F 侧已就位（落地即活）**：蓝图注释行解注 + marker Draggable{onlyFlag:'in_prep'} 数据已挂 + in_prep 门旗已由 flow 维护 + 数据侧测试已锁（交互断言脚本在 F-18 回执存档）。
+
+---
+
 ## 需求模板（复制这段填写）
 
 ```

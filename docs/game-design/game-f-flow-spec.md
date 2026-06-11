@@ -26,17 +26,19 @@
                                     └──────────────────┬───────────────────────────┘             │
  ╔════════ 准备阶段 prep ✅（玩家档 30s 倒计时兜底+ready键✅；测试走快速档参数）════════╗             │
  ║ 回合数+1✅ 棋子满状态重展开✅(deploy,关卡表选敌阵✅)                                ║             │
- ║ 经济：基础收入✅ 利息✅ 连胜金✅ 连败金⬜MVP-1                                      ║             │
+ ║ 经济：基础收入✅ 利息✅ 连胜金✅ 连败金✅(lstreak 与连胜同形带)                      ║             │
  ║ 商店：自动刷新✅ 2金手动刷✅ 锁店(门判定拍自动解锁)✅ 买棋子→备战席9格✅(e4c91db/248ca4d)  ║
- ║   商店5槽可视化+点击购买✅(F-14 两段脉冲重铺) 金币/回合等六数字HUD✅(F-15 text-binding)        ║             │
- ║ 经验：买经验4金→等级=人口上限 ⬜MVP-1尾                                            ║             │
+ ║   商店5槽可视化+点击购买✅(F-14 两段脉冲重铺) 金币/回合/空席等七数字HUD✅(F-15 text-binding)     ║             │
+ ║ 经验：买经验4金→等级=人口上限 ✅($4=+4XP 配方 + xp 阈值带升级5/6/7/8)               ║             │
  ║ 装备：分配/拆卸器回收 ⬜4（静态预配装备✅）                                         ║             │
- ║ 摆阵：上场/回备战席/调位(场上≤人口)⬜ 卖棋子按星级返金⬜                             ║             │
- ║ 合成：3同名自动连锁升星,封顶三星(含备战席) ⬜2                                      ║             │
+ ║ 摆阵：上场/调位(场上≤人口)◐F-17受限版=星级自动入阵,拖拽上板待REQ-F-049部署门+F-050定序 ║             │
+ ║   备战席整理拖拽=数据侧就位(Draggable+in_prep门) 卖棋子按星级返金✅(2/8/26,§4.6表)    ║             │
+ ║ 合成：3同名自动连锁升星,封顶三星(备战席族)✅(F-17:bench→bench2→bench3,★角标;          ║             │
+ ║   星级数值入战=部署窗按star_<将>分流12槽位,血×1.8^n 伤×1.5^n;槽席统一待F-049)         ║             │
  ╚══════════════════════════════════════┬═══════════════════════════════════════════╝             │
-                          入战检查拍：超员且席满→自动出售 ⬜MVP-1尾                                  │
+                          入战检查拍：超员→自动出售 ✅(enforce_cap keepResource:'level';现4槽恒≤level=休眠保险丝,F-049后真生效) │
                                          ▼                                                        │
- ╔══════════ 自动战斗 combat ✅（羁绊开战拍锁定✅蜀魂×1.2 最小版；战斗期可买/刷/卖✅,不可摆⬜18）═══╗             │
+ ╔══════════ 自动战斗 combat ✅（羁绊开战拍锁定✅蜀魂×1.2 最小版；战斗期可买/刷/卖✅,不可摆✅in_prep门）═╗             │
  ║   回合种类（按关卡表）：                                                            ║            │
  ║   ├─ 普通回合 ──▶ 对战剧本敌阵 ✅（阶段2董卓/3吕布/4官渡/5赤壁Boss 全五阶段✅）        ║            │
  ║   ├─ 野怪回合 ✅（阶段1全部+各阶段r5；黄巾波次5档强度；死亡掉法球💰,未拾随结算清）     ║            │
@@ -166,6 +168,16 @@
 | `shop_marks_armed` / `shop_marks2_armed` / `shop_marks` / `shop_marks2` | Flag/信号 | 面板两段脉冲（T+1 整槽清 / T+2 按码重铺，错拍防同拍误杀） | 刷新/买入 → destroy-tagged/重铺带 |
 | `round_ui` | State | 相位镜像（prep/combat/resolution/gameover），横幅/未来 UI 读 | round 流程 set-state → state 叶 |
 | `ph_*` 信号 / `buyxp_btn` / `lose_streak` / `deploy_pve_<N>` / `ot_reset` / `combat_clock` | 信号/Resource/Timer | 横幅切换 / 买经验 / 连败 / 野怪分流 / 加时钟 | 各对应链 |
+| `in_prep` | Flag | 备战相位门（F-18 拖拽 Draggable.onlyFlag；prep 进 true、开战 false） | round 流程 → drag-place |
+| `deploy_gate_done` | 信号 | 部署窗门脉冲（窗开判定拍同拍撤臂，防备战中途升星复燃二次部署） | EventWhen(deploy_armed) → Effect 撤臂 |
+| `star_<将>` | Resource 1..3 | 该将当前星级（手里最高星 marker 派生；部署窗据此选档） | 升降带 → when_deploy_<将>_s<星> |
+| `cb2_<将>` / `cb3_<将>` | Resource | 该将二/三星 marker 在席数（GroupCount 含齐 STAR2\|每将位） | group-count → 星级升降带 |
+| `star2_<将>` / `star3_<将>` / `star1_<将>` | 信号 | 星级升/降档带（edge；含卖掉唯一高星回落） | EventWhen → Effect(set star_<将>) |
+| `deploy_<将>_s<1..3>` | 信号 | 我方按星分流的部署信号（每将恰发一档） | EventWhen(deploy_armed ∧ star eq s) → slot_<将>_s<s> Caster |
+| `cap_armed` / `enforce_cap` | Flag/信号 | 超员检查窗（prep→combat 转移臂）/ 入战拍保额清场 | round 流程 → Effect{destroy-tagged TEAM_A, keepResource:'level'} |
+| `bench_cap` / `bench_occupied` / `bench_sync` | Resource/Resource/信号 | 席容量（符文「广纳」改这）/ 在席 marker 数（GroupCount BENCH_OCC）/ 每拍重算脉冲（level 模式） | →`bench_space`=cap−occupied（派生，F-17 起） |
+| `sell2_<将>` / `sell3_<将>` | 信号 | 二/三星席位卖出（'@signal-source' 点谁卖谁；卖价 8/26，袋不归还=已熔毁） | clickable → destroy+金 Effects |
+| Tag 位 `STAR2`(1<<19) / `STAR3`(1<<20) / 每将位(1<<21..24) / `BENCH_OCC`(1<<25) | Tag.flags | 升星家族/席占用 marker 位（与 TEAM/职业/势力/面板位不相交，不参战不被清场） | marker 模板 → group-count/merge 域 |
 
 ### 3.2 L1 · Run 流程（局）：`run_flow` 实体一台机
 

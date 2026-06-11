@@ -168,7 +168,7 @@ describe('Game F — 自走棋（纯数据装配，零自走棋代码；棋子=�
     }
     expect(wiped).toBe(true);
     expect(alive(e, r1name)).toBe(false); // 名牌等挂件随清场级联，无孤儿
-    expect(alive(e, 'slot_a_guanyu')).toBe(true); // 阵容槽位（无 Tag）持久
+    expect(alive(e, 'slot_a_guanyu_s1')).toBe(true); // 阵容槽位（无 TEAM 位，F-17 后每将×3星级一组）持久
     expect(alive(e, 'slot_s2_2_b_simayi')).toBe(true); // 阶段 2 敌槽同样持久（槽位 id 带序号防同名撞键）
     expect(alive(e, 'library')).toBe(true); // 模板库持久
     // resolution 余下 ≤60 拍 + done 握手数拍 → 回 prep 重展开：+75 拍落在下一回合备战期内。
@@ -208,6 +208,8 @@ describe('Game F — 自走棋（纯数据装配，零自走棋代码；棋子=�
   it('F-9 同模板多实例普攻不串台：错拍注入第二个关羽 → 一个攻击周期窗（45 拍）内 ≥2 个独立打击区', () => {
     const e = new Engine({ tickRate: 60 });
     e.load(buildGameFBlueprint(FAST));
+    // 先抬人口到 8（F-17 超员自动卖入战拍保最早 level 个——本测要养 5 个我方单位，不抬会被按规则卖掉第 5 个）
+    e.world.addComponent('r_level', { type: 'ResourceModify', resourceId: 'level', amount: 4, scope: 'local' } as unknown as Resource);
     for (let i = 0; i < 20; i++) e.world.tick(); // 槽位关羽已展开（timer 自 tick~2 起跳）
     // 注入第二个同模板关羽（错拍 20：两实例 timer 相位错开 → 出手拍必然不同）；坐标视觉(3,7)经 odd-r 换算
     const a = offsetToAxial(3, 7);
@@ -570,5 +572,78 @@ describe('Game F — 自走棋（纯数据装配，零自走棋代码；棋子=�
     expect(res('stage_idx')).toBe(2); // when_stage_up：进位发生
     for (let i = 0; i < 50; i++) e.world.tick(); // 阶段 2 备战展开
     expect(mains(e).filter((id) => id.startsWith('hero_b_'))).toHaveLength(4); // 关卡表换敌阵：「董卓先锋」4 子全强度
+  });
+
+  it('升星合成（F-17/REQ-F-046）：3 同将席位 marker 自动合二星；席位 3→1 自动回账；下回合按 ×1.8 血/×1.5 弹上场；星级卖价', () => {
+    const e = new Engine({ tickRate: 60 });
+    e.load(buildGameFBlueprint(FAST));
+    const res = (id: string): number => {
+      for (const x of e.world.getAllEntities()) {
+        const r = e.world.getComponent<Resource>(x, 'Resource');
+        if (r && r.id === id) return r.current;
+      }
+      return -1;
+    };
+    const click = (x: number, y: number): void => {
+      if (!e.world.getAllEntities().includes('input')) e.world.createEntity('input');
+      e.world.addComponent('input', { type: 'InputQueue', actions: [{ source: 'test', x, y, phase: 'down' }] } as unknown as Resource);
+      e.world.tick();
+      e.world.addComponent('input', { type: 'InputQueue', actions: [] } as unknown as Resource);
+    };
+    for (let i = 0; i < 10; i++) e.world.tick(); // 回合1 备战（star_a_guanyu 初值 1，本回合已按 1 星部署）
+    // 直注 3 张关羽席位 marker（绕过商店牌序的购买路径——merge 只认 PrefabOrigin 家族，与来源无关）
+    [-66, -22, 22].forEach((x, i) => {
+      e.world.createEntity(`mreq${i}`);
+      e.world.addComponent(`mreq${i}`, { type: 'SpawnRequest', templateId: 'bench_a_guanyu', x, y: 178 } as unknown as Resource);
+    });
+    for (let i = 0; i < 6; i++) e.world.tick();
+    // 三连合成：最老 3 个原子换 1 个二星 marker（锚在最老位置 x=-66），★★ 角标随体
+    expect(e.world.getAllEntities().some((id) => id.startsWith('bench_a_guanyu#'))).toBe(false); // 3 张熔毁
+    const b2 = e.world.getAllEntities().filter((id) => id.startsWith('bench2_a_guanyu#') && id.endsWith(':seat'));
+    expect(b2).toHaveLength(1);
+    expect(e.world.getComponent<Transform>(b2[0], 'Transform')!.x).toBe(-66);
+    expect(alive(e, b2[0].replace(/:seat$/, ':star'))).toBe(true);
+    expect(res('star_a_guanyu')).toBe(2); // 星级资源跟手（marker 计数 → 升星带）
+    expect(res('bench_space')).toBe(8); // 派生回账：3 席熔成 1 席 → 9−1（手工 ± 无此账）
+    // 下回合部署带按 star=2 选档：血 ×1.8、普攻换 s2 弹（大招同管道）
+    let guard = 0;
+    while (res('round_idx') === 1 && guard++ < 4000) e.world.tick();
+    for (let i = 0; i < 50; i++) e.world.tick(); // 回合2 备战展开
+    const m = mains(e).find((id) => id.startsWith('hero_a_guanyu#'))!;
+    expect(m).toBeTruthy();
+    const hp = e.world.getComponent<Resource>(m, 'Resource')!;
+    expect(hp.max).toBe(Math.round((240 * 18 + 120) * 1.8)); // finalHp(关羽含玉玺) × 1.8 = 7992
+    expect((e.world.getComponent(m, 'SelfRule') as unknown as { do: { template: string }[] }).do[0].template).toBe('strike_a_guanyu_s2');
+    // 星级卖价（在战斗窗卖：income 窗已关，金额断言不吃利息带宽）：点二星席=sell2 → +8 金、星级回落 1
+    let guard2 = 0;
+    while (!flag(e, 'in_combat') && guard2++ < 100) e.world.tick();
+    const g0 = res('gold');
+    click(-66, 178);
+    for (let i = 0; i < 5; i++) e.world.tick();
+    expect(e.world.getAllEntities().includes(b2[0])).toBe(false); // 点谁卖谁
+    expect(res('gold')).toBe(g0 + 8); // 2星卖价 = 3×3−1（§4.6）
+    expect(res('star_a_guanyu')).toBe(1); // 手里没高星了 → 降档带回 1
+    expect(res('bench_space')).toBe(9);
+  });
+
+  it('摆子拖拽预备（F-18 数据侧）：in_prep 相位门随 flow 启闭；席位 marker 已带 Draggable（系统注册等 REQ-F-050 定序补丁）', () => {
+    // drag-place 系统暂缓注册（与 motion-apply 的 Transform RMW 对成 SCC，REQ-F-050 一行 runsBefore 已提主程）。
+    // 本测锁数据侧就绪度：门旗生命周期 + marker 自带 Draggable{onlyFlag:'in_prep'}；落地后补拖动交互断言
+    // （备战拖到自由落点改 Transform / 战斗期 onlyFlag 拒拖 / 无 snap 不写 HexPos——脚本已在 F-18 回执存档）。
+    const e = new Engine({ tickRate: 60 });
+    e.load(buildGameFBlueprint(FAST));
+    for (let i = 0; i < 10; i++) e.world.tick();
+    expect(flag(e, 'in_prep')).toBe(true); // 备战相位门开（flow prep onEnter 维护）
+    e.world.createEntity('mreq');
+    e.world.addComponent('mreq', { type: 'SpawnRequest', templateId: 'bench_a_zhaoyun', x: -66, y: 178 } as unknown as Resource);
+    for (let i = 0; i < 3; i++) e.world.tick();
+    const seat = e.world.getAllEntities().find((id) => id.startsWith('bench_a_zhaoyun#') && id.endsWith(':seat'))!;
+    expect(seat).toBeTruthy();
+    const d = e.world.getComponent(seat, 'Draggable') as unknown as { onlyFlag: string } | undefined;
+    expect(d?.onlyFlag).toBe('in_prep'); // 惰性数据已就位（无系统消费=零开销，解注即活）
+    expect(e.world.getComponent(seat, 'HexPos')).toBeFalsy(); // 席上 marker 不带 HexPos：不进占位集/不挡寻路
+    let guard = 0;
+    while (!flag(e, 'in_combat') && guard++ < 100) e.world.tick();
+    expect(flag(e, 'in_prep')).toBe(false); // 开战即关门
   });
 });

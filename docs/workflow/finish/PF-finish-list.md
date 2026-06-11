@@ -67,7 +67,7 @@
 2. ✅ **已接入（2026-06-10）**：冰冻定身。§5.2 草案落地，真实字段=建议名（`setMask`/`statusDuration`）；八阵图冻 120 tick；game-f 测 +1 冻敌断言。
 3. **重新平衡数值**（HP_SCALE 退回合理、低攻/适中血、同 ~18s）。
 4. **羁绊**：group-count 数蜀魏吴/武将谋士 → 越阈值 buff（buff 施加先试"全局 buff 资源"重组，真不行才提 group-effect）。
-5. **商店+经济+升星**（card-pile+craft-recipe）把单局扩成 roguelike；星级=独立星星实体叠加（用户提的做法）。
+5. ✅ **商店+经济+升星（2026-06-10/11 分批落地）**：商店五件套+经济三件套+买经验/等级（条目 12/14/15）；升星全链见条目 20（★ 角标=独立星星子实体叠加，用户提的做法成立）。
 6. ✅ **已接入（2026-06-10）**：多回合循环/回合重置（inbox F-7）。REQ-F-033（'@local:'，5ca52ec）落地后按 §5.3 草案原样接：复合棋子模板 + 槽位 + deploy/wipe + round_flow 循环；含两回合循环验收测。
 7. ✅ **MVP-1 对齐第一批（2026-06-10，照 flow-spec §3.2/§4.1/§4.2/§4.5）**：L1 run_flow（boot/advance/victory/defeat + round_done 握手 + >5 进位 banded）、经济三件套（收入爬坡/利息/连胜金 = income_armed 窗 + 14 组 band）、阶段伤害（基础 0/2 + 存活近似 2，REQ-022 接真值待 Phase 3）、关卡表前 2 阶段（STAGES 数据：黄巾×0.45 / 董卓全强度，deploy_stage_N 按 stage_idx 分流）。game-f 测 **10/10**。
 8. ✅ **用户实测三 bug 全闭环（2026-06-10）**：蓝条频闪（MANA_FILL 50→20，节奏数据非 bug）/ 三色阵营（名牌改队伍色，art-data 已同步修订）/ 瞬移（REQ-F-034 当日提报→主程落 glideSpeed→接入 0.8，inbox F-8 done）。
@@ -83,6 +83,14 @@
 18. ✅ **批 D 符文三选一（2026-06-10 深夜）**：回合1备战期顶部三卡（屯粮+10金/砺兵+8XP/广纳席+2），点选生效+destroy-tagged 整组收走=天然一次性；经济型避开 buff 施加依赖（战斗型符文随羁绊 buff 机制后补）。
 19.5 ✅ **F-16 三件落地（044/047/048②，2026-06-10 深夜）**：主角赏金两清（order 钉序坑记档）/蜀魂羁绊最小版（group-count→edge 锁存→scaleByResource 乘区，战斗型符文从此解锁）/卖出袋归还（returnOnSignal）。余 F-17 升星+自动卖、F-18 拖拽摆子（模板星级化结构改造，下一批）。
 19. ✅ **F 批证伪入池（2026-06-10 深夜）**：REQ-F-045 摆子拖拽（输入域 drag+落点载荷+改阵容动词三缺）/ 046 升星合成（同名计数+N换1 原子）/ 047 羁绊 buff 施加（hitbox 活系数乘区=REQ-023 簇最窄落点）/ 048 自动卖+袋归还。剩余 ⬜ 全部有去向：044 赏金 / 045-048 / 选秀九选一（可复用商店面板形，排 045 后）。引擎件全等主程，监听值守。
+20. ✅ **F-17 升星全链 + F-18 数据侧（2026-06-11，「能做的全做完」批）**：
+   - **升星（受限版但数值真入战）**：席位 marker 三档模板族（bench/bench2/bench3_<将>，★ 角标子体）+ 每将两条 MergeRule 三连连锁；星级带 star_<将>（GroupCount 含齐 STAR2|每将位 → 三条升降 edge 带，覆盖卖高星回落）；部署窗按星分流 12 槽位（slot_<将>_s1/2/3，overrides 血 ×1.8^n + SelfRule.do 换 strike/ult_s<星>=伤 ×1.5^n）。**坑（新）**：部署窗必须门脉冲化（deploy_gate_done 同拍撤臂）——窗开全带齐发后立刻关窗，否则备战中途合成把 star 从 1 改 2，s2 带在同窗 false→true 复燃=场上双关羽（实测先撞后修）；星级中途升档下回合生效（known wart，F-049 槽席统一后再审）。
+   - **席位会计改派生**：bench_space = bench_cap − bench_occupied（GroupCount BENCH_OCC 位 + 恒真 level 带每拍重算两 Effect 定序 set/add coeff:-1）——合成 3→1 自动回 2 席、卖出自动 +1，原手工 ± 链整段删除；rune_c 改写容量源 bench_cap。playCosts 扣的 1 会被重算覆盖（原子拒单语义不变，≤3 拍自愈）。
+   - **超员自动卖**：cap_armed（prep→combat 两转移臂）→ enforce_cap → destroy-tagged TEAM_A keepResource:'level'。现 4 槽恒 ≤level=休眠保险丝；**既有 F-9 多实例测试为此先抬 level 再注入**（5 单位>4=按规则被卖，特性正确性的反向证明）。
+   - **袋扩容**：SHOP_DECK 24→36（9/将，3 星可达）；只追加不重排——前 24 张次序锁死全部既有手牌断言。
+   - **星级卖价**：sell2/sell3_<将> 链 8/26 金（=3×3−1/3×9−1）；2/3 星卖出袋不归还（3 张已熔毁，按张语义不成立）——TUNE 注记。
+   - **F-18 数据侧**：marker 全星级挂 Draggable{onlyFlag:'in_prep'}（惰性零开销）+ in_prep 门旗 flow 维护 + 就绪度测试。**系统注册被 SCC 挡**：drag-place↔motion-apply 互为 Transform RMW 对（六件套漏 'motion-apply'，game-f 是首个两者同场的世界）——探针二分定位 + 补丁假设克隆验证 60 拍绿 → **REQ-F-050（一行 runsBefore）**；「部署链随新位置展开」三路纯数据证伪（grid-move 双键查询罚站/overrides 静态/常驻 Caster 在席出兵）→ **REQ-F-049（Caster.requireHexPos + HexPos 继承）**。两单落地后解注一行+补 snap/cap 字段即全通。
+   - game-f 测 24/24（升星/拖拽预备/超员相关 3 新测），全套 1087 + build 绿。HUD 第七行「空席」。
 
 ### 5.1 血条/蓝条接入（✅ 已接入 mainbranch 2026-06-10，本节存档备查）
 
@@ -163,7 +171,10 @@
 - **mana 在 sidecar 实体**（一实体一 Resource，棋子本体已占 hp）。
 - **名字 zOrder hack**：Text-only 实体 zOrder=0（被棋子盖）；给名字加个 Sprite（文本模式不绘）只为抬 zOrder=30。REQ 一个"Text 也能设 zOrder"会更干净（未提）。
 - **hp 共享 id 'hp'**：hitbox 局部路由依赖它，**不能改唯一**；所以血条子条要读"父"的 hp（REQ-F-029 已写明）。
-- 调参旋钮都在 `blueprint.ts` 顶部常量：`HP_SCALE / MOVE_PERIOD / ATK_CD / MANA_FILL / DOT`。
+- **armed 窗内条件叶被改写=带复燃**（F-17 实测）：窗开期间任何会被链路自己改写的条件叶（如 star_<将>）都可能让某带 false→true 迟到触发——部署这类「一窗恰一发」语义的窗，开窗拍就要门脉冲撤臂（deploy_gate_done 同 shop_gate_done 纪律）；只有 income 这类「窗内多带各自至多一次」语义才允许长窗。
+- **新系统进全图先跑 SCC 探针**：capability 自带测试绿 ≠ 全图无环（drag-place 7 测绿、入 game-f 即 22 系统 SCC——它与 motion-apply 的 Transform RMW 对只在两者同场才成环）。定位法=逐个 drop 二分元凶 + 克隆 capability 补 runsBefore 假设验证（测试里 spread-clone，不碰引擎源）——把"猜的修法"变成"验过的修法"再提 REQ。
+- **派生资源与 playCosts 共存语义**：bench_space 既是派生值（每拍重算）又是 playCosts 货币——扣款会被下拍重算覆盖，但原子拒单只看扣款瞬时值 → 语义成立；代价是 ≤3 拍的瞬时回弹窗（人手速不可感知，测试断言留 ≥4 拍余量）。
+- 调参旋钮都在 `blueprint.ts` 顶部常量：`HP_SCALE / MOVE_PERIOD / ATK_CD / MANA_REGEN / DOT / STAR_HP_MUL / STAR_DMG_MUL / SELL_PRICE`。
 
 ## 7. 分支
 
