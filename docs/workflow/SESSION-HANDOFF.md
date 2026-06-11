@@ -14,7 +14,7 @@ Manifest(纯数据) ──parseManifest──▶ WorldBlueprint ──engine.loa
 ```
 
 - **引擎** `src/engine/`：ECS World（snapshot/hash）；SystemPhase + runsAfter/runsBefore 拓扑排序
-- **能力库** `src/skills/`：50+ 原子+扩展；Tier1（运动/动画/hierarchy-cascade）/ Tier2（物理/逻辑链/ARPG/tilemap/hex/self-rule/group-count/gauge）/ Tier3（dialogue/match3/prefab/caster/aggro/poker-hand/card-scoring/flow/card-pile）；**Tier4 刻意为空**（AI行为=数据装配）。全列表见 `wiki/skills/` + 周期表
+- **能力库** `src/skills/`：50+ 原子+扩展；Tier1（运动/动画/hierarchy-cascade）/ Tier2（物理/逻辑链/ARPG/tilemap/hex/self-rule/group-count/gauge/text-binding）/ Tier3（dialogue/match3/prefab/caster/aggro/poker-hand/card-scoring/flow/card-pile）；**Tier4 刻意为空**（AI行为=数据装配）。全列表见 `wiki/skills/` + 周期表
 - **桥接** `src/assembly/`：capability-registry + manifest.ts（parseManifest/exportManifest）+ schema 校验 + validate-references（P0 引用链接器）
 - **Studio** `src/studio/` + `src/bench/`：数据透视器（改字段/实时预览/键盘试玩）、**资源库**（统一资产库浏览器+导入器，三来源一视图；语义标签上图 + AI 选材 `art:<query>` 确定性解析 resolve-art-refs：`docs/design/asset-library.md`）、ApolloBench（Structure/Load/Determinism/Numeric/Visual）；壳层视觉基调 `src/ui/shell-theme.ts`（青瓷×墨蓝×淡金）
 - **启动器** `apollo.py`：Vite+API+多 LLM 生成 manifest；离线预设 platformer/pong；`bench` 命令
@@ -42,7 +42,7 @@ Manifest(纯数据) ──parseManifest──▶ WorldBlueprint ──engine.loa
 | REQ-023 | group-effect（集合写）；倾向重组不 greenlit | P3 |
 | caster 整合 | 可整合进 effect-apply(kind:'spawn')+去重 aggro | 排期 |
 | PE-E 数据换层 | flow/card-pile 重写回合流程(REQ-017/020) + ScoreTrace 回放(REQ-019) | PE-E |
-| PE-F 数据换层 | hierarchy-cascade 命名残留(F-026)；offset 棋盘(F-027)；GameFlow 阶段机(F-028)；self-rule/group-count 接羁绊；**gauge 血/蓝条(F-029，定序环 F-031 已修)**；**CC 定身 haltStatusMask(F-030)**；**回合重置 槽位Caster+overrides+destroy-tagged(F-032)**；**复合预制 @local: 引用重映射(F-033)**；**平滑滑行 glideSpeed(F-034)**；**self 全局阶段门 whenGlobal(F-035)**；**odd-r 拓扑同构棋盘(F-037，外审 Q5；offset 已删)**；**商店据码分发+可负担门(F-040)**；**信号刷新桥+@signal-source 寻址(F-041)** | PE-F |
+| PE-F 数据换层 | hierarchy-cascade 命名残留(F-026)；offset 棋盘(F-027)；GameFlow 阶段机(F-028)；self-rule/group-count 接羁绊；**gauge 血/蓝条(F-029，定序环 F-031 已修)**；**CC 定身 haltStatusMask(F-030)**；**回合重置 槽位Caster+overrides+destroy-tagged(F-032)**；**复合预制 @local: 引用重映射(F-033)**；**平滑滑行 glideSpeed(F-034)**；**self 全局阶段门 whenGlobal(F-035)**；**odd-r 拓扑同构棋盘(F-037，外审 Q5；offset 已删)**；**商店据码分发+可负担门(F-040)**；**信号刷新桥+@signal-source 寻址(F-041)**；**手牌镜像+信号出牌(F-042)**；**text-binding HUD 数字(F-043)** | PE-F |
 
 **🔵 Studio/编辑器 follow-up**（非阻塞）：
 ① 结构编辑（透视器增删实体/组件）；② playwright 真截图（升级 ApolloBench Visual）；

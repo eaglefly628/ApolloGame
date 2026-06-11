@@ -199,3 +199,50 @@ describe('card-pile · REQ-F-041 信号刷新', () => {
     expect(() => { for (let i = 0; i < 3; i++) w.tick(); }).not.toThrow();
   });
 });
+
+// ── REQ-F-042：商店可见可点 —— 手牌镜像 + 信号出牌 ──
+describe('card-pile · REQ-F-042 手牌镜像 + 信号出牌', () => {
+  const wShop42 = (deck: number[]): World => {
+    const w = w0(deck, 2);
+    const p = w.getComponent<CardPile>('table', 'CardPile')!;
+    p.handCodeResources = ['slot_1', 'slot_2'];
+    p.playOnSignals = ['buy_slot_1', 'buy_slot_2'];
+    for (const id of ['slot_1', 'slot_2']) {
+      w.createEntity(`r_${id}`);
+      w.addComponent(`r_${id}`, { type: 'Resource', id, current: 0, min: 0, max: 9999 } as Resource);
+    }
+    return w;
+  };
+  const slot = (w: World, id: string) => w.getComponent<Resource>(`r_${id}`, 'Resource')!.current;
+  const sig42 = (w: World, name: string) => { w.createEntity(`s:${name}`); w.addComponent(`s:${name}`, { type: 'Signal', name, source: `s:${name}` } as Signal); };
+
+  it('A 手牌镜像：补牌后逐槽写码；出牌后镜像同拍更新；空槽写 0', () => {
+    const w = wShop42([207, 105, 313]);
+    w.tick(); // hand=[207,105]
+    expect(slot(w, 'slot_1')).toBe(207);
+    expect(slot(w, 'slot_2')).toBe(105);
+    setInput(w, [{ source: 'p1', key: 'play', values: [0] }]); // 买走槽 1
+    w.tick(); // hand=[105,313]（补牌后）
+    setInput(w, []);
+    expect(slot(w, 'slot_1')).toBe(105);
+    expect(slot(w, 'slot_2')).toBe(313);
+    setInput(w, [{ source: 'p1', key: 'play', values: [0, 1] }]); // 清空且 deck 已尽
+    w.tick();
+    expect(slot(w, 'slot_1')).toBe(0); // 空槽 0
+    expect(slot(w, 'slot_2')).toBe(0);
+  });
+
+  it('B 信号出牌：buy_slot_2 在场 = play(1)；同拍双槽信号只取最低下标', () => {
+    const w = wShop42([207, 105, 313]);
+    w.tick();
+    sig42(w, 'buy_slot_2');
+    w.tick(); // play(1)：买走 105
+    w.destroyEntity('s:buy_slot_2');
+    expect(played(w).length).toBe(1);
+    expect(slot(w, 'slot_1')).toBe(207); // 槽 1 没动
+    expect(slot(w, 'slot_2')).toBe(313); // 槽 2 补上新牌
+    sig42(w, 'buy_slot_1'); sig42(w, 'buy_slot_2'); // 同拍双击
+    w.tick();
+    expect(played(w).length).toBe(1); // 只成交一单（最低下标）
+  });
+});

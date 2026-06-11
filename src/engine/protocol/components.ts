@@ -926,6 +926,23 @@ export interface CardPile extends Component {
   // 配 edge 信号（event-when/clickable 一拍脉冲）；锁店=信号链上游用 Flag 条件挡（EventWhen 重组，零引擎）。
   // 同拍撞上 play/discard 输入则忽略该输入（刷新优先，下标已失效）。
   refreshOnSignal?: string;
+  // REQ-F-042(A) 手牌可视化出口：每拍把 hand[i] 牌码镜像进第 i 个 Resource（id 列表；空槽写 0）。
+  // banded EventWhen{resource eq 码} 即可驱动每槽 marker 展开/销毁（与 bought_code 买入分发同构）。
+  handCodeResources?: string[];
+  // REQ-F-042(B) 信号出牌桥：第 i 个名字的 Signal 在场 = play(i)（clickable 槽位按钮→信号→购买）。
+  // 每拍至多处理一个（最低下标优先；同拍双击=退化输入）；刷新拍忽略；照常过 playCosts 可负担门。
+  playOnSignals?: string[];
+}
+
+// ── text-binding（REQ-F-043）── Resource 数字 → Text 投影（gauge 的姊妹件；HUD 金币/回合/等级/楼层）。
+// text-binding 系统(PostResolve)每拍把目标 Resource.current 写成自身 Text.content = prefix+值+suffix。
+// 寻址同 gauge：fromParent=读 Hierarchy.parentId 宿主；缺省先自身后全局首个同 id（R11 auto）。
+export interface TextBinding extends Component {
+  readonly type: 'TextBinding';
+  resourceId: string; // 跟踪的 Resource.id
+  fromParent?: boolean; // true=读宿主实体 Resource（共享 id 场景）；缺省=先自身后全局
+  prefix?: string; // 文案前缀（如「金币 」）
+  suffix?: string; // 文案后缀（如「 金」）
 }
 
 // ── StatModifier ── 属性修正（①，ARPG）：来自具名 source（装备/buff/光环/天赋/boon）的一条加/乘修正。

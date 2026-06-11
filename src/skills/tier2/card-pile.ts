@@ -121,8 +121,15 @@ export const cardPileCapability = defineCapability({
           const refreshed = !!(pile.refreshOnSignal && sigNames.has(pile.refreshOnSignal));
           if (refreshed) pile.hand = [];
           // ① 输入：play / discard（按 owner；刷新拍忽略）。
-          const playIdx = owner && !refreshed ? plays.get(owner) : undefined;
+          let playIdx = owner && !refreshed ? plays.get(owner) : undefined;
           const discardIdx = owner && !refreshed ? discards.get(owner) : undefined;
+          // REQ-F-042(B)：信号出牌——第 i 个名字在场 = play(i)。每拍至多一个（最低下标优先，
+          // 同拍双击=退化输入）；InputQueue 的 play 优先于信号 play（两路同拍以显式输入为准）。
+          if (!refreshed && !playIdx && pile.playOnSignals?.length) {
+            for (let i = 0; i < pile.playOnSignals.length; i++) {
+              if (pile.playOnSignals[i] && sigNames.has(pile.playOnSignals[i])) { playIdx = [i]; break; }
+            }
+          }
           const ph = world.getComponent<PlayedHand>(eid, 'PlayedHand'); // 出牌区在同实体
           // REQ-F-040(A2) 可负担门：全部代价付得起才执行 play；付不起=本拍视同没出牌（牌不丢、区清空、Flag 灭）。
           let playAccepted = playIdx !== undefined;
@@ -167,6 +174,16 @@ export const cardPileCapability = defineCapability({
           // ② 抽牌补手到 handSize（deck front 抽；空则止）。
           while (pile.hand.length < pile.handSize && pile.deck.length > 0) {
             pile.hand.push(pile.deck.shift()!);
+          }
+          // REQ-F-042(A)：手牌镜像——补牌后的终态逐槽写进 Resource（空槽 0），marker 链当拍见最新。
+          if (pile.handCodeResources?.length) {
+            for (let i = 0; i < pile.handCodeResources.length; i++) {
+              const r = resBy(pile.handCodeResources[i]);
+              if (r) {
+                const v = i < pile.hand.length ? pile.hand[i] : 0;
+                r.current = v < r.min ? r.min : v > r.max ? r.max : v;
+              }
+            }
           }
         }
       },

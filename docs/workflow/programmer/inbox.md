@@ -128,7 +128,16 @@
 - 接线：① **刷新**：商店 CardPile 加 `refreshOnSignal:'shop_refresh'`；prep 自动刷新=flow onEnter 置 Flag→EventWhen(edge)→'shop_refresh'；2 金手动刷新=clickable 按钮→信号 + craft-recipe 扣 2 金（扣不起就别让按钮发信号：EventWhen 条件含 gold≥2）。② **锁店**：刷新 EventWhen 的 when 加 `not flag(shop_locked)`；锁按钮 toggle 该 Flag（Effect set-flag）。③ **卖出**：席位 marker 挂 `Clickable{action:'sell_seat'}` → `Effect{onSignal:'sell_seat', kind:'destroy', targetEntity:'@signal-source'}` + 返还三连（金按将价 Effect/craft-recipe、bench_space+1、袋归还视设计）。
 - 注意：refreshOnSignal 配 **edge** 信号（常驻 Signal 会每拍刷）；卖出 destroy 经 Commit→次拍 cascade 连席位挂件一并清。
 
-> ✅ **引擎侧 REQ-F-026~037 + F-040/041 均已落地、全绿（F-038 空缺、F-039 重组覆盖）**。PE-F 上述 F-1~F-12 皆可接（你交接报告里卡主程的两件——**F-029 血条→接 F-5，F-030 定身→接 F-6——已全部解锁，可继续**），纯数据 / 零游戏代码。不要在游戏层 workaround 引擎行为；若发现新引擎缺口，写 requests.md 提主程。
+#### 任务 F-14 · REQ-F-042 接入商店可视化与点击购买（纯数据） — status: pending（高优先：用户"看不到商店"）
+- 引擎已落（2 测绿）：`CardPile.handCodeResources:['shop_slot_1'..'shop_slot_5']`（每拍终态镜像，空槽 0）+ `CardPile.playOnSignals:['buy_slot_1'..'buy_slot_5']`（信号=play(i)，每拍至多一单、照过 playCosts 门）。
+- 接线：① 5 个槽位 Resource{id:'shop_slot_i', max:9999}；② 每槽每将一条 banded EventWhen{resource:'shop_slot_i' eq 码, mode:edge, signal:'si_show_<将>'} → Caster 展开该将的商店 marker（复合模板：头像 Sprite+价格 Text+Clickable）；槽空(0)/换码 → 旧 marker 用 '@signal-source' 或 destroy-tagged 槽位掩码清。③ marker 挂 Clickable{action:'buy_slot_i'} → 信号即购买。
+- 注意：镜像是"终态"（含补牌），买走后该槽当拍换新码——marker 展开/销毁链要按码变化的 edge 驱动，常驻不重复展开。
+
+#### 任务 F-15 · REQ-F-043 接入 HUD 数字（纯数据） — status: pending（高优先：用户"看不到金币/回合"）
+- 引擎已落 `t2-text-binding`（6 测绿）：实体挂 `Text + TextBinding{resourceId, prefix?, suffix?}` 每拍 content=prefix+值+suffix；蓝图 capabilities 加 `textBindingCapability`（id `t2-text-binding`）。
+- 接线：金币 `TextBinding{resourceId:'gold', prefix:'金币 '}`；玩家血/等级同理；回合「3-2」两个数=两个 Text 实体并排（引擎单资源单绑定，保闭语法）。头顶等级用 fromParent:true（同 gauge）。
+
+> ✅ **引擎侧 REQ-F-026~037 + F-040/041/042/043 均已落地、全绿（F-038 空缺、F-039 重组覆盖）**。PE-F 上述 F-1~F-15 皆可接（你交接报告里卡主程的两件——**F-029 血条→接 F-5，F-030 定身→接 F-6——已全部解锁，可继续**），纯数据 / 零游戏代码。不要在游戏层 workaround 引擎行为；若发现新引擎缺口，写 requests.md 提主程。
 
 ---
 

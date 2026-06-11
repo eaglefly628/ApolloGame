@@ -37,3 +37,5 @@ export { hexDistance, hexNextStep, HEX_DIRS } from './hex.js';
 export type { Hex } from './hex.js';
 // gauge（REQ-F-029）：Resource 比例 → 条形 Shape 投影（实时血条/蓝条/读条；左锚从右端缩，渲染器零改动）。
 export { gaugeCapability } from './gauge.js';
+// text-binding（REQ-F-043）：Resource 数字 → Text 投影（HUD 金币/回合/等级；gauge 管条、本件管数字）。
+export { textBindingCapability } from './text-binding.js';
