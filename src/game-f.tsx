@@ -3,6 +3,8 @@ import { CanvasRenderer } from './renderer/index.js';
 import { PointerInputSource, KeyboardInputSource } from './net/index.js';
 import type { InputSource } from './net/commands.js';
 import { AssetManager, ImageAssetLoader } from '@assets/index.js';
+import { getComponentById } from '@engine/core/query.js';
+import type { World } from '@engine/core/world.js';
 import { buildGameFBlueprint, GAME_F_ASSETS } from './games/game-f/index.js';
 
 // Game F 可挂载模块（launcher 卡带槽契约：export mount(container) → cleanup）。
@@ -147,6 +149,11 @@ const SHELL_CSS = `
   background:var(--panel-grad);box-shadow:0 0 0 1.5px var(--hairline) inset,0 14px 34px rgba(120,70,60,.16);
   overflow:hidden;}
 .gfx-board-panel canvas{display:block;}
+/* —— 单人对局 DOM 设计 chrome（顶/左/右覆盖层；接真实世界数值；中间棋盘+下方备战席露出可玩）—— */
+.gfx-hud{position:absolute;inset:0;pointer-events:none;z-index:6;font-family:var(--font-body);color:var(--ink);}
+.gfx-hud .pe{pointer-events:auto;}
+.gfx-hud .syn{display:flex;align-items:center;gap:10px;padding:8px 11px;border-radius:var(--radius);}
+.gfx-hud .syn .ic{width:30px;height:30px;flex:none;border-radius:8px;display:flex;align-items:center;justify-content:center;font-family:var(--font-cjk);font-weight:900;font-size:15px;}
 .gfx-note{display:flex;gap:10px;align-items:flex-start;margin:10px 0 24px;padding:10px 14px;border-radius:var(--radius);
   background:var(--panel-grad);border:1px solid var(--panel-border);border-left:3px solid var(--info);
   color:var(--ink-dim);font:12.5px var(--font-body);}
@@ -455,6 +462,119 @@ function buildCoopView(): HTMLElement {
   return root;
 }
 
+// —— 单人对局 DOM 设计 chrome（README 对战.dc.html solo 布局 + Apollo UI Kit 控件；接真实世界状态）——
+// 顶 HUD（STAGE/相位/倒计时/主公血/连胜）+ 左羁绊栏 + 右状态·装备栏 + 武将台发光框。
+// 三边覆盖盖掉 canvas 旧 HUD；中间棋盘 + 下方备战席/商店露出，仍走 canvas 数据实体交互（不破坏可玩）。
+function buildSoloHud(): { root: HTMLElement; update: (w: World) => void } {
+  const FAC: Record<string, string> = { 蜀: '#d8504e', 吴: '#3fae6e', 魏: '#3a86d4', 群: '#9b6dd8' };
+  // 羁绊栏（设计 sample；蜀计数接真实 count_shu，余阶段做静态展示）。
+  const synData = [
+    { name: '蜀 · 桃园', fac: '蜀', tiers: [2, 4, 6], glyph: '蜀', ref: 'synShu' },
+    { name: '吴 · 江东', fac: '吴', tiers: [2, 4], glyph: '吴', ref: '' },
+    { name: '武将', fac: '', tiers: [2, 4, 6], glyph: '武', ref: '' },
+    { name: '谋士', fac: '', tiers: [2, 4], glyph: '谋', ref: '' },
+    { name: '射手', fac: '', tiers: [2, 3], glyph: '射', ref: '' },
+  ];
+  const synRows = synData.map((s) => {
+    const col = s.fac ? FAC[s.fac] : 'var(--accent)';
+    return `<div class="syn" style="border:1px solid var(--panel-border);background:var(--chip-bg);box-shadow:inset 0 0 0 1px var(--hairline)">
+      <div class="ic" style="background:${col};color:#fff">${s.glyph}</div>
+      <div style="flex:1;min-width:0"><div style="display:flex;justify-content:space-between;align-items:baseline">
+        <span style="font-family:var(--font-heading);font-weight:700;font-size:14px;color:var(--ink)">${s.name}</span>
+        <span ${s.ref ? `data-ref="${s.ref}"` : ''} style="font-family:var(--font-num);font-size:11px;color:${col}">0/${s.tiers[s.tiers.length - 1]}</span></div>
+      <div style="display:flex;gap:4px;margin-top:5px">${s.tiers.map(() => `<div style="flex:1;height:4px;border-radius:99px;background:var(--track)"></div>`).join('')}</div></div></div>`;
+  }).join('');
+  // 右栏 buff（自设计：当前状态 + 增益；连胜激励接 win_streak）。
+  const buffs = [
+    { g: '🏵️', n: '桃园结义', d: '蜀阵容 +12% 攻击', ref: '' },
+    { g: '🌾', n: '屯田积粮', d: '每回合 +3 金', ref: '' },
+    { g: '🔥', n: '连胜激励', d: '连胜越高士气越旺', ref: 'buffStreak' },
+  ].map((b) => `<div style="display:flex;align-items:center;gap:9px;padding:8px 9px;border-radius:9px;background:var(--chip-bg);border:1px solid var(--panel-border)">
+    <span style="font-size:17px">${b.g}</span><div style="flex:1;min-width:0"><div style="font-family:var(--font-heading);font-weight:700;font-size:13px;color:var(--ink)">${b.n}</div><div ${b.ref ? `data-ref="${b.ref}"` : ''} style="font-size:10px;color:var(--ink-dim)">${b.d}</div></div></div>`).join('');
+  const items = ['🗡', '🛡', '👑', '📜', '🏹', '', '', ''].map((g) =>
+    `<div style="aspect-ratio:1;border-radius:8px;background:${g ? 'var(--chip-bg)' : 'transparent'};border:1px ${g ? 'solid' : 'dashed'} var(--panel-border);display:flex;align-items:center;justify-content:center;font-size:16px">${g}</div>`).join('');
+
+  const root = el('div', 'gfx-hud');
+  root.innerHTML = `
+    <!-- TOP HUD -->
+    <div class="pe" style="position:absolute;top:0;left:0;right:0;height:58px;display:flex;align-items:center;gap:14px;padding:0 18px;background:var(--hud-bg);border-bottom:1px solid var(--panel-border)">
+      <div style="display:flex;align-items:center;gap:12px">
+        <div style="display:flex;flex-direction:column;line-height:1"><span style="font-size:9px;letter-spacing:.2em;text-transform:uppercase;color:var(--ink-dim)">STAGE</span><span data-ref="stage" style="font-family:var(--font-num);font-size:20px;color:var(--ink);margin-top:3px">1-1</span></div>
+        <div data-ref="pips" style="display:flex;gap:5px;align-items:center"></div>
+      </div>
+      <div style="flex:1;display:flex;justify-content:center"><div data-ref="phase" style="padding:6px 18px;border-radius:99px;white-space:nowrap;font-family:var(--font-heading);font-weight:700;font-size:13px;letter-spacing:.06em;background:var(--accent-soft);color:var(--accent);border:1px solid var(--accent)">⚔ 备战 · 布阵</div></div>
+      <div style="display:flex;flex-direction:column;align-items:center;line-height:1;padding:0 6px"><span style="font-size:9px;letter-spacing:.2em;text-transform:uppercase;color:var(--ink-dim)">倒计时</span><span data-ref="timer" style="font-family:var(--font-num);font-size:20px;color:var(--ink);margin-top:3px">0:30</span></div>
+      <div style="display:flex;align-items:center;gap:10px">
+        <div style="display:flex;flex-direction:column;align-items:flex-end;line-height:1.1"><span style="font-family:var(--font-heading);font-weight:700;font-size:14px;color:var(--ink)">主公 · 玄德</span>
+          <div style="display:flex;align-items:center;gap:6px;margin-top:4px"><div style="width:118px;height:9px;border-radius:99px;background:var(--track);overflow:hidden;border:1px solid var(--panel-border)"><div data-ref="hpfill" style="width:100%;height:100%;background:var(--hp);border-radius:99px"></div></div><span data-ref="hp" style="font-family:var(--font-num);font-size:12px;color:var(--hp)">100</span></div></div>
+        <div style="width:44px;height:44px;border-radius:50%;background:var(--protag-bg);border:2px solid var(--accent);box-shadow:0 0 12px var(--accent-soft);display:flex;align-items:center;justify-content:center;font-size:22px">🐢</div>
+        <div style="display:flex;align-items:center;padding:5px 11px;border-radius:10px;background:var(--chip-bg);border:1px solid var(--panel-border)"><span data-ref="streak" style="font-family:var(--font-heading);font-weight:700;font-size:12px;color:var(--accent)">0连胜</span></div>
+      </div>
+    </div>
+    <!-- 武将台发光框（围住棋盘区，pointer-events 透传不挡拖拽）-->
+    <div style="position:absolute;left:350px;top:60px;width:580px;height:492px;border-radius:24px;border:1px solid var(--platform-edge);box-shadow:inset 0 0 0 1px var(--hairline),0 0 38px var(--accent-soft);background:var(--platform-glow);pointer-events:none"></div>
+    <!-- LEFT · 羁绊 -->
+    <div style="position:absolute;left:10px;top:66px;width:186px;bottom:118px;display:flex;flex-direction:column;gap:6px;overflow:hidden">
+      <div style="font-size:9px;letter-spacing:.22em;text-transform:uppercase;color:var(--ink-dim);padding:2px 6px">羁绊 · Synergies</div>${synRows}</div>
+    <!-- RIGHT · 状态/装备（自设计）-->
+    <div style="position:absolute;right:10px;top:66px;width:186px;bottom:118px;display:flex;flex-direction:column;gap:10px;overflow:hidden">
+      <div style="background:var(--panel-grad);border:1px solid var(--panel-border);border-radius:var(--radius);box-shadow:inset 0 0 0 1px var(--hairline);padding:12px">
+        <div style="font-size:9px;letter-spacing:.2em;text-transform:uppercase;color:var(--ink-dim);margin-bottom:9px">当前状态 · Status</div>
+        <div style="display:flex;flex-direction:column;gap:7px">${buffs}</div></div>
+      <div style="background:var(--panel-grad);border:1px solid var(--panel-border);border-radius:var(--radius);box-shadow:inset 0 0 0 1px var(--hairline);padding:12px">
+        <div style="font-size:9px;letter-spacing:.2em;text-transform:uppercase;color:var(--ink-dim);margin-bottom:9px">装备 · 锦囊</div>
+        <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:8px">${items}</div></div></div>`;
+
+  const ref = (k: string): HTMLElement | null => root.querySelector(`[data-ref="${k}"]`);
+  const refs = {
+    stage: ref('stage'), pips: ref('pips'), phase: ref('phase'), timer: ref('timer'),
+    hp: ref('hp'), hpfill: ref('hpfill'), streak: ref('streak'), synShu: ref('synShu'), buffStreak: ref('buffStreak'),
+  };
+  const update = (w: World): void => {
+    const num = (id: string): number | undefined => {
+      const c = getComponentById(w, 'Resource', 'id', id) as { current?: number; max?: number } | undefined;
+      return c?.current;
+    };
+    const max = (id: string): number | undefined => {
+      const c = getComponentById(w, 'Resource', 'id', id) as { max?: number } | undefined;
+      return c?.max;
+    };
+    const flag = (id: string): boolean | undefined => {
+      const c = getComponentById(w, 'Flag', 'id', id) as { active?: boolean } | undefined;
+      return c?.active;
+    };
+    const stageI = num('stage_idx') ?? 1, roundI = num('round_idx') ?? 1;
+    if (refs.stage) refs.stage.textContent = `${stageI}-${roundI}`;
+    if (refs.pips) {
+      const total = 5;
+      refs.pips.innerHTML = Array.from({ length: total }, (_, i) => {
+        const on = i + 1 === stageI;
+        return `<div style="width:${on ? 10 : 7}px;height:${on ? 10 : 7}px;border-radius:50%;background:${i + 1 <= stageI ? 'var(--accent)' : 'var(--ink-dim)'};box-shadow:${on ? '0 0 8px var(--accent)' : 'none'}"></div>`;
+      }).join('');
+    }
+    const prep = flag('in_prep');
+    if (refs.phase) {
+      refs.phase.textContent = prep ? '⚔ 备战 · 布阵' : '⚔ 战斗阶段';
+      refs.phase.style.background = prep ? 'var(--accent-soft)' : 'rgba(214,86,104,.16)';
+      refs.phase.style.color = prep ? 'var(--accent)' : 'var(--danger)';
+      refs.phase.style.borderColor = prep ? 'var(--accent)' : 'var(--danger)';
+    }
+    if (refs.timer) {
+      const t = Math.max(0, Math.ceil(num('prep_left') ?? 0));
+      refs.timer.textContent = `${Math.floor(t / 60)}:${String(t % 60).padStart(2, '0')}`;
+    }
+    const hpV = num('player_hp'), hpM = max('player_hp') ?? 100;
+    if (refs.hp && hpV !== undefined) refs.hp.textContent = String(Math.round(hpV));
+    if (refs.hpfill && hpV !== undefined) refs.hpfill.style.width = `${Math.max(0, Math.min(100, (hpV / (hpM || 100)) * 100))}%`;
+    const streak = num('win_streak') ?? 0;
+    if (refs.streak) refs.streak.textContent = `${streak}连胜`;
+    if (refs.buffStreak) refs.buffStreak.textContent = streak > 0 ? `连胜 ${streak} · 士气高涨` : '连胜越高士气越旺';
+    const shu = num('count_shu');
+    if (refs.synShu && shu !== undefined) refs.synShu.textContent = `${shu}/6`;
+  };
+  return { root, update };
+}
+
 export function mount(container: HTMLElement): () => void {
   // 字体（README §Typography；id 防重复注入）。
   if (!document.getElementById('gfx-fonts')) {
@@ -508,6 +628,9 @@ export function mount(container: HTMLElement): () => void {
   const stage = el('div', '');
   stage.style.cssText = `width:${VIEWPORT_W}px;height:${VIEWPORT_H}px;overflow:hidden`;
   boardPanel.appendChild(stage);
+  // 单人 DOM 设计 chrome 覆盖层（顶/左/右；接真实世界状态）。
+  const hud = buildSoloHud();
+  boardPanel.appendChild(hud.root);
   gameView.appendChild(boardPanel);
   gameView.appendChild(el('div', 'gfx-note', `<span class="ico">i</span><span>买棋子点商店大卡 ➜ 备战席自动落座；拖上棋盘出兵（场上 ≤ 等级），拖到另一子=换位，拖进 🗑 卖出；3 同名自动升星（板上原地升）。点「开战」数 3-2-1 开打；WASD 移动主公拾取战利品。</span>`));
 
@@ -576,7 +699,16 @@ export function mount(container: HTMLElement): () => void {
   }
   engine.start();
 
+  // HUD 实时投影：每帧读世界资源刷新 DOM 数字/条（纯表现层，不进 hash）。
+  let rafId = 0;
+  const pump = (): void => {
+    hud.update(engine.world);
+    rafId = requestAnimationFrame(pump);
+  };
+  rafId = requestAnimationFrame(pump);
+
   return () => {
+    cancelAnimationFrame(rafId);
     engine.stop();
     keyboard.dispose();
     pointer?.dispose();
