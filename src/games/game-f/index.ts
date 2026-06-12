@@ -7,6 +7,7 @@
 // 下一轮：蓝条/大招/经济/商店/flow 阶段机；重复棋子+羁绊待 REQ-021/022 接入。
 export {
   buildGameFBlueprint,
+  gameFEnemyPreview,
   GAME_F_TEMPLATES,
   GAME_F_HERO_IDS,
   TEAM_A,

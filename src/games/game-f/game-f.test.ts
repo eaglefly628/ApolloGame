@@ -1,7 +1,7 @@
 import { describe, it, expect } from 'vitest';
 import { Engine } from '../../runtime/engine.js';
 import type { Resource, Flag, Shape, Status, Transform } from '@engine/protocol/components.js';
-import { buildGameFBlueprint, GAME_F_HERO_IDS, FROZEN, TEAM_A, TEAM_B, rosterFor } from './blueprint.js';
+import { buildGameFBlueprint, gameFEnemyPreview, GAME_F_HERO_IDS, FROZEN, TEAM_A, TEAM_B, rosterFor } from './blueprint.js';
 import { offsetToAxial, project } from './hex.js';
 
 // 节奏：缺省=玩家档（备战30s）；测试统一快速档维持既有时序断言。
@@ -599,6 +599,17 @@ describe('Game F — 自走棋（纯数据装配，零自走棋代码；棋子=�
     e.world.addComponent('eqreq2', { type: 'SpawnRequest', templateId: 'death_a_guanyu', x: -150, y: 86 } as unknown as Resource);
     for (let i = 0; i < 8; i++) e.world.tick();
     expect(res('items')).toBe(1); // 蜀死无装备 orb → 不增
+  });
+
+  it('敌人预布阵（B）：英雄关返回敌阵坐标+将名供半透明预览；野怪回合返回空', () => {
+    const p2 = gameFEnemyPreview(2, 1); // 阶段2「董卓先锋」=4 魏将
+    expect(p2).toHaveLength(4);
+    expect(p2.map((f) => f.name)).toContain('张辽');
+    expect(p2.every((f) => typeof f.x === 'number' && typeof f.y === 'number')).toBe(true); // 世界坐标供投影
+    expect(gameFEnemyPreview(1, 1)).toHaveLength(0); // 阶段1=野怪波，无英雄预览
+    expect(gameFEnemyPreview(2, 5)).toHaveLength(0); // r5=野怪波，无英雄预览
+    // 选魏阵营翻转：敌方变蜀将
+    expect(gameFEnemyPreview(2, 1, 'wei').map((f) => f.name)).toContain('关羽');
   });
 
   it('野怪回合+法球（批B，一图流）：阶段1 全野怪（黄巾波次）；野怪死亡掉法球；结算清场含未拾法球', () => {

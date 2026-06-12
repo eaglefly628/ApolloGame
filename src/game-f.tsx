@@ -5,7 +5,7 @@ import type { InputSource } from './net/commands.js';
 import { AssetManager, ImageAssetLoader } from '@assets/index.js';
 import { getComponentById } from '@engine/core/query.js';
 import type { World } from '@engine/core/world.js';
-import { buildGameFBlueprint, GAME_F_ASSETS } from './games/game-f/index.js';
+import { buildGameFBlueprint, gameFEnemyPreview, GAME_F_ASSETS } from './games/game-f/index.js';
 
 // Game F 可挂载模块（launcher 卡带槽契约：export mount(container) → cleanup）。
 // 壳层 UI = design_handoff_game_f 的「锦霞 Aurora」皮肤（用户钦定女性向风格）：
@@ -523,8 +523,9 @@ function buildSoloHud(click: (x: number, y: number) => void, play: (i: number) =
 
   const root = el('div', 'gfx-hud');
   root.innerHTML = `
-    <!-- 在板 marker 名牌层（备战期投影；pointer-events 透传）-->
+    <!-- 在板 marker 名牌层 + 敌人预布阵幽灵层（备战期投影；pointer-events 透传）-->
     <div data-ref="namelayer" style="position:absolute;inset:0;pointer-events:none;z-index:1"></div>
+    <div data-ref="ghostlayer" style="position:absolute;inset:0;pointer-events:none;z-index:1"></div>
     <!-- TOP HUD -->
     <div class="pe" style="position:absolute;top:0;left:0;right:0;height:58px;display:flex;align-items:center;gap:14px;padding:0 18px;background:var(--hud-bg);border-bottom:1px solid var(--panel-border)">
       <div style="display:flex;align-items:center;gap:12px">
@@ -628,8 +629,8 @@ function buildSoloHud(click: (x: number, y: number) => void, play: (i: number) =
 
   const setAll = (k: string, t: string): void => root.querySelectorAll(`[data-ref="${k}"]`).forEach((e) => { (e as HTMLElement).textContent = t; });
   const setW = (k: string, pct: string): void => root.querySelectorAll(`[data-ref="${k}"]`).forEach((e) => { (e as HTMLElement).style.width = pct; });
-  const elPips = q('[data-ref="pips"]'), elPhase = q('[data-ref="phase"]'), elGuide = q('[data-ref="guidetext"]'), elSyn = q('[data-ref="synrows"]'), elName = q('[data-ref="namelayer"]'), elEquip = q('[data-ref="equipslots"]');
-  let lastEquip = -1;
+  const elPips = q('[data-ref="pips"]'), elPhase = q('[data-ref="phase"]'), elGuide = q('[data-ref="guidetext"]'), elSyn = q('[data-ref="synrows"]'), elName = q('[data-ref="namelayer"]'), elEquip = q('[data-ref="equipslots"]'), elGhost = q('[data-ref="ghostlayer"]');
+  let lastEquip = -1, lastGhost = '';
   let lastShopSig = ''; // 点将台卡面只在「在售/可负担」变化时重渲（每帧重建会杀掉 :hover 浮动效果）。
   let lastSynSig = '';
 
@@ -695,6 +696,23 @@ function buildSoloHud(click: (x: number, y: number) => void, play: (i: number) =
         }
         elName.innerHTML = html;
       } else if (elName.innerHTML) elName.innerHTML = '';
+    }
+    // 敌人预布阵幽灵（功能 B；仅备战期，英雄关半透明画出敌阵让玩家针对性布阵）。
+    if (elGhost) {
+      const sKey = prep ? `${stageI}-${roundI}` : '';
+      if (sKey !== lastGhost) {
+        lastGhost = sKey;
+        if (!prep) elGhost.innerHTML = '';
+        else {
+          const foes = gameFEnemyPreview(stageI, roundI);
+          elGhost.innerHTML = foes.map((f) => {
+            const sx = f.x * CAM_ZOOM + VIEWPORT_W / 2, sy = f.y * CAM_ZOOM + VIEWPORT_H / 2;
+            return `<div style="position:absolute;left:${sx}px;top:${sy}px;transform:translate(-50%,-50%);display:flex;flex-direction:column;align-items:center;gap:2px;opacity:.5">
+              <div style="width:34px;height:34px;border-radius:9px;border:2px dashed #3a86d4;background:rgba(58,134,212,.25);display:flex;align-items:center;justify-content:center;font-family:var(--font-cjk);font-weight:900;font-size:15px;color:#cfe2f7">魏</div>
+              <div style="font:9px var(--font-body);padding:0 4px;border-radius:5px;background:rgba(0,0,0,.45);color:#bcd6f0;white-space:nowrap">${f.name}</div></div>`;
+          }).join('');
+        }
+      }
     }
     runeModal.style.display = w.hasComponent('rune_a', 'Clickable') ? 'flex' : 'none'; // 三选一在场即显
     if (shopBackdrop.style.display === 'flex') {

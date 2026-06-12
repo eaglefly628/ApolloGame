@@ -435,6 +435,21 @@ const STAGES: { n: number; comp: { ei: number; q: number; r: number; hpMul: numb
   },
 ];
 
+// 敌人预布阵（功能 B，用户：排兵布阵时看敌人下一波）：返回当前回合英雄关敌阵的世界坐标 + 将名，
+// 供 DOM 幽灵层投影画半透明敌兵。PVE 回合（阶段1 或 r≥5 野怪波）无英雄坐标→返回空（不预览）。
+export function gameFEnemyPreview(stageIdx: number, roundIdx: number, pf: Faction = 'shu'): { name: string; x: number; y: number }[] {
+  if (stageIdx <= 1 || roundIdx >= 5) return [];
+  const stage = STAGES.find((s) => s.n === stageIdx);
+  if (!stage) return [];
+  const enemyHeroes = rosterFor(pf).filter((h) => h.team === TEAM_B);
+  return stage.comp.map((c) => {
+    const eh = enemyHeroes[c.ei];
+    const a = offsetToAxial(c.q, c.r);
+    const p = project(a.q, a.r);
+    return { name: eh?.name ?? '魏', x: p.x, y: p.y };
+  });
+}
+
 // ── 野怪波次（一图流：阶段1×4回合+每阶段末回合(r5)；固定阵容、死亡掉法球💰）──
 // 强度随阶段爬坡；图暂借甘宁（真野怪皮=美术 pass，见 art-data 待办）。掉落链：Mortal.dropTemplate（引擎现成）。
 const PVE_WAVES: { stage: number; count: number; hpMul: number; atk: number }[] = [
