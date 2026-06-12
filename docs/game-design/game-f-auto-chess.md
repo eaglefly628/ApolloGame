@@ -69,41 +69,6 @@
 └──────────────────────────────────────────────────────────────────────────┘
 ```
 
-`GameFlow`（数据骨架，`when` 复用 `ConditionExpr`，动作 = `set-flag/set-state/modify-resource`）：
-
-```jsonc
-"GameFlow": {
-  "id": "run_loop", "current": "prep", "entered": false,
-  "states": [
-    { "id": "prep",
-      "onEnter": [
-        { "kind": "modify-resource", "targetId": "gold", "op": "add", "value": 5 }  // 基础发钱（利息/连胜见 §4，用 banded EventWhen 叠加）
-      ],
-      "transitions": [ { "when": { "kind": "flag", "id": "ready" }, "to": "combat",
-                        "do": [ { "kind": "set-flag", "targetId": "in_combat", "value": true } ] } ] },
-
-    { "id": "combat",
-      // 胜负：竞技场矩形里某队存活=0。用 Zone 数「敌队还有没有人」(count≥1→flag)，flag 落 false=打完。见 §5。
-      "transitions": [
-        { "when": { "kind": "flag", "id": "enemies_present", "equals": false }, "to": "resolution",
-          "do": [ { "kind": "set-flag", "targetId": "won_round", "value": true } ] },
-        { "when": { "kind": "flag", "id": "allies_present",  "equals": false }, "to": "resolution",
-          "do": [ { "kind": "set-flag", "targetId": "won_round", "value": false } ] } ] },
-
-    { "id": "resolution",
-      "onEnter": [
-        // 输了：玩家扣血（赢了走另一条 banded effect，略）。player_hp 是全局单例 Resource，可直接寻址。
-        { "kind": "modify-resource", "targetId": "player_hp", "op": "add", "value": -1 } ],
-      "transitions": [
-        { "when": { "kind": "resource", "id": "player_hp", "cmp": "lte", "value": 0 }, "to": "gameover" },
-        { "when": { "kind": "always" }, "to": "prep",
-          "do": [ { "kind": "set-flag", "targetId": "ready", "value": false },
-                  { "kind": "set-flag", "targetId": "in_combat", "value": false } ] } ] },
-
-    { "id": "gameover", "onEnter": [ { "kind": "set-flag", "targetId": "run_over", "value": true } ] }
-  ]
-}
-```
 
 > 关键：流程里读写的 `gold / player_hp / ready / 阶段` 全是**全局单例**——`flow`/`event-when`/`condition` 按全局 id 索引，**对单例完美**。问题只出在「每个棋子各自的 mana/cooldown」这种**多份同名**资源上（§6 Gap A）。
 
@@ -151,63 +116,11 @@ ZONE_FLAG = 1<<10;
 ST_BURNING = 1<<0;  ST_FROZEN = 1<<1;  ST_SHIELDED = 1<<2;
 ```
 
-### 4.2 英雄 Prefab 示例 —— 赵云（蜀·猛将，近战，蓝满放「七进七出」）
+### 4.2 英雄 Prefab 结构要点
 
-```jsonc
-// PrefabLibrary.templates["zhao_yun"] —— 一个英雄 = 一组组件（纯数据）
-{ "entities": { "unit": {
-  "Transform": { "x": 0, "y": 0, "rotation": 0, "scaleX": 1, "scaleY": 1 },
-  "Velocity":  { "vx": 0, "vy": 0, "angular": 0 },
-  "Shape":     { "kind": "box", "width": 16, "height": 16 },
-  "Mass":      { "value": 1 },
-  "Tag":       { "flags": "TEAM_A | SHU | WARRIOR" },          // 上阵时按队伍换位
-  "Resource":  { "id": "hp",   "current": 700, "min": 0, "max": 700 },
-  // ⚠️ MVP-0：mana 用「每英雄唯一 id」规避实体本地寻址缺口（§6 Gap A）；重复棋子需下沉后改回 'mana'
-  "Resource2": { "id": "mana_zhaoyun", "current": 0, "min": 0, "max": 100 },
-  "Perception":{ "targetTag": "TEAM_B", "sightRadius": 0 },     // 0=无限视野
-  "Steering":  { "mode": "seek", "speed": 1, "stopRange": 18, "haltStatusMask": "ST_FROZEN" },
-  "Mortal":    { "resource": "hp", "atOrBelow": 0 },
-  // 普攻：loop Timer 周期产信号（详见 §5）
-  "Timer":     { "id": "atk_cd_zhaoyun", "elapsed": 0, "duration": 45, "loop": true },
-  // 蓝满放大招：自身 mana 越 100 → 发大招信号（edge 一次）
-  "EventWhen": { "signal": "ult_zhaoyun", "mode": "edge",
-                 "when": { "kind": "resource", "id": "mana_zhaoyun", "cmp": "gte", "value": 100 } },
-  "Sprite":    { "textureKey": "hero_zhaoyun", "anchorX": 0.5, "anchorY": 0.5, "zOrder": 4 },
-  "AnimState": { "clips": { "walk": {"from":0,"count":4,"fps":6,"loop":true}, "idle": {"from":0,"count":1,"fps":1,"loop":false}, "attack": {"from":4,"count":2,"fps":5,"loop":true} },
-                 "moveClip":"walk","idleClip":"idle","attackClip":"attack","current":"idle","elapsed":0 },
-  "Facing":    { "mode": "target" }
-} } }
-```
+> 引擎「一实体一组件类型」；hp 与 mana 须拆两实体（棋子本体 + mana sidecar）。唯一 id 策略：`mana_<id>`/`atk_<id>` 规避串台（§6 Gap A）。重复棋子待 REQ-021 落地后改。实际装配见 `src/games/game-f/blueprint.ts`。
 
-> 注：引擎「一实体一组件类型」。同实体两份 Resource（hp / mana）在装配层是两条组件记录——按现有写法用不同组件键承载（如 Game 内的装配辅助），或拆成「单位本体 + 蓝条挂件」两实体。MVP 落地时按 game-d 的 `as EntityBlueprint` 装配风格处理。
-
-### 4.3 技能模板 —— 七进七出（赵云大招，索敌 AoE 真伤）
-
-```jsonc
-// PrefabLibrary.templates["skill_zhaoyun"]
-{ "entities": { "area": {
-  "Transform": { "x": 0, "y": 0, "rotation": 0, "scaleX": 1, "scaleY": 1 },
-  "Shape":     { "kind": "box", "width": 90, "height": 90 },
-  "Sensor":    {},
-  "Tag":       { "flags": "ZONE_FLAG" },
-  "Hitbox":    { "resource": "hp", "fracOfMax": 0.18, "targetMask": "TEAM_B" },  // 范围 18% 最大生命真伤
-  "Timer":     { "id": "life", "elapsed": 0, "duration": 2, "loop": false },     // 瞬时自毁
-  "Sprite":    { "textureKey": "fx_dragon_strike", "anchorX": 0.5, "anchorY": 0.5, "zOrder": 6 }
-} } }
-```
-
-释放接线（数据，三个独立实体）：
-
-```jsonc
-// 1) 攒蓝：普攻命中→加蓝（与普攻同信号挂 Effect；MVP 简化为 loop Timer 每拍加蓝）
-"FillMana_zhaoyun": { "Effect": { "onSignal": "atk_zhaoyun", "kind": "modify-resource", "targetId": "mana_zhaoyun", "op": "add", "value": 12 } },
-// 2) 大招：EventWhen 发的 ult_zhaoyun → caster 索敌展开技能区
-"Cast_zhaoyun":     { "Caster": { "onSignal": "ult_zhaoyun", "template": "skill_zhaoyun", "at": "target", "targetTag": "TEAM_B", "originEntity": "<赵云实体>" } },
-// 3) 清蓝：放完归零
-"Drain_zhaoyun":    { "Effect": { "onSignal": "ult_zhaoyun", "kind": "modify-resource", "targetId": "mana_zhaoyun", "op": "set", "value": 0 } }
-```
-
-### 4.4 经济（banded，纯数据；Game E 已证此形态）
+### 4.3 经济（banded，纯数据；Game E 已证此形态）
 
 利息「每持有 10 金 +1，上限 +5」**不是数学缺口**——拆成 5 条 banded `EventWhen→Effect`，天然封顶（只有 5 档）：
 
@@ -330,25 +243,6 @@ ST_BURNING = 1<<0;  ST_FROZEN = 1<<1;  ST_SHIELDED = 1<<2;
 
 ---
 
-## 十、美术（像素三国，简述，不喧宾夺主）
+## 十、美术（像素三国）
 
-像素风是小团队明智解：UI/立绘/棋子/棋盘统一风格。换色分势力（红=蜀/蓝=魏/绿=吴）。
-
-- **itch.io**：搜 `retro RPG sprite` / `tactics character` / `strategy pixel art`（Slynyrd / Szadi art / Cainos）。
-- **OpenGameArt.org**：搜 `Three Kingdoms` / `Dynasty`（免费开源）。
-- **AI 生成 + Aseprite 后处理**：生成立绘/图标 → Aseprite 降阶切片，适配引擎 `Sprite`/`SpriteSheet`/`Frame`。
-- 落地走引擎现有**资产流程（R9 TBF 清单）**，先占位方块（同 Game D），真资产后补。**美术不阻塞 MVP-0 逻辑闭环。**
-
----
-
-## 十一、MVP-0 验收清单（全绿才算跑通）
-
-1. `flow` 阶段机：备战→战斗→结算→备战 循环，`player_hp` 归零进 gameover（vitest）。
-2. 两队各 3 单位对冲：30–60 tick 后一队存活=0，`Zone` flag 落 false 触发结算（vitest）。
-3. 普攻攒蓝 → 蓝满 `EventWhen(edge)` 发大招信号 → `caster` 展开技能区 → `hitbox` 扣血 → mana 清零（vitest，单英雄唯一 id）。
-4. 经济：banded 利息封顶 5、连胜清零正确（vitest）。
-5. 商店：`card-pile` 发 5 张、`buy_slot` 信号 + `craft-recipe` 扣钱、补牌（vitest）。
-6. **确定性**：同 seed 跑两遍 `engine.hash()` 全等（vitest，对齐各游戏首测）。
-7. 离线看帧：`vite-node` 渲一帧确认棋子/技能区位置合理（对齐 Game D）。
-
-> 复诵：**整个自走棋是数据；代码只在 MVP-0 之后、为"实体寻址轴"下沉那几次，且加在引擎。** 战斗的每一拍都从通用能力涌现，不写一个游戏 system。
+现已采用 DCSS CC0 美术库（`assets/FreeArtLib/`），8 将 + 5 特效已映射，详见 `game-f-art-data.md`。美术不阻塞逻辑闭环。

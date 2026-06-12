@@ -53,44 +53,7 @@
 
 ---
 
-## 3. 已验证的引擎事实（精确 schema + 关键陷阱，**省得你重查源码**）
-
-### 3.1 战斗簇组件（Game D 实测，`src/games/game-d/blueprint.ts`）
-
-```jsonc
-Tag:        { flags: number }                       // 32 位掩码：队伍|势力|职业 全 OR 进一个字段
-Resource:   { id, current, min, max }               // 每实体；但全局逻辑按 id 索引（见陷阱②）
-Perception: { targetTag: number, sightRadius: number }   // aggro 输入；0=无限视野
-Steering:   { mode:'seek'|'flee', speed, stopRange, haltStatusMask? }  // 写 Velocity；冻则停
-Hitbox:     { resource, amount?, fracOfMax?, targetMask?, requireMask?, setMask?, clearMask?,
-              statusDuration?, dotPerTick?, dotPeriod?, dotDuration? }  // 关系型结算
-Mortal:     { resource:'hp', atOrBelow:0, dropTemplate? }    // hp≤0 销毁+掉落
-Caster:     { onSignal, template, at:'self'|'pointer'|'target', targetTag?, originEntity? } // 信号→SpawnRequest
-OverTime:   { effects:[{ id?, resource?, amountPerTick?, period, duration, elapsed, clearStatusOnEnd? }] } // 燃烧+冰冻并存
-Timer:      { id, elapsed, duration, loop }          // loop=true 周期产 TimerDone
-EventWhen:  { signal, when:ConditionExpr, mode:'edge'|'level', armed:boolean }  // 条件→信号
-Effect:     { onSignal, kind:'modify-resource'|'set-flag'|'set-state'|'set-sensor'|'set-visible'|'destroy',
-              targetId, targetEntity?, value, op?:'add'|'mul'|'set', order?, valueFrom? }
-Zone:       { outFlag, minX,minY,maxX,maxY, requiredTag?, requiredEntities?, count? } // 数矩形内匹配≥阈值→flag
-PrefabLibrary: { templates: Record<string,PrefabTemplate>, seq }
-PrefabTemplate: { entities: { localId: { Comp: data } } }
-```
-
-`ConditionExpr`（`src/skills/tier2/condition.ts`）：
-```
-{kind:'resource', id, cmp:'lt'|'lte'|'eq'|'ne'|'gte'|'gt', value, vsResource?}  // vsResource=动态阈值(REQ-017)
-{kind:'flag', id, equals?} | {kind:'state', fsmId, equals} | {kind:'timer', id, cmp, value}
-{kind:'string', id, equals} | {kind:'and'|'or', of:[...]} | {kind:'not', of:...} | {kind:'always'}
-```
-
-### 3.2 流程/商店/经济能力
-
-- **`flow`**（`src/skills/tier3/flow.ts`，REQ-020）：`GameFlow{ id, current, states:[{ id, onEnter?:FlowAction[], transitions?:[{when:ConditionExpr, to, do?:FlowAction[]}] }], entered }`。FlowAction = `{kind:'set-flag'|'set-state'|'modify-resource', targetId, value, op?:'add'|'set'}`。onEnter 边沿跑一次；转移按声明序首个 when 成立即跳。**阶段机用它**。
-- **`card-pile`**（`src/skills/tier2/card-pile.ts`，REQ-017）：`CardPile{ owner, deck:number[](预洗好), hand:number[], handSize }` + 同实体 `PlayedHand{owner}` + `Flag{id:owner}`。输入 `{source:owner, key:'play'|'discard', values:[手牌下标]}`。**商店用它**（deck=预洗英雄码，handSize=5 槽，buy=play 下标）。
-- **`craft-recipe`**（`src/skills/tier2/craft-recipe.ts`）：`CraftRecipe{ onSignal, costs:[{id,amount}], gains?, grantsFlag?, grantsState? }`。信号到达且全部可负担→原子成交。**买英雄扣钱用它**。
-- **`random`**（`src/skills/atoms/random/index.ts`）：`RandomSeed{seed,sequence}` + `nextRandom`/`randomInt`（mulberry32 确定性）。**无加权抽样能力**（商店等级加权概率是残余小缺口，MVP 用预置权重牌袋数据规避）。
-
-### 3.3 ⚠️ 两个关键陷阱（= REQ-021 的根，**新 session 务必理解**）
+## 3. ⚠️ 两个关键陷阱（= REQ-021 的根，**新 session 务必理解**）
 
 1. **`caster` 按全局信号名触发**（`src/skills/tier3/caster.ts:89-94`）：收集**全场** Signal 名进一个 Set，任一 Caster 的 `onSignal` 在集合里就触发。→ N 个棋子共享 `cast_attack` 信号会**一齐触发**（串台）。`effect-apply`/`craft-recipe` 同理按全局名。
 2. **`condition` 按全局 id 索引**（`src/skills/tier2/condition.ts:23-44` `buildConditionLookup`，同 id 取第一份）：N 个棋子各有 `Resource{id:'mana'}`，每个 EventWhen 的 `when:mana≥100` 都解析到**世界第一份 mana**，不是自己的。
