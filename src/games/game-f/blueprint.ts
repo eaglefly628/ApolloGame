@@ -845,7 +845,7 @@ export function buildGameFBlueprint(pacing: GameFPacing = {}): WorldBlueprint {
     f_over: { Flag: { id: 'run_over', active: false } } as unknown as EntityBlueprint,
     f_round_done: { Flag: { id: 'round_done', active: false } } as unknown as EntityBlueprint, // L1↔L2 握手
     f_run_won: { Flag: { id: 'run_won', active: false } } as unknown as EntityBlueprint, // 打穿关卡表=通关
-    r_gold: { Resource: { id: 'gold', current: 10, min: 0, max: 999 } } as unknown as EntityBlueprint, // 起手金 10（可即开点将台招募；收入仍在结算后发）
+    r_gold: { Resource: { id: 'gold', current: 5, min: 0, max: 999 } } as unknown as EntityBlueprint, // 起手金 5（用户：10 太多）；收入仍在结算后发
     r_player_hp: { Resource: { id: 'player_hp', current: 100, min: 0, max: 100 } } as unknown as EntityBlueprint, // §3.1：0..100（旧 20 是 MVP-0 占位）
     r_round_idx: { Resource: { id: 'round_idx', current: 1, min: 0, max: 999 } } as unknown as EntityBlueprint, // 回合序号（advance +1，>5 进位）
     r_stage_idx: { Resource: { id: 'stage_idx', current: 1, min: 0, max: 99 } } as unknown as EntityBlueprint, // 阶段序号（关卡表指针）
@@ -875,17 +875,7 @@ export function buildGameFBlueprint(pacing: GameFPacing = {}): WorldBlueprint {
       Resource: { id: 'prep_left', current: 30, min: 0, max: 99 },
       OverTime: { effects: [{ id: 'cd_tick', resource: 'prep_left', amountPerTick: -1, period: 60, duration: 0, elapsed: 0 }] },
     } as unknown as EntityBlueprint,
-    hud_timer: {
-      Transform: xf(0, -160),
-      Text: { content: '开战 30', fontSize: 18, fontFamily: FONT_NUM, anchor: 'center', lineSpacing: 0 },
-      TextBinding: { resourceId: 'prep_left', prefix: '开战 ' },
-      Color: { tint: 0xd8607b, alpha: 1 },
-      Visibility: { visible: true },
-      Sprite: { textureKey: F_FX_STRIKE, anchorX: 0.5, anchorY: 0.5, zOrder: 31 },
-    } as unknown as EntityBlueprint,
-    eff_timer_show: { Effect: { onSignal: 'ph_prep', kind: 'set-visible', targetId: '', targetEntity: 'hud_timer', value: true } } as unknown as EntityBlueprint,
-    eff_timer_hide: { Effect: { onSignal: 'ph_combat', kind: 'set-visible', targetId: '', targetEntity: 'hud_timer', value: false } } as unknown as EntityBlueprint,
-    eff_timer_hide2: { Effect: { onSignal: 'ph_res', kind: 'set-visible', targetId: '', targetEntity: 'hud_timer', value: false } } as unknown as EntityBlueprint,
+    // 老的「开战 NN」canvas 倒计时（屏幕正上方）已删——倒计时移入 DOM 顶栏状态栏（game-f.tsx），prep_left 资源保留供其投影。
     // —— marker 战斗期隐藏（REQ-F-056，消「武将复制、老的没删」幽灵）：开战拍藏全部 marker（seat+★），
     // 备战拍再显。marker 持久（记布阵不删），战斗期它的 Caster 生成会动的战斗棋子 → 不藏就双重显示。
     eff_marker_hide: { Effect: { onSignal: 'ph_combat', kind: 'set-visible-tagged', targetId: '', tagMask: MARKER_VIS, value: false } } as unknown as EntityBlueprint,

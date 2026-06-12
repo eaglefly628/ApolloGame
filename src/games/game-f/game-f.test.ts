@@ -362,8 +362,8 @@ describe('Game F — 自走棋（纯数据装配，零自走棋代码；棋子=�
       e.world.tick();
       e.world.addComponent('input', { type: 'InputQueue', actions: [] } as unknown as Resource);
     };
-    // 起手金 10（用户钦定可即开点将台）→ 先降到 2 以验「钱不够原子拒单」（备战期无收入窗，停在 2）
-    e.world.addComponent('r_gold', { type: 'ResourceModify', resourceId: 'gold', amount: -8, scope: 'local' } as unknown as Resource);
+    // 起手金 5 → 先降到 2 以验「钱不够原子拒单」（备战期无收入窗，停在 2）
+    e.world.addComponent('r_gold', { type: 'ResourceModify', resourceId: 'gold', amount: -3, scope: 'local' } as unknown as Resource);
     for (let i = 0; i < 2; i++) e.world.tick();
     expect(res('gold')).toBe(2); // 2 金 < 3 买不起
     play0();
@@ -613,7 +613,7 @@ describe('Game F — 自走棋（纯数据装配，零自走棋代码；棋子=�
     };
     for (let i = 0; i < 12; i++) e.world.tick(); // 刷新 → 两段脉冲 → 重铺完毕
     expect(cards()).toHaveLength(3); // 三大框在售卡面可见（用户钦定小丑牌式）
-    expect(res('gold')).toBe(10); // 起手金 10（可即开点将台）
+    expect(res('gold')).toBe(5); // 起手金 5（用户：10 太多）
     e.world.addComponent('r_gold', { type: 'ResourceModify', resourceId: 'gold', amount: 20, scope: 'local' } as unknown as Resource);
     for (let i = 0; i < 3; i++) e.world.tick();
     const g0 = res('gold');
@@ -636,7 +636,7 @@ describe('Game F — 自走棋（纯数据装配，零自走棋代码；棋子=�
       return -1;
     };
     for (let i = 0; i < 5; i++) e.world.tick();
-    e.world.addComponent('r_gold', { type: 'ResourceModify', resourceId: 'gold', amount: -10, scope: 'local' } as unknown as Resource); // 归零起手金：本测试单验收入窗（§4.1 表）
+    e.world.addComponent('r_gold', { type: 'ResourceModify', resourceId: 'gold', amount: -5, scope: 'local' } as unknown as Resource); // 归零起手金：本测试单验收入窗（§4.1 表）
     for (let i = 0; i < 45; i++) e.world.tick();
     expect(res('player_hp')).toBe(100); // §3.1 量程（boot 初始化，旧 20 为占位）
     expect(res('round_idx')).toBe(1);

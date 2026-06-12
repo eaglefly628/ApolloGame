@@ -531,10 +531,14 @@ function buildSoloHud(click: (x: number, y: number) => void, play: (i: number) =
         <div style="display:flex;flex-direction:column;line-height:1"><span style="font-size:9px;letter-spacing:.2em;text-transform:uppercase;color:var(--ink-dim)">STAGE</span><span data-ref="stage" style="font-family:var(--font-num);font-size:20px;color:var(--ink);margin-top:3px">1-1</span></div>
         <div data-ref="pips" style="display:flex;gap:5px;align-items:center"></div>
       </div>
-      <div style="display:flex;justify-content:center"><div data-ref="phase" style="padding:6px 18px;border-radius:99px;white-space:nowrap;font-family:var(--font-heading);font-weight:700;font-size:13px;letter-spacing:.06em;background:var(--accent-soft);color:var(--accent);border:1px solid var(--accent)">⚔ 备战 · 布阵</div></div>
-      <div style="display:flex;flex-direction:column;align-items:center;line-height:1;padding:0 6px"><span style="font-size:9px;letter-spacing:.2em;text-transform:uppercase;color:var(--ink-dim)">倒计时</span><span data-ref="timer" style="font-family:var(--font-num);font-size:20px;color:var(--ink);margin-top:3px">0:30</span></div>
+      <!-- 居中的相位 + 开战倒计时（用户：倒计时画在顶栏且居中）-->
+      <div style="position:absolute;left:50%;transform:translateX(-50%);display:flex;align-items:center;gap:16px">
+        <div data-ref="phase" style="padding:6px 18px;border-radius:99px;white-space:nowrap;font-family:var(--font-heading);font-weight:700;font-size:13px;letter-spacing:.06em;background:var(--accent-soft);color:var(--accent);border:1px solid var(--accent)">⚔ 备战 · 布阵</div>
+        <div style="display:flex;flex-direction:column;align-items:center;line-height:1"><span style="font-size:9px;letter-spacing:.2em;text-transform:uppercase;color:var(--ink-dim)">开战倒计时</span><span data-ref="timer" style="font-family:var(--font-num);font-size:22px;color:var(--accent);margin-top:3px">0:30</span></div>
+      </div>
+      <div style="flex:1"></div>
       <!-- 操作引导（用户：最上排状态栏告诉玩家此刻该干什么）-->
-      <div style="flex:1;display:flex;justify-content:flex-end"><div data-ref="guide" style="display:flex;align-items:center;gap:8px;max-width:440px;padding:7px 14px;border-radius:11px;background:var(--chip-bg);border:1px solid var(--panel-border);font-size:11.5px;line-height:1.4;color:var(--ink)"><span style="font-size:14px">🎯</span><span data-ref="guidetext">招募英雄 → 拖上棋盘布阵 → 点「开战」</span></div></div>
+      <div style="display:flex;justify-content:flex-end"><div data-ref="guide" style="display:flex;align-items:center;gap:8px;max-width:400px;padding:7px 14px;border-radius:11px;background:var(--chip-bg);border:1px solid var(--panel-border);font-size:11.5px;line-height:1.4;color:var(--ink)"><span style="font-size:14px">🎯</span><span data-ref="guidetext">招募英雄 → 拖上棋盘布阵 → 点「开战」</span></div></div>
     </div>
     <!-- 玩家信息卡（左下角，合并全部主公状态+经济；UI Kit 控件 avatar-frame/bar/chip）-->
     <div style="position:absolute;left:10px;bottom:118px;width:194px;padding:13px;border-radius:var(--radius);background:var(--panel-grad);border:1px solid var(--panel-border);box-shadow:inset 0 0 0 1px var(--hairline),0 6px 16px rgba(0,0,0,.2);pointer-events:auto">
@@ -576,7 +580,7 @@ function buildSoloHud(click: (x: number, y: number) => void, play: (i: number) =
         <span style="font-family:var(--font-heading);font-weight:700;font-size:24px;letter-spacing:.12em">开 战</span><span style="font-size:10px;letter-spacing:.22em;opacity:.85;margin-top:2px">READY · SPACE</span></button>
     </div>
     <!-- 点将台招募弹窗 -->
-    <div data-act="shop-backdrop" style="position:absolute;inset:0;z-index:40;display:none;align-items:center;justify-content:center;background:rgba(0,0,0,.5);backdrop-filter:blur(4px);pointer-events:auto">
+    <div data-act="shop-backdrop" style="position:absolute;inset:0;z-index:40;display:none;align-items:flex-start;justify-content:center;padding-top:64px;background:rgba(0,0,0,.16);pointer-events:auto">
       <div data-stop="1" style="position:relative;width:900px;background:var(--panel-grad);border:1px solid var(--accent);border-radius:22px;box-shadow:inset 0 0 0 1px var(--hairline),0 30px 70px rgba(0,0,0,.55);padding:30px 32px 26px">
         <div style="display:flex;align-items:center;gap:16px;margin-bottom:20px">
           <div style="font-family:var(--font-display);font-size:38px;color:var(--ink);line-height:1">点将台</div>
