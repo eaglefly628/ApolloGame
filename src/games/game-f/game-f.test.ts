@@ -1,7 +1,7 @@
 import { describe, it, expect } from 'vitest';
 import { Engine } from '../../runtime/engine.js';
 import type { Resource, Flag, Shape, Status, Transform } from '@engine/protocol/components.js';
-import { buildGameFBlueprint, GAME_F_HERO_IDS, FROZEN, TEAM_A } from './blueprint.js';
+import { buildGameFBlueprint, GAME_F_HERO_IDS, FROZEN, TEAM_A, TEAM_B, rosterFor } from './blueprint.js';
 import { offsetToAxial, project } from './hex.js';
 
 // 节奏：缺省=玩家档（备战30s）；测试统一快速档维持既有时序断言。
@@ -707,6 +707,33 @@ describe('Game F — 自走棋（纯数据装配，零自走棋代码；棋子=�
     for (let i = 0; i < 5; i++) e.world.tick();
     expect(e.world.getAllEntities().includes(b2)).toBe(false); // 点谁卖谁（板上也可卖）
     expect(res('gold')).toBe(g0 + 8); // 2星卖价 = 3×3−1（§4.6）
+  });
+
+  it('开局选阵营=魏（REQ-F-061）：我方变魏将(a_zhangliao 下半场)、敌方变蜀将(b_guanyu 上半场)；蓝图确定可加载', () => {
+    const WEI = { ...FAST, playerFaction: 'wei' as const };
+    const run = (): string => {
+      const e = new Engine({ tickRate: 60 });
+      e.load(buildGameFBlueprint(WEI));
+      for (let i = 0; i < 80; i++) e.world.tick();
+      return e.hash();
+    };
+    expect(run()).toBe(run()); // 选魏一局同样确定（同初值重跑 hash 一致）
+    const wr = rosterFor('wei');
+    const ids = wr.map((h) => h.id);
+    expect(ids).toContain('a_zhangliao'); // 魏将上位我方(a_)
+    expect(ids).toContain('b_guanyu'); // 蜀将下位敌方(b_)
+    expect(ids).not.toContain('a_guanyu'); // 关羽不再我方
+    const zl = wr.find((h) => h.id === 'a_zhangliao')!;
+    expect(zl.team).toBe(TEAM_A);
+    expect(zl.r).toBeGreaterThanOrEqual(4); // 我方在下半场 r4-7（站位镜像）
+    const gy = wr.find((h) => h.id === 'b_guanyu')!;
+    expect(gy.team).toBe(TEAM_B);
+    expect(gy.r).toBeLessThanOrEqual(3); // 敌方在上半场 r0-3
+    // 选魏一局棋子真展开（开战拍我方魏将成型）
+    const e = new Engine({ tickRate: 60 });
+    e.load(buildGameFBlueprint(WEI));
+    for (let i = 0; i < 80; i++) e.world.tick();
+    expect(e.world.getAllEntities().some((id) => id.startsWith('hero_a_zhangliao#'))).toBe(true);
   });
 
   it('摆子拖拽（F-18/REQ-F-045+049+050 全量）：备战拖上板吸附格=出兵点、人口限额拒超、战斗期锁拖', () => {

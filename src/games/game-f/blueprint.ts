@@ -238,6 +238,34 @@ const ROSTER: HeroSpec[] = [
   { id: 'b_ganning', name: '甘宁', key: F_HERO.gan_ning, team: TEAM_B, enemy: TEAM_A, cls: ASSASSIN, faction: FACT_WU, tint: WU_GREEN, q: 5, r: 1, hp: 145, atk: 20, ult: '锦帆突袭', ultDmg: 60, ultSize: 50, atkType: 'ranged', ultFx: F_FX_ARROW },
 ];
 
+// ── 开局选阵营（REQ-F-061）：玩家选蜀或魏，所选阵营填我方(a_/下半场)、另一阵营填敌方(b_/上半场)。──
+// ROSTER 即「玩家=蜀」基线；选魏 = swapFactions(ROSTER)。纯函数、确定性；默认蜀 = 零改动安全网。
+export type Faction = 'shu' | 'wei';
+// 阵营互换：a_↔b_ 角色前缀翻转 + 队伍/敌方交换 + 站位镜像(r→7-r：上下半场对调) + tint 随队伍色。
+// 名牌色已由 team 派生(heroTemplate 读 team===TEAM_A?红:蓝)，故"我方红/敌方蓝"自动跟阵营走，无需改模板。
+function swapFactions(roster: HeroSpec[]): HeroSpec[] {
+  return roster.map((h): HeroSpec => {
+    const wasPlayer = h.team === TEAM_A;
+    return {
+      ...h,
+      id: (wasPlayer ? 'b_' : 'a_') + h.id.slice(2),
+      team: wasPlayer ? TEAM_B : TEAM_A,
+      enemy: wasPlayer ? TEAM_A : TEAM_B,
+      tint: wasPlayer ? WEI_BLUE : SHU_RED,
+      r: 7 - h.r, // 上半场 r0-3 ↔ 下半场 r4-7 镜像（中线对称）
+    };
+  });
+}
+export function rosterFor(pf: Faction): HeroSpec[] {
+  return pf === 'wei' ? swapFactions(ROSTER) : ROSTER;
+}
+// 商店英雄码：玩家阵营 4 将 → 码 1..4（按 a_ 顺序；默认蜀 = a_guanyu:1.. 与旧 HERO_CODE 逐字一致）。
+function codesFor(roster: HeroSpec[]): Record<string, number> {
+  const out: Record<string, number> = {};
+  roster.filter((h) => h.team === TEAM_A).forEach((h, i) => { out[h.id] = i + 1; });
+  return out;
+}
+
 // 装备（数据）：物品=属性加成；英雄装配期把 hp/atk 加上（静态）。合成(2件→1件)走商店 craft-recipe，待商店阶段。
 const ITEMS: Record<string, { name: string; hp?: number; atk?: number }> = {
   yuxi: { name: '玉玺', hp: 120 }, // +120 血（坦克件）
@@ -357,52 +385,53 @@ function slotEntity(h: HeroSpec, onSignal: string, col: number, row: number, hpM
 
 // ── 关卡表（flow-spec §4.5，前 2 阶段）：敌阵=数据条目、与我方槽位同构；扩阶段=加条目+一行 when_deploy_stage_N。──
 // 注：敌方强度暂只缩放 HP（攻击力烘在 strike_<id> 模板 amount 里；按阶段缩攻=每阶段一套 strike 模板，真需要再加）。
-const STAGES: { n: number; comp: { hero: string; q: number; r: number; hpMul: number }[] }[] = [
+// 敌阵按**敌方阵营内序号 ei** 引用（0..3），build 时解析成 enemyHeroes[ei]——这样选阵营翻转后，
+// 同一关卡表对蜀/魏皆成立（ei0=前排武将…）。默认蜀：ei0=张辽,ei1=许褚,ei2=司马,ei3=甘宁（与旧 b_ 逐字等价）。
+const STAGES: { n: number; comp: { ei: number; q: number; r: number; hpMul: number }[] }[] = [
   // （阶段1 无 PvP 敌阵——按准则整段野怪化，黄巾散兵=PVE_WAVES[0]，见下；坐标=7×8 视觉 col 0..6 / row 0..3 敌半场）
   {
-    n: 2, // 阶段2「董卓先锋」：4 子全强度（张辽自带方天画戟 ≈ §4.5 的"+1 件装"）
+    n: 2, // 阶段2「董卓先锋」：4 子全强度
     comp: [
-      { hero: 'b_zhangliao', q: 2, r: 3, hpMul: 1 },
-      { hero: 'b_xuchu', q: 4, r: 3, hpMul: 1 },
-      { hero: 'b_simayi', q: 3, r: 1, hpMul: 1 },
-      { hero: 'b_ganning', q: 5, r: 1, hpMul: 1 },
+      { ei: 0, q: 2, r: 3, hpMul: 1 },
+      { ei: 1, q: 4, r: 3, hpMul: 1 },
+      { ei: 2, q: 3, r: 1, hpMul: 1 },
+      { ei: 3, q: 5, r: 1, hpMul: 1 },
     ],
   },
   {
     n: 3, // 阶段3「吕布陷阵」：5 子 + 2 星点缀（hpMul1.8≈2星）——同模板多实例（F-9 per-instance）
     comp: [
-      { hero: 'b_zhangliao', q: 1, r: 3, hpMul: 1.8 },
-      { hero: 'b_zhangliao', q: 5, r: 3, hpMul: 1 },
-      { hero: 'b_xuchu', q: 3, r: 3, hpMul: 1 },
-      { hero: 'b_simayi', q: 3, r: 1, hpMul: 1 },
-      { hero: 'b_ganning', q: 5, r: 1, hpMul: 1 },
+      { ei: 0, q: 1, r: 3, hpMul: 1.8 },
+      { ei: 0, q: 5, r: 3, hpMul: 1 },
+      { ei: 1, q: 3, r: 3, hpMul: 1 },
+      { ei: 2, q: 3, r: 1, hpMul: 1 },
+      { ei: 3, q: 5, r: 1, hpMul: 1 },
     ],
   },
   {
     n: 4, // 阶段4「官渡精锐」：6 子、整体 1.4×（羁绊成型近似——羁绊机制 Phase 3）
     comp: [
-      { hero: 'b_zhangliao', q: 1, r: 3, hpMul: 1.4 },
-      { hero: 'b_zhangliao', q: 5, r: 3, hpMul: 1.4 },
-      { hero: 'b_xuchu', q: 2, r: 3, hpMul: 1.4 },
-      { hero: 'b_xuchu', q: 4, r: 3, hpMul: 1.4 },
-      { hero: 'b_simayi', q: 3, r: 1, hpMul: 1.4 },
-      { hero: 'b_ganning', q: 5, r: 1, hpMul: 1.4 },
+      { ei: 0, q: 1, r: 3, hpMul: 1.4 },
+      { ei: 0, q: 5, r: 3, hpMul: 1.4 },
+      { ei: 1, q: 2, r: 3, hpMul: 1.4 },
+      { ei: 1, q: 4, r: 3, hpMul: 1.4 },
+      { ei: 2, q: 3, r: 1, hpMul: 1.4 },
+      { ei: 3, q: 5, r: 1, hpMul: 1.4 },
     ],
   },
   {
-    n: 5, // 阶段5「赤壁决战」：7 子 + Boss 许褚（hpMul3，终关）
+    n: 5, // 阶段5「赤壁决战」：7 子 + Boss（ei1 hpMul3，终关）
     comp: [
-      { hero: 'b_xuchu', q: 3, r: 2, hpMul: 3 },
-      { hero: 'b_zhangliao', q: 1, r: 3, hpMul: 1.8 },
-      { hero: 'b_zhangliao', q: 5, r: 3, hpMul: 1.8 },
-      { hero: 'b_xuchu', q: 2, r: 3, hpMul: 1.4 },
-      { hero: 'b_simayi', q: 2, r: 1, hpMul: 1.8 },
-      { hero: 'b_simayi', q: 4, r: 1, hpMul: 1.4 },
-      { hero: 'b_ganning', q: 5, r: 0, hpMul: 1.8 },
+      { ei: 1, q: 3, r: 2, hpMul: 3 },
+      { ei: 0, q: 1, r: 3, hpMul: 1.8 },
+      { ei: 0, q: 5, r: 3, hpMul: 1.8 },
+      { ei: 1, q: 2, r: 3, hpMul: 1.4 },
+      { ei: 2, q: 2, r: 1, hpMul: 1.8 },
+      { ei: 2, q: 4, r: 1, hpMul: 1.4 },
+      { ei: 3, q: 5, r: 0, hpMul: 1.8 },
     ],
   },
 ];
-const heroOf = (id: string): HeroSpec => ROSTER.find((h) => h.id === id)!;
 
 // ── 野怪波次（一图流：阶段1×4回合+每阶段末回合(r5)；固定阵容、死亡掉法球💰）──
 // 强度随阶段爬坡；图暂借甘宁（真野怪皮=美术 pass，见 art-data 待办）。掉落链：Mortal.dropTemplate（引擎现成）。
@@ -483,7 +512,9 @@ function visSwap(sig: string, show: string, hides: string[]): Record<string, Ent
 }
 
 // 每英雄三张模板：普攻打击区 + 大招打击区 + 棋子复合体（REQ-F-032 回合重展开用）。targetMask=敌队。
-export const GAME_F_TEMPLATES: Record<string, PrefabTemplate> = Object.fromEntries(
+// 模板库按当前 ROSTER（已按阵营分配 a_/b_）生成；参数名取 ROSTER 以使 150 行体零改动绑定到入参。
+function templatesFor(ROSTER: HeroSpec[]): Record<string, PrefabTemplate> {
+  return Object.fromEntries(
   ROSTER.flatMap((h): [string, PrefabTemplate][] => [
     // 近战=瞬时打击区；远程/法术=追踪弹道（用户打击感批）。两类只发各自用到的武器模板。
     h.atkType === 'melee'
@@ -635,7 +666,10 @@ export const GAME_F_TEMPLATES: Record<string, PrefabTemplate> = Object.fromEntri
       } } as unknown as PrefabTemplate,
     ]),
   ),
-);
+  );
+}
+// 模块级默认（玩家=蜀），供 index.ts 导出/外部消费；build 内按所选阵营重新生成并 shadow。
+export const GAME_F_TEMPLATES = templatesFor(rosterFor('shu'));
 
 // 竞技场=棋盘区（7×8 盘 x≈±150 / y≈-155..95；下方托盘/商店带不在内——席上 marker 本就无 TEAM 位，双保险）。
 const ARENA = { minX: -170, minY: -165, maxX: 170, maxY: 110 };
@@ -779,11 +813,17 @@ const RUN_FLOW = {
 
 // 节奏档（玩家视角修正：备战 ~30s 给操作时间——准则 §1.2；ready 可跳过；结算 4s 可读）。
 // 测试传快速档 {prepTicks:40, resolutionTicks:60} 保持既有时序断言；缺省=玩家档。
-export interface GameFPacing { prepTicks?: number; resolutionTicks?: number; celebrateTicks?: number }
+export interface GameFPacing { prepTicks?: number; resolutionTicks?: number; celebrateTicks?: number; playerFaction?: Faction }
 export function buildGameFBlueprint(pacing: GameFPacing = {}): WorldBlueprint {
   const PREP_TICKS = pacing.prepTicks ?? 1800; // 30s@60tps
   const RESOLUTION_TICKS = pacing.resolutionTicks ?? 240; // 4s
   const CELEBRATE_TICKS = pacing.celebrateTicks ?? 110; // ~1.8s 战后亮相（横幅+彩点；测试快速档传小值）
+  // ── 开局选阵营（REQ-F-061）：按所选阵营生成本局 ROSTER + 派生数据，shadow 模块级默认（玩家=蜀）。──
+  // 下面全部局部 const 同名 shadow 模块级，使 500 行 build 体零改动绑定到本局数据；默认蜀=逐字等价旧行为。
+  const ROSTER = rosterFor(pacing.playerFaction ?? 'shu');
+  const HERO_CODE = codesFor(ROSTER);
+  const GAME_F_TEMPLATES = templatesFor(ROSTER);
+  const enemyHeroes = ROSTER.filter((h) => h.team === TEAM_B); // 敌阵营 4 将（STAGES ei 解析用）
   const entities: Record<string, EntityBlueprint> = {
     // 技能/打击库（数据，单例）。
     library: { PrefabLibrary: { templates: GAME_F_TEMPLATES, seq: 0 } } as unknown as EntityBlueprint,
@@ -1224,8 +1264,9 @@ export function buildGameFBlueprint(pacing: GameFPacing = {}): WorldBlueprint {
   // 敌方关卡槽（持久）：每阶段一组，prep 按 stage_idx 分流的 deploy_stage_<N> 展开（§4.5 敌阵=数据）。
   for (const st of STAGES) {
     st.comp.forEach((c, ci) => {
-      // id 带序号：同阶段同名敌将（F-9 后同模板多实例合法）不撞键
-      entities[`slot_s${st.n}_${ci}_${c.hero}`] = slotEntity(heroOf(c.hero), `deploy_stage_${st.n}`, c.q, c.r, c.hpMul);
+      // ei → 敌阵营第 ei 将（选阵营翻转后仍成立）；id 带序号防同模板多实例撞键。默认蜀：ei0=b_zhangliao..。
+      const eh = enemyHeroes[c.ei];
+      entities[`slot_s${st.n}_${ci}_${eh.id}`] = slotEntity(eh, `deploy_stage_${st.n}`, c.q, c.r, c.hpMul);
     });
   }
   // 野怪槽（批B）：每阶段一组，count 只横向铺位（7×8 盘敌前排 r3、col 1 起）；血量=MOB_BASE_HP×HP_SCALE×hpMul 经 overrides
