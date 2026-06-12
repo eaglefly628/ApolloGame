@@ -403,9 +403,9 @@ describe('Game F — 自走棋（纯数据装配，零自走棋代码；棋子=�
       e.world.tick();
       e.world.addComponent('input', { type: 'InputQueue', actions: [] } as unknown as Resource);
     };
-    // 回合1 prep 自动刷新：初发 [3,1,4] 回袋底、换下一批 → 手牌 ≠ 初发（REQ-F-054 卡池守恒）
+    // 回合1 prep 自动刷新：初发 [3,1,5] 回袋底、换下一批 → 手牌 ≠ 初发（REQ-F-054 卡池守恒；6 将库牌袋）
     for (let i = 0; i < 10; i++) e.world.tick();
-    expect(hand()).toBe('2,2,4'); // 弃 [3,1,4] 回袋底，补 deck 第 4-6 张（确定性）
+    expect(hand()).toBe('2,6,4'); // 弃 [3,1,5] 回袋底，补 deck 第 4-6 张（确定性，6 将库牌袋）
     // 点「锁店」→ 打完回合1 → 回合2 prep 自动刷新被门挡（手牌不变）→ 开战拍自动解锁
     click(300, 120);
     expect(flag(e, 'shop_locked')).toBe(true);
@@ -610,6 +610,18 @@ describe('Game F — 自走棋（纯数据装配，零自走棋代码；棋子=�
     expect(gameFEnemyPreview(2, 5)).toHaveLength(0); // r5=野怪波，无英雄预览
     // 选魏阵营翻转：敌方变蜀将
     expect(gameFEnemyPreview(2, 1, 'wei').map((f) => f.name)).toContain('关羽');
+  });
+
+  it('蜀 6 将库（C）：roster 含 6 蜀（含商店专属马超/黄忠）；开局只播种原 4 将', () => {
+    const shu = rosterFor('shu').filter((h) => h.team === TEAM_A);
+    expect(shu).toHaveLength(6);
+    expect(shu.map((h) => h.name)).toEqual(['关羽', '赵云', '诸葛亮', '张飞', '马超', '黄忠']);
+    expect(shu.filter((h) => h.seed !== false)).toHaveLength(4); // 只原 4 将播种，新增 2 将商店专属
+    // 加载实跑：开局在板 marker 仍 4（新增将不播种）
+    const e = new Engine({ tickRate: 60 });
+    e.load(buildGameFBlueprint(FAST));
+    for (let i = 0; i < 12; i++) e.world.tick();
+    expect(e.world.getAllEntities().filter((id) => id.startsWith('bench_') && id.endsWith(':seat'))).toHaveLength(4);
   });
 
   it('野怪回合+法球（批B，一图流）：阶段1 全野怪（黄巾波次）；野怪死亡掉法球；结算清场含未拾法球', () => {

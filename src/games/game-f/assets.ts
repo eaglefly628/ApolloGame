@@ -17,6 +17,10 @@ export const F_HERO = {
   zhao_yun: 'f.hero.zhao_yun',
   zhuge_liang: 'f.hero.zhuge_liang',
   zhang_fei: 'f.hero.zhang_fei', // 蜀·张飞（世界观修正：单机纯蜀，替原跨势力周瑜）
+  ma_chao: 'f.hero.ma_chao', // 蜀·马超（6 将库扩充，商店专属）
+  huang_zhong: 'f.hero.huang_zhong', // 蜀·黄忠（射手）
+  cao_ren: 'f.hero.cao_ren', // 魏·曹仁（对称扩充）
+  dian_wei: 'f.hero.dian_wei', // 魏·典韦
   zhang_liao: 'f.hero.zhang_liao',
   xu_chu: 'f.hero.xu_chu',
   sima_yi: 'f.hero.sima_yi',
@@ -55,6 +59,10 @@ export const GAME_F_ASSETS: AssetManifest = [
   // 吴（合作/野怪皮借用）+ 主公金龙（独特生物）
   { kind: 'texture', key: F_HERO.zhou_yu, src: dcss('deep_elf_sorcerer'), width: 32, height: 32 },
   { kind: 'texture', key: F_HERO.gan_ning, src: dcss('deep_elf_blademaster'), width: 32, height: 32 },
+  { kind: 'texture', key: F_HERO.ma_chao, src: dcss('centaur_warrior'), width: 32, height: 32 },
+  { kind: 'texture', key: F_HERO.huang_zhong, src: dcss('deep_elf_master_archer'), width: 32, height: 32 },
+  { kind: 'texture', key: F_HERO.cao_ren, src: dcss('orc_warlord'), width: 32, height: 32 },
+  { kind: 'texture', key: F_HERO.dian_wei, src: dcss('minotaur'), width: 32, height: 32 },
   { kind: 'texture', key: F_HERO.protag, src: dcss('golden_dragon'), width: 32, height: 32 },
   // 备战席石墩台座（朴素灰石，圆墩 + 浅色顶沿 + 竖纹；像放香炉的台座）。
   { kind: 'texture', key: F_PEDESTAL, src: svg(`<ellipse cx="20" cy="7" rx="13" ry="3.5" fill="#cfc7b8"/><path d="M7 7 L33 7 L30 25 L10 25 Z" fill="#a79e8d"/><path d="M7 7 L33 7 L31.5 10 L8.5 10 Z" fill="#ddd5c6"/><ellipse cx="20" cy="25" rx="11" ry="3.5" fill="#8f8675"/><path d="M14 11 L13 23 M20 11 L20 23 M26 11 L27 23" stroke="#8a8170" stroke-width="0.6" opacity="0.5"/>`, 40, 32), width: 40, height: 32 },

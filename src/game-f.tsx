@@ -476,11 +476,12 @@ function buildSoloHud(click: (x: number, y: number) => void, play: (i: number) =
   const HEROES: Record<number, [string, string, string, string]> = {
     1: ['关羽', '关', '武将', 'death_knight'], 2: ['赵云', '赵', '武将', 'deep_elf_knight_new'],
     3: ['诸葛亮', '诸', '谋士', 'deep_elf_mage'], 4: ['张飞', '张', '武将', 'orc_knight_new'],
+    5: ['马超', '马', '武将', 'centaur_warrior'], 6: ['黄忠', '黄', '射手', 'deep_elf_master_archer'],
   };
   const SHU = '#d8504e';
   // 备战期在板 marker 名牌（用户：布局时看不到武将名字）——DOM 标签层读世界 marker 位置投影，避开 prefab 子实体
   // 干扰合成/卖出链；marker id → 将名（纯蜀 4 将）。
-  const HERO_NAMES: Record<string, string> = { a_guanyu: '关羽', a_zhaoyun: '赵云', a_zhuge: '诸葛亮', a_zhouyu: '张飞' };
+  const HERO_NAMES: Record<string, string> = { a_guanyu: '关羽', a_zhaoyun: '赵云', a_zhuge: '诸葛亮', a_zhouyu: '张飞', a_machao: '马超', a_huangzhong: '黄忠' };
   // 开局三选一 = 现成 rune_a/b/c（世界坐标 + 信号），DOM 卡接它们。
   const RUNES: [string, string, string, string, number, number][] = [
     ['a', '🌾', '屯粮 · 积谷', '回合开始 +10 金', -110, -100],

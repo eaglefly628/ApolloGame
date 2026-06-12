@@ -223,6 +223,7 @@ interface HeroSpec {
   ultDot?: boolean; // 大招附 DoT（灼烧/吸取）
   ultFreeze?: number; // 大招冰冻时长(tick)：命中置 FROZEN、到点自动解（八阵图类控制技，REQ-F-030）
   items?: string[]; // 装备（ITEMS id；装配期把 hp/atk 加上）
+  seed?: boolean; // false=商店专属不播种（6 将库扩充：开局只播种原 4 将，其余可买）
 }
 
 // 站位金铲铲式（7×8 真规格：魏上半场 r0..3 / 蜀下半场 r4..7，中线 r3|r4 贴脸）+ 各英雄独立血量/攻击
@@ -233,11 +234,17 @@ const ROSTER: HeroSpec[] = [
   { id: 'a_zhaoyun', name: '赵云', key: F_HERO.zhao_yun, team: TEAM_A, enemy: TEAM_B, cls: WARRIOR, faction: FACT_SHU, tint: SHU_RED, q: 4, r: 4, hp: 165, atk: 18, ult: '七进七出', ultDmg: 75, ultSize: 55, atkType: 'melee', ultFx: F_FX_STRIKE, items: ['qinggang'] },
   { id: 'a_zhuge', name: '诸葛亮', key: F_HERO.zhuge_liang, team: TEAM_A, enemy: TEAM_B, cls: TACTICIAN, faction: FACT_SHU, tint: SHU_RED, q: 2, r: 6, hp: 120, atk: 24, ult: '八阵图', ultDmg: 35, ultSize: 95, atkType: 'magic', ultFx: F_FX_FROST, ultFreeze: 120 },
   { id: 'a_zhouyu', name: '张飞', key: F_HERO.zhang_fei, team: TEAM_A, enemy: TEAM_B, cls: WARRIOR, faction: FACT_SHU, tint: SHU_RED, q: 4, r: 6, hp: 200, atk: 15, ult: '燕人咆哮', ultDmg: 50, ultSize: 72, atkType: 'melee', ultFx: F_FX_STRIKE },
+  // 蜀 6 将库扩充（商店专属，seed:false 不播种；数值杜撰、不特别强）：
+  { id: 'a_machao', name: '马超', key: F_HERO.ma_chao, team: TEAM_A, enemy: TEAM_B, cls: WARRIOR, faction: FACT_SHU, tint: SHU_RED, q: 3, r: 5, hp: 190, atk: 16, ult: '西凉铁骑', ultDmg: 48, ultSize: 70, atkType: 'melee', ultFx: F_FX_STRIKE, seed: false },
+  { id: 'a_huangzhong', name: '黄忠', key: F_HERO.huang_zhong, team: TEAM_A, enemy: TEAM_B, cls: ASSASSIN, faction: FACT_SHU, tint: SHU_RED, q: 1, r: 6, hp: 130, atk: 22, ult: '百步穿杨', ultDmg: 55, ultSize: 48, atkType: 'ranged', ultFx: F_FX_ARROW, seed: false },
   // 魏（TEAM_B，上半场 r0..3，蓝）—— 单机=纯曹操阵营（张辽/许褚/司马懿/夏侯惇），不混吴。
   { id: 'b_zhangliao', name: '张辽', key: F_HERO.zhang_liao, team: TEAM_B, enemy: TEAM_A, cls: WARRIOR, faction: FACT_WEI, tint: WEI_BLUE, q: 2, r: 3, hp: 200, atk: 15, ult: '突阵', ultDmg: 50, ultSize: 70, atkType: 'melee', ultFx: F_FX_STRIKE, items: ['fangtian'] },
   { id: 'b_xuchu', name: '许褚', key: F_HERO.xu_chu, team: TEAM_B, enemy: TEAM_A, cls: WARRIOR, faction: FACT_WEI, tint: WEI_BLUE, q: 4, r: 3, hp: 270, atk: 11, ult: '裸衣血战', ultDmg: 42, ultSize: 78, atkType: 'melee', ultFx: F_FX_STRIKE },
   { id: 'b_simayi', name: '司马懿', key: F_HERO.sima_yi, team: TEAM_B, enemy: TEAM_A, cls: TACTICIAN, faction: FACT_WEI, tint: WEI_BLUE, q: 3, r: 1, hp: 130, atk: 23, ult: '鬼谋', ultDmg: 40, ultSize: 88, atkType: 'magic', ultFx: F_FX_DRAIN, ultDot: true, items: ['qinggang'] },
   { id: 'b_ganning', name: '夏侯惇', key: F_HERO.xiahou_dun, team: TEAM_B, enemy: TEAM_A, cls: WARRIOR, faction: FACT_WEI, tint: WEI_BLUE, q: 5, r: 1, hp: 200, atk: 14, ult: '拔矢啖睛', ultDmg: 50, ultSize: 70, atkType: 'melee', ultFx: F_FX_STRIKE },
+  // 魏 6 将库（对称扩充，选阵营翻转用；商店专属 seed:false）：
+  { id: 'b_caoren', name: '曹仁', key: F_HERO.cao_ren, team: TEAM_B, enemy: TEAM_A, cls: WARRIOR, faction: FACT_WEI, tint: WEI_BLUE, q: 3, r: 2, hp: 230, atk: 12, ult: '据守', ultDmg: 40, ultSize: 72, atkType: 'melee', ultFx: F_FX_STRIKE, seed: false },
+  { id: 'b_dianwei', name: '典韦', key: F_HERO.dian_wei, team: TEAM_B, enemy: TEAM_A, cls: WARRIOR, faction: FACT_WEI, tint: WEI_BLUE, q: 1, r: 2, hp: 250, atk: 14, ult: '古之恶来', ultDmg: 50, ultSize: 74, atkType: 'melee', ultFx: F_FX_STRIKE, seed: false },
 ];
 
 // ── 开局选阵营（REQ-F-061）：玩家选蜀或魏，所选阵营填我方(a_/下半场)、另一阵营填敌方(b_/上半场)。──
@@ -496,7 +503,8 @@ function mobTemplate(atk: number): PrefabTemplate {
 const HERO_CODE: Record<string, number> = { a_guanyu: 1, a_zhaoyun: 2, a_zhuge: 3, a_zhouyu: 4 };
 // 每将 9 张：自动刷新每回合弃 5 补 5，有限袋按 v2 §4.6 语义随对局消耗（卖出归还袋底，048②）。
 // F-17 升星后 3 星需同将 9 张 → 袋从 6/将扩到 9/将；**只追加不重排**——前 24 张次序锁死既有验收断言。
-const SHOP_DECK = [3, 1, 4, 2, 2, 4, 1, 3, 1, 2, 3, 4, 4, 2, 1, 3, 3, 1, 2, 4, 2, 3, 4, 1, 1, 2, 3, 4, 4, 3, 2, 1, 2, 4, 1, 3];
+// 6 将库牌袋（码 1..6 各 7 张；有限袋按 §4.6 语义随对局消耗，卖出归还袋底）。
+const SHOP_DECK = [3, 1, 5, 2, 6, 4, 1, 4, 2, 6, 3, 5, 5, 2, 1, 6, 4, 3, 2, 5, 3, 1, 6, 4, 4, 3, 6, 2, 1, 5, 6, 1, 4, 3, 5, 2, 3, 6, 2, 5, 1, 4];
 // ── 升星数值（F-17/REQ-F-046，§4.6）：每星 血 ×1.8 / 攻与大招 ×1.5；卖价 1星=现行2金、2星=3×3−1、3星=3×9−1。──
 const STAR_HP_MUL = [0, 1, 1.8, 3.24]; // 索引=星级
 const STAR_DMG_MUL = [0, 1, 1.5, 2.25];
@@ -1233,7 +1241,7 @@ export function buildGameFBlueprint(pacing: GameFPacing = {}): WorldBlueprint {
   // when_boot：stage_idx≥1 自世界首拍恒真 → edge 恰发一次。旧固定槽 slot_<将> 系列由此整段替代：
   // 上场=「板上有 marker」一个事实源，拖动/买卖/合成全自动跟。
   entities['when_boot'] = { EventWhen: { signal: 'boot_roster', when: resCmp('stage_idx', 'gte', 1), mode: 'edge', armed: false } } as unknown as EntityBlueprint;
-  for (const h of ROSTER.filter((x) => x.team === TEAM_A)) {
+  for (const h of ROSTER.filter((x) => x.team === TEAM_A && x.seed !== false)) { // 只播种原 4 将（seed≠false）；新增 2 将商店专属可买
     const a = offsetToAxial(h.q, h.r);
     const p = project(a.q, a.r);
     entities[`bootcast_${h.id}`] = {
