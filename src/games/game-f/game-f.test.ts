@@ -576,6 +576,31 @@ describe('Game F — 自走棋（纯数据装配，零自走棋代码；棋子=�
     expect(alive(e, 'protag_name')).toBe(true);
   });
 
+  it('装备系统（A）：敌将（魏）死掉装备 orb → 主公行囊拾取 → items 累加（开局空、战中掉、入装备栏）', () => {
+    const e = new Engine({ tickRate: 60 });
+    e.load(buildGameFBlueprint(FAST));
+    const res = (id: string): number => {
+      for (const x of e.world.getAllEntities()) {
+        const r = e.world.getComponent<Resource>(x, 'Resource');
+        if (r && r.id === id) return r.current;
+      }
+      return -1;
+    };
+    for (let i = 0; i < 10; i++) e.world.tick();
+    expect(res('items')).toBe(0); // 开局装备栏空
+    // 在主公(行囊)脚下落一个魏将死亡掉落（含装备 orb，仅 B 方掉）→ 行囊（跟随主公）拾取
+    e.world.createEntity('eqreq');
+    e.world.addComponent('eqreq', { type: 'SpawnRequest', templateId: 'death_b_zhangliao', x: -150, y: 86 } as unknown as Resource);
+    for (let i = 0; i < 8; i++) e.world.tick();
+    expect(res('items')).toBe(1); // 拾取入账 +1（装备 orb Hitbox→行囊 BAG，consumeOnHit）
+    expect(e.world.getAllEntities().some((id) => id.startsWith('death_b_zhangliao#') && id.endsWith(':eorb'))).toBe(false); // orb 同拍自毁
+    // 我方（蜀）死亡不掉装备（防自 farm）
+    e.world.createEntity('eqreq2');
+    e.world.addComponent('eqreq2', { type: 'SpawnRequest', templateId: 'death_a_guanyu', x: -150, y: 86 } as unknown as Resource);
+    for (let i = 0; i < 8; i++) e.world.tick();
+    expect(res('items')).toBe(1); // 蜀死无装备 orb → 不增
+  });
+
   it('野怪回合+法球（批B，一图流）：阶段1 全野怪（黄巾波次）；野怪死亡掉法球；结算清场含未拾法球', () => {
     const e = new Engine({ tickRate: 60 });
     e.load(buildGameFBlueprint(FAST));

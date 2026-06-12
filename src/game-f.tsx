@@ -518,8 +518,8 @@ function buildSoloHud(click: (x: number, y: number) => void, play: (i: number) =
     { g: '🔥', n: '连胜激励', d: '连胜越高士气越旺', ref: 'buffStreak' },
   ].map((b) => `<div style="display:flex;align-items:center;gap:9px;padding:8px 9px;border-radius:9px;background:var(--chip-bg);border:1px solid var(--panel-border)">
     <span style="font-size:17px">${b.g}</span><div style="flex:1;min-width:0"><div style="font-family:var(--font-heading);font-weight:700;font-size:13px;color:var(--ink)">${b.n}</div><div ${b.ref ? `data-ref="${b.ref}"` : ''} style="font-size:10px;color:var(--ink-dim)">${b.d}</div></div></div>`).join('');
-  const items = ['🗡', '🛡', '👑', '📜', '🏹', '', '', ''].map((g) =>
-    `<div style="aspect-ratio:1;border-radius:8px;background:${g ? 'var(--chip-bg)' : 'transparent'};border:1px ${g ? 'solid' : 'dashed'} var(--panel-border);display:flex;align-items:center;justify-content:center;font-size:16px">${g}</div>`).join('');
+  // 装备栏（战利品）：开局空，战中敌死掉装备 → 主公拾取 → items 累加填充（update 读真实 items 资源）。
+  const EQUIP_ICONS = ['🗡', '🛡', '👑', '📜', '🏹', '💍', '🔮', '⚔️'];
 
   const root = el('div', 'gfx-hud');
   root.innerHTML = `
@@ -570,8 +570,8 @@ function buildSoloHud(click: (x: number, y: number) => void, play: (i: number) =
         <div style="font-size:9px;letter-spacing:.2em;text-transform:uppercase;color:var(--ink-dim);margin-bottom:9px">当前状态 · Status</div>
         <div style="display:flex;flex-direction:column;gap:7px">${buffs}</div></div>
       <div style="background:var(--panel-grad);border:1px solid var(--panel-border);border-radius:var(--radius);box-shadow:inset 0 0 0 1px var(--hairline);padding:12px">
-        <div style="font-size:9px;letter-spacing:.2em;text-transform:uppercase;color:var(--ink-dim);margin-bottom:9px">装备 · 锦囊</div>
-        <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:8px">${items}</div></div></div>
+        <div style="display:flex;justify-content:space-between;align-items:baseline;margin-bottom:9px"><span style="font-size:9px;letter-spacing:.2em;text-transform:uppercase;color:var(--ink-dim)">装备 · 战利品</span><span data-ref="equipcount" style="font-family:var(--font-num);font-size:11px;color:var(--gold)">0/8</span></div>
+        <div data-ref="equipslots" style="display:grid;grid-template-columns:repeat(4,1fr);gap:8px"></div></div></div>
     <!-- BOTTOM BAR · 经济 + 点将台 + 开战（覆盖 canvas 旧底部；按钮注入世界坐标点击）-->
     <div style="position:absolute;left:0;right:0;bottom:0;height:104px;display:flex;align-items:stretch;gap:14px;padding:14px 18px;background:var(--dock-bg);border-top:1px solid var(--panel-border);pointer-events:auto">
       <button data-act="shop-open" style="position:relative;overflow:hidden;flex:1;display:flex;align-items:center;justify-content:center;gap:12px;border-radius:16px;border:1px solid var(--accent);background:var(--accent-soft);color:var(--ink);cursor:pointer;box-shadow:inset 0 0 0 1px var(--hairline)">
@@ -628,7 +628,8 @@ function buildSoloHud(click: (x: number, y: number) => void, play: (i: number) =
 
   const setAll = (k: string, t: string): void => root.querySelectorAll(`[data-ref="${k}"]`).forEach((e) => { (e as HTMLElement).textContent = t; });
   const setW = (k: string, pct: string): void => root.querySelectorAll(`[data-ref="${k}"]`).forEach((e) => { (e as HTMLElement).style.width = pct; });
-  const elPips = q('[data-ref="pips"]'), elPhase = q('[data-ref="phase"]'), elGuide = q('[data-ref="guidetext"]'), elSyn = q('[data-ref="synrows"]'), elName = q('[data-ref="namelayer"]');
+  const elPips = q('[data-ref="pips"]'), elPhase = q('[data-ref="phase"]'), elGuide = q('[data-ref="guidetext"]'), elSyn = q('[data-ref="synrows"]'), elName = q('[data-ref="namelayer"]'), elEquip = q('[data-ref="equipslots"]');
+  let lastEquip = -1;
   let lastShopSig = ''; // 点将台卡面只在「在售/可负担」变化时重渲（每帧重建会杀掉 :hover 浮动效果）。
   let lastSynSig = '';
 
@@ -661,6 +662,16 @@ function buildSoloHud(click: (x: number, y: number) => void, play: (i: number) =
     const xpV = num('xp'), xpM = max('xp') ?? 0;
     if (xpV !== undefined) { setAll('xp', `${Math.round(xpV)}/${xpM || '—'}`); if (xpM > 0) setW('xpfill', `${Math.max(0, Math.min(100, (xpV / xpM) * 100))}%`); }
     const benchSp = num('bench_space'); if (benchSp !== undefined) setAll('bench', String(Math.round(benchSp)));
+    // 装备栏（A）：按真实 items 数填充（变化才重渲）。
+    const itemN = Math.round(num('items') ?? 0);
+    setAll('equipcount', `${itemN}/8`);
+    if (elEquip && itemN !== lastEquip) {
+      lastEquip = itemN;
+      elEquip.innerHTML = Array.from({ length: 8 }, (_, i) => {
+        const got = i < itemN;
+        return `<div style="aspect-ratio:1;border-radius:8px;background:${got ? 'var(--gold-chip)' : 'transparent'};border:1px ${got ? 'solid var(--gold)' : 'dashed var(--panel-border)'};display:flex;align-items:center;justify-content:center;font-size:16px;box-shadow:${got ? '0 0 8px var(--accent-soft)' : 'none'}">${got ? EQUIP_ICONS[i] : ''}</div>`;
+      }).join('');
+    }
     setAll('buffStreak', streak > 0 ? `连胜 ${streak} · 士气高涨` : '连胜越高士气越旺');
     // 羁绊真实计数（只在变化时重渲）+ 操作引导随相位。
     const counts = synData.map((s) => num(s.res) ?? 0);

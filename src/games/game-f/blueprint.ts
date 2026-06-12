@@ -74,6 +74,8 @@ export const FROZEN = 1 << 10; // 冰冻定身（REQ-F-030）：GridMover.haltSt
 // 预留：PROTAG=1<<11 主角 / LOOT=1<<12 法球（§4.7，Phase 2.5）。商店面板槽位位 1<<13..1<<17（F-14 整槽清/重铺用）。
 export const PROTAG = 1 << 11; // 主角（小小英雄，§4.7；Phase 2.5 批 C 接操控/拾取）
 export const LOOT = 1 << 12; // 法球/掉落（野怪死亡掉，主角拾取）
+export const BAG = 1 << 19; // 主公行囊（跟随主公、收集装备 orb；位 19-24 已回收复用）
+export const EQUIP = 1 << 20; // 装备 orb（战中敌死掉落，主公拾取入装备栏）
 const SHOPSLOT_BITS = [1 << 13, 1 << 14, 1 << 15]; // 三大框（用户钦定小丑牌式；1<<16/17 随 5 槽裁撤回收）
 const RUNE = 1 << 18; // 开局符文卡（批D；选一发效后 destroy-tagged 整组收走=天然一次性）
 const SHOPSLOT_ALL = SHOPSLOT_BITS.reduce((a, b) => a | b, 0);
@@ -525,14 +527,18 @@ function templatesFor(ROSTER: HeroSpec[]): Record<string, PrefabTemplate> {
     // 死亡碎裂（用户打击感批「被杀死时切成四半」）：4 个 0.55 倍迷你分身向四角飞散+渐隐（Velocity 四向
     // + alpha Tween + lifetime 自清；表现实体无 Tag 不参战不计存活）。
     [`death_${h.id}`, {
-      entities: Object.fromEntries([[-1, -1], [1, -1], [-1, 1], [1, 1]].map(([dx, dy], i) => [`q${i}`, {
-        Transform: { x: dx * 5, y: dy * 5, rotation: 0, scaleX: 0.55, scaleY: 0.55 },
-        Velocity: { vx: dx * 2.0, vy: dy * 1.6 - 0.6, angular: 0 },
-        Color: { tint: 0xffffff, alpha: 0.95 },
-        Tween: { target: 'Color.alpha', from: 0.95, to: 0, elapsed: 0, duration: 26, easing: 'easeOut', done: false },
-        Timer: { id: 'life', elapsed: 0, duration: 30, loop: false },
-        Sprite: sprite(h.key, 6),
-      }])),
+      entities: Object.assign(
+        Object.fromEntries([[-1, -1], [1, -1], [-1, 1], [1, 1]].map(([dx, dy], i) => [`q${i}`, {
+          Transform: { x: dx * 5, y: dy * 5, rotation: 0, scaleX: 0.55, scaleY: 0.55 },
+          Velocity: { vx: dx * 2.0, vy: dy * 1.6 - 0.6, angular: 0 },
+          Color: { tint: 0xffffff, alpha: 0.95 },
+          Tween: { target: 'Color.alpha', from: 0.95, to: 0, elapsed: 0, duration: 26, easing: 'easeOut', done: false },
+          Timer: { id: 'life', elapsed: 0, duration: 30, loop: false },
+          Sprite: sprite(h.key, 6),
+        }])),
+        // 敌将（魏）死亡掉装备 orb（主公拾取入装备栏）；我方死亡不掉（防自farm）。
+        h.team === TEAM_B ? { eorb: { Transform: xf(0, 0), Shape: { kind: 'box', width: 13, height: 13 }, Sensor: {}, Text: { content: '装', fontSize: 11, fontFamily: FONT_BODY, anchor: 'center', lineSpacing: 0 }, Sprite: sprite(F_FX_STRIKE, 6), Color: { tint: 0xcf9a3f, alpha: 1 }, Tag: { flags: EQUIP | LOOT | ZONE_FLAG }, Hitbox: { resource: 'items', amount: -1, targetMask: BAG, consumeOnHit: true } } } : {},
+      ),
     } as unknown as PrefabTemplate],
   ]).concat(
     // 备战席位模板（v2 §4.6 + F-17 升星家族 + F-18/REQ-F-049 统一架构）：**席位 marker 即上场槽**。
@@ -610,7 +616,8 @@ function templatesFor(ROSTER: HeroSpec[]): Record<string, PrefabTemplate> {
     [[
       'mob_death',
       { entities: Object.assign(
-        { orb: { Transform: xf(0, 0), Shape: { kind: 'box', width: 10, height: 10 }, Sensor: {}, Sprite: sprite(F_FX_DRAIN, 5), Color: { tint: 0xd8607b, alpha: 1 }, Tag: { flags: LOOT | ZONE_FLAG }, Hitbox: { resource: 'loot', amount: -5, targetMask: PROTAG, consumeOnHit: true } } },
+        { orb: { Transform: xf(0, 0), Shape: { kind: 'box', width: 10, height: 10 }, Sensor: {}, Sprite: sprite(F_FX_DRAIN, 5), Color: { tint: 0xd8607b, alpha: 1 }, Tag: { flags: LOOT | ZONE_FLAG }, Hitbox: { resource: 'loot', amount: -5, targetMask: PROTAG, consumeOnHit: true } },
+          eorb: { Transform: xf(14, 0), Shape: { kind: 'box', width: 13, height: 13 }, Sensor: {}, Text: { content: '装', fontSize: 11, fontFamily: FONT_BODY, anchor: 'center', lineSpacing: 0 }, Sprite: sprite(F_FX_STRIKE, 6), Color: { tint: 0xcf9a3f, alpha: 1 }, Tag: { flags: EQUIP | LOOT | ZONE_FLAG }, Hitbox: { resource: 'items', amount: -1, targetMask: BAG, consumeOnHit: true } } },
         Object.fromEntries([[-1, -1], [1, -1], [-1, 1], [1, 1]].map(([dx, dy], i) => [`q${i}`, {
           Transform: { x: dx * 5, y: dy * 5, rotation: 0, scaleX: 0.5, scaleY: 0.5 },
           Velocity: { vx: dx * 2.0, vy: dy * 1.6 - 0.6, angular: 0 },
@@ -1116,6 +1123,15 @@ export function buildGameFBlueprint(pacing: GameFPacing = {}): WorldBlueprint {
       Tag: { flags: PROTAG }, // 044 后主角零附件：球自带 consumeOnHit 两清
       Resource: { id: 'loot', current: 0, min: 0, max: 999 },
       Sprite: sprite(F_HERO.protag, 12), // 主公小小英雄 = 金龙（独特奇异生物，非在册英雄/非真人）
+    } as unknown as EntityBlueprint,
+    // 主公行囊（装备系统 A）：跟随主公的隐形收集体，装备 orb 的 Hitbox 命中它 → items 累加（主公单 Resource
+    // 已被 loot 占用，故拆出独立行囊；BAG 位无 TEAM 不参战，Hierarchy 跟手与主公同位收集）。
+    item_bag: {
+      Transform: xf(-150, 86),
+      Shape: { kind: 'box', width: 18, height: 18 },
+      Tag: { flags: BAG },
+      Resource: { id: 'items', current: 0, min: 0, max: 8 }, // 拾取累加封顶 8（=装备栏格数）；跨回合持久（行囊不清场）
+      Hierarchy: { parentId: 'protag', localX: 0, localY: 0, localRotation: 0, localScaleX: 1, localScaleY: 1 },
     } as unknown as EntityBlueprint,
     protag_name: {
       Transform: xf(-150, 70),
