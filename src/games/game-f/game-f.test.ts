@@ -362,9 +362,10 @@ describe('Game F — 自走棋（纯数据装配，零自走棋代码；棋子=�
       e.world.tick();
       e.world.addComponent('input', { type: 'InputQueue', actions: [] } as unknown as Resource);
     };
-    let g0guard = 0;
-    while (res('gold') < 2 && g0guard++ < 3000) e.world.tick(); // 收入移到结算窗（动态进账）：打完回合1拿到 2 金
-    expect(res('gold')).toBe(2); // §4.1 全局回合1基础收入=2（<3 买不起）
+    // 起手金 10（用户钦定可即开点将台）→ 先降到 2 以验「钱不够原子拒单」（备战期无收入窗，停在 2）
+    e.world.addComponent('r_gold', { type: 'ResourceModify', resourceId: 'gold', amount: -8, scope: 'local' } as unknown as Resource);
+    for (let i = 0; i < 2; i++) e.world.tick();
+    expect(res('gold')).toBe(2); // 2 金 < 3 买不起
     play0();
     for (let i = 0; i < 3; i++) e.world.tick();
     expect(res('gold')).toBe(2); // 拒单：金不动
@@ -438,7 +439,7 @@ describe('Game F — 自走棋（纯数据装配，零自走棋代码；棋子=�
     const marker = e.world.getAllEntities().find((id) => id.startsWith('bench_') && id.endsWith(':seat') && !e.world.getComponent(id, 'HexPos'))!;
     expect(marker).toBeTruthy();
     const mt = e.world.getComponent<Transform>(marker, 'Transform')!;
-    e.world.addComponent('input', { type: 'InputQueue', actions: [{ source: 'test', key: 'drag', x: mt.x, y: mt.y, values: [245, 118], phase: 'drag' }] } as unknown as Resource); // 拖进垃圾桶=卖出（REQ-F-058；点选卖出已停用）
+    e.world.addComponent('input', { type: 'InputQueue', actions: [{ source: 'test', key: 'drag', x: mt.x, y: mt.y, values: [200, 118], phase: 'drag' }] } as unknown as Resource); // 拖进垃圾桶=卖出（REQ-F-058；点选卖出已停用）
     e.world.tick();
     e.world.addComponent('input', { type: 'InputQueue', actions: [] } as unknown as Resource);
     for (let i = 0; i < 5; i++) e.world.tick();
@@ -513,7 +514,7 @@ describe('Game F — 自走棋（纯数据装配，零自走棋代码；棋子=�
     const afterBuy = deckLen();
     const seat = e.world.getAllEntities().find((id) => id.startsWith('bench_') && id.endsWith(':seat') && !e.world.getComponent(id, 'HexPos'))!; // 刚买的在席（开局 4 marker 在板，过滤）
     const st = e.world.getComponent<Transform>(seat, 'Transform')!;
-    input([{ source: 'test', key: 'drag', x: st.x, y: st.y, values: [245, 118], phase: 'drag' }]); // 拖进垃圾桶=卖出（REQ-F-058）
+    input([{ source: 'test', key: 'drag', x: st.x, y: st.y, values: [200, 118], phase: 'drag' }]); // 拖进垃圾桶=卖出（REQ-F-058）
     for (let i = 0; i < 6; i++) e.world.tick();
     expect(e.world.getAllEntities().includes(seat)).toBe(false); // 席位售出销毁
     expect(deckLen()).toBe(afterBuy + 1); // 码归还袋底（§4.6 有限袋语义保真）
@@ -612,7 +613,7 @@ describe('Game F — 自走棋（纯数据装配，零自走棋代码；棋子=�
     };
     for (let i = 0; i < 12; i++) e.world.tick(); // 刷新 → 两段脉冲 → 重铺完毕
     expect(cards()).toHaveLength(3); // 三大框在售卡面可见（用户钦定小丑牌式）
-    expect(res('gold')).toBe(0); // 收入移结算：备战开局 0 金
+    expect(res('gold')).toBe(10); // 起手金 10（可即开点将台）
     e.world.addComponent('r_gold', { type: 'ResourceModify', resourceId: 'gold', amount: 20, scope: 'local' } as unknown as Resource);
     for (let i = 0; i < 3; i++) e.world.tick();
     const g0 = res('gold');
@@ -634,11 +635,13 @@ describe('Game F — 自走棋（纯数据装配，零自走棋代码；棋子=�
       }
       return -1;
     };
-    for (let i = 0; i < 50; i++) e.world.tick();
+    for (let i = 0; i < 5; i++) e.world.tick();
+    e.world.addComponent('r_gold', { type: 'ResourceModify', resourceId: 'gold', amount: -10, scope: 'local' } as unknown as Resource); // 归零起手金：本测试单验收入窗（§4.1 表）
+    for (let i = 0; i < 45; i++) e.world.tick();
     expect(res('player_hp')).toBe(100); // §3.1 量程（boot 初始化，旧 20 为占位）
     expect(res('round_idx')).toBe(1);
     expect(res('stage_idx')).toBe(1);
-    expect(res('gold')).toBe(0); // 收入窗移到结算（动态进账=TFT 语义）：备战期未发钱
+    expect(res('gold')).toBe(0); // 本测试归零起手金，单验收入窗
     // 打完回合 1：r1 结算窗发第一笔 2 金 → L1 advance → 回合 2
     let guard = 0;
     while (res('round_idx') === 1 && guard++ < 4000) e.world.tick();
@@ -702,7 +705,7 @@ describe('Game F — 自走棋（纯数据装配，零自走棋代码；棋子=�
     // 星级卖价（战斗窗卖：income 窗已关，金额断言不吃利息带宽）：点板上二星席=sell2 → +8 金（棋子本回合继续打）
     const g0 = res('gold');
     const p = project(home.q, home.r);
-    drag(p.x, p.y, 245, 118); // 板上二星拖进垃圾桶=卖出（任何相位可卖，REQ-F-058）
+    drag(p.x, p.y, 200, 118); // 板上二星拖进垃圾桶=卖出（任何相位可卖，REQ-F-058）
     for (let i = 0; i < 5; i++) e.world.tick();
     expect(e.world.getAllEntities().includes(b2)).toBe(false); // 点谁卖谁（板上也可卖）
     expect(res('gold')).toBe(g0 + 8); // 2星卖价 = 3×3−1（§4.6）

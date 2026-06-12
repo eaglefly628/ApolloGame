@@ -489,23 +489,25 @@ function buildSoloHud(click: (x: number, y: number) => void, play: (i: number) =
     <div style="font-family:var(--font-display);font-size:22px;color:var(--ink);margin-bottom:6px">${n}</div>
     <div style="font-size:12px;color:var(--ink-dim);line-height:1.5;min-height:34px">${d}</div>
     <div style="margin-top:14px;padding:8px 0;border-radius:10px;background:var(--accent-grad);color:var(--accent-ink);font-family:var(--font-heading);font-weight:700;font-size:13px;letter-spacing:2px">选 择</div></div>`).join('');
-  // 羁绊栏（设计 sample；蜀计数接真实 count_shu，余阶段做静态展示）。
+  // 羁绊（接真实 group-count；纯蜀 vs 魏世界观）：蜀魂(count_shu) + 武将(count_warrior) + 谋士(count_tactician)。
   const synData = [
-    { name: '蜀 · 桃园', fac: '蜀', tiers: [2, 4, 6], glyph: '蜀', ref: 'synShu' },
-    { name: '吴 · 江东', fac: '吴', tiers: [2, 4], glyph: '吴', ref: '' },
-    { name: '武将', fac: '', tiers: [2, 4, 6], glyph: '武', ref: '' },
-    { name: '谋士', fac: '', tiers: [2, 4], glyph: '谋', ref: '' },
-    { name: '射手', fac: '', tiers: [2, 3], glyph: '射', ref: '' },
+    { name: '蜀 · 桃园', fac: '蜀', tiers: [2, 4, 6], glyph: '蜀', res: 'count_shu' },
+    { name: '武将 · 猛将', fac: '', tiers: [2, 4, 6], glyph: '武', res: 'count_warrior' },
+    { name: '谋士 · 智囊', fac: '', tiers: [2, 4], glyph: '谋', res: 'count_tactician' },
   ];
-  const synRows = synData.map((s) => {
+  const synRowHtml = (s: { name: string; fac: string; tiers: number[]; glyph: string }, have: number): string => {
     const col = s.fac ? FAC[s.fac] : 'var(--accent)';
-    return `<div class="syn" style="border:1px solid var(--panel-border);background:var(--chip-bg);box-shadow:inset 0 0 0 1px var(--hairline)">
-      <div class="ic" style="background:${col};color:#fff">${s.glyph}</div>
+    const active = have >= s.tiers[0];
+    const reached = s.tiers.filter((t) => have >= t).length;
+    const ticks = s.tiers.map((_, i) => `<div style="flex:1;height:4px;border-radius:99px;background:${i < reached ? col : 'var(--track)'}"></div>`).join('');
+    return `<div class="syn" style="border:1px solid ${active ? col : 'var(--panel-border)'};background:${active ? 'var(--chip-bg)' : 'transparent'};opacity:${active ? 1 : 0.5};box-shadow:${active ? 'inset 0 0 0 1px var(--hairline)' : 'none'}">
+      <div class="ic" style="background:${active ? col : 'var(--track)'};color:${active ? '#fff' : 'var(--ink-dim)'}">${s.glyph}</div>
       <div style="flex:1;min-width:0"><div style="display:flex;justify-content:space-between;align-items:baseline">
         <span style="font-family:var(--font-heading);font-weight:700;font-size:14px;color:var(--ink)">${s.name}</span>
-        <span ${s.ref ? `data-ref="${s.ref}"` : ''} style="font-family:var(--font-num);font-size:11px;color:${col}">0/${s.tiers[s.tiers.length - 1]}</span></div>
-      <div style="display:flex;gap:4px;margin-top:5px">${s.tiers.map(() => `<div style="flex:1;height:4px;border-radius:99px;background:var(--track)"></div>`).join('')}</div></div></div>`;
-  }).join('');
+        <span style="font-family:var(--font-num);font-size:11px;color:${active ? col : 'var(--ink-dim)'}">${have}/${s.tiers[s.tiers.length - 1]}</span></div>
+      <div style="display:flex;gap:4px;margin-top:5px">${ticks}</div></div></div>`;
+  };
+  const synRows = synData.map((s) => synRowHtml(s, 0)).join('');
   // 右栏 buff（自设计：当前状态 + 增益；连胜激励接 win_streak）。
   const buffs = [
     { g: '🏵️', n: '桃园结义', d: '蜀阵容 +12% 攻击', ref: '' },
@@ -524,8 +526,10 @@ function buildSoloHud(click: (x: number, y: number) => void, play: (i: number) =
         <div style="display:flex;flex-direction:column;line-height:1"><span style="font-size:9px;letter-spacing:.2em;text-transform:uppercase;color:var(--ink-dim)">STAGE</span><span data-ref="stage" style="font-family:var(--font-num);font-size:20px;color:var(--ink);margin-top:3px">1-1</span></div>
         <div data-ref="pips" style="display:flex;gap:5px;align-items:center"></div>
       </div>
-      <div style="flex:1;display:flex;justify-content:center"><div data-ref="phase" style="padding:6px 18px;border-radius:99px;white-space:nowrap;font-family:var(--font-heading);font-weight:700;font-size:13px;letter-spacing:.06em;background:var(--accent-soft);color:var(--accent);border:1px solid var(--accent)">⚔ 备战 · 布阵</div></div>
+      <div style="display:flex;justify-content:center"><div data-ref="phase" style="padding:6px 18px;border-radius:99px;white-space:nowrap;font-family:var(--font-heading);font-weight:700;font-size:13px;letter-spacing:.06em;background:var(--accent-soft);color:var(--accent);border:1px solid var(--accent)">⚔ 备战 · 布阵</div></div>
       <div style="display:flex;flex-direction:column;align-items:center;line-height:1;padding:0 6px"><span style="font-size:9px;letter-spacing:.2em;text-transform:uppercase;color:var(--ink-dim)">倒计时</span><span data-ref="timer" style="font-family:var(--font-num);font-size:20px;color:var(--ink);margin-top:3px">0:30</span></div>
+      <!-- 操作引导（用户：最上排状态栏告诉玩家此刻该干什么）-->
+      <div style="flex:1;display:flex;justify-content:flex-end"><div data-ref="guide" style="display:flex;align-items:center;gap:8px;max-width:440px;padding:7px 14px;border-radius:11px;background:var(--chip-bg);border:1px solid var(--panel-border);font-size:11.5px;line-height:1.4;color:var(--ink)"><span style="font-size:14px">🎯</span><span data-ref="guidetext">招募英雄 → 拖上棋盘布阵 → 点「开战」</span></div></div>
     </div>
     <!-- 玩家信息卡（左下角，合并全部主公状态+经济；UI Kit 控件 avatar-frame/bar/chip）-->
     <div style="position:absolute;left:10px;bottom:118px;width:194px;padding:13px;border-radius:var(--radius);background:var(--panel-grad);border:1px solid var(--panel-border);box-shadow:inset 0 0 0 1px var(--hairline),0 6px 16px rgba(0,0,0,.2);pointer-events:auto">
@@ -547,9 +551,10 @@ function buildSoloHud(click: (x: number, y: number) => void, play: (i: number) =
     </div>
     <!-- 武将台发光框（围住棋盘区，pointer-events 透传不挡拖拽）-->
     <div style="position:absolute;left:350px;top:60px;width:580px;height:492px;border-radius:24px;border:1px solid var(--platform-edge);box-shadow:inset 0 0 0 1px var(--hairline),0 0 38px var(--accent-soft);background:var(--platform-glow);pointer-events:none"></div>
-    <!-- LEFT · 羁绊（上）；玩家卡在左下 -->
-    <div style="position:absolute;left:10px;top:66px;width:186px;bottom:270px;display:flex;flex-direction:column;gap:6px;overflow:hidden;pointer-events:auto">
-      <div style="font-size:9px;letter-spacing:.22em;text-transform:uppercase;color:var(--ink-dim);padding:2px 6px">羁绊 · Synergies</div>${synRows}</div>
+    <!-- LEFT · 羁绊（上）；玩家卡在左下（bottom 留够，避免与玩家卡重叠）-->
+    <div style="position:absolute;left:10px;top:66px;width:186px;bottom:330px;display:flex;flex-direction:column;gap:6px;overflow:hidden;pointer-events:auto">
+      <div style="font-size:9px;letter-spacing:.22em;text-transform:uppercase;color:var(--ink-dim);padding:2px 6px">羁绊 · Synergies</div>
+      <div data-ref="synrows" style="display:flex;flex-direction:column;gap:6px">${synRows}</div></div>
     <!-- RIGHT · 状态/装备（自设计）-->
     <div style="position:absolute;right:10px;top:66px;width:186px;bottom:118px;display:flex;flex-direction:column;gap:10px;overflow:hidden;pointer-events:auto">
       <div style="background:var(--panel-grad);border:1px solid var(--panel-border);border-radius:var(--radius);box-shadow:inset 0 0 0 1px var(--hairline);padding:12px">
@@ -614,7 +619,9 @@ function buildSoloHud(click: (x: number, y: number) => void, play: (i: number) =
 
   const setAll = (k: string, t: string): void => root.querySelectorAll(`[data-ref="${k}"]`).forEach((e) => { (e as HTMLElement).textContent = t; });
   const setW = (k: string, pct: string): void => root.querySelectorAll(`[data-ref="${k}"]`).forEach((e) => { (e as HTMLElement).style.width = pct; });
-  const elPips = q('[data-ref="pips"]'), elPhase = q('[data-ref="phase"]');
+  const elPips = q('[data-ref="pips"]'), elPhase = q('[data-ref="phase"]'), elGuide = q('[data-ref="guidetext"]'), elSyn = q('[data-ref="synrows"]');
+  let lastShopSig = ''; // 点将台卡面只在「在售/可负担」变化时重渲（每帧重建会杀掉 :hover 浮动效果）。
+  let lastSynSig = '';
 
   const update = (w: World): void => {
     const num = (id: string): number | undefined => (getComponentById(w, 'Resource', 'id', id) as { current?: number } | undefined)?.current;
@@ -646,12 +653,21 @@ function buildSoloHud(click: (x: number, y: number) => void, play: (i: number) =
     if (xpV !== undefined) { setAll('xp', `${Math.round(xpV)}/${xpM || '—'}`); if (xpM > 0) setW('xpfill', `${Math.max(0, Math.min(100, (xpV / xpM) * 100))}%`); }
     const benchSp = num('bench_space'); if (benchSp !== undefined) setAll('bench', String(Math.round(benchSp)));
     setAll('buffStreak', streak > 0 ? `连胜 ${streak} · 士气高涨` : '连胜越高士气越旺');
-    const shu = num('count_shu'); if (shu !== undefined) setAll('synShu', `${shu}/6`);
+    // 羁绊真实计数（只在变化时重渲）+ 操作引导随相位。
+    const counts = synData.map((s) => num(s.res) ?? 0);
+    const synSig = counts.join(',');
+    if (elSyn && synSig !== lastSynSig) { lastSynSig = synSig; elSyn.innerHTML = synData.map((s, i) => synRowHtml(s, counts[i])).join(''); }
+    if (elGuide) elGuide.textContent = prep
+      ? '招募英雄 → 拖上棋盘布阵（≤等级）→ 点「开战」'
+      : '战斗进行中 · WASD 移动主公拾金 · 静待分出胜负';
     runeModal.style.display = w.hasComponent('rune_a', 'Clickable') ? 'flex' : 'none'; // 三选一在场即显
     if (shopBackdrop.style.display === 'flex') {
       const afford = gold >= 3;
-      shopCards.innerHTML = [0, 1, 2].map((i) => {
-        const code = num(`shop_slot_${i + 1}`) ?? 0;
+      const codes = [num('shop_slot_1') ?? 0, num('shop_slot_2') ?? 0, num('shop_slot_3') ?? 0];
+      const sig = `${codes.join(',')}|${afford}`;
+      if (sig === lastShopSig) return; // 无变化不重渲 → 保住 hover
+      lastShopSig = sig;
+      shopCards.innerHTML = codes.map((code, i) => {
         const h = HEROES[code];
         if (!h) return `<div style="flex:1;min-height:200px;border-radius:14px;border:1px dashed var(--panel-border);background:var(--chip-bg);display:flex;align-items:center;justify-content:center;color:var(--ink-dim);font-size:13px">— 空 —</div>`;
         return `<div data-buy="${i}" style="position:relative;flex:1;display:flex;flex-direction:column;overflow:hidden;cursor:${afford ? 'pointer' : 'not-allowed'};border-radius:14px;border:1px solid ${SHU};background:var(--panel-grad);box-shadow:inset 0 0 0 1px var(--hairline),0 6px 16px rgba(0,0,0,.22);opacity:${afford ? 1 : 0.55};min-height:200px">
@@ -727,8 +743,7 @@ export function mount(container: HTMLElement): () => void {
   // 单人 DOM 设计 chrome 覆盖层（顶/左/右/底 + 点将台/三选一弹窗；接真实世界状态 + 命令）。
   const hud = buildSoloHud(clickW, playShop);
   boardPanel.appendChild(hud.root);
-  gameView.appendChild(boardPanel);
-  gameView.appendChild(el('div', 'gfx-note', `<span class="ico">i</span><span>买棋子点商店大卡 ➜ 备战席自动落座；拖上棋盘出兵（场上 ≤ 等级），拖到另一子=换位，拖进 🗑 卖出；3 同名自动升星（板上原地升）。点「开战」数 3-2-1 开打；WASD 移动主公拾取战利品。</span>`));
+  gameView.appendChild(boardPanel); // 操作引导已移入顶栏状态栏（data-ref guide），不再单列底注。
 
   // 双人合作界面预览（局外壳层 DOM；设计稿 coop 变体）。
   const coopView = el('div', 'gfx-view');

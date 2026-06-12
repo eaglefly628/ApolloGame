@@ -845,7 +845,7 @@ export function buildGameFBlueprint(pacing: GameFPacing = {}): WorldBlueprint {
     f_over: { Flag: { id: 'run_over', active: false } } as unknown as EntityBlueprint,
     f_round_done: { Flag: { id: 'round_done', active: false } } as unknown as EntityBlueprint, // L1↔L2 握手
     f_run_won: { Flag: { id: 'run_won', active: false } } as unknown as EntityBlueprint, // 打穿关卡表=通关
-    r_gold: { Resource: { id: 'gold', current: 0, min: 0, max: 999 } } as unknown as EntityBlueprint,
+    r_gold: { Resource: { id: 'gold', current: 10, min: 0, max: 999 } } as unknown as EntityBlueprint, // 起手金 10（可即开点将台招募；收入仍在结算后发）
     r_player_hp: { Resource: { id: 'player_hp', current: 100, min: 0, max: 100 } } as unknown as EntityBlueprint, // §3.1：0..100（旧 20 是 MVP-0 占位）
     r_round_idx: { Resource: { id: 'round_idx', current: 1, min: 0, max: 999 } } as unknown as EntityBlueprint, // 回合序号（advance +1，>5 进位）
     r_stage_idx: { Resource: { id: 'stage_idx', current: 1, min: 0, max: 99 } } as unknown as EntityBlueprint, // 阶段序号（关卡表指针）
@@ -857,18 +857,14 @@ export function buildGameFBlueprint(pacing: GameFPacing = {}): WorldBlueprint {
     // —— ready 开战（§3.3 操作表，策划批注：输入→信号→set-flag 纯数据）：点按钮 → clickable 产 'ready_btn'
     // 信号 → Effect 置 ready → prep 的 ready 转移提前开战；不点则 40 拍倒计时兜底。按钮无 Tag 不参战不被清场。
     f_ready: { Flag: { id: 'ready', active: false } } as unknown as EntityBlueprint,
-    // 按钮底盘（kit 规格：主=accent 实底白字 / 次=btn-bg+btn-edge；修「右下角裸文字」）
-    ...chrome('btn_ready', 300, 180, 68, 26, 0xd8607b, 0xb84a62),
-    ...chrome('btn_reroll', 300, 150, 60, 22, 0xfdf3ea, 0xecd3b2),
-    ...chrome('btn_lock', 300, 120, 46, 22, 0xfdf3ea, 0xecd3b2),
-    ...chrome('btn_unlock', 300, 92, 46, 22, 0xfdf3ea, 0xecd3b2),
-    ...chrome('btn_xp', 300, 64, 46, 22, 0xfdf3ea, 0xecd3b2),
+    // 操作按钮全部移入 DOM 壳层（点将台/玩家卡/底部条）；canvas 仅留隐形 clickable 命中靶（移出视口 x2000），
+    // 供 DOM 注入世界坐标点击触发既有信号链（ready/reroll/lock/buyxp）。chrome 底盘已撤。
     btn_ready: {
-      Transform: xf(300, 180), // 右下按钮列（视口 ±355×200；商店三大框居中后按钮整列右移）
+      Transform: xf(300, 180), // 隐形命中靶（DOM 底部「开战」注入 click(2000,180)）
       Shape: { kind: 'box', width: 64, height: 24 },
       Clickable: { action: 'ready_btn' },
       Text: { content: '开战', fontSize: 13, fontFamily: FONT_DISPLAY, anchor: 'center', lineSpacing: 0 },
-      Color: { tint: 0xffffff, alpha: 1 },
+      Color: { tint: 0xffffff, alpha: 0 },
       Sprite: { textureKey: F_FX_STRIKE, anchorX: 0.5, anchorY: 0.5, zOrder: 30 }, // 只为抬 zOrder（文本模式不绘）
     } as unknown as EntityBlueprint,
     eff_ready: { Effect: { onSignal: 'ready_btn', kind: 'set-flag', targetId: 'ready', value: true } } as unknown as EntityBlueprint,
@@ -933,7 +929,7 @@ export function buildGameFBlueprint(pacing: GameFPacing = {}): WorldBlueprint {
       Clickable: { action: 'buyxp_btn' },
       CraftRecipe: { onSignal: 'buyxp_btn', costs: [{ id: 'gold', amount: 4 }], gains: [{ id: 'xp', amount: 4 }] },
       Text: { content: '经验$4', fontSize: 11, fontFamily: FONT_BODY, anchor: 'center', lineSpacing: 0 },
-      Color: { tint: 0x6a4a4f, alpha: 1 },
+      Color: { tint: 0x6a4a4f, alpha: 0 },
       Sprite: { textureKey: F_FX_STRIKE, anchorX: 0.5, anchorY: 0.5, zOrder: 30 },
     } as unknown as EntityBlueprint,
     ...band('lvl_5', resCmp('xp', 'gte', 20), 'level', 1),
@@ -948,7 +944,7 @@ export function buildGameFBlueprint(pacing: GameFPacing = {}): WorldBlueprint {
       Clickable: { action: 'reroll_btn' },
       CraftRecipe: { onSignal: 'reroll_btn', costs: [{ id: 'gold', amount: 2 }], grantsFlag: 'reroll_paid' },
       Text: { content: '刷新$2', fontSize: 11, fontFamily: FONT_BODY, anchor: 'center', lineSpacing: 0 },
-      Color: { tint: 0x6a4a4f, alpha: 1 },
+      Color: { tint: 0x6a4a4f, alpha: 0 },
       Sprite: { textureKey: F_FX_STRIKE, anchorX: 0.5, anchorY: 0.5, zOrder: 30 },
     } as unknown as EntityBlueprint,
     f_reroll_paid: { Flag: { id: 'reroll_paid', active: false } } as unknown as EntityBlueprint,
@@ -960,7 +956,7 @@ export function buildGameFBlueprint(pacing: GameFPacing = {}): WorldBlueprint {
       Shape: { kind: 'box', width: 40, height: 20 },
       Clickable: { action: 'lock_btn' },
       Text: { content: '锁店', fontSize: 11, fontFamily: FONT_BODY, anchor: 'center', lineSpacing: 0 },
-      Color: { tint: 0xd8607b, alpha: 1 },
+      Color: { tint: 0xd8607b, alpha: 0 },
       Sprite: { textureKey: F_FX_STRIKE, anchorX: 0.5, anchorY: 0.5, zOrder: 30 },
     } as unknown as EntityBlueprint,
     btn_unlock: {
@@ -968,7 +964,7 @@ export function buildGameFBlueprint(pacing: GameFPacing = {}): WorldBlueprint {
       Shape: { kind: 'box', width: 40, height: 20 },
       Clickable: { action: 'unlock_btn' },
       Text: { content: '解锁', fontSize: 11, fontFamily: FONT_BODY, anchor: 'center', lineSpacing: 0 },
-      Color: { tint: 0x6a4a4f, alpha: 1 },
+      Color: { tint: 0x6a4a4f, alpha: 0 },
       Sprite: { textureKey: F_FX_STRIKE, anchorX: 0.5, anchorY: 0.5, zOrder: 30 },
     } as unknown as EntityBlueprint,
     eff_lock: { Effect: { onSignal: 'lock_btn', kind: 'set-flag', targetId: 'shop_locked', value: true } } as unknown as EntityBlueprint,
@@ -1043,18 +1039,18 @@ export function buildGameFBlueprint(pacing: GameFPacing = {}): WorldBlueprint {
     // sell 动作，任何相位可卖）；指针点选卖出停用（click_sell_off 恒假——「点谁谁消失」陷阱已除）。——
     f_click_sell_off: { Flag: { id: 'click_sell_off', active: false } } as unknown as EntityBlueprint, // 恒假：点选卖出永闭
     // 备战台两侧各一个小垃圾桶（用户：左右各放一个、小一点）；任一 DropZone 落子=卖出（hitDropZone 通配）。
-    ...chrome('trash_bin', 245, 118, 32, 32, 0xfbeee4, 0xd65668, 18.5),
+    ...chrome('trash_bin', 200, 118, 32, 32, 0xfbeee4, 0xd65668, 18.5),
     trash_bin: {
-      Transform: xf(245, 118),
+      Transform: xf(200, 118),
       Shape: { kind: 'box', width: 30, height: 30 },
       DropZone: {},
       Text: { content: '🗑', fontSize: 17, fontFamily: FONT_BODY, anchor: 'center', lineSpacing: 0 },
       Color: { tint: 0xd65668, alpha: 0.95 },
       Sprite: { textureKey: F_FX_STRIKE, anchorX: 0.5, anchorY: 0.5, zOrder: 27 },
     } as unknown as EntityBlueprint,
-    ...chrome('trash_bin_l', -245, 118, 32, 32, 0xfbeee4, 0xd65668, 18.5),
+    ...chrome('trash_bin_l', -200, 118, 32, 32, 0xfbeee4, 0xd65668, 18.5),
     trash_bin_l: {
-      Transform: xf(-245, 118),
+      Transform: xf(-200, 118),
       Shape: { kind: 'box', width: 30, height: 30 },
       DropZone: {},
       Text: { content: '🗑', fontSize: 17, fontFamily: FONT_BODY, anchor: 'center', lineSpacing: 0 },
@@ -1165,6 +1161,11 @@ export function buildGameFBlueprint(pacing: GameFPacing = {}): WorldBlueprint {
     // 战斗中减员不掉档；prep 复位 ×1）。计数=group-count（REQ-022）；施加=hitbox scaleByResource 乘区。——
     bond_counter_shu: { GroupCount: { countResource: 'count_shu', requiredTag: FACT_SHU } } as unknown as EntityBlueprint,
     r_count_shu: { Resource: { id: 'count_shu', current: 0, min: 0, max: 99 } } as unknown as EntityBlueprint,
+    // 职业羁绊计数（HUD 真实反映场上阵容；只数我方 FACT_SHU∧职业位，含齐 ALL-bits 语义）。
+    bond_counter_warrior: { GroupCount: { countResource: 'count_warrior', requiredTag: FACT_SHU | WARRIOR } } as unknown as EntityBlueprint,
+    r_count_warrior: { Resource: { id: 'count_warrior', current: 0, min: 0, max: 99 } } as unknown as EntityBlueprint,
+    bond_counter_tactician: { GroupCount: { countResource: 'count_tactician', requiredTag: FACT_SHU | TACTICIAN } } as unknown as EntityBlueprint,
+    r_count_tactician: { Resource: { id: 'count_tactician', current: 0, min: 0, max: 99 } } as unknown as EntityBlueprint,
     r_dmg_scale_a: { Resource: { id: 'dmg_scale_a', current: 1, min: 0, max: 9 } } as unknown as EntityBlueprint,
     r_dmg_scale_b: { Resource: { id: 'dmg_scale_b', current: 1, min: 0, max: 9 } } as unknown as EntityBlueprint, // 敌方系数占位（关卡羁绊 TUNE 位）
     when_bond_shu: { EventWhen: { signal: 'bond_shu', when: and({ kind: 'state', fsmId: 'round_ui', equals: 'combat' }, resCmp('count_shu', 'gte', 3)), mode: 'edge', armed: false } } as unknown as EntityBlueprint,
