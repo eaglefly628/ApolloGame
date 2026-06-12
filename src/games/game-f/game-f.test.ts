@@ -603,7 +603,7 @@ describe('Game F — 自走棋（纯数据装配，零自走棋代码；棋子=�
       return -1;
     };
     const cards = (): string[] => e.world.getAllEntities().filter((id) => id.startsWith('shopcard_') && id.endsWith(':card'));
-    const hudGold = (): string => (e.world.getComponent('hud_gold', 'Text') as unknown as { content: string }).content;
+    // HUD 金币显示已移入 DOM 壳层（game-f.tsx 右下玩家卡），canvas 不再画——此处验底层 gold 资源即可。
     const click = (x: number, y: number): void => {
       if (!e.world.getAllEntities().includes('input')) e.world.createEntity('input');
       e.world.addComponent('input', { type: 'InputQueue', actions: [{ source: 'test', x, y, phase: 'down' }] } as unknown as Resource);
@@ -612,7 +612,7 @@ describe('Game F — 自走棋（纯数据装配，零自走棋代码；棋子=�
     };
     for (let i = 0; i < 12; i++) e.world.tick(); // 刷新 → 两段脉冲 → 重铺完毕
     expect(cards()).toHaveLength(3); // 三大框在售卡面可见（用户钦定小丑牌式）
-    expect(hudGold()).toBe('金币 0'); // 收入移结算：备战开局 0 金（text-binding 实时投影）
+    expect(res('gold')).toBe(0); // 收入移结算：备战开局 0 金
     e.world.addComponent('r_gold', { type: 'ResourceModify', resourceId: 'gold', amount: 20, scope: 'local' } as unknown as Resource);
     for (let i = 0; i < 3; i++) e.world.tick();
     const g0 = res('gold');
@@ -622,7 +622,6 @@ describe('Game F — 自走棋（纯数据装配，零自走棋代码；棋子=�
     expect(res('bench_space')).toBe(8); // 占席
     expect(e.world.getAllEntities().some((id) => id.startsWith('bench_') && id.endsWith(':seat'))).toBe(true); // 入席可见
     expect(cards()).toHaveLength(3); // 买走→补牌→镜像变 → 面板整体重铺仍 3 张
-    expect(hudGold()).toBe(`金币 ${g0 - 3}`); // HUD 跟跳
   });
 
   it('L1 run_flow + §4.1/§4.2 表：回合1收入2金；advance 推进；败方按阶段表扣血；round>5 进位换关卡敌阵', () => {

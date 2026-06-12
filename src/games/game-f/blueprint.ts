@@ -1078,14 +1078,8 @@ export function buildGameFBlueprint(pacing: GameFPacing = {}): WorldBlueprint {
     ...visSwap('ph_lose', 'banner_lose', ['banner_combat']),
     ...visSwap('ph_over', 'banner_gameover', []),
     ...visSwap('ph_won', 'banner_victory', []),
-    // —— HUD 数字（F-15 / REQ-F-043 t2-text-binding）：左上角金币/血/等级/经验 + 阶段-回合 ——
-    hud_gold: { Transform: xf(-340, -186), Text: { content: '金币 0', fontSize: 13, fontFamily: FONT_NUM, anchor: 'left', lineSpacing: 0 }, TextBinding: { resourceId: 'gold', prefix: '金币 ' }, Color: { tint: 0xcf9a3f, alpha: 1 }, Sprite: { textureKey: F_FX_STRIKE, anchorX: 0.5, anchorY: 0.5, zOrder: 30 } } as unknown as EntityBlueprint,
-    hud_hp: { Transform: xf(-340, -168), Text: { content: '血量 100', fontSize: 13, fontFamily: FONT_NUM, anchor: 'left', lineSpacing: 0 }, TextBinding: { resourceId: 'player_hp', prefix: '血量 ' }, Color: { tint: 0xd65668, alpha: 1 }, Sprite: { textureKey: F_FX_STRIKE, anchorX: 0.5, anchorY: 0.5, zOrder: 30 } } as unknown as EntityBlueprint,
-    hud_level: { Transform: xf(-340, -150), Text: { content: '等级 4', fontSize: 13, fontFamily: FONT_NUM, anchor: 'left', lineSpacing: 0 }, TextBinding: { resourceId: 'level', prefix: '等级 ' }, Color: { tint: 0x8aa0e6, alpha: 1 }, Sprite: { textureKey: F_FX_STRIKE, anchorX: 0.5, anchorY: 0.5, zOrder: 30 } } as unknown as EntityBlueprint,
-    hud_xp: { Transform: xf(-340, -132), Text: { content: '经验 0', fontSize: 13, fontFamily: FONT_NUM, anchor: 'left', lineSpacing: 0 }, TextBinding: { resourceId: 'xp', prefix: '经验 ' }, Color: { tint: 0xc98fc4, alpha: 1 }, Sprite: { textureKey: F_FX_STRIKE, anchorX: 0.5, anchorY: 0.5, zOrder: 30 } } as unknown as EntityBlueprint,
-    hud_stage: { Transform: xf(-340, -114), Text: { content: '阶段 1', fontSize: 13, fontFamily: FONT_NUM, anchor: 'left', lineSpacing: 0 }, TextBinding: { resourceId: 'stage_idx', prefix: '阶段 ' }, Color: { tint: 0xa98b8f, alpha: 1 }, Sprite: { textureKey: F_FX_STRIKE, anchorX: 0.5, anchorY: 0.5, zOrder: 30 } } as unknown as EntityBlueprint,
-    hud_round: { Transform: xf(-275, -114), Text: { content: '回合 1', fontSize: 13, fontFamily: FONT_NUM, anchor: 'left', lineSpacing: 0 }, TextBinding: { resourceId: 'round_idx', prefix: '回合 ' }, Color: { tint: 0xa98b8f, alpha: 1 }, Sprite: { textureKey: F_FX_STRIKE, anchorX: 0.5, anchorY: 0.5, zOrder: 30 } } as unknown as EntityBlueprint,
-    hud_bench: { Transform: xf(-340, -96), Text: { content: '空席 9', fontSize: 13, fontFamily: FONT_NUM, anchor: 'left', lineSpacing: 0 }, TextBinding: { resourceId: 'bench_space', prefix: '空席 ' }, Color: { tint: 0xa98b8f, alpha: 1 }, Sprite: { textureKey: F_FX_STRIKE, anchorX: 0.5, anchorY: 0.5, zOrder: 30 } } as unknown as EntityBlueprint, // F-17：席位空余可视（派生资源）
+    // —— HUD 数字：金币/血/等级/经验/阶段/回合/空席已移入 DOM 壳层（game-f.tsx 左下/右下玩家卡 + 顶栏），
+    //    canvas 不再画左上角文本（去重，消「左上角八角字块」观感）。——
     f_deploy_armed: { Flag: { id: 'deploy_armed', active: false } } as unknown as EntityBlueprint,
     f_wipe_armed: { Flag: { id: 'wipe_armed', active: false } } as unknown as EntityBlueprint,
     f_income_armed: { Flag: { id: 'income_armed', active: false } } as unknown as EntityBlueprint, // §4.1 结算窗
@@ -1123,7 +1117,7 @@ export function buildGameFBlueprint(pacing: GameFPacing = {}): WorldBlueprint {
       Shape: { kind: 'box', width: 14, height: 14 },
       Tag: { flags: PROTAG }, // 044 后主角零附件：球自带 consumeOnHit 两清
       Resource: { id: 'loot', current: 0, min: 0, max: 999 },
-      Sprite: sprite(F_FX_DRAIN, 12),
+      Sprite: sprite(F_HERO.zhao_yun, 12), // 主公 = 真 DCSS 角色图（旧 F_FX_DRAIN 吸血特效=「八角螃蟹」误用）
     } as unknown as EntityBlueprint,
     protag_name: {
       Transform: xf(-250, 24),

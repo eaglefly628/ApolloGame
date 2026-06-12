@@ -505,8 +505,8 @@ function buildSoloHud(): { root: HTMLElement; update: (w: World) => void } {
       <div style="flex:1;display:flex;justify-content:center"><div data-ref="phase" style="padding:6px 18px;border-radius:99px;white-space:nowrap;font-family:var(--font-heading);font-weight:700;font-size:13px;letter-spacing:.06em;background:var(--accent-soft);color:var(--accent);border:1px solid var(--accent)">⚔ 备战 · 布阵</div></div>
       <div style="display:flex;flex-direction:column;align-items:center;line-height:1;padding:0 6px"><span style="font-size:9px;letter-spacing:.2em;text-transform:uppercase;color:var(--ink-dim)">倒计时</span><span data-ref="timer" style="font-family:var(--font-num);font-size:20px;color:var(--ink);margin-top:3px">0:30</span></div>
     </div>
-    <!-- 玩家信息卡（左下角，合并主公状态+经济；新控件 avatar-frame/name-plate/bar/chip）-->
-    <div style="position:absolute;left:10px;bottom:14px;width:188px;padding:13px;border-radius:var(--radius);background:var(--panel-grad);border:1px solid var(--panel-border);box-shadow:inset 0 0 0 1px var(--hairline),0 6px 16px rgba(0,0,0,.2)">
+    <!-- 玩家信息卡（右下角，合并全部主公状态+经济；UI Kit 控件 avatar-frame/bar/chip）-->
+    <div style="position:absolute;right:10px;bottom:14px;width:194px;padding:13px;border-radius:var(--radius);background:var(--panel-grad);border:1px solid var(--panel-border);box-shadow:inset 0 0 0 1px var(--hairline),0 6px 16px rgba(0,0,0,.2)">
       <div style="display:flex;align-items:center;gap:11px">
         <div style="position:relative;width:50px;height:50px;flex:none;border-radius:50%;background:var(--accent-grad);padding:3px;box-shadow:0 0 14px var(--accent-soft)">
           <div style="width:100%;height:100%;border-radius:50%;background:var(--protag-bg);display:flex;align-items:center;justify-content:center;font-size:24px">🐢</div></div>
@@ -515,18 +515,20 @@ function buildSoloHud(): { root: HTMLElement; update: (w: World) => void } {
       </div>
       <div style="margin-top:10px"><div style="display:flex;justify-content:space-between;margin-bottom:3px"><span style="font-size:9px;letter-spacing:.1em;color:var(--ink-dim)">主公生命</span><span data-ref="hp" style="font-family:var(--font-num);font-size:10px;color:var(--hp)">100</span></div>
         <div style="height:10px;border-radius:99px;background:var(--track);overflow:hidden;border:1px solid var(--panel-border)"><div data-ref="hpfill" style="width:100%;height:100%;background:var(--hp);border-radius:99px"></div></div></div>
+      <div style="margin-top:7px"><div style="display:flex;justify-content:space-between;margin-bottom:3px"><span style="font-size:9px;letter-spacing:.1em;color:var(--ink-dim)">经验 · Lv<span data-ref="level">1</span></span><span data-ref="xp" style="font-family:var(--font-num);font-size:10px;color:var(--xp)">0/2</span></div>
+        <div style="height:7px;border-radius:99px;background:var(--track);overflow:hidden;border:1px solid var(--panel-border)"><div data-ref="xpfill" style="width:0%;height:100%;background:var(--xp);border-radius:99px"></div></div></div>
       <div style="display:flex;gap:8px;margin-top:9px">
         <div style="flex:1;display:flex;align-items:center;justify-content:center;gap:6px;padding:5px 9px;border-radius:9px;background:var(--gold-chip);border:1px solid var(--gold)"><span style="font-size:13px">🪙</span><span data-ref="gold" style="font-family:var(--font-num);font-size:14px;color:var(--gold)">0</span></div>
-        <div style="flex:1;display:flex;align-items:center;justify-content:center;gap:6px;padding:5px 9px;border-radius:9px;background:var(--chip-bg);border:1px solid var(--panel-border)"><span style="font-size:11px;color:var(--ink-dim)">Lv</span><span data-ref="level" style="font-family:var(--font-num);font-size:14px;color:var(--ink)">1</span></div>
+        <div style="flex:1;display:flex;align-items:center;justify-content:center;gap:6px;padding:5px 9px;border-radius:9px;background:var(--chip-bg);border:1px solid var(--panel-border)"><span style="font-size:11px;color:var(--ink-dim)">空席</span><span data-ref="bench" style="font-family:var(--font-num);font-size:14px;color:var(--ink)">9</span></div>
       </div>
     </div>
     <!-- 武将台发光框（围住棋盘区，pointer-events 透传不挡拖拽）-->
     <div style="position:absolute;left:350px;top:60px;width:580px;height:492px;border-radius:24px;border:1px solid var(--platform-edge);box-shadow:inset 0 0 0 1px var(--hairline),0 0 38px var(--accent-soft);background:var(--platform-glow);pointer-events:none"></div>
-    <!-- LEFT · 羁绊（上）；玩家卡在左下 -->
-    <div style="position:absolute;left:10px;top:66px;width:186px;bottom:182px;display:flex;flex-direction:column;gap:6px;overflow:hidden">
+    <!-- LEFT · 羁绊 -->
+    <div style="position:absolute;left:10px;top:66px;width:186px;bottom:14px;display:flex;flex-direction:column;gap:6px;overflow:hidden">
       <div style="font-size:9px;letter-spacing:.22em;text-transform:uppercase;color:var(--ink-dim);padding:2px 6px">羁绊 · Synergies</div>${synRows}</div>
-    <!-- RIGHT · 状态/装备（自设计）-->
-    <div style="position:absolute;right:10px;top:66px;width:186px;bottom:118px;display:flex;flex-direction:column;gap:10px;overflow:hidden">
+    <!-- RIGHT · 状态/装备（自设计）；玩家卡在右下 -->
+    <div style="position:absolute;right:10px;top:66px;width:186px;bottom:182px;display:flex;flex-direction:column;gap:10px;overflow:hidden">
       <div style="background:var(--panel-grad);border:1px solid var(--panel-border);border-radius:var(--radius);box-shadow:inset 0 0 0 1px var(--hairline);padding:12px">
         <div style="font-size:9px;letter-spacing:.2em;text-transform:uppercase;color:var(--ink-dim);margin-bottom:9px">当前状态 · Status</div>
         <div style="display:flex;flex-direction:column;gap:7px">${buffs}</div></div>
@@ -538,7 +540,7 @@ function buildSoloHud(): { root: HTMLElement; update: (w: World) => void } {
   const refs = {
     stage: ref('stage'), pips: ref('pips'), phase: ref('phase'), timer: ref('timer'),
     hp: ref('hp'), hpfill: ref('hpfill'), streak: ref('streak'), synShu: ref('synShu'), buffStreak: ref('buffStreak'),
-    gold: ref('gold'), level: ref('level'),
+    gold: ref('gold'), level: ref('level'), xp: ref('xp'), xpfill: ref('xpfill'), bench: ref('bench'),
   };
   const update = (w: World): void => {
     const num = (id: string): number | undefined => {
@@ -582,6 +584,11 @@ function buildSoloHud(): { root: HTMLElement; update: (w: World) => void } {
     if (refs.gold && gold !== undefined) refs.gold.textContent = String(Math.round(gold));
     const lvl = num('level');
     if (refs.level && lvl !== undefined) refs.level.textContent = String(Math.round(lvl));
+    const xpV = num('xp'), xpM = max('xp') ?? 0;
+    if (refs.xp && xpV !== undefined) refs.xp.textContent = `${Math.round(xpV)}/${xpM || '—'}`;
+    if (refs.xpfill && xpV !== undefined && xpM > 0) refs.xpfill.style.width = `${Math.max(0, Math.min(100, (xpV / xpM) * 100))}%`;
+    const benchSp = num('bench_space');
+    if (refs.bench && benchSp !== undefined) refs.bench.textContent = String(Math.round(benchSp));
     if (refs.buffStreak) refs.buffStreak.textContent = streak > 0 ? `连胜 ${streak} · 士气高涨` : '连胜越高士气越旺';
     const shu = num('count_shu');
     if (refs.synShu && shu !== undefined) refs.synShu.textContent = `${shu}/6`;
