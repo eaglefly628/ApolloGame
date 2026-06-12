@@ -470,12 +470,14 @@ function buildCoopView(): HTMLElement {
 // —— 单人对局 DOM 设计 chrome（README 对战.dc.html solo 布局 + Apollo UI Kit 控件；接真实世界状态）——
 // 顶 HUD（STAGE/相位/倒计时/主公血/连胜）+ 左羁绊栏 + 右状态·装备栏 + 武将台发光框。
 // 三边覆盖盖掉 canvas 旧 HUD；中间棋盘 + 下方备战席/商店露出，仍走 canvas 数据实体交互（不破坏可玩）。
-function buildSoloHud(click: (x: number, y: number) => void): { root: HTMLElement; update: (w: World) => void } {
+function buildSoloHud(click: (x: number, y: number) => void, play: (i: number) => void): { root: HTMLElement; update: (w: World) => void } {
   const FAC: Record<string, string> = { 蜀: '#d8504e', 吴: '#3fae6e', 魏: '#3a86d4', 群: '#9b6dd8' };
-  // 玩家阵营英雄码（纯蜀；codesFor 按 TEAM_A 序）：1关羽 2赵云 3诸葛亮 4张飞。点将台据 shop_slot 码渲染。
-  const HEROES: Record<number, [string, string, string]> = { 1: ['关羽', '关', '武将'], 2: ['赵云', '赵', '武将'], 3: ['诸葛亮', '诸', '谋士'], 4: ['张飞', '张', '武将'] };
+  // 玩家阵营英雄码（纯蜀；codesFor 按 TEAM_A 序）：1关羽 2赵云 3诸葛亮 4张飞 → [名,字,职业,DCSS像素图]。
+  const HEROES: Record<number, [string, string, string, string]> = {
+    1: ['关羽', '关', '武将', 'death_knight'], 2: ['赵云', '赵', '武将', 'deep_elf_knight_new'],
+    3: ['诸葛亮', '诸', '谋士', 'deep_elf_mage'], 4: ['张飞', '张', '武将', 'orc_knight_new'],
+  };
   const SHU = '#d8504e';
-  const SHOP_XS = [-70, 0, 70]; // 商店三框世界 x（与 blueprint 一致）；买入注入 click(SHOP_XS[i],168)。
   // 开局三选一 = 现成 rune_a/b/c（世界坐标 + 信号），DOM 卡接它们。
   const RUNES: [string, string, string, string, number, number][] = [
     ['a', '🌾', '屯粮 · 积谷', '回合开始 +10 金', -110, -100],
@@ -541,6 +543,7 @@ function buildSoloHud(click: (x: number, y: number) => void): { root: HTMLElemen
         <div style="flex:1;display:flex;align-items:center;justify-content:center;gap:6px;padding:5px 9px;border-radius:9px;background:var(--gold-chip);border:1px solid var(--gold)"><span style="font-size:13px">🪙</span><span data-ref="gold" style="font-family:var(--font-num);font-size:14px;color:var(--gold)">0</span></div>
         <div style="flex:1;display:flex;align-items:center;justify-content:center;gap:6px;padding:5px 9px;border-radius:9px;background:var(--chip-bg);border:1px solid var(--panel-border)"><span style="font-size:11px;color:var(--ink-dim)">空席</span><span data-ref="bench" style="font-family:var(--font-num);font-size:14px;color:var(--ink)">9</span></div>
       </div>
+      <button data-act="xp" style="margin-top:9px;width:100%;display:flex;align-items:center;justify-content:center;gap:8px;padding:8px;border-radius:10px;cursor:pointer;background:var(--btn-bg);border:1px solid var(--btn-edge);color:var(--btn-text);font-family:var(--font-cjk);font-weight:700;font-size:13px">📜 买经验 <span style="font-family:var(--font-num);font-size:11px;color:var(--gold)">4金</span></button>
     </div>
     <!-- 武将台发光框（围住棋盘区，pointer-events 透传不挡拖拽）-->
     <div style="position:absolute;left:350px;top:60px;width:580px;height:492px;border-radius:24px;border:1px solid var(--platform-edge);box-shadow:inset 0 0 0 1px var(--hairline),0 0 38px var(--accent-soft);background:var(--platform-glow);pointer-events:none"></div>
@@ -556,14 +559,7 @@ function buildSoloHud(click: (x: number, y: number) => void): { root: HTMLElemen
         <div style="font-size:9px;letter-spacing:.2em;text-transform:uppercase;color:var(--ink-dim);margin-bottom:9px">装备 · 锦囊</div>
         <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:8px">${items}</div></div></div>
     <!-- BOTTOM BAR · 经济 + 点将台 + 开战（覆盖 canvas 旧底部；按钮注入世界坐标点击）-->
-    <div style="position:absolute;left:0;right:0;bottom:0;height:104px;display:flex;align-items:stretch;gap:14px;padding:12px 18px;background:var(--dock-bg);border-top:1px solid var(--panel-border);pointer-events:auto">
-      <div style="display:flex;align-items:center;gap:10px">
-        <div style="display:flex;align-items:center;gap:8px;padding:0 14px;height:100%;border-radius:14px;background:var(--gold-chip);border:1px solid var(--gold)"><span style="font-size:20px">🪙</span><span data-ref="gold" style="font-family:var(--font-num);font-size:24px;color:var(--gold)">0</span></div>
-        <div style="display:flex;flex-direction:column;justify-content:center;gap:5px;padding:0 14px;height:100%;border-radius:14px;background:var(--chip-bg);border:1px solid var(--panel-border);min-width:118px">
-          <div style="display:flex;justify-content:space-between;align-items:baseline"><span style="font-family:var(--font-heading);font-weight:700;font-size:14px;color:var(--ink)">等级 <span data-ref="level">1</span></span><span data-ref="xp" style="font-family:var(--font-num);font-size:10px;color:var(--ink-dim)">0/2</span></div>
-          <div style="height:7px;border-radius:99px;background:var(--track);overflow:hidden"><div data-ref="xpfill" style="width:0%;height:100%;background:var(--xp);border-radius:99px"></div></div></div>
-        <button data-act="xp" style="display:flex;flex-direction:column;align-items:center;justify-content:center;padding:0 16px;height:100%;border-radius:14px;cursor:pointer;background:var(--btn-bg);border:1px solid var(--btn-edge);color:var(--btn-text);font-family:var(--font-cjk);font-weight:700;font-size:13px;line-height:1.3">买经验<br><span style="font-family:var(--font-num);font-size:10px;color:var(--gold)">4金</span></button>
-      </div>
+    <div style="position:absolute;left:0;right:0;bottom:0;height:104px;display:flex;align-items:stretch;gap:14px;padding:14px 18px;background:var(--dock-bg);border-top:1px solid var(--panel-border);pointer-events:auto">
       <button data-act="shop-open" style="position:relative;overflow:hidden;flex:1;display:flex;align-items:center;justify-content:center;gap:12px;border-radius:16px;border:1px solid var(--accent);background:var(--accent-soft);color:var(--ink);cursor:pointer;box-shadow:inset 0 0 0 1px var(--hairline)">
         <span style="font-size:26px">🏯</span><div style="display:flex;flex-direction:column;align-items:flex-start;line-height:1.2"><span style="font-family:var(--font-heading);font-weight:700;font-size:21px;color:var(--accent);letter-spacing:.04em">点将台 · 招募</span><span style="font-size:11px;color:var(--ink-dim)">点击开启 · 招募英雄入备战席</span></div></button>
       <button data-act="ready" style="width:172px;flex:none;display:flex;flex-direction:column;align-items:center;justify-content:center;border-radius:16px;border:none;background:var(--ready-bg);color:var(--ready-text);cursor:pointer;box-shadow:var(--ready-shadow)">
@@ -612,7 +608,7 @@ function buildSoloHud(click: (x: number, y: number) => void): { root: HTMLElemen
   q('[data-act="lock"]').addEventListener('click', () => click(300, 120));
   shopCards.addEventListener('click', (e) => {
     const c = (e.target as HTMLElement).closest('[data-buy]') as HTMLElement | null;
-    if (c) click(SHOP_XS[Number(c.dataset.buy)], 168);
+    if (c) play(Number(c.dataset.buy)); // 直接驱动 CardPile.play → 扣金占席、入备战台（不依赖位置点击）
   });
   RUNES.forEach(([k, , , , x, y]) => q(`[data-rune="${k}"]`).addEventListener('click', () => click(x, y)));
 
@@ -661,7 +657,7 @@ function buildSoloHud(click: (x: number, y: number) => void): { root: HTMLElemen
         return `<div data-buy="${i}" style="position:relative;flex:1;display:flex;flex-direction:column;overflow:hidden;cursor:${afford ? 'pointer' : 'not-allowed'};border-radius:14px;border:1px solid ${SHU};background:var(--panel-grad);box-shadow:inset 0 0 0 1px var(--hairline),0 6px 16px rgba(0,0,0,.22);opacity:${afford ? 1 : 0.55};min-height:200px">
           <div style="height:28px;display:flex;align-items:center;justify-content:center;background:${SHU};color:#fff;font-weight:700;font-family:var(--font-num);font-size:13px">🪙 3</div>
           <div style="flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:10px;padding:14px">
-            <div style="width:74px;height:74px;border-radius:13px;background:linear-gradient(160deg,${SHU}ee,${SHU}99);border:2px solid ${SHU};display:flex;align-items:center;justify-content:center;font-family:var(--font-cjk);font-weight:900;font-size:34px;color:#fff;text-shadow:0 1px 3px rgba(0,0,0,.5)">${h[1]}</div>
+            <div style="width:80px;height:80px;border-radius:13px;background:linear-gradient(160deg,${SHU}cc,${SHU}55);border:2px solid ${SHU};display:flex;align-items:center;justify-content:center;overflow:hidden"><img src="assets/FreeArtLib/monster/${h[3]}.png" alt="${h[0]}" style="width:62px;height:62px;image-rendering:pixelated"></div>
             <div style="font-family:var(--font-cjk);font-weight:700;font-size:18px;color:var(--ink)">${h[0]}</div>
             <div style="display:flex;gap:6px"><span style="font-family:var(--font-cjk);font-size:11px;font-weight:700;padding:2px 9px;border-radius:99px;background:var(--chip-bg);border:1px solid var(--panel-border);color:var(--ink-dim)">蜀</span><span style="font-family:var(--font-cjk);font-size:11px;font-weight:700;padding:2px 9px;border-radius:99px;background:var(--chip-bg);border:1px solid var(--panel-border);color:var(--ink-dim)">${h[2]}</span></div>
           </div></div>`;
@@ -724,16 +720,12 @@ export function mount(container: HTMLElement): () => void {
   const stage = el('div', '');
   stage.style.cssText = `position:relative;width:${VIEWPORT_W}px;height:${VIEWPORT_H}px;overflow:hidden;background:var(--platform-bg)`;
   boardPanel.appendChild(stage);
-  // 备战席「王冠平台」装饰（DOM，置于透明 canvas 之下；棋子落其上 = 金铲铲式华丽台座）。
-  const crown = el('div', '');
-  crown.style.cssText = 'position:absolute;left:50%;bottom:102px;transform:translateX(-50%);width:680px;height:92px;border-radius:16px 16px 26px 26px;background:linear-gradient(180deg,var(--accent-soft),rgba(0,0,0,0));border:1px solid var(--seal-edge);box-shadow:inset 0 0 0 1px var(--hairline),0 0 30px var(--accent-soft);z-index:0;pointer-events:none';
-  crown.innerHTML = '<div style="position:absolute;top:-15px;left:50%;transform:translateX(-50%);font-size:22px;opacity:.55">👑</div><div style="position:absolute;left:12px;top:7px;font-size:9px;letter-spacing:.2em;color:var(--seal-edge);opacity:.75">备战席 · BENCH</div>';
-  stage.appendChild(crown);
-  // DOM 按钮 → 注入世界坐标点击（触发 canvas clickable，命令路由；与键盘/指针同 InputSource 契约）。
+  // DOM 按钮 → 命令路由：位置点击触发 canvas clickable / CardPile play 直接买入（与键盘指针同 InputSource）。
   const queued = new QueuedInputSource('p1');
   const clickW = (x: number, y: number): void => queued.enqueue({ source: 'p1', x, y, phase: 'down' });
+  const playShop = (i: number): void => queued.enqueue({ source: 'shop', key: 'play', values: [i] });
   // 单人 DOM 设计 chrome 覆盖层（顶/左/右/底 + 点将台/三选一弹窗；接真实世界状态 + 命令）。
-  const hud = buildSoloHud(clickW);
+  const hud = buildSoloHud(clickW, playShop);
   boardPanel.appendChild(hud.root);
   gameView.appendChild(boardPanel);
   gameView.appendChild(el('div', 'gfx-note', `<span class="ico">i</span><span>买棋子点商店大卡 ➜ 备战席自动落座；拖上棋盘出兵（场上 ≤ 等级），拖到另一子=换位，拖进 🗑 卖出；3 同名自动升星（板上原地升）。点「开战」数 3-2-1 开打；WASD 移动主公拾取战利品。</span>`));

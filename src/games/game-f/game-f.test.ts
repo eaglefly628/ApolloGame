@@ -562,7 +562,7 @@ describe('Game F — 自走棋（纯数据装配，零自走棋代码；棋子=�
     const goldBefore = res('gold');
     // 在主角脚下生成一颗法球（模拟野怪掉落落点重合）→ 双向 hitbox 两清
     e.world.createEntity('lootreq');
-    e.world.addComponent('lootreq', { type: 'SpawnRequest', templateId: 'loot_orb', x: -250, y: 40 } as unknown as Resource);
+    e.world.addComponent('lootreq', { type: 'SpawnRequest', templateId: 'loot_orb', x: -150, y: 86 } as unknown as Resource);
     for (let i = 0; i < 8; i++) e.world.tick();
     expect(e.world.getAllEntities().some((id) => id.startsWith('loot_orb#'))).toBe(false); // 球真结算一次后同拍自毁（044 consumeOnHit）
     expect(res('gold')).toBe(goldBefore + 5); // 赏金入账（loot→valueFrom→gold）
@@ -603,10 +603,10 @@ describe('Game F — 自走棋（纯数据装配，零自走棋代码；棋子=�
       return -1;
     };
     const cards = (): string[] => e.world.getAllEntities().filter((id) => id.startsWith('shopcard_') && id.endsWith(':card'));
-    // HUD 金币显示已移入 DOM 壳层（game-f.tsx 右下玩家卡），canvas 不再画——此处验底层 gold 资源即可。
-    const click = (x: number, y: number): void => {
+    // HUD 金币显示已移入 DOM 壳层；canvas 商店卡退役（移出视口），买入走 CardPile.play（DOM 点将台同款路径）。
+    const buy = (slot: number): void => {
       if (!e.world.getAllEntities().includes('input')) e.world.createEntity('input');
-      e.world.addComponent('input', { type: 'InputQueue', actions: [{ source: 'test', x, y, phase: 'down' }] } as unknown as Resource);
+      e.world.addComponent('input', { type: 'InputQueue', actions: [{ source: 'shop', key: 'play', values: [slot] }] } as unknown as Resource);
       e.world.tick();
       e.world.addComponent('input', { type: 'InputQueue', actions: [] } as unknown as Resource);
     };
@@ -616,7 +616,7 @@ describe('Game F — 自走棋（纯数据装配，零自走棋代码；棋子=�
     e.world.addComponent('r_gold', { type: 'ResourceModify', resourceId: 'gold', amount: 20, scope: 'local' } as unknown as Resource);
     for (let i = 0; i < 3; i++) e.world.tick();
     const g0 = res('gold');
-    click(-70, 168); // 点第 1 个大框 = buy_slot_1 → playOnSignals 购买
+    buy(0); // 买第 1 张 = CardPile.play(0) → 扣金占席入备战台
     for (let i = 0; i < 10; i++) e.world.tick();
     expect(res('gold')).toBe(g0 - 3); // 扣金
     expect(res('bench_space')).toBe(8); // 占席
@@ -770,7 +770,7 @@ describe('Game F — 自走棋（纯数据装配，零自走棋代码；棋子=�
     const zhaoSeat = e.world.getAllEntities().find((id) => id.startsWith('bench_a_zhaoyun#') && id.endsWith(':seat') && id !== seat && e.world.getComponent(id, 'HexPos'))!;
     expect(zhaoSeat).toBeTruthy();
     const zt = pos(zhaoSeat);
-    drag(zt.x, zt.y, -250, 118); // 拖出板（落点避开右侧垃圾桶；失格即回席，托盘自动落座）
+    drag(zt.x, zt.y, 0, -200); // 拖出板（落点选板上方，避开左右两侧垃圾桶；失格即回席，托盘自动落座）
     expect(e.world.getComponent(zhaoSeat, 'HexPos')).toBeFalsy(); // 回席（板外落点移除 HexPos）
     e.world.tick();
     expect(e.world.getComponent(zhaoSeat, 'TraySeat')).toBeTruthy(); // 托盘把回席者捡进空槽

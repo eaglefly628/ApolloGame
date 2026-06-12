@@ -28,7 +28,7 @@ import {
   ZONE_FLAG,
 } from '@skills/tier2/index.js';
 import { prefabCapability, casterCapability, aggroCapability, flowCapability, mergeRuleCapability } from '@skills/tier3/index.js';
-import { GAME_F_ASSETS, F_HERO, F_FX_STRIKE, F_FX_ARROW, F_FX_BOLT, F_FX_FLAME, F_FX_FROST, F_FX_DRAIN, F_HEX_WARM, F_HEX_COOL } from './assets.js';
+import { GAME_F_ASSETS, F_HERO, F_FX_STRIKE, F_FX_ARROW, F_FX_BOLT, F_FX_FLAME, F_FX_FROST, F_FX_DRAIN, F_HEX_WARM, F_HEX_COOL, F_PEDESTAL, F_THRONE } from './assets.js';
 import { boardEntities, project, offsetToAxial, COLS, ROWS, TILE, ORIGIN_X, ORIGIN_Y, LAYOUT } from './hex.js';
 
 // ═══════════════════════════════════════════════════════════════
@@ -677,7 +677,7 @@ const ARENA = { minX: -170, minY: -165, maxX: 170, maxY: 110 };
 const TRAY = { originX: -176, originY: 118, gap: 44, capacity: 9 };
 // 商店三大框（用户钦定：小丑牌式选卡页，替代金铲铲 5 小槽——形态偏离准则，按用户指令执行）。
 const SHOP_XS = [-70, 0, 70];
-const SHOP_Y = 168;
+const SHOP_Y = 320; // 移出视口下方（旧 canvas 商店卡退役；买入走 DOM 点将台 → CardPile.play，位置无关）
 
 // L2 回合流程（flow-spec §3.3 round_flow 原样）：prep⟲combat⟲resolution⟲done 与 L1 round_done 握手。
 // 回合重置（REQ-F-032）：prep 臂 deploy_armed → EventWhen(edge) → 'deploy'/'deploy_stage_<N>' → 槽位重展开；
@@ -1042,16 +1042,25 @@ export function buildGameFBlueprint(pacing: GameFPacing = {}): WorldBlueprint {
     // —— 垃圾桶（REQ-F-058，用户「不想要的英雄扔垃圾桶」）：拖 marker 进桶=卖出（DropZone 代点其
     // sell 动作，任何相位可卖）；指针点选卖出停用（click_sell_off 恒假——「点谁谁消失」陷阱已除）。——
     f_click_sell_off: { Flag: { id: 'click_sell_off', active: false } } as unknown as EntityBlueprint, // 恒假：点选卖出永闭
-    ...chrome('trash_bin', 245, 118, 46, 46, 0xfbeee4, 0xd65668, 26.5),
+    // 备战台两侧各一个小垃圾桶（用户：左右各放一个、小一点）；任一 DropZone 落子=卖出（hitDropZone 通配）。
+    ...chrome('trash_bin', 245, 118, 32, 32, 0xfbeee4, 0xd65668, 18.5),
     trash_bin: {
       Transform: xf(245, 118),
-      Shape: { kind: 'box', width: 44, height: 44 },
+      Shape: { kind: 'box', width: 30, height: 30 },
       DropZone: {},
-      Text: { content: '🗑', fontSize: 24, fontFamily: FONT_BODY, anchor: 'center', lineSpacing: 0 },
+      Text: { content: '🗑', fontSize: 17, fontFamily: FONT_BODY, anchor: 'center', lineSpacing: 0 },
       Color: { tint: 0xd65668, alpha: 0.95 },
       Sprite: { textureKey: F_FX_STRIKE, anchorX: 0.5, anchorY: 0.5, zOrder: 27 },
     } as unknown as EntityBlueprint,
-    trash_label: { Transform: xf(245, 146), Text: { content: '拖到此卖出', fontSize: 9, fontFamily: FONT_BODY, anchor: 'center', lineSpacing: 0 }, Color: { tint: 0xa98b8f, alpha: 1 }, Sprite: { textureKey: F_FX_STRIKE, anchorX: 0.5, anchorY: 0.5, zOrder: 27 } } as unknown as EntityBlueprint,
+    ...chrome('trash_bin_l', -245, 118, 32, 32, 0xfbeee4, 0xd65668, 18.5),
+    trash_bin_l: {
+      Transform: xf(-245, 118),
+      Shape: { kind: 'box', width: 30, height: 30 },
+      DropZone: {},
+      Text: { content: '🗑', fontSize: 17, fontFamily: FONT_BODY, anchor: 'center', lineSpacing: 0 },
+      Color: { tint: 0xd65668, alpha: 0.95 },
+      Sprite: { textureKey: F_FX_STRIKE, anchorX: 0.5, anchorY: 0.5, zOrder: 27 },
+    } as unknown as EntityBlueprint,
     // —— 战后清扫（用户「死亡时机/残留一坨」）：庆祝拍清在飞弹道——战斗已分胜负，不许补刀/暴毙。——
     eff_projsweep_w: { Effect: { onSignal: 'ph_win', kind: 'destroy-tagged', targetId: '', value: PROJ } } as unknown as EntityBlueprint,
     eff_projsweep_l: { Effect: { onSignal: 'ph_lose', kind: 'destroy-tagged', targetId: '', value: PROJ } } as unknown as EntityBlueprint,
@@ -1110,8 +1119,11 @@ export function buildGameFBlueprint(pacing: GameFPacing = {}): WorldBlueprint {
     // 不带队伍位 → 不被 aggro 锁/打击区命中/wipe 清场；常驻跨回合。拾取（过渡版）：主角=zone，碰球即收走
     // （trigger-zone"恰好一方 zone"互斥 + hitbox 无 consume 语义 → 赏金两清的原子缺口已提 REQ-F-044
     //  `Hitbox.consumeOnHit`；落地后球改 zone 单发写 loot 自毁，下方入账链即时生效——链已就位）。
+    // 主公宝座（归位处，棋盘左下角；主公金龙初始坐其上，WASD 离座拾取战利品）。
+    throne: { Transform: xf(-150, 96), Shape: { kind: 'box', width: 40, height: 46 }, Color: { tint: 0xffffff, alpha: 1 }, Sprite: { textureKey: F_THRONE, anchorX: 0.5, anchorY: 0.5, zOrder: 1 } } as unknown as EntityBlueprint,
+    throne_label: { Transform: xf(-150, 122), Text: { content: '主公宝座', fontSize: 9, fontFamily: FONT_BODY, anchor: 'center', lineSpacing: 0 }, Color: { tint: 0xcf9a3f, alpha: 1 }, Sprite: { textureKey: F_FX_STRIKE, anchorX: 0.5, anchorY: 0.5, zOrder: 2 } } as unknown as EntityBlueprint,
     protag: {
-      Transform: xf(-250, 40),
+      Transform: xf(-150, 86), // 棋盘左下角宝座上（用户钦定主公默认位）
       Velocity: { vx: 0, vy: 0, angular: 0 },
       Controllable: { playerId: 'p1', speed: 1.6 },
       Shape: { kind: 'box', width: 14, height: 14 },
@@ -1120,7 +1132,7 @@ export function buildGameFBlueprint(pacing: GameFPacing = {}): WorldBlueprint {
       Sprite: sprite(F_HERO.protag, 12), // 主公小小英雄 = 金龙（独特奇异生物，非在册英雄/非真人）
     } as unknown as EntityBlueprint,
     protag_name: {
-      Transform: xf(-250, 24),
+      Transform: xf(-150, 70),
       Text: { content: '主公', fontSize: 10, fontFamily: FONT_BODY, anchor: 'center', lineSpacing: 0 },
       Color: { tint: 0xcf9a3f, alpha: 1 },
       Sprite: { textureKey: F_FX_STRIKE, anchorX: 0.5, anchorY: 0.5, zOrder: 30 },
@@ -1250,7 +1262,7 @@ export function buildGameFBlueprint(pacing: GameFPacing = {}): WorldBlueprint {
   // 备战席托盘（REQ-F-055）：9 槽英雄平台（非六角；placeholder 槽框）。买入自动落座/席内拖拽互换/上板让座。
   entities['bench_tray'] = { Tray: { ...TRAY, requiredTag: BENCH_OCC } } as unknown as EntityBlueprint;
   for (let i = 0; i < TRAY.capacity; i++) {
-    entities[`bench_frame_${i}`] = { Transform: xf(TRAY.originX + i * TRAY.gap, TRAY.originY), Shape: { kind: 'box', width: 38, height: 38 }, Color: { tint: 0xf3e2dc, alpha: 0.95 }, Sprite: { textureKey: F_FX_STRIKE, anchorX: 0.5, anchorY: 0.5, zOrder: 1 } } as unknown as EntityBlueprint;
+    entities[`bench_frame_${i}`] = { Transform: xf(TRAY.originX + i * TRAY.gap, TRAY.originY + 6), Shape: { kind: 'box', width: 40, height: 32 }, Color: { tint: 0xffffff, alpha: 1 }, Sprite: { textureKey: F_PEDESTAL, anchorX: 0.5, anchorY: 0.5, zOrder: 1 } } as unknown as EntityBlueprint; // 朴素石墩台座（每槽一个）
   }
   for (const h of ROSTER.filter((x) => x.team === TEAM_A)) {
     entities[`eff_marks_on_buy_${h.id}`] = { Effect: { onSignal: `buy_${h.id}`, kind: 'set-flag', targetId: 'shop_marks_armed', value: true } } as unknown as EntityBlueprint;
