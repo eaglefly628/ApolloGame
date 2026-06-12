@@ -782,17 +782,22 @@ def start_vite():
     print(c("  [VITE]", 'g'), f"Starting dev server on http://localhost:{VITE_PORT}")
     return proc
 
-def wait_for_server(url: str, timeout: int = 15) -> bool:
-    # 注意：探测必须打 127.0.0.1（与 Vite 的 IPv4 绑定、is_port_in_use 一致）。
-    # 用 localhost 在很多机器上会先解析到 IPv6 ::1，而 Vite 只听 127.0.0.1 →
-    # 每次 urlopen 直到超时才失败 → 整个 15s 耗尽 → 误打 "Opening anyway"（慢且多开一页）。
+def wait_for_server(url: str, timeout: int = 30) -> bool:
+    # TCP socket 探测，同时试 IPv4(127.0.0.1) 和 IPv6(::1)，端口从 url 解析。
+    # 比 urlopen 更快（端口开即成功，无需完整 HTTP 握手）且不受 IPv4/IPv6 绑定影响——
+    # 旧 HTTP 探测只打 127.0.0.1，当 Node.js/Vite 把 localhost 解析为 ::1 时全部超时 15s。
+    port = int(url.rstrip('/').rsplit(':', 1)[-1])
     start = time.time()
     while time.time() - start < timeout:
-        try:
-            urllib.request.urlopen(url, timeout=1)
-            return True
-        except Exception:
-            time.sleep(0.1)  # 收紧轮询 → 就绪后最快 ~0.1s 内开页
+        for addr, family in [('127.0.0.1', socket.AF_INET), ('::1', socket.AF_INET6)]:
+            try:
+                with socket.socket(family, socket.SOCK_STREAM) as s:
+                    s.settimeout(0.2)
+                    if s.connect_ex((addr, port)) == 0:
+                        return True
+            except OSError:
+                pass
+        time.sleep(0.1)
     return False
 
 def _open_browser_when_ready(open_url: str, probe_url: str) -> None:
