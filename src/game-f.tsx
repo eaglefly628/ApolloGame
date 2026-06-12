@@ -484,7 +484,7 @@ function buildSoloHud(click: (x: number, y: number) => void, play: (i: number) =
   const HERO_NAMES: Record<string, string> = { a_guanyu: '关羽', a_zhaoyun: '赵云', a_zhuge: '诸葛亮', a_zhouyu: '张飞', a_machao: '马超', a_huangzhong: '黄忠' };
   // 开局三选一 = 现成 rune_a/b/c（世界坐标 + 信号），DOM 卡接它们。
   const RUNES: [string, string, string, string, number, number][] = [
-    ['a', '🌾', '屯粮 · 积谷', '回合开始 +10 金', -110, -100],
+    ['a', '🌾', '屯粮 · 积谷', '即时 +5 金', -110, -100],
     ['b', '📖', '砺兵 · 练武', '+8 经验 · 助升级', 0, -100],
     ['c', '🏯', '广纳 · 扩营', '备战席容量 +2', 110, -100],
   ];
@@ -582,7 +582,7 @@ function buildSoloHud(click: (x: number, y: number) => void, play: (i: number) =
         <span style="font-family:var(--font-heading);font-weight:700;font-size:24px;letter-spacing:.12em">开 战</span><span style="font-size:10px;letter-spacing:.22em;opacity:.85;margin-top:2px">READY · SPACE</span></button>
     </div>
     <!-- 点将台招募弹窗 -->
-    <div data-act="shop-backdrop" style="position:absolute;inset:0;z-index:40;display:none;align-items:flex-start;justify-content:center;padding-top:64px;background:rgba(0,0,0,.16);pointer-events:auto">
+    <div data-act="shop-backdrop" style="position:absolute;inset:0;z-index:40;display:none;align-items:flex-start;justify-content:center;padding-top:58px;background:transparent;pointer-events:auto">
       <div data-stop="1" style="position:relative;width:900px;background:var(--panel-grad);border:1px solid var(--accent);border-radius:22px;box-shadow:inset 0 0 0 1px var(--hairline),0 30px 70px rgba(0,0,0,.55);padding:30px 32px 26px">
         <div style="display:flex;align-items:center;gap:16px;margin-bottom:20px">
           <div style="font-family:var(--font-display);font-size:38px;color:var(--ink);line-height:1">点将台</div>
@@ -590,7 +590,7 @@ function buildSoloHud(click: (x: number, y: number) => void, play: (i: number) =
           <div style="display:flex;align-items:center;gap:8px;padding:8px 14px;border-radius:12px;background:var(--gold-chip);border:1px solid var(--gold)"><span style="font-size:18px">🪙</span><span data-ref="gold" style="font-family:var(--font-num);font-size:20px;color:var(--gold)">0</span></div>
           <div data-act="shop-close" style="width:38px;height:38px;border-radius:11px;display:flex;align-items:center;justify-content:center;cursor:pointer;color:var(--ink-dim);border:1px solid var(--panel-border);background:var(--chip-bg);font-size:16px">✕</div>
         </div>
-        <div data-ref="shopcards" style="display:flex;gap:16px;min-height:200px"></div>
+        <div data-ref="shopcards" style="display:flex;gap:16px;min-height:160px"></div>
         <div style="display:flex;align-items:center;gap:12px;margin-top:22px">
           <button data-act="reroll" style="display:flex;align-items:center;gap:8px;padding:11px 22px;border-radius:14px;border:none;cursor:pointer;background:var(--accent-grad);color:var(--accent-ink);box-shadow:inset 0 1px 0 rgba(255,255,255,.3)"><span style="font-size:18px">🔄</span><span style="font-family:var(--font-heading);font-weight:700;font-size:15px">刷新</span><span style="font-family:var(--font-num);font-size:11px;color:var(--gold)">2金</span></button>
           <button data-act="lock" style="display:flex;align-items:center;gap:7px;padding:11px 18px;border-radius:14px;cursor:pointer;background:var(--btn-bg);border:1px solid var(--btn-edge);color:var(--btn-text);font-family:var(--font-heading);font-weight:700;font-size:14px">🔒 锁定商店</button>
@@ -724,8 +724,8 @@ function buildSoloHud(click: (x: number, y: number) => void, play: (i: number) =
       lastShopSig = sig;
       shopCards.innerHTML = codes.map((code, i) => {
         const h = HEROES[code];
-        if (!h) return `<div style="flex:1;min-height:200px;border-radius:14px;border:1px dashed var(--panel-border);background:var(--chip-bg);display:flex;align-items:center;justify-content:center;color:var(--ink-dim);font-size:13px">— 空 —</div>`;
-        return `<div data-buy="${i}" style="position:relative;flex:1;display:flex;flex-direction:column;overflow:hidden;cursor:${afford ? 'pointer' : 'not-allowed'};border-radius:14px;border:1px solid ${SHU};background:var(--panel-grad);box-shadow:inset 0 0 0 1px var(--hairline),0 6px 16px rgba(0,0,0,.22);opacity:${afford ? 1 : 0.55};min-height:200px">
+        if (!h) return `<div style="flex:1;min-height:160px;border-radius:14px;border:1px dashed var(--panel-border);background:var(--chip-bg);display:flex;align-items:center;justify-content:center;color:var(--ink-dim);font-size:13px">— 空 —</div>`;
+        return `<div data-buy="${i}" style="position:relative;flex:1;display:flex;flex-direction:column;overflow:hidden;cursor:${afford ? 'pointer' : 'not-allowed'};border-radius:14px;border:1px solid ${SHU};background:var(--panel-grad);box-shadow:inset 0 0 0 1px var(--hairline),0 6px 16px rgba(0,0,0,.22);opacity:${afford ? 1 : 0.55};min-height:160px">
           <div style="height:28px;display:flex;align-items:center;justify-content:center;background:${SHU};color:#fff;font-weight:700;font-family:var(--font-num);font-size:13px">🪙 3</div>
           <div style="flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:10px;padding:14px">
             <div style="width:80px;height:80px;border-radius:13px;background:linear-gradient(160deg,${SHU}cc,${SHU}55);border:2px solid ${SHU};display:flex;align-items:center;justify-content:center;overflow:hidden"><img src="assets/FreeArtLib/monster/${h[3]}.png" alt="${h[0]}" style="width:62px;height:62px;image-rendering:pixelated"></div>

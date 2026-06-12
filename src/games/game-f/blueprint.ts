@@ -560,7 +560,7 @@ function templatesFor(ROSTER: HeroSpec[]): Record<string, PrefabTemplate> {
           Sprite: sprite(h.key, 6),
         }])),
         // 敌将（魏）死亡掉装备 orb（主公拾取入装备栏）；我方死亡不掉（防自farm）。
-        h.team === TEAM_B ? { eorb: { Transform: xf(0, 0), Shape: { kind: 'box', width: 13, height: 13 }, Sensor: {}, Text: { content: '装', fontSize: 11, fontFamily: FONT_BODY, anchor: 'center', lineSpacing: 0 }, Sprite: sprite(F_FX_STRIKE, 6), Color: { tint: 0xcf9a3f, alpha: 1 }, Tag: { flags: EQUIP | LOOT | ZONE_FLAG }, Hitbox: { resource: 'items', amount: -1, targetMask: BAG, consumeOnHit: true } } } : {},
+        h.team === TEAM_B ? { eorb: { Transform: xf(0, 0), Shape: { kind: 'box', width: 13, height: 13 }, Sensor: {}, Text: { content: '📦', fontSize: 15, fontFamily: FONT_BODY, anchor: 'center', lineSpacing: 0 }, Sprite: sprite(F_FX_STRIKE, 6), Color: { tint: 0xcf9a3f, alpha: 1 }, Tag: { flags: EQUIP | ZONE_FLAG }, Hitbox: { resource: 'items', amount: -1, targetMask: BAG, consumeOnHit: true } } } : {},
       ),
     } as unknown as PrefabTemplate],
   ]).concat(
@@ -640,7 +640,7 @@ function templatesFor(ROSTER: HeroSpec[]): Record<string, PrefabTemplate> {
       'mob_death',
       { entities: Object.assign(
         { orb: { Transform: xf(0, 0), Shape: { kind: 'box', width: 10, height: 10 }, Sensor: {}, Sprite: sprite(F_FX_DRAIN, 5), Color: { tint: 0xd8607b, alpha: 1 }, Tag: { flags: LOOT | ZONE_FLAG }, Hitbox: { resource: 'loot', amount: -5, targetMask: PROTAG, consumeOnHit: true } },
-          eorb: { Transform: xf(14, 0), Shape: { kind: 'box', width: 13, height: 13 }, Sensor: {}, Text: { content: '装', fontSize: 11, fontFamily: FONT_BODY, anchor: 'center', lineSpacing: 0 }, Sprite: sprite(F_FX_STRIKE, 6), Color: { tint: 0xcf9a3f, alpha: 1 }, Tag: { flags: EQUIP | LOOT | ZONE_FLAG }, Hitbox: { resource: 'items', amount: -1, targetMask: BAG, consumeOnHit: true } } },
+          eorb: { Transform: xf(14, 0), Shape: { kind: 'box', width: 13, height: 13 }, Sensor: {}, Text: { content: '📦', fontSize: 15, fontFamily: FONT_BODY, anchor: 'center', lineSpacing: 0 }, Sprite: sprite(F_FX_STRIKE, 6), Color: { tint: 0xcf9a3f, alpha: 1 }, Tag: { flags: EQUIP | ZONE_FLAG }, Hitbox: { resource: 'items', amount: -1, targetMask: BAG, consumeOnHit: true } } },
         Object.fromEntries([[-1, -1], [1, -1], [-1, 1], [1, 1]].map(([dx, dy], i) => [`q${i}`, {
           Transform: { x: dx * 5, y: dy * 5, rotation: 0, scaleX: 0.5, scaleY: 0.5 },
           Velocity: { vx: dx * 2.0, vy: dy * 1.6 - 0.6, angular: 0 },
@@ -1131,6 +1131,9 @@ export function buildGameFBlueprint(pacing: GameFPacing = {}): WorldBlueprint {
     when_deploy_pve4: { EventWhen: { signal: 'deploy_pve_4', when: and(flagIs('deploy_armed'), resCmp('stage_idx', 'eq', 4), resCmp('round_idx', 'gte', 5)), mode: 'edge', armed: false } } as unknown as EntityBlueprint,
     when_deploy_pve5: { EventWhen: { signal: 'deploy_pve_5', when: and(flagIs('deploy_armed'), resCmp('stage_idx', 'eq', 5), resCmp('round_idx', 'gte', 5)), mode: 'edge', armed: false } } as unknown as EntityBlueprint,
     wipe_loot: { Effect: { onSignal: 'wipe', kind: 'destroy-tagged', targetId: '', value: LOOT } } as unknown as EntityBlueprint, // 未拾取法球随结算清（主角拾取=批C）
+    // 装备宝箱（EQUIP，无 LOOT）不随结算清——整个备战期留在场上可捡（用户：宝箱备战期别消失），
+    // 仅在下场战斗开打拍清掉未拾的（ph_combat），避免跨多回合无限堆积。
+    eff_equip_sweep: { Effect: { onSignal: 'ph_combat', kind: 'destroy-tagged', targetId: '', value: EQUIP } } as unknown as EntityBlueprint,
     // —— 主角小小英雄（批C，§4.7 映射零新能力）：WASD/方向键自由移动（Controllable→Velocity→motion-apply）。
     // 不带队伍位 → 不被 aggro 锁/打击区命中/wipe 清场；常驻跨回合。拾取（过渡版）：主角=zone，碰球即收走
     // （trigger-zone"恰好一方 zone"互斥 + hitbox 无 consume 语义 → 赏金两清的原子缺口已提 REQ-F-044
@@ -1175,10 +1178,10 @@ export function buildGameFBlueprint(pacing: GameFPacing = {}): WorldBlueprint {
     ...chrome('rune_b', 0, -100, 100, 44, 0xfffdfa, 0xe3c896, 32.5, RUNE), // 底盘随符文整组收走
     ...chrome('rune_c', 110, -100, 100, 44, 0xfffdfa, 0xe3c896, 32.5, RUNE), // 底盘随符文整组收走
     rune_title: { Transform: xf(0, -128), Shape: { kind: 'box', width: 340, height: 18 }, Tag: { flags: RUNE }, Text: { content: '◆ 开局强化 · 三选一（点击生效，开战后消失）', fontSize: 13, fontFamily: FONT_DISPLAY, anchor: 'center', lineSpacing: 0 }, Color: { tint: 0xcf9a3f, alpha: 1 }, Sprite: { textureKey: F_FX_STRIKE, anchorX: 0.5, anchorY: 0.5, zOrder: 33 } } as unknown as EntityBlueprint,
-    rune_a: { Transform: xf(-110, -100), Shape: { kind: 'box', width: 96, height: 40 }, Clickable: { action: 'rune_a' }, Tag: { flags: RUNE }, Text: { content: '屯粮：+10 金', fontSize: 12, fontFamily: FONT_BODY, anchor: 'center', lineSpacing: 0 }, Color: { tint: 0xcf9a3f, alpha: 1 }, Sprite: { textureKey: F_FX_STRIKE, anchorX: 0.5, anchorY: 0.5, zOrder: 33 } } as unknown as EntityBlueprint,
+    rune_a: { Transform: xf(-110, -100), Shape: { kind: 'box', width: 96, height: 40 }, Clickable: { action: 'rune_a' }, Tag: { flags: RUNE }, Text: { content: '屯粮：+5 金', fontSize: 12, fontFamily: FONT_BODY, anchor: 'center', lineSpacing: 0 }, Color: { tint: 0xcf9a3f, alpha: 1 }, Sprite: { textureKey: F_FX_STRIKE, anchorX: 0.5, anchorY: 0.5, zOrder: 33 } } as unknown as EntityBlueprint,
     rune_b: { Transform: xf(0, -100), Shape: { kind: 'box', width: 96, height: 40 }, Clickable: { action: 'rune_b' }, Tag: { flags: RUNE }, Text: { content: '砺兵：+8 经验', fontSize: 12, fontFamily: FONT_BODY, anchor: 'center', lineSpacing: 0 }, Color: { tint: 0xc98fc4, alpha: 1 }, Sprite: { textureKey: F_FX_STRIKE, anchorX: 0.5, anchorY: 0.5, zOrder: 33 } } as unknown as EntityBlueprint,
     rune_c: { Transform: xf(110, -100), Shape: { kind: 'box', width: 96, height: 40 }, Clickable: { action: 'rune_c' }, Tag: { flags: RUNE }, Text: { content: '广纳：备战席 +2', fontSize: 12, fontFamily: FONT_BODY, anchor: 'center', lineSpacing: 0 }, Color: { tint: 0x8aa0e6, alpha: 1 }, Sprite: { textureKey: F_FX_STRIKE, anchorX: 0.5, anchorY: 0.5, zOrder: 33 } } as unknown as EntityBlueprint,
-    eff_rune_a: { Effect: { onSignal: 'rune_a', kind: 'modify-resource', targetId: 'gold', op: 'add', value: 10 } } as unknown as EntityBlueprint,
+    eff_rune_a: { Effect: { onSignal: 'rune_a', kind: 'modify-resource', targetId: 'gold', op: 'add', value: 5 } } as unknown as EntityBlueprint,
     eff_rune_b: { Effect: { onSignal: 'rune_b', kind: 'modify-resource', targetId: 'xp', op: 'add', value: 8 } } as unknown as EntityBlueprint,
     eff_rune_c: { Effect: { onSignal: 'rune_c', kind: 'modify-resource', targetId: 'bench_cap', op: 'add', value: 2 } } as unknown as EntityBlueprint, // F-17 后席位空余是派生值 → 扩容改容量源
     eff_rune_a_done: { Effect: { onSignal: 'rune_a', kind: 'destroy-tagged', targetId: '', value: RUNE } } as unknown as EntityBlueprint,

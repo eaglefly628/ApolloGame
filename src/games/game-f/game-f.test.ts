@@ -521,7 +521,7 @@ describe('Game F — 自走棋（纯数据装配，零自走棋代码；棋子=�
     expect(res('sold_code')).toBe(0); // 引擎自清
   });
 
-  it('开局符文三选一（批D）：点「屯粮」金+10、三卡整组收走（一次性）；不点不影响流程', () => {
+  it('开局符文三选一（批D）：点「屯粮」金+5、三卡整组收走（一次性）；不点不影响流程', () => {
     const e = new Engine({ tickRate: 60 });
     e.load(buildGameFBlueprint(FAST));
     const res = (id: string): number => {
@@ -542,7 +542,7 @@ describe('Game F — 自走棋（纯数据装配，零自走棋代码；棋子=�
     const g0 = res('gold');
     click(-110, -100); // 选「屯粮」
     for (let i = 0; i < 4; i++) e.world.tick();
-    expect(res('gold')).toBe(g0 + 10); // 生效（收入/利息窗已移到结算，备战金额波动不再蹭利息带）
+    expect(res('gold')).toBe(g0 + 5); // 生效（用户：三选一屯粮 10→5 金；收入/利息窗已移到结算）
     expect(alive(e, 'rune_a')).toBe(false); // 整组收走（含被点那张）
     expect(alive(e, 'rune_b')).toBe(false);
     expect(alive(e, 'rune_c')).toBe(false);
