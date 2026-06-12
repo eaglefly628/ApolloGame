@@ -68,7 +68,11 @@ export class PointerInputSource extends QueuedInputSource {
   private readonly onPointer = (e: PointerEvent) => {
     const phase = e.type === 'pointerdown' ? 'down' : e.type === 'pointerup' ? 'up' : 'move';
     const rect = this.canvas.getBoundingClientRect();
-    const p = canvasPointerToScreen(e.clientX, e.clientY, rect, this.canvas.width, this.canvas.height);
+    // 高分屏修复：渲染器把 canvas.width 设成「逻辑尺寸×devicePixelRatio」(Retina 字糊根治, c105b92)，
+    // 但 worldFromScreen 逆投影按**逻辑**尺寸算 → 必须把指针映射回逻辑像素(÷dpr)，否则落点偏 dpr 倍、点击全空。
+    // canvas.style.width 钉的是逻辑尺寸；逻辑宽 = canvas.width / dpr。dpr=1(headless/jsdom)逐位不变。
+    const dpr = (typeof window !== 'undefined' && window.devicePixelRatio) || 1;
+    const p = canvasPointerToScreen(e.clientX, e.clientY, rect, this.canvas.width / dpr, this.canvas.height / dpr);
     const w = this.opts.worldFromScreen ? this.opts.worldFromScreen(p.x, p.y) : p; // 采集期逆投影 → 世界坐标
     // REQ-F-053 点拖互斥：'up' 与 drag 二选一——超阈值=拖（只发 drag，裸 up 吞掉），阈值内=真点击（发 up）。
     // 否则拖拽起手的 down/收手的 up 会被 clickable 当点击消费（按住即卖、落点误点）。可拖又可点的实体
