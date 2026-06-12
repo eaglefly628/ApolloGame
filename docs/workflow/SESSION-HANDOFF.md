@@ -5,6 +5,36 @@
 
 ---
 
+## 0′. 本 session 交接（2026-06-12，PE-F/助理 session；最新，先读这节）
+
+### 🔴 已修的关键回归 —— 高分屏点击全失效（`1fce0e0`，务必别重蹈）
+- **症状**：用户实测「开场所有都不能点、像一层遮罩屏蔽」。Retina/高分屏(dpr>1)上**点击全部落空**。
+- **根因（两提交联动）**：`c105b92`「字糊根治」把 `CanvasRenderer` 缓冲改为 `逻辑尺寸×devicePixelRatio`（字清），但 `PointerInputSource`(`src/net/queued-input.ts`) 仍按 `canvas.width`(=缓冲=dpr 倍)算点击坐标，而 `worldFromScreen` 逆投影按**逻辑**尺寸算 → 落点偏 dpr 倍、命中测试全空。
+- **修复**：`onPointer` 把 `canvas.width/height ÷ devicePixelRatio` 再喂 `canvasPointerToScreen`，回逻辑坐标系。共享件 → 同时修好 game-e/c/f 所有 canvas 游戏。
+- **⚠️ 教训（测试缺口）**：headless/jsdom **dpr=1**，故 1102 全绿照样漏过——**任何动 canvas 尺寸/坐标的改动，dpr=1 测试不保真**，须真高分屏手验或显式传 dpr≠1 的测试。改 renderer 缓冲尺寸时**必同步审 PointerInputSource 坐标映射**。
+
+### 🟡 REQ-F-061 开局选阵营 —— 地基已推、菜单待接（`d3dd065`）
+- **已落（纯数据，1103 绿）**：`buildGameFBlueprint({ playerFaction:'shu'|'wei' })`。选蜀打魏 / 选魏打蜀——所选阵营填我方(a_/下半场/红)、另一阵营填敌方(b_/上半场/蓝)，商店/敌阵/站位全翻。
+  - 机制：`rosterFor('wei')=swapFactions(ROSTER)`（a_↔b_ 前缀翻转 + team/enemy 交换 + 站位镜像 r→7-r + tint 随队伍）；名牌色已由 team 派生自动跟阵营。STAGES 改按敌方阵营内序号 `ei(0..3)` 引用。`HERO_CODE/GAME_F_TEMPLATES/ROSTER` 在 build 内按所选阵营局部 shadow，500 行 build 体零改动。**默认 'shu' 逐字等价旧行为**（26 既有测试逐字通过 + 1 选魏用例）。
+- **待接（游戏层 UI，未做）**：`src/game-f.tsx` 加「选蜀/选魏」开局菜单 → 选定后 `buildGameFBlueprint({ playerFaction })` 再 `engine.start()`。我已写过一版浮层（boardPanel 内 z-index 浮层 + startGame(faction) 闭包），但**为避免在用户试玩时留半截已撤回**；重接时一次成型、本地全绿再推。
+- **范围裁决留痕**：用户原想「各阵营 8 将」，经审定为**多 session 大改**（8 将牵动 boot/人口/level/商店/5 关敌阵=游戏经济重平衡 + 重写约 15-20 个集成测试），用户选「先做选阵营/4+4」（本条），8 将扩充待后续（需用户给经济设计）。详见对话。
+
+### 📐 给 Claude designer 的设计简报（已交付，docs/design/，不改逻辑）
+- `ui-foundation-brief.md`：引擎壳层 UI 基础库 brief（补 hover/press/focus 交互态——现状 shell-theme 是静态样式函数、7 游戏壳 0 采用、按钮几乎无交互反馈）。
+- `gendered-ui-themes-brief.md`：两套性别向游戏 UI 主题（偏女性向 Aurora / 偏男性向 Vanguard），**自包含**（内联 theme.types 契约 + 20 组件清单 + sakura spec 范例），designer 无需仓库访问。
+- `engine-assessment-and-roadmap.md` / `weak-llm-thesis-redteam.md` / `pitch-narrative.md`：引擎评估·路线·融资叙事（弱 LLM 可行性红队自审 + 女性向/梦核/爱诗视频统一叙事）。
+
+### 🟢 本 session 其余引擎/工具改动（均已推、全绿）
+- `World.query` 倒排组件索引（还规模化性能债，稀有查询 36×，行为逐字节不变 + 8 对拍守护）；`validate-references`（P0 manifest 引用链接器：信号链/全局 id/模板/图内跳转断链加载期点名，五真实蓝图 0 误报）；`group-count`(REQ-022 集合计数)；`self-rule` 加 `spawn` 动作（self 轴 caster 对偶，解 Game F 唯一 id 脚手架）；`capability-registry` 重复 id 守卫；`launcher` 游戏选择进 URL(?game=) + GameRunner 异步竞态防护；`apollo.py` 就绪探测打 127.0.0.1 + 后台线程就绪即开页（修「开页慢/多开一页」）。
+
+### 待办 / 移交
+- **选阵营菜单**（game-f.tsx，见上）——用户确认点击恢复后即接。
+- **8 将扩充**——等用户给经济设计（开局几个/人口曲线/商店出货概率）。
+- **字体分辨率**（canvas DPR）原由主程 c105b92 已修；本 session 修了它引入的点击回归（见 🔴）。
+- **素材按钮**（用户提过）——等主程/designer 出素材。
+
+---
+
 ## 0. 给主程的出差汇报（2026-06-11 晚，PE-F 代行；你回来从这读起）
 
 > **授权背景**：用户今晚拍板「赋予 PE-F 主程职责（出差期间）、可改引擎、评审须换位不得自批自过」。本节=完整移交账：动了什么引擎、为什么、哪里换位砍过自己的方案。全部细节在 requests.md REQ-F-049~053 五个条目（每条含裁决理由与回驳记录），此处为索引。
