@@ -473,7 +473,7 @@ describe('Game F — 自走棋（纯数据装配，零自走棋代码；棋子=�
     for (let k = 0; k < 5; k++) { click(300, 64); for (let i = 0; i < 2; i++) e.world.tick(); } // 买经验 ×5
     expect(res('xp')).toBe(22); // 2 + 5×4
     expect(res('gold')).toBe(g0 - 20); // $4×5 原子扣费
-    expect(res('level')).toBe(5); // xp≥20 → 升 5（§4.3 阈值表）
+    expect(res('level')).toBe(6); // 阈值下调 8/18/30/44：xp22 → 4+2=6（买经验看得见升级）
     // 连败计数：杀光我方 → 败方路径 → lose_streak +1（连败金 band 与连胜金同构同测法）
     for (const m of mains(e).filter((id) => id.startsWith('hero_a_'))) {
       e.world.addComponent(m, { type: 'ResourceModify', resourceId: 'hp', amount: -99999, scope: 'local' } as unknown as Resource);

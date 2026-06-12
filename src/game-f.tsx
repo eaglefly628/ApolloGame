@@ -478,6 +478,9 @@ function buildSoloHud(click: (x: number, y: number) => void, play: (i: number) =
     3: ['诸葛亮', '诸', '谋士', 'deep_elf_mage'], 4: ['张飞', '张', '武将', 'orc_knight_new'],
   };
   const SHU = '#d8504e';
+  // 备战期在板 marker 名牌（用户：布局时看不到武将名字）——DOM 标签层读世界 marker 位置投影，避开 prefab 子实体
+  // 干扰合成/卖出链；marker id → 将名（纯蜀 4 将）。
+  const HERO_NAMES: Record<string, string> = { a_guanyu: '关羽', a_zhaoyun: '赵云', a_zhuge: '诸葛亮', a_zhouyu: '张飞' };
   // 开局三选一 = 现成 rune_a/b/c（世界坐标 + 信号），DOM 卡接它们。
   const RUNES: [string, string, string, string, number, number][] = [
     ['a', '🌾', '屯粮 · 积谷', '回合开始 +10 金', -110, -100],
@@ -520,6 +523,8 @@ function buildSoloHud(click: (x: number, y: number) => void, play: (i: number) =
 
   const root = el('div', 'gfx-hud');
   root.innerHTML = `
+    <!-- 在板 marker 名牌层（备战期投影；pointer-events 透传）-->
+    <div data-ref="namelayer" style="position:absolute;inset:0;pointer-events:none;z-index:1"></div>
     <!-- TOP HUD -->
     <div class="pe" style="position:absolute;top:0;left:0;right:0;height:58px;display:flex;align-items:center;gap:14px;padding:0 18px;background:var(--hud-bg);border-bottom:1px solid var(--panel-border)">
       <div style="display:flex;align-items:center;gap:12px">
@@ -619,7 +624,7 @@ function buildSoloHud(click: (x: number, y: number) => void, play: (i: number) =
 
   const setAll = (k: string, t: string): void => root.querySelectorAll(`[data-ref="${k}"]`).forEach((e) => { (e as HTMLElement).textContent = t; });
   const setW = (k: string, pct: string): void => root.querySelectorAll(`[data-ref="${k}"]`).forEach((e) => { (e as HTMLElement).style.width = pct; });
-  const elPips = q('[data-ref="pips"]'), elPhase = q('[data-ref="phase"]'), elGuide = q('[data-ref="guidetext"]'), elSyn = q('[data-ref="synrows"]');
+  const elPips = q('[data-ref="pips"]'), elPhase = q('[data-ref="phase"]'), elGuide = q('[data-ref="guidetext"]'), elSyn = q('[data-ref="synrows"]'), elName = q('[data-ref="namelayer"]');
   let lastShopSig = ''; // 点将台卡面只在「在售/可负担」变化时重渲（每帧重建会杀掉 :hover 浮动效果）。
   let lastSynSig = '';
 
@@ -660,6 +665,22 @@ function buildSoloHud(click: (x: number, y: number) => void, play: (i: number) =
     if (elGuide) elGuide.textContent = prep
       ? '招募英雄 → 拖上棋盘布阵（≤等级）→ 点「开战」'
       : '战斗进行中 · WASD 移动主公拾金 · 静待分出胜负';
+    // 在板 marker 名牌（仅备战期投影；战斗期 marker 隐藏，由战斗单位头顶名字接管）。
+    if (elName) {
+      if (prep) {
+        let html = '';
+        for (const id of w.getAllEntities()) {
+          if (!id.endsWith(':seat') || !/^bench\d*_a_/.test(id) || !w.getComponent(id, 'HexPos')) continue;
+          const tr = w.getComponent(id, 'Transform') as { x: number; y: number } | undefined;
+          const mm = id.match(/^bench\d*_(a_[a-z]+)#/);
+          const nm = mm ? HERO_NAMES[mm[1]] : '';
+          if (!tr || !nm) continue;
+          const sx = tr.x * CAM_ZOOM + VIEWPORT_W / 2, sy = tr.y * CAM_ZOOM + VIEWPORT_H / 2 + 24;
+          html += `<div style="position:absolute;left:${sx}px;top:${sy}px;transform:translateX(-50%);padding:1px 6px;border-radius:6px;background:rgba(0,0,0,.55);color:#fff;font:10px var(--font-body);white-space:nowrap">${nm}</div>`;
+        }
+        elName.innerHTML = html;
+      } else if (elName.innerHTML) elName.innerHTML = '';
+    }
     runeModal.style.display = w.hasComponent('rune_a', 'Clickable') ? 'flex' : 'none'; // 三选一在场即显
     if (shopBackdrop.style.display === 'flex') {
       const afford = gold >= 3;

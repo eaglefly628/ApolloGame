@@ -556,7 +556,7 @@ function templatesFor(ROSTER: HeroSpec[]): Record<string, PrefabTemplate> {
               // 卖出动作数据（REQ-F-058）：指针点击已停用（onlyFlag 指向恒假旗——用户实测「点谁谁消失」陷阱）；
               // 唯一卖出通路=拖进垃圾桶（DropZone 代点本 action，绕过指针门；任何相位可卖=操作表）。
               Clickable: { action: s === 1 ? `sell_${h.id}` : `sell${s}_${h.id}`, phase: 'up', onlyFlag: 'click_sell_off' },
-              Tag: { flags: BENCH_OCC | MARKER_VIS }, // MARKER_VIS：战斗期隐藏（REQ-F-056，消幽灵）
+              Tag: { flags: BENCH_OCC | MARKER_VIS | h.faction | h.cls }, // +势力/职业位：羁绊按「在板 marker」实时计数（无 TEAM 位仍不参战）
               Visibility: { visible: true, active: true }, // 备战可见；ph_combat→隐藏 / ph_prep→显
               Draggable: { snap: 'hex', onlyFlag: 'in_prep', capTagMask: BENCH_OCC, capResource: 'level' },
               // 落子弹跳（REQ-F-057）：压扁回弹 keep Tween——买入出生播一次，每次拖放落点由 drag-place 倒带重放。
@@ -932,10 +932,10 @@ export function buildGameFBlueprint(pacing: GameFPacing = {}): WorldBlueprint {
       Color: { tint: 0x6a4a4f, alpha: 0 },
       Sprite: { textureKey: F_FX_STRIKE, anchorX: 0.5, anchorY: 0.5, zOrder: 30 },
     } as unknown as EntityBlueprint,
-    ...band('lvl_5', resCmp('xp', 'gte', 20), 'level', 1),
-    ...band('lvl_6', resCmp('xp', 'gte', 36), 'level', 1),
-    ...band('lvl_7', resCmp('xp', 'gte', 56), 'level', 1),
-    ...band('lvl_8', resCmp('xp', 'gte', 80), 'level', 1), // §4.3 阈值表（升到5/6/7/8）；edge 单发+1，单调封顶 8
+    ...band('lvl_5', resCmp('xp', 'gte', 8), 'level', 1),
+    ...band('lvl_6', resCmp('xp', 'gte', 18), 'level', 1),
+    ...band('lvl_7', resCmp('xp', 'gte', 30), 'level', 1),
+    ...band('lvl_8', resCmp('xp', 'gte', 44), 'level', 1), // 阈值下调（用户：买经验/打赢要看得见升级）；+2/回合、买经验$4=+4，edge 单发+1，封顶 8
     // 手动刷新（2 金）：按钮信号 → craft-recipe 原子扣 2 金置 reroll_paid → EventWhen(edge) → 'shop_refresh' → 复位。
     // 扣不起=配方整单不动（inbox 提示"扣不起就别发信号"的原子等价实现）；手动刷新不吃锁店门（锁住时也可花钱换牌）。
     btn_reroll: {
@@ -1159,12 +1159,13 @@ export function buildGameFBlueprint(pacing: GameFPacing = {}): WorldBlueprint {
     eff_rune_sweep: { Effect: { onSignal: 'ph_combat', kind: 'destroy-tagged', targetId: '', value: RUNE } } as unknown as EntityBlueprint,
     // —— 羁绊（F-16/REQ-F-047，Phase 3 先行最小版）：蜀魂——场上蜀将 ≥3 → 我方伤害 ×1.2（开战拍 edge 锁存，
     // 战斗中减员不掉档；prep 复位 ×1）。计数=group-count（REQ-022）；施加=hitbox scaleByResource 乘区。——
-    bond_counter_shu: { GroupCount: { countResource: 'count_shu', requiredTag: FACT_SHU } } as unknown as EntityBlueprint,
+    // 羁绊计数=「在板 marker」（备战期就真实反映布阵；战斗期 marker 持久仍在板→不变）。BENCH_OCC 限定只数
+    // marker（战斗单位无此位→不双计），onBoard:true 只数已上场（拖回备战席=不计，TFT 上场羁绊语义）。
+    bond_counter_shu: { GroupCount: { countResource: 'count_shu', requiredTag: BENCH_OCC | FACT_SHU, onBoard: true } } as unknown as EntityBlueprint,
     r_count_shu: { Resource: { id: 'count_shu', current: 0, min: 0, max: 99 } } as unknown as EntityBlueprint,
-    // 职业羁绊计数（HUD 真实反映场上阵容；只数我方 FACT_SHU∧职业位，含齐 ALL-bits 语义）。
-    bond_counter_warrior: { GroupCount: { countResource: 'count_warrior', requiredTag: FACT_SHU | WARRIOR } } as unknown as EntityBlueprint,
+    bond_counter_warrior: { GroupCount: { countResource: 'count_warrior', requiredTag: BENCH_OCC | WARRIOR, onBoard: true } } as unknown as EntityBlueprint,
     r_count_warrior: { Resource: { id: 'count_warrior', current: 0, min: 0, max: 99 } } as unknown as EntityBlueprint,
-    bond_counter_tactician: { GroupCount: { countResource: 'count_tactician', requiredTag: FACT_SHU | TACTICIAN } } as unknown as EntityBlueprint,
+    bond_counter_tactician: { GroupCount: { countResource: 'count_tactician', requiredTag: BENCH_OCC | TACTICIAN, onBoard: true } } as unknown as EntityBlueprint,
     r_count_tactician: { Resource: { id: 'count_tactician', current: 0, min: 0, max: 99 } } as unknown as EntityBlueprint,
     r_dmg_scale_a: { Resource: { id: 'dmg_scale_a', current: 1, min: 0, max: 9 } } as unknown as EntityBlueprint,
     r_dmg_scale_b: { Resource: { id: 'dmg_scale_b', current: 1, min: 0, max: 9 } } as unknown as EntityBlueprint, // 敌方系数占位（关卡羁绊 TUNE 位）
