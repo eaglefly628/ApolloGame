@@ -16,11 +16,14 @@ export const F_HERO = {
   guan_yu: 'f.hero.guan_yu',
   zhao_yun: 'f.hero.zhao_yun',
   zhuge_liang: 'f.hero.zhuge_liang',
+  zhang_fei: 'f.hero.zhang_fei', // 蜀·张飞（世界观修正：单机纯蜀，替原跨势力周瑜）
   zhang_liao: 'f.hero.zhang_liao',
   xu_chu: 'f.hero.xu_chu',
   sima_yi: 'f.hero.sima_yi',
-  zhou_yu: 'f.hero.zhou_yu',
-  gan_ning: 'f.hero.gan_ning',
+  xiahou_dun: 'f.hero.xiahou_dun', // 魏·夏侯惇（替原跨势力甘宁）
+  zhou_yu: 'f.hero.zhou_yu', // 吴（合作模式 孙刘抗曹 用；野怪皮借用）
+  gan_ning: 'f.hero.gan_ning', // 吴（野怪皮借用）
+  protag: 'f.hero.protag', // 主公小小英雄 = 独特奇异生物（金龙，非真人/非在册英雄）
 } as const;
 export const F_FX_STRIKE = 'f.fx.strike'; // 近战斩光（SVG）
 export const F_FX_ARROW = 'f.fx.arrow'; // 远程箭
@@ -37,17 +40,20 @@ const hexTile = (fill: string, stroke: string): string =>
   svg(`<polygon points="20,1 39,12 39,34 20,45 1,34 1,12" fill="${fill}" stroke="${stroke}" stroke-width="1.3"/>`, 40, 46);
 
 export const GAME_F_ASSETS: AssetManifest = [
-  // 蜀（关羽 死亡骑士 / 赵云 深渊精灵骑士 / 诸葛 深渊精灵法师）
+  // 蜀（关羽 死亡骑士 / 赵云 深渊精灵骑士 / 诸葛 深渊精灵法师 / 张飞 兽人骑士）
   { kind: 'texture', key: F_HERO.guan_yu, src: dcss('death_knight'), width: 32, height: 32 },
   { kind: 'texture', key: F_HERO.zhao_yun, src: dcss('deep_elf_knight_new'), width: 32, height: 32 },
   { kind: 'texture', key: F_HERO.zhuge_liang, src: dcss('deep_elf_mage'), width: 32, height: 32 },
-  // 魏（张辽 地狱骑士 / 许褚 深渊精灵兵 / 司马 死灵法师）
+  { kind: 'texture', key: F_HERO.zhang_fei, src: dcss('orc_knight_new'), width: 32, height: 32 },
+  // 魏（张辽 地狱骑士 / 许褚 深渊精灵兵 / 司马 死灵法师 / 夏侯惇 矮人死亡骑士）
   { kind: 'texture', key: F_HERO.zhang_liao, src: dcss('hell_knight_new'), width: 32, height: 32 },
   { kind: 'texture', key: F_HERO.xu_chu, src: dcss('deep_elf_soldier'), width: 32, height: 32 },
   { kind: 'texture', key: F_HERO.sima_yi, src: dcss('necromancer_new'), width: 32, height: 32 },
-  // 吴（周瑜 精灵术士 / 甘宁 双刀剑师，换掉蛇身娜迦）
+  { kind: 'texture', key: F_HERO.xiahou_dun, src: dcss('deep_dwarf_death_knight'), width: 32, height: 32 },
+  // 吴（合作/野怪皮借用）+ 主公金龙（独特生物）
   { kind: 'texture', key: F_HERO.zhou_yu, src: dcss('deep_elf_sorcerer'), width: 32, height: 32 },
   { kind: 'texture', key: F_HERO.gan_ning, src: dcss('deep_elf_blademaster'), width: 32, height: 32 },
+  { kind: 'texture', key: F_HERO.protag, src: dcss('golden_dragon'), width: 32, height: 32 },
   // 普攻打击特效：黄白斩光。
   {
     kind: 'texture',

@@ -226,16 +226,16 @@ interface HeroSpec {
 // 站位金铲铲式（7×8 真规格：魏上半场 r0..3 / 蜀下半场 r4..7，中线 r3|r4 贴脸）+ 各英雄独立血量/攻击
 // + 职业 + 势力(蜀魏吴) + 专属大招。每方 3 本势力 + 1 吴（跨势力羁绊样本）。
 const ROSTER: HeroSpec[] = [
-  // 蜀（TEAM_A，下半场 r4..7，红）+ 吴·周瑜（绿）：武将顶前排 r4、谋士蹲后排 r6
+  // 蜀（TEAM_A，下半场 r4..7，红）—— 单机=纯刘备阵营（关羽/赵云/诸葛亮/张飞），不混吴（曹战刘世界观）。
   { id: 'a_guanyu', name: '关羽', key: F_HERO.guan_yu, team: TEAM_A, enemy: TEAM_B, cls: WARRIOR, faction: FACT_SHU, tint: SHU_RED, q: 2, r: 4, hp: 240, atk: 12, ult: '青龙偃月', ultDmg: 45, ultSize: 80, atkType: 'melee', ultFx: F_FX_STRIKE, items: ['yuxi'] },
   { id: 'a_zhaoyun', name: '赵云', key: F_HERO.zhao_yun, team: TEAM_A, enemy: TEAM_B, cls: WARRIOR, faction: FACT_SHU, tint: SHU_RED, q: 4, r: 4, hp: 165, atk: 18, ult: '七进七出', ultDmg: 75, ultSize: 55, atkType: 'melee', ultFx: F_FX_STRIKE, items: ['qinggang'] },
   { id: 'a_zhuge', name: '诸葛亮', key: F_HERO.zhuge_liang, team: TEAM_A, enemy: TEAM_B, cls: TACTICIAN, faction: FACT_SHU, tint: SHU_RED, q: 2, r: 6, hp: 120, atk: 24, ult: '八阵图', ultDmg: 35, ultSize: 95, atkType: 'magic', ultFx: F_FX_FROST, ultFreeze: 120 },
-  { id: 'a_zhouyu', name: '周瑜', key: F_HERO.zhou_yu, team: TEAM_A, enemy: TEAM_B, cls: TACTICIAN, faction: FACT_WU, tint: WU_GREEN, q: 4, r: 6, hp: 115, atk: 21, ult: '火烧赤壁', ultDmg: 38, ultSize: 92, atkType: 'magic', ultFx: F_FX_FLAME, ultDot: true },
-  // 魏（TEAM_B，上半场 r0..3，蓝）+ 吴·甘宁（绿）：武将压中线 r3、谋士/刺客缩后排 r1
+  { id: 'a_zhouyu', name: '张飞', key: F_HERO.zhang_fei, team: TEAM_A, enemy: TEAM_B, cls: WARRIOR, faction: FACT_SHU, tint: SHU_RED, q: 4, r: 6, hp: 200, atk: 15, ult: '燕人咆哮', ultDmg: 50, ultSize: 72, atkType: 'melee', ultFx: F_FX_STRIKE },
+  // 魏（TEAM_B，上半场 r0..3，蓝）—— 单机=纯曹操阵营（张辽/许褚/司马懿/夏侯惇），不混吴。
   { id: 'b_zhangliao', name: '张辽', key: F_HERO.zhang_liao, team: TEAM_B, enemy: TEAM_A, cls: WARRIOR, faction: FACT_WEI, tint: WEI_BLUE, q: 2, r: 3, hp: 200, atk: 15, ult: '突阵', ultDmg: 50, ultSize: 70, atkType: 'melee', ultFx: F_FX_STRIKE, items: ['fangtian'] },
   { id: 'b_xuchu', name: '许褚', key: F_HERO.xu_chu, team: TEAM_B, enemy: TEAM_A, cls: WARRIOR, faction: FACT_WEI, tint: WEI_BLUE, q: 4, r: 3, hp: 270, atk: 11, ult: '裸衣血战', ultDmg: 42, ultSize: 78, atkType: 'melee', ultFx: F_FX_STRIKE },
   { id: 'b_simayi', name: '司马懿', key: F_HERO.sima_yi, team: TEAM_B, enemy: TEAM_A, cls: TACTICIAN, faction: FACT_WEI, tint: WEI_BLUE, q: 3, r: 1, hp: 130, atk: 23, ult: '鬼谋', ultDmg: 40, ultSize: 88, atkType: 'magic', ultFx: F_FX_DRAIN, ultDot: true, items: ['qinggang'] },
-  { id: 'b_ganning', name: '甘宁', key: F_HERO.gan_ning, team: TEAM_B, enemy: TEAM_A, cls: ASSASSIN, faction: FACT_WU, tint: WU_GREEN, q: 5, r: 1, hp: 145, atk: 20, ult: '锦帆突袭', ultDmg: 60, ultSize: 50, atkType: 'ranged', ultFx: F_FX_ARROW },
+  { id: 'b_ganning', name: '夏侯惇', key: F_HERO.xiahou_dun, team: TEAM_B, enemy: TEAM_A, cls: WARRIOR, faction: FACT_WEI, tint: WEI_BLUE, q: 5, r: 1, hp: 200, atk: 14, ult: '拔矢啖睛', ultDmg: 50, ultSize: 70, atkType: 'melee', ultFx: F_FX_STRIKE },
 ];
 
 // ── 开局选阵营（REQ-F-061）：玩家选蜀或魏，所选阵营填我方(a_/下半场)、另一阵营填敌方(b_/上半场)。──
@@ -1117,7 +1117,7 @@ export function buildGameFBlueprint(pacing: GameFPacing = {}): WorldBlueprint {
       Shape: { kind: 'box', width: 14, height: 14 },
       Tag: { flags: PROTAG }, // 044 后主角零附件：球自带 consumeOnHit 两清
       Resource: { id: 'loot', current: 0, min: 0, max: 999 },
-      Sprite: sprite(F_HERO.zhao_yun, 12), // 主公 = 真 DCSS 角色图（旧 F_FX_DRAIN 吸血特效=「八角螃蟹」误用）
+      Sprite: sprite(F_HERO.protag, 12), // 主公小小英雄 = 金龙（独特奇异生物，非在册英雄/非真人）
     } as unknown as EntityBlueprint,
     protag_name: {
       Transform: xf(-250, 24),

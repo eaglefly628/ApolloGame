@@ -499,11 +499,11 @@ describe('Game F — 自走棋（纯数据装配，零自走棋代码；棋子=�
       e.world.tick();
       e.world.addComponent('input', { type: 'InputQueue', actions: [] } as unknown as Resource);
     };
-    // 羁绊：场上蜀将 3（关羽/赵云/诸葛；周瑜=吴不计）→ 开战拍锁存 dmg_scale_a=1.2
+    // 羁绊：场上蜀将 4（关羽/赵云/诸葛/张飞，单机纯蜀 vs 魏世界观）→ ≥3 阈值开战拍锁存 dmg_scale_a=1.2
     let guard = 0;
     while (!flag(e, 'in_combat') && guard++ < 100) e.world.tick();
     for (let i = 0; i < 3; i++) e.world.tick();
-    expect(res('count_shu')).toBe(3); // group-count 按 FACT_SHU 计场上
+    expect(res('count_shu')).toBe(4); // group-count 按 FACT_SHU 计场上（纯蜀 4 将）
     expect(res('dmg_scale_a')).toBeCloseTo(1.2); // 蜀魂 ≥3 锁存（prep 复位 ×1，下回合重判）
     // 卖出袋归还：注资买 1（deck 抽 1 补手 → 净 -1）→ 点席卖 → 码归还袋底（净回 +1）
     e.world.addComponent('r_gold', { type: 'ResourceModify', resourceId: 'gold', amount: 10, scope: 'local' } as unknown as Resource);
