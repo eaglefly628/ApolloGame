@@ -24,12 +24,13 @@
 | 文件 | 内容 |
 |---|---|
 | `designs/Game F 对战.dc.html` | **主对战界面(平盘重构版,1280×720)· 推荐主参考** —— 单人/双人×玄铁/锦霞 四组合切换。清爽擂台棋盘 + 羁绊栏 + 备战席(贴棋盘底) + 点将台招募弹窗 + 同盟镜像面板。双人棋盘 10 列 |
-| `designs/Apollo UI Kit.dc.html` | **20 个标准组件** × 两套皮肤 × 全交互态 + 基础(色板/字体/形状) |
+| `designs/Apollo UI Kit.dc.html` | **20 个标准组件** × 两套皮肤 × 全交互态 + 基础(色板/字体/形状/五行分格)· 水墨×王者(色形纹神) |
+| `designs/Game F 对战.dc.html` | **对战界面(平盘,1280×720)** · 单人/多人(3人联机,AI 补位)× 玄铁/锦霞 · 点将台招募弹窗 · 右栏玩家战况六角点图 |
+| `designs/Game F 大厅.dc.html` | **局外大厅** 7 屏(大厅/组队/牌组/收藏/商城·市场/天梯)+ 好友栏 + 邀请 toast · 玄铁/锦霞 |
 | `designs/Game F 商城.dc.html` | 商城(1280×720):抽卡/皮肤/通行证/钻石/礼包 五分页 |
-| `designs/Game F Coop · Buttons & Icons.dc.html` | 合作模式按钮 & 古风玉印图标库 |
-| `designs/Game F Skins.dc.html` | 早期单机对局稿(战场背景 + 单位详情卡画法参考)—— 布局已被「对战」取代 |
+| `designs/玄铁 艺术升级对照.dc.html` | 艺术方向对照(改造前后 + 五行分格) |
 | `tokens/onyx.tokens.css` / `tokens/brocade.tokens.css` | **两套主题 tokens.css 草案** —— 可直接落进 `src/ui/themes/<name>/` |
-| `screenshots/` | 各设计截图(含单人/双人对战) |
+| `screenshots/` | 各设计截图 |
 | `source-briefs/` | 原始策划/设计简报(背景与规则) |
 
 ---
@@ -126,7 +127,7 @@
 19. **modal** 模态 — `--panel-grad` 卡 + **四角转角纹饰**(见下)+ 标题 + 正文 + 取消/确认。
 20. **toast** — 轻量浮层:圆形语义图标 + 文案;短暂浮现自动消失。
 
-### 2. 古风按钮 & 图标 (`Game F Coop · Buttons & Icons.dc.html`) — hifi
+### 2. 古风玉印图标语言(已并入 UI Kit / 对战)— hifi
 - **八角玉印框(图标统一语言)**:八角 `clip-path: polygon(22% 0,78% 0,100% 22%,100% 78%,78% 100%,22% 100%,0 78%,0 22%)`;外圈 `--seal-edge` 古金,内嵌 `--panel-grad` 内收 2.5px + `inset 0 0 0 1.5px` 古金细线(双线描边);字心用 `--font-display` 毛笔字。
 - **A 主操作**:双 ready 开战键三态(我未就绪 btn-bg → 已就绪 accent-soft + 脉冲点 → 双方就绪 accent 渐变 + 发光动画)、赠予、战场标记。
 - **B 行动条**:刷新(2金)/买经验(4金)/锁店/卖出/招降/设置 —— 方形玉印 + 标签 + 金币角标。
