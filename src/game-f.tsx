@@ -1,9 +1,11 @@
 import { Engine } from './runtime/engine.js';
 import { CanvasRenderer } from './renderer/index.js';
-import { PointerInputSource, KeyboardInputSource } from './net/index.js';
+import { PointerInputSource, KeyboardInputSource, QueuedInputSource } from './net/index.js';
 import type { InputSource } from './net/commands.js';
 import { AssetManager, ImageAssetLoader } from '@assets/index.js';
-import { buildGameFBlueprint, GAME_F_ASSETS } from './games/game-f/index.js';
+import { getComponentById } from '@engine/core/query.js';
+import type { World } from '@engine/core/world.js';
+import { buildGameFBlueprint, gameFEnemyPreview, GAME_F_ASSETS } from './games/game-f/index.js';
 
 // Game F 可挂载模块（launcher 卡带槽契约：export mount(container) → cleanup）。
 // 壳层 UI = design_handoff_game_f 的「锦霞 Aurora」皮肤（用户钦定女性向风格）：
@@ -15,6 +17,19 @@ import { buildGameFBlueprint, GAME_F_ASSETS } from './games/game-f/index.js';
 const VIEWPORT_W = 1280;
 const VIEWPORT_H = 720;
 const CAM_ZOOM = 1.8; // 与 blueprint camera.zoom 一致（静态相机）
+
+// —— 三国战场场景（用户：全面提升品质，战场别再平板）——水墨远山 3 层 + 天光 + 蜀红/魏蓝旌旗。
+// 雾蓝中性色 → 锦霞(暖)/玄铁(暗)两皮都读得出；半透明叠在主题天地渐变上（--battlefield）。
+const BATTLEFIELD =
+  "<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 1280 720' preserveAspectRatio='xMidYMid slice'>" +
+  "<circle cx='640' cy='190' r='95' fill='rgba(255,238,205,0.10)'/><circle cx='640' cy='190' r='160' fill='rgba(255,238,205,0.05)'/>" +
+  "<path d='M0 720 L0 350 C180 295 360 345 540 315 C720 285 900 340 1080 312 C1180 298 1240 328 1280 318 L1280 720 Z' fill='rgba(132,150,182,0.10)'/>" +
+  "<path d='M0 720 L0 425 C220 372 420 415 640 388 C840 365 1040 410 1280 384 L1280 720 Z' fill='rgba(110,130,165,0.15)'/>" +
+  "<path d='M0 720 L0 505 C260 472 560 505 820 488 C1020 476 1160 500 1280 492 L1280 720 Z' fill='rgba(88,108,145,0.20)'/>" +
+  "<g opacity='0.55'><rect x='86' y='150' width='6' height='230' rx='3' fill='rgba(70,60,55,0.55)'/><path d='M92 160 L176 180 L92 206 Z' fill='rgba(190,72,70,0.5)'/></g>" +
+  "<g opacity='0.55'><rect x='1188' y='150' width='6' height='230' rx='3' fill='rgba(70,60,55,0.55)'/><path d='M1188 160 L1104 180 L1188 206 Z' fill='rgba(70,118,190,0.5)'/></g>" +
+  "</svg>";
+const BF_URI = `url("data:image/svg+xml,${encodeURIComponent(BATTLEFIELD)}")`;
 
 // —— 锦霞（Aurora）tokens（README 表格锦霞列原值）——
 const AURORA = `
@@ -40,6 +55,7 @@ const AURORA = `
   --gold-chip: rgba(207,154,63,.12);
   --platform-bg: radial-gradient(120% 90% at 50% 35%, #fff8f0, #f0ddcb 70%);
   --platform-glow: radial-gradient(70% 60% at 50% 45%, rgba(216,96,123,.08), transparent 70%);
+  --battlefield: ${BF_URI}, radial-gradient(120% 95% at 50% 18%, #fbe9da 0%, #f2d6c5 48%, #e6c6b6 78%, #dcb8a8 100%);
   --platform-edge: #e3c896;
   --hex-fill: linear-gradient(180deg,#fff8f0,#f6e7d8); --hex-stroke: #e0c79c;
   --hex-fill-e: linear-gradient(180deg,#f7ece2,#f0ddce); --hex-stroke-e: #dcc09a;
@@ -81,6 +97,7 @@ const ONYX = `
   --gold-chip: rgba(255,203,61,.1);
   --platform-bg: radial-gradient(120% 90% at 50% 35%, #1a2531, #0c1117 70%);
   --platform-glow: radial-gradient(70% 60% at 50% 45%, rgba(255,93,46,.08), transparent 70%);
+  --battlefield: ${BF_URI}, radial-gradient(120% 95% at 50% 18%, #213044 0%, #16202e 48%, #0e1620 78%, #090e15 100%);
   --platform-edge: #33404f;
   --hex-fill: linear-gradient(180deg,#1d2733,#141b25); --hex-stroke: #3b4a5a;
   --hex-fill-e: linear-gradient(180deg,#26303d,#1a2230); --hex-stroke-e: #46566a;
@@ -147,6 +164,16 @@ const SHELL_CSS = `
   background:var(--panel-grad);box-shadow:0 0 0 1.5px var(--hairline) inset,0 14px 34px rgba(120,70,60,.16);
   overflow:hidden;}
 .gfx-board-panel canvas{display:block;}
+/* —— 单人对局 DOM 设计 chrome（顶/左/右覆盖层；接真实世界数值；中间棋盘+下方备战席露出可玩）—— */
+.gfx-hud{position:absolute;inset:0;pointer-events:none;z-index:6;font-family:var(--font-body);color:var(--ink);}
+.gfx-hud .pe{pointer-events:auto;}
+.gfx-hud .syn{display:flex;align-items:center;gap:10px;padding:8px 11px;border-radius:var(--radius);}
+.gfx-hud .syn .ic{width:30px;height:30px;flex:none;border-radius:8px;display:flex;align-items:center;justify-content:center;font-family:var(--font-cjk);font-weight:900;font-size:15px;}
+.gfx-hud [data-rune],.gfx-hud [data-buy]{transition:.16s cubic-bezier(.2,.7,.3,1);}
+.gfx-hud [data-rune]:hover,.gfx-hud [data-buy]:hover{transform:translateY(-6px);filter:brightness(1.07);}
+.gfx-hud button{transition:.15s ease;}
+.gfx-hud button:hover{filter:brightness(1.08);}
+.gfx-hud button:active{transform:translateY(1px) scale(.97);}
 .gfx-note{display:flex;gap:10px;align-items:flex-start;margin:10px 0 24px;padding:10px 14px;border-radius:var(--radius);
   background:var(--panel-grad);border:1px solid var(--panel-border);border-left:3px solid var(--info);
   color:var(--ink-dim);font:12.5px var(--font-body);}
@@ -408,7 +435,7 @@ function buildCoopView(): HTMLElement {
     <!-- CENTER -->
     <div style="position:absolute;top:100px;left:298px;right:298px;bottom:164px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:14px">
       <div style="display:flex;align-items:center;gap:9px;margin-bottom:14px"><span style="width:8px;height:8px;border-radius:2px;background:#3a86d4;box-shadow:0 0 8px #3a86d4"></span><span style="font-family:var(--font-heading);font-weight:600;font-size:14px;color:var(--ink-dim);letter-spacing:.04em">魏 · 董卓先锋 — Lv 6 · 38血</span></div>
-      <div style="position:relative;padding:26px 30px;border-radius:24px;background:var(--platform-bg);border:1px solid var(--platform-edge);box-shadow:inset 0 0 0 1px var(--hairline),inset 0 0 60px rgba(0,0,0,.3),0 18px 40px rgba(0,0,0,.3)">
+      <div style="position:relative;padding:26px 30px;border-radius:24px;background:var(--battlefield);background-size:cover;border:1px solid var(--platform-edge);box-shadow:inset 0 0 0 1px var(--hairline),inset 0 0 60px rgba(0,0,0,.3),0 18px 40px rgba(0,0,0,.3)">
         <div style="position:absolute;inset:0;border-radius:inherit;background:var(--platform-glow);pointer-events:none"></div>
         <div style="position:relative">${board}
           <div style="position:absolute;left:130px;top:430px;width:20px;height:20px;border-radius:50%;background:var(--gold);box-shadow:0 0 13px var(--gold);animation:gfx-float 2.4s ease-in-out infinite"></div></div>
@@ -453,6 +480,277 @@ function buildCoopView(): HTMLElement {
     </div>
   </div>`;
   return root;
+}
+
+// —— 单人对局 DOM 设计 chrome（README 对战.dc.html solo 布局 + Apollo UI Kit 控件；接真实世界状态）——
+// 顶 HUD（STAGE/相位/倒计时/主公血/连胜）+ 左羁绊栏 + 右状态·装备栏 + 武将台发光框。
+// 三边覆盖盖掉 canvas 旧 HUD；中间棋盘 + 下方备战席/商店露出，仍走 canvas 数据实体交互（不破坏可玩）。
+function buildSoloHud(click: (x: number, y: number) => void, play: (i: number) => void): { root: HTMLElement; update: (w: World) => void } {
+  const FAC: Record<string, string> = { 蜀: '#d8504e', 吴: '#3fae6e', 魏: '#3a86d4', 群: '#9b6dd8' };
+  // 玩家阵营英雄码（纯蜀；codesFor 按 TEAM_A 序）：1关羽 2赵云 3诸葛亮 4张飞 → [名,字,职业,DCSS像素图]。
+  const HEROES: Record<number, [string, string, string, string]> = {
+    1: ['关羽', '关', '武将', 'death_knight'], 2: ['赵云', '赵', '武将', 'deep_elf_knight_new'],
+    3: ['诸葛亮', '诸', '谋士', 'deep_elf_mage'], 4: ['张飞', '张', '武将', 'orc_knight_new'],
+    5: ['马超', '马', '武将', 'centaur_warrior'], 6: ['黄忠', '黄', '射手', 'deep_elf_master_archer'],
+  };
+  const SHU = '#d8504e';
+  // 备战期在板 marker 名牌（用户：布局时看不到武将名字）——DOM 标签层读世界 marker 位置投影，避开 prefab 子实体
+  // 干扰合成/卖出链；marker id → 将名（纯蜀 4 将）。
+  const HERO_NAMES: Record<string, string> = { a_guanyu: '关羽', a_zhaoyun: '赵云', a_zhuge: '诸葛亮', a_zhouyu: '张飞', a_machao: '马超', a_huangzhong: '黄忠' };
+  // 开局三选一 = 现成 rune_a/b/c（世界坐标 + 信号），DOM 卡接它们。
+  const RUNES: [string, string, string, string, number, number][] = [
+    ['a', '🌾', '屯粮 · 积谷', '即时 +5 金', -110, -100],
+    ['b', '📖', '砺兵 · 练武', '+8 经验 · 助升级', 0, -100],
+    ['c', '🏯', '广纳 · 扩营', '备战席容量 +2', 110, -100],
+  ];
+  const runeCards = RUNES.map(([k, g, n, d]) => `<div data-rune="${k}" style="position:relative;width:208px;padding:28px 20px 20px;border-radius:18px;cursor:pointer;background:var(--panel-grad);border:1px solid var(--accent);box-shadow:inset 0 0 0 1px var(--hairline),0 18px 42px rgba(0,0,0,.5)">
+    <div style="width:64px;height:64px;margin:0 auto 14px;border-radius:16px;background:var(--accent-soft);border:1px solid var(--accent);display:flex;align-items:center;justify-content:center;font-size:32px">${g}</div>
+    <div style="font-family:var(--font-display);font-size:22px;color:var(--ink);margin-bottom:6px">${n}</div>
+    <div style="font-size:12px;color:var(--ink-dim);line-height:1.5;min-height:34px">${d}</div>
+    <div style="margin-top:14px;padding:8px 0;border-radius:10px;background:var(--accent-grad);color:var(--accent-ink);font-family:var(--font-heading);font-weight:700;font-size:13px;letter-spacing:2px">选 择</div></div>`).join('');
+  // 羁绊（接真实 group-count；纯蜀 vs 魏世界观）：蜀魂(count_shu) + 武将(count_warrior) + 谋士(count_tactician)。
+  const synData = [
+    { name: '蜀 · 桃园', fac: '蜀', tiers: [2, 4, 6], glyph: '蜀', res: 'count_shu' },
+    { name: '武将 · 猛将', fac: '', tiers: [2, 4, 6], glyph: '武', res: 'count_warrior' },
+    { name: '谋士 · 智囊', fac: '', tiers: [2, 4], glyph: '谋', res: 'count_tactician' },
+  ];
+  const synRowHtml = (s: { name: string; fac: string; tiers: number[]; glyph: string }, have: number): string => {
+    const col = s.fac ? FAC[s.fac] : 'var(--accent)';
+    const active = have >= s.tiers[0];
+    const reached = s.tiers.filter((t) => have >= t).length;
+    const ticks = s.tiers.map((_, i) => `<div style="flex:1;height:4px;border-radius:99px;background:${i < reached ? col : 'var(--track)'}"></div>`).join('');
+    return `<div class="syn" style="border:1px solid ${active ? col : 'var(--panel-border)'};background:${active ? 'var(--chip-bg)' : 'transparent'};opacity:${active ? 1 : 0.5};box-shadow:${active ? 'inset 0 0 0 1px var(--hairline)' : 'none'}">
+      <div class="ic" style="background:${active ? col : 'var(--track)'};color:${active ? '#fff' : 'var(--ink-dim)'}">${s.glyph}</div>
+      <div style="flex:1;min-width:0"><div style="display:flex;justify-content:space-between;align-items:baseline">
+        <span style="font-family:var(--font-heading);font-weight:700;font-size:14px;color:var(--ink)">${s.name}</span>
+        <span style="font-family:var(--font-num);font-size:11px;color:${active ? col : 'var(--ink-dim)'}">${have}/${s.tiers[s.tiers.length - 1]}</span></div>
+      <div style="display:flex;gap:4px;margin-top:5px">${ticks}</div></div></div>`;
+  };
+  const synRows = synData.map((s) => synRowHtml(s, 0)).join('');
+  // 右栏 buff（自设计：当前状态 + 增益；连胜激励接 win_streak）。
+  const buffs = [
+    { g: '🏵️', n: '桃园结义', d: '蜀阵容 +12% 攻击', ref: '' },
+    { g: '🌾', n: '屯田积粮', d: '每回合 +3 金', ref: '' },
+    { g: '🔥', n: '连胜激励', d: '连胜越高士气越旺', ref: 'buffStreak' },
+  ].map((b) => `<div style="display:flex;align-items:center;gap:9px;padding:8px 9px;border-radius:9px;background:var(--chip-bg);border:1px solid var(--panel-border)">
+    <span style="font-size:17px">${b.g}</span><div style="flex:1;min-width:0"><div style="font-family:var(--font-heading);font-weight:700;font-size:13px;color:var(--ink)">${b.n}</div><div ${b.ref ? `data-ref="${b.ref}"` : ''} style="font-size:10px;color:var(--ink-dim)">${b.d}</div></div></div>`).join('');
+  // 装备栏（战利品）：开局空，战中敌死掉装备 → 主公拾取 → items 累加填充（update 读真实 items 资源）。
+  const EQUIP_ICONS = ['🗡', '🛡', '👑', '📜', '🏹', '💍', '🔮', '⚔️'];
+
+  const root = el('div', 'gfx-hud');
+  root.innerHTML = `
+    <!-- 在板 marker 名牌层 + 敌人预布阵幽灵层（备战期投影；pointer-events 透传）-->
+    <div data-ref="namelayer" style="position:absolute;inset:0;pointer-events:none;z-index:1"></div>
+    <div data-ref="ghostlayer" style="position:absolute;inset:0;pointer-events:none;z-index:1"></div>
+    <!-- TOP HUD -->
+    <div class="pe" style="position:absolute;top:0;left:0;right:0;height:58px;display:flex;align-items:center;gap:14px;padding:0 18px;background:var(--hud-bg);border-bottom:1px solid var(--panel-border)">
+      <div style="display:flex;align-items:center;gap:12px">
+        <div style="display:flex;flex-direction:column;line-height:1"><span style="font-size:9px;letter-spacing:.2em;text-transform:uppercase;color:var(--ink-dim)">STAGE</span><span data-ref="stage" style="font-family:var(--font-num);font-size:20px;color:var(--ink);margin-top:3px">1-1</span></div>
+        <div data-ref="pips" style="display:flex;gap:5px;align-items:center"></div>
+      </div>
+      <!-- 居中的相位 + 开战倒计时（用户：倒计时画在顶栏且居中）-->
+      <div style="position:absolute;left:50%;transform:translateX(-50%);display:flex;align-items:center;gap:16px">
+        <div data-ref="phase" style="padding:6px 18px;border-radius:99px;white-space:nowrap;font-family:var(--font-heading);font-weight:700;font-size:13px;letter-spacing:.06em;background:var(--accent-soft);color:var(--accent);border:1px solid var(--accent)">⚔ 备战 · 布阵</div>
+        <div style="display:flex;flex-direction:column;align-items:center;line-height:1"><span style="font-size:9px;letter-spacing:.2em;text-transform:uppercase;color:var(--ink-dim)">开战倒计时</span><span data-ref="timer" style="font-family:var(--font-num);font-size:22px;color:var(--accent);margin-top:3px">0:30</span></div>
+      </div>
+      <div style="flex:1"></div>
+      <!-- 操作引导（用户：最上排状态栏告诉玩家此刻该干什么）-->
+      <div style="display:flex;justify-content:flex-end"><div data-ref="guide" style="display:flex;align-items:center;gap:8px;max-width:400px;padding:7px 14px;border-radius:11px;background:var(--chip-bg);border:1px solid var(--panel-border);font-size:11.5px;line-height:1.4;color:var(--ink)"><span style="font-size:14px">🎯</span><span data-ref="guidetext">招募英雄 → 拖上棋盘布阵 → 点「开战」</span></div></div>
+    </div>
+    <!-- 玩家信息卡（左下角，合并全部主公状态+经济；UI Kit 控件 avatar-frame/bar/chip）-->
+    <div style="position:absolute;left:10px;bottom:118px;width:194px;padding:13px;border-radius:var(--radius);background:var(--panel-grad);border:1px solid var(--panel-border);box-shadow:inset 0 0 0 1px var(--hairline),0 6px 16px rgba(0,0,0,.2);pointer-events:auto">
+      <div style="display:flex;align-items:center;gap:11px">
+        <div style="position:relative;width:50px;height:50px;flex:none;border-radius:50%;background:var(--accent-grad);padding:3px;box-shadow:0 0 14px var(--accent-soft)">
+          <div style="width:100%;height:100%;border-radius:50%;background:var(--protag-bg);display:flex;align-items:center;justify-content:center;font-size:24px">🐢</div></div>
+        <div style="flex:1;min-width:0"><div style="font-family:var(--font-heading);font-weight:700;font-size:15px;color:var(--ink)">主公 · 玄德</div><div style="font-size:10px;color:var(--ink-dim)">蜀 · 桃园结义</div></div>
+        <div style="display:flex;align-items:center;padding:4px 9px;border-radius:9px;background:var(--accent-soft);border:1px solid var(--accent)"><span data-ref="streak" style="font-family:var(--font-heading);font-weight:700;font-size:11px;color:var(--accent)">0连胜</span></div>
+      </div>
+      <div style="margin-top:10px"><div style="display:flex;justify-content:space-between;margin-bottom:3px"><span style="font-size:9px;letter-spacing:.1em;color:var(--ink-dim)">主公生命</span><span data-ref="hp" style="font-family:var(--font-num);font-size:10px;color:var(--hp)">100</span></div>
+        <div style="height:10px;border-radius:99px;background:var(--track);overflow:hidden;border:1px solid var(--panel-border)"><div data-ref="hpfill" style="width:100%;height:100%;background:var(--hp);border-radius:99px"></div></div></div>
+      <div style="margin-top:7px"><div style="display:flex;justify-content:space-between;margin-bottom:3px"><span style="font-size:9px;letter-spacing:.1em;color:var(--ink-dim)">经验 · Lv<span data-ref="level">1</span></span><span data-ref="xp" style="font-family:var(--font-num);font-size:10px;color:var(--xp)">0/2</span></div>
+        <div style="height:7px;border-radius:99px;background:var(--track);overflow:hidden;border:1px solid var(--panel-border)"><div data-ref="xpfill" style="width:0%;height:100%;background:var(--xp);border-radius:99px"></div></div></div>
+      <div style="display:flex;gap:8px;margin-top:9px">
+        <div style="flex:1;display:flex;align-items:center;justify-content:center;gap:6px;padding:5px 9px;border-radius:9px;background:var(--gold-chip);border:1px solid var(--gold)"><span style="font-size:13px">🪙</span><span data-ref="gold" style="font-family:var(--font-num);font-size:14px;color:var(--gold)">0</span></div>
+        <div style="flex:1;display:flex;align-items:center;justify-content:center;gap:6px;padding:5px 9px;border-radius:9px;background:var(--chip-bg);border:1px solid var(--panel-border)"><span style="font-size:11px;color:var(--ink-dim)">空席</span><span data-ref="bench" style="font-family:var(--font-num);font-size:14px;color:var(--ink)">9</span></div>
+      </div>
+      <button data-act="xp" style="margin-top:9px;width:100%;display:flex;align-items:center;justify-content:center;gap:8px;padding:8px;border-radius:10px;cursor:pointer;background:var(--btn-bg);border:1px solid var(--btn-edge);color:var(--btn-text);font-family:var(--font-cjk);font-weight:700;font-size:13px">📜 买经验 <span style="font-family:var(--font-num);font-size:11px;color:var(--gold)">4金</span></button>
+    </div>
+    <!-- 武将台发光框（围住棋盘区，pointer-events 透传不挡拖拽）-->
+    <div style="position:absolute;left:350px;top:60px;width:580px;height:492px;border-radius:24px;border:1px solid var(--platform-edge);box-shadow:inset 0 0 0 1px var(--hairline),0 0 38px var(--accent-soft);background:var(--platform-glow);pointer-events:none"></div>
+    <!-- LEFT · 羁绊（上）；玩家卡在左下（bottom 留够，避免与玩家卡重叠）-->
+    <div style="position:absolute;left:10px;top:66px;width:186px;bottom:330px;display:flex;flex-direction:column;gap:6px;overflow:hidden;pointer-events:auto">
+      <div style="font-size:9px;letter-spacing:.22em;text-transform:uppercase;color:var(--ink-dim);padding:2px 6px">羁绊 · Synergies</div>
+      <div data-ref="synrows" style="display:flex;flex-direction:column;gap:6px">${synRows}</div></div>
+    <!-- RIGHT · 状态/装备（自设计）-->
+    <div style="position:absolute;right:10px;top:66px;width:186px;bottom:118px;display:flex;flex-direction:column;gap:10px;overflow:hidden;pointer-events:auto">
+      <div style="background:var(--panel-grad);border:1px solid var(--panel-border);border-radius:var(--radius);box-shadow:inset 0 0 0 1px var(--hairline);padding:12px">
+        <div style="font-size:9px;letter-spacing:.2em;text-transform:uppercase;color:var(--ink-dim);margin-bottom:9px">当前状态 · Status</div>
+        <div style="display:flex;flex-direction:column;gap:7px">${buffs}</div></div>
+      <div style="background:var(--panel-grad);border:1px solid var(--panel-border);border-radius:var(--radius);box-shadow:inset 0 0 0 1px var(--hairline);padding:12px">
+        <div style="display:flex;justify-content:space-between;align-items:baseline;margin-bottom:9px"><span style="font-size:9px;letter-spacing:.2em;text-transform:uppercase;color:var(--ink-dim)">装备 · 战利品</span><span data-ref="equipcount" style="font-family:var(--font-num);font-size:11px;color:var(--gold)">0/8</span></div>
+        <div data-ref="equipslots" style="display:grid;grid-template-columns:repeat(4,1fr);gap:8px"></div></div></div>
+    <!-- BOTTOM BAR · 经济 + 点将台 + 开战（覆盖 canvas 旧底部；按钮注入世界坐标点击）-->
+    <div style="position:absolute;left:0;right:0;bottom:0;height:104px;display:flex;align-items:stretch;gap:14px;padding:14px 18px;background:var(--dock-bg);border-top:1px solid var(--panel-border);pointer-events:auto">
+      <button data-act="shop-open" style="position:relative;overflow:hidden;flex:1;display:flex;align-items:center;justify-content:center;gap:12px;border-radius:16px;border:1px solid var(--accent);background:var(--accent-soft);color:var(--ink);cursor:pointer;box-shadow:inset 0 0 0 1px var(--hairline)">
+        <span style="font-size:26px">🏯</span><div style="display:flex;flex-direction:column;align-items:flex-start;line-height:1.2"><span style="font-family:var(--font-heading);font-weight:700;font-size:21px;color:var(--accent);letter-spacing:.04em">点将台 · 招募</span><span style="font-size:11px;color:var(--ink-dim)">点击开启 · 招募英雄入备战席</span></div></button>
+      <button data-act="ready" style="width:172px;flex:none;display:flex;flex-direction:column;align-items:center;justify-content:center;border-radius:16px;border:none;background:var(--ready-bg);color:var(--ready-text);cursor:pointer;box-shadow:var(--ready-shadow)">
+        <span style="font-family:var(--font-heading);font-weight:700;font-size:24px;letter-spacing:.12em">开 战</span><span style="font-size:10px;letter-spacing:.22em;opacity:.85;margin-top:2px">READY · SPACE</span></button>
+    </div>
+    <!-- 点将台招募弹窗 -->
+    <div data-act="shop-backdrop" style="position:absolute;inset:0;z-index:40;display:none;align-items:flex-start;justify-content:center;padding-top:58px;background:transparent;pointer-events:auto">
+      <div data-stop="1" style="position:relative;width:900px;background:var(--panel-grad);border:1px solid var(--accent);border-radius:22px;box-shadow:inset 0 0 0 1px var(--hairline),0 30px 70px rgba(0,0,0,.55);padding:30px 32px 26px">
+        <div style="display:flex;align-items:center;gap:16px;margin-bottom:20px">
+          <div style="font-family:var(--font-display);font-size:38px;color:var(--ink);line-height:1">点将台</div>
+          <div style="font-size:12px;color:var(--ink-dim)">招募英雄 · 每名 3 金 · 可刷新</div><div style="flex:1"></div>
+          <div style="display:flex;align-items:center;gap:8px;padding:8px 14px;border-radius:12px;background:var(--gold-chip);border:1px solid var(--gold)"><span style="font-size:18px">🪙</span><span data-ref="gold" style="font-family:var(--font-num);font-size:20px;color:var(--gold)">0</span></div>
+          <div data-act="shop-close" style="width:38px;height:38px;border-radius:11px;display:flex;align-items:center;justify-content:center;cursor:pointer;color:var(--ink-dim);border:1px solid var(--panel-border);background:var(--chip-bg);font-size:16px">✕</div>
+        </div>
+        <div data-ref="shopcards" style="display:flex;gap:16px;min-height:160px"></div>
+        <div style="display:flex;align-items:center;gap:12px;margin-top:22px">
+          <button data-act="reroll" style="display:flex;align-items:center;gap:8px;padding:11px 22px;border-radius:14px;border:none;cursor:pointer;background:var(--accent-grad);color:var(--accent-ink);box-shadow:inset 0 1px 0 rgba(255,255,255,.3)"><span style="font-size:18px">🔄</span><span style="font-family:var(--font-heading);font-weight:700;font-size:15px">刷新</span><span style="font-family:var(--font-num);font-size:11px;color:var(--gold)">2金</span></button>
+          <button data-act="lock" style="display:flex;align-items:center;gap:7px;padding:11px 18px;border-radius:14px;cursor:pointer;background:var(--btn-bg);border:1px solid var(--btn-edge);color:var(--btn-text);font-family:var(--font-heading);font-weight:700;font-size:14px">🔒 锁定商店</button>
+          <div style="flex:1"></div>
+          <button data-act="shop-close" style="padding:11px 30px;border-radius:14px;cursor:pointer;background:var(--btn-bg);border:1px solid var(--btn-edge);color:var(--ink);font-family:var(--font-heading);font-weight:700;font-size:15px">完成</button>
+        </div>
+      </div>
+    </div>
+    <!-- 开局三选一弹窗（接 rune_a/b/c；rune 实体在场时自动显示）-->
+    <div data-ref="runemodal" style="position:absolute;inset:0;z-index:45;display:none;align-items:center;justify-content:center;background:rgba(0,0,0,.62);backdrop-filter:blur(5px);pointer-events:auto">
+      <div style="text-align:center">
+        <div style="font-family:var(--font-display);font-size:40px;color:var(--accent);letter-spacing:3px;margin-bottom:4px;text-shadow:0 2px 10px rgba(0,0,0,.5)">开局强化 · 三选一</div>
+        <div style="font-size:13px;color:#fff;opacity:.72;margin-bottom:26px">择一而行 · 开战后生效</div>
+        <div style="display:flex;gap:22px;justify-content:center">${runeCards}</div>
+      </div>
+    </div>`;
+
+  // —— 交互接线：DOM 按钮 → 注入对应世界坐标的点击（clickable 按位置命中发信号）——
+  const q = (s: string): HTMLElement => root.querySelector(s) as HTMLElement;
+  const shopBackdrop = q('[data-act="shop-backdrop"]');
+  const runeModal = q('[data-ref="runemodal"]');
+  const shopCards = q('[data-ref="shopcards"]');
+  const openShop = (b: boolean): void => { shopBackdrop.style.display = b ? 'flex' : 'none'; };
+  q('[data-act="xp"]').addEventListener('click', () => click(300, 64));
+  q('[data-act="ready"]').addEventListener('click', () => click(300, 180));
+  q('[data-act="shop-open"]').addEventListener('click', () => openShop(true));
+  root.querySelectorAll('[data-act="shop-close"]').forEach((b) => b.addEventListener('click', () => openShop(false)));
+  shopBackdrop.addEventListener('click', (e) => { if (e.target === shopBackdrop) openShop(false); });
+  q('[data-stop]').addEventListener('click', (e) => e.stopPropagation());
+  q('[data-act="reroll"]').addEventListener('click', () => click(300, 150));
+  q('[data-act="lock"]').addEventListener('click', () => click(300, 120));
+  shopCards.addEventListener('click', (e) => {
+    const c = (e.target as HTMLElement).closest('[data-buy]') as HTMLElement | null;
+    if (c) play(Number(c.dataset.buy)); // 直接驱动 CardPile.play → 扣金占席、入备战台（不依赖位置点击）
+  });
+  RUNES.forEach(([k, , , , x, y]) => q(`[data-rune="${k}"]`).addEventListener('click', () => click(x, y)));
+
+  const setAll = (k: string, t: string): void => root.querySelectorAll(`[data-ref="${k}"]`).forEach((e) => { (e as HTMLElement).textContent = t; });
+  const setW = (k: string, pct: string): void => root.querySelectorAll(`[data-ref="${k}"]`).forEach((e) => { (e as HTMLElement).style.width = pct; });
+  const elPips = q('[data-ref="pips"]'), elPhase = q('[data-ref="phase"]'), elGuide = q('[data-ref="guidetext"]'), elSyn = q('[data-ref="synrows"]'), elName = q('[data-ref="namelayer"]'), elEquip = q('[data-ref="equipslots"]'), elGhost = q('[data-ref="ghostlayer"]');
+  let lastEquip = -1, lastGhost = '';
+  let lastShopSig = ''; // 点将台卡面只在「在售/可负担」变化时重渲（每帧重建会杀掉 :hover 浮动效果）。
+  let lastSynSig = '';
+
+  const update = (w: World): void => {
+    const num = (id: string): number | undefined => (getComponentById(w, 'Resource', 'id', id) as { current?: number } | undefined)?.current;
+    const max = (id: string): number | undefined => (getComponentById(w, 'Resource', 'id', id) as { max?: number } | undefined)?.max;
+    const flag = (id: string): boolean | undefined => (getComponentById(w, 'Flag', 'id', id) as { active?: boolean } | undefined)?.active;
+    const stageI = num('stage_idx') ?? 1, roundI = num('round_idx') ?? 1;
+    setAll('stage', `${stageI}-${roundI}`);
+    if (elPips) elPips.innerHTML = Array.from({ length: 5 }, (_, i) => {
+      const on = i + 1 === stageI;
+      return `<div style="width:${on ? 10 : 7}px;height:${on ? 10 : 7}px;border-radius:50%;background:${i + 1 <= stageI ? 'var(--accent)' : 'var(--ink-dim)'};box-shadow:${on ? '0 0 8px var(--accent)' : 'none'}"></div>`;
+    }).join('');
+    const prep = flag('in_prep');
+    if (elPhase) {
+      elPhase.textContent = prep ? '⚔ 备战 · 布阵' : '⚔ 战斗阶段';
+      elPhase.style.background = prep ? 'var(--accent-soft)' : 'rgba(214,86,104,.16)';
+      elPhase.style.color = prep ? 'var(--accent)' : 'var(--danger)';
+      elPhase.style.borderColor = prep ? 'var(--accent)' : 'var(--danger)';
+    }
+    const t = Math.max(0, Math.ceil(num('prep_left') ?? 0));
+    setAll('timer', `${Math.floor(t / 60)}:${String(t % 60).padStart(2, '0')}`);
+    const hpV = num('player_hp'), hpM = max('player_hp') ?? 100;
+    if (hpV !== undefined) { setAll('hp', String(Math.round(hpV))); setW('hpfill', `${Math.max(0, Math.min(100, (hpV / (hpM || 100)) * 100))}%`); }
+    const streak = num('win_streak') ?? 0;
+    setAll('streak', `${streak}连胜`);
+    const gold = num('gold') ?? 0;
+    setAll('gold', String(Math.round(gold)));
+    const lvl = num('level'); if (lvl !== undefined) setAll('level', String(Math.round(lvl)));
+    const xpV = num('xp'), xpM = max('xp') ?? 0;
+    if (xpV !== undefined) { setAll('xp', `${Math.round(xpV)}/${xpM || '—'}`); if (xpM > 0) setW('xpfill', `${Math.max(0, Math.min(100, (xpV / xpM) * 100))}%`); }
+    const benchSp = num('bench_space'); if (benchSp !== undefined) setAll('bench', String(Math.round(benchSp)));
+    // 装备栏（A）：按真实 items 数填充（变化才重渲）。
+    const itemN = Math.round(num('items') ?? 0);
+    setAll('equipcount', `${itemN}/8`);
+    if (elEquip && itemN !== lastEquip) {
+      lastEquip = itemN;
+      elEquip.innerHTML = Array.from({ length: 8 }, (_, i) => {
+        const got = i < itemN;
+        return `<div style="aspect-ratio:1;border-radius:8px;background:${got ? 'var(--gold-chip)' : 'transparent'};border:1px ${got ? 'solid var(--gold)' : 'dashed var(--panel-border)'};display:flex;align-items:center;justify-content:center;font-size:16px;box-shadow:${got ? '0 0 8px var(--accent-soft)' : 'none'}">${got ? EQUIP_ICONS[i] : ''}</div>`;
+      }).join('');
+    }
+    setAll('buffStreak', streak > 0 ? `连胜 ${streak} · 士气高涨` : '连胜越高士气越旺');
+    // 羁绊真实计数（只在变化时重渲）+ 操作引导随相位。
+    const counts = synData.map((s) => num(s.res) ?? 0);
+    const synSig = counts.join(',');
+    if (elSyn && synSig !== lastSynSig) { lastSynSig = synSig; elSyn.innerHTML = synData.map((s, i) => synRowHtml(s, counts[i])).join(''); }
+    if (elGuide) elGuide.textContent = prep
+      ? '招募英雄 → 拖上棋盘布阵（≤等级）→ 点「开战」'
+      : '战斗进行中 · WASD 移动主公拾金 · 静待分出胜负';
+    // 在板 marker 名牌（仅备战期投影；战斗期 marker 隐藏，由战斗单位头顶名字接管）。
+    if (elName) {
+      if (prep) {
+        let html = '';
+        for (const id of w.getAllEntities()) {
+          if (!id.endsWith(':seat') || !/^bench\d*_a_/.test(id) || !w.getComponent(id, 'HexPos')) continue;
+          const tr = w.getComponent(id, 'Transform') as { x: number; y: number } | undefined;
+          const mm = id.match(/^bench\d*_(a_[a-z]+)#/);
+          const nm = mm ? HERO_NAMES[mm[1]] : '';
+          if (!tr || !nm) continue;
+          const sx = tr.x * CAM_ZOOM + VIEWPORT_W / 2, sy = tr.y * CAM_ZOOM + VIEWPORT_H / 2 + 24;
+          html += `<div style="position:absolute;left:${sx}px;top:${sy}px;transform:translateX(-50%);padding:1px 6px;border-radius:6px;background:rgba(0,0,0,.55);color:#fff;font:10px var(--font-body);white-space:nowrap">${nm}</div>`;
+        }
+        elName.innerHTML = html;
+      } else if (elName.innerHTML) elName.innerHTML = '';
+    }
+    // 敌人预布阵幽灵（功能 B；仅备战期，英雄关半透明画出敌阵让玩家针对性布阵）。
+    if (elGhost) {
+      const sKey = prep ? `${stageI}-${roundI}` : '';
+      if (sKey !== lastGhost) {
+        lastGhost = sKey;
+        if (!prep) elGhost.innerHTML = '';
+        else {
+          const foes = gameFEnemyPreview(stageI, roundI);
+          elGhost.innerHTML = foes.map((f) => {
+            const sx = f.x * CAM_ZOOM + VIEWPORT_W / 2, sy = f.y * CAM_ZOOM + VIEWPORT_H / 2;
+            return `<div style="position:absolute;left:${sx}px;top:${sy}px;transform:translate(-50%,-50%);display:flex;flex-direction:column;align-items:center;gap:2px;opacity:.5">
+              <div style="width:34px;height:34px;border-radius:9px;border:2px dashed #3a86d4;background:rgba(58,134,212,.25);display:flex;align-items:center;justify-content:center;font-family:var(--font-cjk);font-weight:900;font-size:15px;color:#cfe2f7">魏</div>
+              <div style="font:9px var(--font-body);padding:0 4px;border-radius:5px;background:rgba(0,0,0,.45);color:#bcd6f0;white-space:nowrap">${f.name}</div></div>`;
+          }).join('');
+        }
+      }
+    }
+    runeModal.style.display = w.hasComponent('rune_a', 'Clickable') ? 'flex' : 'none'; // 三选一在场即显
+    if (shopBackdrop.style.display === 'flex') {
+      const afford = gold >= 3;
+      const codes = [num('shop_slot_1') ?? 0, num('shop_slot_2') ?? 0, num('shop_slot_3') ?? 0];
+      const sig = `${codes.join(',')}|${afford}`;
+      if (sig === lastShopSig) return; // 无变化不重渲 → 保住 hover
+      lastShopSig = sig;
+      shopCards.innerHTML = codes.map((code, i) => {
+        const h = HEROES[code];
+        if (!h) return `<div style="flex:1;min-height:160px;border-radius:14px;border:1px dashed var(--panel-border);background:var(--chip-bg);display:flex;align-items:center;justify-content:center;color:var(--ink-dim);font-size:13px">— 空 —</div>`;
+        return `<div data-buy="${i}" style="position:relative;flex:1;display:flex;flex-direction:column;overflow:hidden;cursor:${afford ? 'pointer' : 'not-allowed'};border-radius:14px;border:1px solid ${SHU};background:var(--panel-grad);box-shadow:inset 0 0 0 1px var(--hairline),0 6px 16px rgba(0,0,0,.22);opacity:${afford ? 1 : 0.55};min-height:160px">
+          <div style="height:28px;display:flex;align-items:center;justify-content:center;background:${SHU};color:#fff;font-weight:700;font-family:var(--font-num);font-size:13px">🪙 3</div>
+          <div style="flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:10px;padding:14px">
+            <div style="width:80px;height:80px;border-radius:13px;background:linear-gradient(160deg,${SHU}cc,${SHU}55);border:2px solid ${SHU};display:flex;align-items:center;justify-content:center;overflow:hidden"><img src="assets/FreeArtLib/monster/${h[3]}.png" alt="${h[0]}" style="width:62px;height:62px;image-rendering:pixelated"></div>
+            <div style="font-family:var(--font-cjk);font-weight:700;font-size:18px;color:var(--ink)">${h[0]}</div>
+            <div style="display:flex;gap:6px"><span style="font-family:var(--font-cjk);font-size:11px;font-weight:700;padding:2px 9px;border-radius:99px;background:var(--chip-bg);border:1px solid var(--panel-border);color:var(--ink-dim)">蜀</span><span style="font-family:var(--font-cjk);font-size:11px;font-weight:700;padding:2px 9px;border-radius:99px;background:var(--chip-bg);border:1px solid var(--panel-border);color:var(--ink-dim)">${h[2]}</span></div>
+          </div></div>`;
+      }).join('');
+    }
+  };
+  return { root, update };
 }
 
 export function mount(container: HTMLElement): () => void {
@@ -506,10 +804,16 @@ export function mount(container: HTMLElement): () => void {
   const gameView = el('div', 'gfx-view');
   const boardPanel = el('div', 'gfx-board-panel');
   const stage = el('div', '');
-  stage.style.cssText = `width:${VIEWPORT_W}px;height:${VIEWPORT_H}px;overflow:hidden`;
+  stage.style.cssText = `position:relative;width:${VIEWPORT_W}px;height:${VIEWPORT_H}px;overflow:hidden;background:var(--battlefield);background-size:cover`;
   boardPanel.appendChild(stage);
-  gameView.appendChild(boardPanel);
-  gameView.appendChild(el('div', 'gfx-note', `<span class="ico">i</span><span>买棋子点商店大卡 ➜ 备战席自动落座；拖上棋盘出兵（场上 ≤ 等级），拖到另一子=换位，拖进 🗑 卖出；3 同名自动升星（板上原地升）。点「开战」数 3-2-1 开打；WASD 移动主公拾取战利品。</span>`));
+  // DOM 按钮 → 命令路由：位置点击触发 canvas clickable / CardPile play 直接买入（与键盘指针同 InputSource）。
+  const queued = new QueuedInputSource('p1');
+  const clickW = (x: number, y: number): void => queued.enqueue({ source: 'p1', x, y, phase: 'down' });
+  const playShop = (i: number): void => queued.enqueue({ source: 'shop', key: 'play', values: [i] });
+  // 单人 DOM 设计 chrome 覆盖层（顶/左/右/底 + 点将台/三选一弹窗；接真实世界状态 + 命令）。
+  const hud = buildSoloHud(clickW, playShop);
+  boardPanel.appendChild(hud.root);
+  gameView.appendChild(boardPanel); // 操作引导已移入顶栏状态栏（data-ref guide），不再单列底注。
 
   // 双人合作界面预览（局外壳层 DOM；设计稿 coop 变体）。
   const coopView = el('div', 'gfx-view');
@@ -562,21 +866,33 @@ export function mount(container: HTMLElement): () => void {
   // 输入源懒适配：Engine 的 input 是构造期只读，而 canvas 由 attachRenderer 挂载时才创建 → 占位转发。
   const keyboard = new KeyboardInputSource('p1', window);
   let pointer: PointerInputSource | null = null;
-  const lazyInput: InputSource = { commandsForTick: (tick) => [...keyboard.commandsForTick(tick), ...(pointer ? pointer.commandsForTick(tick) : [])] };
+  const lazyInput: InputSource = { commandsForTick: (tick) => [...keyboard.commandsForTick(tick), ...(pointer ? pointer.commandsForTick(tick) : []), ...queued.commandsForTick(tick)] };
   const engine = new Engine({ tickRate: 60, input: lazyInput });
   engine.load(buildGameFBlueprint());
-  engine.attachRenderer(new CanvasRenderer({ width: VIEWPORT_W, height: VIEWPORT_H, background: '#f6e8e0', assets }), stage);
+  // 透明画布：棋盘露出 stage 的设计平台背景（--platform-bg 随皮肤）。
+  engine.attachRenderer(new CanvasRenderer({ width: VIEWPORT_W, height: VIEWPORT_H, background: 'transparent', assets }), stage);
   const canvas = stage.querySelector('canvas');
   if (canvas) {
     canvas.style.touchAction = 'none';
     canvas.style.cursor = 'pointer';
+    canvas.style.position = 'relative'; // 抬到王冠台座之上（z1 > crown z0）
+    canvas.style.zIndex = '1';
     pointer = new PointerInputSource('p1', canvas, {
       worldFromScreen: (sx, sy) => ({ x: (sx - VIEWPORT_W / 2) / CAM_ZOOM, y: (sy - VIEWPORT_H / 2) / CAM_ZOOM }),
     });
   }
   engine.start();
 
+  // HUD 实时投影：每帧读世界资源刷新 DOM 数字/条（纯表现层，不进 hash）。
+  let rafId = 0;
+  const pump = (): void => {
+    hud.update(engine.world);
+    rafId = requestAnimationFrame(pump);
+  };
+  rafId = requestAnimationFrame(pump);
+
   return () => {
+    cancelAnimationFrame(rafId);
     engine.stop();
     keyboard.dispose();
     pointer?.dispose();

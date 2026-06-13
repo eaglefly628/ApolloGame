@@ -88,6 +88,6 @@ export const GAME_F_ASSETS: AssetManifest = [
   { kind: 'texture', key: F_FX_FROST, src: fx('frost_0'), width: 32, height: 32 },
   { kind: 'texture', key: F_FX_DRAIN, src: fx('drain_0_new'), width: 32, height: 32 },
   // 六边形棋盘格（蜀半场暖 / 魏半场冷）。
-  { kind: 'texture', key: F_HEX_WARM, src: hexTile('rgba(251,238,228,0.85)', 'rgba(216,164,78,0.75)'), width: 40, height: 46 }, // 蜀半场：暖珍珠+描金（锦霞）
-  { kind: 'texture', key: F_HEX_COOL, src: hexTile('rgba(233,236,246,0.85)', 'rgba(138,160,230,0.7)'), width: 40, height: 46 }, // 魏半场：雾青+柔蓝描线（锦霞）
+  { kind: 'texture', key: F_HEX_WARM, src: hexTile('rgba(251,238,228,0.62)', 'rgba(216,164,78,0.85)'), width: 40, height: 46 }, // 蜀半场：暖珍珠+描金（半透明让战场透出）
+  { kind: 'texture', key: F_HEX_COOL, src: hexTile('rgba(233,236,246,0.62)', 'rgba(138,160,230,0.8)'), width: 40, height: 46 }, // 魏半场：雾青+柔蓝描线（半透明让战场透出）
 ];
