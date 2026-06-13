@@ -54,12 +54,8 @@ export class CanvasRenderer implements RendererBackend {
 
     ctx.setTransform(this.dpr, 0, 0, this.dpr, 0, 0); // 帧首回到「逻辑坐标系×DPR」基变换
     ctx.imageSmoothingEnabled = false; // 像素图最近邻放大（DCSS 32×32 像素画风，平滑=糊）
-    ctx.clearRect(0, 0, this.logicalW, this.logicalH); // 帧首清屏（透明背景=露出底层 CSS 背景图）
-    const bg = this.opts.background ?? '#16213e';
-    if (bg !== 'transparent') {
-      ctx.fillStyle = bg;
-      ctx.fillRect(0, 0, this.logicalW, this.logicalH);
-    }
+    ctx.fillStyle = this.opts.background ?? '#16213e';
+    ctx.fillRect(0, 0, this.logicalW, this.logicalH);
 
     // 世界→屏幕投影（卷轴）：有相机则把世界向相机反方向平移并缩放，使相机中心落在视口中心；
     // 无相机则世界坐标 1:1（与原行为一致）。整段 renderable 绘制都在此变换下。
