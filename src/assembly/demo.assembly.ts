@@ -1,5 +1,5 @@
 import type { CapabilityDefinition } from '@engine/core/define-capability.js';
-import type { Component } from '@engine/core/types.js';
+import type { ComponentDataMap } from './component-map.js';
 import {
   transformCapability,
   velocityCapability,
@@ -11,9 +11,11 @@ import {
 } from '@atom-skills/index.js';
 import { motionApplyCapability, lifetimeCapability } from '@skills/tier1/index.js';
 
-export interface EntityBlueprint {
-  [componentType: string]: Omit<Component, 'type'>;
-}
+// 实体蓝图 = 组件名【闭集】→ 组件数据。
+// v1 牙=组件名闭集：写错/拼错/编造组件名 → 编译期报错（替代旧 `{[k:string]:Omit<Component,'type'>}`≈`{[k]:{}}` 的零校验）。
+// 值暂为 Record<string,unknown>（放松）：现有游戏蓝图大量用无类型 helper(返回 Record<string,unknown>) 构造组件数据，
+// 收紧到逐字段(Partial<ComponentDataMap[K]>)会误伤游戏层——字段级牙待游戏侧把 helper 类型补上后再收（phase 2）。
+export type EntityBlueprint = { [K in keyof ComponentDataMap]?: Record<string, unknown> };
 
 export interface WorldBlueprint {
   capabilities: CapabilityDefinition[];

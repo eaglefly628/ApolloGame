@@ -28,6 +28,8 @@
 | 1 | `docs/design/data-driven-manifesto.md` | 宪法。一切裁决的尺子：「最弱 LLM 能否产出同样数据？」 |
 | 2 | `CLAUDE.md` | 工作规范 + **核心规则**（对每条需求先评判该不该做、带理由回驳，不盲从） |
 | 3a | ⭐ **`game-f-cards-and-decks.md`** | **现行方向正典**：三人攻岛 + 小丑牌牌组、五借鉴五层、贡献度元循环、10 套牌组、D0–D4 路线、服务层边界 |
+| 3b | 🔨 **`game-f-core-combat-dev.md`**(给主程的 v1 开发单)+ **`game-f-v1-data-pack.md`**(虎豹铁骑/魏武将实装数据)+ **`game-f-taikou-roster.md`**(太阁 Prefab + 九州关卡表)+ **`game-f-contribution-system.md`**(贡献/攻岛/排名 = T3/T4) | **接 v1 核心战斗直接读这组**:范围/复用清单/5 任务/三流程图 + 照填的逐字段数据。零缺口依赖,首发「虎豹铁骑」 |
+| 3c | `game-f-deck-spec.md`(10 套牌组详规 + D0 核对结论)· `game-f-economy-market.md`(经济/天梯/市场,后置)· `docs/design/game-f-lobby-brief.md`(局外大厅 UI,派 Cloud Design) | 卡牌细节 / 商业层 / 大厅原型 |
 | 3 | **`game-f-tft-reference.md` + `game-f-flow-spec.md`(v2)** | ⭐ **战斗经营地基准则**（金铲铲流程图全转录）+ **流转单一真相**（三层状态机 + 数值表 + 审查 + 队列） |
 | 4 | `docs/game-design/game-f-auto-chess.md` | 设计基线：能力映射（§3）、三缺口评审（§6）、回驳清单（§7）、数据模板（§4） |
 | 5 | `docs/workflow/requests.md` 的 REQ-021/022/023 + REQ-F-024~032 | 缺口需求与裁决现状（021/022 已 done；**032 是 MVP-1 阻塞点**） |

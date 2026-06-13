@@ -22,7 +22,7 @@ const fakeCap: CapabilityDefinition = {
   describe: { name: 'Test Cap', summary: '一个测试能力', semantic: [], whenToUse: '', examples: [] },
   components: {
     provides: {
-      Health: {
+      Resource: {
         category: 'resource',
         describe: '生命值组件',
         fields: {
@@ -43,7 +43,7 @@ const sampleBp: WorldBlueprint = {
   capabilities: [fakeCap],
   entities: {
     hero: {
-      Health: { current: 10, max: 100 },
+      Resource: { current: 10, max: 100 },
       Transform: { x: 1, y: 2, rotation: 0, scaleX: 1, scaleY: 1 },
     },
   },
@@ -52,8 +52,8 @@ const sampleBp: WorldBlueprint = {
 describe('buildSchemaRegistry', () => {
   it('索引 capability 提供的组件 schema', () => {
     const reg = buildSchemaRegistry([fakeCap]);
-    expect(reg.get('Health')?.capabilityId).toBe('test-cap');
-    expect(reg.get('Health')?.schema.category).toBe('resource');
+    expect(reg.get('Resource')?.capabilityId).toBe('test-cap');
+    expect(reg.get('Resource')?.schema.category).toBe('resource');
     expect(reg.has('Transform')).toBe(false); // 无能力提供
   });
 });
@@ -65,7 +65,7 @@ describe('inspectBlueprint', () => {
     const hero = out[0];
     expect(hero.id).toBe('hero');
 
-    const health = hero.components.find((c) => c.type === 'Health')!;
+    const health = hero.components.find((c) => c.type === 'Resource')!;
     expect(health.category).toBe('resource');
     expect(health.describe).toBe('生命值组件');
     expect(health.capabilityId).toBe('test-cap');
@@ -98,7 +98,7 @@ describe('capabilitySummaries', () => {
     const [s] = capabilitySummaries([fakeCap]);
     expect(s.id).toBe('test-cap');
     expect(s.name).toBe('Test Cap');
-    expect(s.provides).toEqual(['Health']);
+    expect(s.provides).toEqual(['Resource']);
   });
 });
 
@@ -144,22 +144,22 @@ describe('crossReferenceAssets', () => {
 
 describe('setField (不可变编辑)', () => {
   it('改字段产出新蓝图，原件不动', () => {
-    const next = setField(sampleBp, 'hero', 'Health', 'current', 999);
-    expect((next.entities.hero.Health as Record<string, unknown>).current).toBe(999);
-    expect((sampleBp.entities.hero.Health as Record<string, unknown>).current).toBe(10); // 原件不变
+    const next = setField(sampleBp, 'hero', 'Resource', 'current', 999);
+    expect((next.entities.hero.Resource as Record<string, unknown>).current).toBe(999);
+    expect((sampleBp.entities.hero.Resource as Record<string, unknown>).current).toBe(10); // 原件不变
   });
 
   it('目标不存在时原样返回', () => {
-    expect(setField(sampleBp, 'nope', 'Health', 'current', 1)).toBe(sampleBp);
+    expect(setField(sampleBp, 'nope', 'Resource', 'current', 1)).toBe(sampleBp);
     expect(setField(sampleBp, 'hero', 'Nope', 'current', 1)).toBe(sampleBp);
   });
 });
 
 describe('setComponentRaw', () => {
   it('整体替换组件数据，原件不动', () => {
-    const next = setComponentRaw(sampleBp, 'hero', 'Health', { current: 5, max: 5 });
-    expect(next.entities.hero.Health).toEqual({ current: 5, max: 5 });
-    expect((sampleBp.entities.hero.Health as Record<string, unknown>).max).toBe(100);
+    const next = setComponentRaw(sampleBp, 'hero', 'Resource', { current: 5, max: 5 });
+    expect(next.entities.hero.Resource).toEqual({ current: 5, max: 5 });
+    expect((sampleBp.entities.hero.Resource as Record<string, unknown>).max).toBe(100);
   });
 });
 
@@ -185,6 +185,6 @@ describe('exportManifest', () => {
   it('capabilities 收敛成 id 列表，entities 原样', () => {
     const json = JSON.parse(exportManifest(sampleBp));
     expect(json.capabilities).toEqual(['test-cap']);
-    expect(json.entities.hero.Health).toEqual({ current: 10, max: 100 });
+    expect(json.entities.hero.Resource).toEqual({ current: 10, max: 100 });
   });
 });

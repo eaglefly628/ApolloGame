@@ -39,6 +39,13 @@ export const F_HEX_WARM = 'f.hex.warm'; // 蜀半场暖色六边形格
 export const F_HEX_COOL = 'f.hex.cool'; // 魏半场冷色六边形格
 export const F_PEDESTAL = 'f.bench.pedestal'; // 备战席石墩台座（朴素香台式，每槽一个）
 export const F_THRONE = 'f.protag.throne'; // 主公宝座（金漆，棋盘左下角主公归位处）
+// 太阁守军 足轻皮（T1，渡海征日守岛方；DCSS 杂兵图换皮，逻辑零改）。
+export const F_TAIKOU = {
+  yari: 'f.taikou.yari', // 枪足轻（近战）
+  yumi: 'f.taikou.yumi', // 弓足轻（远程）
+  teppo: 'f.taikou.teppo', // 铁炮足轻（远程爆发）
+  kunoichi: 'f.taikou.kunoichi', // 杂兵忍（近战骚扰）
+} as const;
 
 // 一块六边形棋盘格（pointy-top 尖顶，描边镂空；尺寸 40×46 贴合格距 TILE=40/行距30，不重叠）。
 // 锦霞（Aurora）重染：半透明让战场底透出（design §3 中战场），描金细线 = --hairline 语言。
@@ -64,6 +71,11 @@ export const GAME_F_ASSETS: AssetManifest = [
   { kind: 'texture', key: F_HERO.cao_ren, src: dcss('orc_warlord'), width: 32, height: 32 },
   { kind: 'texture', key: F_HERO.dian_wei, src: dcss('minotaur'), width: 32, height: 32 },
   { kind: 'texture', key: F_HERO.protag, src: dcss('golden_dragon'), width: 32, height: 32 },
+  // 太阁守军 足轻（枪=哥布林兵 / 弓=豺狼 / 铁炮=狗头人 / 忍=大哥布林；DCSS 杂兵换皮，逻辑零改）。
+  { kind: 'texture', key: F_TAIKOU.yari, src: dcss('goblin_new'), width: 32, height: 32 },
+  { kind: 'texture', key: F_TAIKOU.yumi, src: dcss('gnoll_new'), width: 32, height: 32 },
+  { kind: 'texture', key: F_TAIKOU.teppo, src: dcss('kobold_new'), width: 32, height: 32 },
+  { kind: 'texture', key: F_TAIKOU.kunoichi, src: dcss('hobgoblin_new'), width: 32, height: 32 },
   // 备战席石墩台座（朴素灰石，圆墩 + 浅色顶沿 + 竖纹；像放香炉的台座）。
   { kind: 'texture', key: F_PEDESTAL, src: svg(`<ellipse cx="20" cy="7" rx="13" ry="3.5" fill="#cfc7b8"/><path d="M7 7 L33 7 L30 25 L10 25 Z" fill="#a79e8d"/><path d="M7 7 L33 7 L31.5 10 L8.5 10 Z" fill="#ddd5c6"/><ellipse cx="20" cy="25" rx="11" ry="3.5" fill="#8f8675"/><path d="M14 11 L13 23 M20 11 L20 23 M26 11 L27 23" stroke="#8a8170" stroke-width="0.6" opacity="0.5"/>`, 40, 32), width: 40, height: 32 },
   // 主公宝座（金漆雕座 + 顶宝珠；金铲铲式归位台座感）。

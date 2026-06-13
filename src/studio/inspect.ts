@@ -208,16 +208,17 @@ export function setField(
   fieldKey: string,
   value: unknown,
 ): WorldBlueprint {
-  const entity = bp.entities[entityId];
+  // 通用字段编辑器：按任意 componentType 字符串改 —— 在索引边界按原始蓝图形态(组件名→字段表)处理。
+  const entity = bp.entities[entityId] as Record<string, Record<string, unknown>> | undefined;
   if (!entity) return bp;
   const comp = entity[componentType];
   if (!comp) return bp;
-  const newComp = { ...(structuredClone(comp) as Record<string, unknown>), [fieldKey]: value };
+  const newComp = { ...structuredClone(comp), [fieldKey]: value };
   return {
     ...bp,
     entities: {
       ...bp.entities,
-      [entityId]: { ...entity, [componentType]: newComp as EntityBlueprint[string] },
+      [entityId]: { ...entity, [componentType]: newComp },
     },
   };
 }
@@ -229,13 +230,13 @@ export function setComponentRaw(
   componentType: string,
   data: Record<string, unknown>,
 ): WorldBlueprint {
-  const entity = bp.entities[entityId];
+  const entity = bp.entities[entityId] as Record<string, Record<string, unknown>> | undefined;
   if (!entity) return bp;
   return {
     ...bp,
     entities: {
       ...bp.entities,
-      [entityId]: { ...entity, [componentType]: data as EntityBlueprint[string] },
+      [entityId]: { ...entity, [componentType]: data },
     },
   };
 }
