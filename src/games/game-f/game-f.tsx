@@ -7,6 +7,7 @@ import { AssetManager, ImageAssetLoader } from '@assets/index.js';
 import { getComponentById } from '@engine/core/query.js';
 import type { World } from '@engine/core/world.js';
 import { buildGameFBlueprint, gameFEnemyPreview, GAME_F_ASSETS } from './index.js';
+import { buildLobby, type RunConfig } from './lobby.js';
 
 // Game F 可挂载模块（launcher 卡带槽契约：export mount(container) → cleanup）。
 // 壳层 UI = design_handoff_game_f 的「锦霞 Aurora」皮肤（用户钦定女性向风格）：
@@ -471,15 +472,8 @@ function buildSoloHud(click: (x: number, y: number) => void, play: (i: number) =
   return { root, update };
 }
 
-export function mount(container: HTMLElement): () => void {
-  // 字体（README §Typography；id 防重复注入）。
-  if (!document.getElementById('gfx-fonts')) {
-    const link = document.createElement('link');
-    link.id = 'gfx-fonts';
-    link.rel = 'stylesheet';
-    link.href = FONTS_HREF;
-    document.head.appendChild(link);
-  }
+// 局内对局（startMatch）：从大厅收到出战配置 → 用所选牌组建世界开打。onExit=返回大厅。
+function startMatch(container: HTMLElement, cfg: RunConfig, onExit: () => void): () => void {
   const style = document.createElement('style');
   style.textContent = `.gfx-root.aurora{${AURORA}} .gfx-root.onyx{${ONYX}} ${SHELL_CSS}`;
   document.head.appendChild(style);
@@ -489,10 +483,13 @@ export function mount(container: HTMLElement): () => void {
   const top = el('div', 'gfx-top');
   top.appendChild(el('div', 'gfx-title', '像素三分天下'));
   const tabBar = el('div', 'gfx-tabs');
+  const tabBack = el('button', 'gfx-tab', '← 大厅') as HTMLButtonElement;
   const tabGame = el('button', 'gfx-tab on', '对 局') as HTMLButtonElement;
   const tabMall = el('button', 'gfx-tab', '商 城') as HTMLButtonElement;
+  tabBar.appendChild(tabBack);
   tabBar.appendChild(tabGame);
   tabBar.appendChild(tabMall);
+  tabBack.onclick = onExit; // 返回大厅
   top.appendChild(tabBar);
   const cur = el('div', 'gfx-cur', `<span class="gfx-chip">💎 <b>1280</b> ＋</span><span class="gfx-chip">🪙 <b>3600</b> ＋</span>`);
   // 皮肤分段控件（玄铁/锦霞；默认锦霞=aurora）。
@@ -563,7 +560,7 @@ export function mount(container: HTMLElement): () => void {
   let pointer: PointerInputSource | null = null;
   const lazyInput: InputSource = { commandsForTick: (tick) => [...keyboard.commandsForTick(tick), ...(pointer ? pointer.commandsForTick(tick) : []), ...queued.commandsForTick(tick)] };
   const engine = new Engine({ tickRate: 60, input: lazyInput });
-  engine.load(buildGameFBlueprint());
+  engine.load(buildGameFBlueprint({ deck: cfg.deck })); // 大厅出战牌组 → 本局世界（deck.faction 定出生势力）
   // 透明画布：棋盘露出 stage 的设计平台背景（--platform-bg 随皮肤）。
   engine.attachRenderer(new CanvasRenderer({ width: VIEWPORT_W, height: VIEWPORT_H, background: 'transparent', assets }), stage);
   const canvas = stage.querySelector('canvas');
@@ -594,4 +591,27 @@ export function mount(container: HTMLElement): () => void {
     if (style.parentNode) style.parentNode.removeChild(style);
     if (root.parentNode === container) container.removeChild(root);
   };
+}
+
+// 卡带入口：先进局外大厅（Lobby）→「开始攻岛」产出出战配置 → startMatch 接手对局；「← 大厅」返回。
+export function mount(container: HTMLElement): () => void {
+  // 字体（README §Typography；id 防重复注入）——大厅与对局共用。
+  if (!document.getElementById('gfx-fonts')) {
+    const link = document.createElement('link');
+    link.id = 'gfx-fonts';
+    link.rel = 'stylesheet';
+    link.href = FONTS_HREF;
+    document.head.appendChild(link);
+  }
+  let teardown: (() => void) | null = null;
+  const showLobby = (): void => {
+    const lobby = buildLobby((cfg) => {
+      if (lobby.parentNode === container) container.removeChild(lobby);
+      teardown = startMatch(container, cfg, () => { teardown?.(); showLobby(); });
+    });
+    container.appendChild(lobby);
+    teardown = () => { if (lobby.parentNode === container) container.removeChild(lobby); };
+  };
+  showLobby();
+  return () => { teardown?.(); };
 }
