@@ -20,6 +20,13 @@ import {
 import { buildGameBBlueprint } from '../games/game-b/index.js';
 import { buildGameCBlueprint } from '../games/game-c/index.js';
 import { buildGameEBlueprint } from '../games/game-e/index.js';
+import { buildGameFBlueprint, GAME_F_ASSETS } from '../games/game-f/index.js';
+import {
+  buildGameDBlueprint,
+  GAME_D_ASSETS,
+  VIEWPORT_W as GAME_D_VW,
+  VIEWPORT_H as GAME_D_VH,
+} from '../games/game-d/index.js';
 import {
   inspectBlueprint,
   blueprintStats,
@@ -28,7 +35,9 @@ import {
   coerceValue,
   exportManifest,
   type InspectedField,
+  type InspectedEntity,
 } from './inspect.js';
+import { groupByDomain, filterEntities, capabilityKnobs } from './categorize.js';
 import { studioAssets } from './assets-model.js';
 import { AssetBrowser } from './AssetBrowser.js';
 import { applyEditOps, type Entities } from './edit-ops.js';
@@ -37,10 +46,10 @@ import { resolveEdits, parseCommand } from './edit-resolve.js';
 // ═══════════════════════════════════════════════════════════════
 //  游戏数据透视器 (Data Inspector) — 把"游戏=数据"做成可见可改可预览
 //
-//  左：引擎实时预览(画布，Game A 可点焦后键盘试玩) + 实时世界状态读出
-//  右：完整数据树(可改每个字段)  ｜  顶：游戏选择 + 统计 + 能力 + 资产 + 导出
+//  左：引擎实时预览(画布) + 实时世界状态读出 + 启用能力 + 「能配啥」schema 参考 + 资产透视
+//  右：搜索 + 域分类(单位/棋盘/经济/UI…) 的完整数据树(可改每个字段) ｜ 顶：游戏选择 + 统计 + 导出
 //  改字段 → 改的是初始数据 → 点"重跑"用新数据从 t=0 重启 → 看涌现/手感变化。
-//  垂直切片：Game A 打通"数据→透视→编辑→可玩预览"全链。
+//  覆盖全部游戏(A/B/C/D/E/F)。分类导航见 categorize.ts —— 复杂游戏(game-f 上百实体)按域可读。
 // ═══════════════════════════════════════════════════════════════
 
 interface PreviewInput {
@@ -84,6 +93,30 @@ const GAMES: GameDef[] = [
   { id: 'game-b', title: 'Game B · 乙游 VN', build: () => buildGameBBlueprint() },
   { id: 'game-c', title: 'Game C · 缝纫物语', build: () => buildGameCBlueprint() },
   { id: 'game-e', title: 'Game E · Balatro 小丑牌', build: () => buildGameEBlueprint() },
+  {
+    id: 'game-f',
+    title: 'Game F · 三国自走棋',
+    build: () => buildGameFBlueprint(),
+    viewport: { w: 560, h: 460 },
+    makeAssets: () => {
+      const a = new AssetManager(new ImageAssetLoader());
+      a.registerManifest(GAME_F_ASSETS);
+      void a.loadAll();
+      return a;
+    },
+  },
+  {
+    id: 'game-d',
+    title: 'Game D · 暗黑 ARPG',
+    build: () => buildGameDBlueprint(),
+    viewport: { w: GAME_D_VW, h: GAME_D_VH },
+    makeAssets: () => {
+      const a = new AssetManager(new ImageAssetLoader());
+      a.registerManifest(GAME_D_ASSETS);
+      void a.loadAll();
+      return a;
+    },
+  },
   { id: 'demo', title: 'Demo · 子弹撞墙', build: () => demoBlueprint },
 ];
 
@@ -230,6 +263,9 @@ export function StudioInspector({ onBack, extraGame }: { onBack: () => void; ext
   const [flashed, setFlashed] = useState<string | null>(null); // 资产双击定位 → 高亮的实体
   const [nlCmd, setNlCmd] = useState(''); // 自然语言/命令行编辑输入
   const [nlMsg, setNlMsg] = useState<{ ok: boolean; text: string } | null>(null);
+  const [treeSearch, setTreeSearch] = useState(''); // 数据树全文搜索
+  const [activeDomain, setActiveDomain] = useState<string | null>(null); // null = 全部域；否则只看该域
+  const [showKnobs, setShowKnobs] = useState(false); // "能配啥" schema 参考面板
   const previewRef = useRef<HTMLDivElement>(null);
   const engineRef = useRef<Engine | null>(null);
   const rendererRef = useRef<CanvasRenderer | null>(null);
@@ -305,6 +341,8 @@ export function StudioInspector({ onBack, extraGame }: { onBack: () => void; ext
     setWorkingBp(bp);
     setAppliedBp(bp);
     setTreeNonce((n) => n + 1);
+    setTreeSearch('');
+    setActiveDomain(null);
   }, []);
 
   const apply = useCallback(() => setAppliedBp(workingBp), [workingBp]);
@@ -386,9 +424,91 @@ export function StudioInspector({ onBack, extraGame }: { onBack: () => void; ext
   const inspected = useMemo(() => inspectBlueprint(workingBp), [workingBp]);
   const stats = useMemo(() => blueprintStats(workingBp), [workingBp]);
   const caps = useMemo(() => capabilitySummaries(workingBp.capabilities), [workingBp]);
+  const knobs = useMemo(() => capabilityKnobs(workingBp.capabilities), [workingBp]);
   const assets = useMemo(
     () => studioAssets(gameId, workingBp, assetIndex),
     [gameId, workingBp, assetIndex],
+  );
+  // 数据树：全文过滤 → 按域分组（让"只看所有单位/经济/UI"成为一次点击）。
+  const filtered = useMemo(() => filterEntities(inspected, treeSearch), [inspected, treeSearch]);
+  const domainGroups = useMemo(() => groupByDomain(filtered), [filtered]);
+
+  // 单个实体卡（可展开，全字段可改）—— 供按域分组渲染复用。
+  const renderEntity = (ent: InspectedEntity) => (
+    <details
+      key={ent.id}
+      open
+      ref={(el) => {
+        if (el) entityRefs.current.set(ent.id, el);
+        else entityRefs.current.delete(ent.id);
+      }}
+      style={{
+        background: flashed === ent.id ? 'rgba(56,189,248,0.12)' : C.panel,
+        borderRadius: 8,
+        border: `1px solid ${flashed === ent.id ? C.accent : C.border}`,
+        transition: 'background 0.4s, border-color 0.4s',
+      }}
+    >
+      <summary
+        style={{
+          cursor: 'pointer',
+          padding: '8px 12px',
+          fontFamily: 'monospace',
+          fontSize: 13,
+          color: C.accent,
+          userSelect: 'none',
+        }}
+      >
+        {ent.id}{' '}
+        <span style={{ color: C.dim, fontSize: 11 }}>{ent.components.map((c) => c.type).join(' · ')}</span>
+      </summary>
+      <div style={{ padding: '0 12px 10px' }}>
+        {ent.components.map((comp) => (
+          <div key={comp.type} style={{ marginTop: 8 }}>
+            <div style={{ fontSize: 12, fontWeight: 600, color: C.dim2 }}>
+              {comp.type}
+              {comp.category && (
+                <span
+                  style={{
+                    marginLeft: 6,
+                    fontSize: 10,
+                    color: C.dim,
+                    background: 'rgba(255,255,255,0.05)',
+                    borderRadius: 4,
+                    padding: '1px 5px',
+                  }}
+                >
+                  {comp.category}
+                </span>
+              )}
+              {comp.describe && (
+                <span style={{ marginLeft: 6, fontSize: 11, color: C.dim, fontWeight: 400 }}>{comp.describe}</span>
+              )}
+            </div>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 4, marginTop: 4, paddingLeft: 8 }}>
+              {comp.fields.map((f) => (
+                <div key={f.key} style={{ display: 'flex', alignItems: 'flex-start', gap: 8 }}>
+                  <span
+                    title={f.describe}
+                    style={{
+                      fontSize: 12,
+                      fontFamily: 'monospace',
+                      color: C.dim2,
+                      minWidth: 110,
+                      cursor: f.describe ? 'help' : 'default',
+                    }}
+                  >
+                    {f.key}
+                    {f.declaredType && <span style={{ color: C.dim, fontSize: 10 }}> :{f.declaredType}</span>}
+                  </span>
+                  <FieldEditor field={f} onCommit={(raw) => commitField(ent.id, comp.type, f, raw)} />
+                </div>
+              ))}
+            </div>
+          </div>
+        ))}
+      </div>
+    </details>
   );
 
   const currentDef = allGames.find((g) => g.id === gameId);
@@ -525,6 +645,44 @@ export function StudioInspector({ onBack, extraGame }: { onBack: () => void; ext
             </div>
           </div>
 
+          {/* "能配啥" — 引擎自描述的可配置项清单(schema 参考，只读)。答："我不知道能配哪些东西"。 */}
+          <div style={{ marginTop: 14 }}>
+            <div
+              onClick={() => setShowKnobs((v) => !v)}
+              style={{ color: C.dim, fontSize: 11, marginBottom: 6, cursor: 'pointer', userSelect: 'none' }}
+            >
+              {showKnobs ? '▾' : '▸'} 能配哪些东西 · {knobs.length} 个能力的可调字段（引擎自描述 schema，点开看全清单）
+            </div>
+            {showKnobs && (
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 6, maxHeight: 320, overflow: 'auto', paddingRight: 4 }}>
+                {knobs.map((k) => (
+                  <details key={k.id} style={{ background: C.panel, border: `1px solid ${C.border}`, borderRadius: 6 }}>
+                    <summary style={{ cursor: 'pointer', padding: '6px 10px', fontSize: 12, color: C.purple, fontFamily: 'monospace' }}>
+                      {k.name} <span style={{ color: C.dim, fontWeight: 400 }}>{k.summary}</span>
+                    </summary>
+                    <div style={{ padding: '0 10px 8px' }}>
+                      {k.components.map((comp) => (
+                        <div key={comp.type} style={{ marginTop: 6 }}>
+                          <div style={{ fontSize: 12, color: C.dim2, fontWeight: 600 }}>
+                            {comp.type} <span style={{ fontSize: 10, color: C.dim, fontWeight: 400 }}>{comp.category}</span>
+                          </div>
+                          <div style={{ paddingLeft: 8 }}>
+                            {comp.fields.map((f) => (
+                              <div key={f.key} style={{ fontSize: 11, color: C.dim, fontFamily: 'monospace' }}>
+                                <span style={{ color: C.dim2 }}>{f.key}</span>
+                                <span style={{ color: C.accent }}>:{f.type}</span> — {f.describe}
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </details>
+                ))}
+              </div>
+            )}
+          </div>
+
           {/* Assets — 商业引擎风资产透视：分类(可收缩) + tag 搜索 + 双击定位 */}
           <div style={{ marginTop: 14 }}>
             <div style={{ color: C.dim, fontSize: 11, marginBottom: 6 }}>
@@ -560,90 +718,71 @@ export function StudioInspector({ onBack, extraGame }: { onBack: () => void; ext
             </div>
           </div>
 
-          <div style={{ color: C.dim, fontSize: 11, marginBottom: 8 }}>
-            完整数据（实体 → 组件 → 字段，全可改；改完点上方"重跑"应用）
+          {/* 分类导航：搜索 + 域过滤 chips（让"只看所有单位/经济/UI"成为一次点击） */}
+          <div style={{ display: 'flex', gap: 6, alignItems: 'center', marginBottom: 8, flexWrap: 'wrap' }}>
+            <input
+              value={treeSearch}
+              onChange={(e) => setTreeSearch(e.target.value)}
+              placeholder="🔍 搜实体 / 组件 / 字段名 / 值"
+              style={{ flex: '1 1 220px', background: 'rgba(0,0,0,0.35)', color: C.text, border: `1px solid ${C.border}`, borderRadius: 6, fontSize: 12, padding: '6px 8px', outline: 'none' }}
+            />
+            <span style={{ color: C.dim, fontSize: 11 }}>
+              {filtered.length}/{inspected.length} 实体
+            </span>
           </div>
-          <div key={`${gameId}:${treeNonce}`} style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
-            {inspected.map((ent) => (
-              <details
-                key={ent.id}
-                open
-                ref={(el) => {
-                  if (el) entityRefs.current.set(ent.id, el);
-                  else entityRefs.current.delete(ent.id);
-                }}
-                style={{
-                  background: flashed === ent.id ? 'rgba(56,189,248,0.12)' : C.panel,
-                  borderRadius: 8,
-                  border: `1px solid ${flashed === ent.id ? C.accent : C.border}`,
-                  transition: 'background 0.4s, border-color 0.4s',
-                }}
+          <div style={{ display: 'flex', gap: 6, marginBottom: 10, flexWrap: 'wrap' }}>
+            <button
+              onClick={() => setActiveDomain(null)}
+              style={btn({
+                padding: '3px 10px',
+                fontSize: 11,
+                background: activeDomain === null ? 'rgba(56,189,248,0.18)' : 'rgba(255,255,255,0.05)',
+                color: activeDomain === null ? C.accent : C.dim2,
+                borderColor: activeDomain === null ? 'rgba(56,189,248,0.4)' : C.border,
+              })}
+            >
+              ≡ 全部 {filtered.length}
+            </button>
+            {domainGroups.map((g) => (
+              <button
+                key={g.rule.id}
+                title={g.rule.hint}
+                onClick={() => setActiveDomain((a) => (a === g.rule.id ? null : g.rule.id))}
+                style={btn({
+                  padding: '3px 10px',
+                  fontSize: 11,
+                  background: activeDomain === g.rule.id ? 'rgba(56,189,248,0.18)' : 'rgba(255,255,255,0.05)',
+                  color: activeDomain === g.rule.id ? C.accent : C.dim2,
+                  borderColor: activeDomain === g.rule.id ? 'rgba(56,189,248,0.4)' : C.border,
+                })}
               >
-                <summary
-                  style={{
-                    cursor: 'pointer',
-                    padding: '8px 12px',
-                    fontFamily: 'monospace',
-                    fontSize: 13,
-                    color: C.accent,
-                    userSelect: 'none',
-                  }}
-                >
-                  {ent.id}{' '}
-                  <span style={{ color: C.dim, fontSize: 11 }}>
-                    {ent.components.map((c) => c.type).join(' · ')}
-                  </span>
-                </summary>
-                <div style={{ padding: '0 12px 10px' }}>
-                  {ent.components.map((comp) => (
-                    <div key={comp.type} style={{ marginTop: 8 }}>
-                      <div style={{ fontSize: 12, fontWeight: 600, color: C.dim2 }}>
-                        {comp.type}
-                        {comp.category && (
-                          <span
-                            style={{
-                              marginLeft: 6,
-                              fontSize: 10,
-                              color: C.dim,
-                              background: 'rgba(255,255,255,0.05)',
-                              borderRadius: 4,
-                              padding: '1px 5px',
-                            }}
-                          >
-                            {comp.category}
-                          </span>
-                        )}
-                        {comp.describe && (
-                          <span style={{ marginLeft: 6, fontSize: 11, color: C.dim, fontWeight: 400 }}>
-                            {comp.describe}
-                          </span>
-                        )}
-                      </div>
-                      <div style={{ display: 'flex', flexDirection: 'column', gap: 4, marginTop: 4, paddingLeft: 8 }}>
-                        {comp.fields.map((f) => (
-                          <div key={f.key} style={{ display: 'flex', alignItems: 'flex-start', gap: 8 }}>
-                            <span
-                              title={f.describe}
-                              style={{
-                                fontSize: 12,
-                                fontFamily: 'monospace',
-                                color: C.dim2,
-                                minWidth: 110,
-                                cursor: f.describe ? 'help' : 'default',
-                              }}
-                            >
-                              {f.key}
-                              {f.declaredType && <span style={{ color: C.dim, fontSize: 10 }}> :{f.declaredType}</span>}
-                            </span>
-                            <FieldEditor field={f} onCommit={(raw) => commitField(ent.id, comp.type, f, raw)} />
-                          </div>
-                        ))}
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </details>
+                {g.rule.icon} {g.rule.label} {g.entities.length}
+              </button>
             ))}
+          </div>
+
+          <div style={{ color: C.dim, fontSize: 11, marginBottom: 8 }}>
+            完整数据（按域分类 · 实体 → 组件 → 字段，全可改；改完点上方"重跑"应用）
+          </div>
+          <div key={`${gameId}:${treeNonce}`} style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
+            {domainGroups.filter((g) => activeDomain === null || g.rule.id === activeDomain).length === 0 && (
+              <div style={{ color: C.dim, fontSize: 12 }}>（无匹配实体）</div>
+            )}
+            {domainGroups
+              .filter((g) => activeDomain === null || g.rule.id === activeDomain)
+              .map((g) => (
+                <div key={g.rule.id}>
+                  <div style={{ color: C.dim2, fontSize: 12, fontWeight: 700, margin: '2px 0 6px', display: 'flex', alignItems: 'center', gap: 6 }}>
+                    <span>
+                      {g.rule.icon} {g.rule.label}
+                    </span>
+                    <span style={{ color: C.dim, fontWeight: 400 }}>
+                      · {g.entities.length} · {g.rule.hint}
+                    </span>
+                  </div>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>{g.entities.map(renderEntity)}</div>
+                </div>
+              ))}
           </div>
         </div>
       </div>
