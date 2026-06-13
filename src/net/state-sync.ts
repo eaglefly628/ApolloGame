@@ -122,3 +122,105 @@ export function applyPacket(base: WorldSnapshot | null, packet: StatePacket): Wo
   }
   return out;
 }
+
+// ═══════════════════════════════════════════════════════════════
+//  状态同步 · 会话层（关键帧为主 + 增量流；用户 2026-06-13 选定）
+// ═══════════════════════════════════════════════════════════════
+//
+//  每端各自拥有一个世界，每 tick 把自己快照交给本会话；会话按节奏广播自己的状态、
+//  并维护「盟友 peerId → 最新只读镜像快照」供观看端表现层画队友棋盘。传输经注入的
+//  SyncChannel（开发=BroadcastChannel 包装 / 生产=WebSocket / 测试=mock），与 lockstep 同纪律。
+//
+//  节奏（不认识游戏相位——统一一套即覆盖备战/战斗）：
+//   · 关键帧每 keyframeEveryTicks 发一次（抗漂移 + 给增量提供自愈基线）；
+//   · 其余按 deltaEveryTicks 发组件级增量。备战几乎无变化→增量天然≈空≈零成本；
+//     战斗变化多→增量承载位移。收端 base 对不上（丢包/迟到）即丢弃该增量，等下一个关键帧自愈。
+// ═══════════════════════════════════════════════════════════════
+
+export interface StateSyncMsg {
+  peer: string; // 发送方 peerId
+  packet: StatePacket;
+}
+
+export interface SyncChannel {
+  post(msg: StateSyncMsg): void;
+  onMessage(cb: (msg: StateSyncMsg) => void): void;
+  close(): void;
+}
+
+export interface StateSyncOptions {
+  peerId: string;
+  channel: SyncChannel;
+  keyframeEveryTicks?: number; // 缺省 30（≈0.5s@60tps）
+  deltaEveryTicks?: number; // 缺省 1（每 tick 增量；填 2/3 降频）
+  filter?: SyncFilter;
+}
+
+interface PeerMirror {
+  snapshot: WorldSnapshot; // 当前已还原的盟友状态
+  tick: number; // 该状态对应的发送方 tick（增量 base 对账用）
+}
+
+export class StateSyncSession {
+  private readonly peerId: string;
+  private readonly channel: SyncChannel;
+  private readonly kEvery: number;
+  private readonly dEvery: number;
+  private readonly filter?: SyncFilter;
+
+  private lastSent: WorldSnapshot | null = null; // 本端上次发出的状态（增量基线）
+  private lastSentTick = -1;
+  private readonly mirrors = new Map<string, PeerMirror>(); // 盟友只读镜像
+
+  constructor(opts: StateSyncOptions) {
+    this.peerId = opts.peerId;
+    this.channel = opts.channel;
+    this.kEvery = Math.max(1, opts.keyframeEveryTicks ?? 30);
+    this.dEvery = Math.max(1, opts.deltaEveryTicks ?? 1);
+    this.filter = opts.filter;
+    this.channel.onMessage((m) => this.onMessage(m));
+  }
+
+  // 本端每 tick 调用：按节奏广播自己的状态（首发或到关键帧拍=关键帧，否则=增量）。
+  broadcast(snapshot: WorldSnapshot, tick: number): void {
+    const needKeyframe = this.lastSent === null || tick % this.kEvery === 0;
+    if (needKeyframe) {
+      const pk = packKeyframe(snapshot, tick, this.filter);
+      this.channel.post({ peer: this.peerId, packet: pk });
+      this.lastSent = pk.kind === 'keyframe' ? pk.state : null;
+      this.lastSentTick = tick;
+      return;
+    }
+    if (tick % this.dEvery !== 0) return; // 非增量拍：不发
+    const delta = diffState(this.lastSent!, snapshot, tick, this.lastSentTick, this.filter);
+    this.channel.post({ peer: this.peerId, packet: delta });
+    // 推进基线到本次发出的状态（= 过滤后的 next；用 applyPacket 在旧基线上施加增量得到，确保与收端一致）。
+    this.lastSent = applyPacket(this.lastSent, delta);
+    this.lastSentTick = tick;
+  }
+
+  // 盟友最新只读镜像（缺失/尚未收到关键帧 → undefined）。观看端表现层据此画队友棋盘。
+  peerState(peerId: string): WorldSnapshot | undefined {
+    return this.mirrors.get(peerId)?.snapshot;
+  }
+  peers(): string[] {
+    return [...this.mirrors.keys()];
+  }
+
+  dispose(): void {
+    this.channel.close();
+  }
+
+  private onMessage(m: StateSyncMsg): void {
+    if (m.peer === this.peerId) return; // 忽略自身回声
+    const { packet } = m;
+    if (packet.kind === 'keyframe') {
+      this.mirrors.set(m.peer, { snapshot: applyPacket(null, packet), tick: packet.tick });
+      return;
+    }
+    // 增量：基线必须与已持有的发送方 tick 严格对账；对不上即丢弃，等下一个关键帧自愈。
+    const cur = this.mirrors.get(m.peer);
+    if (!cur || cur.tick !== packet.baseTick) return;
+    this.mirrors.set(m.peer, { snapshot: applyPacket(cur.snapshot, packet), tick: packet.tick });
+  }
+}

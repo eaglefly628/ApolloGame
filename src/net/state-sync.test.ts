@@ -1,7 +1,8 @@
 import { describe, it, expect } from 'vitest';
 import type { WorldSnapshot } from '@engine/core/types.js';
 import { hashSnapshot } from './determinism.js';
-import { packKeyframe, diffState, applyPacket, PRESENTATION_COMPONENTS } from './state-sync.js';
+import { packKeyframe, diffState, applyPacket, PRESENTATION_COMPONENTS, StateSyncSession } from './state-sync.js';
+import type { StateSyncMsg, SyncChannel } from './state-sync.js';
 
 // 小工具：构造快照（plain，含 type 字段，与 World.snapshot 同形）。
 const snap = (...ents: [string, Record<string, Record<string, unknown>>][]): WorldSnapshot => {
@@ -95,5 +96,69 @@ describe('state-sync · delta 差分/施加', () => {
     view = applyPacket(view, diffState(f0, f1, 1, 0));
     view = applyPacket(view, diffState(f1, f2, 2, 1));
     expect(hashSnapshot(view)).toBe(hashSnapshot(f2));
+  });
+});
+
+// 双端内存总线：post 广播给所有已注册回调（含发送方自己，由会话内部过滤自身回声）。
+class Bus {
+  private cbs: ((m: StateSyncMsg) => void)[] = [];
+  channel(): SyncChannel {
+    return {
+      post: (m) => { for (const cb of this.cbs) cb(m); },
+      onMessage: (cb) => { this.cbs.push(cb); },
+      close: () => {},
+    };
+  }
+}
+
+describe('state-sync · 会话层（关键帧为主 + 增量）', () => {
+  it('盟友镜像：A 广播自己世界 → B 的 peerState(A) 逐帧等于 A 的真相', () => {
+    const bus = new Bus();
+    const A = new StateSyncSession({ peerId: 'A', channel: bus.channel(), keyframeEveryTicks: 4, deltaEveryTicks: 1 });
+    const B = new StateSyncSession({ peerId: 'B', channel: bus.channel(), keyframeEveryTicks: 4, deltaEveryTicks: 1 });
+    // A 的世界逐帧演化（含位移/新增/删除）。
+    const frames = [
+      snap(['g1', { HexPos: { q: 1, r: 1 }, Resource: { current: 100 } }]),
+      snap(['g1', { HexPos: { q: 1, r: 2 }, Resource: { current: 100 } }]),
+      snap(['g1', { HexPos: { q: 1, r: 2 }, Resource: { current: 80 } }], ['orb', { Tag: { flags: 8 } }]),
+      snap(['g1', { HexPos: { q: 2, r: 2 }, Resource: { current: 80 } }]), // orb 消失
+      snap(['g1', { HexPos: { q: 2, r: 3 }, Resource: { current: 60 } }]),
+    ];
+    frames.forEach((f, t) => {
+      A.broadcast(f, t);
+      expect(hashSnapshot(B.peerState('A')!)).toBe(hashSnapshot(f)); // B 镜像逐帧追平 A
+    });
+    expect(A.peerState('B')).toBeUndefined(); // B 没广播过 → A 无 B 镜像
+  });
+
+  it('首发必为关键帧（即便起始 tick 非关键帧拍）→ 收端可独立还原', () => {
+    const bus = new Bus();
+    const A = new StateSyncSession({ peerId: 'A', channel: bus.channel(), keyframeEveryTicks: 10 });
+    const B = new StateSyncSession({ peerId: 'B', channel: bus.channel(), keyframeEveryTicks: 10 });
+    A.broadcast(snap(['u', { Tag: { flags: 1 } }]), 7); // tick 7 ≠ 关键帧拍，但首发强制关键帧
+    expect(B.peerState('A')).toBeDefined();
+  });
+
+  it('丢包自愈：B 错过中间增量 → base 对不上丢弃 → 下个关键帧重新对齐', () => {
+    const sent: StateSyncMsg[] = [];
+    // A 走一条记录总线（只录不发），B 单独喂——模拟选择性丢包。
+    const recA: SyncChannel = { post: (m) => sent.push(m), onMessage: () => {}, close: () => {} };
+    const A = new StateSyncSession({ peerId: 'A', channel: recA, keyframeEveryTicks: 3, deltaEveryTicks: 1 });
+    const B = new StateSyncSession({ peerId: 'B', channel: { post: () => {}, onMessage: () => {}, close: () => {} } });
+    const frames = [
+      snap(['u', { Resource: { current: 100 } }]), // t0 keyframe
+      snap(['u', { Resource: { current: 90 } }]),  // t1 delta（故意丢给 B）
+      snap(['u', { Resource: { current: 80 } }]),  // t2 delta（基线 t1，B 没有 → 丢弃）
+      snap(['u', { Resource: { current: 70 } }]),  // t3 keyframe → B 自愈
+    ];
+    frames.forEach((f, t) => A.broadcast(f, t));
+    // B 收到：t0 关键帧、(丢 t1)、t2 增量、t3 关键帧。
+    const deliver = (m: StateSyncMsg): void => { (B as unknown as { onMessage: (m: StateSyncMsg) => void }).onMessage(m); };
+    deliver(sent[0]); // t0 keyframe
+    expect(hashSnapshot(B.peerState('A')!)).toBe(hashSnapshot(frames[0]));
+    deliver(sent[2]); // t2 delta（base t1，B 持 t0 → 丢弃）
+    expect(hashSnapshot(B.peerState('A')!)).toBe(hashSnapshot(frames[0])); // 仍停在 t0
+    deliver(sent[3]); // t3 keyframe → 自愈到 t3
+    expect(hashSnapshot(B.peerState('A')!)).toBe(hashSnapshot(frames[3]));
   });
 });

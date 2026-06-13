@@ -15,5 +15,5 @@ export type { Channel, NetMsg, ClientView, LockstepOptions, Dir } from './lockst
 export { buildMpWorld, addPlayer, playerEntityId, renderEnts, PLAYER_COLORS } from './mp-world.js';
 export type { RenderEnt } from './mp-world.js';
 // 状态同步打包层（盟友战局只读镜像；与 lockstep 互补——各跑各世界、只搬运状态）。
-export { packKeyframe, diffState, applyPacket, PRESENTATION_COMPONENTS } from './state-sync.js';
-export type { StatePacket, SyncFilter } from './state-sync.js';
+export { packKeyframe, diffState, applyPacket, PRESENTATION_COMPONENTS, StateSyncSession } from './state-sync.js';
+export type { StatePacket, SyncFilter, StateSyncMsg, SyncChannel, StateSyncOptions } from './state-sync.js';
