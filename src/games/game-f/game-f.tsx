@@ -288,6 +288,8 @@ function buildSoloHud(click: (x: number, y: number) => void, play: (i: number) =
         <div style="height:10px;border-radius:99px;background:var(--track);overflow:hidden;border:1px solid var(--panel-border)"><div data-ref="hpfill" style="width:100%;height:100%;background:var(--hp);border-radius:99px"></div></div></div>
       <div style="margin-top:7px"><div style="display:flex;justify-content:space-between;margin-bottom:3px"><span style="font-size:9px;letter-spacing:.1em;color:var(--ink-dim)">经验 · Lv<span data-ref="level">1</span></span><span data-ref="xp" style="font-family:var(--font-num);font-size:10px;color:var(--xp)">0/2</span></div>
         <div style="height:7px;border-radius:99px;background:var(--track);overflow:hidden;border:1px solid var(--panel-border)"><div data-ref="xpfill" style="width:0%;height:100%;background:var(--xp);border-radius:99px"></div></div></div>
+      <div style="margin-top:7px"><div style="display:flex;justify-content:space-between;margin-bottom:3px"><span style="font-size:9px;letter-spacing:.1em;color:var(--ink-dim)">🗾 攻岛进度 · 贡献 <span data-ref="contrib" style="font-family:var(--font-num);color:var(--gold)">0</span></span><span data-ref="island" style="font-family:var(--font-num);font-size:10px;color:var(--accent)">0/100</span></div>
+        <div style="height:7px;border-radius:99px;background:var(--track);overflow:hidden;border:1px solid var(--panel-border)"><div data-ref="islandfill" style="width:0%;height:100%;background:var(--accent);border-radius:99px"></div></div></div>
       <div style="display:flex;gap:8px;margin-top:9px">
         <div style="flex:1;display:flex;align-items:center;justify-content:center;gap:6px;padding:5px 9px;border-radius:9px;background:var(--gold-chip);border:1px solid var(--gold)"><span style="font-size:13px">🪙</span><span data-ref="gold" style="font-family:var(--font-num);font-size:14px;color:var(--gold)">0</span></div>
         <div style="flex:1;display:flex;align-items:center;justify-content:center;gap:6px;padding:5px 9px;border-radius:9px;background:var(--chip-bg);border:1px solid var(--panel-border)"><span style="font-size:11px;color:var(--ink-dim)">空席</span><span data-ref="bench" style="font-family:var(--font-num);font-size:14px;color:var(--ink)">9</span></div>
@@ -398,6 +400,10 @@ function buildSoloHud(click: (x: number, y: number) => void, play: (i: number) =
     const xpV = num('xp'), xpM = max('xp') ?? 0;
     if (xpV !== undefined) { setAll('xp', `${Math.round(xpV)}/${xpM || '—'}`); if (xpM > 0) setW('xpfill', `${Math.max(0, Math.min(100, (xpV / xpM) * 100))}%`); }
     const benchSp = num('bench_space'); if (benchSp !== undefined) setAll('bench', String(Math.round(benchSp)));
+    // 攻岛进度 + 贡献度（T3/T4 投影；纯表现层）。
+    const contribV = num('contribution'); if (contribV !== undefined) setAll('contrib', String(Math.round(contribV)));
+    const islV = num('island_progress'), islM = max('island_progress') ?? 100;
+    if (islV !== undefined) { setAll('island', `${Math.round(islV)}/${islM}`); setW('islandfill', `${Math.max(0, Math.min(100, (islV / (islM || 100)) * 100))}%`); }
     // 装备栏（A）：按真实 items 数填充（变化才重渲）。
     const itemN = Math.round(num('items') ?? 0);
     setAll('equipcount', `${itemN}/8`);
