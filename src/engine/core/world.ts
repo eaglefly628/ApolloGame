@@ -40,7 +40,7 @@ export class World implements IWorld {
 
   // ── Component operations ──
 
-  addComponent(entityId: EntityId, component: Component): void {
+  addComponent<T extends Component>(entityId: EntityId, component: T): void {
     const entity = this.entities.get(entityId);
     if (!entity) throw new Error(`Entity "${entityId}" not found`);
     entity.set(component.type, component);

@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import { Engine } from '../../runtime/engine.js';
-import type { Resource, Flag, Shape, Status, Transform } from '@engine/protocol/components.js';
+import type { Resource, Flag, Shape, Status, Transform, HexPos, CardPile, SelfRule } from '@engine/protocol/components.js';
 import { buildGameFBlueprint, gameFEnemyPreview, GAME_F_HERO_IDS, FROZEN, TEAM_A, TEAM_B, rosterFor } from './blueprint.js';
 import { offsetToAxial, project } from './hex.js';
 
@@ -58,8 +58,8 @@ describe('Game F — 自走棋（纯数据装配，零自走棋代码；棋子=�
     }
     // 我方棋子的格 = marker 的格（'@origin-hex' 哨兵跟手）
     const guanyuSeat = seats.find((s) => s.startsWith('bench_a_guanyu#'))!;
-    const seatHex = e.world.getComponent<Resource>(guanyuSeat, 'HexPos') as unknown as { q: number; r: number };
-    const heroHex = e.world.getComponent<Resource>(mains(e).find((m) => m.startsWith('hero_a_guanyu#'))!, 'HexPos') as unknown as { q: number; r: number };
+    const seatHex = e.world.getComponent<HexPos>(guanyuSeat, 'HexPos')!;
+    const heroHex = e.world.getComponent<HexPos>(mains(e).find((m) => m.startsWith('hero_a_guanyu#'))!, 'HexPos')!;
     expect([heroHex.q, heroHex.r]).toEqual([seatHex.q, seatHex.r]);
     // REQ-F-056：战斗期 marker 隐藏（消「武将复制、老的没删」幽灵）——seat 持久但 Visibility=false。
     const vis = (id: string): boolean => (e.world.getComponent(id, 'Visibility') as { visible: boolean } | undefined)?.visible ?? true;
@@ -124,7 +124,7 @@ describe('Game F — 自走棋（纯数据装配，零自走棋代码；棋子=�
     expect(m).toBeTruthy();
     for (const part of ['name', 'hpbar', 'mpbg', 'mana']) expect(alive(e, childOf(m, part))).toBe(true); // 死前全在
     // 给关羽实例致命局部伤害 → 死亡。
-    e.world.addComponent(m, { type: 'ResourceModify', resourceId: 'hp', amount: -99999, scope: 'local' } as unknown as Resource);
+    e.world.addComponent(m, { type: 'ResourceModify', resourceId: 'hp', amount: -99999, scope: 'local' });
     for (let i = 0; i < 3; i++) e.world.tick();
     expect(alive(e, m)).toBe(false); // 棋子销毁
     for (const part of ['name', 'hpbar', 'mpbg', 'mana']) expect(alive(e, childOf(m, part))).toBe(false); // 挂件无残留
@@ -257,9 +257,9 @@ describe('Game F — 自走棋（纯数据装配，零自走棋代码；棋子=�
     const back = offsetToAxial(2, 7);
     const bp2 = project(back.q, back.r);
     e.world.createEntity('input');
-    e.world.addComponent('input', { type: 'InputQueue', actions: [{ source: 'test', key: 'drag', x: gt.x, y: gt.y, values: [bp2.x, bp2.y], phase: 'drag' }] } as unknown as Resource);
+    e.world.addComponent('input', { type: 'InputQueue', actions: [{ source: 'test', key: 'drag', x: gt.x, y: gt.y, values: [bp2.x, bp2.y], phase: 'drag' }] });
     e.world.tick();
-    e.world.addComponent('input', { type: 'InputQueue', actions: [] } as unknown as Resource);
+    e.world.addComponent('input', { type: 'InputQueue', actions: [] });
     for (let i = 0; i < 39; i++) e.world.tick(); // 入战拍展开
     const m = mainOf(e, 'a_guanyu')!;
     const t = (): Transform => e.world.getComponent<Transform>(m, 'Transform')!;
@@ -294,7 +294,7 @@ describe('Game F — 自走棋（纯数据装配，零自走棋代码；棋子=�
       x: 0,
       y: 0,
       overrides: { main: { HexPos: { q: a.q, r: a.r }, Tag: { flags: TEAM_A }, Resource: { current: 5000, max: 5000 } } },
-    } as unknown as Resource);
+    });
     const seen = new Set<string>();
     for (let i = 50; i < 140; i++) {
       // 窗口 [50,140)：槽源关羽首击 ~88、注入关羽首击 ~96、槽源二击 ~133——窗内两实例各自出手即证不串台
@@ -335,9 +335,9 @@ describe('Game F — 自走棋（纯数据装配，零自走棋代码；棋子=�
     // 走真实输入路：InputQueue 指针事件（世界坐标）→ clickable 命中「开战」按钮 → 'ready_btn' Signal → Effect 置 ready。
     // （裸造 Signal 实体行不通：event-when 每拍全局先清后标，外来信号活不到 Commit 的 effect-apply。）
     e.world.createEntity('input');
-    e.world.addComponent('input', { type: 'InputQueue', actions: [{ source: 'test', x: 300, y: 180, phase: 'down' }] } as unknown as Resource);
+    e.world.addComponent('input', { type: 'InputQueue', actions: [{ source: 'test', x: 300, y: 180, phase: 'down' }] });
     e.world.tick(); // 命中 → 信号 → ready=true（同拍 Commit）
-    e.world.addComponent('input', { type: 'InputQueue', actions: [] } as unknown as Resource); // 清空输入（单击语义）
+    e.world.addComponent('input', { type: 'InputQueue', actions: [] }); // 清空输入（单击语义）
     let entered = false;
     for (let i = 0; i < 15 && !entered; i++) {
       e.world.tick();
@@ -358,12 +358,12 @@ describe('Game F — 自走棋（纯数据装配，零自走棋代码；棋子=�
     };
     const play0 = (): void => {
       if (!e.world.getAllEntities().includes('input')) e.world.createEntity('input');
-      e.world.addComponent('input', { type: 'InputQueue', actions: [{ source: 'shop', key: 'play', values: [0] }] } as unknown as Resource);
+      e.world.addComponent('input', { type: 'InputQueue', actions: [{ source: 'shop', key: 'play', values: [0] }] });
       e.world.tick();
-      e.world.addComponent('input', { type: 'InputQueue', actions: [] } as unknown as Resource);
+      e.world.addComponent('input', { type: 'InputQueue', actions: [] });
     };
     // 起手金 5 → 先降到 2 以验「钱不够原子拒单」（备战期无收入窗，停在 2）
-    e.world.addComponent('r_gold', { type: 'ResourceModify', resourceId: 'gold', amount: -3, scope: 'local' } as unknown as Resource);
+    e.world.addComponent('r_gold', { type: 'ResourceModify', resourceId: 'gold', amount: -3, scope: 'local' });
     for (let i = 0; i < 2; i++) e.world.tick();
     expect(res('gold')).toBe(2); // 2 金 < 3 买不起
     play0();
@@ -375,7 +375,7 @@ describe('Game F — 自走棋（纯数据装配，零自走棋代码；棋子=�
     let r2guard = 0;
     while (res('round_idx') === 1 && r2guard++ < 4000) e.world.tick();
     for (let i = 0; i < 10; i++) e.world.tick(); // r2 备战早段（刷新已过）
-    e.world.addComponent('r_gold', { type: 'ResourceModify', resourceId: 'gold', amount: 10, scope: 'local' } as unknown as Resource);
+    e.world.addComponent('r_gold', { type: 'ResourceModify', resourceId: 'gold', amount: 10, scope: 'local' });
     for (let i = 0; i < 2; i++) e.world.tick();
     const gFunded = res('gold');
     play0();
@@ -396,12 +396,12 @@ describe('Game F — 自走棋（纯数据装配，零自走棋代码；棋子=�
       }
       return -1;
     };
-    const hand = (): string => (e.world.getComponent('shop', 'CardPile') as unknown as { hand: number[] }).hand.join(',');
+    const hand = (): string => e.world.getComponent<CardPile>('shop', 'CardPile')!.hand.join(',');
     const click = (x: number, y: number): void => {
       if (!e.world.getAllEntities().includes('input')) e.world.createEntity('input');
-      e.world.addComponent('input', { type: 'InputQueue', actions: [{ source: 'test', x, y, phase: 'down' }] } as unknown as Resource);
+      e.world.addComponent('input', { type: 'InputQueue', actions: [{ source: 'test', x, y, phase: 'down' }] });
       e.world.tick();
-      e.world.addComponent('input', { type: 'InputQueue', actions: [] } as unknown as Resource);
+      e.world.addComponent('input', { type: 'InputQueue', actions: [] });
     };
     // 回合1 prep 自动刷新：初发 [3,1,5] 回袋底、换下一批 → 手牌 ≠ 初发（REQ-F-054 卡池守恒；6 将库牌袋）
     for (let i = 0; i < 10; i++) e.world.tick();
@@ -418,7 +418,7 @@ describe('Game F — 自走棋（纯数据装配，零自走棋代码；棋子=�
     while (!flag(e, 'in_combat') && guard2++ < 100) e.world.tick(); // 到开战拍
     expect(flag(e, 'shop_locked')).toBe(false); // 开战自动解锁（次序在刷新门判定之后）
     // 手动刷新 $2：注资后点「刷新」→ 扣 2 金 + 换牌（锁着也能花钱换——先验证解锁态即可）
-    e.world.addComponent('r_gold', { type: 'ResourceModify', resourceId: 'gold', amount: 10, scope: 'local' } as unknown as Resource);
+    e.world.addComponent('r_gold', { type: 'ResourceModify', resourceId: 'gold', amount: 10, scope: 'local' });
     for (let i = 0; i < 2; i++) e.world.tick();
     const goldBefore = res('gold');
     const handBefore = hand();
@@ -429,9 +429,9 @@ describe('Game F — 自走棋（纯数据装配，零自走棋代码；棋子=�
     // 卖出：先买一个（手牌槽0）→ 点其席位 → marker 没了、金 +2、席位回 9
     const buyGold = res('gold');
     if (!e.world.getAllEntities().includes('input')) e.world.createEntity('input');
-    e.world.addComponent('input', { type: 'InputQueue', actions: [{ source: 'shop', key: 'play', values: [0] }] } as unknown as Resource);
+    e.world.addComponent('input', { type: 'InputQueue', actions: [{ source: 'shop', key: 'play', values: [0] }] });
     e.world.tick();
-    e.world.addComponent('input', { type: 'InputQueue', actions: [] } as unknown as Resource);
+    e.world.addComponent('input', { type: 'InputQueue', actions: [] });
     for (let i = 0; i < 6; i++) e.world.tick();
     expect(res('gold')).toBe(buyGold - 3);
     expect(res('bench_space')).toBe(8);
@@ -439,9 +439,9 @@ describe('Game F — 自走棋（纯数据装配，零自走棋代码；棋子=�
     const marker = e.world.getAllEntities().find((id) => id.startsWith('bench_') && id.endsWith(':seat') && !e.world.getComponent(id, 'HexPos'))!;
     expect(marker).toBeTruthy();
     const mt = e.world.getComponent<Transform>(marker, 'Transform')!;
-    e.world.addComponent('input', { type: 'InputQueue', actions: [{ source: 'test', key: 'drag', x: mt.x, y: mt.y, values: [200, 118], phase: 'drag' }] } as unknown as Resource); // 拖进垃圾桶=卖出（REQ-F-058；点选卖出已停用）
+    e.world.addComponent('input', { type: 'InputQueue', actions: [{ source: 'test', key: 'drag', x: mt.x, y: mt.y, values: [200, 118], phase: 'drag' }] }); // 拖进垃圾桶=卖出（REQ-F-058；点选卖出已停用）
     e.world.tick();
-    e.world.addComponent('input', { type: 'InputQueue', actions: [] } as unknown as Resource);
+    e.world.addComponent('input', { type: 'InputQueue', actions: [] });
     for (let i = 0; i < 5; i++) e.world.tick();
     expect(e.world.getAllEntities().includes(marker)).toBe(false); // 席位销毁（点谁卖谁 '@signal-source'）
     expect(res('gold')).toBe(buyGold - 3 + 2); // 卖价 2 返还
@@ -460,14 +460,14 @@ describe('Game F — 自走棋（纯数据装配，零自走棋代码；棋子=�
     };
     const click = (x: number, y: number): void => {
       if (!e.world.getAllEntities().includes('input')) e.world.createEntity('input');
-      e.world.addComponent('input', { type: 'InputQueue', actions: [{ source: 'test', x, y, phase: 'down' }] } as unknown as Resource);
+      e.world.addComponent('input', { type: 'InputQueue', actions: [{ source: 'test', x, y, phase: 'down' }] });
       e.world.tick();
-      e.world.addComponent('input', { type: 'InputQueue', actions: [] } as unknown as Resource);
+      e.world.addComponent('input', { type: 'InputQueue', actions: [] });
     };
     for (let i = 0; i < 50; i++) e.world.tick(); // 进战斗（income_armed 已关：避开利息区间带对注资/消费的边沿响应——带宽语义见 finish-list Gotchas）
     expect(res('xp')).toBe(2); // 回合1 prep 自动 +2 XP（§4.3）
     expect(res('level')).toBe(4); // 起始等级=现固定阵容人口
-    e.world.addComponent('r_gold', { type: 'ResourceModify', resourceId: 'gold', amount: 30, scope: 'local' } as unknown as Resource);
+    e.world.addComponent('r_gold', { type: 'ResourceModify', resourceId: 'gold', amount: 30, scope: 'local' });
     for (let i = 0; i < 2; i++) e.world.tick();
     const g0 = res('gold');
     for (let k = 0; k < 5; k++) { click(300, 64); for (let i = 0; i < 2; i++) e.world.tick(); } // 买经验 ×5
@@ -476,7 +476,7 @@ describe('Game F — 自走棋（纯数据装配，零自走棋代码；棋子=�
     expect(res('level')).toBe(6); // 阈值下调 8/18/30/44：xp22 → 4+2=6（买经验看得见升级）
     // 连败计数：杀光我方 → 败方路径 → lose_streak +1（连败金 band 与连胜金同构同测法）
     for (const m of mains(e).filter((id) => id.startsWith('hero_a_'))) {
-      e.world.addComponent(m, { type: 'ResourceModify', resourceId: 'hp', amount: -99999, scope: 'local' } as unknown as Resource);
+      e.world.addComponent(m, { type: 'ResourceModify', resourceId: 'hp', amount: -99999, scope: 'local' });
     }
     let guard = 0;
     while (res('lose_streak') === 0 && guard++ < 200) e.world.tick();
@@ -493,12 +493,12 @@ describe('Game F — 自走棋（纯数据装配，零自走棋代码；棋子=�
       }
       return -1;
     };
-    const deckLen = (): number => (e.world.getComponent('shop', 'CardPile') as unknown as { deck: number[] }).deck.length;
+    const deckLen = (): number => e.world.getComponent<CardPile>('shop', 'CardPile')!.deck.length;
     const input = (actions: unknown[]): void => {
       if (!e.world.getAllEntities().includes('input')) e.world.createEntity('input');
-      e.world.addComponent('input', { type: 'InputQueue', actions } as unknown as Resource);
+      e.world.addComponent('input', { type: 'InputQueue', actions });
       e.world.tick();
-      e.world.addComponent('input', { type: 'InputQueue', actions: [] } as unknown as Resource);
+      e.world.addComponent('input', { type: 'InputQueue', actions: [] });
     };
     // 羁绊：场上蜀将 4（关羽/赵云/诸葛/张飞，单机纯蜀 vs 魏世界观）→ ≥3 阈值开战拍锁存 dmg_scale_a=1.2
     let guard = 0;
@@ -507,7 +507,7 @@ describe('Game F — 自走棋（纯数据装配，零自走棋代码；棋子=�
     expect(res('count_shu')).toBe(4); // group-count 按 FACT_SHU 计场上（纯蜀 4 将）
     expect(res('dmg_scale_a')).toBeCloseTo(1.2); // 蜀魂 ≥3 锁存（prep 复位 ×1，下回合重判）
     // 卖出袋归还：注资买 1（deck 抽 1 补手 → 净 -1）→ 点席卖 → 码归还袋底（净回 +1）
-    e.world.addComponent('r_gold', { type: 'ResourceModify', resourceId: 'gold', amount: 10, scope: 'local' } as unknown as Resource);
+    e.world.addComponent('r_gold', { type: 'ResourceModify', resourceId: 'gold', amount: 10, scope: 'local' });
     for (let i = 0; i < 2; i++) e.world.tick();
     input([{ source: 'shop', key: 'play', values: [0] }]);
     for (let i = 0; i < 6; i++) e.world.tick();
@@ -533,9 +533,9 @@ describe('Game F — 自走棋（纯数据装配，零自走棋代码；棋子=�
     };
     const click = (x: number, y: number): void => {
       if (!e.world.getAllEntities().includes('input')) e.world.createEntity('input');
-      e.world.addComponent('input', { type: 'InputQueue', actions: [{ source: 'test', x, y, phase: 'down' }] } as unknown as Resource);
+      e.world.addComponent('input', { type: 'InputQueue', actions: [{ source: 'test', x, y, phase: 'down' }] });
       e.world.tick();
-      e.world.addComponent('input', { type: 'InputQueue', actions: [] } as unknown as Resource);
+      e.world.addComponent('input', { type: 'InputQueue', actions: [] });
     };
     for (let i = 0; i < 5; i++) e.world.tick();
     expect(alive(e, 'rune_a')).toBe(true); // 三卡在场
@@ -563,7 +563,7 @@ describe('Game F — 自走棋（纯数据装配，零自走棋代码；棋子=�
     const goldBefore = res('gold');
     // 在主角脚下生成一颗法球（模拟野怪掉落落点重合）→ 双向 hitbox 两清
     e.world.createEntity('lootreq');
-    e.world.addComponent('lootreq', { type: 'SpawnRequest', templateId: 'loot_orb', x: -150, y: 86 } as unknown as Resource);
+    e.world.addComponent('lootreq', { type: 'SpawnRequest', templateId: 'loot_orb', x: -150, y: 86 });
     for (let i = 0; i < 8; i++) e.world.tick();
     expect(e.world.getAllEntities().some((id) => id.startsWith('loot_orb#'))).toBe(false); // 球真结算一次后同拍自毁（044 consumeOnHit）
     expect(res('gold')).toBe(goldBefore + 5); // 赏金入账（loot→valueFrom→gold）
@@ -590,13 +590,13 @@ describe('Game F — 自走棋（纯数据装配，零自走棋代码；棋子=�
     expect(res('items')).toBe(0); // 开局装备栏空
     // 在主公(行囊)脚下落一个魏将死亡掉落（含装备 orb，仅 B 方掉）→ 行囊（跟随主公）拾取
     e.world.createEntity('eqreq');
-    e.world.addComponent('eqreq', { type: 'SpawnRequest', templateId: 'death_b_zhangliao', x: -150, y: 86 } as unknown as Resource);
+    e.world.addComponent('eqreq', { type: 'SpawnRequest', templateId: 'death_b_zhangliao', x: -150, y: 86 });
     for (let i = 0; i < 8; i++) e.world.tick();
     expect(res('items')).toBe(1); // 拾取入账 +1（装备 orb Hitbox→行囊 BAG，consumeOnHit）
     expect(e.world.getAllEntities().some((id) => id.startsWith('death_b_zhangliao#') && id.endsWith(':eorb'))).toBe(false); // orb 同拍自毁
     // 我方（蜀）死亡不掉装备（防自 farm）
     e.world.createEntity('eqreq2');
-    e.world.addComponent('eqreq2', { type: 'SpawnRequest', templateId: 'death_a_guanyu', x: -150, y: 86 } as unknown as Resource);
+    e.world.addComponent('eqreq2', { type: 'SpawnRequest', templateId: 'death_a_guanyu', x: -150, y: 86 });
     for (let i = 0; i < 8; i++) e.world.tick();
     expect(res('items')).toBe(1); // 蜀死无装备 orb → 不增
   });
@@ -631,7 +631,7 @@ describe('Game F — 自走棋（纯数据装配，零自走棋代码；棋子=�
     expect(mains(e).filter((m) => m.startsWith('mob_'))).toHaveLength(3); // 阶段1=PVE_WAVES[0] 黄巾×3
     expect(mains(e).filter((m) => m.startsWith('hero_b_'))).toHaveLength(0); // 无 PvP 敌阵（整段野怪化）
     const mob = mains(e).find((m) => m.startsWith('mob_'))!;
-    e.world.addComponent(mob, { type: 'ResourceModify', resourceId: 'hp', amount: -99999, scope: 'local' } as unknown as Resource);
+    e.world.addComponent(mob, { type: 'ResourceModify', resourceId: 'hp', amount: -99999, scope: 'local' });
     for (let i = 0; i < 4; i++) e.world.tick();
     expect(e.world.getAllEntities().some((id) => id.startsWith('mob_death#') && id.endsWith(':orb'))).toBe(true); // 死亡掉法球+碎裂（mob_death 复合模板）
     let wiped = false;
@@ -655,14 +655,14 @@ describe('Game F — 自走棋（纯数据装配，零自走棋代码；棋子=�
     // HUD 金币显示已移入 DOM 壳层；canvas 商店卡退役（移出视口），买入走 CardPile.play（DOM 点将台同款路径）。
     const buy = (slot: number): void => {
       if (!e.world.getAllEntities().includes('input')) e.world.createEntity('input');
-      e.world.addComponent('input', { type: 'InputQueue', actions: [{ source: 'shop', key: 'play', values: [slot] }] } as unknown as Resource);
+      e.world.addComponent('input', { type: 'InputQueue', actions: [{ source: 'shop', key: 'play', values: [slot] }] });
       e.world.tick();
-      e.world.addComponent('input', { type: 'InputQueue', actions: [] } as unknown as Resource);
+      e.world.addComponent('input', { type: 'InputQueue', actions: [] });
     };
     for (let i = 0; i < 12; i++) e.world.tick(); // 刷新 → 两段脉冲 → 重铺完毕
     expect(cards()).toHaveLength(3); // 三大框在售卡面可见（用户钦定小丑牌式）
     expect(res('gold')).toBe(5); // 起手金 5（用户：10 太多）
-    e.world.addComponent('r_gold', { type: 'ResourceModify', resourceId: 'gold', amount: 20, scope: 'local' } as unknown as Resource);
+    e.world.addComponent('r_gold', { type: 'ResourceModify', resourceId: 'gold', amount: 20, scope: 'local' });
     for (let i = 0; i < 3; i++) e.world.tick();
     const g0 = res('gold');
     buy(0); // 买第 1 张 = CardPile.play(0) → 扣金占席入备战台
@@ -684,7 +684,7 @@ describe('Game F — 自走棋（纯数据装配，零自走棋代码；棋子=�
       return -1;
     };
     for (let i = 0; i < 5; i++) e.world.tick();
-    e.world.addComponent('r_gold', { type: 'ResourceModify', resourceId: 'gold', amount: -5, scope: 'local' } as unknown as Resource); // 归零起手金：本测试单验收入窗（§4.1 表）
+    e.world.addComponent('r_gold', { type: 'ResourceModify', resourceId: 'gold', amount: -5, scope: 'local' }); // 归零起手金：本测试单验收入窗（§4.1 表）
     for (let i = 0; i < 45; i++) e.world.tick();
     expect(res('player_hp')).toBe(100); // §3.1 量程（boot 初始化，旧 20 为占位）
     expect(res('round_idx')).toBe(1);
@@ -699,7 +699,7 @@ describe('Game F — 自走棋（纯数据装配，零自走棋代码；棋子=�
     expect(res('gold')).toBe(2);
     expect(res('player_hp')).toBe(flag(e, 'won') ? 100 : 98); // §4.2 阶段1败=基础0+存活近似2
     // 注入把 round_idx 推到 5（合法 sim 输入），打完该回合验证 >5 进位 banded：stage+1、round=1、敌阵换装
-    e.world.addComponent('r_round_idx', { type: 'ResourceModify', resourceId: 'round_idx', amount: 3, scope: 'local' } as unknown as Resource);
+    e.world.addComponent('r_round_idx', { type: 'ResourceModify', resourceId: 'round_idx', amount: 3, scope: 'local' });
     let guard2 = 0;
     while (!(res('round_idx') === 1 && res('stage_idx') === 2) && guard2++ < 4000) e.world.tick();
     expect(res('stage_idx')).toBe(2); // when_stage_up：进位发生
@@ -719,16 +719,16 @@ describe('Game F — 自走棋（纯数据装配，零自走棋代码；棋子=�
     };
     const act = (a: Record<string, unknown>): void => {
       if (!e.world.getAllEntities().includes('input')) e.world.createEntity('input');
-      e.world.addComponent('input', { type: 'InputQueue', actions: [{ source: 'test', ...a }] } as unknown as Resource);
+      e.world.addComponent('input', { type: 'InputQueue', actions: [{ source: 'test', ...a }] });
       e.world.tick();
-      e.world.addComponent('input', { type: 'InputQueue', actions: [] } as unknown as Resource);
+      e.world.addComponent('input', { type: 'InputQueue', actions: [] });
     };
     const drag = (fx: number, fy: number, tx: number, ty: number): void => act({ key: 'drag', x: fx, y: fy, values: [tx, ty], phase: 'drag' }); // 壳层合成同形
     for (let i = 0; i < 10; i++) e.world.tick(); // 回合1 备战
     // 直注 3 张关羽席位 marker（绕过商店牌序的购买路径——merge 只认 PrefabOrigin 家族，与来源无关）
     [-66, -22, 22].forEach((x, i) => {
       e.world.createEntity(`mreq${i}`);
-      e.world.addComponent(`mreq${i}`, { type: 'SpawnRequest', templateId: 'bench_a_guanyu', x, y: 178 } as unknown as Resource);
+      e.world.addComponent(`mreq${i}`, { type: 'SpawnRequest', templateId: 'bench_a_guanyu', x, y: 178 });
     });
     for (let i = 0; i < 6; i++) e.world.tick();
     // 三连合成取**最老** 3 个 = 开局在板关羽(seq 最小) + 前 2 张注入席卡 → 锚在最老（板上）→
@@ -737,7 +737,7 @@ describe('Game F — 自走棋（纯数据装配，零自走棋代码；棋子=�
     expect(b2all).toHaveLength(1);
     const b2 = b2all[0];
     const home = offsetToAxial(2, 4); // 关羽经典站位（7×8 盘视觉 2,4）
-    const b2hex = e.world.getComponent(b2, 'HexPos') as unknown as { q: number; r: number };
+    const b2hex = e.world.getComponent<HexPos>(b2, 'HexPos')!;
     expect([b2hex.q, b2hex.r]).toEqual([home.q, home.r]); // 板上合成 → 产物留板上原格
     expect(alive(e, b2.replace(/:seat$/, ':star'))).toBe(true); // ★★ 角标随体
     expect(e.world.getAllEntities().filter((id) => id.startsWith('bench_a_guanyu#') && id.endsWith(':seat'))).toHaveLength(1); // 第 3 张注入卡幸存在席
@@ -749,7 +749,7 @@ describe('Game F — 自走棋（纯数据装配，零自走棋代码；棋子=�
     expect(gys).toHaveLength(1); // 在板的二星出兵；席上幸存的一星不出兵（requireHexPos 门）
     const hp = e.world.getComponent<Resource>(gys[0], 'Resource')!;
     expect(hp.max).toBe(Math.round((240 * 18 + 120) * 1.8)); // finalHp(关羽含玉玺) × 1.8 = 7992（二星数值烘在模板族）
-    expect((e.world.getComponent(gys[0], 'SelfRule') as unknown as { do: { template: string }[] }).do[0].template).toBe('strike_a_guanyu_s2');
+    expect(e.world.getComponent<SelfRule>(gys[0], 'SelfRule')!.do[0].template).toBe('strike_a_guanyu_s2');
     // 星级卖价（战斗窗卖：income 窗已关，金额断言不吃利息带宽）：点板上二星席=sell2 → +8 金（棋子本回合继续打）
     const g0 = res('gold');
     const p = project(home.q, home.r);
@@ -791,17 +791,17 @@ describe('Game F — 自走棋（纯数据装配，零自走棋代码；棋子=�
     e.load(buildGameFBlueprint(FAST));
     const drag = (fx: number, fy: number, tx: number, ty: number): void => {
       if (!e.world.getAllEntities().includes('input')) e.world.createEntity('input');
-      e.world.addComponent('input', { type: 'InputQueue', actions: [{ source: 'test', key: 'drag', x: fx, y: fy, values: [tx, ty], phase: 'drag' }] } as unknown as Resource);
+      e.world.addComponent('input', { type: 'InputQueue', actions: [{ source: 'test', key: 'drag', x: fx, y: fy, values: [tx, ty], phase: 'drag' }] });
       e.world.tick();
-      e.world.addComponent('input', { type: 'InputQueue', actions: [] } as unknown as Resource);
+      e.world.addComponent('input', { type: 'InputQueue', actions: [] });
     };
     const pos = (id: string): Transform => e.world.getComponent<Transform>(id, 'Transform')!;
     for (let i = 0; i < 10; i++) e.world.tick();
     expect(flag(e, 'in_prep')).toBe(true); // 备战相位门开（flow prep onEnter 维护）
     e.world.createEntity('mreq');
-    e.world.addComponent('mreq', { type: 'SpawnRequest', templateId: 'bench_a_zhaoyun', x: 0, y: 0 } as unknown as Resource);
+    e.world.addComponent('mreq', { type: 'SpawnRequest', templateId: 'bench_a_zhaoyun', x: 0, y: 0 });
     e.world.createEntity('mreq2');
-    e.world.addComponent('mreq2', { type: 'SpawnRequest', templateId: 'bench_a_zhuge', x: 0, y: 0 } as unknown as Resource);
+    e.world.addComponent('mreq2', { type: 'SpawnRequest', templateId: 'bench_a_zhuge', x: 0, y: 0 });
     for (let i = 0; i < 3; i++) e.world.tick();
     const seat = e.world.getAllEntities().find((id) => id.startsWith('bench_a_zhaoyun#') && id.endsWith(':seat') && !e.world.getComponent(id, 'HexPos'))!;
     const seat2 = e.world.getAllEntities().find((id) => id.startsWith('bench_a_zhuge#') && id.endsWith(':seat') && !e.world.getComponent(id, 'HexPos'))!;
@@ -826,7 +826,7 @@ describe('Game F — 自走棋（纯数据装配，零自走棋代码；棋子=�
     e.world.tick();
     expect(e.world.getComponent(zhaoSeat, 'TraySeat')).toBeTruthy(); // 托盘把回席者捡进空槽
     drag(-132, 118, c55.x, c55.y);
-    const hex = e.world.getComponent(seat, 'HexPos') as unknown as { q: number; r: number };
+    const hex = e.world.getComponent<HexPos>(seat, 'HexPos')!;
     expect([hex.q, hex.r]).toEqual([a55.q, a55.r]); // 吸附格
     expect(pos(seat).x).toBeCloseTo(c55.x, 5); // 投影贴格
     expect(e.world.getComponent(seat, 'TraySeat')).toBeFalsy(); // 上板让座
@@ -835,7 +835,7 @@ describe('Game F — 自走棋（纯数据装配，零自走棋代码；棋子=�
     while (!flag(e, 'in_combat') && guard++ < 100) e.world.tick();
     expect(flag(e, 'in_prep')).toBe(false); // 开战即关门
     drag(c55.x, c55.y, -110, 118);
-    const hex2 = e.world.getComponent(seat, 'HexPos') as unknown as { q: number; r: number };
+    const hex2 = e.world.getComponent<HexPos>(seat, 'HexPos')!;
     expect([hex2.q, hex2.r]).toEqual([a55.q, a55.r]); // 战斗期拖拽被拒：格不变
   });
 });

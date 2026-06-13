@@ -40,7 +40,7 @@ export function boardEntities(warmKey: string, coolKey: string): Record<string, 
       out[`hex_${q}_${r}`] = {
         Transform: { x: p.x, y: p.y, rotation: 0, scaleX: 1, scaleY: 1 },
         Sprite: { textureKey: r >= HALF_ROWS ? warmKey : coolKey, anchorX: 0.5, anchorY: 0.5, zOrder: 0 },
-      } as unknown as EntityBlueprint;
+      };
     }
   }
   return out;

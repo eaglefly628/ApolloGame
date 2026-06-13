@@ -48,6 +48,6 @@ export const sprite = (textureKey: string, zOrder: number): Record<string, unkno
 export const zlift = (zOrder: number): Record<string, unknown> => ({ textureKey: '__zlift__', anchorX: 0.5, anchorY: 0.5, zOrder });
 // 棋盘内组件底盘（kit button/panel 的 canvas 形）：描边层(外扩)+底盘层 双 Shape。
 export const chrome = (id: string, x: number, y: number, w: number, h: number, fill: number, edge: number, z = 28.5, tag = 0): Record<string, EntityBlueprint> => ({
-  [`${id}_edge`]: { Transform: xf(x, y), Shape: { kind: 'box', width: w + 4, height: h + 4 }, Color: { tint: edge, alpha: 1 }, ...(tag ? { Tag: { flags: tag } } : {}), Sprite: zlift(z) } as unknown as EntityBlueprint,
-  [`${id}_bg`]: { Transform: xf(x, y), Shape: { kind: 'box', width: w, height: h }, Color: { tint: fill, alpha: 1 }, ...(tag ? { Tag: { flags: tag } } : {}), Sprite: zlift(z + 0.1) } as unknown as EntityBlueprint,
+  [`${id}_edge`]: { Transform: xf(x, y), Shape: { kind: 'box', width: w + 4, height: h + 4 }, Color: { tint: edge, alpha: 1 }, ...(tag ? { Tag: { flags: tag } } : {}), Sprite: zlift(z) },
+  [`${id}_bg`]: { Transform: xf(x, y), Shape: { kind: 'box', width: w, height: h }, Color: { tint: fill, alpha: 1 }, ...(tag ? { Tag: { flags: tag } } : {}), Sprite: zlift(z + 0.1) },
 });

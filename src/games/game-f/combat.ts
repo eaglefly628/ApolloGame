@@ -175,7 +175,7 @@ function heroTemplate(h: HeroSpec): PrefabTemplate {
         Hierarchy: { ...sidecarLink },
       },
     },
-  } as unknown as PrefabTemplate;
+  };
 }
 
 // ── 棋子 overrides 包（统一管道）：星级数值（血 ×1.8^(星-1)、strike/ult_s<星> 换弹=伤 ×1.5^(星-1)，
@@ -203,7 +203,7 @@ export function slotEntity(h: HeroSpec, onSignal: string, col: number, row: numb
   return {
     Transform: xf(p.x, p.y),
     Caster: { onSignal, template: `hero_${h.id}`, at: 'self', overrides: heroOverrides(h, 1, { q: a.q, r: a.r }, hpMul) },
-  } as unknown as EntityBlueprint;
+  };
 }
 
 // ── 野怪模板：简化棋子（无大招/蓝条；带血条+名牌；死亡掉法球）。Tag/血量由槽位 overrides 写。──
@@ -234,7 +234,7 @@ function mobTemplate(atk: number): PrefabTemplate {
       hpbg: { Transform: xf(0, HP_Y), Shape: { kind: 'box', width: BAR_W, height: 5 }, Hierarchy: { ...sidecarLink, localY: HP_Y }, Color: { tint: trackColor, alpha: 0.85 } },
       hpbar: { Transform: xf(0, HP_Y), Shape: { kind: 'box', width: BAR_W, height: 5 }, Hierarchy: { ...sidecarLink, localY: HP_Y }, Color: { tint: 0x54ad8e, alpha: 1 }, Gauge: { resourceId: 'hp', fromParent: true, width: BAR_W } },
     },
-  } as unknown as PrefabTemplate;
+  };
 }
 
 // 每英雄三张模板：普攻打击区 + 大招打击区 + 棋子复合体（REQ-F-032 回合重展开用）。targetMask=敌队。
@@ -263,7 +263,7 @@ export function templatesFor(ROSTER: HeroSpec[]): Record<string, PrefabTemplate>
         // 敌将（魏）死亡掉装备 orb（主公拾取入装备栏）；我方死亡不掉（防自farm）。
         h.team === TEAM_B ? { eorb: { Transform: xf(0, 0), Shape: { kind: 'box', width: 13, height: 13 }, Sensor: {}, Text: { content: '📦', fontSize: 15, fontFamily: FONT_BODY, anchor: 'center', lineSpacing: 0 }, Sprite: sprite(F_FX_STRIKE, 6), Color: { tint: 0xcf9a3f, alpha: 1 }, Tag: { flags: EQUIP | ZONE_FLAG }, Hitbox: { resource: 'items', amount: -1, targetMask: BAG, consumeOnHit: true } } } : {},
       ),
-    } as unknown as PrefabTemplate],
+    }],
   ]).concat(
     // 备战席位模板（v2 §4.6 + F-17 升星家族 + F-18/REQ-F-049 统一架构）：**席位 marker 即上场槽**。
     // 每将三档星级模板（bench/bench2/bench3）= merge-rule「同模板才互相计数」家族（策划 F-17 原批注语义），
@@ -317,7 +317,7 @@ export function templatesFor(ROSTER: HeroSpec[]): Record<string, PrefabTemplate>
                 }
               : {}),
           },
-        } as unknown as PrefabTemplate,
+        },
       ]),
     ),
     // 升星武器模板（F-17）：二/三星普攻（近战打击区/远程弹道按类型）与大招（×1.5/×2.25），槽位 overrides 换弹。
@@ -334,7 +334,7 @@ export function templatesFor(ROSTER: HeroSpec[]): Record<string, PrefabTemplate>
     PVE_WAVES.map((w): [string, PrefabTemplate] => [`mob_s${w.stage}`, mobTemplate(w.atk)]),
     [[
       'loot_orb',
-      { entities: { orb: { Transform: xf(0, 0), Shape: { kind: 'box', width: 10, height: 10 }, Sensor: {}, Sprite: sprite(F_FX_DRAIN, 5), Color: { tint: 0xd8607b, alpha: 1 }, Tag: { flags: LOOT | ZONE_FLAG }, Hitbox: { resource: 'loot', amount: -5, targetMask: PROTAG, consumeOnHit: true } } } } as unknown as PrefabTemplate, // 044：真结算一次入账-5(负=给予)同拍自毁；主角零附件
+      { entities: { orb: { Transform: xf(0, 0), Shape: { kind: 'box', width: 10, height: 10 }, Sensor: {}, Sprite: sprite(F_FX_DRAIN, 5), Color: { tint: 0xd8607b, alpha: 1 }, Tag: { flags: LOOT | ZONE_FLAG }, Hitbox: { resource: 'loot', amount: -5, targetMask: PROTAG, consumeOnHit: true } } } }, // 044：真结算一次入账-5(负=给予)同拍自毁；主角零附件
     ]] as [string, PrefabTemplate][],
     // 野怪死亡复合（掉法球 + 四分碎裂；Mortal.dropTemplate 单口 → 复合模板一口出两件）
     [[
@@ -350,7 +350,7 @@ export function templatesFor(ROSTER: HeroSpec[]): Record<string, PrefabTemplate>
           Timer: { id: 'life', elapsed: 0, duration: 28, loop: false },
           Sprite: sprite(F_HERO.gan_ning, 6),
         }])),
-      ) } as unknown as PrefabTemplate,
+      ) },
     ]] as [string, PrefabTemplate][],
     // 胜利彩点（庆祝相位喷洒）：金色圆点四散上抛+渐隐（Velocity+Tween+lifetime；zlift 抬层画 Shape）。
     [[
@@ -363,7 +363,7 @@ export function templatesFor(ROSTER: HeroSpec[]): Record<string, PrefabTemplate>
         Tween: { target: 'Color.alpha', from: 0.95, to: 0, elapsed: 0, duration: 38, easing: 'easeOut', done: false },
         Timer: { id: 'life', elapsed: 0, duration: 42, loop: false },
         Sprite: zlift(33),
-      }])) } as unknown as PrefabTemplate,
+      }])) },
     ]] as [string, PrefabTemplate][],
     // 战果面板（动态结算过程）：逐行错速淡入（duration 阶梯=stagger 近似），数字 TextBinding 实时跳
     [[
@@ -374,7 +374,7 @@ export function templatesFor(ROSTER: HeroSpec[]): Record<string, PrefabTemplate>
         gline: { Transform: xf(0, 40), Text: { content: '金币 0', fontSize: 12, fontFamily: FONT_NUM, anchor: 'center', lineSpacing: 0 }, TextBinding: { resourceId: 'gold', prefix: '金币 ' }, Color: { tint: 0xcf9a3f, alpha: 0 }, Tween: { target: 'Color.alpha', from: 0, to: 1, elapsed: 0, duration: 26, easing: 'easeOut', done: false }, Tag: { flags: RESULT }, Sprite: { textureKey: F_FX_STRIKE, anchorX: 0.5, anchorY: 0.5, zOrder: 34 } },
         sline: { Transform: xf(0, 58), Text: { content: '', fontSize: 12, fontFamily: FONT_BODY, anchor: 'center', lineSpacing: 0 }, TextBinding: { resourceId: 'win_streak', prefix: '连胜 ' }, Color: { tint: 0x8aa0e6, alpha: 0 }, Tween: { target: 'Color.alpha', from: 0, to: 1, elapsed: 0, duration: 36, easing: 'easeOut', done: false }, Tag: { flags: RESULT }, Sprite: { textureKey: F_FX_STRIKE, anchorX: 0.5, anchorY: 0.5, zOrder: 34 } },
         hline: { Transform: xf(0, 76), Text: { content: '血量 100', fontSize: 12, fontFamily: FONT_NUM, anchor: 'center', lineSpacing: 0 }, TextBinding: { resourceId: 'player_hp', prefix: '血量 ' }, Color: { tint: 0xd65668, alpha: 0 }, Tween: { target: 'Color.alpha', from: 0, to: 1, elapsed: 0, duration: 46, easing: 'easeOut', done: false }, Tag: { flags: RESULT }, Sprite: { textureKey: F_FX_STRIKE, anchorX: 0.5, anchorY: 0.5, zOrder: 34 } },
-      } } as unknown as PrefabTemplate,
+      } },
     ]] as [string, PrefabTemplate][],
     [[
       'result_lose',
@@ -384,7 +384,7 @@ export function templatesFor(ROSTER: HeroSpec[]): Record<string, PrefabTemplate>
         gline: { Transform: xf(0, 40), Text: { content: '金币 0', fontSize: 12, fontFamily: FONT_NUM, anchor: 'center', lineSpacing: 0 }, TextBinding: { resourceId: 'gold', prefix: '金币 ' }, Color: { tint: 0xcf9a3f, alpha: 0 }, Tween: { target: 'Color.alpha', from: 0, to: 1, elapsed: 0, duration: 26, easing: 'easeOut', done: false }, Tag: { flags: RESULT }, Sprite: { textureKey: F_FX_STRIKE, anchorX: 0.5, anchorY: 0.5, zOrder: 34 } },
         sline: { Transform: xf(0, 58), Text: { content: '', fontSize: 12, fontFamily: FONT_BODY, anchor: 'center', lineSpacing: 0 }, TextBinding: { resourceId: 'lose_streak', prefix: '连败 ' }, Color: { tint: 0x8aa0e6, alpha: 0 }, Tween: { target: 'Color.alpha', from: 0, to: 1, elapsed: 0, duration: 36, easing: 'easeOut', done: false }, Tag: { flags: RESULT }, Sprite: { textureKey: F_FX_STRIKE, anchorX: 0.5, anchorY: 0.5, zOrder: 34 } },
         hline: { Transform: xf(0, 76), Text: { content: '血量 100', fontSize: 12, fontFamily: FONT_NUM, anchor: 'center', lineSpacing: 0 }, TextBinding: { resourceId: 'player_hp', prefix: '血量 ' }, Color: { tint: 0xd65668, alpha: 0 }, Tween: { target: 'Color.alpha', from: 0, to: 1, elapsed: 0, duration: 46, easing: 'easeOut', done: false }, Tag: { flags: RESULT }, Sprite: { textureKey: F_FX_STRIKE, anchorX: 0.5, anchorY: 0.5, zOrder: 34 } },
-      } } as unknown as PrefabTemplate,
+      } },
     ]] as [string, PrefabTemplate][],
     // 商店大卡（F-14 重排/用户钦定）：在售英雄的可点大卡面（60×68 占满大框）+ 名字签 + **价签**（用户报缺）；
     // Clickable.action(买哪框)/Tag(槽位掩码) 由持位 Caster overrides 注入。价 = playCosts 金 3（统一费）。
@@ -394,7 +394,7 @@ export function templatesFor(ROSTER: HeroSpec[]): Record<string, PrefabTemplate>
         card: { Transform: xf(0, 0), Shape: { kind: 'box', width: 58, height: 68 }, Sprite: sprite(h.key, 28), Color: { tint: 0xcf9a3f, alpha: 1 }, Clickable: { action: 'ph' }, Tag: { flags: 0 } },
         cardname: { Transform: xf(0, -26), Text: { content: h.name, fontSize: 9, fontFamily: FONT_BODY, anchor: 'center', lineSpacing: 0 }, Color: { tint: 0x5a3f44, alpha: 1 }, Sprite: { textureKey: F_FX_STRIKE, anchorX: 0.5, anchorY: 0.5, zOrder: 29 }, Hierarchy: { parentId: '@local:card', localX: 0, localY: -26, localRotation: 0, localScaleX: 1, localScaleY: 1 } },
         cardprice: { Transform: xf(0, 28), Text: { content: '💰3', fontSize: 11, fontFamily: FONT_NUM, anchor: 'center', lineSpacing: 0 }, Color: { tint: 0xcf9a3f, alpha: 1 }, Sprite: { textureKey: F_FX_STRIKE, anchorX: 0.5, anchorY: 0.5, zOrder: 29 }, Hierarchy: { parentId: '@local:card', localX: 0, localY: 28, localRotation: 0, localScaleX: 1, localScaleY: 1 } },
-      } } as unknown as PrefabTemplate,
+      } },
     ]),
   ),
   );
