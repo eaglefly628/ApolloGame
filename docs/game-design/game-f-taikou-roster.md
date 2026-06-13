@@ -72,6 +72,53 @@
 - **稀有度梯度**:足轻(易掉、弱)→ 部将(中)→ Boss(极难收、强,收一个翻盘)。掉率走 `game-f-deck-spec.md`「降众归心」星球牌调。
 - **跨次元图鉴欲**:战国 Boss 混进三国阵(信长 + 赵云同队)= 留存钩子;收编池 = 上表全谱。
 
+## 五、数据约定(Tag 位 + Prefab 字段)
+
+- **队伍位**:太阁守军 = `TEAM_C`(与孙/刘/曹三玩家队伍位互为敌;索敌 `targetTag = 全队伍 & ~自队`)。
+- **职业位**:复用 `game-f-auto-chess.md` §4.1 —— `WARRIOR/TACTICIAN/ARCHER/ASSASSIN`。
+- **兵种位(数据约定新增,无引擎改动;Tag.flags 是 32 位字段还有空位)**:`CAVALRY=1<<11`、`INFANTRY=1<<12`(玩家「魏骑」连携也用这两位)。
+- **Prefab 字段**(对齐 enemy 模板,纯数据):`hp`(Resource)/ `atk`(普攻 hitbox.amount)/ `攻击间隔`(Timer.duration,秒)/ `射程`(GridMover.range,hex)/ 职业·兵种 Tag / 可选大招(`EventWhen{mana≥100,self}` → caster → 技能 hitbox)。
+- 数值 = **首版待平衡**(对齐金铲铲 1 星量级)。
+
+## 六、太阁 Prefab 数据表(master · 含 🔴 Boss = ②深挖)
+
+| 码 | 名 | 段 | hp | atk | 间隔s | 射程 | 职业 | 招牌(mana 满触发)→ 数据形 | 判定 |
+|---|---|---|---|---|---|---|---|---|---|
+| `ash_yari` | 枪足轻 | 滩头 | 450 | 45 | 1.0 | 1 | WAR·INF | 无大招 | ✅ |
+| `ash_yumi` | 弓足轻 | 滩头 | 350 | 40 | 1.1 | 4 | ARC | 无 | ✅ |
+| `ash_teppo` | 铁炮足轻 | 滩头 | 380 | 95 | 2.2 | 4 | ARC | 无(慢高) | ✅ |
+| `kunoichi` | 杂兵忍 | 滩头 | 400 | 55 | 0.9 | 1 | ASN | 无 | ✅ |
+| `saito` | 斋藤道三·蝮 | 国人众 | 600 | 50 | 1.2 | 2 | TAC | 毒沼:caster@target → hitbox{dotPerTick30,period1,dur4,AoE} | ✅ |
+| `mori` | 毛利元就·三矢 | 国人众 | 650 | 55 | 1.0 | 1 | WAR | 三矢:group-count 部将≥3 → 全局 buff atk+0.2 | ✅ |
+| `hojo` | 北条氏康·小田原 | 国人众 | 1100 | 40 | 1.3 | 1 | WAR | 龟缩:全局减伤资源(守军受伤×0.7) | ✅ |
+| `imagawa` | 今川义元·弓取 | 国人众 | 600 | 55 | 1.0 | 4 | ARC | 弓阵:group-count 弓 → 全弓 buff | ✅ |
+| `akechi` | 明智光秀·谋叛 | 国人众 | 600 | 50 | 1.2 | 3 | TAC | 群冻:caster → hitbox{setMask:FROZEN,statusDuration90,AoE} | ✅ |
+| `ishida` | 石田三成·三献茶 | 国人众 | 550 | 40 | 1.1 | 3 | TAC | 辅助:over-time 友军回复 +30/s | ✅ |
+| `nobunaga` | 织田信长·天下布武 | 天守 | 1400 | 70 | 0.9 | 1 | WAR | 天下布武:每30s 全局 buff atk_buff+0.15(阶段递增)→ 全军 scaleByResource | ✅ |
+| `hideyoshi` | 丰臣秀吉·一夜城 | 天守 | 1200 | 55 | 1.0 | 2 | WAR | 一夜城:每20s self-rule spawn 2×`ash_yari` 援军 | ✅ |
+| `ieyasu` | 德川家康·忍耐 | 天守 | 2000 | 60 | 1.1 | 1 | WAR | 忍耐:over-time 自回复+40/s + 受击反击 hitbox | ✅ |
+| `honganji` | 本愿寺显如·一向一揆 | 天守 | 1300 | 45 | 1.1 | 2 | TAC | 一揆:每25s spawn 4×`ash_yari`(人海) | ✅ |
+| `shingen` | 武田信玄·风林火山 | 天守 | 1500 | 65 | 0.9 | 1 | WAR·CAV | 风林火山:阶段切换(风提速/林减速/火加攻/山减伤)+ 骑冲 | 🟡部分 per-unit |
+| `kenshin` | 上杉谦信·军神 | 天守 | 1400 | 90 | 0.7 | 1 | ASN | 无双斩:单核高攻 + 对 hp<30% **斩杀**(requireHpFracBelow0.3,executeBelow) | 🔴 F-061 |
+| `yukimura` | 真田幸村·六文钱 | 天守 | 1300 | 75 | 0.8 | 1 | WAR | 决死:**自身残血伤害递增**(valueFrom hp 反比) | 🔴 F-061 |
+| `masamune` | 伊达政宗·独眼龙 | 天守 | 1200 | 70 | 1.0 | 4 | ARC | 狙击:**Perception.policy='highestStat'** 锁最高威胁 | 🔴 F-062 |
+| `shimazu` | 岛津义弘·钓野伏 | 天守 | 1300 | 70 | 1.0 | 2 | ASN | 钓野伏:伏兵 spawn + **policy='farthest' 绕后** | 🔴 F-062 |
+| `tachibana` | 立花宗茂·雷切 | 天守 | 1250 | 80 | 0.9 | 1 | WAR | 雷切:暴击(🟡缓做)+ 对残血**斩**(F-061) | 🔴 |
+| `hattori` | 服部半藏·忍 | 天守 | 1100 | 75 | 0.8 | 1 | ASN | 潜行(Perception 排除·待核)+ 斩后排(F-062+F-061) | 🟡🔴 |
+
+## 七、第一座岛「九州征伐」关卡表(T1 照填;**v1 只做 W1–W2**)
+
+| 波 | 段 | 敌阵(码 × 数量) | 落点 | v1 |
+|---|---|---|---|---|
+| **W1** | 滩头① | `ash_yari`×4 + `ash_yumi`×2 | 岛缘:枪前排 / 弓后排 | ✅ v1 |
+| **W2** | 滩头② | `ash_yari`×4 + `ash_teppo`×2 + `kunoichi`×2 | 前排枪 / 后排铳 / 侧翼忍 | ✅ v1 |
+| W3 | 国人众① | `ash_yari`×3 + `saito` + `ash_yumi`×2 | 中区 | 后续 |
+| W4 | 国人众② | `hojo` + `mori` + 杂兵×4 | 中区(北条压前) | 后续 |
+| W5 | 国人众③ | `akechi` + `ishida` + `imagawa` + 杂兵×3 | 中区 | 后续 |
+| W6 | 天守 | **Boss×1(轮换:`nobunaga`/`hideyoshi`/`ieyasu`/`honganji` 之一)** + 精锐杂兵×4 | 天守阁 | 后续 |
+
+> 落点的精确 hex 由 T1 按棋盘布阵区落子;此处给阵型语义(前排近战/后排远程/侧翼刺客)。终盘 Boss **每局从轮换池抽一名** → 重玩性;v1 用 ✅ 的四名之一即可成局,🔴 Boss 等 F-061/062 落地接入(数据已备齐,见 §六)。
+
 ---
 
-> 复诵:守岛方 = 太阁全谱,纯数据;关卡 = 选哪些太阁组波。终盘 Boss 与玩家招牌流派共用 F-061/062 两缺口(做一次两边亮)。v1 先用 ✅复用 的杂兵 + Boss 成局,🔴 的等缺口落地接入。
+> 复诵:守岛方 = 太阁全谱,纯数据;关卡 = 选哪些太阁组波。终盘 Boss 与玩家招牌流派共用 F-061/062 两缺口(做一次两边亮)。v1 先用 ✅复用 的杂兵 + Boss 成局,🔴 的等缺口落地接入。**Prefab 数据 + 九州 W1–W2 关卡表已就绪,主程 T1 直接照填。**
