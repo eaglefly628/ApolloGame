@@ -41,6 +41,7 @@ import { type Faction, ROSTER, rosterFor, codesFor } from './heroes.js';
 import { STAGES, PVE_WAVES, MOB_BASE_HP, gameFEnemyPreview } from './stages.js';
 import { SHOP_DECK, SELL_PRICE } from './economy.js';
 import { slotEntity, templatesFor, GAME_F_TEMPLATES } from './combat.js';
+import { type Deck, buildDeckRules, applyShopBias } from './decks.js';
 // 向后兼容重导出（index.ts / game-f.test.ts 从 './blueprint.js' 取）。
 export { TEAM_A, TEAM_B, SHU_RED, WEI_BLUE, FROZEN } from './constants.js';
 export { rosterFor, type Faction } from './heroes.js';
@@ -237,14 +238,17 @@ const RUN_FLOW = {
 
 // 节奏档（玩家视角修正：备战 ~30s 给操作时间——准则 §1.2；ready 可跳过；结算 4s 可读）。
 // 测试传快速档 {prepTicks:40, resolutionTicks:60} 保持既有时序断言；缺省=玩家档。
-export interface GameFPacing { prepTicks?: number; resolutionTicks?: number; celebrateTicks?: number; playerFaction?: Faction }
+export interface GameFPacing { prepTicks?: number; resolutionTicks?: number; celebrateTicks?: number; playerFaction?: Faction; deck?: Deck }
 export function buildGameFBlueprint(pacing: GameFPacing = {}): WorldBlueprint {
   const PREP_TICKS = pacing.prepTicks ?? 1800; // 30s@60tps
   const RESOLUTION_TICKS = pacing.resolutionTicks ?? 240; // 4s
   const CELEBRATE_TICKS = pacing.celebrateTicks ?? 110; // ~1.8s 战后亮相（横幅+彩点；测试快速档传小值）
   // ── 开局选阵营（REQ-F-061）：按所选阵营生成本局 ROSTER + 派生数据，shadow 模块级默认（玩家=蜀）。──
   // 下面全部局部 const 同名 shadow 模块级，使 500 行 build 体零改动绑定到本局数据；默认蜀=逐字等价旧行为。
-  const ROSTER = rosterFor(pacing.playerFaction ?? 'shu');
+  // 牌组（T2/T5）：deck.faction 决定出生势力（玩家未显式指定时）；deck 规则实体 + 商店偏置局末合并。
+  const deckRules = pacing.deck ? buildDeckRules(pacing.deck) : null;
+  const SHOP_DECK_BIASED = deckRules ? applyShopBias(SHOP_DECK, deckRules.shopBias) : SHOP_DECK;
+  const ROSTER = rosterFor(pacing.playerFaction ?? pacing.deck?.faction ?? 'shu');
   const HERO_CODE = codesFor(ROSTER);
   const GAME_F_TEMPLATES = templatesFor(ROSTER);
   const enemyHeroes = ROSTER.filter((h) => h.team === TEAM_B); // 敌阵营 4 将（STAGES ei 解析用）
@@ -310,7 +314,7 @@ export function buildGameFBlueprint(pacing: GameFPacing = {}): WorldBlueprint {
     shop: {
       // ⚠️ deck 必须取副本：装配是浅拷贝、嵌套数组按引用共享，发牌原地 shift 会跨 Engine/跨测试泄漏（确定性破口，实测踩过）
       // 三大框（用户钦定小丑牌式）：handSize 3；刷新=旧手回袋底（REQ-F-054 卡池守恒，连刷不枯竭）。
-      CardPile: { owner: 'shop', deck: [...SHOP_DECK], hand: [], handSize: 3, playCosts: [{ id: 'gold', amount: 3 }, { id: 'bench_space', amount: 1 }], playedCodeResource: 'bought_code', refreshOnSignal: 'shop_refresh', returnOnSignal: 'card_sold', returnCodeResource: 'sold_code', handCodeResources: ['shop_slot_1', 'shop_slot_2', 'shop_slot_3'], playOnSignals: ['buy_slot_1', 'buy_slot_2', 'buy_slot_3'] },
+      CardPile: { owner: 'shop', deck: [...SHOP_DECK_BIASED], hand: [], handSize: 3, playCosts: [{ id: 'gold', amount: 3 }, { id: 'bench_space', amount: 1 }], playedCodeResource: 'bought_code', refreshOnSignal: 'shop_refresh', returnOnSignal: 'card_sold', returnCodeResource: 'sold_code', handCodeResources: ['shop_slot_1', 'shop_slot_2', 'shop_slot_3'], playOnSignals: ['buy_slot_1', 'buy_slot_2', 'buy_slot_3'] },
       PlayedHand: { owner: 'shop', cards: [] },
       Flag: { id: 'shop', active: false },
     },
@@ -716,6 +720,9 @@ export function buildGameFBlueprint(pacing: GameFPacing = {}): WorldBlueprint {
       };
     }
   }
+
+  // 牌组规则实体合并（T2）：deck → group-count/EventWhen/Effect 规则；与逻辑同源，开战 edge 锁存写 dmg_scale_a。
+  if (deckRules) Object.assign(entities, deckRules.entities);
 
   return {
     capabilities: [
