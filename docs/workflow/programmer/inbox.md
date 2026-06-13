@@ -161,5 +161,3 @@
 - ① 索敌/伤害的"敌方"写成掩码数据，**勿写死两队**；② 操作区/HUD 数据模板按 owner 参数化；③ 上阵合法区=deploy zone 数据；④ lockstep 三纪律照守（整数 SIM/命令输入/表现不进 hash）。
 - UI 布局：**顶部预留队友镜像条高度**（合作模式 A 区，见 UI 简报 §2/§5）。
 
-#### 给 Cloud Designer · 合作 UI 设计 — status: pending
-- 按 `docs/design/game-f-coop-ui-brief.md` 出布局规格/状态机/资产 key/数据实体草稿；红线与交付格式在简报 §3/§5/§6。
