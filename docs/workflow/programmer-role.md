@@ -17,10 +17,17 @@ Lead（主程序员）会通过 inbox 文件给你分配任务：写 skill 或 r
 2. **`src/engine/core/types.ts`** — IWorld 接口、Component、SystemDeclaration
 3. **`src/engine/core/define-capability.ts`** — defineCapability() 模式和 schema 规范
 4. **`src/engine/core/world.ts`** — World 实现（了解 query/tick/consume 行为）
-5. **`src/engine/protocol/components.ts`** — 跨 skill 共享的组件接口
-6. **`docs/workflow/progress.md`** — 当前进度，已完成的原子列表
+5. **`src/engine/protocol/components.ts`** — 跨 skill 共享的组件契约（**barrel**：定义按域分片在 `protocol/components/{spatial,logic,combat,spawn,render,input,autochess,cardboard}.ts`，barrel 顶部有导航索引。**只读你这次要碰的那一两片**，别全量读 8 片）
+6. **`docs/workflow/SESSION-HANDOFF.md`** — 当前机制 + 状态 + TODO 审计的单一真相（旧 `progress.md` 已废弃）
 
 你的原子不是孤岛——它会与其他原子组合涌现出 Tier 1/2/3/4 行为。理解周期表上其他原子的语义，确保你的组件设计不会阻碍未来的组合。
+
+### 读文件纪律（省 token）
+
+大文件已按域 / 关注点拆分，**按需精读**，别开旧单体全量读：
+- 改组件契约 → 读 `protocol/components/<域>.ts`（~80–200 行），别读 barrel 转发的全部。
+- 改某游戏测试 → 读该游戏对应的 `*.<theme>.test.ts`，别全量读整个测试集。
+- 定位优先 grep / 带 offset 的局部读；文件结构已知后只读相关段。
 
 ## 交付规范
 
@@ -93,7 +100,7 @@ src/atom-skills/{atom-name}/{atom-name}.test.ts
 
 ### 3. 共享组件（如需要）
 
-如果你的原子定义的组件需要被其他原子读写，在 `src/engine/protocol/components.ts` 中添加 TypeScript 接口。
+如果你的原子定义的组件需要被其他原子读写，在 `src/engine/protocol/components/` 下**对应域文件**里添加 TypeScript 接口（barrel `components.ts` 以 `export type *` 自动透传，无需改 barrel）。加在对应域 = 多人并行加组件不撞同一文件，少合并冲突。
 
 ## 编码规范
 
@@ -120,8 +127,14 @@ Lead 会通过 inbox 发送 review 任务（任务类型标记为 `review`）。
 交付前逐条确认：
 
 - [ ] `npx tsc --noEmit` 通过
-- [ ] `npx vitest run` 所有测试通过
+- [ ] `npx vitest run` 所有测试通过（**仅推前**跑全套；开发期见下「测试纪律」）
 - [ ] 组件字段与周期表定义完全匹配
 - [ ] defineCapability 的 describe 部分填写完整
-- [ ] 如有共享组件已更新 protocol/components.ts
+- [ ] 如有共享组件已更新 `protocol/components/` 对应域文件
 - [ ] commit message 包含 `[Programmer]`
+
+## 测试纪律（省 token）
+
+- **开发期只跑受影响的文件**：`npx vitest run <path>`（如 `npx vitest run src/games/game-f`），可配 `--reporter=dot` 压缩输出。别每改一处就把全量 1100+ 测试灌进上下文。
+- **推前才跑全套**：`npx tsc --noEmit && npx vitest run && npm run build` 三件全绿才推（CLAUDE.md 铁律）；**rebase 带进新提交后必须重跑全套**——陈旧基线测的绿不算绿。
+- 全量挂了先用单文件复跑定位，别在全量输出里翻行。

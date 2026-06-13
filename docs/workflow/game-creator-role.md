@@ -29,9 +29,9 @@
 
 ## 上手前先读
 
-- `docs/workflow/SESSION-HANDOFF.md`、`docs/workflow/progress.md` —— 引擎现状与能力清单
+- `docs/workflow/SESSION-HANDOFF.md` —— 引擎现状与能力清单（单一真相；旧 progress.md 已废弃）
 - `wiki/atom-skill-periodic-table.md` —— 原子周期表（有哪些积木）
-- `src/engine/protocol/components.ts` —— 所有共享组件（你的游戏数据用它们拼）
+- `src/engine/protocol/components.ts` —— 所有共享组件（你的游戏数据用它们拼）。barrel，定义按域分片在 `protocol/components/`（顶部有导航索引），按需读对应域
 - `src/skills/README.md` + `src/skills/{atoms,tier1,tier2}/index.ts` —— 当前可用能力（四层 taxonomy）
 - **`docs/workflow/asset-flow.md` —— 资产流程（TBF）。⚠️ 从第一个原型起就按它走：声明 id → 蓝图只引用 id → 缺资产也能跑 → 后补真资产。**
 - `assets/README.md` + `assets/index.json` —— raw 资产存储与索引；`src/assets/index.ts` —— 资产系统代码
