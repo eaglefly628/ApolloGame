@@ -139,7 +139,7 @@ const SHELL_CSS = `
 .gfx-chip b{color:var(--gold);}
 .gfx-skin{font:12px var(--font-body);color:var(--ink-dim);background:none;border:1px dashed var(--panel-border);
   border-radius:999px;padding:4px 12px;cursor:pointer;}
-/* —— 分段控件（设计稿顶栏：模式 单人/双人合作 · 皮肤 玄铁/锦霞）—— */
+/* —— 分段控件（设计稿顶栏：皮肤 玄铁/锦霞）—— */
 .gfx-seg{display:flex;align-items:center;gap:7px;}
 .gfx-seg>.lbl{font:10px var(--font-body);letter-spacing:.16em;text-transform:uppercase;color:var(--ink-dim);}
 .gfx-segbox{display:flex;background:var(--seg-track);border:1px solid var(--seg-edge);border-radius:11px;padding:3px;}
@@ -148,17 +148,6 @@ const SHELL_CSS = `
   transition:.15s ease;}
 .gfx-segbtn:not(.on):hover{color:var(--ink);}
 .gfx-segbtn.on{background:var(--accent-grad);color:var(--accent-ink);box-shadow:inset 0 1px 0 rgba(255,255,255,.3);}
-/* —— 双人合作界面预览（局外壳层 DOM；设计稿 coop 变体 1920×1080 scale .6667；真实联机引擎下一步）—— */
-.gfx-coop{width:${VIEWPORT_W}px;height:${VIEWPORT_H}px;overflow:hidden;border-radius:var(--radius-lg);
-  border:1px solid var(--panel-border);box-shadow:0 0 0 1.5px var(--hairline) inset,0 14px 34px rgba(120,70,60,.16);}
-.gfx-coop .stage1080{width:1920px;height:1080px;transform:scale(0.66667);transform-origin:top left;position:relative;
-  overflow:hidden;background:var(--app-bg);color:var(--ink);font-family:var(--font-body);}
-@keyframes gfx-float{0%,100%{transform:translateY(0);}50%{transform:translateY(-6px);}}
-@keyframes gfx-pulse{0%,100%{opacity:.5;}50%{opacity:1;}}
-@keyframes gfx-shimmer{0%{background-position:-120% 0;}100%{background-position:220% 0;}}
-.gfx-coop-badge{position:absolute;top:14px;left:50%;transform:translateX(-50%);z-index:20;
-  display:flex;align-items:center;gap:8px;padding:6px 16px;border-radius:999px;background:var(--accent-soft);
-  border:1px solid var(--accent);color:var(--accent);font:13px var(--font-heading);letter-spacing:1px;}
 .gfx-view{width:${VIEWPORT_W}px;}
 .gfx-board-panel{position:relative;border:1px solid var(--panel-border);border-radius:var(--radius-lg);
   background:var(--panel-grad);box-shadow:0 0 0 1.5px var(--hairline) inset,0 14px 34px rgba(120,70,60,.16);
@@ -174,11 +163,6 @@ const SHELL_CSS = `
 .gfx-hud button{transition:.15s ease;}
 .gfx-hud button:hover{filter:brightness(1.08);}
 .gfx-hud button:active{transform:translateY(1px) scale(.97);}
-.gfx-note{display:flex;gap:10px;align-items:flex-start;margin:10px 0 24px;padding:10px 14px;border-radius:var(--radius);
-  background:var(--panel-grad);border:1px solid var(--panel-border);border-left:3px solid var(--info);
-  color:var(--ink-dim);font:12.5px var(--font-body);}
-.gfx-note .ico{width:22px;height:22px;border-radius:50%;background:var(--info);color:#fff;display:flex;
-  align-items:center;justify-content:center;flex:none;font-size:12px;}
 /* —— 商城 —— */
 .mall{padding-bottom:30px;}
 .mall-tabs{display:flex;gap:6px;margin:4px 0 14px;}
@@ -313,172 +297,6 @@ function buildMall(): HTMLElement {
   render();
   root.appendChild(bar);
   root.appendChild(body);
-  return root;
-}
-
-// —— 双人合作界面预览（README §3 对战.dc.html coop 变体；静态占位数据，壳层 DOM 表现层）——
-// 同视角同 UI（魏上/蜀左下/吴右下，不镜像）+ 同盟共享血 + 联盟羁绊「火烧赤壁」+ 盟友镜像面板 + 双 ready。
-// 真实联机（双 owner 资源/lockstep/网络层）= 下一步，本视图仅呈现布局供试看。
-function buildCoopView(): HTMLElement {
-  const FAC: Record<string, string> = { 蜀: '#d8504e', 吴: '#3fae6e', 魏: '#3a86d4', 群: '#9b6dd8' };
-  const HEX = 'polygon(50% 0,100% 25%,100% 75%,50% 100%,0 75%,0 25%)';
-  type P = { r: number; c: number; fac: string; star: number; hp: number; mp: number };
-  const pieces: P[] = [
-    { r: 1, c: 2, fac: '魏', star: 1, hp: 100, mp: 30 }, { r: 1, c: 4, fac: '魏', star: 2, hp: 100, mp: 60 }, { r: 2, c: 3, fac: '魏', star: 2, hp: 100, mp: 80 },
-    { r: 6, c: 1, fac: '蜀', star: 2, hp: 88, mp: 45 }, { r: 6, c: 3, fac: '蜀', star: 2, hp: 100, mp: 20 }, { r: 5, c: 2, fac: '蜀', star: 1, hp: 72, mp: 60 }, { r: 7, c: 4, fac: '蜀', star: 1, hp: 100, mp: 90 }, { r: 6, c: 5, fac: '吴', star: 1, hp: 100, mp: 30 },
-    { r: 0, c: 7, fac: '魏', star: 1, hp: 100, mp: 20 }, { r: 2, c: 8, fac: '魏', star: 1, hp: 100, mp: 40 },
-    { r: 6, c: 8, fac: '吴', star: 1, hp: 90, mp: 50 }, { r: 7, c: 7, fac: '吴', star: 2, hp: 100, mp: 70 }, { r: 5, c: 9, fac: '吴', star: 1, hp: 80, mp: 30 },
-  ];
-  const place: Record<string, P> = {};
-  pieces.forEach((p) => { place[p.r + '-' + p.c] = p; });
-
-  const piece = (p: P): string => {
-    const col = FAC[p.fac];
-    const stars = Array.from({ length: p.star }, () => `<div style="width:7px;height:7px;transform:rotate(45deg);background:var(--star);box-shadow:0 0 4px var(--star)"></div>`).join('');
-    return `<div style="position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px">
-      <div style="display:flex;gap:2px;height:8px">${stars}</div>
-      <div style="width:50px;height:50px;border-radius:9px;border:2px solid ${col};box-shadow:0 2px 8px rgba(0,0,0,.4);display:flex;align-items:center;justify-content:center;background-image:linear-gradient(160deg,${col}ee,${col}99),repeating-linear-gradient(0deg,rgba(0,0,0,.12) 0 4px,transparent 4px 8px)">
-        <span style="font-family:var(--font-cjk);font-weight:900;font-size:20px;color:#fff;text-shadow:0 1px 3px rgba(0,0,0,.5)">${p.fac}</span></div>
-      <div style="width:54px;height:5px;border-radius:99px;background:rgba(0,0,0,.4);overflow:hidden;margin-top:1px"><div style="width:${p.hp}%;height:100%;background:var(--hp)"></div></div>
-      <div style="width:54px;height:4px;border-radius:99px;background:rgba(0,0,0,.4);overflow:hidden"><div style="width:${p.mp}%;height:100%;background:var(--mp)"></div></div>
-    </div>`;
-  };
-  const cols = 10, cellW = 104, cellH = 92, overlap = -24, offset = (cellW + 4) / 2;
-  let board = '';
-  for (let r = 0; r < 8; r++) {
-    const enemy = r < 4;
-    let cells = '';
-    for (let c = 0; c < cols; c++) {
-      const p = place[r + '-' + c];
-      cells += `<div style="position:relative;width:${cellW}px;height:${cellH}px;margin:0 2px">
-        <div style="position:absolute;inset:0;clip-path:${HEX};background:${enemy ? 'var(--hex-stroke-e)' : 'var(--hex-stroke)'}"></div>
-        <div style="position:absolute;inset:2px;clip-path:${HEX};background:${enemy ? 'var(--hex-fill-e)' : 'var(--hex-fill)'}"></div>
-        ${p ? piece(p) : ''}</div>`;
-    }
-    board += `<div style="display:flex;margin-top:${r === 0 ? 0 : overlap}px;margin-left:${r % 2 === 1 ? offset : 0}px">${cells}</div>`;
-  }
-
-  const synData = [
-    { name: '蜀 · 桃园', fac: '蜀', have: 4, tiers: [2, 4, 6], glyph: '蜀' },
-    { name: '吴 · 江东', fac: '吴', have: 2, tiers: [2, 4], glyph: '吴' },
-    { name: '武将', fac: '', have: 4, tiers: [2, 4, 6], glyph: '武' },
-    { name: '谋士', fac: '', have: 2, tiers: [2, 4], glyph: '谋' },
-    { name: '射手', fac: '', have: 1, tiers: [2, 3], glyph: '射' },
-  ];
-  const synergies = synData.map((s) => {
-    const col = s.fac ? FAC[s.fac] : 'var(--accent)';
-    const active = s.have >= s.tiers[0];
-    const reached = s.tiers.filter((t) => s.have >= t).length;
-    const ticks = s.tiers.map((_, i) => `<div style="flex:1;height:4px;border-radius:99px;background:${i < reached ? col : 'var(--track)'}"></div>`).join('');
-    return `<div style="display:flex;align-items:center;gap:11px;padding:10px 12px;border-radius:var(--radius);border:1px solid ${active ? col : 'var(--panel-border)'};background:${active ? 'var(--chip-bg)' : 'transparent'};opacity:${active ? 1 : 0.5};box-shadow:${active ? 'inset 0 0 0 1px var(--hairline)' : 'none'}">
-      <div style="width:32px;height:32px;flex:none;border-radius:9px;background:${active ? col : 'var(--track)'};display:flex;align-items:center;justify-content:center;font-family:var(--font-cjk);font-weight:900;font-size:16px;color:${active ? '#fff' : 'var(--ink-dim)'}">${s.glyph}</div>
-      <div style="flex:1;min-width:0">
-        <div style="display:flex;justify-content:space-between;align-items:baseline"><span style="font-family:var(--font-heading);font-weight:700;font-size:15px;color:var(--ink)">${s.name}</span><span style="font-family:var(--font-num);font-size:12px;color:${active ? col : 'var(--ink-dim)'}">${s.have}/${s.tiers[s.tiers.length - 1]}</span></div>
-        <div style="display:flex;gap:4px;margin-top:6px">${ticks}</div></div></div>`;
-  }).join('');
-
-  const benchData: ({ fac: string; star: number } | null)[] = [{ fac: '蜀', star: 1 }, null, { fac: '群', star: 2 }, null, null, { fac: '吴', star: 1 }, null, null, null];
-  const bench = benchData.map((b) => {
-    const base = 'width:66px;height:66px;flex:none;border-radius:11px;background:var(--chip-bg);border:1px solid var(--panel-border);box-shadow:inset 0 2px 6px rgba(0,0,0,.22);display:flex;align-items:center;justify-content:center';
-    if (!b) return `<div style="${base}"></div>`;
-    const col = FAC[b.fac];
-    const stars = Array.from({ length: b.star }, () => `<div style="width:5px;height:5px;transform:rotate(45deg);background:var(--star)"></div>`).join('');
-    return `<div style="${base}"><div style="display:flex;flex-direction:column;align-items:center;gap:3px">
-      <div style="width:42px;height:42px;border-radius:8px;background:linear-gradient(160deg,${col}ee,${col}99);border:2px solid ${col};display:flex;align-items:center;justify-content:center"><span style="font-family:var(--font-cjk);font-weight:900;font-size:17px;color:#fff">${b.fac}</span></div>
-      <div style="display:flex;gap:2px">${stars}</div></div></div>`;
-  }).join('');
-
-  const miniFill = [[2, 4], [3], [1, 5], []];
-  const mini = [0, 1, 2, 3].map((r) => `<div style="display:flex;gap:3px">${Array.from({ length: 7 }, (_, c) => {
-    const on = miniFill[r].includes(c);
-    return `<div style="width:14px;height:14px;border-radius:3px;background:${on ? '#3fae6e' : 'var(--track)'};box-shadow:${on ? '0 0 5px rgba(63,174,110,.6)' : 'none'}"></div>`;
-  }).join('')}</div>`).join('');
-
-  const items = ['🗡', '🛡', '👑', '📜', '🏹', '', '', ''].map((g) =>
-    `<div style="aspect-ratio:1;border-radius:9px;background:${g ? 'var(--chip-bg)' : 'transparent'};border:1px ${g ? 'solid' : 'dashed'} var(--panel-border);display:flex;align-items:center;justify-content:center;font-size:18px">${g}</div>`).join('');
-  const pipKinds = ['pvp', 'pvp', 'now', 'carousel', 'pvp', 'pvp', 'pve'];
-  const pipC: Record<string, string> = { pvp: 'var(--ink-dim)', pve: '#9b6dd8', carousel: 'var(--gold)', now: 'var(--accent)' };
-  const pips = pipKinds.map((k) => `<div style="width:${k === 'now' ? 11 : 8}px;height:${k === 'now' ? 11 : 8}px;border-radius:${k === 'pve' ? '2px' : '50%'};background:${pipC[k]};box-shadow:${k === 'now' ? '0 0 10px var(--accent)' : 'none'}"></div>`).join('');
-  const shimmer = 'background:linear-gradient(110deg,transparent 35%,rgba(255,255,255,.22) 50%,transparent 65%);background-size:230% 100%;animation:gfx-shimmer 3.4s ease-in-out infinite';
-
-  const root = el('div', 'gfx-coop');
-  root.innerHTML = `<div class="gfx-coop-badge"><span style="width:8px;height:8px;border-radius:50%;background:var(--accent);animation:gfx-pulse 1.4s ease-in-out infinite"></span>双人合作 · 界面预览（联机引擎接入中）</div>
-  <div class="stage1080">
-    <div style="position:absolute;inset:0;background:var(--texture);pointer-events:none"></div>
-    <!-- TOP HUD -->
-    <div style="position:absolute;top:0;left:0;right:0;height:90px;display:flex;align-items:center;gap:20px;padding:0 30px;background:var(--hud-bg);border-bottom:1px solid var(--panel-border);z-index:8">
-      <div style="display:flex;align-items:center;gap:16px">
-        <div style="display:flex;flex-direction:column;line-height:1"><span style="font-size:10px;letter-spacing:.2em;text-transform:uppercase;color:var(--ink-dim)">STAGE</span><span style="font-family:var(--font-num);font-size:28px;color:var(--ink);margin-top:5px">2-3</span></div>
-        <div style="display:flex;gap:6px;align-items:center">${pips}</div>
-      </div>
-      <div style="flex:1;display:flex;justify-content:center"><div style="padding:8px 24px;border-radius:99px;white-space:nowrap;font-family:var(--font-heading);font-weight:700;font-size:16px;letter-spacing:.06em;background:var(--accent-soft);color:var(--accent);border:1px solid var(--accent)">⚔ 备战阶段 · 布阵中</div></div>
-      <div style="display:flex;flex-direction:column;align-items:center;line-height:1;padding:0 8px"><span style="font-size:10px;letter-spacing:.2em;text-transform:uppercase;color:var(--ink-dim)">备战</span><span style="font-family:var(--font-num);font-size:28px;color:var(--ink);margin-top:5px">0:23</span></div>
-      <div style="display:flex;align-items:center;gap:14px;min-width:300px;justify-content:flex-end">
-        <div style="display:flex;align-items:center;gap:10px"><span style="font-size:11px;color:var(--ink-dim);letter-spacing:.1em">同盟血</span>
-          <div style="width:150px;height:14px;border-radius:99px;background:var(--track);overflow:hidden;border:1px solid var(--panel-border)"><div style="width:62%;height:100%;background:linear-gradient(90deg,#d8504e,#3fae6e);box-shadow:0 0 10px rgba(216,80,78,.5)"></div></div>
-          <span style="font-family:var(--font-num);font-size:15px;color:var(--ink)">62</span></div>
-        <div style="width:52px;height:52px;border-radius:50%;background:var(--protag-bg);border:2px solid var(--accent);box-shadow:0 0 14px var(--accent-soft);display:flex;align-items:center;justify-content:center;font-size:26px">🐢</div>
-        <div style="display:flex;align-items:center;gap:6px;padding:7px 13px;border-radius:11px;background:var(--chip-bg);border:1px solid var(--panel-border)"><span style="font-family:var(--font-heading);font-weight:700;font-size:13px;color:var(--accent)">3连胜</span></div>
-      </div>
-    </div>
-    <!-- LEFT RAIL -->
-    <div style="position:absolute;top:106px;left:18px;width:264px;bottom:164px;display:flex;flex-direction:column;gap:8px">
-      <div style="font-size:10px;letter-spacing:.22em;text-transform:uppercase;color:var(--ink-dim);padding:2px 8px 4px">羁绊 · Synergies</div>
-      ${synergies}
-      <div style="position:relative;overflow:hidden;margin-top:4px;padding:12px 13px;border-radius:var(--radius);background:var(--accent-soft);border:1px solid var(--accent);box-shadow:inset 0 0 0 1px var(--hairline)">
-        <div style="position:absolute;inset:0;border-radius:inherit;${shimmer};pointer-events:none"></div>
-        <div style="display:flex;align-items:center;gap:10px;position:relative">
-          <div style="width:38px;height:38px;border-radius:10px;background:linear-gradient(135deg,#ff7a45,#d8504e);display:flex;align-items:center;justify-content:center;font-size:20px">🔥</div>
-          <div style="flex:1"><div style="font-family:var(--font-heading);font-weight:700;font-size:15px;color:var(--ink)">联盟 · 火烧赤壁</div><div style="font-size:11px;color:var(--ink-dim);margin-top:1px">双方蜀吴各满 4 激活</div></div>
-          <span style="font-family:var(--font-num);font-size:13px;color:var(--accent)">6/8</span></div></div>
-    </div>
-    <!-- CENTER -->
-    <div style="position:absolute;top:100px;left:298px;right:298px;bottom:164px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:14px">
-      <div style="display:flex;align-items:center;gap:9px;margin-bottom:14px"><span style="width:8px;height:8px;border-radius:2px;background:#3a86d4;box-shadow:0 0 8px #3a86d4"></span><span style="font-family:var(--font-heading);font-weight:600;font-size:14px;color:var(--ink-dim);letter-spacing:.04em">魏 · 董卓先锋 — Lv 6 · 38血</span></div>
-      <div style="position:relative;padding:26px 30px;border-radius:24px;background:var(--battlefield);background-size:cover;border:1px solid var(--platform-edge);box-shadow:inset 0 0 0 1px var(--hairline),inset 0 0 60px rgba(0,0,0,.3),0 18px 40px rgba(0,0,0,.3)">
-        <div style="position:absolute;inset:0;border-radius:inherit;background:var(--platform-glow);pointer-events:none"></div>
-        <div style="position:relative">${board}
-          <div style="position:absolute;left:130px;top:430px;width:20px;height:20px;border-radius:50%;background:var(--gold);box-shadow:0 0 13px var(--gold);animation:gfx-float 2.4s ease-in-out infinite"></div></div>
-      </div>
-      <div style="display:flex;align-items:center;gap:9px;padding:9px 14px;border-radius:16px;background:var(--dock-bg);border:1px solid var(--panel-border);box-shadow:inset 0 0 0 1px var(--hairline)">
-        <span style="font-family:var(--font-heading);font-weight:700;font-size:11px;letter-spacing:.14em;text-transform:uppercase;color:var(--ink-dim);writing-mode:vertical-rl;transform:rotate(180deg)">备战席</span>${bench}</div>
-    </div>
-    <!-- RIGHT RAIL · teammate mirror -->
-    <div style="position:absolute;top:106px;right:18px;width:264px;bottom:164px;display:flex;flex-direction:column;gap:13px">
-      <div style="background:var(--panel-grad);border:1px solid #3fae6e;border-radius:var(--radius);box-shadow:inset 0 0 0 1px rgba(63,174,110,.25),0 4px 12px rgba(0,0,0,.15);padding:15px">
-        <div style="display:flex;align-items:center;gap:11px;margin-bottom:13px">
-          <div style="width:42px;height:42px;border-radius:50%;background:radial-gradient(circle at 35% 30%,#7fe0a8,#3fae6e);border:2px solid #3fae6e;display:flex;align-items:center;justify-content:center;font-size:21px">🐱</div>
-          <div style="flex:1"><div style="display:flex;align-items:center;gap:6px"><span style="font-family:var(--font-heading);font-weight:700;font-size:15px;color:var(--ink)">盟友 · 仲谋</span><span style="font-size:10px;padding:1px 7px;border-radius:99px;background:rgba(63,174,110,.16);color:#3fae6e;font-weight:700">吴</span></div>
-            <div style="display:flex;align-items:center;gap:6px;margin-top:4px"><div style="width:96px;height:8px;border-radius:99px;background:var(--track);overflow:hidden"><div style="width:81%;height:100%;background:#3fae6e;border-radius:99px"></div></div><span style="font-family:var(--font-num);font-size:11px;color:#3fae6e">81</span></div></div></div>
-        <div style="border-radius:10px;background:var(--chip-bg);border:1px solid var(--panel-border);padding:10px;display:flex;flex-direction:column;gap:3px;align-items:center">
-          <div style="font-size:10px;letter-spacing:.16em;text-transform:uppercase;color:var(--ink-dim);align-self:flex-start;margin-bottom:4px">盟友战场</div>${mini}</div>
-        <div style="display:flex;justify-content:space-between;margin-top:11px;padding:8px 12px;border-radius:10px;background:var(--chip-bg);border:1px solid var(--panel-border)"><span style="font-size:12px;color:var(--ink-dim)">盟友状态</span><span style="display:flex;align-items:center;gap:5px;font-family:var(--font-heading);font-weight:700;font-size:13px;color:#3fae6e"><span style="width:8px;height:8px;border-radius:50%;background:#3fae6e;animation:gfx-pulse 1s ease-in-out infinite"></span>已就绪</span></div>
-      </div>
-      <div style="background:var(--panel-grad);border:1px solid var(--panel-border);border-radius:var(--radius);box-shadow:inset 0 0 0 1px var(--hairline),0 4px 12px rgba(0,0,0,.15);padding:15px">
-        <div style="font-size:10px;letter-spacing:.2em;text-transform:uppercase;color:var(--ink-dim);margin-bottom:11px">共享装备库</div>
-        <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:9px">${items}</div></div>
-    </div>
-    <!-- BOTTOM BAR -->
-    <div style="position:absolute;left:0;right:0;bottom:0;height:152px;background:var(--dock-bg);border-top:1px solid var(--panel-border);padding:18px 30px;z-index:7;display:flex;align-items:stretch;gap:16px">
-      <div style="display:flex;align-items:center;gap:10px">
-        <div style="display:flex;align-items:center;gap:9px;padding:0 16px;height:100%;border-radius:14px;background:var(--gold-chip);border:1px solid var(--gold)"><span style="font-size:22px">🪙</span><span style="font-family:var(--font-num);font-size:28px;color:var(--gold)">52</span></div>
-        <div style="display:flex;flex-direction:column;justify-content:center;gap:7px;padding:0 16px;height:100%;border-radius:14px;background:var(--chip-bg);border:1px solid var(--panel-border);min-width:128px">
-          <div style="display:flex;justify-content:space-between;align-items:baseline"><span style="font-family:var(--font-heading);font-weight:700;font-size:15px;color:var(--ink)">等级 6</span><span style="font-family:var(--font-num);font-size:11px;color:var(--ink-dim)">20/36</span></div>
-          <div style="height:8px;border-radius:99px;background:var(--track);overflow:hidden"><div style="width:56%;height:100%;background:var(--xp);border-radius:99px"></div></div></div>
-        <div style="display:flex;flex-direction:column;align-items:center;justify-content:center;padding:0 18px;height:100%;border-radius:14px;background:var(--btn-bg);border:1px solid var(--btn-edge);color:var(--btn-text);font-family:var(--font-cjk);font-weight:700;font-size:14px;line-height:1.35;box-shadow:inset 0 1px 0 var(--hairline);text-align:center">买经验<br><span style="font-family:var(--font-num);font-size:11px;color:var(--gold)">4金</span></div>
-      </div>
-      <div style="position:relative;overflow:hidden;flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;border-radius:16px;border:1px solid var(--accent);background:var(--accent-soft);color:var(--ink);box-shadow:inset 0 0 0 1px var(--hairline)">
-        <span style="position:absolute;inset:0;border-radius:inherit;background:linear-gradient(110deg,transparent 38%,rgba(255,255,255,.18) 50%,transparent 62%);background-size:230% 100%;animation:gfx-shimmer 3.6s ease-in-out infinite;pointer-events:none"></span>
-        <div style="position:relative;display:flex;align-items:center;gap:12px"><span style="font-size:28px">🏯</span><div style="display:flex;flex-direction:column;align-items:flex-start;line-height:1.2"><span style="font-family:var(--font-heading);font-weight:700;font-size:22px;color:var(--accent);letter-spacing:.04em">点将台 · 招募</span><span style="font-size:12px;color:var(--ink-dim)">5 名待募 · 点击开启</span></div></div>
-      </div>
-      <div style="width:200px;flex:none;display:flex;flex-direction:column;gap:8px">
-        <div style="display:flex;gap:6px;align-items:center;justify-content:center;padding:6px;border-radius:10px;background:var(--chip-bg);border:1px solid var(--panel-border)"><span style="font-size:11px;color:var(--ink-dim)">盟友</span><span style="display:flex;align-items:center;gap:5px;font-family:var(--font-heading);font-weight:700;font-size:12px;color:#3fae6e"><span style="width:7px;height:7px;border-radius:50%;background:#3fae6e"></span>已就绪</span></div>
-        <div style="position:relative;overflow:hidden;width:100%;flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;border-radius:16px;background:var(--ready-bg);color:var(--ready-text);box-shadow:var(--ready-shadow)">
-          <span style="position:absolute;inset:0;border-radius:inherit;background:linear-gradient(110deg,transparent 36%,rgba(255,255,255,.4) 50%,transparent 64%);background-size:230% 100%;animation:gfx-shimmer 3s ease-in-out infinite;pointer-events:none"></span>
-          <span style="position:relative;font-family:var(--font-heading);font-weight:700;font-size:26px;letter-spacing:.1em">准备</span><span style="position:relative;font-size:11px;letter-spacing:.22em;opacity:.85;margin-top:2px">YOU · SPACE</span></div>
-      </div>
-    </div>
-  </div>`;
   return root;
 }
 
@@ -777,16 +595,6 @@ export function mount(container: HTMLElement): () => void {
   tabBar.appendChild(tabMall);
   top.appendChild(tabBar);
   const cur = el('div', 'gfx-cur', `<span class="gfx-chip">💎 <b>1280</b> ＋</span><span class="gfx-chip">🪙 <b>3600</b> ＋</span>`);
-  // 模式分段控件（设计稿顶栏）：单人=对局 canvas；双人合作=界面预览（联机引擎下一步）。
-  const modeSeg = el('div', 'gfx-seg');
-  modeSeg.appendChild(el('span', 'lbl', '模式'));
-  const modeBox = el('div', 'gfx-segbox');
-  const segSolo = el('button', 'gfx-segbtn on', '单人') as HTMLButtonElement;
-  const segCoop = el('button', 'gfx-segbtn', '双人合作') as HTMLButtonElement;
-  modeBox.appendChild(segSolo);
-  modeBox.appendChild(segCoop);
-  modeSeg.appendChild(modeBox);
-  cur.appendChild(modeSeg);
   // 皮肤分段控件（玄铁/锦霞；默认锦霞=aurora）。
   const skinSeg = el('div', 'gfx-seg');
   skinSeg.appendChild(el('span', 'lbl', '皮肤'));
@@ -810,44 +618,31 @@ export function mount(container: HTMLElement): () => void {
   const queued = new QueuedInputSource('p1');
   const clickW = (x: number, y: number): void => queued.enqueue({ source: 'p1', x, y, phase: 'down' });
   const playShop = (i: number): void => queued.enqueue({ source: 'shop', key: 'play', values: [i] });
-  // 单人 DOM 设计 chrome 覆盖层（顶/左/右/底 + 点将台/三选一弹窗；接真实世界状态 + 命令）。
+  // 对局 DOM 设计 chrome 覆盖层（顶/左/右/底 + 点将台/三选一弹窗；接真实世界状态 + 命令）。
+  // 大重构方向（魏蜀吴 3 人一队、太阁立志传背景）：单人/双人之分取消——多人对局缺人由 AI 补位，菜单不再分模式。
   const hud = buildSoloHud(clickW, playShop);
   boardPanel.appendChild(hud.root);
   gameView.appendChild(boardPanel); // 操作引导已移入顶栏状态栏（data-ref guide），不再单列底注。
-
-  // 双人合作界面预览（局外壳层 DOM；设计稿 coop 变体）。
-  const coopView = el('div', 'gfx-view');
-  coopView.appendChild(buildCoopView());
-  coopView.appendChild(el('div', 'gfx-note', `<span class="ico">i</span><span>双人合作「孙刘抗曹」：2 真人(蜀+吴)联军 vs AI 魏 —— 同视角同 UI、同盟共享血、联盟羁绊「火烧赤壁」、双 ready、限额赠予。本屏为界面预览，联机引擎（双 owner 资源 / lockstep / 网络层）为下一步。</span>`));
-  coopView.style.display = 'none';
 
   // 商城视图（README §4）。
   const mallView = buildMall();
   mallView.style.display = 'none';
 
   root.appendChild(gameView);
-  root.appendChild(coopView);
   root.appendChild(mallView);
   container.appendChild(root);
 
-  // 视图状态：页签（对局/商城）× 模式（单人/双人合作）。单人对局走 canvas，双人=DOM 预览。
+  // 视图状态：页签（对局/商城）。
   let tab: 'game' | 'mall' = 'game';
-  let mode: 'solo' | 'coop' = 'solo';
   const applyView = (): void => {
     const showMall = tab === 'mall';
-    gameView.style.display = !showMall && mode === 'solo' ? '' : 'none';
-    coopView.style.display = !showMall && mode === 'coop' ? '' : 'none';
+    gameView.style.display = showMall ? 'none' : '';
     mallView.style.display = showMall ? '' : 'none';
     tabGame.classList.toggle('on', tab === 'game');
     tabMall.classList.toggle('on', tab === 'mall');
-    segSolo.classList.toggle('on', mode === 'solo');
-    segCoop.classList.toggle('on', mode === 'coop');
-    modeSeg.style.display = showMall ? 'none' : ''; // 模式控件仅对局相关。
   };
   tabGame.onclick = () => { tab = 'game'; applyView(); };
   tabMall.onclick = () => { tab = 'mall'; applyView(); };
-  segSolo.onclick = () => { mode = 'solo'; applyView(); };
-  segCoop.onclick = () => { mode = 'coop'; applyView(); };
   const applySkin = (onyx: boolean): void => {
     root.classList.toggle('onyx', onyx);
     root.classList.toggle('aurora', !onyx);
