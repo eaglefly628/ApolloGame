@@ -46,6 +46,46 @@ describe('hitbox — 元数据 / 定序', () => {
   });
 });
 
+describe('hitbox — 血量比例门 / 处决（REQ-F-061）', () => {
+  const setHp = (w: World, e: string, cur: number): void => { w.getComponent<Resource>(e, 'Resource')!.current = cur; };
+
+  it('requireHpFracBelow：仅残血(<30%)目标受击，满血跳过', () => {
+    const w = combatWorld();
+    zone(w, 'finish', { resource: 'hp', amount: 20, targetMask: ENEMY, requireHpFracBelow: 0.3 });
+    mob(w, 'low'); setHp(w, 'low', 20); // 20% → 受击
+    mob(w, 'high'); // 100% → 跳过
+    trigger(w, 'finish', 'low');
+    trigger(w, 'finish', 'high');
+    w.tick();
+    expect(hp(w, 'low')).toBe(0); // 20-20
+    expect(hp(w, 'high')).toBe(100); // 满血不受残血门
+  });
+
+  it('requireHpFracAbove：仅满血(>=80%)目标受击（开胃技），残血跳过', () => {
+    const w = combatWorld();
+    zone(w, 'opener', { resource: 'hp', amount: 10, targetMask: ENEMY, requireHpFracAbove: 0.8 });
+    mob(w, 'full'); // 100% → 受击
+    mob(w, 'hurt'); setHp(w, 'hurt', 50); // 50% → 跳过
+    trigger(w, 'opener', 'full');
+    trigger(w, 'opener', 'hurt');
+    w.tick();
+    expect(hp(w, 'full')).toBe(90);
+    expect(hp(w, 'hurt')).toBe(50);
+  });
+
+  it('executeBelow：命中低于阈值(<15%)直接清 0（斩杀）；高于阈值走常规伤害', () => {
+    const w = combatWorld();
+    zone(w, 'execute', { resource: 'hp', amount: 5, targetMask: ENEMY, executeBelow: 0.15 });
+    mob(w, 'doomed'); setHp(w, 'doomed', 10); // 10% → 处决
+    mob(w, 'safe'); setHp(w, 'safe', 50); // 50% → 常规 -5
+    trigger(w, 'execute', 'doomed');
+    trigger(w, 'execute', 'safe');
+    w.tick();
+    expect(hp(w, 'doomed')).toBe(0); // 处决清 0
+    expect(hp(w, 'safe')).toBe(45); // 50-5（未处决）
+  });
+});
+
 describe('hitbox — 命中结算（接触→伤害 / 逐目标 / 状态）', () => {
   it('命中敌人：扣固定血 + 置 frozen（局部寻址，改目标自己的 hp）', () => {
     const w = combatWorld();

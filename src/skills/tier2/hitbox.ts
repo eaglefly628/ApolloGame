@@ -65,6 +65,9 @@ export const hitboxCapability = defineCapability({
           fracOfMax: { type: 'number', describe: '计算伤害 = 目标该资源 max 的此分数（0.2 = 20%）' },
           targetMask: { type: 'number', describe: '仅作用于 Tag.flags 含此位的目标（阵营过滤；0 = 不限）' },
           requireMask: { type: 'number', describe: '仅作用于 Status.flags 含齐此位的目标（如 frozen）' },
+          requireHpFracBelow: { type: 'number', describe: '仅作用于 hp 比例 < 此值的目标（残血技；REQ-F-061）' },
+          requireHpFracAbove: { type: 'number', describe: '仅作用于 hp 比例 >= 此值的目标（满血/精英技）' },
+          executeBelow: { type: 'number', describe: '命中且 hp 比例 < 此值 → 处决清 0（斩杀；与 amount 同存）' },
           setMask: { type: 'number', describe: '命中后给目标 Status 置这些位' },
           clearMask: { type: 'number', describe: '命中后清目标 Status 这些位' },
           statusDuration: { type: 'number', describe: '>0：命中置 setMask 后过 N tick 自动清除（挂 OverTime，定时冻结/眩晕）' },
@@ -110,6 +113,19 @@ export const hitboxCapability = defineCapability({
           if (hb.requireMask) {
             const st = world.getComponent<Status>(target, 'Status');
             if (!st || (st.flags & hb.requireMask) !== hb.requireMask) continue;
+          }
+          // ②.5 血量比例门 / 处决（REQ-F-061）：只读目标当前 hp 比例(current/max)做 gate（残血/满血条件技）；
+          //      处决=命中即清 0（与 amount 同存 → 低于阈值斩杀、否则走常规伤害）。乘法比较避免除法（同 fracOfMax 风格，确定）。
+          if (hb.requireHpFracBelow !== undefined || hb.requireHpFracAbove !== undefined || hb.executeBelow !== undefined) {
+            const tr = world.getComponent<Resource>(target, 'Resource');
+            const hasHp = !!tr && tr.id === hb.resource && tr.max > 0;
+            if (hb.requireHpFracBelow !== undefined && (!hasHp || tr!.current >= tr!.max * hb.requireHpFracBelow)) continue;
+            if (hb.requireHpFracAbove !== undefined && (!hasHp || tr!.current < tr!.max * hb.requireHpFracAbove)) continue;
+            if (hb.executeBelow !== undefined && hasHp && tr!.current > 0 && tr!.current < tr!.max * hb.executeBelow) {
+              queueResourceMod(world, target, hb.resource, -tr!.current, 'local'); // 清 0 = 处决
+              settled.add(trig.zone);
+              continue; // 处决即终结，跳过常规伤害/状态，避免双结算
+            }
           }
           // ③ 伤害（固定 + 计算），局部寻址到目标自身。queueResourceMod 累加 → 同帧多段命中不丢伤害（R14 真修 A）。
           // REQ-F-047 活系数乘区：amount × 全局系数资源（缺省 ×1）；fracOfMax 不乘（保"按目标 max"语义）。
