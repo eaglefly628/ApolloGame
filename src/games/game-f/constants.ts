@@ -1,0 +1,53 @@
+// Game F · 常量与底层助手（从 blueprint.ts 拆出；位/色/节奏/字体/几何助手）。
+// 叶子模块：只依赖 EntityBlueprint 类型，被 heroes/combat/flow/blueprint 复用。
+import type { EntityBlueprint } from '../../assembly/demo.assembly.js';
+
+// 阵营（Tag.flags）。蜀=TEAM_A，魏=TEAM_B。ZONE_FLAG(=1<<0) 由 trigger-zone 约定，留给打击区。
+export const TEAM_A = 1 << 1; // 蜀
+export const TEAM_B = 1 << 2; // 魏
+// 势力色（Color.tint；drawImage 不吃 tint，由头顶名字 Text 承担分色）。
+export const SHU_RED = 0xd8504e; // 蜀红
+export const WEI_BLUE = 0x3a86d4; // 魏蓝
+export const WU_GREEN = 0x3fae6e; // 吴绿
+// 职业位（Tag.flags，特色/羁绊基础；与队伍位独立）。
+export const WARRIOR = 1 << 6; // 武将
+export const TACTICIAN = 1 << 7; // 谋士
+export const ASSASSIN = 1 << 8; // 刺客
+// 势力位（羁绊基础；与队伍/职业位独立）。
+export const FACT_SHU = 1 << 3; // 蜀
+export const FACT_WEI = 1 << 4; // 魏
+export const FACT_WU = 1 << 5; // 吴
+// CC 状态位（写在 Status.flags）。
+export const FROZEN = 1 << 10; // 冰冻定身（REQ-F-030）
+export const PROTAG = 1 << 11; // 主角（小小英雄）
+export const LOOT = 1 << 12; // 法球/掉落
+export const BAG = 1 << 19; // 主公行囊（收集装备 orb）
+export const EQUIP = 1 << 20; // 装备 orb（战中敌死掉落）
+export const SHOPSLOT_BITS = [1 << 13, 1 << 14, 1 << 15]; // 三大框
+export const RUNE = 1 << 18; // 开局符文卡
+export const SHOPSLOT_ALL = SHOPSLOT_BITS.reduce((a, b) => a | b, 0);
+export const BENCH_OCC = 1 << 25; // 席位 marker 位（不含 TEAM → 不参战）
+export const MARKER_VIS = 1 << 19; // marker 显隐位（战斗期隐藏）
+export const PROJ = 1 << 26; // 在飞弹道（庆祝拍清扫）
+export const RESULT = 1 << 27; // 战果面板行
+
+// 战斗节奏（数据）。
+export const MOVE_PERIOD = 48; // 每 48 tick 走一格 ≈ 0.8s
+export const ATK_CD = 45; // 普攻间隔 45 tick ≈ 0.75s
+export const MANA_REGEN = { period: 9, amount: 4 }; // 时基回蓝
+export const HP_SCALE = 18; // 全局血量倍率（调战斗时长）
+
+// 字体槽（design_handoff §Typography；字体文件由 game-f.tsx 加载，canvas 仅引用族名）。
+export const FONT_DISPLAY = "'Ma Shan Zheng','Noto Serif SC',serif"; // 大标题/横幅
+export const FONT_BODY = "'Noto Serif SC',serif"; // 正文/名牌
+export const FONT_NUM = "'Silkscreen','Noto Serif SC',monospace"; // 数字（像素风）
+
+export const xf = (x: number, y: number): Record<string, unknown> => ({ x, y, rotation: 0, scaleX: 1, scaleY: 1 });
+export const sprite = (textureKey: string, zOrder: number): Record<string, unknown> => ({ textureKey, anchorX: 0.5, anchorY: 0.5, zOrder });
+// Shape 抬层 hack：永不注册的贴图 key → spriteReady 恒 false → 退化画 Shape，但 zOrder 取自 Sprite。
+export const zlift = (zOrder: number): Record<string, unknown> => ({ textureKey: '__zlift__', anchorX: 0.5, anchorY: 0.5, zOrder });
+// 棋盘内组件底盘（kit button/panel 的 canvas 形）：描边层(外扩)+底盘层 双 Shape。
+export const chrome = (id: string, x: number, y: number, w: number, h: number, fill: number, edge: number, z = 28.5, tag = 0): Record<string, EntityBlueprint> => ({
+  [`${id}_edge`]: { Transform: xf(x, y), Shape: { kind: 'box', width: w + 4, height: h + 4 }, Color: { tint: edge, alpha: 1 }, ...(tag ? { Tag: { flags: tag } } : {}), Sprite: zlift(z) } as unknown as EntityBlueprint,
+  [`${id}_bg`]: { Transform: xf(x, y), Shape: { kind: 'box', width: w, height: h }, Color: { tint: fill, alpha: 1 }, ...(tag ? { Tag: { flags: tag } } : {}), Sprite: zlift(z + 0.1) } as unknown as EntityBlueprint,
+});
