@@ -526,7 +526,7 @@ function GameRunner({ gameId, onBack }: { gameId: string; onBack: () => void }) 
       'game-c': () => import('./game-c.js'),
       'game-e': () => import('./game-e.js'),
       'game-d': () => import('./game-d.js'),
-      'game-f': () => import('./game-f.js'),
+      'game-f': () => import('./games/game-f/game-f.js'),
     };
     const loader = loaders[gameId];
     if (!loader) return;
