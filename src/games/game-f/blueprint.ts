@@ -222,6 +222,7 @@ const RUN_FLOW = {
       onEnter: [{ kind: 'set-flag', targetId: 'round_done', value: false }],
       transitions: [
         { when: { kind: 'flag', id: 'run_over', equals: true }, to: 'defeat' },
+        { when: { kind: 'flag', id: 'island_taken', equals: true }, to: 'victory' }, // T4 攻岛进度满=岛陷落（与打穿关卡表并行的通关条件）
         { when: { kind: 'and', of: [{ kind: 'flag', id: 'round_done', equals: true }, { kind: 'resource', id: 'stage_idx', cmp: 'gt', value: STAGE_COUNT }] }, to: 'victory' },
         { when: { kind: 'flag', id: 'round_done', equals: true }, to: 'advance' },
       ],
@@ -634,6 +635,20 @@ export function buildGameFBlueprint(pacing: GameFPacing = {}): WorldBlueprint {
     // —— §4.2 玩家伤害（败方）：阶段基础伤(1/2 阶段=0/2) + 存活敌数近似 2（REQ-022 group-count 接入后换真值，队列 P1 注记）——
     ...band('dmg_stage_1', and(flagIs('dmg_armed'), resCmp('stage_idx', 'eq', 1)), 'player_hp', -2),
     ...band('dmg_stage_2', and(flagIs('dmg_armed'), resCmp('stage_idx', 'gt', 1)), 'player_hp', -4),
+    // —— T3 贡献度（单机 scaffold，game-f-core-combat-dev §二）：对太阁打赢的波次累加贡献（胜多败少）。──
+    // 单机=自己的分；多人=岛主排名口径（后置）。真·补刀归属(kill-attribution)是贡献系统特性，非 v1 战斗算子。
+    // 挂结算窗（income_armed 每结算拍真）：胜（won）多记、败（!won，仍造成伤害）少记。stage 越深贡献越高。
+    r_contribution: { Resource: { id: 'contribution', current: 0, min: 0, max: 99999 } },
+    ...band('contrib_win_1', and(flagIs('income_armed'), flagIs('won'), resCmp('stage_idx', 'eq', 1)), 'contribution', 5),
+    ...band('contrib_win_2', and(flagIs('income_armed'), flagIs('won'), resCmp('stage_idx', 'gt', 1)), 'contribution', 9),
+    ...band('contrib_loss', and(flagIs('income_armed'), { kind: 'not', of: flagIs('won') }), 'contribution', 2),
+    // —— T4 岛屿进度条（game-f-core-combat-dev §二）：每打赢一波推进攻岛进度；满 100 = 岛陷落 → 通关。──
+    // 单机攻岛进度资源，胜利波累加（败北不推进，但靠 player_hp 兜底败局）；满即 island_taken → run_flow 转 victory。
+    r_island: { Resource: { id: 'island_progress', current: 0, min: 0, max: 100 } },
+    f_island_taken: { Flag: { id: 'island_taken', active: false } },
+    ...band('island_tick', and(flagIs('income_armed'), flagIs('won')), 'island_progress', 20),
+    when_island_taken: { EventWhen: { signal: 'island_taken_sig', when: resCmp('island_progress', 'gte', 100), mode: 'edge', armed: false } },
+    eff_island_taken: { Effect: { onSignal: 'island_taken_sig', kind: 'set-flag', targetId: 'island_taken', value: true } },
     // 静态相机（表现，排除出 hash）。720p 画布 + zoom 把棋盘放大填满视口。
     camera: { Transform: xf(0, 0), Camera: { zoom: 1.8, offsetX: 0, offsetY: 0, rotation: 0, viewportW: 1280, viewportH: 720 } },
   };

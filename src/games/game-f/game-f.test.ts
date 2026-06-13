@@ -707,6 +707,32 @@ describe('Game F — 自走棋（纯数据装配，零自走棋代码；棋子=�
     expect(mains(e).filter((id) => id.startsWith('hero_b_'))).toHaveLength(4); // 关卡表换敌阵：「董卓先锋」4 子全强度
   });
 
+  it('T3/T4 贡献度 + 攻岛进度（单机 scaffold，纯数据 banded）：每波结算累加贡献；攻岛满 100=岛陷落→通关', () => {
+    const e = new Engine({ tickRate: 60 });
+    e.load(buildGameFBlueprint(FAST));
+    const res = (id: string): number => {
+      for (const x of e.world.getAllEntities()) {
+        const r = e.world.getComponent<Resource>(x, 'Resource');
+        if (r && r.id === id) return r.current;
+      }
+      return -1;
+    };
+    expect(res('contribution')).toBe(0); // 开局零贡献
+    expect(res('island_progress')).toBe(0); // 攻岛进度从 0 起
+    // 打完回合 1：结算窗（income_armed）按胜负累加贡献（胜=5/败=2，阶段1）。
+    for (let i = 0; i < 5; i++) e.world.tick();
+    let guard = 0;
+    while (res('round_idx') === 1 && guard++ < 4000) e.world.tick();
+    expect(res('contribution')).toBeGreaterThan(0); // 一波结算 → 贡献累加（与战斗胜负无关都累）
+    if (flag(e, 'won')) expect(res('island_progress')).toBe(20); // 仅胜利波推进攻岛 +20
+    // 攻岛进度满 100 → island_taken → run_flow round 态并行转移 victory → run_won（岛陷落通关）。
+    e.world.addComponent('r_island', { type: 'ResourceModify', resourceId: 'island_progress', amount: 100, scope: 'local' });
+    let g2 = 0;
+    while (!flag(e, 'run_won') && g2++ < 4000) e.world.tick();
+    expect(flag(e, 'island_taken')).toBe(true); // 岛陷落旗立
+    expect(flag(e, 'run_won')).toBe(true); // 通关（与打穿关卡表并行的胜利条件）
+  });
+
   it('升星合成（F-17/REQ-F-046+049 全链）：3 同将 marker 自动合二星（席位回账）；拖上板 → 开战按 ×1.8 血/×1.5 弹成型；星级卖价', () => {
     const e = new Engine({ tickRate: 60 });
     e.load(buildGameFBlueprint(FAST));
