@@ -21,8 +21,10 @@ export function useEngine(blueprint: WorldBlueprint): Engine {
 }
 
 export function useWorldVersion(engine: Engine): number {
+  const snapshot = (): number => engine.world.getVersion();
   return useSyncExternalStore(
     (onStoreChange) => engine.subscribe(onStoreChange),
-    () => engine.world.getVersion(),
+    snapshot,
+    snapshot, // getServerSnapshot：SSR / renderToString 安全（服务端=客户端同快照）
   );
 }
