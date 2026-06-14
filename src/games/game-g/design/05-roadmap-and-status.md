@@ -10,6 +10,9 @@
 |---|---|---|
 | **MVP-0 ✅** | 3D 翻牌骨架（`ThreeRenderer`+`Card3D`+`buildGameG3DFlip`）+ 胜负规则 `decideFaceUp` + `buildGameGDuel3D`；headless 测（翻到既定面 / 规则确定性）| ThreeRenderer（render 后端）+ Card3D（render 组件）；**0 capability** |
 | **MVP-1 ✅** | 一局收口（`buildGameGMatch`）：两队牌掷命 + `group-count` 数存活 + `Timer` 门（翻牌演完）+ `event-when`(vsResource 比存活, edge) 判胜负 → `set-state` winner + 结算掉材 `mats` | **0**（gameF 重组；Timer-gated banded 代 flow 机，单局更轻）|
+| **G2 · 战场结构 ⭐（owner 愿景核心，下一步）** | `06`：54/方·三路×18·军衔=点数 + 开局布阵 + 将领牵动全队（`hierarchy-cascade`）+ 三路胜负（best-of-3）| 0 期望（重组；将领"集合写"优先重组，真缺口才 REQ-G）|
+| **G3 · vs AI 对抗** | AI 对手 = 数据配置军队 + 布阵 + 功能牌出牌策略；竞争性闭环 | 0（AI=数据）|
+| **G4 · 培养 + 功能牌** | `07`：牌面融合（小丑/星球）+ 功能牌目录（进攻/埋伏/特殊出现）+ 局外构筑 | 0（复用 Game E joker；D0 先核）|
 | **Phase-2** | 局外：集材 / 改造（craft：升 favor / 换皮）/ NPC 商城 / 经济（见 `02`）| 0 |
 | **Phase-3** | 干预系统（祝福/诅咒/重翻/护盾 = 改 favor 输入的数据目录，见 `01` §三）+ 牌组构建 / 羁绊 | 0 |
 | **Phase-4** | 多人（服务器权威，见 `04`）——outcome-first 已扫清浮点障碍 | net/services 基建（非数据能力）|
