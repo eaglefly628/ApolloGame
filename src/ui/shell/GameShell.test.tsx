@@ -104,4 +104,22 @@ describe('GameShell — image 节点（静态 src / 绑 StringVar 动态 src）'
     expect(html).toContain('guan_yu.png'); // 动态卡面投影
     expect((html.match(/<img/g) ?? []).length).toBe(1); // 仅 1 张（缺失那张不渲）
   });
+
+  it('resolveAsset：sim 持资产 key → resolve 成可绘制 src（保 sim 纯）；无 resolver 回落原 key', () => {
+    const e = new Engine();
+    e.world.createEntity('sv');
+    e.world.addComponent('sv', { type: 'StringVar', id: 'card_face', value: 'guan_yu' }); // sim 只持 key
+    const resolve = (k: string): string => `/assets/${k}.webp`;
+    expect(imageSrc(e.world, { bind: 'card_face' }, resolve)).toBe('/assets/guan_yu.webp');
+    expect(imageSrc(e.world, { bind: 'card_face' })).toBe('guan_yu'); // 无 resolver → 回落原 key
+  });
+
+  it('renderToString + resolveAsset prop：<img src> = 解析后的 url（key 不进画面）', () => {
+    const e = new Engine();
+    e.world.createEntity('sv');
+    e.world.addComponent('sv', { type: 'StringVar', id: 'card_face', value: 'guan_yu' });
+    const layout: UILayout = { root: { kind: 'image', bind: 'card_face' } };
+    const html = renderToString(<GameShell engine={e} layout={layout} theme={sakuraOtomeTheme} resolveAsset={(k) => `/a/${k}.webp`} />);
+    expect(html).toContain('/a/guan_yu.webp');
+  });
 });

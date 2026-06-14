@@ -39,4 +39,5 @@ export interface GameShellProps {
   layout: UILayout;
   theme: GameTheme;
   input?: ActionEnqueuer; // 缺省=只读（按钮不注入世界）
+  resolveAsset?: (key: string) => string | undefined; // image bind 的资产 key → 可绘制 src（DI 注入）；sim 只持 key 保纯/确定
 }

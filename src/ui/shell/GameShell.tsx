@@ -35,13 +35,15 @@ export function barFraction(world: IWorld, id: string): number {
   return f < 0 ? 0 : f > 1 ? 1 : f;
 }
 
-// image src：静态 node.src 优先；否则 bind=StringVar id → 取其 value（缺失=空串=不渲）。
-export function imageSrc(world: IWorld, node: { src?: string; bind?: string }): string {
+// image src：静态 node.src（布局层字面 presentation，非 sim）原样用；否则 bind=StringVar → 取 value 当**资产 key**
+// 经 resolve 成可绘制 src（sim 只持 key 保纯/确定；无 resolve 回落原值供测试/简单场景）。缺失=空串=不渲。
+export function imageSrc(world: IWorld, node: { src?: string; bind?: string }, resolve?: (key: string) => string | undefined): string {
   if (node.src) return node.src;
   if (node.bind) {
     const e = findByComponentId(world, 'StringVar', 'id', node.bind);
     const sv = e ? world.getComponent<StringVar>(e, 'StringVar') : undefined;
-    return sv ? sv.value : '';
+    if (!sv) return '';
+    return (resolve ? resolve(sv.value) : undefined) ?? sv.value;
   }
   return '';
 }
@@ -66,7 +68,7 @@ const FONT_SIZE = { sm: 11, md: 14, lg: 22 } as const;
 const barTone = (t: GameTheme, tone?: string): string =>
   tone === 'mp' ? t.tokens.info : tone === 'xp' || tone === 'accent' ? t.tokens.accent : t.tokens.success;
 
-export function GameShell({ engine, layout, theme, input }: GameShellProps): React.ReactElement {
+export function GameShell({ engine, layout, theme, input, resolveAsset }: GameShellProps): React.ReactElement {
   useWorldVersion(engine); // 世界变 → 重渲（stat/bar 投影最新值）
   const world = engine.world;
   const t = theme.tokens;
@@ -122,7 +124,7 @@ export function GameShell({ engine, layout, theme, input }: GameShellProps): Rea
         );
       }
       case 'image': {
-        const src = imageSrc(world, node);
+        const src = imageSrc(world, node, resolveAsset);
         if (!src) return null; // 无 src（绑定缺失）→ 不渲，避免破图
         return <img key={key} src={src} alt={node.alt ?? ''} width={node.width} height={node.height} style={{ objectFit: 'contain', borderRadius: t.borderRadius }} />;
       }
