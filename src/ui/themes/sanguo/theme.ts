@@ -103,3 +103,44 @@ export const ONYX = `
 export const PHOENIX =
   '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64"><g fill="none" stroke="#cf9a3f" stroke-width="1.7" stroke-linecap="round"><path d="M7 58 C7 30 19 9 52 7"/><path d="M12 46 C20 33 33 25 50 20"/><path d="M9 52 C18 38 33 28 54 15"/><path d="M30 14 q7 -6 16 -6 M40 21 q7 -4 15 -1"/><circle cx="54" cy="9" r="2.6" fill="#d8607b" stroke="none"/></g></svg>';
 export const PHOENIX_URI = `url("data:image/svg+xml,${encodeURIComponent(PHOENIX)}")`;
+
+import type { GameTheme } from '../theme.types.js';
+
+// 三国「锦霞」GameTheme（数据）：把局内壳层 token 收成 GameShell 可消费的对象。
+// game-f 采用 GameShell（局外大厅/局内 HUD/商店）即喂这份；换玄铁皮=另出一份对象。
+// 色板取自 AURORA 锦霞列（绢帛暖米底 + 墨字 + 朱印/描金 accent + 蜀绿/魏蓝语义色）。
+export const sanguoTheme: GameTheme = {
+  tokens: {
+    name: 'sanguo-aurora',
+    displayName: '锦霞·三国',
+    bg: '#f3e9d6',
+    bgSecondary: '#ece0c8',
+    text: '#23262d',
+    textSecondary: '#6a6256',
+    accent: '#b5402f',
+    accentHover: '#c75a3f',
+    border: '#cdbb98',
+    shadow: 'rgba(80,55,30,0.18)',
+    success: '#2f9e7e',
+    warning: '#c9a24e',
+    danger: '#d65668',
+    info: '#3a6ea5',
+    fontFamily: "'Noto Serif SC', serif",
+    fontSizeBase: '14px',
+    fontSizeLg: '20px',
+    fontSizeSm: '11px',
+    lineHeight: '1.5',
+    borderRadius: '12px',
+    borderWidth: '1px',
+    spacing: '12px',
+    glowColor: 'rgba(201,162,78,0.3)',
+    backdropBlur: '5px',
+  },
+  components: {
+    healthBar: { height: '10px', fillColor: '#d65668', depletedColor: 'rgba(35,38,45,0.12)', animationDuration: '0.25s' },
+    button: { paddingX: '16px', paddingY: '10px', hoverScale: '1.02', activeScale: '0.97' },
+    panel: { padding: '12px', maxWidth: '260px', headerHeight: '26px' },
+    dialog: { maxWidth: '520px', typingSpeed: '24ms', nameTagPosition: 'top-left' },
+    toast: { position: 'bottom', duration: '2s' },
+  },
+};
