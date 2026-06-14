@@ -6,6 +6,10 @@
 >
 > **卡牌三态**(承 §4.1):**Build**=局外持久带入 ｜ **Run**=局内 Boss 宝箱掉落、本局生效 ｜ **星球**=升级某流派档位(局外持久)。
 > 数值均为**首版待平衡**。
+>
+> ⚡ **缺口状态更新(2026-06-14,Lead 已审)**:
+> - **REQ-F-061 已 done**(`Hitbox.executeBelow/requireHpFracBelow/requireHpFracAbove`)→ 下文「白衣/攻心/渡江」的**斩杀/残血加伤(原 🔴)现已可实装**(关羽斩杀 = `Hitbox{ executeBelow:0.15 }`)。剩「把斩杀接进玩家普攻」= 给牌组加一个 `hitbox-mod` CardSpec 类(往玩家 strike 模板注 executeBelow),是**下一步小扩展**(同 `threshold-buff` 性质)。
+> - **REQ-F-062 被 Lead 打回暂缓**(YAGNI·未被真实数据拉动;且「嘲讽」属**目标侧**机制、非 `aggro.policy`,另案)→「绕后奇袭」🔴 **维持暂缓**,待真实单位钉死 nearest/farthest/lowestHp 具体需求再落。
 
 ---
 
