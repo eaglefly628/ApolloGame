@@ -1,5 +1,7 @@
 # Game G《翻命扑克 · Fateflip》设计案 v2
 
+> 📁 **维护入口已转至 [`design/`](./design/README.md)**（主策划组织化文档库，2026-06-14 接管拆分）。本文保留为历史底稿；后续以 `design/` 为单一真相。
+>
 > 作者：策划兼程序（本 session）｜ 2026-06-14
 > 宪法：`docs/design/data-driven-manifesto.md`｜规范：`CLAUDE.md`｜参考：gameF（run/round flow + 经济 + 商店）、gameE（52 牌组）
 > **v2 取代初版"物理决定胜负"模型**（settle-read/impulse 已回退，见 §11 演进史）。本文为当前真相。
