@@ -17,6 +17,6 @@ export {
 } from './blueprint.js';
 export { GAME_F_ASSETS, F_HERO, F_FX_STRIKE } from './assets.js';
 // 牌组（T2 加载器 + T5 首发数据）：游戏=数据，卡牌→现成 capability 规则实体。
-export { HUBAO_DECK, buildDeckRules, applyShopBias } from './decks.js';
+export { HUBAO_DECK, HANSHI_DECK, DECK_REGISTRY, buildDeckRules, applyShopBias } from './decks.js';
 export type { Deck, CardSpec, DeckRules } from './decks.js';
 export type { Faction } from './heroes.js';

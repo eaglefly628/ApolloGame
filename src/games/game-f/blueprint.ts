@@ -737,7 +737,12 @@ export function buildGameFBlueprint(pacing: GameFPacing = {}): WorldBlueprint {
   }
 
   // 牌组规则实体合并（T2）：deck → group-count/EventWhen/Effect 规则；与逻辑同源，开战 edge 锁存写 dmg_scale_a。
-  if (deckRules) Object.assign(entities, deckRules.entities);
+  // 装牌组时牌组**拥有羁绊**：拆掉硬编码「蜀魂」基线（否则它的 op:set 1.2 会与牌组 connection 的 op:add 在 dmg_scale_a 上互撞）。
+  // 不装牌组的默认蜀局仍保留蜀魂（向后兼容，既有经济测试不动）。
+  if (deckRules) {
+    for (const k of ['bond_counter_shu', 'r_count_shu', 'when_bond_shu', 'eff_bond_shu']) delete entities[k];
+    Object.assign(entities, deckRules.entities);
+  }
 
   return {
     capabilities: [

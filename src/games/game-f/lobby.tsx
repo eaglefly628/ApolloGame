@@ -1,7 +1,7 @@
 // Game F · 局外大厅 Lobby（按 docs/design/game-f-lobby-brief.md 7 屏 IA 实装）。
 // 与确定性引擎解耦：纯前端 + 假数据；只在「开始攻岛」那刻产出一份「出战牌组+势力+队伍配置」交给 onStart。
 // 局内对局由 game-f.tsx 的 startMatch 接手。视觉基调=绢帛暖米+水墨黑（brief §二），class 前缀 gfl- 防与局内 gfx- 撞。
-import { type Deck, type Faction, HUBAO_DECK } from './index.js';
+import { type Deck, type Faction, HUBAO_DECK, DECK_REGISTRY } from './index.js';
 
 export interface RunConfig {
   deck: Deck;
@@ -94,7 +94,7 @@ const LOBBY_CSS = `
 interface DeckCardView { id: string; name: string; icon: string; style: string; key: string; cards: string[]; complete: string; counter: string; power: string; locked?: boolean }
 const DECKS: DeckCardView[] = [
   { id: 'hubao', name: '虎豹铁骑', icon: '⚔️', style: '魏·速攻', key: '虎豹骑令', cards: ['虎豹骑令', '速攻令', '募兵', '铁骑突阵', '星球·魏'], complete: '5/5（已实装）', counter: '克→经济 · 被克→控制', power: '★★★☆' },
-  { id: 'taoyuan', name: '桃园结义', icon: '🛡️', style: '蜀·连携', key: '桃园三义', cards: ['桃园三义', '三顾茅庐', '同生共死', '义结金兰'], complete: '4/5（缺1）', counter: '克→中期肥 · 被克→速攻', power: '★★★' },
+  { id: 'hanshi', name: '兴复汉室', icon: '🛡️', style: '蜀·连携', key: '桃园誓', cards: ['桃园誓', '章武', '募贤'], complete: '3/3（已实装）', counter: '克→中期肥 · 被克→速攻', power: '★★★' },
   { id: 'chibi', name: '赤壁火攻', icon: '🔥', style: '吴·灼烧', key: '东南风', cards: ['东南风', '连营', '苦肉计', '火油', '星球·火'], complete: '5/5', counter: '克→人海 · 被克→护盾', power: '★★★☆' },
   { id: 'wolong', name: '卧龙八阵', icon: '❄️', style: '谋士·控制', key: '八阵图', cards: ['八阵图', '锁定', '空城计', '借东风', '星球·谋'], complete: '5/5', counter: '克→慢耗 · 被克→刺客绕后', power: '★★★★' },
   { id: 'baiyi', name: '白衣渡江', icon: '🗡️', style: '刺客·斩首', key: '白衣', cards: ['白衣🔒', '绕后奇袭', '断粮', '攻心'], complete: '🔒 需稀有卡', counter: '克→单核厚血 · 被克→低血海', power: '★★★★', locked: true },
@@ -119,7 +119,7 @@ export function buildLobby(onStart: (cfg: RunConfig) => void): HTMLElement {
   const root = document.createElement('div');
   root.className = 'gfl';
   root.style.position = 'relative';
-  let faction: Faction = 'shu';
+  let selectedDeckId = 'hubao'; // 默认出战组（虎豹铁骑）；选实装组（hubao/hanshi）即生效。出生势力由所选牌组的 faction 定。
 
   const deckGrid = DECKS.map((d, i) => `<div class="gfl-deck${i === 0 ? ' sel' : ''}" data-deck="${d.id}">
     <div class="gfl-dn">${esc(d.name)} ${d.icon}</div><div class="gfl-ds">${esc(d.style)}</div>
@@ -209,7 +209,7 @@ export function buildLobby(onStart: (cfg: RunConfig) => void): HTMLElement {
   root.querySelectorAll<HTMLElement>('[data-nav]').forEach((b) => b.addEventListener('click', () => show(b.dataset.nav!)));
   root.querySelectorAll<HTMLElement>('[data-fac]').forEach((f) => f.addEventListener('click', () => {
     root.querySelectorAll<HTMLElement>('[data-fac]').forEach((x) => { x.classList.remove('sel'); x.style.color = ''; });
-    f.classList.add('sel'); f.style.color = '#fff'; faction = f.dataset.fac as Faction;
+    f.classList.add('sel'); f.style.color = '#fff'; // 势力选择（v1 视觉；出生势力实取所选牌组的 faction）
   }));
   // 牌组选择 + 预览。
   const prev = root.querySelector<HTMLElement>('[data-deckprev]')!;
@@ -224,6 +224,7 @@ export function buildLobby(onStart: (cfg: RunConfig) => void): HTMLElement {
   root.querySelectorAll<HTMLElement>('[data-deck]').forEach((el2) => el2.addEventListener('click', () => {
     root.querySelectorAll<HTMLElement>('[data-deck]').forEach((x) => x.classList.remove('sel'));
     el2.classList.add('sel');
+    selectedDeckId = el2.dataset.deck!;
     const d = DECKS.find((x) => x.id === el2.dataset.deck); if (d) showDeck(d);
   }));
   showDeck(DECKS[0]);
@@ -235,8 +236,11 @@ export function buildLobby(onStart: (cfg: RunConfig) => void): HTMLElement {
     t.querySelectorAll('button').forEach((b) => b.addEventListener('click', () => t.remove()));
     root.appendChild(t);
   }));
-  // 开始攻岛 → 产出出战配置交引擎（v1 只实装虎豹铁骑）。
-  root.querySelector<HTMLElement>('[data-start]')!.addEventListener('click', () => onStart({ deck: HUBAO_DECK, faction }));
+  // 开始攻岛 → 产出出战配置交引擎（选实装组 hubao/hanshi 即生效；deck.faction 定出生势力）。
+  root.querySelector<HTMLElement>('[data-start]')!.addEventListener('click', () => {
+    const deck = DECK_REGISTRY[selectedDeckId] ?? HUBAO_DECK;
+    onStart({ deck, faction: deck.faction });
+  });
 
   return root;
 }

@@ -1,7 +1,7 @@
 import { describe, it, expect } from 'vitest';
 import { buildGameFBlueprint } from './blueprint.js';
-import { HUBAO_DECK, buildDeckRules, applyShopBias, type Deck } from './decks.js';
-import { FACT_WEI, BENCH_OCC } from './constants.js';
+import { HUBAO_DECK, HANSHI_DECK, DECK_REGISTRY, buildDeckRules, applyShopBias, type Deck } from './decks.js';
+import { FACT_WEI, FACT_SHU, BENCH_OCC } from './constants.js';
 import { SHOP_DECK } from './economy.js';
 
 describe('T2 牌组加载器 · buildDeckRules', () => {
@@ -62,5 +62,36 @@ describe('T2 集成 · buildGameFBlueprint({ deck })', () => {
     const bp = buildGameFBlueprint({ deck: HUBAO_DECK });
     const seatIds = Object.keys(bp.entities).filter((k) => k.startsWith('bootcast_'));
     expect(seatIds.length).toBeGreaterThan(0); // 有开局播种
+  });
+});
+
+describe('牌组 #2 · 兴复汉室（蜀·连携 threshold-buff）', () => {
+  it('threshold-buff → group-count + 每档 banded（开战 ∧ count≥at → dmg_scale_a += bonus）', () => {
+    const { entities } = buildDeckRules(HANSHI_DECK);
+    const gc = entities['gc_taoyuan'] as unknown as { GroupCount: { countResource: string; requiredTag: number; onBoard: boolean } };
+    expect(gc.GroupCount.requiredTag).toBe(BENCH_OCC | FACT_SHU); // 数在板蜀势力
+    // 两档：≥3 +0.20、≥5 +0.25。
+    const eff0 = entities['eff_taoyuan_t0'] as unknown as { Effect: { targetId: string; op: string; value: number } };
+    const eff1 = entities['eff_taoyuan_t1'] as unknown as { Effect: { value: number } };
+    expect(eff0.Effect.targetId).toBe('dmg_scale_a');
+    expect(eff0.Effect.op).toBe('add');
+    expect(eff0.Effect.value).toBe(0.20);
+    expect(eff1.Effect.value).toBe(0.25);
+    const when1 = entities['when_taoyuan_t1'] as unknown as { EventWhen: { when: { of: { cmp?: string; value?: number }[] } } };
+    expect(when1.EventWhen.when.of.some((c) => c.cmp === 'gte' && c.value === 5)).toBe(true); // 满编档阈值 5
+  });
+
+  it('DECK_REGISTRY 含 hubao + hanshi；hanshi=蜀出生', () => {
+    expect(DECK_REGISTRY.hubao).toBe(HUBAO_DECK);
+    expect(DECK_REGISTRY.hanshi).toBe(HANSHI_DECK);
+    expect(HANSHI_DECK.faction).toBe('shu');
+  });
+
+  it('装牌组 → 牌组拥有羁绊：硬编码「蜀魂」基线被拆（避免 op:set/op:add 撞 dmg_scale_a）；不装则保留', () => {
+    const withDeck = buildGameFBlueprint({ deck: HANSHI_DECK });
+    expect(withDeck.entities['eff_bond_shu']).toBeUndefined(); // 蜀魂被牌组接管
+    expect(withDeck.entities['eff_taoyuan_t0']).toBeDefined(); // 牌组连携在
+    const noDeck = buildGameFBlueprint();
+    expect(noDeck.entities['eff_bond_shu']).toBeDefined(); // 默认蜀局蜀魂保留（向后兼容）
   });
 });

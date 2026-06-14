@@ -2,13 +2,15 @@
 // 宪法：游戏=数据。本模块不发明能力——只把「牌组数组」物化成现成 capability 的规则实体
 //（group-count / EventWhen / Effect / banded / card-pile 权重），最弱 LLM 也能产出牌组数据。
 import type { EntityBlueprint } from '../../assembly/demo.assembly.js';
-import { FACT_WEI, BENCH_OCC } from './constants.js';
+import { FACT_WEI, FACT_SHU, BENCH_OCC } from './constants.js';
 import type { Faction } from './heroes.js';
 
-// 卡牌 = {触发条件, 效果} 算子（D0 核对：Game E joker 架构已全覆盖）。v1「虎豹铁骑」只用这三类。
+// 卡牌 = {触发条件, 效果} 算子（D0 核对：Game E joker 架构已全覆盖）。v1 + deck#2 用这四类。
 export type CardSpec =
   // 连携/职业 buff：开战锁存「在板某 tag 数」→ 线性写全队伤害系数（hitbox scaleByResource 读 dmg_scale_a）。
   | { kind: 'synergy-buff'; id: string; tagMask: number; perUnit: number }
+  // 阈值连携：在板某 tag 数**越阶梯阈值** → 阶梯 banded buff（"够 N 个才质变"，区别于线性 synergy-buff）。
+  | { kind: 'threshold-buff'; id: string; tagMask: number; tiers: { at: number; bonus: number }[] }
   // 回合 buff：前 N 回合（round_idx ≤ untilRound）开战额外伤害系数（banded by round）。
   | { kind: 'round-buff'; id: string; untilRound: number; bonus: number }
   // 商店权重：把某些英雄码在牌袋里加权（预配权重，洗入更多某势力）。
@@ -36,6 +38,28 @@ export const HUBAO_DECK: Deck = {
   ],
 };
 
+// 牌组 #2「兴复汉室」(蜀·连携)：deck-spec #2 现实修正（roster 无刘备 → 五虎/全蜀 conn"越多越强、满编质变"）。
+// 与「虎豹铁骑」(魏·速攻) 对称——一势力一起手组。验证 threshold-buff 范式（阈值台阶，非线性）。
+export const HANSHI_DECK: Deck = {
+  id: 'hanshi',
+  name: '兴复汉室',
+  faction: 'shu',
+  cards: [
+    // 桃园誓 ⭐：在板蜀 ≥3 → +20%；≥5（满编）→ 再 +25%（兴复质变）。banded 阶梯，开战锁存。
+    { kind: 'threshold-buff', id: 'taoyuan', tagMask: BENCH_OCC | FACT_SHU, tiers: [{ at: 3, bonus: 0.20 }, { at: 5, bonus: 0.25 }] },
+    // 章武：前 3 回合伤害 +12%（序盘不被速攻压死）。
+    { kind: 'round-buff', id: 'zhangwu', untilRound: 3, bonus: 0.12 },
+    // 募贤：商店蜀码加权（蜀将各多 2 张洗入牌袋）。
+    { kind: 'shop-weight', id: 'muxian', codes: [1, 2, 3, 4, 5, 6], copies: 2 },
+  ],
+};
+
+// 牌组登记表（id → 真实 Deck）：大厅选牌组 → 取真组交引擎。未实装的展示牌组回退首发组。
+export const DECK_REGISTRY: Record<string, Deck> = {
+  hubao: HUBAO_DECK,
+  hanshi: HANSHI_DECK,
+};
+
 export interface DeckRules {
   entities: Record<string, EntityBlueprint>;
   shopBias: { codes: number[]; copies: number }[];
@@ -56,6 +80,17 @@ export function buildDeckRules(deck: Deck): DeckRules {
       ents[`when_${card.id}`] = { EventWhen: { signal: card.id, when: combat, mode: 'edge', armed: false } };
       // 线性：dmg_scale_a += count × perUnit，开战拍施加一次（封顶靠 dmg_scale_a 资源 max）。
       ents[`eff_${card.id}`] = { Effect: { onSignal: card.id, kind: 'modify-resource', targetId: 'dmg_scale_a', op: 'add', value: 0, valueFrom: { resourceId: cr, coeff: card.perUnit } } };
+    } else if (card.kind === 'threshold-buff') {
+      // 阈值连携：count = 在板某 tag 数；每档 banded（开战 ∧ count ≥ at → dmg_scale_a += bonus）。
+      // = synergy-buff 的计数 + round-buff 的 banded 阈值拼装，零引擎改动。
+      const cr = `deck_count_${card.id}`;
+      ents[`gc_${card.id}`] = { GroupCount: { countResource: cr, requiredTag: card.tagMask, onBoard: true } };
+      ents[`r_${cr}`] = { Resource: { id: cr, current: 0, min: 0, max: 99 } };
+      card.tiers.forEach((t, k) => {
+        const sig = `${card.id}_t${k}`;
+        ents[`when_${sig}`] = { EventWhen: { signal: sig, when: { kind: 'and', of: [combat, { kind: 'resource', id: cr, cmp: 'gte', value: t.at }] }, mode: 'edge', armed: false } };
+        ents[`eff_${sig}`] = { Effect: { onSignal: sig, kind: 'modify-resource', targetId: 'dmg_scale_a', op: 'add', value: t.bonus } };
+      });
     } else if (card.kind === 'round-buff') {
       // banded：开战 ∧ round_idx ≤ untilRound → dmg_scale_a += bonus（前 N 回合压制）。
       ents[`when_${card.id}`] = { EventWhen: { signal: card.id, when: { kind: 'and', of: [combat, { kind: 'resource', id: 'round_idx', cmp: 'lte', value: card.untilRound }] }, mode: 'edge', armed: false } };
