@@ -17,6 +17,7 @@ import {
   zoneOccupancyCapability,
   gaugeCapability,
   clickableCapability,
+  keybindCapability,
   selfRuleCapability,
   cardPileCapability,
   craftRecipeCapability,
@@ -281,6 +282,17 @@ export function buildGameFBlueprint(pacing: GameFPacing = {}): WorldBlueprint {
       Sprite: { textureKey: F_FX_STRIKE, anchorX: 0.5, anchorY: 0.5, zOrder: 30 }, // 只为抬 zOrder（文本模式不绘）
     },
     eff_ready: { Effect: { onSignal: 'ready_btn', kind: 'set-flag', targetId: 'ready', value: true } },
+    // —— 去腐：GameShell 按钮的非空间输入桥（keybind）。button{signal:S} → enqueueAction(S) →
+    //    InputQueue{key:S,phase:'action'} → 这些 KeyBinding 产 Signal{name:S} → 既有 EventWhen/Effect/craft 链照常消费。
+    //    买入信号 buy_slot 不经此（走既有 CardPile play 输入路，避免 cp↔keybind 再加一条 Signal 边）。
+    kb_ready_btn: { KeyBinding: { key: 'ready_btn', signal: 'ready_btn', phase: 'action' } },
+    kb_buyxp_btn: { KeyBinding: { key: 'buyxp_btn', signal: 'buyxp_btn', phase: 'action' } },
+    kb_reroll_btn: { KeyBinding: { key: 'reroll_btn', signal: 'reroll_btn', phase: 'action' } },
+    kb_lock_btn: { KeyBinding: { key: 'lock_btn', signal: 'lock_btn', phase: 'action' } },
+    kb_unlock_btn: { KeyBinding: { key: 'unlock_btn', signal: 'unlock_btn', phase: 'action' } },
+    kb_rune_a: { KeyBinding: { key: 'rune_a', signal: 'rune_a', phase: 'action' } },
+    kb_rune_b: { KeyBinding: { key: 'rune_b', signal: 'rune_b', phase: 'action' } },
+    kb_rune_c: { KeyBinding: { key: 'rune_c', signal: 'rune_c', phase: 'action' } },
     // —— 开战倒计时（用户第 3 条：按下开战不许瞬开，要数 3-2-1；备战全程也有可见倒计时）——
     // 零引擎件重组：prep_left 资源被 min=0 钳住即自停 → OverTime 永久 -1/秒 = 自终止秒表；
     // flow 各相位 set 30 / 3 / 0（prep 进 / countdown 进 / combat 进）。HUD 数字 TextBinding 实时投影。
@@ -804,6 +816,8 @@ export function buildGameFBlueprint(pacing: GameFPacing = {}): WorldBlueprint {
       zoneOccupancyCapability,
       gaugeCapability, // 实时血条/蓝条（REQ-F-029）：Resource 比例 → 条宽，PostResolve 终态投影（REQ-F-031 定序）
       clickableCapability, // ready 开战按钮：指针命中 → 'ready_btn' 信号（引擎已对 event-when 定序）
+      keybindCapability, // 去腐：GameShell button→enqueueAction(信号) → InputQueue{key,phase:'action'} → KeyBinding 产 Signal（假点击桥的非空间替代；card-pile.runsBefore 已含 keybind 破环）
+
       cardPileCapability, // 商店（F-11/REQ-F-040）：牌袋发牌/play 原子验扣/据码写 bought_code（引擎已按"输入先行"钉七件套定序）
       craftRecipeCapability, // 手动刷新 $2（F-12）：reroll_btn 信号 → 原子扣金置 reroll_paid（扣不起整单不动）
       textBindingCapability, // HUD 数字（F-15/REQ-F-043）：Resource → Text.content 投影

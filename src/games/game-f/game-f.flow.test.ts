@@ -51,6 +51,21 @@ describe('Game F · 流程/加载/名册（确定性/符文收走/ready开战/�
     expect(entered).toBe(true); // tick ~12-26 已开战 —— 远早于 40 拍兜底（兜底路径由其余测试天然覆盖）
   });
 
+  it('去腐 keybind 桥：GameShell button→enqueueAction(信号) 走 InputQueue 具名动作 → KeyBinding 产信号 → ready（无需 canvas 指针命中）', () => {
+    const e = new Engine({ tickRate: 60 });
+    e.load(buildGameFBlueprint(FAST));
+    for (let i = 0; i < 10; i++) e.world.tick();
+    expect(flag(e, 'in_combat')).toBe(false);
+    // GameShell 路：enqueueAction('ready_btn') → InputQueue 具名动作 {key,phase:'action'}（非空间，无 x/y）。
+    e.world.createEntity('input');
+    e.world.addComponent('input', { type: 'InputQueue', actions: [{ source: 'test', key: 'ready_btn', phase: 'action' }] });
+    e.world.tick(); // keybind 命中 KeyBinding{key:'ready_btn'} → Signal{ready_btn} → eff_ready 置 ready
+    e.world.addComponent('input', { type: 'InputQueue', actions: [] });
+    let entered = false;
+    for (let i = 0; i < 15 && !entered; i++) { e.world.tick(); entered = flag(e, 'in_combat'); }
+    expect(entered).toBe(true); // 具名动作经 keybind 驱动开战 —— 假点击桥可退役
+  });
+
   it('敌人预布阵（B）：英雄关返回敌阵坐标+将名供半透明预览；野怪回合返回空', () => {
     const p2 = gameFEnemyPreview(2, 1); // 阶段2「董卓先锋」=4 魏将
     expect(p2).toHaveLength(4);
