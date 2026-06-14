@@ -27,6 +27,7 @@ export type UINode =
   | { kind: 'text'; text: string; size?: 'sm' | 'md' | 'lg'; tone?: 'normal' | 'dim' | 'accent' } // 静态文字
   | { kind: 'stat'; bind: string; label?: string; icon?: string } // 数值：读 Resource{id:bind}.current
   | { kind: 'bar'; bind: string; tone?: 'hp' | 'mp' | 'xp' | 'accent' } // 比例条：Resource current/max
+  | { kind: 'image'; src?: string; bind?: string; width?: number; height?: number; alt?: string } // 图：src 静态 / bind=StringVar id 动态(取其 value 作 src)
   | { kind: 'button'; label: string; signal: string; primary?: boolean }; // 按钮：点击 → enqueueAction(signal)
 
 export interface UILayout {

@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import type { IWorld } from '@engine/core/types.js';
-import type { Resource } from '@engine/protocol/components.js';
+import type { Resource, StringVar } from '@engine/protocol/components.js';
 import { findByComponentId } from '@engine/core/query.js';
 import { useWorldVersion } from '../hooks/use-engine.js';
 import type { GameTheme } from '../themes/theme.types.js';
@@ -33,6 +33,17 @@ export function barFraction(world: IWorld, id: string): number {
   if (!r || r.max <= r.min) return 0;
   const f = (r.current - r.min) / (r.max - r.min);
   return f < 0 ? 0 : f > 1 ? 1 : f;
+}
+
+// image src：静态 node.src 优先；否则 bind=StringVar id → 取其 value（缺失=空串=不渲）。
+export function imageSrc(world: IWorld, node: { src?: string; bind?: string }): string {
+  if (node.src) return node.src;
+  if (node.bind) {
+    const e = findByComponentId(world, 'StringVar', 'id', node.bind);
+    const sv = e ? world.getComponent<StringVar>(e, 'StringVar') : undefined;
+    return sv ? sv.value : '';
+  }
+  return '';
 }
 
 // 收集布局里全部 按钮→信号 映射（可测：证明布局数据声明了正确的信号；与渲染解耦）。
@@ -109,6 +120,11 @@ export function GameShell({ engine, layout, theme, input }: GameShellProps): Rea
             <div style={{ width: `${Math.round(f * 100)}%`, height: '100%', background: barTone(theme, node.tone) }} />
           </div>
         );
+      }
+      case 'image': {
+        const src = imageSrc(world, node);
+        if (!src) return null; // 无 src（绑定缺失）→ 不渲，避免破图
+        return <img key={key} src={src} alt={node.alt ?? ''} width={node.width} height={node.height} style={{ objectFit: 'contain', borderRadius: t.borderRadius }} />;
       }
       case 'button':
         return (

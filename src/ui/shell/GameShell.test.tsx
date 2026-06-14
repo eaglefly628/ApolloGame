@@ -3,7 +3,7 @@ import { renderToString } from 'react-dom/server';
 import React from 'react';
 import { Engine } from '../../runtime/engine.js';
 import { sakuraOtomeTheme } from '../themes/sakura-otome/theme.js';
-import { GameShell, readResource, statDisplay, barFraction, collectButtons } from './GameShell.js';
+import { GameShell, readResource, statDisplay, barFraction, collectButtons, imageSrc } from './GameShell.js';
 import type { UILayout, ActionEnqueuer } from './types.js';
 
 // 起一个带具名 Resource 的世界（gold=5/99，hp=30/100）。
@@ -79,5 +79,29 @@ describe('GameShell — 渲染（布局数据 → DOM 壳，扁平数据弱 LLM 
     const input: ActionEnqueuer = { enqueueAction: () => {} };
     const html = renderToString(<GameShell engine={worldWith()} layout={layout} theme={sakuraOtomeTheme} input={input} />);
     expect(html).toContain('开战'); // 渲染含按钮；click→signal 接线镜像已验证的 VNStage enqueueAction
+  });
+});
+
+describe('GameShell — image 节点（静态 src / 绑 StringVar 动态 src）', () => {
+  it('imageSrc：静态优先；否则取 StringVar.value；缺失=空串', () => {
+    const e = new Engine();
+    e.world.createEntity('sv');
+    e.world.addComponent('sv', { type: 'StringVar', id: 'card_face', value: 'guan_yu.png' });
+    expect(imageSrc(e.world, { src: 'static.png' })).toBe('static.png');
+    expect(imageSrc(e.world, { bind: 'card_face' })).toBe('guan_yu.png');
+    expect(imageSrc(e.world, { bind: 'ghost' })).toBe('');
+  });
+
+  it('renderToString：动态 src 投影进 <img>；缺失 src 不渲（不破图）', () => {
+    const e = new Engine();
+    e.world.createEntity('sv');
+    e.world.addComponent('sv', { type: 'StringVar', id: 'card_face', value: 'guan_yu.png' });
+    const layout: UILayout = { root: { kind: 'row', children: [
+      { kind: 'image', bind: 'card_face', width: 58, height: 68 },
+      { kind: 'image', bind: 'missing' }, // 缺失 → 不渲
+    ] } };
+    const html = renderToString(<GameShell engine={e} layout={layout} theme={sakuraOtomeTheme} />);
+    expect(html).toContain('guan_yu.png'); // 动态卡面投影
+    expect((html.match(/<img/g) ?? []).length).toBe(1); // 仅 1 张（缺失那张不渲）
   });
 });
