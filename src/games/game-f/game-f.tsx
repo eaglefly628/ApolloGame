@@ -8,6 +8,11 @@ import { getComponentById } from '@engine/core/query.js';
 import type { World } from '@engine/core/world.js';
 import { buildGameFBlueprint, gameFEnemyPreview, GAME_F_ASSETS } from './index.js';
 import { buildLobby, type RunConfig } from './lobby.js';
+import React from 'react';
+import { createRoot } from 'react-dom/client';
+import { GameShell } from '@ui/shell/GameShell.js';
+import { sanguoTheme } from '../../ui/themes/sanguo/theme.js';
+import { GAME_F_UI } from './game-f-ui.js';
 
 // Game F 可挂载模块（launcher 卡带槽契约：export mount(container) → cleanup）。
 // 壳层 UI = design_handoff_game_f 的「锦霞 Aurora」皮肤（用户钦定女性向风格）：
@@ -527,6 +532,24 @@ function startMatch(container: HTMLElement, cfg: RunConfig, onExit: () => void):
   boardPanel.appendChild(hud.root);
   gameView.appendChild(boardPanel); // 操作引导已移入顶栏状态栏（data-ref guide），不再单列底注。
 
+  // —— 去腐片4：GameShell 采用（首个三国 GameShell 消费者）——
+  // 把 GAME_F_UI（布局数据）交通用 @ui/shell 渲染，驱动真世界（stat/bar 随 worldVersion 自动重投影、
+  // button→enqueueAction 经 keybind 桥发信号、image 经 resolveAsset 取资产）。本步**并存**在棋盘下方面板
+  // （不删手写 hud，零破坏）；待真机目视确认摆位后，再删手写 player-card/状态/商店那几块达成线数下降。
+  // 输入适配：买入 buy_slot_i 走既有 CardPile play 输入路（绕开 cp↔keybind 环）；其余动作走 keybind。
+  const shellInput = {
+    enqueueAction: (name: string): void => {
+      const m = /^buy_slot_(\d)$/.exec(name);
+      if (m) queued.enqueue({ source: 'shop', key: 'play', values: [Number(m[1]) - 1] });
+      else queued.enqueueAction(name);
+    },
+  };
+  const assetSrc = new Map<string, string>();
+  for (const a of GAME_F_ASSETS) { const s = (a as { key: string; src?: unknown }).src; if (typeof s === 'string') assetSrc.set(a.key, s); }
+  const shellHost = el('div', '');
+  shellHost.style.cssText = `width:${VIEWPORT_W}px;margin-top:10px;pointer-events:auto`;
+  gameView.appendChild(shellHost);
+
   // 商城视图（README §4）。
   const mallView = buildMall();
   mallView.style.display = 'none';
@@ -581,6 +604,18 @@ function startMatch(container: HTMLElement, cfg: RunConfig, onExit: () => void):
   }
   engine.start();
 
+  // GameShell 渲染（engine 就绪后）：useWorldVersion 随每拍世界版本号自动重投影，无需手动 pump。
+  const shellRoot = createRoot(shellHost);
+  shellRoot.render(
+    React.createElement(GameShell, {
+      engine,
+      layout: GAME_F_UI,
+      theme: sanguoTheme,
+      input: shellInput,
+      resolveAsset: (k: string) => assetSrc.get(k) ?? '',
+    }),
+  );
+
   // HUD 实时投影：每帧读世界资源刷新 DOM 数字/条（纯表现层，不进 hash）。
   let rafId = 0;
   const pump = (): void => {
@@ -591,6 +626,7 @@ function startMatch(container: HTMLElement, cfg: RunConfig, onExit: () => void):
 
   return () => {
     cancelAnimationFrame(rafId);
+    shellRoot.unmount();
     engine.stop();
     keyboard.dispose();
     pointer?.dispose();
