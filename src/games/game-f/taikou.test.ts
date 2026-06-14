@@ -1,7 +1,27 @@
 import { describe, it, expect } from 'vitest';
-import { TAIKOU_BEACHHEAD, STAGE_UNIT, unitForStage } from './taikou.js';
+import { TAIKOU_BEACHHEAD, TAIKOU_KOKUJIN, TAIKOU_BOSS, TAIKOU_ROSTER, STAGE_UNIT, unitForStage, unitByCode } from './taikou.js';
 import { GAME_F_TEMPLATES } from './combat.js';
 import { F_TAIKOU } from './assets.js';
+
+describe('C 太阁全谱 roster（master §六 数据落地）', () => {
+  it('全谱完整：滩头4 + 国人众6 + 天守11 = 21；按 master 数值钉关键样本', () => {
+    expect(Object.keys(TAIKOU_BEACHHEAD)).toHaveLength(4);
+    expect(Object.keys(TAIKOU_KOKUJIN)).toHaveLength(6);
+    expect(Object.keys(TAIKOU_BOSS)).toHaveLength(11);
+    expect(Object.keys(TAIKOU_ROSTER)).toHaveLength(21);
+    // master 样本：斋藤(蝮,TAC,hp600)、家康(忍耐,厚血 hp2000)、谦信(军神,atk90,ASN,斩杀招牌)
+    expect(unitByCode('saito')).toMatchObject({ cls: 'TAC', hp: 600, atkType: 'magic', seg: 'kokujin' });
+    expect(unitByCode('ieyasu')).toMatchObject({ hp: 2000, seg: 'tenshu' });
+    expect(unitByCode('kenshin')).toMatchObject({ atk: 90, cls: 'ASN' });
+    expect(unitByCode('masamune')?.atkType).toBe('ranged'); // 狙击=远程
+    // 每个单位都有皮 + 正数 hp/atk（master 完整性）
+    for (const u of Object.values(TAIKOU_ROSTER)) {
+      expect(u.sprite.startsWith('f.taikou.')).toBe(true);
+      expect(u.hp).toBeGreaterThan(0);
+      expect(u.atk).toBeGreaterThan(0);
+    }
+  });
+});
 
 describe('T1 太阁守军 roster（滩头杂兵 + mob 换皮）', () => {
   it('滩头单位数据：枪足轻近战 / 弓足轻远程；stage 映射 + 越界兜底', () => {

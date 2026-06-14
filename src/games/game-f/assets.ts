@@ -45,6 +45,14 @@ export const F_TAIKOU = {
   yumi: 'f.taikou.yumi', // 弓足轻（远程）
   teppo: 'f.taikou.teppo', // 铁炮足轻（远程爆发）
   kunoichi: 'f.taikou.kunoichi', // 杂兵忍（近战骚扰）
+  // 国人众部将（中盘）
+  saito: 'f.taikou.saito', mori: 'f.taikou.mori', hojo: 'f.taikou.hojo',
+  imagawa: 'f.taikou.imagawa', akechi: 'f.taikou.akechi', ishida: 'f.taikou.ishida',
+  // 天守 Boss（终盘轮换）
+  nobunaga: 'f.taikou.nobunaga', hideyoshi: 'f.taikou.hideyoshi', ieyasu: 'f.taikou.ieyasu',
+  honganji: 'f.taikou.honganji', shingen: 'f.taikou.shingen', kenshin: 'f.taikou.kenshin',
+  yukimura: 'f.taikou.yukimura', masamune: 'f.taikou.masamune', shimazu: 'f.taikou.shimazu',
+  tachibana: 'f.taikou.tachibana', hattori: 'f.taikou.hattori',
 } as const;
 
 // 一块六边形棋盘格（pointy-top 尖顶，描边镂空；尺寸 40×46 贴合格距 TILE=40/行距30，不重叠）。
@@ -76,6 +84,25 @@ export const GAME_F_ASSETS: AssetManifest = [
   { kind: 'texture', key: F_TAIKOU.yumi, src: dcss('gnoll_new'), width: 32, height: 32 },
   { kind: 'texture', key: F_TAIKOU.teppo, src: dcss('kobold_new'), width: 32, height: 32 },
   { kind: 'texture', key: F_TAIKOU.kunoichi, src: dcss('hobgoblin_new'), width: 32, height: 32 },
+  // 国人众部将（DCSS 占位：蝮=蛇法 / 厚血=铁巨魔 / 弓=蛇射手 / 控=蛇仪祭 / 辅=高阶祭司）
+  { kind: 'texture', key: F_TAIKOU.saito, src: dcss('naga_mage'), width: 32, height: 32 },
+  { kind: 'texture', key: F_TAIKOU.mori, src: dcss('ettin_new'), width: 32, height: 32 },
+  { kind: 'texture', key: F_TAIKOU.hojo, src: dcss('iron_troll'), width: 32, height: 32 },
+  { kind: 'texture', key: F_TAIKOU.imagawa, src: dcss('naga_sharpshooter'), width: 32, height: 32 },
+  { kind: 'texture', key: F_TAIKOU.akechi, src: dcss('naga_ritualist'), width: 32, height: 32 },
+  { kind: 'texture', key: F_TAIKOU.ishida, src: dcss('deep_elf_high_priest'), width: 32, height: 32 },
+  // 天守 Boss（DCSS 占位巨怪/恶魔；正式像素三国/战国美术后续换皮）
+  { kind: 'texture', key: F_TAIKOU.nobunaga, src: dcss('juggernaut'), width: 32, height: 32 },
+  { kind: 'texture', key: F_TAIKOU.hideyoshi, src: dcss('hill_giant_new'), width: 32, height: 32 },
+  { kind: 'texture', key: F_TAIKOU.ieyasu, src: dcss('frost_giant_new'), width: 32, height: 32 },
+  { kind: 'texture', key: F_TAIKOU.honganji, src: dcss('deep_elf_demonologist'), width: 32, height: 32 },
+  { kind: 'texture', key: F_TAIKOU.shingen, src: dcss('cyclops_new'), width: 32, height: 32 },
+  { kind: 'texture', key: F_TAIKOU.kenshin, src: dcss('demonspawn'), width: 32, height: 32 },
+  { kind: 'texture', key: F_TAIKOU.yukimura, src: dcss('fire_giant_new'), width: 32, height: 32 },
+  { kind: 'texture', key: F_TAIKOU.masamune, src: dcss('naga_warrior_unique'), width: 32, height: 32 },
+  { kind: 'texture', key: F_TAIKOU.shimazu, src: dcss('deep_troll'), width: 32, height: 32 },
+  { kind: 'texture', key: F_TAIKOU.tachibana, src: dcss('deep_troll_berserker'), width: 32, height: 32 },
+  { kind: 'texture', key: F_TAIKOU.hattori, src: dcss('naga'), width: 32, height: 32 },
   // 备战席石墩台座（朴素灰石，圆墩 + 浅色顶沿 + 竖纹；像放香炉的台座）。
   { kind: 'texture', key: F_PEDESTAL, src: svg(`<ellipse cx="20" cy="7" rx="13" ry="3.5" fill="#cfc7b8"/><path d="M7 7 L33 7 L30 25 L10 25 Z" fill="#a79e8d"/><path d="M7 7 L33 7 L31.5 10 L8.5 10 Z" fill="#ddd5c6"/><ellipse cx="20" cy="25" rx="11" ry="3.5" fill="#8f8675"/><path d="M14 11 L13 23 M20 11 L20 23 M26 11 L27 23" stroke="#8a8170" stroke-width="0.6" opacity="0.5"/>`, 40, 32), width: 40, height: 32 },
   // 主公宝座（金漆雕座 + 顶宝珠；金铲铲式归位台座感）。
