@@ -28,6 +28,10 @@ export interface Card3D extends Component {
   backTint: number; // 反面色 0xRRGGBB
   width: number; // 牌宽（像素，渲染器按比例缩到 3D 单位）
   height: number; // 牌高
+  side?: string; // 'a'|'b'：对阵一方（render-only，供 3D 抛飞相撞编排配对）
+  pairKey?: number; // 配对键：同 pairKey 的 a/b 互为对手，跃向同一相撞点（render-only）
+  rank?: string; // 牌面点数 A/2..10/J/Q/K（render-only，渲染器画牌面用；缺省纯色）
+  suit?: string; // 花色 S/H/D/C（♠♥♦♣）（render-only）
 }
 
 // ── L2 color ── 实体当前的颜色/透明度

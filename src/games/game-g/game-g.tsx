@@ -7,12 +7,16 @@ import type { State, Resource } from '@engine/protocol/components.js';
 // outcome-first：每张牌按 favor 跑确定性种子硬币**先定生死**，3D 翻牌是**反推的表现**（tween 翻到既定面，
 //   正面金=活 / 反面石板=死）。数存活→比数定胜负→我方胜掉材。翻牌不决定胜负→跨端浮点不影响 gameplay。
 // 零新 capability；3D 仅在 ThreeRenderer 渲染后端 + render-only Card3D 组件。逻辑全 headless 测过，画面仅浏览器。
-const W = 460;
-const H = 600;
+const W = 600;
+const H = 540;
 
-// 我方(偏强)vs 敌方(偏弱)各 3 张；favor 越高越易正面(活)。同一局 seed 随机 → 每次结果不同但确定。
-const TEAM_A: FateCard[] = [{ id: 'a1', favor: 85 }, { id: 'a2', favor: 70 }, { id: 'a3', favor: 60 }];
-const TEAM_B: FateCard[] = [{ id: 'b1', favor: 45 }, { id: 'b2', favor: 35 }, { id: 'b3', favor: 25 }];
+// 52 对 52 的局（可调 PER_SIDE）。我方(偏强)vs 敌方(偏弱)：favor 越高越易正面(活)。
+// favor 给个梯度 → 两边都有活有死，落定后比存活数定胜负。同局 seed 随机 → 每次不同但确定。
+const PER_SIDE = 52;
+const mkDeck = (prefix: string, baseFavor: number): FateCard[] =>
+  Array.from({ length: PER_SIDE }, (_, i) => ({ id: `${prefix}${i}`, favor: baseFavor + (i % 12) * 3 }));
+const TEAM_A: FateCard[] = mkDeck('a', 50); // 50..83
+const TEAM_B: FateCard[] = mkDeck('b', 28); // 28..61
 
 export function mount(container: HTMLElement): () => void {
   const wrapper = document.createElement('div');
@@ -22,7 +26,7 @@ export function mount(container: HTMLElement): () => void {
   const hint = document.createElement('div');
   hint.style.cssText = 'max-width:460px;text-align:center;line-height:1.5;opacity:.85';
   hint.innerHTML =
-    '翻命扑克 · <b>一局掷命</b>：胜负 <b>先定</b>（属性加权种子硬币），物理翻牌是 <b>反推的表现</b>。<br>上排敌方 / 下排我方；正面金 = 活，反面石板 = 死。数存活定胜负。';
+    `翻命扑克 · <b>${PER_SIDE} vs ${PER_SIDE} 掷命</b>：胜负 <b>先定</b>（属性加权种子硬币），3D 翻牌是 <b>反推的表现</b>。<br>每对牌跃向空中相撞、坠落翻面——金=我方活，青=敌方活，石板=死。数存活定胜负。`;
 
   const stage = document.createElement('div');
   stage.style.cssText = `width:${W}px;height:${H}px;border:1px solid #334155;border-radius:10px;overflow:hidden`;

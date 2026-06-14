@@ -12,10 +12,10 @@ import type { RandomSeed } from '@engine/protocol/components.js';
 //
 //    胜负规则 = decideFaceUp(favor, 种子)：属性加权的**确定性种子硬币**（lockstep 安全；越高 favor 越易正面）。
 //    翻牌表现 = tween 把 Transform.rotation 缓动到既定面（正面 ≡ 2π·k、反面 ≡ 2π·k+π）。
-//    3D 渲染 = ThreeRenderer 读 Card3D+Transform 画 3D 翻转（Transform.rotation = 绕 X 轴翻面角）。
+//    3D 渲染 = ThreeRenderer 读 Card3D+Transform：画 3D 翻转 + 抛飞相撞编排（按 side/pairKey 配对）。
 //
 //  零游戏专属系统、零新 capability：复用现成 tween + Transform + random(PRNG)；3D 只在渲染后端 + render-only Card3D。
-//  红线：翻牌是表现，不决定胜负 → 跨端浮点不影响 gameplay → 实时多人/多人干预可行（权威=整数胜负）。
+//  红线：翻牌/抛飞/相撞都是表现，不决定胜负 → 跨端浮点不影响 gameplay → 实时多人/多人干预可行（权威=整数胜负）。
 //
 //  （已回退：旧 settle-read/impulse + 物理决定胜负的 buildGameGBlueprint/buildGameGMelee —— 见 DESIGN §v2。）
 // ═══════════════════════════════════════════════════════════════
@@ -40,12 +40,38 @@ export function decideFaceUp(favor: number, rng: RandomSeed): boolean {
   return nextRandom(rng) < p;
 }
 
-// 一张牌的 3D 翻牌实体：Transform(位姿) + Card3D(正反面，render-only) + Tween(翻到既定面)。
-function flipCardEntity(faceUp: boolean, x: number, y: number, spins: number, frontTint: number, backTint: number): EntityBlueprint {
+// 标准 52 牌：序号 → 点数/花色（贴"52 牌组"语义；render-only，渲染器画牌面用）。
+const RANKS = ['A', '2', '3', '4', '5', '6', '7', '8', '9', '10', 'J', 'Q', 'K'];
+const SUITS = ['S', 'H', 'D', 'C']; // ♠♥♦♣
+export function cardFace(i: number): { rank: string; suit: string } {
+  const idx = ((i % 52) + 52) % 52; // 归一到 [0,52)
+  return { rank: RANKS[idx % 13], suit: SUITS[Math.floor(idx / 13) % 4] };
+}
+
+interface FlipOpts {
+  faceUp: boolean;
+  x: number;
+  y: number;
+  spins?: number;
+  frontTint?: number;
+  backTint?: number;
+  side?: 'a' | 'b';
+  pairKey?: number;
+  rank?: string;
+  suit?: string;
+}
+
+// 一张牌的 3D 翻牌实体：Transform(位姿) + Card3D(正反面/牌面/配对，render-only) + Tween(翻到既定面)。
+function flipCardEntity(o: FlipOpts): EntityBlueprint {
+  const card: Record<string, unknown> = { frontTint: o.frontTint ?? 0xeab308, backTint: o.backTint ?? 0x334155, width: CARD_W, height: CARD_H };
+  if (o.side) card.side = o.side;
+  if (o.pairKey !== undefined) card.pairKey = o.pairKey;
+  if (o.rank) card.rank = o.rank;
+  if (o.suit) card.suit = o.suit;
   return {
-    Transform: { x, y, rotation: 0, scaleX: 1, scaleY: 1 },
-    Card3D: { frontTint, backTint, width: CARD_W, height: CARD_H },
-    Tween: { target: 'Transform.rotation', from: 0, to: flipTarget(faceUp, spins), elapsed: 0, duration: FLIP_DURATION, easing: 'easeOut', done: false },
+    Transform: { x: o.x, y: o.y, rotation: 0, scaleX: 1, scaleY: 1 },
+    Card3D: card,
+    Tween: { target: 'Transform.rotation', from: 0, to: flipTarget(o.faceUp, o.spins ?? FLIP_SPINS), elapsed: 0, duration: FLIP_DURATION, easing: 'easeOut', done: false },
   };
 }
 
@@ -56,11 +82,11 @@ function flipCardEntity(faceUp: boolean, x: number, y: number, spins: number, fr
 export function buildGameG3DFlip(faceUp: boolean, spins: number = FLIP_SPINS): WorldBlueprint {
   return {
     capabilities: [transformCapability, tweenCapability],
-    entities: { card: flipCardEntity(faceUp, 0, 0, spins, 0xeab308, 0x334155) },
+    entities: { card: flipCardEntity({ faceUp, x: 0, y: 0, spins }) },
   };
 }
 
-// 一张参战牌（最弱 LLM 能填）：id + 属性 favor（升级偏置，越高越易活）+ 可选位置/外观。
+// 一张参战牌（最弱 LLM 能填）：id + 属性 favor（升级偏置，越高越易活）+ 可选位置/外观/牌面。
 export interface FateCard {
   id: string;
   favor: number; // 0..100：属性/局外升级偏置 → P(正面=活)
@@ -69,10 +95,12 @@ export interface FateCard {
   spins?: number;
   frontTint?: number;
   backTint?: number;
+  rank?: string; // 缺省按序号自动派牌面
+  suit?: string;
 }
 
 /**
- * 一局掷命（v2 主线）：对每张牌按其 favor 跑**属性加权种子硬币**先定胜负，再 3D 翻到既定面。
+ * 一局掷命（v2）：对每张牌按其 favor 跑**属性加权种子硬币**先定胜负，再 3D 翻到既定面。
  * seed 决定整局结果（同 seed+同牌 → 同结果，确定性/可重放/多人一致）。胜负=数据决策，翻牌=表现。
  */
 export function buildGameGDuel3D(cards: FateCard[], seed: number = 1): WorldBlueprint {
@@ -82,22 +110,41 @@ export function buildGameGDuel3D(cards: FateCard[], seed: number = 1): WorldBlue
   cards.forEach((c, i) => {
     const faceUp = decideFaceUp(c.favor, rng); // 胜负先定（属性加权种子）
     const x = c.x ?? (i - (n - 1) / 2) * (CARD_W + 40); // 缺省横向排开
-    entities[c.id] = flipCardEntity(faceUp, x, c.y ?? 0, c.spins ?? FLIP_SPINS, c.frontTint ?? 0xeab308, c.backTint ?? 0x334155);
+    const f = cardFace(i);
+    entities[c.id] = flipCardEntity({ faceUp, x, y: c.y ?? 0, spins: c.spins, frontTint: c.frontTint, backTint: c.backTint, rank: c.rank ?? f.rank, suit: c.suit ?? f.suit });
   });
   return { capabilities: [transformCapability, tweenCapability], entities };
 }
 
 // ═══════════════════════════════════════════════════════════════
-//  MVP-1：收口"一局"（outcome-first）。两队牌各自掷命（规则先定正/反）→ 3D 翻牌表现 →
-//  数存活（group-count 按队 Tag）→ 翻牌动画结束那拍比存活数定胜负 → 结算掉材。
+//  MVP-1：收口"一局"（outcome-first）+ 体量与撞击观感。两队牌按 favor 掷命（规则先定正/反）→
+//  3D 牌阵抛飞相撞落定表现 → 数存活（group-count 按队 Tag）→ 翻牌演完那拍比存活数定胜负 → 结算掉材。
 //  全是 gameF 重组、零新 capability：胜负=数据(decideFaceUp)，存活=Tag 含 ALIVE 位，
 //  判胜负=group-count→event-when(vsResource 比两队存活,edge)→effect(set-state 胜者 + 给材料)。
-//  门=Timer(翻牌时长)：动画演完再结算（戏剧性）；胜负其实从装配即定（确定性/可重放/多人一致）。
+//  布局：A[i] 与 B[i] 配成对（同 pairKey，A 左 B 右），渲染器据此让两牌跃向同一相撞点（撞击观感，纯表现）。
+//  门=Timer(翻牌时长)：动画演完再结算；胜负其实从装配即定（确定性/可重放/多人一致）。
 // ═══════════════════════════════════════════════════════════════
 export const TEAM_A = 1 << 1; // 我方
 export const TEAM_B = 1 << 2; // 敌方
 export const ALIVE = 1 << 3; // 落定正面=活（Tag 含此位才计入存活）
 const MATCH_REWARD = 10; // 我方(A)胜 → 材料 +N
+const A_FRONT = 0xeab308; // 我方牌面暖金
+const B_FRONT = 0x38bdf8; // 敌方牌面冷青
+const CARD_BACK = 0x334155; // 反面石板
+// 牌阵网格（2D px）：每个 cell 一对（A 左 / B 右），跃向 cell 中心相撞。
+const CELL_W = 200;
+const CELL_H = 220;
+const PAIR_DX = 66; // 对内 A/B 左右分开
+
+function gridCols(pairs: number): number {
+  return Math.max(1, Math.ceil(Math.sqrt(pairs * 1.7))); // 略宽于正方，贴 16:9 台面
+}
+function cellCenter(i: number, cols: number, total: number): { cx: number; cy: number } {
+  const rows = Math.ceil(total / cols);
+  const col = i % cols;
+  const row = Math.floor(i / cols);
+  return { cx: (col - (cols - 1) / 2) * CELL_W, cy: (row - (rows - 1) / 2) * CELL_H };
+}
 
 const MATCH_CAPS = [
   transformCapability,
@@ -112,27 +159,43 @@ const MATCH_CAPS = [
 ];
 
 /**
- * 一局 NvN 掷命（MVP-1）：teamA(我) vs teamB(敌)，每张牌按 favor 跑确定性种子硬币先定生死，
- * 再 3D 翻到既定面。group-count 数两队存活 → Timer 到点(翻牌演完)→ 比存活数 → 写 winner 状态 + 我方胜给材料。
- * 入参 seed 决定整局（同 seed+同牌 → 同结果）。装配顺序 teamA→teamB 固定 → PRNG 序列确定。
+ * 一局 NvN 掷命（MVP-1）：teamA(我) vs teamB(敌)。装配顺序 teamA→teamB 先把胜负全定下来（PRNG 序列确定、
+ * 与既有测试回放一致），再把 A[i]/B[i] 配对铺进牌阵网格（撞击观感由渲染器据 side/pairKey 编排）。
+ * group-count 数两队存活 → Timer 到点(翻牌演完)→ 比存活数 → 写 winner 状态 + 我方胜给材料。
  */
 export function buildGameGMatch(teamA: FateCard[], teamB: FateCard[], seed: number = 1, reward: number = MATCH_REWARD): WorldBlueprint {
   const rng: RandomSeed = { type: 'RandomSeed', seed, sequence: 0 };
   const entities: Record<string, EntityBlueprint> = {};
-  const lay = (cards: FateCard[], team: number, rowY: number): void => {
-    const n = cards.length;
-    cards.forEach((c, i) => {
-      const faceUp = decideFaceUp(c.favor, rng); // 胜负先定
-      const x = c.x ?? (i - (n - 1) / 2) * (CARD_W + 40);
-      const ent = flipCardEntity(faceUp, x, c.y ?? rowY, c.spins ?? FLIP_SPINS, c.frontTint ?? 0xeab308, c.backTint ?? 0x334155);
-      ent.Tag = { flags: team | (faceUp ? ALIVE : 0) }; // 正面=活 → 计入该队存活
-      entities[c.id] = ent;
-    });
-  };
-  lay(teamA, TEAM_A, 220); // 我方下排
-  lay(teamB, TEAM_B, -220); // 敌方上排
 
-  // 数存活（含齐 队位|ALIVE）→ 两个数值事实
+  // ① 先定胜负（顺序 A 全部 → B 全部，PRNG 序列确定、测试可回放）。
+  const facesA = teamA.map((c) => decideFaceUp(c.favor, rng));
+  const facesB = teamB.map((c) => decideFaceUp(c.favor, rng));
+
+  // ② 配对铺阵：A[i]/B[i] 同 cell（A 左 B 右、同 pairKey）→ 渲染器让两牌跃向 cell 中心相撞。
+  const pairs = Math.max(teamA.length, teamB.length);
+  const cols = gridCols(pairs);
+  const place = (c: FateCard, faceUp: boolean, team: number, side: 'a' | 'b', pairKey: number, front: number): void => {
+    const { cx, cy } = cellCenter(pairKey, cols, pairs);
+    const f = cardFace(pairKey);
+    const ent = flipCardEntity({
+      faceUp,
+      x: c.x ?? cx + (side === 'a' ? -PAIR_DX : PAIR_DX),
+      y: c.y ?? cy,
+      spins: c.spins,
+      frontTint: c.frontTint ?? front,
+      backTint: c.backTint ?? CARD_BACK,
+      side,
+      pairKey,
+      rank: c.rank ?? f.rank,
+      suit: c.suit ?? f.suit,
+    });
+    ent.Tag = { flags: team | (faceUp ? ALIVE : 0) }; // 正面=活 → 计入该队存活
+    entities[c.id] = ent;
+  };
+  teamA.forEach((c, i) => place(c, facesA[i], TEAM_A, 'a', i, A_FRONT));
+  teamB.forEach((c, i) => place(c, facesB[i], TEAM_B, 'b', i, B_FRONT));
+
+  // ③ 数存活（含齐 队位|ALIVE）→ 两个数值事实
   entities.gc_a = { GroupCount: { countResource: 'a_alive', requiredTag: TEAM_A | ALIVE } };
   entities.gc_b = { GroupCount: { countResource: 'b_alive', requiredTag: TEAM_B | ALIVE } };
   entities.res_a = { Resource: { id: 'a_alive', current: 0, min: 0, max: 999 } };
@@ -141,7 +204,7 @@ export function buildGameGMatch(teamA: FateCard[], teamB: FateCard[], seed: numb
   entities.winner = { State: { fsmId: 'winner', current: 'pending' } };
   entities.clock = { Timer: { id: 'match_clock', elapsed: 0, duration: FLIP_DURATION, loop: false } };
 
-  // 结算门：Timer 到点(翻牌演完)那拍，按存活数 vsResource 比 → 三选一定胜负（edge，互斥各一发）。
+  // ④ 结算门：Timer 到点(翻牌演完)那拍，按存活数 vsResource 比 → 三选一定胜负（edge，互斥各一发）。
   const gate = (cmp: string, sig: string, winState: string, mats: number): void => {
     const when = {
       kind: 'and',

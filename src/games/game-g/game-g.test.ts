@@ -1,8 +1,8 @@
 import { describe, it, expect } from 'vitest';
 import { Engine } from '../../runtime/engine.js';
 import type { Component } from '@engine/core/types.js';
-import type { Transform, RandomSeed, Resource, State } from '@engine/protocol/components.js';
-import { buildGameG3DFlip, buildGameGDuel3D, buildGameGMatch, decideFaceUp, flipTarget, FLIP_DURATION, FLIP_SPINS, MATCH_REWARD, type FateCard } from './blueprint.js';
+import type { Transform, RandomSeed, Resource, State, Card3D } from '@engine/protocol/components.js';
+import { buildGameG3DFlip, buildGameGDuel3D, buildGameGMatch, decideFaceUp, cardFace, flipTarget, FLIP_DURATION, FLIP_SPINS, MATCH_REWARD, type FateCard } from './blueprint.js';
 
 const get = <T extends Component>(e: Engine, id: string, type: string): T | undefined => e.world.getComponent<T>(id, type);
 const rotOf = (e: Engine, id = 'card'): number => get<Transform>(e, id, 'Transform')!.rotation;
@@ -159,5 +159,47 @@ describe('Game G · MVP-1 一局收口（掷命→数存活→判胜负→结算
       e2.world.tick();
       expect(e1.hash()).toBe(e2.hash());
     }
+  });
+});
+
+describe('Game G · 体量与牌阵布局（撞击观感的数据底座）', () => {
+  it('cardFace：序号 → 标准 52 牌点数/花色（循环）', () => {
+    expect(cardFace(0)).toEqual({ rank: 'A', suit: 'S' });
+    expect(cardFace(12)).toEqual({ rank: 'K', suit: 'S' });
+    expect(cardFace(13)).toEqual({ rank: 'A', suit: 'H' });
+    expect(cardFace(51)).toEqual({ rank: 'K', suit: 'C' });
+    expect(cardFace(52)).toEqual(cardFace(0)); // 满 52 循环
+  });
+
+  it('配对布局：A[i]/B[i] 同 pairKey、side 各为 a/b（渲染器据此让两牌相撞）', () => {
+    const A: FateCard[] = [{ id: 'a0', favor: 60 }, { id: 'a1', favor: 60 }];
+    const B: FateCard[] = [{ id: 'b0', favor: 40 }, { id: 'b1', favor: 40 }];
+    const e = new Engine({ tickRate: 60 });
+    e.load(buildGameGMatch(A, B, 1));
+    const ca0 = get<Card3D>(e, 'a0', 'Card3D')!;
+    const cb1 = get<Card3D>(e, 'b1', 'Card3D')!;
+    expect(ca0.side).toBe('a');
+    expect(ca0.pairKey).toBe(0);
+    expect(cb1.side).toBe('b');
+    expect(cb1.pairKey).toBe(1);
+    expect(ca0.rank).toBe('A'); // pairKey 0 → A♠
+  });
+
+  it('体量：52v52 一局照样按存活数定胜负（与规则回放一致）', () => {
+    const mk = (p: string, base: number): FateCard[] => Array.from({ length: 52 }, (_, i) => ({ id: `${p}${i}`, favor: base + (i % 12) * 3 }));
+    const A = mk('a', 50);
+    const B = mk('b', 28);
+    const seed = 7;
+    const rng: RandomSeed = { type: 'RandomSeed', seed, sequence: 0 };
+    const aAlive = A.filter((c) => decideFaceUp(c.favor, rng)).length;
+    const bAlive = B.filter((c) => decideFaceUp(c.favor, rng)).length;
+    const winner = aAlive > bAlive ? 'a' : aAlive < bAlive ? 'b' : 'draw';
+
+    const e = new Engine({ tickRate: 60 });
+    e.load(buildGameGMatch(A, B, seed));
+    for (let i = 0; i < FLIP_DURATION + 10; i++) e.world.tick();
+    expect(get<Resource>(e, 'res_a', 'Resource')!.current).toBe(aAlive);
+    expect(get<Resource>(e, 'res_b', 'Resource')!.current).toBe(bAlive);
+    expect(get<State>(e, 'winner', 'State')!.current).toBe(winner);
   });
 });
