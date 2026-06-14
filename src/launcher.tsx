@@ -111,6 +111,16 @@ const GAMES: GameEntry[] = [
     icon: '♟️',
     status: 'playable',
   },
+  {
+    id: 'game-g',
+    title: 'Game G: Fateflip Poker',
+    subtitle: '翻命扑克 · 3D 掷命骨架',
+    description: '拟人扑克的空中掷命对决（3D 表现骨架）：outcome-first——胜负先定，物理翻牌是反推的表现（tween 把牌翻到既定面，正面金=活/反面石板=死）。Three.js 渲染后端骨架，验证 3D 表现层接入；翻牌不决定胜负→跨端浮点不影响 gameplay。',
+    color: '#10212a',
+    accentColor: '#22d3ee',
+    icon: '🎴',
+    status: 'playable',
+  },
 ];
 
 // ══════════════════════════════════════
@@ -527,6 +537,7 @@ function GameRunner({ gameId, onBack }: { gameId: string; onBack: () => void }) 
       'game-e': () => import('./game-e.js'),
       'game-d': () => import('./game-d.js'),
       'game-f': () => import('./games/game-f/game-f.js'),
+      'game-g': () => import('./games/game-g/game-g.js'),
     };
     const loader = loaders[gameId];
     if (!loader) return;

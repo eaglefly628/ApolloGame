@@ -12,6 +12,7 @@ import type {
   Bounds,
   Camera,
   CameraTarget,
+  Card3D,
   CardPile,
   Caster,
   Clickable,
@@ -98,6 +99,7 @@ export interface ComponentDataMap {
   Bounds: Omit<Bounds, 'type'>;
   Camera: Omit<Camera, 'type'>;
   CameraTarget: Omit<CameraTarget, 'type'>;
+  Card3D: Omit<Card3D, 'type'>;
   CardPile: Omit<CardPile, 'type'>;
   Caster: Omit<Caster, 'type'>;
   Clickable: Omit<Clickable, 'type'>;

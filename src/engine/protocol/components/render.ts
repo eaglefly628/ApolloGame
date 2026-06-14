@@ -19,6 +19,17 @@ export interface Sprite extends Component {
   zOrder: number;
 }
 
+// ── 3D 卡牌（render-only，Three.js 后端解释）── 一张正反两面的薄牌；3D 位姿取自同实体 Transform：
+// x,y → 3D 位置，rotation → 绕 X 轴翻面角（0=正面朝镜头、π=反面）。胜负已定 → tween Transform.rotation
+// 到目标面，渲染器只把它画成 3D 翻转。红线：表现层组件，绝不被 Condition 读、绝不进 sim 逻辑/hash。
+export interface Card3D extends Component {
+  readonly type: 'Card3D';
+  frontTint: number; // 正面色 0xRRGGBB
+  backTint: number; // 反面色 0xRRGGBB
+  width: number; // 牌宽（像素，渲染器按比例缩到 3D 单位）
+  height: number; // 牌高
+}
+
 // ── L2 color ── 实体当前的颜色/透明度
 export interface Color extends Component {
   readonly type: 'Color';
