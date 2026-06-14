@@ -84,16 +84,6 @@ const flagIs = (id: string): Record<string, unknown> => ({ kind: 'flag', id, equ
 const resCmp = (id: string, cmp: string, value: number): Record<string, unknown> => ({ kind: 'resource', id, cmp, value });
 const and = (...of: Record<string, unknown>[]): Record<string, unknown> => ({ kind: 'and', of });
 const or = (...of: Record<string, unknown>[]): Record<string, unknown> => ({ kind: 'or', of });
-// 横幅三选一：信号到 → 显 show、藏 hides（set-visible 矩阵，纯数据）。
-function visSwap(sig: string, show: string, hides: string[]): Record<string, EntityBlueprint> {
-  const out: Record<string, EntityBlueprint> = {
-    [`eff_${sig}_show`]: { Effect: { onSignal: sig, kind: 'set-visible', targetId: '', targetEntity: show, value: true } },
-  };
-  hides.forEach((h, i) => {
-    out[`eff_${sig}_hide${i}`] = { Effect: { onSignal: sig, kind: 'set-visible', targetId: '', targetEntity: h, value: false } };
-  });
-  return out;
-}
 
 
 // 竞技场=棋盘区（7×8 盘 x≈±150 / y≈-155..95；下方托盘/商店带不在内——席上 marker 本就无 TEAM 位，双保险）。
@@ -495,13 +485,26 @@ export function buildGameFBlueprint(pacing: GameFPacing = {}): WorldBlueprint {
     when_ph_res: { EventWhen: { signal: 'ph_res', when: { kind: 'state', fsmId: 'round_ui', equals: 'resolution' }, mode: 'edge', armed: false } },
     when_ph_over: { EventWhen: { signal: 'ph_over', when: flagIs('run_over'), mode: 'edge', armed: false } },
     when_ph_won: { EventWhen: { signal: 'ph_won', when: flagIs('run_won'), mode: 'edge', armed: false } },
-    ...visSwap('ph_prep', 'banner_prep', ['banner_combat', 'banner_resolution', 'banner_win', 'banner_lose']),
-    ...visSwap('ph_combat', 'banner_combat', ['banner_prep', 'banner_resolution']),
-    ...visSwap('ph_res', 'banner_resolution', ['banner_prep', 'banner_combat', 'banner_win', 'banner_lose']),
-    ...visSwap('ph_win', 'banner_win', ['banner_combat']),
-    ...visSwap('ph_lose', 'banner_lose', ['banner_combat']),
-    ...visSwap('ph_over', 'banner_gameover', []),
-    ...visSwap('ph_won', 'banner_victory', []),
+    // 横幅相位显隐（去腐：原 visSwap 生成器展平为字面 set-visible 效果，逐字等价）。
+    eff_ph_prep_show: { Effect: { onSignal: 'ph_prep', kind: 'set-visible', targetId: '', targetEntity: 'banner_prep', value: true } },
+    eff_ph_prep_hide0: { Effect: { onSignal: 'ph_prep', kind: 'set-visible', targetId: '', targetEntity: 'banner_combat', value: false } },
+    eff_ph_prep_hide1: { Effect: { onSignal: 'ph_prep', kind: 'set-visible', targetId: '', targetEntity: 'banner_resolution', value: false } },
+    eff_ph_prep_hide2: { Effect: { onSignal: 'ph_prep', kind: 'set-visible', targetId: '', targetEntity: 'banner_win', value: false } },
+    eff_ph_prep_hide3: { Effect: { onSignal: 'ph_prep', kind: 'set-visible', targetId: '', targetEntity: 'banner_lose', value: false } },
+    eff_ph_combat_show: { Effect: { onSignal: 'ph_combat', kind: 'set-visible', targetId: '', targetEntity: 'banner_combat', value: true } },
+    eff_ph_combat_hide0: { Effect: { onSignal: 'ph_combat', kind: 'set-visible', targetId: '', targetEntity: 'banner_prep', value: false } },
+    eff_ph_combat_hide1: { Effect: { onSignal: 'ph_combat', kind: 'set-visible', targetId: '', targetEntity: 'banner_resolution', value: false } },
+    eff_ph_res_show: { Effect: { onSignal: 'ph_res', kind: 'set-visible', targetId: '', targetEntity: 'banner_resolution', value: true } },
+    eff_ph_res_hide0: { Effect: { onSignal: 'ph_res', kind: 'set-visible', targetId: '', targetEntity: 'banner_prep', value: false } },
+    eff_ph_res_hide1: { Effect: { onSignal: 'ph_res', kind: 'set-visible', targetId: '', targetEntity: 'banner_combat', value: false } },
+    eff_ph_res_hide2: { Effect: { onSignal: 'ph_res', kind: 'set-visible', targetId: '', targetEntity: 'banner_win', value: false } },
+    eff_ph_res_hide3: { Effect: { onSignal: 'ph_res', kind: 'set-visible', targetId: '', targetEntity: 'banner_lose', value: false } },
+    eff_ph_win_show: { Effect: { onSignal: 'ph_win', kind: 'set-visible', targetId: '', targetEntity: 'banner_win', value: true } },
+    eff_ph_win_hide0: { Effect: { onSignal: 'ph_win', kind: 'set-visible', targetId: '', targetEntity: 'banner_combat', value: false } },
+    eff_ph_lose_show: { Effect: { onSignal: 'ph_lose', kind: 'set-visible', targetId: '', targetEntity: 'banner_lose', value: true } },
+    eff_ph_lose_hide0: { Effect: { onSignal: 'ph_lose', kind: 'set-visible', targetId: '', targetEntity: 'banner_combat', value: false } },
+    eff_ph_over_show: { Effect: { onSignal: 'ph_over', kind: 'set-visible', targetId: '', targetEntity: 'banner_gameover', value: true } },
+    eff_ph_won_show: { Effect: { onSignal: 'ph_won', kind: 'set-visible', targetId: '', targetEntity: 'banner_victory', value: true } },
     // —— HUD 数字：金币/血/等级/经验/阶段/回合/空席已移入 DOM 壳层（game-f.tsx 左下/右下玩家卡 + 顶栏），
     //    canvas 不再画左上角文本（去重，消「左上角八角字块」观感）。——
     f_deploy_armed: { Flag: { id: 'deploy_armed', active: false } },
