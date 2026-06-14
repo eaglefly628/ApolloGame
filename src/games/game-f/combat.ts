@@ -4,7 +4,7 @@ import type { PrefabTemplate } from '@engine/protocol/components.js';
 import type { EntityBlueprint } from '../../assembly/demo.assembly.js';
 import { ZONE_FLAG } from '@skills/tier2/index.js';
 import {
-  TEAM_A, TEAM_B, SHU_RED, WEI_BLUE, FROZEN, PROTAG, LOOT, BAG, EQUIP, BENCH_OCC, MARKER_VIS, RESULT, PROJ,
+  TEAM_A, TEAM_B, SHU_RED, WEI_BLUE, FROZEN, ASSASSIN, PROTAG, LOOT, BAG, EQUIP, BENCH_OCC, MARKER_VIS, RESULT, PROJ,
   MOVE_PERIOD, ATK_CD, MANA_REGEN, FONT_DISPLAY, FONT_BODY, FONT_NUM, xf, sprite, zlift,
 } from './constants.js';
 import { type HeroSpec, rosterFor, finalHp, finalAtk } from './heroes.js';
@@ -17,14 +17,14 @@ import { project, offsetToAxial } from './hex.js';
 // 普攻打击区：目标处小 sensor 伤害区，2 tick 自毁 + 表现两件（用户打击感批）：
 // redflash=被击红闪（红 Shape 盖在受击位上方 alpha 速褪）；fx=斩光余韵（特效图 alpha 慢褪）。
 // 表现实体无 Tag/Sensor/Hitbox 不参战，Timer+lifetime 自清。fxKey=按攻击类型的特效（近战斩/远程箭/法术弹）。
-const strike = (targetMask: number, amount: number, fxKey: string, scaleId = 'dmg_scale_b'): PrefabTemplate => ({
+const strike = (targetMask: number, amount: number, fxKey: string, scaleId = 'dmg_scale_b', execBelow?: number): PrefabTemplate => ({
   entities: {
     area: {
       Transform: xf(0, 0),
       Shape: { kind: 'box', width: 18, height: 18 },
       Sensor: {},
       Tag: { flags: ZONE_FLAG },
-      Hitbox: { resource: 'hp', amount, targetMask, scaleByResource: scaleId }, // 047 羁绊乘区：×系数资源（缺省 1 零迁移）
+      Hitbox: { resource: 'hp', amount, targetMask, scaleByResource: scaleId, ...(execBelow !== undefined ? { executeBelow: execBelow } : {}) }, // 047 羁绊乘区 + F-061 斩杀线（hp 比例 < execBelow 即处决）
       Timer: { id: 'life', elapsed: 0, duration: 2, loop: false },
       Sprite: sprite(fxKey, 6),
     },
@@ -54,7 +54,7 @@ const DOT = { dotPerTick: 25, dotPeriod: 30, dotDuration: 240 };
 // strike 同款表现实体补（弹体自带 redflash 子实体不可行——单实体单 Tween，红闪随弹体走会提前闪）→
 // 弹体只带 Hitbox，命中即消失（视觉=弹道飞行+消失在目标身上）。目标死于途中=aggro 重锁最近敌（追踪续航）；
 // 无敌可锁=滞空到 lifetime 自清（120 拍）。无 TEAM 位：不被 zone 计存活/不被锁/不被 wipe。
-const projectile = (targetMask: number, amount: number, fxKey: string, scaleId = 'dmg_scale_b'): PrefabTemplate => ({
+const projectile = (targetMask: number, amount: number, fxKey: string, scaleId = 'dmg_scale_b', execBelow?: number): PrefabTemplate => ({
   entities: {
     p: {
       Transform: xf(0, 0),
@@ -64,7 +64,7 @@ const projectile = (targetMask: number, amount: number, fxKey: string, scaleId =
       Velocity: { vx: 0, vy: 0, angular: 0 },
       Perception: { targetTag: targetMask, sightRadius: 0 },
       Steering: { mode: 'seek', speed: 3.2, stopRange: 0 },
-      Hitbox: { resource: 'hp', amount, targetMask, scaleByResource: scaleId, consumeOnHit: true },
+      Hitbox: { resource: 'hp', amount, targetMask, scaleByResource: scaleId, consumeOnHit: true, ...(execBelow !== undefined ? { executeBelow: execBelow } : {}) },
       Timer: { id: 'life', elapsed: 0, duration: 120, loop: false },
       Sprite: sprite(fxKey, 7),
     },
@@ -246,9 +246,10 @@ export function templatesFor(ROSTER: HeroSpec[]): Record<string, PrefabTemplate>
   return Object.fromEntries(
   ROSTER.flatMap((h): [string, PrefabTemplate][] => [
     // 近战=瞬时打击区；远程/法术=追踪弹道（用户打击感批）。两类只发各自用到的武器模板。
+    // 刺客职业 trait（F-061 斩杀）：ASSASSIN 普攻对残血(<15%)目标处决——黄忠/吕蒙等抢人头流派的引擎支撑。
     h.atkType === 'melee'
-      ? [`strike_${h.id}`, strike(h.enemy, finalAtk(h), FX_BY_TYPE[h.atkType], h.team === TEAM_A ? 'dmg_scale_a' : 'dmg_scale_b')] as [string, PrefabTemplate]
-      : [`proj_${h.id}`, projectile(h.enemy, finalAtk(h), FX_BY_TYPE[h.atkType], h.team === TEAM_A ? 'dmg_scale_a' : 'dmg_scale_b')] as [string, PrefabTemplate],
+      ? [`strike_${h.id}`, strike(h.enemy, finalAtk(h), FX_BY_TYPE[h.atkType], h.team === TEAM_A ? 'dmg_scale_a' : 'dmg_scale_b', h.cls === ASSASSIN ? 0.15 : undefined)] as [string, PrefabTemplate]
+      : [`proj_${h.id}`, projectile(h.enemy, finalAtk(h), FX_BY_TYPE[h.atkType], h.team === TEAM_A ? 'dmg_scale_a' : 'dmg_scale_b', h.cls === ASSASSIN ? 0.15 : undefined)] as [string, PrefabTemplate],
     [`ult_${h.id}`, ultTemplate(h.enemy, h.ultDmg, h.ultSize, h.ultFx, h.ultDot, h.ultFreeze, h.team === TEAM_A ? 'dmg_scale_a' : 'dmg_scale_b')],
     [`hero_${h.id}`, heroTemplate(h)],
     // 死亡碎裂（用户打击感批「被杀死时切成四半」）：4 个 0.55 倍迷你分身向四角飞散+渐隐（Velocity 四向
@@ -327,8 +328,8 @@ export function templatesFor(ROSTER: HeroSpec[]): Record<string, PrefabTemplate>
     ROSTER.filter((x) => x.team === TEAM_A).flatMap((h): [string, PrefabTemplate][] =>
       [2, 3].flatMap((s): [string, PrefabTemplate][] => [
         h.atkType === 'melee'
-          ? [`strike_${h.id}_s${s}`, strike(h.enemy, Math.round(finalAtk(h) * STAR_DMG_MUL[s]), FX_BY_TYPE[h.atkType], 'dmg_scale_a')] as [string, PrefabTemplate]
-          : [`proj_${h.id}_s${s}`, projectile(h.enemy, Math.round(finalAtk(h) * STAR_DMG_MUL[s]), FX_BY_TYPE[h.atkType], 'dmg_scale_a')] as [string, PrefabTemplate],
+          ? [`strike_${h.id}_s${s}`, strike(h.enemy, Math.round(finalAtk(h) * STAR_DMG_MUL[s]), FX_BY_TYPE[h.atkType], 'dmg_scale_a', h.cls === ASSASSIN ? 0.15 : undefined)] as [string, PrefabTemplate]
+          : [`proj_${h.id}_s${s}`, projectile(h.enemy, Math.round(finalAtk(h) * STAR_DMG_MUL[s]), FX_BY_TYPE[h.atkType], 'dmg_scale_a', h.cls === ASSASSIN ? 0.15 : undefined)] as [string, PrefabTemplate],
         [`ult_${h.id}_s${s}`, ultTemplate(h.enemy, Math.round(h.ultDmg * STAR_DMG_MUL[s]), h.ultSize, h.ultFx, h.ultDot, h.ultFreeze, 'dmg_scale_a')],
       ]),
     ),

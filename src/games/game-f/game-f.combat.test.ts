@@ -1,11 +1,20 @@
 import { describe, it, expect } from 'vitest';
 import { Engine } from '../../runtime/engine.js';
 import type { Resource, Flag, Shape, Status, Transform } from '@engine/protocol/components.js';
-import { buildGameFBlueprint, GAME_F_HERO_IDS, FROZEN, TEAM_A } from './blueprint.js';
+import { buildGameFBlueprint, GAME_F_HERO_IDS, GAME_F_TEMPLATES, FROZEN, TEAM_A } from './blueprint.js';
 import { offsetToAxial, project } from './hex.js';
 import { FAST, A_HEROES, B_HEROES, alive, mains, isBSide, mainOf, childOf, flag } from './game-f.helpers.js';
 
 describe('Game F · 战斗（自动对冲/死亡级联/大招/状态/滑行/多实例/相位门）', () => {
+  it('F-061 刺客斩杀接入（B）：ASSASSIN 普攻模板注 executeBelow:0.15；非刺客不注；升星继承', () => {
+    const huang = GAME_F_TEMPLATES['proj_a_huangzhong'] as unknown as { entities: { p: { Hitbox: { executeBelow?: number } } } };
+    expect(huang.entities.p.Hitbox.executeBelow).toBe(0.15); // 黄忠=ASSASSIN·ranged 弹体带斩杀线
+    const guan = GAME_F_TEMPLATES['strike_a_guanyu'] as unknown as { entities: { area: { Hitbox: { executeBelow?: number } } } };
+    expect(guan.entities.area.Hitbox.executeBelow).toBeUndefined(); // 关羽=WARRIOR 无斩杀
+    const huang2 = GAME_F_TEMPLATES['proj_a_huangzhong_s2'] as unknown as { entities: { p: { Hitbox: { executeBelow?: number } } } };
+    expect(huang2.entities.p.Hitbox.executeBelow).toBe(0.15); // 升星弹同样继承斩杀
+  });
+
   it('两队自动对冲互砍：双方都真受伤（aggro + grid-move + timer→event-when→caster→hitbox 涌现）', () => {
     const e = new Engine({ tickRate: 60 });
     e.load(buildGameFBlueprint(FAST));
