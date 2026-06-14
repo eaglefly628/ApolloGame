@@ -32,6 +32,7 @@ export class ThreeRenderer implements RendererBackend {
   private camera!: THREE.PerspectiveCamera;
   private renderer!: THREE.WebGLRenderer;
   private readonly meshes = new Map<string, THREE.Mesh>();
+  private readonly texCache = new Map<string, THREE.Texture>(); // 牌面/背面纹理缓存（按 rank|suit|色 复用）
   private readonly opts: Required<ThreeRendererOptions>;
 
   constructor(opts: ThreeRendererOptions) {
@@ -129,6 +130,8 @@ export class ThreeRenderer implements RendererBackend {
       disposeMesh(mesh);
     }
     this.meshes.clear();
+    for (const [, tex] of this.texCache) tex.dispose(); // 释放牌面/背面纹理
+    this.texCache.clear();
     this.renderer.dispose();
     this.renderer.domElement.remove();
   }
@@ -146,14 +149,108 @@ export class ThreeRenderer implements RendererBackend {
     this.camera.lookAt(cx, cy, 0);
   }
 
-  // 一张薄盒卡牌：+z 面=正面、-z 面=反面、四边深色。BoxGeometry 材质序：px,nx,py,ny,pz,nz。
+  // 一张薄盒卡牌：+z 面=正面(扑克牌面)、-z 面=反面(花纹)、四边深色。BoxGeometry 材质序：px,nx,py,ny,pz,nz。
   private makeCard(c: Card3D, ppu: number): THREE.Mesh {
     const geo = new THREE.BoxGeometry(c.width / ppu, c.height / ppu, 0.03);
     const edge = new THREE.MeshStandardMaterial({ color: 0x1f2937 });
-    const front = new THREE.MeshStandardMaterial({ color: c.frontTint });
-    const back = new THREE.MeshStandardMaterial({ color: c.backTint });
+    // 有 rank/suit → 画真扑克牌面（点数+花色，红黑分色，队伍色描边）；否则退化纯色。
+    const front =
+      c.rank && c.suit
+        ? new THREE.MeshStandardMaterial({ map: this.faceTexture(c.rank, c.suit, c.frontTint) })
+        : new THREE.MeshStandardMaterial({ color: c.frontTint });
+    const back = new THREE.MeshStandardMaterial({ map: this.backTexture(c.backTint) });
     return new THREE.Mesh(geo, [edge, edge, edge, edge, front, back]);
   }
+
+  // 正面：奶白底 + 队伍色描边 + 角标(点数+花色)/中心大花色；红(♥♦)/黑(♠♣)分色。按 rank|suit|描边色缓存复用。
+  private faceTexture(rank: string, suit: string, borderTint: number): THREE.Texture {
+    const key = `f:${rank}:${suit}:${borderTint}`;
+    const hit = this.texCache.get(key);
+    if (hit) return hit;
+    const cv = document.createElement('canvas');
+    cv.width = 256;
+    cv.height = 358;
+    const g = cv.getContext('2d')!;
+    g.fillStyle = '#f7f5ee'; // 奶白底
+    roundRect(g, 6, 6, 244, 346, 22);
+    g.fill();
+    g.lineWidth = 16; // 队伍色描边（区分敌我）
+    g.strokeStyle = hex(borderTint);
+    roundRect(g, 14, 14, 228, 330, 18);
+    g.stroke();
+    const sym = SUIT_SYMBOL[suit] ?? '?';
+    const red = suit === 'H' || suit === 'D';
+    g.fillStyle = red ? '#c0392b' : '#161616';
+    g.textAlign = 'center';
+    g.textBaseline = 'middle';
+    g.font = 'bold 150px Georgia, serif'; // 中心大花色
+    g.fillText(sym, 128, 188);
+    g.font = 'bold 46px Georgia, serif'; // 左上角标：点数 + 花色
+    g.textAlign = 'left';
+    g.fillText(rank, 30, 52);
+    g.font = 'bold 40px Georgia, serif';
+    g.fillText(sym, 32, 96);
+    g.save(); // 右下角标（旋转 180°）
+    g.translate(226, 306);
+    g.rotate(Math.PI);
+    g.font = 'bold 46px Georgia, serif';
+    g.fillText(rank, 0, 0);
+    g.font = 'bold 40px Georgia, serif';
+    g.fillText(sym, 2, 44);
+    g.restore();
+    const tex = new THREE.CanvasTexture(cv);
+    tex.colorSpace = THREE.SRGBColorSpace;
+    this.texCache.set(key, tex);
+    return tex;
+  }
+
+  // 反面：深色底 + 斜向菱格花纹 + 描边。按底色缓存复用。
+  private backTexture(tint: number): THREE.Texture {
+    const key = `b:${tint}`;
+    const hit = this.texCache.get(key);
+    if (hit) return hit;
+    const cv = document.createElement('canvas');
+    cv.width = 256;
+    cv.height = 358;
+    const g = cv.getContext('2d')!;
+    g.fillStyle = hex(tint);
+    roundRect(g, 6, 6, 244, 346, 22);
+    g.fill();
+    g.strokeStyle = 'rgba(255,255,255,0.16)'; // 菱格
+    g.lineWidth = 3;
+    for (let d = -358; d < 256; d += 26) {
+      g.beginPath();
+      g.moveTo(d, 0);
+      g.lineTo(d + 358, 358);
+      g.stroke();
+      g.beginPath();
+      g.moveTo(d + 358, 0);
+      g.lineTo(d, 358);
+      g.stroke();
+    }
+    g.lineWidth = 14;
+    g.strokeStyle = 'rgba(255,255,255,0.30)';
+    roundRect(g, 16, 16, 224, 326, 16);
+    g.stroke();
+    const tex = new THREE.CanvasTexture(cv);
+    tex.colorSpace = THREE.SRGBColorSpace;
+    this.texCache.set(key, tex);
+    return tex;
+  }
+}
+
+const SUIT_SYMBOL: Record<string, string> = { S: '♠', H: '♥', D: '♦', C: '♣' };
+function hex(tint: number): string {
+  return '#' + (tint & 0xffffff).toString(16).padStart(6, '0');
+}
+function roundRect(g: CanvasRenderingContext2D, x: number, y: number, w: number, h: number, r: number): void {
+  g.beginPath();
+  g.moveTo(x + r, y);
+  g.arcTo(x + w, y, x + w, y + h, r);
+  g.arcTo(x + w, y + h, x, y + h, r);
+  g.arcTo(x, y + h, x, y, r);
+  g.arcTo(x, y, x + w, y, r);
+  g.closePath();
 }
 
 // 牌的抛飞进度 t∈[0,1]：有 Tween 取 elapsed/duration，无（已落定/移除）= 1（停在原位）。
