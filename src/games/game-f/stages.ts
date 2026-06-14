@@ -77,7 +77,7 @@ export const PVE_COMP: { stage: number; comp: WaveSlot[] }[] = [
   { stage: 2, comp: [{ code: 'ash_yari', count: 4 }, { code: 'ash_teppo', count: 2 }, { code: 'kunoichi', count: 2 }] }, // W2 滩头②
   { stage: 3, comp: [{ code: 'ash_yari', count: 3 }, { code: 'saito', count: 1 }, { code: 'ash_yumi', count: 2 }] }, // W3 国人众①（斋藤）
   { stage: 4, comp: [{ code: 'hojo', count: 1 }, { code: 'mori', count: 1 }, { code: 'ash_yari', count: 4 }] }, // W4 国人众②（北条压前）
-  { stage: 5, comp: [{ code: 'kenshin', count: 1 }, { code: 'akechi', count: 1 }, { code: 'ishida', count: 1 }, { code: 'ash_yari', count: 3 }] }, // W5/W6 终盘：天守 Boss 谦信(斩杀 F-061) + 国人众精锐
+  { stage: 5, comp: [{ code: 'kenshin', count: 1 }, { code: 'ieyasu', count: 1 }, { code: 'akechi', count: 1 }, { code: 'ash_yari', count: 3 }] }, // W5/W6 终盘：谦信(斩杀) + 家康(忍耐回血) + 国人众精锐
 ];
 // 全波次引用到的唯一太阁码（combat 据此生成 mob_<code> + 武器模板）。
 export const PVE_CODES: string[] = [...new Set(PVE_COMP.flatMap((w) => w.comp.map((c) => c.code)))];

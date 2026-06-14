@@ -41,6 +41,14 @@ describe('C 太阁全谱 roster（master §六 数据落地）', () => {
     const hojo = GAME_F_TEMPLATES['strike_mob_hojo'] as unknown as { entities: { area: { Hitbox: { executeBelow?: number } } } };
     expect(hojo.entities.area.Hitbox.executeBelow).toBeUndefined(); // 北条非斩杀
   });
+
+  it('天守 Boss 忍耐接线（slice3b）：家康进终盘波 + mob 带 over-time 自回复；普通单位不带', () => {
+    expect(PVE_COMP.find((w) => w.stage === 5)!.comp.some((c) => c.code === 'ieyasu')).toBe(true);
+    const ie = GAME_F_TEMPLATES['mob_ieyasu'] as unknown as { entities: { main: { OverTime?: { effects: { resource: string }[] } } } };
+    expect(ie.entities.main.OverTime?.effects[0].resource).toBe('hp'); // 忍耐=自回血
+    const yari = GAME_F_TEMPLATES['mob_ash_yari'] as unknown as { entities: { main: { OverTime?: unknown } } };
+    expect(yari.entities.main.OverTime).toBeUndefined(); // 足轻无回复
+  });
 });
 
 describe('T1 太阁守军 roster（滩头杂兵 + mob 换皮）', () => {

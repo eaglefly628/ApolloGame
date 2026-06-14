@@ -222,6 +222,8 @@ function mobTemplate(unit: TaikouUnit): PrefabTemplate {
         HexPos: { q: 0, r: 0 },
         GridMover: { period: MOVE_PERIOD, elapsed: 0, haltStatusMask: FROZEN, glideSpeed: 0.8, ...(unit.range > 1 ? { range: unit.range } : {}) }, // master 射程
         Mortal: { resource: 'hp', atOrBelow: 0, dropTemplate: 'mob_death' }, // 死亡=掉法球+碎裂特效（mob_death 复合模板）
+        // 忍耐（家康招牌）：over-time 持续自回复 hp（钳在 max；招牌=厚血+回血肉盾）。
+        ...(unit.selfHeal ? { OverTime: { effects: [{ id: 'heal', resource: 'hp', amountPerTick: Math.round(unit.selfHeal / 2), period: 30, duration: 0, elapsed: 0 }] } } : {}),
         Timer: { id: 'atk', elapsed: 0, duration: ATK_CD, loop: true },
         SelfRule: { when: { kind: 'timer', id: 'atk', cmp: 'gte', value: ATK_CD - 1 }, whenGlobal: { kind: 'flag', id: 'in_combat', equals: true }, do: [ranged ? { kind: 'spawn', template: `proj_mob_${unit.code}`, at: 'self' } : { kind: 'spawn', template: `strike_mob_${unit.code}`, at: 'target' }], once: false, armed: false },
         Tween: { target: 'Transform.scaleY', from: 1, to: 1.05, elapsed: 0, duration: 26, easing: 'easeInOut', done: false, loop: 'pingpong' },
