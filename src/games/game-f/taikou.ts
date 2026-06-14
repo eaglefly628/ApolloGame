@@ -53,8 +53,10 @@ export const TAIKOU_BOSS: Record<string, TaikouUnit> = {
   hattori: { code: 'hattori', name: '服部半藏·忍', sprite: F_TAIKOU.hattori, atkType: 'melee', hp: 1100, atk: 75, range: 1, cls: 'ASN', seg: 'tenshu', signature: '潜行+斩后排（🟡🔴 F-061/062）' },
 };
 
-// 全谱（按 code 索引）：滩头 + 国人众 + 天守。供关卡表/降将收编/wave 装配查表。
-export const TAIKOU_ROSTER: Record<string, TaikouUnit> = { ...TAIKOU_BEACHHEAD, ...TAIKOU_KOKUJIN, ...TAIKOU_BOSS };
+// 全谱（**按 unit.code 索引**，非对象属性名——滩头属性名是 yari 但 code 是 ash_yari）。供关卡表/降将/wave 查表。
+export const TAIKOU_ROSTER: Record<string, TaikouUnit> = Object.fromEntries(
+  [...Object.values(TAIKOU_BEACHHEAD), ...Object.values(TAIKOU_KOKUJIN), ...Object.values(TAIKOU_BOSS)].map((u) => [u.code, u]),
+);
 export const unitByCode = (code: string): TaikouUnit | undefined => TAIKOU_ROSTER[code];
 
 // ── 滩头关卡映射（v1 W1–W2 成局；index = stage-1）。W3–W6 多波编成见后续片（master §七）。──

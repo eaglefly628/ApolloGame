@@ -39,7 +39,8 @@ import {
   HP_SCALE, FONT_DISPLAY, FONT_BODY, xf, sprite, zlift,
 } from './constants.js';
 import { type Faction, ROSTER, rosterFor, codesFor } from './heroes.js';
-import { STAGES, PVE_WAVES, MOB_BASE_HP, gameFEnemyPreview } from './stages.js';
+import { STAGES, PVE_COMP, gameFEnemyPreview } from './stages.js';
+import { unitByCode } from './taikou.js';
 import { SHOP_DECK, SELL_PRICE } from './economy.js';
 import { slotEntity, templatesFor, GAME_F_TEMPLATES } from './combat.js';
 import { type Deck, buildDeckRules, applyShopBias } from './decks.js';
@@ -763,17 +764,20 @@ export function buildGameFBlueprint(pacing: GameFPacing = {}): WorldBlueprint {
       entities[`slot_s${st.n}_${ci}_${eh.id}`] = slotEntity(eh, `deploy_stage_${st.n}`, c.q, c.r, c.hpMul);
     });
   }
-  // 野怪槽（批B）：每阶段一组，count 只横向铺位（7×8 盘敌前排 r3、col 1 起）；血量=MOB_BASE_HP×HP_SCALE×hpMul 经 overrides
-  for (const w of PVE_WAVES) {
-    for (let i = 0; i < w.count; i++) {
-      const col = 1 + i;
-      const a = offsetToAxial(col, 3);
-      const p2 = project(a.q, a.r);
-      const hp = Math.round(MOB_BASE_HP * HP_SCALE * w.hpMul);
-      entities[`pveslot_s${w.stage}_${i}`] = {
-        Transform: xf(p2.x, p2.y),
-        Caster: { onSignal: `deploy_pve_${w.stage}`, template: `mob_s${w.stage}`, at: 'self', overrides: { main: { HexPos: { q: a.q, r: a.r }, Tag: { flags: TEAM_B }, Resource: { current: hp, max: hp } } } },
-      };
+  // 太阁守军部署槽（C·slice2）：每波多兵种编成（PVE_COMP）横向铺位（7×8 盘敌前排 r3 起，超 7 折到 r2）；
+  // 血量取 master unit.hp（经 overrides 写）。国人众/Boss 据此进战斗。
+  for (const w of PVE_COMP) {
+    let i = 0;
+    for (const slot of w.comp) {
+      const u = unitByCode(slot.code)!;
+      for (let k = 0; k < slot.count; k++, i++) {
+        const a = offsetToAxial(1 + (i % 6), i < 6 ? 3 : 2); // 前排 r3 排 6 个，溢出到 r2
+        const p2 = project(a.q, a.r);
+        entities[`pveslot_s${w.stage}_${i}`] = {
+          Transform: xf(p2.x, p2.y),
+          Caster: { onSignal: `deploy_pve_${w.stage}`, template: `mob_${slot.code}`, at: 'self', overrides: { main: { HexPos: { q: a.q, r: a.r }, Tag: { flags: TEAM_B }, Resource: { current: u.hp, max: u.hp } } } },
+        };
+      }
     }
   }
 

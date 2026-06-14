@@ -16,7 +16,7 @@ describe('Game F · 摆放（播种展开/回合重置/升星合成/摆子拖拽
     for (const s of seats) expect(e.world.getComponent(s, 'HexPos')).toBeTruthy(); // 在板（哨兵继承 bootcast 的格）
     for (let i = 0; i < 30; i++) e.world.tick(); // FAST prep 40 → 入战拍部署 → prefab 成型
     const r1 = mains(e);
-    expect(r1).toHaveLength(7); // 我方 4 + 阶段1「黄巾散兵」敌 3（§4.5 关卡表）
+    expect(r1).toHaveLength(10); // 我方 4 + W1 太阁滩头（枪足轻×4+弓足轻×2=6）
     for (const m of r1) {
       expect(alive(e, childOf(m, 'name'))).toBe(true); // 名牌随模板整体展开
       expect(alive(e, childOf(m, 'hpbar'))).toBe(true); // 血条
@@ -41,7 +41,7 @@ describe('Game F · 摆放（播种展开/回合重置/升星合成/摆子拖拽
     e.load(buildGameFBlueprint(FAST));
     for (let i = 0; i < 60; i++) e.world.tick();
     const r1 = mains(e);
-    expect(r1).toHaveLength(7); // 回合 1 展开（我方 4 + 阶段1 敌 3）
+    expect(r1).toHaveLength(10); // 回合 1 展开（我方 4 + W1 太阁 6）
     // 打到一方团灭 → resolution 'wipe' destroy-tagged 双向清场 → 全场 0 子（挂件级联，下面用名牌验）。
     const r1name = childOf(r1[0], 'name');
     let wiped = false;
@@ -57,7 +57,7 @@ describe('Game F · 摆放（播种展开/回合重置/升星合成/摆子拖拽
     // resolution + done 握手 → 回 prep（marker 留板）→ 下一开战拍重展开满状态新实例。
     let r2: string[] = [];
     for (let i = 0; i < 4000 && r2.length < 7; i++) { e.world.tick(); r2 = mains(e); }
-    expect(r2).toHaveLength(7); // 新一轮（仍阶段1）7 子
+    expect(r2).toHaveLength(10); // 新一轮（仍 W1）10 子
     for (const id of r2) expect(r1).not.toContain(id); // prefab.seq 单调 → 实例 id 全新（确定性可重放）
     for (const m of r2) {
       const hp = e.world.getComponent<Resource>(m, 'Resource')!;

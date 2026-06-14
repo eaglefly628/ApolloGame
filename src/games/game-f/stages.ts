@@ -68,13 +68,17 @@ export function gameFEnemyPreview(stageIdx: number, roundIdx: number, pf: Factio
   });
 }
 
-// ── 野怪波次（一图流：阶段1×4回合+每阶段末回合(r5)；固定阵容、死亡掉法球💰）──
-// 强度随阶段爬坡；图暂借甘宁（真野怪皮=美术 pass，见 art-data 待办）。掉落链：Mortal.dropTemplate（引擎现成）。
-export const PVE_WAVES: { stage: number; count: number; hpMul: number; atk: number }[] = [
-  { stage: 1, count: 3, hpMul: 0.35, atk: 6 },
-  { stage: 2, count: 4, hpMul: 0.6, atk: 9 },
-  { stage: 3, count: 4, hpMul: 0.9, atk: 13 },
-  { stage: 4, count: 5, hpMul: 1.2, atk: 17 },
-  { stage: 5, count: 6, hpMul: 1.6, atk: 22 },
+// ── 太阁守军波次（多兵种编成，master §七 W1–W5；index 对 deploy_pve_<stage>）──
+// 每波=若干 {太阁码 × 数量}；血/攻取 taikou master（unitByCode），死亡掉法球。W6 终盘 Boss 大招=后续片。
+// 注：stage1 全程 PVE；stage2–5 的 r5 PVE 波引入国人众部将（saito/hojo/mori/akechi/ishida/imagawa）。
+export interface WaveSlot { code: string; count: number }
+export const PVE_COMP: { stage: number; comp: WaveSlot[] }[] = [
+  { stage: 1, comp: [{ code: 'ash_yari', count: 4 }, { code: 'ash_yumi', count: 2 }] }, // W1 滩头①
+  { stage: 2, comp: [{ code: 'ash_yari', count: 4 }, { code: 'ash_teppo', count: 2 }, { code: 'kunoichi', count: 2 }] }, // W2 滩头②
+  { stage: 3, comp: [{ code: 'ash_yari', count: 3 }, { code: 'saito', count: 1 }, { code: 'ash_yumi', count: 2 }] }, // W3 国人众①（斋藤）
+  { stage: 4, comp: [{ code: 'hojo', count: 1 }, { code: 'mori', count: 1 }, { code: 'ash_yari', count: 4 }] }, // W4 国人众②（北条压前）
+  { stage: 5, comp: [{ code: 'akechi', count: 1 }, { code: 'ishida', count: 1 }, { code: 'imagawa', count: 1 }, { code: 'ash_yari', count: 3 }] }, // W5 国人众③
 ];
-export const MOB_BASE_HP = 90; // ×HP_SCALE×hpMul = 实际血量
+// 全波次引用到的唯一太阁码（combat 据此生成 mob_<code> + 武器模板）。
+export const PVE_CODES: string[] = [...new Set(PVE_COMP.flatMap((w) => w.comp.map((c) => c.code)))];
+

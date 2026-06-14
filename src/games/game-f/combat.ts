@@ -10,8 +10,8 @@ import {
 import { type HeroSpec, rosterFor, finalHp, finalAtk } from './heroes.js';
 import { F_HERO, F_FX_STRIKE, F_FX_ARROW, F_FX_BOLT, F_FX_FLAME, F_FX_DRAIN } from './assets.js';
 import { STAR_HP_MUL, STAR_DMG_MUL, STAR_SCALE, STAR_GLYPH } from './economy.js';
-import { PVE_WAVES } from './stages.js';
-import { type TaikouUnit, unitForStage } from './taikou.js';
+import { PVE_CODES } from './stages.js';
+import { type TaikouUnit, unitByCode } from './taikou.js';
 import { project, offsetToAxial } from './hex.js';
 
 // 普攻打击区：目标处小 sensor 伤害区，2 tick 自毁 + 表现两件（用户打击感批）：
@@ -209,8 +209,8 @@ export function slotEntity(h: HeroSpec, onSignal: string, col: number, row: numb
 
 // ── 太阁守军模板（T1）：简化棋子（无大招/蓝条；带血条+名牌；死亡掉法球）。Tag/血量由槽位 overrides 写。──
 // 按单位兵种分流：近战(枪/忍)=贴脸 strike_mob；远程(弓/铁炮)=射程外 proj_mob 追踪弹（GridMover.range=4）。
-function mobTemplate(unit: TaikouUnit, atk: number): PrefabTemplate {
-  const ranged = unit.atkType === 'ranged';
+function mobTemplate(unit: TaikouUnit): PrefabTemplate {
+  const ranged = unit.atkType !== 'melee'; // 远程/法术=追踪弹 + 射程驻足；近战=贴脸
   return {
     entities: {
       main: {
@@ -220,10 +220,10 @@ function mobTemplate(unit: TaikouUnit, atk: number): PrefabTemplate {
         Resource: { id: 'hp', current: 1, min: 0, max: 1 },
         Perception: { targetTag: TEAM_A, sightRadius: 0 },
         HexPos: { q: 0, r: 0 },
-        GridMover: { period: MOVE_PERIOD, elapsed: 0, haltStatusMask: FROZEN, glideSpeed: 0.8, ...(ranged ? { range: 4 } : {}) },
+        GridMover: { period: MOVE_PERIOD, elapsed: 0, haltStatusMask: FROZEN, glideSpeed: 0.8, ...(unit.range > 1 ? { range: unit.range } : {}) }, // master 射程
         Mortal: { resource: 'hp', atOrBelow: 0, dropTemplate: 'mob_death' }, // 死亡=掉法球+碎裂特效（mob_death 复合模板）
         Timer: { id: 'atk', elapsed: 0, duration: ATK_CD, loop: true },
-        SelfRule: { when: { kind: 'timer', id: 'atk', cmp: 'gte', value: ATK_CD - 1 }, whenGlobal: { kind: 'flag', id: 'in_combat', equals: true }, do: [ranged ? { kind: 'spawn', template: `proj_mob_${atk}`, at: 'self' } : { kind: 'spawn', template: `strike_mob_${atk}`, at: 'target' }], once: false, armed: false },
+        SelfRule: { when: { kind: 'timer', id: 'atk', cmp: 'gte', value: ATK_CD - 1 }, whenGlobal: { kind: 'flag', id: 'in_combat', equals: true }, do: [ranged ? { kind: 'spawn', template: `proj_mob_${unit.code}`, at: 'self' } : { kind: 'spawn', template: `strike_mob_${unit.code}`, at: 'target' }], once: false, armed: false },
         Tween: { target: 'Transform.scaleY', from: 1, to: 1.05, elapsed: 0, duration: 26, easing: 'easeInOut', done: false, loop: 'pingpong' },
         Sprite: sprite(unit.sprite, 4),
       },
@@ -333,11 +333,15 @@ export function templatesFor(ROSTER: HeroSpec[]): Record<string, PrefabTemplate>
         [`ult_${h.id}_s${s}`, ultTemplate(h.enemy, Math.round(h.ultDmg * STAR_DMG_MUL[s]), h.ultSize, h.ultFx, h.ultDot, h.ultFreeze, 'dmg_scale_a')],
       ]),
     ),
-    // 太阁守军（T1）：每波按关卡单位生成 mob 模板 + 对应武器（近战 strike / 远程 proj）；法球=死亡掉落（主角拾取=批C；结算清场兜底）。
-    PVE_WAVES.map((w): [string, PrefabTemplate] => unitForStage(w.stage).atkType === 'ranged'
-      ? [`proj_mob_${w.atk}`, projectile(TEAM_A, w.atk, F_FX_ARROW)]
-      : [`strike_mob_${w.atk}`, strike(TEAM_A, w.atk, F_FX_BOLT)]),
-    PVE_WAVES.map((w): [string, PrefabTemplate] => [`mob_s${w.stage}`, mobTemplate(unitForStage(w.stage), w.atk)]),
+    // 太阁守军（C）：每个出场太阁码 → mob_<code> 复合模板 + 对应武器（近战 strike / 远程·法术 proj）；master atk。
+    // 国人众/Boss 据此可进战斗；hp 由部署槽 overrides 写（master unit.hp）。法球=死亡掉落（结算清场兜底）。
+    PVE_CODES.map((code): [string, PrefabTemplate] => {
+      const u = unitByCode(code)!;
+      return u.atkType !== 'melee'
+        ? [`proj_mob_${code}`, projectile(TEAM_A, u.atk, u.atkType === 'magic' ? F_FX_BOLT : F_FX_ARROW)]
+        : [`strike_mob_${code}`, strike(TEAM_A, u.atk, F_FX_BOLT)];
+    }),
+    PVE_CODES.map((code): [string, PrefabTemplate] => [`mob_${code}`, mobTemplate(unitByCode(code)!)]),
     [[
       'loot_orb',
       { entities: { orb: { Transform: xf(0, 0), Shape: { kind: 'box', width: 10, height: 10 }, Sensor: {}, Sprite: sprite(F_FX_DRAIN, 5), Color: { tint: 0xd8607b, alpha: 1 }, Tag: { flags: LOOT | ZONE_FLAG }, Hitbox: { resource: 'loot', amount: -5, targetMask: PROTAG, consumeOnHit: true } } } }, // 044：真结算一次入账-5(负=给予)同拍自毁；主角零附件

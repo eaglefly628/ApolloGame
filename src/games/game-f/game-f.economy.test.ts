@@ -264,7 +264,7 @@ describe('Game F · 经济/商店（买入/刷新/卖出/经验连败/羁绊/符
     const e = new Engine({ tickRate: 60 });
     e.load(buildGameFBlueprint(FAST));
     for (let i = 0; i < 50; i++) e.world.tick();
-    expect(mains(e).filter((m) => m.startsWith('mob_'))).toHaveLength(3); // 阶段1=PVE_WAVES[0] 黄巾×3
+    expect(mains(e).filter((m) => m.startsWith('mob_'))).toHaveLength(6); // W1=枪足轻×4+弓足轻×2
     expect(mains(e).filter((m) => m.startsWith('hero_b_'))).toHaveLength(0); // 无 PvP 敌阵（整段野怪化）
     const mob = mains(e).find((m) => m.startsWith('mob_'))!;
     e.world.addComponent(mob, { type: 'ResourceModify', resourceId: 'hp', amount: -99999, scope: 'local' });
