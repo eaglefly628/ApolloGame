@@ -97,7 +97,9 @@ export const cardPileCapability = defineCapability({
       // REQ-F-041：读 Signal（refreshOnSignal）→ 与 event-when（读 Flag 写 Signal）互锁，且 clickable
       // 自带 runsAfter:['event-when']（先清后标）——cp→ew→clickable→(Signal)→cp 三元环。补 'event-when'
       // 'clickable' 维持输入先行：刷新读到的是上一拍信号（prep/点击级操作，16ms 不可感知）。
-      runsBefore: ['poker-eval', 'card-score-pass', 'flow', 'zone-occupancy', 'group-count', 'self-rule', 'resource-apply', 'event-when', 'clickable'],
+      // 'keybind'（clickable 的非空间孪生，同样 写 Signal + runsAfter event-when）同理补入——任何
+      // card-pile+keybind 并存的游戏都需此对称边（GameShell 按钮经 keybind 产信号时必踩，2026-06-14）。
+      runsBefore: ['poker-eval', 'card-score-pass', 'flow', 'zone-occupancy', 'group-count', 'self-rule', 'resource-apply', 'event-when', 'clickable', 'keybind'],
       reads: ['CardPile', 'InputQueue', 'PlayedHand', 'Flag', 'Resource', 'Signal'],
       writes: ['CardPile', 'PlayedHand', 'Flag', 'Resource'],
       consumes: [],

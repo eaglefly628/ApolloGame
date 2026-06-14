@@ -2,6 +2,7 @@ import { describe, it, expect } from 'vitest';
 import { World } from '@engine/core/world.js';
 import type { CardPile, PlayedHand, Flag, InputQueue, RawInputData } from '@engine/protocol/components.js';
 import { cardPileCapability } from './card-pile.js';
+import { keybindCapability, clickableCapability, eventWhenCapability } from './index.js';
 
 // 牌码：suit*100+rank（这里多用 suit0 → 码=rank，便读）。
 const w0 = (deck: number[], handSize: number, actions: RawInputData[] = []): World => {
@@ -270,5 +271,17 @@ describe('card-pile · REQ-F-048② 袋归还', () => {
     expect(pile(w).deck).toEqual([5, 313]); // 袋底
     expect(w.getComponent<Resource>('r_sold', 'Resource')!.current).toBe(0); // 清零防重复归还
     w.destroyEntity('s1');
+  });
+});
+
+describe('card-pile · 定序守护：与 keybind 共存不成环（2026-06-14）', () => {
+  it('cardPile + keybind + event-when + clickable 同场拓扑可排序（不抛环）', () => {
+    // keybind 是 clickable 的非空间孪生（写 Signal + runsAfter event-when）；card-pile 读其 Signal。
+    // 旧 cp.runsBefore 列了 clickable 漏了 keybind → cp↔keybind↔event-when 三元环。补 'keybind' 破环。
+    const w = new World();
+    for (const c of [eventWhenCapability, clickableCapability, keybindCapability, cardPileCapability]) {
+      for (const s of c.systems) w.addSystem(s);
+    }
+    expect(() => w.tick()).not.toThrow(); // 成环会在拓扑排序时抛 "Circular dependency"
   });
 });
