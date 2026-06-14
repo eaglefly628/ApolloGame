@@ -77,4 +77,31 @@ Run 开始,读 deck_hubao.cards:
 4. 打 `game-f-taikou-roster.md` 九州 **W1→W2** → 结算扣血/给金/记 `contribution` → 进度条累加。
 5. vitest 确定性 hash 绿。
 
-> 复诵:虎豹铁骑 5 卡 + 7 魏武将 + 加载器聚合技巧,全纯数据、零缺口依赖。T1 填 roster 九州 W1–W2,T5 填本包,T2 照 §四聚合 → v1 闭环不 block。
+## 六、实装核验(对真实代码)+ buff 精确构造配方(§二简写以本节为准)
+
+**已核四个能力的真实签名(2026-06-13):**
+- `card-pile{owner, deck(预洗牌码 number[]), hand, handSize}` → 募兵「预配权重牌袋」**写法正确**(把更多魏码烘进 deck)。
+- `self-rule{when(读自身组件), do:[{kind:set-flag|modify-resource|set-state|destroy|spawn, op?,value?,template?,at?}], once?}` → 招降/铺场/「万军取首·张飞击杀回蓝」**写法正确**(spawn 发 SpawnRequest;self 条件读自身)。
+- `effect-apply`:`Effect{op:'add'|'mul'|'set', order, valueFrom:{resourceId,coeff?,timesResourceId?}}` —— 有序结算 + 动态值,**够拼 buff 倍率**。
+- 🔴 **修正**:`group-count{countResource, requiredTag(含齐 ALL-bits 语义)}` **每 tick 把"数量" set 进 countResource**,**无** `perUnit`、**无锁存**、**不直接产 buff**。§二「虎豹骑令」那行的一步写法作废,改用下面配方。
+
+**buf 精确构造配方(给 T2,照这个拼):**
+```
+① 计数:  GroupCount{ countResource:'wei_cav_count', requiredTag: WEI|CAVALRY }   // 每tick set 魏骑数
+② 转倍率(每tick信号 'buff_tick'=一个 loop Timer 驱动,两 Effect 按 order 结算):
+     Effect{ onSignal:'buff_tick', target:'buf_wei', op:'set', value:1,                      order:0 }
+     Effect{ onSignal:'buff_tick', target:'buf_wei', op:'add',
+             valueFrom:{ resourceId:'wei_cav_count', coeff:0.08 },                            order:1 }
+     → buf_wei = 1 + 0.08 × 魏骑数        (虎豹骑令)
+③ 速攻令同法:  EventWhen{ when: round ≤3 } → buf_early = 1.15,否则 1.0
+④ 聚合成单一 scaleByResource(用 valueFrom.timesResourceId 两资源相乘):
+     Effect{ target:'buf_wei_total', op:'set', valueFrom:{ resourceId:'buf_wei', timesResourceId:'buf_early' } }
+     → buf_wei_total = buf_wei × buf_early
+⑤ 魏骑 strike.hitbox.scaleByResource = 'buf_wei_total'     // hitbox 只读一个资源(已核 §REQ-F-047)
+```
+- **注**:用 **live 每-tick 计数**(非开战锁存)——魏骑中途阵亡 buff 会随之降,MVP 可接受;TFT 式「开战锁存」是后续 refinement(给 group-count 加一个"仅 prep→combat 那拍刷新"的门,届时评估)。
+- **这套(group-count 计 → 有序 Effect 转倍率 → timesResourceId 聚合 → 单一 scaleByResource)就是"全队 buff 纯数据落地"的真实配方**,已逐能力核验可行,零新缺口。
+
+---
+
+> 复诵:虎豹铁骑 5 卡 + 7 魏武将 + buff 构造配方(§六,已对真实代码核验),全纯数据、零缺口依赖。T1 填 roster 九州 W1–W2,T5 填本包,T2 照 §六配方 → v1 闭环不 block。

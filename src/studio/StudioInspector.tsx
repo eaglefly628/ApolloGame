@@ -4,6 +4,7 @@ import { CanvasRenderer } from '@renderer/canvas-renderer.js';
 import { parseAssetIndex, AssetManager, ImageAssetLoader, type AssetIndex } from '@assets/index.js';
 import { KeyboardInputSource, MultiInputSource, type InputSource } from '@net/index.js';
 import type { WorldSnapshot } from '@engine/core/types.js';
+import { getCameraView } from '@engine/protocol/camera-view.js';
 import type { WorldBlueprint } from '../assembly/demo.assembly.js';
 import { demoBlueprint } from '../assembly/demo.assembly.js';
 import {
@@ -97,7 +98,8 @@ const GAMES: GameDef[] = [
     id: 'game-f',
     title: 'Game F · 三国自走棋',
     build: () => buildGameFBlueprint(),
-    viewport: { w: 560, h: 460 },
+    viewport: { w: 1280, h: 720 }, // 原生视口(=Camera.viewportW/H)；预览按 previewScale CSS 缩放铺满列
+
     makeAssets: () => {
       const a = new AssetManager(new ImageAssetLoader());
       a.registerManifest(GAME_F_ASSETS);
@@ -266,10 +268,12 @@ export function StudioInspector({ onBack, extraGame }: { onBack: () => void; ext
   const [treeSearch, setTreeSearch] = useState(''); // 数据树全文搜索
   const [activeDomain, setActiveDomain] = useState<string | null>(null); // null = 全部域；否则只看该域
   const [showKnobs, setShowKnobs] = useState(false); // "能配啥" schema 参考面板
+  const [selectedEntity, setSelectedEntity] = useState<string | null>(null); // 点中的实体 → 预览框高亮
   const previewRef = useRef<HTMLDivElement>(null);
   const engineRef = useRef<Engine | null>(null);
   const rendererRef = useRef<CanvasRenderer | null>(null);
   const entityRefs = useRef<Map<string, HTMLDetailsElement>>(new Map()); // 实体 id → 数据树 DOM(定位用)
+  const domainRefs = useRef<Map<string, HTMLDetailsElement>>(new Map()); // 域 id → 折叠组 DOM(搜索时展开)
 
   const dirty = workingBp !== appliedBp;
 
@@ -279,9 +283,11 @@ export function StudioInspector({ onBack, extraGame }: { onBack: () => void; ext
     const targetId = usedBy.find((u) => entityRefs.current.has(u));
     if (!targetId) return false;
     const el = entityRefs.current.get(targetId)!;
+    for (const d of domainRefs.current.values()) d.open = true; // 展开所有域，确保目标可见
     el.open = true;
     el.scrollIntoView({ behavior: 'smooth', block: 'center' });
     setFlashed(targetId);
+    setSelectedEntity(targetId); // 定位即选中 → 预览框同步高亮
     window.setTimeout(() => setFlashed((f) => (f === targetId ? null : f)), 1500);
     return true;
   }, []);
@@ -343,6 +349,7 @@ export function StudioInspector({ onBack, extraGame }: { onBack: () => void; ext
     setTreeNonce((n) => n + 1);
     setTreeSearch('');
     setActiveDomain(null);
+    setSelectedEntity(null);
   }, []);
 
   const apply = useCallback(() => setAppliedBp(workingBp), [workingBp]);
@@ -433,29 +440,37 @@ export function StudioInspector({ onBack, extraGame }: { onBack: () => void; ext
   const filtered = useMemo(() => filterEntities(inspected, treeSearch), [inspected, treeSearch]);
   const domainGroups = useMemo(() => groupByDomain(filtered), [filtered]);
 
+  // 搜索时自动展开命中的域+实体(filtered 已只含命中)；清空搜索则保持折叠默认。
+  useEffect(() => {
+    if (treeSearch.trim().length === 0) return;
+    for (const d of domainRefs.current.values()) d.open = true;
+    for (const e of entityRefs.current.values()) e.open = true;
+  }, [treeSearch, filtered, gameId, treeNonce]);
+
   // 单个实体卡（可展开，全字段可改）—— 供按域分组渲染复用。
   const renderEntity = (ent: InspectedEntity) => (
     <details
       key={ent.id}
-      open
       ref={(el) => {
         if (el) entityRefs.current.set(ent.id, el);
         else entityRefs.current.delete(ent.id);
       }}
       style={{
-        background: flashed === ent.id ? 'rgba(56,189,248,0.12)' : C.panel,
+        background:
+          selectedEntity === ent.id ? 'rgba(251,191,36,0.10)' : flashed === ent.id ? 'rgba(56,189,248,0.12)' : C.panel,
         borderRadius: 8,
-        border: `1px solid ${flashed === ent.id ? C.accent : C.border}`,
+        border: `1px solid ${selectedEntity === ent.id ? C.amber : flashed === ent.id ? C.accent : C.border}`,
         transition: 'background 0.4s, border-color 0.4s',
       }}
     >
       <summary
+        onClick={() => setSelectedEntity(ent.id)}
         style={{
           cursor: 'pointer',
           padding: '8px 12px',
           fontFamily: 'monospace',
           fontSize: 13,
-          color: C.accent,
+          color: selectedEntity === ent.id ? C.amber : C.accent,
           userSelect: 'none',
         }}
       >
@@ -513,6 +528,20 @@ export function StudioInspector({ onBack, extraGame }: { onBack: () => void; ext
 
   const currentDef = allGames.find((g) => g.id === gameId);
   const vp = currentDef?.viewport ?? { w: 640, h: 400 };
+  // 预览缩放：游戏按原生视口渲染(如 game-f 1280×720)，再 CSS 缩放铺满列(约 620px) → 全景可见，
+  // 不再"只显示中间一块"(此前把视口设小，看到的是相机中心的一小窗)。
+  const previewScale = Math.min(1, 620 / vp.w);
+  // 选中实体在预览框里的屏幕坐标(世界→屏幕，与渲染器同一相机契约)× 预览缩放。无 Transform → null。
+  const selectedScreenPos = useMemo(() => {
+    if (!selectedEntity) return null;
+    const comps = snapshot[selectedEntity] as Record<string, unknown> | undefined;
+    const t = comps?.['Transform'] as { x: number; y: number } | undefined;
+    if (!t) return null;
+    const cam = engineRef.current ? getCameraView(engineRef.current.world) : null;
+    const sx = cam ? vp.w / 2 + (t.x - cam.centerX) * cam.zoom : t.x;
+    const sy = cam ? vp.h / 2 + (t.y - cam.centerY) * cam.zoom : t.y;
+    return { x: sx * previewScale, y: sy * previewScale };
+  }, [selectedEntity, snapshot, previewScale, vp.w, vp.h]);
 
   const btn = (extra: React.CSSProperties = {}): React.CSSProperties => ({
     padding: '6px 14px',
@@ -590,20 +619,49 @@ export function StudioInspector({ onBack, extraGame }: { onBack: () => void; ext
         {/* Left: preview + state + capabilities + assets */}
         <div style={{ flex: '0 0 660px', maxWidth: '100%' }}>
           <div
-            ref={previewRef}
-            tabIndex={0}
-            onClick={(e) => e.currentTarget.focus()}
             style={{
-              width: vp.w,
-              height: vp.h,
+              position: 'relative',
+              width: vp.w * previewScale,
+              height: vp.h * previewScale,
               maxWidth: '100%',
               background: '#16213e',
               borderRadius: 8,
               border: `1px solid ${C.border}`,
               overflow: 'hidden',
-              outline: 'none',
             }}
-          />
+          >
+            {/* 按原生视口渲染，再 CSS 缩放铺满外框 → 全景可见 */}
+            <div
+              ref={previewRef}
+              tabIndex={0}
+              onClick={(e) => e.currentTarget.focus()}
+              style={{
+                width: vp.w,
+                height: vp.h,
+                transform: `scale(${previewScale})`,
+                transformOrigin: 'top left',
+                outline: 'none',
+              }}
+            />
+            {/* 选中实体聚光高亮：环 + 四周压暗(box-shadow 被外框 overflow 裁成遮罩) */}
+            {selectedScreenPos && (
+              <div
+                style={{
+                  position: 'absolute',
+                  left: selectedScreenPos.x,
+                  top: selectedScreenPos.y,
+                  transform: 'translate(-50%, -50%)',
+                  width: 28,
+                  height: 28,
+                  border: `2px solid ${C.amber}`,
+                  borderRadius: 6,
+                  boxShadow: '0 0 0 9999px rgba(0,0,0,0.32)',
+                  pointerEvents: 'none',
+                  transition: 'left 0.12s, top 0.12s',
+                }}
+              />
+            )}
+          </div>
 
           {/* Playback controls */}
           <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginTop: 6 }}>
@@ -618,6 +676,14 @@ export function StudioInspector({ onBack, extraGame }: { onBack: () => void; ext
           <div style={{ color: C.dim, fontSize: 11, marginTop: 4 }}>
             空间预览（画布）：有 Transform/Shape 的实体在此可见；纯逻辑/文字游戏在此为空，看下方实时状态 + 右侧数据。
           </div>
+
+          {selectedEntity && (
+            <div style={{ color: C.amber, fontSize: 11, marginTop: 4, display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
+              ◎ 选中 <b style={{ fontFamily: 'monospace' }}>{selectedEntity}</b>
+              {!selectedScreenPos && <span style={{ color: C.dim }}>（无 Transform，预览框中无位置）</span>}
+              <button onClick={() => setSelectedEntity(null)} style={btn({ padding: '1px 8px', fontSize: 10 })}>清除选中</button>
+            </div>
+          )}
 
           <LiveState snapshot={snapshot} tick={tick} />
 
@@ -764,24 +830,45 @@ export function StudioInspector({ onBack, extraGame }: { onBack: () => void; ext
           <div style={{ color: C.dim, fontSize: 11, marginBottom: 8 }}>
             完整数据（按域分类 · 实体 → 组件 → 字段，全可改；改完点上方"重跑"应用）
           </div>
-          <div key={`${gameId}:${treeNonce}`} style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
+          <div key={`${gameId}:${treeNonce}`} style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
             {domainGroups.filter((g) => activeDomain === null || g.rule.id === activeDomain).length === 0 && (
               <div style={{ color: C.dim, fontSize: 12 }}>（无匹配实体）</div>
             )}
             {domainGroups
               .filter((g) => activeDomain === null || g.rule.id === activeDomain)
               .map((g) => (
-                <div key={g.rule.id}>
-                  <div style={{ color: C.dim2, fontSize: 12, fontWeight: 700, margin: '2px 0 6px', display: 'flex', alignItems: 'center', gap: 6 }}>
+                <details
+                  key={g.rule.id}
+                  ref={(el) => {
+                    if (el) domainRefs.current.set(g.rule.id, el);
+                    else domainRefs.current.delete(g.rule.id);
+                  }}
+                  style={{ background: 'rgba(255,255,255,0.02)', borderRadius: 8, border: `1px solid ${C.border}` }}
+                >
+                  <summary
+                    style={{
+                      cursor: 'pointer',
+                      padding: '8px 12px',
+                      fontSize: 12,
+                      fontWeight: 700,
+                      color: C.dim2,
+                      userSelect: 'none',
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: 6,
+                    }}
+                  >
                     <span>
                       {g.rule.icon} {g.rule.label}
                     </span>
                     <span style={{ color: C.dim, fontWeight: 400 }}>
                       · {g.entities.length} · {g.rule.hint}
                     </span>
+                  </summary>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: 8, padding: '4px 10px 10px' }}>
+                    {g.entities.map(renderEntity)}
                   </div>
-                  <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>{g.entities.map(renderEntity)}</div>
-                </div>
+                </details>
               ))}
           </div>
         </div>

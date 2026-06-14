@@ -49,6 +49,11 @@ export interface Hitbox extends Component {
   // 羁绊/战斗符文 = group-count 计数 → EventWhen 阈值 → Effect 写系数资源 → 此处生效；同模板两阵营
   // 各自系数用槽位 overrides 改本字段指向各自资源 id（纯数据）。fracOfMax 部分不乘（保"按目标max"语义）。
   scaleByResource?: string;
+  // ── 血量比例门 / 处决（REQ-F-061）── 命中那刻只读目标当前 hp 比例(current/max)做 gate：连续 Resource 烘不成
+  // Status、C→E→E 触发层够不到命中那刻目标血量 → 真缺口。只读门，不引入伤害分型/重定向（守边界）。
+  requireHpFracBelow?: number; // 仅作用于 hp 比例 < 此值的目标（残血技：target.current < max×此值）。
+  requireHpFracAbove?: number; // 仅作用于 hp 比例 >= 此值的目标（满血/精英开胃技）。
+  executeBelow?: number; // 命中且 hp 比例 < 此值 → 处决（清 0）；与 amount 同存 = 「低于阈值斩杀、否则常规伤害」。
 }
 
 // ── TimedEffect ── 一个限时/持续效果（DoT/regen/定时状态）。多个并存在 OverTime.effects 列表里。
