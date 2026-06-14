@@ -18,6 +18,7 @@ export interface TaikouUnit {
   cls: TaikouCls;
   seg: TaikouSeg;
   signature?: string; // 招牌大招语义（机制接线见后续片；🔴 者依赖 F-061/062）
+  execBelow?: number; // 斩杀线（F-061）：普攻对 hp 比例 < 此值的目标处决（谦信/立花/半藏）
 }
 
 // ── 滩头杂兵（roster §一 / §六；v1 成局）──
@@ -45,12 +46,12 @@ export const TAIKOU_BOSS: Record<string, TaikouUnit> = {
   ieyasu: { code: 'ieyasu', name: '德川家康·忍耐', sprite: F_TAIKOU.ieyasu, atkType: 'melee', hp: 2000, atk: 60, range: 1, cls: 'WAR', seg: 'tenshu', signature: '忍耐:自回复+反击' },
   honganji: { code: 'honganji', name: '本愿寺显如·一向一揆', sprite: F_TAIKOU.honganji, atkType: 'magic', hp: 1300, atk: 45, range: 2, cls: 'TAC', seg: 'tenshu', signature: '一揆:人海 spawn' },
   shingen: { code: 'shingen', name: '武田信玄·风林火山', sprite: F_TAIKOU.shingen, atkType: 'melee', hp: 1500, atk: 65, range: 1, cls: 'WAR', seg: 'tenshu', signature: '风林火山:阶段切换+骑冲（🟡部分 per-unit）' },
-  kenshin: { code: 'kenshin', name: '上杉谦信·军神', sprite: F_TAIKOU.kenshin, atkType: 'melee', hp: 1400, atk: 90, range: 1, cls: 'ASN', seg: 'tenshu', signature: '无双斩:斩杀残血（🔴 F-061）' },
+  kenshin: { code: 'kenshin', name: '上杉谦信·军神', sprite: F_TAIKOU.kenshin, atkType: 'melee', hp: 1400, atk: 90, range: 1, cls: 'ASN', seg: 'tenshu', signature: '无双斩:斩杀残血（F-061）', execBelow: 0.3 },
   yukimura: { code: 'yukimura', name: '真田幸村·六文钱', sprite: F_TAIKOU.yukimura, atkType: 'melee', hp: 1300, atk: 75, range: 1, cls: 'WAR', seg: 'tenshu', signature: '决死:自身残血加伤（🔴 F-061 valueFrom）' },
   masamune: { code: 'masamune', name: '伊达政宗·独眼龙', sprite: F_TAIKOU.masamune, atkType: 'ranged', hp: 1200, atk: 70, range: 4, cls: 'ARC', seg: 'tenshu', signature: '狙击:锁最高威胁（🔴 F-062）' },
   shimazu: { code: 'shimazu', name: '岛津义弘·钓野伏', sprite: F_TAIKOU.shimazu, atkType: 'ranged', hp: 1300, atk: 70, range: 2, cls: 'ASN', seg: 'tenshu', signature: '钓野伏:伏兵 spawn+绕后（🔴 F-062）' },
-  tachibana: { code: 'tachibana', name: '立花宗茂·雷切', sprite: F_TAIKOU.tachibana, atkType: 'melee', hp: 1250, atk: 80, range: 1, cls: 'WAR', seg: 'tenshu', signature: '雷切:暴击(🟡)+斩杀(🔴 F-061)' },
-  hattori: { code: 'hattori', name: '服部半藏·忍', sprite: F_TAIKOU.hattori, atkType: 'melee', hp: 1100, atk: 75, range: 1, cls: 'ASN', seg: 'tenshu', signature: '潜行+斩后排（🟡🔴 F-061/062）' },
+  tachibana: { code: 'tachibana', name: '立花宗茂·雷切', sprite: F_TAIKOU.tachibana, atkType: 'melee', hp: 1250, atk: 80, range: 1, cls: 'WAR', seg: 'tenshu', signature: '雷切:斩杀(F-061)+暴击(🟡缓)', execBelow: 0.25 },
+  hattori: { code: 'hattori', name: '服部半藏·忍', sprite: F_TAIKOU.hattori, atkType: 'melee', hp: 1100, atk: 75, range: 1, cls: 'ASN', seg: 'tenshu', signature: '斩杀(F-061)+潜行(🟡待核)', execBelow: 0.3 },
 };
 
 // 全谱（**按 unit.code 索引**，非对象属性名——滩头属性名是 yari 但 code 是 ash_yari）。供关卡表/降将/wave 查表。

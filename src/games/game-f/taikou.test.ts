@@ -33,6 +33,14 @@ describe('C 太阁全谱 roster（master §六 数据落地）', () => {
     expect(GAME_F_TEMPLATES['mob_hojo']).toBeDefined();
     expect(GAME_F_TEMPLATES['strike_mob_hojo']).toBeDefined(); // 北条 melee → 打击区
   });
+
+  it('天守 Boss 斩杀接线（slice3，F-061）：谦信进终盘波 + 普攻带 executeBelow；非斩杀单位不带', () => {
+    expect(PVE_COMP.find((w) => w.stage === 5)!.comp.some((c) => c.code === 'kenshin')).toBe(true); // 谦信终盘部署
+    const ken = GAME_F_TEMPLATES['strike_mob_kenshin'] as unknown as { entities: { area: { Hitbox: { executeBelow?: number } } } };
+    expect(ken.entities.area.Hitbox.executeBelow).toBe(0.3); // 军神·斩杀残血
+    const hojo = GAME_F_TEMPLATES['strike_mob_hojo'] as unknown as { entities: { area: { Hitbox: { executeBelow?: number } } } };
+    expect(hojo.entities.area.Hitbox.executeBelow).toBeUndefined(); // 北条非斩杀
+  });
 });
 
 describe('T1 太阁守军 roster（滩头杂兵 + mob 换皮）', () => {

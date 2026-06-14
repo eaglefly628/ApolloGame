@@ -337,9 +337,10 @@ export function templatesFor(ROSTER: HeroSpec[]): Record<string, PrefabTemplate>
     // 国人众/Boss 据此可进战斗；hp 由部署槽 overrides 写（master unit.hp）。法球=死亡掉落（结算清场兜底）。
     PVE_CODES.map((code): [string, PrefabTemplate] => {
       const u = unitByCode(code)!;
+      // 太阁 Boss 招牌：execBelow=斩杀线（F-061，谦信/立花/半藏）。普攻武器带处决。
       return u.atkType !== 'melee'
-        ? [`proj_mob_${code}`, projectile(TEAM_A, u.atk, u.atkType === 'magic' ? F_FX_BOLT : F_FX_ARROW)]
-        : [`strike_mob_${code}`, strike(TEAM_A, u.atk, F_FX_BOLT)];
+        ? [`proj_mob_${code}`, projectile(TEAM_A, u.atk, u.atkType === 'magic' ? F_FX_BOLT : F_FX_ARROW, 'dmg_scale_b', u.execBelow)]
+        : [`strike_mob_${code}`, strike(TEAM_A, u.atk, F_FX_BOLT, 'dmg_scale_b', u.execBelow)];
     }),
     PVE_CODES.map((code): [string, PrefabTemplate] => [`mob_${code}`, mobTemplate(unitByCode(code)!)]),
     [[
