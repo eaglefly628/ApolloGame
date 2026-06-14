@@ -1,6 +1,5 @@
 // Game F · 常量与底层助手（从 blueprint.ts 拆出；位/色/节奏/字体/几何助手）。
-// 叶子模块：只依赖 EntityBlueprint 类型，被 heroes/combat/flow/blueprint 复用。
-import type { EntityBlueprint } from '../../assembly/demo.assembly.js';
+// 叶子模块：位/色/节奏/字体 + xf/sprite/zlift 几何助手，被 heroes/combat/blueprint 复用。
 
 // 阵营（Tag.flags）。蜀=TEAM_A，魏=TEAM_B。ZONE_FLAG(=1<<0) 由 trigger-zone 约定，留给打击区。
 export const TEAM_A = 1 << 1; // 蜀
@@ -46,8 +45,4 @@ export const xf = (x: number, y: number): Record<string, unknown> => ({ x, y, ro
 export const sprite = (textureKey: string, zOrder: number): Record<string, unknown> => ({ textureKey, anchorX: 0.5, anchorY: 0.5, zOrder });
 // Shape 抬层 hack：永不注册的贴图 key → spriteReady 恒 false → 退化画 Shape，但 zOrder 取自 Sprite。
 export const zlift = (zOrder: number): Record<string, unknown> => ({ textureKey: '__zlift__', anchorX: 0.5, anchorY: 0.5, zOrder });
-// 棋盘内组件底盘（kit button/panel 的 canvas 形）：描边层(外扩)+底盘层 双 Shape。
-export const chrome = (id: string, x: number, y: number, w: number, h: number, fill: number, edge: number, z = 28.5, tag = 0): Record<string, EntityBlueprint> => ({
-  [`${id}_edge`]: { Transform: xf(x, y), Shape: { kind: 'box', width: w + 4, height: h + 4 }, Color: { tint: edge, alpha: 1 }, ...(tag ? { Tag: { flags: tag } } : {}), Sprite: zlift(z) },
-  [`${id}_bg`]: { Transform: xf(x, y), Shape: { kind: 'box', width: w, height: h }, Color: { tint: fill, alpha: 1 }, ...(tag ? { Tag: { flags: tag } } : {}), Sprite: zlift(z + 0.1) },
-});
+// （chrome 底盘工厂已去腐：调用点展平为字面 edge+bg 双 Shape，见 blueprint.ts）

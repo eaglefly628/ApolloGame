@@ -35,7 +35,7 @@ import { boardEntities, project, offsetToAxial, COLS, ROWS, TILE, ORIGIN_X, ORIG
 import {
   TEAM_A, TEAM_B, WARRIOR, TACTICIAN, FACT_SHU, FROZEN,
   PROTAG, LOOT, BAG, EQUIP, SHOPSLOT_BITS, RUNE, SHOPSLOT_ALL, BENCH_OCC, MARKER_VIS, PROJ, RESULT,
-  HP_SCALE, FONT_DISPLAY, FONT_BODY, xf, sprite, chrome,
+  HP_SCALE, FONT_DISPLAY, FONT_BODY, xf, sprite, zlift,
 } from './constants.js';
 import { type Faction, ROSTER, rosterFor, codesFor } from './heroes.js';
 import { STAGES, PVE_WAVES, MOB_BASE_HP, gameFEnemyPreview } from './stages.js';
@@ -72,14 +72,8 @@ export { GAME_F_TEMPLATES } from './combat.js';
 // ═══════════════════════════════════════════════════════════════
 
 // ── §4.1/§4.2 banded 结算（Game E 已证形态）：armed 旗开窗 → EventWhen(edge) 带条件命中 → Effect 改资源一次。──
-// 带宽语义注记：同窗内资源被前一 band 改写后，后续 band 的阈值按"改写后的值"再判（如利息可能含同回合收入）——
-// 确定性单调、每 band 每窗至多一次；TUNE 嫌宽就调阈值，不改逻辑。
-function band(sig: string, when: Record<string, unknown>, targetId: string, value: number): Record<string, EntityBlueprint> {
-  return {
-    [`when_${sig}`]: { EventWhen: { signal: sig, when, mode: 'edge', armed: false } },
-    [`eff_${sig}`]: { Effect: { onSignal: sig, kind: 'modify-resource', targetId, op: 'add', value } },
-  };
-}
+// （去腐：band 工厂已展平——调用点直接写字面 when_<sig> EventWhen + eff_<sig> Effect 双实体，见 build 体经济/贡献段。）
+// 带宽语义注记：同窗内资源被前一 band 改写后，后续 band 的阈值按"改写后的值"再判；确定性单调、每窗至多一次。
 const flagIs = (id: string): Record<string, unknown> => ({ kind: 'flag', id, equals: true });
 const resCmp = (id: string, cmp: string, value: number): Record<string, unknown> => ({ kind: 'resource', id, cmp, value });
 const and = (...of: Record<string, unknown>[]): Record<string, unknown> => ({ kind: 'and', of });
@@ -341,10 +335,14 @@ export function buildGameFBlueprint(pacing: GameFPacing = {}): WorldBlueprint {
       Color: { tint: 0x6a4a4f, alpha: 0 },
       Sprite: { textureKey: F_FX_STRIKE, anchorX: 0.5, anchorY: 0.5, zOrder: 30 },
     },
-    ...band('lvl_5', resCmp('xp', 'gte', 8), 'level', 1),
-    ...band('lvl_6', resCmp('xp', 'gte', 18), 'level', 1),
-    ...band('lvl_7', resCmp('xp', 'gte', 30), 'level', 1),
-    ...band('lvl_8', resCmp('xp', 'gte', 44), 'level', 1), // 阈值下调（用户：买经验/打赢要看得见升级）；+2/回合、买经验$4=+4，edge 单发+1，封顶 8
+    when_lvl_5: { EventWhen: { signal: 'lvl_5', when: resCmp('xp', 'gte', 8), mode: 'edge', armed: false } },
+    eff_lvl_5: { Effect: { onSignal: 'lvl_5', kind: 'modify-resource', targetId: 'level', op: 'add', value: 1 } },
+    when_lvl_6: { EventWhen: { signal: 'lvl_6', when: resCmp('xp', 'gte', 18), mode: 'edge', armed: false } },
+    eff_lvl_6: { Effect: { onSignal: 'lvl_6', kind: 'modify-resource', targetId: 'level', op: 'add', value: 1 } },
+    when_lvl_7: { EventWhen: { signal: 'lvl_7', when: resCmp('xp', 'gte', 30), mode: 'edge', armed: false } },
+    eff_lvl_7: { Effect: { onSignal: 'lvl_7', kind: 'modify-resource', targetId: 'level', op: 'add', value: 1 } },
+    when_lvl_8: { EventWhen: { signal: 'lvl_8', when: resCmp('xp', 'gte', 44), mode: 'edge', armed: false } }, // 阈值下调（用户：买经验/打赢要看得见升级）；+2/回合、买经验$4=+4，edge 单发+1，封顶 8
+    eff_lvl_8: { Effect: { onSignal: 'lvl_8', kind: 'modify-resource', targetId: 'level', op: 'add', value: 1 } },
     // 手动刷新（2 金）：按钮信号 → craft-recipe 原子扣 2 金置 reroll_paid → EventWhen(edge) → 'shop_refresh' → 复位。
     // 扣不起=配方整单不动（inbox 提示"扣不起就别发信号"的原子等价实现）；手动刷新不吃锁店门（锁住时也可花钱换牌）。
     btn_reroll: {
@@ -448,7 +446,8 @@ export function buildGameFBlueprint(pacing: GameFPacing = {}): WorldBlueprint {
     // sell 动作，任何相位可卖）；指针点选卖出停用（click_sell_off 恒假——「点谁谁消失」陷阱已除）。——
     f_click_sell_off: { Flag: { id: 'click_sell_off', active: false } }, // 恒假：点选卖出永闭
     // 备战台两侧各一个小垃圾桶（用户：左右各放一个、小一点）；任一 DropZone 落子=卖出（hitDropZone 通配）。
-    ...chrome('trash_bin', 200, 118, 32, 32, 0xfbeee4, 0xd65668, 18.5),
+    trash_bin_edge: { Transform: xf(200, 118), Shape: { kind: 'box', width: 36, height: 36 }, Color: { tint: 0xd65668, alpha: 1 }, Sprite: zlift(18.5) },
+    trash_bin_bg: { Transform: xf(200, 118), Shape: { kind: 'box', width: 32, height: 32 }, Color: { tint: 0xfbeee4, alpha: 1 }, Sprite: zlift(18.6) },
     trash_bin: {
       Transform: xf(200, 118),
       Shape: { kind: 'box', width: 30, height: 30 },
@@ -457,7 +456,8 @@ export function buildGameFBlueprint(pacing: GameFPacing = {}): WorldBlueprint {
       Color: { tint: 0xd65668, alpha: 0.95 },
       Sprite: { textureKey: F_FX_STRIKE, anchorX: 0.5, anchorY: 0.5, zOrder: 27 },
     },
-    ...chrome('trash_bin_l', -200, 118, 32, 32, 0xfbeee4, 0xd65668, 18.5),
+    trash_bin_l_edge: { Transform: xf(-200, 118), Shape: { kind: 'box', width: 36, height: 36 }, Color: { tint: 0xd65668, alpha: 1 }, Sprite: zlift(18.5) },
+    trash_bin_l_bg: { Transform: xf(-200, 118), Shape: { kind: 'box', width: 32, height: 32 }, Color: { tint: 0xfbeee4, alpha: 1 }, Sprite: zlift(18.6) },
     trash_bin_l: {
       Transform: xf(-200, 118),
       Shape: { kind: 'box', width: 30, height: 30 },
@@ -575,10 +575,15 @@ export function buildGameFBlueprint(pacing: GameFPacing = {}): WorldBlueprint {
     // 整组 destroy-tagged 收走（天然一次性，无需 armed 旗）。效果=经济型（全现有词汇，无 buff 施加依赖）。
     // 开局强化三选一（一次性，仅回合1）：加标题说明 + 开战拍自动收走（用户报「永远在中央、不知何意」——
     // 真打的时候就去掉）。Tag RUNE → 点选生效后 destroy-tagged 整组收（含标题），没点则 ph_combat 兜底收走。
-    ...chrome('rune_title', 0, -128, 344, 22, 0xfffdfa, 0xe3c896, 32.5, RUNE), // 底盘随符文整组收走
-    ...chrome('rune_a', -110, -100, 100, 44, 0xfffdfa, 0xe3c896, 32.5, RUNE), // 底盘随符文整组收走
-    ...chrome('rune_b', 0, -100, 100, 44, 0xfffdfa, 0xe3c896, 32.5, RUNE), // 底盘随符文整组收走
-    ...chrome('rune_c', 110, -100, 100, 44, 0xfffdfa, 0xe3c896, 32.5, RUNE), // 底盘随符文整组收走
+    // 符文三选一底盘（去腐：原 chrome 生成器展平为字面 edge+bg 双 Shape，逐字等价；Tag RUNE 随整组收走）。
+    rune_title_edge: { Transform: xf(0, -128), Shape: { kind: 'box', width: 348, height: 26 }, Color: { tint: 0xe3c896, alpha: 1 }, Tag: { flags: RUNE }, Sprite: zlift(32.5) },
+    rune_title_bg: { Transform: xf(0, -128), Shape: { kind: 'box', width: 344, height: 22 }, Color: { tint: 0xfffdfa, alpha: 1 }, Tag: { flags: RUNE }, Sprite: zlift(32.6) },
+    rune_a_edge: { Transform: xf(-110, -100), Shape: { kind: 'box', width: 104, height: 48 }, Color: { tint: 0xe3c896, alpha: 1 }, Tag: { flags: RUNE }, Sprite: zlift(32.5) },
+    rune_a_bg: { Transform: xf(-110, -100), Shape: { kind: 'box', width: 100, height: 44 }, Color: { tint: 0xfffdfa, alpha: 1 }, Tag: { flags: RUNE }, Sprite: zlift(32.6) },
+    rune_b_edge: { Transform: xf(0, -100), Shape: { kind: 'box', width: 104, height: 48 }, Color: { tint: 0xe3c896, alpha: 1 }, Tag: { flags: RUNE }, Sprite: zlift(32.5) },
+    rune_b_bg: { Transform: xf(0, -100), Shape: { kind: 'box', width: 100, height: 44 }, Color: { tint: 0xfffdfa, alpha: 1 }, Tag: { flags: RUNE }, Sprite: zlift(32.6) },
+    rune_c_edge: { Transform: xf(110, -100), Shape: { kind: 'box', width: 104, height: 48 }, Color: { tint: 0xe3c896, alpha: 1 }, Tag: { flags: RUNE }, Sprite: zlift(32.5) },
+    rune_c_bg: { Transform: xf(110, -100), Shape: { kind: 'box', width: 100, height: 44 }, Color: { tint: 0xfffdfa, alpha: 1 }, Tag: { flags: RUNE }, Sprite: zlift(32.6) },
     rune_title: { Transform: xf(0, -128), Shape: { kind: 'box', width: 340, height: 18 }, Tag: { flags: RUNE }, Text: { content: '◆ 开局强化 · 三选一（点击生效，开战后消失）', fontSize: 13, fontFamily: FONT_DISPLAY, anchor: 'center', lineSpacing: 0 }, Color: { tint: 0xcf9a3f, alpha: 1 }, Sprite: { textureKey: F_FX_STRIKE, anchorX: 0.5, anchorY: 0.5, zOrder: 33 } },
     rune_a: { Transform: xf(-110, -100), Shape: { kind: 'box', width: 96, height: 40 }, Clickable: { action: 'rune_a' }, Tag: { flags: RUNE }, Text: { content: '屯粮：+5 金', fontSize: 12, fontFamily: FONT_BODY, anchor: 'center', lineSpacing: 0 }, Color: { tint: 0xcf9a3f, alpha: 1 }, Sprite: { textureKey: F_FX_STRIKE, anchorX: 0.5, anchorY: 0.5, zOrder: 33 } },
     rune_b: { Transform: xf(0, -100), Shape: { kind: 'box', width: 96, height: 40 }, Clickable: { action: 'rune_b' }, Tag: { flags: RUNE }, Text: { content: '砺兵：+8 经验', fontSize: 12, fontFamily: FONT_BODY, anchor: 'center', lineSpacing: 0 }, Color: { tint: 0xc98fc4, alpha: 1 }, Sprite: { textureKey: F_FX_STRIKE, anchorX: 0.5, anchorY: 0.5, zOrder: 33 } },
@@ -617,39 +622,60 @@ export function buildGameFBlueprint(pacing: GameFPacing = {}): WorldBlueprint {
     eff_stage_up_stage: { Effect: { onSignal: 'stage_up', kind: 'modify-resource', targetId: 'stage_idx', op: 'add', value: 1 } },
     eff_stage_up_round: { Effect: { onSignal: 'stage_up', kind: 'modify-resource', targetId: 'round_idx', op: 'set', value: 1 } },
     // —— §4.1 基础收入（按回合全局序 1,2,3,4,≥5 → 2,2,3,4,5 金；全局序≥5 ⇔ 阶段>1 或 round≥5）——
-    ...band('income_2', and(flagIs('income_armed'), resCmp('stage_idx', 'eq', 1), resCmp('round_idx', 'lte', 2)), 'gold', 2),
-    ...band('income_3', and(flagIs('income_armed'), resCmp('stage_idx', 'eq', 1), resCmp('round_idx', 'eq', 3)), 'gold', 3),
-    ...band('income_4', and(flagIs('income_armed'), resCmp('stage_idx', 'eq', 1), resCmp('round_idx', 'eq', 4)), 'gold', 4),
-    ...band('income_5', and(flagIs('income_armed'), or(resCmp('stage_idx', 'gt', 1), resCmp('round_idx', 'gte', 5))), 'gold', 5),
+    when_income_2: { EventWhen: { signal: 'income_2', when: and(flagIs('income_armed'), resCmp('stage_idx', 'eq', 1), resCmp('round_idx', 'lte', 2)), mode: 'edge', armed: false } },
+    eff_income_2: { Effect: { onSignal: 'income_2', kind: 'modify-resource', targetId: 'gold', op: 'add', value: 2 } },
+    when_income_3: { EventWhen: { signal: 'income_3', when: and(flagIs('income_armed'), resCmp('stage_idx', 'eq', 1), resCmp('round_idx', 'eq', 3)), mode: 'edge', armed: false } },
+    eff_income_3: { Effect: { onSignal: 'income_3', kind: 'modify-resource', targetId: 'gold', op: 'add', value: 3 } },
+    when_income_4: { EventWhen: { signal: 'income_4', when: and(flagIs('income_armed'), resCmp('stage_idx', 'eq', 1), resCmp('round_idx', 'eq', 4)), mode: 'edge', armed: false } },
+    eff_income_4: { Effect: { onSignal: 'income_4', kind: 'modify-resource', targetId: 'gold', op: 'add', value: 4 } },
+    when_income_5: { EventWhen: { signal: 'income_5', when: and(flagIs('income_armed'), or(resCmp('stage_idx', 'gt', 1), resCmp('round_idx', 'gte', 5))), mode: 'edge', armed: false } },
+    eff_income_5: { Effect: { onSignal: 'income_5', kind: 'modify-resource', targetId: 'gold', op: 'add', value: 5 } },
     // —— §4.1 利息 ⌊gold/10⌋ 上限 +5（5 条 banded）——
-    ...band('interest_1', and(flagIs('income_armed'), resCmp('gold', 'gte', 10), resCmp('gold', 'lt', 20)), 'gold', 1),
-    ...band('interest_2', and(flagIs('income_armed'), resCmp('gold', 'gte', 20), resCmp('gold', 'lt', 30)), 'gold', 2),
-    ...band('interest_3', and(flagIs('income_armed'), resCmp('gold', 'gte', 30), resCmp('gold', 'lt', 40)), 'gold', 3),
-    ...band('interest_4', and(flagIs('income_armed'), resCmp('gold', 'gte', 40), resCmp('gold', 'lt', 50)), 'gold', 4),
-    ...band('interest_5', and(flagIs('income_armed'), resCmp('gold', 'gte', 50)), 'gold', 5),
+    when_interest_1: { EventWhen: { signal: 'interest_1', when: and(flagIs('income_armed'), resCmp('gold', 'gte', 10), resCmp('gold', 'lt', 20)), mode: 'edge', armed: false } },
+    eff_interest_1: { Effect: { onSignal: 'interest_1', kind: 'modify-resource', targetId: 'gold', op: 'add', value: 1 } },
+    when_interest_2: { EventWhen: { signal: 'interest_2', when: and(flagIs('income_armed'), resCmp('gold', 'gte', 20), resCmp('gold', 'lt', 30)), mode: 'edge', armed: false } },
+    eff_interest_2: { Effect: { onSignal: 'interest_2', kind: 'modify-resource', targetId: 'gold', op: 'add', value: 2 } },
+    when_interest_3: { EventWhen: { signal: 'interest_3', when: and(flagIs('income_armed'), resCmp('gold', 'gte', 30), resCmp('gold', 'lt', 40)), mode: 'edge', armed: false } },
+    eff_interest_3: { Effect: { onSignal: 'interest_3', kind: 'modify-resource', targetId: 'gold', op: 'add', value: 3 } },
+    when_interest_4: { EventWhen: { signal: 'interest_4', when: and(flagIs('income_armed'), resCmp('gold', 'gte', 40), resCmp('gold', 'lt', 50)), mode: 'edge', armed: false } },
+    eff_interest_4: { Effect: { onSignal: 'interest_4', kind: 'modify-resource', targetId: 'gold', op: 'add', value: 4 } },
+    when_interest_5: { EventWhen: { signal: 'interest_5', when: and(flagIs('income_armed'), resCmp('gold', 'gte', 50)), mode: 'edge', armed: false } },
+    eff_interest_5: { Effect: { onSignal: 'interest_5', kind: 'modify-resource', targetId: 'gold', op: 'add', value: 5 } },
     // —— §4.1 连胜金：2–3 连 +1；4 连 +2；5+ 连 +3 ——
-    ...band('streak_1', and(flagIs('income_armed'), resCmp('win_streak', 'gte', 2), resCmp('win_streak', 'lte', 3)), 'gold', 1),
-    ...band('streak_2', and(flagIs('income_armed'), resCmp('win_streak', 'eq', 4)), 'gold', 2),
-    ...band('streak_3', and(flagIs('income_armed'), resCmp('win_streak', 'gte', 5)), 'gold', 3),
+    when_streak_1: { EventWhen: { signal: 'streak_1', when: and(flagIs('income_armed'), resCmp('win_streak', 'gte', 2), resCmp('win_streak', 'lte', 3)), mode: 'edge', armed: false } },
+    eff_streak_1: { Effect: { onSignal: 'streak_1', kind: 'modify-resource', targetId: 'gold', op: 'add', value: 1 } },
+    when_streak_2: { EventWhen: { signal: 'streak_2', when: and(flagIs('income_armed'), resCmp('win_streak', 'eq', 4)), mode: 'edge', armed: false } },
+    eff_streak_2: { Effect: { onSignal: 'streak_2', kind: 'modify-resource', targetId: 'gold', op: 'add', value: 2 } },
+    when_streak_3: { EventWhen: { signal: 'streak_3', when: and(flagIs('income_armed'), resCmp('win_streak', 'gte', 5)), mode: 'edge', armed: false } },
+    eff_streak_3: { Effect: { onSignal: 'streak_3', kind: 'modify-resource', targetId: 'gold', op: 'add', value: 3 } },
     // —— §4.1 连败金（准则 P2，与连胜同形档位）——
-    ...band('lstreak_1', and(flagIs('income_armed'), resCmp('lose_streak', 'gte', 2), resCmp('lose_streak', 'lte', 3)), 'gold', 1),
-    ...band('lstreak_2', and(flagIs('income_armed'), resCmp('lose_streak', 'eq', 4)), 'gold', 2),
-    ...band('lstreak_3', and(flagIs('income_armed'), resCmp('lose_streak', 'gte', 5)), 'gold', 3),
+    when_lstreak_1: { EventWhen: { signal: 'lstreak_1', when: and(flagIs('income_armed'), resCmp('lose_streak', 'gte', 2), resCmp('lose_streak', 'lte', 3)), mode: 'edge', armed: false } },
+    eff_lstreak_1: { Effect: { onSignal: 'lstreak_1', kind: 'modify-resource', targetId: 'gold', op: 'add', value: 1 } },
+    when_lstreak_2: { EventWhen: { signal: 'lstreak_2', when: and(flagIs('income_armed'), resCmp('lose_streak', 'eq', 4)), mode: 'edge', armed: false } },
+    eff_lstreak_2: { Effect: { onSignal: 'lstreak_2', kind: 'modify-resource', targetId: 'gold', op: 'add', value: 2 } },
+    when_lstreak_3: { EventWhen: { signal: 'lstreak_3', when: and(flagIs('income_armed'), resCmp('lose_streak', 'gte', 5)), mode: 'edge', armed: false } },
+    eff_lstreak_3: { Effect: { onSignal: 'lstreak_3', kind: 'modify-resource', targetId: 'gold', op: 'add', value: 3 } },
     // —— §4.2 玩家伤害（败方）：阶段基础伤(1/2 阶段=0/2) + 存活敌数近似 2（REQ-022 group-count 接入后换真值，队列 P1 注记）——
-    ...band('dmg_stage_1', and(flagIs('dmg_armed'), resCmp('stage_idx', 'eq', 1)), 'player_hp', -2),
-    ...band('dmg_stage_2', and(flagIs('dmg_armed'), resCmp('stage_idx', 'gt', 1)), 'player_hp', -4),
+    when_dmg_stage_1: { EventWhen: { signal: 'dmg_stage_1', when: and(flagIs('dmg_armed'), resCmp('stage_idx', 'eq', 1)), mode: 'edge', armed: false } },
+    eff_dmg_stage_1: { Effect: { onSignal: 'dmg_stage_1', kind: 'modify-resource', targetId: 'player_hp', op: 'add', value: -2 } },
+    when_dmg_stage_2: { EventWhen: { signal: 'dmg_stage_2', when: and(flagIs('dmg_armed'), resCmp('stage_idx', 'gt', 1)), mode: 'edge', armed: false } },
+    eff_dmg_stage_2: { Effect: { onSignal: 'dmg_stage_2', kind: 'modify-resource', targetId: 'player_hp', op: 'add', value: -4 } },
     // —— T3 贡献度（单机 scaffold，game-f-core-combat-dev §二）：对太阁打赢的波次累加贡献（胜多败少）。──
     // 单机=自己的分；多人=岛主排名口径（后置）。真·补刀归属(kill-attribution)是贡献系统特性，非 v1 战斗算子。
     // 挂结算窗（income_armed 每结算拍真）：胜（won）多记、败（!won，仍造成伤害）少记。stage 越深贡献越高。
     r_contribution: { Resource: { id: 'contribution', current: 0, min: 0, max: 99999 } },
-    ...band('contrib_win_1', and(flagIs('income_armed'), flagIs('won'), resCmp('stage_idx', 'eq', 1)), 'contribution', 5),
-    ...band('contrib_win_2', and(flagIs('income_armed'), flagIs('won'), resCmp('stage_idx', 'gt', 1)), 'contribution', 9),
-    ...band('contrib_loss', and(flagIs('income_armed'), { kind: 'not', of: flagIs('won') }), 'contribution', 2),
+    when_contrib_win_1: { EventWhen: { signal: 'contrib_win_1', when: and(flagIs('income_armed'), flagIs('won'), resCmp('stage_idx', 'eq', 1)), mode: 'edge', armed: false } },
+    eff_contrib_win_1: { Effect: { onSignal: 'contrib_win_1', kind: 'modify-resource', targetId: 'contribution', op: 'add', value: 5 } },
+    when_contrib_win_2: { EventWhen: { signal: 'contrib_win_2', when: and(flagIs('income_armed'), flagIs('won'), resCmp('stage_idx', 'gt', 1)), mode: 'edge', armed: false } },
+    eff_contrib_win_2: { Effect: { onSignal: 'contrib_win_2', kind: 'modify-resource', targetId: 'contribution', op: 'add', value: 9 } },
+    when_contrib_loss: { EventWhen: { signal: 'contrib_loss', when: and(flagIs('income_armed'), { kind: 'not', of: flagIs('won') }), mode: 'edge', armed: false } },
+    eff_contrib_loss: { Effect: { onSignal: 'contrib_loss', kind: 'modify-resource', targetId: 'contribution', op: 'add', value: 2 } },
     // —— T4 岛屿进度条（game-f-core-combat-dev §二）：每打赢一波推进攻岛进度；满 100 = 岛陷落 → 通关。──
     // 单机攻岛进度资源，胜利波累加（败北不推进，但靠 player_hp 兜底败局）；满即 island_taken → run_flow 转 victory。
     r_island: { Resource: { id: 'island_progress', current: 0, min: 0, max: 100 } },
     f_island_taken: { Flag: { id: 'island_taken', active: false } },
-    ...band('island_tick', and(flagIs('income_armed'), flagIs('won')), 'island_progress', 20),
+    when_island_tick: { EventWhen: { signal: 'island_tick', when: and(flagIs('income_armed'), flagIs('won')), mode: 'edge', armed: false } },
+    eff_island_tick: { Effect: { onSignal: 'island_tick', kind: 'modify-resource', targetId: 'island_progress', op: 'add', value: 20 } },
     when_island_taken: { EventWhen: { signal: 'island_taken_sig', when: resCmp('island_progress', 'gte', 100), mode: 'edge', armed: false } },
     eff_island_taken: { Effect: { onSignal: 'island_taken_sig', kind: 'set-flag', targetId: 'island_taken', value: true } },
     // 静态相机（表现，排除出 hash）。720p 画布 + zoom 把棋盘放大填满视口。
