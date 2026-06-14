@@ -3,93 +3,183 @@ import { ThreeRenderer } from './three-renderer.js';
 import { buildGameGMatch, type FateCard } from './index.js';
 import type { State, Resource } from '@engine/protocol/components.js';
 
-// Game G ·《翻命扑克》一局掷命（launcher 卡带槽：export mount(container)→cleanup）。自包含于本目录。
-// outcome-first：每张牌按 favor 跑确定性种子硬币**先定生死**，3D 翻牌是**反推的表现**（tween 翻到既定面，
-//   正面金=活 / 反面石板=死）。数存活→比数定胜负→我方胜掉材。翻牌不决定胜负→跨端浮点不影响 gameplay。
-// 零新 capability；3D 仅在 ThreeRenderer 渲染后端 + render-only Card3D 组件。逻辑全 headless 测过，画面仅浏览器。
+// Game G ·《翻命扑克》—— 大厅 ↔ 出征 闭环（launcher 卡带槽：export mount(container)→cleanup）。自包含于本目录。
+// outcome-first：每张牌按 favor 跑确定性种子硬币**先定生死**，3D 翻牌是**反推的表现**（抛飞→相撞→落定翻面）。
+// 闭环：大厅看材料/牌组 → 花材料改造牌组(升 favor) → 出征打一关(buildGameGMatch) → 赢取材料、关卡递增 → 再改造。
+// 进度本地存档；胜负=数据决策（不回灌）；3D 只在 ThreeRenderer 表现层。是 gameF 大厅式挂载编排，复用现成能力。
 const W = 600;
 const H = 540;
+const DECK_SIZE = 52;
+const SAVE_KEY = 'gameG-save-v1';
 
-// 52 对 52 的局（可调 PER_SIDE）。我方(偏强)vs 敌方(偏弱)：favor 越高越易正面(活)。
-// favor 给个梯度 → 两边都有活有死，落定后比存活数定胜负。同局 seed 随机 → 每次不同但确定。
-const PER_SIDE = 52;
-const mkDeck = (prefix: string, baseFavor: number): FateCard[] =>
-  Array.from({ length: PER_SIDE }, (_, i) => ({ id: `${prefix}${i}`, favor: baseFavor + (i % 12) * 3 }));
-const TEAM_A: FateCard[] = mkDeck('a', 50); // 50..83
-const TEAM_B: FateCard[] = mkDeck('b', 28); // 28..61
+interface Save {
+  materials: number;
+  stage: number;
+  deck: number[]; // 我方 52 张的 favor（0..95）
+}
+
+function freshSave(): Save {
+  return { materials: 0, stage: 1, deck: Array.from({ length: DECK_SIZE }, (_, i) => 44 + (i % 10) * 2) }; // 44..62 起步
+}
+function loadSave(): Save {
+  try {
+    const raw = localStorage.getItem(SAVE_KEY);
+    if (raw) {
+      const s = JSON.parse(raw) as Save;
+      if (Array.isArray(s.deck) && s.deck.length === DECK_SIZE) return s;
+    }
+  } catch {
+    /* localStorage 不可用 → 用全新存档 */
+  }
+  return freshSave();
+}
+function persist(s: Save): void {
+  try {
+    localStorage.setItem(SAVE_KEY, JSON.stringify(s));
+  } catch {
+    /* 忽略 */
+  }
+}
+
+const clampFavor = (f: number): number => Math.max(5, Math.min(95, Math.round(f)));
+const avg = (xs: number[]): number => Math.round(xs.reduce((a, b) => a + b, 0) / xs.length);
+// 我方牌组 → 参战牌；敌方按关卡递增强度生成。
+const myCards = (deck: number[]): FateCard[] => deck.map((f, i) => ({ id: `a${i}`, favor: f }));
+const enemyCards = (stage: number): FateCard[] =>
+  Array.from({ length: DECK_SIZE }, (_, i) => ({ id: `b${i}`, favor: clampFavor(34 + stage * 3 + (i % 10) * 2) }));
 
 export function mount(container: HTMLElement): () => void {
-  const wrapper = document.createElement('div');
-  wrapper.style.cssText =
-    'position:absolute;inset:0;background:#0a0a14;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:12px;color:#cbd5e1;font:13px system-ui';
-
-  const hint = document.createElement('div');
-  hint.style.cssText = 'max-width:460px;text-align:center;line-height:1.5;opacity:.85';
-  hint.innerHTML =
-    `翻命扑克 · <b>${PER_SIDE} vs ${PER_SIDE} 掷命</b>：胜负 <b>先定</b>（属性加权种子硬币），3D 翻牌是 <b>反推的表现</b>。<br>每对牌跃向空中相撞、坠落翻面——金=我方活，青=敌方活，石板=死。数存活定胜负。`;
-
-  const stage = document.createElement('div');
-  stage.style.cssText = `width:${W}px;height:${H}px;border:1px solid #334155;border-radius:10px;overflow:hidden`;
-
-  const bar = document.createElement('div');
-  bar.style.cssText = 'display:flex;gap:10px;align-items:center';
-  const label = document.createElement('div');
-  label.style.cssText = 'min-width:240px;text-align:center;font-weight:600';
-  const btnFight = mkBtn('再来一局（随机种子）');
-  bar.append(btnFight, label);
-
-  wrapper.append(hint, stage, bar);
-  container.appendChild(wrapper);
-
+  const save = loadSave();
   let engine: Engine | null = null;
   let renderer: ThreeRenderer | null = null;
 
-  const refresh = (): void => {
-    if (!engine) return;
-    const w = engine.world;
-    const winner = w.getComponent<State>('winner', 'State')?.current ?? 'pending';
-    const a = w.getComponent<Resource>('res_a', 'Resource')?.current ?? 0;
-    const b = w.getComponent<Resource>('res_b', 'Resource')?.current ?? 0;
-    const mats = w.getComponent<Resource>('res_mats', 'Resource')?.current ?? 0;
-    if (winner === 'pending') {
-      label.textContent = '掷命中…';
-      label.style.color = '#cbd5e1';
-    } else {
-      const who = winner === 'a' ? '我方胜' : winner === 'b' ? '敌方胜' : '平局';
-      label.textContent = `${who} ｜ 存活 我 ${a} : ${b} 敌 ｜ 材料 ${mats}`;
-      label.style.color = winner === 'a' ? '#eab308' : winner === 'b' ? '#94a3b8' : '#cbd5e1';
-    }
-  };
+  const root = document.createElement('div');
+  root.style.cssText =
+    'position:absolute;inset:0;background:#0a0a14;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:14px;color:#cbd5e1;font:13px system-ui';
+  container.appendChild(root);
 
-  const teardown = (): void => {
+  const teardownEngine = (): void => {
     if (engine) engine.stop();
     if (renderer) renderer.destroy();
+    engine = null;
+    renderer = null;
+  };
+  const clear = (): void => {
+    teardownEngine();
+    root.replaceChildren();
   };
 
-  const newMatch = (): void => {
-    teardown();
+  // ───────────────────────── 大厅 ─────────────────────────
+  function showLobby(): void {
+    clear();
+    const title = el('div', 'font:600 20px system-ui;color:#eab308', '翻命扑克 · 大厅');
+    const stat = el(
+      'div',
+      'text-align:center;line-height:1.7',
+      `材料 <b style="color:#eab308">${save.materials}</b> ｜ 第 <b>${save.stage}</b> 关<br>` +
+        `你的牌组：${DECK_SIZE} 张，favor 均 <b>${avg(save.deck)}</b>（最低 ${Math.min(...save.deck)} / 最高 ${Math.max(...save.deck)}）<br>` +
+        `<span style="opacity:.7">favor 越高越易翻正面(活)。改造牌组让更多牌活下来。</span>`,
+    );
+
+    const shop = el('div', 'display:flex;gap:10px;flex-wrap:wrap;justify-content:center;max-width:560px');
+    const buy = (label: string, cost: number, apply: () => void): HTMLButtonElement => {
+      const b = mkBtn(`${label}（${cost} 材料）`);
+      b.disabled = save.materials < cost;
+      if (b.disabled) b.style.opacity = '0.45';
+      b.onclick = () => {
+        if (save.materials < cost) return;
+        save.materials -= cost;
+        apply();
+        persist(save);
+        showLobby();
+      };
+      return b;
+    };
+    shop.append(
+      buy('强化全军 +3 favor', 12, () => {
+        save.deck = save.deck.map((f) => clampFavor(f + 3));
+      }),
+      buy('精炼弱牌 +8（最弱 12 张）', 8, () => {
+        const order = save.deck.map((f, i) => [f, i] as const).sort((a, b) => a[0] - b[0]);
+        for (let k = 0; k < 12; k++) save.deck[order[k][1]] = clampFavor(save.deck[order[k][1]] + 8);
+      }),
+    );
+
+    const go = mkBtn(`⚔ 出征 · 第 ${save.stage} 关`);
+    go.style.cssText += ';background:#1e3a2a;border-color:#22c55e;font-weight:600';
+    go.onclick = () => showMatch();
+
+    const reset = mkBtn('重置进度');
+    reset.style.cssText += ';opacity:.6;font-size:11px';
+    reset.onclick = () => {
+      Object.assign(save, freshSave());
+      persist(save);
+      showLobby();
+    };
+
+    root.append(title, stat, shop, go, reset);
+  }
+
+  // ───────────────────────── 出征（一局 3D 掷命）─────────────────────────
+  function showMatch(): void {
+    clear();
+    const hint = el(
+      'div',
+      'max-width:560px;text-align:center;line-height:1.5;opacity:.85',
+      `第 ${save.stage} 关 · ${DECK_SIZE} vs ${DECK_SIZE} 掷命：每对牌跃向空中相撞、坠落翻面。金=我方活 / 青=敌方活 / 石板=死。`,
+    );
+    const stage = document.createElement('div');
+    stage.style.cssText = `width:${W}px;height:${H}px;border:1px solid #334155;border-radius:10px;overflow:hidden`;
+    const label = el('div', 'min-width:300px;text-align:center;font-weight:600', '掷命中…');
+    const back = mkBtn('← 返回大厅');
+    back.onclick = showLobby;
+    const bar = el('div', 'display:flex;gap:10px;align-items:center');
+    bar.append(label, back);
+    root.append(hint, stage, bar);
+
     engine = new Engine({ tickRate: 60 });
-    engine.load(buildGameGMatch(TEAM_A, TEAM_B, Math.floor(Math.random() * 1e9)));
+    engine.load(buildGameGMatch(myCards(save.deck), enemyCards(save.stage), Math.floor(Math.random() * 1e9)));
     renderer = new ThreeRenderer({ width: W, height: H });
     engine.attachRenderer(renderer, stage);
-    engine.subscribe(refresh); // 每帧刷新胜负/存活/材料显示（掷命中→揭晓）
+
+    let settled = false;
+    const onFrame = (): void => {
+      if (settled || !engine) return;
+      const winner = engine.world.getComponent<State>('winner', 'State')?.current ?? 'pending';
+      if (winner === 'pending') return;
+      settled = true;
+      const a = engine.world.getComponent<Resource>('res_a', 'Resource')?.current ?? 0;
+      const b = engine.world.getComponent<Resource>('res_b', 'Resource')?.current ?? 0;
+      // 结算奖励：存活的我方牌都算战利品；胜利额外 +10 并推进关卡（敌方更强）。
+      const gain = a + (winner === 'a' ? 10 : 0);
+      save.materials += gain;
+      if (winner === 'a') save.stage += 1;
+      persist(save);
+      const who = winner === 'a' ? '我方胜' : winner === 'b' ? '敌方胜' : '平局';
+      const color = winner === 'a' ? '#eab308' : winner === 'b' ? '#94a3b8' : '#cbd5e1';
+      label.innerHTML = `<span style="color:${color}">${who}</span> ｜ 存活 我 ${a} : ${b} 敌 ｜ +${gain} 材料`;
+      back.textContent = winner === 'a' ? '← 回大厅（关卡推进）' : '← 回大厅';
+    };
+    engine.subscribe(onFrame);
     engine.start();
-    refresh();
-  };
+  }
 
-  btnFight.onclick = newMatch;
-  newMatch();
-
+  showLobby();
   return () => {
-    teardown();
-    wrapper.remove();
+    teardownEngine();
+    root.remove();
   };
 }
 
+function el(tag: string, css: string, html = ''): HTMLElement {
+  const e = document.createElement(tag);
+  e.style.cssText = css;
+  e.innerHTML = html;
+  return e;
+}
 function mkBtn(text: string): HTMLButtonElement {
   const b = document.createElement('button');
   b.textContent = text;
-  b.style.cssText =
-    'padding:7px 12px;border-radius:8px;border:1px solid #334155;background:#15202b;color:#e2e8f0;cursor:pointer;font:12px system-ui';
+  b.style.cssText = 'padding:8px 13px;border-radius:8px;border:1px solid #334155;background:#15202b;color:#e2e8f0;cursor:pointer;font:12px system-ui';
   return b;
 }
