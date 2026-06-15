@@ -2,7 +2,7 @@ import { describe, it, expect } from 'vitest';
 import { Engine } from '../../runtime/engine.js';
 import type { Component } from '@engine/core/types.js';
 import type { Transform, RandomSeed, Resource, State, Card3D } from '@engine/protocol/components.js';
-import { buildGameG3DFlip, buildGameGDuel3D, buildGameGMatch, buildGameGArmyMatch, prepareArmies, standardArmy, armyFromFormation, laneEstimates, applyInterventions, applyShadowRevenge, quartermasterEnergy, applyJokers, jokerMoraleScale, jokerLinks, jokerKeyBuffs, GAME_G_JOKERS, JOKER_BY_ID, ARCHETYPES, detectArchetype, archetypeMatchup, GAME_G_PLANETS, effectiveLives, effectiveLeverCap, effectiveLeverRegen, applyPlanetArmy, laneHandTier, battleSpec, RUN_BATTLES, RUN_LIVES, BETWEEN_BUFFS, applyBuff, BOSS_ROSTER, bossFor, LEVER_CATALOG, LEVER_START, LEVER_CAP, LEVER_REGEN, FORMATION_PRESETS, PRESET_NAMES, decideFaceUp, cardFace, flipTarget, FLIP_DURATION, FLIP_SPINS, MATCH_REWARD, type FateCard, type ArmyCard, type Intervention, type BuffTarget } from './blueprint.js';
+import { buildGameG3DFlip, buildGameGDuel3D, buildGameGMatch, buildGameGArmyMatch, prepareArmies, standardArmy, armyFromFormation, laneEstimates, applyInterventions, applyShadowRevenge, quartermasterEnergy, applyJokers, jokerMoraleScale, jokerLinks, jokerKeyBuffs, GAME_G_JOKERS, JOKER_BY_ID, ARCHETYPES, detectArchetype, archetypeMatchup, GAME_G_PLANETS, effectiveLives, effectiveLeverCap, effectiveLeverRegen, effectiveTierBonus, applyPlanetArmy, laneHandTier, battleSpec, RUN_BATTLES, RUN_LIVES, BETWEEN_BUFFS, applyBuff, BOSS_ROSTER, bossFor, LEVER_CATALOG, LEVER_START, LEVER_CAP, LEVER_REGEN, FORMATION_PRESETS, PRESET_NAMES, decideFaceUp, cardFace, flipTarget, FLIP_DURATION, FLIP_SPINS, MATCH_REWARD, type FateCard, type ArmyCard, type Intervention, type BuffTarget } from './blueprint.js';
 
 const get = <T extends Component>(e: Engine, id: string, type: string): T | undefined => e.world.getComponent<T>(id, type);
 const rotOf = (e: Engine, id = 'card'): number => get<Transform>(e, id, 'Transform')!.rotation;
@@ -808,9 +808,9 @@ describe('Game G · T-G6 流派 + 克制网（身份 + 石头剪刀布 · 纯数
 
 describe('Game G · T-G6 星球牌（第二养成轴 · 可叠加升档 · 纯数据）', () => {
   const TROOP = ['A', '2', '3', '4', '5', '6'];
-  it('星球池≥3，kind 合法、cost/amount>0、有 text', () => {
-    expect(GAME_G_PLANETS.length).toBeGreaterThanOrEqual(3);
-    const kinds = new Set(['lives', 'energy', 'rank-favor']);
+  it('星球池≥4，kind 合法、cost/amount>0、有 text', () => {
+    expect(GAME_G_PLANETS.length).toBeGreaterThanOrEqual(4);
+    const kinds = new Set(['lives', 'energy', 'rank-favor', 'tier']);
     for (const p of GAME_G_PLANETS) {
       expect(kinds.has(p.kind)).toBe(true);
       expect(p.cost).toBeGreaterThan(0);
@@ -844,6 +844,25 @@ describe('Game G · T-G6 星球牌（第二养成轴 · 可叠加升档 · 纯�
     const base = prepareArmies({ ...opt, planets: {} }).a;
     const withMars = prepareArmies({ ...opt, planets: { mars: 2 } }).a;
     expect(sumTroop(withMars)).toBeGreaterThan(sumTroop(base));
+  });
+
+  it('星球·型：成型(非高牌)整条阶梯 +bonus；高牌(0)不吃', () => {
+    const mk = (rank: string, suit: string, i: number): ArmyCard => ({ id: `x${i}`, rank, lane: 0, favor: 50, general: i === 0, suit });
+    const flushLane = ['A', 'K', 'Q', '9', '3'].map((r, i) => mk(r, 'H', i)); // 同花
+    expect(laneHandTier(flushLane).buff).toBe(10); // flush 基础
+    expect(laneHandTier(flushLane, 4).buff).toBe(14); // +星球·型 4
+    const highCard = [['A', 'H'], ['K', 'S'], ['9', 'D'], ['7', 'C'], ['3', 'H']].map(([r, s], i) => mk(r, s, i));
+    expect(laneHandTier(highCard).type).toBe('high-card');
+    expect(laneHandTier(highCard, 4).buff).toBe(0); // 高牌不成型 → 不吃加成
+    expect(effectiveTierBonus({ mercury: 2 })).toBe(8); // amount 4 × 2 级
+  });
+
+  it('星球·型 进 prepareArmies：flush 干预受益于 mercury（vs 无星球）', () => {
+    const opt = { formation: FORMATION_PRESETS['均衡'], deckBias: 0, jokers: [], interventions: [{ kind: 'flush', lane: 0 }] as Intervention[], enemyBias: 0 };
+    const sumLane0 = (a: ArmyCard[]): number => a.filter((c) => c.lane === 0).reduce((s, c) => s + c.favor, 0);
+    const base = prepareArmies({ ...opt, planets: {} }).a;
+    const withTier = prepareArmies({ ...opt, planets: { mercury: 2 } }).a;
+    expect(sumLane0(withTier)).toBeGreaterThan(sumLane0(base)); // 牌型阶梯被星球·型抬高 → flush 给该路更多 favor
   });
 });
 

@@ -459,7 +459,8 @@ const RANK_NUM: Record<string, number> = { A: 14, K: 13, Q: 12, J: 11, '10': 10,
 const TIER_BUFF: Partial<Record<HandType, number>> = {
   'straight-flush': 18, 'four-of-a-kind': 14, 'full-house': 12, flush: 10, straight: 9, 'three-of-a-kind': 7, 'two-pair': 5, pair: 3, 'high-card': 0,
 };
-export function laneHandTier(cards: ArmyCard[]): { type: HandType; buff: number } {
+// tierBonus（星球·型）：成型(非高牌)时整条阶梯全局 +bonus —— 放大牌型流的羁绊回报（design reply#15 全局形，零目标 UI）。
+export function laneHandTier(cards: ArmyCard[], tierBonus = 0): { type: HandType; buff: number } {
   const rankCounts = new Map<number, number>();
   const suitCounts = new Map<string, number>();
   for (const c of cards) {
@@ -485,7 +486,8 @@ export function laneHandTier(cards: ArmyCard[]): { type: HandType; buff: number 
   else if (maxR === 2 && secR === 2) type = 'two-pair';
   else if (maxR === 2) type = 'pair';
   else type = 'high-card';
-  return { type, buff: TIER_BUFF[type] ?? 0 };
+  const base = TIER_BUFF[type] ?? 0;
+  return { type, buff: base + (base > 0 ? tierBonus : 0) }; // 成型(非高牌)才吃星球·型加成
 }
 
 /**
@@ -497,7 +499,7 @@ export function laneHandTier(cards: ArmyCard[]): { type: HandType; buff: number 
  * side 参数化、非两套算子。玩家干预 caster='a'(默认，行为不变)；**Boss 起手干预 caster='b'**：诅咒/斩首落玩家(a)、增益落 Boss(b)。
  * bias = 施加方整体偏置（增援新兵用）。两次调用(先玩家 caster='a'、再 Boss caster='b')链式叠加，均揭晓前、outcome-first 不破。
  */
-export function applyInterventions(armyA: ArmyCard[], armyB: ArmyCard[], list: Intervention[], bias = 0, caster: 'a' | 'b' = 'a'): { a: ArmyCard[]; b: ArmyCard[] } {
+export function applyInterventions(armyA: ArmyCard[], armyB: ArmyCard[], list: Intervention[], bias = 0, caster: 'a' | 'b' = 'a', tierBonus = 0): { a: ArmyCard[]; b: ArmyCard[] } {
   let a = armyA.map((c) => ({ ...c }));
   let b = armyB.map((c) => ({ ...c }));
   const selfIsA = caster === 'a';
@@ -524,9 +526,9 @@ export function applyInterventions(armyA: ArmyCard[], armyB: ArmyCard[], list: I
         setSelf(cur.map((c) => (c.id === weak.id ? { ...c, favor: 92 } : c)));
       }
     } else if (iv.kind === 'flush') {
-      // 牌型：评本路凑成的最高扑克牌型 → 逐级 +favor（对子→同花顺，复用 poker-hand 阶梯）。
+      // 牌型：评本路凑成的最高扑克牌型 → 逐级 +favor（对子→同花顺，复用 poker-hand 阶梯）；星球·型 全局抬整条阶梯。
       const cur = self();
-      const { buff } = laneHandTier(cur.filter((c) => c.lane === iv.lane));
+      const { buff } = laneHandTier(cur.filter((c) => c.lane === iv.lane), tierBonus);
       if (buff > 0) setSelf(cur.map((c) => (c.lane === iv.lane ? { ...c, favor: clampFavor(c.favor + buff) } : c)));
     }
   }
@@ -612,12 +614,13 @@ export function quartermasterEnergy(jokerIds: readonly string[], lanesWon: numbe
 // 与小丑（一次性·改规则·身份）正交：星球 = **可叠加的升档**（买 N 级累加），改 run 参数 / 军阵底盘。持久存档、跨 run。
 // 本批 3 张：命(run 命线上限)/能(干预能量上限+回能)/军(「兵」档 favor 底盘)——皆**与大厅 deck-favor 商店不重叠**的新轴
 // （命/能=run 经济无现成；军=作用在 built 军阵的兵档结构，非 deck 均值偏置）。路(选路)/型(牌型档) 待 design 定目标 UI，见 finish。
-export type PlanetKind = 'lives' | 'energy' | 'rank-favor';
+export type PlanetKind = 'lives' | 'energy' | 'rank-favor' | 'tier';
 export interface PlanetCard { id: string; name: string; kind: PlanetKind; cost: number; amount: number; text: string }
 export const GAME_G_PLANETS: PlanetCard[] = [
   { id: 'saturn', name: '星球·命', kind: 'lives', cost: 24, amount: 1, text: '战役命线上限 +1/级（更长的 run）' },
   { id: 'jupiter', name: '星球·能', kind: 'energy', cost: 20, amount: 1, text: '干预能量上限 +1 且每胜回能 +1/级' },
   { id: 'mars', name: '星球·军', kind: 'rank-favor', cost: 14, amount: 3, text: '全军「兵」档(A–6) favor +3/级（夯实底盘）' },
+  { id: 'mercury', name: '星球·型', kind: 'tier', cost: 16, amount: 4, text: '牌型羁绊（同花/顺子卡）整条阶梯 +4/级（牌型流升档）' },
 ];
 export const PLANET_BY_ID: ReadonlyMap<string, PlanetCard> = new Map(GAME_G_PLANETS.map((p) => [p.id, p]));
 const planetBump = (planets: Record<string, number> | undefined, id: string): number => (planets?.[id] ?? 0) * (PLANET_BY_ID.get(id)?.amount ?? 0);
@@ -625,6 +628,7 @@ const planetBump = (planets: Record<string, number> | undefined, id: string): nu
 export function effectiveLives(planets: Record<string, number>): number { return RUN_LIVES + planetBump(planets, 'saturn'); }
 export function effectiveLeverCap(planets: Record<string, number>): number { return LEVER_CAP + planetBump(planets, 'jupiter'); }
 export function effectiveLeverRegen(planets: Record<string, number>): number { return LEVER_REGEN + planetBump(planets, 'jupiter'); }
+export function effectiveTierBonus(planets: Record<string, number>): number { return planetBump(planets, 'mercury'); } // 星球·型：牌型阶梯全局加成
 const PLANET_TROOP_RANKS = new Set(['A', '2', '3', '4', '5', '6']); // 「兵」档（星球·军作用域）
 /** 星球·军：揭晓前给军阵「兵」档 +favor（叠加级数）。build-时变换、outcome-first；作用 built 军阵结构（非 deck 均值）。 */
 export function applyPlanetArmy(army: ArmyCard[], planets: Record<string, number>): ArmyCard[] {
@@ -721,9 +725,10 @@ export function applyJokers(army: ArmyCard[], jokerIds: readonly string[]): Army
  */
 export interface MatchSetup { formation: Formation; deckBias: number; jokers: readonly string[]; interventions: Intervention[]; enemyForm?: Formation; enemyBias: number; boss?: BossSpec | null; planets?: Record<string, number> }
 export function prepareArmies(s: MatchSetup): { a: ArmyCard[]; b: ArmyCard[]; moraleA: number[]; linksA: LinkJokers } {
-  const armyA = applyJokers(applyPlanetArmy(armyFromFormation('a', s.deckBias, s.formation), s.planets ?? {}), s.jokers); // 星球·军(兵档底盘) → 融小丑（持久 favor 变换）
+  const planets = s.planets ?? {};
+  const armyA = applyJokers(applyPlanetArmy(armyFromFormation('a', s.deckBias, s.formation), planets), s.jokers); // 星球·军(兵档底盘) → 融小丑（持久 favor 变换）
   const armyB = armyFromFormation('b', s.enemyBias, s.enemyForm);
-  let { a, b } = applyInterventions(armyA, armyB, s.interventions, s.deckBias); // 玩家干预
+  let { a, b } = applyInterventions(armyA, armyB, s.interventions, s.deckBias, 'a', effectiveTierBonus(planets)); // 玩家干预（flush 吃星球·型）
   if (s.boss && s.boss.openingLevers.length) ({ a, b } = applyInterventions(a, b, s.boss.openingLevers, s.enemyBias, 'b')); // Boss 起手（对称）
   if (s.jokers.includes('shadow')) a = applyShadowRevenge(a); // 影武者：敌斩首命中我主将 → 该路余部复仇（在 Boss 干预后侦测）
   return { a, b, moraleA: jokerMoraleScale(a, s.jokers), linksA: jokerLinks(s.jokers) }; // 士气倍率 + 结局联动（死士/连环）
