@@ -2,7 +2,8 @@
 // 与确定性引擎解耦：纯前端 + 假数据；只在「开始攻岛」那刻产出一份「出战牌组+势力+队伍配置」交给 onStart。
 // 局内对局由 game-f.tsx 的 startMatch 接手。视觉基调=绢帛暖米+水墨黑（brief §二），class 前缀 gfl- 防与局内 gfx- 撞。
 import { type Deck, type Faction, HUBAO_DECK, DECK_REGISTRY } from './index.js';
-import { getWarfunds, gachaPull, gachaPull10, getCollection, GACHA_COST, GACHA10_COST, getLP, rankFor } from './account.js';
+import { getWarfunds, gachaPull, gachaPull10, getCollection, GACHA_COST, GACHA10_COST, getLP, rankFor, saveCustomDeck } from './account.js';
+import { CARD_CATALOG, assembleDeck } from './decks.js';
 
 export interface RunConfig {
   deck: Deck;
@@ -122,6 +123,14 @@ export function buildLobby(onStart: (cfg: RunConfig) => void): HTMLElement {
   root.className = 'gfl';
   root.style.position = 'relative';
   let selectedDeckId = 'hubao'; // 默认出战组（虎豹铁骑）；选实装组（hubao/hanshi）即生效。出生势力由所选牌组的 faction 定。
+  // 组牌器（designer #19 步3）：自组牌组选中态 + 拥有的小丑牌 chips（从收藏）。
+  const FAC_MAP: Record<string, Faction> = { 蜀: 'shu', 魏: 'wei', 吴: 'wu' };
+  let custFac: Faction = 'shu';
+  const custSel = new Set<string>();
+  const ownedCards = Object.entries(getCollection()).filter(([id, n]) => n > 0 && CARD_CATALOG[id]);
+  const ownedCardChips = ownedCards.length
+    ? ownedCards.map(([id, n]) => `<button class="gfl-fbtn" data-card="${esc(id)}" style="cursor:pointer">${esc(id)} ×${n}</button>`).join('')
+    : '<span class="gfl-fbtn" style="opacity:.6">（先去「收藏」页抽卡获得小丑牌）</span>';
 
   const deckGrid = DECKS.map((d, i) => `<div class="gfl-deck${i === 0 ? ' sel' : ''}" data-deck="${d.id}">
     <div class="gfl-dn">${esc(d.name)} ${d.icon}</div><div class="gfl-ds">${esc(d.style)}</div>
@@ -174,6 +183,10 @@ export function buildLobby(onStart: (cfg: RunConfig) => void): HTMLElement {
       <h2>牌组管理（${DECKS.length}）</h2><div class="gfl-sub">按流派/势力/稀有度筛；预览 5–8 卡位 + 钥匙牌 + 流派标签 + 克制提示。</div>
       <div class="gfl-filters">${['全部', '速攻', '连携', '控制', '单核', '经济', '降将', '刺客'].map((t) => `<span class="gfl-fbtn">${t}</span>`).join('')}</div>
       <div class="gfl-grid">${deckGrid}</div><div class="gfl-prev" data-deckprev></div>
+      <div class="gfl-sub" style="margin-top:18px">🛠️ 自组牌组（从收藏拼小丑牌 · 选出生势力 + ≤8 张）</div>
+      <div class="gfl-filters" data-ref="custfac">${(['蜀', '魏', '吴'] as const).map((f, i) => `<button class="gfl-fbtn${i === 0 ? ' sel' : ''}" data-fac="${f}" style="cursor:pointer">${f}</button>`).join('')}</div>
+      <div class="gfl-filters" data-ref="custcards">${ownedCardChips}</div>
+      <button class="gfl-cta" style="width:auto;padding:11px 24px;font-size:15px;margin-top:10px" data-act="custom-start">▶ 用自组牌组出战</button>
     </div>
     <div class="gfl-screen" data-screen="coll" style="flex:1">
       <h2>卡牌收藏</h2><div class="gfl-sub">筛选 势力/职业/稀有度/品质 + 搜索。未拥有显灰锁 🔒。战功抽卡入收藏（概率公示）。</div>
@@ -262,6 +275,23 @@ export function buildLobby(onStart: (cfg: RunConfig) => void): HTMLElement {
     t.innerHTML = r.ok ? `<span>🎲 十连：${r.cards.length} 张入收藏（稀有+ ×${rares}）</span><button class="gfl-acc">好</button>` : `<span>⚠️ 战功不足（需 ${GACHA10_COST}）</span><button class="gfl-acc">好</button>`;
     t.querySelector('button')!.addEventListener('click', () => t.remove());
     root.appendChild(t);
+  });
+  // 组牌器（步3）：势力单选 / 卡多选(≤8) / 用自组牌组出战。
+  root.querySelectorAll<HTMLElement>('[data-fac]').forEach((el2) => el2.addEventListener('click', () => {
+    root.querySelectorAll<HTMLElement>('[data-fac]').forEach((x) => x.classList.remove('sel'));
+    el2.classList.add('sel');
+    custFac = FAC_MAP[el2.dataset.fac!] ?? 'shu';
+  }));
+  root.querySelectorAll<HTMLElement>('[data-card]').forEach((el2) => el2.addEventListener('click', () => {
+    const id = el2.dataset.card!;
+    if (custSel.has(id)) { custSel.delete(id); el2.classList.remove('sel'); }
+    else if (custSel.size < 8) { custSel.add(id); el2.classList.add('sel'); }
+  }));
+  root.querySelector<HTMLElement>('[data-act="custom-start"]')?.addEventListener('click', () => {
+    if (custSel.size === 0) { root.querySelector('.gfl-toast')?.remove(); const t = document.createElement('div'); t.className = 'gfl-toast'; t.innerHTML = '<span>⚠️ 先从收藏选至少 1 张小丑牌</span><button class="gfl-acc">好</button>'; t.querySelector('button')!.addEventListener('click', () => t.remove()); root.appendChild(t); return; }
+    const ids = [...custSel];
+    saveCustomDeck({ cardIds: ids, faction: custFac });
+    onStart({ deck: assembleDeck(ids, custFac), faction: custFac });
   });
   // 开始攻岛 → 产出出战配置交引擎（选实装组 hubao/hanshi 即生效；deck.faction 定出生势力）。
   root.querySelector<HTMLElement>('[data-start]')!.addEventListener('click', () => {
