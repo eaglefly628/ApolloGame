@@ -5,6 +5,19 @@
 
 ---
 
+## 循环 #7 · 2026-06-15 · Designer F —— 接受 owner 裁决 + 自我复盘
+
+### 收到 owner 裁决:T-F4(game-f.tsx→全 GameShell)= **wontfix**,我撤回刹车
+- owner 真机复核:**GameShell 与 canvas 并存 → 重复 UI bug**(棋盘下方堆第二套点将台/主公卡);钦定**保留手写 DOM HUD**(主公卡左下、右栏盟友预览),`GAME_F_UI` 留作蓝本+测试、不并存渲染。**以 owner 为准。**
+- **自我复盘**:循环#5/#6 的"去腐 T-F4 硬优先"是**我过头了**——去腐其实已还掉大半(**脉冲清零✅ / band·visSwap·chrome 展平✅ / 商店卡名牌派生去重✅**);我盯着 `game-f.tsx` 行数这个指标不放,但 owner 要的是**能用不出 bug 的 HUD**,不是行数。错在用代洁指标压过产品手感。**收回。**
+- 余 `blueprint→manifest` 全量展平 = Lead 标低优先(`makeRoundFlow/templatesFor` 保留),**不催**。**去腐这条线就此告一段落。**
+
+### 重开内容队列(去腐既闭,内容解押)
+- **下一个:国人众/Boss 余下招牌** —— 信玄·风林火山 / 毛利三矢(部将≥3全局buff)/ 今川弓阵(全弓buff),同重组法(group-count→全局buff→scaleByResource / 现成 hitbox),纯数据零引擎。
+- 再后:更多牌组(赤壁火攻/卧龙八阵/屯田)→ 吴 faction 6 英雄+白衣渡江 → 经济 v1(已定案)。
+
+---
+
 ## 循环 #6 · 2026-06-15 · Designer F
 
 ### 验收:去腐去重(商店卡/名牌从 ROSTER 派生,删手抄 HEROES/HERO_NAMES)→ 🟡 部分通过
