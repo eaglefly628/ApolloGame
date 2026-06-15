@@ -7,7 +7,7 @@ import { Engine } from '../../runtime/engine.js';
 import { getComponentById } from '@engine/core/query.js';
 import { instantiate } from '@skills/tier3/index.js';
 import { buildGameFBlueprint } from './blueprint.js';
-import { TEAM_B } from './constants.js';
+import { TEAM_B, FROZEN } from './constants.js';
 import { FAST } from './game-f.helpers.js';
 
 describe('C 太阁全谱 roster（master §六 数据落地）', () => {
@@ -120,5 +120,18 @@ describe('T-F2/T-F3 召援（秀吉一夜城周期召兵 / 本愿寺一揆开场
   it('本愿寺·一揆：once 一次性 + count=3（开场人海，数据钉死）', () => {
     expect(unitByCode('honganji')!.summon).toMatchObject({ code: 'ash_yari', count: 3, once: true });
     expect(unitByCode('hideyoshi')!.summon!.once).toBeFalsy(); // 秀吉=周期(loop)非一次性
+  });
+});
+
+describe('国人众招牌·普攻控/毒（斋藤毒沼 DoT / 明智群冻 FROZEN；hitbox 现成词汇、零引擎）', () => {
+  it('斋藤·毒沼：proj_mob_saito 命中附 DoT（over-time 持续掉血）', () => {
+    const p = GAME_F_TEMPLATES['proj_mob_saito'] as unknown as { entities: { p: { Hitbox: { dotPerTick?: number; dotDuration?: number } } } };
+    expect(p.entities.p.Hitbox.dotPerTick).toBeGreaterThan(0);
+    expect(p.entities.p.Hitbox.dotDuration).toBeGreaterThan(0);
+  });
+  it('明智·群冻：proj_mob_akechi 命中置 FROZEN + statusDuration（定身）', () => {
+    const p = GAME_F_TEMPLATES['proj_mob_akechi'] as unknown as { entities: { p: { Hitbox: { setMask?: number; statusDuration?: number } } } };
+    expect((p.entities.p.Hitbox.setMask ?? 0) & FROZEN).toBe(FROZEN);
+    expect(p.entities.p.Hitbox.statusDuration).toBe(90);
   });
 });

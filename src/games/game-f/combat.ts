@@ -17,14 +17,14 @@ import { project, offsetToAxial } from './hex.js';
 // 普攻打击区：目标处小 sensor 伤害区，2 tick 自毁 + 表现两件（用户打击感批）：
 // redflash=被击红闪（红 Shape 盖在受击位上方 alpha 速褪）；fx=斩光余韵（特效图 alpha 慢褪）。
 // 表现实体无 Tag/Sensor/Hitbox 不参战，Timer+lifetime 自清。fxKey=按攻击类型的特效（近战斩/远程箭/法术弹）。
-const strike = (targetMask: number, amount: number, fxKey: string, scaleId = 'dmg_scale_b', execBelow?: number): PrefabTemplate => ({
+const strike = (targetMask: number, amount: number, fxKey: string, scaleId = 'dmg_scale_b', execBelow?: number, dot = false, freezeTicks = 0): PrefabTemplate => ({
   entities: {
     area: {
       Transform: xf(0, 0),
       Shape: { kind: 'box', width: 18, height: 18 },
       Sensor: {},
       Tag: { flags: ZONE_FLAG },
-      Hitbox: { resource: 'hp', amount, targetMask, scaleByResource: scaleId, ...(execBelow !== undefined ? { executeBelow: execBelow } : {}) }, // 047 羁绊乘区 + F-061 斩杀线（hp 比例 < execBelow 即处决）
+      Hitbox: { resource: 'hp', amount, targetMask, scaleByResource: scaleId, ...(execBelow !== undefined ? { executeBelow: execBelow } : {}), ...(dot ? DOT : {}), ...(freezeTicks > 0 ? { setMask: FROZEN, statusDuration: freezeTicks } : {}) }, // 047 羁绊乘区 + F-061 斩杀 + 毒沼DoT/群冻FROZEN（太阁招牌）
       Timer: { id: 'life', elapsed: 0, duration: 2, loop: false },
       Sprite: sprite(fxKey, 6),
     },
@@ -54,7 +54,7 @@ const DOT = { dotPerTick: 25, dotPeriod: 30, dotDuration: 240 };
 // strike 同款表现实体补（弹体自带 redflash 子实体不可行——单实体单 Tween，红闪随弹体走会提前闪）→
 // 弹体只带 Hitbox，命中即消失（视觉=弹道飞行+消失在目标身上）。目标死于途中=aggro 重锁最近敌（追踪续航）；
 // 无敌可锁=滞空到 lifetime 自清（120 拍）。无 TEAM 位：不被 zone 计存活/不被锁/不被 wipe。
-const projectile = (targetMask: number, amount: number, fxKey: string, scaleId = 'dmg_scale_b', execBelow?: number): PrefabTemplate => ({
+const projectile = (targetMask: number, amount: number, fxKey: string, scaleId = 'dmg_scale_b', execBelow?: number, dot = false, freezeTicks = 0): PrefabTemplate => ({
   entities: {
     p: {
       Transform: xf(0, 0),
@@ -64,7 +64,7 @@ const projectile = (targetMask: number, amount: number, fxKey: string, scaleId =
       Velocity: { vx: 0, vy: 0, angular: 0 },
       Perception: { targetTag: targetMask, sightRadius: 0 },
       Steering: { mode: 'seek', speed: 3.2, stopRange: 0 },
-      Hitbox: { resource: 'hp', amount, targetMask, scaleByResource: scaleId, consumeOnHit: true, ...(execBelow !== undefined ? { executeBelow: execBelow } : {}) },
+      Hitbox: { resource: 'hp', amount, targetMask, scaleByResource: scaleId, consumeOnHit: true, ...(execBelow !== undefined ? { executeBelow: execBelow } : {}), ...(dot ? DOT : {}), ...(freezeTicks > 0 ? { setMask: FROZEN, statusDuration: freezeTicks } : {}) },
       Timer: { id: 'life', elapsed: 0, duration: 120, loop: false },
       Sprite: sprite(fxKey, 7),
     },
@@ -367,8 +367,8 @@ export function templatesFor(ROSTER: HeroSpec[]): Record<string, PrefabTemplate>
       const u = unitByCode(code)!;
       // 太阁 Boss 招牌：execBelow=斩杀线（F-061，谦信/立花/半藏）。普攻武器带处决。
       return u.atkType !== 'melee'
-        ? [`proj_mob_${code}`, projectile(TEAM_A, u.atk, u.atkType === 'magic' ? F_FX_BOLT : F_FX_ARROW, 'dmg_scale_b', u.execBelow)]
-        : [`strike_mob_${code}`, strike(TEAM_A, u.atk, F_FX_BOLT, 'dmg_scale_b', u.execBelow)];
+        ? [`proj_mob_${code}`, projectile(TEAM_A, u.atk, u.atkType === 'magic' ? F_FX_BOLT : F_FX_ARROW, 'dmg_scale_b', u.execBelow, u.atkFx?.dot, u.atkFx?.freeze)]
+        : [`strike_mob_${code}`, strike(TEAM_A, u.atk, F_FX_BOLT, 'dmg_scale_b', u.execBelow, u.atkFx?.dot, u.atkFx?.freeze)];
     }),
     PVE_CODES.map((code): [string, PrefabTemplate] => [`mob_${code}`, mobTemplate(unitByCode(code)!)]),
     // 召援登陆模板（T-F2/T-F3）：出场太阁里所有 summon 目标码 → reinf_<code>（baked 战斗单位）。

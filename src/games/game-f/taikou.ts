@@ -22,6 +22,8 @@ export interface TaikouUnit {
   selfHeal?: number; // 忍耐（家康）：over-time 每秒自回复 hp（招牌：厚血+持续回复）
   // 召援（T-F2 秀吉·一夜城周期召兵 / T-F3 本愿寺·一向一揆开场人海）：mob summon sidecar(Timer+SelfRule spawn reinf_<code>)。
   summon?: { code: string; period: number; count?: number; once?: boolean };
+  // 普攻附带控/毒（斋藤·毒沼 DoT / 明智·群冻 FROZEN）：hitbox 现成 DOT/setMask 词汇，零引擎。
+  atkFx?: { dot?: boolean; freeze?: number };
 }
 
 // ── 滩头杂兵（roster §一 / §六；v1 成局）──
@@ -34,11 +36,11 @@ export const TAIKOU_BEACHHEAD: Record<string, TaikouUnit> = {
 
 // ── 国人众部将（roster §二 / §六；一招机制，全 ✅复用）──
 export const TAIKOU_KOKUJIN: Record<string, TaikouUnit> = {
-  saito: { code: 'saito', name: '斋藤道三·蝮', sprite: F_TAIKOU.saito, atkType: 'magic', hp: 600, atk: 50, range: 2, cls: 'TAC', seg: 'kokujin', signature: '毒沼:AoE DoT' },
+  saito: { code: 'saito', name: '斋藤道三·蝮', sprite: F_TAIKOU.saito, atkType: 'magic', hp: 600, atk: 50, range: 2, cls: 'TAC', seg: 'kokujin', signature: '毒沼:AoE DoT', atkFx: { dot: true } }, // 蝮毒：普攻附 DoT
   mori: { code: 'mori', name: '毛利元就·三矢', sprite: F_TAIKOU.mori, atkType: 'melee', hp: 650, atk: 55, range: 1, cls: 'WAR', seg: 'kokujin', signature: '三矢:部将≥3 全局 atk buff' },
   hojo: { code: 'hojo', name: '北条氏康·小田原', sprite: F_TAIKOU.hojo, atkType: 'melee', hp: 1100, atk: 40, range: 1, cls: 'WAR', seg: 'kokujin', signature: '龟缩:守军全局减伤' },
   imagawa: { code: 'imagawa', name: '今川义元·弓取', sprite: F_TAIKOU.imagawa, atkType: 'ranged', hp: 600, atk: 55, range: 4, cls: 'ARC', seg: 'kokujin', signature: '弓阵:全弓 buff' },
-  akechi: { code: 'akechi', name: '明智光秀·谋叛', sprite: F_TAIKOU.akechi, atkType: 'magic', hp: 600, atk: 50, range: 3, cls: 'TAC', seg: 'kokujin', signature: '群冻:AoE FROZEN' },
+  akechi: { code: 'akechi', name: '明智光秀·谋叛', sprite: F_TAIKOU.akechi, atkType: 'magic', hp: 600, atk: 50, range: 3, cls: 'TAC', seg: 'kokujin', signature: '群冻:AoE FROZEN', atkFx: { freeze: 90 } }, // 群冻：普攻附 1.5s FROZEN
   ishida: { code: 'ishida', name: '石田三成·三献茶', sprite: F_TAIKOU.ishida, atkType: 'magic', hp: 550, atk: 40, range: 3, cls: 'TAC', seg: 'kokujin', signature: '辅助:友军回复' },
 };
 
