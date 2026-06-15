@@ -2,7 +2,8 @@
 // ⛔ 铁律：服务/账号层与确定性 ECS **单向解耦**——本模块只消费引擎回吐的「攻岛结算」，绝不进 sim、不被 world.hash 触及。
 // v1 仅一种局外软币 warfunds（战功）：攻岛按贡献+胜负+波深产出 → 持久化（localStorage；测试注入内存 KV）。
 // 收藏/抽卡已接（earn→spend 闭合）；附魔/天梯随后切片；市场/充值押后 phase3。
-import { ROSTER, WU_ROSTER } from './heroes.js';
+// 卡池=**小丑牌**(各 deck 的 CardSpec 卡)，**非武将**——武将每局清零、人人平等是地基（cards-and-decks），抽武将=P2W 破核心（designer #18）。
+import { DECK_REGISTRY } from './decks.js';
 
 export interface Settlement {
   contribution: number; // 本局累计贡献度（引擎 contribution 资源）
@@ -89,17 +90,29 @@ export function updateLpAfterRun(victory: boolean, kv: KV = defaultKV()): { rank
 }
 
 // ── 收藏 + 软币抽卡（spec §二/§五；闭合 earn→spend；account 层、与 ECS 解耦）──
-// 卡池=三国全武将（id→收藏 count）。weight=出率（均权占位；rarity 真表由 designer 定，本模块只管机制）。
-export interface GachaEntry { id: string; name: string; weight: number }
-export const GACHA_COST = 100; // 单抽战功价（占位，待 designer 平衡）
-// 卡池：蜀6+魏6（ROSTER）+ 吴6（WU_ROSTER），按 id 去重，均权。
+// 收藏=**小丑牌**（deck CardSpec 卡）；rarity 表（designer #18）：钥匙牌(synergy/threshold 定义流派)=传说、
+// 经济档=稀有、通用配牌(round-buff/shop-weight)=普通。weight 越低越稀有。
+export type Rarity = 'legendary' | 'rare' | 'common';
+export interface GachaEntry { id: string; name: string; weight: number; rarity?: Rarity }
+export const GACHA_COST = 100;   // 单抽
+export const GACHA10_COST = 900; // 十连（9 折）+ 保底 ≥1 稀有
+const RARITY_WEIGHT: Record<Rarity, number> = { legendary: 1, rare: 3, common: 6 };
+function rarityOf(kind: string): Rarity {
+  if (kind === 'synergy-buff' || kind === 'threshold-buff') return 'legendary'; // 钥匙牌=流派定义
+  if (kind === 'economy-band') return 'rare';
+  return 'common'; // round-buff / shop-weight 通用配牌
+}
+// 卡池：DECK_REGISTRY 全 deck 的 CardSpec 卡，按 id 去重，按 rarity 定权。
 export const GACHA_POOL: GachaEntry[] = (() => {
   const seen = new Set<string>();
   const out: GachaEntry[] = [];
-  for (const h of [...ROSTER, ...WU_ROSTER]) {
-    if (seen.has(h.id)) continue;
-    seen.add(h.id);
-    out.push({ id: h.id, name: h.name, weight: 1 });
+  for (const deck of Object.values(DECK_REGISTRY)) {
+    for (const c of deck.cards) {
+      if (seen.has(c.id)) continue;
+      seen.add(c.id);
+      const rarity = rarityOf(c.kind);
+      out.push({ id: c.id, name: c.id, weight: RARITY_WEIGHT[rarity], rarity });
+    }
   }
   return out;
 })();
@@ -123,13 +136,31 @@ export function gachaRates(pool: GachaEntry[] = GACHA_POOL): { id: string; name:
   return pool.map((e) => ({ id: e.id, name: e.name, rate: e.weight / total }));
 }
 
-// 单抽：扣战功 → 加权随机出一张入收藏 → 返回。rng 注入（测试可定种；账号层非 sim，用 Math.random 不破确定性）。
-export function gachaPull(kv: KV = defaultKV(), rng: () => number = Math.random, pool: GachaEntry[] = GACHA_POOL): { ok: boolean; card?: GachaEntry; balance: number } {
-  if (!spendWarfunds(GACHA_COST, kv)) return { ok: false, balance: getWarfunds(kv) };
+// 加权随机抽一张（不扣费、不入收藏）。rng 注入（测试可定种；账号层非 sim，Math.random 不破确定性）。
+function pickOne(pool: GachaEntry[], rng: () => number): GachaEntry {
   const total = pool.reduce((s, e) => s + e.weight, 0);
   let r = rng() * total;
-  let card = pool[pool.length - 1];
-  for (const e of pool) { if (r < e.weight) { card = e; break; } r -= e.weight; }
+  for (const e of pool) { if (r < e.weight) return e; r -= e.weight; }
+  return pool[pool.length - 1];
+}
+
+// 单抽：扣战功 → 加权随机出一张入收藏 → 返回。
+export function gachaPull(kv: KV = defaultKV(), rng: () => number = Math.random, pool: GachaEntry[] = GACHA_POOL): { ok: boolean; card?: GachaEntry; balance: number } {
+  if (!spendWarfunds(GACHA_COST, kv)) return { ok: false, balance: getWarfunds(kv) };
+  const card = pickOne(pool, rng);
   addCard(card.id, kv);
   return { ok: true, card, balance: getWarfunds(kv) };
+}
+
+// 十连：扣 GACHA10_COST → 抽 10 张入收藏，**保底**至少 1 张稀有+（无则末位换一张稀有+）。
+export function gachaPull10(kv: KV = defaultKV(), rng: () => number = Math.random, pool: GachaEntry[] = GACHA_POOL): { ok: boolean; cards: GachaEntry[]; balance: number } {
+  if (!spendWarfunds(GACHA10_COST, kv)) return { ok: false, cards: [], balance: getWarfunds(kv) };
+  const cards: GachaEntry[] = [];
+  for (let i = 0; i < 10; i++) cards.push(pickOne(pool, rng));
+  if (!cards.some((c) => c.rarity && c.rarity !== 'common')) {
+    const rares = pool.filter((c) => c.rarity && c.rarity !== 'common');
+    if (rares.length) cards[9] = pickOne(rares, rng); // 保底兜底
+  }
+  for (const c of cards) addCard(c.id, kv);
+  return { ok: true, cards, balance: getWarfunds(kv) };
 }

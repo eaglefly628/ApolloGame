@@ -2,7 +2,7 @@
 // 与确定性引擎解耦：纯前端 + 假数据；只在「开始攻岛」那刻产出一份「出战牌组+势力+队伍配置」交给 onStart。
 // 局内对局由 game-f.tsx 的 startMatch 接手。视觉基调=绢帛暖米+水墨黑（brief §二），class 前缀 gfl- 防与局内 gfx- 撞。
 import { type Deck, type Faction, HUBAO_DECK, DECK_REGISTRY } from './index.js';
-import { getWarfunds, gachaPull, getCollection, GACHA_COST, getLP, rankFor } from './account.js';
+import { getWarfunds, gachaPull, gachaPull10, getCollection, GACHA_COST, GACHA10_COST, getLP, rankFor } from './account.js';
 
 export interface RunConfig {
   deck: Deck;
@@ -177,7 +177,7 @@ export function buildLobby(onStart: (cfg: RunConfig) => void): HTMLElement {
     </div>
     <div class="gfl-screen" data-screen="coll" style="flex:1">
       <h2>卡牌收藏</h2><div class="gfl-sub">筛选 势力/职业/稀有度/品质 + 搜索。未拥有显灰锁 🔒。战功抽卡入收藏（概率公示）。</div>
-      <div class="gfl-filters"><button class="gfl-fbtn" data-act="gacha" style="background:#c9a24e;color:#fff;border-color:transparent;cursor:pointer">🎲 单抽 · ${GACHA_COST} 战功</button><span class="gfl-fbtn" data-ref="collinfo">已收藏 ${Object.values(getCollection()).reduce((a, b) => a + b, 0)} 张</span>${['势力 ▾', '职业 ▾', '稀有度 ▾'].map((t) => `<span class="gfl-fbtn">${t}</span>`).join('')}</div>
+      <div class="gfl-filters"><button class="gfl-fbtn" data-act="gacha" style="background:#c9a24e;color:#fff;border-color:transparent;cursor:pointer">🎲 单抽 · ${GACHA_COST} 战功</button><button class="gfl-fbtn" data-act="gacha10" style="background:#8a6d2f;color:#fff;border-color:transparent;cursor:pointer">🎲 十连 · ${GACHA10_COST}（保底稀有）</button><span class="gfl-fbtn" data-ref="collinfo">已收藏 ${Object.values(getCollection()).reduce((a, b) => a + b, 0)} 张</span>${['势力 ▾', '稀有度 ▾'].map((t) => `<span class="gfl-fbtn">${t}</span>`).join('')}</div>
       <div class="gfl-cards">${cardGrid}</div>
     </div>
     <div class="gfl-screen" data-screen="market" style="flex:1">
@@ -247,7 +247,19 @@ export function buildLobby(onStart: (cfg: RunConfig) => void): HTMLElement {
     if (ci) ci.textContent = `已收藏 ${Object.values(getCollection()).reduce((a, b) => a + b, 0)} 张`;
     if (root.querySelector('.gfl-toast')) root.querySelector('.gfl-toast')!.remove();
     const t = document.createElement('div'); t.className = 'gfl-toast';
-    t.innerHTML = r.ok ? `<span>🎲 抽到 <b>${esc(r.card!.name)}</b>！入收藏。</span><button class="gfl-acc">好</button>` : `<span>⚠️ 战功不足（需 ${GACHA_COST}）</span><button class="gfl-acc">好</button>`;
+    t.innerHTML = r.ok ? `<span>🎲 抽到 <b>${esc(r.card!.name)}</b>（${esc(r.card!.rarity ?? '')}）！入收藏。</span><button class="gfl-acc">好</button>` : `<span>⚠️ 战功不足（需 ${GACHA_COST}）</span><button class="gfl-acc">好</button>`;
+    t.querySelector('button')!.addEventListener('click', () => t.remove());
+    root.appendChild(t);
+  });
+  // 十连抽（保底 ≥1 稀有）。
+  root.querySelector<HTMLElement>('[data-act="gacha10"]')?.addEventListener('click', () => {
+    const r = gachaPull10();
+    const wf = root.querySelector<HTMLElement>('[data-ref="warfunds"]'); if (wf) wf.textContent = `🎖️ 战功 ${getWarfunds()}`;
+    const ci = root.querySelector<HTMLElement>('[data-ref="collinfo"]'); if (ci) ci.textContent = `已收藏 ${Object.values(getCollection()).reduce((a, b) => a + b, 0)} 张`;
+    root.querySelector('.gfl-toast')?.remove();
+    const t = document.createElement('div'); t.className = 'gfl-toast';
+    const rares = r.ok ? r.cards.filter((c) => c.rarity && c.rarity !== 'common').length : 0;
+    t.innerHTML = r.ok ? `<span>🎲 十连：${r.cards.length} 张入收藏（稀有+ ×${rares}）</span><button class="gfl-acc">好</button>` : `<span>⚠️ 战功不足（需 ${GACHA10_COST}）</span><button class="gfl-acc">好</button>`;
     t.querySelector('button')!.addEventListener('click', () => t.remove());
     root.appendChild(t);
   });

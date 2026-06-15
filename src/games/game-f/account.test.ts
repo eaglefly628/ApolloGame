@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { warfundsFor, getWarfunds, addWarfunds, settleRun, memoryKV, spendWarfunds, gachaPull, gachaRates, getCollection, GACHA_COST, GACHA_POOL, getLP, rankFor, updateLpAfterRun } from './account.js';
+import { warfundsFor, getWarfunds, addWarfunds, settleRun, memoryKV, spendWarfunds, gachaPull, gachaPull10, gachaRates, getCollection, GACHA_COST, GACHA10_COST, GACHA_POOL, getLP, rankFor, updateLpAfterRun, type GachaEntry } from './account.js';
 
 describe('经济 v1 · 账号层战功（warfunds；服务层、与 ECS 解耦）', () => {
   it('战功公式：贡献/胜利/波深单调增，钳非负取整', () => {
@@ -55,6 +55,22 @@ describe('经济 v1 · 收藏 + 软币抽卡（闭合 earn→spend；account 层
     expect(r.card!.id).toBe('a_guanyu');
     expect(r.balance).toBe(0);
     expect(getCollection(kv)['a_guanyu']).toBe(1);
+  });
+  it('卡池=小丑牌(deck CardSpec)非武将；钥匙牌=传说(权最低)', () => {
+    expect(GACHA_POOL.some((e) => e.id === 'taoyuan' && e.rarity === 'legendary')).toBe(true); // 桃园誓=钥匙牌传说
+    expect(GACHA_POOL.every((e) => !e.id.startsWith('a_') && !e.id.startsWith('c_'))).toBe(true); // 无武将 id
+    const leg = GACHA_POOL.find((e) => e.rarity === 'legendary')!;
+    const com = GACHA_POOL.find((e) => e.rarity === 'common');
+    if (com) expect(leg.weight).toBeLessThan(com.weight); // 传说更稀有
+  });
+  it('gachaPull10：十连 + 保底（无稀有则末位换稀有）', () => {
+    const kv = memoryKV(); addWarfunds(GACHA10_COST, kv);
+    const pool: GachaEntry[] = [{ id: 'c1', name: 'c1', weight: 1, rarity: 'common' }, { id: 'r1', name: 'r1', weight: 1, rarity: 'rare' }];
+    const r = gachaPull10(kv, () => 0, pool); // rng=0 → 全抽 common → 保底末位换 rare
+    expect(r.ok).toBe(true);
+    expect(r.cards).toHaveLength(10);
+    expect(r.cards.some((c) => c.rarity === 'rare')).toBe(true); // 保底命中
+    expect(r.balance).toBe(0);
   });
 });
 
