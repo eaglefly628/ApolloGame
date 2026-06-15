@@ -231,6 +231,19 @@ export function buildGameGMatch(teamA: FateCard[], teamB: FateCard[], seed: numb
 
 export { FLIP_DURATION, FLIP_SPINS, flipTarget, MATCH_REWARD };
 
+// ── T-G5 · 战役 / run 结构（design/11）──
+// 一个 run = 5 场连战 + 3 命线：输一场扣 1 命，命尽=结束，打穿 5 场=通关。
+// 战役曲线：敌方 favor 偏置逐场升，终局第 5 场=Boss 牌王座(更强 + 起手干预)。场间养成另在 mount。
+export const RUN_BATTLES = 5;
+export const RUN_LIVES = 3;
+const BATTLE_LABELS = ['序战 · 杂兵', '前哨 · 偏师', '中军 · 名将', '精锐 · 机关', '终局 · 牌王座 BOSS'];
+export interface BattleSpec { enemyBias: number; boss: boolean; label: string }
+/** 第 i 场(0-based)的敌军强度/是否 Boss。敌 favor 偏置逐场升(-10,-5,0,5)，终局 Boss 额外 +8(=18,牌王座)。 */
+export function battleSpec(i: number): BattleSpec {
+  const boss = i >= RUN_BATTLES - 1;
+  return { enemyBias: -10 + i * 5 + (boss ? 8 : 0), boss, label: BATTLE_LABELS[i] ?? `第 ${i + 1} 战` };
+}
+
 // ═══════════════════════════════════════════════════════════════
 //  G2 · 战场结构（军衔 / 三路 / 布阵 / 将领牵动）—— design/06。owner 愿景核心。
 //

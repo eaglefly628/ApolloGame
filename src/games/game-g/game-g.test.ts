@@ -2,7 +2,7 @@ import { describe, it, expect } from 'vitest';
 import { Engine } from '../../runtime/engine.js';
 import type { Component } from '@engine/core/types.js';
 import type { Transform, RandomSeed, Resource, State, Card3D } from '@engine/protocol/components.js';
-import { buildGameG3DFlip, buildGameGDuel3D, buildGameGMatch, buildGameGArmyMatch, standardArmy, armyFromFormation, laneEstimates, applyInterventions, laneHandTier, LEVER_CATALOG, LEVER_START, LEVER_CAP, LEVER_REGEN, FORMATION_PRESETS, PRESET_NAMES, decideFaceUp, cardFace, flipTarget, FLIP_DURATION, FLIP_SPINS, MATCH_REWARD, type FateCard, type ArmyCard, type Intervention } from './blueprint.js';
+import { buildGameG3DFlip, buildGameGDuel3D, buildGameGMatch, buildGameGArmyMatch, standardArmy, armyFromFormation, laneEstimates, applyInterventions, laneHandTier, battleSpec, RUN_BATTLES, RUN_LIVES, LEVER_CATALOG, LEVER_START, LEVER_CAP, LEVER_REGEN, FORMATION_PRESETS, PRESET_NAMES, decideFaceUp, cardFace, flipTarget, FLIP_DURATION, FLIP_SPINS, MATCH_REWARD, type FateCard, type ArmyCard, type Intervention } from './blueprint.js';
 
 const get = <T extends Component>(e: Engine, id: string, type: string): T | undefined => e.world.getComponent<T>(id, type);
 const rotOf = (e: Engine, id = 'card'): number => get<Transform>(e, id, 'Transform')!.rotation;
@@ -439,5 +439,20 @@ describe('Game G · T-G4 护盾 + 同花（首发 6 完成）', () => {
     };
     const e1 = mk(), e2 = mk();
     for (let i = 0; i < FLIP_DURATION + 12; i++) { e1.world.tick(); e2.world.tick(); expect(e1.hash()).toBe(e2.hash()); }
+  });
+});
+
+describe('Game G · T-G5 战役/run 结构（战役曲线 + Boss）', () => {
+  it('run 常量 + 战役曲线逐场升 + 终局 Boss', () => {
+    expect([RUN_BATTLES, RUN_LIVES]).toEqual([5, 3]);
+    const bias = [0, 1, 2, 3, 4].map((i) => battleSpec(i).enemyBias);
+    for (let i = 1; i < 5; i++) expect(bias[i]).toBeGreaterThan(bias[i - 1]); // 敌偏置逐场升
+    expect(battleSpec(0).boss).toBe(false);
+    expect(battleSpec(4).boss).toBe(true); // 第 5 场=Boss
+    expect(battleSpec(4).label).toContain('BOSS');
+  });
+  it('Boss 牌王座更强：终局敌军 favor 总和 > 序战', () => {
+    const sum = (bias: number): number => standardArmy('b', bias).reduce((s, c) => s + c.favor, 0);
+    expect(sum(battleSpec(4).enemyBias)).toBeGreaterThan(sum(battleSpec(0).enemyBias));
   });
 });

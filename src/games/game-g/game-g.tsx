@@ -1,6 +1,6 @@
 import { Engine } from '../../runtime/engine.js';
 import { ThreeRenderer } from './three-renderer.js';
-import { buildGameGArmyMatch, armyFromFormation, applyInterventions, laneEstimates, FORMATION_PRESETS, PRESET_NAMES, LEVER_CATALOG, LEVER_START, LEVER_CAP, LEVER_REGEN, type Formation, type Intervention, type LeverKind } from './index.js';
+import { buildGameGArmyMatch, armyFromFormation, applyInterventions, laneEstimates, FORMATION_PRESETS, PRESET_NAMES, LEVER_CATALOG, LEVER_START, LEVER_CAP, LEVER_REGEN, battleSpec, RUN_BATTLES, RUN_LIVES, type Formation, type Intervention, type LeverKind } from './index.js';
 import type { State, Resource } from '@engine/protocol/components.js';
 
 // Game G ·《翻命扑克》—— 大厅 ↔ 出征 闭环（launcher 卡带槽：export mount(container)→cleanup）。自包含于本目录。
@@ -18,10 +18,11 @@ interface Save {
   deck: number[]; // 我方 52 张的 favor（0..95）
   lastOfficers: number[]; // 上次布阵的三路军官数 [上,中,下]（默认选中 + AI 克制依据）
   leverEnergy: number; // 干预能量◈（开局 3 / 每胜 +2 / 上限 6）
+  lives: number; // 战役命线（开 run 3 命，输一场 −1，命尽=run 结束）
 }
 
 function freshSave(): Save {
-  return { materials: 0, stage: 1, deck: Array.from({ length: DECK_SIZE }, (_, i) => 44 + (i % 10) * 2), lastOfficers: [10, 10, 10], leverEnergy: LEVER_START }; // 44..62 起步
+  return { materials: 0, stage: 1, deck: Array.from({ length: DECK_SIZE }, (_, i) => 44 + (i % 10) * 2), lastOfficers: [10, 10, 10], leverEnergy: LEVER_START, lives: RUN_LIVES }; // 44..62 起步；stage=当前战 1..5
 }
 function loadSave(): Save {
   try {
@@ -31,6 +32,8 @@ function loadSave(): Save {
       if (Array.isArray(s.deck) && s.deck.length === DECK_SIZE) {
         if (!Array.isArray(s.lastOfficers) || s.lastOfficers.length !== 3) s.lastOfficers = [10, 10, 10]; // 旧存档兼容
         if (typeof s.leverEnergy !== 'number') s.leverEnergy = LEVER_START;
+        if (typeof s.lives !== 'number') s.lives = RUN_LIVES;
+        if (s.stage < 1 || s.stage > RUN_BATTLES) s.stage = 1;
         return s;
       }
     }
@@ -92,7 +95,7 @@ export function mount(container: HTMLElement): () => void {
     const stat = el(
       'div',
       'text-align:center;line-height:1.7',
-      `材料 <b style="color:#eab308">${save.materials}</b> ｜ 第 <b>${save.stage}</b> 关<br>` +
+      `材料 <b style="color:#eab308">${save.materials}</b> ｜ 战役 第 <b>${save.stage}/${RUN_BATTLES}</b> 战 ｜ 命 ${'❤'.repeat(save.lives)} ｜ 能量 ◈${save.leverEnergy}<br>` +
         `你的牌组：${DECK_SIZE} 张，favor 均 <b>${avg(save.deck)}</b>（最低 ${Math.min(...save.deck)} / 最高 ${Math.max(...save.deck)}）<br>` +
         `<span style="opacity:.7">favor 越高越易翻正面(活)。改造牌组让更多牌活下来。</span>`,
     );
@@ -121,7 +124,7 @@ export function mount(container: HTMLElement): () => void {
       }),
     );
 
-    const go = mkBtn(`⚔ 出征 · 第 ${save.stage} 关`);
+    const go = mkBtn(`⚔ 出征 · 第 ${save.stage}/${RUN_BATTLES} 战（${battleSpec(save.stage - 1).label}）`);
     go.style.cssText += ';background:#1e3a2a;border-color:#22c55e;font-weight:600';
     go.onclick = () => showFormation([...save.lastOfficers] as [number, number, number]);
 
@@ -241,7 +244,7 @@ export function mount(container: HTMLElement): () => void {
     const hint = el(
       'div',
       'max-width:560px;text-align:center;line-height:1.5;opacity:.85',
-      `第 ${save.stage} 关 · 54 vs 54 三路军阵（你的阵：<b>${myName}</b> ｜ 敌阵：暗）。<br>` +
+      `第 ${save.stage}/${RUN_BATTLES} 战 · <b>${battleSpec(save.stage - 1).label}</b> ｜ 命 ${'❤'.repeat(save.lives)} ｜ 你的阵 <b>${myName}</b>/敌阵暗。<br>` +
         `逐路掷命相撞翻面，<b>主将生死牵动全路</b>（活则士气、亡则溃散）；<b>胜 2/3 路即赢</b>。金=我方活/青=敌方活/石板=死。`,
     );
     const stage = document.createElement('div');
@@ -255,7 +258,8 @@ export function mount(container: HTMLElement): () => void {
 
     engine = new Engine({ tickRate: 60 });
     const armyA = armyFromFormation('a', myBias(save.deck), formation);
-    const armyB = armyFromFormation('b', enemyBias(save.stage), aiForm);
+    const spec = battleSpec(save.stage - 1); // stage 1→战 0
+    const armyB = armyFromFormation('b', spec.enemyBias, aiForm);
     const { a, b } = applyInterventions(armyA, armyB, interventions, myBias(save.deck)); // 揭晓前施加干预
     engine.load(buildGameGArmyMatch(a, b, Math.floor(Math.random() * 1e9)));
     renderer = new ThreeRenderer({ width: W, height: H });
@@ -276,12 +280,24 @@ export function mount(container: HTMLElement): () => void {
       // 结算奖励：存活的我方牌都算战利品；胜利额外 +15 并推进关卡（敌方更强）。
       const gain = survA + (winner === 'a' ? 15 : 0);
       save.materials += gain;
-      if (winner === 'a') { save.stage += 1; save.leverEnergy = Math.min(LEVER_CAP, save.leverEnergy + LEVER_REGEN); } // 胜→推进关卡 + 回能◈
+      let tail = '';
+      if (winner === 'a') {
+        save.leverEnergy = Math.min(LEVER_CAP, save.leverEnergy + LEVER_REGEN); // 回能◈
+        if (save.stage >= RUN_BATTLES) { // 打穿终局 Boss → 通关
+          save.materials += 50;
+          tail = '🏆 <b>通关战役！</b>（+50 材料）回大厅开新战役';
+          save.stage = 1; save.lives = RUN_LIVES;
+        } else { save.stage += 1; tail = `进军 第 ${save.stage}/${RUN_BATTLES} 战`; }
+      } else { // 败/平 → 扣命
+        save.lives -= 1;
+        tail = save.lives <= 0 ? '💀 <b>命尽，战役结束</b> 回大厅重整' : `命 −1（剩 ${save.lives}）重整旗鼓再战本场`;
+        if (save.lives <= 0) { save.stage = 1; save.lives = RUN_LIVES; }
+      }
       persist(save);
       const who = winner === 'a' ? '我方胜（best-of-3）' : winner === 'b' ? '敌方胜' : '平局';
       const color = winner === 'a' ? '#eab308' : winner === 'b' ? '#94a3b8' : '#cbd5e1';
-      label.innerHTML = `<span style="color:${color}">${who}</span> ｜ 三路 ${lanesA}:${lanesB} ｜ 存活 ${survA}:${survB} ｜ 敌阵【${aiName}】 ｜ +${gain} 材料`;
-      back.textContent = winner === 'a' ? '← 回大厅（关卡推进）' : '← 回大厅';
+      label.innerHTML = `<span style="color:${color}">${who}</span> ｜ 三路 ${lanesA}:${lanesB} ｜ 敌阵【${aiName}】 ｜ +${gain} 材料 ｜ ${tail}`;
+      back.textContent = '← 回大厅';
     };
     engine.subscribe(onFrame);
     engine.start();
