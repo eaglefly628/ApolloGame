@@ -614,9 +614,14 @@ export function buildGameFBlueprint(pacing: GameFPacing = {}): WorldBlueprint {
     r_count_tactician: { Resource: { id: 'count_tactician', current: 0, min: 0, max: 99 } },
     r_dmg_scale_a: { Resource: { id: 'dmg_scale_a', current: 1, min: 0, max: 9 } },
     r_dmg_scale_b: { Resource: { id: 'dmg_scale_b', current: 1, min: 0, max: 9 } }, // 敌方系数（信长·天下布武 全军 atk buff 在此锁存；mob hitbox 全读 dmg_scale_b）
-    // 信长·天下布武（太阁 Boss 招牌，REQ-F-064 现成能力重组：group/信号→Effect→hitbox scaleByResource）：
-    // 终盘 W6 信长坐镇天守 → deploy_pve_5 拍全军伤害 ×1.35（与玩家 dmg_scale_a 羁绊乘区对称；零引擎改动）。
-    eff_nobunaga_tenka: { Effect: { onSignal: 'deploy_pve_5', kind: 'modify-resource', targetId: 'dmg_scale_b', op: 'set', value: 1.35 } },
+    // 信长·天下布武（T-F1，REQ-F-064 现成能力重组：deploy_pve_<N> 信号 → 全局 Effect modify-resource，零引擎；
+    // = decks round-buff 同款 banded 锁存，只是 banded by 关卡阶段而非回合）。守军全军伤害**阶段递增**：
+    // 国人众/天守关越深，太阁守军越凶，终盘信长坐镇天守 ×1.40。prep 每回合把 dmg_scale_b 复位回 1（round_ui prep onEnter）。
+    // 全 mob hitbox 已 scaleByResource:'dmg_scale_b'（与玩家 dmg_scale_a 羁绊乘区对称）。
+    eff_tenka_s2: { Effect: { onSignal: 'deploy_pve_2', kind: 'modify-resource', targetId: 'dmg_scale_b', op: 'set', value: 1.08 } },
+    eff_tenka_s3: { Effect: { onSignal: 'deploy_pve_3', kind: 'modify-resource', targetId: 'dmg_scale_b', op: 'set', value: 1.16 } },
+    eff_tenka_s4: { Effect: { onSignal: 'deploy_pve_4', kind: 'modify-resource', targetId: 'dmg_scale_b', op: 'set', value: 1.25 } },
+    eff_tenka_s5: { Effect: { onSignal: 'deploy_pve_5', kind: 'modify-resource', targetId: 'dmg_scale_b', op: 'set', value: 1.40 } },
     when_bond_shu: { EventWhen: { signal: 'bond_shu', when: and({ kind: 'state', fsmId: 'round_ui', equals: 'combat' }, resCmp('count_shu', 'gte', 3)), mode: 'edge', armed: false } },
     eff_bond_shu: { Effect: { onSignal: 'bond_shu', kind: 'modify-resource', targetId: 'dmg_scale_a', op: 'set', value: 1.2 } },
     // —— 加时强制结束（一图流：30s+15s；单人改编=超时按败方路径结算，注记于 flow-spec）——

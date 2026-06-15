@@ -3,6 +3,10 @@ import { TAIKOU_BEACHHEAD, TAIKOU_KOKUJIN, TAIKOU_BOSS, TAIKOU_ROSTER, STAGE_UNI
 import { GAME_F_TEMPLATES } from './combat.js';
 import { F_TAIKOU } from './assets.js';
 import { PVE_COMP } from './stages.js';
+import { Engine } from '../../runtime/engine.js';
+import { getComponentById } from '@engine/core/query.js';
+import { buildGameFBlueprint } from './blueprint.js';
+import { FAST } from './game-f.helpers.js';
 
 describe('C 太阁全谱 roster（master §六 数据落地）', () => {
   it('全谱完整：滩头4 + 国人众6 + 天守11 = 21；按 master 数值钉关键样本', () => {
@@ -71,5 +75,21 @@ describe('T1 太阁守军 roster（滩头杂兵 + mob 换皮）', () => {
     expect(GAME_F_TEMPLATES['proj_mob_ash_yumi']).toBeDefined();
     const m2 = GAME_F_TEMPLATES['mob_ash_yumi'] as unknown as { entities: { main: { GridMover: { range?: number } } } };
     expect(m2.entities.main.GridMover.range).toBe(4);
+  });
+});
+
+describe('T-F1 信长·天下布武（守军全军 buff 阶段递增；现成能力重组、零引擎）', () => {
+  it('终盘 deploy_pve_5 锁存 dmg_scale_b=1.40（全 mob hitbox scaleByResource 据此放大伤害）', () => {
+    const e = new Engine({ tickRate: 60 });
+    e.load(buildGameFBlueprint(FAST));
+    const set = (id: string, v: number): void => { const r = getComponentById(e.world, 'Resource', 'id', id) as { current: number } | undefined; if (r) r.current = v; };
+    const setFlag = (id: string, v: boolean): void => { const f = getComponentById(e.world, 'Flag', 'id', id) as { active: boolean } | undefined; if (f) f.active = v; };
+    const sb = (): number => (getComponentById(e.world, 'Resource', 'id', 'dmg_scale_b') as unknown as { current: number }).current;
+    for (let i = 0; i < 5; i++) e.world.tick(); // 沉降进 prep（deploy_armed 复位 false、dmg_scale_b 复位 1）
+    expect(sb()).toBe(1); // 锁存前基线
+    // 强制终盘部署窗条件（deploy_armed false→true 边沿 ∧ stage==5 ∧ round>=5）→ EventWhen 发 deploy_pve_5 → 全局 Effect 锁存。
+    set('stage_idx', 5); set('round_idx', 5); setFlag('deploy_armed', true);
+    e.world.tick();
+    expect(sb()).toBeCloseTo(1.40, 5); // 天下布武：终盘守军伤害 ×1.40（阶段递增最高档）
   });
 });
