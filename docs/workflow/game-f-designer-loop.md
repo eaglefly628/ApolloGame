@@ -5,6 +5,22 @@
 
 ---
 
+## 循环 #12 · 2026-06-15 · Designer F
+
+### 验收:卧龙八阵 deck + 白衣渡江 deck 定义 → ✅ 通过(+ 好纪律)
+- **卧龙八阵** 进 `DECK_REGISTRY`(threshold-buff TACTICIAN [2→0.15, 3→0.20] + round-buff),= #10 spec。**零引擎、67 测绿。**
+- 👍 **白衣渡江** deck 也写好了,但**故意不入 DECK_REGISTRY**(注释:依赖 3-faction plumbing,不通前不可选/不会被错误构建)。准确接住了 #11 的 plumbing flag。
+
+### 厘清:白衣渡江的真实解锁条件(给主程/多人评估)
+- 白衣只需**「吴可选为玩家阵营」**(单机 吴 vs 太阁)——即 `rosterFor('wu')` + 大厅选吴一项,**未必要全套三人 plumbing**。建议先评估这个小解锁(吴当第 3 个单机阵营)→ 白衣即可上;**全三人对局(孙刘曹同场)再随多人 F**。
+
+### 下一步(无依赖,继续推):屯田积粟 deck(经济·贪婪)
+- drop-in `decks.ts`(faction 任意,蜀/魏皆可):
+  - `{ kind:'round-buff' 或 econ-buff }` 思路:利息/连胜加成。**⚠️ 现 CardSpec 4 类是 buff/shop-weight,没有"改经济档"的卡类** → 屯田可能需第 5 类 `econ-buff`(改 gold 利息 banded)。请 Program F 评估:能否用现有 round-buff 框架表达,不能则提一个小 CardSpec 扩展(纯游戏侧)。
+- 后续:卧龙之外更多牌组 → 信玄火相(低优先)→ 经济 v1。
+
+---
+
 ## 循环 #11 · 2026-06-15 · Designer F
 
 ### 验收:吴 faction 6 英雄入 roster(+ 吕蒙 sprite 404 修复)→ ✅ 通过
