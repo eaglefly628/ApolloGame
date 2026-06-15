@@ -173,3 +173,18 @@ export function applyShopBias(baseDeck: number[], shopBias: { codes: number[]; c
   for (const b of shopBias) for (let i = 0; i < b.copies; i++) out.push(...b.codes);
   return out;
 }
+
+// ── 组牌器（designer #19；养成环 build 端：抽小丑牌→收藏→拼牌组→喂局内）──
+// 卡目录：DECK_REGISTRY 全 deck 的 CardSpec 卡，按 id 索引（抽到的卡=catalog 里的 id）。
+export const CARD_CATALOG: Record<string, CardSpec> = (() => {
+  const cat: Record<string, CardSpec> = {};
+  for (const deck of Object.values(DECK_REGISTRY)) for (const c of deck.cards) cat[c.id] = c;
+  return cat;
+})();
+
+// 从一组卡 id 拼出自组牌组（id 来自玩家收藏；catalog 查不到的 id 丢弃）。faction 定出生势力（玩家选）。
+// buildDeckRules 接口不变（仍吃 Deck）→ 自组牌组与硬编码 preset 同路进局。
+export function assembleDeck(cardIds: string[], faction: Faction, name = '自组牌组'): Deck {
+  const cards = cardIds.map((id) => CARD_CATALOG[id]).filter((c): c is CardSpec => !!c);
+  return { id: 'custom', name, faction, cards };
+}

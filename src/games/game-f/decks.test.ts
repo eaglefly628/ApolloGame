@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import { buildGameFBlueprint } from './blueprint.js';
-import { HUBAO_DECK, HANSHI_DECK, TUNTIAN_DECK, WOLONG_DECK, DECK_REGISTRY, buildDeckRules, applyShopBias, type Deck } from './decks.js';
+import { HUBAO_DECK, HANSHI_DECK, TUNTIAN_DECK, WOLONG_DECK, DECK_REGISTRY, buildDeckRules, applyShopBias, CARD_CATALOG, assembleDeck, type Deck } from './decks.js';
 import { FACT_WEI, FACT_SHU, BENCH_OCC } from './constants.js';
 import { SHOP_DECK } from './economy.js';
 
@@ -129,5 +129,20 @@ describe('牌组 #4 · 卧龙八阵（蜀·谋士控制 threshold-buff TACTICIAN
     const bp = buildGameFBlueprint({ deck: WOLONG_DECK });
     expect(bp.entities['eff_bond_shu']).toBeUndefined();
     expect(bp.entities['eff_bazhen_t0']).toBeDefined();
+  });
+});
+
+describe('组牌器（catalog + assembleDeck；designer #19 build 端）', () => {
+  it('CARD_CATALOG：deck 卡按 id 可查；assembleDeck 从 id 拼 Deck（丢未知 id）', () => {
+    expect(CARD_CATALOG['taoyuan']).toBeDefined();
+    expect(CARD_CATALOG['bazhen']).toBeDefined();
+    const d = assembleDeck(['taoyuan', 'zhangwu', 'nope_unknown'], 'shu', '自组');
+    expect(d.faction).toBe('shu');
+    expect(d.cards.map((c) => c.id)).toEqual(['taoyuan', 'zhangwu']); // 未知 id 丢弃
+  });
+  it('自组牌组喂 buildGameFBlueprint 接口不变（与硬编码 preset 同路）', () => {
+    const d = assembleDeck(['taoyuan'], 'shu');
+    const bp = buildGameFBlueprint({ deck: d });
+    expect(bp.entities['eff_taoyuan_t0']).toBeDefined(); // 自组的桃园连携照常物化
   });
 });

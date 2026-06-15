@@ -57,6 +57,19 @@ export function spendWarfunds(amount: number, kv: KV = defaultKV()): boolean {
   return true;
 }
 
+// ── 自组牌组（组牌器 designer #19；玩家从收藏拼的卡 id 列表 + 出生势力，持久化）──
+export interface CustomDeck { cardIds: string[]; faction: 'shu' | 'wei' | 'wu' }
+const CUSTOM_KEY = 'gamef.account.customdeck';
+export function getCustomDeck(kv: KV = defaultKV()): CustomDeck | null {
+  try {
+    const o = JSON.parse(kv.getItem(CUSTOM_KEY) ?? 'null') as CustomDeck | null;
+    return o && Array.isArray(o.cardIds) && o.faction ? o : null;
+  } catch { return null; }
+}
+export function saveCustomDeck(d: CustomDeck, kv: KV = defaultKV()): void {
+  kv.setItem(CUSTOM_KEY, JSON.stringify(d));
+}
+
 // ── 段位 = 难度阀（spec §六；account 层数据 → 难度系数喂蓝图）──
 // 单机「名次」退化为胜负：胜 +LP、负 -LP；LP→段位档→太阁难度系数（高段位关卡更凶，spec §六）。
 export interface Rank { tier: string; lp: number; difficulty: number }
