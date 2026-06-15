@@ -7,7 +7,7 @@ import { Engine } from '../../runtime/engine.js';
 import { getComponentById } from '@engine/core/query.js';
 import { instantiate } from '@skills/tier3/index.js';
 import { buildGameFBlueprint } from './blueprint.js';
-import { TEAM_B, FROZEN } from './constants.js';
+import { TEAM_B, FROZEN, BUSHO } from './constants.js';
 import { FAST } from './game-f.helpers.js';
 
 describe('C 太阁全谱 roster（master §六 数据落地）', () => {
@@ -133,5 +133,22 @@ describe('国人众招牌·普攻控/毒（斋藤毒沼 DoT / 明智群冻 FROZE
     const p = GAME_F_TEMPLATES['proj_mob_akechi'] as unknown as { entities: { p: { Hitbox: { setMask?: number; statusDuration?: number } } } };
     expect((p.entities.p.Hitbox.setMask ?? 0) & FROZEN).toBe(FROZEN);
     expect(p.entities.p.Hitbox.statusDuration).toBe(90);
+  });
+});
+
+describe('毛利元就·三矢（场上部将≥3 → 守军全军 buff；玩家羁绊敌方镜像、零引擎）', () => {
+  it('铺 3 个部将(BUSHO)入战斗 → dmg_scale_b 叠加 +0.18（group-count→edge→Effect）', () => {
+    const e = new Engine({ tickRate: 60 });
+    e.load(buildGameFBlueprint(FAST));
+    const state = getComponentById(e.world, 'State', 'fsmId', 'round_ui') as { current: string } | undefined;
+    const sb = (): number => (getComponentById(e.world, 'Resource', 'id', 'dmg_scale_b') as unknown as { current: number }).current;
+    // 直接铺 3 个国人众部将（烘 TEAM_B|BUSHO）→ group-count 计 count_busho=3。
+    for (let n = 0; n < 3; n++) {
+      instantiate(e.world, GAME_F_TEMPLATES['mob_hojo'], `probe_busho${n}`, n, 0, 0,
+        { main: { Tag: { flags: TEAM_B | BUSHO }, Resource: { id: 'hp', current: 999, min: 0, max: 999 }, HexPos: { q: 2 + n, r: 2 } } }, { q: 2 + n, r: 2 });
+    }
+    let maxScale = 0;
+    for (let i = 0; i < 8; i++) { if (state) state.current = 'combat'; e.world.tick(); maxScale = Math.max(maxScale, sb()); }
+    expect(maxScale).toBeGreaterThanOrEqual(1.18); // 三矢：部将≥3 → 全军 +0.18（从基线 1）
   });
 });

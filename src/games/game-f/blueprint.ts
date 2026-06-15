@@ -35,7 +35,7 @@ import { boardEntities, project, offsetToAxial, COLS, ROWS, TILE, ORIGIN_X, ORIG
 // 关卡/野怪/预布阵 → stages.ts；经济/升星数值 → economy.ts；战斗模板库 → combat.ts。blueprint.ts=门面 + flow 装配。
 import {
   TEAM_A, TEAM_B, WARRIOR, TACTICIAN, FACT_SHU, FROZEN,
-  PROTAG, LOOT, BAG, EQUIP, RUNE, BENCH_OCC, MARKER_VIS, PROJ, RESULT,
+  PROTAG, LOOT, BAG, EQUIP, RUNE, BENCH_OCC, MARKER_VIS, PROJ, RESULT, BUSHO,
   HP_SCALE, FONT_DISPLAY, FONT_BODY, xf, sprite, zlift,
 } from './constants.js';
 import { type Faction, ROSTER, rosterFor, codesFor } from './heroes.js';
@@ -618,10 +618,17 @@ export function buildGameFBlueprint(pacing: GameFPacing = {}): WorldBlueprint {
     // = decks round-buff 同款 banded 锁存，只是 banded by 关卡阶段而非回合）。守军全军伤害**阶段递增**：
     // 国人众/天守关越深，太阁守军越凶，终盘信长坐镇天守 ×1.40。prep 每回合把 dmg_scale_b 复位回 1（round_ui prep onEnter）。
     // 全 mob hitbox 已 scaleByResource:'dmg_scale_b'（与玩家 dmg_scale_a 羁绊乘区对称）。
-    eff_tenka_s2: { Effect: { onSignal: 'deploy_pve_2', kind: 'modify-resource', targetId: 'dmg_scale_b', op: 'set', value: 1.08 } },
-    eff_tenka_s3: { Effect: { onSignal: 'deploy_pve_3', kind: 'modify-resource', targetId: 'dmg_scale_b', op: 'set', value: 1.16 } },
-    eff_tenka_s4: { Effect: { onSignal: 'deploy_pve_4', kind: 'modify-resource', targetId: 'dmg_scale_b', op: 'set', value: 1.25 } },
-    eff_tenka_s5: { Effect: { onSignal: 'deploy_pve_5', kind: 'modify-resource', targetId: 'dmg_scale_b', op: 'set', value: 1.40 } },
+    // op:add（从 prep 复位的基线 1 累加）→ 与毛利·三矢 buff 可叠加（同 dmg_scale_b，避免 set 覆盖）。
+    eff_tenka_s2: { Effect: { onSignal: 'deploy_pve_2', kind: 'modify-resource', targetId: 'dmg_scale_b', op: 'add', value: 0.08 } },
+    eff_tenka_s3: { Effect: { onSignal: 'deploy_pve_3', kind: 'modify-resource', targetId: 'dmg_scale_b', op: 'add', value: 0.16 } },
+    eff_tenka_s4: { Effect: { onSignal: 'deploy_pve_4', kind: 'modify-resource', targetId: 'dmg_scale_b', op: 'add', value: 0.25 } },
+    eff_tenka_s5: { Effect: { onSignal: 'deploy_pve_5', kind: 'modify-resource', targetId: 'dmg_scale_b', op: 'add', value: 0.40 } },
+    // 毛利元就·三矢（国人众招牌，REQ-F-064 现成能力重组）：场上部将(国人众/天守)≥3 → 守军全军伤害 +0.18。
+    // = 玩家羁绊 bond 的敌方镜像（group-count 部将 tag → 战斗态 edge → Effect 累加 dmg_scale_b）。零引擎。
+    gc_busho: { GroupCount: { countResource: 'count_busho', requiredTag: BUSHO } },
+    r_count_busho: { Resource: { id: 'count_busho', current: 0, min: 0, max: 99 } },
+    when_busho_sanshi: { EventWhen: { signal: 'busho_sanshi', when: and({ kind: 'state', fsmId: 'round_ui', equals: 'combat' }, resCmp('count_busho', 'gte', 3)), mode: 'edge', armed: false } },
+    eff_busho_sanshi: { Effect: { onSignal: 'busho_sanshi', kind: 'modify-resource', targetId: 'dmg_scale_b', op: 'add', value: 0.18 } },
     when_bond_shu: { EventWhen: { signal: 'bond_shu', when: and({ kind: 'state', fsmId: 'round_ui', equals: 'combat' }, resCmp('count_shu', 'gte', 3)), mode: 'edge', armed: false } },
     eff_bond_shu: { Effect: { onSignal: 'bond_shu', kind: 'modify-resource', targetId: 'dmg_scale_a', op: 'set', value: 1.2 } },
     // —— 加时强制结束（一图流：30s+15s；单人改编=超时按败方路径结算，注记于 flow-spec）——
@@ -763,7 +770,7 @@ export function buildGameFBlueprint(pacing: GameFPacing = {}): WorldBlueprint {
         const p2 = project(a.q, a.r);
         entities[`pveslot_s${w.stage}_${i}`] = {
           Transform: xf(p2.x, p2.y),
-          Caster: { onSignal: `deploy_pve_${w.stage}`, template: `mob_${slot.code}`, at: 'self', overrides: { main: { HexPos: { q: a.q, r: a.r }, Tag: { flags: TEAM_B }, Resource: { current: u.hp, max: u.hp } } } },
+          Caster: { onSignal: `deploy_pve_${w.stage}`, template: `mob_${slot.code}`, at: 'self', overrides: { main: { HexPos: { q: a.q, r: a.r }, Tag: { flags: TEAM_B | (u.seg === 'kokujin' || u.seg === 'tenshu' ? BUSHO : 0) }, Resource: { current: u.hp, max: u.hp } } } }, // 国人众/天守 = 部将（毛利三矢 group-count）
         };
       }
     }
