@@ -533,6 +533,16 @@ export function applyInterventions(armyA: ArmyCard[], armyB: ArmyCard[], list: I
   return { a, b };
 }
 
+const SHADOW_REVENGE = 12; // 影武者：本路主将被斩(favor≤8)→该路余部 +favor 复仇
+/**
+ * 影武者（design/12 §五.5 退路·零缺口）：敌斩首把我某路主将压到 favor≤8(=被斩) → 该路**余部** +复仇 favor（替身死战）。
+ * 揭晓前 build-时变换（在 Boss 起手干预之后调用，故能侦测被斩主将）；只升余部 favor、主将仍被斩 → outcome-first、可重放。
+ */
+export function applyShadowRevenge(army: ArmyCard[]): ArmyCard[] {
+  const hitLanes = new Set(army.filter((c) => c.general && c.favor <= DECAP_FAVOR).map((c) => c.lane));
+  return army.map((c) => (!c.general && hitLanes.has(c.lane) ? { ...c, favor: clampFavor(c.favor + SHADOW_REVENGE) } : { ...c }));
+}
+
 /** 布阵预估（build 时算，喂布阵屏预估条）：每路 Σfavor / 主将军衔点数 / 牌数。 */
 export function laneEstimates(army: ArmyCard[]): { sumFavor: number; general: string; count: number }[] {
   return [0, 1, 2].map((lane) => {
@@ -568,7 +578,7 @@ export function bossFor(idx: number): BossSpec {
 // 故复用"数据+解释器"范式、**不复用 Game E 运行时**（同 D0 §同花未复用 evaluateHand 之理）。applyJokers 在 resolveArmy 前跑、**零新能力**。
 // 局外持久：融在玩家牌组上（save.jokers），跨 run 不清零——"牌组身份"养成核(owner 愿景)。
 // 本批 4 张=纯 build 时 favor 变换(同袍/赌徒/先登/不屈)；士气放大族(旗手/枭雄)、结局联动族(死士/连环/督粮/影武者)待后续切片(需 resolve 时钩子)。
-export type JokerKind = 'suit-synergy' | 'polarize' | 'lane-pref' | 'diehard' | 'morale' | 'link';
+export type JokerKind = 'suit-synergy' | 'polarize' | 'lane-pref' | 'diehard' | 'morale' | 'link' | 'economy' | 'revenge';
 export type Archetype = 'decap' | 'cardtype' | 'general' | 'wide' | 'probability' | 'tianji'; // 6 流派 id（design/12 §四）
 export interface JokerCard {
   id: string; name: string; kind: JokerKind; cost: number; archetype: Archetype; text: string;
@@ -585,10 +595,17 @@ export const GAME_G_JOKERS: JokerCard[] = [
   { id: 'warlord', name: '枭雄', kind: 'morale', cost: 24, archetype: 'general', moraleMul: 2, text: '顶级主将(K/王)所在路，士气加成 ×2（堆高军衔主将碾压一路）' },
   { id: 'martyr', name: '死士', kind: 'link', cost: 16, archetype: 'wide', text: '本路首张兵阵亡 → 该路余下未翻的兵 +10 favor（报仇·死战 · 铺场流）' },
   { id: 'chain', name: '连环', kind: 'link', cost: 19, archetype: 'wide', text: '本路首张兵翻正 → 牵起下一张未翻的兵必活（连环索 · 铺场流）' },
+  { id: 'quartermaster', name: '督粮', kind: 'economy', cost: 18, archetype: 'decap', text: '每胜一路 → 下场备战 +1◈ 干预能量（攒能秒将 · 斩首流）' },
+  { id: 'shadow', name: '影武者', kind: 'revenge', cost: 20, archetype: 'decap', text: '我某路主将被斩首 → 该路余部 +12 favor 复仇（替身死战 · 斩首流）' },
 ];
 /** 从已融小丑取结局联动开关（死士/连环）→ 喂 resolveArmy 前向生效。 */
 export function jokerLinks(jokerIds: readonly string[]): LinkJokers {
   return { martyr: jokerIds.includes('martyr'), chain: jokerIds.includes('chain') };
+}
+const QUARTERMASTER_PER_LANE = 1; // 督粮：每胜一路 +1◈（入下场 run 能量池，post-resolve）
+/** 督粮：结算后按胜路数算给下场的 ◈ 增益（拥有才有；run 经济，不破本场揭晓前花能量的相位）。 */
+export function quartermasterEnergy(jokerIds: readonly string[], lanesWon: number): number {
+  return jokerIds.includes('quartermaster') ? QUARTERMASTER_PER_LANE * Math.max(0, lanesWon) : 0;
 }
 export const JOKER_BY_ID: ReadonlyMap<string, JokerCard> = new Map(GAME_G_JOKERS.map((j) => [j.id, j]));
 
@@ -605,7 +622,7 @@ export function jokerKeyBuffs(ownedIds: readonly string[]): RunBuff[] {
 export interface ArchetypeSpec { id: Archetype; name: string; desc: string; keyJokers: string[]; counters: Archetype }
 export const ARCHETYPES: ArchetypeSpec[] = [
   // 核心 3-环（`12` §四明示）：斩首 克 将领 克 铺场 克 斩首。
-  { id: 'decap', name: '斩首流', desc: '攒能量秒敌主将引溃散', keyJokers: [], counters: 'general' }, // 钥匙：督粮/影武者(待实现)
+  { id: 'decap', name: '斩首流', desc: '攒能量秒敌主将引溃散', keyJokers: ['quartermaster', 'shadow'], counters: 'general' },
   { id: 'general', name: '将领流', desc: '主将士气碾压一路', keyJokers: ['bannerman', 'warlord'], counters: 'wide' },
   { id: 'wide', name: '铺场流', desc: 'go-wide + 连锁必活', keyJokers: ['vanguard', 'martyr', 'chain'], counters: 'decap' },
   // 次 3-环（我的合理映射，待 design 校准）：牌型 克 概率 克 弃一保二 克 牌型。
@@ -684,6 +701,7 @@ export function prepareArmies(s: MatchSetup): { a: ArmyCard[]; b: ArmyCard[]; mo
   const armyB = armyFromFormation('b', s.enemyBias, s.enemyForm);
   let { a, b } = applyInterventions(armyA, armyB, s.interventions, s.deckBias); // 玩家干预
   if (s.boss && s.boss.openingLevers.length) ({ a, b } = applyInterventions(a, b, s.boss.openingLevers, s.enemyBias, 'b')); // Boss 起手（对称）
+  if (s.jokers.includes('shadow')) a = applyShadowRevenge(a); // 影武者：敌斩首命中我主将 → 该路余部复仇（在 Boss 干预后侦测）
   return { a, b, moraleA: jokerMoraleScale(a, s.jokers), linksA: jokerLinks(s.jokers) }; // 士气倍率 + 结局联动（死士/连环）
 }
 

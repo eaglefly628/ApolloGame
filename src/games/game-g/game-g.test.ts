@@ -2,7 +2,7 @@ import { describe, it, expect } from 'vitest';
 import { Engine } from '../../runtime/engine.js';
 import type { Component } from '@engine/core/types.js';
 import type { Transform, RandomSeed, Resource, State, Card3D } from '@engine/protocol/components.js';
-import { buildGameG3DFlip, buildGameGDuel3D, buildGameGMatch, buildGameGArmyMatch, prepareArmies, standardArmy, armyFromFormation, laneEstimates, applyInterventions, applyJokers, jokerMoraleScale, jokerLinks, jokerKeyBuffs, GAME_G_JOKERS, JOKER_BY_ID, ARCHETYPES, detectArchetype, archetypeMatchup, laneHandTier, battleSpec, RUN_BATTLES, RUN_LIVES, BETWEEN_BUFFS, applyBuff, BOSS_ROSTER, bossFor, LEVER_CATALOG, LEVER_START, LEVER_CAP, LEVER_REGEN, FORMATION_PRESETS, PRESET_NAMES, decideFaceUp, cardFace, flipTarget, FLIP_DURATION, FLIP_SPINS, MATCH_REWARD, type FateCard, type ArmyCard, type Intervention, type BuffTarget } from './blueprint.js';
+import { buildGameG3DFlip, buildGameGDuel3D, buildGameGMatch, buildGameGArmyMatch, prepareArmies, standardArmy, armyFromFormation, laneEstimates, applyInterventions, applyShadowRevenge, quartermasterEnergy, applyJokers, jokerMoraleScale, jokerLinks, jokerKeyBuffs, GAME_G_JOKERS, JOKER_BY_ID, ARCHETYPES, detectArchetype, archetypeMatchup, laneHandTier, battleSpec, RUN_BATTLES, RUN_LIVES, BETWEEN_BUFFS, applyBuff, BOSS_ROSTER, bossFor, LEVER_CATALOG, LEVER_START, LEVER_CAP, LEVER_REGEN, FORMATION_PRESETS, PRESET_NAMES, decideFaceUp, cardFace, flipTarget, FLIP_DURATION, FLIP_SPINS, MATCH_REWARD, type FateCard, type ArmyCard, type Intervention, type BuffTarget } from './blueprint.js';
 
 const get = <T extends Component>(e: Engine, id: string, type: string): T | undefined => e.world.getComponent<T>(id, type);
 const rotOf = (e: Engine, id = 'card'): number => get<Transform>(e, id, 'Transform')!.rotation;
@@ -585,9 +585,9 @@ describe('Game G · T-G5 终局 Boss 阵容 + 对称起手干预（design/13）'
 describe('Game G · T-G6 小丑牌（融牌面 · build 时 favor 变换 · 持久牌组身份）', () => {
   const mk = (id: string, lane: number, suit: string, favor: number): ArmyCard => ({ id, rank: 'A', lane, favor, general: false, suit });
 
-  it('小丑目录(本批)≥8，kind 合法、cost>0、有 text；JOKER_BY_ID 覆盖全', () => {
-    expect(GAME_G_JOKERS.length).toBeGreaterThanOrEqual(8);
-    const kinds = new Set(['suit-synergy', 'polarize', 'lane-pref', 'diehard', 'morale', 'link']);
+  it('小丑目录 10 张(全)，kind 合法、cost>0、有 text；JOKER_BY_ID 覆盖全', () => {
+    expect(GAME_G_JOKERS.length).toBeGreaterThanOrEqual(10);
+    const kinds = new Set(['suit-synergy', 'polarize', 'lane-pref', 'diehard', 'morale', 'link', 'economy', 'revenge']);
     for (const j of GAME_G_JOKERS) {
       expect(kinds.has(j.kind)).toBe(true);
       expect(j.cost).toBeGreaterThan(0);
@@ -717,6 +717,35 @@ describe('Game G · T-G6 小丑牌（融牌面 · build 时 favor 变换 · 持�
   it('prepareArmies 带出 linksA（死士/连环 喂 build）', () => {
     const { linksA } = prepareArmies({ formation: FORMATION_PRESETS['均衡'], deckBias: 0, jokers: ['martyr', 'chain'], interventions: [], enemyBias: 0 });
     expect(linksA).toEqual({ martyr: true, chain: true });
+  });
+
+  it('督粮：每胜一路 +1◈（仅拥有时；lanesWon clamp≥0）', () => {
+    expect(quartermasterEnergy([], 3)).toBe(0);
+    expect(quartermasterEnergy(['quartermaster'], 2)).toBe(2);
+    expect(quartermasterEnergy(['quartermaster'], 0)).toBe(0);
+    expect(quartermasterEnergy(['quartermaster'], -1)).toBe(0); // 负数钳 0
+  });
+
+  it('applyShadowRevenge：仅被斩路(主将 favor≤8)余部 +复仇，主将不变、他路不变', () => {
+    const army = standardArmy('a', 0);
+    const hit = army.map((c) => (c.lane === 1 && c.general ? { ...c, favor: 8 } : c)); // 人工把 lane1 主将斩到 8
+    const out = applyShadowRevenge(hit);
+    const soldierSum = (arr: ArmyCard[], lane: number): number => arr.filter((c) => c.lane === lane && !c.general).reduce((s, c) => s + c.favor, 0);
+    expect(soldierSum(out, 1)).toBeGreaterThan(soldierSum(hit, 1)); // 被斩路余部复仇
+    expect(soldierSum(out, 0)).toBe(soldierSum(hit, 0)); // 他路不变
+    expect(out.find((c) => c.lane === 1 && c.general)!.favor).toBe(8); // 主将仍被斩（退路不救将）
+  });
+
+  it('影武者：Boss 斩首命中我三路主将 → prepareArmies 让三路余部 +复仇（vs 不带影武者）', () => {
+    const boss = BOSS_ROSTER.find((b) => b.id === 'smallJoker')!; // decapitate×3
+    const make = (jokers: string[]): ArmyCard[] => prepareArmies({ formation: FORMATION_PRESETS['均衡'], deckBias: 0, jokers, interventions: [], enemyForm: boss.formation, enemyBias: boss.favorBias, boss }).a;
+    const without = make([]);
+    const withShadow = make(['shadow']);
+    const soldierSum = (arr: ArmyCard[], lane: number): number => arr.filter((c) => c.lane === lane && !c.general).reduce((s, c) => s + c.favor, 0);
+    for (const lane of [0, 1, 2]) {
+      expect(without.find((c) => c.lane === lane && c.general)!.favor).toBe(8); // 三路主将都被斩
+      expect(soldierSum(withShadow, lane)).toBeGreaterThan(soldierSum(without, lane)); // 影武者 → 余部复仇
+    }
   });
 
   it('流派钥匙：jokerKeyBuffs 为每张"未拥有"小丑产 kind=joker 的 RunBuff（已拥有不出）', () => {
