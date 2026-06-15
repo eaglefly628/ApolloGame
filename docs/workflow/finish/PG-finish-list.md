@@ -54,3 +54,21 @@ G2 战场结构（军衔/三路/将领牵动/best-of-3）核心已落、已接�
 - `design/06` 的"将领牵动=集合写优先重组"落地顺利——**build 时逐级掷命**比运行时 group-effect 更干净、确定、可回放，建议设计就以此为准（已在 `01/06` 内核之上、未改内核）。
 - best-of-3 首版已可玩；若要"分路推进/总存活"等替代判胜，给个数值意向我就改（纯 banded 调整）。
 - 布阵 UI 需要你定**交互形态**（拖牌分路？预设阵型选择？）——给个 `design/06 §四` 的交互细化，我接。
+
+---
+
+## 自动工作循环约定（PG auto-loop SOP）
+
+> owner 指令：PG 每 ~4 分钟跑一个自主工作周期，与主策划并行迭代，不打断用户。
+> 本环境无 cron/ScheduleWakeup → 用 **persistent Monitor 心跳**（每 4 分钟一 tick）唤醒。
+> **每次被 `PG-tick` 唤醒，照此 SOP 跑一个周期：**
+
+1. `git fetch origin claude/mainbranch && git rebase origin/claude/mainbranch`（拉主策划最新设计 + 他人提交）。
+2. 读 `src/games/game-g/design/`（重点 `05-roadmap-and-status.md` + 新/改的特性文档），找下一个**未实现**任务，优先主策划最近细化的那条。
+3. 在 game-g 层实现一个自包含切片：数据驱动、outcome-first；优先重组、零新 capability——真缺口才自己以 Lead 身份做并在本文件标注供 review。
+4. 保持 tsc + vitest + build 全绿；新逻辑加 headless 测。
+5. 提交（署名 `Claude <noreply@anthropic.com>`，信息以 session URL 结尾）→ fetch→rebase→（带进新提交则重跑全绿）→ push。
+6. 回填本文件：本周期做了什么 + 状态 + Lead review 触点 + 给主策划的反馈。
+7. 都实现完则做小步打磨/测试加强，标 `idle—待下一轮设计迭代`。**绝不留红、绝不留未推送、不问用户。**
+
+> 停止循环：`TaskStop` 掉 `PG Game G 心跳` monitor（用户喊停时）。
