@@ -306,6 +306,85 @@ function laneSlot(lane: number, i: number, isA: boolean): { x: number; y: number
   return { x: cellX + (isA ? -PAIR_DX : PAIR_DX), y: cellY }; // A 左 / B 右，跃向 cell 中心相撞
 }
 
+// ── T-G3 · 开局布阵 / 分兵（design/09，田忌赛马）──
+// 30 军官(大队长6/中队长8/小队长16) 由玩家分三路，24 兵自动补到 18/路；每路最高军衔=主将。
+// Formation = 各路军官数(和=30) → 决定哪路强/弃。预设给易上手，AI 暗布阵给读心。纯数据、零新能力。
+const OFFICER_RANKS: string[] = (() => {
+  const r = ['JOKER', 'JOKER'];
+  for (const x of ['K', 'Q', 'J', '10', '9', '8', '7']) for (let i = 0; i < 4; i++) r.push(x);
+  return r; // 30，军衔降序
+})();
+const TROOP_RANKS: string[] = (() => {
+  const r: string[] = [];
+  for (const x of ['A', '2', '3', '4', '5', '6']) for (let i = 0; i < 4; i++) r.push(x);
+  return r; // 24
+})();
+
+export interface Formation {
+  officers: [number, number, number]; // 各路(上/中/下)军官数，和必须=30
+}
+// 首版 4 预设（命名分布；石头剪刀布闭环 → 读心有意义，见 design/09 §三）。
+export const FORMATION_PRESETS: Record<string, Formation> = {
+  均衡: { officers: [10, 10, 10] },
+  锋矢: { officers: [6, 18, 6] }, // 攻中
+  两翼: { officers: [13, 4, 13] }, // 弃中
+  田忌: { officers: [2, 14, 14] }, // 弃上
+};
+export const PRESET_NAMES = ['均衡', '锋矢', '两翼', '田忌'];
+
+// 按军官配额把军衔降序的军官轮转发三路（跳过已满路）→ 每路得均衡的高低军官，配额精确。
+function deployOfficers(quota: readonly number[]): string[][] {
+  const lanes: string[][] = [[], [], []];
+  const cap = [...quota];
+  let li = 0;
+  for (const off of OFFICER_RANKS) {
+    let guard = 0;
+    while (cap[li] === 0 && guard++ < 3) li = (li + 1) % 3;
+    if (cap[li] === 0) break; // 全满（理论上不会，sum=30）
+    lanes[li].push(off);
+    cap[li]--;
+    li = (li + 1) % 3;
+  }
+  return lanes;
+}
+
+/**
+ * 按布阵发兵成军：30 军官按 Formation 分三路、24 兵自动补到 18/路，每路首席(最高军衔)=主将。
+ * 无 Formation → 回退 standardArmy(军衔蛇形=均衡，零迁移)。输出与 standardArmy 同构(ArmyCard[])，喂 buildGameGArmyMatch。
+ */
+export function armyFromFormation(prefix: string, favorBias: number, formation?: Formation): ArmyCard[] {
+  if (!formation) return standardArmy(prefix, favorBias);
+  const offLanes = deployOfficers(formation.officers);
+  const need = [0, 1, 2].map((l) => 18 - offLanes[l].length); // 各路补兵数(和=24)
+  const troopLanes: string[][] = [[], [], []];
+  let li = 0;
+  for (const t of TROOP_RANKS) {
+    let guard = 0;
+    while (need[li] === 0 && guard++ < 3) li = (li + 1) % 3;
+    if (need[li] === 0) break;
+    troopLanes[li].push(t);
+    need[li]--;
+    li = (li + 1) % 3;
+  }
+  const army: ArmyCard[] = [];
+  for (const lane of [0, 1, 2]) {
+    const laneRanks = [...offLanes[lane], ...troopLanes[lane]]; // 军官在前(高 favor)→ idx0=主将
+    laneRanks.forEach((rank, idx) => {
+      army.push({ id: `${prefix}_l${lane}_${idx}`, rank, lane, favor: clampFavor(rankFavor(rank) + favorBias), general: idx === 0 });
+    });
+  }
+  return army;
+}
+
+/** 布阵预估（build 时算，喂布阵屏预估条）：每路 Σfavor / 主将军衔点数 / 牌数。 */
+export function laneEstimates(army: ArmyCard[]): { sumFavor: number; general: string; count: number }[] {
+  return [0, 1, 2].map((lane) => {
+    const lc = army.filter((c) => c.lane === lane);
+    const gen = lc.find((c) => c.general);
+    return { sumFavor: lc.reduce((a, c) => a + c.favor, 0), general: gen ? (gen.rank === 'JOKER' ? '★' : gen.rank) : '-', count: lc.length };
+  });
+}
+
 /**
  * G2 一局军阵对决：armyA(我) vs armyB(敌)，自上而下逐级掷命(将领牵动) → 三路数存活 → best-of-3 定总胜负。
  * 装配顺序 A 全军 → B 全军（PRNG 序列确定、可回放）。胜负 build 时即定；3D 抛飞相撞为表现。

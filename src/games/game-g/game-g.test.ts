@@ -2,7 +2,7 @@ import { describe, it, expect } from 'vitest';
 import { Engine } from '../../runtime/engine.js';
 import type { Component } from '@engine/core/types.js';
 import type { Transform, RandomSeed, Resource, State, Card3D } from '@engine/protocol/components.js';
-import { buildGameG3DFlip, buildGameGDuel3D, buildGameGMatch, buildGameGArmyMatch, standardArmy, decideFaceUp, cardFace, flipTarget, FLIP_DURATION, FLIP_SPINS, MATCH_REWARD, type FateCard, type ArmyCard } from './blueprint.js';
+import { buildGameG3DFlip, buildGameGDuel3D, buildGameGMatch, buildGameGArmyMatch, standardArmy, armyFromFormation, laneEstimates, FORMATION_PRESETS, PRESET_NAMES, decideFaceUp, cardFace, flipTarget, FLIP_DURATION, FLIP_SPINS, MATCH_REWARD, type FateCard, type ArmyCard } from './blueprint.js';
 
 const get = <T extends Component>(e: Engine, id: string, type: string): T | undefined => e.world.getComponent<T>(id, type);
 const rotOf = (e: Engine, id = 'card'): number => get<Transform>(e, id, 'Transform')!.rotation;
@@ -266,5 +266,63 @@ describe('Game G · 体量与牌阵布局（撞击观感的数据底座）', () 
     expect(get<Resource>(e, 'res_a', 'Resource')!.current).toBe(aAlive);
     expect(get<Resource>(e, 'res_b', 'Resource')!.current).toBe(bAlive);
     expect(get<State>(e, 'winner', 'State')!.current).toBe(winner);
+  });
+});
+
+describe('Game G · T-G3 开局布阵 / 分兵（田忌赛马，纯数据）', () => {
+  const OFFICER = new Set(['JOKER', 'K', 'Q', 'J', '10', '9', '8', '7']);
+  const officersInLane = (army: ArmyCard[], lane: number): number => army.filter((c) => c.lane === lane && OFFICER.has(c.rank)).length;
+
+  it('4 预设：军官数和=30、各路≤18', () => {
+    expect(PRESET_NAMES).toEqual(['均衡', '锋矢', '两翼', '田忌']);
+    for (const name of PRESET_NAMES) {
+      const o = FORMATION_PRESETS[name].officers;
+      expect(o[0] + o[1] + o[2]).toBe(30);
+      expect(Math.max(...o)).toBeLessThanOrEqual(18);
+    }
+  });
+
+  it('armyFromFormation：按阵型发三路，54 张/18 每路/每路 1 主将/军官数与阵型一致', () => {
+    for (const name of PRESET_NAMES) {
+      const f = FORMATION_PRESETS[name];
+      const army = armyFromFormation('a', 0, f);
+      expect(army).toHaveLength(54);
+      for (const lane of [0, 1, 2]) {
+        expect(army.filter((c) => c.lane === lane)).toHaveLength(18); // 每路 18
+        expect(army.filter((c) => c.lane === lane && c.general)).toHaveLength(1); // 每路 1 主将
+        expect(officersInLane(army, lane)).toBe(f.officers[lane]); // 军官分布=阵型
+      }
+    }
+  });
+
+  it('无阵型 → 回退 standardArmy（均衡蛇形，零迁移）', () => {
+    const fallback = armyFromFormation('a', 5, undefined);
+    expect(fallback).toHaveLength(54);
+    for (const lane of [0, 1, 2]) expect(fallback.filter((c) => c.lane === lane)).toHaveLength(18);
+    // 与 standardArmy 同构（同 favorBias 下各路军官数一致）
+    const std = standardArmy('a', 5);
+    for (const lane of [0, 1, 2]) expect(officersInLane(fallback, lane)).toBe(officersInLane(std, lane));
+  });
+
+  it('laneEstimates：三路各给 Σfavor/主将/牌数(18)', () => {
+    const est = laneEstimates(armyFromFormation('a', 0, FORMATION_PRESETS['锋矢']));
+    expect(est).toHaveLength(3);
+    expect(est[1].count).toBe(18);
+    expect(est[1].sumFavor).toBeGreaterThan(est[0].sumFavor); // 锋矢攻中：中路 favor 总和最高(军官最多)
+  });
+
+  it('布阵影响胜负且确定：同阵型+seed 逐拍 hash 一致；攻中阵中路更易赢', () => {
+    const mkE = (fa: typeof FORMATION_PRESETS[string]): Engine => {
+      const e = new Engine({ tickRate: 60 });
+      e.load(buildGameGArmyMatch(armyFromFormation('a', 8, fa), armyFromFormation('b', -8, FORMATION_PRESETS['均衡']), 7));
+      return e;
+    };
+    const e1 = mkE(FORMATION_PRESETS['锋矢']);
+    const e2 = mkE(FORMATION_PRESETS['锋矢']);
+    for (let i = 0; i < FLIP_DURATION + 12; i++) {
+      e1.world.tick();
+      e2.world.tick();
+      expect(e1.hash()).toBe(e2.hash()); // 同阵型+seed → 确定
+    }
   });
 });

@@ -1,6 +1,6 @@
 import { Engine } from '../../runtime/engine.js';
 import { ThreeRenderer } from './three-renderer.js';
-import { buildGameGArmyMatch, standardArmy } from './index.js';
+import { buildGameGArmyMatch, armyFromFormation, laneEstimates, FORMATION_PRESETS, PRESET_NAMES, type Formation } from './index.js';
 import type { State, Resource } from '@engine/protocol/components.js';
 
 // Game G ·《翻命扑克》—— 大厅 ↔ 出征 闭环（launcher 卡带槽：export mount(container)→cleanup）。自包含于本目录。
@@ -16,17 +16,21 @@ interface Save {
   materials: number;
   stage: number;
   deck: number[]; // 我方 52 张的 favor（0..95）
+  lastFormation: string; // 上次布阵预设（默认选中 + AI 克制依据）
 }
 
 function freshSave(): Save {
-  return { materials: 0, stage: 1, deck: Array.from({ length: DECK_SIZE }, (_, i) => 44 + (i % 10) * 2) }; // 44..62 起步
+  return { materials: 0, stage: 1, deck: Array.from({ length: DECK_SIZE }, (_, i) => 44 + (i % 10) * 2), lastFormation: '均衡' }; // 44..62 起步
 }
 function loadSave(): Save {
   try {
     const raw = localStorage.getItem(SAVE_KEY);
     if (raw) {
       const s = JSON.parse(raw) as Save;
-      if (Array.isArray(s.deck) && s.deck.length === DECK_SIZE) return s;
+      if (Array.isArray(s.deck) && s.deck.length === DECK_SIZE) {
+        if (!s.lastFormation) s.lastFormation = '均衡'; // 旧存档兼容
+        return s;
+      }
     }
   } catch {
     /* localStorage 不可用 → 用全新存档 */
@@ -46,6 +50,9 @@ const avg = (xs: number[]): number => Math.round(xs.reduce((a, b) => a + b, 0) /
 // 牌组均 favor → 全军 favor 偏置（改造越多越强）；敌方偏置随关卡递增。
 const myBias = (deck: number[]): number => avg(deck) - 50;
 const enemyBias = (stage: number): number => -8 + stage * 2;
+// AI 暗布阵：低关固定均衡 / 中关变化 / 高关克制你上局阵型（石头剪刀布闭环）。对玩家隐藏，开战揭晓。
+const COUNTER: Record<string, string> = { 均衡: '锋矢', 锋矢: '两翼', 两翼: '田忌', 田忌: '均衡' };
+const PRESET_DESC: Record<string, string> = { 均衡: '10/10/10 · 三路均摊', 锋矢: '6/18/6 · 攻中', 两翼: '13/4/13 · 弃中', 田忌: '2/14/14 · 弃上' };
 
 export function mount(container: HTMLElement): () => void {
   const save = loadSave();
@@ -106,7 +113,7 @@ export function mount(container: HTMLElement): () => void {
 
     const go = mkBtn(`⚔ 出征 · 第 ${save.stage} 关`);
     go.style.cssText += ';background:#1e3a2a;border-color:#22c55e;font-weight:600';
-    go.onclick = () => showMatch();
+    go.onclick = () => showFormation(save.lastFormation || '均衡');
 
     const reset = mkBtn('重置进度');
     reset.style.cssText += ';opacity:.6;font-size:11px';
@@ -119,13 +126,55 @@ export function mount(container: HTMLElement): () => void {
     root.append(title, stat, shop, go, reset);
   }
 
-  // ───────────────────────── 出征（一局 3D 掷命）─────────────────────────
-  function showMatch(): void {
+  // ───────────────────────── 布阵（田忌赛马 · 开战前核心博弈）─────────────────────────
+  const aiFormation = (): string => {
+    const s = save.stage;
+    if (s <= 2) return '均衡'; // 低关：固定均衡
+    if (s <= 5) return PRESET_NAMES[(s + save.materials) % 4]; // 中关：变化
+    return COUNTER[save.lastFormation] ?? '均衡'; // 高关：克制你上局阵型
+  };
+  function showFormation(chosen: string): void {
     clear();
+    const title = el('div', 'font:600 18px system-ui;color:#eab308', `布阵 · 第 ${save.stage} 关`);
+    const sub = el('div', 'max-width:560px;text-align:center;opacity:.82;line-height:1.6',
+      '三路只需<b>赢两路</b>：三路均摊赌险胜，还是<b>弃一路</b>、把军官堆进两路稳拿 2:1？<br>敌方也在<b>暗中布阵</b>——猜对了爽，猜错了亏。30 名军官的分法决定哪路强弱。');
+    const lanesBox = el('div', 'display:flex;gap:10px');
+    const presetBar = el('div', 'display:flex;gap:8px;flex-wrap:wrap;justify-content:center');
+    const laneName = ['上', '中', '下'];
+    const est = laneEstimates(armyFromFormation('a', myBias(save.deck), FORMATION_PRESETS[chosen]));
+    lanesBox.replaceChildren(...est.map((L, i) => el('div',
+      'width:150px;padding:9px;border:1px solid #334155;border-radius:8px;text-align:center;line-height:1.6',
+      `<b>${laneName[i]}路</b><br>军官 ×${FORMATION_PRESETS[chosen].officers[i]} ｜ 主将 <b>${L.general}</b><br>Σfavor <b style="color:#eab308">${L.sumFavor}</b>`)));
+    presetBar.replaceChildren(...PRESET_NAMES.map((name) => {
+      const b = mkBtn(name);
+      b.title = PRESET_DESC[name];
+      if (name === chosen) b.style.cssText += ';border-color:#eab308;background:#2a2410;font-weight:700';
+      b.onclick = () => showFormation(name);
+      return b;
+    }));
+    const desc = el('div', 'opacity:.7;font-size:12px', PRESET_DESC[chosen]);
+    const go = mkBtn('⚔ 确认出征');
+    go.style.cssText += ';background:#1e3a2a;border-color:#22c55e;font-weight:600';
+    go.onclick = () => {
+      save.lastFormation = chosen;
+      persist(save);
+      showMatch(FORMATION_PRESETS[chosen], chosen);
+    };
+    const back = mkBtn('← 返回大厅');
+    back.onclick = showLobby;
+    const btnRow = el('div', 'display:flex;gap:10px');
+    btnRow.append(go, back);
+    root.append(title, sub, presetBar, desc, lanesBox, btnRow);
+  }
+
+  // ───────────────────────── 出征（一局 3D 三路掷命）─────────────────────────
+  function showMatch(formation: Formation, myName: string): void {
+    clear();
+    const aiName = aiFormation();
     const hint = el(
       'div',
       'max-width:560px;text-align:center;line-height:1.5;opacity:.85',
-      `第 ${save.stage} 关 · 54 vs 54 三路军阵：上/中/下三路各 18 张，军衔=点数(亮牌=主将)。<br>` +
+      `第 ${save.stage} 关 · 54 vs 54 三路军阵（你的阵：<b>${myName}</b> ｜ 敌阵：暗）。<br>` +
         `逐路掷命相撞翻面，<b>主将生死牵动全路</b>（活则士气、亡则溃散）；<b>胜 2/3 路即赢</b>。金=我方活/青=敌方活/石板=死。`,
     );
     const stage = document.createElement('div');
@@ -138,7 +187,7 @@ export function mount(container: HTMLElement): () => void {
     root.append(hint, stage, bar);
 
     engine = new Engine({ tickRate: 60 });
-    engine.load(buildGameGArmyMatch(standardArmy('a', myBias(save.deck)), standardArmy('b', enemyBias(save.stage)), Math.floor(Math.random() * 1e9)));
+    engine.load(buildGameGArmyMatch(armyFromFormation('a', myBias(save.deck), formation), armyFromFormation('b', enemyBias(save.stage), FORMATION_PRESETS[aiName]), Math.floor(Math.random() * 1e9)));
     renderer = new ThreeRenderer({ width: W, height: H });
     engine.attachRenderer(renderer, stage);
 
@@ -161,7 +210,7 @@ export function mount(container: HTMLElement): () => void {
       persist(save);
       const who = winner === 'a' ? '我方胜（best-of-3）' : winner === 'b' ? '敌方胜' : '平局';
       const color = winner === 'a' ? '#eab308' : winner === 'b' ? '#94a3b8' : '#cbd5e1';
-      label.innerHTML = `<span style="color:${color}">${who}</span> ｜ 三路 ${lanesA}:${lanesB} ｜ 存活 我 ${survA}:${survB} 敌 ｜ +${gain} 材料`;
+      label.innerHTML = `<span style="color:${color}">${who}</span> ｜ 三路 ${lanesA}:${lanesB} ｜ 存活 ${survA}:${survB} ｜ 敌阵【${aiName}】 ｜ +${gain} 材料`;
       back.textContent = winner === 'a' ? '← 回大厅（关卡推进）' : '← 回大厅';
     };
     engine.subscribe(onFrame);
