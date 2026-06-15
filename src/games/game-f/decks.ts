@@ -13,6 +13,8 @@ export type CardSpec =
   | { kind: 'threshold-buff'; id: string; tagMask: number; tiers: { at: number; bonus: number }[] }
   // 回合 buff：前 N 回合（round_idx ≤ untilRound）开战额外伤害系数（banded by round）。
   | { kind: 'round-buff'; id: string; untilRound: number; bonus: number }
+  // 经济档（屯田/利息）：结算窗按金币阈值阶梯追加金币（攒越多额外利息越高）。banded by gold。
+  | { kind: 'economy-band'; id: string; tiers: { atGold: number; bonus: number }[] }
   // 商店权重：把某些英雄码在牌袋里加权（预配权重，洗入更多某势力）。
   | { kind: 'shop-weight'; id: string; codes: number[]; copies: number };
 
@@ -68,11 +70,27 @@ export const BAIYI_DECK: Deck = {
   ],
 };
 
+// 牌组 #9「屯田积粟」(经济·Greed)：deck-spec §9。攒利息滚经济，后期接管。魏·曹屯田 lore；现成 banded（新 economy-band 卡类）。
+export const TUNTIAN_DECK: Deck = {
+  id: 'tuntian',
+  name: '屯田积粟',
+  faction: 'wei',
+  cards: [
+    // 屯田 ⭐：金币越多额外利息越高（攒钱滚雪球；利息上限翻倍语义）。
+    { kind: 'economy-band', id: 'tuntian', tiers: [{ atGold: 20, bonus: 1 }, { atGold: 40, bonus: 2 }, { atGold: 60, bonus: 3 }] },
+    // 重农：每回合结算基础额外金（稳态经济）。
+    { kind: 'economy-band', id: 'zhongnong', tiers: [{ atGold: 0, bonus: 1 }] },
+    // 募农：商店权重（攒钱期也能补人）。
+    { kind: 'shop-weight', id: 'munong', codes: [1, 2, 3, 4, 5, 6], copies: 1 },
+  ],
+};
+
 // 牌组登记表（id → 真实 Deck）：大厅选牌组 → 取真组交引擎。未实装的展示牌组回退首发组。
 // 注：BAIYI（吴）待 3-faction plumbing 才入表（现入会因 rosterFor('wu') 占位布局打不正常）。
 export const DECK_REGISTRY: Record<string, Deck> = {
   hubao: HUBAO_DECK,
   hanshi: HANSHI_DECK,
+  tuntian: TUNTIAN_DECK,
 };
 
 export interface DeckRules {
@@ -105,6 +123,16 @@ export function buildDeckRules(deck: Deck): DeckRules {
         const sig = `${card.id}_t${k}`;
         ents[`when_${sig}`] = { EventWhen: { signal: sig, when: { kind: 'and', of: [combat, { kind: 'resource', id: cr, cmp: 'gte', value: t.at }] }, mode: 'edge', armed: false } };
         ents[`eff_${sig}`] = { Effect: { onSignal: sig, kind: 'modify-resource', targetId: 'dmg_scale_a', op: 'add', value: t.bonus } };
+      });
+    } else if (card.kind === 'economy-band') {
+      // 经济档：结算窗（income_armed）∧ 金币≥atGold → 追加金币（攒钱滚利息）。atGold=0=每结算拍恒发。
+      card.tiers.forEach((t, k) => {
+        const sig = `${card.id}_e${k}`;
+        const when = t.atGold > 0
+          ? { kind: 'and', of: [{ kind: 'flag', id: 'income_armed', equals: true }, { kind: 'resource', id: 'gold', cmp: 'gte', value: t.atGold }] }
+          : { kind: 'flag', id: 'income_armed', equals: true };
+        ents[`when_${sig}`] = { EventWhen: { signal: sig, when, mode: 'edge', armed: false } };
+        ents[`eff_${sig}`] = { Effect: { onSignal: sig, kind: 'modify-resource', targetId: 'gold', op: 'add', value: t.bonus } };
       });
     } else if (card.kind === 'round-buff') {
       // banded：开战 ∧ round_idx ≤ untilRound → dmg_scale_a += bonus（前 N 回合压制）。

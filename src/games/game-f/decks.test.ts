@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import { buildGameFBlueprint } from './blueprint.js';
-import { HUBAO_DECK, HANSHI_DECK, DECK_REGISTRY, buildDeckRules, applyShopBias, type Deck } from './decks.js';
+import { HUBAO_DECK, HANSHI_DECK, TUNTIAN_DECK, DECK_REGISTRY, buildDeckRules, applyShopBias, type Deck } from './decks.js';
 import { FACT_WEI, FACT_SHU, BENCH_OCC } from './constants.js';
 import { SHOP_DECK } from './economy.js';
 
@@ -93,5 +93,24 @@ describe('牌组 #2 · 兴复汉室（蜀·连携 threshold-buff）', () => {
     expect(withDeck.entities['eff_taoyuan_t0']).toBeDefined(); // 牌组连携在
     const noDeck = buildGameFBlueprint();
     expect(noDeck.entities['eff_bond_shu']).toBeDefined(); // 默认蜀局蜀魂保留（向后兼容）
+  });
+});
+
+describe('牌组 #9 · 屯田积粟（经济 economy-band）', () => {
+  it('economy-band → 结算窗 banded 金币（atGold 阈值阶梯；atGold=0 恒发）', () => {
+    const { entities } = buildDeckRules(TUNTIAN_DECK);
+    // 屯田三档：≥20/≥40/≥60。
+    const e1 = entities['eff_tuntian_e1'] as unknown as { Effect: { targetId: string; op: string; value: number } };
+    expect(e1.Effect.targetId).toBe('gold');
+    expect(e1.Effect.op).toBe('add');
+    const w1 = entities['when_tuntian_e1'] as unknown as { EventWhen: { when: { kind: string; of?: { value?: number }[] } } };
+    expect(w1.EventWhen.when.kind).toBe('and'); // income_armed ∧ gold≥40
+    // 重农 atGold=0 → 仅 income_armed（非 and）。
+    const w0 = entities['when_zhongnong_e0'] as unknown as { EventWhen: { when: { kind: string } } };
+    expect(w0.EventWhen.when.kind).toBe('flag');
+  });
+  it('屯田积粟入 DECK_REGISTRY（可选第 3 套可玩牌组）', () => {
+    expect(DECK_REGISTRY.tuntian).toBe(TUNTIAN_DECK);
+    expect(TUNTIAN_DECK.faction).toBe('wei');
   });
 });
