@@ -35,7 +35,7 @@ import { boardEntities, project, offsetToAxial, COLS, ROWS, TILE, ORIGIN_X, ORIG
 // 关卡/野怪/预布阵 → stages.ts；经济/升星数值 → economy.ts；战斗模板库 → combat.ts。blueprint.ts=门面 + flow 装配。
 import {
   TEAM_A, TEAM_B, WARRIOR, TACTICIAN, FACT_SHU, FROZEN,
-  PROTAG, LOOT, BAG, EQUIP, SHOPSLOT_BITS, RUNE, SHOPSLOT_ALL, BENCH_OCC, MARKER_VIS, PROJ, RESULT,
+  PROTAG, LOOT, BAG, EQUIP, RUNE, BENCH_OCC, MARKER_VIS, PROJ, RESULT,
   HP_SCALE, FONT_DISPLAY, FONT_BODY, xf, sprite, zlift,
 } from './constants.js';
 import { type Faction, ROSTER, rosterFor, codesFor } from './heroes.js';
@@ -86,10 +86,6 @@ const or = (...of: Record<string, unknown>[]): Record<string, unknown> => ({ kin
 const ARENA = { minX: -170, minY: -165, maxX: 170, maxY: 110 };
 // 备战席托盘（用户钦定：下排英雄平台，非六角格；9 槽、可互换、买入自动落座；皮=placeholder 待 UI 资源）。
 const TRAY = { originX: -176, originY: 118, gap: 44, capacity: 9 };
-// 商店三大框（用户钦定：小丑牌式选卡页，替代金铲铲 5 小槽——形态偏离准则，按用户指令执行）。
-const SHOP_XS = [-70, 0, 70];
-const SHOP_Y = 320; // 移出视口下方（旧 canvas 商店卡退役；买入走 DOM 点将台 → CardPile.play，位置无关）
-
 // L2 回合流程（flow-spec §3.3 round_flow 原样）：prep⟲combat⟲resolution⟲done 与 L1 round_done 握手。
 // 回合重置（REQ-F-032）：prep 臂 deploy_armed → EventWhen(edge) → 'deploy'/'deploy_stage_<N>' → 槽位重展开；
 // resolution 臂 wipe_armed → 'wipe' → destroy-tagged 清场。经济/伤害不再写死在 flow：prep 臂 income_armed、
@@ -398,17 +394,8 @@ export function buildGameFBlueprint(pacing: GameFPacing = {}): WorldBlueprint {
     // + sold_code=码 → sold_code>0 边沿 → 'card_sold' → CardPile.returnOnSignal 袋底归还（引擎自清 sold_code）。
     r_sold_code: { Resource: { id: 'sold_code', current: 0, min: 0, max: 9999 } },
     when_sold: { EventWhen: { signal: 'card_sold', when: resCmp('sold_code', 'gt', 0), mode: 'edge', armed: false } },
-    // —— 商店 5 槽面板（F-14/REQ-F-042）：handCodeResources 终态镜像 → 两段脉冲（先整槽清、后按码重铺）→ 可点卡面。
-    // 脉冲时序：刷新/买入信号 → 臂1 → T+1 'shop_marks'(destroy-tagged 全槽卡 + 臂2) → T+2 重铺带按码展开（清已落地，无同拍误杀）。
-    f_marks_armed: { Flag: { id: 'shop_marks_armed', active: false } },
-    f_marks2_armed: { Flag: { id: 'shop_marks2_armed', active: false } },
-    eff_marks_on_refresh: { Effect: { onSignal: 'shop_refresh', kind: 'set-flag', targetId: 'shop_marks_armed', value: true } },
-    when_marks: { EventWhen: { signal: 'shop_marks', when: flagIs('shop_marks_armed'), mode: 'edge', armed: false } },
-    eff_marks_clear: { Effect: { onSignal: 'shop_marks', kind: 'destroy-tagged', targetId: '', value: SHOPSLOT_ALL } },
-    eff_marks_disarm: { Effect: { onSignal: 'shop_marks', kind: 'set-flag', targetId: 'shop_marks_armed', value: false } },
-    eff_marks2_arm: { Effect: { onSignal: 'shop_marks', kind: 'set-flag', targetId: 'shop_marks2_armed', value: true } },
-    when_marks2: { EventWhen: { signal: 'shop_marks2', when: flagIs('shop_marks2_armed'), mode: 'edge', armed: false } },
-    eff_marks2_disarm: { Effect: { onSignal: 'shop_marks2', kind: 'set-flag', targetId: 'shop_marks2_armed', value: false } },
+    // 商店在售（F-14/REQ-F-042）：CardPile.handCodeResources 镜像 shop_slot_1..3 终态码 → GameShell 商店面板按码取脸图（shop_face StringVar）。
+    // 旧 canvas 卡面/两段脉冲（destroy-tagged 重铺）已退役：壳层 image 直读镜像，无需引擎侧脉冲重绘。
     // —— 相位横幅（F-15 配套）：round_ui 状态镜像 → state 叶 edge → set-visible 三选一；胜/败终幕横幅走旗标。——
     f_round_state: { State: { fsmId: 'round_ui', current: 'prep' } },
     banner_prep: {
@@ -738,28 +725,15 @@ export function buildGameFBlueprint(pacing: GameFPacing = {}): WorldBlueprint {
       entities[`eff_${sk}_gold`] = { Effect: { onSignal: sk, kind: 'modify-resource', targetId: 'gold', op: 'add', value: SELL_PRICE[s] } };
     }
   });
-  // 商店三大框（F-14 重排，用户钦定小丑牌式选卡页）：3 槽镜像资源 + 每槽×每将 重铺带
-  // （and(臂2, 槽码=将码) edge → 持位 Caster 展开大卡面）+ 买入后面板再臂。卡面 Clickable=buy_slot_i 即购买。
+  // 商店三槽镜像资源（F-14）：CardPile.handCodeResources 写入在售英雄码，GameShell 商店面板按码取脸图。
+  // 旧 canvas 大卡面/底板/框（持位 Caster + Shape 占位）已退役 → 壳层 image 直读 shop_face StringVar。
   for (let i = 0; i < 3; i++) {
     entities[`r_shop_slot_${i + 1}`] = { Resource: { id: `shop_slot_${i + 1}`, current: 0, min: 0, max: 9999 } };
-    ROSTER.filter((x) => x.team === TEAM_A).forEach((h) => {
-      const sig = `s${i + 1}_${h.id}`;
-      entities[`when_${sig}`] = { EventWhen: { signal: sig, when: and(flagIs('shop_marks2_armed'), resCmp(`shop_slot_${i + 1}`, 'eq', HERO_CODE[h.id])), mode: 'edge', armed: false } };
-      entities[`cardcast_${sig}`] = { Transform: xf(SHOP_XS[i], SHOP_Y), Caster: { onSignal: sig, template: `shopcard_${h.id}`, at: 'self', overrides: { card: { Clickable: { action: `buy_slot_${i + 1}` }, Tag: { flags: SHOPSLOT_BITS[i] } } } } };
-    });
-  }
-  // 商店页底板 + 三个大框（placeholder：Shape+Color 占位，待用户给 UI 资源后换皮）。
-  entities['shop_panel'] = { Transform: xf(0, SHOP_Y), Shape: { kind: 'box', width: 240, height: 80 }, Color: { tint: 0xfffdfa, alpha: 0.92 }, Sprite: { textureKey: F_FX_STRIKE, anchorX: 0.5, anchorY: 0.5, zOrder: 26 } };
-  for (let i = 0; i < 3; i++) {
-    entities[`shop_frame_${i + 1}`] = { Transform: xf(SHOP_XS[i], SHOP_Y), Shape: { kind: 'box', width: 62, height: 72 }, Color: { tint: 0xf3dcc8, alpha: 1 }, Sprite: { textureKey: F_FX_STRIKE, anchorX: 0.5, anchorY: 0.5, zOrder: 27 } };
   }
   // 备战席托盘（REQ-F-055）：9 槽英雄平台（非六角；placeholder 槽框）。买入自动落座/席内拖拽互换/上板让座。
   entities['bench_tray'] = { Tray: { ...TRAY, requiredTag: BENCH_OCC } };
   for (let i = 0; i < TRAY.capacity; i++) {
     entities[`bench_frame_${i}`] = { Transform: xf(TRAY.originX + i * TRAY.gap, TRAY.originY + 6), Shape: { kind: 'box', width: 40, height: 32 }, Color: { tint: 0xffffff, alpha: 1 }, Sprite: { textureKey: F_PEDESTAL, anchorX: 0.5, anchorY: 0.5, zOrder: 1 } }; // 朴素石墩台座（每槽一个）
-  }
-  for (const h of ROSTER.filter((x) => x.team === TEAM_A)) {
-    entities[`eff_marks_on_buy_${h.id}`] = { Effect: { onSignal: `buy_${h.id}`, kind: 'set-flag', targetId: 'shop_marks_armed', value: true } };
   }
   // 敌方关卡槽（持久）：每阶段一组，prep 按 stage_idx 分流的 deploy_stage_<N> 展开（§4.5 敌阵=数据）。
   for (const st of STAGES) {
