@@ -38,10 +38,10 @@
 - **6 流派 + 克制网**（`12` §四）：斩首/牌型/将领/铺场/概率/弃一保二，石头剪刀布闭环。
 - 验收：改造坊融卡持久 / 小丑被动局内生效 / 6 流派可组 / 同牌组+seed hash 一致 / 全绿。⚠️ 影武者(斩首重定向)唯一小待核、有"复仇 buff"零缺口退路（`12` §五）。
 
-### T-G5 收尾 + Boss 阵容（`11` 余 + `13` 新）
-- **场间三选一增益**（`11` §三）：胜后窗 `card-pile` 三选一（升一路/加一命/解锁阵型…）。
-- **终局 Boss 阵容**（`13`）：6 名拟人化扑克 Boss（黑桃王/红桃皇后/方块J/梅花K/大小王），每 run 轮换一名，各带偏强 Formation + gimmick。
-- **Boss 起手干预（对称）**（`13` §二）：对 AI 侧也跑 `applyInterventions` 吃 Boss `openingLevers`——**非新算子，是"加 side 参数"的游戏侧小接线**；核 `applyInterventions` 是否写死玩家侧。
+### T-G5 收尾 + Boss 阵容（`11` 余 + `13` 新）✅ **全部完成**（program G cycle#7+#8）
+- ✅ **场间三选一增益**（`11` §三，cycle#7）：胜非终局→`showBetween` 三选一(`BETWEEN_BUFFS` 纯数据 + `applyBuff`)。
+- ✅ **终局 Boss 阵容**（`13`，cycle#8）：`BOSS_ROSTER` 6 名拟人化扑克 Boss，每 run `bossFor(save.bossIdx)` 轮换，各带偏强 Formation + favorBias + openingLevers；大厅预告 Boss 名/人格(针对性布阵)、终局揭晓台词。
+- ✅ **Boss 起手干预（对称）**（`13` §二，cycle#8）：**核了 `applyInterventions` 确写死玩家侧 → 加 `caster:'a'|'b'` 参数**(默认 'a' 行为不变)；Boss 用 `caster='b'` 起手——增益落 Boss、诅咒/斩首落玩家，**对称、零新算子**。showMatch 终局先玩家(a)后 Boss(b) 链式施加，同 seed+同决策逐拍 hash 一致已测。
 
 ### T-G1 · 大厅 GameShell（并行·质量任务，`08` §六 U1）
 - 把现 `game-g.tsx` 手写大厅壳迁成 `GAME_G_LOBBY_UI: UILayout`（`@ui/shell`），照 gameF `GAME_F_UI`。5 tabs + 顶栏 + 主 CTA。
@@ -67,7 +67,7 @@
 | T-G2 战场结构核（军衔/三路/将领/best-of-3）| ✅ **完成**（design G 核验）| `c88908a`；game-g 17 测绿(总 1195)；按 `06` 落地、守 outcome-first + §三"集合写=build时重组不下沉 group-effect"。MOBA 空间元素(老家/推塔/推进轨)归 U5 表现层，不阻塞核心 |
 | T-G3 开局布阵/分兵 | ✅ **全部完成**（预设 + 自定义±分兵 + AI 暗布阵）| game-g 23 测绿(总 1205)；`Formation`/4 预设/`armyFromFormation`(任意合法分布,无则回退蛇形=均衡)/`laneEstimates` 纯数据零能力；布阵屏：4 预设一键 + **± 自定义分兵**(军官跨路、兵自动补平 18/路、三路实时预估条) + **AI 暗布阵**(低关均衡/中关变化/**高关猛攻你最弱一路**,开战揭晓=田忌猜心)；任意分布(含 0 路/满 18)测过、同布阵+seed 逐拍 hash 一致。**注**：用 ± 按钮替代字面 drag-place(DOM 更稳、决策权等价；若坚持拖拽手感可后补) |
 | T-G4 干预卡/功能牌 | ✅ **首发 6 卡(全) + 能量 + 备战相位完成**（仅重翻下轮；同花/护盾已补）| game-g 27 测绿(总 1209)；能量◈经济(开局3/每胜+2/上限6,原子扣费) + `applyInterventions`(揭晓前改 favor/斩将/加兵,**outcome-first 不破**) + 4 卡(祝福/诅咒/**斩首令⭐**/增援) + **备战相位屏**(选卡×目标路打出,能量取舍)；斩首→敌主将 favor=8 必掉→该路 −14 溃散(复用 `06`)、同 seed+同干预序列逐拍 hash 一致。**余(下轮)**：同花/顺子(⚠️ 待 **D0 核 Game E `poker-hand`** 已实现哪些,缺才提 REQ-G)、护盾免死/重翻(status 位/reroll 信号) |
-| T-G5 战役/run 结构 | ✅ **5 场连战+命线+曲线+Boss+场间三选一 完成**（仅 Boss 起手干预/融小丑下轮）| game-g 39 测绿(总 1225)；`battleSpec`(敌偏置逐场升 -10→18，第5场=牌王座 Boss) + `RUN_BATTLES=5/RUN_LIVES=3`；mount run 循环：胜非终局→**场间整备·三选一**→进军、打穿 Boss=通关(+50材料,重开)、负→扣命重整(`重整再战`回布阵)/命尽=结束。**场间三选一增益**=`BETWEEN_BUFFS`(整训+4/精兵弱10+8/征兵+命/囤能+3◈/财源+25)纯数据 + `applyBuff` 小解释器(与大厅商城同类存档变更,**零新 capability**,headless 5 测)+ `showBetween` 胜后短窗(Fisher–Yates 取 3,选择即流派)；战役曲线/Boss 更强已测。**余(下轮)**：Boss 起手干预(需对称干预模型,现 Boss=高偏置)、融小丑(`12` 培养层) |
+| T-G5 战役/run 结构 | ✅ **全部完成**（5 场连战+命线+曲线+场间三选一+**6 Boss 轮换+对称起手干预**）| game-g **46 测绿(总 1234)**；`battleSpec`(敌偏置逐场升) + `RUN_BATTLES=5/RUN_LIVES=3` + run 循环(胜非终局→**场间三选一**→进军、打穿 Boss=通关+50重开、负→扣命重整/命尽=结束)。**cycle#7 场间三选一**=`BETWEEN_BUFFS` 纯数据+`applyBuff`+`showBetween`(Fisher–Yates 取 3)。**cycle#8 Boss**=`BOSS_ROSTER` 6 名(黑桃王/红桃Q/方块J/梅花K/大小王)，`bossFor(bossIdx)` 每 run 轮换(开 run/通关/命尽 重掷)、大厅预告(针对性布阵)、终局揭晓台词；**对称起手干预**=`applyInterventions` 加 `caster` 参(默认'a'不变；Boss `caster='b'` 增益落己/诅咒斩首落玩家,**零新算子**)，showMatch 终局先玩家后 Boss 链式施加，同 seed+决策逐拍 hash 一致已测。**余**：融小丑→并入 T-G6 培养层(`12`) |
 | T-G1 大厅 GameShell | ⬜ 待领（并行·质量）| — |
 
 > 复诵：纯游戏侧、不改引擎、全绿才推；完成标 ✅ 回馈 → design G 4 分钟轮询迭代。

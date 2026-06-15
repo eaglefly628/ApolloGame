@@ -476,30 +476,42 @@ export function laneHandTier(cards: ArmyCard[]): { type: HandType; buff: number 
  * 揭晓前施加干预（改 favor / 斩将 / 加兵）→ 返回改后的 a/b 军，喂 buildGameGArmyMatch。
  * outcome-first：只改掷命前输入；胜负仍 build 时由规则定、可回放（同 seed+同干预序列 → 同结果）。
  * 斩首=把敌该路主将 favor 压到 8(极易掉)，掉则经 06 将领牵动自动 −14 溃散；增援=该路 +2 兵(路可达 20)。
+ *
+ * **对称（design/13 §二）**：`caster` = 施加方。增益(bless/shield/reinforce/flush)落己方、削弱(curse/decapitate)落敌方——
+ * side 参数化、非两套算子。玩家干预 caster='a'(默认，行为不变)；**Boss 起手干预 caster='b'**：诅咒/斩首落玩家(a)、增益落 Boss(b)。
+ * bias = 施加方整体偏置（增援新兵用）。两次调用(先玩家 caster='a'、再 Boss caster='b')链式叠加，均揭晓前、outcome-first 不破。
  */
-export function applyInterventions(armyA: ArmyCard[], armyB: ArmyCard[], list: Intervention[], biasA = 0): { a: ArmyCard[]; b: ArmyCard[] } {
+export function applyInterventions(armyA: ArmyCard[], armyB: ArmyCard[], list: Intervention[], bias = 0, caster: 'a' | 'b' = 'a'): { a: ArmyCard[]; b: ArmyCard[] } {
   let a = armyA.map((c) => ({ ...c }));
   let b = armyB.map((c) => ({ ...c }));
+  const selfIsA = caster === 'a';
+  const self = (): ArmyCard[] => (selfIsA ? a : b); // 施加方己军
+  const enemy = (): ArmyCard[] => (selfIsA ? b : a); // 对手军
+  const setSelf = (next: ArmyCard[]): void => { if (selfIsA) a = next; else b = next; };
+  const setEnemy = (next: ArmyCard[]): void => { if (selfIsA) b = next; else a = next; };
   for (const iv of list) {
-    if (iv.kind === 'bless') a = a.map((c) => (c.lane === iv.lane ? { ...c, favor: clampFavor(c.favor + BLESS) } : c));
-    else if (iv.kind === 'curse') b = b.map((c) => (c.lane === iv.lane ? { ...c, favor: clampFavor(c.favor - CURSE) } : c));
-    else if (iv.kind === 'decapitate') b = b.map((c) => (c.lane === iv.lane && c.general ? { ...c, favor: DECAP_FAVOR } : c));
+    if (iv.kind === 'bless') setSelf(self().map((c) => (c.lane === iv.lane ? { ...c, favor: clampFavor(c.favor + BLESS) } : c)));
+    else if (iv.kind === 'curse') setEnemy(enemy().map((c) => (c.lane === iv.lane ? { ...c, favor: clampFavor(c.favor - CURSE) } : c)));
+    else if (iv.kind === 'decapitate') setEnemy(enemy().map((c) => (c.lane === iv.lane && c.general ? { ...c, favor: DECAP_FAVOR } : c)));
     else if (iv.kind === 'reinforce') {
-      const n = a.filter((c) => c.lane === iv.lane).length;
-      a = [...a,
-        { id: `a_l${iv.lane}_rf${n}`, rank: 'A', lane: iv.lane, favor: clampFavor(46 + biasA), general: false, suit: 'S' },
-        { id: `a_l${iv.lane}_rf${n + 1}`, rank: '2', lane: iv.lane, favor: clampFavor(46 + biasA), general: false, suit: 'H' }];
+      const cur = self();
+      const n = cur.filter((c) => c.lane === iv.lane).length;
+      setSelf([...cur,
+        { id: `${caster}_l${iv.lane}_rf${n}`, rank: 'A', lane: iv.lane, favor: clampFavor(46 + bias), general: false, suit: 'S' },
+        { id: `${caster}_l${iv.lane}_rf${n + 1}`, rank: '2', lane: iv.lane, favor: clampFavor(46 + bias), general: false, suit: 'H' }]);
     } else if (iv.kind === 'shield') {
       // 护盾：本路最弱牌 favor 拉到 92（≈反面免死，揭晓前抬高其活率）。
-      const lane = a.filter((c) => c.lane === iv.lane);
+      const cur = self();
+      const lane = cur.filter((c) => c.lane === iv.lane);
       if (lane.length) {
         const weak = lane.reduce((m, c) => (c.favor < m.favor ? c : m), lane[0]);
-        a = a.map((c) => (c.id === weak.id ? { ...c, favor: 92 } : c));
+        setSelf(cur.map((c) => (c.id === weak.id ? { ...c, favor: 92 } : c)));
       }
     } else if (iv.kind === 'flush') {
       // 牌型：评本路凑成的最高扑克牌型 → 逐级 +favor（对子→同花顺，复用 poker-hand 阶梯）。
-      const { buff } = laneHandTier(a.filter((c) => c.lane === iv.lane));
-      if (buff > 0) a = a.map((c) => (c.lane === iv.lane ? { ...c, favor: clampFavor(c.favor + buff) } : c));
+      const cur = self();
+      const { buff } = laneHandTier(cur.filter((c) => c.lane === iv.lane));
+      if (buff > 0) setSelf(cur.map((c) => (c.lane === iv.lane ? { ...c, favor: clampFavor(c.favor + buff) } : c)));
     }
   }
   return { a, b };
@@ -512,6 +524,26 @@ export function laneEstimates(army: ArmyCard[]): { sumFavor: number; general: st
     const gen = lc.find((c) => c.general);
     return { sumFavor: lc.reduce((a, c) => a + c.favor, 0), general: gen ? (gen.rank === 'JOKER' ? '★' : gen.rank) : '-', count: lc.length };
   });
+}
+
+// ── 终局 Boss 阵容（design/13 · 每 run 轮换一名牌王座）──
+// 每 Boss = 一个拟人化扑克人格，强度全用 3 个**数据**杠杆表达：formation(力压哪路)/favorBias(多强)/openingLevers(起手干预)。
+// 起手干预 = 对 Boss(B)侧跑 applyInterventions(caster='b')：增益落 Boss 己方、诅咒/斩首落玩家——**对称、零新算子**(design/13 §二)。
+// taunt/persona 仅 flavor(UI 台词)、无可执行逻辑——力量全在三杠杆，守"整个游戏是数据"(最弱 LLM 能填 BossSpec)。
+export interface BossSpec { id: string; name: string; persona: string; formation: Formation; favorBias: number; openingLevers: Intervention[]; taunt: string }
+const BOSS_BIAS = 14; // 终局基准偏置(≈battleSpec(4)=18 同档，余强度由 openingLevers 补)；数值可调，平衡总表归 design G。
+export const BOSS_ROSTER: BossSpec[] = [
+  { id: 'spadeK', name: '黑桃王·铁壁', persona: '沉稳防守', formation: FORMATION_PRESETS['均衡'], favorBias: BOSS_BIAS, openingLevers: [{ kind: 'bless', lane: 0 }, { kind: 'bless', lane: 1 }, { kind: 'bless', lane: 2 }], taunt: '铜墙铁壁，寸土不让。' },
+  { id: 'heartQ', name: '红桃皇后·倾国', persona: '妖艳压制', formation: FORMATION_PRESETS['锋矢'], favorBias: BOSS_BIAS, openingLevers: [{ kind: 'curse', lane: 0 }, { kind: 'curse', lane: 1 }], taunt: '一顾倾人城，再顾倾你军。' },
+  { id: 'diamondJ', name: '方块J·诡牌', persona: '花哨赌徒', formation: FORMATION_PRESETS['均衡'], favorBias: BOSS_BIAS, openingLevers: [{ kind: 'flush', lane: 0 }, { kind: 'flush', lane: 1 }, { kind: 'flush', lane: 2 }], taunt: '满手好牌，张张要命。' },
+  { id: 'clubK', name: '梅花K·人海', persona: '暴兵碾压', formation: FORMATION_PRESETS['均衡'], favorBias: BOSS_BIAS - 4, openingLevers: [{ kind: 'reinforce', lane: 0 }, { kind: 'reinforce', lane: 1 }, { kind: 'reinforce', lane: 2 }], taunt: '人海无尽，淹没你的旗。' },
+  { id: 'bigJoker', name: '大王·天命', persona: '疯赌', formation: FORMATION_PRESETS['锋矢'], favorBias: BOSS_BIAS + 6, openingLevers: [{ kind: 'flush', lane: 1 }], taunt: '天命在我，一掷定乾坤！' },
+  { id: 'smallJoker', name: '小王·无常', persona: '阴狠刺客', formation: FORMATION_PRESETS['两翼'], favorBias: BOSS_BIAS, openingLevers: [{ kind: 'decapitate', lane: 0 }, { kind: 'decapitate', lane: 1 }, { kind: 'decapitate', lane: 2 }], taunt: '擒贼擒王，先取你将首。' },
+];
+/** 取第 idx 名 Boss（每 run 轮换；越界自动归一）。 */
+export function bossFor(idx: number): BossSpec {
+  const n = BOSS_ROSTER.length;
+  return BOSS_ROSTER[((idx % n) + n) % n];
 }
 
 /**

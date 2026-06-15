@@ -2,7 +2,7 @@ import { describe, it, expect } from 'vitest';
 import { Engine } from '../../runtime/engine.js';
 import type { Component } from '@engine/core/types.js';
 import type { Transform, RandomSeed, Resource, State, Card3D } from '@engine/protocol/components.js';
-import { buildGameG3DFlip, buildGameGDuel3D, buildGameGMatch, buildGameGArmyMatch, standardArmy, armyFromFormation, laneEstimates, applyInterventions, laneHandTier, battleSpec, RUN_BATTLES, RUN_LIVES, BETWEEN_BUFFS, applyBuff, LEVER_CATALOG, LEVER_START, LEVER_CAP, LEVER_REGEN, FORMATION_PRESETS, PRESET_NAMES, decideFaceUp, cardFace, flipTarget, FLIP_DURATION, FLIP_SPINS, MATCH_REWARD, type FateCard, type ArmyCard, type Intervention, type BuffTarget } from './blueprint.js';
+import { buildGameG3DFlip, buildGameGDuel3D, buildGameGMatch, buildGameGArmyMatch, standardArmy, armyFromFormation, laneEstimates, applyInterventions, laneHandTier, battleSpec, RUN_BATTLES, RUN_LIVES, BETWEEN_BUFFS, applyBuff, BOSS_ROSTER, bossFor, LEVER_CATALOG, LEVER_START, LEVER_CAP, LEVER_REGEN, FORMATION_PRESETS, PRESET_NAMES, decideFaceUp, cardFace, flipTarget, FLIP_DURATION, FLIP_SPINS, MATCH_REWARD, type FateCard, type ArmyCard, type Intervention, type BuffTarget } from './blueprint.js';
 
 const get = <T extends Component>(e: Engine, id: string, type: string): T | undefined => e.world.getComponent<T>(id, type);
 const rotOf = (e: Engine, id = 'card'): number => get<Transform>(e, id, 'Transform')!.rotation;
@@ -503,5 +503,81 @@ describe('Game G · T-G5 场间三选一增益（养成核 · 纯数据 + applyB
       applyBuff(a, b); applyBuff(c, b);
       expect(a).toEqual(c);
     }
+  });
+});
+
+describe('Game G · T-G5 终局 Boss 阵容 + 对称起手干预（design/13）', () => {
+  const sumLane = (arr: ArmyCard[], lane: number): number => arr.filter((c) => c.lane === lane).reduce((s, c) => s + c.favor, 0);
+
+  it('Boss 池=6 名，各 formation 合法(军官和=30) + openingLevers 合法 + 有人格/台词', () => {
+    expect(BOSS_ROSTER).toHaveLength(6);
+    const kinds = new Set(['bless', 'curse', 'shield', 'decapitate', 'reinforce', 'flush']);
+    for (const bs of BOSS_ROSTER) {
+      expect(bs.formation.officers.reduce((a, b) => a + b, 0)).toBe(30);
+      expect(bs.name.length).toBeGreaterThan(0);
+      expect(bs.persona.length).toBeGreaterThan(0);
+      expect(bs.taunt.length).toBeGreaterThan(0);
+      for (const lv of bs.openingLevers) {
+        expect(kinds.has(lv.kind)).toBe(true);
+        expect(lv.lane).toBeGreaterThanOrEqual(0);
+        expect(lv.lane).toBeLessThanOrEqual(2);
+      }
+    }
+  });
+
+  it('bossFor 每 run 轮换归一（含越界/负 idx）', () => {
+    expect(bossFor(0).id).toBe(BOSS_ROSTER[0].id);
+    expect(bossFor(6).id).toBe(BOSS_ROSTER[0].id);
+    expect(bossFor(7).id).toBe(BOSS_ROSTER[1].id);
+    expect(bossFor(-1).id).toBe(BOSS_ROSTER[5].id);
+  });
+
+  it('对称干预（caster=b）：增益落 Boss(b)、诅咒落玩家(a)——side 参数化', () => {
+    const A = standardArmy('a', 0);
+    const B = standardArmy('b', 0);
+    // Boss 诅咒玩家 lane0 → 玩家(a)被削、Boss(b)不动
+    const r = applyInterventions(A, B, [{ kind: 'curse', lane: 0 }], 0, 'b');
+    expect(sumLane(r.a, 0)).toBeLessThan(sumLane(A, 0));
+    expect(sumLane(r.b, 0)).toBe(sumLane(B, 0));
+    // Boss 自祝福 lane1 → Boss(b)增益、玩家(a)不动
+    const r2 = applyInterventions(A, B, [{ kind: 'bless', lane: 1 }], 0, 'b');
+    expect(sumLane(r2.b, 1)).toBeGreaterThan(sumLane(B, 1));
+    expect(sumLane(r2.a, 1)).toBe(sumLane(A, 1));
+  });
+
+  it('默认 caster=a 行为不变：玩家祝福落己(a)、诅咒落敌(b)', () => {
+    const A = standardArmy('a', 0), B = standardArmy('b', 0);
+    const r = applyInterventions(A, B, [{ kind: 'bless', lane: 0 }, { kind: 'curse', lane: 1 }]);
+    expect(sumLane(r.a, 0)).toBeGreaterThan(sumLane(A, 0)); // 己方被祝福
+    expect(sumLane(r.b, 1)).toBeLessThan(sumLane(B, 1)); // 敌方被诅咒
+  });
+
+  it('小王·无常 起手斩首(caster=b)→玩家该路主将 favor 压到 8（擒贼擒王反噬玩家）', () => {
+    const A = standardArmy('a', 0);
+    const gBefore = A.filter((c) => c.lane === 2).find((c) => c.general)!;
+    const r = applyInterventions(A, standardArmy('b', 0), [{ kind: 'decapitate', lane: 2 }], 0, 'b');
+    const gAfter = r.a.filter((c) => c.lane === 2).find((c) => c.general)!;
+    expect(gBefore.favor).toBeGreaterThan(8);
+    expect(gAfter.favor).toBe(8);
+  });
+
+  it('Boss 起手干预进 sim 确定：同军 + 同 Boss openingLevers + seed 逐拍 hash 一致', () => {
+    const boss = bossFor(5); // 小王·无常（decapitate×3 反噬玩家）
+    const mk = (): Engine => {
+      let { a, b } = applyInterventions(standardArmy('a', 2), armyFromFormation('b', boss.favorBias, boss.formation), [{ kind: 'bless', lane: 0 }], 2);
+      ({ a, b } = applyInterventions(a, b, boss.openingLevers, boss.favorBias, 'b'));
+      const e = new Engine({ tickRate: 60 });
+      e.load(buildGameGArmyMatch(a, b, 9));
+      return e;
+    };
+    const e1 = mk(), e2 = mk();
+    for (let i = 0; i < FLIP_DURATION + 12; i++) { e1.world.tick(); e2.world.tick(); expect(e1.hash()).toBe(e2.hash()); }
+  });
+
+  it('梅花K·人海 起手增援(caster=b)→Boss 该路兵力 +2（go-wide 落 Boss 侧）', () => {
+    const boss = BOSS_ROSTER.find((b) => b.id === 'clubK')!;
+    const B0 = armyFromFormation('b', boss.favorBias, boss.formation);
+    const { b } = applyInterventions(standardArmy('a', 0), B0, boss.openingLevers, boss.favorBias, 'b');
+    for (const lane of [0, 1, 2]) expect(b.filter((c) => c.lane === lane).length).toBe(B0.filter((c) => c.lane === lane).length + 2);
   });
 });

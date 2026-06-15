@@ -1,6 +1,6 @@
 import { Engine } from '../../runtime/engine.js';
 import { ThreeRenderer } from './three-renderer.js';
-import { buildGameGArmyMatch, armyFromFormation, applyInterventions, laneEstimates, FORMATION_PRESETS, PRESET_NAMES, LEVER_CATALOG, LEVER_START, LEVER_CAP, LEVER_REGEN, battleSpec, RUN_BATTLES, RUN_LIVES, BETWEEN_BUFFS, applyBuff, type Formation, type Intervention, type LeverKind, type RunBuff } from './index.js';
+import { buildGameGArmyMatch, armyFromFormation, applyInterventions, laneEstimates, FORMATION_PRESETS, PRESET_NAMES, LEVER_CATALOG, LEVER_START, LEVER_CAP, LEVER_REGEN, battleSpec, RUN_BATTLES, RUN_LIVES, BETWEEN_BUFFS, applyBuff, BOSS_ROSTER, bossFor, type Formation, type Intervention, type LeverKind, type RunBuff } from './index.js';
 import type { State, Resource } from '@engine/protocol/components.js';
 
 // Game G ·《翻命扑克》—— 大厅 ↔ 出征 闭环（launcher 卡带槽：export mount(container)→cleanup）。自包含于本目录。
@@ -19,10 +19,12 @@ interface Save {
   lastOfficers: number[]; // 上次布阵的三路军官数 [上,中,下]（默认选中 + AI 克制依据）
   leverEnergy: number; // 干预能量◈（开局 3 / 每胜 +2 / 上限 6）
   lives: number; // 战役命线（开 run 3 命，输一场 −1，命尽=run 结束）
+  bossIdx: number; // 本 run 终局 Boss（每 run 轮换一名，开 run 随机定，供针对性布阵）
 }
 
+const rollBoss = (): number => Math.floor(Math.random() * BOSS_ROSTER.length);
 function freshSave(): Save {
-  return { materials: 0, stage: 1, deck: Array.from({ length: DECK_SIZE }, (_, i) => 44 + (i % 10) * 2), lastOfficers: [10, 10, 10], leverEnergy: LEVER_START, lives: RUN_LIVES }; // 44..62 起步；stage=当前战 1..5
+  return { materials: 0, stage: 1, deck: Array.from({ length: DECK_SIZE }, (_, i) => 44 + (i % 10) * 2), lastOfficers: [10, 10, 10], leverEnergy: LEVER_START, lives: RUN_LIVES, bossIdx: rollBoss() }; // 44..62 起步；stage=当前战 1..5
 }
 function loadSave(): Save {
   try {
@@ -33,6 +35,7 @@ function loadSave(): Save {
         if (!Array.isArray(s.lastOfficers) || s.lastOfficers.length !== 3) s.lastOfficers = [10, 10, 10]; // 旧存档兼容
         if (typeof s.leverEnergy !== 'number') s.leverEnergy = LEVER_START;
         if (typeof s.lives !== 'number') s.lives = RUN_LIVES;
+        if (typeof s.bossIdx !== 'number') s.bossIdx = rollBoss();
         if (s.stage < 1 || s.stage > RUN_BATTLES) s.stage = 1;
         return s;
       }
@@ -106,6 +109,7 @@ export function mount(container: HTMLElement): () => void {
       'text-align:center;line-height:1.7',
       `材料 <b style="color:#eab308">${save.materials}</b> ｜ 战役 第 <b>${save.stage}/${RUN_BATTLES}</b> 战 ｜ 命 ${'❤'.repeat(save.lives)} ｜ 能量 ◈${save.leverEnergy}<br>` +
         `你的牌组：${DECK_SIZE} 张，favor 均 <b>${avg(save.deck)}</b>（最低 ${Math.min(...save.deck)} / 最高 ${Math.max(...save.deck)}）<br>` +
+        `终局 Boss：<b style="color:#f87171">${bossFor(save.bossIdx).name}</b>（${bossFor(save.bossIdx).persona}）— 据其流派针对性布阵<br>` +
         `<span style="opacity:.7">favor 越高越易翻正面(活)。改造牌组让更多牌活下来。</span>`,
     );
 
@@ -270,12 +274,16 @@ export function mount(container: HTMLElement): () => void {
   // ───────────────────────── 出征（一局 3D 三路掷命）─────────────────────────
   function showMatch(formation: Formation, myName: string, interventions: Intervention[]): void {
     clear();
-    const aiForm = aiFormation();
-    const aiName = describeFormation(aiForm.officers);
+    const spec = battleSpec(save.stage - 1); // stage 1→战 0
+    const boss = spec.boss ? bossFor(save.bossIdx) : null; // 终局 → 本 run 的牌王座
+    const aiForm = boss ? boss.formation : aiFormation();
+    const enemyBias = boss ? boss.favorBias : spec.enemyBias;
+    const aiName = boss ? boss.name : describeFormation(aiForm.officers);
     const hint = el(
       'div',
       'max-width:560px;text-align:center;line-height:1.5;opacity:.85',
-      `第 ${save.stage}/${RUN_BATTLES} 战 · <b>${battleSpec(save.stage - 1).label}</b> ｜ 命 ${'❤'.repeat(save.lives)} ｜ 你的阵 <b>${myName}</b>/敌阵暗。<br>` +
+      `第 ${save.stage}/${RUN_BATTLES} 战 · <b>${spec.label}</b> ｜ 命 ${'❤'.repeat(save.lives)} ｜ 你的阵 <b>${myName}</b>/敌阵暗。<br>` +
+        (boss ? `<span style="color:#f87171">⚔ ${boss.name}（${boss.persona}）：「${boss.taunt}」起手干预已落场——见招拆招！</span><br>` : '') +
         `逐路掷命相撞翻面，<b>主将生死牵动全路</b>（活则士气、亡则溃散）；<b>胜 2/3 路即赢</b>。金=我方活/青=敌方活/石板=死。`,
     );
     const stage = document.createElement('div');
@@ -289,9 +297,10 @@ export function mount(container: HTMLElement): () => void {
 
     engine = new Engine({ tickRate: 60 });
     const armyA = armyFromFormation('a', myBias(save.deck), formation);
-    const spec = battleSpec(save.stage - 1); // stage 1→战 0
-    const armyB = armyFromFormation('b', spec.enemyBias, aiForm);
-    const { a, b } = applyInterventions(armyA, armyB, interventions, myBias(save.deck)); // 揭晓前施加干预
+    const armyB = armyFromFormation('b', enemyBias, aiForm);
+    // 揭晓前施加干预：先玩家(caster='a')，再 Boss 起手(caster='b'，对称——诅咒/斩首落玩家、增益落 Boss)。均 outcome-first。
+    let { a, b } = applyInterventions(armyA, armyB, interventions, myBias(save.deck));
+    if (boss && boss.openingLevers.length) ({ a, b } = applyInterventions(a, b, boss.openingLevers, enemyBias, 'b'));
     engine.load(buildGameGArmyMatch(a, b, Math.floor(Math.random() * 1e9)));
     renderer = new ThreeRenderer({ width: W, height: H });
     engine.attachRenderer(renderer, stage);
@@ -319,7 +328,7 @@ export function mount(container: HTMLElement): () => void {
         if (save.stage >= RUN_BATTLES) { // 打穿终局 Boss → 通关
           save.materials += 50;
           tail = '🏆 <b>通关战役！</b>（+50 材料）回大厅开新战役';
-          save.stage = 1; save.lives = RUN_LIVES;
+          save.stage = 1; save.lives = RUN_LIVES; save.bossIdx = rollBoss(); // 新 run 轮换 Boss
         } else { // 胜非终局 → 进军 + 场间三选一养成窗
           save.stage += 1;
           tail = `进军 第 ${save.stage}/${RUN_BATTLES} 战`;
@@ -329,7 +338,7 @@ export function mount(container: HTMLElement): () => void {
         }
       } else { // 败/平 → 扣命
         save.lives -= 1;
-        if (save.lives <= 0) { tail = '💀 <b>命尽，战役结束</b> 回大厅重整'; save.stage = 1; save.lives = RUN_LIVES; }
+        if (save.lives <= 0) { tail = '💀 <b>命尽，战役结束</b> 回大厅重整'; save.stage = 1; save.lives = RUN_LIVES; save.bossIdx = rollBoss(); } // 新 run 轮换 Boss
         else { tail = `命 −1（剩 ${save.lives}）重整旗鼓再战本场`; cont = '重整再战'; route = () => showFormation([...save.lastOfficers] as [number, number, number]); }
       }
       persist(save);
