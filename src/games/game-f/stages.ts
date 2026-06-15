@@ -74,7 +74,7 @@ export function gameFEnemyPreview(stageIdx: number, roundIdx: number, pf: Factio
 export interface WaveSlot { code: string; count: number }
 export const PVE_COMP: { stage: number; comp: WaveSlot[] }[] = [
   { stage: 1, comp: [{ code: 'ash_yari', count: 4 }, { code: 'ash_yumi', count: 2 }] }, // W1 滩头①
-  { stage: 2, comp: [{ code: 'ash_yari', count: 4 }, { code: 'ash_teppo', count: 2 }, { code: 'kunoichi', count: 2 }] }, // W2 滩头②
+  { stage: 2, comp: [{ code: 'imagawa', count: 1 }, { code: 'ash_yari', count: 3 }, { code: 'ash_teppo', count: 2 }, { code: 'kunoichi', count: 1 }] }, // W2 滩头②（今川弓阵：今川+2铁炮=3弓 → 全军 buff）
   { stage: 3, comp: [{ code: 'honganji', count: 1 }, { code: 'saito', count: 1 }, { code: 'ishida', count: 1 }, { code: 'ash_yumi', count: 1 }] }, // W3 国人众①（斋藤毒沼 + 本愿寺人海 + 石田回血）
   { stage: 4, comp: [{ code: 'hideyoshi', count: 1 }, { code: 'hojo', count: 1 }, { code: 'mori', count: 1 }, { code: 'ash_yari', count: 3 }] }, // W4 国人众②（北条+毛利 + 秀吉一夜城：周期召兵）
   { stage: 5, comp: [{ code: 'nobunaga', count: 1 }, { code: 'kenshin', count: 1 }, { code: 'ieyasu', count: 1 }, { code: 'akechi', count: 1 }, { code: 'ash_yari', count: 3 }] }, // W5/W6 终盘天守：信长(天下布武 全军buff) + 谦信(斩杀) + 家康(忍耐回血) + 国人众精锐

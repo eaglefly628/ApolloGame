@@ -7,7 +7,7 @@ import { Engine } from '../../runtime/engine.js';
 import { getComponentById } from '@engine/core/query.js';
 import { instantiate } from '@skills/tier3/index.js';
 import { buildGameFBlueprint } from './blueprint.js';
-import { TEAM_B, FROZEN, BUSHO } from './constants.js';
+import { TEAM_B, FROZEN, BUSHO, BOW } from './constants.js';
 import { FAST } from './game-f.helpers.js';
 
 describe('C 太阁全谱 roster（master §六 数据落地）', () => {
@@ -30,7 +30,7 @@ describe('C 太阁全谱 roster（master §六 数据落地）', () => {
   });
 
   it('国人众进战斗（slice2）：W3–W5 编成引国人众；mob_<code> 战斗模板就绪（master 数值）', () => {
-    // W3 含斋藤、W4 含北条+毛利、W5 含明智+石田+今川。
+    // W2 含今川(弓阵)、W3 含斋藤、W4 含北条+毛利、W5 含明智。
     expect(PVE_COMP.find((w) => w.stage === 3)!.comp.some((c) => c.code === 'saito')).toBe(true);
     expect(PVE_COMP.find((w) => w.stage === 4)!.comp.map((c) => c.code)).toEqual(expect.arrayContaining(['hojo', 'mori']));
     // 国人众战斗模板就绪（部署槽 mob_<code> + 武器）：斋藤(法术弹)、北条(近战)。
@@ -167,5 +167,21 @@ describe('毛利元就·三矢（场上部将≥3 → 守军全军 buff；玩家
     let maxScale = 0;
     for (let i = 0; i < 8; i++) { if (state) state.current = 'combat'; e.world.tick(); maxScale = Math.max(maxScale, sb()); }
     expect(maxScale).toBeGreaterThanOrEqual(1.18); // 三矢：部将≥3 → 全军 +0.18（从基线 1）
+  });
+});
+
+describe('今川义元·弓阵（场上弓兵≥3 → 守军全军 buff；同毛利镜像、零引擎）', () => {
+  it('铺 3 个弓兵(BOW)入战斗 → dmg_scale_b 叠加 +0.12', () => {
+    const e = new Engine({ tickRate: 60 });
+    e.load(buildGameFBlueprint(FAST));
+    const state = getComponentById(e.world, 'State', 'fsmId', 'round_ui') as { current: string } | undefined;
+    const sb = (): number => (getComponentById(e.world, 'Resource', 'id', 'dmg_scale_b') as unknown as { current: number }).current;
+    for (let n = 0; n < 3; n++) {
+      instantiate(e.world, GAME_F_TEMPLATES['mob_ash_yumi'], `probe_bow${n}`, n, 0, 0,
+        { main: { Tag: { flags: TEAM_B | BOW }, Resource: { id: 'hp', current: 999, min: 0, max: 999 }, HexPos: { q: 2 + n, r: 1 } } }, { q: 2 + n, r: 1 });
+    }
+    let maxScale = 0;
+    for (let i = 0; i < 8; i++) { if (state) state.current = 'combat'; e.world.tick(); maxScale = Math.max(maxScale, sb()); }
+    expect(maxScale).toBeGreaterThanOrEqual(1.12); // 弓阵：弓≥3 → 全军 +0.12
   });
 });
