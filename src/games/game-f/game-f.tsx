@@ -281,26 +281,7 @@ function buildSoloHud(click: (x: number, y: number) => void, play: (i: number) =
       <!-- 操作引导（用户：最上排状态栏告诉玩家此刻该干什么）-->
       <div style="display:flex;justify-content:flex-end"><div data-ref="guide" style="display:flex;align-items:center;gap:8px;max-width:400px;padding:7px 14px;border-radius:11px;background:var(--chip-bg);border:1px solid var(--panel-border);font-size:11.5px;line-height:1.4;color:var(--ink)"><span style="font-size:14px">🎯</span><span data-ref="guidetext">招募英雄 → 拖上棋盘布阵 → 点「开战」</span></div></div>
     </div>
-    <!-- 玩家信息卡（左下角，合并全部主公状态+经济；UI Kit 控件 avatar-frame/bar/chip）-->
-    <div style="position:absolute;left:10px;bottom:118px;width:194px;padding:13px;border-radius:var(--radius);background:var(--panel-grad);border:1px solid var(--panel-border);box-shadow:inset 0 0 0 1px var(--hairline),0 6px 16px rgba(0,0,0,.2);pointer-events:auto">
-      <div style="display:flex;align-items:center;gap:11px">
-        <div style="position:relative;width:50px;height:50px;flex:none;border-radius:50%;background:var(--accent-grad);padding:3px;box-shadow:0 0 14px var(--accent-soft)">
-          <div style="width:100%;height:100%;border-radius:50%;background:var(--protag-bg);display:flex;align-items:center;justify-content:center;font-size:24px">🐢</div></div>
-        <div style="flex:1;min-width:0"><div style="font-family:var(--font-heading);font-weight:700;font-size:15px;color:var(--ink)">主公 · 玄德</div><div style="font-size:10px;color:var(--ink-dim)">蜀 · 桃园结义</div></div>
-        <div style="display:flex;align-items:center;padding:4px 9px;border-radius:9px;background:var(--accent-soft);border:1px solid var(--accent)"><span data-ref="streak" style="font-family:var(--font-heading);font-weight:700;font-size:11px;color:var(--accent)">0连胜</span></div>
-      </div>
-      <div style="margin-top:10px"><div style="display:flex;justify-content:space-between;margin-bottom:3px"><span style="font-size:9px;letter-spacing:.1em;color:var(--ink-dim)">主公生命</span><span data-ref="hp" style="font-family:var(--font-num);font-size:10px;color:var(--hp)">100</span></div>
-        <div style="height:10px;border-radius:99px;background:var(--track);overflow:hidden;border:1px solid var(--panel-border)"><div data-ref="hpfill" style="width:100%;height:100%;background:var(--hp);border-radius:99px"></div></div></div>
-      <div style="margin-top:7px"><div style="display:flex;justify-content:space-between;margin-bottom:3px"><span style="font-size:9px;letter-spacing:.1em;color:var(--ink-dim)">经验 · Lv<span data-ref="level">1</span></span><span data-ref="xp" style="font-family:var(--font-num);font-size:10px;color:var(--xp)">0/2</span></div>
-        <div style="height:7px;border-radius:99px;background:var(--track);overflow:hidden;border:1px solid var(--panel-border)"><div data-ref="xpfill" style="width:0%;height:100%;background:var(--xp);border-radius:99px"></div></div></div>
-      <div style="margin-top:7px"><div style="display:flex;justify-content:space-between;margin-bottom:3px"><span style="font-size:9px;letter-spacing:.1em;color:var(--ink-dim)">🗾 攻岛进度 · 贡献 <span data-ref="contrib" style="font-family:var(--font-num);color:var(--gold)">0</span></span><span data-ref="island" style="font-family:var(--font-num);font-size:10px;color:var(--accent)">0/100</span></div>
-        <div style="height:7px;border-radius:99px;background:var(--track);overflow:hidden;border:1px solid var(--panel-border)"><div data-ref="islandfill" style="width:0%;height:100%;background:var(--accent);border-radius:99px"></div></div></div>
-      <div style="display:flex;gap:8px;margin-top:9px">
-        <div style="flex:1;display:flex;align-items:center;justify-content:center;gap:6px;padding:5px 9px;border-radius:9px;background:var(--gold-chip);border:1px solid var(--gold)"><span style="font-size:13px">🪙</span><span data-ref="gold" style="font-family:var(--font-num);font-size:14px;color:var(--gold)">0</span></div>
-        <div style="flex:1;display:flex;align-items:center;justify-content:center;gap:6px;padding:5px 9px;border-radius:9px;background:var(--chip-bg);border:1px solid var(--panel-border)"><span style="font-size:11px;color:var(--ink-dim)">空席</span><span data-ref="bench" style="font-family:var(--font-num);font-size:14px;color:var(--ink)">9</span></div>
-      </div>
-      <button data-act="xp" style="margin-top:9px;width:100%;display:flex;align-items:center;justify-content:center;gap:8px;padding:8px;border-radius:10px;cursor:pointer;background:var(--btn-bg);border:1px solid var(--btn-edge);color:var(--btn-text);font-family:var(--font-cjk);font-weight:700;font-size:13px">📜 买经验 <span style="font-family:var(--font-num);font-size:11px;color:var(--gold)">4金</span></button>
-    </div>
+    <!-- 玩家卡已迁 GameShell（GAME_F_UI 主公面板：hp/xp/金/席/贡献/攻岛 + 买经验按钮经 keybind）。去腐片4。 -->
     <!-- 武将台发光框（围住棋盘区，pointer-events 透传不挡拖拽）-->
     <div style="position:absolute;left:350px;top:60px;width:580px;height:492px;border-radius:24px;border:1px solid var(--platform-edge);box-shadow:inset 0 0 0 1px var(--hairline),0 0 38px var(--accent-soft);background:var(--platform-glow);pointer-events:none"></div>
     <!-- LEFT · 羁绊（上）；玩家卡在左下（bottom 留够，避免与玩家卡重叠）-->
@@ -355,7 +336,6 @@ function buildSoloHud(click: (x: number, y: number) => void, play: (i: number) =
   const runeModal = q('[data-ref="runemodal"]');
   const shopCards = q('[data-ref="shopcards"]');
   const openShop = (b: boolean): void => { shopBackdrop.style.display = b ? 'flex' : 'none'; };
-  q('[data-act="xp"]').addEventListener('click', () => click(300, 64));
   q('[data-act="ready"]').addEventListener('click', () => click(300, 180));
   q('[data-act="shop-open"]').addEventListener('click', () => openShop(true));
   root.querySelectorAll('[data-act="shop-close"]').forEach((b) => b.addEventListener('click', () => openShop(false)));
