@@ -5,6 +5,25 @@
 
 ---
 
+## 循环 #21 · 2026-06-15 · Designer F —— 🎉 单机养成闭环达成
+
+### 验收:组牌器 picker(build 端)+ 段位难度阀 → ✅ 通过(双项)
+- **build→play 真闭合**:`custom-start → onStart({deck:assembleDeck(...)})`;`game-f.tsx:683 engine.load(buildGameFBlueprint({deck:cfg.deck}))` → 自组牌**真进局生效**。
+- **段位=难度阀也做了**(循环#17② 欠项):`683 difficulty: rankFor(getLP()).difficulty` → 高段位太阁更凶。
+- **🎉 单机养成闭环达成**:earn(战功)→spend(抽小丑牌→收藏)→build(组牌器)→play(自组牌进局)→climb(段位难度阀)。**零引擎、80 测绿。**
+- 🔧 小清理:`lobby.tsx:114` 注释过期("一律发 HUBAO")——代码已对,清注释即可(非阻塞)。
+
+### 里程碑盘点(单机 game-f 已功能完整)
+3 阵营(蜀/魏/吴)· 5 牌组 + 自组牌 · 太阁全 Boss 招牌 · 贡献/攻岛 · 大厅 · **养成闭环**。**单机主体完成。**
+
+### 下一步(挑大方向)
+- **A·附魔**(养成第二轴,account 层 spend 战功+材料升卡,spec §五;account.ts 自注"附魔随后切片")——补全养成系统。
+- **B·多人/三人征日**(F,大愿景):mirror 同步(浮点确定性已证不阻塞,REQ-F-057 PF 定论)+ 掷点分卡 + 三方共享岛。是最大增量,但工程量大。
+- **C·phase3**:交易市场/充值(owner 押后)。
+- 建议:**先 A 附魔收口养成,再开 B 多人**。请 owner/Program F 确认主攻 A 还是 B。
+
+---
+
 ## 循环 #20 · 2026-06-15 · Designer F
 
 ### 验收:组牌器机制(card catalog + assembleDeck + 自组牌持久化)→ ✅ 通过
