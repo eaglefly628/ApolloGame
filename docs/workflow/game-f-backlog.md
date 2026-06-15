@@ -10,7 +10,7 @@
 
 | # | 项 | 为什么能独立做 |
 |---|---|---|
-| 1 | **太阁 Boss 战斗招牌接线(slice2)** | 数据齐(21单位/6波),只差 combat 接现成能力:信长全局buff·秀吉/本愿寺 self-rule spawn·家康 over-time·**谦信/立花/半藏 F-061 execBelow 斩杀**(引擎已 done)。零引擎改动 |
+| 1 | **太阁 Boss 招牌·余下(slice3c+)** | 🟡已接:谦信/立花/半藏斩杀(F-061·slice3a)+ 家康忍耐回血(slice3b)。⬜余:**信长天下布武(全局atk buff)·秀吉一夜城/本愿寺一揆(self-rule spawn)·信玄风林火山·毛利三矢/今川弓阵** 等。纯数据接线,零引擎改动 |
 | 2 | **去腐收尾(LEAD→PF)** | 片3 商店脉冲→GameShell / 片4 删 game-f.tsx 用 UILayout / 片5 manifest.json。纯游戏侧,引擎已备齐,runbook 在 `game-f-derot-runbook.md` |
 | 3 | **更多牌组** | threshold-buff 已 done;赤壁火攻(DoT现成)/卧龙八阵(冻现成)/屯田(banded现成)等纯数据可铺;单核/降将等范式或需小 CardSpec 扩展 |
 | 4 | **吴 6 英雄入 roster + 白衣渡江 deck** | 英雄=纯数据(`wu-faction-seed.md`);白衣渡江=刺客 synergy(刺客斩杀 trait 已 done)。⚠️ 真打需 3-faction plumbing(见 §3-F) |
@@ -29,7 +29,7 @@
 | 模块 | 状态 | 归属 / 依赖 | 优先级 |
 |---|---|---|---|
 | **A 牌组** 其余 8 套 + 范式新 CardSpec | ⬜ | **游戏侧·纯数据**(+小扩展) | 中 |
-| **B 太阁 Boss 战斗招牌** slice2(含 F-061 Boss斩杀) | ⬜ | **游戏侧·数据接线**(现成能力,引擎已 done) | **高** |
+| **B 太阁 Boss 战斗招牌** | 🟡 | **游戏侧·数据接线**。已接:斩杀(谦信/立花/半藏)+家康忍耐;余:信长buff/秀吉·本愿寺spawn/国人众招牌 | **高** |
 | **C 吴 faction** 6 英雄 + 白衣渡江 deck | ⬜ | 英雄/deck=**游戏侧数据**;`FACT_WU` 位已加 | 中 |
 | **C' 3-faction plumbing** | ⬜ | **主程/多人重构**(rosterFor 三选/布局)= 依赖 F | 中 |
 | **D 降将收编** | ⬜ | **游戏侧·数据** | 中 |
