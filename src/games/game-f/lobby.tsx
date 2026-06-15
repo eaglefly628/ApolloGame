@@ -2,7 +2,7 @@
 // 与确定性引擎解耦：纯前端 + 假数据；只在「开始攻岛」那刻产出一份「出战牌组+势力+队伍配置」交给 onStart。
 // 局内对局由 game-f.tsx 的 startMatch 接手。视觉基调=绢帛暖米+水墨黑（brief §二），class 前缀 gfl- 防与局内 gfx- 撞。
 import { type Deck, type Faction, HUBAO_DECK, DECK_REGISTRY } from './index.js';
-import { getWarfunds, gachaPull, gachaPull10, getCollection, GACHA_COST, GACHA10_COST, getLP, rankFor, saveCustomDeck } from './account.js';
+import { getWarfunds, gachaPull, gachaPull10, getCollection, GACHA_COST, GACHA10_COST, getLP, rankFor, saveCustomDeck, getDust, getEnchantLevels, enchantCard, disenchant, ENCHANT_MAX, ENCHANT_COST_WARFUNDS, ENCHANT_COST_DUST } from './account.js';
 import { CARD_CATALOG, assembleDeck } from './decks.js';
 
 export interface RunConfig {
@@ -131,6 +131,11 @@ export function buildLobby(onStart: (cfg: RunConfig) => void): HTMLElement {
   const ownedCardChips = ownedCards.length
     ? ownedCards.map(([id, n]) => `<button class="gfl-fbtn" data-card="${esc(id)}" style="cursor:pointer">${esc(id)} ×${n}</button>`).join('')
     : '<span class="gfl-fbtn" style="opacity:.6">（先去「收藏」页抽卡获得小丑牌）</span>';
+  const enchLevels = getEnchantLevels();
+  const ownedActionRows = ownedCards.length
+    ? ownedCards.map(([id, n]) => `<div class="gfl-frow" style="gap:8px">🃏 <b>${esc(id)}</b> ×<span data-cnt="${esc(id)}">${n}</span> · 附魔 <span data-ench="${esc(id)}">${enchLevels[id] ?? 0}</span>/${ENCHANT_MAX}
+      <span style="flex:1"></span><button class="gfl-mini" data-ench-btn="${esc(id)}">附魔(${ENCHANT_COST_WARFUNDS}战功+${ENCHANT_COST_DUST}尘)</button><button class="gfl-mini" data-dis-btn="${esc(id)}">分解</button></div>`).join('')
+    : '<div class="gfl-frow" style="opacity:.6">（先抽卡获得小丑牌，可附魔/分解）</div>';
 
   const deckGrid = DECKS.map((d, i) => `<div class="gfl-deck${i === 0 ? ' sel' : ''}" data-deck="${d.id}">
     <div class="gfl-dn">${esc(d.name)} ${d.icon}</div><div class="gfl-ds">${esc(d.style)}</div>
@@ -190,8 +195,9 @@ export function buildLobby(onStart: (cfg: RunConfig) => void): HTMLElement {
     </div>
     <div class="gfl-screen" data-screen="coll" style="flex:1">
       <h2>卡牌收藏</h2><div class="gfl-sub">筛选 势力/职业/稀有度/品质 + 搜索。未拥有显灰锁 🔒。战功抽卡入收藏（概率公示）。</div>
-      <div class="gfl-filters"><button class="gfl-fbtn" data-act="gacha" style="background:#c9a24e;color:#fff;border-color:transparent;cursor:pointer">🎲 单抽 · ${GACHA_COST} 战功</button><button class="gfl-fbtn" data-act="gacha10" style="background:#8a6d2f;color:#fff;border-color:transparent;cursor:pointer">🎲 十连 · ${GACHA10_COST}（保底稀有）</button><span class="gfl-fbtn" data-ref="collinfo">已收藏 ${Object.values(getCollection()).reduce((a, b) => a + b, 0)} 张</span>${['势力 ▾', '稀有度 ▾'].map((t) => `<span class="gfl-fbtn">${t}</span>`).join('')}</div>
-      <div class="gfl-cards">${cardGrid}</div>
+      <div class="gfl-filters"><button class="gfl-fbtn" data-act="gacha" style="background:#c9a24e;color:#fff;border-color:transparent;cursor:pointer">🎲 单抽 · ${GACHA_COST} 战功</button><button class="gfl-fbtn" data-act="gacha10" style="background:#8a6d2f;color:#fff;border-color:transparent;cursor:pointer">🎲 十连 · ${GACHA10_COST}（保底稀有）</button><span class="gfl-fbtn" data-ref="collinfo">已收藏 ${Object.values(getCollection()).reduce((a, b) => a + b, 0)} 张</span><span class="gfl-fbtn" data-ref="dust">✨ 尘 ${getDust()}</span></div>
+      <div class="gfl-sub" style="margin-top:12px">🔧 附魔 / 分解（附魔升卡=局内更强；分解多余卡化尘）</div>
+      <div data-ref="ownrows" style="display:flex;flex-direction:column;gap:4px;max-height:280px;overflow-y:auto">${ownedActionRows}</div>
     </div>
     <div class="gfl-screen" data-screen="market" style="flex:1">
       <h2>商城 & 交易市场</h2><div class="gfl-sub">抽卡（概率公示）/ 直购 / 交易市场（挂单·求购·行情）。<b>TCG 式封闭市场，非 crypto。</b></div>
@@ -276,6 +282,22 @@ export function buildLobby(onStart: (cfg: RunConfig) => void): HTMLElement {
     t.querySelector('button')!.addEventListener('click', () => t.remove());
     root.appendChild(t);
   });
+  // 附魔/分解（养成第二轴 UI）：按卡操作，原地刷新数字 + 飘字。
+  const toast = (msg: string): void => { root.querySelector('.gfl-toast')?.remove(); const t = document.createElement('div'); t.className = 'gfl-toast'; t.innerHTML = `<span>${msg}</span><button class="gfl-acc">好</button>`; t.querySelector('button')!.addEventListener('click', () => t.remove()); root.appendChild(t); };
+  const refreshDust = (): void => { const d = root.querySelector<HTMLElement>('[data-ref="dust"]'); if (d) d.textContent = `✨ 尘 ${getDust()}`; };
+  const refreshWf = (): void => { const w = root.querySelector<HTMLElement>('[data-ref="warfunds"]'); if (w) w.textContent = `🎖️ 战功 ${getWarfunds()}`; };
+  root.querySelectorAll<HTMLElement>('[data-ench-btn]').forEach((el2) => el2.addEventListener('click', () => {
+    const id = el2.dataset.enchBtn!;
+    const r = enchantCard(id);
+    if (r.ok) { const e = root.querySelector<HTMLElement>(`[data-ench="${id}"]`); if (e) e.textContent = String(r.level); refreshWf(); refreshDust(); toast(`🔧 ${esc(id)} 附魔 → Lv${r.level}`); }
+    else toast('⚠️ 附魔失败（满级或 战功/尘 不足）');
+  }));
+  root.querySelectorAll<HTMLElement>('[data-dis-btn]').forEach((el2) => el2.addEventListener('click', () => {
+    const id = el2.dataset.disBtn!;
+    const r = disenchant(id);
+    if (r.dust > 0) { const c = root.querySelector<HTMLElement>(`[data-cnt="${id}"]`); if (c) c.textContent = String(r.kept); refreshDust(); const ci = root.querySelector<HTMLElement>('[data-ref="collinfo"]'); if (ci) ci.textContent = `已收藏 ${Object.values(getCollection()).reduce((a, b) => a + b, 0)} 张`; toast(`✨ 分解得尘 +${r.dust}`); }
+    else toast('⚠️ 无多余卡可分解（保留 1 张）');
+  }));
   // 组牌器（步3）：势力单选 / 卡多选(≤8) / 用自组牌组出战。
   root.querySelectorAll<HTMLElement>('[data-fac]').forEach((el2) => el2.addEventListener('click', () => {
     root.querySelectorAll<HTMLElement>('[data-fac]').forEach((x) => x.classList.remove('sel'));
