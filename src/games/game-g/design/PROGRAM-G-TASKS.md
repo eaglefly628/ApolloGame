@@ -26,11 +26,12 @@
 
 ## 当前任务
 
-### T-G3 · 开局布阵 / 分兵 ⭐（本轮新派 · `09` 全文）
-- 布阵屏：默认「均衡」+ 4 预设一键切（均衡/锋矢·攻中/两翼·弃中/田忌）+ **军官卡拖拽跨路**（兵自动补平 18/路）+ 每路**实时预估条**（Σfavor/主将军衔/胜率★）。
-- 接点：`standardArmy` 改为**读 `Formation` 发三路**（无 Formation 回退现蛇形=均衡，零迁移）。布阵屏=GameShell 面板 + canvas drag-place。
-- vs AI：AI 按难度选阵型、**对玩家隐藏、开战揭晓**（数据策略 + localStorage 历史）。
-- 验收：4 预设可切 / 拖拽补平 / 预估条实时 / 同 Formation+seed 逐拍 hash 一致 / vs AI 暗布阵 / 全绿。
+### T-G4 · 干预卡 / 功能牌系统 ⭐（本轮新派 · `10` 全文）
+- **干预能量◈ 经济**：开局 3 / 每关回 +2 / 上限 6 / 原子扣费（`Resource` + banded + `craft-recipe`）。
+- **首发 6 卡**（`10` §三）：祝福·诅咒·护盾（改命）+ **斩首令**（擒贼先擒王＝对敌某路主将单掷 + 触发 `06` 溃散）+ 增援（`self-rule` spawn 2 兵）+ 同花（复用 `poker-hand` 数同花 → 路 buff）。
+- **相位**：备战·干预相位打卡（改 favor/主将/兵力）→ 揭晓三路掷命读改后值（**全在揭晓前生效＝outcome-first 不破**，合 program G 的 build-时定胜负模型）。
+- 出牌通路：GameShell 左栏卡（`08` HUD）+ canvas 选目标 → 信号 → `craft-recipe` 扣◈ → effect。
+- 验收：6 卡可打 / 斩首→该路溃散（−14，`06`）/ 同 seed+同干预序列逐拍 hash 一致 / 全绿。⚠️ 落前 **D0 核对 Game E `poker-hand`/joker** 已实现哪些，缺的才提 REQ-G。
 
 ### T-G1 · 大厅 GameShell（并行·质量任务，`08` §六 U1）
 - 把现 `game-g.tsx` 手写大厅壳迁成 `GAME_G_LOBBY_UI: UILayout`（`@ui/shell`），照 gameF `GAME_F_UI`。5 tabs + 顶栏 + 主 CTA。
@@ -42,7 +43,7 @@
 
 | 槽 | 内容 | 备注 |
 |---|---|---|
-| G4 · 干预卡/功能牌 | 局内 Levers 目录（进攻/埋伏/援军/斩首…）= condition/effect/spawn 数据目录 | design G 下轮补**干预卡详规** |
+| T-G3 余项 · 拖拽微调 | 军官卡拖拽跨路 + 兵自动补平的可视交互（drag-place）| 小 polish，可并入 T-G1 |
 | U5 · 3D 表现 + 相机 | 三路世界/翻牌/老家牌王座 + 缩放/平移/小地图 + **将领溃散视觉级联** | `03` |
 | U6 · vs AI 深化 | 布阵策略已在 T-G3；再扩出牌/干预 AI | — |
 | U7 · 改造坊/收藏/天梯 + 皮肤 | `07`/`02` | — |
