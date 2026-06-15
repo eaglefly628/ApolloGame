@@ -33,6 +33,7 @@
 | 11 | `11-run-and-campaign.md` | 战役/run 结构（roguelike 元层）：5 场连战 + 命线 + 场间养成 + 终局 Boss |
 | 12 | `12-cultivation-jokers-archetypes.md` | 培养：小丑牌(10)/星球牌(5)/附魔 + 6 流派 + 克制网（长期重玩层）|
 | 13 | `13-boss-roster.md` | 终局 Boss 阵容（6 名拟人化扑克，每 run 轮换）+ 对称干预（Boss 起手干预）|
+| 14 | `14-balance-and-tuning.md` | 数值平衡总表（所有 tunable 单一真相）+ 平衡意图 + 风险 + 调参纪律 |
 | — | `PROGRAM-G-TASKS.md` | design G↔program G 循环任务板（当前任务/状态/回馈）|
 | — | `UI/` | UI 设计稿（`大厅` / `三路战场`(推荐) / `对战`(参考) `.dc.html` + README）= `08` 的依据 |
 
