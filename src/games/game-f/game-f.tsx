@@ -6,7 +6,7 @@ import type { InputSource } from '../../net/commands.js';
 import { AssetManager, ImageAssetLoader } from '@assets/index.js';
 import { getComponentById } from '@engine/core/query.js';
 import type { World } from '@engine/core/world.js';
-import { buildGameFBlueprint, gameFEnemyPreview, GAME_F_ASSETS } from './index.js';
+import { buildGameFBlueprint, gameFEnemyPreview, GAME_F_ASSETS, rosterFor, codesFor } from './index.js';
 import { buildLobby, type RunConfig } from './lobby.js';
 import React from 'react';
 import { createRoot } from 'react-dom/client';
@@ -596,10 +596,22 @@ function startMatch(container: HTMLElement, cfg: RunConfig, onExit: () => void):
     }),
   );
 
+  // 商店脸图投影（去腐片3）：商店码 → 英雄资产 key → shop_face_i StringVar（GameShell image bind→resolveAsset）。
+  // 纯表现（rAF，不进 tick）；构建 码→资产key 表（按本局阵营名册）。
+  const shopRoster = rosterFor(cfg.deck?.faction ?? 'shu');
+  const shopCodeToKey = new Map<number, string>();
+  { const cm = codesFor(shopRoster); for (const h of shopRoster) { const c = cm[h.id]; if (c) shopCodeToKey.set(c, h.key); } }
+
   // HUD 实时投影：每帧读世界资源刷新 DOM 数字/条（纯表现层，不进 hash）。
   let rafId = 0;
   const pump = (): void => {
     hud.update(engine.world);
+    // 商店 3 槽脸图投影：shop_slot_i 码 → 资产 key → shop_face_i StringVar（GameShell 据此画卡面）。
+    for (let i = 1; i <= 3; i++) {
+      const code = (getComponentById(engine.world, 'Resource', 'id', `shop_slot_${i}`) as { current?: number } | undefined)?.current ?? 0;
+      const sv = getComponentById(engine.world, 'StringVar', 'id', `shop_face_${i}`) as { value: string } | undefined;
+      if (sv) sv.value = shopCodeToKey.get(code) ?? '';
+    }
     rafId = requestAnimationFrame(pump);
   };
   rafId = requestAnimationFrame(pump);

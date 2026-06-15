@@ -317,6 +317,11 @@ export function buildGameFBlueprint(pacing: GameFPacing = {}): WorldBlueprint {
       Flag: { id: 'shop', active: false },
     },
     r_bought_code: { Resource: { id: 'bought_code', current: 0, min: 0, max: 9999 } }, // 最近一次成交牌码（0=无）
+    // 去腐片3：商店 3 槽脸图 key（GameShell image bind→resolveAsset）。值=英雄资产 key，由表现层每帧据 shop_slot_i 投影。
+    // 单人商店、表现投影（不进 tick，确定性测不跑 pump→恒空）；sim 只持 key（纯数据，非 URL）。
+    r_shop_face_1: { StringVar: { id: 'shop_face_1', value: '' } },
+    r_shop_face_2: { StringVar: { id: 'shop_face_2', value: '' } },
+    r_shop_face_3: { StringVar: { id: 'shop_face_3', value: '' } },
     // —— 备战席容量（F-17 改派生）：bench_space = bench_cap − bench_occupied，每拍 level 信号重算 ——
     // 仍作 playCosts 第二货币（席满=0 原子拒单）；marker 增（买）/减（卖/合成 3→1）全自动对账，
     // 手工 ± 漂移（合成回 2 席没人加）从根上消除。playCosts 扣的 1 会被下一拍重算覆盖（≤3 拍自愈，人手速不可感知）。
