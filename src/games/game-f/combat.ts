@@ -238,8 +238,34 @@ function mobTemplate(unit: TaikouUnit): PrefabTemplate {
       },
       hpbg: { Transform: xf(0, HP_Y), Shape: { kind: 'box', width: BAR_W, height: 5 }, Hierarchy: { ...sidecarLink, localY: HP_Y }, Color: { tint: trackColor, alpha: 0.85 } },
       hpbar: { Transform: xf(0, HP_Y), Shape: { kind: 'box', width: BAR_W, height: 5 }, Hierarchy: { ...sidecarLink, localY: HP_Y }, Color: { tint: 0x54ad8e, alpha: 1 }, Gauge: { resourceId: 'hp', fromParent: true, width: BAR_W } },
+      // 召援 sidecar（T-F2 秀吉一夜城 / T-F3 本愿寺一揆，REQ-021 spawn 重组）：自带 Timer + SelfRule，战斗期到点
+      // spawn reinf_<code>（baked TEAM_B+hp+登陆格 → 与部署兵同款战斗单位）。挂 Hierarchy 随 Boss 生死级联。
+      ...(unit.summon
+        ? { summon: {
+            Transform: xf(0, 0),
+            Hierarchy: { ...sidecarLink },
+            Timer: { id: 'summon', elapsed: 0, duration: unit.summon.period, loop: !unit.summon.once },
+            SelfRule: {
+              when: { kind: 'timer', id: 'summon', cmp: 'gte', value: unit.summon.period - 1 },
+              whenGlobal: { kind: 'flag', id: 'in_combat', equals: true },
+              do: Array.from({ length: unit.summon.count ?? 1 }, () => ({ kind: 'spawn', template: `reinf_${unit.summon!.code}`, at: 'self' })),
+              once: unit.summon.once ?? false, armed: false,
+            },
+          } }
+        : {}),
     },
   };
+}
+
+// 召援登陆单位（T-F2/T-F3）：= mob 模板，但把 TEAM_B / hp / 登陆格**烘进模板自身**（spawn 不走部署 overrides）。
+// 登陆格固定在敌前排 staging（grid-move 接管寻路）；与部署兵同组件 → 同样索敌/走位/攻击/被斩杀。
+function reinfTemplate(unit: TaikouUnit): PrefabTemplate {
+  const t = mobTemplate(unit);
+  const main = t.entities.main as Record<string, unknown>;
+  main.Tag = { flags: TEAM_B };
+  main.Resource = { id: 'hp', current: unit.hp, min: 0, max: unit.hp };
+  main.HexPos = { q: 2, r: 2 }; // 援军登陆点（敌前排；超员靠 grid-move 占格分散）
+  return t;
 }
 
 // 每英雄三张模板：普攻打击区 + 大招打击区 + 棋子复合体（REQ-F-032 回合重展开用）。targetMask=敌队。
@@ -345,6 +371,9 @@ export function templatesFor(ROSTER: HeroSpec[]): Record<string, PrefabTemplate>
         : [`strike_mob_${code}`, strike(TEAM_A, u.atk, F_FX_BOLT, 'dmg_scale_b', u.execBelow)];
     }),
     PVE_CODES.map((code): [string, PrefabTemplate] => [`mob_${code}`, mobTemplate(unitByCode(code)!)]),
+    // 召援登陆模板（T-F2/T-F3）：出场太阁里所有 summon 目标码 → reinf_<code>（baked 战斗单位）。
+    [...new Set(PVE_CODES.map((c) => unitByCode(c)).filter((u): u is TaikouUnit => !!u?.summon).map((u) => u.summon!.code))]
+      .map((code): [string, PrefabTemplate] => [`reinf_${code}`, reinfTemplate(unitByCode(code)!)]),
     [[
       'loot_orb',
       { entities: { orb: { Transform: xf(0, 0), Shape: { kind: 'box', width: 10, height: 10 }, Sensor: {}, Sprite: sprite(F_FX_DRAIN, 5), Color: { tint: 0xd8607b, alpha: 1 }, Tag: { flags: LOOT | ZONE_FLAG }, Hitbox: { resource: 'loot', amount: -5, targetMask: PROTAG, consumeOnHit: true } } } }, // 044：真结算一次入账-5(负=给予)同拍自毁；主角零附件

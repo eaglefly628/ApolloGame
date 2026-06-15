@@ -5,7 +5,9 @@ import { F_TAIKOU } from './assets.js';
 import { PVE_COMP } from './stages.js';
 import { Engine } from '../../runtime/engine.js';
 import { getComponentById } from '@engine/core/query.js';
+import { instantiate } from '@skills/tier3/index.js';
 import { buildGameFBlueprint } from './blueprint.js';
+import { TEAM_B } from './constants.js';
 import { FAST } from './game-f.helpers.js';
 
 describe('C 太阁全谱 roster（master §六 数据落地）', () => {
@@ -91,5 +93,32 @@ describe('T-F1 信长·天下布武（守军全军 buff 阶段递增；现成能
     set('stage_idx', 5); set('round_idx', 5); setFlag('deploy_armed', true);
     e.world.tick();
     expect(sb()).toBeCloseTo(1.40, 5); // 天下布武：终盘守军伤害 ×1.40（阶段递增最高档）
+  });
+});
+
+describe('T-F2/T-F3 召援（秀吉一夜城周期召兵 / 本愿寺一揆开场人海；REQ-021 spawn 重组、零引擎）', () => {
+  it('reinf_ash_yari 登陆模板烘进 TEAM_B + hp（spawn 即满血参战，非部署 overrides）', () => {
+    const r = GAME_F_TEMPLATES['reinf_ash_yari'] as unknown as { entities: { main: { Tag: { flags: number }; Resource: { max: number }; HexPos: { q: number } } } };
+    expect(r).toBeDefined();
+    expect(r.entities.main.Tag.flags & TEAM_B).toBe(TEAM_B); // 烘死敌方阵营 → 索敌玩家
+    expect(r.entities.main.Resource.max).toBeGreaterThan(0); // 烘死满血
+  });
+
+  it('秀吉·一夜城：战斗期周期 spawn 援军 → reinf_ash_yari 实例真出现在世界', () => {
+    const e = new Engine({ tickRate: 60 });
+    e.load(buildGameFBlueprint(FAST)); // 蓝图已载预制库（含 mob_hideyoshi / reinf_ash_yari）
+    const inc = getComponentById(e.world, 'Flag', 'id', 'in_combat') as { active: boolean } | undefined;
+    // 直接铺一个秀吉战斗单位（烘 TEAM_B/hp/格）；其 summon sidecar 每 180 拍召 1 足轻。
+    instantiate(e.world, GAME_F_TEMPLATES['mob_hideyoshi'], 'probe_hideyoshi', 0, 0, 0,
+      { main: { Tag: { flags: TEAM_B }, Resource: { id: 'hp', current: 9999, min: 0, max: 9999 }, HexPos: { q: 2, r: 2 } } }, { q: 2, r: 2 });
+    const reinfCount = (): number => e.world.getAllEntities().filter((id) => id.includes('reinf_ash_yari')).length;
+    expect(reinfCount()).toBe(0);
+    for (let i = 0; i < 200; i++) { if (inc) inc.active = true; e.world.tick(); } // 钉死战斗态跑过 1 个召援周期
+    expect(reinfCount()).toBeGreaterThan(0); // 一夜城确实召出援军
+  });
+
+  it('本愿寺·一揆：once 一次性 + count=3（开场人海，数据钉死）', () => {
+    expect(unitByCode('honganji')!.summon).toMatchObject({ code: 'ash_yari', count: 3, once: true });
+    expect(unitByCode('hideyoshi')!.summon!.once).toBeFalsy(); // 秀吉=周期(loop)非一次性
   });
 });

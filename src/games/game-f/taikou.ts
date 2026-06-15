@@ -20,6 +20,8 @@ export interface TaikouUnit {
   signature?: string; // 招牌大招语义（机制接线见后续片；🔴 者依赖 F-061/062）
   execBelow?: number; // 斩杀线（F-061）：普攻对 hp 比例 < 此值的目标处决（谦信/立花/半藏）
   selfHeal?: number; // 忍耐（家康）：over-time 每秒自回复 hp（招牌：厚血+持续回复）
+  // 召援（T-F2 秀吉·一夜城周期召兵 / T-F3 本愿寺·一向一揆开场人海）：mob summon sidecar(Timer+SelfRule spawn reinf_<code>)。
+  summon?: { code: string; period: number; count?: number; once?: boolean };
 }
 
 // ── 滩头杂兵（roster §一 / §六；v1 成局）──
@@ -43,9 +45,9 @@ export const TAIKOU_KOKUJIN: Record<string, TaikouUnit> = {
 // ── 天守 Boss（roster §三 / §六；每局轮换。✅ 类 v1 可成局；🔴 类招牌依赖 F-061 斩杀 / F-062 索敌策略）──
 export const TAIKOU_BOSS: Record<string, TaikouUnit> = {
   nobunaga: { code: 'nobunaga', name: '织田信长·天下布武', sprite: F_TAIKOU.nobunaga, atkType: 'melee', hp: 1400, atk: 70, range: 1, cls: 'WAR', seg: 'tenshu', signature: '天下布武:全军 atk buff 阶段递增' },
-  hideyoshi: { code: 'hideyoshi', name: '丰臣秀吉·一夜城', sprite: F_TAIKOU.hideyoshi, atkType: 'melee', hp: 1200, atk: 55, range: 2, cls: 'WAR', seg: 'tenshu', signature: '一夜城:周期 spawn 援军' },
+  hideyoshi: { code: 'hideyoshi', name: '丰臣秀吉·一夜城', sprite: F_TAIKOU.hideyoshi, atkType: 'melee', hp: 1200, atk: 55, range: 2, cls: 'WAR', seg: 'tenshu', signature: '一夜城:周期 spawn 援军', summon: { code: 'ash_yari', period: 180, count: 1 } }, // T-F2：每 3s 召 1 足轻
   ieyasu: { code: 'ieyasu', name: '德川家康·忍耐', sprite: F_TAIKOU.ieyasu, atkType: 'melee', hp: 2000, atk: 60, range: 1, cls: 'WAR', seg: 'tenshu', signature: '忍耐:自回复(over-time)+反击(🟡缓)', selfHeal: 40 },
-  honganji: { code: 'honganji', name: '本愿寺显如·一向一揆', sprite: F_TAIKOU.honganji, atkType: 'magic', hp: 1300, atk: 45, range: 2, cls: 'TAC', seg: 'tenshu', signature: '一揆:人海 spawn' },
+  honganji: { code: 'honganji', name: '本愿寺显如·一向一揆', sprite: F_TAIKOU.honganji, atkType: 'magic', hp: 1300, atk: 45, range: 2, cls: 'TAC', seg: 'tenshu', signature: '一揆:人海 spawn', summon: { code: 'ash_yari', period: 30, count: 3, once: true } }, // T-F3：开场 0.5s 放 3 人海一揆
   shingen: { code: 'shingen', name: '武田信玄·风林火山', sprite: F_TAIKOU.shingen, atkType: 'melee', hp: 1500, atk: 65, range: 1, cls: 'WAR', seg: 'tenshu', signature: '风林火山:阶段切换+骑冲（🟡部分 per-unit）' },
   kenshin: { code: 'kenshin', name: '上杉谦信·军神', sprite: F_TAIKOU.kenshin, atkType: 'melee', hp: 1400, atk: 90, range: 1, cls: 'ASN', seg: 'tenshu', signature: '无双斩:斩杀残血（F-061）', execBelow: 0.3 },
   yukimura: { code: 'yukimura', name: '真田幸村·六文钱', sprite: F_TAIKOU.yukimura, atkType: 'melee', hp: 1300, atk: 75, range: 1, cls: 'WAR', seg: 'tenshu', signature: '决死:自身残血加伤（🔴 F-061 valueFrom）' },
