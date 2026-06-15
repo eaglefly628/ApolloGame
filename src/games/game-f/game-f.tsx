@@ -253,12 +253,54 @@ function buildSoloHud(click: (x: number, y: number) => void, play: (i: number) =
     { g: '🔥', n: '连胜激励', d: '连胜越高士气越旺', ref: 'buffStreak' },
   ].map((b) => `<div style="display:flex;align-items:center;gap:9px;padding:8px 9px;border-radius:9px;background:var(--chip-bg);border:1px solid var(--panel-border)">
     <span style="font-size:17px">${b.g}</span><div style="flex:1;min-width:0"><div style="font-family:var(--font-heading);font-weight:700;font-size:13px;color:var(--ink)">${b.n}</div><div ${b.ref ? `data-ref="${b.ref}"` : ''} style="font-size:10px;color:var(--ink-dim)">${b.d}</div></div></div>`).join('');
-  // 盟友布阵预览（三人一队设计：另两名玩家/AI 的战局镜像缩略；多人同步层接入前占位）。
-  // 真盟友数据来自状态同步（关键帧+战斗期增量，src/net/state-sync），单机阶段显「AI 补位」占位。
-  const ALLIES: [string, string][] = [['盟友 · 吴', '🐅'], ['盟友 · 魏', '🐎']];
-  const allyPreview = ALLIES.map(([n, g]) => `<div style="flex:1;min-height:0;display:flex;flex-direction:column;gap:6px;padding:9px;border-radius:11px;background:var(--chip-bg);border:1px solid var(--panel-border)">
-    <div style="display:flex;align-items:center;gap:7px"><span style="font-size:15px">${g}</span><span style="font-family:var(--font-heading);font-weight:700;font-size:12px;color:var(--ink)">${n}</span><span style="flex:1"></span><span style="font-size:9px;color:var(--ink-dim)">AI 补位</span></div>
-    <div style="flex:1;min-height:46px;border-radius:8px;border:1px dashed var(--panel-border);background:var(--track);display:flex;align-items:center;justify-content:center;font-size:10px;color:var(--ink-dim)">战局镜像 · 待联机接入</div></div>`).join('');
+  // 盟友/对战玩家名单（复刻「Game F 对战.dc.html」三人版右栏：三人一队，另两名玩家的战况镜像）。
+  // 每张卡 = 头像+势力+真人/AI+名次+血条+就绪态 + 迷你 hex 布阵预览（mkMini）。真数据来自状态同步
+  // （关键帧+战斗期增量，src/net/state-sync）；联机层接入前用 AI 托管占位（结构即列表，扩 N 人只追加条目）。
+  const FACNAME: Record<string, string> = { 蜀: '蜀', 吴: '吴', 魏: '魏', 群: '群雄' };
+  // 迷你布阵图（4 排×7 格六角缩略，行交错偏移）：pattern[row]=占位列号。
+  const HEXMINI = 'polygon(50% 0,100% 25%,100% 75%,50% 100%,0 75%,0 25%)';
+  const miniBoard = (fac: string, pat: number[][]): string => {
+    const col = FAC[fac];
+    return [0, 1, 2, 3].map((r) => {
+      const cells = Array.from({ length: 7 }, (_, c) => {
+        const on = (pat[r] || []).includes(c);
+        return `<div style="width:13px;height:11px;clip-path:${HEXMINI};background:${on ? col : 'var(--track)'};box-shadow:${on ? `0 0 3px ${col}99` : 'none'}"></div>`;
+      }).join('');
+      return `<div style="display:flex;gap:2px;margin-top:${r === 0 ? '0' : '-3px'};margin-left:${r % 2 === 1 ? '7px' : '0'}">${cells}</div>`;
+    }).join('');
+  };
+  // 同队另两名玩家（玩家=蜀·玄德；队友=吴/魏，三国合击征日）。ready/hp/place/pat 占位，待同步层填真值。
+  const ALLY_ROSTER = [
+    { name: '仲谋', fac: '吴', human: true, hp: 81, ready: true, place: 2, pat: [[2, 4], [3], [1, 5], []] },
+    { name: '孟德', fac: '魏', human: false, hp: 64, ready: false, place: 3, pat: [[1, 3, 5], [2, 4], [3], [0]] },
+  ];
+  const allyCard = (p: typeof ALLY_ROSTER[number]): string => {
+    const col = FAC[p.fac];
+    const facTag = `display:inline-flex;align-items:center;font-size:9px;padding:1px 6px;border-radius:99px;background:${col}22;color:${col};border:1px solid ${col}66;font-weight:700`;
+    const humanTag = `font-size:8px;padding:1px 5px;border-radius:99px;background:${p.human ? 'var(--accent-soft)' : 'var(--chip-bg)'};color:${p.human ? 'var(--accent)' : 'var(--ink-dim)'};border:1px solid ${p.human ? 'var(--accent)' : 'var(--panel-border)'};font-weight:700`;
+    const readyStyle = `display:flex;align-items:center;gap:4px;font-family:var(--font-heading);font-weight:700;font-size:10px;color:${p.ready ? 'var(--hp)' : 'var(--ink-dim)'}`;
+    const readyDot = `width:6px;height:6px;border-radius:50%;background:${p.ready ? 'var(--hp)' : 'var(--ink-dim)'};box-shadow:${p.ready ? '0 0 5px var(--hp)' : 'none'}`;
+    return `<div style="border-radius:12px;background:var(--chip-bg);border:1px solid ${p.human ? col + 'aa' : 'var(--panel-border)'};box-shadow:inset 0 0 0 1px var(--hairline),0 3px 8px rgba(0,0,0,.12);padding:10px">
+      <div style="display:flex;align-items:center;gap:8px">
+        <div style="width:32px;height:32px;border-radius:9px;flex:none;background:linear-gradient(160deg,${col}ee,${col}99);border:2px solid ${col};display:flex;align-items:center;justify-content:center;color:#fff;font-family:var(--font-cjk);font-weight:900;font-size:14px">${p.fac}</div>
+        <div style="flex:1;min-width:0">
+          <div style="display:flex;align-items:center;gap:4px">
+            <span style="font-family:var(--font-heading);font-weight:700;font-size:12px;color:var(--ink)">${p.name}</span>
+            <span style="${facTag}">${FACNAME[p.fac]}</span>
+            <span style="${humanTag}">${p.human ? '真人' : 'AI 托管'}</span>
+            <span style="margin-left:auto;font-family:var(--font-num);font-size:11px;color:${p.place === 1 ? 'var(--gold)' : 'var(--ink-dim)'}">#${p.place}</span>
+          </div>
+          <div style="display:flex;align-items:center;gap:5px;margin-top:4px">
+            <div style="flex:1;height:6px;border-radius:99px;background:var(--track);overflow:hidden"><div style="width:${p.hp}%;height:100%;background:${p.hp < 35 ? 'var(--danger)' : col};border-radius:99px"></div></div>
+            <span style="font-family:var(--font-num);font-size:9px;color:var(--ink-dim)">${p.hp}</span>
+            <span style="${readyStyle}"><span style="${readyDot}"></span>${p.ready ? '已就绪' : '布阵中'}</span>
+          </div>
+        </div>
+      </div>
+      <div class="ally-board" style="margin-top:8px;border-radius:8px;background:var(--panel-grad);border:1px solid var(--panel-border);padding:7px;display:flex;flex-direction:column;align-items:center">${miniBoard(p.fac, p.pat)}</div>
+    </div>`;
+  };
+  const allyPreview = ALLY_ROSTER.map(allyCard).join('');
   // 装备栏（战利品）：开局空，战中敌死掉装备 → 主公拾取 → items 累加填充（update 读真实 items 资源）。
   const EQUIP_ICONS = ['🗡', '🛡', '👑', '📜', '🏹', '💍', '🔮', '⚔️'];
 
@@ -313,11 +355,16 @@ function buildSoloHud(click: (x: number, y: number) => void, play: (i: number) =
     <div style="position:absolute;left:10px;top:66px;width:186px;bottom:330px;display:flex;flex-direction:column;gap:6px;overflow:hidden;pointer-events:auto">
       <div style="font-size:9px;letter-spacing:.22em;text-transform:uppercase;color:var(--ink-dim);padding:2px 6px">羁绊 · Synergies</div>
       <div data-ref="synrows" style="display:flex;flex-direction:column;gap:6px">${synRows}</div></div>
-    <!-- RIGHT · 盟友布阵预览（三人一队：另两名玩家/AI 的战局镜像；多人接入前占位）+ 装备 -->
+    <!-- RIGHT · 对战玩家（三人版：另两名玩家/AI 的战况 + 迷你布阵镜像，复刻对战设计稿右栏）+ 装备 -->
     <div style="position:absolute;right:10px;top:66px;width:186px;bottom:118px;display:flex;flex-direction:column;gap:10px;overflow:hidden;pointer-events:auto">
       <div style="flex:1;min-height:0;background:var(--panel-grad);border:1px solid var(--panel-border);border-radius:var(--radius);box-shadow:inset 0 0 0 1px var(--hairline);padding:12px;display:flex;flex-direction:column;gap:9px">
-        <div style="font-size:9px;letter-spacing:.2em;text-transform:uppercase;color:var(--ink-dim)">盟友布阵 · Allies</div>
-        <div data-ref="allies" style="display:flex;flex-direction:column;gap:9px;flex:1;min-height:0">${allyPreview}</div></div>
+        <div style="display:flex;align-items:center;gap:6px">
+          <span style="font-size:9px;letter-spacing:.2em;text-transform:uppercase;color:var(--ink-dim)">对战玩家</span>
+          <span style="font-family:var(--font-num);font-size:11px;color:var(--accent)">3 人</span>
+          <span style="flex:1"></span>
+          <button data-act="toggle-boards" style="padding:3px 8px;border-radius:7px;cursor:pointer;background:var(--chip-bg);border:1px solid var(--panel-border);color:var(--ink-dim);font-family:var(--font-heading);font-weight:700;font-size:10px;white-space:nowrap">收起战况 ▴</button>
+        </div>
+        <div data-ref="allies" style="display:flex;flex-direction:column;gap:9px;flex:1;min-height:0;overflow-y:auto">${allyPreview}</div></div>
       <div style="background:var(--panel-grad);border:1px solid var(--panel-border);border-radius:var(--radius);box-shadow:inset 0 0 0 1px var(--hairline);padding:12px">
         <div style="display:flex;justify-content:space-between;align-items:baseline;margin-bottom:9px"><span style="font-size:9px;letter-spacing:.2em;text-transform:uppercase;color:var(--ink-dim)">装备 · 战利品</span><span data-ref="equipcount" style="font-family:var(--font-num);font-size:11px;color:var(--gold)">0/8</span></div>
         <div data-ref="equipslots" style="display:grid;grid-template-columns:repeat(4,1fr);gap:8px"></div></div></div>
@@ -364,6 +411,12 @@ function buildSoloHud(click: (x: number, y: number) => void, play: (i: number) =
   const buffPop = q('[data-ref="buffpop"]');
   q('[data-act="xp"]').addEventListener('click', (e) => { e.stopPropagation(); click(300, 64); }); // 买经验（不连带触发卡片弹窗）
   q('[data-act="playerinfo"]').addEventListener('click', () => { buffPop.style.display = buffPop.style.display === 'flex' ? 'none' : 'flex'; }); // 点玩家卡 → 切换当前状态弹窗
+  let boardsOpen = true; // 对战玩家迷你布阵图展开/收起（复刻设计稿 toggleBoards）
+  q('[data-act="toggle-boards"]').addEventListener('click', (e) => {
+    boardsOpen = !boardsOpen;
+    root.querySelectorAll('.ally-board').forEach((b) => { (b as HTMLElement).style.display = boardsOpen ? 'flex' : 'none'; });
+    (e.currentTarget as HTMLElement).textContent = boardsOpen ? '收起战况 ▴' : '展开战况 ▾';
+  });
   q('[data-act="ready"]').addEventListener('click', () => click(300, 180));
   q('[data-act="shop-open"]').addEventListener('click', () => openShop(true));
   root.querySelectorAll('[data-act="shop-close"]').forEach((b) => b.addEventListener('click', () => openShop(false)));

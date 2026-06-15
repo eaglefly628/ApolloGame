@@ -132,6 +132,13 @@
 - **范围注**：纯测试/工具，不动引擎语义。详见 `docs/game-design/game-f-coop-sunliu.md` §四.3/§五 C0。
 - **Lead 注（2026-06-15）**：用户拍板 game-f 战斗用**整数 HexPos** → 同进程双实例探针即足（无需跨架构定点）；定点退路已在分支 `festive-planck` 实装备用。探针仍待建（game-f 联机真拉动时）。
 
+- **PF 调查定论（2026-06-15，owner 裁决「探针=回归守卫，非命门」后核实）**：
+  - **探针现状必假绿**：`determinism.ts:18` `NON_DETERMINISTIC={Camera,ScoreTrace}`，战斗 `Transform`(浮点)仍在 hash(:25)，:37 全精度入串 → 同进程同 FMA 必逐位相同 → 必绿；换端才发散。证实 owner 判断。
+  - **整数 vs 浮点 = 混合**：移动是整数（`grid-move.ts` 自注「HexPos 永远 SIM 真相（占位/寻路/hash），Transform 是视觉投影、不被 Condition 读」），但命中结算/弹道/主角吃浮点（overlap-detect 经 `contact.ts` Math.sqrt 读浮点 Transform；steering 弹道；motion-apply 主角）。**裸 lockstep 跨端命中时序发散。**
+  - **Math.random 附雷已排除**：全库仅 `mp-client.ts:13`（peerId 连接用），战斗路径 0 处 → 不需 seeded RandomSeed。
+  - **关键收敛**：命门只在 **lockstep**（重演+hash 比对）下成立；而 game-f 既定同步是 **mirror**（`state-sync.ts` 关键帧+增量，权威端跑自己 PvE、对端只还原显示、不重演）—— owner 早先「核心战斗=各自 PvE，信息在玩家间传递」即此。**mirror 下战斗永不被对端重演 → 浮点命门不参与跨端比对 → 自动消解；`hashSnapshot` 仅 lockstep 调用。**
+  - **结论**：game-f 战斗走 mirror（既定），浮点确定性**不阻塞** 三人；lockstep 仅承载离散跨玩家命令（卡牌/连携，整数/枚举，天然确定）。若未来要 lockstep 重演战斗，前置 = 命中结算整数化(combat.ts, PF) + Transform 移出 hash(determinism.ts, Lead) + 跨平台 CI。边界：`src/net/*` 属主程，PF 不碰。
+
 ---
 
 ### REQ-F-061 · [2026-06-13] · 主策划（Game F 卡牌系统 D0 拉动）· 框架级 · status: **done**（2026-06-13，Lead）· 优先级: 中 · 类型: 真缺口（hitbox 缺血量条件门 + 处决）
