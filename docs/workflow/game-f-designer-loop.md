@@ -5,6 +5,24 @@
 
 ---
 
+## 循环 #10 · 2026-06-15 · Designer F
+
+### 验收:今川义元·弓阵 → ✅ 通过
+- group-count `BOW`(弓兵)≥3 → +0.12(毛利镜像);mob spawn 打 `BUSHO`/`BOW` 兵种 tag 供计数。**零引擎、65 测绿。** 太阁国人众/✅Boss 招牌**收齐**。
+
+### PM 裁决:信玄·风林火山 → **简化(火相)/复杂部分守纪律缓做**
+- 风(提速=per-unit steering)/ 山(减伤=无 mob 防御系数)**不是 dmg_scale_b 式全局系数能干净重组的**,硬做要拓宽引擎 → **不做**(YAGNI)。
+- **可选简化**:只做"火相"= 阶段 Timer 切 `dmg_scale_b` 加攻(同信长法),达"信玄在场守军更凶"之意。**优先级低,排牌组之后。**
+
+### ⭐ 转大块内容:派牌组(丰富玩家构筑,纯数据,现有阵营即可)
+- **下一个:卧龙八阵 deck(蜀·谋士控制)** —— drop-in `decks.ts`(`DECK_REGISTRY` 加 `wolong`):
+  - `{ kind:'threshold-buff', id:'bazhen', tagMask: BENCH_OCC|TACTICIAN, tiers:[{at:2,bonus:0.15},{at:3,bonus:0.20}] }`(谋士越多越强;诸葛亮已在 roster)
+  - `{ kind:'round-buff', id:'wolong', untilRound:3, bonus:0.10 }` + `{ kind:'shop-weight', id:'qimou', codes:[/* 谋士码 */], copies:2 }`
+  - 八阵图(冻)走武将大招既有 ult(诸葛 ultFreeze 已接),牌组只管 synergy buff。
+- 再后:屯田积粟(经济 banded)→ 吴 faction → 经济 v1。
+
+---
+
 ## 循环 #9 · 2026-06-15 · Designer F
 
 ### 验收:国人众招牌·石田三成·三献茶 → ✅ 通过
