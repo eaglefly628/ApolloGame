@@ -183,6 +183,14 @@
 - ✅ **③ 解锁：Lead 已给 GameShell 加通用 `image` 节点**（静态 src / 绑 StringVar 动态 src；rule-of-three 远超：VN 立绘/换装/卡牌/商店；**非 game-f 脉冲下沉**）。商店=**固定 3 槽** → 3×(`image`+`stat`+`button`) 即可，**不需 `list`**（避模板化 DSL 腐烂高风险区，YAGNI 暂不加；真有干净跨游戏拉动再议）。**棋盘拖拽/点将台留 canvas（drag-place 能力），不归 GameShell。**
 - **修订验收**：band/visSwap/chrome→0 ✅已达；makeRoundFlow/templatesFor 保留（不计入"生成器构造"目标）；脉冲清零 = PF 用 GameShell（HUD/tabs/buttons 用现有节点 + 商店用新 `image`）重写壳层 + 退役假点击桥。**引擎侧到此为止（image 已加，不再为 game-f 加任何能力）。**
 
+**进度 + owner 裁决（2026-06-15，Program F 记账）**
+- ✅ **脉冲清零**：商店两段脉冲（shop_marks/shop_marks2）+ 大卡模板 + 占位框全删，114→0（商店改 GameShell `image` shop_face / 后被 owner 调整，见下）。
+- ✅ **band/visSwap/chrome 展平**（Lead 已确认）。
+- ✅ **派生去腐（顺手）**：商店卡/名牌从 ROSTER 派生，删手抄 `HEROES`/`HERO_NAMES`（「加英雄=一条 HeroSpec」，过尺子）。
+- ⛔ **②「game-f.tsx → 完整 GameShell / ~30 行 mount」= owner-overridden，标 wontfix（暂）**：owner（2026-06-15 真机复核）**明确撤掉 GameShell 与 canvas 并存**（报「棋盘下方堆出第二套点将台/主公卡」重复 bug），**钦定保留手写 DOM HUD**（主公信息卡复位左下角、右栏改盟友布阵预览）。GameShell 蓝本（`GAME_F_UI`）保留作数据壳层参考 + 测试，但**不在局内并存渲染**。
+  - → **designer-loop「去腐 T-F4 硬优先」与 owner 决定冲突 → 以 owner 为准、暂挂**。若 owner 日后要全 GameShell 化（需 GameShell 长出 modal/drag-slot/动态 list 等通用节点，属 Lead），再重启。
+- 余项（非 owner-blocked，按 Lead 裁继续）：blueprint→manifest 全量展平（大、低优先；makeRoundFlow/templatesFor 按 Lead 保留）。
+
 ---
 
 ### REQ-F-064 · [2026-06-15] · game-f（Boss 技能拉动，经用户转 Lead）· 框架级 · status: **wontfix / done-covered（2026-06-15 结案）** · 类型: 现有能力重组（非缺口）
