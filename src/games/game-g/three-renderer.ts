@@ -1,6 +1,7 @@
 import * as THREE from 'three';
 import type { RendererBackend, IWorld } from '@engine/core/types.js';
 import type { Transform, Card3D, Tween } from '@engine/protocol/components.js';
+import { clamp01, hangWarp, revealGlow, faceUpVisible, ALIVE_GLOW, DEAD_DIM } from './feel.js'; // design/15 手感曲线（纯表现、不进 hash）
 
 // ═══════════════════════════════════════════════════════════════
 //  ThreeRenderer —— 3D 表现层后端（Game G）。RendererBackend 的 Three.js 实现：读 render-only 组件
@@ -68,7 +69,7 @@ export class ThreeRenderer implements RendererBackend {
     // ── 一遍扫描：建/更新 mesh，收集 rest 位置 + 包围盒 + 对子中心（按 pairKey）。
     const pairSumX = new Map<number, number>();
     const pairCount = new Map<number, number>();
-    interface CardView { id: string; rx: number; ry: number; rot: number; t: number; pairKey?: number }
+    interface CardView { id: string; rx: number; ry: number; rot: number; t: number; pairKey?: number; faceUp: boolean; tint: number }
     const views: CardView[] = [];
     let minX = Infinity, maxX = -Infinity, minY = Infinity, maxY = -Infinity, halfW = 0, halfH = 0;
 
@@ -84,7 +85,10 @@ export class ThreeRenderer implements RendererBackend {
       }
       const rx = t.x / ppu;
       const ry = -t.y / ppu; // 2D y 向下 → 3D y 向上
-      views.push({ id, rx, ry, rot: t.rotation, t: tweenProgress(world, id), pairKey: c.pairKey });
+      const tw = world.getComponent<Tween>(id, 'Tween');
+      const prog = tw && tw.duration > 0 ? clamp01(tw.elapsed / tw.duration) : 1; // 抛飞/翻面进度
+      const faceUp = faceUpVisible(tw ? tw.to : t.rotation); // 既定面（落定目标 tw.to；已移除 Tween→当前角）
+      views.push({ id, rx, ry, rot: t.rotation, t: prog, pairKey: c.pairKey, faceUp, tint: c.frontTint });
       minX = Math.min(minX, rx); maxX = Math.max(maxX, rx);
       minY = Math.min(minY, ry); maxY = Math.max(maxY, ry);
       halfW = Math.max(halfW, c.width / ppu / 2);
@@ -98,19 +102,20 @@ export class ThreeRenderer implements RendererBackend {
     // ── 相机自适配：取景包围盒（含牌尺寸 + 抛飞顶点余量），从几张到 52v52 都自动框住。
     if (views.length > 0) this.fitCamera(minX - halfW, maxX + halfW, minY - halfH, maxY + halfH + APEX);
 
-    // ── 二遍：编排每张牌位姿（抛飞弧 + 相撞靠拢 + 翻面），纯表现。
+    // ── 二遍：编排每张牌位姿（抛飞弧 + 顶点滞空 + 相撞靠拢 + 翻面 + 落定金石对比），纯表现（design/15）。
     for (const v of views) {
       const mesh = this.meshes.get(v.id)!;
-      const arc = Math.sin(Math.PI * v.t); // 0→1→0：起落
-      const leap = APEX * arc;
+      const s = hangWarp(v.t); // 顶点滞空时间重映射：快抛→apex 屏息一拍→快落（命门）
+      const arc = Math.sin(Math.PI * s); // 0→1→0：起落（apex 处因 s 放慢而悬停）
       let nudgeX = 0;
       if (v.pairKey !== undefined) {
         const n = pairCount.get(v.pairKey) ?? 1;
         const centerX = (pairSumX.get(v.pairKey) ?? v.rx) / n; // 对子中心 x
         nudgeX = (centerX - v.rx) * COLLIDE * arc; // apex 处朝中心靠拢 → 与对手相撞
       }
-      mesh.position.set(v.rx + nudgeX, v.ry + leap, Z_POP * arc);
+      mesh.position.set(v.rx + nudgeX, v.ry + APEX * arc, Z_POP * arc);
       mesh.rotation.x = v.rot; // 翻面（tween 驱动到既定面）
+      this.applyReveal(mesh, v.faceUp, v.tint, revealGlow(v.t)); // 落定一刻：正面=自色金光(活)/反面=石板压暗(死)
     }
 
     // ── 实体消失 → 释放 GPU 资源。
@@ -160,6 +165,22 @@ export class ThreeRenderer implements RendererBackend {
         : new THREE.MeshStandardMaterial({ color: c.frontTint });
     const back = new THREE.MeshStandardMaterial({ map: this.backTexture(c.backTint) });
     return new THREE.Mesh(geo, [edge, edge, edge, edge, front, back]);
+  }
+
+  // 落定金石对比（design/15 命门 · 纯表现）：正面(活)=自队色 emissive 随落定渐亮(立绘亮/金光)；
+  // 反面(死)=背面石板随落定压暗(沉灰/石裂)。每帧据 rev∈[0,1] 设，两支各自复位对方的改动→无残留。
+  private applyReveal(mesh: THREE.Mesh, faceUp: boolean, tint: number, rev: number): void {
+    const mats = mesh.material as THREE.MeshStandardMaterial[];
+    const front = mats[4];
+    const back = mats[5];
+    if (faceUp) {
+      front.emissive.setHex(tint & 0xffffff);
+      front.emissiveIntensity = rev * ALIVE_GLOW; // 活：自色辉光随落定渐起
+      back.color.setScalar(1);
+    } else {
+      front.emissiveIntensity = 0;
+      back.color.setScalar(1 - rev * DEAD_DIM); // 死：背面石板随落定压暗
+    }
   }
 
   // 正面：奶白底 + 队伍色描边 + 角标(点数+花色)/中心大花色；红(♥♦)/黑(♠♣)分色。按 rank|suit|描边色缓存复用。
@@ -251,14 +272,6 @@ function roundRect(g: CanvasRenderingContext2D, x: number, y: number, w: number,
   g.arcTo(x, y + h, x, y, r);
   g.arcTo(x, y, x + w, y, r);
   g.closePath();
-}
-
-// 牌的抛飞进度 t∈[0,1]：有 Tween 取 elapsed/duration，无（已落定/移除）= 1（停在原位）。
-function tweenProgress(world: IWorld, id: string): number {
-  const tw = world.getComponent<Tween>(id, 'Tween');
-  if (!tw || tw.duration <= 0) return 1;
-  const r = tw.elapsed / tw.duration;
-  return r < 0 ? 0 : r > 1 ? 1 : r;
 }
 
 function disposeMesh(mesh: THREE.Mesh): void {
