@@ -5,6 +5,23 @@
 
 ---
 
+## 循环 #19 · 2026-06-15 · Designer F
+
+### 验收:抽卡池纠正为小丑牌 + rarity + 十连保底 → ✅ 通过(纠正落地)
+- 卡池=`DECK_REGISTRY` 全 deck 的 CardSpec 卡(去重),`rarityOf`:synergy/threshold=传说·economy=稀有·配牌=普通,权重 1/3/6,十连 900+保底≥1 稀有。**注释明引 designer #18 + 地基。零引擎、78 测绿。** 我的纠正干净落地。
+
+### 下一步:收藏 → 组牌器(养成环真正落点)
+- 现状:decks **硬编码**(HUBAO_DECK 等),抽到的小丑牌进收藏但**还不能拼进牌组** → earn→spend→**build** 这环还没闭。
+- **派 Program F**(评估实现路径,纯游戏侧):
+  1. **抽 card catalog**:`id → CardSpec 定义`(把现内联在 deck 里的卡抽成 id 索引的目录);
+  2. **收藏 = 拥有的卡 id**(account 已有 collection count);
+  3. **组牌器**(接大厅 S4):从收藏选 5–8 张 id → 拼成 Deck → 喂局内(`buildDeckRules` 已吃 Deck,接口不变);
+  4. 现 5 套硬编码 deck **保留为 preset/起手套**(新人直接能玩)。
+- **段位 = 难度阀**(循环#17② 仍欠):攻岛名次→LP/段位→高段位换凶关卡表(spec §六)。可并行。
+- 信玄火相 = 低优先。
+
+---
+
 ## 循环 #18 · 2026-06-15 · Designer F
 
 ### 验收:收藏 + 软币抽卡(机制)→ ✅ 通过
