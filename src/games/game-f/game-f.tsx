@@ -11,6 +11,7 @@ import { rosterFor, type Faction } from './heroes.js';
 import { WARRIOR, TACTICIAN, TEAM_A } from './constants.js';
 import { buildLobby, type RunConfig } from './lobby.js';
 import { createAllyMirrors } from './ally-mirror.js';
+import { settleRun } from './account.js';
 
 // Game F 可挂载模块（launcher 卡带槽契约：export mount(container) → cleanup）。
 // 壳层 UI = design_handoff_game_f 的「锦霞 Aurora」皮肤（用户钦定女性向风格）：
@@ -706,6 +707,11 @@ function startMatch(container: HTMLElement, cfg: RunConfig, onExit: () => void):
 
   return () => {
     cancelAnimationFrame(rafId);
+    // 经济 v1：返回大厅前结算战功（贡献+胜负+波深 → 持久软币）。纯账号层、单向消费，读完即走（不进 sim）。
+    try {
+      const rnum = (id: string): number => (getComponentById(engine.world, 'Resource', 'id', id) as unknown as { current?: number } | undefined)?.current ?? 0;
+      settleRun({ contribution: rnum('contribution'), victory: rnum('island_progress') >= 100, wave: rnum('stage_idx') });
+    } catch { /* 结算失败不阻塞退出 */ }
     engine.stop();
     allies.forEach((a) => a.dispose());
     keyboard.dispose();
