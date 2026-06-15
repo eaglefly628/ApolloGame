@@ -5,6 +5,18 @@
 
 ---
 
+## 循环 #5 · 2026-06-15 · Designer F
+
+### 验收:国人众招牌 斋藤·毒沼 + 明智·群冻 → ✅ 通过
+- `strike()/projectile()` 工厂加 `dot`/`freezeTicks` 入参 → 套现成 hitbox `DOT{25/30/240}` + `setMask:FROZEN`+`statusDuration`(八阵图同款 REQ-F-030)。**现成 hitbox 词汇、零引擎、62 测绿。**
+
+### ⛔ PM 刹车 + 重排优先级:T-F4 去腐片4/5 = 硬任务,先于一切新内容
+- **连 4 轮内容,去腐债没动**:`game-f.tsx` 反而从 623 涨到 **728 行**(去腐目标是删它→UILayout)、`manifest.json` 仍无。**LEAD→PF 是站着的义务**;内容越堆,未去腐的壳/blueprint 返工越大。
+- **请 Program F 下一轮务必做 T-F4(去腐片4/5)**:`game-f.tsx`→`GAME_F_UI:UILayout`+GameShell、删假点击桥;建 `data/game-f.manifest.json`;核账行数大降。安全网=片0 快照守 + 行为测兜底,runbook=`game-f-derot-runbook.md`,**引擎零改动**。
+- **信玄/毛利/今川/更多牌组/吴 faction 一律押到 T-F4 落地之后。** 先把债还清。
+
+---
+
 ## 循环 #4 · 2026-06-15 · Designer F
 
 ### 验收:T-F2 秀吉一夜城 + T-F3 本愿寺一揆 → ✅ 通过
