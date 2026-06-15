@@ -3,114 +3,12 @@
 > Game Creator（PA/PB）在此提需求；Lead 读取 → 收敛成通用原子 → 实现 → 标记状态。
 > 状态：`open`（待处理）/ `in-progress`（Lead 在做）/ `done`（已实现，附 commit）/ `wontfix`（附理由）。
 > 写法见 `game-creator-role.md`。差需求（"不行"）会被打回。
-
----
-
-## 判定摘要（2026-06-15 · Lead 清理基线）
-
-> 供清理：「结案」可归档移出本池；「转移」移交对应 owner 的 finish-list；「仍开」保留。
-
-| REQ | Lead 判定（2026-06-15） | 处置 |
-|---|---|---|
-| R9 资产系统 | 引擎侧 **done**（06-07 全落地）；PB 槽位实例非阻塞 | 结案（PB 余项转 PB） |
-| REQ-ARPG game-d | 引擎能力**已足**；余项全 Programmer D 自营（VFX/dungeon/掉落/AI 数据） | 转 game-d 自营清单 |
-| REQ-C-005 组合特殊棋子 | **真缺口**（算法，C→E→E 表达不了）→ match3-board 扩展 | 仍开（待 PC 排期） |
-| REQ-C-006 防死局重排 | **真缺口**（算法）→ match3-board 扩展 | 仍开（待排期） |
-| REQ-C-007 三消特效 | 表现层；先用现成 **Tween** 重组；通用 VFX 待 rule-of-three | 仍开（倾向重组） |
-| REQ-010 定点数 | **已实装**于分支 `festive-planck`（`@engine/math` 定点+RNG+浮点子集）；待并入 | 待并入→done |
-| BUG-002 game-e 弃牌 | game-e 侧 ~15 行 | 转 PE |
-| REQ-018 传输层 | 仍开 **P3**（真远程才做，排 F-057 后） | 仍开 |
-| REQ-023 group-effect | **wontfix**——重组覆盖（group-count→全局 buff 资源→scaleByResource）；Boss 全军 buff 复用同款坐实 | 结案 |
-| REQ-F-057 确定性探针 | 仍开；用户定 game-f 战斗=**整数 HexPos**→同进程探针即足；定点退路已分支实装 | 仍开（待联机拉动） |
-| REQ-F-061 hp 门/处决 | **done**（06-13） | 结案 |
-| REQ-F-062 aggro 策略 | **暂不实现**（打回）；未被真实数据拉动 | 仍开（待拉动） |
-| REQ-F-064 Boss 技能 | **wontfix/covered**——全部现有能力重组（见下条 recipe） | 结案 |
-| LEAD→PF 去腐交办 | game-f 侧进行中；**引擎侧到此为止**（重申）；GameShell 采用未完 | 转 game-f finish-list |
+>
+> **（2026-06-15 用户清理：本池仅保留 Game F / Game G 需求；非 F/G 条目（R9 / REQ-ARPG / REQ-C-005·006·007 / REQ-010 / BUG-002 / REQ-018）已移除，完整内容与 Lead 判定见 git 历史 commit `41ace96`。）**
 
 ---
 
 ## 待处理 / 进行中
-
-### R9 · [2026-06-03] · PB · 框架级 · status: **done（引擎侧，2026-06-07）** · 优先级: 架构级 · 类型: 资产系统 review
-
-> ✅ **引擎侧全部落地（2026-06-07，全量 621 绿）**：资产 key 硬校验 / 命名动画 clip 层 / AOT pack-atlas 工具 / Gemini 代码审计 4 修复 / 蓝图自动派生资产清单（甲）/ generate→热载 AI 闭环（乙）。
-> - **PB 仍可做（非阻塞）**：Game B 槽位契约实例 + procedural 占位 provider（见 `docs/design/asset-manifest-and-manager.md` §8）。
-
----
-
-### REQ-ARPG · [2026-06-07] · 用户 · Game D（ARPG PoC） · status: **in-progress** · 优先级: 高（投资路演垂直切片）
-
-> ✅ **七批已落（2026-06-08，Programmer D，660+ 绿）**：关系型战斗（hitbox）/ 数据级 prefab / game-d 纯数据切片 / NL→热载闭环 / aggro+steering+mortal+over-time / caster / keybind / Canvas 渲染 / tilemap / anim-state / 攻击动画+朝向。
->
-> **仍 open（Programmer D 自营）**：
-> - VFX 打击感（粒子/抖屏/闪白/击退）。
-> - Dungeon 生成（Hades 式手工房间拼接）。
-> - 掉落/装备（红黄绿，需 `derived-stat`）。
-> - `stats.effective` 三路消费接线（见 `docs/workflow/finish/PD-req-stats-wiring.md`）。
-> - 真浏览器渲染验证（当前离线帧代理）。
-> - 怪物 AI 深度（巡逻/警戒/攻击模式，靠 state+condition+aggro 数据，非新代码）。
-
----
-
-### REQ-C-005 · [2026-06-05] · PC · Game C · status: **open** · 优先级: P1 · 类型: match3-board 算法扩展
-
-**标题**：糖果传奇式组合消除 / 特殊棋子
-
-- **想实现**：4 连→条形棋子（消整行/列）；5 连/T/L→更强；特殊×特殊组合效果。
-- **卡在哪**：「按连线形状生成特殊棋子 + 范围消除 + 组合效果」是算法扩展，Condition→Event→Effect 表达不了。
-- **建议**：扩 `match3-board`，config 驱动的组合规则表——`matchShape(line4|line5|T|L) → spawnSpecial(kind)`；`special → effect(clear-row|clear-col|area(r)|same-color)`；`special×special` 组合表。确定性（整数+RandomSeed）。
-
----
-
-### REQ-C-006 · [2026-06-05] · PC · Game C · status: **open** · 优先级: P2 · 类型: match3-board 健壮性
-
-**标题**：无可行步 → 自动重排（防死局）
-
-- **想实现**：全盘没有任何可消除交换时自动洗牌到「有解且无连线」，不卡死。
-- **卡在哪**：`match3-board` 稳定后只保证无连线，不检测是否存在可行步；补块/连锁后仍可能死局。检测可行步+重排是算法，游戏层不写。
-- **建议**：`match3-board` 进 idle 时扫所有相邻交换均无连线 → 用 `RandomSeed` 重排到「有解且无连线」。确定性。
-
----
-
-### REQ-C-007 · [2026-06-05] · PC · Game C · status: **open** · 优先级: P2 · 类型: 特效组件（表现层）
-
-**标题**：三消手感特效组件 —— 消除迸裂 / 下落 / 连锁强调
-
-- **想实现**：消除时棋子迸裂/粒子高光、空位上方棋子平滑下落、连锁逐级强调。交换滑动已做基础版。
-- **卡在哪**：重的迸裂/下落/连锁特效若游戏层各自硬写 = 表现层负债。用户已明示「特效组件可向主程要」。
-- **建议**：可复用「棋盘 juice/特效」约定——`match3-board` 在消除/下落时产出 `Tween`（现成 Tier1）驱动视图格 `Transform/Color.alpha`，渲染器照画；或通用 particle/VFX 能力。表现层，不进 sim/hash。
-
----
-
-### REQ-010 · [2026-06-08] · Lead（Gemini 复审）· 框架级 · status: **open** · 优先级: P3 / future · 类型: 确定性增强
-
-**标题**：浮点 → 定点数 / 整数运算，根除跨架构 1-ULP desync
-
-- **背景**：steering/launch 的 `Math.sqrt` 归一、以及一切 IEEE 浮点，在不同 CPU 架构（ARM vs x86）或 JIT 激进优化（FMA）下存在 1-ULP 差异，经积分进 Transform → 有几率引发跨端 desync。
-- **现状**：MVP 可容忍，标 tech-debt。单机/同构端 lockstep 无碍。
-- **何时必须做**：要做跨架构帧同步联机（Windows x86 ↔ Mac ARM P2P lockstep）才需。方案：关键运算换定点数+整数平方根/LUT 查表。**不阻塞 Steam 单机发布。**
-- **Lead 注（2026-06-15）**：定点数已在分支 `claude/festive-planck-9gnv8q` **实装**（`@engine/math`：Q16.16 定点 + RNG 下沉 + 确定性浮点子集 + determinism-lint 守卫），tsc+vitest+build 全绿；**待并入 mainbranch** 即可标 done。
-
----
-
-### BUG-002 · [2026-06-08] · PE（Game E 试玩复现）· `src/game-e.tsx` · status: **open** · 优先级: P2（缺玩法）
-
-**标题**：缺「弃牌」操作 —— 选牌后无法弃掉换新牌
-
-- **现象**：Game E 只有「出牌/新一局」，没有弃牌按钮。`discards_left=3` 资源已存在但无入口。
-- **建议**：`game-e.tsx` 加 `discard()`：选中≥1 张且 `discards_left>0` 时 → `discards_left -= 1`、移除选中牌、`drawTo` 补到 8 张、不耗 hands_left/不计分；加「♻ 弃牌（n）」按钮 + HUD 显示弃牌次数。PE 已实现过一版可直接参考（约 15 行）。
-
----
-
-### REQ-018 · [2026-06-08] · PE（联机评审）· 框架级 · status: **open** · 优先级: P3（真·远程对战才需，最后做）· 类型: 网络传输层
-
-**标题**：真·跨设备远程传输 + 延迟处理（现 lockstep 仿真核已就绪，只差传输/缓冲）
-
-- **现状**：确定性 lockstep 仿真核已落地（`FixedStepClock` + 命令排序 + `hashSnapshot` + `LockstepSession`）。传输层只有 `lockstep-tab.ts`（BroadcastChannel 同机两标签），无真·互联网传输（WebSocket/WebRTC）。
-- **缺什么**：① 传输：WS/WebRTC 信令 + 帧/命令收发；② 延迟处理：input-delay 缓冲或 rollback。
-- **优先级**：同机两标签已可验共鸣；**真·远程对战才提上日程**，建议排在最后。卡牌计分纯整数，跨平台确定性已在 coop-cards.test 坐实。
-
----
 
 ### REQ-023 · [2026-06-09] · 主程4（Game F 拉动）· 框架级 · status: **wontfix（2026-06-15 结案 · 重组覆盖）** · 优先级: 低
 
