@@ -1,6 +1,6 @@
 import { Engine } from '../../runtime/engine.js';
 import { ThreeRenderer } from './three-renderer.js';
-import { buildGameGArmyMatch, prepareArmies, armyFromFormation, laneEstimates, quartermasterEnergy, FORMATION_PRESETS, PRESET_NAMES, LEVER_CATALOG, LEVER_START, LEVER_CAP, LEVER_REGEN, battleSpec, RUN_BATTLES, RUN_LIVES, BETWEEN_BUFFS, applyBuff, jokerKeyBuffs, BOSS_ROSTER, bossFor, GAME_G_JOKERS, JOKER_BY_ID, ARCHETYPES, detectArchetype, archetypeMatchup, type Formation, type Intervention, type LeverKind, type RunBuff } from './index.js';
+import { buildGameGArmyMatch, prepareArmies, armyFromFormation, laneEstimates, quartermasterEnergy, FORMATION_PRESETS, PRESET_NAMES, LEVER_CATALOG, LEVER_START, battleSpec, RUN_BATTLES, RUN_LIVES, BETWEEN_BUFFS, applyBuff, jokerKeyBuffs, BOSS_ROSTER, bossFor, GAME_G_JOKERS, JOKER_BY_ID, ARCHETYPES, detectArchetype, archetypeMatchup, GAME_G_PLANETS, effectiveLives, effectiveLeverCap, effectiveLeverRegen, type Formation, type Intervention, type LeverKind, type RunBuff } from './index.js';
 import type { State, Resource } from '@engine/protocol/components.js';
 
 // Game G ·《翻命扑克》—— 大厅 ↔ 出征 闭环（launcher 卡带槽：export mount(container)→cleanup）。自包含于本目录。
@@ -21,11 +21,12 @@ interface Save {
   lives: number; // 战役命线（开 run 3 命，输一场 −1，命尽=run 结束）
   bossIdx: number; // 本 run 终局 Boss（每 run 轮换一名，开 run 随机定，供针对性布阵）
   jokers: string[]; // 已融小丑牌 id（局外持久 · 跨 run 不清零 · 牌组身份养成）
+  planets: Record<string, number>; // 星球牌等级（局外持久 · 可叠加升档 · 第二养成轴）
 }
 
 const rollBoss = (): number => Math.floor(Math.random() * BOSS_ROSTER.length);
 function freshSave(): Save {
-  return { materials: 0, stage: 1, deck: Array.from({ length: DECK_SIZE }, (_, i) => 44 + (i % 10) * 2), lastOfficers: [10, 10, 10], leverEnergy: LEVER_START, lives: RUN_LIVES, bossIdx: rollBoss(), jokers: [] }; // 44..62 起步；stage=当前战 1..5
+  return { materials: 0, stage: 1, deck: Array.from({ length: DECK_SIZE }, (_, i) => 44 + (i % 10) * 2), lastOfficers: [10, 10, 10], leverEnergy: LEVER_START, lives: RUN_LIVES, bossIdx: rollBoss(), jokers: [], planets: {} }; // 44..62 起步；stage=当前战 1..5
 }
 function loadSave(): Save {
   try {
@@ -35,9 +36,10 @@ function loadSave(): Save {
       if (Array.isArray(s.deck) && s.deck.length === DECK_SIZE) {
         if (!Array.isArray(s.lastOfficers) || s.lastOfficers.length !== 3) s.lastOfficers = [10, 10, 10]; // 旧存档兼容
         if (typeof s.leverEnergy !== 'number') s.leverEnergy = LEVER_START;
-        if (typeof s.lives !== 'number') s.lives = RUN_LIVES;
         if (typeof s.bossIdx !== 'number') s.bossIdx = rollBoss();
         if (!Array.isArray(s.jokers)) s.jokers = [];
+        if (typeof s.planets !== 'object' || s.planets === null) s.planets = {};
+        if (typeof s.lives !== 'number') s.lives = effectiveLives(s.planets);
         if (s.stage < 1 || s.stage > RUN_BATTLES) s.stage = 1;
         return s;
       }
@@ -159,6 +161,23 @@ export function mount(container: HTMLElement): () => void {
         ? '已融：' + save.jokers.map((id) => `<b style="color:#c4b5fd">${JOKER_BY_ID.get(id)?.name ?? id}</b>`).join('、') + '（悬停看效果 · 出征时自动生效）'
         : '（未融小丑 · 鼠标悬停看效果；融了它持久改你牌组的掷命规则 = 流派身份）');
 
+    // 星球牌：第二养成轴（可叠加升档 · 持久）。改 run 参数 / 军阵底盘，与小丑(改规则·身份)正交。
+    const planetTitle = el('div', 'font:600 13px system-ui;color:#60a5fa;margin-top:2px', '🪐 星球牌 · 升档（可叠加 · 持久 · 第二养成轴）');
+    const planetShop = el('div', 'display:flex;gap:8px;flex-wrap:wrap;justify-content:center;max-width:560px');
+    planetShop.replaceChildren(...GAME_G_PLANETS.map((p) => {
+      const lv = save.planets[p.id] ?? 0;
+      const b = mkBtn(`${p.name} Lv.${lv} → 升（${p.cost}）`);
+      b.title = p.text;
+      b.disabled = save.materials < p.cost;
+      if (b.disabled) b.style.opacity = '0.45';
+      else b.style.cssText += ';border-color:#1e3a5a;background:#0e1726';
+      b.onclick = () => {
+        if (save.materials < p.cost) return;
+        save.materials -= p.cost; save.planets[p.id] = (save.planets[p.id] ?? 0) + 1; persist(save); showLobby();
+      };
+      return b;
+    }));
+
     // 流派身份 + 克制网：由已融小丑浮现主流派，对比本 run 终局 Boss 的流派 → 克制提示（指导针对性布阵）。
     const arch = detectArchetype(save.jokers);
     const bossArchId = bossFor(save.bossIdx).archetype;
@@ -185,7 +204,7 @@ export function mount(container: HTMLElement): () => void {
       showLobby();
     };
 
-    root.append(title, stat, shop, forgeTitle, forge, forgeDesc, archEl, go, reset);
+    root.append(title, stat, shop, forgeTitle, forge, forgeDesc, planetTitle, planetShop, archEl, go, reset);
   }
 
   // ───────────────────────── 布阵（田忌赛马 · 开战前核心博弈）─────────────────────────
@@ -254,7 +273,7 @@ export function mount(container: HTMLElement): () => void {
     const queueEl = el('div', 'min-height:20px;opacity:.85;font-size:12px');
     const cardsBox = el('div', 'display:flex;flex-direction:column;gap:7px');
     const refresh = (): void => {
-      energyEl.innerHTML = `能量 ◈ <b style="color:#22d3ee">${save.leverEnergy}</b> / ${LEVER_CAP}`;
+      energyEl.innerHTML = `能量 ◈ <b style="color:#22d3ee">${save.leverEnergy}</b> / ${effectiveLeverCap(save.planets)}`;
       queueEl.innerHTML = interventions.length
         ? '已打出：' + interventions.map((iv) => `${LEVER_CATALOG[iv.kind].name}→${LANE_NAME[iv.lane]}路`).join('，')
         : '（未打出干预）';
@@ -337,7 +356,7 @@ export function mount(container: HTMLElement): () => void {
 
     engine = new Engine({ tickRate: 60 });
     // 揭晓前完整编排（融小丑→玩家干预→Boss 起手→士气倍率+结局联动），与测试共用 prepareArmies、杜绝漂移；均 outcome-first。
-    const { a, b, moraleA, linksA } = prepareArmies({ formation, deckBias: myBias(save.deck), jokers: save.jokers, interventions, enemyForm: aiForm, enemyBias, boss });
+    const { a, b, moraleA, linksA } = prepareArmies({ formation, deckBias: myBias(save.deck), jokers: save.jokers, planets: save.planets, interventions, enemyForm: aiForm, enemyBias, boss });
     engine.load(buildGameGArmyMatch(a, b, Math.floor(Math.random() * 1e9), undefined, moraleA, linksA));
     renderer = new ThreeRenderer({ width: W, height: H });
     engine.attachRenderer(renderer, stage);
@@ -361,11 +380,11 @@ export function mount(container: HTMLElement): () => void {
       let route: () => void = showLobby; // 结算后"继续"去向
       let cont = '回大厅';
       if (winner === 'a') {
-        save.leverEnergy = Math.min(LEVER_CAP, save.leverEnergy + LEVER_REGEN); // 回能◈
+        save.leverEnergy = Math.min(effectiveLeverCap(save.planets), save.leverEnergy + effectiveLeverRegen(save.planets)); // 回能◈（星球·能 升档）
         if (save.stage >= RUN_BATTLES) { // 打穿终局 Boss → 通关
           save.materials += 50;
           tail = '🏆 <b>通关战役！</b>（+50 材料）回大厅开新战役';
-          save.stage = 1; save.lives = RUN_LIVES; save.bossIdx = rollBoss(); // 新 run 轮换 Boss
+          save.stage = 1; save.lives = effectiveLives(save.planets); save.bossIdx = rollBoss(); // 新 run：命线读星球·命、轮换 Boss
         } else { // 胜非终局 → 进军 + 场间三选一养成窗
           save.stage += 1;
           tail = `进军 第 ${save.stage}/${RUN_BATTLES} 战`;
@@ -375,11 +394,11 @@ export function mount(container: HTMLElement): () => void {
         }
       } else { // 败/平 → 扣命
         save.lives -= 1;
-        if (save.lives <= 0) { tail = '💀 <b>命尽，战役结束</b> 回大厅重整'; save.stage = 1; save.lives = RUN_LIVES; save.bossIdx = rollBoss(); } // 新 run 轮换 Boss
+        if (save.lives <= 0) { tail = '💀 <b>命尽，战役结束</b> 回大厅重整'; save.stage = 1; save.lives = effectiveLives(save.planets); save.bossIdx = rollBoss(); } // 新 run：命线读星球·命、轮换 Boss
         else { tail = `命 −1（剩 ${save.lives}）重整旗鼓再战本场`; cont = '重整再战'; route = () => showFormation([...save.lastOfficers] as [number, number, number]); }
       }
       const qm = quartermasterEnergy(save.jokers, lanesA); // 督粮：每胜一路 +◈ 入下场 run 能量（post-resolve）
-      if (qm > 0) { save.leverEnergy = Math.min(LEVER_CAP, save.leverEnergy + qm); tail += `（督粮 +${qm}◈）`; }
+      if (qm > 0) { save.leverEnergy = Math.min(effectiveLeverCap(save.planets), save.leverEnergy + qm); tail += `（督粮 +${qm}◈）`; }
       persist(save);
       const who = winner === 'a' ? '我方胜（best-of-3）' : winner === 'b' ? '敌方胜' : '平局';
       const color = winner === 'a' ? '#eab308' : winner === 'b' ? '#94a3b8' : '#cbd5e1';

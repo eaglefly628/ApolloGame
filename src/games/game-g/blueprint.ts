@@ -607,6 +607,30 @@ const QUARTERMASTER_PER_LANE = 1; // 督粮：每胜一路 +1◈（入下场 run
 export function quartermasterEnergy(jokerIds: readonly string[], lanesWon: number): number {
   return jokerIds.includes('quartermaster') ? QUARTERMASTER_PER_LANE * Math.max(0, lanesWon) : 0;
 }
+
+// ── T-G6 · 星球牌（第二养成轴 · design/12 §三 · 升档/可叠加）──
+// 与小丑（一次性·改规则·身份）正交：星球 = **可叠加的升档**（买 N 级累加），改 run 参数 / 军阵底盘。持久存档、跨 run。
+// 本批 3 张：命(run 命线上限)/能(干预能量上限+回能)/军(「兵」档 favor 底盘)——皆**与大厅 deck-favor 商店不重叠**的新轴
+// （命/能=run 经济无现成；军=作用在 built 军阵的兵档结构，非 deck 均值偏置）。路(选路)/型(牌型档) 待 design 定目标 UI，见 finish。
+export type PlanetKind = 'lives' | 'energy' | 'rank-favor';
+export interface PlanetCard { id: string; name: string; kind: PlanetKind; cost: number; amount: number; text: string }
+export const GAME_G_PLANETS: PlanetCard[] = [
+  { id: 'saturn', name: '星球·命', kind: 'lives', cost: 24, amount: 1, text: '战役命线上限 +1/级（更长的 run）' },
+  { id: 'jupiter', name: '星球·能', kind: 'energy', cost: 20, amount: 1, text: '干预能量上限 +1 且每胜回能 +1/级' },
+  { id: 'mars', name: '星球·军', kind: 'rank-favor', cost: 14, amount: 3, text: '全军「兵」档(A–6) favor +3/级（夯实底盘）' },
+];
+export const PLANET_BY_ID: ReadonlyMap<string, PlanetCard> = new Map(GAME_G_PLANETS.map((p) => [p.id, p]));
+const planetBump = (planets: Record<string, number> | undefined, id: string): number => (planets?.[id] ?? 0) * (PLANET_BY_ID.get(id)?.amount ?? 0);
+/** 派生 run 参数（叠加星球级数；纯函数、可测）。星球持久 → run 重开读它。 */
+export function effectiveLives(planets: Record<string, number>): number { return RUN_LIVES + planetBump(planets, 'saturn'); }
+export function effectiveLeverCap(planets: Record<string, number>): number { return LEVER_CAP + planetBump(planets, 'jupiter'); }
+export function effectiveLeverRegen(planets: Record<string, number>): number { return LEVER_REGEN + planetBump(planets, 'jupiter'); }
+const PLANET_TROOP_RANKS = new Set(['A', '2', '3', '4', '5', '6']); // 「兵」档（星球·军作用域）
+/** 星球·军：揭晓前给军阵「兵」档 +favor（叠加级数）。build-时变换、outcome-first；作用 built 军阵结构（非 deck 均值）。 */
+export function applyPlanetArmy(army: ArmyCard[], planets: Record<string, number>): ArmyCard[] {
+  const bump = planetBump(planets, 'mars');
+  return army.map((c) => (bump > 0 && PLANET_TROOP_RANKS.has(c.rank) ? { ...c, favor: clampFavor(c.favor + bump) } : { ...c }));
+}
 export const JOKER_BY_ID: ReadonlyMap<string, JokerCard> = new Map(GAME_G_JOKERS.map((j) => [j.id, j]));
 
 /** 流派钥匙：把"未拥有的小丑"包成场间三选一可白嫖的 RunBuff（design reply#10：场间选择=构筑分叉）。已拥有的不再出。 */
@@ -695,9 +719,9 @@ export function applyJokers(army: ArmyCard[], jokerIds: readonly string[]): Army
  *   成军(布阵+deck偏置) → 融小丑(applyJokers) → 玩家干预(caster='a') → Boss 起手干预(caster='b') → 算士气倍率。
  * 全在揭晓前、不回灌 gameplay（outcome-first）；返回喂 buildGameGArmyMatch 的 {a,b,moraleA}。纯函数、可重放。
  */
-export interface MatchSetup { formation: Formation; deckBias: number; jokers: readonly string[]; interventions: Intervention[]; enemyForm?: Formation; enemyBias: number; boss?: BossSpec | null }
+export interface MatchSetup { formation: Formation; deckBias: number; jokers: readonly string[]; interventions: Intervention[]; enemyForm?: Formation; enemyBias: number; boss?: BossSpec | null; planets?: Record<string, number> }
 export function prepareArmies(s: MatchSetup): { a: ArmyCard[]; b: ArmyCard[]; moraleA: number[]; linksA: LinkJokers } {
-  const armyA = applyJokers(armyFromFormation('a', s.deckBias, s.formation), s.jokers); // 融小丑（持久 favor 变换）
+  const armyA = applyJokers(applyPlanetArmy(armyFromFormation('a', s.deckBias, s.formation), s.planets ?? {}), s.jokers); // 星球·军(兵档底盘) → 融小丑（持久 favor 变换）
   const armyB = armyFromFormation('b', s.enemyBias, s.enemyForm);
   let { a, b } = applyInterventions(armyA, armyB, s.interventions, s.deckBias); // 玩家干预
   if (s.boss && s.boss.openingLevers.length) ({ a, b } = applyInterventions(a, b, s.boss.openingLevers, s.enemyBias, 'b')); // Boss 起手（对称）

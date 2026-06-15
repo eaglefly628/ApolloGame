@@ -2,7 +2,7 @@ import { describe, it, expect } from 'vitest';
 import { Engine } from '../../runtime/engine.js';
 import type { Component } from '@engine/core/types.js';
 import type { Transform, RandomSeed, Resource, State, Card3D } from '@engine/protocol/components.js';
-import { buildGameG3DFlip, buildGameGDuel3D, buildGameGMatch, buildGameGArmyMatch, prepareArmies, standardArmy, armyFromFormation, laneEstimates, applyInterventions, applyShadowRevenge, quartermasterEnergy, applyJokers, jokerMoraleScale, jokerLinks, jokerKeyBuffs, GAME_G_JOKERS, JOKER_BY_ID, ARCHETYPES, detectArchetype, archetypeMatchup, laneHandTier, battleSpec, RUN_BATTLES, RUN_LIVES, BETWEEN_BUFFS, applyBuff, BOSS_ROSTER, bossFor, LEVER_CATALOG, LEVER_START, LEVER_CAP, LEVER_REGEN, FORMATION_PRESETS, PRESET_NAMES, decideFaceUp, cardFace, flipTarget, FLIP_DURATION, FLIP_SPINS, MATCH_REWARD, type FateCard, type ArmyCard, type Intervention, type BuffTarget } from './blueprint.js';
+import { buildGameG3DFlip, buildGameGDuel3D, buildGameGMatch, buildGameGArmyMatch, prepareArmies, standardArmy, armyFromFormation, laneEstimates, applyInterventions, applyShadowRevenge, quartermasterEnergy, applyJokers, jokerMoraleScale, jokerLinks, jokerKeyBuffs, GAME_G_JOKERS, JOKER_BY_ID, ARCHETYPES, detectArchetype, archetypeMatchup, GAME_G_PLANETS, effectiveLives, effectiveLeverCap, effectiveLeverRegen, applyPlanetArmy, laneHandTier, battleSpec, RUN_BATTLES, RUN_LIVES, BETWEEN_BUFFS, applyBuff, BOSS_ROSTER, bossFor, LEVER_CATALOG, LEVER_START, LEVER_CAP, LEVER_REGEN, FORMATION_PRESETS, PRESET_NAMES, decideFaceUp, cardFace, flipTarget, FLIP_DURATION, FLIP_SPINS, MATCH_REWARD, type FateCard, type ArmyCard, type Intervention, type BuffTarget } from './blueprint.js';
 
 const get = <T extends Component>(e: Engine, id: string, type: string): T | undefined => e.world.getComponent<T>(id, type);
 const rotOf = (e: Engine, id = 'card'): number => get<Transform>(e, id, 'Transform')!.rotation;
@@ -803,6 +803,47 @@ describe('Game G · T-G6 流派 + 克制网（身份 + 石头剪刀布 · 纯数
   it('每个 Boss 带合法流派 id', () => {
     const ids = new Set(ARCHETYPES.map((a) => a.id));
     for (const b of BOSS_ROSTER) expect(ids.has(b.archetype)).toBe(true);
+  });
+});
+
+describe('Game G · T-G6 星球牌（第二养成轴 · 可叠加升档 · 纯数据）', () => {
+  const TROOP = ['A', '2', '3', '4', '5', '6'];
+  it('星球池≥3，kind 合法、cost/amount>0、有 text', () => {
+    expect(GAME_G_PLANETS.length).toBeGreaterThanOrEqual(3);
+    const kinds = new Set(['lives', 'energy', 'rank-favor']);
+    for (const p of GAME_G_PLANETS) {
+      expect(kinds.has(p.kind)).toBe(true);
+      expect(p.cost).toBeGreaterThan(0);
+      expect(p.amount).toBeGreaterThan(0);
+      expect(p.text.length).toBeGreaterThan(0);
+    }
+  });
+
+  it('effective 派生 run 参数：无星球=base，按级线性叠加', () => {
+    expect(effectiveLives({})).toBe(RUN_LIVES);
+    expect(effectiveLives({ saturn: 2 })).toBe(RUN_LIVES + 2);
+    expect(effectiveLeverCap({})).toBe(LEVER_CAP);
+    expect(effectiveLeverCap({ jupiter: 1 })).toBe(LEVER_CAP + 1);
+    expect(effectiveLeverRegen({ jupiter: 3 })).toBe(LEVER_REGEN + 3);
+  });
+
+  it('星球·军：仅「兵」档(A–6) +3/级、军官不变；无 mars → 原样复制', () => {
+    const army = standardArmy('a', 0);
+    const out = applyPlanetArmy(army, { mars: 1 });
+    for (const c of out) {
+      const o = army.find((x) => x.id === c.id)!;
+      if (TROOP.includes(c.rank)) expect(c.favor).toBe(Math.min(95, o.favor + 3)); // 兵 +3
+      else expect(c.favor).toBe(o.favor); // 军官/王 不变
+    }
+    expect(applyPlanetArmy(army, {})).toEqual(army);
+  });
+
+  it('星球·军 进 prepareArmies：兵档底盘抬升（vs 无星球）', () => {
+    const sumTroop = (a: ArmyCard[]): number => a.filter((c) => TROOP.includes(c.rank)).reduce((s, c) => s + c.favor, 0);
+    const opt = { formation: FORMATION_PRESETS['均衡'], deckBias: 0, jokers: [], interventions: [] as Intervention[], enemyBias: 0 };
+    const base = prepareArmies({ ...opt, planets: {} }).a;
+    const withMars = prepareArmies({ ...opt, planets: { mars: 2 } }).a;
+    expect(sumTroop(withMars)).toBeGreaterThan(sumTroop(base));
   });
 });
 
