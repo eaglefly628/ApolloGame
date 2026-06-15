@@ -2,7 +2,7 @@ import { describe, it, expect } from 'vitest';
 import { Engine } from '../../runtime/engine.js';
 import type { Component } from '@engine/core/types.js';
 import type { Transform, RandomSeed, Resource, State, Card3D } from '@engine/protocol/components.js';
-import { buildGameG3DFlip, buildGameGDuel3D, buildGameGMatch, decideFaceUp, cardFace, flipTarget, FLIP_DURATION, FLIP_SPINS, MATCH_REWARD, type FateCard } from './blueprint.js';
+import { buildGameG3DFlip, buildGameGDuel3D, buildGameGMatch, buildGameGArmyMatch, standardArmy, decideFaceUp, cardFace, flipTarget, FLIP_DURATION, FLIP_SPINS, MATCH_REWARD, type FateCard, type ArmyCard } from './blueprint.js';
 
 const get = <T extends Component>(e: Engine, id: string, type: string): T | undefined => e.world.getComponent<T>(id, type);
 const rotOf = (e: Engine, id = 'card'): number => get<Transform>(e, id, 'Transform')!.rotation;
@@ -183,6 +183,71 @@ describe('Game G · 体量与牌阵布局（撞击观感的数据底座）', () 
     expect(cb1.side).toBe('b');
     expect(cb1.pairKey).toBe(1);
     expect(ca0.rank).toBe('A'); // pairKey 0 → A♠
+  });
+
+  it('军阵：54/方·三路×18·军衔=点数（standardArmy 结构）', () => {
+    const A = standardArmy('a', 0);
+    expect(A).toHaveLength(54);
+    for (const lane of [0, 1, 2]) {
+      const lc = A.filter((c) => c.lane === lane);
+      expect(lc).toHaveLength(18); // 每路 18
+      expect(lc.filter((c) => c.general)).toHaveLength(1); // 每路 1 主将
+    }
+    // 三路主将 = 最高军衔（2 王 + 1 K，favor 80）
+    expect(A.filter((c) => c.general).every((c) => c.favor >= 80 || c.rank === 'JOKER' || c.rank === 'K')).toBe(true);
+  });
+
+  it('G2 将领牵动 + best-of-3：三路数存活/路胜负/总胜负与逐级掷命回放一致', () => {
+    const clamp = (f: number): number => Math.max(5, Math.min(95, Math.round(f)));
+    // 镜像 builder 的逐级掷命（主将先、活+8/亡−14、再下属），算各路存活。
+    const replay = (army: ArmyCard[], rng: { type: 'RandomSeed'; seed: number; sequence: number }): number[] => {
+      const alive = [0, 0, 0];
+      for (const lane of [0, 1, 2]) {
+        const lc = army.filter((c) => c.lane === lane);
+        const gen = lc.find((c) => c.general)!;
+        const fg = decideFaceUp(gen.favor, rng);
+        if (fg) alive[lane]++;
+        const shift = fg ? 8 : -14;
+        for (const c of lc) {
+          if (c.general) continue;
+          if (decideFaceUp(clamp(c.favor + shift), rng)) alive[lane]++;
+        }
+      }
+      return alive;
+    };
+    for (const seed of [1, 7, 42, 99]) {
+      const A = standardArmy('a', 6);
+      const B = standardArmy('b', -4);
+      const rng = { type: 'RandomSeed' as const, seed, sequence: 0 };
+      const aAlive = replay(A, rng);
+      const bAlive = replay(B, rng);
+      let aLanes = 0, bLanes = 0;
+      for (const L of [0, 1, 2]) { if (aAlive[L] > bAlive[L]) aLanes++; else if (aAlive[L] < bAlive[L]) bLanes++; }
+      const winner = aLanes >= 2 ? 'a' : bLanes >= 2 ? 'b' : 'draw';
+
+      const e = new Engine({ tickRate: 60 });
+      e.load(buildGameGArmyMatch(A, B, seed));
+      for (let i = 0; i < FLIP_DURATION + 12; i++) e.world.tick();
+      for (const L of [0, 1, 2]) {
+        expect(get<Resource>(e, `res_a${L}`, 'Resource')!.current).toBe(aAlive[L]); // 各路存活与回放一致
+        expect(get<Resource>(e, `res_b${L}`, 'Resource')!.current).toBe(bAlive[L]);
+      }
+      expect(get<State>(e, 'winner', 'State')!.current).toBe(winner); // best-of-3 总胜负一致
+    }
+  });
+
+  it('确定性：同军同 seed 两局逐拍 hash 一致', () => {
+    const A = standardArmy('a', 6);
+    const B = standardArmy('b', -4);
+    const e1 = new Engine({ tickRate: 60 });
+    const e2 = new Engine({ tickRate: 60 });
+    e1.load(buildGameGArmyMatch(A, B, 7));
+    e2.load(buildGameGArmyMatch(A, B, 7));
+    for (let i = 0; i < FLIP_DURATION + 12; i++) {
+      e1.world.tick();
+      e2.world.tick();
+      expect(e1.hash()).toBe(e2.hash());
+    }
   });
 
   it('体量：52v52 一局照样按存活数定胜负（与规则回放一致）', () => {

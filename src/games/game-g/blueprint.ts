@@ -40,6 +40,9 @@ export function decideFaceUp(favor: number, rng: RandomSeed): boolean {
   return nextRandom(rng) < p;
 }
 
+// favor 钳到 [5,95] 整数（士气/溃散叠加后用）。
+const clampFavor = (f: number): number => Math.max(5, Math.min(95, Math.round(f)));
+
 // 标准 52 牌：序号 → 点数/花色（贴"52 牌组"语义；render-only，渲染器画牌面用）。
 const RANKS = ['A', '2', '3', '4', '5', '6', '7', '8', '9', '10', 'J', 'Q', 'K'];
 const SUITS = ['S', 'H', 'D', 'C']; // ♠♥♦♣
@@ -225,3 +228,150 @@ export function buildGameGMatch(teamA: FateCard[], teamB: FateCard[], seed: numb
 }
 
 export { FLIP_DURATION, FLIP_SPINS, flipTarget, MATCH_REWARD };
+
+// ═══════════════════════════════════════════════════════════════
+//  G2 · 战场结构（军衔 / 三路 / 布阵 / 将领牵动）—— design/06。owner 愿景核心。
+//
+//  一副 54 张(52+2王) = 一支按军衔(点数)成军、分三路(各18)列阵的军队。开局布阵分兵三路，
+//  交战时**自上而下逐级掷命**：先掷该路主将——主将活→本路下属 +士气 favor、主将亡→−溃散 favor
+//  （擒贼先擒王 → 连锁溃散）——再掷下属。三路各自数存活定路胜负，**胜 2/3 路 = 赢**(best-of-3)。
+//
+//  全是现成能力重组、**零新 capability**（守 §六）：军衔/三路/布阵=数据(tag+布局)；逐张掷命=decideFaceUp；
+//  将领牵动="集合写"用 **build 时逐级 favor 调整**重组(不预设 group-effect 缺口)；数存活/路胜负=group-count+event-when。
+//  outcome-first 红线不变：胜负 build 时即定(确定性/可重放)，3D 抛飞相撞只是表现。
+// ═══════════════════════════════════════════════════════════════
+export const LANE = [1 << 4, 1 << 5, 1 << 6]; // 上/中/下路 Tag 位
+const MORALE = 8; // 主将在场：本路下属 +favor（士气）
+const ROUT = 14; // 主将阵亡：本路下属 −favor（溃散连锁）
+const LANE_SEP = 640; // 三路 x 间距（2D px）
+const ACELL_W = 168;
+const ACELL_H = 150; // 路内 3×6 子格
+
+// 军衔 → 基础 favor（高军衔更易活）。JOKER/K=大队长, Q/J=中队长, 10-7=小队长, A-6=兵。
+function rankFavor(rank: string): number {
+  if (rank === 'JOKER' || rank === 'K') return 80;
+  if (rank === 'Q' || rank === 'J') return 66;
+  if (rank === '10' || rank === '9' || rank === '8' || rank === '7') return 56;
+  return 46;
+}
+const ARMY_RANKS = ['K', 'Q', 'J', '10', '9', '8', '7', 'A', '2', '3', '4', '5', '6'];
+
+export interface ArmyCard {
+  id: string;
+  rank: string;
+  lane: number; // 0/1/2 = 上/中/下路
+  favor: number; // 含 favorBias 的基础 favor（未含士气/溃散）
+  general: boolean; // 是否本路主将（最高军衔）
+}
+
+/** 一方 54 张(52+2王)成军：按军衔降序蛇形发三路(各18)，每路首张(最高军衔)=路主将。favorBias=该方整体强弱。 */
+export function standardArmy(prefix: string, favorBias = 0): ArmyCard[] {
+  const ranks: string[] = ['JOKER', 'JOKER'];
+  for (const r of ARMY_RANKS) for (let s = 0; s < 4; s++) ranks.push(r);
+  const order = ranks.map((r, i) => ({ r, i, f: rankFavor(r) })).sort((a, b) => b.f - a.f || a.i - b.i);
+  const army: ArmyCard[] = [];
+  const counts = [0, 0, 0];
+  order.forEach((o, k) => {
+    const lane = k % 3;
+    const idx = counts[lane]++;
+    army.push({ id: `${prefix}_l${lane}_${idx}`, rank: o.r, lane, favor: clampFavor(rankFavor(o.r) + favorBias), general: idx === 0 });
+  });
+  return army;
+}
+
+// 将领牵动：逐路自上而下掷命——先掷主将，按主将生死给本路下属 ±favor，再掷下属。返回 id→faceUp。
+// PRNG 顺序固定（lane 0→1→2，路内主将先、其余按生成序）→ 可回放、确定性。
+function resolveArmy(army: ArmyCard[], rng: RandomSeed): Map<string, boolean> {
+  const face = new Map<string, boolean>();
+  for (const lane of [0, 1, 2]) {
+    const laneCards = army.filter((c) => c.lane === lane);
+    const gen = laneCards.find((c) => c.general)!;
+    const fg = decideFaceUp(gen.favor, rng); // 先掷主将
+    face.set(gen.id, fg);
+    const shift = fg ? MORALE : -ROUT; // 主将活=士气，亡=溃散
+    for (const c of laneCards) {
+      if (c.general) continue;
+      face.set(c.id, decideFaceUp(clampFavor(c.favor + shift), rng));
+    }
+  }
+  return face;
+}
+
+function laneSlot(lane: number, i: number, isA: boolean): { x: number; y: number } {
+  const laneX = (lane - 1) * LANE_SEP;
+  const col = i % 3;
+  const row = Math.floor(i / 3); // 3×6 = 18
+  const cellX = laneX + (col - 1) * ACELL_W;
+  const cellY = (row - 2.5) * ACELL_H;
+  return { x: cellX + (isA ? -PAIR_DX : PAIR_DX), y: cellY }; // A 左 / B 右，跃向 cell 中心相撞
+}
+
+/**
+ * G2 一局军阵对决：armyA(我) vs armyB(敌)，自上而下逐级掷命(将领牵动) → 三路数存活 → best-of-3 定总胜负。
+ * 装配顺序 A 全军 → B 全军（PRNG 序列确定、可回放）。胜负 build 时即定；3D 抛飞相撞为表现。
+ */
+export function buildGameGArmyMatch(armyA: ArmyCard[], armyB: ArmyCard[], seed = 1, reward = MATCH_REWARD): WorldBlueprint {
+  const rng: RandomSeed = { type: 'RandomSeed', seed, sequence: 0 };
+  const faceA = resolveArmy(armyA, rng);
+  const faceB = resolveArmy(armyB, rng);
+  const entities: Record<string, EntityBlueprint> = {};
+
+  const place = (army: ArmyCard[], team: number, front: number, genFront: number, face: Map<string, boolean>): void => {
+    const isA = team === TEAM_A;
+    for (const lane of [0, 1, 2]) {
+      army.filter((c) => c.lane === lane).forEach((c, i) => {
+        const fu = face.get(c.id)!;
+        const { x, y } = laneSlot(lane, i, isA);
+        const ent = flipCardEntity({
+          faceUp: fu,
+          x,
+          y,
+          side: isA ? 'a' : 'b',
+          pairKey: lane * 18 + i, // 同 pairKey 的 A/B 互为对手 → 渲染器让两牌相撞
+          rank: c.rank === 'JOKER' ? '★' : c.rank,
+          suit: SUITS[(lane * 18 + i) % 4],
+          frontTint: c.general ? genFront : front, // 主将更亮，战场上一眼可辨
+          backTint: CARD_BACK,
+        });
+        ent.Tag = { flags: team | LANE[lane] | (fu ? ALIVE : 0) }; // 队 + 路 + 存活位
+        entities[c.id] = ent;
+      });
+    }
+  };
+  place(armyA, TEAM_A, A_FRONT, 0xfde68a, faceA);
+  place(armyB, TEAM_B, B_FRONT, 0xbae6fd, faceB);
+
+  // 三路数存活（含齐 队|路|ALIVE）
+  for (const L of [0, 1, 2]) {
+    entities[`gc_a${L}`] = { GroupCount: { countResource: `a_l${L}`, requiredTag: TEAM_A | LANE[L] | ALIVE } };
+    entities[`gc_b${L}`] = { GroupCount: { countResource: `b_l${L}`, requiredTag: TEAM_B | LANE[L] | ALIVE } };
+    entities[`res_a${L}`] = { Resource: { id: `a_l${L}`, current: 0, min: 0, max: 99 } };
+    entities[`res_b${L}`] = { Resource: { id: `b_l${L}`, current: 0, min: 0, max: 99 } };
+  }
+  entities.res_alanes = { Resource: { id: 'a_lanes', current: 0, min: 0, max: 3 } };
+  entities.res_blanes = { Resource: { id: 'b_lanes', current: 0, min: 0, max: 3 } };
+  entities.res_mats = { Resource: { id: 'mats', current: 0, min: 0, max: 99999 } };
+  entities.winner = { State: { fsmId: 'winner', current: 'pending' } };
+  entities.clock = { Timer: { id: 'match_clock', elapsed: 0, duration: FLIP_DURATION + 6, loop: false } };
+
+  // ① 翻牌演完(Timer 到 FLIP_DURATION)那拍，逐路比存活 → 累计各方"赢几路"。
+  const tLane = { kind: 'timer', id: 'match_clock', cmp: 'gte', value: FLIP_DURATION };
+  for (const L of [0, 1, 2]) {
+    entities[`when_a_lane${L}`] = { EventWhen: { signal: `a_lane${L}`, when: { kind: 'and', of: [tLane, { kind: 'resource', id: `a_l${L}`, cmp: 'gt', value: 0, vsResource: `b_l${L}` }] }, mode: 'edge', armed: false } };
+    entities[`fx_a_lane${L}`] = { Effect: { onSignal: `a_lane${L}`, kind: 'modify-resource', targetId: 'a_lanes', value: 1 } };
+    entities[`when_b_lane${L}`] = { EventWhen: { signal: `b_lane${L}`, when: { kind: 'and', of: [tLane, { kind: 'resource', id: `a_l${L}`, cmp: 'lt', value: 0, vsResource: `b_l${L}` }] }, mode: 'edge', armed: false } };
+    entities[`fx_b_lane${L}`] = { Effect: { onSignal: `b_lane${L}`, kind: 'modify-resource', targetId: 'b_lanes', value: 1 } };
+  }
+  // ② 路数累计稳定后(Timer 到 FLIP_DURATION+3)，best-of-3 定总胜负（胜 2 路即赢，互斥各一发）。
+  const tWin = { kind: 'timer', id: 'match_clock', cmp: 'gte', value: FLIP_DURATION + 3 };
+  const total = (sig: string, cond: Record<string, unknown>, winState: string, mats: number): void => {
+    entities[`when_${sig}`] = { EventWhen: { signal: sig, when: { kind: 'and', of: [tWin, cond] }, mode: 'edge', armed: false } };
+    entities[`fx_${sig}_st`] = { Effect: { onSignal: sig, kind: 'set-state', targetId: 'winner', value: winState } };
+    if (mats > 0) entities[`fx_${sig}_mat`] = { Effect: { onSignal: sig, kind: 'modify-resource', targetId: 'mats', value: mats } };
+  };
+  total('m_a', { kind: 'resource', id: 'a_lanes', cmp: 'gte', value: 2 }, 'a', reward);
+  total('m_b', { kind: 'resource', id: 'b_lanes', cmp: 'gte', value: 2 }, 'b', 0);
+  total('m_d', { kind: 'and', of: [{ kind: 'resource', id: 'a_lanes', cmp: 'lt', value: 2 }, { kind: 'resource', id: 'b_lanes', cmp: 'lt', value: 2 }] }, 'draw', 0);
+
+  return { capabilities: MATCH_CAPS, entities };
+}

@@ -1,6 +1,6 @@
 import { Engine } from '../../runtime/engine.js';
 import { ThreeRenderer } from './three-renderer.js';
-import { buildGameGMatch, type FateCard } from './index.js';
+import { buildGameGArmyMatch, standardArmy } from './index.js';
 import type { State, Resource } from '@engine/protocol/components.js';
 
 // Game G ·《翻命扑克》—— 大厅 ↔ 出征 闭环（launcher 卡带槽：export mount(container)→cleanup）。自包含于本目录。
@@ -43,10 +43,9 @@ function persist(s: Save): void {
 
 const clampFavor = (f: number): number => Math.max(5, Math.min(95, Math.round(f)));
 const avg = (xs: number[]): number => Math.round(xs.reduce((a, b) => a + b, 0) / xs.length);
-// 我方牌组 → 参战牌；敌方按关卡递增强度生成。
-const myCards = (deck: number[]): FateCard[] => deck.map((f, i) => ({ id: `a${i}`, favor: f }));
-const enemyCards = (stage: number): FateCard[] =>
-  Array.from({ length: DECK_SIZE }, (_, i) => ({ id: `b${i}`, favor: clampFavor(34 + stage * 3 + (i % 10) * 2) }));
+// 牌组均 favor → 全军 favor 偏置（改造越多越强）；敌方偏置随关卡递增。
+const myBias = (deck: number[]): number => avg(deck) - 50;
+const enemyBias = (stage: number): number => -8 + stage * 2;
 
 export function mount(container: HTMLElement): () => void {
   const save = loadSave();
@@ -126,7 +125,8 @@ export function mount(container: HTMLElement): () => void {
     const hint = el(
       'div',
       'max-width:560px;text-align:center;line-height:1.5;opacity:.85',
-      `第 ${save.stage} 关 · ${DECK_SIZE} vs ${DECK_SIZE} 掷命：每对牌跃向空中相撞、坠落翻面。金=我方活 / 青=敌方活 / 石板=死。`,
+      `第 ${save.stage} 关 · 54 vs 54 三路军阵：上/中/下三路各 18 张，军衔=点数(亮牌=主将)。<br>` +
+        `逐路掷命相撞翻面，<b>主将生死牵动全路</b>（活则士气、亡则溃散）；<b>胜 2/3 路即赢</b>。金=我方活/青=敌方活/石板=死。`,
     );
     const stage = document.createElement('div');
     stage.style.cssText = `width:${W}px;height:${H}px;border:1px solid #334155;border-radius:10px;overflow:hidden`;
@@ -138,26 +138,30 @@ export function mount(container: HTMLElement): () => void {
     root.append(hint, stage, bar);
 
     engine = new Engine({ tickRate: 60 });
-    engine.load(buildGameGMatch(myCards(save.deck), enemyCards(save.stage), Math.floor(Math.random() * 1e9)));
+    engine.load(buildGameGArmyMatch(standardArmy('a', myBias(save.deck)), standardArmy('b', enemyBias(save.stage)), Math.floor(Math.random() * 1e9)));
     renderer = new ThreeRenderer({ width: W, height: H });
     engine.attachRenderer(renderer, stage);
 
     let settled = false;
     const onFrame = (): void => {
       if (settled || !engine) return;
-      const winner = engine.world.getComponent<State>('winner', 'State')?.current ?? 'pending';
+      const w = engine.world;
+      const winner = w.getComponent<State>('winner', 'State')?.current ?? 'pending';
       if (winner === 'pending') return;
       settled = true;
-      const a = engine.world.getComponent<Resource>('res_a', 'Resource')?.current ?? 0;
-      const b = engine.world.getComponent<Resource>('res_b', 'Resource')?.current ?? 0;
-      // 结算奖励：存活的我方牌都算战利品；胜利额外 +10 并推进关卡（敌方更强）。
-      const gain = a + (winner === 'a' ? 10 : 0);
+      const r = (eid: string): number => w.getComponent<Resource>(eid, 'Resource')?.current ?? 0;
+      const survA = r('res_a0') + r('res_a1') + r('res_a2');
+      const survB = r('res_b0') + r('res_b1') + r('res_b2');
+      const lanesA = r('res_alanes');
+      const lanesB = r('res_blanes');
+      // 结算奖励：存活的我方牌都算战利品；胜利额外 +15 并推进关卡（敌方更强）。
+      const gain = survA + (winner === 'a' ? 15 : 0);
       save.materials += gain;
       if (winner === 'a') save.stage += 1;
       persist(save);
-      const who = winner === 'a' ? '我方胜' : winner === 'b' ? '敌方胜' : '平局';
+      const who = winner === 'a' ? '我方胜（best-of-3）' : winner === 'b' ? '敌方胜' : '平局';
       const color = winner === 'a' ? '#eab308' : winner === 'b' ? '#94a3b8' : '#cbd5e1';
-      label.innerHTML = `<span style="color:${color}">${who}</span> ｜ 存活 我 ${a} : ${b} 敌 ｜ +${gain} 材料`;
+      label.innerHTML = `<span style="color:${color}">${who}</span> ｜ 三路 ${lanesA}:${lanesB} ｜ 存活 我 ${survA}:${survB} 敌 ｜ +${gain} 材料`;
       back.textContent = winner === 'a' ? '← 回大厅（关卡推进）' : '← 回大厅';
     };
     engine.subscribe(onFrame);
