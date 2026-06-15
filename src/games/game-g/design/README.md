@@ -27,6 +27,8 @@
 | 05 | `05-roadmap-and-status.md` | 阶段路线 + 当前实现状态 + 数据vs代码占比 + 演进史 + REQ-G 状态 |
 | 06 | `06-army-and-formation.md` | ⭐ 战场结构（灵魂）：三三制编制 / 军衔=点数 / 三路军 / 开局布阵 / 将领牵动全队 |
 | 07 | `07-cultivation-and-cards.md` | 培养牌组：小丑/星球融牌面 + 功能牌目录（进攻/埋伏/特殊出现）|
+| 08 | `08-ui-implementation-spec.md` | ⭐ UI 实装策划案（给 program G）：MOBA 三路战场接 outcome-first / GameShell vs canvas / 逐屏规格 / 改进清单 / 开发队列 |
+| — | `UI/` | UI 设计稿（`大厅` / `三路战场`(推荐) / `对战`(参考) `.dc.html` + README）= `08` 的依据 |
 
 ---
 
