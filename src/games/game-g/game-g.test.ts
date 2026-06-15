@@ -2,7 +2,7 @@ import { describe, it, expect } from 'vitest';
 import { Engine } from '../../runtime/engine.js';
 import type { Component } from '@engine/core/types.js';
 import type { Transform, RandomSeed, Resource, State, Card3D } from '@engine/protocol/components.js';
-import { buildGameG3DFlip, buildGameGDuel3D, buildGameGMatch, buildGameGArmyMatch, prepareArmies, standardArmy, armyFromFormation, laneEstimates, applyInterventions, applyShadowRevenge, quartermasterEnergy, applyJokers, jokerMoraleScale, jokerLinks, jokerKeyBuffs, GAME_G_JOKERS, JOKER_BY_ID, ARCHETYPES, detectArchetype, archetypeMatchup, activeArchetype, applyArchetypeActivation, GAME_G_PLANETS, effectiveLives, effectiveLeverCap, effectiveLeverRegen, effectiveTierBonus, applyPlanetArmy, laneHandTier, battleSpec, RUN_BATTLES, RUN_LIVES, BETWEEN_BUFFS, applyBuff, BOSS_ROSTER, bossFor, LEVER_CATALOG, LEVER_START, LEVER_CAP, LEVER_REGEN, FORMATION_PRESETS, PRESET_NAMES, decideFaceUp, cardFace, flipTarget, FLIP_DURATION, FLIP_SPINS, MATCH_REWARD, type FateCard, type ArmyCard, type Intervention, type BuffTarget } from './blueprint.js';
+import { buildGameG3DFlip, buildGameGDuel3D, buildGameGMatch, buildGameGArmyMatch, prepareArmies, standardArmy, armyFromFormation, laneEstimates, applyInterventions, applyShadowRevenge, quartermasterEnergy, pickAiFormation, applyJokers, jokerMoraleScale, jokerLinks, jokerKeyBuffs, GAME_G_JOKERS, JOKER_BY_ID, ARCHETYPES, detectArchetype, archetypeMatchup, activeArchetype, applyArchetypeActivation, GAME_G_PLANETS, effectiveLives, effectiveLeverCap, effectiveLeverRegen, effectiveTierBonus, applyPlanetArmy, laneHandTier, battleSpec, RUN_BATTLES, RUN_LIVES, BETWEEN_BUFFS, applyBuff, BOSS_ROSTER, bossFor, LEVER_CATALOG, LEVER_START, LEVER_CAP, LEVER_REGEN, FORMATION_PRESETS, PRESET_NAMES, decideFaceUp, cardFace, flipTarget, FLIP_DURATION, FLIP_SPINS, MATCH_REWARD, type FateCard, type ArmyCard, type Intervention, type BuffTarget } from './blueprint.js';
 
 const get = <T extends Component>(e: Engine, id: string, type: string): T | undefined => e.world.getComponent<T>(id, type);
 const rotOf = (e: Engine, id = 'card'): number => get<Transform>(e, id, 'Transform')!.rotation;
@@ -803,6 +803,31 @@ describe('Game G · T-G6 流派 + 克制网（身份 + 石头剪刀布 · 纯数
   it('每个 Boss 带合法流派 id', () => {
     const ids = new Set(ARCHETYPES.map((a) => a.id));
     for (const b of BOSS_ROSTER) expect(ids.has(b.archetype)).toBe(true);
+  });
+});
+
+describe('Game G · AI 暗布阵 pickAiFormation（纯逻辑下沉 · committed→反制）', () => {
+  const even = [10, 10, 10];
+  it('低关(≤2)非 committed → 均衡', () => {
+    expect(pickAiFormation(1, 0, even, false)).toEqual(FORMATION_PRESETS['均衡']);
+    expect(pickAiFormation(2, 5, even, false)).toEqual(FORMATION_PRESETS['均衡']);
+  });
+
+  it('中关(3–5)非 committed → 随 stage+materials 变化(预设之一)', () => {
+    const f = pickAiFormation(3, 1, even, false);
+    expect(PRESET_NAMES.some((n) => FORMATION_PRESETS[n] === f)).toBe(true);
+  });
+
+  it('高关(>5) → 猛攻最弱一路（该路堆 18 军官）', () => {
+    const f = pickAiFormation(6, 0, [14, 4, 12], false); // 中路最弱
+    expect(f.officers[1]).toBe(18);
+    expect(f.officers).toEqual([6, 18, 6]);
+  });
+
+  it('committed（玩家集齐招牌）→ 低关也反制攻最弱路', () => {
+    const f = pickAiFormation(1, 0, [3, 14, 14], true); // 上路最弱
+    expect(f.officers[0]).toBe(18); // 全程反制（非 committed 时此关本是均衡）
+    expect(pickAiFormation(1, 0, [3, 14, 14], false)).toEqual(FORMATION_PRESETS['均衡']); // 对照：未 committed 仍均衡
   });
 });
 

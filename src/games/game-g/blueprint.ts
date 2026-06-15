@@ -390,6 +390,24 @@ export const FORMATION_PRESETS: Record<string, Formation> = {
 };
 export const PRESET_NAMES = ['均衡', '锋矢', '两翼', '田忌'];
 
+/**
+ * AI 暗布阵（纯函数·可测；游戏层 mount 调用）。低关均衡 / 中关随 stage+materials 变化 / 高关或**committed**(玩家集齐招牌流派)→
+ * **反制：全程猛攻你最弱一路**(读 lastOfficers 最小路)。committed 让"亮出招牌的强玩家"面对更尖的 AI（U6 按克制反制布阵的一种落地）。
+ * ⚠️ 注(待 design 校准)：克制网是 archetype↔archetype，而 AI 杠杆是 formation；formation 无法精确"克制某流派"(best-of-3 下攻弱路才是稳解)，
+ *   故此处取"committed→AI 更尖(攻最弱路)"而非逐流派映 formation(后者数学上弱/糊)。若要 AI 真按流派差异化布阵，需给 AI 自己的 archetype/levers。
+ */
+export function pickAiFormation(stage: number, materials: number, lastOfficers: readonly number[], committed: boolean): Formation {
+  if (committed || stage > 5) {
+    const min = Math.min(...lastOfficers);
+    const weak = lastOfficers.indexOf(min);
+    const off: [number, number, number] = [6, 6, 6];
+    off[weak >= 0 ? weak : 1] = 18;
+    return { officers: off };
+  }
+  if (stage <= 2) return FORMATION_PRESETS['均衡'];
+  return FORMATION_PRESETS[PRESET_NAMES[(stage + materials) % 4]];
+}
+
 // 按军官配额把军衔降序的军官轮转发三路（跳过已满路）→ 每路得均衡的高低军官，配额精确。
 function deployOfficers(quota: readonly number[]): string[][] {
   const lanes: string[][] = [[], [], []];
