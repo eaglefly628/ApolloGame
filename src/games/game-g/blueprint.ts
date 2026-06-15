@@ -656,6 +656,20 @@ export function applyJokers(army: ArmyCard[], jokerIds: readonly string[]): Army
 }
 
 /**
+ * 揭晓前的**完整 build 时编排**（单一真相 · showMatch 与测试共用，杜绝两路漂移）：
+ *   成军(布阵+deck偏置) → 融小丑(applyJokers) → 玩家干预(caster='a') → Boss 起手干预(caster='b') → 算士气倍率。
+ * 全在揭晓前、不回灌 gameplay（outcome-first）；返回喂 buildGameGArmyMatch 的 {a,b,moraleA}。纯函数、可重放。
+ */
+export interface MatchSetup { formation: Formation; deckBias: number; jokers: readonly string[]; interventions: Intervention[]; enemyForm?: Formation; enemyBias: number; boss?: BossSpec | null }
+export function prepareArmies(s: MatchSetup): { a: ArmyCard[]; b: ArmyCard[]; moraleA: number[] } {
+  const armyA = applyJokers(armyFromFormation('a', s.deckBias, s.formation), s.jokers); // 融小丑（持久 favor 变换）
+  const armyB = armyFromFormation('b', s.enemyBias, s.enemyForm);
+  let { a, b } = applyInterventions(armyA, armyB, s.interventions, s.deckBias); // 玩家干预
+  if (s.boss && s.boss.openingLevers.length) ({ a, b } = applyInterventions(a, b, s.boss.openingLevers, s.enemyBias, 'b')); // Boss 起手（对称）
+  return { a, b, moraleA: jokerMoraleScale(a, s.jokers) }; // 旗手/枭雄放大我方各路士气
+}
+
+/**
  * G2 一局军阵对决：armyA(我) vs armyB(敌)，自上而下逐级掷命(将领牵动) → 三路数存活 → best-of-3 定总胜负。
  * 装配顺序 A 全军 → B 全军（PRNG 序列确定、可回放）。胜负 build 时即定；3D 抛飞相撞为表现。
  * moraleA：我方各路士气倍率（旗手/枭雄小丑放大，缺省 [1,1,1]）；敌方无小丑。缩放不改掷命次数→确定性不变。

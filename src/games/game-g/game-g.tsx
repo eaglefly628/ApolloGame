@@ -1,6 +1,6 @@
 import { Engine } from '../../runtime/engine.js';
 import { ThreeRenderer } from './three-renderer.js';
-import { buildGameGArmyMatch, armyFromFormation, applyInterventions, applyJokers, jokerMoraleScale, laneEstimates, FORMATION_PRESETS, PRESET_NAMES, LEVER_CATALOG, LEVER_START, LEVER_CAP, LEVER_REGEN, battleSpec, RUN_BATTLES, RUN_LIVES, BETWEEN_BUFFS, applyBuff, jokerKeyBuffs, BOSS_ROSTER, bossFor, GAME_G_JOKERS, JOKER_BY_ID, ARCHETYPES, detectArchetype, archetypeMatchup, type Formation, type Intervention, type LeverKind, type RunBuff } from './index.js';
+import { buildGameGArmyMatch, prepareArmies, armyFromFormation, laneEstimates, FORMATION_PRESETS, PRESET_NAMES, LEVER_CATALOG, LEVER_START, LEVER_CAP, LEVER_REGEN, battleSpec, RUN_BATTLES, RUN_LIVES, BETWEEN_BUFFS, applyBuff, jokerKeyBuffs, BOSS_ROSTER, bossFor, GAME_G_JOKERS, JOKER_BY_ID, ARCHETYPES, detectArchetype, archetypeMatchup, type Formation, type Intervention, type LeverKind, type RunBuff } from './index.js';
 import type { State, Resource } from '@engine/protocol/components.js';
 
 // Game G ·《翻命扑克》—— 大厅 ↔ 出征 闭环（launcher 卡带槽：export mount(container)→cleanup）。自包含于本目录。
@@ -336,12 +336,8 @@ export function mount(container: HTMLElement): () => void {
     root.append(hint, stage, bar);
 
     engine = new Engine({ tickRate: 60 });
-    const armyA = applyJokers(armyFromFormation('a', myBias(save.deck), formation), save.jokers); // 揭晓前先融小丑(持久 favor 变换)
-    const armyB = armyFromFormation('b', enemyBias, aiForm);
-    // 揭晓前施加干预：先玩家(caster='a')，再 Boss 起手(caster='b'，对称——诅咒/斩首落玩家、增益落 Boss)。均 outcome-first。
-    let { a, b } = applyInterventions(armyA, armyB, interventions, myBias(save.deck));
-    if (boss && boss.openingLevers.length) ({ a, b } = applyInterventions(a, b, boss.openingLevers, enemyBias, 'b'));
-    const moraleA = jokerMoraleScale(a, save.jokers); // 旗手/枭雄放大我方各路士气（敌方无）
+    // 揭晓前完整编排（融小丑→玩家干预→Boss 起手→士气倍率），与测试共用 prepareArmies、杜绝漂移；均 outcome-first。
+    const { a, b, moraleA } = prepareArmies({ formation, deckBias: myBias(save.deck), jokers: save.jokers, interventions, enemyForm: aiForm, enemyBias, boss });
     engine.load(buildGameGArmyMatch(a, b, Math.floor(Math.random() * 1e9), undefined, moraleA));
     renderer = new ThreeRenderer({ width: W, height: H });
     engine.attachRenderer(renderer, stage);

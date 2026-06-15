@@ -2,7 +2,7 @@ import { describe, it, expect } from 'vitest';
 import { Engine } from '../../runtime/engine.js';
 import type { Component } from '@engine/core/types.js';
 import type { Transform, RandomSeed, Resource, State, Card3D } from '@engine/protocol/components.js';
-import { buildGameG3DFlip, buildGameGDuel3D, buildGameGMatch, buildGameGArmyMatch, standardArmy, armyFromFormation, laneEstimates, applyInterventions, applyJokers, jokerMoraleScale, jokerKeyBuffs, GAME_G_JOKERS, JOKER_BY_ID, ARCHETYPES, detectArchetype, archetypeMatchup, laneHandTier, battleSpec, RUN_BATTLES, RUN_LIVES, BETWEEN_BUFFS, applyBuff, BOSS_ROSTER, bossFor, LEVER_CATALOG, LEVER_START, LEVER_CAP, LEVER_REGEN, FORMATION_PRESETS, PRESET_NAMES, decideFaceUp, cardFace, flipTarget, FLIP_DURATION, FLIP_SPINS, MATCH_REWARD, type FateCard, type ArmyCard, type Intervention, type BuffTarget } from './blueprint.js';
+import { buildGameG3DFlip, buildGameGDuel3D, buildGameGMatch, buildGameGArmyMatch, prepareArmies, standardArmy, armyFromFormation, laneEstimates, applyInterventions, applyJokers, jokerMoraleScale, jokerKeyBuffs, GAME_G_JOKERS, JOKER_BY_ID, ARCHETYPES, detectArchetype, archetypeMatchup, laneHandTier, battleSpec, RUN_BATTLES, RUN_LIVES, BETWEEN_BUFFS, applyBuff, BOSS_ROSTER, bossFor, LEVER_CATALOG, LEVER_START, LEVER_CAP, LEVER_REGEN, FORMATION_PRESETS, PRESET_NAMES, decideFaceUp, cardFace, flipTarget, FLIP_DURATION, FLIP_SPINS, MATCH_REWARD, type FateCard, type ArmyCard, type Intervention, type BuffTarget } from './blueprint.js';
 
 const get = <T extends Component>(e: Engine, id: string, type: string): T | undefined => e.world.getComponent<T>(id, type);
 const rotOf = (e: Engine, id = 'card'): number => get<Transform>(e, id, 'Transform')!.rotation;
@@ -741,5 +741,45 @@ describe('Game G · T-G6 流派 + 克制网（身份 + 石头剪刀布 · 纯数
   it('每个 Boss 带合法流派 id', () => {
     const ids = new Set(ARCHETYPES.map((a) => a.id));
     for (const b of BOSS_ROSTER) expect(ids.has(b.archetype)).toBe(true);
+  });
+});
+
+describe('Game G · 完整 build 时编排 prepareArmies（showMatch 同款 · 端到端）', () => {
+  const boss = bossFor(5); // 小王·无常（decapitate×3 反噬玩家）
+  const setup = () => ({
+    formation: FORMATION_PRESETS['田忌'],
+    deckBias: 6,
+    jokers: ['bannerman', 'comrade', 'vanguard'],
+    interventions: [{ kind: 'bless', lane: 1 }, { kind: 'reinforce', lane: 2 }] as Intervention[],
+    enemyForm: boss.formation,
+    enemyBias: boss.favorBias,
+    boss,
+  });
+
+  it('端到端确定性：同 setup+seed → 逐拍 hash 一致（融小丑+玩家干预+Boss起手+士气 全栈）', () => {
+    const mk = (): Engine => {
+      const { a, b, moraleA } = prepareArmies(setup());
+      const e = new Engine({ tickRate: 60 });
+      e.load(buildGameGArmyMatch(a, b, 21, undefined, moraleA));
+      return e;
+    };
+    const e1 = mk(), e2 = mk();
+    for (let i = 0; i < FLIP_DURATION + 15; i++) { e1.world.tick(); e2.world.tick(); expect(e1.hash()).toBe(e2.hash()); }
+  });
+
+  it('编排落实各效果：旗手士气×1.5、Boss 斩首压玩家三路主将 favor=8、增援我方该路 +2 兵', () => {
+    const { a, moraleA } = prepareArmies(setup());
+    expect(moraleA).toEqual([1.5, 1.5, 1.5]); // 旗手全路
+    for (const lane of [0, 1, 2]) expect(a.find((c) => c.lane === lane && c.general)!.favor).toBe(8); // Boss 斩首（绝对设值，覆盖小丑加成）
+    const base = armyFromFormation('a', 6, FORMATION_PRESETS['田忌']).filter((c) => c.lane === 2).length;
+    expect(a.filter((c) => c.lane === 2).length).toBe(base + 2); // 增援 lane2
+  });
+
+  it('编排不改掷命次数 → 跑到结算出胜负（不卡 pending）', () => {
+    const { a, b, moraleA } = prepareArmies(setup());
+    const e = new Engine({ tickRate: 60 });
+    e.load(buildGameGArmyMatch(a, b, 21, undefined, moraleA));
+    for (let i = 0; i < FLIP_DURATION + 15; i++) e.world.tick();
+    expect(['a', 'b', 'draw']).toContain(get<State>(e, 'winner', 'State')!.current);
   });
 });
