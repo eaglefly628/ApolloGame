@@ -71,6 +71,23 @@ const projectile = (targetMask: number, amount: number, fxKey: string, scaleId =
   },
 });
 
+// 治疗区（石田三成·辅助）：负 amount = 回血（hitbox.ts:140 queueResourceMod(-dmg) → +hp，钳在 max）；
+// targetMask=太阁方(TEAM_B)，无 scaleByResource（治疗量不吃敌方系数）。短驻 AoE，命中范围内友军即回血。
+const healPulse = (amount: number, size: number): PrefabTemplate => ({
+  entities: {
+    area: {
+      Transform: xf(0, 0),
+      Shape: { kind: 'box', width: size, height: size },
+      Sensor: {},
+      Tag: { flags: ZONE_FLAG },
+      Hitbox: { resource: 'hp', amount: -amount, targetMask: TEAM_B }, // 负=回血
+      Timer: { id: 'life', elapsed: 0, duration: 3, loop: false },
+      Sprite: sprite(F_FX_DRAIN, 7),
+      Color: { tint: 0x54ad8e, alpha: 0.8 },
+    },
+  },
+});
+
 // 大招打击区：目标处大范围真伤（范围 size、伤害 amount），fxKey=主题特效，dot=是否附 DoT，
 // freezeTicks>0=命中冰冻 N tick（八阵图类控制技：hitbox 置 FROZEN + 挂 OverTime 到点自动解，REQ-F-030）。
 const ultTemplate = (targetMask: number, amount: number, size: number, fxKey: string, dot = false, freezeTicks = 0, scaleId = 'dmg_scale_b'): PrefabTemplate => ({
@@ -253,6 +270,20 @@ function mobTemplate(unit: TaikouUnit): PrefabTemplate {
             },
           } }
         : {}),
+      // 辅助回复 sidecar（石田·三献茶）：周期 spawn 治疗区回血太阁方。挂 Hierarchy 随死亡级联。
+      ...(unit.healAura
+        ? { healer: {
+            Transform: xf(0, 0),
+            Hierarchy: { ...sidecarLink },
+            Timer: { id: 'heal', elapsed: 0, duration: unit.healAura.period, loop: true },
+            SelfRule: {
+              when: { kind: 'timer', id: 'heal', cmp: 'gte', value: unit.healAura.period - 1 },
+              whenGlobal: { kind: 'flag', id: 'in_combat', equals: true },
+              do: [{ kind: 'spawn', template: `heal_pulse_${unit.code}`, at: 'self' }],
+              once: false, armed: false,
+            },
+          } }
+        : {}),
     },
   };
 }
@@ -374,6 +405,9 @@ export function templatesFor(ROSTER: HeroSpec[]): Record<string, PrefabTemplate>
     // 召援登陆模板（T-F2/T-F3）：出场太阁里所有 summon 目标码 → reinf_<code>（baked 战斗单位）。
     [...new Set(PVE_CODES.map((c) => unitByCode(c)).filter((u): u is TaikouUnit => !!u?.summon).map((u) => u.summon!.code))]
       .map((code): [string, PrefabTemplate] => [`reinf_${code}`, reinfTemplate(unitByCode(code)!)]),
+    // 治疗区模板（石田·辅助）：出场太阁里带 healAura 的 → heal_pulse_<code>。
+    PVE_CODES.map((c) => unitByCode(c)).filter((u): u is TaikouUnit => !!u?.healAura)
+      .map((u): [string, PrefabTemplate] => [`heal_pulse_${u.code}`, healPulse(u.healAura!.amount, u.healAura!.size ?? 60)]),
     [[
       'loot_orb',
       { entities: { orb: { Transform: xf(0, 0), Shape: { kind: 'box', width: 10, height: 10 }, Sensor: {}, Sprite: sprite(F_FX_DRAIN, 5), Color: { tint: 0xd8607b, alpha: 1 }, Tag: { flags: LOOT | ZONE_FLAG }, Hitbox: { resource: 'loot', amount: -5, targetMask: PROTAG, consumeOnHit: true } } } }, // 044：真结算一次入账-5(负=给予)同拍自毁；主角零附件

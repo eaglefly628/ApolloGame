@@ -24,6 +24,8 @@ export interface TaikouUnit {
   summon?: { code: string; period: number; count?: number; once?: boolean };
   // 普攻附带控/毒（斋藤·毒沼 DoT / 明智·群冻 FROZEN）：hitbox 现成 DOT/setMask 词汇，零引擎。
   atkFx?: { dot?: boolean; freeze?: number };
+  // 辅助·友军回复（石田三成·三献茶）：周期 spawn 治疗区（hitbox 负 amount=回血，targetMask 太阁方），零引擎。
+  healAura?: { amount: number; period: number; size?: number };
 }
 
 // ── 滩头杂兵（roster §一 / §六；v1 成局）──
@@ -41,7 +43,7 @@ export const TAIKOU_KOKUJIN: Record<string, TaikouUnit> = {
   hojo: { code: 'hojo', name: '北条氏康·小田原', sprite: F_TAIKOU.hojo, atkType: 'melee', hp: 1100, atk: 40, range: 1, cls: 'WAR', seg: 'kokujin', signature: '龟缩:守军全局减伤' },
   imagawa: { code: 'imagawa', name: '今川义元·弓取', sprite: F_TAIKOU.imagawa, atkType: 'ranged', hp: 600, atk: 55, range: 4, cls: 'ARC', seg: 'kokujin', signature: '弓阵:全弓 buff' },
   akechi: { code: 'akechi', name: '明智光秀·谋叛', sprite: F_TAIKOU.akechi, atkType: 'magic', hp: 600, atk: 50, range: 3, cls: 'TAC', seg: 'kokujin', signature: '群冻:AoE FROZEN', atkFx: { freeze: 90 } }, // 群冻：普攻附 1.5s FROZEN
-  ishida: { code: 'ishida', name: '石田三成·三献茶', sprite: F_TAIKOU.ishida, atkType: 'magic', hp: 550, atk: 40, range: 3, cls: 'TAC', seg: 'kokujin', signature: '辅助:友军回复' },
+  ishida: { code: 'ishida', name: '石田三成·三献茶', sprite: F_TAIKOU.ishida, atkType: 'magic', hp: 550, atk: 40, range: 3, cls: 'TAC', seg: 'kokujin', signature: '辅助:友军回复', healAura: { amount: 35, period: 90, size: 64 } }, // 三献茶：每 1.5s 范围回血太阁方
 };
 
 // ── 天守 Boss（roster §三 / §六；每局轮换。✅ 类 v1 可成局；🔴 类招牌依赖 F-061 斩杀 / F-062 索敌策略）──

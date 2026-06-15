@@ -136,6 +136,23 @@ describe('国人众招牌·普攻控/毒（斋藤毒沼 DoT / 明智群冻 FROZE
   });
 });
 
+describe('石田三成·辅助（三献茶：周期范围回血太阁方；hitbox 负 amount=回血、零引擎）', () => {
+  it('石田在场战斗 → 同格残血友军 hp 被治疗区回上来', () => {
+    const e = new Engine({ tickRate: 60 });
+    e.load(buildGameFBlueprint(FAST));
+    const inc = getComponentById(e.world, 'Flag', 'id', 'in_combat') as { active: boolean } | undefined;
+    // 石田 + 一个残血足轻（同格 {2,2}，TEAM_B）：石田 healer sidecar 周期 spawn 治疗区 → 覆盖友军回血。
+    instantiate(e.world, GAME_F_TEMPLATES['mob_ishida'], 'probe_ishida', 0, 0, 0,
+      { main: { Tag: { flags: TEAM_B }, Resource: { id: 'hp', current: 999, min: 0, max: 999 }, HexPos: { q: 2, r: 2 } } }, { q: 2, r: 2 });
+    instantiate(e.world, GAME_F_TEMPLATES['mob_ash_yari'], 'probe_ally', 0, 0, 0,
+      { main: { Tag: { flags: TEAM_B }, Resource: { id: 'hp', current: 100, min: 0, max: 999 }, HexPos: { q: 2, r: 2 } } }, { q: 2, r: 2 });
+    const allyHp = (): number => (e.world.getComponent('probe_ally#0:main', 'Resource') as unknown as { current: number }).current;
+    expect(allyHp()).toBe(100);
+    for (let i = 0; i < 110; i++) { if (inc) inc.active = true; e.world.tick(); } // 跑过 1 个治疗周期(90拍)
+    expect(allyHp()).toBeGreaterThan(100); // 三献茶把残血友军奶上来
+  });
+});
+
 describe('毛利元就·三矢（场上部将≥3 → 守军全军 buff；玩家羁绊敌方镜像、零引擎）', () => {
   it('铺 3 个部将(BUSHO)入战斗 → dmg_scale_b 叠加 +0.18（group-count→edge→Effect）', () => {
     const e = new Engine({ tickRate: 60 });
