@@ -102,11 +102,13 @@ export const WOLONG_DECK: Deck = {
 };
 
 // 牌组登记表（id → 真实 Deck）：大厅选牌组 → 取真组交引擎。未实装的展示牌组回退首发组。
-// 注：BAIYI（吴）待 3-faction plumbing 才入表（现入会因 rosterFor('wu') 占位布局打不正常）。
+// 白衣渡江（吴）：owner 2026-06-15 拍板「启用单机吴」→ 入表（rosterFor('wu') plumbing 已就绪；
+// 三人同场孙刘曹仍随多人）。
 export const DECK_REGISTRY: Record<string, Deck> = {
   hubao: HUBAO_DECK,
   hanshi: HANSHI_DECK,
   wolong: WOLONG_DECK,
+  baiyi: BAIYI_DECK,
   tuntian: TUNTIAN_DECK,
 };
 

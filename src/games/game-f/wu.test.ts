@@ -30,7 +30,7 @@ describe('吴 faction 刺客核心 + 白衣渡江（待命数据）', () => {
     const baiyi = BAIYI_DECK.cards.find((c) => c.kind === 'threshold-buff');
     expect(baiyi && 'tagMask' in baiyi && baiyi.tagMask).toBe(BENCH_OCC | ASSASSIN);
     expect(BAIYI_DECK.faction).toBe('wu');
-    expect(DECK_REGISTRY.baiyi).toBeUndefined(); // 仍未入表：白衣渡江 deck 注册 + 大厅解锁 + seed 属吴 faction 里程碑（待 owner）
+    expect(DECK_REGISTRY.baiyi).toBe(BAIYI_DECK); // owner 2026-06-15 启用单机吴 → 白衣渡江入表可选
   });
 
   it('3-faction plumbing：吴 蓝图可加载不崩（敌方半区就位）+ 确定', () => {

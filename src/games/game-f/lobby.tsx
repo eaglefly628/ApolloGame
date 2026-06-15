@@ -97,7 +97,7 @@ const DECKS: DeckCardView[] = [
   { id: 'hanshi', name: '兴复汉室', icon: '🛡️', style: '蜀·连携', key: '桃园誓', cards: ['桃园誓', '章武', '募贤'], complete: '3/3（已实装）', counter: '克→中期肥 · 被克→速攻', power: '★★★' },
   { id: 'chibi', name: '赤壁火攻', icon: '🔥', style: '吴·灼烧', key: '东南风', cards: ['东南风', '连营', '苦肉计', '火油', '星球·火'], complete: '5/5', counter: '克→人海 · 被克→护盾', power: '★★★☆' },
   { id: 'wolong', name: '卧龙八阵', icon: '❄️', style: '谋士·控制', key: '八阵图', cards: ['八阵图', '锁定', '空城计', '借东风', '星球·谋'], complete: '5/5', counter: '克→慢耗 · 被克→刺客绕后', power: '★★★★' },
-  { id: 'baiyi', name: '白衣渡江', icon: '🗡️', style: '刺客·斩首', key: '白衣', cards: ['白衣🔒', '绕后奇袭', '断粮', '攻心'], complete: '🔒 需稀有卡', counter: '克→单核厚血 · 被克→低血海', power: '★★★★', locked: true },
+  { id: 'baiyi', name: '白衣渡江', icon: '🗡️', style: '吴·刺客斩首', key: '白衣', cards: ['白衣', '锦帆', '募刺'], complete: '3/3（已实装·单机吴）', counter: '克→单核厚血 · 被克→低血海', power: '★★★★' },
   { id: 'tuntian', name: '屯田积粟', icon: '🌾', style: '经济·Greed', key: '屯田', cards: ['屯田', '重农', '募农'], complete: '3/3（已实装）', counter: '克→长局对耗 · 被克→速攻', power: '★★★' },
   { id: 'yizhan', name: '以战养战', icon: '🪤', style: '降将·混血', key: '招降令', cards: ['招降令', '以战养战', '质子为质', '以夷制夷', '养寇自重'], complete: '5/5', counter: '克→密集杂兵 · 被克→精英Boss', power: '★★★' },
 ];

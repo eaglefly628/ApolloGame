@@ -7,7 +7,7 @@ import { AssetManager, ImageAssetLoader } from '@assets/index.js';
 import { getComponentById } from '@engine/core/query.js';
 import type { World } from '@engine/core/world.js';
 import { buildGameFBlueprint, gameFEnemyPreview, GAME_F_ASSETS, codesFor } from './index.js';
-import { ROSTER } from './heroes.js';
+import { rosterFor, type Faction } from './heroes.js';
 import { WARRIOR, TACTICIAN, TEAM_A } from './constants.js';
 import { buildLobby, type RunConfig } from './lobby.js';
 import { createAllyMirrors } from './ally-mirror.js';
@@ -207,19 +207,22 @@ function buildMall(): HTMLElement {
 // —— 单人对局 DOM 设计 chrome（README 对战.dc.html solo 布局 + Apollo UI Kit 控件；接真实世界状态）——
 // 顶 HUD（STAGE/相位/倒计时/主公血/连胜）+ 左羁绊栏 + 右状态·装备栏 + 武将台发光框。
 // 三边覆盖盖掉 canvas 旧 HUD；中间棋盘 + 下方备战席/商店露出，仍走 canvas 数据实体交互（不破坏可玩）。
-function buildSoloHud(click: (x: number, y: number) => void, play: (i: number) => void): { root: HTMLElement; update: (w: World) => void; renderAllies: (unitsList: { q: number; r: number; enemy: boolean; hpFrac: number }[][]) => void } {
+function buildSoloHud(click: (x: number, y: number) => void, play: (i: number) => void, faction: Faction = 'shu'): { root: HTMLElement; update: (w: World) => void; renderAllies: (unitsList: { q: number; r: number; enemy: boolean; hpFrac: number }[][]) => void } {
   const FAC: Record<string, string> = { 蜀: '#d8504e', 吴: '#3fae6e', 魏: '#3a86d4', 群: '#9b6dd8' };
-  // 商店卡/名牌全部**从 ROSTER 派生**（去腐：原硬编码 HEROES/HERO_NAMES 是 ROSTER 的手抄副本，加英雄要双改）。
-  // 现在「加一个英雄 = 只改 heroes.ts 一条 HeroSpec + 一行资产」即可，DOM 壳层零改动（弱 LLM 也能一次做对）。
+  const FAC_LABEL: Record<Faction, string> = { shu: '蜀', wei: '魏', wu: '吴' };
+  const playerFacLabel = FAC_LABEL[faction];
+  // 商店卡/名牌全部**从所选阵营 roster 派生**（去腐：原硬编码 HEROES/HERO_NAMES + 写死蜀；现按 faction 取名册）。
+  // 「加一个英雄 = 只改 heroes.ts 一条 HeroSpec + 一行资产」即可，DOM 壳层零改动（弱 LLM 也能一次做对）。
+  const PLAYER_ROSTER = rosterFor(faction);
   const assetSrcByKey = new Map<string, string>();
   for (const a of GAME_F_ASSETS) { const s = (a as { key: string; src?: unknown }).src; if (typeof s === 'string') assetSrcByKey.set(a.key, s); }
   const clsLabel = (c: number): string => (c === WARRIOR ? '武将' : c === TACTICIAN ? '谋士' : '刺客');
-  const CODE = codesFor(ROSTER);
+  const CODE = codesFor(PLAYER_ROSTER);
   // code → [名, 字, 职业, 贴图 src]（玩家阵营 = TEAM_A；codesFor 按出场序给码）。
   const HEROES: Record<number, [string, string, string, string]> = {};
-  // marker id（a_xxx）→ 将名：备战期在板棋子头顶名牌。
+  // marker id（如 a_guanyu / c_lvmeng）→ 将名：备战期在板棋子头顶名牌。
   const HERO_NAMES: Record<string, string> = {};
-  for (const h of ROSTER.filter((x) => x.team === TEAM_A)) {
+  for (const h of PLAYER_ROSTER.filter((x) => x.team === TEAM_A)) {
     const code = CODE[h.id];
     if (code) HEROES[code] = [h.name, h.name[0], clsLabel(h.cls), assetSrcByKey.get(h.key) ?? ''];
     HERO_NAMES[h.id] = h.name;
@@ -525,9 +528,9 @@ function buildSoloHud(click: (x: number, y: number) => void, play: (i: number) =
       if (prep) {
         let html = '';
         for (const id of w.getAllEntities()) {
-          if (!id.endsWith(':seat') || !/^bench\d*_a_/.test(id) || !w.getComponent(id, 'HexPos')) continue;
+          if (!id.endsWith(':seat') || !/^bench\d*_[a-z]+_/.test(id) || !w.getComponent(id, 'HexPos')) continue;
           const tr = w.getComponent(id, 'Transform') as { x: number; y: number } | undefined;
-          const mm = id.match(/^bench\d*_(a_[a-z]+)#/);
+          const mm = id.match(/^bench\d*_([a-z]+_[a-z]+)#/); // 阵营无关：a_guanyu / c_lvmeng …，名由 HERO_NAMES（按 faction 派生）查
           const nm = mm ? HERO_NAMES[mm[1]] : '';
           if (!tr || !nm) continue;
           const sx = tr.x * CAM_ZOOM + VIEWPORT_W / 2, sy = tr.y * CAM_ZOOM + VIEWPORT_H / 2 + 24;
@@ -568,7 +571,7 @@ function buildSoloHud(click: (x: number, y: number) => void, play: (i: number) =
           <div style="flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:10px;padding:14px">
             <div style="width:80px;height:80px;border-radius:13px;background:linear-gradient(160deg,${SHU}cc,${SHU}55);border:2px solid ${SHU};display:flex;align-items:center;justify-content:center;overflow:hidden"><img src="${h[3]}" alt="${h[0]}" style="width:62px;height:62px;image-rendering:pixelated"></div>
             <div style="font-family:var(--font-cjk);font-weight:700;font-size:18px;color:var(--ink)">${h[0]}</div>
-            <div style="display:flex;gap:6px"><span style="font-family:var(--font-cjk);font-size:11px;font-weight:700;padding:2px 9px;border-radius:99px;background:var(--chip-bg);border:1px solid var(--panel-border);color:var(--ink-dim)">蜀</span><span style="font-family:var(--font-cjk);font-size:11px;font-weight:700;padding:2px 9px;border-radius:99px;background:var(--chip-bg);border:1px solid var(--panel-border);color:var(--ink-dim)">${h[2]}</span></div>
+            <div style="display:flex;gap:6px"><span style="font-family:var(--font-cjk);font-size:11px;font-weight:700;padding:2px 9px;border-radius:99px;background:var(--chip-bg);border:1px solid var(--panel-border);color:var(--ink-dim)">${playerFacLabel}</span><span style="font-family:var(--font-cjk);font-size:11px;font-weight:700;padding:2px 9px;border-radius:99px;background:var(--chip-bg);border:1px solid var(--panel-border);color:var(--ink-dim)">${h[2]}</span></div>
           </div></div>`;
       }).join('');
     }
@@ -629,7 +632,7 @@ function startMatch(container: HTMLElement, cfg: RunConfig, onExit: () => void):
   const playShop = (i: number): void => queued.enqueue({ source: 'shop', key: 'play', values: [i] });
   // 对局 DOM 设计 chrome 覆盖层（顶/左/右/底 + 点将台/三选一弹窗；接真实世界状态 + 命令）。
   // 大重构方向（魏蜀吴 3 人一队、太阁立志传背景）：单人/双人之分取消——多人对局缺人由 AI 补位，菜单不再分模式。
-  const hud = buildSoloHud(clickW, playShop);
+  const hud = buildSoloHud(clickW, playShop, cfg.deck?.faction ?? 'shu'); // 阵营感知 HUD（蜀/魏/吴 商店卡+名牌按所选牌组阵营）
   boardPanel.appendChild(hud.root);
   gameView.appendChild(boardPanel); // 操作引导已移入顶栏状态栏（data-ref guide），不再单列底注。
   // 盟友镜像（三人 Mirror）：两名 AI 盟友各跑自己的 game-f PvE，右栏迷你棋盘实时投影其战局（state-sync 还原）。

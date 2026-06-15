@@ -50,10 +50,10 @@ export const ROSTER: HeroSpec[] = [
 // 斩杀走 F-061 职业 trait（ASSASSIN 普攻自带 executeBelow，已 done）。team/q/r=占位（蜀半场），
 // 真正布局/选位 = 3-faction plumbing（多人重构，见 seed §三）。现 2-faction v1 不选吴 → 不接线、不扰动。
 export const WU_ROSTER: HeroSpec[] = [
-  { id: 'c_lvmeng', name: '吕蒙', key: F_HERO.lv_meng, team: TEAM_A, enemy: TEAM_B, cls: ASSASSIN, faction: FACT_WU, tint: WU_GREEN, q: 2, r: 5, hp: 150, atk: 20, ult: '白衣渡江', ultDmg: 55, ultSize: 50, atkType: 'melee', ultFx: F_FX_STRIKE, seed: false },
-  { id: 'c_ganning', name: '甘宁', key: F_HERO.gan_ning, team: TEAM_A, enemy: TEAM_B, cls: ASSASSIN, faction: FACT_WU, tint: WU_GREEN, q: 4, r: 5, hp: 135, atk: 23, ult: '百骑劫营', ultDmg: 50, ultSize: 55, atkType: 'melee', ultFx: F_FX_STRIKE, seed: false },
-  { id: 'c_taishici', name: '太史慈', key: F_HERO.tai_shici, team: TEAM_A, enemy: TEAM_B, cls: ASSASSIN, faction: FACT_WU, tint: WU_GREEN, q: 1, r: 6, hp: 130, atk: 22, ult: '神射', ultDmg: 52, ultSize: 45, atkType: 'ranged', ultFx: F_FX_ARROW, seed: false },
-  { id: 'c_lingtong', name: '凌统', key: F_HERO.ling_tong, team: TEAM_A, enemy: TEAM_B, cls: ASSASSIN, faction: FACT_WU, tint: WU_GREEN, q: 5, r: 6, hp: 145, atk: 19, ult: '旋身突阵', ultDmg: 48, ultSize: 52, atkType: 'melee', ultFx: F_FX_STRIKE, seed: false },
+  { id: 'c_lvmeng', name: '吕蒙', key: F_HERO.lv_meng, team: TEAM_A, enemy: TEAM_B, cls: ASSASSIN, faction: FACT_WU, tint: WU_GREEN, q: 2, r: 5, hp: 150, atk: 20, ult: '白衣渡江', ultDmg: 55, ultSize: 50, atkType: 'melee', ultFx: F_FX_STRIKE },
+  { id: 'c_ganning', name: '甘宁', key: F_HERO.gan_ning, team: TEAM_A, enemy: TEAM_B, cls: ASSASSIN, faction: FACT_WU, tint: WU_GREEN, q: 4, r: 5, hp: 135, atk: 23, ult: '百骑劫营', ultDmg: 50, ultSize: 55, atkType: 'melee', ultFx: F_FX_STRIKE },
+  { id: 'c_taishici', name: '太史慈', key: F_HERO.tai_shici, team: TEAM_A, enemy: TEAM_B, cls: ASSASSIN, faction: FACT_WU, tint: WU_GREEN, q: 1, r: 6, hp: 130, atk: 22, ult: '神射', ultDmg: 52, ultSize: 45, atkType: 'ranged', ultFx: F_FX_ARROW },
+  { id: 'c_lingtong', name: '凌统', key: F_HERO.ling_tong, team: TEAM_A, enemy: TEAM_B, cls: ASSASSIN, faction: FACT_WU, tint: WU_GREEN, q: 5, r: 6, hp: 145, atk: 19, ult: '旋身突阵', ultDmg: 48, ultSize: 52, atkType: 'melee', ultFx: F_FX_STRIKE },
   { id: 'c_zhouyu', name: '周瑜', key: F_HERO.zhou_yu, team: TEAM_A, enemy: TEAM_B, cls: TACTICIAN, faction: FACT_WU, tint: WU_GREEN, q: 3, r: 7, hp: 125, atk: 23, ult: '火烧赤壁', ultDmg: 38, ultSize: 92, atkType: 'magic', ultFx: F_FX_FLAME, ultDot: true, seed: false },
   { id: 'c_sunce', name: '孙策', key: F_HERO.sun_ce, team: TEAM_A, enemy: TEAM_B, cls: WARRIOR, faction: FACT_WU, tint: WU_GREEN, q: 3, r: 4, hp: 210, atk: 15, ult: '小霸王', ultDmg: 50, ultSize: 70, atkType: 'melee', ultFx: F_FX_STRIKE, seed: false },
 ];
