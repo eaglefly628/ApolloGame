@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { rosterFor } from './blueprint.js';
+import { rosterFor, buildGameFBlueprint } from './blueprint.js';
 import { WU_ROSTER } from './heroes.js';
 import { BAIYI_DECK, DECK_REGISTRY } from './decks.js';
 import { templatesFor } from './combat.js';
@@ -12,7 +12,10 @@ describe('吴 faction 刺客核心 + 白衣渡江（待命数据）', () => {
     expect(WU_ROSTER.every((h) => (h.faction & FACT_WU) === FACT_WU)).toBe(true);
     expect(WU_ROSTER.filter((h) => h.cls === ASSASSIN)).toHaveLength(4); // 吕蒙/甘宁/太史慈/凌统
     expect(WU_ROSTER.map((h) => h.name)).toEqual(['吕蒙', '甘宁', '太史慈', '凌统', '周瑜', '孙策']);
-    expect(rosterFor('wu')).toBe(WU_ROSTER);
+    // 3-faction plumbing 落地：rosterFor('wu')=吴(TEAM_A) + 魏(TEAM_B 敌方半区)，TEAM_A 半区即 WU_ROSTER。
+    const wu = rosterFor('wu');
+    expect(wu.filter((h) => (h.faction & FACT_WU) === FACT_WU)).toEqual(WU_ROSTER);
+    expect(wu.some((h) => h.team !== WU_ROSTER[0].team)).toBe(true); // 含敌方半区（不再只 6 吴）
   });
 
   it('F-061 职业 trait 自动覆盖吴刺客：吕蒙普攻自带 executeBelow（处决残血）', () => {
@@ -27,6 +30,12 @@ describe('吴 faction 刺客核心 + 白衣渡江（待命数据）', () => {
     const baiyi = BAIYI_DECK.cards.find((c) => c.kind === 'threshold-buff');
     expect(baiyi && 'tagMask' in baiyi && baiyi.tagMask).toBe(BENCH_OCC | ASSASSIN);
     expect(BAIYI_DECK.faction).toBe('wu');
-    expect(DECK_REGISTRY.baiyi).toBeUndefined(); // 待命，未入表
+    expect(DECK_REGISTRY.baiyi).toBeUndefined(); // 仍未入表：白衣渡江 deck 注册 + 大厅解锁 + seed 属吴 faction 里程碑（待 owner）
+  });
+
+  it('3-faction plumbing：吴 蓝图可加载不崩（敌方半区就位）+ 确定', () => {
+    expect(() => buildGameFBlueprint({ playerFaction: 'wu' })).not.toThrow(); // 旧 bug：rosterFor(wu) 无敌方半区 → enemyHeroes[].id 崩
+    const bp = buildGameFBlueprint({ playerFaction: 'wu' });
+    expect(Object.keys(bp.entities).some((k) => k.startsWith('slot_s'))).toBe(true); // 敌阵槽展开（enemyHeroes 非空）
   });
 });

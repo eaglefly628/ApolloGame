@@ -29,7 +29,7 @@ function createAllyMirror(faction: Faction): AllyMirror {
   // 短节奏：盟友战局快进（备战 1s → 战斗），右栏一直有活的战斗可看。
   engine.load(buildGameFBlueprint({ playerFaction: faction, prepTicks: 60, resolutionTicks: 60, celebrateTicks: 30 }));
   const templates = templatesFor(rosterFor(faction));
-  const comp = rosterFor(faction).filter((h) => h.team === TEAM_A && h.seed !== false).slice(0, 4);
+  const comp = rosterFor(faction).filter((h) => h.team === TEAM_A).slice(0, 4); // AI 补位铺场不看 seed（seed 仅管玩家起手板）
   let seq = 0;
   let lastFieldVersion = -999;
 
@@ -77,9 +77,8 @@ function createAllyMirror(faction: Faction): AllyMirror {
   };
 }
 
-// 起两名 AI 盟友引擎。注：'wu' 名册「待命」（无敌方半区，wu.test 钉死 rosterFor('wu')===WU_ROSTER 身份），
-// 接线前用可跑通的 'wei'/'shu' 跑真实 PvE；右栏卡的势力色由 UI 侧（ALLY_ROSTER）决定，与引擎名册解耦
-// （迷你棋盘画的是单位位置/阵营，非具体武将身份）。WU_ROSTER 补齐敌方半区后可换回真 'wu'。
+// 起两名 AI 盟友引擎（吴/魏，对应右栏 ALLY_ROSTER 卡）。3-faction plumbing 落地后 rosterFor('wu') 有效
+// （吴+魏敌方半区），故 'wu' 盟友跑真实吴名册 PvE；迷你棋盘画单位位置/阵营，颜色由 UI 侧决定。
 export function createAllyMirrors(): AllyMirror[] {
-  return [createAllyMirror('wei'), createAllyMirror('shu')];
+  return [createAllyMirror('wu'), createAllyMirror('wei')]; // 吴/魏 盟友（3-faction plumbing 落地后 'wu' 可用）
 }

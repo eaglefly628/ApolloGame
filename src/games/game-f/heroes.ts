@@ -75,7 +75,7 @@ function swapFactions(roster: HeroSpec[]): HeroSpec[] {
 }
 export function rosterFor(pf: Faction): HeroSpec[] {
   if (pf === 'wei') return swapFactions(ROSTER);
-  if (pf === 'wu') return WU_ROSTER; // 待命：3-faction plumbing 到位前不会被选（BAIYI 不入 DECK_REGISTRY）
+  if (pf === 'wu') return [...WU_ROSTER, ...ROSTER.filter((h) => h.team === TEAM_B)]; // 吴(TEAM_A 下半场) + 魏(TEAM_B 敌方半区)=有效全名册（3-faction plumbing 落地，敌阵复用魏）
   return ROSTER;
 }
 // 商店英雄码：玩家阵营将 → 码 1..N（按 a_ 顺序）。
