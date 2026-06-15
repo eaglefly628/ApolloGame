@@ -2,7 +2,7 @@ import { describe, it, expect } from 'vitest';
 import { Engine } from '../../runtime/engine.js';
 import type { Component } from '@engine/core/types.js';
 import type { Transform, RandomSeed, Resource, State, Card3D } from '@engine/protocol/components.js';
-import { buildGameG3DFlip, buildGameGDuel3D, buildGameGMatch, buildGameGArmyMatch, standardArmy, armyFromFormation, laneEstimates, applyInterventions, LEVER_CATALOG, LEVER_START, LEVER_CAP, LEVER_REGEN, FORMATION_PRESETS, PRESET_NAMES, decideFaceUp, cardFace, flipTarget, FLIP_DURATION, FLIP_SPINS, MATCH_REWARD, type FateCard, type ArmyCard, type Intervention } from './blueprint.js';
+import { buildGameG3DFlip, buildGameGDuel3D, buildGameGMatch, buildGameGArmyMatch, standardArmy, armyFromFormation, laneEstimates, applyInterventions, laneHandTier, LEVER_CATALOG, LEVER_START, LEVER_CAP, LEVER_REGEN, FORMATION_PRESETS, PRESET_NAMES, decideFaceUp, cardFace, flipTarget, FLIP_DURATION, FLIP_SPINS, MATCH_REWARD, type FateCard, type ArmyCard, type Intervention } from './blueprint.js';
 
 const get = <T extends Component>(e: Engine, id: string, type: string): T | undefined => e.world.getComponent<T>(id, type);
 const rotOf = (e: Engine, id = 'card'): number => get<Transform>(e, id, 'Transform')!.rotation;
@@ -411,16 +411,23 @@ describe('Game G · T-G4 护盾 + 同花（首发 6 完成）', () => {
     expect(Math.max(...sh.map((c) => c.favor))).toBeGreaterThanOrEqual(92);
     expect(sh.filter((c) => c.favor === 92).length).toBe(1);
   });
-  it('同花：本路某花 ≥3 张 → 全路 favor 抬升；否则不变', () => {
+  it('牌型阶梯：评本路最高牌型→逐级 favor（复用 poker-hand 算法，标准 18 张路≥对子→有 buff）', () => {
     const A = standardArmy('a', 0);
     const lane0 = A.filter((c) => c.lane === 0);
-    const cnt: Record<string, number> = {};
-    for (const c of lane0) cnt[c.suit] = (cnt[c.suit] ?? 0) + 1;
-    const maxSuit = Math.max(...Object.values(cnt));
-    const fl = applyInterventions(A, standardArmy('b', 0), [{ kind: 'flush', lane: 0 }]).a.filter((c) => c.lane === 0);
+    const { type, buff } = laneHandTier(lane0);
+    expect(['high-card', 'pair', 'two-pair', 'three-of-a-kind', 'straight', 'flush', 'full-house', 'four-of-a-kind', 'straight-flush']).toContain(type);
+    expect(buff).toBeGreaterThan(0); // 18 张里必有对子以上
     const sum = (xs: ArmyCard[]): number => xs.reduce((s, c) => s + c.favor, 0);
-    if (maxSuit > 2) expect(sum(fl)).toBeGreaterThan(sum(lane0));
-    else expect(sum(fl)).toBe(sum(lane0));
+    const fl = applyInterventions(A, standardArmy('b', 0), [{ kind: 'flush', lane: 0 }]).a.filter((c) => c.lane === 0);
+    expect(sum(fl)).toBeGreaterThan(sum(lane0)); // 牌型 buff 抬升全路
+  });
+
+  it('laneHandTier：构造同花路→flush / 顺子路→straight', () => {
+    const mk = (rank: string, suit: string, i: number): ArmyCard => ({ id: `x${i}`, rank, lane: 0, favor: 50, general: i === 0, suit });
+    const flushLane = ['A', 'K', 'Q', '9', '3'].map((r, i) => mk(r, 'H', i));
+    expect(laneHandTier(flushLane).type).toBe('flush');
+    const straightLane: ArmyCard[] = [['5', 'S'], ['6', 'H'], ['7', 'D'], ['8', 'C'], ['9', 'S']].map(([r, s], i) => mk(r, s, i));
+    expect(laneHandTier(straightLane).type).toBe('straight');
   });
   it('护盾/同花进 sim 确定：同军+同干预+seed 逐拍 hash 一致', () => {
     const list: Intervention[] = [{ kind: 'shield', lane: 0 }, { kind: 'flush', lane: 1 }];

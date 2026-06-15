@@ -2,6 +2,8 @@ import type { WorldBlueprint, EntityBlueprint } from '../../assembly/demo.assemb
 import { transformCapability, nextRandom, tagCapability, resourceCapability, stateCapability, timerCapability } from '@atom-skills/index.js';
 import { tweenCapability } from '@skills/tier1/index.js';
 import { groupCountCapability, eventWhenCapability, effectApplyCapability } from '@skills/tier2/index.js';
+import { isStraightRanks } from '@skills/tier3/poker-hand.js'; // 复用 Game E 牌型算法(顺子检测)
+import type { HandType } from '@skills/tier3/poker-hand.js';
 import type { RandomSeed } from '@engine/protocol/components.js';
 
 // ═══════════════════════════════════════════════════════════════
@@ -390,10 +392,46 @@ export const LEVER_CATALOG: Record<LeverKind, { name: string; cost: number; side
   shield: { name: '护盾', cost: 2, side: 'a', desc: '我某路最弱牌反面免死(favor→92)' },
   decapitate: { name: '斩首令', cost: 3, side: 'b', desc: '敌某路主将必掉→该路溃散(−14)' },
   reinforce: { name: '增援', cost: 3, side: 'a', desc: '我某路 +2 兵(go-wide 该路)' },
-  flush: { name: '同花', cost: 2, side: 'a', desc: '我某路同花色越多→全路 +favor' },
+  flush: { name: '牌型', cost: 2, side: 'a', desc: '我某路凑成的最高牌型→逐级 +favor(对子→同花顺)' },
 };
 export interface Intervention { kind: LeverKind; lane: number }
 const BLESS = 20, CURSE = 20, DECAP_FAVOR = 8;
+
+// 牌型阶梯（design/10 D 类，复用 Game E poker-hand 思想）：评一路(18+张)凑成的最高扑克牌型 → 逐级 favor。
+// 注：evaluateHand 限定恰 5 张/全同花，整路不适用——故按"路"语义算特征(同花=≥5 同色/顺子=路内含 5 连点,
+//   用 poker-hand 的 isStraightRanks 真算法 + HandType 枚举)，体现"52 张扑克身份的回报"。
+const RANK_NUM: Record<string, number> = { A: 14, K: 13, Q: 12, J: 11, '10': 10, '9': 9, '8': 8, '7': 7, '6': 6, '5': 5, '4': 4, '3': 3, '2': 2, JOKER: 15 };
+const TIER_BUFF: Partial<Record<HandType, number>> = {
+  'straight-flush': 18, 'four-of-a-kind': 14, 'full-house': 12, flush: 10, straight: 9, 'three-of-a-kind': 7, 'two-pair': 5, pair: 3, 'high-card': 0,
+};
+export function laneHandTier(cards: ArmyCard[]): { type: HandType; buff: number } {
+  const rankCounts = new Map<number, number>();
+  const suitCounts = new Map<string, number>();
+  for (const c of cards) {
+    const r = RANK_NUM[c.rank] ?? 0;
+    rankCounts.set(r, (rankCounts.get(r) ?? 0) + 1);
+    suitCounts.set(c.suit, (suitCounts.get(c.suit) ?? 0) + 1);
+  }
+  const counts = [...rankCounts.values()].sort((a, b) => b - a);
+  const maxR = counts[0] ?? 0, secR = counts[1] ?? 0;
+  const maxSuit = Math.max(0, ...suitCounts.values());
+  const distinct = [...rankCounts.keys()].sort((a, b) => a - b);
+  let hasStraight = false;
+  for (let i = 0; i + 5 <= distinct.length && !hasStraight; i++) hasStraight = isStraightRanks(distinct.slice(i, i + 5));
+  if (!hasStraight && [2, 3, 4, 5, 14].every((r) => rankCounts.has(r))) hasStraight = isStraightRanks([2, 3, 4, 5, 14]); // A 低轮子
+  const isFlush = maxSuit >= 5; // 路内同色 ≥5
+  let type: HandType;
+  if (isFlush && hasStraight) type = 'straight-flush';
+  else if (maxR >= 4) type = 'four-of-a-kind';
+  else if (maxR === 3 && secR >= 2) type = 'full-house';
+  else if (isFlush) type = 'flush';
+  else if (hasStraight) type = 'straight';
+  else if (maxR === 3) type = 'three-of-a-kind';
+  else if (maxR === 2 && secR === 2) type = 'two-pair';
+  else if (maxR === 2) type = 'pair';
+  else type = 'high-card';
+  return { type, buff: TIER_BUFF[type] ?? 0 };
+}
 
 /**
  * 揭晓前施加干预（改 favor / 斩将 / 加兵）→ 返回改后的 a/b 军，喂 buildGameGArmyMatch。
@@ -420,11 +458,8 @@ export function applyInterventions(armyA: ArmyCard[], armyB: ArmyCard[], list: I
         a = a.map((c) => (c.id === weak.id ? { ...c, favor: 92 } : c));
       }
     } else if (iv.kind === 'flush') {
-      // 同花：数本路同花色最多的一花，越多→全路 +favor（每超过 2 张 +4）。简单数花色，不复用 5 张 poker-hand。
-      const lane = a.filter((c) => c.lane === iv.lane);
-      const cnt: Record<string, number> = {};
-      for (const c of lane) cnt[c.suit] = (cnt[c.suit] ?? 0) + 1;
-      const buff = Math.max(0, (Math.max(0, ...Object.values(cnt)) - 2) * 4);
+      // 牌型：评本路凑成的最高扑克牌型 → 逐级 +favor（对子→同花顺，复用 poker-hand 阶梯）。
+      const { buff } = laneHandTier(a.filter((c) => c.lane === iv.lane));
       if (buff > 0) a = a.map((c) => (c.lane === iv.lane ? { ...c, favor: clampFavor(c.favor + buff) } : c));
     }
   }
