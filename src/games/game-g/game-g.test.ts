@@ -637,7 +637,7 @@ describe('Game G · T-G6 小丑牌（融牌面 · build 时 favor 变换 · 持�
       const e = new Engine({ tickRate: 60 });
       e.load(buildGameGArmyMatch(a, standardArmy('b', 0), 5));
       for (let i = 0; i < FLIP_DURATION + 8; i++) e.world.tick();
-      return ['a_l0', 'a_l1', 'a_l2'].reduce((s, id) => s + (get<Resource>(e, id, 'Resource')?.current ?? 0), 0);
+      return ['res_a0', 'res_a1', 'res_a2'].reduce((s, id) => s + (get<Resource>(e, id, 'Resource')?.current ?? 0), 0);
     };
     expect(run(['diehard'])).toBeGreaterThanOrEqual(run([]));
   });
@@ -670,7 +670,7 @@ describe('Game G · T-G6 小丑牌（融牌面 · build 时 favor 变换 · 持�
       const e = new Engine({ tickRate: 60 });
       e.load(buildGameGArmyMatch(a, standardArmy('b', 0), 11, undefined, jokerMoraleScale(a, jids)));
       for (let i = 0; i < FLIP_DURATION + 8; i++) e.world.tick();
-      return ['a_l0', 'a_l1', 'a_l2'].reduce((s, id) => s + (get<Resource>(e, id, 'Resource')?.current ?? 0), 0);
+      return ['res_a0', 'res_a1', 'res_a2'].reduce((s, id) => s + (get<Resource>(e, id, 'Resource')?.current ?? 0), 0);
     };
     expect(run(['bannerman'])).toBeGreaterThanOrEqual(run([])); // 士气放大只升不降
   });
@@ -699,7 +699,7 @@ describe('Game G · T-G6 小丑牌（融牌面 · build 时 favor 变换 · 持�
       const e = new Engine({ tickRate: 60 });
       e.load(buildGameGArmyMatch(baseA, standardArmy('b', 0), 33, undefined, undefined, links));
       for (let i = 0; i < FLIP_DURATION + 8; i++) e.world.tick();
-      return ['a_l0', 'a_l1', 'a_l2'].reduce((s, id) => s + (get<Resource>(e, id, 'Resource')?.current ?? 0), 0);
+      return ['res_a0', 'res_a1', 'res_a2'].reduce((s, id) => s + (get<Resource>(e, id, 'Resource')?.current ?? 0), 0);
     };
     expect(survivors({ martyr: true, chain: false })).toBeGreaterThanOrEqual(survivors({ martyr: false, chain: false }));
   });
@@ -932,6 +932,42 @@ describe('Game G · T-G6 流派激活质变（主流派集齐 keyJokers → 招�
     };
     const e1 = mk(), e2 = mk();
     for (let i = 0; i < FLIP_DURATION + 12; i++) { e1.world.tick(); e2.world.tick(); expect(e1.hash()).toBe(e2.hash()); }
+  });
+});
+
+describe('Game G · 全栈养成端到端（星球+激活流派+干预+Boss+联动 一锅 · 硬化）', () => {
+  const surv = (setup: Parameters<typeof prepareArmies>[0], seed: number): number => {
+    const { a, b, moraleA, linksA } = prepareArmies(setup);
+    const e = new Engine({ tickRate: 60 });
+    e.load(buildGameGArmyMatch(a, b, seed, undefined, moraleA, linksA));
+    for (let i = 0; i < FLIP_DURATION + 10; i++) e.world.tick();
+    return ['res_a0', 'res_a1', 'res_a2'].reduce((s, id) => s + (get<Resource>(e, id, 'Resource')?.current ?? 0), 0);
+  };
+
+  it('养成回报：满配(星球+集齐将领流+干预)军 vs 同 Boss 存活 > 裸军', () => {
+    const boss = bossFor(2);
+    const base = { formation: FORMATION_PRESETS['均衡'], deckBias: 0, jokers: [] as string[], interventions: [] as Intervention[], enemyForm: boss.formation, enemyBias: boss.favorBias, boss, planets: {} as Record<string, number> };
+    const kitted = { ...base, jokers: ['bannerman', 'warlord', 'diehard'], interventions: [{ kind: 'bless', lane: 0 }, { kind: 'bless', lane: 1 }] as Intervention[], planets: { mars: 3, saturn: 1 } };
+    expect(surv(kitted, 77)).toBeGreaterThan(surv(base, 77)); // 养成全栈确实更强
+  });
+
+  it('最大配置确定性：星球+铺场流激活+联动+护盾/增援+终局 Boss 同 setup+seed 逐拍 hash 一致', () => {
+    const boss = bossFor(5); // 小王·无常（decapitate×3）
+    const setup = (): Parameters<typeof prepareArmies>[0] => ({
+      formation: FORMATION_PRESETS['田忌'], deckBias: 4,
+      jokers: ['vanguard', 'martyr', 'chain', 'diehard'], // wide 集齐 → 激活 +2兵/路；martyr/chain 联动
+      interventions: [{ kind: 'reinforce', lane: 2 }, { kind: 'shield', lane: 0 }],
+      enemyForm: boss.formation, enemyBias: boss.favorBias, boss,
+      planets: { mars: 2, mercury: 1, jupiter: 1 },
+    });
+    const mk = (): Engine => {
+      const { a, b, moraleA, linksA } = prepareArmies(setup());
+      const e = new Engine({ tickRate: 60 });
+      e.load(buildGameGArmyMatch(a, b, 88, undefined, moraleA, linksA));
+      return e;
+    };
+    const e1 = mk(), e2 = mk();
+    for (let i = 0; i < FLIP_DURATION + 15; i++) { e1.world.tick(); e2.world.tick(); expect(e1.hash()).toBe(e2.hash()); }
   });
 });
 
