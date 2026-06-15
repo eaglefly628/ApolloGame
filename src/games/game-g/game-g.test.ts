@@ -2,7 +2,7 @@ import { describe, it, expect } from 'vitest';
 import { Engine } from '../../runtime/engine.js';
 import type { Component } from '@engine/core/types.js';
 import type { Transform, RandomSeed, Resource, State, Card3D } from '@engine/protocol/components.js';
-import { buildGameG3DFlip, buildGameGDuel3D, buildGameGMatch, buildGameGArmyMatch, standardArmy, armyFromFormation, laneEstimates, applyInterventions, applyJokers, jokerMoraleScale, jokerKeyBuffs, GAME_G_JOKERS, JOKER_BY_ID, laneHandTier, battleSpec, RUN_BATTLES, RUN_LIVES, BETWEEN_BUFFS, applyBuff, BOSS_ROSTER, bossFor, LEVER_CATALOG, LEVER_START, LEVER_CAP, LEVER_REGEN, FORMATION_PRESETS, PRESET_NAMES, decideFaceUp, cardFace, flipTarget, FLIP_DURATION, FLIP_SPINS, MATCH_REWARD, type FateCard, type ArmyCard, type Intervention, type BuffTarget } from './blueprint.js';
+import { buildGameG3DFlip, buildGameGDuel3D, buildGameGMatch, buildGameGArmyMatch, standardArmy, armyFromFormation, laneEstimates, applyInterventions, applyJokers, jokerMoraleScale, jokerKeyBuffs, GAME_G_JOKERS, JOKER_BY_ID, ARCHETYPES, detectArchetype, archetypeMatchup, laneHandTier, battleSpec, RUN_BATTLES, RUN_LIVES, BETWEEN_BUFFS, applyBuff, BOSS_ROSTER, bossFor, LEVER_CATALOG, LEVER_START, LEVER_CAP, LEVER_REGEN, FORMATION_PRESETS, PRESET_NAMES, decideFaceUp, cardFace, flipTarget, FLIP_DURATION, FLIP_SPINS, MATCH_REWARD, type FateCard, type ArmyCard, type Intervention, type BuffTarget } from './blueprint.js';
 
 const get = <T extends Component>(e: Engine, id: string, type: string): T | undefined => e.world.getComponent<T>(id, type);
 const rotOf = (e: Engine, id = 'card'): number => get<Transform>(e, id, 'Transform')!.rotation;
@@ -702,5 +702,44 @@ describe('Game G · T-G6 小丑牌（融牌面 · build 时 favor 变换 · 持�
     expect(t.jokers).toEqual([key.jokerId]);
     applyBuff(t, key); // 再选同一张 → 不重复
     expect(t.jokers).toEqual([key.jokerId]);
+  });
+});
+
+describe('Game G · T-G6 流派 + 克制网（身份 + 石头剪刀布 · 纯数据）', () => {
+  it('流派池=6，counters 合法(在集合内、无自克)、keyJokers 是有效小丑 id', () => {
+    expect(ARCHETYPES).toHaveLength(6);
+    const ids = new Set(ARCHETYPES.map((a) => a.id));
+    for (const a of ARCHETYPES) {
+      expect(ids.has(a.counters)).toBe(true);
+      expect(a.counters).not.toBe(a.id); // 无自克
+      for (const k of a.keyJokers) expect(JOKER_BY_ID.has(k)).toBe(true);
+    }
+  });
+
+  it('克制网：每流派恰被 1 个克制（双 3-环闭合）+ 核心环 decap→general→wide→decap', () => {
+    const counters = new Map(ARCHETYPES.map((a) => [a.id, a.counters]));
+    for (const a of ARCHETYPES) expect(ARCHETYPES.filter((x) => x.counters === a.id).length).toBe(1);
+    expect(counters.get('decap')).toBe('general');
+    expect(counters.get('general')).toBe('wide');
+    expect(counters.get('wide')).toBe('decap');
+  });
+
+  it('detectArchetype：无小丑→null；旗手+枭雄→将领流；多数决', () => {
+    expect(detectArchetype([])).toBeNull();
+    expect(detectArchetype(['bannerman', 'warlord'])?.id).toBe('general');
+    expect(detectArchetype(['gambler', 'diehard'])?.id).toBe('probability');
+    expect(detectArchetype(['comrade'])?.id).toBe('cardtype');
+    expect(detectArchetype(['gambler', 'diehard', 'comrade'])?.id).toBe('probability'); // 概率(2) 压牌型(1)
+  });
+
+  it('archetypeMatchup：将领克铺场、铺场被将领克、将领vs牌型中立', () => {
+    expect(archetypeMatchup('general', 'wide')).toBe('counter');
+    expect(archetypeMatchup('wide', 'general')).toBe('countered');
+    expect(archetypeMatchup('general', 'cardtype')).toBe('neutral');
+  });
+
+  it('每个 Boss 带合法流派 id', () => {
+    const ids = new Set(ARCHETYPES.map((a) => a.id));
+    for (const b of BOSS_ROSTER) expect(ids.has(b.archetype)).toBe(true);
   });
 });

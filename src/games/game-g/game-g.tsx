@@ -1,6 +1,6 @@
 import { Engine } from '../../runtime/engine.js';
 import { ThreeRenderer } from './three-renderer.js';
-import { buildGameGArmyMatch, armyFromFormation, applyInterventions, applyJokers, jokerMoraleScale, laneEstimates, FORMATION_PRESETS, PRESET_NAMES, LEVER_CATALOG, LEVER_START, LEVER_CAP, LEVER_REGEN, battleSpec, RUN_BATTLES, RUN_LIVES, BETWEEN_BUFFS, applyBuff, jokerKeyBuffs, BOSS_ROSTER, bossFor, GAME_G_JOKERS, JOKER_BY_ID, type Formation, type Intervention, type LeverKind, type RunBuff } from './index.js';
+import { buildGameGArmyMatch, armyFromFormation, applyInterventions, applyJokers, jokerMoraleScale, laneEstimates, FORMATION_PRESETS, PRESET_NAMES, LEVER_CATALOG, LEVER_START, LEVER_CAP, LEVER_REGEN, battleSpec, RUN_BATTLES, RUN_LIVES, BETWEEN_BUFFS, applyBuff, jokerKeyBuffs, BOSS_ROSTER, bossFor, GAME_G_JOKERS, JOKER_BY_ID, ARCHETYPES, detectArchetype, archetypeMatchup, type Formation, type Intervention, type LeverKind, type RunBuff } from './index.js';
 import type { State, Resource } from '@engine/protocol/components.js';
 
 // Game G ·《翻命扑克》—— 大厅 ↔ 出征 闭环（launcher 卡带槽：export mount(container)→cleanup）。自包含于本目录。
@@ -159,6 +159,20 @@ export function mount(container: HTMLElement): () => void {
         ? '已融：' + save.jokers.map((id) => `<b style="color:#c4b5fd">${JOKER_BY_ID.get(id)?.name ?? id}</b>`).join('、') + '（悬停看效果 · 出征时自动生效）'
         : '（未融小丑 · 鼠标悬停看效果；融了它持久改你牌组的掷命规则 = 流派身份）');
 
+    // 流派身份 + 克制网：由已融小丑浮现主流派，对比本 run 终局 Boss 的流派 → 克制提示（指导针对性布阵）。
+    const arch = detectArchetype(save.jokers);
+    const bossArchId = bossFor(save.bossIdx).archetype;
+    const bossArchName = ARCHETYPES.find((a) => a.id === bossArchId)?.name ?? bossArchId;
+    let archHtml: string;
+    if (arch) {
+      const m = archetypeMatchup(arch.id, bossArchId);
+      const rel = m === 'counter' ? '<b style="color:#22c55e">⮞ 克制</b>' : m === 'countered' ? '<b style="color:#f87171">⮜ 被克于</b>' : '<span style="opacity:.7">≈ 互不克</span>';
+      archHtml = `你的流派：<b style="color:#c4b5fd">${arch.name}</b>（${arch.desc}）　${rel}　终局 Boss 流派【<b style="color:#f87171">${bossArchName}</b>】`;
+    } else {
+      archHtml = `你的流派：<span style="opacity:.7">未成型</span>（融小丑/取流派钥匙以确立身份）　｜　终局 Boss 流派【<b style="color:#f87171">${bossArchName}</b>】`;
+    }
+    const archEl = el('div', 'font-size:12px;max-width:560px;text-align:center;line-height:1.5;border-top:1px solid #1e293b;padding-top:7px', archHtml);
+
     const go = mkBtn(`⚔ 出征 · 第 ${save.stage}/${RUN_BATTLES} 战（${battleSpec(save.stage - 1).label}）`);
     go.style.cssText += ';background:#1e3a2a;border-color:#22c55e;font-weight:600';
     go.onclick = () => showFormation([...save.lastOfficers] as [number, number, number]);
@@ -171,7 +185,7 @@ export function mount(container: HTMLElement): () => void {
       showLobby();
     };
 
-    root.append(title, stat, shop, forgeTitle, forge, forgeDesc, go, reset);
+    root.append(title, stat, shop, forgeTitle, forge, forgeDesc, archEl, go, reset);
   }
 
   // ───────────────────────── 布阵（田忌赛马 · 开战前核心博弈）─────────────────────────

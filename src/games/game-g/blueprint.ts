@@ -534,15 +534,15 @@ export function laneEstimates(army: ArmyCard[]): { sumFavor: number; general: st
 // 每 Boss = 一个拟人化扑克人格，强度全用 3 个**数据**杠杆表达：formation(力压哪路)/favorBias(多强)/openingLevers(起手干预)。
 // 起手干预 = 对 Boss(B)侧跑 applyInterventions(caster='b')：增益落 Boss 己方、诅咒/斩首落玩家——**对称、零新算子**(design/13 §二)。
 // taunt/persona 仅 flavor(UI 台词)、无可执行逻辑——力量全在三杠杆，守"整个游戏是数据"(最弱 LLM 能填 BossSpec)。
-export interface BossSpec { id: string; name: string; persona: string; formation: Formation; favorBias: number; openingLevers: Intervention[]; taunt: string }
+export interface BossSpec { id: string; name: string; persona: string; formation: Formation; favorBias: number; openingLevers: Intervention[]; taunt: string; archetype: Archetype }
 const BOSS_BIAS = 14; // 终局基准偏置(≈battleSpec(4)=18 同档，余强度由 openingLevers 补)；数值可调，平衡总表归 design G。
 export const BOSS_ROSTER: BossSpec[] = [
-  { id: 'spadeK', name: '黑桃王·铁壁', persona: '沉稳防守', formation: FORMATION_PRESETS['均衡'], favorBias: BOSS_BIAS, openingLevers: [{ kind: 'bless', lane: 0 }, { kind: 'bless', lane: 1 }, { kind: 'bless', lane: 2 }], taunt: '铜墙铁壁，寸土不让。' },
-  { id: 'heartQ', name: '红桃皇后·倾国', persona: '妖艳压制', formation: FORMATION_PRESETS['锋矢'], favorBias: BOSS_BIAS, openingLevers: [{ kind: 'curse', lane: 0 }, { kind: 'curse', lane: 1 }], taunt: '一顾倾人城，再顾倾你军。' },
-  { id: 'diamondJ', name: '方块J·诡牌', persona: '花哨赌徒', formation: FORMATION_PRESETS['均衡'], favorBias: BOSS_BIAS, openingLevers: [{ kind: 'flush', lane: 0 }, { kind: 'flush', lane: 1 }, { kind: 'flush', lane: 2 }], taunt: '满手好牌，张张要命。' },
-  { id: 'clubK', name: '梅花K·人海', persona: '暴兵碾压', formation: FORMATION_PRESETS['均衡'], favorBias: BOSS_BIAS - 4, openingLevers: [{ kind: 'reinforce', lane: 0 }, { kind: 'reinforce', lane: 1 }, { kind: 'reinforce', lane: 2 }], taunt: '人海无尽，淹没你的旗。' },
-  { id: 'bigJoker', name: '大王·天命', persona: '疯赌', formation: FORMATION_PRESETS['锋矢'], favorBias: BOSS_BIAS + 6, openingLevers: [{ kind: 'flush', lane: 1 }], taunt: '天命在我，一掷定乾坤！' },
-  { id: 'smallJoker', name: '小王·无常', persona: '阴狠刺客', formation: FORMATION_PRESETS['两翼'], favorBias: BOSS_BIAS, openingLevers: [{ kind: 'decapitate', lane: 0 }, { kind: 'decapitate', lane: 1 }, { kind: 'decapitate', lane: 2 }], taunt: '擒贼擒王，先取你将首。' },
+  { id: 'spadeK', name: '黑桃王·铁壁', persona: '沉稳防守', archetype: 'general', formation: FORMATION_PRESETS['均衡'], favorBias: BOSS_BIAS, openingLevers: [{ kind: 'bless', lane: 0 }, { kind: 'bless', lane: 1 }, { kind: 'bless', lane: 2 }], taunt: '铜墙铁壁，寸土不让。' },
+  { id: 'heartQ', name: '红桃皇后·倾国', persona: '妖艳压制', archetype: 'probability', formation: FORMATION_PRESETS['锋矢'], favorBias: BOSS_BIAS, openingLevers: [{ kind: 'curse', lane: 0 }, { kind: 'curse', lane: 1 }], taunt: '一顾倾人城，再顾倾你军。' },
+  { id: 'diamondJ', name: '方块J·诡牌', persona: '花哨赌徒', archetype: 'cardtype', formation: FORMATION_PRESETS['均衡'], favorBias: BOSS_BIAS, openingLevers: [{ kind: 'flush', lane: 0 }, { kind: 'flush', lane: 1 }, { kind: 'flush', lane: 2 }], taunt: '满手好牌，张张要命。' },
+  { id: 'clubK', name: '梅花K·人海', persona: '暴兵碾压', archetype: 'wide', formation: FORMATION_PRESETS['均衡'], favorBias: BOSS_BIAS - 4, openingLevers: [{ kind: 'reinforce', lane: 0 }, { kind: 'reinforce', lane: 1 }, { kind: 'reinforce', lane: 2 }], taunt: '人海无尽，淹没你的旗。' },
+  { id: 'bigJoker', name: '大王·天命', persona: '疯赌', archetype: 'tianji', formation: FORMATION_PRESETS['锋矢'], favorBias: BOSS_BIAS + 6, openingLevers: [{ kind: 'flush', lane: 1 }], taunt: '天命在我，一掷定乾坤！' },
+  { id: 'smallJoker', name: '小王·无常', persona: '阴狠刺客', archetype: 'decap', formation: FORMATION_PRESETS['两翼'], favorBias: BOSS_BIAS, openingLevers: [{ kind: 'decapitate', lane: 0 }, { kind: 'decapitate', lane: 1 }, { kind: 'decapitate', lane: 2 }], taunt: '擒贼擒王，先取你将首。' },
 ];
 /** 取第 idx 名 Boss（每 run 轮换；越界自动归一）。 */
 export function bossFor(idx: number): BossSpec {
@@ -557,7 +557,7 @@ export function bossFor(idx: number): BossSpec {
 // 局外持久：融在玩家牌组上（save.jokers），跨 run 不清零——"牌组身份"养成核(owner 愿景)。
 // 本批 4 张=纯 build 时 favor 变换(同袍/赌徒/先登/不屈)；士气放大族(旗手/枭雄)、结局联动族(死士/连环/督粮/影武者)待后续切片(需 resolve 时钩子)。
 export type JokerKind = 'suit-synergy' | 'polarize' | 'lane-pref' | 'diehard' | 'morale';
-export type Archetype = 'card-type' | 'probability' | 'vanguard' | 'wide' | 'decap' | 'general';
+export type Archetype = 'decap' | 'cardtype' | 'general' | 'wide' | 'probability' | 'tianji'; // 6 流派 id（design/12 §四）
 export interface JokerCard {
   id: string; name: string; kind: JokerKind; cost: number; archetype: Archetype; text: string;
   amount?: number; // favor 量
@@ -565,9 +565,9 @@ export interface JokerCard {
   moraleMul?: number; // morale：本路士气倍率（旗手 1.5 / 枭雄 2）
 }
 export const GAME_G_JOKERS: JokerCard[] = [
-  { id: 'comrade', name: '同袍', kind: 'suit-synergy', cost: 18, archetype: 'card-type', amount: 2, text: '本路每有 1 张同花色 → 该牌 +2 favor（牌型流：往一路堆同花越爽）' },
+  { id: 'comrade', name: '同袍', kind: 'suit-synergy', cost: 18, archetype: 'cardtype', amount: 2, text: '本路每有 1 张同花色 → 该牌 +2 favor（牌型流：往一路堆同花越爽）' },
   { id: 'gambler', name: '赌徒', kind: 'polarize', cost: 16, archetype: 'probability', amount: 12, text: '全军 favor 两极化：≥50 的更高、<50 的更低（概率流：高风险高回报）' },
-  { id: 'vanguard', name: '先登', kind: 'lane-pref', cost: 15, archetype: 'vanguard', amount: 8, lane: 0, text: '上路全员 +8 favor（主攻上路）' },
+  { id: 'vanguard', name: '先登', kind: 'lane-pref', cost: 15, archetype: 'wide', amount: 8, lane: 0, text: '上路全员 +8 favor（铺场流：主攻上路）' },
   { id: 'diehard', name: '不屈', kind: 'diehard', cost: 22, archetype: 'probability', amount: 88, text: '全军 favor 不足 88 的拉到 88（近免死、稳翻正面）' },
   { id: 'bannerman', name: '旗手', kind: 'morale', cost: 17, archetype: 'general', moraleMul: 1.5, text: '全军主将士气加成 ×1.5（主将活则全路涌 · 将领流核心）' },
   { id: 'warlord', name: '枭雄', kind: 'morale', cost: 24, archetype: 'general', moraleMul: 2, text: '顶级主将(K/王)所在路，士气加成 ×2（堆高军衔主将碾压一路）' },
@@ -579,6 +579,38 @@ export function jokerKeyBuffs(ownedIds: readonly string[]): RunBuff[] {
   return GAME_G_JOKERS.filter((j) => !ownedIds.includes(j.id)).map((j) => ({
     id: `key_${j.id}`, name: `🃏钥匙·${j.name}`, desc: `融入小丑【${j.name}】：${j.text}`, kind: 'joker', amount: 0, jokerId: j.id,
   }));
+}
+
+// ── T-G6 · 流派 + 克制网（design/12 §四 · 身份 + 石头剪刀布）──
+// 流派 = 由已融小丑浮现的身份；克制网 = **双 3-环** rock-paper-scissors（无唯一最优 → 看对手临场调布阵/干预）。
+// 纯数据：每流派 {keyJokers, counters} 最弱 LLM 能填；detectArchetype 数已融小丑归属、archetypeMatchup 查克制——零新能力。
+export interface ArchetypeSpec { id: Archetype; name: string; desc: string; keyJokers: string[]; counters: Archetype }
+export const ARCHETYPES: ArchetypeSpec[] = [
+  // 核心 3-环（`12` §四明示）：斩首 克 将领 克 铺场 克 斩首。
+  { id: 'decap', name: '斩首流', desc: '攒能量秒敌主将引溃散', keyJokers: [], counters: 'general' }, // 钥匙：督粮/影武者(待实现)
+  { id: 'general', name: '将领流', desc: '主将士气碾压一路', keyJokers: ['bannerman', 'warlord'], counters: 'wide' },
+  { id: 'wide', name: '铺场流', desc: 'go-wide + 连锁必活', keyJokers: ['vanguard'], counters: 'decap' }, // +死士/连环(待)
+  // 次 3-环（我的合理映射，待 design 校准）：牌型 克 概率 克 弃一保二 克 牌型。
+  { id: 'cardtype', name: '牌型流', desc: '堆同花色/连号成高牌型', keyJokers: ['comrade'], counters: 'probability' },
+  { id: 'probability', name: '概率流', desc: '改命堆高 favor 稳翻正', keyJokers: ['gambler', 'diehard'], counters: 'tianji' },
+  { id: 'tianji', name: '弃一保二流', desc: '弃一路、经济滚两路', keyJokers: [], counters: 'cardtype' }, // 钥匙：田忌布阵/督粮(待)
+];
+const ARCH_BY_ID: ReadonlyMap<Archetype, ArchetypeSpec> = new Map(ARCHETYPES.map((a) => [a.id, a]));
+/** 由已融小丑浮现的主流派：数每流派 keyJokers 命中数，取最高（平局取 ARCHETYPES 靠前）；无命中 → null。 */
+export function detectArchetype(jokerIds: readonly string[]): ArchetypeSpec | null {
+  let best: ArchetypeSpec | null = null;
+  let bestN = 0;
+  for (const a of ARCHETYPES) {
+    const n = a.keyJokers.filter((k) => jokerIds.includes(k)).length;
+    if (n > bestN) { bestN = n; best = a; }
+  }
+  return best;
+}
+/** 流派克制：a 对 b = 克制 / 被克 / 中立（双 3-环，无自克）。 */
+export function archetypeMatchup(a: Archetype, b: Archetype): 'counter' | 'countered' | 'neutral' {
+  if (ARCH_BY_ID.get(a)?.counters === b) return 'counter';
+  if (ARCH_BY_ID.get(b)?.counters === a) return 'countered';
+  return 'neutral';
 }
 
 // 从已融小丑算每路士气倍率（旗手全路、枭雄仅顶级主将路）→ 喂 resolveArmy。复用 `06` 士气、不新机制。
