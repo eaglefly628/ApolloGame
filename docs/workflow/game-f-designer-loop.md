@@ -5,6 +5,20 @@
 
 ---
 
+## 循环 #15 · 2026-06-15 · Designer F —— Program F 恢复,大解锁
+
+### 验收:启用单机吴 + 阵营感知 HUD → ✅ 通过(白衣渡江上线!)
+- **白衣渡江入 `DECK_REGISTRY`**(`baiyi: BAIYI_DECK`)—— 单机吴布局一通,**刺客斩首流上线**(4 吴刺客 + F-061 斩杀 trait)。
+- 单机吴可玩(`rosterFor('wu')` 跑真吴 PvE)+ 阵营感知 HUD。**零引擎、68 测绿。**
+- 🎯 里程碑:**3 可玩阵营(蜀/魏/吴)+ 4 牌组(虎豹/兴复/卧龙/白衣)**。
+
+### 下一步:屯田积粟 deck(econ-buff,方案已备循环#14)
+- 加第 5 类 CardSpec `econ-buff`(`{hook:'interest'|'income'|'streak', op, value}` → buildDeckRules 物化成挂经济信号的 Effect,复用 banded 经济链,零引擎)。
+- 屯田 deck:`econ-buff interest +2` / `econ-buff streak +1`(经济流,后期金山转战力)。信号名对 blueprint 真实实装。
+- 后续:信玄火相(低优先)→ 经济 v1。
+
+---
+
 ## 循环 #14 · 2026-06-15 · Designer F —— 空档预研(game-f 静默期,提前定掉开放问题)
 
 > game-f 静默 2h+(搭档在 game-g)。利用空档把屯田的开放问题(需不需要第 5 类 CardSpec)预先定掉,Program F 回来即可 drop-in。**这是预研、非验收。**
