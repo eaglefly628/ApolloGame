@@ -2,7 +2,7 @@
 // 宪法：游戏=数据。本模块不发明能力——只把「牌组数组」物化成现成 capability 的规则实体
 //（group-count / EventWhen / Effect / banded / card-pile 权重），最弱 LLM 也能产出牌组数据。
 import type { EntityBlueprint } from '../../assembly/demo.assembly.js';
-import { FACT_WEI, FACT_SHU, BENCH_OCC } from './constants.js';
+import { FACT_WEI, FACT_SHU, ASSASSIN, BENCH_OCC } from './constants.js';
 import type { Faction } from './heroes.js';
 
 // 卡牌 = {触发条件, 效果} 算子（D0 核对：Game E joker 架构已全覆盖）。v1 + deck#2 用这四类。
@@ -54,7 +54,22 @@ export const HANSHI_DECK: Deck = {
   ],
 };
 
+// 牌组 #3「白衣渡江」(吴·刺客斩首)：game-f-wu-faction-seed.md §二。场上刺客越多越强；斩杀走 F-061 职业 trait（已 done）。
+// 待命：依赖吴 faction（已落 WU_ROSTER）+ 3-faction plumbing（多人重构）。plumbing 到位前**不入 DECK_REGISTRY**（不可选、不会被错误构建）。
+export const BAIYI_DECK: Deck = {
+  id: 'baiyi',
+  name: '白衣渡江',
+  faction: 'wu',
+  cards: [
+    // 白衣 ⭐：在板刺客 ≥2 → +18%；≥4（成军）→ 再 +22%。斩杀=刺客职业 trait（F-061）。
+    { kind: 'threshold-buff', id: 'baiyi', tagMask: BENCH_OCC | ASSASSIN, tiers: [{ at: 2, bonus: 0.18 }, { at: 4, bonus: 0.22 }] },
+    { kind: 'round-buff', id: 'jinfan', untilRound: 3, bonus: 0.12 }, // 锦帆：序盘压制
+    { kind: 'shop-weight', id: 'muci', codes: [1, 2, 3, 4, 5, 6], copies: 3 }, // 募刺：吴刺客加权（码待 3-faction codesFor 定）
+  ],
+};
+
 // 牌组登记表（id → 真实 Deck）：大厅选牌组 → 取真组交引擎。未实装的展示牌组回退首发组。
+// 注：BAIYI（吴）待 3-faction plumbing 才入表（现入会因 rosterFor('wu') 占位布局打不正常）。
 export const DECK_REGISTRY: Record<string, Deck> = {
   hubao: HUBAO_DECK,
   hanshi: HANSHI_DECK,

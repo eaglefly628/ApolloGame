@@ -27,6 +27,10 @@ export const F_HERO = {
   xiahou_dun: 'f.hero.xiahou_dun', // 魏·夏侯惇（替原跨势力甘宁）
   zhou_yu: 'f.hero.zhou_yu', // 吴（合作模式 孙刘抗曹 用；野怪皮借用）
   gan_ning: 'f.hero.gan_ning', // 吴（野怪皮借用）
+  lv_meng: 'f.hero.lv_meng', // 吴·吕蒙（白衣渡江 队长刺客）
+  tai_shici: 'f.hero.tai_shici', // 吴·太史慈（远程刺客）
+  ling_tong: 'f.hero.ling_tong', // 吴·凌统（刺客）
+  sun_ce: 'f.hero.sun_ce', // 吴·孙策（前排坦）
   protag: 'f.hero.protag', // 主公小小英雄 = 独特奇异生物（金龙，非真人/非在册英雄）
 } as const;
 export const F_FX_STRIKE = 'f.fx.strike'; // 近战斩光（SVG）
@@ -74,6 +78,10 @@ export const GAME_F_ASSETS: AssetManifest = [
   // 吴（合作/野怪皮借用）+ 主公金龙（独特生物）
   { kind: 'texture', key: F_HERO.zhou_yu, src: dcss('deep_elf_sorcerer'), width: 32, height: 32 },
   { kind: 'texture', key: F_HERO.gan_ning, src: dcss('deep_elf_blademaster'), width: 32, height: 32 },
+  { kind: 'texture', key: F_HERO.lv_meng, src: dcss('deep_elf_assassin'), width: 32, height: 32 },
+  { kind: 'texture', key: F_HERO.tai_shici, src: dcss('deep_elf_master_archer'), width: 32, height: 32 },
+  { kind: 'texture', key: F_HERO.ling_tong, src: dcss('deep_elf_knight_new'), width: 32, height: 32 },
+  { kind: 'texture', key: F_HERO.sun_ce, src: dcss('orc_warlord'), width: 32, height: 32 },
   { kind: 'texture', key: F_HERO.ma_chao, src: dcss('centaur_warrior'), width: 32, height: 32 },
   { kind: 'texture', key: F_HERO.huang_zhong, src: dcss('deep_elf_master_archer'), width: 32, height: 32 },
   { kind: 'texture', key: F_HERO.cao_ren, src: dcss('orc_warlord'), width: 32, height: 32 },
