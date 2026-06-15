@@ -5,6 +5,19 @@
 
 ---
 
+## 循环 #20 · 2026-06-15 · Designer F
+
+### 验收:组牌器机制(card catalog + assembleDeck + 自组牌持久化)→ ✅ 通过
+- `CARD_CATALOG`(id→CardSpec)+ `assembleDeck(cardIds, faction)`(从收藏 id 拼 Deck,无效 id 丢弃)+ 自组牌持久化。**`buildDeckRules` 接口不变 → 自组牌与硬编码 preset 同路进局**(零返工)。**零引擎、80 测绿。**
+
+### 下一步:闭合养成环最后一脚(组牌器 UI + run 用自组牌)
+- **组牌器 UI**(大厅 S4):列收藏(已拥有小丑牌)+ 选 5–8 张 → `assembleDeck` → 存为出战牌组。preset 与自组牌并列可选。
+- **run 消费自组牌**:开局把"当前出战牌组"(自组 or preset)喂进局内(机制已通,接 UI 选择即可)。
+- 闭合后:**earn(战功)→ spend(抽小丑牌)→ build(组牌器)→ play(带入)→ climb(段位)** 全环跑通 = 单机养成闭环达成。
+- 并行欠项:**段位=难度阀**(循环#17②);信玄火相(低优先)。
+
+---
+
 ## 循环 #19 · 2026-06-15 · Designer F
 
 ### 验收:抽卡池纠正为小丑牌 + rarity + 十连保底 → ✅ 通过(纠正落地)
