@@ -247,10 +247,11 @@ export function battleSpec(i: number): BattleSpec {
 // ── 场间三选一增益（design/11 §三 · roguelike 养成核）──
 // 胜一场后的短窗：三随机增益里选一项，改 牌组 favor / 命 / 干预能量◈ / 材料。**纯数据**（最弱 LLM 能填 {kind,amount}）
 // + 小解释器 applyBuff，与大厅商城同类的存档变更——零新 capability、headless 可测。选择即流派（养成核）。
-export type BuffKind = 'deck-all' | 'deck-weak' | 'lives' | 'energy' | 'materials';
-export interface RunBuff { id: string; name: string; desc: string; kind: BuffKind; amount: number; count?: number }
-// 被增益作用的存档子集（Save 的子结构；解耦 mount 的 Save 类型，便于 headless 测）。
-export interface BuffTarget { deck: number[]; lives: number; leverEnergy: number; materials: number }
+// kind 'joker' = 流派钥匙（白嫖一张小丑 → 构筑分叉，design reply#10 StS/Balatro 式，T-G6 小丑就绪后接）。
+export type BuffKind = 'deck-all' | 'deck-weak' | 'lives' | 'energy' | 'materials' | 'joker';
+export interface RunBuff { id: string; name: string; desc: string; kind: BuffKind; amount: number; count?: number; jokerId?: string }
+// 被增益作用的存档子集（Save 的子结构；解耦 mount 的 Save 类型，便于 headless 测）。含 jokers（流派钥匙落点）。
+export interface BuffTarget { deck: number[]; lives: number; leverEnergy: number; materials: number; jokers: string[] }
 export const BETWEEN_BUFFS: RunBuff[] = [
   { id: 'drill', name: '整训', desc: '全军 favor +4', kind: 'deck-all', amount: 4 },
   { id: 'elite', name: '精兵', desc: '最弱 10 张 favor +8', kind: 'deck-weak', amount: 8, count: 10 },
@@ -268,6 +269,7 @@ export function applyBuff(t: BuffTarget, b: RunBuff): void {
   } else if (b.kind === 'lives') t.lives += b.amount;
   else if (b.kind === 'energy') t.leverEnergy = Math.min(LEVER_CAP, t.leverEnergy + b.amount);
   else if (b.kind === 'materials') t.materials += b.amount;
+  else if (b.kind === 'joker') { if (b.jokerId && !t.jokers.includes(b.jokerId)) t.jokers.push(b.jokerId); } // 流派钥匙：白嫖小丑（去重）
 }
 
 // ═══════════════════════════════════════════════════════════════
@@ -571,6 +573,13 @@ export const GAME_G_JOKERS: JokerCard[] = [
   { id: 'warlord', name: '枭雄', kind: 'morale', cost: 24, archetype: 'general', moraleMul: 2, text: '顶级主将(K/王)所在路，士气加成 ×2（堆高军衔主将碾压一路）' },
 ];
 export const JOKER_BY_ID: ReadonlyMap<string, JokerCard> = new Map(GAME_G_JOKERS.map((j) => [j.id, j]));
+
+/** 流派钥匙：把"未拥有的小丑"包成场间三选一可白嫖的 RunBuff（design reply#10：场间选择=构筑分叉）。已拥有的不再出。 */
+export function jokerKeyBuffs(ownedIds: readonly string[]): RunBuff[] {
+  return GAME_G_JOKERS.filter((j) => !ownedIds.includes(j.id)).map((j) => ({
+    id: `key_${j.id}`, name: `🃏钥匙·${j.name}`, desc: `融入小丑【${j.name}】：${j.text}`, kind: 'joker', amount: 0, jokerId: j.id,
+  }));
+}
 
 // 从已融小丑算每路士气倍率（旗手全路、枭雄仅顶级主将路）→ 喂 resolveArmy。复用 `06` 士气、不新机制。
 const TOP_RANKS = new Set(['JOKER', 'K']); // 顶级军衔（枭雄触发档）

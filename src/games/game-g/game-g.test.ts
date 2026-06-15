@@ -2,7 +2,7 @@ import { describe, it, expect } from 'vitest';
 import { Engine } from '../../runtime/engine.js';
 import type { Component } from '@engine/core/types.js';
 import type { Transform, RandomSeed, Resource, State, Card3D } from '@engine/protocol/components.js';
-import { buildGameG3DFlip, buildGameGDuel3D, buildGameGMatch, buildGameGArmyMatch, standardArmy, armyFromFormation, laneEstimates, applyInterventions, applyJokers, jokerMoraleScale, GAME_G_JOKERS, JOKER_BY_ID, laneHandTier, battleSpec, RUN_BATTLES, RUN_LIVES, BETWEEN_BUFFS, applyBuff, BOSS_ROSTER, bossFor, LEVER_CATALOG, LEVER_START, LEVER_CAP, LEVER_REGEN, FORMATION_PRESETS, PRESET_NAMES, decideFaceUp, cardFace, flipTarget, FLIP_DURATION, FLIP_SPINS, MATCH_REWARD, type FateCard, type ArmyCard, type Intervention, type BuffTarget } from './blueprint.js';
+import { buildGameG3DFlip, buildGameGDuel3D, buildGameGMatch, buildGameGArmyMatch, standardArmy, armyFromFormation, laneEstimates, applyInterventions, applyJokers, jokerMoraleScale, jokerKeyBuffs, GAME_G_JOKERS, JOKER_BY_ID, laneHandTier, battleSpec, RUN_BATTLES, RUN_LIVES, BETWEEN_BUFFS, applyBuff, BOSS_ROSTER, bossFor, LEVER_CATALOG, LEVER_START, LEVER_CAP, LEVER_REGEN, FORMATION_PRESETS, PRESET_NAMES, decideFaceUp, cardFace, flipTarget, FLIP_DURATION, FLIP_SPINS, MATCH_REWARD, type FateCard, type ArmyCard, type Intervention, type BuffTarget } from './blueprint.js';
 
 const get = <T extends Component>(e: Engine, id: string, type: string): T | undefined => e.world.getComponent<T>(id, type);
 const rotOf = (e: Engine, id = 'card'): number => get<Transform>(e, id, 'Transform')!.rotation;
@@ -458,7 +458,7 @@ describe('Game G · T-G5 战役/run 结构（战役曲线 + Boss）', () => {
 });
 
 describe('Game G · T-G5 场间三选一增益（养成核 · 纯数据 + applyBuff）', () => {
-  const target = (): BuffTarget => ({ deck: Array.from({ length: 52 }, (_, i) => 44 + (i % 10) * 2), lives: 3, leverEnergy: 3, materials: 0 });
+  const target = (): BuffTarget => ({ deck: Array.from({ length: 52 }, (_, i) => 44 + (i % 10) * 2), lives: 3, leverEnergy: 3, materials: 0, jokers: [] });
   const byId = (id: string) => BETWEEN_BUFFS.find((b) => b.id === id)!;
 
   it('增益池=5 张，每张 kind 合法、amount>0、最弱 LLM 能填的纯数据', () => {
@@ -493,7 +493,7 @@ describe('Game G · T-G5 场间三选一增益（养成核 · 纯数据 + applyB
   it('征兵/囤能(封顶 CAP)/财源 改对应资源', () => {
     const t1 = target(); applyBuff(t1, byId('conscript')); expect(t1.lives).toBe(4);
     const t2 = target(); applyBuff(t2, byId('stockpile')); expect(t2.leverEnergy).toBe(Math.min(LEVER_CAP, 3 + 3));
-    const t3 = { deck: [50], lives: 3, leverEnergy: LEVER_CAP, materials: 0 }; applyBuff(t3, byId('stockpile')); expect(t3.leverEnergy).toBe(LEVER_CAP); // 已满不溢出
+    const t3 = { deck: [50], lives: 3, leverEnergy: LEVER_CAP, materials: 0, jokers: [] }; applyBuff(t3, byId('stockpile')); expect(t3.leverEnergy).toBe(LEVER_CAP); // 已满不溢出
     const t4 = target(); applyBuff(t4, byId('revenue')); expect(t4.materials).toBe(25);
   });
 
@@ -684,5 +684,23 @@ describe('Game G · T-G6 小丑牌（融牌面 · build 时 favor 变换 · 持�
     };
     const e1 = mkE(), e2 = mkE();
     for (let i = 0; i < FLIP_DURATION + 12; i++) { e1.world.tick(); e2.world.tick(); expect(e1.hash()).toBe(e2.hash()); }
+  });
+
+  it('流派钥匙：jokerKeyBuffs 为每张"未拥有"小丑产 kind=joker 的 RunBuff（已拥有不出）', () => {
+    const all = jokerKeyBuffs([]);
+    expect(all).toHaveLength(GAME_G_JOKERS.length); // 全未拥有 → 全产
+    for (const k of all) { expect(k.kind).toBe('joker'); expect(k.jokerId).toBeTruthy(); expect(JOKER_BY_ID.has(k.jokerId!)).toBe(true); }
+    const owned = jokerKeyBuffs(['comrade', 'bannerman']);
+    expect(owned).toHaveLength(GAME_G_JOKERS.length - 2);
+    expect(owned.some((k) => k.jokerId === 'comrade' || k.jokerId === 'bannerman')).toBe(false);
+  });
+
+  it('applyBuff(joker)：白嫖小丑入 save.jokers，去重幂等', () => {
+    const t: BuffTarget = { deck: [50], lives: 3, leverEnergy: 3, materials: 0, jokers: [] };
+    const key = jokerKeyBuffs([])[0]; // 取第一张钥匙
+    applyBuff(t, key);
+    expect(t.jokers).toEqual([key.jokerId]);
+    applyBuff(t, key); // 再选同一张 → 不重复
+    expect(t.jokers).toEqual([key.jokerId]);
   });
 });

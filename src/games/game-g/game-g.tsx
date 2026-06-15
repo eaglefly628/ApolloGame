@@ -1,6 +1,6 @@
 import { Engine } from '../../runtime/engine.js';
 import { ThreeRenderer } from './three-renderer.js';
-import { buildGameGArmyMatch, armyFromFormation, applyInterventions, applyJokers, jokerMoraleScale, laneEstimates, FORMATION_PRESETS, PRESET_NAMES, LEVER_CATALOG, LEVER_START, LEVER_CAP, LEVER_REGEN, battleSpec, RUN_BATTLES, RUN_LIVES, BETWEEN_BUFFS, applyBuff, BOSS_ROSTER, bossFor, GAME_G_JOKERS, JOKER_BY_ID, type Formation, type Intervention, type LeverKind, type RunBuff } from './index.js';
+import { buildGameGArmyMatch, armyFromFormation, applyInterventions, applyJokers, jokerMoraleScale, laneEstimates, FORMATION_PRESETS, PRESET_NAMES, LEVER_CATALOG, LEVER_START, LEVER_CAP, LEVER_REGEN, battleSpec, RUN_BATTLES, RUN_LIVES, BETWEEN_BUFFS, applyBuff, jokerKeyBuffs, BOSS_ROSTER, bossFor, GAME_G_JOKERS, JOKER_BY_ID, type Formation, type Intervention, type LeverKind, type RunBuff } from './index.js';
 import type { State, Resource } from '@engine/protocol/components.js';
 
 // Game G ·《翻命扑克》—— 大厅 ↔ 出征 闭环（launcher 卡带槽：export mount(container)→cleanup）。自包含于本目录。
@@ -272,18 +272,22 @@ export function mount(container: HTMLElement): () => void {
   }
 
   // ───────────────────────── 场间整备 · 三选一增益（roguelike 养成核 · 胜后短窗）─────────────────────────
-  // 胜一场后进军前的短窗：三随机增益选一项强化牌组/资源 → 选择即流派。改后落存档、回大厅看下一战。
+  // 胜一场后进军前的短窗：三随机里选一项 → 选择即流派。池=资源增益 + **流派钥匙(白嫖未拥有小丑)**，
+  // 后者把场间选择做成 StS/Balatro 式构筑分叉（design reply#10），不只 +stat。改后落存档、回大厅看下一战。
   function showBetween(nextLabel: string): void {
     clear();
     const title = el('div', 'font:600 18px system-ui;color:#22c55e', '🎉 战间整备 · 三选一');
     const sub = el('div', 'max-width:520px;text-align:center;opacity:.82;line-height:1.6',
-      `胜一场！<b>${nextLabel}</b>前选<b>一项</b>增益强化牌组/资源——roguelike 养成，选择即流派。`);
+      `胜一场！<b>${nextLabel}</b>前选<b>一项</b>——资源增益，或<b style="color:#c4b5fd">🃏流派钥匙</b>(白嫖小丑、定你的构筑分叉)。`);
+    const pool: RunBuff[] = [...BETWEEN_BUFFS, ...jokerKeyBuffs(save.jokers)]; // 资源增益 + 未拥有小丑钥匙
     const cardsBox = el('div', 'display:flex;gap:12px;justify-content:center;flex-wrap:wrap');
-    cardsBox.replaceChildren(...pick3(BETWEEN_BUFFS).map((bf: RunBuff) => {
-      const card = el('div', 'width:152px;padding:14px 10px;border:1px solid #334155;border-radius:10px;text-align:center;cursor:pointer;line-height:1.6;background:#10161f',
-        `<div style="font:600 15px system-ui;color:#eab308">${bf.name}</div><div style="opacity:.85;font-size:12px;margin-top:6px">${bf.desc}</div>`);
-      card.onmouseenter = () => { card.style.borderColor = '#22c55e'; card.style.background = '#15201a'; };
-      card.onmouseleave = () => { card.style.borderColor = '#334155'; card.style.background = '#10161f'; };
+    cardsBox.replaceChildren(...pick3(pool).map((bf: RunBuff) => {
+      const isKey = bf.kind === 'joker';
+      const accent = isKey ? '#a78bfa' : '#22c55e';
+      const card = el('div', `width:158px;padding:14px 10px;border:1px solid ${isKey ? '#4c1d95' : '#334155'};border-radius:10px;text-align:center;cursor:pointer;line-height:1.55;background:${isKey ? '#160f24' : '#10161f'}`,
+        `<div style="font:600 15px system-ui;color:${isKey ? '#c4b5fd' : '#eab308'}">${bf.name}</div><div style="opacity:.85;font-size:12px;margin-top:6px">${bf.desc}</div>`);
+      card.onmouseenter = () => { card.style.borderColor = accent; };
+      card.onmouseleave = () => { card.style.borderColor = isKey ? '#4c1d95' : '#334155'; };
       card.onclick = () => { applyBuff(save, bf); persist(save); showLobby(); };
       return card;
     }));
