@@ -546,6 +546,52 @@ export function bossFor(idx: number): BossSpec {
   return BOSS_ROSTER[((idx % n) + n) % n];
 }
 
+// ── T-G6 · 小丑牌（融牌面的持久"改规则"被动 · design/12 §二）──
+// 借 Game E 小丑的**声明式数据哲学**（每张 = 一条 {kind,params} 规则 + text 人话），但**域不同**：
+//   Game E joker = 运行时计分(on_hand_scored→chips/mult)；Game G **outcome-first** → joker = **build 时军阵 favor 变换**（揭晓前定、不回灌）。
+// 故复用"数据+解释器"范式、**不复用 Game E 运行时**（同 D0 §同花未复用 evaluateHand 之理）。applyJokers 在 resolveArmy 前跑、**零新能力**。
+// 局外持久：融在玩家牌组上（save.jokers），跨 run 不清零——"牌组身份"养成核(owner 愿景)。
+// 本批 4 张=纯 build 时 favor 变换(同袍/赌徒/先登/不屈)；士气放大族(旗手/枭雄)、结局联动族(死士/连环/督粮/影武者)待后续切片(需 resolve 时钩子)。
+export type JokerKind = 'suit-synergy' | 'polarize' | 'lane-pref' | 'diehard';
+export type Archetype = 'card-type' | 'probability' | 'vanguard' | 'wide' | 'decap' | 'general';
+export interface JokerCard {
+  id: string; name: string; kind: JokerKind; cost: number; archetype: Archetype; text: string;
+  amount?: number; // favor 量
+  lane?: number; // lane-pref 偏好路
+}
+export const GAME_G_JOKERS: JokerCard[] = [
+  { id: 'comrade', name: '同袍', kind: 'suit-synergy', cost: 18, archetype: 'card-type', amount: 2, text: '本路每有 1 张同花色 → 该牌 +2 favor（牌型流：往一路堆同花越爽）' },
+  { id: 'gambler', name: '赌徒', kind: 'polarize', cost: 16, archetype: 'probability', amount: 12, text: '全军 favor 两极化：≥50 的更高、<50 的更低（概率流：高风险高回报）' },
+  { id: 'vanguard', name: '先登', kind: 'lane-pref', cost: 15, archetype: 'vanguard', amount: 8, lane: 0, text: '上路全员 +8 favor（主攻上路）' },
+  { id: 'diehard', name: '不屈', kind: 'diehard', cost: 22, archetype: 'probability', amount: 88, text: '全军 favor 不足 88 的拉到 88（近免死、稳翻正面）' },
+];
+export const JOKER_BY_ID: ReadonlyMap<string, JokerCard> = new Map(GAME_G_JOKERS.map((j) => [j.id, j]));
+
+/**
+ * 融小丑：揭晓前按已融小丑（持久）把军阵 favor 变换 → 返回新军，喂 applyInterventions/build。
+ * outcome-first：只改掷命前输入；同军+同小丑集 → 同结果（确定性、可回放）。纯 build 时、零 rng、零新能力。
+ */
+export function applyJokers(army: ArmyCard[], jokerIds: readonly string[]): ArmyCard[] {
+  let out = army.map((c) => ({ ...c }));
+  for (const id of jokerIds) {
+    const j = JOKER_BY_ID.get(id);
+    if (!j) continue;
+    const amt = j.amount ?? 0;
+    if (j.kind === 'suit-synergy') {
+      const src = out; // 同花色计数基于当前花色分布（花色不变，计数稳定）
+      out = out.map((c) => ({ ...c, favor: clampFavor(c.favor + amt * src.filter((d) => d.lane === c.lane && d.suit === c.suit).length) }));
+    } else if (j.kind === 'polarize') {
+      out = out.map((c) => ({ ...c, favor: clampFavor(c.favor + (c.favor >= 50 ? amt : -amt)) }));
+    } else if (j.kind === 'lane-pref') {
+      const lane = j.lane ?? 0;
+      out = out.map((c) => (c.lane === lane ? { ...c, favor: clampFavor(c.favor + amt) } : c));
+    } else if (j.kind === 'diehard') {
+      out = out.map((c) => (c.favor < amt ? { ...c, favor: amt } : c));
+    }
+  }
+  return out;
+}
+
 /**
  * G2 一局军阵对决：armyA(我) vs armyB(敌)，自上而下逐级掷命(将领牵动) → 三路数存活 → best-of-3 定总胜负。
  * 装配顺序 A 全军 → B 全军（PRNG 序列确定、可回放）。胜负 build 时即定；3D 抛飞相撞为表现。

@@ -1,6 +1,6 @@
 import { Engine } from '../../runtime/engine.js';
 import { ThreeRenderer } from './three-renderer.js';
-import { buildGameGArmyMatch, armyFromFormation, applyInterventions, laneEstimates, FORMATION_PRESETS, PRESET_NAMES, LEVER_CATALOG, LEVER_START, LEVER_CAP, LEVER_REGEN, battleSpec, RUN_BATTLES, RUN_LIVES, BETWEEN_BUFFS, applyBuff, BOSS_ROSTER, bossFor, type Formation, type Intervention, type LeverKind, type RunBuff } from './index.js';
+import { buildGameGArmyMatch, armyFromFormation, applyInterventions, applyJokers, laneEstimates, FORMATION_PRESETS, PRESET_NAMES, LEVER_CATALOG, LEVER_START, LEVER_CAP, LEVER_REGEN, battleSpec, RUN_BATTLES, RUN_LIVES, BETWEEN_BUFFS, applyBuff, BOSS_ROSTER, bossFor, GAME_G_JOKERS, JOKER_BY_ID, type Formation, type Intervention, type LeverKind, type RunBuff } from './index.js';
 import type { State, Resource } from '@engine/protocol/components.js';
 
 // Game G ·《翻命扑克》—— 大厅 ↔ 出征 闭环（launcher 卡带槽：export mount(container)→cleanup）。自包含于本目录。
@@ -20,11 +20,12 @@ interface Save {
   leverEnergy: number; // 干预能量◈（开局 3 / 每胜 +2 / 上限 6）
   lives: number; // 战役命线（开 run 3 命，输一场 −1，命尽=run 结束）
   bossIdx: number; // 本 run 终局 Boss（每 run 轮换一名，开 run 随机定，供针对性布阵）
+  jokers: string[]; // 已融小丑牌 id（局外持久 · 跨 run 不清零 · 牌组身份养成）
 }
 
 const rollBoss = (): number => Math.floor(Math.random() * BOSS_ROSTER.length);
 function freshSave(): Save {
-  return { materials: 0, stage: 1, deck: Array.from({ length: DECK_SIZE }, (_, i) => 44 + (i % 10) * 2), lastOfficers: [10, 10, 10], leverEnergy: LEVER_START, lives: RUN_LIVES, bossIdx: rollBoss() }; // 44..62 起步；stage=当前战 1..5
+  return { materials: 0, stage: 1, deck: Array.from({ length: DECK_SIZE }, (_, i) => 44 + (i % 10) * 2), lastOfficers: [10, 10, 10], leverEnergy: LEVER_START, lives: RUN_LIVES, bossIdx: rollBoss(), jokers: [] }; // 44..62 起步；stage=当前战 1..5
 }
 function loadSave(): Save {
   try {
@@ -36,6 +37,7 @@ function loadSave(): Save {
         if (typeof s.leverEnergy !== 'number') s.leverEnergy = LEVER_START;
         if (typeof s.lives !== 'number') s.lives = RUN_LIVES;
         if (typeof s.bossIdx !== 'number') s.bossIdx = rollBoss();
+        if (!Array.isArray(s.jokers)) s.jokers = [];
         if (s.stage < 1 || s.stage > RUN_BATTLES) s.stage = 1;
         return s;
       }
@@ -137,6 +139,26 @@ export function mount(container: HTMLElement): () => void {
       }),
     );
 
+    // 改造坊 · 融小丑（局外持久，跨 run 不清零 → 牌组身份养成；融了它在揭晓前改你军阵规则）。
+    const forgeTitle = el('div', 'font:600 13px system-ui;color:#a78bfa;margin-top:2px', '⚒ 改造坊 · 融小丑牌（持久牌组身份）');
+    const forge = el('div', 'display:flex;gap:8px;flex-wrap:wrap;justify-content:center;max-width:560px');
+    forge.replaceChildren(...GAME_G_JOKERS.map((j) => {
+      const owned = save.jokers.includes(j.id);
+      const b = mkBtn(owned ? `✓ ${j.name}` : `融 ${j.name}（${j.cost}）`);
+      b.title = j.text;
+      if (owned) b.style.cssText += ';border-color:#a78bfa;background:#1e1b2e;opacity:.85;cursor:default';
+      else { b.disabled = save.materials < j.cost; if (b.disabled) b.style.opacity = '0.45'; }
+      b.onclick = () => {
+        if (owned || save.materials < j.cost) return;
+        save.materials -= j.cost; save.jokers.push(j.id); persist(save); showLobby();
+      };
+      return b;
+    }));
+    const forgeDesc = el('div', 'font-size:11px;opacity:.72;max-width:540px;text-align:center;line-height:1.5',
+      save.jokers.length
+        ? '已融：' + save.jokers.map((id) => `<b style="color:#c4b5fd">${JOKER_BY_ID.get(id)?.name ?? id}</b>`).join('、') + '（悬停看效果 · 出征时自动生效）'
+        : '（未融小丑 · 鼠标悬停看效果；融了它持久改你牌组的掷命规则 = 流派身份）');
+
     const go = mkBtn(`⚔ 出征 · 第 ${save.stage}/${RUN_BATTLES} 战（${battleSpec(save.stage - 1).label}）`);
     go.style.cssText += ';background:#1e3a2a;border-color:#22c55e;font-weight:600';
     go.onclick = () => showFormation([...save.lastOfficers] as [number, number, number]);
@@ -149,7 +171,7 @@ export function mount(container: HTMLElement): () => void {
       showLobby();
     };
 
-    root.append(title, stat, shop, go, reset);
+    root.append(title, stat, shop, forgeTitle, forge, forgeDesc, go, reset);
   }
 
   // ───────────────────────── 布阵（田忌赛马 · 开战前核心博弈）─────────────────────────
@@ -296,7 +318,7 @@ export function mount(container: HTMLElement): () => void {
     root.append(hint, stage, bar);
 
     engine = new Engine({ tickRate: 60 });
-    const armyA = armyFromFormation('a', myBias(save.deck), formation);
+    const armyA = applyJokers(armyFromFormation('a', myBias(save.deck), formation), save.jokers); // 揭晓前先融小丑(持久 favor 变换)
     const armyB = armyFromFormation('b', enemyBias, aiForm);
     // 揭晓前施加干预：先玩家(caster='a')，再 Boss 起手(caster='b'，对称——诅咒/斩首落玩家、增益落 Boss)。均 outcome-first。
     let { a, b } = applyInterventions(armyA, armyB, interventions, myBias(save.deck));

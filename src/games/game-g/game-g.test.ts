@@ -2,7 +2,7 @@ import { describe, it, expect } from 'vitest';
 import { Engine } from '../../runtime/engine.js';
 import type { Component } from '@engine/core/types.js';
 import type { Transform, RandomSeed, Resource, State, Card3D } from '@engine/protocol/components.js';
-import { buildGameG3DFlip, buildGameGDuel3D, buildGameGMatch, buildGameGArmyMatch, standardArmy, armyFromFormation, laneEstimates, applyInterventions, laneHandTier, battleSpec, RUN_BATTLES, RUN_LIVES, BETWEEN_BUFFS, applyBuff, BOSS_ROSTER, bossFor, LEVER_CATALOG, LEVER_START, LEVER_CAP, LEVER_REGEN, FORMATION_PRESETS, PRESET_NAMES, decideFaceUp, cardFace, flipTarget, FLIP_DURATION, FLIP_SPINS, MATCH_REWARD, type FateCard, type ArmyCard, type Intervention, type BuffTarget } from './blueprint.js';
+import { buildGameG3DFlip, buildGameGDuel3D, buildGameGMatch, buildGameGArmyMatch, standardArmy, armyFromFormation, laneEstimates, applyInterventions, applyJokers, GAME_G_JOKERS, JOKER_BY_ID, laneHandTier, battleSpec, RUN_BATTLES, RUN_LIVES, BETWEEN_BUFFS, applyBuff, BOSS_ROSTER, bossFor, LEVER_CATALOG, LEVER_START, LEVER_CAP, LEVER_REGEN, FORMATION_PRESETS, PRESET_NAMES, decideFaceUp, cardFace, flipTarget, FLIP_DURATION, FLIP_SPINS, MATCH_REWARD, type FateCard, type ArmyCard, type Intervention, type BuffTarget } from './blueprint.js';
 
 const get = <T extends Component>(e: Engine, id: string, type: string): T | undefined => e.world.getComponent<T>(id, type);
 const rotOf = (e: Engine, id = 'card'): number => get<Transform>(e, id, 'Transform')!.rotation;
@@ -579,5 +579,77 @@ describe('Game G · T-G5 终局 Boss 阵容 + 对称起手干预（design/13）'
     const B0 = armyFromFormation('b', boss.favorBias, boss.formation);
     const { b } = applyInterventions(standardArmy('a', 0), B0, boss.openingLevers, boss.favorBias, 'b');
     for (const lane of [0, 1, 2]) expect(b.filter((c) => c.lane === lane).length).toBe(B0.filter((c) => c.lane === lane).length + 2);
+  });
+});
+
+describe('Game G · T-G6 小丑牌（融牌面 · build 时 favor 变换 · 持久牌组身份）', () => {
+  const mk = (id: string, lane: number, suit: string, favor: number): ArmyCard => ({ id, rank: 'A', lane, favor, general: false, suit });
+
+  it('小丑目录(本批)≥4，kind 合法、cost>0、有 text；JOKER_BY_ID 覆盖全', () => {
+    expect(GAME_G_JOKERS.length).toBeGreaterThanOrEqual(4);
+    const kinds = new Set(['suit-synergy', 'polarize', 'lane-pref', 'diehard']);
+    for (const j of GAME_G_JOKERS) {
+      expect(kinds.has(j.kind)).toBe(true);
+      expect(j.cost).toBeGreaterThan(0);
+      expect(j.text.length).toBeGreaterThan(0);
+      expect(JOKER_BY_ID.get(j.id)).toBe(j);
+    }
+  });
+
+  it('空小丑集 → 原样复制（不改 favor、非别名）', () => {
+    const army = [mk('x', 0, 'H', 50)];
+    const out = applyJokers(army, []);
+    expect(out).toEqual(army);
+    expect(out).not.toBe(army);
+  });
+
+  it('同袍：本路每张同花色 → +2×同花数（限本路本花色）', () => {
+    const army = [mk('a', 0, 'H', 50), mk('b', 0, 'H', 50), mk('c', 0, 'S', 50), mk('d', 1, 'H', 50)];
+    const out = applyJokers(army, ['comrade']);
+    expect(out.find((c) => c.id === 'a')!.favor).toBe(54); // lane0 2×H → +2×2
+    expect(out.find((c) => c.id === 'b')!.favor).toBe(54);
+    expect(out.find((c) => c.id === 'c')!.favor).toBe(52); // lane0 1×S → +2×1
+    expect(out.find((c) => c.id === 'd')!.favor).toBe(52); // lane1 1×H → +2×1
+  });
+
+  it('赌徒：favor≥50 +12、<50 −12（两极化）', () => {
+    const out = applyJokers([mk('hi', 0, 'H', 60), mk('lo', 0, 'H', 40)], ['gambler']);
+    expect(out.find((c) => c.id === 'hi')!.favor).toBe(72);
+    expect(out.find((c) => c.id === 'lo')!.favor).toBe(28);
+  });
+
+  it('先登：仅上路(lane0) +8', () => {
+    const out = applyJokers([mk('up', 0, 'H', 50), mk('mid', 1, 'H', 50)], ['vanguard']);
+    expect(out.find((c) => c.id === 'up')!.favor).toBe(58);
+    expect(out.find((c) => c.id === 'mid')!.favor).toBe(50);
+  });
+
+  it('不屈：favor<88 拉到 88、≥88 不变', () => {
+    const out = applyJokers([mk('weak', 0, 'H', 46), mk('strong', 0, 'H', 90)], ['diehard']);
+    expect(out.find((c) => c.id === 'weak')!.favor).toBe(88);
+    expect(out.find((c) => c.id === 'strong')!.favor).toBe(90);
+  });
+
+  it('outcome-first：融不屈只升 favor → 同 seed 下存活数单调不减', () => {
+    const baseA = standardArmy('a', -10); // 压低制造弱牌
+    const run = (jids: string[]): number => {
+      const a = applyJokers(baseA, jids);
+      const e = new Engine({ tickRate: 60 });
+      e.load(buildGameGArmyMatch(a, standardArmy('b', 0), 5));
+      for (let i = 0; i < FLIP_DURATION + 8; i++) e.world.tick();
+      return ['a_l0', 'a_l1', 'a_l2'].reduce((s, id) => s + (get<Resource>(e, id, 'Resource')?.current ?? 0), 0);
+    };
+    expect(run(['diehard'])).toBeGreaterThanOrEqual(run([]));
+  });
+
+  it('确定性：同军 + 同小丑集 + seed 逐拍 hash 一致（融小丑进 sim）', () => {
+    const mkE = (): Engine => {
+      const a = applyJokers(standardArmy('a', 2), ['comrade', 'vanguard']);
+      const e = new Engine({ tickRate: 60 });
+      e.load(buildGameGArmyMatch(a, standardArmy('b', 0), 9));
+      return e;
+    };
+    const e1 = mkE(), e2 = mkE();
+    for (let i = 0; i < FLIP_DURATION + 12; i++) { e1.world.tick(); e2.world.tick(); expect(e1.hash()).toBe(e2.hash()); }
   });
 });
