@@ -951,6 +951,18 @@ describe('Game G · 全栈养成端到端（星球+激活流派+干预+Boss+联�
     expect(surv(kitted, 77)).toBeGreaterThan(surv(base, 77)); // 养成全栈确实更强
   });
 
+  it('胜负正确性：压倒性强军 → winner=a；裸弱军 vs 强敌 → winner=b（best-of-3 路比较方向对）', () => {
+    const settle = (armyA: ArmyCard[], armyB: ArmyCard[], seed: number): string => {
+      const e = new Engine({ tickRate: 60 });
+      e.load(buildGameGArmyMatch(armyA, armyB, seed));
+      for (let i = 0; i < FLIP_DURATION + 12; i++) e.world.tick();
+      return get<State>(e, 'winner', 'State')!.current;
+    };
+    const strong = applyJokers(standardArmy('a', 20), ['diehard']); // 高偏置 + 免死地板 88 → 压倒
+    expect(settle(strong, standardArmy('b', -40), 7)).toBe('a'); // 强 vs 弱 → a 胜
+    expect(settle(standardArmy('a', -40), applyJokers(standardArmy('b', 20), ['diehard']), 7)).toBe('b'); // 反向 → b 胜
+  });
+
   it('最大配置确定性：星球+铺场流激活+联动+护盾/增援+终局 Boss 同 setup+seed 逐拍 hash 一致', () => {
     const boss = bossFor(5); // 小王·无常（decapitate×3）
     const setup = (): Parameters<typeof prepareArmies>[0] => ({
