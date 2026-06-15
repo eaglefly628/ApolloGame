@@ -6,9 +6,32 @@
 
 ---
 
+## 判定摘要（2026-06-15 · Lead 清理基线）
+
+> 供清理：「结案」可归档移出本池；「转移」移交对应 owner 的 finish-list；「仍开」保留。
+
+| REQ | Lead 判定（2026-06-15） | 处置 |
+|---|---|---|
+| R9 资产系统 | 引擎侧 **done**（06-07 全落地）；PB 槽位实例非阻塞 | 结案（PB 余项转 PB） |
+| REQ-ARPG game-d | 引擎能力**已足**；余项全 Programmer D 自营（VFX/dungeon/掉落/AI 数据） | 转 game-d 自营清单 |
+| REQ-C-005 组合特殊棋子 | **真缺口**（算法，C→E→E 表达不了）→ match3-board 扩展 | 仍开（待 PC 排期） |
+| REQ-C-006 防死局重排 | **真缺口**（算法）→ match3-board 扩展 | 仍开（待排期） |
+| REQ-C-007 三消特效 | 表现层；先用现成 **Tween** 重组；通用 VFX 待 rule-of-three | 仍开（倾向重组） |
+| REQ-010 定点数 | **已实装**于分支 `festive-planck`（`@engine/math` 定点+RNG+浮点子集）；待并入 | 待并入→done |
+| BUG-002 game-e 弃牌 | game-e 侧 ~15 行 | 转 PE |
+| REQ-018 传输层 | 仍开 **P3**（真远程才做，排 F-057 后） | 仍开 |
+| REQ-023 group-effect | **wontfix**——重组覆盖（group-count→全局 buff 资源→scaleByResource）；Boss 全军 buff 复用同款坐实 | 结案 |
+| REQ-F-057 确定性探针 | 仍开；用户定 game-f 战斗=**整数 HexPos**→同进程探针即足；定点退路已分支实装 | 仍开（待联机拉动） |
+| REQ-F-061 hp 门/处决 | **done**（06-13） | 结案 |
+| REQ-F-062 aggro 策略 | **暂不实现**（打回）；未被真实数据拉动 | 仍开（待拉动） |
+| REQ-F-064 Boss 技能 | **wontfix/covered**——全部现有能力重组（见下条 recipe） | 结案 |
+| LEAD→PF 去腐交办 | game-f 侧进行中；**引擎侧到此为止**（重申）；GameShell 采用未完 | 转 game-f finish-list |
+
+---
+
 ## 待处理 / 进行中
 
-### R9 · [2026-06-03] · PB · 框架级 · status: **in-progress** · 优先级: 架构级 · 类型: 资产系统 review
+### R9 · [2026-06-03] · PB · 框架级 · status: **done（引擎侧，2026-06-07）** · 优先级: 架构级 · 类型: 资产系统 review
 
 > ✅ **引擎侧全部落地（2026-06-07，全量 621 绿）**：资产 key 硬校验 / 命名动画 clip 层 / AOT pack-atlas 工具 / Gemini 代码审计 4 修复 / 蓝图自动派生资产清单（甲）/ generate→热载 AI 闭环（乙）。
 > - **PB 仍可做（非阻塞）**：Game B 槽位契约实例 + procedural 占位 provider（见 `docs/design/asset-manifest-and-manager.md` §8）。
@@ -66,6 +89,7 @@
 - **背景**：steering/launch 的 `Math.sqrt` 归一、以及一切 IEEE 浮点，在不同 CPU 架构（ARM vs x86）或 JIT 激进优化（FMA）下存在 1-ULP 差异，经积分进 Transform → 有几率引发跨端 desync。
 - **现状**：MVP 可容忍，标 tech-debt。单机/同构端 lockstep 无碍。
 - **何时必须做**：要做跨架构帧同步联机（Windows x86 ↔ Mac ARM P2P lockstep）才需。方案：关键运算换定点数+整数平方根/LUT 查表。**不阻塞 Steam 单机发布。**
+- **Lead 注（2026-06-15）**：定点数已在分支 `claude/festive-planck-9gnv8q` **实装**（`@engine/math`：Q16.16 定点 + RNG 下沉 + 确定性浮点子集 + determinism-lint 守卫），tsc+vitest+build 全绿；**待并入 mainbranch** 即可标 done。
 
 ---
 
@@ -88,7 +112,7 @@
 
 ---
 
-### REQ-023 · [2026-06-09] · 主程4（Game F 拉动）· 框架级 · status: **open（不 greenlit·倾向先重组 YAGNI）** · 优先级: 低
+### REQ-023 · [2026-06-09] · 主程4（Game F 拉动）· 框架级 · status: **wontfix（2026-06-15 结案 · 重组覆盖）** · 优先级: 低
 
 **标题**：`group-effect` —— 把效果 fan-out 到一组实体（集合写）
 
@@ -106,6 +130,7 @@
 - **建议形态**：扩 `src/net/lockstep` 既有 2 实例对拍：跑同一份 game-f 战斗蓝图（含 grid-move/滑行/hitbox/DoT/冰冻/大招全链）N=3000 拍，逐拍比 `world.hash()`；绿=联机地基就绪；红=输出首个发散拍+组件 diff 定位。
 - **失败退路**：战斗浮点整数化/定点化（成熟技术）；探针本身就是在给这笔账定价。
 - **范围注**：纯测试/工具，不动引擎语义。详见 `docs/game-design/game-f-coop-sunliu.md` §四.3/§五 C0。
+- **Lead 注（2026-06-15）**：用户拍板 game-f 战斗用**整数 HexPos** → 同进程双实例探针即足（无需跨架构定点）；定点退路已在分支 `festive-planck` 实装备用。探针仍待建（game-f 联机真拉动时）。
 
 ---
 
@@ -150,6 +175,19 @@
 - ⛔ **回驳"字面化 makeRoundFlow/templatesFor"（修正本交办原措辞）**：二者是**薄确定性展开器**（`makeRoundFlow`=pacing 配置；`templatesFor`=roster 数据→prefab + 阵营选择），与 game-b 的 `manifest.json + 85 行 loader` **同类**——**"数据驱动 ≠ 零函数"**，判据是"内容扁平 + 展开器薄/固定/确定"。硬字面化会砸 36 处测试快进 + 多阵营，得不偿失。**保留为"扁平数据 + 薄展开"。** PF 这条线划对了。
 - ✅ **③ 解锁：Lead 已给 GameShell 加通用 `image` 节点**（静态 src / 绑 StringVar 动态 src；rule-of-three 远超：VN 立绘/换装/卡牌/商店；**非 game-f 脉冲下沉**）。商店=**固定 3 槽** → 3×(`image`+`stat`+`button`) 即可，**不需 `list`**（避模板化 DSL 腐烂高风险区，YAGNI 暂不加；真有干净跨游戏拉动再议）。**棋盘拖拽/点将台留 canvas（drag-place 能力），不归 GameShell。**
 - **修订验收**：band/visSwap/chrome→0 ✅已达；makeRoundFlow/templatesFor 保留（不计入"生成器构造"目标）；脉冲清零 = PF 用 GameShell（HUD/tabs/buttons 用现有节点 + 商店用新 `image`）重写壳层 + 退役假点击桥。**引擎侧到此为止（image 已加，不再为 game-f 加任何能力）。**
+
+---
+
+### REQ-F-064 · [2026-06-15] · game-f（Boss 技能拉动，经用户转 Lead）· 框架级 · status: **wontfix / done-covered（2026-06-15 结案）** · 类型: 现有能力重组（非缺口）
+
+**标题**：太阁 Boss 技能（信长全军 buff / 秀吉·本愿寺援军 spawn / 真田自残血加伤 等）
+
+game-f 报「多数需新引擎能力」。Lead 实测：**三个已点名技能全部现有能力可表达 → 回驳；引擎冻结成立**。等价数据写法：
+1. **信长·全军 buff** = `group-count`/触发信号 → `Effect{modify-resource dmg_scale_boss, valueFrom}` → 全 Boss 方 `Hitbox.scaleByResource` 读它。**game-f 自己已实装同款**（`decks.ts` synergy/threshold/round-buff 写 `dmg_scale_a`，`combat.ts:27` hitbox 读），Boss 版对称。
+2. **秀吉·本愿寺援军 spawn** = Boss 技能信号 → `Caster{onSignal, template:'honganji_*', at:'self'}` → `SpawnRequest` → `prefab` 展开援军队。`caster.ts` 自陈「信号→生成桥…召唤」，示例含召唤/掉落。
+3. **真田·自残血加伤**（注意：自身 hp，**非** F-061 的目标 hp）= `Condition(自身 hp < 阈值=frac×已知 maxhp)` → `Event`→`Signal` → `Effect{modify-resource dmg_scale_sanada}` → 其 `Hitbox.scaleByResource` 读它（Condition→Event→Effect + scaleByResource 重组）。
+
+**流程纠正**：笼统「多数需新能力」不达需求模板「试了什么/卡在哪」的标准 → 一律回驳。某技能数据**确实**表达不了（如需连续反比血量、阈值+valueFrom 线性都不够）就**单提那一个**附失败重组，逐个评。
 
 ---
 
