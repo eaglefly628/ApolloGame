@@ -5,6 +5,21 @@
 
 ---
 
+## 循环 #13 · 2026-06-15 · Designer F
+
+### 验收:3-faction plumbing(`rosterFor('wu')` + 盟友镜像吴名册)→ ✅ 通过
+- `WU_ROSTER`(6 吴英雄)+ `Faction='shu'|'wei'|'wu'` + 盟友镜像跑真吴名册。**零引擎、68 测绿。**
+
+### 白衣渡江:仍 gated —— 卡在「吴单机布阵布局」
+- decks.ts 注释:"现入会因 `rosterFor('wu')` 占位布局打不正常" → plumbing 通了一半(吴可 roster + 盟友镜像),但**吴选阵营后的单机布阵/落点布局还没调正**。
+- **派 Program F:把吴单机 deploy 布局调正**(让 `rosterFor('wu')` 单机能正常开局/布阵)→ **白衣渡江即可入 `DECK_REGISTRY` 上线**(deck 已写好,就差这一脚)。
+
+### 下一步(无依赖,并行推):屯田积粟 deck(经济·贪婪)
+- 评估能否用现有 round-buff 框架,不能则提小 `econ-buff` CardSpec 扩展(纯游戏侧)。
+- 后续:吴布局通 → 白衣上线 → 信玄火相(低优先)→ 经济 v1。
+
+---
+
 ## 循环 #12 · 2026-06-15 · Designer F
 
 ### 验收:卧龙八阵 deck + 白衣渡江 deck 定义 → ✅ 通过(+ 好纪律)
