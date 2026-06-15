@@ -1,6 +1,6 @@
 import { Engine } from '../../runtime/engine.js';
 import { ThreeRenderer } from './three-renderer.js';
-import { buildGameGArmyMatch, armyFromFormation, applyInterventions, laneEstimates, FORMATION_PRESETS, PRESET_NAMES, LEVER_CATALOG, LEVER_START, LEVER_CAP, LEVER_REGEN, battleSpec, RUN_BATTLES, RUN_LIVES, type Formation, type Intervention, type LeverKind } from './index.js';
+import { buildGameGArmyMatch, armyFromFormation, applyInterventions, laneEstimates, FORMATION_PRESETS, PRESET_NAMES, LEVER_CATALOG, LEVER_START, LEVER_CAP, LEVER_REGEN, battleSpec, RUN_BATTLES, RUN_LIVES, BETWEEN_BUFFS, applyBuff, type Formation, type Intervention, type LeverKind, type RunBuff } from './index.js';
 import type { State, Resource } from '@engine/protocol/components.js';
 
 // Game G ·《翻命扑克》—— 大厅 ↔ 出征 闭环（launcher 卡带槽：export mount(container)→cleanup）。自包含于本目录。
@@ -65,6 +65,15 @@ function describeFormation(off: number[]): string {
     if (p[0] === off[0] && p[1] === off[1] && p[2] === off[2]) return n;
   }
   return `自定义 ${off[0]}/${off[1]}/${off[2]}`;
+}
+// 场间三选一：从增益池随机取 3 张（Fisher–Yates；元层奖励，非确定性 gameplay，用 Math.random 即可）。
+function pick3<T>(xs: readonly T[]): T[] {
+  const a = [...xs];
+  for (let i = a.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [a[i], a[j]] = [a[j], a[i]];
+  }
+  return a.slice(0, 3);
 }
 
 export function mount(container: HTMLElement): () => void {
@@ -236,6 +245,28 @@ export function mount(container: HTMLElement): () => void {
     refresh();
   }
 
+  // ───────────────────────── 场间整备 · 三选一增益（roguelike 养成核 · 胜后短窗）─────────────────────────
+  // 胜一场后进军前的短窗：三随机增益选一项强化牌组/资源 → 选择即流派。改后落存档、回大厅看下一战。
+  function showBetween(nextLabel: string): void {
+    clear();
+    const title = el('div', 'font:600 18px system-ui;color:#22c55e', '🎉 战间整备 · 三选一');
+    const sub = el('div', 'max-width:520px;text-align:center;opacity:.82;line-height:1.6',
+      `胜一场！<b>${nextLabel}</b>前选<b>一项</b>增益强化牌组/资源——roguelike 养成，选择即流派。`);
+    const cardsBox = el('div', 'display:flex;gap:12px;justify-content:center;flex-wrap:wrap');
+    cardsBox.replaceChildren(...pick3(BETWEEN_BUFFS).map((bf: RunBuff) => {
+      const card = el('div', 'width:152px;padding:14px 10px;border:1px solid #334155;border-radius:10px;text-align:center;cursor:pointer;line-height:1.6;background:#10161f',
+        `<div style="font:600 15px system-ui;color:#eab308">${bf.name}</div><div style="opacity:.85;font-size:12px;margin-top:6px">${bf.desc}</div>`);
+      card.onmouseenter = () => { card.style.borderColor = '#22c55e'; card.style.background = '#15201a'; };
+      card.onmouseleave = () => { card.style.borderColor = '#334155'; card.style.background = '#10161f'; };
+      card.onclick = () => { applyBuff(save, bf); persist(save); showLobby(); };
+      return card;
+    }));
+    const skip = mkBtn('跳过，直接回大厅');
+    skip.style.cssText += ';opacity:.6;font-size:11px';
+    skip.onclick = showLobby;
+    root.append(title, sub, cardsBox, skip);
+  }
+
   // ───────────────────────── 出征（一局 3D 三路掷命）─────────────────────────
   function showMatch(formation: Formation, myName: string, interventions: Intervention[]): void {
     clear();
@@ -281,23 +312,32 @@ export function mount(container: HTMLElement): () => void {
       const gain = survA + (winner === 'a' ? 15 : 0);
       save.materials += gain;
       let tail = '';
+      let route: () => void = showLobby; // 结算后"继续"去向
+      let cont = '回大厅';
       if (winner === 'a') {
         save.leverEnergy = Math.min(LEVER_CAP, save.leverEnergy + LEVER_REGEN); // 回能◈
         if (save.stage >= RUN_BATTLES) { // 打穿终局 Boss → 通关
           save.materials += 50;
           tail = '🏆 <b>通关战役！</b>（+50 材料）回大厅开新战役';
           save.stage = 1; save.lives = RUN_LIVES;
-        } else { save.stage += 1; tail = `进军 第 ${save.stage}/${RUN_BATTLES} 战`; }
+        } else { // 胜非终局 → 进军 + 场间三选一养成窗
+          save.stage += 1;
+          tail = `进军 第 ${save.stage}/${RUN_BATTLES} 战`;
+          cont = '战间整备（三选一）';
+          const nl = `进军第 ${save.stage} 战`;
+          route = () => showBetween(nl);
+        }
       } else { // 败/平 → 扣命
         save.lives -= 1;
-        tail = save.lives <= 0 ? '💀 <b>命尽，战役结束</b> 回大厅重整' : `命 −1（剩 ${save.lives}）重整旗鼓再战本场`;
-        if (save.lives <= 0) { save.stage = 1; save.lives = RUN_LIVES; }
+        if (save.lives <= 0) { tail = '💀 <b>命尽，战役结束</b> 回大厅重整'; save.stage = 1; save.lives = RUN_LIVES; }
+        else { tail = `命 −1（剩 ${save.lives}）重整旗鼓再战本场`; cont = '重整再战'; route = () => showFormation([...save.lastOfficers] as [number, number, number]); }
       }
       persist(save);
       const who = winner === 'a' ? '我方胜（best-of-3）' : winner === 'b' ? '敌方胜' : '平局';
       const color = winner === 'a' ? '#eab308' : winner === 'b' ? '#94a3b8' : '#cbd5e1';
       label.innerHTML = `<span style="color:${color}">${who}</span> ｜ 三路 ${lanesA}:${lanesB} ｜ 敌阵【${aiName}】 ｜ +${gain} 材料 ｜ ${tail}`;
-      back.textContent = '← 回大厅';
+      back.textContent = `→ ${cont}`;
+      back.onclick = route;
     };
     engine.subscribe(onFrame);
     engine.start();

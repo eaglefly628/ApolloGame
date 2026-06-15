@@ -2,7 +2,7 @@ import { describe, it, expect } from 'vitest';
 import { Engine } from '../../runtime/engine.js';
 import type { Component } from '@engine/core/types.js';
 import type { Transform, RandomSeed, Resource, State, Card3D } from '@engine/protocol/components.js';
-import { buildGameG3DFlip, buildGameGDuel3D, buildGameGMatch, buildGameGArmyMatch, standardArmy, armyFromFormation, laneEstimates, applyInterventions, laneHandTier, battleSpec, RUN_BATTLES, RUN_LIVES, LEVER_CATALOG, LEVER_START, LEVER_CAP, LEVER_REGEN, FORMATION_PRESETS, PRESET_NAMES, decideFaceUp, cardFace, flipTarget, FLIP_DURATION, FLIP_SPINS, MATCH_REWARD, type FateCard, type ArmyCard, type Intervention } from './blueprint.js';
+import { buildGameG3DFlip, buildGameGDuel3D, buildGameGMatch, buildGameGArmyMatch, standardArmy, armyFromFormation, laneEstimates, applyInterventions, laneHandTier, battleSpec, RUN_BATTLES, RUN_LIVES, BETWEEN_BUFFS, applyBuff, LEVER_CATALOG, LEVER_START, LEVER_CAP, LEVER_REGEN, FORMATION_PRESETS, PRESET_NAMES, decideFaceUp, cardFace, flipTarget, FLIP_DURATION, FLIP_SPINS, MATCH_REWARD, type FateCard, type ArmyCard, type Intervention, type BuffTarget } from './blueprint.js';
 
 const get = <T extends Component>(e: Engine, id: string, type: string): T | undefined => e.world.getComponent<T>(id, type);
 const rotOf = (e: Engine, id = 'card'): number => get<Transform>(e, id, 'Transform')!.rotation;
@@ -454,5 +454,54 @@ describe('Game G · T-G5 战役/run 结构（战役曲线 + Boss）', () => {
   it('Boss 牌王座更强：终局敌军 favor 总和 > 序战', () => {
     const sum = (bias: number): number => standardArmy('b', bias).reduce((s, c) => s + c.favor, 0);
     expect(sum(battleSpec(4).enemyBias)).toBeGreaterThan(sum(battleSpec(0).enemyBias));
+  });
+});
+
+describe('Game G · T-G5 场间三选一增益（养成核 · 纯数据 + applyBuff）', () => {
+  const target = (): BuffTarget => ({ deck: Array.from({ length: 52 }, (_, i) => 44 + (i % 10) * 2), lives: 3, leverEnergy: 3, materials: 0 });
+  const byId = (id: string) => BETWEEN_BUFFS.find((b) => b.id === id)!;
+
+  it('增益池=5 张，每张 kind 合法、amount>0、最弱 LLM 能填的纯数据', () => {
+    expect(BETWEEN_BUFFS).toHaveLength(5);
+    const kinds = new Set(['deck-all', 'deck-weak', 'lives', 'energy', 'materials']);
+    for (const b of BETWEEN_BUFFS) {
+      expect(kinds.has(b.kind)).toBe(true);
+      expect(b.amount).toBeGreaterThan(0);
+      expect(b.name.length).toBeGreaterThan(0);
+    }
+  });
+
+  it('整训：全军 favor +4（钳到 95）', () => {
+    const t = target();
+    const before = [...t.deck];
+    applyBuff(t, byId('drill'));
+    for (let i = 0; i < t.deck.length; i++) expect(t.deck[i]).toBe(Math.min(95, before[i] + 4));
+  });
+
+  it('精兵：仅最弱 10 张各 +8，其余不变；总增=10×8', () => {
+    const t = target();
+    const before = [...t.deck];
+    applyBuff(t, byId('elite'));
+    const delta = t.deck.map((f, i) => f - before[i]);
+    expect(delta.filter((d) => d > 0).length).toBe(10); // 恰 10 张被抬升
+    expect(delta.reduce((a, b) => a + b, 0)).toBe(80); // 无封顶时总增 80
+    // 被抬升的就是原最弱 10 张
+    const weakIdx = before.map((f, i) => [f, i] as const).sort((a, b) => a[0] - b[0]).slice(0, 10).map(([, i]) => i);
+    for (const i of weakIdx) expect(delta[i]).toBe(8);
+  });
+
+  it('征兵/囤能(封顶 CAP)/财源 改对应资源', () => {
+    const t1 = target(); applyBuff(t1, byId('conscript')); expect(t1.lives).toBe(4);
+    const t2 = target(); applyBuff(t2, byId('stockpile')); expect(t2.leverEnergy).toBe(Math.min(LEVER_CAP, 3 + 3));
+    const t3 = { deck: [50], lives: 3, leverEnergy: LEVER_CAP, materials: 0 }; applyBuff(t3, byId('stockpile')); expect(t3.leverEnergy).toBe(LEVER_CAP); // 已满不溢出
+    const t4 = target(); applyBuff(t4, byId('revenue')); expect(t4.materials).toBe(25);
+  });
+
+  it('applyBuff 纯函数式：同 target+buff → 同结果（可重放）', () => {
+    for (const b of BETWEEN_BUFFS) {
+      const a = target(); const c = target();
+      applyBuff(a, b); applyBuff(c, b);
+      expect(a).toEqual(c);
+    }
   });
 });
