@@ -8,6 +8,7 @@ import { getComponentById } from '@engine/core/query.js';
 import type { World } from '@engine/core/world.js';
 import { buildGameFBlueprint, gameFEnemyPreview, GAME_F_ASSETS } from './index.js';
 import { buildLobby, type RunConfig } from './lobby.js';
+import { createAllyMirrors } from './ally-mirror.js';
 
 // Game F 可挂载模块（launcher 卡带槽契约：export mount(container) → cleanup）。
 // 壳层 UI = design_handoff_game_f 的「锦霞 Aurora」皮肤（用户钦定女性向风格）：
@@ -204,7 +205,7 @@ function buildMall(): HTMLElement {
 // —— 单人对局 DOM 设计 chrome（README 对战.dc.html solo 布局 + Apollo UI Kit 控件；接真实世界状态）——
 // 顶 HUD（STAGE/相位/倒计时/主公血/连胜）+ 左羁绊栏 + 右状态·装备栏 + 武将台发光框。
 // 三边覆盖盖掉 canvas 旧 HUD；中间棋盘 + 下方备战席/商店露出，仍走 canvas 数据实体交互（不破坏可玩）。
-function buildSoloHud(click: (x: number, y: number) => void, play: (i: number) => void): { root: HTMLElement; update: (w: World) => void } {
+function buildSoloHud(click: (x: number, y: number) => void, play: (i: number) => void): { root: HTMLElement; update: (w: World) => void; renderAllies: (unitsList: { q: number; r: number; enemy: boolean; hpFrac: number }[][]) => void } {
   const FAC: Record<string, string> = { 蜀: '#d8504e', 吴: '#3fae6e', 魏: '#3a86d4', 群: '#9b6dd8' };
   // 玩家阵营英雄码（纯蜀；codesFor 按 TEAM_A 序）：1关羽 2赵云 3诸葛亮 4张飞 → [名,字,职业,DCSS像素图]。
   const HEROES: Record<number, [string, string, string, string]> = {
@@ -274,7 +275,30 @@ function buildSoloHud(click: (x: number, y: number) => void, play: (i: number) =
     { name: '仲谋', fac: '吴', human: true, hp: 81, ready: true, place: 2, pat: [[2, 4], [3], [1, 5], []] },
     { name: '孟德', fac: '魏', human: false, hp: 64, ready: false, place: 3, pat: [[1, 3, 5], [2, 4], [3], [0]] },
   ];
-  const allyCard = (p: typeof ALLY_ROSTER[number]): string => {
+  // 实时迷你布阵：把盟友镜像里的真实单位(HexPos q,r + 阵营 + 血量)桶进 4×7 hex 缩略格。
+  // ally=势力色、enemy(太阁)=危险色；自适应缩放到当前单位包围盒，故坐标系差异不影响呈现。
+  const liveMini = (fac: string, units: { q: number; r: number; enemy: boolean; hpFrac: number }[]): string => {
+    const col = FAC[fac];
+    if (!units.length) return miniBoard(fac, [[], [], [], []]);
+    const qs = units.map((u) => u.q), rs = units.map((u) => u.r);
+    const minQ = Math.min(...qs), maxQ = Math.max(...qs), minR = Math.min(...rs), maxR = Math.max(...rs);
+    const grid: (null | 'ally' | 'enemy')[] = Array(28).fill(null);
+    for (const u of units) {
+      const c = maxQ > minQ ? Math.round(((u.q - minQ) / (maxQ - minQ)) * 6) : 3;
+      const r = maxR > minR ? Math.round(((u.r - minR) / (maxR - minR)) * 3) : 0;
+      const k = r * 7 + c;
+      if (grid[k] !== 'ally') grid[k] = u.enemy ? 'enemy' : 'ally'; // 盟友优先压敌
+    }
+    return [0, 1, 2, 3].map((r) => {
+      const cells = Array.from({ length: 7 }, (_, c) => {
+        const v = grid[r * 7 + c];
+        const bg = v === 'ally' ? col : v === 'enemy' ? 'var(--danger)' : 'var(--track)';
+        return `<div style="width:13px;height:11px;clip-path:${HEXMINI};background:${bg};box-shadow:${v ? `0 0 3px ${v === 'ally' ? col : 'var(--danger)'}99` : 'none'}"></div>`;
+      }).join('');
+      return `<div style="display:flex;gap:2px;margin-top:${r === 0 ? '0' : '-3px'};margin-left:${r % 2 === 1 ? '7px' : '0'}">${cells}</div>`;
+    }).join('');
+  };
+  const allyCard = (p: typeof ALLY_ROSTER[number], i: number): string => {
     const col = FAC[p.fac];
     const facTag = `display:inline-flex;align-items:center;font-size:9px;padding:1px 6px;border-radius:99px;background:${col}22;color:${col};border:1px solid ${col}66;font-weight:700`;
     const humanTag = `font-size:8px;padding:1px 5px;border-radius:99px;background:${p.human ? 'var(--accent-soft)' : 'var(--chip-bg)'};color:${p.human ? 'var(--accent)' : 'var(--ink-dim)'};border:1px solid ${p.human ? 'var(--accent)' : 'var(--panel-border)'};font-weight:700`;
@@ -297,10 +321,10 @@ function buildSoloHud(click: (x: number, y: number) => void, play: (i: number) =
           </div>
         </div>
       </div>
-      <div class="ally-board" style="margin-top:8px;border-radius:8px;background:var(--panel-grad);border:1px solid var(--panel-border);padding:7px;display:flex;flex-direction:column;align-items:center">${miniBoard(p.fac, p.pat)}</div>
+      <div data-ref="allyboard${i}" class="ally-board" style="margin-top:8px;border-radius:8px;background:var(--panel-grad);border:1px solid var(--panel-border);padding:7px;display:flex;flex-direction:column;align-items:center">${miniBoard(p.fac, p.pat)}</div>
     </div>`;
   };
-  const allyPreview = ALLY_ROSTER.map(allyCard).join('');
+  const allyPreview = ALLY_ROSTER.map((p, i) => allyCard(p, i)).join('');
   // 装备栏（战利品）：开局空，战中敌死掉装备 → 主公拾取 → items 累加填充（update 读真实 items 资源）。
   const EQUIP_ICONS = ['🗡', '🛡', '👑', '📜', '🏹', '💍', '🔮', '⚔️'];
 
@@ -541,7 +565,15 @@ function buildSoloHud(click: (x: number, y: number) => void, play: (i: number) =
       }).join('');
     }
   };
-  return { root, update };
+  // 盟友镜像投影：把每名盟友的真实战局单位画进对应迷你棋盘（startMatch 每帧喂 ally-mirror 单位）。
+  // 颜色取该卡的势力（ALLY_ROSTER[i].fac），与引擎名册解耦——迷你图画的是位置/阵营，不是具体武将。
+  const renderAllies = (unitsList: { q: number; r: number; enemy: boolean; hpFrac: number }[][]): void => {
+    unitsList.forEach((units, i) => {
+      const el = root.querySelector(`[data-ref="allyboard${i}"]`) as HTMLElement | null;
+      if (el) el.innerHTML = liveMini(ALLY_ROSTER[i]?.fac ?? '蜀', units);
+    });
+  };
+  return { root, update, renderAllies };
 }
 
 // 局内对局（startMatch）：从大厅收到出战配置 → 用所选牌组建世界开打。onExit=返回大厅。
@@ -592,6 +624,8 @@ function startMatch(container: HTMLElement, cfg: RunConfig, onExit: () => void):
   const hud = buildSoloHud(clickW, playShop);
   boardPanel.appendChild(hud.root);
   gameView.appendChild(boardPanel); // 操作引导已移入顶栏状态栏（data-ref guide），不再单列底注。
+  // 盟友镜像（三人 Mirror）：两名 AI 盟友各跑自己的 game-f PvE，右栏迷你棋盘实时投影其战局（state-sync 还原）。
+  const allies = createAllyMirrors();
   // 局内 HUD = 这份手写 DOM 覆盖层（顶栏/左下主公卡/右盟友预览/底点将台·开战 + 弹窗）；GameShell（GAME_F_UI）
   // 留作数据化壳层蓝本/测试，但**不在局内并存渲染**——避免在棋盘下方堆叠出第二套点将台/主公卡（owner 报重复）。
 
@@ -654,6 +688,7 @@ function startMatch(container: HTMLElement, cfg: RunConfig, onExit: () => void):
   let rafId = 0;
   const pump = (): void => {
     hud.update(engine.world);
+    hud.renderAllies(allies.map((a) => a.units()));
     rafId = requestAnimationFrame(pump);
   };
   rafId = requestAnimationFrame(pump);
@@ -661,6 +696,7 @@ function startMatch(container: HTMLElement, cfg: RunConfig, onExit: () => void):
   return () => {
     cancelAnimationFrame(rafId);
     engine.stop();
+    allies.forEach((a) => a.dispose());
     keyboard.dispose();
     pointer?.dispose();
     if (style.parentNode) style.parentNode.removeChild(style);
