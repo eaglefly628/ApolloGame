@@ -35,6 +35,19 @@
 
 排期：**A → B → C**（全游戏侧、不阻塞，逐步把"在数据里编程"压下来）；**D 待 Lead 给 GameShell 通用节点**后做。
 
+---
+
+## 一·补 执行进度（2026-06-15 更新）
+
+- **A** ✅ 已达：`band/visSwap/chrome` 生成器构造已展平（Lead 复核确认）。
+- **B** ✅ 已达：顶栏 + 主公卡 → `GAME_F_UI`（`game-f-ui.ts`）；`GameShell` mount；删手写玩家卡（72bc789）。
+- **C** ✅ 界定结案：`makeRoundFlow`/`templatesFor`/`slotEntity` 经 Lead 裁为**合法薄展开器**（"数据驱动≠零函数"），**保留**，不计入"生成器构造"目标。
+- **D（商店分项）** ✅ 已达：Lead 加 `image` 节点后，商店 = 3×(`image`+`button`)（`GAME_F_UI` 点将台面板）；
+  - shop_face StringVar 投影（c53b243）；**canvas 两段脉冲（shop_marks/shop_marks2）+ 大卡模板 + 占位框 → 清零**（96e1fb2）。脉冲标记 114 → 0 ✅。
+- **D（剩余）** ⛔ **浏览器视觉验证阻塞**：删重复 DOM HUD（`buildSoloHud`：底栏/点将台 modal/牵绊栏/装备格/叠层）+ 退役 ready/reroll/lock 假点击桥 + `game-f.tsx` → ~30 行薄 mount。
+  - 卡点：GameShell 与 canvas 棋盘叠放后的实际渲染/拖拽/三选一 modal 显示**无头环境不可见**，删可见 DOM 即"无验证发布 UI"。
+  - 另：三选一 rune modal、棋盘拖拽布阵仍属 DOM/canvas（Lead 裁：不归 GameShell），其假点击/叠层按设计保留。
+
 ## 二、不做（守边界）
 - 不把 game-f 脉冲下沉成引擎能力（Lead 已回驳）。
 - 不为 game-f 私货扩 GameShell；只在确属**通用**节点时请 Lead 评估（card-grid/image/modal）。
