@@ -4,7 +4,23 @@
 
 ---
 
-## 0. 最新交接摘要（2026-06-12，PE-F session）
+## 0. 最新交接摘要（2026-06-15，Program F 自动循环 session）
+
+**🟢 game-f 单机功能完整（本 session 全零引擎、纯游戏侧、全测+真机验）**：
+- **太阁 Boss 招牌 ×8**（现成能力重组）：信长·天下布武(阶段递增 dmg_scale_b)、秀吉/本愿寺(SelfRule spawn 援军/人海)、斋藤毒沼(DoT)、明智群冻(FROZEN)、毛利三矢/今川弓阵(group-count BUSHO/BOW→buff)、石田三献茶(负 hitbox 回血)、谦信/家康(斩杀/忍耐, 早 done)。
+- **牌组 ×5 + 组牌器**：虎豹/汉室/卧龙/白衣/屯田 preset + `CARD_CATALOG`/`assembleDeck`(从收藏自组) + 大厅 picker。
+- **单机吴启用 + 3-faction plumbing**：`rosterFor('wu')`=吴+魏敌方半区（修旧崩 bug）；`buildSoloHud` 阵营感知（HEROES/名牌/商店卡按 faction 派生，去硬编码蜀+a_ 前缀）。
+- **三人 mirror**：`ally-mirror.ts` 本地 AI 盟友各跑 PvE → 右栏迷你棋盘（state-sync 还原）。
+- **经济 v1 全养成环**（`account.ts`，与 ECS 单向解耦）：战功 earn(攻岛结算)→spend(单抽/十连保底抽小丑牌)→收藏→组牌→段位(LP/难度阀 ×太阁hp)→附魔(分解化尘+升卡→局内 dmg_scale_a)。
+- **去腐 + 回驳**：商店脉冲清零(114→0)、商店卡/名牌从 ROSTER 派生（删手抄 HEROES/HERO_NAMES）；回驳 REQ-F-064(Boss=重组)/屯田(已 economy-band)/econ-buff(过度设计)/武将-gacha(破公平)。
+
+**⛔ 下一大方向 = B·多人/三人征日**：核心(传输 REQ-018 + N 端 lockstep)在 `src/net`=主程域 → 需 Lead+owner 协同，**Program F 不擅自入 net 层**。mirror 同步已证不阻塞(REQ-F-057 PF 定论)。小切片(星球牌/天梯解锁)待 Designer F spec。
+
+**自动循环说明**：4 分钟心跳 Monitor（env 30min 上限 → 每周期重武装）；owner 定「不问问题、决策默认+报告」。Designer F 同步跑 docs(`game-f-designer-loop.md`)派单，Program F 实现+回驳，单一 `claude/mainbranch` 直推 rebase。
+
+---
+
+## 0b. 上一交接（2026-06-12，PE-F session）
 
 **🔴 高分屏点击回归（`1fce0e0` 已修）**：`c105b92` 改 canvas 缓冲=逻辑×dpr，但 PointerInputSource 仍按 canvas.width(=缓冲)算坐标 → 落点偏 dpr 倍全空。修：onPointer 先 ÷dpr 还原逻辑坐标。⚠️ headless dpr=1 测试**不保真**——改任何 canvas 尺寸/坐标须真高分屏手验或传 dpr≠1 测试。
 
@@ -37,7 +53,7 @@ Manifest(纯数据) ──parseManifest──▶ WorldBlueprint ──engine.loa
 | **C** 缝纫物语 | match3+craft-recipe+换装 |
 | **D** 暗黑 ARPG | aggro+caster+tilemap；WASD 可玩 |
 | **E** 小丑牌 | poker-hand→card-scoring；150 小丑；webp 美术 |
-| **F** 自走棋 | 六角+hex A*+回合 flow；MVP-1 商店待接；选阵营菜单待接 |
+| **F** 三国自走棋 | 六角+hex A*+回合 flow；单机功能完整（3阵营/5牌组+组牌器/8太阁招牌/三人mirror/经济v1养成环）；下一步=多人 |
 
 ## 3. TODO
 
@@ -47,7 +63,8 @@ Manifest(纯数据) ──parseManifest──▶ WorldBlueprint ──engine.loa
 | REQ-C-005/006/007 | match3 扩展/健壮/特效 | P1/P2 |
 | REQ-023 | group-effect（不 greenlit，先重组） | P3 |
 | PE-E | flow/card-pile 重写回合 + ScoreTrace | PE-E |
-| PE-F | 选阵营菜单(game-f.tsx)；8将扩充（待用户给经济设计）；羁绊 | PE-F |
+| game-f 多人 | B·三人征日：传输 REQ-018 + N 端 lockstep（主程域）+ 掷点分卡 + 三方共享岛 | 待 Lead/owner |
+| game-f 养成余项 | 星球牌(流派升级)、天梯解锁(段位→解锁将/岛/Boss) | 待 Designer F spec |
 
 **🔵 Studio follow-up**：结构编辑；playwright 真截图；⭐ NL→意图层（`ai-data-editor.md`）；Controllable schema
 
