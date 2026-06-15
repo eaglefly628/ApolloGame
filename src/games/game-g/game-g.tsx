@@ -207,7 +207,7 @@ export function mount(container: HTMLElement): () => void {
         ? '已打出：' + interventions.map((iv) => `${LEVER_CATALOG[iv.kind].name}→${LANE_NAME[iv.lane]}路`).join('，')
         : '（未打出干预）';
     };
-    const KINDS: LeverKind[] = ['bless', 'curse', 'decapitate', 'reinforce'];
+    const KINDS = Object.keys(LEVER_CATALOG) as LeverKind[]; // 6 卡自动全列
     cardsBox.replaceChildren(...KINDS.map((kind) => {
       const c = LEVER_CATALOG[kind];
       const row = el('div', 'display:flex;gap:7px;align-items:center;justify-content:center');

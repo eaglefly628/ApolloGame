@@ -345,9 +345,9 @@ describe('Game G · T-G3 自定义分兵（任意合法军官分布）', () => {
 describe('Game G · T-G4 干预卡（揭晓前改输入，outcome-first 不破）', () => {
   const sumLane = (army: ArmyCard[], lane: number): number => army.filter((c) => c.lane === lane).reduce((s, c) => s + c.favor, 0);
 
-  it('能量常量 + 4 卡目录(费用/侧)', () => {
+  it('能量常量 + 6 卡目录(费用/侧)', () => {
     expect([LEVER_START, LEVER_CAP, LEVER_REGEN]).toEqual([3, 6, 2]);
-    expect(Object.keys(LEVER_CATALOG)).toEqual(['bless', 'curse', 'decapitate', 'reinforce']);
+    expect(Object.keys(LEVER_CATALOG)).toEqual(['bless', 'curse', 'shield', 'decapitate', 'reinforce', 'flush']);
     expect(LEVER_CATALOG.decapitate.cost).toBe(3);
     expect(LEVER_CATALOG.bless.side).toBe('a');
     expect(LEVER_CATALOG.curse.side).toBe('b');
@@ -396,5 +396,41 @@ describe('Game G · T-G4 干预卡（揭晓前改输入，outcome-first 不破�
       e2.world.tick();
       expect(e1.hash()).toBe(e2.hash());
     }
+  });
+});
+
+describe('Game G · T-G4 护盾 + 同花（首发 6 完成）', () => {
+  it('目录含 6 卡(护盾2◈/同花2◈)', () => {
+    expect(Object.keys(LEVER_CATALOG)).toHaveLength(6);
+    expect(LEVER_CATALOG.shield.cost).toBe(2);
+    expect(LEVER_CATALOG.flush.side).toBe('a');
+  });
+  it('护盾：本路最弱牌 favor 拉到 92(仅一张)', () => {
+    const A = standardArmy('a', -20); // 压低，制造弱牌
+    const sh = applyInterventions(A, standardArmy('b', 0), [{ kind: 'shield', lane: 0 }]).a.filter((c) => c.lane === 0);
+    expect(Math.max(...sh.map((c) => c.favor))).toBeGreaterThanOrEqual(92);
+    expect(sh.filter((c) => c.favor === 92).length).toBe(1);
+  });
+  it('同花：本路某花 ≥3 张 → 全路 favor 抬升；否则不变', () => {
+    const A = standardArmy('a', 0);
+    const lane0 = A.filter((c) => c.lane === 0);
+    const cnt: Record<string, number> = {};
+    for (const c of lane0) cnt[c.suit] = (cnt[c.suit] ?? 0) + 1;
+    const maxSuit = Math.max(...Object.values(cnt));
+    const fl = applyInterventions(A, standardArmy('b', 0), [{ kind: 'flush', lane: 0 }]).a.filter((c) => c.lane === 0);
+    const sum = (xs: ArmyCard[]): number => xs.reduce((s, c) => s + c.favor, 0);
+    if (maxSuit > 2) expect(sum(fl)).toBeGreaterThan(sum(lane0));
+    else expect(sum(fl)).toBe(sum(lane0));
+  });
+  it('护盾/同花进 sim 确定：同军+同干预+seed 逐拍 hash 一致', () => {
+    const list: Intervention[] = [{ kind: 'shield', lane: 0 }, { kind: 'flush', lane: 1 }];
+    const mk = (): Engine => {
+      const { a, b } = applyInterventions(standardArmy('a', 2), standardArmy('b', 0), list);
+      const e = new Engine({ tickRate: 60 });
+      e.load(buildGameGArmyMatch(a, b, 7));
+      return e;
+    };
+    const e1 = mk(), e2 = mk();
+    for (let i = 0; i < FLIP_DURATION + 12; i++) { e1.world.tick(); e2.world.tick(); expect(e1.hash()).toBe(e2.hash()); }
   });
 });

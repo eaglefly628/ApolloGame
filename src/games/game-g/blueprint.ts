@@ -262,6 +262,7 @@ export interface ArmyCard {
   lane: number; // 0/1/2 = 上/中/下路
   favor: number; // 含 favorBias 的基础 favor（未含士气/溃散）
   general: boolean; // 是否本路主将（最高军衔）
+  suit: string; // 花色 S/H/D/C（同花卡数花色用；render 也用）
 }
 
 /** 一方 54 张(52+2王)成军：按军衔降序蛇形发三路(各18)，每路首张(最高军衔)=路主将。favorBias=该方整体强弱。 */
@@ -274,7 +275,7 @@ export function standardArmy(prefix: string, favorBias = 0): ArmyCard[] {
   order.forEach((o, k) => {
     const lane = k % 3;
     const idx = counts[lane]++;
-    army.push({ id: `${prefix}_l${lane}_${idx}`, rank: o.r, lane, favor: clampFavor(rankFavor(o.r) + favorBias), general: idx === 0 });
+    army.push({ id: `${prefix}_l${lane}_${idx}`, rank: o.r, lane, favor: clampFavor(rankFavor(o.r) + favorBias), general: idx === 0, suit: SUITS[army.length % 4] });
   });
   return army;
 }
@@ -370,7 +371,7 @@ export function armyFromFormation(prefix: string, favorBias: number, formation?:
   for (const lane of [0, 1, 2]) {
     const laneRanks = [...offLanes[lane], ...troopLanes[lane]]; // 军官在前(高 favor)→ idx0=主将
     laneRanks.forEach((rank, idx) => {
-      army.push({ id: `${prefix}_l${lane}_${idx}`, rank, lane, favor: clampFavor(rankFavor(rank) + favorBias), general: idx === 0 });
+      army.push({ id: `${prefix}_l${lane}_${idx}`, rank, lane, favor: clampFavor(rankFavor(rank) + favorBias), general: idx === 0, suit: SUITS[army.length % 4] });
     });
   }
   return army;
@@ -382,12 +383,14 @@ export function armyFromFormation(prefix: string, favorBias: number, formation?:
 export const LEVER_START = 3; // 开局能量
 export const LEVER_CAP = 6; // 上限
 export const LEVER_REGEN = 2; // 每关回能
-export type LeverKind = 'bless' | 'curse' | 'decapitate' | 'reinforce';
+export type LeverKind = 'bless' | 'curse' | 'shield' | 'decapitate' | 'reinforce' | 'flush';
 export const LEVER_CATALOG: Record<LeverKind, { name: string; cost: number; side: 'a' | 'b'; desc: string }> = {
   bless: { name: '祝福', cost: 1, side: 'a', desc: '我某路全员 favor +20' },
   curse: { name: '诅咒', cost: 1, side: 'b', desc: '敌某路全员 favor −20' },
+  shield: { name: '护盾', cost: 2, side: 'a', desc: '我某路最弱牌反面免死(favor→92)' },
   decapitate: { name: '斩首令', cost: 3, side: 'b', desc: '敌某路主将必掉→该路溃散(−14)' },
   reinforce: { name: '增援', cost: 3, side: 'a', desc: '我某路 +2 兵(go-wide 该路)' },
+  flush: { name: '同花', cost: 2, side: 'a', desc: '我某路同花色越多→全路 +favor' },
 };
 export interface Intervention { kind: LeverKind; lane: number }
 const BLESS = 20, CURSE = 20, DECAP_FAVOR = 8;
@@ -407,8 +410,22 @@ export function applyInterventions(armyA: ArmyCard[], armyB: ArmyCard[], list: I
     else if (iv.kind === 'reinforce') {
       const n = a.filter((c) => c.lane === iv.lane).length;
       a = [...a,
-        { id: `a_l${iv.lane}_rf${n}`, rank: 'A', lane: iv.lane, favor: clampFavor(46 + biasA), general: false },
-        { id: `a_l${iv.lane}_rf${n + 1}`, rank: '2', lane: iv.lane, favor: clampFavor(46 + biasA), general: false }];
+        { id: `a_l${iv.lane}_rf${n}`, rank: 'A', lane: iv.lane, favor: clampFavor(46 + biasA), general: false, suit: 'S' },
+        { id: `a_l${iv.lane}_rf${n + 1}`, rank: '2', lane: iv.lane, favor: clampFavor(46 + biasA), general: false, suit: 'H' }];
+    } else if (iv.kind === 'shield') {
+      // 护盾：本路最弱牌 favor 拉到 92（≈反面免死，揭晓前抬高其活率）。
+      const lane = a.filter((c) => c.lane === iv.lane);
+      if (lane.length) {
+        const weak = lane.reduce((m, c) => (c.favor < m.favor ? c : m), lane[0]);
+        a = a.map((c) => (c.id === weak.id ? { ...c, favor: 92 } : c));
+      }
+    } else if (iv.kind === 'flush') {
+      // 同花：数本路同花色最多的一花，越多→全路 +favor（每超过 2 张 +4）。简单数花色，不复用 5 张 poker-hand。
+      const lane = a.filter((c) => c.lane === iv.lane);
+      const cnt: Record<string, number> = {};
+      for (const c of lane) cnt[c.suit] = (cnt[c.suit] ?? 0) + 1;
+      const buff = Math.max(0, (Math.max(0, ...Object.values(cnt)) - 2) * 4);
+      if (buff > 0) a = a.map((c) => (c.lane === iv.lane ? { ...c, favor: clampFavor(c.favor + buff) } : c));
     }
   }
   return { a, b };
@@ -446,7 +463,7 @@ export function buildGameGArmyMatch(armyA: ArmyCard[], armyB: ArmyCard[], seed =
           side: isA ? 'a' : 'b',
           pairKey: lane * 100 + i, // 同 pairKey 的 A/B 互为对手 → 渲染器让两牌相撞（*100 容增援后路 >18 张）
           rank: c.rank === 'JOKER' ? '★' : c.rank,
-          suit: SUITS[(lane * 18 + i) % 4],
+          suit: c.suit,
           frontTint: c.general ? genFront : front, // 主将更亮，战场上一眼可辨
           backTint: CARD_BACK,
         });
