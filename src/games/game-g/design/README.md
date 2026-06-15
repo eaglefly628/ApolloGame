@@ -31,6 +31,7 @@
 | 09 | `09-formation-and-deployment.md` | 开局布阵/分兵（田忌赛马）：预设+拖拽混合 / 弃一保二 / vs AI 暗布阵 |
 | 10 | `10-intervention-cards.md` | 干预卡/功能牌目录（Levers）：能量经济 + 改命/斩首/增援/牌型羁绊/伏击 5 类 |
 | 11 | `11-run-and-campaign.md` | 战役/run 结构（roguelike 元层）：5 场连战 + 命线 + 场间养成 + 终局 Boss |
+| 12 | `12-cultivation-jokers-archetypes.md` | 培养：小丑牌(10)/星球牌(5)/附魔 + 6 流派 + 克制网（长期重玩层）|
 | — | `PROGRAM-G-TASKS.md` | design G↔program G 循环任务板（当前任务/状态/回馈）|
 | — | `UI/` | UI 设计稿（`大厅` / `三路战场`(推荐) / `对战`(参考) `.dc.html` + README）= `08` 的依据 |
 
