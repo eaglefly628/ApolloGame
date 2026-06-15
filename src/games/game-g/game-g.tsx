@@ -1,6 +1,6 @@
 import { Engine } from '../../runtime/engine.js';
 import { ThreeRenderer } from './three-renderer.js';
-import { buildGameGArmyMatch, armyFromFormation, applyInterventions, applyJokers, laneEstimates, FORMATION_PRESETS, PRESET_NAMES, LEVER_CATALOG, LEVER_START, LEVER_CAP, LEVER_REGEN, battleSpec, RUN_BATTLES, RUN_LIVES, BETWEEN_BUFFS, applyBuff, BOSS_ROSTER, bossFor, GAME_G_JOKERS, JOKER_BY_ID, type Formation, type Intervention, type LeverKind, type RunBuff } from './index.js';
+import { buildGameGArmyMatch, armyFromFormation, applyInterventions, applyJokers, jokerMoraleScale, laneEstimates, FORMATION_PRESETS, PRESET_NAMES, LEVER_CATALOG, LEVER_START, LEVER_CAP, LEVER_REGEN, battleSpec, RUN_BATTLES, RUN_LIVES, BETWEEN_BUFFS, applyBuff, BOSS_ROSTER, bossFor, GAME_G_JOKERS, JOKER_BY_ID, type Formation, type Intervention, type LeverKind, type RunBuff } from './index.js';
 import type { State, Resource } from '@engine/protocol/components.js';
 
 // Game G ·《翻命扑克》—— 大厅 ↔ 出征 闭环（launcher 卡带槽：export mount(container)→cleanup）。自包含于本目录。
@@ -323,7 +323,8 @@ export function mount(container: HTMLElement): () => void {
     // 揭晓前施加干预：先玩家(caster='a')，再 Boss 起手(caster='b'，对称——诅咒/斩首落玩家、增益落 Boss)。均 outcome-first。
     let { a, b } = applyInterventions(armyA, armyB, interventions, myBias(save.deck));
     if (boss && boss.openingLevers.length) ({ a, b } = applyInterventions(a, b, boss.openingLevers, enemyBias, 'b'));
-    engine.load(buildGameGArmyMatch(a, b, Math.floor(Math.random() * 1e9)));
+    const moraleA = jokerMoraleScale(a, save.jokers); // 旗手/枭雄放大我方各路士气（敌方无）
+    engine.load(buildGameGArmyMatch(a, b, Math.floor(Math.random() * 1e9), undefined, moraleA));
     renderer = new ThreeRenderer({ width: W, height: H });
     engine.attachRenderer(renderer, stage);
 

@@ -323,14 +323,16 @@ export function standardArmy(prefix: string, favorBias = 0): ArmyCard[] {
 
 // 将领牵动：逐路自上而下掷命——先掷主将，按主将生死给本路下属 ±favor，再掷下属。返回 id→faceUp。
 // PRNG 顺序固定（lane 0→1→2，路内主将先、其余按生成序）→ 可回放、确定性。
-function resolveArmy(army: ArmyCard[], rng: RandomSeed): Map<string, boolean> {
+// moraleScale[lane]：本路士气加成倍率（旗手/枭雄小丑放大 `06` 士气，缺省 1）。仅放大士气(活)、不放大溃散(亡)。
+// 缩放只改下属 favor 值、不改掷命次数（每牌 1 抽）→ PRNG 序列不变、确定性/可回放保持。
+function resolveArmy(army: ArmyCard[], rng: RandomSeed, moraleScale: readonly number[] = [1, 1, 1]): Map<string, boolean> {
   const face = new Map<string, boolean>();
   for (const lane of [0, 1, 2]) {
     const laneCards = army.filter((c) => c.lane === lane);
     const gen = laneCards.find((c) => c.general)!;
     const fg = decideFaceUp(gen.favor, rng); // 先掷主将
     face.set(gen.id, fg);
-    const shift = fg ? MORALE : -ROUT; // 主将活=士气，亡=溃散
+    const shift = fg ? Math.round(MORALE * (moraleScale[lane] ?? 1)) : -ROUT; // 主将活=士气(可被旗手/枭雄放大)，亡=溃散(不放大)
     for (const c of laneCards) {
       if (c.general) continue;
       face.set(c.id, decideFaceUp(clampFavor(c.favor + shift), rng));
@@ -552,20 +554,40 @@ export function bossFor(idx: number): BossSpec {
 // 故复用"数据+解释器"范式、**不复用 Game E 运行时**（同 D0 §同花未复用 evaluateHand 之理）。applyJokers 在 resolveArmy 前跑、**零新能力**。
 // 局外持久：融在玩家牌组上（save.jokers），跨 run 不清零——"牌组身份"养成核(owner 愿景)。
 // 本批 4 张=纯 build 时 favor 变换(同袍/赌徒/先登/不屈)；士气放大族(旗手/枭雄)、结局联动族(死士/连环/督粮/影武者)待后续切片(需 resolve 时钩子)。
-export type JokerKind = 'suit-synergy' | 'polarize' | 'lane-pref' | 'diehard';
+export type JokerKind = 'suit-synergy' | 'polarize' | 'lane-pref' | 'diehard' | 'morale';
 export type Archetype = 'card-type' | 'probability' | 'vanguard' | 'wide' | 'decap' | 'general';
 export interface JokerCard {
   id: string; name: string; kind: JokerKind; cost: number; archetype: Archetype; text: string;
   amount?: number; // favor 量
   lane?: number; // lane-pref 偏好路
+  moraleMul?: number; // morale：本路士气倍率（旗手 1.5 / 枭雄 2）
 }
 export const GAME_G_JOKERS: JokerCard[] = [
   { id: 'comrade', name: '同袍', kind: 'suit-synergy', cost: 18, archetype: 'card-type', amount: 2, text: '本路每有 1 张同花色 → 该牌 +2 favor（牌型流：往一路堆同花越爽）' },
   { id: 'gambler', name: '赌徒', kind: 'polarize', cost: 16, archetype: 'probability', amount: 12, text: '全军 favor 两极化：≥50 的更高、<50 的更低（概率流：高风险高回报）' },
   { id: 'vanguard', name: '先登', kind: 'lane-pref', cost: 15, archetype: 'vanguard', amount: 8, lane: 0, text: '上路全员 +8 favor（主攻上路）' },
   { id: 'diehard', name: '不屈', kind: 'diehard', cost: 22, archetype: 'probability', amount: 88, text: '全军 favor 不足 88 的拉到 88（近免死、稳翻正面）' },
+  { id: 'bannerman', name: '旗手', kind: 'morale', cost: 17, archetype: 'general', moraleMul: 1.5, text: '全军主将士气加成 ×1.5（主将活则全路涌 · 将领流核心）' },
+  { id: 'warlord', name: '枭雄', kind: 'morale', cost: 24, archetype: 'general', moraleMul: 2, text: '顶级主将(K/王)所在路，士气加成 ×2（堆高军衔主将碾压一路）' },
 ];
 export const JOKER_BY_ID: ReadonlyMap<string, JokerCard> = new Map(GAME_G_JOKERS.map((j) => [j.id, j]));
+
+// 从已融小丑算每路士气倍率（旗手全路、枭雄仅顶级主将路）→ 喂 resolveArmy。复用 `06` 士气、不新机制。
+const TOP_RANKS = new Set(['JOKER', 'K']); // 顶级军衔（枭雄触发档）
+export function jokerMoraleScale(army: ArmyCard[], jokerIds: readonly string[]): number[] {
+  const scale = [1, 1, 1];
+  for (const id of jokerIds) {
+    const j = JOKER_BY_ID.get(id);
+    if (!j || j.kind !== 'morale') continue;
+    for (const lane of [0, 1, 2]) {
+      if (j.id === 'warlord') {
+        const gen = army.find((c) => c.lane === lane && c.general); // 枭雄：仅本路主将顶级时放大
+        if (gen && TOP_RANKS.has(gen.rank)) scale[lane] *= j.moraleMul ?? 1;
+      } else scale[lane] *= j.moraleMul ?? 1; // 旗手：全路
+    }
+  }
+  return scale;
+}
 
 /**
  * 融小丑：揭晓前按已融小丑（持久）把军阵 favor 变换 → 返回新军，喂 applyInterventions/build。
@@ -595,10 +617,11 @@ export function applyJokers(army: ArmyCard[], jokerIds: readonly string[]): Army
 /**
  * G2 一局军阵对决：armyA(我) vs armyB(敌)，自上而下逐级掷命(将领牵动) → 三路数存活 → best-of-3 定总胜负。
  * 装配顺序 A 全军 → B 全军（PRNG 序列确定、可回放）。胜负 build 时即定；3D 抛飞相撞为表现。
+ * moraleA：我方各路士气倍率（旗手/枭雄小丑放大，缺省 [1,1,1]）；敌方无小丑。缩放不改掷命次数→确定性不变。
  */
-export function buildGameGArmyMatch(armyA: ArmyCard[], armyB: ArmyCard[], seed = 1, reward = MATCH_REWARD): WorldBlueprint {
+export function buildGameGArmyMatch(armyA: ArmyCard[], armyB: ArmyCard[], seed = 1, reward = MATCH_REWARD, moraleA: readonly number[] = [1, 1, 1]): WorldBlueprint {
   const rng: RandomSeed = { type: 'RandomSeed', seed, sequence: 0 };
-  const faceA = resolveArmy(armyA, rng);
+  const faceA = resolveArmy(armyA, rng, moraleA);
   const faceB = resolveArmy(armyB, rng);
   const entities: Record<string, EntityBlueprint> = {};
 

@@ -2,7 +2,7 @@ import { describe, it, expect } from 'vitest';
 import { Engine } from '../../runtime/engine.js';
 import type { Component } from '@engine/core/types.js';
 import type { Transform, RandomSeed, Resource, State, Card3D } from '@engine/protocol/components.js';
-import { buildGameG3DFlip, buildGameGDuel3D, buildGameGMatch, buildGameGArmyMatch, standardArmy, armyFromFormation, laneEstimates, applyInterventions, applyJokers, GAME_G_JOKERS, JOKER_BY_ID, laneHandTier, battleSpec, RUN_BATTLES, RUN_LIVES, BETWEEN_BUFFS, applyBuff, BOSS_ROSTER, bossFor, LEVER_CATALOG, LEVER_START, LEVER_CAP, LEVER_REGEN, FORMATION_PRESETS, PRESET_NAMES, decideFaceUp, cardFace, flipTarget, FLIP_DURATION, FLIP_SPINS, MATCH_REWARD, type FateCard, type ArmyCard, type Intervention, type BuffTarget } from './blueprint.js';
+import { buildGameG3DFlip, buildGameGDuel3D, buildGameGMatch, buildGameGArmyMatch, standardArmy, armyFromFormation, laneEstimates, applyInterventions, applyJokers, jokerMoraleScale, GAME_G_JOKERS, JOKER_BY_ID, laneHandTier, battleSpec, RUN_BATTLES, RUN_LIVES, BETWEEN_BUFFS, applyBuff, BOSS_ROSTER, bossFor, LEVER_CATALOG, LEVER_START, LEVER_CAP, LEVER_REGEN, FORMATION_PRESETS, PRESET_NAMES, decideFaceUp, cardFace, flipTarget, FLIP_DURATION, FLIP_SPINS, MATCH_REWARD, type FateCard, type ArmyCard, type Intervention, type BuffTarget } from './blueprint.js';
 
 const get = <T extends Component>(e: Engine, id: string, type: string): T | undefined => e.world.getComponent<T>(id, type);
 const rotOf = (e: Engine, id = 'card'): number => get<Transform>(e, id, 'Transform')!.rotation;
@@ -585,9 +585,9 @@ describe('Game G · T-G5 终局 Boss 阵容 + 对称起手干预（design/13）'
 describe('Game G · T-G6 小丑牌（融牌面 · build 时 favor 变换 · 持久牌组身份）', () => {
   const mk = (id: string, lane: number, suit: string, favor: number): ArmyCard => ({ id, rank: 'A', lane, favor, general: false, suit });
 
-  it('小丑目录(本批)≥4，kind 合法、cost>0、有 text；JOKER_BY_ID 覆盖全', () => {
-    expect(GAME_G_JOKERS.length).toBeGreaterThanOrEqual(4);
-    const kinds = new Set(['suit-synergy', 'polarize', 'lane-pref', 'diehard']);
+  it('小丑目录(本批)≥6，kind 合法、cost>0、有 text；JOKER_BY_ID 覆盖全', () => {
+    expect(GAME_G_JOKERS.length).toBeGreaterThanOrEqual(6);
+    const kinds = new Set(['suit-synergy', 'polarize', 'lane-pref', 'diehard', 'morale']);
     for (const j of GAME_G_JOKERS) {
       expect(kinds.has(j.kind)).toBe(true);
       expect(j.cost).toBeGreaterThan(0);
@@ -647,6 +647,39 @@ describe('Game G · T-G6 小丑牌（融牌面 · build 时 favor 变换 · 持�
       const a = applyJokers(standardArmy('a', 2), ['comrade', 'vanguard']);
       const e = new Engine({ tickRate: 60 });
       e.load(buildGameGArmyMatch(a, standardArmy('b', 0), 9));
+      return e;
+    };
+    const e1 = mkE(), e2 = mkE();
+    for (let i = 0; i < FLIP_DURATION + 12; i++) { e1.world.tick(); e2.world.tick(); expect(e1.hash()).toBe(e2.hash()); }
+  });
+
+  it('旗手/枭雄 士气倍率：旗手全路 ×1.5、枭雄仅顶级主将(K/王)路 ×2、无则 [1,1,1]', () => {
+    const army = standardArmy('a', 0); // 三路主将均顶级(JOKER/JOKER/K)
+    expect(jokerMoraleScale(army, [])).toEqual([1, 1, 1]);
+    expect(jokerMoraleScale(army, ['bannerman'])).toEqual([1.5, 1.5, 1.5]);
+    for (const v of jokerMoraleScale(army, ['warlord'])) expect(v).toBe(2); // 全顶级 → 全 ×2
+    // 枭雄只认顶级主将：把某路主将换成低军衔 → 该路不放大
+    const army2 = army.map((c) => (c.lane === 1 && c.general ? { ...c, rank: '7' } : c));
+    expect(jokerMoraleScale(army2, ['warlord'])).toEqual([2, 1, 2]);
+  });
+
+  it('旗手放大士气：build 时该路下属(主将活)favor 抬升 → 表现为存活单调不减（同 seed）', () => {
+    const baseA = standardArmy('a', 6); // 主将高军衔+偏置 → 大概率活、士气生效
+    const run = (jids: string[]): number => {
+      const a = applyJokers(baseA, jids);
+      const e = new Engine({ tickRate: 60 });
+      e.load(buildGameGArmyMatch(a, standardArmy('b', 0), 11, undefined, jokerMoraleScale(a, jids)));
+      for (let i = 0; i < FLIP_DURATION + 8; i++) e.world.tick();
+      return ['a_l0', 'a_l1', 'a_l2'].reduce((s, id) => s + (get<Resource>(e, id, 'Resource')?.current ?? 0), 0);
+    };
+    expect(run(['bannerman'])).toBeGreaterThanOrEqual(run([])); // 士气放大只升不降
+  });
+
+  it('确定性：旗手士气缩放进 sim 逐拍 hash 一致（缩放不改掷命次数）', () => {
+    const mkE = (): Engine => {
+      const a = applyJokers(standardArmy('a', 4), ['bannerman', 'warlord']);
+      const e = new Engine({ tickRate: 60 });
+      e.load(buildGameGArmyMatch(a, standardArmy('b', 0), 13, undefined, jokerMoraleScale(a, ['bannerman', 'warlord'])));
       return e;
     };
     const e1 = mkE(), e2 = mkE();
