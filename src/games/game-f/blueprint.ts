@@ -222,8 +222,9 @@ const RUN_FLOW = {
 
 // 节奏档（玩家视角修正：备战 ~30s 给操作时间——准则 §1.2；ready 可跳过；结算 4s 可读）。
 // 测试传快速档 {prepTicks:40, resolutionTicks:60} 保持既有时序断言；缺省=玩家档。
-export interface GameFPacing { prepTicks?: number; resolutionTicks?: number; celebrateTicks?: number; playerFaction?: Faction; deck?: Deck }
+export interface GameFPacing { prepTicks?: number; resolutionTicks?: number; celebrateTicks?: number; playerFaction?: Faction; deck?: Deck; difficulty?: number }
 export function buildGameFBlueprint(pacing: GameFPacing = {}): WorldBlueprint {
+  const DIFFICULTY = pacing.difficulty ?? 1; // 段位难度阀（×太阁 hp；缺省 1 = 默认局，snapshot 不变）
   const PREP_TICKS = pacing.prepTicks ?? 1800; // 30s@60tps
   const RESOLUTION_TICKS = pacing.resolutionTicks ?? 240; // 4s
   const CELEBRATE_TICKS = pacing.celebrateTicks ?? 110; // ~1.8s 战后亮相（横幅+彩点；测试快速档传小值）
@@ -773,9 +774,10 @@ export function buildGameFBlueprint(pacing: GameFPacing = {}): WorldBlueprint {
       for (let k = 0; k < slot.count; k++, i++) {
         const a = offsetToAxial(1 + (i % 6), i < 6 ? 3 : 2); // 前排 r3 排 6 个，溢出到 r2
         const p2 = project(a.q, a.r);
+        const mobHp = Math.round(u.hp * DIFFICULTY); // 段位难度阀：高段位太阁更肉
         entities[`pveslot_s${w.stage}_${i}`] = {
           Transform: xf(p2.x, p2.y),
-          Caster: { onSignal: `deploy_pve_${w.stage}`, template: `mob_${slot.code}`, at: 'self', overrides: { main: { HexPos: { q: a.q, r: a.r }, Tag: { flags: TEAM_B | (u.seg === 'kokujin' || u.seg === 'tenshu' ? BUSHO : 0) | (u.atkType !== 'melee' ? BOW : 0) }, Resource: { current: u.hp, max: u.hp } } } }, // 部将(毛利三矢)/弓兵(今川弓阵) group-count tag
+          Caster: { onSignal: `deploy_pve_${w.stage}`, template: `mob_${slot.code}`, at: 'self', overrides: { main: { HexPos: { q: a.q, r: a.r }, Tag: { flags: TEAM_B | (u.seg === 'kokujin' || u.seg === 'tenshu' ? BUSHO : 0) | (u.atkType !== 'melee' ? BOW : 0) }, Resource: { current: mobHp, max: mobHp } } } }, // 部将(毛利三矢)/弓兵(今川弓阵) group-count tag
         };
       }
     }

@@ -56,6 +56,38 @@ export function spendWarfunds(amount: number, kv: KV = defaultKV()): boolean {
   return true;
 }
 
+// ── 段位 = 难度阀（spec §六；account 层数据 → 难度系数喂蓝图）──
+// 单机「名次」退化为胜负：胜 +LP、负 -LP；LP→段位档→太阁难度系数（高段位关卡更凶，spec §六）。
+export interface Rank { tier: string; lp: number; difficulty: number }
+const LP_KEY = 'gamef.account.lp';
+const LP_START = 1000;
+// 段位表：LP 阈值 → 段位名 + 太阁难度系数（×太阁 hp）。越高段位岛越凶。
+const RANK_TIERS: { min: number; tier: string; difficulty: number }[] = [
+  { min: 0, tier: '黑铁', difficulty: 1.0 },
+  { min: 800, tier: '白银', difficulty: 1.1 },
+  { min: 1200, tier: '黄金', difficulty: 1.25 },
+  { min: 1800, tier: '铂金', difficulty: 1.45 },
+  { min: 2400, tier: '钻石', difficulty: 1.7 },
+];
+export function getLP(kv: KV = defaultKV()): number {
+  const raw = kv.getItem(LP_KEY);
+  if (raw === null) return LP_START;
+  const n = Number(raw);
+  return Number.isFinite(n) && n >= 0 ? Math.floor(n) : LP_START;
+}
+export function rankFor(lp: number): Rank {
+  let t = RANK_TIERS[0];
+  for (const x of RANK_TIERS) { if (lp >= x.min) t = x; }
+  return { tier: t.tier, lp, difficulty: t.difficulty };
+}
+// 一局后更新 LP（胜 +25 / 负 -15，钳非负）→ 返回新段位 + 变动。
+export function updateLpAfterRun(victory: boolean, kv: KV = defaultKV()): { rank: Rank; delta: number } {
+  const delta = victory ? 25 : -15;
+  const lp = Math.max(0, getLP(kv) + delta);
+  kv.setItem(LP_KEY, String(lp));
+  return { rank: rankFor(lp), delta };
+}
+
 // ── 收藏 + 软币抽卡（spec §二/§五；闭合 earn→spend；account 层、与 ECS 解耦）──
 // 卡池=三国全武将（id→收藏 count）。weight=出率（均权占位；rarity 真表由 designer 定，本模块只管机制）。
 export interface GachaEntry { id: string; name: string; weight: number }

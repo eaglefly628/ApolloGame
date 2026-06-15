@@ -2,7 +2,7 @@
 // 与确定性引擎解耦：纯前端 + 假数据；只在「开始攻岛」那刻产出一份「出战牌组+势力+队伍配置」交给 onStart。
 // 局内对局由 game-f.tsx 的 startMatch 接手。视觉基调=绢帛暖米+水墨黑（brief §二），class 前缀 gfl- 防与局内 gfx- 撞。
 import { type Deck, type Faction, HUBAO_DECK, DECK_REGISTRY } from './index.js';
-import { getWarfunds, gachaPull, getCollection, GACHA_COST } from './account.js';
+import { getWarfunds, gachaPull, getCollection, GACHA_COST, getLP, rankFor } from './account.js';
 
 export interface RunConfig {
   deck: Deck;
@@ -133,7 +133,7 @@ export function buildLobby(onStart: (cfg: RunConfig) => void): HTMLElement {
   <div class="gfl-top">
     <div style="display:flex;align-items:center;gap:10px"><div class="gfl-av">🪖</div>
       <div><div style="font-weight:700;font-size:15px">赵云<span style="font-size:11px;color:#cdbb98"> ·「江夏太守」</span></div></div>
-      <div class="gfl-rank">⚔️ 黄金Ⅲ · 1240 LP</div></div>
+      <div class="gfl-rank">⚔️ ${rankFor(getLP()).tier} · ${getLP()} LP</div></div>
     <div class="gfl-cur"><span class="gfl-chip" data-ref="warfunds">🎖️ 战功 ${getWarfunds()}</span><span class="gfl-chip">🪙 金 1.2k</span><span class="gfl-chip">🎟️ 券 30</span><span class="gfl-chip">💎 钻 88</span></div>
   </div>
   <div class="gfl-tabs">

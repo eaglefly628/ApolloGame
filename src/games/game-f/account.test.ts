@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { warfundsFor, getWarfunds, addWarfunds, settleRun, memoryKV, spendWarfunds, gachaPull, gachaRates, getCollection, GACHA_COST, GACHA_POOL } from './account.js';
+import { warfundsFor, getWarfunds, addWarfunds, settleRun, memoryKV, spendWarfunds, gachaPull, gachaRates, getCollection, GACHA_COST, GACHA_POOL, getLP, rankFor, updateLpAfterRun } from './account.js';
 
 describe('经济 v1 · 账号层战功（warfunds；服务层、与 ECS 解耦）', () => {
   it('战功公式：贡献/胜利/波深单调增，钳非负取整', () => {
@@ -50,10 +50,27 @@ describe('经济 v1 · 收藏 + 软币抽卡（闭合 earn→spend；account 层
     const kv = memoryKV();
     expect(gachaPull(kv, () => 0).ok).toBe(false); // 0 战功抽不动
     addWarfunds(GACHA_COST, kv);
-    const r = gachaPull(kv, () => 0, [{ id: 'a_guanyu', name: '关羽', weight: 1 }]); // 定种 rng → 必出关羽
+    const r = gachaPull(kv, () => 0, [{ id: 'a_guanyu', name: '关羽', weight: 1 }]);
     expect(r.ok).toBe(true);
     expect(r.card!.id).toBe('a_guanyu');
-    expect(r.balance).toBe(0); // 扣光
-    expect(getCollection(kv)['a_guanyu']).toBe(1); // 入收藏
+    expect(r.balance).toBe(0);
+    expect(getCollection(kv)['a_guanyu']).toBe(1);
+  });
+});
+
+describe('经济 v1 · 段位难度阀（LP→段位→太阁难度系数）', () => {
+  it('段位表：LP 越高段位越高、难度系数越大', () => {
+    expect(rankFor(0).tier).toBe('黑铁');
+    expect(rankFor(1000).tier).toBe('白银');
+    expect(rankFor(1300).tier).toBe('黄金');
+    expect(rankFor(2500).difficulty).toBeGreaterThan(rankFor(1000).difficulty); // 高段位更凶
+  });
+  it('updateLpAfterRun：胜 +25 / 负 -15，钳非负', () => {
+    const kv = memoryKV();
+    expect(getLP(kv)).toBe(1000); // 起始
+    expect(updateLpAfterRun(true, kv).rank.lp).toBe(1025);
+    expect(updateLpAfterRun(false, kv).rank.lp).toBe(1010);
+    const kv2 = memoryKV(); kv2.setItem('gamef.account.lp', '5');
+    expect(updateLpAfterRun(false, kv2).rank.lp).toBe(0); // 钳非负
   });
 });
