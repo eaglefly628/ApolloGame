@@ -2,7 +2,7 @@ import { describe, it, expect } from 'vitest';
 import { Engine } from '../../runtime/engine.js';
 import type { Component } from '@engine/core/types.js';
 import type { Transform, RandomSeed, Resource, State, Card3D } from '@engine/protocol/components.js';
-import { buildGameG3DFlip, buildGameGDuel3D, buildGameGMatch, buildGameGArmyMatch, standardArmy, armyFromFormation, laneEstimates, FORMATION_PRESETS, PRESET_NAMES, decideFaceUp, cardFace, flipTarget, FLIP_DURATION, FLIP_SPINS, MATCH_REWARD, type FateCard, type ArmyCard } from './blueprint.js';
+import { buildGameG3DFlip, buildGameGDuel3D, buildGameGMatch, buildGameGArmyMatch, standardArmy, armyFromFormation, laneEstimates, applyInterventions, LEVER_CATALOG, LEVER_START, LEVER_CAP, LEVER_REGEN, FORMATION_PRESETS, PRESET_NAMES, decideFaceUp, cardFace, flipTarget, FLIP_DURATION, FLIP_SPINS, MATCH_REWARD, type FateCard, type ArmyCard, type Intervention } from './blueprint.js';
 
 const get = <T extends Component>(e: Engine, id: string, type: string): T | undefined => e.world.getComponent<T>(id, type);
 const rotOf = (e: Engine, id = 'card'): number => get<Transform>(e, id, 'Transform')!.rotation;
@@ -338,6 +338,63 @@ describe('Game G · T-G3 自定义分兵（任意合法军官分布）', () => {
         expect(army.filter((c) => c.lane === lane && OFFICER.has(c.rank)).length).toBe(off[lane]);
         expect(army.filter((c) => c.lane === lane && c.general)).toHaveLength(1);
       }
+    }
+  });
+});
+
+describe('Game G · T-G4 干预卡（揭晓前改输入，outcome-first 不破）', () => {
+  const sumLane = (army: ArmyCard[], lane: number): number => army.filter((c) => c.lane === lane).reduce((s, c) => s + c.favor, 0);
+
+  it('能量常量 + 4 卡目录(费用/侧)', () => {
+    expect([LEVER_START, LEVER_CAP, LEVER_REGEN]).toEqual([3, 6, 2]);
+    expect(Object.keys(LEVER_CATALOG)).toEqual(['bless', 'curse', 'decapitate', 'reinforce']);
+    expect(LEVER_CATALOG.decapitate.cost).toBe(3);
+    expect(LEVER_CATALOG.bless.side).toBe('a');
+    expect(LEVER_CATALOG.curse.side).toBe('b');
+  });
+
+  it('applyInterventions：祝福↑诅咒↓我/敌某路 / 斩首→敌主将 favor=8 / 增援→我某路+2兵', () => {
+    const A = standardArmy('a', 0);
+    const B = standardArmy('b', 0);
+    expect(sumLane(applyInterventions(A, B, [{ kind: 'bless', lane: 1 }]).a, 1)).toBeGreaterThan(sumLane(A, 1));
+    expect(sumLane(applyInterventions(A, B, [{ kind: 'curse', lane: 2 }]).b, 2)).toBeLessThan(sumLane(B, 2));
+    const dec = applyInterventions(A, B, [{ kind: 'decapitate', lane: 0 }]);
+    expect(dec.b.find((c) => c.lane === 0 && c.general)!.favor).toBe(8);
+    const rf = applyInterventions(A, B, [{ kind: 'reinforce', lane: 0 }]);
+    expect(rf.a.filter((c) => c.lane === 0)).toHaveLength(20); // 18 + 2 兵
+    // 原军不被改（map 深拷贝）
+    expect(dec.b.find((c) => c.lane === 0 && c.general)!.favor).not.toBe(B.find((c) => c.lane === 0 && c.general)!.favor);
+  });
+
+  it('斩首令：敌某路主将必掉→该路溃散 → 敌该路存活 ≤ 不打时（同 seed，干预进 sim 确定）', () => {
+    const runB0 = (list: Intervention[], seed: number): number => {
+      const A = standardArmy('a', 6);
+      const B = standardArmy('b', 6); // 敌偏强，凸显斩首效果
+      const { a, b } = applyInterventions(A, B, list);
+      const e = new Engine({ tickRate: 60 });
+      e.load(buildGameGArmyMatch(a, b, seed));
+      for (let i = 0; i < FLIP_DURATION + 12; i++) e.world.tick();
+      return e.world.getComponent<Resource>('res_b0', 'Resource')!.current;
+    };
+    for (const seed of [1, 7, 42, 99]) {
+      expect(runB0([{ kind: 'decapitate', lane: 0 }], seed)).toBeLessThanOrEqual(runB0([], seed));
+    }
+  });
+
+  it('确定性：同军+同干预序列+同 seed 两局逐拍 hash 一致（干预进 sim）', () => {
+    const list: Intervention[] = [{ kind: 'bless', lane: 1 }, { kind: 'decapitate', lane: 0 }, { kind: 'reinforce', lane: 2 }];
+    const mk = (): Engine => {
+      const { a, b } = applyInterventions(standardArmy('a', 4), standardArmy('b', -2), list);
+      const e = new Engine({ tickRate: 60 });
+      e.load(buildGameGArmyMatch(a, b, 7));
+      return e;
+    };
+    const e1 = mk();
+    const e2 = mk();
+    for (let i = 0; i < FLIP_DURATION + 12; i++) {
+      e1.world.tick();
+      e2.world.tick();
+      expect(e1.hash()).toBe(e2.hash());
     }
   });
 });

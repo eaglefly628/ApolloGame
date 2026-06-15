@@ -376,6 +376,44 @@ export function armyFromFormation(prefix: string, favorBias: number, formation?:
   return army;
 }
 
+// ── T-G4 · 干预卡 / 功能牌（design/10）──
+// 干预 = 花「干预能量◈」在**揭晓前**改 favor/主将/兵力 → 三路掷命读改后值。outcome-first 红线：只改掷命前输入、不回灌。
+// 首发 4 张(favor-mod + 斩将 + 增援)，同花/护盾/重翻 留后续(需 D0 核 poker-hand / status)。
+export const LEVER_START = 3; // 开局能量
+export const LEVER_CAP = 6; // 上限
+export const LEVER_REGEN = 2; // 每关回能
+export type LeverKind = 'bless' | 'curse' | 'decapitate' | 'reinforce';
+export const LEVER_CATALOG: Record<LeverKind, { name: string; cost: number; side: 'a' | 'b'; desc: string }> = {
+  bless: { name: '祝福', cost: 1, side: 'a', desc: '我某路全员 favor +20' },
+  curse: { name: '诅咒', cost: 1, side: 'b', desc: '敌某路全员 favor −20' },
+  decapitate: { name: '斩首令', cost: 3, side: 'b', desc: '敌某路主将必掉→该路溃散(−14)' },
+  reinforce: { name: '增援', cost: 3, side: 'a', desc: '我某路 +2 兵(go-wide 该路)' },
+};
+export interface Intervention { kind: LeverKind; lane: number }
+const BLESS = 20, CURSE = 20, DECAP_FAVOR = 8;
+
+/**
+ * 揭晓前施加干预（改 favor / 斩将 / 加兵）→ 返回改后的 a/b 军，喂 buildGameGArmyMatch。
+ * outcome-first：只改掷命前输入；胜负仍 build 时由规则定、可回放（同 seed+同干预序列 → 同结果）。
+ * 斩首=把敌该路主将 favor 压到 8(极易掉)，掉则经 06 将领牵动自动 −14 溃散；增援=该路 +2 兵(路可达 20)。
+ */
+export function applyInterventions(armyA: ArmyCard[], armyB: ArmyCard[], list: Intervention[], biasA = 0): { a: ArmyCard[]; b: ArmyCard[] } {
+  let a = armyA.map((c) => ({ ...c }));
+  let b = armyB.map((c) => ({ ...c }));
+  for (const iv of list) {
+    if (iv.kind === 'bless') a = a.map((c) => (c.lane === iv.lane ? { ...c, favor: clampFavor(c.favor + BLESS) } : c));
+    else if (iv.kind === 'curse') b = b.map((c) => (c.lane === iv.lane ? { ...c, favor: clampFavor(c.favor - CURSE) } : c));
+    else if (iv.kind === 'decapitate') b = b.map((c) => (c.lane === iv.lane && c.general ? { ...c, favor: DECAP_FAVOR } : c));
+    else if (iv.kind === 'reinforce') {
+      const n = a.filter((c) => c.lane === iv.lane).length;
+      a = [...a,
+        { id: `a_l${iv.lane}_rf${n}`, rank: 'A', lane: iv.lane, favor: clampFavor(46 + biasA), general: false },
+        { id: `a_l${iv.lane}_rf${n + 1}`, rank: '2', lane: iv.lane, favor: clampFavor(46 + biasA), general: false }];
+    }
+  }
+  return { a, b };
+}
+
 /** 布阵预估（build 时算，喂布阵屏预估条）：每路 Σfavor / 主将军衔点数 / 牌数。 */
 export function laneEstimates(army: ArmyCard[]): { sumFavor: number; general: string; count: number }[] {
   return [0, 1, 2].map((lane) => {
@@ -406,7 +444,7 @@ export function buildGameGArmyMatch(armyA: ArmyCard[], armyB: ArmyCard[], seed =
           x,
           y,
           side: isA ? 'a' : 'b',
-          pairKey: lane * 18 + i, // 同 pairKey 的 A/B 互为对手 → 渲染器让两牌相撞
+          pairKey: lane * 100 + i, // 同 pairKey 的 A/B 互为对手 → 渲染器让两牌相撞（*100 容增援后路 >18 张）
           rank: c.rank === 'JOKER' ? '★' : c.rank,
           suit: SUITS[(lane * 18 + i) % 4],
           frontTint: c.general ? genFront : front, // 主将更亮，战场上一眼可辨

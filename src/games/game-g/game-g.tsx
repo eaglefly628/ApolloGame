@@ -1,6 +1,6 @@
 import { Engine } from '../../runtime/engine.js';
 import { ThreeRenderer } from './three-renderer.js';
-import { buildGameGArmyMatch, armyFromFormation, laneEstimates, FORMATION_PRESETS, PRESET_NAMES, type Formation } from './index.js';
+import { buildGameGArmyMatch, armyFromFormation, applyInterventions, laneEstimates, FORMATION_PRESETS, PRESET_NAMES, LEVER_CATALOG, LEVER_START, LEVER_CAP, LEVER_REGEN, type Formation, type Intervention, type LeverKind } from './index.js';
 import type { State, Resource } from '@engine/protocol/components.js';
 
 // Game G ·《翻命扑克》—— 大厅 ↔ 出征 闭环（launcher 卡带槽：export mount(container)→cleanup）。自包含于本目录。
@@ -17,10 +17,11 @@ interface Save {
   stage: number;
   deck: number[]; // 我方 52 张的 favor（0..95）
   lastOfficers: number[]; // 上次布阵的三路军官数 [上,中,下]（默认选中 + AI 克制依据）
+  leverEnergy: number; // 干预能量◈（开局 3 / 每胜 +2 / 上限 6）
 }
 
 function freshSave(): Save {
-  return { materials: 0, stage: 1, deck: Array.from({ length: DECK_SIZE }, (_, i) => 44 + (i % 10) * 2), lastOfficers: [10, 10, 10] }; // 44..62 起步
+  return { materials: 0, stage: 1, deck: Array.from({ length: DECK_SIZE }, (_, i) => 44 + (i % 10) * 2), lastOfficers: [10, 10, 10], leverEnergy: LEVER_START }; // 44..62 起步
 }
 function loadSave(): Save {
   try {
@@ -29,6 +30,7 @@ function loadSave(): Save {
       const s = JSON.parse(raw) as Save;
       if (Array.isArray(s.deck) && s.deck.length === DECK_SIZE) {
         if (!Array.isArray(s.lastOfficers) || s.lastOfficers.length !== 3) s.lastOfficers = [10, 10, 10]; // 旧存档兼容
+        if (typeof s.leverEnergy !== 'number') s.leverEnergy = LEVER_START;
         return s;
       }
     }
@@ -181,7 +183,7 @@ export function mount(container: HTMLElement): () => void {
     }));
     const go = mkBtn('⚔ 确认出征');
     go.style.cssText += ';background:#1e3a2a;border-color:#22c55e;font-weight:600';
-    go.onclick = () => { save.lastOfficers = [...officers]; persist(save); showMatch(f, describeFormation(officers)); };
+    go.onclick = () => { save.lastOfficers = [...officers]; persist(save); showPrep(f, describeFormation(officers)); };
     const back = mkBtn('← 返回大厅');
     back.onclick = showLobby;
     const btnRow = el('div', 'display:flex;gap:10px');
@@ -189,8 +191,50 @@ export function mount(container: HTMLElement): () => void {
     root.append(title, sub, presetBar, lanesBox, btnRow);
   }
 
+  // ───────────────────────── 备战 · 干预相位（开战前用◈改命，揭晓前生效）─────────────────────────
+  function showPrep(formation: Formation, myName: string): void {
+    clear();
+    const interventions: Intervention[] = [];
+    const title = el('div', 'font:600 18px system-ui;color:#eab308', `备战 · 干预（第 ${save.stage} 关 · 你的阵 ${myName}）`);
+    const sub = el('div', 'max-width:560px;text-align:center;opacity:.82;line-height:1.6',
+      '开战前用<b>干预能量◈</b>改命：祝福/诅咒改 favor、<b>斩首令</b>擒贼先擒王(敌主将必掉→该路溃散)、增援铺场。<br>全在<b>揭晓前</b>生效——胜负仍由规则定、可回放。能量有限：这关花，还是攒？');
+    const energyEl = el('div', 'font-weight:600');
+    const queueEl = el('div', 'min-height:20px;opacity:.85;font-size:12px');
+    const cardsBox = el('div', 'display:flex;flex-direction:column;gap:7px');
+    const refresh = (): void => {
+      energyEl.innerHTML = `能量 ◈ <b style="color:#22d3ee">${save.leverEnergy}</b> / ${LEVER_CAP}`;
+      queueEl.innerHTML = interventions.length
+        ? '已打出：' + interventions.map((iv) => `${LEVER_CATALOG[iv.kind].name}→${LANE_NAME[iv.lane]}路`).join('，')
+        : '（未打出干预）';
+    };
+    const KINDS: LeverKind[] = ['bless', 'curse', 'decapitate', 'reinforce'];
+    cardsBox.replaceChildren(...KINDS.map((kind) => {
+      const c = LEVER_CATALOG[kind];
+      const row = el('div', 'display:flex;gap:7px;align-items:center;justify-content:center');
+      row.appendChild(el('div', 'width:250px;text-align:right;font-size:12px', `<b>${c.name}</b> <span style="opacity:.6">${c.cost}◈ · ${c.desc}</span>`));
+      [0, 1, 2].forEach((lane) => {
+        const b = mkBtn(LANE_NAME[lane]);
+        b.style.cssText += ';padding:5px 9px';
+        b.onclick = () => {
+          if (save.leverEnergy >= c.cost) { save.leverEnergy -= c.cost; interventions.push({ kind, lane }); persist(save); refresh(); }
+        };
+        row.appendChild(b);
+      });
+      return row;
+    }));
+    const go = mkBtn('⚔ 出征');
+    go.style.cssText += ';background:#1e3a2a;border-color:#22c55e;font-weight:600';
+    go.onclick = () => showMatch(formation, myName, interventions);
+    const back = mkBtn('← 改布阵');
+    back.onclick = () => showFormation([...save.lastOfficers] as [number, number, number]);
+    const btnRow = el('div', 'display:flex;gap:10px');
+    btnRow.append(go, back);
+    root.append(title, sub, energyEl, el('div', 'font-size:12px;opacity:.6', '（点卡名右侧 上/中/下 选目标路打出）'), cardsBox, queueEl, btnRow);
+    refresh();
+  }
+
   // ───────────────────────── 出征（一局 3D 三路掷命）─────────────────────────
-  function showMatch(formation: Formation, myName: string): void {
+  function showMatch(formation: Formation, myName: string, interventions: Intervention[]): void {
     clear();
     const aiForm = aiFormation();
     const aiName = describeFormation(aiForm.officers);
@@ -210,7 +254,10 @@ export function mount(container: HTMLElement): () => void {
     root.append(hint, stage, bar);
 
     engine = new Engine({ tickRate: 60 });
-    engine.load(buildGameGArmyMatch(armyFromFormation('a', myBias(save.deck), formation), armyFromFormation('b', enemyBias(save.stage), aiForm), Math.floor(Math.random() * 1e9)));
+    const armyA = armyFromFormation('a', myBias(save.deck), formation);
+    const armyB = armyFromFormation('b', enemyBias(save.stage), aiForm);
+    const { a, b } = applyInterventions(armyA, armyB, interventions, myBias(save.deck)); // 揭晓前施加干预
+    engine.load(buildGameGArmyMatch(a, b, Math.floor(Math.random() * 1e9)));
     renderer = new ThreeRenderer({ width: W, height: H });
     engine.attachRenderer(renderer, stage);
 
@@ -229,7 +276,7 @@ export function mount(container: HTMLElement): () => void {
       // 结算奖励：存活的我方牌都算战利品；胜利额外 +15 并推进关卡（敌方更强）。
       const gain = survA + (winner === 'a' ? 15 : 0);
       save.materials += gain;
-      if (winner === 'a') save.stage += 1;
+      if (winner === 'a') { save.stage += 1; save.leverEnergy = Math.min(LEVER_CAP, save.leverEnergy + LEVER_REGEN); } // 胜→推进关卡 + 回能◈
       persist(save);
       const who = winner === 'a' ? '我方胜（best-of-3）' : winner === 'b' ? '敌方胜' : '平局';
       const color = winner === 'a' ? '#eab308' : winner === 'b' ? '#94a3b8' : '#cbd5e1';
