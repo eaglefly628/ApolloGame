@@ -6,7 +6,9 @@ import type { InputSource } from '../../net/commands.js';
 import { AssetManager, ImageAssetLoader } from '@assets/index.js';
 import { getComponentById } from '@engine/core/query.js';
 import type { World } from '@engine/core/world.js';
-import { buildGameFBlueprint, gameFEnemyPreview, GAME_F_ASSETS } from './index.js';
+import { buildGameFBlueprint, gameFEnemyPreview, GAME_F_ASSETS, codesFor } from './index.js';
+import { ROSTER } from './heroes.js';
+import { WARRIOR, TACTICIAN, TEAM_A } from './constants.js';
 import { buildLobby, type RunConfig } from './lobby.js';
 import { createAllyMirrors } from './ally-mirror.js';
 
@@ -207,16 +209,22 @@ function buildMall(): HTMLElement {
 // 三边覆盖盖掉 canvas 旧 HUD；中间棋盘 + 下方备战席/商店露出，仍走 canvas 数据实体交互（不破坏可玩）。
 function buildSoloHud(click: (x: number, y: number) => void, play: (i: number) => void): { root: HTMLElement; update: (w: World) => void; renderAllies: (unitsList: { q: number; r: number; enemy: boolean; hpFrac: number }[][]) => void } {
   const FAC: Record<string, string> = { 蜀: '#d8504e', 吴: '#3fae6e', 魏: '#3a86d4', 群: '#9b6dd8' };
-  // 玩家阵营英雄码（纯蜀；codesFor 按 TEAM_A 序）：1关羽 2赵云 3诸葛亮 4张飞 → [名,字,职业,DCSS像素图]。
-  const HEROES: Record<number, [string, string, string, string]> = {
-    1: ['关羽', '关', '武将', 'death_knight'], 2: ['赵云', '赵', '武将', 'deep_elf_knight_new'],
-    3: ['诸葛亮', '诸', '谋士', 'deep_elf_mage'], 4: ['张飞', '张', '武将', 'orc_knight_new'],
-    5: ['马超', '马', '武将', 'centaur_warrior'], 6: ['黄忠', '黄', '射手', 'deep_elf_master_archer'],
-  };
+  // 商店卡/名牌全部**从 ROSTER 派生**（去腐：原硬编码 HEROES/HERO_NAMES 是 ROSTER 的手抄副本，加英雄要双改）。
+  // 现在「加一个英雄 = 只改 heroes.ts 一条 HeroSpec + 一行资产」即可，DOM 壳层零改动（弱 LLM 也能一次做对）。
+  const assetSrcByKey = new Map<string, string>();
+  for (const a of GAME_F_ASSETS) { const s = (a as { key: string; src?: unknown }).src; if (typeof s === 'string') assetSrcByKey.set(a.key, s); }
+  const clsLabel = (c: number): string => (c === WARRIOR ? '武将' : c === TACTICIAN ? '谋士' : '刺客');
+  const CODE = codesFor(ROSTER);
+  // code → [名, 字, 职业, 贴图 src]（玩家阵营 = TEAM_A；codesFor 按出场序给码）。
+  const HEROES: Record<number, [string, string, string, string]> = {};
+  // marker id（a_xxx）→ 将名：备战期在板棋子头顶名牌。
+  const HERO_NAMES: Record<string, string> = {};
+  for (const h of ROSTER.filter((x) => x.team === TEAM_A)) {
+    const code = CODE[h.id];
+    if (code) HEROES[code] = [h.name, h.name[0], clsLabel(h.cls), assetSrcByKey.get(h.key) ?? ''];
+    HERO_NAMES[h.id] = h.name;
+  }
   const SHU = '#d8504e';
-  // 备战期在板 marker 名牌（用户：布局时看不到武将名字）——DOM 标签层读世界 marker 位置投影，避开 prefab 子实体
-  // 干扰合成/卖出链；marker id → 将名（纯蜀 4 将）。
-  const HERO_NAMES: Record<string, string> = { a_guanyu: '关羽', a_zhaoyun: '赵云', a_zhuge: '诸葛亮', a_zhouyu: '张飞', a_machao: '马超', a_huangzhong: '黄忠' };
   // 开局三选一 = 现成 rune_a/b/c（世界坐标 + 信号），DOM 卡接它们。
   const RUNES: [string, string, string, string, number, number][] = [
     ['a', '🌾', '屯粮 · 积谷', '即时 +5 金', -110, -100],
@@ -558,7 +566,7 @@ function buildSoloHud(click: (x: number, y: number) => void, play: (i: number) =
         return `<div data-buy="${i}" style="position:relative;flex:1;display:flex;flex-direction:column;overflow:hidden;cursor:${afford ? 'pointer' : 'not-allowed'};border-radius:14px;border:1px solid ${SHU};background:var(--panel-grad);box-shadow:inset 0 0 0 1px var(--hairline),0 6px 16px rgba(0,0,0,.22);opacity:${afford ? 1 : 0.55};min-height:160px">
           <div style="height:28px;display:flex;align-items:center;justify-content:center;background:${SHU};color:#fff;font-weight:700;font-family:var(--font-num);font-size:13px">🪙 3</div>
           <div style="flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:10px;padding:14px">
-            <div style="width:80px;height:80px;border-radius:13px;background:linear-gradient(160deg,${SHU}cc,${SHU}55);border:2px solid ${SHU};display:flex;align-items:center;justify-content:center;overflow:hidden"><img src="assets/FreeArtLib/monster/${h[3]}.png" alt="${h[0]}" style="width:62px;height:62px;image-rendering:pixelated"></div>
+            <div style="width:80px;height:80px;border-radius:13px;background:linear-gradient(160deg,${SHU}cc,${SHU}55);border:2px solid ${SHU};display:flex;align-items:center;justify-content:center;overflow:hidden"><img src="${h[3]}" alt="${h[0]}" style="width:62px;height:62px;image-rendering:pixelated"></div>
             <div style="font-family:var(--font-cjk);font-weight:700;font-size:18px;color:var(--ink)">${h[0]}</div>
             <div style="display:flex;gap:6px"><span style="font-family:var(--font-cjk);font-size:11px;font-weight:700;padding:2px 9px;border-radius:99px;background:var(--chip-bg);border:1px solid var(--panel-border);color:var(--ink-dim)">蜀</span><span style="font-family:var(--font-cjk);font-size:11px;font-weight:700;padding:2px 9px;border-radius:99px;background:var(--chip-bg);border:1px solid var(--panel-border);color:var(--ink-dim)">${h[2]}</span></div>
           </div></div>`;
