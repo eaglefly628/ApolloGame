@@ -323,11 +323,15 @@ export function standardArmy(prefix: string, favorBias = 0): ArmyCard[] {
   return army;
 }
 
+// 结局联动族小丑（design/12 §五.5）：在确定性单遍解析里**前向生效**（只改未翻牌 → 无二次解析、hash 稳）。
+export interface LinkJokers { martyr: boolean; chain: boolean }
+const SHI_REVENGE = 10; // 死士：本路首死后，余下未翻的兵 +favor（报仇·死战）
+
 // 将领牵动：逐路自上而下掷命——先掷主将，按主将生死给本路下属 ±favor，再掷下属。返回 id→faceUp。
 // PRNG 顺序固定（lane 0→1→2，路内主将先、其余按生成序）→ 可回放、确定性。
-// moraleScale[lane]：本路士气加成倍率（旗手/枭雄小丑放大 `06` 士气，缺省 1）。仅放大士气(活)、不放大溃散(亡)。
-// 缩放只改下属 favor 值、不改掷命次数（每牌 1 抽）→ PRNG 序列不变、确定性/可回放保持。
-function resolveArmy(army: ArmyCard[], rng: RandomSeed, moraleScale: readonly number[] = [1, 1, 1]): Map<string, boolean> {
+// moraleScale[lane]：本路士气倍率（旗手/枭雄放大 `06` 士气，仅放大士气不放大溃散；只改 favor 值、不改掷命次数→序列不变）。
+// links：结局联动（死士首死→余部 +报仇；连环首活→牵下一张跳掷命置活）。均前向、只动未翻牌 → 单遍确定、hash 稳。
+function resolveArmy(army: ArmyCard[], rng: RandomSeed, moraleScale: readonly number[] = [1, 1, 1], links: LinkJokers = { martyr: false, chain: false }): Map<string, boolean> {
   const face = new Map<string, boolean>();
   for (const lane of [0, 1, 2]) {
     const laneCards = army.filter((c) => c.lane === lane);
@@ -335,9 +339,17 @@ function resolveArmy(army: ArmyCard[], rng: RandomSeed, moraleScale: readonly nu
     const fg = decideFaceUp(gen.favor, rng); // 先掷主将
     face.set(gen.id, fg);
     const shift = fg ? Math.round(MORALE * (moraleScale[lane] ?? 1)) : -ROUT; // 主将活=士气(可被旗手/枭雄放大)，亡=溃散(不放大)
+    let forceNext = false; // 连环：被上一张牵起 → 这张跳掷命置活
+    let martyrFired = false; // 死士：本路已出现首死 → 后续 +报仇
+    let chainUsed = false; // 连环每路只牵一次
     for (const c of laneCards) {
       if (c.general) continue;
-      face.set(c.id, decideFaceUp(clampFavor(c.favor + shift), rng));
+      let alive: boolean;
+      if (forceNext) { alive = true; forceNext = false; } // 连环牵活（跳掷命，同护盾族）
+      else alive = decideFaceUp(clampFavor(c.favor + shift + (links.martyr && martyrFired ? SHI_REVENGE : 0)), rng);
+      face.set(c.id, alive);
+      if (alive) { if (links.chain && !chainUsed) { chainUsed = true; forceNext = true; } } // 首个活牵起下一张
+      else if (links.martyr) martyrFired = true; // 首死起，余部得报仇
     }
   }
   return face;
@@ -556,7 +568,7 @@ export function bossFor(idx: number): BossSpec {
 // 故复用"数据+解释器"范式、**不复用 Game E 运行时**（同 D0 §同花未复用 evaluateHand 之理）。applyJokers 在 resolveArmy 前跑、**零新能力**。
 // 局外持久：融在玩家牌组上（save.jokers），跨 run 不清零——"牌组身份"养成核(owner 愿景)。
 // 本批 4 张=纯 build 时 favor 变换(同袍/赌徒/先登/不屈)；士气放大族(旗手/枭雄)、结局联动族(死士/连环/督粮/影武者)待后续切片(需 resolve 时钩子)。
-export type JokerKind = 'suit-synergy' | 'polarize' | 'lane-pref' | 'diehard' | 'morale';
+export type JokerKind = 'suit-synergy' | 'polarize' | 'lane-pref' | 'diehard' | 'morale' | 'link';
 export type Archetype = 'decap' | 'cardtype' | 'general' | 'wide' | 'probability' | 'tianji'; // 6 流派 id（design/12 §四）
 export interface JokerCard {
   id: string; name: string; kind: JokerKind; cost: number; archetype: Archetype; text: string;
@@ -571,7 +583,13 @@ export const GAME_G_JOKERS: JokerCard[] = [
   { id: 'diehard', name: '不屈', kind: 'diehard', cost: 22, archetype: 'probability', amount: 88, text: '全军 favor 不足 88 的拉到 88（近免死、稳翻正面）' },
   { id: 'bannerman', name: '旗手', kind: 'morale', cost: 17, archetype: 'general', moraleMul: 1.5, text: '全军主将士气加成 ×1.5（主将活则全路涌 · 将领流核心）' },
   { id: 'warlord', name: '枭雄', kind: 'morale', cost: 24, archetype: 'general', moraleMul: 2, text: '顶级主将(K/王)所在路，士气加成 ×2（堆高军衔主将碾压一路）' },
+  { id: 'martyr', name: '死士', kind: 'link', cost: 16, archetype: 'wide', text: '本路首张兵阵亡 → 该路余下未翻的兵 +10 favor（报仇·死战 · 铺场流）' },
+  { id: 'chain', name: '连环', kind: 'link', cost: 19, archetype: 'wide', text: '本路首张兵翻正 → 牵起下一张未翻的兵必活（连环索 · 铺场流）' },
 ];
+/** 从已融小丑取结局联动开关（死士/连环）→ 喂 resolveArmy 前向生效。 */
+export function jokerLinks(jokerIds: readonly string[]): LinkJokers {
+  return { martyr: jokerIds.includes('martyr'), chain: jokerIds.includes('chain') };
+}
 export const JOKER_BY_ID: ReadonlyMap<string, JokerCard> = new Map(GAME_G_JOKERS.map((j) => [j.id, j]));
 
 /** 流派钥匙：把"未拥有的小丑"包成场间三选一可白嫖的 RunBuff（design reply#10：场间选择=构筑分叉）。已拥有的不再出。 */
@@ -589,7 +607,7 @@ export const ARCHETYPES: ArchetypeSpec[] = [
   // 核心 3-环（`12` §四明示）：斩首 克 将领 克 铺场 克 斩首。
   { id: 'decap', name: '斩首流', desc: '攒能量秒敌主将引溃散', keyJokers: [], counters: 'general' }, // 钥匙：督粮/影武者(待实现)
   { id: 'general', name: '将领流', desc: '主将士气碾压一路', keyJokers: ['bannerman', 'warlord'], counters: 'wide' },
-  { id: 'wide', name: '铺场流', desc: 'go-wide + 连锁必活', keyJokers: ['vanguard'], counters: 'decap' }, // +死士/连环(待)
+  { id: 'wide', name: '铺场流', desc: 'go-wide + 连锁必活', keyJokers: ['vanguard', 'martyr', 'chain'], counters: 'decap' },
   // 次 3-环（我的合理映射，待 design 校准）：牌型 克 概率 克 弃一保二 克 牌型。
   { id: 'cardtype', name: '牌型流', desc: '堆同花色/连号成高牌型', keyJokers: ['comrade'], counters: 'probability' },
   { id: 'probability', name: '概率流', desc: '改命堆高 favor 稳翻正', keyJokers: ['gambler', 'diehard'], counters: 'tianji' },
@@ -661,22 +679,23 @@ export function applyJokers(army: ArmyCard[], jokerIds: readonly string[]): Army
  * 全在揭晓前、不回灌 gameplay（outcome-first）；返回喂 buildGameGArmyMatch 的 {a,b,moraleA}。纯函数、可重放。
  */
 export interface MatchSetup { formation: Formation; deckBias: number; jokers: readonly string[]; interventions: Intervention[]; enemyForm?: Formation; enemyBias: number; boss?: BossSpec | null }
-export function prepareArmies(s: MatchSetup): { a: ArmyCard[]; b: ArmyCard[]; moraleA: number[] } {
+export function prepareArmies(s: MatchSetup): { a: ArmyCard[]; b: ArmyCard[]; moraleA: number[]; linksA: LinkJokers } {
   const armyA = applyJokers(armyFromFormation('a', s.deckBias, s.formation), s.jokers); // 融小丑（持久 favor 变换）
   const armyB = armyFromFormation('b', s.enemyBias, s.enemyForm);
   let { a, b } = applyInterventions(armyA, armyB, s.interventions, s.deckBias); // 玩家干预
   if (s.boss && s.boss.openingLevers.length) ({ a, b } = applyInterventions(a, b, s.boss.openingLevers, s.enemyBias, 'b')); // Boss 起手（对称）
-  return { a, b, moraleA: jokerMoraleScale(a, s.jokers) }; // 旗手/枭雄放大我方各路士气
+  return { a, b, moraleA: jokerMoraleScale(a, s.jokers), linksA: jokerLinks(s.jokers) }; // 士气倍率 + 结局联动（死士/连环）
 }
 
 /**
  * G2 一局军阵对决：armyA(我) vs armyB(敌)，自上而下逐级掷命(将领牵动) → 三路数存活 → best-of-3 定总胜负。
  * 装配顺序 A 全军 → B 全军（PRNG 序列确定、可回放）。胜负 build 时即定；3D 抛飞相撞为表现。
  * moraleA：我方各路士气倍率（旗手/枭雄小丑放大，缺省 [1,1,1]）；敌方无小丑。缩放不改掷命次数→确定性不变。
+ * linksA：我方结局联动（死士/连环，缺省关）；前向单遍生效、只动未翻牌 → hash 稳。敌方无小丑。
  */
-export function buildGameGArmyMatch(armyA: ArmyCard[], armyB: ArmyCard[], seed = 1, reward = MATCH_REWARD, moraleA: readonly number[] = [1, 1, 1]): WorldBlueprint {
+export function buildGameGArmyMatch(armyA: ArmyCard[], armyB: ArmyCard[], seed = 1, reward = MATCH_REWARD, moraleA: readonly number[] = [1, 1, 1], linksA: LinkJokers = { martyr: false, chain: false }): WorldBlueprint {
   const rng: RandomSeed = { type: 'RandomSeed', seed, sequence: 0 };
-  const faceA = resolveArmy(armyA, rng, moraleA);
+  const faceA = resolveArmy(armyA, rng, moraleA, linksA);
   const faceB = resolveArmy(armyB, rng);
   const entities: Record<string, EntityBlueprint> = {};
 

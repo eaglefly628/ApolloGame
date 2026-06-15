@@ -2,7 +2,7 @@ import { describe, it, expect } from 'vitest';
 import { Engine } from '../../runtime/engine.js';
 import type { Component } from '@engine/core/types.js';
 import type { Transform, RandomSeed, Resource, State, Card3D } from '@engine/protocol/components.js';
-import { buildGameG3DFlip, buildGameGDuel3D, buildGameGMatch, buildGameGArmyMatch, prepareArmies, standardArmy, armyFromFormation, laneEstimates, applyInterventions, applyJokers, jokerMoraleScale, jokerKeyBuffs, GAME_G_JOKERS, JOKER_BY_ID, ARCHETYPES, detectArchetype, archetypeMatchup, laneHandTier, battleSpec, RUN_BATTLES, RUN_LIVES, BETWEEN_BUFFS, applyBuff, BOSS_ROSTER, bossFor, LEVER_CATALOG, LEVER_START, LEVER_CAP, LEVER_REGEN, FORMATION_PRESETS, PRESET_NAMES, decideFaceUp, cardFace, flipTarget, FLIP_DURATION, FLIP_SPINS, MATCH_REWARD, type FateCard, type ArmyCard, type Intervention, type BuffTarget } from './blueprint.js';
+import { buildGameG3DFlip, buildGameGDuel3D, buildGameGMatch, buildGameGArmyMatch, prepareArmies, standardArmy, armyFromFormation, laneEstimates, applyInterventions, applyJokers, jokerMoraleScale, jokerLinks, jokerKeyBuffs, GAME_G_JOKERS, JOKER_BY_ID, ARCHETYPES, detectArchetype, archetypeMatchup, laneHandTier, battleSpec, RUN_BATTLES, RUN_LIVES, BETWEEN_BUFFS, applyBuff, BOSS_ROSTER, bossFor, LEVER_CATALOG, LEVER_START, LEVER_CAP, LEVER_REGEN, FORMATION_PRESETS, PRESET_NAMES, decideFaceUp, cardFace, flipTarget, FLIP_DURATION, FLIP_SPINS, MATCH_REWARD, type FateCard, type ArmyCard, type Intervention, type BuffTarget } from './blueprint.js';
 
 const get = <T extends Component>(e: Engine, id: string, type: string): T | undefined => e.world.getComponent<T>(id, type);
 const rotOf = (e: Engine, id = 'card'): number => get<Transform>(e, id, 'Transform')!.rotation;
@@ -585,9 +585,9 @@ describe('Game G · T-G5 终局 Boss 阵容 + 对称起手干预（design/13）'
 describe('Game G · T-G6 小丑牌（融牌面 · build 时 favor 变换 · 持久牌组身份）', () => {
   const mk = (id: string, lane: number, suit: string, favor: number): ArmyCard => ({ id, rank: 'A', lane, favor, general: false, suit });
 
-  it('小丑目录(本批)≥6，kind 合法、cost>0、有 text；JOKER_BY_ID 覆盖全', () => {
-    expect(GAME_G_JOKERS.length).toBeGreaterThanOrEqual(6);
-    const kinds = new Set(['suit-synergy', 'polarize', 'lane-pref', 'diehard', 'morale']);
+  it('小丑目录(本批)≥8，kind 合法、cost>0、有 text；JOKER_BY_ID 覆盖全', () => {
+    expect(GAME_G_JOKERS.length).toBeGreaterThanOrEqual(8);
+    const kinds = new Set(['suit-synergy', 'polarize', 'lane-pref', 'diehard', 'morale', 'link']);
     for (const j of GAME_G_JOKERS) {
       expect(kinds.has(j.kind)).toBe(true);
       expect(j.cost).toBeGreaterThan(0);
@@ -684,6 +684,39 @@ describe('Game G · T-G6 小丑牌（融牌面 · build 时 favor 变换 · 持�
     };
     const e1 = mkE(), e2 = mkE();
     for (let i = 0; i < FLIP_DURATION + 12; i++) { e1.world.tick(); e2.world.tick(); expect(e1.hash()).toBe(e2.hash()); }
+  });
+
+  it('jokerLinks：从已融小丑取死士/连环开关（结局联动族）', () => {
+    expect(jokerLinks([])).toEqual({ martyr: false, chain: false });
+    expect(jokerLinks(['martyr'])).toEqual({ martyr: true, chain: false });
+    expect(jokerLinks(['chain', 'comrade'])).toEqual({ martyr: false, chain: true });
+    expect(jokerLinks(['martyr', 'chain'])).toEqual({ martyr: true, chain: true });
+  });
+
+  it('死士：首死后余部 +报仇（只升 favor、不改掷命次数）→ 同 seed 存活单调不减', () => {
+    const baseA = standardArmy('a', -16); // 压低→兵大概率死、触发首死链
+    const survivors = (links: { martyr: boolean; chain: boolean }): number => {
+      const e = new Engine({ tickRate: 60 });
+      e.load(buildGameGArmyMatch(baseA, standardArmy('b', 0), 33, undefined, undefined, links));
+      for (let i = 0; i < FLIP_DURATION + 8; i++) e.world.tick();
+      return ['a_l0', 'a_l1', 'a_l2'].reduce((s, id) => s + (get<Resource>(e, id, 'Resource')?.current ?? 0), 0);
+    };
+    expect(survivors({ martyr: true, chain: false })).toBeGreaterThanOrEqual(survivors({ martyr: false, chain: false }));
+  });
+
+  it('结局联动进 sim 确定：同军 + 同 links(死士+连环) + seed 逐拍 hash 一致（前向单遍）', () => {
+    const mk = (): Engine => {
+      const e = new Engine({ tickRate: 60 });
+      e.load(buildGameGArmyMatch(standardArmy('a', 0), standardArmy('b', 0), 41, undefined, [1, 1, 1], { martyr: true, chain: true }));
+      return e;
+    };
+    const e1 = mk(), e2 = mk();
+    for (let i = 0; i < FLIP_DURATION + 12; i++) { e1.world.tick(); e2.world.tick(); expect(e1.hash()).toBe(e2.hash()); }
+  });
+
+  it('prepareArmies 带出 linksA（死士/连环 喂 build）', () => {
+    const { linksA } = prepareArmies({ formation: FORMATION_PRESETS['均衡'], deckBias: 0, jokers: ['martyr', 'chain'], interventions: [], enemyBias: 0 });
+    expect(linksA).toEqual({ martyr: true, chain: true });
   });
 
   it('流派钥匙：jokerKeyBuffs 为每张"未拥有"小丑产 kind=joker 的 RunBuff（已拥有不出）', () => {

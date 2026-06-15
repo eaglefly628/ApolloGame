@@ -336,9 +336,9 @@ export function mount(container: HTMLElement): () => void {
     root.append(hint, stage, bar);
 
     engine = new Engine({ tickRate: 60 });
-    // 揭晓前完整编排（融小丑→玩家干预→Boss 起手→士气倍率），与测试共用 prepareArmies、杜绝漂移；均 outcome-first。
-    const { a, b, moraleA } = prepareArmies({ formation, deckBias: myBias(save.deck), jokers: save.jokers, interventions, enemyForm: aiForm, enemyBias, boss });
-    engine.load(buildGameGArmyMatch(a, b, Math.floor(Math.random() * 1e9), undefined, moraleA));
+    // 揭晓前完整编排（融小丑→玩家干预→Boss 起手→士气倍率+结局联动），与测试共用 prepareArmies、杜绝漂移；均 outcome-first。
+    const { a, b, moraleA, linksA } = prepareArmies({ formation, deckBias: myBias(save.deck), jokers: save.jokers, interventions, enemyForm: aiForm, enemyBias, boss });
+    engine.load(buildGameGArmyMatch(a, b, Math.floor(Math.random() * 1e9), undefined, moraleA, linksA));
     renderer = new ThreeRenderer({ width: W, height: H });
     engine.attachRenderer(renderer, stage);
 
