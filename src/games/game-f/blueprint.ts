@@ -125,6 +125,7 @@ const makeRoundFlow = (PREP_TICKS: number, RESOLUTION_TICKS: number, CELEBRATE_T
         { kind: 'modify-resource', targetId: 'prep_left', op: 'set', value: PREP_SECONDS }, // 倒计时表归位（OverTime -1/秒，0 钳停）
         { kind: 'modify-resource', targetId: 'xp', op: 'add', value: 2 }, // 每回合自动 +2 XP（§4.3）
         { kind: 'modify-resource', targetId: 'dmg_scale_a', op: 'set', value: 1 }, // 羁绊系数回 1（开战拍重新锁存）
+        { kind: 'modify-resource', targetId: 'dmg_scale_b', op: 'set', value: 1 }, // 敌方系数回 1（信长·天下布武 在终盘 deploy_pve 拍重新锁存）
       ],
       transitions: [
         { when: { kind: 'flag', id: 'ready', equals: true }, to: 'countdown' }, // 点「开战」→ 3 秒读数（不瞬开）
@@ -612,7 +613,10 @@ export function buildGameFBlueprint(pacing: GameFPacing = {}): WorldBlueprint {
     bond_counter_tactician: { GroupCount: { countResource: 'count_tactician', requiredTag: BENCH_OCC | TACTICIAN, onBoard: true } },
     r_count_tactician: { Resource: { id: 'count_tactician', current: 0, min: 0, max: 99 } },
     r_dmg_scale_a: { Resource: { id: 'dmg_scale_a', current: 1, min: 0, max: 9 } },
-    r_dmg_scale_b: { Resource: { id: 'dmg_scale_b', current: 1, min: 0, max: 9 } }, // 敌方系数占位（关卡羁绊 TUNE 位）
+    r_dmg_scale_b: { Resource: { id: 'dmg_scale_b', current: 1, min: 0, max: 9 } }, // 敌方系数（信长·天下布武 全军 atk buff 在此锁存；mob hitbox 全读 dmg_scale_b）
+    // 信长·天下布武（太阁 Boss 招牌，REQ-F-064 现成能力重组：group/信号→Effect→hitbox scaleByResource）：
+    // 终盘 W6 信长坐镇天守 → deploy_pve_5 拍全军伤害 ×1.35（与玩家 dmg_scale_a 羁绊乘区对称；零引擎改动）。
+    eff_nobunaga_tenka: { Effect: { onSignal: 'deploy_pve_5', kind: 'modify-resource', targetId: 'dmg_scale_b', op: 'set', value: 1.35 } },
     when_bond_shu: { EventWhen: { signal: 'bond_shu', when: and({ kind: 'state', fsmId: 'round_ui', equals: 'combat' }, resCmp('count_shu', 'gte', 3)), mode: 'edge', armed: false } },
     eff_bond_shu: { Effect: { onSignal: 'bond_shu', kind: 'modify-resource', targetId: 'dmg_scale_a', op: 'set', value: 1.2 } },
     // —— 加时强制结束（一图流：30s+15s；单人改编=超时按败方路径结算，注记于 flow-spec）——
