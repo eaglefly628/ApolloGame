@@ -1,0 +1,534 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Silkscreen:wght@400;700&family=Rajdhani:wght@500;600;700&family=Cormorant+Garamond:wght@500;600;700&family=Noto+Serif+SC:wght@500;700;900&family=Noto+Sans+SC:wght@400;500;700;900&family=Zhi+Mang+Xing&family=Ma+Shan+Zheng&display=swap" rel="stylesheet">
+<style>
+  * { box-sizing: border-box; }
+  body { margin: 0; background: #0c0a08; }
+  ::-webkit-scrollbar { width: 9px; height: 9px; }
+  ::-webkit-scrollbar-thumb { background: rgba(120,90,50,.4); border-radius: 9px; }
+  @keyframes g-sheen { 0% { background-position: -130% 0; } 100% { background-position: 230% 0; } }
+  @keyframes g-float { 0%,100% { transform: translateY(0) rotate(var(--rot,0deg)); } 50% { transform: translateY(-12px) rotate(var(--rot,0deg)); } }
+  @keyframes g-pulse { 0%,100% { opacity: .45; } 50% { opacity: 1; } }
+  @keyframes g-spin { to { transform: rotate(360deg); } }
+</style>
+</helmet>
+
+<div style="{{ pageStyle }}">
+  <div style="{{ frameStyle }}">
+
+    <!-- ===== TOP BAR ===== -->
+    <div style="{{ topbar }}">
+      <div style="display:flex; align-items:center; gap:13px;">
+        <div style="{{ avatarSeal }}">♠</div>
+        <div style="display:flex; flex-direction:column; line-height:1.25;">
+          <span style="font-family:var(--fh); font-weight:700; font-size:18px; color:var(--ink); letter-spacing:.01em;">不翻就赢_07</span>
+          <span style="font-size:11px; color:var(--ink-dim);">主牌 · <span style="font-family:var(--fd); color:var(--gold); font-size:14px;">黑桃A</span> 「掷命尖兵」</span>
+        </div>
+        <div style="{{ rankBadge }}"><span style="font-size:14px;">♠</span><span style="font-family:var(--fh); font-weight:700; font-size:13px; color:var(--ink);">黄金 III</span><span style="font-family:var(--fn); font-size:11px; color:var(--gold);">1240</span></div>
+      </div>
+      <div style="flex:1;"></div>
+      <div style="display:flex; align-items:center; gap:9px;">
+        <button onClick="{{ skinOnyx }}" style="{{ segOnyx }}">玄铁</button>
+        <button onClick="{{ skinBrocade }}" style="{{ segBrocade }}">锦霞</button>
+        <div style="width:1px; height:22px; background:var(--panel-border); margin:0 2px;"></div>
+        <div style="{{ coin }}"><span style="font-size:14px;">🪙</span><span style="font-family:var(--fn); font-size:13px; color:var(--ink);">1.2k</span></div>
+        <div style="{{ coin }}"><span style="font-size:13px;">◈</span><span style="font-family:var(--fn); font-size:13px; color:var(--gold);">64</span></div>
+        <div style="{{ coin }}"><span style="font-size:14px;">💎</span><span style="font-family:var(--fn); font-size:13px; color:#3a86b0;">88</span></div>
+        <div style="{{ iconBtn }}">⚙</div>
+      </div>
+    </div>
+
+    <!-- ===== NAV ===== -->
+    <div style="{{ navRow }}">
+      <button onClick="{{ navTo }}" data-s="home" style="{{ navHome }}">大厅</button>
+      <button onClick="{{ navTo }}" data-s="decks" style="{{ navDecks }}">牌组</button>
+      <button onClick="{{ navTo }}" data-s="collection" style="{{ navColl }}">收藏</button>
+      <button onClick="{{ navTo }}" data-s="craft" style="{{ navCraft }}">改造坊</button>
+      <button onClick="{{ navTo }}" data-s="ladder" style="{{ navLadder }}">天梯</button>
+    </div>
+
+    <!-- ===== CONTENT ===== -->
+    <div style="{{ contentWrap }}">
+
+      <!-- S1 HOME -->
+      <div style="{{ scrHome }}">
+        <div style="flex:1; display:flex; flex-direction:column; gap:14px; min-width:0;">
+          <div style="{{ heroFelt }}">
+            <div style="{{ feltVignette }}"></div>
+            <div style="position:absolute; top:18px; left:24px; display:flex; flex-direction:column; gap:3px;">
+              <span style="font-family:var(--fd); font-size:34px; color:#fff; text-shadow:0 2px 12px rgba(0,0,0,.6);">命运牌桌</span>
+              <span style="font-size:12px; color:rgba(255,255,255,.82); letter-spacing:.04em;">第 7 赛季 · 掷命争锋 · 剩 12 天</span>
+            </div>
+            <div style="position:absolute; top:22px; right:24px; display:flex; gap:7px;">
+              <sc-for list="{{ suitTags }}" as="s" hint-placeholder-count="4">
+                <div style="{{ s.tag }}"><span style="{{ s.glyphStyle }}">{{ s.glyph }}</span>{{ s.cn }}</div>
+              </sc-for>
+            </div>
+
+            <!-- floating duel cards -->
+            <div style="position:absolute; left:50%; top:48%; transform:translate(-50%,-50%); display:flex; align-items:center; gap:34px;">
+              <div style="{{ duelCardA }}">
+                <div style="{{ cornerTLa }}">A<br>♠</div>
+                <div style="{{ duelFaceA }}">♠</div>
+              </div>
+              <div style="{{ vsEmblem }}"><span style="font-family:var(--fd); font-size:30px;">掷</span></div>
+              <div style="{{ duelCardB }}">
+                <div style="{{ cardBackB }}"></div>
+              </div>
+            </div>
+
+            <div style="position:absolute; left:0; right:0; bottom:24px; display:flex; flex-direction:column; align-items:center; gap:13px;">
+              <button style="{{ ctaMain }}">
+                <span style="position:absolute; inset:0; border-radius:inherit; background:linear-gradient(110deg,transparent 36%,rgba(255,255,255,.4) 50%,transparent 64%); background-size:230% 100%; animation:g-sheen 3s ease-in-out infinite; pointer-events:none;"></span>
+                <span style="position:relative; font-family:var(--fd); font-size:32px; letter-spacing:.06em;">⚡ 天梯掷命</span>
+                <span style="position:relative; font-size:10px; letter-spacing:.26em; opacity:.85;">RANKED · 1V1 DUEL</span>
+              </button>
+              <div style="display:flex; gap:11px;">
+                <button style="{{ ctaSub }}">好友切磋</button>
+                <button style="{{ ctaSub }}">单人 · AI 庄家</button>
+              </div>
+            </div>
+          </div>
+          <div style="display:flex; gap:12px;">
+            <div style="{{ quickCard }}"><span style="font-size:22px;">🃏</span><div><div style="font-size:11px; color:var(--ink-dim);">出战牌组</div><div style="font-family:var(--fh); font-weight:700; font-size:15px; color:var(--ink);">黑桃急袭 ▸</div></div></div>
+            <div style="{{ quickCard }}"><span style="font-size:22px;">🎁</span><div><div style="font-size:11px; color:var(--ink-dim);">每日掷命箱</div><div style="font-family:var(--fh); font-weight:700; font-size:15px; color:var(--gold);">可领取 ●</div></div></div>
+            <div style="{{ quickCard }}"><span style="font-size:22px;">🏪</span><div><div style="font-size:11px; color:var(--ink-dim);">改造坊上新</div><div style="font-family:var(--fh); font-weight:700; font-size:15px; color:var(--ink);">镶字·配重 🔴</div></div></div>
+          </div>
+        </div>
+        <!-- friends rail -->
+        <div style="{{ friendRail }}">
+          <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:12px;">
+            <span style="font-family:var(--fh); font-weight:700; font-size:14px; color:var(--ink); letter-spacing:.04em;">牌友</span>
+            <span style="font-size:11px; color:var(--ink-dim);">在线 5</span>
+          </div>
+          <div style="display:flex; flex-direction:column; gap:7px;">
+            <sc-for list="{{ friends }}" as="f" hint-placeholder-count="6">
+              <div style="{{ f.row }}">
+                <span style="{{ f.dot }}"></span>
+                <div style="flex:1; min-width:0;">
+                  <div style="font-family:var(--fh); font-weight:600; font-size:13px; color:var(--ink);">{{ f.name }}</div>
+                  <div style="font-size:10px; color:var(--ink-dim);">{{ f.tag }}</div>
+                </div>
+                <span style="{{ f.statusStyle }}">{{ f.status }}</span>
+              </div>
+            </sc-for>
+          </div>
+          <button style="{{ addFriend }}">+ 添加牌友</button>
+        </div>
+      </div>
+
+      <!-- S2 DECKS -->
+      <div style="{{ scrDecks }}">
+        <div style="display:flex; align-items:center; gap:12px; margin-bottom:14px; flex-wrap:wrap;">
+          <span style="font-family:var(--fd); font-size:24px; color:var(--ink);">我的牌组</span>
+          <span style="font-size:12px; color:var(--ink-dim);">每组 52 张 · 8 套</span>
+          <div style="flex:1;"></div>
+          <span style="{{ chip2 }}">+ 新建</span>
+          <span style="{{ chip2 }}">流派 ▾</span>
+        </div>
+        <div style="display:flex; gap:8px; flex-wrap:wrap; margin-bottom:16px;">
+          <sc-for list="{{ deckFilters }}" as="d" hint-placeholder-count="6"><span style="{{ d.style }}">{{ d.label }}</span></sc-for>
+        </div>
+        <div style="display:flex; gap:18px;">
+          <div style="display:grid; grid-template-columns:repeat(3,1fr); gap:13px; flex:1;">
+            <sc-for list="{{ decks }}" as="d" hint-placeholder-count="6">
+              <div style="{{ d.card }}">
+                <div style="display:flex; align-items:center; justify-content:space-between;"><span style="font-family:var(--fh); font-weight:700; font-size:16px; color:var(--ink);">{{ d.name }}</span><span style="{{ d.suitGlyph }}">{{ d.icon }}</span></div>
+                <div style="{{ d.facTag }}">{{ d.style2 }}</div>
+                <div style="font-size:11px; color:var(--ink-dim); margin-top:8px;">核心:{{ d.key }}</div>
+                <div style="{{ d.compStyle }}">{{ d.complete }}</div>
+              </div>
+            </sc-for>
+          </div>
+          <div style="{{ deckPreview }}">
+            <div style="font-family:var(--fd); font-size:22px; color:var(--ink);">黑桃急袭</div>
+            <div style="font-size:12px; color:var(--ink-dim); margin-top:2px;">♠ 黑桃 · 速攻 · 稳转速·高正面率</div>
+            <div style="display:flex; gap:10px; margin:14px 0;">
+              <sc-for list="{{ suitBars }}" as="b" hint-placeholder-count="4">
+                <div style="flex:1; display:flex; flex-direction:column; align-items:center; gap:6px;">
+                  <div style="{{ b.barWrap }}"><div style="{{ b.fill }}"></div></div>
+                  <span style="{{ b.label }}">{{ b.glyph }} {{ b.n }}</span>
+                </div>
+              </sc-for>
+            </div>
+            <div style="display:flex; gap:7px; flex-wrap:wrap; margin:6px 0 4px;">
+              <sc-for list="{{ deckSlots }}" as="c" hint-placeholder-count="8"><div style="{{ c.style }}">{{ c.label }}</div></sc-for>
+            </div>
+            <div style="font-size:12px; color:var(--ink-dim); line-height:1.7;">配重均衡 · 重翻位 ×2<br>预估强度 <span style="color:var(--gold);">★★★☆</span></div>
+            <div style="display:flex; gap:9px; margin-top:14px;">
+              <button style="{{ btnGhost }}">改造</button>
+              <button style="{{ ctaWide }}">设为出战</button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- S3 COLLECTION -->
+      <div style="{{ scrColl }}">
+        <div style="display:flex; align-items:center; gap:10px; margin-bottom:14px; flex-wrap:wrap;">
+          <span style="font-family:var(--fd); font-size:24px; color:var(--ink);">卡牌收藏</span>
+          <div style="flex:1;"></div>
+          <span style="{{ chip2 }}">花色 ▾</span><span style="{{ chip2 }}">点数 ▾</span><span style="{{ chip2 }}">稀有度 ▾</span><span style="{{ chip2 }}">🔍 搜索</span>
+        </div>
+        <div style="display:flex; gap:18px;">
+          <div style="display:grid; grid-template-columns:repeat(5,1fr); gap:12px; flex:1;">
+            <sc-for list="{{ collection }}" as="c" hint-placeholder-count="10">
+              <div style="{{ c.card }}">
+                <div style="{{ c.art }}">
+                  <div style="{{ c.cornerStyle }}">{{ c.rank }}<br>{{ c.glyph }}</div>
+                  <span style="{{ c.glyphBig }}">{{ c.glyph }}</span>
+                </div>
+                <div style="font-family:var(--fb); font-weight:700; font-size:12px; color:var(--ink); text-align:center; margin-top:6px;">{{ c.name }}</div>
+                <div style="{{ c.ownStyle }}">{{ c.own }}</div>
+              </div>
+            </sc-for>
+          </div>
+          <div style="{{ cardDetail }}">
+            <div style="{{ detailArt }}">
+              <div style="{{ detailCorner }}">A<br>♠</div>
+              <span style="font-family:var(--fd); font-size:60px; color:#fff;">♠</span>
+            </div>
+            <div style="font-family:var(--fh); font-weight:700; font-size:18px; color:var(--ink); margin-top:12px;">黑桃A · 掷命尖兵</div>
+            <div style="display:flex; gap:6px; margin-top:7px;"><span style="{{ rarOrange }}">传说</span><span style="{{ suitChip }}">♠ 黑桃</span><span style="font-size:11px; color:var(--ink-dim); align-self:center;">拥有 ×1</span></div>
+            <div style="font-size:12.5px; color:var(--ink); line-height:1.6; margin-top:12px;">初始转速极稳,落地正面率 +18%。掷命相撞时压制低点数牌。</div>
+            <div style="font-size:11px; color:var(--ink-dim); margin-top:8px;">改造:镶「重翻」字 · 配重 +2 · 可叠护盾位</div>
+            <div style="display:flex; gap:9px; margin-top:14px;">
+              <button style="{{ btnGhost }}">改造</button><button style="{{ btnGhost }}">分解</button><button style="{{ ctaWide }}">加入牌组</button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- S4 CRAFT / SHOP -->
+      <div style="{{ scrCraft }}">
+        <div style="display:flex; gap:8px; margin-bottom:16px;">
+          <span style="{{ mtabOn }}">改造台</span><span style="{{ mtab }}">庄家商城</span><span style="{{ mtab }}">集材</span>
+          <div style="flex:1;"></div>
+          <span style="font-size:12px; color:var(--ink-dim); align-self:center;">NPC 庄家 · 非玩家交易</span>
+        </div>
+        <div style="display:flex; gap:16px;">
+          <!-- craft bench -->
+          <div style="{{ craftBench }}">
+            <div style="font-family:var(--fh); font-weight:700; font-size:15px; color:var(--ink); margin-bottom:14px;">改造台 · 把牌练得更稳</div>
+            <div style="display:flex; align-items:center; gap:18px;">
+              <div style="{{ craftBefore }}">
+                <div style="{{ craftCorner }}">7<br>♣</div>
+                <span style="font-family:var(--fd); font-size:40px; color:#fff;">♣</span>
+              </div>
+              <div style="display:flex; flex-direction:column; align-items:center; gap:5px; color:var(--gold);">
+                <span style="font-size:24px;">→</span>
+                <span style="font-family:var(--fn); font-size:10px;">CRAFT</span>
+              </div>
+              <div style="{{ craftAfter }}">
+                <div style="{{ craftCornerG }}">7<br>♣</div>
+                <span style="font-family:var(--fd); font-size:40px; color:#fff;">♣</span>
+                <div style="{{ craftGem }}">重翻</div>
+              </div>
+            </div>
+            <div style="display:flex; flex-direction:column; gap:9px; margin-top:18px;">
+              <sc-for list="{{ recipe }}" as="r" hint-placeholder-count="3">
+                <div style="{{ r.row }}">
+                  <span style="{{ r.icon }}">{{ r.glyph }}</span>
+                  <span style="flex:1; font-size:13px; color:var(--ink);">{{ r.label }}</span>
+                  <span style="{{ r.costStyle }}">{{ r.have }} / {{ r.need }}</span>
+                </div>
+              </sc-for>
+            </div>
+            <button style="{{ ctaCraft }}">熔铸改造 · 消耗材料</button>
+          </div>
+          <!-- shop shelf -->
+          <div style="{{ shopShelf }}">
+            <div style="display:flex; align-items:center; gap:10px; margin-bottom:14px;">
+              <span style="font-family:var(--fh); font-weight:700; font-size:15px; color:var(--ink);">庄家货架</span>
+              <span style="font-size:11px; color:var(--ink-dim);">买一张少一张 · 可刷新</span>
+              <div style="flex:1;"></div>
+              <span style="{{ refreshChip }}">🔄 刷新 · 🪙2</span>
+            </div>
+            <div style="display:grid; grid-template-columns:repeat(4,1fr); gap:12px;">
+              <sc-for list="{{ shopCards }}" as="c" hint-placeholder-count="4">
+                <div style="{{ c.card }}">
+                  <div style="{{ c.costBar }}">🪙{{ c.cost }}</div>
+                  <div style="{{ c.art }}"><div style="{{ c.cornerStyle }}">{{ c.rank }}<br>{{ c.glyph }}</div><span style="{{ c.glyphBig }}">{{ c.glyph }}</span></div>
+                  <div style="font-family:var(--fb); font-weight:700; font-size:12px; color:var(--ink); text-align:center; margin-top:7px;">{{ c.name }}</div>
+                  <div style="{{ c.rarStyle }}">{{ c.rar }}</div>
+                </div>
+              </sc-for>
+            </div>
+            <div style="display:flex; gap:9px; margin-top:18px;"><button style="{{ btnGhost }}">锁定货架</button><button style="{{ btnGhost }}">每日礼包</button><button style="{{ btnGhost }}">集材任务</button></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- S5 LADDER -->
+      <div style="{{ scrLadder }}">
+        <div style="display:flex; gap:16px;">
+          <div style="width:300px; flex:none; display:flex; flex-direction:column; gap:14px;">
+            <div style="{{ rankCard }}">
+              <span style="font-size:46px;">♠</span>
+              <div style="font-family:var(--fd); font-size:30px; color:var(--ink); margin-top:6px;">黄金 III</div>
+              <div style="font-family:var(--fn); font-size:14px; color:var(--gold); margin-top:2px;">1240 LP</div>
+              <div style="width:100%; height:8px; border-radius:99px; background:rgba(120,90,50,.2); overflow:hidden; margin-top:12px;"><div style="width:62%; height:100%; background:var(--gold-grad); border-radius:99px;"></div></div>
+              <div style="font-size:11px; color:var(--ink-dim); margin-top:7px;">距 黄金 II 还需 60 LP</div>
+            </div>
+            <div style="{{ sheet }}">
+              <div style="font-family:var(--fh); font-weight:700; font-size:14px; color:var(--ink); margin-bottom:11px;">近 10 局</div>
+              <div style="display:flex; gap:5px; flex-wrap:wrap;">
+                <sc-for list="{{ recents }}" as="r" hint-placeholder-count="10"><div style="{{ r.style }}">{{ r.place }}</div></sc-for>
+              </div>
+              <div style="font-size:11px; color:var(--ink-dim); margin-top:10px;">胜率 64% · 连胜 3 · 翻正率 71%</div>
+            </div>
+          </div>
+          <div style="{{ sheetFlex }}">
+            <div style="display:flex; align-items:center; gap:12px; margin-bottom:12px;"><span style="font-family:var(--fd); font-size:22px; color:var(--ink);">天梯榜</span><span style="{{ chip2 }}">全服</span><span style="{{ chip2 }}">牌友</span></div>
+            <sc-for list="{{ ladder }}" as="l" hint-placeholder-count="8">
+              <div style="{{ l.row }}">
+                <span style="{{ l.rankStyle }}">{{ l.rank }}</span>
+                <div style="{{ l.av }}">{{ l.avText }}</div>
+                <div style="flex:1; min-width:0;"><div style="font-family:var(--fh); font-weight:700; font-size:14px; color:var(--ink);">{{ l.name }}</div><div style="font-size:10px; color:var(--ink-dim);">{{ l.deckTag }}</div></div>
+                <span style="font-family:var(--fn); font-size:13px; color:var(--gold);">{{ l.lp }}</span>
+              </div>
+            </sc-for>
+          </div>
+        </div>
+      </div>
+
+    </div>
+
+    <!-- invite toast -->
+    <div style="{{ toast }}">
+      <div style="{{ toastAv }}">♥</div>
+      <div style="flex:1;"><div style="font-family:var(--fh); font-weight:700; font-size:13px; color:var(--ink);">红桃Q 邀你切磋</div><div style="font-size:11px; color:var(--ink-dim);">好友房 · 掷命 1v1</div></div>
+      <button style="{{ toastYes }}">接受</button>
+      <button style="{{ toastNo }}">✕</button>
+    </div>
+
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script>
+class Component extends DCLogic {
+  state = { screen: 'home', skin: 'onyx' };
+
+  themes() {
+    return {
+      onyx: {
+        '--ink': '#e7edf3', '--ink-dim': '#7e8c9b',
+        '--gold': '#e8cd82', '--gold-grad': 'linear-gradient(180deg,#f5e6ad,#c69a44)',
+        '--paper': 'radial-gradient(120% 120% at 50% -8%, #1d2d42 0%, #0f1b29 55%, #070e17 100%)',
+        '--panel': 'radial-gradient(130% 95% at 22% 10%, rgba(82,120,158,.30), transparent 56%), linear-gradient(165deg,#1a2a3c,#0f1c2a)',
+        '--panel-border': '#3a516e', '--hairline': 'rgba(232,205,138,.24)',
+        '--chip': 'rgba(255,255,255,.05)', '--track': 'rgba(0,0,0,.5)',
+        '--frame-edge': '#2a3a4e',
+        '--felt': 'radial-gradient(120% 110% at 50% 26%, #1d6f4e 0%, #11543a 46%, #0a3325 100%)',
+        '--felt-edge': '#0c2a1f',
+        '--chamfer': 'polygon(13px 0,100% 0,100% calc(100% - 13px),calc(100% - 13px) 100%,0 100%,0 13px)',
+        '--fd': "'Zhi Mang Xing', cursive", '--fh': "'Rajdhani', sans-serif", '--fb': "'Noto Sans SC', sans-serif", '--fn': "'Silkscreen', monospace",
+      },
+      brocade: {
+        '--ink': '#5a3f44', '--ink-dim': '#a98b8f',
+        '--gold': '#cf9a3f', '--gold-grad': 'linear-gradient(180deg,#f3e2a4,#cf9a3f)',
+        '--paper': 'radial-gradient(120% 120% at 50% -10%, #fdf4ee 0%, #f3e2dc 60%, #ecd6cf 100%)',
+        '--panel': 'radial-gradient(130% 95% at 22% 10%, rgba(216,170,120,.20), transparent 56%), linear-gradient(165deg,#fffaf3,#f8e7d6)',
+        '--panel-border': '#e0c290', '--hairline': 'rgba(207,154,63,.5)',
+        '--chip': 'rgba(255,255,255,.55)', '--track': 'rgba(150,110,90,.18)',
+        '--frame-edge': '#6b4a2e',
+        '--felt': 'radial-gradient(120% 110% at 50% 26%, #c97f86 0%, #b15f6b 46%, #8c4654 100%)',
+        '--felt-edge': '#6e3a44',
+        '--chamfer': 'polygon(13px 0,100% 0,100% calc(100% - 13px),calc(100% - 13px) 100%,0 100%,0 13px)',
+        '--fd': "'Ma Shan Zheng', cursive", '--fh': "'Cormorant Garamond', serif", '--fb': "'Noto Serif SC', serif", '--fn': "'Silkscreen', monospace",
+      },
+    };
+  }
+
+  renderVals() {
+    const T = this.themes()[this.state.skin];
+    const SUIT = { s: '#4a6390', h: '#d8504e', d: '#e0973a', c: '#3fae6e' };
+    const RAR = { white: '#b9bec8', green: '#5bbf7a', blue: '#3a9bff', purple: '#bf6bff', orange: '#f0972f' };
+    const screen = this.state.screen;
+    const show = (s) => ({ display: screen === s ? 'flex' : 'none' });
+
+    const pageStyle = Object.assign({}, T, { minHeight: '100vh', background: '#0c0a08', padding: '22px', display: 'flex', justifyContent: 'center', fontFamily: "'Noto Sans SC', sans-serif" });
+    const frameStyle = { position: 'relative', width: '1340px', minHeight: '820px', borderRadius: '16px', overflow: 'hidden', background: 'var(--paper)', border: '3px solid var(--frame-edge)', boxShadow: '0 30px 80px rgba(0,0,0,.6), inset 0 0 0 1px var(--hairline)', display: 'flex', flexDirection: 'column' };
+
+    const topbar = { display: 'flex', alignItems: 'center', gap: '14px', padding: '14px 24px', background: 'linear-gradient(180deg,rgba(94,63,38,.16),transparent)', borderBottom: '1px solid var(--panel-border)' };
+    const avatarSeal = { width: '44px', height: '44px', flex: 'none', borderRadius: '10px', background: 'linear-gradient(150deg,#3a4f78,#28385a)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#fff', fontSize: '24px', boxShadow: '0 0 12px rgba(74,99,144,.5)', border: '1px solid var(--hairline)' };
+    const rankBadge = { display: 'flex', alignItems: 'center', gap: '7px', marginLeft: '6px', padding: '6px 13px', borderRadius: '99px', background: 'var(--chip)', border: '1px solid var(--panel-border)' };
+    const coin = { display: 'flex', alignItems: 'center', gap: '5px', padding: '6px 11px', borderRadius: '9px', background: 'var(--chip)', border: '1px solid var(--panel-border)' };
+    const iconBtn = { width: '34px', height: '34px', borderRadius: '9px', display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'var(--chip)', border: '1px solid var(--panel-border)', color: 'var(--ink-dim)', fontSize: '16px', cursor: 'pointer' };
+
+    const navRow = { display: 'flex', gap: '4px', padding: '10px 22px 0' };
+    const navItem = (on) => ({ position: 'relative', padding: '10px 20px', cursor: 'pointer', border: 'none', background: on ? 'var(--panel)' : 'transparent', borderRadius: '11px 11px 0 0', fontFamily: 'var(--fh)', fontWeight: 700, fontSize: '15px', letterSpacing: '.03em', color: on ? 'var(--ink)' : 'var(--ink-dim)', borderBottom: on ? '2px solid var(--gold)' : '2px solid transparent', transition: 'all .15s' });
+
+    const contentWrap = { flex: 1, padding: '18px 24px 24px', display: 'flex', minHeight: 0 };
+
+    // ---- S1 home : felt table hero ----
+    const heroFelt = { position: 'relative', flex: 1, minHeight: '440px', borderRadius: '16px', overflow: 'hidden', background: 'var(--felt)', border: '6px solid var(--felt-edge)', boxShadow: 'inset 0 0 0 2px rgba(255,255,255,.08), inset 0 0 120px rgba(0,0,0,.5)' };
+    const feltVignette = { position: 'absolute', inset: 0, background: 'radial-gradient(60% 50% at 50% 44%, rgba(255,255,255,.10), transparent 70%), repeating-linear-gradient(45deg, rgba(0,0,0,.05) 0 2px, transparent 2px 12px)', pointerEvents: 'none' };
+    const suitTags = [['s', '♠', '黑桃'], ['h', '♥', '红桃'], ['d', '♦', '方块'], ['c', '♣', '梅花']].map(([k, glyph, cn]) => ({
+      glyph, cn,
+      tag: { display: 'flex', alignItems: 'center', gap: '6px', padding: '5px 11px', borderRadius: '99px', background: 'rgba(12,20,16,.5)', color: '#fff', fontSize: '12px', fontFamily: 'var(--fh)', fontWeight: 700, backdropFilter: 'blur(3px)' },
+      glyphStyle: { color: SUIT[k], fontSize: '14px', textShadow: '0 0 6px ' + SUIT[k] },
+    }));
+    const cardFace = (col, deg) => ({ position: 'relative', width: '116px', height: '160px', borderRadius: '12px', background: 'linear-gradient(160deg,#fbf7ef,#e9dcc6)', border: '3px solid ' + col, boxShadow: '0 18px 40px rgba(0,0,0,.45), inset 0 0 0 2px rgba(255,255,255,.6)', transform: 'rotate(' + deg + 'deg)', '--rot': deg + 'deg', animation: 'g-float 4s ease-in-out infinite' });
+    const duelCardA = cardFace(SUIT.s, -9);
+    const cornerTLa = { position: 'absolute', top: '7px', left: '9px', fontFamily: 'var(--fh)', fontWeight: 700, fontSize: '15px', lineHeight: '.95', color: SUIT.s, textAlign: 'center' };
+    const duelFaceA = { position: 'absolute', inset: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '64px', color: SUIT.s, textShadow: '0 2px 6px rgba(0,0,0,.2)' };
+    const duelCardB = { position: 'relative', width: '116px', height: '160px', borderRadius: '12px', background: '#b1402f', border: '3px solid #7d2a1e', boxShadow: '0 18px 40px rgba(0,0,0,.45)', transform: 'rotate(11deg)', '--rot': '11deg', animation: 'g-float 4.6s ease-in-out infinite' };
+    const cardBackB = { position: 'absolute', inset: '7px', borderRadius: '7px', border: '2px solid rgba(255,255,255,.5)', background: 'repeating-linear-gradient(45deg, rgba(255,255,255,.14) 0 6px, transparent 6px 12px), repeating-linear-gradient(-45deg, rgba(255,255,255,.14) 0 6px, transparent 6px 12px)' };
+    const vsEmblem = { width: '64px', height: '64px', borderRadius: '50%', flex: 'none', background: 'radial-gradient(circle at 38% 32%, #ffe6a6, #c69a44)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#2a1a08', boxShadow: '0 0 30px rgba(232,205,130,.7), inset 0 1px 0 rgba(255,255,255,.5)', border: '2px solid #fff' };
+
+    const ctaMain = { position: 'relative', overflow: 'hidden', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '2px', padding: '14px 52px', cursor: 'pointer', clipPath: 'var(--chamfer)', border: 'none', background: 'linear-gradient(180deg,#e7b052,#bb7f2c)', color: '#2a1a08', boxShadow: '0 10px 28px rgba(0,0,0,.5), inset 0 1px 0 rgba(255,255,255,.4)' };
+    const ctaSub = { padding: '10px 22px', borderRadius: '11px', cursor: 'pointer', background: 'rgba(255,255,255,.16)', border: '1px solid rgba(255,255,255,.4)', color: '#fff', fontFamily: 'var(--fh)', fontWeight: 700, fontSize: '14px', backdropFilter: 'blur(4px)' };
+    const quickCard = { flex: 1, display: 'flex', alignItems: 'center', gap: '12px', padding: '14px 16px', borderRadius: '12px', clipPath: 'var(--chamfer)', background: 'var(--panel)', border: '1px solid var(--panel-border)', boxShadow: 'inset 0 0 0 1px var(--hairline)' };
+
+    const friendRail = { width: '256px', flex: 'none', marginLeft: '14px', padding: '16px', borderRadius: '14px', background: 'var(--panel)', border: '1px solid var(--panel-border)', boxShadow: 'inset 0 0 0 1px var(--hairline)', display: 'flex', flexDirection: 'column' };
+    const fst = { lobby: ['大厅', '#b8893f'], in_party: ['切磋中', '#3a6abf'], in_game: ['对战中', '#c0473b'], offline: ['离线', '#a89878'] };
+    const friends = [
+      ['梅花J骑士', '♣ 梅花连携', 'in_game'], ['红桃皇后', '♥ 火攻流', 'lobby'], ['方块老千', '♦ 配重流', 'in_party'],
+      ['黑桃暗影', '♠ 速攻', 'offline'], ['百搭小丑', '✦ 干预流', 'offline'], ['同花顺子手', '♠ 顺子', 'lobby'],
+    ].map(([name, tag, st]) => ({
+      name, tag, status: fst[st][0],
+      row: { display: 'flex', alignItems: 'center', gap: '9px', padding: '8px 10px', borderRadius: '10px', background: st === 'offline' ? 'transparent' : 'var(--chip)', border: '1px solid var(--panel-border)', opacity: st === 'offline' ? .5 : 1 },
+      dot: { width: '8px', height: '8px', borderRadius: '50%', flex: 'none', background: fst[st][1], boxShadow: st !== 'offline' ? '0 0 6px ' + fst[st][1] : 'none' },
+      statusStyle: { fontSize: '10px', fontFamily: 'var(--fh)', fontWeight: 700, color: fst[st][1] },
+    }));
+    const addFriend = { marginTop: '12px', padding: '10px', borderRadius: '10px', cursor: 'pointer', background: 'transparent', border: '1px dashed var(--panel-border)', color: 'var(--ink-dim)', fontFamily: 'var(--fh)', fontWeight: 700, fontSize: '13px' };
+
+    // shared chrome
+    const sheet = { background: 'var(--panel)', borderRadius: '14px', border: '1px solid var(--panel-border)', boxShadow: 'inset 0 0 0 1px var(--hairline)', padding: '22px 24px', width: '100%' };
+    const sheetFlex = Object.assign({}, sheet, { flex: 1 });
+    const btnGhost = { padding: '11px 22px', borderRadius: '11px', cursor: 'pointer', background: 'var(--chip)', border: '1px solid var(--panel-border)', color: 'var(--ink)', fontFamily: 'var(--fh)', fontWeight: 700, fontSize: '14px' };
+    const ctaWide = { padding: '11px 28px', borderRadius: '11px', clipPath: 'var(--chamfer)', cursor: 'pointer', border: 'none', background: 'var(--gold-grad)', color: '#2a1a08', fontFamily: 'var(--fh)', fontWeight: 700, fontSize: '15px', boxShadow: 'inset 0 1px 0 rgba(255,255,255,.4), 0 5px 14px rgba(120,80,20,.3)' };
+    const chip2 = { padding: '6px 13px', borderRadius: '9px', background: 'var(--chip)', border: '1px solid var(--panel-border)', fontFamily: 'var(--fh)', fontWeight: 700, fontSize: '13px', color: 'var(--ink-dim)', cursor: 'pointer' };
+
+    // ---- S2 decks ----
+    const deckFilters = ['全部', '速攻', '同花', '配重', '干预', '重翻'].map((label, i) => ({ label, style: { padding: '5px 13px', borderRadius: '99px', fontSize: '12px', fontFamily: 'var(--fh)', fontWeight: 700, cursor: 'pointer', background: i === 0 ? 'var(--gold-grad)' : 'var(--chip)', color: i === 0 ? '#2a1a08' : 'var(--ink-dim)', border: '1px solid ' + (i === 0 ? 'transparent' : 'var(--panel-border)') } }));
+    const decks = [
+      ['黑桃急袭', '♠', 's', '♠ 速攻', '黑桃A', '52/52', 1], ['红桃火攻', '♥', 'h', '♥ 爆发', '红桃K', '50/52', 0],
+      ['方块配重', '♦', 'd', '♦ 稳翻', '方块Q', '🔒 缺稀有', 2], ['梅花连携', '♣', 'c', '♣ 连携', '梅花J', '52/52', 1],
+      ['百搭干预', '★', 's', '混 · 干预', '小丑', '48/52', 0], ['同花顺', '♠', 's', '♠ 顺子', '黑桃10', '52/52', 1],
+    ].map(([name, icon, suit, style2, key, complete, status]) => ({
+      name, icon, style2, key, complete,
+      suitGlyph: { fontSize: '18px', color: SUIT[suit] },
+      card: { padding: '14px', borderRadius: '12px', clipPath: 'var(--chamfer)', background: 'var(--chip)', border: '1px solid ' + (status === 2 ? 'var(--panel-border)' : SUIT[suit]), boxShadow: 'inset 0 0 0 1px var(--hairline)', cursor: 'pointer', opacity: status === 2 ? .62 : 1 },
+      facTag: { display: 'inline-block', marginTop: '8px', fontSize: '11px', padding: '2px 9px', borderRadius: '99px', background: SUIT[suit] + '22', color: SUIT[suit], fontWeight: 700 },
+      compStyle: { marginTop: '8px', fontFamily: 'var(--fn)', fontSize: '11px', color: status === 1 ? '#2f8f6b' : (status === 2 ? 'var(--ink-dim)' : '#c0473b') },
+    }));
+    const deckPreview = { width: '300px', flex: 'none', padding: '20px', borderRadius: '14px', clipPath: 'var(--chamfer)', background: 'var(--panel)', border: '1px solid var(--gold)', boxShadow: 'inset 0 0 0 1px var(--hairline)' };
+    const suitBars = [['s', '♠', 16], ['h', '♥', 12], ['d', '♦', 11], ['c', '♣', 13]].map(([k, glyph, n]) => ({
+      glyph, n,
+      barWrap: { width: '100%', height: '70px', borderRadius: '8px', background: 'var(--track)', display: 'flex', alignItems: 'flex-end', overflow: 'hidden', border: '1px solid var(--panel-border)' },
+      fill: { width: '100%', height: (n / 16 * 100) + '%', background: 'linear-gradient(180deg,' + SUIT[k] + 'dd,' + SUIT[k] + '88)' },
+      label: { fontFamily: 'var(--fn)', fontSize: '11px', color: SUIT[k] },
+    }));
+    const deckSlots = ['黑桃A', '黑桃K', '重翻×2', '配重', '护盾', '加权', '诅咒', '小丑'].map((label) => ({ label, style: { width: '64px', height: '50px', borderRadius: '9px', display: 'flex', alignItems: 'center', justifyContent: 'center', textAlign: 'center', fontFamily: 'var(--fb)', fontWeight: 700, fontSize: '10px', padding: '4px', background: 'var(--chip)', border: '1px solid var(--gold)', color: 'var(--ink)' } }));
+
+    // ---- S3 collection ----
+    const collCards = [
+      ['黑桃A', 'A', '♠', 's', 'orange', '×1'], ['红桃K', 'K', '♥', 'h', 'purple', '×2'], ['方块Q', 'Q', '♦', 'd', 'purple', '×1'], ['梅花J', 'J', '♣', 'c', 'blue', '×3'], ['黑桃10', '10', '♠', 's', 'blue', '×2'],
+      ['红桃9', '9', '♥', 'h', 'green', '×4'], ['梅花7', '7', '♣', 'c', 'white', '×9'], ['方块6', '6', '♦', 'd', 'green', '×2'], ['小丑·百搭', 'JK', '✦', 's', 'orange', '🔒'], ['黑桃2', '2', '♠', 's', 'white', '×6'],
+    ].map(([name, rank, glyph, suit, rar, own]) => {
+      const c = SUIT[suit]; const rc = RAR[rar]; const locked = own === '🔒';
+      return {
+        name, rank, glyph, own,
+        card: { padding: '8px', borderRadius: '10px', background: 'var(--chip)', border: '1px solid var(--panel-border)', boxShadow: 'inset 0 0 0 1px var(--hairline)', opacity: locked ? .5 : 1, cursor: 'pointer' },
+        art: { position: 'relative', height: '84px', borderRadius: '7px', background: 'linear-gradient(160deg,#fbf7ef,#e7dac3)', border: '2px solid ' + c, display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: '0 0 10px ' + rc + '55, inset 0 0 0 1px rgba(255,255,255,.5)' },
+        cornerStyle: { position: 'absolute', top: '4px', left: '6px', fontFamily: 'var(--fh)', fontWeight: 700, fontSize: '12px', lineHeight: '.9', color: c, textAlign: 'center' },
+        glyphBig: { fontSize: '38px', color: c, textShadow: '0 1px 3px rgba(0,0,0,.15)' },
+        ownStyle: { fontFamily: 'var(--fn)', fontSize: '10px', color: locked ? 'var(--ink-dim)' : rc, textAlign: 'center', marginTop: '4px' },
+      };
+    });
+    const cardDetail = { width: '264px', flex: 'none', padding: '20px', borderRadius: '14px', clipPath: 'var(--chamfer)', background: 'var(--panel)', border: '1px solid var(--panel-border)', boxShadow: 'inset 0 0 0 1px var(--hairline)', display: 'flex', flexDirection: 'column', alignItems: 'center', textAlign: 'center' };
+    const detailArt = { position: 'relative', width: '120px', height: '160px', borderRadius: '12px', background: 'linear-gradient(160deg,#fbf7ef,#e7dac3)', border: '3px solid ' + SUIT.s, display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: '0 0 18px rgba(240,151,47,.45), inset 0 0 0 2px rgba(255,255,255,.6)' };
+    const detailCorner = { position: 'absolute', top: '8px', left: '10px', fontFamily: 'var(--fh)', fontWeight: 700, fontSize: '17px', lineHeight: '.92', color: SUIT.s, textAlign: 'center' };
+    const rarOrange = { fontSize: '11px', padding: '2px 9px', borderRadius: '99px', background: 'rgba(240,151,47,.16)', color: '#f0972f', fontWeight: 700 };
+    const suitChip = { fontSize: '11px', padding: '2px 9px', borderRadius: '99px', background: SUIT.s + '22', color: SUIT.s, fontWeight: 700 };
+
+    // ---- S4 craft/shop ----
+    const mtab = { padding: '9px 18px', borderRadius: '10px', background: 'var(--chip)', border: '1px solid var(--panel-border)', fontFamily: 'var(--fh)', fontWeight: 700, fontSize: '14px', color: 'var(--ink-dim)', cursor: 'pointer' };
+    const mtabOn = Object.assign({}, mtab, { background: 'var(--gold-grad)', color: '#2a1a08', border: 'none' });
+    const craftBench = { width: '420px', flex: 'none', padding: '22px', borderRadius: '14px', background: 'var(--panel)', border: '1px solid var(--panel-border)', boxShadow: 'inset 0 0 0 1px var(--hairline)' };
+    const mkCraftCard = (col, glow) => ({ position: 'relative', width: '92px', height: '128px', borderRadius: '11px', background: 'linear-gradient(160deg,#fbf7ef,#e7dac3)', border: '3px solid ' + col, display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: glow ? '0 0 22px ' + glow : '0 6px 16px rgba(0,0,0,.3), inset 0 0 0 2px rgba(255,255,255,.6)' });
+    const craftBefore = mkCraftCard(SUIT.c, null);
+    const craftAfter = Object.assign(mkCraftCard(SUIT.c, 'rgba(232,205,130,.7)'), { borderColor: 'var(--gold)' });
+    const craftCorner = { position: 'absolute', top: '6px', left: '8px', fontFamily: 'var(--fh)', fontWeight: 700, fontSize: '13px', lineHeight: '.9', color: SUIT.c, textAlign: 'center' };
+    const craftCornerG = Object.assign({}, craftCorner, { color: SUIT.c });
+    const craftGem = { position: 'absolute', bottom: '8px', left: '50%', transform: 'translateX(-50%)', padding: '2px 8px', borderRadius: '99px', background: 'var(--gold-grad)', color: '#2a1a08', fontFamily: 'var(--fh)', fontWeight: 700, fontSize: '10px', whiteSpace: 'nowrap' };
+    const recipe = [['◈', '掷命碎片', 12, 8], ['墨', '改造墨', 3, 2], ['🪙', '金币', 1200, 600]].map(([glyph, label, have, need]) => ({
+      glyph, label, have, need,
+      row: { display: 'flex', alignItems: 'center', gap: '11px', padding: '9px 12px', borderRadius: '10px', background: 'var(--chip)', border: '1px solid var(--panel-border)' },
+      icon: { width: '30px', height: '30px', flex: 'none', borderRadius: '8px', background: 'var(--track)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '15px' },
+      costStyle: { fontFamily: 'var(--fn)', fontSize: '12px', color: have >= need ? '#2f8f6b' : '#c0473b' },
+    }));
+    const ctaCraft = { width: '100%', marginTop: '18px', padding: '13px', borderRadius: '11px', clipPath: 'var(--chamfer)', cursor: 'pointer', border: 'none', background: 'var(--gold-grad)', color: '#2a1a08', fontFamily: 'var(--fh)', fontWeight: 700, fontSize: '15px', boxShadow: 'inset 0 1px 0 rgba(255,255,255,.4), 0 5px 14px rgba(120,80,20,.3)' };
+    const shopShelf = Object.assign({}, sheet, { flex: 1 });
+    const refreshChip = { padding: '6px 13px', borderRadius: '9px', background: 'var(--chip)', border: '1px solid var(--gold)', fontFamily: 'var(--fh)', fontWeight: 700, fontSize: '12px', color: 'var(--gold)', cursor: 'pointer' };
+    const shopCards = [
+      ['黑桃K', 'K', '♠', 's', 6, '史诗', 'purple'], ['红桃A', 'A', '♥', 'h', 5, '传说', 'orange'], ['方块9', '9', '♦', 'd', 2, '稀有', 'blue'], ['梅花Q', 'Q', '♣', 'c', 3, '史诗', 'purple'],
+    ].map(([name, rank, glyph, suit, cost, rar, rk]) => {
+      const c = SUIT[suit]; const rc = RAR[rk];
+      return {
+        name, rank, glyph, cost, rar,
+        card: { position: 'relative', padding: '8px 8px 10px', borderRadius: '12px', background: 'var(--panel)', border: '1px solid ' + c, boxShadow: 'inset 0 0 0 1px var(--hairline)', cursor: 'pointer' },
+        costBar: { position: 'absolute', top: '-8px', right: '8px', padding: '2px 9px', borderRadius: '99px', background: 'var(--gold-grad)', color: '#2a1a08', fontFamily: 'var(--fn)', fontSize: '11px', fontWeight: 700, boxShadow: '0 2px 6px rgba(0,0,0,.3)' },
+        art: { position: 'relative', height: '92px', borderRadius: '7px', background: 'linear-gradient(160deg,#fbf7ef,#e7dac3)', border: '2px solid ' + c, display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: 'inset 0 0 0 1px rgba(255,255,255,.5)' },
+        cornerStyle: { position: 'absolute', top: '4px', left: '6px', fontFamily: 'var(--fh)', fontWeight: 700, fontSize: '12px', lineHeight: '.9', color: c, textAlign: 'center' },
+        glyphBig: { fontSize: '40px', color: c },
+        rarStyle: { fontFamily: 'var(--fb)', fontSize: '10px', fontWeight: 700, color: rc, textAlign: 'center', marginTop: '3px' },
+      };
+    });
+
+    // ---- S5 ladder ----
+    const rankCard = { display: 'flex', flexDirection: 'column', alignItems: 'center', padding: '24px 20px', borderRadius: '14px', clipPath: 'var(--chamfer)', background: 'var(--panel)', border: '1px solid var(--gold)', boxShadow: 'inset 0 0 0 1px var(--hairline)' };
+    const recents = ['W', 'L', 'W', 'W', 'L', 'W', 'W', 'L', 'W', 'W'].map((p) => ({ place: p, style: { width: '30px', height: '30px', borderRadius: '8px', display: 'flex', alignItems: 'center', justifyContent: 'center', fontFamily: 'var(--fn)', fontSize: '12px', background: p === 'W' ? 'var(--gold-grad)' : 'var(--chip)', color: p === 'W' ? '#2a1a08' : 'var(--ink-dim)', border: '1px solid var(--panel-border)' } }));
+    const ladder = [
+      ['1', '同花顺王', '♠ 顺子', 2880, 's'], ['2', '红桃皇后', '♥ 火攻', 2710, 'h'], ['3', '方块老千', '♦ 配重', 2640, 'd'],
+      ['4', '梅花骑士', '♣ 连携', 2510, 'c'], ['5', '百搭小丑', '✦ 干预', 2380, 's'], ['6', '黑桃暗影', '♠ 速攻', 2240, 's'],
+    ].map(([rank, name, deckTag, lp, suit]) => ({
+      rank, name, deckTag, lp,
+      rankStyle: { width: '26px', fontFamily: 'var(--fn)', fontSize: '14px', color: +rank <= 3 ? 'var(--gold)' : 'var(--ink-dim)', textAlign: 'center' },
+      av: { width: '32px', height: '32px', flex: 'none', borderRadius: '8px', background: 'linear-gradient(150deg,' + SUIT[suit] + 'dd,' + SUIT[suit] + '99)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#fff', fontSize: '16px' }, avText: deckTag[0],
+      row: { display: 'flex', alignItems: 'center', gap: '11px', padding: '9px 8px', borderRadius: '9px', borderBottom: '1px solid var(--panel-border)' },
+    }));
+
+    const toast = { position: 'absolute', right: '22px', bottom: '22px', width: '290px', display: 'flex', alignItems: 'center', gap: '11px', padding: '13px 15px', borderRadius: '13px', clipPath: 'var(--chamfer)', background: 'var(--panel)', border: '1px solid var(--gold)', boxShadow: '0 14px 34px rgba(0,0,0,.4), inset 0 0 0 1px var(--hairline)', zIndex: 20 };
+    const toastAv = { width: '38px', height: '38px', flex: 'none', borderRadius: '9px', background: 'linear-gradient(150deg,#e0635a,#c0473b)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#fff', fontSize: '19px' };
+    const toastYes = { padding: '8px 14px', borderRadius: '9px', cursor: 'pointer', border: 'none', background: 'var(--gold-grad)', color: '#2a1a08', fontFamily: 'var(--fh)', fontWeight: 700, fontSize: '13px' };
+    const toastNo = { width: '30px', height: '30px', borderRadius: '8px', cursor: 'pointer', background: 'var(--chip)', border: '1px solid var(--panel-border)', color: 'var(--ink-dim)' };
+
+    return {
+      pageStyle, frameStyle, topbar, avatarSeal, rankBadge, coin, iconBtn, navRow, contentWrap,
+      skinOnyx: () => this.setState({ skin: 'onyx' }), skinBrocade: () => this.setState({ skin: 'brocade' }),
+      segOnyx: { padding: '6px 12px', borderRadius: '8px', cursor: 'pointer', border: '1px solid ' + (this.state.skin === 'onyx' ? 'var(--gold)' : 'var(--panel-border)'), background: this.state.skin === 'onyx' ? 'var(--gold-grad)' : 'transparent', color: this.state.skin === 'onyx' ? '#2a1a08' : 'var(--ink-dim)', fontFamily: 'var(--fh)', fontWeight: 700, fontSize: '12px', whiteSpace: 'nowrap' },
+      segBrocade: { padding: '6px 12px', borderRadius: '8px', cursor: 'pointer', border: '1px solid ' + (this.state.skin === 'brocade' ? 'var(--gold)' : 'var(--panel-border)'), background: this.state.skin === 'brocade' ? 'var(--gold-grad)' : 'transparent', color: this.state.skin === 'brocade' ? '#2a1a08' : 'var(--ink-dim)', fontFamily: 'var(--fh)', fontWeight: 700, fontSize: '12px', whiteSpace: 'nowrap' },
+      navTo: (e) => this.setState({ screen: e.currentTarget.dataset.s }),
+      navHome: navItem(screen === 'home'), navDecks: navItem(screen === 'decks'), navColl: navItem(screen === 'collection'), navCraft: navItem(screen === 'craft'), navLadder: navItem(screen === 'ladder'),
+      scrHome: Object.assign({ flexDirection: 'row', minWidth: 0, width: '100%' }, show('home')),
+      scrDecks: Object.assign({ flexDirection: 'column', width: '100%' }, show('decks')),
+      scrColl: Object.assign({ flexDirection: 'column', width: '100%' }, show('collection')),
+      scrCraft: Object.assign({ flexDirection: 'column', width: '100%' }, show('craft')),
+      scrLadder: Object.assign({ width: '100%' }, show('ladder')),
+      heroFelt, feltVignette, suitTags, duelCardA, cornerTLa, duelFaceA, duelCardB, cardBackB, vsEmblem,
+      ctaMain, ctaSub, quickCard, friendRail, friends, addFriend,
+      sheet, sheetFlex, btnGhost, ctaWide, chip2,
+      deckFilters, decks, deckPreview, suitBars, deckSlots,
+      collection: collCards, cardDetail, detailArt, detailCorner, rarOrange, suitChip,
+      mtab, mtabOn, craftBench, craftBefore, craftAfter, craftCorner, craftCornerG, craftGem, recipe, ctaCraft, shopShelf, refreshChip, shopCards,
+      rankCard, recents, ladder,
+      toast, toastAv, toastYes, toastNo,
+    };
+  }
+}
+</script>
+</body>
+</html>
