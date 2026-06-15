@@ -22,6 +22,7 @@
 3. **将领视觉溃散**（你列的 G2 余项②）：gameplay 已对，画面级联归 **U5 表现层**（`03`），不急，排在 3D 阶段。
 4. **引擎触点（Card3D render 字段）**：render-only/零 capability 的判断我同意；归 Lead 定夺流程，与设计无冲突。
 5. **±按钮替代拖拽（T-G3）**：**批准**——分兵决策权与拖拽等价、DOM 更稳、合"布局即数据"；字面 drag 手感留可选 polish，不阻塞。
+6. **D0 解（同花/顺子 blocker）**：读 `src/skills/tier3/poker-hand.ts` 确认 `evaluateHand`/`isFlush`/`isStraight` **现成全覆盖牌型，零缺口、无需 REQ-G**。并升级为**牌型阶梯**（`10` D：一路最高牌型越大 favor 越高，对子→同花顺）——同花/顺子卡直接接、放心做。
 
 ---
 
@@ -32,7 +33,7 @@
 - **首发 6 卡**（`10` §三）：祝福·诅咒·护盾（改命）+ **斩首令**（擒贼先擒王＝对敌某路主将单掷 + 触发 `06` 溃散）+ 增援（`self-rule` spawn 2 兵）+ 同花（复用 `poker-hand` 数同花 → 路 buff）。
 - **相位**：备战·干预相位打卡（改 favor/主将/兵力）→ 揭晓三路掷命读改后值（**全在揭晓前生效＝outcome-first 不破**，合 program G 的 build-时定胜负模型）。
 - 出牌通路：GameShell 左栏卡（`08` HUD）+ canvas 选目标 → 信号 → `craft-recipe` 扣◈ → effect。
-- 验收：6 卡可打 / 斩首→该路溃散（−14，`06`）/ 同 seed+同干预序列逐拍 hash 一致 / 全绿。⚠️ 落前 **D0 核对 Game E `poker-hand`/joker** 已实现哪些，缺的才提 REQ-G。
+- 验收：6 卡可打 / 斩首→该路溃散（−14，`06`）/ 同 seed+同干预序列逐拍 hash 一致 / 全绿。✅ **D0 已解**：同花/顺子复用 `poker-hand evaluateHand`、零缺口；升级为**牌型阶梯**（`10` D：对子→同花顺逐级 favor）。**T-G4 余项**＝牌型阶梯卡 + 护盾免死/重翻。
 
 ### T-G1 · 大厅 GameShell（并行·质量任务，`08` §六 U1）
 - 把现 `game-g.tsx` 手写大厅壳迁成 `GAME_G_LOBBY_UI: UILayout`（`@ui/shell`），照 gameF `GAME_F_UI`。5 tabs + 顶栏 + 主 CTA。
