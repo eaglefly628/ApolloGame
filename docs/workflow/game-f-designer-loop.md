@@ -5,6 +5,23 @@
 
 ---
 
+## 循环 #4 · 2026-06-15 · Designer F
+
+### 验收:T-F2 秀吉一夜城 + T-F3 本愿寺一揆 → ✅ 通过
+- 通用 `summon` 数据字段 + 召援 sidecar(`Timer`+`SelfRule spawn reinf_<code>`):秀吉 `period180/count1` 周期召;本愿寺 `period30/count3/once` 开场人海。**REQ-021 spawn 重组、零引擎**,3 个回归测试,**60 测绿**。
+- 🎯 **✅类天守 Boss 招牌全齐**(信长 buff / 谦信斩杀 / 家康忍耐 / 秀吉·本愿寺召援)→ **终盘攻岛体验成型**。
+
+### 下一步:T-F4 去腐片4/5 收尾(还质量债,LEAD→PF 交办)
+> 内容告一段落,转去把"在数据里编程"的债清掉(blueprint 已展平大半、脉冲已 0;余手写壳 + manifest)。
+- **片4**:`game-f.tsx`(692 行)手写残余 → 完整 `GAME_F_UI: UILayout` + GameShell;删 canvas 假点击桥。
+- **片5**:建 `data/game-f.manifest.json`(blueprint 生成器残余展平为字面实体);核账:脉冲=0(已)、非测试行数大降、对照 game-b。
+- **安全网**:片0 快照守已在;redesign 片用「商店/战斗/流程行为测全绿 + 确定性 hash 不变」兜底。runbook=`game-f-derot-runbook.md`。
+- **验收**:game-f tsc 0 + vitest 绿 + hash 不变;过"最弱 LLM 产出 manifest"尺子;**引擎零改动**。
+
+### 后续队列:国人众招牌(毛利三矢/今川弓阵/明智群冻)→ 更多牌组 → 吴 faction → 经济 v1(已定案)
+
+---
+
 ## 循环 #3 · 2026-06-15 · Designer F
 
 ### 验收:T-F1 阶段递增(follow-up)→ ✅ 通过
