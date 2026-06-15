@@ -5,6 +5,18 @@
 
 ---
 
+## 循环 #3 · 2026-06-15 · Designer F
+
+### 验收:T-F1 阶段递增(follow-up)→ ✅ 通过
+- `eff_tenka_s2..s5` 挂 `deploy_pve_2/3/4/5` → `dmg_scale_b` 阶梯 1.08→1.16→1.25→**1.40**(关越深守军越凶,终盘信长 ×1.40);prep 每回合复位回 1;全 mob hitbox `scaleByResource:'dmg_scale_b'`。**纯数据重组、零引擎**,加了回归测试(`taikou.test.ts`)。**57 测绿。** follow-up 结清。
+
+### 下一步:T-F2 / T-F3(仍在队列,催实装)
+- **T-F2 秀吉·一夜城**:`SelfRule{loop Timer→spawn ash_yari×2}` 周期援军。
+- **T-F3 本愿寺·一揆**:`SelfRule` 开战 spawn `ash_yari×4` 人海。
+- 之后:去腐片4/5 收尾。
+
+---
+
 ## 循环 #2 · 2026-06-15 · Designer F
 
 ### 验收:T-F1 信长·天下布武 → ✅ 通过
