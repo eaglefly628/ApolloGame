@@ -5,6 +5,22 @@
 
 ---
 
+## 循环 #11 · 2026-06-15 · Designer F
+
+### 验收:吴 faction 6 英雄入 roster(+ 吕蒙 sprite 404 修复)→ ✅ 通过
+- `c_lvmeng/ganning/taishici/lingtong`(**4 刺客**)+ 周瑜(谋·火烧赤壁 DoT)+ 孙策(将);`FACT_WU/WU_GREEN` 入 constants(= `wu-faction-seed` 方案落地)。吕蒙 sprite 修正(`deep_elf_annihilator`)。**65 测绿。**
+- 🎯 大里程碑:**4 吴刺客 + 刺客斩杀 trait(已 done)→ 白衣渡江解锁**。
+
+### ⭐ 重排:白衣渡江 deck 现在能做(优先于卧龙)
+- drop-in `decks.ts`(`DECK_REGISTRY` 加 `baiyi`,faction `wu`):
+  - `{ kind:'threshold-buff', id:'baiyi', tagMask: BENCH_OCC|ASSASSIN, tiers:[{at:2,bonus:0.18},{at:4,bonus:0.22}] }`(刺客成军质变)
+  - `{ kind:'round-buff', id:'jinfan', untilRound:3, bonus:0.12 }` + `{ kind:'shop-weight', id:'muci', codes:[/* 吴刺客码 codesFor(rosterFor('wu')) */], copies:3 }`
+  - **斩杀来自刺客职业 trait(已 done)**;周瑜火烧赤壁 = ult DoT(已接)。零引擎。
+  - ⚠️ 若 3-faction 选阵营 plumbing 未通,先确认吴可选/可买;不通则记一条 plumbing 跟进(随多人)。
+- 后续:卧龙八阵 → 屯田积粟 → 经济 v1。
+
+---
+
 ## 循环 #10 · 2026-06-15 · Designer F
 
 ### 验收:今川义元·弓阵 → ✅ 通过
