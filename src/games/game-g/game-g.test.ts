@@ -326,3 +326,18 @@ describe('Game G · T-G3 开局布阵 / 分兵（田忌赛马，纯数据）', (
     }
   });
 });
+
+describe('Game G · T-G3 自定义分兵（任意合法军官分布）', () => {
+  const OFFICER = new Set(['JOKER', 'K', 'Q', 'J', '10', '9', '8', '7']);
+  it('任意分布(含 0 路 / 满 18 路)：54 张 / 每路 18 / 军官数=分布 / 每路1主将', () => {
+    for (const off of [[0, 18, 12], [18, 6, 6], [12, 12, 6], [2, 14, 14]] as [number, number, number][]) {
+      const army = armyFromFormation('a', 4, { officers: off });
+      expect(army).toHaveLength(54);
+      for (const lane of [0, 1, 2]) {
+        expect(army.filter((c) => c.lane === lane)).toHaveLength(18);
+        expect(army.filter((c) => c.lane === lane && OFFICER.has(c.rank)).length).toBe(off[lane]);
+        expect(army.filter((c) => c.lane === lane && c.general)).toHaveLength(1);
+      }
+    }
+  });
+});

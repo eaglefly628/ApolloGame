@@ -16,11 +16,11 @@ interface Save {
   materials: number;
   stage: number;
   deck: number[]; // 我方 52 张的 favor（0..95）
-  lastFormation: string; // 上次布阵预设（默认选中 + AI 克制依据）
+  lastOfficers: number[]; // 上次布阵的三路军官数 [上,中,下]（默认选中 + AI 克制依据）
 }
 
 function freshSave(): Save {
-  return { materials: 0, stage: 1, deck: Array.from({ length: DECK_SIZE }, (_, i) => 44 + (i % 10) * 2), lastFormation: '均衡' }; // 44..62 起步
+  return { materials: 0, stage: 1, deck: Array.from({ length: DECK_SIZE }, (_, i) => 44 + (i % 10) * 2), lastOfficers: [10, 10, 10] }; // 44..62 起步
 }
 function loadSave(): Save {
   try {
@@ -28,7 +28,7 @@ function loadSave(): Save {
     if (raw) {
       const s = JSON.parse(raw) as Save;
       if (Array.isArray(s.deck) && s.deck.length === DECK_SIZE) {
-        if (!s.lastFormation) s.lastFormation = '均衡'; // 旧存档兼容
+        if (!Array.isArray(s.lastOfficers) || s.lastOfficers.length !== 3) s.lastOfficers = [10, 10, 10]; // 旧存档兼容
         return s;
       }
     }
@@ -51,8 +51,16 @@ const avg = (xs: number[]): number => Math.round(xs.reduce((a, b) => a + b, 0) /
 const myBias = (deck: number[]): number => avg(deck) - 50;
 const enemyBias = (stage: number): number => -8 + stage * 2;
 // AI 暗布阵：低关固定均衡 / 中关变化 / 高关克制你上局阵型（石头剪刀布闭环）。对玩家隐藏，开战揭晓。
-const COUNTER: Record<string, string> = { 均衡: '锋矢', 锋矢: '两翼', 两翼: '田忌', 田忌: '均衡' };
 const PRESET_DESC: Record<string, string> = { 均衡: '10/10/10 · 三路均摊', 锋矢: '6/18/6 · 攻中', 两翼: '13/4/13 · 弃中', 田忌: '2/14/14 · 弃上' };
+const LANE_NAME = ['上', '中', '下'];
+// 布阵 → 名称（命中预设则用预设名，否则"自定义 x/y/z"），用于战后揭晓敌阵。
+function describeFormation(off: number[]): string {
+  for (const n of PRESET_NAMES) {
+    const p = FORMATION_PRESETS[n].officers;
+    if (p[0] === off[0] && p[1] === off[1] && p[2] === off[2]) return n;
+  }
+  return `自定义 ${off[0]}/${off[1]}/${off[2]}`;
+}
 
 export function mount(container: HTMLElement): () => void {
   const save = loadSave();
@@ -113,7 +121,7 @@ export function mount(container: HTMLElement): () => void {
 
     const go = mkBtn(`⚔ 出征 · 第 ${save.stage} 关`);
     go.style.cssText += ';background:#1e3a2a;border-color:#22c55e;font-weight:600';
-    go.onclick = () => showFormation(save.lastFormation || '均衡');
+    go.onclick = () => showFormation([...save.lastOfficers] as [number, number, number]);
 
     const reset = mkBtn('重置进度');
     reset.style.cssText += ';opacity:.6;font-size:11px';
@@ -127,50 +135,65 @@ export function mount(container: HTMLElement): () => void {
   }
 
   // ───────────────────────── 布阵（田忌赛马 · 开战前核心博弈）─────────────────────────
-  const aiFormation = (): string => {
+  const aiFormation = (): Formation => {
     const s = save.stage;
-    if (s <= 2) return '均衡'; // 低关：固定均衡
-    if (s <= 5) return PRESET_NAMES[(s + save.materials) % 4]; // 中关：变化
-    return COUNTER[save.lastFormation] ?? '均衡'; // 高关：克制你上局阵型
+    if (s <= 2) return FORMATION_PRESETS['均衡']; // 低关：固定均衡
+    if (s <= 5) return FORMATION_PRESETS[PRESET_NAMES[(s + save.materials) % 4]]; // 中关：变化
+    const weak = save.lastOfficers.indexOf(Math.min(...save.lastOfficers)); // 高关：猛攻你最弱的一路
+    const off: [number, number, number] = [6, 6, 6];
+    off[weak] = 18;
+    return { officers: off };
   };
-  function showFormation(chosen: string): void {
+  // 布阵屏：4 预设一键套 + ± 自定义分兵（军官跨路、兵自动补平）+ 三路实时预估条。
+  function showFormation(officers: [number, number, number]): void {
     clear();
+    const f: Formation = { officers };
     const title = el('div', 'font:600 18px system-ui;color:#eab308', `布阵 · 第 ${save.stage} 关`);
     const sub = el('div', 'max-width:560px;text-align:center;opacity:.82;line-height:1.6',
-      '三路只需<b>赢两路</b>：三路均摊赌险胜，还是<b>弃一路</b>、把军官堆进两路稳拿 2:1？<br>敌方也在<b>暗中布阵</b>——猜对了爽，猜错了亏。30 名军官的分法决定哪路强弱。');
-    const lanesBox = el('div', 'display:flex;gap:10px');
+      '三路只需<b>赢两路</b>：均摊赌险胜，还是<b>弃一路</b>、把 30 名军官堆进两路稳拿 2:1？敌方也在<b>暗布阵</b>。<br>套预设或用 ± 自定义分兵（军官越多该路越强；兵自动补平 18/路）。');
     const presetBar = el('div', 'display:flex;gap:8px;flex-wrap:wrap;justify-content:center');
-    const laneName = ['上', '中', '下'];
-    const est = laneEstimates(armyFromFormation('a', myBias(save.deck), FORMATION_PRESETS[chosen]));
-    lanesBox.replaceChildren(...est.map((L, i) => el('div',
-      'width:150px;padding:9px;border:1px solid #334155;border-radius:8px;text-align:center;line-height:1.6',
-      `<b>${laneName[i]}路</b><br>军官 ×${FORMATION_PRESETS[chosen].officers[i]} ｜ 主将 <b>${L.general}</b><br>Σfavor <b style="color:#eab308">${L.sumFavor}</b>`)));
     presetBar.replaceChildren(...PRESET_NAMES.map((name) => {
       const b = mkBtn(name);
       b.title = PRESET_DESC[name];
-      if (name === chosen) b.style.cssText += ';border-color:#eab308;background:#2a2410;font-weight:700';
-      b.onclick = () => showFormation(name);
+      const p = FORMATION_PRESETS[name].officers;
+      if (p[0] === officers[0] && p[1] === officers[1] && p[2] === officers[2]) b.style.cssText += ';border-color:#eab308;background:#2a2410;font-weight:700';
+      b.onclick = () => showFormation([...FORMATION_PRESETS[name].officers] as [number, number, number]);
       return b;
     }));
-    const desc = el('div', 'opacity:.7;font-size:12px', PRESET_DESC[chosen]);
+    // ± 维持总数 30：+ 从最多的另一路取一军官，− 给最少的另一路（兵自动补平）。
+    const otherLane = (i: number, wantMax: boolean): number => {
+      const cands = [0, 1, 2].filter((j) => j !== i && (wantMax ? officers[j] > 0 : officers[j] < 18));
+      return cands.length ? cands.reduce((bj, j) => ((wantMax ? officers[j] > officers[bj] : officers[j] < officers[bj]) ? j : bj), cands[0]) : -1;
+    };
+    const est = laneEstimates(armyFromFormation('a', myBias(save.deck), f));
+    const lanesBox = el('div', 'display:flex;gap:10px');
+    lanesBox.replaceChildren(...[0, 1, 2].map((i) => {
+      const box = el('div', 'width:150px;padding:9px;border:1px solid #334155;border-radius:8px;text-align:center;line-height:1.55',
+        `<b>${LANE_NAME[i]}路</b><br>军官 <b>×${officers[i]}</b> ｜ 主将 <b>${est[i].general}</b><br>Σfavor <b style="color:#eab308">${est[i].sumFavor}</b>`);
+      const ctl = el('div', 'display:flex;gap:6px;justify-content:center;margin-top:6px');
+      const minus = mkBtn('−');
+      const plus = mkBtn('＋');
+      minus.onclick = () => { const r = otherLane(i, false); if (officers[i] > 0 && r >= 0) { officers[i]--; officers[r]++; showFormation(officers); } };
+      plus.onclick = () => { const d = otherLane(i, true); if (officers[i] < 18 && d >= 0) { officers[d]--; officers[i]++; showFormation(officers); } };
+      ctl.append(minus, plus);
+      box.appendChild(ctl);
+      return box;
+    }));
     const go = mkBtn('⚔ 确认出征');
     go.style.cssText += ';background:#1e3a2a;border-color:#22c55e;font-weight:600';
-    go.onclick = () => {
-      save.lastFormation = chosen;
-      persist(save);
-      showMatch(FORMATION_PRESETS[chosen], chosen);
-    };
+    go.onclick = () => { save.lastOfficers = [...officers]; persist(save); showMatch(f, describeFormation(officers)); };
     const back = mkBtn('← 返回大厅');
     back.onclick = showLobby;
     const btnRow = el('div', 'display:flex;gap:10px');
     btnRow.append(go, back);
-    root.append(title, sub, presetBar, desc, lanesBox, btnRow);
+    root.append(title, sub, presetBar, lanesBox, btnRow);
   }
 
   // ───────────────────────── 出征（一局 3D 三路掷命）─────────────────────────
   function showMatch(formation: Formation, myName: string): void {
     clear();
-    const aiName = aiFormation();
+    const aiForm = aiFormation();
+    const aiName = describeFormation(aiForm.officers);
     const hint = el(
       'div',
       'max-width:560px;text-align:center;line-height:1.5;opacity:.85',
@@ -187,7 +210,7 @@ export function mount(container: HTMLElement): () => void {
     root.append(hint, stage, bar);
 
     engine = new Engine({ tickRate: 60 });
-    engine.load(buildGameGArmyMatch(armyFromFormation('a', myBias(save.deck), formation), armyFromFormation('b', enemyBias(save.stage), FORMATION_PRESETS[aiName]), Math.floor(Math.random() * 1e9)));
+    engine.load(buildGameGArmyMatch(armyFromFormation('a', myBias(save.deck), formation), armyFromFormation('b', enemyBias(save.stage), aiForm), Math.floor(Math.random() * 1e9)));
     renderer = new ThreeRenderer({ width: W, height: H });
     engine.attachRenderer(renderer, stage);
 
