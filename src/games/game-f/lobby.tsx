@@ -2,7 +2,7 @@
 // 与确定性引擎解耦：纯前端 + 假数据；只在「开始攻岛」那刻产出一份「出战牌组+势力+队伍配置」交给 onStart。
 // 局内对局由 game-f.tsx 的 startMatch 接手。视觉基调=绢帛暖米+水墨黑（brief §二），class 前缀 gfl- 防与局内 gfx- 撞。
 import { type Deck, type Faction, HUBAO_DECK, DECK_REGISTRY } from './index.js';
-import { getWarfunds } from './account.js';
+import { getWarfunds, gachaPull, getCollection, GACHA_COST } from './account.js';
 
 export interface RunConfig {
   deck: Deck;
@@ -134,7 +134,7 @@ export function buildLobby(onStart: (cfg: RunConfig) => void): HTMLElement {
     <div style="display:flex;align-items:center;gap:10px"><div class="gfl-av">🪖</div>
       <div><div style="font-weight:700;font-size:15px">赵云<span style="font-size:11px;color:#cdbb98"> ·「江夏太守」</span></div></div>
       <div class="gfl-rank">⚔️ 黄金Ⅲ · 1240 LP</div></div>
-    <div class="gfl-cur"><span class="gfl-chip">🎖️ 战功 ${getWarfunds()}</span><span class="gfl-chip">🪙 金 1.2k</span><span class="gfl-chip">🎟️ 券 30</span><span class="gfl-chip">💎 钻 88</span></div>
+    <div class="gfl-cur"><span class="gfl-chip" data-ref="warfunds">🎖️ 战功 ${getWarfunds()}</span><span class="gfl-chip">🪙 金 1.2k</span><span class="gfl-chip">🎟️ 券 30</span><span class="gfl-chip">💎 钻 88</span></div>
   </div>
   <div class="gfl-tabs">
     <div class="gfl-tab on" data-nav="home">大厅</div><div class="gfl-tab" data-nav="party">组队</div>
@@ -176,8 +176,8 @@ export function buildLobby(onStart: (cfg: RunConfig) => void): HTMLElement {
       <div class="gfl-grid">${deckGrid}</div><div class="gfl-prev" data-deckprev></div>
     </div>
     <div class="gfl-screen" data-screen="coll" style="flex:1">
-      <h2>卡牌收藏</h2><div class="gfl-sub">筛选 势力/职业/稀有度/品质 + 搜索。未拥有显灰锁 🔒。</div>
-      <div class="gfl-filters">${['势力 ▾', '职业 ▾', '稀有度 ▾', '品质 ▾'].map((t) => `<span class="gfl-fbtn">${t}</span>`).join('')}</div>
+      <h2>卡牌收藏</h2><div class="gfl-sub">筛选 势力/职业/稀有度/品质 + 搜索。未拥有显灰锁 🔒。战功抽卡入收藏（概率公示）。</div>
+      <div class="gfl-filters"><button class="gfl-fbtn" data-act="gacha" style="background:#c9a24e;color:#fff;border-color:transparent;cursor:pointer">🎲 单抽 · ${GACHA_COST} 战功</button><span class="gfl-fbtn" data-ref="collinfo">已收藏 ${Object.values(getCollection()).reduce((a, b) => a + b, 0)} 张</span>${['势力 ▾', '职业 ▾', '稀有度 ▾'].map((t) => `<span class="gfl-fbtn">${t}</span>`).join('')}</div>
       <div class="gfl-cards">${cardGrid}</div>
     </div>
     <div class="gfl-screen" data-screen="market" style="flex:1">
@@ -238,6 +238,19 @@ export function buildLobby(onStart: (cfg: RunConfig) => void): HTMLElement {
     t.querySelectorAll('button').forEach((b) => b.addEventListener('click', () => t.remove()));
     root.appendChild(t);
   }));
+  // 软币抽卡（经济 v1 spend 端）：扣战功 → 出武将入收藏 → 刷新战功/收藏显示 + 飘字。
+  root.querySelector<HTMLElement>('[data-act="gacha"]')?.addEventListener('click', () => {
+    const r = gachaPull();
+    const wf = root.querySelector<HTMLElement>('[data-ref="warfunds"]');
+    if (wf) wf.textContent = `🎖️ 战功 ${getWarfunds()}`;
+    const ci = root.querySelector<HTMLElement>('[data-ref="collinfo"]');
+    if (ci) ci.textContent = `已收藏 ${Object.values(getCollection()).reduce((a, b) => a + b, 0)} 张`;
+    if (root.querySelector('.gfl-toast')) root.querySelector('.gfl-toast')!.remove();
+    const t = document.createElement('div'); t.className = 'gfl-toast';
+    t.innerHTML = r.ok ? `<span>🎲 抽到 <b>${esc(r.card!.name)}</b>！入收藏。</span><button class="gfl-acc">好</button>` : `<span>⚠️ 战功不足（需 ${GACHA_COST}）</span><button class="gfl-acc">好</button>`;
+    t.querySelector('button')!.addEventListener('click', () => t.remove());
+    root.appendChild(t);
+  });
   // 开始攻岛 → 产出出战配置交引擎（选实装组 hubao/hanshi 即生效；deck.faction 定出生势力）。
   root.querySelector<HTMLElement>('[data-start]')!.addEventListener('click', () => {
     const deck = DECK_REGISTRY[selectedDeckId] ?? HUBAO_DECK;
