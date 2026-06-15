@@ -5,6 +5,19 @@
 
 ---
 
+## 循环 #8 · 2026-06-15 · Designer F
+
+### 验收:国人众招牌·毛利元就·三矢 → ✅ 通过(+ 一个好 catch)
+- `group-count 部将(国人众/天守)≥3 → edge 信号 busho_sanshi → Effect add 0.18 到 dmg_scale_b` = 玩家羁绊 bond 的敌方镜像重组。**零引擎、63 测绿。**
+- 👍 **Program F 主动修了 buff 叠加坑**:发现信长 `op:set` 会覆盖毛利 buff → 把信长阶段递增改成 `op:add`(从 prep 复位基线 1 累加),信长×阶段 + 毛利羁绊**正确叠加**。好工程嗅觉。
+
+### 下一步:继续国人众/Boss 余下招牌
+- **今川义元·弓取**:弓阵(全弓 buff)——group-count 弓职 → 全局 buff(同毛利法)。
+- **武田信玄·风林火山**:阶段切换(提速/加攻/减伤)——`Timer` 阶段 + 全局系数,纯数据。
+- 之后:更多牌组(赤壁/卧龙/屯田)→ 吴 faction → 经济 v1。
+
+---
+
 ## 循环 #7 · 2026-06-15 · Designer F —— 接受 owner 裁决 + 自我复盘
 
 ### 收到 owner 裁决:T-F4(game-f.tsx→全 GameShell)= **wontfix**,我撤回刹车
