@@ -57,6 +57,57 @@ export function spendWarfunds(amount: number, kv: KV = defaultKV()): boolean {
   return true;
 }
 
+// ── 附魔 + 材料（养成第二轴，spec §五；account 层 spend 战功+材料 升卡 → 局内加成）──
+// 材料「尘」：分解收藏里多余的重复卡得（每张多余 +DUST_PER_CARD，count 保 1）。
+const DUST_KEY = 'gamef.account.dust';
+export const DUST_PER_CARD = 10;
+export function getDust(kv: KV = defaultKV()): number {
+  const n = Number(kv.getItem(DUST_KEY) ?? '0');
+  return Number.isFinite(n) && n > 0 ? Math.floor(n) : 0;
+}
+export function addDust(amount: number, kv: KV = defaultKV()): number {
+  const next = getDust(kv) + Math.max(0, Math.round(amount));
+  kv.setItem(DUST_KEY, String(next));
+  return next;
+}
+// 分解某卡的多余张数（count>1 → 留 1，其余化尘）。返回得尘 + 留存数。
+export function disenchant(id: string, kv: KV = defaultKV()): { dust: number; kept: number } {
+  const c = getCollection(kv);
+  const have = c[id] ?? 0;
+  if (have <= 1) return { dust: 0, kept: have };
+  const extra = have - 1;
+  c[id] = 1;
+  kv.setItem(COLL_KEY, JSON.stringify(c));
+  const gained = extra * DUST_PER_CARD;
+  addDust(gained, kv);
+  return { dust: gained, kept: 1 };
+}
+
+// 附魔等级（每卡 id → 级；上限 ENCHANT_MAX）。每级 +ENCHANT_STEP 伤害系数（局内加成，buildDeckRules 读）。
+const ENCH_KEY = 'gamef.account.enchant';
+export const ENCHANT_MAX = 5;
+export const ENCHANT_COST_WARFUNDS = 50;
+export const ENCHANT_COST_DUST = 20;
+export function getEnchantLevels(kv: KV = defaultKV()): Record<string, number> {
+  try {
+    const o = JSON.parse(kv.getItem(ENCH_KEY) ?? '{}') as Record<string, number>;
+    return o && typeof o === 'object' ? o : {};
+  } catch { return {}; }
+}
+// 附魔一张已拥有的卡：扣战功+尘、+1 级（≤MAX）。返回是否成功 + 新级。
+export function enchantCard(id: string, kv: KV = defaultKV()): { ok: boolean; level: number } {
+  const lv = getEnchantLevels(kv);
+  const cur = lv[id] ?? 0;
+  const owned = (getCollection(kv)[id] ?? 0) > 0;
+  if (!owned || cur >= ENCHANT_MAX) return { ok: false, level: cur };
+  if (getDust(kv) < ENCHANT_COST_DUST || getWarfunds(kv) < ENCHANT_COST_WARFUNDS) return { ok: false, level: cur };
+  spendWarfunds(ENCHANT_COST_WARFUNDS, kv);
+  kv.setItem(DUST_KEY, String(getDust(kv) - ENCHANT_COST_DUST));
+  lv[id] = cur + 1;
+  kv.setItem(ENCH_KEY, JSON.stringify(lv));
+  return { ok: true, level: cur + 1 };
+}
+
 // ── 自组牌组（组牌器 designer #19；玩家从收藏拼的卡 id 列表 + 出生势力，持久化）──
 export interface CustomDeck { cardIds: string[]; faction: 'shu' | 'wei' | 'wu' }
 const CUSTOM_KEY = 'gamef.account.customdeck';

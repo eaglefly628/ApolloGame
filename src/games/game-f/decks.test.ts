@@ -145,4 +145,9 @@ describe('组牌器（catalog + assembleDeck；designer #19 build 端）', () =>
     const bp = buildGameFBlueprint({ deck: d });
     expect(bp.entities['eff_taoyuan_t0']).toBeDefined(); // 自组的桃园连携照常物化
   });
+  it('附魔加成：enchants → buildDeckRules 加 eff_enchant（开战 dmg_scale_a += step×总级）；无附魔不加', () => {
+    expect(buildDeckRules(HANSHI_DECK).entities['eff_enchant']).toBeUndefined(); // 无附魔
+    const r = buildDeckRules(HANSHI_DECK, { taoyuan: 2 });
+    expect(r.entities['eff_enchant']).toBeDefined(); // 有附魔 → 加成实体
+  });
 });

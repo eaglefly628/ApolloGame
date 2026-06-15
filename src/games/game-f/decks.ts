@@ -2,7 +2,7 @@
 // 宪法：游戏=数据。本模块不发明能力——只把「牌组数组」物化成现成 capability 的规则实体
 //（group-count / EventWhen / Effect / banded / card-pile 权重），最弱 LLM 也能产出牌组数据。
 import type { EntityBlueprint } from '../../assembly/demo.assembly.js';
-import { FACT_WEI, FACT_SHU, ASSASSIN, TACTICIAN, BENCH_OCC } from './constants.js';
+import { FACT_WEI, FACT_SHU, ASSASSIN, TACTICIAN, BENCH_OCC, ENCHANT_STEP } from './constants.js';
 import type { Faction } from './heroes.js';
 
 // 卡牌 = {触发条件, 效果} 算子（D0 核对：Game E joker 架构已全覆盖）。v1 + deck#2 用这四类。
@@ -123,10 +123,16 @@ export interface DeckRules {
 // 物化：deck → 规则实体（合并进 world 蓝图）+ 商店牌袋偏置。
 // 沿用蜀魂 bond 成熟模式（blueprint.ts §羁绊）：GroupCount→count 资源；开战 edge 锁存 → Effect 写 dmg_scale_a。
 // dmg_scale_a 已由 prep 进入时复位为 1（round_ui prep onEnter），故此处只加锁存、不管复位（同蜀魂纪律）。
-export function buildDeckRules(deck: Deck): DeckRules {
+export function buildDeckRules(deck: Deck, enchants: Record<string, number> = {}): DeckRules {
   const ents: Record<string, EntityBlueprint> = {};
   const shopBias: { codes: number[]; copies: number }[] = [];
   const combat = { kind: 'state', fsmId: 'round_ui', equals: 'combat' };
+  // 附魔加成（spec §五）：本牌组各卡附魔级之和 → 开战 dmg_scale_a += ENCHANT_STEP×总级（养成第二轴的局内回报）。
+  const enchTotal = deck.cards.reduce((s, c) => s + (enchants[c.id] ?? 0), 0);
+  if (enchTotal > 0) {
+    ents['when_enchant'] = { EventWhen: { signal: 'enchant_buff', when: combat, mode: 'edge', armed: false } };
+    ents['eff_enchant'] = { Effect: { onSignal: 'enchant_buff', kind: 'modify-resource', targetId: 'dmg_scale_a', op: 'add', value: ENCHANT_STEP * enchTotal } };
+  }
   for (const card of deck.cards) {
     if (card.kind === 'synergy-buff') {
       const cr = `deck_count_${card.id}`;

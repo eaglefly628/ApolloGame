@@ -222,7 +222,7 @@ const RUN_FLOW = {
 
 // 节奏档（玩家视角修正：备战 ~30s 给操作时间——准则 §1.2；ready 可跳过；结算 4s 可读）。
 // 测试传快速档 {prepTicks:40, resolutionTicks:60} 保持既有时序断言；缺省=玩家档。
-export interface GameFPacing { prepTicks?: number; resolutionTicks?: number; celebrateTicks?: number; playerFaction?: Faction; deck?: Deck; difficulty?: number }
+export interface GameFPacing { prepTicks?: number; resolutionTicks?: number; celebrateTicks?: number; playerFaction?: Faction; deck?: Deck; difficulty?: number; enchants?: Record<string, number> }
 export function buildGameFBlueprint(pacing: GameFPacing = {}): WorldBlueprint {
   const DIFFICULTY = pacing.difficulty ?? 1; // 段位难度阀（×太阁 hp；缺省 1 = 默认局，snapshot 不变）
   const PREP_TICKS = pacing.prepTicks ?? 1800; // 30s@60tps
@@ -231,7 +231,7 @@ export function buildGameFBlueprint(pacing: GameFPacing = {}): WorldBlueprint {
   // ── 开局选阵营（REQ-F-061）：按所选阵营生成本局 ROSTER + 派生数据，shadow 模块级默认（玩家=蜀）。──
   // 下面全部局部 const 同名 shadow 模块级，使 500 行 build 体零改动绑定到本局数据；默认蜀=逐字等价旧行为。
   // 牌组（T2/T5）：deck.faction 决定出生势力（玩家未显式指定时）；deck 规则实体 + 商店偏置局末合并。
-  const deckRules = pacing.deck ? buildDeckRules(pacing.deck) : null;
+  const deckRules = pacing.deck ? buildDeckRules(pacing.deck, pacing.enchants) : null;
   const SHOP_DECK_BIASED = deckRules ? applyShopBias(SHOP_DECK, deckRules.shopBias) : SHOP_DECK;
   const ROSTER = rosterFor(pacing.playerFaction ?? pacing.deck?.faction ?? 'shu');
   const HERO_CODE = codesFor(ROSTER);

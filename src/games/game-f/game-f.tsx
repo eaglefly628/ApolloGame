@@ -11,7 +11,7 @@ import { rosterFor, type Faction } from './heroes.js';
 import { WARRIOR, TACTICIAN, TEAM_A } from './constants.js';
 import { buildLobby, type RunConfig } from './lobby.js';
 import { createAllyMirrors } from './ally-mirror.js';
-import { settleRun, getLP, rankFor, updateLpAfterRun } from './account.js';
+import { settleRun, getLP, rankFor, updateLpAfterRun, getEnchantLevels } from './account.js';
 
 // Game F 可挂载模块（launcher 卡带槽契约：export mount(container) → cleanup）。
 // 壳层 UI = design_handoff_game_f 的「锦霞 Aurora」皮肤（用户钦定女性向风格）：
@@ -680,7 +680,7 @@ function startMatch(container: HTMLElement, cfg: RunConfig, onExit: () => void):
   let pointer: PointerInputSource | null = null;
   const lazyInput: InputSource = { commandsForTick: (tick) => [...keyboard.commandsForTick(tick), ...(pointer ? pointer.commandsForTick(tick) : []), ...queued.commandsForTick(tick)] };
   const engine = new Engine({ tickRate: 60, input: lazyInput });
-  engine.load(buildGameFBlueprint({ deck: cfg.deck, difficulty: rankFor(getLP()).difficulty })); // 出战牌组 + 段位难度阀（高段位太阁更凶）
+  engine.load(buildGameFBlueprint({ deck: cfg.deck, difficulty: rankFor(getLP()).difficulty, enchants: getEnchantLevels() })); // 出战牌组 + 段位难度阀 + 附魔加成
   // 透明画布：棋盘露出 stage 的设计平台背景（--platform-bg 随皮肤）。
   engine.attachRenderer(new CanvasRenderer({ width: VIEWPORT_W, height: VIEWPORT_H, background: 'transparent', assets }), stage);
   const canvas = stage.querySelector('canvas');

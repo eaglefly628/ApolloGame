@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { warfundsFor, getWarfunds, addWarfunds, settleRun, memoryKV, spendWarfunds, gachaPull, gachaPull10, gachaRates, getCollection, GACHA_COST, GACHA10_COST, GACHA_POOL, getLP, rankFor, updateLpAfterRun, type GachaEntry } from './account.js';
+import { warfundsFor, getWarfunds, addWarfunds, settleRun, memoryKV, spendWarfunds, gachaPull, gachaPull10, gachaRates, getCollection, GACHA_COST, GACHA10_COST, GACHA_POOL, getLP, rankFor, updateLpAfterRun, disenchant, getDust, addDust, enchantCard, getEnchantLevels, DUST_PER_CARD, ENCHANT_COST_WARFUNDS, ENCHANT_COST_DUST, type GachaEntry } from './account.js';
 
 describe('经济 v1 · 账号层战功（warfunds；服务层、与 ECS 解耦）', () => {
   it('战功公式：贡献/胜利/波深单调增，钳非负取整', () => {
@@ -88,5 +88,27 @@ describe('经济 v1 · 段位难度阀（LP→段位→太阁难度系数）', (
     expect(updateLpAfterRun(false, kv).rank.lp).toBe(1010);
     const kv2 = memoryKV(); kv2.setItem('gamef.account.lp', '5');
     expect(updateLpAfterRun(false, kv2).rank.lp).toBe(0); // 钳非负
+  });
+});
+
+describe('经济 v1 · 附魔 + 材料（养成第二轴；spec §五）', () => {
+  it('disenchant：多余重复卡 → 化尘留 1', () => {
+    const kv = memoryKV(); kv.setItem('gamef.account.collection', JSON.stringify({ taoyuan: 3 }));
+    const r = disenchant('taoyuan', kv);
+    expect(r.dust).toBe(2 * DUST_PER_CARD); // 3 张留 1 → 2 张化尘
+    expect(getCollection(kv)['taoyuan']).toBe(1);
+    expect(getDust(kv)).toBe(2 * DUST_PER_CARD);
+    expect(disenchant('taoyuan', kv).dust).toBe(0); // 只剩 1 不可再分解
+  });
+  it('enchantCard：扣战功+尘 → +1 级；不够/满级/未拥有则失败', () => {
+    const kv = memoryKV();
+    expect(enchantCard('taoyuan', kv).ok).toBe(false); // 未拥有
+    kv.setItem('gamef.account.collection', JSON.stringify({ taoyuan: 1 }));
+    expect(enchantCard('taoyuan', kv).ok).toBe(false); // 没战功/尘
+    addWarfunds(ENCHANT_COST_WARFUNDS, kv); addDust(ENCHANT_COST_DUST, kv);
+    const r = enchantCard('taoyuan', kv);
+    expect(r.ok).toBe(true); expect(r.level).toBe(1);
+    expect(getWarfunds(kv)).toBe(0); expect(getDust(kv)).toBe(0); // 扣光
+    expect(getEnchantLevels(kv)['taoyuan']).toBe(1);
   });
 });
