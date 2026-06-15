@@ -2,7 +2,7 @@
 // 宪法：游戏=数据。本模块不发明能力——只把「牌组数组」物化成现成 capability 的规则实体
 //（group-count / EventWhen / Effect / banded / card-pile 权重），最弱 LLM 也能产出牌组数据。
 import type { EntityBlueprint } from '../../assembly/demo.assembly.js';
-import { FACT_WEI, FACT_SHU, ASSASSIN, BENCH_OCC } from './constants.js';
+import { FACT_WEI, FACT_SHU, ASSASSIN, TACTICIAN, BENCH_OCC } from './constants.js';
 import type { Faction } from './heroes.js';
 
 // 卡牌 = {触发条件, 效果} 算子（D0 核对：Game E joker 架构已全覆盖）。v1 + deck#2 用这四类。
@@ -85,11 +85,28 @@ export const TUNTIAN_DECK: Deck = {
   ],
 };
 
+// 牌组 #4「卧龙八阵」(蜀·谋士控制)：designer #10 派单。谋士越多越强（threshold-buff TACTICIAN）；
+// 八阵图(冻)走武将大招既有 ult（诸葛 ultFreeze 已接），牌组只管 synergy buff。全现有 CardSpec kind、零引擎。
+export const WOLONG_DECK: Deck = {
+  id: 'wolong',
+  name: '卧龙八阵',
+  faction: 'shu',
+  cards: [
+    // 八阵 ⭐：在板谋士 ≥2 → +15%；≥3 → 再 +20%（谋士堆叠质变）。
+    { kind: 'threshold-buff', id: 'bazhen', tagMask: BENCH_OCC | TACTICIAN, tiers: [{ at: 2, bonus: 0.15 }, { at: 3, bonus: 0.20 }] },
+    // 卧龙：前 3 回合伤害 +10%（运筹序盘）。
+    { kind: 'round-buff', id: 'wolong', untilRound: 3, bonus: 0.10 },
+    // 奇谋：商店加权诸葛亮（谋士码 3），多洗入便于成阵。
+    { kind: 'shop-weight', id: 'qimou', codes: [3], copies: 2 },
+  ],
+};
+
 // 牌组登记表（id → 真实 Deck）：大厅选牌组 → 取真组交引擎。未实装的展示牌组回退首发组。
 // 注：BAIYI（吴）待 3-faction plumbing 才入表（现入会因 rosterFor('wu') 占位布局打不正常）。
 export const DECK_REGISTRY: Record<string, Deck> = {
   hubao: HUBAO_DECK,
   hanshi: HANSHI_DECK,
+  wolong: WOLONG_DECK,
   tuntian: TUNTIAN_DECK,
 };
 

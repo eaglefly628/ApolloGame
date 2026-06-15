@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import { buildGameFBlueprint } from './blueprint.js';
-import { HUBAO_DECK, HANSHI_DECK, TUNTIAN_DECK, DECK_REGISTRY, buildDeckRules, applyShopBias, type Deck } from './decks.js';
+import { HUBAO_DECK, HANSHI_DECK, TUNTIAN_DECK, WOLONG_DECK, DECK_REGISTRY, buildDeckRules, applyShopBias, type Deck } from './decks.js';
 import { FACT_WEI, FACT_SHU, BENCH_OCC } from './constants.js';
 import { SHOP_DECK } from './economy.js';
 
@@ -112,5 +112,22 @@ describe('牌组 #9 · 屯田积粟（经济 economy-band）', () => {
   it('屯田积粟入 DECK_REGISTRY（可选第 3 套可玩牌组）', () => {
     expect(DECK_REGISTRY.tuntian).toBe(TUNTIAN_DECK);
     expect(TUNTIAN_DECK.faction).toBe('wei');
+  });
+});
+
+describe('牌组 #4 · 卧龙八阵（蜀·谋士控制 threshold-buff TACTICIAN；designer #10 派单）', () => {
+  it('入 DECK_REGISTRY=蜀；bazhen 两档阈值 + 卧龙 round-buff + 奇谋 shop-weight 规则齐', () => {
+    expect(DECK_REGISTRY.wolong).toBe(WOLONG_DECK);
+    expect(WOLONG_DECK.faction).toBe('shu');
+    const { entities, shopBias } = buildDeckRules(WOLONG_DECK);
+    expect(entities['eff_bazhen_t0']).toBeDefined(); // 谋士≥2
+    expect(entities['eff_bazhen_t1']).toBeDefined(); // 谋士≥3
+    expect(entities['eff_wolong']).toBeDefined();     // 前 3 回合 round-buff
+    expect(shopBias.some((b) => b.codes.includes(3) && b.copies === 2)).toBe(true); // 奇谋：诸葛亮(码3)加权 2 张
+  });
+  it('装卧龙 → blueprint 拆默认蜀魂、挂八阵连携', () => {
+    const bp = buildGameFBlueprint({ deck: WOLONG_DECK });
+    expect(bp.entities['eff_bond_shu']).toBeUndefined();
+    expect(bp.entities['eff_bazhen_t0']).toBeDefined();
   });
 });
