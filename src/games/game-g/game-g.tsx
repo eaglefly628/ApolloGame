@@ -1,6 +1,6 @@
 import { Engine } from '../../runtime/engine.js';
 import { ThreeRenderer } from './three-renderer.js';
-import { buildGameGArmyMatch, prepareArmies, armyFromFormation, laneEstimates, quartermasterEnergy, FORMATION_PRESETS, PRESET_NAMES, LEVER_CATALOG, LEVER_START, battleSpec, RUN_BATTLES, RUN_LIVES, BETWEEN_BUFFS, applyBuff, jokerKeyBuffs, BOSS_ROSTER, bossFor, GAME_G_JOKERS, JOKER_BY_ID, ARCHETYPES, detectArchetype, archetypeMatchup, GAME_G_PLANETS, effectiveLives, effectiveLeverCap, effectiveLeverRegen, type Formation, type Intervention, type LeverKind, type RunBuff } from './index.js';
+import { buildGameGArmyMatch, prepareArmies, armyFromFormation, laneEstimates, quartermasterEnergy, FORMATION_PRESETS, PRESET_NAMES, LEVER_CATALOG, LEVER_START, battleSpec, RUN_BATTLES, RUN_LIVES, BETWEEN_BUFFS, applyBuff, jokerKeyBuffs, BOSS_ROSTER, bossFor, GAME_G_JOKERS, JOKER_BY_ID, ARCHETYPES, detectArchetype, archetypeMatchup, activeArchetype, GAME_G_PLANETS, effectiveLives, effectiveLeverCap, effectiveLeverRegen, type Formation, type Intervention, type LeverKind, type RunBuff } from './index.js';
 import type { State, Resource } from '@engine/protocol/components.js';
 
 // Game G ·《翻命扑克》—— 大厅 ↔ 出征 闭环（launcher 卡带槽：export mount(container)→cleanup）。自包含于本目录。
@@ -182,11 +182,13 @@ export function mount(container: HTMLElement): () => void {
     const arch = detectArchetype(save.jokers);
     const bossArchId = bossFor(save.bossIdx).archetype;
     const bossArchName = ARCHETYPES.find((a) => a.id === bossArchId)?.name ?? bossArchId;
+    const activated = activeArchetype(save.jokers); // 集齐主流派 keyJokers → 招牌质变
     let archHtml: string;
     if (arch) {
       const m = archetypeMatchup(arch.id, bossArchId);
       const rel = m === 'counter' ? '<b style="color:#22c55e">⮞ 克制</b>' : m === 'countered' ? '<b style="color:#f87171">⮜ 被克于</b>' : '<span style="opacity:.7">≈ 互不克</span>';
-      archHtml = `你的流派：<b style="color:#c4b5fd">${arch.name}</b>（${arch.desc}）　${rel}　终局 Boss 流派【<b style="color:#f87171">${bossArchName}</b>】`;
+      const actTag = activated === arch.id ? '　<b style="color:#f59e0b">🔥 招牌已激活</b>' : `　<span style="opacity:.6">（集齐 ${arch.keyJokers.map((k) => JOKER_BY_ID.get(k)?.name ?? k).join('+')} 激活招牌）</span>`;
+      archHtml = `你的流派：<b style="color:#c4b5fd">${arch.name}</b>（${arch.desc}）　${rel}　终局 Boss 流派【<b style="color:#f87171">${bossArchName}</b>】${actTag}`;
     } else {
       archHtml = `你的流派：<span style="opacity:.7">未成型</span>（融小丑/取流派钥匙以确立身份）　｜　终局 Boss 流派【<b style="color:#f87171">${bossArchName}</b>】`;
     }

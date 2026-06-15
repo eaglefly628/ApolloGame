@@ -2,7 +2,7 @@ import { describe, it, expect } from 'vitest';
 import { Engine } from '../../runtime/engine.js';
 import type { Component } from '@engine/core/types.js';
 import type { Transform, RandomSeed, Resource, State, Card3D } from '@engine/protocol/components.js';
-import { buildGameG3DFlip, buildGameGDuel3D, buildGameGMatch, buildGameGArmyMatch, prepareArmies, standardArmy, armyFromFormation, laneEstimates, applyInterventions, applyShadowRevenge, quartermasterEnergy, applyJokers, jokerMoraleScale, jokerLinks, jokerKeyBuffs, GAME_G_JOKERS, JOKER_BY_ID, ARCHETYPES, detectArchetype, archetypeMatchup, GAME_G_PLANETS, effectiveLives, effectiveLeverCap, effectiveLeverRegen, effectiveTierBonus, applyPlanetArmy, laneHandTier, battleSpec, RUN_BATTLES, RUN_LIVES, BETWEEN_BUFFS, applyBuff, BOSS_ROSTER, bossFor, LEVER_CATALOG, LEVER_START, LEVER_CAP, LEVER_REGEN, FORMATION_PRESETS, PRESET_NAMES, decideFaceUp, cardFace, flipTarget, FLIP_DURATION, FLIP_SPINS, MATCH_REWARD, type FateCard, type ArmyCard, type Intervention, type BuffTarget } from './blueprint.js';
+import { buildGameG3DFlip, buildGameGDuel3D, buildGameGMatch, buildGameGArmyMatch, prepareArmies, standardArmy, armyFromFormation, laneEstimates, applyInterventions, applyShadowRevenge, quartermasterEnergy, applyJokers, jokerMoraleScale, jokerLinks, jokerKeyBuffs, GAME_G_JOKERS, JOKER_BY_ID, ARCHETYPES, detectArchetype, archetypeMatchup, activeArchetype, applyArchetypeActivation, GAME_G_PLANETS, effectiveLives, effectiveLeverCap, effectiveLeverRegen, effectiveTierBonus, applyPlanetArmy, laneHandTier, battleSpec, RUN_BATTLES, RUN_LIVES, BETWEEN_BUFFS, applyBuff, BOSS_ROSTER, bossFor, LEVER_CATALOG, LEVER_START, LEVER_CAP, LEVER_REGEN, FORMATION_PRESETS, PRESET_NAMES, decideFaceUp, cardFace, flipTarget, FLIP_DURATION, FLIP_SPINS, MATCH_REWARD, type FateCard, type ArmyCard, type Intervention, type BuffTarget } from './blueprint.js';
 
 const get = <T extends Component>(e: Engine, id: string, type: string): T | undefined => e.world.getComponent<T>(id, type);
 const rotOf = (e: Engine, id = 'card'): number => get<Transform>(e, id, 'Transform')!.rotation;
@@ -863,6 +863,75 @@ describe('Game G · T-G6 星球牌（第二养成轴 · 可叠加升档 · 纯�
     const base = prepareArmies({ ...opt, planets: {} }).a;
     const withTier = prepareArmies({ ...opt, planets: { mercury: 2 } }).a;
     expect(sumLane0(withTier)).toBeGreaterThan(sumLane0(base)); // 牌型阶梯被星球·型抬高 → flush 给该路更多 favor
+  });
+});
+
+describe('Game G · T-G6 流派激活质变（主流派集齐 keyJokers → 招牌增益）', () => {
+  const sumLane = (arr: ArmyCard[], lane: number): number => arr.filter((c) => c.lane === lane).reduce((s, c) => s + c.favor, 0);
+
+  it('activeArchetype：空/部分→null；集齐主流派→该流派；混搭只激活主流派', () => {
+    expect(activeArchetype([])).toBeNull();
+    expect(activeArchetype(['bannerman'])).toBeNull(); // 部分(缺枭雄)
+    expect(activeArchetype(['bannerman', 'warlord'])).toBe('general');
+    expect(activeArchetype(['comrade'])).toBe('cardtype');
+    expect(activeArchetype(['vanguard', 'martyr', 'chain'])).toBe('wide');
+    expect(activeArchetype(['bannerman', 'warlord', 'comrade'])).toBe('general'); // 将领(2)>牌型(1) 主流派
+  });
+
+  it('将领流激活：moraleMul=1.3、军不变', () => {
+    const A = standardArmy('a', 0);
+    const r = applyArchetypeActivation('general', A, standardArmy('b', 0), 0);
+    expect(r.moraleMul).toBe(1.3);
+    expect(r.a.map((c) => c.favor)).toEqual(A.map((c) => c.favor));
+  });
+
+  it('铺场流激活：每路 +2 兵（共 +6）', () => {
+    const A = standardArmy('a', 0);
+    const r = applyArchetypeActivation('wide', A, standardArmy('b', 0), 0);
+    expect(r.a.length).toBe(A.length + 6);
+    for (const lane of [0, 1, 2]) expect(r.a.filter((c) => c.lane === lane).length).toBe(A.filter((c) => c.lane === lane).length + 2);
+  });
+
+  it('牌型流激活：tierBonusAdd=12（阶梯近×2）；概率流：favor 下限拉到 15', () => {
+    expect(applyArchetypeActivation('cardtype', standardArmy('a', 0), standardArmy('b', 0), 0).tierBonusAdd).toBe(12);
+    const r = applyArchetypeActivation('probability', standardArmy('a', -40), standardArmy('b', 0), 0);
+    expect(Math.min(...r.a.map((c) => c.favor))).toBeGreaterThanOrEqual(15);
+  });
+
+  it('斩首流激活：敌主将先怯 −12（仅敌主将）', () => {
+    const B = standardArmy('b', 0);
+    const r = applyArchetypeActivation('decap', standardArmy('a', 0), B, 0);
+    for (const lane of [0, 1, 2]) {
+      const g0 = B.find((c) => c.lane === lane && c.general)!;
+      const g1 = r.b.find((c) => c.lane === lane && c.general)!;
+      expect(g1.favor).toBe(Math.max(5, g0.favor - 12));
+    }
+  });
+
+  it('弃一保二激活：两强路 +favor、最弱路不变', () => {
+    const A = armyFromFormation('a', 0, FORMATION_PRESETS['田忌']); // 上路最弱(2 军官)
+    const r = applyArchetypeActivation('tianji', A, standardArmy('b', 0), 0);
+    const sums = [0, 1, 2].map((l) => sumLane(A, l));
+    const weakest = sums.indexOf(Math.min(...sums));
+    expect(sumLane(r.a, weakest)).toBe(sumLane(A, weakest)); // 最弱路不变
+    for (const lane of [0, 1, 2]) if (lane !== weakest) expect(sumLane(r.a, lane)).toBeGreaterThan(sumLane(A, lane));
+  });
+
+  it('将领流激活进 prepareArmies：moraleA = 小丑士气 ×1.3', () => {
+    const r = prepareArmies({ formation: FORMATION_PRESETS['均衡'], deckBias: 0, jokers: ['bannerman', 'warlord'], interventions: [], enemyBias: 0 });
+    const morJoker = jokerMoraleScale(r.a, ['bannerman', 'warlord']);
+    for (let i = 0; i < 3; i++) expect(r.moraleA[i]).toBeCloseTo(morJoker[i] * 1.3, 6);
+  });
+
+  it('确定性：激活质变(铺场流+联动)进 sim 逐拍 hash 一致', () => {
+    const mk = (): Engine => {
+      const { a, b, moraleA, linksA } = prepareArmies({ formation: FORMATION_PRESETS['锋矢'], deckBias: 2, jokers: ['vanguard', 'martyr', 'chain'], interventions: [], enemyForm: FORMATION_PRESETS['均衡'], enemyBias: 0 });
+      const e = new Engine({ tickRate: 60 });
+      e.load(buildGameGArmyMatch(a, b, 55, undefined, moraleA, linksA));
+      return e;
+    };
+    const e1 = mk(), e2 = mk();
+    for (let i = 0; i < FLIP_DURATION + 12; i++) { e1.world.tick(); e2.world.tick(); expect(e1.hash()).toBe(e2.hash()); }
   });
 });
 

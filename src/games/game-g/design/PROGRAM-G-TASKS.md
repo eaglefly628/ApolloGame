@@ -42,7 +42,7 @@
 - **改造坊**：融**小丑牌(10)**/**星球牌(4·路砍)**/附魔，消材料、持久存档（`craft-recipe` + 经济）。〔✅ 改造坊：融小丑(10·一次性) + **星球牌升档 4 张(命/能/军 cycle#17 + 型 cycle#18)·可叠加·持久=第二养成轴**。**星球·路 砍**(design reply#15 采纳我 CORE RULE 回驳)；**星球·型 改全局**(整条牌型阶梯 +4/级，零目标 UI，cycle#18 落)。余附魔〕
 - **小丑牌**（`12` §二）：死士/不屈/旗手/同袍/赌徒/督粮/影武者/连环/枭雄/先登——每张 = 融牌面的改规则被动。〔✅ **10/10 全落地生效**：favor 变换族(同袍/赌徒/先登/不屈) + 士气放大族(旗手/枭雄=将领流) + 结局联动族(死士/连环=铺场流, `12`§五.5 前向单遍) + **斩首流族(cycle#16：督粮 post-resolve ◈ run 经济 / 影武者 斩首复仇=§五.5 退路)**。全 outcome-first、零引擎触点〕
   - **D0 核 Game E `jokers.ts` 结论（重要架构）**：Game E joker = **运行时计分**(on_hand_scored→chips/mult)；Game G **outcome-first** → joker 必是 **build 时军阵 favor 变换**(揭晓前定、不回灌)。故**复用其声明式数据哲学(`{kind,params}`+text)、不复用运行时**——同 D0 §同花未复用 evaluateHand 之理。`applyJokers` 与 `applyInterventions`/`applyBuff` 同族(游戏侧数据解释器，**零新引擎能力**)。
-- **6 流派 + 克制网**（`12` §四）：斩首/牌型/将领/铺场/概率/弃一保二，石头剪刀布闭环。〔🟡 **cycle#12 落地**：`ARCHETYPES` 6 流派 + 双 3-环克制网(核心环 斩首→将领→铺场→斩首 按 `12` 明示；次环我合理映射待校准)；`detectArchetype`(由已融小丑浮现主流派)、`archetypeMatchup`、Boss 带 `archetype`；大厅显示你的流派 + 对终局 Boss 流派的克制提示。**余**：流派由组合"激活质变"(现仅识别+提示)、AI 按克制反制布阵〕
+- **6 流派 + 克制网**（`12` §四）：斩首/牌型/将领/铺场/概率/弃一保二，石头剪刀布闭环。〔🟡 **cycle#12 身份识别 + cycle#19 激活质变(`12`§四.5)**：`ARCHETYPES` 6 流派 + 双 3-环克制网 + `detectArchetype`/`archetypeMatchup`/Boss `archetype` + 大厅流派身份条/克制提示；**激活质变** `activeArchetype`(主流派集齐 keyJokers)→`applyArchetypeActivation`(将领 士气×1.3/铺场 +2兵/路/牌型 阶梯+12/概率 favor下限15/斩首 敌主将−12/弃一保二 两强路+favor)入 prepareArmies，大厅显"🔥招牌已激活"。**余**：AI 按克制反制布阵、次环克制校准〕
 - 验收：改造坊融卡持久 / 小丑被动局内生效 / 6 流派可组 / 同牌组+seed hash 一致 / 全绿。⚠️ 影武者(斩首重定向)唯一小待核、有"复仇 buff"零缺口退路（`12` §五）。
 
 ### T-G5 收尾 + Boss 阵容（`11` 余 + `13` 新）✅ **全部完成**（program G cycle#7+#8）

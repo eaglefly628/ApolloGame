@@ -676,6 +676,42 @@ export function archetypeMatchup(a: Archetype, b: Archetype): 'counter' | 'count
   return 'neutral';
 }
 
+// ── T-G6 · 流派激活质变（design/12 §四.5 · "钥匙解锁招牌强度" → 闭合"选择即流派"）──
+// 触发：你的**主流派**(detectArchetype 多数决)且**集齐其 keyJokers**(全融承诺) → 施该流派**招牌增益**。只主流派激活(防混搭叠猛)。
+// ⚠️ 与 design#16 的差异(已报 finish，待 design 核)：① 原阈值"≥3 keyJokers"与现 keyJoker 数(多为 2)不符 → 改"集齐主流派全 keyJokers"(6 流派皆可达)；
+//    ② 原招式 概率(改 decideFaceUp 下限)/弃一保二(favor 转移)/斩首(−1◈+溃散−20) 需新机制/改核 → 取**等价 build-时近似**(各注)。全 build 时、outcome-first、零新能力。
+const ACTIVATION_FAVOR = 8; // 弃一保二：两强路集中 +favor
+export function activeArchetype(jokerIds: readonly string[]): Archetype | null {
+  const main = detectArchetype(jokerIds); // 多数决主流派
+  if (!main || main.keyJokers.length === 0) return null;
+  return main.keyJokers.every((k) => jokerIds.includes(k)) ? main.id : null; // 集齐主流派 keyJokers 才质变
+}
+/**
+ * 施主流派招牌增益（揭晓前 build-时）。返回改后 a/b + 士气倍率/牌型阶梯加成（喂下游 moraleA / 干预 tierBonus）。
+ * 纯函数、确定性：将领=士气×1.3 / 铺场=每路+2兵 / 牌型=阶梯+12(≈×2) / 概率=favor下限15 / 斩首=敌主将−12先怯 / 弃一保二=两强路+favor。
+ */
+export function applyArchetypeActivation(active: Archetype, armyA: ArmyCard[], armyB: ArmyCard[], biasA: number): { a: ArmyCard[]; b: ArmyCard[]; moraleMul: number; tierBonusAdd: number } {
+  let a = armyA.map((c) => ({ ...c }));
+  let b = armyB.map((c) => ({ ...c }));
+  let moraleMul = 1;
+  let tierBonusAdd = 0;
+  if (active === 'general') moraleMul = 1.3; // 将领流：主将士气 ×1.3
+  else if (active === 'wide') {
+    for (const lane of [0, 1, 2]) a.push(
+      { id: `a_l${lane}_act0`, rank: 'A', lane, favor: clampFavor(46 + biasA), general: false, suit: 'S' },
+      { id: `a_l${lane}_act1`, rank: '2', lane, favor: clampFavor(46 + biasA), general: false, suit: 'H' },
+    ); // 铺场流：每路 +2 兵
+  } else if (active === 'cardtype') tierBonusAdd = 12; // 牌型流：阶梯近 ×2（近似 design 的 ×2）
+  else if (active === 'probability') a = a.map((c) => (c.favor < 15 ? { ...c, favor: 15 } : c)); // 概率流：favor 下限 15（≈下限 5%→15%）
+  else if (active === 'decap') b = b.map((c) => (c.general ? { ...c, favor: clampFavor(c.favor - 12) } : c)); // 斩首流：敌主将先怯 −12（近似 −1◈/溃散−20）
+  else if (active === 'tianji') {
+    const sums = [0, 1, 2].map((l) => a.filter((c) => c.lane === l).reduce((s, c) => s + c.favor, 0));
+    const weakest = sums.indexOf(Math.min(...sums));
+    a = a.map((c) => (c.lane !== weakest ? { ...c, favor: clampFavor(c.favor + ACTIVATION_FAVOR) } : c)); // 弃一保二：两强路集中
+  }
+  return { a, b, moraleMul, tierBonusAdd };
+}
+
 // 从已融小丑算每路士气倍率（旗手全路、枭雄仅顶级主将路）→ 喂 resolveArmy。复用 `06` 士气、不新机制。
 const TOP_RANKS = new Set(['JOKER', 'K']); // 顶级军衔（枭雄触发档）
 export function jokerMoraleScale(army: ArmyCard[], jokerIds: readonly string[]): number[] {
@@ -726,12 +762,17 @@ export function applyJokers(army: ArmyCard[], jokerIds: readonly string[]): Army
 export interface MatchSetup { formation: Formation; deckBias: number; jokers: readonly string[]; interventions: Intervention[]; enemyForm?: Formation; enemyBias: number; boss?: BossSpec | null; planets?: Record<string, number> }
 export function prepareArmies(s: MatchSetup): { a: ArmyCard[]; b: ArmyCard[]; moraleA: number[]; linksA: LinkJokers } {
   const planets = s.planets ?? {};
-  const armyA = applyJokers(applyPlanetArmy(armyFromFormation('a', s.deckBias, s.formation), planets), s.jokers); // 星球·军(兵档底盘) → 融小丑（持久 favor 变换）
-  const armyB = armyFromFormation('b', s.enemyBias, s.enemyForm);
-  let { a, b } = applyInterventions(armyA, armyB, s.interventions, s.deckBias, 'a', effectiveTierBonus(planets)); // 玩家干预（flush 吃星球·型）
+  let a = applyJokers(applyPlanetArmy(armyFromFormation('a', s.deckBias, s.formation), planets), s.jokers); // 星球·军(兵档底盘) → 融小丑（持久 favor 变换）
+  let b = armyFromFormation('b', s.enemyBias, s.enemyForm);
+  // 流派激活质变：主流派集齐 keyJokers → 招牌增益（改 a/b + 士气倍率/牌型阶梯加成）。
+  const active = activeArchetype(s.jokers);
+  let moraleMul = 1;
+  let tierAdd = 0;
+  if (active) { const r = applyArchetypeActivation(active, a, b, s.deckBias); a = r.a; b = r.b; moraleMul = r.moraleMul; tierAdd = r.tierBonusAdd; }
+  ({ a, b } = applyInterventions(a, b, s.interventions, s.deckBias, 'a', effectiveTierBonus(planets) + tierAdd)); // 玩家干预（flush 吃星球·型 + 牌型流激活）
   if (s.boss && s.boss.openingLevers.length) ({ a, b } = applyInterventions(a, b, s.boss.openingLevers, s.enemyBias, 'b')); // Boss 起手（对称）
   if (s.jokers.includes('shadow')) a = applyShadowRevenge(a); // 影武者：敌斩首命中我主将 → 该路余部复仇（在 Boss 干预后侦测）
-  return { a, b, moraleA: jokerMoraleScale(a, s.jokers), linksA: jokerLinks(s.jokers) }; // 士气倍率 + 结局联动（死士/连环）
+  return { a, b, moraleA: jokerMoraleScale(a, s.jokers).map((m) => m * moraleMul), linksA: jokerLinks(s.jokers) }; // 士气倍率(×将领流激活) + 结局联动
 }
 
 /**
