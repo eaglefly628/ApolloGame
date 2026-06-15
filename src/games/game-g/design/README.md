@@ -28,6 +28,8 @@
 | 06 | `06-army-and-formation.md` | ⭐ 战场结构（灵魂）：三三制编制 / 军衔=点数 / 三路军 / 开局布阵 / 将领牵动全队 |
 | 07 | `07-cultivation-and-cards.md` | 培养牌组：小丑/星球融牌面 + 功能牌目录（进攻/埋伏/特殊出现）|
 | 08 | `08-ui-implementation-spec.md` | ⭐ UI 实装策划案（给 program G）：MOBA 三路战场接 outcome-first / GameShell vs canvas / 逐屏规格 / 改进清单 / 开发队列 |
+| 09 | `09-formation-and-deployment.md` | 开局布阵/分兵（田忌赛马）：预设+拖拽混合 / 弃一保二 / vs AI 暗布阵 |
+| — | `PROGRAM-G-TASKS.md` | design G↔program G 循环任务板（当前任务/状态/回馈）|
 | — | `UI/` | UI 设计稿（`大厅` / `三路战场`(推荐) / `对战`(参考) `.dc.html` + README）= `08` 的依据 |
 
 ---
