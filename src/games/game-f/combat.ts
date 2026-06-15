@@ -399,16 +399,8 @@ export function templatesFor(ROSTER: HeroSpec[]): Record<string, PrefabTemplate>
         hline: { Transform: xf(0, 76), Text: { content: '血量 100', fontSize: 12, fontFamily: FONT_NUM, anchor: 'center', lineSpacing: 0 }, TextBinding: { resourceId: 'player_hp', prefix: '血量 ' }, Color: { tint: 0xd65668, alpha: 0 }, Tween: { target: 'Color.alpha', from: 0, to: 1, elapsed: 0, duration: 46, easing: 'easeOut', done: false }, Tag: { flags: RESULT }, Sprite: { textureKey: F_FX_STRIKE, anchorX: 0.5, anchorY: 0.5, zOrder: 34 } },
       } },
     ]] as [string, PrefabTemplate][],
-    // 商店大卡（F-14 重排/用户钦定）：在售英雄的可点大卡面（60×68 占满大框）+ 名字签 + **价签**（用户报缺）；
-    // Clickable.action(买哪框)/Tag(槽位掩码) 由持位 Caster overrides 注入。价 = playCosts 金 3（统一费）。
-    ROSTER.filter((x) => x.team === TEAM_A).map((h): [string, PrefabTemplate] => [
-      `shopcard_${h.id}`,
-      { entities: {
-        card: { Transform: xf(0, 0), Shape: { kind: 'box', width: 58, height: 68 }, Sprite: sprite(h.key, 28), Color: { tint: 0xcf9a3f, alpha: 1 }, Clickable: { action: 'ph' }, Tag: { flags: 0 } },
-        cardname: { Transform: xf(0, -26), Text: { content: h.name, fontSize: 9, fontFamily: FONT_BODY, anchor: 'center', lineSpacing: 0 }, Color: { tint: 0x5a3f44, alpha: 1 }, Sprite: { textureKey: F_FX_STRIKE, anchorX: 0.5, anchorY: 0.5, zOrder: 29 }, Hierarchy: { parentId: '@local:card', localX: 0, localY: -26, localRotation: 0, localScaleX: 1, localScaleY: 1 } },
-        cardprice: { Transform: xf(0, 28), Text: { content: '💰3', fontSize: 11, fontFamily: FONT_NUM, anchor: 'center', lineSpacing: 0 }, Color: { tint: 0xcf9a3f, alpha: 1 }, Sprite: { textureKey: F_FX_STRIKE, anchorX: 0.5, anchorY: 0.5, zOrder: 29 }, Hierarchy: { parentId: '@local:card', localX: 0, localY: 28, localRotation: 0, localScaleX: 1, localScaleY: 1 } },
-      } },
-    ]),
+    // 商店大卡（旧 canvas 选卡页）已退役：在售脸图改由 GameShell 商店面板 image 直读 shop_face StringVar，
+    // 买入走 DOM 点将台 → CardPile.play（位置无关），不再需要持位 Caster 展开的可点大卡模板。
   ),
   );
 }

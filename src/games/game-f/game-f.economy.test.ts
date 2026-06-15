@@ -287,16 +287,15 @@ describe('Game F · 经济/商店（买入/刷新/卖出/经验连败/羁绊/符
       }
       return -1;
     };
-    const cards = (): string[] => e.world.getAllEntities().filter((id) => id.startsWith('shopcard_') && id.endsWith(':card'));
-    // HUD 金币显示已移入 DOM 壳层；canvas 商店卡退役（移出视口），买入走 CardPile.play（DOM 点将台同款路径）。
+    // HUD 金币显示已移入 DOM 壳层；canvas 商店卡退役，买入走 CardPile.play（DOM 点将台同款路径）。
     const buy = (slot: number): void => {
       if (!e.world.getAllEntities().includes('input')) e.world.createEntity('input');
       e.world.addComponent('input', { type: 'InputQueue', actions: [{ source: 'shop', key: 'play', values: [slot] }] });
       e.world.tick();
       e.world.addComponent('input', { type: 'InputQueue', actions: [] });
     };
-    for (let i = 0; i < 12; i++) e.world.tick(); // 刷新 → 两段脉冲 → 重铺完毕
-    expect(cards()).toHaveLength(3); // 三大框在售卡面可见（用户钦定小丑牌式）
+    for (let i = 0; i < 12; i++) e.world.tick(); // 刷新 → CardPile 补满三槽镜像
+    expect(res('shop_slot_1')).toBeGreaterThan(0); // 三槽镜像有在售英雄码（壳层按码取脸图）
     expect(res('gold')).toBe(5); // 起手金 5（用户：10 太多）
     e.world.addComponent('r_gold', { type: 'ResourceModify', resourceId: 'gold', amount: 20, scope: 'local' });
     for (let i = 0; i < 3; i++) e.world.tick();
@@ -306,6 +305,6 @@ describe('Game F · 经济/商店（买入/刷新/卖出/经验连败/羁绊/符
     expect(res('gold')).toBe(g0 - 3); // 扣金
     expect(res('bench_space')).toBe(8); // 占席
     expect(e.world.getAllEntities().some((id) => id.startsWith('bench_') && id.endsWith(':seat'))).toBe(true); // 入席可见
-    expect(cards()).toHaveLength(3); // 买走→补牌→镜像变 → 面板整体重铺仍 3 张
+    expect(res('shop_slot_1')).toBeGreaterThan(0); // 买走→补牌→镜像仍有在售码（壳层重绘）
   });
 });

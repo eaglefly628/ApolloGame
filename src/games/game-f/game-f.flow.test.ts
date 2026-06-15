@@ -15,15 +15,12 @@ describe('Game F · 流程/加载/名册（确定性/符文收走/ready开战/�
     expect(run()).toBe(run());
   });
 
-  it('开局符文开战自动收走（用户报「永远在屏幕中央」）+ 商店卡带价签（用户报「没有价格」）', () => {
+  it('开局符文开战自动收走（用户报「永远在屏幕中央」）', () => {
     const e = new Engine({ tickRate: 60 });
     e.load(buildGameFBlueprint(FAST));
     for (let i = 0; i < 12; i++) e.world.tick();
     expect(alive(e, 'rune_a')).toBe(true); // 回合1备战：符文三选一在场
     expect(alive(e, 'rune_title')).toBe(true); // 标题说明
-    // 商店卡价签：在售大卡有价格子实体（💰3）
-    const priceCards = e.world.getAllEntities().filter((id) => id.startsWith('shopcard_') && id.endsWith(':cardprice'));
-    expect(priceCards.length).toBeGreaterThan(0);
     // 不点符文 → 开战拍 ph_combat 兜底收走（真打的时候去掉）
     let guard = 0;
     while (!flag(e, 'in_combat') && guard++ < 200) e.world.tick();
