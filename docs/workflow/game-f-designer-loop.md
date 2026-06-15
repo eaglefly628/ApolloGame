@@ -5,6 +5,30 @@
 
 ---
 
+## 循环 #14 · 2026-06-15 · Designer F —— 空档预研(game-f 静默期,提前定掉开放问题)
+
+> game-f 静默 2h+(搭档在 game-g)。利用空档把屯田的开放问题(需不需要第 5 类 CardSpec)预先定掉,Program F 回来即可 drop-in。**这是预研、非验收。**
+
+### 定案:屯田 **需要**第 5 类 CardSpec `econ-buff`(现有 4 类都只改 dmg_scale,碰不到经济)
+- **CardSpec 加一员**:`{ kind:'econ-buff'; id:string; hook:'interest'|'income'|'streak'; op:'add'|'mul'; value:number }`
+- **`buildDeckRules` 加分支**:把 econ-buff 物化成挂在**经济信号**上的 `Effect`(复用现有 banded 经济链):
+  - `hook:'interest'` → `Effect{ onSignal:'give_interest', targetId:'gold', op, value }`(改利息产出/上限)
+  - `hook:'income'` → 挂回合收入结算信号;`hook:'streak'` → 挂连胜金信号
+  - **全是现成 `Effect modify-resource` + 现有经济信号,零引擎**(同卡牌加载器一贯做法)。
+- **屯田积粟 deck**(drop-in,faction 任意):
+  - `{ kind:'econ-buff', id:'tuntian', hook:'interest', op:'add', value:2 }`(利息每跳 +2,= "屯田生息")
+  - `{ kind:'econ-buff', id:'zhongnong', hook:'streak', op:'add', value:1 }`(连胜金 +1)
+  - `{ kind:'round-buff', id:'houfa', untilRound:99, bonus:0 }` 占位 or 省略 —— 屯田是经济流,战力靠后期攒出来,不必带伤害 buff。
+- **验收**:装屯田 → 利息/连胜金明显更高 → 后期金山转战力;`econ-buff` 物化正确;tsc+vitest 绿、零引擎。
+- ⚠️ 注:经济信号名(give_interest/income/streak)以 blueprint 现有实装为准,Program F 接时对一下真实信号名。
+
+### 队列现状(等搭档回 game-f)
+1. 吴单机布局调正 → 白衣渡江入 registry(循环#13 派)
+2. 屯田 deck(本预研,econ-buff 第 5 类)
+3. 信玄火相(低优先)→ 经济 v1(已定案 `game-f-economy-spec-v1.md`)
+
+---
+
 ## 循环 #13 · 2026-06-15 · Designer F
 
 ### 验收:3-faction plumbing(`rosterFor('wu')` + 盟友镜像吴名册)→ ✅ 通过
