@@ -14,6 +14,9 @@ export type CardSpec =
   // 回合 buff：前 N 回合（round_idx ≤ untilRound）开战额外伤害系数（banded by round）。
   | { kind: 'round-buff'; id: string; untilRound: number; bonus: number }
   // 经济档（屯田/利息）：结算窗按金币阈值阶梯追加金币（攒越多额外利息越高）。banded by gold。
+  // 注（PF 回 designer #14）：屯田积粟**已用本类实装**（TUNTIAN_DECK，入 registry、有测）——「利息+」=高 atGold 档、
+  // 「基础income+」=atGold:0 档。无需另设第 5 类 `econ-buff`（过度设计）；真要「连胜金」(banded by win_streak)
+  // 再把本类 banded 源从写死 gold 泛化成可选 resource 字段即可，不新增 kind。
   | { kind: 'economy-band'; id: string; tiers: { atGold: number; bonus: number }[] }
   // 商店权重：把某些英雄码在牌袋里加权（预配权重，洗入更多某势力）。
   | { kind: 'shop-weight'; id: string; codes: number[]; copies: number };
