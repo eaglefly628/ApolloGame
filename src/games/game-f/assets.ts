@@ -78,7 +78,7 @@ export const GAME_F_ASSETS: AssetManifest = [
   // 吴（合作/野怪皮借用）+ 主公金龙（独特生物）
   { kind: 'texture', key: F_HERO.zhou_yu, src: dcss('deep_elf_sorcerer'), width: 32, height: 32 },
   { kind: 'texture', key: F_HERO.gan_ning, src: dcss('deep_elf_blademaster'), width: 32, height: 32 },
-  { kind: 'texture', key: F_HERO.lv_meng, src: dcss('deep_elf_assassin'), width: 32, height: 32 },
+  { kind: 'texture', key: F_HERO.lv_meng, src: dcss('deep_elf_annihilator'), width: 32, height: 32 }, // 吕蒙（原 deep_elf_assassin 不存在→404；换现存近战图）
   { kind: 'texture', key: F_HERO.tai_shici, src: dcss('deep_elf_master_archer'), width: 32, height: 32 },
   { kind: 'texture', key: F_HERO.ling_tong, src: dcss('deep_elf_knight_new'), width: 32, height: 32 },
   { kind: 'texture', key: F_HERO.sun_ce, src: dcss('orc_warlord'), width: 32, height: 32 },
