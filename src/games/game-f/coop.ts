@@ -20,6 +20,12 @@ export interface CoopIsland {
 
 export const COOP_GOAL_PER_OWNER = 100;
 
+// 太阁强度按攻岛人数缩放（designer #28；三人同凿一岛、岛 goal 已 ×N，须让各 owner 的太阁更厚以防秒岛、
+// 拉长终盘）：hp 乘子 = 1 + 0.3×(N-1) → 单机1.0 / 双人1.3 / 三人1.6。单机(N=1)基线不变。喂 buildGameFBlueprint.difficulty。
+export function enemyScaleForPlayers(playerCount: number): number {
+  return +(1 + 0.3 * Math.max(0, playerCount - 1)).toFixed(2);
+}
+
 // Boss 宝箱掷点分卡（B·slice2，designer #24；co-opetition：合作杀 Boss、按贡献竞争分赃）。
 // 轮选制：贡献排序后第 1 名先挑 1 张（加权随机出小丑牌），轮转到分完 lootCount 张。AI 份额=展示，人类份额入收藏。
 // rng 注入（确定性 seed 可选）；纯账号层、零引擎。

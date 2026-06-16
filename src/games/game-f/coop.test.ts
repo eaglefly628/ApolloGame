@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { computeCoopIsland, distributeBossLoot, COOP_GOAL_PER_OWNER, type OwnerContribution } from './coop.js';
+import { computeCoopIsland, distributeBossLoot, enemyScaleForPlayers, COOP_GOAL_PER_OWNER, type OwnerContribution } from './coop.js';
 
 const O = (name: string, contribution: number): OwnerContribution => ({ name, faction: '蜀', human: false, contribution });
 
@@ -34,5 +34,14 @@ describe('多人 B·slice2 · Boss 宝箱掷点分卡（distributeBossLoot）', 
   it('lootCount=0 或空池 → 各 0 张', () => {
     expect(distributeBossLoot([O('a', 1)], 0, pool, () => 0)[0].cards.length).toBe(0);
     expect(distributeBossLoot([O('a', 1)], 3, [], () => 0)[0].cards.length).toBe(0);
+  });
+});
+
+describe('太阁强度按人数缩放（designer #28）', () => {
+  it('单机 N=1 基线不变；人数越多太阁越厚', () => {
+    expect(enemyScaleForPlayers(1)).toBe(1); // 单机不受影响
+    expect(enemyScaleForPlayers(2)).toBeCloseTo(1.3, 5);
+    expect(enemyScaleForPlayers(3)).toBeCloseTo(1.6, 5);
+    expect(enemyScaleForPlayers(3)).toBeGreaterThan(enemyScaleForPlayers(1));
   });
 });
