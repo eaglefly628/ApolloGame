@@ -2,7 +2,7 @@
 // 与确定性引擎解耦：纯前端 + 假数据；只在「开始攻岛」那刻产出一份「出战牌组+势力+队伍配置」交给 onStart。
 // 局内对局由 game-f.tsx 的 startMatch 接手。视觉基调=绢帛暖米+水墨黑（brief §二），class 前缀 gfl- 防与局内 gfx- 撞。
 import { type Deck, type Faction, HUBAO_DECK, DECK_REGISTRY } from './index.js';
-import { getWarfunds, gachaPull, gachaPull10, getCollection, GACHA_COST, GACHA10_COST, getLP, rankFor, saveCustomDeck, getDust, getEnchantLevels, enchantCard, disenchant, ENCHANT_MAX, ENCHANT_COST_WARFUNDS, ENCHANT_COST_DUST } from './account.js';
+import { getWarfunds, gachaPull, gachaPull10, getCollection, GACHA_COST, GACHA10_COST, getLP, rankFor, saveCustomDeck, getDust, getEnchantLevels, enchantCard, disenchant, ENCHANT_MAX, enchantCost } from './account.js';
 import { CARD_CATALOG, assembleDeck } from './decks.js';
 
 export interface RunConfig {
@@ -132,9 +132,10 @@ export function buildLobby(onStart: (cfg: RunConfig) => void): HTMLElement {
     ? ownedCards.map(([id, n]) => `<button class="gfl-fbtn" data-card="${esc(id)}" style="cursor:pointer">${esc(id)} ×${n}</button>`).join('')
     : '<span class="gfl-fbtn" style="opacity:.6">（先去「收藏」页抽卡获得小丑牌）</span>';
   const enchLevels = getEnchantLevels();
+  const FOIL = ['普通', 'foil', 'holo', '彩'];
   const ownedActionRows = ownedCards.length
-    ? ownedCards.map(([id, n]) => `<div class="gfl-frow" style="gap:8px">🃏 <b>${esc(id)}</b> ×<span data-cnt="${esc(id)}">${n}</span> · 附魔 <span data-ench="${esc(id)}">${enchLevels[id] ?? 0}</span>/${ENCHANT_MAX}
-      <span style="flex:1"></span><button class="gfl-mini" data-ench-btn="${esc(id)}">附魔(${ENCHANT_COST_WARFUNDS}战功+${ENCHANT_COST_DUST}尘)</button><button class="gfl-mini" data-dis-btn="${esc(id)}">分解</button></div>`).join('')
+    ? ownedCards.map(([id, n]) => { const lv = enchLevels[id] ?? 0; const cost = enchantCost(lv); return `<div class="gfl-frow" style="gap:8px">🃏 <b>${esc(id)}</b> ×<span data-cnt="${esc(id)}">${n}</span> · 附魔 <span data-ench="${esc(id)}">${lv}</span>/${ENCHANT_MAX}（${FOIL[lv]}）
+      <span style="flex:1"></span><button class="gfl-mini" data-ench-btn="${esc(id)}">${lv >= ENCHANT_MAX ? '满级' : `附魔(${cost.warfunds}战功+${cost.dust}尘)`}</button><button class="gfl-mini" data-dis-btn="${esc(id)}">分解</button></div>`; }).join('')
     : '<div class="gfl-frow" style="opacity:.6">（先抽卡获得小丑牌，可附魔/分解）</div>';
 
   const deckGrid = DECKS.map((d, i) => `<div class="gfl-deck${i === 0 ? ' sel' : ''}" data-deck="${d.id}">
@@ -289,8 +290,11 @@ export function buildLobby(onStart: (cfg: RunConfig) => void): HTMLElement {
   root.querySelectorAll<HTMLElement>('[data-ench-btn]').forEach((el2) => el2.addEventListener('click', () => {
     const id = el2.dataset.enchBtn!;
     const r = enchantCard(id);
-    if (r.ok) { const e = root.querySelector<HTMLElement>(`[data-ench="${id}"]`); if (e) e.textContent = String(r.level); refreshWf(); refreshDust(); toast(`🔧 ${esc(id)} 附魔 → Lv${r.level}`); }
-    else toast('⚠️ 附魔失败（满级或 战功/尘 不足）');
+    if (r.ok) {
+      const e = root.querySelector<HTMLElement>(`[data-ench="${id}"]`); if (e) e.textContent = String(r.level);
+      const nc = enchantCost(r.level); el2.textContent = r.level >= ENCHANT_MAX ? '满级' : `附魔(${nc.warfunds}战功+${nc.dust}尘)`; // 刷新为下一级成本
+      refreshWf(); refreshDust(); toast(`🔧 ${esc(id)} 附魔 → Lv${r.level}`);
+    } else toast('⚠️ 附魔失败（满级或 战功/尘 不足）');
   }));
   root.querySelectorAll<HTMLElement>('[data-dis-btn]').forEach((el2) => el2.addEventListener('click', () => {
     const id = el2.dataset.disBtn!;
@@ -313,7 +317,7 @@ export function buildLobby(onStart: (cfg: RunConfig) => void): HTMLElement {
     if (custSel.size === 0) { root.querySelector('.gfl-toast')?.remove(); const t = document.createElement('div'); t.className = 'gfl-toast'; t.innerHTML = '<span>⚠️ 先从收藏选至少 1 张小丑牌</span><button class="gfl-acc">好</button>'; t.querySelector('button')!.addEventListener('click', () => t.remove()); root.appendChild(t); return; }
     const ids = [...custSel];
     saveCustomDeck({ cardIds: ids, faction: custFac });
-    onStart({ deck: assembleDeck(ids, custFac), faction: custFac });
+    onStart({ deck: assembleDeck(ids, custFac, '自组牌组', getEnchantLevels()), faction: custFac }); // 附魔级烘进卡数值
   });
   // 开始攻岛 → 产出出战配置交引擎（选实装组 hubao/hanshi 即生效；deck.faction 定出生势力）。
   root.querySelector<HTMLElement>('[data-start]')!.addEventListener('click', () => {

@@ -2,7 +2,7 @@
 // 宪法：游戏=数据。本模块不发明能力——只把「牌组数组」物化成现成 capability 的规则实体
 //（group-count / EventWhen / Effect / banded / card-pile 权重），最弱 LLM 也能产出牌组数据。
 import type { EntityBlueprint } from '../../assembly/demo.assembly.js';
-import { FACT_WEI, FACT_SHU, ASSASSIN, TACTICIAN, BENCH_OCC, ENCHANT_STEP } from './constants.js';
+import { FACT_WEI, FACT_SHU, ASSASSIN, TACTICIAN, BENCH_OCC, ENCHANT_MUL } from './constants.js';
 import type { Faction } from './heroes.js';
 
 // 卡牌 = {触发条件, 效果} 算子（D0 核对：Game E joker 架构已全覆盖）。v1 + deck#2 用这四类。
@@ -123,16 +123,11 @@ export interface DeckRules {
 // 物化：deck → 规则实体（合并进 world 蓝图）+ 商店牌袋偏置。
 // 沿用蜀魂 bond 成熟模式（blueprint.ts §羁绊）：GroupCount→count 资源；开战 edge 锁存 → Effect 写 dmg_scale_a。
 // dmg_scale_a 已由 prep 进入时复位为 1（round_ui prep onEnter），故此处只加锁存、不管复位（同蜀魂纪律）。
-export function buildDeckRules(deck: Deck, enchants: Record<string, number> = {}): DeckRules {
+export function buildDeckRules(deck: Deck): DeckRules {
   const ents: Record<string, EntityBlueprint> = {};
   const shopBias: { codes: number[]; copies: number }[] = [];
   const combat = { kind: 'state', fsmId: 'round_ui', equals: 'combat' };
-  // 附魔加成（spec §五）：本牌组各卡附魔级之和 → 开战 dmg_scale_a += ENCHANT_STEP×总级（养成第二轴的局内回报）。
-  const enchTotal = deck.cards.reduce((s, c) => s + (enchants[c.id] ?? 0), 0);
-  if (enchTotal > 0) {
-    ents['when_enchant'] = { EventWhen: { signal: 'enchant_buff', when: combat, mode: 'edge', armed: false } };
-    ents['eff_enchant'] = { Effect: { onSignal: 'enchant_buff', kind: 'modify-resource', targetId: 'dmg_scale_a', op: 'add', value: ENCHANT_STEP * enchTotal } };
-  }
+  // 附魔不在此（旧全局法已撤）：改由 assembleDeck 把附魔级烘进各卡 CardSpec 数值（Balatro modifier，designer #22）。
   for (const card of deck.cards) {
     if (card.kind === 'synergy-buff') {
       const cr = `deck_count_${card.id}`;
@@ -188,9 +183,25 @@ export const CARD_CATALOG: Record<string, CardSpec> = (() => {
   return cat;
 })();
 
+// 附魔放大（designer #22）：按 enchant 级把 CardSpec 数值 ×(1 + ENCHANT_MUL×级)；shop-weight 改 copies + 级。
+// 深拷贝后改（不污染 CARD_CATALOG）。其余卡原样。= Balatro 数据 modifier，不进 sim、零引擎。
+function enchantCardSpec(card: CardSpec, level: number): CardSpec {
+  if (level <= 0) return card;
+  const mul = 1 + ENCHANT_MUL * level;
+  const c = JSON.parse(JSON.stringify(card)) as CardSpec;
+  if (c.kind === 'synergy-buff') c.perUnit = +(c.perUnit * mul).toFixed(4);
+  else if (c.kind === 'threshold-buff') c.tiers = c.tiers.map((t) => ({ ...t, bonus: +(t.bonus * mul).toFixed(4) }));
+  else if (c.kind === 'round-buff') c.bonus = +(c.bonus * mul).toFixed(4);
+  else if (c.kind === 'economy-band') c.tiers = c.tiers.map((t) => ({ ...t, bonus: t.bonus + level }));
+  else if (c.kind === 'shop-weight') c.copies = c.copies + level;
+  return c;
+}
+
 // 从一组卡 id 拼出自组牌组（id 来自玩家收藏；catalog 查不到的 id 丢弃）。faction 定出生势力（玩家选）。
-// buildDeckRules 接口不变（仍吃 Deck）→ 自组牌组与硬编码 preset 同路进局。
-export function assembleDeck(cardIds: string[], faction: Faction, name = '自组牌组'): Deck {
-  const cards = cardIds.map((id) => CARD_CATALOG[id]).filter((c): c is CardSpec => !!c);
+// enchants：卡 id→附魔级，烘进各卡 CardSpec 数值。buildDeckRules 接口不变（仍吃 Deck）→ 与 preset 同路进局。
+export function assembleDeck(cardIds: string[], faction: Faction, name = '自组牌组', enchants: Record<string, number> = {}): Deck {
+  const cards = cardIds
+    .map((id) => { const c = CARD_CATALOG[id]; return c ? enchantCardSpec(c, enchants[id] ?? 0) : undefined; })
+    .filter((c): c is CardSpec => !!c);
   return { id: 'custom', name, faction, cards };
 }

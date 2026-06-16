@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { warfundsFor, getWarfunds, addWarfunds, settleRun, memoryKV, spendWarfunds, gachaPull, gachaPull10, gachaRates, getCollection, GACHA_COST, GACHA10_COST, GACHA_POOL, getLP, rankFor, updateLpAfterRun, disenchant, getDust, addDust, enchantCard, getEnchantLevels, DUST_PER_CARD, ENCHANT_COST_WARFUNDS, ENCHANT_COST_DUST, type GachaEntry } from './account.js';
+import { warfundsFor, getWarfunds, addWarfunds, settleRun, memoryKV, spendWarfunds, gachaPull, gachaPull10, gachaRates, getCollection, GACHA_COST, GACHA10_COST, GACHA_POOL, getLP, rankFor, updateLpAfterRun, disenchant, getDust, addDust, enchantCard, getEnchantLevels, DUST_PER_CARD, enchantCost, ENCHANT_MAX, type GachaEntry } from './account.js';
 
 describe('经济 v1 · 账号层战功（warfunds；服务层、与 ECS 解耦）', () => {
   it('战功公式：贡献/胜利/波深单调增，钳非负取整', () => {
@@ -100,15 +100,18 @@ describe('经济 v1 · 附魔 + 材料（养成第二轴；spec §五）', () =>
     expect(getDust(kv)).toBe(2 * DUST_PER_CARD);
     expect(disenchant('taoyuan', kv).dust).toBe(0); // 只剩 1 不可再分解
   });
-  it('enchantCard：扣战功+尘 → +1 级；不够/满级/未拥有则失败', () => {
+  it('enchantCard：扣战功+尘（随级递增）→ +1 级；不够/满级/未拥有则失败', () => {
     const kv = memoryKV();
     expect(enchantCard('taoyuan', kv).ok).toBe(false); // 未拥有
     kv.setItem('gamef.account.collection', JSON.stringify({ taoyuan: 1 }));
     expect(enchantCard('taoyuan', kv).ok).toBe(false); // 没战功/尘
-    addWarfunds(ENCHANT_COST_WARFUNDS, kv); addDust(ENCHANT_COST_DUST, kv);
+    const c0 = enchantCost(0); expect(c0).toEqual({ warfunds: 100, dust: 2 });
+    addWarfunds(c0.warfunds, kv); addDust(c0.dust, kv);
     const r = enchantCard('taoyuan', kv);
     expect(r.ok).toBe(true); expect(r.level).toBe(1);
     expect(getWarfunds(kv)).toBe(0); expect(getDust(kv)).toBe(0); // 扣光
     expect(getEnchantLevels(kv)['taoyuan']).toBe(1);
+    expect(enchantCost(1)).toEqual({ warfunds: 200, dust: 4 }); // 递增
+    expect(ENCHANT_MAX).toBe(3);
   });
 });

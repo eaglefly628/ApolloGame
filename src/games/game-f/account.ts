@@ -83,26 +83,29 @@ export function disenchant(id: string, kv: KV = defaultKV()): { dust: number; ke
   return { dust: gained, kept: 1 };
 }
 
-// 附魔等级（每卡 id → 级；上限 ENCHANT_MAX）。每级 +ENCHANT_STEP 伤害系数（局内加成，buildDeckRules 读）。
+// 附魔等级（每卡 id → 级 0..3；0普通/1foil/2holo/3polychrome）。生效=assembleDeck 按级放大该卡 CardSpec 数值
+// （Balatro modifier；designer #22 spec §五）。等级存平行 map（与 collection count 解耦，等价 {count,enchant}）。
 const ENCH_KEY = 'gamef.account.enchant';
-export const ENCHANT_MAX = 5;
-export const ENCHANT_COST_WARFUNDS = 50;
-export const ENCHANT_COST_DUST = 20;
+export const ENCHANT_MAX = 3;
+// 升级成本随当前级翻倍：lv0→1 = 100战功+2尘；1→2 = 200+4；2→3 = 400+8。
+export function enchantCost(curLevel: number): { warfunds: number; dust: number } {
+  return { warfunds: 100 * 2 ** curLevel, dust: 2 * 2 ** curLevel };
+}
 export function getEnchantLevels(kv: KV = defaultKV()): Record<string, number> {
   try {
     const o = JSON.parse(kv.getItem(ENCH_KEY) ?? '{}') as Record<string, number>;
     return o && typeof o === 'object' ? o : {};
   } catch { return {}; }
 }
-// 附魔一张已拥有的卡：扣战功+尘、+1 级（≤MAX）。返回是否成功 + 新级。
+// 附魔一张已拥有的卡：扣战功+尘（随级递增）、+1 级（≤MAX3）。返回是否成功 + 新级。
 export function enchantCard(id: string, kv: KV = defaultKV()): { ok: boolean; level: number } {
   const lv = getEnchantLevels(kv);
   const cur = lv[id] ?? 0;
-  const owned = (getCollection(kv)[id] ?? 0) > 0;
-  if (!owned || cur >= ENCHANT_MAX) return { ok: false, level: cur };
-  if (getDust(kv) < ENCHANT_COST_DUST || getWarfunds(kv) < ENCHANT_COST_WARFUNDS) return { ok: false, level: cur };
-  spendWarfunds(ENCHANT_COST_WARFUNDS, kv);
-  kv.setItem(DUST_KEY, String(getDust(kv) - ENCHANT_COST_DUST));
+  if ((getCollection(kv)[id] ?? 0) <= 0 || cur >= ENCHANT_MAX) return { ok: false, level: cur };
+  const c = enchantCost(cur);
+  if (getWarfunds(kv) < c.warfunds || getDust(kv) < c.dust) return { ok: false, level: cur };
+  spendWarfunds(c.warfunds, kv);
+  kv.setItem(DUST_KEY, String(getDust(kv) - c.dust));
   lv[id] = cur + 1;
   kv.setItem(ENCH_KEY, JSON.stringify(lv));
   return { ok: true, level: cur + 1 };

@@ -31,7 +31,7 @@ export const PROJ = 1 << 26; // 在飞弹道（庆祝拍清扫）
 export const RESULT = 1 << 27; // 战果面板行
 export const BUSHO = 1 << 28; // 太阁部将位（国人众/天守 Boss）：毛利·三矢「部将≥3 全军 buff」group-count 用
 export const BOW = 1 << 29; // 太阁弓兵位（远程 mob）：今川·弓阵「弓≥3 全军 buff」group-count 用
-export const ENCHANT_STEP = 0.08; // 附魔：每附魔级给所属牌组开战 +0.08 dmg_scale_a（buildDeckRules 读；账号层定级）
+export const ENCHANT_MUL = 0.2; // 附魔：assembleDeck 时该卡 CardSpec 数值 ×(1 + ENCHANT_MUL×级)（Balatro modifier；designer #22）
 
 // 战斗节奏（数据）。
 export const MOVE_PERIOD = 48; // 每 48 tick 走一格 ≈ 0.8s
