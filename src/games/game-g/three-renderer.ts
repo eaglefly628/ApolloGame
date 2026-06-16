@@ -1,8 +1,9 @@
 import * as THREE from 'three';
 import type { RendererBackend, IWorld } from '@engine/core/types.js';
-import type { Transform, Card3D, Tween } from '@engine/protocol/components.js';
-import { clamp01, hangWarp, revealGlow, faceUpVisible, laneRevealProgress, easeOutCubic, ALIVE_GLOW, DEAD_DIM } from './feel.js'; // design/15/16 手感曲线（纯表现、不进 hash）
-import { cardScreenPos, SCENE_W, SCENE_H, LANE_Y, HOME_AX, HOME_BX, TOWERS, CARD_SCALE, SCENE_CH } from './scene.js'; // VIS-2 三路战场布局（与 render-frame 共用单一真相）
+import type { Transform, Card3D, Tween, Timer } from '@engine/protocol/components.js';
+import { clamp01, hangWarp, revealGlow, faceUpVisible, encounterReveal, easeOutCubic, ALIVE_GLOW, DEAD_DIM } from './feel.js'; // design/15/16 手感曲线（纯表现、不进 hash）
+import { FLIP_DURATION } from './blueprint.js'; // 行军揭晓窗口（接敌点翻牌）
+import { marchScreenPos, SCENE_W, SCENE_H, LANE_Y, HOME_AX, HOME_BX, TOWERS, CARD_SCALE, SCENE_CH } from './scene.js'; // MARCH-2 行军布局（与 render-frame 共用单一真相）
 
 // ═══════════════════════════════════════════════════════════════
 //  ThreeRenderer —— 3D 表现层后端（Game G）。RendererBackend 的 Three.js 实现：读 render-only 组件
@@ -146,6 +147,7 @@ export class ThreeRenderer implements RendererBackend {
   sync(world: IWorld): void {
     const ppu = this.opts.pixelsPerUnit;
     const seen = new Set<string>();
+    const elapsed = world.getComponent<Timer>('clock', 'Timer')?.elapsed ?? 0; // 行军拍数（驱动 marchScreenPos，纯表现）
     // 屏 px（scene.ts 单一真相）→ 3D：场景居中、y 翻转。
     const toX = (sx: number): number => (sx - SCENE_W / 2) / ppu;
     const toY = (sy: number): number => -(sy - SCENE_H / 2) / ppu;
@@ -166,12 +168,12 @@ export class ThreeRenderer implements RendererBackend {
       if (c.pairKey !== undefined && c.side) {
         // VIS-2 三路战场 + VIS-4 逐路揭晓：上→中→下 错开（lp）；按 scene.ts 摆位、抛飞/翻面/金石揭晓 都吃 lp。
         const lane = Math.floor(c.pairKey / 100);
-        const lp = laneRevealProgress(prog, lane);
+        const lp = encounterReveal(elapsed, FLIP_DURATION, lane); // MARCH-2：面朝下行军 → 接敌点才翻（design/17 §八）
         const arc = Math.sin(Math.PI * hangWarp(lp));
-        const p = cardScreenPos(lane, c.side === 'a' ? 'a' : 'b', c.pairKey % 100, arc);
+        const p = marchScreenPos(lane, c.side === 'a' ? 'a' : 'b', c.pairKey % 100, faceUp, elapsed, arc);
         mesh.position.set(toX(p.x), toY(p.y), Z_POP * arc);
         mesh.scale.set(CARD_SCALE, CARD_SCALE, 1);
-        mesh.rotation.x = tw ? tw.from + (tw.to - tw.from) * easeOutCubic(lp) : t.rotation; // 翻面按路错开（重导自 Tween，不读 sim 角）
+        mesh.rotation.x = tw ? Math.PI + (tw.to - Math.PI) * easeOutCubic(lp) : t.rotation; // MARCH-2：面朝下(π)行军 → 接敌(lp)翻到既定面（重导自 Tween，不读 sim 角）
         this.applyReveal(mesh, faceUp, c.frontTint, revealGlow(lp));
         if (c.pairKey % 100 === 0) { // idx0=本路主将 → ♔王冠（不随牌翻）+ 阵亡红斩（牵动/擒贼擒王可读）
           const m = this.generalMarker(id, c.side === 'a' ? 'a' : 'b');

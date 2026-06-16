@@ -45,6 +45,17 @@ export function laneRevealProgress(prog: number, lane: number, lead = 0.16): num
   return clamp01((clamp01(prog) - lane * lead) / Math.max(0.001, 1 - 2 * lead));
 }
 
+/**
+ * MARCH-2 · 接敌点揭晓（design/17 §八 关键指引）：兵**面朝下行军**，**逼近接敌中线(行军后段)才翻牌** ——
+ * 把 match_clock 拍数 elapsed 映成揭晓进度：前段(<0.55·flipDuration)几乎不翻(面朝下推进)、后段急翻、略越过
+ * flipDuration 落定；再过 laneRevealProgress 配合"上→中→下"逐路错开。翻牌时机 = 兵相遇那一刻 = owner 行军愿景。
+ * 纯表现（不改胜负、不进 hash）；结果仍 build 时规则定，只是"在遭遇点才揭晓"。
+ */
+export function encounterReveal(elapsed: number, flipDuration: number, lane: number): number {
+  const closing = clamp01((elapsed - flipDuration * 0.55) / Math.max(1, flipDuration * 0.5));
+  return laneRevealProgress(closing, lane);
+}
+
 /** easeOutCubic：1-(1-x)³，落定收尾的缓出（逐路揭晓重导翻面角用）。 */
 export function easeOutCubic(x: number): number {
   const t = 1 - clamp01(x);

@@ -1,16 +1,15 @@
-// VIS-1/2/2b · 离线看帧（design/16 §二/§三/§八）：跑一局 Game G 到关键拍 → 投影成 SVG 落 doc/screenshots/。
+// MARCH-2 · 离线看帧（design/17 行军模型 + 16 §二）：跑一局到关键拍 → 投影成 SVG 落 doc/screenshots/。
 // 为什么 SVG 不是 PNG/WebGL：node 无 GL 上下文跑不了真 ThreeRenderer（game-d/game-f 同理用 SVG 投影）→ 确定性/可版本控制/浏览器直接看/可 diff。
-// 第 1 轮评审(design G `16`§八)：① 有牌没战场 ② 命运一掷太平(flat) → 本轮 VIS-2/2b：
-//   · **三路战场**：三路分区(上/中/下)轨 + 左右老家牌王座(♔) + 哨塔 + 卡按路列阵(A 左/B 右,front 接敌) + 三路比分(弃一保二可读)。
-//   · **命运一掷加戏**：活牌落定 gold 辉光(radialGradient) / 死牌碎裂+压暗 / 古风战场底(非纯 void)。
-//   ⚠️ 渲染器侧**纯表现重映射**（按 lane/side/idx 摆成 MOBA 三路，gameplay 位置 laneSlot 不变、不进 hash）；3D 场景的 2D 近似，待 ThreeRenderer 同步。
+// owner 纠偏（design/17）：实时三路行军取代瞬间翻牌。本帧演出 = **兵出老家 → 沿三路推进 → 接敌掷命(金生/石死) → 幸存突破 → 攻克敌方老家(home_hp 见血条)**。
+//   · 位置：`scene.marchScreenPos`（match_clock 拍数驱动，与 ThreeRenderer 共用单一真相、纯表现不进 hash）。
+//   · 老家牌王座(♔) + **血条**(home_hp/满) + 哨塔 + 三路轨/比分。
 // 跑：npx vite-node src/games/game-g/render-frame.ts → doc/screenshots/*.svg
 import { mkdirSync, writeFileSync } from 'node:fs';
 import { Engine } from '../../runtime/engine.js';
-import { hangWarp, revealGlow, faceUpVisible, clamp01, DEAD_DIM, laneRevealProgress } from './feel.js';
-import { buildGameGArmyMatch, armyFromFormation, prepareArmies, bossFor, FORMATION_PRESETS, FLIP_DURATION } from './index.js';
-import { SCENE_W as W, SCENE_H as H, LANE_Y, LANE_NAME, HOME_AX, HOME_BX, CONTEST, SCENE_CW as cw, SCENE_CH as ch, TOWERS, cardScreenPos, laneScores } from './scene.js'; // 单一真相布局（与 ThreeRenderer 共用）
-import type { Transform, Card3D, Tween } from '@engine/protocol/components.js';
+import { hangWarp, revealGlow, faceUpVisible, clamp01, DEAD_DIM, encounterReveal } from './feel.js';
+import { buildGameGArmyMatch, armyFromFormation, prepareArmies, bossFor, FORMATION_PRESETS, FLIP_DURATION, MARCH_DURATION, HOME_HP } from './index.js';
+import { SCENE_W as W, SCENE_H as H, LANE_Y, LANE_NAME, HOME_AX, HOME_BX, CONTEST, SCENE_CW as cw, SCENE_CH as ch, TOWERS, marchScreenPos, laneScores } from './scene.js'; // 单一真相布局（与 ThreeRenderer 共用）
+import type { Transform, Card3D, Tween, Resource, Timer } from '@engine/protocol/components.js';
 import type { IWorld } from '@engine/core/types.js';
 
 const SUIT = { S: '♠', H: '♥', D: '♦', C: '♣' } as const;
@@ -20,22 +19,28 @@ function dim(n: number, k: number): string {
   const r = (n >> 16) & 0xff, g = (n >> 8) & 0xff, b = n & 0xff;
   return hx((Math.round(r * k) << 16) | (Math.round(g * k) << 8) | Math.round(b * k));
 }
+const clockElapsed = (world: IWorld): number => world.getComponent<Timer>('clock', 'Timer')?.elapsed ?? 0;
+const homeHp = (world: IWorld, id: 'res_ahome' | 'res_bhome'): number => world.getComponent<Resource>(id, 'Resource')?.current ?? HOME_HP;
 
-interface Card { lane: number; side: 'a' | 'b'; idx: number; isGeneral: boolean; faceUp: boolean; rev: number; arc: number; tint: number; back: number; rank?: string; suit?: string }
+interface Card { lane: number; side: 'a' | 'b'; idx: number; isGeneral: boolean; faceUp: boolean; rev: number; lp: number; x: number; y: number; tint: number; back: number; rank?: string; suit?: string }
 
-function project(world: IWorld): Card[] {
+function project(world: IWorld, elapsed: number): Card[] {
   const out: Card[] = [];
   for (const [id] of world.query('Card3D', 'Transform')) {
     const c = world.getComponent<Card3D>(id, 'Card3D')!;
     const t = world.getComponent<Transform>(id, 'Transform')!;
     const tw = world.getComponent<Tween>(id, 'Tween') ?? undefined;
     if (c.pairKey === undefined || !c.side) continue;
-    const prog = tw && tw.duration > 0 ? clamp01(tw.elapsed / tw.duration) : 1;
     const lane = Math.floor(c.pairKey / 100);
-    const lp = laneRevealProgress(prog, lane); // VIS-4 逐路揭晓：上→中→下 错开
+    const idx = c.pairKey % 100;
+    const side: 'a' | 'b' = c.side === 'a' ? 'a' : 'b';
+    const lp = encounterReveal(elapsed, FLIP_DURATION, lane); // MARCH-2：面朝下行军 → 接敌点才翻（逐路错开，design/17 §八）
+    const faceUp = faceUpVisible(tw ? tw.to : t.rotation);
+    const arc = Math.sin(Math.PI * hangWarp(lp));
+    const pos = marchScreenPos(lane, side, idx, faceUp, elapsed, arc); // 行军屏位（home→中线→敌家）
     out.push({
-      lane, side: c.side === 'a' ? 'a' : 'b', idx: c.pairKey % 100, isGeneral: c.pairKey % 100 === 0, // idx0=本路主将（牵动全路）
-      faceUp: faceUpVisible(tw ? tw.to : t.rotation), rev: revealGlow(lp), arc: Math.sin(Math.PI * hangWarp(lp)),
+      lane, side, idx, isGeneral: idx === 0, // idx0=本路主将（牵动全路）
+      faceUp, rev: revealGlow(lp), lp, x: pos.x, y: pos.y,
       tint: c.frontTint ?? 0xeab308, back: c.backTint ?? 0x334155, rank: c.rank, suit: c.suit,
     });
   }
@@ -43,8 +48,16 @@ function project(world: IWorld): Card[] {
 }
 
 function cardSvg(c: Card): string {
-  const { x, y } = cardScreenPos(c.lane, c.side, c.idx, c.arc); // 单一真相布局（scene.ts）
+  const x = c.x, y = c.y; // 行军屏位（scene.ts marchScreenPos）
   const px = x - cw / 2, py = y - ch / 2;
+  // MARCH-2：未揭晓（行军中 lp<0.5）→ 面朝下中性牌背（侧色描边；主将暗 ♔ 标列）。接敌(lp≥0.5)才翻面。
+  if (c.lp < 0.5) {
+    const trim = c.side === 'a' ? '#a16207' : '#0e7490';
+    let dn = `<rect x="${px}" y="${py}" width="${cw}" height="${ch}" rx="5" fill="#2a3344" stroke="${trim}" stroke-width="${c.isGeneral ? 3 : 2}"/>` +
+      `<rect x="${px + 5}" y="${py + 5}" width="${cw - 10}" height="${ch - 10}" rx="3" fill="none" stroke="${trim}" stroke-width="0.8" opacity="0.5"/>`;
+    if (c.isGeneral) dn += `<text x="${x}" y="${py - 3}" text-anchor="middle" font-size="${ch * 0.3}" fill="${trim}">♔</text>`;
+    return dn;
+  }
   let body: string;
   if (c.faceUp) {
     const red = c.suit === 'H' || c.suit === 'D';
@@ -74,8 +87,8 @@ function cardSvg(c: Card): string {
   return body;
 }
 
-// 老家牌王座（♔）+ 哨塔 + 三路轨 + 比分。
-function scenery(cards: Card[]): string {
+// 老家牌王座（♔ + 血条）+ 哨塔 + 三路轨 + 比分。
+function scenery(cards: Card[], aHome: number, bHome: number): string {
   let s = '';
   const scores = laneScores(cards); // 单一真相比分
   // 三路横轨（分区带）+ 路名 + 比分（活牌数；弃一保二可读）。
@@ -94,15 +107,27 @@ function scenery(cards: Card[]): string {
     const col = tw.side === 'a' ? '#a16207' : '#0e7490';
     s += `<g transform="translate(${tw.x},${tw.y})"><rect x="-13" y="-34" width="26" height="58" rx="4" fill="${col}" stroke="#1e1208" stroke-width="2"/><rect x="-17" y="-44" width="34" height="14" rx="3" fill="${col}"/><text x="0" y="-50" text-anchor="middle" font-size="13" fill="#cbd5e1">♜</text></g>`;
   }
-  // 左右老家牌王座 ♔（A 金 / B 青）。
-  const throne = (x: number, color: string, who: string): string =>
-    `<g transform="translate(${x},${H / 2})"><rect x="-46" y="-86" width="92" height="172" rx="12" fill="#10151f" stroke="${color}" stroke-width="3"/><text x="0" y="-30" text-anchor="middle" font-size="64" fill="${color}">♔</text><text x="0" y="22" text-anchor="middle" font-family="system-ui" font-size="16" font-weight="700" fill="${color}">${who}</text><text x="0" y="46" text-anchor="middle" font-family="system-ui" font-size="12" fill="#7c8aa0">牌王座</text></g>`;
-  s += throne(HOME_AX, '#eab308', '我军') + throne(HOME_BX, '#38bdf8', '敌军');
+  // 左右老家牌王座 ♔ + 血条（攻克=0=破家）。A 金 / B 青。
+  const throne = (x: number, color: string, who: string, hp: number): string => {
+    const bw = 84, fill = (bw * clamp01(hp / HOME_HP)).toFixed(1);
+    const broken = hp <= 0;
+    return `<g transform="translate(${x},${H / 2})">` +
+      `<rect x="-46" y="-86" width="92" height="172" rx="12" fill="#10151f" stroke="${broken ? '#ef4444' : color}" stroke-width="3"/>` +
+      `<text x="0" y="-30" text-anchor="middle" font-size="64" fill="${broken ? '#7f1d1d' : color}">♔</text>` +
+      `<text x="0" y="22" text-anchor="middle" font-family="system-ui" font-size="16" font-weight="700" fill="${color}">${who}</text>` +
+      `<text x="0" y="46" text-anchor="middle" font-family="system-ui" font-size="12" fill="#7c8aa0">牌王座</text>` +
+      `<rect x="-42" y="64" width="${bw}" height="11" rx="3" fill="#1a2230" stroke="#33415a"/>` +
+      `<rect x="-42" y="64" width="${fill}" height="11" rx="3" fill="${broken ? '#ef4444' : color}"/>` +
+      `<text x="0" y="100" text-anchor="middle" font-family="system-ui" font-size="12" font-weight="700" fill="${broken ? '#ef4444' : '#9aa7bd'}">${broken ? '已破！' : `老家 ${hp}/${HOME_HP}`}</text>` +
+      `</g>`;
+  };
+  s += throne(HOME_AX, '#eab308', '我军', aHome) + throne(HOME_BX, '#38bdf8', '敌军', bHome);
   return s;
 }
 
 function frame(world: IWorld, label: string): string {
-  const cards = project(world);
+  const elapsed = clockElapsed(world);
+  const cards = project(world, elapsed);
   // 后排先画（front 接敌牌压在最上）：按 |idx| 降序。
   cards.sort((a, b) => b.idx - a.idx);
   const body = cards.map(cardSvg).join('');
@@ -111,9 +136,9 @@ function frame(world: IWorld, label: string): string {
     `<defs><radialGradient id="glow"><stop offset="0%" stop-color="#fff6cc" stop-opacity="0.95"/><stop offset="45%" stop-color="#f5c542" stop-opacity="0.7"/><stop offset="100%" stop-color="#f5c542" stop-opacity="0"/></radialGradient>` +
     `<linearGradient id="ground" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="#0c1118"/><stop offset="55%" stop-color="#0e1410"/><stop offset="100%" stop-color="#080a0e"/></linearGradient></defs>` +
     `<rect width="${W}" height="${H}" fill="url(#ground)"/>` +
-    scenery(cards) + body +
+    scenery(cards, homeHp(world, 'res_ahome'), homeHp(world, 'res_bhome')) + body +
     `<text x="20" y="36" font-family="system-ui" font-size="22" font-weight="700" fill="#e2e8f0">Game G · ${esc(label)}</text>` +
-    `<text x="20" y="${H - 14}" font-family="system-ui" font-size="13" fill="#5b6678">三路 best-of-3 · 金=活/石=死 · 弃一保二看比分 · 命运一掷在中线</text>` +
+    `<text x="20" y="${H - 14}" font-family="system-ui" font-size="13" fill="#5b6678">实时三路行军 · 兵出老家→遭遇掷命(金活/石死)→幸存突破→攻克大本营(血条) · design/17</text>` +
     `</svg>`
   );
 }
@@ -126,24 +151,20 @@ const mk = (seed: number, a = armyFromFormation('a', 6, FORMATION_PRESETS['均�
   e.load(buildGameGArmyMatch(a, b, seed));
   return e;
 };
+const runTo = (e: Engine, ticks: number): Engine => { for (let i = 0; i < ticks; i++) e.world.tick(); return e; };
 
-const e1 = mk(7);
-for (let i = 0; i < Math.round(FLIP_DURATION * 0.5); i++) e1.world.tick();
-write('02-kickoff.svg', frame(e1.world, '三路开战 · 抛牌（命运一掷）'));
-
-const eS = mk(7);
-for (let i = 0; i < Math.round(FLIP_DURATION * 0.68); i++) eS.world.tick();
-write('03-stagger.svg', frame(eS.world, '逐路揭晓 · 上路先落定/下路仍在飞（2:1 翻盘悬念）'));
-
-const e2 = mk(7);
-for (let i = 0; i < FLIP_DURATION + 10; i++) e2.world.tick();
-write('04-reveal.svg', frame(e2.world, '掷命揭晓 · 金=活/石=死（三路 best-of-3）'));
+// ① 行军中：兵出老家、沿三路向中线推进（尚未接敌）。
+write('02-kickoff.svg', frame(runTo(mk(7), Math.round(FLIP_DURATION * 0.42)).world, '三路行军 · 兵出老家向中线推进'));
+// ② 遭遇掷命：前锋接敌、翻牌定生死（金活/石死、主将♔/斩、逐路揭晓）。
+write('03-stagger.svg', frame(runTo(mk(7), Math.round(FLIP_DURATION * 0.8)).world, '遭遇掷命 · 接敌逐路翻牌（上路先翻 / 下路仍面朝下推进）'));
+// ③ 突破破家：幸存者推进到敌方老家、血条见底=攻克。
+write('04-reveal.svg', frame(runTo(mk(7), FLIP_DURATION + MARCH_DURATION + 4).world, '突破破家 · 幸存推进攻克敌方老家'));
 
 const boss = bossFor(5);
 const { a, b } = prepareArmies({ formation: FORMATION_PRESETS['锋矢'], deckBias: 8, jokers: ['bannerman', 'warlord'], interventions: [], enemyForm: boss.formation, enemyBias: boss.favorBias, boss });
 const e3 = new Engine({ tickRate: 60 });
 e3.load(buildGameGArmyMatch(a, b, 9));
-for (let i = 0; i < FLIP_DURATION + 10; i++) e3.world.tick();
-write('05-boss.svg', frame(e3.world, `终局 Boss · ${boss.name}`));
+runTo(e3, FLIP_DURATION + MARCH_DURATION + 4);
+write('05-boss.svg', frame(e3.world, `终局 Boss · ${boss.name}（行军破家）`));
 
-console.error('VIS-2/2b/4 done · 4 帧（三路战场+老家牌王座+哨塔+比分+金辉光/石碎裂 + 逐路揭晓上落下飞）→ doc/screenshots/');
+console.error('MARCH-2 done · 4 帧（行军出征→遭遇掷命→突破破家 + 老家血条 + 三路战场/哨塔/比分/金石）→ doc/screenshots/');
