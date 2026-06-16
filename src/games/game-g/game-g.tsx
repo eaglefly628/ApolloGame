@@ -1,6 +1,6 @@
 import { Engine } from '../../runtime/engine.js';
 import { ThreeRenderer } from './three-renderer.js';
-import { buildGameGArmyMatch, prepareArmies, armyFromFormation, laneEstimates, quartermasterEnergy, FORMATION_PRESETS, PRESET_NAMES, LEVER_CATALOG, LEVER_START, battleSpec, RUN_BATTLES, RUN_LIVES, BETWEEN_BUFFS, applyBuff, jokerKeyBuffs, BOSS_ROSTER, bossFor, GAME_G_JOKERS, JOKER_BY_ID, ARCHETYPES, detectArchetype, archetypeMatchup, activeArchetype, pickAiFormation, GAME_G_PLANETS, GAME_G_FOILS, effectiveLives, effectiveLeverCap, effectiveLeverRegen, type Formation, type Intervention, type LeverKind, type RunBuff } from './index.js';
+import { buildGameGArmyMatch, prepareArmies, armyFromFormation, laneEstimates, quartermasterEnergy, FORMATION_PRESETS, PRESET_NAMES, LEVER_CATALOG, LEVER_START, HOME_HP, battleSpec, RUN_BATTLES, RUN_LIVES, BETWEEN_BUFFS, applyBuff, jokerKeyBuffs, BOSS_ROSTER, bossFor, GAME_G_JOKERS, JOKER_BY_ID, ARCHETYPES, detectArchetype, archetypeMatchup, activeArchetype, pickAiFormation, GAME_G_PLANETS, GAME_G_FOILS, effectiveLives, effectiveLeverCap, effectiveLeverRegen, type Formation, type Intervention, type LeverKind, type RunBuff } from './index.js';
 import type { State, Resource } from '@engine/protocol/components.js';
 
 // Game G ·《翻命扑克》—— 大厅 ↔ 出征 闭环（launcher 卡带槽：export mount(container)→cleanup）。自包含于本目录。
@@ -383,6 +383,8 @@ export function mount(container: HTMLElement): () => void {
       const survB = r('res_b0') + r('res_b1') + r('res_b2');
       const lanesA = r('res_alanes');
       const lanesB = r('res_blanes');
+      const homeA = r('a_home'); // 大本营血（被攻克=0）
+      const homeB = r('b_home');
       // 结算奖励：存活的我方牌都算战利品；胜利额外 +15 并推进关卡（敌方更强）。
       const gain = survA + (winner === 'a' ? 15 : 0);
       save.materials += gain;
@@ -410,9 +412,9 @@ export function mount(container: HTMLElement): () => void {
       const qm = quartermasterEnergy(save.jokers, lanesA); // 督粮：每胜一路 +◈ 入下场 run 能量（post-resolve）
       if (qm > 0) { save.leverEnergy = Math.min(effectiveLeverCap(save.planets), save.leverEnergy + qm); tail += `（督粮 +${qm}◈）`; }
       persist(save);
-      const who = winner === 'a' ? '我方胜（best-of-3）' : winner === 'b' ? '敌方胜' : '平局';
+      const who = winner === 'a' ? '我方胜（攻克敌老家）' : winner === 'b' ? '敌方胜（我老家被破）' : '平局（无人破家）';
       const color = winner === 'a' ? '#eab308' : winner === 'b' ? '#94a3b8' : '#cbd5e1';
-      label.innerHTML = `<span style="color:${color}">${who}</span> ｜ 三路 ${lanesA}:${lanesB} ｜ 敌阵【${aiName}】 ｜ +${gain} 材料 ｜ ${tail}`;
+      label.innerHTML = `<span style="color:${color}">${who}</span> ｜ 三路 ${lanesA}:${lanesB} ｜ 老家 我${homeA}/敌${homeB}（满${HOME_HP}）｜ 敌阵【${aiName}】 ｜ +${gain} 材料 ｜ ${tail}`;
       back.textContent = `→ ${cont}`;
       back.onclick = route;
     };

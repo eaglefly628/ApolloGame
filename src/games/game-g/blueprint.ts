@@ -803,9 +803,17 @@ export function prepareArmies(s: MatchSetup): { a: ArmyCard[]; b: ArmyCard[]; mo
   return { a, b, moraleA: jokerMoraleScale(a, s.jokers).map((m) => m * moraleMul), linksA: jokerLinks(s.jokers) }; // 士气倍率(×将领流激活) + 结局联动
 }
 
+// ── 行军·攻克大本营 调参（design/17 §二；owner 纠偏：实时三路行军取代瞬间翻牌；先破者胜）──
+export const HOME_HP = 8;     // 大本营血量（被突破方 chip 到 0 = 攻克 = 负）
+const MARCH_T0 = 12;          // 翻牌后 → 首拍破家前的行军延迟（拍；给"兵在路上走"的时间纵深）
+const MARCH_PERIOD = 5;       // 每拍破家间隔（拍）
+export const MARCH_DURATION = MARCH_T0 + HOME_HP * MARCH_PERIOD; // 行军/攻克相位时长；胜负在 FLIP_DURATION+MARCH_DURATION 那拍落定
+
 /**
- * G2 一局军阵对决：armyA(我) vs armyB(敌)，自上而下逐级掷命(将领牵动) → 三路数存活 → best-of-3 定总胜负。
- * 装配顺序 A 全军 → B 全军（PRNG 序列确定、可回放）。胜负 build 时即定；3D 抛飞相撞为表现。
+ * G2 一局军阵对决：armyA(我) vs armyB(敌)，自上而下逐级掷命(将领牵动) → 三路数存活 →
+ *   **行军突破·攻克大本营**定胜负（design/17 §二）：每路幸存差=突破到敌老家的兵，净突破方逐拍 chip 敌
+ *   `home_hp`→0=攻克=胜（取代旧 best-of-3）。掷命结果仍 build 时规则定(outcome-first)，行军是确定性时间结构。
+ * 装配顺序 A 全军 → B 全军（PRNG 序列确定、可回放）。胜负 build 时即定；3D 行军/抛飞为表现。
  * moraleA：我方各路士气倍率（旗手/枭雄小丑放大，缺省 [1,1,1]）；敌方无小丑。缩放不改掷命次数→确定性不变。
  * linksA：我方结局联动（死士/连环，缺省关）；前向单遍生效、只动未翻牌 → hash 稳。敌方无小丑。
  */
@@ -840,6 +848,10 @@ export function buildGameGArmyMatch(armyA: ArmyCard[], armyB: ArmyCard[], seed =
   place(armyA, TEAM_A, A_FRONT, 0xfde68a, faceA);
   place(armyB, TEAM_B, B_FRONT, 0xbae6fd, faceB);
 
+  // 各路 build 时幸存数（= 下方 GroupCount 的 res_a{L}/res_b{L}，同源 faceA/faceB）→ 算行军突破。
+  const aSurv = [0, 1, 2].map((L) => armyA.filter((c) => c.lane === L && faceA.get(c.id)).length);
+  const bSurv = [0, 1, 2].map((L) => armyB.filter((c) => c.lane === L && faceB.get(c.id)).length);
+
   // 三路数存活（含齐 队|路|ALIVE）
   for (const L of [0, 1, 2]) {
     entities[`gc_a${L}`] = { GroupCount: { countResource: `a_l${L}`, requiredTag: TEAM_A | LANE[L] | ALIVE } };
@@ -847,11 +859,13 @@ export function buildGameGArmyMatch(armyA: ArmyCard[], armyB: ArmyCard[], seed =
     entities[`res_a${L}`] = { Resource: { id: `a_l${L}`, current: 0, min: 0, max: 99 } };
     entities[`res_b${L}`] = { Resource: { id: `b_l${L}`, current: 0, min: 0, max: 99 } };
   }
-  entities.res_alanes = { Resource: { id: 'a_lanes', current: 0, min: 0, max: 3 } };
+  entities.res_alanes = { Resource: { id: 'a_lanes', current: 0, min: 0, max: 3 } }; // 赢几路（督粮/战况显示用；不再决定总胜负）
   entities.res_blanes = { Resource: { id: 'b_lanes', current: 0, min: 0, max: 3 } };
+  entities.res_ahome = { Resource: { id: 'a_home', current: HOME_HP, min: 0, max: HOME_HP } }; // 我方大本营血（被攻克=0=我负）
+  entities.res_bhome = { Resource: { id: 'b_home', current: HOME_HP, min: 0, max: HOME_HP } }; // 敌方大本营血（被攻克=0=我胜）
   entities.res_mats = { Resource: { id: 'mats', current: 0, min: 0, max: 99999 } };
   entities.winner = { State: { fsmId: 'winner', current: 'pending' } };
-  entities.clock = { Timer: { id: 'match_clock', elapsed: 0, duration: FLIP_DURATION + 6, loop: false } };
+  entities.clock = { Timer: { id: 'match_clock', elapsed: 0, duration: FLIP_DURATION + MARCH_DURATION + 6, loop: false } };
 
   // ① 翻牌演完(Timer 到 FLIP_DURATION)那拍，逐路比存活 → 累计各方"赢几路"。
   const tLane = { kind: 'timer', id: 'match_clock', cmp: 'gte', value: FLIP_DURATION };
@@ -861,16 +875,24 @@ export function buildGameGArmyMatch(armyA: ArmyCard[], armyB: ArmyCard[], seed =
     entities[`when_b_lane${L}`] = { EventWhen: { signal: `b_lane${L}`, when: { kind: 'and', of: [tLane, { kind: 'resource', id: `a_l${L}`, cmp: 'lt', value: 0, vsResource: `b_l${L}` }] }, mode: 'edge', armed: false } };
     entities[`fx_b_lane${L}`] = { Effect: { onSignal: `b_lane${L}`, kind: 'modify-resource', targetId: 'b_lanes', value: 1 } };
   }
-  // ② 路数累计稳定后(Timer 到 FLIP_DURATION+3)，best-of-3 定总胜负（胜 2 路即赢，互斥各一发）。
-  const tWin = { kind: 'timer', id: 'match_clock', cmp: 'gte', value: FLIP_DURATION + 3 };
-  const total = (sig: string, cond: Record<string, unknown>, winState: string, mats: number): void => {
-    entities[`when_${sig}`] = { EventWhen: { signal: sig, when: { kind: 'and', of: [tWin, cond] }, mode: 'edge', armed: false } };
-    entities[`fx_${sig}_st`] = { Effect: { onSignal: sig, kind: 'set-state', targetId: 'winner', value: winState } };
-    if (mats > 0) entities[`fx_${sig}_mat`] = { Effect: { onSignal: sig, kind: 'modify-resource', targetId: 'mats', value: mats } };
+  // ② 行军·攻克大本营（design/17 §二，取代 best-of-3）：每路幸存差 = 突破到敌方老家的兵，
+  //    净突破方逐拍 chip 敌老家血 → 打到 0 = 攻克 = 胜。掷命结果仍规则定(outcome-first)，行军是确定性时间结构。
+  const dmgToB = aSurv.reduce((s, av, L) => s + Math.max(0, av - bSurv[L]), 0); // A 净突破 → 攻 B 老家
+  const dmgToA = bSurv.reduce((s, bv, L) => s + Math.max(0, bv - aSurv[L]), 0); // B 净突破 → 攻 A 老家
+  const w = dmgToB > dmgToA ? 'a' : dmgToA > dmgToB ? 'b' : 'draw';
+  // 被攻克的老家逐拍 chip 到 0（行军时间纵深，可见"破家"过程）；赢家老家只受较少伤、不破。
+  const chip = (home: string, steps: number, sig: string): void => {
+    for (let k = 1; k <= steps; k++) {
+      entities[`when_${sig}${k}`] = { EventWhen: { signal: `${sig}${k}`, when: { kind: 'timer', id: 'match_clock', cmp: 'gte', value: FLIP_DURATION + MARCH_T0 + k * MARCH_PERIOD }, mode: 'edge', armed: false } };
+      entities[`fx_${sig}${k}`] = { Effect: { onSignal: `${sig}${k}`, kind: 'modify-resource', targetId: home, value: -1 } };
+    }
   };
-  total('m_a', { kind: 'resource', id: 'a_lanes', cmp: 'gte', value: 2 }, 'a', reward);
-  total('m_b', { kind: 'resource', id: 'b_lanes', cmp: 'gte', value: 2 }, 'b', 0);
-  total('m_d', { kind: 'and', of: [{ kind: 'resource', id: 'a_lanes', cmp: 'lt', value: 2 }, { kind: 'resource', id: 'b_lanes', cmp: 'lt', value: 2 }] }, 'draw', 0);
+  chip('a_home', w === 'b' ? HOME_HP : Math.min(dmgToA, HOME_HP - 1), 'ca'); // 我被攻克(w=b)→破到0；否则只受 dmgToA 伤、不破
+  chip('b_home', w === 'a' ? HOME_HP : Math.min(dmgToB, HOME_HP - 1), 'cb'); // 敌被攻克(w=a)→破到0；否则只受 dmgToB 伤、不破
+  // 攻克那拍（被攻克老家恰 chip 完）定总胜负 + 我方(a)胜给材料。
+  entities.when_decide = { EventWhen: { signal: 'decide', when: { kind: 'timer', id: 'match_clock', cmp: 'gte', value: FLIP_DURATION + MARCH_DURATION }, mode: 'edge', armed: false } };
+  entities.fx_decide = { Effect: { onSignal: 'decide', kind: 'set-state', targetId: 'winner', value: w } };
+  if (w === 'a' && reward > 0) entities.fx_decide_mat = { Effect: { onSignal: 'decide', kind: 'modify-resource', targetId: 'mats', value: reward } };
 
   return { capabilities: MATCH_CAPS, entities };
 }
