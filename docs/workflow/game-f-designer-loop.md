@@ -5,6 +5,18 @@
 
 ---
 
+## 循环 #30 · 2026-06-16 · Designer F
+
+### 验收:game-f 视觉回归(SVG 无头截图 + 快照 diff)→ ✅ 通过
+- `frame-svg.ts`(World→SVG 投影)+ `game-f.frame.test.ts`(备战/战斗 golden SVG 快照)+ `__frames__/*.svg`(golden)。**无浏览器、确定性视觉回归**——画面一变快照 diff 即红,守住"看帧"。**98 测绿。** 渲染器/工具层,非游戏 system。
+- 连带 Program F 近期还落了 **Loop B 全路径回归探针 + BFS 状态图爬 + 点遍按钮测**——game-f 的**自动化质量网**织起来了。
+
+### 澄清(给 owner):Program F 没卡,在做质量基建
+- game-f 提交节奏:6 / 71 / 83 分钟前(视觉回归 / 状态爬 / 按钮测),**98 绿,活跃**。
+- 它做的是**测试/验证基建**(自查 game-f 不回退),**不是我队列里的 gameplay polish**(AI 难度/掷点手感)。两者不冲突;polish 队列仍就绪,Program F 转回 gameplay 即接。
+
+---
+
 ## 循环 #29 · 2026-06-16 · Designer F —— 补验收 #28(我之前漏了)
 
 ### 验收:太阁/岛强度按攻岛人数缩放(#28)→ ✅ 通过(迟到的验收)
