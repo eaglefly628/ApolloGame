@@ -19,7 +19,9 @@ export type CardSpec =
   // 再把本类 banded 源从写死 gold 泛化成可选 resource 字段即可，不新增 kind。
   | { kind: 'economy-band'; id: string; tiers: { atGold: number; bonus: number }[] }
   // 商店权重：把某些英雄码在牌袋里加权（预配权重，洗入更多某势力）。
-  | { kind: 'shop-weight'; id: string; codes: number[]; copies: number };
+  | { kind: 'shop-weight'; id: string; codes: number[]; copies: number }
+  // 主动锦囊（P1 QTE 参与感）：局内可点手牌，每回合 charges 次。buff=鼓舞类(全队系数)；fxTemplate=点地/范围效果(caster)。
+  | { kind: 'jinnang'; id: string; name: string; charges: number; buff?: number; fxTemplate?: string; target?: 'pointer' | 'enemies' | 'self' };
 
 export interface Deck {
   id: string;
@@ -40,6 +42,8 @@ export const HUBAO_DECK: Deck = {
     { kind: 'round-buff', id: 'blitz', untilRound: 3, bonus: 0.15 },
     // 募兵：商店魏国权重 +（魏码各多 2 张洗入牌袋）。
     { kind: 'shop-weight', id: 'levy', codes: [1, 2, 3, 4, 5, 6], copies: 2 },
+    // 鼓舞（主动锦囊 P1）：战中点一下，全队 +20% 攻；每回合 1 次。
+    { kind: 'jinnang', id: 'guwu', name: '鼓舞', charges: 1, buff: 0.2 },
   ],
 };
 
@@ -161,6 +165,19 @@ export function buildDeckRules(deck: Deck): DeckRules {
       // banded：开战 ∧ round_idx ≤ untilRound → dmg_scale_a += bonus（前 N 回合压制）。
       ents[`when_${card.id}`] = { EventWhen: { signal: card.id, when: { kind: 'and', of: [combat, { kind: 'resource', id: 'round_idx', cmp: 'lte', value: card.untilRound }] }, mode: 'edge', armed: false } };
       ents[`eff_${card.id}`] = { Effect: { onSignal: card.id, kind: 'modify-resource', targetId: 'dmg_scale_a', op: 'add', value: card.bonus } };
+    } else if (card.kind === 'jinnang') {
+      // 主动锦囊（P1，designer #31）：局内可点手牌——充能资源 + 回合刷新 + keybind(按钮→信号) + craft 原子扣充能施放。
+      // 鼓舞类(buff)=craft 充能→dmg_scale_a；点地类(fxTemplate at:pointer)走 caster（后续片接交互）。零引擎（全现成算子）。
+      ents[`r_charge_${card.id}`] = { Resource: { id: `charge_${card.id}`, current: card.charges, min: 0, max: card.charges } };
+      ents[`kb_cast_${card.id}`] = { KeyBinding: { key: `cast_${card.id}`, signal: `cast_${card.id}`, phase: 'action' } };
+      ents[`when_jref_${card.id}`] = { EventWhen: { signal: `jref_${card.id}`, when: { kind: 'state', fsmId: 'round_ui', equals: 'prep' }, mode: 'edge', armed: false } };
+      ents[`eff_jref_${card.id}`] = { Effect: { onSignal: `jref_${card.id}`, kind: 'modify-resource', targetId: `charge_${card.id}`, op: 'set', value: card.charges } };
+      if (card.buff !== undefined) {
+        ents[`craft_cast_${card.id}`] = { CraftRecipe: { onSignal: `cast_${card.id}`, costs: [{ id: `charge_${card.id}`, amount: 1 }], gains: [{ id: 'dmg_scale_a', amount: card.buff }] } };
+      } else if (card.fxTemplate) {
+        ents[`cast_caster_${card.id}`] = { Transform: { x: 0, y: 0, rotation: 0, scaleX: 1, scaleY: 1 }, Caster: { onSignal: `cast_${card.id}`, template: card.fxTemplate, at: card.target === 'self' ? 'self' : 'pointer' } };
+        ents[`craft_cast_${card.id}`] = { CraftRecipe: { onSignal: `cast_${card.id}`, costs: [{ id: `charge_${card.id}`, amount: 1 }], gains: [] } }; // 仅扣充能（caster 同信号展开 fx）
+      }
     } else {
       shopBias.push({ codes: card.codes, copies: card.copies });
     }

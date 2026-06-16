@@ -213,11 +213,16 @@ function buildMall(): HTMLElement {
 function buildSoloHud(click: (x: number, y: number) => void, play: (i: number) => void, faction: Faction = 'shu', deck?: Deck): { root: HTMLElement; update: (w: World) => void; renderAllies: (unitsList: { q: number; r: number; enemy: boolean; hpFrac: number }[][]) => void; renderCoop: (island: { progress: number; goal: number; owner: string | null; ranking?: { name: string; faction: string; contribution: number }[] }) => void; renderDeck: (w: World) => void } {
   const FAC: Record<string, string> = { 蜀: '#d8504e', 吴: '#3fae6e', 魏: '#3a86d4', 群: '#9b6dd8' };
   // 出战牌组卡名（P0 局内可见；取自各 deck 注释名，非新设计）。
-  const CARD_NAME: Record<string, string> = { hubao_edict: '虎豹骑令', blitz: '速攻令', levy: '募兵', taoyuan: '桃园誓', zhangwu: '章武', muxian: '募贤', baiyi: '白衣', jinfan: '锦帆', muci: '募刺', tuntian: '屯田', zhongnong: '重农', munong: '募农', bazhen: '八阵图', wolong: '卧龙', qimou: '奇谋' };
+  const CARD_NAME: Record<string, string> = { hubao_edict: '虎豹骑令', blitz: '速攻令', levy: '募兵', taoyuan: '桃园誓', zhangwu: '章武', muxian: '募贤', baiyi: '白衣', jinfan: '锦帆', muci: '募刺', tuntian: '屯田', zhongnong: '重农', munong: '募农', bazhen: '八阵图', wolong: '卧龙', qimou: '奇谋', guwu: '鼓舞' };
   const deckCards = deck?.cards ?? [];
-  // 局内可见牌组（P0，designer #31；owner 报「卡牌隐形」）：一排卡面，名 + 当前效果值（读 buff 资源），生效 flash。
-  const deckRowsHtml = deckCards.map((c) => `<div data-ref="deckcard_${c.id}" style="display:flex;align-items:center;gap:6px;padding:5px 7px;border-radius:8px;background:var(--chip-bg);border:1px solid var(--panel-border);transition:background .15s">
-    <span style="font-size:13px">🃏</span><div style="flex:1;min-width:0"><div style="font-family:var(--font-heading);font-weight:700;font-size:11px;color:var(--ink);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${CARD_NAME[c.id] ?? c.id}</div><div data-ref="deckval_${c.id}" style="font-size:9px;color:var(--ink-dim)">—</div></div></div>`).join('');
+  const passiveCards = deckCards.filter((c) => c.kind !== 'jinnang');
+  const jinnangCards = deckCards.filter((c): c is Extract<typeof c, { kind: 'jinnang' }> => c.kind === 'jinnang');
+  // 被动卡（参与战斗计算的 buff）：名 + 当前效果值（读资源实时算），开战 flash（被动发动可见）。
+  const passiveRowsHtml = passiveCards.map((c) => `<div data-ref="deckcard_${c.id}" style="display:flex;align-items:center;gap:5px;padding:4px 6px;border-radius:8px;background:var(--chip-bg);border:1px solid var(--panel-border);transition:background .15s;box-shadow:0 1px 4px rgba(0,0,0,.18)">
+    <span style="font-size:12px">🃏</span><div style="flex:1;min-width:0"><div style="font-family:var(--font-heading);font-weight:700;font-size:10px;color:var(--ink);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${CARD_NAME[c.id] ?? c.id}</div><div data-ref="deckval_${c.id}" style="font-size:8.5px;color:var(--ink-dim)">—</div></div></div>`).join('');
+  // 主动锦囊：可点卡（点击施放，扣充能）；显充能。
+  const jinnangRowsHtml = jinnangCards.map((c) => `<button data-act="cast_${c.id}" data-jid="${c.id}" style="display:flex;align-items:center;gap:5px;padding:5px 6px;border-radius:8px;background:var(--accent-soft);border:1px solid var(--accent);cursor:pointer;transition:transform .1s;box-shadow:0 1px 4px rgba(0,0,0,.2)">
+    <span style="font-size:13px">📜</span><div style="flex:1;min-width:0;text-align:left"><div style="font-family:var(--font-heading);font-weight:700;font-size:10px;color:var(--accent)">${CARD_NAME[c.id] ?? c.id}</div><div style="font-size:8.5px;color:var(--ink-dim)">点击施放 · 充能 <span data-ref="charge_${c.id}">${c.charges}</span>/${c.charges}</div></div></button>`).join('');
   const FAC_LABEL: Record<Faction, string> = { shu: '蜀', wei: '魏', wu: '吴' };
   const playerFacLabel = FAC_LABEL[faction];
   // 商店卡/名牌全部**从所选阵营 roster 派生**（去腐：原硬编码 HEROES/HERO_NAMES + 写死蜀；现按 faction 取名册）。
@@ -398,9 +403,13 @@ function buildSoloHud(click: (x: number, y: number) => void, play: (i: number) =
     <!-- LEFT · 羁绊（上）；玩家卡在左下（bottom 留够，避免与玩家卡重叠）-->
     <div style="position:absolute;left:10px;top:66px;width:186px;bottom:330px;display:flex;flex-direction:column;gap:6px;overflow:hidden;pointer-events:auto">
       <div style="font-size:9px;letter-spacing:.22em;text-transform:uppercase;color:var(--ink-dim);padding:2px 6px">羁绊 · Synergies</div>
-      <div data-ref="synrows" style="display:flex;flex-direction:column;gap:6px">${synRows}</div>
-      <div style="font-size:9px;letter-spacing:.22em;text-transform:uppercase;color:var(--ink-dim);padding:6px 6px 2px">出战牌组 · Build</div>
-      <div data-ref="deckrows" style="display:flex;flex-direction:column;gap:4px;overflow-y:auto">${deckRowsHtml || '<div style="font-size:9px;color:var(--ink-dim);padding:2px 6px">（无牌组）</div>'}</div></div>
+      <div data-ref="synrows" style="display:flex;flex-direction:column;gap:6px">${synRows}</div></div>
+    <!-- 出战牌组/锦囊：棋盘左侧空档（owner 反馈：勿与左栏文字重合；放棋盘与左栏之间）。被动卡显值+生效flash；主动锦囊可点。 -->
+    <div style="position:absolute;left:208px;top:120px;width:138px;max-height:440px;display:flex;flex-direction:column;gap:5px;overflow:hidden;pointer-events:auto;z-index:2">
+      <div style="font-size:9px;letter-spacing:.18em;text-transform:uppercase;color:var(--ink-dim);padding:2px 4px;text-shadow:0 1px 3px rgba(0,0,0,.4)">出战牌组 · Build</div>
+      <div data-ref="deckrows" style="display:flex;flex-direction:column;gap:4px">${passiveRowsHtml || '<div style="font-size:9px;color:var(--ink-dim);padding:2px 4px">（无被动牌）</div>'}</div>
+      ${jinnangRowsHtml ? `<div style="font-size:9px;letter-spacing:.18em;text-transform:uppercase;color:var(--accent);padding:6px 4px 2px;text-shadow:0 1px 3px rgba(0,0,0,.4)">锦囊 · 主动</div><div data-ref="jinnangrows" style="display:flex;flex-direction:column;gap:4px">${jinnangRowsHtml}</div>` : ''}
+    </div>
     <!-- RIGHT · 对战玩家（三人版：另两名玩家/AI 的战况 + 迷你布阵镜像，复刻对战设计稿右栏）+ 装备 -->
     <div style="position:absolute;right:10px;top:66px;width:186px;bottom:118px;display:flex;flex-direction:column;gap:10px;overflow:hidden;pointer-events:auto">
       <div style="flex:1;min-height:0;background:var(--panel-grad);border:1px solid var(--panel-border);border-radius:var(--radius);box-shadow:inset 0 0 0 1px var(--hairline);padding:12px;display:flex;flex-direction:column;gap:9px">
@@ -619,7 +628,7 @@ function buildSoloHud(click: (x: number, y: number) => void, play: (i: number) =
   const renderDeck = (w: World): void => {
     const rnum = (id: string): number => (getComponentById(w, 'Resource', 'id', id) as unknown as { current?: number } | undefined)?.current ?? 0;
     const inCombat = ((getComponentById(w, 'Flag', 'id', 'in_combat') as unknown as { active?: boolean } | undefined)?.active) ?? false;
-    for (const c of deckCards) {
+    for (const c of passiveCards) {
       const el = root.querySelector(`[data-ref="deckval_${c.id}"]`) as HTMLElement | null;
       if (!el) continue;
       let txt = '';
@@ -630,8 +639,14 @@ function buildSoloHud(click: (x: number, y: number) => void, play: (i: number) =
       else if (c.kind === 'shop-weight') { txt = `商店加权 ×${c.copies}`; }
       el.textContent = txt;
     }
-    if (inCombat && !lastInCombatDeck) { // 开战锁存拍：卡面闪一下（生效可见）
-      for (const c of deckCards) {
+    // 主动锦囊：刷充能 + 充能 0 灰按钮。
+    for (const c of jinnangCards) {
+      const ch = rnum(`charge_${c.id}`);
+      const e = root.querySelector(`[data-ref="charge_${c.id}"]`) as HTMLElement | null; if (e) e.textContent = String(ch);
+      const btn = root.querySelector(`[data-act="cast_${c.id}"]`) as HTMLElement | null; if (btn) { btn.style.opacity = ch > 0 ? '1' : '0.4'; btn.style.cursor = ch > 0 ? 'pointer' : 'not-allowed'; }
+    }
+    if (inCombat && !lastInCombatDeck) { // 开战锁存拍：被动卡闪一下（被动发动可见）
+      for (const c of passiveCards) {
         const card = root.querySelector(`[data-ref="deckcard_${c.id}"]`) as HTMLElement | null;
         if (card) { card.style.background = 'var(--accent-soft)'; setTimeout(() => { card.style.background = 'var(--chip-bg)'; }, 500); }
       }
@@ -686,7 +701,9 @@ function startMatch(container: HTMLElement, cfg: RunConfig, onExit: () => void):
   const playShop = (i: number): void => queued.enqueue({ source: 'shop', key: 'play', values: [i] });
   // 对局 DOM 设计 chrome 覆盖层（顶/左/右/底 + 点将台/三选一弹窗；接真实世界状态 + 命令）。
   // 大重构方向（魏蜀吴 3 人一队、太阁立志传背景）：单人/双人之分取消——多人对局缺人由 AI 补位，菜单不再分模式。
-  const hud = buildSoloHud(clickW, playShop, cfg.deck?.faction ?? 'shu', cfg.deck); // 阵营感知 HUD + 局内可见牌组（P0）
+  const hud = buildSoloHud(clickW, playShop, cfg.deck?.faction ?? 'shu', cfg.deck); // 阵营感知 HUD + 局内可见牌组（P0）+ 主动锦囊（P1）
+  // 主动锦囊点击（P1）：按钮 → enqueueAction('cast_<id>') → keybind 桥发信号 → craft 原子扣充能 + 施放（caster/buff）。
+  hud.root.querySelectorAll<HTMLElement>('[data-act^="cast_"]').forEach((btn) => btn.addEventListener('click', () => queued.enqueueAction(btn.dataset.act!)));
   boardPanel.appendChild(hud.root);
   gameView.appendChild(boardPanel); // 操作引导已移入顶栏状态栏（data-ref guide），不再单列底注。
   // 盟友镜像（三人 Mirror）：两名 AI 盟友各跑自己的 game-f PvE，右栏迷你棋盘实时投影其战局（state-sync 还原）。
