@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { computeCoopIsland, distributeBossLoot, enemyScaleForPlayers, COOP_GOAL_PER_OWNER, type OwnerContribution } from './coop.js';
+import { computeCoopIsland, distributeBossLoot, enemyScaleForPlayers, enemyAtkBaseForPlayers, COOP_GOAL_PER_OWNER, type OwnerContribution } from './coop.js';
 
 const O = (name: string, contribution: number): OwnerContribution => ({ name, faction: '蜀', human: false, contribution });
 
@@ -43,5 +43,8 @@ describe('太阁强度按人数缩放（designer #28）', () => {
     expect(enemyScaleForPlayers(2)).toBeCloseTo(1.3, 5);
     expect(enemyScaleForPlayers(3)).toBeCloseTo(1.6, 5);
     expect(enemyScaleForPlayers(3)).toBeGreaterThan(enemyScaleForPlayers(1));
+    expect(enemyAtkBaseForPlayers(1)).toBe(1); // atk 单机不变
+    expect(enemyAtkBaseForPlayers(3)).toBeCloseTo(1.3, 5); // atk 比 hp(1.6) 缓
+    expect(enemyAtkBaseForPlayers(3)).toBeLessThan(enemyScaleForPlayers(3));
   });
 });

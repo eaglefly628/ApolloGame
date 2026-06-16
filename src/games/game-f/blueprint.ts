@@ -91,7 +91,7 @@ const TRAY = { originX: -176, originY: 118, gap: 44, capacity: 9 };
 // resolution 臂 wipe_armed → 'wipe' → destroy-tagged 清场。经济/伤害不再写死在 flow：prep 臂 income_armed、
 // 败方臂 dmg_armed，由 banded EventWhen→Effect 按 §4.1/§4.2 表结算（见 goldBand/伤害 bands）。
 // 尚缺 ready 开战输入（§6.2 P2，输入路由归主程）：prep 暂以 after 40 自动开战，接上后改读 ready Flag。
-const makeRoundFlow = (PREP_TICKS: number, RESOLUTION_TICKS: number, CELEBRATE_TICKS: number) => {
+const makeRoundFlow = (PREP_TICKS: number, RESOLUTION_TICKS: number, CELEBRATE_TICKS: number, enemyDmgBase = 1) => {
   // 开战倒计时（用户第 3 条）：prep 末尾恒有 3 秒读数（玩家档 180 拍；快速档按比例缩、总时长不变=
   // 既有时序断言零漂移）。ready 提前 → 也先进 countdown 数完再打，不许瞬开。
   const CD_TICKS = Math.min(180, Math.max(6, Math.floor(PREP_TICKS / 4)));
@@ -125,7 +125,7 @@ const makeRoundFlow = (PREP_TICKS: number, RESOLUTION_TICKS: number, CELEBRATE_T
         { kind: 'modify-resource', targetId: 'prep_left', op: 'set', value: PREP_SECONDS }, // 倒计时表归位（OverTime -1/秒，0 钳停）
         { kind: 'modify-resource', targetId: 'xp', op: 'add', value: 2 }, // 每回合自动 +2 XP（§4.3）
         { kind: 'modify-resource', targetId: 'dmg_scale_a', op: 'set', value: 1 }, // 羁绊系数回 1（开战拍重新锁存）
-        { kind: 'modify-resource', targetId: 'dmg_scale_b', op: 'set', value: 1 }, // 敌方系数回 1（信长·天下布武 在终盘 deploy_pve 拍重新锁存）
+        { kind: 'modify-resource', targetId: 'dmg_scale_b', op: 'set', value: enemyDmgBase }, // 敌方系数回基线（缺省 1；多人按人数 >1 让太阁更凶；信长/毛利/今川 在此之上叠加）
       ],
       transitions: [
         { when: { kind: 'flag', id: 'ready', equals: true }, to: 'countdown' }, // 点「开战」→ 3 秒读数（不瞬开）
@@ -222,7 +222,7 @@ const RUN_FLOW = {
 
 // 节奏档（玩家视角修正：备战 ~30s 给操作时间——准则 §1.2；ready 可跳过；结算 4s 可读）。
 // 测试传快速档 {prepTicks:40, resolutionTicks:60} 保持既有时序断言；缺省=玩家档。
-export interface GameFPacing { prepTicks?: number; resolutionTicks?: number; celebrateTicks?: number; playerFaction?: Faction; deck?: Deck; difficulty?: number }
+export interface GameFPacing { prepTicks?: number; resolutionTicks?: number; celebrateTicks?: number; playerFaction?: Faction; deck?: Deck; difficulty?: number; enemyDmgBase?: number }
 export function buildGameFBlueprint(pacing: GameFPacing = {}): WorldBlueprint {
   const DIFFICULTY = pacing.difficulty ?? 1; // 段位难度阀（×太阁 hp；缺省 1 = 默认局，snapshot 不变）
   const PREP_TICKS = pacing.prepTicks ?? 1800; // 30s@60tps
@@ -250,7 +250,7 @@ export function buildGameFBlueprint(pacing: GameFPacing = {}): WorldBlueprint {
     zone_a: { Zone: { outFlag: 'team_a_present', ...ARENA, requiredTag: TEAM_A, count: 1 } },
     zone_b: { Zone: { outFlag: 'team_b_present', ...ARENA, requiredTag: TEAM_B, count: 1 } },
     // —— 金铲铲回合流程（flow）+ 其读写的旗标/资源单例 ——
-    flow_ctrl: { GameFlow: makeRoundFlow(PREP_TICKS, RESOLUTION_TICKS, CELEBRATE_TICKS) }, // L2 round_flow（节奏=装配参数）
+    flow_ctrl: { GameFlow: makeRoundFlow(PREP_TICKS, RESOLUTION_TICKS, CELEBRATE_TICKS, pacing.enemyDmgBase ?? 1) }, // L2 round_flow（节奏=装配参数 + 敌方伤害基线按人数）
     flow_run: { GameFlow: RUN_FLOW }, // L1 run_flow（§3.2）
     f_in_combat: { Flag: { id: 'in_combat', active: false } },
     f_in_prep: { Flag: { id: 'in_prep', active: false } }, // 备战相位（F-18 拖拽门；flow prep 进出维护）

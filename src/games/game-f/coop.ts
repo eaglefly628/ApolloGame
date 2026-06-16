@@ -25,6 +25,10 @@ export const COOP_GOAL_PER_OWNER = 100;
 export function enemyScaleForPlayers(playerCount: number): number {
   return +(1 + 0.3 * Math.max(0, playerCount - 1)).toFixed(2);
 }
+// 太阁 atk 基线按人数（更凶但比 hp 缓，避免与信长/毛利叠加爆炸）：单机1.0/双人1.15/三人1.3。
+export function enemyAtkBaseForPlayers(playerCount: number): number {
+  return +(1 + 0.15 * Math.max(0, playerCount - 1)).toFixed(2);
+}
 
 // Boss 宝箱掷点分卡（B·slice2，designer #24；co-opetition：合作杀 Boss、按贡献竞争分赃）。
 // 轮选制：贡献排序后第 1 名先挑 1 张（加权随机出小丑牌），轮转到分完 lootCount 张。AI 份额=展示，人类份额入收藏。

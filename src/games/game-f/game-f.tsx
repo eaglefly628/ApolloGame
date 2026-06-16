@@ -11,7 +11,7 @@ import { rosterFor, type Faction } from './heroes.js';
 import { WARRIOR, TACTICIAN, TEAM_A } from './constants.js';
 import { buildLobby, type RunConfig } from './lobby.js';
 import { createAllyMirrors } from './ally-mirror.js';
-import { computeCoopIsland, distributeBossLoot, enemyScaleForPlayers } from './coop.js';
+import { computeCoopIsland, distributeBossLoot, enemyScaleForPlayers, enemyAtkBaseForPlayers } from './coop.js';
 import { settleRun, getLP, rankFor, updateLpAfterRun, GACHA_POOL, grantCards } from './account.js';
 
 // Game F 可挂载模块（launcher 卡带槽契约：export mount(container) → cleanup）。
@@ -660,7 +660,8 @@ function startMatch(container: HTMLElement, cfg: RunConfig, onExit: () => void):
   // 太阁强度按攻岛人数缩放（designer #28）：N 人同凿一岛 → 各 owner 太阁 ×hpMul（防秒岛、拉长终盘）；单机 N=1 不变。
   const playerCount = 1 + (cfg.allies?.length ?? 0);
   const coopMul = enemyScaleForPlayers(playerCount);
-  const allies = createAllyMirrors(cfg.allies, coopMul); // 组队房配置的盟友阵营（slice3）+ 人数难度（slice#28）
+  const coopAtk = enemyAtkBaseForPlayers(playerCount);
+  const allies = createAllyMirrors(cfg.allies, coopMul, coopAtk); // 组队房配置的盟友阵营（slice3）+ 人数难度 hp/atk（#28）
   // 局内 HUD = 这份手写 DOM 覆盖层（顶栏/左下主公卡/右盟友预览/底点将台·开战 + 弹窗）；GameShell（GAME_F_UI）
   // 留作数据化壳层蓝本/测试，但**不在局内并存渲染**——避免在棋盘下方堆叠出第二套点将台/主公卡（owner 报重复）。
 
@@ -703,7 +704,7 @@ function startMatch(container: HTMLElement, cfg: RunConfig, onExit: () => void):
   let pointer: PointerInputSource | null = null;
   const lazyInput: InputSource = { commandsForTick: (tick) => [...keyboard.commandsForTick(tick), ...(pointer ? pointer.commandsForTick(tick) : []), ...queued.commandsForTick(tick)] };
   const engine = new Engine({ tickRate: 60, input: lazyInput });
-  engine.load(buildGameFBlueprint({ deck: cfg.deck, difficulty: rankFor(getLP()).difficulty * coopMul })); // 出战牌组 + 段位难度阀 × 人数缩放（附魔已由 assembleDeck 烘进自组牌）
+  engine.load(buildGameFBlueprint({ deck: cfg.deck, difficulty: rankFor(getLP()).difficulty * coopMul, enemyDmgBase: coopAtk })); // 出战牌组 + 段位难度阀 × 人数缩放(hp) + 太阁 atk 基线按人数
   // 透明画布：棋盘露出 stage 的设计平台背景（--platform-bg 随皮肤）。
   engine.attachRenderer(new CanvasRenderer({ width: VIEWPORT_W, height: VIEWPORT_H, background: 'transparent', assets }), stage);
   const canvas = stage.querySelector('canvas');

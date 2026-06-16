@@ -26,10 +26,10 @@ export interface AllyMirror {
 }
 
 // 盟友默认出战阵容（取该势力名册前 4 个可播种将，落在自己默认格）。AI 补位无需经济/拖拽，直接铺场。
-function createAllyMirror(faction: Faction, difficulty = 1): AllyMirror {
+function createAllyMirror(faction: Faction, difficulty = 1, enemyDmgBase = 1): AllyMirror {
   const engine = new Engine({ tickRate: 60 });
-  // 短节奏：盟友战局快进（备战 1s → 战斗），右栏一直有活的战斗可看。difficulty=太阁强度按人数缩放（同玩家盘）。
-  engine.load(buildGameFBlueprint({ playerFaction: faction, prepTicks: 60, resolutionTicks: 60, celebrateTicks: 30, difficulty }));
+  // 短节奏：盟友战局快进（备战 1s → 战斗），右栏一直有活的战斗可看。difficulty/enemyDmgBase=太阁 hp/atk 按人数缩放（同玩家盘）。
+  engine.load(buildGameFBlueprint({ playerFaction: faction, prepTicks: 60, resolutionTicks: 60, celebrateTicks: 30, difficulty, enemyDmgBase }));
   const templates = templatesFor(rosterFor(faction));
   const comp = rosterFor(faction).filter((h) => h.team === TEAM_A).slice(0, 4); // AI 补位铺场不看 seed（seed 仅管玩家起手板）
   let seq = 0;
@@ -86,6 +86,6 @@ function createAllyMirror(faction: Faction, difficulty = 1): AllyMirror {
 // 起两名 AI 盟友引擎（吴/魏，对应右栏 ALLY_ROSTER 卡）。3-faction plumbing 落地后 rosterFor('wu') 有效
 // （吴+魏敌方半区），故 'wu' 盟友跑真实吴名册 PvE；迷你棋盘画单位位置/阵营，颜色由 UI 侧决定。
 // 按组队房配置起 N 名 AI 盟友引擎（slice3：每席阵营可配；缺省 吴/魏 补位）。
-export function createAllyMirrors(factions: Faction[] = ['wu', 'wei'], difficulty = 1): AllyMirror[] {
-  return factions.map((f) => createAllyMirror(f, difficulty));
+export function createAllyMirrors(factions: Faction[] = ['wu', 'wei'], difficulty = 1, enemyDmgBase = 1): AllyMirror[] {
+  return factions.map((f) => createAllyMirror(f, difficulty, enemyDmgBase));
 }
