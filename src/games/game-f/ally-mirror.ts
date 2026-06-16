@@ -7,6 +7,7 @@ import { buildGameFBlueprint } from './blueprint.js';
 import { templatesFor } from './combat.js';
 import { rosterFor, finalHp, type Faction } from './heroes.js';
 import { instantiate } from '@skills/tier3/index.js';
+import { getComponentById } from '@engine/core/query.js';
 import { packKeyframe, applyPacket } from '../../net/state-sync.js';
 import { TEAM_A, TEAM_B } from './constants.js';
 
@@ -20,6 +21,7 @@ export interface MirrorUnit {
 export interface AllyMirror {
   faction: Faction;
   units(): MirrorUnit[]; // 当前镜像快照里的全部参战单位（经 state-sync 还原）
+  contribution(): number; // 该盟友本局累计贡献度（共享岛聚合用；读其引擎 contribution 资源）
   dispose(): void;
 }
 
@@ -70,6 +72,10 @@ function createAllyMirror(faction: Faction): AllyMirror {
       }
       if (allyCount === 0 && engine.world.getVersion() - lastFieldVersion >= 40) field();
       return out;
+    },
+    contribution(): number {
+      const r = getComponentById(engine.world, 'Resource', 'id', 'contribution') as unknown as { current?: number } | undefined;
+      return r?.current ?? 0;
     },
     dispose(): void {
       engine.stop();

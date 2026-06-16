@@ -11,6 +11,7 @@ import { rosterFor, type Faction } from './heroes.js';
 import { WARRIOR, TACTICIAN, TEAM_A } from './constants.js';
 import { buildLobby, type RunConfig } from './lobby.js';
 import { createAllyMirrors } from './ally-mirror.js';
+import { computeCoopIsland } from './coop.js';
 import { settleRun, getLP, rankFor, updateLpAfterRun } from './account.js';
 
 // Game F 可挂载模块（launcher 卡带槽契约：export mount(container) → cleanup）。
@@ -208,7 +209,7 @@ function buildMall(): HTMLElement {
 // —— 单人对局 DOM 设计 chrome（README 对战.dc.html solo 布局 + Apollo UI Kit 控件；接真实世界状态）——
 // 顶 HUD（STAGE/相位/倒计时/主公血/连胜）+ 左羁绊栏 + 右状态·装备栏 + 武将台发光框。
 // 三边覆盖盖掉 canvas 旧 HUD；中间棋盘 + 下方备战席/商店露出，仍走 canvas 数据实体交互（不破坏可玩）。
-function buildSoloHud(click: (x: number, y: number) => void, play: (i: number) => void, faction: Faction = 'shu'): { root: HTMLElement; update: (w: World) => void; renderAllies: (unitsList: { q: number; r: number; enemy: boolean; hpFrac: number }[][]) => void } {
+function buildSoloHud(click: (x: number, y: number) => void, play: (i: number) => void, faction: Faction = 'shu'): { root: HTMLElement; update: (w: World) => void; renderAllies: (unitsList: { q: number; r: number; enemy: boolean; hpFrac: number }[][]) => void; renderCoop: (island: { progress: number; goal: number; owner: string | null }) => void } {
   const FAC: Record<string, string> = { 蜀: '#d8504e', 吴: '#3fae6e', 魏: '#3a86d4', 群: '#9b6dd8' };
   const FAC_LABEL: Record<Faction, string> = { shu: '蜀', wei: '魏', wu: '吴' };
   const playerFacLabel = FAC_LABEL[faction];
@@ -400,6 +401,11 @@ function buildSoloHud(click: (x: number, y: number) => void, play: (i: number) =
           <span style="flex:1"></span>
           <button data-act="toggle-boards" style="padding:3px 8px;border-radius:7px;cursor:pointer;background:var(--chip-bg);border:1px solid var(--panel-border);color:var(--ink-dim);font-family:var(--font-heading);font-weight:700;font-size:10px;white-space:nowrap">收起战况 ▴</button>
         </div>
+        <!-- 共享岛（多人 B·slice1）：三方贡献凿同一座岛 + 岛主 -->
+        <div style="background:var(--chip-bg);border:1px solid var(--panel-border);border-radius:9px;padding:7px 9px">
+          <div style="display:flex;justify-content:space-between;align-items:baseline"><span style="font-size:9px;letter-spacing:.1em;color:var(--ink-dim)">🗾 共享岛 · 岛主 <span data-ref="islandowner" style="color:var(--gold)">—</span></span><span data-ref="coopisland" style="font-family:var(--font-num);font-size:10px;color:var(--accent)">0/300</span></div>
+          <div style="height:6px;border-radius:99px;background:var(--track);overflow:hidden;margin-top:4px"><div data-ref="coopislandfill" style="width:0%;height:100%;background:var(--accent);border-radius:99px"></div></div>
+        </div>
         <div data-ref="allies" style="display:flex;flex-direction:column;gap:9px;flex:1;min-height:0;overflow-y:auto">${allyPreview}</div></div>
       <div style="background:var(--panel-grad);border:1px solid var(--panel-border);border-radius:var(--radius);box-shadow:inset 0 0 0 1px var(--hairline);padding:12px">
         <div style="display:flex;justify-content:space-between;align-items:baseline;margin-bottom:9px"><span style="font-size:9px;letter-spacing:.2em;text-transform:uppercase;color:var(--ink-dim)">装备 · 战利品</span><span data-ref="equipcount" style="font-family:var(--font-num);font-size:11px;color:var(--gold)">0/8</span></div>
@@ -585,7 +591,15 @@ function buildSoloHud(click: (x: number, y: number) => void, play: (i: number) =
       if (el) el.innerHTML = liveMini(ALLY_ROSTER[i]?.fac ?? '蜀', units);
     });
   };
-  return { root, update, renderAllies };
+  // 共享岛投影（多人 B·slice1）：三方贡献和 → 进度条 + 岛主。
+  const renderCoop = (island: { progress: number; goal: number; owner: string | null }): void => {
+    const setT = (k: string, t: string): void => { const e = root.querySelector(`[data-ref="${k}"]`) as HTMLElement | null; if (e) e.textContent = t; };
+    setT('islandowner', island.owner ?? '—');
+    setT('coopisland', `${Math.round(island.progress)}/${island.goal}`);
+    const f = root.querySelector('[data-ref="coopislandfill"]') as HTMLElement | null;
+    if (f) f.style.width = `${Math.max(0, Math.min(100, (island.progress / (island.goal || 1)) * 100))}%`;
+  };
+  return { root, update, renderAllies, renderCoop };
 }
 
 // 局内对局（startMatch）：从大厅收到出战配置 → 用所选牌组建世界开打。onExit=返回大厅。
@@ -698,9 +712,18 @@ function startMatch(container: HTMLElement, cfg: RunConfig, onExit: () => void):
   // HUD 实时投影：每帧读世界资源刷新 DOM 数字/条（纯表现层，不进 hash）。商店脸图由 DOM 点将台弹窗
   // 自渲（update 读 shop_slot_i 码），无需 GameShell 的 shop_face StringVar 投影。
   let rafId = 0;
+  const COOP_NAMES = ['玄德', '仲谋', '孟德'];
+  const COOP_FACS = ['蜀', '吴', '魏'];
   const pump = (): void => {
     hud.update(engine.world);
     hud.renderAllies(allies.map((a) => a.units()));
+    // 共享岛（多人 B·slice1）：玩家 + 2 盟友贡献凿同一座岛。
+    const myContrib = (getComponentById(engine.world, 'Resource', 'id', 'contribution') as unknown as { current?: number } | undefined)?.current ?? 0;
+    const owners = [
+      { name: COOP_NAMES[0], faction: COOP_FACS[0], human: true, contribution: myContrib },
+      ...allies.map((a, i) => ({ name: COOP_NAMES[i + 1] ?? `盟友${i}`, faction: COOP_FACS[i + 1] ?? '群', human: false, contribution: a.contribution() })),
+    ];
+    hud.renderCoop(computeCoopIsland(owners));
     rafId = requestAnimationFrame(pump);
   };
   rafId = requestAnimationFrame(pump);
