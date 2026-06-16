@@ -8,18 +8,11 @@
 import { mkdirSync, writeFileSync } from 'node:fs';
 import { Engine } from '../../runtime/engine.js';
 import { hangWarp, revealGlow, faceUpVisible, clamp01, DEAD_DIM } from './feel.js';
-import { buildGameGArmyMatch, armyFromFormation, prepareArmies, bossFor, FORMATION_PRESETS, CARD_W, CARD_H, FLIP_DURATION } from './index.js';
+import { buildGameGArmyMatch, armyFromFormation, prepareArmies, bossFor, FORMATION_PRESETS, FLIP_DURATION } from './index.js';
+import { SCENE_W as W, SCENE_H as H, LANE_Y, LANE_NAME, HOME_AX, HOME_BX, CONTEST, SCENE_CW as cw, SCENE_CH as ch, TOWERS, cardScreenPos, laneScores } from './scene.js'; // 单一真相布局（与 ThreeRenderer 共用）
 import type { Transform, Card3D, Tween } from '@engine/protocol/components.js';
 import type { IWorld } from '@engine/core/types.js';
 
-// ── MOBA 三路布局常量（纯表现，px）──
-const W = 1280, H = 760; // 画布
-const LANE_Y = [180, 380, 580]; // 上/中/下 路的横轨 y
-const LANE_NAME = ['上路', '中路', '下路'];
-const HOME_AX = 96, HOME_BX = W - 96; // 左右老家 x
-const CONTEST = W / 2; // 接敌中线
-const CS = 0.42; // 卡缩放（54v54 要塞得下）
-const cw = CARD_W * CS, ch = CARD_H * CS;
 const SUIT = { S: '♠', H: '♥', D: '♦', C: '♣' } as const;
 const hx = (n: number): string => '#' + (n & 0xffffff).toString(16).padStart(6, '0');
 const esc = (s: string): string => s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
@@ -47,17 +40,8 @@ function project(world: IWorld): Card[] {
   return out;
 }
 
-// 卡 → MOBA 屏位：A 从左老家、B 从右老家，front(col0)在接敌中线，后排退向各自老家；3 行竖排。
-function pos(c: Card): { x: number; y: number } {
-  const col = Math.floor(c.idx / 3), row = c.idx % 3;
-  const sign = c.side === 'a' ? -1 : 1;
-  const x = CONTEST + sign * (40 + col * (cw + 6));
-  const y = LANE_Y[c.lane] + (row - 1) * (ch + 5) - 56 * c.arc; // 抛飞弧上跳
-  return { x, y };
-}
-
 function cardSvg(c: Card): string {
-  const { x, y } = pos(c);
+  const { x, y } = cardScreenPos(c.lane, c.side, c.idx, c.arc); // 单一真相布局（scene.ts）
   const px = x - cw / 2, py = y - ch / 2;
   if (c.faceUp) {
     const red = c.suit === 'H' || c.suit === 'D';
@@ -83,21 +67,22 @@ function cardSvg(c: Card): string {
 // 老家牌王座（♔）+ 哨塔 + 三路轨 + 比分。
 function scenery(cards: Card[]): string {
   let s = '';
+  const scores = laneScores(cards); // 单一真相比分
   // 三路横轨（分区带）+ 路名 + 比分（活牌数；弃一保二可读）。
   for (let L = 0; L < 3; L++) {
     const ly = LANE_Y[L];
     s += `<rect x="${HOME_AX + 40}" y="${ly - ch / 2 - 60}" width="${HOME_BX - HOME_AX - 80}" height="${ch + 120}" rx="14" fill="${L === 1 ? '#13201a' : '#141a26'}" stroke="#243042" stroke-width="1.5" opacity="0.7"/>`;
-    const aLive = cards.filter((c) => c.lane === L && c.side === 'a' && c.faceUp).length;
-    const bLive = cards.filter((c) => c.lane === L && c.side === 'b' && c.faceUp).length;
+    const { a: aLive, b: bLive } = scores[L];
     const lead = aLive > bLive ? '#eab308' : bLive > aLive ? '#38bdf8' : '#94a3b8';
     s += `<text x="${HOME_AX + 54}" y="${ly - ch / 2 - 30}" font-family="system-ui" font-size="20" font-weight="700" fill="#7c8aa0">${LANE_NAME[L]}</text>`;
     s += `<text x="${CONTEST}" y="${ly - ch / 2 - 30}" text-anchor="middle" font-family="system-ui" font-size="22" font-weight="800" fill="${lead}">${aLive} : ${bLive}</text>`;
   }
   // 接敌中线（命运在此一掷）。
   s += `<line x1="${CONTEST}" y1="60" x2="${CONTEST}" y2="${H - 30}" stroke="#3b2f1a" stroke-width="2" stroke-dasharray="6 8"/>`;
-  // 哨塔（每路 A/B 各一）。
-  for (let L = 0; L < 3; L++) for (const [tx, col] of [[CONTEST - 250, '#a16207'], [CONTEST + 250, '#0e7490']] as const) {
-    s += `<g transform="translate(${tx},${LANE_Y[L]})"><rect x="-13" y="-34" width="26" height="58" rx="4" fill="${col}" stroke="#1e1208" stroke-width="2"/><rect x="-17" y="-44" width="34" height="14" rx="3" fill="${col}"/><text x="0" y="-50" text-anchor="middle" font-size="13" fill="#cbd5e1">♜</text></g>`;
+  // 哨塔（每路 A/B 各一，scene.TOWERS 单一真相）。
+  for (const tw of TOWERS) {
+    const col = tw.side === 'a' ? '#a16207' : '#0e7490';
+    s += `<g transform="translate(${tw.x},${tw.y})"><rect x="-13" y="-34" width="26" height="58" rx="4" fill="${col}" stroke="#1e1208" stroke-width="2"/><rect x="-17" y="-44" width="34" height="14" rx="3" fill="${col}"/><text x="0" y="-50" text-anchor="middle" font-size="13" fill="#cbd5e1">♜</text></g>`;
   }
   // 左右老家牌王座 ♔（A 金 / B 青）。
   const throne = (x: number, color: string, who: string): string =>
