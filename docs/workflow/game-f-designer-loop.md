@@ -5,6 +5,25 @@
 
 ---
 
+## 循环 #23 · 2026-06-16 · Designer F —— A 附魔收口,转 B·多人
+
+### 验收:A·附魔(养成第二轴)→ ✅ 通过(A 完成)
+- `disenchant`(分解多余卡→尘 dust)+ `enchantCard`(spend 战功+尘,成本 `100×2^lv / 2×2^lv` 递增)+ **assembleDeck 按 enchant 放大每卡数值**(per-card Balatro modifier,按我 #22 spec 重构)。account 层解耦、**零引擎、83 测绿**。**养成系统(抽卡+组牌+附魔+段位)收口。**
+
+### ▶ 转 B·多人/三人征日(方案乙:分盘 + 共享岛;mirror 同步)
+> REQ-F-057 PF 定论:game-f 走 **mirror**(权威端各自跑 PvE、对端只还原显示不重演)→ **浮点确定性不阻塞三人**。先做 **game-side 三人框架**(本地 + AI 补位,可测);**真·远程联机(WS/WebRTC)= REQ-018 主程/押后**。
+
+**B·slice1(派 Program F,game-side,核现状�’盟友镜像’已有右栏):**
+1. **N-owner 对局配置**:3 个 owner(玩家 + 2 AI,**人不全 AI 补位**=已有 N 阵营架构),各带**阵营+牌组**(复用单机 rosterFor/assembleDeck)。
+2. **共享岛屿进度**:三人各自盘的攻岛贡献凿**同一座岛**(`island_progress` 累加三方贡献);满 → 全局岛陷落、本局结束。
+3. **per-owner 贡献 + 名次 → 岛主**:结算读各 owner 贡献排序(承贡献度系统;单机 scaffold 已有,扩 per-owner)。
+4. **盟友镜像**:右栏已有(循环更早),接真三人各自盘只读镜像。
+5. **Boss 宝箱掷点分卡**(账号层多人):合作杀 Boss → 宝箱 → 按贡献/掷点分小丑牌(co-opetition)。
+- **验收**:本地 3-owner(1 人+2 AI)一局攻岛 → 共享岛进度涨 → 岛陷落 → 出贡献排名/岛主;tsc+vitest 绿、零引擎、mirror 不进 hash。
+- **押后(主程/网络层)**:REQ-018 真远程传输;先把 local 三人框架跑通。
+
+---
+
 ## 循环 #22 · 2026-06-15 · Designer F —— owner 拍板:先 A 附魔,再 B 多人
 
 > owner 2026-06-16:**先做 A 附魔,完了直接做 B 多人;过程中不问、不停。** Designer F 按此驱动到底。
