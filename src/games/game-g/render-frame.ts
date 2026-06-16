@@ -7,7 +7,7 @@
 // 跑：npx vite-node src/games/game-g/render-frame.ts → doc/screenshots/*.svg
 import { mkdirSync, writeFileSync } from 'node:fs';
 import { Engine } from '../../runtime/engine.js';
-import { hangWarp, revealGlow, faceUpVisible, clamp01, DEAD_DIM } from './feel.js';
+import { hangWarp, revealGlow, faceUpVisible, clamp01, DEAD_DIM, laneRevealProgress } from './feel.js';
 import { buildGameGArmyMatch, armyFromFormation, prepareArmies, bossFor, FORMATION_PRESETS, FLIP_DURATION } from './index.js';
 import { SCENE_W as W, SCENE_H as H, LANE_Y, LANE_NAME, HOME_AX, HOME_BX, CONTEST, SCENE_CW as cw, SCENE_CH as ch, TOWERS, cardScreenPos, laneScores } from './scene.js'; // 单一真相布局（与 ThreeRenderer 共用）
 import type { Transform, Card3D, Tween } from '@engine/protocol/components.js';
@@ -31,9 +31,11 @@ function project(world: IWorld): Card[] {
     const tw = world.getComponent<Tween>(id, 'Tween') ?? undefined;
     if (c.pairKey === undefined || !c.side) continue;
     const prog = tw && tw.duration > 0 ? clamp01(tw.elapsed / tw.duration) : 1;
+    const lane = Math.floor(c.pairKey / 100);
+    const lp = laneRevealProgress(prog, lane); // VIS-4 逐路揭晓：上→中→下 错开
     out.push({
-      lane: Math.floor(c.pairKey / 100), side: c.side === 'a' ? 'a' : 'b', idx: c.pairKey % 100,
-      faceUp: faceUpVisible(tw ? tw.to : t.rotation), rev: revealGlow(prog), arc: Math.sin(Math.PI * hangWarp(prog)),
+      lane, side: c.side === 'a' ? 'a' : 'b', idx: c.pairKey % 100,
+      faceUp: faceUpVisible(tw ? tw.to : t.rotation), rev: revealGlow(lp), arc: Math.sin(Math.PI * hangWarp(lp)),
       tint: c.frontTint ?? 0xeab308, back: c.backTint ?? 0x334155, rank: c.rank, suit: c.suit,
     });
   }
@@ -121,15 +123,19 @@ const e1 = mk(7);
 for (let i = 0; i < Math.round(FLIP_DURATION * 0.5); i++) e1.world.tick();
 write('02-kickoff.svg', frame(e1.world, '三路开战 · 抛牌（命运一掷）'));
 
+const eS = mk(7);
+for (let i = 0; i < Math.round(FLIP_DURATION * 0.68); i++) eS.world.tick();
+write('03-stagger.svg', frame(eS.world, '逐路揭晓 · 上路先落定/下路仍在飞（2:1 翻盘悬念）'));
+
 const e2 = mk(7);
 for (let i = 0; i < FLIP_DURATION + 10; i++) e2.world.tick();
-write('03-reveal.svg', frame(e2.world, '掷命揭晓 · 金=活/石=死（三路 best-of-3）'));
+write('04-reveal.svg', frame(e2.world, '掷命揭晓 · 金=活/石=死（三路 best-of-3）'));
 
 const boss = bossFor(5);
 const { a, b } = prepareArmies({ formation: FORMATION_PRESETS['锋矢'], deckBias: 8, jokers: ['bannerman', 'warlord'], interventions: [], enemyForm: boss.formation, enemyBias: boss.favorBias, boss });
 const e3 = new Engine({ tickRate: 60 });
 e3.load(buildGameGArmyMatch(a, b, 9));
 for (let i = 0; i < FLIP_DURATION + 10; i++) e3.world.tick();
-write('04-boss.svg', frame(e3.world, `终局 Boss · ${boss.name}`));
+write('05-boss.svg', frame(e3.world, `终局 Boss · ${boss.name}`));
 
-console.error('VIS-2/2b done · 3 帧（三路战场+老家牌王座+哨塔+比分+金辉光/石碎裂）→ doc/screenshots/');
+console.error('VIS-2/2b/4 done · 4 帧（三路战场+老家牌王座+哨塔+比分+金辉光/石碎裂 + 逐路揭晓上落下飞）→ doc/screenshots/');

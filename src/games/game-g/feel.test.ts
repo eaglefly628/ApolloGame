@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { clamp01, smoothstep, hangWarp, revealGlow, faceUpVisible } from './feel.js';
+import { clamp01, smoothstep, hangWarp, revealGlow, faceUpVisible, laneRevealProgress, easeOutCubic } from './feel.js';
 
 // design/15 手感曲线：纯表现函数（不进 hash），headless 可测其数学性质。
 // 渲染器消费它演"命运一掷"：hangWarp=顶点滞空(屏息命门)、revealGlow=落地揭晓、faceUpVisible=金/石分支。
@@ -51,5 +51,23 @@ describe('Game G · 手感曲线 feel（design/15 · 纯表现 · 不进 hash）
     expect(faceUpVisible(Math.PI)).toBe(false);
     expect(faceUpVisible(4 * Math.PI)).toBe(true); // 2 圈空翻落正面
     expect(faceUpVisible(4 * Math.PI + Math.PI)).toBe(false); // 落反面
+  });
+
+  it('laneRevealProgress（逐路揭晓）：上路(0)先翻、下路(2)后翻；prog=1 各路皆落定；每路单调', () => {
+    // 中段：上路进度 > 下路（依次揭晓）
+    expect(laneRevealProgress(0.5, 0)).toBeGreaterThan(laneRevealProgress(0.5, 2));
+    expect(laneRevealProgress(0.5, 0)).toBeGreaterThan(laneRevealProgress(0.5, 1));
+    // prog=1：三路都落定到 1（结束态一致）
+    for (const L of [0, 1, 2]) expect(laneRevealProgress(1, L)).toBeCloseTo(1, 6);
+    // 每路随 prog 单调不减
+    for (const L of [0, 1, 2]) { let prev = -1; for (let p = 0; p <= 1.0001; p += 0.05) { const v = laneRevealProgress(p, L); expect(v).toBeGreaterThanOrEqual(prev); prev = v; } }
+    expect(laneRevealProgress(0, 2)).toBe(0); // 起点
+  });
+
+  it('easeOutCubic：端点 0/1、单调、缓出（前段快）', () => {
+    expect(easeOutCubic(0)).toBeCloseTo(0, 6);
+    expect(easeOutCubic(1)).toBeCloseTo(1, 6);
+    expect(easeOutCubic(0.5)).toBeGreaterThan(0.5); // 缓出：中点已过半
+    let prev = -1; for (let x = 0; x <= 1.0001; x += 0.05) { const y = easeOutCubic(x); expect(y).toBeGreaterThanOrEqual(prev); prev = y; }
   });
 });

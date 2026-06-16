@@ -36,5 +36,20 @@ export function faceUpVisible(rot: number): boolean {
   return Math.cos(rot) > 0;
 }
 
+/**
+ * 逐路揭晓（VIS-4 · design/16 §九）：把整局进度 prog 映成**某路**的视觉进度——上路(0)先翻、下路(2)后翻，
+ * 制造"2:1 还能不能翻盘"的连续悬念（best-of-3 的心跳）。lead=每路错开量；至 prog=1 各路都落定(=1)。
+ * 纯表现重映射（不改胜负、不进 hash）；渲染器用它驱动该路的 抛飞弧/翻面/金石揭晓 的时序。
+ */
+export function laneRevealProgress(prog: number, lane: number, lead = 0.16): number {
+  return clamp01((clamp01(prog) - lane * lead) / Math.max(0.001, 1 - 2 * lead));
+}
+
+/** easeOutCubic：1-(1-x)³，落定收尾的缓出（逐路揭晓重导翻面角用）。 */
+export function easeOutCubic(x: number): number {
+  const t = 1 - clamp01(x);
+  return 1 - t * t * t;
+}
+
 export const ALIVE_GLOW = 0.6; // 正面(活)：自色 emissive 强度峰值（立绘亮）
 export const DEAD_DIM = 0.5; // 反面(死)：背面石板压暗比例（沉灰）

@@ -1,7 +1,7 @@
 import * as THREE from 'three';
 import type { RendererBackend, IWorld } from '@engine/core/types.js';
 import type { Transform, Card3D, Tween } from '@engine/protocol/components.js';
-import { clamp01, hangWarp, revealGlow, faceUpVisible, ALIVE_GLOW, DEAD_DIM } from './feel.js'; // design/15 手感曲线（纯表现、不进 hash）
+import { clamp01, hangWarp, revealGlow, faceUpVisible, laneRevealProgress, easeOutCubic, ALIVE_GLOW, DEAD_DIM } from './feel.js'; // design/15/16 手感曲线（纯表现、不进 hash）
 import { cardScreenPos, SCENE_W, SCENE_H, LANE_Y, HOME_AX, HOME_BX, TOWERS, CARD_SCALE, SCENE_CH } from './scene.js'; // VIS-2 三路战场布局（与 render-frame 共用单一真相）
 
 // ═══════════════════════════════════════════════════════════════
@@ -139,20 +139,24 @@ export class ThreeRenderer implements RendererBackend {
       }
       const tw = world.getComponent<Tween>(id, 'Tween');
       const prog = tw && tw.duration > 0 ? clamp01(tw.elapsed / tw.duration) : 1; // 抛飞/翻面进度
-      const arc = Math.sin(Math.PI * hangWarp(prog)); // 顶点滞空（命门）
       const faceUp = faceUpVisible(tw ? tw.to : t.rotation); // 既定面（落定目标 tw.to）
       if (c.pairKey !== undefined && c.side) {
-        // VIS-2 三路战场：按 scene.ts 摆位（A 左/B 右、front 接敌中线、抛飞弧上跳）；缩到 SCENE_CW 档。
+        // VIS-2 三路战场 + VIS-4 逐路揭晓：上→中→下 错开（lp）；按 scene.ts 摆位、抛飞/翻面/金石揭晓 都吃 lp。
         const lane = Math.floor(c.pairKey / 100);
+        const lp = laneRevealProgress(prog, lane);
+        const arc = Math.sin(Math.PI * hangWarp(lp));
         const p = cardScreenPos(lane, c.side === 'a' ? 'a' : 'b', c.pairKey % 100, arc);
         mesh.position.set(toX(p.x), toY(p.y), Z_POP * arc);
         mesh.scale.set(CARD_SCALE, CARD_SCALE, 1);
+        mesh.rotation.x = tw ? tw.from + (tw.to - tw.from) * easeOutCubic(lp) : t.rotation; // 翻面按路错开（重导自 Tween，不读 sim 角）
+        this.applyReveal(mesh, faceUp, c.frontTint, revealGlow(lp));
       } else {
         // 退路（单牌/对决 demo，无 pairKey）：旧布局 + 抛飞弧。
+        const arc = Math.sin(Math.PI * hangWarp(prog));
         mesh.position.set(t.x / ppu, -t.y / ppu + APEX * arc, Z_POP * arc);
+        mesh.rotation.x = t.rotation;
+        this.applyReveal(mesh, faceUp, c.frontTint, revealGlow(prog));
       }
-      mesh.rotation.x = t.rotation; // 翻面（tween 驱动到既定面）
-      this.applyReveal(mesh, faceUp, c.frontTint, revealGlow(prog)); // 落定：正面=自色金光(活)/反面=石板压暗(死)
     }
 
     // ── 实体消失 → 释放 GPU 资源。
