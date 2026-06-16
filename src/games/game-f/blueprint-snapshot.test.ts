@@ -26,7 +26,7 @@ describe('blueprint 去腐安全网（结构基线）', () => {
     // 实体数 + 摘要双钉：任何平移漂移即触发。
     expect({ entityCount: entKeys.length, digest }).toMatchInlineSnapshot(`
       {
-        "digest": "c3b7810a",
+        "digest": "c0a4bef8",
         "entityCount": 449,
       }
     `);

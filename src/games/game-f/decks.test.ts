@@ -1,7 +1,7 @@
 import { describe, it, expect } from 'vitest';
 import { buildGameFBlueprint } from './blueprint.js';
 import { HUBAO_DECK, HANSHI_DECK, TUNTIAN_DECK, WOLONG_DECK, DECK_REGISTRY, buildDeckRules, applyShopBias, CARD_CATALOG, assembleDeck, type Deck } from './decks.js';
-import { FACT_WEI, FACT_SHU, BENCH_OCC, TEAM_B, FROZEN } from './constants.js';
+import { FACT_WEI, FACT_SHU, BENCH_OCC, TEAM_A, TEAM_B, FROZEN } from './constants.js';
 import { SHOP_DECK } from './economy.js';
 import { GAME_F_TEMPLATES } from './combat.js';
 
@@ -177,5 +177,21 @@ describe('主动锦囊（P1/P1.5；CardSpec jinnang → 充能/keybind/craft/cas
     expect(fire.entities.area.Hitbox.dotPerTick).toBeGreaterThan(0);
     const ice = GAME_F_TEMPLATES['jinnang_dingshen'] as unknown as { entities: { area: { Hitbox: { setMask?: number } } } };
     expect((ice.entities.area.Hitbox.setMask ?? 0) & FROZEN).toBe(FROZEN);
+  });
+  it('catalog 补全(#34)：万箭=爆发真伤太阁(无 DOT)、妙手回春=负伤回我方(TEAM_A)', () => {
+    const arrow = GAME_F_TEMPLATES['jinnang_wanjian'] as unknown as { entities: { area: { Hitbox: { targetMask: number; amount: number; dotPerTick?: number } } } };
+    expect(arrow.entities.area.Hitbox.targetMask).toBe(TEAM_B);
+    expect(arrow.entities.area.Hitbox.amount).toBeGreaterThan(0); // 正=伤害
+    expect(arrow.entities.area.Hitbox.dotPerTick ?? 0).toBe(0);   // 单击非 DOT
+    const heal = GAME_F_TEMPLATES['jinnang_huichun'] as unknown as { entities: { area: { Hitbox: { targetMask: number; amount: number } } } };
+    expect(heal.entities.area.Hitbox.targetMask).toBe(TEAM_A);    // 我方
+    expect(heal.entities.area.Hitbox.amount).toBeLessThan(0);     // 负=回血
+  });
+  it('空城计(自施防守)：craft 扣充能 → 减敌伤 dmg_scale_b 负值(防守版鼓舞)', () => {
+    const { entities } = buildDeckRules(WOLONG_DECK);
+    const craft = entities['craft_cast_kongcheng'] as unknown as { CraftRecipe: { costs: { id: string }[]; gains: { id: string; amount: number }[] } };
+    expect(craft.CraftRecipe.costs[0].id).toBe('charge_kongcheng');
+    expect(craft.CraftRecipe.gains[0].id).toBe('dmg_scale_b'); // 写敌方系数
+    expect(craft.CraftRecipe.gains[0].amount).toBeLessThan(0);  // 负值=减伤
   });
 });

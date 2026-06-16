@@ -20,8 +20,9 @@ export type CardSpec =
   | { kind: 'economy-band'; id: string; tiers: { atGold: number; bonus: number }[] }
   // 商店权重：把某些英雄码在牌袋里加权（预配权重，洗入更多某势力）。
   | { kind: 'shop-weight'; id: string; codes: number[]; copies: number }
-  // 主动锦囊（P1 QTE 参与感）：局内可点手牌，每回合 charges 次。buff=鼓舞类(全队系数)；fxTemplate=点地/范围效果(caster)。
-  | { kind: 'jinnang'; id: string; name: string; charges: number; buff?: number; fxTemplate?: string; target?: 'pointer' | 'enemies' | 'self' };
+  // 主动锦囊（P1 QTE 参与感）：局内可点手牌，每回合 charges 次。buff=系数类(craft 改资源)；fxTemplate=点地/范围效果(caster)。
+  // buffTarget：buff 写入的资源（缺省 dmg_scale_a=我方攻；空城计写 dmg_scale_b 负值=敌伤减，防守版鼓舞）。
+  | { kind: 'jinnang'; id: string; name: string; charges: number; buff?: number; buffTarget?: string; fxTemplate?: string; target?: 'pointer' | 'enemies' | 'self' };
 
 export interface Deck {
   id: string;
@@ -62,6 +63,10 @@ export const HANSHI_DECK: Deck = {
     { kind: 'round-buff', id: 'zhangwu', untilRound: 3, bonus: 0.12 },
     // 募贤：商店蜀码加权（蜀将各多 2 张洗入牌袋）。
     { kind: 'shop-weight', id: 'muxian', codes: [1, 2, 3, 4, 5, 6], copies: 2 },
+    // 万箭齐发（点地锦囊 P1.5，爆发）：点棋盘一块 → 范围一击真伤太阁；每回合 1 次。
+    { kind: 'jinnang', id: 'wanjian', name: '万箭齐发', charges: 1, fxTemplate: 'jinnang_wanjian', target: 'pointer' },
+    // 妙手回春（点地锦囊 P1.5，治疗）：点棋盘一块 → 范围给友军回血（hitbox 负伤=回血、targetMask 我方）；每回合 1 次。
+    { kind: 'jinnang', id: 'huichun', name: '妙手回春', charges: 1, fxTemplate: 'jinnang_huichun', target: 'pointer' },
   ],
 };
 
@@ -108,7 +113,10 @@ export const WOLONG_DECK: Deck = {
     // 奇谋：商店加权诸葛亮（谋士码 3），多洗入便于成阵。
     { kind: 'shop-weight', id: 'qimou', codes: [3], copies: 2 },
     // 定身（点地锦囊 P1.5，控制流）：点棋盘一块 → 范围 FROZEN 定住太阁；每回合 1 次。
+    //（即 catalog「铁索连环」同款 AoE FROZEN——同一数据形，不另设重复卡。）
     { kind: 'jinnang', id: 'dingshen', name: '定身', charges: 1, fxTemplate: 'jinnang_dingshen', target: 'pointer' },
+    // 空城计（自施锦囊 P1.5，防守版鼓舞）：点一下 → 本回合敌伤 -20%（craft 扣充能 → dmg_scale_b 负值，prep 复位）；每回合 1 次。
+    { kind: 'jinnang', id: 'kongcheng', name: '空城计', charges: 1, buff: -0.2, buffTarget: 'dmg_scale_b' },
   ],
 };
 
@@ -177,7 +185,7 @@ export function buildDeckRules(deck: Deck): DeckRules {
       ents[`when_jref_${card.id}`] = { EventWhen: { signal: `jref_${card.id}`, when: { kind: 'state', fsmId: 'round_ui', equals: 'prep' }, mode: 'edge', armed: false } };
       ents[`eff_jref_${card.id}`] = { Effect: { onSignal: `jref_${card.id}`, kind: 'modify-resource', targetId: `charge_${card.id}`, op: 'set', value: card.charges } };
       if (card.buff !== undefined) {
-        ents[`craft_cast_${card.id}`] = { CraftRecipe: { onSignal: `cast_${card.id}`, costs: [{ id: `charge_${card.id}`, amount: 1 }], gains: [{ id: 'dmg_scale_a', amount: card.buff }] } };
+        ents[`craft_cast_${card.id}`] = { CraftRecipe: { onSignal: `cast_${card.id}`, costs: [{ id: `charge_${card.id}`, amount: 1 }], gains: [{ id: card.buffTarget ?? 'dmg_scale_a', amount: card.buff }] } };
       } else if (card.fxTemplate) {
         ents[`cast_caster_${card.id}`] = { Transform: { x: 0, y: 0, rotation: 0, scaleX: 1, scaleY: 1 }, Caster: { onSignal: `cast_${card.id}`, template: card.fxTemplate, at: card.target === 'self' ? 'self' : 'pointer' } };
         ents[`craft_cast_${card.id}`] = { CraftRecipe: { onSignal: `cast_${card.id}`, costs: [{ id: `charge_${card.id}`, amount: 1 }], gains: [] } }; // 仅扣充能（caster 同信号展开 fx）
