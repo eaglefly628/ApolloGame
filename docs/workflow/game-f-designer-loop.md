@@ -5,6 +5,31 @@
 
 ---
 
+## 循环 #34 · 2026-06-16 · Designer F —— 空档主动设计:锦囊 catalog(主动牌内容池)
+
+> game-f 空闲(搭档在 game-g),不空等。把主动锦囊设计成**一整套 drop-in 内容池**,P1.5 点地交互通后,这些照填即上。**全映射现成能力(caster/hitbox/over-time/spawn),零引擎。**
+
+### 锦囊 catalog(首批 7 张;`{kind:'jinnang', id, name, target, charges, ...}`)
+| 锦囊 | target | 效果 | 数据形(现成能力) | 状态 |
+|---|---|---|---|---|
+| **鼓舞** | self | 全队 +20% 攻(1 回合) | craft 扣充能 → dmg_scale_a(已做) | ✅ 已实装 |
+| **火烧连营** | pointer | 点地范围灼烧 DoT | `caster@pointer` → spawn zone + `hitbox{dotPerTick,dotDuration, setMask:BURNING}` | 待 P1.5 |
+| **万箭齐发** | pointer | 点地范围真伤一击 | `caster@pointer` → `hitbox{amount, targetMask:敌}` | 待 P1.5 |
+| **铁索连环** | pointer | 点地范围定身 | `caster@pointer` → `hitbox{setMask:FROZEN, statusDuration}` | 待 P1.5 |
+| **疑兵增援** | self | 召 2 友军杂兵 | `caster/self-rule spawn ash_yari×2`(TEAM_A) | 待 P1.5 |
+| **妙手回春** | pointer | 点地范围治友军 | `caster@pointer` → `hitbox{amount:负, targetMask:友}`(石田治疗同款) | 待 P1.5 |
+| **空城计** | self | 全队短时减伤(防守版鼓舞) | craft 扣充能 → 全局减伤资源(hitbox 读全局,信长镜像同款) | 待 P1.5 |
+
+### 回驳(守纪律,不入池)
+- **草船借箭**(把伤害按目标状态重定向到另一资源)= 撞 §7 已回驳的"伤害分型/重定向"缺口 → **不做**(为一卡拓宽引擎违 YAGNI)。
+- **驱虎吞狼/嘲讽**(强制改敌索敌)= 目标侧机制(F-062 域,Lead 暂缓)→ 暂不做。
+
+### 给 Program F
+- P1.5 点地交互闭环通后,上表 6 张 pointer/self 锦囊**照数据形直接填**(全现成算子);每张配回归测。
+- 平衡:charges、范围、数值首版待 owner 真机调;先把"看得见、点得动、有变化"做出来。
+
+---
+
 ## 循环 #33 · 2026-06-16 · Designer F
 
 ### 验收:P1 主动锦囊(框架 + 鼓舞)→ ✅ 通过
