@@ -21,7 +21,7 @@ function dim(n: number, k: number): string {
   return hx((Math.round(r * k) << 16) | (Math.round(g * k) << 8) | Math.round(b * k));
 }
 
-interface Card { lane: number; side: 'a' | 'b'; idx: number; faceUp: boolean; rev: number; arc: number; tint: number; back: number; rank?: string; suit?: string }
+interface Card { lane: number; side: 'a' | 'b'; idx: number; isGeneral: boolean; faceUp: boolean; rev: number; arc: number; tint: number; back: number; rank?: string; suit?: string }
 
 function project(world: IWorld): Card[] {
   const out: Card[] = [];
@@ -34,7 +34,7 @@ function project(world: IWorld): Card[] {
     const lane = Math.floor(c.pairKey / 100);
     const lp = laneRevealProgress(prog, lane); // VIS-4 逐路揭晓：上→中→下 错开
     out.push({
-      lane, side: c.side === 'a' ? 'a' : 'b', idx: c.pairKey % 100,
+      lane, side: c.side === 'a' ? 'a' : 'b', idx: c.pairKey % 100, isGeneral: c.pairKey % 100 === 0, // idx0=本路主将（牵动全路）
       faceUp: faceUpVisible(tw ? tw.to : t.rotation), rev: revealGlow(lp), arc: Math.sin(Math.PI * hangWarp(lp)),
       tint: c.frontTint ?? 0xeab308, back: c.backTint ?? 0x334155, rank: c.rank, suit: c.suit,
     });
@@ -45,25 +45,33 @@ function project(world: IWorld): Card[] {
 function cardSvg(c: Card): string {
   const { x, y } = cardScreenPos(c.lane, c.side, c.idx, c.arc); // 单一真相布局（scene.ts）
   const px = x - cw / 2, py = y - ch / 2;
+  let body: string;
   if (c.faceUp) {
     const red = c.suit === 'H' || c.suit === 'D';
     const sym = c.suit ? SUIT[c.suit as keyof typeof SUIT] ?? '' : '';
     const ink = red ? '#b02a1e' : '#161616';
     // 活牌：金石对比的"金"——落定 gold 辉光（rev 越大越亮）。
     const glow = c.rev > 0.02 ? `<circle cx="${x}" cy="${y}" r="${cw * 0.95}" fill="url(#glow)" opacity="${(c.rev * 0.85).toFixed(2)}"/>` : '';
-    return (
+    body =
       glow +
       `<g>` +
-      `<rect x="${px}" y="${py}" width="${cw}" height="${ch}" rx="5" fill="#f7f5ee" stroke="${hx(c.tint)}" stroke-width="${2.6}"/>` +
+      `<rect x="${px}" y="${py}" width="${cw}" height="${ch}" rx="5" fill="#f7f5ee" stroke="${hx(c.tint)}" stroke-width="${c.isGeneral ? 4 : 2.6}"/>` +
       (c.rank ? `<text x="${x}" y="${y + ch * 0.16}" text-anchor="middle" font-family="Georgia,serif" font-weight="bold" font-size="${ch * 0.5}" fill="${ink}">${esc(sym)}</text>` +
         `<text x="${px + 3}" y="${py + ch * 0.2}" font-family="Georgia,serif" font-weight="bold" font-size="${ch * 0.2}" fill="${ink}">${esc(c.rank)}</text>` : '') +
-      `</g>`
-    );
+      `</g>`;
+  } else {
+    // 死牌：石板压暗 + 碎裂纹（去色变暗）。
+    const k = 1 - c.rev * DEAD_DIM;
+    const crack = c.rev > 0.3 ? `<path d="M${px + cw * 0.5},${py} L${x - 3},${y} L${px + cw * 0.7},${py + ch} M${x - 3},${y} L${px},${y + ch * 0.4} M${x - 3},${y} L${px + cw},${y + ch * 0.6}" stroke="rgba(255,255,255,${0.28 * c.rev})" stroke-width="1.4" fill="none"/>` : '';
+    body = `<rect x="${px}" y="${py}" width="${cw}" height="${ch}" rx="5" fill="${dim(c.back, k)}" stroke="${dim(0x64748b, k)}" stroke-width="1.4"/>${crack}`;
   }
-  // 死牌：石板压暗 + 碎裂纹（去色变暗）。
-  const k = 1 - c.rev * DEAD_DIM;
-  const crack = c.rev > 0.3 ? `<path d="M${px + cw * 0.5},${py} L${x - 3},${y} L${px + cw * 0.7},${py + ch} M${x - 3},${y} L${px},${y + ch * 0.4} M${x - 3},${y} L${px + cw},${y + ch * 0.6}" stroke="rgba(255,255,255,${0.28 * c.rev})" stroke-width="1.4" fill="none"/>` : '';
-  return `<rect x="${px}" y="${py}" width="${cw}" height="${ch}" rx="5" fill="${dim(c.back, k)}" stroke="${dim(0x64748b, k)}" stroke-width="1.4"/>${crack}`;
+  // 主将(idx0)标识：♔ 王冠（牵动全路一眼可辨）；主将阵亡 → 红「斩」（擒贼擒王→溃散可读）。
+  if (c.isGeneral) {
+    const col = c.side === 'a' ? '#eab308' : '#38bdf8';
+    body += `<text x="${x}" y="${py - 3}" text-anchor="middle" font-size="${ch * 0.32}" fill="${col}">♔</text>`;
+    if (!c.faceUp && c.rev > 0.4) body += `<text x="${x}" y="${y + ch * 0.12}" text-anchor="middle" font-family="system-ui" font-weight="800" font-size="${ch * 0.4}" fill="#ef4444" opacity="0.92">斩</text>`;
+  }
+  return body;
 }
 
 // 老家牌王座（♔）+ 哨塔 + 三路轨 + 比分。
