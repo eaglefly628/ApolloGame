@@ -647,6 +647,16 @@ export function effectiveLives(planets: Record<string, number>): number { return
 export function effectiveLeverCap(planets: Record<string, number>): number { return LEVER_CAP + planetBump(planets, 'jupiter'); }
 export function effectiveLeverRegen(planets: Record<string, number>): number { return LEVER_REGEN + planetBump(planets, 'jupiter'); }
 export function effectiveTierBonus(planets: Record<string, number>): number { return planetBump(planets, 'mercury'); } // 星球·型：牌型阶梯全局加成
+
+// ── T-G6 · 闪艺 foil 收集皮肤（design reply#17 · 附魔回驳→纯表现收集）──
+// ⛔ 纯表现 / 不进 hash / 零平衡影响：只是局外**收集欲**的牌组装饰，买下=解锁、零 gameplay 作用。最弱 LLM 能填 {id,name,cost}。
+export interface FoilSkin { id: string; name: string; cost: number; desc: string }
+export const GAME_G_FOILS: FoilSkin[] = [
+  { id: 'gilt', name: '鎏金', cost: 30, desc: '金箔流光' },
+  { id: 'azure', name: '碧霄', cost: 45, desc: '青碧全息' },
+  { id: 'crimson', name: '赤焰', cost: 60, desc: '赤红炽芒' },
+  { id: 'obsidian', name: '玄曜', cost: 90, desc: '玄黑曜辉' },
+];
 const PLANET_TROOP_RANKS = new Set(['A', '2', '3', '4', '5', '6']); // 「兵」档（星球·军作用域）
 /** 星球·军：揭晓前给军阵「兵」档 +favor（叠加级数）。build-时变换、outcome-first；作用 built 军阵结构（非 deck 均值）。 */
 export function applyPlanetArmy(army: ArmyCard[], planets: Record<string, number>): ArmyCard[] {

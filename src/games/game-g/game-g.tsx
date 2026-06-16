@@ -1,6 +1,6 @@
 import { Engine } from '../../runtime/engine.js';
 import { ThreeRenderer } from './three-renderer.js';
-import { buildGameGArmyMatch, prepareArmies, armyFromFormation, laneEstimates, quartermasterEnergy, FORMATION_PRESETS, PRESET_NAMES, LEVER_CATALOG, LEVER_START, battleSpec, RUN_BATTLES, RUN_LIVES, BETWEEN_BUFFS, applyBuff, jokerKeyBuffs, BOSS_ROSTER, bossFor, GAME_G_JOKERS, JOKER_BY_ID, ARCHETYPES, detectArchetype, archetypeMatchup, activeArchetype, pickAiFormation, GAME_G_PLANETS, effectiveLives, effectiveLeverCap, effectiveLeverRegen, type Formation, type Intervention, type LeverKind, type RunBuff } from './index.js';
+import { buildGameGArmyMatch, prepareArmies, armyFromFormation, laneEstimates, quartermasterEnergy, FORMATION_PRESETS, PRESET_NAMES, LEVER_CATALOG, LEVER_START, battleSpec, RUN_BATTLES, RUN_LIVES, BETWEEN_BUFFS, applyBuff, jokerKeyBuffs, BOSS_ROSTER, bossFor, GAME_G_JOKERS, JOKER_BY_ID, ARCHETYPES, detectArchetype, archetypeMatchup, activeArchetype, pickAiFormation, GAME_G_PLANETS, GAME_G_FOILS, effectiveLives, effectiveLeverCap, effectiveLeverRegen, type Formation, type Intervention, type LeverKind, type RunBuff } from './index.js';
 import type { State, Resource } from '@engine/protocol/components.js';
 
 // Game G ·《翻命扑克》—— 大厅 ↔ 出征 闭环（launcher 卡带槽：export mount(container)→cleanup）。自包含于本目录。
@@ -22,11 +22,12 @@ interface Save {
   bossIdx: number; // 本 run 终局 Boss（每 run 轮换一名，开 run 随机定，供针对性布阵）
   jokers: string[]; // 已融小丑牌 id（局外持久 · 跨 run 不清零 · 牌组身份养成）
   planets: Record<string, number>; // 星球牌等级（局外持久 · 可叠加升档 · 第二养成轴）
+  foils: string[]; // 已收集的 foil 闪艺皮肤 id（纯表现收集 · 零 gameplay）
 }
 
 const rollBoss = (): number => Math.floor(Math.random() * BOSS_ROSTER.length);
 function freshSave(): Save {
-  return { materials: 0, stage: 1, deck: Array.from({ length: DECK_SIZE }, (_, i) => 44 + (i % 10) * 2), lastOfficers: [10, 10, 10], leverEnergy: LEVER_START, lives: RUN_LIVES, bossIdx: rollBoss(), jokers: [], planets: {} }; // 44..62 起步；stage=当前战 1..5
+  return { materials: 0, stage: 1, deck: Array.from({ length: DECK_SIZE }, (_, i) => 44 + (i % 10) * 2), lastOfficers: [10, 10, 10], leverEnergy: LEVER_START, lives: RUN_LIVES, bossIdx: rollBoss(), jokers: [], planets: {}, foils: [] }; // 44..62 起步；stage=当前战 1..5
 }
 function loadSave(): Save {
   try {
@@ -39,6 +40,7 @@ function loadSave(): Save {
         if (typeof s.bossIdx !== 'number') s.bossIdx = rollBoss();
         if (!Array.isArray(s.jokers)) s.jokers = [];
         if (typeof s.planets !== 'object' || s.planets === null) s.planets = {};
+        if (!Array.isArray(s.foils)) s.foils = [];
         if (typeof s.lives !== 'number') s.lives = effectiveLives(s.planets);
         if (s.stage < 1 || s.stage > RUN_BATTLES) s.stage = 1;
         return s;
@@ -178,6 +180,19 @@ export function mount(container: HTMLElement): () => void {
       return b;
     }));
 
+    // 闪艺 foil 收集（纯表现·零 gameplay）：买下=解锁收藏，满足收集欲。
+    const foilTitle = el('div', 'font:600 13px system-ui;color:#f0abfc;margin-top:2px', `✨ 闪艺 foil 收藏（${save.foils.length}/${GAME_G_FOILS.length} · 纯装饰）`);
+    const foilShop = el('div', 'display:flex;gap:8px;flex-wrap:wrap;justify-content:center;max-width:560px');
+    foilShop.replaceChildren(...GAME_G_FOILS.map((fk) => {
+      const owned = save.foils.includes(fk.id);
+      const b = mkBtn(owned ? `✨ ${fk.name}` : `${fk.name}（${fk.cost}）`);
+      b.title = fk.desc;
+      if (owned) b.style.cssText += ';border-color:#d946ef;background:#1f1525;opacity:.9;cursor:default';
+      else { b.disabled = save.materials < fk.cost; if (b.disabled) b.style.opacity = '0.45'; }
+      b.onclick = () => { if (owned || save.materials < fk.cost) return; save.materials -= fk.cost; save.foils.push(fk.id); persist(save); showLobby(); };
+      return b;
+    }));
+
     // 流派身份 + 克制网：由已融小丑浮现主流派，对比本 run 终局 Boss 的流派 → 克制提示（指导针对性布阵）。
     const arch = detectArchetype(save.jokers);
     const bossArchId = bossFor(save.bossIdx).archetype;
@@ -206,7 +221,7 @@ export function mount(container: HTMLElement): () => void {
       showLobby();
     };
 
-    root.append(title, stat, shop, forgeTitle, forge, forgeDesc, planetTitle, planetShop, archEl, go, reset);
+    root.append(title, stat, shop, forgeTitle, forge, forgeDesc, planetTitle, planetShop, foilTitle, foilShop, archEl, go, reset);
   }
 
   // ───────────────────────── 布阵（田忌赛马 · 开战前核心博弈）─────────────────────────
