@@ -5,6 +5,25 @@
 
 ---
 
+## 循环 #22 · 2026-06-15 · Designer F —— owner 拍板:先 A 附魔,再 B 多人
+
+> owner 2026-06-16:**先做 A 附魔,完了直接做 B 多人;过程中不问、不停。** Designer F 按此驱动到底。
+
+### 派 A·附魔(养成第二轴,account 层 + assembleDeck;纯游戏侧零引擎,spec §五)
+> 先核 account.ts 现状(collection 结构),不重复;account 自注"附魔随后切片"=未做。
+
+- **数据**:collection 每卡从 `count` 扩成 `{ count, enchant: 0..3 }`(0 普通 / 1 foil / 2 holo / 3 polychrome)。
+- **材料**:**分解**重复卡(超出组牌所需的多余卡)→ 碎片 `dust`(account 软资源);如每张多余卡 = 1 dust。
+- **附魔**:`enchantCard(id)` = spend 战功 + dust(每级递增,如 lv1=100战功+2dust / lv2=200+4 / lv3=400+8)→ 该卡 enchant +1(≤3)。
+- **生效**:`assembleDeck` 时按 enchant level **放大该卡 CardSpec 数值**——`synergy/threshold/round-buff` 的 `bonus/perUnit` ×(1 + 0.2×enchant);`economy-band` 的 tier bonus 同放大;`shop-weight` 的 copies +enchant。**= Balatro 附魔的数据 modifier(Game E joker 先例),不进 sim 逻辑、零引擎。**
+- **UI**:大厅 S5 收藏 → 卡详情显 enchant 角标 + [附魔]/[分解] 按钮 + dust 余额。
+- **验收**:抽重复卡→分解得 dust→附魔一张钥匙牌→该卡进局数值更高(自组牌走 assembleDeck 放大);tsc+vitest 绿、零引擎、与 ECS 解耦。
+
+### A 完成后 → 直接进 B·多人/三人征日(不停,见后续循环)
+- B 起步预告:三方共享岛(mirror 同步,REQ-F-057 PF 定论=浮点不阻塞)+ 攻岛贡献排名(per-owner)+ Boss 宝箱掷点分卡。详规到 A 收尾时展开。
+
+---
+
 ## 循环 #21 · 2026-06-15 · Designer F —— 🎉 单机养成闭环达成
 
 ### 验收:组牌器 picker(build 端)+ 段位难度阀 → ✅ 通过(双项)
