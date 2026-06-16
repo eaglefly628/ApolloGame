@@ -5,6 +5,22 @@
 
 ---
 
+## 循环 #35 · 2026-06-16 · Designer F —— 🎯 主动用牌 QTE 闭环达成
+
+### 验收:P1.5 点地锦囊交互闭环 → ✅ 通过
+- combat.ts 锦囊 fx 模板:`jinnang_huoshao`(范围 DoT)/`jinnang_dingshen`(范围 FROZEN),`caster@pointer` 落点展开、对 TEAM_B。game-f.tsx 接**点锦囊→瞄准态→点棋盘→放**。加了回归测(火烧 at=pointer + craft 扣充能 + fx DoT/FROZEN)。**零引擎、101 测绿。**
+- 🎯 **owner 要的"实时用牌"全到位**:点火烧连营→点棋盘一块→那里烧 DoT;定身→范围冻。卡牌可见(P0)+被动触发(小丑牌)+主动点放(锦囊)三件齐。
+
+### 趁窗口铺下一批:剩余锦囊 catalog(循环#34 已设计,照数据形填)
+> P1.5 交互闭环已通 → 下列 4 张**照 combat.ts 锦囊 fx 模板 + decks.ts jinnang 条目直接填**,全现成能力、零引擎、各配测。
+- **万箭齐发**(pointer):`caster@pointer` → `hitbox{amount:大, targetMask:TEAM_B}` 范围真伤一击(无 DoT,= 火烧去 DOT)。
+- **疑兵增援**(self):`self-rule/caster spawn ash_yari×2`(TEAM_A 友军,= 太阁召援镜像友方版)。
+- **妙手回春**(pointer):`caster@pointer` → `hitbox{amount:负, targetMask:TEAM_A}` 范围治友军(= 石田治疗 targetMask 换我方)。
+- **空城计**(self):craft 扣充能 → 全队短时**减伤**全局资源(= 北条龟缩镜像我方;若"我方减伤系数"无读者,先重组/缓,不拓引擎)。
+- 验收:四张各能点放、效果对、charges 扣减;101+ 绿、零引擎。平衡数值待 owner 真机调。
+
+---
+
 ## 循环 #34 · 2026-06-16 · Designer F —— 空档主动设计:锦囊 catalog(主动牌内容池)
 
 > game-f 空闲(搭档在 game-g),不空等。把主动锦囊设计成**一整套 drop-in 内容池**,P1.5 点地交互通后,这些照填即上。**全映射现成能力(caster/hitbox/over-time/spawn),零引擎。**
