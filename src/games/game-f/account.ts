@@ -196,6 +196,10 @@ function addCard(id: string, kv: KV): void {
   c[id] = (c[id] ?? 0) + 1;
   kv.setItem(COLL_KEY, JSON.stringify(c));
 }
+// 直接发卡入收藏（Boss 宝箱分卡 B·slice2 的第二获取源；多人局也喂收藏）。
+export function grantCards(ids: string[], kv: KV = defaultKV()): void {
+  for (const id of ids) addCard(id, kv);
+}
 
 // 概率公示（spec §二「概率公示」铁律）：每张牌的出率（weight / 总权）。
 export function gachaRates(pool: GachaEntry[] = GACHA_POOL): { id: string; name: string; rate: number }[] {

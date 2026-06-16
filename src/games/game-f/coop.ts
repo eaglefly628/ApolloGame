@@ -20,6 +20,29 @@ export interface CoopIsland {
 
 export const COOP_GOAL_PER_OWNER = 100;
 
+// Boss 宝箱掷点分卡（B·slice2，designer #24；co-opetition：合作杀 Boss、按贡献竞争分赃）。
+// 轮选制：贡献排序后第 1 名先挑 1 张（加权随机出小丑牌），轮转到分完 lootCount 张。AI 份额=展示，人类份额入收藏。
+// rng 注入（确定性 seed 可选）；纯账号层、零引擎。
+export interface LootShare { name: string; human: boolean; cards: GachaPoolEntry[] }
+// 复用 account 的 GachaEntry 形（避免循环依赖：此处只声明所需字段）。
+export interface GachaPoolEntry { id: string; name: string; weight: number; rarity?: string }
+export function distributeBossLoot(owners: OwnerContribution[], lootCount: number, pool: GachaPoolEntry[], rng: () => number = Math.random): LootShare[] {
+  const ranked = owners
+    .map((o, i) => ({ o, i }))
+    .sort((a, b) => (b.o.contribution - a.o.contribution) || (a.i - b.i))
+    .map((x) => x.o);
+  const shares: LootShare[] = ranked.map((o) => ({ name: o.name, human: o.human, cards: [] }));
+  if (!pool.length || lootCount <= 0 || !shares.length) return shares;
+  const total = pool.reduce((s, e) => s + e.weight, 0);
+  for (let k = 0; k < lootCount; k++) {
+    let r = rng() * total;
+    let card = pool[pool.length - 1];
+    for (const e of pool) { if (r < e.weight) { card = e; break; } r -= e.weight; }
+    shares[k % shares.length].cards.push(card); // 轮选：贡献高者先挑（k=0 给排名第 1）
+  }
+  return shares;
+}
+
 // 纯函数：三方贡献 → 共享岛进度 + 排名 + 岛主。确定（稳定排序：贡献降序，等值保入参序）。
 export function computeCoopIsland(owners: OwnerContribution[], goalPerOwner = COOP_GOAL_PER_OWNER): CoopIsland {
   const progress = owners.reduce((s, o) => s + Math.max(0, o.contribution), 0);

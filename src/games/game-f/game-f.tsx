@@ -11,8 +11,8 @@ import { rosterFor, type Faction } from './heroes.js';
 import { WARRIOR, TACTICIAN, TEAM_A } from './constants.js';
 import { buildLobby, type RunConfig } from './lobby.js';
 import { createAllyMirrors } from './ally-mirror.js';
-import { computeCoopIsland } from './coop.js';
-import { settleRun, getLP, rankFor, updateLpAfterRun } from './account.js';
+import { computeCoopIsland, distributeBossLoot } from './coop.js';
+import { settleRun, getLP, rankFor, updateLpAfterRun, GACHA_POOL, grantCards } from './account.js';
 
 // Game F 可挂载模块（launcher 卡带槽契约：export mount(container) → cleanup）。
 // 壳层 UI = design_handoff_game_f 的「锦霞 Aurora」皮肤（用户钦定女性向风格）：
@@ -714,6 +714,7 @@ function startMatch(container: HTMLElement, cfg: RunConfig, onExit: () => void):
   let rafId = 0;
   const COOP_NAMES = ['玄德', '仲谋', '孟德'];
   const COOP_FACS = ['蜀', '吴', '魏'];
+  let lootGiven = false; // Boss 宝箱分卡一局一次（岛陷落边沿）
   const pump = (): void => {
     hud.update(engine.world);
     hud.renderAllies(allies.map((a) => a.units()));
@@ -723,7 +724,20 @@ function startMatch(container: HTMLElement, cfg: RunConfig, onExit: () => void):
       { name: COOP_NAMES[0], faction: COOP_FACS[0], human: true, contribution: myContrib },
       ...allies.map((a, i) => ({ name: COOP_NAMES[i + 1] ?? `盟友${i}`, faction: COOP_FACS[i + 1] ?? '群', human: false, contribution: a.contribution() })),
     ];
-    hud.renderCoop(computeCoopIsland(owners));
+    const island = computeCoopIsland(owners);
+    hud.renderCoop(island);
+    // B·slice2：岛陷落（合作杀 Boss）→ 宝箱掷点分卡，按贡献轮选；人类份额入收藏。
+    if (island.fallen && !lootGiven) {
+      lootGiven = true;
+      const shares = distributeBossLoot(owners, 3, GACHA_POOL);
+      const mine = shares.find((s) => s.human);
+      if (mine && mine.cards.length) grantCards(mine.cards.map((c) => c.id));
+      const t = document.createElement('div');
+      t.style.cssText = 'position:absolute;left:50%;top:38%;transform:translateX(-50%);z-index:60;background:#23262d;color:#f3e9d6;border:1px solid var(--gold);border-radius:12px;padding:14px 20px;font-size:14px;line-height:1.5;box-shadow:0 12px 34px rgba(0,0,0,.55);text-align:center';
+      t.innerHTML = `🗾 <b>天守陷落！</b>宝箱分卡（按贡献轮选）<br>${shares.map((s) => `${s.name} +${s.cards.length}`).join(' · ')}<br><span style="font-size:11px;color:#cdbb98">你的 ${mine?.cards.length ?? 0} 张已入收藏</span>`;
+      hud.root.appendChild(t);
+      setTimeout(() => t.remove(), 6000);
+    }
     rafId = requestAnimationFrame(pump);
   };
   rafId = requestAnimationFrame(pump);
