@@ -5,6 +5,28 @@
 
 ---
 
+## 循环 #31 · 2026-06-16 · Designer F —— owner 真机反馈:卡牌局内隐形(P0+P1)
+
+> **owner 试玩发现**:小丑牌/牌组**局内完全隐形**(`buildDeckRules` 只产隐形 buff 数学)——看不到牌、不知用了啥、无操作感。**owner 拍板做 P0+P1。** 全纯游戏侧/表现层,零引擎。
+
+### P0 · 让小丑牌「可见」(表现层,先做)
+- **局内 HUD 一排卡面**显示出战 Build 牌组(`cfg.deck.cards`):每张 = 名 + 图标 + **当前效果值**(读对应 buff 资源,如"虎豹骑令:魏骑×4 → +24% 攻")。
+- **触发可见**:开战锁存那拍,该卡 **flash + 蹦效果数字**(现成 `Tween`/`Text`/`Sprite`)。
+- 纯表现层(读现有 deck + buff/count 资源渲染),**零引擎**。**验收**:局内看得到 5–8 张牌 + 生效时动一下、显数值。
+
+### P1 · 主动锦囊层(后做,补 QTE 参与感)
+- **CardSpec 加主动类**:`{ kind:'jinnang', id, name, fxTemplate, target:'pointer'|'enemies'|'self', charges }`(数据)。
+- **加载**:`buildDeckRules` 把锦囊卡 → 局内**「锦囊手牌」**(可点 marker + charges 资源),**不进 buff**。
+- **操作**:战斗中点锦囊 → 进"指定/点地"态 → 点棋盘 → `caster{at:'pointer'}` 展开效果。**= 现成"点地放火"(Game D 已验证,lockstep 安全),零引擎。**
+- **首批锦囊**:火烧连营(范围 DoT)/ 增援(spawn 2 友军杂兵)/ 鼓舞(全队短时 buff)/ 定身(范围 FROZEN)。每局每张 1 用、回合刷新。
+- **验收**:战斗中点锦囊→点地→效果生效、charges 扣减;零引擎、确定性 hash 不变。
+
+### 数据驱动守 + 给 Program F 的纪律
+- 锦囊 = 数据(id+fx 模板+target)+ 现成 `caster/hitbox/over-time`,**零新引擎能力**。**先查** `caster at:'pointer'` 是否已支持(Game D 点地放火证过);若锦囊手牌的"指定态"表达不了,**先重组**(clickable+state+caster),真缺口才提主程。
+- **先交 P0(快、解决"看不到"),再交 P1。**
+
+---
+
 ## 循环 #30 · 2026-06-16 · Designer F
 
 ### 验收:game-f 视觉回归(SVG 无头截图 + 快照 diff)→ ✅ 通过
