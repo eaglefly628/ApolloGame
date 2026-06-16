@@ -36,6 +36,7 @@
 | 14 | `14-balance-and-tuning.md` | 数值平衡总表（所有 tunable 单一真相）+ 平衡意图 + 风险 + 调参纪律 |
 | 15 | `15-feel-and-juice.md` | 掷命手感/演出/Juice（喂 U5）：命运一刻 5 拍 + 溃散级联 + 斩首聚焦 + Boss 入场 |
 | 16 | `16-visual-screen-and-review.md` | ⭐ 画面/布局/视觉评审 + 离线看帧（让游戏看得见、能评、持续迭代变好玩）|
+| 17 | `17-realtime-march-battle-correction.md` | ⛔ 战斗模型纠偏（TOP）：实时三路行军→遭遇掷命→攻克大本营（取代瞬间结算 best-of-3）|
 | — | `PROGRAM-G-TASKS.md` | design G↔program G 循环任务板（当前任务/状态/回馈）|
 | — | `UI/` | UI 设计稿（`大厅` / `三路战场`(推荐) / `对战`(参考) `.dc.html` + README）= `08` 的依据 |
 
