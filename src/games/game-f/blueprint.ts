@@ -691,10 +691,14 @@ export function buildGameFBlueprint(pacing: GameFPacing = {}): WorldBlueprint {
     // 单机=自己的分；多人=岛主排名口径（后置）。真·补刀归属(kill-attribution)是贡献系统特性，非 v1 战斗算子。
     // 挂结算窗（income_armed 每结算拍真）：胜（won）多记、败（!won，仍造成伤害）少记。stage 越深贡献越高。
     r_contribution: { Resource: { id: 'contribution', current: 0, min: 0, max: 99999 } },
-    when_contrib_win_1: { EventWhen: { signal: 'contrib_win_1', when: and(flagIs('income_armed'), flagIs('won'), resCmp('stage_idx', 'eq', 1)), mode: 'edge', armed: false } },
-    eff_contrib_win_1: { Effect: { onSignal: 'contrib_win_1', kind: 'modify-resource', targetId: 'contribution', op: 'add', value: 5 } },
-    when_contrib_win_2: { EventWhen: { signal: 'contrib_win_2', when: and(flagIs('income_armed'), flagIs('won'), resCmp('stage_idx', 'gt', 1)), mode: 'edge', armed: false } },
-    eff_contrib_win_2: { Effect: { onSignal: 'contrib_win_2', kind: 'modify-resource', targetId: 'contribution', op: 'add', value: 9 } },
+    // 贡献「后置」曲线（designer #27 防独大/anti-snowball）：按关卡敌阵层级加权——滩头杂兵(stage≤2)=6、
+    // 国人众部将(stage3-4)=18、天守 Boss(stage≥5)=45。序盘领先锁不死，岛主到终盘抢 Boss 才定（翻盘悬念+人头高光）。
+    when_contrib_win_1: { EventWhen: { signal: 'contrib_win_1', when: and(flagIs('income_armed'), flagIs('won'), resCmp('stage_idx', 'lte', 2)), mode: 'edge', armed: false } },
+    eff_contrib_win_1: { Effect: { onSignal: 'contrib_win_1', kind: 'modify-resource', targetId: 'contribution', op: 'add', value: 6 } },
+    when_contrib_win_2: { EventWhen: { signal: 'contrib_win_2', when: and(flagIs('income_armed'), flagIs('won'), resCmp('stage_idx', 'gte', 3), resCmp('stage_idx', 'lte', 4)), mode: 'edge', armed: false } },
+    eff_contrib_win_2: { Effect: { onSignal: 'contrib_win_2', kind: 'modify-resource', targetId: 'contribution', op: 'add', value: 18 } },
+    when_contrib_win_boss: { EventWhen: { signal: 'contrib_win_boss', when: and(flagIs('income_armed'), flagIs('won'), resCmp('stage_idx', 'gte', 5)), mode: 'edge', armed: false } },
+    eff_contrib_win_boss: { Effect: { onSignal: 'contrib_win_boss', kind: 'modify-resource', targetId: 'contribution', op: 'add', value: 45 } },
     when_contrib_loss: { EventWhen: { signal: 'contrib_loss', when: and(flagIs('income_armed'), { kind: 'not', of: flagIs('won') }), mode: 'edge', armed: false } },
     eff_contrib_loss: { Effect: { onSignal: 'contrib_loss', kind: 'modify-resource', targetId: 'contribution', op: 'add', value: 2 } },
     // —— T4 岛屿进度条（game-f-core-combat-dev §二）：每打赢一波推进攻岛进度；满 100 = 岛陷落 → 通关。──

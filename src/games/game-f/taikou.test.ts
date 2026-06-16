@@ -80,6 +80,16 @@ describe('T1 太阁守军 roster（滩头杂兵 + mob 换皮）', () => {
   });
 });
 
+describe('贡献后置曲线（多人防独大/anti-snowball；designer #27）', () => {
+  it('Boss 波贡献 >> 国人众 >> 滩头（终盘抢 Boss 才定岛主）', () => {
+    const bp = buildGameFBlueprint();
+    const v = (k: string): number => (bp.entities[k] as unknown as { Effect: { value: number } }).Effect.value;
+    expect(v('eff_contrib_win_boss')).toBe(45);
+    expect(v('eff_contrib_win_boss')).toBeGreaterThan(v('eff_contrib_win_2')); // 天守 > 国人众
+    expect(v('eff_contrib_win_2')).toBeGreaterThan(v('eff_contrib_win_1'));    // 国人众 > 滩头
+  });
+});
+
 describe('T-F1 信长·天下布武（守军全军 buff 阶段递增；现成能力重组、零引擎）', () => {
   it('终盘 deploy_pve_5 锁存 dmg_scale_b=1.40（全 mob hitbox scaleByResource 据此放大伤害）', () => {
     const e = new Engine({ tickRate: 60 });
