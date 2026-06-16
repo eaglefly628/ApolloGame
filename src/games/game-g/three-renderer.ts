@@ -2,6 +2,7 @@ import * as THREE from 'three';
 import type { RendererBackend, IWorld } from '@engine/core/types.js';
 import type { Transform, Card3D, Tween } from '@engine/protocol/components.js';
 import { clamp01, hangWarp, revealGlow, faceUpVisible, ALIVE_GLOW, DEAD_DIM } from './feel.js'; // design/15 手感曲线（纯表现、不进 hash）
+import { cardScreenPos, SCENE_W, SCENE_H, LANE_Y, HOME_AX, HOME_BX, TOWERS, CARD_SCALE, SCENE_CH } from './scene.js'; // VIS-2 三路战场布局（与 render-frame 共用单一真相）
 
 // ═══════════════════════════════════════════════════════════════
 //  ThreeRenderer —— 3D 表现层后端（Game G）。RendererBackend 的 Three.js 实现：读 render-only 组件
@@ -23,8 +24,7 @@ export interface ThreeRendererOptions {
   pixelsPerUnit?: number; // 2D 像素 → 3D 单位换算（缺省 100）
 }
 
-const APEX = 0.7; // 抛飞顶点高度（3D 单位）
-const COLLIDE = 0.82; // apex 处朝对子中心靠拢的比例（撞击观感）
+const APEX = 0.7; // 抛飞顶点高度（3D 单位，单牌 demo 退路用）
 const Z_POP = 0.5; // apex 处朝镜头弹出的深度（增强"跃出"感）
 const FOV = 50;
 
@@ -33,6 +33,7 @@ export class ThreeRenderer implements RendererBackend {
   private camera!: THREE.PerspectiveCamera;
   private renderer!: THREE.WebGLRenderer;
   private readonly meshes = new Map<string, THREE.Mesh>();
+  private readonly scenery: THREE.Object3D[] = []; // VIS-2 静态战场 mesh（路/老家/哨塔/地面）
   private readonly texCache = new Map<string, THREE.Texture>(); // 牌面/背面纹理缓存（按 rank|suit|色 复用）
   private readonly opts: Required<ThreeRendererOptions>;
 
@@ -60,18 +61,71 @@ export class ThreeRenderer implements RendererBackend {
     this.renderer = new THREE.WebGLRenderer({ antialias: true });
     this.renderer.setSize(width, height);
     container.appendChild(this.renderer.domElement);
+
+    this.buildScenery(); // VIS-2 三路战场：路/老家牌王座/哨塔/地面（静态 mesh，一次建）
+    const ppu = this.opts.pixelsPerUnit; // 相机固定框 scene 包围盒（布局尺寸恒定）
+    this.fitCamera(-SCENE_W / 2 / ppu, SCENE_W / 2 / ppu, -SCENE_H / 2 / ppu, SCENE_H / 2 / ppu);
+  }
+
+  // VIS-2 三路战场场景（design/16 §三，approved）：古风地面 + 三路分区带 + 左右老家牌王座♔ + 哨塔。纯表现、静态。
+  private buildScenery(): void {
+    const ppu = this.opts.pixelsPerUnit;
+    const X = (sx: number): number => (sx - SCENE_W / 2) / ppu;
+    const Y = (sy: number): number => -(sy - SCENE_H / 2) / ppu;
+    const add = (m: THREE.Object3D): void => { this.scene.add(m); this.scenery.push(m); };
+    // 古风地面（深色，卡之后）。
+    const ground = new THREE.Mesh(new THREE.PlaneGeometry(SCENE_W / ppu * 1.1, SCENE_H / ppu * 1.1), new THREE.MeshBasicMaterial({ color: 0x0c1410 }));
+    ground.position.z = -0.4;
+    add(ground);
+    // 三路分区带（横轨）。
+    for (let L = 0; L < 3; L++) {
+      const band = new THREE.Mesh(new THREE.PlaneGeometry((HOME_BX - HOME_AX - 80) / ppu, (SCENE_CH + 120) / ppu), new THREE.MeshBasicMaterial({ color: L === 1 ? 0x13201a : 0x141a26, transparent: true, opacity: 0.72 }));
+      band.position.set(X((HOME_AX + HOME_BX) / 2), Y(LANE_Y[L]), -0.3);
+      add(band);
+    }
+    // 哨塔（每路 A/B 各一）。
+    for (const tw of TOWERS) {
+      const tower = new THREE.Mesh(new THREE.BoxGeometry(0.3, 0.7, 0.3), new THREE.MeshStandardMaterial({ color: tw.side === 'a' ? 0xa16207 : 0x0e7490 }));
+      tower.position.set(X(tw.x), Y(tw.y), -0.15);
+      add(tower);
+    }
+    // 左右老家牌王座 ♔（我军金 / 敌军青）：底座 + ♔ 贴图面。
+    for (const [hx, color, who] of [[HOME_AX, 0xeab308, '我军'], [HOME_BX, 0x38bdf8, '敌军']] as const) {
+      const base = new THREE.Mesh(new THREE.BoxGeometry(0.95, 1.8, 0.4), new THREE.MeshStandardMaterial({ color: 0x10151f }));
+      base.position.set(X(hx), 0, -0.2);
+      add(base);
+      const plate = new THREE.Mesh(new THREE.PlaneGeometry(0.85, 1.1), new THREE.MeshBasicMaterial({ map: this.glyphTexture('♔', color), transparent: true }));
+      plate.position.set(X(hx), 0.2, 0.02);
+      add(plate);
+      void who;
+    }
+  }
+
+  // ♔ 等字形 → 画布纹理（老家牌王座面用）。
+  private glyphTexture(glyph: string, color: number): THREE.Texture {
+    const key = `g:${glyph}:${color}`;
+    const hit = this.texCache.get(key);
+    if (hit) return hit;
+    const cv = document.createElement('canvas');
+    cv.width = 128; cv.height = 160;
+    const g = cv.getContext('2d')!;
+    g.fillStyle = hex(color);
+    g.font = 'bold 96px serif';
+    g.textAlign = 'center';
+    g.textBaseline = 'middle';
+    g.fillText(glyph, 64, 70);
+    const tex = new THREE.CanvasTexture(cv);
+    tex.colorSpace = THREE.SRGBColorSpace;
+    this.texCache.set(key, tex);
+    return tex;
   }
 
   sync(world: IWorld): void {
     const ppu = this.opts.pixelsPerUnit;
     const seen = new Set<string>();
-
-    // ── 一遍扫描：建/更新 mesh，收集 rest 位置 + 包围盒 + 对子中心（按 pairKey）。
-    const pairSumX = new Map<number, number>();
-    const pairCount = new Map<number, number>();
-    interface CardView { id: string; rx: number; ry: number; rot: number; t: number; pairKey?: number; faceUp: boolean; tint: number }
-    const views: CardView[] = [];
-    let minX = Infinity, maxX = -Infinity, minY = Infinity, maxY = -Infinity, halfW = 0, halfH = 0;
+    // 屏 px（scene.ts 单一真相）→ 3D：场景居中、y 翻转。
+    const toX = (sx: number): number => (sx - SCENE_W / 2) / ppu;
+    const toY = (sy: number): number => -(sy - SCENE_H / 2) / ppu;
 
     for (const [id] of world.query('Card3D', 'Transform')) {
       seen.add(id);
@@ -83,39 +137,22 @@ export class ThreeRenderer implements RendererBackend {
         this.meshes.set(id, mesh);
         this.scene.add(mesh);
       }
-      const rx = t.x / ppu;
-      const ry = -t.y / ppu; // 2D y 向下 → 3D y 向上
       const tw = world.getComponent<Tween>(id, 'Tween');
       const prog = tw && tw.duration > 0 ? clamp01(tw.elapsed / tw.duration) : 1; // 抛飞/翻面进度
-      const faceUp = faceUpVisible(tw ? tw.to : t.rotation); // 既定面（落定目标 tw.to；已移除 Tween→当前角）
-      views.push({ id, rx, ry, rot: t.rotation, t: prog, pairKey: c.pairKey, faceUp, tint: c.frontTint });
-      minX = Math.min(minX, rx); maxX = Math.max(maxX, rx);
-      minY = Math.min(minY, ry); maxY = Math.max(maxY, ry);
-      halfW = Math.max(halfW, c.width / ppu / 2);
-      halfH = Math.max(halfH, c.height / ppu / 2);
-      if (c.pairKey !== undefined) {
-        pairSumX.set(c.pairKey, (pairSumX.get(c.pairKey) ?? 0) + rx);
-        pairCount.set(c.pairKey, (pairCount.get(c.pairKey) ?? 0) + 1);
+      const arc = Math.sin(Math.PI * hangWarp(prog)); // 顶点滞空（命门）
+      const faceUp = faceUpVisible(tw ? tw.to : t.rotation); // 既定面（落定目标 tw.to）
+      if (c.pairKey !== undefined && c.side) {
+        // VIS-2 三路战场：按 scene.ts 摆位（A 左/B 右、front 接敌中线、抛飞弧上跳）；缩到 SCENE_CW 档。
+        const lane = Math.floor(c.pairKey / 100);
+        const p = cardScreenPos(lane, c.side === 'a' ? 'a' : 'b', c.pairKey % 100, arc);
+        mesh.position.set(toX(p.x), toY(p.y), Z_POP * arc);
+        mesh.scale.set(CARD_SCALE, CARD_SCALE, 1);
+      } else {
+        // 退路（单牌/对决 demo，无 pairKey）：旧布局 + 抛飞弧。
+        mesh.position.set(t.x / ppu, -t.y / ppu + APEX * arc, Z_POP * arc);
       }
-    }
-
-    // ── 相机自适配：取景包围盒（含牌尺寸 + 抛飞顶点余量），从几张到 52v52 都自动框住。
-    if (views.length > 0) this.fitCamera(minX - halfW, maxX + halfW, minY - halfH, maxY + halfH + APEX);
-
-    // ── 二遍：编排每张牌位姿（抛飞弧 + 顶点滞空 + 相撞靠拢 + 翻面 + 落定金石对比），纯表现（design/15）。
-    for (const v of views) {
-      const mesh = this.meshes.get(v.id)!;
-      const s = hangWarp(v.t); // 顶点滞空时间重映射：快抛→apex 屏息一拍→快落（命门）
-      const arc = Math.sin(Math.PI * s); // 0→1→0：起落（apex 处因 s 放慢而悬停）
-      let nudgeX = 0;
-      if (v.pairKey !== undefined) {
-        const n = pairCount.get(v.pairKey) ?? 1;
-        const centerX = (pairSumX.get(v.pairKey) ?? v.rx) / n; // 对子中心 x
-        nudgeX = (centerX - v.rx) * COLLIDE * arc; // apex 处朝中心靠拢 → 与对手相撞
-      }
-      mesh.position.set(v.rx + nudgeX, v.ry + APEX * arc, Z_POP * arc);
-      mesh.rotation.x = v.rot; // 翻面（tween 驱动到既定面）
-      this.applyReveal(mesh, v.faceUp, v.tint, revealGlow(v.t)); // 落定一刻：正面=自色金光(活)/反面=石板压暗(死)
+      mesh.rotation.x = t.rotation; // 翻面（tween 驱动到既定面）
+      this.applyReveal(mesh, faceUp, c.frontTint, revealGlow(prog)); // 落定：正面=自色金光(活)/反面=石板压暗(死)
     }
 
     // ── 实体消失 → 释放 GPU 资源。
@@ -135,6 +172,8 @@ export class ThreeRenderer implements RendererBackend {
       disposeMesh(mesh);
     }
     this.meshes.clear();
+    for (const o of this.scenery) { this.scene.remove(o); if (o instanceof THREE.Mesh) disposeMesh(o); }
+    this.scenery.length = 0;
     for (const [, tex] of this.texCache) tex.dispose(); // 释放牌面/背面纹理
     this.texCache.clear();
     this.renderer.dispose();
