@@ -5,6 +5,21 @@
 
 ---
 
+## 循环 #25 · 2026-06-16 · Designer F
+
+### 验收:B·slice2 Boss 宝箱掷点分卡 → ✅ 通过
+- `distributeBossLoot(owners, lootCount, pool, rng)`:**按贡献轮选**(第一先挑、份额随名次 3卡=高2/低1)、确定性 rng、边界(0卡/空池)处理 → 入各 owner 收藏(多人第二获取源)。co-opetition「合作杀 Boss、按贡献分赃」。**账号/coop 层、零引擎、89 测绿。**
+
+### 派 B·slice3:组队房 S2 接三人对局配置(UI 骨架已存在,做接线)
+> 核现状:`lobby.tsx` 组队/seat 已有 ~18 处骨架 → 本 slice = **把它接上三人对局**,不重写。
+- **3 席配置**:每席选 `{阵营(蜀/魏/吴) + 牌组(preset/自组) + 人|AI}`;空席默认 **AI 补位**(承 N-owner 架构)。
+- **喂 coop**:开局把 3 席配置 → `coop.ts` 的 3-owner 对局(各带 rosterFor(阵营)+assembleDeck(牌组));复用单机选牌路径。
+- **闭合三人一局**:配置 → 三人各自盘(玩家+AI)→ 共享岛进度(slice1)→ Boss 宝箱分卡(slice2)→ 岛陷落出排名/岛主。**= 本地三人攻岛 v1 跑通。**
+- **验收**:组队房选 3 席 → 开局 → 三人共享岛一局完整 → 岛主排名 + 各自收藏到分卡;tsc+vitest 绿、零引擎、mirror 不进 hash。
+- **押后**:真·远程联机(REQ-018 WS/WebRTC,主程);本 slice 只做本地(AI 补位)可玩。
+
+---
+
 ## 循环 #24 · 2026-06-16 · Designer F
 
 ### 验收:B·slice1 本地三人共享岛 + per-owner 贡献排名/岛主 → ✅ 通过
