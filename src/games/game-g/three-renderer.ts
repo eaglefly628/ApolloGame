@@ -33,6 +33,7 @@ export class ThreeRenderer implements RendererBackend {
   private camera!: THREE.PerspectiveCamera;
   private renderer!: THREE.WebGLRenderer;
   private readonly meshes = new Map<string, THREE.Mesh>();
+  private readonly markers = new Map<string, { group: THREE.Group; zhan: THREE.Sprite }>(); // 主将♔王冠 + 阵亡红斩（VIS-4 可读性，design/16 §十）
   private readonly scenery: THREE.Object3D[] = []; // VIS-2 静态战场 mesh（路/老家/哨塔/地面）
   private readonly texCache = new Map<string, THREE.Texture>(); // 牌面/背面纹理缓存（按 rank|suit|色 复用）
   private readonly opts: Required<ThreeRendererOptions>;
@@ -120,6 +121,28 @@ export class ThreeRenderer implements RendererBackend {
     return tex;
   }
 
+  // 主将标识（Sprite 永远朝镜头、不随牌翻）：♔ 王冠在牌上方 + 红「斩」阵亡时显在牌面。
+  private generalMarker(id: string, side: 'a' | 'b'): { group: THREE.Group; zhan: THREE.Sprite } {
+    const hit = this.markers.get(id);
+    if (hit) return hit;
+    const color = side === 'a' ? 0xeab308 : 0x38bdf8;
+    const halfH = SCENE_CH / this.opts.pixelsPerUnit / 2; // SCENE_CH 已含 CARD_SCALE
+    const crown = new THREE.Sprite(new THREE.SpriteMaterial({ map: this.glyphTexture('♔', color), transparent: true }));
+    crown.scale.set(0.4, 0.5, 1);
+    crown.position.y = halfH + 0.3;
+    const zhan = new THREE.Sprite(new THREE.SpriteMaterial({ map: this.glyphTexture('斩', 0xef4444), transparent: true }));
+    zhan.scale.set(0.55, 0.68, 1);
+    zhan.position.z = 0.12;
+    zhan.visible = false;
+    const group = new THREE.Group();
+    group.add(crown);
+    group.add(zhan);
+    this.scene.add(group);
+    const m = { group, zhan };
+    this.markers.set(id, m);
+    return m;
+  }
+
   sync(world: IWorld): void {
     const ppu = this.opts.pixelsPerUnit;
     const seen = new Set<string>();
@@ -150,6 +173,11 @@ export class ThreeRenderer implements RendererBackend {
         mesh.scale.set(CARD_SCALE, CARD_SCALE, 1);
         mesh.rotation.x = tw ? tw.from + (tw.to - tw.from) * easeOutCubic(lp) : t.rotation; // 翻面按路错开（重导自 Tween，不读 sim 角）
         this.applyReveal(mesh, faceUp, c.frontTint, revealGlow(lp));
+        if (c.pairKey % 100 === 0) { // idx0=本路主将 → ♔王冠（不随牌翻）+ 阵亡红斩（牵动/擒贼擒王可读）
+          const m = this.generalMarker(id, c.side === 'a' ? 'a' : 'b');
+          m.group.position.set(toX(p.x), toY(p.y), Z_POP * arc + 0.05);
+          m.zhan.visible = !faceUp && revealGlow(lp) > 0.4;
+        }
       } else {
         // 退路（单牌/对决 demo，无 pairKey）：旧布局 + 抛飞弧。
         const arc = Math.sin(Math.PI * hangWarp(prog));
@@ -167,6 +195,9 @@ export class ThreeRenderer implements RendererBackend {
         this.meshes.delete(id);
       }
     }
+    for (const [id, m] of this.markers) {
+      if (!seen.has(id)) { this.scene.remove(m.group); disposeGroup(m.group); this.markers.delete(id); }
+    }
     this.renderer.render(this.scene, this.camera);
   }
 
@@ -176,6 +207,8 @@ export class ThreeRenderer implements RendererBackend {
       disposeMesh(mesh);
     }
     this.meshes.clear();
+    for (const [, m] of this.markers) { this.scene.remove(m.group); disposeGroup(m.group); }
+    this.markers.clear();
     for (const o of this.scenery) { this.scene.remove(o); if (o instanceof THREE.Mesh) disposeMesh(o); }
     this.scenery.length = 0;
     for (const [, tex] of this.texCache) tex.dispose(); // 释放牌面/背面纹理
@@ -321,4 +354,9 @@ function disposeMesh(mesh: THREE.Mesh): void {
   mesh.geometry.dispose();
   const m = mesh.material;
   (Array.isArray(m) ? m : [m]).forEach((x) => x.dispose());
+}
+
+// 主将标识组（♔/斩 Sprite）：只 dispose 材质，纹理走 texCache 共用（destroy 统一释放）。
+function disposeGroup(group: THREE.Group): void {
+  group.traverse((o) => { if (o instanceof THREE.Sprite) o.material.dispose(); });
 }
