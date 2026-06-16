@@ -44,6 +44,8 @@ export const HUBAO_DECK: Deck = {
     { kind: 'shop-weight', id: 'levy', codes: [1, 2, 3, 4, 5, 6], copies: 2 },
     // 鼓舞（主动锦囊 P1）：战中点一下，全队 +20% 攻；每回合 1 次。
     { kind: 'jinnang', id: 'guwu', name: '鼓舞', charges: 1, buff: 0.2 },
+    // 火烧连营（点地锦囊 P1.5）：点棋盘一块 → 范围 DoT 灼烧太阁；每回合 1 次。
+    { kind: 'jinnang', id: 'huoshao', name: '火烧连营', charges: 1, fxTemplate: 'jinnang_huoshao', target: 'pointer' },
   ],
 };
 
@@ -105,6 +107,8 @@ export const WOLONG_DECK: Deck = {
     { kind: 'round-buff', id: 'wolong', untilRound: 3, bonus: 0.10 },
     // 奇谋：商店加权诸葛亮（谋士码 3），多洗入便于成阵。
     { kind: 'shop-weight', id: 'qimou', codes: [3], copies: 2 },
+    // 定身（点地锦囊 P1.5，控制流）：点棋盘一块 → 范围 FROZEN 定住太阁；每回合 1 次。
+    { kind: 'jinnang', id: 'dingshen', name: '定身', charges: 1, fxTemplate: 'jinnang_dingshen', target: 'pointer' },
   ],
 };
 

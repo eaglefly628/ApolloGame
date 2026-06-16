@@ -213,7 +213,7 @@ function buildMall(): HTMLElement {
 function buildSoloHud(click: (x: number, y: number) => void, play: (i: number) => void, faction: Faction = 'shu', deck?: Deck): { root: HTMLElement; update: (w: World) => void; renderAllies: (unitsList: { q: number; r: number; enemy: boolean; hpFrac: number }[][]) => void; renderCoop: (island: { progress: number; goal: number; owner: string | null; ranking?: { name: string; faction: string; contribution: number }[] }) => void; renderDeck: (w: World) => void } {
   const FAC: Record<string, string> = { 蜀: '#d8504e', 吴: '#3fae6e', 魏: '#3a86d4', 群: '#9b6dd8' };
   // 出战牌组卡名（P0 局内可见；取自各 deck 注释名，非新设计）。
-  const CARD_NAME: Record<string, string> = { hubao_edict: '虎豹骑令', blitz: '速攻令', levy: '募兵', taoyuan: '桃园誓', zhangwu: '章武', muxian: '募贤', baiyi: '白衣', jinfan: '锦帆', muci: '募刺', tuntian: '屯田', zhongnong: '重农', munong: '募农', bazhen: '八阵图', wolong: '卧龙', qimou: '奇谋', guwu: '鼓舞' };
+  const CARD_NAME: Record<string, string> = { hubao_edict: '虎豹骑令', blitz: '速攻令', levy: '募兵', taoyuan: '桃园誓', zhangwu: '章武', muxian: '募贤', baiyi: '白衣', jinfan: '锦帆', muci: '募刺', tuntian: '屯田', zhongnong: '重农', munong: '募农', bazhen: '八阵图', wolong: '卧龙', qimou: '奇谋', guwu: '鼓舞', huoshao: '火烧连营', dingshen: '定身' };
   const deckCards = deck?.cards ?? [];
   const passiveCards = deckCards.filter((c) => c.kind !== 'jinnang');
   const jinnangCards = deckCards.filter((c): c is Extract<typeof c, { kind: 'jinnang' }> => c.kind === 'jinnang');
@@ -221,8 +221,8 @@ function buildSoloHud(click: (x: number, y: number) => void, play: (i: number) =
   const passiveRowsHtml = passiveCards.map((c) => `<div data-ref="deckcard_${c.id}" style="display:flex;align-items:center;gap:5px;padding:4px 6px;border-radius:8px;background:var(--chip-bg);border:1px solid var(--panel-border);transition:background .15s;box-shadow:0 1px 4px rgba(0,0,0,.18)">
     <span style="font-size:12px">🃏</span><div style="flex:1;min-width:0"><div style="font-family:var(--font-heading);font-weight:700;font-size:10px;color:var(--ink);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${CARD_NAME[c.id] ?? c.id}</div><div data-ref="deckval_${c.id}" style="font-size:8.5px;color:var(--ink-dim)">—</div></div></div>`).join('');
   // 主动锦囊：可点卡（点击施放，扣充能）；显充能。
-  const jinnangRowsHtml = jinnangCards.map((c) => `<button data-act="cast_${c.id}" data-jid="${c.id}" style="display:flex;align-items:center;gap:5px;padding:5px 6px;border-radius:8px;background:var(--accent-soft);border:1px solid var(--accent);cursor:pointer;transition:transform .1s;box-shadow:0 1px 4px rgba(0,0,0,.2)">
-    <span style="font-size:13px">📜</span><div style="flex:1;min-width:0;text-align:left"><div style="font-family:var(--font-heading);font-weight:700;font-size:10px;color:var(--accent)">${CARD_NAME[c.id] ?? c.id}</div><div style="font-size:8.5px;color:var(--ink-dim)">点击施放 · 充能 <span data-ref="charge_${c.id}">${c.charges}</span>/${c.charges}</div></div></button>`).join('');
+  const jinnangRowsHtml = jinnangCards.map((c) => `<button data-act="cast_${c.id}" data-jid="${c.id}" data-target="${c.target ?? 'self'}" style="display:flex;align-items:center;gap:5px;padding:5px 6px;border-radius:8px;background:var(--accent-soft);border:1px solid var(--accent);cursor:pointer;transition:transform .1s;box-shadow:0 1px 4px rgba(0,0,0,.2)">
+    <span style="font-size:13px">📜</span><div style="flex:1;min-width:0;text-align:left"><div style="font-family:var(--font-heading);font-weight:700;font-size:10px;color:var(--accent)">${CARD_NAME[c.id] ?? c.id}</div><div style="font-size:8.5px;color:var(--ink-dim)">${c.target === 'pointer' ? '点击→点棋盘' : '点击施放'} · 充能 <span data-ref="charge_${c.id}">${c.charges}</span>/${c.charges}</div></div></button>`).join('');
   const FAC_LABEL: Record<Faction, string> = { shu: '蜀', wei: '魏', wu: '吴' };
   const playerFacLabel = FAC_LABEL[faction];
   // 商店卡/名牌全部**从所选阵营 roster 派生**（去腐：原硬编码 HEROES/HERO_NAMES + 写死蜀；现按 faction 取名册）。
@@ -702,8 +702,15 @@ function startMatch(container: HTMLElement, cfg: RunConfig, onExit: () => void):
   // 对局 DOM 设计 chrome 覆盖层（顶/左/右/底 + 点将台/三选一弹窗；接真实世界状态 + 命令）。
   // 大重构方向（魏蜀吴 3 人一队、太阁立志传背景）：单人/双人之分取消——多人对局缺人由 AI 补位，菜单不再分模式。
   const hud = buildSoloHud(clickW, playShop, cfg.deck?.faction ?? 'shu', cfg.deck); // 阵营感知 HUD + 局内可见牌组（P0）+ 主动锦囊（P1）
-  // 主动锦囊点击（P1）：按钮 → enqueueAction('cast_<id>') → keybind 桥发信号 → craft 原子扣充能 + 施放（caster/buff）。
-  hud.root.querySelectorAll<HTMLElement>('[data-act^="cast_"]').forEach((btn) => btn.addEventListener('click', () => queued.enqueueAction(btn.dataset.act!)));
+  // 主动锦囊点击（P1/P1.5）：self/buff 类即时施放；pointer 类→进点地态→下次点棋盘在落点施放。
+  // enqueueAction(cast,{x,y}) 一条事件同时：keybind 产 Signal cast_<id>（craft 扣充能 + caster 触发）+ 提供光标世界坐标（caster at:'pointer' 读它）。
+  let armedCast: string | null = null;
+  let canvasEl: HTMLCanvasElement | null = null;
+  hud.root.querySelectorAll<HTMLElement>('[data-act^="cast_"]').forEach((btn) => btn.addEventListener('click', () => {
+    const act = btn.dataset.act!;
+    if (btn.dataset.target === 'pointer') { armedCast = act; if (canvasEl) canvasEl.style.cursor = 'crosshair'; } // 进点地态
+    else queued.enqueueAction(act); // 鼓舞等即时
+  }));
   boardPanel.appendChild(hud.root);
   gameView.appendChild(boardPanel); // 操作引导已移入顶栏状态栏（data-ref guide），不再单列底注。
   // 盟友镜像（三人 Mirror）：两名 AI 盟友各跑自己的 game-f PvE，右栏迷你棋盘实时投影其战局（state-sync 还原）。
@@ -766,6 +773,19 @@ function startMatch(container: HTMLElement, cfg: RunConfig, onExit: () => void):
     pointer = new PointerInputSource('p1', canvas, {
       worldFromScreen: (sx, sy) => ({ x: (sx - VIEWPORT_W / 2) / CAM_ZOOM, y: (sy - VIEWPORT_H / 2) / CAM_ZOOM }),
     });
+    canvasEl = canvas;
+    // 点地锦囊（P1.5）：处于点地态时，捕获棋盘点击 → 在落点世界坐标施放（caster at:'pointer' 读同条事件的 x/y），消费此点击。
+    canvas.addEventListener('click', (e) => {
+      if (!armedCast) return;
+      const me = e as MouseEvent;
+      const rect = canvas.getBoundingClientRect();
+      const sx = (me.clientX - rect.left) * (VIEWPORT_W / rect.width);
+      const sy = (me.clientY - rect.top) * (VIEWPORT_H / rect.height);
+      queued.enqueueAction(armedCast, { x: (sx - VIEWPORT_W / 2) / CAM_ZOOM, y: (sy - VIEWPORT_H / 2) / CAM_ZOOM });
+      armedCast = null;
+      canvas.style.cursor = 'pointer';
+      e.stopPropagation();
+    }, true); // capture：抢在普通点击前
   }
   engine.start();
 

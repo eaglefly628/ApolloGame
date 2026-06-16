@@ -8,7 +8,7 @@ import {
   MOVE_PERIOD, ATK_CD, MANA_REGEN, FONT_DISPLAY, FONT_BODY, FONT_NUM, xf, sprite, zlift,
 } from './constants.js';
 import { type HeroSpec, rosterFor, finalHp, finalAtk } from './heroes.js';
-import { F_HERO, F_FX_STRIKE, F_FX_ARROW, F_FX_BOLT, F_FX_FLAME, F_FX_DRAIN } from './assets.js';
+import { F_HERO, F_FX_STRIKE, F_FX_ARROW, F_FX_BOLT, F_FX_FLAME, F_FX_DRAIN, F_FX_FROST } from './assets.js';
 import { STAR_HP_MUL, STAR_DMG_MUL, STAR_SCALE, STAR_GLYPH } from './economy.js';
 import { PVE_CODES } from './stages.js';
 import { type TaikouUnit, unitByCode } from './taikou.js';
@@ -412,6 +412,11 @@ export function templatesFor(ROSTER: HeroSpec[]): Record<string, PrefabTemplate>
       'loot_orb',
       { entities: { orb: { Transform: xf(0, 0), Shape: { kind: 'box', width: 10, height: 10 }, Sensor: {}, Sprite: sprite(F_FX_DRAIN, 5), Color: { tint: 0xd8607b, alpha: 1 }, Tag: { flags: LOOT | ZONE_FLAG }, Hitbox: { resource: 'loot', amount: -5, targetMask: PROTAG, consumeOnHit: true } } } }, // 044：真结算一次入账-5(负=给予)同拍自毁；主角零附件
     ]] as [string, PrefabTemplate][],
+    // 主动锦囊 fx（P1.5 点地施放，caster at:'pointer' 在落点展开；范围 hitbox 对太阁 TEAM_B）。火烧=DoT，定身=FROZEN。
+    [
+      ['jinnang_huoshao', { entities: { area: { Transform: xf(0, 0), Shape: { kind: 'box', width: 70, height: 70 }, Sensor: {}, Tag: { flags: ZONE_FLAG }, Hitbox: { resource: 'hp', amount: 20, targetMask: TEAM_B, ...DOT }, Timer: { id: 'life', elapsed: 0, duration: 4, loop: false }, Sprite: sprite(F_FX_FLAME, 8), Color: { tint: 0xff7a3a, alpha: 0.9 }, Tween: { target: 'Color.alpha', from: 0.9, to: 0, elapsed: 0, duration: 18, easing: 'easeOut', done: false } } } }],
+      ['jinnang_dingshen', { entities: { area: { Transform: xf(0, 0), Shape: { kind: 'box', width: 70, height: 70 }, Sensor: {}, Tag: { flags: ZONE_FLAG }, Hitbox: { resource: 'hp', amount: 5, targetMask: TEAM_B, setMask: FROZEN, statusDuration: 120 }, Timer: { id: 'life', elapsed: 0, duration: 4, loop: false }, Sprite: sprite(F_FX_FROST, 8), Color: { tint: 0x7ad0ff, alpha: 0.9 }, Tween: { target: 'Color.alpha', from: 0.9, to: 0, elapsed: 0, duration: 18, easing: 'easeOut', done: false } } } }],
+    ] as [string, PrefabTemplate][],
     // 野怪死亡复合（掉法球 + 四分碎裂；Mortal.dropTemplate 单口 → 复合模板一口出两件）
     [[
       'mob_death',

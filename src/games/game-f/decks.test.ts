@@ -1,8 +1,9 @@
 import { describe, it, expect } from 'vitest';
 import { buildGameFBlueprint } from './blueprint.js';
 import { HUBAO_DECK, HANSHI_DECK, TUNTIAN_DECK, WOLONG_DECK, DECK_REGISTRY, buildDeckRules, applyShopBias, CARD_CATALOG, assembleDeck, type Deck } from './decks.js';
-import { FACT_WEI, FACT_SHU, BENCH_OCC } from './constants.js';
+import { FACT_WEI, FACT_SHU, BENCH_OCC, TEAM_B, FROZEN } from './constants.js';
 import { SHOP_DECK } from './economy.js';
+import { GAME_F_TEMPLATES } from './combat.js';
 
 describe('T2 牌组加载器 · buildDeckRules', () => {
   it('synergy-buff → group-count + 资源 + 开战 edge 锁存写 dmg_scale_a（线性 valueFrom）', () => {
@@ -150,5 +151,31 @@ describe('组牌器（catalog + assembleDeck；designer #19 build 端）', () =>
     const ench = assembleDeck(['taoyuan'], 'shu', '自组', { taoyuan: 2 }).cards[0] as { kind: string; tiers: { bonus: number }[] };
     expect(ench.tiers[0].bonus).toBeCloseTo(base.tiers[0].bonus * 1.4, 4); // 2 级 → ×1.4
     expect(ench.tiers[0].bonus).toBeGreaterThan(base.tiers[0].bonus);
+  });
+});
+
+describe('主动锦囊（P1/P1.5；CardSpec jinnang → 充能/keybind/craft/caster；零引擎）', () => {
+  it('鼓舞(buff)：buildDeckRules 产 充能资源 + 回合刷新 + keybind + craft 扣充能加 dmg_scale_a', () => {
+    const { entities } = buildDeckRules(HUBAO_DECK);
+    expect(entities['r_charge_guwu']).toBeDefined();
+    expect(entities['kb_cast_guwu']).toBeDefined();        // 按钮→信号桥
+    expect(entities['eff_jref_guwu']).toBeDefined();        // 回合刷新
+    const craft = entities['craft_cast_guwu'] as unknown as { CraftRecipe: { costs: { id: string }[]; gains: { id: string }[] } };
+    expect(craft.CraftRecipe.costs[0].id).toBe('charge_guwu'); // 扣充能
+    expect(craft.CraftRecipe.gains[0].id).toBe('dmg_scale_a'); // 加全队系数
+  });
+  it('火烧连营(点地)：buildDeckRules 产 caster + craft 扣充能；caster at=pointer', () => {
+    const { entities } = buildDeckRules(HUBAO_DECK);
+    const caster = entities['cast_caster_huoshao'] as unknown as { Caster: { template: string; at: string } };
+    expect(caster.Caster.template).toBe('jinnang_huoshao');
+    expect(caster.Caster.at).toBe('pointer'); // 点地
+    expect((entities['craft_cast_huoshao'] as unknown as { CraftRecipe: { costs: { id: string }[] } }).CraftRecipe.costs[0].id).toBe('charge_huoshao');
+  });
+  it('锦囊 fx 模板：火烧=DoT、定身=FROZEN，均对太阁(TEAM_B)', () => {
+    const fire = GAME_F_TEMPLATES['jinnang_huoshao'] as unknown as { entities: { area: { Hitbox: { targetMask: number; dotPerTick?: number } } } };
+    expect(fire.entities.area.Hitbox.targetMask).toBe(TEAM_B);
+    expect(fire.entities.area.Hitbox.dotPerTick).toBeGreaterThan(0);
+    const ice = GAME_F_TEMPLATES['jinnang_dingshen'] as unknown as { entities: { area: { Hitbox: { setMask?: number } } } };
+    expect((ice.entities.area.Hitbox.setMask ?? 0) & FROZEN).toBe(FROZEN);
   });
 });
