@@ -1,5 +1,6 @@
 import type { Engine } from './engine.js';
 import type { World } from '@engine/core/world.js';
+import type { WorldSnapshot } from '@engine/core/types.js';
 
 // ═══════════════════════════════════════════════════════════════
 //  全路径回归探针（Loop B）—— 无头、确定性的「点遍所有声明按钮」回归测试基建。
@@ -113,4 +114,98 @@ export function fullPathProbe(makeEngine: () => Engine, fire: FireFn, signals: s
 
   const ok = perSignal.every((r) => r.ok) && deterministic;
   return { perSignal, deterministic, divergedAt, finalHash, ok };
+}
+
+// ───────────────────────────────────────────────────────────────
+//  BFS 状态图爬（Loop B 升级）—— 从起点逐个点按钮发现新「界面」，按状态键去重，对新状态递归。
+//  分支靠 world.snapshot()/restore()（从同一节点回退再试下一个动作）；去重靠 stateKey（默认 world.hash）。
+//  连续态（如战斗，每 tick 新 hash）会让纯 hash 去重爆炸 → 调用方用 `expand` 把这类态当**叶**（发现但不展开）。
+//  每条转移都跑不变量（no-throw / no-NaN），报错附**复现路径**（动作序列）。受 maxStates/maxDepth 双约束。
+// ───────────────────────────────────────────────────────────────
+
+export interface CrawlOptions {
+  maxStates?: number; // 去重状态上限（默认 200）—— 防爆炸的硬闸
+  maxDepth?: number; // BFS 深度上限（默认 6）
+  ticksPerAction?: number; // 每动作后推进 tick（默认 6）
+  stateKey?: (engine: Engine) => string; // 状态去重键（默认 engine.hash()）
+  expand?: (engine: Engine) => boolean; // 是否展开此状态的子节点（默认恒真；战斗态→false 当叶）
+}
+
+export interface CrawlIssue {
+  path: string[]; // 到达出问题前的动作序列（复现路径）
+  signal: string; // 触发问题的动作
+  detail: string; // 异常信息 / 非有限数字段
+}
+
+export interface CrawlReport {
+  states: number; // 去重后发现的状态数
+  transitions: number; // 试过的 (状态×动作) 次数
+  maxDepthReached: number;
+  truncated: boolean; // 是否因 maxStates 截断
+  errors: CrawlIssue[]; // tick 抛错（含复现路径）
+  nonFinite: CrawlIssue[]; // 出现 NaN/Infinity（含复现路径）
+  ok: boolean;
+}
+
+export function crawlStates(makeEngine: () => Engine, fire: FireFn, actions: string[], opts: CrawlOptions = {}): CrawlReport {
+  const maxStates = opts.maxStates ?? 200;
+  const maxDepth = opts.maxDepth ?? 6;
+  const ticks = opts.ticksPerAction ?? 6;
+  const keyOf = opts.stateKey ?? ((e: Engine) => e.hash());
+  const canExpand = opts.expand ?? (() => true);
+
+  const e = makeEngine();
+  const errors: CrawlIssue[] = [];
+  const nonFinite: CrawlIssue[] = [];
+  let transitions = 0;
+  let maxDepthReached = 0;
+  let truncated = false;
+
+  interface Node {
+    snap: WorldSnapshot;
+    depth: number;
+    path: string[];
+  }
+  const visited = new Set<string>([keyOf(e)]);
+  const queue: Node[] = [{ snap: e.world.snapshot(), depth: 0, path: [] }];
+
+  while (queue.length > 0) {
+    const node = queue.shift()!;
+    maxDepthReached = Math.max(maxDepthReached, node.depth);
+    e.world.restore(node.snap);
+    if (!canExpand(e) || node.depth >= maxDepth) continue; // 叶 / 到底：发现即可，不展开
+    for (const signal of actions) {
+      if (visited.size >= maxStates) {
+        truncated = true;
+        break;
+      }
+      e.world.restore(node.snap); // 回到本节点，再试下一个动作（restore 从快照克隆，快照不被改）
+      transitions++;
+      try {
+        fire(e, signal);
+        for (let i = 0; i < ticks; i++) e.world.tick();
+      } catch (err) {
+        errors.push({ path: node.path, signal, detail: err instanceof Error ? err.message : String(err) });
+        continue;
+      }
+      const nf = scanNonFinite(e.world);
+      if (nf.length) nonFinite.push({ path: node.path, signal, detail: nf.join(', ') });
+      const key = keyOf(e);
+      if (!visited.has(key)) {
+        visited.add(key);
+        queue.push({ snap: e.world.snapshot(), depth: node.depth + 1, path: [...node.path, signal] });
+      }
+    }
+    if (truncated) break;
+  }
+
+  return {
+    states: visited.size,
+    transitions,
+    maxDepthReached,
+    truncated,
+    errors,
+    nonFinite,
+    ok: errors.length === 0 && nonFinite.length === 0,
+  };
 }

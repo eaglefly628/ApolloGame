@@ -3,8 +3,8 @@ import { Engine } from '../../runtime/engine.js';
 import { buildGameFBlueprint } from './blueprint.js';
 import { GAME_F_UI } from './game-f-ui.js';
 import { collectButtons } from '@ui/shell/GameShell.js';
-import { FAST } from './game-f.helpers.js';
-import { fullPathProbe, scanNonFinite, type FireFn } from '../../runtime/fullpath-probe.js';
+import { FAST, flag } from './game-f.helpers.js';
+import { fullPathProbe, scanNonFinite, crawlStates, type FireFn } from '../../runtime/fullpath-probe.js';
 
 // ═══════════════════════════════════════════════════════════════
 //  Loop B — game-f 全路径回归：枚举 GAME_F_UI 声明的**所有按钮** → 逐个点（投信号）→ tick →
@@ -51,4 +51,18 @@ describe('game-f 全路径回归（Loop B）— 点遍所有声明按钮', () =>
     expect(report.deterministic, `确定性发散于 step ${report.divergedAt?.step}（${report.divergedAt?.signal}）`).toBe(true);
     expect(report.ok).toBe(true);
   });
+
+  it('BFS 状态图爬：从备战逐个点按钮发现多个状态，全程无报错/无 NaN（战斗态当叶不展开）', () => {
+    const fmt = (xs: { path: string[]; signal: string; detail: string }[]) =>
+      xs.map((x) => `  [${x.path.join('→')}]→${x.signal}: ${x.detail}`).join('\n');
+    const report = crawlStates(makeEngine, fire, signals, {
+      maxStates: 60,
+      maxDepth: 4,
+      ticksPerAction: 5,
+      expand: (e) => !flag(e, 'in_combat'), // 战斗=连续态（每 tick 新 hash）→ 发现即可，不深入展开
+    });
+    expect(report.errors, `报错复现路径:\n${fmt(report.errors)}`).toEqual([]);
+    expect(report.nonFinite, `NaN/Inf 复现路径:\n${fmt(report.nonFinite)}`).toEqual([]);
+    expect(report.states, 'BFS 应分叉出多个状态').toBeGreaterThan(1);
+  }, 30000);
 });
