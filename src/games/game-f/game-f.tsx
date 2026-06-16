@@ -10,6 +10,7 @@ import { buildGameFBlueprint, gameFEnemyPreview, GAME_F_ASSETS, codesFor } from 
 import { rosterFor, type Faction } from './heroes.js';
 import { WARRIOR, TACTICIAN, TEAM_A } from './constants.js';
 import { buildLobby, type RunConfig } from './lobby.js';
+import type { Deck } from './decks.js';
 import { createAllyMirrors } from './ally-mirror.js';
 import { computeCoopIsland, distributeBossLoot, enemyScaleForPlayers, enemyAtkBaseForPlayers } from './coop.js';
 import { settleRun, getLP, rankFor, updateLpAfterRun, GACHA_POOL, grantCards } from './account.js';
@@ -209,8 +210,14 @@ function buildMall(): HTMLElement {
 // —— 单人对局 DOM 设计 chrome（README 对战.dc.html solo 布局 + Apollo UI Kit 控件；接真实世界状态）——
 // 顶 HUD（STAGE/相位/倒计时/主公血/连胜）+ 左羁绊栏 + 右状态·装备栏 + 武将台发光框。
 // 三边覆盖盖掉 canvas 旧 HUD；中间棋盘 + 下方备战席/商店露出，仍走 canvas 数据实体交互（不破坏可玩）。
-function buildSoloHud(click: (x: number, y: number) => void, play: (i: number) => void, faction: Faction = 'shu'): { root: HTMLElement; update: (w: World) => void; renderAllies: (unitsList: { q: number; r: number; enemy: boolean; hpFrac: number }[][]) => void; renderCoop: (island: { progress: number; goal: number; owner: string | null; ranking?: { name: string; faction: string; contribution: number }[] }) => void } {
+function buildSoloHud(click: (x: number, y: number) => void, play: (i: number) => void, faction: Faction = 'shu', deck?: Deck): { root: HTMLElement; update: (w: World) => void; renderAllies: (unitsList: { q: number; r: number; enemy: boolean; hpFrac: number }[][]) => void; renderCoop: (island: { progress: number; goal: number; owner: string | null; ranking?: { name: string; faction: string; contribution: number }[] }) => void; renderDeck: (w: World) => void } {
   const FAC: Record<string, string> = { 蜀: '#d8504e', 吴: '#3fae6e', 魏: '#3a86d4', 群: '#9b6dd8' };
+  // 出战牌组卡名（P0 局内可见；取自各 deck 注释名，非新设计）。
+  const CARD_NAME: Record<string, string> = { hubao_edict: '虎豹骑令', blitz: '速攻令', levy: '募兵', taoyuan: '桃园誓', zhangwu: '章武', muxian: '募贤', baiyi: '白衣', jinfan: '锦帆', muci: '募刺', tuntian: '屯田', zhongnong: '重农', munong: '募农', bazhen: '八阵图', wolong: '卧龙', qimou: '奇谋' };
+  const deckCards = deck?.cards ?? [];
+  // 局内可见牌组（P0，designer #31；owner 报「卡牌隐形」）：一排卡面，名 + 当前效果值（读 buff 资源），生效 flash。
+  const deckRowsHtml = deckCards.map((c) => `<div data-ref="deckcard_${c.id}" style="display:flex;align-items:center;gap:6px;padding:5px 7px;border-radius:8px;background:var(--chip-bg);border:1px solid var(--panel-border);transition:background .15s">
+    <span style="font-size:13px">🃏</span><div style="flex:1;min-width:0"><div style="font-family:var(--font-heading);font-weight:700;font-size:11px;color:var(--ink);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${CARD_NAME[c.id] ?? c.id}</div><div data-ref="deckval_${c.id}" style="font-size:9px;color:var(--ink-dim)">—</div></div></div>`).join('');
   const FAC_LABEL: Record<Faction, string> = { shu: '蜀', wei: '魏', wu: '吴' };
   const playerFacLabel = FAC_LABEL[faction];
   // 商店卡/名牌全部**从所选阵营 roster 派生**（去腐：原硬编码 HEROES/HERO_NAMES + 写死蜀；现按 faction 取名册）。
@@ -391,7 +398,9 @@ function buildSoloHud(click: (x: number, y: number) => void, play: (i: number) =
     <!-- LEFT · 羁绊（上）；玩家卡在左下（bottom 留够，避免与玩家卡重叠）-->
     <div style="position:absolute;left:10px;top:66px;width:186px;bottom:330px;display:flex;flex-direction:column;gap:6px;overflow:hidden;pointer-events:auto">
       <div style="font-size:9px;letter-spacing:.22em;text-transform:uppercase;color:var(--ink-dim);padding:2px 6px">羁绊 · Synergies</div>
-      <div data-ref="synrows" style="display:flex;flex-direction:column;gap:6px">${synRows}</div></div>
+      <div data-ref="synrows" style="display:flex;flex-direction:column;gap:6px">${synRows}</div>
+      <div style="font-size:9px;letter-spacing:.22em;text-transform:uppercase;color:var(--ink-dim);padding:6px 6px 2px">出战牌组 · Build</div>
+      <div data-ref="deckrows" style="display:flex;flex-direction:column;gap:4px;overflow-y:auto">${deckRowsHtml || '<div style="font-size:9px;color:var(--ink-dim);padding:2px 6px">（无牌组）</div>'}</div></div>
     <!-- RIGHT · 对战玩家（三人版：另两名玩家/AI 的战况 + 迷你布阵镜像，复刻对战设计稿右栏）+ 装备 -->
     <div style="position:absolute;right:10px;top:66px;width:186px;bottom:118px;display:flex;flex-direction:column;gap:10px;overflow:hidden;pointer-events:auto">
       <div style="flex:1;min-height:0;background:var(--panel-grad);border:1px solid var(--panel-border);border-radius:var(--radius);box-shadow:inset 0 0 0 1px var(--hairline);padding:12px;display:flex;flex-direction:column;gap:9px">
@@ -605,7 +614,31 @@ function buildSoloHud(click: (x: number, y: number) => void, play: (i: number) =
     const f = root.querySelector('[data-ref="coopislandfill"]') as HTMLElement | null;
     if (f) f.style.width = `${Math.max(0, Math.min(100, (island.progress / (island.goal || 1)) * 100))}%`;
   };
-  return { root, update, renderAllies, renderCoop };
+  // 局内可见牌组（P0）：每张卡显当前效果值（读 buff/count 资源），开战边沿 flash 一下。
+  let lastInCombatDeck = false;
+  const renderDeck = (w: World): void => {
+    const rnum = (id: string): number => (getComponentById(w, 'Resource', 'id', id) as unknown as { current?: number } | undefined)?.current ?? 0;
+    const inCombat = ((getComponentById(w, 'Flag', 'id', 'in_combat') as unknown as { active?: boolean } | undefined)?.active) ?? false;
+    for (const c of deckCards) {
+      const el = root.querySelector(`[data-ref="deckval_${c.id}"]`) as HTMLElement | null;
+      if (!el) continue;
+      let txt = '';
+      if (c.kind === 'synergy-buff') { const n = rnum(`deck_count_${c.id}`); txt = `在板 ${n} → +${Math.round(n * c.perUnit * 100)}% 攻`; }
+      else if (c.kind === 'threshold-buff') { const n = rnum(`deck_count_${c.id}`); const bonus = c.tiers.filter((t) => n >= t.at).reduce((s, t) => s + t.bonus, 0); txt = `${n} 个 → +${Math.round(bonus * 100)}%`; }
+      else if (c.kind === 'round-buff') { const r = rnum('round_idx'); txt = r <= c.untilRound ? `前${c.untilRound}回合 +${Math.round(c.bonus * 100)}%` : '序盘加成已过'; }
+      else if (c.kind === 'economy-band') { txt = '金币阶梯利息'; }
+      else if (c.kind === 'shop-weight') { txt = `商店加权 ×${c.copies}`; }
+      el.textContent = txt;
+    }
+    if (inCombat && !lastInCombatDeck) { // 开战锁存拍：卡面闪一下（生效可见）
+      for (const c of deckCards) {
+        const card = root.querySelector(`[data-ref="deckcard_${c.id}"]`) as HTMLElement | null;
+        if (card) { card.style.background = 'var(--accent-soft)'; setTimeout(() => { card.style.background = 'var(--chip-bg)'; }, 500); }
+      }
+    }
+    lastInCombatDeck = inCombat;
+  };
+  return { root, update, renderAllies, renderCoop, renderDeck };
 }
 
 // 局内对局（startMatch）：从大厅收到出战配置 → 用所选牌组建世界开打。onExit=返回大厅。
@@ -653,7 +686,7 @@ function startMatch(container: HTMLElement, cfg: RunConfig, onExit: () => void):
   const playShop = (i: number): void => queued.enqueue({ source: 'shop', key: 'play', values: [i] });
   // 对局 DOM 设计 chrome 覆盖层（顶/左/右/底 + 点将台/三选一弹窗；接真实世界状态 + 命令）。
   // 大重构方向（魏蜀吴 3 人一队、太阁立志传背景）：单人/双人之分取消——多人对局缺人由 AI 补位，菜单不再分模式。
-  const hud = buildSoloHud(clickW, playShop, cfg.deck?.faction ?? 'shu'); // 阵营感知 HUD（蜀/魏/吴 商店卡+名牌按所选牌组阵营）
+  const hud = buildSoloHud(clickW, playShop, cfg.deck?.faction ?? 'shu', cfg.deck); // 阵营感知 HUD + 局内可见牌组（P0）
   boardPanel.appendChild(hud.root);
   gameView.appendChild(boardPanel); // 操作引导已移入顶栏状态栏（data-ref guide），不再单列底注。
   // 盟友镜像（三人 Mirror）：两名 AI 盟友各跑自己的 game-f PvE，右栏迷你棋盘实时投影其战局（state-sync 还原）。
@@ -728,6 +761,7 @@ function startMatch(container: HTMLElement, cfg: RunConfig, onExit: () => void):
   let lootGiven = false; // Boss 宝箱分卡一局一次（岛陷落边沿）
   const pump = (): void => {
     hud.update(engine.world);
+    hud.renderDeck(engine.world);
     hud.renderAllies(allies.map((a) => a.units()));
     // 共享岛（多人 B·slice1）：玩家 + 2 盟友贡献凿同一座岛。
     const myContrib = (getComponentById(engine.world, 'Resource', 'id', 'contribution') as unknown as { current?: number } | undefined)?.current ?? 0;
