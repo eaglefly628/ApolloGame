@@ -8,6 +8,7 @@ import { CARD_CATALOG, assembleDeck } from './decks.js';
 export interface RunConfig {
   deck: Deck;
   faction: Faction;
+  allies?: Faction[]; // 组队房 2 席盟友阵营（slice3；缺省 吴/魏 AI 补位）
 }
 
 const LOBBY_CSS = `
@@ -127,6 +128,7 @@ export function buildLobby(onStart: (cfg: RunConfig) => void): HTMLElement {
   const FAC_MAP: Record<string, Faction> = { 蜀: 'shu', 魏: 'wei', 吴: 'wu' };
   let custFac: Faction = 'shu';
   const custSel = new Set<string>();
+  const allyFacs: Faction[] = ['wu', 'wei']; // 组队房 2 席盟友阵营（slice3）
   const ownedCards = Object.entries(getCollection()).filter(([id, n]) => n > 0 && CARD_CATALOG[id]);
   const ownedCardChips = ownedCards.length
     ? ownedCards.map(([id, n]) => `<button class="gfl-fbtn" data-card="${esc(id)}" style="cursor:pointer">${esc(id)} ×${n}</button>`).join('')
@@ -174,8 +176,8 @@ export function buildLobby(onStart: (cfg: RunConfig) => void): HTMLElement {
       <div class="gfl-sub">3 席攻岛：空席可邀好友/快速匹配/AI 补位。各选势力 + 各选牌组（势力=出生倾向，牌组才是身份）。全员 ready 才能开始。</div>
       <div class="gfl-seats">
         <div class="gfl-seat host"><div class="gfl-face" style="background:#2f9e7e">🪖</div><div style="font-weight:800;font-size:15px">赵云（房主·我）</div><div><span class="gfl-pill" style="background:#2f9e7e">蜀</span> 牌组：虎豹铁骑</div><div class="gfl-ready">✅ 已准备</div></div>
-        <div class="gfl-seat empty" data-toast="1"><div style="font-size:34px">＋</div><div>邀好友 / 快速匹配 / AI 补位<br>（空席）</div></div>
-        <div class="gfl-seat"><div class="gfl-face" style="background:#3a6ea5">🤖</div><div style="font-weight:800;font-size:15px">AI · 曹</div><div><span class="gfl-pill" style="background:#3a6ea5">魏</span> 牌组：自动</div><div class="gfl-pending">🤖 AI 自动准备</div></div>
+        <div class="gfl-seat"><div class="gfl-face" style="background:#2f9e7e">🤖</div><div style="font-weight:800;font-size:15px">AI 盟友 ①</div><div style="display:flex;gap:5px" data-allyfac="0">${(['wu', 'wei', 'shu'] as const).map((f, i) => `<span class="gfl-fac${i === 0 ? ' sel' : ''}" data-f="${f}" style="cursor:pointer">${({ shu: '蜀', wei: '魏', wu: '吴' } as Record<string, string>)[f]}</span>`).join('')}</div><div class="gfl-pending">🤖 AI 自动准备</div></div>
+        <div class="gfl-seat"><div class="gfl-face" style="background:#3a6ea5">🤖</div><div style="font-weight:800;font-size:15px">AI 盟友 ②</div><div style="display:flex;gap:5px" data-allyfac="1">${(['wei', 'wu', 'shu'] as const).map((f, i) => `<span class="gfl-fac${i === 0 ? ' sel' : ''}" data-f="${f}" style="cursor:pointer">${({ shu: '蜀', wei: '魏', wu: '吴' } as Record<string, string>)[f]}</span>`).join('')}</div><div class="gfl-pending">🤖 AI 自动准备</div></div>
       </div>
       <div class="gfl-config"><span>选势力：</span>
         <span class="gfl-fac sel" style="background:#2f9e7e" data-fac="shu">蜀</span><span class="gfl-fac" data-fac="wei">魏</span><span class="gfl-fac" data-fac="wu">吴</span>
@@ -317,12 +319,21 @@ export function buildLobby(onStart: (cfg: RunConfig) => void): HTMLElement {
     if (custSel.size === 0) { root.querySelector('.gfl-toast')?.remove(); const t = document.createElement('div'); t.className = 'gfl-toast'; t.innerHTML = '<span>⚠️ 先从收藏选至少 1 张小丑牌</span><button class="gfl-acc">好</button>'; t.querySelector('button')!.addEventListener('click', () => t.remove()); root.appendChild(t); return; }
     const ids = [...custSel];
     saveCustomDeck({ cardIds: ids, faction: custFac });
-    onStart({ deck: assembleDeck(ids, custFac, '自组牌组', getEnchantLevels()), faction: custFac }); // 附魔级烘进卡数值
+    onStart({ deck: assembleDeck(ids, custFac, '自组牌组', getEnchantLevels()), faction: custFac, allies: [...allyFacs] }); // 附魔级烘进卡数值
   });
-  // 开始攻岛 → 产出出战配置交引擎（选实装组 hubao/hanshi 即生效；deck.faction 定出生势力）。
+  // 组队房盟友席阵营选择（slice3）：每席 data-f 单选 → allyFacs[席]。
+  root.querySelectorAll<HTMLElement>('[data-allyfac]').forEach((grp) => {
+    const idx = Number(grp.dataset.allyfac);
+    grp.querySelectorAll<HTMLElement>('[data-f]').forEach((el2) => el2.addEventListener('click', () => {
+      grp.querySelectorAll<HTMLElement>('[data-f]').forEach((x) => x.classList.remove('sel'));
+      el2.classList.add('sel');
+      allyFacs[idx] = el2.dataset.f as Faction;
+    }));
+  });
+  // 开始攻岛 → 产出出战配置交引擎（选实装组 hubao/hanshi 即生效；deck.faction 定出生势力；allies=组队房盟友阵营）。
   root.querySelector<HTMLElement>('[data-start]')!.addEventListener('click', () => {
     const deck = DECK_REGISTRY[selectedDeckId] ?? HUBAO_DECK;
-    onStart({ deck, faction: deck.faction });
+    onStart({ deck, faction: deck.faction, allies: [...allyFacs] });
   });
 
   return root;

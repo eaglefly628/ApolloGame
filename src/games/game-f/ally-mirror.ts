@@ -85,6 +85,7 @@ function createAllyMirror(faction: Faction): AllyMirror {
 
 // 起两名 AI 盟友引擎（吴/魏，对应右栏 ALLY_ROSTER 卡）。3-faction plumbing 落地后 rosterFor('wu') 有效
 // （吴+魏敌方半区），故 'wu' 盟友跑真实吴名册 PvE；迷你棋盘画单位位置/阵营，颜色由 UI 侧决定。
-export function createAllyMirrors(): AllyMirror[] {
-  return [createAllyMirror('wu'), createAllyMirror('wei')]; // 吴/魏 盟友（3-faction plumbing 落地后 'wu' 可用）
+// 按组队房配置起 N 名 AI 盟友引擎（slice3：每席阵营可配；缺省 吴/魏 补位）。
+export function createAllyMirrors(factions: Faction[] = ['wu', 'wei']): AllyMirror[] {
+  return factions.map((f) => createAllyMirror(f));
 }

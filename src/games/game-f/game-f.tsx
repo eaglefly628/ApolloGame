@@ -651,7 +651,7 @@ function startMatch(container: HTMLElement, cfg: RunConfig, onExit: () => void):
   boardPanel.appendChild(hud.root);
   gameView.appendChild(boardPanel); // 操作引导已移入顶栏状态栏（data-ref guide），不再单列底注。
   // 盟友镜像（三人 Mirror）：两名 AI 盟友各跑自己的 game-f PvE，右栏迷你棋盘实时投影其战局（state-sync 还原）。
-  const allies = createAllyMirrors();
+  const allies = createAllyMirrors(cfg.allies); // 组队房配置的盟友阵营（slice3；缺省 吴/魏 AI 补位）
   // 局内 HUD = 这份手写 DOM 覆盖层（顶栏/左下主公卡/右盟友预览/底点将台·开战 + 弹窗）；GameShell（GAME_F_UI）
   // 留作数据化壳层蓝本/测试，但**不在局内并存渲染**——避免在棋盘下方堆叠出第二套点将台/主公卡（owner 报重复）。
 
@@ -713,7 +713,8 @@ function startMatch(container: HTMLElement, cfg: RunConfig, onExit: () => void):
   // 自渲（update 读 shop_slot_i 码），无需 GameShell 的 shop_face StringVar 投影。
   let rafId = 0;
   const COOP_NAMES = ['玄德', '仲谋', '孟德'];
-  const COOP_FACS = ['蜀', '吴', '魏'];
+  const FAC_LABEL: Record<string, string> = { shu: '蜀', wei: '魏', wu: '吴' };
+  const COOP_FACS = [FAC_LABEL[cfg.deck?.faction ?? 'shu'] ?? '蜀', ...(cfg.allies ?? ['wu', 'wei']).map((f) => FAC_LABEL[f] ?? '群')];
   let lootGiven = false; // Boss 宝箱分卡一局一次（岛陷落边沿）
   const pump = (): void => {
     hud.update(engine.world);
