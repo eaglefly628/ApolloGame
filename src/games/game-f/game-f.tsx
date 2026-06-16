@@ -209,7 +209,7 @@ function buildMall(): HTMLElement {
 // —— 单人对局 DOM 设计 chrome（README 对战.dc.html solo 布局 + Apollo UI Kit 控件；接真实世界状态）——
 // 顶 HUD（STAGE/相位/倒计时/主公血/连胜）+ 左羁绊栏 + 右状态·装备栏 + 武将台发光框。
 // 三边覆盖盖掉 canvas 旧 HUD；中间棋盘 + 下方备战席/商店露出，仍走 canvas 数据实体交互（不破坏可玩）。
-function buildSoloHud(click: (x: number, y: number) => void, play: (i: number) => void, faction: Faction = 'shu'): { root: HTMLElement; update: (w: World) => void; renderAllies: (unitsList: { q: number; r: number; enemy: boolean; hpFrac: number }[][]) => void; renderCoop: (island: { progress: number; goal: number; owner: string | null }) => void } {
+function buildSoloHud(click: (x: number, y: number) => void, play: (i: number) => void, faction: Faction = 'shu'): { root: HTMLElement; update: (w: World) => void; renderAllies: (unitsList: { q: number; r: number; enemy: boolean; hpFrac: number }[][]) => void; renderCoop: (island: { progress: number; goal: number; owner: string | null; ranking?: { name: string; faction: string; contribution: number }[] }) => void } {
   const FAC: Record<string, string> = { 蜀: '#d8504e', 吴: '#3fae6e', 魏: '#3a86d4', 群: '#9b6dd8' };
   const FAC_LABEL: Record<Faction, string> = { shu: '蜀', wei: '魏', wu: '吴' };
   const playerFacLabel = FAC_LABEL[faction];
@@ -405,6 +405,7 @@ function buildSoloHud(click: (x: number, y: number) => void, play: (i: number) =
         <div style="background:var(--chip-bg);border:1px solid var(--panel-border);border-radius:9px;padding:7px 9px">
           <div style="display:flex;justify-content:space-between;align-items:baseline"><span style="font-size:9px;letter-spacing:.1em;color:var(--ink-dim)">🗾 共享岛 · 岛主 <span data-ref="islandowner" style="color:var(--gold)">—</span></span><span data-ref="coopisland" style="font-family:var(--font-num);font-size:10px;color:var(--accent)">0/300</span></div>
           <div style="height:6px;border-radius:99px;background:var(--track);overflow:hidden;margin-top:4px"><div data-ref="coopislandfill" style="width:0%;height:100%;background:var(--accent);border-radius:99px"></div></div>
+          <div data-ref="cooprank" style="display:flex;flex-direction:column;gap:2px;margin-top:5px"></div>
         </div>
         <div data-ref="allies" style="display:flex;flex-direction:column;gap:9px;flex:1;min-height:0;overflow-y:auto">${allyPreview}</div></div>
       <div style="background:var(--panel-grad);border:1px solid var(--panel-border);border-radius:var(--radius);box-shadow:inset 0 0 0 1px var(--hairline);padding:12px">
@@ -592,10 +593,15 @@ function buildSoloHud(click: (x: number, y: number) => void, play: (i: number) =
     });
   };
   // 共享岛投影（多人 B·slice1）：三方贡献和 → 进度条 + 岛主。
-  const renderCoop = (island: { progress: number; goal: number; owner: string | null }): void => {
+  const renderCoop = (island: { progress: number; goal: number; owner: string | null; ranking?: { name: string; faction: string; contribution: number }[] }): void => {
     const setT = (k: string, t: string): void => { const e = root.querySelector(`[data-ref="${k}"]`) as HTMLElement | null; if (e) e.textContent = t; };
     setT('islandowner', island.owner ?? '—');
     setT('coopisland', `${Math.round(island.progress)}/${island.goal}`);
+    // 贡献榜（co-opetition 张力可视化）：按名次排，岛主戴冠。
+    const lb = root.querySelector('[data-ref="cooprank"]') as HTMLElement | null;
+    if (lb && island.ranking) {
+      lb.innerHTML = island.ranking.map((o, i) => `<div style="display:flex;align-items:center;gap:5px;font-size:9.5px;color:${i === 0 ? 'var(--gold)' : 'var(--ink-dim)'}"><span>${i === 0 ? '👑' : `${i + 1}.`}</span><span style="flex:1">${o.name}·${o.faction}</span><span style="font-family:var(--font-num)">${Math.round(o.contribution)}</span></div>`).join('');
+    }
     const f = root.querySelector('[data-ref="coopislandfill"]') as HTMLElement | null;
     if (f) f.style.width = `${Math.max(0, Math.min(100, (island.progress / (island.goal || 1)) * 100))}%`;
   };
