@@ -41,6 +41,26 @@ export function equipDeployHp(h: HeroSpec, star: number, hpMul: number, map: Equ
   return Math.round((finalHp(h) + bonus) * hpMul * (STAR_HP_MUL[star] ?? 1));
 }
 
+// 极简 world 接口（解耦引擎类型，便于测试）：拖装备只需读/写 marker 的 Caster 组件。
+export interface EquipWorld {
+  getComponent(entityId: string, type: string): unknown;
+  addComponent(entityId: string, comp: unknown): void;
+}
+interface CasterOverride { overrides?: { main?: { Resource?: { current: number; max: number } } } }
+
+// 拖装备落 marker（③）：addEquip(≤3) 成功后，把该将部署 HP 重烘进 Caster.overrides.main.Resource
+// （caster 每次施放重读 overrides → 下次开战生效）。满 3 件返回 false（调用方回弹+提示，不写 override）。
+export function applyEquip(world: EquipWorld, markerId: string, itemId: string, map: EquipMap, h: HeroSpec, star: number, hpMul: number): boolean {
+  if (!addEquip(map, markerId, itemId)) return false;
+  const caster = world.getComponent(markerId, 'Caster') as CasterOverride | undefined;
+  if (caster?.overrides?.main?.Resource) {
+    const hp = equipDeployHp(h, star, hpMul, map, markerId);
+    caster.overrides.main.Resource = { current: hp, max: hp };
+    world.addComponent(markerId, caster);
+  }
+  return true;
+}
+
 // 解析 marker 实例 id（`bench${star?}_${heroId}#${seq}:seat`）→ {heroId, star}；非席位 → null。
 // star：bench_ =1 / bench2_ =2 / bench3_ =3（模板族名编码星级）。heroId 可含下划线（如 a_guanyu）。
 export function parseMarkerId(entityId: string): { heroId: string; star: number } | null {

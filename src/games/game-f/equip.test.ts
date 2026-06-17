@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { addEquip, removeEquip, equipStatSum, equipDeployHp, parseMarkerId, MAX_EQUIP, type EquipMap } from './equip.js';
+import { addEquip, removeEquip, equipStatSum, equipDeployHp, parseMarkerId, applyEquip, MAX_EQUIP, type EquipMap, type EquipWorld } from './equip.js';
 import { finalHp, type HeroSpec } from './heroes.js';
 import { STAR_HP_MUL } from './economy.js';
 
@@ -37,6 +37,21 @@ describe('装备 ③/④ 模型（金铲铲 ≤3 / 烘下次部署 / 拆解退�
     expect(equipDeployHp(h, 2, 1, m, 'k')).toBe(expected2);
     // 无装备 = 纯 heroOverrides 基线
     expect(equipDeployHp(h, 1, 1, {}, 'k')).toBe(Math.round(finalHp(h) * STAR_HP_MUL[1]));
+  });
+  it('applyEquip：成功则把重烘 HP 写回 Caster.overrides.main.Resource；满 3 件不写、返回 false', () => {
+    // 假 world：marker 的 Caster.overrides 初始为基线 HP。
+    const caster = { overrides: { main: { Resource: { current: 100, max: 100 } } } };
+    const world: EquipWorld = { getComponent: () => caster, addComponent: () => {} };
+    const m: EquipMap = {};
+    const h = hero(200, 15);
+    expect(applyEquip(world, 'bench_a_x#1:seat', 'a_baiyin', m, h, 2, 1)).toBe(true); // +hp260
+    expect(caster.overrides.main.Resource.max).toBe(Math.round((finalHp(h) + 260) * STAR_HP_MUL[2]));
+    expect(caster.overrides.main.Resource.current).toBe(caster.overrides.main.Resource.max);
+    // 装满 3 件后第 4 件拒绝、override 不再变
+    addEquip(m, 'bench_a_x#1:seat', 'x'); addEquip(m, 'bench_a_x#1:seat', 'y'); // 现 3 件
+    const before = caster.overrides.main.Resource.max;
+    expect(applyEquip(world, 'bench_a_x#1:seat', 'w_fangtian', m, h, 2, 1)).toBe(false);
+    expect(caster.overrides.main.Resource.max).toBe(before);
   });
   it('parseMarkerId：bench/bench2/bench3 编码星级；heroId 含下划线；非席位 null', () => {
     expect(parseMarkerId('bench_a_guanyu#3:seat')).toEqual({ heroId: 'a_guanyu', star: 1 });

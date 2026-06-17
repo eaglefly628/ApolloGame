@@ -8,7 +8,8 @@ import { getComponentById } from '@engine/core/query.js';
 import type { World } from '@engine/core/world.js';
 import { buildGameFBlueprint, gameFEnemyPreview, GAME_F_ASSETS, codesFor } from './index.js';
 import { rosterFor, type Faction } from './heroes.js';
-import { itemIcon, itemTip, rollItemId } from './items.js';
+import { itemIcon, itemTip, rollItemId, ITEM_LIB } from './items.js';
+import { applyEquip, parseMarkerId, type EquipMap } from './equip.js';
 import { WARRIOR, TACTICIAN, TEAM_A } from './constants.js';
 import { buildLobby, type RunConfig } from './lobby.js';
 import type { Deck } from './decks.js';
@@ -211,7 +212,7 @@ function buildMall(): HTMLElement {
 // —— 单人对局 DOM 设计 chrome（README 对战.dc.html solo 布局 + Apollo UI Kit 控件；接真实世界状态）——
 // 顶 HUD（STAGE/相位/倒计时/主公血/连胜）+ 左羁绊栏 + 右状态·装备栏 + 武将台发光框。
 // 三边覆盖盖掉 canvas 旧 HUD；中间棋盘 + 下方备战席/商店露出，仍走 canvas 数据实体交互（不破坏可玩）。
-function buildSoloHud(click: (x: number, y: number) => void, play: (i: number) => void, faction: Faction = 'shu', deck?: Deck): { root: HTMLElement; update: (w: World) => void; renderAllies: (unitsList: { q: number; r: number; enemy: boolean; hpFrac: number }[][]) => void; renderCoop: (island: { progress: number; goal: number; owner: string | null; ranking?: { name: string; faction: string; contribution: number }[] }) => void; renderDeck: (w: World) => void } {
+function buildSoloHud(click: (x: number, y: number) => void, play: (i: number) => void, faction: Faction = 'shu', deck?: Deck): { root: HTMLElement; update: (w: World) => void; renderAllies: (unitsList: { q: number; r: number; enemy: boolean; hpFrac: number }[][]) => void; renderCoop: (island: { progress: number; goal: number; owner: string | null; ranking?: { name: string; faction: string; contribution: number }[] }) => void; renderDeck: (w: World) => void; bag: string[]; equipped: EquipMap; renderBag: () => void } {
   const FAC: Record<string, string> = { 蜀: '#d8504e', 吴: '#3fae6e', 魏: '#3a86d4', 群: '#9b6dd8' };
   // 出战牌组卡名（P0 局内可见；取自各 deck 注释名，非新设计）。
   const CARD_NAME: Record<string, string> = { hubao_edict: '虎豹骑令', blitz: '速攻令', levy: '募兵', taoyuan: '桃园誓', zhangwu: '章武', muxian: '募贤', baiyi: '白衣', jinfan: '锦帆', muci: '募刺', tuntian: '屯田', zhongnong: '重农', munong: '募农', bazhen: '八阵图', wolong: '卧龙', qimou: '奇谋', guwu: '鼓舞', huoshao: '火烧连营', dingshen: '定身', wanjian: '万箭齐发', huichun: '妙手回春', kongcheng: '空城计' };
@@ -498,8 +499,20 @@ function buildSoloHud(click: (x: number, y: number) => void, play: (i: number) =
   let lastShopSig = ''; // 点将台卡面只在「在售/可负担」变化时重渲（每帧重建会杀掉 :hover 浮动效果）。
   let lastSynSig = '';
 
-  // 战利品袋（② 具体道具 + tooltip）：JS 侧 meta 状态（不入战斗 hash）；拾取 items 上升沿掷一件。
+  // 战利品袋（② 具体道具 + tooltip / ③ 拖装备）：JS 侧 meta 状态（不入战斗 hash）；拾取 items 上升沿掷一件。
   const bag: string[] = [];
+  let rolled = 0; // 已掷次数（=累计拾取数；单调，与袋长解耦——装备移出袋不触发重掷）
+  const equipped: EquipMap = {}; // marker 实例 id → 已装道具（③ 拖装备落 marker）
+  // 渲染战利品格：具体道具(品级色边 + 图标 + draggable)；空格虚线。供 update（拾取变化）与拖装备后即时调。
+  const renderBag = (): void => {
+    if (!elEquip) return;
+    elEquip.innerHTML = Array.from({ length: 8 }, (_, i) => {
+      const id = bag[i];
+      if (!id) return '<div style="aspect-ratio:1;border-radius:8px;background:transparent;border:1px dashed var(--panel-border)"></div>';
+      const col = itemTip(id)?.color ?? '#caa15a';
+      return `<div data-itemid="${id}" data-slot="${i}" draggable="true" style="aspect-ratio:1;border-radius:8px;background:var(--gold-chip);border:2px solid ${col};display:flex;align-items:center;justify-content:center;font-size:16px;cursor:grab;box-shadow:0 0 8px ${col}55">${itemIcon(id)}</div>`;
+    }).join('');
+  };
   const tip = document.createElement('div');
   tip.style.cssText = 'position:fixed;z-index:90;display:none;max-width:210px;padding:9px 12px;border-radius:9px;background:#1b1e25;border:1px solid #4a4a52;box-shadow:0 10px 28px rgba(0,0,0,.6);font-family:var(--font-cjk);pointer-events:none;line-height:1.55';
   root.appendChild(tip);
@@ -519,6 +532,11 @@ function buildSoloHud(click: (x: number, y: number) => void, play: (i: number) =
     elEquip.addEventListener('mouseover', (e) => { const el = (e.target as HTMLElement).closest('[data-itemid]') as HTMLElement | null; if (el?.dataset.itemid) showTip(el.dataset.itemid, (e as MouseEvent).clientX, (e as MouseEvent).clientY); });
     elEquip.addEventListener('mousemove', (e) => { if (tip.style.display === 'block') { tip.style.left = `${(e as MouseEvent).clientX + 14}px`; tip.style.top = `${(e as MouseEvent).clientY + 12}px`; } });
     elEquip.addEventListener('mouseout', hideTip);
+    // ③ 拖装备：从战利品格拖出，dataTransfer 带 itemid + 槽位（落 canvas 武将 marker 由 startMatch 接）。
+    elEquip.addEventListener('dragstart', (e) => {
+      const el = (e.target as HTMLElement).closest('[data-itemid]') as HTMLElement | null;
+      if (el?.dataset.itemid && (e as DragEvent).dataTransfer) { (e as DragEvent).dataTransfer!.setData('text/plain', `${el.dataset.itemid}|${el.dataset.slot}`); hideTip(); }
+    });
   }
 
   const update = (w: World): void => {
@@ -554,18 +572,13 @@ function buildSoloHud(click: (x: number, y: number) => void, play: (i: number) =
     const contribV = num('contribution'); if (contribV !== undefined) setAll('contrib', String(Math.round(contribV)));
     const islV = num('island_progress'), islM = max('island_progress') ?? 100;
     if (islV !== undefined) { setAll('island', `${Math.round(islV)}/${islM}`); setW('islandfill', `${Math.max(0, Math.min(100, (islV / (islM || 100)) * 100))}%`); }
-    // 装备栏（②）：拾取 items 上升沿 → 掷具体道具入袋；按品级色渲格 + hover tooltip（变化才重渲）。
+    // 装备栏（②/③）：拾取 items 上升沿 → 掷具体道具入袋（rolled 单调，装备移出袋不重掷）；品级色渲格 + hover/拖拽。
     const itemN = Math.min(8, Math.round(num('items') ?? 0));
-    while (bag.length < itemN) bag.push(rollItemId());
+    while (rolled < itemN && bag.length < 8) { bag.push(rollItemId()); rolled++; }
     setAll('equipcount', `${bag.length}/8`);
-    if (elEquip && bag.length !== lastEquip) {
-      lastEquip = bag.length;
-      elEquip.innerHTML = Array.from({ length: 8 }, (_, i) => {
-        const id = bag[i];
-        if (!id) return '<div style="aspect-ratio:1;border-radius:8px;background:transparent;border:1px dashed var(--panel-border)"></div>';
-        const col = itemTip(id)?.color ?? '#caa15a';
-        return `<div data-itemid="${id}" style="aspect-ratio:1;border-radius:8px;background:var(--gold-chip);border:2px solid ${col};display:flex;align-items:center;justify-content:center;font-size:16px;cursor:help;box-shadow:0 0 8px ${col}55">${itemIcon(id)}</div>`;
-      }).join('');
+    if (elEquip && rolled !== lastEquip) {
+      lastEquip = rolled;
+      renderBag();
     }
     setAll('buffStreak', streak > 0 ? `连胜 ${streak} · 士气高涨` : '连胜越高士气越旺');
     // 羁绊真实计数（只在变化时重渲）+ 操作引导随相位。
@@ -679,7 +692,7 @@ function buildSoloHud(click: (x: number, y: number) => void, play: (i: number) =
     }
     lastInCombatDeck = inCombat;
   };
-  return { root, update, renderAllies, renderCoop, renderDeck };
+  return { root, update, renderAllies, renderCoop, renderDeck, bag, equipped, renderBag };
 }
 
 // 局内对局（startMatch）：从大厅收到出战配置 → 用所选牌组建世界开打。onExit=返回大厅。
@@ -812,6 +825,33 @@ function startMatch(container: HTMLElement, cfg: RunConfig, onExit: () => void):
       canvas.style.cursor = 'pointer';
       e.stopPropagation();
     }, true); // capture：抢在普通点击前
+    // ③ 拖装备落 marker：战利品格拖到 canvas 武将 → 命中最近 marker → applyEquip 烘 HP 进下次部署。
+    const equipFaction = cfg.deck?.faction ?? 'shu';
+    const equipRoster = rosterFor(equipFaction);
+    const equipToast = (msg: string): void => { const t = document.createElement('div'); t.style.cssText = 'position:absolute;left:50%;top:28%;transform:translateX(-50%);z-index:70;background:#23262d;color:#f3e9d6;border:1px solid var(--gold);border-radius:10px;padding:9px 16px;font-size:13px;box-shadow:0 10px 28px rgba(0,0,0,.5)'; t.textContent = msg; hud.root.appendChild(t); setTimeout(() => t.remove(), 2200); };
+    canvas.addEventListener('dragover', (e) => e.preventDefault());
+    canvas.addEventListener('drop', (e) => {
+      e.preventDefault();
+      const data = (e as DragEvent).dataTransfer?.getData('text/plain'); if (!data) return;
+      const [itemId, slotStr] = data.split('|'); const slot = Number(slotStr);
+      const rect = canvas.getBoundingClientRect();
+      const wx = ((e as DragEvent).clientX - rect.left) * (VIEWPORT_W / rect.width) / CAM_ZOOM - VIEWPORT_W / 2 / CAM_ZOOM;
+      const wy = ((e as DragEvent).clientY - rect.top) * (VIEWPORT_H / rect.height) / CAM_ZOOM - VIEWPORT_H / 2 / CAM_ZOOM;
+      let best: { id: string; heroId: string; star: number } | null = null, bd = Infinity;
+      for (const id of engine.world.queryEntities('Draggable')) {
+        const mk = parseMarkerId(id); if (!mk) continue;
+        const tr = engine.world.getComponent(id, 'Transform') as { x: number; y: number } | undefined; if (!tr) continue;
+        const d = (tr.x - wx) ** 2 + (tr.y - wy) ** 2; if (d < bd) { bd = d; best = { id, heroId: mk.heroId, star: mk.star }; }
+      }
+      if (!best || bd > 48 * 48) { equipToast('拖到武将身上才能装备'); return; }
+      const h = equipRoster.find((x) => x.id === best!.heroId); if (!h) return;
+      const name = ITEM_LIB[itemId]?.name ?? itemId;
+      if (applyEquip(engine.world, best.id, itemId, hud.equipped, h, best.star, coopMul)) {
+        if (hud.bag[slot] === itemId) hud.bag.splice(slot, 1); else { const k = hud.bag.indexOf(itemId); if (k >= 0) hud.bag.splice(k, 1); }
+        hud.renderBag();
+        equipToast(`${h.name} 装备「${name}」· 下次开战生效`);
+      } else equipToast(`${h.name} 已满 3 件`);
+    });
   }
   engine.start();
 
