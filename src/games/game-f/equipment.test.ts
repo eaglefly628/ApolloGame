@@ -58,7 +58,7 @@ describe('装备系统 · 程序化道具库（基底×品级×词缀 + 命名�
   });
 
   it('命名传说固定在库、覆盖不被程序化变体冲掉（如 赤兔马/方天画戟/传国玉玺）', () => {
-    expect(Object.keys(NAMED_UNIQUES).length).toBeGreaterThanOrEqual(30);
+    expect(Object.keys(NAMED_UNIQUES).length).toBeGreaterThanOrEqual(50); // owner 锁 50 命名传说
     expect(ITEM_LIB['m_chitu']?.name).toBe('赤兔马');
     expect(ITEM_LIB['m_chitu']?.effect).toBeTruthy(); // 橙装带特效
     expect(ITEM_LIB['w_fangtian']?.stats.atk).toBe(40);

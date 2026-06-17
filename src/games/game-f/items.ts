@@ -139,8 +139,23 @@ export const NAMED_UNIQUES: Record<string, ItemDef> = {
   t_hujiu: { id: 't_hujiu', name: '虎贲腰牌', slot: 'trinket', rarity: 'blue', stats: { hp: 100, atk: 6 }, desc: '虎贲卫士，以一当十' },
   w_gudao_unique: { id: 'w_gudao_unique', name: '古锭刀·孙坚', slot: 'weapon', rarity: 'green', stats: { atk: 16 }, desc: '孙坚旧物，江东之始' },
   a_pijia_unique: { id: 'a_pijia_unique', name: '一身是胆', slot: 'armor', rarity: 'purple', stats: { hp: 220, move: 0.05 }, effect: '残血免伤', desc: '子龙单骑，浑身是胆' },
-  m_zhaoye: { id: 'm_zhaoye', name: '照夜玉狮子', slot: 'mount', rarity: 'orange', stats: { move: 0.3, hp: 60 }, effect: '冲锋破阵', desc: '通体如雪，夜照千里' },
   t_qiguang: { id: 't_qiguang', name: '七宝刀', slot: 'trinket', rarity: 'purple', stats: { atk: 18, crit: 0.1 }, desc: '七宝镶嵌，光华夺目' },
+  // §7.5 补足 14 件凑满 50（特效 v1 仅文案，机制后续锦囊式 caster）。
+  w_yitian: { id: 'w_yitian', name: '倚天剑', slot: 'weapon', rarity: 'orange', stats: { atk: 46, crit: 0.18 }, effect: '开战全队 +攻', desc: '曹操配剑，镇军威' },
+  w_gulou: { id: 'w_gulou', name: '古锭巨阙', slot: 'weapon', rarity: 'purple', stats: { atk: 32 }, desc: '越王遗兵，断金切玉' },
+  w_sanjian: { id: 'w_sanjian', name: '三尖刀', slot: 'weapon', rarity: 'blue', stats: { atk: 24, atkSpd: 0.08 }, desc: '二郎遗制，刃开三锋' },
+  a_lianhuanma: { id: 'a_lianhuanma', name: '连环马铠', slot: 'armor', rarity: 'purple', stats: { hp: 250 }, desc: '铁骑连环，势不可当' },
+  a_jinsuo: { id: 'a_jinsuo', name: '黄金锁子', slot: 'armor', rarity: 'orange', stats: { hp: 340, atk: 8 }, effect: '开战免控 3s', desc: '刀枪不入，马超之甲' },
+  a_tengjiawang: { id: 'a_tengjiawang', name: '藤甲王', slot: 'armor', rarity: 'purple', stats: { hp: 230 }, effect: '受火伤+，余减伤', desc: '刀箭难入，畏火' },
+  m_dawanwang: { id: 'm_dawanwang', name: '千里大宛', slot: 'mount', rarity: 'purple', stats: { move: 0.26, hp: 70 }, desc: '汗血神驹，日行千里' },
+  m_zhaoyemulan: { id: 'm_zhaoyemulan', name: '照夜玉狮子', slot: 'mount', rarity: 'orange', stats: { move: 0.3, atk: 10 }, effect: '冲锋暴击', desc: '赵云白马，长坂七进出' },
+  t_chuanguo: { id: 't_chuanguo', name: '传国玉玺', slot: 'trinket', rarity: 'orange', stats: { hp: 150, atk: 15 }, effect: '全队 +5% 攻光环', desc: '受命于天' },
+  t_taipingyaoshu: { id: 't_taipingyaoshu', name: '太平要术', slot: 'trinket', rarity: 'orange', stats: { hp: 100, atk: 12 }, effect: '开战回血', desc: '南华老仙' },
+  t_dunjia: { id: 't_dunjia', name: '奇门遁甲', slot: 'trinket', rarity: 'purple', stats: { crit: 0.2, atkSpd: 0.1 }, desc: '卧龙所授，鬼神莫测' },
+  t_liannu: { id: 't_liannu', name: '诸葛连弩图', slot: 'trinket', rarity: 'purple', stats: { atk: 20, atkSpd: 0.15 }, desc: '一弩十矢，机巧无双' },
+  t_qixingdeng: { id: 't_qixingdeng', name: '七星灯', slot: 'trinket', rarity: 'purple', stats: { hp: 120 }, desc: '续命禳星，五丈原夜' },
+  t_dujiang: { id: 't_dujiang', name: '督将虎贲', slot: 'trinket', rarity: 'blue', stats: { hp: 100, atk: 6 }, desc: '虎贲卫士，以一当十' },
+  w_shuangji: { id: 'w_shuangji', name: '双铁戟', slot: 'weapon', rarity: 'purple', stats: { atk: 30 }, desc: '古之恶来，典韦护主' },
 };
 
 // 数值缩放（hp/atk 整数；crit/atkSpd/move 小数维 3 位定点，避免浮点噪声；皆不入战斗 hash）。
