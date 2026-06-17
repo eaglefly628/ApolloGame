@@ -565,7 +565,7 @@ export function buildGameFBlueprint(pacing: GameFPacing = {}): WorldBlueprint {
       Transform: xf(-150, 86),
       Shape: { kind: 'box', width: 18, height: 18 },
       Tag: { flags: BAG },
-      Resource: { id: 'items', current: 0, min: 0, max: 8 }, // 拾取累加封顶 8（=装备栏格数）；跨回合持久（行囊不清场）
+      Resource: { id: 'items', current: 0, min: 0, max: 60 }, // 拾取累加上限 60（战利品滚动槽，金铲铲式不再卡 8）；跨回合持久（行囊不清场）
       Hierarchy: { parentId: 'protag', localX: 0, localY: 0, localRotation: 0, localScaleX: 1, localScaleY: 1 },
     },
     protag_name: {

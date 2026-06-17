@@ -428,11 +428,14 @@ function buildSoloHud(click: (x: number, y: number) => void, play: (i: number) =
         </div>
         <div data-ref="allies" style="display:flex;flex-direction:column;gap:9px;flex:1;min-height:0;overflow-y:auto">${allyPreview}</div></div>
       <div style="background:var(--panel-grad);border:1px solid var(--panel-border);border-radius:var(--radius);box-shadow:inset 0 0 0 1px var(--hairline);padding:12px">
-        <div style="display:flex;justify-content:space-between;align-items:baseline;margin-bottom:9px"><span style="font-size:9px;letter-spacing:.2em;text-transform:uppercase;color:var(--ink-dim)">装备 · 战利品</span><span data-ref="equipcount" style="font-family:var(--font-num);font-size:11px;color:var(--gold)">0/8</span></div>
-        <div data-ref="equipslots" style="display:grid;grid-template-columns:repeat(4,1fr);gap:8px"></div>
-        <div data-ref="equippedwrap" style="display:none;margin-top:10px;border-top:1px solid var(--hairline);padding-top:8px">
-          <div style="font-size:9px;letter-spacing:.2em;text-transform:uppercase;color:var(--ink-dim);margin-bottom:6px">已装备 · 点击拆解</div>
-          <div data-ref="equippedpanel" style="display:flex;flex-direction:column;gap:5px"></div></div></div></div>
+        <div style="display:flex;justify-content:space-between;align-items:baseline;margin-bottom:9px"><span style="font-size:9px;letter-spacing:.2em;text-transform:uppercase;color:var(--ink-dim)">已装备 · 点击拆解</span></div>
+        <div data-ref="equippedwrap" style="display:none">
+          <div data-ref="equippedpanel" style="display:flex;flex-direction:column;gap:5px"></div></div>
+        <div data-ref="equippedempty" style="font-size:10px;color:var(--ink-dim)">拖右侧战利品到武将身上装备</div></div></div>
+    <!-- 战利品滚动槽（owner：捡到的物件不止 8 个 → 金铲铲式可滚动；坐在棋盘与最右友方战局之间）-->
+    <div style="position:absolute;right:204px;top:120px;width:56px;bottom:140px;display:flex;flex-direction:column;align-items:center;gap:6px;pointer-events:auto;z-index:2;background:var(--panel-grad);border:1px solid var(--panel-border);border-radius:12px;box-shadow:inset 0 0 0 1px var(--hairline);padding:8px 4px">
+      <div style="font-size:8px;letter-spacing:.1em;color:var(--ink-dim);text-align:center;line-height:1.2">战利品<br><span data-ref="equipcount" style="font-family:var(--font-num);font-size:10px;color:var(--gold)">0</span></div>
+      <div data-ref="equipslots" style="flex:1;min-height:0;width:100%;display:flex;flex-direction:column;align-items:center;gap:6px;overflow-y:auto;overflow-x:hidden;scrollbar-width:thin"></div></div>
     <!-- BOTTOM BAR · 经济 + 点将台 + 开战（覆盖 canvas 旧底部；按钮注入世界坐标点击）-->
     <div style="position:absolute;left:0;right:0;bottom:0;height:104px;display:flex;align-items:stretch;gap:14px;padding:14px 18px;background:var(--dock-bg);border-top:1px solid var(--panel-border);pointer-events:auto">
       <button data-act="shop-open" style="position:relative;overflow:hidden;flex:1;display:flex;align-items:center;justify-content:center;gap:12px;border-radius:16px;border:1px solid var(--accent);background:var(--accent-soft);color:var(--ink);cursor:pointer;box-shadow:inset 0 0 0 1px var(--hairline)">
@@ -509,20 +512,21 @@ function buildSoloHud(click: (x: number, y: number) => void, play: (i: number) =
   // 渲染战利品格：具体道具(品级色边 + 图标 + draggable)；空格虚线。供 update（拾取变化）与拖装备后即时调。
   const renderBag = (): void => {
     if (!elEquip) return;
-    elEquip.innerHTML = Array.from({ length: 8 }, (_, i) => {
-      const id = bag[i];
-      if (!id) return '<div style="aspect-ratio:1;border-radius:8px;background:transparent;border:1px dashed var(--panel-border)"></div>';
+    if (!bag.length) { elEquip.innerHTML = '<div style="font-size:9px;color:var(--ink-dim);opacity:.6;text-align:center;margin-top:6px">空</div>'; return; }
+    // 滚动槽（金铲铲式）：拾取不止 8，纵向可滚；每件具体道具(品级色边 + 图标 + draggable + hover)。
+    elEquip.innerHTML = bag.map((id, i) => {
       const col = itemTip(id)?.color ?? '#caa15a';
-      return `<div data-itemid="${id}" data-slot="${i}" draggable="true" style="aspect-ratio:1;border-radius:8px;background:var(--gold-chip);border:2px solid ${col};display:flex;align-items:center;justify-content:center;font-size:16px;cursor:grab;box-shadow:0 0 8px ${col}55">${itemIcon(id)}</div>`;
+      return `<div data-itemid="${id}" data-slot="${i}" draggable="true" title="拖到武将身上装备" style="flex:none;width:42px;height:42px;border-radius:8px;background:var(--gold-chip);border:2px solid ${col};display:flex;align-items:center;justify-content:center;font-size:18px;cursor:grab;box-shadow:0 0 8px ${col}55">${itemIcon(id)}</div>`;
     }).join('');
   };
   // 已装备面板（④ 拆解）：列出每名带装武将 + 其装备图标（点击拆解退回袋）。marker 是 canvas 实体 → 用 DOM 面板呈现。
-  const elEquipped = q('[data-ref="equippedpanel"]'), elEquippedWrap = q('[data-ref="equippedwrap"]');
+  const elEquipped = q('[data-ref="equippedpanel"]'), elEquippedWrap = q('[data-ref="equippedwrap"]'), elEquippedEmpty = q('[data-ref="equippedempty"]');
   const renderEquipped = (): void => {
     if (!elEquipped) return;
     const keys = Object.keys(equipped).filter((k) => (equipped[k]?.length ?? 0) > 0);
-    if (!keys.length) { if (elEquippedWrap) elEquippedWrap.style.display = 'none'; elEquipped.innerHTML = ''; return; }
+    if (!keys.length) { if (elEquippedWrap) elEquippedWrap.style.display = 'none'; if (elEquippedEmpty) elEquippedEmpty.style.display = 'block'; elEquipped.innerHTML = ''; return; }
     if (elEquippedWrap) elEquippedWrap.style.display = 'block';
+    if (elEquippedEmpty) elEquippedEmpty.style.display = 'none';
     const roster = rosterFor(faction);
     elEquipped.innerHTML = keys.map((mid) => {
       const mk = parseMarkerId(mid); const h = mk ? roster.find((x) => x.id === mk.heroId) : null;
@@ -596,10 +600,10 @@ function buildSoloHud(click: (x: number, y: number) => void, play: (i: number) =
     const contribV = num('contribution'); if (contribV !== undefined) setAll('contrib', String(Math.round(contribV)));
     const islV = num('island_progress'), islM = max('island_progress') ?? 100;
     if (islV !== undefined) { setAll('island', `${Math.round(islV)}/${islM}`); setW('islandfill', `${Math.max(0, Math.min(100, (islV / (islM || 100)) * 100))}%`); }
-    // 装备栏（②/③）：拾取 items 上升沿 → 掷具体道具入袋（rolled 单调，装备移出袋不重掷）；品级色渲格 + hover/拖拽。
-    const itemN = Math.min(8, Math.round(num('items') ?? 0));
-    while (rolled < itemN && bag.length < 8) { bag.push(rollItemId(Math.random, stageI - 1)); rolled++; } // 太阁越深掉得越好（spec §二）
-    setAll('equipcount', `${bag.length}/8`);
+    // 战利品滚动槽（②/③）：拾取 items 上升沿 → 掷具体道具入袋（rolled 单调，装备移出袋不重掷）；不再卡 8，纵向可滚。
+    const itemN = Math.round(num('items') ?? 0);
+    while (rolled < itemN) { bag.push(rollItemId(Math.random, stageI - 1)); rolled++; } // 太阁越深掉得越好（spec §二）
+    setAll('equipcount', `${bag.length}`);
     if (elEquip && rolled !== lastEquip) {
       lastEquip = rolled;
       renderBag();
