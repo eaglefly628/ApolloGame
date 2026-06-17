@@ -30,7 +30,7 @@ interface Save {
 }
 
 const rollBoss = (): number => Math.floor(Math.random() * BOSS_ROSTER.length);
-function freshSave(): Save {
+export function freshSave(): Save {
   return { materials: 0, stage: 1, deck: Array.from({ length: DECK_SIZE }, (_, i) => 44 + (i % 10) * 2), lastOfficers: [10, 10, 10], leverEnergy: LEVER_START, lives: RUN_LIVES, bossIdx: rollBoss(), jokers: [], planets: {}, foils: [] }; // 44..62 起步；stage=当前战 1..5
 }
 function loadSave(): Save {
@@ -95,7 +95,8 @@ const suitOf = (n: string): 's' | 'h' | 'd' | 'c' => (/黑桃|♠/.test(n) ? 's'
 const LANE_NAME3 = ['上路', '中路', '下路'];
 
 // 从 MARCH-1 world + save 派生战场视图（喂 battle-screen 渲染设计稿）。纯读 sim 真相、不回灌。
-function buildBattleView(world: IWorld, save: Save, oppName: string, oppPersona: string, oppSuit: 's' | 'h' | 'd' | 'c'): BattleView {
+// 导出供无头看帧/视觉回归测试用（battle-screen.frame.test.ts 真 sim → 真 view → 真渲染器 → HTML golden）。
+export function buildBattleView(world: IWorld, save: Save, oppName: string, oppPersona: string, oppSuit: 's' | 'h' | 'd' | 'c'): BattleView {
   const r = (id: string): number => world.getComponent<Resource>(id, 'Resource')?.current ?? 0;
   const elapsed = world.getComponent<Timer>('clock', 'Timer')?.elapsed ?? 0;
   const units: BattleUnit[] = [];
@@ -109,14 +110,14 @@ function buildBattleView(world: IWorld, save: Save, oppName: string, oppPersona:
     units.push({ lane: Math.floor(pk / 100), side: c.side === 'a' ? 'a' : 'b', col: Math.floor(idx / 3), faceUp: (tag.flags & ALIVE) !== 0, rank: String(c.rank ?? '?'), suit: String(c.suit ?? 'S').toLowerCase() as 's' | 'h' | 'd' | 'c', general: idx === 0 });
   }
   const lanes: BattleLane[] = [0, 1, 2].map((L) => {
-    const mine = r(`a_l${L}`), enemy = r(`b_l${L}`);
+    const mine = r(`res_a${L}`), enemy = r(`res_b${L}`); // 实体 id（res_aL），非资源 id（a_lL）
     const lead: 'a' | 'b' | 'n' = mine > enemy ? 'a' : enemy > mine ? 'b' : 'n';
     return { name: LANE_NAME3[L], mine, enemy, lead, state: lead === 'a' ? '我方推进' : lead === 'b' ? '敌方压制' : '僵持', mineText: `存活 ${mine}`, enemyText: `存活 ${enemy}` };
   });
   const levers: BattleLever[] = (Object.keys(LEVER_CATALOG) as LeverKind[]).map((k) => ({ key: k, glyph: LEVER_GLYPH[k], name: LEVER_CATALOG[k].name, cost: LEVER_CATALOG[k].cost, desc: LEVER_CATALOG[k].desc }));
   const secs = Math.floor(elapsed / 60);
   return {
-    homeA: r('a_home'), homeAMax: HOME_HP, homeB: r('b_home'), homeBMax: HOME_HP,
+    homeA: r('res_ahome'), homeAMax: HOME_HP, homeB: r('res_bhome'), homeBMax: HOME_HP, // 实体 id（res_ahome），非资源 id（a_home）
     oppName, oppPersona, oppSuit, energy: save.leverEnergy, energyMax: effectiveLeverCap(save.planets), materials: save.materials,
     phaseText: '占领敌方老家 · 即胜', timeText: `${String(Math.floor(secs / 60)).padStart(2, '0')}:${String(secs % 60).padStart(2, '0')}`, elapsed,
     levers, lanes, units,
@@ -508,8 +509,8 @@ export function mount(container: HTMLElement): () => void {
       const survB = r('res_b0') + r('res_b1') + r('res_b2');
       const lanesA = r('res_alanes');
       const lanesB = r('res_blanes');
-      const homeA = r('a_home'); // 大本营血（被攻克=0）
-      const homeB = r('b_home');
+      const homeA = r('res_ahome'); // 大本营血（实体 id res_ahome；被攻克=0）
+      const homeB = r('res_bhome');
       // 结算奖励：存活的我方牌都算战利品；胜利额外 +15 并推进关卡（敌方更强）。
       const gain = survA + (winner === 'a' ? 15 : 0);
       save.materials += gain;
