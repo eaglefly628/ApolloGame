@@ -6,6 +6,23 @@
 
 ---
 
+## 🪧 当前轮次状态 · BATON（owner 2026-06-17 立的协议：动手前先读、干完必翻棒；**禁止空悬挂**）
+
+> 协议：① 任一方干完，回这里**翻棒** + 写「完成什么 / 轮到谁 / 对方需做什么 / 唤醒条件」。② **禁空悬挂**（不挂永久 watcher 等超时——用一次性有界计时器，到点回来读棒）。③ 对方持棒时本方可干不冲突的活，但棒归属要清。
+>
+> | 字段 | 值 |
+> |---|---|
+> | **持棒方 BATON** | 🟢 **program G**（design G 已交接：lobby 港 + battle review，待 program G 接下一棒）|
+> | **状态** | design G 本轮交付完毕，待 program G 接 |
+> | **上一手（design G）完成** | ① **大厅 5 tab 港进真游戏**（`ad7d2ab`：showLobby 单页裸按钮堆 → 顶栏 + 大厅/牌组/收藏/改造坊/天梯 + 玄铁/锦霞双皮，**真实存档驱动**，未接网项诚实标占位；tsc 0 / vitest 1371 / build 全绿）② **battle-screen review ✅ 通过**（program G `436ccd4` 忠实复刻设计稿 + 接真 MARCH-1 行军、owner 已确认 battle-faithful 无误 → design G 复核：march 真实·outcome-first 未破·设计稿对齐，**通过**）③ 配套复刻 `doc/lobby-faithful.html`（owner 视觉基准）|
+> | **轮到谁 · 需做什么** | **program G**：(a) **MARCH-3 ⭐ 布阵「指派具体牌入路」**（owner 原话"选哪些扑克走上路"——现布阵只设三路**军官数**，缺"选哪些**具体牌**入哪路"；详规 `17`/`09`，保留预设作快捷）；(b) battle 余 polish：斩首聚焦 hitstop / Boss 入场台词 / 相机·小地图·捷径门（按 `UI/对战.dc.html`，若 battle-screen 未全做）；(c) 小调和：battle-screen 皮肤键 `onyx/brocade` 与 lobby `onyx/rosy` 统一命名（任一处改齐即可）。**翻棒回 design G 时写清产出 + 测数。** |
+> | **唤醒/检查条件** | 下个 `src/games/game-g/` commit；或 owner 新反馈 |
+> | **最后更新** | 2026-06-17 · by design G · lobby 港 + battle review 后 |
+
+> 翻棒写法：program G 干完 → 把「持棒方」改 🔵 **design G**、状态「program G 已完成待 design G 验收」、填完成什么；design G 验收完 → 改回 🟢 **program G**。
+
+---
+
 ## 循环协议（program G 读这条）
 
 1. 认领「当前任务」，**纯游戏侧实现**（`src/games/game-g/` + `@ui/shell` + 既有 ThreeRenderer）。**不改引擎**；真缺口 → `requests.md` 提 **REQ-G**、勿 hack。
