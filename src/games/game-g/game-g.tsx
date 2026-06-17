@@ -12,6 +12,9 @@ const W = 600;
 const H = 540;
 const DECK_SIZE = 52;
 const SAVE_KEY = 'gameG-save-v1';
+// 大厅根容器样式：默认屏(布阵/备战/战斗)居中竖排；大厅屏改顶对齐可滚动(承载 5 tab 古风布局)。
+const DEFAULT_ROOT_CSS = 'position:absolute;inset:0;background:#0a0a14;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:14px;color:#cbd5e1;font:13px system-ui';
+const LOBBY_ROOT_CSS = 'position:absolute;inset:0;overflow:auto';
 
 interface Save {
   materials: number;
@@ -124,10 +127,11 @@ export function mount(container: HTMLElement): () => void {
   const save = loadSave();
   let engine: Engine | null = null;
   let battle: { update: () => void; destroy: () => void } | null = null;
+  let lobbyTab = 'home'; // 大厅当前 tab（home/decks/coll/craft/ladder）
+  let lobbySkin: 'onyx' | 'rosy' = 'onyx'; // 双皮：玄铁(暗)/锦霞(亮)，纯表现、不入存档
 
   const root = document.createElement('div');
-  root.style.cssText =
-    'position:absolute;inset:0;background:#0a0a14;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:14px;color:#cbd5e1;font:13px system-ui';
+  root.style.cssText = DEFAULT_ROOT_CSS;
   container.appendChild(root);
 
   const teardownEngine = (): void => {
@@ -139,124 +143,210 @@ export function mount(container: HTMLElement): () => void {
   const clear = (): void => {
     teardownEngine();
     root.replaceChildren();
+    root.style.cssText = DEFAULT_ROOT_CSS; // 离开大厅时还原默认屏样式
   };
 
-  // ───────────────────────── 大厅 ─────────────────────────
+  // ───────────────────────── 大厅（5 tab IA · 顶栏 · 玄铁/锦霞双皮 · 对齐 UI/Game G 大厅.dc.html）─────────────────────────
+  // owner 指「裸按钮堆 ≠ 设计稿」(design/16 §十一)：重做成 大厅/牌组/收藏/改造坊/天梯 五屏 + 顶栏 + 古风双皮。
+  // 真实存档数据驱动；未接网的(好友/天梯1v1/全服榜)诚实标「占位」，绝不伪造功能。
   function showLobby(): void {
     clear();
-    const title = el('div', 'font:600 20px system-ui;color:#eab308', '翻命扑克 · 大厅');
-    const stat = el(
-      'div',
-      'text-align:center;line-height:1.7',
-      `材料 <b style="color:#eab308">${save.materials}</b> ｜ 战役 第 <b>${save.stage}/${RUN_BATTLES}</b> 战 ｜ 命 ${'❤'.repeat(save.lives)} ｜ 能量 ◈${save.leverEnergy}<br>` +
-        `你的牌组：${DECK_SIZE} 张，favor 均 <b>${avg(save.deck)}</b>（最低 ${Math.min(...save.deck)} / 最高 ${Math.max(...save.deck)}）<br>` +
-        `终局 Boss：<b style="color:#f87171">${bossFor(save.bossIdx).name}</b>（${bossFor(save.bossIdx).persona}）— 据其流派针对性布阵<br>` +
-        `<span style="opacity:.7">favor 越高越易翻正面(活)。改造牌组让更多牌活下来。</span>`,
-    );
+    root.style.cssText = LOBBY_ROOT_CSS;
+    const gg = elc('div', 'gg');
+    gg.dataset.skin = lobbySkin;
+    const styleTag = document.createElement('style');
+    styleTag.textContent = LOBBY_CSS;
+    gg.appendChild(styleTag);
+    const wrap = elc('div', 'wrap');
+    gg.appendChild(wrap);
 
-    const shop = el('div', 'display:flex;gap:10px;flex-wrap:wrap;justify-content:center;max-width:560px');
-    const buy = (label: string, cost: number, apply: () => void): HTMLButtonElement => {
-      const b = mkBtn(`${label}（${cost} 材料）`);
-      b.disabled = save.materials < cost;
-      if (b.disabled) b.style.opacity = '0.45';
-      b.onclick = () => {
-        if (save.materials < cost) return;
-        save.materials -= cost;
-        apply();
-        persist(save);
-        showLobby();
-      };
+    const boss = bossFor(save.bossIdx);
+    const arch = detectArchetype(save.jokers);
+    const activated = activeArchetype(save.jokers); // 集齐主流派 keyJokers → 招牌质变
+    const bossArchName = ARCHETYPES.find((a) => a.id === boss.archetype)?.name ?? boss.archetype;
+    const favAvg = avg(save.deck);
+    const cap = effectiveLeverCap(save.planets);
+
+    // ── 顶栏：头像 / 称号(流派) / 段位(战役进度) / 货币 / 双皮切换 ──
+    const top = elc('div', 'top',
+      `<div class="avatar">♠</div>` +
+      `<div class="me"><div class="name">不翻就赢_07</div><div class="sub">${arch ? arch.name : '掷命学徒'}${activated ? ' · 🔥 招牌已激活' : ''}</div></div>` +
+      `<div class="rank">⚔ 战役 ${save.stage}/${RUN_BATTLES} · 命 ${'❤'.repeat(Math.max(0, save.lives))}</div>` +
+      `<div class="cur"><span>🪙 <b>${save.materials}</b></span><span>◈ <b>${save.leverEnergy}</b></span><span>✨ <b>${save.foils.length}</b></span></div>`);
+    const skinBox = elc('div', 'skin');
+    (['onyx', 'rosy'] as const).forEach((sk) => {
+      const b = document.createElement('button');
+      b.textContent = sk === 'onyx' ? '玄铁' : '锦霞';
+      if (sk === lobbySkin) b.className = 'on';
+      b.onclick = () => { lobbySkin = sk; showLobby(); };
+      skinBox.appendChild(b);
+    });
+    top.appendChild(skinBox);
+    wrap.appendChild(top);
+
+    // ── 导航 5 tab ──
+    const TABS: ReadonlyArray<readonly [string, string]> = [['home', '大厅'], ['decks', '牌组'], ['coll', '收藏'], ['craft', '改造坊'], ['ladder', '天梯']];
+    const nav = elc('div', 'nav');
+    TABS.forEach(([id, label]) => {
+      const b = document.createElement('button');
+      b.textContent = label;
+      if (id === lobbyTab) b.className = 'on';
+      b.onclick = () => { lobbyTab = id; showLobby(); };
+      nav.appendChild(b);
+    });
+    wrap.appendChild(nav);
+
+    // 购买按钮（材料不足禁用 → 扣材料 → apply → 存档 → 重渲）
+    const buyBtn = (label: string, cost: number, apply: () => void): HTMLButtonElement => {
+      const b = document.createElement('button');
+      b.className = 'btn';
+      b.innerHTML = label;
+      if (save.materials < cost) { b.disabled = true; b.classList.add('off'); }
+      b.onclick = () => { if (save.materials < cost) return; save.materials -= cost; apply(); persist(save); showLobby(); };
       return b;
     };
-    shop.append(
-      buy('强化全军 +3 favor', 12, () => {
-        save.deck = save.deck.map((f) => clampFavor(f + 3));
-      }),
-      buy('精炼弱牌 +8（最弱 12 张）', 8, () => {
+    const body = elc('div', 'body');
+    wrap.appendChild(body);
+
+    if (lobbyTab === 'home') {
+      // ── 大厅：命运牌桌 + 出征 CTA + 流派/Boss + 速览 + 侧栏(占位) ──
+      const layout = elc('div', 'layout');
+      const main = document.createElement('div');
+      const hero = elc('div', 'hero',
+        `<div><div class="season">第 ${save.stage} 战 / 共 ${RUN_BATTLES} · 终局 Boss【${boss.name}】</div>` +
+        `<div class="title zh">命运牌桌</div>` +
+        `<div class="season">${boss.persona} · 流派【${bossArchName}】— 据其针对布阵</div></div>`);
+      const cta = elc('div', 'cta');
+      const goBtn = document.createElement('button');
+      goBtn.className = 'btn primary';
+      goBtn.innerHTML = `🎲 ⚔ 出征 · 第 ${save.stage}/${RUN_BATTLES} 战<br><span style="font-size:11px;opacity:.85">${battleSpec(save.stage - 1).label}</span>`;
+      goBtn.onclick = () => showFormation([...save.lastOfficers] as [number, number, number]);
+      cta.appendChild(goBtn);
+      hero.appendChild(cta);
+      main.appendChild(hero);
+      // 流派 ↔ Boss 克制（复用克制网）
+      let archHtml: string;
+      if (arch) {
+        const m = archetypeMatchup(arch.id, boss.archetype);
+        const rel = m === 'counter' ? '<b style="color:var(--club)">⮞ 克制 Boss</b>' : m === 'countered' ? '<b style="color:var(--heart)">⮜ 被 Boss 克</b>' : '<span class="ghost">≈ 互不克</span>';
+        const act = activated === arch.id ? '　<b style="color:var(--gold)">🔥 招牌已激活</b>' : `　<span class="ghost">集齐 ${arch.keyJokers.map((k) => JOKER_BY_ID.get(k)?.name ?? k).join('+')} 激活招牌</span>`;
+        archHtml = `你的流派 <b>${arch.name}</b>（${arch.desc}）　${rel}${act}`;
+      } else {
+        archHtml = `流派 <span class="ghost">未成型</span> —— 去<b>改造坊</b>融小丑确立身份（克制本 run Boss【${bossArchName}】）`;
+      }
+      main.appendChild(elc('div', 'card', `<div style="line-height:1.6">${archHtml}</div>`));
+      // 速览
+      const quick = elc('div', 'quick');
+      quick.appendChild(elc('div', 'qbtn', `<span class="ic">🃏</span><div>出战牌组<br><b style="color:var(--spade)">favor 均 ${favAvg} ▸</b></div>`));
+      quick.appendChild(elc('div', 'qbtn', `<span class="ic">🪙</span><div>材料<br><b>${save.materials}</b></div>`));
+      quick.appendChild(elc('div', 'qbtn', `<span class="ic">◈</span><div>干预能量<br><b>${save.leverEnergy}/${cap}</b></div>`));
+      main.appendChild(quick);
+      layout.appendChild(main);
+      // 侧栏：好友/天梯1v1 是设计 IA，未接网 → 诚实占位
+      const side = elc('div', 'card silk',
+        `<h2>🪖 牌友 · 命运牌桌</h2><div class="ghost" style="font-size:12px;line-height:1.8">好友切磋 / 天梯 1v1 DUEL<br>为设计 IA，尚未接入网络（占位）。<br>当前：单人战役 vs AI 庄家·Boss。</div>`);
+      const reset = document.createElement('button');
+      reset.className = 'btn';
+      reset.style.cssText = 'width:100%;margin-top:14px;font-size:12px;opacity:.7';
+      reset.textContent = '重置进度';
+      reset.onclick = () => { Object.assign(save, freshSave()); persist(save); lobbyTab = 'home'; showLobby(); };
+      side.appendChild(reset);
+      layout.appendChild(side);
+      body.appendChild(layout);
+    } else if (lobbyTab === 'decks') {
+      // ── 牌组：52 张牌网格(真实 favor 着色) + 强化/精炼 ──
+      const SUITS: ReadonlyArray<readonly [string, string]> = [['♠', 'var(--spade)'], ['♥', 'var(--heart)'], ['♦', 'var(--diamond)'], ['♣', 'var(--club)']];
+      const RANKS = ['A', 'K', 'Q', 'J', '10', '9', '8', '7', '6', '5', '4', '3', '2'];
+      const card = elc('div', 'card', `<h2>📜 出战牌组 · 52 张 <span class="ghost" style="margin-left:auto;font-size:12px">favor 均 <b>${favAvg}</b> · 最低 ${Math.min(...save.deck)} / 最高 ${Math.max(...save.deck)}</span></h2>`);
+      const grid = elc('div', 'colgrid');
+      save.deck.forEach((fv, i) => {
+        const [s, c] = SUITS[Math.floor(i / 13) % 4];
+        const r = RANKS[i % 13];
+        const cell = elc('div', 'pcard' + (fv >= 70 ? ' leg' : '') + (fv <= 50 ? ' lock' : ''));
+        cell.innerHTML = `<div class="r" style="color:${c}">${s}</div><div style="text-align:right;color:${c};font-size:13px">${r}</div><span class="own">${fv}</span>`;
+        grid.appendChild(cell);
+      });
+      card.appendChild(grid);
+      const tools = elc('div', 'row');
+      tools.appendChild(buyBtn('强化全军 <b>+3 favor</b> <span class="ghost">12🪙</span>', 12, () => { save.deck = save.deck.map((f) => clampFavor(f + 3)); }));
+      tools.appendChild(buyBtn('精炼最弱 12 张 <b>+8</b> <span class="ghost">8🪙</span>', 8, () => {
         const order = save.deck.map((f, i) => [f, i] as const).sort((a, b) => a[0] - b[0]);
         for (let k = 0; k < 12; k++) save.deck[order[k][1]] = clampFavor(save.deck[order[k][1]] + 8);
-      }),
-    );
-
-    // 改造坊 · 融小丑（局外持久，跨 run 不清零 → 牌组身份养成；融了它在揭晓前改你军阵规则）。
-    const forgeTitle = el('div', 'font:600 13px system-ui;color:#a78bfa;margin-top:2px', '⚒ 改造坊 · 融小丑牌（持久牌组身份）');
-    const forge = el('div', 'display:flex;gap:8px;flex-wrap:wrap;justify-content:center;max-width:560px');
-    forge.replaceChildren(...GAME_G_JOKERS.map((j) => {
-      const owned = save.jokers.includes(j.id);
-      const b = mkBtn(owned ? `✓ ${j.name}` : `融 ${j.name}（${j.cost}）`);
-      b.title = j.text;
-      if (owned) b.style.cssText += ';border-color:#a78bfa;background:#1e1b2e;opacity:.85;cursor:default';
-      else { b.disabled = save.materials < j.cost; if (b.disabled) b.style.opacity = '0.45'; }
-      b.onclick = () => {
-        if (owned || save.materials < j.cost) return;
-        save.materials -= j.cost; save.jokers.push(j.id); persist(save); showLobby();
-      };
-      return b;
-    }));
-    const forgeDesc = el('div', 'font-size:11px;opacity:.72;max-width:540px;text-align:center;line-height:1.5',
-      save.jokers.length
-        ? '已融：' + save.jokers.map((id) => `<b style="color:#c4b5fd">${JOKER_BY_ID.get(id)?.name ?? id}</b>`).join('、') + '（悬停看效果 · 出征时自动生效）'
-        : '（未融小丑 · 鼠标悬停看效果；融了它持久改你牌组的掷命规则 = 流派身份）');
-
-    // 星球牌：第二养成轴（可叠加升档 · 持久）。改 run 参数 / 军阵底盘，与小丑(改规则·身份)正交。
-    const planetTitle = el('div', 'font:600 13px system-ui;color:#60a5fa;margin-top:2px', '🪐 星球牌 · 升档（可叠加 · 持久 · 第二养成轴）');
-    const planetShop = el('div', 'display:flex;gap:8px;flex-wrap:wrap;justify-content:center;max-width:560px');
-    planetShop.replaceChildren(...GAME_G_PLANETS.map((p) => {
-      const lv = save.planets[p.id] ?? 0;
-      const b = mkBtn(`${p.name} Lv.${lv} → 升（${p.cost}）`);
-      b.title = p.text;
-      b.disabled = save.materials < p.cost;
-      if (b.disabled) b.style.opacity = '0.45';
-      else b.style.cssText += ';border-color:#1e3a5a;background:#0e1726';
-      b.onclick = () => {
-        if (save.materials < p.cost) return;
-        save.materials -= p.cost; save.planets[p.id] = (save.planets[p.id] ?? 0) + 1; persist(save); showLobby();
-      };
-      return b;
-    }));
-
-    // 闪艺 foil 收集（纯表现·零 gameplay）：买下=解锁收藏，满足收集欲。
-    const foilTitle = el('div', 'font:600 13px system-ui;color:#f0abfc;margin-top:2px', `✨ 闪艺 foil 收藏（${save.foils.length}/${GAME_G_FOILS.length} · 纯装饰）`);
-    const foilShop = el('div', 'display:flex;gap:8px;flex-wrap:wrap;justify-content:center;max-width:560px');
-    foilShop.replaceChildren(...GAME_G_FOILS.map((fk) => {
-      const owned = save.foils.includes(fk.id);
-      const b = mkBtn(owned ? `✨ ${fk.name}` : `${fk.name}（${fk.cost}）`);
-      b.title = fk.desc;
-      if (owned) b.style.cssText += ';border-color:#d946ef;background:#1f1525;opacity:.9;cursor:default';
-      else { b.disabled = save.materials < fk.cost; if (b.disabled) b.style.opacity = '0.45'; }
-      b.onclick = () => { if (owned || save.materials < fk.cost) return; save.materials -= fk.cost; save.foils.push(fk.id); persist(save); showLobby(); };
-      return b;
-    }));
-
-    // 流派身份 + 克制网：由已融小丑浮现主流派，对比本 run 终局 Boss 的流派 → 克制提示（指导针对性布阵）。
-    const arch = detectArchetype(save.jokers);
-    const bossArchId = bossFor(save.bossIdx).archetype;
-    const bossArchName = ARCHETYPES.find((a) => a.id === bossArchId)?.name ?? bossArchId;
-    const activated = activeArchetype(save.jokers); // 集齐主流派 keyJokers → 招牌质变
-    let archHtml: string;
-    if (arch) {
-      const m = archetypeMatchup(arch.id, bossArchId);
-      const rel = m === 'counter' ? '<b style="color:#22c55e">⮞ 克制</b>' : m === 'countered' ? '<b style="color:#f87171">⮜ 被克于</b>' : '<span style="opacity:.7">≈ 互不克</span>';
-      const actTag = activated === arch.id ? '　<b style="color:#f59e0b">🔥 招牌已激活</b>' : `　<span style="opacity:.6">（集齐 ${arch.keyJokers.map((k) => JOKER_BY_ID.get(k)?.name ?? k).join('+')} 激活招牌）</span>`;
-      archHtml = `你的流派：<b style="color:#c4b5fd">${arch.name}</b>（${arch.desc}）　${rel}　终局 Boss 流派【<b style="color:#f87171">${bossArchName}</b>】${actTag}`;
+      }));
+      card.appendChild(tools);
+      card.appendChild(elc('div', 'note', 'favor = 该牌掷命翻正面(存活)的概率底盘。<b style="color:var(--gold)">金边</b>=强(≥70) / 暗格=弱(≤50)。花材料改造让更多牌活下来。'));
+      body.appendChild(card);
+    } else if (lobbyTab === 'coll') {
+      // ── 收藏：小丑(身份) + 闪艺 foil(纯装饰)，真实拥有态 ──
+      const card = elc('div', 'card', `<h2>🗃 卡牌收藏 · 小丑 ${save.jokers.length}/${GAME_G_JOKERS.length} · 闪艺 ${save.foils.length}/${GAME_G_FOILS.length}</h2>`);
+      card.appendChild(elc('div', 'sub2', '🃏 小丑牌（改掷命规则 = 流派身份 · 到改造坊融取）'));
+      const jg = elc('div', 'colgrid');
+      GAME_G_JOKERS.forEach((j) => {
+        const owned = save.jokers.includes(j.id);
+        const cell = elc('div', 'pcard wide' + (owned ? ' leg' : ' lock'));
+        cell.title = j.text;
+        cell.innerHTML = `<div class="r" style="color:var(--gold);font-size:15px">🃏</div><div class="jn">${j.name}</div><span class="own">${owned ? '已融' : '未拥有'}</span>`;
+        jg.appendChild(cell);
+      });
+      card.appendChild(jg);
+      card.appendChild(elc('div', 'sub2', '✨ 闪艺 foil（纯装饰收集 · 点亮可购买）'));
+      const fg = elc('div', 'colgrid');
+      GAME_G_FOILS.forEach((fk) => {
+        const owned = save.foils.includes(fk.id);
+        const cell = elc('div', 'pcard wide' + (owned ? ' leg' : ''));
+        cell.title = fk.desc;
+        const head = `<div class="r" style="color:var(--accent2);font-size:15px">✨</div><div class="jn">${fk.name}</div>`;
+        if (owned) cell.innerHTML = head + `<span class="own">✨ 已藏</span>`;
+        else {
+          cell.innerHTML = head + `<span class="own">${fk.cost}🪙</span>`;
+          if (save.materials >= fk.cost) { cell.classList.add('buyable'); cell.onclick = () => { save.materials -= fk.cost; save.foils.push(fk.id); persist(save); showLobby(); }; }
+          else cell.classList.add('lock');
+        }
+        fg.appendChild(cell);
+      });
+      card.appendChild(fg);
+      body.appendChild(card);
+    } else if (lobbyTab === 'craft') {
+      // ── 改造坊：融小丑(改规则·身份) + 星球升档(改 run 参数) ──
+      const forge = elc('div', 'forge');
+      const fcard = elc('div', 'card silk', `<h2>⚒ 改造台 · 融小丑（持久牌组身份）</h2>`);
+      const jrow = elc('div', 'shelf');
+      GAME_G_JOKERS.forEach((j) => {
+        const owned = save.jokers.includes(j.id);
+        const good = elc('div', 'good' + (owned ? ' got' : ''));
+        good.title = j.text;
+        good.innerHTML = `🃏 ${j.name}<div class="cost">${owned ? '✓ 已融' : j.cost + '🪙'}</div>`;
+        if (!owned && save.materials >= j.cost) { good.classList.add('buyable'); good.onclick = () => { save.materials -= j.cost; save.jokers.push(j.id); persist(save); showLobby(); }; }
+        jrow.appendChild(good);
+      });
+      fcard.appendChild(jrow);
+      const pcard = elc('div', 'card', `<h2>🪐 星球牌 · 升档（可叠加 · 第二养成轴）</h2>`);
+      const prow = elc('div', 'shelf');
+      GAME_G_PLANETS.forEach((p) => {
+        const lv = save.planets[p.id] ?? 0;
+        const good = elc('div', 'good');
+        good.title = p.text;
+        good.innerHTML = `🪐 ${p.name} <span class="ghost">Lv.${lv}</span><div class="cost">${p.cost}🪙</div>`;
+        if (save.materials >= p.cost) { good.classList.add('buyable'); good.onclick = () => { save.materials -= p.cost; save.planets[p.id] = (save.planets[p.id] ?? 0) + 1; persist(save); showLobby(); }; }
+        prow.appendChild(good);
+      });
+      pcard.appendChild(prow);
+      forge.appendChild(fcard);
+      forge.appendChild(pcard);
+      body.appendChild(forge);
+      body.appendChild(elc('div', 'note', `材料 🪙 ${save.materials} · 融小丑=改掷命规则(流派身份·持久) / 星球=升 run 参数(能量·命·favor)。出征赢取材料。`));
     } else {
-      archHtml = `你的流派：<span style="opacity:.7">未成型</span>（融小丑/取流派钥匙以确立身份）　｜　终局 Boss 流派【<b style="color:#f87171">${bossArchName}</b>】`;
+      // ── 天梯：战役进度 + 终局 Boss 克制（天梯1v1/全服榜未接网 → 占位）──
+      const lt = elc('div', 'ladder-top');
+      lt.appendChild(elc('div', 'card box', `<h2>⚔ 战役进度</h2><div class="bigrank">第 ${save.stage} / ${RUN_BATTLES} 战</div><div class="note" style="margin-top:6px">命 ${'❤'.repeat(Math.max(0, save.lives))} · 能量 ◈${save.leverEnergy}/${cap} · 材料 🪙${save.materials}</div>`));
+      const rel = arch ? archetypeMatchup(arch.id, boss.archetype) : 'even';
+      lt.appendChild(elc('div', 'card box', `<h2>🏆 终局 Boss</h2><div class="bigrank" style="color:var(--heart)">${boss.name}</div><div class="note" style="margin-top:6px">${boss.persona} · 流派【${bossArchName}】<br>${arch ? (rel === 'counter' ? '<b style="color:var(--club)">你克制它</b>' : rel === 'countered' ? '<b style="color:var(--heart)">它克制你</b>' : '与你互不克') : '确立流派以判克制'}</div>`));
+      body.appendChild(lt);
+      body.appendChild(elc('div', 'note', '天梯 1v1 / LP / 全服榜为设计 IA，尚未接入网络（占位）。当前为单人战役 vs AI Boss——段位即战役进度。'));
     }
-    const archEl = el('div', 'font-size:12px;max-width:560px;text-align:center;line-height:1.5;border-top:1px solid #1e293b;padding-top:7px', archHtml);
 
-    const go = mkBtn(`⚔ 出征 · 第 ${save.stage}/${RUN_BATTLES} 战（${battleSpec(save.stage - 1).label}）`);
-    go.style.cssText += ';background:#1e3a2a;border-color:#22c55e;font-weight:600';
-    go.onclick = () => showFormation([...save.lastOfficers] as [number, number, number]);
-
-    const reset = mkBtn('重置进度');
-    reset.style.cssText += ';opacity:.6;font-size:11px';
-    reset.onclick = () => {
-      Object.assign(save, freshSave());
-      persist(save);
-      showLobby();
-    };
-
-    root.append(title, stat, shop, forgeTitle, forge, forgeDesc, planetTitle, planetShop, foilTitle, foilShop, archEl, go, reset);
+    wrap.appendChild(elc('div', 'note', '大厅已对齐 UI/Game G 大厅.dc.html：顶栏 + 5 tab(大厅/牌组/收藏/改造坊/天梯) + 玄铁/锦霞双皮 · 真实存档数据 · 未接网项已诚实标占位'));
+    root.appendChild(gg);
   }
 
   // ───────────────────────── 布阵（田忌赛马 · 开战前核心博弈）─────────────────────────
@@ -476,3 +566,71 @@ function mkBtn(text: string): HTMLButtonElement {
   b.style.cssText = 'padding:8px 13px;border-radius:8px;border:1px solid #334155;background:#15202b;color:#e2e8f0;cursor:pointer;font:12px system-ui';
   return b;
 }
+// classed element（大厅古风布局用 CSS class，配 LOBBY_CSS 双皮变量）
+function elc(tag: string, cls: string, html = ''): HTMLElement {
+  const e = document.createElement(tag);
+  e.className = cls;
+  if (html) e.innerHTML = html;
+  return e;
+}
+// 大厅样式：作用域全 .gg 前缀（不外泄）；玄铁(onyx)/锦霞(rosy) 双皮靠 [data-skin] 切 CSS 变量。对齐 UI/Game G 大厅.dc.html。
+const LOBBY_CSS = `
+.gg{background:var(--bg);min-height:100%;color:var(--ink);font-family:"Noto Serif SC","Songti SC",serif}
+.gg,.gg[data-skin=onyx]{--bg:#0e0d12;--bg2:#16141c;--panel:#1b1822;--panel2:#221e2c;--line:#332c40;--ink:#ece6f5;--ink2:#a99fbc;--gold:#e0973a;--accent:#d8504e;--accent2:#ff7a45;--spade:#8ba2c9;--heart:#d8504e;--diamond:#e0973a;--club:#3fae6e;--silk:#191620;--shadow:0 6px 22px #0009;--scroll:linear-gradient(135deg,#1b1822,#16141c)}
+.gg[data-skin=rosy]{--bg:#f3ead9;--bg2:#ece0cb;--panel:#fbf4e6;--panel2:#f5ead4;--line:#d9c3a3;--ink:#3a2b22;--ink2:#7a6450;--gold:#b8862f;--accent:#c14b66;--accent2:#d8607c;--spade:#3a4a66;--heart:#c14b66;--diamond:#b8862f;--club:#2f8f56;--silk:#fbf4e6;--shadow:0 6px 22px #0002;--scroll:linear-gradient(135deg,#fbf4e6,#f0e3cc)}
+.gg *{box-sizing:border-box}
+.gg .wrap{max-width:1100px;margin:0 auto;padding:14px 18px 34px}
+.gg .ghost{opacity:.6}
+.gg .zh{font-weight:800;letter-spacing:1px}
+.gg button{font-family:inherit;cursor:pointer}
+.gg .top{display:flex;align-items:center;gap:14px;padding:10px 16px;border:1px solid var(--line);border-radius:14px;background:var(--scroll);box-shadow:var(--shadow)}
+.gg .avatar{width:44px;height:44px;border-radius:11px;display:grid;place-items:center;font-size:22px;background:radial-gradient(circle at 30% 30%,var(--panel2),var(--bg2));border:1px solid var(--line);color:var(--spade)}
+.gg .me .name{font-weight:700;font-size:15px;letter-spacing:.5px}
+.gg .me .sub{font-size:12px;color:var(--ink2)}
+.gg .rank{margin-left:auto;font-size:13px;color:var(--gold);border:1px solid var(--line);padding:5px 11px;border-radius:20px;background:var(--panel)}
+.gg .cur{display:flex;gap:12px;font-size:13px}
+.gg .cur b{color:var(--gold)}
+.gg .skin{display:flex;border:1px solid var(--line);border-radius:20px;overflow:hidden}
+.gg .skin button{background:transparent;color:var(--ink2);border:0;padding:5px 13px;font-size:12px}
+.gg .skin button.on{background:var(--accent);color:#fff}
+.gg .nav{display:flex;gap:8px;margin:14px 0}
+.gg .nav button{background:var(--panel);color:var(--ink2);border:1px solid var(--line);border-radius:11px;padding:9px 20px;font-size:15px;font-weight:600}
+.gg .nav button.on{color:var(--ink);border-color:var(--gold);background:var(--panel2);box-shadow:0 0 0 1px var(--gold) inset}
+.gg .layout{display:grid;grid-template-columns:1fr 280px;gap:16px}
+.gg .card{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:14px 16px;box-shadow:var(--shadow);margin-bottom:14px}
+.gg .card.silk{background:var(--silk)}
+.gg .card h2{display:flex;align-items:center;gap:8px;font-size:15px;margin:0 0 12px;font-weight:700}
+.gg .hero{display:flex;justify-content:space-between;align-items:center;gap:14px;background:linear-gradient(120deg,var(--panel2),var(--panel));border:1px solid var(--line);border-radius:16px;padding:20px;box-shadow:var(--shadow);margin-bottom:14px}
+.gg .season{font-size:12px;color:var(--ink2)}
+.gg .title{font-size:30px;font-weight:800;margin:6px 0;color:var(--gold)}
+.gg .cta{display:flex;flex-direction:column;gap:8px}
+.gg .btn{background:var(--panel2);color:var(--ink);border:1px solid var(--line);border-radius:11px;padding:11px 18px;font-size:14px;font-weight:600}
+.gg .btn.primary{background:linear-gradient(120deg,var(--accent),var(--accent2));color:#fff;border:0;font-size:16px;box-shadow:0 4px 16px #0006}
+.gg .btn.off{opacity:.4;cursor:not-allowed}
+.gg .quick{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-top:14px}
+.gg .qbtn{display:flex;align-items:center;gap:10px;background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:12px;font-size:13px}
+.gg .qbtn .ic{font-size:22px}
+.gg .colgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(62px,1fr));gap:8px;margin:8px 0}
+.gg .pcard{aspect-ratio:3/4;border:1px solid var(--line);border-radius:8px;background:var(--panel2);padding:6px;position:relative;display:flex;flex-direction:column;justify-content:space-between;font-weight:700}
+.gg .pcard.wide{aspect-ratio:auto;min-height:60px}
+.gg .pcard .r{font-size:18px}
+.gg .pcard .jn{font-size:11px;color:var(--ink2);font-weight:600;line-height:1.2;margin-top:2px}
+.gg .pcard .own{position:absolute;right:6px;bottom:4px;font-size:10px;color:var(--ink2)}
+.gg .pcard.leg{border-color:var(--gold);box-shadow:0 0 0 1px var(--gold) inset,0 0 12px #e0973a55}
+.gg .pcard.lock{opacity:.42}
+.gg .pcard.buyable{cursor:pointer;border-color:var(--accent2)}
+.gg .pcard.buyable:hover{box-shadow:0 0 0 1px var(--accent2) inset}
+.gg .row{display:flex;gap:10px;flex-wrap:wrap;margin-top:12px}
+.gg .note{font-size:12px;color:var(--ink2);line-height:1.6;margin-top:10px}
+.gg .sub2{font-size:13px;color:var(--ink2);font-weight:600;margin:12px 0 4px}
+.gg .forge{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+.gg .shelf{display:grid;grid-template-columns:repeat(auto-fill,minmax(118px,1fr));gap:10px}
+.gg .good{background:var(--panel2);border:1px solid var(--line);border-radius:10px;padding:12px 10px;font-size:13px;font-weight:600;position:relative;min-height:62px}
+.gg .good .cost{margin-top:8px;color:var(--gold);font-size:12px}
+.gg .good.got{border-color:var(--gold);opacity:.85}
+.gg .good.buyable{cursor:pointer}
+.gg .good.buyable:hover{border-color:var(--accent2);box-shadow:0 0 0 1px var(--accent2) inset}
+.gg .ladder-top{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+.gg .bigrank{font-size:24px;font-weight:800;color:var(--gold)}
+@media(max-width:900px){.gg .layout,.gg .forge,.gg .ladder-top{grid-template-columns:1fr}}
+`;
