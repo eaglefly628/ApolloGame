@@ -67,6 +67,8 @@ export const HANSHI_DECK: Deck = {
     { kind: 'jinnang', id: 'wanjian', name: '万箭齐发', charges: 1, fxTemplate: 'jinnang_wanjian', target: 'pointer' },
     // 妙手回春（点地锦囊 P1.5，治疗）：点棋盘一块 → 范围给友军回血（hitbox 负伤=回血、targetMask 我方）；每回合 1 次。
     { kind: 'jinnang', id: 'huichun', name: '妙手回春', charges: 1, fxTemplate: 'jinnang_huichun', target: 'pointer' },
+    // 疑兵增援（自施锦囊，召援）：点一下 → 召 2 名友军杂兵(TEAM_A)落玩家半场参战；每回合 1 次。
+    { kind: 'jinnang', id: 'yibing', name: '疑兵增援', charges: 1, fxTemplate: 'jinnang_yibing', target: 'self' },
   ],
 };
 

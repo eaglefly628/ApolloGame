@@ -215,7 +215,7 @@ function buildMall(): HTMLElement {
 function buildSoloHud(click: (x: number, y: number) => void, play: (i: number) => void, faction: Faction = 'shu', deck?: Deck): { root: HTMLElement; update: (w: World) => void; renderAllies: (unitsList: { q: number; r: number; enemy: boolean; hpFrac: number }[][]) => void; renderCoop: (island: { progress: number; goal: number; owner: string | null; ranking?: { name: string; faction: string; contribution: number }[] }) => void; renderDeck: (w: World) => void; bag: string[]; equipped: EquipMap; renderBag: () => void; renderEquipped: () => void } {
   const FAC: Record<string, string> = { 蜀: '#d8504e', 吴: '#3fae6e', 魏: '#3a86d4', 群: '#9b6dd8' };
   // 出战牌组卡名（P0 局内可见；取自各 deck 注释名，非新设计）。
-  const CARD_NAME: Record<string, string> = { hubao_edict: '虎豹骑令', blitz: '速攻令', levy: '募兵', taoyuan: '桃园誓', zhangwu: '章武', muxian: '募贤', baiyi: '白衣', jinfan: '锦帆', muci: '募刺', tuntian: '屯田', zhongnong: '重农', munong: '募农', bazhen: '八阵图', wolong: '卧龙', qimou: '奇谋', guwu: '鼓舞', huoshao: '火烧连营', dingshen: '定身', wanjian: '万箭齐发', huichun: '妙手回春', kongcheng: '空城计' };
+  const CARD_NAME: Record<string, string> = { hubao_edict: '虎豹骑令', blitz: '速攻令', levy: '募兵', taoyuan: '桃园誓', zhangwu: '章武', muxian: '募贤', baiyi: '白衣', jinfan: '锦帆', muci: '募刺', tuntian: '屯田', zhongnong: '重农', munong: '募农', bazhen: '八阵图', wolong: '卧龙', qimou: '奇谋', guwu: '鼓舞', huoshao: '火烧连营', dingshen: '定身', wanjian: '万箭齐发', huichun: '妙手回春', kongcheng: '空城计', yibing: '疑兵增援' };
   const deckCards = deck?.cards ?? [];
   const passiveCards = deckCards.filter((c) => c.kind !== 'jinnang');
   const jinnangCards = deckCards.filter((c): c is Extract<typeof c, { kind: 'jinnang' }> => c.kind === 'jinnang');

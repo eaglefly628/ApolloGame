@@ -194,4 +194,18 @@ describe('主动锦囊（P1/P1.5；CardSpec jinnang → 充能/keybind/craft/cas
     expect(craft.CraftRecipe.gains[0].id).toBe('dmg_scale_b'); // 写敌方系数
     expect(craft.CraftRecipe.gains[0].amount).toBeLessThan(0);  // 负值=减伤
   });
+  it('疑兵增援(自施召援)：caster at=self + craft 扣充能；模板召 2 友军(TEAM_A)、其 strike 打太阁(TEAM_B)', () => {
+    const { entities } = buildDeckRules(HANSHI_DECK);
+    const caster = entities['cast_caster_yibing'] as unknown as { Caster: { template: string; at: string } };
+    expect(caster.Caster.template).toBe('jinnang_yibing');
+    expect(caster.Caster.at).toBe('self'); // 自施（非点地）
+    expect((entities['craft_cast_yibing'] as unknown as { CraftRecipe: { costs: { id: string }[] } }).CraftRecipe.costs[0].id).toBe('charge_yibing');
+    const squad = GAME_F_TEMPLATES['jinnang_yibing'] as unknown as { entities: Record<string, { Tag: { flags: number }; Perception: { targetTag: number } }> };
+    const units = Object.values(squad.entities);
+    expect(units.length).toBe(2); // 召 2 名
+    for (const u of units) { expect(u.Tag.flags & TEAM_A).toBe(TEAM_A); expect(u.Perception.targetTag).toBe(TEAM_B); } // 友军锁敌
+    const strike = GAME_F_TEMPLATES['jinnang_yibing_strike'] as unknown as { entities: { area: { Hitbox: { targetMask: number; scaleByResource?: string } } } };
+    expect(strike.entities.area.Hitbox.targetMask).toBe(TEAM_B);          // 打太阁
+    expect(strike.entities.area.Hitbox.scaleByResource).toBe('dmg_scale_a'); // 用我方乘区
+  });
 });

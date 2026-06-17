@@ -299,6 +299,27 @@ function reinfTemplate(unit: TaikouUnit): PrefabTemplate {
   return t;
 }
 
+// 疑兵增援（designer #34/#35 收口）：友军杂兵 = TEAM_A 战斗单位，镜像 mob/reinf 但阵营翻面——
+// Perception 锁 TEAM_B、自带打 TEAM_B 的 strike（用我方 dmg_scale_a 乘区）、HexPos 烘玩家半场。占位美术(赵云图)。
+const YIBING_HP = 60, YIBING_ATK = 18;
+function yibingUnit(hex: { q: number; r: number }): EntityBlueprint {
+  return {
+    Transform: xf(0, 0),
+    Shape: { kind: 'box', width: 16, height: 16 },
+    Tag: { flags: TEAM_A },
+    Resource: { id: 'hp', current: YIBING_HP, min: 0, max: YIBING_HP },
+    Perception: { targetTag: TEAM_B, sightRadius: 0 },
+    HexPos: hex,
+    GridMover: { period: MOVE_PERIOD, elapsed: 0, haltStatusMask: FROZEN, glideSpeed: 0.8 },
+    Mortal: { resource: 'hp', atOrBelow: 0 },
+    Timer: { id: 'atk', elapsed: 0, duration: ATK_CD, loop: true },
+    SelfRule: { when: { kind: 'timer', id: 'atk', cmp: 'gte', value: ATK_CD - 1 }, whenGlobal: { kind: 'flag', id: 'in_combat', equals: true }, do: [{ kind: 'spawn', template: 'jinnang_yibing_strike', at: 'target' }], once: false, armed: false },
+    Tween: { target: 'Transform.scaleY', from: 1, to: 1.05, elapsed: 0, duration: 26, easing: 'easeInOut', done: false, loop: 'pingpong' },
+    Sprite: sprite(F_HERO.zhao_yun, 4),
+    Color: { tint: SHU_RED, alpha: 1 },
+  } as unknown as EntityBlueprint;
+}
+
 // 每英雄三张模板：普攻打击区 + 大招打击区 + 棋子复合体（REQ-F-032 回合重展开用）。targetMask=敌队。
 // 模板库按当前 ROSTER（已按阵营分配 a_/b_）生成；参数名取 ROSTER 以使 150 行体零改动绑定到入参。
 export function templatesFor(ROSTER: HeroSpec[]): Record<string, PrefabTemplate> {
@@ -420,6 +441,9 @@ export function templatesFor(ROSTER: HeroSpec[]): Record<string, PrefabTemplate>
       ['jinnang_wanjian', { entities: { area: { Transform: xf(0, 0), Shape: { kind: 'box', width: 80, height: 80 }, Sensor: {}, Tag: { flags: ZONE_FLAG }, Hitbox: { resource: 'hp', amount: 30, targetMask: TEAM_B }, Timer: { id: 'life', elapsed: 0, duration: 1, loop: false }, Sprite: sprite(F_FX_ARROW, 8), Color: { tint: 0xe8d49a, alpha: 0.95 }, Tween: { target: 'Color.alpha', from: 0.95, to: 0, elapsed: 0, duration: 14, easing: 'easeOut', done: false } } } }],
       // 妙手回春：落点范围给我方回血（负伤=回血、targetMask 我方 TEAM_A；与野怪 heal_pulse 同款负伤算子）。
       ['jinnang_huichun', { entities: { area: { Transform: xf(0, 0), Shape: { kind: 'box', width: 80, height: 80 }, Sensor: {}, Tag: { flags: ZONE_FLAG }, Hitbox: { resource: 'hp', amount: -20, targetMask: TEAM_A }, Timer: { id: 'life', elapsed: 0, duration: 1, loop: false }, Sprite: sprite(F_FX_DRAIN, 8), Color: { tint: 0x7ce8a0, alpha: 0.9 }, Tween: { target: 'Color.alpha', from: 0.9, to: 0, elapsed: 0, duration: 16, easing: 'easeOut', done: false } } } }],
+      // 疑兵增援（自施）：召 2 名友军杂兵(TEAM_A)落玩家半场参战；其 strike 打 TEAM_B 用我方乘区。
+      ['jinnang_yibing_strike', strike(TEAM_B, YIBING_ATK, F_FX_STRIKE, 'dmg_scale_a')],
+      ['jinnang_yibing', { entities: { u1: yibingUnit({ q: 1, r: 5 }), u2: yibingUnit({ q: 5, r: 5 }) } }],
     ] as [string, PrefabTemplate][],
     // 野怪死亡复合（掉法球 + 四分碎裂；Mortal.dropTemplate 单口 → 复合模板一口出两件）
     [[
