@@ -1,6 +1,9 @@
 import { describe, it, expect } from 'vitest';
 import { GameSession } from './session.js';
 import { STARTER_JOKERS } from './jokers.js';
+import { planetForHand } from './planets.js';
+import { handScoreAtLevel } from './hand-rankings.js';
+import { blindRequirement } from './blinds.js';
 
 // 回合流程脚本 headless 测试（无 React）：证明线性编排正确，引擎负责算分。
 describe('game-e · GameSession 线性流程脚本', () => {
@@ -71,5 +74,38 @@ describe('game-e · GameSession 线性流程脚本', () => {
   it('确定性：同 seed 两局开局手牌一致', () => {
     const a = new GameSession(42), b = new GameSession(42);
     expect(a.hand.map((c) => `${c.suit}${c.rank}`)).toEqual(b.hand.map((c) => `${c.suit}${c.rank}`));
+  });
+
+  it('星球牌：升级牌型 → 引擎 rankingTable 基础分提升（下次出牌生效）', () => {
+    const s = new GameSession(1);
+    expect(s.handLevels.pair).toBe(1);
+    const before = s.handBase('pair');
+    s.usePlanet(planetForHand('pair'));
+    expect(s.handLevels.pair).toBe(2);
+    const after = s.handBase('pair');
+    expect(after.chips).toBeGreaterThan(before.chips);
+    expect(after).toEqual(handScoreAtLevel('pair', 2));
+  });
+
+  it('Boss 诅咒：boss 道按表施加（Ante1 高墙=盲注线翻倍）', () => {
+    const s = new GameSession(1);
+    expect(s.boss).toBeNull(); // small 道无 boss
+    s.blindIdx = 2; s.startBlind();
+    expect(s.boss?.id).toBe('the_wall');
+    expect(s.target).toBe(blindRequirement(1, 'boss') * 2);
+  });
+
+  it('Boss 诅咒：镣铐发 7 张 / 尖针仅 1 次出牌 / 深水 0 弃牌', () => {
+    const wall = new GameSession(1); wall.blindIdx = 2; wall.startBlind(); // ante1 = the_wall
+    // 直接构造其它 Boss：ante 决定 boss（ante2=尖针, ante3=深水, ante4=镣铐）。
+    const needle = new GameSession(1); needle.ante = 2; needle.blindIdx = 2; needle.startBlind();
+    expect(needle.boss?.effect).toBe('fewer_hands');
+    expect(needle.handsLeft).toBe(1);
+    const water = new GameSession(1); water.ante = 3; water.blindIdx = 2; water.startBlind();
+    expect(water.boss?.effect).toBe('no_discards');
+    expect(water.discardsLeft).toBe(0);
+    const manacle = new GameSession(1); manacle.ante = 4; manacle.blindIdx = 2; manacle.startBlind();
+    expect(manacle.boss?.effect).toBe('small_hand');
+    expect(manacle.hand.length).toBe(7);
   });
 });

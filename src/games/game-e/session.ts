@@ -1,10 +1,12 @@
 import { Engine } from '../../runtime/engine.js';
 import type { Resource, PlayedHand, Flag, StringVar, ScoreTrace, ScoreEvent } from '@engine/protocol/components.js';
-import { buildGameEBlueprint, buildJokerEntities, jokerToEntities, toEngineCard, R_CHIPS, R_MULT, R_MONEY, R_HAND_SCORE, R_ROUND_SCORE, R_HANDS_LEFT, R_DISCARDS_LEFT, R_BLIND, V_HAND_TYPE } from './blueprint.js';
+import { buildGameEBlueprint, buildJokerEntities, jokerToEntities, toEngineCard, HAND_TYPE_TO_ENGINE, R_CHIPS, R_MULT, R_MONEY, R_HAND_SCORE, R_ROUND_SCORE, R_HANDS_LEFT, R_DISCARDS_LEFT, R_BLIND, V_HAND_TYPE } from './blueprint.js';
 import { shuffledDeck, mulberry32, type Card } from './deck.js';
-import type { HandType } from './hand-rankings.js';
+import { HAND_ORDER, handScoreAtLevel, type HandType } from './hand-rankings.js';
 import { STARTER_JOKERS, type JokerCard } from './jokers.js';
 import { blindRequirement, BLIND_ORDER, type BlindKind } from './blinds.js';
+import { type PlanetCard } from './planets.js';
+import { bossForAnte, type BossBlind } from './boss-blinds.js';
 
 // ════════════════════════════════════════════════════════════════════════
 //  Game E · 回合流程脚本（GameSession）
@@ -49,10 +51,19 @@ export class GameSession {
   blindIdx = 0; // 0 small / 1 big / 2 boss
   owned: JokerCard[] = [];
   hand: Card[] = [];
+  /** 各牌型当前等级（星球牌升级，默认 1）。 */
+  handLevels: Record<HandType, number> = Object.fromEntries(HAND_ORDER.map((h) => [h, 1])) as Record<HandType, number>;
+  /** 本道盲注手牌张数（Boss「镣铐」会减 1）。 */
+  handSize = HAND_SIZE;
 
   constructor(seed = 20260608) {
     this.seed = seed;
     this.reset();
+  }
+
+  /** 当前 Boss 诅咒（仅 boss 道生效）。 */
+  get boss(): BossBlind | null {
+    return this.blindKind === 'boss' ? bossForAnte(this.ante) : null;
   }
 
   // ── 引擎资源读写（薄封装）──
@@ -76,6 +87,11 @@ export class GameSession {
   get discardsLeft(): number { return this.get(R_DISCARDS_LEFT); }
   get money(): number { return this.get(R_MONEY); }
   get blindKind(): BlindKind { return BLIND_ORDER[this.blindIdx]; }
+  /** 某牌型当前（含星球牌升级）的基础 chips/mult（读引擎 rankingTable）。 */
+  handBase(hand: HandType): { chips: number; mult: number } {
+    const pk = this.engine.world.getComponent<{ type: string; rankingTable: Record<string, { chips: number; mult: number }> }>('table', 'PokerHand');
+    return pk?.rankingTable[HAND_TYPE_TO_ENGINE[hand]] ?? { chips: 0, mult: 0 };
+  }
 
   /** 整局重开：新引擎（开局 0 小丑）+ 回到 Ante1 小盲注。 */
   reset(): void {
@@ -85,25 +101,38 @@ export class GameSession {
     this.owned = [];
     this.ante = 1;
     this.blindIdx = 0;
+    this.handLevels = Object.fromEntries(HAND_ORDER.map((h) => [h, 1])) as Record<HandType, number>;
     this.startBlind();
   }
 
-  /** ① 一道盲注开局：重置回合资源 + 设盲注线 + 洗牌发 8 张。 */
+  /** 用一张星球牌：牌型 +1 级 → 把升级后的基础分写回引擎 rankingTable（下次出牌生效）。 */
+  usePlanet(p: PlanetCard): void {
+    this.handLevels[p.hand] += 1;
+    this.applyHandLevel(p.hand);
+  }
+  private applyHandLevel(hand: HandType): void {
+    const pk = this.engine.world.getComponent<{ type: string; rankingTable: Record<string, { chips: number; mult: number }> }>('table', 'PokerHand');
+    if (pk) pk.rankingTable[HAND_TYPE_TO_ENGINE[hand]] = handScoreAtLevel(hand, this.handLevels[hand]);
+  }
+
+  /** ① 一道盲注开局：重置回合资源 + 设盲注线（Boss 诅咒可改）+ 洗牌发牌。 */
   startBlind(): void {
+    const boss = this.boss;
+    this.handSize = boss?.effect === 'small_hand' ? HAND_SIZE - 1 : HAND_SIZE;
     this.set(R_ROUND_SCORE, 0);
-    this.set(R_HANDS_LEFT, HANDS_PER_BLIND);
-    this.set(R_DISCARDS_LEFT, DISCARDS_PER_BLIND);
+    this.set(R_HANDS_LEFT, boss?.effect === 'fewer_hands' ? 1 : HANDS_PER_BLIND);
+    this.set(R_DISCARDS_LEFT, boss?.effect === 'no_discards' ? 0 : DISCARDS_PER_BLIND);
     this.set(R_CHIPS, 0); this.set(R_MULT, 0); this.set(R_HAND_SCORE, 0);
-    this.set(R_BLIND, blindRequirement(this.ante, this.blindKind));
+    this.set(R_BLIND, blindRequirement(this.ante, this.blindKind) * (boss?.effect === 'target_x2' ? 2 : 1));
     this.engine.world.getComponent<PlayedHand>('table', 'PlayedHand')!.cards = [];
     this.seed += 1;
     this.deck = shuffledDeck(this.seed);
-    this.deckPtr = HAND_SIZE;
-    this.hand = this.deck.slice(0, HAND_SIZE);
+    this.deckPtr = this.handSize;
+    this.hand = this.deck.slice(0, this.handSize);
   }
 
   private drawTo(kept: Card[]): Card[] {
-    const need = HAND_SIZE - kept.length;
+    const need = this.handSize - kept.length;
     const drawn = this.deck.slice(this.deckPtr, this.deckPtr + need);
     this.deckPtr += drawn.length;
     return [...kept, ...drawn];

@@ -41,7 +41,7 @@ export const R_PAIR_COUNT = 'pair_count';
 export const R_HAND_SIZE = 'hand_size';
 
 // 数据牌型 id（下划线）→ 引擎 poker-hand 牌型名（连字符）。
-const HAND_TYPE_TO_ENGINE: Record<HandType, string> = {
+export const HAND_TYPE_TO_ENGINE: Record<HandType, string> = {
   high_card: 'high-card',
   pair: 'pair',
   two_pair: 'two-pair',
