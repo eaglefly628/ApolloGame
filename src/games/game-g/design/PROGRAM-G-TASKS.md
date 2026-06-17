@@ -12,12 +12,12 @@
 >
 > | 字段 | 值 |
 > |---|---|
-> | **持棒方 BATON** | 🟢 **program G**（design G 已交接：lobby 港 + battle review，待 program G 接下一棒）|
-> | **状态** | design G 本轮交付完毕，待 program G 接 |
-> | **上一手（design G）完成** | ① **大厅 5 tab 港进真游戏**（`ad7d2ab`：showLobby 单页裸按钮堆 → 顶栏 + 大厅/牌组/收藏/改造坊/天梯 + 玄铁/锦霞双皮，**真实存档驱动**，未接网项诚实标占位；tsc 0 / vitest 1371 / build 全绿）② **battle-screen review ✅ 通过**（program G `436ccd4` 忠实复刻设计稿 + 接真 MARCH-1 行军、owner 已确认 battle-faithful 无误 → design G 复核：march 真实·outcome-first 未破·设计稿对齐，**通过**）③ 配套复刻 `doc/lobby-faithful.html`（owner 视觉基准）|
-> | **轮到谁 · 需做什么** | **program G**：(a) **MARCH-3 ⭐ 布阵「指派具体牌入路」**（owner 原话"选哪些扑克走上路"——现布阵只设三路**军官数**，缺"选哪些**具体牌**入哪路"；详规 `17`/`09`，保留预设作快捷）；(b) battle 余 polish：斩首聚焦 hitstop / Boss 入场台词 / 相机·小地图·捷径门（按 `UI/对战.dc.html`，若 battle-screen 未全做）；(c) 小调和：battle-screen 皮肤键 `onyx/brocade` 与 lobby `onyx/rosy` 统一命名（任一处改齐即可）。**翻棒回 design G 时写清产出 + 测数。** |
-> | **唤醒/检查条件** | 下个 `src/games/game-g/` commit；或 owner 新反馈 |
-> | **最后更新** | 2026-06-17 · by design G · lobby 港 + battle review 后 |
+> | **持棒方 BATON** | 🔵 **design G**（program G 交回：doc18 **3D-2 live 解析器**已落，待 design G 验收模型 + 派下一切片）|
+> | **状态** | program G 已完成 doc18 3D-2、待 design G 验收 |
+> | **上一手（program G）完成** | **doc18 §九 3D-2「live 遭遇解析器」** `live-combat.ts`（owner「任务来了，干活吧」→ 抢先做地基）：MARCH-1 build 时批量 `resolveArmy` → **逐拍 live**（兵 march → 前锋接触 → 每 `ENC_PERIOD` 拍对决 `decideFaceUp` 读**当下** favor → 清空敌路的幸存者突破、march 到敌老家逐 chip `home_hp` → 先破者胜）。**outcome-first 三本质保留**：单一 seeded PRNG 按 lane 序消费、逐拍 `liveHash` 稳；favor 遭遇拍读 → 中途投放/干预只影响未遭遇牌（前向单遍、不破 hash）。纯 game-side 解释器、零引擎。**4 测**（确定性逐拍 hash / 胜负方向 / live favor 杠杆 / 终止性）；tsc + vitest(1387) + build 全绿。另：battle-screen 已含相机/小地图/捷径门（(b) 那项部分已做）；无头 golden 看帧抓出并修了 `buildBattleView` 实体id bug（`32d2c25`）|
+> | **轮到谁 · 需做什么** | **design G**：① **验收 live 模型**——我取的遭遇模型 = "march → 接触 → **前线逐拍对决**（双 roll，双活到 `CLASH_CAP` 低 favor 让位）→ 突破 chip home"；请核是否合 doc18 §二「**成波遭遇 / 胜方余部推进**」愿景（要否改成"波次 pass-through"，或调 ENC_PERIOD/CLASH 数值）。② **§10.8 sub-fork（流派 被动 vs 打出）owner 还没拍** → 卡小丑重构方向，请催 owner 拍（design 倾向 C·流派印记）。③ 验收 OK → 派下一切片（**3D-1 投放/手牌/抽牌层** = 大头，按 §十 v3）|
+> | **唤醒/检查条件** | design G 验收回棒；或 owner 新反馈 |
+> | **最后更新** | 2026-06-17 · by program G · doc18 3D-2 live 解析器落地后 |
 
 > 翻棒写法：program G 干完 → 把「持棒方」改 🔵 **design G**、状态「program G 已完成待 design G 验收」、填完成什么；design G 验收完 → 改回 🟢 **program G**。
 
