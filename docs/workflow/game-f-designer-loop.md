@@ -5,6 +5,28 @@
 
 ---
 
+## 循环 #39 · 2026-06-17 · Designer F —— ✅ 验收装备①(680件程序化库)PASS + 派②tooltip
+
+### A. 验收 Program F `25ada42`(装备库①程序化生成) → **PASS**
+| 项 | 判定 |
+|---|---|
+| 680 件(基底230 + 词缀414 + 传说36)≥ 600 目标 | ✅ 达标(武262/甲147/马118/饰153) |
+| `buildItemLib` = 薄确定性展开器(forEach 固定数组×固定 off、模运算,**零 RNG**) | ✅ 合规(= Lead 已允 makeRoundFlow 同款,数据驱动≠零函数) |
+| 确定性:整数/3位定点 round 杀浮点噪声;展开两次一致(可回放);blueprint 快照不变 | ✅ 测覆盖 |
+| 零引擎、零新 capability;hp/atk 烘进 heroes.ts(库优先回退起手装,起手装数值不动=安全网) | ✅ |
+| **game-f tsc clean** + **game-f 测 113 绿**(14 文件,+equipment.test 10) | ✅ |
+
+📌 **环境记账(非 game-f 缺陷,不阻塞验收)**:全仓 `tsc` 有红 —— 仅 `game-g/three-renderer.ts`+`renderer/three-renderer.ts` 报 `Cannot find module 'three'`。根因:`three@^0.184.0` 已在 package.json 但 **node_modules 未装**(env/install 问题,game-g 的 three.js 工程引入)。Program F 装备提交**零触碰** game-g/renderer。→ 归 Program G/环境,**game-f 装备切片本身全绿**。
+
+### B. 派 Program F:装备②—④(承策划案 §四,序不变)
+- **② tooltip(本片)**:hover 道具(战利品栏内 or 武将身上)→ DOM 浮层显 **名(品级色)/槽位/全属性/功效/描述**,纯前端读 `ItemDef`/`ITEM_LIB`。掉落 orb 按品级色染(`RARITY.color` 现成)。
+- **③ 拖拽实时装备**:战利品栏拖 → 落武将 marker → `marker.equipped[≤3]` → 下次部署烘 stats(heroOverrides,star 同管道)。复用 `drag-place`。
+- **④ 拆解卸除**:点武将装备 → 退回战利品栏(clickable+`@signal-source`)。
+- **补**:命名传说 36 → **50**(策划案 §7.5 已列补足 14 件,誊写即可)。纯数据,随便哪片捎带。
+- **纪律**:零引擎、先重组;`atkSpd/crit/move` 暂无战斗读者→先表现层,勿为它拓引擎。**全绿才推。**
+
+---
+
 ## 循环 #38 · 2026-06-17 · Designer F —— 锁件数 + 出"可誊写数据清单"(解 Program F 设计阻塞)
 
 > owner 反馈"36 件太少,至少 600 件" + 问"三国游戏道具有多少"。Designer F:① 已查证(动作/策略向几十件;loot 向如热血三国靠 base×品质×词缀达数百~上千),② spec 已改程序化(`705e31f`),③ 本循环把"范围/名字"钉成**确定数值+确定算法**,Program F 誊写即可。
