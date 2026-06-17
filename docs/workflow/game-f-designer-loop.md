@@ -11,14 +11,32 @@
 >
 > | 字段 | 值 |
 > |---|---|
-> | **持棒方 BATON** | 🔵 **策划F**(程序F 已交接,待策划F验收) |
-> | **状态** | 程序已完成待策划验收 |
-> | **上一手(程序F)完成** | **疑兵增援收口**:自施锦囊召 2 名友军杂兵(TEAM_A，锁 TEAM_B、打 TEAM_B 用我方 dmg_scale_a 乘区，HexPos 烘玩家半场)，入 HANSHI 牌组；零引擎、真机施放 charge 1→0 零报错、1372 绿。状态文件收敛到本 BATON(删冗余 game-f-loop-state.md)。 |
-> | **轮到谁 · 需做什么** | **策划F**:验收 `疑兵增援` 提交(combat.ts yibingUnit + jinnang_yibing/_strike + decks HANSHI + 测)。验收后→翻棒回 🟢程序F。此后 game-f 游戏侧空档基本清完,主线等主程交付 `REQ-F-065`(eq_atk 接线)。 |
+> | **持棒方 BATON** | 🟢 **程序F**(策划F 已验收+派单,待程序F接) |
+> | **状态** | 策划已完成待程序接 |
+> | **上一手(策划F)完成** | ✅ 验收 `疑兵增援`(f9c93d6)**PASS**:game-f tsc clean + **125 绿**(+1)、零引擎(复用 spawn+dmg_scale_a乘区+HexPos烘)。接受 Program F 状态收敛(单一真相=本 BATON,已删冗余 game-f-loop-state.md)。 |
+> | **轮到谁 · 需做什么** | **程序F**:取 §0 最高值剩活——**太阁 Boss 余下招牌**(backlog §0-1/§2-B 仍 ⬜,高优先):信长·天下布武(阶段 Timer→全局 atk buff,scaleByResource 同款)/ 秀吉·一夜城(SelfRule 周期 spawn 援军)/ 本愿寺·一向一揆(开战 spawn 人海)。**纯数据接线、零引擎**,循环#1 派过可直接捡。干完翻棒回 🔵策划F 写产出。 |
 > | **唤醒/检查条件** | 下个 `src/games/game-f/` 或 `src/engine` commit;或主程交付 REQ-F-065 |
-> | **最后更新** | 2026-06-17 · by 程序F · 疑兵增援收口后 |
+> | **最后更新** | 2026-06-17 · by 策划F · 循环#45(验收疑兵增援+派太阁Boss招牌) |
 
 > 翻棒写法:程序F 干完 → 把「持棒方」改 🔵**策划F**、状态「程序已完成待策划验收」、填「完成什么」;策划F 验收完 → 改回 🟢**程序F**。
+
+---
+
+## 循环 #45 · 2026-06-17 · Designer F —— ✅ 验收疑兵增援 PASS + 统一接力棒 + 派太阁Boss余下招牌
+
+### A. 验收 Program F `f9c93d6`(疑兵增援收口) → **PASS**
+| 项 | 判定 |
+|---|---|
+| 自施锦囊召 2 名友军杂兵(TEAM_A,锁/打 TEAM_B 用我方 dmg_scale_a 乘区,HexPos 烘玩家半场),入 HANSHI 牌组 | ✅(零引擎,复用 spawn+乘区+HexPos) |
+| combat.ts yibingUnit + jinnang_yibing/_strike + decks HANSHI + 测 | ✅ |
+| **game-f tsc clean** + **game-f 测 125 绿**(+1) | ✅ |
+> 这是 P1.5 最后一张主动锦囊,锦囊池收口。
+
+### B. 流程治理:接力棒单一真相
+- owner 立 BATON 协议后,策划F 与 Program F **并发**各做了一份状态收敛(我建独立文件 / Program F 收进板顶 BATON 块并删文件)= 双真相风险。**已对齐 Program F 方向**:单一真相 = 板顶 `🪧 BATON 块`,独立 `game-f-loop-state.md` 删除。今后只维护板顶块。
+
+### C. 派 Program F:太阁 Boss 余下招牌(纯数据零引擎,见 BATON「轮到谁」)
+信长·天下布武 / 秀吉·一夜城 / 本愿寺·一向一揆 —— backlog §0-1 仍 ⬜、循环#1 派过,直接捡。此后游戏侧空档基本清完,主线候主程 REQ-F-065。
 
 ---
 
