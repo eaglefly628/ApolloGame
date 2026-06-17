@@ -138,8 +138,99 @@ interface ItemDef {
 | 橙装特效(暴击溅射/斩杀/光环…) | 走锦囊式 caster/hitbox(F-061 斩杀已 done)**后续片** | 重组 |
 > **全程零引擎、零新 capability。** 真撞表达不了的(如"装备实时改战斗中活属性")→ 走"烘进下次部署"绕过(金铲铲语义),不拓引擎。
 
+## 七、★ 可誊写数据清单(Program F 直接落库,零设计决策)
+
+> owner 锁:**命名传说 = 50**(够记忆点;其余靠程序化凑 600+)。下表把 §三的"范围/名字"钉成**确定数值 + 确定算法**,Program F 誊写即可,不必再设计。
+
+### 7.1 基底表 BASES(46;每行 = `{id, name, slot, base}`)
+> `base` = 白品(×1.0)裸数值;品级倍率在 7.3 统一乘。
+
+**weapon(18,主 atk;少量 atkSpd/crit)**
+```
+wb_gudingdao 古锭刀   atk8     | wb_huanshou 环首刀  atk9
+wb_changqiang 长枪    atk11    | wb_gangqiang 钢枪   atk12
+wb_baojian 宝剑       atk10    | wb_changjian 长剑   atk11
+wb_huaji 画戟         atk13    | wb_fangtianji 方天戟 atk15,crit0.05
+wb_zhanfu 战斧        atk14    | wb_kaishanfu 开山斧 atk16
+wb_tiechui 铁锤       atk15    | wb_liuxingchui 流星锤 atk13,move0.05
+wb_changgong 长弓     atk10,atkSpd0.05 | wb_qiangnu 强弩 atk12,atkSpd0.08
+wb_tiebian 铁鞭       atk11    | wb_shuangjian 双锏  atk12,atkSpd0.05
+wb_shemao 蛇矛        atk14,atkSpd0.05 | wb_sanjian 三尖两刃刀 atk15
+```
+**armor(10,主 hp)**
+```
+ab_pijia 皮甲 hp60 | ab_zhanpao 锦战袍 hp90 | ab_suozi 锁子甲 hp120
+ab_lianhuan 连环铠 hp150 | ab_bintie 镔铁铠 hp140,atk4 | ab_linjia 鳞甲 hp130
+ab_shoumian 兽面铠 hp160 | ab_zhongkai 重铠 hp200 | ab_ruanwei 软猬甲 hp110,crit0.05 | ab_tengjia 藤甲 hp170
+```
+**mount(8,主 move;少量 hp/atkSpd)**
+```
+mb_xiliang 西凉马 move0.10 | mb_dawan 大宛马 move0.12,hp40
+mb_wuzhui 乌骓 move0.14 | mb_huangbiao 黄骠马 move0.13,hp50
+mb_bailong 白龙驹 move0.15 | mb_taxue 踏雪乌 move0.14,atkSpd0.05
+mb_qingcong 青骢马 move0.12 | mb_yinzong 银鬃马 move0.13
+```
+**trinket(10,混合小属性)**
+```
+tb_yinshou 印绶 hp30,atk4 | tb_lingpai 督军令牌 atk8,atkSpd0.05
+tb_hufu 调兵虎符 hp80,atk6 | tb_bingshu 兵书 atk10,crit0.08
+tb_zhangu 战鼓 atk8,atkSpd0.05 | tb_shuaiqi 帅旗 hp60,atk6
+tb_huxinjing 护心镜 hp80 | tb_yupei 玉佩 hp50,atkSpd0.05
+tb_jinnang 锦囊 atkSpd0.08 | tb_fulu 符箓 hp40,crit0.08
+```
+
+### 7.2 品级前缀 + 倍率
+```
+white  破损的  ×1.0   | green 精良的 ×1.6 | blue 卓越的 ×2.4
+purple 史诗的 ×3.4   | orange 传说的 ×5.0(+特效位)
+```
+> 命名:程序化件 = `前缀 + 基底名`(白品免前缀)。如 `卓越的·画戟(蓝)`。数值 = `round(base.stat × 倍率)`(move/crit/atkSpd 保留 2 位小数)。
+
+### 7.3 词缀表 AFFIXES(12;蓝及以上挂 ≤1 条,改名+加一维)
+```
+锋锐 +atk(×0.5基底atk) | 破军 +crit0.08 | 疾风 +atkSpd0.08 | 奔雷 +move0.06
+玄武 +hp(×0.4基底hp或+60) | 坚壁 +hp(×0.8基底hp或+120) | 精钢 +hp40+atk5
+百炼 +全维各×0.2 | 无双 +atk8+crit0.08+atkSpd0.05(仅紫/橙)
+饕餮[特效:吸血] | 赤焰[特效:灼烧] | 寒霜[特效:减速]   // 特效类 v1 仅挂文案,机制后续锦囊式 caster
+```
+> 命名:`词缀 + · + 品级件名`,如 `破军·卓越的画戟(蓝)`。词缀只加在 blue/purple/orange 变体上。
+
+### 7.4 展开器算法 expandItems()(薄确定性函数,合规同 makeRoundFlow)
+```
+按固定顺序(BASES 数组序 × RARITIES 序 × AFFIXES 序)遍历,纯映射,无随机:
+1) for base in BASES, for rarity in RARITIES:
+     纯净变体 id=`${base.id}_${rarity}`  stats=round(base.base × mul[rarity])
+     → 230 件
+2) for base in BASES where rarity∈{blue,purple,orange}, for affix in AFFIXES(数值类9条):
+     词缀变体 id=`${base.id}_${rarity}_${affix.id}`  stats=纯净 + affix.delta
+     → 46×3×9 ≈ 已超 600,取前 ~400 落库(或全展开运行时,二者皆合规)
+3) UNIQUES(7.5,50 件固定)直接并入。
+合计 230 + 400+ + 50 ≈ 680 ≥ 600。✅
+```
+> 掉落 roll:`pickRarity(太阁深度) → pickBase(slot) → maybeAffix(rarity)` 拼 id 取件。展开是**纯函数**,确定性 hash 不破(同 seed 同结果)。
+
+### 7.5 命名传说 UNIQUES(50,固定;§三已列 36,补足 14)
+> §三 表内 36 件为前 36;下面补 14 件凑满 50(均带专属特效文案,机制后续接):
+```
+w_yitian 倚天剑 橙 atk46,crit0.18  曹操配剑,镇军威(效果:开战全队+atk)
+w_gulou 古锭巨阙 紫 atk32           越王遗兵,断金切玉
+w_sanjian 三尖刀 蓝 atk24,atkSpd0.08 二郎遗制,刃开三锋
+a_lianhuanma 连环马铠 紫 hp250,move-0.0 铁骑连环,势不可当
+a_jinsuo 黄金锁子 橙 hp340,atk8    刀枪不入,马超之甲(效果:开战免控3s)
+a_tengjiawang 藤甲王 紫 hp230      刀箭难入畏火(效果:受火伤+,余减伤)
+m_dawanwang 千里大宛 紫 move0.26,hp70 汗血神驹,日行千里
+m_zhaoyemulan 照夜玉狮子 橙 move0.30,atk10 赵云白马,长坂七进出(效果:冲锋暴击)
+t_chuanguo 传国玉玺 橙 hp150,atk15 受命于天(效果:全队+5%攻光环)
+t_taipingyaoshu 太平要术 橙 hp100,atk12 南华老仙(效果:开战回血)
+t_dunjia 奇门遁甲 紫 crit0.20,atkSpd0.10 卧龙所授,鬼神莫测
+t_liannu 诸葛连弩图 紫 atk20,atkSpd0.15 一弩十矢,机巧无双
+t_qixingdeng 七星灯 紫 hp120       续命禳星,五丈原夜
+t_dujiang 督将虎贲 蓝 hp100,atk6   虎贲卫士,以一当十
+```
+> ⚠️ id 与 §三 已有件去重(上表为新增,§三的 `w_qinglong/m_chitu/w_fangtian` 等保留)。最终 UNIQUES = §三 36 + 上 14 = 50。橙紫特效 v1 仅文案,数值生效;特效机制走 §五「后续片」锦囊式 caster。
+
 ## 六、验收
-1. `ITEMS` 扩到 36+ 件带品级;掉落 orb 染品级色。
+1. 道具库经 §七 展开器达 **600+ 件**带品级(50 命名传说 + 程序化变体);掉落 orb 染品级色。
 2. hover 任意道具 → tooltip 显名/品级/属性/功效/描述。
 3. 战利品栏拖道具 → 落武将 marker → 下次开战该武将属性按装备提升(≤3 件)。
 4. 点武将装备 → 拆解退回栏。
