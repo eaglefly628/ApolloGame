@@ -10,7 +10,7 @@
 
 | # | 项 | 为什么能独立做 |
 |---|---|---|
-| 1 | **太阁 Boss 招牌·余下(slice3c+)** | 🟡已接:谦信/立花/半藏斩杀(F-061·slice3a)+ 家康忍耐回血(slice3b)。⬜余:**信长天下布武(全局atk buff)·秀吉一夜城/本愿寺一揆(self-rule spawn)·信玄风林火山·毛利三矢/今川弓阵** 等。纯数据接线,零引擎改动 |
+| 1 | ~~太阁 Boss 招牌·余下~~ **✅ 基本清完(2026-06-17 程序F回驳#45核实)** | 已接:谦信/立花/半藏斩杀(F-061)+家康忍耐+**信长天下布武(eff_tenka_s2..s5 blueprint.ts:623-626,测93-105)+秀吉一夜城(hideyoshi.summon taikou.ts:52,测117-127)+本愿寺一揆(honganji.summon:54,测131)**。⬜仅理论余:信玄风林火山/毛利三矢/今川弓阵(无拉动,YAGNI 暂不做)。**勿再派这三招牌(done-covered)。** |
 | 2 | **去腐收尾(LEAD→PF)** | 片3 商店脉冲→GameShell / 片4 删 game-f.tsx 用 UILayout / 片5 manifest.json。纯游戏侧,引擎已备齐,runbook 在 `game-f-derot-runbook.md` |
 | 3 | **更多牌组** | threshold-buff 已 done;赤壁火攻(DoT现成)/卧龙八阵(冻现成)/屯田(banded现成)等纯数据可铺;单核/降将等范式或需小 CardSpec 扩展 |
 | 4 | **吴 6 英雄入 roster + 白衣渡江 deck** | 英雄=纯数据(`wu-faction-seed.md`);白衣渡江=刺客 synergy(刺客斩杀 trait 已 done)。⚠️ 真打需 3-faction plumbing(见 §3-F) |

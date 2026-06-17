@@ -11,14 +11,27 @@
 >
 > | 字段 | 值 |
 > |---|---|
-> | **持棒方 BATON** | 🔵 **策划F**(程序F 回驳#45 派单=done-covered,待策划F 重新指方向) |
-> | **状态** | 程序已回驳(done-covered)待策划 |
-> | **上一手(程序F)完成** | ⛔ **回驳 #45 派单（太阁 Boss 招牌）= 已实装+已测,不重做**(manifesto §2 已覆盖→回驳)。证据:① 信长·天下布武=`blueprint.ts:618-626` eff_tenka_s2..s5(deploy_pve_N→dmg_scale_b +0.08/0.16/0.25/0.40),测 `taikou.test.ts:93-105`(终盘=1.40);② 秀吉·一夜城=`taikou.ts:52` hideyoshi.summon{ash_yari,period:180},测 `taikou.test.ts:117-127`(reinf 真出现);③ 本愿寺·一向一揆=`taikou.ts:54` honganji.summon{count:3,once:true},测 `taikou.test.ts:131`。三招牌循环#1 已落,无新活。 |
-> | **轮到谁 · 需做什么** | **策划F**:#45 三项均 done-covered，请核对上面证据；game-f **游戏侧空档已基本清完**(7 锦囊全实装+装备全链+太阁招牌)。请么(a) 给**真新设计**(现有数据/能力表达不了的缺口),么(b) 确认进入"待主程 REQ-F-065"静默期(我接 eq_atk)。**勿再派已覆盖项**。 |
-> | **唤醒/检查条件** | 下个 `src/games/game-f/` 或 `src/engine` commit;或主程交付 REQ-F-065 |
-> | **最后更新** | 2026-06-17 · by 程序F · 回驳#45 done-covered |
+> | **持棒方 BATON** | 🟢 **程序F**(策划F 已**接受回驳**+给 no-regret 续片;大方向请 owner) |
+> | **状态** | 策划已接受回驳·派可选续片·候 owner 定大方向 |
+> | **上一手(策划F)完成** | ✅ **接受程序F 回驳#45**(已逐条核代码属实:信长 eff_tenka blueprint.ts:623-626/秀吉 taikou.ts:52/本愿寺:54 + 测 93-131,**确系 done-covered**)。我承认 #45 派单错误=照搬陈旧 backlog 未先核码,已修 `game-f-backlog.md §0-1` 标三招牌 ✅。**game-f 游戏侧 sim 内容达完成里程碑**。 |
+> | **轮到谁 · 需做什么** | **程序F**(no-regret 续片,**非强制凑活**):**装备特效片·非atk子集** —— 橙装/词缀里**不依赖 per-unit atk 缩放**的特效,全用现成算子重组(零引擎):关羽青龙刀「斩杀残血」=executeBelow(F-061现成)/赤焰·灼烧=DoT现成/寒霜·减速=FROZEN现成/饕餮·吸血=heal(负amount)现成/太平要术「开战回血」=OverTime现成/黄金锁子「开战免控」=status现成。owner 在装备 spec §3.4 明确要橙装特效,v1 仅落了数值、特效仍文案 → **真未做、非 done-covered**。⛔ **scope out**:光环+atk/暴击溅射/冲锋暴击 等 atk·crit 依赖项 → 随 REQ-F-065 一起。 |
+> | **唤醒/检查条件** | 下个 `src/games/game-f/` 或 `src/engine` commit;或主程交付 REQ-F-065;或 owner 定大方向 |
+> | **最后更新** | 2026-06-17 · by 策划F · 循环#46(接受回驳+修 backlog+派装备特效非atk子集) |
 
 > 翻棒写法:程序F 干完 → 把「持棒方」改 🔵**策划F**、状态「程序已完成待策划验收」、填「完成什么」;策划F 验收完 → 改回 🟢**程序F**。
+
+---
+
+## 循环 #46 · 2026-06-17 · Designer F —— 接受程序F回驳#45(我错:陈旧backlog) + 修文档 + 派装备特效(非atk子集)
+
+### A. 接受回驳(程序F 对,我错)
+程序F 回驳 #45 太阁 Boss 三招牌 = done-covered。**我逐条核了代码,属实**:信长 `eff_tenka_s2..s5`(blueprint.ts:623-626,测93-105 终盘1.40)/秀吉 `hideyoshi.summon`(taikou.ts:52,测117-127)/本愿寺 `honganji.summon`(taikou.ts:54,测131)。**我 #45 的派单是错误**——照搬了陈旧 `game-f-backlog.md §0-1`(标 ⬜)却没先核码,**犯了"派单前先核代码现状"的旧错**。已修 backlog §0-1 标三招牌 ✅、注明 done-covered 勿再派。
+
+### B. 里程碑:game-f 游戏侧 sim 内容**基本完成**
+7 锦囊全实装(含主动 QTE)+ 装备 HP 全链 + 太阁 21 单位/6 波/全 Boss 招牌 + 2 牌组 + 贡献/攻岛 scaffold。**剩余主线 = 武器 atk(候主程 REQ-F-065)**;大方向(经济服务层 / 多人联机 / 美术)需 owner 定。
+
+### C. 派可选 no-regret 续片(非强制凑活):装备特效·非atk子集
+owner 在装备 spec §3.4 要橙装特效,v1 仅落数值、特效仍文案 → 真未做。**只派不依赖 per-unit atk/crit 的子集**(斩杀=executeBelow现成/灼烧=DoT/减速=FROZEN/吸血=heal/开战回血=OverTime/免控=status),全零引擎重组。atk·crit 依赖项(光环/暴击溅射/冲锋暴击)scope out,随 REQ-F-065。**已同时请 owner 定下一大方向。**
 
 ---
 
