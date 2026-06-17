@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { warfundsFor, getWarfunds, addWarfunds, settleRun, memoryKV, spendWarfunds, gachaPull, gachaPull10, gachaRates, getCollection, GACHA_COST, GACHA10_COST, GACHA_POOL, getLP, rankFor, updateLpAfterRun, disenchant, getDust, addDust, enchantCard, getEnchantLevels, DUST_PER_CARD, enchantCost, ENCHANT_MAX, type GachaEntry } from './account.js';
+import { warfundsFor, getWarfunds, addWarfunds, settleRun, memoryKV, spendWarfunds, gachaPull, gachaPull10, gachaRates, getCollection, GACHA_COST, GACHA10_COST, GACHA_POOL, getLP, rankFor, updateLpAfterRun, disenchant, getDust, addDust, enchantCard, getEnchantLevels, DUST_PER_CARD, enchantCost, ENCHANT_MAX, getSeason, getFormat, setFormat, advanceSeason, seasonInfo, grantCards, type GachaEntry } from './account.js';
 
 describe('经济 v1 · 账号层战功（warfunds；服务层、与 ECS 解耦）', () => {
   it('战功公式：贡献/胜利/波深单调增，钳非负取整', () => {
@@ -113,5 +113,38 @@ describe('经济 v1 · 附魔 + 材料（养成第二轴；spec §五）', () =>
     expect(getEnchantLevels(kv)['taoyuan']).toBe(1);
     expect(enchantCost(1)).toEqual({ warfunds: 200, dust: 4 }); // 递增
     expect(ENCHANT_MAX).toBe(3);
+  });
+});
+
+describe('赛季轮换骨架（经济 v1 真缺口 · spec §七 安全阀）', () => {
+  it('默认 season=1 / format=standard；setFormat 持久', () => {
+    const kv = memoryKV();
+    expect(getSeason(kv)).toBe(1);
+    expect(getFormat(kv)).toBe('standard');
+    setFormat('wild', kv);
+    expect(getFormat(kv)).toBe('wild');
+    expect(seasonInfo(kv)).toEqual({ season: 1, format: 'wild' });
+  });
+  it('换季安全阀：season++、LP 向基线(1000)软重置(保40%超额)、收藏/战功留存', () => {
+    const kv = memoryKV();
+    addWarfunds(500, kv); grantCards(['taoyuan'], kv);
+    for (let i = 0; i < 60; i++) updateLpAfterRun(true, kv); // 抬到高 LP（1000+60×25=2500）
+    const lpHigh = getLP(kv);
+    expect(lpHigh).toBeGreaterThan(2000);
+    const r = advanceSeason(kv);
+    expect(r.season).toBe(2);
+    expect(getSeason(kv)).toBe(2);
+    expect(r.lpAfter).toBe(Math.floor(1000 + (lpHigh - 1000) * 0.4)); // 软重置压缩
+    expect(r.lpAfter).toBeLessThan(lpHigh);
+    expect(r.lpAfter).toBeGreaterThan(1000); // 仍保部分超额（非清零）
+    expect(getWarfunds(kv)).toBe(500);              // 战功留存
+    expect(getCollection(kv)['taoyuan']).toBe(1);   // 收藏留存
+  });
+  it('低于基线换季不倒贴（钳基线附近，非负）', () => {
+    const kv = memoryKV();
+    for (let i = 0; i < 50; i++) updateLpAfterRun(false, kv); // 砸到 0
+    const r = advanceSeason(kv);
+    expect(r.lpAfter).toBeGreaterThanOrEqual(0);
+    expect(r.lpAfter).toBeLessThanOrEqual(1000);
   });
 });

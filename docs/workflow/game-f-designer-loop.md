@@ -11,12 +11,12 @@
 >
 > | 字段 | 值 |
 > |---|---|
-> | **持棒方 BATON** | 🟢 **程序F**(策划F 已验收 atk 线 PASS + 派经济 v1 真缺口) |
-> | **状态** | 策划已验收+派单·待程序接 |
-> | **上一手(策划F)完成** | ✅ **验收装备 atk 线（dc6e2ef, REQ-F-065 path A）PASS**：game-f tsc clean + 全仓 tsc 仅 game-g/three 旧账 + **126 绿**;eqcaster sidecar(per-unit eq_atk + 独立 eq_strike scaleByResource 先查本地)干净确定、blueprint 快照随之更新。**装备 HP+atk 双线全通,装备系统完整收官。** 同时**接受程序F 对我 #46 的纠正**:斩杀/灼烧/减速/吸血=改**共享 strike** 属性=与 atk 同 per-instance 墙,非"现成重组"——我 #46 把它们划进"非atk子集"是误判,致歉并撤回那部分。 |
-> | **轮到谁 · 需做什么** | **程序F · 经济养成 v1 真缺口收口**(owner 2026-06-17 定大方向=经济 v1;策划F 已核现状:经济 v1 **~85% 已实装**,account.ts 全数据层+lobby 6tab+game-f.tsx 闭环+测,§十闭环基本通)。只做**真缺口**(非 done-covered):**① 赛季轮换骨架**(account 加 season + 牌池格式标准/狂野 + 部分重置;spec §七必做安全阀,grep 确认绝对缺;**先做**);**② 星球牌账号层流派升级**(spec §五;**先核**是否已被 deck「星球·X」卡+enchant 覆盖,真缺才做 spend战功→升流派羁绊全档 modifier)。**defer 分层匹配**(spec 自承"多人才真用",单机 YAGNI,策划自驳暂缓)。**账号层、解耦 ECS、全绿才推。** |
+> | **持棒方 BATON** | 🔵 **策划F**(程序F 做完①赛季+回驳②,待策划F验收) |
+> | **状态** | 程序已完成①+回驳②·待策划验收 |
+> | **上一手(程序F)完成** | ✅ **① 赛季轮换骨架(真缺口,已落)**：account.ts 加 `getSeason/getFormat/setFormat/advanceSeason/seasonInfo/cardAllowedInFormat`——season 计数 + 标准/狂野格式 + **换季安全阀**(LP 向基线 1000 软重置、保 40% 超额、收藏/战功/附魔留存)；牌池过滤留 hook(季1 恒等，待 per-card 轮替数据收紧标准池)。account 层、解耦 ECS、+4 测(共 1383 绿)。 ⛔ **② 星球牌流派升级 = 回驳(done-covered)**：流派钥匙牌=synergy/threshold-buff(account.ts:160-168 rarity 表)，`enchantCard`(account.ts:101，spend 战功100×2^lv+尘)→`enchantCardSpec`(decks.ts:219) 把 perUnit/tiers.bonus ×(1+ENCHANT_MUL×级)=**spend 货币→升流派羁绊全档 modifier**，正是 ②。已实装+有测(account.test 附魔档)→不重做。 |
+> | **轮到谁 · 需做什么** | **策划F**:① 验收赛季骨架(account.ts season/format/advanceSeason + 测)；② 核对回驳证据(enchant=升流派)。经济 v1 真缺口至此清(分层匹配 YAGNI 已 defer)。验收后→翻 🟢程序F；并请 owner 定下一大方向(美术/多人/新内容)。 |
 > | **唤醒/检查条件** | 下个 `src/games/game-f/` 或 `src/engine` commit;或 owner 新指令 |
-> | **最后更新** | 2026-06-17 · by 策划F · 循环#47(验收atk PASS+派经济v1真缺口) |
+> | **最后更新** | 2026-06-17 · by 程序F · ①赛季骨架done+②回驳done-covered |
 
 > 翻棒写法:程序F 干完 → 把「持棒方」改 🔵**策划F**、状态「程序已完成待策划验收」、填「完成什么」;策划F 验收完 → 改回 🟢**程序F**。
 

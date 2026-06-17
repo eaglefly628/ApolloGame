@@ -156,6 +156,39 @@ export function updateLpAfterRun(victory: boolean, kv: KV = defaultKV()): { rank
   return { rank: rankFor(lp), delta };
 }
 
+// ── 赛季轮换骨架（spec §七 安全阀；经济 v1 真缺口，2026-06-17 owner 定）──
+// 安全阀=防 LP/进度无限累积：换季软重置 LP 向基线压缩（保 40% 超额）、收藏/战功/附魔留存。
+// 牌池格式：标准(当季合法池)/狂野(全收藏)；v1 季1 无轮替出池 → 过滤为恒等，待轮替数据接（per-card season）。
+const SEASON_KEY = 'gamef.account.season';
+const FORMAT_KEY = 'gamef.account.format';
+export type DeckFormat = 'standard' | 'wild';
+export function getSeason(kv: KV = defaultKV()): number {
+  const n = Number(kv.getItem(SEASON_KEY));
+  return Number.isFinite(n) && n >= 1 ? Math.floor(n) : 1;
+}
+export function getFormat(kv: KV = defaultKV()): DeckFormat {
+  return kv.getItem(FORMAT_KEY) === 'wild' ? 'wild' : 'standard';
+}
+export function setFormat(f: DeckFormat, kv: KV = defaultKV()): void {
+  kv.setItem(FORMAT_KEY, f);
+}
+// 换季：season++ + LP 软重置（向 LP_START 压缩，保留 40% 超额；钳非负）。收藏/战功/附魔/自组牌不动。
+export function advanceSeason(kv: KV = defaultKV()): { season: number; lpBefore: number; lpAfter: number } {
+  const season = getSeason(kv) + 1;
+  const lpBefore = getLP(kv);
+  const lpAfter = Math.max(0, Math.floor(LP_START + (lpBefore - LP_START) * 0.4));
+  kv.setItem(SEASON_KEY, String(season));
+  kv.setItem(LP_KEY, String(lpAfter));
+  return { season, lpBefore, lpAfter };
+}
+// 牌池格式过滤（标准=当季合法；狂野=全放行）。v1 无 per-card season → 标准亦全放行（轮替数据到位再收紧）。
+export function cardAllowedInFormat(_cardId: string, _format: DeckFormat = getFormat(), _season: number = getSeason()): boolean {
+  return true; // 季1 全合法；轮替出池数据接入后按 _format/_season 收紧标准池
+}
+export function seasonInfo(kv: KV = defaultKV()): { season: number; format: DeckFormat } {
+  return { season: getSeason(kv), format: getFormat(kv) };
+}
+
 // ── 收藏 + 软币抽卡（spec §二/§五；闭合 earn→spend；account 层、与 ECS 解耦）──
 // 收藏=**小丑牌**（deck CardSpec 卡）；rarity 表（designer #18）：钥匙牌(synergy/threshold 定义流派)=传说、
 // 经济档=稀有、通用配牌(round-buff/shop-weight)=普通。weight 越低越稀有。
