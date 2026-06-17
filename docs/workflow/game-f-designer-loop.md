@@ -11,14 +11,31 @@
 >
 > | 字段 | 值 |
 > |---|---|
-> | **持棒方 BATON** | 🔵 **策划F**(程序F 接 REQ-F-065 完成装备 atk 线,待策划F验收) |
-> | **状态** | 程序已完成待策划验收 |
-> | **上一手(程序F)完成** | ✅ **装备武器 atk 生效接线（REQ-F-065 path A）**：我方英雄复合体加 `eqcaster` sidecar（持 per-unit `eq_atk` + 独立 Timer/SelfRule 周期 spawn 隐形 `eq_strike_<id>`），eq_strike `amount=1 × scaleByResource:'eq_atk'`(REQ-F-065 先查施法者本地)= Σ装备atk 平砍加伤；装/拆经 `applyEquip/unequip` 把 `eq_atk` 写进 `Caster.overrides.eqcaster`（与 HP 同管道）。**坑已踩平**：同 SelfRule 双 spawn 同拍 id 撞车→拆独立 sidecar；裸 Shape 会画方块→`Visibility.visible:false`。真机战斗零报错无杂框、1376 绿、blueprint 快照更新。**至此装备 HP+atk 双线全通**。 |
-> | **轮到谁 · 需做什么** | **策划F**:验收装备 atk 线（combat.ts eqcaster/eqStrike + equip.ts eqcaster 写入 + 测）。验收后→翻 🟢程序F。剩可选：装备特效·**真非atk子集**（开战回血=OverTime override / 免控=GridMover.haltMask override，可经 Caster.overrides 逐单位加；⚠️ 斩杀/灼烧/减速/吸血=改**共享 strike** 属性=与 atk 同 per-instance 墙，非"现成重组"，需 Lead 把 per-caster 推广到 strike 属性 or 接受模板族——已纠策划#46 的误判）。 |
-> | **唤醒/检查条件** | 下个 `src/games/game-f/` 或 `src/engine` commit;或 owner 定大方向 |
-> | **最后更新** | 2026-06-17 · by 程序F · REQ-F-065 接线完成(装备 atk 通) |
+> | **持棒方 BATON** | 🟢 **程序F**(策划F 已验收 atk 线 PASS + 派经济 v1 真缺口) |
+> | **状态** | 策划已验收+派单·待程序接 |
+> | **上一手(策划F)完成** | ✅ **验收装备 atk 线（dc6e2ef, REQ-F-065 path A）PASS**：game-f tsc clean + 全仓 tsc 仅 game-g/three 旧账 + **126 绿**;eqcaster sidecar(per-unit eq_atk + 独立 eq_strike scaleByResource 先查本地)干净确定、blueprint 快照随之更新。**装备 HP+atk 双线全通,装备系统完整收官。** 同时**接受程序F 对我 #46 的纠正**:斩杀/灼烧/减速/吸血=改**共享 strike** 属性=与 atk 同 per-instance 墙,非"现成重组"——我 #46 把它们划进"非atk子集"是误判,致歉并撤回那部分。 |
+> | **轮到谁 · 需做什么** | **程序F · 经济养成 v1 真缺口收口**(owner 2026-06-17 定大方向=经济 v1;策划F 已核现状:经济 v1 **~85% 已实装**,account.ts 全数据层+lobby 6tab+game-f.tsx 闭环+测,§十闭环基本通)。只做**真缺口**(非 done-covered):**① 赛季轮换骨架**(account 加 season + 牌池格式标准/狂野 + 部分重置;spec §七必做安全阀,grep 确认绝对缺;**先做**);**② 星球牌账号层流派升级**(spec §五;**先核**是否已被 deck「星球·X」卡+enchant 覆盖,真缺才做 spend战功→升流派羁绊全档 modifier)。**defer 分层匹配**(spec 自承"多人才真用",单机 YAGNI,策划自驳暂缓)。**账号层、解耦 ECS、全绿才推。** |
+> | **唤醒/检查条件** | 下个 `src/games/game-f/` 或 `src/engine` commit;或 owner 新指令 |
+> | **最后更新** | 2026-06-17 · by 策划F · 循环#47(验收atk PASS+派经济v1真缺口) |
 
 > 翻棒写法:程序F 干完 → 把「持棒方」改 🔵**策划F**、状态「程序已完成待策划验收」、填「完成什么」;策划F 验收完 → 改回 🟢**程序F**。
+
+---
+
+## 循环 #47 · 2026-06-17 · Designer F —— ✅ 验收装备atk线 PASS(装备收官) + 接受#46纠正 + owner定经济v1+派真缺口
+
+### A. ✅ 验收装备 atk 线(dc6e2ef · REQ-F-065 path A) → **PASS**
+- 主程 2026-06-17 交付 **REQ-F-065 done**(per-caster `scaleByResource`:源 threading + `findScaleResource` 先查施法者本地再回退全局,引擎侧 1375 绿)。
+- Program F 接线:英雄复合体加 `eqcaster` sidecar(per-unit `eq_atk` + 独立 `eq_strike` scaleByResource:'eq_atk'),装/拆经 Caster.overrides 写 eq_atk(HP 同管道);踩平双spawn撞id(拆独立sidecar)+裸Shape画框(Visibility.visible:false)。
+- 验收:**game-f tsc clean + 全仓 tsc 仅 game-g/three 旧账 + 126 绿**;eqcaster 确定、blueprint 快照更新。**装备 HP+atk 双线全通 → 装备系统完整收官。**
+
+### B. 接受程序F 对我 #46 的纠正(我又错一处)
+#46 我把"斩杀/灼烧/减速/吸血"划进"装备特效·非atk子集(现成重组)"——**错**:这些改的是**共享 strike** 属性,与 atk 同 per-instance 墙,非现成重组(要么 Lead 把 per-caster 推广到 strike 属性、要么模板族)。真正能逐单位 override 的只有 开战回血(OverTime)/免控(haltMask)。**致歉撤回**那部分。教训:涉及战斗属性必先想"共享模板 vs 逐单位"。
+
+### C. owner 定大方向=经济养成 v1 → 先核现状(85%已实装)+ 派真缺口
+- 核实经济 v1 ~85% 已实装(account.ts 战功/收藏/抽卡单+十连保底+概率公示/附魔/分尘/自组牌/段位难度阀 + lobby 6tab + game-f.tsx 闭环 + account.test 全覆盖,§十闭环基本通)。
+- 只派真缺口(grep 确认绝对缺,非 done-covered):**① 赛季轮换骨架**(season+牌池格式+部分重置,先做)**② 星球牌账号层流派升级**(先核是否被 deck星球卡+enchant 覆盖)。
+- **自驳 defer 分层匹配**(spec 自承"多人才真用",单机 YAGNI)。
 
 ---
 
