@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { ITEM_LIB, RARITY, RARITIES, NAMED_UNIQUES, buildItemLib, itemIcon, type Slot, type Rarity } from './items.js';
+import { ITEM_LIB, RARITY, RARITIES, NAMED_UNIQUES, buildItemLib, itemIcon, rollItemId, formatItemStats, itemTip, type Slot, type Rarity } from './items.js';
 import { finalHp, finalAtk, type HeroSpec } from './heroes.js';
 import { HP_SCALE } from './constants.js';
 
@@ -71,6 +71,27 @@ describe('装备系统 · 程序化道具库（基底×品级×词缀 + 命名�
     expect(itemIcon('m_chitu')).toBe('🐎');
     expect(itemIcon('t_yuxi')).toBe('🔮');
     expect(itemIcon('不存在')).toBe('📦');
+  });
+});
+
+describe('装备 ② tooltip/拾取 表现层助手（meta，不入战斗 hash）', () => {
+  it('rollItemId：注入 rnd 确定可控；恒返回库内合法 id', () => {
+    expect(ITEM_LIB[rollItemId(() => 0)]).toBeTruthy();   // 最低分支
+    expect(ITEM_LIB[rollItemId(() => 0.999)]).toBeTruthy(); // 最高分支
+    for (let i = 0; i < 50; i++) expect(ITEM_LIB[rollItemId()]).toBeTruthy();
+  });
+  it('formatItemStats：hp/atk 整数、atkSpd/crit/move 百分比', () => {
+    expect(formatItemStats({ hp: 150, atk: 15 })).toEqual(['生命 +150', '攻击 +15']);
+    expect(formatItemStats({ crit: 0.2, atkSpd: 0.1, move: 0.3 })).toEqual(['攻速 +10%', '暴击 +20%', '移速 +30%']);
+  });
+  it('itemTip：库 id 出结构（名/色/品级/槽位/属性/功效/描述）；非库→null', () => {
+    const t = itemTip('w_fangtian')!;
+    expect(t.name).toBe('方天画戟');
+    expect(t.color).toBe('#e8902a'); // 橙
+    expect(t.slotLabel).toBe('武器');
+    expect(t.stats).toContain('攻击 +40');
+    expect(t.effect).toBe('暴击溅射');
+    expect(itemTip('不存在')).toBeNull();
   });
 });
 

@@ -8,6 +8,7 @@ import { getComponentById } from '@engine/core/query.js';
 import type { World } from '@engine/core/world.js';
 import { buildGameFBlueprint, gameFEnemyPreview, GAME_F_ASSETS, codesFor } from './index.js';
 import { rosterFor, type Faction } from './heroes.js';
+import { itemIcon, itemTip, rollItemId } from './items.js';
 import { WARRIOR, TACTICIAN, TEAM_A } from './constants.js';
 import { buildLobby, type RunConfig } from './lobby.js';
 import type { Deck } from './decks.js';
@@ -350,8 +351,7 @@ function buildSoloHud(click: (x: number, y: number) => void, play: (i: number) =
     </div>`;
   };
   const allyPreview = ALLY_ROSTER.map((p, i) => allyCard(p, i)).join('');
-  // 装备栏（战利品）：开局空，战中敌死掉装备 → 主公拾取 → items 累加填充（update 读真实 items 资源）。
-  const EQUIP_ICONS = ['🗡', '🛡', '👑', '📜', '🏹', '💍', '🔮', '⚔️'];
+  // 装备栏（战利品）：开局空，战中敌死掉装备 → 主公拾取 → items 累加；拾取上升沿掷一件具体道具入袋（②）。
 
   const root = el('div', 'gfx-hud');
   root.innerHTML = `
@@ -498,6 +498,29 @@ function buildSoloHud(click: (x: number, y: number) => void, play: (i: number) =
   let lastShopSig = ''; // 点将台卡面只在「在售/可负担」变化时重渲（每帧重建会杀掉 :hover 浮动效果）。
   let lastSynSig = '';
 
+  // 战利品袋（② 具体道具 + tooltip）：JS 侧 meta 状态（不入战斗 hash）；拾取 items 上升沿掷一件。
+  const bag: string[] = [];
+  const tip = document.createElement('div');
+  tip.style.cssText = 'position:fixed;z-index:90;display:none;max-width:210px;padding:9px 12px;border-radius:9px;background:#1b1e25;border:1px solid #4a4a52;box-shadow:0 10px 28px rgba(0,0,0,.6);font-family:var(--font-cjk);pointer-events:none;line-height:1.55';
+  root.appendChild(tip);
+  const showTip = (id: string, x: number, y: number): void => {
+    const t = itemTip(id);
+    if (!t) { tip.style.display = 'none'; return; }
+    tip.innerHTML = `<div style="font-weight:700;font-size:13px;color:${t.color}">${t.name}<span style="font-size:10px;color:#9aa"> ·${t.rarityLabel}·${t.slotLabel}</span></div>`
+      + t.stats.map((s) => `<div style="font-size:11px;color:#cfe6ff">${s}</div>`).join('')
+      + (t.effect ? `<div style="font-size:11px;color:#ffd56b;margin-top:2px">【${t.effect}】</div>` : '')
+      + `<div style="font-size:10px;color:#9aa;margin-top:3px;font-style:italic">${t.desc}</div>`;
+    tip.style.display = 'block';
+    tip.style.left = `${x + 14}px`;
+    tip.style.top = `${y + 12}px`;
+  };
+  const hideTip = (): void => { tip.style.display = 'none'; };
+  if (elEquip) {
+    elEquip.addEventListener('mouseover', (e) => { const el = (e.target as HTMLElement).closest('[data-itemid]') as HTMLElement | null; if (el?.dataset.itemid) showTip(el.dataset.itemid, (e as MouseEvent).clientX, (e as MouseEvent).clientY); });
+    elEquip.addEventListener('mousemove', (e) => { if (tip.style.display === 'block') { tip.style.left = `${(e as MouseEvent).clientX + 14}px`; tip.style.top = `${(e as MouseEvent).clientY + 12}px`; } });
+    elEquip.addEventListener('mouseout', hideTip);
+  }
+
   const update = (w: World): void => {
     const num = (id: string): number | undefined => (getComponentById(w, 'Resource', 'id', id) as { current?: number } | undefined)?.current;
     const max = (id: string): number | undefined => (getComponentById(w, 'Resource', 'id', id) as { max?: number } | undefined)?.max;
@@ -531,14 +554,17 @@ function buildSoloHud(click: (x: number, y: number) => void, play: (i: number) =
     const contribV = num('contribution'); if (contribV !== undefined) setAll('contrib', String(Math.round(contribV)));
     const islV = num('island_progress'), islM = max('island_progress') ?? 100;
     if (islV !== undefined) { setAll('island', `${Math.round(islV)}/${islM}`); setW('islandfill', `${Math.max(0, Math.min(100, (islV / (islM || 100)) * 100))}%`); }
-    // 装备栏（A）：按真实 items 数填充（变化才重渲）。
-    const itemN = Math.round(num('items') ?? 0);
-    setAll('equipcount', `${itemN}/8`);
-    if (elEquip && itemN !== lastEquip) {
-      lastEquip = itemN;
+    // 装备栏（②）：拾取 items 上升沿 → 掷具体道具入袋；按品级色渲格 + hover tooltip（变化才重渲）。
+    const itemN = Math.min(8, Math.round(num('items') ?? 0));
+    while (bag.length < itemN) bag.push(rollItemId());
+    setAll('equipcount', `${bag.length}/8`);
+    if (elEquip && bag.length !== lastEquip) {
+      lastEquip = bag.length;
       elEquip.innerHTML = Array.from({ length: 8 }, (_, i) => {
-        const got = i < itemN;
-        return `<div style="aspect-ratio:1;border-radius:8px;background:${got ? 'var(--gold-chip)' : 'transparent'};border:1px ${got ? 'solid var(--gold)' : 'dashed var(--panel-border)'};display:flex;align-items:center;justify-content:center;font-size:16px;box-shadow:${got ? '0 0 8px var(--accent-soft)' : 'none'}">${got ? EQUIP_ICONS[i] : ''}</div>`;
+        const id = bag[i];
+        if (!id) return '<div style="aspect-ratio:1;border-radius:8px;background:transparent;border:1px dashed var(--panel-border)"></div>';
+        const col = itemTip(id)?.color ?? '#caa15a';
+        return `<div data-itemid="${id}" style="aspect-ratio:1;border-radius:8px;background:var(--gold-chip);border:2px solid ${col};display:flex;align-items:center;justify-content:center;font-size:16px;cursor:help;box-shadow:0 0 8px ${col}55">${itemIcon(id)}</div>`;
       }).join('');
     }
     setAll('buffStreak', streak > 0 ? `连胜 ${streak} · 士气高涨` : '连胜越高士气越旺');

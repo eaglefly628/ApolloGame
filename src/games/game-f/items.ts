@@ -198,3 +198,44 @@ export const itemIcon = (id: string): string => {
   const it = ITEM_LIB[id];
   return it?.icon ?? (it ? SLOT_ICON[it.slot] : '📦');
 };
+
+// —— §四 表现层助手（tooltip / 拾取掉落；纯表现/meta，不入战斗 hash）——
+export const SLOT_LABEL: Record<Slot, string> = { weapon: '武器', armor: '盔甲', mount: '坐骑', trinket: '饰品' };
+// 掉落品级权重（太阁越深越好为后续；v1 固定：白多橙极稀）。
+export const RARITY_WEIGHT: Record<Rarity, number> = { white: 50, green: 28, blue: 15, purple: 6, orange: 1 };
+// 按品级分桶（展开一次）。
+const BY_RARITY: Record<Rarity, string[]> = (() => {
+  const m: Record<Rarity, string[]> = { white: [], green: [], blue: [], purple: [], orange: [] };
+  for (const it of Object.values(ITEM_LIB)) m[it.rarity].push(it.id);
+  return m;
+})();
+// 掉落一件：先按权重选品级，再在该品级内均匀取一件（rnd 注入便于测试；meta 层，非确定性 hash）。
+export function rollItemId(rnd: () => number = Math.random): string {
+  let total = 0;
+  for (const r of RARITIES) total += RARITY_WEIGHT[r];
+  let x = rnd() * total;
+  let pick: Rarity = 'white';
+  for (const r of RARITIES) { x -= RARITY_WEIGHT[r]; if (x < 0) { pick = r; break; } }
+  const pool = BY_RARITY[pick].length ? BY_RARITY[pick] : BY_RARITY.white;
+  return pool[Math.min(pool.length - 1, Math.floor(rnd() * pool.length))];
+}
+// 属性格式化为 tooltip 行：hp/atk 整数，atkSpd/crit/move 百分比。
+export function formatItemStats(stats: ItemStats): string[] {
+  const out: string[] = [];
+  if (stats.hp) out.push(`生命 +${stats.hp}`);
+  if (stats.atk) out.push(`攻击 +${stats.atk}`);
+  if (stats.atkSpd) out.push(`攻速 +${Math.round(stats.atkSpd * 100)}%`);
+  if (stats.crit) out.push(`暴击 +${Math.round(stats.crit * 100)}%`);
+  if (stats.move) out.push(`移速 +${Math.round(stats.move * 100)}%`);
+  return out;
+}
+// tooltip 结构（名 + 品级色 + 槽位 + 属性行 + 功效 + 描述）；非库 id→null。
+export function itemTip(id: string): { name: string; color: string; rarityLabel: string; slotLabel: string; stats: string[]; effect?: string; desc: string } | null {
+  const it = ITEM_LIB[id];
+  if (!it) return null;
+  const r = RARITY[it.rarity];
+  return {
+    name: it.name, color: `#${r.color.toString(16).padStart(6, '0')}`, rarityLabel: r.label,
+    slotLabel: SLOT_LABEL[it.slot], stats: formatItemStats(it.stats), effect: it.effect, desc: it.desc,
+  };
+}
