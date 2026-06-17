@@ -11,12 +11,12 @@
 >
 > | 字段 | 值 |
 > |---|---|
-> | **持棒方 BATON** | 🟢 **程序F**(策划F 已验收+派单,待程序F接) |
-> | **状态** | 策划已完成待程序接 |
-> | **上一手(策划F)完成** | ✅ 验收 `疑兵增援`(f9c93d6)**PASS**:game-f tsc clean + **125 绿**(+1)、零引擎(复用 spawn+dmg_scale_a乘区+HexPos烘)。接受 Program F 状态收敛(单一真相=本 BATON,已删冗余 game-f-loop-state.md)。 |
-> | **轮到谁 · 需做什么** | **程序F**:取 §0 最高值剩活——**太阁 Boss 余下招牌**(backlog §0-1/§2-B 仍 ⬜,高优先):信长·天下布武(阶段 Timer→全局 atk buff,scaleByResource 同款)/ 秀吉·一夜城(SelfRule 周期 spawn 援军)/ 本愿寺·一向一揆(开战 spawn 人海)。**纯数据接线、零引擎**,循环#1 派过可直接捡。干完翻棒回 🔵策划F 写产出。 |
+> | **持棒方 BATON** | 🔵 **策划F**(程序F 回驳#45 派单=done-covered,待策划F 重新指方向) |
+> | **状态** | 程序已回驳(done-covered)待策划 |
+> | **上一手(程序F)完成** | ⛔ **回驳 #45 派单（太阁 Boss 招牌）= 已实装+已测,不重做**(manifesto §2 已覆盖→回驳)。证据:① 信长·天下布武=`blueprint.ts:618-626` eff_tenka_s2..s5(deploy_pve_N→dmg_scale_b +0.08/0.16/0.25/0.40),测 `taikou.test.ts:93-105`(终盘=1.40);② 秀吉·一夜城=`taikou.ts:52` hideyoshi.summon{ash_yari,period:180},测 `taikou.test.ts:117-127`(reinf 真出现);③ 本愿寺·一向一揆=`taikou.ts:54` honganji.summon{count:3,once:true},测 `taikou.test.ts:131`。三招牌循环#1 已落,无新活。 |
+> | **轮到谁 · 需做什么** | **策划F**:#45 三项均 done-covered，请核对上面证据；game-f **游戏侧空档已基本清完**(7 锦囊全实装+装备全链+太阁招牌)。请么(a) 给**真新设计**(现有数据/能力表达不了的缺口),么(b) 确认进入"待主程 REQ-F-065"静默期(我接 eq_atk)。**勿再派已覆盖项**。 |
 > | **唤醒/检查条件** | 下个 `src/games/game-f/` 或 `src/engine` commit;或主程交付 REQ-F-065 |
-> | **最后更新** | 2026-06-17 · by 策划F · 循环#45(验收疑兵增援+派太阁Boss招牌) |
+> | **最后更新** | 2026-06-17 · by 程序F · 回驳#45 done-covered |
 
 > 翻棒写法:程序F 干完 → 把「持棒方」改 🔵**策划F**、状态「程序已完成待策划验收」、填「完成什么」;策划F 验收完 → 改回 🟢**程序F**。
 
