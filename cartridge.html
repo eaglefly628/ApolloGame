@@ -1,0 +1,182 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, viewport-fit=cover" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <title>Apollo OS</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    html, body { width: 100%; height: 100%; overflow: hidden; background: #050510; }
+
+    #game-root {
+      position: fixed; inset: 0; z-index: 1;
+      background: #000;
+      opacity: 0;
+    }
+
+    #shell {
+      position: fixed; inset: 0; z-index: 10;
+      background: #050510;
+      font-family: 'Courier New', 'Consolas', monospace;
+      color: #c0c8d0;
+      display: flex;
+      flex-direction: column;
+      transition: opacity 0.7s ease;
+      background-image:
+        repeating-linear-gradient(0deg, transparent, transparent 3px, rgba(0,0,0,0.12) 3px, rgba(0,0,0,0.12) 4px);
+    }
+    #shell.fade-out { opacity: 0; pointer-events: none; }
+
+    /* ── Status bar ── */
+    .statusbar {
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 0 18px;
+      height: 38px;
+      border-bottom: 1px solid #0e0e28;
+      background: rgba(0, 0, 0, 0.5);
+      flex-shrink: 0;
+    }
+    .statusbar-brand {
+      font-size: 12px; font-weight: bold; letter-spacing: 0.25em;
+      color: #00dfa0;
+    }
+    .statusbar-right {
+      display: flex; align-items: center; gap: 14px;
+      font-size: 12px; color: #505868;
+    }
+    .sys-time { color: #8090a0; letter-spacing: 0.08em; }
+    .battery {
+      display: flex; align-items: center; gap: 3px;
+    }
+    .bat-body {
+      width: 20px; height: 9px; border: 1px solid #303848; border-radius: 2px;
+      position: relative;
+    }
+    .bat-body::after {
+      content: ''; position: absolute; right: -3px; top: 50%;
+      transform: translateY(-50%); width: 2px; height: 5px;
+      background: #303848; border-radius: 0 1px 1px 0;
+    }
+    .bat-level {
+      position: absolute; left: 1px; top: 1px; bottom: 1px;
+      width: 75%; background: #00dfa0; border-radius: 1px;
+    }
+
+    /* ── Main content ── */
+    .content {
+      flex: 1; display: flex; flex-direction: column;
+      align-items: center; justify-content: center; gap: 20px;
+      padding: 20px;
+    }
+
+    /* ── Cartridge card ── */
+    .cart-card {
+      width: min(440px, 92vw);
+      background: #0a0a1e;
+      border: 1px solid rgba(0, 223, 160, 0.35);
+      border-radius: 3px;
+      padding: 18px 22px 20px;
+      box-shadow:
+        0 0 28px rgba(0, 223, 160, 0.07),
+        inset 0 0 24px rgba(0, 223, 160, 0.03);
+      opacity: 0;
+      transform: translateY(6px);
+      transition: opacity 0.45s, transform 0.45s;
+    }
+    .cart-card.show { opacity: 1; transform: translateY(0); }
+
+    .cart-tag {
+      font-size: 10px; color: #00dfa0; letter-spacing: 0.22em;
+      text-transform: uppercase; margin-bottom: 10px; opacity: 0.65;
+      display: flex; align-items: center; gap: 6px;
+    }
+    .cart-tag::before {
+      content: ''; width: 6px; height: 6px; background: #00dfa0;
+      border-radius: 50%; display: inline-block; opacity: 0.8;
+      box-shadow: 0 0 6px #00dfa0;
+    }
+    .cart-title { font-size: 19px; color: #e8eef4; font-weight: bold; letter-spacing: 0.04em; }
+    .cart-subtitle { font-size: 13px; color: #606878; margin-top: 4px; }
+    .cart-id {
+      font-size: 10px; color: #282838; margin-top: 10px;
+      letter-spacing: 0.15em; text-transform: uppercase;
+    }
+
+    /* ── Boot log ── */
+    .boot-log {
+      width: min(440px, 92vw);
+      font-size: 12px;
+      line-height: 1.85;
+      min-height: 72px;
+    }
+    .log-line {
+      opacity: 0; transition: opacity 0.18s;
+      display: flex; gap: 8px;
+    }
+    .log-line.show { opacity: 1; }
+    .log-pfx { color: #00dfa0; opacity: 0.55; user-select: none; }
+    .log-line.warn .log-pfx { color: #ffaa40; opacity: 0.8; }
+    .log-txt { color: #606870; }
+    .log-line.show .log-txt { color: #707880; }
+
+    /* ── Progress ── */
+    .prog-wrap {
+      width: min(440px, 92vw);
+      opacity: 0; transition: opacity 0.3s;
+    }
+    .prog-wrap.show { opacity: 1; }
+    .prog-track {
+      height: 2px; background: #0e0e28; border-radius: 2px; overflow: hidden;
+    }
+    .prog-fill {
+      height: 100%; width: 0%;
+      background: linear-gradient(90deg, #00dfa0 0%, #0088ff 100%);
+      transition: width 0.65s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+    .prog-labels {
+      display: flex; justify-content: space-between;
+      font-size: 10px; color: #282838; margin-top: 5px;
+      letter-spacing: 0.1em;
+    }
+  </style>
+</head>
+<body>
+  <div id="game-root"></div>
+
+  <div id="shell">
+    <div class="statusbar">
+      <div class="statusbar-brand">APOLLO OS</div>
+      <div class="statusbar-right">
+        <span id="sys-clock" class="sys-time">--:--</span>
+        <span class="battery">
+          <div class="bat-body"><div class="bat-level"></div></div>
+        </span>
+      </div>
+    </div>
+
+    <div class="content">
+      <div id="cart-card" class="cart-card">
+        <div class="cart-tag">CARTRIDGE LOADED</div>
+        <div id="cart-title" class="cart-title">—</div>
+        <div id="cart-subtitle" class="cart-subtitle">—</div>
+        <div id="cart-id" class="cart-id">—</div>
+      </div>
+
+      <div id="boot-log" class="boot-log"></div>
+
+      <div id="prog-wrap" class="prog-wrap">
+        <div class="prog-track">
+          <div id="prog-fill" class="prog-fill"></div>
+        </div>
+        <div class="prog-labels">
+          <span id="prog-status">LOADING</span>
+          <span id="prog-pct">0%</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script type="module" src="/src/cartridge-entry.ts"></script>
+</body>
+</html>
