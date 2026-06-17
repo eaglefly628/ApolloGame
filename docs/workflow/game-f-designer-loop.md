@@ -5,6 +5,24 @@
 
 ---
 
+## 循环 #37 · 2026-06-16 · Designer F —— owner 派单:装备系统(策划案已出)
+
+> owner 2026-06-16:完善装备系统,**今天落地**。Designer F 已出完整策划案 **`docs/game-design/game-f-equipment-spec.md`**(含 36 件三国道具库 + 品级 + 机制)。派 Program F 实现。
+
+### 派 Program F(全纯游戏侧/重组,零引擎;策划案 §四/§五 为准)
+- **① 道具库 + 品级**:扩 `ITEMS` schema(`slot/rarity/stats/effect/desc`)+ 填 §三 的 36 件(白绿蓝紫橙);掉落 orb 按品级染色。
+- **② tooltip**:hover 道具 → DOM 浮层显 名(品级色)/槽位/全属性/功效/描述。
+- **③ 拖拽实时装备**:战利品栏拖道具 → 落武将 marker → `marker.equipped[≤3]` += 道具 → **下次部署烘进 stats**(扩 heroOverrides,= star 倍率同管道;"实时"=拖上即显、开战生效,避活属性缺口)。复用 `drag-place`。
+- **④ 拆解卸除**:点武将装备 → 退回战利品栏(clickable+`@signal-source`,不做专门卸除物件)。
+- **橙装特效**(暴击溅射/斩杀/光环/回血)= 后续片走锦囊式 caster(F-061 斩杀已 done),v1 先做数值。
+- **纪律**:零引擎、先重组;撞"实时改战斗活属性"→ 走"烘进下次部署"绕过(金铲铲语义),不拓引擎。**全绿才推。**
+- **可切片**:①(数据库)→②(tooltip)→③(拖拽装备)→④(拆解);每片配测。**Program F 抢到窗口按此序推。**
+
+### 验收(我逐片验)
+道具库 36+ 带品级 / hover 出 tooltip / 拖道具上武将下次开战属性升 / 点装备拆解退栏;tsc+vitest+build 绿、零引擎、hash 不变。
+
+---
+
 ## 循环 #36 · 2026-06-16 · Designer F
 
 ### 验收:catalog 锦囊 万箭/回春/空城计 → ✅ 通过(+ 一个巧解)
