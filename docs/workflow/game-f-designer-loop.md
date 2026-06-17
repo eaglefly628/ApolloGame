@@ -5,6 +5,32 @@
 
 ---
 
+## 循环 #41 · 2026-06-17 · Designer F —— ✅ 验收装备③(equip核+传说50)PASS + 评判 atk 缺口(报 owner)
+
+### A. 验收 Program F `45b0829`(装备③ equip 模型 + 传说补 50) → **PASS**
+| 项 | 判定 |
+|---|---|
+| 命名传说 36→50(§7.5 誊写);总库 ~694 件 | ✅ |
+| `equip.ts` 纯函数 EquipMap(meta,不入战斗 hash):addEquip(≤3 金铲铲,满员回弹)/removeEquip(退回 id) —— ③④共用核 | ✅ |
+| `equipDeployHp` = round((finalHp+Σ装备hp)×人数难度×星级)= heroOverrides 同管道 → 供写回 Caster.overrides | ✅ |
+| **game-f tsc clean** + **game-f 测 121 绿**(15 文件,+5) | ✅ |
+
+### B. ★ atk 缺口评判(Program F 带理由上报,Designer F 核引擎后裁定)
+**已核实(非空口)**:`strike_${h.id}` 模板的 `amount = finalAtk(h)` 是 **build 期常量**(combat.ts:310);星级靠**预建模板族** `strike_${h.id}_s${star}`(line390)+ 部署 override 切 `SelfRule.do` 换族(line209)。HP 能 live 是因 deploy override 写**本单位 Resource**(per-unit);atk 不能,因伤害 = 模板常量 × **全局** `scaleByResource`(`findResourceById` 全局查),**无 per-caster atk 缩放**。→ Program F 判断**属实**。
+
+**两条路(报 owner 定;我已附推荐)**:
+- **路A·下沉小能力(主程 REQ,我推荐)**:让 `scaleByResource` 先查**施法者本地资源**再回退全局(一处解析改动)。则给每将一个 per-unit `eq_atk` 资源(deploy override 写,**连续精确**),strike 按施法者 `eq_atk` 缩放。**干净/连续/可复用,且能让星级也退掉"模板族爆炸"那个 smell**。代价:动引擎=主程活、**今天到不了**。
+- **路B·桶化模板族(Program F,零引擎,今天能落)**:atk 量化成几桶,预建 `strike_${h.id}_s{star}_e{bucket}` 族,deploy override 按当前装备 atk 选桶(= 现有星级模式同构,支持局内换装)。**今天武器即生效**,代价:atk 量化(±可接受,TFT 同款)+ 模板组合膨胀(技术债,与 manifesto"勿无脑加宽"逆)。
+
+> **冻结点**:atk 路线**待 owner 拍板**前不动(避免做了再推翻)。HP 路已通,装备系统主体可用。
+
+### C. 派 Program F:④拆解 UI(零引擎,今天能落,不依赖 atk 决策)
+- ③核已就位,本片只接 **UI 线**:战利品袋拖道具 → canvas 命中武将 marker → `addEquip` → deploy 拍 `equipDeployHp` 写回 `Caster.overrides`(HP 生效);点武将装备 → `removeEquip` 退回袋(clickable)。
+- 武将身上 hover tooltip(②缓的那半)随本片一并接。
+- **纪律**:只接 HP 烘值线 + 拖拽/拆解 UI;**atk 烘值先别做**(等 owner 定 A/B)。**全绿才推。**
+
+---
+
 ## 循环 #40 · 2026-06-17 · Designer F —— ✅ 验收装备②(战利品袋+tooltip)PASS + 催③拖装备/④拆解
 
 ### A. 验收 Program F `46cf733`(装备②具体战利品袋 + hover tooltip) → **PASS**
