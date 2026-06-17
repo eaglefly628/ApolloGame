@@ -9,7 +9,7 @@ import type { World } from '@engine/core/world.js';
 import { buildGameFBlueprint, gameFEnemyPreview, GAME_F_ASSETS, codesFor } from './index.js';
 import { rosterFor, type Faction } from './heroes.js';
 import { itemIcon, itemTip, rollItemId, ITEM_LIB } from './items.js';
-import { applyEquip, parseMarkerId, type EquipMap } from './equip.js';
+import { applyEquip, unequip, parseMarkerId, type EquipMap } from './equip.js';
 import { WARRIOR, TACTICIAN, TEAM_A } from './constants.js';
 import { buildLobby, type RunConfig } from './lobby.js';
 import type { Deck } from './decks.js';
@@ -212,7 +212,7 @@ function buildMall(): HTMLElement {
 // —— 单人对局 DOM 设计 chrome（README 对战.dc.html solo 布局 + Apollo UI Kit 控件；接真实世界状态）——
 // 顶 HUD（STAGE/相位/倒计时/主公血/连胜）+ 左羁绊栏 + 右状态·装备栏 + 武将台发光框。
 // 三边覆盖盖掉 canvas 旧 HUD；中间棋盘 + 下方备战席/商店露出，仍走 canvas 数据实体交互（不破坏可玩）。
-function buildSoloHud(click: (x: number, y: number) => void, play: (i: number) => void, faction: Faction = 'shu', deck?: Deck): { root: HTMLElement; update: (w: World) => void; renderAllies: (unitsList: { q: number; r: number; enemy: boolean; hpFrac: number }[][]) => void; renderCoop: (island: { progress: number; goal: number; owner: string | null; ranking?: { name: string; faction: string; contribution: number }[] }) => void; renderDeck: (w: World) => void; bag: string[]; equipped: EquipMap; renderBag: () => void } {
+function buildSoloHud(click: (x: number, y: number) => void, play: (i: number) => void, faction: Faction = 'shu', deck?: Deck): { root: HTMLElement; update: (w: World) => void; renderAllies: (unitsList: { q: number; r: number; enemy: boolean; hpFrac: number }[][]) => void; renderCoop: (island: { progress: number; goal: number; owner: string | null; ranking?: { name: string; faction: string; contribution: number }[] }) => void; renderDeck: (w: World) => void; bag: string[]; equipped: EquipMap; renderBag: () => void; renderEquipped: () => void } {
   const FAC: Record<string, string> = { 蜀: '#d8504e', 吴: '#3fae6e', 魏: '#3a86d4', 群: '#9b6dd8' };
   // 出战牌组卡名（P0 局内可见；取自各 deck 注释名，非新设计）。
   const CARD_NAME: Record<string, string> = { hubao_edict: '虎豹骑令', blitz: '速攻令', levy: '募兵', taoyuan: '桃园誓', zhangwu: '章武', muxian: '募贤', baiyi: '白衣', jinfan: '锦帆', muci: '募刺', tuntian: '屯田', zhongnong: '重农', munong: '募农', bazhen: '八阵图', wolong: '卧龙', qimou: '奇谋', guwu: '鼓舞', huoshao: '火烧连营', dingshen: '定身', wanjian: '万箭齐发', huichun: '妙手回春', kongcheng: '空城计' };
@@ -429,7 +429,10 @@ function buildSoloHud(click: (x: number, y: number) => void, play: (i: number) =
         <div data-ref="allies" style="display:flex;flex-direction:column;gap:9px;flex:1;min-height:0;overflow-y:auto">${allyPreview}</div></div>
       <div style="background:var(--panel-grad);border:1px solid var(--panel-border);border-radius:var(--radius);box-shadow:inset 0 0 0 1px var(--hairline);padding:12px">
         <div style="display:flex;justify-content:space-between;align-items:baseline;margin-bottom:9px"><span style="font-size:9px;letter-spacing:.2em;text-transform:uppercase;color:var(--ink-dim)">装备 · 战利品</span><span data-ref="equipcount" style="font-family:var(--font-num);font-size:11px;color:var(--gold)">0/8</span></div>
-        <div data-ref="equipslots" style="display:grid;grid-template-columns:repeat(4,1fr);gap:8px"></div></div></div>
+        <div data-ref="equipslots" style="display:grid;grid-template-columns:repeat(4,1fr);gap:8px"></div>
+        <div data-ref="equippedwrap" style="display:none;margin-top:10px;border-top:1px solid var(--hairline);padding-top:8px">
+          <div style="font-size:9px;letter-spacing:.2em;text-transform:uppercase;color:var(--ink-dim);margin-bottom:6px">已装备 · 点击拆解</div>
+          <div data-ref="equippedpanel" style="display:flex;flex-direction:column;gap:5px"></div></div></div></div>
     <!-- BOTTOM BAR · 经济 + 点将台 + 开战（覆盖 canvas 旧底部；按钮注入世界坐标点击）-->
     <div style="position:absolute;left:0;right:0;bottom:0;height:104px;display:flex;align-items:stretch;gap:14px;padding:14px 18px;background:var(--dock-bg);border-top:1px solid var(--panel-border);pointer-events:auto">
       <button data-act="shop-open" style="position:relative;overflow:hidden;flex:1;display:flex;align-items:center;justify-content:center;gap:12px;border-radius:16px;border:1px solid var(--accent);background:var(--accent-soft);color:var(--ink);cursor:pointer;box-shadow:inset 0 0 0 1px var(--hairline)">
@@ -513,6 +516,21 @@ function buildSoloHud(click: (x: number, y: number) => void, play: (i: number) =
       return `<div data-itemid="${id}" data-slot="${i}" draggable="true" style="aspect-ratio:1;border-radius:8px;background:var(--gold-chip);border:2px solid ${col};display:flex;align-items:center;justify-content:center;font-size:16px;cursor:grab;box-shadow:0 0 8px ${col}55">${itemIcon(id)}</div>`;
     }).join('');
   };
+  // 已装备面板（④ 拆解）：列出每名带装武将 + 其装备图标（点击拆解退回袋）。marker 是 canvas 实体 → 用 DOM 面板呈现。
+  const elEquipped = q('[data-ref="equippedpanel"]'), elEquippedWrap = q('[data-ref="equippedwrap"]');
+  const renderEquipped = (): void => {
+    if (!elEquipped) return;
+    const keys = Object.keys(equipped).filter((k) => (equipped[k]?.length ?? 0) > 0);
+    if (!keys.length) { if (elEquippedWrap) elEquippedWrap.style.display = 'none'; elEquipped.innerHTML = ''; return; }
+    if (elEquippedWrap) elEquippedWrap.style.display = 'block';
+    const roster = rosterFor(faction);
+    elEquipped.innerHTML = keys.map((mid) => {
+      const mk = parseMarkerId(mid); const h = mk ? roster.find((x) => x.id === mk.heroId) : null;
+      const label = `${h?.name ?? '武将'}${'★'.repeat(mk?.star ?? 1)}`;
+      const items = (equipped[mid] ?? []).map((id) => { const col = itemTip(id)?.color ?? '#caa15a'; return `<span data-mid="${mid}" data-itemid="${id}" title="点击拆解" style="display:inline-flex;align-items:center;justify-content:center;width:22px;height:22px;border-radius:6px;background:var(--gold-chip);border:1.5px solid ${col};font-size:13px;cursor:pointer">${itemIcon(id)}</span>`; }).join('');
+      return `<div style="display:flex;align-items:center;gap:6px"><span style="font-size:10px;color:var(--ink-dim);min-width:50px;white-space:nowrap">${label}</span><span style="display:flex;gap:4px;flex-wrap:wrap">${items}</span></div>`;
+    }).join('');
+  };
   const tip = document.createElement('div');
   tip.style.cssText = 'position:fixed;z-index:90;display:none;max-width:210px;padding:9px 12px;border-radius:9px;background:#1b1e25;border:1px solid #4a4a52;box-shadow:0 10px 28px rgba(0,0,0,.6);font-family:var(--font-cjk);pointer-events:none;line-height:1.55';
   root.appendChild(tip);
@@ -537,6 +555,12 @@ function buildSoloHud(click: (x: number, y: number) => void, play: (i: number) =
       const el = (e.target as HTMLElement).closest('[data-itemid]') as HTMLElement | null;
       if (el?.dataset.itemid && (e as DragEvent).dataTransfer) { (e as DragEvent).dataTransfer!.setData('text/plain', `${el.dataset.itemid}|${el.dataset.slot}`); hideTip(); }
     });
+  }
+  // 已装备面板 hover tooltip（武将身上装备的悬浮说明，= ② 缓的那半的 DOM 版）。
+  if (elEquipped) {
+    elEquipped.addEventListener('mouseover', (e) => { const el = (e.target as HTMLElement).closest('[data-itemid]') as HTMLElement | null; if (el?.dataset.itemid) showTip(el.dataset.itemid, (e as MouseEvent).clientX, (e as MouseEvent).clientY); });
+    elEquipped.addEventListener('mousemove', (e) => { if (tip.style.display === 'block') { tip.style.left = `${(e as MouseEvent).clientX + 14}px`; tip.style.top = `${(e as MouseEvent).clientY + 12}px`; } });
+    elEquipped.addEventListener('mouseout', hideTip);
   }
 
   const update = (w: World): void => {
@@ -692,7 +716,7 @@ function buildSoloHud(click: (x: number, y: number) => void, play: (i: number) =
     }
     lastInCombatDeck = inCombat;
   };
-  return { root, update, renderAllies, renderCoop, renderDeck, bag, equipped, renderBag };
+  return { root, update, renderAllies, renderCoop, renderDeck, bag, equipped, renderBag, renderEquipped };
 }
 
 // 局内对局（startMatch）：从大厅收到出战配置 → 用所选牌组建世界开打。onExit=返回大厅。
@@ -848,10 +872,20 @@ function startMatch(container: HTMLElement, cfg: RunConfig, onExit: () => void):
       const name = ITEM_LIB[itemId]?.name ?? itemId;
       if (applyEquip(engine.world, best.id, itemId, hud.equipped, h, best.star, coopMul)) {
         if (hud.bag[slot] === itemId) hud.bag.splice(slot, 1); else { const k = hud.bag.indexOf(itemId); if (k >= 0) hud.bag.splice(k, 1); }
-        hud.renderBag();
+        hud.renderBag(); hud.renderEquipped();
         equipToast(`${h.name} 装备「${name}」· 下次开战生效`);
       } else equipToast(`${h.name} 已满 3 件`);
     });
+    // ④ 拆解：点已装备面板里的装备 → unequip 退回袋 + 重烘 HP。
+    const equippedPanel = hud.root.querySelector('[data-ref="equippedpanel"]');
+    equippedPanel?.addEventListener('click', (e) => {
+      const el = (e.target as HTMLElement).closest('[data-mid]') as HTMLElement | null;
+      const mid = el?.dataset.mid, itemId = el?.dataset.itemid; if (!mid || !itemId) return;
+      const mk = parseMarkerId(mid); const h = mk ? equipRoster.find((x) => x.id === mk.heroId) : null; if (!mk || !h) return;
+      const removed = unequip(engine.world, mid, itemId, hud.equipped, h, mk.star, coopMul);
+      if (removed) { if (hud.bag.length < 8) hud.bag.push(removed); hud.renderBag(); hud.renderEquipped(); equipToast(`拆下「${ITEM_LIB[removed]?.name ?? removed}」退回战利品`); }
+    });
+    hud.renderEquipped(); // 初始（空→隐藏）
   }
   engine.start();
 

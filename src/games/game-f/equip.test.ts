@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { addEquip, removeEquip, equipStatSum, equipDeployHp, parseMarkerId, applyEquip, MAX_EQUIP, type EquipMap, type EquipWorld } from './equip.js';
+import { addEquip, removeEquip, equipStatSum, equipDeployHp, parseMarkerId, applyEquip, unequip, MAX_EQUIP, type EquipMap, type EquipWorld } from './equip.js';
 import { finalHp, type HeroSpec } from './heroes.js';
 import { STAR_HP_MUL } from './economy.js';
 
@@ -52,6 +52,18 @@ describe('装备 ③/④ 模型（金铲铲 ≤3 / 烘下次部署 / 拆解退�
     const before = caster.overrides.main.Resource.max;
     expect(applyEquip(world, 'bench_a_x#1:seat', 'w_fangtian', m, h, 2, 1)).toBe(false);
     expect(caster.overrides.main.Resource.max).toBe(before);
+  });
+  it('unequip(④)：卸下 → HP 重烘回扣装备 hp → 返回被卸 id（退回袋）；无则 null', () => {
+    const caster = { overrides: { main: { Resource: { current: 100, max: 100 } } } };
+    const world: EquipWorld = { getComponent: () => caster, addComponent: () => {} };
+    const m: EquipMap = {};
+    const h = hero(200, 15);
+    applyEquip(world, 'k', 'a_baiyin', m, h, 2, 1); // +hp260
+    const withGear = caster.overrides.main.Resource.max;
+    expect(unequip(world, 'k', 'a_baiyin', m, h, 2, 1)).toBe('a_baiyin'); // 退回 id
+    expect(caster.overrides.main.Resource.max).toBe(Math.round(finalHp(h) * STAR_HP_MUL[2])); // 扣回基线
+    expect(caster.overrides.main.Resource.max).toBeLessThan(withGear);
+    expect(unequip(world, 'k', 'x', m, h, 2, 1)).toBeNull(); // 无则 null
   });
   it('parseMarkerId：bench/bench2/bench3 编码星级；heroId 含下划线；非席位 null', () => {
     expect(parseMarkerId('bench_a_guanyu#3:seat')).toEqual({ heroId: 'a_guanyu', star: 1 });

@@ -48,17 +48,29 @@ export interface EquipWorld {
 }
 interface CasterOverride { overrides?: { main?: { Resource?: { current: number; max: number } } } }
 
-// 拖装备落 marker（③）：addEquip(≤3) 成功后，把该将部署 HP 重烘进 Caster.overrides.main.Resource
-// （caster 每次施放重读 overrides → 下次开战生效）。满 3 件返回 false（调用方回弹+提示，不写 override）。
-export function applyEquip(world: EquipWorld, markerId: string, itemId: string, map: EquipMap, h: HeroSpec, star: number, hpMul: number): boolean {
-  if (!addEquip(map, markerId, itemId)) return false;
+// 把某 marker 当前装备的部署 HP 重烘进 Caster.overrides.main.Resource（caster 每施放重读 → 下次开战生效）。
+// 装/卸共用：等价 heroOverrides 同管道，只是基底再叠当前 Σ装备 hp。
+export function rebakeDeployHp(world: EquipWorld, markerId: string, map: EquipMap, h: HeroSpec, star: number, hpMul: number): void {
   const caster = world.getComponent(markerId, 'Caster') as CasterOverride | undefined;
   if (caster?.overrides?.main?.Resource) {
     const hp = equipDeployHp(h, star, hpMul, map, markerId);
     caster.overrides.main.Resource = { current: hp, max: hp };
     world.addComponent(markerId, caster);
   }
+}
+
+// 拖装备落 marker（③）：addEquip(≤3) 成功后重烘 HP。满 3 件返回 false（调用方回弹+提示，不写 override）。
+export function applyEquip(world: EquipWorld, markerId: string, itemId: string, map: EquipMap, h: HeroSpec, star: number, hpMul: number): boolean {
+  if (!addEquip(map, markerId, itemId)) return false;
+  rebakeDeployHp(world, markerId, map, h, star, hpMul);
   return true;
+}
+
+// 拆解（④）：从 marker 卸下 itemId → 重烘 HP（扣回装备 hp）→ 返回被卸 id（退回战利品袋）；无则 null。
+export function unequip(world: EquipWorld, markerId: string, itemId: string, map: EquipMap, h: HeroSpec, star: number, hpMul: number): string | null {
+  const removed = removeEquip(map, markerId, itemId);
+  if (removed) rebakeDeployHp(world, markerId, map, h, star, hpMul);
+  return removed;
 }
 
 // 解析 marker 实例 id（`bench${star?}_${heroId}#${seq}:seat`）→ {heroId, star}；非席位 → null。
