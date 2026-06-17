@@ -5,6 +5,27 @@
 
 ---
 
+## 循环 #40 · 2026-06-17 · Designer F —— ✅ 验收装备②(战利品袋+tooltip)PASS + 催③拖装备/④拆解
+
+### A. 验收 Program F `46cf733`(装备②具体战利品袋 + hover tooltip) → **PASS**
+| 项 | 判定 |
+|---|---|
+| 战利品栏从「标量计数」→「具体道具袋」(items 上升沿掷件入袋 ≤8) | ✅ |
+| 按 `RARITY.color` 渲格边框(一眼识好货)+ hover DOM 浮层显 名/品级色/槽位/全属性/功效/描述 | ✅(符 §4.1) |
+| `rollItemId`(品级权重 白50/绿28/蓝15/紫6/橙1,桶内均匀,rnd 可注入测) | ✅ |
+| **确定性安全**:`rollItemId()` 只在 `game-f.tsx` HUD 投影 effect 调(与 contrib/island 同列纯表现层),**不在 ECS sim/blueprint** → 战斗 hash 不染、快照不变 | ✅(已核 line559) |
+| **game-f tsc clean** + **game-f 测 116 绿**(+3) | ✅ |
+
+📌 合理缓做(Program F 自报,认可):orb 掉落染色(需 drop 期预掷耦合,缓)/武将身上 hover(随③拖装备落 marker 一并做)。
+
+### B. 催 Program F:装备③拖拽实时装备 + ④拆解(承策划案 §4.2/§4.3)
+- **③(核心)**:战利品袋拖道具 → 落场上/备战席武将 marker → `marker.equipped[≤3]` += 道具 → **下次部署烘进 stats**(扩 heroOverrides,= star 倍率同管道,"实时"=拖上即显、开战生效)。复用 `drag-place`。落 marker 后,武将身上 hover tooltip 一并接上(②缓的那半)。
+- **④**:点武将装备(或装备槽)→ 拆解退回战利品袋(clickable+`@signal-source`)。
+- **顺手**:命名传说 36→50(§7.5)。
+- **纪律**:撞"战斗中改活属性"→烘下次部署绕过,零引擎。**全绿才推。**
+
+---
+
 ## 循环 #39 · 2026-06-17 · Designer F —— ✅ 验收装备①(680件程序化库)PASS + 派②tooltip
 
 ### A. 验收 Program F `25ada42`(装备库①程序化生成) → **PASS**
