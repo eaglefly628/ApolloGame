@@ -1,5 +1,7 @@
 node_modules/
 dist/
+dist-cartridge/
+apollo-*-rk3562.tar.gz
 .env
 *.log
 .DS_Store
