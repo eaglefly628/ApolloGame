@@ -80,6 +80,17 @@ describe('装备 ② tooltip/拾取 表现层助手（meta，不入战斗 hash�
     expect(ITEM_LIB[rollItemId(() => 0.999)]).toBeTruthy(); // 最高分支
     for (let i = 0; i < 50; i++) expect(ITEM_LIB[rollItemId()]).toBeTruthy();
   });
+  it('rollItemId 太阁越深越好：depth 高 → 蓝+稀有占比上升（spec §二）', () => {
+    // 确定性 LCG 采样，比较 depth0 vs depth8 的稀有(蓝/紫/橙)命中数。
+    const lcg = (seed: number) => () => { seed = (seed * 1103515245 + 12345) & 0x7fffffff; return seed / 0x7fffffff; };
+    const rare = new Set(['blue', 'purple', 'orange']);
+    const count = (depth: number): number => {
+      const rnd = lcg(42); let n = 0;
+      for (let i = 0; i < 2000; i++) if (rare.has(ITEM_LIB[rollItemId(rnd, depth)].rarity)) n++;
+      return n;
+    };
+    expect(count(8)).toBeGreaterThan(count(0)); // 深处稀有更多
+  });
   it('formatItemStats：hp/atk 整数、atkSpd/crit/move 百分比', () => {
     expect(formatItemStats({ hp: 150, atk: 15 })).toEqual(['生命 +150', '攻击 +15']);
     expect(formatItemStats({ crit: 0.2, atkSpd: 0.1, move: 0.3 })).toEqual(['攻速 +10%', '暴击 +20%', '移速 +30%']);

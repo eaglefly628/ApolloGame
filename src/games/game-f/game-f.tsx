@@ -598,7 +598,7 @@ function buildSoloHud(click: (x: number, y: number) => void, play: (i: number) =
     if (islV !== undefined) { setAll('island', `${Math.round(islV)}/${islM}`); setW('islandfill', `${Math.max(0, Math.min(100, (islV / (islM || 100)) * 100))}%`); }
     // 装备栏（②/③）：拾取 items 上升沿 → 掷具体道具入袋（rolled 单调，装备移出袋不重掷）；品级色渲格 + hover/拖拽。
     const itemN = Math.min(8, Math.round(num('items') ?? 0));
-    while (rolled < itemN && bag.length < 8) { bag.push(rollItemId()); rolled++; }
+    while (rolled < itemN && bag.length < 8) { bag.push(rollItemId(Math.random, stageI - 1)); rolled++; } // 太阁越深掉得越好（spec §二）
     setAll('equipcount', `${bag.length}/8`);
     if (elEquip && rolled !== lastEquip) {
       lastEquip = rolled;

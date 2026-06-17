@@ -225,12 +225,21 @@ const BY_RARITY: Record<Rarity, string[]> = (() => {
   return m;
 })();
 // 掉落一件：先按权重选品级，再在该品级内均匀取一件（rnd 注入便于测试；meta 层，非确定性 hash）。
-export function rollItemId(rnd: () => number = Math.random): string {
+// depth（=关卡阶段-1，太阁越深越大）越高，蓝/紫/橙权重逐级放大 → 越深掉得越好（spec §二「掉率·太阁越深越好」）。
+export function rollItemId(rnd: () => number = Math.random, depth = 0): string {
+  const boost = 1 + Math.max(0, depth) * 0.5;
+  const w: Record<Rarity, number> = {
+    white: RARITY_WEIGHT.white,
+    green: RARITY_WEIGHT.green,
+    blue: RARITY_WEIGHT.blue * boost,
+    purple: RARITY_WEIGHT.purple * boost * boost,
+    orange: RARITY_WEIGHT.orange * boost * boost * boost,
+  };
   let total = 0;
-  for (const r of RARITIES) total += RARITY_WEIGHT[r];
+  for (const r of RARITIES) total += w[r];
   let x = rnd() * total;
   let pick: Rarity = 'white';
-  for (const r of RARITIES) { x -= RARITY_WEIGHT[r]; if (x < 0) { pick = r; break; } }
+  for (const r of RARITIES) { x -= w[r]; if (x < 0) { pick = r; break; } }
   const pool = BY_RARITY[pick].length ? BY_RARITY[pick] : BY_RARITY.white;
   return pool[Math.min(pool.length - 1, Math.floor(rnd() * pool.length))];
 }
