@@ -11,6 +11,14 @@ import {
   type Card, type Suit, type Rank, type HandType, type JokerCard, type BlindKind,
 } from './games/game-e/index.js';
 import { cardCell, CELL_W, CELL_H, SHEET_W, SHEET_H } from './games/game-e/cards-atlas.js';
+import { evaluateHand } from './skills/tier3/index.js';
+
+// 引擎牌型名(连字符) → 游戏牌型表键(下划线)，供选牌时的牌型预览取基础 chips/mult。
+const ENGINE_TO_HR: Record<string, HandType> = {
+  'high-card': 'high_card', pair: 'pair', 'two-pair': 'two_pair', 'three-of-a-kind': 'three_kind',
+  straight: 'straight', flush: 'flush', 'full-house': 'full_house', 'four-of-a-kind': 'four_kind',
+  'straight-flush': 'straight_flush', 'five-of-a-kind': 'five_kind', 'flush-house': 'flush_house', 'flush-five': 'flush_five',
+};
 
 // ════════════════════════════════════════════════════════════════════════
 //  Game E · 小丑牌 单人 MVP（按设计稿 §五 回合流程：Ante→三盲注→冲线→商店）。
@@ -333,8 +341,17 @@ function GameE() {
   const inShop = phase === 'shop';
   const progress = target > 0 ? Math.min(100, (roundScore / target) * 100) : 0;
 
+  // 选牌时的牌型预览（基础 chips/mult，未含小丑）；结算时显示实时跳动值。
+  const selCards = hand.filter((_, i) => sel[i]);
+  const preview = (!inShop && !lost && !scoring && selCards.length > 0)
+    ? (() => { const hr = HAND_RANKINGS[ENGINE_TO_HR[evaluateHand(selCards.map(toEngineCard)).type]]; return hr ? { name: hr.name, chips: hr.baseChips, mult: hr.baseMult } : null; })()
+    : null;
+  const boxChips = scoring ? scoring.frame.chips : preview ? preview.chips : 0;
+  const boxMult = scoring ? scoring.frame.mult : preview ? preview.mult : 0;
+  const boxLabel = scoring ? '结算中…' : preview ? preview.name : '选牌预览';
+
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 14, padding: 22, color: '#e2e8f0', font: '13px system-ui', width: '100%', maxWidth: 820 }}>
+    <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 14, padding: 22, color: '#e2e8f0', font: '13px system-ui', width: '100%', maxWidth: 1120 }}>
       {/* 常驻动效关键帧（小丑抖动等，跨阶段可用）*/}
       <style>{`
         @keyframes ge-wiggle { 0% { transform: rotate(0) } 25% { transform: rotate(-10deg) scale(1.15) } 75% { transform: rotate(10deg) scale(1.15) } 100% { transform: rotate(0) } }
@@ -351,20 +368,58 @@ function GameE() {
           <div key={i} style={{ color: i === 0 ? '#e2e8f0' : '#7d93a8', borderBottom: line.startsWith('—') ? '1px dashed #2b5562' : 'none', paddingBottom: line.startsWith('—') ? 4 : 0, marginBottom: line.startsWith('—') ? 4 : 0 }}>{line}</div>
         ))}
       </div>
-      {/* 顶部：Ante / 盲注 / 进度线 / 钱 */}
-      <div style={{ width: '100%', maxWidth: 680 }}>
-        <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 13, marginBottom: 4 }}>
-          <span style={{ fontWeight: 700 }}>Ante {ante} · {BLIND_META[blindKind].icon} {BLIND_META[blindKind].label}（{blindIdx + 1}/3）</span>
-          <span>💰 <span style={{ color: '#ffd166', fontWeight: 700 }}>${money}</span>　<span style={{ color: '#64748b', fontSize: 11 }}>出牌 {handsLeft} · 弃牌 {discardsLeft}</span></span>
+      {/* ══ 双栏：左信息栏 + 右牌桌 ══ */}
+      <div style={{ display: 'flex', gap: 18, alignItems: 'flex-start', width: '100%', maxWidth: 1080, justifyContent: 'center' }}>
+
+      {/* ── 左信息栏 ── */}
+      <aside style={{ width: 244, flexShrink: 0, background: '#0c1f26', border: '1px solid #234', borderRadius: 14, padding: 14, display: 'flex', flexDirection: 'column', gap: 12 }}>
+        {/* 盲注 token + Boss 预告 */}
+        <div style={{ borderRadius: 10, padding: '10px 12px', background: blindKind === 'boss' ? '#3a1118' : '#0b1c22', border: `1px solid ${blindKind === 'boss' ? '#b23' : '#2b5562'}` }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+            <span style={{ fontSize: 24 }}>{BLIND_META[blindKind].icon}</span>
+            <div>
+              <div style={{ fontWeight: 700, color: blindKind === 'boss' ? '#ff6b81' : '#cfe8ee', fontSize: 14 }}>{BLIND_META[blindKind].label}</div>
+              <div style={{ fontSize: 11, color: '#ffd166' }}>奖励 💰${BLIND_META[blindKind].reward}</div>
+            </div>
+          </div>
+          {blindKind === 'boss' && <div style={{ fontSize: 11, color: '#fca5a5', marginTop: 6 }}>诅咒：（待实现）</div>}
         </div>
-        <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 12, color: '#94a3b8', marginBottom: 3 }}>
-          <span>得分 <span style={{ color: '#90be6d', fontWeight: 700 }}>{roundScore.toLocaleString()}</span></span>
-          <span>目标 <span style={{ color: '#fca5a5' }}>{target.toLocaleString()}</span></span>
+        {/* 本回合得分 + 目标 + 进度 */}
+        <div>
+          <div style={{ fontSize: 11, color: '#9fb3bd', textAlign: 'center', letterSpacing: 2 }}>本回合得分</div>
+          <div style={{ fontSize: 28, fontWeight: 800, textAlign: 'center', color: '#fff', lineHeight: 1.2 }}>{roundScore.toLocaleString()}</div>
+          <div style={{ fontSize: 12, color: '#fca5a5', textAlign: 'center' }}>目标 {target.toLocaleString()}</div>
+          <div style={{ height: 10, background: '#1e293b', borderRadius: 5, overflow: 'hidden', marginTop: 4 }}><div style={{ width: `${progress}%`, height: '100%', background: 'linear-gradient(90deg,#22c55e,#86efac)', transition: 'width .3s' }} /></div>
         </div>
-        <div style={{ height: 14, background: '#1e293b', borderRadius: 7, overflow: 'hidden', border: '1px solid #334155' }}>
-          <div style={{ width: `${progress}%`, height: '100%', background: 'linear-gradient(90deg,#22c55e,#86efac)', transition: 'width 0.3s' }} />
+        {/* 蓝筹码 × 红倍率 框 */}
+        <div>
+          <div style={{ fontSize: 10, color: '#64748b', textAlign: 'center', marginBottom: 4 }}>{boxLabel}</div>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+            <div style={{ flex: 1, background: '#10405f', border: '2px solid #4cc9f0', borderRadius: 9, padding: '6px 0', textAlign: 'center' }}>
+              <div style={{ fontSize: 9, color: '#8fd9f5' }}>筹码</div>
+              <div key={`c${boxChips}`} style={{ fontSize: 22, fontWeight: 800, color: '#fff', animation: scoring ? 'ge-pop .25s ease' : undefined }}>{boxChips.toLocaleString()}</div>
+            </div>
+            <span style={{ fontSize: 18, color: '#94a3b8' }}>×</span>
+            <div style={{ flex: 1, background: '#5e1322', border: '2px solid #f72585', borderRadius: 9, padding: '6px 0', textAlign: 'center' }}>
+              <div style={{ fontSize: 9, color: '#ff9ec4' }}>倍率</div>
+              <div key={`m${boxMult}`} style={{ fontSize: 22, fontWeight: 800, color: '#fff', animation: scoring ? 'ge-pop .25s ease' : undefined }}>{boxMult}</div>
+            </div>
+          </div>
         </div>
-      </div>
+        {/* 出牌 / 弃牌 / 钱 */}
+        <div style={{ display: 'flex', gap: 8 }}>
+          {([['出牌', handsLeft, '#4cc9f0'], ['弃牌', discardsLeft, '#f87171'], ['💰', money, '#ffd166']] as const).map(([lab, val, col]) => (
+            <div key={lab} style={{ flex: 1, background: '#06121a', border: `1.5px solid ${col}`, borderRadius: 9, padding: '6px 0', textAlign: 'center' }}>
+              <div style={{ fontSize: 10, color: col }}>{lab}</div>
+              <div style={{ fontSize: 18, fontWeight: 800, color: '#fff' }}>{lab === '💰' ? `$${val}` : val}</div>
+            </div>
+          ))}
+        </div>
+        <div style={{ fontSize: 12, color: '#9fb3bd', textAlign: 'center' }}>Ante {ante} · 第 {blindIdx + 1}/3 道</div>
+      </aside>
+
+      {/* ── 右牌桌 ── */}
+      <main style={{ flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 14 }}>
 
       {/* 小丑排（owned；开局空）*/}
       <div style={{ display: 'flex', gap: 6, alignItems: 'center', minHeight: 74, flexWrap: 'wrap', justifyContent: 'center' }}>
@@ -555,6 +610,8 @@ function GameE() {
           <button onClick={restart} style={{ padding: '10px 24px', borderRadius: 8, fontSize: 14, fontWeight: 700, border: 'none', cursor: 'pointer', background: 'linear-gradient(135deg,#ffd166,#f59e0b)', color: '#1a1020', alignSelf: 'center' }}>重新开始</button>
         </div>
       )}
+      </main>
+      </div>{/* ══ 双栏行结束 ══ */}
 
       <div style={{ fontSize: 10, color: '#3d4a5c', textAlign: 'center', maxWidth: 560, lineHeight: 1.6 }}>
         Ante 三盲注(Small×1/Big×1.5/Boss×2) → 选≤5 出牌冲线 / 弃牌换牌 → 过线结算$进商店买小丑 → 下一道。
