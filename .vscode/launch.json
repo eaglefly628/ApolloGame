@@ -1,0 +1,31 @@
+{
+  "version": "0.2.0",
+  "configurations": [
+    {
+      "name": "Build Cartridge (menu)",
+      "type": "debugpy",
+      "request": "launch",
+      "program": "${workspaceFolder}/scripts/build_game.py",
+      "console": "integratedTerminal",
+      "cwd": "${workspaceFolder}"
+    },
+    {
+      "name": "Build Cartridge: game-f",
+      "type": "debugpy",
+      "request": "launch",
+      "program": "${workspaceFolder}/scripts/build_game.py",
+      "args": ["game-f"],
+      "console": "integratedTerminal",
+      "cwd": "${workspaceFolder}"
+    },
+    {
+      "name": "Build Cartridge: ALL games",
+      "type": "debugpy",
+      "request": "launch",
+      "program": "${workspaceFolder}/scripts/build_game.py",
+      "args": ["all"],
+      "console": "integratedTerminal",
+      "cwd": "${workspaceFolder}"
+    }
+  ]
+}
