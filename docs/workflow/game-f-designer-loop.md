@@ -5,6 +5,26 @@
 
 ---
 
+## 循环 #43 · 2026-06-17 · Designer F —— ✅ 验收装备④+掉落depth PASS → 装备系统 HP 线**今日交付完成**
+
+### A. 验收 Program F `6f2ad75`(④拆解+已装备面板+武将hover) + `d9f9afc`(掉落 depth) → **双 PASS**
+| 项 | 判定 |
+|---|---|
+| ④拆解:点已装备 → `removeEquip` 退回袋(clickable) | ✅ |
+| 已装备面板 + 武将身上 hover tooltip(②缓的那半补齐) | ✅(符 §4.1/§4.3) |
+| 掉落 depth:`rollItemId(rnd, depth)` 按关卡阶段放大稀有权重(太阁越深越好,spec §二) | ✅ |
+| **确定性安全**:`rollItemId(depth)` 仍只在 HUD 投影 effect 调(line601),不入 ECS/blueprint | ✅(已核) |
+| **game-f tsc clean** + **game-f 测 124 绿**(15 文件,+3) | ✅ |
+
+### B. 🎯 里程碑:装备系统 **HP 线全链今日交付**
+①程序化库 694 件(白绿蓝紫橙)→ ②具体战利品袋+品级色+hover全属性 tooltip → ③equip 核(≤3 金铲铲/拖拽落 marker/`equipDeployHp` 烘下次部署)→ ④拆解退袋+已装备面板+武将 hover → 掉落 depth(越深越好)。**盔甲/名马/饰品的血量战斗生效;全套拖拽/tooltip/拆解 UX 可用;零引擎。** owner"今天中午前落地"达成(HP 线)。
+
+### C. 唯一未决:武器 atk → 等主程 `REQ-F-065`
+- atk/atkSpd/crit/move 已入袋+tooltip,**战斗暂不加成**;待主程交付 per-caster `scaleByResource` 后,Program F 接 `eq_atk` 资源(纯游戏侧,小接线)即生效。
+- **Program F 当前无新装备活**(HP 线收口)。可回 §0 取其他游戏侧空档(太阁 Boss 余下招牌 / 更多牌组 / 疑兵增援收口),或待主程 REQ-F-065 落地回来接 atk。
+
+---
+
 ## 循环 #42 · 2026-06-17 · Designer F —— owner 钦定路A → atk 提主程 REQ-F-065;Program F 继续 HP+④拆解
 
 > owner 2026-06-17 拍板:武器 atk 走**路A·下沉引擎小能力(连续精确)**。按"引擎只归主程"铁律 → Designer F 落 **REQ-F-065**(per-caster `scaleByResource`)提主程,**不让 Program F 碰引擎**。
