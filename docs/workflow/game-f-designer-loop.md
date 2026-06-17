@@ -11,12 +11,12 @@
 >
 > | 字段 | 值 |
 > |---|---|
-> | **持棒方 BATON** | 🟢 **程序F**(策划F 已**接受回驳**+给 no-regret 续片;大方向请 owner) |
-> | **状态** | 策划已接受回驳·派可选续片·候 owner 定大方向 |
-> | **上一手(策划F)完成** | ✅ **接受程序F 回驳#45**(已逐条核代码属实:信长 eff_tenka blueprint.ts:623-626/秀吉 taikou.ts:52/本愿寺:54 + 测 93-131,**确系 done-covered**)。我承认 #45 派单错误=照搬陈旧 backlog 未先核码,已修 `game-f-backlog.md §0-1` 标三招牌 ✅。**game-f 游戏侧 sim 内容达完成里程碑**。 |
-> | **轮到谁 · 需做什么** | **程序F**(no-regret 续片,**非强制凑活**):**装备特效片·非atk子集** —— 橙装/词缀里**不依赖 per-unit atk 缩放**的特效,全用现成算子重组(零引擎):关羽青龙刀「斩杀残血」=executeBelow(F-061现成)/赤焰·灼烧=DoT现成/寒霜·减速=FROZEN现成/饕餮·吸血=heal(负amount)现成/太平要术「开战回血」=OverTime现成/黄金锁子「开战免控」=status现成。owner 在装备 spec §3.4 明确要橙装特效,v1 仅落了数值、特效仍文案 → **真未做、非 done-covered**。⛔ **scope out**:光环+atk/暴击溅射/冲锋暴击 等 atk·crit 依赖项 → 随 REQ-F-065 一起。 |
-> | **唤醒/检查条件** | 下个 `src/games/game-f/` 或 `src/engine` commit;或主程交付 REQ-F-065;或 owner 定大方向 |
-> | **最后更新** | 2026-06-17 · by 策划F · 循环#46(接受回驳+修 backlog+派装备特效非atk子集) |
+> | **持棒方 BATON** | 🔵 **策划F**(程序F 接 REQ-F-065 完成装备 atk 线,待策划F验收) |
+> | **状态** | 程序已完成待策划验收 |
+> | **上一手(程序F)完成** | ✅ **装备武器 atk 生效接线（REQ-F-065 path A）**：我方英雄复合体加 `eqcaster` sidecar（持 per-unit `eq_atk` + 独立 Timer/SelfRule 周期 spawn 隐形 `eq_strike_<id>`），eq_strike `amount=1 × scaleByResource:'eq_atk'`(REQ-F-065 先查施法者本地)= Σ装备atk 平砍加伤；装/拆经 `applyEquip/unequip` 把 `eq_atk` 写进 `Caster.overrides.eqcaster`（与 HP 同管道）。**坑已踩平**：同 SelfRule 双 spawn 同拍 id 撞车→拆独立 sidecar；裸 Shape 会画方块→`Visibility.visible:false`。真机战斗零报错无杂框、1376 绿、blueprint 快照更新。**至此装备 HP+atk 双线全通**。 |
+> | **轮到谁 · 需做什么** | **策划F**:验收装备 atk 线（combat.ts eqcaster/eqStrike + equip.ts eqcaster 写入 + 测）。验收后→翻 🟢程序F。剩可选：装备特效·**真非atk子集**（开战回血=OverTime override / 免控=GridMover.haltMask override，可经 Caster.overrides 逐单位加；⚠️ 斩杀/灼烧/减速/吸血=改**共享 strike** 属性=与 atk 同 per-instance 墙，非"现成重组"，需 Lead 把 per-caster 推广到 strike 属性 or 接受模板族——已纠策划#46 的误判）。 |
+> | **唤醒/检查条件** | 下个 `src/games/game-f/` 或 `src/engine` commit;或 owner 定大方向 |
+> | **最后更新** | 2026-06-17 · by 程序F · REQ-F-065 接线完成(装备 atk 通) |
 
 > 翻棒写法:程序F 干完 → 把「持棒方」改 🔵**策划F**、状态「程序已完成待策划验收」、填「完成什么」;策划F 验收完 → 改回 🟢**程序F**。
 

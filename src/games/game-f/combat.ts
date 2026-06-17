@@ -49,6 +49,13 @@ const strike = (targetMask: number, amount: number, fxKey: string, scaleId = 'dm
 // DoT（灼烧/吸取）：命中后每 30 tick 掉血、持续 ~4s，由 over-time 处理。
 const DOT = { dotPerTick: 25, dotPeriod: 30, dotDuration: 240 };
 
+// 装备 atk 加成打击区（REQ-F-065 per-caster scaleByResource）：裸 hitbox（无 fx）amount=1 × 施法者本地 eq_atk
+// （=Σ装备atk，默认 0）→ 0 时 0 伤无表现（未装备者零副作用）；与主普攻同拍展开在目标，装武器即附带平砍加伤。
+const eqStrike = (targetMask: number): PrefabTemplate => ({
+  // Visibility.visible:false → 不绘几何（裸 Shape 否则会画方块）；Hitbox 仍 sim 生效。加伤并入主普攻数字、无独立表现(v1)。
+  entities: { area: { Transform: xf(0, 0), Shape: { kind: 'box', width: 18, height: 18 }, Sensor: {}, Visibility: { visible: false, active: true }, Tag: { flags: ZONE_FLAG }, Hitbox: { resource: 'hp', amount: 1, targetMask, scaleByResource: 'eq_atk' }, Timer: { id: 'life', elapsed: 0, duration: 2, loop: false } } },
+});
+
 // 远程/法术弹道（用户打击感批「远程要有弹道」）：从攻击者自身射出的**追踪弹**——全现有词汇拼装：
 // Perception(敌方)+aggro 锁最近敌 → Steering{seek} 追 → 命中(consumeOnHit 真结算)即灭 + 命中处红闪由
 // strike 同款表现实体补（弹体自带 redflash 子实体不可行——单实体单 Tween，红闪随弹体走会提前闪）→
@@ -192,6 +199,10 @@ function heroTemplate(h: HeroSpec): PrefabTemplate {
         SelfRule: { when: { kind: 'resource', id: 'mp', cmp: 'gte', value: 100 }, whenGlobal: { kind: 'flag', id: 'in_combat', equals: true }, do: [{ kind: 'spawn', template: `ult_${h.id}`, at: 'target' }, { kind: 'modify-resource', op: 'set', value: 0 }], once: false, armed: false },
         Hierarchy: { ...sidecarLink },
       },
+      // 装备 atk sidecar（REQ-F-065 per-caster；仅我方）：独立 Timer+SelfRule 周期 spawn eq_strike（裸加伤区），
+      // 源=本 sidecar → eq_strike 的 scaleByResource:'eq_atk' 先查本 sidecar 的 eq_atk(=Σ装备atk，deploy override 连续写，默认0)。
+      // 独立 source 避开「同 do 双 spawn 同拍 id 撞车」(主普攻一份、装备加伤一份，各自 sidecar)；off-phase 平砍加伤可接受。
+      ...(h.team === TEAM_A ? { eqcaster: { Transform: xf(0, 0), Resource: { id: 'eq_atk', current: 0, min: 0, max: 9999 }, Perception: { targetTag: h.enemy, sightRadius: 0 }, Timer: { id: 'atk', elapsed: 0, duration: ATK_CD, loop: true }, SelfRule: { when: { kind: 'timer', id: 'atk', cmp: 'gte', value: ATK_CD - 1 }, whenGlobal: { kind: 'flag', id: 'in_combat', equals: true }, do: [{ kind: 'spawn', template: `eq_strike_${h.id}`, at: 'target' }], once: false, armed: false }, Hierarchy: { ...sidecarLink } } } : {}),
     },
   };
 }
@@ -332,6 +343,8 @@ export function templatesFor(ROSTER: HeroSpec[]): Record<string, PrefabTemplate>
       : [`proj_${h.id}`, projectile(h.enemy, finalAtk(h), FX_BY_TYPE[h.atkType], h.team === TEAM_A ? 'dmg_scale_a' : 'dmg_scale_b', h.cls === ASSASSIN ? 0.15 : undefined)] as [string, PrefabTemplate],
     [`ult_${h.id}`, ultTemplate(h.enemy, h.ultDmg, h.ultSize, h.ultFx, h.ultDot, h.ultFreeze, h.team === TEAM_A ? 'dmg_scale_a' : 'dmg_scale_b')],
     [`hero_${h.id}`, heroTemplate(h)],
+    // 装备 atk 打击区（仅我方；eq_strike_<id> 由普攻同拍 spawn，按本单位 eq_atk 缩放=异质装备加伤，REQ-F-065）。
+    ...(h.team === TEAM_A ? [[`eq_strike_${h.id}`, eqStrike(h.enemy)] as [string, PrefabTemplate]] : []),
     // 死亡碎裂（用户打击感批「被杀死时切成四半」）：4 个 0.55 倍迷你分身向四角飞散+渐隐（Velocity 四向
     // + alpha Tween + lifetime 自清；表现实体无 Tag 不参战不计存活）。
     [`death_${h.id}`, {

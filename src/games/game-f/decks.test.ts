@@ -208,4 +208,18 @@ describe('主动锦囊（P1/P1.5；CardSpec jinnang → 充能/keybind/craft/cas
     expect(strike.entities.area.Hitbox.targetMask).toBe(TEAM_B);          // 打太阁
     expect(strike.entities.area.Hitbox.scaleByResource).toBe('dmg_scale_a'); // 用我方乘区
   });
+  it('装备 atk 生效(REQ-F-065)：我方英雄复合体带 eqcaster sidecar(持 eq_atk + 周期 spawn eq_strike) + eq_strike per-caster 缩放', () => {
+    // 我方关羽：hero 复合体应含 eqcaster(持 eq_atk 资源 + 自带 Timer/SelfRule spawn eq_strike，独立 source 避撞车)。
+    const hero = GAME_F_TEMPLATES['hero_a_guanyu'] as unknown as { entities: { eqcaster?: { Resource: { id: string }; SelfRule: { do: { template?: string }[] } } } };
+    expect(hero.entities.eqcaster?.Resource.id).toBe('eq_atk');
+    expect(hero.entities.eqcaster!.SelfRule.do.some((d) => d.template === 'eq_strike_a_guanyu')).toBe(true);
+    const eq = GAME_F_TEMPLATES['eq_strike_a_guanyu'] as unknown as { entities: { area: { Hitbox: { targetMask: number; amount: number; scaleByResource?: string } } } };
+    expect(eq.entities.area.Hitbox.scaleByResource).toBe('eq_atk'); // per-caster：读本单位 eq_atk
+    expect(eq.entities.area.Hitbox.amount).toBe(1);                 // 1 × eq_atk = Σ装备atk 平砍加伤
+    expect(eq.entities.area.Hitbox.targetMask).toBe(TEAM_B);        // 打太阁
+    // 敌方(魏)英雄不挂装备线（无 eqcaster / 无 eq_strike 模板）
+    const enemy = GAME_F_TEMPLATES['hero_b_zhangliao'] as unknown as { entities: { eqcaster?: unknown } };
+    expect(enemy.entities.eqcaster).toBeUndefined();
+    expect(GAME_F_TEMPLATES['eq_strike_b_zhangliao']).toBeUndefined();
+  });
 });

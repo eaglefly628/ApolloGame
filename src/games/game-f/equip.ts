@@ -46,17 +46,19 @@ export interface EquipWorld {
   getComponent(entityId: string, type: string): unknown;
   addComponent(entityId: string, comp: unknown): void;
 }
-interface CasterOverride { overrides?: { main?: { Resource?: { current: number; max: number } } } }
+interface CasterOverride { overrides?: { main?: { Resource?: { current: number; max: number } }; eqcaster?: { Resource?: { current: number; max: number } } } }
 
-// 把某 marker 当前装备的部署 HP 重烘进 Caster.overrides.main.Resource（caster 每施放重读 → 下次开战生效）。
-// 装/卸共用：等价 heroOverrides 同管道，只是基底再叠当前 Σ装备 hp。
+// 把某 marker 当前装备重烘进 Caster.overrides（caster 每施放重读 → 下次开战生效）。装/卸共用：
+// ① main.Resource = 部署 HP(基底+Σ装备hp，star 同管道)；② eqstat.Resource(eq_atk) = Σ装备atk(REQ-F-065 per-caster，
+// eq_strike 按本单位 eq_atk 缩放=异质平砍加伤)。HP/atk 双线一起烘。
 export function rebakeDeployHp(world: EquipWorld, markerId: string, map: EquipMap, h: HeroSpec, star: number, hpMul: number): void {
   const caster = world.getComponent(markerId, 'Caster') as CasterOverride | undefined;
-  if (caster?.overrides?.main?.Resource) {
-    const hp = equipDeployHp(h, star, hpMul, map, markerId);
-    caster.overrides.main.Resource = { current: hp, max: hp };
-    world.addComponent(markerId, caster);
-  }
+  if (!caster?.overrides?.main?.Resource) return;
+  const hp = equipDeployHp(h, star, hpMul, map, markerId);
+  caster.overrides.main.Resource = { current: hp, max: hp };
+  const atk = equipStatSum(map, markerId, 'atk');
+  caster.overrides.eqcaster = { Resource: { current: atk, max: 9999 } }; // eq_atk = Σ装备atk（per-unit sidecar，eq_strike 读它）
+  world.addComponent(markerId, caster);
 }
 
 // 拖装备落 marker（③）：addEquip(≤3) 成功后重烘 HP。满 3 件返回 false（调用方回弹+提示，不写 override）。
