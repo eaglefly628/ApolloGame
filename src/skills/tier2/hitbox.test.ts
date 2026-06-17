@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import { World } from '@engine/core/world.js';
-import type { Hitbox, Tag, Status, Resource, Trigger, Transform, Shape, Sensor, OverTime } from '@engine/protocol/components.js';
+import type { Hitbox, Tag, Status, Resource, Trigger, Transform, Shape, Sensor, OverTime, PrefabOrigin } from '@engine/protocol/components.js';
 import { hitboxCapability } from './hitbox.js';
 import { triggerZoneCapability, ZONE_FLAG } from './trigger-zone.js';
 import { resourceCapability } from '@atom-skills/index.js';
@@ -43,6 +43,61 @@ describe('hitbox — 元数据 / 定序', () => {
     const sys = hitboxCapability.systems[0];
     expect(sys.runsAfter).toContain('trigger-zone');
     expect(sys.runsBefore).toContain('resource-apply');
+  });
+});
+
+describe('hitbox — scaleByResource per-caster 本地缩放（REQ-F-065）', () => {
+  // 施法者复合体：main + eq 兄弟（同 templateId+seq）；eq 持 Resource{eq_atk}（异质装备 atk）。
+  const caster = (w: World, id: string, eqAtk: number, seq: number): void => {
+    w.createEntity(id);
+    w.addComponent(id, { type: 'PrefabOrigin', templateId: 'unit', seq, localId: 'main' } as unknown as PrefabOrigin);
+    w.createEntity(`${id}:eq`);
+    w.addComponent(`${id}:eq`, { type: 'PrefabOrigin', templateId: 'unit', seq, localId: 'eq' } as unknown as PrefabOrigin);
+    w.addComponent(`${id}:eq`, { type: 'Resource', id: 'eq_atk', current: eqAtk, min: 0, max: 999 } as Resource);
+  };
+  // 源自施法者的 strike 区（PrefabOrigin.source = 施法者 main）。
+  const strikeFrom = (w: World, id: string, src: string, hb: Omit<Hitbox, 'type'>): void => {
+    w.createEntity(id);
+    w.addComponent(id, { type: 'Hitbox', ...hb } as Hitbox);
+    w.addComponent(id, { type: 'PrefabOrigin', templateId: 'strike', seq: 99, localId: 'area', source: src } as unknown as PrefabOrigin);
+  };
+
+  it('strike 按施法者复合兄弟的 eq_atk 缩放（异质：每将装备不同→加成不同）', () => {
+    const w = combatWorld();
+    caster(w, 'guan', 3, 1); // 关羽 eq_atk=3
+    caster(w, 'zhang', 5, 2); // 张飞 eq_atk=5
+    mob(w, 'foe1');
+    mob(w, 'foe2');
+    strikeFrom(w, 'strk_guan', 'guan', { resource: 'hp', amount: 10, targetMask: ENEMY, scaleByResource: 'eq_atk' });
+    strikeFrom(w, 'strk_zhang', 'zhang', { resource: 'hp', amount: 10, targetMask: ENEMY, scaleByResource: 'eq_atk' });
+    trigger(w, 'strk_guan', 'foe1');
+    trigger(w, 'strk_zhang', 'foe2');
+    w.tick();
+    expect(hp(w, 'foe1')).toBe(100 - 10 * 3); // 70：关羽本地 eq_atk=3
+    expect(hp(w, 'foe2')).toBe(100 - 10 * 5); // 50：张飞本地 eq_atk=5（异质 → 证 per-caster）
+  });
+
+  it('源自身持有该资源（快路）', () => {
+    const w = combatWorld();
+    w.createEntity('solo');
+    w.addComponent('solo', { type: 'PrefabOrigin', templateId: 'u', seq: 1, localId: 'main' } as unknown as PrefabOrigin);
+    w.addComponent('solo', { type: 'Resource', id: 'eq_atk', current: 4, min: 0, max: 99 } as Resource);
+    mob(w, 'foe');
+    strikeFrom(w, 'strk', 'solo', { resource: 'hp', amount: 10, targetMask: ENEMY, scaleByResource: 'eq_atk' });
+    trigger(w, 'strk', 'foe');
+    w.tick();
+    expect(hp(w, 'foe')).toBe(100 - 10 * 4); // 60：源自身 eq_atk=4
+  });
+
+  it('无 source / 未命中本地 → 回退全局（团队系数行为不变）', () => {
+    const w = combatWorld();
+    w.createEntity('gscale');
+    w.addComponent('gscale', { type: 'Resource', id: 'dmg_scale', current: 2, min: 0, max: 9 } as Resource);
+    mob(w, 'foe');
+    zone(w, 'strk', { resource: 'hp', amount: 10, targetMask: ENEMY, scaleByResource: 'dmg_scale' }); // 无 PrefabOrigin.source
+    trigger(w, 'strk', 'foe');
+    w.tick();
+    expect(hp(w, 'foe')).toBe(100 - 10 * 2); // 80：回退全局 dmg_scale=2
   });
 });
 

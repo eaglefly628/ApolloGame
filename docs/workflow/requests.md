@@ -10,7 +10,7 @@
 
 ## 待处理 / 进行中
 
-### REQ-F-065 · [2026-06-17] · 策划 PF（装备系统 atk 生效 · owner 2026-06-17 钦定路A）· 框架级 · status: **open（提主程）** · 优先级: 中（装备武器线唯一阻塞）
+### REQ-F-065 · [2026-06-17] · 策划 PF（装备系统 atk 生效 · owner 2026-06-17 钦定路A）· 框架级 · status: **done（引擎侧，2026-06-17，Lead）** · 优先级: 中（装备武器线唯一阻塞）
 
 **标题**：`scaleByResource` 支持「施法者本地资源」寻址（per-caster scaling），表达逐单位异质缩放
 
@@ -21,6 +21,11 @@
 - **owner 决策**：2026-06-17 owner 在「路A(下沉小能力·连续精确·推荐) vs 路B(桶化模板·零引擎但量化+模板膨胀)」中**钦定路A**。
 - **确定性**：deploy 拍写 per-unit `eq_atk`（构建快照 + 镜像关键帧均捕获，同 HP override 路径，安全）；纯整数/定点，回放不破。
 - **交付后游戏侧接线（Program F，非引擎）**：deploy override 写 `eq_atk = Σ装备atk`；strike 模板 `scaleByResource: 'eq_atk'`（与全局 dmg_scale 叠乘）。
+- **Lead 评判 + 落地（2026-06-17，引擎侧 done）**：缺口属实（异质 per-unit 缩放，全局 scaleByResource 表达不了，正中 REQ-023 留口；退星级/装备模板族 = 净简化）→ **ACCEPT**。**但原提案"scaleByResource 查施法者本地"漏了前提**：spawn 出的 strike 命中那刻**没有施法者实体链**（`PrefabOrigin`/`SpawnRequest` 只带 `originHex` 格、不带 source 实体）。故先补**源 threading**，再做本地解析：
+  - `SpawnRequest.source` / `PrefabOrigin.source`（新 POD 字段）；`caster`(=`originEntity ?? 自身`) 与 `self-rule`(普攻=自身) 盖章 → `prefab` 转记到每个展开实体。
+  - `hitbox.ts` 新 `findScaleResource`：`scaleByResource` **先查施法者本地**（源实体自身 + 其**同次展开的复合兄弟**，同 `templateId+seq`——因一实体一 Resource、main 占 hp，故 eq_atk 必在兄弟子件上）→ **未命中回退全局**（dmg_scale 等行为不变、零迁移）。
+  - 测试：异质两将(eq_atk 3/5)同 amount 出不同伤 + 源自身快路 + 无 source 回退全局。全绿（tsc + 1375 vitest + build）。
+- **给 PF 的接线契约**：① `eq_atk` 作 per-unit Resource 放在**棋子复合体的某个子件**（与 strike 的 `source`=棋子 main 同 `templateId+seq`；main 已占 hp），deploy override 连续写；② strike `scaleByResource:'eq_atk'`。**注意单 `scaleByResource` 只乘一项**——要 per-unit × 全局 dmg_scale 同乘，把 dmg_scale 折进 eq_atk（写时含团队系数），或单提"多段缩放"我再评（非本次最小下沉）。
 
 ---
 

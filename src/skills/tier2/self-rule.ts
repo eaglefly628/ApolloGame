@@ -103,7 +103,7 @@ function applySelfAction(world: IWorld, eid: EntityId, a: SelfAction): void {
       const t = world.getComponent<Transform>(originId, 'Transform');
       if (!t) break;
       // SpawnRequest 挂自身（一实体一组件：同拍多个 spawn 动作会相互覆盖，普攻一拍一发不受影响）。
-      world.addComponent(eid, { type: 'SpawnRequest', templateId: a.template, x: t.x, y: t.y } as SpawnRequest);
+      world.addComponent(eid, { type: 'SpawnRequest', templateId: a.template, x: t.x, y: t.y, source: eid } as SpawnRequest); // source(REQ-F-065)=普攻发起者自身（普攻链的施法者）
       break;
     }
   }

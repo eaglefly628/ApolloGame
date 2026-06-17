@@ -140,7 +140,7 @@ export const casterCapability = defineCapability({
           }
 
           // overrides 原样透传（REQ-F-032）：槽位实体声明自己棋子的 HexPos/Tag/数值补丁，prefab 合并。
-          world.addComponent(id, { type: 'SpawnRequest', templateId: c.template, x, y, ...(originHex ? { originHex: { q: originHex.q, r: originHex.r } } : {}), ...(c.overrides ? { overrides: c.overrides } : {}) } as SpawnRequest);
+          world.addComponent(id, { type: 'SpawnRequest', templateId: c.template, x, y, source: originId, ...(originHex ? { originHex: { q: originHex.q, r: originHex.r } } : {}), ...(c.overrides ? { overrides: c.overrides } : {}) } as SpawnRequest); // source(REQ-F-065)=施法锚点(originEntity ?? 自身)
         }
       },
     },

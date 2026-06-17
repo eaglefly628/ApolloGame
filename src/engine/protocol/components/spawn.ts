@@ -20,6 +20,7 @@ export interface PrefabOrigin extends Component {
   templateId: string; // 出自哪个模板
   seq: number; // 第几次展开（PrefabLibrary.seq，全局单调=入场顺序）
   localId: string; // 模板内 localId
+  source?: EntityId; // 生成它的施法者/源实体（REQ-F-065：hitbox 据此读施法者本地资源做 per-caster 异质缩放）
 }
 
 export interface PrefabLibrary extends Component {
@@ -44,6 +45,9 @@ export interface SpawnRequest extends Component {
   // 模板缺 HexPos 组件时**仅哨兵路径**允许补建（值恒完整 {q,r}；通用补丁不建缺件——半截组件的
   // undefined 字段会进 snapshot/hash）。缺 originHex → 哨兵补丁整条跳过（发起者不在板上=实例不上板）。
   originHex?: { q: number; r: number };
+  // 发起者实体（REQ-F-065）：caster/self-rule 盖章自身 → prefab 转记到每个展开实体的 PrefabOrigin.source，
+  // 供 hitbox 的 scaleByResource 先查"施法者本地（源 + 同次展开的复合兄弟）"资源、未命中再回退全局。
+  source?: EntityId;
 }
 
 // ── K2 destroy ── 移除实体的请求（read-then-consume）

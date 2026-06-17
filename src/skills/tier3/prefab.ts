@@ -1,5 +1,5 @@
 import { defineCapability } from '@engine/core/define-capability.js';
-import type { IWorld, Component } from '@engine/core/types.js';
+import type { IWorld, Component, EntityId } from '@engine/core/types.js';
 import type { SpawnRequest, PrefabLibrary, PrefabTemplate, SpawnOverrides } from '@engine/protocol/components.js';
 
 // ═══════════════════════════════════════════════════════════════
@@ -57,7 +57,7 @@ export const ORIGIN_HEX_SENTINEL = '@origin-hex';
 // 实例化一个模板到 (x,y)，返回新建实体 id 列表（便于测试/调试）。
 // overrides（REQ-F-032）：localId→组件→字段补丁，深拷贝+Transform 偏移之后逐字段合并——
 // 同一模板展开异构实例（各自 HexPos/Tag/数值）。补丁亦深拷贝（请求方数据与实例隔离）。
-export function instantiate(world: IWorld, tmpl: PrefabTemplate, templateId: string, seq: number, x: number, y: number, overrides?: SpawnOverrides, originHex?: { q: number; r: number }): string[] {
+export function instantiate(world: IWorld, tmpl: PrefabTemplate, templateId: string, seq: number, x: number, y: number, overrides?: SpawnOverrides, originHex?: { q: number; r: number }, source?: EntityId): string[] {
   const created: string[] = [];
   const locals = new Set(Object.keys(tmpl.entities)); // REQ-F-033：本模板兄弟 localId 集
   for (const [localId, comps] of Object.entries(tmpl.entities)) {
@@ -84,7 +84,7 @@ export function instantiate(world: IWorld, tmpl: PrefabTemplate, templateId: str
       world.addComponent(eid, { type: 'HexPos', q: originHex.q, r: originHex.r } as unknown as Component);
     }
     // REQ-F-046/048①：出身戳（同模板计数/入场顺序的数据钥匙；POD 进 snapshot，确定可重放）。
-    world.addComponent(eid, { type: 'PrefabOrigin', templateId, seq, localId } as unknown as Component);
+    world.addComponent(eid, { type: 'PrefabOrigin', templateId, seq, localId, ...(source ? { source } : {}) } as unknown as Component); // source(REQ-F-065)：转记发起者 → hitbox per-caster 缩放据此寻施法者本地资源
     created.push(eid);
   }
   return created;
@@ -139,7 +139,7 @@ export const prefabCapability = defineCapability({
           if (req) {
             const tmpl = lib.templates[req.templateId];
             if (tmpl) {
-              instantiate(world, tmpl, req.templateId, lib.seq, req.x, req.y, req.overrides, req.originHex);
+              instantiate(world, tmpl, req.templateId, lib.seq, req.x, req.y, req.overrides, req.originHex, req.source);
               lib.seq += 1;
             }
           }

@@ -1,6 +1,6 @@
 import { defineCapability } from '@engine/core/define-capability.js';
 import type { IWorld } from '@engine/core/types.js';
-import type { Trigger, Hitbox, Tag, Status, Resource, DestroyRequest } from '@engine/protocol/components.js';
+import type { Trigger, Hitbox, Tag, Status, Resource, DestroyRequest, PrefabOrigin } from '@engine/protocol/components.js';
 import { findByComponentId } from '@engine/core/query.js';
 import { queueResourceMod } from '@skills/atoms/resource/index.js';
 import { addTimedEffect } from './over-time.js';
@@ -9,6 +9,28 @@ import { addTimedEffect } from './over-time.js';
 function findResourceById(world: IWorld, id: string): Resource | undefined {
   const e = findByComponentId(world, 'Resource', 'id', id);
   return e ? world.getComponent<Resource>(e, 'Resource') : undefined;
+}
+
+// scaleByResource 解析（REQ-F-065 per-caster 异质缩放）：先查「施法者本地」——伤害区的源实体
+// （PrefabOrigin.source，由 caster/self-rule 盖章）自身、或其**同次展开的复合兄弟**（同 templateId+seq，
+// 如棋子的子件）所持的 resId Resource；未命中再回退**全局** findResourceById（团队系数 dmg_scale 等行为不变）。
+// 让"每将装备不同 → atk 加成异质"用一份 strike 模板 + per-unit 资源缩放表达，退掉星级/装备的模板族爆炸。
+function findScaleResource(world: IWorld, zoneId: string, resId: string): Resource | undefined {
+  const src = world.getComponent<PrefabOrigin>(zoneId, 'PrefabOrigin')?.source;
+  if (src) {
+    const own = world.getComponent<Resource>(src, 'Resource');
+    if (own && own.id === resId) return own; // 施法者自身持有（快路；一实体一 Resource）
+    const so = world.getComponent<PrefabOrigin>(src, 'PrefabOrigin'); // 施法者复合身份
+    if (so) {
+      for (const [eid] of world.query('Resource', 'PrefabOrigin')) {
+        const po = world.getComponent<PrefabOrigin>(eid, 'PrefabOrigin')!;
+        if (po.templateId !== so.templateId || po.seq !== so.seq) continue; // 仅同次展开的兄弟
+        const r = world.getComponent<Resource>(eid, 'Resource')!;
+        if (r.id === resId) return r;
+      }
+    }
+  }
+  return findResourceById(world, resId); // 全局回退（无 source / 未命中本地）
 }
 
 // ═══════════════════════════════════════════════════════════════
@@ -131,7 +153,7 @@ export const hitboxCapability = defineCapability({
           // REQ-F-047 活系数乘区：amount × 全局系数资源（缺省 ×1）；fracOfMax 不乘（保"按目标 max"语义）。
           let base = hb.amount ?? 0;
           if (hb.scaleByResource) {
-            const coef = findResourceById(world, hb.scaleByResource);
+            const coef = findScaleResource(world, trig.zone, hb.scaleByResource);
             if (coef) base = base * coef.current;
           }
           let dmg = base;
