@@ -26,6 +26,21 @@
       "args": ["all"],
       "console": "integratedTerminal",
       "cwd": "${workspaceFolder}"
+    },
+    {
+      "name": "Preview Cartridge",
+      "type": "debugpy",
+      "request": "launch",
+      "program": "${workspaceFolder}/scripts/preview_cartridge.py",
+      "console": "integratedTerminal",
+      "cwd": "${workspaceFolder}"
+    }
+  ],
+  "compounds": [
+    {
+      "name": "Build + Preview: game-f",
+      "configurations": ["Build Cartridge: game-f", "Preview Cartridge"],
+      "stopAll": true
     }
   ]
 }
