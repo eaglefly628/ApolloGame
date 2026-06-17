@@ -23,6 +23,10 @@
   @keyframes g-dash { to { stroke-dashoffset: -68; } }
   input[type=range].gz { -webkit-appearance:none; appearance:none; height:6px; border-radius:99px; outline:none; }
   input[type=range].gz::-webkit-slider-thumb { -webkit-appearance:none; width:18px; height:18px; border-radius:50%; background:#fff; border:2px solid var(--accent); cursor:pointer; box-shadow:0 2px 6px rgba(0,0,0,.4); }
+  /* 交互态复刻 design 的 style-hover/style-active（DC 原本逐元素带，原生版用 CSS 还原） */
+  [data-act="lever"]:hover, [data-act="focus"]:hover, [data-act="lane"]:hover, [data-act="zoom"]:hover, [data-act="gate"]:hover { filter:brightness(1.08); transform:translateY(-2px); border-color:var(--accent); }
+  [data-act="lever"]:active, [data-act="focus"]:active, [data-act="lane"]:active, [data-act="zoom"]:active, [data-act="gate"]:active, [data-act="ready"]:active { transform:translateY(1px) scale(.97); filter:brightness(.94); }
+  [data-act="ready"]:hover { filter:brightness(1.08); transform:translateY(-2px); }
 </style>
 </head>
 <body>
@@ -244,7 +248,7 @@ const App = {
       const on = this.state.lane === key;
       return { key, label, subText, style: { flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '2px', padding: '9px 6px', borderRadius: '11px', cursor: 'pointer', border: '1px solid ' + (on ? 'var(--accent)' : 'var(--btn-edge)'), background: on ? 'var(--accent-grad)' : 'var(--btn-bg)', color: on ? '#fff' : 'var(--btn-text)', fontFamily: 'var(--font-heading)', fontWeight: 700, fontSize: '15px', transition: 'all .15s ease', boxShadow: on ? '0 0 14px var(--accent-soft)' : 'none' }, sub: { fontFamily: 'var(--font-num)', fontSize: '9px', opacity: .8, color: on ? '#fff' : 'var(--ink-dim)' } };
     });
-    const readyBtn = { position: 'relative', overflow: 'hidden', width: '100%', height: '100%', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', borderRadius: '16px', cursor: 'pointer', border: 'none', background: 'var(--ready-bg)', color: 'var(--ready-text)', boxShadow: 'var(--ready-shadow)' };
+    const readyBtn = { position: 'relative', overflow: 'hidden', width: '100%', height: '100%', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', borderRadius: '16px', cursor: 'pointer', border: 'none', background: 'var(--ready-bg)', color: 'var(--ready-text)', boxShadow: 'var(--ready-shadow)', transition: 'all .15s ease' };
     const LANE_CN = { top: '上路', mid: '中路', bot: '下路' };
 
     return { T, seg, phaseBanner, nexBadgeA, nexBadgeB, levers, viewport, world, nexusA, nexusB, towers, units, laneTopLbl, laneMidLbl, laneBotLbl, clashes, gates, focusBar, focusChip, focusChipOn, zoomBox, zoomBtn, zoomSlider, zoomLabel, zoomVal: Z, zoomPct: Math.round(Z * 100) + '%', hintTag, mmBox, mmInner, mmLanes, mmBlips, mmViewRect, mmHit, hand, laneStatus, oppAv, oppTag, panel, panelHead, augRow, energyPips, laneBtns, readyBtn, laneSubLabel: LANE_CN[this.state.lane], A, B, mid };
@@ -341,10 +345,11 @@ const App = {
             <div style="${st(v.hintTag)}">🖱 拖拽平移 · 滚轮缩放 · 点「门」开/关捷径</div>
             <div style="${st(v.mmBox)}">
               <div style="position:absolute; top:6px; left:9px; font-family:var(--font-heading); font-weight:700; font-size:11px; letter-spacing:.1em; color:rgba(255,255,255,.8); z-index:3;">战场全局</div>
-              <div data-act="mmdown" style="${st(v.mmInner)}">
+              <div style="${st(v.mmInner)}">
                 ${forr(v.mmLanes, (l) => `<div style="${st(l)}"></div>`)}
                 ${forr(v.mmBlips, (b) => `<div style="${st(b)}"></div>`)}
                 <div style="${st(v.mmViewRect)}"></div>
+                <div data-act="mmdown" style="${st(v.mmHit)}"></div>
               </div>
             </div>
           </div>
@@ -376,7 +381,7 @@ const App = {
             <div style="display:flex; gap:10px;">${forr(v.laneBtns, (b) => `<button data-act="lane" data-k="${b.key}" style="${st(b.style)}">${esc(b.label)}<span style="${st(b.sub)}">${esc(b.subText)}</span></button>`)}</div>
           </div>
           <div style="width:210px; flex:none; display:flex; flex-direction:column; gap:8px;">
-            <button style="${st(v.readyBtn)}"><span style="position:absolute; inset:0; border-radius:inherit; background:linear-gradient(110deg,transparent 36%,rgba(255,255,255,.4) 50%,transparent 64%); background-size:230% 100%; animation:g-shimmer 3s ease-in-out infinite; pointer-events:none;"></span><span style="position:relative; font-family:var(--font-heading); font-weight:700; font-size:24px; letter-spacing:.08em;">派牌出战</span><span style="position:relative; font-size:11px; letter-spacing:.22em; opacity:.85; margin-top:2px;">DEPLOY · ${esc(v.laneSubLabel)}</span></button>
+            <button data-act="ready" style="${st(v.readyBtn)}"><span style="position:absolute; inset:0; border-radius:inherit; background:linear-gradient(110deg,transparent 36%,rgba(255,255,255,.4) 50%,transparent 64%); background-size:230% 100%; animation:g-shimmer 3s ease-in-out infinite; pointer-events:none;"></span><span style="position:relative; font-family:var(--font-heading); font-weight:700; font-size:24px; letter-spacing:.08em;">派牌出战</span><span style="position:relative; font-size:11px; letter-spacing:.22em; opacity:.85; margin-top:2px;">DEPLOY · ${esc(v.laneSubLabel)}</span></button>
           </div>
         </div>
       </div>
