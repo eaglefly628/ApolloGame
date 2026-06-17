@@ -1,7 +1,8 @@
 import { Engine } from '../../runtime/engine.js';
-import { ThreeRenderer } from './three-renderer.js';
-import { buildGameGArmyMatch, prepareArmies, armyFromFormation, laneEstimates, quartermasterEnergy, FORMATION_PRESETS, PRESET_NAMES, LEVER_CATALOG, LEVER_START, HOME_HP, battleSpec, RUN_BATTLES, RUN_LIVES, BETWEEN_BUFFS, applyBuff, jokerKeyBuffs, BOSS_ROSTER, bossFor, GAME_G_JOKERS, JOKER_BY_ID, ARCHETYPES, detectArchetype, archetypeMatchup, activeArchetype, pickAiFormation, GAME_G_PLANETS, GAME_G_FOILS, effectiveLives, effectiveLeverCap, effectiveLeverRegen, type Formation, type Intervention, type LeverKind, type RunBuff } from './index.js';
-import type { State, Resource } from '@engine/protocol/components.js';
+import { mountBattle, type BattleView, type BattleUnit, type BattleLane, type BattleLever } from './battle-screen.js';
+import { buildGameGArmyMatch, prepareArmies, armyFromFormation, laneEstimates, quartermasterEnergy, FORMATION_PRESETS, PRESET_NAMES, LEVER_CATALOG, LEVER_START, HOME_HP, ALIVE, battleSpec, RUN_BATTLES, RUN_LIVES, BETWEEN_BUFFS, applyBuff, jokerKeyBuffs, BOSS_ROSTER, bossFor, GAME_G_JOKERS, JOKER_BY_ID, ARCHETYPES, detectArchetype, archetypeMatchup, activeArchetype, pickAiFormation, GAME_G_PLANETS, GAME_G_FOILS, effectiveLives, effectiveLeverCap, effectiveLeverRegen, type Formation, type Intervention, type LeverKind, type RunBuff } from './index.js';
+import type { State, Resource, Card3D, Tag, Timer } from '@engine/protocol/components.js';
+import type { IWorld } from '@engine/core/types.js';
 
 // Game G ·《翻命扑克》—— 大厅 ↔ 出征 闭环（launcher 卡带槽：export mount(container)→cleanup）。自包含于本目录。
 // outcome-first：每张牌按 favor 跑确定性种子硬币**先定生死**，3D 翻牌是**反推的表现**（抛飞→相撞→落定翻面）。
@@ -85,10 +86,44 @@ function pick3<T>(xs: readonly T[]): T[] {
   return a.slice(0, 3);
 }
 
+// 干预卡字形（设计稿同款图标）；对手花色（从 Boss/阵名推）。
+const LEVER_GLYPH: Record<LeverKind, string> = { bless: '🎯', curse: '☠', shield: '🛡', decapitate: '🗡', reinforce: '🚩', flush: '♣' };
+const suitOf = (n: string): 's' | 'h' | 'd' | 'c' => (/黑桃|♠/.test(n) ? 's' : /红桃|♥/.test(n) ? 'h' : /方块|方片|♦/.test(n) ? 'd' : /梅花|♣/.test(n) ? 'c' : 'h');
+const LANE_NAME3 = ['上路', '中路', '下路'];
+
+// 从 MARCH-1 world + save 派生战场视图（喂 battle-screen 渲染设计稿）。纯读 sim 真相、不回灌。
+function buildBattleView(world: IWorld, save: Save, oppName: string, oppPersona: string, oppSuit: 's' | 'h' | 'd' | 'c'): BattleView {
+  const r = (id: string): number => world.getComponent<Resource>(id, 'Resource')?.current ?? 0;
+  const elapsed = world.getComponent<Timer>('clock', 'Timer')?.elapsed ?? 0;
+  const units: BattleUnit[] = [];
+  for (const [eid] of world.query('Card3D', 'Tag')) {
+    const c = world.getComponent<Card3D>(eid, 'Card3D');
+    const tag = world.getComponent<Tag>(eid, 'Tag');
+    if (!c || !tag) continue;
+    const pk = c.pairKey;
+    if (pk === undefined || !c.side) continue;
+    const idx = pk % 100;
+    units.push({ lane: Math.floor(pk / 100), side: c.side === 'a' ? 'a' : 'b', col: Math.floor(idx / 3), faceUp: (tag.flags & ALIVE) !== 0, rank: String(c.rank ?? '?'), suit: String(c.suit ?? 'S').toLowerCase() as 's' | 'h' | 'd' | 'c', general: idx === 0 });
+  }
+  const lanes: BattleLane[] = [0, 1, 2].map((L) => {
+    const mine = r(`a_l${L}`), enemy = r(`b_l${L}`);
+    const lead: 'a' | 'b' | 'n' = mine > enemy ? 'a' : enemy > mine ? 'b' : 'n';
+    return { name: LANE_NAME3[L], mine, enemy, lead, state: lead === 'a' ? '我方推进' : lead === 'b' ? '敌方压制' : '僵持', mineText: `存活 ${mine}`, enemyText: `存活 ${enemy}` };
+  });
+  const levers: BattleLever[] = (Object.keys(LEVER_CATALOG) as LeverKind[]).map((k) => ({ key: k, glyph: LEVER_GLYPH[k], name: LEVER_CATALOG[k].name, cost: LEVER_CATALOG[k].cost, desc: LEVER_CATALOG[k].desc }));
+  const secs = Math.floor(elapsed / 60);
+  return {
+    homeA: r('a_home'), homeAMax: HOME_HP, homeB: r('b_home'), homeBMax: HOME_HP,
+    oppName, oppPersona, oppSuit, energy: save.leverEnergy, energyMax: effectiveLeverCap(save.planets), materials: save.materials,
+    phaseText: '占领敌方老家 · 即胜', timeText: `${String(Math.floor(secs / 60)).padStart(2, '0')}:${String(secs % 60).padStart(2, '0')}`, elapsed,
+    levers, lanes, units,
+  };
+}
+
 export function mount(container: HTMLElement): () => void {
   const save = loadSave();
   let engine: Engine | null = null;
-  let renderer: ThreeRenderer | null = null;
+  let battle: { update: () => void; destroy: () => void } | null = null;
 
   const root = document.createElement('div');
   root.style.cssText =
@@ -97,9 +132,9 @@ export function mount(container: HTMLElement): () => void {
 
   const teardownEngine = (): void => {
     if (engine) engine.stop();
-    if (renderer) renderer.destroy();
+    if (battle) battle.destroy();
     engine = null;
-    renderer = null;
+    battle = null;
   };
   const clear = (): void => {
     teardownEngine();
@@ -348,36 +383,36 @@ export function mount(container: HTMLElement): () => void {
     const aiForm = boss ? boss.formation : aiFormation();
     const enemyBias = boss ? boss.favorBias : spec.enemyBias;
     const aiName = boss ? boss.name : describeFormation(aiForm.officers);
-    const hint = el(
-      'div',
-      'max-width:560px;text-align:center;line-height:1.5;opacity:.85',
-      `第 ${save.stage}/${RUN_BATTLES} 战 · <b>${spec.label}</b> ｜ 命 ${'❤'.repeat(save.lives)} ｜ 你的阵 <b>${myName}</b>/敌阵暗。<br>` +
-        (boss ? `<span style="color:#f87171">⚔ ${boss.name}（${boss.persona}）：「${boss.taunt}」起手干预已落场——见招拆招！</span><br>` : '') +
-        `逐路掷命相撞翻面，<b>主将生死牵动全路</b>（活则士气、亡则溃散）；<b>胜 2/3 路即赢</b>。金=我方活/青=敌方活/石板=死。`,
-    );
+    // 战斗屏 = 设计稿三路战场（battle-screen，1280×720）。运行上下文(战次/命/Boss 台词)收进下方细条，不挡设计 HUD。
     const stage = document.createElement('div');
-    stage.style.cssText = `width:${W}px;height:${H}px;border:1px solid #334155;border-radius:10px;overflow:hidden`;
-    const label = el('div', 'min-width:300px;text-align:center;font-weight:600', '掷命中…');
+    stage.style.cssText = 'width:1280px;height:720px;max-width:100%;border-radius:12px;overflow:auto';
+    const label = el('div', 'min-width:300px;text-align:center;font-weight:600;opacity:.85',
+      `第 ${save.stage}/${RUN_BATTLES} 战 · ${spec.label} ｜ 命 ${'❤'.repeat(save.lives)} ｜ 你的阵 ${myName}${boss ? ` ｜ ⚔ ${boss.name}：「${boss.taunt}」` : ''}`);
     const back = mkBtn('← 返回大厅');
     back.onclick = showLobby;
-    const bar = el('div', 'display:flex;gap:10px;align-items:center');
+    const bar = el('div', 'display:flex;gap:10px;align-items:center;max-width:1280px;flex-wrap:wrap;justify-content:center');
     bar.append(label, back);
-    root.append(hint, stage, bar);
+    root.append(stage, bar);
 
     engine = new Engine({ tickRate: 60 });
     // 揭晓前完整编排（融小丑→玩家干预→Boss 起手→士气倍率+结局联动），与测试共用 prepareArmies、杜绝漂移；均 outcome-first。
     const { a, b, moraleA, linksA } = prepareArmies({ formation, deckBias: myBias(save.deck), jokers: save.jokers, planets: save.planets, interventions, enemyForm: aiForm, enemyBias, boss });
     engine.load(buildGameGArmyMatch(a, b, Math.floor(Math.random() * 1e9), undefined, moraleA, linksA));
-    renderer = new ThreeRenderer({ width: W, height: H });
-    engine.attachRenderer(renderer, stage);
+    const oppPersona = boss ? boss.persona : '伺机而动 · 见招拆招';
+    const oppSuit = suitOf(aiName);
+    battle = mountBattle(stage, () => buildBattleView(engine!.world, save, aiName, oppPersona, oppSuit));
 
     let settled = false;
+    let fc = 0;
     const onFrame = (): void => {
-      if (settled || !engine) return;
+      if (!engine) return;
+      if (battle && ++fc % 4 === 0) battle.update(); // 每 4 拍重渲战场（兵行军/接敌翻/破家 可见；CSS 颤动自跑）
+      if (settled) return;
       const w = engine.world;
       const winner = w.getComponent<State>('winner', 'State')?.current ?? 'pending';
       if (winner === 'pending') return;
       settled = true;
+      if (battle) battle.update(); // 落定那帧定格最终态
       const r = (eid: string): number => w.getComponent<Resource>(eid, 'Resource')?.current ?? 0;
       const survA = r('res_a0') + r('res_a1') + r('res_a2');
       const survB = r('res_b0') + r('res_b1') + r('res_b2');
