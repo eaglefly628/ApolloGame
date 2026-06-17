@@ -120,7 +120,9 @@ interface ItemDef {
 
 ### 4.2 拖拽实时装备到武将(金铲铲核心)
 - **从战利品栏拖道具 → 落到场上/备战席的武将 marker** → 该 marker 的 `equipped:[itemId…]`(≤3 件,金铲铲制)+= 此道具。
-- **生效**:武将**部署进战斗时**,把 equipped 的 stats **烘进单位**(扩 `heroOverrides`:`finalHp/finalAtk += Σ装备`,= 现有 star 倍率同管道)。"实时"= 拖上即显在 marker、**下次开战即生效**(金铲铲就是这样;避开"战斗中改活属性"的引擎缺口)。
+- **生效**:武将**部署进战斗时**,把 equipped 的 stats **烘进单位**(扩 `heroOverrides`,= 现有 star 倍率同管道)。"实时"= 拖上即显在 marker、**下次开战即生效**(金铲铲就是这样;避开"战斗中改活属性"的引擎缺口)。
+  - **HP(及减伤)→ 今日生效**:deploy override 写本单位 Resource(per-unit,连续),`equipDeployHp` 已就位。
+  - **⚠️ atk/atkSpd/crit/move → 待主程 REQ-F-065**:伤害走全局 `scaleByResource`,无 per-caster 缩放 → 逐单位异质 atk 表达不了。**owner 2026-06-17 钦定路A·下沉引擎小能力**(`scaleByResource` 先查施法者本地资源)。主程交付后,Program F 接 per-unit `eq_atk` 资源即生效(纯游戏侧)。在此之前 atk 等仅入袋+tooltip,**战斗不加成**。
 - 复用:`drag-place`(已有拖拽)+ 席位 marker(REQ-F-049)+ heroOverrides 烘值(star 同款)。
 
 ### 4.3 拆解/卸除(owner:不做专门物件,点击剥离)

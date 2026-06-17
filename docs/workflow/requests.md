@@ -10,6 +10,20 @@
 
 ## 待处理 / 进行中
 
+### REQ-F-065 · [2026-06-17] · 策划 PF（装备系统 atk 生效 · owner 2026-06-17 钦定路A）· 框架级 · status: **open（提主程）** · 优先级: 中（装备武器线唯一阻塞）
+
+**标题**：`scaleByResource` 支持「施法者本地资源」寻址（per-caster scaling），表达逐单位异质缩放
+
+- **拉动（真实，已核代码）**：Game F 装备系统——武将拖装备（武器 +atk），**每个单位装备不同 → atk 加成异质**。现 `strike_${h.id}` 模板 `amount=finalAtk(h)` 是 build 期常量，星级靠预建模板族切换；伤害的 `scaleByResource`（hitbox.ts `findResourceById`）只查**全局**资源 → **无法逐单位缩放 atk**。HP 已能 live 生效（deploy override 写本单位 Resource），atk 不能。
+- **想实现**：让 `scaleByResource`（或新增 `scaleByCasterResource`）解析时**先查施法者/spawn 源实体的本地资源，未命中再回退全局**（一处解析改动）。则：每将一个 per-unit 资源 `eq_atk`（deploy override 连续精确写），strike 按施法者 `eq_atk` 缩放 → 装备 atk 连续生效。
+- **与 REQ-023 区别（不重复）**：REQ-023(group-effect) 被 wontfix 是因**同质**羁绊光环可走"全局 buff 资源 + 各单位读全局"重组；但它明确留口「**各单位状态异质、全局共享值表达不了**才下沉」。装备 atk 正是异质（每将不同装备不同加成），全局 buff 资源表达不了 → 命中该留口。
+- **额外收益（manifesto 论据）**：现星级用"预建模板族 `_s{star}`"模拟逐单位缩放本身是 smell；此能力一并能让星级改用 per-unit 资源缩放，**退掉模板族爆炸**，净简化引擎而非加宽。
+- **owner 决策**：2026-06-17 owner 在「路A(下沉小能力·连续精确·推荐) vs 路B(桶化模板·零引擎但量化+模板膨胀)」中**钦定路A**。
+- **确定性**：deploy 拍写 per-unit `eq_atk`（构建快照 + 镜像关键帧均捕获，同 HP override 路径，安全）；纯整数/定点，回放不破。
+- **交付后游戏侧接线（Program F，非引擎）**：deploy override 写 `eq_atk = Σ装备atk`；strike 模板 `scaleByResource: 'eq_atk'`（与全局 dmg_scale 叠乘）。
+
+---
+
 ### REQ-023 · [2026-06-09] · 主程4（Game F 拉动）· 框架级 · status: **wontfix（2026-06-15 结案 · 重组覆盖）** · 优先级: 低
 
 **标题**：`group-effect` —— 把效果 fan-out 到一组实体（集合写）

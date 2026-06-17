@@ -5,6 +5,17 @@
 
 ---
 
+## 循环 #42 · 2026-06-17 · Designer F —— owner 钦定路A → atk 提主程 REQ-F-065;Program F 继续 HP+④拆解
+
+> owner 2026-06-17 拍板:武器 atk 走**路A·下沉引擎小能力(连续精确)**。按"引擎只归主程"铁律 → Designer F 落 **REQ-F-065**(per-caster `scaleByResource`)提主程,**不让 Program F 碰引擎**。
+
+### 落地
+- **REQ-F-065 已入 `requests.md`**(open,提主程):`scaleByResource` 先查施法者本地资源再回退全局 → 每将 per-unit `eq_atk` 资源连续缩放 atk。附:与 REQ-023 的异质/同质区别(命中其留口)、退星级模板族 smell 的净简化论据、owner 决策记录、确定性论证、交付后游戏侧接线。
+- **Program F 分工不变**:继续 ④拆解 UI + HP 烘值线(`equipDeployHp` 写 Caster.overrides),**atk 烘值等主程交付 REQ-F-065 后再接** `eq_atk` 资源(纯游戏侧接线)。
+- **今日可交付**:HP 装备全链(库/品级/袋/tooltip/拖拽/拆解 + 盔甲·名马·饰品血量战斗生效)。武器 atk 待主程小能力(不阻塞主体)。
+
+---
+
 ## 循环 #41 · 2026-06-17 · Designer F —— ✅ 验收装备③(equip核+传说50)PASS + 评判 atk 缺口(报 owner)
 
 ### A. 验收 Program F `45b0829`(装备③ equip 模型 + 传说补 50) → **PASS**
