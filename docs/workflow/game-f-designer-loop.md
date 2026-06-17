@@ -5,6 +5,19 @@
 
 ---
 
+## 循环 #44 · 2026-06-17 · Designer F —— ✅ 验收战利品滚动槽+重定位 PASS(owner 真机需求)
+
+### 验收 Program F `41303c2`(战利品改滚动槽不卡8 + 重定位棋盘↔盟友栏之间) → **PASS**
+| 项 | 判定 |
+|---|---|
+| items 资源上限 8→60(blueprint,跨回合持久);快照 digest 同步更新、snapshot 测改齐 | ✅(确定性:max 改属构建,回放不破) |
+| 战利品 4格网格 → 独立纵向**滚动槽**(right:204,棋盘↔右侧盟友栏之间),超出可滚、计数去 /8 | ✅(金铲铲式,符 owner) |
+| renderBag 不定长列表(42px 品级色+图标+draggable+hover);已装备框留「点击拆解」空态提示 | ✅ |
+| **game-f tsc clean** + **测 124 绿** | ✅ |
+> 零引擎纯表现层。atk 仍归主程 REQ-F-065(Program F 自己也记了,口径一致)。
+
+---
+
 ## 循环 #43 · 2026-06-17 · Designer F —— ✅ 验收装备④+掉落depth PASS → 装备系统 HP 线**今日交付完成**
 
 ### A. 验收 Program F `6f2ad75`(④拆解+已装备面板+武将hover) + `d9f9afc`(掉落 depth) → **双 PASS**
