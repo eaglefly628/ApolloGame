@@ -1,6 +1,7 @@
 // Game F · 英雄名册 + 阵营 + 装备数据（从 blueprint.ts 拆出）。
 import { TEAM_A, TEAM_B, WARRIOR, TACTICIAN, ASSASSIN, FACT_SHU, FACT_WEI, FACT_WU, SHU_RED, WEI_BLUE, WU_GREEN, HP_SCALE } from './constants.js';
 import { F_HERO, F_FX_STRIKE, F_FX_ARROW, F_FX_FLAME, F_FX_FROST, F_FX_DRAIN } from './assets.js';
+import { ITEM_LIB } from './items.js';
 
 export interface HeroSpec {
   id: string;
@@ -86,11 +87,15 @@ export function codesFor(roster: HeroSpec[]): Record<string, number> {
 }
 
 // 装备（数据）：物品=属性加成；英雄装配期把 hp/atk 加上（静态）。
+// —— 起手装（legacy）：既有英雄出生自带，保持原值不动（确定性安全网；勿改数值）。
 export const ITEMS: Record<string, { name: string; hp?: number; atk?: number }> = {
   yuxi: { name: '玉玺', hp: 120 },
   qinggang: { name: '青釭剑', atk: 12 },
   fangtian: { name: '方天画戟', hp: 60, atk: 8 },
 };
-const sumItem = (ids: string[] | undefined, k: 'hp' | 'atk'): number => (ids ?? []).reduce((s, id) => s + (ITEMS[id]?.[k] ?? 0), 0);
+// 道具大库（程序化生成 600+ 件）拆到 items.ts；此处只负责把 hp/atk 烘进英雄。
+// 属性查询：库（ItemDef.stats）优先，回退起手装（legacy ITEMS）。hp/atk 接战斗，其余表现。
+const itemStat = (id: string, k: 'hp' | 'atk'): number => ITEM_LIB[id]?.stats[k] ?? ITEMS[id]?.[k] ?? 0;
+const sumItem = (ids: string[] | undefined, k: 'hp' | 'atk'): number => (ids ?? []).reduce((s, id) => s + itemStat(id, k), 0);
 export const finalHp = (h: HeroSpec): number => h.hp * HP_SCALE + sumItem(h.items, 'hp');
 export const finalAtk = (h: HeroSpec): number => h.atk + sumItem(h.items, 'atk');
