@@ -11,14 +11,34 @@
 >
 > | 字段 | 值 |
 > |---|---|
-> | **持棒方 BATON** | 🔵 **策划F**(程序F 做完①赛季+回驳②,待策划F验收) |
-> | **状态** | 程序已完成①+回驳②·待策划验收 |
-> | **上一手(程序F)完成** | ✅ **① 赛季轮换骨架(真缺口,已落)**：account.ts 加 `getSeason/getFormat/setFormat/advanceSeason/seasonInfo/cardAllowedInFormat`——season 计数 + 标准/狂野格式 + **换季安全阀**(LP 向基线 1000 软重置、保 40% 超额、收藏/战功/附魔留存)；牌池过滤留 hook(季1 恒等，待 per-card 轮替数据收紧标准池)。account 层、解耦 ECS、+4 测(共 1383 绿)。 ⛔ **② 星球牌流派升级 = 回驳(done-covered)**：流派钥匙牌=synergy/threshold-buff(account.ts:160-168 rarity 表)，`enchantCard`(account.ts:101，spend 战功100×2^lv+尘)→`enchantCardSpec`(decks.ts:219) 把 perUnit/tiers.bonus ×(1+ENCHANT_MUL×级)=**spend 货币→升流派羁绊全档 modifier**，正是 ②。已实装+有测(account.test 附魔档)→不重做。 |
-> | **轮到谁 · 需做什么** | **策划F**:① 验收赛季骨架(account.ts season/format/advanceSeason + 测)；② 核对回驳证据(enchant=升流派)。经济 v1 真缺口至此清(分层匹配 YAGNI 已 defer)。验收后→翻 🟢程序F；并请 owner 定下一大方向(美术/多人/新内容)。 |
-> | **唤醒/检查条件** | 下个 `src/games/game-f/` 或 `src/engine` commit;或 owner 新指令 |
-> | **最后更新** | 2026-06-17 · by 程序F · ①赛季骨架done+②回驳done-covered |
+> | **持棒方 BATON** | 🟡 **待 owner**(装备+经济双收官;下一大方向需 owner/主程,无纯游戏侧无悔活可派) |
+> | **状态** | 双大方向已收官·候 owner 真机拉动/定向(Program F 静默值守,勿凑活) |
+> | **上一手(策划F)完成** | ✅ **验收 ① 赛季骨架 PASS**(account.ts season/format/advanceSeason 安全阀软重置,game-f tsc clean+**129绿**) + **接受 ② 星球牌回驳**(已核 enchantCardSpec decks.ts:219 把 synergy.perUnit/threshold.tiers.bonus ×(1+ENCHANT_MUL×级)=spend战功升流派羁绊全档,**确系 done-covered**)。**经济养成 v1 收官**(战功/收藏/抽卡/附魔/组牌/段位/赛季全实装;星球=enchant覆盖;分层匹配=多人defer;市场=phase3)。 |
+> | **轮到谁 · 需做什么** | **⏸ 候 owner**。装备(HP+atk全链)+经济 v1 双收官,game-f 单机内容+元经济完整。**剩余大石头均非 Program F 纯游戏侧能独立做**:多人联机=主程/联机层(WS/WebRTC+对局架构)、美术=需真美术资产。**polish(AI难度档/掷点手感/数值平衡)需 owner 真机拉动**(强派=过度设计,Program F 已两度回驳我同类)。→ **Program F 静默值守**;真要动只可取**无悔 prep**(自测覆盖补强 / 锦囊+装备数值合理默认档校准供 owner 试)。**勿无中生有派新系统。** |
+> | **唤醒/检查条件** | owner 真机反馈/新指令;或主程动多人/引擎;或 Program F 取无悔 prep 提交 |
+> | **最后更新** | 2026-06-17 · by 策划F · 循环#48(验收赛季+受②回驳+经济v1收官→候owner) |
 
-> 翻棒写法:程序F 干完 → 把「持棒方」改 🔵**策划F**、状态「程序已完成待策划验收」、填「完成什么」;策划F 验收完 → 改回 🟢**程序F**。
+> 翻棒写法:程序F 干完 → 把「持棒方」改 🔵**策划F**、状态「程序已完成待策划验收」、填「完成什么」;策划F 验收完 → 改回 🟢**程序F**;**双方均无无悔活时 → 🟡 待 owner**(诚实静默,不凑活,等真机/新指令拉动)。
+
+---
+
+## 循环 #48 · 2026-06-17 · Designer F —— ✅ 验收赛季 PASS + 受②回驳 → 经济 v1 收官(候 owner)
+
+### A. ✅ 验收 ① 赛季轮换骨架(19179a0) → **PASS**
+account.ts `getSeason/getFormat/setFormat/advanceSeason/seasonInfo/cardAllowedInFormat`;换季安全阀=LP 软重置向基线 1000 压缩、保 40% 超额、收藏/战功/附魔/自组牌留存;牌池格式标准/狂野(季1 恒等 hook,待 per-card 轮替数据)。**game-f tsc clean + 129 绿**、account 层解耦 ECS、零引擎。
+
+### B. ✅ 接受 ② 星球牌回驳(done-covered) —— 已核证据属实
+流派钥匙牌=`synergy-buff`(perUnit)/`threshold-buff`(tiers.bonus);`enchantCardSpec`(decks.ts:219) 把这俩 ×(1+ENCHANT_MUL×级)。**spend 战功附魔流派钥匙牌 = 升该流派羁绊全档 = 正是星球牌**。独立星球牌系统=重复机制 → 回驳对(manifesto §2 功能等价)。
+
+### C. 🎯 里程碑:经济养成 v1 **收官**
+战功/收藏/抽卡(单+十连保底+概率公示)/附魔分尘/自组牌器/段位LP难度阀/赛季轮换 全实装;星球=enchant 覆盖;分层匹配=多人 defer;市场/充值=phase3。**§十验收闭环全通。** 至此**装备(HP+atk)+经济 v1 双大方向收官**。
+
+### D. 候 owner(诚实静默,不凑活)
+game-f 单机内容+元经济完整。剩余大石头(多人=主程/联机层、美术=美术资产、polish=待真机拉动)**无 Program F 纯游戏侧无悔活**。强派新系统=过度设计(已两度被回驳)。→ BATON 置 🟡 待 owner;Program F 静默,只可取无悔 prep(测覆盖/数值默认档)。**请 owner 真机试一把(装备 atk 现已生效)或定下一大方向。**
+
+---
+
+## 循环 #47 · 2026-06-17 · Designer F —— ✅ 验收装备atk线 PASS(装备收官) + 接受#46纠正 + owner定经济v1+派真缺口
 
 ---
 
