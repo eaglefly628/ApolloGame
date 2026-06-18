@@ -8,7 +8,7 @@ import {
 } from './games/game-e/blueprint.js';
 import {
   HAND_RANKINGS, HAND_ORDER, handScoreAtLevel, RANK_ORDER, RANKS, SUITS, shuffledDeck, rollJokerOffer, blindRequirement, BLIND_ORDER,
-  COMMON_PLANETS, bossForAnte, TAROTS, ENCHANTS,
+  COMMON_PLANETS, planetForHand, bossForAnte, TAROTS, ENCHANTS,
   type PlanetCard, type BossBlind, type TarotCard, type EnchantId,
   type Card, type Suit, type Rank, type HandType, type JokerCard, type BlindKind,
 } from './games/game-e/index.js';
@@ -629,13 +629,14 @@ function GameE() {
               </div>
 
               {/* 牌型等级表（含星球牌升级后的实时基础分）*/}
-              <div style={{ fontSize: 12, color: '#7fd1de', fontWeight: 700, marginBottom: 6 }}>牌型等级（蓝筹码 × 红倍率）</div>
+              <div style={{ fontSize: 12, color: '#7fd1de', fontWeight: 700, marginBottom: 6 }}>牌型等级 · 对应星球牌（蓝筹码 × 红倍率）</div>
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '3px 16px', marginBottom: 18 }}>
-                {HAND_ORDER.filter((h) => !HAND_RANKINGS[h].secret || (handLevels[h] ?? 1) > 1).map((h) => {
-                  const lv = handLevels[h] ?? 1; const sc = handScoreAtLevel(h, lv);
+                {HAND_ORDER.map((h) => {
+                  const lv = handLevels[h] ?? 1; const sc = handScoreAtLevel(h, lv); const pl = planetForHand(h);
+                  const secret = HAND_RANKINGS[h].secret;
                   return (
-                    <div key={h} style={{ display: 'flex', justifyContent: 'space-between', fontSize: 12, padding: '2px 0', borderBottom: '1px solid #16323a' }}>
-                      <span style={{ color: '#cfe8ee' }}>{HAND_RANKINGS[h].name} <span style={{ color: lv > 1 ? '#ffd166' : '#475569' }}>Lv{lv}</span></span>
+                    <div key={h} title={secret ? '隐藏牌型（需特殊牌型才能打出）' : `${pl.name}：升级${HAND_RANKINGS[h].name}`} style={{ display: 'flex', justifyContent: 'space-between', fontSize: 12, padding: '2px 0', borderBottom: '1px solid #16323a', opacity: secret && lv === 1 ? 0.5 : 1 }}>
+                      <span style={{ color: '#cfe8ee' }}><span title={pl.name}>{pl.icon}</span> {HAND_RANKINGS[h].name} <span style={{ color: lv > 1 ? '#ffd166' : '#475569' }}>Lv{lv}</span></span>
                       <span><span style={{ color: '#4cc9f0' }}>{sc.chips}</span> <span style={{ color: '#64748b' }}>×</span> <span style={{ color: '#f72585' }}>{sc.mult}</span></span>
                     </div>
                   );
