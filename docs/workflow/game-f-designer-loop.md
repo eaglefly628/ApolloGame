@@ -11,14 +11,27 @@
 >
 > | 字段 | 值 |
 > |---|---|
-> | **持棒方 BATON** | 🟡 **待 owner**(装备+经济双收官;下一大方向需 owner/主程,无纯游戏侧无悔活可派) |
-> | **状态** | 双大方向已收官·候 owner 真机拉动/定向(Program F 静默值守,勿凑活) |
-> | **上一手(策划F)完成** | ✅ **验收 ① 赛季骨架 PASS**(account.ts season/format/advanceSeason 安全阀软重置,game-f tsc clean+**129绿**) + **接受 ② 星球牌回驳**(已核 enchantCardSpec decks.ts:219 把 synergy.perUnit/threshold.tiers.bonus ×(1+ENCHANT_MUL×级)=spend战功升流派羁绊全档,**确系 done-covered**)。**经济养成 v1 收官**(战功/收藏/抽卡/附魔/组牌/段位/赛季全实装;星球=enchant覆盖;分层匹配=多人defer;市场=phase3)。 |
-> | **轮到谁 · 需做什么** | **⏸ 候 owner**。装备(HP+atk全链)+经济 v1 双收官,game-f 单机内容+元经济完整。**剩余大石头均非 Program F 纯游戏侧能独立做**:多人联机=主程/联机层(WS/WebRTC+对局架构)、美术=需真美术资产。**polish(AI难度档/掷点手感/数值平衡)需 owner 真机拉动**(强派=过度设计,Program F 已两度回驳我同类)。→ **Program F 静默值守**;真要动只可取**无悔 prep**(自测覆盖补强 / 锦囊+装备数值合理默认档校准供 owner 试)。**勿无中生有派新系统。** |
-> | **唤醒/检查条件** | owner 真机反馈/新指令;或主程动多人/引擎;或 Program F 取无悔 prep 提交 |
-> | **最后更新** | 2026-06-17 · by 策划F · 循环#48(验收赛季+受②回驳+经济v1收官→候owner) |
+> | **持棒方 BATON** | 🟣 **候 owner 看一眼**(owner 要新手教程页+新手引导;策划F 已出 v1,待 owner 拍板再派 Program F 接入) |
+> | **状态** | 策划F 已产教程页 v1 + 新手引导策划案·候 owner review·approve 后派 Program F |
+> | **上一手(策划F)完成** | owner 拉动「新手教程 + 首玩引导」。策划F 出:① **`docs/game-design/game-f-tutorial.html`**(自包含教程页 v1:灵魂原则+两环循环+局内/局外流程图+系统速查+三句上手,已发 owner 看一眼);② **`docs/game-design/game-f-onboarding-spec.md`**(首玩手把手引导策划案:account flag 判新手→两段式[总览页+分步 coach marks]、10 步数据驱动脚本、零引擎重组分析)。 |
+> | **轮到谁 · 需做什么** | **⏸ 候 owner 看一眼拍板**(教程页 OK?改哪?引导脚本步数/文案OK?)。**approve 后 → 派 Program F**:把教程页接进启动「新手教程」按钮 + 实现新手引导(coach-overlay DOM + OnboardingStep[] 数据 + account flag,纯游戏侧)。**未 approve 前不派实现。** |
+> | **唤醒/检查条件** | owner 对教程页/引导案的反馈;或 owner 新指令 |
+> | **最后更新** | 2026-06-17 · by 策划F · 循环#49(出教程页v1+新手引导策划案,候owner看一眼) |
 
-> 翻棒写法:程序F 干完 → 把「持棒方」改 🔵**策划F**、状态「程序已完成待策划验收」、填「完成什么」;策划F 验收完 → 改回 🟢**程序F**;**双方均无无悔活时 → 🟡 待 owner**(诚实静默,不凑活,等真机/新指令拉动)。
+> 翻棒写法:程序F 干完 → 把「持棒方」改 🔵**策划F**、状态「程序已完成待策划验收」、填「完成什么」;策划F 验收完 → 改回 🟢**程序F**;**双方均无无悔活时 → 🟡 待 owner**(诚实静默);**策划F 出案候 owner 看一眼/拍板时 → 🟣 候 owner**(approve 后才派实现)。
+
+---
+
+## 循环 #49 · 2026-06-17 · Designer F —— 出新手教程页 v1 + 新手引导策划案(候 owner 看一眼)
+
+> owner 拉动:做一份 game-f 可视化流程图+玩法说明的**网页版教程**(放启动新手教程按钮),并设计**首玩手把手引导**。
+
+### 产出(候 owner review,未派实现)
+- **`docs/game-design/game-f-tutorial.html`**(自包含教程页 v1):《三国征日》灵魂原则(武将租来的/小丑牌灵魂)+ 两环循环图(局内攻岛 ⟲ 局外养成)+ 局内 6 步/局外 4 步流程图 + 核心系统速查 + 品级色 + 三句话上手。古风 parchment 风、零外部依赖、可直接当游戏内页。**已发 owner 看一眼。**
+- **`docs/game-design/game-f-onboarding-spec.md`**(新手引导/FTUE 策划案):与教程页分工(静态总览 vs 首玩手把手);account flag 判新手→两段式(总览页 + 分步 coach marks);**10 步数据驱动脚本**(OnboardingStep[]:scene/target/文案/advanceOn/gate);交互=DOM 遮罩镂空+气泡;重组分析=倾向零引擎纯游戏侧,通用 coach-overlay 暂不下沉(YAGNI)。
+
+### 下一步
+候 owner 拍板(教程页改不改 / 引导脚本步数文案)。approve → 派 Program F 接入(教程页接启动按钮 + 引导接首玩)。
 
 ---
 
