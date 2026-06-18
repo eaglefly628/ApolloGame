@@ -1,8 +1,7 @@
-import { Engine } from '../../runtime/engine.js';
 import { mountBattle, type BattleView, type BattleUnit, type BattleLane, type BattleLever } from './battle-screen.js';
-import { buildGameGArmyMatch, prepareArmies, armyFromFormation, laneEstimates, quartermasterEnergy, FORMATION_PRESETS, PRESET_NAMES, LEVER_CATALOG, LEVER_START, HOME_HP, ALIVE, battleSpec, RUN_BATTLES, RUN_LIVES, BETWEEN_BUFFS, applyBuff, jokerKeyBuffs, BOSS_ROSTER, bossFor, GAME_G_JOKERS, JOKER_BY_ID, ARCHETYPES, detectArchetype, archetypeMatchup, activeArchetype, pickAiFormation, GAME_G_PLANETS, GAME_G_FOILS, effectiveLives, effectiveLeverCap, effectiveLeverRegen, type Formation, type Intervention, type LeverKind, type RunBuff } from './index.js';
-import type { State, Resource, Card3D, Tag, Timer } from '@engine/protocol/components.js';
-import type { IWorld } from '@engine/core/types.js';
+import { prepareArmies, armyFromFormation, laneEstimates, quartermasterEnergy, FORMATION_PRESETS, PRESET_NAMES, LEVER_CATALOG, LEVER_START, battleSpec, RUN_BATTLES, RUN_LIVES, BETWEEN_BUFFS, applyBuff, jokerKeyBuffs, BOSS_ROSTER, bossFor, GAME_G_JOKERS, JOKER_BY_ID, ARCHETYPES, detectArchetype, archetypeMatchup, activeArchetype, pickAiFormation, GAME_G_PLANETS, GAME_G_FOILS, effectiveLives, effectiveLeverCap, effectiveLeverRegen, type Formation, type Intervention, type LeverKind, type RunBuff, type ArmyCard } from './index.js';
+import { initLiveBattle, stepLiveBattle, liveActive, LANE_LEN, HOME_BLOOD, type LiveBattle, type DeployCmd } from './live-combat.js';
+import { cardPoints, P_MAX } from './clash-resolve.js';
 
 // Game G ·《翻命扑克》—— 大厅 ↔ 出征 闭环（launcher 卡带槽：export mount(container)→cleanup）。自包含于本目录。
 // outcome-first：每张牌按 favor 跑确定性种子硬币**先定生死**，3D 翻牌是**反推的表现**（抛飞→相撞→落定翻面）。
@@ -15,6 +14,12 @@ const SAVE_KEY = 'gameG-save-v1';
 // 大厅根容器样式：默认屏(布阵/备战/战斗)居中竖排；大厅屏改顶对齐可滚动(承载 5 tab 古风布局)。
 const DEFAULT_ROOT_CSS = 'position:absolute;inset:0;background:#0a0a14;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:14px;color:#cbd5e1;font:13px system-ui';
 const LOBBY_ROOT_CSS = 'position:absolute;inset:0;overflow:auto';
+// WIRE-MARCH 节奏（owner 钉死「一格格慢慢走、几十秒一局」，doc18 §八）：sim 每 LIVE_STEP_MS 走一拍（MARCH_STEP=2 格），
+// 渲染按真拍间 frac 平滑滑行（~RENDER_MS 一帧）。实测一局 ~190–215 拍收敛 → ×0.3s ≈ 60s「几十秒」；
+// 接敌 ~25 拍≈7.5s、单卡空路 traverse ~50 拍≈15s——肉眼「一格格慢慢走」、非 2.5s 刷过去。SEC_PER_TICK 派生读秒。
+const LIVE_STEP_MS = 300;   // 一拍真实时长（慢=决策窗；3D-1 读秒暂停接这里）
+const RENDER_MS = 33;       // 重渲间隔（~30fps 平滑）
+const SEC_PER_TICK = LIVE_STEP_MS / 1000;
 
 interface Save {
   materials: number;
@@ -94,39 +99,56 @@ const LEVER_GLYPH: Record<LeverKind, string> = { bless: '🎯', curse: '☠', sh
 const suitOf = (n: string): 's' | 'h' | 'd' | 'c' => (/黑桃|♠/.test(n) ? 's' : /红桃|♥/.test(n) ? 'h' : /方块|方片|♦/.test(n) ? 'd' : /梅花|♣/.test(n) ? 'c' : 'h');
 const LANE_NAME3 = ['上路', '中路', '下路'];
 
-// 从 MARCH-1 world + save 派生战场视图（喂 battle-screen 渲染设计稿）。纯读 sim 真相、不回灌。
-// 导出供无头看帧/视觉回归测试用（battle-screen.frame.test.ts 真 sim → 真 view → 真渲染器 → HTML golden）。
-export function buildBattleView(world: IWorld, save: Save, oppName: string, oppPersona: string, oppSuit: 's' | 'h' | 'd' | 'c'): BattleView {
-  const r = (id: string): number => world.getComponent<Resource>(id, 'Resource')?.current ?? 0;
-  const elapsed = world.getComponent<Timer>('clock', 'Timer')?.elapsed ?? 0;
+// WIRE-MARCH 桥：把揭晓前编排好的 ArmyCard（favor=军衔+经营+干预 聚成的单一强度标量）映射成 live-combat 投放令。
+// 公平骨架（doc19）：rank→points(fair) 走 cardPoints；该牌全部强度经 favor 折算进 buff，使 P_eff=clamp(favorToP(favor))
+//   单调随 favor（军衔已在 favor 里）——buff 抵消 cardPoints 噪声，让既有 favor 经济无缝驱动新 pairwise 对决核、不改既测的 live-combat。
+//   （3D-CLASH 深水区会用 doc19 公平 points + 经营 buff 正式替掉 favor；此为 W1 接线桥，FAVOR/scale 待仿真台调。）
+const FAVOR_LO = 5, FAVOR_HI = 95; // favor 钳域（blueprint clampFavor）
+const favorToP = (favor: number): number => ((Math.max(FAVOR_LO, Math.min(FAVOR_HI, favor)) - FAVOR_LO) / (FAVOR_HI - FAVOR_LO)) * P_MAX; // favor → P_eff 空间 [0,30]
+export function armyToDeploys(army: ArmyCard[], side: 'a' | 'b'): DeployCmd[] {
+  return army.map((c) => {
+    const rank = c.rank === 'JOKER' ? '★' : c.rank; // 显示 + cardPoints/cardStamina 同口径（★≡JOKER：点数15/续航3）
+    return { tick: 1, side, lane: c.lane, unit: { id: c.id, rank, suit: c.suit, general: c.general, buff: Math.round(favorToP(c.favor) - cardPoints(rank)) } };
+  });
+}
+// 逐拍位置快照（驱动层插值用：真拍间按 frac 滑行，渲染才「慢慢走」而非每拍瞬跳）。
+function snapLivePos(live: LiveBattle): Map<string, number> {
+  const m = new Map<string, number>();
+  for (const L of live.lanes) { for (const u of L.a) m.set(u.id, u.pos); for (const u of L.b) m.set(u.id, u.pos); }
+  return m;
+}
+
+// 从 live-combat 逐拍 sim + save 派生战场视图（喂 battle-screen 渲染设计稿）。纯读 sim 真相、不回灌。
+// owner「一格格慢慢走」：兵位 = 真 slot pos01（live pos/LANE_LEN）；最前两张相邻(接敌)才 revealed 翻开。
+// 导出供无头看帧/视觉回归测试用（battle-screen.frame.test.ts 真 live sim → 真 view → 真渲染器 → HTML golden）。
+export function buildBattleViewLive(live: LiveBattle, save: Save, oppName: string, oppPersona: string, oppSuit: 's' | 'h' | 'd' | 'c'): BattleView {
+  const sv = (s: string): 's' | 'h' | 'd' | 'c' => s.toLowerCase() as 's' | 'h' | 'd' | 'c';
   const units: BattleUnit[] = [];
-  for (const [eid] of world.query('Card3D', 'Tag')) {
-    const c = world.getComponent<Card3D>(eid, 'Card3D');
-    const tag = world.getComponent<Tag>(eid, 'Tag');
-    if (!c || !tag) continue;
-    const pk = c.pairKey;
-    if (pk === undefined || !c.side) continue;
-    const idx = pk % 100;
-    units.push({ lane: Math.floor(pk / 100), side: c.side === 'a' ? 'a' : 'b', col: Math.floor(idx / 3), faceUp: (tag.flags & ALIVE) !== 0, rank: String(c.rank ?? '?'), suit: String(c.suit ?? 'S').toLowerCase() as 's' | 'h' | 'd' | 'c', general: idx === 0 });
+  for (const li of [0, 1, 2]) {
+    const L = live.lanes[li];
+    const engaged = L.a.length > 0 && L.b.length > 0 && L.a[0].pos + 1 >= L.b[0].pos; // 最前两张相邻 → 接敌翻开（同 stepLane 判据）
+    L.a.forEach((u, i) => units.push({ id: u.id, lane: li, side: 'a', pos01: u.pos / LANE_LEN, revealed: i === 0 && engaged, faceUp: true, rank: u.rank, suit: sv(u.suit), general: u.general }));
+    L.b.forEach((u, i) => units.push({ id: u.id, lane: li, side: 'b', pos01: u.pos / LANE_LEN, revealed: i === 0 && engaged, faceUp: true, rank: u.rank, suit: sv(u.suit), general: u.general }));
   }
-  const lanes: BattleLane[] = [0, 1, 2].map((L) => {
-    const mine = r(`res_a${L}`), enemy = r(`res_b${L}`); // 实体 id（res_aL），非资源 id（a_lL）
+  const lanes: BattleLane[] = [0, 1, 2].map((li) => {
+    const L = live.lanes[li];
+    const mine = L.a.length, enemy = L.b.length;
     const lead: 'a' | 'b' | 'n' = mine > enemy ? 'a' : enemy > mine ? 'b' : 'n';
-    return { name: LANE_NAME3[L], mine, enemy, lead, state: lead === 'a' ? '我方推进' : lead === 'b' ? '敌方压制' : '僵持', mineText: `存活 ${mine}`, enemyText: `存活 ${enemy}` };
+    return { name: LANE_NAME3[li], mine, enemy, lead, state: lead === 'a' ? '我方推进' : lead === 'b' ? '敌方压制' : '僵持', mineText: `存活 ${mine}`, enemyText: `存活 ${enemy}` };
   });
   const levers: BattleLever[] = (Object.keys(LEVER_CATALOG) as LeverKind[]).map((k) => ({ key: k, glyph: LEVER_GLYPH[k], name: LEVER_CATALOG[k].name, cost: LEVER_CATALOG[k].cost, desc: LEVER_CATALOG[k].desc }));
-  const secs = Math.floor(elapsed / 60);
+  const secs = Math.round(live.tick * SEC_PER_TICK); // 读秒（确定性，由拍数派生）
   return {
-    homeA: r('res_ahome'), homeAMax: HOME_HP, homeB: r('res_bhome'), homeBMax: HOME_HP, // 实体 id（res_ahome），非资源 id（a_home）
+    homeA: live.homeA, homeAMax: live.homeMax, homeB: live.homeB, homeBMax: live.homeMax,
     oppName, oppPersona, oppSuit, energy: save.leverEnergy, energyMax: effectiveLeverCap(save.planets), materials: save.materials,
-    phaseText: '占领敌方老家 · 即胜', timeText: `${String(Math.floor(secs / 60)).padStart(2, '0')}:${String(secs % 60).padStart(2, '0')}`, elapsed,
+    phaseText: '占领敌方老家 · 即胜', timeText: `${String(Math.floor(secs / 60)).padStart(2, '0')}:${String(secs % 60).padStart(2, '0')}`,
     levers, lanes, units,
   };
 }
 
 export function mount(container: HTMLElement): () => void {
   const save = loadSave();
-  let engine: Engine | null = null;
+  let stopLoop: (() => void) | null = null; // live-combat rAF 驱动停手（替掉旧 Engine 时钟）
   let battle: { update: () => void; destroy: () => void } | null = null;
   let lobbyTab = 'home'; // 大厅当前 tab（home/decks/coll/craft/ladder）
   let lobbySkin: 'onyx' | 'rosy' = 'onyx'; // 双皮：玄铁(暗)/锦霞(亮)，纯表现、不入存档
@@ -135,14 +157,14 @@ export function mount(container: HTMLElement): () => void {
   root.style.cssText = DEFAULT_ROOT_CSS;
   container.appendChild(root);
 
-  const teardownEngine = (): void => {
-    if (engine) engine.stop();
+  const teardownMatch = (): void => {
+    if (stopLoop) stopLoop();
     if (battle) battle.destroy();
-    engine = null;
+    stopLoop = null;
     battle = null;
   };
   const clear = (): void => {
-    teardownEngine();
+    teardownMatch();
     root.replaceChildren();
     root.style.cssText = DEFAULT_ROOT_CSS; // 离开大厅时还原默认屏样式
   };
@@ -466,7 +488,9 @@ export function mount(container: HTMLElement): () => void {
     root.append(title, sub, cardsBox, skip);
   }
 
-  // ───────────────────────── 出征（一局 3D 三路掷命）─────────────────────────
+  // ───────────────────────── 出征（一局 · live-combat 实时三路行军）─────────────────────────
+  // WIRE-MARCH：兵沿三路一格格慢慢爬（每 LIVE_STEP_MS 一拍）→ 最前两张相邻才翻牌成波对决 → 续航退场 →
+  //   突破到敌 3 血老家先破者胜。胜负仍 outcome-first（live-combat 种子化、可回放）；battle-screen 只如实画真 slot 位置。
   function showMatch(formation: Formation, myName: string, interventions: Intervention[]): void {
     clear();
     const spec = battleSpec(save.stage - 1); // stage 1→战 0
@@ -485,33 +509,31 @@ export function mount(container: HTMLElement): () => void {
     bar.append(label, back);
     root.append(stage, bar);
 
-    engine = new Engine({ tickRate: 60 });
     // 揭晓前完整编排（融小丑→玩家干预→Boss 起手→士气倍率+结局联动），与测试共用 prepareArmies、杜绝漂移；均 outcome-first。
-    const { a, b, moraleA, linksA } = prepareArmies({ formation, deckBias: myBias(save.deck), jokers: save.jokers, planets: save.planets, interventions, enemyForm: aiForm, enemyBias, boss });
-    engine.load(buildGameGArmyMatch(a, b, Math.floor(Math.random() * 1e9), undefined, moraleA, linksA));
+    const { a, b } = prepareArmies({ formation, deckBias: myBias(save.deck), jokers: save.jokers, planets: save.planets, interventions, enemyForm: aiForm, enemyBias, boss });
     const oppPersona = boss ? boss.persona : '伺机而动 · 见招拆招';
     const oppSuit = suitOf(aiName);
-    battle = mountBattle(stage, () => buildBattleView(engine!.world, save, aiName, oppPersona, oppSuit));
+    // live-combat 逐拍驱动：基础布局 tick 1 预铺三路 → 一格格爬 → 接敌对决 → 攻克 3 血老家。替掉旧 buildGameGArmyMatch 瞬翻。
+    const live = initLiveBattle(Math.floor(Math.random() * 1e9), HOME_BLOOD);
+    const deploys = [...armyToDeploys(a, 'a'), ...armyToDeploys(b, 'b')];
+    let prevPos = snapLivePos(live); // 真拍间插值锚（渲染层据此平滑滑行）
+    let frac = 1;
+    battle = mountBattle(stage, () => {
+      const v = buildBattleViewLive(live, save, aiName, oppPersona, oppSuit);
+      for (const u of v.units) { const cur = u.pos01 * LANE_LEN; const prev = prevPos.has(u.id) ? prevPos.get(u.id)! : cur; u.pos01 = (prev + (cur - prev) * frac) / LANE_LEN; } // lerp 上一拍→当拍
+      return v;
+    });
 
     let settled = false;
-    let fc = 0;
-    const onFrame = (): void => {
-      if (!engine) return;
-      if (battle && ++fc % 4 === 0) battle.update(); // 每 4 拍重渲战场（兵行军/接敌翻/破家 可见；CSS 颤动自跑）
-      if (settled) return;
-      const w = engine.world;
-      const winner = w.getComponent<State>('winner', 'State')?.current ?? 'pending';
-      if (winner === 'pending') return;
+    let last = 0, acc = 0, lastRender = 0, raf = 0;
+    const settle = (): void => {
       settled = true;
+      frac = 1; // 落定帧滑到真·终位（不停在插值中途）
       if (battle) battle.update(); // 落定那帧定格最终态
-      const r = (eid: string): number => w.getComponent<Resource>(eid, 'Resource')?.current ?? 0;
-      const survA = r('res_a0') + r('res_a1') + r('res_a2');
-      const survB = r('res_b0') + r('res_b1') + r('res_b2');
-      const lanesA = r('res_alanes');
-      const lanesB = r('res_blanes');
-      const homeA = r('res_ahome'); // 大本营血（实体 id res_ahome；被攻克=0）
-      const homeB = r('res_bhome');
-      // 结算奖励：存活的我方牌都算战利品；胜利额外 +15 并推进关卡（敌方更强）。
+      const survA = live.lanes.reduce((s, L) => s + L.a.length + L.spentA, 0); // 我方幸存(在场+续航尽退场) = 战利品
+      const lanesA = live.lanes.filter((L) => L.a.length + L.spentA > L.b.length + L.spentB).length; // 净控路数（督粮/战况）
+      const lanesB = live.lanes.filter((L) => L.b.length + L.spentB > L.a.length + L.spentA).length;
+      const homeA = live.homeA, homeB = live.homeB, winner = live.winner;
       const gain = survA + (winner === 'a' ? 15 : 0);
       save.materials += gain;
       let tail = '';
@@ -540,17 +562,33 @@ export function mount(container: HTMLElement): () => void {
       persist(save);
       const who = winner === 'a' ? '我方胜（攻克敌老家）' : winner === 'b' ? '敌方胜（我老家被破）' : '平局（无人破家）';
       const color = winner === 'a' ? '#eab308' : winner === 'b' ? '#94a3b8' : '#cbd5e1';
-      label.innerHTML = `<span style="color:${color}">${who}</span> ｜ 三路 ${lanesA}:${lanesB} ｜ 老家 我${homeA}/敌${homeB}（满${HOME_HP}）｜ 敌阵【${aiName}】 ｜ +${gain} 材料 ｜ ${tail}`;
+      label.innerHTML = `<span style="color:${color}">${who}</span> ｜ 控路 ${lanesA}:${lanesB} ｜ 老家 我${homeA}/敌${homeB}（满${HOME_BLOOD}）｜ 敌阵【${aiName}】 ｜ +${gain} 材料 ｜ ${tail}`;
       back.textContent = `→ ${cont}`;
       back.onclick = route;
     };
-    engine.subscribe(onFrame);
-    engine.start();
+    // rAF 实时驱动：每 LIVE_STEP_MS 走一拍（一格格爬），渲染 ~30fps 按 frac 平滑；落定即结算、停步。
+    const loop = (ts: number): void => {
+      if (last === 0) last = ts;
+      acc += ts - last; last = ts;
+      if (acc > LIVE_STEP_MS * 3) acc = LIVE_STEP_MS; // 切后台回来防暴冲
+      if (!settled && acc >= LIVE_STEP_MS && live.winner === 'pending') {
+        prevPos = snapLivePos(live);
+        stepLiveBattle(live, deploys);
+        acc -= LIVE_STEP_MS;
+        if (live.winner === 'pending' && !liveActive(live)) live.winner = live.homeB < live.homeA ? 'a' : live.homeA < live.homeB ? 'b' : 'draw'; // 两军互清无突破 → 比残血定（同 runLiveBattle 收尾）
+      }
+      frac = settled ? 1 : Math.max(0, Math.min(1, acc / LIVE_STEP_MS));
+      if (battle && ts - lastRender >= RENDER_MS) { battle.update(); lastRender = ts; }
+      if (!settled && live.winner !== 'pending') { settle(); return; } // 收手：不再 rAF，CSS 余韵自跑
+      raf = requestAnimationFrame(loop);
+    };
+    raf = requestAnimationFrame(loop);
+    stopLoop = () => { if (raf) cancelAnimationFrame(raf); raf = 0; settled = true; };
   }
 
   showLobby();
   return () => {
-    teardownEngine();
+    teardownMatch();
     root.remove();
   };
 }

@@ -1,21 +1,22 @@
 // Game G · 三路战场 —— 设计稿「完整复刻」的游戏内渲染器（owner 2026-06-17 确认 battle-faithful 无误后落地）。
 // 忠实移植自 design/UI/「Game G 对战 三路战场.dc.html」/ doc/battle-faithful.html：themes()/几何/样式 逐字复用，
-// 仅把样例数据换成 BattleView（由 game-g.tsx 从真 MARCH-1 world 派生）。纯表现"固定解释器"(同 ThreeRenderer，manifesto §2)：
-//   不进 hash、不读 sim 真相外、不回灌胜负。胜负仍 MARCH-1 outcome-first 定。
+// 仅把样例数据换成 BattleView（由 game-g.tsx 从真 live-combat 逐拍 sim 派生）。纯表现"固定解释器"(同 ThreeRenderer，manifesto §2)：
+//   不进 hash、不读 sim 真相外、不回灌胜负。胜负仍 live-combat outcome-first 定。
 // 与 battle-faithful.html 同源——改样式须两处同步（doc 那份是 owner 核对基准）。
-import { FLIP_DURATION, MARCH_DURATION } from './index.js';
-import { encounterReveal } from './feel.js';
+// WIRE-MARCH（owner 钉死「一格格慢慢走」）：兵位 = live-combat 的**真 slot 位置** pos01（0=我家…1=敌家），
+//   不再按 FLIP/MARCH_DURATION 插值——慢慢爬/接敌才翻 全由 sim 真相驱动，渲染器只如实画当下那一拍。
 
-// ── 战场视图数据（game-g.tsx 从 world + save 派生，每帧喂） ──
-// 注：faceUp=既定生死(sim 真相，game 侧给)；reveal(接敌点揭晓进度)由本渲染器按 elapsed 算，game 侧不必管时序。
-export interface BattleUnit { lane: number; side: 'a' | 'b'; col: number; faceUp: boolean; rank: string; suit: 's' | 'h' | 'd' | 'c'; general: boolean }
+// ── 战场视图数据（game-g.tsx 从 live-combat 逐拍 sim 派生，每帧喂） ──
+// pos01 = 该牌沿本路的真实进度（0=A 家 / 1=B 家，= live pos/LANE_LEN）；revealed = 是否已接敌翻开（面朝下行军→接敌翻）；
+// faceUp = 翻开后生死（活=正面 / 死=石板斩）。id 供驱动层插值匹配（不进渲染 HTML）。
+export interface BattleUnit { id: string; lane: number; side: 'a' | 'b'; pos01: number; revealed: boolean; faceUp: boolean; rank: string; suit: 's' | 'h' | 'd' | 'c'; general: boolean }
 export interface BattleLane { name: string; mine: number; enemy: number; lead: 'a' | 'b' | 'n'; state: string; mineText: string; enemyText: string }
 export interface BattleLever { key: string; glyph: string; name: string; cost: number; desc: string; on?: boolean }
 export interface BattleView {
   homeA: number; homeAMax: number; homeB: number; homeBMax: number;
   oppName: string; oppPersona: string; oppSuit: 's' | 'h' | 'd' | 'c';
   energy: number; energyMax: number; materials: number;
-  phaseText: string; timeText: string; elapsed: number;
+  phaseText: string; timeText: string;
   levers: BattleLever[]; lanes: BattleLane[]; units: BattleUnit[];
 }
 
@@ -75,21 +76,6 @@ const A_POS = [300, 750], B_POS = [2700, 750];
 const TP = [[380, 650], [1500, 150], [2620, 650]], BP = [[380, 850], [1500, 1350], [2620, 850]], MP = [[460, 750], [2540, 750]];
 const laneAt = (lane: number, t: number): number[] => (lane === 0 ? qb(TP[0], TP[1], TP[2], t) : lane === 2 ? qb(BP[0], BP[1], BP[2], t) : lerpP(MP[0], MP[1], t));
 
-// 行军→贝塞尔 t：A 从自家(左,t≈0.08)推进到中线(t≈0.46)、幸存突破到敌家(t≈0.92)；B 镜像。col 后排略退、亡者留中线。
-export function marchFraction(side: 'a' | 'b', col: number, faceUp: boolean, elapsed: number): number {
-  const clamp01 = (x: number): number => (x < 0 ? 0 : x > 1 ? 1 : x);
-  const smooth = (x: number): number => { const u = clamp01(x); return u * u * (3 - 2 * u); };
-  const p1 = smooth(elapsed / FLIP_DURATION), p2 = smooth((elapsed - FLIP_DURATION) / MARCH_DURATION);
-  const back = col * 0.05; // 后排列略靠自家
-  let f: number; // 0=自家 1=敌家
-  const contest = 0.46;
-  if (p2 <= 0) f = (0.08 + contest * p1) - back * (1 - p1);
-  else if (faceUp) f = contest + (0.92 - contest) * p2;
-  else f = contest; // 阵亡：留中线
-  f = clamp01(f - (p2 <= 0 ? 0 : back * 0.4));
-  return side === 'a' ? f : 1 - f;
-}
-
 interface CamState { theme: string; lever: string; lane: string; zoom: number; camX: number; camY: number; gates: Record<string, boolean> }
 
 function buildHTML(view: BattleView, s: CamState): string {
@@ -126,21 +112,20 @@ function buildHTML(view: BattleView, s: CamState): string {
     return `<div style="${st(style)}"><span style="font-size:52px; color:${SUITC[suit]};">${SUITG[suit]}</span><div style="position:absolute; left:8px; right:8px; bottom:-15px; height:9px; border-radius:99px; background:rgba(0,0,0,.5); overflow:hidden;"><div style="width:${(hp as number) * 100}%; height:100%; background:${col};"></div></div></div>`;
   });
 
-  // 兵：按 lane 内序号分列；col 列、同列内三行。位置 = laneAt(t)，t 由 marchFraction 算。
+  // 兵：位置 = laneAt(pos01)，pos01 = live-combat 真 slot 进度（0=我家…1=敌家）。同路同侧多张按渲染序错三行、不重叠。
+  // 一格格慢慢爬/接敌才翻——全由 sim 真相（pos / revealed）驱动，渲染器只如实画当下。
+  const clamp01 = (x: number): number => (x < 0 ? 0 : x > 1 ? 1 : x);
   const laneCounters: Record<string, number> = {};
   const unitsHTML = forr(view.units, (u) => {
     const key = u.side + u.lane;
     const n = laneCounters[key] = (laneCounters[key] ?? 0) + 1;
-    const col = u.col;
-    const reveal = encounterReveal(view.elapsed, FLIP_DURATION, u.lane); // 接敌点揭晓（面朝下行军→接敌翻）
-    const t = marchFraction(u.side, col, u.faceUp, view.elapsed);
-    const base0 = laneAt(u.lane, t);
+    const base0 = laneAt(u.lane, clamp01(u.pos01)); // 真 slot 位置 → 贝塞尔三路
     const row = (n % 3) - 1; // -1/0/1 三行错开
     const p = [base0[0], base0[1] + row * 78];
     const cc = u.side === 'a' ? '#ff5d2e' : '#3a86d4';
     const rot = (((u.lane * 7 + n * 13) % 12) - 6).toFixed(1);
     const base: Record<string, string> = Object.assign({ position: 'absolute', width: '74px', height: '102px', '--rot': rot + 'deg', transform: 'translate(-50%,-50%) rotate(' + rot + 'deg)', animation: 'gg-march ' + (2.6 + (n % 4) * 0.4).toFixed(1) + 's ease-in-out infinite', borderRadius: '11px', display: 'flex', alignItems: 'center', justifyContent: 'center' }, at(p) as Record<string, string>);
-    if (reveal < 0.5) { // 面朝下行军
+    if (!u.revealed) { // 面朝下行军（还没接敌）
       const trim = u.side === 'a' ? '#a16207' : '#0e7490';
       return `<div style="${st(Object.assign({}, base, { background: '#274a73', border: '4px solid ' + (u.general ? trim : '#16314e'), boxShadow: '0 8px 18px rgba(0,0,0,.5)' }))}"><div style="position:absolute; inset:8px; border-radius:6px; border:2px solid rgba(255,255,255,.4); background:repeating-linear-gradient(45deg, rgba(255,255,255,.16) 0 8px, transparent 8px 16px), repeating-linear-gradient(-45deg, rgba(255,255,255,.16) 0 8px, transparent 8px 16px);"></div>${u.general ? `<span style="position:absolute; top:-22px; font-size:30px; color:${trim};">♔</span>` : ''}</div>`;
     }
