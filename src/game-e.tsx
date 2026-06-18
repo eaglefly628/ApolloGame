@@ -7,7 +7,7 @@ import {
   R_CHIPS, R_MULT, R_MONEY, R_HAND_SCORE, R_ROUND_SCORE, R_HANDS_LEFT, R_DISCARDS_LEFT, R_BLIND, V_HAND_TYPE,
 } from './games/game-e/blueprint.js';
 import {
-  HAND_RANKINGS, HAND_ORDER, handScoreAtLevel, RANK_ORDER, RANKS, SUITS, shuffledDeck, STARTER_JOKERS, blindRequirement, BLIND_ORDER,
+  HAND_RANKINGS, HAND_ORDER, handScoreAtLevel, RANK_ORDER, RANKS, SUITS, shuffledDeck, rollJokerOffer, blindRequirement, BLIND_ORDER,
   COMMON_PLANETS, bossForAnte, TAROTS, ENCHANTS,
   type PlanetCard, type BossBlind, type TarotCard, type EnchantId,
   type Card, type Suit, type Rank, type HandType, type JokerCard, type BlindKind,
@@ -366,10 +366,7 @@ function GameE() {
       if (rs >= get(R_BLIND)) {
         const reward = BLIND_META[blindKind].reward + get(R_HANDS_LEFT) + Math.min(5, Math.floor(get(R_MONEY) / 5));
         set(R_MONEY, get(R_MONEY) + reward);
-        const tmp = STARTER_JOKERS.filter((j) => !owned.some((o) => o.id === j.id));
-        const offer: JokerCard[] = [];
-        for (let k = 0; k < 3 && tmp.length; k++) offer.push(tmp.splice(Math.floor(Math.random() * tmp.length), 1)[0]);
-        setShopOffer(offer);
+        setShopOffer(rollJokerOffer(new Set(owned.map((o) => o.id)), 3, Math.random));
         setShopConsumables(rollConsumables());
         setMascot(true); window.setTimeout(() => setMascot(false), 3800); // 过关庆祝：萌宠举牌
         setPhase('shop'); bump(); return;
@@ -443,12 +440,7 @@ function GameE() {
     bump();
   }, [busy, engine, set, get]);
 
-  const rollShop = useCallback((): JokerCard[] => {
-    const tmp = STARTER_JOKERS.filter((j) => !owned.some((o) => o.id === j.id));
-    const offer: JokerCard[] = [];
-    for (let k = 0; k < 3 && tmp.length; k++) offer.push(tmp.splice(Math.floor(Math.random() * tmp.length), 1)[0]);
-    return offer;
-  }, [owned]);
+  const rollShop = useCallback((): JokerCard[] => rollJokerOffer(new Set(owned.map((o) => o.id)), 3, Math.random), [owned]);
   // 道具货架：1 星球牌（升级牌型）+ 1 塔罗牌（盖附魔）。
   const rollConsumables = useCallback((): Consumable[] => {
     const planet = COMMON_PLANETS[Math.floor(Math.random() * COMMON_PLANETS.length)];

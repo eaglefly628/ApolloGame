@@ -158,6 +158,8 @@ export function jokerToEntities(j: JokerCard, idx: number): Record<string, Entit
     if (j.when.kind === 'card_suit') pcWhen = { kind: 'suit', suit: SUIT_TO_NUM[j.when.suit] };
     else if (j.when.kind === 'card_face') pcWhen = { kind: 'rankIn', ranks: [11, 12, 13] };
     else if (j.when.kind === 'card_even') pcWhen = { kind: 'rankIn', ranks: [2, 4, 6, 8, 10] };
+    else if (j.when.kind === 'card_odd') pcWhen = { kind: 'rankIn', ranks: [14, 3, 5, 7, 9] };
+    else if (j.when.kind === 'card_rank_in') pcWhen = { kind: 'rankIn', ranks: [...j.when.ranks] };
     else pcWhen = { kind: 'always' };
     out[`j_${j.id}`] = { PerCardRule: { when: pcWhen, op: j.op, targetResource: target, value: j.value } } as unknown as EntityBlueprint;
     return out;

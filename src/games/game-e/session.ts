@@ -3,7 +3,7 @@ import type { Resource, PlayedHand, Flag, StringVar, ScoreTrace, ScoreEvent } fr
 import { buildGameEBlueprint, buildJokerEntities, jokerToEntities, toEngineCard, HAND_TYPE_TO_ENGINE, R_CHIPS, R_MULT, R_MONEY, R_HAND_SCORE, R_ROUND_SCORE, R_HANDS_LEFT, R_DISCARDS_LEFT, R_BLIND, V_HAND_TYPE } from './blueprint.js';
 import { shuffledDeck, mulberry32, type Card } from './deck.js';
 import { HAND_ORDER, handScoreAtLevel, type HandType } from './hand-rankings.js';
-import { STARTER_JOKERS, type JokerCard } from './jokers.js';
+import { rollJokerOffer, type JokerCard } from './jokers.js';
 import { blindRequirement, BLIND_ORDER, type BlindKind } from './blinds.js';
 import { type PlanetCard } from './planets.js';
 import { bossForAnte, type BossBlind } from './boss-blinds.js';
@@ -215,14 +215,9 @@ export class GameSession {
     return true;
   }
 
-  /** 商店货：从未拥有的小丑里种子化取 3 张。 */
+  /** 商店货：从未拥有的小丑里种子化、按稀有度加权取 3 张。 */
   rollShop(rngSeed = this.seed): JokerCard[] {
-    const rng = mulberry32(rngSeed);
-    const pool = STARTER_JOKERS.filter((j) => !this.owned.some((o) => o.id === j.id));
-    const tmp = [...pool];
-    const offer: JokerCard[] = [];
-    for (let k = 0; k < 3 && tmp.length; k++) offer.push(tmp.splice(Math.floor(rng() * tmp.length), 1)[0]);
-    return offer;
+    return rollJokerOffer(new Set(this.owned.map((o) => o.id)), 3, mulberry32(rngSeed));
   }
 
   /** ④ 买小丑：扣钱 + 加入 owned + 把它的实体注入运行中的引擎。 */

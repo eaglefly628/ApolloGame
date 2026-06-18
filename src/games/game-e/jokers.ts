@@ -33,7 +33,9 @@ export type JokerCondition =
   | { readonly kind: 'hand_size_lte'; readonly n: number } // 出牌张数 ≤ n
   | { readonly kind: 'card_suit'; readonly suit: Suit } // 逐张：该牌花色（配 on_card_scored）
   | { readonly kind: 'card_face' } // 逐张：人头牌
-  | { readonly kind: 'card_even' }; // 逐张：偶数点
+  | { readonly kind: 'card_even' } // 逐张：偶数点
+  | { readonly kind: 'card_odd' } // 逐张：奇数点（A 计奇）
+  | { readonly kind: 'card_rank_in'; readonly ranks: readonly number[] }; // 逐张：点数 ∈ 集合（引擎 rank 2..14；Fibonacci 等）
 
 /** 动态值来源（量纲类，如「每 $1」「每剩 1 弃牌」）。映射候选 REQ-013 valueFrom。 */
 export interface ValueFrom {
@@ -77,11 +79,40 @@ export const STARTER_JOKERS: readonly JokerCard[] = [
   J({ id: 'even_steven', name: 'Even Steven', rarity: 'common', cost: 4, jokerType: '+m', trigger: 'on_card_scored', when: { kind: 'card_even' }, op: 'add', target: 'mult', value: 4, text: '每张计分的偶数牌 +4 倍率' }),
   J({ id: 'banner', name: 'Banner', rarity: 'common', cost: 5, jokerType: '+c', trigger: 'on_hand_scored', when: { kind: 'always' }, op: 'add', target: 'chips', value: 30, valueFrom: { resourceId: 'discards', coeff: 30 }, text: '每剩 1 次弃牌 +30 筹码' }),
   J({ id: 'bull', name: 'Bull', rarity: 'uncommon', cost: 6, jokerType: '+c', trigger: 'on_hand_scored', when: { kind: 'always' }, op: 'add', target: 'chips', value: 2, valueFrom: { resourceId: 'money', coeff: 2 }, text: '每有 $1 +2 筹码' }),
-  J({ id: 'cavendish', name: 'Cavendish', rarity: 'common', cost: 4, jokerType: 'Xm', trigger: 'on_hand_scored', when: { kind: 'always' }, op: 'mul', target: 'mult', value: 3, text: '×3 倍率' }),
+  J({ id: 'cavendish', name: 'Cavendish', rarity: 'uncommon', cost: 6, jokerType: 'Xm', trigger: 'on_hand_scored', when: { kind: 'always' }, op: 'mul', target: 'mult', value: 3, text: '×3 倍率' }),
   J({ id: 'the_duo', name: 'The Duo', rarity: 'rare', cost: 8, jokerType: 'Xm', trigger: 'on_hand_scored', when: { kind: 'hand_contains', hand: 'pair' }, op: 'mul', target: 'mult', value: 2, text: '含对子 → ×2 倍率' }),
   J({ id: 'golden_joker', name: 'Golden Joker', rarity: 'common', cost: 6, jokerType: '+$', trigger: 'on_round_end', when: { kind: 'always' }, op: 'add', target: 'money', value: 4, text: '回合结束 +$4' }),
   J({ id: 'hanging_chad', name: 'Hanging Chad', rarity: 'common', cost: 4, jokerType: '...', trigger: 'on_card_scored', when: { kind: 'always' }, op: 'add', target: 'chips', value: 0, retrigger: 2, text: '首张计分牌额外重触发 2 次' }),
+  // ── 补全：现有能力可忠实表达的官方小丑（数值对齐 Balatro Wiki）──
+  J({ id: 'wrathful_joker', name: 'Wrathful Joker', rarity: 'common', cost: 5, jokerType: '+m', trigger: 'on_card_scored', when: { kind: 'card_suit', suit: 'spades' }, op: 'add', target: 'mult', value: 3, text: '每张计分的 ♠ +3 倍率' }),
+  J({ id: 'gluttonous_joker', name: 'Gluttonous Joker', rarity: 'common', cost: 5, jokerType: '+m', trigger: 'on_card_scored', when: { kind: 'card_suit', suit: 'clubs' }, op: 'add', target: 'mult', value: 3, text: '每张计分的 ♣ +3 倍率' }),
+  J({ id: 'odd_todd', name: 'Odd Todd', rarity: 'common', cost: 4, jokerType: '+c', trigger: 'on_card_scored', when: { kind: 'card_odd' }, op: 'add', target: 'chips', value: 31, text: '每张计分的奇数牌(A,3,5,7,9) +31 筹码' }),
+  J({ id: 'fibonacci', name: 'Fibonacci', rarity: 'uncommon', cost: 8, jokerType: '+m', trigger: 'on_card_scored', when: { kind: 'card_rank_in', ranks: [14, 2, 3, 5, 8] }, op: 'add', target: 'mult', value: 8, text: '每张计分的 A/2/3/5/8 +8 倍率' }),
+  J({ id: 'mad_joker', name: 'Mad Joker', rarity: 'common', cost: 4, jokerType: '+m', trigger: 'on_hand_scored', when: { kind: 'hand_contains', hand: 'two_pair' }, op: 'add', target: 'mult', value: 10, text: '含两对 → +10 倍率' }),
+  J({ id: 'sly_joker', name: 'Sly Joker', rarity: 'common', cost: 3, jokerType: '+c', trigger: 'on_hand_scored', when: { kind: 'hand_contains', hand: 'pair' }, op: 'add', target: 'chips', value: 50, text: '含对子 → +50 筹码' }),
+  J({ id: 'wily_joker', name: 'Wily Joker', rarity: 'common', cost: 4, jokerType: '+c', trigger: 'on_hand_scored', when: { kind: 'hand_contains', hand: 'three_kind' }, op: 'add', target: 'chips', value: 100, text: '含三条 → +100 筹码' }),
+  J({ id: 'clever_joker', name: 'Clever Joker', rarity: 'common', cost: 4, jokerType: '+c', trigger: 'on_hand_scored', when: { kind: 'hand_contains', hand: 'two_pair' }, op: 'add', target: 'chips', value: 80, text: '含两对 → +80 筹码' }),
+  J({ id: 'the_trio', name: 'The Trio', rarity: 'rare', cost: 8, jokerType: 'Xm', trigger: 'on_hand_scored', when: { kind: 'hand_contains', hand: 'three_kind' }, op: 'mul', target: 'mult', value: 3, text: '含三条 → ×3 倍率' }),
+  J({ id: 'the_family', name: 'The Family', rarity: 'rare', cost: 8, jokerType: 'Xm', trigger: 'on_hand_scored', when: { kind: 'hand_contains', hand: 'four_kind' }, op: 'mul', target: 'mult', value: 4, text: '含四条 → ×4 倍率' }),
+  J({ id: 'gros_michel', name: 'Gros Michel', rarity: 'common', cost: 5, jokerType: '+m', trigger: 'on_hand_scored', when: { kind: 'always' }, op: 'add', target: 'mult', value: 15, text: '+15 倍率' }),
 ];
 
 /** 按 id 取小丑。 */
 export const JOKER_BY_ID: ReadonlyMap<string, JokerCard> = new Map(STARTER_JOKERS.map((j) => [j.id, j]));
+
+/** 商店稀有度权重（对齐 Balatro：常见 ~70% / 罕见 ~25% / 稀有 ~5%）。越强越稀有 → 不会每店都刷到强乘法小丑。 */
+export const RARITY_WEIGHT: Readonly<Record<Rarity, number>> = { common: 70, uncommon: 25, rare: 5, legendary: 1 };
+
+/** 稀有度加权抽 n 张未拥有的小丑（rand=取数器，注入以保确定性/可测）。 */
+export function rollJokerOffer(ownedIds: ReadonlySet<string>, n: number, rand: () => number): JokerCard[] {
+  const tmp = STARTER_JOKERS.filter((j) => !ownedIds.has(j.id));
+  const offer: JokerCard[] = [];
+  for (let k = 0; k < n && tmp.length; k++) {
+    const total = tmp.reduce((s, j) => s + RARITY_WEIGHT[j.rarity], 0);
+    let roll = rand() * total;
+    let pick = 0;
+    for (let i = 0; i < tmp.length; i++) { roll -= RARITY_WEIGHT[tmp[i].rarity]; if (roll <= 0) { pick = i; break; } }
+    offer.push(tmp.splice(pick, 1)[0]);
+  }
+  return offer;
+}

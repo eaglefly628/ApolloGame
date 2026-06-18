@@ -2,7 +2,8 @@ import { describe, it, expect } from 'vitest';
 import { STANDARD_DECK, RANK_CHIPS, SUITS, RANKS, RANK_ORDER } from './deck.js';
 import { HAND_RANKINGS, HAND_ORDER, handScoreAtLevel } from './hand-rankings.js';
 import { ANTE_BASE, BLIND_MULT, blindRequirement, BLIND_ORDER } from './blinds.js';
-import { STARTER_JOKERS, JOKER_BY_ID } from './jokers.js';
+import { STARTER_JOKERS, JOKER_BY_ID, rollJokerOffer, RARITY_WEIGHT } from './jokers.js';
+import { mulberry32 } from './deck.js';
 import { jokerArtKey, JOKER_ART_FILES } from './assets.js';
 
 // 全为「数据自洽」断言：不进 sim/hash，证明内容表确定、可被引擎能力直接消费。
@@ -68,10 +69,10 @@ describe('game-e · 盲注曲线', () => {
 });
 
 describe('game-e · 小丑数据', () => {
-  it('起手 14 张、id 唯一、字段在合法枚举内', () => {
-    expect(STARTER_JOKERS.length).toBe(14);
+  it('可玩 25 张、id 唯一、字段在合法枚举内', () => {
+    expect(STARTER_JOKERS.length).toBe(25);
     const ids = STARTER_JOKERS.map((j) => j.id);
-    expect(new Set(ids).size).toBe(14);
+    expect(new Set(ids).size).toBe(25);
     const ops = new Set(['add', 'mul']);
     const targets = new Set(['chips', 'mult', 'money']);
     for (const j of STARTER_JOKERS) {
@@ -89,6 +90,22 @@ describe('game-e · 小丑数据', () => {
   it('刻意覆盖全部 7 型', () => {
     const types = new Set(STARTER_JOKERS.map((j) => j.jokerType));
     for (const t of ['+m', '+c', 'Xm', '+$', '...'] as const) expect(types.has(t)).toBe(true);
+  });
+
+  it('商店稀有度加权抽取：只抽未拥有、张数正确、确定性、强乘法小丑被稀释', () => {
+    const owned = new Set(['joker']);
+    const a = rollJokerOffer(owned, 3, mulberry32(123));
+    const b = rollJokerOffer(owned, 3, mulberry32(123));
+    expect(a.map((j) => j.id)).toEqual(b.map((j) => j.id)); // 同 rand → 同结果
+    expect(a.length).toBe(3);
+    expect(a.every((j) => j.id !== 'joker')).toBe(true); // 不抽已拥有
+    expect(new Set(a.map((j) => j.id)).size).toBe(3); // 不重复
+    // 稀有度权重存在且常见 > 稀有（强 ×mult 被稀释）。
+    expect(RARITY_WEIGHT.common).toBeGreaterThan(RARITY_WEIGHT.rare);
+    // 大样本里 ×mult(Xm) 出现率应远低于均匀分布（稀释验证）。
+    let xm = 0; const N = 2000;
+    for (let i = 0; i < N; i++) for (const j of rollJokerOffer(new Set(), 1, mulberry32(i))) if (j.jokerType === 'Xm') xm++;
+    expect(xm / N).toBeLessThan(0.12); // 远低于 4/25≈0.16 的均匀概率
   });
 
   it('有图的小丑 artKey 命中资产清单；缺图的走占位（不报错）', () => {
