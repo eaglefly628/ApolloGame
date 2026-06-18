@@ -4,7 +4,8 @@
 //   （doc19 §三 pairwise logistic 定生死）→ 赢家前进·续航−1(尽则退场沉底)、输家弃堆 → 突破到敌大本营 −1 血(3 血)先破者胜。
 // outcome-first：单一 seeded PRNG 按 lane 序消费、逐拍 hash 稳；favor/buff 遭遇拍读 → 中途投放/干预只影响未遭遇牌。
 // 纯 game-side 解释器、零引擎；复用 clash-resolve（decideFaceUp 升级为 pairwise）+ seeded PRNG。
-import { clashResolve, pEff, cardPoints } from './clash-resolve.js';
+import { winrate, pEff, cardPoints } from './clash-resolve.js';
+import { nextRandom } from '@atom-skills/index.js';
 import type { RandomSeed } from '@engine/protocol/components.js';
 
 // ── 调参（初版锚点，doc 18 §八 / 19；真机 + 仿真台调入 14）──
@@ -23,14 +24,18 @@ export function cardStamina(rank: string): number {
 
 export interface LiveUnit { id: string; rank: string; suit: string; points: number; buff: number; general: boolean; dead: boolean; stamina: number; staminaLeft: number; pos: number }
 export interface LiveLane { a: LiveUnit[]; b: LiveUnit[]; aGenDead: boolean; bGenDead: boolean; spentA: number; spentB: number; encT: number }
-export interface LiveBattle { tick: number; lanes: [LiveLane, LiveLane, LiveLane]; homeA: number; homeB: number; homeMax: number; winner: 'a' | 'b' | 'draw' | 'pending'; rng: RandomSeed }
+// 对决事件（doc19 §三「胜率可读」+ 命运一掷 · 给战斗表演特写读数）：双方点数/经营加成/有效战力 P_eff、胜率、所掷点 roll、谁胜。
+// 纯记录（不进 liveHash、不改判定）：roll = clash 那一掷的 nextRandom 值，aWins = roll < winrate ——把"算出概率→掷→落在区间定生死"如实暴露。
+export interface ClashCard { rank: string; suit: string; general: boolean; points: number; pEff: number }
+export interface ClashEvent { tick: number; lane: number; winrate: number; roll: number; aWins: boolean; a: ClashCard; b: ClashCard }
+export interface LiveBattle { tick: number; lanes: [LiveLane, LiveLane, LiveLane]; homeA: number; homeB: number; homeMax: number; winner: 'a' | 'b' | 'draw' | 'pending'; rng: RandomSeed; lastClash: ClashEvent | null; clashSeq: number; clashLog: ClashEvent[] }
 // 投放指令：第 tick 拍把 unit 投进 lane 的 side 侧（确定性输入流；预布阵 = tick 1 投放）。
 // 点数=公平骨架（cardPoints 由 rank 算·双方同副）；buff=经营（小丑/附魔/协同/路…聚合，缺省 0）。
 export interface DeployCmd { tick: number; side: 'a' | 'b'; lane: number; unit: { id: string; rank: string; suit: string; general: boolean; buff?: number } }
 
 const mkLane = (): LiveLane => ({ a: [], b: [], aGenDead: false, bGenDead: false, spentA: 0, spentB: 0, encT: 0 });
 export function initLiveBattle(seed: number, homeMax: number = HOME_BLOOD): LiveBattle {
-  return { tick: 0, lanes: [mkLane(), mkLane(), mkLane()], homeA: homeMax, homeB: homeMax, homeMax, winner: 'pending', rng: { type: 'RandomSeed', seed, sequence: 0 } };
+  return { tick: 0, lanes: [mkLane(), mkLane(), mkLane()], homeA: homeMax, homeB: homeMax, homeMax, winner: 'pending', rng: { type: 'RandomSeed', seed, sequence: 0 }, lastClash: null, clashSeq: 0, clashLog: [] };
 }
 
 function applyDeploy(b: LiveBattle, c: DeployCmd): void {
@@ -76,7 +81,13 @@ function stepLane(b: LiveBattle, li: number): void {
     if (fa.pos + 1 < fb.pos) { marchSide(A, 1, fb.pos - 1); marchSide(B, -1, fa.pos + 1); lane.encT = 0; return; } // 还没碰面 → 慢慢爬
     lane.encT += 1; // 相邻 → 成波对决（每 ENC_PERIOD 一掷）
     if (lane.encT % ENC_PERIOD !== 0) return;
-    const aWins = clashResolve(effPower(fa, lane, 'a'), effPower(fb, lane, 'b'), b.rng); // doc19 §三 pairwise logistic
+    // doc19 §三 pairwise logistic：算 P_eff → 胜率 → 掷一点 roll 落在区间定生死。内联 clashResolve 同序消费 rng（hash 不变），且暴露 roll/明细供特写。
+    const ea = effPower(fa, lane, 'a'), eb = effPower(fb, lane, 'b');
+    const wr = winrate(ea, eb);
+    const roll = nextRandom(b.rng);
+    const aWins = roll < wr;
+    const ev: ClashEvent = { tick: b.tick, lane: li, winrate: wr, roll, aWins, a: { rank: fa.rank, suit: fa.suit, general: fa.general, points: fa.points, pEff: ea }, b: { rank: fb.rank, suit: fb.suit, general: fb.general, points: fb.points, pEff: eb } };
+    b.lastClash = ev; b.clashSeq += 1; b.clashLog.push(ev);
     killFront(lane, aWins ? 'b' : 'a'); // 输家翻反·阵亡 → 本局弃堆
     const wq = aWins ? A : B; const wf = wq[0]; // 赢家翻正·前进，续航 −1；尽则退场（沉牌底·3D-1 再部署轮转）
     if (wf) { wf.staminaLeft -= 1; if (wf.staminaLeft <= 0) { wq.shift(); if (aWins) lane.spentA += 1; else lane.spentB += 1; } }

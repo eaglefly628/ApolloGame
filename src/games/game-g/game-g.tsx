@@ -1,6 +1,6 @@
-import { mountBattle, type BattleView, type BattleUnit, type BattleLane, type BattleLever, type HandCardView, type BattleActions } from './battle-screen.js';
+import { mountBattle, type BattleView, type BattleUnit, type BattleLane, type BattleLever, type HandCardView, type BattleActions, type ClashView } from './battle-screen.js';
 import { prepareArmies, armyFromFormation, laneEstimates, quartermasterEnergy, FORMATION_PRESETS, PRESET_NAMES, LEVER_CATALOG, LEVER_START, battleSpec, RUN_BATTLES, RUN_LIVES, BETWEEN_BUFFS, applyBuff, jokerKeyBuffs, BOSS_ROSTER, bossFor, GAME_G_JOKERS, JOKER_BY_ID, ARCHETYPES, detectArchetype, archetypeMatchup, activeArchetype, pickAiFormation, GAME_G_PLANETS, GAME_G_FOILS, effectiveLives, effectiveLeverCap, effectiveLeverRegen, type Formation, type Intervention, type LeverKind, type RunBuff, type ArmyCard } from './index.js';
-import { initLiveBattle, stepLiveBattle, liveActive, LANE_LEN, HOME_BLOOD, type LiveBattle, type DeployCmd } from './live-combat.js';
+import { initLiveBattle, stepLiveBattle, liveActive, LANE_LEN, HOME_BLOOD, type LiveBattle, type DeployCmd, type ClashEvent } from './live-combat.js';
 import { cardPoints, P_MAX } from './clash-resolve.js';
 
 // Game G ·《翻命扑克》—— 大厅 ↔ 出征 闭环（launcher 卡带槽：export mount(container)→cleanup）。自包含于本目录。
@@ -14,12 +14,13 @@ const SAVE_KEY = 'gameG-save-v1';
 // 大厅根容器样式：默认屏(布阵/备战/战斗)居中竖排；大厅屏改顶对齐可滚动(承载 5 tab 古风布局)。
 const DEFAULT_ROOT_CSS = 'position:absolute;inset:0;background:#0a0a14;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:14px;color:#cbd5e1;font:13px system-ui';
 const LOBBY_ROOT_CSS = 'position:absolute;inset:0;overflow:auto';
-// WIRE-MARCH 节奏（owner 钉死「一格格慢慢走、几十秒一局」，doc18 §八）：sim 每 LIVE_STEP_MS 走一拍（MARCH_STEP=2 格），
-// 渲染按真拍间 frac 平滑滑行（~RENDER_MS 一帧）。实测一局 ~190–215 拍收敛 → ×0.3s ≈ 60s「几十秒」；
-// 接敌 ~25 拍≈7.5s、单卡空路 traverse ~50 拍≈15s——肉眼「一格格慢慢走」、非 2.5s 刷过去。SEC_PER_TICK 派生读秒。
-const LIVE_STEP_MS = 300;   // 一拍真实时长（慢=决策窗；3D-1 读秒暂停接这里）
+// WIRE-MARCH 节奏（owner 钉死「一格格慢慢走」，doc18 §八）：sim 每 LIVE_STEP_MS 走一拍（MARCH_STEP=2 格），
+// 渲染按真拍间 frac 平滑滑行（~RENDER_MS 一帧）。owner 反馈「太快来不及看」→ 600ms/拍（比首版慢 1 倍），更从容观察；
+// 每场对决再叠加特写表演（PERF_MS 冻结战场细看）。SEC_PER_TICK 派生读秒。
+const LIVE_STEP_MS = 600;   // 一拍真实时长（owner 要更慢：300→600 慢一倍；慢=决策窗）
 const RENDER_MS = 33;       // 重渲间隔（~30fps 平滑）
 const SEC_PER_TICK = LIVE_STEP_MS / 1000;
+const PERF_MS = 1700;       // 对决特写表演时长（冻结战场·放大两牌·读数·掷点定生死，owner：拉到屏幕前看为什么胜败）
 // 起手迷雾 + 显形（doc18 §10.5 / owner：不是接敌才翻、是「出了门的线」就翻）：各自老家一段内面朝下行军，
 // 越过本侧捷径门线（t=0.34 / 0.66，battle-screen gateDefs 同值）即显形翻开。中段 (0.34,0.66) 双方皆可见。
 const FOG_A_EDGE = 0.34;    // A 兵越过上门线 → 显形（pos01 ≥）
@@ -133,7 +134,7 @@ function snapLivePos(live: LiveBattle): Map<string, number> {
 // 从 live-combat 逐拍 sim + save 派生战场视图（喂 battle-screen 渲染设计稿）。纯读 sim 真相、不回灌。
 // owner「一格格慢慢走」：兵位 = 真 slot pos01（live pos/LANE_LEN）；最前两张相邻(接敌)才 revealed 翻开。
 // 导出供无头看帧/视觉回归测试用（battle-screen.frame.test.ts 真 live sim → 真 view → 真渲染器 → HTML golden）。
-export function buildBattleViewLive(live: LiveBattle, save: Save, oppName: string, oppPersona: string, oppSuit: 's' | 'h' | 'd' | 'c', control: BattleControl = NO_CONTROL): BattleView {
+export function buildBattleViewLive(live: LiveBattle, save: Save, oppName: string, oppPersona: string, oppSuit: 's' | 'h' | 'd' | 'c', control: BattleControl = NO_CONTROL, clash: ClashView | null = null): BattleView {
   const sv = (s: string): 's' | 'h' | 'd' | 'c' => s.toLowerCase() as 's' | 'h' | 'd' | 'c';
   const units: BattleUnit[] = [];
   for (const li of [0, 1, 2]) {
@@ -156,7 +157,13 @@ export function buildBattleViewLive(live: LiveBattle, save: Save, oppName: strin
     phaseText: control.paused ? '暂停部署 · 读秒中' : '占领敌方老家 · 即胜', timeText: `${String(Math.floor(secs / 60)).padStart(2, '0')}:${String(secs % 60).padStart(2, '0')}`,
     levers, lanes, units,
     hand: control.hand, selectedCard: control.selectedCard, deckCount: control.deckCount, pauseBank: control.pauseBank, pauseMax: control.pauseMax, paused: control.paused,
+    clash,
   };
+}
+// live-combat 对决事件 → 特写视图（a=我方/b=敌方；点数/加成/战力/胜率/掷点 如实透出）。
+function clashToView(ev: ClashEvent): ClashView {
+  const card = (c: ClashEvent['a']): ClashView['a'] => ({ rank: c.rank, suit: c.suit.toLowerCase() as 's' | 'h' | 'd' | 'c', general: c.general, points: c.points, pEff: c.pEff });
+  return { lane: ev.lane, winrate: ev.winrate, roll: ev.roll, aWins: ev.aWins, a: card(ev.a), b: card(ev.b) };
 }
 
 export function mount(container: HTMLElement): () => void {
@@ -556,6 +563,11 @@ export function mount(container: HTMLElement): () => void {
     const control = (): BattleControl => ({ hand: aHand.map((c): HandCardView => ({ id: c.id, rank: cardRank(c), suit: c.suit.toLowerCase() as 's' | 'h' | 'd' | 'c', general: c.general })), selectedCard, deckCount: aDeck.length, pauseBank, pauseMax: PAUSE_BANK_MS, paused });
     let prevPos = snapLivePos(live); // 真拍间插值锚（渲染层据此平滑滑行）
     let frac = 1;
+    // 对决特写表演队列（owner：每场对决拉到屏幕前·看为什么胜败）：每拍新生对决进队，逐个冻结战场演 PERF_MS。
+    const perfQueue: ClashEvent[] = [];
+    let perfClash: ClashEvent | null = null;
+    let perfUntil = 0;
+    let drained = 0; // 已收进特写队列的 clashLog 下标
     const actions: BattleActions = {
       selectCard: (i) => { selectedCard = i === selectedCard ? -1 : i; }, // 再点取消
       playLane: (lane) => { // 选中手牌派往该路：下一拍从老家出发（实时投放；暂停时也可从容部署）
@@ -567,7 +579,7 @@ export function mount(container: HTMLElement): () => void {
       togglePause: () => { if (pauseBank > 0 || paused) paused = !paused; },
     };
     battle = mountBattle(stage, () => {
-      const v = buildBattleViewLive(live, save, aiName, oppPersona, oppSuit, control());
+      const v = buildBattleViewLive(live, save, aiName, oppPersona, oppSuit, control(), perfClash ? clashToView(perfClash) : null);
       for (const u of v.units) { const cur = u.pos01 * LANE_LEN; const prev = prevPos.has(u.id) ? prevPos.get(u.id)! : cur; u.pos01 = (prev + (cur - prev) * frac) / LANE_LEN; } // lerp 上一拍→当拍
       return v;
     }, actions);
@@ -619,22 +631,28 @@ export function mount(container: HTMLElement): () => void {
     const loop = (ts: number): void => {
       if (last === 0) last = ts;
       const dt = ts - last; last = ts;
-      if (paused) { pauseBank -= dt; if (pauseBank <= 0) { pauseBank = 0; paused = false; } } // 读秒银行耗尽 → 强制继续
-      else if (!settled && live.winner === 'pending') {
-        acc += dt;
-        if (acc > LIVE_STEP_MS * 3) acc = LIVE_STEP_MS; // 切后台回来防暴冲
-        if (acc >= LIVE_STEP_MS) {
-          prevPos = snapLivePos(live);
-          stepLiveBattle(live, deploys);
-          acc -= LIVE_STEP_MS;
-          if (aHand.length < HAND_MAX && aDeck.length && live.tick % DRAW_PERIOD_TICKS === 0) aHand.push(aDeck.shift()!); // 底流涌牌进手
-          if (live.tick >= aiNext && bDeck.length) { const c = bDeck.shift()!; deploys.push({ tick: live.tick + 1, side: 'b', lane: c.lane, unit: toUnit(c) }); aiNext = live.tick + AI_PERIOD_TICKS; } // 敌滴投入该牌原路（随阵型）
-          if (live.winner === 'pending' && !liveActive(live)) live.winner = live.homeB < live.homeA ? 'a' : live.homeA < live.homeB ? 'b' : 'draw'; // 两军互清无突破 → 比残血定（同 runLiveBattle 收尾）
+      // 对决特写：演完(到 PERF_MS)收场；空闲且队列有 → 取下一场冻结战场演（sim 此刻不推进）。
+      if (perfClash && ts >= perfUntil) perfClash = null;
+      if (!perfClash && perfQueue.length) { perfClash = perfQueue.shift()!; perfUntil = ts + PERF_MS; acc = 0; }
+      if (!perfClash) { // 无特写在演 → 正常推进/暂停
+        if (paused) { pauseBank -= dt; if (pauseBank <= 0) { pauseBank = 0; paused = false; } } // 读秒银行耗尽 → 强制继续
+        else if (!settled && live.winner === 'pending') {
+          acc += dt;
+          if (acc > LIVE_STEP_MS * 3) acc = LIVE_STEP_MS; // 切后台回来防暴冲
+          if (acc >= LIVE_STEP_MS) {
+            prevPos = snapLivePos(live);
+            stepLiveBattle(live, deploys);
+            acc -= LIVE_STEP_MS;
+            for (; drained < live.clashLog.length; drained++) perfQueue.push(live.clashLog[drained]); // 本拍新生对决 → 进特写队列
+            if (aHand.length < HAND_MAX && aDeck.length && live.tick % DRAW_PERIOD_TICKS === 0) aHand.push(aDeck.shift()!); // 底流涌牌进手
+            if (live.tick >= aiNext && bDeck.length) { const c = bDeck.shift()!; deploys.push({ tick: live.tick + 1, side: 'b', lane: c.lane, unit: toUnit(c) }); aiNext = live.tick + AI_PERIOD_TICKS; } // 敌滴投入该牌原路（随阵型）
+            if (live.winner === 'pending' && !liveActive(live)) live.winner = live.homeB < live.homeA ? 'a' : live.homeA < live.homeB ? 'b' : 'draw'; // 两军互清无突破 → 比残血定（同 runLiveBattle 收尾）
+          }
+          frac = Math.max(0, Math.min(1, acc / LIVE_STEP_MS));
         }
-        frac = settled ? 1 : Math.max(0, Math.min(1, acc / LIVE_STEP_MS));
       }
       if (battle && ts - lastRender >= RENDER_MS) { battle.update(); lastRender = ts; }
-      if (!settled && live.winner !== 'pending') { settle(); return; } // 收手：不再 rAF，CSS 余韵自跑
+      if (!settled && live.winner !== 'pending' && !perfClash && perfQueue.length === 0) { settle(); return; } // 等特写全演完才结算（最后几场对决也演出来）
       raf = requestAnimationFrame(loop);
     };
     raf = requestAnimationFrame(loop);

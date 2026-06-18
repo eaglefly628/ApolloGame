@@ -14,6 +14,9 @@ export interface BattleUnit { id: string; lane: number; side: 'a' | 'b'; pos01: 
 export interface HandCardView { id: string; rank: string; suit: 's' | 'h' | 'd' | 'c'; general: boolean }
 export interface BattleLane { name: string; mine: number; enemy: number; lead: 'a' | 'b' | 'n'; state: string; mineText: string; enemyText: string }
 export interface BattleLever { key: string; glyph: string; name: string; cost: number; desc: string; on?: boolean }
+// 对决特写（owner：拉到屏幕前·战斗表演）：两张牌放大 + 点数/加成/战力计算 + 胜率区间条 + 掷点落区间 → 生/死翻转。
+export interface ClashCardView { rank: string; suit: 's' | 'h' | 'd' | 'c'; general: boolean; points: number; pEff: number }
+export interface ClashView { lane: number; winrate: number; roll: number; aWins: boolean; a: ClashCardView; b: ClashCardView }
 export interface BattleView {
   homeA: number; homeAMax: number; homeB: number; homeBMax: number;
   oppName: string; oppPersona: string; oppSuit: 's' | 'h' | 'd' | 'c';
@@ -23,6 +26,7 @@ export interface BattleView {
   // 出牌控盘层（doc18 §10 · 实时流+暂停银行+手牌派三路）：
   hand: HandCardView[]; selectedCard: number; deckCount: number; // 手牌 / 选中索引(-1 无) / 抽牌堆余量
   pauseBank: number; pauseMax: number; paused: boolean; // 暂停银行(ms·围棋读秒) / 上限 / 当前是否暂停
+  clash?: ClashView | null; // 非空 → 叠加对决特写表演（冻结战场、放大两牌、读数、掷点定生死）
 }
 
 type Theme = Record<string, string>;
@@ -67,6 +71,12 @@ const CSS = `
 @keyframes gg-shimmer { 0% { background-position: -120% 0; } 100% { background-position: 220% 0; } }
 @keyframes gg-march { 0%,100% { transform: translate(-50%,-50%) rotate(var(--rot,0deg)); } 50% { transform: translate(-50%,-56%) rotate(var(--rot,0deg)); } }
 @keyframes gg-dash { to { stroke-dashoffset: -68; } }
+@keyframes gg-clashin { 0% { transform: scale(.82); opacity: 0; } 100% { transform: scale(1); opacity: 1; } }
+@keyframes gg-clashL { 0% { transform: translateX(-120px) rotate(-12deg); opacity: 0; } 100% { transform: translateX(0) rotate(0); opacity: 1; } }
+@keyframes gg-clashR { 0% { transform: translateX(120px) rotate(12deg); opacity: 0; } 100% { transform: translateX(0) rotate(0); opacity: 1; } }
+@keyframes gg-rolldrop { 0% { top: -70px; opacity: 0; } 55% { opacity: 1; } 78% { top: -2px; } 100% { top: -14px; } }
+@keyframes gg-winglow { 0%,100% { box-shadow: 0 0 26px var(--gold), 0 12px 30px rgba(0,0,0,.6); } 50% { box-shadow: 0 0 54px var(--gold), 0 12px 30px rgba(0,0,0,.6); } }
+@keyframes gg-diefall { 0% { transform: rotate(0) translateY(0); filter: grayscale(0); } 100% { transform: rotate(7deg) translateY(10px); filter: grayscale(1) brightness(.6); } }
 .gg-root input[type=range].gz { -webkit-appearance:none; appearance:none; height:6px; border-radius:99px; outline:none; }
 .gg-root input[type=range].gz::-webkit-slider-thumb { -webkit-appearance:none; width:18px; height:18px; border-radius:50%; background:#fff; border:2px solid var(--accent); cursor:pointer; box-shadow:0 2px 6px rgba(0,0,0,.4); }
 .gg-root [data-act="lever"]:hover, .gg-root [data-act="focus"]:hover, .gg-root [data-act="lane"]:hover, .gg-root [data-act="zoom"]:hover, .gg-root [data-act="gate"]:hover { filter:brightness(1.08); transform:translateY(-2px); border-color:var(--accent); }
@@ -154,7 +164,7 @@ function buildHTML(view: BattleView, s: CamState): string {
 
   const focusChip = { display: 'flex', alignItems: 'center', gap: '5px', padding: '7px 13px', borderRadius: '10px', cursor: 'pointer', border: '1px solid var(--panel-border)', background: 'rgba(12,16,14,.66)', color: 'rgba(255,255,255,.86)', fontFamily: 'var(--font-heading)', fontWeight: 700, fontSize: '13px', transition: 'all .15s ease' };
   const focusChipOn = Object.assign({}, focusChip, { background: 'var(--accent-grad)', color: '#fff', border: '1px solid var(--accent)' });
-  const zp = (Z - 0.55) / (2.6 - 0.55) * 100;
+  const zp = (Z - 0.4) / (2.6 - 0.4) * 100;
 
   // 小地图
   const mmW = 236, mmH = Math.round(mmW * H / W), mmScale = mmW / W;
@@ -203,6 +213,33 @@ function buildHTML(view: BattleView, s: CamState): string {
   const bankPct = Math.max(0, Math.min(100, Math.round((view.pauseBank / Math.max(1, view.pauseMax)) * 100)));
   const pauseBtnS = { width: '100%', padding: '10px 0', borderRadius: '11px', cursor: 'pointer', border: '1px solid ' + (view.paused ? 'var(--accent)' : 'var(--btn-edge)'), background: view.paused ? 'var(--accent-grad)' : 'var(--btn-bg)', color: view.paused ? '#fff' : 'var(--btn-text)', fontFamily: 'var(--font-heading)', fontWeight: 700, fontSize: '15px' };
 
+  // 对决特写表演（owner：拉到屏幕前·看为什么胜败）：冻结战场 → 放大两牌 + 点数/加成/战力 → 胜率区间条 + 掷点落区间 → 生者翻正/死者斩。
+  const cv = view.clash;
+  const bonusTxt = (c: ClashCardView): string => { const d = c.pEff - c.points; return d >= 0 ? '+' + d : String(d); };
+  const bigCard = (c: ClashCardView, side: 'a' | 'b', win: boolean): string => {
+    const col = side === 'a' ? '#ff5d2e' : '#3a86d4', sc = SUITC[c.suit];
+    const inAnim = side === 'a' ? 'gg-clashL .5s ease-out' : 'gg-clashR .5s ease-out';
+    const fateAnim = win ? ', gg-winglow 1.1s ease-in-out .5s infinite' : ', gg-diefall .55s ease-out .85s forwards';
+    return `<div style="${st({ position: 'relative', width: '186px', height: '260px', flex: 'none', borderRadius: '16px', background: win ? 'linear-gradient(160deg,#fff8ec,#f0e2c4)' : '#8d2f22', border: '6px solid ' + (win ? 'var(--gold)' : 'var(--danger)'), display: 'flex', alignItems: 'center', justifyContent: 'center', animation: inAnim + fateAnim })}">${c.general ? '<span style="position:absolute; top:-32px; font-size:42px; color:var(--gold);">♔</span>' : ''}<div style="position:absolute; top:10px; left:15px; font-family:var(--font-heading); font-weight:800; font-size:42px; color:${win ? sc : '#fff'};">${esc(c.rank)}</div><span style="font-size:100px; color:${win ? sc : 'rgba(255,255,255,.9)'};">${SUITG[c.suit]}</span>${win ? '' : '<span style="position:absolute; font-family:var(--font-heading); font-weight:800; font-size:96px; color:#fff;">斩</span>'}<div style="position:absolute; bottom:-44px; left:50%; transform:translateX(-50%); white-space:nowrap; font-family:var(--font-num); font-size:13px; color:${col};">点数 ${c.points} · 加成 ${bonusTxt(c)} <b style="font-size:16px; color:#fff;">＝ 战力 ${c.pEff}</b></div></div>`;
+  };
+  const clashHTML = cv ? (() => {
+    const LN = ['上路', '中路', '下路'][cv.lane] ?? '';
+    const wrPct = Math.round(cv.winrate * 100), rollPct = Math.round(cv.roll * 100), barW = 720;
+    return `<div style="${st({ position: 'absolute', inset: '0', zIndex: 30, display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'radial-gradient(circle at 50% 42%, rgba(8,10,14,.72), rgba(4,6,9,.93))' })}">
+      <div style="${st({ animation: 'gg-clashin .4s ease-out', display: 'flex', flexDirection: 'column', alignItems: 'center', padding: '24px 44px 30px', borderRadius: '22px', background: 'var(--hud-bg)', border: '1px solid var(--panel-border)', boxShadow: '0 30px 80px rgba(0,0,0,.7)' })}">
+        <div style="font-family:var(--font-display); font-weight:700; font-size:26px; color:var(--accent); letter-spacing:.06em;">⚔ ${LN} · 命运一掷</div>
+        <div style="display:flex; align-items:center; gap:46px; margin:24px 0 30px;">${bigCard(cv.a, 'a', cv.aWins)}<div style="font-family:var(--font-heading); font-weight:800; font-size:36px; color:var(--ink-dim);">VS</div>${bigCard(cv.b, 'b', !cv.aWins)}</div>
+        <div style="display:flex; justify-content:space-between; width:${barW}px; font-family:var(--font-num); font-size:13px; margin-bottom:5px;"><span style="color:#ff5d2e;">我方 ${SUITG[cv.a.suit]}${esc(cv.a.rank)} 生 ${wrPct}%</span><span style="color:#3a86d4;">${100 - wrPct}% 生 ${SUITG[cv.b.suit]}${esc(cv.b.rank)} 敌方</span></div>
+        <div style="position:relative; width:${barW}px; height:26px; border-radius:99px; border:2px solid rgba(255,255,255,.28);">
+          <div style="position:absolute; inset:0; border-radius:99px; overflow:hidden; display:flex;"><div style="width:${wrPct}%; background:linear-gradient(180deg,#ff7a45,#ee4515);"></div><div style="flex:1; background:linear-gradient(180deg,#5ea0e0,#2a5f9e);"></div></div>
+          <div style="position:absolute; left:${wrPct}%; top:-5px; bottom:-5px; width:2px; background:#fff;"></div>
+          <div style="position:absolute; left:${rollPct}%; top:-14px;"><div style="transform:translateX(-50%); width:0; height:0; border-left:11px solid transparent; border-right:11px solid transparent; border-top:18px solid #fff; filter:drop-shadow(0 2px 4px rgba(0,0,0,.6)); animation:gg-rolldrop .9s ease-out forwards;"></div></div>
+        </div>
+        <div style="font-family:var(--font-num); font-size:13px; color:var(--ink-dim); margin-top:14px;">掷点 ${rollPct} 落在 ${cv.aWins ? '我方生区' : '敌方生区'} → <b style="color:${cv.aWins ? '#ff5d2e' : '#3a86d4'};">${cv.aWins ? '我方' + esc(cv.a.rank) + '翻正 · 敌' + esc(cv.b.rank) + '斩' : '敌' + esc(cv.b.rank) + '翻正 · 我方' + esc(cv.a.rank) + '斩'}</b></div>
+      </div>
+    </div>`;
+  })() : '';
+
   return `<div class="gg-root" style="${st(rootStyle)}">
     <div style="margin:0 auto; width:1280px; height:720px; overflow:hidden; border-radius:14px; box-shadow:0 24px 60px rgba(0,0,0,.35);">
     <div style="width:1920px; height:1080px; transform:scale(0.66667); transform-origin:top left; position:relative; overflow:hidden; background:var(--app-bg); color:var(--ink); font-family:var(--font-body);">
@@ -226,7 +263,7 @@ function buildHTML(view: BattleView, s: CamState): string {
             ${laneLbl(0, -34, '上路')}${laneLbl(1, -70, '中路')}${laneLbl(2, 34, '下路')}
           </div>
           <div style="position:absolute; top:14px; left:14px; display:flex; gap:8px; z-index:5;"><button data-act="focus" data-k="home" style="${st(focusChip)}">⌂ 我方老家</button><button data-act="focus" data-k="fight" style="${st(focusChipOn)}">⚔ 中路团战</button><button data-act="focus" data-k="enemy" style="${st(focusChip)}">⚑ 敌方老家</button><button data-act="focus" data-k="all" style="${st(focusChip)}">▦ 全局</button></div>
-          <div style="position:absolute; top:14px; right:14px; display:flex; align-items:center; gap:9px; padding:8px 12px; border-radius:12px; background:rgba(12,16,14,.7); border:1px solid var(--panel-border); z-index:5;"><button data-act="zoom" data-k="out" style="${st({ width: '30px', height: '30px', borderRadius: '8px', cursor: 'pointer', border: '1px solid var(--panel-border)', background: 'var(--chip-bg)', color: '#fff', fontFamily: 'var(--font-heading)', fontWeight: 700, fontSize: '18px', lineHeight: 1, display: 'flex', alignItems: 'center', justifyContent: 'center' })}">－</button><input type="range" class="gz" min="0.55" max="2.6" step="0.05" value="${Z}" data-act="zoominput" style="${st({ width: '140px', background: 'linear-gradient(90deg,var(--accent) ' + zp + '%, rgba(255,255,255,.25) ' + zp + '%)' })}"><button data-act="zoom" data-k="in" style="${st({ width: '30px', height: '30px', borderRadius: '8px', cursor: 'pointer', border: '1px solid var(--panel-border)', background: 'var(--chip-bg)', color: '#fff', fontFamily: 'var(--font-heading)', fontWeight: 700, fontSize: '18px', lineHeight: 1, display: 'flex', alignItems: 'center', justifyContent: 'center' })}">＋</button><span style="font-family:var(--font-num); font-size:12px; color:#fff; min-width:42px; text-align:right;">${Math.round(Z * 100)}%</span></div>
+          <div style="position:absolute; top:14px; right:14px; display:flex; align-items:center; gap:9px; padding:8px 12px; border-radius:12px; background:rgba(12,16,14,.7); border:1px solid var(--panel-border); z-index:5;"><button data-act="zoom" data-k="out" style="${st({ width: '30px', height: '30px', borderRadius: '8px', cursor: 'pointer', border: '1px solid var(--panel-border)', background: 'var(--chip-bg)', color: '#fff', fontFamily: 'var(--font-heading)', fontWeight: 700, fontSize: '18px', lineHeight: 1, display: 'flex', alignItems: 'center', justifyContent: 'center' })}">－</button><input type="range" class="gz" min="0.4" max="2.6" step="0.05" value="${Z}" data-act="zoominput" style="${st({ width: '140px', background: 'linear-gradient(90deg,var(--accent) ' + zp + '%, rgba(255,255,255,.25) ' + zp + '%)' })}"><button data-act="zoom" data-k="in" style="${st({ width: '30px', height: '30px', borderRadius: '8px', cursor: 'pointer', border: '1px solid var(--panel-border)', background: 'var(--chip-bg)', color: '#fff', fontFamily: 'var(--font-heading)', fontWeight: 700, fontSize: '18px', lineHeight: 1, display: 'flex', alignItems: 'center', justifyContent: 'center' })}">＋</button><span style="font-family:var(--font-num); font-size:12px; color:#fff; min-width:42px; text-align:right;">${Math.round(Z * 100)}%</span></div>
           <div style="position:absolute; bottom:14px; left:14px; padding:5px 12px; border-radius:99px; background:rgba(12,16,14,.6); color:rgba(255,255,255,.7); font-size:12px; z-index:5;">🖱 拖拽平移 · 滚轮缩放 · 点「门」开/关捷径</div>
           <div style="position:absolute; bottom:14px; right:14px; width:${mmW}px; height:${mmH}px; border-radius:12px; overflow:hidden; border:2px solid var(--panel-border); box-shadow:0 10px 24px rgba(0,0,0,.5); z-index:6;"><div style="position:absolute; top:6px; left:9px; font-family:var(--font-heading); font-weight:700; font-size:11px; letter-spacing:.1em; color:rgba(255,255,255,.8); z-index:3;">战场全局</div><div style="position:absolute; inset:0; background:var(--arena);">${mmLanesHTML}${mmBlipsHTML}<div style="${st(mmViewRect)}"></div><div data-act="mmdown" style="position:absolute; inset:0; cursor:crosshair;"></div></div></div>
         </div>
@@ -242,6 +279,7 @@ function buildHTML(view: BattleView, s: CamState): string {
         <div style="flex:1; display:flex; flex-direction:column; gap:7px; justify-content:center; padding:8px 18px; border-radius:16px; background:var(--accent-soft); border:1px solid var(--accent); box-shadow:inset 0 0 0 1px var(--hairline);"><div style="display:flex; align-items:center; gap:10px;"><span style="font-family:var(--font-heading); font-weight:700; font-size:17px; color:var(--accent); letter-spacing:.03em;">手牌 · 出牌</span><span style="font-size:12px; color:var(--ink-dim);">点选一张 → 派往上/中/下，从老家出发慢慢推进</span><span style="flex:1;"></span><span style="font-family:var(--font-num); font-size:11px; color:var(--ink-dim);">抽牌堆 ${view.deckCount}</span></div><div style="display:flex; gap:8px; align-items:flex-end; min-height:86px;">${handHTML}</div></div>
         <div style="width:228px; flex:none; display:flex; flex-direction:column; gap:8px; justify-content:center;"><div style="display:flex; gap:8px;">${laneBtnsHTML}</div><button data-act="pause" style="${st(pauseBtnS)}">${view.paused ? '▶ 继续 (空格)' : '⏸ 暂停思考 (空格)'}</button><div style="display:flex; align-items:center; gap:7px;"><span style="font-size:10px; letter-spacing:.12em; color:var(--ink-dim); white-space:nowrap;">读秒银行</span><div style="flex:1; height:8px; border-radius:99px; background:var(--track); overflow:hidden; border:1px solid var(--panel-border);"><div style="width:${bankPct}%; height:100%; background:${bankPct < 25 ? 'var(--danger)' : 'var(--accent-grad)'};"></div></div><span style="font-family:var(--font-num); font-size:11px; color:var(--ink);">${Math.ceil(view.pauseBank / 1000)}s</span></div></div>
       </div>
+      ${clashHTML}
     </div></div></div>`;
 }
 
@@ -252,12 +290,12 @@ export interface BattleActions { selectCard: (i: number) => void; playLane: (lan
 export function mountBattle(host: HTMLElement, getView: () => BattleView, actions?: BattleActions): { update: () => void; destroy: () => void } {
   if (!document.getElementById('gg-battle-css')) { const s = document.createElement('style'); s.id = 'gg-battle-css'; s.textContent = CSS; document.head.appendChild(s); }
   const W = 3000, H = 1500, VPW = 1284, VPH = 612, OUT = 0.66667;
-  const state: CamState = { theme: 'onyx', lever: 'bless', lane: 'mid', zoom: 0.85, camX: 1500, camY: 750, gates: { g1: true, g2: false } };
+  const state: CamState = { theme: 'onyx', lever: 'bless', lane: 'mid', zoom: 0.42, camX: 1500, camY: 750, gates: { g1: true, g2: false } };
   let drag: { mx: number; my: number; cx: number; cy: number } | null = null;
   let mm: HTMLElement | null = null;
   const clampAxis = (c: number, world: number, vp: number, z: number): number => { const half = vp / (2 * z); if (2 * half >= world) return world / 2; return Math.max(half, Math.min(world - half, c)); };
   const setCam = (x: number, y: number): void => { state.camX = clampAxis(x, W, VPW, state.zoom); state.camY = clampAxis(y, H, VPH, state.zoom); render(); };
-  const setView = (x: number, y: number, z: number): void => { state.zoom = Math.max(0.55, Math.min(2.6, z)); setCam(x, y); };
+  const setView = (x: number, y: number, z: number): void => { state.zoom = Math.max(0.4, Math.min(2.6, z)); setCam(x, y); };
   const render = (): void => { host.innerHTML = buildHTML(getView(), state); };
 
   const LANE_IDX: Record<string, number> = { top: 0, mid: 1, bot: 2 };
@@ -270,7 +308,7 @@ export function mountBattle(host: HTMLElement, getView: () => BattleView, action
     else if (act === 'pause') { actions?.togglePause(); render(); }
     else if (act === 'gate') { state.gates[k] = !state.gates[k]; render(); }
     else if (act === 'zoom') setView(state.camX, state.camY, state.zoom + (k === 'in' ? 0.2 : -0.2));
-    else if (act === 'focus') { if (k === 'home') setView(A_POS[0] + 260, 750, 1.5); else if (k === 'fight') setView(laneAt(1, 0.5)[0], laneAt(1, 0.5)[1], 1.4); else if (k === 'enemy') setView(B_POS[0] - 260, 750, 1.5); else setView(1500, 750, 0.55); }
+    else if (act === 'focus') { if (k === 'home') setView(A_POS[0] + 260, 750, 1.5); else if (k === 'fight') setView(laneAt(1, 0.5)[0], laneAt(1, 0.5)[1], 1.4); else if (k === 'enemy') setView(B_POS[0] - 260, 750, 1.5); else setView(1500, 750, 0.42); }
   };
   const onKey = (e: KeyboardEvent): void => { if (e.code === 'Space') { e.preventDefault(); actions?.togglePause(); render(); } };
   const onInput = (e: Event): void => { const el = e.target as HTMLInputElement; if (el.dataset && el.dataset.act === 'zoominput') setView(state.camX, state.camY, parseFloat(el.value)); };
@@ -300,6 +338,6 @@ const FONTS = '<link rel="preconnect" href="https://fonts.googleapis.com"><link 
 // 离线"看帧"：自包含 HTML 文档（CSS + 字体 + 真渲染器 buildHTML 输出）。浏览器直接开 = 真游戏战斗屏渲染。
 // 容器内确定性生成（同 game-f frameSvg），可 toMatchFileSnapshot 做无头视觉回归 golden。theme 缺省玄铁。
 export function renderBattleDoc(view: BattleView, theme: 'onyx' | 'brocade' = 'onyx'): string {
-  const s: CamState = { theme, lever: 'bless', lane: 'mid', zoom: 0.85, camX: 1500, camY: 750, gates: { g1: true, g2: false } };
+  const s: CamState = { theme, lever: 'bless', lane: 'mid', zoom: 0.42, camX: 1500, camY: 750, gates: { g1: true, g2: false } };
   return `<!DOCTYPE html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">${FONTS}<style>body{margin:0;background:#0a0d12;display:flex;justify-content:center;}${CSS}</style></head><body>${buildHTML(view, s)}</body></html>`;
 }
