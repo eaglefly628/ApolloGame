@@ -3,7 +3,7 @@ import type { Resource, PlayedHand, Flag, StringVar, ScoreTrace, ScoreEvent } fr
 import { buildGameEBlueprint, buildJokerEntities, jokerToEntities, toEngineCard, HAND_TYPE_TO_ENGINE, HANDMOD_FLAGS, R_CHIPS, R_MULT, R_MONEY, R_HAND_SCORE, R_ROUND_SCORE, R_HANDS_LEFT, R_DISCARDS_LEFT, R_BLIND, V_HAND_TYPE } from './blueprint.js';
 import { shuffledDeck, mulberry32, type Card } from './deck.js';
 import { HAND_ORDER, handScoreAtLevel, type HandType } from './hand-rankings.js';
-import { rollJokerOffer, type JokerCard } from './jokers.js';
+import { rollJokerOffer, roundEndPayout, type JokerCard } from './jokers.js';
 import { blindRequirement, BLIND_ORDER, type BlindKind } from './blinds.js';
 import { type PlanetCard } from './planets.js';
 import { bossForAnte, type BossBlind } from './boss-blinds.js';
@@ -58,6 +58,8 @@ export class GameSession {
   handSize = HAND_SIZE;
   /** Boss「尖牙」：每次出牌按张数扣 $。 */
   payPerPlay = false;
+  /** 已击败 Boss 数（Rocket 等经济小丑读）。 */
+  bossesBeaten = 0;
   /** 牌身份 → 附魔列表（塔罗牌盖章，可叠多个，持久；洗牌不丢，按 suit+rank 绑定）。 */
   enchanted: Record<string, EnchantId[]> = {};
 
@@ -108,6 +110,7 @@ export class GameSession {
     this.blindIdx = 0;
     this.handLevels = Object.fromEntries(HAND_ORDER.map((h) => [h, 1])) as Record<HandType, number>;
     this.enchanted = {};
+    this.bossesBeaten = 0;
     this.startBlind();
   }
 
@@ -204,6 +207,9 @@ export class GameSession {
     if (this.roundScore >= this.target) {
       const reward = BLIND_REWARD[this.blindKind] + this.handsLeft + Math.min(5, Math.floor(this.money / 5));
       this.set(R_MONEY, this.money + reward);
+      if (this.blindKind === 'boss') this.bossesBeaten += 1;
+      const unusedDiscards = this.discardsLeft === DISCARDS_PER_BLIND ? this.discardsLeft : 0; // 一次没弃才算
+      this.set(R_MONEY, this.money + roundEndPayout(this.owned, { money: this.money, bossesBeaten: this.bossesBeaten, unusedDiscards }));
       outcome = 'won-blind';
     } else if (this.handsLeft <= 0) {
       outcome = 'lost';

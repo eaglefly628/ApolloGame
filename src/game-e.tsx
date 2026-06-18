@@ -8,7 +8,7 @@ import {
 } from './games/game-e/blueprint.js';
 import {
   HAND_RANKINGS, HAND_ORDER, handScoreAtLevel, RANK_ORDER, RANKS, SUITS, shuffledDeck, rollJokerOffer, blindRequirement, BLIND_ORDER,
-  COMMON_PLANETS, planetForHand, bossForAnte, TAROTS, ENCHANTS,
+  COMMON_PLANETS, planetForHand, bossForAnte, TAROTS, ENCHANTS, roundEndPayout,
   type PlanetCard, type BossBlind, type TarotCard, type EnchantId,
   type Card, type Suit, type Rank, type HandType, type JokerCard, type BlindKind,
 } from './games/game-e/index.js';
@@ -150,6 +150,7 @@ function GameE() {
     return () => { window.removeEventListener('resize', measure); window.removeEventListener('scroll', measure, true); };
   }, [tour]); // eslint-disable-line react-hooks/exhaustive-deps
   const handSizeRef = useRef(HAND_SIZE); // 本道手牌张数（镣铐诅咒减 1）
+  const bossesBeatenRef = useRef(0); // 已击败 Boss 数（Rocket 等经济小丑读）
   const CONSUMABLE_SLOTS = 2;
   const enchantOf = (c: Card): EnchantId[] => enchanted[`${c.suit}${c.rank}`] ?? [];
   useEffect(() => { handLevelsRef.current = handLevels; }, [handLevels]);
@@ -385,6 +386,10 @@ function GameE() {
       if (rs >= get(R_BLIND)) {
         const reward = BLIND_META[blindKind].reward + get(R_HANDS_LEFT) + Math.min(5, Math.floor(get(R_MONEY) / 5));
         set(R_MONEY, get(R_MONEY) + reward);
+        if (blindKind === 'boss') bossesBeatenRef.current += 1;
+        const unusedDiscards = get(R_DISCARDS_LEFT) === DISCARDS_PER_BLIND ? get(R_DISCARDS_LEFT) : 0;
+        const econ = roundEndPayout(owned, { money: get(R_MONEY), bossesBeaten: bossesBeatenRef.current, unusedDiscards });
+        if (econ > 0) { set(R_MONEY, get(R_MONEY) + econ); pushLog(`💰 小丑结算 +$${econ}`); }
         setShopOffer(rollJokerOffer(new Set(owned.map((o) => o.id)), 3, Math.random));
         setShopConsumables(rollConsumables());
         setMascot(true); window.setTimeout(() => setMascot(false), 3800); // 过关庆祝：萌宠举牌
@@ -490,7 +495,7 @@ function GameE() {
     engineRef.current = e;
     setOwned([]); setAnte(1); setBlindIdx(0);
     setConsumables([]); setShopConsumables([]);
-    setEnchanted({}); enchantedRef.current = {};
+    setEnchanted({}); enchantedRef.current = {}; bossesBeatenRef.current = 0;
     setHandLevels(Object.fromEntries(HAND_ORDER.map((h) => [h, 1])) as Record<HandType, number>);
     startBlind(1, 0);
   }, [startBlind]);

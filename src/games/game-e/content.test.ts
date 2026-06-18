@@ -2,7 +2,7 @@ import { describe, it, expect } from 'vitest';
 import { STANDARD_DECK, RANK_CHIPS, SUITS, RANKS, RANK_ORDER } from './deck.js';
 import { HAND_RANKINGS, HAND_ORDER, handScoreAtLevel } from './hand-rankings.js';
 import { ANTE_BASE, BLIND_MULT, blindRequirement, BLIND_ORDER } from './blinds.js';
-import { STARTER_JOKERS, JOKER_BY_ID, rollJokerOffer, RARITY_WEIGHT } from './jokers.js';
+import { STARTER_JOKERS, JOKER_BY_ID, rollJokerOffer, RARITY_WEIGHT, roundEndPayout } from './jokers.js';
 import { mulberry32 } from './deck.js';
 import { jokerArtKey, JOKER_ART_FILES } from './assets.js';
 
@@ -69,10 +69,10 @@ describe('game-e · 盲注曲线', () => {
 });
 
 describe('game-e · 小丑数据', () => {
-  it('可玩 47 张、id 唯一、字段在合法枚举内', () => {
-    expect(STARTER_JOKERS.length).toBe(47);
+  it('可玩 51 张、id 唯一、字段在合法枚举内', () => {
+    expect(STARTER_JOKERS.length).toBe(51);
     const ids = STARTER_JOKERS.map((j) => j.id);
-    expect(new Set(ids).size).toBe(47);
+    expect(new Set(ids).size).toBe(51);
     const ops = new Set(['add', 'mul']);
     const targets = new Set(['chips', 'mult', 'money']);
     for (const j of STARTER_JOKERS) {
@@ -85,6 +85,16 @@ describe('game-e · 小丑数据', () => {
       if (j.valueFrom) expect(j.valueFrom.coeff).not.toBe(0);
     }
     expect(JOKER_BY_ID.get('cavendish')?.op).toBe('mul');
+  });
+
+  it('经济小丑：roundEndPayout 按 owned 算 $（Golden/Rocket/Cloud9/ToTheMoon/Delayed）', () => {
+    const g = (id: string) => JOKER_BY_ID.get(id)!;
+    expect(roundEndPayout([g('golden_joker')], { money: 0, bossesBeaten: 0, unusedDiscards: 0 })).toBe(4); // flat
+    expect(roundEndPayout([g('rocket')], { money: 0, bossesBeaten: 3, unusedDiscards: 0 })).toBe(6); // 2×3 boss
+    expect(roundEndPayout([g('cloud_9')], { money: 0, bossesBeaten: 0, unusedDiscards: 0 })).toBe(4); // 4 张 9
+    expect(roundEndPayout([g('to_the_moon')], { money: 23, bossesBeaten: 0, unusedDiscards: 0 })).toBe(4); // floor(23/5)
+    expect(roundEndPayout([g('delayed_gratification')], { money: 0, bossesBeaten: 0, unusedDiscards: 3 })).toBe(6); // 2×3
+    expect(roundEndPayout([g('joker')], { money: 99, bossesBeaten: 9, unusedDiscards: 3 })).toBe(0); // 非经济小丑 0
   });
 
   it('刻意覆盖全部 7 型', () => {

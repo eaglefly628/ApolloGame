@@ -197,7 +197,8 @@ export function jokerToEntities(j: JokerCard, idx: number): Record<string, Entit
     return tagged(out);
   }
 
-  if (j.trigger !== 'on_hand_scored') return out; // on_round_end / on_blind_selected：切片暂不接
+  // on_round_end / on_discard / on_blind_selected：效果由游戏侧线性脚本解释 owned（经济等），引擎侧只占一个 tag（countOf 计入 + 占位）。
+  if (j.trigger !== 'on_hand_scored') { out[`j_${j.id}`] = {} as unknown as EntityBlueprint; return tagged(out); }
 
   const effect: Record<string, unknown> = { onSignal: SIG_SCORE, kind: 'modify-resource', targetId: target, op: j.op, order };
   if (j.countTag === 'jokers') effect.valueFrom = { countOf: TAG_JOKER, coeff: j.value }; // REQ-E-023①：×小丑数（Abstract）

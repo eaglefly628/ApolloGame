@@ -68,6 +68,8 @@ export interface JokerCard {
   readonly held?: boolean;
   /** 被动判型修饰（REQ-E-023⑤）：拥有期间点亮对应 mod Flag（four_fingers 4 张成顺/同花、shortcut 带空顺、smeared 红黑各算同花）。 */
   readonly handMod?: 'four_fingers' | 'shortcut' | 'smeared';
+  /** 经济触发（游戏侧线性脚本在流程点解释，非引擎）：on='round'(过关结算) / 'discard'(弃牌时)。kind=一组固定的金额公式词汇。 */
+  readonly econ?: { readonly on: 'round' | 'discard'; readonly kind: 'flat' | 'per_boss' | 'per_9_in_deck' | 'interest' | 'per_unused_discard' | 'face_gte_3'; readonly value: number };
   /** 重触发次数（REQ-014 PerCardRetrigger）：>0 表示首张计分牌额外重触发 N 次（Hanging Chad=2）。 */
   readonly retrigger?: number;
   /** 美术 key（jokerArtKey(id)）；缺图自动退化占位。 */
@@ -92,7 +94,7 @@ export const STARTER_JOKERS: readonly JokerCard[] = [
   J({ id: 'bull', name: 'Bull', rarity: 'uncommon', cost: 6, jokerType: '+c', trigger: 'on_hand_scored', when: { kind: 'always' }, op: 'add', target: 'chips', value: 2, valueFrom: { resourceId: 'money', coeff: 2 }, text: '每有 $1 +2 筹码' }),
   J({ id: 'cavendish', name: 'Cavendish', rarity: 'uncommon', cost: 6, jokerType: 'Xm', trigger: 'on_hand_scored', when: { kind: 'always' }, op: 'mul', target: 'mult', value: 3, text: '×3 倍率' }),
   J({ id: 'the_duo', name: 'The Duo', rarity: 'rare', cost: 8, jokerType: 'Xm', trigger: 'on_hand_scored', when: { kind: 'hand_contains', hand: 'pair' }, op: 'mul', target: 'mult', value: 2, text: '含对子 → ×2 倍率' }),
-  J({ id: 'golden_joker', name: 'Golden Joker', rarity: 'common', cost: 6, jokerType: '+$', trigger: 'on_round_end', when: { kind: 'always' }, op: 'add', target: 'money', value: 4, text: '回合结束 +$4' }),
+  J({ id: 'golden_joker', name: 'Golden Joker', rarity: 'common', cost: 6, jokerType: '+$', trigger: 'on_round_end', when: { kind: 'always' }, op: 'add', target: 'money', value: 4, econ: { on: 'round', kind: 'flat', value: 4 }, text: '回合结束 +$4' }),
   J({ id: 'hanging_chad', name: 'Hanging Chad', rarity: 'common', cost: 4, jokerType: '...', trigger: 'on_card_scored', when: { kind: 'always' }, op: 'add', target: 'chips', value: 0, retrigger: 2, text: '首张计分牌额外重触发 2 次' }),
   // ── 补全：现有能力可忠实表达的官方小丑（数值对齐 Balatro Wiki）──
   J({ id: 'wrathful_joker', name: 'Wrathful Joker', rarity: 'common', cost: 5, jokerType: '+m', trigger: 'on_card_scored', when: { kind: 'card_suit', suit: 'spades' }, op: 'add', target: 'mult', value: 3, text: '每张计分的 ♠ +3 倍率' }),
@@ -133,7 +135,29 @@ export const STARTER_JOKERS: readonly JokerCard[] = [
   J({ id: 'four_fingers', name: 'Four Fingers', rarity: 'uncommon', cost: 7, jokerType: '!!', trigger: 'on_blind_selected', when: { kind: 'always' }, op: 'add', target: 'mult', value: 0, handMod: 'four_fingers', text: '4 张牌即可组成同花和顺子' }),
   J({ id: 'shortcut', name: 'Shortcut', rarity: 'uncommon', cost: 7, jokerType: '!!', trigger: 'on_blind_selected', when: { kind: 'always' }, op: 'add', target: 'mult', value: 0, handMod: 'shortcut', text: '顺子允许有 1 个点数空缺' }),
   J({ id: 'smeared_joker', name: 'Smeared Joker', rarity: 'uncommon', cost: 7, jokerType: '!!', trigger: 'on_blind_selected', when: { kind: 'always' }, op: 'add', target: 'mult', value: 0, handMod: 'smeared', text: '红桃方块算同花色、黑桃梅花算同花色' }),
+  // ── 经济：过关结算时 +$（游戏侧线性脚本解释 owned，非引擎）──
+  J({ id: 'rocket', name: 'Rocket', rarity: 'uncommon', cost: 6, jokerType: '+$', trigger: 'on_round_end', when: { kind: 'always' }, op: 'add', target: 'money', value: 2, econ: { on: 'round', kind: 'per_boss', value: 2 }, text: '回合结束 +$2 × 已击败 Boss 数' }),
+  J({ id: 'cloud_9', name: 'Cloud 9', rarity: 'uncommon', cost: 7, jokerType: '+$', trigger: 'on_round_end', when: { kind: 'always' }, op: 'add', target: 'money', value: 1, econ: { on: 'round', kind: 'per_9_in_deck', value: 1 }, text: '回合结束 每张 9 +$1（满副 +$4）' }),
+  J({ id: 'to_the_moon', name: 'To the Moon', rarity: 'uncommon', cost: 5, jokerType: '+$', trigger: 'on_round_end', when: { kind: 'always' }, op: 'add', target: 'money', value: 1, econ: { on: 'round', kind: 'interest', value: 1 }, text: '回合结束 每 $5 额外 +$1 利息' }),
+  J({ id: 'delayed_gratification', name: 'Delayed Gratification', rarity: 'common', cost: 4, jokerType: '+$', trigger: 'on_round_end', when: { kind: 'always' }, op: 'add', target: 'money', value: 2, econ: { on: 'round', kind: 'per_unused_discard', value: 2 }, text: '本回合一次没弃牌 → 每剩 1 弃牌 +$2' }),
 ];
+
+/** 经济解释（游戏侧线性脚本调用）：过关结算时 owned 的 on='round' 经济小丑总 $。 */
+export function roundEndPayout(owned: readonly JokerCard[], ctx: { money: number; bossesBeaten: number; unusedDiscards: number }): number {
+  let m = 0;
+  for (const j of owned) {
+    if (j.econ?.on !== 'round') continue;
+    switch (j.econ.kind) {
+      case 'flat': m += j.econ.value; break;
+      case 'per_boss': m += j.econ.value * ctx.bossesBeaten; break;
+      case 'per_9_in_deck': m += j.econ.value * 4; break; // 标准副 4 张 9
+      case 'interest': m += Math.floor(Math.max(0, ctx.money) / 5) * j.econ.value; break;
+      case 'per_unused_discard': m += j.econ.value * ctx.unusedDiscards; break;
+      default: break;
+    }
+  }
+  return m;
+}
 
 /** 按 id 取小丑。 */
 export const JOKER_BY_ID: ReadonlyMap<string, JokerCard> = new Map(STARTER_JOKERS.map((j) => [j.id, j]));

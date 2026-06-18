@@ -65,14 +65,18 @@ describe('joker-wiring · jokerToEntities 结构映射', () => {
     const e = jokerToEntities(J('hanging_chad'), 0) as Record<string, { PerCardRetrigger: Record<string, unknown> }>;
     expect(e.j_hanging_chad.PerCardRetrigger).toMatchObject({ when: { kind: 'index', eq: 0 }, extra: 2 });
   });
-  it('on_round_end（Golden Joker）→ 切片暂跳过（空）', () => {
-    expect(Object.keys(jokerToEntities(J('golden_joker'), 0))).toHaveLength(0);
+  it('on_round_end（Golden Joker）→ tag-only 实体（效果由游戏侧解释，仅占 tag 供 countOf）', () => {
+    const ent = jokerToEntities(J('golden_joker'), 0);
+    expect(Object.keys(ent)).toEqual(['j_golden_joker']);
+    const e = ent.j_golden_joker as unknown as Record<string, unknown>;
+    expect(e.Tag).toBeDefined(); // 计入 countOf
+    expect(e.Effect).toBeUndefined(); // 无计分效果（钱由 roundEndPayout 解释）
   });
-  it('buildJokerEntities(全 14 张)：除 golden(round_end) 外全部产实体', () => {
+  it('buildJokerEntities：计分小丑产计分实体，经济/被动小丑产 tag-only', () => {
     const all = buildJokerEntities(STARTER_JOKERS);
-    // 13 张计分小丑各 ≥1 实体（条件类 2 实体）；golden 跳过。
     expect(all.j_joker).toBeDefined();
-    expect(all.j_golden_joker).toBeUndefined();
+    expect(all.j_golden_joker).toBeDefined(); // 现为 tag-only（不再 undefined）
+    expect((all.j_golden_joker as unknown as Record<string, unknown>).Effect).toBeUndefined();
     expect(all.j_hanging_chad).toBeDefined();
   });
 });
