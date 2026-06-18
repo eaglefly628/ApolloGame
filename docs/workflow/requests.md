@@ -136,6 +136,7 @@
 - **想实现**：羁绊光环——"3 战士羁绊 → 所有战士 +10 攻"。
 - **建议**：`GroupEffect{ filter, action }` 把 action 施给每个匹配实体。
 - **Lead 裁决（不 greenlit）**：多数逐单位羁绊光环可用 **group-count（数羁绊层数）→ 写一个全局 buff 资源 → 各单位 stat/hitbox 读该全局 buff** 重组绕过，不必逐单位 fan-out。只有"各单位状态异质、必须逐个写、全局共享值表达不了"的羁绊时才下沉。待真实拉动再评估。
+- **Game G 复判（2026-06-17 · 卡牌桌游 owner 拉动复审 → ⛔ 维持 wontfix）**：Game G《翻命扑克》战斗是 **clash-resolve 读聚合**（doc 19 §三：P_eff 在遭遇拍**读**各 buff 聚合算胜率），**不是集合写**——`group-effect`(fan-out 写) 解的是我们没有的问题。① 同质组 buff（路/侧/花色）= 全局资源 + 各牌按条件**读**（REQ-023 既定重组）；② 异质 per-牌 = `Card.mods`（REQ-E-021 已落）+ 游戏侧声明式 joker 解释器**循环写**（零引擎原语）；③ 士气/相邻协同 = clash-resolve **读时算**。**无任一机制需要「全局值表达不了的异质持久集合写」** → 既定留口未命中。Lead 已明确「不做统一 Buff 引擎」，group-effect 逆此 + 逆 manifesto「勿无脑加宽」。**优先级高 ≠ 真缺口**（manifesto 是最高纲领）。→ **维持 wontfix。** 若扩展组有**具体卡**需「动态过滤组的异质持久写、且 `Card.mods`+游戏侧循环也表达不了」，给出那张卡，再复判。
 
 ---
 
