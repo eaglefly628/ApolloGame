@@ -3,12 +3,12 @@ import { createRoot } from 'react-dom/client';
 import { Engine } from './runtime/engine.js';
 import type { Resource, PlayedHand, Flag, StringVar, ScoreTrace, ScoreEvent } from './engine/protocol/components.js';
 import {
-  buildGameEBlueprint, buildJokerEntities, jokerToEntities, toEngineCard, BASE_CHIPS_BY_RANK, HAND_TYPE_TO_ENGINE, HANDMOD_FLAGS,
+  buildGameEBlueprint, buildJokerEntities, jokerToEntities, toEngineCard, BASE_CHIPS_BY_RANK, HAND_TYPE_TO_ENGINE, HANDMOD_FLAGS, F_DID_DISCARD, F_DID_ROUND,
   R_CHIPS, R_MULT, R_MONEY, R_HAND_SCORE, R_ROUND_SCORE, R_HANDS_LEFT, R_DISCARDS_LEFT, R_BLIND, V_HAND_TYPE,
 } from './games/game-e/blueprint.js';
 import {
   HAND_RANKINGS, HAND_ORDER, handScoreAtLevel, RANK_ORDER, RANKS, SUITS, shuffledDeck, rollJokerOffer, blindRequirement, BLIND_ORDER,
-  COMMON_PLANETS, planetForHand, bossForAnte, TAROTS, ENCHANTS, roundEndPayout, growBumps, discardPayout, passiveTotals,
+  COMMON_PLANETS, planetForHand, bossForAnte, TAROTS, ENCHANTS, roundEndPayout, discardPayout, passiveTotals,
   type PlanetCard, type BossBlind, type TarotCard, type EnchantId,
   type Card, type Suit, type Rank, type HandType, type JokerCard, type BlindKind,
 } from './games/game-e/index.js';
@@ -217,6 +217,11 @@ function GameE() {
     const e = engineRef.current!;
     for (const [eid] of e.world.query('Flag')) { const f = e.world.getComponent<Flag>(eid, 'Flag'); if (f && f.id === id) { f.active = active; return; } }
   }, []);
+  // 脉冲边沿 Flag（升→tick→降→tick）：让监听它的自增长累加 Effect 各跑一次（弃牌/过关）。
+  const pulse = useCallback((flagId: string) => {
+    const e = engineRef.current!;
+    setFlagById(flagId, true); e.world.tick(); setFlagById(flagId, false); e.world.tick();
+  }, [setFlagById]);
 
   // 一道盲注开局：重置回合资源 + 设盲注线 + 洗牌发 8 张。
   const startBlind = useCallback((a: number, bi: number) => {
@@ -387,8 +392,7 @@ function GameE() {
       setSlam(true); window.setTimeout(() => setSlam(false), 440); // 结算砸屏
       setPlayedTypes((p) => (p.includes(type) ? p : [...p, type]));
       if (boss?.effect === 'pay_per_play') { set(R_MONEY, get(R_MONEY) - chosen.length); pushLog(`🦷 尖牙：出 ${chosen.length} 张 -💰$${chosen.length}`); } // 尖牙：按张数扣 $
-      // 自增长（出牌事件）：本手 type 决定条件累加（Green/Supernova/Ice Cream/Square/Runner/Spare Trousers）。
-      for (const b of growBumps(owned, 'hand', { handSize: chosen.length, isStraight: type === 'straight' || type === 'straight_flush', isTwoPair: type === 'two_pair' })) set(b.id, get(b.id) + b.delta);
+      // 自增长「出牌事件」：已由 SIG_COMMIT/条件门的累加 Effect 在上方计分 tick 内自动执行（引擎做）。
       pushLog(`▶ ${HAND_RANKINGS[type]?.name ?? type}　${finalChips.toLocaleString()} × ${finalMult} = ${finalScore.toLocaleString()}`);
       const rs = get(R_ROUND_SCORE);
       pushLog(`　累计 ${rs.toLocaleString()} / ${get(R_BLIND).toLocaleString()}${rs >= get(R_BLIND) ? '　✅ 过关！' : ''}`);
@@ -399,7 +403,7 @@ function GameE() {
         const unusedDiscards = get(R_DISCARDS_LEFT) === DISCARDS_PER_BLIND ? get(R_DISCARDS_LEFT) : 0;
         const econ = roundEndPayout(owned, { money: get(R_MONEY), bossesBeaten: bossesBeatenRef.current, unusedDiscards });
         if (econ > 0) { set(R_MONEY, get(R_MONEY) + econ); pushLog(`💰 小丑结算 +$${econ}`); }
-        for (const b of growBumps(owned, 'round', {})) set(b.id, get(b.id) + b.delta); // 过关事件（Popcorn）
+        pulse(F_DID_ROUND); // 过关事件（Popcorn 等自增长）→ 引擎累加 Effect
         setShopOffer(rollJokerOffer(new Set(owned.map((o) => o.id)), 3, Math.random));
         setShopConsumables(rollConsumables());
         setMascot(true); window.setTimeout(() => setMascot(false), 3800); // 过关庆祝：萌宠举牌
@@ -422,7 +426,7 @@ function GameE() {
     const scoringIdx = [...new Set(events.filter((e) => e.source?.startsWith('card:')).map((e) => Number(e.source!.slice(5))))];
     seqRef.current = { frames, i: 0, after, cards: chosen, scoringIdx };
     advanceSeq();
-  }, [phase, busy, handsLeft, hand, sel, engine, get, set, drawTo, owned, blindKind, advanceSeq, boss, playedTypes]);
+  }, [phase, busy, handsLeft, hand, sel, engine, get, set, drawTo, owned, blindKind, advanceSeq, boss, playedTypes, pulse]);
 
   const commitDiscard = useCallback(() => {
     set(R_DISCARDS_LEFT, get(R_DISCARDS_LEFT) - 1);
@@ -430,7 +434,7 @@ function GameE() {
     const discarded = hand.filter((_, i) => sel[i]);
     pushLog(`♻ 弃 ${hand.length - kept.length} 张，补牌`);
     // 自增长（弃牌事件，Green -1）+ Faceless（弃 ≥3 人头 +$5）。
-    for (const b of growBumps(owned, 'discard', {})) set(b.id, get(b.id) + b.delta);
+    pulse(F_DID_DISCARD); // 弃牌事件（Green -1 等自增长）→ 引擎累加 Effect
     const faces = discarded.filter((c) => c.rank === 'J' || c.rank === 'Q' || c.rank === 'K').length;
     const dpay = discardPayout(owned, faces);
     if (dpay > 0) { set(R_MONEY, get(R_MONEY) + dpay); pushLog(`💰 弃牌小丑 +$${dpay}`); }
@@ -440,7 +444,7 @@ function GameE() {
     setNewKeys(new Set(next.slice(kept.length).map(keyOf)));
     setAnim(null);
     bump();
-  }, [hand, sel, get, set, drawTo, owned]);
+  }, [hand, sel, get, set, drawTo, owned, pulse]);
 
   // 弃牌：先播「飞向垃圾桶」动画（380ms）→ 再提交（扣额度+补牌飞入）。
   const beginDiscard = useCallback(() => {

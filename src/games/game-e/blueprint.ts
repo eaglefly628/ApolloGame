@@ -49,6 +49,11 @@ export const R_HANDS_LEFT = 'hands_left';
 export const R_DISCARDS_LEFT = 'discards_left';
 export const R_BLIND = 'blind_target';
 export const SIG_COMMIT = 'hand_committed'; // 边沿信号：每"出一手"触发一次（与 score 的 level 区分）
+// REQ-E-023④（数据驱动）：弃牌 / 过关 边沿信号 —— 游戏侧脉冲对应 Flag → 自增长小丑的累加 Effect 监听它。
+export const SIG_DISCARD = 'discard_made';
+export const SIG_ROUND = 'round_cleared';
+export const F_DID_DISCARD = 'did_discard';
+export const F_DID_ROUND = 'did_round';
 // poker-eval 派生事实（供条件类小丑门控："含对子/三条/两对" = rankMaxCount/pairCount 阈值；"出牌≤N" = handSize）。
 export const R_RANK_MAX = 'rank_max_count';
 export const R_PAIR_COUNT = 'pair_count';
@@ -203,9 +208,20 @@ export function jokerToEntities(j: JokerCard, idx: number): Record<string, Entit
   if (j.trigger !== 'on_hand_scored') { out[`j_${j.id}`] = {} as unknown as EntityBlueprint; return tagged(out); }
 
   const effect: Record<string, unknown> = { onSignal: SIG_SCORE, kind: 'modify-resource', targetId: target, op: j.op, order };
-  if (j.grow) { // REQ-E-023④：计分读 per-joker 计数 Resource（流程在事件 ± 更新）
-    effect.valueFrom = { resourceId: growResId(j.id) };
-    out[growResId(j.id)] = { Resource: { id: growResId(j.id), current: j.grow.start, min: -1_000_000_000, max: 1_000_000_000 } } as unknown as EntityBlueprint;
+  if (j.grow) { // REQ-E-023④（数据驱动）：计分读 per-joker 计数 Resource；累加由「信号→Effect」做，引擎执行（无游戏侧解释器）
+    const gid = growResId(j.id);
+    effect.valueFrom = { resourceId: gid };
+    out[gid] = { Resource: { id: gid, current: j.grow.start, min: -1_000_000_000, max: 1_000_000_000 } } as unknown as EntityBlueprint;
+    const acc = (key: string, signal: string, delta: number) => { out[key] = { Effect: { onSignal: signal, kind: 'modify-resource', targetId: gid, op: 'add', value: delta, order: 3000 } } as unknown as EntityBlueprint; };
+    if (j.grow.hand != null) {
+      if (j.grow.cond) { // 条件累加：出牌边沿 + 牌面条件（同 jolly 门套路）
+        const cond = j.grow.cond === 'size4' ? { kind: 'resource', id: R_HAND_SIZE, cmp: 'eq', value: 4 } : j.grow.cond === 'straight' ? { kind: 'flag', id: F_STRAIGHT } : { kind: 'resource', id: R_PAIR_COUNT, cmp: 'gte', value: 2 };
+        out[`gg_${j.id}`] = { EventWhen: { signal: `gs_${j.id}`, when: { kind: 'and', of: [{ kind: 'flag', id: F_SCORING }, cond] }, mode: 'edge', armed: false } } as unknown as EntityBlueprint;
+        acc(`ga_${j.id}`, `gs_${j.id}`, j.grow.hand);
+      } else acc(`ga_${j.id}`, SIG_COMMIT, j.grow.hand);
+    }
+    if (j.grow.discard != null) acc(`gd_${j.id}`, SIG_DISCARD, j.grow.discard);
+    if (j.grow.round != null) acc(`gr_${j.id}`, SIG_ROUND, j.grow.round);
   } else if (j.countTag === 'jokers') effect.valueFrom = { countOf: TAG_JOKER, coeff: j.value }; // REQ-E-023①：×小丑数（Abstract）
   else if (valueFrom) effect.valueFrom = valueFrom;
   else effect.value = j.value;
@@ -325,6 +341,12 @@ export function buildGameEBlueprint(jokerEntities: Record<string, EntityBlueprin
     // round_score += hand_score（order>score_combine 的 1000 → 同 tick 读到刚 set 的本手分）。
     round_accumulate: { Effect: { onSignal: SIG_COMMIT, kind: 'modify-resource', targetId: R_ROUND_SCORE, op: 'add', valueFrom: { resourceId: R_HAND_SCORE }, order: 2000 } } as unknown as EntityBlueprint,
     hands_decrement: { Effect: { onSignal: SIG_COMMIT, kind: 'modify-resource', targetId: R_HANDS_LEFT, op: 'add', value: -1, order: 2001 } } as unknown as EntityBlueprint,
+
+    // ── 弃牌 / 过关 边沿信号（REQ-E-023④ 数据驱动自增长）：游戏侧脉冲 Flag → 这里发信号 → 累加 Effect 监听 ──
+    didDiscard: { Flag: { id: F_DID_DISCARD, active: false } } as unknown as EntityBlueprint,
+    didRound: { Flag: { id: F_DID_ROUND, active: false } } as unknown as EntityBlueprint,
+    gate_discard: { EventWhen: { signal: SIG_DISCARD, when: { kind: 'flag', id: F_DID_DISCARD }, mode: 'edge', armed: false } } as unknown as EntityBlueprint,
+    gate_round: { EventWhen: { signal: SIG_ROUND, when: { kind: 'flag', id: F_DID_ROUND }, mode: 'edge', armed: false } } as unknown as EntityBlueprint,
   };
 
   return {

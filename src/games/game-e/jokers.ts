@@ -179,24 +179,6 @@ export function passiveTotals(owned: readonly JokerCard[]): { handSize: number; 
   return { handSize, hands, discards };
 }
 
-/** 流程在某事件后要对哪些自增长计数 ±多少（游戏侧据此 set 计数 Resource）。cond 仅 hand 事件按出的牌判。 */
-export function growBumps(owned: readonly JokerCard[], event: 'hand' | 'discard' | 'round', ctx: { handSize?: number; isStraight?: boolean; isTwoPair?: boolean }): { id: string; delta: number }[] {
-  const out: { id: string; delta: number }[] = [];
-  for (const j of owned) {
-    const g = j.grow;
-    if (!g) continue;
-    const d = event === 'hand' ? g.hand : event === 'discard' ? g.discard : g.round;
-    if (d == null) continue;
-    if (event === 'hand' && g.cond) {
-      if (g.cond === 'size4' && ctx.handSize !== 4) continue;
-      if (g.cond === 'straight' && !ctx.isStraight) continue;
-      if (g.cond === 'two_pair' && !ctx.isTwoPair) continue;
-    }
-    out.push({ id: growResId(j.id), delta: d });
-  }
-  return out;
-}
-
 /** 弃牌时 owned 的 on='discard' 经济小丑总 $（Faceless：同次弃 ≥3 张人头 +$5）。 */
 export function discardPayout(owned: readonly JokerCard[], facesDiscarded: number): number {
   let m = 0;

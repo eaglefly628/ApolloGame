@@ -1,9 +1,9 @@
 import { Engine } from '../../runtime/engine.js';
 import type { Resource, PlayedHand, Flag, StringVar, ScoreTrace, ScoreEvent } from '@engine/protocol/components.js';
-import { buildGameEBlueprint, buildJokerEntities, jokerToEntities, toEngineCard, HAND_TYPE_TO_ENGINE, HANDMOD_FLAGS, R_CHIPS, R_MULT, R_MONEY, R_HAND_SCORE, R_ROUND_SCORE, R_HANDS_LEFT, R_DISCARDS_LEFT, R_BLIND, V_HAND_TYPE } from './blueprint.js';
+import { buildGameEBlueprint, buildJokerEntities, jokerToEntities, toEngineCard, HAND_TYPE_TO_ENGINE, HANDMOD_FLAGS, F_DID_DISCARD, F_DID_ROUND, R_CHIPS, R_MULT, R_MONEY, R_HAND_SCORE, R_ROUND_SCORE, R_HANDS_LEFT, R_DISCARDS_LEFT, R_BLIND, V_HAND_TYPE } from './blueprint.js';
 import { shuffledDeck, mulberry32, type Card } from './deck.js';
 import { HAND_ORDER, handScoreAtLevel, type HandType } from './hand-rankings.js';
-import { rollJokerOffer, roundEndPayout, growBumps, discardPayout, passiveTotals, type JokerCard } from './jokers.js';
+import { rollJokerOffer, roundEndPayout, discardPayout, passiveTotals, type JokerCard } from './jokers.js';
 import { blindRequirement, BLIND_ORDER, type BlindKind } from './blinds.js';
 import { type PlanetCard } from './planets.js';
 import { bossForAnte, type BossBlind } from './boss-blinds.js';
@@ -205,8 +205,7 @@ export class GameSession {
     this.hand = this.drawTo(this.hand.filter((_, i) => !keep.has(i)));
 
     if (this.payPerPlay) this.set(R_MONEY, this.money - chosen.length); // 尖牙：按出牌张数扣 $
-    // 自增长（出牌事件）：本手 type 决定条件累加（Green/Supernova/Ice Cream/Square/Runner/Spare Trousers）。
-    for (const b of growBumps(this.owned, 'hand', { handSize: chosen.length, isStraight: type === 'straight' || type === 'straight_flush', isTwoPair: type === 'two_pair' })) this.set(b.id, this.get(b.id) + b.delta);
+    // 自增长「出牌事件」：已由 SIG_COMMIT/条件门的累加 Effect 在上方计分 tick 内自动执行（引擎做，无游戏侧解释）。
 
     // 推进流程（线性判定）。
     let outcome: PlayResult['outcome'] = 'continue';
@@ -216,7 +215,7 @@ export class GameSession {
       if (this.blindKind === 'boss') this.bossesBeaten += 1;
       const unusedDiscards = this.discardsUsed === 0 ? this.discardsLeft : 0; // 一次没弃才算
       this.set(R_MONEY, this.money + roundEndPayout(this.owned, { money: this.money, bossesBeaten: this.bossesBeaten, unusedDiscards }));
-      for (const b of growBumps(this.owned, 'round', {})) this.set(b.id, this.get(b.id) + b.delta); // 过关事件（Popcorn 等）
+      this.pulse(F_DID_ROUND); // 过关事件（Popcorn 等自增长）→ 引擎累加 Effect
       outcome = 'won-blind';
     } else if (this.handsLeft <= 0) {
       outcome = 'lost';
@@ -232,7 +231,7 @@ export class GameSession {
     const discarded = this.hand.filter((_, i) => keep.has(i));
     this.discardsUsed += 1;
     // 自增长（弃牌事件）+ 弃牌经济（Faceless：弃 ≥3 人头 +$5）。
-    for (const b of growBumps(this.owned, 'discard', {})) this.set(b.id, this.get(b.id) + b.delta);
+    this.pulse(F_DID_DISCARD); // 弃牌事件（Green -1 等自增长）→ 引擎累加 Effect
     const faces = discarded.filter((c) => c.rank === 'J' || c.rank === 'Q' || c.rank === 'K').length;
     this.set(R_MONEY, this.money + discardPayout(this.owned, faces));
     this.hand = this.drawTo(this.hand.filter((_, i) => !keep.has(i)));
@@ -265,6 +264,11 @@ export class GameSession {
       const f = this.engine.world.getComponent<Flag>(eid, 'Flag');
       if (f && f.id === id) { f.active = active; return; }
     }
+  }
+  /** 脉冲一个边沿 Flag（升→tick→降→tick），让监听它的累加 Effect 各跑一次（弃牌/过关自增长）。 */
+  private pulse(flagId: string): void {
+    this.setFlagById(flagId, true); this.engine.world.tick();
+    this.setFlagById(flagId, false); this.engine.world.tick();
   }
 
   reroll(): boolean {
