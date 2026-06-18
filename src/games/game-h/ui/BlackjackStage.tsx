@@ -1,39 +1,23 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { Engine } from '../../../runtime/engine.js';
-import type { Resource, State, Clickable } from '@engine/protocol/components.js';
+import type { Resource, State } from '@engine/protocol/components.js';
 import { useWorldVersion } from '@ui/hooks/use-engine.js';
 import { useComponent } from '@ui/hooks/use-component.js';
 import {
-  DECK_ID,
-  PLAYER_CARDS_ID,
-  PLAYER_SCORE_ID,
-  DEALER_CARDS_ID,
-  DEALER_SCORE_ID,
-  GAME_STATES,
+  CHIPS_ID,
+  BET_ID,
   BLACKJACK_LIMIT,
   DEALER_STAND_AT,
+  INITIAL_CHIPS,
+  MIN_BET,
+  MAX_BET,
+  GAME_STATES,
+  OUTCOMES,
   buildDeck,
   type Card,
+  type Hand,
 } from '../theme.js';
-import {
-  GAME_STATE_ENTITY,
-  PLAYER_ENTITY,
-  DEALER_ENTITY,
-  HIT_BUTTON_ID,
-  STAND_BUTTON_ID,
-  RESTART_BUTTON_ID,
-} from '../blueprint.js';
-
-// ═══════════════════════════════════════════════════════════════
-//  Game H ·《二十一点》(Blackjack) —— 交互舞台（React 表现层）
-//
-//  核心职责：
-//  1. 计算手牌点数（A 灵活计 1 或 11）
-//  2. 响应玩家操作（要牌、停牌、重新开始）
-//  3. 自动执行庄家 AI（17 点站住）
-//  4. 判定胜负并更新世界状态
-//  5. 渲染游戏界面和统计数据
-// ═══════════════════════════════════════════════════════════════
+import { GAME_STATE_ENTITY, CHIPS_ENTITY, BET_ENTITY } from '../blueprint.js';
 
 const COLORS = {
   bg: '#0a0f1e',
@@ -41,25 +25,24 @@ const COLORS = {
   text: '#e2e8f0',
   accent: '#4ade80',
   danger: '#ef4444',
+  gold: '#fbbf24',
   primary: '#1e3a2f',
 };
 
 const CARD_SUITS = { hearts: '♥', diamonds: '♦', clubs: '♣', spades: '♠' };
 
-interface GameState {
+interface GameSession {
   deck: Card[];
-  playerCards: Card[];
+  playerHands: Hand[];
+  currentHandIndex: number;
   dealerCards: Card[];
   gameState: string;
   outcome?: string;
-  playerBust: boolean;
-  dealerBust: boolean;
 }
 
-function calculateScore(cards: Card[]): { score: number; scoreWithAce: number } {
+function calculateScore(cards: Card[]): { score: number; hasAce: boolean } {
   let score = 0;
   let aces = 0;
-
   for (const card of cards) {
     if (card.rank === 'A') {
       aces += 1;
@@ -68,14 +51,16 @@ function calculateScore(cards: Card[]): { score: number; scoreWithAce: number } 
       score += card.baseValue;
     }
   }
-
-  let scoreWithAce = score;
-  while (scoreWithAce > BLACKJACK_LIMIT && aces > 0) {
-    scoreWithAce -= 10;
+  while (score > BLACKJACK_LIMIT && aces > 0) {
+    score -= 10;
     aces -= 1;
   }
+  return { score, hasAce: aces > 0 };
+}
 
-  return { score: scoreWithAce, scoreWithAce };
+function canSplit(hand: Hand): boolean {
+  if (hand.cards.length !== 2) return false;
+  return hand.cards[0].baseValue === hand.cards[1].baseValue;
 }
 
 function displayCard(card: Card): string {
@@ -83,7 +68,7 @@ function displayCard(card: Card): string {
   return `${card.display}${suit}`;
 }
 
-function CardComponent({ card, hidden = false }: { card: Card; hidden?: boolean }): React.ReactElement {
+function CardComp({ card, hidden = false }: { card: Card; hidden?: boolean }): React.ReactElement {
   return (
     <div
       style={{
@@ -98,6 +83,7 @@ function CardComponent({ card, hidden = false }: { card: Card; hidden?: boolean 
         fontSize: 24,
         fontWeight: 700,
         color: hidden ? '#64748b' : card.suit === 'hearts' || card.suit === 'diamonds' ? '#dc2626' : '#000',
+        animation: 'slideIn 0.4s ease-out',
       }}
     >
       {hidden ? '🂠' : displayCard(card)}
@@ -105,25 +91,314 @@ function CardComponent({ card, hidden = false }: { card: Card; hidden?: boolean 
   );
 }
 
-function Hand({ cards, label, score, hidden = false }: {
-  cards: Card[];
+function HandDisplay({
+  hand,
+  label,
+  isActive,
+  onSplit,
+  onHit,
+  onStand,
+  canHit,
+  canStand,
+  canSplitHand,
+}: {
+  hand: Hand;
   label: string;
-  score: number;
-  hidden?: boolean;
+  isActive: boolean;
+  onSplit?: () => void;
+  onHit?: () => void;
+  onStand?: () => void;
+  canHit: boolean;
+  canStand: boolean;
+  canSplitHand: boolean;
 }): React.ReactElement {
+  const { score } = calculateScore(hand.cards);
+  const statusText =
+    hand.status === 'bust'
+      ? '❌ 爆牌'
+      : hand.status === 'blackjack'
+        ? '⭐ 黑杰克'
+        : hand.status === 'stand'
+          ? '✋ 停牌'
+          : hand.status === 'win'
+            ? '✅ 胜'
+            : hand.status === 'lose'
+              ? '❌ 负'
+              : hand.status === 'tie'
+                ? '🤝 平'
+                : '';
+
+  const borderColor =
+    hand.status === 'win'
+      ? COLORS.accent
+      : hand.status === 'bust' || hand.status === 'lose'
+        ? COLORS.danger
+        : hand.status === 'tie'
+          ? COLORS.gold
+          : isActive
+            ? COLORS.accent
+            : 'rgba(226,232,240,0.2)';
+
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: 10, alignItems: 'center' }}>
-      <div style={{ fontSize: 14, fontWeight: 600, color: COLORS.text }}>{label}</div>
-      <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', justifyContent: 'center' }}>
-        {cards.map((card: Card, i: number) => (
-          <CardComponent key={i} card={card} hidden={hidden && i === cards.length - 1} />
+    <div
+      style={{
+        border: `2px solid ${borderColor}`,
+        borderRadius: 12,
+        padding: 16,
+        background: isActive ? 'rgba(74, 222, 128, 0.1)' : 'rgba(0,0,0,0.2)',
+        transition: 'all 0.3s ease',
+      }}
+    >
+      <div style={{ fontSize: 14, fontWeight: 600, color: COLORS.text, marginBottom: 8 }}>
+        {label} {statusText && `${statusText}`}
+      </div>
+      <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', marginBottom: 10 }}>
+        {hand.cards.map((card: Card, i: number) => (
+          <CardComp key={i} card={card} />
         ))}
       </div>
-      <div style={{ fontSize: 16, fontWeight: 700, color: COLORS.accent }}>
-        {hidden && cards.length > 1
-          ? `${calculateScore(cards.slice(0, -1)).score} + ?`
-          : `${score} 点`}
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+        <div style={{ fontSize: 16, fontWeight: 700, color: COLORS.accent }}>
+          {score} 点 {hand.bet > 0 && `| 押注: $${hand.bet}`}
+        </div>
+        {isActive && hand.status === 'active' && (
+          <div style={{ display: 'flex', gap: 6 }}>
+            {canSplitHand && (
+              <button
+                onClick={onSplit}
+                style={{
+                  padding: '6px 12px',
+                  background: COLORS.gold,
+                  color: '#000',
+                  border: 'none',
+                  borderRadius: 4,
+                  fontSize: 12,
+                  fontWeight: 600,
+                  cursor: 'pointer',
+                }}
+              >
+                分牌
+              </button>
+            )}
+            {canHit && (
+              <button
+                onClick={onHit}
+                style={{
+                  padding: '6px 12px',
+                  background: COLORS.accent,
+                  color: '#000',
+                  border: 'none',
+                  borderRadius: 4,
+                  fontSize: 12,
+                  fontWeight: 600,
+                  cursor: 'pointer',
+                }}
+              >
+                要牌
+              </button>
+            )}
+            {canStand && (
+              <button
+                onClick={onStand}
+                style={{
+                  padding: '6px 12px',
+                  background: 'rgba(74, 222, 128, 0.2)',
+                  color: COLORS.accent,
+                  border: `1px solid ${COLORS.accent}`,
+                  borderRadius: 4,
+                  fontSize: 12,
+                  fontWeight: 600,
+                  cursor: 'pointer',
+                }}
+              >
+                停牌
+              </button>
+            )}
+          </div>
+        )}
       </div>
+    </div>
+  );
+}
+
+function BettingPhase({
+  chips,
+  currentBet,
+  onBet,
+  onDeal,
+}: {
+  chips: number;
+  currentBet: number;
+  onBet: (amount: number) => void;
+  onDeal: () => void;
+}): React.ReactElement {
+  const quickBets = [10, 25, 50, 100, 250, 500];
+
+  return (
+    <div
+      style={{
+        textAlign: 'center',
+        padding: 20,
+        background: COLORS.panel,
+        borderRadius: 12,
+        border: `1px solid ${COLORS.accent}`,
+      }}
+    >
+      <div style={{ fontSize: 18, fontWeight: 700, marginBottom: 16, color: COLORS.text }}>
+        💰 选择押注额度
+      </div>
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 8, marginBottom: 16 }}>
+        {quickBets.map((bet) => (
+          <button
+            key={bet}
+            onClick={() => onBet(Math.min(bet, chips))}
+            disabled={bet > chips}
+            style={{
+              padding: 10,
+              background: currentBet === bet ? COLORS.accent : 'rgba(74, 222, 128, 0.2)',
+              color: currentBet === bet ? '#000' : COLORS.accent,
+              border: `1px solid ${COLORS.accent}`,
+              borderRadius: 6,
+              fontSize: 14,
+              fontWeight: 600,
+              cursor: bet > chips ? 'not-allowed' : 'pointer',
+              opacity: bet > chips ? 0.5 : 1,
+            }}
+          >
+            ${bet}
+          </button>
+        ))}
+      </div>
+      <div style={{ display: 'flex', gap: 8, marginBottom: 16 }}>
+        <input
+          type="number"
+          min={MIN_BET}
+          max={chips}
+          value={currentBet || ''}
+          onChange={(e) => onBet(Math.min(Math.max(parseInt(e.target.value) || 0, MIN_BET), chips))}
+          placeholder="或输入金额"
+          style={{
+            flex: 1,
+            padding: '8px 12px',
+            borderRadius: 6,
+            border: `1px solid ${COLORS.accent}`,
+            background: 'rgba(0,0,0,0.3)',
+            color: COLORS.text,
+            fontSize: 14,
+          }}
+        />
+      </div>
+      <div style={{ display: 'flex', gap: 10, justifyContent: 'center' }}>
+        <div style={{ fontSize: 14, color: COLORS.text }}>
+          💵 剩余筹码: <span style={{ fontWeight: 700, color: COLORS.accent }}>${chips}</span>
+        </div>
+      </div>
+      {currentBet > 0 && (
+        <button
+          onClick={onDeal}
+          style={{
+            marginTop: 16,
+            padding: '10px 24px',
+            background: COLORS.accent,
+            color: '#000',
+            border: 'none',
+            borderRadius: 6,
+            fontSize: 16,
+            fontWeight: 700,
+            cursor: 'pointer',
+          }}
+        >
+          开始游戏
+        </button>
+      )}
+    </div>
+  );
+}
+
+function GameOverScreen({
+  chips,
+  winAmount,
+  outcome,
+  onRestart,
+}: {
+  chips: number;
+  winAmount: number;
+  outcome?: string;
+  onRestart: () => void;
+}): React.ReactElement {
+  const outcomeText =
+    outcome === OUTCOMES.BLACKJACK
+      ? '⭐ 黑杰克！获胜'
+      : outcome === OUTCOMES.PLAYER_WIN
+        ? '✅ 你胜了'
+        : outcome === OUTCOMES.DEALER_WIN
+          ? '❌ 庄家胜'
+          : outcome === OUTCOMES.PLAYER_BUST
+            ? '❌ 你爆牌了'
+            : outcome === OUTCOMES.DEALER_BUST
+              ? '✅ 庄家爆牌，你胜'
+              : outcome === OUTCOMES.TIE
+                ? '🤝 平局'
+                : '';
+
+  const outcomeColor =
+    outcome === OUTCOMES.PLAYER_WIN || outcome === OUTCOMES.BLACKJACK || outcome === OUTCOMES.DEALER_BUST
+      ? COLORS.accent
+      : outcome === OUTCOMES.TIE
+        ? COLORS.gold
+        : COLORS.danger;
+
+  return (
+    <div
+      style={{
+        textAlign: 'center',
+        padding: 24,
+        background: `linear-gradient(135deg, rgba(74, 222, 128, 0.1), rgba(239, 68, 68, 0.05))`,
+        borderRadius: 12,
+        border: `2px solid ${outcomeColor}`,
+        animation: 'scaleIn 0.5s ease-out',
+      }}
+    >
+      <div style={{ fontSize: 32, fontWeight: 900, color: outcomeColor, marginBottom: 16 }}>
+        {outcomeText}
+      </div>
+      <div style={{ fontSize: 20, color: COLORS.text, marginBottom: 24 }}>
+        {winAmount > 0 ? (
+          <>
+            获胜 <span style={{ color: COLORS.gold, fontWeight: 700 }}>${winAmount}</span>
+          </>
+        ) : winAmount < 0 ? (
+          <>
+            损失 <span style={{ color: COLORS.danger, fontWeight: 700 }}>${Math.abs(winAmount)}</span>
+          </>
+        ) : (
+          '押注退还'
+        )}
+      </div>
+      <div style={{ fontSize: 16, color: 'rgba(226,232,240,0.7)', marginBottom: 20 }}>
+        总筹码：<span style={{ fontWeight: 700, color: COLORS.accent }}>${chips}</span>
+      </div>
+      {chips > 0 ? (
+        <button
+          onClick={onRestart}
+          style={{
+            padding: '12px 28px',
+            background: COLORS.accent,
+            color: '#000',
+            border: 'none',
+            borderRadius: 6,
+            fontSize: 16,
+            fontWeight: 700,
+            cursor: 'pointer',
+          }}
+        >
+          再来一局
+        </button>
+      ) : (
+        <div style={{ color: COLORS.danger, fontSize: 16, fontWeight: 700 }}>
+          筹码耗尽！游戏结束。
+        </div>
+      )}
     </div>
   );
 }
@@ -131,182 +406,179 @@ function Hand({ cards, label, score, hidden = false }: {
 export function BlackjackStage({ engine }: { engine: Engine }): React.ReactElement {
   useWorldVersion(engine);
 
-  const gameStateComponent = useComponent<State>(engine, GAME_STATE_ENTITY, 'State');
-  const playerCardsResource = useComponent<Resource>(engine, PLAYER_ENTITY, 'Resource');
-  const dealerCardsResource = useComponent<Resource>(engine, DEALER_ENTITY, 'Resource');
-
-  const [gameState, setGameState] = useState<GameState>(() => ({
-    deck: shuffleDeck(buildDeck()),
-    playerCards: [],
+  const [gameSession, setGameSession] = useState<GameSession>(() => ({
+    deck: [],
+    playerHands: [],
+    currentHandIndex: 0,
     dealerCards: [],
-    gameState: GAME_STATES.INIT,
-    outcome: undefined,
-    playerBust: false,
-    dealerBust: false,
+    gameState: GAME_STATES.BETTING,
   }));
 
-  // ── 初始化游戏 ──────────────────────────────────────────────────
-  const initializeGame = useCallback(() => {
-    const deck = shuffleDeck(buildDeck());
-    const playerCards = [deck.pop()!, deck.pop()!];
-    const dealerCards = [deck.pop()!, deck.pop()!];
+  const [currentBet, setCurrentBet] = useState(0);
+  const [chips, setChips] = useState(INITIAL_CHIPS);
+  const [sessionOutcome, setSessionOutcome] = useState<{
+    outcome?: string;
+    winAmount: number;
+  }>({ winAmount: 0 });
 
-    setGameState({
-      deck,
-      playerCards,
-      dealerCards,
-      gameState: GAME_STATES.PLAYER_TURN,
-      outcome: undefined,
-      playerBust: false,
-      dealerBust: false,
-    });
+  const initializeGame = useCallback(
+    (bet: number) => {
+      const fullDeck = buildDeck();
+      const deck = [...fullDeck].sort(() => Math.random() - 0.5);
+      const playerCards = [deck.pop()!, deck.pop()!];
+      const dealerCards = [deck.pop()!, deck.pop()!];
 
-    // 更新世界状态
-    updateResourceInEngine(engine, DECK_ID, deck.length);
-    updateResourceInEngine(engine, PLAYER_CARDS_ID, playerCards.length);
-    updateResourceInEngine(engine, DEALER_CARDS_ID, dealerCards.length);
-    updateStateInEngine(engine, GAME_STATE_ENTITY, GAME_STATES.PLAYER_TURN);
-  }, [engine]);
+      const playerHand: Hand = {
+        cards: playerCards,
+        bet,
+        status: 'active',
+      };
 
-  // ── 首次初始化 ──────────────────────────────────────────────────
-  useEffect(() => {
-    if (gameState.gameState === GAME_STATES.INIT) {
-      initializeGame();
-    }
-  }, []);
-
-  // ── 要牌 ──────────────────────────────────────────────────────
-  const onHit = useCallback(() => {
-    if (gameState.gameState !== GAME_STATES.PLAYER_TURN) return;
-
-    const newDeck = [...gameState.deck];
-    const newPlayerCards = [...gameState.playerCards, newDeck.pop()!];
-    const { score } = calculateScore(newPlayerCards);
-
-    if (score > BLACKJACK_LIMIT) {
-      // 爆牌
-      setGameState((prev: GameState) => ({
-        ...prev,
-        playerCards: newPlayerCards,
-        deck: newDeck,
-        playerBust: true,
-        gameState: GAME_STATES.GAME_OVER,
-        outcome: 'player_bust',
-      }));
-      updateResourceInEngine(engine, DECK_ID, newDeck.length);
-      updateResourceInEngine(engine, PLAYER_CARDS_ID, newPlayerCards.length);
-      updateStateInEngine(engine, GAME_STATE_ENTITY, GAME_STATES.GAME_OVER);
-    } else {
-      setGameState((prev: GameState) => ({
-        ...prev,
-        playerCards: newPlayerCards,
-        deck: newDeck,
-      }));
-      updateResourceInEngine(engine, DECK_ID, newDeck.length);
-      updateResourceInEngine(engine, PLAYER_CARDS_ID, newPlayerCards.length);
-    }
-  }, [gameState, engine]);
-
-  // ── 停牌，进入庄家回合 ──────────────────────────────────────────
-  const onStand = useCallback(() => {
-    if (gameState.gameState !== GAME_STATES.PLAYER_TURN) return;
-
-    setGameState((prev) => ({
-      ...prev,
-      gameState: GAME_STATES.DEALER_TURN,
-    }));
-    updateStateInEngine(engine, GAME_STATE_ENTITY, GAME_STATES.DEALER_TURN);
-
-    // 使用 setTimeout 延迟庄家的行动，以便用户看到动画
-    setTimeout(() => {
-      applyDealerLogic(gameState.playerCards, gameState.dealerCards, gameState.deck);
-    }, 800);
-  }, [gameState, engine]);
-
-  // ── 庄家逻辑 ──────────────────────────────────────────────────
-  const applyDealerLogic = useCallback(
-    (playerCards: Card[], initialDealerCards: Card[], initialDeck: Card[]) => {
-      let dealerCards = [...initialDealerCards];
-      let deck = [...initialDeck];
-      let dealerBust = false;
-      let outcome = '';
-
-      // 庄家 AI：< 17 要牌，>= 17 停牌
-      while (true) {
-        const { score } = calculateScore(dealerCards);
-        if (score >= DEALER_STAND_AT) break;
-        dealerCards.push(deck.pop()!);
-      }
-
-      const playerScore = calculateScore(playerCards).score;
-      const dealerScore = calculateScore(dealerCards).score;
-
-      if (dealerScore > BLACKJACK_LIMIT) {
-        dealerBust = true;
-        outcome = 'dealer_bust';
-      } else if (playerScore > dealerScore) {
-        outcome = 'player_win';
-      } else if (dealerScore > playerScore) {
-        outcome = 'dealer_win';
-      } else {
-        outcome = 'tie';
-      }
-
-      setGameState((prev: GameState) => ({
-        ...prev,
-        dealerCards,
+      setGameSession({
         deck,
-        gameState: GAME_STATES.GAME_OVER,
-        outcome,
-        dealerBust,
-        playerBust: false,
-      }));
+        playerHands: [playerHand],
+        currentHandIndex: 0,
+        dealerCards,
+        gameState: GAME_STATES.PLAYER_TURN,
+      });
 
-      updateResourceInEngine(engine, DECK_ID, deck.length);
-      updateResourceInEngine(engine, DEALER_CARDS_ID, dealerCards.length);
-      updateStateInEngine(engine, GAME_STATE_ENTITY, GAME_STATES.GAME_OVER);
+      setCurrentBet(0);
     },
-    [engine],
+    []
   );
 
-  // ── 重新开始 ──────────────────────────────────────────────────
-  const onRestart = useCallback(() => {
-    initializeGame();
-  }, [initializeGame]);
+  const onHit = useCallback(() => {
+    setGameSession((prev) => {
+      const newSession = { ...prev };
+      const hand = newSession.playerHands[newSession.currentHandIndex];
 
-  const playerScore = calculateScore(gameState.playerCards).score;
-  const dealerScore = calculateScore(gameState.dealerCards).score;
-  const isGameOver = gameState.gameState === GAME_STATES.GAME_OVER;
-  const isDealerTurn = gameState.gameState === GAME_STATES.DEALER_TURN;
-  const isPlayerTurn = gameState.gameState === GAME_STATES.PLAYER_TURN;
+      if (newSession.deck.length === 0) return prev;
+      hand.cards.push(newSession.deck.pop()!);
 
-  // 胜负文案
-  let outcomeText = '';
-  let outcomeColor = COLORS.text;
-  if (isGameOver) {
-    if (gameState.playerBust) {
-      outcomeText = '❌ 爆牌！庄家胜';
-      outcomeColor = COLORS.danger;
-    } else if (gameState.dealerBust) {
-      outcomeText = '✅ 庄家爆牌！你胜';
-      outcomeColor = COLORS.accent;
-    } else if (gameState.outcome === 'player_win') {
-      outcomeText = '✅ 你胜';
-      outcomeColor = COLORS.accent;
-    } else if (gameState.outcome === 'dealer_win') {
-      outcomeText = '❌ 庄家胜';
-      outcomeColor = COLORS.danger;
-    } else if (gameState.outcome === 'tie') {
-      outcomeText = '🤝 平局';
-      outcomeColor = COLORS.accent;
-    }
-  }
+      const { score } = calculateScore(hand.cards);
+      if (score > BLACKJACK_LIMIT) {
+        hand.status = 'bust';
+        if (newSession.currentHandIndex < newSession.playerHands.length - 1) {
+          newSession.currentHandIndex += 1;
+        } else {
+          newSession.gameState = GAME_STATES.DEALER_TURN;
+        }
+      }
+
+      return newSession;
+    });
+  }, []);
+
+  const onStand = useCallback(() => {
+    setGameSession((prev) => {
+      const newSession = { ...prev };
+      const hand = newSession.playerHands[newSession.currentHandIndex];
+      hand.status = 'stand';
+
+      if (newSession.currentHandIndex < newSession.playerHands.length - 1) {
+        newSession.currentHandIndex += 1;
+      } else {
+        newSession.gameState = GAME_STATES.DEALER_TURN;
+      }
+
+      return newSession;
+    });
+  }, []);
+
+  const onSplit = useCallback(() => {
+    setGameSession((prev) => {
+      const newSession = { ...prev };
+      const hand = newSession.playerHands[newSession.currentHandIndex];
+
+      if (!canSplit(hand) || newSession.deck.length < 2) return prev;
+
+      const splitCard = hand.cards.pop()!;
+      const newHand: Hand = {
+        cards: [splitCard, newSession.deck.pop()!],
+        bet: hand.bet,
+        status: 'active',
+      };
+
+      hand.cards.push(newSession.deck.pop()!);
+      newSession.playerHands.push(newHand);
+
+      return newSession;
+    });
+  }, []);
+
+  useEffect(() => {
+    if (gameSession.gameState !== GAME_STATES.DEALER_TURN) return;
+
+    const timer = setTimeout(() => {
+      setGameSession((prev) => {
+        const newSession = { ...prev };
+        let deck = newSession.deck;
+        let dealerCards = [...newSession.dealerCards];
+
+        while (true) {
+          const { score } = calculateScore(dealerCards);
+          if (score >= DEALER_STAND_AT) break;
+          if (deck.length === 0) break;
+          dealerCards.push(deck.pop()!);
+        }
+
+        const dealerScore = calculateScore(dealerCards).score;
+
+        let totalWinAmount = 0;
+        newSession.playerHands.forEach((hand) => {
+          const playerScore = calculateScore(hand.cards).score;
+
+          if (playerScore > BLACKJACK_LIMIT) {
+            hand.status = 'bust';
+            totalWinAmount -= hand.bet;
+          } else if (dealerScore > BLACKJACK_LIMIT) {
+            hand.status = 'win';
+            totalWinAmount += hand.bet;
+          } else if (playerScore > dealerScore) {
+            hand.status = 'win';
+            totalWinAmount += hand.bet;
+          } else if (dealerScore > playerScore) {
+            hand.status = 'lose';
+            totalWinAmount -= hand.bet;
+          } else {
+            hand.status = 'tie';
+          }
+        });
+
+        if (newSession.playerHands[0].cards.length === 2 && calculateScore(newSession.playerHands[0].cards).score === 21) {
+          newSession.playerHands[0].status = 'blackjack';
+          totalWinAmount = totalWinAmount + newSession.playerHands[0].bet * 0.5;
+        }
+
+        const newChips = chips + totalWinAmount;
+
+        setChips(newChips);
+        setSessionOutcome({
+          outcome: newSession.playerHands[0].status,
+          winAmount: totalWinAmount,
+        });
+
+        return {
+          ...newSession,
+          dealerCards,
+          deck,
+          gameState: GAME_STATES.GAME_OVER,
+        };
+      });
+    }, 1500);
+
+    return () => clearTimeout(timer);
+  }, [gameSession.gameState]);
+
+  const currentHand = gameSession.playerHands[gameSession.currentHandIndex];
+  const isPlayerTurn = gameSession.gameState === GAME_STATES.PLAYER_TURN;
+  const isGameOver = gameSession.gameState === GAME_STATES.GAME_OVER;
 
   return (
     <div
       style={{
         width: '100%',
-        maxWidth: 500,
+        maxWidth: 800,
         margin: '0 auto',
         padding: 20,
         display: 'flex',
@@ -316,174 +588,106 @@ export function BlackjackStage({ engine }: { engine: Engine }): React.ReactEleme
         fontFamily: 'system-ui, -apple-system, sans-serif',
       }}
     >
-      {/* 标题 */}
+      <style>{`
+        @keyframes slideIn {
+          from { opacity: 0; transform: translateY(-20px); }
+          to { opacity: 1; transform: translateY(0); }
+        }
+        @keyframes scaleIn {
+          from { opacity: 0; transform: scale(0.8); }
+          to { opacity: 1; transform: scale(1); }
+        }
+      `}</style>
+
       <div>
         <div style={{ fontSize: 28, fontWeight: 900, color: COLORS.accent }}>二十一点</div>
-        <div style={{ fontSize: 12, color: 'rgba(226,232,240,0.6)', marginTop: 4 }}>Blackjack · 传统纸牌游戏</div>
+        <div style={{ fontSize: 12, color: 'rgba(226,232,240,0.6)', marginTop: 4 }}>
+          Blackjack · v1.0 完整版
+        </div>
       </div>
 
-      {/* 游戏板 */}
       <div
         style={{
-          background: COLORS.panel,
-          border: `1px solid rgba(74, 222, 128, 0.2)`,
-          borderRadius: 12,
-          padding: 20,
-          display: 'flex',
-          flexDirection: 'column',
-          gap: 30,
-        }}
-      >
-        {/* 庄家区 */}
-        <Hand
-          cards={gameState.dealerCards}
-          label="庄家"
-          score={dealerScore}
-          hidden={isPlayerTurn}
-        />
-
-        {/* 玩家区 */}
-        <Hand cards={gameState.playerCards} label="你" score={playerScore} />
-      </div>
-
-      {/* 状态信息 */}
-      <div
-        style={{
-          background: 'rgba(0,0,0,0.4)',
+          background: 'rgba(251, 191, 36, 0.1)',
+          border: `1px solid ${COLORS.gold}`,
           borderRadius: 8,
           padding: 12,
           textAlign: 'center',
-          fontSize: 14,
         }}
       >
-        {isPlayerTurn && (
-          <div>当前轮到你：要牌或停牌？</div>
-        )}
-        {isDealerTurn && (
-          <div>庄家正在思考...</div>
-        )}
-        {isGameOver && (
-          <div style={{ color: outcomeColor, fontWeight: 700 }}>
-            {outcomeText}
-          </div>
-        )}
+        <div style={{ fontSize: 14, color: 'rgba(226,232,240,0.7)' }}>💰 筹码</div>
+        <div style={{ fontSize: 24, fontWeight: 900, color: COLORS.gold }}>${chips}</div>
       </div>
 
-      {/* 操作按钮 */}
-      <div style={{ display: 'flex', gap: 10, justifyContent: 'center' }}>
-        {isPlayerTurn && (
-          <>
-            <button
-              onClick={onHit}
-              style={{
-                padding: '10px 20px',
-                background: COLORS.accent,
-                color: '#000',
-                border: 'none',
-                borderRadius: 6,
-                fontWeight: 700,
-                cursor: 'pointer',
-                fontSize: 14,
-              }}
-            >
-              要牌
-            </button>
-            <button
-              onClick={onStand}
-              style={{
-                padding: '10px 20px',
-                background: 'rgba(74, 222, 128, 0.2)',
-                color: COLORS.accent,
-                border: `1px solid ${COLORS.accent}`,
-                borderRadius: 6,
-                fontWeight: 700,
-                cursor: 'pointer',
-                fontSize: 14,
-              }}
-            >
-              停牌
-            </button>
-          </>
-        )}
-        {isGameOver && (
-          <button
-            onClick={onRestart}
+      {gameSession.gameState === GAME_STATES.BETTING ? (
+        <BettingPhase
+          chips={chips}
+          currentBet={currentBet}
+          onBet={setCurrentBet}
+          onDeal={() => {
+            initializeGame(currentBet);
+            setChips(chips - currentBet);
+          }}
+        />
+      ) : (
+        <>
+          <div
             style={{
-              padding: '10px 24px',
-              background: COLORS.accent,
-              color: '#000',
-              border: 'none',
-              borderRadius: 6,
-              fontWeight: 700,
-              cursor: 'pointer',
-              fontSize: 14,
+              background: COLORS.panel,
+              border: `1px solid rgba(74, 222, 128, 0.2)`,
+              borderRadius: 12,
+              padding: 16,
             }}
           >
-            重新开始
-          </button>
-        )}
-      </div>
+            <div style={{ fontSize: 14, fontWeight: 600, color: COLORS.text, marginBottom: 10 }}>
+              🎰 庄家
+            </div>
+            <div style={{ display: 'flex', gap: 6, marginBottom: 10 }}>
+              {gameSession.dealerCards.map((card: Card, i: number) => (
+                <CardComp key={i} card={card} hidden={isPlayerTurn && i === gameSession.dealerCards.length - 1} />
+              ))}
+            </div>
+            <div style={{ fontSize: 16, fontWeight: 700, color: COLORS.accent }}>
+              {isPlayerTurn ? '? 点' : `${calculateScore(gameSession.dealerCards).score} 点`}
+            </div>
+          </div>
 
-      {/* 统计信息 */}
-      <div
-        style={{
-          display: 'grid',
-          gridTemplateColumns: 'repeat(3, 1fr)',
-          gap: 10,
-          fontSize: 12,
-        }}
-      >
-        <div style={{ background: 'rgba(74, 222, 128, 0.1)', padding: 10, borderRadius: 6, textAlign: 'center' }}>
-          <div style={{ color: 'rgba(226,232,240,0.6)' }}>牌堆剩余</div>
-          <div style={{ fontSize: 16, fontWeight: 700, marginTop: 4 }}>{gameState.deck.length}</div>
-        </div>
-        <div style={{ background: 'rgba(74, 222, 128, 0.1)', padding: 10, borderRadius: 6, textAlign: 'center' }}>
-          <div style={{ color: 'rgba(226,232,240,0.6)' }}>你的牌</div>
-          <div style={{ fontSize: 16, fontWeight: 700, marginTop: 4 }}>{gameState.playerCards.length}</div>
-        </div>
-        <div style={{ background: 'rgba(74, 222, 128, 0.1)', padding: 10, borderRadius: 6, textAlign: 'center' }}>
-          <div style={{ color: 'rgba(226,232,240,0.6)' }}>庄家的牌</div>
-          <div style={{ fontSize: 16, fontWeight: 700, marginTop: 4 }}>{gameState.dealerCards.length}</div>
-        </div>
-      </div>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+            {gameSession.playerHands.map((hand: Hand, i: number) => (
+              <HandDisplay
+                key={i}
+                hand={hand}
+                label={`🎴 手 ${gameSession.playerHands.length > 1 ? i + 1 : ''}`}
+                isActive={i === gameSession.currentHandIndex && isPlayerTurn}
+                onSplit={() => onSplit()}
+                onHit={() => onHit()}
+                onStand={() => onStand()}
+                canHit={hand.status === 'active' && isPlayerTurn}
+                canStand={hand.status === 'active' && isPlayerTurn}
+                canSplitHand={hand.status === 'active' && isPlayerTurn && canSplit(hand) && chips >= hand.bet}
+              />
+            ))}
+          </div>
+        </>
+      )}
 
-      {/* 规则提示 */}
-      <div
-        style={{
-          background: 'rgba(74, 222, 128, 0.1)',
-          border: `1px solid rgba(74, 222, 128, 0.2)`,
-          borderRadius: 8,
-          padding: 10,
-          fontSize: 11,
-          lineHeight: 1.6,
-          color: 'rgba(226,232,240,0.7)',
-        }}
-      >
-        📖 <strong>规则</strong>：目标接近 21 点不超出。A 计 1 或 11 点。J/Q/K 计 10 点。庄家 17 点站住。
-      </div>
+      {isGameOver && (
+        <GameOverScreen
+          chips={chips}
+          winAmount={sessionOutcome.winAmount}
+          outcome={sessionOutcome.outcome}
+          onRestart={() => {
+            setGameSession({
+              deck: [],
+              playerHands: [],
+              currentHandIndex: 0,
+              dealerCards: [],
+              gameState: GAME_STATES.BETTING,
+            });
+            setSessionOutcome({ winAmount: 0 });
+          }}
+        />
+      )}
     </div>
   );
-}
-
-// ── 工具函数 ────────────────────────────────────────────────────
-
-function shuffleDeck(deck: readonly any[]): any[] {
-  const arr = [...deck];
-  for (let i = arr.length - 1; i > 0; i--) {
-    const j = Math.floor(Math.random() * (i + 1));
-    [arr[i], arr[j]] = [arr[j], arr[i]];
-  }
-  return arr;
-}
-
-function updateResourceInEngine(engine: Engine, resourceId: string, value: number): void {
-  const world = engine.world;
-  // 在实际实现中，这里应该更新世界的资源
-  // 暂时作为占位符，实际逻辑由引擎层处理
-}
-
-function updateStateInEngine(engine: Engine, entityId: string, state: string): void {
-  const world = engine.world;
-  // 在实际实现中，这里应该更新世界的状态
-  // 暂时作为占位符，实际逻辑由引擎层处理
 }
