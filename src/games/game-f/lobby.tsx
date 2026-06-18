@@ -152,7 +152,7 @@ export function buildLobby(onStart: (cfg: RunConfig) => void): HTMLElement {
     <div style="display:flex;align-items:center;gap:10px"><div class="gfl-av">🪖</div>
       <div><div style="font-weight:700;font-size:15px">赵云<span style="font-size:11px;color:#cdbb98"> ·「江夏太守」</span></div></div>
       <div class="gfl-rank">⚔️ ${rankFor(getLP()).tier} · ${getLP()} LP</div></div>
-    <div class="gfl-cur"><span class="gfl-chip" data-ref="warfunds">🎖️ 战功 ${getWarfunds()}</span><span class="gfl-chip">🪙 金 1.2k</span><span class="gfl-chip">🎟️ 券 30</span><span class="gfl-chip">💎 钻 88</span></div>
+    <div class="gfl-cur"><span class="gfl-chip" data-ref="warfunds">🎖️ 战功 ${getWarfunds()}</span><span class="gfl-chip" data-ref="dustchip">✨ 尘 ${getDust()}</span><span class="gfl-chip" data-ref="collchip">🃏 收藏 ${Object.values(getCollection()).reduce((a, b) => a + b, 0)}</span></div>
   </div>
   <div class="gfl-tabs">
     <div class="gfl-tab on" data-nav="home">大厅</div><div class="gfl-tab" data-nav="party">组队</div>
@@ -264,10 +264,7 @@ export function buildLobby(onStart: (cfg: RunConfig) => void): HTMLElement {
   // 软币抽卡（经济 v1 spend 端）：扣战功 → 出武将入收藏 → 刷新战功/收藏显示 + 飘字。
   root.querySelector<HTMLElement>('[data-act="gacha"]')?.addEventListener('click', () => {
     const r = gachaPull();
-    const wf = root.querySelector<HTMLElement>('[data-ref="warfunds"]');
-    if (wf) wf.textContent = `🎖️ 战功 ${getWarfunds()}`;
-    const ci = root.querySelector<HTMLElement>('[data-ref="collinfo"]');
-    if (ci) ci.textContent = `已收藏 ${Object.values(getCollection()).reduce((a, b) => a + b, 0)} 张`;
+    refreshWf(); refreshColl();
     if (root.querySelector('.gfl-toast')) root.querySelector('.gfl-toast')!.remove();
     const t = document.createElement('div'); t.className = 'gfl-toast';
     t.innerHTML = r.ok ? `<span>🎲 抽到 <b>${esc(r.card!.name)}</b>（${esc(r.card!.rarity ?? '')}）！入收藏。</span><button class="gfl-acc">好</button>` : `<span>⚠️ 战功不足（需 ${GACHA_COST}）</span><button class="gfl-acc">好</button>`;
@@ -277,8 +274,7 @@ export function buildLobby(onStart: (cfg: RunConfig) => void): HTMLElement {
   // 十连抽（保底 ≥1 稀有）。
   root.querySelector<HTMLElement>('[data-act="gacha10"]')?.addEventListener('click', () => {
     const r = gachaPull10();
-    const wf = root.querySelector<HTMLElement>('[data-ref="warfunds"]'); if (wf) wf.textContent = `🎖️ 战功 ${getWarfunds()}`;
-    const ci = root.querySelector<HTMLElement>('[data-ref="collinfo"]'); if (ci) ci.textContent = `已收藏 ${Object.values(getCollection()).reduce((a, b) => a + b, 0)} 张`;
+    refreshWf(); refreshColl();
     root.querySelector('.gfl-toast')?.remove();
     const t = document.createElement('div'); t.className = 'gfl-toast';
     const rares = r.ok ? r.cards.filter((c) => c.rarity && c.rarity !== 'common').length : 0;
@@ -288,8 +284,10 @@ export function buildLobby(onStart: (cfg: RunConfig) => void): HTMLElement {
   });
   // 附魔/分解（养成第二轴 UI）：按卡操作，原地刷新数字 + 飘字。
   const toast = (msg: string): void => { root.querySelector('.gfl-toast')?.remove(); const t = document.createElement('div'); t.className = 'gfl-toast'; t.innerHTML = `<span>${msg}</span><button class="gfl-acc">好</button>`; t.querySelector('button')!.addEventListener('click', () => t.remove()); root.appendChild(t); };
-  const refreshDust = (): void => { const d = root.querySelector<HTMLElement>('[data-ref="dust"]'); if (d) d.textContent = `✨ 尘 ${getDust()}`; };
+  const refreshDust = (): void => { const d = root.querySelector<HTMLElement>('[data-ref="dust"]'); if (d) d.textContent = `✨ 尘 ${getDust()}`; const dc = root.querySelector<HTMLElement>('[data-ref="dustchip"]'); if (dc) dc.textContent = `✨ 尘 ${getDust()}`; };
   const refreshWf = (): void => { const w = root.querySelector<HTMLElement>('[data-ref="warfunds"]'); if (w) w.textContent = `🎖️ 战功 ${getWarfunds()}`; };
+  // P3：顶栏收藏数同步真值（抽卡/分解后）。
+  const refreshColl = (): void => { const n = Object.values(getCollection()).reduce((a, b) => a + b, 0); const cc = root.querySelector<HTMLElement>('[data-ref="collchip"]'); if (cc) cc.textContent = `🃏 收藏 ${n}`; const ci = root.querySelector<HTMLElement>('[data-ref="collinfo"]'); if (ci) ci.textContent = `已收藏 ${n} 张`; };
   root.querySelectorAll<HTMLElement>('[data-ench-btn]').forEach((el2) => el2.addEventListener('click', () => {
     const id = el2.dataset.enchBtn!;
     const r = enchantCard(id);
