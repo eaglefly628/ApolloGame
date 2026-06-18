@@ -134,6 +134,23 @@ describe('game-e · GameSession 线性流程脚本', () => {
     expect(r1.chips).toBe(r0.chips + 80); // Crafty 的 +80 筹码确实加上了
   });
 
+  it('双产出小丑(B组)：Scholar 每张 A +20筹+4倍 两条效果都生效', () => {
+    const hand5 = [
+      { suit: 'spades', rank: 'A' }, { suit: 'hearts', rank: 'A' }, { suit: 'spades', rank: 'K' }, { suit: 'spades', rank: 'Q' }, { suit: 'spades', rank: 'J' },
+    ];
+    const fillers = [{ suit: 'clubs', rank: '3' }, { suit: 'diamonds', rank: '6' }, { suit: 'hearts', rank: '8' }] as const;
+    const plain = new GameSession(1);
+    plain.hand = [...hand5, ...fillers] as never;
+    const r0 = plain.play([0, 1, 2, 3, 4])!; // 一对 A，计分牌=2 张 A
+
+    const withJ = new GameSession(1);
+    expect(withJ.buyJoker(STARTER_JOKERS.find((j) => j.id === 'scholar')!)).toBe(true); // cost 4 = 起始钱
+    withJ.hand = [...hand5, ...fillers] as never;
+    const r1 = withJ.play([0, 1, 2, 3, 4])!;
+    expect(r1.chips).toBe(r0.chips + 40); // 2 张 A × +20 筹码
+    expect(r1.mult).toBe(r0.mult + 8); // 2 张 A × +4 倍率（extra 第二条效果）
+  });
+
   it('Boss 诅咒：boss 道按表施加（Ante1 高墙=盲注线翻倍）', () => {
     const s = new GameSession(1);
     expect(s.boss).toBeNull(); // small 道无 boss

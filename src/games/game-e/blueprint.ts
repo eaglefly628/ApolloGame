@@ -166,6 +166,8 @@ export function jokerToEntities(j: JokerCard, idx: number): Record<string, Entit
     else if (j.when.kind === 'card_rank_in') pcWhen = { kind: 'rankIn', ranks: [...j.when.ranks] };
     else pcWhen = { kind: 'always' };
     out[`j_${j.id}`] = { PerCardRule: { when: pcWhen, op: j.op, targetResource: target, value: j.value } } as unknown as EntityBlueprint;
+    // 第二条效果（Scholar/Walkie：同 when 再加一条 PerCardRule）。
+    if (j.extra) out[`j_${j.id}_x`] = { PerCardRule: { when: pcWhen, op: j.extra.op, targetResource: TARGET_TO_RES[j.extra.target], value: j.extra.value } } as unknown as EntityBlueprint;
     return out;
   }
 
@@ -184,6 +186,7 @@ export function jokerToEntities(j: JokerCard, idx: number): Record<string, Entit
   let cond: Record<string, unknown>;
   if (j.when.kind === 'hand_contains') cond = containsCondition(j.when.hand);
   else if (j.when.kind === 'hand_size_lte') cond = { kind: 'resource', id: R_HAND_SIZE, cmp: 'lte', value: j.when.n };
+  else if (j.when.kind === 'resource_cmp') cond = { kind: 'resource', id: j.when.id, cmp: j.when.cmp, value: j.when.value };
   else cond = { kind: 'flag', id: F_SCORING };
   out[`gate_${j.id}`] = { EventWhen: { signal: sig, when: { kind: 'and', of: [{ kind: 'flag', id: F_SCORING }, cond] }, mode: 'level', armed: false } } as unknown as EntityBlueprint;
   out[`j_${j.id}`] = { Effect: { ...effect, onSignal: sig } } as unknown as EntityBlueprint;

@@ -35,7 +35,8 @@ export type JokerCondition =
   | { readonly kind: 'card_face' } // 逐张：人头牌
   | { readonly kind: 'card_even' } // 逐张：偶数点
   | { readonly kind: 'card_odd' } // 逐张：奇数点（A 计奇）
-  | { readonly kind: 'card_rank_in'; readonly ranks: readonly number[] }; // 逐张：点数 ∈ 集合（引擎 rank 2..14；Fibonacci 等）
+  | { readonly kind: 'card_rank_in'; readonly ranks: readonly number[] } // 逐张：点数 ∈ 集合（引擎 rank 2..14；Fibonacci 等）
+  | { readonly kind: 'resource_cmp'; readonly id: string; readonly cmp: 'lte' | 'gte' | 'eq'; readonly value: number }; // 读某 Resource 比较（如剩余弃牌=0）
 
 /** 动态值来源（量纲类，如「每 $1」「每剩 1 弃牌」）。映射候选 REQ-013 valueFrom。 */
 export interface ValueFrom {
@@ -57,6 +58,8 @@ export interface JokerCard {
   readonly value: number;
   /** 量纲动态值（候选 REQ-013）；缺省=静态 value。 */
   readonly valueFrom?: ValueFrom;
+  /** 第二条效果（同 trigger/when）：双产出小丑用（Scholar=A +20筹+4倍、Walkie=10/4 +10筹+4倍）。 */
+  readonly extra?: { readonly op: ScoreOp; readonly target: ScoreTarget; readonly value: number };
   /** 重触发次数（REQ-014 PerCardRetrigger）：>0 表示首张计分牌额外重触发 N 次（Hanging Chad=2）。 */
   readonly retrigger?: number;
   /** 美术 key（jokerArtKey(id)）；缺图自动退化占位。 */
@@ -102,6 +105,15 @@ export const STARTER_JOKERS: readonly JokerCard[] = [
   J({ id: 'crafty_joker', name: 'Crafty Joker', rarity: 'common', cost: 4, jokerType: '+c', trigger: 'on_hand_scored', when: { kind: 'hand_contains', hand: 'flush' }, op: 'add', target: 'chips', value: 80, text: '含同花 → +80 筹码' }),
   J({ id: 'the_order', name: 'The Order', rarity: 'rare', cost: 8, jokerType: 'Xm', trigger: 'on_hand_scored', when: { kind: 'hand_contains', hand: 'straight' }, op: 'mul', target: 'mult', value: 3, text: '含顺子 → ×3 倍率' }),
   J({ id: 'the_tribe', name: 'The Tribe', rarity: 'rare', cost: 8, jokerType: 'Xm', trigger: 'on_hand_scored', when: { kind: 'hand_contains', hand: 'flush' }, op: 'mul', target: 'mult', value: 2, text: '含同花 → ×2 倍率' }),
+  // ── B 组：现有能力即可表达（无引擎工）──
+  J({ id: 'smiley_face', name: 'Smiley Face', rarity: 'common', cost: 4, jokerType: '+m', trigger: 'on_card_scored', when: { kind: 'card_face' }, op: 'add', target: 'mult', value: 5, text: '每张计分人头牌 +5 倍率' }),
+  J({ id: 'arrowhead', name: 'Arrowhead', rarity: 'uncommon', cost: 7, jokerType: '+c', trigger: 'on_card_scored', when: { kind: 'card_suit', suit: 'spades' }, op: 'add', target: 'chips', value: 50, text: '每张计分的 ♠ +50 筹码' }),
+  J({ id: 'onyx_agate', name: 'Onyx Agate', rarity: 'uncommon', cost: 7, jokerType: '+m', trigger: 'on_card_scored', when: { kind: 'card_suit', suit: 'clubs' }, op: 'add', target: 'mult', value: 7, text: '每张计分的 ♣ +7 倍率' }),
+  J({ id: 'rough_gem', name: 'Rough Gem', rarity: 'uncommon', cost: 7, jokerType: '+$', trigger: 'on_card_scored', when: { kind: 'card_suit', suit: 'diamonds' }, op: 'add', target: 'money', value: 1, text: '每张计分的 ♦ +$1' }),
+  J({ id: 'triboulet', name: 'Triboulet', rarity: 'legendary', cost: 20, jokerType: 'Xm', trigger: 'on_card_scored', when: { kind: 'card_rank_in', ranks: [12, 13] }, op: 'mul', target: 'mult', value: 2, text: '每张计分的 K/Q ×2 倍率' }),
+  J({ id: 'mystic_summit', name: 'Mystic Summit', rarity: 'common', cost: 5, jokerType: '+m', trigger: 'on_hand_scored', when: { kind: 'resource_cmp', id: 'discards_left', cmp: 'lte', value: 0 }, op: 'add', target: 'mult', value: 15, text: '剩余弃牌为 0 时 +15 倍率' }),
+  J({ id: 'scholar', name: 'Scholar', rarity: 'common', cost: 4, jokerType: '++', trigger: 'on_card_scored', when: { kind: 'card_rank_in', ranks: [14] }, op: 'add', target: 'chips', value: 20, extra: { op: 'add', target: 'mult', value: 4 }, text: '每张计分的 A +20 筹码 +4 倍率' }),
+  J({ id: 'walkie_talkie', name: 'Walkie Talkie', rarity: 'common', cost: 4, jokerType: '++', trigger: 'on_card_scored', when: { kind: 'card_rank_in', ranks: [10, 4] }, op: 'add', target: 'chips', value: 10, extra: { op: 'add', target: 'mult', value: 4 }, text: '每张计分的 10/4 +10 筹码 +4 倍率' }),
 ];
 
 /** 按 id 取小丑。 */
