@@ -2,6 +2,9 @@ import { describe, it, expect } from 'vitest';
 import { Engine } from '../../runtime/engine.js';
 import type { Resource, Transform, CardPile } from '@engine/protocol/components.js';
 import { buildGameFBlueprint } from './blueprint.js';
+import { GAME_F_TEMPLATES } from './combat.js';
+import { PVE_CODES } from './stages.js';
+import { unitByCode } from './taikou.js';
 import { FAST, alive, mains, flag } from './game-f.helpers.js';
 
 describe('Game F · 经济/商店（买入/刷新/卖出/经验连败/羁绊/符文/主角/装备/野怪法球/HUD）', () => {
@@ -260,6 +263,34 @@ describe('Game F · 经济/商店（买入/刷新/卖出/经验连败/羁绊/符
     expect(res('items')).toBe(1); // 蜀死无装备 orb → 不增
   });
 
+  it('P1 自动拾取：敌死在棋盘任意处(非主公脚下)→ 装备 orb 全盘自动归集 items（删捡 orb 摩擦）', () => {
+    const e = new Engine({ tickRate: 60 });
+    e.load(buildGameFBlueprint(FAST));
+    const res = (id: string): number => {
+      for (const x of e.world.getAllEntities()) { const r = e.world.getComponent<Resource>(x, 'Resource'); if (r && r.id === id) return r.current; }
+      return -1;
+    };
+    for (let i = 0; i < 10; i++) e.world.tick();
+    expect(res('items')).toBe(0);
+    // 敌将死在棋盘正中(0,0)——离主公行囊原脚下(-150,86)很远；全盘收集体应仍自动归集。
+    e.world.createEntity('eqfar');
+    e.world.addComponent('eqfar', { type: 'SpawnRequest', templateId: 'death_b_zhangliao', x: 0, y: 0 });
+    for (let i = 0; i < 8; i++) e.world.tick();
+    expect(res('items')).toBe(1); // 棋盘中央击杀 → 自动入袋（不需主公走过去）
+  });
+
+  it('P1 概率掉落：名将/Boss(mob_death) 掉装备 orb，杂兵(mob_death_bare) 不掉；按 seg 确定性、零 RNG', () => {
+    const T = GAME_F_TEMPLATES;
+    expect((T['mob_death'] as { entities: Record<string, unknown> }).entities.eorb).toBeDefined();        // 名将掉装备
+    expect((T['mob_death_bare'] as { entities: Record<string, unknown> }).entities.eorb).toBeUndefined();  // 杂兵不掉
+    expect((T['mob_death_bare'] as { entities: Record<string, unknown> }).entities.orb).toBeDefined();     // 但仍掉金法球
+    // 足轻(beachhead)→bare；名将(kokujin/tenshu)→full
+    const drop = (code: string): string => (T[`mob_${code}`] as { entities: { main: { Mortal: { dropTemplate: string } } } }).entities.main.Mortal.dropTemplate;
+    expect(drop('ash_yari')).toBe('mob_death_bare');  // 杂兵
+    const named = PVE_CODES.find((c) => unitByCode(c)?.seg !== 'beachhead')!;
+    expect(drop(named)).toBe('mob_death');            // 名将/Boss
+  });
+
   it('野怪回合+法球（批B，一图流）：阶段1 全野怪（黄巾波次）；野怪死亡掉法球；结算清场含未拾法球', () => {
     const e = new Engine({ tickRate: 60 });
     e.load(buildGameFBlueprint(FAST));
@@ -269,7 +300,7 @@ describe('Game F · 经济/商店（买入/刷新/卖出/经验连败/羁绊/符
     const mob = mains(e).find((m) => m.startsWith('mob_'))!;
     e.world.addComponent(mob, { type: 'ResourceModify', resourceId: 'hp', amount: -99999, scope: 'local' });
     for (let i = 0; i < 4; i++) e.world.tick();
-    expect(e.world.getAllEntities().some((id) => id.startsWith('mob_death#') && id.endsWith(':orb'))).toBe(true); // 死亡掉法球+碎裂（mob_death 复合模板）
+    expect(e.world.getAllEntities().some((id) => id.startsWith('mob_death_bare#') && id.endsWith(':orb'))).toBe(true); // 杂兵(足轻)死掉金法球+碎裂（P1：杂兵走 mob_death_bare，仍掉金不掉装备）
     let wiped = false;
     for (let i = 0; i < 4000 && !wiped; i++) { e.world.tick(); wiped = mains(e).length === 0; }
     expect(wiped).toBe(true);

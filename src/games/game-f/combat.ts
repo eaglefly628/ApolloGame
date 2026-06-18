@@ -249,7 +249,7 @@ function mobTemplate(unit: TaikouUnit): PrefabTemplate {
         Perception: { targetTag: TEAM_A, sightRadius: 0 },
         HexPos: { q: 0, r: 0 },
         GridMover: { period: MOVE_PERIOD, elapsed: 0, haltStatusMask: FROZEN, glideSpeed: 0.8, ...(unit.range > 1 ? { range: unit.range } : {}) }, // master 射程
-        Mortal: { resource: 'hp', atOrBelow: 0, dropTemplate: 'mob_death' }, // 死亡=掉法球+碎裂特效（mob_death 复合模板）
+        Mortal: { resource: 'hp', atOrBelow: 0, dropTemplate: unit.seg === 'beachhead' ? 'mob_death_bare' : 'mob_death' }, // 死亡=掉法球+碎裂；装备 orb 仅名将/Boss(非杂兵)掉（P1 概率掉落，确定性按 seg）
         // 忍耐（家康招牌）：over-time 持续自回复 hp（钳在 max；招牌=厚血+回血肉盾）。
         ...(unit.selfHeal ? { OverTime: { effects: [{ id: 'heal', resource: 'hp', amountPerTick: Math.round(unit.selfHeal / 2), period: 30, duration: 0, elapsed: 0 }] } } : {}),
         Timer: { id: 'atk', elapsed: 0, duration: ATK_CD, loop: true },
@@ -458,22 +458,24 @@ export function templatesFor(ROSTER: HeroSpec[]): Record<string, PrefabTemplate>
       ['jinnang_yibing_strike', strike(TEAM_B, YIBING_ATK, F_FX_STRIKE, 'dmg_scale_a')],
       ['jinnang_yibing', { entities: { u1: yibingUnit({ q: 1, r: 5 }), u2: yibingUnit({ q: 5, r: 5 }) } }],
     ] as [string, PrefabTemplate][],
-    // 野怪死亡复合（掉法球 + 四分碎裂；Mortal.dropTemplate 单口 → 复合模板一口出两件）
-    [[
-      'mob_death',
-      { entities: Object.assign(
-        { orb: { Transform: xf(0, 0), Shape: { kind: 'box', width: 10, height: 10 }, Sensor: {}, Sprite: sprite(F_FX_DRAIN, 5), Color: { tint: 0xd8607b, alpha: 1 }, Tag: { flags: LOOT | ZONE_FLAG }, Hitbox: { resource: 'loot', amount: -5, targetMask: PROTAG, consumeOnHit: true } },
-          eorb: { Transform: xf(14, 0), Shape: { kind: 'box', width: 13, height: 13 }, Sensor: {}, Text: { content: '📦', fontSize: 15, fontFamily: FONT_BODY, anchor: 'center', lineSpacing: 0 }, Sprite: sprite(F_FX_STRIKE, 6), Color: { tint: 0xcf9a3f, alpha: 1 }, Tag: { flags: EQUIP | ZONE_FLAG }, Hitbox: { resource: 'items', amount: -1, targetMask: BAG, consumeOnHit: true } } },
-        Object.fromEntries([[-1, -1], [1, -1], [-1, 1], [1, 1]].map(([dx, dy], i) => [`q${i}`, {
-          Transform: { x: dx * 5, y: dy * 5, rotation: 0, scaleX: 0.5, scaleY: 0.5 },
-          Velocity: { vx: dx * 2.0, vy: dy * 1.6 - 0.6, angular: 0 },
-          Color: { tint: 0xffffff, alpha: 0.9 },
-          Tween: { target: 'Color.alpha', from: 0.9, to: 0, elapsed: 0, duration: 24, easing: 'easeOut', done: false },
-          Timer: { id: 'life', elapsed: 0, duration: 28, loop: false },
-          Sprite: sprite(F_HERO.gan_ning, 6),
-        }])),
-      ) },
-    ]] as [string, PrefabTemplate][],
+    // 野怪死亡复合（掉法球 + 四分碎裂）。**提交版 P1 概率掉落**：装备 orb 仅名将/Boss(seg≠beachhead) 掉，
+    // 杂兵(足轻/beachhead)只掉金法球不掉装备 → mob_death(含 eorb) / mob_death_bare(无 eorb) 两版，mobTemplate 按 seg 选。
+    (() => {
+      const shatter = Object.fromEntries([[-1, -1], [1, -1], [-1, 1], [1, 1]].map(([dx, dy], i) => [`q${i}`, {
+        Transform: { x: dx * 5, y: dy * 5, rotation: 0, scaleX: 0.5, scaleY: 0.5 },
+        Velocity: { vx: dx * 2.0, vy: dy * 1.6 - 0.6, angular: 0 },
+        Color: { tint: 0xffffff, alpha: 0.9 },
+        Tween: { target: 'Color.alpha', from: 0.9, to: 0, elapsed: 0, duration: 24, easing: 'easeOut', done: false },
+        Timer: { id: 'life', elapsed: 0, duration: 28, loop: false },
+        Sprite: sprite(F_HERO.gan_ning, 6),
+      }]));
+      const orb = { orb: { Transform: xf(0, 0), Shape: { kind: 'box', width: 10, height: 10 }, Sensor: {}, Sprite: sprite(F_FX_DRAIN, 5), Color: { tint: 0xd8607b, alpha: 1 }, Tag: { flags: LOOT | ZONE_FLAG }, Hitbox: { resource: 'loot', amount: -5, targetMask: PROTAG, consumeOnHit: true } } };
+      const eorb = { eorb: { Transform: xf(14, 0), Shape: { kind: 'box', width: 13, height: 13 }, Sensor: {}, Text: { content: '📦', fontSize: 15, fontFamily: FONT_BODY, anchor: 'center', lineSpacing: 0 }, Sprite: sprite(F_FX_STRIKE, 6), Color: { tint: 0xcf9a3f, alpha: 1 }, Tag: { flags: EQUIP | ZONE_FLAG }, Hitbox: { resource: 'items', amount: -1, targetMask: BAG, consumeOnHit: true } } };
+      return [
+        ['mob_death', { entities: Object.assign({}, orb, eorb, shatter) }],      // 名将/Boss：金法球 + 装备 orb + 碎裂
+        ['mob_death_bare', { entities: Object.assign({}, orb, shatter) }],         // 杂兵：仅金法球 + 碎裂（不掉装备）
+      ] as [string, PrefabTemplate][];
+    })(),
     // 胜利彩点（庆祝相位喷洒）：金色圆点四散上抛+渐隐（Velocity+Tween+lifetime；zlift 抬层画 Shape）。
     [[
       'win_burst',

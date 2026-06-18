@@ -559,14 +559,14 @@ export function buildGameFBlueprint(pacing: GameFPacing = {}): WorldBlueprint {
       Resource: { id: 'loot', current: 0, min: 0, max: 999 },
       Sprite: sprite(F_HERO.protag, 12), // 主公小小英雄 = 金龙（独特奇异生物，非在册英雄/非真人）
     },
-    // 主公行囊（装备系统 A）：跟随主公的隐形收集体，装备 orb 的 Hitbox 命中它 → items 累加（主公单 Resource
-    // 已被 loot 占用，故拆出独立行囊；BAG 位无 TEAM 不参战，Hierarchy 跟手与主公同位收集）。
+    // 主公行囊（装备系统 A）：**全盘自动归集**（提交版 P1：删「主公捡 orb」摩擦）——静态收集体覆盖整个棋盘
+    // (ARENA)，敌死掉落的装备 orb 落在任意格都同拍命中它 → items 累加。无 Sprite 不可见；BAG 位无 TEAM 不参战。
     item_bag: {
-      Transform: xf(-150, 86),
-      Shape: { kind: 'box', width: 18, height: 18 },
+      Transform: xf(0, -28),
+      Shape: { kind: 'box', width: 380, height: 320 }, // 覆盖 ARENA(±170/-165..110) → 全盘任意落点即收
+      Visibility: { visible: false, active: true }, // 隐形收集区（裸 Shape 否则渲成大方块）；Hitbox 仍 sim 收集
       Tag: { flags: BAG },
       Resource: { id: 'items', current: 0, min: 0, max: 60 }, // 拾取累加上限 60（战利品滚动槽，金铲铲式不再卡 8）；跨回合持久（行囊不清场）
-      Hierarchy: { parentId: 'protag', localX: 0, localY: 0, localRotation: 0, localScaleX: 1, localScaleY: 1 },
     },
     protag_name: {
       Transform: xf(-150, 70),
