@@ -10,6 +10,26 @@
 
 ## 待处理 / 进行中
 
+### REQ-E-021 · [2026-06-18] · PE（Game E 小丑牌 · 卡牌附魔/buff 拉动）· 框架级 · status: **open** · 优先级: 中 · 类型: 真缺口（逐张计分读不到「牌自带的修正」）
+
+**标题**：`card-scoring` 逐张 pass 读取「牌自带的内禀修正」（per-card 附魔/buff）—— Card 携带 mods，迭代时套用
+
+- **想实现（游戏行为）**：Balatro 的卡牌**附魔**——版式（foil +50筹码 / holo +10倍率 / poly ×1.5倍率）、增强（bonus +30c / mult +4m / glass ×2m / stone +50c）、红蜡封（该牌重触发）。本质：**一张特定的牌身上带着持久修正，在它计分时生效**——一个 per-card buff 系统。
+- **已经试了什么 / 为何回驳「不加能力」的重组**：唯一的纯游戏侧路子是出牌时按附魔牌**落在出牌序列里的下标**临时注入 `PerCardRule{when:{index,eq}}`、tick 完移除。**这是牵强的**：
+  - `PerCardRule`/`PerCardRetrigger` 的 `when` 只认 **suit/rank/index**（设计给**小丑规则**——扫描全手的外部规则，如"每张♦+3m"）；附魔是**某张牌的身份内禀**，不是位置/花色规则。
+  - 用位置规则模拟身份附魔 → 游戏层每出一手都要**重新推算"我那张 foil 落在第几位"再注入规则**，这段绑定逻辑是**代码、每次动作重跑** → 过不了"最弱 LLM 一致产出数据"的尺子。错抽象（拿规则引擎模拟属性系统）。
+- **卡在哪（引擎做不到的点）**：`Card = {suit, rank}`（`components/cardboard.ts:45`）**没有承载内禀修正的槽**；`card-scoring`（`tier3/card-scoring.ts`）的逐张循环已经**逐张拿到了 `c`**，但只累加 `baseChipsByRank[c.rank]` + 套外部 `PerCardRule`，**读不到"这张牌自带的修正"**。
+- **建议方案（最小、与现有循环同构）**：
+  1. `Card` 加可选 `mods?: Array<{ op:'add'|'mul'; target:string; value:number }>`（target=Resource id，如 chips/mult/money）。card-scoring 逐张循环里，在 baseChips 之后、按序套用 `c.mods`（与 baseChips 同一 `repeats` 重触发循环内，自然吃 retrigger），emit `appendScoreEvent(trace, 'percard-mod', …)`（UI 演出复用现有回放）。
+  2. `Card` 加可选 `retrigger?: number`（红蜡封）：并进现有 `repeats = 1 + Σ…`（与 `PerCardRetrigger` 同算），让该牌连同其上 mods/小丑一起重复。
+  - 版式/增强全是数据：foil=`{add,chips,50}`、holo=`{add,mult,10}`、poly=`{mul,mult,1.5}`、bonus=`{add,chips,30}`、mult=`{add,mult,4}`、glass=`{mul,mult,2}`、stone=`{add,chips,50}`。弱 LLM 可照填。
+- **边界（守住，不外扩）**：① 只做**计分牌的内禀 mods + 内禀 retrigger**；② **不做**手牌内（held-in-hand）触发（steel/gold/blue/purple 蜡封那类——从手牌而非出牌结算，是另一条触发线，单提）；③ 不引入伤害分型/重定向/身份版 PerCardRule 匹配。
+- **可复用性（非 Game E 专属）**：「实体携带修正、在被处理时套用」是通用 buff 原语——卡牌符文/装备词条/牌面状态跨卡牌游戏复用；与 REQ-F-061（命中那刻读目标 hp 做门）同类——都是**迭代/结算循环缺一处"读被处理对象的数据"**。
+- **交付后游戏侧接线（PE，非引擎）**：数据 `Card`（`deck.ts`）带 `enchant` 字段 → `toEngineCard` 把它映射成引擎 `Card.mods/retrigger`；附魔**来源**用塔罗牌/卡包商店项（纯游戏侧数据 + 表现），给某张牌盖章。视觉徽标（角标/描边）游戏侧做。
+- **请 Lead/主程裁决**：是否 ACCEPT 为 card-scoring 的最小扩展（同 REQ-F-061 纪律：迭代循环补"读被处理对象数据"）。
+
+---
+
 ### REQ-F-065 · [2026-06-17] · 策划 PF（装备系统 atk 生效 · owner 2026-06-17 钦定路A）· 框架级 · status: **done（引擎侧，2026-06-17，Lead）** · 优先级: 中（装备武器线唯一阻塞）
 
 **标题**：`scaleByResource` 支持「施法者本地资源」寻址（per-caster scaling），表达逐单位异质缩放
