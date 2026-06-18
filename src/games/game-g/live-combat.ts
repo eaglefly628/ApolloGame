@@ -6,24 +6,23 @@
 // （本模块纯逻辑、不碰渲染）；③ 可复现：单一 seeded PRNG，遭遇按 lane 序消费 → 同 seed + 同投放指令流 逐拍 hash 稳。
 // favor 在遭遇拍读（含此前所有投放/干预）→ 中途干预自然只影响未遭遇牌（前向单遍、不破 hash，同 12 §五.5）。
 // 纯 game-side 解释器（manifesto §2 固定解释器那部分），零新引擎能力；复用 decideFaceUp + seeded PRNG。
-import { decideFaceUp } from './blueprint.js';
+import { clashResolve, pEff, cardPoints } from './clash-resolve.js';
 import type { RandomSeed } from '@engine/protocol/components.js';
 
-// ── 调参（初版锚点，doc 18 §八；真机调入 14）──
+// ── 调参（初版锚点，doc 18 §八 / doc 19；真机 + 仿真台调入 14）──
 export const LANE_LEN = 100;   // 路长：己家 0 ↔ 敌家 100
 export const MARCH_STEP = 2;   // 每拍单侧推进（双侧 → gap 每拍 −2·STEP）
 export const CONTACT = 6;      // 前锋距 ≤ 此 = 接触（成前线）
 export const ENC_PERIOD = 6;   // 每多少拍一次对决（成波、可读、给决策窗）
-export const CLASH_CAP = 6;    // 双方连续都活的对决上限 → 到顶低 favor 者让位（确定性收敛、有界）
 export const TRAVEL = 14;      // 突破后 march 到敌老家的基准拍
-const MORALE = 8, ROUT = 14;   // 主将在场→本路下属士气 / 主将阵亡→溃散（doc 06）
-const clampFavor = (f: number): number => Math.max(5, Math.min(95, Math.round(f)));
+const MORALE_PTS = 2, ROUT_PTS = 4; // 主将在→下属 +战力 / 主将亡→溃散 −战力（点数空间·bounded，doc 06）
 
-export interface LiveUnit { id: string; rank: string; suit: string; favor: number; general: boolean; dead: boolean }
+export interface LiveUnit { id: string; rank: string; suit: string; points: number; buff: number; general: boolean; dead: boolean }
 export interface LiveLane { a: LiveUnit[]; b: LiveUnit[]; gap: number; clash: number; aGenDead: boolean; bGenDead: boolean; pendA: number[]; pendB: number[] }
 export interface LiveBattle { tick: number; lanes: [LiveLane, LiveLane, LiveLane]; homeA: number; homeB: number; homeMax: number; winner: 'a' | 'b' | 'draw' | 'pending'; rng: RandomSeed }
-// 投放指令：第 tick 拍把 unit 投进 lane 的 side 侧（确定性输入流；预布阵 = tick 0 投放）。
-export interface DeployCmd { tick: number; side: 'a' | 'b'; lane: number; unit: Omit<LiveUnit, 'dead'> }
+// 投放指令：第 tick 拍把 unit 投进 lane 的 side 侧（确定性输入流；预布阵 = tick 1 投放）。
+// 点数=公平骨架（cardPoints 由 rank 算，双方同副）；buff=经营（小丑/附魔/协同/路…聚合，缺省 0）。
+export interface DeployCmd { tick: number; side: 'a' | 'b'; lane: number; unit: { id: string; rank: string; suit: string; general: boolean; buff?: number } }
 
 const mkLane = (): LiveLane => ({ a: [], b: [], gap: LANE_LEN, clash: 0, aGenDead: false, bGenDead: false, pendA: [], pendB: [] });
 export function initLiveBattle(seed: number, homeMax: number): LiveBattle {
@@ -32,16 +31,17 @@ export function initLiveBattle(seed: number, homeMax: number): LiveBattle {
 
 function applyDeploy(b: LiveBattle, c: DeployCmd): void {
   const L = b.lanes[c.lane];
-  (c.side === 'a' ? L.a : L.b).push({ ...c.unit, dead: false }); // 队尾入列（front=index0=先投者）
+  const u: LiveUnit = { id: c.unit.id, rank: c.unit.rank, suit: c.unit.suit, points: cardPoints(c.unit.rank), buff: c.unit.buff ?? 0, general: c.unit.general, dead: false };
+  (c.side === 'a' ? L.a : L.b).push(u); // 队尾入列（front=index0=先投者）
 }
 
-// 遭遇拍的有效 favor：主将本身用基础；下属吃本路本侧士气（主将在 +MORALE / 主将亡 −ROUT）。读当下 → live。
-function effFavor(u: LiveUnit, lane: LiveLane, side: 'a' | 'b'): number {
-  if (u.general) return clampFavor(u.favor);
+// 遭遇拍的有效战力 P_eff（doc19 §三）：基础点数 + 经营 buff + 本路士气（主将在 +MORALE_PTS / 亡 −ROUT_PTS）。读当下 → live。
+function effPower(u: LiveUnit, lane: LiveLane, side: 'a' | 'b'): number {
+  if (u.general) return pEff(u.points, u.buff);
   const genDead = side === 'a' ? lane.aGenDead : lane.bGenDead;
   const genHere = (side === 'a' ? lane.a : lane.b).some((x) => x.general && !x.dead);
-  const shift = genDead ? -ROUT : genHere ? MORALE : 0;
-  return clampFavor(u.favor + shift);
+  const shift = genDead ? -ROUT_PTS : genHere ? MORALE_PTS : 0;
+  return pEff(u.points, u.buff + shift);
 }
 
 function killFront(lane: LiveLane, side: 'a' | 'b'): void {
@@ -56,18 +56,11 @@ function stepLane(b: LiveBattle, li: number): void {
   const hasA = lane.a.length > 0, hasB = lane.b.length > 0;
   if (hasA && hasB) {
     if (lane.gap > CONTACT) { lane.gap -= 2 * MARCH_STEP; return; } // 行军靠拢（决策窗）
-    // 接触：每 ENC_PERIOD 拍一次对决。
+    // 接触：每 ENC_PERIOD 拍一次对决（成波）。doc19 §三 pairwise：P_eff 聚合 → logistic 胜率 → 种子骰 → 单一胜负。
     if (b.tick % ENC_PERIOD !== 0) return;
-    const aF = lane.a[0], bF = lane.b[0];
-    const aAlive = decideFaceUp(effFavor(aF, lane, 'a'), b.rng); // RNG 先 A 后 B、lane 0→1→2 序 → 确定
-    const bAlive = decideFaceUp(effFavor(bF, lane, 'b'), b.rng);
-    if (!aAlive && !bAlive) { killFront(lane, 'a'); killFront(lane, 'b'); lane.clash = 0; }
-    else if (!aAlive) { killFront(lane, 'a'); lane.clash = 0; }
-    else if (!bAlive) { killFront(lane, 'b'); lane.clash = 0; }
-    else { // 双活：再战；到顶低 favor 让位（有界确定）
-      lane.clash += 1;
-      if (lane.clash >= CLASH_CAP) { (effFavor(aF, lane, 'a') < effFavor(bF, lane, 'b') ? killFront(lane, 'a') : killFront(lane, 'b')); lane.clash = 0; }
-    }
+    const aWins = clashResolve(effPower(lane.a[0], lane, 'a'), effPower(lane.b[0], lane, 'b'), b.rng);
+    killFront(lane, aWins ? 'b' : 'a'); // 赢家翻正·存活前进；输家翻反·阵亡（续航/弃堆 = 下一片 3D-STAM）
+    lane.clash = 0;
   } else if (hasA && !hasB) { // B 路清空 → A 幸存者突破，march 到敌(B)老家
     lane.a.forEach((_, i) => lane.pendA.push(b.tick + TRAVEL + i * 2));
     lane.a = [];
