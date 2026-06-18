@@ -14,6 +14,7 @@
 
 **目标**：可玩小丑 **31 → 趋近 150**（catalog 元数据已全 150）。下面按「能力」拆分；**每项是独立 capability，可分别落地、分别验收**，不是一个大泥球。
 **📋 主程对照用的全 150 分桶卡组清单（每能力的验收目标 + 每张效果/参数）见 `docs/game-design/game-e-joker-rollout.md`。**
+**🟢 Lead 进度（2026-06-18，主程一轮走完六项）**：① countOf **done**（按 Tag 数实体，回驳字符串枚举）· ② chance **done**（种子 PRNG 概率门）· ③ held-card-score **done**（留手牌结算 pass）· ④ 自增长 **wontfix/重组**（Resource+Effect+valueFrom 覆盖，Counter 冗余）· ⑤ HandMods **done(部分)**（four_fingers/shortcut/smeared；splash/pareidolia/flower_pot 另评）· ⑥ 跨实体 **defer(P3)**（无干净最小切片，逐族待具体卡单提）。每项详见对应子项。引擎侧全绿（tsc+vitest+build）逐项推 mainbranch。**PE 可据此把对应小丑接成可玩 + 补测试。**
 
 **判据声明（owner 2026-06-18 定）**：回驳"做成重组"的前提是——**最弱 LLM 能稳定产出那份数据**。若某组合需要一段易错的同步代码/复杂拼装（弱模型复现不了），即使理论上能重组，也**特例化下沉成干净能力/数据接口**（宣言尺子）。据此下面区分。
 
@@ -71,6 +72,12 @@
 - 解锁：Blueprint(复制右侧小丑)、Brainstorm(复制最左)、Invisible Joker(2 回合后卖出复制一个随机小丑)、DNA(复制出的牌进牌库)、Vampire(吸附魔)、Midas Mask(人头→黄金)、Hologram…
 - 缺口：小丑只能改全局 Resource；不能读/写**别的实体**（其它小丑/牌库的牌）。
 - 建议：先做**只读复制**（一个小丑"引用"另一个小丑的 Effect 列表，结算时一并跑）——比"运行时改牌库"小且确定。改牌库/吸附魔留到后面单评。**体积大、确定性最难，建议最后做。**
+- **Lead 裁决（defer / 暂不下沉 —— 不整包做，待具体卡逐族单提）**：⑥ 没有"干净的最小切片"，每个最小版都拖进一类抗数据化的东西 → 整包下沉 = mini 规则引擎 = inner-platform，撞防臃肿头号红线。逐族说明：
+  - **复制相邻小丑（Blueprint/Brainstorm）**：要小丑**排序/相邻**（game-e 概念，每回合算"右邻是谁"= 代码、过不了弱-LLM 尺子）+ **effect 复制+上下文重放**。无干净通用形。
+  - **改牌库/改牌（DNA/Hiker/Midas/Marble/Certificate）**：运行时**改别的实体数据**（往牌库加牌、给某张牌永久 +mods）——确定性最难（快照/录放/定序），且"加哪张/改哪张"的寻址抗数据化。
+  - **吸附魔/毁其它小丑（Vampire/Ceremonial Dagger/Madness）**：跨实体**读取+移除**——同上，更重。
+  - **个别其实是别的能力**：baseball_card「每个 uncommon 小丑 ×1.5」是**连乘**（非 ① 的 count×coeff 加性），单独评；Invisible Joker 涉及"卖出"经济触发（G 组）。
+  - **路径**：留 `open(deferred, P3)`。真要做时**按族逐个最小 REQ**（先"只读复制"族——需先有干净的小丑排序数据接口；再"改牌库"族——需先定运行时牌库变更的快照/确定性契约），各由具体卡拉动、附弱-LLM 尺子证明，不一次性塞。其余 5 项（①done/②done/③done/④wontfix/⑤done）已闭合，⑥ 不阻塞它们。
 
 **落地节奏建议**：① countOf（最小、先解锁一批）→ ② 概率 → ③ 手牌内（顺带补全 REQ-E-021 的 steel/gold 一条线）→ ④ 自增长 → ⑤ 规则修饰 → ⑥ 跨实体。每项落一项，PE 跟着把对应小丑从 catalog 接成可玩并加测试。PE 同时并行做留在游戏侧的两项（更多触发 / 条件重触发），不等引擎。
 
