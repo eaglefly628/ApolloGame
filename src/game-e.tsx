@@ -661,7 +661,7 @@ function GameE() {
                       const ecs = enchanted[`${su}${rk}`] ?? [];
                       const first = ecs.length ? ENCHANTS[ecs[0]] : null;
                       return (
-                        <span key={rk} title={ecs.map((id) => `${ENCHANTS[id].name}：${ENCHANTS[id].desc}`).join(' · ') || undefined} style={{ position: 'relative', width: 24, height: 26, lineHeight: '26px', textAlign: 'center', fontSize: 11, borderRadius: 4, background: here ? '#16323a' : 'transparent', border: `1px solid ${first ? first.color : here ? SUIT_SYM[su].c : '#1a2730'}`, color: here ? '#fff' : '#33424d', opacity: here ? 1 : 0.5 }}>
+                        <span key={rk} title={ecs.map((id) => `${ENCHANTS[id].name}：${ENCHANTS[id].desc}`).join(' · ') || undefined} style={{ position: 'relative', width: 24, height: 26, lineHeight: '26px', textAlign: 'center', fontSize: 11, borderRadius: 4, background: first ? `${first.color}33` : here ? '#16323a' : 'transparent', border: `1px solid ${first ? first.color : here ? SUIT_SYM[su].c : '#1a2730'}`, color: here ? '#fff' : '#33424d', opacity: here || first ? 1 : 0.5 }}>
                           {rk}{first && <span style={{ position: 'absolute', top: -5, right: -3, fontSize: 9, color: first.color }}>{ecs.length > 1 ? ecs.length : first.badge}</span>}
                         </span>
                       );
@@ -669,6 +669,31 @@ function GameE() {
                   </div>
                 ))}
               </div>
+
+              {/* 已附魔的牌（牌组里直接列出每张被附魔的牌 + 附魔明细）*/}
+              {(() => {
+                const ench = SUITS.flatMap((su) => RANKS.map((rk) => ({ su, rk, ids: enchanted[`${su}${rk}`] ?? [] }))).filter((x) => x.ids.length > 0);
+                return ench.length > 0 ? (
+                  <>
+                    <div style={{ fontSize: 12, color: '#7fd1de', fontWeight: 700, margin: '16px 0 6px' }}>已附魔的牌（{ench.length}）</div>
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: 5 }}>
+                      {ench.map(({ su, rk, ids }) => (
+                        <div key={`${su}${rk}`} style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 12, background: '#0b1c22', border: '1px solid #16323a', borderRadius: 8, padding: '5px 9px' }}>
+                          <span style={{ color: SUIT_SYM[su].c, fontWeight: 800, width: 36, fontSize: 14 }}>{rk}{SUIT_SYM[su].s}</span>
+                          <span style={{ display: 'flex', flexWrap: 'wrap', gap: '2px 10px' }}>
+                            {ids.map((id, i) => { const e = ENCHANTS[id]; return (
+                              <span key={i} style={{ display: 'inline-flex', alignItems: 'center', gap: 4 }}>
+                                <span style={{ width: 14, height: 14, borderRadius: '50%', background: e.color, color: '#0a0a0a', fontSize: 9, fontWeight: 800, lineHeight: '14px', textAlign: 'center' }}>{e.badge}</span>
+                                <span style={{ color: e.color, fontWeight: 700 }}>{e.name}</span><span style={{ color: '#64748b' }}>{e.desc}</span>
+                              </span>
+                            ); })}
+                          </span>
+                        </div>
+                      ))}
+                    </div>
+                  </>
+                ) : <div style={{ fontSize: 11, color: '#475569', marginTop: 12 }}>（还没有附魔的牌——商店买塔罗牌，选 1 张手牌使用即可附魔）</div>;
+              })()}
             </div>
           </div>
         );
