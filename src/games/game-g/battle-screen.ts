@@ -10,6 +10,8 @@
 // pos01 = 该牌沿本路的真实进度（0=A 家 / 1=B 家，= live pos/LANE_LEN）；revealed = 是否已接敌翻开（面朝下行军→接敌翻）；
 // faceUp = 翻开后生死（活=正面 / 死=石板斩）。id 供驱动层插值匹配（不进渲染 HTML）。
 export interface BattleUnit { id: string; lane: number; side: 'a' | 'b'; pos01: number; revealed: boolean; faceUp: boolean; rank: string; suit: 's' | 'h' | 'd' | 'c'; general: boolean }
+// 手牌（底部坞展示·点选派往三路）：rank/suit/将；id 供出牌回调定位。
+export interface HandCardView { id: string; rank: string; suit: 's' | 'h' | 'd' | 'c'; general: boolean }
 export interface BattleLane { name: string; mine: number; enemy: number; lead: 'a' | 'b' | 'n'; state: string; mineText: string; enemyText: string }
 export interface BattleLever { key: string; glyph: string; name: string; cost: number; desc: string; on?: boolean }
 export interface BattleView {
@@ -18,6 +20,9 @@ export interface BattleView {
   energy: number; energyMax: number; materials: number;
   phaseText: string; timeText: string;
   levers: BattleLever[]; lanes: BattleLane[]; units: BattleUnit[];
+  // 出牌控盘层（doc18 §10 · 实时流+暂停银行+手牌派三路）：
+  hand: HandCardView[]; selectedCard: number; deckCount: number; // 手牌 / 选中索引(-1 无) / 抽牌堆余量
+  pauseBank: number; pauseMax: number; paused: boolean; // 暂停银行(ms·围棋读秒) / 上限 / 当前是否暂停
 }
 
 type Theme = Record<string, string>;
@@ -181,14 +186,22 @@ function buildHTML(view: BattleView, s: CamState): string {
     return `<div data-act="lever" data-k="${l.key}" style="${st(rowS)}"><div style="${st(iconS)}">${l.glyph}</div><div style="flex:1; min-width:0;"><div style="display:flex; justify-content:space-between; align-items:baseline;"><span style="font-family:var(--font-heading); font-weight:700; font-size:15px; color:var(--ink);">${esc(l.name)}</span><span style="font-family:var(--font-num); font-size:12px; color:var(--accent);">⚡${l.cost}</span></div><div style="font-size:11px; color:var(--ink-dim); margin-top:3px; line-height:1.35;">${esc(l.desc)}</div></div></div>`;
   });
   const energyPips = [0, 1, 2, 3, 4].map((i) => `<div style="${st({ flex: 1, height: '8px', borderRadius: '99px', background: i < view.energy ? 'var(--accent-grad)' : 'var(--track)', boxShadow: i < view.energy ? '0 0 6px var(--accent-soft)' : 'none' })}"></div>`).join('');
-  const laneBtnDefs: [string, string][] = [['top', '上路'], ['mid', '中路'], ['bot', '下路']];
-  const laneBtnsHTML = forr(laneBtnDefs, ([key, label], i) => {
-    const on = s.lane === key; const ln = view.lanes[i];
-    const style = { flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '2px', padding: '9px 6px', borderRadius: '11px', cursor: 'pointer', border: '1px solid ' + (on ? 'var(--accent)' : 'var(--btn-edge)'), background: on ? 'var(--accent-grad)' : 'var(--btn-bg)', color: on ? '#fff' : 'var(--btn-text)', fontFamily: 'var(--font-heading)', fontWeight: 700, fontSize: '15px', transition: 'all .15s ease', boxShadow: on ? '0 0 14px var(--accent-soft)' : 'none' };
-    return `<button data-act="lane" data-k="${key}" style="${st(style)}">${label}<span style="font-family:var(--font-num); font-size:9px; opacity:.8; color:${on ? '#fff' : 'var(--ink-dim)'};">${esc(ln ? ln.state : '')}</span></button>`;
+  // 出牌坞·派牌目标（选中手牌后点上/中/下 → 派往该路出发）。selectedCard≥0 时高亮可投。
+  const hasSel = view.selectedCard >= 0 && view.selectedCard < view.hand.length;
+  const laneBtnDefs: [string, number, string][] = [['top', 0, '上路'], ['mid', 1, '中路'], ['bot', 2, '下路']];
+  const laneBtnsHTML = forr(laneBtnDefs, ([key, i, label]) => {
+    const ln = view.lanes[i];
+    const style = { flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '2px', padding: '9px 6px', borderRadius: '11px', cursor: hasSel ? 'pointer' : 'not-allowed', border: '1px solid ' + (hasSel ? 'var(--accent)' : 'var(--btn-edge)'), background: hasSel ? 'var(--accent-grad)' : 'var(--btn-bg)', color: hasSel ? '#fff' : 'var(--btn-text)', fontFamily: 'var(--font-heading)', fontWeight: 700, fontSize: '15px', transition: 'all .15s ease', opacity: hasSel ? '1' : '.6', boxShadow: hasSel ? '0 0 14px var(--accent-soft)' : 'none' };
+    return `<button data-act="play" data-k="${key}" style="${st(style)}">${label}<span style="font-family:var(--font-num); font-size:9px; opacity:.8; color:${hasSel ? '#fff' : 'var(--ink-dim)'};">${esc(ln ? ln.state : '')}</span></button>`;
   });
-  const readyBtn = { position: 'relative', overflow: 'hidden', width: '100%', height: '100%', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', borderRadius: '16px', cursor: 'pointer', border: 'none', background: 'var(--ready-bg)', color: 'var(--ready-text)', boxShadow: 'var(--ready-shadow)', transition: 'all .15s ease' };
-  const LANE_CN: Record<string, string> = { top: '上路', mid: '中路', bot: '下路' };
+  // 手牌：底部坞点选 → 高亮（抬起）→ 点上/中/下派出。将领带♔。
+  const handHTML = view.hand.length ? forr(view.hand, (c, i) => {
+    const sel = i === view.selectedCard; const sc = SUITC[c.suit];
+    const cardS = { position: 'relative', width: '60px', height: '84px', flex: 'none', borderRadius: '9px', cursor: 'pointer', background: 'linear-gradient(160deg,#fbf7ef,#e9dcc6)', border: (c.general ? 3 : 2) + 'px solid ' + (sel ? 'var(--accent)' : sc), boxShadow: sel ? '0 0 0 2px var(--accent), 0 10px 20px rgba(0,0,0,.55)' : '0 4px 10px rgba(0,0,0,.45)', transform: sel ? 'translateY(-10px)' : 'none', transition: 'all .12s ease', display: 'flex', alignItems: 'center', justifyContent: 'center' };
+    return `<div data-act="hand" data-i="${i}" style="${st(cardS)}"><div style="position:absolute; top:3px; left:6px; font-family:var(--font-heading); font-weight:700; font-size:16px; color:${sc};">${esc(c.rank)}</div><span style="font-size:32px; color:${sc};">${SUITG[c.suit]}</span>${c.general ? '<span style="position:absolute; top:-15px; left:50%; transform:translateX(-50%); font-size:20px; color:var(--gold);">♔</span>' : ''}</div>`;
+  }) : `<span style="color:var(--ink-dim); font-size:13px; padding:0 8px;">（手牌空 · 等抽牌堆涌牌）</span>`;
+  const bankPct = Math.max(0, Math.min(100, Math.round((view.pauseBank / Math.max(1, view.pauseMax)) * 100)));
+  const pauseBtnS = { width: '100%', padding: '10px 0', borderRadius: '11px', cursor: 'pointer', border: '1px solid ' + (view.paused ? 'var(--accent)' : 'var(--btn-edge)'), background: view.paused ? 'var(--accent-grad)' : 'var(--btn-bg)', color: view.paused ? '#fff' : 'var(--btn-text)', fontFamily: 'var(--font-heading)', fontWeight: 700, fontSize: '15px' };
 
   return `<div class="gg-root" style="${st(rootStyle)}">
     <div style="margin:0 auto; width:1280px; height:720px; overflow:hidden; border-radius:14px; box-shadow:0 24px 60px rgba(0,0,0,.35);">
@@ -226,14 +239,17 @@ function buildHTML(view: BattleView, s: CamState): string {
       </div>
       <div style="position:absolute; left:0; right:0; bottom:0; height:160px; background:var(--dock-bg); border-top:1px solid var(--panel-border); padding:18px 30px; z-index:7; display:flex; align-items:stretch; gap:16px;">
         <div style="display:flex; align-items:center; gap:10px;"><div style="display:flex; align-items:center; gap:9px; padding:0 16px; height:100%; border-radius:14px; background:var(--gold-chip); border:1px solid var(--gold);"><span style="font-size:22px;">◈</span><span style="font-family:var(--font-num); font-size:28px; color:var(--gold);">${view.materials}</span></div><div style="display:flex; flex-direction:column; justify-content:center; gap:7px; padding:0 16px; height:100%; border-radius:14px; background:var(--chip-bg); border:1px solid var(--panel-border); min-width:150px;"><div style="display:flex; justify-content:space-between; align-items:baseline;"><span style="font-family:var(--font-heading); font-weight:700; font-size:14px; color:var(--ink);">干预能量</span><span style="font-family:var(--font-num); font-size:11px; color:var(--accent);">${view.energy}/${view.energyMax}</span></div><div style="display:flex; gap:5px;">${energyPips}</div></div></div>
-        <div style="flex:1; display:flex; flex-direction:column; gap:9px; justify-content:center; padding:0 18px; border-radius:16px; background:var(--accent-soft); border:1px solid var(--accent); box-shadow:inset 0 0 0 1px var(--hairline);"><div style="display:flex; align-items:center; gap:10px;"><span style="font-family:var(--font-heading); font-weight:700; font-size:18px; color:var(--accent); letter-spacing:.03em;">选路派牌</span><span style="font-size:12px; color:var(--ink-dim);">把牌派往一路推进,接敌即掷命</span></div><div style="display:flex; gap:10px;">${laneBtnsHTML}</div></div>
-        <div style="width:210px; flex:none; display:flex; flex-direction:column; gap:8px;"><button data-act="ready" style="${st(readyBtn)}"><span style="position:absolute; inset:0; border-radius:inherit; background:linear-gradient(110deg,transparent 36%,rgba(255,255,255,.4) 50%,transparent 64%); background-size:230% 100%; animation:gg-shimmer 3s ease-in-out infinite; pointer-events:none;"></span><span style="position:relative; font-family:var(--font-heading); font-weight:700; font-size:24px; letter-spacing:.08em;">派牌出战</span><span style="position:relative; font-size:11px; letter-spacing:.22em; opacity:.85; margin-top:2px;">DEPLOY · ${esc(LANE_CN[s.lane])}</span></button></div>
+        <div style="flex:1; display:flex; flex-direction:column; gap:7px; justify-content:center; padding:8px 18px; border-radius:16px; background:var(--accent-soft); border:1px solid var(--accent); box-shadow:inset 0 0 0 1px var(--hairline);"><div style="display:flex; align-items:center; gap:10px;"><span style="font-family:var(--font-heading); font-weight:700; font-size:17px; color:var(--accent); letter-spacing:.03em;">手牌 · 出牌</span><span style="font-size:12px; color:var(--ink-dim);">点选一张 → 派往上/中/下，从老家出发慢慢推进</span><span style="flex:1;"></span><span style="font-family:var(--font-num); font-size:11px; color:var(--ink-dim);">抽牌堆 ${view.deckCount}</span></div><div style="display:flex; gap:8px; align-items:flex-end; min-height:86px;">${handHTML}</div></div>
+        <div style="width:228px; flex:none; display:flex; flex-direction:column; gap:8px; justify-content:center;"><div style="display:flex; gap:8px;">${laneBtnsHTML}</div><button data-act="pause" style="${st(pauseBtnS)}">${view.paused ? '▶ 继续 (空格)' : '⏸ 暂停思考 (空格)'}</button><div style="display:flex; align-items:center; gap:7px;"><span style="font-size:10px; letter-spacing:.12em; color:var(--ink-dim); white-space:nowrap;">读秒银行</span><div style="flex:1; height:8px; border-radius:99px; background:var(--track); overflow:hidden; border:1px solid var(--panel-border);"><div style="width:${bankPct}%; height:100%; background:${bankPct < 25 ? 'var(--danger)' : 'var(--accent-grad)'};"></div></div><span style="font-family:var(--font-num); font-size:11px; color:var(--ink);">${Math.ceil(view.pauseBank / 1000)}s</span></div></div>
       </div>
     </div></div></div>`;
 }
 
-// 挂载：把设计稿渲进 host，wire 相机/门/聚焦等交互；update() 每帧从 getView() 拉真数据重渲。
-export function mountBattle(host: HTMLElement, getView: () => BattleView): { update: () => void; destroy: () => void } {
+// 出牌控盘回调（game-g.tsx 提供）：选手牌 / 把选中牌派往某路(0/1/2) / 切换暂停。
+export interface BattleActions { selectCard: (i: number) => void; playLane: (lane: number) => void; togglePause: () => void }
+
+// 挂载：把设计稿渲进 host，wire 相机/门/聚焦 + 出牌/暂停交互；update() 每帧从 getView() 拉真数据重渲。
+export function mountBattle(host: HTMLElement, getView: () => BattleView, actions?: BattleActions): { update: () => void; destroy: () => void } {
   if (!document.getElementById('gg-battle-css')) { const s = document.createElement('style'); s.id = 'gg-battle-css'; s.textContent = CSS; document.head.appendChild(s); }
   const W = 3000, H = 1500, VPW = 1284, VPH = 612, OUT = 0.66667;
   const state: CamState = { theme: 'onyx', lever: 'bless', lane: 'mid', zoom: 0.85, camX: 1500, camY: 750, gates: { g1: true, g2: false } };
@@ -244,15 +260,19 @@ export function mountBattle(host: HTMLElement, getView: () => BattleView): { upd
   const setView = (x: number, y: number, z: number): void => { state.zoom = Math.max(0.55, Math.min(2.6, z)); setCam(x, y); };
   const render = (): void => { host.innerHTML = buildHTML(getView(), state); };
 
+  const LANE_IDX: Record<string, number> = { top: 0, mid: 1, bot: 2 };
   const onClick = (e: MouseEvent): void => {
     const el = (e.target as HTMLElement).closest('[data-act]') as HTMLElement | null; if (!el) return;
     const act = el.dataset.act, k = el.dataset.k ?? '';
     if (act === 'lever') { state.lever = k; render(); }
-    else if (act === 'lane') { state.lane = k; render(); }
+    else if (act === 'hand') { actions?.selectCard(parseInt(el.dataset.i ?? '-1', 10)); render(); }
+    else if (act === 'play') { actions?.playLane(LANE_IDX[k] ?? 0); render(); }
+    else if (act === 'pause') { actions?.togglePause(); render(); }
     else if (act === 'gate') { state.gates[k] = !state.gates[k]; render(); }
     else if (act === 'zoom') setView(state.camX, state.camY, state.zoom + (k === 'in' ? 0.2 : -0.2));
     else if (act === 'focus') { if (k === 'home') setView(A_POS[0] + 260, 750, 1.5); else if (k === 'fight') setView(laneAt(1, 0.5)[0], laneAt(1, 0.5)[1], 1.4); else if (k === 'enemy') setView(B_POS[0] - 260, 750, 1.5); else setView(1500, 750, 0.55); }
   };
+  const onKey = (e: KeyboardEvent): void => { if (e.code === 'Space') { e.preventDefault(); actions?.togglePause(); render(); } };
   const onInput = (e: Event): void => { const el = e.target as HTMLInputElement; if (el.dataset && el.dataset.act === 'zoominput') setView(state.camX, state.camY, parseFloat(el.value)); };
   const onWheel = (e: WheelEvent): void => { if ((e.target as HTMLElement).closest('[data-act="vpdown"]')) { e.preventDefault(); setView(state.camX, state.camY, state.zoom * (e.deltaY < 0 ? 1.12 : 0.89)); } };
   const onDown = (e: MouseEvent): void => {
@@ -267,10 +287,11 @@ export function mountBattle(host: HTMLElement, getView: () => BattleView): { upd
   host.addEventListener('click', onClick); host.addEventListener('input', onInput);
   host.addEventListener('wheel', onWheel, { passive: false }); host.addEventListener('mousedown', onDown);
   window.addEventListener('mousemove', onMove); window.addEventListener('mouseup', onUp);
+  if (actions) window.addEventListener('keydown', onKey);
   render();
   return {
     update: render,
-    destroy: () => { window.removeEventListener('mousemove', onMove); window.removeEventListener('mouseup', onUp); host.replaceChildren(); },
+    destroy: () => { window.removeEventListener('mousemove', onMove); window.removeEventListener('mouseup', onUp); window.removeEventListener('keydown', onKey); host.replaceChildren(); },
   };
 }
 

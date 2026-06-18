@@ -48,6 +48,20 @@ describe('Game G · 战斗屏视觉回归（真 live-combat → HTML golden · �
     await expect(html).toMatchFileSnapshot('./__frames__/battle-brocade.html');
   });
 
+  it('出牌坞帧（底部手牌 + 选牌派三路 + 读秒银行 · doc18 控盘层）匹配 golden', async () => {
+    const { live, deploys } = setup();
+    while (live.tick < 40) stepLiveBattle(live, deploys);
+    const control = { // 样例控盘态：手牌 5 张(选中第2张)、抽牌堆 33、读秒银行 64/90s
+      hand: [{ id: 'h0', rank: 'K', suit: 's' as const, general: true }, { id: 'h1', rank: '9', suit: 'h' as const, general: false }, { id: 'h2', rank: 'Q', suit: 'd' as const, general: false }, { id: 'h3', rank: '4', suit: 'c' as const, general: false }, { id: 'h4', rank: '★', suit: 's' as const, general: true }],
+      selectedCard: 1, deckCount: 33, pauseBank: 64000, pauseMax: 90000, paused: false,
+    };
+    const html = renderBattleDoc(buildBattleViewLive(live, save(), bossFor(2).name, bossFor(2).persona, 'd', control));
+    expect(html).toContain('手牌 · 出牌'); // 出牌坞标题
+    expect(html).toContain('抽牌堆 33'); // 抽牌堆余量
+    expect(html).toContain('⏸ 暂停思考 (空格)'); // 读秒暂停
+    await expect(html).toMatchFileSnapshot('./__frames__/battle-dock.html');
+  });
+
   it('一格格慢慢走（owner 钉死）：最前兵 pos01 随 tick 单调前推；行军面朝下、接敌才翻（非一次全翻/瞬移）', () => {
     const { live, deploys } = setup();
     const s = save();
