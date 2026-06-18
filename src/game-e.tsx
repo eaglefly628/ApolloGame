@@ -151,6 +151,10 @@ function GameE() {
   }, [tour]); // eslint-disable-line react-hooks/exhaustive-deps
   const handSizeRef = useRef(HAND_SIZE); // 本道手牌张数（镣铐诅咒减 1）
   const bossesBeatenRef = useRef(0); // 已击败 Boss 数（Rocket 等经济小丑读）
+  const [hoverJoker, setHoverJoker] = useState<string | null>(null); // 悬浮中的小丑（详情框延迟关闭，便于移到框上点卖出）
+  const hoverTimer = useRef<number | null>(null);
+  const openJokerTip = useCallback((id: string) => { if (hoverTimer.current) window.clearTimeout(hoverTimer.current); setHoverJoker(id); }, []);
+  const closeJokerTip = useCallback(() => { if (hoverTimer.current) window.clearTimeout(hoverTimer.current); hoverTimer.current = window.setTimeout(() => setHoverJoker(null), 260); }, []);
   const CONSUMABLE_SLOTS = 2;
   const enchantOf = (c: Card): EnchantId[] => enchanted[`${c.suit}${c.rank}`] ?? [];
   useEffect(() => { handLevelsRef.current = handLevels; }, [handLevels]);
@@ -872,20 +876,24 @@ function GameE() {
           const jcol = j.op === 'mul' ? '#ffd166' : j.target === 'chips' ? '#4cc9f0' : j.target === 'money' ? '#ffd166' : '#f72585';
           const jlabel = j.op === 'mul' ? `×${j.value}` : j.target === 'money' ? `+$${j.value}` : `+${j.value}`;
           return (
-            <div key={j.id} className="ge-joker" style={{ width: 50, height: 70, borderRadius: 6, border: `2px solid ${wig ? '#ffd166' : rc}`, background: '#160f22', position: 'relative', boxShadow: wig ? '0 0 16px #ffd166' : `0 0 8px ${rc}55`, animation: wig ? 'ge-wiggle .26s ease' : undefined, zIndex: wig ? 5 : 1 }}>
+            <div key={j.id} className="ge-joker" onMouseEnter={() => openJokerTip(j.id)} onMouseLeave={closeJokerTip} style={{ width: 50, height: 70, borderRadius: 6, border: `2px solid ${wig ? '#ffd166' : rc}`, background: '#160f22', position: 'relative', boxShadow: wig ? '0 0 16px #ffd166' : `0 0 8px ${rc}55`, animation: wig ? 'ge-wiggle .26s ease' : undefined, zIndex: hoverJoker === j.id ? 30 : wig ? 5 : 1 }}>
               {wig && <div style={{ position: 'absolute', top: -20, left: '50%', fontSize: 15, fontWeight: 900, color: jcol, textShadow: '0 1px 4px #000, 0 0 8px ' + jcol, animation: 'ge-jfloat .55s ease-out forwards', pointerEvents: 'none', whiteSpace: 'nowrap', zIndex: 10 }}>{jlabel}</div>}
               <div style={{ position: 'absolute', inset: 0, borderRadius: 4, overflow: 'hidden' }}>
                 <div style={{ position: 'absolute', inset: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 20 }}>🃏</div>
                 <img src={JOKER_URL(j.name)} alt={j.name} style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', objectFit: 'cover' }} onError={(e) => { (e.currentTarget as HTMLImageElement).style.display = 'none'; }} />
               </div>
               <div style={{ position: 'absolute', top: -3, right: -3, width: 8, height: 8, borderRadius: '50%', background: rc, boxShadow: `0 0 5px ${rc}` }} />
-              {/* 悬浮详情 */}
-              <div className="ge-joker-tip" style={{ position: 'absolute', top: 78, left: '50%', transform: 'translateX(-50%)', width: 150, background: 'rgba(10,16,24,0.97)', border: `1px solid ${rc}`, borderRadius: 8, padding: '7px 9px', zIndex: 40, boxShadow: '0 6px 18px #000a' }}>
-                <div style={{ fontSize: 12, fontWeight: 700, color: '#f1f5f9' }}>{j.name}</div>
-                <div style={{ fontSize: 9, color: rc, textTransform: 'uppercase', letterSpacing: 1, marginBottom: 3 }}>{j.rarity} · {j.jokerType}</div>
-                <div style={{ fontSize: 10.5, color: '#a78bfa', lineHeight: 1.4, marginBottom: 6 }}>{j.text}</div>
-                <button onClick={(ev) => { ev.stopPropagation(); sellJoker(j); }} disabled={busy} style={{ width: '100%', padding: '4px', borderRadius: 6, border: '1px solid #ef4444', background: busy ? '#1e293b' : 'rgba(239,68,68,0.18)', color: busy ? '#475569' : '#fca5a5', cursor: busy ? 'default' : 'pointer', fontSize: 11, fontWeight: 700 }}>🗑️ 卖出 +💰${sellValue(j)}</button>
-              </div>
+              {/* 悬浮详情：state 驱动 + 延迟关闭；top:70 紧贴卡 + paddingTop 桥接缝隙，鼠标能移到框上点卖出 */}
+              {hoverJoker === j.id && (
+                <div onMouseEnter={() => openJokerTip(j.id)} onMouseLeave={closeJokerTip} style={{ position: 'absolute', top: 70, left: '50%', transform: 'translateX(-50%)', width: 150, paddingTop: 8, zIndex: 40 }}>
+                  <div style={{ background: 'rgba(10,16,24,0.97)', border: `1px solid ${rc}`, borderRadius: 8, padding: '7px 9px', boxShadow: '0 6px 18px #000a' }}>
+                    <div style={{ fontSize: 12, fontWeight: 700, color: '#f1f5f9' }}>{j.name}</div>
+                    <div style={{ fontSize: 9, color: rc, textTransform: 'uppercase', letterSpacing: 1, marginBottom: 3 }}>{j.rarity} · {j.jokerType}</div>
+                    <div style={{ fontSize: 10.5, color: '#a78bfa', lineHeight: 1.4, marginBottom: 6 }}>{j.text}</div>
+                    <button onClick={(ev) => { ev.stopPropagation(); sellJoker(j); setHoverJoker(null); }} disabled={busy} style={{ width: '100%', padding: '4px', borderRadius: 6, border: '1px solid #ef4444', background: busy ? '#1e293b' : 'rgba(239,68,68,0.18)', color: busy ? '#475569' : '#fca5a5', cursor: busy ? 'default' : 'pointer', fontSize: 11, fontWeight: 700 }}>🗑️ 卖出 +💰${sellValue(j)}</button>
+                  </div>
+                </div>
+              )}
             </div>
           );
         })}
