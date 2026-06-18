@@ -121,6 +121,16 @@ const GAMES: GameEntry[] = [
     icon: '🎴',
     status: 'playable',
   },
+  {
+    id: 'game-h',
+    title: 'Game H: Blackjack',
+    subtitle: '二十一点 · 传统纸牌',
+    description: '经典 21 点纸牌游戏：玩家与庄家对赌，目标手牌总和接近 21 点不超出。纯数据驱动：蓝图装配 4 个原子能力，点数计算与胜负判定由 React 组件实现。庄家 AI 全自动（17 点站住）。',
+    color: '#1a2634',
+    accentColor: '#4ade80',
+    icon: '🃏',
+    status: 'playable',
+  },
 ];
 
 // ══════════════════════════════════════
@@ -538,6 +548,7 @@ function GameRunner({ gameId, onBack }: { gameId: string; onBack: () => void }) 
       'game-d': () => import('./game-d.js'),
       'game-f': () => import('./games/game-f/game-f.js'),
       'game-g': () => import('./games/game-g/game-g.js'),
+      'game-h': () => import('./game-h.js'),
     };
     const loader = loaders[gameId];
     if (!loader) return;
