@@ -54,6 +54,10 @@
 - 缺口：Effect 是无状态数据；这些要一个**随触发累加、按条件重置**的 per-joker 计数。
 - 建议：per-joker `Counter{ id, value }` 组件 + 声明式更新规则 `on: signal, delta, resetWhen?`；计分时用 `valueFrom{ resourceId: 该 counter }`（已有）读出。引擎只做"按规则累加/重置 + 暴露为可读值"。
 - 确定性：纯整数累加，状态进快照/关键帧。
+- **Lead 裁决（wontfix / 重组覆盖 —— `Counter` 组件冗余，回驳）**：per-joker 自增长计数 = **一个 `Resource`（计数本体，进快照）+ `Effect{onSignal, kind:'modify-resource', op:'add', value:±delta}`（每手/每弃累加）+ `Condition→Event→Effect{op:'set', value:0}`（按条件重置）+ 计分 `valueFrom{resourceId:该计数}`（读出）** —— 全是现成能力（effect-apply modify-resource on signal、condition+event-when、REQ-013 valueFrom），`Counter{on,delta,resetWhen}` 只是它们的语法糖。
+  - **为何与 ① 区别对待（① 下沉、④ 回驳）**：① 的"每次买卖手动维护计数 Resource"是**易错同步代码**（弱模型写不稳）→ 才下沉；④ 的"每手/每弃发个信号 → 声明式 +delta"是**干净声明数据**（游戏本就为回合流程发 hand_played/discard 信号），过弱-LLM 尺子——同 Bull(REQ-013 valueFrom)、REQ-017「card-pile+State+condition+effect 全数据回合流·零新能力」的已立范式。加 `Counter` = 为糖拓宽引擎，撞防臃肿红线。
+  - **等价数据写法**：Green Joker = `Resource gj=0` + `Effect{onSignal:'hand_played',op:add,value:1}` + `Effect{onSignal:'discard',op:add,value:-1}` + `Effect{onSignal:'score',targetId:'mult',op:add,valueFrom:{resourceId:'gj'}}`；Supernova/Ice Cream 同形（起始值+每手 ±）；多个自增长小丑各给唯一计数 id。
+  - **真缺口（另评，非本项）**：个别**重置/累加条件**——Ride the Bus「含人头」、Obelisk「最常打牌型」——是 poker-eval **派生事实**缺口（同 isFlush/isStraight 族），归 ⑤ 逐个评；计数机制本身不缺。
 
 **⑤ 被动改判型规则（P2 · 体积 中 · 解锁 ~8 张）**
 - 解锁：Four Fingers(4 张成顺/同花)、Shortcut(带空顺)、Splash(每张都计分)、Pareidolia(全算人头)、Smeared(红/黑各算同花)、Oops! All 6s(概率翻倍)。
