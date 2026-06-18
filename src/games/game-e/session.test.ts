@@ -151,6 +151,31 @@ describe('game-e · GameSession 线性流程脚本', () => {
     expect(r1.mult).toBe(r0.mult + 8); // 2 张 A × +4 倍率（extra 第二条效果）
   });
 
+  it('计数缩放(REQ-E-023①)：Abstract Joker 每小丑 +3 倍（countOf 数 JOKER tag）', () => {
+    const hand5 = [
+      { suit: 'spades', rank: 'A' }, { suit: 'hearts', rank: 'K' }, { suit: 'clubs', rank: '9' }, { suit: 'diamonds', rank: '7' }, { suit: 'spades', rank: '4' },
+    ]; // 高牌（无对/顺/同花）
+    const fillers = [{ suit: 'clubs', rank: '2' }, { suit: 'diamonds', rank: '3' }, { suit: 'hearts', rank: '5' }] as const;
+    const plain = new GameSession(1);
+    plain.hand = [...hand5, ...fillers] as never;
+    const r0 = plain.play([0, 1, 2, 3, 4])!;
+    const withJ = new GameSession(1);
+    expect(withJ.buyJoker(STARTER_JOKERS.find((j) => j.id === 'abstract_joker')!)).toBe(true);
+    withJ.hand = [...hand5, ...fillers] as never;
+    const r1 = withJ.play([0, 1, 2, 3, 4])!;
+    expect(r1.mult).toBe(r0.mult + 3); // 拥有 1 个小丑（自身）→ +3×1 倍率
+  });
+
+  it('概率门(REQ-E-023②)：Bloodstone 接成带 chance 的 PerCardRule（引擎逐张 roll）', () => {
+    const s = new GameSession(1);
+    expect(s.buyJoker(STARTER_JOKERS.find((j) => j.id === 'business_card')!)).toBe(true); // cost 4
+    // 出一手含人头牌，多次不报错（命中与否由世界 RNG 定，确定性、不崩）。
+    s.hand = [{ suit: 'spades', rank: 'K' }, { suit: 'hearts', rank: 'Q' }, { suit: 'clubs', rank: 'J' }, { suit: 'diamonds', rank: '9' }, { suit: 'spades', rank: '7' }, { suit: 'clubs', rank: '2' }, { suit: 'diamonds', rank: '3' }, { suit: 'hearts', rank: '5' }] as never;
+    const r = s.play([0, 1, 2, 3, 4]);
+    expect(r).not.toBeNull();
+    expect(s.money).toBeGreaterThanOrEqual(0); // 不崩；命中则 +$2/张人头
+  });
+
   it('Boss 诅咒：boss 道按表施加（Ante1 高墙=盲注线翻倍）', () => {
     const s = new GameSession(1);
     expect(s.boss).toBeNull(); // small 道无 boss

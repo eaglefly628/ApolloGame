@@ -146,17 +146,26 @@ function containsCondition(hand: HandType): Record<string, unknown> {
 }
 
 /** 一张小丑 → 它在蓝图里的实体集（id 以 `j_<jokerId>` 前缀，避免碰撞）。idx 决定结算 order。 */
+/** 小丑实体打的 Tag 位（REQ-E-023① countOf 用：Abstract「每小丑 +3 倍」数它）。 */
+export const TAG_JOKER = 1;
+
 export function jokerToEntities(j: JokerCard, idx: number): Record<string, EntityBlueprint> {
   const out: Record<string, EntityBlueprint> = {};
   const target = TARGET_TO_RES[j.target];
   const order = (j.op === 'mul' ? 100 : 10) + idx;
   const valueFrom = j.valueFrom ? { resourceId: VALUEFROM_RES[j.valueFrom.resourceId] ?? j.valueFrom.resourceId, coeff: j.valueFrom.coeff } : undefined;
+  // 给主实体 j_<id> 打 JOKER tag（每张小丑恰好一个 → countOf 数得准），并返回。
+  const tagged = (o: Record<string, EntityBlueprint>): Record<string, EntityBlueprint> => {
+    const e = o[`j_${j.id}`] as Record<string, unknown> | undefined;
+    if (e) e.Tag = { flags: TAG_JOKER };
+    return o;
+  };
 
   if (j.trigger === 'on_card_scored') {
     // 逐张：retrigger 优先（Hanging Chad），否则按 when 映射 PerCardRule。
     if (j.retrigger && j.retrigger > 0) {
       out[`j_${j.id}`] = { PerCardRetrigger: { when: { kind: 'index', eq: 0 }, extra: j.retrigger } } as unknown as EntityBlueprint;
-      return out;
+      return tagged(out);
     }
     let pcWhen: Record<string, unknown>;
     if (j.when.kind === 'card_suit') pcWhen = { kind: 'suit', suit: SUIT_TO_NUM[j.when.suit] };
@@ -165,20 +174,25 @@ export function jokerToEntities(j: JokerCard, idx: number): Record<string, Entit
     else if (j.when.kind === 'card_odd') pcWhen = { kind: 'rankIn', ranks: [14, 3, 5, 7, 9] };
     else if (j.when.kind === 'card_rank_in') pcWhen = { kind: 'rankIn', ranks: [...j.when.ranks] };
     else pcWhen = { kind: 'always' };
-    out[`j_${j.id}`] = { PerCardRule: { when: pcWhen, op: j.op, targetResource: target, value: j.value } } as unknown as EntityBlueprint;
+    const pcr: Record<string, unknown> = { when: pcWhen, op: j.op, targetResource: target, value: j.value };
+    if (j.chance) pcr.chance = j.chance; // REQ-E-023②：逐张概率门（Bloodstone/Business Card）
+    out[`j_${j.id}`] = { PerCardRule: pcr } as unknown as EntityBlueprint;
     // 第二条效果（Scholar/Walkie：同 when 再加一条 PerCardRule）。
     if (j.extra) out[`j_${j.id}_x`] = { PerCardRule: { when: pcWhen, op: j.extra.op, targetResource: TARGET_TO_RES[j.extra.target], value: j.extra.value } } as unknown as EntityBlueprint;
-    return out;
+    return tagged(out);
   }
 
   if (j.trigger !== 'on_hand_scored') return out; // on_round_end / on_blind_selected：切片暂不接
 
   const effect: Record<string, unknown> = { onSignal: SIG_SCORE, kind: 'modify-resource', targetId: target, op: j.op, order };
-  if (valueFrom) effect.valueFrom = valueFrom; else effect.value = j.value;
+  if (j.countTag === 'jokers') effect.valueFrom = { countOf: TAG_JOKER, coeff: j.value }; // REQ-E-023①：×小丑数（Abstract）
+  else if (valueFrom) effect.valueFrom = valueFrom;
+  else effect.value = j.value;
+  if (j.chance) effect.chance = j.chance; // REQ-E-023②：整手概率门
 
   if (j.when.kind === 'always') {
     out[`j_${j.id}`] = { Effect: effect } as unknown as EntityBlueprint;
-    return out;
+    return tagged(out);
   }
 
   // 条件类：建专属信号门（scoring 且 含某牌型 / 出牌≤N），Effect 监听该门信号。
@@ -190,7 +204,7 @@ export function jokerToEntities(j: JokerCard, idx: number): Record<string, Entit
   else cond = { kind: 'flag', id: F_SCORING };
   out[`gate_${j.id}`] = { EventWhen: { signal: sig, when: { kind: 'and', of: [{ kind: 'flag', id: F_SCORING }, cond] }, mode: 'level', armed: false } } as unknown as EntityBlueprint;
   out[`j_${j.id}`] = { Effect: { ...effect, onSignal: sig } } as unknown as EntityBlueprint;
-  return out;
+  return tagged(out);
 }
 
 /** 一组小丑 → 合并的蓝图实体集（供 buildGameEBlueprint 的 jokerEntities 参数）。 */
@@ -242,6 +256,8 @@ export function buildGameEBlueprint(jokerEntities: Record<string, EntityBlueprin
     // poker-eval 写的牌型派生 Flag（REQ-E-022）：含顺子 / 含同花。条件类小丑门控读。
     isStraight: { Flag: { id: F_STRAIGHT, active: false } } as unknown as EntityBlueprint,
     isFlush: { Flag: { id: F_FLUSH, active: false } } as unknown as EntityBlueprint,
+    // 概率门用的世界 RNG（REQ-E-023②：Bloodstone/Business Card 等；缺它则概率小丑 fail-closed）。
+    rng: { RandomSeed: { seed: 20260618, sequence: 0 } } as unknown as EntityBlueprint,
 
     // ── 回合循环资源（增量1：单局可玩切片）。round_score 跨手累加、过 blind_target 即胜；hands_left 出一手 -1。──
     roundScore: { Resource: { id: R_ROUND_SCORE, current: 0, min: 0, max: 1_000_000_000_000 } } as unknown as EntityBlueprint,

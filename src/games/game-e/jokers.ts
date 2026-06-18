@@ -60,6 +60,10 @@ export interface JokerCard {
   readonly valueFrom?: ValueFrom;
   /** 第二条效果（同 trigger/when）：双产出小丑用（Scholar=A +20筹+4倍、Walkie=10/4 +10筹+4倍）。 */
   readonly extra?: { readonly op: ScoreOp; readonly target: ScoreTarget; readonly value: number };
+  /** 概率门（REQ-E-023②）：命中 when 后再按 num/den roll 才施用（Bloodstone 每张♥ 1/2 ×1.5、Business Card 人头 1/2 +$2）。 */
+  readonly chance?: { readonly num: number; readonly den: number };
+  /** 计数缩放（REQ-E-023① countOf）：value 视作"每个该类实体 ×value"（Abstract 每小丑 +3 倍）。 */
+  readonly countTag?: 'jokers';
   /** 重触发次数（REQ-014 PerCardRetrigger）：>0 表示首张计分牌额外重触发 N 次（Hanging Chad=2）。 */
   readonly retrigger?: number;
   /** 美术 key（jokerArtKey(id)）；缺图自动退化占位。 */
@@ -114,6 +118,10 @@ export const STARTER_JOKERS: readonly JokerCard[] = [
   J({ id: 'mystic_summit', name: 'Mystic Summit', rarity: 'common', cost: 5, jokerType: '+m', trigger: 'on_hand_scored', when: { kind: 'resource_cmp', id: 'discards_left', cmp: 'lte', value: 0 }, op: 'add', target: 'mult', value: 15, text: '剩余弃牌为 0 时 +15 倍率' }),
   J({ id: 'scholar', name: 'Scholar', rarity: 'common', cost: 4, jokerType: '++', trigger: 'on_card_scored', when: { kind: 'card_rank_in', ranks: [14] }, op: 'add', target: 'chips', value: 20, extra: { op: 'add', target: 'mult', value: 4 }, text: '每张计分的 A +20 筹码 +4 倍率' }),
   J({ id: 'walkie_talkie', name: 'Walkie Talkie', rarity: 'common', cost: 4, jokerType: '++', trigger: 'on_card_scored', when: { kind: 'card_rank_in', ranks: [10, 4] }, op: 'add', target: 'chips', value: 10, extra: { op: 'add', target: 'mult', value: 4 }, text: '每张计分的 10/4 +10 筹码 +4 倍率' }),
+  // ── REQ-E-023 ① 计数缩放 / ② 概率（主程引擎落地后接线）──
+  J({ id: 'abstract_joker', name: 'Abstract Joker', rarity: 'common', cost: 4, jokerType: '+m', trigger: 'on_hand_scored', when: { kind: 'always' }, op: 'add', target: 'mult', value: 3, countTag: 'jokers', text: '每拥有 1 个小丑 +3 倍率' }),
+  J({ id: 'bloodstone', name: 'Bloodstone', rarity: 'uncommon', cost: 7, jokerType: 'Xm', trigger: 'on_card_scored', when: { kind: 'card_suit', suit: 'hearts' }, op: 'mul', target: 'mult', value: 1.5, chance: { num: 1, den: 2 }, text: '每张计分 ♥ 1/2 概率 ×1.5 倍率' }),
+  J({ id: 'business_card', name: 'Business Card', rarity: 'common', cost: 4, jokerType: '+$', trigger: 'on_card_scored', when: { kind: 'card_face' }, op: 'add', target: 'money', value: 2, chance: { num: 1, den: 2 }, text: '每张计分人头牌 1/2 概率 +$2' }),
 ];
 
 /** 按 id 取小丑。 */
