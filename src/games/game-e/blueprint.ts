@@ -6,6 +6,7 @@ import { pokerHandCapability, cardScoringCapability } from '@skills/tier3/index.
 import { HAND_RANKINGS, type HandType } from './hand-rankings.js';
 import { RANK_ORDER, type Card as DataCard } from './deck.js';
 import { ENCHANTS } from './enchants.js';
+import { growResId } from './jokers.js';
 import type { JokerCard, ScoreTarget } from './jokers.js';
 
 // ════════════════════════════════════════════════════════════════════════
@@ -176,11 +177,6 @@ export function jokerToEntities(j: JokerCard, idx: number): Record<string, Entit
   if (j.handMod) { out[`j_${j.id}`] = {} as unknown as EntityBlueprint; return tagged(out); }
 
   if (j.trigger === 'on_card_scored') {
-    // 逐张：retrigger 优先（Hanging Chad），否则按 when 映射 PerCardRule。
-    if (j.retrigger && j.retrigger > 0) {
-      out[`j_${j.id}`] = { PerCardRetrigger: { when: { kind: 'index', eq: 0 }, extra: j.retrigger } } as unknown as EntityBlueprint;
-      return tagged(out);
-    }
     let pcWhen: Record<string, unknown>;
     if (j.when.kind === 'card_suit') pcWhen = { kind: 'suit', suit: SUIT_TO_NUM[j.when.suit] };
     else if (j.when.kind === 'card_face') pcWhen = { kind: 'rankIn', ranks: [11, 12, 13] };
@@ -188,6 +184,12 @@ export function jokerToEntities(j: JokerCard, idx: number): Record<string, Entit
     else if (j.when.kind === 'card_odd') pcWhen = { kind: 'rankIn', ranks: [14, 3, 5, 7, 9] };
     else if (j.when.kind === 'card_rank_in') pcWhen = { kind: 'rankIn', ranks: [...j.when.ranks] };
     else pcWhen = { kind: 'always' };
+    // 逐张重触发：always=首张(Hanging Chad, index 0)；带条件=按 when 命中的牌（Hack 2/3/4/5、Sock and Buskin 人头）。
+    if (j.retrigger && j.retrigger > 0) {
+      const rw = j.when.kind === 'always' ? { kind: 'index', eq: 0 } : pcWhen;
+      out[`j_${j.id}`] = { PerCardRetrigger: { when: rw, extra: j.retrigger } } as unknown as EntityBlueprint;
+      return tagged(out);
+    }
     const pcr: Record<string, unknown> = { when: pcWhen, op: j.op, targetResource: target, value: j.value };
     if (j.chance) pcr.chance = j.chance; // REQ-E-023②：逐张概率门（Bloodstone/Business Card）
     if (j.held) pcr.held = true; // REQ-E-023③：对留手牌求值（Baron/Shoot the Moon）
@@ -201,7 +203,10 @@ export function jokerToEntities(j: JokerCard, idx: number): Record<string, Entit
   if (j.trigger !== 'on_hand_scored') { out[`j_${j.id}`] = {} as unknown as EntityBlueprint; return tagged(out); }
 
   const effect: Record<string, unknown> = { onSignal: SIG_SCORE, kind: 'modify-resource', targetId: target, op: j.op, order };
-  if (j.countTag === 'jokers') effect.valueFrom = { countOf: TAG_JOKER, coeff: j.value }; // REQ-E-023①：×小丑数（Abstract）
+  if (j.grow) { // REQ-E-023④：计分读 per-joker 计数 Resource（流程在事件 ± 更新）
+    effect.valueFrom = { resourceId: growResId(j.id) };
+    out[growResId(j.id)] = { Resource: { id: growResId(j.id), current: j.grow.start, min: -1_000_000_000, max: 1_000_000_000 } } as unknown as EntityBlueprint;
+  } else if (j.countTag === 'jokers') effect.valueFrom = { countOf: TAG_JOKER, coeff: j.value }; // REQ-E-023①：×小丑数（Abstract）
   else if (valueFrom) effect.valueFrom = valueFrom;
   else effect.value = j.value;
   if (j.chance) effect.chance = j.chance; // REQ-E-023②：整手概率门

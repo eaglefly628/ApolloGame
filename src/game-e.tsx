@@ -8,7 +8,7 @@ import {
 } from './games/game-e/blueprint.js';
 import {
   HAND_RANKINGS, HAND_ORDER, handScoreAtLevel, RANK_ORDER, RANKS, SUITS, shuffledDeck, rollJokerOffer, blindRequirement, BLIND_ORDER,
-  COMMON_PLANETS, planetForHand, bossForAnte, TAROTS, ENCHANTS, roundEndPayout,
+  COMMON_PLANETS, planetForHand, bossForAnte, TAROTS, ENCHANTS, roundEndPayout, growBumps, discardPayout,
   type PlanetCard, type BossBlind, type TarotCard, type EnchantId,
   type Card, type Suit, type Rank, type HandType, type JokerCard, type BlindKind,
 } from './games/game-e/index.js';
@@ -380,6 +380,8 @@ function GameE() {
       setSlam(true); window.setTimeout(() => setSlam(false), 440); // 结算砸屏
       setPlayedTypes((p) => (p.includes(type) ? p : [...p, type]));
       if (boss?.effect === 'pay_per_play') { set(R_MONEY, get(R_MONEY) - chosen.length); pushLog(`🦷 尖牙：出 ${chosen.length} 张 -💰$${chosen.length}`); } // 尖牙：按张数扣 $
+      // 自增长（出牌事件）：本手 type 决定条件累加（Green/Supernova/Ice Cream/Square/Runner/Spare Trousers）。
+      for (const b of growBumps(owned, 'hand', { handSize: chosen.length, isStraight: type === 'straight' || type === 'straight_flush', isTwoPair: type === 'two_pair' })) set(b.id, get(b.id) + b.delta);
       pushLog(`▶ ${HAND_RANKINGS[type]?.name ?? type}　${finalChips.toLocaleString()} × ${finalMult} = ${finalScore.toLocaleString()}`);
       const rs = get(R_ROUND_SCORE);
       pushLog(`　累计 ${rs.toLocaleString()} / ${get(R_BLIND).toLocaleString()}${rs >= get(R_BLIND) ? '　✅ 过关！' : ''}`);
@@ -390,6 +392,7 @@ function GameE() {
         const unusedDiscards = get(R_DISCARDS_LEFT) === DISCARDS_PER_BLIND ? get(R_DISCARDS_LEFT) : 0;
         const econ = roundEndPayout(owned, { money: get(R_MONEY), bossesBeaten: bossesBeatenRef.current, unusedDiscards });
         if (econ > 0) { set(R_MONEY, get(R_MONEY) + econ); pushLog(`💰 小丑结算 +$${econ}`); }
+        for (const b of growBumps(owned, 'round', {})) set(b.id, get(b.id) + b.delta); // 过关事件（Popcorn）
         setShopOffer(rollJokerOffer(new Set(owned.map((o) => o.id)), 3, Math.random));
         setShopConsumables(rollConsumables());
         setMascot(true); window.setTimeout(() => setMascot(false), 3800); // 过关庆祝：萌宠举牌
@@ -417,14 +420,20 @@ function GameE() {
   const commitDiscard = useCallback(() => {
     set(R_DISCARDS_LEFT, get(R_DISCARDS_LEFT) - 1);
     const kept = hand.filter((_, i) => !sel[i]);
+    const discarded = hand.filter((_, i) => sel[i]);
     pushLog(`♻ 弃 ${hand.length - kept.length} 张，补牌`);
+    // 自增长（弃牌事件，Green -1）+ Faceless（弃 ≥3 人头 +$5）。
+    for (const b of growBumps(owned, 'discard', {})) set(b.id, get(b.id) + b.delta);
+    const faces = discarded.filter((c) => c.rank === 'J' || c.rank === 'Q' || c.rank === 'K').length;
+    const dpay = discardPayout(owned, faces);
+    if (dpay > 0) { set(R_MONEY, get(R_MONEY) + dpay); pushLog(`💰 弃牌小丑 +$${dpay}`); }
     const next = drawTo(kept);
     setHand(next);
     setSel(new Array(next.length).fill(false));
     setNewKeys(new Set(next.slice(kept.length).map(keyOf)));
     setAnim(null);
     bump();
-  }, [hand, sel, get, set, drawTo]);
+  }, [hand, sel, get, set, drawTo, owned]);
 
   // 弃牌：先播「飞向垃圾桶」动画（380ms）→ 再提交（扣额度+补牌飞入）。
   const beginDiscard = useCallback(() => {
@@ -871,7 +880,7 @@ function GameE() {
               </div>
               <div style={{ position: 'absolute', top: -3, right: -3, width: 8, height: 8, borderRadius: '50%', background: rc, boxShadow: `0 0 5px ${rc}` }} />
               {/* 悬浮详情 */}
-              <div className="ge-joker-tip" style={{ position: 'absolute', bottom: 76, left: '50%', transform: 'translateX(-50%)', width: 150, background: 'rgba(10,16,24,0.97)', border: `1px solid ${rc}`, borderRadius: 8, padding: '7px 9px', zIndex: 40, boxShadow: '0 6px 18px #000a' }}>
+              <div className="ge-joker-tip" style={{ position: 'absolute', top: 78, left: '50%', transform: 'translateX(-50%)', width: 150, background: 'rgba(10,16,24,0.97)', border: `1px solid ${rc}`, borderRadius: 8, padding: '7px 9px', zIndex: 40, boxShadow: '0 6px 18px #000a' }}>
                 <div style={{ fontSize: 12, fontWeight: 700, color: '#f1f5f9' }}>{j.name}</div>
                 <div style={{ fontSize: 9, color: rc, textTransform: 'uppercase', letterSpacing: 1, marginBottom: 3 }}>{j.rarity} · {j.jokerType}</div>
                 <div style={{ fontSize: 10.5, color: '#a78bfa', lineHeight: 1.4, marginBottom: 6 }}>{j.text}</div>

@@ -192,6 +192,17 @@ describe('game-e · GameSession 线性流程脚本', () => {
     expect(e.Tag).toBeDefined(); // 仅占 tag（供 countOf 计入）
   });
 
+  it('自增长(REQ-E-023④)：Green Joker 每出一手 +1 倍率累加', () => {
+    const hi = [{ suit: 'spades', rank: 'A' }, { suit: 'hearts', rank: 'K' }, { suit: 'clubs', rank: '9' }, { suit: 'diamonds', rank: '7' }, { suit: 'spades', rank: '4' }, { suit: 'clubs', rank: '2' }, { suit: 'diamonds', rank: '3' }, { suit: 'hearts', rank: '5' }];
+    const s = new GameSession(1);
+    expect(s.buyJoker(STARTER_JOKERS.find((j) => j.id === 'green_joker')!)).toBe(true); // cost 4 = 起始钱
+    s.hand = [...hi] as never;
+    const r1 = s.play([0, 1, 2, 3, 4])!; // 计数 0 → +0；出牌后 +1
+    s.hand = [...hi] as never;
+    const r2 = s.play([0, 1, 2, 3, 4])!; // 计数 1 → +1 倍率
+    expect(r2.mult).toBe(r1.mult + 1);
+  });
+
   it('Boss 诅咒：boss 道按表施加（Ante1 高墙=盲注线翻倍）', () => {
     const s = new GameSession(1);
     expect(s.boss).toBeNull(); // small 道无 boss
