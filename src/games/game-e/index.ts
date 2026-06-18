@@ -10,6 +10,7 @@ export * from './jokers.js';
 export * from './joker-catalog.js';
 export * from './planets.js';
 export * from './boss-blinds.js';
+export * from './enchants.js';
 export * from './assets.js';
 export * from './blueprint.js';
 export * from './cards-atlas.js';

@@ -5,6 +5,7 @@ import { eventWhenCapability, effectApplyCapability } from '@skills/tier2/index.
 import { pokerHandCapability, cardScoringCapability } from '@skills/tier3/index.js';
 import { HAND_RANKINGS, type HandType } from './hand-rankings.js';
 import { RANK_ORDER, type Card as DataCard } from './deck.js';
+import { ENCHANTS } from './enchants.js';
 import type { JokerCard, ScoreTarget } from './jokers.js';
 
 // ════════════════════════════════════════════════════════════════════════
@@ -81,9 +82,15 @@ export const ENGINE_HANDS_CONTAINING_PAIR: readonly string[] = [
 // 花色名 → 引擎数字（0..3）。
 const SUIT_TO_NUM: Record<DataCard['suit'], number> = { spades: 0, hearts: 1, diamonds: 2, clubs: 3 };
 
-/** 数据牌 {suit,rank(字符串)} → 引擎牌 {suit:0..3, rank:2..14}。 */
+/** 数据牌 {suit,rank(字符串),enchant?} → 引擎牌 {suit,rank,mods?,retrigger?}（附魔映射成内禀修正，REQ-E-021）。 */
 export function toEngineCard(c: DataCard): Card {
-  return { suit: SUIT_TO_NUM[c.suit], rank: RANK_ORDER[c.rank] };
+  const out: Card = { suit: SUIT_TO_NUM[c.suit], rank: RANK_ORDER[c.rank] };
+  if (c.enchant) {
+    const en = ENCHANTS[c.enchant];
+    if (en.mods) out.mods = en.mods.map((m) => ({ ...m }));
+    if (en.retrigger) out.retrigger = en.retrigger;
+  }
+  return out;
 }
 
 /** 便捷构造引擎牌（直接给数字）。 */

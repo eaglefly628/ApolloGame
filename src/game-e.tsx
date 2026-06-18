@@ -8,9 +8,13 @@ import {
 } from './games/game-e/blueprint.js';
 import {
   HAND_RANKINGS, HAND_ORDER, handScoreAtLevel, RANK_ORDER, RANKS, SUITS, shuffledDeck, STARTER_JOKERS, blindRequirement, BLIND_ORDER,
-  COMMON_PLANETS, bossForAnte, type PlanetCard, type BossBlind,
+  COMMON_PLANETS, bossForAnte, TAROTS, ENCHANTS,
+  type PlanetCard, type BossBlind, type TarotCard, type EnchantId,
   type Card, type Suit, type Rank, type HandType, type JokerCard, type BlindKind,
 } from './games/game-e/index.js';
+
+// 消耗位道具 = 星球牌（升级牌型）或 塔罗牌（盖附魔）。
+type Consumable = PlanetCard | TarotCard;
 import { cardCell, CELL_W, CELL_H, SHEET_W, SHEET_H } from './games/game-e/cards-atlas.js';
 import { evaluateHand } from './skills/tier3/index.js';
 
@@ -43,6 +47,7 @@ const JOKER_SLOTS = 5;
 const REROLL_COST = 5;
 
 const RARITY_COLOR: Record<string, string> = { common: '#9ca3af', uncommon: '#34d399', rare: '#60a5fa', legendary: '#f59e0b' };
+const SUIT_SYM: Record<Suit, string> = { spades: '♠', hearts: '♥', diamonds: '♦', clubs: '♣' };
 
 // 逐张/逐小丑计分演出的一帧（纯表现：显示用 chips/mult + 高亮哪张牌 + 抖哪个小丑）。
 interface SeqFrame { chips: number; mult: number; score: number | null; hi: number | null; wiggle: string | null; dur: number; }
@@ -98,12 +103,15 @@ function GameE() {
   const seqRef = useRef<{ frames: SeqFrame[]; i: number; after: () => void; cards: Card[]; scoringIdx: number[] } | null>(null);
   // 星球牌（牌型升级）/ Boss 诅咒 / 牌组预览 状态。
   const [handLevels, setHandLevels] = useState<Record<HandType, number>>(() => Object.fromEntries(HAND_ORDER.map((h) => [h, 1])) as Record<HandType, number>);
-  const [consumables, setConsumables] = useState<PlanetCard[]>([]); // 持有星球牌（待使用）
-  const [shopPlanets, setShopPlanets] = useState<PlanetCard[]>([]); // 商店星球牌货架
+  const [consumables, setConsumables] = useState<Consumable[]>([]); // 持有道具（星球/塔罗），待使用
+  const [shopConsumables, setShopConsumables] = useState<Consumable[]>([]); // 商店道具货架（星球+塔罗）
+  const [enchanted, setEnchanted] = useState<Record<string, EnchantId>>({}); // 牌身份→附魔（持久）
+  const enchantedRef = useRef<Record<string, EnchantId>>({}); // 同步给回调里读（出牌时映射 mods）
   const [playedTypes, setPlayedTypes] = useState<HandType[]>([]); // 本道已打出的牌型（巨眼诅咒用）
   const [deckOpen, setDeckOpen] = useState(false); // 牌组/牌型面板开关
   const handSizeRef = useRef(HAND_SIZE); // 本道手牌张数（镣铐诅咒减 1）
   const CONSUMABLE_SLOTS = 2;
+  const enchantOf = (c: Card): EnchantId | undefined => enchanted[`${c.suit}${c.rank}`];
   const [, force] = useState(0);
   const bump = () => force((n) => n + 1);
   const keyOf = (c: Card) => `${c.suit}${c.rank}`;
@@ -212,25 +220,40 @@ function GameE() {
   const money = get(R_MONEY);
   const selCount = sel.filter(Boolean).length;
 
-  // 星球牌：用一张 → 牌型 +1 级 → 升级后的基础分写回引擎 rankingTable（下次出牌生效）。
-  const usePlanet = useCallback((idx: number) => {
-    const p = consumables[idx];
-    if (!p) return;
-    const lvl = (handLevels[p.hand] ?? 1) + 1;
-    const pk = engineRef.current!.world.getComponent<{ type: string; rankingTable: Record<string, { chips: number; mult: number }> }>('table', 'PokerHand');
-    if (pk) pk.rankingTable[HAND_TYPE_TO_ENGINE[p.hand]] = handScoreAtLevel(p.hand, lvl);
-    setHandLevels((prev) => ({ ...prev, [p.hand]: lvl }));
+  // 用道具：星球牌→牌型 +1 级（写回引擎 rankingTable）；塔罗牌→给「选中的 1 张手牌」盖附魔。
+  const useConsumable = useCallback((idx: number) => {
+    const item = consumables[idx];
+    if (!item) return;
+    if (item.kind === 'planet') {
+      const lvl = (handLevels[item.hand] ?? 1) + 1;
+      const pk = engineRef.current!.world.getComponent<{ type: string; rankingTable: Record<string, { chips: number; mult: number }> }>('table', 'PokerHand');
+      if (pk) pk.rankingTable[HAND_TYPE_TO_ENGINE[item.hand]] = handScoreAtLevel(item.hand, lvl);
+      setHandLevels((prev) => ({ ...prev, [item.hand]: lvl }));
+      setConsumables((c) => c.filter((_, i) => i !== idx));
+      pushLog(`${item.icon} ${item.name}：${HAND_RANKINGS[item.hand].name} 升至 Lv${lvl}`);
+      bump();
+      return;
+    }
+    // 塔罗：需恰好选中 1 张手牌。
+    const selIdx = sel.map((s, i) => (s ? i : -1)).filter((i) => i >= 0);
+    if (selIdx.length !== 1) { pushLog(`${item.icon} ${item.name}：请先选中 1 张手牌再使用`); bump(); return; }
+    const card = hand[selIdx[0]];
+    const k = `${card.suit}${card.rank}`;
+    const next = { ...enchantedRef.current, [k]: item.enchant };
+    enchantedRef.current = next;
+    setEnchanted(next);
     setConsumables((c) => c.filter((_, i) => i !== idx));
-    pushLog(`${p.icon} ${p.name}：${HAND_RANKINGS[p.hand].name} 升至 Lv${lvl}`);
+    setSel(new Array(hand.length).fill(false));
+    pushLog(`${item.icon} ${item.name}：${card.rank}${SUIT_SYM[card.suit]} 附「${ENCHANTS[item.enchant].name}」(${ENCHANTS[item.enchant].desc})`);
     bump();
-  }, [consumables, handLevels]);
+  }, [consumables, handLevels, sel, hand]);
 
-  // 买星球牌：扣 $、入消耗位（满则不可买）。
-  const buyPlanet = useCallback((p: PlanetCard) => {
-    if (consumables.length >= CONSUMABLE_SLOTS || money < p.cost) return;
-    set(R_MONEY, money - p.cost);
-    setConsumables((c) => [...c, p]);
-    setShopPlanets((s) => s.filter((x) => x.id !== p.id));
+  // 买道具：扣 $、入消耗位（满则不可买）。
+  const buyConsumable = useCallback((item: Consumable) => {
+    if (consumables.length >= CONSUMABLE_SLOTS || money < item.cost) return;
+    set(R_MONEY, money - item.cost);
+    setConsumables((c) => [...c, item]);
+    setShopConsumables((s) => s.filter((x) => x.id !== item.id));
     bump();
   }, [consumables, money, set]);
 
@@ -254,8 +277,8 @@ function GameE() {
       if (t && playedTypes.includes(t)) return;
     }
 
-    // 引擎一拍算出本手真值（chips/mult/score + 牌型 + 累加 round_score/hands-1）。
-    engine.world.getComponent<PlayedHand>('table', 'PlayedHand')!.cards = chosen.map(toEngineCard);
+    // 引擎一拍算出本手真值（chips/mult/score + 牌型 + 累加 round_score/hands-1）。附魔按牌身份映射成 Card.mods。
+    engine.world.getComponent<PlayedHand>('table', 'PlayedHand')!.cards = chosen.map((c) => toEngineCard({ ...c, enchant: enchantedRef.current[`${c.suit}${c.rank}`] }));
     engine.world.getComponent<Flag>('scoring', 'Flag')!.active = true;
     engine.world.tick();
     const finalChips = get(R_CHIPS), finalMult = get(R_MULT), finalScore = get(R_HAND_SCORE);
@@ -305,11 +328,7 @@ function GameE() {
         const offer: JokerCard[] = [];
         for (let k = 0; k < 3 && tmp.length; k++) offer.push(tmp.splice(Math.floor(Math.random() * tmp.length), 1)[0]);
         setShopOffer(offer);
-        // 商店同时上 2 张星球牌（牌型升级）。
-        const ptmp = [...COMMON_PLANETS];
-        const poffer: PlanetCard[] = [];
-        for (let k = 0; k < 2 && ptmp.length; k++) poffer.push(ptmp.splice(Math.floor(Math.random() * ptmp.length), 1)[0]);
-        setShopPlanets(poffer);
+        setShopConsumables(rollConsumables());
         setPhase('shop'); bump(); return;
       }
       if (get(R_HANDS_LEFT) <= 0) { setPhase('lost'); bump(); return; }
@@ -374,16 +393,19 @@ function GameE() {
     for (let k = 0; k < 3 && tmp.length; k++) offer.push(tmp.splice(Math.floor(Math.random() * tmp.length), 1)[0]);
     return offer;
   }, [owned]);
+  // 道具货架：1 星球牌（升级牌型）+ 1 塔罗牌（盖附魔）。
+  const rollConsumables = useCallback((): Consumable[] => {
+    const planet = COMMON_PLANETS[Math.floor(Math.random() * COMMON_PLANETS.length)];
+    const tarot = TAROTS[Math.floor(Math.random() * TAROTS.length)];
+    return [planet, tarot];
+  }, []);
   const reroll = useCallback(() => {
     if (money < REROLL_COST) return;
     set(R_MONEY, money - REROLL_COST);
     setShopOffer(rollShop());
-    const ptmp = [...COMMON_PLANETS];
-    const poffer: PlanetCard[] = [];
-    for (let k = 0; k < 2 && ptmp.length; k++) poffer.push(ptmp.splice(Math.floor(Math.random() * ptmp.length), 1)[0]);
-    setShopPlanets(poffer);
+    setShopConsumables(rollConsumables());
     bump();
-  }, [money, set, rollShop]);
+  }, [money, set, rollShop, rollConsumables]);
 
   const nextBlind = useCallback(() => {
     let a = ante, bi = blindIdx + 1;
@@ -398,7 +420,8 @@ function GameE() {
     e.world.addComponent('table', { type: 'ScoreTrace', events: [] } as ScoreTrace); // REQ-019：开启逐步 trace（opt-in）
     engineRef.current = e;
     setOwned([]); setAnte(1); setBlindIdx(0);
-    setConsumables([]); setShopPlanets([]);
+    setConsumables([]); setShopConsumables([]);
+    setEnchanted({}); enchantedRef.current = {};
     setHandLevels(Object.fromEntries(HAND_ORDER.map((h) => [h, 1])) as Record<HandType, number>);
     startBlind(1, 0);
   }, [startBlind]);
@@ -481,8 +504,12 @@ function GameE() {
                     <span style={{ width: 18, color: SUIT_SYM[su].c, fontSize: 15 }}>{SUIT_SYM[su].s}</span>
                     {RANKS.map((rk) => {
                       const here = remaining.has(`${su}${rk}`);
+                      const en = enchanted[`${su}${rk}`];
+                      const ec = en ? ENCHANTS[en] : null;
                       return (
-                        <span key={rk} style={{ width: 24, height: 26, lineHeight: '26px', textAlign: 'center', fontSize: 11, borderRadius: 4, background: here ? '#16323a' : 'transparent', border: `1px solid ${here ? SUIT_SYM[su].c : '#1a2730'}`, color: here ? '#fff' : '#33424d', opacity: here ? 1 : 0.5 }}>{rk}</span>
+                        <span key={rk} title={ec ? `${ec.name}：${ec.desc}` : undefined} style={{ position: 'relative', width: 24, height: 26, lineHeight: '26px', textAlign: 'center', fontSize: 11, borderRadius: 4, background: here ? '#16323a' : 'transparent', border: `1px solid ${ec ? ec.color : here ? SUIT_SYM[su].c : '#1a2730'}`, color: here ? '#fff' : '#33424d', opacity: here ? 1 : 0.5 }}>
+                          {rk}{ec && <span style={{ position: 'absolute', top: -5, right: -3, fontSize: 9, color: ec.color }}>{ec.badge}</span>}
+                        </span>
                       );
                     })}
                   </div>
@@ -540,19 +567,21 @@ function GameE() {
             </div>
           ))}
         </div>
-        {/* 星球牌（消耗位）：点击使用，升级对应牌型 */}
+        {/* 道具消耗位：星球牌(升级牌型) / 塔罗牌(选 1 张手牌盖附魔)。点击使用 */}
         <div>
-          <div style={{ fontSize: 10, color: '#64748b', marginBottom: 4 }}>星球牌 {consumables.length}/{CONSUMABLE_SLOTS}（点击使用）</div>
+          <div style={{ fontSize: 10, color: '#64748b', marginBottom: 4 }}>道具 {consumables.length}/{CONSUMABLE_SLOTS}（点击使用）</div>
           <div style={{ display: 'flex', gap: 6 }}>
             {Array.from({ length: CONSUMABLE_SLOTS }).map((_, i) => {
-              const p = consumables[i];
-              return p ? (
-                <button key={i} onClick={() => usePlanet(i)} title={`${p.name}：${HAND_RANKINGS[p.hand].name} 升级（当前 Lv${handLevels[p.hand] ?? 1}）`}
-                  style={{ flex: 1, padding: '6px 4px', borderRadius: 8, border: '1px solid #5b6cff', background: 'linear-gradient(160deg,#1a2a5e,#0d1430)', color: '#cfe0ff', cursor: 'pointer', fontSize: 11 }}>
-                  <div style={{ fontSize: 16 }}>{p.icon}</div>{p.name}
+              const it = consumables[i];
+              if (!it) return <div key={i} style={{ flex: 1, padding: '6px 4px', borderRadius: 8, border: '1px dashed #2b4651', color: '#2b4651', textAlign: 'center', fontSize: 16 }}>+</div>;
+              const isP = it.kind === 'planet';
+              const tip = isP ? `${it.name}：${HAND_RANKINGS[it.hand].name} 升级（当前 Lv${handLevels[it.hand] ?? 1}）` : `${it.name}：选 1 张手牌盖「${ENCHANTS[it.enchant].name}」(${ENCHANTS[it.enchant].desc})`;
+              const col = isP ? '#5b6cff' : ENCHANTS[it.enchant].color;
+              return (
+                <button key={i} onClick={() => useConsumable(i)} title={tip}
+                  style={{ flex: 1, padding: '6px 4px', borderRadius: 8, border: `1px solid ${col}`, background: isP ? 'linear-gradient(160deg,#1a2a5e,#0d1430)' : 'linear-gradient(160deg,#2a1a40,#140d24)', color: '#e6e0ff', cursor: 'pointer', fontSize: 11 }}>
+                  <div style={{ fontSize: 16 }}>{it.icon}</div>{it.name}
                 </button>
-              ) : (
-                <div key={i} style={{ flex: 1, padding: '6px 4px', borderRadius: 8, border: '1px dashed #2b4651', color: '#2b4651', textAlign: 'center', fontSize: 16 }}>+</div>
               );
             })}
           </div>
@@ -651,20 +680,23 @@ function GameE() {
             })}
           </div>
 
-          {/* 星球牌货架（牌型升级）*/}
-          {shopPlanets.length > 0 && (
+          {/* 道具货架：星球牌（升级牌型）/ 塔罗牌（盖附魔）*/}
+          {shopConsumables.length > 0 && (
             <div style={{ marginTop: 14, paddingTop: 12, borderTop: '1px dashed #2b5562' }}>
-              <div style={{ fontSize: 11, color: '#7fa8ff', fontWeight: 700, marginBottom: 8 }}>🪐 星球牌（升级牌型基础分）</div>
+              <div style={{ fontSize: 11, color: '#7fa8ff', fontWeight: 700, marginBottom: 8 }}>🪐 星球牌（升级牌型） · 🔮 塔罗牌（盖附魔）</div>
               <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap', justifyContent: 'center' }}>
-                {shopPlanets.map((p, i) => {
-                  const can = money >= p.cost && consumables.length < CONSUMABLE_SLOTS;
+                {shopConsumables.map((it, i) => {
+                  const can = money >= it.cost && consumables.length < CONSUMABLE_SLOTS;
+                  const isP = it.kind === 'planet';
+                  const col = isP ? '#5b6cff' : ENCHANTS[it.enchant].color;
+                  const blurb = isP ? `升级「${HAND_RANKINGS[it.hand].name}」` : `附「${ENCHANTS[it.enchant].name}」${ENCHANTS[it.enchant].desc}`;
                   return (
-                    <div key={p.id} className="ge-shop-card" style={{ width: 132, borderRadius: 12, padding: 10, display: 'flex', flexDirection: 'column', gap: 6, background: 'linear-gradient(165deg,#16234e,#0a1024)', border: '1.5px solid #5b6cff', boxShadow: '0 0 14px #5b6cff44', animation: `ge-shopIn .35s ease ${i * 0.08}s both` }}>
-                      <div style={{ fontSize: 34, textAlign: 'center' }}>{p.icon}</div>
-                      <div style={{ fontSize: 12, fontWeight: 700, textAlign: 'center', color: '#dbe4ff' }}>{p.name}</div>
-                      <div style={{ fontSize: 9.5, color: '#9fb3ff', textAlign: 'center', minHeight: 24, lineHeight: 1.35 }}>升级「{HAND_RANKINGS[p.hand].name}」</div>
-                      <button className="ge-buy" onClick={() => buyPlanet(p)} disabled={!can} style={{ padding: '7px', borderRadius: 8, fontSize: 13, fontWeight: 800, border: 'none', cursor: can ? 'pointer' : 'default', background: can ? 'linear-gradient(135deg,#5b6cff,#3b82f6)' : '#1e293b', color: can ? '#0a1020' : '#475569' }}>
-                        {consumables.length >= CONSUMABLE_SLOTS ? '消耗位满' : money < p.cost ? `💰$${p.cost}（钱不够）` : `购买 💰$${p.cost}`}
+                    <div key={it.id} className="ge-shop-card" style={{ width: 132, borderRadius: 12, padding: 10, display: 'flex', flexDirection: 'column', gap: 6, background: isP ? 'linear-gradient(165deg,#16234e,#0a1024)' : 'linear-gradient(165deg,#2a1640,#140a24)', border: `1.5px solid ${col}`, boxShadow: `0 0 14px ${col}44`, animation: `ge-shopIn .35s ease ${i * 0.08}s both` }}>
+                      <div style={{ fontSize: 34, textAlign: 'center' }}>{it.icon}</div>
+                      <div style={{ fontSize: 12, fontWeight: 700, textAlign: 'center', color: '#e6e0ff' }}>{it.name}{!isP && ' 🔮'}</div>
+                      <div style={{ fontSize: 9.5, color: '#b9a8ff', textAlign: 'center', minHeight: 24, lineHeight: 1.35 }}>{blurb}</div>
+                      <button className="ge-buy" onClick={() => buyConsumable(it)} disabled={!can} style={{ padding: '7px', borderRadius: 8, fontSize: 13, fontWeight: 800, border: 'none', cursor: can ? 'pointer' : 'default', background: can ? `linear-gradient(135deg,${col},#3b82f6)` : '#1e293b', color: can ? '#0a1020' : '#475569' }}>
+                        {consumables.length >= CONSUMABLE_SLOTS ? '消耗位满' : money < it.cost ? `💰$${it.cost}（钱不够）` : `购买 💰$${it.cost}`}
                       </button>
                     </div>
                   );
@@ -718,9 +750,12 @@ function GameE() {
                 {scoring.cards.map((c, i) => {
                   const isHi = scoring.frame.hi === i;
                   const isScoring = scoring.scoringIdx.includes(i);
+                  const en = enchantOf(c);
+                  const ec = en ? ENCHANTS[en] : null;
                   return (
-                    <div key={keyOf(c)} style={{ position: 'relative', ...cardBg(c.suit, c.rank), opacity: isScoring ? 1 : 0.4, outline: isHi ? '3px solid #4cc9f0' : '1px solid #0008', boxShadow: isHi ? '0 0 22px #4cc9f0' : 'none', animation: isHi ? 'ge-scorehi .22s ease' : undefined, transition: 'opacity .2s' }}>
+                    <div key={keyOf(c)} style={{ position: 'relative', ...cardBg(c.suit, c.rank), opacity: isScoring ? 1 : 0.4, outline: isHi ? '3px solid #4cc9f0' : ec ? `2px solid ${ec.color}` : '1px solid #0008', boxShadow: isHi ? '0 0 22px #4cc9f0' : ec ? `0 0 10px ${ec.color}aa` : 'none', animation: isHi ? 'ge-scorehi .22s ease' : undefined, transition: 'opacity .2s' }}>
                       {isHi && <div style={{ position: 'absolute', top: -22, left: 0, right: 0, textAlign: 'center', color: '#4cc9f0', fontWeight: 800, fontSize: 14, animation: 'ge-float .55s ease forwards' }}>+{BASE_CHIPS_BY_RANK[String(RANK_ORDER[c.rank])] ?? 0}</div>}
+                      {ec && <span style={{ position: 'absolute', top: -7, right: -6, width: 16, height: 16, borderRadius: '50%', background: ec.color, color: '#0a0a0a', fontSize: 10, fontWeight: 800, lineHeight: '16px', textAlign: 'center', boxShadow: `0 0 6px ${ec.color}` }}>{ec.badge}</span>}
                     </div>
                   );
                 })}
@@ -747,14 +782,18 @@ function GameE() {
                   {hand.map((c, i) => {
                     const leaving = anim?.idx.includes(i);
                     const isNew = newKeys.has(keyOf(c));
+                    const en = enchantOf(c);
+                    const ec = en ? ENCHANTS[en] : null;
                     return (
                       <div key={keyOf(c)} className={busy ? undefined : 'ge-cardsel'} onClick={() => !busy && toggle(i)} style={{
-                        ...cardBg(c.suit, c.rank), cursor: busy ? 'default' : 'pointer',
+                        ...cardBg(c.suit, c.rank), cursor: busy ? 'default' : 'pointer', position: 'relative',
                         transform: sel[i] && !leaving ? 'translateY(-12px)' : 'none', transition: 'transform 0.15s',
-                        outline: sel[i] ? '3px solid #ffd166' : '1px solid #0008',
-                        boxShadow: sel[i] ? '0 8px 20px #ffd16655' : 'none',
+                        outline: sel[i] ? '3px solid #ffd166' : ec ? `2px solid ${ec.color}` : '1px solid #0008',
+                        boxShadow: sel[i] ? '0 8px 20px #ffd16655' : ec ? `0 0 10px ${ec.color}aa` : 'none',
                         animation: leaving ? 'ge-flyTrash 0.38s ease forwards' : isNew ? `ge-drawIn 0.4s ease ${i * 0.05}s both` : undefined,
-                      }} />
+                      }} title={ec ? `${ec.name}：${ec.desc}` : undefined}>
+                        {ec && <span style={{ position: 'absolute', top: -7, right: -6, width: 16, height: 16, borderRadius: '50%', background: ec.color, color: '#0a0a0a', fontSize: 10, fontWeight: 800, lineHeight: '16px', textAlign: 'center', boxShadow: `0 0 6px ${ec.color}` }}>{ec.badge}</span>}
+                      </div>
                     );
                   })}
                 </div>

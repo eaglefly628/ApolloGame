@@ -8,6 +8,7 @@
 import type { HandType } from './hand-rankings.js';
 
 export interface PlanetCard {
+  readonly kind: 'planet';
   readonly id: string;
   readonly name: string; // 中文名（Balatro 行星名意译）
   readonly hand: HandType; // 升级哪种牌型
@@ -17,18 +18,18 @@ export interface PlanetCard {
 
 /** 九大行星 + 三隐藏星（与 12 种牌型一一对应；数值源 Balatro）。 */
 export const PLANETS: readonly PlanetCard[] = [
-  { id: 'pluto', name: '冥王星', hand: 'high_card', icon: '🌑', cost: 3 },
-  { id: 'mercury', name: '水星', hand: 'pair', icon: '🟤', cost: 3 },
-  { id: 'uranus', name: '天王星', hand: 'two_pair', icon: '🔵', cost: 3 },
-  { id: 'venus', name: '金星', hand: 'three_kind', icon: '🟡', cost: 3 },
-  { id: 'saturn', name: '土星', hand: 'straight', icon: '🪐', cost: 3 },
-  { id: 'jupiter', name: '木星', hand: 'flush', icon: '🟠', cost: 3 },
-  { id: 'earth', name: '地球', hand: 'full_house', icon: '🌍', cost: 3 },
-  { id: 'mars', name: '火星', hand: 'four_kind', icon: '🔴', cost: 3 },
-  { id: 'neptune', name: '海王星', hand: 'straight_flush', icon: '🟦', cost: 3 },
-  { id: 'planet_x', name: '行星X', hand: 'five_kind', icon: '🛰️', cost: 5 },
-  { id: 'ceres', name: '谷神星', hand: 'flush_house', icon: '⚪', cost: 5 },
-  { id: 'eris', name: '阋神星', hand: 'flush_five', icon: '⚫', cost: 5 },
+  { kind: 'planet', id: 'pluto', name: '冥王星', hand: 'high_card', icon: '🌑', cost: 3 },
+  { kind: 'planet', id: 'mercury', name: '水星', hand: 'pair', icon: '🟤', cost: 3 },
+  { kind: 'planet', id: 'uranus', name: '天王星', hand: 'two_pair', icon: '🔵', cost: 3 },
+  { kind: 'planet', id: 'venus', name: '金星', hand: 'three_kind', icon: '🟡', cost: 3 },
+  { kind: 'planet', id: 'saturn', name: '土星', hand: 'straight', icon: '🪐', cost: 3 },
+  { kind: 'planet', id: 'jupiter', name: '木星', hand: 'flush', icon: '🟠', cost: 3 },
+  { kind: 'planet', id: 'earth', name: '地球', hand: 'full_house', icon: '🌍', cost: 3 },
+  { kind: 'planet', id: 'mars', name: '火星', hand: 'four_kind', icon: '🔴', cost: 3 },
+  { kind: 'planet', id: 'neptune', name: '海王星', hand: 'straight_flush', icon: '🟦', cost: 3 },
+  { kind: 'planet', id: 'planet_x', name: '行星X', hand: 'five_kind', icon: '🛰️', cost: 5 },
+  { kind: 'planet', id: 'ceres', name: '谷神星', hand: 'flush_house', icon: '⚪', cost: 5 },
+  { kind: 'planet', id: 'eris', name: '阋神星', hand: 'flush_five', icon: '⚫', cost: 5 },
 ];
 
 const BY_HAND: Readonly<Record<HandType, PlanetCard>> = Object.fromEntries(

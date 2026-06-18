@@ -7,9 +7,13 @@
 export type Suit = 'spades' | 'hearts' | 'diamonds' | 'clubs';
 export type Rank = '2' | '3' | '4' | '5' | '6' | '7' | '8' | '9' | '10' | 'J' | 'Q' | 'K' | 'A';
 
+import type { EnchantId } from './enchants.js';
+
 export interface Card {
   readonly suit: Suit;
   readonly rank: Rank;
+  /** 牌的内禀附魔（版式/增强/蜡封；持久绑定到牌身份）。计分时映射成引擎 Card.mods/retrigger。 */
+  readonly enchant?: EnchantId;
 }
 
 export const SUITS: readonly Suit[] = ['spades', 'hearts', 'diamonds', 'clubs'];

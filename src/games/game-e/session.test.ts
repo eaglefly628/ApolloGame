@@ -87,6 +87,18 @@ describe('game-e · GameSession 线性流程脚本', () => {
     expect(after).toEqual(handScoreAtLevel('pair', 2));
   });
 
+  it('附魔：给计分牌盖闪箔(+50筹码) → 同手牌得分更高（引擎读 Card.mods）', () => {
+    const base = new GameSession(1);
+    const plain = base.play([0, 1, 2, 3, 4])!;
+    // 同 seed 新局，给开局前 5 张都盖 foil（+50 筹码/张），出同样的牌。
+    const buff = new GameSession(1);
+    for (const i of [0, 1, 2, 3, 4]) buff.enchant(buff.hand[i], 'foil');
+    const r = buff.play([0, 1, 2, 3, 4])!;
+    expect(r.chips).toBeGreaterThan(plain.chips); // 附魔牌多加了筹码
+    expect(r.score).toBeGreaterThan(plain.score);
+    expect(r.events.some((e) => e.phase === 'percard-mod')).toBe(true); // 留下了附魔 trace
+  });
+
   it('Boss 诅咒：boss 道按表施加（Ante1 高墙=盲注线翻倍）', () => {
     const s = new GameSession(1);
     expect(s.boss).toBeNull(); // small 道无 boss

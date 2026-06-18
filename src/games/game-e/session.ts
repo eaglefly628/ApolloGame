@@ -7,6 +7,7 @@ import { STARTER_JOKERS, type JokerCard } from './jokers.js';
 import { blindRequirement, BLIND_ORDER, type BlindKind } from './blinds.js';
 import { type PlanetCard } from './planets.js';
 import { bossForAnte, type BossBlind } from './boss-blinds.js';
+import { type EnchantId } from './enchants.js';
 
 // ════════════════════════════════════════════════════════════════════════
 //  Game E · 回合流程脚本（GameSession）
@@ -55,6 +56,8 @@ export class GameSession {
   handLevels: Record<HandType, number> = Object.fromEntries(HAND_ORDER.map((h) => [h, 1])) as Record<HandType, number>;
   /** 本道盲注手牌张数（Boss「镣铐」会减 1）。 */
   handSize = HAND_SIZE;
+  /** 牌身份 → 附魔（塔罗牌盖章，持久；洗牌不丢，按 suit+rank 绑定）。 */
+  enchanted: Record<string, EnchantId> = {};
 
   constructor(seed = 20260608) {
     this.seed = seed;
@@ -102,7 +105,15 @@ export class GameSession {
     this.ante = 1;
     this.blindIdx = 0;
     this.handLevels = Object.fromEntries(HAND_ORDER.map((h) => [h, 1])) as Record<HandType, number>;
+    this.enchanted = {};
     this.startBlind();
+  }
+
+  /** 给一张牌（按身份）盖附魔（塔罗牌来源）。 */
+  enchant(c: Card, id: EnchantId): void { this.enchanted[`${c.suit}${c.rank}`] = id; }
+  private withEnchant(c: Card): Card {
+    const e = this.enchanted[`${c.suit}${c.rank}`];
+    return e ? { ...c, enchant: e } : c;
   }
 
   /** 用一张星球牌：牌型 +1 级 → 把升级后的基础分写回引擎 rankingTable（下次出牌生效）。 */
@@ -143,7 +154,7 @@ export class GameSession {
     if (selected.length === 0 || this.handsLeft <= 0) return null;
     const chosen = selected.map((i) => this.hand[i]).filter(Boolean);
 
-    this.engine.world.getComponent<PlayedHand>('table', 'PlayedHand')!.cards = chosen.map(toEngineCard);
+    this.engine.world.getComponent<PlayedHand>('table', 'PlayedHand')!.cards = chosen.map((c) => toEngineCard(this.withEnchant(c)));
     this.engine.world.getComponent<Flag>('scoring', 'Flag')!.active = true;
     this.engine.world.tick();
 
