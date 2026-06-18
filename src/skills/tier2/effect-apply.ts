@@ -1,7 +1,8 @@
 import { defineCapability } from '@engine/core/define-capability.js';
 import { SystemPhase, type IWorld } from '@engine/core/types.js';
-import type { Effect, Signal, Sensor, Visibility, DestroyRequest, Timer, Tag, PrefabOrigin } from '@engine/protocol/components.js';
+import type { Effect, Signal, Sensor, Visibility, DestroyRequest, Timer, Tag, PrefabOrigin, RandomSeed } from '@engine/protocol/components.js';
 import { buildConditionLookup } from './condition.js';
+import { chancePass } from '@atom-skills/index.js';
 import { findScoreTrace, appendScoreEvent } from '../score-trace.js';
 
 // effect-apply —— Condition→Event→**Effect** 的 Effect 侧（链的合龙石）。
@@ -68,8 +69,8 @@ export const effectApplyCapability = defineCapability({
         },
       },
     },
-    reads: ['Effect', 'Signal', 'Timer', 'Tag', 'PrefabOrigin'],
-    writes: ['Flag', 'Resource', 'State', 'Sensor', 'Visibility', 'DestroyRequest', 'Timer'],
+    reads: ['Effect', 'Signal', 'Timer', 'Tag', 'PrefabOrigin', 'RandomSeed'],
+    writes: ['Flag', 'Resource', 'State', 'Sensor', 'Visibility', 'DestroyRequest', 'Timer', 'RandomSeed'],
     consumes: [],
   },
 
@@ -79,8 +80,8 @@ export const effectApplyCapability = defineCapability({
     {
       id: 'effect-apply',
       phase: SystemPhase.Commit,
-      reads: ['Effect', 'Signal', 'Timer', 'Tag', 'PrefabOrigin'],
-      writes: ['Flag', 'Resource', 'State', 'Sensor', 'Visibility', 'DestroyRequest', 'Timer'],
+      reads: ['Effect', 'Signal', 'Timer', 'Tag', 'PrefabOrigin', 'RandomSeed'],
+      writes: ['Flag', 'Resource', 'State', 'Sensor', 'Visibility', 'DestroyRequest', 'Timer', 'RandomSeed'],
       consumes: [],
       execute(world) {
         // 收集本 tick 在场的信号名 + 各名的 source 实体列表（REQ-F-041：'@signal-source' 寻址用；query 序确定）。
@@ -113,8 +114,12 @@ export const effectApplyCapability = defineCapability({
 
         // REQ-019：opt-in 计分 trace（仅当世界有 ScoreTrace 单例；限 modify-resource 数值步，redline）。
         const trace = findScoreTrace(world);
+        // REQ-E-023②：概率门用的世界 RNG（首个 RandomSeed；roll 推进其序列，确定/录放安全）。
+        let rng: RandomSeed | undefined;
+        for (const [rid] of world.query('RandomSeed')) { rng = world.getComponent<RandomSeed>(rid, 'RandomSeed'); break; }
 
         for (const { eid, ef } of hits) {
+          if (ef.chance && !chancePass(rng, ef.chance.num, ef.chance.den)) continue; // REQ-E-023②：概率未中 → 跳过本效果（roll 已推进 RNG）
           switch (ef.kind) {
             case 'set-flag': {
               const f = lookup.flag(ef.targetId);

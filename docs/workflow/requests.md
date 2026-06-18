@@ -37,6 +37,9 @@
 - 缺口：`effect-apply` / `card-scoring` 没有"按概率触发"。
 - 建议：Effect / PerCardRule 加可选 `chance?: { num, den }`，命中条件后再用**世界种子 PRNG**（与引擎 random 原子同源，lockstep 安全、录放一致）roll `< num/den` 才施用。一处解析改动。
 - 确定性：用确定性 PRNG（按 tick/序号取数），不碰 Math.random。
+- **Lead 落地（done，引擎侧）**：`Effect.chance?:{num,den}`（effect-apply）+ `PerCardRule.chance?:{num,den}`（card-scoring，逐张独立 roll）。共用 random 原子新 helper `chancePass(rng,num,den)`=`nextRandom(rng)<num/den`（推进世界 RandomSeed，lockstep/录放安全，绝不 Math.random）；无 RandomSeed→fail-closed 不施用。两系统声明 read+write RandomSeed（同 dialogue/match3 先例，无 cycle）。测试用 1/1(必中)/0/1(必不中)/无种子 不依赖 PRNG 值。全绿（tsc + 1428 vitest + build）。
+  - **给 PE 的接线契约**：indep 概率小丑（space_joker/gros_michel 自毁/business_card）→ 计分 Effect 加 `chance`；per-card 概率（bloodstone 每张♥ 1/2）→ PerCardRule 加 `chance`；世界须有一个 `RandomSeed` 实体。
+  - **未纳入**：misprint「随机 +0~23 倍」是**随机取值**非概率门（不同 shape），单提（小：valueFrom 随机区间 or 一个 randomValue 字段）。
 
 **③ 逐张「手牌内」结算 pass（P1 · 体积 中 · 解锁 ~10 张 + 钢铁/黄金牌）**
 - 解锁：Baron(留手 K ×1.5)、Shoot the Moon(留手 Q +13)、Mime、Raised Fist、以及 REQ-E-021 边界外的 **Steel(留手×1.5) / Gold(回合末留手 +$)** 牌增强。

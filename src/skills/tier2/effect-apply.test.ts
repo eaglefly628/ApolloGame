@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import { World } from '@engine/core/world.js';
-import type { Effect, Signal, Flag, Resource, State, EventWhen, Sensor, Visibility, DestroyRequest, Tag } from '@engine/protocol/components.js';
+import type { Effect, Signal, Flag, Resource, State, EventWhen, Sensor, Visibility, DestroyRequest, Tag, RandomSeed } from '@engine/protocol/components.js';
 import { effectApplyCapability } from './effect-apply.js';
 import { eventWhenCapability } from './event-when.js';
 
@@ -22,8 +22,8 @@ function effect(w: World, eid: string, ef: Omit<Effect, 'type'>): void {
 describe('T2 effect-apply — metadata', () => {
   it('id / 读 Effect+Signal / 写 Flag+Resource+State', () => {
     expect(effectApplyCapability.id).toBe('t2-effect-apply');
-    expect(effectApplyCapability.components.reads).toEqual(['Effect', 'Signal', 'Timer', 'Tag', 'PrefabOrigin']); // Tag：F-032 清场寻址；PrefabOrigin：F-048① keepResource 入场序
-    expect(effectApplyCapability.components.writes).toEqual(['Flag', 'Resource', 'State', 'Sensor', 'Visibility', 'DestroyRequest', 'Timer']);
+    expect(effectApplyCapability.components.reads).toEqual(['Effect', 'Signal', 'Timer', 'Tag', 'PrefabOrigin', 'RandomSeed']); // Tag：F-032 清场寻址；PrefabOrigin：F-048① keepResource；RandomSeed：E-023② 概率门
+    expect(effectApplyCapability.components.writes).toEqual(['Flag', 'Resource', 'State', 'Sensor', 'Visibility', 'DestroyRequest', 'Timer', 'RandomSeed']);
   });
 });
 
@@ -278,6 +278,36 @@ describe('T2 effect-apply — valueFrom.countOf 按 Tag 掩码数实体（REQ-E-
     effect(w, 'ef', { onSignal: 'score', kind: 'modify-resource', targetId: 'mult', op: 'add', value: 0, valueFrom: { countOf: 4, coeff: 3 } });
     signal(w, 'score'); w.tick();
     expect(mult(w)).toBe(7); // +0
+  });
+});
+
+describe('T2 effect-apply — chance 概率门（REQ-E-023②，确定性种子 PRNG）', () => {
+  const seeded = (cur: number): World => {
+    const w = worldWithEffect();
+    w.createEntity('gs'); w.addComponent('gs', { type: 'Resource', id: 'hp', current: cur, min: 0, max: 100 } as Resource);
+    w.createEntity('rng'); w.addComponent('rng', { type: 'RandomSeed', seed: 12345, sequence: 0 } as RandomSeed);
+    return w;
+  };
+  const hp = (w: World): number => w.getComponent<Resource>('gs', 'Resource')!.current;
+
+  it('chance 1/1 → 必中（施用）', () => {
+    const w = seeded(5);
+    effect(w, 'ef', { onSignal: 'hit', kind: 'modify-resource', targetId: 'hp', value: 10, chance: { num: 1, den: 1 } });
+    signal(w, 'hit'); w.tick();
+    expect(hp(w)).toBe(15);
+  });
+  it('chance 0/1 → 必不中（跳过）', () => {
+    const w = seeded(5);
+    effect(w, 'ef', { onSignal: 'hit', kind: 'modify-resource', targetId: 'hp', value: 10, chance: { num: 0, den: 1 } });
+    signal(w, 'hit'); w.tick();
+    expect(hp(w)).toBe(5);
+  });
+  it('无 RandomSeed + chance → fail-closed（不施用）', () => {
+    const w = worldWithEffect();
+    w.createEntity('gs'); w.addComponent('gs', { type: 'Resource', id: 'hp', current: 5, min: 0, max: 100 } as Resource);
+    effect(w, 'ef', { onSignal: 'hit', kind: 'modify-resource', targetId: 'hp', value: 10, chance: { num: 1, den: 1 } });
+    signal(w, 'hit'); w.tick();
+    expect(hp(w)).toBe(5);
   });
 });
 

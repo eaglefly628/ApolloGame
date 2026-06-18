@@ -120,6 +120,9 @@ export interface PerCardRule extends Component {
   op: 'add' | 'mul';
   targetResource: string;
   value: number;
+  // 概率门（REQ-E-023②）：在场则该牌命中 when 后再掷世界 RandomSeed，nextRandom < num/den 才施用（逐张独立 roll，
+  // 如 Bloodstone「每张♥ 1/2 概率 ×1.5」）。确定性同 Effect.chance（引擎种子 PRNG，lockstep 安全）。
+  chance?: { num: number; den: number };
 }
 
 // ── card-scoring retrigger（REQ-014）── 重触发规则（Hanging Chad/Red Seal/Mime 折叠于此）。

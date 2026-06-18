@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import { World } from '@engine/core/world.js';
-import type { Card, PlayedHand, PokerHand, PerCardScore, PerCardRule, PerCardRetrigger, Resource } from '@engine/protocol/components.js';
+import type { Card, PlayedHand, PokerHand, PerCardScore, PerCardRule, PerCardRetrigger, Resource, RandomSeed } from '@engine/protocol/components.js';
 import { cardScoringCapability, matchPerCardWhen } from './card-scoring.js';
 import { pokerHandCapability } from './poker-hand.js';
 
@@ -92,6 +92,21 @@ describe('card-score-pass — 牌内禀修正 mods / retrigger（REQ-E-021 附�
     const w = loadPass([{ suit: 0, rank: 5, mods: [{ op: 'add', target: 'chips', value: 50 }], retrigger: 1 }, c(1, 5)]);
     w.tick();
     expect(res(w, 'chips')).toBe((5 + 50) * 2 + 5); // 115：5♠(base5+50)×2 + 5♥(base5)
+  });
+});
+
+describe('card-score-pass — PerCardRule.chance 概率门（REQ-E-023②，确定性种子 PRNG）', () => {
+  const withSeed = (w: World): World => { w.createEntity('rng'); w.addComponent('rng', { type: 'RandomSeed', seed: 999, sequence: 0 } as RandomSeed); return w; };
+  // 对子两张 5 都计分；规则 when:always +4 mult，逐张独立 roll。
+  it('chance 1/1 → 必中（两张计分牌各 +4 → 8）', () => {
+    const w = withSeed(loadPass([c(0, 5), c(1, 5)], { rules: [{ id: 'bs', rule: { when: { kind: 'always' }, op: 'add', targetResource: 'mult', value: 4, chance: { num: 1, den: 1 } } }] }));
+    w.tick();
+    expect(res(w, 'mult')).toBe(8);
+  });
+  it('chance 0/1 → 必不中（规则全跳过 → 0）', () => {
+    const w = withSeed(loadPass([c(0, 5), c(1, 5)], { rules: [{ id: 'bs', rule: { when: { kind: 'always' }, op: 'add', targetResource: 'mult', value: 4, chance: { num: 0, den: 1 } } }] }));
+    w.tick();
+    expect(res(w, 'mult')).toBe(0);
   });
 });
 

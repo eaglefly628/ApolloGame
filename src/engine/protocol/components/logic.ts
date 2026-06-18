@@ -130,6 +130,9 @@ export interface Effect extends Component {
   // 纯整数计数、自描述零游戏侧记账，过弱-LLM 尺子）。解 score += chips×mult（timesResourceId）、Bull 每$1+2c（coeff）、
   // 星球升级 chips += level×增量、abstract 每小丑 +3 倍（countOf）。确定性同 op:mul（IEEE 乘）/ 纯计数。
   valueFrom?: { resourceId?: string; coeff?: number; timesResourceId?: string; countOf?: number };
+  // 概率门（REQ-E-023②）：在场则命中 onSignal 后再掷世界 RandomSeed，nextRandom < num/den 才施用（否则跳过、roll 仍推进 RNG）。
+  // 确定性：引擎种子 PRNG（同 random 原子，lockstep/录放安全），绝不 Math.random；无 RandomSeed→不施用（fail-closed）。
+  chance?: { num: number; den: number };
 }
 
 // ── craft-recipe ── 配方/经济：信号到达且所有 costs 可负担时，**原子地**扣全部料 + 产出 gains + 置 flag/state。

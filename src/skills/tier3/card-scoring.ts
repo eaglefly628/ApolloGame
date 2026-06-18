@@ -1,8 +1,9 @@
 import { defineCapability } from '@engine/core/define-capability.js';
 import { SystemPhase } from '@engine/core/types.js';
 import type { IWorld } from '@engine/core/types.js';
-import type { Card, PlayedHand, PerCardScore, PerCardRule, PerCardRetrigger, PerCardWhen, Resource } from '@engine/protocol/components.js';
+import type { Card, PlayedHand, PerCardScore, PerCardRule, PerCardRetrigger, PerCardWhen, Resource, RandomSeed } from '@engine/protocol/components.js';
 import { scoringCardIndices } from './poker-hand.js';
+import { chancePass } from '@atom-skills/index.js';
 import { findScoreTrace, appendScoreEvent } from '../score-trace.js';
 
 // ═══════════════════════════════════════════════════════════════
@@ -103,8 +104,8 @@ export const cardScoringCapability = defineCapability({
         },
       },
     },
-    reads: ['PerCardScore', 'PlayedHand', 'PerCardRule', 'PerCardRetrigger', 'Resource'],
-    writes: ['Resource'],
+    reads: ['PerCardScore', 'PlayedHand', 'PerCardRule', 'PerCardRetrigger', 'Resource', 'RandomSeed'],
+    writes: ['Resource', 'RandomSeed'],
     consumes: [],
   },
 
@@ -119,8 +120,8 @@ export const cardScoringCapability = defineCapability({
       phase: SystemPhase.Update,
       runsAfter: ['poker-eval'],
       runsBefore: ['resource-apply', 'string-apply'],
-      reads: ['PerCardScore', 'PlayedHand', 'PerCardRule', 'PerCardRetrigger', 'Resource'],
-      writes: ['Resource'],
+      reads: ['PerCardScore', 'PlayedHand', 'PerCardRule', 'PerCardRetrigger', 'Resource', 'RandomSeed'],
+      writes: ['Resource', 'RandomSeed'],
       consumes: [],
       execute(world: IWorld) {
         // 预建 Resource id → 组件 的 lookup（一次扫描，避免逐次全表）。
@@ -151,6 +152,8 @@ export const cardScoringCapability = defineCapability({
         }
 
         const trace = findScoreTrace(world); // REQ-019：poker-eval 已清空，这里只 append（opt-in：无则 no-op）
+        let rng: RandomSeed | undefined; // REQ-E-023②：per-card 概率门用世界 RNG（逐张独立 roll，如 Bloodstone 每张♥ 1/2）
+        for (const [rid] of world.query('RandomSeed')) { rng = world.getComponent<RandomSeed>(rid, 'RandomSeed'); break; }
         for (const [eid] of world.query('PerCardScore', 'PlayedHand')) {
           const cfg = world.getComponent<PerCardScore>(eid, 'PerCardScore')!;
           const played = world.getComponent<PlayedHand>(eid, 'PlayedHand')!;
@@ -181,7 +184,8 @@ export const cardScoringCapability = defineCapability({
                 }
               }
               for (const { eid: ruleEid, rule } of rules) {
-                if (matchPerCardWhen(rule.when, c, pos)) {
+                // REQ-E-023②：概率小丑（Bloodstone 等）—— when 命中后再掷世界 RNG 才施用（逐张独立 roll，确定）。
+                if (matchPerCardWhen(rule.when, c, pos) && (!rule.chance || chancePass(rng, rule.chance.num, rule.chance.den))) {
                   const after = applyToResource(lk, rule.targetResource, rule.op ?? 'add', rule.value);
                   if (after !== undefined) appendScoreEvent(trace, 'percard-rule', rule.targetResource, rule.op ?? 'add', rule.value, after, ruleEid);
                 }

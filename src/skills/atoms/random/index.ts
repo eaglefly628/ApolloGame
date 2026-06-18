@@ -18,6 +18,13 @@ export function randomInt(state: RandomSeed, minInclusive: number, maxExclusive:
   return minInclusive + Math.floor(nextRandom(state) * (maxExclusive - minInclusive));
 }
 
+// 概率门（REQ-E-023②）：掷 PRNG，nextRandom < num/den 为中。无 state 或 den<=0 → 不中（fail-closed）。
+// 用引擎种子 PRNG（lockstep/录放安全），绝不 Math.random。num>=den → nextRandom∈[0,1) 必 < → 必中（1/1=always）。
+export function chancePass(state: RandomSeed | undefined, num: number, den: number): boolean {
+  if (!state || den <= 0) return false;
+  return nextRandom(state) < num / den;
+}
+
 export const randomCapability = defineCapability({
   id: 'w1-random',
   version: '1.0.0',
