@@ -515,7 +515,20 @@ function GameE() {
         @keyframes ge-mascotOut { from { opacity: 1 } to { transform: translateY(150px); opacity: 0 } }
         @keyframes ge-bob { 0%,100% { transform: translateY(0) rotate(-3deg) } 50% { transform: translateY(-7px) rotate(3deg) } }
         @keyframes ge-signWave { 0%,100% { transform: rotate(-7deg) } 50% { transform: rotate(7deg) } }
+        @keyframes ge-jfloat { 0% { transform: translate(-50%,4px) scale(.7); opacity: 0 } 25% { transform: translate(-50%,-10px) scale(1.1); opacity: 1 } 100% { transform: translate(-50%,-34px) scale(1); opacity: 0 } }
+        @keyframes ge-amb1 { 0%,100% { transform: translate(0,0) scale(1); opacity:.5 } 50% { transform: translate(40px,-30px) scale(1.25); opacity:.85 } }
+        @keyframes ge-amb2 { 0%,100% { transform: translate(0,0) scale(1.1); opacity:.4 } 50% { transform: translate(-50px,28px) scale(.85); opacity:.7 } }
+        @keyframes ge-spark { 0% { transform: translateY(0); opacity:0 } 20% { opacity:.7 } 100% { transform: translateY(-120px); opacity:0 } }
       `}</style>
+
+      {/* 动态背景氛围（垫底，纯表现）：两团缓慢漂移柔光 + 上浮微粒 */}
+      <div aria-hidden style={{ position: 'fixed', inset: 0, zIndex: -1, pointerEvents: 'none', overflow: 'hidden' }}>
+        <div style={{ position: 'absolute', top: '12%', left: '14%', width: 320, height: 320, borderRadius: '50%', background: 'radial-gradient(circle,#1f6f7a55,transparent 70%)', filter: 'blur(8px)', animation: 'ge-amb1 13s ease-in-out infinite' }} />
+        <div style={{ position: 'absolute', bottom: '8%', right: '12%', width: 360, height: 360, borderRadius: '50%', background: 'radial-gradient(circle,#7a2f5a44,transparent 70%)', filter: 'blur(8px)', animation: 'ge-amb2 17s ease-in-out infinite' }} />
+        {Array.from({ length: 9 }).map((_, i) => (
+          <div key={i} style={{ position: 'absolute', bottom: -10, left: `${8 + i * 10.5}%`, width: 3, height: 3, borderRadius: '50%', background: i % 2 ? '#ffd16688' : '#7fd1de88', animation: `ge-spark ${7 + (i % 4) * 2}s linear ${i * 1.3}s infinite` }} />
+        ))}
+      </div>
 
       {/* 算分回馈 log（右侧固定窗，游戏性流水）*/}
       <div style={{ position: 'fixed', right: 12, top: 70, width: 210, maxHeight: '70vh', overflowY: 'auto', background: 'rgba(11,28,34,0.92)', border: '1px solid #2b5562', borderRadius: 10, padding: '10px 12px', fontSize: 11, lineHeight: 1.7, zIndex: 20 }}>
@@ -713,18 +726,18 @@ function GameE() {
           <div style={{ fontSize: 11, color: '#9fb3bd', textAlign: 'center', letterSpacing: 2 }}>本回合得分</div>
           <div style={{ fontSize: 28, fontWeight: 800, textAlign: 'center', color: '#fff', lineHeight: 1.2 }}>{roundScore.toLocaleString()}</div>
           <div style={{ fontSize: 12, color: '#fca5a5', textAlign: 'center' }}>目标 {target.toLocaleString()}</div>
-          <div style={{ height: 10, background: '#1e293b', borderRadius: 5, overflow: 'hidden', marginTop: 4 }}><div style={{ width: `${progress}%`, height: '100%', background: 'linear-gradient(90deg,#22c55e,#86efac)', transition: 'width .3s' }} /></div>
+          <div style={{ height: 10, background: '#1e293b', borderRadius: 5, overflow: 'hidden', marginTop: 4, boxShadow: progress >= 100 ? '0 0 12px #22c55e' : 'none', transition: 'box-shadow .3s' }}><div style={{ width: `${progress}%`, height: '100%', background: progress >= 100 ? 'linear-gradient(90deg,#ffd166,#86efac)' : 'linear-gradient(90deg,#22c55e,#86efac)', transition: 'width .3s, background .3s' }} /></div>
         </div>
         {/* 蓝筹码 × 红倍率 框 */}
         <div ref={rBoxes}>
           <div style={{ fontSize: 10, color: '#64748b', textAlign: 'center', marginBottom: 4 }}>{boxLabel}</div>
           <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-            <div style={{ flex: 1, background: '#10405f', border: '2px solid #4cc9f0', borderRadius: 9, padding: '6px 0', textAlign: 'center' }}>
+            <div style={{ flex: 1, background: '#10405f', border: '2px solid #4cc9f0', borderRadius: 9, padding: '6px 0', textAlign: 'center', boxShadow: scoring ? '0 0 14px #4cc9f0aa' : 'none', transition: 'box-shadow .2s' }}>
               <div style={{ fontSize: 9, color: '#8fd9f5' }}>筹码</div>
               <div key={`c${boxChips}`} style={{ fontSize: 22, fontWeight: 800, color: '#fff', animation: scoring ? 'ge-pop .25s ease' : undefined }}>{boxChips.toLocaleString()}</div>
             </div>
             <span style={{ fontSize: 18, color: '#94a3b8' }}>×</span>
-            <div style={{ flex: 1, background: '#5e1322', border: '2px solid #f72585', borderRadius: 9, padding: '6px 0', textAlign: 'center' }}>
+            <div style={{ flex: 1, background: '#5e1322', border: '2px solid #f72585', borderRadius: 9, padding: '6px 0', textAlign: 'center', boxShadow: scoring ? `0 0 ${Math.min(30, 10 + boxMult)}px #f72585` : 'none', transition: 'box-shadow .2s' }}>
               <div style={{ fontSize: 9, color: '#ff9ec4' }}>倍率</div>
               <div key={`m${boxMult}`} style={{ fontSize: 22, fontWeight: 800, color: '#fff', animation: scoring ? 'ge-pop .25s ease' : undefined }}>{boxMult}</div>
             </div>
@@ -789,8 +802,11 @@ function GameE() {
         {owned.map((j) => {
           const wig = scoring?.frame.wiggle === j.id;
           const rc = RARITY_COLOR[j.rarity];
+          const jcol = j.op === 'mul' ? '#ffd166' : j.target === 'chips' ? '#4cc9f0' : j.target === 'money' ? '#ffd166' : '#f72585';
+          const jlabel = j.op === 'mul' ? `×${j.value}` : j.target === 'money' ? `+$${j.value}` : `+${j.value}`;
           return (
             <div key={j.id} className="ge-joker" style={{ width: 50, height: 70, borderRadius: 6, border: `2px solid ${wig ? '#ffd166' : rc}`, background: '#160f22', position: 'relative', boxShadow: wig ? '0 0 16px #ffd166' : `0 0 8px ${rc}55`, animation: wig ? 'ge-wiggle .26s ease' : undefined, zIndex: wig ? 5 : 1 }}>
+              {wig && <div style={{ position: 'absolute', top: -20, left: '50%', fontSize: 15, fontWeight: 900, color: jcol, textShadow: '0 1px 4px #000, 0 0 8px ' + jcol, animation: 'ge-jfloat .55s ease-out forwards', pointerEvents: 'none', whiteSpace: 'nowrap', zIndex: 10 }}>{jlabel}</div>}
               <div style={{ position: 'absolute', inset: 0, borderRadius: 4, overflow: 'hidden' }}>
                 <div style={{ position: 'absolute', inset: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 20 }}>🃏</div>
                 <img src={JOKER_URL(j.name)} alt={j.name} style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', objectFit: 'cover' }} onError={(e) => { (e.currentTarget as HTMLImageElement).style.display = 'none'; }} />
