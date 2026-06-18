@@ -113,6 +113,9 @@ function GameE() {
   const [deckOpen, setDeckOpen] = useState(false); // 牌组/牌型面板开关
   const [mascot, setMascot] = useState(false); // 过关时蹦出的萌宠（爱萌 出品位）
   const [slam, setSlam] = useState(false); // 出牌结算落定时的砸屏震动
+  const [bossIntro, setBossIntro] = useState<BossBlind | null>(null); // Boss 入场横幅
+  const [moneyFx, setMoneyFx] = useState<{ d: number; k: number } | null>(null); // 钱变动飘字
+  const prevMoneyRef = useRef(0);
   const [helpOpen, setHelpOpen] = useState(false); // 帮助页
   const [tour, setTour] = useState(-1); // 新手引导步骤（-1=未激活）
   const [tourRect, setTourRect] = useState<DOMRect | null>(null);
@@ -230,6 +233,7 @@ function GameE() {
     setPlayedTypes([]);
     setResult(null);
     setPhase('playing');
+    if (bz) { setBossIntro(bz); window.setTimeout(() => setBossIntro(null), 2200); } else setBossIntro(null); // Boss 入场横幅
     bump();
   }, [set]);
 
@@ -260,6 +264,10 @@ function GameE() {
   const handsLeft = get(R_HANDS_LEFT);
   const discardsLeft = get(R_DISCARDS_LEFT);
   const money = get(R_MONEY);
+  useEffect(() => {
+    const d = money - prevMoneyRef.current; prevMoneyRef.current = money;
+    if (d !== 0) { setMoneyFx({ d, k: Date.now() }); const t = window.setTimeout(() => setMoneyFx(null), 1100); return () => window.clearTimeout(t); }
+  }, [money]);
   const selCount = sel.filter(Boolean).length;
 
   // 用道具：星球牌→牌型 +1 级（写回引擎 rankingTable）；塔罗牌→给「选中的 1 张手牌」盖附魔。
@@ -525,6 +533,11 @@ function GameE() {
         @keyframes ge-shake { 0%,100% { transform: translate(0,0) } 20% { transform: translate(-5px,3px) } 40% { transform: translate(5px,-3px) } 60% { transform: translate(-4px,-2px) } 80% { transform: translate(4px,2px) } }
         @keyframes ge-slam { 0% { transform: scale(2.2); opacity:0 } 55% { transform: scale(.86) } 75% { transform: scale(1.08) } 100% { transform: scale(1); opacity:1 } }
         @keyframes ge-coinfly { 0% { transform: translateY(0) scale(.6); opacity:0 } 25% { opacity:1 } 100% { transform: translateY(-42px) scale(1.1); opacity:0 } }
+        @keyframes ge-selpulse { 0%,100% { box-shadow: 0 6px 16px #ffd16640 } 50% { box-shadow: 0 8px 26px #ffd166cc } }
+        @keyframes ge-moneyfly { 0% { transform: translate(-50%,0); opacity:0 } 20% { opacity:1 } 100% { transform: translate(-50%,-30px); opacity:0 } }
+        @keyframes ge-bannerSweep { 0% { transform: translateX(-130%) skewX(-12deg); opacity:0 } 18% { transform: translateX(0) skewX(-12deg); opacity:1 } 78% { transform: translateX(0) skewX(-12deg); opacity:1 } 100% { transform: translateX(130%) skewX(-12deg); opacity:0 } }
+        @keyframes ge-redflash { 0% { opacity:0 } 30% { opacity:.45 } 100% { opacity:0 } }
+        @keyframes ge-handname { 0% { transform: translateY(8px) scale(.85); opacity:0 } 45% { transform: translateY(0) scale(1.06); opacity:1 } 100% { transform: translateY(0) scale(1); opacity:1 } }
       `}</style>
 
       {/* 动态背景氛围（垫底，纯表现）：两团缓慢漂移柔光 + 上浮微粒 */}
@@ -561,6 +574,18 @@ function GameE() {
             {/* 萌宠 */}
             <div style={{ fontSize: 70, animation: 'ge-bob .8s ease-in-out infinite', zIndex: 3 }}>🐱</div>
             <div style={{ fontSize: 12, color: '#ffd166', fontWeight: 800, marginTop: 2, textShadow: '0 1px 4px #000', letterSpacing: 1, zIndex: 3 }}>✨ 过关！✨</div>
+          </div>
+        </div>
+      )}
+
+      {/* ── Boss 盲注入场：红光闪 + 诅咒横幅扫入 ── */}
+      {bossIntro && (
+        <div style={{ position: 'fixed', inset: 0, zIndex: 65, pointerEvents: 'none', overflow: 'hidden', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+          <div style={{ position: 'absolute', inset: 0, background: 'radial-gradient(circle,#b2334533,#7a112255)', animation: 'ge-redflash 2.2s ease-out forwards' }} />
+          <div style={{ animation: 'ge-bannerSweep 2.2s ease-in-out forwards', background: 'linear-gradient(160deg,#3a1118,#1a0a0e)', border: '2px solid #e0455a', borderRadius: 12, padding: '14px 40px', boxShadow: '0 0 40px #e0455a88', textAlign: 'center' }}>
+            <div style={{ fontSize: 30 }}>{bossIntro.icon}</div>
+            <div style={{ fontSize: 22, fontWeight: 900, color: '#ff6b81', letterSpacing: 2 }}>{bossIntro.name}</div>
+            <div style={{ fontSize: 13, color: '#fca5a5', marginTop: 2 }}>诅咒：{bossIntro.desc}</div>
           </div>
         </div>
       )}
@@ -770,9 +795,12 @@ function GameE() {
         {/* 出牌 / 弃牌 / 钱 */}
         <div style={{ display: 'flex', gap: 8 }}>
           {([['出牌', handsLeft, '#4cc9f0'], ['弃牌', discardsLeft, '#f87171'], ['💰', money, '#ffd166']] as const).map(([lab, val, col]) => (
-            <div key={lab} style={{ flex: 1, background: '#06121a', border: `1.5px solid ${col}`, borderRadius: 9, padding: '6px 0', textAlign: 'center' }}>
+            <div key={lab} style={{ flex: 1, background: '#06121a', border: `1.5px solid ${col}`, borderRadius: 9, padding: '6px 0', textAlign: 'center', position: 'relative' }}>
               <div style={{ fontSize: 10, color: col }}>{lab}</div>
               <div style={{ fontSize: 18, fontWeight: 800, color: '#fff' }}>{lab === '💰' ? `$${val}` : val}</div>
+              {lab === '💰' && moneyFx && (
+                <div key={moneyFx.k} style={{ position: 'absolute', top: -6, left: '50%', fontSize: 14, fontWeight: 900, color: moneyFx.d > 0 ? '#86efac' : '#fca5a5', textShadow: '0 1px 4px #000', animation: 'ge-moneyfly 1.05s ease-out forwards', pointerEvents: 'none', whiteSpace: 'nowrap' }}>{moneyFx.d > 0 ? `+$${moneyFx.d}` : `-$${-moneyFx.d}`}</div>
+              )}
             </div>
           ))}
         </div>
@@ -982,6 +1010,14 @@ function GameE() {
             </div>
           ) : (
             <>
+              {/* 牌型名横幅（选牌时大字预览）*/}
+              <div style={{ minHeight: 34, display: 'flex', alignItems: 'center' }}>
+                {preview && (
+                  <div key={preview.name} style={{ animation: 'ge-handname .35s ease-out both', fontSize: 22, fontWeight: 900, letterSpacing: 2, color: '#ffd166', textShadow: '0 2px 8px #000, 0 0 14px #ffd16655' }}>
+                    {preview.name} <span style={{ fontSize: 14, color: '#4cc9f0' }}>{preview.chips}</span><span style={{ fontSize: 12, color: '#64748b' }}> × </span><span style={{ fontSize: 14, color: '#f72585' }}>{preview.mult}</span>
+                  </div>
+                )}
+              </div>
               {/* 排序按钮 */}
               <div style={{ display: 'flex', gap: 8, alignItems: 'center', fontSize: 11, color: '#64748b' }}>
                 <span>排序</span>
@@ -1008,7 +1044,7 @@ function GameE() {
                         transform: sel[i] && !leaving ? 'translateY(-12px)' : 'none', transition: 'transform 0.15s',
                         outline: sel[i] ? '3px solid #ffd166' : first ? `2px solid ${first.color}` : '1px solid #0008',
                         boxShadow: sel[i] ? '0 8px 20px #ffd16655' : first ? `0 0 10px ${first.color}aa` : 'none',
-                        animation: leaving ? 'ge-flyTrash 0.38s ease forwards' : isNew ? `ge-drawIn 0.4s ease ${i * 0.05}s both` : undefined,
+                        animation: leaving ? 'ge-flyTrash 0.38s ease forwards' : isNew ? `ge-drawIn 0.4s ease ${i * 0.05}s both` : sel[i] ? 'ge-selpulse 1.2s ease-in-out infinite' : undefined,
                       }}>
                         {ecs.length > 0 && <span style={{ position: 'absolute', top: -7, right: -6, display: 'flex', gap: 1 }}>
                           {ecs.map((id, bi) => { const e = ENCHANTS[id]; return <span key={bi} style={{ width: 15, height: 15, borderRadius: '50%', background: e.color, color: '#0a0a0a', fontSize: 9, fontWeight: 800, lineHeight: '15px', textAlign: 'center', boxShadow: `0 0 5px ${e.color}` }}>{e.badge}</span>; })}
