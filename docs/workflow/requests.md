@@ -63,6 +63,9 @@
 - 解锁：Four Fingers(4 张成顺/同花)、Shortcut(带空顺)、Splash(每张都计分)、Pareidolia(全算人头)、Smeared(红/黑各算同花)、Oops! All 6s(概率翻倍)。
 - 缺口：`poker-eval` / `card-scoring` 判型与"哪些牌计分"是写死规则。
 - 建议：`PokerHand` 读一组可选规则修饰 Flag（fourFlush/fourStraight/allScore/facesWild/suitMerge…），由小丑置位。**只读 flag 改判定，不引入新牌型。**
+- **Lead 落地（done 部分，引擎侧）**：`evaluateHand(cards, mods?)` 加 `HandMods{fourFlush,fourStraight,gappedStraight,suitMerge}`；`isStraightRanks(ranks, need?, maxStep?)`（1 参数向后兼容，game-g 复用不破）。`PokerHand.handMods?:{fourFlushFlag,fourStraightFlag,gappedStraightFlag,suitMergeFlag}`（各=Flag.id），poker-eval 读 Flag → 构建 mods → 判型。**只读 flag 改阈值/合并，零新牌型**；缺省（无 flag）行为完全不变（57+7 测试证）。覆盖 **four_fingers / shortcut / smeared**。全绿。
+  - **给 PE 的接线契约**：被动小丑用 set-flag Effect 置 `mod_*` Flag；PokerHand 配 `handMods:{fourFlushFlag:'mod_four_fingers',...}`。
+  - **未纳入（另评）**：Splash（每张都计分）需改 `scoringCardIndices`（card-scoring 侧，非 evaluateHand），单提；Pareidolia（全算人头）改 per-card「is face」匹配（card-scoring matchPerCardWhen 侧）；Flower Pot（四种花色 ×3）= 新派生事实「花色种数」（同 rankMaxCount 族，countOf 不覆盖花色种类）；Photograph（首张人头）需「首个匹配」谓词。逐个真拉动再评。
 
 **⑥ 跨实体效果：复制 / 改牌 / 改其它小丑（P3 · 体积 大 · 解锁 ~15 张）**
 - 解锁：Blueprint(复制右侧小丑)、Brainstorm(复制最左)、Invisible Joker(2 回合后卖出复制一个随机小丑)、DNA(复制出的牌进牌库)、Vampire(吸附魔)、Midas Mask(人头→黄金)、Hologram…

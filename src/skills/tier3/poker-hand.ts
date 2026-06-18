@@ -47,6 +47,15 @@ export interface HandEval {
   isStraight: boolean; // 顺子（5 张相异且连续，含 A 高 / A 低轮子）
 }
 
+// 判型规则修饰（REQ-E-023⑤，被动小丑置位 → poker-eval 从 PokerHand.handMods 的 Flag 解析后传入）。
+// 只读 flag 改"判定阈值/合并"，不引入新牌型。four_fingers=四张成顺/同花、shortcut=顺子可隔1、smeared=红/黑各算同花。
+export interface HandMods {
+  fourFlush?: boolean; // four_fingers：4 张同花即同花（阈值 5→4）
+  fourStraight?: boolean; // four_fingers：4 张连即顺（阈值 5→4）
+  gappedStraight?: boolean; // shortcut：顺子允许步长≤2（隔 1 点）
+  suitMerge?: boolean; // smeared：♥♦ 同色 / ♠♣ 同色 合并后算同花
+}
+
 // ── 纯算法 helper（导出供单测；无副作用，确定性）────────────────────────────
 
 // 按字段计数（点数/花色）。返回普通 Map（值=张数）；调用方若需遍历请自行按 key 排序保证确定性。
@@ -56,17 +65,23 @@ function countBy(cards: readonly Card[], pick: (c: Card) => number): Map<number,
   return m;
 }
 
-// 5 张相异点数是否构成顺子：常规连续（max-min===4）或 A 低轮子（A-2-3-4-5，A 当 1）。
-export function isStraightRanks(distinctRanks: readonly number[]): boolean {
-  if (distinctRanks.length !== 5) return false;
-  const s = [...distinctRanks].sort((a, b) => a - b);
-  if (s[4] - s[0] === 4) return true; // 普通顺（含 10-J-Q-K-A=10..14 的 Broadway）
-  // A 低轮子：2,3,4,5,14（A 既高又低）
-  return s[0] === 2 && s[1] === 3 && s[2] === 4 && s[3] === 5 && s[4] === 14;
+// need=需要几张连成顺（缺省 5；four_fingers=4）；maxStep=相邻点数最大步长（缺省 1；shortcut=2 允许隔 1）。
+// A 既高(14)又低(1)：含 14 则补 1。排序去重后找步长≤maxStep 的连续段长≥need。1 参数调用向后兼容（need5/step1，等价旧"5 张连/A 低轮子"）。
+export function isStraightRanks(distinctRanks: readonly number[], need = 5, maxStep = 1): boolean {
+  const set = new Set(distinctRanks);
+  if (set.has(14)) set.add(1); // A 低轮子（A 当 1）
+  const sorted = [...set].sort((a, b) => a - b);
+  let run = 1;
+  for (let i = 1; i < sorted.length; i++) {
+    const d = sorted[i] - sorted[i - 1];
+    run = d >= 1 && d <= maxStep ? run + 1 : 1;
+    if (run >= need) return true;
+  }
+  return need <= 1;
 }
 
 // 牌型判定（纯函数：有序卡集 → 稳定结果）。priority 从高到低短路，所以"并列取高"（如葫芦不会被判成对子）。
-export function evaluateHand(cards: readonly Card[]): HandEval {
+export function evaluateHand(cards: readonly Card[], mods: HandMods = {}): HandEval {
   const rankCounts = countBy(cards, (c) => c.rank);
   const suitCounts = countBy(cards, (c) => c.suit);
 
@@ -75,9 +90,17 @@ export function evaluateHand(cards: readonly Card[]): HandEval {
   const maxCount = counts[0] ?? 0;
   const secondCount = counts[1] ?? 0;
 
-  // 同花：≥5 张且只有一种花色。顺子：恰 5 张、5 个相异点数且连续。
-  const isFlush = cards.length >= 5 && suitCounts.size === 1;
-  const isStraight = cards.length === 5 && rankCounts.size === 5 && isStraightRanks([...rankCounts.keys()]);
+  // 同花：某（可合并）花色张数≥阈值。阈值缺省 5，four_fingers→4；smeared 把 ♥♦/♠♣ 合并计数。
+  // 缺省（无 mods）：阈值 5、不合并 → 等价旧"≥5 张且全同花色"。
+  const flushNeed = mods.fourFlush ? 4 : 5;
+  const suitKey = (s: number): number => (mods.suitMerge ? (s === 1 || s === 2 ? 0 : 1) : s); // 红(♥1♦2)→0 / 黑(♠0♣3)→1
+  let maxSuit = 0;
+  const mergedSuit = new Map<number, number>();
+  for (const c of cards) { const n = (mergedSuit.get(suitKey(c.suit)) ?? 0) + 1; mergedSuit.set(suitKey(c.suit), n); if (n > maxSuit) maxSuit = n; }
+  const isFlush = cards.length >= flushNeed && maxSuit >= flushNeed;
+  // 顺子：need 张连（four_fingers→4）、步长≤(shortcut?2:1)。缺省等价旧"恰 5 张相异连续 + A 低轮子"。
+  const straightNeed = mods.fourStraight ? 4 : 5;
+  const isStraight = cards.length >= straightNeed && isStraightRanks([...rankCounts.keys()], straightNeed, mods.gappedStraight ? 2 : 1);
 
   let type: HandType;
   if (maxCount === 5 && isFlush) type = 'flush-five';
@@ -143,6 +166,11 @@ function setFlag(world: IWorld, flagId: string, active: boolean): void {
   const f = world.getComponent<Flag>(e, 'Flag');
   if (f) f.active = active;
 }
+// REQ-E-023⑤：读 Flag.active（判型规则修饰由被动小丑置位 → poker-eval 读它改判定）。缺/无 → false。
+function getFlag(world: IWorld, flagId: string): boolean {
+  const e = findByComponentId(world, 'Flag', 'id', flagId);
+  return e ? (world.getComponent<Flag>(e, 'Flag')?.active ?? false) : false;
+}
 
 // 包含谓词原语（REQ-011 完善）：从 rankCounts 折算「最大同点张数」「计数≥2 的种数」。
 // 含对子=rankMaxCount≥2、含三条=≥3、含四条=≥4、含五条=≥5、含两对=pairCount≥2、含葫芦=and(≥3,pairCount≥2)。
@@ -200,7 +228,7 @@ export const pokerHandCapability = defineCapability({
         },
       },
     },
-    reads: ['PokerHand', 'PlayedHand', 'Resource'],
+    reads: ['PokerHand', 'PlayedHand', 'Resource', 'Flag'],
     writes: ['Resource', 'StringVar', 'Flag'],
     consumes: [],
   },
@@ -216,7 +244,7 @@ export const pokerHandCapability = defineCapability({
       // 定序：与 resource-apply/string-apply 同读写 Resource/StringVar 于 Update → 显式 runsBefore 打破拓扑环
       // （与 dialogue.ts 先例一致）。语义：poker-eval 先 set 基础分，resource-apply 再在其上应用 ResourceModify。
       runsBefore: ['resource-apply', 'string-apply'],
-      reads: ['PokerHand', 'PlayedHand', 'Resource'],
+      reads: ['PokerHand', 'PlayedHand', 'Resource', 'Flag'],
       writes: ['Resource', 'StringVar', 'Flag'],
       consumes: [],
       execute(world: IWorld) {
@@ -226,7 +254,15 @@ export const pokerHandCapability = defineCapability({
           const cfg = world.getComponent<PokerHand>(eid, 'PokerHand')!;
           const played = world.getComponent<PlayedHand>(eid, 'PlayedHand')!;
           if (played.cards.length === 0) continue; // 无出牌 → 不评估（基础分由装配层在新回合清零）
-          const evald = evaluateHand(played.cards);
+          // REQ-E-023⑤：判型规则修饰——从 PokerHand.handMods 的 Flag 解析（被动小丑置位）→ 传入 evaluateHand。
+          const hm = cfg.handMods;
+          const mods: HandMods = hm ? {
+            fourFlush: !!hm.fourFlushFlag && getFlag(world, hm.fourFlushFlag),
+            fourStraight: !!hm.fourStraightFlag && getFlag(world, hm.fourStraightFlag),
+            gappedStraight: !!hm.gappedStraightFlag && getFlag(world, hm.gappedStraightFlag),
+            suitMerge: !!hm.suitMergeFlag && getFlag(world, hm.suitMergeFlag),
+          } : {};
+          const evald = evaluateHand(played.cards, mods);
           const base = cfg.rankingTable[evald.type] ?? { chips: 0, mult: 0 };
           const chipsAfter = setResourceBase(world, cfg.chipsResource, base.chips);
           const multAfter = setResourceBase(world, cfg.multResource, base.mult);

@@ -95,6 +95,9 @@ export interface PokerHand extends Component {
   isStraightFlag?: string; // 可选：是否含顺子写入此 Flag.id
   isFlushFlag?: string; // 可选：是否含同花写入此 Flag.id
   handSizeResource?: string; // 可选：本次出牌张数写入此 Resource（Half Joker「出牌≤3张」等）
+  // 判型规则修饰（REQ-E-023⑤）：各值=一个 Flag.id；被动小丑 set-flag 置位后，poker-eval 读它改判定（不引入新牌型）。
+  // four_fingers=fourFlush+fourStraight（4 张成同花/顺）；shortcut=gappedStraight（顺子隔1）；smeared=suitMerge（红/黑各算同花）。
+  handMods?: { fourFlushFlag?: string; fourStraightFlag?: string; gappedStraightFlag?: string; suitMergeFlag?: string };
 }
 
 // ── card-scoring 逐张谓词（REQ-014）── 对"当前计分牌"求值的小词汇表（纯数据，最弱 LLM 可产）。

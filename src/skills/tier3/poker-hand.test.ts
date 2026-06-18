@@ -17,6 +17,33 @@ describe('poker helpers — isStraightRanks', () => {
   it('不连续 2,3,4,5,7 → 非顺', () => expect(isStraightRanks([2, 3, 4, 5, 7])).toBe(false));
   it('Q,K,A,2,3 不绕回 → 非顺', () => expect(isStraightRanks([Q, K, A, 2, 3])).toBe(false));
   it('非 5 张 → 非顺', () => expect(isStraightRanks([5, 6, 7, 8])).toBe(false));
+  // REQ-E-023⑤ 参数：need / maxStep
+  it('need=4：4 连即顺（four_fingers）', () => expect(isStraightRanks([5, 6, 7, 8], 4)).toBe(true));
+  it('maxStep=2：隔 1 成顺 3-5-7-9-J（shortcut）', () => expect(isStraightRanks([3, 5, 7, 9, J], 5, 2)).toBe(true));
+  it('maxStep=1：同样隔 1 牌 → 非顺', () => expect(isStraightRanks([3, 5, 7, 9, J], 5, 1)).toBe(false));
+});
+
+describe('poker helpers — evaluateHand 判型规则修饰 HandMods（REQ-E-023⑤）', () => {
+  it('fourFlush：4 张同花 + 1 张异色 → 同花（缺省非同花）', () => {
+    const hand = [c(0, 2), c(0, 5), c(0, 7), c(0, 9), c(1, K)]; // 4♠ + 1♥
+    expect(evaluateHand(hand).isFlush).toBe(false);
+    expect(evaluateHand(hand, { fourFlush: true }).isFlush).toBe(true);
+  });
+  it('fourStraight：4 连 + 1 张离群 → 顺（缺省非顺）', () => {
+    const hand = [c(0, 5), c(1, 6), c(2, 7), c(3, 8), c(0, K)]; // 5-6-7-8 + K
+    expect(evaluateHand(hand).isStraight).toBe(false);
+    expect(evaluateHand(hand, { fourStraight: true }).isStraight).toBe(true);
+  });
+  it('gappedStraight：3-5-7-9-J 隔 1 → 顺（缺省非顺）', () => {
+    const hand = [c(0, 3), c(1, 5), c(2, 7), c(3, 9), c(0, J)];
+    expect(evaluateHand(hand).isStraight).toBe(false);
+    expect(evaluateHand(hand, { gappedStraight: true }).isStraight).toBe(true);
+  });
+  it('suitMerge：3♥ + 2♦ = 5 红 → 同花（缺省非同花）', () => {
+    const hand = [c(1, 2), c(1, 5), c(1, 7), c(2, 9), c(2, K)]; // ♥♥♥♦♦
+    expect(evaluateHand(hand).isFlush).toBe(false);
+    expect(evaluateHand(hand, { suitMerge: true }).isFlush).toBe(true);
+  });
 });
 
 // ── 纯算法 helper：evaluateHand 全牌型 + 边界 ─────────────────────
