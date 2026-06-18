@@ -17,7 +17,12 @@
 > | **上一手（design G）完成** | ① **验收 3D-2 live 解析器 = ✅ PASS**（骨架对：march→接触→逐拍对决→突破 chip home、单一 seeded PRNG 逐拍 hash 稳、4 测绿）。② 出 **doc 19 统一战斗模型**（18 田忌赛马 × F-handoff 概率对决合流：clash-resolve logistic 数学 / 公平骨架 / 续航经济 / 3 血大本营 / 仿真台 / 胜率可读）。③ **owner 拍板**：§10.8 = **C·流派印记** + **公平骨架（退役「强化全军 favor 泵点数」，养成全改小丑/附魔/buff）** + 乙抽牌 + iii 小丑。|
 > | **轮到谁 · 需做什么** | **program G** 按 **doc 19 + doc18 §九**（建议序）：<br>**① 验收答复（你问的遭遇模型）**：✅ **保留「前线逐拍对决（最前两张）」**、不必改 pass-through；但**对决核换 doc19 §三 pairwise logistic**（取代裸 decideFaceUp）：`P_eff=clamp(点数+Σbuff,bounded)` / `胜率=clamp(logistic((Pa−Pb)/k),3%,97%)` / 种子骰。「成波」= `ENC_PERIOD` cadence 即可。<br>**② 3D-CLASH**：clash-resolve 薄核（读扁平 buff→logistic→种子骰→正负），借 **REQ-E-021 Card.mods**，守 Lead 窄边界（**不建统一 Buff 引擎**）；种子 RNG 若 Lead 要立共享原语→提 REQ-G。<br>**③ 3D-STAM**：续航+冷却+牌组轮转（赢−续航/尽则沉底冷却/输进弃堆；数字1/人头2/小丑3）；`home_hp` 8→**3 血+回合上限+可平**。<br>**④ 3D-1（大头）**：混合手牌（点数+小丑/功能）+ 基础布局每路 3 + **战潮抽牌（底流+战斗脉冲，§10.3 乙）** + 读秒暂停银行 + 短带迷雾+侦查牌。<br>**⑤ 3D-JOKER**：小丑重构 = iii 构筑定库+局内打出 + **§10.8 C 流派印记**；退役泵 favor→公平骨架。<br>**⑥ 3D-READ**：胜率可读（对决前 76:24 hover + buff 明细）+ 关键对决 1v1 特写。<br>**⑦ 3D-SIM**：仿真台（离线蒙特卡洛扫全配置→胜率矩阵+退化告警·当平衡回归测）——owner 强调、平衡命脉。<br>**纪律**：game-side 复用为主、零/极少引擎、真缺口提 REQ-G；每片确定性 hash 测；全绿才推。翻棒回 design G 写产出+测数。|
 > | **唤醒/检查条件** | 下个 `src/games/game-g/` commit；或 owner 新反馈 |
-> | **最后更新** | 2026-06-17 · by design G · 验收 3D-2 + doc19 统一模型 + owner 拍 C 后 |
+> | **最后更新** | 2026-06-17 · by design G · 验收 3D-2 + doc19 + owner 拍 C + **owner 追加大厅/新手指导(见下 ⚡)** |
+
+> ⚡ **owner 追加（2026-06-17 · UI 高优先 · 先做、盖过深水区切片）**：
+> 1. **LOBBY-FAITHFUL · 大厅忠实港**：owner 指现大厅（design G 手写 `showLobby`）**仍偏离原生设计 `UI/Game G 大厅.dc.html`**——只对了 5 tab IA，**视觉/牌面/布局全是结构近似**。**照 battle-screen 同法**（你把 `三路战场.dc.html`→`battle-screen.ts`、owner 已确认那套忠实港法），**忠实港 `大厅.dc.html`→ `lobby-screen.ts`，替掉手写 `showLobby`**。signature 元素别丢：① HOME = **绿呢牌桌 + 漂浮对决卡(A♠ vs 牌背 + 掷 emblem) + sheen 大 CTA「天梯掷命」** + quickCards + 牌友栏 ② DECKS = 8 套牌组卡 + **牌组预览面板(花色条/卡槽/预估强度★)** ③ COLL = 5 列卡网格(**真·牌面 art**:角标 rank+花色 + 大花色字) + 卡详情面板 ④ CRAFT = **改造台(前牌→CRAFT→后牌+重翻 gem)+recipe** + 庄家货架(cost 条) ⑤ LADDER = 段位卡(♠+黄金III+LP+进度条)+近10局+天梯榜。用 `UI/support.js` 解析 `{{}}`/`<sc-for>` 样式（同 battle 港法）。**数据接真存档**；注意公平骨架退役泵 favor → 牌组/收藏数值映射到新模型(buff/小丑/附魔)。
+> 2. **TUTORIAL · 新手指导按钮**：HOME 开始界面加「**📖 新手指导**」按钮 → 开 overlay 显**对局流程图**（复用 design G 做的 `doc/match-flow.html`：赛前→开局→实时博弈循环→对决核→大本营 + 胜率可读/仿真台两支柱）。让新玩家一看就懂"牌怎么走、怎么赢"。
+> 3. **序**：**LOBBY-FAITHFUL + TUTORIAL 先做**（owner 二次亲点、可见、快赢），再回深水区 3D-CLASH/STAM/1/JOKER/READ/SIM。
 
 > 翻棒写法：program G 干完 → 把「持棒方」改 🔵 **design G**、状态「program G 已完成待 design G 验收」、填完成什么；design G 验收完 → 改回 🟢 **program G**。
 
