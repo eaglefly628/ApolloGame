@@ -376,7 +376,8 @@ export function mount(container: HTMLElement): () => void {
     const aiName = boss ? boss.name : describeFormation(aiForm.officers);
     // 战斗屏 = 设计稿三路战场（battle-screen，1280×720）。运行上下文(战次/命/Boss 台词)收进下方细条，不挡设计 HUD。
     const stage = document.createElement('div');
-    stage.style.cssText = 'width:1280px;height:720px;max-width:100%;border-radius:12px;overflow:auto';
+    // 占屏比更大（owner）：撑满容器宽（受 153vh 高约束保 16:9），battle-screen 内层用 container-query 随之缩放、不再锁 1280。
+    stage.style.cssText = 'width:min(100%, 153vh);aspect-ratio:16 / 9;max-width:100%;margin:0 auto;border-radius:12px;overflow:hidden';
     const label = el('div', 'min-width:300px;text-align:center;font-weight:600;opacity:.85',
       `第 ${save.stage}/${RUN_BATTLES} 战 · ${spec.label} ｜ 命 ${'❤'.repeat(save.lives)} ｜ 你的阵 ${myName}${boss ? ` ｜ ⚔ ${boss.name}：「${boss.taunt}」` : ''}`);
     const back = mkBtn('← 返回大厅');

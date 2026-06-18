@@ -76,7 +76,8 @@ const CSS = `
 @keyframes gg-clashR { 0% { transform: translateX(120px) rotate(12deg); opacity: 0; } 100% { transform: translateX(0) rotate(0); opacity: 1; } }
 @keyframes gg-rolldrop { 0% { top: -70px; opacity: 0; } 55% { opacity: 1; } 78% { top: -2px; } 100% { top: -14px; } }
 @keyframes gg-winglow { 0%,100% { box-shadow: 0 0 26px var(--gold), 0 12px 30px rgba(0,0,0,.6); } 50% { box-shadow: 0 0 54px var(--gold), 0 12px 30px rgba(0,0,0,.6); } }
-@keyframes gg-diefall { 0% { transform: rotate(0) translateY(0); filter: grayscale(0); } 100% { transform: rotate(7deg) translateY(10px); filter: grayscale(1) brightness(.6); } }
+@keyframes gg-flip-win { 0% { transform: rotateY(0) scale(1); } 55% { transform: rotateY(200deg) scale(1.07); } 100% { transform: rotateY(360deg) scale(1); } }
+@keyframes gg-flip-lose { 0% { transform: rotateY(0); } 100% { transform: rotateY(180deg); } }
 .gg-root input[type=range].gz { -webkit-appearance:none; appearance:none; height:6px; border-radius:99px; outline:none; }
 .gg-root input[type=range].gz::-webkit-slider-thumb { -webkit-appearance:none; width:18px; height:18px; border-radius:50%; background:#fff; border:2px solid var(--accent); cursor:pointer; box-shadow:0 2px 6px rgba(0,0,0,.4); }
 .gg-root [data-act="lever"]:hover, .gg-root [data-act="focus"]:hover, .gg-root [data-act="lane"]:hover, .gg-root [data-act="zoom"]:hover, .gg-root [data-act="gate"]:hover { filter:brightness(1.08); transform:translateY(-2px); border-color:var(--accent); }
@@ -162,21 +163,6 @@ function buildHTML(view: BattleView, s: CamState): string {
     return `<div style="${st(connector)}"></div><div data-act="gate" data-k="${key}" style="${st(node)}"><div style="position:absolute; top:-36px; left:50%; transform:translateX(-50%); padding:3px 13px; border-radius:99px; background:rgba(8,12,10,.7); color:#fff; font-family:var(--font-heading); font-weight:700; font-size:21px; white-space:nowrap; border:1px solid ${col};">${esc(lanes)}</div><span style="font-family:var(--font-display); font-size:56px; color:${col}; line-height:1;">门</span><div style="margin-top:5px; padding:2px 14px; border-radius:99px; background:${col}; color:${open ? '#06281a' : '#fff'}; font-family:var(--font-heading); font-weight:700; font-size:18px;">${open ? '通行' : '封锁'}</div></div>`;
   });
 
-  const focusChip = { display: 'flex', alignItems: 'center', gap: '5px', padding: '7px 13px', borderRadius: '10px', cursor: 'pointer', border: '1px solid var(--panel-border)', background: 'rgba(12,16,14,.66)', color: 'rgba(255,255,255,.86)', fontFamily: 'var(--font-heading)', fontWeight: 700, fontSize: '13px', transition: 'all .15s ease' };
-  const focusChipOn = Object.assign({}, focusChip, { background: 'var(--accent-grad)', color: '#fff', border: '1px solid var(--accent)' });
-  const zp = (Z - 0.4) / (2.6 - 0.4) * 100;
-
-  // 小地图
-  const mmW = 236, mmH = Math.round(mmW * H / W), mmScale = mmW / W;
-  const samp = (lane: number): number[][] => [0, 0.15, 0.3, 0.45, 0.6, 0.75, 0.9, 1].map((t) => laneAt(lane, t));
-  let mmLanesHTML = '';
-  [samp(0), samp(2), [laneAt(1, 0), laneAt(1, 1)]].forEach((pts) => { for (let i = 0; i < pts.length - 1; i++) { const a = pts[i], b = pts[i + 1]; const dx = (b[0] - a[0]) * mmScale, dy = (b[1] - a[1]) * mmScale; const len = Math.hypot(dx, dy); const ang = Math.atan2(dy, dx) * 180 / Math.PI; mmLanesHTML += `<div style="${st({ position: 'absolute', left: (a[0] * mmScale) + 'px', top: (a[1] * mmScale) + 'px', width: (len + 2) + 'px', height: '7px', marginTop: '-3.5px', borderRadius: '99px', background: 'rgba(238,222,180,.3)', transformOrigin: '0 50%', transform: 'rotate(' + ang + 'deg)' })}"></div>`; } });
-  const blip = (p: number[], c: string, sz: number): string => `<div style="${st({ position: 'absolute', left: (p[0] * mmScale) + 'px', top: (p[1] * mmScale) + 'px', width: sz + 'px', height: sz + 'px', marginLeft: (-sz / 2) + 'px', marginTop: (-sz / 2) + 'px', borderRadius: '2px', background: c, boxShadow: '0 0 4px ' + c })}"></div>`;
-  let mmBlipsHTML = blip(A_POS, '#ff5d2e', 12) + blip(B_POS, '#3a86d4', 12);
-  towerData.forEach(([p, team]) => { mmBlipsHTML += blip(p, team === 'a' ? '#ff7a45' : '#5ea0e0', 7); });
-  const visW = VPW / Z, visH = VPH / Z;
-  const mmViewRect = { position: 'absolute', left: ((CX - visW / 2) * mmScale) + 'px', top: ((CY - visH / 2) * mmScale) + 'px', width: (visW * mmScale) + 'px', height: (visH * mmScale) + 'px', border: '2px solid #fff', borderRadius: '3px', boxShadow: '0 0 0 9999px rgba(0,0,0,.28)', pointerEvents: 'none' };
-
   // 右栏 三路战况
   const lanesHTML = forr(view.lanes, (l) => {
     const col = l.lead === 'a' ? 'var(--accent)' : l.lead === 'b' ? '#3a86d4' : 'var(--gold)';
@@ -218,9 +204,14 @@ function buildHTML(view: BattleView, s: CamState): string {
   const bonusTxt = (c: ClashCardView): string => { const d = c.pEff - c.points; return d >= 0 ? '+' + d : String(d); };
   const bigCard = (c: ClashCardView, side: 'a' | 'b', win: boolean): string => {
     const col = side === 'a' ? '#ff5d2e' : '#3a86d4', sc = SUITC[c.suit];
-    const inAnim = side === 'a' ? 'gg-clashL .5s ease-out' : 'gg-clashR .5s ease-out';
-    const fateAnim = win ? ', gg-winglow 1.1s ease-in-out .5s infinite' : ', gg-diefall .55s ease-out .85s forwards';
-    return `<div style="${st({ position: 'relative', width: '186px', height: '260px', flex: 'none', borderRadius: '16px', background: win ? 'linear-gradient(160deg,#fff8ec,#f0e2c4)' : '#8d2f22', border: '6px solid ' + (win ? 'var(--gold)' : 'var(--danger)'), display: 'flex', alignItems: 'center', justifyContent: 'center', animation: inAnim + fateAnim })}">${c.general ? '<span style="position:absolute; top:-32px; font-size:42px; color:var(--gold);">♔</span>' : ''}<div style="position:absolute; top:10px; left:15px; font-family:var(--font-heading); font-weight:800; font-size:42px; color:${win ? sc : '#fff'};">${esc(c.rank)}</div><span style="font-size:100px; color:${win ? sc : 'rgba(255,255,255,.9)'};">${SUITG[c.suit]}</span>${win ? '' : '<span style="position:absolute; font-family:var(--font-heading); font-weight:800; font-size:96px; color:#fff;">斩</span>'}<div style="position:absolute; bottom:-44px; left:50%; transform:translateX(-50%); white-space:nowrap; font-family:var(--font-num); font-size:13px; color:${col};">点数 ${c.points} · 加成 ${bonusTxt(c)} <b style="font-size:16px; color:#fff;">＝ 战力 ${c.pEff}</b></div></div>`;
+    const slide = side === 'a' ? 'gg-clashL' : 'gg-clashR';
+    const flip = win ? 'gg-flip-win' : 'gg-flip-lose'; // 真 3D Y 轴翻转：赢=胜利翻 360°停正面、输=翻命翻 180°到死面
+    const face = 'position:absolute; inset:0; border-radius:16px; backface-visibility:hidden; -webkit-backface-visibility:hidden; display:flex; align-items:center; justify-content:center;';
+    const front = `<div style="${face} background:linear-gradient(160deg,#fff8ec,#f0e2c4); border:6px solid ${win ? 'var(--gold)' : col};">${c.general ? '<span style="position:absolute; top:8px; font-size:34px; color:var(--gold);">♔</span>' : ''}<div style="position:absolute; top:10px; left:15px; font-family:var(--font-heading); font-weight:800; font-size:42px; color:${sc};">${esc(c.rank)}</div><span style="font-size:100px; color:${sc};">${SUITG[c.suit]}</span></div>`;
+    const back = win
+      ? `<div style="${face} transform:rotateY(180deg); background:#274a73; border:6px solid #16314e;"><div style="position:absolute; inset:14px; border-radius:8px; border:2px solid rgba(255,255,255,.4); background:repeating-linear-gradient(45deg, rgba(255,255,255,.16) 0 9px, transparent 9px 18px), repeating-linear-gradient(-45deg, rgba(255,255,255,.16) 0 9px, transparent 9px 18px);"></div></div>`
+      : `<div style="${face} transform:rotateY(180deg); background:#8d2f22; border:6px solid var(--danger);"><span style="font-family:var(--font-heading); font-weight:800; font-size:96px; color:#fff;">斩</span></div>`;
+    return `<div style="animation:${slide} .5s ease-out;"><div style="width:186px; height:260px; perspective:1100px;"><div style="position:relative; width:100%; height:100%; transform-style:preserve-3d; animation:${flip} .9s cubic-bezier(.4,1.25,.5,1) .5s both;${win ? ' filter:drop-shadow(0 0 22px var(--gold));' : ''}">${front}${back}</div></div><div style="margin-top:14px; text-align:center; white-space:nowrap; font-family:var(--font-num); font-size:13px; color:${col};">点数 ${c.points} · 加成 ${bonusTxt(c)} <b style="font-size:16px; color:var(--ink);">＝ 战力 ${c.pEff}</b></div></div>`;
   };
   const clashHTML = cv ? (() => {
     const LN = ['上路', '中路', '下路'][cv.lane] ?? '';
@@ -241,8 +232,8 @@ function buildHTML(view: BattleView, s: CamState): string {
   })() : '';
 
   return `<div class="gg-root" style="${st(rootStyle)}">
-    <div style="margin:0 auto; width:1280px; height:720px; overflow:hidden; border-radius:14px; box-shadow:0 24px 60px rgba(0,0,0,.35);">
-    <div style="width:1920px; height:1080px; transform:scale(0.66667); transform-origin:top left; position:relative; overflow:hidden; background:var(--app-bg); color:var(--ink); font-family:var(--font-body);">
+    <div style="container-type:size; width:100%; aspect-ratio:16 / 9; margin:0 auto; overflow:hidden; border-radius:14px; box-shadow:0 24px 60px rgba(0,0,0,.35);">
+    <div style="width:1920px; height:1080px; transform:scale(calc(100cqw / 1920)); transform-origin:top left; position:relative; overflow:hidden; background:var(--app-bg); color:var(--ink); font-family:var(--font-body);">
       <div style="position:absolute; inset:0; background:var(--texture); pointer-events:none;"></div>
       <div style="position:absolute; top:0; left:0; right:0; height:96px; display:flex; align-items:center; gap:18px; padding:0 30px; background:var(--hud-bg); border-bottom:1px solid var(--panel-border); z-index:8;">
         <div style="display:flex; align-items:center; gap:11px; min-width:280px;"><div style="${st(nexBadgeA)}">♠</div><div style="flex:1;"><div style="display:flex; justify-content:space-between; align-items:baseline;"><span style="font-family:var(--font-heading); font-weight:700; font-size:14px; color:var(--ink);">我方老家</span><span style="font-family:var(--font-num); font-size:12px; color:var(--accent);">${view.homeA}/${view.homeAMax}</span></div><div style="height:11px; border-radius:99px; background:var(--track); overflow:hidden; margin-top:5px; border:1px solid var(--panel-border);"><div style="width:${pct(view.homeA, view.homeAMax)}%; height:100%; background:var(--accent-grad); border-radius:99px; box-shadow:0 0 8px var(--accent-soft);"></div></div></div></div>
@@ -254,7 +245,7 @@ function buildHTML(view: BattleView, s: CamState): string {
         <div style="display:flex; flex-direction:column; gap:9px;">${leversHTML}</div>
       </div>
       <div style="position:absolute; top:104px; left:318px; right:318px; bottom:172px; display:flex; flex-direction:column; align-items:center; gap:12px;">
-        <div data-act="vpdown" style="${st(viewport)}">
+        <div style="${st(viewport)}">
           <div style="${st(world)}">
             <svg viewBox="0 0 3000 1500" preserveAspectRatio="none" style="position:absolute; inset:0; width:100%; height:100%;"><polygon points="1380,-40 1620,-40 1620,1540 1380,1540" fill="rgba(86,150,205,.10)"></polygon><g fill="none" stroke="rgba(238,222,180,.16)" stroke-width="140" stroke-linecap="round" stroke-linejoin="round"><path d="M460,750 Q1500,640 2540,750"></path><path d="M380,650 Q1500,150 2620,650"></path><path d="M380,850 Q1500,1350 2620,850"></path></g><g fill="none" stroke="rgba(238,222,180,.34)" stroke-width="7" stroke-dasharray="40 28" style="animation:gg-dash 1.6s linear infinite;"><path d="M460,750 Q1500,640 2540,750"></path><path d="M380,650 Q1500,150 2620,650"></path><path d="M380,850 Q1500,1350 2620,850"></path></g></svg>
             ${mkNexus(A_POS, '#ff5d2e', 'rgba(255,93,46,.6)', view.homeA, view.homeAMax, '我方老家', '♠')}
@@ -262,10 +253,6 @@ function buildHTML(view: BattleView, s: CamState): string {
             ${towersHTML}${unitsHTML}${gatesHTML}
             ${laneLbl(0, -34, '上路')}${laneLbl(1, -70, '中路')}${laneLbl(2, 34, '下路')}
           </div>
-          <div style="position:absolute; top:14px; left:14px; display:flex; gap:8px; z-index:5;"><button data-act="focus" data-k="home" style="${st(focusChip)}">⌂ 我方老家</button><button data-act="focus" data-k="fight" style="${st(focusChipOn)}">⚔ 中路团战</button><button data-act="focus" data-k="enemy" style="${st(focusChip)}">⚑ 敌方老家</button><button data-act="focus" data-k="all" style="${st(focusChip)}">▦ 全局</button></div>
-          <div style="position:absolute; top:14px; right:14px; display:flex; align-items:center; gap:9px; padding:8px 12px; border-radius:12px; background:rgba(12,16,14,.7); border:1px solid var(--panel-border); z-index:5;"><button data-act="zoom" data-k="out" style="${st({ width: '30px', height: '30px', borderRadius: '8px', cursor: 'pointer', border: '1px solid var(--panel-border)', background: 'var(--chip-bg)', color: '#fff', fontFamily: 'var(--font-heading)', fontWeight: 700, fontSize: '18px', lineHeight: 1, display: 'flex', alignItems: 'center', justifyContent: 'center' })}">－</button><input type="range" class="gz" min="0.4" max="2.6" step="0.05" value="${Z}" data-act="zoominput" style="${st({ width: '140px', background: 'linear-gradient(90deg,var(--accent) ' + zp + '%, rgba(255,255,255,.25) ' + zp + '%)' })}"><button data-act="zoom" data-k="in" style="${st({ width: '30px', height: '30px', borderRadius: '8px', cursor: 'pointer', border: '1px solid var(--panel-border)', background: 'var(--chip-bg)', color: '#fff', fontFamily: 'var(--font-heading)', fontWeight: 700, fontSize: '18px', lineHeight: 1, display: 'flex', alignItems: 'center', justifyContent: 'center' })}">＋</button><span style="font-family:var(--font-num); font-size:12px; color:#fff; min-width:42px; text-align:right;">${Math.round(Z * 100)}%</span></div>
-          <div style="position:absolute; bottom:14px; left:14px; padding:5px 12px; border-radius:99px; background:rgba(12,16,14,.6); color:rgba(255,255,255,.7); font-size:12px; z-index:5;">🖱 拖拽平移 · 滚轮缩放 · 点「门」开/关捷径</div>
-          <div style="position:absolute; bottom:14px; right:14px; width:${mmW}px; height:${mmH}px; border-radius:12px; overflow:hidden; border:2px solid var(--panel-border); box-shadow:0 10px 24px rgba(0,0,0,.5); z-index:6;"><div style="position:absolute; top:6px; left:9px; font-family:var(--font-heading); font-weight:700; font-size:11px; letter-spacing:.1em; color:rgba(255,255,255,.8); z-index:3;">战场全局</div><div style="position:absolute; inset:0; background:var(--arena);">${mmLanesHTML}${mmBlipsHTML}<div style="${st(mmViewRect)}"></div><div data-act="mmdown" style="position:absolute; inset:0; cursor:crosshair;"></div></div></div>
         </div>
       </div>
       <div style="position:absolute; top:112px; right:18px; width:284px; bottom:172px; display:flex; flex-direction:column; gap:11px;">
@@ -289,15 +276,9 @@ export interface BattleActions { selectCard: (i: number) => void; playLane: (lan
 // 挂载：把设计稿渲进 host，wire 相机/门/聚焦 + 出牌/暂停交互；update() 每帧从 getView() 拉真数据重渲。
 export function mountBattle(host: HTMLElement, getView: () => BattleView, actions?: BattleActions): { update: () => void; destroy: () => void } {
   if (!document.getElementById('gg-battle-css')) { const s = document.createElement('style'); s.id = 'gg-battle-css'; s.textContent = CSS; document.head.appendChild(s); }
-  const W = 3000, H = 1500, VPW = 1284, VPH = 612, OUT = 0.66667;
-  const state: CamState = { theme: 'onyx', lever: 'bless', lane: 'mid', zoom: 0.42, camX: 1500, camY: 750, gates: { g1: true, g2: false } };
-  let drag: { mx: number; my: number; cx: number; cy: number } | null = null;
-  let mm: HTMLElement | null = null;
-  const clampAxis = (c: number, world: number, vp: number, z: number): number => { const half = vp / (2 * z); if (2 * half >= world) return world / 2; return Math.max(half, Math.min(world - half, c)); };
-  const setCam = (x: number, y: number): void => { state.camX = clampAxis(x, W, VPW, state.zoom); state.camY = clampAxis(y, H, VPH, state.zoom); render(); };
-  const setView = (x: number, y: number, z: number): void => { state.zoom = Math.max(0.4, Math.min(2.6, z)); setCam(x, y); };
+  // 固定全局视角（owner：不放缩了）：相机锁定 zoom=0.4·居中，整片三路战场一屏尽收；占屏比由外层 container-query 撑满容器宽。
+  const state: CamState = { theme: 'onyx', lever: 'bless', lane: 'mid', zoom: 0.4, camX: 1500, camY: 750, gates: { g1: true, g2: false } };
   const render = (): void => { host.innerHTML = buildHTML(getView(), state); };
-
   const LANE_IDX: Record<string, number> = { top: 0, mid: 1, bot: 2 };
   const onClick = (e: MouseEvent): void => {
     const el = (e.target as HTMLElement).closest('[data-act]') as HTMLElement | null; if (!el) return;
@@ -307,29 +288,14 @@ export function mountBattle(host: HTMLElement, getView: () => BattleView, action
     else if (act === 'play') { actions?.playLane(LANE_IDX[k] ?? 0); render(); }
     else if (act === 'pause') { actions?.togglePause(); render(); }
     else if (act === 'gate') { state.gates[k] = !state.gates[k]; render(); }
-    else if (act === 'zoom') setView(state.camX, state.camY, state.zoom + (k === 'in' ? 0.2 : -0.2));
-    else if (act === 'focus') { if (k === 'home') setView(A_POS[0] + 260, 750, 1.5); else if (k === 'fight') setView(laneAt(1, 0.5)[0], laneAt(1, 0.5)[1], 1.4); else if (k === 'enemy') setView(B_POS[0] - 260, 750, 1.5); else setView(1500, 750, 0.42); }
   };
   const onKey = (e: KeyboardEvent): void => { if (e.code === 'Space') { e.preventDefault(); actions?.togglePause(); render(); } };
-  const onInput = (e: Event): void => { const el = e.target as HTMLInputElement; if (el.dataset && el.dataset.act === 'zoominput') setView(state.camX, state.camY, parseFloat(el.value)); };
-  const onWheel = (e: WheelEvent): void => { if ((e.target as HTMLElement).closest('[data-act="vpdown"]')) { e.preventDefault(); setView(state.camX, state.camY, state.zoom * (e.deltaY < 0 ? 1.12 : 0.89)); } };
-  const onDown = (e: MouseEvent): void => {
-    const t = e.target as HTMLElement;
-    if (t.closest('[data-act="mmdown"]')) { mm = t.closest('[data-act="mmdown"]'); mmTo(e); }
-    else if (t.closest('[data-act="vpdown"]')) drag = { mx: e.clientX, my: e.clientY, cx: state.camX, cy: state.camY };
-  };
-  const mmTo = (e: MouseEvent): void => { if (!mm) return; const r = mm.getBoundingClientRect(); setCam((e.clientX - r.left) / r.width * W, (e.clientY - r.top) / r.height * H); };
-  const onMove = (e: MouseEvent): void => { if (drag) { const kf = OUT * state.zoom; setCam(drag.cx - (e.clientX - drag.mx) / kf, drag.cy - (e.clientY - drag.my) / kf); } else if (mm) mmTo(e); };
-  const onUp = (): void => { drag = null; mm = null; };
-
-  host.addEventListener('click', onClick); host.addEventListener('input', onInput);
-  host.addEventListener('wheel', onWheel, { passive: false }); host.addEventListener('mousedown', onDown);
-  window.addEventListener('mousemove', onMove); window.addEventListener('mouseup', onUp);
+  host.addEventListener('click', onClick);
   if (actions) window.addEventListener('keydown', onKey);
   render();
   return {
     update: render,
-    destroy: () => { window.removeEventListener('mousemove', onMove); window.removeEventListener('mouseup', onUp); window.removeEventListener('keydown', onKey); host.replaceChildren(); },
+    destroy: () => { window.removeEventListener('keydown', onKey); host.replaceChildren(); },
   };
 }
 
