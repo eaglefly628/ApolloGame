@@ -4,6 +4,7 @@
 import { type Deck, type Faction, HUBAO_DECK, DECK_REGISTRY } from './index.js';
 import { getWarfunds, gachaPull, gachaPull10, getCollection, GACHA_COST, GACHA10_COST, getLP, rankFor, saveCustomDeck, getDust, getEnchantLevels, enchantCard, disenchant, ENCHANT_MAX, enchantCost } from './account.js';
 import { CARD_CATALOG, assembleDeck } from './decks.js';
+import TUTORIAL_HTML from '../../../docs/game-design/game-f-tutorial.html?raw'; // P2：新手教程页内联进弹层 iframe
 
 export interface RunConfig {
   deck: Deck;
@@ -168,7 +169,7 @@ export function buildLobby(onStart: (cfg: RunConfig) => void): HTMLElement {
         <div class="gfl-cta-wrap"><button class="gfl-cta" data-nav="party">▶ 渡海攻岛（快速匹配）</button>
           <div class="gfl-cta-row"><button class="gfl-btn" data-nav="party">邀好友组队</button><button class="gfl-btn" data-nav="party">单人（AI 补位）</button></div></div></div>
       <div class="gfl-quick"><div class="gfl-qcard" data-nav="decks">🃏 我的牌组 ▸ <b>虎豹铁骑</b>（出战）</div>
-        <div class="gfl-qcard">🎁 每日宝箱 ● 可领</div><div class="gfl-qcard" data-nav="market">🛒 商城上新 ●</div></div>
+        <div class="gfl-qcard" data-act="tutorial">📖 新手教程 ● 必读</div><div class="gfl-qcard" data-nav="market">🛒 商城上新 ●</div></div>
       <div class="gfl-banner">规则：3 人一队渡海攻岛 → 各自单独 PvE 打太阁守军 → 按<b>贡献度排名</b>定岛主。盟友战局状态实时镜像（连携/卡牌互通）。</div>
     </div>
     <div class="gfl-screen" data-screen="party" style="flex:1">
@@ -334,6 +335,19 @@ export function buildLobby(onStart: (cfg: RunConfig) => void): HTMLElement {
   root.querySelector<HTMLElement>('[data-start]')!.addEventListener('click', () => {
     const deck = DECK_REGISTRY[selectedDeckId] ?? HUBAO_DECK;
     onStart({ deck, faction: deck.faction, allies: [...allyFacs] });
+  });
+
+  // P2 新手教程（owner approve）：点「新手教程」→ 弹层 iframe 内联教程页（srcdoc 隔离样式，无分步引导）。
+  root.querySelector<HTMLElement>('[data-act="tutorial"]')?.addEventListener('click', () => {
+    if (root.querySelector('.gfl-tut')) return;
+    const ov = document.createElement('div');
+    ov.className = 'gfl-tut';
+    ov.style.cssText = 'position:absolute;inset:0;z-index:120;display:flex;flex-direction:column;background:rgba(20,14,8,.72);backdrop-filter:blur(4px)';
+    ov.innerHTML = `<div style="display:flex;align-items:center;gap:10px;padding:10px 16px;background:#2e2317;color:#f4ead2;font-weight:700;font-size:14px">📖 新手教程<span style="flex:1"></span><button class="gfl-tut-x" style="padding:5px 14px;border-radius:8px;border:1px solid #c9a24e;background:transparent;color:#f4ead2;cursor:pointer;font-size:13px">关闭 ✕</button></div>
+      <iframe srcdoc="${TUTORIAL_HTML.replace(/"/g, '&quot;')}" style="flex:1;width:100%;border:none;background:#f4ead2"></iframe>`;
+    ov.querySelector('.gfl-tut-x')!.addEventListener('click', () => ov.remove());
+    ov.addEventListener('click', (e) => { if (e.target === ov) ov.remove(); });
+    root.appendChild(ov);
   });
 
   return root;
