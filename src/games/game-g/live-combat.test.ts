@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import { standardArmy } from './index.js';
-import { initLiveBattle, stepLiveBattle, runLiveBattle, liveHash, cardStamina, type DeployCmd } from './live-combat.js';
+import { initLiveBattle, stepLiveBattle, runLiveBattle, liveHash, cardStamina, MARCH_STEP, type DeployCmd } from './live-combat.js';
 
 // doc 18/19 · live 解析器 + 3D-CLASH 对决核 + 3D-STAM 续航：验证 live 化后 outcome-first 不破（确定性逐拍 hash）
 // + 公平骨架（base=点数·双方同副；强弱来自经营 buff）+ 胜负方向 + live buff 杠杆 + 续航退场（战线接力·神牌不包打）。
@@ -19,6 +19,22 @@ describe('Game G · live-combat（doc18/19 · live + pairwise clash + 续航）'
     }
     expect(b1.winner).not.toBe('pending');
     expect(b1.winner).toBe(b2.winner);
+  });
+
+  it('一张牌一张牌·一格格往前爬（owner 钉死：不是一堆刷过去）：每拍 +MARCH_STEP；两军相隔时只爬不打、最前两张相邻才对决', () => {
+    // 单 A 无敌：每拍 pos 增 MARCH_STEP，一格格慢慢爬向敌家。
+    const b = initLiveBattle(9);
+    stepLiveBattle(b, [{ tick: 1, side: 'a', lane: 0, unit: { id: 'a0', rank: '7', suit: 'S', general: false } }]);
+    const p1 = b.lanes[0].a[0].pos;
+    stepLiveBattle(b);
+    expect(b.lanes[0].a[0].pos - p1).toBe(MARCH_STEP); // 每拍 +一格、慢慢爬（非瞬移/批量刷）
+    // 两军远隔：开打前只相向爬、不死（最前两张没相邻就不对决）。
+    const c = initLiveBattle(9);
+    const d: DeployCmd[] = [{ tick: 1, side: 'a', lane: 0, unit: { id: 'a0', rank: '7', suit: 'S', general: false, buff: 50 } }, { tick: 1, side: 'b', lane: 0, unit: { id: 'b0', rank: '7', suit: 'H', general: false } }];
+    for (let i = 0; i < 5; i++) stepLiveBattle(c, d);
+    expect(c.lanes[0].a.length).toBe(1);
+    expect(c.lanes[0].b.length).toBe(1); // 没相邻 → 没人死（强 A 也没"刷过去"秒杀）
+    expect(c.lanes[0].a[0].pos).toBeLessThan(c.lanes[0].b[0].pos); // A 左·B 右、相向爬
   });
 
   it('公平骨架 · 胜负方向：经营 buff 强者攻克敌 3 血老家 → 胜；反向 → 负（base 点数同副、不泵 favor）', () => {
