@@ -1,9 +1,10 @@
 import * as THREE from 'three';
 import type { IWorld, RendererBackend } from '@engine/core/types.js';
+import type { Mesh3D } from '@engine/protocol/components.js';
 import type { AssetManager } from '@assets/index.js';
 import { isImageHandle } from '@assets/index.js';
 import { collectRenderables, chooseRenderMode, type Renderable } from './renderable.js';
-import { renderablePose, poseBounds, fitPerspective, type Pose3D } from './three-projection.js';
+import { renderablePose, poseBounds, fitPerspective, flipEuler, mesh3dDepth, type Pose3D } from './three-projection.js';
 
 // ═══════════════════════════════════════════════════════════════
 //  ThreeRenderer —— 通用 3D 渲染后端（RendererBackend 的 Three.js 实现）。
@@ -71,6 +72,19 @@ export class ThreeRenderer implements RendererBackend {
     const poses: Pose3D[] = [];
 
     for (const r of collectRenderables(world)) {
+      // 3D 物件（Mesh3D）：渲成有体积/双面的 box（或薄片 plane），Transform.rotation 驱动翻面。与 2D 同场混排。
+      if (r.mesh3d) {
+        const mesh = this.ensureMesh3D(r, r.mesh3d);
+        const pose = renderablePose(r, this.zStep);
+        mesh.position.set(pose.x, pose.y, pose.z);
+        const fe = flipEuler(r.rotation, r.mesh3d.flipAxis);
+        mesh.rotation.set(fe.x, fe.y, 0);
+        mesh.scale.set(pose.sx, pose.sy, 1);
+        this.paintMesh3D(mesh, r.mesh3d, r.color?.alpha ?? 1);
+        seen.add(r.entityId);
+        poses.push(pose);
+        continue;
+      }
       const ready = !!(r.sprite && this.assets && this.spriteReady(r.sprite.textureKey, r.frame?.index));
       const mode = chooseRenderMode(r, ready);
       if (mode === 'none') continue;
@@ -146,6 +160,42 @@ export class ThreeRenderer implements RendererBackend {
     mat.needsUpdate = true;
   }
 
+  // 建/复用 3D 物件 mesh：几何形态（box/plane）不变则复用，变了重建。与 flat 路径共用 meshes/modeOf。
+  private ensureMesh3D(r: Renderable, m: Mesh3D): THREE.Mesh {
+    const mode = `m3:${m.shape}`;
+    const prev = this.meshes.get(r.entityId);
+    if (prev && this.modeOf.get(r.entityId) === mode) return prev;
+    if (prev) {
+      this.scene.remove(prev);
+      disposeMesh(prev);
+    }
+    const mesh = buildMesh3D(m);
+    this.meshes.set(r.entityId, mesh);
+    this.modeOf.set(r.entityId, mode);
+    this.scene.add(mesh);
+    return mesh;
+  }
+
+  // 上色：box → 正面(+z)/反面(-z)/四边 各自取色；plane → 单面取正面色。alpha 透传到全部材质。每帧设（tint 变即反映）。
+  private paintMesh3D(mesh: THREE.Mesh, m: Mesh3D, alpha: number): void {
+    const mats = mesh.material;
+    if (Array.isArray(mats)) {
+      const a = mats as THREE.MeshStandardMaterial[]; // BoxGeometry 面序 px,nx,py,ny,pz(正),nz(反)
+      a[4].color.setHex(m.frontTint & 0xffffff);
+      a[5].color.setHex((m.backTint ?? m.frontTint) & 0xffffff);
+      a[0].color.setHex((m.edgeTint ?? 0x1f2937) & 0xffffff); // 四边共用同一材质实例
+      for (const mat of a) {
+        mat.opacity = alpha;
+        mat.needsUpdate = true;
+      }
+    } else {
+      const mat = mats as THREE.MeshStandardMaterial;
+      mat.color.setHex(m.frontTint & 0xffffff);
+      mat.opacity = alpha;
+      mat.needsUpdate = true;
+    }
+  }
+
   private spriteReady(key: string, frame?: number): boolean {
     const res = this.assets?.resolve(key, frame);
     return !!res && isImageHandle(res.asset.handle);
@@ -192,6 +242,20 @@ export class ThreeRenderer implements RendererBackend {
     this.textSig.set(r.entityId, sig);
     return tex;
   }
+}
+
+// Mesh3D → three Mesh：box=有厚度盒（面序 px,nx,py,ny,pz=正,nz=反，四边共用一材质）；plane=双面薄片。
+// 材质先建空白，颜色每帧由 paintMesh3D 设（避免建/绘两处重复颜色逻辑）。
+function buildMesh3D(m: Mesh3D): THREE.Mesh {
+  if (m.shape === 'plane') {
+    const mat = new THREE.MeshStandardMaterial({ transparent: true, side: THREE.DoubleSide });
+    return new THREE.Mesh(new THREE.PlaneGeometry(m.width, m.height), mat);
+  }
+  const depth = mesh3dDepth(m.shape, m.width, m.height, m.depth);
+  const edge = new THREE.MeshStandardMaterial({ transparent: true });
+  const front = new THREE.MeshStandardMaterial({ transparent: true });
+  const back = new THREE.MeshStandardMaterial({ transparent: true });
+  return new THREE.Mesh(new THREE.BoxGeometry(m.width, m.height, depth), [edge, edge, edge, edge, front, back]);
 }
 
 // 几何由渲染模式决定：shape→对应平面几何；sprite/text/placeholder→单位面（贴图/占位）。

@@ -1,5 +1,5 @@
 import type { IWorld } from '@engine/core/types.js';
-import type { Transform, Shape, Color, Sprite, Text, Visibility, Frame } from '@engine/protocol/components.js';
+import type { Transform, Shape, Color, Sprite, Text, Visibility, Frame, Mesh3D } from '@engine/protocol/components.js';
 
 // 相机视图与世界↔屏幕投影已下沉为共享契约（renderer 正向投影 + clickable 逆向命中的单一真相）。
 // 此处重导出，保持既有 `@renderer/renderable` 消费者（canvas-renderer / 测试）的 import 不变。
@@ -20,6 +20,7 @@ export interface Renderable {
   sprite?: Sprite;
   frame?: Frame; // 当前帧索引（序列帧/命名动画用；渲染器据此 resolve(textureKey, frame.index)）
   text?: Text;
+  mesh3d?: Mesh3D; // 可选「3D 物件」描述：3D 后端渲成有体积/双面/可翻的 box/plane；2D 后端画其正面（per-object opt-in 3D）
 }
 
 // 实体绘制模式选择（REQ-005）：**优先 Sprite** —— 有贴图且资产就绪即画贴图（给可碰撞实体"穿皮"，
@@ -56,6 +57,7 @@ export function collectRenderables(world: IWorld): Renderable[] {
       sprite,
       frame: world.getComponent<Frame>(id, 'Frame'),
       text: world.getComponent<Text>(id, 'Text'),
+      mesh3d: world.getComponent<Mesh3D>(id, 'Mesh3D'),
     });
   }
   out.sort((a, b) => a.zOrder - b.zOrder);

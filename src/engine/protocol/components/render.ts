@@ -34,6 +34,25 @@ export interface Card3D extends Component {
   suit?: string; // 花色 S/H/D/C（♠♥♦♣）（render-only）
 }
 
+// ── Mesh3D（render-only，通用「3D 物件即数据」原语）── 一个有体积/双面、可翻面的 3D 物体（牌/骰/棋子）。
+// 区别于 game-g 专属 Card3D（扑克牌面纹理 + 抛飞相撞编排是它的私货）：本件是**引擎通用原语**——任意实体挂上
+// 即被 3D 后端渲成一个 box/plane，与 2D Renderable **同场混排**（per-object opt-in 3D，不是整场景 3D）。
+// 「3D JSON」= 这些 Mesh3D 的数据描述（类比 UILayout 之于 2D UI），游戏只**描述**、引擎**解释**渲染，
+// 不再每游戏手写 Three.js。3D 位姿取同实体 Transform：x,y→位置；rotation→绕 flipAxis 的**翻面角**
+// （0=正面朝镜头、π=反面）。红线：表现层组件，**绝不被 Condition 读、绝不进 sim 逻辑/hash**。
+// 纹理/导入/骨骼/动画不在此（那是各游戏私货 or action 方向，触发方向漂移预警）。
+export interface Mesh3D extends Component {
+  readonly type: 'Mesh3D';
+  shape: 'box' | 'plane'; // box=有厚度、正反两面可分色；plane=双面薄片（单色）
+  width: number; // 物体宽（世界单位，与 Transform.x/y 同尺；相机自适配取景）
+  height: number; // 物体高
+  depth?: number; // box 厚度；缺省=短边*薄板比（下限 1）。plane 忽略
+  frontTint: number; // 正面(+z)色 0xRRGGBB
+  backTint?: number; // 反面(-z)色；缺省=frontTint
+  edgeTint?: number; // box 四边色；缺省深灰
+  flipAxis?: 'x' | 'y'; // Transform.rotation 作为绕此轴的翻面角；缺省 'x'（前后翻）
+}
+
 // ── L2 color ── 实体当前的颜色/透明度
 export interface Color extends Component {
   readonly type: 'Color';

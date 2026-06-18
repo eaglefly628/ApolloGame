@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { renderablePose, poseBounds, fitPerspective, type Pose3D } from './three-projection.js';
+import { renderablePose, poseBounds, fitPerspective, mesh3dDepth, flipEuler, type Pose3D } from './three-projection.js';
 import type { Renderable } from './renderable.js';
 
 const R = (o: Partial<Renderable>): Renderable => ({
@@ -49,5 +49,20 @@ describe('three-projection — 纯 2D→3D 映射（无 three / 无 WebGL）', (
     const fit = fitPerspective({ minX: 4, maxX: 6, minY: 10, maxY: 14 }, 50, 1);
     expect(fit.cx).toBe(5);
     expect(fit.cy).toBe(12);
+  });
+});
+
+describe('three-projection — Mesh3D（3D 物件即数据）几何/翻面纯函数', () => {
+  it('mesh3dDepth：plane→0；box 缺省=短边*0.05（下限 1）；显式 depth 透传', () => {
+    expect(mesh3dDepth('plane', 60, 90)).toBe(0);
+    expect(mesh3dDepth('box', 60, 90)).toBeCloseTo(3); // min(60,90)*0.05
+    expect(mesh3dDepth('box', 60, 90, 5)).toBe(5); // 显式优先
+    expect(mesh3dDepth('box', 4, 4)).toBe(1); // 0.2 → 下限 1
+  });
+
+  it('flipEuler：缺省绕 x（前后翻）、y 轴可选，另一轴恒 0', () => {
+    expect(flipEuler(Math.PI)).toEqual({ x: Math.PI, y: 0 });
+    expect(flipEuler(1.2, 'x')).toEqual({ x: 1.2, y: 0 });
+    expect(flipEuler(1.2, 'y')).toEqual({ x: 0, y: 1.2 });
   });
 });

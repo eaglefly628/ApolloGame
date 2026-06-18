@@ -54,3 +54,16 @@ export function fitPerspective(b: Bounds2D, fovDeg: number, aspect: number, pad 
   const dist = Math.max(halfH / tanV, halfW / (tanV * Math.max(aspect, 1e-6))) * pad + 1;
   return { cx, cy, dist };
 }
+
+// ── Mesh3D（3D 物件即数据）几何/翻面的纯推导（无 three / 无 WebGL → node 可测）──────────────
+
+// box 厚度：plane 无厚度(0)；box 缺省=短边*ratio 的薄板（下限 1），显式 depth 则透传。
+export function mesh3dDepth(shape: 'box' | 'plane', width: number, height: number, depth?: number, ratio = 0.05): number {
+  if (shape === 'plane') return 0;
+  return depth ?? Math.max(1, Math.min(width, height) * ratio);
+}
+
+// 翻面：Transform.rotation 作为绕 flipAxis 的角度（0=正面朝镜头、π=反面）→ 欧拉角（另一轴恒 0）。
+export function flipEuler(rotation: number, axis: 'x' | 'y' = 'x'): { x: number; y: number } {
+  return axis === 'y' ? { x: 0, y: rotation } : { x: rotation, y: 0 };
+}

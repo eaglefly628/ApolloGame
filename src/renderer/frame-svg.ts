@@ -37,6 +37,12 @@ export function frameSvg(world: IWorld, opts: FrameSvgOptions = {}): string {
 
   let body = '';
   for (const r of collectRenderables(world)) {
+    // 3D 物件（Mesh3D）：无头看帧用正交正面投影——画其正面矩形（位置/尺寸/正面色），golden 可 diff。
+    if (r.mesh3d) {
+      const m = r.mesh3d;
+      body += `<rect x="${n(r.x - m.width / 2)}" y="${n(r.y - m.height / 2)}" width="${n(m.width)}" height="${n(m.height)}" rx="2" fill="${hex(m.frontTint)}" stroke="${hex(m.edgeTint ?? 0x1f2937)}"/>`;
+      continue;
+    }
     const fill = r.color ? hex(r.color.tint) : '#e2e8f0';
     const snip = r.sprite && opts.resolveSprite ? opts.resolveSprite(r.sprite.textureKey, r.frame?.index) : undefined;
     const mode = chooseRenderMode(r, !!snip);

@@ -1,7 +1,8 @@
 import { describe, it, expect } from 'vitest';
 import { World } from '@engine/core/world.js';
 import { collectRenderables, AsciiRenderer } from './index.js';
-import type { Transform, Shape, Sprite, Visibility } from '@engine/protocol/components.js';
+import { frameSvg } from './frame-svg.js';
+import type { Transform, Shape, Sprite, Visibility, Mesh3D } from '@engine/protocol/components.js';
 
 function addTransform(w: World, id: string, x: number, y: number) {
   w.createEntity(id);
@@ -47,5 +48,29 @@ describe('renderer · AsciiRenderer', () => {
 
     const out = new AsciiRenderer({ width: 4, height: 1, worldWidth: 10, worldHeight: 10 }).render(w);
     expect(out).toContain('B');
+  });
+});
+
+describe('renderer · Mesh3D（3D 物件即数据，per-object 3D）', () => {
+  it('collectRenderables 收集 Mesh3D；frameSvg 正交投影出正面矩形（无头看帧）', () => {
+    const w = new World();
+    addTransform(w, 'card', 100, 50);
+    w.addComponent('card', {
+      type: 'Mesh3D',
+      shape: 'box',
+      width: 60,
+      height: 90,
+      frontTint: 0xff0000,
+      backTint: 0x0000ff,
+    } as Mesh3D);
+
+    const rs = collectRenderables(w);
+    expect(rs[0].mesh3d?.shape).toBe('box');
+    expect(rs[0].mesh3d?.frontTint).toBe(0xff0000);
+
+    const svg = frameSvg(w, { width: 400, height: 300 });
+    expect(svg).toContain('#ff0000'); // 正面色矩形
+    expect(svg).toContain('width="60"');
+    expect(svg).toContain('height="90"');
   });
 });

@@ -42,6 +42,7 @@ import type {
   Mass,
   MatchBoard,
   MergeRule,
+  Mesh3D,
   Mortal,
   OverTime,
   Overlap,
@@ -129,6 +130,7 @@ export interface ComponentDataMap {
   Mass: Omit<Mass, 'type'>;
   MatchBoard: Omit<MatchBoard, 'type'>;
   MergeRule: Omit<MergeRule, 'type'>;
+  Mesh3D: Omit<Mesh3D, 'type'>;
   Mortal: Omit<Mortal, 'type'>;
   OverTime: Omit<OverTime, 'type'>;
   Overlap: Omit<Overlap, 'type'>;
