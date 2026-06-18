@@ -10,6 +10,31 @@
 
 ## 待处理 / 进行中
 
+### REQ-E-022 · [2026-06-18] · PE（Game E 小丑牌 · 真实牌库扩充拉动）· 框架级 · status: **open** · 优先级: 中 · 类型: 真缺口（poker-eval 缺 isFlush/isStraight 派生事实）
+
+**标题**：`poker-eval` 暴露 `isFlush` / `isStraight`（含 `isStraightFlush`）派生事实 —— 与现有 `rankMaxCount`/`pairCount` 同类
+
+- **拉动（真实）**：可玩小丑只有 25 张（已 14→25）。下一批官方 common 卡在「含顺子 / 含同花」条件上打不出：
+  **Crazy(顺+12倍) / Droll(同花+10倍) / Devious(顺+100筹) / Crafty(同花+80筹) / The Order(顺×3) / The Tribe(同花×2)** —— 6 张核心 common，全因引擎读不到"这手是否含顺/含同花"而无法成数据。
+- **已经试了什么 / 卡在哪**：游戏侧 `containsCondition`（`blueprint.ts`）已能用 `rankMaxCount≥2/≥3/≥4`、`pairCount≥2` 表达"含对子/三条/四条/两对"（REQ-011 派生事实）；但 **poker-eval 不写 isFlush/isStraight**，所以 `containsCondition('straight'|'flush')` 直接 `throw`。这正是 REQ-011 当时留的口（注释明说"需补 isFlush/isStraight 等派生事实"）。
+- **建议方案（最小、与现有派生事实同构）**：`PokerHand` 配置加可选 `isFlushResource?` / `isStraightResource?`（缺省不写，零迁移）；`poker-eval` 在判型时本就算了 flush/straight（`isStraightRanks` 已导出），把布尔写成 0/1 Resource（与 `rankMaxCountResource` 同一套写法）。游戏侧 `containsCondition` 读它 → 上述 6 张变纯数据。
+  - 含同花 = flush/straight-flush/flush-house/flush-five 任一；含顺子 = straight/straight-flush。poker-eval 判型已知，直接投影。
+- **可复用性**：任何"按牌型门控"的卡牌游戏都要（与 rankMaxCount/pairCount 同级的基础派生事实），非 Game E 专属。
+- **边界**：只加这两个（可选带 isStraightFlush）派生事实；不引入新计分、不动定序。
+- **交付后游戏侧接线（PE）**：`containsCondition` 补 straight/flush 分支 → STARTER_JOKERS 加这 6 张（catalog id 已在）。可玩数 25→31。
+
+**关于"真实的牌库"（全 150）—— 路线图（Lead 按价值排期，逐个单提，不一次性塞）**：catalog 150 张元数据已全；可执行的随能力解锁。除本 REQ 外仍缺：
+- **随机/概率**（Misprint/8 Ball/Bloodstone…）：需确定性概率 roll（lockstep 安全）。
+- **计数缩放**（Joker Stencil ×空槽 / Abstract +每小丑 / Blue +每张牌…）：valueFrom 读"实体/牌库计数"。
+- **自增长**（Ride the Bus / Green Joker / Obelisk…）：跨回合可变 joker 状态 + 触发时累加。
+- **别的触发时机**（on_discard / on_round_end / on_blind_selected）：需这些信号（on_round_end 数据已有、jokerToEntities 暂跳过）。
+- **改其它实体**（Blueprint 复制右侧 / DNA 复制牌 / Brainstorm…）：joker 读写 joker / 改牌库。
+- **条件重触发**（Mime / Sock and Buskin / Hack / Dusk…）：PerCardRetrigger 按 when 条件（现仅按 index）。
+
+→ 本次只请裁决 **isFlush/isStraight**（最小、解锁 6 张、与 REQ-011 同纪律）。其余等真实拉动逐个评。
+
+---
+
 ### REQ-E-021 · [2026-06-18] · PE（Game E 小丑牌 · 卡牌附魔/buff 拉动）· 框架级 · status: **done（引擎侧，2026-06-18，Lead）** · 优先级: 中 · 类型: 真缺口（逐张计分读不到「牌自带的修正」）
 
 **标题**：`card-scoring` 逐张 pass 读取「牌自带的内禀修正」（per-card 附魔/buff）—— Card 携带 mods，迭代时套用
