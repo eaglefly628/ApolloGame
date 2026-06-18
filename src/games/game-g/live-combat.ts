@@ -16,22 +16,31 @@ export const CONTACT = 6;      // 前锋距 ≤ 此 = 接触（成前线）
 export const ENC_PERIOD = 6;   // 每多少拍一次对决（成波、可读、给决策窗）
 export const TRAVEL = 14;      // 突破后 march 到敌老家的基准拍
 const MORALE_PTS = 2, ROUT_PTS = 4; // 主将在→下属 +战力 / 主将亡→溃散 −战力（点数空间·bounded，doc 06）
+export const HOME_BLOOD = 3;        // 大本营 3 滴血（doc19 §六，替 home_hp 8；防无限拖、保节奏）
+// 续航（doc19 §五）：每张牌能赢几场对决就得回家歇 → 战线靠接力前压、神牌也不能包打 → 逼牌组轮转。
+//   数字牌 1 场 / 人头牌(A·J·Q·K) 2 场 / 小丑 3 场（初值，仿真台调）。
+export function cardStamina(rank: string): number {
+  if (rank === 'JOKER' || rank === '★' || rank === '王') return 3;
+  if (rank === 'A' || rank === 'K' || rank === 'Q' || rank === 'J') return 2;
+  return 1;
+}
 
-export interface LiveUnit { id: string; rank: string; suit: string; points: number; buff: number; general: boolean; dead: boolean }
-export interface LiveLane { a: LiveUnit[]; b: LiveUnit[]; gap: number; clash: number; aGenDead: boolean; bGenDead: boolean; pendA: number[]; pendB: number[] }
+export interface LiveUnit { id: string; rank: string; suit: string; points: number; buff: number; general: boolean; dead: boolean; stamina: number; staminaLeft: number }
+export interface LiveLane { a: LiveUnit[]; b: LiveUnit[]; gap: number; clash: number; aGenDead: boolean; bGenDead: boolean; pendA: number[]; pendB: number[]; spentA: number; spentB: number }
 export interface LiveBattle { tick: number; lanes: [LiveLane, LiveLane, LiveLane]; homeA: number; homeB: number; homeMax: number; winner: 'a' | 'b' | 'draw' | 'pending'; rng: RandomSeed }
 // 投放指令：第 tick 拍把 unit 投进 lane 的 side 侧（确定性输入流；预布阵 = tick 1 投放）。
 // 点数=公平骨架（cardPoints 由 rank 算，双方同副）；buff=经营（小丑/附魔/协同/路…聚合，缺省 0）。
 export interface DeployCmd { tick: number; side: 'a' | 'b'; lane: number; unit: { id: string; rank: string; suit: string; general: boolean; buff?: number } }
 
-const mkLane = (): LiveLane => ({ a: [], b: [], gap: LANE_LEN, clash: 0, aGenDead: false, bGenDead: false, pendA: [], pendB: [] });
-export function initLiveBattle(seed: number, homeMax: number): LiveBattle {
+const mkLane = (): LiveLane => ({ a: [], b: [], gap: LANE_LEN, clash: 0, aGenDead: false, bGenDead: false, pendA: [], pendB: [], spentA: 0, spentB: 0 });
+export function initLiveBattle(seed: number, homeMax: number = HOME_BLOOD): LiveBattle {
   return { tick: 0, lanes: [mkLane(), mkLane(), mkLane()], homeA: homeMax, homeB: homeMax, homeMax, winner: 'pending', rng: { type: 'RandomSeed', seed, sequence: 0 } };
 }
 
 function applyDeploy(b: LiveBattle, c: DeployCmd): void {
   const L = b.lanes[c.lane];
-  const u: LiveUnit = { id: c.unit.id, rank: c.unit.rank, suit: c.unit.suit, points: cardPoints(c.unit.rank), buff: c.unit.buff ?? 0, general: c.unit.general, dead: false };
+  const stam = cardStamina(c.unit.rank);
+  const u: LiveUnit = { id: c.unit.id, rank: c.unit.rank, suit: c.unit.suit, points: cardPoints(c.unit.rank), buff: c.unit.buff ?? 0, general: c.unit.general, dead: false, stamina: stam, staminaLeft: stam };
   (c.side === 'a' ? L.a : L.b).push(u); // 队尾入列（front=index0=先投者）
 }
 
@@ -59,7 +68,11 @@ function stepLane(b: LiveBattle, li: number): void {
     // 接触：每 ENC_PERIOD 拍一次对决（成波）。doc19 §三 pairwise：P_eff 聚合 → logistic 胜率 → 种子骰 → 单一胜负。
     if (b.tick % ENC_PERIOD !== 0) return;
     const aWins = clashResolve(effPower(lane.a[0], lane, 'a'), effPower(lane.b[0], lane, 'b'), b.rng);
-    killFront(lane, aWins ? 'b' : 'a'); // 赢家翻正·存活前进；输家翻反·阵亡（续航/弃堆 = 下一片 3D-STAM）
+    killFront(lane, aWins ? 'b' : 'a'); // 输家翻反·阵亡 → 本局弃堆
+    // 赢家翻正·前进，但续航 −1；续航尽 → 退场（沉牌底 + deploy 冷却，3D-1 再部署轮转）→ 战线接力、神牌不包打。
+    const wq = aWins ? lane.a : lane.b;
+    const wf = wq[0];
+    if (wf) { wf.staminaLeft -= 1; if (wf.staminaLeft <= 0) { wq.shift(); if (aWins) lane.spentA += 1; else lane.spentB += 1; } }
     lane.clash = 0;
   } else if (hasA && !hasB) { // B 路清空 → A 幸存者突破，march 到敌(B)老家
     lane.a.forEach((_, i) => lane.pendA.push(b.tick + TRAVEL + i * 2));
@@ -100,6 +113,6 @@ export function runLiveBattle(b: LiveBattle, deploys: DeployCmd[] = [], maxTicks
 
 // 确定性状态指纹（逐拍对比；不含渲染）。
 export function liveHash(b: LiveBattle): string {
-  const lane = (l: LiveLane): string => `${l.a.length},${l.b.length},${l.gap},${l.clash},${l.aGenDead ? 1 : 0}${l.bGenDead ? 1 : 0},${l.pendA.length},${l.pendB.length}`;
+  const lane = (l: LiveLane): string => `${l.a.length},${l.b.length},${l.gap},${l.clash},${l.aGenDead ? 1 : 0}${l.bGenDead ? 1 : 0},${l.pendA.length},${l.pendB.length},${l.spentA},${l.spentB}`;
   return `t${b.tick}|hA${b.homeA}|hB${b.homeB}|w${b.winner}|s${b.rng.sequence}|${b.lanes.map(lane).join('|')}`;
 }
