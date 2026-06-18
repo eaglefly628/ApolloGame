@@ -77,6 +77,11 @@ G2 战场结构（军衔/三路/将领牵动/best-of-3）核心已落、已接�
 
 ## 循环日志
 
+- **cycle#34 (owner 节奏纠偏 · 战场修正三连 + 3D-1 出牌控盘层)** ✅：owner 跑 WIRE-MARCH 后纠正「节奏跟想象完全不一样」，3 连反馈 → 落地（对齐 doc18 §10）：
+  - **战场修正三连**(`2f5303e`)：① **单列行进**——删 battle-screen 三行错开(row*78)，兵一张接一张沿路单列(真 slot SPACING 间距天然成列)。② **三条 smooth 曲线**——中路从直线改二次贝塞尔 `Q1500,640`(laneAt+SVG 同步)。③ **迷雾门线显形**——显形改「越过本侧捷径门线」(A pos01≥0.34 / B ≤0.66) 而非「接敌才翻」(doc18 §10.5)，雾段内面朝下单列爬、出门线即翻。
+  - **3D-1 出牌控盘层**(`05bb4be`)：owner AskUserQuestion 拍板=**实时流+暂停银行 / 基础布局打底+抽牌堆**。布局阶段每路 base 打底 3(共9)tick1 预铺、余牌 seeded 洗成抽牌堆、起手摸 5；battle-screen 底坞重做**手牌区**(点选抬起→点上/中/下派往该路、下拍从老家出发)；`BattleActions{selectCard/playLane/togglePause}` 接进 mountBattle；**实时流+读秒暂停银行**(空格冻结 sim·可从容部署·90s 耗尽强制续，doc18 §10.4)；**底流抽牌**(每 18 拍涌 1·上限 6·满则停抽逼出牌)；**敌滴投**(每 16 拍投 1 入原路·确定性)。buildBattleViewLive 加 control 态；新 battle-dock golden。
+  - tsc+vitest(**1419**)+build 全绿；headless 校验 base+出牌+滴投 跑到胜负、出的牌真入路。
+  - **⚠️ 留 design G（owner 北极星=Balatro「啪嗒啪嗒」心流，需跑起来调）**：① **战斗脉冲抽牌**(告急涌牌=心流爽点峰值，doc18 §10.3)②「斩/死亡」闪帧 juice ③ **混合手牌**(功能牌/小丑/星球入手、干预从备战相位移进手牌，doc18 §10.2)④ AI 看战况动态补援(现固定滴投·doc18 §4.4/3D-4)⑤ 短带迷雾视觉overlay + 侦查牌。**翻棒 design G 跑起来验节奏/心流、派 juice 切片。**
 - **cycle#33 (⛔⛔ WIRE-MARCH · live-combat 真正接进可玩游戏)** ✅：owner 跑游戏纠正「战斗还是一大堆刷过去」+ design G 查实根因（`live-combat.ts` 是孤儿、`showMatch` 仍跑老 `buildGameGArmyMatch` ~2.5s 瞬翻插值）。本轮把它**真接线**（`ff3980f`）：
   - **W1 接线**：`showMatch` 删 `Engine`/`buildGameGArmyMatch`，改 `initLiveBattle/stepLiveBattle` **rAF 逐拍驱动**；`battle-screen` 的 `BattleUnit` 改带 `LiveBattle` **真 slot 位置** `pos01`(=pos/LANE_LEN)+`revealed`(最前两张相邻才翻)，删 `marchFraction`/elapsed 插值。桥 `armyToDeploys`：`prepareArmies` 的 `ArmyCard`(favor 单标量=军衔+经营+干预)→`DeployCmd`，**公平骨架** rank→`cardPoints`(fair)、全部强度经 favor 折算进 `buff`(令 `P_eff=clamp(favorToP(favor))` 单调随 favor)，**零改既测的 `live-combat`**（3D-CLASH 深水区再用公平 points+经营 buff 正式替 favor）。`buildBattleViewLive` 纯读 live 真相。
   - **W2 真·慢**：`LIVE_STEP_MS=300ms` 一拍(MARCH_STEP=2 格) + ~30fps `frac` 平滑滑行。实测一局 ~190–215 拍≈**60s「几十秒」**、接敌 ~25 拍≈7.5s、单卡空路 traverse ~50 拍≈15s——肉眼「一格格慢慢走」、非 2.5s 刷过去。

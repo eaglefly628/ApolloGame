@@ -12,7 +12,8 @@
 >
 > | 字段 | 值 |
 > |---|---|
-> | **持棒方 BATON** | 🔵 **design G**（program G 完成 ⛔⛔ **WIRE-MARCH W1/W2/W3** → 待 design G **跑起来肉眼验**「兵沿三路一格格慢慢走、接敌才翻、几十秒一局」）|
+> | **owner 直派追加（2026-06-18 · 3 连反馈 → program G 已落地，`05bb4be`）** | owner 跑 WIRE-MARCH 后纠正节奏「跟想象完全不一样」，3 连反馈 → 已实现：**①战场修正三连**(`2f5303e`)：单列行进(删三行错开)、三路皆平滑曲线(中路改贝塞尔)、**迷雾门线显形**(出 t=0.34/0.66 门线才翻、非接敌才翻)。**②3D-1 出牌控盘层**(`05bb4be`)：布局阶段 base 打底 3/路+抽牌堆+起手摸 5；**手牌坞**点选派上/中/下、实时慢推；**实时流+读秒暂停银行**(空格冻结/90s)；底流每 18 拍涌牌；敌每 16 拍滴投原路。owner 节奏决议=实时流+暂停银行 / 基础布局打底+抽牌堆（AskUserQuestion 拍板）。owner 北极星=**Balatro「啪嗒啪嗒」心流**。|
+> | **持棒方 BATON** | 🔵 **design G**（program G 完成 WIRE-MARCH + 战场修正三连 + 3D-1 控盘层 → 待 design G **跑起来肉眼验**「出牌节奏/心流对不对」+ 派心流 juice 切片）|
 > | **状态** | program G 已把 live-combat **真正接进 showMatch**（替掉 buildGameGArmyMatch 瞬翻）、battle-screen 按真 slot 渲染、出 4 看帧 + 行为断言、全绿（`ff3980f`）。待 design G 验收 → 翻棒派深水区（clash/续航/3D-1/小丑/胜率/仿真台，**全接在 live-combat 上**）|
 > | **program G 本轮完成（WIRE-MARCH，`ff3980f`）** | **W1 接线**：`showMatch` 用 `initLiveBattle/stepLiveBattle` rAF 逐拍驱动、**删掉 `buildGameGArmyMatch`/Engine 战斗**；`BattleUnit` 改带真 slot `pos01`(=live pos/LANE_LEN)+`revealed`(最前两张相邻才翻)，删 `marchFraction`/elapsed 插值。桥 `armyToDeploys`：`prepareArmies` 的 ArmyCard(favor 单标量)→`DeployCmd`，公平骨架 rank→cardPoints、强度经 favor 折算进 buff(P_eff=clamp(favorToP(favor)) 单调)，**零改既测 live-combat**。**W2 真·慢**：`LIVE_STEP_MS=300` 一拍、~30fps frac 平滑；实测一局 ~190–215 拍≈**60s**，接敌 ~25 拍≈7.5s、单卡 traverse 50 拍≈15s。**W3 出帧**：`battle-screen.frame.test` 重写真 live sim 出帧(tick6 行军/tick25 接敌/破家/锦霞 4 golden) + 行为断言(最前兵 pos01 单调 0.12→0.30→0.50、行军 revealed=0、接敌 revealed=6)。结算改读 live 真相。tsc+vitest(1417)+build 全绿。|
 > | **⚠️ 诚实留给 design G（2 条·不阻塞）** | ① **镜像对局 A 偏胜 ~62/38**：`live-combat.marchSide` 同拍先 A 后 B、B 的 frontLimit 读到 A 刚更新的 pos → A 每次抢中线、累积小优势。实战因关卡/deck 偏置**恒不为镜像**(stage1 a+3 vs b−10…)已被掩、Boss 局 b 也会赢——**留 3D-SIM 当平衡回归扫出来再校**，本轮不动既测的 sim。② **阵亡只即时消失**、暂无「斩」死亡闪帧（driver 层 ghost 待做、纯表现、不影响 sim/胜负）。|
