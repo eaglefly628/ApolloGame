@@ -12,12 +12,12 @@
 >
 > | 字段 | 值 |
 > |---|---|
-> | **持棒方 BATON** | 🔵 **design G**（program G 交回：doc18 **3D-2 live 解析器**已落，待 design G 验收模型 + 派下一切片）|
-> | **状态** | program G 已完成 doc18 3D-2、待 design G 验收 |
-> | **上一手（program G）完成** | **doc18 §九 3D-2「live 遭遇解析器」** `live-combat.ts`（owner「任务来了，干活吧」→ 抢先做地基）：MARCH-1 build 时批量 `resolveArmy` → **逐拍 live**（兵 march → 前锋接触 → 每 `ENC_PERIOD` 拍对决 `decideFaceUp` 读**当下** favor → 清空敌路的幸存者突破、march 到敌老家逐 chip `home_hp` → 先破者胜）。**outcome-first 三本质保留**：单一 seeded PRNG 按 lane 序消费、逐拍 `liveHash` 稳；favor 遭遇拍读 → 中途投放/干预只影响未遭遇牌（前向单遍、不破 hash）。纯 game-side 解释器、零引擎。**4 测**（确定性逐拍 hash / 胜负方向 / live favor 杠杆 / 终止性）；tsc + vitest(1387) + build 全绿。另：battle-screen 已含相机/小地图/捷径门（(b) 那项部分已做）；无头 golden 看帧抓出并修了 `buildBattleView` 实体id bug（`32d2c25`）|
-> | **轮到谁 · 需做什么** | **design G**：① **验收 live 模型**——我取的遭遇模型 = "march → 接触 → **前线逐拍对决**（双 roll，双活到 `CLASH_CAP` 低 favor 让位）→ 突破 chip home"；请核是否合 doc18 §二「**成波遭遇 / 胜方余部推进**」愿景（要否改成"波次 pass-through"，或调 ENC_PERIOD/CLASH 数值）。② **§10.8 sub-fork（流派 被动 vs 打出）owner 还没拍** → 卡小丑重构方向，请催 owner 拍（design 倾向 C·流派印记）。③ 验收 OK → 派下一切片（**3D-1 投放/手牌/抽牌层** = 大头，按 §十 v3）|
-> | **唤醒/检查条件** | design G 验收回棒；或 owner 新反馈 |
-> | **最后更新** | 2026-06-17 · by program G · doc18 3D-2 live 解析器落地后 |
+> | **持棒方 BATON** | 🟢 **program G**（design G 验收 3D-2 PASS + 出 doc19 统一模型 + owner 拍 C → 派下一大批）|
+> | **状态** | design G 已验收 + 翻棒，program G 接 clash/续航/3D-1/小丑/胜率/仿真台 |
+> | **上一手（design G）完成** | ① **验收 3D-2 live 解析器 = ✅ PASS**（骨架对：march→接触→逐拍对决→突破 chip home、单一 seeded PRNG 逐拍 hash 稳、4 测绿）。② 出 **doc 19 统一战斗模型**（18 田忌赛马 × F-handoff 概率对决合流：clash-resolve logistic 数学 / 公平骨架 / 续航经济 / 3 血大本营 / 仿真台 / 胜率可读）。③ **owner 拍板**：§10.8 = **C·流派印记** + **公平骨架（退役「强化全军 favor 泵点数」，养成全改小丑/附魔/buff）** + 乙抽牌 + iii 小丑。|
+> | **轮到谁 · 需做什么** | **program G** 按 **doc 19 + doc18 §九**（建议序）：<br>**① 验收答复（你问的遭遇模型）**：✅ **保留「前线逐拍对决（最前两张）」**、不必改 pass-through；但**对决核换 doc19 §三 pairwise logistic**（取代裸 decideFaceUp）：`P_eff=clamp(点数+Σbuff,bounded)` / `胜率=clamp(logistic((Pa−Pb)/k),3%,97%)` / 种子骰。「成波」= `ENC_PERIOD` cadence 即可。<br>**② 3D-CLASH**：clash-resolve 薄核（读扁平 buff→logistic→种子骰→正负），借 **REQ-E-021 Card.mods**，守 Lead 窄边界（**不建统一 Buff 引擎**）；种子 RNG 若 Lead 要立共享原语→提 REQ-G。<br>**③ 3D-STAM**：续航+冷却+牌组轮转（赢−续航/尽则沉底冷却/输进弃堆；数字1/人头2/小丑3）；`home_hp` 8→**3 血+回合上限+可平**。<br>**④ 3D-1（大头）**：混合手牌（点数+小丑/功能）+ 基础布局每路 3 + **战潮抽牌（底流+战斗脉冲，§10.3 乙）** + 读秒暂停银行 + 短带迷雾+侦查牌。<br>**⑤ 3D-JOKER**：小丑重构 = iii 构筑定库+局内打出 + **§10.8 C 流派印记**；退役泵 favor→公平骨架。<br>**⑥ 3D-READ**：胜率可读（对决前 76:24 hover + buff 明细）+ 关键对决 1v1 特写。<br>**⑦ 3D-SIM**：仿真台（离线蒙特卡洛扫全配置→胜率矩阵+退化告警·当平衡回归测）——owner 强调、平衡命脉。<br>**纪律**：game-side 复用为主、零/极少引擎、真缺口提 REQ-G；每片确定性 hash 测；全绿才推。翻棒回 design G 写产出+测数。|
+> | **唤醒/检查条件** | 下个 `src/games/game-g/` commit；或 owner 新反馈 |
+> | **最后更新** | 2026-06-17 · by design G · 验收 3D-2 + doc19 统一模型 + owner 拍 C 后 |
 
 > 翻棒写法：program G 干完 → 把「持棒方」改 🔵 **design G**、状态「program G 已完成待 design G 验收」、填完成什么；design G 验收完 → 改回 🟢 **program G**。
 
