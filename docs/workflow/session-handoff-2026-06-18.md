@@ -66,6 +66,13 @@
 3. **边界**:① **纯表现**,只读 world、不写 sim、不进 hash(同所有渲染器);② game-g 的**牌面纹理 + 抛飞/相撞编排留 game-g**(它的私货 juice),只抽**通用几何/材质/翻面**;③ node 无 GL → 单测走 `three-projection` 纯函数 + (可选)给 3D 物件加一条 `frame-svg` 的等距/正交投影,无头也能"看帧"。
 4. **rule-of-three**:目前 game-g 一个 3D 消费者;但「per-object 3D 物件」是桌游通用(3D 牌/骰子/棋子),且**消费共享 Renderable/新 Object3D 数据**→ 任意游戏可用,不绑 game-g。先做**最小**(box/plane + 双面材质 + 翻面),不要一上来做骨骼/动画/导入 glTF(那是 action 方向,触发 §3.2 预警)。
 
+**✅ 落地（2026-06-18 续，mainbranch `f78ee97`）—— 最小核心已交付**：
+- 新增 render-only **`Mesh3D`** 组件（`protocol/components/render.ts`：`shape:box|plane` + 尺寸 + `depth?` + `frontTint/backTint/edgeTint` + `flipAxis`；`component-map` 闭集登记）。**这就是「3D JSON」**——平铺字段，最弱 LLM 可产出。
+- 通用 **`ThreeRenderer`** 渲 `Mesh3D` → 真 `BoxGeometry`(6 面 正/反/边)/双面 `PlaneGeometry`，`flipAxis`+`Transform.rotation` 驱动翻面，**与 2D `Renderable` 同场混排**（per-object opt-in；刻意不进 barrel，three 仍 code-split）。
+- 纯投影 `three-projection`：`mesh3dDepth`/`flipEuler`/`faceDown` 纯函数（node 可测）；**`frame-svg` 翻面感知正交投影**（无头看帧 golden 覆盖）。`renderable.mesh3d` 走共享 `collectRenderables`（所有后端单一收集点）。
+- **边界守住**：纯表现零 sim/hash；只抽通用几何/材质/翻面；**未做** 贴图 key 材质 / glTF / 骨骼 / 动画（YAGNI + action 方向）；**game-g 的 `Card3D`(牌面纹理+抛飞相撞编排)原样留 game-g**。
+- **rule-of-three 闭环**：能力已就绪、暂无上线游戏消费 → 给 game-g 发 `LEAD→PG`（可选迁移 `Card3D`→`Mesh3D`+游戏侧编排）。全套绿 tsc+vitest(1412)+build。
+
 ---
 
 ## 5. 现状（SHA / 分支 / 池子）
@@ -74,7 +81,7 @@
 - `requests.md` = F/G-only + REQ-E-021(done)/REQ-F-065(done) + REQ-F-057/062/LEAD→PF(open) + REQ-023(wontfix)。
 
 ## 6. 残留 TODO（排序）
-1. 🟢⭐ **3D 物件即数据**（§4，新 session 主攻）：泛化 Card3D→`Object3D` render primitive + 引擎 ThreeRenderer 混排 + 「3D JSON」描述 + 纯表现/无头可测。先最小。
+1. ✅⭐ **3D 物件即数据**（§4，**最小核心已落 mainbranch `f78ee97`**）：`Mesh3D` 组件 + 通用 ThreeRenderer 混排 + 翻面感知 frame-svg + 纯投影 node 可测。**剩余（按需，非紧急）**：① 贴图 key 材质（有消费者再加）；② `Mesh3D` golden 帧（回归锚）；③ game-g `Card3D`→`Mesh3D` 迁移（game-g lane，已发 LEAD→PG）。
 2. 🟡 **方向漂移预警**（§3.2）：常驻执行，任何 action/非桌面扩展先 `AskUserQuestion`。
 3. 🟡 **festive-planck `@engine/math` 并不并**：用户定；桌面垂直下定点数非紧急，倾向先不并（RNG 下沉可单摘）。
 4. 🟡 **因果/source 线补全**（`ResourceModify.source`）：等 REQ-F-063（岛主/贡献）真拉动再动。
