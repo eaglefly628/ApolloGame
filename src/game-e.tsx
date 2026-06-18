@@ -534,18 +534,18 @@ function GameE() {
         ))}
       </div>
 
-      {/* ── 过关庆祝：萌宠举牌（爱萌 出品位）—— 屏幕正中弹出，更醒目 ── */}
+      {/* ── 过关庆祝：萌宠举牌（爱萌 出品位）—— 左下角弹出 ── */}
       {mascot && (
-        <div style={{ position: 'fixed', inset: 0, zIndex: 60, pointerEvents: 'none', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-          <div style={{ animation: 'ge-mascotIn .6s cubic-bezier(.2,1.4,.5,1) both', display: 'flex', flexDirection: 'column', alignItems: 'center', filter: 'drop-shadow(0 12px 28px #000a)' }}>
+        <div style={{ position: 'fixed', left: 18, bottom: 14, zIndex: 60, pointerEvents: 'none', animation: 'ge-mascotIn .6s cubic-bezier(.2,1.4,.5,1) both', filter: 'drop-shadow(0 10px 22px #000a)' }}>
+          <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
             {/* 牌子 */}
-            <div style={{ transformOrigin: 'bottom center', animation: 'ge-signWave 1.1s ease-in-out infinite', marginBottom: -8 }}>
-              <div style={{ background: 'linear-gradient(160deg,#fff7e6,#ffe0a3)', border: '4px solid #b9772e', borderRadius: 14, padding: '10px 28px', boxShadow: '0 6px 14px #0007', fontWeight: 900, fontSize: 38, color: '#e23b4e', letterSpacing: 4, fontFamily: '"PingFang SC","Microsoft YaHei",system-ui' }}>爱萌</div>
-              <div style={{ width: 6, height: 22, background: '#8a5a22', margin: '0 auto' }} />
+            <div style={{ transformOrigin: 'bottom center', animation: 'ge-signWave 1.1s ease-in-out infinite', marginBottom: -6 }}>
+              <div style={{ background: 'linear-gradient(160deg,#fff7e6,#ffe0a3)', border: '3px solid #b9772e', borderRadius: 10, padding: '6px 18px', boxShadow: '0 4px 10px #0006', fontWeight: 900, fontSize: 24, color: '#e23b4e', letterSpacing: 3, fontFamily: '"PingFang SC","Microsoft YaHei",system-ui' }}>爱萌</div>
+              <div style={{ width: 4, height: 15, background: '#8a5a22', margin: '0 auto' }} />
             </div>
             {/* 萌宠 */}
-            <div style={{ fontSize: 110, animation: 'ge-bob .8s ease-in-out infinite' }}>🐱</div>
-            <div style={{ fontSize: 18, color: '#ffd166', fontWeight: 800, marginTop: 4, textShadow: '0 2px 6px #000', letterSpacing: 2 }}>✨ 过关！✨</div>
+            <div style={{ fontSize: 70, animation: 'ge-bob .8s ease-in-out infinite' }}>🐱</div>
+            <div style={{ fontSize: 12, color: '#ffd166', fontWeight: 800, marginTop: 2, textShadow: '0 1px 4px #000', letterSpacing: 1 }}>✨ 过关！✨</div>
           </div>
         </div>
       )}
