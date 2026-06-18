@@ -71,10 +71,10 @@ const CSS = `
 
 // 贝塞尔三路几何（design 坐标系 3000×1500）。
 const qb = (p0: number[], p1: number[], p2: number[], t: number): number[] => [Math.round((1 - t) * (1 - t) * p0[0] + 2 * (1 - t) * t * p1[0] + t * t * p2[0]), Math.round((1 - t) * (1 - t) * p0[1] + 2 * (1 - t) * t * p1[1] + t * t * p2[1])];
-const lerpP = (a: number[], b: number[], t: number): number[] => [Math.round(a[0] + (b[0] - a[0]) * t), Math.round(a[1] + (b[1] - a[1]) * t)];
 const A_POS = [300, 750], B_POS = [2700, 750];
-const TP = [[380, 650], [1500, 150], [2620, 650]], BP = [[380, 850], [1500, 1350], [2620, 850]], MP = [[460, 750], [2540, 750]];
-const laneAt = (lane: number, t: number): number[] => (lane === 0 ? qb(TP[0], TP[1], TP[2], t) : lane === 2 ? qb(BP[0], BP[1], BP[2], t) : lerpP(MP[0], MP[1], t));
+// 三路皆走平滑二次贝塞尔曲线（owner：三条 smooth 曲线）：上拱/下拱/中路轻拱——不再有直线段。
+const TP = [[380, 650], [1500, 150], [2620, 650]], BP = [[380, 850], [1500, 1350], [2620, 850]], MP = [[460, 750], [1500, 640], [2540, 750]];
+const laneAt = (lane: number, t: number): number[] => (lane === 0 ? qb(TP[0], TP[1], TP[2], t) : lane === 2 ? qb(BP[0], BP[1], BP[2], t) : qb(MP[0], MP[1], MP[2], t));
 
 interface CamState { theme: string; lever: string; lane: string; zoom: number; camX: number; camY: number; gates: Record<string, boolean> }
 
@@ -119,9 +119,7 @@ function buildHTML(view: BattleView, s: CamState): string {
   const unitsHTML = forr(view.units, (u) => {
     const key = u.side + u.lane;
     const n = laneCounters[key] = (laneCounters[key] ?? 0) + 1;
-    const base0 = laneAt(u.lane, clamp01(u.pos01)); // 真 slot 位置 → 贝塞尔三路
-    const row = (n % 3) - 1; // -1/0/1 三行错开
-    const p = [base0[0], base0[1] + row * 78];
+    const p = laneAt(u.lane, clamp01(u.pos01)); // 真 slot 位置 → 贝塞尔三路（一张接一张单列行进，不再三行错开）
     const cc = u.side === 'a' ? '#ff5d2e' : '#3a86d4';
     const rot = (((u.lane * 7 + n * 13) % 12) - 6).toFixed(1);
     const base: Record<string, string> = Object.assign({ position: 'absolute', width: '74px', height: '102px', '--rot': rot + 'deg', transform: 'translate(-50%,-50%) rotate(' + rot + 'deg)', animation: 'gg-march ' + (2.6 + (n % 4) * 0.4).toFixed(1) + 's ease-in-out infinite', borderRadius: '11px', display: 'flex', alignItems: 'center', justifyContent: 'center' }, at(p) as Record<string, string>);
@@ -208,7 +206,7 @@ function buildHTML(view: BattleView, s: CamState): string {
       <div style="position:absolute; top:104px; left:318px; right:318px; bottom:172px; display:flex; flex-direction:column; align-items:center; gap:12px;">
         <div data-act="vpdown" style="${st(viewport)}">
           <div style="${st(world)}">
-            <svg viewBox="0 0 3000 1500" preserveAspectRatio="none" style="position:absolute; inset:0; width:100%; height:100%;"><polygon points="1380,-40 1620,-40 1620,1540 1380,1540" fill="rgba(86,150,205,.10)"></polygon><g fill="none" stroke="rgba(238,222,180,.16)" stroke-width="140" stroke-linecap="round" stroke-linejoin="round"><path d="M460,750 L2540,750"></path><path d="M380,650 Q1500,150 2620,650"></path><path d="M380,850 Q1500,1350 2620,850"></path></g><g fill="none" stroke="rgba(238,222,180,.34)" stroke-width="7" stroke-dasharray="40 28" style="animation:gg-dash 1.6s linear infinite;"><path d="M460,750 L2540,750"></path><path d="M380,650 Q1500,150 2620,650"></path><path d="M380,850 Q1500,1350 2620,850"></path></g></svg>
+            <svg viewBox="0 0 3000 1500" preserveAspectRatio="none" style="position:absolute; inset:0; width:100%; height:100%;"><polygon points="1380,-40 1620,-40 1620,1540 1380,1540" fill="rgba(86,150,205,.10)"></polygon><g fill="none" stroke="rgba(238,222,180,.16)" stroke-width="140" stroke-linecap="round" stroke-linejoin="round"><path d="M460,750 Q1500,640 2540,750"></path><path d="M380,650 Q1500,150 2620,650"></path><path d="M380,850 Q1500,1350 2620,850"></path></g><g fill="none" stroke="rgba(238,222,180,.34)" stroke-width="7" stroke-dasharray="40 28" style="animation:gg-dash 1.6s linear infinite;"><path d="M460,750 Q1500,640 2540,750"></path><path d="M380,650 Q1500,150 2620,650"></path><path d="M380,850 Q1500,1350 2620,850"></path></g></svg>
             ${mkNexus(A_POS, '#ff5d2e', 'rgba(255,93,46,.6)', view.homeA, view.homeAMax, '我方老家', '♠')}
             ${mkNexus(B_POS, '#3a86d4', 'rgba(58,134,212,.55)', view.homeB, view.homeBMax, '敌方老家', SUITG[view.oppSuit])}
             ${towersHTML}${unitsHTML}${gatesHTML}

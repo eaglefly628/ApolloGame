@@ -20,6 +20,10 @@ const LOBBY_ROOT_CSS = 'position:absolute;inset:0;overflow:auto';
 const LIVE_STEP_MS = 300;   // 一拍真实时长（慢=决策窗；3D-1 读秒暂停接这里）
 const RENDER_MS = 33;       // 重渲间隔（~30fps 平滑）
 const SEC_PER_TICK = LIVE_STEP_MS / 1000;
+// 起手迷雾 + 显形（doc18 §10.5 / owner：不是接敌才翻、是「出了门的线」就翻）：各自老家一段内面朝下行军，
+// 越过本侧捷径门线（t=0.34 / 0.66，battle-screen gateDefs 同值）即显形翻开。中段 (0.34,0.66) 双方皆可见。
+const FOG_A_EDGE = 0.34;    // A 兵越过上门线 → 显形（pos01 ≥）
+const FOG_B_EDGE = 0.66;    // B 兵越过下门线 → 显形（pos01 ≤）
 
 interface Save {
   materials: number;
@@ -126,9 +130,9 @@ export function buildBattleViewLive(live: LiveBattle, save: Save, oppName: strin
   const units: BattleUnit[] = [];
   for (const li of [0, 1, 2]) {
     const L = live.lanes[li];
-    const engaged = L.a.length > 0 && L.b.length > 0 && L.a[0].pos + 1 >= L.b[0].pos; // 最前两张相邻 → 接敌翻开（同 stepLane 判据）
-    L.a.forEach((u, i) => units.push({ id: u.id, lane: li, side: 'a', pos01: u.pos / LANE_LEN, revealed: i === 0 && engaged, faceUp: true, rank: u.rank, suit: sv(u.suit), general: u.general }));
-    L.b.forEach((u, i) => units.push({ id: u.id, lane: li, side: 'b', pos01: u.pos / LANE_LEN, revealed: i === 0 && engaged, faceUp: true, rank: u.rank, suit: sv(u.suit), general: u.general }));
+    // 显形 = 越过本侧迷雾门线（非接敌才翻）：A 兵 pos01≥0.34 / B 兵 pos01≤0.66 → 翻开（doc18 §10.5 短带迷雾）。
+    L.a.forEach((u) => { const pos01 = u.pos / LANE_LEN; units.push({ id: u.id, lane: li, side: 'a', pos01, revealed: pos01 >= FOG_A_EDGE, faceUp: true, rank: u.rank, suit: sv(u.suit), general: u.general }); });
+    L.b.forEach((u) => { const pos01 = u.pos / LANE_LEN; units.push({ id: u.id, lane: li, side: 'b', pos01, revealed: pos01 <= FOG_B_EDGE, faceUp: true, rank: u.rank, suit: sv(u.suit), general: u.general }); });
   }
   const lanes: BattleLane[] = [0, 1, 2].map((li) => {
     const L = live.lanes[li];
