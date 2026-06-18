@@ -1,5 +1,6 @@
 import type { IWorld } from '@engine/core/types.js';
 import { collectRenderables, getCameraView, chooseRenderMode } from './renderable.js';
+import { faceDown } from './three-projection.js';
 
 // ═══════════════════════════════════════════════════════════════
 //  frame-svg —— 把世界投影成一帧 SVG 的「无头截图」（复用纯函数 collectRenderables，无 DOM/GL）。
@@ -37,10 +38,11 @@ export function frameSvg(world: IWorld, opts: FrameSvgOptions = {}): string {
 
   let body = '';
   for (const r of collectRenderables(world)) {
-    // 3D 物件（Mesh3D）：无头看帧用正交正面投影——画其正面矩形（位置/尺寸/正面色），golden 可 diff。
+    // 3D 物件（Mesh3D）：无头看帧用正交投影——画朝镜头那面（翻面感知：rotation 过临界则反面色），golden 可 diff。
     if (r.mesh3d) {
       const m = r.mesh3d;
-      body += `<rect x="${n(r.x - m.width / 2)}" y="${n(r.y - m.height / 2)}" width="${n(m.width)}" height="${n(m.height)}" rx="2" fill="${hex(m.frontTint)}" stroke="${hex(m.edgeTint ?? 0x1f2937)}"/>`;
+      const face = faceDown(r.rotation) ? m.backTint ?? m.frontTint : m.frontTint;
+      body += `<rect x="${n(r.x - m.width / 2)}" y="${n(r.y - m.height / 2)}" width="${n(m.width)}" height="${n(m.height)}" rx="2" fill="${hex(face)}" stroke="${hex(m.edgeTint ?? 0x1f2937)}"/>`;
       continue;
     }
     const fill = r.color ? hex(r.color.tint) : '#e2e8f0';

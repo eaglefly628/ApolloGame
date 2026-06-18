@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { renderablePose, poseBounds, fitPerspective, mesh3dDepth, flipEuler, type Pose3D } from './three-projection.js';
+import { renderablePose, poseBounds, fitPerspective, mesh3dDepth, flipEuler, faceDown, type Pose3D } from './three-projection.js';
 import type { Renderable } from './renderable.js';
 
 const R = (o: Partial<Renderable>): Renderable => ({
@@ -64,5 +64,13 @@ describe('three-projection — Mesh3D（3D 物件即数据）几何/翻面纯函
     expect(flipEuler(Math.PI)).toEqual({ x: Math.PI, y: 0 });
     expect(flipEuler(1.2, 'x')).toEqual({ x: 1.2, y: 0 });
     expect(flipEuler(1.2, 'y')).toEqual({ x: 0, y: 1.2 });
+  });
+
+  it('faceDown：0/2π=正面朝前(false)；π=反面朝前(true)；负角归一', () => {
+    expect(faceDown(0)).toBe(false);
+    expect(faceDown(Math.PI)).toBe(true);
+    expect(faceDown(Math.PI * 2)).toBe(false);
+    expect(faceDown(-Math.PI)).toBe(true); // 归一到 π
+    expect(faceDown(0.3)).toBe(false);
   });
 });

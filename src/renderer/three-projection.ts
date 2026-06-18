@@ -67,3 +67,11 @@ export function mesh3dDepth(shape: 'box' | 'plane', width: number, height: numbe
 export function flipEuler(rotation: number, axis: 'x' | 'y' = 'x'): { x: number; y: number } {
   return axis === 'y' ? { x: 0, y: rotation } : { x: rotation, y: 0 };
 }
+
+// 翻面后哪面朝镜头：rotation 归一到 [0,2π)，落在 (π/2, 3π/2) → 反面朝前（看到 back）。WebGL 后端靠真几何自动
+// 决定可见面，无需此函数；正交看帧（frame-svg 无真几何）则据此选正/反面色，保真翻面。
+export function faceDown(rotation: number): boolean {
+  const tau = Math.PI * 2;
+  const a = ((rotation % tau) + tau) % tau;
+  return a > Math.PI / 2 && a < (3 * Math.PI) / 2;
+}
