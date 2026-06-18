@@ -36,6 +36,7 @@ const ENGINE_TO_HR: Record<string, HandType> = {
 // ════════════════════════════════════════════════════════════════════════
 
 const CARDS_URL = '/assets/FreeArtLib/cardgame/cards.png';
+const COIN_URL = '/assets/FreeArtLib/item/gold/gold_pile.png'; // 过关金币迸射（真素材，缺图回退 🪙）
 const JOKER_URL = (name: string) => `/assets/FreeArtLib/cardgame/card/${name.replace(/ /g, '_')}.webp`;
 const SCALE = 0.82; // 手牌显示缩放（8 张一行排得下）
 const CW = Math.round(CELL_W * SCALE);
@@ -111,6 +112,7 @@ function GameE() {
   const [playedTypes, setPlayedTypes] = useState<HandType[]>([]); // 本道已打出的牌型（巨眼诅咒用）
   const [deckOpen, setDeckOpen] = useState(false); // 牌组/牌型面板开关
   const [mascot, setMascot] = useState(false); // 过关时蹦出的萌宠（爱萌 出品位）
+  const [slam, setSlam] = useState(false); // 出牌结算落定时的砸屏震动
   const [helpOpen, setHelpOpen] = useState(false); // 帮助页
   const [tour, setTour] = useState(-1); // 新手引导步骤（-1=未激活）
   const [tourRect, setTourRect] = useState<DOMRect | null>(null);
@@ -358,6 +360,7 @@ function GameE() {
     const next = drawTo(kept);
     const after = () => {
       setResult({ type, chips: finalChips, mult: finalMult, score: finalScore });
+      setSlam(true); window.setTimeout(() => setSlam(false), 440); // 结算砸屏
       setPlayedTypes((p) => (p.includes(type) ? p : [...p, type]));
       if (boss?.effect === 'pay_per_play') { set(R_MONEY, get(R_MONEY) - chosen.length); pushLog(`🦷 尖牙：出 ${chosen.length} 张 -💰$${chosen.length}`); } // 尖牙：按张数扣 $
       pushLog(`▶ ${HAND_RANKINGS[type]?.name ?? type}　${finalChips.toLocaleString()} × ${finalMult} = ${finalScore.toLocaleString()}`);
@@ -519,6 +522,9 @@ function GameE() {
         @keyframes ge-amb1 { 0%,100% { transform: translate(0,0) scale(1); opacity:.5 } 50% { transform: translate(40px,-30px) scale(1.25); opacity:.85 } }
         @keyframes ge-amb2 { 0%,100% { transform: translate(0,0) scale(1.1); opacity:.4 } 50% { transform: translate(-50px,28px) scale(.85); opacity:.7 } }
         @keyframes ge-spark { 0% { transform: translateY(0); opacity:0 } 20% { opacity:.7 } 100% { transform: translateY(-120px); opacity:0 } }
+        @keyframes ge-shake { 0%,100% { transform: translate(0,0) } 20% { transform: translate(-5px,3px) } 40% { transform: translate(5px,-3px) } 60% { transform: translate(-4px,-2px) } 80% { transform: translate(4px,2px) } }
+        @keyframes ge-slam { 0% { transform: scale(2.2); opacity:0 } 55% { transform: scale(.86) } 75% { transform: scale(1.08) } 100% { transform: scale(1); opacity:1 } }
+        @keyframes ge-coinfly { 0% { transform: translateY(0) scale(.6); opacity:0 } 25% { opacity:1 } 100% { transform: translateY(-42px) scale(1.1); opacity:0 } }
       `}</style>
 
       {/* 动态背景氛围（垫底，纯表现）：两团缓慢漂移柔光 + 上浮微粒 */}
@@ -542,15 +548,19 @@ function GameE() {
       {/* ── 过关庆祝：萌宠举牌（爱萌 出品位）—— 左下角弹出 ── */}
       {mascot && (
         <div style={{ position: 'fixed', left: 18, bottom: 14, zIndex: 60, pointerEvents: 'none', animation: 'ge-mascotIn .6s cubic-bezier(.2,1.4,.5,1) both', filter: 'drop-shadow(0 10px 22px #000a)' }}>
-          <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+          <div style={{ position: 'relative', display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+            {/* 金币迸射（真素材 gold_pile，缺图回退 🪙）*/}
+            {Array.from({ length: 6 }).map((_, i) => (
+              <img key={i} src={COIN_URL} alt="" style={{ position: 'absolute', bottom: 18, left: `${6 + i * 16}px`, width: 26, height: 26, imageRendering: 'pixelated', animation: `ge-coinfly ${0.9 + (i % 3) * 0.25}s ease-out ${0.15 + i * 0.12}s infinite`, zIndex: 2 }} onError={(e) => { const s = e.currentTarget; s.outerHTML = '<span style="position:absolute;bottom:18px;left:' + (6 + i * 16) + 'px;font-size:22px;animation:ge-coinfly ' + (0.9 + (i % 3) * 0.25) + 's ease-out ' + (0.15 + i * 0.12) + 's infinite">🪙</span>'; }} />
+            ))}
             {/* 牌子 */}
-            <div style={{ transformOrigin: 'bottom center', animation: 'ge-signWave 1.1s ease-in-out infinite', marginBottom: -6 }}>
+            <div style={{ transformOrigin: 'bottom center', animation: 'ge-signWave 1.1s ease-in-out infinite', marginBottom: -6, zIndex: 3 }}>
               <div style={{ background: 'linear-gradient(160deg,#fff7e6,#ffe0a3)', border: '3px solid #b9772e', borderRadius: 10, padding: '6px 18px', boxShadow: '0 4px 10px #0006', fontWeight: 900, fontSize: 24, color: '#e23b4e', letterSpacing: 3, fontFamily: '"PingFang SC","Microsoft YaHei",system-ui' }}>爱萌</div>
               <div style={{ width: 4, height: 15, background: '#8a5a22', margin: '0 auto' }} />
             </div>
             {/* 萌宠 */}
-            <div style={{ fontSize: 70, animation: 'ge-bob .8s ease-in-out infinite' }}>🐱</div>
-            <div style={{ fontSize: 12, color: '#ffd166', fontWeight: 800, marginTop: 2, textShadow: '0 1px 4px #000', letterSpacing: 1 }}>✨ 过关！✨</div>
+            <div style={{ fontSize: 70, animation: 'ge-bob .8s ease-in-out infinite', zIndex: 3 }}>🐱</div>
+            <div style={{ fontSize: 12, color: '#ffd166', fontWeight: 800, marginTop: 2, textShadow: '0 1px 4px #000', letterSpacing: 1, zIndex: 3 }}>✨ 过关！✨</div>
           </div>
         </div>
       )}
@@ -793,7 +803,7 @@ function GameE() {
       </aside>
 
       {/* ── 右牌桌 ── */}
-      <main style={{ flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 14 }}>
+      <main style={{ flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 14, animation: slam ? 'ge-shake .4s ease' : undefined }}>
 
       {/* 小丑排（owned；开局空）*/}
       <div style={{ display: 'flex', gap: 6, alignItems: 'center', minHeight: 74, flexWrap: 'wrap', justifyContent: 'center' }}>
@@ -824,13 +834,13 @@ function GameE() {
         })}
       </div>
 
-      {/* 结算读出 */}
+      {/* 结算读出（最终分砸下）*/}
       {result && !inShop && (
-        <div style={{ background: '#0b1c22', border: '1px solid #2b5562', borderRadius: 10, padding: '6px 20px', fontSize: 14 }}>
+        <div style={{ background: '#0b1c22', border: '1px solid #2b5562', borderRadius: 10, padding: '6px 20px', fontSize: 14, display: 'flex', alignItems: 'center', gap: 6 }}>
           <span style={{ color: '#ffd166', fontWeight: 700 }}>{HAND_RANKINGS[result.type]?.name ?? result.type}</span>{'  '}
           <span style={{ color: '#4cc9f0', fontWeight: 700 }}>{result.chips}</span> ×{' '}
           <span style={{ color: '#f72585', fontWeight: 700 }}>{result.mult}</span> ={' '}
-          <span style={{ color: '#90be6d', fontWeight: 800 }}>{result.score.toLocaleString()}</span>
+          <span key={result.score} style={{ color: '#90be6d', fontWeight: 800, fontSize: 22, display: 'inline-block', animation: 'ge-slam .5s cubic-bezier(.2,1.5,.4,1) both', textShadow: '0 0 10px #90be6d88' }}>{result.score.toLocaleString()}</span>
         </div>
       )}
 
