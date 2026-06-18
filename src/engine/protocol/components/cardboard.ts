@@ -49,7 +49,8 @@ export interface Card {
   // (PerCardRule) 之前**按序套用**到对应 Resource。通用「实体携带修正、被处理时套用」原语（卡牌符文/牌面状态
   // 跨卡牌游戏复用），非 Buff 元系统：语境=计分循环本身（隐式）。版式/增强全是数据：
   //   foil=[{op:'add',target:'chips',value:50}]、holo=[{op:'add',target:'mult',value:10}]、poly=[{op:'mul',target:'mult',value:1.5}]。
-  mods?: Array<{ op: 'add' | 'mul'; target: string; value: number }>;
+  // held?(REQ-E-023③)：true=该 mod 只在 held-card-score pass（留手牌）套用（如 Steel 留手 ×1.5）；缺省=出牌 pass。两 pass 互不重复。
+  mods?: Array<{ op: 'add' | 'mul'; target: string; value: number; held?: boolean }>;
   // ── REQ-E-021 牌的内禀重触发（红蜡封）── 并进逐张计分的 repeats（该牌连同其上 mods/小丑一起重复结算）。
   retrigger?: number;
 }
@@ -63,6 +64,14 @@ export interface PlayedHand extends Component {
   // 可选归属玩家 id（多人/coop）：card-play 按它把某玩家的「出牌」输入路由到对应牌桌的 PlayedHand。
   // 单人留空（装配层直接填 cards）。
   owner?: string;
+}
+
+// ── held-card-score 留手牌（REQ-E-023③）── 本次**留在手里没出**的牌（有序）。held-card-score pass 遍历它，
+// 套用 held 标记的 Card.mods（如 Steel 留手 ×1.5）+ held 标记的 PerCardRule（如 Baron 留手 K ×1.5）。出牌 pass
+// 只管出的牌、读不到留手牌，故需此独立入口。与 PlayedHand 同实体（牌桌）；装配层每次出牌结算时填"未出的手牌"。空=无留手结算。
+export interface HeldHand extends Component {
+  readonly type: 'HeldHand';
+  cards: Card[];
 }
 
 // ── poker-hand 评估器配置（REQ-011；Tier3「算法/解释器型机制」大类，与 match3-board/tilemap 同构）──
@@ -123,6 +132,9 @@ export interface PerCardRule extends Component {
   // 概率门（REQ-E-023②）：在场则该牌命中 when 后再掷世界 RandomSeed，nextRandom < num/den 才施用（逐张独立 roll，
   // 如 Bloodstone「每张♥ 1/2 概率 ×1.5」）。确定性同 Effect.chance（引擎种子 PRNG，lockstep 安全）。
   chance?: { num: number; den: number };
+  // 留手规则（REQ-E-023③）：true=在 held-card-score pass 对**手里没出的牌**求值（如 Baron 留手 K ×1.5、Shoot the Moon 留手 Q +13）；
+  // 缺省=在出牌 pass 对出的牌求值（原语义）。两 pass 各按 held 标记取自己的规则，互不重复。
+  held?: boolean;
 }
 
 // ── card-scoring retrigger（REQ-014）── 重触发规则（Hanging Chad/Red Seal/Mime 折叠于此）。

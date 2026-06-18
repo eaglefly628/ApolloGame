@@ -1,7 +1,7 @@
 import { defineCapability } from '@engine/core/define-capability.js';
 import { SystemPhase } from '@engine/core/types.js';
 import type { IWorld } from '@engine/core/types.js';
-import type { Card, PlayedHand, PerCardScore, PerCardRule, PerCardRetrigger, PerCardWhen, Resource, RandomSeed } from '@engine/protocol/components.js';
+import type { Card, PlayedHand, HeldHand, PerCardScore, PerCardRule, PerCardRetrigger, PerCardWhen, Resource, RandomSeed } from '@engine/protocol/components.js';
 import { scoringCardIndices } from './poker-hand.js';
 import { chancePass } from '@atom-skills/index.js';
 import { findScoreTrace, appendScoreEvent } from '../score-trace.js';
@@ -104,7 +104,7 @@ export const cardScoringCapability = defineCapability({
         },
       },
     },
-    reads: ['PerCardScore', 'PlayedHand', 'PerCardRule', 'PerCardRetrigger', 'Resource', 'RandomSeed'],
+    reads: ['PerCardScore', 'PlayedHand', 'HeldHand', 'PerCardRule', 'PerCardRetrigger', 'Resource', 'RandomSeed'],
     writes: ['Resource', 'RandomSeed'],
     consumes: [],
   },
@@ -120,7 +120,7 @@ export const cardScoringCapability = defineCapability({
       phase: SystemPhase.Update,
       runsAfter: ['poker-eval'],
       runsBefore: ['resource-apply', 'string-apply'],
-      reads: ['PerCardScore', 'PlayedHand', 'PerCardRule', 'PerCardRetrigger', 'Resource', 'RandomSeed'],
+      reads: ['PerCardScore', 'PlayedHand', 'HeldHand', 'PerCardRule', 'PerCardRetrigger', 'Resource', 'RandomSeed'],
       writes: ['Resource', 'RandomSeed'],
       consumes: [],
       execute(world: IWorld) {
@@ -179,19 +179,41 @@ export const cardScoringCapability = defineCapability({
               // REQ-E-021：牌的内禀修正（附魔/版式/增强）按序套用——在 baseChips 之后、外部小丑(PerCardRule)之前（同 Balatro：牌自身先于小丑）。
               if (c.mods) {
                 for (const m of c.mods) {
+                  if (m.held) continue; // REQ-E-023③：留手 mod（Steel 等）归 held-card-score pass，出牌 pass 跳过
                   const after = applyToResource(lk, m.target, m.op, m.value);
                   if (after !== undefined) appendScoreEvent(trace, 'percard-mod', m.target, m.op, m.value, after, src);
                 }
               }
               for (const { eid: ruleEid, rule } of rules) {
                 // REQ-E-023②：概率小丑（Bloodstone 等）—— when 命中后再掷世界 RNG 才施用（逐张独立 roll，确定）。
-                if (matchPerCardWhen(rule.when, c, pos) && (!rule.chance || chancePass(rng, rule.chance.num, rule.chance.den))) {
+                if (!rule.held && matchPerCardWhen(rule.when, c, pos) && (!rule.chance || chancePass(rng, rule.chance.num, rule.chance.den))) {
                   const after = applyToResource(lk, rule.targetResource, rule.op ?? 'add', rule.value);
                   if (after !== undefined) appendScoreEvent(trace, 'percard-rule', rule.targetResource, rule.op ?? 'add', rule.value, after, ruleEid);
                 }
               }
             }
           }
+        }
+
+        // REQ-E-023③：留手牌结算（同 card-score-pass 内、紧接出牌之后；复用 lookup/rules/rng/trace，零新调度边）。
+        // 出牌 pass 只遍历出的牌，留手牌（手里没出的）走 HeldHand：套 held 标记的 mods（Steel ×1.5）+ held 规则（Baron 等）。
+        for (const [hid] of world.query('HeldHand')) {
+          const held = world.getComponent<HeldHand>(hid, 'HeldHand');
+          if (!held || held.cards.length === 0) continue;
+          const hlk = lookup();
+          held.cards.forEach((c, pos) => {
+            if (c.mods) for (const m of c.mods) {
+              if (!m.held) continue; // 只 held mod
+              const after = applyToResource(hlk, m.target, m.op, m.value);
+              if (after !== undefined) appendScoreEvent(trace, 'held-mod', m.target, m.op, m.value, after, `held:${pos}`);
+            }
+            for (const { eid: ruleEid, rule } of rules) {
+              if (rule.held && matchPerCardWhen(rule.when, c, pos) && (!rule.chance || chancePass(rng, rule.chance.num, rule.chance.den))) {
+                const after = applyToResource(hlk, rule.targetResource, rule.op ?? 'add', rule.value);
+                if (after !== undefined) appendScoreEvent(trace, 'held-rule', rule.targetResource, rule.op ?? 'add', rule.value, after, ruleEid);
+              }
+            }
+          });
         }
       },
     },

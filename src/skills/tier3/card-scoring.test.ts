@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import { World } from '@engine/core/world.js';
-import type { Card, PlayedHand, PokerHand, PerCardScore, PerCardRule, PerCardRetrigger, Resource, RandomSeed } from '@engine/protocol/components.js';
+import type { Card, PlayedHand, HeldHand, PokerHand, PerCardScore, PerCardRule, PerCardRetrigger, Resource, RandomSeed } from '@engine/protocol/components.js';
 import { cardScoringCapability, matchPerCardWhen } from './card-scoring.js';
 import { pokerHandCapability } from './poker-hand.js';
 
@@ -107,6 +107,35 @@ describe('card-score-pass — PerCardRule.chance 概率门（REQ-E-023②，确�
     const w = withSeed(loadPass([c(0, 5), c(1, 5)], { rules: [{ id: 'bs', rule: { when: { kind: 'always' }, op: 'add', targetResource: 'mult', value: 4, chance: { num: 0, den: 1 } } }] }));
     w.tick();
     expect(res(w, 'mult')).toBe(0);
+  });
+});
+
+describe('held-card-score — 留手牌结算 pass（REQ-E-023③）', () => {
+  function loadHeld(held: Card[], rules: Array<{ id: string; rule: Omit<PerCardRule, 'type'> }> = []): World {
+    const w = new World();
+    for (const s of cardScoringCapability.systems) w.addSystem(s);
+    w.createEntity('table');
+    w.addComponent('table', { type: 'PerCardScore', chipsResource: 'chips', baseChipsByRank: BASE_CHIPS } as PerCardScore);
+    w.addComponent('table', { type: 'PlayedHand', cards: [] } as PlayedHand); // 出牌空：held pass 独立入口
+    w.addComponent('table', { type: 'HeldHand', cards: held } as HeldHand);
+    for (const id of ['chips', 'mult']) { w.createEntity(`res:${id}`); w.addComponent(`res:${id}`, { type: 'Resource', id, current: 0, min: 0, max: 1e9 } as Resource); }
+    for (const { id, rule } of rules) { w.createEntity(id); w.addComponent(id, { type: 'PerCardRule', ...rule } as PerCardRule); }
+    return w;
+  }
+  it('held PerCardRule 对留手牌生效（Baron：留手 K +4 mult）', () => {
+    const w = loadHeld([c(0, K), c(1, 5)], [{ id: 'baron', rule: { when: { kind: 'rankIn', ranks: [K] }, op: 'add', targetResource: 'mult', value: 4, held: true } }]);
+    w.tick();
+    expect(res(w, 'mult')).toBe(4); // 只留手 K 命中
+  });
+  it('held Card.mod 对留手牌生效（Steel：held mod +50 chips）', () => {
+    const w = loadHeld([{ suit: 0, rank: 5, mods: [{ op: 'add', target: 'chips', value: 50, held: true }] }]);
+    w.tick();
+    expect(res(w, 'chips')).toBe(50);
+  });
+  it('出牌 pass 跳过 held 标记的 mod（不双算）', () => {
+    const w = loadPass([{ suit: 0, rank: 5, mods: [{ op: 'add', target: 'chips', value: 50, held: true }] }, c(1, 5)]);
+    w.tick();
+    expect(res(w, 'chips')).toBe(10); // 仅 baseChips 5+5；held mod 不在出牌 pass 生效
   });
 });
 

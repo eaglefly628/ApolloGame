@@ -32,6 +32,7 @@ import type {
   GridMover,
   Grounded,
   GroupCount,
+  HeldHand,
   HexBoard,
   HexPos,
   Hierarchy,
@@ -120,6 +121,7 @@ export interface ComponentDataMap {
   GridMover: Omit<GridMover, 'type'>;
   Grounded: Omit<Grounded, 'type'>;
   GroupCount: Omit<GroupCount, 'type'>;
+  HeldHand: Omit<HeldHand, 'type'>;
   HexBoard: Omit<HexBoard, 'type'>;
   HexPos: Omit<HexPos, 'type'>;
   Hierarchy: Omit<Hierarchy, 'type'>;

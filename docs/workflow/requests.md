@@ -45,6 +45,9 @@
 - 解锁：Baron(留手 K ×1.5)、Shoot the Moon(留手 Q +13)、Mime、Raised Fist、以及 REQ-E-021 边界外的 **Steel(留手×1.5) / Gold(回合末留手 +$)** 牌增强。
 - 缺口：`card-scoring` 只遍历**出的牌**；手牌里"留着不打"的牌没有结算入口。
 - 建议：新增 `HeldCardScore` pass —— 出牌结算时另遍历**未出的手牌**，套 `Card.mods`(held 类) + PerCardRule(held 类)。与现有逐张 pass 同构、同纪律（迭代=引擎、规则=数据）。
+- **Lead 落地（done，引擎侧）**：新增 `HeldHand{cards}` 组件（PlayedHand 兄弟件，装配层填"未出的手牌"）+ card-score-pass 在出牌循环后**同 execute 内追加留手循环**（复用 lookup/rules/rng/trace，**零新系统/零新调度边**——独立系统会与 card-pile/resource-apply 经 RandomSeed/Resource RMW 成环，故并入）。`Card.mods[].held?` + `PerCardRule.held?` 标记：留手循环套 held 标记的，出牌循环跳过 held（互不双算）。复用 matchPerCardWhen/applyToResource/chancePass（held 规则也可带 ② chance，如 reserved_parking）。测试：held 规则/mod 对留手牌生效 + 出牌 pass 跳 held。全绿。
+  - **给 PE 的接线契约**：装配层每次结算填 `HeldHand.cards`=手里没出的牌；Baron=`PerCardRule{when:rankIn[13],op:mul,mult,1.5,held:true}`；Steel=`Card.mods:[{op:mul,target:mult,value:1.5,held:true}]`。
+  - **未纳入**：Mime（留手牌**重触发**）需 held 版 retrigger，单提；Gold「回合末留手 +$」属 G 组（on_round_end 触发，游戏侧）。
 
 **④ 小丑「自增长」可变状态（P2 · 体积 中-大 · 解锁 ~25 张）**
 - 解锁：Ride the Bus(连续无人头 +1/手)、Green Joker(+1/手 −1/弃)、Obelisk、Supernova、Square、Runner、Red Card、Ice Cream/Popcorn(递减)…
