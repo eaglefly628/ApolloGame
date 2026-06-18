@@ -163,7 +163,7 @@ export function buildBattleViewLive(live: LiveBattle, save: Save, oppName: strin
 }
 // live-combat 对决事件 → 特写视图（a=我方/b=敌方；点数/加成/战力/胜率/掷点 如实透出）。
 function clashToView(ev: ClashEvent): ClashView {
-  const card = (c: ClashEvent['a']): ClashView['a'] => ({ rank: c.rank, suit: c.suit.toLowerCase() as 's' | 'h' | 'd' | 'c', general: c.general, points: c.points, pEff: c.pEff });
+  const card = (c: ClashEvent['a']): ClashView['a'] => ({ rank: c.rank, suit: c.suit.toLowerCase() as 's' | 'h' | 'd' | 'c', general: c.general, points: c.points, buff: c.buff, morale: c.morale, pEff: c.pEff });
   return { lane: ev.lane, winrate: ev.winrate, roll: ev.roll, aWins: ev.aWins, a: card(ev.a), b: card(ev.b) };
 }
 

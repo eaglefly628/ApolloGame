@@ -26,7 +26,7 @@ export interface LiveUnit { id: string; rank: string; suit: string; points: numb
 export interface LiveLane { a: LiveUnit[]; b: LiveUnit[]; aGenDead: boolean; bGenDead: boolean; spentA: number; spentB: number; encT: number }
 // 对决事件（doc19 §三「胜率可读」+ 命运一掷 · 给战斗表演特写读数）：双方点数/经营加成/有效战力 P_eff、胜率、所掷点 roll、谁胜。
 // 纯记录（不进 liveHash、不改判定）：roll = clash 那一掷的 nextRandom 值，aWins = roll < winrate ——把"算出概率→掷→落在区间定生死"如实暴露。
-export interface ClashCard { rank: string; suit: string; general: boolean; points: number; pEff: number }
+export interface ClashCard { rank: string; suit: string; general: boolean; points: number; buff: number; morale: number; pEff: number }
 export interface ClashEvent { tick: number; lane: number; winrate: number; roll: number; aWins: boolean; a: ClashCard; b: ClashCard }
 export interface LiveBattle { tick: number; lanes: [LiveLane, LiveLane, LiveLane]; homeA: number; homeB: number; homeMax: number; winner: 'a' | 'b' | 'draw' | 'pending'; rng: RandomSeed; lastClash: ClashEvent | null; clashSeq: number; clashLog: ClashEvent[] }
 // 投放指令：第 tick 拍把 unit 投进 lane 的 side 侧（确定性输入流；预布阵 = tick 1 投放）。
@@ -48,12 +48,13 @@ function applyDeploy(b: LiveBattle, c: DeployCmd): void {
 }
 
 // 遭遇拍的有效战力 P_eff（doc19 §三）：基础点数 + 经营 buff + 本路士气（主将在 +MORALE_PTS / 亡 −ROUT_PTS）。读当下 → live。
-function effPower(u: LiveUnit, lane: LiveLane, side: 'a' | 'b'): number {
-  if (u.general) return pEff(u.points, u.buff);
+// 返回拆解（供对决特写「主 Buff 明细」）：pEff 终值 + shift（士气/溃散分量）。经营 buff = u.buff（养成/干预聚合）。
+function effPowerBreak(u: LiveUnit, lane: LiveLane, side: 'a' | 'b'): { pEff: number; shift: number } {
+  if (u.general) return { pEff: pEff(u.points, u.buff), shift: 0 }; // 主将自身=士气源、不再吃士气分量
   const genDead = side === 'a' ? lane.aGenDead : lane.bGenDead;
   const genHere = (side === 'a' ? lane.a : lane.b).some((x) => x.general && !x.dead);
   const shift = genDead ? -ROUT_PTS : genHere ? MORALE_PTS : 0;
-  return pEff(u.points, u.buff + shift);
+  return { pEff: pEff(u.points, u.buff + shift), shift };
 }
 
 function killFront(lane: LiveLane, side: 'a' | 'b'): void {
@@ -82,11 +83,12 @@ function stepLane(b: LiveBattle, li: number): void {
     lane.encT += 1; // 相邻 → 成波对决（每 ENC_PERIOD 一掷）
     if (lane.encT % ENC_PERIOD !== 0) return;
     // doc19 §三 pairwise logistic：算 P_eff → 胜率 → 掷一点 roll 落在区间定生死。内联 clashResolve 同序消费 rng（hash 不变），且暴露 roll/明细供特写。
-    const ea = effPower(fa, lane, 'a'), eb = effPower(fb, lane, 'b');
+    const ba = effPowerBreak(fa, lane, 'a'), bb = effPowerBreak(fb, lane, 'b');
+    const ea = ba.pEff, eb = bb.pEff;
     const wr = winrate(ea, eb);
     const roll = nextRandom(b.rng);
     const aWins = roll < wr;
-    const ev: ClashEvent = { tick: b.tick, lane: li, winrate: wr, roll, aWins, a: { rank: fa.rank, suit: fa.suit, general: fa.general, points: fa.points, pEff: ea }, b: { rank: fb.rank, suit: fb.suit, general: fb.general, points: fb.points, pEff: eb } };
+    const ev: ClashEvent = { tick: b.tick, lane: li, winrate: wr, roll, aWins, a: { rank: fa.rank, suit: fa.suit, general: fa.general, points: fa.points, buff: fa.buff, morale: ba.shift, pEff: ea }, b: { rank: fb.rank, suit: fb.suit, general: fb.general, points: fb.points, buff: fb.buff, morale: bb.shift, pEff: eb } };
     b.lastClash = ev; b.clashSeq += 1; b.clashLog.push(ev);
     killFront(lane, aWins ? 'b' : 'a'); // 输家翻反·阵亡 → 本局弃堆
     const wq = aWins ? A : B; const wf = wq[0]; // 赢家翻正·前进，续航 −1；尽则退场（沉牌底·3D-1 再部署轮转）

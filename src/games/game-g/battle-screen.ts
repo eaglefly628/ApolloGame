@@ -15,7 +15,7 @@ export interface HandCardView { id: string; rank: string; suit: 's' | 'h' | 'd' 
 export interface BattleLane { name: string; mine: number; enemy: number; lead: 'a' | 'b' | 'n'; state: string; mineText: string; enemyText: string }
 export interface BattleLever { key: string; glyph: string; name: string; cost: number; desc: string; on?: boolean }
 // 对决特写（owner：拉到屏幕前·战斗表演）：两张牌放大 + 点数/加成/战力计算 + 胜率区间条 + 掷点落区间 → 生/死翻转。
-export interface ClashCardView { rank: string; suit: 's' | 'h' | 'd' | 'c'; general: boolean; points: number; pEff: number }
+export interface ClashCardView { rank: string; suit: 's' | 'h' | 'd' | 'c'; general: boolean; points: number; buff: number; morale: number; pEff: number }
 export interface ClashView { lane: number; winrate: number; roll: number; aWins: boolean; a: ClashCardView; b: ClashCardView }
 export interface BattleView {
   homeA: number; homeAMax: number; homeB: number; homeBMax: number;
@@ -201,7 +201,9 @@ function buildHTML(view: BattleView, s: CamState): string {
 
   // 对决特写表演（owner：拉到屏幕前·看为什么胜败）：冻结战场 → 放大两牌 + 点数/加成/战力 → 胜率区间条 + 掷点落区间 → 生者翻正/死者斩。
   const cv = view.clash;
-  const bonusTxt = (c: ClashCardView): string => { const d = c.pEff - c.points; return d >= 0 ? '+' + d : String(d); };
+  const sgn = (n: number): string => (n >= 0 ? '+' + n : String(n));
+  // 主 Buff 明细（owner）：点数(公平骨架 base) + 经营(养成/干预聚合) [+ 士气(主将在/亡)] ＝ 战力 P_eff（夹 [0,30]）。
+  const detailTxt = (c: ClashCardView): string => `点数 ${c.points} · 经营 ${sgn(c.buff)}${c.morale ? ' · 士气 ' + sgn(c.morale) : ''} <b style="font-size:15px; color:var(--ink);">＝ 战力 ${c.pEff}</b>`;
   const bigCard = (c: ClashCardView, side: 'a' | 'b', win: boolean): string => {
     const col = side === 'a' ? '#ff5d2e' : '#3a86d4', sc = SUITC[c.suit];
     const slide = side === 'a' ? 'gg-clashL' : 'gg-clashR';
@@ -211,7 +213,7 @@ function buildHTML(view: BattleView, s: CamState): string {
     const back = win
       ? `<div style="${face} transform:rotateY(180deg); background:#274a73; border:6px solid #16314e;"><div style="position:absolute; inset:14px; border-radius:8px; border:2px solid rgba(255,255,255,.4); background:repeating-linear-gradient(45deg, rgba(255,255,255,.16) 0 9px, transparent 9px 18px), repeating-linear-gradient(-45deg, rgba(255,255,255,.16) 0 9px, transparent 9px 18px);"></div></div>`
       : `<div style="${face} transform:rotateY(180deg); background:#8d2f22; border:6px solid var(--danger);"><span style="font-family:var(--font-heading); font-weight:800; font-size:96px; color:#fff;">斩</span></div>`;
-    return `<div style="animation:${slide} .5s ease-out;"><div style="width:186px; height:260px; perspective:1100px;"><div style="position:relative; width:100%; height:100%; transform-style:preserve-3d; animation:${flip} .9s cubic-bezier(.4,1.25,.5,1) .5s both;${win ? ' filter:drop-shadow(0 0 22px var(--gold));' : ''}">${front}${back}</div></div><div style="margin-top:14px; text-align:center; white-space:nowrap; font-family:var(--font-num); font-size:13px; color:${col};">点数 ${c.points} · 加成 ${bonusTxt(c)} <b style="font-size:16px; color:var(--ink);">＝ 战力 ${c.pEff}</b></div></div>`;
+    return `<div style="animation:${slide} .5s ease-out;"><div style="width:186px; height:260px; perspective:1100px;"><div style="position:relative; width:100%; height:100%; transform-style:preserve-3d; animation:${flip} .9s cubic-bezier(.4,1.25,.5,1) .5s both;${win ? ' filter:drop-shadow(0 0 22px var(--gold));' : ''}">${front}${back}</div></div><div style="margin-top:14px; text-align:center; white-space:nowrap; font-family:var(--font-num); font-size:12px; color:${col};">${detailTxt(c)}</div></div>`;
   };
   const clashHTML = cv ? (() => {
     const LN = ['上路', '中路', '下路'][cv.lane] ?? '';
@@ -304,6 +306,45 @@ const FONTS = '<link rel="preconnect" href="https://fonts.googleapis.com"><link 
 // 离线"看帧"：自包含 HTML 文档（CSS + 字体 + 真渲染器 buildHTML 输出）。浏览器直接开 = 真游戏战斗屏渲染。
 // 容器内确定性生成（同 game-f frameSvg），可 toMatchFileSnapshot 做无头视觉回归 golden。theme 缺省玄铁。
 export function renderBattleDoc(view: BattleView, theme: 'onyx' | 'brocade' = 'onyx'): string {
-  const s: CamState = { theme, lever: 'bless', lane: 'mid', zoom: 0.42, camX: 1500, camY: 750, gates: { g1: true, g2: false } };
+  const s: CamState = { theme, lever: 'bless', lane: 'mid', zoom: 0.4, camX: 1500, camY: 750, gates: { g1: true, g2: false } };
   return `<!DOCTYPE html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">${FONTS}<style>body{margin:0;background:#0a0d12;display:flex;justify-content:center;}${CSS}</style></head><body>${buildHTML(view, s)}</body></html>`;
+}
+
+// 对决特写「看帧」—— 自包含 SVG（无需浏览器/字体；矢量图，客户端多能内联预览，解 owner「HTML 看不到」）。
+// 静态呈现 HTML 特写的同款信息：放大两牌(赢金/输斩) + 主 Buff 明细(点数/经营/士气=战力) + 胜率区间 + 掷点落区间定生死。
+export function renderClashSvg(cv: ClashView): string {
+  const LN = ['上路', '中路', '下路'][cv.lane] ?? '';
+  const wrPct = Math.round(cv.winrate * 100), rollPct = Math.round(cv.roll * 100);
+  const W = 940, Hh = 590;
+  const sg: Record<string, string> = { s: '♠', h: '♥', d: '♦', c: '♣' };
+  const sgn = (n: number): string => (n >= 0 ? '+' + n : String(n));
+  const detail = (c: ClashCardView): string => `点数 ${c.points} · 经营 ${sgn(c.buff)}${c.morale ? ' · 士气 ' + sgn(c.morale) : ''} ＝ 战力 ${c.pEff}`;
+  const card = (c: ClashCardView, x: number, win: boolean, mine: boolean): string => {
+    const sc = SUITC[c.suit], bcol = win ? '#e0a93a' : '#d8504e', bg = win ? '#fff7e8' : '#7e2a20';
+    return `<g transform="translate(${x},116)">
+      <rect width="210" height="286" rx="16" fill="${bg}" stroke="${bcol}" stroke-width="6"/>
+      ${c.general ? '<text x="105" y="6" font-size="34" text-anchor="middle" fill="#e0a93a">♔</text>' : ''}
+      <text x="22" y="52" font-size="42" font-weight="800" fill="${win ? sc : '#fff'}">${esc(c.rank)}</text>
+      <text x="105" y="176" font-size="98" text-anchor="middle" fill="${win ? sc : 'rgba(255,255,255,.92)'}">${sg[c.suit]}</text>
+      ${win ? '' : '<text x="105" y="210" font-size="94" font-weight="800" text-anchor="middle" fill="#fff">斩</text>'}
+      <text x="105" y="324" font-size="15" text-anchor="middle" fill="${mine ? '#ff7a45' : '#5ea0e0'}" font-family="monospace">${esc(detail(c))}</text>
+    </g>`;
+  };
+  const barX = 120, barY = 486, barW = 700, barH = 26, splitX = barX + barW * cv.winrate, rollX = barX + barW * cv.roll;
+  const resultTxt = cv.aWins ? '我方' + cv.a.rank + ' 翻正 · 敌 ' + cv.b.rank + ' 斩' : '敌 ' + cv.b.rank + ' 翻正 · 我方 ' + cv.a.rank + ' 斩';
+  return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${W} ${Hh}" font-family="'Noto Sans SC','PingFang SC',sans-serif">
+    <rect width="${W}" height="${Hh}" fill="#0e1117"/>
+    <text x="${W / 2}" y="58" font-size="28" font-weight="700" text-anchor="middle" fill="#ff7a45">⚔ ${LN} · 命运一掷</text>
+    ${card(cv.a, 160, cv.aWins, true)}
+    <text x="${W / 2}" y="270" font-size="36" font-weight="800" text-anchor="middle" fill="#8b94a3">VS</text>
+    ${card(cv.b, 570, !cv.aWins, false)}
+    <text x="${barX}" y="470" font-size="14" fill="#ff7a45" font-family="monospace">我方 ${sg[cv.a.suit]}${esc(cv.a.rank)} 生 ${wrPct}%</text>
+    <text x="${barX + barW}" y="470" font-size="14" fill="#5ea0e0" text-anchor="end" font-family="monospace">${100 - wrPct}% 生 ${sg[cv.b.suit]}${esc(cv.b.rank)} 敌方</text>
+    <rect x="${barX}" y="${barY}" width="${barW}" height="${barH}" rx="13" fill="#2f72b8"/>
+    <rect x="${barX}" y="${barY}" width="${Math.round(barW * cv.winrate)}" height="${barH}" rx="13" fill="#ee5520"/>
+    <line x1="${splitX}" y1="${barY - 7}" x2="${splitX}" y2="${barY + barH + 7}" stroke="#fff" stroke-width="2"/>
+    <polygon points="${rollX - 11},${barY - 24} ${rollX + 11},${barY - 24} ${rollX},${barY - 4}" fill="#fff"/>
+    <text x="${rollX}" y="${barY - 30}" font-size="13" text-anchor="middle" fill="#fff" font-family="monospace">掷 ${rollPct}</text>
+    <text x="${W / 2}" y="556" font-size="15" text-anchor="middle" fill="#cbd5e1" font-family="monospace">掷点 ${rollPct} 落在 ${cv.aWins ? '我方生区' : '敌方生区'} → ${esc(resultTxt)}</text>
+  </svg>`;
 }

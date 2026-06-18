@@ -1,7 +1,7 @@
 import { describe, it, expect } from 'vitest';
 import { prepareArmies, FORMATION_PRESETS, bossFor } from './index.js';
 import { initLiveBattle, stepLiveBattle, liveActive, HOME_BLOOD } from './live-combat.js';
-import { renderBattleDoc } from './battle-screen.js';
+import { renderBattleDoc, renderClashSvg, type ClashView } from './battle-screen.js';
 import { armyToDeploys, buildBattleViewLive, freshSave } from './game-g.js';
 
 // ═══════════════════════════════════════════════════════════════
@@ -62,17 +62,23 @@ describe('Game G · 战斗屏视觉回归（真 live-combat → HTML golden · �
     await expect(html).toMatchFileSnapshot('./__frames__/battle-dock.html');
   });
 
-  it('对决特写帧（命运一掷 · 点数/加成/战力 + 胜率区间 + 掷点落区间定生死 · owner 战斗表演）匹配 golden', async () => {
+  it('对决特写帧（命运一掷 · 点数/经营/士气=战力 主Buff明细 + 胜率区间 + 掷点落区间定生死 · owner 战斗表演）匹配 golden（HTML + SVG）', async () => {
     const { live, deploys } = setup();
     while (live.tick < 400 && live.clashSeq === 0) stepLiveBattle(live, deploys); // 跑到首次对决，取真 clash 事件
     const ev = live.lastClash!;
-    const card = (c: typeof ev.a): { rank: string; suit: 's' | 'h' | 'd' | 'c'; general: boolean; points: number; pEff: number } => ({ rank: c.rank, suit: c.suit.toLowerCase() as 's' | 'h' | 'd' | 'c', general: c.general, points: c.points, pEff: c.pEff });
-    const clash = { lane: ev.lane, winrate: ev.winrate, roll: ev.roll, aWins: ev.aWins, a: card(ev.a), b: card(ev.b) };
+    const card = (c: typeof ev.a): ClashView['a'] => ({ rank: c.rank, suit: c.suit.toLowerCase() as 's' | 'h' | 'd' | 'c', general: c.general, points: c.points, buff: c.buff, morale: c.morale, pEff: c.pEff });
+    const clash: ClashView = { lane: ev.lane, winrate: ev.winrate, roll: ev.roll, aWins: ev.aWins, a: card(ev.a), b: card(ev.b) };
     const html = renderBattleDoc(buildBattleViewLive(live, save(), bossFor(2).name, bossFor(2).persona, 'd', undefined, clash));
     expect(html).toContain('命运一掷'); // 特写标题
-    expect(html).toContain('＝ 战力'); // 点数+加成=战力 读数
-    expect(live.clashSeq).toBeGreaterThan(0); // 真发生了对决（roll/winrate 来自真 sim）
+    expect(html).toContain('经营'); // 主 Buff 明细：点数·经营·士气
+    expect(html).toContain('＝ 战力');
+    expect(live.clashSeq).toBeGreaterThan(0); // 真发生了对决（roll/winrate/buff/morale 来自真 sim）
     await expect(html).toMatchFileSnapshot('./__frames__/battle-clash-closeup.html');
+    // SVG 看帧（矢量图·客户端可内联预览，解「HTML 看不到」）：同款明细。
+    const svg = renderClashSvg(clash);
+    expect(svg).toContain('<svg');
+    expect(svg).toContain('经营');
+    await expect(svg).toMatchFileSnapshot('./__frames__/battle-clash-closeup.svg');
   });
 
   it('一格格慢慢走（owner 钉死）：最前兵 pos01 随 tick 单调前推；行军面朝下、接敌才翻（非一次全翻/瞬移）', () => {
