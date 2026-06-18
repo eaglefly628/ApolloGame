@@ -12,8 +12,8 @@ import type { EnchantId } from './enchants.js';
 export interface Card {
   readonly suit: Suit;
   readonly rank: Rank;
-  /** 牌的内禀附魔（版式/增强/蜡封；持久绑定到牌身份）。计分时映射成引擎 Card.mods/retrigger。 */
-  readonly enchant?: EnchantId;
+  /** 牌的内禀附魔（版式/增强/蜡封；可叠多个，持久绑定到牌身份）。映射成引擎 Card.mods/retrigger。 */
+  readonly enchants?: readonly EnchantId[];
 }
 
 export const SUITS: readonly Suit[] = ['spades', 'hearts', 'diamonds', 'clubs'];

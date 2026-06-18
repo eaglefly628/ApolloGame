@@ -4,6 +4,7 @@ import { STARTER_JOKERS } from './jokers.js';
 import { planetForHand } from './planets.js';
 import { handScoreAtLevel } from './hand-rankings.js';
 import { blindRequirement } from './blinds.js';
+import { toEngineCard } from './blueprint.js';
 
 // 回合流程脚本 headless 测试（无 React）：证明线性编排正确，引擎负责算分。
 describe('game-e · GameSession 线性流程脚本', () => {
@@ -97,6 +98,22 @@ describe('game-e · GameSession 线性流程脚本', () => {
     expect(r.chips).toBeGreaterThan(plain.chips); // 附魔牌多加了筹码
     expect(r.score).toBeGreaterThan(plain.score);
     expect(r.events.some((e) => e.phase === 'percard-mod')).toBe(true); // 留下了附魔 trace
+  });
+
+  it('附魔可叠加：toEngineCard 合并多附魔（mods 串接 + retrigger 求和，不覆盖）', () => {
+    const c = toEngineCard({ suit: 'spades', rank: 'A', enchants: ['foil', 'bonus', 'red_seal'] });
+    expect(c.mods).toEqual([
+      { op: 'add', target: 'chips', value: 50 }, // foil
+      { op: 'add', target: 'chips', value: 30 }, // bonus
+    ]);
+    expect(c.retrigger).toBe(1); // red_seal
+  });
+
+  it('session.enchant 追加不覆盖：同牌可叠两个附魔', () => {
+    const s = new GameSession(1);
+    s.enchant(s.hand[0], 'foil');
+    s.enchant(s.hand[0], 'mult');
+    expect(s.enchanted[`${s.hand[0].suit}${s.hand[0].rank}`]).toEqual(['foil', 'mult']);
   });
 
   it('Boss 诅咒：boss 道按表施加（Ante1 高墙=盲注线翻倍）', () => {

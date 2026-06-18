@@ -105,13 +105,14 @@ function GameE() {
   const [handLevels, setHandLevels] = useState<Record<HandType, number>>(() => Object.fromEntries(HAND_ORDER.map((h) => [h, 1])) as Record<HandType, number>);
   const [consumables, setConsumables] = useState<Consumable[]>([]); // 持有道具（星球/塔罗），待使用
   const [shopConsumables, setShopConsumables] = useState<Consumable[]>([]); // 商店道具货架（星球+塔罗）
-  const [enchanted, setEnchanted] = useState<Record<string, EnchantId>>({}); // 牌身份→附魔（持久）
-  const enchantedRef = useRef<Record<string, EnchantId>>({}); // 同步给回调里读（出牌时映射 mods）
+  const [enchanted, setEnchanted] = useState<Record<string, EnchantId[]>>({}); // 牌身份→附魔列表（可叠加，持久）
+  const enchantedRef = useRef<Record<string, EnchantId[]>>({}); // 同步给回调里读（出牌时映射 mods）
   const [playedTypes, setPlayedTypes] = useState<HandType[]>([]); // 本道已打出的牌型（巨眼诅咒用）
   const [deckOpen, setDeckOpen] = useState(false); // 牌组/牌型面板开关
+  const [mascot, setMascot] = useState(false); // 过关时蹦出的萌宠（爱萌 出品位）
   const handSizeRef = useRef(HAND_SIZE); // 本道手牌张数（镣铐诅咒减 1）
   const CONSUMABLE_SLOTS = 2;
-  const enchantOf = (c: Card): EnchantId | undefined => enchanted[`${c.suit}${c.rank}`];
+  const enchantOf = (c: Card): EnchantId[] => enchanted[`${c.suit}${c.rank}`] ?? [];
   const [, force] = useState(0);
   const bump = () => force((n) => n + 1);
   const keyOf = (c: Card) => `${c.suit}${c.rank}`;
@@ -239,7 +240,7 @@ function GameE() {
     if (selIdx.length !== 1) { pushLog(`${item.icon} ${item.name}：请先选中 1 张手牌再使用`); bump(); return; }
     const card = hand[selIdx[0]];
     const k = `${card.suit}${card.rank}`;
-    const next = { ...enchantedRef.current, [k]: item.enchant };
+    const next = { ...enchantedRef.current, [k]: [...(enchantedRef.current[k] ?? []), item.enchant] };
     enchantedRef.current = next;
     setEnchanted(next);
     setConsumables((c) => c.filter((_, i) => i !== idx));
@@ -278,7 +279,7 @@ function GameE() {
     }
 
     // 引擎一拍算出本手真值（chips/mult/score + 牌型 + 累加 round_score/hands-1）。附魔按牌身份映射成 Card.mods。
-    engine.world.getComponent<PlayedHand>('table', 'PlayedHand')!.cards = chosen.map((c) => toEngineCard({ ...c, enchant: enchantedRef.current[`${c.suit}${c.rank}`] }));
+    engine.world.getComponent<PlayedHand>('table', 'PlayedHand')!.cards = chosen.map((c) => toEngineCard({ ...c, enchants: enchantedRef.current[`${c.suit}${c.rank}`] }));
     engine.world.getComponent<Flag>('scoring', 'Flag')!.active = true;
     engine.world.tick();
     const finalChips = get(R_CHIPS), finalMult = get(R_MULT), finalScore = get(R_HAND_SCORE);
@@ -329,6 +330,7 @@ function GameE() {
         for (let k = 0; k < 3 && tmp.length; k++) offer.push(tmp.splice(Math.floor(Math.random() * tmp.length), 1)[0]);
         setShopOffer(offer);
         setShopConsumables(rollConsumables());
+        setMascot(true); window.setTimeout(() => setMascot(false), 3800); // 过关庆祝：萌宠举牌
         setPhase('shop'); bump(); return;
       }
       if (get(R_HANDS_LEFT) <= 0) { setPhase('lost'); bump(); return; }
@@ -459,6 +461,10 @@ function GameE() {
         .ge-joker:hover { transform: translateY(-6px); z-index: 30; }
         .ge-joker .ge-joker-tip { opacity: 0; pointer-events: none; transition: opacity .15s; }
         .ge-joker:hover .ge-joker-tip { opacity: 1; }
+        @keyframes ge-mascotIn { 0% { transform: translateY(150px); opacity: 0 } 55% { transform: translateY(-22px); opacity: 1 } 75% { transform: translateY(6px) } 100% { transform: translateY(0); opacity: 1 } }
+        @keyframes ge-mascotOut { from { opacity: 1 } to { transform: translateY(150px); opacity: 0 } }
+        @keyframes ge-bob { 0%,100% { transform: translateY(0) rotate(-3deg) } 50% { transform: translateY(-7px) rotate(3deg) } }
+        @keyframes ge-signWave { 0%,100% { transform: rotate(-7deg) } 50% { transform: rotate(7deg) } }
       `}</style>
 
       {/* 算分回馈 log（右侧固定窗，游戏性流水）*/}
@@ -469,6 +475,22 @@ function GameE() {
           <div key={i} style={{ color: i === 0 ? '#e2e8f0' : '#7d93a8', borderBottom: line.startsWith('—') ? '1px dashed #2b5562' : 'none', paddingBottom: line.startsWith('—') ? 4 : 0, marginBottom: line.startsWith('—') ? 4 : 0 }}>{line}</div>
         ))}
       </div>
+
+      {/* ── 过关庆祝：萌宠举牌（爱萌 出品位）── */}
+      {mascot && (
+        <div style={{ position: 'fixed', left: 18, bottom: 14, zIndex: 50, pointerEvents: 'none', animation: 'ge-mascotIn .6s cubic-bezier(.2,1.4,.5,1) both' }}>
+          <div style={{ position: 'relative', display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+            {/* 牌子 */}
+            <div style={{ transformOrigin: 'bottom center', animation: 'ge-signWave 1.1s ease-in-out infinite', marginBottom: -6 }}>
+              <div style={{ background: 'linear-gradient(160deg,#fff7e6,#ffe0a3)', border: '3px solid #b9772e', borderRadius: 10, padding: '6px 16px', boxShadow: '0 4px 10px #0006', fontWeight: 900, fontSize: 22, color: '#e23b4e', letterSpacing: 2, fontFamily: '"PingFang SC","Microsoft YaHei",system-ui' }}>爱萌</div>
+              <div style={{ width: 4, height: 14, background: '#8a5a22', margin: '0 auto' }} />
+            </div>
+            {/* 萌宠 */}
+            <div style={{ fontSize: 64, animation: 'ge-bob .8s ease-in-out infinite', filter: 'drop-shadow(0 6px 8px #0007)' }}>🐱</div>
+            <div style={{ fontSize: 11, color: '#ffd166', fontWeight: 700, marginTop: 2, textShadow: '0 1px 3px #000' }}>过关！</div>
+          </div>
+        </div>
+      )}
 
       {/* ── 牌组 / 牌型 面板（模态）── */}
       {deckOpen && (() => {
@@ -504,11 +526,11 @@ function GameE() {
                     <span style={{ width: 18, color: SUIT_SYM[su].c, fontSize: 15 }}>{SUIT_SYM[su].s}</span>
                     {RANKS.map((rk) => {
                       const here = remaining.has(`${su}${rk}`);
-                      const en = enchanted[`${su}${rk}`];
-                      const ec = en ? ENCHANTS[en] : null;
+                      const ecs = enchanted[`${su}${rk}`] ?? [];
+                      const first = ecs.length ? ENCHANTS[ecs[0]] : null;
                       return (
-                        <span key={rk} title={ec ? `${ec.name}：${ec.desc}` : undefined} style={{ position: 'relative', width: 24, height: 26, lineHeight: '26px', textAlign: 'center', fontSize: 11, borderRadius: 4, background: here ? '#16323a' : 'transparent', border: `1px solid ${ec ? ec.color : here ? SUIT_SYM[su].c : '#1a2730'}`, color: here ? '#fff' : '#33424d', opacity: here ? 1 : 0.5 }}>
-                          {rk}{ec && <span style={{ position: 'absolute', top: -5, right: -3, fontSize: 9, color: ec.color }}>{ec.badge}</span>}
+                        <span key={rk} title={ecs.map((id) => `${ENCHANTS[id].name}：${ENCHANTS[id].desc}`).join(' · ') || undefined} style={{ position: 'relative', width: 24, height: 26, lineHeight: '26px', textAlign: 'center', fontSize: 11, borderRadius: 4, background: here ? '#16323a' : 'transparent', border: `1px solid ${first ? first.color : here ? SUIT_SYM[su].c : '#1a2730'}`, color: here ? '#fff' : '#33424d', opacity: here ? 1 : 0.5 }}>
+                          {rk}{first && <span style={{ position: 'absolute', top: -5, right: -3, fontSize: 9, color: first.color }}>{ecs.length > 1 ? ecs.length : first.badge}</span>}
                         </span>
                       );
                     })}
@@ -558,6 +580,20 @@ function GameE() {
             </div>
           </div>
         </div>
+        {/* 选中牌的附魔属性（点中带附魔的牌即显示）*/}
+        {!inShop && !lost && selCards.some((c) => enchantOf(c).length > 0) && (
+          <div style={{ background: '#06121a', border: '1px solid #2b4651', borderRadius: 9, padding: '8px 10px' }}>
+            <div style={{ fontSize: 10, color: '#7fd1de', fontWeight: 700, marginBottom: 4 }}>选中牌 · 附魔</div>
+            {selCards.filter((c) => enchantOf(c).length > 0).map((c) => (
+              <div key={keyOf(c)} style={{ fontSize: 11, marginBottom: 3 }}>
+                <span style={{ color: '#fff', fontWeight: 700 }}>{c.rank}{SUIT_SYM[c.suit]}</span>{' '}
+                {enchantOf(c).map((id, bi) => { const e = ENCHANTS[id]; return (
+                  <span key={bi} style={{ color: e.color }}>{e.badge} {e.name}<span style={{ color: '#64748b' }}>({e.desc})</span>{bi < enchantOf(c).length - 1 ? '，' : ''}</span>
+                ); })}
+              </div>
+            ))}
+          </div>
+        )}
         {/* 出牌 / 弃牌 / 钱 */}
         <div style={{ display: 'flex', gap: 8 }}>
           {([['出牌', handsLeft, '#4cc9f0'], ['弃牌', discardsLeft, '#f87171'], ['💰', money, '#ffd166']] as const).map(([lab, val, col]) => (
@@ -750,12 +786,14 @@ function GameE() {
                 {scoring.cards.map((c, i) => {
                   const isHi = scoring.frame.hi === i;
                   const isScoring = scoring.scoringIdx.includes(i);
-                  const en = enchantOf(c);
-                  const ec = en ? ENCHANTS[en] : null;
+                  const ecs = enchantOf(c);
+                  const first = ecs.length ? ENCHANTS[ecs[0]] : null;
                   return (
-                    <div key={keyOf(c)} style={{ position: 'relative', ...cardBg(c.suit, c.rank), opacity: isScoring ? 1 : 0.4, outline: isHi ? '3px solid #4cc9f0' : ec ? `2px solid ${ec.color}` : '1px solid #0008', boxShadow: isHi ? '0 0 22px #4cc9f0' : ec ? `0 0 10px ${ec.color}aa` : 'none', animation: isHi ? 'ge-scorehi .22s ease' : undefined, transition: 'opacity .2s' }}>
+                    <div key={keyOf(c)} style={{ position: 'relative', ...cardBg(c.suit, c.rank), opacity: isScoring ? 1 : 0.4, outline: isHi ? '3px solid #4cc9f0' : first ? `2px solid ${first.color}` : '1px solid #0008', boxShadow: isHi ? '0 0 22px #4cc9f0' : first ? `0 0 10px ${first.color}aa` : 'none', animation: isHi ? 'ge-scorehi .22s ease' : undefined, transition: 'opacity .2s' }}>
                       {isHi && <div style={{ position: 'absolute', top: -22, left: 0, right: 0, textAlign: 'center', color: '#4cc9f0', fontWeight: 800, fontSize: 14, animation: 'ge-float .55s ease forwards' }}>+{BASE_CHIPS_BY_RANK[String(RANK_ORDER[c.rank])] ?? 0}</div>}
-                      {ec && <span style={{ position: 'absolute', top: -7, right: -6, width: 16, height: 16, borderRadius: '50%', background: ec.color, color: '#0a0a0a', fontSize: 10, fontWeight: 800, lineHeight: '16px', textAlign: 'center', boxShadow: `0 0 6px ${ec.color}` }}>{ec.badge}</span>}
+                      {ecs.length > 0 && <span style={{ position: 'absolute', top: -7, right: -6, display: 'flex', gap: 1 }}>
+                        {ecs.map((id, bi) => { const e = ENCHANTS[id]; return <span key={bi} style={{ width: 15, height: 15, borderRadius: '50%', background: e.color, color: '#0a0a0a', fontSize: 9, fontWeight: 800, lineHeight: '15px', textAlign: 'center', boxShadow: `0 0 5px ${e.color}` }}>{e.badge}</span>; })}
+                      </span>}
                     </div>
                   );
                 })}
@@ -782,17 +820,19 @@ function GameE() {
                   {hand.map((c, i) => {
                     const leaving = anim?.idx.includes(i);
                     const isNew = newKeys.has(keyOf(c));
-                    const en = enchantOf(c);
-                    const ec = en ? ENCHANTS[en] : null;
+                    const ecs = enchantOf(c);
+                    const first = ecs.length ? ENCHANTS[ecs[0]] : null;
                     return (
                       <div key={keyOf(c)} className={busy ? undefined : 'ge-cardsel'} onClick={() => !busy && toggle(i)} style={{
                         ...cardBg(c.suit, c.rank), cursor: busy ? 'default' : 'pointer', position: 'relative',
                         transform: sel[i] && !leaving ? 'translateY(-12px)' : 'none', transition: 'transform 0.15s',
-                        outline: sel[i] ? '3px solid #ffd166' : ec ? `2px solid ${ec.color}` : '1px solid #0008',
-                        boxShadow: sel[i] ? '0 8px 20px #ffd16655' : ec ? `0 0 10px ${ec.color}aa` : 'none',
+                        outline: sel[i] ? '3px solid #ffd166' : first ? `2px solid ${first.color}` : '1px solid #0008',
+                        boxShadow: sel[i] ? '0 8px 20px #ffd16655' : first ? `0 0 10px ${first.color}aa` : 'none',
                         animation: leaving ? 'ge-flyTrash 0.38s ease forwards' : isNew ? `ge-drawIn 0.4s ease ${i * 0.05}s both` : undefined,
-                      }} title={ec ? `${ec.name}：${ec.desc}` : undefined}>
-                        {ec && <span style={{ position: 'absolute', top: -7, right: -6, width: 16, height: 16, borderRadius: '50%', background: ec.color, color: '#0a0a0a', fontSize: 10, fontWeight: 800, lineHeight: '16px', textAlign: 'center', boxShadow: `0 0 6px ${ec.color}` }}>{ec.badge}</span>}
+                      }} title={ecs.map((id) => `${ENCHANTS[id].name}：${ENCHANTS[id].desc}`).join(' · ') || undefined}>
+                        {ecs.length > 0 && <span style={{ position: 'absolute', top: -7, right: -6, display: 'flex', gap: 1 }}>
+                          {ecs.map((id, bi) => { const e = ENCHANTS[id]; return <span key={bi} style={{ width: 15, height: 15, borderRadius: '50%', background: e.color, color: '#0a0a0a', fontSize: 9, fontWeight: 800, lineHeight: '15px', textAlign: 'center', boxShadow: `0 0 5px ${e.color}` }}>{e.badge}</span>; })}
+                        </span>}
                       </div>
                     );
                   })}

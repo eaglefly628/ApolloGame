@@ -56,8 +56,8 @@ export class GameSession {
   handLevels: Record<HandType, number> = Object.fromEntries(HAND_ORDER.map((h) => [h, 1])) as Record<HandType, number>;
   /** 本道盲注手牌张数（Boss「镣铐」会减 1）。 */
   handSize = HAND_SIZE;
-  /** 牌身份 → 附魔（塔罗牌盖章，持久；洗牌不丢，按 suit+rank 绑定）。 */
-  enchanted: Record<string, EnchantId> = {};
+  /** 牌身份 → 附魔列表（塔罗牌盖章，可叠多个，持久；洗牌不丢，按 suit+rank 绑定）。 */
+  enchanted: Record<string, EnchantId[]> = {};
 
   constructor(seed = 20260608) {
     this.seed = seed;
@@ -109,11 +109,14 @@ export class GameSession {
     this.startBlind();
   }
 
-  /** 给一张牌（按身份）盖附魔（塔罗牌来源）。 */
-  enchant(c: Card, id: EnchantId): void { this.enchanted[`${c.suit}${c.rank}`] = id; }
+  /** 给一张牌（按身份）追加一个附魔（塔罗牌来源；可叠加，不覆盖）。 */
+  enchant(c: Card, id: EnchantId): void {
+    const k = `${c.suit}${c.rank}`;
+    this.enchanted[k] = [...(this.enchanted[k] ?? []), id];
+  }
   private withEnchant(c: Card): Card {
     const e = this.enchanted[`${c.suit}${c.rank}`];
-    return e ? { ...c, enchant: e } : c;
+    return e && e.length ? { ...c, enchants: e } : c;
   }
 
   /** 用一张星球牌：牌型 +1 级 → 把升级后的基础分写回引擎 rankingTable（下次出牌生效）。 */

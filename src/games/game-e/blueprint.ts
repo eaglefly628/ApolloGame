@@ -82,13 +82,19 @@ export const ENGINE_HANDS_CONTAINING_PAIR: readonly string[] = [
 // 花色名 → 引擎数字（0..3）。
 const SUIT_TO_NUM: Record<DataCard['suit'], number> = { spades: 0, hearts: 1, diamonds: 2, clubs: 3 };
 
-/** 数据牌 {suit,rank(字符串),enchant?} → 引擎牌 {suit,rank,mods?,retrigger?}（附魔映射成内禀修正，REQ-E-021）。 */
+/** 数据牌 {suit,rank(字符串),enchants?} → 引擎牌 {suit,rank,mods?,retrigger?}（多附魔合并：mods 串接、retrigger 求和，REQ-E-021）。 */
 export function toEngineCard(c: DataCard): Card {
   const out: Card = { suit: SUIT_TO_NUM[c.suit], rank: RANK_ORDER[c.rank] };
-  if (c.enchant) {
-    const en = ENCHANTS[c.enchant];
-    if (en.mods) out.mods = en.mods.map((m) => ({ ...m }));
-    if (en.retrigger) out.retrigger = en.retrigger;
+  if (c.enchants && c.enchants.length) {
+    const mods: Array<{ op: 'add' | 'mul'; target: string; value: number }> = [];
+    let retrig = 0;
+    for (const id of c.enchants) {
+      const en = ENCHANTS[id];
+      if (en.mods) for (const m of en.mods) mods.push({ ...m });
+      if (en.retrigger) retrig += en.retrigger;
+    }
+    if (mods.length) out.mods = mods;
+    if (retrig) out.retrigger = retrig;
   }
   return out;
 }
