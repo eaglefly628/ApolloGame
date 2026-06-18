@@ -1,4 +1,4 @@
-import React, { useRef, useState, useCallback, useEffect } from 'react';
+import React, { useRef, useState, useCallback, useEffect, useLayoutEffect } from 'react';
 import { createRoot } from 'react-dom/client';
 import { Engine } from './runtime/engine.js';
 import type { Resource, PlayedHand, Flag, StringVar, ScoreTrace, ScoreEvent } from './engine/protocol/components.js';
@@ -111,6 +111,39 @@ function GameE() {
   const [playedTypes, setPlayedTypes] = useState<HandType[]>([]); // 本道已打出的牌型（巨眼诅咒用）
   const [deckOpen, setDeckOpen] = useState(false); // 牌组/牌型面板开关
   const [mascot, setMascot] = useState(false); // 过关时蹦出的萌宠（爱萌 出品位）
+  const [helpOpen, setHelpOpen] = useState(false); // 帮助页
+  const [tour, setTour] = useState(-1); // 新手引导步骤（-1=未激活）
+  const [tourRect, setTourRect] = useState<DOMRect | null>(null);
+  // 引导高亮目标的 ref（侧栏得分/计分框/牌组按钮 + 手牌/出牌/弃牌按钮）。
+  const rScore = useRef<HTMLDivElement | null>(null);
+  const rBoxes = useRef<HTMLDivElement | null>(null);
+  const rDeckBtn = useRef<HTMLButtonElement | null>(null);
+  const rHand = useRef<HTMLDivElement | null>(null);
+  const rPlay = useRef<HTMLButtonElement | null>(null);
+  const rDiscard = useRef<HTMLButtonElement | null>(null);
+  const TOUR: { ref: React.RefObject<HTMLElement | null> | null; title: string; text: string }[] = [
+    { ref: rScore, title: '🎯 目标', text: '每道盲注要把「本回合得分」冲到「目标」线。达成即过关，进商店买道具变强。' },
+    { ref: rBoxes, title: '🧮 怎么算分', text: '每手牌的分 = 蓝色筹码 × 红色倍率。选牌时这里实时预览本手牌型的基础值。' },
+    { ref: rHand, title: '🃏 选牌', text: '点手牌选最多 5 张，组成扑克牌型（对子 / 同花 / 顺子 / 葫芦…牌型越大分越高）。' },
+    { ref: rPlay, title: '▶ 出牌', text: '点「出牌」结算这手分数并累加。出牌次数有限——用完还没过线就失败。' },
+    { ref: rDiscard, title: '♻ 弃牌', text: '不想要的牌可以弃掉换新的：不计分、不消耗出牌次数（弃牌次数另算）。' },
+    { ref: rDeckBtn, title: '🂠 牌组 / 牌型', text: '随时打开查看：牌型分值表、抽牌堆剩余、哪些牌被附魔了。' },
+    { ref: null, title: '🛒 越打越强', text: '过关进商店：买小丑（永久加成）、星球牌（升级牌型）、塔罗牌（给牌附魔）。Boss 盲注有诅咒，注意侧栏提示。祝好运！' },
+  ];
+  const endTour = useCallback(() => { setTour(-1); try { localStorage.setItem('ge_onboarded', '1'); } catch { /* ignore */ } }, []);
+  // 首次运行自动启动引导。
+  useEffect(() => {
+    try { if (!localStorage.getItem('ge_onboarded')) setTour(0); } catch { /* ignore */ }
+  }, []);
+  // 量出当前引导步骤目标元素的位置（步骤变化 / 窗口缩放时重测）。
+  useLayoutEffect(() => {
+    if (tour < 0 || tour >= TOUR.length) { setTourRect(null); return; }
+    const measure = () => { const el = TOUR[tour].ref?.current; setTourRect(el ? el.getBoundingClientRect() : null); };
+    measure();
+    window.addEventListener('resize', measure);
+    window.addEventListener('scroll', measure, true);
+    return () => { window.removeEventListener('resize', measure); window.removeEventListener('scroll', measure, true); };
+  }, [tour]); // eslint-disable-line react-hooks/exhaustive-deps
   const handSizeRef = useRef(HAND_SIZE); // 本道手牌张数（镣铐诅咒减 1）
   const CONSUMABLE_SLOTS = 2;
   const enchantOf = (c: Card): EnchantId[] => enchanted[`${c.suit}${c.rank}`] ?? [];
@@ -517,6 +550,80 @@ function GameE() {
         </div>
       )}
 
+      {/* ── 帮助 / 玩法说明（模态）── */}
+      {helpOpen && (
+        <div onClick={() => setHelpOpen(false)} style={{ position: 'fixed', inset: 0, background: 'rgba(4,8,12,0.8)', zIndex: 70, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 20 }}>
+          <div onClick={(e) => e.stopPropagation()} style={{ background: 'linear-gradient(160deg,#102a33,#0a1622)', border: '1px solid #2b5562', borderRadius: 16, padding: 22, maxWidth: 640, width: '100%', maxHeight: '88vh', overflowY: 'auto', boxShadow: '0 16px 48px #000a', lineHeight: 1.7 }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
+              <span style={{ fontSize: 18, fontWeight: 800, color: '#ffd166' }}>❔ 玩法说明 · 帮助</span>
+              <button onClick={() => setHelpOpen(false)} style={{ background: 'none', border: '1px solid #2b5562', color: '#9fb3bd', borderRadius: 8, padding: '4px 12px', cursor: 'pointer' }}>关闭 ✕</button>
+            </div>
+            <div style={{ fontSize: 13, color: '#cfe8ee' }}>
+              <p style={{ margin: '0 0 10px' }}><b style={{ color: '#7fd1de' }}>这是什么</b><br />一款 Balatro 式扑克 roguelike：用一副扑克打出牌型得分，靠小丑/星球/附魔不断变强，闯过一关比一关高的盲注分数线。</p>
+              <p style={{ margin: '0 0 6px' }}><b style={{ color: '#7fd1de' }}>核心流程</b></p>
+              <ol style={{ margin: '0 0 10px', paddingLeft: 20 }}>
+                <li>每个 Ante 有 3 道盲注：小盲注 → 大盲注 → Boss 盲注（分数线递增，Boss 还带诅咒）。</li>
+                <li>每道盲注发 8 张手牌，给你 <b>4 次出牌、3 次弃牌</b>。</li>
+                <li>选 ≤5 张「出牌」→ 得分 = <span style={{ color: '#4cc9f0' }}>筹码</span> × <span style={{ color: '#f72585' }}>倍率</span>，累加到本回合得分。</li>
+                <li>不想要的牌「弃牌」换新（不计分、不耗出牌次数）。</li>
+                <li>本回合得分 ≥ 目标线 → 过关，结算 💰 进商店；出牌次数用完还没过线 → 失败。</li>
+              </ol>
+              <p style={{ margin: '0 0 6px' }}><b style={{ color: '#7fd1de' }}>牌型分值（基础 筹码 × 倍率，可被星球牌升级）</b></p>
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1px 16px', fontSize: 12, marginBottom: 10 }}>
+                {HAND_ORDER.filter((h) => !HAND_RANKINGS[h].secret).map((h) => (
+                  <div key={h} style={{ display: 'flex', justifyContent: 'space-between', borderBottom: '1px solid #16323a', padding: '1px 0' }}>
+                    <span>{HAND_RANKINGS[h].name}</span><span><span style={{ color: '#4cc9f0' }}>{HAND_RANKINGS[h].baseChips}</span> × <span style={{ color: '#f72585' }}>{HAND_RANKINGS[h].baseMult}</span></span>
+                  </div>
+                ))}
+              </div>
+              <p style={{ margin: '0 0 6px' }}><b style={{ color: '#7fd1de' }}>变强的东西（商店购买）</b></p>
+              <ul style={{ margin: '0 0 10px', paddingLeft: 20 }}>
+                <li><b>🃏 小丑</b>：永久加成（每张♦+倍率、含对子+倍率、×倍率…）。最多 5 个，可在悬浮卡里<b>卖出</b>换 💰。</li>
+                <li><b>🪐 星球牌</b>：升级某个牌型的基础筹码/倍率（永久）。</li>
+                <li><b>🔮 塔罗牌</b>：选中 1 张手牌给它<b>附魔</b>（闪箔+筹码、全息/多彩+倍率、红蜡封重触发…可叠加）。</li>
+                <li><b>👹 Boss 诅咒</b>：Boss 盲注会限制你（线翻倍 / 只能 1 次出牌 / 必出 5 张 / 牌型基础分减半…），侧栏会写明。</li>
+              </ul>
+              <button onClick={() => { setHelpOpen(false); setTour(0); }} style={{ width: '100%', padding: '9px', borderRadius: 8, border: 'none', cursor: 'pointer', background: 'linear-gradient(135deg,#ffd166,#f59e0b)', color: '#1a1020', fontWeight: 800, fontSize: 14 }}>▶ 重新开始新手引导</button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ── 新手引导：高亮目标 + 说明卡（首次运行自动；可在帮助里重启）── */}
+      {tour >= 0 && tour < TOUR.length && (() => {
+        const step = TOUR[tour];
+        const last = tour === TOUR.length - 1;
+        const card = (
+          <div style={{ width: 270, background: 'linear-gradient(160deg,#16323a,#0a1622)', border: '1px solid #ffd166', borderRadius: 12, padding: '14px 16px', boxShadow: '0 12px 32px #000c', pointerEvents: 'auto' }}>
+            <div style={{ fontSize: 15, fontWeight: 800, color: '#ffd166', marginBottom: 6 }}>{step.title}</div>
+            <div style={{ fontSize: 12.5, color: '#cfe8ee', lineHeight: 1.65 }}>{step.text}</div>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: 12 }}>
+              <span style={{ fontSize: 11, color: '#64748b' }}>{tour + 1} / {TOUR.length}</span>
+              <span style={{ display: 'flex', gap: 8 }}>
+                <button onClick={endTour} style={{ background: 'none', border: '1px solid #2b5562', color: '#9fb3bd', borderRadius: 7, padding: '4px 10px', cursor: 'pointer', fontSize: 12 }}>跳过</button>
+                <button onClick={() => (last ? endTour() : setTour(tour + 1))} style={{ border: 'none', borderRadius: 7, padding: '4px 14px', cursor: 'pointer', fontSize: 12, fontWeight: 800, background: 'linear-gradient(135deg,#ffd166,#f59e0b)', color: '#1a1020' }}>{last ? '开始游戏 ✓' : '下一步 ▶'}</button>
+              </span>
+            </div>
+          </div>
+        );
+        if (!tourRect) {
+          // 无目标（如最后一步/元素未就绪）：居中暗幕 + 卡片。
+          return (
+            <div style={{ position: 'fixed', inset: 0, zIndex: 80, background: 'rgba(4,8,12,0.78)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>{card}</div>
+          );
+        }
+        const below = tourRect.bottom + 200 < window.innerHeight;
+        const cardTop = below ? tourRect.bottom + 14 : Math.max(12, tourRect.top - 190);
+        const cardLeft = Math.min(Math.max(12, tourRect.left + tourRect.width / 2 - 135), window.innerWidth - 282);
+        return (
+          <div style={{ position: 'fixed', inset: 0, zIndex: 80, pointerEvents: 'none' }}>
+            {/* 高亮框（box-shadow 把四周压暗，目标透出）*/}
+            <div style={{ position: 'fixed', left: tourRect.left - 6, top: tourRect.top - 6, width: tourRect.width + 12, height: tourRect.height + 12, borderRadius: 12, boxShadow: '0 0 0 9999px rgba(4,8,12,0.76)', border: '2px solid #ffd166', transition: 'all .25s ease' }} />
+            <div style={{ position: 'fixed', left: cardLeft, top: cardTop }}>{card}</div>
+          </div>
+        );
+      })()}
+
       {/* ── 牌组 / 牌型 面板（模态）── */}
       {deckOpen && (() => {
         const remaining = new Set(deckRef.current.slice(deckPtrRef.current).map(keyOf));
@@ -584,14 +691,14 @@ function GameE() {
           {boss && <div style={{ fontSize: 11, color: '#fca5a5', marginTop: 6 }}>{boss.icon} {boss.name}：{boss.desc}</div>}
         </div>
         {/* 本回合得分 + 目标 + 进度 */}
-        <div>
+        <div ref={rScore}>
           <div style={{ fontSize: 11, color: '#9fb3bd', textAlign: 'center', letterSpacing: 2 }}>本回合得分</div>
           <div style={{ fontSize: 28, fontWeight: 800, textAlign: 'center', color: '#fff', lineHeight: 1.2 }}>{roundScore.toLocaleString()}</div>
           <div style={{ fontSize: 12, color: '#fca5a5', textAlign: 'center' }}>目标 {target.toLocaleString()}</div>
           <div style={{ height: 10, background: '#1e293b', borderRadius: 5, overflow: 'hidden', marginTop: 4 }}><div style={{ width: `${progress}%`, height: '100%', background: 'linear-gradient(90deg,#22c55e,#86efac)', transition: 'width .3s' }} /></div>
         </div>
         {/* 蓝筹码 × 红倍率 框 */}
-        <div>
+        <div ref={rBoxes}>
           <div style={{ fontSize: 10, color: '#64748b', textAlign: 'center', marginBottom: 4 }}>{boxLabel}</div>
           <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
             <div style={{ flex: 1, background: '#10405f', border: '2px solid #4cc9f0', borderRadius: 9, padding: '6px 0', textAlign: 'center' }}>
@@ -647,7 +754,10 @@ function GameE() {
             })}
           </div>
         </div>
-        <button onClick={() => setDeckOpen(true)} style={{ padding: '7px 0', borderRadius: 8, border: '1px solid #2b5562', background: '#0b1c22', color: '#7fd1de', cursor: 'pointer', fontSize: 12, fontWeight: 700 }}>🂠 牌组 / 牌型</button>
+        <div style={{ display: 'flex', gap: 6 }}>
+          <button ref={rDeckBtn} onClick={() => setDeckOpen(true)} style={{ flex: 1, padding: '7px 0', borderRadius: 8, border: '1px solid #2b5562', background: '#0b1c22', color: '#7fd1de', cursor: 'pointer', fontSize: 12, fontWeight: 700 }}>🂠 牌组 / 牌型</button>
+          <button onClick={() => setHelpOpen(true)} style={{ flex: 1, padding: '7px 0', borderRadius: 8, border: '1px solid #2b5562', background: '#0b1c22', color: '#ffd166', cursor: 'pointer', fontSize: 12, fontWeight: 700 }}>❔ 帮助</button>
+        </div>
         <div style={{ fontSize: 12, color: '#9fb3bd', textAlign: 'center' }}>Ante {ante} · 第 {blindIdx + 1}/3 道</div>
       </aside>
 
@@ -842,7 +952,7 @@ function GameE() {
                   <div style={{ marginTop: 4 }}>牌堆</div>
                 </div>
 
-                <div style={{ display: 'flex', gap: 5, alignItems: 'flex-end', justifyContent: 'center' }}>
+                <div ref={rHand} style={{ display: 'flex', gap: 5, alignItems: 'flex-end', justifyContent: 'center' }}>
                   {hand.map((c, i) => {
                     const leaving = anim?.idx.includes(i);
                     const isNew = newKeys.has(keyOf(c));
@@ -882,10 +992,10 @@ function GameE() {
               </div>
 
               <div style={{ display: 'flex', gap: 12, alignItems: 'stretch' }}>
-                <button onClick={startScoring} disabled={selCount === 0 || handsLeft <= 0 || busy || !!playBlock} title={playBlock ?? ''} style={{ padding: '8px 24px', borderRadius: 8, fontSize: 14, fontWeight: 700, border: 'none', cursor: selCount && handsLeft > 0 && !busy && !playBlock ? 'pointer' : 'default', background: selCount && handsLeft > 0 && !busy && !playBlock ? 'linear-gradient(135deg,#ffd166,#f59e0b)' : '#1e293b', color: selCount && handsLeft > 0 && !busy && !playBlock ? '#1a1020' : '#475569', display: 'flex', flexDirection: 'column', alignItems: 'center', lineHeight: 1.3 }}>
+                <button ref={rPlay} onClick={startScoring} disabled={selCount === 0 || handsLeft <= 0 || busy || !!playBlock} title={playBlock ?? ''} style={{ padding: '8px 24px', borderRadius: 8, fontSize: 14, fontWeight: 700, border: 'none', cursor: selCount && handsLeft > 0 && !busy && !playBlock ? 'pointer' : 'default', background: selCount && handsLeft > 0 && !busy && !playBlock ? 'linear-gradient(135deg,#ffd166,#f59e0b)' : '#1e293b', color: selCount && handsLeft > 0 && !busy && !playBlock ? '#1a1020' : '#475569', display: 'flex', flexDirection: 'column', alignItems: 'center', lineHeight: 1.3 }}>
                   <span>▶ 出牌</span><span style={{ fontSize: 10, opacity: 0.85 }}>剩 {handsLeft} 次</span>
                 </button>
-                <button onClick={beginDiscard} disabled={selCount === 0 || discardsLeft <= 0 || busy} style={{ padding: '8px 22px', borderRadius: 8, fontSize: 14, fontWeight: 700, border: 'none', cursor: selCount && discardsLeft > 0 && !busy ? 'pointer' : 'default', background: selCount && discardsLeft > 0 && !busy ? 'linear-gradient(135deg,#60a5fa,#3b82f6)' : '#1e293b', color: selCount && discardsLeft > 0 && !busy ? '#0a1020' : '#475569', display: 'flex', flexDirection: 'column', alignItems: 'center', lineHeight: 1.3 }}>
+                <button ref={rDiscard} onClick={beginDiscard} disabled={selCount === 0 || discardsLeft <= 0 || busy} style={{ padding: '8px 22px', borderRadius: 8, fontSize: 14, fontWeight: 700, border: 'none', cursor: selCount && discardsLeft > 0 && !busy ? 'pointer' : 'default', background: selCount && discardsLeft > 0 && !busy ? 'linear-gradient(135deg,#60a5fa,#3b82f6)' : '#1e293b', color: selCount && discardsLeft > 0 && !busy ? '#0a1020' : '#475569', display: 'flex', flexDirection: 'column', alignItems: 'center', lineHeight: 1.3 }}>
                   <span>♻ 弃牌</span><span style={{ fontSize: 10, opacity: 0.85 }}>剩 {discardsLeft} 次</span>
                 </button>
               </div>
