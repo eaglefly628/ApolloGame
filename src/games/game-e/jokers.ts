@@ -95,6 +95,13 @@ export const STARTER_JOKERS: readonly JokerCard[] = [
   J({ id: 'the_trio', name: 'The Trio', rarity: 'rare', cost: 8, jokerType: 'Xm', trigger: 'on_hand_scored', when: { kind: 'hand_contains', hand: 'three_kind' }, op: 'mul', target: 'mult', value: 3, text: '含三条 → ×3 倍率' }),
   J({ id: 'the_family', name: 'The Family', rarity: 'rare', cost: 8, jokerType: 'Xm', trigger: 'on_hand_scored', when: { kind: 'hand_contains', hand: 'four_kind' }, op: 'mul', target: 'mult', value: 4, text: '含四条 → ×4 倍率' }),
   J({ id: 'gros_michel', name: 'Gros Michel', rarity: 'common', cost: 5, jokerType: '+m', trigger: 'on_hand_scored', when: { kind: 'always' }, op: 'add', target: 'mult', value: 15, text: '+15 倍率' }),
+  // ── REQ-E-022 落地：含顺子/含同花条件小丑（poker-eval 暴露 isFlush/isStraight Flag 后成纯数据）──
+  J({ id: 'crazy_joker', name: 'Crazy Joker', rarity: 'common', cost: 4, jokerType: '+m', trigger: 'on_hand_scored', when: { kind: 'hand_contains', hand: 'straight' }, op: 'add', target: 'mult', value: 12, text: '含顺子 → +12 倍率' }),
+  J({ id: 'droll_joker', name: 'Droll Joker', rarity: 'common', cost: 4, jokerType: '+m', trigger: 'on_hand_scored', when: { kind: 'hand_contains', hand: 'flush' }, op: 'add', target: 'mult', value: 10, text: '含同花 → +10 倍率' }),
+  J({ id: 'devious_joker', name: 'Devious Joker', rarity: 'common', cost: 4, jokerType: '+c', trigger: 'on_hand_scored', when: { kind: 'hand_contains', hand: 'straight' }, op: 'add', target: 'chips', value: 100, text: '含顺子 → +100 筹码' }),
+  J({ id: 'crafty_joker', name: 'Crafty Joker', rarity: 'common', cost: 4, jokerType: '+c', trigger: 'on_hand_scored', when: { kind: 'hand_contains', hand: 'flush' }, op: 'add', target: 'chips', value: 80, text: '含同花 → +80 筹码' }),
+  J({ id: 'the_order', name: 'The Order', rarity: 'rare', cost: 8, jokerType: 'Xm', trigger: 'on_hand_scored', when: { kind: 'hand_contains', hand: 'straight' }, op: 'mul', target: 'mult', value: 3, text: '含顺子 → ×3 倍率' }),
+  J({ id: 'the_tribe', name: 'The Tribe', rarity: 'rare', cost: 8, jokerType: 'Xm', trigger: 'on_hand_scored', when: { kind: 'hand_contains', hand: 'flush' }, op: 'mul', target: 'mult', value: 2, text: '含同花 → ×2 倍率' }),
 ];
 
 /** 按 id 取小丑。 */

@@ -116,6 +116,24 @@ describe('game-e · GameSession 线性流程脚本', () => {
     expect(s.enchanted[`${s.hand[0].suit}${s.hand[0].rank}`]).toEqual(['foil', 'mult']);
   });
 
+  it('含同花小丑(REQ-E-022)：打出同花 → Crafty +80 筹码生效（引擎 isFlush Flag → 门 → effect）', () => {
+    const flush5: { suit: 'spades'; rank: '2' | '5' | '7' | '9' | 'K' }[] = [
+      { suit: 'spades', rank: '2' }, { suit: 'spades', rank: '5' }, { suit: 'spades', rank: '7' }, { suit: 'spades', rank: '9' }, { suit: 'spades', rank: 'K' },
+    ];
+    const fillers = [{ suit: 'hearts', rank: '3' }, { suit: 'clubs', rank: '4' }, { suit: 'diamonds', rank: '6' }] as const;
+    const plain = new GameSession(1);
+    plain.hand = [...flush5, ...fillers] as never;
+    const r0 = plain.play([0, 1, 2, 3, 4])!;
+    expect(r0.type).toBe('flush');
+
+    const withJ = new GameSession(1);
+    expect(withJ.buyJoker(STARTER_JOKERS.find((j) => j.id === 'crafty_joker')!)).toBe(true); // 含同花 +80 筹码
+    withJ.hand = [...flush5, ...fillers] as never;
+    const r1 = withJ.play([0, 1, 2, 3, 4])!;
+    expect(r1.type).toBe('flush');
+    expect(r1.chips).toBe(r0.chips + 80); // Crafty 的 +80 筹码确实加上了
+  });
+
   it('Boss 诅咒：boss 道按表施加（Ante1 高墙=盲注线翻倍）', () => {
     const s = new GameSession(1);
     expect(s.boss).toBeNull(); // small 道无 boss

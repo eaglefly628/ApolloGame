@@ -10,7 +10,9 @@
 
 ## 待处理 / 进行中
 
-### REQ-E-022 · [2026-06-18] · PE（Game E 小丑牌 · 真实牌库扩充拉动）· 框架级 · status: **open** · 优先级: 中 · 类型: 真缺口（poker-eval 缺 isFlush/isStraight 派生事实）
+### REQ-E-022 · [2026-06-18] · PE（Game E 小丑牌 · 真实牌库扩充拉动）· 框架级 · status: **done（引擎侧 + 游戏侧接线 2026-06-18）** · 优先级: 中 · 类型: 真缺口（poker-eval 缺 isFlush/isStraight 派生事实）
+
+> **落地**：引擎侧 `PokerHand.isStraightFlag?/isFlushFlag?`（poker-eval `setFlag` 写 evald.isStraight/isFlush）。游戏侧接线：blueprint 加 `F_STRAIGHT/F_FLUSH` Flag 实体 + PokerHand 配置指向它们，`containsCondition` 补 straight/flush 分支；STARTER_JOKERS 加 Crazy/Droll/Devious/Crafty/The Order/The Tribe（可玩 25→31）。headless 测试证「打同花 → Crafty +80 筹码」端到端生效。全绿（tsc + 1418 vitest + build）。
 
 **标题**：`poker-eval` 暴露 `isFlush` / `isStraight`（含 `isStraightFlush`）派生事实 —— 与现有 `rankMaxCount`/`pairCount` 同类
 

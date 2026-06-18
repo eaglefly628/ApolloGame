@@ -28,6 +28,8 @@ export const R_MONEY = 'money';
 export const R_HAND_SCORE = 'hand_score'; // 本手最终得分 = chips × mult（REQ-013 valueFrom timesResourceId）
 export const V_HAND_TYPE = 'hand_type';
 export const F_SCORING = 'scoring';
+export const F_STRAIGHT = 'is_straight'; // poker-eval 写：本手是否含顺子（REQ-E-022）
+export const F_FLUSH = 'is_flush'; // poker-eval 写：本手是否含同花（REQ-E-022）
 export const SIG_SCORE = 'score';
 export const SIG_JOLLY = 'jolly_fire';
 // 回合循环（增量1：可玩切片）。round_score 跨手累加；hands_left 每出一手 -1；blind_target 过关线。
@@ -137,7 +139,9 @@ function containsCondition(hand: HandType): Record<string, unknown> {
     case 'three_kind': return { kind: 'resource', id: R_RANK_MAX, cmp: 'gte', value: 3 };
     case 'four_kind': return { kind: 'resource', id: R_RANK_MAX, cmp: 'gte', value: 4 };
     case 'two_pair': return { kind: 'resource', id: R_PAIR_COUNT, cmp: 'gte', value: 2 };
-    default: throw new Error(`containsCondition: 未支持的牌型包含判定 "${hand}"（需补 isFlush/isStraight 等派生事实）`);
+    case 'straight': return { kind: 'flag', id: F_STRAIGHT }; // REQ-E-022
+    case 'flush': return { kind: 'flag', id: F_FLUSH }; // REQ-E-022
+    default: throw new Error(`containsCondition: 未支持的牌型包含判定 "${hand}"（需补派生事实）`);
   }
 }
 
@@ -232,6 +236,9 @@ export function buildGameEBlueprint(jokerEntities: Record<string, EntityBlueprin
 
     // 计分开关（装配层/输入层在「出牌」时置 true → 驱动 score 信号）。
     scoring: { Flag: { id: F_SCORING, active: false } } as unknown as EntityBlueprint,
+    // poker-eval 写的牌型派生 Flag（REQ-E-022）：含顺子 / 含同花。条件类小丑门控读。
+    isStraight: { Flag: { id: F_STRAIGHT, active: false } } as unknown as EntityBlueprint,
+    isFlush: { Flag: { id: F_FLUSH, active: false } } as unknown as EntityBlueprint,
 
     // ── 回合循环资源（增量1：单局可玩切片）。round_score 跨手累加、过 blind_target 即胜；hands_left 出一手 -1。──
     roundScore: { Resource: { id: R_ROUND_SCORE, current: 0, min: 0, max: 1_000_000_000_000 } } as unknown as EntityBlueprint,
@@ -250,6 +257,7 @@ export function buildGameEBlueprint(jokerEntities: Record<string, EntityBlueprin
       PokerHand: {
         rankingTable: buildRankingTable(), chipsResource: R_CHIPS, multResource: R_MULT, handTypeVar: V_HAND_TYPE,
         rankMaxCountResource: R_RANK_MAX, pairCountResource: R_PAIR_COUNT, handSizeResource: R_HAND_SIZE,
+        isStraightFlag: F_STRAIGHT, isFlushFlag: F_FLUSH,
       },
       PerCardScore: { chipsResource: R_CHIPS, baseChipsByRank: BASE_CHIPS_BY_RANK },
       PlayedHand: { cards: [] as Card[] },
