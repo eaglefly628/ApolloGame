@@ -1,0 +1,131 @@
+<!DOCTYPE html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><style>html,body{margin:0;background:#0e0d12}
+.ggl-root[data-skin="onyx"]{ --bg:#0e0d12; --bg2:#16141c; --panel:#1b1822; --panel2:#221e2c; --line:#332c40;
+  --ink:#ece6f5; --ink2:#a99fbc; --gold:#e0973a; --accent:#d8504e; --accent2:#ff7a45; --seal:#c0392b; --silk:#191620;
+  --shadow:0 6px 22px #0009; --rare-leg:#e0973a; --spade:#4a6390; --heart:#d8504e; --diamond:#e0973a; --club:#3fae6e;
+  --scroll:linear-gradient(135deg,#1b1822,#16141c); }
+.ggl-root[data-skin="rosy"]{ --bg:#f3ead9; --bg2:#ece0cb; --panel:#fbf4e6; --panel2:#f5ead4; --line:#d9c3a3;
+  --ink:#3a2b22; --ink2:#7a6450; --gold:#b8862f; --accent:#c14b66; --accent2:#d8607c; --seal:#b03050; --silk:#fbf4e6;
+  --shadow:0 6px 22px #0002; --rare-leg:#b8862f; --spade:#4a6390; --heart:#c14b66; --diamond:#b8862f; --club:#3fae6e;
+  --scroll:linear-gradient(135deg,#fbf4e6,#f0e3cc); }
+.ggl-root{ background:var(--bg); color:var(--ink); font-family:"Noto Serif SC","Songti SC",serif; min-height:100%; }
+.ggl-root *{ box-sizing:border-box; margin:0 }
+.ggl-root button{ font-family:inherit; cursor:pointer }
+.ggl-root .ghost{ opacity:.62 } .ggl-root .zh{ font-family:"Ma Shan Zheng","Zhi Mang Xing","Noto Serif SC",serif }
+.ggl-root .wrap{ max-width:1340px; margin:0 auto; padding:14px 18px 40px }
+.ggl-root .top{ display:flex; align-items:center; gap:14px; padding:10px 16px; border:1px solid var(--line); border-radius:14px; background:var(--scroll); box-shadow:var(--shadow) }
+.ggl-root .avatar{ width:46px; height:46px; border-radius:11px; display:grid; place-items:center; font-size:24px; background:radial-gradient(circle at 30% 30%,var(--panel2),var(--bg2)); border:1px solid var(--line); color:var(--spade) }
+.ggl-root .me .name{ font-weight:700; font-size:16px; letter-spacing:.5px } .ggl-root .me .sub{ font-size:12px; color:var(--ink2) }
+.ggl-root .rank{ margin-left:auto; font-size:13px; color:var(--gold); border:1px solid var(--line); padding:5px 11px; border-radius:20px; background:var(--panel) }
+.ggl-root .cur{ display:flex; gap:12px; font-size:13px } .ggl-root .cur b{ color:var(--gold) }
+.ggl-root .skin{ display:flex; border:1px solid var(--line); border-radius:20px; overflow:hidden }
+.ggl-root .skin button{ background:transparent; color:var(--ink2); border:0; padding:5px 13px; font-size:12px }
+.ggl-root .skin button.on{ background:var(--accent); color:#fff }
+.ggl-root .gear{ background:var(--panel); border:1px solid var(--line); color:var(--ink2); border-radius:10px; width:34px; height:34px }
+.ggl-root .tut{ background:var(--panel); border:1px solid var(--gold); color:var(--gold); border-radius:10px; padding:0 12px; height:34px; font-size:13px; font-weight:700 }
+.ggl-root .nav{ display:flex; gap:8px; margin:14px 0 }
+.ggl-root .nav button{ flex:0 0 auto; background:var(--panel); color:var(--ink2); border:1px solid var(--line); border-radius:11px; padding:9px 20px; font-size:15px; font-weight:600; position:relative }
+.ggl-root .nav button.on{ color:var(--ink); border-color:var(--gold); background:var(--panel2); box-shadow:0 0 0 1px var(--gold) inset }
+.ggl-root .nav button.on::after{ content:""; position:absolute; left:18%; right:18%; bottom:-1px; height:2px; background:var(--gold); border-radius:2px }
+.ggl-root .screen{ display:none } .ggl-root .screen.on{ display:block }
+.ggl-root .layout{ display:grid; grid-template-columns:1fr 300px; gap:16px }
+@media(max-width:980px){ .ggl-root .layout{ grid-template-columns:1fr } }
+.ggl-root .card{ background:var(--panel); border:1px solid var(--line); border-radius:14px; padding:16px; box-shadow:var(--shadow) }
+.ggl-root .card.silk{ background:var(--scroll) }
+.ggl-root h2{ font-size:15px; color:var(--gold); margin-bottom:10px; letter-spacing:1px; display:flex; align-items:center; gap:8px }
+.ggl-root h2 .seal{ font-size:11px; background:var(--seal); color:#fff; padding:2px 8px; border-radius:4px; font-family:"Ma Shan Zheng",serif }
+.ggl-root .hero{ position:relative; border-radius:16px; overflow:hidden; border:1px solid var(--line);
+  background: radial-gradient(120% 80% at 80% 0%,color-mix(in srgb,var(--accent) 28%,transparent),transparent 60%),
+   radial-gradient(100% 100% at 0% 100%,color-mix(in srgb,var(--spade) 30%,transparent),transparent 55%), var(--scroll);
+  padding:26px 24px; min-height:236px; display:flex; flex-direction:column; justify-content:space-between }
+.ggl-root .hero .season{ font-size:13px; color:var(--ink2) }
+.ggl-root .hero .title{ font-size:30px; font-weight:800; letter-spacing:2px; text-shadow:0 2px 10px #0006 }
+.ggl-root .cta{ display:flex; gap:12px; flex-wrap:wrap }
+.ggl-root .btn{ border:1px solid var(--line); border-radius:12px; padding:12px 20px; font-size:15px; font-weight:700; background:var(--panel2); color:var(--ink) }
+.ggl-root .btn.primary{ background:linear-gradient(180deg,var(--accent2),var(--accent)); color:#fff; border:0; box-shadow:0 6px 18px color-mix(in srgb,var(--accent) 45%,transparent) }
+.ggl-root .btn.dice{ font-size:18px }
+.ggl-root .quick{ display:flex; gap:10px; margin-top:14px; flex-wrap:wrap }
+.ggl-root .qbtn{ flex:1; min-width:150px; background:var(--panel); border:1px solid var(--line); border-radius:11px; padding:11px 13px; display:flex; align-items:center; gap:10px; color:var(--ink); font-size:13px }
+.ggl-root .qbtn .ic{ font-size:20px } .ggl-root .qbtn .red{ color:var(--accent); font-weight:700 } .ggl-root .dot{ color:var(--accent); font-size:11px }
+.ggl-root .friend{ display:flex; align-items:center; gap:9px; padding:8px 6px; border-bottom:1px solid var(--line); font-size:13px }
+.ggl-root .friend:last-child{ border:0 }
+.ggl-root .on-dot{ width:8px; height:8px; border-radius:50%; background:var(--club) } .ggl-root .off-dot{ width:8px; height:8px; border-radius:50%; background:#5557 }
+.ggl-root .friend .tag{ margin-left:auto; font-size:11px; color:var(--ink2) }
+.ggl-root .deckgrid{ display:grid; grid-template-columns:repeat(auto-fill,minmax(220px,1fr)); gap:12px }
+.ggl-root .deck{ background:var(--panel2); border:1px solid var(--line); border-radius:12px; padding:13px; position:relative }
+.ggl-root .deck .suit{ position:absolute; top:10px; right:12px; font-size:22px; color:var(--spade) }
+.ggl-root .deck .nm{ font-weight:700; font-size:16px } .ggl-root .deck .meta{ font-size:12px; color:var(--ink2); margin:3px 0 8px } .ggl-root .deck .key{ font-size:12px; color:var(--gold) }
+.ggl-root .deck .row{ display:flex; gap:8px; margin-top:10px }
+.ggl-root .deck .row button{ flex:1; background:var(--panel); border:1px solid var(--line); color:var(--ink); border-radius:8px; padding:7px; font-size:12px }
+.ggl-root .deck .row button.go{ background:var(--accent); color:#fff; border:0 } .ggl-root .stars{ color:var(--gold); letter-spacing:2px }
+.ggl-root .filters{ display:flex; gap:8px; flex-wrap:wrap; margin-bottom:12px }
+.ggl-root .filters .f{ background:var(--panel2); border:1px solid var(--line); color:var(--ink2); border-radius:9px; padding:7px 12px; font-size:12px }
+.ggl-root .colgrid{ display:grid; grid-template-columns:repeat(auto-fill,minmax(70px,1fr)); gap:9px }
+.ggl-root .pcard{ aspect-ratio:5/7; border-radius:9px; border:1px solid var(--line); background:var(--panel2); display:flex; flex-direction:column; justify-content:space-between; padding:7px; font-size:13px; position:relative; cursor:pointer }
+.ggl-root .pcard.leg{ border-color:var(--rare-leg); box-shadow:0 0 0 1px var(--rare-leg) inset } .ggl-root .pcard.lock{ opacity:.4 }
+.ggl-root .pcard .r{ font-size:18px; font-weight:800 } .ggl-root .pcard .own{ position:absolute; bottom:5px; right:6px; font-size:10px; color:var(--ink2) }
+.ggl-root .detail{ margin-top:14px; border-top:1px solid var(--line); padding-top:12px } .ggl-root .detail .nm{ font-weight:700; font-size:16px } .ggl-root .detail .rare{ color:var(--rare-leg); font-size:12px; font-weight:700 } .ggl-root .detail .eff{ font-size:13px; color:var(--ink2); margin:6px 0; line-height:1.6 } .ggl-root .meta{ font-size:12px; color:var(--ink2) }
+.ggl-root .forge{ display:grid; grid-template-columns:1fr 1fr; gap:14px } @media(max-width:760px){ .ggl-root .forge{ grid-template-columns:1fr } }
+.ggl-root .fuse{ display:flex; align-items:center; gap:12px; justify-content:center; padding:14px 0 }
+.ggl-root .slot{ width:64px; height:88px; border-radius:10px; border:1px dashed var(--line); display:grid; place-items:center; font-size:26px; background:var(--panel2) } .ggl-root .arrow{ font-size:24px; color:var(--gold) }
+.ggl-root .shelf{ display:grid; grid-template-columns:repeat(auto-fill,minmax(96px,1fr)); gap:9px }
+.ggl-root .good{ background:var(--panel2); border:1px solid var(--line); border-radius:9px; padding:9px; text-align:center; font-size:12px } .ggl-root .good .cost{ color:var(--gold); font-weight:700; margin-top:4px }
+.ggl-root .ladder-top{ display:flex; gap:16px; flex-wrap:wrap } .ggl-root .ladder-top .box{ flex:1; min-width:180px } .ggl-root .bigrank{ font-size:26px; font-weight:800; color:var(--gold) }
+.ggl-root .rankrow{ display:flex; align-items:center; gap:10px; padding:8px 4px; border-bottom:1px solid var(--line); font-size:13px } .ggl-root .rankrow:last-child{ border:0 } .ggl-root .rankrow .n{ width:22px; color:var(--ink2); text-align:center } .ggl-root .rankrow .lp{ margin-left:auto; color:var(--gold) }
+.ggl-root .note{ font-size:11px; color:var(--ink2); text-align:center; margin-top:22px; line-height:1.7 }
+.ggl-root .tut-ov{ position:absolute; inset:0; background:#000a; display:flex; align-items:center; justify-content:center; padding:24px; z-index:50 }
+.ggl-root .tut-box{ max-width:920px; max-height:90%; overflow:auto; background:var(--panel); border:1px solid var(--gold); border-radius:14px; padding:22px; box-shadow:var(--shadow) }
+.ggl-root .tut-box h3{ color:var(--gold); font-size:18px; margin-bottom:12px } .ggl-root .tut-box .step{ border-left:3px solid var(--accent); padding:6px 0 6px 12px; margin:8px 0; font-size:14px; line-height:1.7 } .ggl-root .tut-box .step b{ color:var(--ink) }
+</style></head><body><div class="ggl-root" data-skin="onyx"><div class="wrap">
+  <div class="top">
+    <div class="avatar">♠</div>
+    <div class="me"><div class="name zh">不翻就赢_07</div><div class="sub">主牌 · <b style="color:var(--spade)">黑桃A「掷命尖兵」</b></div></div>
+    <div class="rank">⚔️ 黄金 III · 1240 LP</div>
+    <div class="cur"><span>🪙 <b>1.2k</b></span><span>◈ <b>30</b></span><span>💎 <b>88</b></span></div>
+    <button class="tut" data-act="tut">📖 新手指导</button>
+    <div class="skin"><button class="on" data-act="skin" data-k="onyx">玄铁</button><button class="" data-act="skin" data-k="rosy">锦霞</button></div>
+    <button class="gear">⚙</button>
+  </div>
+  <div class="nav">
+    <button class="" data-act="tab" data-k="home">大厅</button>
+    <button class="" data-act="tab" data-k="decks">牌组</button>
+    <button class=" on" data-act="tab" data-k="coll">收藏</button>
+    <button class="" data-act="tab" data-k="craft">改造坊</button>
+    <button class="" data-act="tab" data-k="ladder">天梯</button>
+  </div>
+  <section class="screen"><div class="layout"><div>
+    <div class="hero"><div><div class="season">第 7 赛季 · 掷命争锋 · 剩 12 天</div><div class="title zh">命运牌桌</div></div>
+      <div class="cta"><button class="btn primary" data-act="play"><span class="dice">🎲</span> ⚡ 天梯掷命 · 1V1 DUEL</button><button class="btn" data-act="play">好友切磋</button><button class="btn" data-act="play">单人 · AI 庄家</button></div></div>
+    <div class="quick"><div class="qbtn"><span class="ic">🃏</span><div>出战牌组<br><b style="color:var(--spade)">黑桃急袭 ▸</b></div></div>
+      <div class="qbtn"><span class="ic">🎁</span><div>每日掷命箱<br><span class="red">可领取 ●</span></div></div>
+      <div class="qbtn"><span class="ic">🏪</span><div>改造坊上新<br>镶字·配重 <span class="dot">🔴</span></div></div></div>
+    </div>
+    <div class="card silk"><h2>🪖 牌友 · 在线 5</h2>
+      <div class="friend"><span class="on-dot"></span> 张飞_关张 <span class="tag">对战中</span></div>
+      <div class="friend"><span class="on-dot"></span> 周瑜 <span class="tag">大厅</span></div>
+      <div class="friend"><span class="on-dot"></span> 孔明 <span class="tag">组队中</span></div>
+      <div class="friend"><span class="off-dot"></span> 司马懿 <span class="tag">离线</span></div>
+      <button class="btn" style="width:100%;margin-top:12px;font-size:13px;padding:9px">+ 添加牌友</button></div>
+  </div></section>
+  <section class="screen"><div class="card"><h2>📜 我的牌组 · 每组 54 张 · 8 套 <span style="margin-left:auto;font-size:12px;color:var(--ink2)">流派 ▾　+ 新建</span></h2>
+    <div class="deckgrid">
+      <div class="deck"><span class="suit">♠</span><div class="nm zh">黑桃急袭</div><div class="meta">♠ 黑桃 · 速攻 · 高胜率经营</div><div class="key">核心：掷命尖兵</div><div class="meta">小丑 ×2 · 附魔 ×3</div><div>预估强度 <span class="stars">★★★☆</span></div><div class="row"><button data-act="craft">改造</button><button class="go" data-act="play">设为出战</button></div></div>
+      <div class="deck"><span class="suit" style="color:var(--heart)">♥</span><div class="nm zh">赤焰火攻</div><div class="meta">♥ 红桃 · 灼烧 · 中路压制</div><div class="key">核心：东南风</div><div class="meta">小丑 ×1 · 附魔 ×2</div><div>预估强度 <span class="stars">★★★★</span></div><div class="row"><button data-act="craft">改造</button><button class="go" data-act="play">设为出战</button></div></div>
+      <div class="deck ghost"><span class="suit" style="color:var(--club)">♣</span><div class="nm zh">翠羽铺场</div><div class="meta">♣ 梅花 · 人海 · go-wide</div><div class="key">核心：人海</div><div class="meta">4/5 完成 · 缺 1 张</div><div>预估强度 <span class="stars">★★☆☆</span></div><div class="row"><button data-act="craft">改造</button><button class="go" data-act="play">设为出战</button></div></div>
+    </div></div></section>
+  <section class="screen on"><div class="card"><h2>🗃 卡牌收藏</h2>
+    <div class="filters"><span class="f">花色 ▾</span><span class="f">点数 ▾</span><span class="f">稀有度 ▾</span><span class="f">🔍 搜索</span></div>
+    <div class="colgrid"><div class="pcard leg"><div class="r" style="color:var(--spade)">♠</div><div style="text-align:right;color:var(--spade)">A</div><span class="own">×1</span></div><div class="pcard"><div class="r" style="color:var(--spade)">♠</div><div style="text-align:right;color:var(--spade)">K</div><span class="own">×2</span></div><div class="pcard"><div class="r" style="color:var(--spade)">♠</div><div style="text-align:right;color:var(--spade)">Q</div><span class="own">×3</span></div><div class="pcard"><div class="r" style="color:var(--spade)">♠</div><div style="text-align:right;color:var(--spade)">J</div><span class="own">×1</span></div><div class="pcard"><div class="r" style="color:var(--spade)">♠</div><div style="text-align:right;color:var(--spade)">10</div><span class="own">×2</span></div><div class="pcard"><div class="r" style="color:var(--spade)">♠</div><div style="text-align:right;color:var(--spade)">9</div><span class="own">×3</span></div><div class="pcard"><div class="r" style="color:var(--spade)">♠</div><div style="text-align:right;color:var(--spade)">8</div><span class="own">×1</span></div><div class="pcard"><div class="r" style="color:var(--spade)">♠</div><div style="text-align:right;color:var(--spade)">7</div><span class="own">×2</span></div><div class="pcard"><div class="r" style="color:var(--spade)">♠</div><div style="text-align:right;color:var(--spade)">6</div><span class="own">×3</span></div><div class="pcard"><div class="r" style="color:var(--spade)">♠</div><div style="text-align:right;color:var(--spade)">5</div><span class="own">×1</span></div><div class="pcard lock"><div class="r" style="color:var(--spade)">♠</div><div style="text-align:right;color:var(--spade)">4</div><span class="own">×2</span></div><div class="pcard lock"><div class="r" style="color:var(--spade)">♠</div><div style="text-align:right;color:var(--spade)">3</div><span class="own">×3</span></div><div class="pcard lock"><div class="r" style="color:var(--spade)">♠</div><div style="text-align:right;color:var(--spade)">2</div><span class="own">×1</span></div><div class="pcard"><div class="r" style="color:var(--heart)">♥</div><div style="text-align:right;color:var(--heart)">A</div><span class="own">×1</span></div><div class="pcard"><div class="r" style="color:var(--heart)">♥</div><div style="text-align:right;color:var(--heart)">K</div><span class="own">×2</span></div><div class="pcard"><div class="r" style="color:var(--heart)">♥</div><div style="text-align:right;color:var(--heart)">Q</div><span class="own">×3</span></div><div class="pcard"><div class="r" style="color:var(--heart)">♥</div><div style="text-align:right;color:var(--heart)">J</div><span class="own">×1</span></div><div class="pcard"><div class="r" style="color:var(--heart)">♥</div><div style="text-align:right;color:var(--heart)">10</div><span class="own">×2</span></div><div class="pcard"><div class="r" style="color:var(--heart)">♥</div><div style="text-align:right;color:var(--heart)">9</div><span class="own">×3</span></div><div class="pcard"><div class="r" style="color:var(--heart)">♥</div><div style="text-align:right;color:var(--heart)">8</div><span class="own">×1</span></div><div class="pcard"><div class="r" style="color:var(--heart)">♥</div><div style="text-align:right;color:var(--heart)">7</div><span class="own">×2</span></div><div class="pcard"><div class="r" style="color:var(--heart)">♥</div><div style="text-align:right;color:var(--heart)">6</div><span class="own">×3</span></div><div class="pcard"><div class="r" style="color:var(--heart)">♥</div><div style="text-align:right;color:var(--heart)">5</div><span class="own">×1</span></div><div class="pcard lock"><div class="r" style="color:var(--heart)">♥</div><div style="text-align:right;color:var(--heart)">4</div><span class="own">×2</span></div><div class="pcard lock"><div class="r" style="color:var(--heart)">♥</div><div style="text-align:right;color:var(--heart)">3</div><span class="own">×3</span></div><div class="pcard lock"><div class="r" style="color:var(--heart)">♥</div><div style="text-align:right;color:var(--heart)">2</div><span class="own">×1</span></div><div class="pcard"><div class="r" style="color:var(--diamond)">♦</div><div style="text-align:right;color:var(--diamond)">A</div><span class="own">×1</span></div><div class="pcard"><div class="r" style="color:var(--diamond)">♦</div><div style="text-align:right;color:var(--diamond)">K</div><span class="own">×2</span></div><div class="pcard"><div class="r" style="color:var(--diamond)">♦</div><div style="text-align:right;color:var(--diamond)">Q</div><span class="own">×3</span></div><div class="pcard"><div class="r" style="color:var(--diamond)">♦</div><div style="text-align:right;color:var(--diamond)">J</div><span class="own">×1</span></div><div class="pcard"><div class="r" style="color:var(--diamond)">♦</div><div style="text-align:right;color:var(--diamond)">10</div><span class="own">×2</span></div><div class="pcard"><div class="r" style="color:var(--diamond)">♦</div><div style="text-align:right;color:var(--diamond)">9</div><span class="own">×3</span></div><div class="pcard"><div class="r" style="color:var(--diamond)">♦</div><div style="text-align:right;color:var(--diamond)">8</div><span class="own">×1</span></div><div class="pcard"><div class="r" style="color:var(--diamond)">♦</div><div style="text-align:right;color:var(--diamond)">7</div><span class="own">×2</span></div><div class="pcard"><div class="r" style="color:var(--diamond)">♦</div><div style="text-align:right;color:var(--diamond)">6</div><span class="own">×3</span></div><div class="pcard"><div class="r" style="color:var(--diamond)">♦</div><div style="text-align:right;color:var(--diamond)">5</div><span class="own">×1</span></div><div class="pcard lock"><div class="r" style="color:var(--diamond)">♦</div><div style="text-align:right;color:var(--diamond)">4</div><span class="own">×2</span></div><div class="pcard lock"><div class="r" style="color:var(--diamond)">♦</div><div style="text-align:right;color:var(--diamond)">3</div><span class="own">×3</span></div><div class="pcard lock"><div class="r" style="color:var(--diamond)">♦</div><div style="text-align:right;color:var(--diamond)">2</div><span class="own">×1</span></div><div class="pcard"><div class="r" style="color:var(--club)">♣</div><div style="text-align:right;color:var(--club)">A</div><span class="own">×1</span></div><div class="pcard"><div class="r" style="color:var(--club)">♣</div><div style="text-align:right;color:var(--club)">K</div><span class="own">×2</span></div><div class="pcard"><div class="r" style="color:var(--club)">♣</div><div style="text-align:right;color:var(--club)">Q</div><span class="own">×3</span></div><div class="pcard"><div class="r" style="color:var(--club)">♣</div><div style="text-align:right;color:var(--club)">J</div><span class="own">×1</span></div><div class="pcard"><div class="r" style="color:var(--club)">♣</div><div style="text-align:right;color:var(--club)">10</div><span class="own">×2</span></div><div class="pcard"><div class="r" style="color:var(--club)">♣</div><div style="text-align:right;color:var(--club)">9</div><span class="own">×3</span></div><div class="pcard"><div class="r" style="color:var(--club)">♣</div><div style="text-align:right;color:var(--club)">8</div><span class="own">×1</span></div><div class="pcard"><div class="r" style="color:var(--club)">♣</div><div style="text-align:right;color:var(--club)">7</div><span class="own">×2</span></div><div class="pcard"><div class="r" style="color:var(--club)">♣</div><div style="text-align:right;color:var(--club)">6</div><span class="own">×3</span></div><div class="pcard"><div class="r" style="color:var(--club)">♣</div><div style="text-align:right;color:var(--club)">5</div><span class="own">×1</span></div><div class="pcard lock"><div class="r" style="color:var(--club)">♣</div><div style="text-align:right;color:var(--club)">4</div><span class="own">×2</span></div><div class="pcard lock"><div class="r" style="color:var(--club)">♣</div><div style="text-align:right;color:var(--club)">3</div><span class="own">×3</span></div><div class="pcard lock"><div class="r" style="color:var(--club)">♣</div><div style="text-align:right;color:var(--club)">2</div><span class="own">×1</span></div></div>
+    <div class="detail"><div class="nm zh">黑桃A · 掷命尖兵　<span class="rare">传说</span></div><div class="meta">♠ 黑桃 · 拥有 ×1</div>
+      <div class="eff">公平骨架：点数 14。经营 buff：镶「重翻」+ 配重 +2 + 可叠护盾位。掷命相撞时压制低点数牌。</div>
+      <div class="row" style="display:flex;gap:8px;margin-top:8px"><button class="btn" style="padding:8px 14px;font-size:13px">分解</button><button class="btn primary" style="padding:8px 14px;font-size:13px" data-act="craft">加入牌组</button></div></div></div></section>
+  <section class="screen"><div class="forge">
+    <div class="card silk"><h2>⚒ 改造台 · 把牌经营得更强（公平骨架·不泵点数）</h2><div class="fuse"><div class="slot" style="color:var(--club)">♣</div><div class="arrow">→</div><div class="slot" style="color:var(--gold)">重翻</div></div><div class="note" style="margin-top:4px">熔铸改造 · 消耗材料 🪙 1.2k</div><div style="margin-top:12px"><span class="f">集材</span></div></div>
+    <div class="card"><h2>🏪 庄家商城 <span class="seal">NPC</span> <span style="margin-left:auto;font-size:12px;color:var(--ink2)">非玩家交易</span></h2><div class="meta" style="font-size:12px;margin-bottom:8px">庄家货架 · 买一张少一张 · 🔄 刷新 🪙2 · 锁定货架</div>
+      <div class="shelf"><div class="good">★ 重翻字<div class="cost">🪙 12</div></div><div class="good">★ 配重 +2<div class="cost">🪙 8</div></div><div class="good">★ 护盾位<div class="cost">🪙 20</div></div><div class="good">每日礼包<div class="cost">●</div></div></div></div>
+  </div></section>
+  <section class="screen"><div class="ladder-top">
+    <div class="card box"><h2>⚔️ 我的段位</h2><div class="bigrank">黄金 III · 1240 LP</div><div class="meta" style="margin-top:4px">距 黄金 II 还需 60 LP</div><div class="meta" style="margin-top:8px">近 10 局 · 胜率 64% · 连胜 3 · 翻正率 71%</div></div>
+    <div class="card box"><h2>🏆 天梯榜 · 全服</h2><div class="rankrow"><span class="n">1</span> 不败战神 <span class="lp">2480</span></div><div class="rankrow"><span class="n">2</span> 一掷千金 <span class="lp">2310</span></div><div class="rankrow"><span class="n">3</span> 翻命真君 <span class="lp">2185</span></div><div class="rankrow"><span class="n">…</span> 不翻就赢_07 <span class="lp">1240</span></div></div>
+  </div></section>
+  <div class="note">大厅忠实港 · 对照 UI/Game G 大厅.dc.html 五屏 IA + 顶栏 + 玄铁/锦霞双皮 · 货币接真存档</div>
+  </div></div></body></html>
