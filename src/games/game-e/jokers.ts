@@ -74,6 +74,8 @@ export interface JokerCard {
   /** 自增长（REQ-E-023④ 重组：per-joker 计数 Resource + 计分 valueFrom 读出）。流程在 hand/discard/round 事件按 ± 更新计数；
    *  cond（仅 hand 事件）按出的牌判定才累加。计分用本小丑的 op/target 把计数作用上去（counter 起始 start）。 */
   readonly grow?: { readonly start: number; readonly hand?: number; readonly discard?: number; readonly round?: number; readonly cond?: 'size4' | 'straight' | 'two_pair' };
+  /** 被动改本道盲注资源（游戏侧每道开局读 owned 累加；Juggler +1手牌、Drunkard +1弃牌、Stuntman -2手牌…）。 */
+  readonly passive?: { readonly handSize?: number; readonly hands?: number; readonly discards?: number };
   /** 重触发次数（REQ-014 PerCardRetrigger）：>0 表示首张计分牌额外重触发 N 次（Hanging Chad=2）。 */
   readonly retrigger?: number;
   /** 美术 key（jokerArtKey(id)）；缺图自动退化占位。 */
@@ -156,10 +158,26 @@ export const STARTER_JOKERS: readonly JokerCard[] = [
   // ── 条件重触发（PerCardRetrigger.when）──
   J({ id: 'hack', name: 'Hack', rarity: 'uncommon', cost: 6, jokerType: '...', trigger: 'on_card_scored', when: { kind: 'card_rank_in', ranks: [2, 3, 4, 5] }, op: 'add', target: 'chips', value: 0, retrigger: 1, text: '每张计分的 2/3/4/5 额外重触发 1 次' }),
   J({ id: 'sock_and_buskin', name: 'Sock and Buskin', rarity: 'uncommon', cost: 6, jokerType: '...', trigger: 'on_card_scored', when: { kind: 'card_face' }, op: 'add', target: 'chips', value: 0, retrigger: 1, text: '每张计分的人头牌额外重触发 1 次' }),
+  // ── 留手+概率（能力已就绪，纯数据）──
+  J({ id: 'reserved_parking', name: 'Reserved Parking', rarity: 'common', cost: 6, jokerType: '+$', trigger: 'on_card_scored', when: { kind: 'card_face' }, op: 'add', target: 'money', value: 1, held: true, chance: { num: 1, den: 2 }, text: '每张留在手里的人头牌 1/2 概率 +$1' }),
+  // ── 被动改手数/弃牌/手牌（每道开局读 owned）──
+  J({ id: 'juggler', name: 'Juggler', rarity: 'common', cost: 4, jokerType: '!!', trigger: 'on_blind_selected', when: { kind: 'always' }, op: 'add', target: 'mult', value: 0, passive: { handSize: 1 }, text: '手牌 +1 张' }),
+  J({ id: 'drunkard', name: 'Drunkard', rarity: 'common', cost: 4, jokerType: '!!', trigger: 'on_blind_selected', when: { kind: 'always' }, op: 'add', target: 'mult', value: 0, passive: { discards: 1 }, text: '每回合 +1 次弃牌' }),
+  J({ id: 'merry_andy', name: 'Merry Andy', rarity: 'uncommon', cost: 7, jokerType: '!!', trigger: 'on_blind_selected', when: { kind: 'always' }, op: 'add', target: 'mult', value: 0, passive: { discards: 3, handSize: -1 }, text: '每回合 +3 次弃牌，手牌 -1 张' }),
+  J({ id: 'troubadour', name: 'Troubadour', rarity: 'uncommon', cost: 6, jokerType: '!!', trigger: 'on_blind_selected', when: { kind: 'always' }, op: 'add', target: 'mult', value: 0, passive: { handSize: 2, hands: -1 }, text: '手牌 +2 张，每回合 -1 次出牌' }),
+  J({ id: 'burglar', name: 'Burglar', rarity: 'uncommon', cost: 6, jokerType: '!!', trigger: 'on_blind_selected', when: { kind: 'always' }, op: 'add', target: 'mult', value: 0, passive: { hands: 3, discards: -99 }, text: '选盲注后 +3 次出牌，失去全部弃牌' }),
+  J({ id: 'stuntman', name: 'Stuntman', rarity: 'rare', cost: 7, jokerType: '+c', trigger: 'on_hand_scored', when: { kind: 'always' }, op: 'add', target: 'chips', value: 250, passive: { handSize: -2 }, text: '+250 筹码，手牌 -2 张' }),
 ];
 
 /** 自增长小丑的计数 Resource id（per-joker）。 */
 export function growResId(id: string): string { return `jc_${id}`; }
+
+/** owned 的被动手数/弃牌/手牌张数总增量（游戏侧每道开局加到基准上）。 */
+export function passiveTotals(owned: readonly JokerCard[]): { handSize: number; hands: number; discards: number } {
+  let handSize = 0, hands = 0, discards = 0;
+  for (const j of owned) if (j.passive) { handSize += j.passive.handSize ?? 0; hands += j.passive.hands ?? 0; discards += j.passive.discards ?? 0; }
+  return { handSize, hands, discards };
+}
 
 /** 流程在某事件后要对哪些自增长计数 ±多少（游戏侧据此 set 计数 Resource）。cond 仅 hand 事件按出的牌判。 */
 export function growBumps(owned: readonly JokerCard[], event: 'hand' | 'discard' | 'round', ctx: { handSize?: number; isStraight?: boolean; isTwoPair?: boolean }): { id: string; delta: number }[] {

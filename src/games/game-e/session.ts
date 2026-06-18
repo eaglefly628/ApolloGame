@@ -3,7 +3,7 @@ import type { Resource, PlayedHand, Flag, StringVar, ScoreTrace, ScoreEvent } fr
 import { buildGameEBlueprint, buildJokerEntities, jokerToEntities, toEngineCard, HAND_TYPE_TO_ENGINE, HANDMOD_FLAGS, R_CHIPS, R_MULT, R_MONEY, R_HAND_SCORE, R_ROUND_SCORE, R_HANDS_LEFT, R_DISCARDS_LEFT, R_BLIND, V_HAND_TYPE } from './blueprint.js';
 import { shuffledDeck, mulberry32, type Card } from './deck.js';
 import { HAND_ORDER, handScoreAtLevel, type HandType } from './hand-rankings.js';
-import { rollJokerOffer, roundEndPayout, growBumps, discardPayout, type JokerCard } from './jokers.js';
+import { rollJokerOffer, roundEndPayout, growBumps, discardPayout, passiveTotals, type JokerCard } from './jokers.js';
 import { blindRequirement, BLIND_ORDER, type BlindKind } from './blinds.js';
 import { type PlanetCard } from './planets.js';
 import { bossForAnte, type BossBlind } from './boss-blinds.js';
@@ -148,12 +148,13 @@ export class GameSession {
   /** ① 一道盲注开局：重置回合资源 + 设盲注线（Boss 诅咒可改）+ 洗牌发牌。 */
   startBlind(): void {
     const boss = this.boss;
-    this.handSize = boss?.effect === 'small_hand' ? HAND_SIZE - 1 : HAND_SIZE;
+    const pt = passiveTotals(this.owned); // 被动小丑（Juggler/Drunkard/Stuntman…）改本道资源
+    this.handSize = Math.max(1, (boss?.effect === 'small_hand' ? HAND_SIZE - 1 : HAND_SIZE) + pt.handSize);
     this.rebuildRankingTable(boss?.effect === 'halve_base' ? 0.5 : 1); // 燧石减半 / 否则按等级还原
     this.payPerPlay = boss?.effect === 'pay_per_play';
     this.set(R_ROUND_SCORE, 0);
-    this.set(R_HANDS_LEFT, boss?.effect === 'fewer_hands' ? 1 : HANDS_PER_BLIND);
-    this.set(R_DISCARDS_LEFT, boss?.effect === 'no_discards' ? 0 : DISCARDS_PER_BLIND);
+    this.set(R_HANDS_LEFT, Math.max(1, (boss?.effect === 'fewer_hands' ? 1 : HANDS_PER_BLIND) + pt.hands));
+    this.set(R_DISCARDS_LEFT, Math.max(0, (boss?.effect === 'no_discards' ? 0 : DISCARDS_PER_BLIND) + pt.discards));
     this.set(R_CHIPS, 0); this.set(R_MULT, 0); this.set(R_HAND_SCORE, 0);
     this.set(R_BLIND, blindRequirement(this.ante, this.blindKind) * (boss?.effect === 'target_x2' ? 2 : 1));
     this.engine.world.getComponent<PlayedHand>('table', 'PlayedHand')!.cards = [];

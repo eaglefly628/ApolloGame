@@ -8,7 +8,7 @@ import {
 } from './games/game-e/blueprint.js';
 import {
   HAND_RANKINGS, HAND_ORDER, handScoreAtLevel, RANK_ORDER, RANKS, SUITS, shuffledDeck, rollJokerOffer, blindRequirement, BLIND_ORDER,
-  COMMON_PLANETS, planetForHand, bossForAnte, TAROTS, ENCHANTS, roundEndPayout, growBumps, discardPayout,
+  COMMON_PLANETS, planetForHand, bossForAnte, TAROTS, ENCHANTS, roundEndPayout, growBumps, discardPayout, passiveTotals,
   type PlanetCard, type BossBlind, type TarotCard, type EnchantId,
   type Card, type Suit, type Rank, type HandType, type JokerCard, type BlindKind,
 } from './games/game-e/index.js';
@@ -158,6 +158,8 @@ function GameE() {
   const CONSUMABLE_SLOTS = 2;
   const enchantOf = (c: Card): EnchantId[] => enchanted[`${c.suit}${c.rank}`] ?? [];
   useEffect(() => { handLevelsRef.current = handLevels; }, [handLevels]);
+  const ownedRef = useRef(owned); // startBlind 读 owned 算被动手数/弃牌（避免闭包陈旧）
+  useEffect(() => { ownedRef.current = owned; }, [owned]);
   const [, force] = useState(0);
   const bump = () => force((n) => n + 1);
   const keyOf = (c: Card) => `${c.suit}${c.rank}`;
@@ -221,7 +223,8 @@ function GameE() {
     const e = engineRef.current!;
     const kind = BLIND_ORDER[bi];
     const bz = kind === 'boss' ? bossForAnte(a) : null;
-    const hs = bz?.effect === 'small_hand' ? HAND_SIZE - 1 : HAND_SIZE;
+    const pt = passiveTotals(ownedRef.current); // 被动小丑改本道资源（Juggler/Drunkard/Stuntman…）
+    const hs = Math.max(1, (bz?.effect === 'small_hand' ? HAND_SIZE - 1 : HAND_SIZE) + pt.handSize);
     handSizeRef.current = hs;
     // 由 handLevels 重建 rankingTable（燧石 halve_base=0.5 减半，否则按等级还原）。
     const rtMult = bz?.effect === 'halve_base' ? 0.5 : 1;
@@ -230,8 +233,8 @@ function GameE() {
     const tgt = blindRequirement(a, kind) * (bz?.effect === 'target_x2' ? 2 : 1);
     setLog([`— Ante ${a} · ${BLIND_META[kind].label} 目标 ${tgt.toLocaleString()} —`, ...(bz ? [`${bz.icon} ${bz.name}：${bz.desc}`] : [])]);
     set(R_ROUND_SCORE, 0);
-    set(R_HANDS_LEFT, bz?.effect === 'fewer_hands' ? 1 : HANDS_PER_BLIND);
-    set(R_DISCARDS_LEFT, bz?.effect === 'no_discards' ? 0 : DISCARDS_PER_BLIND);
+    set(R_HANDS_LEFT, Math.max(1, (bz?.effect === 'fewer_hands' ? 1 : HANDS_PER_BLIND) + pt.hands));
+    set(R_DISCARDS_LEFT, Math.max(0, (bz?.effect === 'no_discards' ? 0 : DISCARDS_PER_BLIND) + pt.discards));
     set(R_CHIPS, 0); set(R_MULT, 0); set(R_HAND_SCORE, 0);
     set(R_BLIND, tgt);
     e.world.getComponent<PlayedHand>('table', 'PlayedHand')!.cards = [];

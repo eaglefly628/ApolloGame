@@ -203,6 +203,18 @@ describe('game-e · GameSession 线性流程脚本', () => {
     expect(r2.mult).toBe(r1.mult + 1);
   });
 
+  it('被动小丑：Juggler 手牌 +1 / Drunkard 弃牌 +1（每道开局读 owned）', () => {
+    const s = new GameSession(1);
+    expect(s.buyJoker(STARTER_JOKERS.find((j) => j.id === 'juggler')!)).toBe(true); // cost 4
+    s.blindIdx = 1; s.startBlind(); // 重开一道（大盲注），被动生效
+    expect(s.hand.length).toBe(9); // 8 + 1
+    const s2 = new GameSession(1);
+    s2.buyJoker(STARTER_JOKERS.find((j) => j.id === 'drunkard')!);
+    s2.blindIdx = 1; s2.startBlind();
+    expect(s2.discardsLeft).toBe(4); // 3 + 1
+    expect(s2.hand.length).toBe(8);
+  });
+
   it('Boss 诅咒：boss 道按表施加（Ante1 高墙=盲注线翻倍）', () => {
     const s = new GameSession(1);
     expect(s.boss).toBeNull(); // small 道无 boss
