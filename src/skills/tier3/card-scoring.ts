@@ -61,7 +61,7 @@ export const cardScoringCapability = defineCapability({
   describe: {
     name: 'card-scoring',
     summary:
-      '逐张计分 pass：按序遍历 PlayedHand.cards，对每张（含 retrigger 重复）累加 baseChips + 触发命中该牌的逐张规则（PerCardRule，改 chips/mult 等）。poker-hand 的伴生件，补 Balatro「逐张/retrigger」缺口。',
+      '逐张计分 pass：按序遍历 PlayedHand.cards，对每张（含 retrigger 重复）累加 baseChips + 套用牌自带内禀修正（Card.mods 附魔/版式）+ 触发命中该牌的逐张规则（PerCardRule，改 chips/mult）。poker-hand 的伴生件，补 Balatro「逐张/retrigger/附魔」缺口。',
     semantic: ['tier3', 'mechanic', 'cards', 'poker', 'algorithm'],
     whenToUse:
       'Balatro 式逐张小丑（每♦+mult、每人头+chips、首张重触发…）与逐张 baseChips 累加。挂 PerCardScore{chipsResource,baseChipsByRank} 于牌桌实体（与 PlayedHand 同实体）；逐张小丑=PerCardRule 实体、重触发=PerCardRetrigger 实体。聚合计数表达不了 retrigger 时用它。',
@@ -70,6 +70,7 @@ export const cardScoringCapability = defineCapability({
       'Greedy Joker 每张♦+3 倍率：PerCardRule{ when:{kind:"suit",suit:2}, op:"add", targetResource:"mult", value:3 }',
       'Scary Face 每张人头+30 筹码：PerCardRule{ when:{kind:"rankIn",ranks:[11,12,13]}, op:"add", targetResource:"chips", value:30 }',
       'Hanging Chad 首张牌额外重触发2次：PerCardRetrigger{ when:{kind:"index",eq:0}, extra:2 }',
+      '牌附魔(REQ-E-021)：foil 牌 Card{ suit, rank, mods:[{op:"add",target:"chips",value:50}] }；红蜡封 Card{ ..., retrigger:1 }（该牌连同其修正/小丑重复1次）',
     ],
   },
 
@@ -163,7 +164,7 @@ export const cardScoringCapability = defineCapability({
             const c = played.cards[scoringIdx[pos]];
             const src = `card:${scoringIdx[pos]}`; // REQ-019：UI 据此高亮该牌（原始出牌下标）
             // 本张计分次数 = 1 + Σ 命中该牌的 retrigger.extra。
-            let repeats = 1;
+            let repeats = 1 + (c.retrigger ?? 0); // REQ-E-021：牌自带重触发（红蜡封）+ 外部 retrigger 小丑
             for (const rt of retriggers) if (matchPerCardWhen(rt.when, c, pos)) repeats += rt.extra;
             const baseChips = cfg.baseChipsByRank[String(c.rank)] ?? 0;
 
@@ -171,6 +172,13 @@ export const cardScoringCapability = defineCapability({
               if (baseChips !== 0) {
                 const after = applyToResource(lk, cfg.chipsResource, 'add', baseChips);
                 if (after !== undefined) appendScoreEvent(trace, 'percard', cfg.chipsResource, 'add', baseChips, after, src);
+              }
+              // REQ-E-021：牌的内禀修正（附魔/版式/增强）按序套用——在 baseChips 之后、外部小丑(PerCardRule)之前（同 Balatro：牌自身先于小丑）。
+              if (c.mods) {
+                for (const m of c.mods) {
+                  const after = applyToResource(lk, m.target, m.op, m.value);
+                  if (after !== undefined) appendScoreEvent(trace, 'percard-mod', m.target, m.op, m.value, after, src);
+                }
               }
               for (const { eid: ruleEid, rule } of rules) {
                 if (matchPerCardWhen(rule.when, c, pos)) {

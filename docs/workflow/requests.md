@@ -10,7 +10,7 @@
 
 ## 待处理 / 进行中
 
-### REQ-E-021 · [2026-06-18] · PE（Game E 小丑牌 · 卡牌附魔/buff 拉动）· 框架级 · status: **open** · 优先级: 中 · 类型: 真缺口（逐张计分读不到「牌自带的修正」）
+### REQ-E-021 · [2026-06-18] · PE（Game E 小丑牌 · 卡牌附魔/buff 拉动）· 框架级 · status: **done（引擎侧，2026-06-18，Lead）** · 优先级: 中 · 类型: 真缺口（逐张计分读不到「牌自带的修正」）
 
 **标题**：`card-scoring` 逐张 pass 读取「牌自带的内禀修正」（per-card 附魔/buff）—— Card 携带 mods，迭代时套用
 
@@ -27,6 +27,10 @@
 - **可复用性（非 Game E 专属）**：「实体携带修正、在被处理时套用」是通用 buff 原语——卡牌符文/装备词条/牌面状态跨卡牌游戏复用；与 REQ-F-061（命中那刻读目标 hp 做门）同类——都是**迭代/结算循环缺一处"读被处理对象的数据"**。
 - **交付后游戏侧接线（PE，非引擎）**：数据 `Card`（`deck.ts`）带 `enchant` 字段 → `toEngineCard` 把它映射成引擎 `Card.mods/retrigger`；附魔**来源**用塔罗牌/卡包商店项（纯游戏侧数据 + 表现），给某张牌盖章。视觉徽标（角标/描边）游戏侧做。
 - **请 Lead/主程裁决**：是否 ACCEPT 为 card-scoring 的最小扩展（同 REQ-F-061 纪律：迭代循环补"读被处理对象数据"）。
+- **Lead 评判 + 落地（2026-06-18，引擎侧 done）**：核实 PE 全部论点属实（`Card={suit,rank}` 无槽 `cardboard.ts:45`；`PerCardRule/Retrigger.when` 只认 suit/rank/index 非身份 `card-scoring.ts:29`；模拟附魔需每手重算下标注规则=代码、过不了尺子）→ **真缺口，ACCEPT**。与 REQ-F-061/F-065 同纪律（结算循环补"读被处理对象自身的数据"）。
+- **架构裁决（用户问：要不要扩成通用「Buff」抽象）→ 不扩，按窄做**：F-061/F-065/E-021 看着像一个东西，但**生效语境不同**（计分/伤害/命中各在自己循环）；统一 Buff 必逼出 trigger/context 规则引擎 = inner-platform 腐烂源、弱 LLM 更难一致产出、跨系统耦合、固化。正解：**语境=循环本身（隐式）**，各能力就地读相关数据；共性只收在小 shape `{op,target,value}`（PerCardRule/Effect 已用、Card.mods 复用）= 词汇复用非框架。真正跨语境、共享叠加/时长、≥2 游戏拉动时再议（现非）。
+- **落地**：`Card.mods?: {op:'add'|'mul',target,value}[]` + `Card.retrigger?: number`（`cardboard.ts`）；`card-scoring` 逐张循环在 baseChips 后、`PerCardRule` 前按序套 `c.mods`，`repeats += c.retrigger`（连同 mods/小丑重复），emit `percard-mod` trace（UI 回放复用）。零迁移。测试：foil 异质 + 无 mods 不变 + add 先于 mul + 红蜡封重复。全绿（tsc + 1394 vitest + build）。
+- **给 PE 的接线**：数据 `Card.enchant` → `toEngineCard` 映射成 `Card.mods/retrigger`；附魔来源(塔罗/卡包)、视觉徽标 = 游戏侧。
 
 ---
 

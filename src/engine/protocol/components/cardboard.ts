@@ -45,6 +45,13 @@ export interface BoardCell extends Component {
 export interface Card {
   suit: number;
   rank: number;
+  // ── REQ-E-021 牌的**内禀修正**（附魔/版式/增强）── card-scoring 逐张 pass 在 baseChips 之后、外部小丑
+  // (PerCardRule) 之前**按序套用**到对应 Resource。通用「实体携带修正、被处理时套用」原语（卡牌符文/牌面状态
+  // 跨卡牌游戏复用），非 Buff 元系统：语境=计分循环本身（隐式）。版式/增强全是数据：
+  //   foil=[{op:'add',target:'chips',value:50}]、holo=[{op:'add',target:'mult',value:10}]、poly=[{op:'mul',target:'mult',value:1.5}]。
+  mods?: Array<{ op: 'add' | 'mul'; target: string; value: number }>;
+  // ── REQ-E-021 牌的内禀重触发（红蜡封）── 并进逐张计分的 repeats（该牌连同其上 mods/小丑一起重复结算）。
+  retrigger?: number;
 }
 
 // ── poker-hand 出牌（REQ-011）── 本次"出"的一手牌（有序，供逐张迭代 / 按花色·点数计数）。

@@ -72,6 +72,29 @@ function loadPass(cards: Card[], opts: SetupOpts = {}): World {
 }
 const res = (w: World, id: string): number => w.getComponent<Resource>(`res:${id}`, 'Resource')!.current;
 
+describe('card-score-pass — 牌内禀修正 mods / retrigger（REQ-E-021 附魔）', () => {
+  it('foil 牌 mods 加 chips：只该牌得加成（异质，非全局规则）', () => {
+    const w = loadPass([{ suit: 0, rank: 5, mods: [{ op: 'add', target: 'chips', value: 50 }] }, c(1, 5)]);
+    w.tick();
+    expect(res(w, 'chips')).toBe(5 + 50 + 5); // 60：foil 5♠(base5 + mods50) + 5♥(base5)
+  });
+  it('无 mods → 行为不变（仅 baseChips）', () => {
+    const w = loadPass([c(0, 5), c(1, 5)]);
+    w.tick();
+    expect(res(w, 'chips')).toBe(10);
+  });
+  it('mods 同一张牌内按序套用（add 先于 mul）', () => {
+    const w = loadPass([{ suit: 0, rank: 5, mods: [{ op: 'add', target: 'mult', value: 4 }, { op: 'mul', target: 'mult', value: 2 }] }, c(1, 5)]);
+    w.tick();
+    expect(res(w, 'mult')).toBe((0 + 4) * 2); // 8：先 +4 再 ×2（数组序）
+  });
+  it('retrigger（红蜡封）：该牌连同其 mods 重复结算', () => {
+    const w = loadPass([{ suit: 0, rank: 5, mods: [{ op: 'add', target: 'chips', value: 50 }], retrigger: 1 }, c(1, 5)]);
+    w.tick();
+    expect(res(w, 'chips')).toBe((5 + 50) * 2 + 5); // 115：5♠(base5+50)×2 + 5♥(base5)
+  });
+});
+
 describe('card-score-pass — 逐张 baseChips 累加', () => {
   it('5 张牌 baseChips 累加：2+5+7+9+(K=10)=33', () => {
     const w = loadPass([c(0, 2), c(0, 5), c(0, 7), c(0, 9), c(0, K)]);
