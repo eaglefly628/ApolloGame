@@ -330,6 +330,8 @@ function GameE() {
 
     // 引擎一拍算出本手真值（chips/mult/score + 牌型 + 累加 round_score/hands-1）。附魔按牌身份映射成 Card.mods。
     engine.world.getComponent<PlayedHand>('table', 'PlayedHand')!.cards = chosen.map((c) => toEngineCard({ ...c, enchants: enchantedRef.current[`${c.suit}${c.rank}`] }));
+    const heldComp = engine.world.getComponent<{ type: string; cards: ReturnType<typeof toEngineCard>[] }>('table', 'HeldHand');
+    if (heldComp) heldComp.cards = hand.filter((_, i) => !sel[i]).map((c) => toEngineCard({ ...c, enchants: enchantedRef.current[`${c.suit}${c.rank}`] })); // 留手牌（Baron/Shoot the Moon）
     engine.world.getComponent<Flag>('scoring', 'Flag')!.active = true;
     engine.world.tick();
     const finalChips = get(R_CHIPS), finalMult = get(R_MULT), finalScore = get(R_HAND_SCORE);
@@ -343,6 +345,7 @@ function GameE() {
     const events: ScoreEvent[] = traceComp ? traceComp.events.map((e) => ({ ...e })) : [];
 
     engine.world.getComponent<PlayedHand>('table', 'PlayedHand')!.cards = [];
+    if (heldComp) heldComp.cards = [];
     engine.world.getComponent<Flag>('scoring', 'Flag')!.active = false;
     engine.world.tick();
 

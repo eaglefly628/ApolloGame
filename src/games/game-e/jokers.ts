@@ -64,6 +64,8 @@ export interface JokerCard {
   readonly chance?: { readonly num: number; readonly den: number };
   /** 计数缩放（REQ-E-023① countOf）：value 视作"每个该类实体 ×value"（Abstract 每小丑 +3 倍）。 */
   readonly countTag?: 'jokers';
+  /** 留手生效（REQ-E-023③）：on_card_scored 规则改对"留在手里没出的牌"求值（Baron 留手 K ×1.5）。 */
+  readonly held?: boolean;
   /** 重触发次数（REQ-014 PerCardRetrigger）：>0 表示首张计分牌额外重触发 N 次（Hanging Chad=2）。 */
   readonly retrigger?: number;
   /** 美术 key（jokerArtKey(id)）；缺图自动退化占位。 */
@@ -122,6 +124,9 @@ export const STARTER_JOKERS: readonly JokerCard[] = [
   J({ id: 'abstract_joker', name: 'Abstract Joker', rarity: 'common', cost: 4, jokerType: '+m', trigger: 'on_hand_scored', when: { kind: 'always' }, op: 'add', target: 'mult', value: 3, countTag: 'jokers', text: '每拥有 1 个小丑 +3 倍率' }),
   J({ id: 'bloodstone', name: 'Bloodstone', rarity: 'uncommon', cost: 7, jokerType: 'Xm', trigger: 'on_card_scored', when: { kind: 'card_suit', suit: 'hearts' }, op: 'mul', target: 'mult', value: 1.5, chance: { num: 1, den: 2 }, text: '每张计分 ♥ 1/2 概率 ×1.5 倍率' }),
   J({ id: 'business_card', name: 'Business Card', rarity: 'common', cost: 4, jokerType: '+$', trigger: 'on_card_scored', when: { kind: 'card_face' }, op: 'add', target: 'money', value: 2, chance: { num: 1, den: 2 }, text: '每张计分人头牌 1/2 概率 +$2' }),
+  // ── REQ-E-023 ③ 留手牌结算（HeldHand）──
+  J({ id: 'baron', name: 'Baron', rarity: 'rare', cost: 8, jokerType: 'Xm', trigger: 'on_card_scored', when: { kind: 'card_rank_in', ranks: [13] }, op: 'mul', target: 'mult', value: 1.5, held: true, text: '每张留在手里的 K ×1.5 倍率' }),
+  J({ id: 'shoot_the_moon', name: 'Shoot the Moon', rarity: 'common', cost: 5, jokerType: '+m', trigger: 'on_card_scored', when: { kind: 'card_rank_in', ranks: [12] }, op: 'add', target: 'mult', value: 13, held: true, text: '每张留在手里的 Q +13 倍率' }),
 ];
 
 /** 按 id 取小丑。 */

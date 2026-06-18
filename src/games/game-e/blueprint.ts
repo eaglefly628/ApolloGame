@@ -176,6 +176,7 @@ export function jokerToEntities(j: JokerCard, idx: number): Record<string, Entit
     else pcWhen = { kind: 'always' };
     const pcr: Record<string, unknown> = { when: pcWhen, op: j.op, targetResource: target, value: j.value };
     if (j.chance) pcr.chance = j.chance; // REQ-E-023②：逐张概率门（Bloodstone/Business Card）
+    if (j.held) pcr.held = true; // REQ-E-023③：对留手牌求值（Baron/Shoot the Moon）
     out[`j_${j.id}`] = { PerCardRule: pcr } as unknown as EntityBlueprint;
     // 第二条效果（Scholar/Walkie：同 when 再加一条 PerCardRule）。
     if (j.extra) out[`j_${j.id}_x`] = { PerCardRule: { when: pcWhen, op: j.extra.op, targetResource: TARGET_TO_RES[j.extra.target], value: j.extra.value } } as unknown as EntityBlueprint;
@@ -280,6 +281,7 @@ export function buildGameEBlueprint(jokerEntities: Record<string, EntityBlueprin
       },
       PerCardScore: { chipsResource: R_CHIPS, baseChipsByRank: BASE_CHIPS_BY_RANK },
       PlayedHand: { cards: [] as Card[] },
+      HeldHand: { cards: [] as Card[] }, // REQ-E-023③：留手牌（Baron/Shoot the Moon 等读它）
     } as unknown as EntityBlueprint,
 
     // ── 信号门：scoring → score（每帧 level）──

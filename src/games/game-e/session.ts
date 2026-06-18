@@ -169,8 +169,12 @@ export class GameSession {
   play(selected: readonly number[]): PlayResult | null {
     if (selected.length === 0 || this.handsLeft <= 0) return null;
     const chosen = selected.map((i) => this.hand[i]).filter(Boolean);
+    const keepSet = new Set(selected);
+    const held = this.hand.filter((_, i) => !keepSet.has(i)); // 留在手里没出的牌（REQ-E-023③）
 
     this.engine.world.getComponent<PlayedHand>('table', 'PlayedHand')!.cards = chosen.map((c) => toEngineCard(this.withEnchant(c)));
+    const heldComp = this.engine.world.getComponent<{ type: string; cards: ReturnType<typeof toEngineCard>[] }>('table', 'HeldHand');
+    if (heldComp) heldComp.cards = held.map((c) => toEngineCard(this.withEnchant(c)));
     this.engine.world.getComponent<Flag>('scoring', 'Flag')!.active = true;
     this.engine.world.tick();
 
@@ -183,8 +187,9 @@ export class GameSession {
     const traceComp = this.engine.world.getComponent<ScoreTrace>('table', 'ScoreTrace');
     const events: ScoreEvent[] = traceComp ? traceComp.events.map((e) => ({ ...e })) : [];
 
-    // 收尾一拍：清出牌 + 关 scoring（disarm 边沿门）。
+    // 收尾一拍：清出牌/留手 + 关 scoring（disarm 边沿门）。
     this.engine.world.getComponent<PlayedHand>('table', 'PlayedHand')!.cards = [];
+    if (heldComp) heldComp.cards = [];
     this.engine.world.getComponent<Flag>('scoring', 'Flag')!.active = false;
     this.engine.world.tick();
 

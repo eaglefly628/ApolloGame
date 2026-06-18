@@ -4,7 +4,7 @@ import { STARTER_JOKERS } from './jokers.js';
 import { planetForHand } from './planets.js';
 import { handScoreAtLevel } from './hand-rankings.js';
 import { blindRequirement } from './blinds.js';
-import { toEngineCard } from './blueprint.js';
+import { toEngineCard, jokerToEntities } from './blueprint.js';
 
 // 回合流程脚本 headless 测试（无 React）：证明线性编排正确，引擎负责算分。
 describe('game-e · GameSession 线性流程脚本', () => {
@@ -174,6 +174,14 @@ describe('game-e · GameSession 线性流程脚本', () => {
     const r = s.play([0, 1, 2, 3, 4]);
     expect(r).not.toBeNull();
     expect(s.money).toBeGreaterThanOrEqual(0); // 不崩；命中则 +$2/张人头
+  });
+
+  it('留手牌(REQ-E-023③)：Baron/Shoot the Moon 接成 held PerCardRule（留手 pass 求值）', () => {
+    const baron = jokerToEntities(STARTER_JOKERS.find((j) => j.id === 'baron')!, 0);
+    const pcr = (baron['j_baron'] as unknown as { PerCardRule: { held?: boolean; op: string; when: { ranks: number[] } } }).PerCardRule;
+    expect(pcr.held).toBe(true); // 对留手牌求值
+    expect(pcr.op).toBe('mul');
+    expect(pcr.when.ranks).toEqual([13]); // K
   });
 
   it('Boss 诅咒：boss 道按表施加（Ante1 高墙=盲注线翻倍）', () => {
