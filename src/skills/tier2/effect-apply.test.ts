@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import { World } from '@engine/core/world.js';
-import type { Effect, Signal, Flag, Resource, State, EventWhen, Sensor, Visibility, DestroyRequest } from '@engine/protocol/components.js';
+import type { Effect, Signal, Flag, Resource, State, EventWhen, Sensor, Visibility, DestroyRequest, Tag } from '@engine/protocol/components.js';
 import { effectApplyCapability } from './effect-apply.js';
 import { eventWhenCapability } from './event-when.js';
 
@@ -242,6 +242,42 @@ describe('T2 effect-apply — modify-resource 动态值 valueFrom（REQ-013）',
     signal(w, 'heal');
     w.tick();
     expect(cur(w, 'hp')).toBe(15);
+  });
+});
+
+describe('T2 effect-apply — valueFrom.countOf 按 Tag 掩码数实体（REQ-E-023①）', () => {
+  const setup = (resCurrent: number): World => {
+    const w = worldWithEffect();
+    w.createEntity('res');
+    w.addComponent('res', { type: 'Resource', id: 'mult', current: resCurrent, min: 0, max: 1e9 } as Resource);
+    return w;
+  };
+  const tag = (w: World, id: string, flags: number): void => { w.createEntity(id); w.addComponent(id, { type: 'Tag', flags } as Tag); };
+  const mult = (w: World): number => w.getComponent<Resource>('res', 'Resource')!.current;
+
+  it('op:add：每个命中掩码的实体 ×coeff（abstract「每小丑 +3 倍」）', () => {
+    const w = setup(0);
+    tag(w, 'j1', 4); tag(w, 'j2', 4); tag(w, 'j3', 4); // 3 个小丑（掩码 4）
+    tag(w, 'card', 1); // 别的 tag 不计
+    effect(w, 'ef', { onSignal: 'score', kind: 'modify-resource', targetId: 'mult', op: 'add', value: 0, valueFrom: { countOf: 4, coeff: 3 } });
+    signal(w, 'score'); w.tick();
+    expect(mult(w)).toBe(9); // 3 个 ×3
+  });
+
+  it('op:mul：×(count×coeff)（stencil 类「每个 ×」）', () => {
+    const w = setup(5);
+    tag(w, 'a', 2); tag(w, 'b', 2); // count=2
+    effect(w, 'ef', { onSignal: 'score', kind: 'modify-resource', targetId: 'mult', op: 'mul', value: 0, valueFrom: { countOf: 2, coeff: 1 } });
+    signal(w, 'score'); w.tick();
+    expect(mult(w)).toBe(10); // 5 × (2×1)
+  });
+
+  it('无命中实体 → count 0（add 不动）', () => {
+    const w = setup(7);
+    tag(w, 'x', 1); // 掩码 4 不命中
+    effect(w, 'ef', { onSignal: 'score', kind: 'modify-resource', targetId: 'mult', op: 'add', value: 0, valueFrom: { countOf: 4, coeff: 3 } });
+    signal(w, 'score'); w.tick();
+    expect(mult(w)).toBe(7); // +0
   });
 });
 

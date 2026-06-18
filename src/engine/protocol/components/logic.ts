@@ -123,11 +123,13 @@ export interface Effect extends Component {
   // 结算顺序（REQ-012）：同信号命中的多个 Effect 按 order **升序**依次结算（乘法引入顺序依赖，顺序须是显式数据）。
   // 缺省 0；并列再按 Effect 所在实体 id 升序 tie-break → 确定、可审计、录放安全。
   order?: number;
-  // 值取自资源（REQ-013，量纲动态值 / 两资源相乘）：有则 modify-resource 的 v =
-  //   resource[resourceId].current × (timesResourceId ? resource[timesResourceId].current : coeff ?? 1)，
-  // 否则用静态 value。缺省=用 value（老数据零改动）。解 Balatro 最终计分 score += chips×mult（timesResourceId）、
-  // Bull「每 $1 +2 筹码」chips += coeff×money（coeff）、星球牌升级 chips += level×每级增量。确定性同 op:mul（IEEE 乘，正确舍入）。
-  valueFrom?: { resourceId: string; coeff?: number; timesResourceId?: string };
+  // 值取自资源/计数（REQ-013 + REQ-E-023①）：有则 modify-resource 的 v = base × factor，
+  //   base = countOf != null ? 「Tag.flags & countOf 命中的实体数」 : resource[resourceId].current；
+  //   factor = timesResourceId ? resource[timesResourceId].current : (coeff ?? 1)。
+  // 否则用静态 value（老数据零改动）。countOf=按 Tag 掩码数实体（"每个 tagged 物 +X"：每小丑/每张牌/每钢铁牌…，
+  // 纯整数计数、自描述零游戏侧记账，过弱-LLM 尺子）。解 score += chips×mult（timesResourceId）、Bull 每$1+2c（coeff）、
+  // 星球升级 chips += level×增量、abstract 每小丑 +3 倍（countOf）。确定性同 op:mul（IEEE 乘）/ 纯计数。
+  valueFrom?: { resourceId?: string; coeff?: number; timesResourceId?: string; countOf?: number };
 }
 
 // ── craft-recipe ── 配方/经济：信号到达且所有 costs 可负担时，**原子地**扣全部料 + 产出 gains + 置 flag/state。

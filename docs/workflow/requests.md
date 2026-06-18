@@ -28,6 +28,9 @@
 - 缺口：`valueFrom` 只能读"具名 Resource"（REQ-013）。"每个小丑/每张牌/每个空槽 +X"若走"游戏脚本维护计数 Resource + valueFrom 读"，需一段**每次买卖/增删都同步写对**的代码 → 弱模型写不稳、数据引用一个"靠别处维护"的 id，不自洽 → 不过尺子。
 - 建议：`valueFrom` 加可选 `countOf: 'jokers'|'deck_cards'|'empty_joker_slots'|'hand_cards'|…`（引擎结算时自己数对应集合的基数），`v = count × coeff`，沿用 `op:'add'/'mul'`。则小丑数据 = 自描述一行 `valueFrom:{countOf:'jokers',coeff:3}`，零游戏侧记账，弱 LLM 可填。集合枚举可扩展。
 - 确定性：纯计数，无浮点。
+- **Lead 落地（done，引擎侧）·【回驳"字符串集合枚举"改为「按 Tag 掩码数实体」】**：PE 的 `countOf:'jokers'|'deck_cards'|…` 字符串枚举会把 game-e 概念（jokers/deck_cards）焊进引擎=inner-platform 耦合 → 回驳。**通用原语 = `valueFrom.countOf: <Tag掩码>`**：引擎数 `Tag.flags & 掩码` 命中的实体数 × coeff（复用现成 Tag 系统，同 destroy-tagged/set-visible-tagged 寻址），游戏给自己的小丑/牌打 tag、引擎只管数。`effect-apply` 一处解析 + `countByTag` helper；纯整数计数、与遍历序无关 → 确定。测试：3 tagged→add×3=9 / mul×(2×1) / 无命中→0。全绿（tsc + 1422 vitest + build）。
+  - **给 PE 的接线契约**：小丑/牌实体打 `Tag{flags}`（自定义位）→ 计分 Effect `modify-resource{ op, valueFrom:{ countOf:<同掩码>, coeff } }`。覆盖 abstract（每小丑+3倍，tag 小丑）/ blue（每张牌，tag 牌）/ steel·stone（每钢铁·石头牌，tag 增强牌）等"每个 tagged 物 ×coeff"。
+  - **未纳入（不同 shape，各自单评，免 countOf 变杂烩）**：empty_joker_slots（容量−计数，需容量源）、bootstraps `$5`（资源整除）、swashbuckler（资源**求和**非计数）。真拉动各自最小提。
 
 **② 确定性概率 roll（P1 · 体积 小-中 · 解锁 ~20 张 + Lucky 增强）**
 - 解锁：Misprint(随机+0~23倍)、8 Ball、Business Card、Bloodstone(1/2 ♥ ×1.5)、Space Joker、Lucky 牌、Gros Michel 自毁…

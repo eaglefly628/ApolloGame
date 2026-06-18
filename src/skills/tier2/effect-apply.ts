@@ -1,5 +1,5 @@
 import { defineCapability } from '@engine/core/define-capability.js';
-import { SystemPhase } from '@engine/core/types.js';
+import { SystemPhase, type IWorld } from '@engine/core/types.js';
 import type { Effect, Signal, Sensor, Visibility, DestroyRequest, Timer, Tag, PrefabOrigin } from '@engine/protocol/components.js';
 import { buildConditionLookup } from './condition.js';
 import { findScoreTrace, appendScoreEvent } from '../score-trace.js';
@@ -16,6 +16,18 @@ import { findScoreTrace, appendScoreEvent } from '../score-trace.js';
 // "信号 → 置 flag → 下帧条件读 flag → 再触发" 即让多步机制（连锁/开关→门）纯配置涌现。
 // 确定性：只读/写确定状态、按 id 定位（与 Condition 读侧、resource 写侧对称），不碰浮点超越函数。
 // 查找复用 buildConditionLookup 的按 id 索引（O(1)，Reviewer #3）。
+
+// REQ-E-023①：数 Tag.flags 命中掩码的实体数（集合计数，与遍历序无关 → 确定）。供 valueFrom.countOf
+// 表达"每个 tagged 物 +X"（每小丑/每张牌/每钢铁牌…）——自描述一行、零游戏侧记账，过弱-LLM 尺子。
+function countByTag(world: IWorld, mask: number): number {
+  if (!Number.isFinite(mask) || mask === 0) return 0;
+  let n = 0;
+  for (const [tid] of world.query('Tag')) {
+    const tg = world.getComponent<Tag>(tid, 'Tag');
+    if (tg && (tg.flags & mask) !== 0) n++;
+  }
+  return n;
+}
 
 export const effectApplyCapability = defineCapability({
   id: 't2-effect-apply',
@@ -52,7 +64,7 @@ export const effectApplyCapability = defineCapability({
           value: { type: 'string', describe: 'modify-resource=数值；set-flag/set-sensor/set-visible=布尔；set-state=目标状态名；destroy 忽略' },
           op: { type: 'string', describe: "modify-resource 运算(REQ-012)：'add'(默认,current+value)|'mul'(current*value,×倍率)|'set'(=value)" },
           order: { type: 'number', describe: '结算顺序(REQ-012)：同信号命中的 Effect 按 order 升序依次结算（缺省 0）。乘法依赖顺序时必填。' },
-          valueFrom: { type: 'string', describe: "动态值(REQ-013)：{resourceId,coeff?,timesResourceId?}，v=资源×(另一资源|系数)。解 score+=chips×mult、每$1+2c；缺省用静态 value" },
+          valueFrom: { type: 'string', describe: "动态值(REQ-013/E-023①)：{resourceId?,coeff?,timesResourceId?,countOf?}，v=base×factor；base=countOf(按Tag掩码数实体)或具名Resource，factor=另一资源|系数。解 score+=chips×mult、每$1+2c、abstract每小丑+3倍；缺省用静态 value" },
         },
       },
     },
@@ -119,7 +131,10 @@ export const effectApplyCapability = defineCapability({
                 // 解最终计分 score += chips×mult、Bull 每$1+2c、星球升级 chips += level×增量。缺资源按 0 处理（无效=不动）。
                 let v: number;
                 if (ef.valueFrom) {
-                  const base = lookup.resource(ef.valueFrom.resourceId)?.current ?? 0;
+                  // REQ-E-023①：countOf 在场 → base = Tag.flags 命中掩码的实体数（每个 tagged 物 ×coeff）；否则读具名 Resource。
+                  const base = ef.valueFrom.countOf !== undefined
+                    ? countByTag(world, ef.valueFrom.countOf)
+                    : (lookup.resource(ef.valueFrom.resourceId ?? '')?.current ?? 0);
                   const factor = ef.valueFrom.timesResourceId
                     ? (lookup.resource(ef.valueFrom.timesResourceId)?.current ?? 0)
                     : (ef.valueFrom.coeff ?? 1);
