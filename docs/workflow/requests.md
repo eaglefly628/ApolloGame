@@ -10,6 +10,48 @@
 
 ## 待处理 / 进行中
 
+### REQ-E-023 · [2026-06-18] · PE（Game E 小丑牌 · 牌库扩展总纲，owner 指派陈陈飞）· 框架级 · status: **open** · 优先级: 见各子项 · 类型: 多个真缺口（整理为一份，逐项可独立落地）
+
+**目标**：可玩小丑 **31 → 趋近 150**（catalog 元数据已全 150）。下面按「能力」拆分；**每项是独立 capability，可分别落地、分别验收**，不是一个大泥球。
+
+**⚠️ 先回驳一批「看着缺、其实是重组」——这部分 PE 自己做，不占引擎工：**
+- **计数缩放**（Abstract +每小丑 / Blue +每张牌 / Joker Stencil ×每空槽 / Bootstraps +每$5 / Swashbuckler…）：已验证 `effect-apply` 的 `op:'mul'/'add'` + `valueFrom{resourceId,coeff}` 够用（`mul` 也支持，effect-apply.ts:130）。游戏脚本维护 `joker_count / deck_size / empty_slots` 等计数 Resource（买卖/增删时写）→ 这些小丑就是纯数据。**无需引擎能力。**
+- **更多触发时机的"改资源"类**（on_round_end 经济：Golden/Rocket/Gift Card…；on_discard：Faceless/Trading Card…；on_blind_selected）：线性脚本发对应信号 + `jokerToEntities` 接 `on_round_end/on_discard/on_blind_selected`（现仅接 on_hand/on_card）。**无需引擎能力**（信号由脚本产）。
+- **条件重触发**（Hack 重触发 2/3/4/5、Sock and Buskin 重触发人头）：`PerCardRetrigger.when` 本就是 `PerCardWhen`（支持 suit/rankIn/index）；只要 `jokerToEntities` 把"带 retrigger 条件的小丑"映射成 `PerCardRetrigger{when}` 即可。**无需引擎能力。**
+
+**↓ 以下是真缺口，请引擎实现（陈陈飞）。每项标了体积/优先级/解锁量。**
+
+**① 确定性概率 roll（P1 · 体积 小-中 · 解锁 ~20 张 + Lucky 增强）**
+- 解锁：Misprint(随机+0~23倍)、8 Ball、Business Card、Bloodstone(1/2 ♥ ×1.5)、Space Joker、Lucky 牌、Gros Michel 自毁…
+- 缺口：`effect-apply` / `card-scoring` 没有"按概率触发"。
+- 建议：Effect / PerCardRule 加可选 `chance?: { num, den }`，命中条件后再用**世界种子 PRNG**（与引擎 random 原子同源，lockstep 安全、录放一致）roll `< num/den` 才施用。一处解析改动。
+- 确定性：用确定性 PRNG（按 tick/序号取数），不碰 Math.random。
+
+**② 逐张「手牌内」结算 pass（P1 · 体积 中 · 解锁 ~10 张 + 钢铁/黄金牌）**
+- 解锁：Baron(留手 K ×1.5)、Shoot the Moon(留手 Q +13)、Mime、Raised Fist、以及 REQ-E-021 边界外的 **Steel(留手×1.5) / Gold(回合末留手 +$)** 牌增强。
+- 缺口：`card-scoring` 只遍历**出的牌**；手牌里"留着不打"的牌没有结算入口。
+- 建议：新增 `HeldCardScore` pass —— 出牌结算时另遍历**未出的手牌**，套 `Card.mods`(held 类) + PerCardRule(held 类)。与现有逐张 pass 同构、同纪律（迭代=引擎、规则=数据）。
+
+**③ 小丑「自增长」可变状态（P2 · 体积 中-大 · 解锁 ~25 张）**
+- 解锁：Ride the Bus(连续无人头 +1/手)、Green Joker(+1/手 −1/弃)、Obelisk、Supernova、Square、Runner、Red Card、Ice Cream/Popcorn(递减)…
+- 缺口：Effect 是无状态数据；这些要一个**随触发累加、按条件重置**的 per-joker 计数。
+- 建议：per-joker `Counter{ id, value }` 组件 + 声明式更新规则 `on: signal, delta, resetWhen?`；计分时用 `valueFrom{ resourceId: 该 counter }`（已有）读出。引擎只做"按规则累加/重置 + 暴露为可读值"。
+- 确定性：纯整数累加，状态进快照/关键帧。
+
+**④ 被动改判型规则（P2 · 体积 中 · 解锁 ~8 张）**
+- 解锁：Four Fingers(4 张成顺/同花)、Shortcut(带空顺)、Splash(每张都计分)、Pareidolia(全算人头)、Smeared(红/黑各算同花)、Oops! All 6s(概率翻倍)。
+- 缺口：`poker-eval` / `card-scoring` 判型与"哪些牌计分"是写死规则。
+- 建议：`PokerHand` 读一组可选规则修饰 Flag（fourFlush/fourStraight/allScore/facesWild/suitMerge…），由小丑置位。**只读 flag 改判定，不引入新牌型。**
+
+**⑤ 跨实体效果：复制 / 改牌 / 改其它小丑（P3 · 体积 大 · 解锁 ~15 张）**
+- 解锁：Blueprint(复制右侧小丑)、Brainstorm(复制最左)、Invisible Joker(2 回合后卖出复制一个随机小丑)、DNA(复制出的牌进牌库)、Vampire(吸附魔)、Midas Mask(人头→黄金)、Hologram…
+- 缺口：小丑只能改全局 Resource；不能读/写**别的实体**（其它小丑/牌库的牌）。
+- 建议：先做**只读复制**（一个小丑"引用"另一个小丑的 Effect 列表，结算时一并跑）——比"运行时改牌库"小且确定。改牌库/吸附魔留到后面单评。**体积大、确定性最难，建议最后做。**
+
+**落地节奏建议**：① 概率 → ② 手牌内（顺带补全 REQ-E-021 的 steel/gold 一条线）→ ③ 自增长 → ④ 规则修饰 → ⑤ 跨实体。每项落一项，PE 跟着把对应小丑从 catalog 接成可玩并加测试。PE 同时并行做上面「重组那批」（计数缩放 / 更多触发 / 条件重触发），不等引擎。
+
+---
+
 ### REQ-E-022 · [2026-06-18] · PE（Game E 小丑牌 · 真实牌库扩充拉动）· 框架级 · status: **done（引擎侧 + 游戏侧接线 2026-06-18）** · 优先级: 中 · 类型: 真缺口（poker-eval 缺 isFlush/isStraight 派生事实）
 
 > **落地**：引擎侧 `PokerHand.isStraightFlag?/isFlushFlag?`（poker-eval `setFlag` 写 evald.isStraight/isFlush）。游戏侧接线：blueprint 加 `F_STRAIGHT/F_FLUSH` Flag 实体 + PokerHand 配置指向它们，`containsCondition` 补 straight/flush 分支；STARTER_JOKERS 加 Crazy/Droll/Devious/Crafty/The Order/The Tribe（可玩 25→31）。headless 测试证「打同花 → Crafty +80 筹码」端到端生效。全绿（tsc + 1418 vitest + build）。
