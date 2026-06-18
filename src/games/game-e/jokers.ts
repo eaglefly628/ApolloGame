@@ -66,6 +66,8 @@ export interface JokerCard {
   readonly countTag?: 'jokers';
   /** 留手生效（REQ-E-023③）：on_card_scored 规则改对"留在手里没出的牌"求值（Baron 留手 K ×1.5）。 */
   readonly held?: boolean;
+  /** 被动判型修饰（REQ-E-023⑤）：拥有期间点亮对应 mod Flag（four_fingers 4 张成顺/同花、shortcut 带空顺、smeared 红黑各算同花）。 */
+  readonly handMod?: 'four_fingers' | 'shortcut' | 'smeared';
   /** 重触发次数（REQ-014 PerCardRetrigger）：>0 表示首张计分牌额外重触发 N 次（Hanging Chad=2）。 */
   readonly retrigger?: number;
   /** 美术 key（jokerArtKey(id)）；缺图自动退化占位。 */
@@ -127,6 +129,10 @@ export const STARTER_JOKERS: readonly JokerCard[] = [
   // ── REQ-E-023 ③ 留手牌结算（HeldHand）──
   J({ id: 'baron', name: 'Baron', rarity: 'rare', cost: 8, jokerType: 'Xm', trigger: 'on_card_scored', when: { kind: 'card_rank_in', ranks: [13] }, op: 'mul', target: 'mult', value: 1.5, held: true, text: '每张留在手里的 K ×1.5 倍率' }),
   J({ id: 'shoot_the_moon', name: 'Shoot the Moon', rarity: 'common', cost: 5, jokerType: '+m', trigger: 'on_card_scored', when: { kind: 'card_rank_in', ranks: [12] }, op: 'add', target: 'mult', value: 13, held: true, text: '每张留在手里的 Q +13 倍率' }),
+  // ── REQ-E-023 ⑤ 被动判型修饰（拥有即生效）──
+  J({ id: 'four_fingers', name: 'Four Fingers', rarity: 'uncommon', cost: 7, jokerType: '!!', trigger: 'on_blind_selected', when: { kind: 'always' }, op: 'add', target: 'mult', value: 0, handMod: 'four_fingers', text: '4 张牌即可组成同花和顺子' }),
+  J({ id: 'shortcut', name: 'Shortcut', rarity: 'uncommon', cost: 7, jokerType: '!!', trigger: 'on_blind_selected', when: { kind: 'always' }, op: 'add', target: 'mult', value: 0, handMod: 'shortcut', text: '顺子允许有 1 个点数空缺' }),
+  J({ id: 'smeared_joker', name: 'Smeared Joker', rarity: 'uncommon', cost: 7, jokerType: '!!', trigger: 'on_blind_selected', when: { kind: 'always' }, op: 'add', target: 'mult', value: 0, handMod: 'smeared', text: '红桃方块算同花色、黑桃梅花算同花色' }),
 ];
 
 /** 按 id 取小丑。 */

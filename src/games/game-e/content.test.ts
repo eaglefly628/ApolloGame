@@ -69,10 +69,10 @@ describe('game-e · 盲注曲线', () => {
 });
 
 describe('game-e · 小丑数据', () => {
-  it('可玩 44 张、id 唯一、字段在合法枚举内', () => {
-    expect(STARTER_JOKERS.length).toBe(44);
+  it('可玩 47 张、id 唯一、字段在合法枚举内', () => {
+    expect(STARTER_JOKERS.length).toBe(47);
     const ids = STARTER_JOKERS.map((j) => j.id);
-    expect(new Set(ids).size).toBe(44);
+    expect(new Set(ids).size).toBe(47);
     const ops = new Set(['add', 'mul']);
     const targets = new Set(['chips', 'mult', 'money']);
     for (const j of STARTER_JOKERS) {

@@ -184,6 +184,14 @@ describe('game-e · GameSession 线性流程脚本', () => {
     expect(pcr.when.ranks).toEqual([13]); // K
   });
 
+  it('判型修饰(REQ-E-023⑤)：Four Fingers 接成无计分实体的 tag-only（被动，买入点 mod flag）', () => {
+    const ff = jokerToEntities(STARTER_JOKERS.find((j) => j.id === 'four_fingers')!, 0);
+    const e = ff['j_four_fingers'] as unknown as Record<string, unknown>;
+    expect(e.PerCardRule).toBeUndefined();
+    expect(e.Effect).toBeUndefined();
+    expect(e.Tag).toBeDefined(); // 仅占 tag（供 countOf 计入）
+  });
+
   it('Boss 诅咒：boss 道按表施加（Ante1 高墙=盲注线翻倍）', () => {
     const s = new GameSession(1);
     expect(s.boss).toBeNull(); // small 道无 boss

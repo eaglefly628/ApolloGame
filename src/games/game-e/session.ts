@@ -1,6 +1,6 @@
 import { Engine } from '../../runtime/engine.js';
 import type { Resource, PlayedHand, Flag, StringVar, ScoreTrace, ScoreEvent } from '@engine/protocol/components.js';
-import { buildGameEBlueprint, buildJokerEntities, jokerToEntities, toEngineCard, HAND_TYPE_TO_ENGINE, R_CHIPS, R_MULT, R_MONEY, R_HAND_SCORE, R_ROUND_SCORE, R_HANDS_LEFT, R_DISCARDS_LEFT, R_BLIND, V_HAND_TYPE } from './blueprint.js';
+import { buildGameEBlueprint, buildJokerEntities, jokerToEntities, toEngineCard, HAND_TYPE_TO_ENGINE, HANDMOD_FLAGS, R_CHIPS, R_MULT, R_MONEY, R_HAND_SCORE, R_ROUND_SCORE, R_HANDS_LEFT, R_DISCARDS_LEFT, R_BLIND, V_HAND_TYPE } from './blueprint.js';
 import { shuffledDeck, mulberry32, type Card } from './deck.js';
 import { HAND_ORDER, handScoreAtLevel, type HandType } from './hand-rankings.js';
 import { rollJokerOffer, type JokerCard } from './jokers.js';
@@ -236,8 +236,16 @@ export class GameSession {
         this.engine.world.addComponent(eid, { type, ...(data as object) } as never);
       }
     }
+    if (j.handMod) for (const fid of HANDMOD_FLAGS[j.handMod]) this.setFlagById(fid, true); // REQ-E-023⑤：点亮判型修饰
     this.owned = [...this.owned, j];
     return true;
+  }
+
+  private setFlagById(id: string, active: boolean): void {
+    for (const [eid] of this.engine.world.query('Flag')) {
+      const f = this.engine.world.getComponent<Flag>(eid, 'Flag');
+      if (f && f.id === id) { f.active = active; return; }
+    }
   }
 
   reroll(): boolean {

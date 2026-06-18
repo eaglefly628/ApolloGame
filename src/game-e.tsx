@@ -3,7 +3,7 @@ import { createRoot } from 'react-dom/client';
 import { Engine } from './runtime/engine.js';
 import type { Resource, PlayedHand, Flag, StringVar, ScoreTrace, ScoreEvent } from './engine/protocol/components.js';
 import {
-  buildGameEBlueprint, buildJokerEntities, jokerToEntities, toEngineCard, BASE_CHIPS_BY_RANK, HAND_TYPE_TO_ENGINE,
+  buildGameEBlueprint, buildJokerEntities, jokerToEntities, toEngineCard, BASE_CHIPS_BY_RANK, HAND_TYPE_TO_ENGINE, HANDMOD_FLAGS,
   R_CHIPS, R_MULT, R_MONEY, R_HAND_SCORE, R_ROUND_SCORE, R_HANDS_LEFT, R_DISCARDS_LEFT, R_BLIND, V_HAND_TYPE,
 } from './games/game-e/blueprint.js';
 import {
@@ -205,6 +205,11 @@ function GameE() {
     const r = resOf(id);
     if (r) r.current = Math.max(r.min, Math.min(r.max, v));
   }, [resOf]);
+  // 按 id 置 Flag（REQ-E-023⑤ 判型修饰小丑买/卖时点灭）。
+  const setFlagById = useCallback((id: string, active: boolean) => {
+    const e = engineRef.current!;
+    for (const [eid] of e.world.query('Flag')) { const f = e.world.getComponent<Flag>(eid, 'Flag'); if (f && f.id === id) { f.active = active; return; } }
+  }, []);
 
   // 一道盲注开局：重置回合资源 + 设盲注线 + 洗牌发 8 张。
   const startBlind = useCallback((a: number, bi: number) => {
@@ -436,10 +441,11 @@ function GameE() {
         engine.world.addComponent(eid, { type, ...(data as object) } as never);
       }
     }
+    if (j.handMod) for (const fid of HANDMOD_FLAGS[j.handMod]) setFlagById(fid, true); // REQ-E-023⑤：点亮判型修饰
     setOwned((o) => [...o, j]);
     setShopOffer((s) => s.filter((x) => x.id !== j.id));
     bump();
-  }, [owned, money, engine, set]);
+  }, [owned, money, engine, set, setFlagById]);
 
   // 卖出小丑：销毁它的引擎实体（停止计分）+ 返还 ⌊cost/2⌋（最低 $1）。
   const sellValue = (j: JokerCard) => Math.max(1, Math.floor(j.cost / 2));
@@ -447,12 +453,13 @@ function GameE() {
     if (busy) return;
     engine.world.destroyEntity(`j_${j.id}`);
     engine.world.destroyEntity(`gate_${j.id}`); // 条件类小丑的信号门（无则 no-op）
+    if (j.handMod) for (const fid of HANDMOD_FLAGS[j.handMod]) setFlagById(fid, false); // REQ-E-023⑤：熄灭判型修饰
     const val = sellValue(j);
     set(R_MONEY, get(R_MONEY) + val);
     setOwned((o) => o.filter((x) => x.id !== j.id));
     pushLog(`🗑️ 卖出 ${j.name} +💰$${val}`);
     bump();
-  }, [busy, engine, set, get]);
+  }, [busy, engine, set, get, setFlagById]);
 
   const rollShop = useCallback((): JokerCard[] => rollJokerOffer(new Set(owned.map((o) => o.id)), 3, Math.random), [owned]);
   // 道具货架：1 星球牌（升级牌型）+ 1 塔罗牌（盖附魔）。
@@ -494,8 +501,13 @@ function GameE() {
 
   // 选牌时的牌型预览（基础 chips/mult，含星球牌升级，未含小丑）；结算时显示实时跳动值。
   const selCards = hand.filter((_, i) => sel[i]);
+  // 判型修饰（REQ-E-023⑤）：拥有对应被动小丑时，预览也按同规则判型（与引擎一致）。
+  const handMods = {
+    fourFlush: owned.some((j) => j.handMod === 'four_fingers'), fourStraight: owned.some((j) => j.handMod === 'four_fingers'),
+    gappedStraight: owned.some((j) => j.handMod === 'shortcut'), suitMerge: owned.some((j) => j.handMod === 'smeared'),
+  };
   const previewType: HandType | null = (!inShop && !lost && !scoring && selCards.length > 0)
-    ? (ENGINE_TO_HR[evaluateHand(selCards.map(toEngineCard)).type] ?? null) : null;
+    ? (ENGINE_TO_HR[evaluateHand(selCards.map(toEngineCard), handMods).type] ?? null) : null;
   const preview = previewType
     ? (() => { const hr = HAND_RANKINGS[previewType]; const lv = handScoreAtLevel(previewType, handLevels[previewType] ?? 1); return { name: hr.name, chips: lv.chips, mult: lv.mult }; })()
     : null;

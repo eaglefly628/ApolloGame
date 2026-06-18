@@ -30,6 +30,16 @@ export const V_HAND_TYPE = 'hand_type';
 export const F_SCORING = 'scoring';
 export const F_STRAIGHT = 'is_straight'; // poker-eval 写：本手是否含顺子（REQ-E-022）
 export const F_FLUSH = 'is_flush'; // poker-eval 写：本手是否含同花（REQ-E-022）
+// REQ-E-023⑤ 判型规则修饰 Flag（被动小丑置位，poker-eval 读 → 改判型阈值）。
+export const F_MOD_FOURFINGERS = 'mod_four_fingers';
+export const F_MOD_SHORTCUT = 'mod_shortcut';
+export const F_MOD_SMEARED = 'mod_smeared';
+/** handMod 种类 → 它点亮的 Flag id（买/卖时游戏侧置位）。four_fingers 同时开 4 张顺+4 张同花。 */
+export const HANDMOD_FLAGS: Record<string, readonly string[]> = {
+  four_fingers: [F_MOD_FOURFINGERS],
+  shortcut: [F_MOD_SHORTCUT],
+  smeared: [F_MOD_SMEARED],
+};
 export const SIG_SCORE = 'score';
 export const SIG_JOLLY = 'jolly_fire';
 // 回合循环（增量1：可玩切片）。round_score 跨手累加；hands_left 每出一手 -1；blind_target 过关线。
@@ -161,6 +171,10 @@ export function jokerToEntities(j: JokerCard, idx: number): Record<string, Entit
     return o;
   };
 
+  // REQ-E-023⑤：被动判型修饰小丑（four_fingers/shortcut/smeared）—— 无计分实体，只占一个 tag（供 countOf 数 + 占位）；
+  // 判型 Flag 由游戏侧买/卖时置位（见 HANDMOD_FLAGS）。
+  if (j.handMod) { out[`j_${j.id}`] = {} as unknown as EntityBlueprint; return tagged(out); }
+
   if (j.trigger === 'on_card_scored') {
     // 逐张：retrigger 优先（Hanging Chad），否则按 when 映射 PerCardRule。
     if (j.retrigger && j.retrigger > 0) {
@@ -259,6 +273,10 @@ export function buildGameEBlueprint(jokerEntities: Record<string, EntityBlueprin
     isFlush: { Flag: { id: F_FLUSH, active: false } } as unknown as EntityBlueprint,
     // 概率门用的世界 RNG（REQ-E-023②：Bloodstone/Business Card 等；缺它则概率小丑 fail-closed）。
     rng: { RandomSeed: { seed: 20260618, sequence: 0 } } as unknown as EntityBlueprint,
+    // REQ-E-023⑤ 判型规则修饰 Flag（被动小丑买入时置位）。
+    modFourFingers: { Flag: { id: F_MOD_FOURFINGERS, active: false } } as unknown as EntityBlueprint,
+    modShortcut: { Flag: { id: F_MOD_SHORTCUT, active: false } } as unknown as EntityBlueprint,
+    modSmeared: { Flag: { id: F_MOD_SMEARED, active: false } } as unknown as EntityBlueprint,
 
     // ── 回合循环资源（增量1：单局可玩切片）。round_score 跨手累加、过 blind_target 即胜；hands_left 出一手 -1。──
     roundScore: { Resource: { id: R_ROUND_SCORE, current: 0, min: 0, max: 1_000_000_000_000 } } as unknown as EntityBlueprint,
@@ -278,6 +296,7 @@ export function buildGameEBlueprint(jokerEntities: Record<string, EntityBlueprin
         rankingTable: buildRankingTable(), chipsResource: R_CHIPS, multResource: R_MULT, handTypeVar: V_HAND_TYPE,
         rankMaxCountResource: R_RANK_MAX, pairCountResource: R_PAIR_COUNT, handSizeResource: R_HAND_SIZE,
         isStraightFlag: F_STRAIGHT, isFlushFlag: F_FLUSH,
+        handMods: { fourFlushFlag: F_MOD_FOURFINGERS, fourStraightFlag: F_MOD_FOURFINGERS, gappedStraightFlag: F_MOD_SHORTCUT, suitMergeFlag: F_MOD_SMEARED }, // REQ-E-023⑤
       },
       PerCardScore: { chipsResource: R_CHIPS, baseChipsByRank: BASE_CHIPS_BY_RANK },
       PlayedHand: { cards: [] as Card[] },
