@@ -56,6 +56,8 @@ export class GameSession {
   handLevels: Record<HandType, number> = Object.fromEntries(HAND_ORDER.map((h) => [h, 1])) as Record<HandType, number>;
   /** 本道盲注手牌张数（Boss「镣铐」会减 1）。 */
   handSize = HAND_SIZE;
+  /** Boss「尖牙」：每次出牌按张数扣 $。 */
+  payPerPlay = false;
   /** 牌身份 → 附魔列表（塔罗牌盖章，可叠多个，持久；洗牌不丢，按 suit+rank 绑定）。 */
   enchanted: Record<string, EnchantId[]> = {};
 
@@ -128,11 +130,22 @@ export class GameSession {
     const pk = this.engine.world.getComponent<{ type: string; rankingTable: Record<string, { chips: number; mult: number }> }>('table', 'PokerHand');
     if (pk) pk.rankingTable[HAND_TYPE_TO_ENGINE[hand]] = handScoreAtLevel(hand, this.handLevels[hand]);
   }
+  /** 由 handLevels 重建引擎 rankingTable（×mult；Boss「燧石」=0.5 减半）。每道盲注开局调，幂等。 */
+  private rebuildRankingTable(mult = 1): void {
+    const pk = this.engine.world.getComponent<{ type: string; rankingTable: Record<string, { chips: number; mult: number }> }>('table', 'PokerHand');
+    if (!pk) return;
+    for (const h of HAND_ORDER) {
+      const sc = handScoreAtLevel(h, this.handLevels[h] ?? 1);
+      pk.rankingTable[HAND_TYPE_TO_ENGINE[h]] = mult === 1 ? sc : { chips: Math.floor(sc.chips * mult), mult: Math.max(1, Math.floor(sc.mult * mult)) };
+    }
+  }
 
   /** ① 一道盲注开局：重置回合资源 + 设盲注线（Boss 诅咒可改）+ 洗牌发牌。 */
   startBlind(): void {
     const boss = this.boss;
     this.handSize = boss?.effect === 'small_hand' ? HAND_SIZE - 1 : HAND_SIZE;
+    this.rebuildRankingTable(boss?.effect === 'halve_base' ? 0.5 : 1); // 燧石减半 / 否则按等级还原
+    this.payPerPlay = boss?.effect === 'pay_per_play';
     this.set(R_ROUND_SCORE, 0);
     this.set(R_HANDS_LEFT, boss?.effect === 'fewer_hands' ? 1 : HANDS_PER_BLIND);
     this.set(R_DISCARDS_LEFT, boss?.effect === 'no_discards' ? 0 : DISCARDS_PER_BLIND);
@@ -178,6 +191,8 @@ export class GameSession {
     // 抽牌补手（移除已出）。
     const keep = new Set(selected);
     this.hand = this.drawTo(this.hand.filter((_, i) => !keep.has(i)));
+
+    if (this.payPerPlay) this.set(R_MONEY, this.money - chosen.length); // 尖牙：按出牌张数扣 $
 
     // 推进流程（线性判定）。
     let outcome: PlayResult['outcome'] = 'continue';

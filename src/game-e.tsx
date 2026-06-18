@@ -103,6 +103,7 @@ function GameE() {
   const seqRef = useRef<{ frames: SeqFrame[]; i: number; after: () => void; cards: Card[]; scoringIdx: number[] } | null>(null);
   // 星球牌（牌型升级）/ Boss 诅咒 / 牌组预览 状态。
   const [handLevels, setHandLevels] = useState<Record<HandType, number>>(() => Object.fromEntries(HAND_ORDER.map((h) => [h, 1])) as Record<HandType, number>);
+  const handLevelsRef = useRef(handLevels); // 同步给 startBlind 重建 rankingTable（燧石减半）用
   const [consumables, setConsumables] = useState<Consumable[]>([]); // 持有道具（星球/塔罗），待使用
   const [shopConsumables, setShopConsumables] = useState<Consumable[]>([]); // 商店道具货架（星球+塔罗）
   const [enchanted, setEnchanted] = useState<Record<string, EnchantId[]>>({}); // 牌身份→附魔列表（可叠加，持久）
@@ -113,6 +114,7 @@ function GameE() {
   const handSizeRef = useRef(HAND_SIZE); // 本道手牌张数（镣铐诅咒减 1）
   const CONSUMABLE_SLOTS = 2;
   const enchantOf = (c: Card): EnchantId[] => enchanted[`${c.suit}${c.rank}`] ?? [];
+  useEffect(() => { handLevelsRef.current = handLevels; }, [handLevels]);
   const [, force] = useState(0);
   const bump = () => force((n) => n + 1);
   const keyOf = (c: Card) => `${c.suit}${c.rank}`;
@@ -173,6 +175,10 @@ function GameE() {
     const bz = kind === 'boss' ? bossForAnte(a) : null;
     const hs = bz?.effect === 'small_hand' ? HAND_SIZE - 1 : HAND_SIZE;
     handSizeRef.current = hs;
+    // 由 handLevels 重建 rankingTable（燧石 halve_base=0.5 减半，否则按等级还原）。
+    const rtMult = bz?.effect === 'halve_base' ? 0.5 : 1;
+    const pk = e.world.getComponent<{ type: string; rankingTable: Record<string, { chips: number; mult: number }> }>('table', 'PokerHand');
+    if (pk) for (const h of HAND_ORDER) { const sc = handScoreAtLevel(h, handLevelsRef.current[h] ?? 1); pk.rankingTable[HAND_TYPE_TO_ENGINE[h]] = rtMult === 1 ? sc : { chips: Math.floor(sc.chips * rtMult), mult: Math.max(1, Math.floor(sc.mult * rtMult)) }; }
     const tgt = blindRequirement(a, kind) * (bz?.effect === 'target_x2' ? 2 : 1);
     setLog([`— Ante ${a} · ${BLIND_META[kind].label} 目标 ${tgt.toLocaleString()} —`, ...(bz ? [`${bz.icon} ${bz.name}：${bz.desc}`] : [])]);
     set(R_ROUND_SCORE, 0);
@@ -271,11 +277,12 @@ function GameE() {
     if (phase !== 'playing' || busy || handsLeft <= 0) return;
     const chosen = hand.filter((_, i) => sel[i]);
     if (chosen.length === 0) return;
-    // Boss 出牌约束（与下方 UI 的 playBlock 同源）：灵媒须满 5 张；巨眼禁重复牌型。
+    // Boss 出牌约束（与下方 UI 的 playBlock 同源）：灵媒须满 5 张；巨眼禁重复牌型；大嘴只允一种牌型。
     if (boss?.effect === 'must_five' && chosen.length !== 5) return;
-    if (boss?.effect === 'no_repeat') {
+    if (boss?.effect === 'no_repeat' || boss?.effect === 'one_hand_type') {
       const t = ENGINE_TO_HR[evaluateHand(chosen.map(toEngineCard)).type];
-      if (t && playedTypes.includes(t)) return;
+      if (boss.effect === 'no_repeat' && t && playedTypes.includes(t)) return;
+      if (boss.effect === 'one_hand_type' && t && playedTypes.length > 0 && t !== playedTypes[0]) return;
     }
 
     // 引擎一拍算出本手真值（chips/mult/score + 牌型 + 累加 round_score/hands-1）。附魔按牌身份映射成 Card.mods。
@@ -319,6 +326,7 @@ function GameE() {
     const after = () => {
       setResult({ type, chips: finalChips, mult: finalMult, score: finalScore });
       setPlayedTypes((p) => (p.includes(type) ? p : [...p, type]));
+      if (boss?.effect === 'pay_per_play') { set(R_MONEY, get(R_MONEY) - chosen.length); pushLog(`🦷 尖牙：出 ${chosen.length} 张 -💰$${chosen.length}`); } // 尖牙：按张数扣 $
       pushLog(`▶ ${HAND_RANKINGS[type]?.name ?? type}　${finalChips.toLocaleString()} × ${finalMult} = ${finalScore.toLocaleString()}`);
       const rs = get(R_ROUND_SCORE);
       pushLog(`　累计 ${rs.toLocaleString()} / ${get(R_BLIND).toLocaleString()}${rs >= get(R_BLIND) ? '　✅ 过关！' : ''}`);
@@ -389,6 +397,19 @@ function GameE() {
     bump();
   }, [owned, money, engine, set]);
 
+  // 卖出小丑：销毁它的引擎实体（停止计分）+ 返还 ⌊cost/2⌋（最低 $1）。
+  const sellValue = (j: JokerCard) => Math.max(1, Math.floor(j.cost / 2));
+  const sellJoker = useCallback((j: JokerCard) => {
+    if (busy) return;
+    engine.world.destroyEntity(`j_${j.id}`);
+    engine.world.destroyEntity(`gate_${j.id}`); // 条件类小丑的信号门（无则 no-op）
+    const val = sellValue(j);
+    set(R_MONEY, get(R_MONEY) + val);
+    setOwned((o) => o.filter((x) => x.id !== j.id));
+    pushLog(`🗑️ 卖出 ${j.name} +💰$${val}`);
+    bump();
+  }, [busy, engine, set, get]);
+
   const rollShop = useCallback((): JokerCard[] => {
     const tmp = STARTER_JOKERS.filter((j) => !owned.some((o) => o.id === j.id));
     const offer: JokerCard[] = [];
@@ -447,6 +468,7 @@ function GameE() {
   const playBlock: string | null = !boss ? null
     : boss.effect === 'must_five' && selCount > 0 && selCount !== 5 ? '灵媒：必须出满 5 张'
     : boss.effect === 'no_repeat' && previewType && playedTypes.includes(previewType) ? `巨眼：${HAND_RANKINGS[previewType].name} 已打过`
+    : boss.effect === 'one_hand_type' && previewType && playedTypes.length > 0 && previewType !== playedTypes[0] ? `大嘴：本回合只能打${HAND_RANKINGS[playedTypes[0]].name}`
     : null;
 
   return (
@@ -460,7 +482,10 @@ function GameE() {
         .ge-joker { transition: transform .15s; }
         .ge-joker:hover { transform: translateY(-6px); z-index: 30; }
         .ge-joker .ge-joker-tip { opacity: 0; pointer-events: none; transition: opacity .15s; }
-        .ge-joker:hover .ge-joker-tip { opacity: 1; }
+        .ge-joker:hover .ge-joker-tip { opacity: 1; pointer-events: auto; }
+        .ge-card { position: relative; }
+        .ge-card .ge-ench-tip { opacity: 0; pointer-events: none; transition: opacity .15s; }
+        .ge-card:hover .ge-ench-tip { opacity: 1; }
         @keyframes ge-mascotIn { 0% { transform: translateY(150px); opacity: 0 } 55% { transform: translateY(-22px); opacity: 1 } 75% { transform: translateY(6px) } 100% { transform: translateY(0); opacity: 1 } }
         @keyframes ge-mascotOut { from { opacity: 1 } to { transform: translateY(150px); opacity: 0 } }
         @keyframes ge-bob { 0%,100% { transform: translateY(0) rotate(-3deg) } 50% { transform: translateY(-7px) rotate(3deg) } }
@@ -476,18 +501,18 @@ function GameE() {
         ))}
       </div>
 
-      {/* ── 过关庆祝：萌宠举牌（爱萌 出品位）── */}
+      {/* ── 过关庆祝：萌宠举牌（爱萌 出品位）—— 屏幕正中弹出，更醒目 ── */}
       {mascot && (
-        <div style={{ position: 'fixed', left: 18, bottom: 14, zIndex: 50, pointerEvents: 'none', animation: 'ge-mascotIn .6s cubic-bezier(.2,1.4,.5,1) both' }}>
-          <div style={{ position: 'relative', display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+        <div style={{ position: 'fixed', inset: 0, zIndex: 60, pointerEvents: 'none', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+          <div style={{ animation: 'ge-mascotIn .6s cubic-bezier(.2,1.4,.5,1) both', display: 'flex', flexDirection: 'column', alignItems: 'center', filter: 'drop-shadow(0 12px 28px #000a)' }}>
             {/* 牌子 */}
-            <div style={{ transformOrigin: 'bottom center', animation: 'ge-signWave 1.1s ease-in-out infinite', marginBottom: -6 }}>
-              <div style={{ background: 'linear-gradient(160deg,#fff7e6,#ffe0a3)', border: '3px solid #b9772e', borderRadius: 10, padding: '6px 16px', boxShadow: '0 4px 10px #0006', fontWeight: 900, fontSize: 22, color: '#e23b4e', letterSpacing: 2, fontFamily: '"PingFang SC","Microsoft YaHei",system-ui' }}>爱萌</div>
-              <div style={{ width: 4, height: 14, background: '#8a5a22', margin: '0 auto' }} />
+            <div style={{ transformOrigin: 'bottom center', animation: 'ge-signWave 1.1s ease-in-out infinite', marginBottom: -8 }}>
+              <div style={{ background: 'linear-gradient(160deg,#fff7e6,#ffe0a3)', border: '4px solid #b9772e', borderRadius: 14, padding: '10px 28px', boxShadow: '0 6px 14px #0007', fontWeight: 900, fontSize: 38, color: '#e23b4e', letterSpacing: 4, fontFamily: '"PingFang SC","Microsoft YaHei",system-ui' }}>爱萌</div>
+              <div style={{ width: 6, height: 22, background: '#8a5a22', margin: '0 auto' }} />
             </div>
             {/* 萌宠 */}
-            <div style={{ fontSize: 64, animation: 'ge-bob .8s ease-in-out infinite', filter: 'drop-shadow(0 6px 8px #0007)' }}>🐱</div>
-            <div style={{ fontSize: 11, color: '#ffd166', fontWeight: 700, marginTop: 2, textShadow: '0 1px 3px #000' }}>过关！</div>
+            <div style={{ fontSize: 110, animation: 'ge-bob .8s ease-in-out infinite' }}>🐱</div>
+            <div style={{ fontSize: 18, color: '#ffd166', fontWeight: 800, marginTop: 4, textShadow: '0 2px 6px #000', letterSpacing: 2 }}>✨ 过关！✨</div>
           </div>
         </div>
       )}
@@ -647,7 +672,8 @@ function GameE() {
               <div className="ge-joker-tip" style={{ position: 'absolute', bottom: 76, left: '50%', transform: 'translateX(-50%)', width: 150, background: 'rgba(10,16,24,0.97)', border: `1px solid ${rc}`, borderRadius: 8, padding: '7px 9px', zIndex: 40, boxShadow: '0 6px 18px #000a' }}>
                 <div style={{ fontSize: 12, fontWeight: 700, color: '#f1f5f9' }}>{j.name}</div>
                 <div style={{ fontSize: 9, color: rc, textTransform: 'uppercase', letterSpacing: 1, marginBottom: 3 }}>{j.rarity} · {j.jokerType}</div>
-                <div style={{ fontSize: 10.5, color: '#a78bfa', lineHeight: 1.4 }}>{j.text}</div>
+                <div style={{ fontSize: 10.5, color: '#a78bfa', lineHeight: 1.4, marginBottom: 6 }}>{j.text}</div>
+                <button onClick={(ev) => { ev.stopPropagation(); sellJoker(j); }} disabled={busy} style={{ width: '100%', padding: '4px', borderRadius: 6, border: '1px solid #ef4444', background: busy ? '#1e293b' : 'rgba(239,68,68,0.18)', color: busy ? '#475569' : '#fca5a5', cursor: busy ? 'default' : 'pointer', fontSize: 11, fontWeight: 700 }}>🗑️ 卖出 +💰${sellValue(j)}</button>
               </div>
             </div>
           );
@@ -823,16 +849,27 @@ function GameE() {
                     const ecs = enchantOf(c);
                     const first = ecs.length ? ENCHANTS[ecs[0]] : null;
                     return (
-                      <div key={keyOf(c)} className={busy ? undefined : 'ge-cardsel'} onClick={() => !busy && toggle(i)} style={{
+                      <div key={keyOf(c)} className={`ge-card${busy ? '' : ' ge-cardsel'}`} onClick={() => !busy && toggle(i)} style={{
                         ...cardBg(c.suit, c.rank), cursor: busy ? 'default' : 'pointer', position: 'relative',
                         transform: sel[i] && !leaving ? 'translateY(-12px)' : 'none', transition: 'transform 0.15s',
                         outline: sel[i] ? '3px solid #ffd166' : first ? `2px solid ${first.color}` : '1px solid #0008',
                         boxShadow: sel[i] ? '0 8px 20px #ffd16655' : first ? `0 0 10px ${first.color}aa` : 'none',
                         animation: leaving ? 'ge-flyTrash 0.38s ease forwards' : isNew ? `ge-drawIn 0.4s ease ${i * 0.05}s both` : undefined,
-                      }} title={ecs.map((id) => `${ENCHANTS[id].name}：${ENCHANTS[id].desc}`).join(' · ') || undefined}>
+                      }}>
                         {ecs.length > 0 && <span style={{ position: 'absolute', top: -7, right: -6, display: 'flex', gap: 1 }}>
                           {ecs.map((id, bi) => { const e = ENCHANTS[id]; return <span key={bi} style={{ width: 15, height: 15, borderRadius: '50%', background: e.color, color: '#0a0a0a', fontSize: 9, fontWeight: 800, lineHeight: '15px', textAlign: 'center', boxShadow: `0 0 5px ${e.color}` }}>{e.badge}</span>; })}
                         </span>}
+                        {ecs.length > 0 && first && (
+                          <div className="ge-ench-tip" style={{ position: 'absolute', bottom: CH + 10, left: '50%', transform: 'translateX(-50%)', width: 168, background: 'rgba(8,14,22,0.9)', backdropFilter: 'blur(3px)', WebkitBackdropFilter: 'blur(3px)', border: `1px solid ${first.color}`, borderRadius: 9, padding: '8px 10px', zIndex: 45, boxShadow: '0 8px 22px #000b' }}>
+                            <div style={{ fontSize: 11, fontWeight: 700, color: '#fff', marginBottom: 5 }}>{c.rank}{SUIT_SYM[c.suit]} · 附魔</div>
+                            {ecs.map((id, bi) => { const e = ENCHANTS[id]; return (
+                              <div key={bi} style={{ fontSize: 10.5, lineHeight: 1.6, display: 'flex', alignItems: 'center', gap: 5 }}>
+                                <span style={{ width: 14, height: 14, borderRadius: '50%', background: e.color, color: '#0a0a0a', fontSize: 9, fontWeight: 800, lineHeight: '14px', textAlign: 'center' }}>{e.badge}</span>
+                                <span style={{ color: e.color, fontWeight: 700 }}>{e.name}</span><span style={{ color: '#9fb3bd' }}>{e.desc}</span>
+                              </div>
+                            ); })}
+                          </div>
+                        )}
                       </div>
                     );
                   })}
@@ -844,14 +881,15 @@ function GameE() {
                 </div>
               </div>
 
-              <div style={{ display: 'flex', gap: 12 }}>
-                <button onClick={startScoring} disabled={selCount === 0 || handsLeft <= 0 || busy || !!playBlock} title={playBlock ?? ''} style={{ padding: '10px 26px', borderRadius: 8, fontSize: 14, fontWeight: 700, border: 'none', cursor: selCount && handsLeft > 0 && !busy && !playBlock ? 'pointer' : 'default', background: selCount && handsLeft > 0 && !busy && !playBlock ? 'linear-gradient(135deg,#ffd166,#f59e0b)' : '#1e293b', color: selCount && handsLeft > 0 && !busy && !playBlock ? '#1a1020' : '#475569' }}>
-                  ▶ 出牌（{selCount}）
+              <div style={{ display: 'flex', gap: 12, alignItems: 'stretch' }}>
+                <button onClick={startScoring} disabled={selCount === 0 || handsLeft <= 0 || busy || !!playBlock} title={playBlock ?? ''} style={{ padding: '8px 24px', borderRadius: 8, fontSize: 14, fontWeight: 700, border: 'none', cursor: selCount && handsLeft > 0 && !busy && !playBlock ? 'pointer' : 'default', background: selCount && handsLeft > 0 && !busy && !playBlock ? 'linear-gradient(135deg,#ffd166,#f59e0b)' : '#1e293b', color: selCount && handsLeft > 0 && !busy && !playBlock ? '#1a1020' : '#475569', display: 'flex', flexDirection: 'column', alignItems: 'center', lineHeight: 1.3 }}>
+                  <span>▶ 出牌</span><span style={{ fontSize: 10, opacity: 0.85 }}>剩 {handsLeft} 次</span>
                 </button>
-                <button onClick={beginDiscard} disabled={selCount === 0 || discardsLeft <= 0 || busy} style={{ padding: '10px 22px', borderRadius: 8, fontSize: 14, fontWeight: 700, border: 'none', cursor: selCount && discardsLeft > 0 && !busy ? 'pointer' : 'default', background: selCount && discardsLeft > 0 && !busy ? 'linear-gradient(135deg,#60a5fa,#3b82f6)' : '#1e293b', color: selCount && discardsLeft > 0 && !busy ? '#0a1020' : '#475569' }}>
-                  ♻ 弃牌（{discardsLeft}）
+                <button onClick={beginDiscard} disabled={selCount === 0 || discardsLeft <= 0 || busy} style={{ padding: '8px 22px', borderRadius: 8, fontSize: 14, fontWeight: 700, border: 'none', cursor: selCount && discardsLeft > 0 && !busy ? 'pointer' : 'default', background: selCount && discardsLeft > 0 && !busy ? 'linear-gradient(135deg,#60a5fa,#3b82f6)' : '#1e293b', color: selCount && discardsLeft > 0 && !busy ? '#0a1020' : '#475569', display: 'flex', flexDirection: 'column', alignItems: 'center', lineHeight: 1.3 }}>
+                  <span>♻ 弃牌</span><span style={{ fontSize: 10, opacity: 0.85 }}>剩 {discardsLeft} 次</span>
                 </button>
               </div>
+              <div style={{ fontSize: 12, color: '#9fb3bd' }}>已选 <span style={{ color: '#ffd166', fontWeight: 700 }}>{selCount}</span>/5 张{selCount === 0 ? '（点手牌选择）' : ''}</div>
               {playBlock && <div style={{ fontSize: 12, color: '#fca5a5' }}>🚫 {playBlock}</div>}
             </>
           )}

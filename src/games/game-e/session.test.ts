@@ -124,6 +124,22 @@ describe('game-e · GameSession 线性流程脚本', () => {
     expect(s.target).toBe(blindRequirement(1, 'boss') * 2);
   });
 
+  it('Boss 诅咒（追加）：燧石牌型基础分减半 / 尖牙出牌扣 $', () => {
+    // ante9 = 燧石(halve_base)：pair 基础 {10,2} → {5,1}。
+    const flint = new GameSession(1); flint.ante = 9; flint.blindIdx = 2; flint.startBlind();
+    expect(flint.boss?.effect).toBe('halve_base');
+    expect(flint.handBase('pair')).toEqual({ chips: 5, mult: 1 });
+    // 离开燧石道（普通道）→ 基础分还原。
+    flint.ante = 9; flint.blindIdx = 0; flint.startBlind();
+    expect(flint.handBase('pair')).toEqual({ chips: 10, mult: 2 });
+    // ante10 = 尖牙(pay_per_play)：出 5 张扣 $5。
+    const tooth = new GameSession(1); tooth.ante = 10; tooth.blindIdx = 2; tooth.startBlind();
+    expect(tooth.boss?.effect).toBe('pay_per_play');
+    const before = tooth.money;
+    tooth.play([0, 1, 2, 3, 4]); // ante10 盲注线极高，单手不过线 → 无奖励，净扣 5
+    expect(tooth.money).toBe(before - 5);
+  });
+
   it('Boss 诅咒：镣铐发 7 张 / 尖针仅 1 次出牌 / 深水 0 弃牌', () => {
     const wall = new GameSession(1); wall.blindIdx = 2; wall.startBlind(); // ante1 = the_wall
     // 直接构造其它 Boss：ante 决定 boss（ante2=尖针, ante3=深水, ante4=镣铐）。

@@ -14,7 +14,10 @@ export type BossEffectKind =
   | 'small_hand' // 镣铐：手牌减 1（发 7 张）
   | 'must_five' // 灵媒：每手必须出满 5 张
   | 'hook_discard' // 钩子：每次出牌后随机弃 2 张手牌
-  | 'no_repeat'; // 眼：本回合每种牌型只能打一次
+  | 'no_repeat' // 眼：本回合每种牌型只能打一次
+  | 'one_hand_type' // 嘴：本回合只能打第一手打出的那种牌型
+  | 'halve_base' // 燧石：所有牌型基础分（筹码+倍率）减半
+  | 'pay_per_play'; // 牙：每次出牌，按出牌张数扣 $
 
 export interface BossBlind {
   readonly id: string;
@@ -33,6 +36,10 @@ export const BOSS_BLINDS: readonly BossBlind[] = [
   { id: 'the_psychic', name: '灵媒', icon: '🔮', desc: '每手必须出满 5 张', effect: 'must_five' },
   { id: 'the_hook', name: '铁钩', icon: '🪝', desc: '每次出牌后随机弃 2 张', effect: 'hook_discard' },
   { id: 'the_eye', name: '巨眼', icon: '👁️', desc: '每种牌型只能打一次', effect: 'no_repeat' },
+  // 追加（索引 ≥7，不动前 7 个 ante 的对应关系）：
+  { id: 'the_mouth', name: '大嘴', icon: '👄', desc: '本回合只能打一种牌型', effect: 'one_hand_type' },
+  { id: 'the_flint', name: '燧石', icon: '🔥', desc: '牌型基础分减半', effect: 'halve_base' },
+  { id: 'the_tooth', name: '尖牙', icon: '🦷', desc: '每次出牌按张数扣 $1', effect: 'pay_per_play' },
 ];
 
 /** 某 ante 的 Boss（确定性轮转：随 ante 推进循环取下一个）。 */
