@@ -41,6 +41,8 @@ export interface AssetIndexEntry {
   readonly source?: string;
   /** 许可（如 'CC0'）。 */
   readonly license?: string;
+  /** 画风（ArtStyle：'pixel'|'cartoon.ink'|...；导入器按来源标，缺省视为 pixel）。 */
+  readonly style?: string;
   /** 导入溯源：{ method, originalFile, importedAt, ... }（自由结构，仅作留痕）。 */
   readonly provenance?: Readonly<Record<string, unknown>>;
 }
@@ -77,7 +79,7 @@ export function parseAssetIndex(raw: unknown): AssetIndex {
       fail(`assets[${i}] "${e.id}" 已 filled 但缺 path`);
     if (e.spec !== undefined && (typeof e.spec !== 'object' || e.spec === null))
       fail(`assets[${i}] "${e.id}".spec 必须是对象`);
-    for (const f of ['category', 'source', 'license'] as const)
+    for (const f of ['category', 'source', 'license', 'style'] as const)
       if (e[f] !== undefined && typeof e[f] !== 'string') fail(`assets[${i}] "${e.id}".${f} 必须是字符串`);
     if (e.tags !== undefined && (!Array.isArray(e.tags) || e.tags.some((t) => typeof t !== 'string')))
       fail(`assets[${i}] "${e.id}".tags 必须是字符串数组`);
@@ -94,6 +96,7 @@ export function parseAssetIndex(raw: unknown): AssetIndex {
       tags: e.tags as string[] | undefined,
       source: e.source as string | undefined,
       license: e.license as string | undefined,
+      style: e.style as string | undefined,
       provenance: e.provenance as Record<string, unknown> | undefined,
     };
   });
