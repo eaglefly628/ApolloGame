@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import { standardArmy } from './index.js';
-import { initLiveBattle, stepLiveBattle, runLiveBattle, liveHash, cardStamina, MARCH_STEP, type DeployCmd } from './live-combat.js';
+import { initLiveBattle, stepLiveBattle, runLiveBattle, liveHash, cardStamina, tideDrawPulse, TIDE_PULSE, MARCH_STEP, type DeployCmd, type ClashEvent } from './live-combat.js';
 
 // doc 18/19 · live 解析器 + 3D-CLASH 对决核 + 3D-STAM 续航：验证 live 化后 outcome-first 不破（确定性逐拍 hash）
 // + 公平骨架（base=点数·双方同副；强弱来自经营 buff）+ 胜负方向 + live buff 杠杆 + 续航退场（战线接力·神牌不包打）。
@@ -68,5 +68,39 @@ describe('Game G · live-combat（doc18/19 · live + pairwise clash + 续航）'
     runLiveBattle(b, [...preboard('a', 0), ...preboard('b', 0)]);
     expect(['a', 'b', 'draw']).toContain(b.winner);
     expect(b.tick).toBeLessThan(4000);
+  });
+});
+
+// A1 战潮抽牌·事件脉冲（owner 北极星 Balatro「啪嗒」心流）：非线性涌牌 = 底流 + 遭遇/斩将/告急/破阵。
+describe('Game G · A1 战潮抽牌·事件脉冲（doc18 §10.3 乙 · tideDrawPulse 纯函数·确定性）', () => {
+  const ce = (aWins: boolean, aGen: boolean, bGen: boolean): ClashEvent => ({ tick: 1, lane: 0, winrate: 0.5, roll: 0.5, aWins, a: { rank: '7', suit: 'S', general: aGen, points: 7, buff: 0, morale: 0, pEff: 7 }, b: { rank: '7', suit: 'H', general: bGen, points: 7, buff: 0, morale: 0, pEff: 7 } });
+
+  it('事件→张数：遭遇+1 / 斩将(输方主将)+1 / 告急(我家掉血)+2 / 破阵(敌家掉血)+1；负 chip 钳 0', () => {
+    expect(tideDrawPulse([], 0, 0)).toBe(0); // 静拍不涌
+    expect(tideDrawPulse([ce(true, false, false)], 0, 0)).toBe(TIDE_PULSE.encounter); // 遭遇 1
+    expect(tideDrawPulse([ce(true, false, true)], 0, 0)).toBe(TIDE_PULSE.encounter + TIDE_PULSE.decap); // 斩了 b 主将
+    expect(tideDrawPulse([ce(false, true, false)], 0, 0)).toBe(TIDE_PULSE.encounter + TIDE_PULSE.decap); // 斩了 a 主将
+    expect(tideDrawPulse([], 1, 0)).toBe(TIDE_PULSE.crisis); // 我家掉 1 血 → 绝境援牌（峰值）
+    expect(tideDrawPulse([], 0, 2)).toBe(2 * TIDE_PULSE.breach); // 敌家掉 2 血 → 趁胜追击
+    expect(tideDrawPulse([ce(true, false, false), ce(false, true, false)], 1, 1)).toBe(1 + (1 + 1) + 2 + 1); // 综合
+    expect(tideDrawPulse([], -3, -1)).toBe(0); // 负 chip 钳 0
+  });
+
+  it('行为·非线性「看得见」：跑一局，整局涌牌远超纯底流、且有"哗一把"峰值拍(≥2)、静拍为 0；同 seed 涌牌序列确定', () => {
+    const run = (): { total: number; bursts: number; quiet: number } => {
+      const b = fresh(7); const d = [...preboard('a', 6), ...preboard('b', -4)];
+      let prevLen = 0, total = 0, bursts = 0, quiet = 0;
+      for (let i = 0; i < 3000 && b.winner === 'pending'; i++) {
+        const ha = b.homeA, hb = b.homeB; stepLiveBattle(b, d);
+        const p = tideDrawPulse(b.clashLog.slice(prevLen), ha - b.homeA, hb - b.homeB); prevLen = b.clashLog.length;
+        total += p; if (p >= 2) bursts++; if (p === 0) quiet++;
+      }
+      return { total, bursts, quiet };
+    };
+    const a = run(), c = run();
+    expect(a).toEqual(c); // 确定性：同 seed → 同涌牌序列
+    expect(a.total).toBeGreaterThan(20); // 整局涌了不少援牌（非纯底流·该来牌哗一把）
+    expect(a.bursts).toBeGreaterThan(0); // 有峰值拍（≥2 张：斩将/告急）
+    expect(a.quiet).toBeGreaterThan(0); // 也有静拍（行军/再逼近·不涌）→ 非线性节奏
   });
 });

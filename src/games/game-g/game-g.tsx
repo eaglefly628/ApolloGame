@@ -1,7 +1,7 @@
 import { mountBattle, type BattleView, type BattleUnit, type BattleLane, type BattleLever, type HandCardView, type BattleActions, type ClashView } from './battle-screen.js';
 import { mountLobby, type LobbyView, type LobbyShopItem } from './lobby-screen.js';
 import { prepareArmies, armyFromFormation, laneEstimates, quartermasterEnergy, FORMATION_PRESETS, PRESET_NAMES, LEVER_CATALOG, LEVER_START, battleSpec, RUN_BATTLES, RUN_LIVES, BETWEEN_BUFFS, applyBuff, jokerKeyBuffs, BOSS_ROSTER, bossFor, GAME_G_JOKERS, JOKER_BY_ID, ARCHETYPES, detectArchetype, archetypeMatchup, activeArchetype, pickAiFormation, GAME_G_PLANETS, GAME_G_FOILS, effectiveLives, effectiveLeverCap, effectiveLeverRegen, type Formation, type Intervention, type LeverKind, type RunBuff, type ArmyCard } from './index.js';
-import { initLiveBattle, stepLiveBattle, liveActive, LANE_LEN, HOME_BLOOD, type LiveBattle, type DeployCmd, type ClashEvent } from './live-combat.js';
+import { initLiveBattle, stepLiveBattle, liveActive, tideDrawPulse, LANE_LEN, HOME_BLOOD, type LiveBattle, type DeployCmd, type ClashEvent } from './live-combat.js';
 import { cardPoints, P_MAX } from './clash-resolve.js';
 
 // Game G ·《翻命扑克》—— 大厅 ↔ 出征 闭环（launcher 卡带槽：export mount(container)→cleanup）。自包含于本目录。
@@ -498,10 +498,15 @@ export function mount(container: HTMLElement): () => void {
           if (acc > LIVE_STEP_MS * 3) acc = LIVE_STEP_MS; // 切后台回来防暴冲
           if (acc >= LIVE_STEP_MS) {
             prevPos = snapLivePos(live);
+            const beforeHA = live.homeA, beforeHB = live.homeB;
             stepLiveBattle(live, deploys);
             acc -= LIVE_STEP_MS;
-            for (; drained < live.clashLog.length; drained++) perfQueue.push(live.clashLog[drained]); // 本拍新生对决 → 进特写队列
-            if (aHand.length < HAND_MAX && aDeck.length && live.tick % DRAW_PERIOD_TICKS === 0) aHand.push(aDeck.shift()!); // 底流涌牌进手
+            const newClashes = live.clashLog.slice(drained); drained = live.clashLog.length; // 本拍新生对决（特写 + 战潮抽牌同源）
+            for (const ev of newClashes) perfQueue.push(ev); // → 进特写队列
+            // A1 战潮抽牌：底流(每 DRAW_PERIOD_TICKS +1) + 事件脉冲(遭遇/斩将/告急/破阵)，「啪嗒」涌牌；手牌满则自然停抽=节流。
+            let pulse = tideDrawPulse(newClashes, beforeHA - live.homeA, beforeHB - live.homeB);
+            if (live.tick % DRAW_PERIOD_TICKS === 0) pulse += 1; // 底流保底
+            for (let d = 0; d < pulse && aHand.length < HAND_MAX && aDeck.length; d++) aHand.push(aDeck.shift()!);
             if (live.tick >= aiNext && bDeck.length) { const c = bDeck.shift()!; deploys.push({ tick: live.tick + 1, side: 'b', lane: c.lane, unit: toUnit(c) }); aiNext = live.tick + AI_PERIOD_TICKS; } // 敌滴投入该牌原路（随阵型）
             if (live.winner === 'pending' && !liveActive(live)) live.winner = live.homeB < live.homeA ? 'a' : live.homeA < live.homeB ? 'b' : 'draw'; // 两军互清无突破 → 比残血定（同 runLiveBattle 收尾）
           }

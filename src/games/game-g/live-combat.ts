@@ -130,3 +130,20 @@ export function liveHash(b: LiveBattle): string {
   const lane = (l: LiveLane): string => `${l.a.length}@${l.a[0]?.pos ?? '_'},${l.b.length}@${l.b[0]?.pos ?? '_'},${l.aGenDead ? 1 : 0}${l.bGenDead ? 1 : 0},${l.spentA},${l.spentB},${l.encT}`;
   return `t${b.tick}|hA${b.homeA}|hB${b.homeB}|w${b.winner}|s${b.rng.sequence}|${b.lanes.map(lane).join('|')}`;
 }
+
+// ── A1 战潮抽牌·事件脉冲（doc18 §10.3 乙 · owner 北极星 Balatro「啪嗒啪嗒」心流）──
+// 抽牌非线性：底流保底慢抽（showMatch 每 DRAW_PERIOD_TICKS +1），叠**战斗事件脉冲**——该来牌时"哗"一把：
+//   遭遇(每场对决) +1 / 斩将(主将阵亡) +1 / 告急(我家被 chip 1 血) +CRISIS 援牌(张力峰值·绝境涌牌) / 破阵(敌家被 chip) +1 趁胜追击。
+// 纯函数·确定性：吃「本拍新生对决 + 我家/敌家被 chip 血量」→ 返回本拍事件应抽张数（底流另加）。手牌满则 showMatch 自然停抽=节流。
+export const TIDE_PULSE = { encounter: 1, decap: 1, crisis: 2, breach: 1 } as const;
+export function tideDrawPulse(newClashes: ClashEvent[], homeAChipped: number, homeBChipped: number): number {
+  let n = 0;
+  for (const ev of newClashes) {
+    n += TIDE_PULSE.encounter; // 一波遭遇翻牌 +1
+    if (ev.aWins ? ev.b.general : ev.a.general) n += TIDE_PULSE.decap; // 主将阵亡(被斩) +1
+  }
+  n += Math.max(0, homeAChipped) * TIDE_PULSE.crisis; // 我家每掉 1 血 → 绝境援牌（峰值）
+  n += Math.max(0, homeBChipped) * TIDE_PULSE.breach; // 敌家每掉 1 血 → 趁胜追击
+  return n;
+}
+
