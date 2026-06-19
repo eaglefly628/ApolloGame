@@ -14,6 +14,17 @@
       "category": "background"
     },
     {
+      "id": "bgm.daily",
+      "type": "sound",
+      "description": "BGM·日常（轻松温柔，都市钢琴）",
+      "status": "tbf",
+      "spec": {
+        "loop": true,
+        "format": "mp3"
+      },
+      "category": "bgm"
+    },
+    {
       "id": "char_S.portrait.neutral",
       "type": "texture",
       "description": "立绘·角色S·平静（30代男性，西装，高冷气质，半身，透明背景）",
@@ -27,15 +38,2431 @@
       "category": "portrait"
     },
     {
-      "id": "bgm.daily",
-      "type": "sound",
-      "description": "BGM·日常（轻松温柔，都市钢琴）",
-      "status": "tbf",
+      "id": "gameicons/andymeneely/police-badge",
+      "type": "texture",
+      "description": "police badge · game-icons (andymeneely)",
+      "status": "filled",
+      "path": "gameicons/andymeneely/police-badge.svg",
+      "category": "icon.ui",
+      "style": "cartoon.flat",
+      "license": "CC BY 3.0",
+      "source": "game-icons",
+      "tags": [
+        "police",
+        "badge",
+        "andymeneely",
+        "icon",
+        "flat",
+        "vector"
+      ],
       "spec": {
-        "loop": true,
-        "format": "mp3"
+        "format": "svg",
+        "width": 512,
+        "height": 512,
+        "transparent": false
       },
-      "category": "bgm"
+      "provenance": {
+        "repo": "game-icons/icons",
+        "ref": "master",
+        "author": "andymeneely"
+      }
+    },
+    {
+      "id": "gameicons/andymeneely/riposte",
+      "type": "texture",
+      "description": "riposte · game-icons (andymeneely)",
+      "status": "filled",
+      "path": "gameicons/andymeneely/riposte.svg",
+      "category": "icon.ui",
+      "style": "cartoon.flat",
+      "license": "CC BY 3.0",
+      "source": "game-icons",
+      "tags": [
+        "riposte",
+        "andymeneely",
+        "icon",
+        "flat",
+        "vector"
+      ],
+      "spec": {
+        "format": "svg",
+        "width": 512,
+        "height": 512,
+        "transparent": false
+      },
+      "provenance": {
+        "repo": "game-icons/icons",
+        "ref": "master",
+        "author": "andymeneely"
+      }
+    },
+    {
+      "id": "gameicons/aussiesim/card-10-clubs",
+      "type": "texture",
+      "description": "card 10 clubs · game-icons (aussiesim)",
+      "status": "filled",
+      "path": "gameicons/aussiesim/card-10-clubs.svg",
+      "category": "icon.ui",
+      "style": "cartoon.flat",
+      "license": "CC BY 3.0",
+      "source": "game-icons",
+      "tags": [
+        "card",
+        "10",
+        "clubs",
+        "aussiesim",
+        "icon",
+        "flat",
+        "vector"
+      ],
+      "spec": {
+        "format": "svg",
+        "width": 512,
+        "height": 512,
+        "transparent": false
+      },
+      "provenance": {
+        "repo": "game-icons/icons",
+        "ref": "master",
+        "author": "aussiesim"
+      }
+    },
+    {
+      "id": "gameicons/aussiesim/card-10-diamonds",
+      "type": "texture",
+      "description": "card 10 diamonds · game-icons (aussiesim)",
+      "status": "filled",
+      "path": "gameicons/aussiesim/card-10-diamonds.svg",
+      "category": "icon.ui",
+      "style": "cartoon.flat",
+      "license": "CC BY 3.0",
+      "source": "game-icons",
+      "tags": [
+        "card",
+        "10",
+        "diamonds",
+        "aussiesim",
+        "icon",
+        "flat",
+        "vector"
+      ],
+      "spec": {
+        "format": "svg",
+        "width": 512,
+        "height": 512,
+        "transparent": false
+      },
+      "provenance": {
+        "repo": "game-icons/icons",
+        "ref": "master",
+        "author": "aussiesim"
+      }
+    },
+    {
+      "id": "gameicons/aussiesim/card-10-hearts",
+      "type": "texture",
+      "description": "card 10 hearts · game-icons (aussiesim)",
+      "status": "filled",
+      "path": "gameicons/aussiesim/card-10-hearts.svg",
+      "category": "icon.ui",
+      "style": "cartoon.flat",
+      "license": "CC BY 3.0",
+      "source": "game-icons",
+      "tags": [
+        "card",
+        "10",
+        "hearts",
+        "aussiesim",
+        "icon",
+        "flat",
+        "vector"
+      ],
+      "spec": {
+        "format": "svg",
+        "width": 512,
+        "height": 512,
+        "transparent": false
+      },
+      "provenance": {
+        "repo": "game-icons/icons",
+        "ref": "master",
+        "author": "aussiesim"
+      }
+    },
+    {
+      "id": "gameicons/aussiesim/card-10-spades",
+      "type": "texture",
+      "description": "card 10 spades · game-icons (aussiesim)",
+      "status": "filled",
+      "path": "gameicons/aussiesim/card-10-spades.svg",
+      "category": "icon.ui",
+      "style": "cartoon.flat",
+      "license": "CC BY 3.0",
+      "source": "game-icons",
+      "tags": [
+        "card",
+        "10",
+        "spades",
+        "aussiesim",
+        "icon",
+        "flat",
+        "vector"
+      ],
+      "spec": {
+        "format": "svg",
+        "width": 512,
+        "height": 512,
+        "transparent": false
+      },
+      "provenance": {
+        "repo": "game-icons/icons",
+        "ref": "master",
+        "author": "aussiesim"
+      }
+    },
+    {
+      "id": "gameicons/aussiesim/card-2-clubs",
+      "type": "texture",
+      "description": "card 2 clubs · game-icons (aussiesim)",
+      "status": "filled",
+      "path": "gameicons/aussiesim/card-2-clubs.svg",
+      "category": "icon.ui",
+      "style": "cartoon.flat",
+      "license": "CC BY 3.0",
+      "source": "game-icons",
+      "tags": [
+        "card",
+        "2",
+        "clubs",
+        "aussiesim",
+        "icon",
+        "flat",
+        "vector"
+      ],
+      "spec": {
+        "format": "svg",
+        "width": 512,
+        "height": 512,
+        "transparent": false
+      },
+      "provenance": {
+        "repo": "game-icons/icons",
+        "ref": "master",
+        "author": "aussiesim"
+      }
+    },
+    {
+      "id": "gameicons/aussiesim/card-2-diamonds",
+      "type": "texture",
+      "description": "card 2 diamonds · game-icons (aussiesim)",
+      "status": "filled",
+      "path": "gameicons/aussiesim/card-2-diamonds.svg",
+      "category": "icon.ui",
+      "style": "cartoon.flat",
+      "license": "CC BY 3.0",
+      "source": "game-icons",
+      "tags": [
+        "card",
+        "2",
+        "diamonds",
+        "aussiesim",
+        "icon",
+        "flat",
+        "vector"
+      ],
+      "spec": {
+        "format": "svg",
+        "width": 512,
+        "height": 512,
+        "transparent": false
+      },
+      "provenance": {
+        "repo": "game-icons/icons",
+        "ref": "master",
+        "author": "aussiesim"
+      }
+    },
+    {
+      "id": "gameicons/aussiesim/card-2-hearts",
+      "type": "texture",
+      "description": "card 2 hearts · game-icons (aussiesim)",
+      "status": "filled",
+      "path": "gameicons/aussiesim/card-2-hearts.svg",
+      "category": "icon.ui",
+      "style": "cartoon.flat",
+      "license": "CC BY 3.0",
+      "source": "game-icons",
+      "tags": [
+        "card",
+        "2",
+        "hearts",
+        "aussiesim",
+        "icon",
+        "flat",
+        "vector"
+      ],
+      "spec": {
+        "format": "svg",
+        "width": 512,
+        "height": 512,
+        "transparent": false
+      },
+      "provenance": {
+        "repo": "game-icons/icons",
+        "ref": "master",
+        "author": "aussiesim"
+      }
+    },
+    {
+      "id": "gameicons/aussiesim/card-2-spades",
+      "type": "texture",
+      "description": "card 2 spades · game-icons (aussiesim)",
+      "status": "filled",
+      "path": "gameicons/aussiesim/card-2-spades.svg",
+      "category": "icon.ui",
+      "style": "cartoon.flat",
+      "license": "CC BY 3.0",
+      "source": "game-icons",
+      "tags": [
+        "card",
+        "2",
+        "spades",
+        "aussiesim",
+        "icon",
+        "flat",
+        "vector"
+      ],
+      "spec": {
+        "format": "svg",
+        "width": 512,
+        "height": 512,
+        "transparent": false
+      },
+      "provenance": {
+        "repo": "game-icons/icons",
+        "ref": "master",
+        "author": "aussiesim"
+      }
+    },
+    {
+      "id": "gameicons/aussiesim/card-3-clubs",
+      "type": "texture",
+      "description": "card 3 clubs · game-icons (aussiesim)",
+      "status": "filled",
+      "path": "gameicons/aussiesim/card-3-clubs.svg",
+      "category": "icon.ui",
+      "style": "cartoon.flat",
+      "license": "CC BY 3.0",
+      "source": "game-icons",
+      "tags": [
+        "card",
+        "3",
+        "clubs",
+        "aussiesim",
+        "icon",
+        "flat",
+        "vector"
+      ],
+      "spec": {
+        "format": "svg",
+        "width": 512,
+        "height": 512,
+        "transparent": false
+      },
+      "provenance": {
+        "repo": "game-icons/icons",
+        "ref": "master",
+        "author": "aussiesim"
+      }
+    },
+    {
+      "id": "gameicons/aussiesim/card-3-diamonds",
+      "type": "texture",
+      "description": "card 3 diamonds · game-icons (aussiesim)",
+      "status": "filled",
+      "path": "gameicons/aussiesim/card-3-diamonds.svg",
+      "category": "icon.ui",
+      "style": "cartoon.flat",
+      "license": "CC BY 3.0",
+      "source": "game-icons",
+      "tags": [
+        "card",
+        "3",
+        "diamonds",
+        "aussiesim",
+        "icon",
+        "flat",
+        "vector"
+      ],
+      "spec": {
+        "format": "svg",
+        "width": 512,
+        "height": 512,
+        "transparent": false
+      },
+      "provenance": {
+        "repo": "game-icons/icons",
+        "ref": "master",
+        "author": "aussiesim"
+      }
+    },
+    {
+      "id": "gameicons/aussiesim/card-3-hearts",
+      "type": "texture",
+      "description": "card 3 hearts · game-icons (aussiesim)",
+      "status": "filled",
+      "path": "gameicons/aussiesim/card-3-hearts.svg",
+      "category": "icon.ui",
+      "style": "cartoon.flat",
+      "license": "CC BY 3.0",
+      "source": "game-icons",
+      "tags": [
+        "card",
+        "3",
+        "hearts",
+        "aussiesim",
+        "icon",
+        "flat",
+        "vector"
+      ],
+      "spec": {
+        "format": "svg",
+        "width": 512,
+        "height": 512,
+        "transparent": false
+      },
+      "provenance": {
+        "repo": "game-icons/icons",
+        "ref": "master",
+        "author": "aussiesim"
+      }
+    },
+    {
+      "id": "gameicons/aussiesim/card-3-spades",
+      "type": "texture",
+      "description": "card 3 spades · game-icons (aussiesim)",
+      "status": "filled",
+      "path": "gameicons/aussiesim/card-3-spades.svg",
+      "category": "icon.ui",
+      "style": "cartoon.flat",
+      "license": "CC BY 3.0",
+      "source": "game-icons",
+      "tags": [
+        "card",
+        "3",
+        "spades",
+        "aussiesim",
+        "icon",
+        "flat",
+        "vector"
+      ],
+      "spec": {
+        "format": "svg",
+        "width": 512,
+        "height": 512,
+        "transparent": false
+      },
+      "provenance": {
+        "repo": "game-icons/icons",
+        "ref": "master",
+        "author": "aussiesim"
+      }
+    },
+    {
+      "id": "gameicons/aussiesim/card-4-clubs",
+      "type": "texture",
+      "description": "card 4 clubs · game-icons (aussiesim)",
+      "status": "filled",
+      "path": "gameicons/aussiesim/card-4-clubs.svg",
+      "category": "icon.ui",
+      "style": "cartoon.flat",
+      "license": "CC BY 3.0",
+      "source": "game-icons",
+      "tags": [
+        "card",
+        "4",
+        "clubs",
+        "aussiesim",
+        "icon",
+        "flat",
+        "vector"
+      ],
+      "spec": {
+        "format": "svg",
+        "width": 512,
+        "height": 512,
+        "transparent": false
+      },
+      "provenance": {
+        "repo": "game-icons/icons",
+        "ref": "master",
+        "author": "aussiesim"
+      }
+    },
+    {
+      "id": "gameicons/aussiesim/card-4-diamonds",
+      "type": "texture",
+      "description": "card 4 diamonds · game-icons (aussiesim)",
+      "status": "filled",
+      "path": "gameicons/aussiesim/card-4-diamonds.svg",
+      "category": "icon.ui",
+      "style": "cartoon.flat",
+      "license": "CC BY 3.0",
+      "source": "game-icons",
+      "tags": [
+        "card",
+        "4",
+        "diamonds",
+        "aussiesim",
+        "icon",
+        "flat",
+        "vector"
+      ],
+      "spec": {
+        "format": "svg",
+        "width": 512,
+        "height": 512,
+        "transparent": false
+      },
+      "provenance": {
+        "repo": "game-icons/icons",
+        "ref": "master",
+        "author": "aussiesim"
+      }
+    },
+    {
+      "id": "gameicons/aussiesim/card-4-hearts",
+      "type": "texture",
+      "description": "card 4 hearts · game-icons (aussiesim)",
+      "status": "filled",
+      "path": "gameicons/aussiesim/card-4-hearts.svg",
+      "category": "icon.ui",
+      "style": "cartoon.flat",
+      "license": "CC BY 3.0",
+      "source": "game-icons",
+      "tags": [
+        "card",
+        "4",
+        "hearts",
+        "aussiesim",
+        "icon",
+        "flat",
+        "vector"
+      ],
+      "spec": {
+        "format": "svg",
+        "width": 512,
+        "height": 512,
+        "transparent": false
+      },
+      "provenance": {
+        "repo": "game-icons/icons",
+        "ref": "master",
+        "author": "aussiesim"
+      }
+    },
+    {
+      "id": "gameicons/aussiesim/card-4-spades",
+      "type": "texture",
+      "description": "card 4 spades · game-icons (aussiesim)",
+      "status": "filled",
+      "path": "gameicons/aussiesim/card-4-spades.svg",
+      "category": "icon.ui",
+      "style": "cartoon.flat",
+      "license": "CC BY 3.0",
+      "source": "game-icons",
+      "tags": [
+        "card",
+        "4",
+        "spades",
+        "aussiesim",
+        "icon",
+        "flat",
+        "vector"
+      ],
+      "spec": {
+        "format": "svg",
+        "width": 512,
+        "height": 512,
+        "transparent": false
+      },
+      "provenance": {
+        "repo": "game-icons/icons",
+        "ref": "master",
+        "author": "aussiesim"
+      }
+    },
+    {
+      "id": "gameicons/aussiesim/card-5-clubs",
+      "type": "texture",
+      "description": "card 5 clubs · game-icons (aussiesim)",
+      "status": "filled",
+      "path": "gameicons/aussiesim/card-5-clubs.svg",
+      "category": "icon.ui",
+      "style": "cartoon.flat",
+      "license": "CC BY 3.0",
+      "source": "game-icons",
+      "tags": [
+        "card",
+        "5",
+        "clubs",
+        "aussiesim",
+        "icon",
+        "flat",
+        "vector"
+      ],
+      "spec": {
+        "format": "svg",
+        "width": 512,
+        "height": 512,
+        "transparent": false
+      },
+      "provenance": {
+        "repo": "game-icons/icons",
+        "ref": "master",
+        "author": "aussiesim"
+      }
+    },
+    {
+      "id": "gameicons/aussiesim/card-5-diamonds",
+      "type": "texture",
+      "description": "card 5 diamonds · game-icons (aussiesim)",
+      "status": "filled",
+      "path": "gameicons/aussiesim/card-5-diamonds.svg",
+      "category": "icon.ui",
+      "style": "cartoon.flat",
+      "license": "CC BY 3.0",
+      "source": "game-icons",
+      "tags": [
+        "card",
+        "5",
+        "diamonds",
+        "aussiesim",
+        "icon",
+        "flat",
+        "vector"
+      ],
+      "spec": {
+        "format": "svg",
+        "width": 512,
+        "height": 512,
+        "transparent": false
+      },
+      "provenance": {
+        "repo": "game-icons/icons",
+        "ref": "master",
+        "author": "aussiesim"
+      }
+    },
+    {
+      "id": "gameicons/aussiesim/card-5-hearts",
+      "type": "texture",
+      "description": "card 5 hearts · game-icons (aussiesim)",
+      "status": "filled",
+      "path": "gameicons/aussiesim/card-5-hearts.svg",
+      "category": "icon.ui",
+      "style": "cartoon.flat",
+      "license": "CC BY 3.0",
+      "source": "game-icons",
+      "tags": [
+        "card",
+        "5",
+        "hearts",
+        "aussiesim",
+        "icon",
+        "flat",
+        "vector"
+      ],
+      "spec": {
+        "format": "svg",
+        "width": 512,
+        "height": 512,
+        "transparent": false
+      },
+      "provenance": {
+        "repo": "game-icons/icons",
+        "ref": "master",
+        "author": "aussiesim"
+      }
+    },
+    {
+      "id": "gameicons/aussiesim/card-5-spades",
+      "type": "texture",
+      "description": "card 5 spades · game-icons (aussiesim)",
+      "status": "filled",
+      "path": "gameicons/aussiesim/card-5-spades.svg",
+      "category": "icon.ui",
+      "style": "cartoon.flat",
+      "license": "CC BY 3.0",
+      "source": "game-icons",
+      "tags": [
+        "card",
+        "5",
+        "spades",
+        "aussiesim",
+        "icon",
+        "flat",
+        "vector"
+      ],
+      "spec": {
+        "format": "svg",
+        "width": 512,
+        "height": 512,
+        "transparent": false
+      },
+      "provenance": {
+        "repo": "game-icons/icons",
+        "ref": "master",
+        "author": "aussiesim"
+      }
+    },
+    {
+      "id": "gameicons/aussiesim/card-6-clubs",
+      "type": "texture",
+      "description": "card 6 clubs · game-icons (aussiesim)",
+      "status": "filled",
+      "path": "gameicons/aussiesim/card-6-clubs.svg",
+      "category": "icon.ui",
+      "style": "cartoon.flat",
+      "license": "CC BY 3.0",
+      "source": "game-icons",
+      "tags": [
+        "card",
+        "6",
+        "clubs",
+        "aussiesim",
+        "icon",
+        "flat",
+        "vector"
+      ],
+      "spec": {
+        "format": "svg",
+        "width": 512,
+        "height": 512,
+        "transparent": false
+      },
+      "provenance": {
+        "repo": "game-icons/icons",
+        "ref": "master",
+        "author": "aussiesim"
+      }
+    },
+    {
+      "id": "gameicons/aussiesim/card-6-diamonds",
+      "type": "texture",
+      "description": "card 6 diamonds · game-icons (aussiesim)",
+      "status": "filled",
+      "path": "gameicons/aussiesim/card-6-diamonds.svg",
+      "category": "icon.ui",
+      "style": "cartoon.flat",
+      "license": "CC BY 3.0",
+      "source": "game-icons",
+      "tags": [
+        "card",
+        "6",
+        "diamonds",
+        "aussiesim",
+        "icon",
+        "flat",
+        "vector"
+      ],
+      "spec": {
+        "format": "svg",
+        "width": 512,
+        "height": 512,
+        "transparent": false
+      },
+      "provenance": {
+        "repo": "game-icons/icons",
+        "ref": "master",
+        "author": "aussiesim"
+      }
+    },
+    {
+      "id": "gameicons/aussiesim/card-6-hearts",
+      "type": "texture",
+      "description": "card 6 hearts · game-icons (aussiesim)",
+      "status": "filled",
+      "path": "gameicons/aussiesim/card-6-hearts.svg",
+      "category": "icon.ui",
+      "style": "cartoon.flat",
+      "license": "CC BY 3.0",
+      "source": "game-icons",
+      "tags": [
+        "card",
+        "6",
+        "hearts",
+        "aussiesim",
+        "icon",
+        "flat",
+        "vector"
+      ],
+      "spec": {
+        "format": "svg",
+        "width": 512,
+        "height": 512,
+        "transparent": false
+      },
+      "provenance": {
+        "repo": "game-icons/icons",
+        "ref": "master",
+        "author": "aussiesim"
+      }
+    },
+    {
+      "id": "gameicons/aussiesim/card-6-spades",
+      "type": "texture",
+      "description": "card 6 spades · game-icons (aussiesim)",
+      "status": "filled",
+      "path": "gameicons/aussiesim/card-6-spades.svg",
+      "category": "icon.ui",
+      "style": "cartoon.flat",
+      "license": "CC BY 3.0",
+      "source": "game-icons",
+      "tags": [
+        "card",
+        "6",
+        "spades",
+        "aussiesim",
+        "icon",
+        "flat",
+        "vector"
+      ],
+      "spec": {
+        "format": "svg",
+        "width": 512,
+        "height": 512,
+        "transparent": false
+      },
+      "provenance": {
+        "repo": "game-icons/icons",
+        "ref": "master",
+        "author": "aussiesim"
+      }
+    },
+    {
+      "id": "gameicons/aussiesim/card-7-clubs",
+      "type": "texture",
+      "description": "card 7 clubs · game-icons (aussiesim)",
+      "status": "filled",
+      "path": "gameicons/aussiesim/card-7-clubs.svg",
+      "category": "icon.ui",
+      "style": "cartoon.flat",
+      "license": "CC BY 3.0",
+      "source": "game-icons",
+      "tags": [
+        "card",
+        "7",
+        "clubs",
+        "aussiesim",
+        "icon",
+        "flat",
+        "vector"
+      ],
+      "spec": {
+        "format": "svg",
+        "width": 512,
+        "height": 512,
+        "transparent": false
+      },
+      "provenance": {
+        "repo": "game-icons/icons",
+        "ref": "master",
+        "author": "aussiesim"
+      }
+    },
+    {
+      "id": "gameicons/aussiesim/card-7-diamonds",
+      "type": "texture",
+      "description": "card 7 diamonds · game-icons (aussiesim)",
+      "status": "filled",
+      "path": "gameicons/aussiesim/card-7-diamonds.svg",
+      "category": "icon.ui",
+      "style": "cartoon.flat",
+      "license": "CC BY 3.0",
+      "source": "game-icons",
+      "tags": [
+        "card",
+        "7",
+        "diamonds",
+        "aussiesim",
+        "icon",
+        "flat",
+        "vector"
+      ],
+      "spec": {
+        "format": "svg",
+        "width": 512,
+        "height": 512,
+        "transparent": false
+      },
+      "provenance": {
+        "repo": "game-icons/icons",
+        "ref": "master",
+        "author": "aussiesim"
+      }
+    },
+    {
+      "id": "gameicons/aussiesim/card-7-hearts",
+      "type": "texture",
+      "description": "card 7 hearts · game-icons (aussiesim)",
+      "status": "filled",
+      "path": "gameicons/aussiesim/card-7-hearts.svg",
+      "category": "icon.ui",
+      "style": "cartoon.flat",
+      "license": "CC BY 3.0",
+      "source": "game-icons",
+      "tags": [
+        "card",
+        "7",
+        "hearts",
+        "aussiesim",
+        "icon",
+        "flat",
+        "vector"
+      ],
+      "spec": {
+        "format": "svg",
+        "width": 512,
+        "height": 512,
+        "transparent": false
+      },
+      "provenance": {
+        "repo": "game-icons/icons",
+        "ref": "master",
+        "author": "aussiesim"
+      }
+    },
+    {
+      "id": "gameicons/aussiesim/card-7-spades",
+      "type": "texture",
+      "description": "card 7 spades · game-icons (aussiesim)",
+      "status": "filled",
+      "path": "gameicons/aussiesim/card-7-spades.svg",
+      "category": "icon.ui",
+      "style": "cartoon.flat",
+      "license": "CC BY 3.0",
+      "source": "game-icons",
+      "tags": [
+        "card",
+        "7",
+        "spades",
+        "aussiesim",
+        "icon",
+        "flat",
+        "vector"
+      ],
+      "spec": {
+        "format": "svg",
+        "width": 512,
+        "height": 512,
+        "transparent": false
+      },
+      "provenance": {
+        "repo": "game-icons/icons",
+        "ref": "master",
+        "author": "aussiesim"
+      }
+    },
+    {
+      "id": "gameicons/aussiesim/card-8-clubs",
+      "type": "texture",
+      "description": "card 8 clubs · game-icons (aussiesim)",
+      "status": "filled",
+      "path": "gameicons/aussiesim/card-8-clubs.svg",
+      "category": "icon.ui",
+      "style": "cartoon.flat",
+      "license": "CC BY 3.0",
+      "source": "game-icons",
+      "tags": [
+        "card",
+        "8",
+        "clubs",
+        "aussiesim",
+        "icon",
+        "flat",
+        "vector"
+      ],
+      "spec": {
+        "format": "svg",
+        "width": 512,
+        "height": 512,
+        "transparent": false
+      },
+      "provenance": {
+        "repo": "game-icons/icons",
+        "ref": "master",
+        "author": "aussiesim"
+      }
+    },
+    {
+      "id": "gameicons/aussiesim/card-8-diamonds",
+      "type": "texture",
+      "description": "card 8 diamonds · game-icons (aussiesim)",
+      "status": "filled",
+      "path": "gameicons/aussiesim/card-8-diamonds.svg",
+      "category": "icon.ui",
+      "style": "cartoon.flat",
+      "license": "CC BY 3.0",
+      "source": "game-icons",
+      "tags": [
+        "card",
+        "8",
+        "diamonds",
+        "aussiesim",
+        "icon",
+        "flat",
+        "vector"
+      ],
+      "spec": {
+        "format": "svg",
+        "width": 512,
+        "height": 512,
+        "transparent": false
+      },
+      "provenance": {
+        "repo": "game-icons/icons",
+        "ref": "master",
+        "author": "aussiesim"
+      }
+    },
+    {
+      "id": "gameicons/aussiesim/card-8-hearts",
+      "type": "texture",
+      "description": "card 8 hearts · game-icons (aussiesim)",
+      "status": "filled",
+      "path": "gameicons/aussiesim/card-8-hearts.svg",
+      "category": "icon.ui",
+      "style": "cartoon.flat",
+      "license": "CC BY 3.0",
+      "source": "game-icons",
+      "tags": [
+        "card",
+        "8",
+        "hearts",
+        "aussiesim",
+        "icon",
+        "flat",
+        "vector"
+      ],
+      "spec": {
+        "format": "svg",
+        "width": 512,
+        "height": 512,
+        "transparent": false
+      },
+      "provenance": {
+        "repo": "game-icons/icons",
+        "ref": "master",
+        "author": "aussiesim"
+      }
+    },
+    {
+      "id": "gameicons/aussiesim/card-8-spades",
+      "type": "texture",
+      "description": "card 8 spades · game-icons (aussiesim)",
+      "status": "filled",
+      "path": "gameicons/aussiesim/card-8-spades.svg",
+      "category": "icon.ui",
+      "style": "cartoon.flat",
+      "license": "CC BY 3.0",
+      "source": "game-icons",
+      "tags": [
+        "card",
+        "8",
+        "spades",
+        "aussiesim",
+        "icon",
+        "flat",
+        "vector"
+      ],
+      "spec": {
+        "format": "svg",
+        "width": 512,
+        "height": 512,
+        "transparent": false
+      },
+      "provenance": {
+        "repo": "game-icons/icons",
+        "ref": "master",
+        "author": "aussiesim"
+      }
+    },
+    {
+      "id": "gameicons/aussiesim/card-9-clubs",
+      "type": "texture",
+      "description": "card 9 clubs · game-icons (aussiesim)",
+      "status": "filled",
+      "path": "gameicons/aussiesim/card-9-clubs.svg",
+      "category": "icon.ui",
+      "style": "cartoon.flat",
+      "license": "CC BY 3.0",
+      "source": "game-icons",
+      "tags": [
+        "card",
+        "9",
+        "clubs",
+        "aussiesim",
+        "icon",
+        "flat",
+        "vector"
+      ],
+      "spec": {
+        "format": "svg",
+        "width": 512,
+        "height": 512,
+        "transparent": false
+      },
+      "provenance": {
+        "repo": "game-icons/icons",
+        "ref": "master",
+        "author": "aussiesim"
+      }
+    },
+    {
+      "id": "gameicons/aussiesim/card-9-diamonds",
+      "type": "texture",
+      "description": "card 9 diamonds · game-icons (aussiesim)",
+      "status": "filled",
+      "path": "gameicons/aussiesim/card-9-diamonds.svg",
+      "category": "icon.ui",
+      "style": "cartoon.flat",
+      "license": "CC BY 3.0",
+      "source": "game-icons",
+      "tags": [
+        "card",
+        "9",
+        "diamonds",
+        "aussiesim",
+        "icon",
+        "flat",
+        "vector"
+      ],
+      "spec": {
+        "format": "svg",
+        "width": 512,
+        "height": 512,
+        "transparent": false
+      },
+      "provenance": {
+        "repo": "game-icons/icons",
+        "ref": "master",
+        "author": "aussiesim"
+      }
+    },
+    {
+      "id": "gameicons/aussiesim/card-9-hearts",
+      "type": "texture",
+      "description": "card 9 hearts · game-icons (aussiesim)",
+      "status": "filled",
+      "path": "gameicons/aussiesim/card-9-hearts.svg",
+      "category": "icon.ui",
+      "style": "cartoon.flat",
+      "license": "CC BY 3.0",
+      "source": "game-icons",
+      "tags": [
+        "card",
+        "9",
+        "hearts",
+        "aussiesim",
+        "icon",
+        "flat",
+        "vector"
+      ],
+      "spec": {
+        "format": "svg",
+        "width": 512,
+        "height": 512,
+        "transparent": false
+      },
+      "provenance": {
+        "repo": "game-icons/icons",
+        "ref": "master",
+        "author": "aussiesim"
+      }
+    },
+    {
+      "id": "gameicons/aussiesim/card-9-spades",
+      "type": "texture",
+      "description": "card 9 spades · game-icons (aussiesim)",
+      "status": "filled",
+      "path": "gameicons/aussiesim/card-9-spades.svg",
+      "category": "icon.ui",
+      "style": "cartoon.flat",
+      "license": "CC BY 3.0",
+      "source": "game-icons",
+      "tags": [
+        "card",
+        "9",
+        "spades",
+        "aussiesim",
+        "icon",
+        "flat",
+        "vector"
+      ],
+      "spec": {
+        "format": "svg",
+        "width": 512,
+        "height": 512,
+        "transparent": false
+      },
+      "provenance": {
+        "repo": "game-icons/icons",
+        "ref": "master",
+        "author": "aussiesim"
+      }
+    },
+    {
+      "id": "gameicons/aussiesim/card-ace-clubs",
+      "type": "texture",
+      "description": "card ace clubs · game-icons (aussiesim)",
+      "status": "filled",
+      "path": "gameicons/aussiesim/card-ace-clubs.svg",
+      "category": "icon.ui",
+      "style": "cartoon.flat",
+      "license": "CC BY 3.0",
+      "source": "game-icons",
+      "tags": [
+        "card",
+        "ace",
+        "clubs",
+        "aussiesim",
+        "icon",
+        "flat",
+        "vector"
+      ],
+      "spec": {
+        "format": "svg",
+        "width": 512,
+        "height": 512,
+        "transparent": false
+      },
+      "provenance": {
+        "repo": "game-icons/icons",
+        "ref": "master",
+        "author": "aussiesim"
+      }
+    },
+    {
+      "id": "gameicons/aussiesim/card-ace-diamonds",
+      "type": "texture",
+      "description": "card ace diamonds · game-icons (aussiesim)",
+      "status": "filled",
+      "path": "gameicons/aussiesim/card-ace-diamonds.svg",
+      "category": "icon.ui",
+      "style": "cartoon.flat",
+      "license": "CC BY 3.0",
+      "source": "game-icons",
+      "tags": [
+        "card",
+        "ace",
+        "diamonds",
+        "aussiesim",
+        "icon",
+        "flat",
+        "vector"
+      ],
+      "spec": {
+        "format": "svg",
+        "width": 512,
+        "height": 512,
+        "transparent": false
+      },
+      "provenance": {
+        "repo": "game-icons/icons",
+        "ref": "master",
+        "author": "aussiesim"
+      }
+    },
+    {
+      "id": "gameicons/aussiesim/card-ace-hearts",
+      "type": "texture",
+      "description": "card ace hearts · game-icons (aussiesim)",
+      "status": "filled",
+      "path": "gameicons/aussiesim/card-ace-hearts.svg",
+      "category": "icon.ui",
+      "style": "cartoon.flat",
+      "license": "CC BY 3.0",
+      "source": "game-icons",
+      "tags": [
+        "card",
+        "ace",
+        "hearts",
+        "aussiesim",
+        "icon",
+        "flat",
+        "vector"
+      ],
+      "spec": {
+        "format": "svg",
+        "width": 512,
+        "height": 512,
+        "transparent": false
+      },
+      "provenance": {
+        "repo": "game-icons/icons",
+        "ref": "master",
+        "author": "aussiesim"
+      }
+    },
+    {
+      "id": "gameicons/aussiesim/card-ace-spades",
+      "type": "texture",
+      "description": "card ace spades · game-icons (aussiesim)",
+      "status": "filled",
+      "path": "gameicons/aussiesim/card-ace-spades.svg",
+      "category": "icon.ui",
+      "style": "cartoon.flat",
+      "license": "CC BY 3.0",
+      "source": "game-icons",
+      "tags": [
+        "card",
+        "ace",
+        "spades",
+        "aussiesim",
+        "icon",
+        "flat",
+        "vector"
+      ],
+      "spec": {
+        "format": "svg",
+        "width": 512,
+        "height": 512,
+        "transparent": false
+      },
+      "provenance": {
+        "repo": "game-icons/icons",
+        "ref": "master",
+        "author": "aussiesim"
+      }
+    },
+    {
+      "id": "gameicons/aussiesim/card-jack-clubs",
+      "type": "texture",
+      "description": "card jack clubs · game-icons (aussiesim)",
+      "status": "filled",
+      "path": "gameicons/aussiesim/card-jack-clubs.svg",
+      "category": "icon.ui",
+      "style": "cartoon.flat",
+      "license": "CC BY 3.0",
+      "source": "game-icons",
+      "tags": [
+        "card",
+        "jack",
+        "clubs",
+        "aussiesim",
+        "icon",
+        "flat",
+        "vector"
+      ],
+      "spec": {
+        "format": "svg",
+        "width": 512,
+        "height": 512,
+        "transparent": false
+      },
+      "provenance": {
+        "repo": "game-icons/icons",
+        "ref": "master",
+        "author": "aussiesim"
+      }
+    },
+    {
+      "id": "gameicons/aussiesim/card-jack-diamonds",
+      "type": "texture",
+      "description": "card jack diamonds · game-icons (aussiesim)",
+      "status": "filled",
+      "path": "gameicons/aussiesim/card-jack-diamonds.svg",
+      "category": "icon.ui",
+      "style": "cartoon.flat",
+      "license": "CC BY 3.0",
+      "source": "game-icons",
+      "tags": [
+        "card",
+        "jack",
+        "diamonds",
+        "aussiesim",
+        "icon",
+        "flat",
+        "vector"
+      ],
+      "spec": {
+        "format": "svg",
+        "width": 512,
+        "height": 512,
+        "transparent": false
+      },
+      "provenance": {
+        "repo": "game-icons/icons",
+        "ref": "master",
+        "author": "aussiesim"
+      }
+    },
+    {
+      "id": "gameicons/aussiesim/card-jack-hearts",
+      "type": "texture",
+      "description": "card jack hearts · game-icons (aussiesim)",
+      "status": "filled",
+      "path": "gameicons/aussiesim/card-jack-hearts.svg",
+      "category": "icon.ui",
+      "style": "cartoon.flat",
+      "license": "CC BY 3.0",
+      "source": "game-icons",
+      "tags": [
+        "card",
+        "jack",
+        "hearts",
+        "aussiesim",
+        "icon",
+        "flat",
+        "vector"
+      ],
+      "spec": {
+        "format": "svg",
+        "width": 512,
+        "height": 512,
+        "transparent": false
+      },
+      "provenance": {
+        "repo": "game-icons/icons",
+        "ref": "master",
+        "author": "aussiesim"
+      }
+    },
+    {
+      "id": "gameicons/aussiesim/card-jack-spades",
+      "type": "texture",
+      "description": "card jack spades · game-icons (aussiesim)",
+      "status": "filled",
+      "path": "gameicons/aussiesim/card-jack-spades.svg",
+      "category": "icon.ui",
+      "style": "cartoon.flat",
+      "license": "CC BY 3.0",
+      "source": "game-icons",
+      "tags": [
+        "card",
+        "jack",
+        "spades",
+        "aussiesim",
+        "icon",
+        "flat",
+        "vector"
+      ],
+      "spec": {
+        "format": "svg",
+        "width": 512,
+        "height": 512,
+        "transparent": false
+      },
+      "provenance": {
+        "repo": "game-icons/icons",
+        "ref": "master",
+        "author": "aussiesim"
+      }
+    },
+    {
+      "id": "gameicons/aussiesim/card-king-clubs",
+      "type": "texture",
+      "description": "card king clubs · game-icons (aussiesim)",
+      "status": "filled",
+      "path": "gameicons/aussiesim/card-king-clubs.svg",
+      "category": "icon.ui",
+      "style": "cartoon.flat",
+      "license": "CC BY 3.0",
+      "source": "game-icons",
+      "tags": [
+        "card",
+        "king",
+        "clubs",
+        "aussiesim",
+        "icon",
+        "flat",
+        "vector"
+      ],
+      "spec": {
+        "format": "svg",
+        "width": 512,
+        "height": 512,
+        "transparent": false
+      },
+      "provenance": {
+        "repo": "game-icons/icons",
+        "ref": "master",
+        "author": "aussiesim"
+      }
+    },
+    {
+      "id": "gameicons/aussiesim/card-king-diamonds",
+      "type": "texture",
+      "description": "card king diamonds · game-icons (aussiesim)",
+      "status": "filled",
+      "path": "gameicons/aussiesim/card-king-diamonds.svg",
+      "category": "icon.ui",
+      "style": "cartoon.flat",
+      "license": "CC BY 3.0",
+      "source": "game-icons",
+      "tags": [
+        "card",
+        "king",
+        "diamonds",
+        "aussiesim",
+        "icon",
+        "flat",
+        "vector"
+      ],
+      "spec": {
+        "format": "svg",
+        "width": 512,
+        "height": 512,
+        "transparent": false
+      },
+      "provenance": {
+        "repo": "game-icons/icons",
+        "ref": "master",
+        "author": "aussiesim"
+      }
+    },
+    {
+      "id": "gameicons/aussiesim/card-king-hearts",
+      "type": "texture",
+      "description": "card king hearts · game-icons (aussiesim)",
+      "status": "filled",
+      "path": "gameicons/aussiesim/card-king-hearts.svg",
+      "category": "icon.ui",
+      "style": "cartoon.flat",
+      "license": "CC BY 3.0",
+      "source": "game-icons",
+      "tags": [
+        "card",
+        "king",
+        "hearts",
+        "aussiesim",
+        "icon",
+        "flat",
+        "vector"
+      ],
+      "spec": {
+        "format": "svg",
+        "width": 512,
+        "height": 512,
+        "transparent": false
+      },
+      "provenance": {
+        "repo": "game-icons/icons",
+        "ref": "master",
+        "author": "aussiesim"
+      }
+    },
+    {
+      "id": "gameicons/aussiesim/card-king-spades",
+      "type": "texture",
+      "description": "card king spades · game-icons (aussiesim)",
+      "status": "filled",
+      "path": "gameicons/aussiesim/card-king-spades.svg",
+      "category": "icon.ui",
+      "style": "cartoon.flat",
+      "license": "CC BY 3.0",
+      "source": "game-icons",
+      "tags": [
+        "card",
+        "king",
+        "spades",
+        "aussiesim",
+        "icon",
+        "flat",
+        "vector"
+      ],
+      "spec": {
+        "format": "svg",
+        "width": 512,
+        "height": 512,
+        "transparent": false
+      },
+      "provenance": {
+        "repo": "game-icons/icons",
+        "ref": "master",
+        "author": "aussiesim"
+      }
+    },
+    {
+      "id": "gameicons/aussiesim/card-queen-clubs",
+      "type": "texture",
+      "description": "card queen clubs · game-icons (aussiesim)",
+      "status": "filled",
+      "path": "gameicons/aussiesim/card-queen-clubs.svg",
+      "category": "icon.ui",
+      "style": "cartoon.flat",
+      "license": "CC BY 3.0",
+      "source": "game-icons",
+      "tags": [
+        "card",
+        "queen",
+        "clubs",
+        "aussiesim",
+        "icon",
+        "flat",
+        "vector"
+      ],
+      "spec": {
+        "format": "svg",
+        "width": 512,
+        "height": 512,
+        "transparent": false
+      },
+      "provenance": {
+        "repo": "game-icons/icons",
+        "ref": "master",
+        "author": "aussiesim"
+      }
+    },
+    {
+      "id": "gameicons/aussiesim/card-queen-diamonds",
+      "type": "texture",
+      "description": "card queen diamonds · game-icons (aussiesim)",
+      "status": "filled",
+      "path": "gameicons/aussiesim/card-queen-diamonds.svg",
+      "category": "icon.ui",
+      "style": "cartoon.flat",
+      "license": "CC BY 3.0",
+      "source": "game-icons",
+      "tags": [
+        "card",
+        "queen",
+        "diamonds",
+        "aussiesim",
+        "icon",
+        "flat",
+        "vector"
+      ],
+      "spec": {
+        "format": "svg",
+        "width": 512,
+        "height": 512,
+        "transparent": false
+      },
+      "provenance": {
+        "repo": "game-icons/icons",
+        "ref": "master",
+        "author": "aussiesim"
+      }
+    },
+    {
+      "id": "gameicons/aussiesim/card-queen-hearts",
+      "type": "texture",
+      "description": "card queen hearts · game-icons (aussiesim)",
+      "status": "filled",
+      "path": "gameicons/aussiesim/card-queen-hearts.svg",
+      "category": "icon.ui",
+      "style": "cartoon.flat",
+      "license": "CC BY 3.0",
+      "source": "game-icons",
+      "tags": [
+        "card",
+        "queen",
+        "hearts",
+        "aussiesim",
+        "icon",
+        "flat",
+        "vector"
+      ],
+      "spec": {
+        "format": "svg",
+        "width": 512,
+        "height": 512,
+        "transparent": false
+      },
+      "provenance": {
+        "repo": "game-icons/icons",
+        "ref": "master",
+        "author": "aussiesim"
+      }
+    },
+    {
+      "id": "gameicons/aussiesim/card-queen-spades",
+      "type": "texture",
+      "description": "card queen spades · game-icons (aussiesim)",
+      "status": "filled",
+      "path": "gameicons/aussiesim/card-queen-spades.svg",
+      "category": "icon.ui",
+      "style": "cartoon.flat",
+      "license": "CC BY 3.0",
+      "source": "game-icons",
+      "tags": [
+        "card",
+        "queen",
+        "spades",
+        "aussiesim",
+        "icon",
+        "flat",
+        "vector"
+      ],
+      "spec": {
+        "format": "svg",
+        "width": 512,
+        "height": 512,
+        "transparent": false
+      },
+      "provenance": {
+        "repo": "game-icons/icons",
+        "ref": "master",
+        "author": "aussiesim"
+      }
+    },
+    {
+      "id": "gameicons/badges/anvil",
+      "type": "texture",
+      "description": "anvil · game-icons (badges)",
+      "status": "filled",
+      "path": "gameicons/badges/anvil.svg",
+      "category": "icon.ui",
+      "style": "cartoon.flat",
+      "license": "CC BY 3.0",
+      "source": "game-icons",
+      "tags": [
+        "anvil",
+        "badges",
+        "icon",
+        "flat",
+        "vector"
+      ],
+      "spec": {
+        "format": "svg",
+        "width": 256,
+        "height": 256,
+        "transparent": false
+      },
+      "provenance": {
+        "repo": "game-icons/icons",
+        "ref": "master",
+        "author": "badges"
+      }
+    },
+    {
+      "id": "gameicons/badges/arrow-down",
+      "type": "texture",
+      "description": "arrow down · game-icons (badges)",
+      "status": "filled",
+      "path": "gameicons/badges/arrow-down.svg",
+      "category": "icon.ui",
+      "style": "cartoon.flat",
+      "license": "CC BY 3.0",
+      "source": "game-icons",
+      "tags": [
+        "arrow",
+        "down",
+        "badges",
+        "icon",
+        "flat",
+        "vector"
+      ],
+      "spec": {
+        "format": "svg",
+        "width": 256,
+        "height": 256,
+        "transparent": false
+      },
+      "provenance": {
+        "repo": "game-icons/icons",
+        "ref": "master",
+        "author": "badges"
+      }
+    },
+    {
+      "id": "gameicons/badges/arrow-up",
+      "type": "texture",
+      "description": "arrow up · game-icons (badges)",
+      "status": "filled",
+      "path": "gameicons/badges/arrow-up.svg",
+      "category": "icon.ui",
+      "style": "cartoon.flat",
+      "license": "CC BY 3.0",
+      "source": "game-icons",
+      "tags": [
+        "arrow",
+        "up",
+        "badges",
+        "icon",
+        "flat",
+        "vector"
+      ],
+      "spec": {
+        "format": "svg",
+        "width": 256,
+        "height": 256,
+        "transparent": false
+      },
+      "provenance": {
+        "repo": "game-icons/icons",
+        "ref": "master",
+        "author": "badges"
+      }
+    },
+    {
+      "id": "gameicons/badges/blank",
+      "type": "texture",
+      "description": "blank · game-icons (badges)",
+      "status": "filled",
+      "path": "gameicons/badges/blank.svg",
+      "category": "icon.ui",
+      "style": "cartoon.flat",
+      "license": "CC BY 3.0",
+      "source": "game-icons",
+      "tags": [
+        "blank",
+        "badges",
+        "icon",
+        "flat",
+        "vector"
+      ],
+      "spec": {
+        "format": "svg",
+        "width": 256,
+        "height": 256,
+        "transparent": false
+      },
+      "provenance": {
+        "repo": "game-icons/icons",
+        "ref": "master",
+        "author": "badges"
+      }
+    },
+    {
+      "id": "gameicons/badges/body",
+      "type": "texture",
+      "description": "body · game-icons (badges)",
+      "status": "filled",
+      "path": "gameicons/badges/body.svg",
+      "category": "icon.ui",
+      "style": "cartoon.flat",
+      "license": "CC BY 3.0",
+      "source": "game-icons",
+      "tags": [
+        "body",
+        "badges",
+        "icon",
+        "flat",
+        "vector"
+      ],
+      "spec": {
+        "format": "svg",
+        "width": 256,
+        "height": 256,
+        "transparent": false
+      },
+      "provenance": {
+        "repo": "game-icons/icons",
+        "ref": "master",
+        "author": "badges"
+      }
+    },
+    {
+      "id": "gameicons/badges/bolt",
+      "type": "texture",
+      "description": "bolt · game-icons (badges)",
+      "status": "filled",
+      "path": "gameicons/badges/bolt.svg",
+      "category": "icon.ui",
+      "style": "cartoon.flat",
+      "license": "CC BY 3.0",
+      "source": "game-icons",
+      "tags": [
+        "bolt",
+        "badges",
+        "icon",
+        "flat",
+        "vector"
+      ],
+      "spec": {
+        "format": "svg",
+        "width": 256,
+        "height": 256,
+        "transparent": false
+      },
+      "provenance": {
+        "repo": "game-icons/icons",
+        "ref": "master",
+        "author": "badges"
+      }
+    },
+    {
+      "id": "gameicons/badges/building",
+      "type": "texture",
+      "description": "building · game-icons (badges)",
+      "status": "filled",
+      "path": "gameicons/badges/building.svg",
+      "category": "icon.ui",
+      "style": "cartoon.flat",
+      "license": "CC BY 3.0",
+      "source": "game-icons",
+      "tags": [
+        "building",
+        "badges",
+        "icon",
+        "flat",
+        "vector"
+      ],
+      "spec": {
+        "format": "svg",
+        "width": 256,
+        "height": 256,
+        "transparent": false
+      },
+      "provenance": {
+        "repo": "game-icons/icons",
+        "ref": "master",
+        "author": "badges"
+      }
+    },
+    {
+      "id": "gameicons/badges/cloud",
+      "type": "texture",
+      "description": "cloud · game-icons (badges)",
+      "status": "filled",
+      "path": "gameicons/badges/cloud.svg",
+      "category": "icon.ui",
+      "style": "cartoon.flat",
+      "license": "CC BY 3.0",
+      "source": "game-icons",
+      "tags": [
+        "cloud",
+        "badges",
+        "icon",
+        "flat",
+        "vector"
+      ],
+      "spec": {
+        "format": "svg",
+        "width": 256,
+        "height": 256,
+        "transparent": false
+      },
+      "provenance": {
+        "repo": "game-icons/icons",
+        "ref": "master",
+        "author": "badges"
+      }
+    },
+    {
+      "id": "gameicons/badges/club",
+      "type": "texture",
+      "description": "club · game-icons (badges)",
+      "status": "filled",
+      "path": "gameicons/badges/club.svg",
+      "category": "icon.ui",
+      "style": "cartoon.flat",
+      "license": "CC BY 3.0",
+      "source": "game-icons",
+      "tags": [
+        "club",
+        "badges",
+        "icon",
+        "flat",
+        "vector"
+      ],
+      "spec": {
+        "format": "svg",
+        "width": 256,
+        "height": 256,
+        "transparent": false
+      },
+      "provenance": {
+        "repo": "game-icons/icons",
+        "ref": "master",
+        "author": "badges"
+      }
+    },
+    {
+      "id": "gameicons/badges/cog",
+      "type": "texture",
+      "description": "cog · game-icons (badges)",
+      "status": "filled",
+      "path": "gameicons/badges/cog.svg",
+      "category": "icon.ui",
+      "style": "cartoon.flat",
+      "license": "CC BY 3.0",
+      "source": "game-icons",
+      "tags": [
+        "cog",
+        "badges",
+        "icon",
+        "flat",
+        "vector"
+      ],
+      "spec": {
+        "format": "svg",
+        "width": 256,
+        "height": 256,
+        "transparent": false
+      },
+      "provenance": {
+        "repo": "game-icons/icons",
+        "ref": "master",
+        "author": "badges"
+      }
+    },
+    {
+      "id": "gameicons/badges/coins",
+      "type": "texture",
+      "description": "coins · game-icons (badges)",
+      "status": "filled",
+      "path": "gameicons/badges/coins.svg",
+      "category": "icon.ui",
+      "style": "cartoon.flat",
+      "license": "CC BY 3.0",
+      "source": "game-icons",
+      "tags": [
+        "coins",
+        "badges",
+        "icon",
+        "flat",
+        "vector"
+      ],
+      "spec": {
+        "format": "svg",
+        "width": 256,
+        "height": 256,
+        "transparent": false
+      },
+      "provenance": {
+        "repo": "game-icons/icons",
+        "ref": "master",
+        "author": "badges"
+      }
+    },
+    {
+      "id": "gameicons/badges/corporal",
+      "type": "texture",
+      "description": "corporal · game-icons (badges)",
+      "status": "filled",
+      "path": "gameicons/badges/corporal.svg",
+      "category": "icon.ui",
+      "style": "cartoon.flat",
+      "license": "CC BY 3.0",
+      "source": "game-icons",
+      "tags": [
+        "corporal",
+        "badges",
+        "icon",
+        "flat",
+        "vector"
+      ],
+      "spec": {
+        "format": "svg",
+        "width": 256,
+        "height": 256,
+        "transparent": false
+      },
+      "provenance": {
+        "repo": "game-icons/icons",
+        "ref": "master",
+        "author": "badges"
+      }
+    },
+    {
+      "id": "gameicons/badges/crosshair",
+      "type": "texture",
+      "description": "crosshair · game-icons (badges)",
+      "status": "filled",
+      "path": "gameicons/badges/crosshair.svg",
+      "category": "icon.ui",
+      "style": "cartoon.flat",
+      "license": "CC BY 3.0",
+      "source": "game-icons",
+      "tags": [
+        "crosshair",
+        "badges",
+        "icon",
+        "flat",
+        "vector"
+      ],
+      "spec": {
+        "format": "svg",
+        "width": 256,
+        "height": 256,
+        "transparent": false
+      },
+      "provenance": {
+        "repo": "game-icons/icons",
+        "ref": "master",
+        "author": "badges"
+      }
+    },
+    {
+      "id": "gameicons/badges/crown",
+      "type": "texture",
+      "description": "crown · game-icons (badges)",
+      "status": "filled",
+      "path": "gameicons/badges/crown.svg",
+      "category": "icon.ui",
+      "style": "cartoon.flat",
+      "license": "CC BY 3.0",
+      "source": "game-icons",
+      "tags": [
+        "crown",
+        "badges",
+        "icon",
+        "flat",
+        "vector"
+      ],
+      "spec": {
+        "format": "svg",
+        "width": 256,
+        "height": 256,
+        "transparent": false
+      },
+      "provenance": {
+        "repo": "game-icons/icons",
+        "ref": "master",
+        "author": "badges"
+      }
+    },
+    {
+      "id": "gameicons/badges/diamond",
+      "type": "texture",
+      "description": "diamond · game-icons (badges)",
+      "status": "filled",
+      "path": "gameicons/badges/diamond.svg",
+      "category": "icon.ui",
+      "style": "cartoon.flat",
+      "license": "CC BY 3.0",
+      "source": "game-icons",
+      "tags": [
+        "diamond",
+        "badges",
+        "icon",
+        "flat",
+        "vector"
+      ],
+      "spec": {
+        "format": "svg",
+        "width": 256,
+        "height": 256,
+        "transparent": false
+      },
+      "provenance": {
+        "repo": "game-icons/icons",
+        "ref": "master",
+        "author": "badges"
+      }
+    },
+    {
+      "id": "gameicons/badges/exclamation",
+      "type": "texture",
+      "description": "exclamation · game-icons (badges)",
+      "status": "filled",
+      "path": "gameicons/badges/exclamation.svg",
+      "category": "icon.ui",
+      "style": "cartoon.flat",
+      "license": "CC BY 3.0",
+      "source": "game-icons",
+      "tags": [
+        "exclamation",
+        "badges",
+        "icon",
+        "flat",
+        "vector"
+      ],
+      "spec": {
+        "format": "svg",
+        "width": 256,
+        "height": 256,
+        "transparent": false
+      },
+      "provenance": {
+        "repo": "game-icons/icons",
+        "ref": "master",
+        "author": "badges"
+      }
+    },
+    {
+      "id": "gameicons/badges/eye",
+      "type": "texture",
+      "description": "eye · game-icons (badges)",
+      "status": "filled",
+      "path": "gameicons/badges/eye.svg",
+      "category": "icon.ui",
+      "style": "cartoon.flat",
+      "license": "CC BY 3.0",
+      "source": "game-icons",
+      "tags": [
+        "eye",
+        "badges",
+        "icon",
+        "flat",
+        "vector"
+      ],
+      "spec": {
+        "format": "svg",
+        "width": 256,
+        "height": 256,
+        "transparent": false
+      },
+      "provenance": {
+        "repo": "game-icons/icons",
+        "ref": "master",
+        "author": "badges"
+      }
+    },
+    {
+      "id": "gameicons/badges/fire",
+      "type": "texture",
+      "description": "fire · game-icons (badges)",
+      "status": "filled",
+      "path": "gameicons/badges/fire.svg",
+      "category": "icon.ui",
+      "style": "cartoon.flat",
+      "license": "CC BY 3.0",
+      "source": "game-icons",
+      "tags": [
+        "fire",
+        "badges",
+        "icon",
+        "flat",
+        "vector"
+      ],
+      "spec": {
+        "format": "svg",
+        "width": 256,
+        "height": 256,
+        "transparent": false
+      },
+      "provenance": {
+        "repo": "game-icons/icons",
+        "ref": "master",
+        "author": "badges"
+      }
+    },
+    {
+      "id": "gameicons/badges/flask",
+      "type": "texture",
+      "description": "flask · game-icons (badges)",
+      "status": "filled",
+      "path": "gameicons/badges/flask.svg",
+      "category": "icon.ui",
+      "style": "cartoon.flat",
+      "license": "CC BY 3.0",
+      "source": "game-icons",
+      "tags": [
+        "flask",
+        "badges",
+        "icon",
+        "flat",
+        "vector"
+      ],
+      "spec": {
+        "format": "svg",
+        "width": 256,
+        "height": 256,
+        "transparent": false
+      },
+      "provenance": {
+        "repo": "game-icons/icons",
+        "ref": "master",
+        "author": "badges"
+      }
+    },
+    {
+      "id": "gameicons/badges/happy",
+      "type": "texture",
+      "description": "happy · game-icons (badges)",
+      "status": "filled",
+      "path": "gameicons/badges/happy.svg",
+      "category": "icon.ui",
+      "style": "cartoon.flat",
+      "license": "CC BY 3.0",
+      "source": "game-icons",
+      "tags": [
+        "happy",
+        "badges",
+        "icon",
+        "flat",
+        "vector"
+      ],
+      "spec": {
+        "format": "svg",
+        "width": 256,
+        "height": 256,
+        "transparent": false
+      },
+      "provenance": {
+        "repo": "game-icons/icons",
+        "ref": "master",
+        "author": "badges"
+      }
+    },
+    {
+      "id": "gameicons/badges/heart",
+      "type": "texture",
+      "description": "heart · game-icons (badges)",
+      "status": "filled",
+      "path": "gameicons/badges/heart.svg",
+      "category": "icon.ui",
+      "style": "cartoon.flat",
+      "license": "CC BY 3.0",
+      "source": "game-icons",
+      "tags": [
+        "heart",
+        "badges",
+        "icon",
+        "flat",
+        "vector"
+      ],
+      "spec": {
+        "format": "svg",
+        "width": 256,
+        "height": 256,
+        "transparent": false
+      },
+      "provenance": {
+        "repo": "game-icons/icons",
+        "ref": "master",
+        "author": "badges"
+      }
+    },
+    {
+      "id": "gameicons/badges/ice",
+      "type": "texture",
+      "description": "ice · game-icons (badges)",
+      "status": "filled",
+      "path": "gameicons/badges/ice.svg",
+      "category": "icon.ui",
+      "style": "cartoon.flat",
+      "license": "CC BY 3.0",
+      "source": "game-icons",
+      "tags": [
+        "ice",
+        "badges",
+        "icon",
+        "flat",
+        "vector"
+      ],
+      "spec": {
+        "format": "svg",
+        "width": 256,
+        "height": 256,
+        "transparent": false
+      },
+      "provenance": {
+        "repo": "game-icons/icons",
+        "ref": "master",
+        "author": "badges"
+      }
+    },
+    {
+      "id": "gameicons/badges/justice",
+      "type": "texture",
+      "description": "justice · game-icons (badges)",
+      "status": "filled",
+      "path": "gameicons/badges/justice.svg",
+      "category": "icon.ui",
+      "style": "cartoon.flat",
+      "license": "CC BY 3.0",
+      "source": "game-icons",
+      "tags": [
+        "justice",
+        "badges",
+        "icon",
+        "flat",
+        "vector"
+      ],
+      "spec": {
+        "format": "svg",
+        "width": 256,
+        "height": 256,
+        "transparent": false
+      },
+      "provenance": {
+        "repo": "game-icons/icons",
+        "ref": "master",
+        "author": "badges"
+      }
+    },
+    {
+      "id": "gameicons/badges/leaf",
+      "type": "texture",
+      "description": "leaf · game-icons (badges)",
+      "status": "filled",
+      "path": "gameicons/badges/leaf.svg",
+      "category": "icon.ui",
+      "style": "cartoon.flat",
+      "license": "CC BY 3.0",
+      "source": "game-icons",
+      "tags": [
+        "leaf",
+        "badges",
+        "icon",
+        "flat",
+        "vector"
+      ],
+      "spec": {
+        "format": "svg",
+        "width": 256,
+        "height": 256,
+        "transparent": false
+      },
+      "provenance": {
+        "repo": "game-icons/icons",
+        "ref": "master",
+        "author": "badges"
+      }
+    },
+    {
+      "id": "gameicons/badges/lock",
+      "type": "texture",
+      "description": "lock · game-icons (badges)",
+      "status": "filled",
+      "path": "gameicons/badges/lock.svg",
+      "category": "icon.ui",
+      "style": "cartoon.flat",
+      "license": "CC BY 3.0",
+      "source": "game-icons",
+      "tags": [
+        "lock",
+        "badges",
+        "icon",
+        "flat",
+        "vector"
+      ],
+      "spec": {
+        "format": "svg",
+        "width": 256,
+        "height": 256,
+        "transparent": false
+      },
+      "provenance": {
+        "repo": "game-icons/icons",
+        "ref": "master",
+        "author": "badges"
+      }
+    },
+    {
+      "id": "gameicons/badges/minus",
+      "type": "texture",
+      "description": "minus · game-icons (badges)",
+      "status": "filled",
+      "path": "gameicons/badges/minus.svg",
+      "category": "icon.ui",
+      "style": "cartoon.flat",
+      "license": "CC BY 3.0",
+      "source": "game-icons",
+      "tags": [
+        "minus",
+        "badges",
+        "icon",
+        "flat",
+        "vector"
+      ],
+      "spec": {
+        "format": "svg",
+        "width": 256,
+        "height": 256,
+        "transparent": false
+      },
+      "provenance": {
+        "repo": "game-icons/icons",
+        "ref": "master",
+        "author": "badges"
+      }
     }
   ]
 }
