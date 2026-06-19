@@ -128,7 +128,7 @@ const GAMES: GameEntry[] = [
     description: '经典 21 点纸牌游戏：玩家与庄家对赌，目标手牌总和接近 21 点不超出。纯数据驱动：蓝图装配 4 个原子能力，点数计算与胜负判定由 React 组件实现。庄家 AI 全自动（17 点站住）。',
     color: '#1a2634',
     accentColor: '#4ade80',
-    icon: '🃏',
+    icon: '💰',
     status: 'playable',
   },
 ];
