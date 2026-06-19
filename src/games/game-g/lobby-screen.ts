@@ -82,13 +82,18 @@ const CSS = `
 .ggl-root .suit-row{ display:flex; align-items:center; gap:8px; margin:5px 0 }
 .ggl-root .suit-hd{ width:22px; flex:none; font-size:18px; font-weight:700; text-align:center; line-height:1 }
 .ggl-root .suit-line{ display:flex; flex:1; gap:4px }
-.ggl-root .suit-line .pcard{ flex:1; min-width:0; overflow:hidden }
-.ggl-root .pcard{ aspect-ratio:5/7; border-radius:9px; border:1px solid var(--panel-border); background:var(--chip); display:flex; flex-direction:column; justify-content:space-between; padding:5px 5px 4px; font-size:13px; position:relative; font-weight:700; cursor:default }
-.ggl-root .pcard.leg{ border-color:var(--gold); box-shadow:0 0 0 1px var(--gold) inset } .ggl-root .pcard.lock{ opacity:.42 } .ggl-root .pcard .r{ font-size:14px; line-height:1; z-index:1; position:relative } .ggl-root .pcard .own{ position:absolute; bottom:3px; right:5px; font-size:9px; color:var(--ink-dim); z-index:1 }
+.ggl-root .pcard-wrap{ flex:1; min-width:0; perspective:260px; cursor:pointer }
+.ggl-root .pcard{ width:100%; aspect-ratio:5/7; border-radius:9px; border:1px solid var(--panel-border); background:var(--chip); font-size:13px; font-weight:700; position:relative; transform-style:preserve-3d; transition:transform .42s cubic-bezier(.4,0,.2,1),box-shadow .18s; will-change:transform; box-shadow:0 4px 10px rgba(0,0,0,.46),0 1px 3px rgba(0,0,0,.28),inset 0 1px 0 rgba(255,255,255,.10),inset 0 -1px 0 rgba(0,0,0,.18) }
+.ggl-root .pcard-wrap:hover>.pcard{ transform:rotateY(180deg); box-shadow:0 9px 26px rgba(0,0,0,.62),0 2px 8px rgba(0,0,0,.36),inset 0 1px 0 rgba(255,255,255,.12) }
+.ggl-root .pcard.leg{ border-color:var(--gold); box-shadow:0 4px 12px rgba(0,0,0,.44),0 0 10px rgba(232,205,130,.18),inset 0 1px 0 rgba(255,255,255,.14) }
+.ggl-root .pcard.lock{ opacity:.42 }
+.ggl-root .pcard-front,.ggl-root .pcard-back{ position:absolute; inset:0; border-radius:8px; backface-visibility:hidden; -webkit-backface-visibility:hidden }
+.ggl-root .pcard-front{ display:flex; flex-direction:column; justify-content:space-between; padding:5px 5px 4px; overflow:hidden; background:linear-gradient(148deg,rgba(255,255,255,.055) 0%,transparent 55%,rgba(0,0,0,.045) 100%) }
+.ggl-root .pcard-back{ transform:rotateY(180deg); background:linear-gradient(148deg,#0d1b2c 0%,#14243a 100%); border:1px solid rgba(232,205,138,.2); display:flex; flex-direction:column; align-items:center; justify-content:center; gap:2px; padding:4px; color:#e7edf3; text-align:center }
+.ggl-root .pcard .r{ font-size:14px; line-height:1 }
+.ggl-root .pcard .own{ position:absolute; bottom:3px; right:5px; font-size:9px; color:var(--ink-dim) }
 .ggl-root .pcard-wm{ position:absolute; inset:0; display:flex; align-items:center; justify-content:center; pointer-events:none; user-select:none }
-.ggl-root .pcard-lbl{ font-size:8.5px; font-weight:900; letter-spacing:.04em; line-height:1; text-align:center; z-index:1; position:relative }
-.ggl-root .pcard-info{ position:absolute; inset:0; background:rgba(8,15,25,.9); color:#e7edf3; font-size:9.5px; display:flex; flex-direction:column; align-items:center; justify-content:center; text-align:center; padding:4px; line-height:1.5; opacity:0; transition:opacity .15s; border-radius:8px; z-index:10; pointer-events:none }
-.ggl-root .pcard:hover .pcard-info{ opacity:1 }
+.ggl-root .pcard-lbl{ font-size:8.5px; font-weight:900; letter-spacing:.04em; line-height:1; text-align:center }
 .ggl-root .shelf{ display:grid; grid-template-columns:repeat(auto-fill,minmax(120px,1fr)); gap:10px }
 .ggl-root .good{ background:var(--chip); border:1px solid var(--panel-border); border-radius:10px; padding:10px; text-align:center; font-size:12px; position:relative; min-height:74px; clip-path:var(--chamfer) } .ggl-root .good .gnm{ font-weight:700; color:var(--ink); line-height:1.25 } .ggl-root .good .cost{ color:var(--gold); font-weight:700; margin-top:6px; font-family:var(--fn) }
 .ggl-root .good.got{ border-color:var(--gold) } .ggl-root .good.buy{ cursor:pointer } .ggl-root .good.buy:hover{ box-shadow:0 0 0 1px var(--gold) inset } .ggl-root .good.lock{ opacity:.5 }
@@ -111,35 +116,41 @@ const RANKS = ['A', 'K', 'Q', 'J', '10', '9', '8', '7', '6', '5', '4', '3', '2']
 const kfmt = (n: number): string => (n >= 1000 ? (n / 1000).toFixed(1) + 'k' : String(n));
 const esc = (s: string): string => String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
 
-// 人头牌（A/K/Q/J）的中文标签 + 较大水印；数字牌轻水印。
-const FACE_LBL = ['尖兵', '王将', '王后', '先锋']; // RANKS[0..3] = A K Q J
+// 人头牌（A/K/Q/J）中文标签（RANKS 索引 0-3 = A K Q J）
+const FACE_LBL = ['尖兵', '王将', '王后', '先锋'];
 function deckGrid(deck: number[], foils?: LobbyShopItem[]): string {
   const ownedFoilNames = (foils ?? []).filter(f => f.owned).map(f => f.name);
-  const foilTag = ownedFoilNames.length ? `<span style="color:var(--gold)">✨${esc(ownedFoilNames.join('+'))}</span>` : '';
+  const foilBack = ownedFoilNames.length
+    ? `<div style="font-size:9px;color:var(--gold)">✨${esc(ownedFoilNames.join('+'))}</div>` : '';
   return SUITS.map(([su, c], si) => {
     const cards = Array.from({ length: 13 }, (_, ri) => {
       const fv = deck[si * 13 + ri] ?? 50;
       const rank = RANKS[ri];
       const isFace = ri <= 3;
       const qual = fv >= 70 ? '强' : fv >= 58 ? '良' : fv <= 50 ? '弱' : '中';
+      const qualColor = fv >= 70 ? 'var(--gold)' : fv >= 58 ? 'var(--club)' : fv <= 50 ? 'var(--ink-dim)' : 'var(--ink)';
       const cls = 'pcard' + (fv >= 70 ? ' leg' : '') + (fv <= 50 ? ' lock' : '');
-      const faceStyle = isFace ? `border-color:${c}80;` : '';
-      // 水印：人头牌更大更亮，数字牌轻淡
-      const wmSize = isFace ? '38px' : '26px';
-      const wmOpacity = isFace ? '.2' : '.09';
-      // 悬浮信息蒙版
-      const infoHtml = [
-        `<b style="color:${c};font-size:12px">${su}${rank}</b>`,
-        `<span>favor ${fv} · ${qual}</span>`,
-        ...(isFace ? [`<span style="color:${c};font-weight:900">${FACE_LBL[ri]}</span>`] : []),
-        ...(foilTag ? [foilTag] : []),
-      ].join('');
-      return `<div class="${cls}" style="${faceStyle}" title="${esc(su + rank + ' · favor ' + fv)}">` +
+      const faceStyle = isFace ? `border-color:${c}90;` : '';
+      const wmSize = isFace ? '36px' : '24px';
+      const wmOpacity = isFace ? '.18' : '.08';
+      // 正面（front）
+      const front = `<div class="pcard-front">` +
         `<div class="pcard-wm" style="color:${c};font-size:${wmSize};opacity:${wmOpacity}">${su}</div>` +
-        `<div class="pcard-info">${infoHtml}</div>` +
         `<div class="r" style="color:${c}">${rank}</div>` +
-        (isFace ? `<div class="pcard-lbl" style="color:${c};opacity:.75">${FACE_LBL[ri]}</div>` : '') +
+        (isFace ? `<div class="pcard-lbl" style="color:${c};opacity:.72">${FACE_LBL[ri]}</div>` : '') +
         `<span class="own">${fv}</span>` +
+      `</div>`;
+      // 背面（back）：翻转后显示的信息面
+      const back = `<div class="pcard-back">` +
+        `<div style="font-size:13px;font-weight:700;color:${c}">${su}${rank}</div>` +
+        (isFace ? `<div style="font-size:9px;font-weight:900;color:${c};opacity:.85">${FACE_LBL[ri]}</div>` : '') +
+        `<div style="font-size:9px;color:var(--ink-dim)">favor</div>` +
+        `<div style="font-size:13px;font-weight:700;color:${qualColor}">${fv}</div>` +
+        `<div style="font-size:9px;color:${qualColor}">${qual}</div>` +
+        foilBack +
+      `</div>`;
+      return `<div class="pcard-wrap" title="${esc(su + rank + ' · favor ' + fv)}">` +
+        `<div class="${cls}" style="${faceStyle}">${front}${back}</div>` +
       `</div>`;
     }).join('');
     return `<div class="suit-row"><div class="suit-hd" style="color:${c}">${su}</div><div class="suit-line">${cards}</div></div>`;
