@@ -18,13 +18,14 @@ const view = (skin: 'onyx' | 'rosy' = 'onyx'): LobbyView => ({
 });
 
 describe('Game G · lobby-screen 视觉回归（忠实港大厅 · 真渲染器 → HTML golden · 接真存档数据）', () => {
-  it('大厅 HOME 帧匹配 golden（命运牌桌 + 出征 + 货币接真 + 流派↔Boss + 玄铁皮）', async () => {
+  it('大厅 HOME 帧匹配 golden（绿呢牌桌 + 漂浮对决卡掷emblem + sheen出征 + 货币接真 + 玄铁皮）', async () => {
     const html = renderLobbyDoc(view(), 'home');
     expect(html).toContain('命运牌桌');
-    expect(html).toContain('⚔ 出征'); // 真出征 CTA
-    expect(html).toContain('🪙 <b>1.2k</b>'); // 货币接真存档
-    expect(html).toContain('将领流'); // 真流派↔Boss 克制行
-    expect(html).toContain('--accent:#d8504e'); // 玄铁皮
+    expect(html).toContain('⚔ 出征'); // sheen 大 CTA
+    expect(html).toContain('class="vs">掷'); // 漂浮对决卡 掷 emblem（招牌）
+    expect(html).toContain('1.2k'); // 货币接真存档
+    expect(html).toContain('将领流'); // 真流派↔Boss
+    expect(html).toContain('--felt:radial-gradient(120% 110% at 50% 26%,#1d6f4e'); // 玄铁绿呢牌桌
     expect(html).toContain('📖 新手指导');
     await expect(html).toMatchFileSnapshot('./__frames__/lobby-home.html');
   });
@@ -52,7 +53,7 @@ describe('Game G · lobby-screen 视觉回归（忠实港大厅 · 真渲染器 
 
   it('锦霞皮帧匹配 golden', async () => {
     const html = renderLobbyDoc(view('rosy'), 'home');
-    expect(html).toContain('--accent:#c14b66'); // 锦霞皮
+    expect(html).toContain('#c97f86'); // 锦霞红呢牌桌 felt
     await expect(html).toMatchFileSnapshot('./__frames__/lobby-rosy.html');
   });
 
