@@ -47,11 +47,11 @@ const CSS = `
   --chamfer:polygon(13px 0,100% 0,100% calc(100% - 13px),calc(100% - 13px) 100%,0 100%,0 13px);
   --hp:#2f8f6b; --danger:#d65668;
   --fd:'Ma Shan Zheng',cursive; --fh:'Cormorant Garamond',serif; --fb:'Noto Serif SC',serif; --fn:'Silkscreen',monospace; }
-.ggl-root{ background:#0c0a08; color:var(--ink); font-family:'Noto Sans SC',sans-serif; min-height:100%; padding:22px; display:flex; justify-content:center }
+.ggl-root{ background:#0c0a08; color:var(--ink); font-family:'Noto Sans SC',sans-serif; height:100vh; box-sizing:border-box; padding:12px; overflow:hidden; display:flex; justify-content:center }
 .ggl-root *{ box-sizing:border-box; margin:0 }
 .ggl-root button{ font-family:inherit; cursor:pointer } .ggl-root button:disabled{ opacity:.5; cursor:not-allowed }
 .ggl-root .ghost{ opacity:.62 }
-.ggl-root .frame{ position:relative; width:1340px; max-width:100%; min-height:820px; border-radius:16px; overflow:hidden; background:var(--paper); border:3px solid var(--frame-edge); box-shadow:0 30px 80px rgba(0,0,0,.6), inset 0 0 0 1px var(--hairline); display:flex; flex-direction:column }
+.ggl-root .frame{ position:relative; width:1340px; max-width:100%; height:100%; border-radius:16px; overflow:hidden; background:var(--paper); border:3px solid var(--frame-edge); box-shadow:0 30px 80px rgba(0,0,0,.6), inset 0 0 0 1px var(--hairline); display:flex; flex-direction:column }
 .ggl-root .topbar{ display:flex; align-items:center; gap:14px; padding:14px 24px; background:linear-gradient(180deg,rgba(94,63,38,.16),transparent); border-bottom:1px solid var(--panel-border) }
 .ggl-root .seal{ width:44px; height:44px; flex:none; border-radius:10px; background:linear-gradient(150deg,#3a4f78,#28385a); display:flex; align-items:center; justify-content:center; color:#fff; font-size:24px; box-shadow:0 0 12px rgba(74,99,144,.5); border:1px solid var(--hairline) }
 .ggl-root .who{ display:flex; flex-direction:column; line-height:1.25 } .ggl-root .who .nm{ font-family:var(--fh); font-weight:700; font-size:18px; letter-spacing:.01em } .ggl-root .who .sub{ font-size:11px; color:var(--ink-dim) } .ggl-root .who .sub b{ font-family:var(--fd); color:var(--gold); font-size:14px; font-weight:400 }
@@ -64,11 +64,11 @@ const CSS = `
 .ggl-root .nav{ display:flex; gap:4px; padding:10px 22px 0 }
 .ggl-root .nav button{ position:relative; padding:10px 20px; border:none; background:transparent; border-radius:11px 11px 0 0; font-family:var(--fh); font-weight:700; font-size:15px; letter-spacing:.03em; color:var(--ink-dim); border-bottom:2px solid transparent }
 .ggl-root .nav button.on{ background:var(--panel); color:var(--ink); border-bottom:2px solid var(--gold) }
-.ggl-root .content{ flex:1; padding:18px 24px 24px; display:flex; min-height:0; flex-direction:column }
+.ggl-root .content{ flex:1; padding:18px 24px 24px; display:flex; min-height:0; flex-direction:column; overflow-y:auto }
 .ggl-root .screen{ display:none } .ggl-root .screen.on{ display:flex }
 .ggl-root .homerow{ gap:14px; width:100% } @media(max-width:1000px){ .ggl-root .homerow{ flex-direction:column } }
 .ggl-root .herocol{ flex:1; display:flex; flex-direction:column; gap:14px; min-width:0 }
-.ggl-root .felt{ position:relative; flex:1; min-height:440px; border-radius:16px; overflow:hidden; background:var(--felt); border:6px solid var(--felt-edge); box-shadow:inset 0 0 0 2px rgba(255,255,255,.08), inset 0 0 120px rgba(0,0,0,.5) }
+.ggl-root .felt{ position:relative; flex:1; min-height:160px; border-radius:16px; overflow:hidden; background:var(--felt); border:6px solid var(--felt-edge); box-shadow:inset 0 0 0 2px rgba(255,255,255,.08), inset 0 0 120px rgba(0,0,0,.5) }
 .ggl-root .vignette{ position:absolute; inset:0; pointer-events:none; background:radial-gradient(60% 50% at 50% 44%,rgba(255,255,255,.10),transparent 70%),repeating-linear-gradient(45deg,rgba(0,0,0,.05) 0 2px,transparent 2px 12px) }
 .ggl-root .felt-h{ position:absolute; top:18px; left:24px; display:flex; flex-direction:column; gap:3px } .ggl-root .felt-h .t{ font-family:var(--fd); font-size:34px; color:#fff; text-shadow:0 2px 12px rgba(0,0,0,.6) } .ggl-root .felt-h .s{ font-size:12px; color:rgba(255,255,255,.82); letter-spacing:.04em }
 .ggl-root .stags{ position:absolute; top:22px; right:24px; display:flex; gap:7px }
@@ -466,7 +466,7 @@ export function renderLobby(view: LobbyView, tab: string, tutorialOpen: boolean,
   return `<div class="ggl-root" data-skin="${view.skin}"><div class="frame">
   <div class="topbar">
     <div class="seal">♠</div>
-    <div class="who"><span class="nm">${esc(view.name)}</span><span class="sub">主牌 · <b>${esc(view.mainCard)}</b></span></div>
+    <div class="who"><span class="nm">${esc(view.name)}</span><span class="sub">主牌 · <b>${esc(view.mainCard)}</b></span><span class="sub" style="font-size:10px;margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:340px">${view.archLine}</span><span class="sub" style="font-size:10px;opacity:.7;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:340px">${esc(view.bossLine)}</span></div>
     <div class="rankb"><span>♠</span>${esc(view.rankText)}</div>
     <div style="flex:1"></div>
     <button class="seg ${view.skin === 'onyx' ? 'on' : ''}" data-act="skin" data-k="onyx">玄铁</button>
@@ -501,12 +501,6 @@ export function renderLobby(view: LobbyView, tab: string, tutorialOpen: boolean,
             <div class="ctarow"><button class="cta-sub" disabled>好友切磋（占位）</button><button class="cta-sub" disabled>天梯 1V1 DUEL（占位）</button></div>
           </div>
         </div>
-        <div class="quick">
-          <div class="qcard"><span class="ic">♠</span><div>扑克牌组<br><b>favor 均 ${view.deckAvg} ▸</b></div></div>
-          <div class="qcard"><span class="ic">🪙</span><div>材料<br><b>${kfmt(view.coin)}</b></div></div>
-          <div class="qcard"><span class="ic">◈</span><div>干预能量<br><b>${view.energy}/${view.energyMax}</b></div></div>
-        </div>
-        <div class="card" style="line-height:1.7">${view.archLine}<div class="note" style="text-align:left;margin-top:6px">${view.bossLine}</div></div>
         ${deckPreviewPanel(view.tiangangs, view.deckArchName, view.deckArchActivated)}
       </div>
       <div class="rail"><h2>🪖 牌友 · 戏牌师</h2>
@@ -520,7 +514,7 @@ export function renderLobby(view: LobbyView, tab: string, tutorialOpen: boolean,
     <section class="screen${on('craft')} full"><div class="craft-zones">
       <div class="card"><h2>♠ 扑克牌组 <span class="ghost" style="margin-left:auto;font-size:12px">52 张 · 公平骨架 · 上场打三路</span></h2>
         <div class="deck-sumbar"><span>favor 均 <b>${view.deckAvg}</b></span><span>最低 <b>${view.deckMin}</b></span><span>最高 <b>${view.deckMax}</b></span></div>
-        <div style="display:flex;align-items:center;gap:14px;padding:12px 0 8px;border-bottom:1px solid var(--panel-border);margin-bottom:8px"><div style="width:62px;height:88px;border-radius:9px;background:var(--chip);border:1px solid var(--panel-border);display:flex;flex-direction:column;justify-content:space-between;padding:5px 6px;flex:none"><span style="color:var(--spade);font-family:var(--fh);font-weight:700;font-size:14px;line-height:.9">7<br>♠</span><span style="color:var(--spade);font-size:32px;line-height:1;text-align:right">♠</span></div><div style="display:flex;flex-direction:column;align-items:center;gap:3px;color:var(--gold)"><span style="font-size:22px">→</span><span style="font-family:var(--fn);font-size:9px;letter-spacing:.06em">CRAFT</span></div><div style="width:62px;height:88px;border-radius:9px;background:var(--chip);border:2px solid var(--gold);display:flex;flex-direction:column;justify-content:space-between;padding:5px 6px;position:relative;flex:none;box-shadow:0 0 10px rgba(232,205,130,.15)"><span style="color:var(--spade);font-family:var(--fh);font-weight:700;font-size:14px;line-height:.9">7<br>♠</span><span style="color:var(--spade);font-size:32px;line-height:1;text-align:right">♠</span><div style="position:absolute;bottom:-8px;right:5px;background:var(--gold);color:#2a1a08;font-family:var(--fn);font-size:8px;padding:2px 5px;border-radius:99px;font-weight:700">重翻</div></div><div style="display:flex;flex-direction:column;gap:5px"><span style="font-family:var(--fh);font-weight:700;font-size:14px;color:var(--ink)">改造台 · 卡牌改造</span><span style="font-size:12px;color:var(--ink-dim)">选一张扑克 + 材料 → 镶 gem（重翻/镶字/配重）</span><div style="display:flex;gap:8px;margin-top:4px"><button class="btn ghost" style="font-size:12px;padding:7px 12px" data-act="tab" data-k="decks">选牌 →</button><span style="font-size:11px;color:var(--ink-dim);align-self:center">材料 🪙 24~48</span></div></div></div>
+        <div style="display:flex;align-items:center;gap:14px;padding:12px 0 8px;border-bottom:1px solid var(--panel-border);margin-bottom:8px"><div style="width:62px;height:88px;border-radius:9px;background:var(--chip);border:1px solid var(--panel-border);display:flex;flex-direction:column;justify-content:space-between;padding:5px 6px;flex:none"><span style="color:var(--spade);font-family:var(--fh);font-weight:700;font-size:14px;line-height:.9">7<br>♠</span><span style="color:var(--spade);font-size:32px;line-height:1;text-align:right">♠</span></div><div style="display:flex;flex-direction:column;align-items:center;gap:3px;color:var(--gold)"><span style="font-size:22px">→</span><span style="font-family:var(--fn);font-size:9px;letter-spacing:.06em">CRAFT</span></div><div style="width:62px;height:88px;border-radius:9px;background:var(--chip);border:2px solid var(--gold);display:flex;flex-direction:column;justify-content:space-between;padding:5px 6px;position:relative;flex:none;box-shadow:0 0 10px rgba(232,205,130,.15)"><span style="color:var(--spade);font-family:var(--fh);font-weight:700;font-size:14px;line-height:.9">7<br>♠</span><span style="color:var(--spade);font-size:32px;line-height:1;text-align:right">♠</span><div style="position:absolute;bottom:-8px;right:5px;background:var(--gold);color:#2a1a08;font-family:var(--fn);font-size:8px;padding:2px 5px;border-radius:99px;font-weight:700">重翻</div></div><div style="display:flex;flex-direction:column;gap:5px"><span style="font-family:var(--fh);font-weight:700;font-size:14px;color:var(--ink)">改造台 · 卡牌改造</span><span style="font-size:12px;color:var(--ink-dim)">选一张扑克 → 镶 gem（重翻/镶字/配重）</span><div style="display:flex;gap:8px;margin-top:4px"><button class="btn ghost" style="font-size:12px;padding:7px 12px" data-act="tab" data-k="decks">选牌 →</button></div></div></div>
         <div class="note" style="text-align:left">扑克牌组 = 标准 52 张公平骨架；强度靠天罡/地支经营、不泵点数。<button class="btn ghost" style="margin-left:8px" data-act="tab" data-k="decks">查看牌组 →</button></div></div>
       <div class="forge">
         <div class="card"><h2>${GI.crafting} 改造台 · 天罡牌组（≤5 入战库·局内法术）</h2><div class="fuse"><div class="slot" style="color:var(--gold)">⚡</div><div class="arrow">→</div><div class="slot" style="color:var(--gold)">⚔</div></div>
@@ -529,10 +523,9 @@ export function renderLobby(view: LobbyView, tab: string, tutorialOpen: boolean,
         <div class="card"><h2>${GI.planet} 地支牌 · 升档（可叠加 · 第二养成轴）</h2><div class="note" style="text-align:left;margin-bottom:8px">升档改 run 参数（命/能/兵档/牌型）· 持久存档 · 买一级累加</div>
           <div class="shelf">${view.planets.map((p) => shopItem('buyPlanet', '🪐', p)).join('')}</div></div>
       </div>
-    </div><div class="note" style="text-align:left;margin-top:14px">材料 🪙 ${kfmt(view.coin)} · 天罡牌=局内法术(流派身份·持久) / 地支牌=升 run 参数。庄家货架为设计 IA（占位）。</div></section>
+    </div></section>
     <section class="screen${on('ladder')} full">${ladderSection(view.name, view.rankText)}</section>
   </div>
-  <div class="note" style="margin:0 0 14px">大厅忠实港 · 对照 UI/Game G 大厅.dc.html：纸框 + 顶栏 + 绿呢牌桌(漂浮对决卡/掷 emblem/sheen 出征) + 5 屏 + 玄铁/锦霞双皮 · 真实存档数据 · 未接网项诚实占位</div>
   </div>${tutorialOpen ? tutorialBox() : ''}</div>`;
 }
 
