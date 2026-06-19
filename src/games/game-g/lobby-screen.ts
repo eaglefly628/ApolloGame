@@ -3,6 +3,8 @@
 //   + 玄铁(onyx)/锦霞(rosy=brocade)双皮（CSS 变量逐项对齐 .dc.html themes()）。数据接真存档；未接网项诚实占位。
 // 纯表现"固定解释器"：只渲染 view + 抛 data-act 回调，零 gameplay 计算。CSS 全 scope 在 .ggl-root 下。
 
+import { GI } from './icons.js';
+
 export interface LobbyShopItem { id: string; name: string; sub: string; cost: number; owned: boolean; buyable: boolean; level?: number; inDeck?: boolean; power?: number; phat?: number }
 export type EarthRarity = 'bronze' | 'blue' | 'purple' | 'gold';
 export interface EarthBranchCard {
@@ -145,8 +147,41 @@ const CSS = `
 .ggl-root .rarity-e{ color:#9b5fc7 }
 .ggl-root .rarity-l{ color:var(--gold) }
 .ggl-root .craft-zones{ display:flex; flex-direction:column; gap:14px }
+.ggl-root .gi{ width:1em; height:1em; display:inline-block; vertical-align:-0.125em; flex-shrink:0; fill:currentColor }
 .ggl-root .deck-sumbar{ display:flex; gap:16px; flex-wrap:wrap; font-size:12px; padding:8px 0; border-bottom:1px solid var(--panel-border); margin-bottom:10px }
 .ggl-root .deck-sumbar b{ color:var(--gold) }
+/* ── polish: 入场 · hover · 点击手感 · 徽章生命感 ── */
+@keyframes ggl-fadein { from{ opacity:0; transform:translateY(7px) } to{ opacity:1; transform:translateY(0) } }
+@keyframes ggl-glow { 0%,100%{ box-shadow:0 0 22px rgba(232,205,130,.5),inset 0 1px 0 rgba(255,255,255,.5) } 50%{ box-shadow:0 0 50px rgba(232,205,130,.95),inset 0 1px 0 rgba(255,255,255,.65) } }
+.ggl-root .screen.on{ animation:ggl-fadein .22s ease-out both }
+.ggl-root .vs{ animation:ggl-glow 2.6s ease-in-out infinite }
+.ggl-root .nav button{ transition:background .15s,color .15s }
+.ggl-root .nav button:not(.on):hover{ background:rgba(255,255,255,.07); color:var(--ink) }
+.ggl-root .cta-main{ transition:transform .12s,box-shadow .12s }
+.ggl-root .cta-main:hover{ transform:translateY(-2px); box-shadow:0 18px 40px rgba(0,0,0,.65),inset 0 1px 0 rgba(255,255,255,.45) }
+.ggl-root .cta-main:active{ transform:translateY(1px) scale(.98); transition-duration:.06s }
+.ggl-root .cta-main::after{ content:''; position:absolute; inset:0; background:radial-gradient(circle at 50% 50%,rgba(255,255,255,.30) 0%,transparent 68%); opacity:0; pointer-events:none; transition:opacity .35s }
+.ggl-root .cta-main:active::after{ opacity:1; transition:none }
+.ggl-root .cta-sub{ transition:background .15s,transform .12s }
+.ggl-root .cta-sub:hover{ background:rgba(255,255,255,.25); transform:translateY(-1px) }
+.ggl-root .cta-sub:active{ transform:translateY(0) scale(.97) }
+.ggl-root .tutbtn{ transition:background .15s,box-shadow .15s }
+.ggl-root .tutbtn:hover{ background:rgba(232,205,130,.10); box-shadow:0 0 0 1px var(--gold) }
+.ggl-root .seg{ transition:background .15s,color .15s,border-color .15s }
+.ggl-root .good{ transition:transform .15s,box-shadow .15s }
+.ggl-root .good.buy:hover{ transform:translateY(-2px); box-shadow:0 0 0 1px var(--gold) inset,0 0 14px rgba(232,205,130,.15) }
+.ggl-root .good.buy:active{ transform:translateY(0) scale(.97) }
+.ggl-root .qcard{ transition:transform .15s,box-shadow .15s }
+.ggl-root .qcard:hover{ transform:translateY(-2px); box-shadow:0 8px 22px rgba(0,0,0,.32),inset 0 0 0 1px var(--hairline) }
+.ggl-root .joker-tog{ transition:background .12s,color .12s,border-color .12s }
+.ggl-root .joker-tog:not(.active):hover{ color:var(--ink); border-color:var(--gold) }
+.ggl-root .deck-nav button{ transition:background .15s,color .15s }
+.ggl-root .deck-nav button:not(.on):hover{ background:rgba(255,255,255,.08); color:var(--ink) }
+.ggl-root .earth-filter button{ transition:background .15s,color .15s }
+.ggl-root .earth-filter button:hover{ background:rgba(255,255,255,.10); color:var(--ink) }
+.ggl-root .btn{ transition:transform .10s,box-shadow .10s }
+.ggl-root .btn:not(.ghost):hover{ transform:translateY(-1px); box-shadow:0 6px 16px rgba(0,0,0,.32) }
+.ggl-root .btn:active{ transform:scale(.97) }
 `;
 
 const SUITS: [string, string][] = [['♠', 'var(--spade)'], ['♥', 'var(--heart)'], ['♦', 'var(--diamond)'], ['♣', 'var(--club)']];
@@ -282,7 +317,7 @@ function deckPreviewPanel(jokers: LobbyShopItem[], archName: string | null | und
     : `<div class="note" style="text-align:left;margin:8px 0">战库空 · 去「改造坊」选入天罡牌（局内法术·≤5 张）</div>`;
   const arch = archName ? `流派 <b>${esc(archName)}</b>${activated ? '　🔥 招牌已激活' : ''}` : '流派未成型';
   const summary = inDeck.length ? `　整库 P̂ <b style="color:var(--gold)">${totalPhat}</b>${hasLeg ? '　🔥 传说激活' : ''}` : '';
-  return `<div class="card" style="margin-bottom:14px"><h2>⚡ 天罡战库 <span class="ghost" style="font-size:12px;margin-left:auto">${inDeck.length}/5 · 局内打出生效</span></h2>${body}<div class="note" style="text-align:left;margin-top:4px">${arch}${summary}</div></div>`;
+  return `<div class="card" style="margin-bottom:14px"><h2>${GI.bolt} 天罡战库 <span class="ghost" style="font-size:12px;margin-left:auto">${inDeck.length}/5 · 局内打出生效</span></h2>${body}<div class="note" style="text-align:left;margin-top:4px">${arch}${summary}</div></div>`;
 }
 
 export function renderLobby(view: LobbyView, tab: string, tutorialOpen: boolean, deckTab: 'base' | 'gang' = 'base', earthFilter = 'all'): string {
@@ -325,7 +360,7 @@ export function renderLobby(view: LobbyView, tab: string, tutorialOpen: boolean,
             <div class="dback"><i></i></div>
           </div>
           <div class="ctawrap">
-            <button class="cta-main" data-act="play"><span class="sheen"></span><span class="big">🎲 ⚔ 出征 · ${esc(view.rankText)}</span><span class="sm">DEPLOY · 单人战役 vs AI 庄家</span></button>
+            <button class="cta-main" data-act="play"><span class="sheen"></span><span class="big">${GI.swords} 出征 · ${esc(view.rankText)}</span><span class="sm">DEPLOY · 单人战役 vs AI 庄家</span></button>
             <div class="ctarow"><button class="cta-sub" disabled>好友切磋（占位）</button><button class="cta-sub" disabled>天梯 1V1 DUEL（占位）</button></div>
           </div>
         </div>
@@ -343,7 +378,7 @@ export function renderLobby(view: LobbyView, tab: string, tutorialOpen: boolean,
         <div class="friend"><span class="dot"></span> 周瑜 <span class="tag">占位</span></div>
         <div class="friend"><span class="dot"></span> 孔明 <span class="tag">占位</span></div></div>
     </section>
-    <section class="screen${on('decks')} full">${deckPreviewPanel(view.jokers, view.deckArchName, view.deckArchActivated)}<div class="deck-nav"><button class="${deckTab==='base'?'on':''}" data-act="deckTab" data-k="base">扑克牌组</button><button class="${deckTab==='gang'?'on':''}" data-act="deckTab" data-k="gang">天罡战牌</button></div><div class="dsub${dOn('base')}"><div class="card"><h2>📜 扑克牌组 · 52 张 <span class="ghost" style="margin-left:auto;font-size:12px">favor 均 ${view.deckAvg} · 最低 ${view.deckMin} / 最高 ${view.deckMax}</span></h2><div>${deckGrid(view.deck, view.foils)}</div><div class="note" style="text-align:left">favor=该牌掷命翻正面(存活)的概率底盘。<b style="color:var(--gold)">金边</b>=强(≥70) / 暗格=弱(≤50)。牌组强度靠<b>天罡牌/地支牌/流派</b>提升 → 去「改造坊」经营。</div></div></div><div class="dsub${dOn('gang')}"><div class="card" style="margin-bottom:14px"><h2>⚡ 天罡战牌 <span class="ghost" style="margin-left:auto;font-size:12px">三十六天罡 · 一期 20 张已上架</span></h2><div class="gang-grid"><div class="gang-empty"><span style="font-size:28px;opacity:.5">⚡</span><b>天罡战牌 · 去改造坊选入战库</b><span style="font-size:11px">改造坊买入 → 选 ≤5 入战库 → 局内打出生效</span></div></div></div><div class="card"><h2>🌿 地支牌 <span class="ghost" style="margin-left:auto;font-size:12px">12 支脉 · 青铜→蓝→紫→金</span></h2><div class="earth-filter">${efBtn('all','全部','background:var(--gold-grad);color:#2a1a08;border:0')}${efBtn('bronze','青铜','background:#b8732a;color:#fff;border:0')}${efBtn('blue','蓝色','background:#4a9fd5;color:#fff;border:0')}${efBtn('purple','紫色','background:#9b5fc7;color:#fff;border:0')}${efBtn('gold','黄金','background:var(--gold-grad);color:#2a1a08;border:0')}</div><div class="earth-groups">${earthSection(view.earthCards ?? [], earthFilter)}</div></div></div></section>
+    <section class="screen${on('decks')} full">${deckPreviewPanel(view.jokers, view.deckArchName, view.deckArchActivated)}<div class="deck-nav"><button class="${deckTab==='base'?'on':''}" data-act="deckTab" data-k="base">扑克牌组</button><button class="${deckTab==='gang'?'on':''}" data-act="deckTab" data-k="gang">天罡战牌</button></div><div class="dsub${dOn('base')}"><div class="card"><h2>📜 扑克牌组 · 52 张 <span class="ghost" style="margin-left:auto;font-size:12px">favor 均 ${view.deckAvg} · 最低 ${view.deckMin} / 最高 ${view.deckMax}</span></h2><div>${deckGrid(view.deck, view.foils)}</div><div class="note" style="text-align:left">favor=该牌掷命翻正面(存活)的概率底盘。<b style="color:var(--gold)">金边</b>=强(≥70) / 暗格=弱(≤50)。牌组强度靠<b>天罡牌/地支牌/流派</b>提升 → 去「改造坊」经营。</div></div></div><div class="dsub${dOn('gang')}"><div class="card" style="margin-bottom:14px"><h2>${GI.bolt} 天罡战牌 <span class="ghost" style="margin-left:auto;font-size:12px">三十六天罡 · 一期 20 张已上架</span></h2><div class="gang-grid"><div class="gang-empty"><span style="font-size:28px;opacity:.5">⚡</span><b>天罡战牌 · 去改造坊选入战库</b><span style="font-size:11px">改造坊买入 → 选 ≤5 入战库 → 局内打出生效</span></div></div></div><div class="card"><h2>${GI.planet} 地支牌 <span class="ghost" style="margin-left:auto;font-size:12px">12 支脉 · 青铜→蓝→紫→金</span></h2><div class="earth-filter">${efBtn('all','全部','background:var(--gold-grad);color:#2a1a08;border:0')}${efBtn('bronze','青铜','background:#b8732a;color:#fff;border:0')}${efBtn('blue','蓝色','background:#4a9fd5;color:#fff;border:0')}${efBtn('purple','紫色','background:#9b5fc7;color:#fff;border:0')}${efBtn('gold','黄金','background:var(--gold-grad);color:#2a1a08;border:0')}</div><div class="earth-groups">${earthSection(view.earthCards ?? [], earthFilter)}</div></div></div></section>
     <section class="screen${on('coll')} full"><div class="card"><h2>🗃 卡牌收藏 · 天罡牌 ${view.jokers.filter((j) => j.owned).length}/${view.jokers.length} · 闪艺 ${view.foils.filter((f) => f.owned).length}/${view.foils.length}</h2>
       <div class="note" style="text-align:left;margin-bottom:6px">⚡ 天罡牌（局内法术·效果牌 · 到改造坊解锁选入战库）</div>
       <div class="shelf">${view.jokers.map((j) => shopItem('', '⚡', { ...j, buyable: false })).join('')}</div>
@@ -354,10 +389,10 @@ export function renderLobby(view: LobbyView, tab: string, tutorialOpen: boolean,
         <div class="deck-sumbar"><span>favor 均 <b>${view.deckAvg}</b></span><span>最低 <b>${view.deckMin}</b></span><span>最高 <b>${view.deckMax}</b></span></div>
         <div class="note" style="text-align:left">扑克牌组 = 标准 52 张公平骨架；强度靠天罡/地支经营、不泵点数。<button class="btn ghost" style="margin-left:8px" data-act="tab" data-k="decks">查看牌组 →</button></div></div>
       <div class="forge">
-        <div class="card"><h2>⚒ 改造台 · 天罡牌组（≤5 入战库·局内法术）</h2><div class="fuse"><div class="slot" style="color:var(--gold)">⚡</div><div class="arrow">→</div><div class="slot" style="color:var(--gold)">⚔</div></div>
+        <div class="card"><h2>${GI.crafting} 改造台 · 天罡牌组（≤5 入战库·局内法术）</h2><div class="fuse"><div class="slot" style="color:var(--gold)">⚡</div><div class="arrow">→</div><div class="slot" style="color:var(--gold)">⚔</div></div>
           <div class="note" style="text-align:left;margin-bottom:8px">买入后「+ 战库」选入（≤5 张进战库）；战库=流派身份·法术牌，局内打出生效。</div>
           <div class="shelf">${(() => { const full = view.jokers.filter((j) => j.inDeck).length >= 5; return view.jokers.map((j) => craftJokerItem(j, full)).join(''); })()}</div></div>
-        <div class="card"><h2>🌿 地支牌 · 升档（可叠加 · 第二养成轴）</h2><div class="note" style="text-align:left;margin-bottom:8px">升档改 run 参数（命/能/兵档/牌型）· 持久存档 · 买一级累加</div>
+        <div class="card"><h2>${GI.planet} 地支牌 · 升档（可叠加 · 第二养成轴）</h2><div class="note" style="text-align:left;margin-bottom:8px">升档改 run 参数（命/能/兵档/牌型）· 持久存档 · 买一级累加</div>
           <div class="shelf">${view.planets.map((p) => shopItem('buyPlanet', '🪐', p)).join('')}</div></div>
       </div>
     </div><div class="note" style="text-align:left;margin-top:14px">材料 🪙 ${kfmt(view.coin)} · 天罡牌=局内法术(流派身份·持久) / 地支牌=升 run 参数。庄家货架为设计 IA（占位）。</div></section>
