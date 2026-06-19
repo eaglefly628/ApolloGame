@@ -78,6 +78,7 @@ export const LIBRARY_TAXONOMY: readonly LibraryTypeDef[] = [
       { id: 'icon.ui', label: 'UI 图标' },
       { id: 'decal', label: '装饰贴花' },
       { id: 'card', label: '卡面' },
+      { id: 'playing-card', label: '扑克牌' },
       { id: 'fx', label: '特效' },
       { id: 'background', label: '背景' },
       { id: 'portrait', label: '立绘' },

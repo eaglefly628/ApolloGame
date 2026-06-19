@@ -32,6 +32,12 @@ const PACKS = {
     dest: 'gameicons',
     idPrefix: 'gameicons',
     transparent: false, // game-icons = 白图标+黑底方块（不透明）
+    // 按文件名归类（首个命中胜，否则用 category）：扑克牌单独成类，供扑克游戏直接 category=playing-card 取。
+    categoryRules: [
+      { re: /^card-(?:[2-9]|10|jack|queen|king|ace)-(?:clubs|diamonds|hearts|spades)$/, category: 'playing-card' },
+      { re: /^card-(?:joker|back)$/, category: 'playing-card' },
+      { re: /^(?:clubs|spades|hearts|diamonds)$/, category: 'playing-card' },
+    ],
   },
 };
 
@@ -96,18 +102,20 @@ try {
     const destAbs = join(ASSETS, destRel);
     mkdirSync(dirname(destAbs), { recursive: true });
     copyFileSync(join(srcRoot, rel), destAbs);
+    const category = (P.categoryRules ?? []).find((r) => r.re.test(name))?.category ?? P.category;
     const words = name.split(/[-_]/).filter(Boolean);
+    const extraTags = category === 'playing-card' ? ['card', 'poker', 'playing-card'] : ['icon', 'flat', 'vector'];
     byId.set(id, {
       id,
       type: 'texture',
       description: `${name.replace(/[-_]/g, ' ')} · ${P.source} (${author})`,
       status: 'filled',
       path: destRel,
-      category: P.category,
+      category,
       style: P.style,
       license: P.license,
       source: P.source,
-      tags: [...new Set([...words, author, 'icon', 'flat', 'vector'])],
+      tags: [...new Set([...words, author, ...extraTags])],
       spec: { format: 'svg', width: w, height: h, transparent: P.transparent ?? true },
       provenance: { repo: P.repo, ref: P.ref, author },
     });
