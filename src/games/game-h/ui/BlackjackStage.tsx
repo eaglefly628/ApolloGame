@@ -19,8 +19,6 @@ import {
 } from '../theme.js';
 import { GAME_STATE_ENTITY, CHIPS_ENTITY, BET_ENTITY } from '../blueprint.js';
 
-const CARD_SUITS = { hearts: '♥', diamonds: '♦', clubs: '♣', spades: '♠' };
-
 type Theme = 'onyx' | 'brocade';
 type GamePhase = 'bet' | 'play' | 'result';
 
@@ -35,26 +33,46 @@ interface GameSession {
 
 const THEMES: Record<Theme, Record<string, string>> = {
   onyx: {
-    '--app-bg': 'linear-gradient(135deg, #0a0d12 0%, #06080b 100%)',
+    '--app-bg': 'radial-gradient(120% 120% at 50% -10%, #1a2230 0%, #0a0d12 55%, #06080b 100%)',
+    '--texture': 'repeating-linear-gradient(45deg, rgba(135,175,215,.05) 0 1px, transparent 1px 9px)',
     '--hud-bg': 'linear-gradient(180deg, rgba(22,28,37,.95), rgba(14,18,24,.88))',
     '--dock-bg': 'linear-gradient(180deg, rgba(18,23,31,.7), rgba(10,13,18,.97))',
+    '--panel-grad': 'linear-gradient(180deg, #1c2531, #121821)',
+    '--panel-border': '#33404f',
+    '--hairline': 'rgba(255,214,150,.12)',
     '--ink': '#e7edf3',
     '--ink-dim': '#7e8c9b',
     '--accent': '#4ade80',
+    '--accent-soft': 'rgba(74,222,128,.15)',
+    '--accent-grad': 'linear-gradient(180deg, #5ef395, #28a745)',
     '--gold': '#ffcb3d',
-    '--danger': '#ef4444',
+    '--gold-grad': 'linear-gradient(180deg, #ffe08a, #e0a52e)',
+    '--danger': '#ff404f',
     '--table-bg': 'radial-gradient(130% 100% at 50% 36%, #1d6f4e 0%, #11543a 45%, #082c1f 100%)',
+    '--table-edge': '#0a2a1f',
+    '--btn-bg': 'linear-gradient(180deg, #283341, #1a222c)',
+    '--btn-edge': '#3d4b5b',
   },
   brocade: {
-    '--app-bg': 'linear-gradient(135deg, #fdf4ee 0%, #f3e2dc 100%)',
+    '--app-bg': 'radial-gradient(120% 120% at 50% -10%, #fdf4ee 0%, #f3e2dc 60%, #ecd6cf 100%)',
+    '--texture': 'radial-gradient(circle, rgba(201,148,72,.14) 1px, transparent 1.7px) 0 0/26px 26px',
     '--hud-bg': 'linear-gradient(180deg, rgba(255,250,244,.96), rgba(251,238,229,.9))',
     '--dock-bg': 'linear-gradient(180deg, rgba(255,250,244,.72), rgba(250,236,225,.98))',
+    '--panel-grad': 'linear-gradient(180deg, #fffdfa, #fbeee4)',
+    '--panel-border': '#e3c896',
+    '--hairline': 'rgba(216,164,78,.4)',
     '--ink': '#5a3f44',
     '--ink-dim': '#a98b8f',
     '--accent': '#d8607b',
+    '--accent-soft': 'rgba(216,96,123,.15)',
+    '--accent-grad': 'linear-gradient(180deg, #e887a0, #cf5070)',
     '--gold': '#cf9a3f',
+    '--gold-grad': 'linear-gradient(180deg, #f3e2a4, #cf9a3f)',
     '--danger': '#d65668',
     '--table-bg': 'radial-gradient(130% 100% at 50% 36%, #c97f86 0%, #b15f6b 45%, #8c4654 100%)',
+    '--table-edge': '#6e3a44',
+    '--btn-bg': 'linear-gradient(180deg, #fffaf4, #fbece1)',
+    '--btn-edge': '#ecd3b2',
   },
 };
 
@@ -81,6 +99,9 @@ function canSplit(hand: Hand): boolean {
   return hand.cards[0].baseValue === hand.cards[1].baseValue;
 }
 
+const CARD_SUITS = { hearts: '♥', diamonds: '♦', clubs: '♣', spades: '♠' };
+const SUIT_COLORS = { hearts: '#c0392b', diamonds: '#c0651a', clubs: '#2d6a3f', spades: '#22303f' };
+
 function displayCard(card: Card): string {
   const suit = CARD_SUITS[card.suit as keyof typeof CARD_SUITS];
   return `${card.display}${suit}`;
@@ -89,38 +110,44 @@ function displayCard(card: Card): string {
 interface CardCompProps {
   card: Card;
   hidden?: boolean;
+  index?: number;
 }
 
-function CardComp({ card, hidden = false }: CardCompProps): React.ReactElement {
-  const suitColor = card.suit === 'hearts' || card.suit === 'diamonds' ? '#c0392b' : '#22303f';
+function CardComp({ card, hidden = false, index = 0 }: CardCompProps): React.ReactElement {
+  const suitColor = SUIT_COLORS[card.suit as keyof typeof SUIT_COLORS];
+  const rotation = (index - 0.5) * 5;
+
   return (
     <div
       style={{
-        width: 100,
-        height: 140,
+        width: 110,
+        height: 154,
         background: hidden ? 'linear-gradient(150deg, #b1402f, #7d2a1e)' : '#fcf9f1',
-        border: hidden ? '3px solid #fbf7ef' : '3px solid #000',
-        borderRadius: 10,
+        border: hidden ? '4px solid #fbf7ef' : '3px solid #000',
+        borderRadius: 13,
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'center',
-        fontSize: hidden ? 0 : 28,
+        fontSize: hidden ? 0 : 32,
         fontWeight: 700,
         color: suitColor,
-        animation: 'slideIn 0.4s ease-out',
-        boxShadow: hidden ? '0 10px 24px rgba(0,0,0,.5)' : '0 8px 16px rgba(0,0,0,.2)',
+        animation: 'cardDeal 0.4s cubic-bezier(0.2, 0.8, 0.3, 1) both',
+        animationDelay: `${index * 0.12}s`,
+        boxShadow: hidden ? '0 14px 30px rgba(0,0,0,.5)' : '0 14px 30px rgba(0,0,0,.45), inset 0 0 0 1px rgba(0,0,0,.05)',
         position: 'relative',
-      }}
+        transform: `rotate(${rotation}deg)`,
+        '--rot': `${rotation}deg`,
+      } as any}
     >
       {!hidden && (
         <>
-          <div style={{ position: 'absolute', top: 6, left: 6, textAlign: 'center', lineHeight: 1 }}>
+          <div style={{ position: 'absolute', top: 8, left: 8, textAlign: 'center', lineHeight: 0.9, fontSize: 22 }}>
             {displayCard(card)}
           </div>
-          <div style={{ position: 'absolute', bottom: 6, right: 6, textAlign: 'center', lineHeight: 1, transform: 'rotate(180deg)' }}>
+          <div style={{ position: 'absolute', bottom: 8, right: 8, textAlign: 'center', lineHeight: 0.9, fontSize: 22, transform: 'rotate(180deg)' }}>
             {displayCard(card)}
           </div>
-          <div style={{ fontSize: 52, textShadow: '0 2px 4px rgba(0,0,0,.1)' }}>
+          <div style={{ fontSize: 64, textShadow: '0 2px 4px rgba(0,0,0,.12)' }}>
             {CARD_SUITS[card.suit as keyof typeof CARD_SUITS]}
           </div>
         </>
@@ -150,7 +177,7 @@ export function BlackjackStage({ engine }: BlackjackStageProps): React.ReactElem
   const [theme, setTheme] = useState<Theme>('onyx');
   const [gamePhase, setGamePhase] = useState<GamePhase>('bet');
 
-  const themeVars = THEMES[theme];
+  const T = THEMES[theme];
 
   const initializeGame = useCallback((bet: number) => {
     const fullDeck = buildDeck();
@@ -307,78 +334,198 @@ export function BlackjackStage({ engine }: BlackjackStageProps): React.ReactElem
   const playerScore = currentHand ? calculateScore(currentHand.cards) : { score: 0, hasAce: false };
   const totalBet = gameSession.playerHands.reduce((sum, hand) => sum + hand.bet, 0);
 
-  const phaseLabels: Record<GamePhase, string> = {
-    bet: '下注阶段 · 放置筹码',
-    play: '你的回合 · 要牌或停牌',
-    result: '本局结束 · 结算结果',
-  };
+  const ScorePill = ({ value, label }: { value: string | number; label: string }) => (
+    <div style={{
+      minWidth: 52,
+      padding: '6px 14px',
+      borderRadius: 99,
+      background: label === '庄家' && isPlayerTurn ? 'rgba(8,20,14,.7)' : label === '你' ? T['--gold-grad'] : 'rgba(0,0,0,.3)',
+      border: `1px solid ${label === '你' ? 'transparent' : T['--hairline']}`,
+      color: label === '你' ? '#2a1a08' : '#fff',
+      fontFamily: 'monospace',
+      fontSize: 18,
+      textAlign: 'center',
+      fontWeight: 700,
+      boxShadow: '0 4px 12px rgba(0,0,0,.3)',
+    }}>
+      {value}
+    </div>
+  );
 
   return (
-    <div style={{ width: '100%', height: '100vh', background: themeVars['--app-bg'], color: themeVars['--ink'], fontFamily: 'system-ui, -apple-system, sans-serif', display: 'flex', flexDirection: 'column' }}>
+    <div style={{
+      width: '100%',
+      height: '100vh',
+      background: T['--app-bg'],
+      color: T['--ink'],
+      fontFamily: "'Noto Sans SC', system-ui, -apple-system, sans-serif",
+      display: 'flex',
+      flexDirection: 'column',
+      position: 'relative',
+      overflow: 'hidden',
+    }}>
+      <div style={{
+        position: 'absolute',
+        inset: 0,
+        background: T['--texture'],
+        pointerEvents: 'none',
+        opacity: 0.3,
+      }} />
+
       <style>{`
-        @keyframes slideIn {
-          from { opacity: 0; transform: translateY(-20px); }
-          to { opacity: 1; transform: translateY(0); }
-        }
-        @keyframes scaleIn {
-          from { opacity: 0; transform: scale(0.8); }
-          to { opacity: 1; transform: scale(1); }
+        @keyframes cardDeal {
+          0% { transform: translate(220px, -180px) rotate(40deg) scale(0.7); opacity: 0; }
+          100% { transform: translate(0, 0) rotate(var(--rot, 0deg)) scale(1); opacity: 1; }
         }
         @keyframes pulse {
           0%, 100% { opacity: 0.8; }
           50% { opacity: 1; }
         }
+        @keyframes shimmer {
+          0% { background-position: -120% 0; }
+          100% { background-position: 220% 0; }
+        }
+        @keyframes glow {
+          0%, 100% { box-shadow: 0 0 0 0 rgba(255, 203, 61, 0); }
+          50% { box-shadow: 0 0 26px 4px rgba(255, 203, 61, 0.45); }
+        }
+        button:active { transform: scale(0.97) translateY(1px); }
       `}</style>
 
       {/* ===== TOP HUD ===== */}
       <div style={{
-        height: 80,
+        height: 88,
         display: 'flex',
         alignItems: 'center',
-        gap: 20,
-        padding: '0 28px',
-        background: themeVars['--hud-bg'],
-        borderBottom: `1px solid rgba(255,255,255,.1)`,
+        gap: 18,
+        padding: '0 30px',
+        background: T['--hud-bg'],
+        borderBottom: `1px solid var(--panel-border)`,
         zIndex: 10,
+        position: 'relative',
       }}>
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
-          <div style={{ fontSize: 16, fontWeight: 700, letterSpacing: '.03em' }}>GAME H · 二十一点 — 传统赌桌</div>
-          <div style={{ fontSize: 10, letterSpacing: '.16em', textTransform: 'uppercase', color: themeVars['--ink-dim'] }}>BLACKJACK · 庄家 vs 玩家</div>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+          <div style={{
+            fontFamily: 'var(--font-heading, monospace)',
+            fontWeight: 700,
+            fontSize: 17,
+            letterSpacing: '.03em',
+          }}>
+            GAME H · 二十一点
+          </div>
+          <div style={{
+            fontSize: 11,
+            letterSpacing: '.18em',
+            textTransform: 'uppercase',
+            color: T['--ink-dim'],
+          }}>
+            BLACKJACK · 庄家 vs 玩家
+          </div>
         </div>
 
         <div style={{ flex: 1 }} />
 
-        <span style={{ fontSize: 10, letterSpacing: '.16em', textTransform: 'uppercase', color: themeVars['--ink-dim'] }}>回合</span>
-        <div style={{ display: 'flex', background: 'rgba(0,0,0,.2)', border: `1px solid ${themeVars['--accent']}`, borderRadius: 10, padding: 3, gap: 4 }}>
-          <button onClick={() => setGamePhase('bet')} style={{ padding: '6px 12px', background: gamePhase === 'bet' ? themeVars['--accent'] : 'transparent', color: gamePhase === 'bet' ? '#000' : themeVars['--ink-dim'], border: 'none', borderRadius: 6, fontSize: 11, fontWeight: 600, cursor: 'pointer', transition: 'all .15s ease' }}>
-            下注
-          </button>
-          <button onClick={() => setGamePhase('play')} style={{ padding: '6px 12px', background: gamePhase === 'play' ? themeVars['--accent'] : 'transparent', color: gamePhase === 'play' ? '#000' : themeVars['--ink-dim'], border: 'none', borderRadius: 6, fontSize: 11, fontWeight: 600, cursor: 'pointer', transition: 'all .15s ease' }}>
-            行动
-          </button>
-          <button onClick={() => setGamePhase('result')} style={{ padding: '6px 12px', background: gamePhase === 'result' ? themeVars['--accent'] : 'transparent', color: gamePhase === 'result' ? '#000' : themeVars['--ink-dim'], border: 'none', borderRadius: 6, fontSize: 11, fontWeight: 600, cursor: 'pointer', transition: 'all .15s ease' }}>
-            结算
-          </button>
+        <span style={{
+          fontSize: 10,
+          letterSpacing: '.16em',
+          textTransform: 'uppercase',
+          color: T['--ink-dim'],
+        }}>回合</span>
+
+        <div style={{
+          display: 'flex',
+          background: 'rgba(0,0,0,.2)',
+          border: `1px solid ${T['--panel-border']}`,
+          borderRadius: 11,
+          padding: 3,
+          gap: 3,
+        }}>
+          {(['bet', 'play', 'result'] as GamePhase[]).map((phase) => (
+            <button
+              key={phase}
+              onClick={() => setGamePhase(phase)}
+              style={{
+                padding: '7px 15px',
+                background: gamePhase === phase ? T['--accent-grad'] : 'transparent',
+                color: gamePhase === phase ? '#000' : T['--ink-dim'],
+                border: 'none',
+                borderRadius: 8,
+                fontSize: 13,
+                fontWeight: 700,
+                cursor: 'pointer',
+                transition: 'all .15s ease',
+                boxShadow: gamePhase === phase ? 'inset 0 1px 0 rgba(255,255,255,.3)' : 'none',
+              }}
+            >
+              {phase === 'bet' ? '下注' : phase === 'play' ? '行动' : '结算'}
+            </button>
+          ))}
         </div>
 
-        <span style={{ fontSize: 10, letterSpacing: '.16em', textTransform: 'uppercase', color: themeVars['--ink-dim'], marginLeft: 16 }}>皮肤</span>
-        <div style={{ display: 'flex', background: 'rgba(0,0,0,.2)', border: `1px solid ${themeVars['--accent']}`, borderRadius: 10, padding: 3, gap: 4 }}>
-          <button onClick={() => setTheme('onyx')} style={{ padding: '6px 12px', background: theme === 'onyx' ? themeVars['--accent'] : 'transparent', color: theme === 'onyx' ? '#000' : themeVars['--ink-dim'], border: 'none', borderRadius: 6, fontSize: 11, fontWeight: 600, cursor: 'pointer', transition: 'all .15s ease' }}>
-            玄铁
-          </button>
-          <button onClick={() => setTheme('brocade')} style={{ padding: '6px 12px', background: theme === 'brocade' ? themeVars['--accent'] : 'transparent', color: theme === 'brocade' ? '#000' : themeVars['--ink-dim'], border: 'none', borderRadius: 6, fontSize: 11, fontWeight: 600, cursor: 'pointer', transition: 'all .15s ease' }}>
-            锦霞
-          </button>
+        <span style={{
+          fontSize: 10,
+          letterSpacing: '.16em',
+          textTransform: 'uppercase',
+          color: T['--ink-dim'],
+          marginLeft: 6,
+        }}>皮肤</span>
+
+        <div style={{
+          display: 'flex',
+          background: 'rgba(0,0,0,.2)',
+          border: `1px solid ${T['--panel-border']}`,
+          borderRadius: 11,
+          padding: 3,
+          gap: 3,
+        }}>
+          {(['onyx', 'brocade'] as Theme[]).map((t) => (
+            <button
+              key={t}
+              onClick={() => setTheme(t)}
+              style={{
+                padding: '7px 15px',
+                background: theme === t ? T['--accent-grad'] : 'transparent',
+                color: theme === t ? '#000' : T['--ink-dim'],
+                border: 'none',
+                borderRadius: 8,
+                fontSize: 13,
+                fontWeight: 700,
+                cursor: 'pointer',
+                transition: 'all .15s ease',
+                boxShadow: theme === t ? 'inset 0 1px 0 rgba(255,255,255,.3)' : 'none',
+              }}
+            >
+              {t === 'onyx' ? '玄铁' : '锦霞'}
+            </button>
+          ))}
         </div>
 
-        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: 3 }}>
-          <div style={{ fontSize: 10, letterSpacing: '.16em', textTransform: 'uppercase', color: themeVars['--ink-dim'] }}>余额</div>
-          <div style={{ fontSize: 20, fontWeight: 700, color: themeVars['--gold'] }}>◈ {chips.toLocaleString()}</div>
+        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', lineHeight: 1.1 }}>
+          <span style={{
+            fontSize: 10,
+            letterSpacing: '.18em',
+            textTransform: 'uppercase',
+            color: T['--ink-dim'],
+          }}>余额</span>
+          <span style={{
+            fontFamily: 'monospace',
+            fontSize: 22,
+            color: T['--gold'],
+            marginTop: 3,
+            fontWeight: 700,
+          }}>◈ {chips.toLocaleString()}</span>
         </div>
       </div>
 
       {/* ===== MAIN CONTENT ===== */}
-      <div style={{ flex: 1, display: 'flex', gap: 20, padding: 20, overflow: 'hidden' }}>
+      <div style={{
+        flex: 1,
+        display: 'flex',
+        gap: 20,
+        padding: 18,
+        overflow: 'hidden',
+        position: 'relative',
+      }}>
         {/* LEFT: Game Table */}
         <div style={{ flex: 1, display: 'flex', flexDirection: 'column', minWidth: 0 }}>
           {isBetting ? (
@@ -386,20 +533,46 @@ export function BlackjackStage({ engine }: BlackjackStageProps): React.ReactElem
           ) : (
             <>
               {/* Dealer Area */}
-              <div style={{ background: 'rgba(0,0,0,.2)', border: `1px solid rgba(255,255,255,.1)`, borderRadius: 12, padding: 16, marginBottom: 16 }}>
-                <div style={{ fontSize: 12, fontWeight: 600, marginBottom: 10, color: themeVars['--ink-dim'], textTransform: 'uppercase' }}>🎰 庄家</div>
-                <div style={{ display: 'flex', gap: 12, marginBottom: 12, alignItems: 'center' }}>
+              <div style={{
+                background: T['--panel-grad'],
+                border: `1px solid ${T['--panel-border']}`,
+                borderRadius: 14,
+                padding: 16,
+                marginBottom: 16,
+                boxShadow: `inset 0 0 0 1px ${T['--hairline']}, 0 4px 14px rgba(0,0,0,.18)`,
+              }}>
+                <div style={{
+                  fontSize: 14,
+                  fontWeight: 700,
+                  letterSpacing: '.08em',
+                  marginBottom: 10,
+                  color: T['--ink'],
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: 10,
+                }}>
+                  <span style={{ fontSize: 18 }}>♣</span>
+                  庄家
+                </div>
+                <div style={{ display: 'flex', gap: 14, marginBottom: 12, alignItems: 'flex-end' }}>
                   {gameSession.dealerCards.map((card, i) => (
-                    <CardComp key={i} card={card} hidden={isPlayerTurn && i === gameSession.dealerCards.length - 1} />
+                    <CardComp key={i} card={card} hidden={isPlayerTurn && i === gameSession.dealerCards.length - 1} index={i} />
                   ))}
                 </div>
-                <div style={{ fontSize: 14, fontWeight: 700, color: themeVars['--accent'] }}>
-                  {isPlayerTurn ? '? 点' : `${dealerScore.score} 点`}
+                <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+                  <ScorePill value={isPlayerTurn ? '?' : dealerScore.score} label="庄家" />
                 </div>
               </div>
 
               {/* Game Table / Results */}
-              <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: 16, position: 'relative' }}>
+              <div style={{
+                flex: 1,
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                marginBottom: 16,
+                position: 'relative',
+              }}>
                 {gameSession.gameState === GAME_STATES.GAME_OVER && (
                   <div style={{
                     position: 'absolute',
@@ -408,58 +581,159 @@ export function BlackjackStage({ engine }: BlackjackStageProps): React.ReactElem
                     flexDirection: 'column',
                     alignItems: 'center',
                     justifyContent: 'center',
-                    background: 'rgba(0,0,0,.4)',
+                    background: 'rgba(8,16,12,.7)',
                     borderRadius: 12,
-                    backdropFilter: 'blur(4px)',
-                    animation: 'scaleIn 0.5s ease-out',
+                    border: `2px solid ${T['--gold']}`,
+                    backdropFilter: 'blur(3px)',
+                    animation: 'pulse 1.8s ease-in-out infinite',
+                    boxShadow: `0 0 50px ${T['--gold']}66`,
                   }}>
-                    <div style={{ fontSize: 48, fontWeight: 900, color: themeVars['--gold'], marginBottom: 12 }}>
-                      {sessionOutcome.outcome === OUTCOMES.BLACKJACK ? '⭐ BLACKJACK' : sessionOutcome.outcome === OUTCOMES.PLAYER_WIN ? '✅ 你胜了' : sessionOutcome.outcome === OUTCOMES.PLAYER_BUST ? '❌ 爆牌' : sessionOutcome.outcome === OUTCOMES.DEALER_BUST ? '✅ 庄家爆牌' : sessionOutcome.outcome === OUTCOMES.TIE ? '🤝 平局' : '❌ 你负了'}
+                    <div style={{
+                      fontSize: 46,
+                      fontWeight: 900,
+                      color: T['--gold'],
+                      marginBottom: 12,
+                      lineHeight: 1,
+                    }}>
+                      {sessionOutcome.outcome === OUTCOMES.BLACKJACK ? '⭐ BLACKJACK' : sessionOutcome.outcome === OUTCOMES.PLAYER_WIN ? '✅ 胜' : sessionOutcome.outcome === OUTCOMES.PLAYER_BUST ? '❌ 爆牌' : sessionOutcome.outcome === OUTCOMES.DEALER_BUST ? '✅ 庄家爆牌' : sessionOutcome.outcome === OUTCOMES.TIE ? '🤝 平' : '❌ 负'}
                     </div>
-                    <div style={{ fontSize: 24, color: themeVars['--ink'], marginBottom: 20 }}>
-                      {sessionOutcome.winAmount > 0 ? `赢 ◈${sessionOutcome.winAmount}` : sessionOutcome.winAmount < 0 ? `负 ◈${Math.abs(sessionOutcome.winAmount)}` : '平手'}
+                    <div style={{
+                      fontSize: 20,
+                      color: T['--ink'],
+                      marginBottom: 20,
+                    }}>
+                      {sessionOutcome.winAmount > 0 ? `赢 ◈${sessionOutcome.winAmount}` : sessionOutcome.winAmount < 0 ? `负 ◈${Math.abs(sessionOutcome.winAmount)}` : '押注退还'}
                     </div>
-                    <button onClick={() => { setGameSession({ deck: [], playerHands: [], currentHandIndex: 0, dealerCards: [], gameState: GAME_STATES.BETTING }); setSessionOutcome({ winAmount: 0 }); setGamePhase('bet'); }} style={{ padding: '10px 24px', background: themeVars['--accent'], color: '#000', border: 'none', borderRadius: 6, fontSize: 14, fontWeight: 700, cursor: 'pointer' }}>
+                    <div style={{ fontSize: 16, color: T['--ink-dim'], marginBottom: 20 }}>
+                      总筹码：<span style={{ fontWeight: 700, color: T['--gold'] }}>◈{chips.toLocaleString()}</span>
+                    </div>
+                    <button
+                      onClick={() => {
+                        setGameSession({ deck: [], playerHands: [], currentHandIndex: 0, dealerCards: [], gameState: GAME_STATES.BETTING });
+                        setSessionOutcome({ winAmount: 0 });
+                        setGamePhase('bet');
+                      }}
+                      style={{
+                        padding: '12px 28px',
+                        background: T['--accent-grad'],
+                        color: '#000',
+                        border: 'none',
+                        borderRadius: 6,
+                        fontSize: 16,
+                        fontWeight: 700,
+                        cursor: 'pointer',
+                        transition: 'all .15s ease',
+                      }}
+                    >
                       再来一局
                     </button>
                   </div>
                 )}
                 <div style={{ textAlign: 'center', opacity: gameSession.gameState === GAME_STATES.GAME_OVER ? 0.3 : 1 }}>
-                  <div style={{ fontSize: 32, fontWeight: 700, color: themeVars['--gold'], marginBottom: 8 }}>◈ {totalBet.toLocaleString()}</div>
-                  <div style={{ fontSize: 11, color: themeVars['--ink-dim'] }}>当前下注</div>
+                  <div style={{ fontSize: 32, fontWeight: 700, color: T['--gold'], marginBottom: 8 }}>◈ {totalBet.toLocaleString()}</div>
+                  <div style={{ fontSize: 11, color: T['--ink-dim'] }}>当前下注</div>
                 </div>
               </div>
 
               {/* Player Hands */}
-              <div style={{ background: 'rgba(0,0,0,.2)', border: `1px solid rgba(255,255,255,.1)`, borderRadius: 12, padding: 16 }}>
+              <div style={{
+                background: T['--panel-grad'],
+                border: `1px solid ${T['--panel-border']}`,
+                borderRadius: 14,
+                padding: 16,
+                boxShadow: `inset 0 0 0 1px ${T['--hairline']}, 0 4px 14px rgba(0,0,0,.18)`,
+              }}>
                 <div style={{ display: 'grid', gridTemplateColumns: `repeat(${gameSession.playerHands.length}, 1fr)`, gap: 12, marginBottom: 12 }}>
-                  {gameSession.playerHands.map((hand, i) => (
-                    <div key={i} style={{ background: i === gameSession.currentHandIndex && isPlayerTurn ? `rgba(${theme === 'onyx' ? '74,222,128' : '216,96,123'},.15)` : 'transparent', borderRadius: 10, padding: 12, border: `1px solid ${i === gameSession.currentHandIndex && isPlayerTurn ? themeVars['--accent'] : 'transparent'}` }}>
-                      <div style={{ display: 'flex', gap: 8, marginBottom: 8, flexWrap: 'wrap' }}>
-                        {hand.cards.map((card, j) => (
-                          <div key={j} style={{ transform: 'scale(0.8)', transformOrigin: 'top left' }}>
-                            <CardComp card={card} />
-                          </div>
-                        ))}
+                  {gameSession.playerHands.map((hand, i) => {
+                    const handScore = calculateScore(hand.cards).score;
+                    const isActive = i === gameSession.currentHandIndex && isPlayerTurn;
+                    return (
+                      <div
+                        key={i}
+                        style={{
+                          background: isActive ? T['--accent-soft'] : 'rgba(0,0,0,.2)',
+                          borderRadius: 10,
+                          padding: 12,
+                          border: `2px solid ${isActive ? T['--accent'] : 'transparent'}`,
+                          transition: 'all .15s ease',
+                        }}
+                      >
+                        <div style={{ display: 'flex', gap: 8, marginBottom: 10, flexWrap: 'wrap', alignItems: 'flex-end' }}>
+                          {hand.cards.map((card, j) => (
+                            <div key={j} style={{ transform: 'scale(0.75)', transformOrigin: 'top left' }}>
+                              <CardComp card={card} index={j} />
+                            </div>
+                          ))}
+                        </div>
+                        <div style={{
+                          fontSize: 14,
+                          fontWeight: 700,
+                          color: T['--gold'],
+                          display: 'flex',
+                          alignItems: 'center',
+                          gap: 8,
+                        }}>
+                          {handScore} 点
+                          {hand.bet > 0 && <span style={{ fontSize: 12, color: T['--ink-dim'] }}>| ◈{hand.bet}</span>}
+                        </div>
                       </div>
-                      <div style={{ fontSize: 12, color: themeVars['--accent'], fontWeight: 700 }}>
-                        {calculateScore(hand.cards).score} 点 {hand.bet > 0 && `| ◈${hand.bet}`}
-                      </div>
-                    </div>
-                  ))}
+                    );
+                  })}
                 </div>
                 <div style={{ display: 'flex', gap: 8 }}>
                   {currentHand && isPlayerTurn && currentHand.status === 'active' && (
                     <>
                       {canSplit(currentHand) && chips >= currentHand.bet && (
-                        <button onClick={onSplit} style={{ flex: 1, padding: '8px 12px', background: themeVars['--gold'], color: '#000', border: 'none', borderRadius: 6, fontSize: 12, fontWeight: 600, cursor: 'pointer' }}>
+                        <button
+                          onClick={onSplit}
+                          style={{
+                            flex: 1,
+                            padding: '10px 12px',
+                            background: T['--gold-grad'],
+                            color: '#2a1a08',
+                            border: 'none',
+                            borderRadius: 6,
+                            fontSize: 13,
+                            fontWeight: 700,
+                            cursor: 'pointer',
+                            transition: 'all .12s ease',
+                          }}
+                        >
                           分牌
                         </button>
                       )}
-                      <button onClick={onHit} style={{ flex: 1, padding: '8px 12px', background: themeVars['--accent'], color: '#000', border: 'none', borderRadius: 6, fontSize: 12, fontWeight: 600, cursor: 'pointer' }}>
+                      <button
+                        onClick={onHit}
+                        style={{
+                          flex: 1,
+                          padding: '10px 12px',
+                          background: T['--accent-grad'],
+                          color: '#000',
+                          border: 'none',
+                          borderRadius: 6,
+                          fontSize: 13,
+                          fontWeight: 700,
+                          cursor: 'pointer',
+                          transition: 'all .12s ease',
+                        }}
+                      >
                         要牌
                       </button>
-                      <button onClick={onStand} style={{ flex: 1, padding: '8px 12px', background: 'rgba(0,0,0,.2)', color: themeVars['--accent'], border: `1px solid ${themeVars['--accent']}`, borderRadius: 6, fontSize: 12, fontWeight: 600, cursor: 'pointer' }}>
+                      <button
+                        onClick={onStand}
+                        style={{
+                          flex: 1,
+                          padding: '10px 12px',
+                          background: T['--btn-bg'],
+                          color: T['--accent'],
+                          border: `1px solid ${T['--btn-edge']}`,
+                          borderRadius: 6,
+                          fontSize: 13,
+                          fontWeight: 700,
+                          cursor: 'pointer',
+                          transition: 'all .12s ease',
+                        }}
+                      >
                         停牌
                       </button>
                     </>
@@ -471,77 +745,181 @@ export function BlackjackStage({ engine }: BlackjackStageProps): React.ReactElem
         </div>
 
         {/* RIGHT: Sidebar */}
-        <div style={{ width: 280, display: 'flex', flexDirection: 'column', gap: 12, overflow: 'auto' }}>
+        <div style={{ width: 304, display: 'flex', flexDirection: 'column', gap: 13, overflow: 'auto' }}>
           {/* Stats */}
           {!isBetting && (
-            <div style={{ background: 'rgba(0,0,0,.2)', border: `1px solid rgba(255,255,255,.1)`, borderRadius: 12, padding: 12 }}>
-              <div style={{ fontSize: 10, letterSpacing: '.2em', textTransform: 'uppercase', color: themeVars['--ink-dim'], marginBottom: 10 }}>本局</div>
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 8 }}>
-                <div style={{ background: 'rgba(0,0,0,.3)', borderRadius: 8, padding: 8, textAlign: 'center' }}>
-                  <div style={{ fontSize: 10, color: themeVars['--ink-dim'], marginBottom: 4 }}>庄家</div>
-                  <div style={{ fontSize: 14, fontWeight: 700, color: themeVars['--ink'] }}>{isPlayerTurn ? '?' : dealerScore.score}</div>
+            <div style={{
+              background: T['--panel-grad'],
+              border: `1px solid ${T['--panel-border']}`,
+              borderRadius: 14,
+              boxShadow: `inset 0 0 0 1px ${T['--hairline']}, 0 4px 14px rgba(0,0,0,.18)`,
+              padding: '15px 16px',
+            }}>
+              <div style={{
+                fontSize: 10,
+                letterSpacing: '.2em',
+                textTransform: 'uppercase',
+                color: T['--ink-dim'],
+                marginBottom: 12,
+              }}>本局</div>
+              <div style={{ display: 'flex', gap: 10 }}>
+                <div style={{
+                  flex: 1,
+                  display: 'flex',
+                  flexDirection: 'column',
+                  alignItems: 'center',
+                  gap: 5,
+                  padding: '11px 6px',
+                  borderRadius: 11,
+                  background: 'rgba(0,0,0,.3)',
+                  border: `1px solid ${T['--panel-border']}`,
+                }}>
+                  <span style={{ fontSize: 11, color: T['--ink-dim'] }}>庄家</span>
+                  <span style={{ fontFamily: 'monospace', fontSize: 19, color: T['--ink'], fontWeight: 700 }}>{isPlayerTurn ? '?' : dealerScore.score}</span>
                 </div>
-                <div style={{ background: 'rgba(0,0,0,.3)', borderRadius: 8, padding: 8, textAlign: 'center' }}>
-                  <div style={{ fontSize: 10, color: themeVars['--ink-dim'], marginBottom: 4 }}>你</div>
-                  <div style={{ fontSize: 14, fontWeight: 700, color: themeVars['--gold'] }}>{playerScore.score}</div>
+                <div style={{
+                  flex: 1,
+                  display: 'flex',
+                  flexDirection: 'column',
+                  alignItems: 'center',
+                  gap: 5,
+                  padding: '11px 6px',
+                  borderRadius: 11,
+                  background: 'rgba(0,0,0,.3)',
+                  border: `1px solid ${T['--panel-border']}`,
+                }}>
+                  <span style={{ fontSize: 11, color: T['--ink-dim'] }}>你</span>
+                  <span style={{ fontFamily: 'monospace', fontSize: 19, color: T['--gold'], fontWeight: 700 }}>{playerScore.score}</span>
                 </div>
-                <div style={{ background: 'rgba(0,0,0,.3)', borderRadius: 8, padding: 8, textAlign: 'center' }}>
-                  <div style={{ fontSize: 10, color: themeVars['--ink-dim'], marginBottom: 4 }}>注额</div>
-                  <div style={{ fontSize: 14, fontWeight: 700, color: themeVars['--gold'] }}>◈{totalBet}</div>
+                <div style={{
+                  flex: 1,
+                  display: 'flex',
+                  flexDirection: 'column',
+                  alignItems: 'center',
+                  gap: 5,
+                  padding: '11px 6px',
+                  borderRadius: 11,
+                  background: 'rgba(0,0,0,.3)',
+                  border: `1px solid ${T['--panel-border']}`,
+                }}>
+                  <span style={{ fontSize: 11, color: T['--ink-dim'] }}>注额</span>
+                  <span style={{ fontFamily: 'monospace', fontSize: 19, color: T['--gold'], fontWeight: 700 }}>◈{totalBet}</span>
                 </div>
               </div>
             </div>
           )}
 
           {/* Chip Selector */}
-          <div style={{ background: 'rgba(0,0,0,.2)', border: `1px solid rgba(255,255,255,.1)`, borderRadius: 12, padding: 12 }}>
-            <div style={{ fontSize: 10, letterSpacing: '.2em', textTransform: 'uppercase', color: themeVars['--ink-dim'], marginBottom: 10 }}>筹码 · 点击下注</div>
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 8, marginBottom: 10 }}>
-              {[10, 25, 50, 100, 250, 500].map((denom) => (
-                <button
-                  key={denom}
-                  onClick={() => setCurrentBet(currentBet + denom)}
-                  style={{
-                    padding: '10px',
-                    background: `radial-gradient(circle at 38% 32%, ${theme === 'onyx' ? '#4ade80' : '#d8607b'}dd, ${theme === 'onyx' ? '#4ade80' : '#d8607b'} 62%, rgba(0,0,0,.45))`,
-                    border: '2px solid rgba(255,255,255,.7)',
-                    borderRadius: '50%',
-                    color: '#fff',
-                    fontSize: 11,
-                    fontWeight: 700,
-                    cursor: 'pointer',
-                    aspectRatio: '1',
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    transition: 'all .15s ease',
-                  }}
-                  onMouseEnter={(e) => { e.currentTarget.style.transform = 'scale(1.08)'; }}
-                  onMouseLeave={(e) => { e.currentTarget.style.transform = 'scale(1)'; }}
-                >
-                  ◈{denom}
-                </button>
-              ))}
+          <div style={{
+            background: T['--panel-grad'],
+            border: `1px solid ${T['--panel-border']}`,
+            borderRadius: 14,
+            boxShadow: `inset 0 0 0 1px ${T['--hairline']}, 0 4px 14px rgba(0,0,0,.18)`,
+            padding: '15px 16px',
+          }}>
+            <div style={{
+              fontSize: 10,
+              letterSpacing: '.2em',
+              textTransform: 'uppercase',
+              color: T['--ink-dim'],
+              marginBottom: 12,
+            }}>筹码 · 点击下注</div>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 11, marginBottom: 13 }}>
+              {[5, 25, 50, 100, 250, 500].map((denom) => {
+                const chipColors = { onyx: '#4ade80', brocade: '#d8607b' };
+                const chipColor = chipColors[theme];
+                return (
+                  <button
+                    key={denom}
+                    onClick={() => setCurrentBet(Math.min(currentBet + denom, chips))}
+                    style={{
+                      aspectRatio: '1',
+                      padding: 0,
+                      background: `radial-gradient(circle at 38% 32%, ${chipColor}ee, ${chipColor} 62%, rgba(0,0,0,.45))`,
+                      border: '4px dashed rgba(255,255,255,.82)',
+                      borderRadius: '50%',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      flexDirection: 'column',
+                      cursor: 'pointer',
+                      boxShadow: '0 5px 12px rgba(0,0,0,.4), inset 0 0 0 1px rgba(255,255,255,.15)',
+                      transition: 'all .12s ease',
+                    }}
+                    onMouseEnter={(e) => { e.currentTarget.style.transform = 'translateY(-3px) scale(1.04)'; e.currentTarget.style.filter = 'brightness(1.1)'; }}
+                    onMouseLeave={(e) => { e.currentTarget.style.transform = 'translateY(0) scale(1)'; e.currentTarget.style.filter = 'brightness(1)'; }}
+                  >
+                    <span style={{ fontSize: 12, color: '#fff', fontWeight: 700, textShadow: '0 1px 2px rgba(0,0,0,.6)' }}>◈{denom}</span>
+                  </button>
+                );
+              })}
             </div>
-            <div style={{ display: 'flex', gap: 8 }}>
-              <button onClick={() => setCurrentBet(0)} style={{ flex: 1, padding: '8px', background: 'rgba(0,0,0,.3)', color: themeVars['--accent'], border: `1px solid ${themeVars['--accent']}`, borderRadius: 6, fontSize: 12, fontWeight: 600, cursor: 'pointer' }}>
+            <div style={{ display: 'flex', gap: 9 }}>
+              <button
+                onClick={() => setCurrentBet(0)}
+                style={{
+                  flex: 1,
+                  padding: '10px',
+                  background: 'rgba(0,0,0,.3)',
+                  border: `1px solid ${T['--panel-border']}`,
+                  borderRadius: 10,
+                  color: T['--ink'],
+                  fontFamily: 'var(--font-heading)',
+                  fontWeight: 700,
+                  fontSize: 14,
+                  cursor: 'pointer',
+                  transition: 'all .15s ease',
+                }}
+                onMouseEnter={(e) => { e.currentTarget.style.filter = 'brightness(1.08)'; e.currentTarget.style.borderColor = T['--accent']; }}
+                onMouseLeave={(e) => { e.currentTarget.style.filter = 'brightness(1)'; e.currentTarget.style.borderColor = T['--panel-border']; }}
+              >
                 清空
               </button>
-              <button onClick={() => setCurrentBet(chips)} style={{ flex: 1, padding: '8px', background: 'rgba(0,0,0,.3)', color: themeVars['--accent'], border: `1px solid ${themeVars['--accent']}`, borderRadius: 6, fontSize: 12, fontWeight: 600, cursor: 'pointer' }}>
+              <button
+                onClick={() => setCurrentBet(chips)}
+                style={{
+                  flex: 1,
+                  padding: '10px',
+                  background: 'rgba(0,0,0,.3)',
+                  border: `1px solid ${T['--panel-border']}`,
+                  borderRadius: 10,
+                  color: T['--ink'],
+                  fontFamily: 'var(--font-heading)',
+                  fontWeight: 700,
+                  fontSize: 14,
+                  cursor: 'pointer',
+                  transition: 'all .15s ease',
+                }}
+                onMouseEnter={(e) => { e.currentTarget.style.filter = 'brightness(1.08)'; e.currentTarget.style.borderColor = T['--accent']; }}
+                onMouseLeave={(e) => { e.currentTarget.style.filter = 'brightness(1)'; e.currentTarget.style.borderColor = T['--panel-border']; }}
+              >
                 最大
               </button>
             </div>
           </div>
 
-          {/* Info */}
-          <div style={{ background: 'rgba(0,0,0,.2)', border: `1px solid rgba(255,255,255,.1)`, borderRadius: 12, padding: 12, flex: 1 }}>
-            <div style={{ fontSize: 10, letterSpacing: '.2em', textTransform: 'uppercase', color: themeVars['--ink-dim'], marginBottom: 10 }}>规则</div>
-            <div style={{ fontSize: 11, lineHeight: 1.6, color: themeVars['--ink-dim'] }}>
+          {/* Rules */}
+          <div style={{
+            background: T['--panel-grad'],
+            border: `1px solid ${T['--panel-border']}`,
+            borderRadius: 14,
+            boxShadow: `inset 0 0 0 1px ${T['--hairline']}, 0 4px 14px rgba(0,0,0,.18)`,
+            padding: '15px 16px',
+            flex: 1,
+          }}>
+            <div style={{
+              fontSize: 10,
+              letterSpacing: '.2em',
+              textTransform: 'uppercase',
+              color: T['--ink-dim'],
+              marginBottom: 12,
+            }}>规则</div>
+            <div style={{ fontSize: 11, color: T['--ink-dim'], lineHeight: 1.6 }}>
               <div>• 庄家 17 点必停</div>
               <div>• 黑杰克 3:2 赔付</div>
-              <div>• 最小下注 $10</div>
-              <div>• 最大下注 $500</div>
               <div>• 可分牌和加倍</div>
+              <div>• 最小注额 $10</div>
+              <div>• 最大注额 $500</div>
             </div>
           </div>
         </div>
@@ -550,98 +928,71 @@ export function BlackjackStage({ engine }: BlackjackStageProps): React.ReactElem
       {/* ===== BOTTOM ACTION BAR ===== */}
       {isPlayerTurn && currentHand && currentHand.status === 'active' && (
         <div style={{
-          height: 100,
+          height: 118,
           display: 'flex',
           alignItems: 'center',
-          gap: 12,
-          padding: '0 28px',
-          background: themeVars['--dock-bg'],
-          borderTop: `1px solid rgba(255,255,255,.1)`,
+          gap: 14,
+          padding: '0 30px',
+          background: T['--dock-bg'],
+          borderTop: `1px solid ${T['--panel-border']}`,
           zIndex: 10,
         }}>
-          <button
-            onClick={onHit}
-            style={{
-              flex: 1,
-              height: 70,
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              gap: 10,
-              background: themeVars['--accent'],
-              color: '#000',
-              border: 'none',
-              borderRadius: 12,
-              fontSize: 16,
-              fontWeight: 700,
-              cursor: 'pointer',
-              transition: 'all .15s ease',
-            }}
-            onMouseEnter={(e) => { e.currentTarget.style.transform = 'translateY(-2px)'; }}
-            onMouseLeave={(e) => { e.currentTarget.style.transform = 'translateY(0)'; }}
-          >
-            <span style={{ fontSize: 24 }}>🃏</span>
-            <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-start' }}>
-              <span>要牌</span>
-              <span style={{ fontSize: 10, opacity: 0.8 }}>HIT</span>
-            </div>
-          </button>
-          <button
-            onClick={onStand}
-            style={{
-              flex: 1,
-              height: 70,
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              gap: 10,
-              background: 'rgba(0,0,0,.2)',
-              color: themeVars['--accent'],
-              border: `1px solid ${themeVars['--accent']}`,
-              borderRadius: 12,
-              fontSize: 16,
-              fontWeight: 700,
-              cursor: 'pointer',
-              transition: 'all .15s ease',
-            }}
-            onMouseEnter={(e) => { e.currentTarget.style.transform = 'translateY(-2px)'; }}
-            onMouseLeave={(e) => { e.currentTarget.style.transform = 'translateY(0)'; }}
-          >
-            <span style={{ fontSize: 24 }}>✋</span>
-            <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-start' }}>
-              <span>停牌</span>
-              <span style={{ fontSize: 10, opacity: 0.8 }}>STAND</span>
-            </div>
-          </button>
-          {canSplit(currentHand) && chips >= currentHand.bet && (
+          {[
+            { glyph: '🃏', label: '要牌', sub: 'HIT', primary: true, action: onHit },
+            { glyph: '✋', label: '停牌', sub: 'STAND', primary: false, action: onStand },
+            ...(canSplit(currentHand) && chips >= currentHand.bet ? [{ glyph: '⑂', label: '分牌', sub: 'SPLIT', primary: false, action: onSplit }] : []),
+          ].map((btn, i) => (
             <button
-              onClick={onSplit}
+              key={i}
+              onClick={btn.action}
               style={{
                 flex: 1,
-                height: 70,
+                height: 78,
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'center',
-                gap: 10,
-                background: 'rgba(0,0,0,.2)',
-                color: themeVars['--gold'],
-                border: `1px solid ${themeVars['--gold']}`,
-                borderRadius: 12,
-                fontSize: 16,
-                fontWeight: 700,
+                gap: 12,
+                background: btn.primary ? T['--accent-grad'] : T['--btn-bg'],
+                color: btn.primary ? '#000' : T['--btn-edge'],
+                border: btn.primary ? 'none' : `1px solid ${T['--btn-edge']}`,
+                borderRadius: 15,
                 cursor: 'pointer',
+                boxShadow: btn.primary ? `0 8px 22px ${T['--accent-soft']}, inset 0 1px 0 rgba(255,255,255,.3)` : `inset 0 0 0 1px ${T['--hairline']}`,
                 transition: 'all .15s ease',
+                overflow: 'hidden',
+                position: 'relative',
               }}
-              onMouseEnter={(e) => { e.currentTarget.style.transform = 'translateY(-2px)'; }}
-              onMouseLeave={(e) => { e.currentTarget.style.transform = 'translateY(0)'; }}
+              onMouseEnter={(e) => {
+                e.currentTarget.style.transform = 'translateY(-2px)';
+                e.currentTarget.style.filter = 'brightness(1.08)';
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.transform = 'translateY(0)';
+                e.currentTarget.style.filter = 'brightness(1)';
+              }}
             >
-              <span style={{ fontSize: 24 }}>⑂</span>
-              <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-start' }}>
-                <span>分牌</span>
-                <span style={{ fontSize: 10, opacity: 0.8 }}>SPLIT</span>
+              <span style={{ position: 'relative', fontSize: 26, lineHeight: 1 }}>{btn.glyph}</span>
+              <div style={{ position: 'relative', display: 'flex', flexDirection: 'column', alignItems: 'flex-start', lineHeight: 1.15 }}>
+                <span style={{
+                  fontFamily: 'var(--font-heading)',
+                  fontWeight: 700,
+                  fontSize: 19,
+                  letterSpacing: '.04em',
+                  color: btn.primary ? '#000' : T['--ink'],
+                }}>
+                  {btn.label}
+                </span>
+                <span style={{
+                  fontSize: 10,
+                  letterSpacing: '.16em',
+                  opacity: 0.7,
+                  color: btn.primary ? '#000' : T['--ink-dim'],
+                }}>
+                  {btn.sub}
+                </span>
               </div>
             </button>
-          )}
+          ))}
         </div>
       )}
     </div>
@@ -657,7 +1008,7 @@ interface BettingPanelProps {
 }
 
 function BettingPanel({ chips, currentBet, onBet, onDeal, theme }: BettingPanelProps): React.ReactElement {
-  const themeVars = THEMES[theme];
+  const T = THEMES[theme];
 
   return (
     <div style={{
@@ -667,24 +1018,26 @@ function BettingPanel({ chips, currentBet, onBet, onDeal, theme }: BettingPanelP
       alignItems: 'center',
       justifyContent: 'center',
       gap: 20,
-      background: 'rgba(0,0,0,.2)',
+      background: T['--panel-grad'],
       borderRadius: 12,
+      border: `1px solid ${T['--panel-border']}`,
       padding: 40,
+      boxShadow: `inset 0 0 0 1px ${T['--hairline']}, 0 4px 14px rgba(0,0,0,.18)`,
     }}>
-      <div style={{ fontSize: 28, fontWeight: 900, color: themeVars['--accent'] }}>💰 选择押注额度</div>
+      <div style={{ fontSize: 28, fontWeight: 900, color: T['--accent'], textAlign: 'center' }}>💰 选择押注额度</div>
 
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 12, width: '100%', maxWidth: 400 }}>
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 8, width: '100%', maxWidth: 400 }}>
         {[10, 25, 50, 100, 250, 500].map((bet) => (
           <button
             key={bet}
             onClick={() => onBet(Math.min(bet, chips))}
             disabled={bet > chips}
             style={{
-              padding: 16,
-              background: currentBet === bet ? themeVars['--accent'] : 'rgba(0,0,0,.3)',
-              color: currentBet === bet ? '#000' : themeVars['--accent'],
-              border: `1px solid ${themeVars['--accent']}`,
-              borderRadius: 8,
+              padding: 10,
+              background: currentBet === bet ? T['--accent-grad'] : 'rgba(0,0,0,.2)',
+              color: currentBet === bet ? '#000' : T['--accent'],
+              border: `1px solid ${T['--accent']}`,
+              borderRadius: 6,
               fontSize: 14,
               fontWeight: 700,
               cursor: bet > chips ? 'not-allowed' : 'pointer',
@@ -707,19 +1060,18 @@ function BettingPanel({ chips, currentBet, onBet, onDeal, theme }: BettingPanelP
           placeholder="或输入金额"
           style={{
             width: '100%',
-            padding: '12px 16px',
-            borderRadius: 8,
-            border: `1px solid ${themeVars['--accent']}`,
+            padding: '8px 12px',
+            borderRadius: 6,
+            border: `1px solid ${T['--accent']}`,
             background: 'rgba(0,0,0,.3)',
-            color: themeVars['--accent'],
+            color: T['--accent'],
             fontSize: 14,
-            fontWeight: 700,
           }}
         />
       </div>
 
-      <div style={{ fontSize: 16, color: themeVars['--ink'] }}>
-        💵 剩余筹码: <span style={{ fontWeight: 700, color: themeVars['--gold'] }}>${chips.toLocaleString()}</span>
+      <div style={{ fontSize: 14, color: T['--ink'] }}>
+        💵 剩余筹码: <span style={{ fontWeight: 700, color: T['--gold'] }}>${chips.toLocaleString()}</span>
       </div>
 
       {currentBet > 0 && (
@@ -727,18 +1079,19 @@ function BettingPanel({ chips, currentBet, onBet, onDeal, theme }: BettingPanelP
           onClick={onDeal}
           style={{
             marginTop: 12,
-            padding: '14px 32px',
-            background: themeVars['--accent'],
+            padding: '10px 24px',
+            background: T['--accent-grad'],
             color: '#000',
             border: 'none',
-            borderRadius: 8,
+            borderRadius: 6,
             fontSize: 16,
             fontWeight: 700,
             cursor: 'pointer',
+            boxShadow: `0 8px 22px ${T['--accent-soft']}, inset 0 1px 0 rgba(255,255,255,.3)`,
             transition: 'all .15s ease',
           }}
-          onMouseEnter={(e) => { e.currentTarget.style.transform = 'scale(1.05)'; }}
-          onMouseLeave={(e) => { e.currentTarget.style.transform = 'scale(1)'; }}
+          onMouseEnter={(e) => { e.currentTarget.style.transform = 'translateY(-2px)'; }}
+          onMouseLeave={(e) => { e.currentTarget.style.transform = 'translateY(0)'; }}
         >
           开始游戏
         </button>
