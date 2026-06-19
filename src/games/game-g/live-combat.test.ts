@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import { standardArmy } from './index.js';
-import { initLiveBattle, stepLiveBattle, runLiveBattle, liveHash, cardStamina, tideDrawPulse, TIDE_PULSE, MARCH_STEP, type DeployCmd, type ClashEvent } from './live-combat.js';
+import { initLiveBattle, stepLiveBattle, runLiveBattle, liveHash, cardStamina, tideDrawPulse, TIDE_PULSE, MARCH_STEP, migrateRear, type DeployCmd, type ClashEvent } from './live-combat.js';
 
 // doc 18/19 · live 解析器 + 3D-CLASH 对决核 + 3D-STAM 续航：验证 live 化后 outcome-first 不破（确定性逐拍 hash）
 // + 公平骨架（base=点数·双方同副；强弱来自经营 buff）+ 胜负方向 + live buff 杠杆 + 续航退场（战线接力·神牌不包打）。
@@ -102,5 +102,27 @@ describe('Game G · A1 战潮抽牌·事件脉冲（doc18 §10.3 乙 · tideDraw
     expect(a.total).toBeGreaterThan(20); // 整局涌了不少援牌（非纯底流·该来牌哗一把）
     expect(a.bursts).toBeGreaterThan(0); // 有峰值拍（≥2 张：斩将/告急）
     expect(a.quiet).toBeGreaterThan(0); // 也有静拍（行军/再逼近·不涌）→ 非线性节奏
+  });
+
+  it('三路兵力迁移（doc21 ⭐ owner）：搬队尾后备到另一路·重新 staging·确定性不消耗 rng·outcome-first 安全', () => {
+    const live = initLiveBattle(5);
+    const dep: DeployCmd[] = [
+      { tick: 1, side: 'a', lane: 0, unit: { id: 'a0', rank: '5', suit: 'S', general: false } },
+      { tick: 1, side: 'a', lane: 0, unit: { id: 'a1', rank: '6', suit: 'H', general: false } },
+      { tick: 1, side: 'a', lane: 0, unit: { id: 'a2', rank: '7', suit: 'D', general: false } },
+    ];
+    stepLiveBattle(live, dep); // 上路 3 张 A（无敌·自由行军），队尾 a2 = 后备（离敌最远）
+    expect(live.lanes[0].a.length).toBe(3);
+    expect(live.lanes[2].a.length).toBe(0);
+    const seqBefore = live.rng.sequence;
+    expect(migrateRear(live, 'a', 0, 2)).toBe(true); // 上→下 搬队尾后备
+    expect(live.lanes[0].a.length).toBe(2);          // 上路少一张
+    expect(live.lanes[2].a.map((u) => u.id)).toEqual(['a2']); // 搬的是队尾后备 a2、入下路
+    expect(live.rng.sequence).toBe(seqBefore);       // 不消耗 rng → 不破确定性 hash（outcome-first 安全）
+    expect(migrateRear(live, 'a', 1, 1)).toBe(false); // 同路 → 拒
+    expect(migrateRear(live, 'a', 1, 0)).toBe(false); // 源(中路)空 → 拒
+    // 确定性：同序列迁移 → 同 hash
+    const run = (): string => { const b = initLiveBattle(5); stepLiveBattle(b, dep); migrateRear(b, 'a', 0, 2); stepLiveBattle(b, dep); return liveHash(b); };
+    expect(run()).toBe(run());
   });
 });

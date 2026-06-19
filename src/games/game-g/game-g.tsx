@@ -1,7 +1,7 @@
 import { mountBattle, type BattleView, type BattleUnit, type BattleLane, type BattleLever, type HandCardView, type TengangCardView, type BattleActions, type ClashView, type BattleFx } from './battle-screen.js';
 import { mountLobby, type LobbyView, type LobbyShopItem } from './lobby-screen.js';
 import { prepareArmies, armyFromFormation, laneEstimates, quartermasterEnergy, FORMATION_PRESETS, PRESET_NAMES, LEVER_CATALOG, LEVER_START, battleSpec, RUN_BATTLES, RUN_LIVES, BETWEEN_BUFFS, applyBuff, jokerKeyBuffs, BOSS_ROSTER, bossFor, GAME_G_JOKERS, JOKER_BY_ID, ARCHETYPES, detectArchetype, archetypeMatchup, activeArchetype, pickAiFormation, GAME_G_PLANETS, GAME_G_FOILS, effectiveLives, effectiveLeverCap, effectiveLeverRegen, type Formation, type Intervention, type LeverKind, type RunBuff, type ArmyCard } from './index.js';
-import { initLiveBattle, stepLiveBattle, liveActive, LANE_LEN, HOME_BLOOD, type LiveBattle, type DeployCmd, type ClashEvent } from './live-combat.js';
+import { initLiveBattle, stepLiveBattle, liveActive, migrateRear, LANE_LEN, HOME_BLOOD, type LiveBattle, type DeployCmd, type ClashEvent } from './live-combat.js';
 import { cardPoints, P_MAX } from './clash-resolve.js';
 
 // Game G ·《翻命扑克》—— 大厅 ↔ 出征 闭环（launcher 卡带槽：export mount(container)→cleanup）。自包含于本目录。
@@ -38,8 +38,8 @@ const TENGANG_DRAW_COST = 2;    // 摸天罡库花点数（~2·更贵 = 故意�
 const NORMAL_HAND_CAP = 7;      // 普通手牌可囤积上限（doc21 ~7）
 const TENGANG_CAP = 5;          // 天罡在手上限（打掉一张才能再摸 · play-to-draw）
 const OPENING_NORMAL = 4;       // 起手普通手牌（CR 起手 4）
-type BattleControl = { hand: HandCardView[]; selectedCard: number; deckCount: number; tengang: TengangCardView[]; selectedTengang: number; tengangDeckCount: number; points: number; pointsMax: number; normalDrawCost: number; tengangDrawCost: number; canDrawNormal: boolean; canDrawTengang: boolean };
-const NO_CONTROL: BattleControl = { hand: [], selectedCard: -1, deckCount: 0, tengang: [], selectedTengang: -1, tengangDeckCount: 0, points: 0, pointsMax: 0, normalDrawCost: 0, tengangDrawCost: 0, canDrawNormal: false, canDrawTengang: false }; // 看帧/无控盘默认
+type BattleControl = { hand: HandCardView[]; selectedCard: number; deckCount: number; tengang: TengangCardView[]; selectedTengang: number; tengangDeckCount: number; points: number; pointsMax: number; normalDrawCost: number; tengangDrawCost: number; canDrawNormal: boolean; canDrawTengang: boolean; migrateSource: number };
+const NO_CONTROL: BattleControl = { hand: [], selectedCard: -1, deckCount: 0, tengang: [], selectedTengang: -1, tengangDeckCount: 0, points: 0, pointsMax: 0, normalDrawCost: 0, tengangDrawCost: 0, canDrawNormal: false, canDrawTengang: false, migrateSource: -1 }; // 看帧/无控盘默认
 
 interface Save {
   materials: number;
@@ -171,7 +171,7 @@ export function buildBattleViewLive(live: LiveBattle, save: Save, oppName: strin
     levers, lanes, units,
     hand: control.hand, selectedCard: control.selectedCard, deckCount: control.deckCount,
     tengang: control.tengang, selectedTengang: control.selectedTengang, tengangDeckCount: control.tengangDeckCount,
-    points: control.points, pointsMax: control.pointsMax, normalDrawCost: control.normalDrawCost, tengangDrawCost: control.tengangDrawCost, canDrawNormal: control.canDrawNormal, canDrawTengang: control.canDrawTengang,
+    points: control.points, pointsMax: control.pointsMax, normalDrawCost: control.normalDrawCost, tengangDrawCost: control.tengangDrawCost, canDrawNormal: control.canDrawNormal, canDrawTengang: control.canDrawTengang, migrateSource: control.migrateSource,
     clash, fx,
   };
 }
@@ -457,6 +457,7 @@ export function mount(container: HTMLElement): () => void {
     ];
     // CR 出牌控盘运行时态（doc21）：普通/天罡手牌 + 选中 + 点数池（圣水·浮点·真实时间回复）。
     let selectedCard = -1, selectedTengang = -1;
+    let migrateSource = -1; // 三路兵力迁移：已选的迁出路（-1 无·无选中牌时点路 = 迁移模式）
     let points = POINTS_START;
     // 天罡库（法术·≤5·读 save.jokers 契约②）：cycle 队列 —— 摸牌从库顶取、施法回库底；cap5 打掉才补。
     const tDeck: { id: string; name: string }[] = save.jokers.map((id) => ({ id, name: JOKER_BY_ID.get(id)?.name ?? id }));
@@ -468,7 +469,7 @@ export function mount(container: HTMLElement): () => void {
       hand: aHand.map((c): HandCardView => ({ id: c.id, rank: cardRank(c), suit: c.suit.toLowerCase() as 's' | 'h' | 'd' | 'c', general: c.general })),
       selectedCard, deckCount: aDeck.length,
       tengang: tHand.map((c): TengangCardView => ({ id: c.id, name: c.name })), selectedTengang, tengangDeckCount: tDeck.length,
-      points, pointsMax: POINTS_MAX, normalDrawCost: NORMAL_DRAW_COST, tengangDrawCost: TENGANG_DRAW_COST, canDrawNormal: canDrawNormal(), canDrawTengang: canDrawTengang(),
+      points, pointsMax: POINTS_MAX, normalDrawCost: NORMAL_DRAW_COST, tengangDrawCost: TENGANG_DRAW_COST, canDrawNormal: canDrawNormal(), canDrawTengang: canDrawTengang(), migrateSource,
     });
     let prevPos = snapLivePos(live); // 真拍间插值锚（渲染层据此平滑滑行）
     let frac = 1;
@@ -486,11 +487,11 @@ export function mount(container: HTMLElement): () => void {
     let heldClash: ClashEvent | null = null; // 已定格渲染的特写：演出期间不每帧重画 → CSS 3D 翻转/掷点动画得以播完（不再每 33ms 重启卡在起手）
     const lc = (s: string): 's' | 'h' | 'd' | 'c' => s.toLowerCase() as 's' | 'h' | 'd' | 'c';
     const actions: BattleActions = {
-      selectCard: (i) => { selectedCard = i === selectedCard ? -1 : i; selectedTengang = -1; }, // 二选一：选普通清天罡
-      selectTengang: (i) => { selectedTengang = i === selectedTengang ? -1 : i; selectedCard = -1; },
-      playLane: (lane) => { // 普通=部署慢行军 / 天罡=施法（按当前选中）；下一拍从老家出发（实时投放，CR 落点自选·非牌原路）
+      selectCard: (i) => { selectedCard = i === selectedCard ? -1 : i; selectedTengang = -1; migrateSource = -1; }, // 二选一：选普通清天罡，并退出迁移模式
+      selectTengang: (i) => { selectedTengang = i === selectedTengang ? -1 : i; selectedCard = -1; migrateSource = -1; },
+      playLane: (lane) => { // 选中普通=部署 / 选中天罡=施法 / 无选中=三路兵力迁移（点首路=迁出、点次路=迁入）
         if (live.winner !== 'pending') return;
-        if (selectedCard >= 0 && selectedCard < aHand.length) {
+        if (selectedCard >= 0 && selectedCard < aHand.length) { // 部署慢行军（落点玩家自选·非牌原路）
           const c = aHand.splice(selectedCard, 1)[0];
           deploys.push({ tick: live.tick + 1, side: 'a', lane, unit: toUnit(c) });
           selectedCard = -1;
@@ -498,6 +499,10 @@ export function mount(container: HTMLElement): () => void {
           const c = tHand.splice(selectedTengang, 1)[0];
           tDeck.push(c);
           selectedTengang = -1;
+        } else { // 迁移模式（无选中牌）：先点迁出路（须有后备）→ 再点迁入路 → 搬队尾后备一张
+          if (migrateSource < 0) { if (live.lanes[lane].a.length > 0) migrateSource = lane; }
+          else if (lane === migrateSource) { migrateSource = -1; } // 再点取消
+          else { migrateRear(live, 'a', migrateSource, lane); migrateSource = -1; }
         }
       },
       drawNormal: () => { if (canDrawNormal()) { points -= NORMAL_DRAW_COST; aHand.push(aDeck.shift()!); } }, // 花点数摸普通库

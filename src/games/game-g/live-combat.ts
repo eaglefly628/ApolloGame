@@ -48,6 +48,20 @@ function applyDeploy(b: LiveBattle, c: DeployCmd): void {
   q.push({ id: c.unit.id, rank: c.unit.rank, suit: c.unit.suit, points: cardPoints(c.unit.rank), buff: c.unit.buff ?? 0, general: c.unit.general, dead: false, stamina: stam, staminaLeft: stam, pos, fogged: c.unit.fogged ?? false });
 }
 
+// 三路兵力迁移（doc21 ⭐ owner「兵力可跨路调度」）：把某路己侧**后备**(队尾·离敌最远·未接敌)一张移到另一路，
+//   从目标路家边重新排队入列。**确定性**（只搬队列·不消耗 rng）；只动队尾后备 → 不抽走正在遭遇的前锋、不改已决对决（outcome-first 安全）。
+//   返回是否成功（同路/源空 → false）。哪一拍迁移由输入流决定 → 同输入可回放、逐拍 hash 稳。
+export function migrateRear(b: LiveBattle, side: 'a' | 'b', fromLane: number, toLane: number): boolean {
+  if (fromLane === toLane || b.winner !== 'pending') return false;
+  const src = side === 'a' ? b.lanes[fromLane].a : b.lanes[fromLane].b;
+  const dst = side === 'a' ? b.lanes[toLane].a : b.lanes[toLane].b;
+  if (src.length === 0) return false;
+  const u = src.pop()!; // 后备 = 队尾（己 side 离敌最远的一张·未接敌）
+  u.pos = side === 'a' ? -dst.length * SPACING : LANE_LEN + dst.length * SPACING; // 目标路家边重新 staging（同 applyDeploy）
+  dst.push(u);
+  return true;
+}
+
 // 遭遇拍的有效战力 P_eff（doc19 §三）：基础点数 + 经营 buff + 本路士气（主将在 +MORALE_PTS / 亡 −ROUT_PTS）。读当下 → live。
 // 返回拆解（供对决特写「主 Buff 明细」）：pEff 终值 + shift（士气/溃散分量）。经营 buff = u.buff（养成/干预聚合）。
 function effPowerBreak(u: LiveUnit, lane: LiveLane, side: 'a' | 'b'): { pEff: number; shift: number } {

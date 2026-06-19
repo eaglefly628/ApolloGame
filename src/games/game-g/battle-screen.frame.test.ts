@@ -55,7 +55,7 @@ describe('Game G · 战斗屏视觉回归（真 live-combat → HTML golden · �
       hand: [{ id: 'h0', rank: 'K', suit: 's' as const, general: true }, { id: 'h1', rank: '9', suit: 'h' as const, general: false }, { id: 'h2', rank: 'Q', suit: 'd' as const, general: false }, { id: 'h3', rank: '4', suit: 'c' as const, general: false }],
       selectedCard: 1, deckCount: 33,
       tengang: [{ id: 'gambler', name: '赌徒' }, { id: 'warlord', name: '枭雄' }], selectedTengang: -1, tengangDeckCount: 3,
-      points: 6, pointsMax: 10, normalDrawCost: 1, tengangDrawCost: 2, canDrawNormal: true, canDrawTengang: true,
+      points: 6, pointsMax: 10, normalDrawCost: 1, tengangDrawCost: 2, canDrawNormal: true, canDrawTengang: true, migrateSource: -1,
     };
     const html = renderBattleDoc(buildBattleViewLive(live, save(), bossFor(2).name, bossFor(2).persona, 'd', control));
     expect(html).toContain('手牌 · 出牌'); // 出牌坞标题
