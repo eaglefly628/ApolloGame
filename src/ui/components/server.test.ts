@@ -1,0 +1,193 @@
+import { describe, it, expect } from 'vitest';
+import { renderNode } from './render.js';
+import { settingsScreen } from './demo.js';
+import type { LayoutNode } from './types.js';
+
+describe('UI Components · renderNode', () => {
+  it('Button: label + data-action + data-arg', () => {
+    const node: LayoutNode = {
+      type: 'Button',
+      id: 'btn1',
+      props: { label: 'Buy', kind: 'primary', action: 'buy', actionArg: 'item-1' },
+    };
+    const html = renderNode(node);
+    expect(html).toContain('id="btn1"');
+    expect(html).toContain('>Buy<');
+    expect(html).toContain('data-action="buy"');
+    expect(html).toContain('data-arg="item-1"');
+    expect(html).toMatch(/<button/);
+    expect(html).toContain('font-weight:600');  // primary style
+  });
+
+  it('Button: disabled 无 action 触发', () => {
+    const node: LayoutNode = {
+      type: 'Button',
+      id: 'btn-dis',
+      props: { label: 'Locked', disabled: true },
+    };
+    const html = renderNode(node);
+    expect(html).toContain('disabled');
+    expect(html).toContain('not-allowed');
+    expect(html).toContain('opacity:0.4');
+  });
+
+  it('Label: size/color/bold/mono 正确映射', () => {
+    const node: LayoutNode = {
+      type: 'Label',
+      id: 'lbl1',
+      props: { text: 'Hello', size: 'lg', color: 'jade', bold: true, mono: false },
+    };
+    const html = renderNode(node);
+    expect(html).toContain('>Hello<');
+    expect(html).toContain('font-size:16px');   // lg
+    expect(html).toContain('#9cd2c5');           // SHELL.jade
+    expect(html).toContain('font-weight:700');
+  });
+
+  it('Label: 默认 size=md color=text', () => {
+    const node: LayoutNode = { type: 'Label', id: 'lbl2', props: { text: 'X' } };
+    const html = renderNode(node);
+    expect(html).toContain('font-size:13px');
+    expect(html).toContain('#e3e8f0');  // SHELL.text
+  });
+
+  it('Dropdown: options + value selected + action', () => {
+    const node: LayoutNode = {
+      type: 'Dropdown',
+      id: 'dd1',
+      props: {
+        options: [{ value: 'a', label: 'Alpha' }, { value: 'b', label: 'Beta' }],
+        value: 'b',
+        action: 'pick',
+      },
+    };
+    const html = renderNode(node);
+    expect(html).toContain('Alpha');
+    expect(html).toContain('Beta');
+    expect(html).toContain('value="b" selected');
+    expect(html).toContain('data-action="pick"');
+    expect(html).toMatch(/<select/);
+  });
+
+  it('Dropdown: placeholder 在无 value 时 selected', () => {
+    const node: LayoutNode = {
+      type: 'Dropdown',
+      id: 'dd2',
+      props: { options: [{ value: 'x', label: 'X' }], placeholder: '选择…', action: 'go' },
+    };
+    const html = renderNode(node);
+    expect(html).toContain('选择…');
+    expect(html).toContain('selected');
+  });
+
+  it('Badge: ok/warn/dim tone 颜色正确', () => {
+    const ok   = renderNode({ type: 'Badge', id: 'b1', props: { text: 'OK',   tone: 'ok'   } });
+    const warn = renderNode({ type: 'Badge', id: 'b2', props: { text: 'WARN', tone: 'warn' } });
+    const dim  = renderNode({ type: 'Badge', id: 'b3', props: { text: 'DIM',  tone: 'dim'  } });
+    expect(ok).toContain('#84c7a4');    // SHELL.ok
+    expect(warn).toContain('#d6b277');  // SHELL.warn
+    expect(dim).toContain('#5d6880');   // SHELL.dim
+  });
+
+  it('Input: placeholder + value + data-action', () => {
+    const node: LayoutNode = {
+      type: 'Input',
+      id: 'in1',
+      props: { placeholder: '搜索…', value: 'test', action: 'search' },
+    };
+    const html = renderNode(node);
+    expect(html).toContain('placeholder="搜索…"');
+    expect(html).toContain('value="test"');
+    expect(html).toContain('data-action="search"');
+    expect(html).toMatch(/<input/);
+  });
+
+  it('Divider: 渲染 hr 带分隔线色', () => {
+    const html = renderNode({ type: 'Divider', id: 'hr1', props: {} });
+    expect(html).toMatch(/<hr/);
+    expect(html).toContain('border-top');
+  });
+
+  it('Panel: 嵌套子节点并包含 title', () => {
+    const node: LayoutNode = {
+      type: 'Panel',
+      id: 'p1',
+      props: { title: 'SECTION' },
+      layout: { direction: 'row', gap: 12, padding: 8 },
+      children: [
+        { type: 'Label', id: 'lc1', props: { text: 'Child A' } },
+        { type: 'Button', id: 'lc2', props: { label: 'Go', action: 'go' } },
+      ],
+    };
+    const html = renderNode(node);
+    expect(html).toContain('SECTION');
+    expect(html).toContain('Child A');
+    expect(html).toContain('>Go<');
+    expect(html).toContain('flex-direction:row');
+    expect(html).toContain('gap:12px');
+    expect(html).toContain('padding:8px');
+  });
+
+  it('Panel: scroll=true 加 overflow-y:auto', () => {
+    const node: LayoutNode = {
+      type: 'Panel', id: 'ps', props: { scroll: true }, children: [],
+    };
+    expect(renderNode(node)).toContain('overflow-y:auto');
+  });
+
+  it('layout x/y 触发绝对定位', () => {
+    const node: LayoutNode = {
+      type: 'Button', id: 'abs', props: { label: 'Pin' },
+      layout: { x: 100, y: 200 },
+    };
+    const html = renderNode(node);
+    expect(html).toContain('left:100px');
+    expect(html).toContain('top:200px');
+    expect(html).toContain('position:absolute');
+  });
+
+  it('layout flex 注入 flex:N', () => {
+    const node: LayoutNode = {
+      type: 'Label', id: 'fl', props: { text: 'Stretch' },
+      layout: { flex: 1 },
+    };
+    expect(renderNode(node)).toContain('flex:1');
+  });
+
+  it('XSS: 文本内容被 HTML 转义', () => {
+    const node: LayoutNode = {
+      type: 'Label', id: 'xss', props: { text: '<script>alert(1)</script>' },
+    };
+    const html = renderNode(node);
+    expect(html).not.toContain('<script>');
+    expect(html).toContain('&lt;script&gt;');
+  });
+
+  it('XSS: action/arg 属性被 HTML 转义', () => {
+    const node: LayoutNode = {
+      type: 'Button', id: 'xss2',
+      props: { label: 'X', action: 'a"b', actionArg: 'x"y' },
+    };
+    const html = renderNode(node);
+    expect(html).not.toContain('"b"');       // 未转义的 " 会破坏属性
+    // 至少不含未转义的原始引号破坏属性
+    expect(html).not.toMatch(/data-action="a"b"/);
+  });
+
+  it('未知 type 输出注释而不抛出', () => {
+    const node = { type: 'Unknown' as never, id: 'u', props: {} } as LayoutNode;
+    const html = renderNode(node);
+    expect(html).toContain('unknown');
+  });
+
+  it('demo settingsScreen: 完整数据树渲染无异常', () => {
+    const html = renderNode(settingsScreen);
+    expect(html).toContain('settings-root');
+    expect(html).toContain('Game Settings');
+    expect(html).toContain('Volume');
+    expect(html).toContain('data-action="setVolume"');
+    expect(html).toContain('data-action="save"');
+    expect(html).toContain('data-action="close"');
+    expect(html).toContain('UI Server v0.1');
+  });
+});
