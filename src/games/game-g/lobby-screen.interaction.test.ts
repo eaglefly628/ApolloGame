@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { renderLobby, type LobbyView, type LobbyShopItem } from './lobby-screen.js';
+import { renderLobby, renderLobbyDoc, type LobbyView, type LobbyShopItem } from './lobby-screen.js';
 
 const J = (id: string, name: string): LobbyShopItem => ({ id, name, sub: name, cost: 16, owned: false, buyable: true });
 const view = (): LobbyView => ({
@@ -22,5 +22,13 @@ describe('Game G · lobby tab 渲染逻辑（on(tab) 切激活屏 + 回调挂钩
     // 交互钩子齐全（mountLobby 据此分发）
     const h = renderLobby(view(), 'craft', false);
     for (const a of ['data-act="tab"', 'data-act="skin"', 'data-act="play"', 'data-act="buyJoker"', 'data-act="buyPlanet"', 'data-act="reset"', 'data-act="tut"']) expect(h).toContain(a);
+  });
+
+  it('切屏 CSS 守恒：非激活屏 display:none、激活才 display:flex；homerow 不得带 display（否则 HOME 永显盖住别屏 = 点 tab 还停在主页）', () => {
+    const doc = renderLobbyDoc(view(), 'decks');
+    expect(doc).toContain('.ggl-root .screen{ display:none }');
+    expect(doc).toContain('.ggl-root .screen.on{ display:flex }');
+    expect(doc).toContain('.ggl-root .homerow{ gap:14px'); // homerow 仅 gap/width，无 display
+    expect(doc).not.toMatch(/\.homerow\{ display/); // ⛔ 守：homerow 一旦带 display 就会覆盖 .screen 的隐藏、HOME 永显
   });
 });
