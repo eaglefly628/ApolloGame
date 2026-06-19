@@ -99,6 +99,6 @@
 
 **契约③（新增·先对齐再各做）**：`GAME_G_JOKERS` 每张 = `{id,name,rarity,kind,params,text,cost}`（doc20 §三数据形）。**乙写这份养成数据、甲写 kind 解释器读它**。先把 `{kind,params}` schema 钉死（doc20 §三 10 kind）再并行。
 
-> **⏳ 甲催乙（2026-06-19 · A-JOKER 卡数据）**：CR 两牌库经济 + 三路迁移已落（甲），战斗里**天罡能摸/能打/能循环**，但**施法暂无数值效果** —— 因为 `GAME_G_JOKERS` 还是**旧 JokerCard 形**（`kind: suit-synergy/polarize/morale/lane-pref/diehard/link…` + `amount/lane/moraleMul`），**不是** contract③ 的 doc20 §三 10-kind `{kind,params}`（`odds/power/combo/morale/tempo/stamina/draw/lane/siege/arcane`）。
-> **请乙**：把 `GAME_G_JOKERS` 迁到 contract③ 形、填 **36 天罡（或先一期子集）** 的 `{kind,params}`（doc20 §二 数据形）。**甲这边 A-JOKER 10 个 kind 解释器一拿到数据就能接**（读已激活集 → apply 进 `prepareArmies`/`clash-resolve`/`live-combat`，复用现成 buff 源·零引擎）。**schema 不动代码、纯数据**，最弱 LLM 可填。
+> **✅ 契约③ 已对齐（2026-06-19 · 甲乙合流）**：乙已交付 **B-JOKER 一期 20 张天罡** —— `GAME_G_JOKERS` 已扩 contract③ 形（`kind: odds/power/combo/morale/tempo/stamina/draw/lane/siege/arcane` + `rarity/power/phat/params`），如 巧手 `odds{op:add,value:1}`、背水 `odds{op:reroll,when:afterLoss}`、寡兵 `power{op:add,value:6,filter:countLE3}`。
+> **A-JOKER 解锁 = 甲可开工**：10 个 kind 解释器读 `save.jokers`(契约②·已激活集) 的 `{kind,params}` → apply 进 `prepareArmies`/`clash-resolve`/`live-combat`（复用现成 buff 源·零引擎）。每张配测断言 ΔWR 量级与 `phat` 大致符。**等 owner 排期**（当前 owner 选先调 CR 手感数值）。
 
