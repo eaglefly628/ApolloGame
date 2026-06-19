@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useMemo, useState } from 'react';
+import React, { useCallback, useDeferredValue, useEffect, useMemo, useState } from 'react';
 import {
   LIBRARY_TAXONOMY,
   categoryLabel,
@@ -94,11 +94,13 @@ export function AssetLibrary({ onBack }: { onBack: () => void }) {
     [allRecords, enabledSources],
   );
   const counts = useMemo(() => libraryCounts(scoped), [scoped]);
+  // 输入框即时回显 text，重查询用 deferred 值 → 打字不被 2 万条查询阻塞（React 18，可中断、无需手搓计时器）。
+  const deferredText = useDeferredValue(text);
   // 搜索时默认按相关度（与 AI 选材解析同一个排序器：所见即所选）；用户显式选了尺寸/变体则尊重。
-  const effectiveSort = text.trim() && sort === 'name' ? 'relevance' : sort;
+  const effectiveSort = deferredText.trim() && sort === 'name' ? 'relevance' : sort;
   const results = useMemo(
-    () => queryLibrary(scoped, { text, type: type || undefined, category: category || undefined, status: status || undefined, tags: tagFilters, sort: effectiveSort }),
-    [scoped, text, type, category, status, tagFilters, effectiveSort],
+    () => queryLibrary(scoped, { text: deferredText, type: type || undefined, category: category || undefined, status: status || undefined, tags: tagFilters, sort: effectiveSort }),
+    [scoped, deferredText, type, category, status, tagFilters, effectiveSort],
   );
   const shown = results.slice(0, CAP);
   const selected = useMemo(() => allRecords.find((r) => r.id === selectedId) ?? null, [allRecords, selectedId]);

@@ -238,7 +238,40 @@ export interface LibraryQuery {
 }
 
 function haystack(r: LibraryRecord): string {
-  return [r.id, r.name, r.description, r.category, r.sourceLabel, r.style ?? '', ...r.tags].join(' ').toLowerCase();
+  return searchFields(r).hay;
+}
+
+// ── 检索字段预计算缓存（性能）──
+//
+//  搜索框每敲一键就重算查询；过去每条记录都现做 haystack(join+小写) + rankRecords 现建两个 Set，
+//  2 万条记录 × 每键 = 大量临时分配（实测 ~13ms/键）。
+//  这里按"记录对象身份"用 WeakMap 缓存其小写检索字段：记录是只读、仅在源数据重载时重建，
+//  故缓存随对象长存、跨键复用；记录数组被替换后随对象一起被 GC。
+//  **缓存的内容与原内联计算逐字节相同** → queryLibrary / rankRecords 输出不变
+//  （rankRecords 与 resolve-art-refs 的 AI 选材确定性路径共用，绝不能漂）。
+interface SearchFields {
+  readonly hay: string;
+  readonly nameLc: string;
+  readonly idLc: string;
+  readonly tagsLc: readonly string[];
+  readonly tagSet: ReadonlySet<string>;
+  readonly semSet: ReadonlySet<string>;
+}
+const searchCache = new WeakMap<LibraryRecord, SearchFields>();
+function searchFields(r: LibraryRecord): SearchFields {
+  const hit = searchCache.get(r);
+  if (hit) return hit;
+  const tagsLc = r.tags.map((t) => t.toLowerCase());
+  const fields: SearchFields = {
+    nameLc: r.name.toLowerCase(),
+    idLc: r.id.toLowerCase(),
+    tagsLc,
+    tagSet: new Set(tagsLc),
+    semSet: new Set((r.semanticTags ?? []).map((t) => t.toLowerCase())),
+    hay: [r.id, r.name, r.description, r.category, r.sourceLabel, r.style ?? '', ...r.tags].join(' ').toLowerCase(),
+  };
+  searchCache.set(r, fields);
+  return fields;
 }
 
 // ── 相关度排序（单点实现：浏览器搜索 与 AI 选材解析 共用同一个排序器 → 所见即所选）──
@@ -260,11 +293,7 @@ export function rankRecords(records: readonly LibraryRecord[], text: string): Ra
   if (terms.length === 0) return [];
   const out: RankedRecord[] = [];
   for (const r of records) {
-    const name = r.name.toLowerCase();
-    const id = r.id.toLowerCase();
-    const tags = r.tags.map((t) => t.toLowerCase());
-    const tagSet = new Set(tags);
-    const semSet = new Set((r.semanticTags ?? []).map((t) => t.toLowerCase()));
+    const { nameLc: name, idLc: id, tagsLc: tags, tagSet, semSet } = searchFields(r);
     let score = 0;
     let allHit = true;
     for (const t of terms) {
