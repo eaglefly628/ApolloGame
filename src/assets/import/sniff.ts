@@ -1,8 +1,8 @@
 // 图像文件头嗅探 —— 纯字节解析，不依赖 canvas/Image（可在 Node/vitest 跑，确定性）。
 // 导入器用它做规格侦测（宽高/格式/透明通道），写进 AssetIndexEntry.spec。
-// 覆盖四种 2D 贴图常见格式：PNG / JPEG / WebP(VP8X·VP8·VP8L) / GIF。
+// 覆盖：PNG / JPEG / WebP(VP8X·VP8·VP8L) / GIF / SVG(矢量，取 viewBox 尺寸)。
 
-export type ImageFormat = 'png' | 'jpeg' | 'webp' | 'gif';
+export type ImageFormat = 'png' | 'jpeg' | 'webp' | 'gif' | 'svg';
 
 export interface ImageInfo {
   readonly format: ImageFormat;
@@ -109,6 +109,23 @@ function sniffGif(b: Uint8Array): ImageInfo | undefined {
   return { format: 'gif', width: u16le(b, 6), height: u16le(b, 8), alpha: undefined };
 }
 
+function sniffSvg(b: Uint8Array): ImageInfo | undefined {
+  // SVG 是文本：解码开头一段，从 <svg ...> 的 viewBox（优先）或 width/height 取尺寸。
+  const head = ascii(b, 0, Math.min(b.length, 1024));
+  const tag = head.match(/<svg\b[^>]*>/i)?.[0];
+  if (!tag) return undefined;
+  let width = 0;
+  let height = 0;
+  const vb = tag.match(/viewBox\s*=\s*["']\s*[\d.+-]+\s+[\d.+-]+\s+([\d.+-]+)\s+([\d.+-]+)/i);
+  if (vb) {
+    width = Math.round(parseFloat(vb[1]));
+    height = Math.round(parseFloat(vb[2]));
+  }
+  if (!width) width = Math.round(parseFloat(tag.match(/\bwidth\s*=\s*["']?\s*([\d.]+)/i)?.[1] ?? '0'));
+  if (!height) height = Math.round(parseFloat(tag.match(/\bheight\s*=\s*["']?\s*([\d.]+)/i)?.[1] ?? '0'));
+  return { format: 'svg', width, height, alpha: true }; // 矢量默认含透明背景
+}
+
 /** 嗅探图像字节 → 格式/宽高/透明。不认识的格式返回 undefined（导入器据此标"未侦测"）。 */
 export function sniffImage(bytes: Uint8Array): ImageInfo | undefined {
   const b = bytes;
@@ -116,6 +133,8 @@ export function sniffImage(bytes: Uint8Array): ImageInfo | undefined {
   if (b.length >= 4 && b[0] === 0xff && b[1] === 0xd8 && b[2] === 0xff) return sniffJpeg(b);
   if (b.length >= 12 && ascii(b, 0, 4) === 'RIFF' && ascii(b, 8, 4) === 'WEBP') return sniffWebp(b);
   if (b.length >= 6 && ascii(b, 0, 4) === 'GIF8') return sniffGif(b);
+  // SVG（文本，放最后）：开头 ~512 字节里出现 <svg 即按矢量解析。
+  if (/<svg[\s>]/i.test(ascii(b, 0, Math.min(b.length, 512)))) return sniffSvg(b);
   return undefined;
 }
 

@@ -1,6 +1,6 @@
 import type { AssetIndex, AssetIndexEntry, AssetType } from './asset-index.js';
 import type { AssetManifest } from './asset-types.js';
-import { artlibThumb, artlibTokens, artlibSemanticTags, type ArtLibIndex } from './artlib.js';
+import { artlibThumb, artlibTokens, artlibSemanticTags, assetStyle, type ArtLibIndex, type ArtStyle } from './artlib.js';
 
 // ═══════════════════════════════════════════════════════════════
 //  资源库统一模型（Library）—— 把三套并存的索引适配成一种记录，供一个浏览器看全部。
@@ -37,6 +37,8 @@ export interface LibraryRecord {
   /** 给人看的来源名："assets/"、"FreeArtLib"、"game-e" 等。 */
   readonly sourceLabel: string;
   readonly license?: string;
+  /** 画风（pixel / cartoon.ink…）；artlib 货架统一 pixel，项目资产按导入器所标。 */
+  readonly style?: ArtStyle;
   readonly status: LibraryStatus;
   /** 可直接 <img src> 的预览（相对站点根的路径或 dataURL）；无则渲染占位块。 */
   readonly thumb?: string;
@@ -76,6 +78,7 @@ export const LIBRARY_TAXONOMY: readonly LibraryTypeDef[] = [
       { id: 'icon.ui', label: 'UI 图标' },
       { id: 'decal', label: '装饰贴花' },
       { id: 'card', label: '卡面' },
+      { id: 'playing-card', label: '扑克牌' },
       { id: 'fx', label: '特效' },
       { id: 'background', label: '背景' },
       { id: 'portrait', label: '立绘' },
@@ -152,6 +155,7 @@ export function projectRecords(index: AssetIndex, assetsBase = '/assets/'): Libr
     source: 'project' as const,
     sourceLabel: 'assets/',
     license: e.license,
+    style: e.style as ArtStyle | undefined,
     status: e.status,
     thumb: e.status === 'filled' && e.path && e.type === 'texture' ? assetsBase + e.path : undefined,
     path: e.path,
@@ -176,6 +180,7 @@ export function artlibRecords(index: ArtLibIndex): LibraryRecord[] {
     source: 'artlib' as const,
     sourceLabel: 'FreeArtLib',
     license: index.license.split('(')[0].trim(),
+    style: assetStyle(a), // DCSS 货架全是像素风（缺省即 pixel）
     status: 'filled' as const,
     thumb: '/' + artlibThumb(index, a),
     path: artlibThumb(index, a),
@@ -220,6 +225,10 @@ export interface LibraryQuery {
   readonly type?: string;
   readonly category?: string;
   readonly status?: LibraryStatus | '';
+  /** 精确画风过滤（如 'cartoon.ink'）。 */
+  readonly style?: ArtStyle | '';
+  /** 顶层画风组过滤（'cartoon' 含全部 cartoon.*）。 */
+  readonly styleGroup?: 'pixel' | 'cartoon' | '';
   /** 已选 tag 过滤（AND 叠加）。 */
   readonly tags?: readonly string[];
   readonly sources?: readonly LibrarySource[];
@@ -228,7 +237,7 @@ export interface LibraryQuery {
 }
 
 function haystack(r: LibraryRecord): string {
-  return [r.id, r.name, r.description, r.category, r.sourceLabel, ...r.tags].join(' ').toLowerCase();
+  return [r.id, r.name, r.description, r.category, r.sourceLabel, r.style ?? '', ...r.tags].join(' ').toLowerCase();
 }
 
 // ── 相关度排序（单点实现：浏览器搜索 与 AI 选材解析 共用同一个排序器 → 所见即所选）──
@@ -289,6 +298,11 @@ export function queryLibrary(records: readonly LibraryRecord[], q: LibraryQuery)
     if (q.type && r.type !== q.type) return false;
     if (q.category && r.category !== q.category) return false;
     if (q.status && r.status !== q.status) return false;
+    if (q.style && r.style !== q.style) return false;
+    if (q.styleGroup) {
+      const g = r.style ? (r.style.startsWith('cartoon') ? 'cartoon' : 'pixel') : undefined;
+      if (g !== q.styleGroup) return false;
+    }
     if (q.tags && q.tags.length > 0) {
       const hay = haystack(r);
       if (!q.tags.every((t) => hay.includes(t.toLowerCase()))) return false;

@@ -4,6 +4,11 @@
 // 纯表现"固定解释器"：只渲染 view + 抛 data-act 回调，零 gameplay 计算。CSS 全 scope 在 .ggl-root 下。
 
 export interface LobbyShopItem { id: string; name: string; sub: string; cost: number; owned: boolean; buyable: boolean; level?: number; inDeck?: boolean }
+export type EarthRarity = 'bronze' | 'blue' | 'purple' | 'gold';
+export interface EarthBranchCard {
+  id: string; branch: string; name: string; effect: string;
+  rarity: EarthRarity; owned: boolean; equipped: boolean;
+}
 export interface LobbyView {
   skin: 'onyx' | 'rosy';
   coin: number; energy: number; energyMax: number; foilCount: number;
@@ -12,7 +17,8 @@ export interface LobbyView {
   deckAvg: number; deckMin: number; deckMax: number; deck: number[];
   jokers: LobbyShopItem[]; planets: LobbyShopItem[]; foils: LobbyShopItem[];
   ladderLines: string[];
-  deckArchName?: string | null; deckArchActivated?: boolean; // B3: 命牌战库流派状态（可选·框架测试不传）
+  deckArchName?: string | null; deckArchActivated?: boolean;
+  earthCards?: EarthBranchCard[];
 }
 
 // ── 双皮 CSS 变量（逐项照搬 .dc.html themes() · onyx 绿呢 / rosy=brocade 红呢）+ 招牌类 ──
@@ -82,13 +88,41 @@ const CSS = `
 .ggl-root .suit-row{ display:flex; align-items:center; gap:8px; margin:5px 0 }
 .ggl-root .suit-hd{ width:22px; flex:none; font-size:18px; font-weight:700; text-align:center; line-height:1 }
 .ggl-root .suit-line{ display:flex; flex:1; gap:4px }
-.ggl-root .suit-line .pcard{ flex:1; min-width:0; overflow:hidden }
-.ggl-root .pcard{ aspect-ratio:5/7; border-radius:9px; border:1px solid var(--panel-border); background:var(--chip); display:flex; flex-direction:column; justify-content:space-between; padding:5px 5px 4px; font-size:13px; position:relative; font-weight:700; cursor:default }
-.ggl-root .pcard.leg{ border-color:var(--gold); box-shadow:0 0 0 1px var(--gold) inset } .ggl-root .pcard.lock{ opacity:.42 } .ggl-root .pcard .r{ font-size:14px; line-height:1; z-index:1; position:relative } .ggl-root .pcard .own{ position:absolute; bottom:3px; right:5px; font-size:9px; color:var(--ink-dim); z-index:1 }
+.ggl-root .pcard-wrap{ flex:1; min-width:0; perspective:260px; cursor:pointer }
+.ggl-root .pcard{ width:100%; aspect-ratio:5/7; border-radius:9px; border:1px solid var(--panel-border); background:var(--chip); font-size:13px; font-weight:700; position:relative; transform-style:preserve-3d; transition:transform .42s cubic-bezier(.4,0,.2,1),box-shadow .18s; will-change:transform; box-shadow:0 4px 10px rgba(0,0,0,.46),0 1px 3px rgba(0,0,0,.28),inset 0 1px 0 rgba(255,255,255,.10),inset 0 -1px 0 rgba(0,0,0,.18) }
+.ggl-root .pcard-wrap:hover>.pcard{ transform:rotateY(180deg); box-shadow:0 9px 26px rgba(0,0,0,.62),0 2px 8px rgba(0,0,0,.36),inset 0 1px 0 rgba(255,255,255,.12) }
+.ggl-root .pcard.leg{ border-color:var(--gold); box-shadow:0 4px 12px rgba(0,0,0,.44),0 0 10px rgba(232,205,130,.18),inset 0 1px 0 rgba(255,255,255,.14) }
+.ggl-root .pcard.lock{ opacity:.42 }
+.ggl-root .pcard-front,.ggl-root .pcard-back{ position:absolute; inset:0; border-radius:8px; backface-visibility:hidden; -webkit-backface-visibility:hidden }
+.ggl-root .pcard-front{ display:flex; flex-direction:column; justify-content:space-between; padding:5px 5px 4px; overflow:hidden; background:linear-gradient(148deg,rgba(255,255,255,.055) 0%,transparent 55%,rgba(0,0,0,.045) 100%) }
+.ggl-root .pcard-back{ transform:rotateY(180deg); background:linear-gradient(148deg,#0d1b2c 0%,#14243a 100%); border:1px solid rgba(232,205,138,.2); display:flex; flex-direction:column; align-items:center; justify-content:center; gap:2px; padding:4px; color:#e7edf3; text-align:center }
+.ggl-root .pcard .r{ font-size:28px; line-height:1; text-shadow:0 1px 4px rgba(0,0,0,.55) }
+.ggl-root .pcard .own{ position:absolute; bottom:3px; right:5px; font-size:9px; color:var(--ink-dim) }
 .ggl-root .pcard-wm{ position:absolute; inset:0; display:flex; align-items:center; justify-content:center; pointer-events:none; user-select:none }
-.ggl-root .pcard-lbl{ font-size:8.5px; font-weight:900; letter-spacing:.04em; line-height:1; text-align:center; z-index:1; position:relative }
-.ggl-root .pcard-info{ position:absolute; inset:0; background:rgba(8,15,25,.9); color:#e7edf3; font-size:9.5px; display:flex; flex-direction:column; align-items:center; justify-content:center; text-align:center; padding:4px; line-height:1.5; opacity:0; transition:opacity .15s; border-radius:8px; z-index:10; pointer-events:none }
-.ggl-root .pcard:hover .pcard-info{ opacity:1 }
+.ggl-root .pcard-lbl{ font-size:8.5px; font-weight:900; letter-spacing:.04em; line-height:1; text-align:center; text-shadow:0 1px 3px rgba(0,0,0,.7) }
+.ggl-root .pcard-portrait{ position:absolute; inset:0; display:flex; align-items:center; justify-content:center; pointer-events:none; opacity:.28 }
+.ggl-root .pcard-portrait svg{ width:66%; height:66% }
+.ggl-root .deck-nav{ display:flex; gap:6px; margin-bottom:14px }
+.ggl-root .deck-nav button{ padding:6px 20px; border-radius:8px; background:var(--chip); border:1px solid var(--panel-border); color:var(--ink-dim); font-family:var(--fh); font-weight:600; font-size:14px; cursor:pointer }
+.ggl-root .deck-nav button.on{ background:var(--gold-grad); color:#2a1a08; border:0 }
+.ggl-root .dsub{ display:none; flex-direction:column }
+.ggl-root .dsub.on{ display:flex }
+.ggl-root .gang-grid{ display:grid; grid-template-columns:repeat(auto-fill,minmax(78px,1fr)); gap:8px; min-height:240px }
+.ggl-root .gang-empty{ grid-column:1/-1; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:10px; padding:56px 0; color:var(--ink-dim); font-size:13px; text-align:center }
+.ggl-root .earth-filter{ display:flex; gap:6px; flex-wrap:wrap; margin-bottom:14px }
+.ggl-root .earth-filter button{ padding:4px 14px; border-radius:6px; background:var(--chip); border:1px solid var(--panel-border); color:var(--ink-dim); font-size:12px; cursor:pointer; transition:background .15s }
+.ggl-root .earth-groups{ display:flex; flex-direction:column; gap:10px }
+.ggl-root .earth-group{ background:rgba(255,255,255,.03); border:1px solid var(--panel-border); border-radius:10px; padding:10px 12px }
+.ggl-root .earth-group-hd{ display:flex; align-items:center; gap:8px; margin-bottom:8px }
+.ggl-root .earth-branch{ font-family:var(--fh); font-size:22px; font-weight:800; color:var(--gold); width:26px }
+.ggl-root .earth-cards{ display:flex; gap:8px; flex-wrap:wrap }
+.ggl-root .ecard{ border-radius:8px; padding:8px 10px; background:var(--chip); border:1px solid var(--panel-border); font-size:12px; min-width:84px; position:relative }
+.ggl-root .ecard.r-bronze{ border-color:#b8732a }
+.ggl-root .ecard.r-blue{ border-color:#4a9fd5 }
+.ggl-root .ecard.r-purple{ border-color:#9b5fc7 }
+.ggl-root .ecard.r-gold{ border-color:var(--gold); box-shadow:0 0 8px rgba(232,205,130,.18) }
+.ggl-root .ecard.unowned{ opacity:.36 }
+.ggl-root .ecard.equipped::after{ content:'⚔'; position:absolute; top:3px; right:5px; font-size:10px; color:var(--gold) }
 .ggl-root .shelf{ display:grid; grid-template-columns:repeat(auto-fill,minmax(120px,1fr)); gap:10px }
 .ggl-root .good{ background:var(--chip); border:1px solid var(--panel-border); border-radius:10px; padding:10px; text-align:center; font-size:12px; position:relative; min-height:74px; clip-path:var(--chamfer) } .ggl-root .good .gnm{ font-weight:700; color:var(--ink); line-height:1.25 } .ggl-root .good .cost{ color:var(--gold); font-weight:700; margin-top:6px; font-family:var(--fn) }
 .ggl-root .good.got{ border-color:var(--gold) } .ggl-root .good.buy{ cursor:pointer } .ggl-root .good.buy:hover{ box-shadow:0 0 0 1px var(--gold) inset } .ggl-root .good.lock{ opacity:.5 }
@@ -111,35 +145,79 @@ const RANKS = ['A', 'K', 'Q', 'J', '10', '9', '8', '7', '6', '5', '4', '3', '2']
 const kfmt = (n: number): string => (n >= 1000 ? (n / 1000).toFixed(1) + 'k' : String(n));
 const esc = (s: string): string => String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
 
-// 人头牌（A/K/Q/J）的中文标签 + 较大水印；数字牌轻水印。
-const FACE_LBL = ['尖兵', '王将', '王后', '先锋']; // RANKS[0..3] = A K Q J
+// 十二地支支脉（子→亥，animal，theme）
+const BRANCHES = [
+  { b: '子', a: '鼠', t: '隐匿' }, { b: '丑', a: '牛', t: '坚韧' },
+  { b: '寅', a: '虎', t: '猛攻' }, { b: '卯', a: '兔', t: '疾速' },
+  { b: '辰', a: '龙', t: '威压' }, { b: '巳', a: '蛇', t: '毒创' },
+  { b: '午', a: '马', t: '冲锋' }, { b: '未', a: '羊', t: '群势' },
+  { b: '申', a: '猴', t: '奇袭' }, { b: '酉', a: '鸡', t: '号令' },
+  { b: '戌', a: '狗', t: '守卫' }, { b: '亥', a: '猪', t: '蛮力' },
+];
+const RARITY_CLR: Record<EarthRarity, string> = { bronze: '#b8732a', blue: '#4a9fd5', purple: '#9b5fc7', gold: '#e8cd82' };
+const RARITY_LBL: Record<EarthRarity, string> = { bronze: '青铜', blue: '蓝色', purple: '紫色', gold: '黄金' };
+
+function earthSection(cards: EarthBranchCard[], filter: string): string {
+  if (!cards.length) return `<div class="gang-empty"><span style="font-size:28px;opacity:.5">🌿</span><b>地支灵牌 · 尚未开放</b><span style="font-size:11px">战役推进后逐步解锁 · 12 支脉 · 青铜→蓝→紫→金</span></div>`;
+  return BRANCHES.map(({ b, a, t }) => {
+    const bc = cards.filter(c => c.branch === b);
+    const shown = filter === 'all' ? bc : bc.filter(c => c.rarity === filter);
+    if (shown.length === 0 && bc.length > 0 && filter !== 'all') return ''; // 当前等级无牌时折叠
+    const cs = shown.map(c => {
+      const cls = `ecard r-${c.rarity}${c.owned ? '' : ' unowned'}${c.equipped ? ' equipped' : ''}`;
+      return `<div class="${cls}" title="${esc(c.effect)}"><div style="font-size:10px;font-weight:700;color:${RARITY_CLR[c.rarity]}">${RARITY_LBL[c.rarity]}</div><div style="font-size:12px;font-weight:700;color:var(--ink);margin:2px 0">${esc(c.name)}</div><div style="font-size:11px;color:var(--ink-dim)">${esc(c.effect)}</div></div>`;
+    }).join('');
+    return `<div class="earth-group"><div class="earth-group-hd"><span class="earth-branch">${b}</span><span style="font-size:13px;color:var(--ink)">${a}</span><span style="font-size:11px;color:var(--ink-dim)">· ${t}</span><span style="font-size:11px;color:var(--ink-dim);margin-left:auto">${bc.filter(c => c.owned).length}/${bc.length}</span></div>${cs ? `<div class="earth-cards">${cs}</div>` : ''}</div>`;
+  }).join('');
+}
+
+// 人头牌（A/K/Q/J）中文标签（RANKS 索引 0-3 = A K Q J）
+const FACE_LBL = ['尖兵', '王将', '王后', '先锋'];
+// 人头牌内联 SVG 人像（currentColor = 花色色；fill 背衬画像；viewBox 0 0 40 56 = 5:7 近似）
+const FACE_SVG = [
+  // A 尖兵：甲胄兵戎执长矛
+  '<svg viewBox="0 0 40 56" fill="currentColor" xmlns="http://www.w3.org/2000/svg"><ellipse cx="20" cy="9" rx="4" ry="5"/><path d="M16 15h8l3 17H13Z"/><rect x="11" y="19" width="4" height="10" rx="2"/><rect x="25" y="19" width="4" height="10" rx="2"/><rect x="14" y="32" width="5" height="14" rx="2"/><rect x="21" y="32" width="5" height="14" rx="2"/><rect x="35" y="3" width="2" height="49" rx="1"/><polygon points="34,3 38,3 36,0"/></svg>',
+  // K 王将：冕旒大将宽袍
+  '<svg viewBox="0 0 40 56" fill="currentColor" xmlns="http://www.w3.org/2000/svg"><circle cx="20" cy="9" r="5"/><path d="M11 4L14 0L17 4L20 1L23 4L26 0L29 4v5H11Z"/><path d="M12 18q-2 8-2 17h20q-2-9-2-17Z"/><rect x="13" y="35" width="6" height="13" rx="2"/><rect x="21" y="35" width="6" height="13" rx="2"/></svg>',
+  // Q 王后：凤冠曳裾广袖
+  '<svg viewBox="0 0 40 56" fill="currentColor" xmlns="http://www.w3.org/2000/svg"><circle cx="20" cy="8" r="5"/><path d="M13 4L16 0L20 3L24 0L27 4" stroke="currentColor" stroke-width="2" fill="none"/><path d="M10 18Q8 36 10 46h20Q32 36 30 18Q25 14 20 14Q15 14 10 18Z"/></svg>',
+  // J 先锋：轻甲突将踏台
+  '<svg viewBox="0 0 40 56" fill="currentColor" xmlns="http://www.w3.org/2000/svg"><circle cx="20" cy="9" r="5"/><path d="M14 16L12 29h16L26 16Z"/><rect x="9" y="18" width="5" height="9" rx="2"/><rect x="26" y="18" width="5" height="9" rx="2"/><rect x="13" y="29" width="6" height="17" rx="2"/><rect x="21" y="29" width="6" height="17" rx="2"/><path d="M5 46L8 56H32L35 46Z"/></svg>',
+];
 function deckGrid(deck: number[], foils?: LobbyShopItem[]): string {
   const ownedFoilNames = (foils ?? []).filter(f => f.owned).map(f => f.name);
-  const foilTag = ownedFoilNames.length ? `<span style="color:var(--gold)">✨${esc(ownedFoilNames.join('+'))}</span>` : '';
+  const foilBack = ownedFoilNames.length
+    ? `<div style="font-size:9px;color:var(--gold)">✨${esc(ownedFoilNames.join('+'))}</div>` : '';
   return SUITS.map(([su, c], si) => {
     const cards = Array.from({ length: 13 }, (_, ri) => {
       const fv = deck[si * 13 + ri] ?? 50;
       const rank = RANKS[ri];
       const isFace = ri <= 3;
       const qual = fv >= 70 ? '强' : fv >= 58 ? '良' : fv <= 50 ? '弱' : '中';
+      const qualColor = fv >= 70 ? 'var(--gold)' : fv >= 58 ? 'var(--club)' : fv <= 50 ? 'var(--ink-dim)' : 'var(--ink)';
       const cls = 'pcard' + (fv >= 70 ? ' leg' : '') + (fv <= 50 ? ' lock' : '');
-      const faceStyle = isFace ? `border-color:${c}80;` : '';
-      // 水印：人头牌更大更亮，数字牌轻淡
-      const wmSize = isFace ? '38px' : '26px';
-      const wmOpacity = isFace ? '.2' : '.09';
-      // 悬浮信息蒙版
-      const infoHtml = [
-        `<b style="color:${c};font-size:12px">${su}${rank}</b>`,
-        `<span>favor ${fv} · ${qual}</span>`,
-        ...(isFace ? [`<span style="color:${c};font-weight:900">${FACE_LBL[ri]}</span>`] : []),
-        ...(foilTag ? [foilTag] : []),
-      ].join('');
-      return `<div class="${cls}" style="${faceStyle}" title="${esc(su + rank + ' · favor ' + fv)}">` +
+      const faceStyle = isFace ? `border-color:${c}90;` : '';
+      const wmSize = isFace ? '36px' : '24px';
+      const wmOpacity = isFace ? '.18' : '.08';
+      // 正面（front）
+      const front = `<div class="pcard-front">` +
         `<div class="pcard-wm" style="color:${c};font-size:${wmSize};opacity:${wmOpacity}">${su}</div>` +
-        `<div class="pcard-info">${infoHtml}</div>` +
+        (isFace ? `<div class="pcard-portrait" style="color:${c}">${FACE_SVG[ri]}</div>` : '') +
         `<div class="r" style="color:${c}">${rank}</div>` +
-        (isFace ? `<div class="pcard-lbl" style="color:${c};opacity:.75">${FACE_LBL[ri]}</div>` : '') +
+        (isFace ? `<div class="pcard-lbl" style="color:${c};opacity:.72">${FACE_LBL[ri]}</div>` : '') +
         `<span class="own">${fv}</span>` +
+      `</div>`;
+      // 背面（back）：翻转后显示的信息面
+      const back = `<div class="pcard-back">` +
+        `<div style="font-size:13px;font-weight:700;color:${c}">${su}${rank}</div>` +
+        (isFace ? `<div style="font-size:9px;font-weight:900;color:${c};opacity:.85">${FACE_LBL[ri]}</div>` : '') +
+        `<div style="font-size:9px;color:var(--ink-dim)">favor</div>` +
+        `<div style="font-size:13px;font-weight:700;color:${qualColor}">${fv}</div>` +
+        `<div style="font-size:9px;color:${qualColor}">${qual}</div>` +
+        foilBack +
+      `</div>`;
+      return `<div class="pcard-wrap" title="${esc(su + rank + ' · favor ' + fv)}">` +
+        `<div class="${cls}" style="${faceStyle}">${front}${back}</div>` +
       `</div>`;
     }).join('');
     return `<div class="suit-row"><div class="suit-hd" style="color:${c}">${su}</div><div class="suit-line">${cards}</div></div>`;
@@ -189,8 +267,11 @@ function deckPreviewPanel(jokers: LobbyShopItem[], archName: string | null | und
   return `<div class="card" style="margin-bottom:14px"><h2>⚔ 命牌战库 <span class="ghost" style="font-size:12px;margin-left:auto">${inDeck.length}/5 · 局内打出生效</span></h2>${body}<div class="note" style="text-align:left;margin-top:4px">${arch}</div></div>`;
 }
 
-export function renderLobby(view: LobbyView, tab: string, tutorialOpen: boolean): string {
+export function renderLobby(view: LobbyView, tab: string, tutorialOpen: boolean, deckTab: 'base' | 'gang' = 'base', earthFilter = 'all'): string {
   const on = (t: string): string => (tab === t ? ' on' : '');
+  const dOn = (t: string): string => (deckTab === t ? ' on' : '');
+  const efBtn = (k: string, lbl: string, style: string): string =>
+    `<button class="${earthFilter===k?'on':''}" style="${earthFilter===k?style:''}" data-act="earthFilter" data-k="${k}">${lbl}</button>`;
   const stags = SUITS.map(([g, c], i) => `<div class="stag"><span style="color:${c};font-size:14px;text-shadow:0 0 6px ${c}">${g}</span>${['黑桃', '红桃', '方块', '梅花'][i]}</div>`).join('');
   return `<div class="ggl-root" data-skin="${view.skin}"><div class="frame">
   <div class="topbar">
@@ -218,7 +299,7 @@ export function renderLobby(view: LobbyView, tab: string, tutorialOpen: boolean)
       <div class="herocol">
         <div class="felt">
           <div class="vignette"></div>
-          <div class="felt-h"><span class="t">命运牌桌</span><span class="s">${esc(view.stageLabel)}</span></div>
+          <div class="felt-h"><span class="t">戏牌师</span><span class="s">${esc(view.stageLabel)}</span></div>
           <div class="stags">${stags}</div>
           <div class="duel">
             <div class="dcard" style="border:3px solid var(--spade);transform:rotate(-9deg);--rot:-9deg"><div class="corner" style="color:var(--spade)">A<br>♠</div><div class="big" style="color:var(--spade)">♠</div></div>
@@ -237,15 +318,13 @@ export function renderLobby(view: LobbyView, tab: string, tutorialOpen: boolean)
         </div>
         <div class="card" style="line-height:1.7">${view.archLine}<div class="note" style="text-align:left;margin-top:6px">${view.bossLine}</div></div>
       </div>
-      <div class="rail"><h2>🪖 牌友 · 命运牌桌</h2>
+      <div class="rail"><h2>🪖 牌友 · 戏牌师</h2>
         <div class="ghost" style="font-size:12px;line-height:1.8">好友切磋 / 天梯 1v1 DUEL 为设计 IA、尚未接入网络（占位）。<br>当前：单人战役 vs AI 庄家·Boss。</div>
         <div class="friend" style="margin-top:10px"><span class="dot"></span> 张飞_关张 <span class="tag">占位</span></div>
         <div class="friend"><span class="dot"></span> 周瑜 <span class="tag">占位</span></div>
         <div class="friend"><span class="dot"></span> 孔明 <span class="tag">占位</span></div></div>
     </section>
-    <section class="screen${on('decks')} full">${deckPreviewPanel(view.jokers, view.deckArchName, view.deckArchActivated)}<div class="card"><h2>📜 出战牌组 · 52 张 <span class="ghost" style="margin-left:auto;font-size:12px">favor 均 ${view.deckAvg} · 最低 ${view.deckMin} / 最高 ${view.deckMax}</span></h2>
-      <div>${deckGrid(view.deck, view.foils)}</div>
-      <div class="note" style="text-align:left">favor=该牌掷命翻正面(存活)的概率底盘。<b style="color:var(--gold)">金边</b>=强(≥70) / 暗格=弱(≤50)。牌组强度靠<b>小丑/星球/流派</b>提升 → 去「改造坊」经营。</div></div></section>
+    <section class="screen${on('decks')} full">${deckPreviewPanel(view.jokers, view.deckArchName, view.deckArchActivated)}<div class="deck-nav"><button class="${deckTab==='base'?'on':''}" data-act="deckTab" data-k="base">基础牌组</button><button class="${deckTab==='gang'?'on':''}" data-act="deckTab" data-k="gang">天罡战牌</button></div><div class="dsub${dOn('base')}"><div class="card"><h2>📜 基础牌组 · 52 张 <span class="ghost" style="margin-left:auto;font-size:12px">favor 均 ${view.deckAvg} · 最低 ${view.deckMin} / 最高 ${view.deckMax}</span></h2><div>${deckGrid(view.deck, view.foils)}</div><div class="note" style="text-align:left">favor=该牌掷命翻正面(存活)的概率底盘。<b style="color:var(--gold)">金边</b>=强(≥70) / 暗格=弱(≤50)。牌组强度靠<b>小丑/星球/流派</b>提升 → 去「改造坊」经营。</div></div></div><div class="dsub${dOn('gang')}"><div class="card" style="margin-bottom:14px"><h2>⚡ 天罡战牌 <span class="ghost" style="margin-left:auto;font-size:12px">天罡三十六将 · 尚未开放</span></h2><div class="gang-grid"><div class="gang-empty"><span style="font-size:28px;opacity:.5">⚡</span><b>天罡三十六将 · 尚未开放</b><span style="font-size:11px">战役推进后解锁</span></div></div></div><div class="card" style="margin-bottom:14px"><h2>🔥 地煞战牌 <span class="ghost" style="margin-left:auto;font-size:12px">地煞七十二煞 · 尚未开放</span></h2><div class="gang-grid"><div class="gang-empty"><span style="font-size:28px;opacity:.5">🔥</span><b>地煞七十二煞 · 尚未开放</b><span style="font-size:11px">战役推进后解锁</span></div></div></div><div class="card"><h2>🌿 地支灵牌 <span class="ghost" style="margin-left:auto;font-size:12px">12 支脉 · 青铜→蓝→紫→金</span></h2><div class="earth-filter">${efBtn('all','全部','background:var(--gold-grad);color:#2a1a08;border:0')}${efBtn('bronze','青铜','background:#b8732a;color:#fff;border:0')}${efBtn('blue','蓝色','background:#4a9fd5;color:#fff;border:0')}${efBtn('purple','紫色','background:#9b5fc7;color:#fff;border:0')}${efBtn('gold','黄金','background:var(--gold-grad);color:#2a1a08;border:0')}</div><div class="earth-groups">${earthSection(view.earthCards ?? [], earthFilter)}</div></div></div></section>
     <section class="screen${on('coll')} full"><div class="card"><h2>🗃 卡牌收藏 · 小丑 ${view.jokers.filter((j) => j.owned).length}/${view.jokers.length} · 闪艺 ${view.foils.filter((f) => f.owned).length}/${view.foils.length}</h2>
       <div class="note" style="text-align:left;margin-bottom:6px">🃏 小丑牌（改掷命规则=流派身份 · 到改造坊融取）</div>
       <div class="shelf">${view.jokers.map((j) => shopItem('', '🃏', { ...j, buyable: false })).join('')}</div>
@@ -280,13 +359,17 @@ export interface LobbyHandlers {
 export function mountLobby(host: HTMLElement, h: LobbyHandlers): { update: () => void; destroy: () => void } {
   if (!document.getElementById('ggl-css')) { const s = document.createElement('style'); s.id = 'ggl-css'; s.textContent = CSS; document.head.appendChild(s); }
   let tab = 'home';
+  let deckTab: 'base' | 'gang' = 'base';
+  let earthFilter = 'all';
   let skin: 'onyx' | 'rosy' = h.getView().skin;
   let tut = false;
-  const render = (): void => { host.innerHTML = renderLobby({ ...h.getView(), skin }, tab, tut); };
+  const render = (): void => { host.innerHTML = renderLobby({ ...h.getView(), skin }, tab, tut, deckTab, earthFilter); };
   const onClick = (e: MouseEvent): void => {
     const el = (e.target as HTMLElement).closest('[data-act]') as HTMLElement | null; if (!el) return;
     const act = el.dataset.act, k = el.dataset.k ?? '';
     if (act === 'tab') { tab = k; render(); }
+    else if (act === 'deckTab') { deckTab = k === 'gang' ? 'gang' : 'base'; render(); }
+    else if (act === 'earthFilter') { earthFilter = k; render(); }
     else if (act === 'skin') { skin = k === 'rosy' ? 'rosy' : 'onyx'; h.onSkin?.(skin); render(); }
     else if (act === 'tut') { tut = true; render(); }
     else if (act === 'tut-close') { tut = false; render(); }

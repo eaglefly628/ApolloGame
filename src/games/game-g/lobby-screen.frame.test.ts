@@ -20,7 +20,7 @@ const view = (skin: 'onyx' | 'rosy' = 'onyx'): LobbyView => ({
 describe('Game G · lobby-screen 视觉回归（忠实港大厅 · 真渲染器 → HTML golden · 接真存档数据）', () => {
   it('大厅 HOME 帧匹配 golden（绿呢牌桌 + 漂浮对决卡掷emblem + sheen出征 + 货币接真 + 玄铁皮）', async () => {
     const html = renderLobbyDoc(view(), 'home');
-    expect(html).toContain('命运牌桌');
+    expect(html).toContain('戏牌师');
     expect(html).toContain('⚔ 出征'); // sheen 大 CTA
     expect(html).toContain('class="vs">掷'); // 漂浮对决卡 掷 emblem（招牌）
     expect(html).toContain('1.2k'); // 货币接真存档
