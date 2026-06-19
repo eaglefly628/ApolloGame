@@ -90,10 +90,12 @@ const CSS = `
 .ggl-root .pcard-front,.ggl-root .pcard-back{ position:absolute; inset:0; border-radius:8px; backface-visibility:hidden; -webkit-backface-visibility:hidden }
 .ggl-root .pcard-front{ display:flex; flex-direction:column; justify-content:space-between; padding:5px 5px 4px; overflow:hidden; background:linear-gradient(148deg,rgba(255,255,255,.055) 0%,transparent 55%,rgba(0,0,0,.045) 100%) }
 .ggl-root .pcard-back{ transform:rotateY(180deg); background:linear-gradient(148deg,#0d1b2c 0%,#14243a 100%); border:1px solid rgba(232,205,138,.2); display:flex; flex-direction:column; align-items:center; justify-content:center; gap:2px; padding:4px; color:#e7edf3; text-align:center }
-.ggl-root .pcard .r{ font-size:14px; line-height:1 }
+.ggl-root .pcard .r{ font-size:28px; line-height:1; text-shadow:0 1px 4px rgba(0,0,0,.55) }
 .ggl-root .pcard .own{ position:absolute; bottom:3px; right:5px; font-size:9px; color:var(--ink-dim) }
 .ggl-root .pcard-wm{ position:absolute; inset:0; display:flex; align-items:center; justify-content:center; pointer-events:none; user-select:none }
-.ggl-root .pcard-lbl{ font-size:8.5px; font-weight:900; letter-spacing:.04em; line-height:1; text-align:center }
+.ggl-root .pcard-lbl{ font-size:8.5px; font-weight:900; letter-spacing:.04em; line-height:1; text-align:center; text-shadow:0 1px 3px rgba(0,0,0,.7) }
+.ggl-root .pcard-portrait{ position:absolute; inset:0; display:flex; align-items:center; justify-content:center; pointer-events:none; opacity:.28 }
+.ggl-root .pcard-portrait svg{ width:66%; height:66% }
 .ggl-root .shelf{ display:grid; grid-template-columns:repeat(auto-fill,minmax(120px,1fr)); gap:10px }
 .ggl-root .good{ background:var(--chip); border:1px solid var(--panel-border); border-radius:10px; padding:10px; text-align:center; font-size:12px; position:relative; min-height:74px; clip-path:var(--chamfer) } .ggl-root .good .gnm{ font-weight:700; color:var(--ink); line-height:1.25 } .ggl-root .good .cost{ color:var(--gold); font-weight:700; margin-top:6px; font-family:var(--fn) }
 .ggl-root .good.got{ border-color:var(--gold) } .ggl-root .good.buy{ cursor:pointer } .ggl-root .good.buy:hover{ box-shadow:0 0 0 1px var(--gold) inset } .ggl-root .good.lock{ opacity:.5 }
@@ -118,6 +120,17 @@ const esc = (s: string): string => String(s).replace(/&/g, '&amp;').replace(/</g
 
 // 人头牌（A/K/Q/J）中文标签（RANKS 索引 0-3 = A K Q J）
 const FACE_LBL = ['尖兵', '王将', '王后', '先锋'];
+// 人头牌内联 SVG 人像（currentColor = 花色色；fill 背衬画像；viewBox 0 0 40 56 = 5:7 近似）
+const FACE_SVG = [
+  // A 尖兵：甲胄兵戎执长矛
+  '<svg viewBox="0 0 40 56" fill="currentColor" xmlns="http://www.w3.org/2000/svg"><ellipse cx="20" cy="9" rx="4" ry="5"/><path d="M16 15h8l3 17H13Z"/><rect x="11" y="19" width="4" height="10" rx="2"/><rect x="25" y="19" width="4" height="10" rx="2"/><rect x="14" y="32" width="5" height="14" rx="2"/><rect x="21" y="32" width="5" height="14" rx="2"/><rect x="35" y="3" width="2" height="49" rx="1"/><polygon points="34,3 38,3 36,0"/></svg>',
+  // K 王将：冕旒大将宽袍
+  '<svg viewBox="0 0 40 56" fill="currentColor" xmlns="http://www.w3.org/2000/svg"><circle cx="20" cy="9" r="5"/><path d="M11 4L14 0L17 4L20 1L23 4L26 0L29 4v5H11Z"/><path d="M12 18q-2 8-2 17h20q-2-9-2-17Z"/><rect x="13" y="35" width="6" height="13" rx="2"/><rect x="21" y="35" width="6" height="13" rx="2"/></svg>',
+  // Q 王后：凤冠曳裾广袖
+  '<svg viewBox="0 0 40 56" fill="currentColor" xmlns="http://www.w3.org/2000/svg"><circle cx="20" cy="8" r="5"/><path d="M13 4L16 0L20 3L24 0L27 4" stroke="currentColor" stroke-width="2" fill="none"/><path d="M10 18Q8 36 10 46h20Q32 36 30 18Q25 14 20 14Q15 14 10 18Z"/></svg>',
+  // J 先锋：轻甲突将踏台
+  '<svg viewBox="0 0 40 56" fill="currentColor" xmlns="http://www.w3.org/2000/svg"><circle cx="20" cy="9" r="5"/><path d="M14 16L12 29h16L26 16Z"/><rect x="9" y="18" width="5" height="9" rx="2"/><rect x="26" y="18" width="5" height="9" rx="2"/><rect x="13" y="29" width="6" height="17" rx="2"/><rect x="21" y="29" width="6" height="17" rx="2"/><path d="M5 46L8 56H32L35 46Z"/></svg>',
+];
 function deckGrid(deck: number[], foils?: LobbyShopItem[]): string {
   const ownedFoilNames = (foils ?? []).filter(f => f.owned).map(f => f.name);
   const foilBack = ownedFoilNames.length
@@ -136,6 +149,7 @@ function deckGrid(deck: number[], foils?: LobbyShopItem[]): string {
       // 正面（front）
       const front = `<div class="pcard-front">` +
         `<div class="pcard-wm" style="color:${c};font-size:${wmSize};opacity:${wmOpacity}">${su}</div>` +
+        (isFace ? `<div class="pcard-portrait" style="color:${c}">${FACE_SVG[ri]}</div>` : '') +
         `<div class="r" style="color:${c}">${rank}</div>` +
         (isFace ? `<div class="pcard-lbl" style="color:${c};opacity:.72">${FACE_LBL[ri]}</div>` : '') +
         `<span class="own">${fv}</span>` +
