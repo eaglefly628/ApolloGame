@@ -239,10 +239,6 @@ export function mount(container: HTMLElement): () => void {
       onBuyJoker: (id) => { const j = JOKER_BY_ID.get(id); if (!j || save.jokers.includes(id)) return; buy(j.cost, () => save.jokers.push(id)); },
       onBuyPlanet: (id) => { const p = GAME_G_PLANETS.find((x) => x.id === id); if (!p) return; buy(p.cost, () => { save.planets[id] = (save.planets[id] ?? 0) + 1; }); },
       onBuyFoil: (id) => { const f = GAME_G_FOILS.find((x) => x.id === id); if (!f || save.foils.includes(id)) return; buy(f.cost, () => save.foils.push(id)); },
-      onDeckTool: (kind) => {
-        if (kind === 'all') buy(12, () => { save.deck = save.deck.map((f) => clampFavor(f + 3)); });
-        else if (kind === 'weak') buy(8, () => { const order = save.deck.map((f, i) => [f, i] as const).sort((a, b) => a[0] - b[0]); for (let k = 0; k < 12; k++) save.deck[order[k][1]] = clampFavor(save.deck[order[k][1]] + 8); });
-      },
       onReset: () => { Object.assign(save, freshSave()); persist(save); },
       onSkin: (s) => { lobbySkin = s; },
     });
@@ -251,13 +247,14 @@ export function mount(container: HTMLElement): () => void {
   // ───────────────────────── 布阵（田忌赛马 · 开战前核心博弈）─────────────────────────
   // AI 暗布阵：纯逻辑下沉到 pickAiFormation（可测）；committed=玩家集齐招牌流派 → AI 全程反制攻你最弱一路。
   const aiFormation = (): Formation => pickAiFormation(save.stage, save.materials, save.lastOfficers, activeArchetype(save.jokers) !== null);
-  // 布阵屏：4 预设一键套 + ± 自定义分兵（军官跨路、兵自动补平）+ 三路实时预估条。
+  // 布阵屏：4 预设一键套 + ± 自定义分兵（军官跨路、兵自动补平）+ 三路实时预估条 + 具体牌入路预览（B2）。
+  // 每路 = 基础布局牌（前 BASE_PER_LANE 张开战即上场）+ 抽牌堆（余牌洗进手牌实时派）。
   function showFormation(officers: [number, number, number]): void {
     clear();
     const f: Formation = { officers };
     const title = el('div', 'font:600 18px system-ui;color:#eab308', `布阵 · 第 ${save.stage} 关`);
-    const sub = el('div', 'max-width:560px;text-align:center;opacity:.82;line-height:1.6',
-      '三路只需<b>赢两路</b>：均摊赌险胜，还是<b>弃一路</b>、把 30 名军官堆进两路稳拿 2:1？敌方也在<b>暗布阵</b>。<br>套预设或用 ± 自定义分兵（军官越多该路越强；兵自动补平 18/路）。');
+    const sub = el('div', 'max-width:620px;text-align:center;opacity:.82;line-height:1.6',
+      '三路只需<b>赢两路</b>：均摊赌险胜，还是<b>弃一路</b>、把 30 名军官堆进两路稳拿 2:1？敌方也在<b>暗布阵</b>。<br>套预设或用 ± 自定义分兵。⚑ 预铺牌开战即上场，🃏 余牌入手牌堆实时派。');
     const presetBar = el('div', 'display:flex;gap:8px;flex-wrap:wrap;justify-content:center');
     presetBar.replaceChildren(...PRESET_NAMES.map((name) => {
       const b = mkBtn(name);
@@ -272,12 +269,39 @@ export function mount(container: HTMLElement): () => void {
       const cands = [0, 1, 2].filter((j) => j !== i && (wantMax ? officers[j] > 0 : officers[j] < 18));
       return cands.length ? cands.reduce((bj, j) => ((wantMax ? officers[j] > officers[bj] : officers[j] < officers[bj]) ? j : bj), cands[0]) : -1;
     };
-    const est = laneEstimates(armyFromFormation('a', myBias(save.deck), f));
-    const lanesBox = el('div', 'display:flex;gap:10px');
+    const army = armyFromFormation('a', myBias(save.deck), f);
+    const est = laneEstimates(army);
+    // 花色符号 + 颜色（与大厅 CSS 变量对齐的硬码值）
+    const SUIT_GLYPH: Record<string, string> = { S: '♠', H: '♥', D: '♦', C: '♣' };
+    const SUIT_COLOR: Record<string, string> = { S: '#8ba2c9', H: '#d8504e', D: '#e0973a', C: '#3fae6e' };
+    const cardPill = (rank: string, suit: string, isBase: boolean, isGeneral: boolean): HTMLElement => {
+      const c = SUIT_COLOR[suit] ?? '#fff';
+      const bg = isBase ? 'rgba(34,197,94,.12)' : 'rgba(255,255,255,.04)';
+      const border = isBase ? (isGeneral ? '#eab308' : '#22c55e') : '#334155';
+      const pill = el('div', `display:inline-flex;align-items:center;gap:2px;padding:2px 6px;border-radius:5px;font-size:11px;font-weight:700;background:${bg};border:1px solid ${border};color:${c}`,
+        `${rank}<span style="font-size:10px">${SUIT_GLYPH[suit] ?? suit}</span>`);
+      if (isGeneral) { const crown = el('span', 'font-size:9px;margin-right:1px', '♔'); pill.prepend(crown); }
+      return pill;
+    };
+    const lanesBox = el('div', 'display:flex;gap:10px;max-width:820px;align-items:flex-start');
     lanesBox.replaceChildren(...[0, 1, 2].map((i) => {
-      const box = el('div', 'width:150px;padding:9px;border:1px solid #334155;border-radius:8px;text-align:center;line-height:1.55',
-        `<b>${LANE_NAME[i]}路</b><br>军官 <b>×${officers[i]}</b> ｜ 主将 <b>${est[i].general}</b><br>Σfavor <b style="color:#eab308">${est[i].sumFavor}</b>`);
-      const ctl = el('div', 'display:flex;gap:6px;justify-content:center;margin-top:6px');
+      const laneCards = army.filter((c) => c.lane === i);
+      const base = laneCards.slice(0, BASE_PER_LANE);
+      const drawDeck = laneCards.slice(BASE_PER_LANE);
+      const box = el('div', 'flex:1;min-width:200px;padding:10px;border:1px solid #334155;border-radius:8px;line-height:1.55');
+      const header = el('div', 'text-align:center;margin-bottom:6px',
+        `<b style="font-size:14px">${LANE_NAME[i]}路</b>　<span style="opacity:.7;font-size:12px">军官 ×${officers[i]} · 主将 <b style="color:#eab308">${est[i].general}</b></span>`);
+      const favorEl = el('div', 'text-align:center;font-size:12px;color:#eab308;margin-bottom:8px', `Σfavor ${est[i].sumFavor}`);
+      // 预铺：前 BASE_PER_LANE 张，开战 tick1 即上场
+      const baseLabel = el('div', 'font-size:10px;color:#22c55e;margin-bottom:3px', `⚑ 预铺 ${base.length} 张（开战即上场）`);
+      const baseRow = el('div', 'display:flex;flex-wrap:wrap;gap:3px;margin-bottom:8px');
+      base.forEach((c) => baseRow.appendChild(cardPill(c.rank, c.suit, true, c.general)));
+      // 抽牌堆：余牌洗进手牌堆，实时从手牌选派路
+      const deckLabel = el('div', 'font-size:10px;color:#64748b;margin-bottom:3px', `🃏 手牌堆 ${drawDeck.length} 张（实时派）`);
+      const deckRow = el('div', 'display:flex;flex-wrap:wrap;gap:3px;margin-bottom:8px');
+      drawDeck.forEach((c) => deckRow.appendChild(cardPill(c.rank, c.suit, false, c.general)));
+      box.append(header, favorEl, baseLabel, baseRow, deckLabel, deckRow);
+      const ctl = el('div', 'display:flex;gap:6px;justify-content:center');
       const minus = mkBtn('−');
       const plus = mkBtn('＋');
       minus.onclick = () => { const r = otherLane(i, false); if (officers[i] > 0 && r >= 0) { officers[i]--; officers[r]++; showFormation(officers); } };

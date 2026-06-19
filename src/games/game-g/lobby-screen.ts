@@ -181,8 +181,7 @@ export function renderLobby(view: LobbyView, tab: string, tutorialOpen: boolean)
     </section>
     <section class="screen${on('decks')} full"><div class="card"><h2>📜 出战牌组 · 52 张 <span class="ghost" style="margin-left:auto;font-size:12px">favor 均 ${view.deckAvg} · 最低 ${view.deckMin} / 最高 ${view.deckMax}</span></h2>
       <div class="colgrid">${deckGrid(view.deck)}</div>
-      <div class="tools"><button class="btn" data-act="deckTool" data-k="all">强化全军 +3 favor <span style="opacity:.7">🪙12</span></button><button class="btn ghost" data-act="deckTool" data-k="weak">精炼最弱 12 张 +8 <span class="ghost">🪙8</span></button></div>
-      <div class="note" style="text-align:left">favor=该牌掷命翻正面(存活)的概率底盘。<b style="color:var(--gold)">金边</b>=强(≥70) / 暗格=弱(≤50)。花材料改造让更多牌活下来。</div></div></section>
+      <div class="note" style="text-align:left">favor=该牌掷命翻正面(存活)的概率底盘。<b style="color:var(--gold)">金边</b>=强(≥70) / 暗格=弱(≤50)。牌组强度靠<b>小丑/星球/流派</b>提升 → 去「改造坊」经营。</div></div></section>
     <section class="screen${on('coll')} full"><div class="card"><h2>🗃 卡牌收藏 · 小丑 ${view.jokers.filter((j) => j.owned).length}/${view.jokers.length} · 闪艺 ${view.foils.filter((f) => f.owned).length}/${view.foils.length}</h2>
       <div class="note" style="text-align:left;margin-bottom:6px">🃏 小丑牌（改掷命规则=流派身份 · 到改造坊融取）</div>
       <div class="shelf">${view.jokers.map((j) => shopItem('', '🃏', { ...j, buyable: false })).join('')}</div>
@@ -208,7 +207,6 @@ export interface LobbyHandlers {
   onBuyJoker?: (id: string) => void;
   onBuyPlanet?: (id: string) => void;
   onBuyFoil?: (id: string) => void;
-  onDeckTool?: (kind: string) => void;
   onReset?: () => void;
   onSkin?: (skin: 'onyx' | 'rosy') => void;
 }
@@ -230,7 +228,6 @@ export function mountLobby(host: HTMLElement, h: LobbyHandlers): { update: () =>
     else if (act === 'buyJoker') { h.onBuyJoker?.(k); render(); }
     else if (act === 'buyPlanet') { h.onBuyPlanet?.(k); render(); }
     else if (act === 'buyFoil') { h.onBuyFoil?.(k); render(); }
-    else if (act === 'deckTool') { h.onDeckTool?.(k); render(); }
     else if (act === 'reset') { h.onReset?.(); render(); }
   };
   host.addEventListener('click', onClick);
