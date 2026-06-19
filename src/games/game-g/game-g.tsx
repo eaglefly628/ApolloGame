@@ -248,7 +248,7 @@ export function mount(container: HTMLElement): () => void {
         const act = activated === arch.id ? '　<b style="color:var(--gold)">🔥 招牌已激活</b>' : `　<span class="ghost">集齐 ${arch.keyJokers.map((k) => JOKER_BY_ID.get(k)?.name ?? k).join('+')} 激活招牌</span>`;
         archLine = `你的流派 <b>${arch.name}</b>（${arch.desc}）　${rel}${act}`;
       } else {
-        archLine = `流派 <span class="ghost">未成型</span> —— 去<b>改造坊</b>融小丑确立身份（克制本 run Boss【${bossArchName}】）`;
+        archLine = `流派 <span class="ghost">未成型</span> —— 去<b>改造坊</b>融天罡牌确立身份（克制本 run Boss【${bossArchName}】）`;
       }
       const cap = effectiveLeverCap(save.planets);
       // B3: owned=已买入(ownedJokers)；inDeck=已选入战库(jokers ≤5)；buyable=未买且材料够
@@ -410,7 +410,7 @@ export function mount(container: HTMLElement): () => void {
     clear();
     const title = el('div', 'font:600 18px system-ui;color:#22c55e', '🎉 战间整备 · 三选一');
     const sub = el('div', 'max-width:520px;text-align:center;opacity:.82;line-height:1.6',
-      `胜一场！<b>${nextLabel}</b>前选<b>一项</b>——资源增益，或<b style="color:#c4b5fd">🃏流派钥匙</b>(白嫖小丑、定你的构筑分叉)。`);
+      `胜一场！<b>${nextLabel}</b>前选<b>一项</b>——资源增益，或<b style="color:#c4b5fd">🃏流派钥匙</b>(白嫖天罡牌、定你的构筑分叉)。`);
     const pool: RunBuff[] = [...BETWEEN_BUFFS, ...jokerKeyBuffs(save.jokers)]; // 资源增益 + 未拥有小丑钥匙
     const cardsBox = el('div', 'display:flex;gap:12px;justify-content:center;flex-wrap:wrap');
     cardsBox.replaceChildren(...pick3(pool).map((bf: RunBuff) => {

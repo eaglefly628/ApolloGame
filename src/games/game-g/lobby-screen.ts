@@ -277,9 +277,9 @@ function shopItem(act: string, glyph: string, it: LobbyShopItem): string {
 function tutorialBox(): string {
   return `<div class="tut-ov" data-act="tut-close"><div class="tut-box" data-stop="1">
     <h3>📖 新手指导 · 一局怎么打</h3>
-    <div class="step"><b>赛前（改造坊）</b>：构筑你的库——标准公平 54 牌 + 小丑/附魔/星球（强弱靠经营、不靠抽强牌）。</div>
+    <div class="step"><b>赛前（改造坊）</b>：构筑你的库——标准公平 54 牌 + 天罡牌/附魔/地支牌（强弱靠经营、不靠抽强牌）。</div>
     <div class="step"><b>开局</b>：三路预铺基础布局，起手摸手牌，读秒暂停银行满，短带迷雾亮。</div>
-    <div class="step"><b>实时博弈</b>：① 看/侦查读三路 ② 田忌断舍·往哪路投牌、弃哪路 ③ 打小丑/功能牌给某路某牌加 buff/干涉。牌慢慢往敌家走=给你思考时间。</div>
+    <div class="step"><b>实时博弈</b>：① 看/侦查读三路 ② 田忌断舍·往哪路投牌、弃哪路 ③ 打天罡牌/功能牌给某路某牌加 buff/干涉。牌慢慢往敌家走=给你思考时间。</div>
     <div class="step"><b>对决核</b>：最前两张相遇 → 战力 P_eff 聚合 → 胜率(如 76:24) → 种子骰 → 正面活·前进 / 反面亡。<b>胜率可见</b>。</div>
     <div class="step"><b>赢条件</b>：幸存者突破到敌大本营 −1 血（共 3 血），<b>先破者胜</b>。</div>
     <div style="text-align:center;margin-top:14px"><button class="cta-sub" style="color:#2a1a08;background:var(--gold-grad);border:0" data-act="tut-close">明白了，开打 →</button></div>

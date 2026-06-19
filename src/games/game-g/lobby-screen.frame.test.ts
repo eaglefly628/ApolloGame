@@ -2,7 +2,7 @@ import { describe, it, expect } from 'vitest';
 import { renderLobby, renderLobbyDoc, type LobbyView, type LobbyShopItem } from './lobby-screen.js';
 
 // 大厅忠实港 · 视觉回归（无头）：真渲染器 → 自包含 HTML golden（浏览器开 = 真大厅，同 battle-screen 套路）。
-// 数据接真存档（材料/能量/牌组 favor/小丑/星球/闪艺/战役进度）；此处喂代表性样例 view。
+// 数据接真存档（材料/能量/牌组 favor/天罡牌/地支牌/闪艺/战役进度）；此处喂代表性样例 view。
 const J = (id: string, name: string, cost: number, owned: boolean, buyable: boolean): LobbyShopItem => ({ id, name, sub: `${name} 效果`, cost, owned, buyable });
 const view = (skin: 'onyx' | 'rosy' = 'onyx'): LobbyView => ({
   skin, coin: 1200, energy: 4, energyMax: 6, foilCount: 1,
@@ -37,14 +37,14 @@ describe('Game G · lobby-screen 视觉回归（忠实港大厅 · 真渲染器 
     await expect(html).toMatchFileSnapshot('./__frames__/lobby-decks.html');
   });
 
-  it('收藏帧（小丑 + 闪艺·接真拥有态）匹配 golden', async () => {
+  it('收藏帧（天罡牌 + 闪艺·接真拥有态）匹配 golden', async () => {
     const html = renderLobbyDoc(view(), 'coll');
-    expect(html).toContain('同袍'); // 小丑
+    expect(html).toContain('同袍'); // 天罡牌
     expect(html).toContain('✨ 碧霄'); // 闪艺
     await expect(html).toMatchFileSnapshot('./__frames__/lobby-coll.html');
   });
 
-  it('改造坊帧（融小丑货架 + 星球升档·接真材料/拥有）匹配 golden', async () => {
+  it('改造坊帧（天罡货架 + 地支升档·接真材料/拥有）匹配 golden', async () => {
     const html = renderLobbyDoc(view(), 'craft');
     expect(html).toContain('改造台');
     expect(html).toContain('🪐 星球·命');
