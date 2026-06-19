@@ -22,10 +22,10 @@ const LIVE_STEP_MS = 600;   // 一拍真实时长（owner 要更慢：300→600 
 const RENDER_MS = 33;       // 重渲间隔（~30fps 平滑）
 const SEC_PER_TICK = LIVE_STEP_MS / 1000;
 const PERF_MS = 1700;       // 对决特写表演时长（冻结战场·放大两牌·读数·掷点定生死，owner：拉到屏幕前看为什么胜败）
-// 起手迷雾 + 显形（doc18 §10.5 / owner：不是接敌才翻、是「出了门的线」就翻）：各自老家一段内面朝下行军，
-// 越过本侧捷径门线（t=0.34 / 0.66，battle-screen gateDefs 同值）即显形翻开。中段 (0.34,0.66) 双方皆可见。
-const FOG_A_EDGE = 0.34;    // A 兵越过上门线 → 显形（pos01 ≥）
-const FOG_B_EDGE = 0.66;    // B 兵越过下门线 → 显形（pos01 ≤）
+// 迷雾显形（owner 2026-06-18 改：**默认无迷雾**，仅附魔牌 fogged 才面朝下 → 过线 3D 翻显形）。迷雾时间缩短：早点翻。
+// 非 fogged 牌一律即显形(face-up)；fogged 牌越过本侧短线(0.18/0.82·比旧 0.34/0.66 短)即翻。
+const FOG_A_EDGE = 0.18;    // A 的 fogged 兵越过此线 → 显形（pos01 ≥）
+const FOG_B_EDGE = 0.82;    // B 的 fogged 兵越过此线 → 显形（pos01 ≤）
 // 出牌控盘层（doc18 §10 · 布局阶段 base 打底 + 抽牌堆 + 手牌实时派三路 + 读秒暂停银行）。数值初版、待真机/仿真台磨。
 const BASE_PER_LANE = 3;        // 布局阶段每路预铺张数（共 9 打底，doc18 §10.2）
 const OPENING_HAND = 5;         // 起手摸牌
@@ -140,9 +140,9 @@ export function buildBattleViewLive(live: LiveBattle, save: Save, oppName: strin
   const units: BattleUnit[] = [];
   for (const li of [0, 1, 2]) {
     const L = live.lanes[li];
-    // 显形 = 越过本侧迷雾门线（非接敌才翻）：A 兵 pos01≥0.34 / B 兵 pos01≤0.66 → 翻开（doc18 §10.5 短带迷雾）。
-    L.a.forEach((u) => { const pos01 = u.pos / LANE_LEN; units.push({ id: u.id, lane: li, side: 'a', pos01, revealed: pos01 >= FOG_A_EDGE, faceUp: true, rank: u.rank, suit: sv(u.suit), general: u.general }); });
-    L.b.forEach((u) => { const pos01 = u.pos / LANE_LEN; units.push({ id: u.id, lane: li, side: 'b', pos01, revealed: pos01 <= FOG_B_EDGE, faceUp: true, rank: u.rank, suit: sv(u.suit), general: u.general }); });
+    // 默认即显形(face-up)；仅 fogged(附魔)牌面朝下、越过本侧短线才翻（owner：默认无迷雾、迷雾=附魔专属）。
+    L.a.forEach((u) => { const pos01 = u.pos / LANE_LEN; units.push({ id: u.id, lane: li, side: 'a', pos01, revealed: !u.fogged || pos01 >= FOG_A_EDGE, faceUp: true, rank: u.rank, suit: sv(u.suit), general: u.general, fogged: u.fogged }); });
+    L.b.forEach((u) => { const pos01 = u.pos / LANE_LEN; units.push({ id: u.id, lane: li, side: 'b', pos01, revealed: !u.fogged || pos01 <= FOG_B_EDGE, faceUp: true, rank: u.rank, suit: sv(u.suit), general: u.general, fogged: u.fogged }); });
   }
   const lanes: BattleLane[] = [0, 1, 2].map((li) => {
     const L = live.lanes[li];

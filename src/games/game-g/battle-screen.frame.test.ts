@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import { prepareArmies, FORMATION_PRESETS, bossFor } from './index.js';
-import { initLiveBattle, stepLiveBattle, liveActive, HOME_BLOOD } from './live-combat.js';
+import { initLiveBattle, stepLiveBattle, liveActive, HOME_BLOOD, type DeployCmd } from './live-combat.js';
 import { renderBattleDoc, renderClashSvg, type ClashView } from './battle-screen.js';
 import { armyToDeploys, buildBattleViewLive, freshSave } from './game-g.js';
 
@@ -81,24 +81,39 @@ describe('Game G · 战斗屏视觉回归（真 live-combat → HTML golden · �
     await expect(svg).toMatchFileSnapshot('./__frames__/battle-clash-closeup.svg');
   });
 
-  it('一格格慢慢走（owner 钉死）：最前兵 pos01 随 tick 单调前推；行军面朝下、接敌才翻（非一次全翻/瞬移）', () => {
+  it('一格格慢慢走 + 默认无迷雾（owner 2026-06-18）：最前兵 pos01 单调前推；默认即显形(face-up)、不再起手面朝下', () => {
     const { live, deploys } = setup();
     const s = save();
-    const snap = (): { front: number; revealed: number } => {
+    const snap = (): { front: number; revealed: number; total: number } => {
       const v = buildBattleViewLive(live, s, 'X', 'p', 'd');
       const aPos = v.units.filter((u) => u.side === 'a').map((u) => u.pos01);
-      return { front: aPos.length ? Math.max(...aPos) : 0, revealed: v.units.filter((u) => u.revealed).length };
+      return { front: aPos.length ? Math.max(...aPos) : 0, revealed: v.units.filter((u) => u.revealed).length, total: v.units.length };
     };
     const step = (to: number): void => { while (live.tick < to) stepLiveBattle(live, deploys); };
     step(6); const t6 = snap();
     step(15); const t15 = snap();
     step(25); const t25 = snap();
-    expect(t6.revealed).toBe(0); // 行军中：面朝下、没接敌（非一次全翻）
-    expect(t6.front).toBeGreaterThan(0); // 已离家往前爬
     expect(t15.front).toBeGreaterThan(t6.front); // 一格格往前（单调）
     expect(t25.front).toBeGreaterThan(t15.front);
-    expect(t25.front).toBeGreaterThan(0.4); // ~中线接敌
-    expect(t25.revealed).toBeGreaterThan(0); // 接敌才翻（成波）
+    expect(t25.front).toBeGreaterThan(0.4); // ~中线
+    // 默认无迷雾：所有牌一上场即显形（owner：迷雾=附魔专属、默认没有）
+    expect(t6.total).toBeGreaterThan(0);
+    expect(t6.revealed).toBe(t6.total);
+    expect(t25.revealed).toBe(t25.total);
+  });
+
+  it('迷雾=附魔专属（owner 2026-06-18）：fogged 牌面朝下、越过本侧短线(0.18)才显形；非 fogged 即显形', () => {
+    const live = initLiveBattle(9);
+    const dep: DeployCmd[] = [
+      { tick: 1, side: 'a', lane: 0, unit: { id: 'fog', rank: '7', suit: 'S', general: false, fogged: true } },
+      { tick: 1, side: 'a', lane: 1, unit: { id: 'open', rank: '7', suit: 'H', general: false } },
+    ];
+    const rev = (id: string): boolean | undefined => buildBattleViewLive(live, save(), 'X', 'p', 'd').units.find((u) => u.id === id)?.revealed;
+    stepLiveBattle(live, dep); // tick1 出场（pos≈0）
+    expect(rev('open')).toBe(true); // 非 fogged 即显形
+    expect(rev('fog')).toBe(false); // fogged 面朝下
+    while ((live.lanes[0].a[0]?.pos ?? 99) < 18 && live.tick < 200) stepLiveBattle(live, dep); // 推到越过 0.18 短线
+    expect(rev('fog')).toBe(true); // 过短线 → 显形（迷雾时间短）
   });
 
   it('确定性：同帧两次渲染逐字符一致（回归基线稳）', () => {

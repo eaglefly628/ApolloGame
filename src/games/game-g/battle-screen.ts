@@ -9,7 +9,7 @@
 // ── 战场视图数据（game-g.tsx 从 live-combat 逐拍 sim 派生，每帧喂） ──
 // pos01 = 该牌沿本路的真实进度（0=A 家 / 1=B 家，= live pos/LANE_LEN）；revealed = 是否已接敌翻开（面朝下行军→接敌翻）；
 // faceUp = 翻开后生死（活=正面 / 死=石板斩）。id 供驱动层插值匹配（不进渲染 HTML）。
-export interface BattleUnit { id: string; lane: number; side: 'a' | 'b'; pos01: number; revealed: boolean; faceUp: boolean; rank: string; suit: 's' | 'h' | 'd' | 'c'; general: boolean }
+export interface BattleUnit { id: string; lane: number; side: 'a' | 'b'; pos01: number; revealed: boolean; faceUp: boolean; rank: string; suit: 's' | 'h' | 'd' | 'c'; general: boolean; fogged: boolean }
 // 手牌（底部坞展示·点选派往三路）：rank/suit/将；id 供出牌回调定位。
 export interface HandCardView { id: string; rank: string; suit: 's' | 'h' | 'd' | 'c'; general: boolean }
 export interface BattleLane { name: string; mine: number; enemy: number; lead: 'a' | 'b' | 'n'; state: string; mineText: string; enemyText: string }
@@ -139,9 +139,9 @@ function buildHTML(view: BattleView, s: CamState): string {
     const cc = u.side === 'a' ? '#ff5d2e' : '#3a86d4';
     const rot = (((u.lane * 7 + n * 13) % 12) - 6).toFixed(1);
     const base: Record<string, string> = Object.assign({ position: 'absolute', width: '74px', height: '102px', '--rot': rot + 'deg', transform: 'translate(-50%,-50%) rotate(' + rot + 'deg)', animation: 'gg-march ' + (2.6 + (n % 4) * 0.4).toFixed(1) + 's ease-in-out infinite', borderRadius: '11px', display: 'flex', alignItems: 'center', justifyContent: 'center' }, at(p) as Record<string, string>);
-    if (!u.revealed) { // 面朝下行军（还没接敌）
+    if (!u.revealed) { // 附魔·迷雾牌面朝下行军（owner：默认无迷雾 → 走这里的只剩 fogged 附魔牌）；过线即 3D 翻显形（gg-reveal）。紫雾皮 + ✦ 标记区分。
       const trim = u.side === 'a' ? '#a16207' : '#0e7490';
-      return `<div style="${st(Object.assign({}, base, { background: '#274a73', border: '4px solid ' + (u.general ? trim : '#16314e'), boxShadow: '0 8px 18px rgba(0,0,0,.5)' }))}"><div style="position:absolute; inset:8px; border-radius:6px; border:2px solid rgba(255,255,255,.4); background:repeating-linear-gradient(45deg, rgba(255,255,255,.16) 0 8px, transparent 8px 16px), repeating-linear-gradient(-45deg, rgba(255,255,255,.16) 0 8px, transparent 8px 16px);"></div>${u.general ? `<span style="position:absolute; top:-22px; font-size:30px; color:${trim};">♔</span>` : ''}</div>`;
+      return `<div style="${st(Object.assign({}, base, { background: 'linear-gradient(160deg,#3b2a5e,#241640)', border: '4px solid ' + (u.general ? trim : '#7c5cc4'), boxShadow: '0 8px 18px rgba(0,0,0,.5), 0 0 14px rgba(140,110,230,.55)' }))}"><div style="position:absolute; inset:8px; border-radius:6px; border:2px solid rgba(190,170,255,.5); background:repeating-linear-gradient(45deg, rgba(190,170,255,.18) 0 8px, transparent 8px 16px), repeating-linear-gradient(-45deg, rgba(190,170,255,.18) 0 8px, transparent 8px 16px);"></div><span style="position:absolute; font-size:26px; color:#c9b6ff;">✦</span>${u.general ? `<span style="position:absolute; top:-22px; font-size:30px; color:${trim};">♔</span>` : ''}</div>`;
     }
     if (u.faceUp) { // 揭晓·活
       return `<div style="${st(Object.assign({}, base, { background: 'linear-gradient(160deg,#fbf7ef,#e9dcc6)', border: (u.general ? 6 : 4) + 'px solid ' + cc, boxShadow: '0 8px 18px rgba(0,0,0,.5), 0 0 18px ' + cc + '55, inset 0 0 0 2px rgba(255,255,255,.6)' }))}"><div style="position:absolute; top:5px; left:8px; font-family:var(--font-heading); font-weight:700; font-size:21px; color:${SUITC[u.suit]};">${esc(u.rank)}</div><span style="font-size:42px; color:${SUITC[u.suit]};">${SUITG[u.suit]}</span>${u.general ? '<span style="position:absolute; top:-22px; font-size:30px; color:var(--gold);">♔</span>' : ''}</div>`;
@@ -213,12 +213,15 @@ function buildHTML(view: BattleView, s: CamState): string {
     const back = win
       ? `<div style="${face} transform:rotateY(180deg); background:#274a73; border:6px solid #16314e;"><div style="position:absolute; inset:14px; border-radius:8px; border:2px solid rgba(255,255,255,.4); background:repeating-linear-gradient(45deg, rgba(255,255,255,.16) 0 9px, transparent 9px 18px), repeating-linear-gradient(-45deg, rgba(255,255,255,.16) 0 9px, transparent 9px 18px);"></div></div>`
       : `<div style="${face} transform:rotateY(180deg); background:#8d2f22; border:6px solid var(--danger);"><span style="font-family:var(--font-heading); font-weight:800; font-size:96px; color:#fff;">斩</span></div>`;
-    return `<div style="animation:${slide} .5s ease-out;"><div style="width:186px; height:260px; perspective:1100px;"><div style="position:relative; width:100%; height:100%; transform-style:preserve-3d; animation:${flip} .9s cubic-bezier(.4,1.25,.5,1) .5s both;${win ? ' filter:drop-shadow(0 0 22px var(--gold));' : ''}">${front}${back}</div></div><div style="margin-top:14px; text-align:center; white-space:nowrap; font-family:var(--font-num); font-size:12px; color:${col};">${detailTxt(c)}</div></div>`;
+    return `<div style="animation:${slide} .4s ease-out;"><div style="width:186px; height:260px; perspective:1100px;"><div style="position:relative; width:100%; height:100%; transform-style:preserve-3d; animation:${flip} .6s cubic-bezier(.3,1.6,.5,1) .35s both;${win ? ' filter:drop-shadow(0 0 22px var(--gold));' : ''}">${front}${back}</div></div><div style="margin-top:14px; text-align:center; white-space:nowrap; font-family:var(--font-num); font-size:12px; color:${col};">${detailTxt(c)}</div></div>`;
   };
   const clashHTML = cv ? (() => {
     const LN = ['上路', '中路', '下路'][cv.lane] ?? '';
     const wrPct = Math.round(cv.winrate * 100), rollPct = Math.round(cv.roll * 100), barW = 720;
-    return `<div style="${st({ position: 'absolute', inset: '0', zIndex: 30, display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'radial-gradient(circle at 50% 42%, rgba(8,10,14,.72), rgba(4,6,9,.93))' })}">
+    // owner：对决画面定位到上/中/下三路的地方——按 lane 竖向锚 + 聚光跟随该路，给空间感（哪一路在打）。
+    const vAlign = cv.lane === 0 ? 'flex-start' : cv.lane === 2 ? 'flex-end' : 'center';
+    const spotY = cv.lane === 0 ? '24%' : cv.lane === 2 ? '76%' : '50%';
+    return `<div style="${st({ position: 'absolute', inset: '0', zIndex: 30, display: 'flex', alignItems: vAlign, justifyContent: 'center', padding: '60px 0', background: 'radial-gradient(circle at 50% ' + spotY + ', rgba(8,10,14,.5), rgba(4,6,9,.93))' })}">
       <div style="${st({ animation: 'gg-clashin .4s ease-out', display: 'flex', flexDirection: 'column', alignItems: 'center', padding: '24px 44px 30px', borderRadius: '22px', background: 'var(--hud-bg)', border: '1px solid var(--panel-border)', boxShadow: '0 30px 80px rgba(0,0,0,.7)' })}">
         <div style="font-family:var(--font-display); font-weight:700; font-size:26px; color:var(--accent); letter-spacing:.06em;">⚔ ${LN} · 命运一掷</div>
         <div style="display:flex; align-items:center; gap:46px; margin:24px 0 30px;">${bigCard(cv.a, 'a', cv.aWins)}<div style="font-family:var(--font-heading); font-weight:800; font-size:36px; color:var(--ink-dim);">VS</div>${bigCard(cv.b, 'b', !cv.aWins)}</div>

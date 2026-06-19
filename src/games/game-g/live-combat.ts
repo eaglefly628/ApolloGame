@@ -22,7 +22,8 @@ export function cardStamina(rank: string): number {
   return 1;
 }
 
-export interface LiveUnit { id: string; rank: string; suit: string; points: number; buff: number; general: boolean; dead: boolean; stamina: number; staminaLeft: number; pos: number }
+// fogged = 出场带迷雾（面朝下行军、过线才 3D 翻显形）。owner 2026-06-18：**默认无迷雾(false)**，仅附魔牌为 true（乙的养成写、契约①+）。纯表现位、不进 hash/不改判定。
+export interface LiveUnit { id: string; rank: string; suit: string; points: number; buff: number; general: boolean; dead: boolean; stamina: number; staminaLeft: number; pos: number; fogged: boolean }
 export interface LiveLane { a: LiveUnit[]; b: LiveUnit[]; aGenDead: boolean; bGenDead: boolean; spentA: number; spentB: number; encT: number }
 // 对决事件（doc19 §三「胜率可读」+ 命运一掷 · 给战斗表演特写读数）：双方点数/经营加成/有效战力 P_eff、胜率、所掷点 roll、谁胜。
 // 纯记录（不进 liveHash、不改判定）：roll = clash 那一掷的 nextRandom 值，aWins = roll < winrate ——把"算出概率→掷→落在区间定生死"如实暴露。
@@ -31,7 +32,7 @@ export interface ClashEvent { tick: number; lane: number; winrate: number; roll:
 export interface LiveBattle { tick: number; lanes: [LiveLane, LiveLane, LiveLane]; homeA: number; homeB: number; homeMax: number; winner: 'a' | 'b' | 'draw' | 'pending'; rng: RandomSeed; lastClash: ClashEvent | null; clashSeq: number; clashLog: ClashEvent[] }
 // 投放指令：第 tick 拍把 unit 投进 lane 的 side 侧（确定性输入流；预布阵 = tick 1 投放）。
 // 点数=公平骨架（cardPoints 由 rank 算·双方同副）；buff=经营（小丑/附魔/协同/路…聚合，缺省 0）。
-export interface DeployCmd { tick: number; side: 'a' | 'b'; lane: number; unit: { id: string; rank: string; suit: string; general: boolean; buff?: number } }
+export interface DeployCmd { tick: number; side: 'a' | 'b'; lane: number; unit: { id: string; rank: string; suit: string; general: boolean; buff?: number; fogged?: boolean } }
 
 const mkLane = (): LiveLane => ({ a: [], b: [], aGenDead: false, bGenDead: false, spentA: 0, spentB: 0, encT: 0 });
 export function initLiveBattle(seed: number, homeMax: number = HOME_BLOOD): LiveBattle {
@@ -44,7 +45,7 @@ function applyDeploy(b: LiveBattle, c: DeployCmd): void {
   const stam = cardStamina(c.unit.rank);
   // 入场位 = 己家边 + 已有同侧牌往后错开间距（一张张排队 staging，front=index0=先投者在最前）。
   const pos = c.side === 'a' ? -q.length * SPACING : LANE_LEN + q.length * SPACING;
-  q.push({ id: c.unit.id, rank: c.unit.rank, suit: c.unit.suit, points: cardPoints(c.unit.rank), buff: c.unit.buff ?? 0, general: c.unit.general, dead: false, stamina: stam, staminaLeft: stam, pos });
+  q.push({ id: c.unit.id, rank: c.unit.rank, suit: c.unit.suit, points: cardPoints(c.unit.rank), buff: c.unit.buff ?? 0, general: c.unit.general, dead: false, stamina: stam, staminaLeft: stam, pos, fogged: c.unit.fogged ?? false });
 }
 
 // 遭遇拍的有效战力 P_eff（doc19 §三）：基础点数 + 经营 buff + 本路士气（主将在 +MORALE_PTS / 亡 −ROUT_PTS）。读当下 → live。
