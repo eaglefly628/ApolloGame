@@ -1,0 +1,225 @@
+{
+  "source": "game-icons (CC BY 3.0)",
+  "note": "Game G 能力图标策展：item id → game-icons 资产 id + 建议着色 tint（渲染时把单色 SVG 前景染成 tint）。",
+  "map": {
+    "lever": {
+      "bless": {
+        "icon": "gameicons/lorc/prayer",
+        "tint": "#fcd34d",
+        "name": "祝福"
+      },
+      "curse": {
+        "icon": "gameicons/skoll/evil-eyes",
+        "tint": "#a78bfa",
+        "name": "诅咒"
+      },
+      "shield": {
+        "icon": "gameicons/badges/shield",
+        "tint": "#38bdf8",
+        "name": "护盾"
+      },
+      "decapitate": {
+        "icon": "gameicons/lorc/decapitation",
+        "tint": "#ef4444",
+        "name": "斩首令"
+      },
+      "reinforce": {
+        "icon": "gameicons/lorc/rally-the-troops",
+        "tint": "#22c55e",
+        "name": "增援"
+      },
+      "flush": {
+        "icon": "gameicons/lorc/poker-hand",
+        "tint": "#2dd4bf",
+        "name": "牌型"
+      }
+    },
+    "archetype": {
+      "decap": {
+        "icon": "gameicons/lorc/backstab",
+        "tint": "#ef4444",
+        "name": "斩首流"
+      },
+      "general": {
+        "icon": "gameicons/lorc/crown",
+        "tint": "#fcd34d",
+        "name": "将领流"
+      },
+      "wide": {
+        "icon": "gameicons/sbed/overmind",
+        "tint": "#22c55e",
+        "name": "铺场流"
+      },
+      "cardtype": {
+        "icon": "gameicons/faithtoken/card-random",
+        "tint": "#2dd4bf",
+        "name": "牌型流"
+      },
+      "probability": {
+        "icon": "gameicons/delapouite/rolling-dices",
+        "tint": "#a78bfa",
+        "name": "概率流"
+      },
+      "tianji": {
+        "icon": "gameicons/skoll/chess-king",
+        "tint": "#94a3b8",
+        "name": "弃一保二"
+      }
+    },
+    "buff": {
+      "drill": {
+        "icon": "gameicons/lorc/muscle-up",
+        "tint": "#fb923c",
+        "name": "整训"
+      },
+      "elite": {
+        "icon": "gameicons/delapouite/star-medal",
+        "tint": "#fcd34d",
+        "name": "精兵"
+      },
+      "conscript": {
+        "icon": "gameicons/sbed/health-normal",
+        "tint": "#f87171",
+        "name": "征兵"
+      },
+      "stockpile": {
+        "icon": "gameicons/priorblue/battery-100",
+        "tint": "#facc15",
+        "name": "囤能"
+      },
+      "revenue": {
+        "icon": "gameicons/delapouite/two-coins",
+        "tint": "#fcd34d",
+        "name": "财源"
+      }
+    },
+    "boss": {
+      "spadeK": {
+        "icon": "gameicons/skoll/spades",
+        "tint": "#8ba2c9",
+        "name": "黑桃王·铁壁"
+      },
+      "heartQ": {
+        "icon": "gameicons/skoll/hearts",
+        "tint": "#d8504e",
+        "name": "红桃后·倾国"
+      },
+      "diamondJ": {
+        "icon": "gameicons/skoll/diamonds",
+        "tint": "#e0973a",
+        "name": "方块J·诡牌"
+      },
+      "clubK": {
+        "icon": "gameicons/skoll/clubs",
+        "tint": "#3fae6e",
+        "name": "梅花K·人海"
+      },
+      "bigJoker": {
+        "icon": "gameicons/delapouite/card-joker",
+        "tint": "#fcd34d",
+        "name": "大王·天命"
+      },
+      "smallJoker": {
+        "icon": "gameicons/badges/skull",
+        "tint": "#94a3b8",
+        "name": "小王·无常"
+      }
+    },
+    "joker": {
+      "comrade": {
+        "icon": "gameicons/skoll/clubs",
+        "tint": "#2dd4bf",
+        "name": "同袍"
+      },
+      "gambler": {
+        "icon": "gameicons/delapouite/rolling-dices",
+        "tint": "#a78bfa",
+        "name": "赌徒"
+      },
+      "vanguard": {
+        "icon": "gameicons/lorc/flying-flag",
+        "tint": "#22c55e",
+        "name": "先登"
+      },
+      "diehard": {
+        "icon": "gameicons/badges/shield",
+        "tint": "#38bdf8",
+        "name": "不屈"
+      },
+      "bannerman": {
+        "icon": "gameicons/lorc/rally-the-troops",
+        "tint": "#fcd34d",
+        "name": "旗手"
+      },
+      "warlord": {
+        "icon": "gameicons/lorc/crown",
+        "tint": "#fb923c",
+        "name": "枭雄"
+      },
+      "martyr": {
+        "icon": "gameicons/lorc/tombstone",
+        "tint": "#f87171",
+        "name": "死士"
+      },
+      "chain": {
+        "icon": "gameicons/lorc/linked-rings",
+        "tint": "#22c55e",
+        "name": "连环"
+      },
+      "quartermaster": {
+        "icon": "gameicons/delapouite/two-coins",
+        "tint": "#fcd34d",
+        "name": "督粮"
+      },
+      "shadow": {
+        "icon": "gameicons/lorc/backstab",
+        "tint": "#a78bfa",
+        "name": "影武者"
+      }
+    },
+    "planet": {
+      "saturn": {
+        "icon": "gameicons/lorc/ringed-planet",
+        "tint": "#38bdf8",
+        "name": "星球·命"
+      },
+      "jupiter": {
+        "icon": "gameicons/delapouite/jupiter",
+        "tint": "#facc15",
+        "name": "星球·能"
+      },
+      "mars": {
+        "icon": "gameicons/delapouite/planet-core",
+        "tint": "#ef4444",
+        "name": "星球·军"
+      },
+      "mercury": {
+        "icon": "gameicons/delapouite/planet-conquest",
+        "tint": "#a78bfa",
+        "name": "星球·型"
+      }
+    },
+    "foil": {
+      "gilt": {
+        "icon": "gameicons/delapouite/sparkles",
+        "tint": "#fcd34d",
+        "name": "鎏金"
+      },
+      "azure": {
+        "icon": "gameicons/delapouite/sparkles",
+        "tint": "#38bdf8",
+        "name": "碧霄"
+      },
+      "crimson": {
+        "icon": "gameicons/carl-olsen/flame",
+        "tint": "#ef4444",
+        "name": "赤焰"
+      },
+      "obsidian": {
+        "icon": "gameicons/lorc/emerald",
+        "tint": "#64748b",
+        "name": "玄曜"
+      }
+    }
+  }
+}
