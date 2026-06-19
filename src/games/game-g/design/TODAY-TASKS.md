@@ -74,6 +74,10 @@
 | **B5 ✦细化** | 收藏屏 / 天梯屏 | **doc22 世界观落地** → 详见文末「🎴 COLL 收藏屏·世界观牌面规格」。三层英雄分页(扑克名将/天罡星宿/地支天命) + 牌面英雄身份叠层(可选 `hero?`·未解封占位) + 卡详情(立绘/称号/被诅咒故事/成长弧占位) + 筛选 + 段位/全服榜。**叙事皮肤层·不进对战强度·0 英雄也能跑·不阻塞**。|
 | **B6** | 新手指导 overlay | HOME「📖 新手指导」按钮 → 开 overlay 显 `doc/match-flow.html` 对局流程图。|
 
+> **⛔ B7 · owner 拍板（2026-06-19 · 甲转交乙改 · owner「留给乙」）：出战 → 直接进战斗，删「选择阵型」+「备战」两步菜单。**
+> 理由：策划 `match-flow` 无 pre-battle 阵型/备战；「分配」= **局内 CR**（圣水回复 → 花点数摸牌选库 → 派上/中/下三路），不再有局外布阵/备战屏。owner 实机只想 出战→直接打。
+> **乙改**：`showLobby` 的 `onPlay` 由 `showFormation(...)` 改为直接进战斗 `showMatch(defaultFormation, defaultName, [])` —— `showMatch` 是甲的·**签名不变**（甲已就绪、不依赖这两屏）；传默认布阵（如 `FORMATION_PRESETS['均衡']` 或 `save.lastOfficers` → `armyFromFormation` 的 formation）+ 空 `interventions`。`showFormation`/`showPrep` 可删（或留 dead code）。甲不动大厅路由（正交·乙地盘）。
+
 ---
 
 ## 验收（design G 驻片）
