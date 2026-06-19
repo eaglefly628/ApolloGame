@@ -4,6 +4,7 @@
 // 纯表现"固定解释器"：只渲染 view + 抛 data-act 回调，零 gameplay 计算。CSS 全 scope 在 .ggl-root 下。
 
 import { GI } from './icons.js';
+import { HERO_CARDS } from './blueprint.js';
 
 export interface LobbyShopItem { id: string; name: string; sub: string; cost: number; owned: boolean; buyable: boolean; level?: number; inDeck?: boolean; power?: number; phat?: number }
 export type EarthRarity = 'bronze' | 'blue' | 'purple' | 'gold';
@@ -182,6 +183,24 @@ const CSS = `
 .ggl-root .btn{ transition:transform .10s,box-shadow .10s }
 .ggl-root .btn:not(.ghost):hover{ transform:translateY(-1px); box-shadow:0 6px 16px rgba(0,0,0,.32) }
 .ggl-root .btn:active{ transform:scale(.97) }
+.ggl-root .hero-filter{ display:flex; gap:6px; margin-bottom:12px; flex-wrap:wrap }
+.ggl-root .hero-filter button{ padding:5px 13px; border-radius:8px; border:1px solid var(--panel-border); background:var(--chip); color:var(--ink-dim); font-size:12px; font-weight:700; transition:background .12s,color .12s,border-color .12s }
+.ggl-root .hero-filter button.on{ background:var(--gold-grad); color:#2a1a08; border:0 }
+.ggl-root .hero-grid{ display:grid; grid-template-columns:repeat(auto-fill,minmax(80px,1fr)); gap:8px; margin-bottom:6px }
+.ggl-root .hcard{ position:relative; aspect-ratio:5/7; border-radius:10px; border:2px solid var(--panel-border); background:var(--panel); padding:7px 5px 5px; display:flex; flex-direction:column; cursor:pointer; transition:transform .12s,box-shadow .12s,border-color .12s; overflow:hidden }
+.ggl-root .hcard:hover{ transform:translateY(-3px) scale(1.03); box-shadow:0 8px 22px rgba(0,0,0,.45); border-color:var(--gold) }
+.ggl-root .hcard.sel{ border-color:var(--gold); box-shadow:0 0 0 2px var(--gold) }
+.ggl-root .hcard .hc-corner{ font-size:11px; font-weight:900; line-height:1.1; font-family:var(--fh) }
+.ggl-root .hcard .hc-name{ flex:1; display:flex; align-items:center; justify-content:center; font-size:12px; font-weight:700; text-align:center; padding:2px 1px; word-break:break-all }
+.ggl-root .hcard .hc-title{ font-size:9px; color:var(--ink-dim); text-align:center; line-height:1.2 }
+.ggl-root .hcard .hc-big{ position:absolute; right:3px; top:50%; transform:translateY(-50%); font-size:32px; opacity:.10; pointer-events:none }
+.ggl-root .hero-detail{ background:var(--panel); border:2px solid var(--gold); border-radius:12px; padding:16px 18px; margin-bottom:12px; animation:ggl-fadein .18s ease-out both }
+.ggl-root .hero-detail .hd-head{ display:flex; align-items:baseline; gap:8px; margin-bottom:10px; flex-wrap:wrap }
+.ggl-root .hero-detail .hd-name{ font-family:var(--fh); font-size:20px; font-weight:900 }
+.ggl-root .hero-detail .hd-title{ font-size:12px; color:var(--gold) }
+.ggl-root .hero-detail .hd-dyn{ font-size:11px; color:var(--ink-dim); margin-left:auto }
+.ggl-root .hero-detail .hd-story{ font-size:14px; line-height:1.85; margin-bottom:10px }
+.ggl-root .hero-detail .hd-curse{ font-size:12px; color:#d8504e; font-style:italic; border-left:3px solid #d8504e; padding-left:8px; line-height:1.7 }
 `;
 
 const SUITS: [string, string][] = [['♠', 'var(--spade)'], ['♥', 'var(--heart)'], ['♦', 'var(--diamond)'], ['♣', 'var(--club)']];
@@ -320,9 +339,23 @@ function deckPreviewPanel(tiangangs: LobbyShopItem[], archName: string | null | 
   return `<div class="card" style="margin-bottom:14px"><h2>${GI.bolt} 天罡战库 <span class="ghost" style="font-size:12px;margin-left:auto">${inDeck.length}/5 · 局内打出生效</span></h2>${body}<div class="note" style="text-align:left;margin-top:4px">${arch}${summary}</div></div>`;
 }
 
-export function renderLobby(view: LobbyView, tab: string, tutorialOpen: boolean, deckTab: 'base' | 'gang' = 'base', earthFilter = 'all'): string {
+const HERO_SUIT_META: Array<['♠'|'♥'|'♦'|'♣', string, string]> = [
+  ['♠', '秦·战国', '#8ba2c9'], ['♥', '汉·三国', '#d8504e'], ['♦', '盛唐', '#e0973a'], ['♣', '宋·明', '#3fae6e'],
+];
+function heroCollSection(heroSuit: string, heroDetail: string): string {
+  const sc = (s: string): string => HERO_SUIT_META.find(([sym]) => sym === s)?.[2] ?? 'var(--ink)';
+  const filtered = heroSuit === 'all' ? HERO_CARDS : HERO_CARDS.filter(h => h.suit === heroSuit);
+  const detail = heroDetail ? HERO_CARDS.find(h => h.id === heroDetail) : undefined;
+  const filterBtns = `<div class="hero-filter"><button class="${heroSuit==='all'?'on':''}" data-act="heroSuit" data-k="all">全部 ${HERO_CARDS.length}</button>${HERO_SUIT_META.map(([sym, lbl, col]) => `<button class="${heroSuit===sym?'on':''}" style="${heroSuit===sym?`background:${col};color:#fff;border:0`:''}" data-act="heroSuit" data-k="${sym}">${sym} ${lbl}</button>`).join('')}</div>`;
+  const detailPanel = detail ? `<div class="hero-detail"><button class="btn ghost" style="float:right;font-size:16px;line-height:1;padding:2px 6px" data-act="heroDetail" data-k="${detail.id}" title="关闭">✕</button><div class="hd-head"><span class="hd-name" style="color:${sc(detail.suit)}">${detail.suit} ${esc(detail.name)}</span><span class="hd-title">「${esc(detail.title)}」</span><span class="hd-dyn">${esc(detail.dynasty)}</span></div><div class="hd-story">${esc(detail.story)}</div><div class="hd-curse">⚑ 诅咒：${esc(detail.curse)}</div></div>` : '';
+  const grid = `<div class="hero-grid">${filtered.map(h => `<div class="hcard${heroDetail===h.id?' sel':''}" data-act="heroDetail" data-k="${h.id}" title="${esc(h.dynasty)} · ${esc(h.title)}"><div class="hc-corner" style="color:${sc(h.suit)}">${h.rank}<br>${h.suit}</div><div class="hc-name">${esc(h.name)}</div><div class="hc-title">${esc(h.title)}</div><div class="hc-big" style="color:${sc(h.suit)}">${h.suit}</div></div>`).join('')}</div>`;
+  return `<div class="card"><h2>🏛 英雄谱 · 52 位被诅咒的历史名将 <span class="ghost" style="font-size:11px;margin-left:auto">花色=阵营 · 点数=军衔 · 点击查看故事</span></h2>${filterBtns}${detailPanel}${grid}</div>`;
+}
+
+export function renderLobby(view: LobbyView, tab: string, tutorialOpen: boolean, deckTab: 'base' | 'gang' = 'base', earthFilter = 'all', collTab = 'heroes', heroSuit = 'all', heroDetail = ''): string {
   const on = (t: string): string => (tab === t ? ' on' : '');
   const dOn = (t: string): string => (deckTab === t ? ' on' : '');
+  const cOn = (t: string): string => (collTab === t ? ' on' : '');
   const efBtn = (k: string, lbl: string, style: string): string =>
     `<button class="${earthFilter===k?'on':''}" style="${earthFilter===k?style:''}" data-act="earthFilter" data-k="${k}">${lbl}</button>`;
   const stags = SUITS.map(([g, c], i) => `<div class="stag"><span style="color:${c};font-size:14px;text-shadow:0 0 6px ${c}">${g}</span>${['黑桃', '红桃', '方块', '梅花'][i]}</div>`).join('');
@@ -379,11 +412,7 @@ export function renderLobby(view: LobbyView, tab: string, tutorialOpen: boolean,
         <div class="friend"><span class="dot"></span> 孔明 <span class="tag">占位</span></div></div>
     </section>
     <section class="screen${on('decks')} full">${deckPreviewPanel(view.tiangangs, view.deckArchName, view.deckArchActivated)}<div class="deck-nav"><button class="${deckTab==='base'?'on':''}" data-act="deckTab" data-k="base">扑克牌组</button><button class="${deckTab==='gang'?'on':''}" data-act="deckTab" data-k="gang">天罡战牌</button></div><div class="dsub${dOn('base')}"><div class="card"><h2>📜 扑克牌组 · 52 张 <span class="ghost" style="margin-left:auto;font-size:12px">favor 均 ${view.deckAvg} · 最低 ${view.deckMin} / 最高 ${view.deckMax}</span></h2><div>${deckGrid(view.deck, view.foils)}</div><div class="note" style="text-align:left">favor=该牌掷命翻正面(存活)的概率底盘。<b style="color:var(--gold)">金边</b>=强(≥70) / 暗格=弱(≤50)。牌组强度靠<b>天罡牌/地支牌/流派</b>提升 → 去「改造坊」经营。</div></div></div><div class="dsub${dOn('gang')}"><div class="card" style="margin-bottom:14px"><h2>${GI.bolt} 天罡战牌 <span class="ghost" style="margin-left:auto;font-size:12px">三十六天罡 · 一期 20 张已上架</span></h2><div class="gang-grid"><div class="gang-empty"><span style="font-size:28px;opacity:.5">⚡</span><b>天罡战牌 · 去改造坊选入战库</b><span style="font-size:11px">改造坊买入 → 选 ≤5 入战库 → 局内打出生效</span></div></div></div><div class="card"><h2>${GI.planet} 地支牌 <span class="ghost" style="margin-left:auto;font-size:12px">12 支脉 · 青铜→蓝→紫→金</span></h2><div class="earth-filter">${efBtn('all','全部','background:var(--gold-grad);color:#2a1a08;border:0')}${efBtn('bronze','青铜','background:#b8732a;color:#fff;border:0')}${efBtn('blue','蓝色','background:#4a9fd5;color:#fff;border:0')}${efBtn('purple','紫色','background:#9b5fc7;color:#fff;border:0')}${efBtn('gold','黄金','background:var(--gold-grad);color:#2a1a08;border:0')}</div><div class="earth-groups">${earthSection(view.earthCards ?? [], earthFilter)}</div></div></div></section>
-    <section class="screen${on('coll')} full"><div class="card"><h2>🗃 卡牌收藏 · 天罡牌 ${view.tiangangs.filter((j) => j.owned).length}/${view.tiangangs.length} · 闪艺 ${view.foils.filter((f) => f.owned).length}/${view.foils.length}</h2>
-      <div class="note" style="text-align:left;margin-bottom:6px">⚡ 天罡牌（局内法术·效果牌 · 到改造坊解锁选入战库）</div>
-      <div class="shelf">${view.tiangangs.map((j) => shopItem('', '⚡', { ...j, buyable: false })).join('')}</div>
-      <div class="note" style="text-align:left;margin:12px 0 6px">✨ 闪艺 foil（纯装饰收集 · 点亮可购买）</div>
-      <div class="shelf">${view.foils.map((f) => shopItem('buyFoil', '✨', f)).join('')}</div></div></section>
+    <section class="screen${on('coll')} full"><div class="deck-nav"><button class="${collTab==='heroes'?'on':''}" data-act="collTab" data-k="heroes">🏛 英雄谱</button><button class="${collTab==='collect'?'on':''}" data-act="collTab" data-k="collect">天罡 &amp; 闪艺</button></div><div class="dsub${cOn('heroes')}">${heroCollSection(heroSuit, heroDetail)}</div><div class="dsub${cOn('collect')}"><div class="card"><h2>🗃 天罡牌 · 收藏 ${view.tiangangs.filter((j) => j.owned).length}/${view.tiangangs.length}</h2><div class="note" style="text-align:left;margin-bottom:6px">⚡ 已解锁天罡牌（到改造坊选入战库 ≤5 张）</div><div class="shelf">${view.tiangangs.map((j) => shopItem('', '⚡', { ...j, buyable: false })).join('')}</div><div class="note" style="text-align:left;margin:12px 0 6px">✨ 闪艺 foil（纯装饰收集 · 点亮可购买）· ${view.foils.filter((f) => f.owned).length}/${view.foils.length}</div><div class="shelf">${view.foils.map((f) => shopItem('buyFoil', '✨', f)).join('')}</div></div></div></section>
     <section class="screen${on('craft')} full"><div class="craft-zones">
       <div class="card"><h2>♠ 扑克牌组 <span class="ghost" style="margin-left:auto;font-size:12px">52 张 · 公平骨架 · 上场打三路</span></h2>
         <div class="deck-sumbar"><span>favor 均 <b>${view.deckAvg}</b></span><span>最低 <b>${view.deckMin}</b></span><span>最高 <b>${view.deckMax}</b></span></div>
@@ -420,15 +449,21 @@ export function mountLobby(host: HTMLElement, h: LobbyHandlers): { update: () =>
   let tab = 'home';
   let deckTab: 'base' | 'gang' = 'base';
   let earthFilter = 'all';
+  let collTab = 'heroes';
+  let heroSuit = 'all';
+  let heroDetail = '';
   let skin: 'onyx' | 'rosy' = h.getView().skin;
   let tut = false;
-  const render = (): void => { host.innerHTML = renderLobby({ ...h.getView(), skin }, tab, tut, deckTab, earthFilter); };
+  const render = (): void => { host.innerHTML = renderLobby({ ...h.getView(), skin }, tab, tut, deckTab, earthFilter, collTab, heroSuit, heroDetail); };
   const onClick = (e: MouseEvent): void => {
     const el = (e.target as HTMLElement).closest('[data-act]') as HTMLElement | null; if (!el) return;
     const act = el.dataset.act, k = el.dataset.k ?? '';
     if (act === 'tab') { tab = k; render(); }
     else if (act === 'deckTab') { deckTab = k === 'gang' ? 'gang' : 'base'; render(); }
     else if (act === 'earthFilter') { earthFilter = k; render(); }
+    else if (act === 'collTab') { collTab = k; render(); }
+    else if (act === 'heroSuit') { heroSuit = k; heroDetail = ''; render(); }
+    else if (act === 'heroDetail') { heroDetail = heroDetail === k ? '' : k; render(); }
     else if (act === 'skin') { skin = k === 'rosy' ? 'rosy' : 'onyx'; h.onSkin?.(skin); render(); }
     else if (act === 'tut') { tut = true; render(); }
     else if (act === 'tut-close') { tut = false; render(); }
