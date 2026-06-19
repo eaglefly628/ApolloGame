@@ -1,6 +1,6 @@
 import { mountBattle, type BattleView, type BattleUnit, type BattleLane, type BattleLever, type HandCardView, type TengangCardView, type BattleActions, type ClashView, type BattleFx } from './battle-screen.js';
 import { mountLobby, type LobbyView, type LobbyShopItem } from './lobby-screen.js';
-import { prepareArmies, armyFromFormation, laneEstimates, quartermasterEnergy, FORMATION_PRESETS, PRESET_NAMES, LEVER_CATALOG, LEVER_START, battleSpec, RUN_BATTLES, RUN_LIVES, BETWEEN_BUFFS, applyBuff, tiangangKeyBuffs, BOSS_ROSTER, bossFor, GAME_G_TIANGANGS, TIANGANG_BY_ID, ARCHETYPES, detectArchetype, archetypeMatchup, activeArchetype, pickAiFormation, GAME_G_PLANETS, GAME_G_FOILS, effectiveLives, effectiveLeverCap, effectiveLeverRegen, type Formation, type Intervention, type LeverKind, type RunBuff, type ArmyCard } from './index.js';
+import { prepareArmies, quartermasterEnergy, FORMATION_PRESETS, PRESET_NAMES, LEVER_CATALOG, LEVER_START, battleSpec, RUN_BATTLES, RUN_LIVES, BETWEEN_BUFFS, applyBuff, tiangangKeyBuffs, BOSS_ROSTER, bossFor, GAME_G_TIANGANGS, TIANGANG_BY_ID, ARCHETYPES, detectArchetype, archetypeMatchup, activeArchetype, pickAiFormation, GAME_G_PLANETS, GAME_G_FOILS, effectiveLives, effectiveLeverCap, effectiveLeverRegen, type Formation, type Intervention, type LeverKind, type RunBuff, type ArmyCard } from './index.js';
 import { initLiveBattle, stepLiveBattle, liveActive, migrateRear, NO_TENGANG, LANE_LEN, HOME_BLOOD, type LiveBattle, type DeployCmd, type ClashEvent, type TengangFx } from './live-combat.js';
 import { cardPoints, P_MAX } from './clash-resolve.js';
 
@@ -107,8 +107,6 @@ const avg = (xs: number[]): number => Math.round(xs.reduce((a, b) => a + b, 0) /
 const myBias = (deck: number[]): number => avg(deck) - 50;
 const enemyBias = (stage: number): number => -8 + stage * 2;
 // AI 暗布阵：低关固定均衡 / 中关变化 / 高关克制你上局阵型（石头剪刀布闭环）。对玩家隐藏，开战揭晓。
-const PRESET_DESC: Record<string, string> = { 均衡: '10/10/10 · 三路均摊', 锋矢: '6/18/6 · 攻中', 两翼: '13/4/13 · 弃中', 田忌: '2/14/14 · 弃上' };
-const LANE_NAME = ['上', '中', '下'];
 // 布阵 → 名称（命中预设则用预设名，否则"自定义 x/y/z"），用于战后揭晓敌阵。
 function describeFormation(off: number[]): string {
   for (const n of PRESET_NAMES) {
@@ -278,7 +276,7 @@ export function mount(container: HTMLElement): () => void {
     const buy = (cost: number, apply: () => void): void => { if (save.materials < cost) return; save.materials -= cost; apply(); persist(save); };
     lobby = mountLobby(host, {
       getView: buildLobbyView,
-      onPlay: () => showFormation([...save.lastOfficers] as [number, number, number]),
+      onPlay: () => startBattle(),
       // B3: 买入 → ownedTiangangs；战库未满时自动选入（方便新手无需手动选）
       onBuyTiangang: (id) => { const j = TIANGANG_BY_ID.get(id); if (!j || save.ownedTiangangs.includes(id)) return; buy(j.cost, () => { save.ownedTiangangs.push(id); if (save.tiangangs.length < 5) save.tiangangs.push(id); }); },
       onBuyPlanet: (id) => { const p = GAME_G_PLANETS.find((x) => x.id === id); if (!p) return; buy(p.cost, () => { save.planets[id] = (save.planets[id] ?? 0) + 1; }); },
@@ -290,122 +288,15 @@ export function mount(container: HTMLElement): () => void {
     });
   }
 
-  // ───────────────────────── 布阵（田忌赛马 · 开战前核心博弈）─────────────────────────
+  // ───────────────────────── 出征前置 · AI 暗布阵（showMatch 用）─────────────────────────
   // AI 暗布阵：纯逻辑下沉到 pickAiFormation（可测）；committed=玩家集齐招牌流派 → AI 全程反制攻你最弱一路。
   const aiFormation = (): Formation => pickAiFormation(save.stage, save.materials, save.lastOfficers, activeArchetype(save.tiangangs) !== null);
-  // 布阵屏：4 预设一键套 + ± 自定义分兵（军官跨路、兵自动补平）+ 三路实时预估条 + 具体牌入路预览（B2）。
-  // 每路 = 基础布局牌（前 BASE_PER_LANE 张开战即上场）+ 抽牌堆（余牌洗进手牌实时派）。
-  function showFormation(officers: [number, number, number]): void {
-    clear();
-    const f: Formation = { officers };
-    const title = el('div', 'font:600 18px system-ui;color:#eab308', `布阵 · 第 ${save.stage} 关`);
-    const sub = el('div', 'max-width:620px;text-align:center;opacity:.82;line-height:1.6',
-      '三路只需<b>赢两路</b>：均摊赌险胜，还是<b>弃一路</b>、把 30 名军官堆进两路稳拿 2:1？敌方也在<b>暗布阵</b>。<br>套预设或用 ± 自定义分兵。⚑ 预铺牌开战即上场，🃏 余牌入手牌堆实时派。');
-    const presetBar = el('div', 'display:flex;gap:8px;flex-wrap:wrap;justify-content:center');
-    presetBar.replaceChildren(...PRESET_NAMES.map((name) => {
-      const b = mkBtn(name);
-      b.title = PRESET_DESC[name];
-      const p = FORMATION_PRESETS[name].officers;
-      if (p[0] === officers[0] && p[1] === officers[1] && p[2] === officers[2]) b.style.cssText += ';border-color:#eab308;background:#2a2410;font-weight:700';
-      b.onclick = () => showFormation([...FORMATION_PRESETS[name].officers] as [number, number, number]);
-      return b;
-    }));
-    // ± 维持总数 30：+ 从最多的另一路取一军官，− 给最少的另一路（兵自动补平）。
-    const otherLane = (i: number, wantMax: boolean): number => {
-      const cands = [0, 1, 2].filter((j) => j !== i && (wantMax ? officers[j] > 0 : officers[j] < 18));
-      return cands.length ? cands.reduce((bj, j) => ((wantMax ? officers[j] > officers[bj] : officers[j] < officers[bj]) ? j : bj), cands[0]) : -1;
-    };
-    const army = armyFromFormation('a', myBias(save.deck), f);
-    const est = laneEstimates(army);
-    // 花色符号 + 颜色（与大厅 CSS 变量对齐的硬码值）
-    const SUIT_GLYPH: Record<string, string> = { S: '♠', H: '♥', D: '♦', C: '♣' };
-    const SUIT_COLOR: Record<string, string> = { S: '#8ba2c9', H: '#d8504e', D: '#e0973a', C: '#3fae6e' };
-    const cardPill = (rank: string, suit: string, isBase: boolean, isGeneral: boolean): HTMLElement => {
-      const c = SUIT_COLOR[suit] ?? '#fff';
-      const bg = isBase ? 'rgba(34,197,94,.12)' : 'rgba(255,255,255,.04)';
-      const border = isBase ? (isGeneral ? '#eab308' : '#22c55e') : '#334155';
-      const pill = el('div', `display:inline-flex;align-items:center;gap:2px;padding:2px 6px;border-radius:5px;font-size:11px;font-weight:700;background:${bg};border:1px solid ${border};color:${c}`,
-        `${rank}<span style="font-size:10px">${SUIT_GLYPH[suit] ?? suit}</span>`);
-      if (isGeneral) { const crown = el('span', 'font-size:9px;margin-right:1px', '♔'); pill.prepend(crown); }
-      return pill;
-    };
-    const lanesBox = el('div', 'display:flex;gap:10px;max-width:820px;align-items:flex-start');
-    lanesBox.replaceChildren(...[0, 1, 2].map((i) => {
-      const laneCards = army.filter((c) => c.lane === i);
-      const base = laneCards.slice(0, BASE_PER_LANE);
-      const drawDeck = laneCards.slice(BASE_PER_LANE);
-      const box = el('div', 'flex:1;min-width:200px;padding:10px;border:1px solid #334155;border-radius:8px;line-height:1.55');
-      const header = el('div', 'text-align:center;margin-bottom:6px',
-        `<b style="font-size:14px">${LANE_NAME[i]}路</b>　<span style="opacity:.7;font-size:12px">军官 ×${officers[i]} · 主将 <b style="color:#eab308">${est[i].general}</b></span>`);
-      const favorEl = el('div', 'text-align:center;font-size:12px;color:#eab308;margin-bottom:8px', `Σfavor ${est[i].sumFavor}`);
-      // 预铺：前 BASE_PER_LANE 张，开战 tick1 即上场
-      const baseLabel = el('div', 'font-size:10px;color:#22c55e;margin-bottom:3px', `⚑ 预铺 ${base.length} 张（开战即上场）`);
-      const baseRow = el('div', 'display:flex;flex-wrap:wrap;gap:3px;margin-bottom:8px');
-      base.forEach((c) => baseRow.appendChild(cardPill(c.rank, c.suit, true, c.general)));
-      // 抽牌堆：余牌洗进手牌堆，实时从手牌选派路
-      const deckLabel = el('div', 'font-size:10px;color:#64748b;margin-bottom:3px', `🃏 手牌堆 ${drawDeck.length} 张（实时派）`);
-      const deckRow = el('div', 'display:flex;flex-wrap:wrap;gap:3px;margin-bottom:8px');
-      drawDeck.forEach((c) => deckRow.appendChild(cardPill(c.rank, c.suit, false, c.general)));
-      box.append(header, favorEl, baseLabel, baseRow, deckLabel, deckRow);
-      const ctl = el('div', 'display:flex;gap:6px;justify-content:center');
-      const minus = mkBtn('−');
-      const plus = mkBtn('＋');
-      minus.onclick = () => { const r = otherLane(i, false); if (officers[i] > 0 && r >= 0) { officers[i]--; officers[r]++; showFormation(officers); } };
-      plus.onclick = () => { const d = otherLane(i, true); if (officers[i] < 18 && d >= 0) { officers[d]--; officers[i]++; showFormation(officers); } };
-      ctl.append(minus, plus);
-      box.appendChild(ctl);
-      return box;
-    }));
-    const go = mkBtn('⚔ 确认出征');
-    go.style.cssText += ';background:#1e3a2a;border-color:#22c55e;font-weight:600';
-    go.onclick = () => { save.lastOfficers = [...officers]; persist(save); showPrep(f, describeFormation(officers)); };
-    const back = mkBtn('← 返回大厅');
-    back.onclick = showLobby;
-    const btnRow = el('div', 'display:flex;gap:10px');
-    btnRow.append(go, back);
-    root.append(title, sub, presetBar, lanesBox, btnRow);
-  }
 
-  // ───────────────────────── 备战 · 干预相位（开战前用◈改命，揭晓前生效）─────────────────────────
-  function showPrep(formation: Formation, myName: string): void {
-    clear();
-    const interventions: Intervention[] = [];
-    const title = el('div', 'font:600 18px system-ui;color:#eab308', `备战 · 干预（第 ${save.stage} 关 · 你的阵 ${myName}）`);
-    const sub = el('div', 'max-width:560px;text-align:center;opacity:.82;line-height:1.6',
-      '开战前用<b>干预能量◈</b>改命：祝福/诅咒改 favor、<b>斩首令</b>擒贼先擒王(敌主将必掉→该路溃散)、增援铺场。<br>全在<b>揭晓前</b>生效——胜负仍由规则定、可回放。能量有限：这关花，还是攒？');
-    const energyEl = el('div', 'font-weight:600');
-    const queueEl = el('div', 'min-height:20px;opacity:.85;font-size:12px');
-    const cardsBox = el('div', 'display:flex;flex-direction:column;gap:7px');
-    const refresh = (): void => {
-      energyEl.innerHTML = `能量 ◈ <b style="color:#22d3ee">${save.leverEnergy}</b> / ${effectiveLeverCap(save.planets)}`;
-      queueEl.innerHTML = interventions.length
-        ? '已打出：' + interventions.map((iv) => `${LEVER_CATALOG[iv.kind].name}→${LANE_NAME[iv.lane]}路`).join('，')
-        : '（未打出干预）';
-    };
-    const KINDS = Object.keys(LEVER_CATALOG) as LeverKind[]; // 6 卡自动全列
-    cardsBox.replaceChildren(...KINDS.map((kind) => {
-      const c = LEVER_CATALOG[kind];
-      const row = el('div', 'display:flex;gap:7px;align-items:center;justify-content:center');
-      row.appendChild(el('div', 'width:250px;text-align:right;font-size:12px', `<b>${c.name}</b> <span style="opacity:.6">${c.cost}◈ · ${c.desc}</span>`));
-      [0, 1, 2].forEach((lane) => {
-        const b = mkBtn(LANE_NAME[lane]);
-        b.style.cssText += ';padding:5px 9px';
-        b.onclick = () => {
-          if (save.leverEnergy >= c.cost) { save.leverEnergy -= c.cost; interventions.push({ kind, lane }); persist(save); refresh(); }
-        };
-        row.appendChild(b);
-      });
-      return row;
-    }));
-    const go = mkBtn('⚔ 出征');
-    go.style.cssText += ';background:#1e3a2a;border-color:#22c55e;font-weight:600';
-    go.onclick = () => showMatch(formation, myName, interventions);
-    const back = mkBtn('← 改布阵');
-    back.onclick = () => showFormation([...save.lastOfficers] as [number, number, number]);
-    const btnRow = el('div', 'display:flex;gap:10px');
-    btnRow.append(go, back);
-    root.append(title, sub, energyEl, el('div', 'font-size:12px;opacity:.6', '（点卡名右侧 上/中/下 选目标路打出）'), cardsBox, queueEl, btnRow);
-    refresh();
+  // 出征：旧「布阵分兵 / 备战干预」两屏已废弃（CR 实时出牌模型：派路 + 干预改在战斗中实时做）→ 点出征直接进战斗。
+  // 默认用上次布阵（初始均衡 10/10/10），开战前无预置干预。
+  function startBattle(): void {
+    const off = [...save.lastOfficers] as [number, number, number];
+    showMatch({ officers: off }, describeFormation(off), []);
   }
 
   // ───────────────────────── 场间整备 · 三选一增益（roguelike 养成核 · 胜后短窗）─────────────────────────
@@ -577,7 +468,7 @@ export function mount(container: HTMLElement): () => void {
       } else { // 败/平 → 扣命
         save.lives -= 1;
         if (save.lives <= 0) { tail = '💀 <b>命尽，战役结束</b> 回大厅重整'; save.stage = 1; save.lives = effectiveLives(save.planets); save.bossIdx = rollBoss(); } // 新 run：命线读星球·命、轮换 Boss
-        else { tail = `命 −1（剩 ${save.lives}）重整旗鼓再战本场`; cont = '重整再战'; route = () => showFormation([...save.lastOfficers] as [number, number, number]); }
+        else { tail = `命 −1（剩 ${save.lives}）重整旗鼓再战本场`; cont = '重整再战'; route = startBattle; }
       }
       const qm = quartermasterEnergy(save.tiangangs, lanesA); // 督粮：每胜一路 +◈ 入下场 run 能量（post-resolve）
       if (qm > 0) { save.leverEnergy = Math.min(effectiveLeverCap(save.planets), save.leverEnergy + qm); tail += `（督粮 +${qm}◈）`; }
