@@ -39,6 +39,8 @@
 | 17 | `17-realtime-march-battle-correction.md` | ⛔ 战斗模型纠偏（TOP）：实时三路行军→遭遇掷命→攻克大本营（取代瞬间结算 best-of-3）|
 | 18 | `18-dynamic-lane-deployment-battle.md` | ⭐ 核心博弈层：玩家实时控盘·田忌赛马·以少胜多（在 17 行军骨架上长出"边看边投放、边读边干预"的连续博弈）|
 | 19 | `19-unified-combat-model.md` | ⭐⭐ 统一战斗模型（"谁赢谁输"单一真相）：18 田忌赛马 × F-handoff 概率对决合流 —— clash-resolve 数学/公平骨架/续航经济/3血大本营/仿真台 |
+| 20 | `20-joker-catalog-150.md` | ⭐ 命牌全集（致命翻牌养成层）：10 维度数据 kind + 牌力评估 + 一期 20 张精选 + 储备池逐期加厚（owner：不堆 150、慢慢加厚、每张牌力）|
+| — | `TODAY-TASKS.md` | 今日双程序员正交派单（甲=开发/乙=菜单）|
 | — | `PROGRAM-G-TASKS.md` | design G↔program G 循环任务板（当前任务/状态/回馈）|
 | — | `UI/` | UI 设计稿（`大厅` / `三路战场`(推荐) / `对战`(参考) `.dc.html` + README）= `08` 的依据 |
 
