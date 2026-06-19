@@ -142,6 +142,26 @@ async function apiCall(endpoint: string): Promise<any> {
   return res.json();
 }
 
+function useKeyframes() {
+  useEffect(() => {
+    const id = 'apollo-launcher-kf';
+    if (document.getElementById(id)) return;
+    const s = document.createElement('style');
+    s.id = id;
+    s.textContent = `
+      @keyframes al-shimmer {
+        0%   { transform: translateX(-120%) skewX(-12deg); }
+        100% { transform: translateX(380%)  skewX(-12deg); }
+      }
+      @keyframes al-pulse {
+        0%, 100% { opacity: 1; }
+        50%       { opacity: 0.72; }
+      }
+    `;
+    document.head.appendChild(s);
+  }, []);
+}
+
 // ══════════════════════════════════════
 //  Cartridge + Carousel
 // ══════════════════════════════════════
@@ -217,15 +237,36 @@ function Cartridge({ game, isSelected }: { game: GameEntry; isSelected: boolean 
           pointerEvents: 'none',
         }} />
       )}
+      {/* Selected shimmer sweep */}
+      {isSelected && (
+        <div style={{ position: 'absolute', inset: 0, overflow: 'hidden', pointerEvents: 'none', borderRadius: 10 }}>
+          <div style={{
+            position: 'absolute', top: 0, bottom: 0, width: '40%',
+            background: 'linear-gradient(90deg, transparent, rgba(255,255,255,0.07), transparent)',
+            animation: 'al-shimmer 3s ease-in-out infinite',
+          }} />
+        </div>
+      )}
+      {/* Selected top glint */}
+      {isSelected && (
+        <div style={{
+          position: 'absolute', top: 0, left: '12%', right: '12%', height: 1,
+          background: `linear-gradient(90deg, transparent, ${game.accentColor}88, transparent)`,
+          pointerEvents: 'none',
+        }} />
+      )}
     </div>
   );
 }
 
 function CartridgeCarousel({ onLaunch }: { onLaunch: (id: string) => void }) {
   const [activeIndex, setActiveIndex] = useState(0);
+  const [arrowHover, setArrowHover] = useState<'left' | 'right' | null>(null);
   const n = GAMES.length;
-  const prevIdx = (activeIndex - 1 + n) % n;
-  const nextIdx = (activeIndex + 1) % n;
+  const prevIdx  = (activeIndex - 1 + n) % n;
+  const nextIdx  = (activeIndex + 1) % n;
+  const prevPrev = (activeIndex - 2 + n) % n;
+  const nextNext = (activeIndex + 2) % n;
 
   const goLeft = useCallback(() => setActiveIndex((i: number) => (i - 1 + n) % n), [n]);
   const goRight = useCallback(() => setActiveIndex((i: number) => (i + 1) % n), [n]);
@@ -246,13 +287,17 @@ function CartridgeCarousel({ onLaunch }: { onLaunch: (id: string) => void }) {
   const selected = GAMES[activeIndex];
 
   const cardStyle = (i: number): React.CSSProperties => {
-    const isCenter = i === activeIndex;
-    const isPrev   = i === prevIdx;
-    const isNext   = i === nextIdx;
+    const isCenter   = i === activeIndex;
+    const isPrev     = i === prevIdx;
+    const isNext     = i === nextIdx;
+    const isPrevPrev = n > 4 && i === prevPrev && i !== prevIdx && i !== activeIndex;
+    const isNextNext = n > 4 && i === nextNext && i !== nextIdx && i !== activeIndex;
     let tx = '0px', ty = '0px', scale = '0', opacity = 0;
-    if (isCenter)     { tx = '0px';   ty = '0px';  scale = '1';    opacity = 1; }
-    else if (isPrev)  { tx = '-178px'; ty = '22px'; scale = '0.72'; opacity = 0.52; }
-    else if (isNext)  { tx = '178px';  ty = '22px'; scale = '0.72'; opacity = 0.52; }
+    if (isCenter)        { tx = '0px';    ty = '0px';  scale = '1';    opacity = 1; }
+    else if (isPrev)     { tx = '-178px'; ty = '22px'; scale = '0.72'; opacity = 0.52; }
+    else if (isNext)     { tx = '178px';  ty = '22px'; scale = '0.72'; opacity = 0.52; }
+    else if (isPrevPrev) { tx = '-295px'; ty = '40px'; scale = '0.52'; opacity = 0.18; }
+    else if (isNextNext) { tx = '295px';  ty = '40px'; scale = '0.52'; opacity = 0.18; }
     return {
       position: 'absolute' as const,
       left: '50%',
@@ -271,13 +316,13 @@ function CartridgeCarousel({ onLaunch }: { onLaunch: (id: string) => void }) {
     position: 'absolute' as const,
     top: '50%',
     [side]: 8,
-    transform: 'translateY(-50%)',
+    transform: arrowHover === side ? 'translateY(-50%) scale(1.15)' : 'translateY(-50%)',
     zIndex: 10,
     width: 36, height: 36,
-    background: 'rgba(255,255,255,0.06)',
-    border: '1px solid rgba(255,255,255,0.12)',
+    background: arrowHover === side ? 'rgba(255,255,255,0.12)' : 'rgba(255,255,255,0.06)',
+    border: `1px solid ${arrowHover === side ? 'rgba(255,255,255,0.26)' : 'rgba(255,255,255,0.12)'}`,
     borderRadius: '50%',
-    color: '#94a3b8',
+    color: arrowHover === side ? '#e2e8f0' : '#94a3b8',
     fontSize: 14,
     cursor: 'pointer',
     display: 'flex',
@@ -291,7 +336,21 @@ function CartridgeCarousel({ onLaunch }: { onLaunch: (id: string) => void }) {
     <div style={{ width: '100%', maxWidth: 880 }}>
       {/* Stage */}
       <div style={{ position: 'relative', height: 288, overflow: 'visible' }}>
-        <button onClick={goLeft} style={arrowStyle('left')}>◀</button>
+        <button onClick={goLeft} style={arrowStyle('left')}
+          onMouseEnter={() => setArrowHover('left')}
+          onMouseLeave={() => setArrowHover(null)}>◀</button>
+
+        {/* Ambient color glow behind active card */}
+        <div style={{
+          position: 'absolute',
+          width: 320, height: 320,
+          background: `radial-gradient(circle, ${selected.accentColor}18 0%, transparent 68%)`,
+          top: '50%', left: '50%',
+          transform: 'translate(-50%, -50%)',
+          pointerEvents: 'none',
+          transition: 'background 0.5s ease',
+          borderRadius: '50%',
+        }} />
 
         {GAMES.map((game, i) => (
           <div
@@ -303,7 +362,28 @@ function CartridgeCarousel({ onLaunch }: { onLaunch: (id: string) => void }) {
           </div>
         ))}
 
-        <button onClick={goRight} style={arrowStyle('right')}>▶</button>
+        <button onClick={goRight} style={arrowStyle('right')}
+          onMouseEnter={() => setArrowHover('right')}
+          onMouseLeave={() => setArrowHover(null)}>▶</button>
+      </div>
+
+      {/* Dot indicators */}
+      <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', gap: 7, padding: '10px 0 2px' }}>
+        {GAMES.map((g, i) => (
+          <div
+            key={g.id}
+            onClick={() => setActiveIndex(i)}
+            style={{
+              width: i === activeIndex ? 20 : 6,
+              height: 6,
+              borderRadius: 3,
+              background: i === activeIndex ? selected.accentColor : 'rgba(255,255,255,0.15)',
+              cursor: 'pointer',
+              transition: 'all 0.32s cubic-bezier(0.25,0.46,0.45,0.94)',
+              flexShrink: 0,
+            }}
+          />
+        ))}
       </div>
 
       {/* Description */}
@@ -334,6 +414,7 @@ function CartridgeCarousel({ onLaunch }: { onLaunch: (id: string) => void }) {
               ? `0 4px 22px ${selected.accentColor}44, 0 0 0 1px ${selected.accentColor}33`
               : 'none',
             transition: 'all 0.22s',
+            animation: selected.status === 'playable' ? 'al-pulse 2.4s ease-in-out infinite' : 'none',
             outline: 'none',
           }}
         >
@@ -582,6 +663,7 @@ function GameRunner({ gameId, onBack }: { gameId: string; onBack: () => void }) 
 // ══════════════════════════════════════
 
 function Launcher() {
+  useKeyframes();
   // 「正在玩哪个游戏」进 URL（?game=id）：游戏选择若只是 React 状态，任何全页 reload
   // （HMR 失联恢复 / 依赖再优化 / 手动刷新）都会把人弹回主页——这正是「点游戏几秒后跳回主页」
   // 系列 bug 的放大器（根因之一 stdout pipe 阻塞已修，此处把"导航被 reload 清零"永久防住）。
