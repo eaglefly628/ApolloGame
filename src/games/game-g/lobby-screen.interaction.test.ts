@@ -5,7 +5,7 @@ const J = (id: string, name: string): LobbyShopItem => ({ id, name, sub: name, c
 const view = (): LobbyView => ({
   skin: 'onyx', coin: 1200, energy: 4, energyMax: 6, foilCount: 1, name: 'X', mainCard: '黑桃A', rankText: '战役 3/5',
   stageLabel: '第 3 战', archLine: '将领流', bossLine: 'boss', deckAvg: 53, deckMin: 44, deckMax: 62, deck: Array.from({ length: 52 }, (_, i) => 44 + (i % 10) * 2),
-  jokers: [J('comrade', '同袍')], planets: [{ id: 'mars', name: '星球·军', sub: 's', cost: 14, owned: false, level: 0, buyable: true }], foils: [J('gilt', '鎏金')], ladderLines: ['<h2>战役</h2>'],
+  tiangangs: [J('comrade', '同袍')], planets: [{ id: 'mars', name: '星球·军', sub: 's', cost: 14, owned: false, level: 0, buyable: true }], foils: [J('gilt', '鎏金')], ladderLines: ['<h2>战役</h2>'],
 });
 
 describe('Game G · lobby tab 渲染逻辑（on(tab) 切激活屏 + 回调挂钩齐全）', () => {
@@ -21,7 +21,7 @@ describe('Game G · lobby tab 渲染逻辑（on(tab) 切激活屏 + 回调挂钩
     }
     // 交互钩子齐全（mountLobby 据此分发）
     const h = renderLobby(view(), 'craft', false);
-    for (const a of ['data-act="tab"', 'data-act="skin"', 'data-act="play"', 'data-act="buyJoker"', 'data-act="buyPlanet"', 'data-act="reset"', 'data-act="tut"']) expect(h).toContain(a);
+    for (const a of ['data-act="tab"', 'data-act="skin"', 'data-act="play"', 'data-act="buyTiangang"', 'data-act="buyPlanet"', 'data-act="reset"', 'data-act="tut"']) expect(h).toContain(a);
   });
 
   it('切屏 CSS 守恒：非激活屏 display:none、激活才 display:flex；homerow 不得带 display（否则 HOME 永显盖住别屏 = 点 tab 还停在主页）', () => {

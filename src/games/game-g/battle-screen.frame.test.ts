@@ -11,7 +11,7 @@ import { armyToDeploys, buildBattleViewLive, canDrawFrom, freshSave } from './ga
 // ═══════════════════════════════════════════════════════════════
 const setup = (): { live: ReturnType<typeof initLiveBattle>; deploys: ReturnType<typeof armyToDeploys> } => {
   const boss = bossFor(2); // 方块J·诡牌（终局牌王座）
-  const { a, b } = prepareArmies({ formation: FORMATION_PRESETS['锋矢'], deckBias: 8, jokers: ['bannerman', 'warlord'], interventions: [], enemyForm: boss.formation, enemyBias: boss.favorBias, boss });
+  const { a, b } = prepareArmies({ formation: FORMATION_PRESETS['锋矢'], deckBias: 8, tiangangs: ['bannerman', 'warlord'], interventions: [], enemyForm: boss.formation, enemyBias: boss.favorBias, boss });
   const live = initLiveBattle(7, HOME_BLOOD);
   const deploys = [...armyToDeploys(a, 'a'), ...armyToDeploys(b, 'b')];
   return { live, deploys };

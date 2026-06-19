@@ -248,10 +248,10 @@ export function battleSpec(i: number): BattleSpec {
 // 胜一场后的短窗：三随机增益里选一项，改 牌组 favor / 命 / 干预能量◈ / 材料。**纯数据**（最弱 LLM 能填 {kind,amount}）
 // + 小解释器 applyBuff，与大厅商城同类的存档变更——零新 capability、headless 可测。选择即流派（养成核）。
 // kind 'joker' = 流派钥匙（白嫖一张小丑 → 构筑分叉，design reply#10 StS/Balatro 式，T-G6 小丑就绪后接）。
-export type BuffKind = 'deck-all' | 'deck-weak' | 'lives' | 'energy' | 'materials' | 'joker';
-export interface RunBuff { id: string; name: string; desc: string; kind: BuffKind; amount: number; count?: number; jokerId?: string }
+export type BuffKind = 'deck-all' | 'deck-weak' | 'lives' | 'energy' | 'materials' | 'tiangang';
+export interface RunBuff { id: string; name: string; desc: string; kind: BuffKind; amount: number; count?: number; tiangangId?: string }
 // 被增益作用的存档子集（Save 的子结构；解耦 mount 的 Save 类型，便于 headless 测）。含 jokers（流派钥匙落点）。
-export interface BuffTarget { deck: number[]; lives: number; leverEnergy: number; materials: number; jokers: string[] }
+export interface BuffTarget { deck: number[]; lives: number; leverEnergy: number; materials: number; tiangangs: string[] }
 export const BETWEEN_BUFFS: RunBuff[] = [
   { id: 'drill', name: '整训', desc: '全军 favor +4', kind: 'deck-all', amount: 4 },
   { id: 'elite', name: '精兵', desc: '最弱 10 张 favor +8', kind: 'deck-weak', amount: 8, count: 10 },
@@ -269,7 +269,7 @@ export function applyBuff(t: BuffTarget, b: RunBuff): void {
   } else if (b.kind === 'lives') t.lives += b.amount;
   else if (b.kind === 'energy') t.leverEnergy = Math.min(LEVER_CAP, t.leverEnergy + b.amount);
   else if (b.kind === 'materials') t.materials += b.amount;
-  else if (b.kind === 'joker') { if (b.jokerId && !t.jokers.includes(b.jokerId)) t.jokers.push(b.jokerId); } // 流派钥匙：白嫖小丑（去重）
+  else if (b.kind === 'tiangang') { if (b.tiangangId && !t.tiangangs.includes(b.tiangangId)) t.tiangangs.push(b.tiangangId); } // 流派钥匙：白嫖小丑（去重）
 }
 
 // ═══════════════════════════════════════════════════════════════
@@ -324,14 +324,14 @@ export function standardArmy(prefix: string, favorBias = 0): ArmyCard[] {
 }
 
 // 结局联动族小丑（design/12 §五.5）：在确定性单遍解析里**前向生效**（只改未翻牌 → 无二次解析、hash 稳）。
-export interface LinkJokers { martyr: boolean; chain: boolean }
+export interface LinkTiangangs { martyr: boolean; chain: boolean }
 const SHI_REVENGE = 10; // 死士：本路首死后，余下未翻的兵 +favor（报仇·死战）
 
 // 将领牵动：逐路自上而下掷命——先掷主将，按主将生死给本路下属 ±favor，再掷下属。返回 id→faceUp。
 // PRNG 顺序固定（lane 0→1→2，路内主将先、其余按生成序）→ 可回放、确定性。
 // moraleScale[lane]：本路士气倍率（旗手/枭雄放大 `06` 士气，仅放大士气不放大溃散；只改 favor 值、不改掷命次数→序列不变）。
 // links：结局联动（死士首死→余部 +报仇；连环首活→牵下一张跳掷命置活）。均前向、只动未翻牌 → 单遍确定、hash 稳。
-function resolveArmy(army: ArmyCard[], rng: RandomSeed, moraleScale: readonly number[] = [1, 1, 1], links: LinkJokers = { martyr: false, chain: false }): Map<string, boolean> {
+function resolveArmy(army: ArmyCard[], rng: RandomSeed, moraleScale: readonly number[] = [1, 1, 1], links: LinkTiangangs = { martyr: false, chain: false }): Map<string, boolean> {
   const face = new Map<string, boolean>();
   for (const lane of [0, 1, 2]) {
     const laneCards = army.filter((c) => c.lane === lane);
@@ -601,11 +601,11 @@ export function bossFor(idx: number): BossSpec {
 // contract③ 天罡牌稀有度（doc20 §一）普/稀/史/传
 export type TiangangRarity = 'common' | 'rare' | 'epic' | 'legendary';
 // 旧 build-时 favor 变换 kinds + 新 contract③ 10 维度 kinds（甲写解释器）
-export type JokerKind = 'suit-synergy' | 'polarize' | 'lane-pref' | 'diehard' | 'morale' | 'link' | 'economy' | 'revenge'
+export type TiangangKind = 'suit-synergy' | 'polarize' | 'lane-pref' | 'diehard' | 'morale' | 'link' | 'economy' | 'revenge'
   | 'odds' | 'power' | 'combo' | 'tempo' | 'stamina' | 'draw' | 'lane' | 'siege' | 'arcane';
 export type Archetype = 'decap' | 'cardtype' | 'general' | 'wide' | 'probability' | 'tianji'; // 6 流派 id（design/12 §四）
-export interface JokerCard {
-  id: string; name: string; kind: JokerKind; cost: number; archetype: Archetype; text: string;
+export interface TiangangCard {
+  id: string; name: string; kind: TiangangKind; cost: number; archetype: Archetype; text: string;
   amount?: number; // favor 量（旧 build-时变换用）
   lane?: number; // lane-pref 偏好路
   moraleMul?: number; // morale：本路士气倍率（旗手 1.5 / 枭雄 2）
@@ -615,7 +615,7 @@ export interface JokerCard {
   power?: number; // 牌力 ⭐1–5
   phat?: number; // P̂ 0–10 设计估胜率影响（仿真台实测校准）
 }
-export const GAME_G_JOKERS: JokerCard[] = [
+export const GAME_G_TIANGANGS: TiangangCard[] = [
   // ── 旧批（T-G6 · build-时 favor 变换 · 甲已有解释器）──
   { id: 'comrade', name: '同袍', kind: 'suit-synergy', cost: 18, archetype: 'cardtype', amount: 2, text: '本路每有 1 张同花色 → 该牌 +2 favor（牌型流：往一路堆同花越爽）' },
   { id: 'gambler', name: '赌徒', kind: 'polarize', cost: 16, archetype: 'probability', amount: 12, text: '全军 favor 两极化：≥50 的更高、<50 的更低（概率流：高风险高回报）' },
@@ -660,13 +660,13 @@ export const GAME_G_JOKERS: JokerCard[] = [
   { id: 'tianjiyin', name: '田忌印', kind: 'arcane', rarity: 'legendary', cost: 42, archetype: 'tianji', power: 5, phat: 9, params: { mark: 'sacrifice' }, text: '集齐弃一保二流印记 → 弃路 favor 转移 ×1.5（流派招牌质变）' },
 ];
 /** 从已融小丑取结局联动开关（死士/连环）→ 喂 resolveArmy 前向生效。 */
-export function jokerLinks(jokerIds: readonly string[]): LinkJokers {
-  return { martyr: jokerIds.includes('martyr'), chain: jokerIds.includes('chain') };
+export function tiangangLinks(tiangangIds: readonly string[]): LinkTiangangs {
+  return { martyr: tiangangIds.includes('martyr'), chain: tiangangIds.includes('chain') };
 }
 const QUARTERMASTER_PER_LANE = 1; // 督粮：每胜一路 +1◈（入下场 run 能量池，post-resolve）
 /** 督粮：结算后按胜路数算给下场的 ◈ 增益（拥有才有；run 经济，不破本场揭晓前花能量的相位）。 */
-export function quartermasterEnergy(jokerIds: readonly string[], lanesWon: number): number {
-  return jokerIds.includes('quartermaster') ? QUARTERMASTER_PER_LANE * Math.max(0, lanesWon) : 0;
+export function quartermasterEnergy(tiangangIds: readonly string[], lanesWon: number): number {
+  return tiangangIds.includes('quartermaster') ? QUARTERMASTER_PER_LANE * Math.max(0, lanesWon) : 0;
 }
 
 // ── T-G6 · 星球牌（第二养成轴 · design/12 §三 · 升档/可叠加）──
@@ -704,36 +704,36 @@ export function applyPlanetArmy(army: ArmyCard[], planets: Record<string, number
   const bump = planetBump(planets, 'mars');
   return army.map((c) => (bump > 0 && PLANET_TROOP_RANKS.has(c.rank) ? { ...c, favor: clampFavor(c.favor + bump) } : { ...c }));
 }
-export const JOKER_BY_ID: ReadonlyMap<string, JokerCard> = new Map(GAME_G_JOKERS.map((j) => [j.id, j]));
+export const TIANGANG_BY_ID: ReadonlyMap<string, TiangangCard> = new Map(GAME_G_TIANGANGS.map((j) => [j.id, j]));
 
 /** 流派钥匙：把"未拥有的小丑"包成场间三选一可白嫖的 RunBuff（design reply#10：场间选择=构筑分叉）。已拥有的不再出。 */
-export function jokerKeyBuffs(ownedIds: readonly string[]): RunBuff[] {
-  return GAME_G_JOKERS.filter((j) => !ownedIds.includes(j.id)).map((j) => ({
-    id: `key_${j.id}`, name: `🃏钥匙·${j.name}`, desc: `融入小丑【${j.name}】：${j.text}`, kind: 'joker', amount: 0, jokerId: j.id,
+export function tiangangKeyBuffs(ownedIds: readonly string[]): RunBuff[] {
+  return GAME_G_TIANGANGS.filter((j) => !ownedIds.includes(j.id)).map((j) => ({
+    id: `key_${j.id}`, name: `🃏钥匙·${j.name}`, desc: `融入小丑【${j.name}】：${j.text}`, kind: 'tiangang', amount: 0, tiangangId: j.id,
   }));
 }
 
 // ── T-G6 · 流派 + 克制网（design/12 §四 · 身份 + 石头剪刀布）──
 // 流派 = 由已融小丑浮现的身份；克制网 = **双 3-环** rock-paper-scissors（无唯一最优 → 看对手临场调布阵/干预）。
 // 纯数据：每流派 {keyJokers, counters} 最弱 LLM 能填；detectArchetype 数已融小丑归属、archetypeMatchup 查克制——零新能力。
-export interface ArchetypeSpec { id: Archetype; name: string; desc: string; keyJokers: string[]; counters: Archetype }
+export interface ArchetypeSpec { id: Archetype; name: string; desc: string; keyTiangangs: string[]; counters: Archetype }
 export const ARCHETYPES: ArchetypeSpec[] = [
   // 核心 3-环（`12` §四明示）：斩首 克 将领 克 铺场 克 斩首。
-  { id: 'decap', name: '斩首流', desc: '攒能量秒敌主将引溃散', keyJokers: ['quartermaster', 'shadow'], counters: 'general' },
-  { id: 'general', name: '将领流', desc: '主将士气碾压一路', keyJokers: ['bannerman', 'warlord'], counters: 'wide' },
-  { id: 'wide', name: '铺场流', desc: 'go-wide + 连锁必活', keyJokers: ['vanguard', 'martyr', 'chain'], counters: 'decap' },
+  { id: 'decap', name: '斩首流', desc: '攒能量秒敌主将引溃散', keyTiangangs: ['quartermaster', 'shadow'], counters: 'general' },
+  { id: 'general', name: '将领流', desc: '主将士气碾压一路', keyTiangangs: ['bannerman', 'warlord'], counters: 'wide' },
+  { id: 'wide', name: '铺场流', desc: 'go-wide + 连锁必活', keyTiangangs: ['vanguard', 'martyr', 'chain'], counters: 'decap' },
   // 次 3-环（我的合理映射，待 design 校准）：牌型 克 概率 克 弃一保二 克 牌型。
-  { id: 'cardtype', name: '牌型流', desc: '堆同花色/连号成高牌型', keyJokers: ['comrade'], counters: 'probability' },
-  { id: 'probability', name: '概率流', desc: '改命堆高 favor 稳翻正', keyJokers: ['gambler', 'diehard'], counters: 'tianji' },
-  { id: 'tianji', name: '弃一保二流', desc: '弃一路、经济滚两路', keyJokers: [], counters: 'cardtype' }, // 钥匙：田忌布阵/督粮(待)
+  { id: 'cardtype', name: '牌型流', desc: '堆同花色/连号成高牌型', keyTiangangs: ['comrade'], counters: 'probability' },
+  { id: 'probability', name: '概率流', desc: '改命堆高 favor 稳翻正', keyTiangangs: ['gambler', 'diehard'], counters: 'tianji' },
+  { id: 'tianji', name: '弃一保二流', desc: '弃一路、经济滚两路', keyTiangangs: [], counters: 'cardtype' }, // 钥匙：田忌布阵/督粮(待)
 ];
 const ARCH_BY_ID: ReadonlyMap<Archetype, ArchetypeSpec> = new Map(ARCHETYPES.map((a) => [a.id, a]));
-/** 由已融小丑浮现的主流派：数每流派 keyJokers 命中数，取最高（平局取 ARCHETYPES 靠前）；无命中 → null。 */
-export function detectArchetype(jokerIds: readonly string[]): ArchetypeSpec | null {
+/** 由已融小丑浮现的主流派：数每流派 keyTiangangs 命中数，取最高（平局取 ARCHETYPES 靠前）；无命中 → null。 */
+export function detectArchetype(tiangangIds: readonly string[]): ArchetypeSpec | null {
   let best: ArchetypeSpec | null = null;
   let bestN = 0;
   for (const a of ARCHETYPES) {
-    const n = a.keyJokers.filter((k) => jokerIds.includes(k)).length;
+    const n = a.keyTiangangs.filter((k) => tiangangIds.includes(k)).length;
     if (n > bestN) { bestN = n; best = a; }
   }
   return best;
@@ -750,10 +750,10 @@ export function archetypeMatchup(a: Archetype, b: Archetype): 'counter' | 'count
 // ⚠️ 与 design#16 的差异(已报 finish，待 design 核)：① 原阈值"≥3 keyJokers"与现 keyJoker 数(多为 2)不符 → 改"集齐主流派全 keyJokers"(6 流派皆可达)；
 //    ② 原招式 概率(改 decideFaceUp 下限)/弃一保二(favor 转移)/斩首(−1◈+溃散−20) 需新机制/改核 → 取**等价 build-时近似**(各注)。全 build 时、outcome-first、零新能力。
 const ACTIVATION_FAVOR = 8; // 弃一保二：两强路集中 +favor
-export function activeArchetype(jokerIds: readonly string[]): Archetype | null {
-  const main = detectArchetype(jokerIds); // 多数决主流派
-  if (!main || main.keyJokers.length === 0) return null;
-  return main.keyJokers.every((k) => jokerIds.includes(k)) ? main.id : null; // 集齐主流派 keyJokers 才质变
+export function activeArchetype(tiangangIds: readonly string[]): Archetype | null {
+  const main = detectArchetype(tiangangIds); // 多数决主流派
+  if (!main || main.keyTiangangs.length === 0) return null;
+  return main.keyTiangangs.every((k) => tiangangIds.includes(k)) ? main.id : null; // 集齐主流派 keyJokers 才质变
 }
 /**
  * 施主流派招牌增益（揭晓前 build-时）。返回改后 a/b + 士气倍率/牌型阶梯加成（喂下游 moraleA / 干预 tierBonus）。
@@ -783,10 +783,10 @@ export function applyArchetypeActivation(active: Archetype, armyA: ArmyCard[], a
 
 // 从已融小丑算每路士气倍率（旗手全路、枭雄仅顶级主将路）→ 喂 resolveArmy。复用 `06` 士气、不新机制。
 const TOP_RANKS = new Set(['JOKER', 'K']); // 顶级军衔（枭雄触发档）
-export function jokerMoraleScale(army: ArmyCard[], jokerIds: readonly string[]): number[] {
+export function tiangangMoraleScale(army: ArmyCard[], tiangangIds: readonly string[]): number[] {
   const scale = [1, 1, 1];
-  for (const id of jokerIds) {
-    const j = JOKER_BY_ID.get(id);
+  for (const id of tiangangIds) {
+    const j = TIANGANG_BY_ID.get(id);
     if (!j || j.kind !== 'morale') continue;
     for (const lane of [0, 1, 2]) {
       if (j.id === 'warlord') {
@@ -802,10 +802,10 @@ export function jokerMoraleScale(army: ArmyCard[], jokerIds: readonly string[]):
  * 融小丑：揭晓前按已融小丑（持久）把军阵 favor 变换 → 返回新军，喂 applyInterventions/build。
  * outcome-first：只改掷命前输入；同军+同小丑集 → 同结果（确定性、可回放）。纯 build 时、零 rng、零新能力。
  */
-export function applyJokers(army: ArmyCard[], jokerIds: readonly string[]): ArmyCard[] {
+export function applyTiangangs(army: ArmyCard[], tiangangIds: readonly string[]): ArmyCard[] {
   let out = army.map((c) => ({ ...c }));
-  for (const id of jokerIds) {
-    const j = JOKER_BY_ID.get(id);
+  for (const id of tiangangIds) {
+    const j = TIANGANG_BY_ID.get(id);
     if (!j) continue;
     const amt = j.amount ?? 0;
     if (j.kind === 'suit-synergy') {
@@ -828,20 +828,20 @@ export function applyJokers(army: ArmyCard[], jokerIds: readonly string[]): Army
  *   成军(布阵+deck偏置) → 融小丑(applyJokers) → 玩家干预(caster='a') → Boss 起手干预(caster='b') → 算士气倍率。
  * 全在揭晓前、不回灌 gameplay（outcome-first）；返回喂 buildGameGArmyMatch 的 {a,b,moraleA}。纯函数、可重放。
  */
-export interface MatchSetup { formation: Formation; deckBias: number; jokers: readonly string[]; interventions: Intervention[]; enemyForm?: Formation; enemyBias: number; boss?: BossSpec | null; planets?: Record<string, number> }
-export function prepareArmies(s: MatchSetup): { a: ArmyCard[]; b: ArmyCard[]; moraleA: number[]; linksA: LinkJokers } {
+export interface MatchSetup { formation: Formation; deckBias: number; tiangangs: readonly string[]; interventions: Intervention[]; enemyForm?: Formation; enemyBias: number; boss?: BossSpec | null; planets?: Record<string, number> }
+export function prepareArmies(s: MatchSetup): { a: ArmyCard[]; b: ArmyCard[]; moraleA: number[]; linksA: LinkTiangangs } {
   const planets = s.planets ?? {};
-  let a = applyJokers(applyPlanetArmy(armyFromFormation('a', s.deckBias, s.formation), planets), s.jokers); // 星球·军(兵档底盘) → 融小丑（持久 favor 变换）
+  let a = applyTiangangs(applyPlanetArmy(armyFromFormation('a', s.deckBias, s.formation), planets), s.tiangangs); // 星球·军(兵档底盘) → 融小丑（持久 favor 变换）
   let b = armyFromFormation('b', s.enemyBias, s.enemyForm);
   // 流派激活质变：主流派集齐 keyJokers → 招牌增益（改 a/b + 士气倍率/牌型阶梯加成）。
-  const active = activeArchetype(s.jokers);
+  const active = activeArchetype(s.tiangangs);
   let moraleMul = 1;
   let tierAdd = 0;
   if (active) { const r = applyArchetypeActivation(active, a, b, s.deckBias); a = r.a; b = r.b; moraleMul = r.moraleMul; tierAdd = r.tierBonusAdd; }
   ({ a, b } = applyInterventions(a, b, s.interventions, s.deckBias, 'a', effectiveTierBonus(planets) + tierAdd)); // 玩家干预（flush 吃星球·型 + 牌型流激活）
   if (s.boss && s.boss.openingLevers.length) ({ a, b } = applyInterventions(a, b, s.boss.openingLevers, s.enemyBias, 'b')); // Boss 起手（对称）
-  if (s.jokers.includes('shadow')) a = applyShadowRevenge(a); // 影武者：敌斩首命中我主将 → 该路余部复仇（在 Boss 干预后侦测）
-  return { a, b, moraleA: jokerMoraleScale(a, s.jokers).map((m) => m * moraleMul), linksA: jokerLinks(s.jokers) }; // 士气倍率(×将领流激活) + 结局联动
+  if (s.tiangangs.includes('shadow')) a = applyShadowRevenge(a); // 影武者：敌斩首命中我主将 → 该路余部复仇（在 Boss 干预后侦测）
+  return { a, b, moraleA: tiangangMoraleScale(a, s.tiangangs).map((m) => m * moraleMul), linksA: tiangangLinks(s.tiangangs) }; // 士气倍率(×将领流激活) + 结局联动
 }
 
 // ── 行军·攻克大本营 调参（design/17 §二；owner 纠偏：实时三路行军取代瞬间翻牌；先破者胜）──
@@ -858,7 +858,7 @@ export const MARCH_DURATION = MARCH_T0 + HOME_HP * MARCH_PERIOD; // 行军/攻�
  * moraleA：我方各路士气倍率（旗手/枭雄小丑放大，缺省 [1,1,1]）；敌方无小丑。缩放不改掷命次数→确定性不变。
  * linksA：我方结局联动（死士/连环，缺省关）；前向单遍生效、只动未翻牌 → hash 稳。敌方无小丑。
  */
-export function buildGameGArmyMatch(armyA: ArmyCard[], armyB: ArmyCard[], seed = 1, reward = MATCH_REWARD, moraleA: readonly number[] = [1, 1, 1], linksA: LinkJokers = { martyr: false, chain: false }): WorldBlueprint {
+export function buildGameGArmyMatch(armyA: ArmyCard[], armyB: ArmyCard[], seed = 1, reward = MATCH_REWARD, moraleA: readonly number[] = [1, 1, 1], linksA: LinkTiangangs = { martyr: false, chain: false }): WorldBlueprint {
   const rng: RandomSeed = { type: 'RandomSeed', seed, sequence: 0 };
   const faceA = resolveArmy(armyA, rng, moraleA, linksA);
   const faceB = resolveArmy(armyB, rng);

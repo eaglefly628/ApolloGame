@@ -161,7 +161,7 @@ write('03-stagger.svg', frame(runTo(mk(7), Math.round(FLIP_DURATION * 0.8)).worl
 write('04-reveal.svg', frame(runTo(mk(7), FLIP_DURATION + MARCH_DURATION + 4).world, '突破破家 · 幸存推进攻克敌方老家'));
 
 const boss = bossFor(5);
-const { a, b } = prepareArmies({ formation: FORMATION_PRESETS['锋矢'], deckBias: 8, jokers: ['bannerman', 'warlord'], interventions: [], enemyForm: boss.formation, enemyBias: boss.favorBias, boss });
+const { a, b } = prepareArmies({ formation: FORMATION_PRESETS['锋矢'], deckBias: 8, tiangangs: ['bannerman', 'warlord'], interventions: [], enemyForm: boss.formation, enemyBias: boss.favorBias, boss });
 const e3 = new Engine({ tickRate: 60 });
 e3.load(buildGameGArmyMatch(a, b, 9));
 runTo(e3, FLIP_DURATION + MARCH_DURATION + 4);

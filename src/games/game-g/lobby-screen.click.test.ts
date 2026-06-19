@@ -15,7 +15,7 @@ const makeView = (overrides: Partial<LobbyView> = {}): LobbyView => ({
   stageLabel: '第 3 战', archLine: '将领流', bossLine: 'Boss信息',
   deckAvg: 53, deckMin: 44, deckMax: 62,
   deck: Array.from({ length: 52 }, (_, i) => 44 + (i % 10) * 2),
-  jokers: [J('comrade', '同袍', true, true), J('gambler', '赌徒', false, false, true), J('warlord', '枭雄', false, false, false)],
+  tiangangs: [J('comrade', '同袍', true, true), J('gambler', '赌徒', false, false, true), J('warlord', '枭雄', false, false, false)],
   planets: [{ id: 'saturn', name: '星球·命', sub: '命线', cost: 24, owned: false, level: 1, buyable: true }],
   foils: [{ id: 'gilt', name: '鎏金', sub: '金箔', cost: 30, owned: false, buyable: true }],
   ladderLines: ['<h2>战役进度</h2><div class="bigrank">第 3/5 战</div>'],
@@ -162,66 +162,66 @@ describe('Game G · lobby-screen mountLobby 点击交互（DOM · happy-dom）',
 
   // ── 5. 买入小丑 ──
   describe('改造坊·买入小丑', () => {
-    it('点击可买小丑→ onBuyJoker 以正确 id 调用', () => {
-      const onBuyJoker = vi.fn();
+    it('点击可买小丑→ onBuyTiangang 以正确 id 调用', () => {
+      const onBuyTiangang = vi.fn();
       const host = document.createElement('div');
-      mountLobby(host, { getView: makeView, onPlay: vi.fn(), onBuyJoker });
+      mountLobby(host, { getView: makeView, onPlay: vi.fn(), onBuyTiangang });
       click(navBtn(host, '改造坊'));
       // gambler 是 buyable 的（owned=false, buyable=true）
-      const buyEl = host.querySelector('[data-act="buyJoker"][data-k="gambler"]')!;
+      const buyEl = host.querySelector('[data-act="buyTiangang"][data-k="gambler"]')!;
       click(buyEl);
-      expect(onBuyJoker).toHaveBeenCalledWith('gambler');
+      expect(onBuyTiangang).toHaveBeenCalledWith('gambler');
     });
 
-    it('locked 小丑（warlord）不渲染 data-act="buyJoker"', () => {
+    it('locked 小丑（warlord）不渲染 data-act="buyTiangang"', () => {
       const host = document.createElement('div');
       mountLobby(host, { getView: makeView, onPlay: vi.fn() });
       click(navBtn(host, '改造坊'));
-      expect(host.querySelector('[data-act="buyJoker"][data-k="warlord"]')).toBeNull();
+      expect(host.querySelector('[data-act="buyTiangang"][data-k="warlord"]')).toBeNull();
     });
   });
 
   // ── 6. 战库切换（B3）──
   describe('改造坊·命牌战库切换（B3）', () => {
-    it('已拥有且未入战库的小丑：点「+ 战库」→ onToggleJoker 以 id 调用', () => {
-      const onToggleJoker = vi.fn();
+    it('已拥有且未入战库的小丑：点「+ 战库」→ onToggleTiangang 以 id 调用', () => {
+      const onToggleTiangang = vi.fn();
       // 构造一个 owned=true，inDeck=false 的小丑
       const view = makeView({
-        jokers: [J('comrade', '同袍', true, false)],
+        tiangangs: [J('comrade', '同袍', true, false)],
       });
       const host = document.createElement('div');
-      mountLobby(host, { getView: () => view, onPlay: vi.fn(), onToggleJoker });
+      mountLobby(host, { getView: () => view, onPlay: vi.fn(), onToggleTiangang });
       click(navBtn(host, '改造坊'));
-      const togBtn = host.querySelector('[data-act="toggleJoker"][data-k="comrade"]')!;
+      const togBtn = host.querySelector('[data-act="toggleTiangang"][data-k="comrade"]')!;
       expect(togBtn).not.toBeNull();
       click(togBtn);
-      expect(onToggleJoker).toHaveBeenCalledWith('comrade');
+      expect(onToggleTiangang).toHaveBeenCalledWith('comrade');
     });
 
     it('已入战库的小丑：显示「⚔ 战库」active 态按钮', () => {
       const view = makeView({
-        jokers: [J('comrade', '同袍', true, true)],
+        tiangangs: [J('comrade', '同袍', true, true)],
       });
       const host = document.createElement('div');
       mountLobby(host, { getView: () => view, onPlay: vi.fn() });
       click(navBtn(host, '改造坊'));
-      const togBtn = host.querySelector('[data-act="toggleJoker"][data-k="comrade"]')!;
+      const togBtn = host.querySelector('[data-act="toggleTiangang"][data-k="comrade"]')!;
       expect(togBtn).not.toBeNull();
       expect(togBtn.classList.contains('active')).toBe(true);
       expect(togBtn.textContent).toContain('⚔ 战库');
     });
 
     it('战库已满（5 张）：未入战库的 owned 小丑显示「战库满」且 disabled', () => {
-      const jokers: LobbyShopItem[] = [
+      const tiangangs: LobbyShopItem[] = [
         J('a', 'A', true, true), J('b', 'B', true, true), J('c', 'C', true, true),
         J('d', 'D', true, true), J('e', 'E', true, true),
         J('f', 'F', true, false), // owned 但未入战库，且战库已满
       ];
-      const view = makeView({ jokers });
+      const view = makeView({ tiangangs });
       const host = document.createElement('div');
       mountLobby(host, { getView: () => view, onPlay: vi.fn() });
       click(navBtn(host, '改造坊'));
-      const togBtn = host.querySelector('[data-act="toggleJoker"][data-k="f"]') as HTMLButtonElement | null;
+      const togBtn = host.querySelector('[data-act="toggleTiangang"][data-k="f"]') as HTMLButtonElement | null;
       expect(togBtn).not.toBeNull();
       expect(togBtn?.disabled).toBe(true);
       expect(togBtn?.textContent).toContain('战库满');

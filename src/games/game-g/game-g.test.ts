@@ -2,7 +2,7 @@ import { describe, it, expect } from 'vitest';
 import { Engine } from '../../runtime/engine.js';
 import type { Component } from '@engine/core/types.js';
 import type { Transform, RandomSeed, Resource, State, Card3D } from '@engine/protocol/components.js';
-import { buildGameG3DFlip, buildGameGDuel3D, buildGameGMatch, buildGameGArmyMatch, prepareArmies, standardArmy, armyFromFormation, laneEstimates, applyInterventions, applyShadowRevenge, quartermasterEnergy, pickAiFormation, applyJokers, jokerMoraleScale, jokerLinks, jokerKeyBuffs, GAME_G_JOKERS, JOKER_BY_ID, ARCHETYPES, detectArchetype, archetypeMatchup, activeArchetype, applyArchetypeActivation, GAME_G_PLANETS, GAME_G_FOILS, effectiveLives, effectiveLeverCap, effectiveLeverRegen, effectiveTierBonus, applyPlanetArmy, laneHandTier, battleSpec, RUN_BATTLES, RUN_LIVES, BETWEEN_BUFFS, applyBuff, BOSS_ROSTER, bossFor, LEVER_CATALOG, LEVER_START, LEVER_CAP, LEVER_REGEN, FORMATION_PRESETS, PRESET_NAMES, decideFaceUp, cardFace, flipTarget, FLIP_DURATION, FLIP_SPINS, MATCH_REWARD, MARCH_DURATION, type FateCard, type ArmyCard, type Intervention, type BuffTarget } from './blueprint.js';
+import { buildGameG3DFlip, buildGameGDuel3D, buildGameGMatch, buildGameGArmyMatch, prepareArmies, standardArmy, armyFromFormation, laneEstimates, applyInterventions, applyShadowRevenge, quartermasterEnergy, pickAiFormation, applyTiangangs, tiangangMoraleScale, tiangangLinks, tiangangKeyBuffs, GAME_G_TIANGANGS, TIANGANG_BY_ID, ARCHETYPES, detectArchetype, archetypeMatchup, activeArchetype, applyArchetypeActivation, GAME_G_PLANETS, GAME_G_FOILS, effectiveLives, effectiveLeverCap, effectiveLeverRegen, effectiveTierBonus, applyPlanetArmy, laneHandTier, battleSpec, RUN_BATTLES, RUN_LIVES, BETWEEN_BUFFS, applyBuff, BOSS_ROSTER, bossFor, LEVER_CATALOG, LEVER_START, LEVER_CAP, LEVER_REGEN, FORMATION_PRESETS, PRESET_NAMES, decideFaceUp, cardFace, flipTarget, FLIP_DURATION, FLIP_SPINS, MATCH_REWARD, MARCH_DURATION, type FateCard, type ArmyCard, type Intervention, type BuffTarget } from './blueprint.js';
 
 const get = <T extends Component>(e: Engine, id: string, type: string): T | undefined => e.world.getComponent<T>(id, type);
 const rotOf = (e: Engine, id = 'card'): number => get<Transform>(e, id, 'Transform')!.rotation;
@@ -459,7 +459,7 @@ describe('Game G · T-G5 战役/run 结构（战役曲线 + Boss）', () => {
 });
 
 describe('Game G · T-G5 场间三选一增益（养成核 · 纯数据 + applyBuff）', () => {
-  const target = (): BuffTarget => ({ deck: Array.from({ length: 52 }, (_, i) => 44 + (i % 10) * 2), lives: 3, leverEnergy: 3, materials: 0, jokers: [] });
+  const target = (): BuffTarget => ({ deck: Array.from({ length: 52 }, (_, i) => 44 + (i % 10) * 2), lives: 3, leverEnergy: 3, materials: 0, tiangangs: [] });
   const byId = (id: string) => BETWEEN_BUFFS.find((b) => b.id === id)!;
 
   it('增益池=5 张，每张 kind 合法、amount>0、最弱 LLM 能填的纯数据', () => {
@@ -494,7 +494,7 @@ describe('Game G · T-G5 场间三选一增益（养成核 · 纯数据 + applyB
   it('征兵/囤能(封顶 CAP)/财源 改对应资源', () => {
     const t1 = target(); applyBuff(t1, byId('conscript')); expect(t1.lives).toBe(4);
     const t2 = target(); applyBuff(t2, byId('stockpile')); expect(t2.leverEnergy).toBe(Math.min(LEVER_CAP, 3 + 3));
-    const t3 = { deck: [50], lives: 3, leverEnergy: LEVER_CAP, materials: 0, jokers: [] }; applyBuff(t3, byId('stockpile')); expect(t3.leverEnergy).toBe(LEVER_CAP); // 已满不溢出
+    const t3 = { deck: [50], lives: 3, leverEnergy: LEVER_CAP, materials: 0, tiangangs: [] }; applyBuff(t3, byId('stockpile')); expect(t3.leverEnergy).toBe(LEVER_CAP); // 已满不溢出
     const t4 = target(); applyBuff(t4, byId('revenue')); expect(t4.materials).toBe(25);
   });
 
@@ -586,28 +586,28 @@ describe('Game G · T-G5 终局 Boss 阵容 + 对称起手干预（design/13）'
 describe('Game G · T-G6 小丑牌（融牌面 · build 时 favor 变换 · 持久牌组身份）', () => {
   const mk = (id: string, lane: number, suit: string, favor: number): ArmyCard => ({ id, rank: 'A', lane, favor, general: false, suit });
 
-  it('小丑目录 10 张(全)，kind 合法、cost>0、有 text；JOKER_BY_ID 覆盖全', () => {
-    expect(GAME_G_JOKERS.length).toBeGreaterThanOrEqual(10);
+  it('小丑目录 10 张(全)，kind 合法、cost>0、有 text；TIANGANG_BY_ID 覆盖全', () => {
+    expect(GAME_G_TIANGANGS.length).toBeGreaterThanOrEqual(10);
     const kinds = new Set(['suit-synergy', 'polarize', 'lane-pref', 'diehard', 'morale', 'link', 'economy', 'revenge',
       'odds', 'power', 'combo', 'tempo', 'stamina', 'draw', 'lane', 'siege', 'arcane']);
-    for (const j of GAME_G_JOKERS) {
+    for (const j of GAME_G_TIANGANGS) {
       expect(kinds.has(j.kind)).toBe(true);
       expect(j.cost).toBeGreaterThan(0);
       expect(j.text.length).toBeGreaterThan(0);
-      expect(JOKER_BY_ID.get(j.id)).toBe(j);
+      expect(TIANGANG_BY_ID.get(j.id)).toBe(j);
     }
   });
 
   it('空小丑集 → 原样复制（不改 favor、非别名）', () => {
     const army = [mk('x', 0, 'H', 50)];
-    const out = applyJokers(army, []);
+    const out = applyTiangangs(army, []);
     expect(out).toEqual(army);
     expect(out).not.toBe(army);
   });
 
   it('同袍：本路每张同花色 → +2×同花数（限本路本花色）', () => {
     const army = [mk('a', 0, 'H', 50), mk('b', 0, 'H', 50), mk('c', 0, 'S', 50), mk('d', 1, 'H', 50)];
-    const out = applyJokers(army, ['comrade']);
+    const out = applyTiangangs(army, ['comrade']);
     expect(out.find((c) => c.id === 'a')!.favor).toBe(54); // lane0 2×H → +2×2
     expect(out.find((c) => c.id === 'b')!.favor).toBe(54);
     expect(out.find((c) => c.id === 'c')!.favor).toBe(52); // lane0 1×S → +2×1
@@ -615,19 +615,19 @@ describe('Game G · T-G6 小丑牌（融牌面 · build 时 favor 变换 · 持�
   });
 
   it('赌徒：favor≥50 +12、<50 −12（两极化）', () => {
-    const out = applyJokers([mk('hi', 0, 'H', 60), mk('lo', 0, 'H', 40)], ['gambler']);
+    const out = applyTiangangs([mk('hi', 0, 'H', 60), mk('lo', 0, 'H', 40)], ['gambler']);
     expect(out.find((c) => c.id === 'hi')!.favor).toBe(72);
     expect(out.find((c) => c.id === 'lo')!.favor).toBe(28);
   });
 
   it('先登：仅上路(lane0) +8', () => {
-    const out = applyJokers([mk('up', 0, 'H', 50), mk('mid', 1, 'H', 50)], ['vanguard']);
+    const out = applyTiangangs([mk('up', 0, 'H', 50), mk('mid', 1, 'H', 50)], ['vanguard']);
     expect(out.find((c) => c.id === 'up')!.favor).toBe(58);
     expect(out.find((c) => c.id === 'mid')!.favor).toBe(50);
   });
 
   it('不屈：favor<88 拉到 88、≥88 不变', () => {
-    const out = applyJokers([mk('weak', 0, 'H', 46), mk('strong', 0, 'H', 90)], ['diehard']);
+    const out = applyTiangangs([mk('weak', 0, 'H', 46), mk('strong', 0, 'H', 90)], ['diehard']);
     expect(out.find((c) => c.id === 'weak')!.favor).toBe(88);
     expect(out.find((c) => c.id === 'strong')!.favor).toBe(90);
   });
@@ -635,7 +635,7 @@ describe('Game G · T-G6 小丑牌（融牌面 · build 时 favor 变换 · 持�
   it('outcome-first：融不屈只升 favor → 同 seed 下存活数单调不减', () => {
     const baseA = standardArmy('a', -10); // 压低制造弱牌
     const run = (jids: string[]): number => {
-      const a = applyJokers(baseA, jids);
+      const a = applyTiangangs(baseA, jids);
       const e = new Engine({ tickRate: 60 });
       e.load(buildGameGArmyMatch(a, standardArmy('b', 0), 5));
       for (let i = 0; i < FLIP_DURATION + 8; i++) e.world.tick();
@@ -646,7 +646,7 @@ describe('Game G · T-G6 小丑牌（融牌面 · build 时 favor 变换 · 持�
 
   it('确定性：同军 + 同小丑集 + seed 逐拍 hash 一致（融小丑进 sim）', () => {
     const mkE = (): Engine => {
-      const a = applyJokers(standardArmy('a', 2), ['comrade', 'vanguard']);
+      const a = applyTiangangs(standardArmy('a', 2), ['comrade', 'vanguard']);
       const e = new Engine({ tickRate: 60 });
       e.load(buildGameGArmyMatch(a, standardArmy('b', 0), 9));
       return e;
@@ -657,20 +657,20 @@ describe('Game G · T-G6 小丑牌（融牌面 · build 时 favor 变换 · 持�
 
   it('旗手/枭雄 士气倍率：旗手全路 ×1.5、枭雄仅顶级主将(K/王)路 ×2、无则 [1,1,1]', () => {
     const army = standardArmy('a', 0); // 三路主将均顶级(JOKER/JOKER/K)
-    expect(jokerMoraleScale(army, [])).toEqual([1, 1, 1]);
-    expect(jokerMoraleScale(army, ['bannerman'])).toEqual([1.5, 1.5, 1.5]);
-    for (const v of jokerMoraleScale(army, ['warlord'])) expect(v).toBe(2); // 全顶级 → 全 ×2
+    expect(tiangangMoraleScale(army, [])).toEqual([1, 1, 1]);
+    expect(tiangangMoraleScale(army, ['bannerman'])).toEqual([1.5, 1.5, 1.5]);
+    for (const v of tiangangMoraleScale(army, ['warlord'])) expect(v).toBe(2); // 全顶级 → 全 ×2
     // 枭雄只认顶级主将：把某路主将换成低军衔 → 该路不放大
     const army2 = army.map((c) => (c.lane === 1 && c.general ? { ...c, rank: '7' } : c));
-    expect(jokerMoraleScale(army2, ['warlord'])).toEqual([2, 1, 2]);
+    expect(tiangangMoraleScale(army2, ['warlord'])).toEqual([2, 1, 2]);
   });
 
   it('旗手放大士气：build 时该路下属(主将活)favor 抬升 → 表现为存活单调不减（同 seed）', () => {
     const baseA = standardArmy('a', 6); // 主将高军衔+偏置 → 大概率活、士气生效
     const run = (jids: string[]): number => {
-      const a = applyJokers(baseA, jids);
+      const a = applyTiangangs(baseA, jids);
       const e = new Engine({ tickRate: 60 });
-      e.load(buildGameGArmyMatch(a, standardArmy('b', 0), 11, undefined, jokerMoraleScale(a, jids)));
+      e.load(buildGameGArmyMatch(a, standardArmy('b', 0), 11, undefined, tiangangMoraleScale(a, jids)));
       for (let i = 0; i < FLIP_DURATION + 8; i++) e.world.tick();
       return ['res_a0', 'res_a1', 'res_a2'].reduce((s, id) => s + (get<Resource>(e, id, 'Resource')?.current ?? 0), 0);
     };
@@ -679,20 +679,20 @@ describe('Game G · T-G6 小丑牌（融牌面 · build 时 favor 变换 · 持�
 
   it('确定性：旗手士气缩放进 sim 逐拍 hash 一致（缩放不改掷命次数）', () => {
     const mkE = (): Engine => {
-      const a = applyJokers(standardArmy('a', 4), ['bannerman', 'warlord']);
+      const a = applyTiangangs(standardArmy('a', 4), ['bannerman', 'warlord']);
       const e = new Engine({ tickRate: 60 });
-      e.load(buildGameGArmyMatch(a, standardArmy('b', 0), 13, undefined, jokerMoraleScale(a, ['bannerman', 'warlord'])));
+      e.load(buildGameGArmyMatch(a, standardArmy('b', 0), 13, undefined, tiangangMoraleScale(a, ['bannerman', 'warlord'])));
       return e;
     };
     const e1 = mkE(), e2 = mkE();
     for (let i = 0; i < FLIP_DURATION + MARCH_DURATION + 6; i++) { e1.world.tick(); e2.world.tick(); expect(e1.hash()).toBe(e2.hash()); }
   });
 
-  it('jokerLinks：从已融小丑取死士/连环开关（结局联动族）', () => {
-    expect(jokerLinks([])).toEqual({ martyr: false, chain: false });
-    expect(jokerLinks(['martyr'])).toEqual({ martyr: true, chain: false });
-    expect(jokerLinks(['chain', 'comrade'])).toEqual({ martyr: false, chain: true });
-    expect(jokerLinks(['martyr', 'chain'])).toEqual({ martyr: true, chain: true });
+  it('tiangangLinks：从已融小丑取死士/连环开关（结局联动族）', () => {
+    expect(tiangangLinks([])).toEqual({ martyr: false, chain: false });
+    expect(tiangangLinks(['martyr'])).toEqual({ martyr: true, chain: false });
+    expect(tiangangLinks(['chain', 'comrade'])).toEqual({ martyr: false, chain: true });
+    expect(tiangangLinks(['martyr', 'chain'])).toEqual({ martyr: true, chain: true });
   });
 
   it('死士：首死后余部 +报仇（只升 favor、不改掷命次数）→ 同 seed 存活单调不减', () => {
@@ -717,7 +717,7 @@ describe('Game G · T-G6 小丑牌（融牌面 · build 时 favor 变换 · 持�
   });
 
   it('prepareArmies 带出 linksA（死士/连环 喂 build）', () => {
-    const { linksA } = prepareArmies({ formation: FORMATION_PRESETS['均衡'], deckBias: 0, jokers: ['martyr', 'chain'], interventions: [], enemyBias: 0 });
+    const { linksA } = prepareArmies({ formation: FORMATION_PRESETS['均衡'], deckBias: 0, tiangangs: ['martyr', 'chain'], interventions: [], enemyBias: 0 });
     expect(linksA).toEqual({ martyr: true, chain: true });
   });
 
@@ -740,7 +740,7 @@ describe('Game G · T-G6 小丑牌（融牌面 · build 时 favor 变换 · 持�
 
   it('影武者：Boss 斩首命中我三路主将 → prepareArmies 让三路余部 +复仇（vs 不带影武者）', () => {
     const boss = BOSS_ROSTER.find((b) => b.id === 'smallJoker')!; // decapitate×3
-    const make = (jokers: string[]): ArmyCard[] => prepareArmies({ formation: FORMATION_PRESETS['均衡'], deckBias: 0, jokers, interventions: [], enemyForm: boss.formation, enemyBias: boss.favorBias, boss }).a;
+    const make = (tiangangs: string[]): ArmyCard[] => prepareArmies({ formation: FORMATION_PRESETS['均衡'], deckBias: 0, tiangangs, interventions: [], enemyForm: boss.formation, enemyBias: boss.favorBias, boss }).a;
     const without = make([]);
     const withShadow = make(['shadow']);
     const soldierSum = (arr: ArmyCard[], lane: number): number => arr.filter((c) => c.lane === lane && !c.general).reduce((s, c) => s + c.favor, 0);
@@ -750,22 +750,22 @@ describe('Game G · T-G6 小丑牌（融牌面 · build 时 favor 变换 · 持�
     }
   });
 
-  it('流派钥匙：jokerKeyBuffs 为每张"未拥有"小丑产 kind=joker 的 RunBuff（已拥有不出）', () => {
-    const all = jokerKeyBuffs([]);
-    expect(all).toHaveLength(GAME_G_JOKERS.length); // 全未拥有 → 全产
-    for (const k of all) { expect(k.kind).toBe('joker'); expect(k.jokerId).toBeTruthy(); expect(JOKER_BY_ID.has(k.jokerId!)).toBe(true); }
-    const owned = jokerKeyBuffs(['comrade', 'bannerman']);
-    expect(owned).toHaveLength(GAME_G_JOKERS.length - 2);
-    expect(owned.some((k) => k.jokerId === 'comrade' || k.jokerId === 'bannerman')).toBe(false);
+  it('流派钥匙：tiangangKeyBuffs 为每张"未拥有"小丑产 kind=joker 的 RunBuff（已拥有不出）', () => {
+    const all = tiangangKeyBuffs([]);
+    expect(all).toHaveLength(GAME_G_TIANGANGS.length); // 全未拥有 → 全产
+    for (const k of all) { expect(k.kind).toBe('tiangang'); expect(k.tiangangId).toBeTruthy(); expect(TIANGANG_BY_ID.has(k.tiangangId!)).toBe(true); }
+    const owned = tiangangKeyBuffs(['comrade', 'bannerman']);
+    expect(owned).toHaveLength(GAME_G_TIANGANGS.length - 2);
+    expect(owned.some((k) => k.tiangangId === 'comrade' || k.tiangangId === 'bannerman')).toBe(false);
   });
 
   it('applyBuff(joker)：白嫖小丑入 save.jokers，去重幂等', () => {
-    const t: BuffTarget = { deck: [50], lives: 3, leverEnergy: 3, materials: 0, jokers: [] };
-    const key = jokerKeyBuffs([])[0]; // 取第一张钥匙
+    const t: BuffTarget = { deck: [50], lives: 3, leverEnergy: 3, materials: 0, tiangangs: [] };
+    const key = tiangangKeyBuffs([])[0]; // 取第一张钥匙
     applyBuff(t, key);
-    expect(t.jokers).toEqual([key.jokerId]);
+    expect(t.tiangangs).toEqual([key.tiangangId]);
     applyBuff(t, key); // 再选同一张 → 不重复
-    expect(t.jokers).toEqual([key.jokerId]);
+    expect(t.tiangangs).toEqual([key.tiangangId]);
   });
 });
 
@@ -776,7 +776,7 @@ describe('Game G · T-G6 流派 + 克制网（身份 + 石头剪刀布 · 纯数
     for (const a of ARCHETYPES) {
       expect(ids.has(a.counters)).toBe(true);
       expect(a.counters).not.toBe(a.id); // 无自克
-      for (const k of a.keyJokers) expect(JOKER_BY_ID.has(k)).toBe(true);
+      for (const k of a.keyTiangangs) expect(TIANGANG_BY_ID.has(k)).toBe(true);
     }
   });
 
@@ -867,7 +867,7 @@ describe('Game G · T-G6 星球牌（第二养成轴 · 可叠加升档 · 纯�
 
   it('星球·军 进 prepareArmies：兵档底盘抬升（vs 无星球）', () => {
     const sumTroop = (a: ArmyCard[]): number => a.filter((c) => TROOP.includes(c.rank)).reduce((s, c) => s + c.favor, 0);
-    const opt = { formation: FORMATION_PRESETS['均衡'], deckBias: 0, jokers: [], interventions: [] as Intervention[], enemyBias: 0 };
+    const opt = { formation: FORMATION_PRESETS['均衡'], deckBias: 0, tiangangs: [], interventions: [] as Intervention[], enemyBias: 0 };
     const base = prepareArmies({ ...opt, planets: {} }).a;
     const withMars = prepareArmies({ ...opt, planets: { mars: 2 } }).a;
     expect(sumTroop(withMars)).toBeGreaterThan(sumTroop(base));
@@ -891,7 +891,7 @@ describe('Game G · T-G6 星球牌（第二养成轴 · 可叠加升档 · 纯�
   });
 
   it('星球·型 进 prepareArmies：flush 干预受益于 mercury（vs 无星球）', () => {
-    const opt = { formation: FORMATION_PRESETS['均衡'], deckBias: 0, jokers: [], interventions: [{ kind: 'flush', lane: 0 }] as Intervention[], enemyBias: 0 };
+    const opt = { formation: FORMATION_PRESETS['均衡'], deckBias: 0, tiangangs: [], interventions: [{ kind: 'flush', lane: 0 }] as Intervention[], enemyBias: 0 };
     const sumLane0 = (a: ArmyCard[]): number => a.filter((c) => c.lane === 0).reduce((s, c) => s + c.favor, 0);
     const base = prepareArmies({ ...opt, planets: {} }).a;
     const withTier = prepareArmies({ ...opt, planets: { mercury: 2 } }).a;
@@ -951,14 +951,14 @@ describe('Game G · T-G6 流派激活质变（主流派集齐 keyJokers → 招�
   });
 
   it('将领流激活进 prepareArmies：moraleA = 小丑士气 ×1.3', () => {
-    const r = prepareArmies({ formation: FORMATION_PRESETS['均衡'], deckBias: 0, jokers: ['bannerman', 'warlord'], interventions: [], enemyBias: 0 });
-    const morJoker = jokerMoraleScale(r.a, ['bannerman', 'warlord']);
-    for (let i = 0; i < 3; i++) expect(r.moraleA[i]).toBeCloseTo(morJoker[i] * 1.3, 6);
+    const r = prepareArmies({ formation: FORMATION_PRESETS['均衡'], deckBias: 0, tiangangs: ['bannerman', 'warlord'], interventions: [], enemyBias: 0 });
+    const morTiangang = tiangangMoraleScale(r.a, ['bannerman', 'warlord']);
+    for (let i = 0; i < 3; i++) expect(r.moraleA[i]).toBeCloseTo(morTiangang[i] * 1.3, 6);
   });
 
   it('确定性：激活质变(铺场流+联动)进 sim 逐拍 hash 一致', () => {
     const mk = (): Engine => {
-      const { a, b, moraleA, linksA } = prepareArmies({ formation: FORMATION_PRESETS['锋矢'], deckBias: 2, jokers: ['vanguard', 'martyr', 'chain'], interventions: [], enemyForm: FORMATION_PRESETS['均衡'], enemyBias: 0 });
+      const { a, b, moraleA, linksA } = prepareArmies({ formation: FORMATION_PRESETS['锋矢'], deckBias: 2, tiangangs: ['vanguard', 'martyr', 'chain'], interventions: [], enemyForm: FORMATION_PRESETS['均衡'], enemyBias: 0 });
       const e = new Engine({ tickRate: 60 });
       e.load(buildGameGArmyMatch(a, b, 55, undefined, moraleA, linksA));
       return e;
@@ -979,8 +979,8 @@ describe('Game G · 全栈养成端到端（星球+激活流派+干预+Boss+联�
 
   it('养成回报：满配(星球+集齐将领流+干预)军 vs 同 Boss 存活 > 裸军', () => {
     const boss = bossFor(2);
-    const base = { formation: FORMATION_PRESETS['均衡'], deckBias: 0, jokers: [] as string[], interventions: [] as Intervention[], enemyForm: boss.formation, enemyBias: boss.favorBias, boss, planets: {} as Record<string, number> };
-    const kitted = { ...base, jokers: ['bannerman', 'warlord', 'diehard'], interventions: [{ kind: 'bless', lane: 0 }, { kind: 'bless', lane: 1 }] as Intervention[], planets: { mars: 3, saturn: 1 } };
+    const base = { formation: FORMATION_PRESETS['均衡'], deckBias: 0, tiangangs: [] as string[], interventions: [] as Intervention[], enemyForm: boss.formation, enemyBias: boss.favorBias, boss, planets: {} as Record<string, number> };
+    const kitted = { ...base, tiangangs: ['bannerman', 'warlord', 'diehard'], interventions: [{ kind: 'bless', lane: 0 }, { kind: 'bless', lane: 1 }] as Intervention[], planets: { mars: 3, saturn: 1 } };
     expect(surv(kitted, 77)).toBeGreaterThan(surv(base, 77)); // 养成全栈确实更强
   });
 
@@ -991,16 +991,16 @@ describe('Game G · 全栈养成端到端（星球+激活流派+干预+Boss+联�
       for (let i = 0; i < FLIP_DURATION + MARCH_DURATION + 6; i++) e.world.tick();
       return get<State>(e, 'winner', 'State')!.current;
     };
-    const strong = applyJokers(standardArmy('a', 20), ['diehard']); // 高偏置 + 免死地板 88 → 压倒
+    const strong = applyTiangangs(standardArmy('a', 20), ['diehard']); // 高偏置 + 免死地板 88 → 压倒
     expect(settle(strong, standardArmy('b', -40), 7)).toBe('a'); // 强 vs 弱 → a 胜
-    expect(settle(standardArmy('a', -40), applyJokers(standardArmy('b', 20), ['diehard']), 7)).toBe('b'); // 反向 → b 胜
+    expect(settle(standardArmy('a', -40), applyTiangangs(standardArmy('b', 20), ['diehard']), 7)).toBe('b'); // 反向 → b 胜
   });
 
   it('最大配置确定性：星球+铺场流激活+联动+护盾/增援+终局 Boss 同 setup+seed 逐拍 hash 一致', () => {
     const boss = bossFor(5); // 小王·无常（decapitate×3）
     const setup = (): Parameters<typeof prepareArmies>[0] => ({
       formation: FORMATION_PRESETS['田忌'], deckBias: 4,
-      jokers: ['vanguard', 'martyr', 'chain', 'diehard'], // wide 集齐 → 激活 +2兵/路；martyr/chain 联动
+      tiangangs: ['vanguard', 'martyr', 'chain', 'diehard'], // wide 集齐 → 激活 +2兵/路；martyr/chain 联动
       interventions: [{ kind: 'reinforce', lane: 2 }, { kind: 'shield', lane: 0 }],
       enemyForm: boss.formation, enemyBias: boss.favorBias, boss,
       planets: { mars: 2, mercury: 1, jupiter: 1 },
@@ -1021,7 +1021,7 @@ describe('Game G · 完整 build 时编排 prepareArmies（showMatch 同款 · �
   const setup = () => ({
     formation: FORMATION_PRESETS['田忌'],
     deckBias: 6,
-    jokers: ['bannerman', 'comrade', 'vanguard'],
+    tiangangs: ['bannerman', 'comrade', 'vanguard'],
     interventions: [{ kind: 'bless', lane: 1 }, { kind: 'reinforce', lane: 2 }] as Intervention[],
     enemyForm: boss.formation,
     enemyBias: boss.favorBias,

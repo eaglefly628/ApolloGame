@@ -110,8 +110,8 @@
 .ggl-root .note{ font-size:11px; color:var(--ink-dim); text-align:center; margin-top:18px; line-height:1.7 }
 .ggl-root .tut-ov{ position:absolute; inset:0; background:#000a; display:flex; align-items:center; justify-content:center; padding:24px; z-index:50 }
 .ggl-root .tut-box{ max-width:920px; max-height:90%; overflow:auto; background:var(--panel); border:1px solid var(--gold); border-radius:14px; padding:22px } .ggl-root .tut-box h3{ color:var(--gold); font-size:18px; margin-bottom:12px } .ggl-root .tut-box .step{ border-left:3px solid var(--gold); padding:6px 0 6px 12px; margin:8px 0; font-size:14px; line-height:1.7 } .ggl-root .tut-box .step b{ color:var(--ink) }
-.ggl-root .joker-tog{ padding:2px 8px; border-radius:6px; background:var(--chip); border:1px solid var(--panel-border); color:var(--ink-dim); font-size:11px; cursor:pointer }
-.ggl-root .joker-tog.active{ background:var(--gold-grad); color:#2a1a08; border:0 }
+.ggl-root .tiangang-tog{ padding:2px 8px; border-radius:6px; background:var(--chip); border:1px solid var(--panel-border); color:var(--ink-dim); font-size:11px; cursor:pointer }
+.ggl-root .tiangang-tog.active{ background:var(--gold-grad); color:#2a1a08; border:0 }
 .ggl-root .jchips{ display:flex; flex-wrap:wrap; gap:8px; margin:10px 0 4px }
 .ggl-root .jchip{ display:flex; align-items:center; gap:4px; padding:4px 10px; border-radius:8px; background:var(--chip); border:1px solid var(--gold); font-size:12px }
 .ggl-root .power-stars{ font-size:9px; letter-spacing:-.1em; color:var(--gold); margin-left:2px }
@@ -147,8 +147,8 @@
 .ggl-root .good.buy:active{ transform:translateY(0) scale(.97) }
 .ggl-root .qcard{ transition:transform .15s,box-shadow .15s }
 .ggl-root .qcard:hover{ transform:translateY(-2px); box-shadow:0 8px 22px rgba(0,0,0,.32),inset 0 0 0 1px var(--hairline) }
-.ggl-root .joker-tog{ transition:background .12s,color .12s,border-color .12s }
-.ggl-root .joker-tog:not(.active):hover{ color:var(--ink); border-color:var(--gold) }
+.ggl-root .tiangang-tog{ transition:background .12s,color .12s,border-color .12s }
+.ggl-root .tiangang-tog:not(.active):hover{ color:var(--ink); border-color:var(--gold) }
 .ggl-root .deck-nav button{ transition:background .15s,color .15s }
 .ggl-root .deck-nav button:not(.on):hover{ background:rgba(255,255,255,.08); color:var(--ink) }
 .ggl-root .earth-filter button{ transition:background .15s,color .15s }
@@ -221,7 +221,7 @@
       <div class="forge">
         <div class="card"><h2><svg class="gi" aria-hidden="true" viewBox="0 0 512 512"><path fill="currentColor" d="M25 25v206h110v-3.3L99.27 192 135 156.3V25H25zm398 94c-16.5 0-31.3 3.4-41.2 8.4-10 5-13.8 10.6-13.8 14.6s3.8 9.6 13.8 14.6c9.9 5 24.7 8.4 41.2 8.4 16.5 0 31.3-3.4 41.2-8.4 10-5 13.8-10.6 13.8-14.6s-3.8-9.6-13.8-14.6c-9.9-5-24.7-8.4-41.2-8.4zm-263 37.7L124.7 192l64 64-64 64 35.3 35.3 76.3-76.3H329v37.8l72.9-60.8-72.9-60.8V233h-92.7L160 156.7zm208 12.8v34.8l62.1 51.7-62.1 51.7V366c0 8 4.8 13.8 15 18.9 10.2 5.2 25.1 8.1 40 8.1 14.9 0 29.8-2.9 40-8.1 10.2-5.1 15-10.9 15-18.9V169.5c-1.8 1.1-3.7 2.2-5.7 3.2-13.2 6.6-30.4 10.3-49.3 10.3s-36.1-3.7-49.3-10.3c-2-1-3.9-2.1-5.7-3.2zM80 361c-30.48 0-55 24.5-55 55s24.52 55 55 55c30.5 0 55-24.5 55-55s-24.5-55-55-55z"/></svg> 改造台 · 天罡牌组（≤5 入战库·局内法术）</h2><div class="fuse"><div class="slot" style="color:var(--gold)">⚡</div><div class="arrow">→</div><div class="slot" style="color:var(--gold)">⚔</div></div>
           <div class="note" style="text-align:left;margin-bottom:8px">买入后「+ 战库」选入（≤5 张进战库）；战库=流派身份·法术牌，局内打出生效。</div>
-          <div class="shelf"><div class="good got" title="同袍 效果"><div class="gnm">⚡ 同袍</div><div style="display:flex;gap:6px;margin-top:6px;align-items:center"><span style="font-size:11px;color:var(--gold)">✓ 已解锁</span><button class="joker-tog" data-act="toggleJoker" data-k="comrade">+ 战库</button></div></div><div class="good buy" data-act="buyJoker" data-k="gambler" title="赌徒 效果"><div class="gnm">⚡ 赌徒</div><div class="cost">🪙 16</div></div><div class="good lock" title="枭雄 效果"><div class="gnm">⚡ 枭雄</div><div class="cost">🪙 24</div></div></div></div>
+          <div class="shelf"><div class="good got" title="同袍 效果"><div class="gnm">⚡ 同袍</div><div style="display:flex;gap:6px;margin-top:6px;align-items:center"><span style="font-size:11px;color:var(--gold)">✓ 已解锁</span><button class="tiangang-tog" data-act="toggleTiangang" data-k="comrade">+ 战库</button></div></div><div class="good buy" data-act="buyTiangang" data-k="gambler" title="赌徒 效果"><div class="gnm">⚡ 赌徒</div><div class="cost">🪙 16</div></div><div class="good lock" title="枭雄 效果"><div class="gnm">⚡ 枭雄</div><div class="cost">🪙 24</div></div></div></div>
         <div class="card"><h2><svg class="gi" aria-hidden="true" viewBox="0 0 512 512"><path fill="currentColor" d="M256 16A240 240 0 0 0 16 256a240 240 0 0 0 240 240 240 240 0 0 0 240-240A240 240 0 0 0 256 16zm-9 14.73v86.342c-35.304 2.47-124.423 31.35-127.033 129.928H37.605C39.993 81.83 189.513 34.292 247 30.73zm18 .874c.596.158 1.148.33 1.62.52 78.82 31.677 84.33 217.118 77.042 268.052l-36.498-22.813c3.486-34.36-.902-132.647-42.164-156.877V31.604zM41.258 265h85.996c19.485 15.47 77.33 34.583 166.902 25.46l37.7 23.563C163.39 333.03 61.252 291.425 41.26 265z"/></svg> 地支牌 · 升档（可叠加 · 第二养成轴）</h2><div class="note" style="text-align:left;margin-bottom:8px">升档改 run 参数（命/能/兵档/牌型）· 持久存档 · 买一级累加</div>
           <div class="shelf"><div class="good buy" data-act="buyPlanet" data-k="saturn" title="命线 +1/级"><div class="gnm">🪐 星球·命 <span class="ghost">Lv.1</span></div><div class="cost">🪙 24</div></div><div class="good buy" data-act="buyPlanet" data-k="mars" title="兵档 +3/级"><div class="gnm">🪐 星球·军 <span class="ghost">Lv.0</span></div><div class="cost">🪙 14</div></div></div></div>
       </div>
