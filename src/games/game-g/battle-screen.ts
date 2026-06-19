@@ -386,7 +386,12 @@ export function mountBattle(host: HTMLElement, getView: () => BattleView, action
     if (outer && inner) { const w = outer.clientWidth || host.clientWidth; if (w > 0) { const sc = w / 1920; inner.style.transform = 'scale(' + sc + ')'; outer.style.height = Math.round(1080 * sc) + 'px'; } }
   };
   const LANE_IDX: Record<string, number> = { top: 0, mid: 1, bot: 2 };
-  const onClick = (e: MouseEvent): void => {
+  // 出牌坞交互用 pointerdown，不是 click：驱动层 rAF 每 ~33ms 整片 host.innerHTML 重建一次，
+  // 一次人手「按下→抬起」(~80–150ms) 期间 DOM 被重建数次 → 按下时那个按钮节点已被销毁、
+  // click 找不到落点（owner 报「圣水摸牌/出牌按键摁了都无效」）。pointerdown 是单次离散事件，
+  // 在按下那一刻就派发到当下活着的 DOM，重渲再频繁也夹不进 down/up 之间 → 必中。
+  const onPress = (e: MouseEvent): void => {
+    if (e.button > 0) return; // 仅主键（触屏/笔 button=0）；右/中键不触发
     const el = (e.target as HTMLElement).closest('[data-act]') as HTMLElement | null; if (!el) return;
     const act = el.dataset.act, k = el.dataset.k ?? '';
     if (act === 'hand') { actions?.selectCard(parseInt(el.dataset.i ?? '-1', 10)); render(); }
@@ -396,7 +401,7 @@ export function mountBattle(host: HTMLElement, getView: () => BattleView, action
     else if (act === 'draw-tengang') { actions?.drawTengang(); render(); }
     else if (act === 'gate') { state.gates[k] = !state.gates[k]; render(); }
   };
-  host.addEventListener('click', onClick);
+  host.addEventListener('pointerdown', onPress);
   render();
   return {
     update: render,
