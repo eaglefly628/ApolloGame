@@ -73,9 +73,14 @@ function loadSave(): Save {
         if (!Array.isArray(s.lastOfficers) || s.lastOfficers.length !== 3) s.lastOfficers = [10, 10, 10]; // 旧存档兼容
         if (typeof s.leverEnergy !== 'number') s.leverEnergy = LEVER_START;
         if (typeof s.bossIdx !== 'number') s.bossIdx = rollBoss();
-        if (!Array.isArray(s.tiangangs)) s.tiangangs = [];
-        // B3 旧存档迁移：ownedTiangangs 未设时，视旧 jokers 全为已拥有；战库上限 5。
-        if (!Array.isArray(s.ownedTiangangs)) { s.ownedTiangangs = [...s.tiangangs]; s.tiangangs = s.tiangangs.slice(0, 5); }
+        // 重命名(joker→天罡)迁移 + owner 拍「清空老存档战库」：老存档键为 jokers/ownedJokers → 战库(tiangangs)清空、收藏(ownedTiangangs)沿用旧 ownedJokers；丢弃遗留键。
+        const legacy = s as unknown as { jokers?: unknown; ownedJokers?: unknown };
+        if (legacy.jokers !== undefined || legacy.ownedJokers !== undefined || !Array.isArray(s.tiangangs) || !Array.isArray(s.ownedTiangangs)) {
+          if (!Array.isArray(s.ownedTiangangs)) s.ownedTiangangs = Array.isArray(legacy.ownedJokers) ? (legacy.ownedJokers as string[]) : [];
+          s.tiangangs = []; // 老存档战库清空（owner）
+          delete legacy.jokers; delete legacy.ownedJokers;
+        }
+        if (s.tiangangs.length > 5) s.tiangangs = s.tiangangs.slice(0, 5); // 战库上限 5
         if (typeof s.planets !== 'object' || s.planets === null) s.planets = {};
         if (!Array.isArray(s.foils)) s.foils = [];
         if (typeof s.lives !== 'number') s.lives = effectiveLives(s.planets);
