@@ -29,15 +29,20 @@ const FOG_B_EDGE = 0.82;    // B 的 fogged 兵越过此线 → 显形（pos01 �
 // 出牌控盘层（doc18 §10 · 布局阶段 base 打底 + 抽牌堆 + 手牌实时派三路 + 读秒暂停银行）。数值初版、待真机/仿真台磨。
 const BASE_PER_LANE = 3;        // 布局阶段每路预铺张数（共 9 打底，doc18 §10.2）
 const AI_PERIOD_TICKS = 16;     // 敌方滴投：每 N 拍从其牌库投一张（入该牌原路 → 随阵型分布）
-// ── CR 局内经济（doc21 · owner 抄皇室战争）：点数(圣水)随真实时间回复 → 花点数摸牌(玩家选库) → 普通部署/天罡施法。砍读秒暂停。──
+// ── CR 局内经济 TUNE（doc21 · owner 抄皇室战争 + 要「快节奏」）：点数(圣水)随真实时间回复 → 花点数摸牌(玩家选库) → 普通部署/天罡施法。砍读秒暂停。──
+// 改这一处即调手感。派生节奏（当前「快」档 regen 800ms）：≈1.25 点/秒 → 每 0.8s 可摸 1 普通 / 1.6s 摸 1 天罡；满池 10 点 ≈ 8s 攒满。
+// 档位（owner 真机选 · 改下面 3 个值即可）：    慢 | 中 | 快(当前)
+//   POINTS_REGEN_MS                          1100 | 950 | 800
+//   POINTS_START                                5 |  5  |  6
+//   OPENING_NORMAL                              4 |  4  |  5
 const POINTS_MAX = 10;          // 点数池上限（CR 圣水 10）
-const POINTS_START = 5;         // 起手点数
-const POINTS_REGEN_MS = 1100;   // 每回 1 点的真实时长（owner 要快节奏；待真机/仿真台调）
+const POINTS_START = 6;         // 起手点数（快档：开局多 1 点·更快开打）
+const POINTS_REGEN_MS = 800;    // 每回 1 点真实时长（快档·owner 要快；慢=1100 / 中=950）
 const NORMAL_DRAW_COST = 1;     // 摸普通库花点数（doc21 §二.5 ~1）
 const TENGANG_DRAW_COST = 2;    // 摸天罡库花点数（~2·更贵 = 故意限流 + 一次点数投资）
-const NORMAL_HAND_CAP = 7;      // 普通手牌可囤积上限（doc21 ~7）
+const NORMAL_HAND_CAP = 7;      // 普通手牌可囤积上限（攒一波"哗"出·doc21 ~7）
 const TENGANG_CAP = 5;          // 天罡在手上限（打掉一张才能再摸 · play-to-draw）
-const OPENING_NORMAL = 4;       // 起手普通手牌（CR 起手 4）
+const OPENING_NORMAL = 5;       // 起手普通手牌（快档：5·更快有牌打）
 type BattleControl = { hand: HandCardView[]; selectedCard: number; deckCount: number; tengang: TengangCardView[]; selectedTengang: number; tengangDeckCount: number; points: number; pointsMax: number; normalDrawCost: number; tengangDrawCost: number; canDrawNormal: boolean; canDrawTengang: boolean; migrateSource: number };
 const NO_CONTROL: BattleControl = { hand: [], selectedCard: -1, deckCount: 0, tengang: [], selectedTengang: -1, tengangDeckCount: 0, points: 0, pointsMax: 0, normalDrawCost: 0, tengangDrawCost: 0, canDrawNormal: false, canDrawTengang: false, migrateSource: -1 }; // 看帧/无控盘默认
 
