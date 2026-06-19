@@ -13,6 +13,7 @@
 3. **`blueprint.ts` 归乙**（养成数据 + 布阵→army）；甲**只读**。甲要新战斗常量 → 放自己文件（`live-combat.ts`/`clash-resolve.ts`），**不写 blueprint**。
 4. **两个接口契约（先各确认、不许私改 shape）**：
    - **① `prepareArmies(setup) → { a, b: ArmyCard[] }`**：乙改"布阵/养成 → 军队"的产出逻辑，**甲只认 `ArmyCard[]`**（`{id,rank,suit,favor,lane,general}`）这个 shape 不变。
+     - **①+ 扩展提案（甲提·2026-06-18·待乙接·非破坏）**：owner 定「出场带迷雾=附魔专属·默认无」。甲下游已全铺好 `fogged`（`LiveUnit`/`DeployCmd.unit.fogged?`/`battle-screen` 默认 false=现状·不进 hash）。**乙若做"迷雾附魔"**：给 `ArmyCard` 加可选 `fogged?: boolean`（附魔养成写），甲 `armyToDeploys` 读它→`DeployCmd.unit.fogged`。不加=保持默认无迷雾，**不破现有 shape**（甲已不依赖该字段存在）。
    - **② `save.jokers[]` + `save.planets{}` = 构筑库**：乙（改造坊）**写**、甲（战斗）**读**（seed 抽牌堆 + 局内打出）。schema 不变。
 5. 各自 push 前 `fetch → rebase →` 重跑 **tsc + vitest + build 全绿**；各自配测；翻棒只写自己那半（BATON 各占一行）。
 6. 撞到契约要改 → **先在本文件改契约 + 知会对方**，再动代码。
