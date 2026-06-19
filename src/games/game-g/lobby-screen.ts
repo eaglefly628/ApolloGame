@@ -299,7 +299,7 @@ export function renderLobby(view: LobbyView, tab: string, tutorialOpen: boolean,
       <div class="herocol">
         <div class="felt">
           <div class="vignette"></div>
-          <div class="felt-h"><span class="t">命运牌桌</span><span class="s">${esc(view.stageLabel)}</span></div>
+          <div class="felt-h"><span class="t">戏牌师</span><span class="s">${esc(view.stageLabel)}</span></div>
           <div class="stags">${stags}</div>
           <div class="duel">
             <div class="dcard" style="border:3px solid var(--spade);transform:rotate(-9deg);--rot:-9deg"><div class="corner" style="color:var(--spade)">A<br>♠</div><div class="big" style="color:var(--spade)">♠</div></div>
@@ -318,7 +318,7 @@ export function renderLobby(view: LobbyView, tab: string, tutorialOpen: boolean,
         </div>
         <div class="card" style="line-height:1.7">${view.archLine}<div class="note" style="text-align:left;margin-top:6px">${view.bossLine}</div></div>
       </div>
-      <div class="rail"><h2>🪖 牌友 · 命运牌桌</h2>
+      <div class="rail"><h2>🪖 牌友 · 戏牌师</h2>
         <div class="ghost" style="font-size:12px;line-height:1.8">好友切磋 / 天梯 1v1 DUEL 为设计 IA、尚未接入网络（占位）。<br>当前：单人战役 vs AI 庄家·Boss。</div>
         <div class="friend" style="margin-top:10px"><span class="dot"></span> 张飞_关张 <span class="tag">占位</span></div>
         <div class="friend"><span class="dot"></span> 周瑜 <span class="tag">占位</span></div>
