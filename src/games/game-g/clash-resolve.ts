@@ -3,7 +3,7 @@
 // → 种子骰 → 谁正(活·前进) 谁反(亡)。**纯确定性函数、种子化、可回放、可直接当平衡回归测**（仿真台 §十）。
 //
 // 公平骨架（doc 19 §四，owner 拍板）：base = 点数（双方同副标准 54、军衔=点数 → 公平）；强弱全来自**经营** buff
-//   （小丑/附魔/相邻协同/士气/路 buff/主动干涉，各自 bounded ±Δ 进 P_eff）。退役"强化全军 favor 泵点数"。
+//   （天罡/附魔/相邻协同/士气/路 buff/主动干涉，各自 bounded ±Δ 进 P_eff）。退役"强化全军 favor 泵点数"。
 // game-side 薄解算核：就地读扁平 buff 数、只复用 `{op,target,value}` 心智，**不建统一 Buff 引擎**（守 Lead 窄边界）。
 // 复用引擎 PRNG `nextRandom`（同 decideFaceUp → lockstep 安全、镜像同步/回放不裂）。零新引擎能力。
 import type { RandomSeed } from '@engine/protocol/components.js';

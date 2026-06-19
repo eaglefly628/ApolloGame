@@ -15,7 +15,7 @@ export const SPACING = 5;      // 同侧相邻牌最小间距（保队形、不�
 export const ENC_PERIOD = 6;   // 最前两张相邻后每多少拍一次对决（成波·可读·给决策窗）
 export const HOME_BLOOD = 3;   // 大本营 3 滴血（doc19 §六，替 home_hp 8；防无限拖、保节奏）
 const MORALE_PTS = 2, ROUT_PTS = 4; // 主将在→下属 +战力 / 主将亡→溃散 −战力（点数空间·bounded，doc 06）
-// 续航（doc19 §五）：数字 1 / 人头(A·J·Q·K) 2 / 小丑 3 场 → 神牌也得回家歇、逼牌组轮转。
+// 续航（doc19 §五）：数字 1 / 人头(A·J·Q·K) 2 / 大小王(JOKER 牌·非天罡) 3 场 → 神牌也得回家歇、逼牌组轮转。
 export function cardStamina(rank: string): number {
   if (rank === 'JOKER' || rank === '★' || rank === '王') return 3;
   if (rank === 'A' || rank === 'K' || rank === 'Q' || rank === 'J') return 2;
@@ -30,13 +30,13 @@ export interface LiveLane { a: LiveUnit[]; b: LiveUnit[]; aGenDead: boolean; bGe
 export interface ClashCard { rank: string; suit: string; general: boolean; points: number; buff: number; morale: number; pEff: number }
 export interface ClashEvent { tick: number; lane: number; winrate: number; roll: number; aWins: boolean; a: ClashCard; b: ClashCard }
 // 已施天罡 → 玩家侧(a)持续战斗修正（A-JOKER · cast 后整局生效·一种牌算一次不叠）。
-// 聚合(aggregateTengang)在 game-g 读 GAME_G_JOKERS 算（避免 live-combat ← blueprint 环依赖）；live-combat 只持有这份扁平修正、在 clash/deploy 钩子读。
+// 聚合(aggregateTengang)在 game-g 读 GAME_G_TIANGANGS 算（避免 live-combat ← blueprint 环依赖）；live-combat 只持有这份扁平修正、在 clash/deploy 钩子读。
 // v1 实装：odds(巧手 pEffAdd / 稳手 winFloor) · power(虎符 all / 寡兵 LE3 / 同花魁 sameSuit) · combo(对子诀 pair) · morale(令旗 leader) · stamina(铁汉) · draw(广纳 handMax)。
 export interface TengangFx { pEffAdd: number; winFloor: number; powerAll: number; powerLE3: number; powerSameSuit: number; comboPair: number; moraleLeader: number; stamPlus: number; handMaxAdd: number }
 export const NO_TENGANG: TengangFx = { pEffAdd: 0, winFloor: 0, powerAll: 0, powerLE3: 0, powerSameSuit: 0, comboPair: 0, moraleLeader: 0, stamPlus: 0, handMaxAdd: 0 };
 export interface LiveBattle { tick: number; lanes: [LiveLane, LiveLane, LiveLane]; homeA: number; homeB: number; homeMax: number; winner: 'a' | 'b' | 'draw' | 'pending'; rng: RandomSeed; lastClash: ClashEvent | null; clashSeq: number; clashLog: ClashEvent[]; tengangA: TengangFx }
 // 投放指令：第 tick 拍把 unit 投进 lane 的 side 侧（确定性输入流；预布阵 = tick 1 投放）。
-// 点数=公平骨架（cardPoints 由 rank 算·双方同副）；buff=经营（小丑/附魔/协同/路…聚合，缺省 0）。
+// 点数=公平骨架（cardPoints 由 rank 算·双方同副）；buff=经营（天罡/附魔/协同/路…聚合，缺省 0）。
 export interface DeployCmd { tick: number; side: 'a' | 'b'; lane: number; unit: { id: string; rank: string; suit: string; general: boolean; buff?: number; fogged?: boolean } }
 
 const mkLane = (): LiveLane => ({ a: [], b: [], aGenDead: false, bGenDead: false, spentA: 0, spentB: 0, encT: 0 });

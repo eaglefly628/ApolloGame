@@ -451,7 +451,7 @@ export function mount(container: HTMLElement): () => void {
     bar.append(label, back);
     root.append(stage, bar);
 
-    // 揭晓前完整编排（融小丑→玩家干预→Boss 起手→士气倍率+结局联动），与测试共用 prepareArmies、杜绝漂移；均 outcome-first。
+    // 揭晓前完整编排（融天罡→玩家干预→Boss 起手→士气倍率+结局联动），与测试共用 prepareArmies、杜绝漂移；均 outcome-first。
     const { a, b } = prepareArmies({ formation, deckBias: myBias(save.deck), tiangangs: save.tiangangs, planets: save.planets, interventions, enemyForm: aiForm, enemyBias, boss });
     const oppPersona = boss ? boss.persona : '伺机而动 · 见招拆招';
     const oppSuit = suitOf(aiName);
