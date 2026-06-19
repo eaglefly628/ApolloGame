@@ -88,6 +88,15 @@ const CSS = `
 @keyframes gg-winglow { 0%,100% { box-shadow: 0 0 26px var(--gold), 0 12px 30px rgba(0,0,0,.6); } 50% { box-shadow: 0 0 54px var(--gold), 0 12px 30px rgba(0,0,0,.6); } }
 @keyframes gg-flip-win { 0% { transform: rotateY(0) scale(1); } 55% { transform: rotateY(200deg) scale(1.07); } 100% { transform: rotateY(360deg) scale(1); } }
 @keyframes gg-flip-lose { 0% { transform: rotateY(0); } 100% { transform: rotateY(180deg); } }
+@keyframes gg-spark { 0%,100% { opacity:.55; transform:translate(-50%,-50%) scale(1);} 50% { opacity:1; transform:translate(-50%,-50%) scale(1.14);} }
+@keyframes gg-rays { to { transform:translate(-50%,-50%) rotate(360deg); } }
+@keyframes gg-emblem { 0% { transform:translate(-50%,-50%) scale(.5); opacity:0;} 55% { transform:translate(-50%,-50%) scale(1.16); opacity:1;} 100% { transform:translate(-50%,-50%) scale(1); opacity:1;} }
+@keyframes gg-burst { 0% { transform:translate(-50%,-50%) scale(.2); opacity:.9;} 100% { transform:translate(-50%,-50%) scale(2.4); opacity:0;} }
+@keyframes gg-flash { 0% { opacity:0;} 12% { opacity:1;} 100% { opacity:0;} }
+@keyframes gg-fatebob { 0%,100% { transform:translateY(0) rotate(-10deg);} 50% { transform:translateY(-14px) rotate(10deg);} }
+@keyframes gg-fatedrop { 0% { top:-180px; opacity:0; } 40% { opacity:1; } 100% { top:-2px; opacity:1; } }
+@keyframes gg-shatter { 0%,100% { transform:translate(0,0) rotate(0);} 20% { transform:translate(-5px,3px) rotate(-1.6deg);} 60% { transform:translate(5px,-2px) rotate(1.6deg);} }
+@keyframes gg-cardflip { 0% { transform:rotateY(180deg);} 100% { transform:rotateY(0);} }
 .gg-root input[type=range].gz { -webkit-appearance:none; appearance:none; height:6px; border-radius:99px; outline:none; }
 .gg-root input[type=range].gz::-webkit-slider-thumb { -webkit-appearance:none; width:18px; height:18px; border-radius:50%; background:#fff; border:2px solid var(--accent); cursor:pointer; box-shadow:0 2px 6px rgba(0,0,0,.4); }
 .gg-root [data-act="lever"]:hover, .gg-root [data-act="focus"]:hover, .gg-root [data-act="lane"]:hover, .gg-root [data-act="zoom"]:hover, .gg-root [data-act="gate"]:hover { filter:brightness(1.08); transform:translateY(-2px); border-color:var(--accent); }
@@ -102,7 +111,95 @@ const A_POS = [300, 750], B_POS = [2700, 750];
 const TP = [[380, 650], [1500, 150], [2620, 650]], BP = [[380, 850], [1500, 1350], [2620, 850]], MP = [[460, 750], [1500, 640], [2540, 750]];
 const laneAt = (lane: number, t: number): number[] => (lane === 0 ? qb(TP[0], TP[1], TP[2], t) : lane === 2 ? qb(BP[0], BP[1], BP[2], t) : qb(MP[0], MP[1], MP[2], t));
 
-interface CamState { theme: string; lever: string; lane: string; zoom: number; camX: number; camY: number; gates: Record<string, boolean> }
+interface CamState { theme: string; lane: string; zoom: number; camX: number; camY: number; gates: Record<string, boolean> }
+
+// 对决特写 —— 忠实复刻 owner 委托 Core Design 的「Game G 对决特写.dc.html」（与本渲染器同 1920×1080 画布·坐标直用）。
+// 冻结战场 = 我们真棋盘在后（本层做暗化舞台）；入场/翻牌/掷命/定格用 CSS 一次播完（配合 showMatch 演出期定格一次渲染）。
+// 三态：我方胜(活·金爆)/我方负(斩·红斩+碎)/平局裁定(50:50·点数大者胜·不掷命)。双皮玄铁(暗)/锦霞(亮)。英雄立绘/生肖=占位(doc22·暂用花色字)。
+function clashCloseup(cv: ClashView, theme: string): string {
+  const onyx = theme !== 'brocade';
+  const T = onyx
+    ? { ink: '#eaf0f6', dim: '#8493a3', gold: '#f0d488', goldGrad: 'linear-gradient(180deg,#ffe9a8,#c89a42)', accent: '#ff7a45', accentGrad: 'linear-gradient(180deg,#ff8d5a,#ee5a25)', accentSoft: 'rgba(255,122,69,.2)', stageBg: 'radial-gradient(72% 64% at 50% 36%,#1b2638 0%,#0d1420 52%,#070b12 100%)', stageBd: '#3a526e', stageGlow: 'rgba(240,212,136,.16)', vig: 'radial-gradient(60% 58% at 50% 42%,transparent 38%,rgba(0,0,0,.74) 100%)', ray: 'rgba(255,214,140,.06)', spot: 'rgba(255,221,150,.12)', panel: 'linear-gradient(180deg,rgba(26,38,54,.9),rgba(14,22,34,.94))', panelBd: '#37506c', hair: 'rgba(240,212,136,.18)', track: 'rgba(0,0,0,.55)', cardFace: 'linear-gradient(158deg,#fcf9f1,#e6d8bd)', cardBack: 'linear-gradient(150deg,#1f2f44,#13202f)', backPat: 'rgba(240,212,136,.5)', fd: "'Zhi Mang Xing',cursive", fh: "'Rajdhani',sans-serif", fb: "'Noto Sans SC',sans-serif", fn: "'Silkscreen',monospace" }
+    : { ink: '#5a3f44', dim: '#9a7a7e', gold: '#b9842f', goldGrad: 'linear-gradient(180deg,#f3e2a4,#cf9a3f)', accent: '#cf5070', accentGrad: 'linear-gradient(180deg,#e887a0,#cf5070)', accentSoft: 'rgba(207,80,112,.18)', stageBg: 'radial-gradient(72% 64% at 50% 34%,#fbeede 0%,#f0d2c8 54%,#d49a98 100%)', stageBd: '#e0b890', stageGlow: 'rgba(185,132,47,.22)', vig: 'radial-gradient(60% 58% at 50% 42%,transparent 42%,rgba(110,40,48,.5) 100%)', ray: 'rgba(255,255,255,.16)', spot: 'rgba(255,255,255,.28)', panel: 'linear-gradient(180deg,rgba(255,250,243,.95),rgba(250,234,222,.97))', panelBd: '#e0b890', hair: 'rgba(185,132,47,.4)', track: 'rgba(150,90,80,.2)', cardFace: 'linear-gradient(158deg,#fffdf8,#f1e2cf)', cardBack: 'linear-gradient(150deg,#c0566f,#9c3f57)', backPat: 'rgba(255,240,220,.6)', fd: "'Ma Shan Zheng',cursive", fh: "'Cormorant Garamond',serif", fb: "'Noto Serif SC',serif", fn: "'Silkscreen',monospace" };
+  const sgC: Record<string, string> = { s: '#22303f', h: '#c0392b', d: '#c0651a', c: '#2d6a3f' };
+  const sgG: Record<string, string> = { s: '♠', h: '♥', d: '♦', c: '♣' };
+  const LN = ['上路', '中路', '下路'][cv.lane] ?? '';
+  const laneCol = cv.lane === 0 ? '#ff7a45' : cv.lane === 1 ? '#e0973a' : '#46c6ff';
+  const wrPct = Math.round(cv.winrate * 100), foePct = 100 - wrPct, rollPct = Math.round(cv.roll * 100);
+  const isTie = cv.tie === 'points' || cv.tie === 'stamina';
+  const isWin = !isTie && cv.aWins, isLose = !isTie && !cv.aWins;
+  const sgn = (n: number): string => (n >= 0 ? '+' + n : String(n));
+  const sideCard = (c: ClashCardView, mine: boolean, won: boolean, dead: boolean): string => {
+    const teamCol = mine ? T.accent : '#3a86d4', sc = sgC[c.suit], tilt = mine ? -6 : 6;
+    const rows: [string, string, number][] = [['点', '点数(公平基础)', c.points], ['营', '经营(养成)', c.buff], ['罡', '天罡(法术)', c.tengang], ['气', '士气(主将)', c.morale]];
+    const rowsHTML = rows.map(([tag, label, num]) => `<div style="display:flex;align-items:center;gap:10px;padding:4px 0;"><span style="width:28px;height:28px;flex:none;border-radius:7px;background:${mine ? T.accentSoft : 'rgba(58,134,212,.18)'};display:flex;align-items:center;justify-content:center;font-family:${T.fb};font-weight:700;font-size:13px;color:${teamCol};">${tag}</span><span style="flex:1;font-size:14px;color:${T.dim};">${label}</span><span style="font-family:${T.fn};font-size:16px;color:${T.ink};">${sgn(num)}</span></div>`).join('');
+    return `<div style="display:flex;flex-direction:column;align-items:center;gap:16px;width:378px;flex:none;animation:${mine ? 'gg-clashL' : 'gg-clashR'} .5s cubic-bezier(.2,.8,.3,1) both${dead ? ',gg-shatter .4s ease 1s 2' : ''};${dead ? 'filter:grayscale(.55) brightness(.62);opacity:.62;' : ''}">
+      <div style="position:relative;perspective:1300px;transform:rotate(${tilt}deg);">
+        <div style="position:relative;width:188px;height:264px;transform-style:preserve-3d;animation:gg-cardflip .65s cubic-bezier(.4,.1,.2,1) .3s both;box-shadow:${won ? '0 0 56px ' + T.accentSoft + ',0 22px 44px rgba(0,0,0,.6)' : '0 22px 44px rgba(0,0,0,.6)'};">
+          <div style="position:absolute;inset:0;border-radius:15px;background:${T.cardBack};border:4px solid #fff;backface-visibility:hidden;-webkit-backface-visibility:hidden;transform:rotateY(180deg);background-image:repeating-linear-gradient(45deg,${T.backPat} 0 7px,transparent 7px 15px);"></div>
+          <div style="position:absolute;inset:0;border-radius:15px;background:${T.cardFace};border:4px solid ${won ? teamCol : '#fff'};backface-visibility:hidden;-webkit-backface-visibility:hidden;overflow:hidden;display:flex;align-items:center;justify-content:center;">
+            <div style="position:absolute;top:9px;left:11px;font-family:${T.fh};font-weight:700;font-size:23px;line-height:.84;color:${sc};text-align:center;">${esc(c.rank)}<br>${sgG[c.suit]}</div>
+            ${c.general ? `<div style="position:absolute;top:48px;right:10px;padding:2px 8px;border-radius:99px;background:${T.goldGrad};color:#2a1a08;font-family:${T.fh};font-weight:700;font-size:11px;">♔ 主将</div>` : ''}
+            <div style="font-family:${T.fd};font-size:120px;color:${sc};text-shadow:0 4px 12px rgba(0,0,0,.25);">${sgG[c.suit]}</div>
+            <div style="position:absolute;bottom:9px;right:11px;font-family:${T.fh};font-weight:700;font-size:23px;line-height:.84;color:${sc};text-align:center;transform:rotate(180deg);">${esc(c.rank)}<br>${sgG[c.suit]}</div>
+          </div>
+        </div>
+        ${c.general ? `<div style="position:absolute;top:-36px;left:50%;transform:translateX(-50%);font-size:38px;color:${T.gold};text-shadow:0 2px 10px rgba(0,0,0,.6);">♔</div>` : ''}
+      </div>
+      <div style="width:358px;padding:14px 16px;border-radius:13px;background:${T.panel};border:1px solid ${won ? teamCol : T.panelBd};box-shadow:inset 0 0 0 1px ${T.hair},0 10px 24px rgba(0,0,0,.4);animation:gg-clashin .5s ease .25s both;">
+        <div style="font-size:10px;letter-spacing:.16em;text-transform:uppercase;color:${mine ? T.accent : '#3a86d4'};margin-bottom:7px;font-weight:700;">${mine ? '我方' : '敌方'} · 战力拆解</div>
+        ${rowsHTML}
+        <div style="display:flex;align-items:center;margin-top:7px;padding-top:9px;border-top:1px solid ${T.panelBd};"><span style="flex:1;font-family:${T.fh};font-weight:700;font-size:16px;color:${T.ink};">＝ 战力</span><span style="font-family:${T.fn};font-size:23px;color:${mine ? T.accent : '#3a86d4'};">${c.pEff}</span></div>
+      </div>
+    </div>`;
+  };
+  const mineWon = isTie ? cv.aWins : isWin, foeWon = isTie ? !cv.aWins : isLose;
+  const mineDead = !isTie && isLose, foeDead = !isTie && isWin;
+  const fateMarker = isTie ? '' : `<div style="position:absolute;left:${rollPct}%;top:-2px;transform:translateX(-50%);display:flex;flex-direction:column;align-items:center;z-index:9;animation:gg-fatedrop .6s cubic-bezier(.4,.1,.3,1) 1.1s both;"><div style="width:3px;height:46px;background:${T.gold};box-shadow:0 0 10px ${T.gold};margin-bottom:-4px;"></div><div style="width:26px;height:58px;border-radius:6px 6px 3px 3px;background:linear-gradient(180deg,#c0452f,#7d2a1e);border:2px solid ${T.gold};display:flex;align-items:center;justify-content:center;box-shadow:0 0 16px ${T.accentSoft};"><span style="font-family:${T.fd};font-size:20px;color:#ffe9a8;writing-mode:vertical-rl;">命</span></div></div>`;
+  const tieReason = cv.tie === 'stamina' ? '续航高者胜' : '点数大者胜';
+  const winnerRank = (cv.aWins ? cv.a : cv.b).rank;
+  const emblem = isTie
+    ? `<div style="font-family:${T.fd};font-size:76px;color:${T.gold};line-height:1;text-shadow:0 4px 22px rgba(0,0,0,.7);">平 · 裁定</div><div style="font-family:${T.fh};font-weight:700;font-size:19px;color:#fff;margin-top:7px;">战力相等 50:50 · 不掷命 · ${tieReason}</div><div style="font-family:${T.fh};font-weight:700;font-size:16px;color:${T.gold};margin-top:5px;">${cv.aWins ? '我方' : '敌方'} ${esc(winnerRank)} 胜</div>`
+    : isWin
+      ? `<div style="position:absolute;top:50%;left:50%;width:300px;height:300px;border-radius:50%;border:6px solid rgba(255,220,120,.8);transform:translate(-50%,-50%);animation:gg-burst 1s ease-out 1.7s infinite;"></div><div style="position:absolute;top:50%;left:50%;width:440px;height:440px;transform:translate(-50%,-50%);border-radius:50%;background:radial-gradient(circle,rgba(255,205,90,.55),transparent 64%);"></div><div style="position:relative;font-family:${T.fd};font-size:116px;line-height:1;color:#ffe9a8;text-shadow:0 0 46px rgba(255,205,90,.95),0 4px 18px rgba(0,0,0,.6);">活</div><div style="position:relative;font-family:${T.fh};font-weight:700;font-size:21px;color:#fff;letter-spacing:.06em;margin-top:5px;">我方${esc(cv.a.rank)} 翻正 · 英雄显形</div>`
+      : `<div style="position:absolute;top:50%;left:50%;width:480px;height:480px;transform:translate(-50%,-50%);border-radius:50%;background:radial-gradient(circle,rgba(255,40,60,.5),transparent 64%);"></div><div style="position:absolute;top:50%;left:50%;width:560px;height:10px;transform:translate(-50%,-50%) rotate(-32deg);background:linear-gradient(90deg,transparent,#ff2f3c,#fff,#ff2f3c,transparent);box-shadow:0 0 26px rgba(255,40,60,.9);border-radius:99px;"></div><div style="position:relative;font-family:${T.fd};font-size:138px;line-height:1;color:#ff2f3c;text-shadow:0 0 50px rgba(255,40,60,.95),0 4px 18px rgba(0,0,0,.7);">斩</div><div style="position:relative;font-family:${T.fh};font-weight:700;font-size:21px;color:#ffd9dc;letter-spacing:.06em;margin-top:5px;">我方${esc(cv.a.rank)} 阵亡 · 该路溃退</div>`;
+  return `<div style="position:absolute;inset:0;z-index:30;font-family:${T.fb};">
+    <div style="position:absolute;inset:0;backdrop-filter:blur(3px);-webkit-backdrop-filter:blur(3px);background:radial-gradient(60% 60% at 50% 44%,${isLose ? 'rgba(120,10,16,.45)' : 'rgba(0,0,0,.4)'},rgba(0,0,0,.82));"></div>
+    <div style="position:absolute;top:120px;left:260px;width:1400px;height:786px;border-radius:26px;overflow:hidden;background:${T.stageBg};border:2px solid ${T.stageBd};box-shadow:0 30px 90px rgba(0,0,0,.7),0 0 60px ${T.stageGlow},inset 0 0 0 1px ${T.hair};animation:gg-clashin .5s cubic-bezier(.2,.8,.3,1) both;">
+      <div style="position:absolute;inset:0;background:${T.vig};pointer-events:none;z-index:2;"></div>
+      <div style="position:absolute;top:40%;left:50%;width:1200px;height:1200px;transform:translate(-50%,-50%);background:repeating-conic-gradient(from 0deg,${T.ray} 0deg 5deg,transparent 5deg 16deg);animation:gg-rays 60s linear infinite;opacity:${isLose ? '.4' : '1'};pointer-events:none;z-index:1;"></div>
+      <div style="position:absolute;bottom:120px;left:50%;width:1100px;height:260px;transform:translateX(-50%);background:radial-gradient(50% 60% at 50% 50%,${T.spot},transparent 72%);pointer-events:none;z-index:1;"></div>
+      <div style="position:absolute;top:24px;left:50%;transform:translateX(-50%);display:flex;flex-direction:column;align-items:center;gap:7px;z-index:6;">
+        <div style="display:flex;align-items:center;gap:8px;padding:6px 18px;border-radius:99px;background:rgba(8,12,18,.6);border:1px solid ${laneCol};color:#fff;font-family:${T.fh};font-weight:700;font-size:16px;letter-spacing:.06em;"><span style="width:10px;height:10px;border-radius:50%;background:${laneCol};box-shadow:0 0 10px ${laneCol};"></span>${LN} · 前锋相遇</div>
+        <div style="font-family:${T.fd};font-size:34px;color:${T.gold};letter-spacing:.06em;text-shadow:0 3px 14px rgba(0,0,0,.6);">命运一掷</div>
+      </div>
+      <div style="position:absolute;top:118px;left:0;right:0;height:340px;display:flex;align-items:center;justify-content:center;z-index:4;">
+        ${sideCard(cv.a, true, mineWon, mineDead)}
+        <div style="position:relative;width:120px;flex:none;display:flex;align-items:center;justify-content:center;z-index:5;">
+          <div style="position:absolute;top:50%;left:50%;width:150px;height:150px;border-radius:50%;background:radial-gradient(circle,rgba(255,235,160,.9),rgba(255,150,40,.4) 45%,transparent 72%);transform:translate(-50%,-50%);animation:gg-spark 1.2s ease-in-out infinite;${isLose ? 'filter:hue-rotate(-45deg) saturate(1.4);' : ''}"></div>
+          <div style="position:relative;width:72px;height:72px;border-radius:50%;background:${T.goldGrad};display:flex;align-items:center;justify-content:center;color:#2a1a08;box-shadow:0 0 26px rgba(240,212,136,.6),inset 0 2px 0 rgba(255,255,255,.5);border:3px solid #fff;"><span style="font-family:${T.fd};font-size:34px;">${isTie ? '裁' : '掷'}</span></div>
+        </div>
+        ${sideCard(cv.b, false, foeWon, foeDead)}
+      </div>
+      <div style="position:absolute;bottom:50px;left:50%;transform:translateX(-50%);width:1180px;z-index:6;">
+        <div style="display:flex;justify-content:space-between;align-items:flex-end;margin-bottom:9px;">
+          <div style="display:flex;align-items:baseline;gap:8px;"><span style="font-family:${T.fh};font-weight:700;font-size:16px;color:${T.accent};">我方</span><span style="font-family:${T.fn};font-size:26px;color:${T.accent};">${wrPct}%</span></div>
+          <div style="text-align:center;"><div style="font-size:11px;letter-spacing:.16em;color:${T.dim};text-transform:uppercase;">胜率区间 · 战力差 → 概率</div><div style="font-size:10px;color:${T.dim};margin-top:2px;">保留 3%–97% 爆冷缝 · 弱者亦可翻盘</div></div>
+          <div style="display:flex;align-items:baseline;gap:8px;"><span style="font-family:${T.fn};font-size:26px;color:#3a86d4;">${foePct}%</span><span style="font-family:${T.fh};font-weight:700;font-size:16px;color:#3a86d4;">敌方</span></div>
+        </div>
+        <div style="position:relative;height:30px;border-radius:99px;background:${T.track};border:1px solid ${T.panelBd};box-shadow:inset 0 2px 8px rgba(0,0,0,.4);">
+          <div style="position:absolute;left:0;top:0;bottom:0;width:${wrPct}%;border-radius:99px 0 0 99px;background:${T.accentGrad};box-shadow:0 0 16px ${T.accentSoft};"></div>
+          <div style="position:absolute;right:0;top:0;bottom:0;width:${foePct}%;border-radius:0 99px 99px 0;background:linear-gradient(180deg,#5ea0e0,#2a5f9e);"></div>
+          <div style="position:absolute;top:-5px;bottom:-5px;left:3%;width:2px;background:rgba(255,255,255,.6);"></div>
+          <div style="position:absolute;top:-5px;bottom:-5px;left:97%;width:2px;background:rgba(255,255,255,.6);"></div>
+          ${fateMarker}
+        </div>
+        <div style="display:flex;justify-content:space-between;margin-top:6px;font-size:10px;color:${T.dim};"><span>3% 底缝</span><span style="font-family:${T.fn};font-size:11px;color:${T.gold};">${isTie ? '平局裁定 · 不掷命' : '命点 ' + rollPct + ' / 100 · 落于' + (rollPct <= wrPct ? '我方侧 → 活' : '敌方侧 → 斩')}</span><span>97% 顶缝</span></div>
+      </div>
+      <div style="position:absolute;top:42%;left:50%;transform:translate(-50%,-50%);display:flex;flex-direction:column;align-items:center;text-align:center;z-index:10;animation:gg-emblem .6s cubic-bezier(.2,.9,.3,1) 1.6s both;pointer-events:none;">${emblem}</div>
+    </div>
+  </div>`;
+}
 
 function buildHTML(view: BattleView, s: CamState): string {
   const T = THEMES[s.theme] ?? THEMES.onyx;
@@ -202,13 +299,6 @@ function buildHTML(view: BattleView, s: CamState): string {
 
   const panel = { background: 'var(--panel-grad)', border: '1px solid var(--panel-border)', borderRadius: '11px', boxShadow: 'inset 0 0 0 1px var(--hairline), 0 4px 12px rgba(0,0,0,.15)', padding: '14px' };
   const panelHead = { fontSize: '10px', letterSpacing: '.2em', textTransform: 'uppercase', color: 'var(--ink-dim)', marginBottom: '11px' };
-  const leversHTML = forr(view.levers, (l) => {
-    const on = s.lever === l.key;
-    const rowS = { display: 'flex', alignItems: 'center', gap: '11px', padding: '11px 12px', borderRadius: '11px', cursor: 'pointer', border: '1px solid ' + (on ? 'var(--accent)' : 'var(--panel-border)'), background: on ? 'var(--accent-soft)' : 'var(--chip-bg)', boxShadow: on ? 'inset 0 0 0 1px var(--hairline), 0 0 14px var(--accent-soft)' : 'inset 0 0 0 1px var(--hairline)', transition: 'all .15s ease' };
-    const iconS = { width: '36px', height: '36px', flex: 'none', borderRadius: '9px', background: on ? 'var(--accent-grad)' : 'var(--track)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '18px', color: '#fff' };
-    return `<div data-act="lever" data-k="${l.key}" style="${st(rowS)}"><div style="${st(iconS)}">${l.glyph}</div><div style="flex:1; min-width:0;"><div style="display:flex; justify-content:space-between; align-items:baseline;"><span style="font-family:var(--font-heading); font-weight:700; font-size:15px; color:var(--ink);">${esc(l.name)}</span><span style="font-family:var(--font-num); font-size:12px; color:var(--accent);">⚡${l.cost}</span></div><div style="font-size:11px; color:var(--ink-dim); margin-top:3px; line-height:1.35;">${esc(l.desc)}</div></div></div>`;
-  });
-  const energyPips = [0, 1, 2, 3, 4].map((i) => `<div style="${st({ flex: 1, height: '8px', borderRadius: '99px', background: i < view.energy ? 'var(--accent-grad)' : 'var(--track)', boxShadow: i < view.energy ? '0 0 6px var(--accent-soft)' : 'none' })}"></div>`).join('');
   // CR 出牌坞：选普通牌(部署) / 天罡牌(施法) / 无选中→三路兵力迁移（点首路=迁出·点次路=迁入）。lane 按钮三用，按选中态切。
   const castMode = view.selectedTengang >= 0 && view.selectedTengang < view.tengang.length; // 选中天罡 → lane 按钮 = 施法
   const hasSel = (view.selectedCard >= 0 && view.selectedCard < view.hand.length) || castMode;
@@ -241,57 +331,19 @@ function buildHTML(view: BattleView, s: CamState): string {
     return `<button data-act="${act}" style="${st(s)}">${label}<span style="font-family:var(--font-num); font-size:11px;">◈${cost}</span></button>`;
   };
 
-  // 对决特写表演（owner：拉到屏幕前·看为什么胜败）：冻结战场 → 放大两牌 + 点数/加成/战力 → 胜率区间条 + 掷点落区间 → 生者翻正/死者斩。
+  // 对决特写：忠实复刻 Core Design「Game G 对决特写.dc.html」→ clashCloseup（自包含·冻结战场叠加·居中舞台·活/斩/平裁定·玄铁/锦霞）。
   const cv = view.clash;
-  const sgn = (n: number): string => (n >= 0 ? '+' + n : String(n));
-  // 主 Buff 明细（owner）：点数(公平骨架 base) + 经营(养成聚合) [+ 天罡(已施法术加成)] [+ 士气(主将在/亡)] ＝ 战力 P_eff（夹 [0,30]）。
-  const detailTxt = (c: ClashCardView): string => `点数 ${c.points} · 经营 ${sgn(c.buff)}${c.tengang ? ' · 天罡 ' + sgn(c.tengang) : ''}${c.morale ? ' · 士气 ' + sgn(c.morale) : ''} <b style="font-size:15px; color:var(--ink);">＝ 战力 ${c.pEff}</b>`;
-  const bigCard = (c: ClashCardView, side: 'a' | 'b', win: boolean): string => {
-    const col = side === 'a' ? '#ff5d2e' : '#3a86d4', sc = SUITC[c.suit];
-    const slide = side === 'a' ? 'gg-clashL' : 'gg-clashR';
-    const flip = win ? 'gg-flip-win' : 'gg-flip-lose'; // 真 3D Y 轴翻转：赢=胜利翻 360°停正面、输=翻命翻 180°到死面
-    const face = 'position:absolute; inset:0; border-radius:16px; backface-visibility:hidden; -webkit-backface-visibility:hidden; display:flex; align-items:center; justify-content:center;';
-    const front = `<div style="${face} background:linear-gradient(160deg,#fff8ec,#f0e2c4); border:6px solid ${win ? 'var(--gold)' : col};">${c.general ? '<span style="position:absolute; top:8px; font-size:34px; color:var(--gold);">♔</span>' : ''}<div style="position:absolute; top:10px; left:15px; font-family:var(--font-heading); font-weight:800; font-size:42px; color:${sc};">${esc(c.rank)}</div><span style="font-size:100px; color:${sc};">${SUITG[c.suit]}</span></div>`;
-    const back = win
-      ? `<div style="${face} transform:rotateY(180deg); background:#274a73; border:6px solid #16314e;"><div style="position:absolute; inset:14px; border-radius:8px; border:2px solid rgba(255,255,255,.4); background:repeating-linear-gradient(45deg, rgba(255,255,255,.16) 0 9px, transparent 9px 18px), repeating-linear-gradient(-45deg, rgba(255,255,255,.16) 0 9px, transparent 9px 18px);"></div></div>`
-      : `<div style="${face} transform:rotateY(180deg); background:#8d2f22; border:6px solid var(--danger);"><span style="font-family:var(--font-heading); font-weight:800; font-size:96px; color:#fff;">斩</span></div>`;
-    return `<div style="animation:${slide} .4s ease-out;"><div style="width:186px; height:260px; perspective:1100px;"><div style="position:relative; width:100%; height:100%; transform-style:preserve-3d; animation:${flip} .6s cubic-bezier(.3,1.6,.5,1) .35s both;${win ? ' filter:drop-shadow(0 0 22px var(--gold));' : ''}">${front}${back}</div></div><div style="margin-top:14px; text-align:center; white-space:nowrap; font-family:var(--font-num); font-size:12px; color:${col};">${detailTxt(c)}</div></div>`;
-  };
-  const clashHTML = cv ? (() => {
-    const LN = ['上路', '中路', '下路'][cv.lane] ?? '';
-    const wrPct = Math.round(cv.winrate * 100), rollPct = Math.round(cv.roll * 100), barW = 720;
-    // owner：对决画面定位到上/中/下三路的地方——按 lane 竖向锚 + 聚光跟随该路，给空间感（哪一路在打）。
-    const vAlign = cv.lane === 0 ? 'flex-start' : cv.lane === 2 ? 'flex-end' : 'center';
-    const spotY = cv.lane === 0 ? '24%' : cv.lane === 2 ? '76%' : '50%';
-    return `<div style="${st({ position: 'absolute', inset: '0', zIndex: 30, display: 'flex', alignItems: vAlign, justifyContent: 'center', padding: '60px 0', background: 'radial-gradient(circle at 50% ' + spotY + ', rgba(8,10,14,.5), rgba(4,6,9,.93))' })}">
-      <div style="${st({ animation: 'gg-clashin .4s ease-out', display: 'flex', flexDirection: 'column', alignItems: 'center', padding: '24px 44px 30px', borderRadius: '22px', background: 'var(--hud-bg)', border: '1px solid var(--panel-border)', boxShadow: '0 30px 80px rgba(0,0,0,.7)' })}">
-        <div style="font-family:var(--font-display); font-weight:700; font-size:26px; color:var(--accent); letter-spacing:.06em;">⚔ ${LN} · 命运一掷</div>
-        <div style="display:flex; align-items:center; gap:46px; margin:24px 0 30px;">${bigCard(cv.a, 'a', cv.aWins)}<div style="font-family:var(--font-heading); font-weight:800; font-size:36px; color:var(--ink-dim);">VS</div>${bigCard(cv.b, 'b', !cv.aWins)}</div>
-        <div style="display:flex; justify-content:space-between; width:${barW}px; font-family:var(--font-num); font-size:13px; margin-bottom:5px;"><span style="color:#ff5d2e;">我方 ${SUITG[cv.a.suit]}${esc(cv.a.rank)} 生 ${wrPct}%</span><span style="color:#3a86d4;">${100 - wrPct}% 生 ${SUITG[cv.b.suit]}${esc(cv.b.rank)} 敌方</span></div>
-        <div style="position:relative; width:${barW}px; height:26px; border-radius:99px; border:2px solid rgba(255,255,255,.28);">
-          <div style="position:absolute; inset:0; border-radius:99px; overflow:hidden; display:flex;"><div style="width:${wrPct}%; background:linear-gradient(180deg,#ff7a45,#ee4515);"></div><div style="flex:1; background:linear-gradient(180deg,#5ea0e0,#2a5f9e);"></div></div>
-          <div style="position:absolute; left:${wrPct}%; top:-5px; bottom:-5px; width:2px; background:#fff;"></div>
-          <div style="position:absolute; left:${rollPct}%; top:-14px;"><div style="transform:translateX(-50%); width:0; height:0; border-left:11px solid transparent; border-right:11px solid transparent; border-top:18px solid #fff; filter:drop-shadow(0 2px 4px rgba(0,0,0,.6)); animation:gg-rolldrop .9s ease-out forwards;"></div></div>
-        </div>
-        <div style="font-family:var(--font-num); font-size:13px; color:var(--ink-dim); margin-top:14px;">${cv.tie === 'points' ? '战力相等 50:50 → 点数大者胜' : cv.tie === 'stamina' ? '战力·点数皆平 → 续航高者胜' : cv.tie === 'roll' ? '全平 → 重揉定' : '掷点 ' + rollPct + ' 落在 ' + (cv.aWins ? '我方生区' : '敌方生区')} → <b style="color:${cv.aWins ? '#ff5d2e' : '#3a86d4'};">${cv.aWins ? '我方' + esc(cv.a.rank) + '翻正 · 敌' + esc(cv.b.rank) + '斩' : '敌' + esc(cv.b.rank) + '翻正 · 我方' + esc(cv.a.rank) + '斩'}</b></div>
-      </div>
-    </div>`;
-  })() : '';
 
   return `<div class="gg-root" style="${st(rootStyle)}">
-    <div style="container-type:size; width:100%; aspect-ratio:16 / 9; margin:0 auto; overflow:hidden; border-radius:14px; box-shadow:0 24px 60px rgba(0,0,0,.35);">
-    <div style="width:1920px; height:1080px; transform:scale(calc(100cqw / 1920)); transform-origin:top left; position:relative; overflow:hidden; background:var(--app-bg); color:var(--ink); font-family:var(--font-body);">
+    <div class="gg-scale-outer" style="container-type:size; width:100%; aspect-ratio:16 / 9; margin:0 auto; overflow:hidden; border-radius:14px; box-shadow:0 24px 60px rgba(0,0,0,.35);">
+    <div class="gg-scale-inner" style="width:1920px; height:1080px; transform:scale(calc(100cqw / 1920)); transform-origin:top left; position:relative; overflow:hidden; background:var(--app-bg); color:var(--ink); font-family:var(--font-body);">
       <div style="position:absolute; inset:0; background:var(--texture); pointer-events:none;"></div>
       <div style="position:absolute; top:0; left:0; right:0; height:96px; display:flex; align-items:center; gap:18px; padding:0 30px; background:var(--hud-bg); border-bottom:1px solid var(--panel-border); z-index:8;">
         <div style="display:flex; align-items:center; gap:11px; min-width:280px;"><div style="${st(nexBadgeA)}">♠</div><div style="flex:1;"><div style="display:flex; justify-content:space-between; align-items:baseline;"><span style="font-family:var(--font-heading); font-weight:700; font-size:14px; color:var(--ink);">我方老家</span><span style="font-family:var(--font-num); font-size:12px; color:var(--accent);">${view.homeA}/${view.homeAMax}</span></div><div style="height:11px; border-radius:99px; background:var(--track); overflow:hidden; margin-top:5px; border:1px solid var(--panel-border);"><div style="width:${pct(view.homeA, view.homeAMax)}%; height:100%; background:var(--accent-grad); border-radius:99px; box-shadow:0 0 8px var(--accent-soft);"></div></div></div></div>
         <div style="flex:1; display:flex; flex-direction:column; align-items:center; gap:5px;"><div style="${st(phaseBanner)}">${esc(view.phaseText)}</div><div style="display:flex; align-items:center; gap:10px;"><span style="font-size:10px; letter-spacing:.2em; text-transform:uppercase; color:var(--ink-dim);">TIME</span><span style="font-family:var(--font-num); font-size:22px; color:var(--ink);">${esc(view.timeText)}</span></div></div>
         <div style="display:flex; align-items:center; gap:11px; min-width:280px; justify-content:flex-end;"><div style="flex:1;"><div style="display:flex; justify-content:space-between; align-items:baseline;"><span style="font-family:var(--font-num); font-size:12px; color:#3a86d4;">${view.homeB}/${view.homeBMax}</span><span style="font-family:var(--font-heading); font-weight:700; font-size:14px; color:var(--ink);">敌方老家</span></div><div style="height:11px; border-radius:99px; background:var(--track); overflow:hidden; margin-top:5px; border:1px solid var(--panel-border);"><div style="width:${pct(view.homeB, view.homeBMax)}%; height:100%; margin-left:${100 - pct(view.homeB, view.homeBMax)}%; background:linear-gradient(180deg,#5ea0e0,#2a5f9e); border-radius:99px; box-shadow:0 0 8px rgba(58,134,212,.5);"></div></div></div><div style="${st(nexBadgeB)}">${SUITG[view.oppSuit]}</div></div>
       </div>
-      <div style="position:absolute; top:112px; left:18px; width:284px; bottom:172px; display:flex; flex-direction:column; gap:11px; overflow-y:auto; padding-right:4px;">
-        <div style="display:flex; align-items:center; gap:8px; padding:2px 4px;"><span style="font-size:10px; letter-spacing:.22em; text-transform:uppercase; color:var(--ink-dim);">干预卡 · Levers</span><div style="flex:1;"></div><div style="display:flex; align-items:center; gap:5px; padding:3px 9px; border-radius:99px; background:var(--accent-soft); border:1px solid var(--accent);"><span style="font-size:12px;">⚡</span><span style="font-family:var(--font-num); font-size:12px; color:var(--accent);">${view.energy}</span></div></div>
-        <div style="display:flex; flex-direction:column; gap:9px;">${leversHTML}</div>
-      </div>
-      <div style="position:absolute; top:104px; left:318px; right:318px; bottom:172px; display:flex; flex-direction:column; align-items:center; gap:12px;">
+      <div style="position:absolute; top:104px; left:18px; right:318px; bottom:172px; display:flex; flex-direction:column; align-items:center; gap:12px;">
         <div style="${st(viewport)}">
           <div style="${st(world)}">
             <svg viewBox="0 0 3000 1500" preserveAspectRatio="none" style="position:absolute; inset:0; width:100%; height:100%;"><polygon points="1380,-40 1620,-40 1620,1540 1380,1540" fill="rgba(86,150,205,.10)"></polygon><g fill="none" stroke="rgba(238,222,180,.16)" stroke-width="140" stroke-linecap="round" stroke-linejoin="round"><path d="M460,750 Q1500,640 2540,750"></path><path d="M380,650 Q1500,150 2620,650"></path><path d="M380,850 Q1500,1350 2620,850"></path></g><g fill="none" stroke="rgba(238,222,180,.34)" stroke-width="7" stroke-dasharray="40 28" style="animation:gg-dash 1.6s linear infinite;"><path d="M460,750 Q1500,640 2540,750"></path><path d="M380,650 Q1500,150 2620,650"></path><path d="M380,850 Q1500,1350 2620,850"></path></g></svg>
@@ -309,11 +361,11 @@ function buildHTML(view: BattleView, s: CamState): string {
         <div style="${st(panel)}"><div style="${st(panelHead)}">台面机关</div><div style="display:flex; align-items:center; gap:11px; padding:9px 11px; border-radius:9px; background:var(--chip-bg); border:1px solid var(--panel-border);"><span style="font-size:18px;">🌪</span><div><div style="font-family:var(--font-heading); font-weight:700; font-size:13px; color:var(--ink);">河道·低重力</div><div style="font-size:11px; color:var(--ink-dim);">过河掷命滞空更久</div></div></div></div>
       </div>
       <div style="position:absolute; left:0; right:0; bottom:0; height:160px; background:var(--dock-bg); border-top:1px solid var(--panel-border); padding:18px 30px; z-index:7; display:flex; align-items:stretch; gap:16px;">
-        <div style="display:flex; align-items:center; gap:10px;"><div style="display:flex; align-items:center; gap:9px; padding:0 14px; height:100%; border-radius:14px; background:var(--gold-chip); border:1px solid var(--gold);"><span style="font-size:20px;">◈</span><span style="font-family:var(--font-num); font-size:24px; color:var(--gold);">${view.materials}</span></div><div style="display:flex; flex-direction:column; justify-content:center; gap:6px; padding:0 16px; height:100%; border-radius:14px; background:rgba(168,85,247,.12); border:1px solid #a855f7; min-width:172px;"><div style="display:flex; justify-content:space-between; align-items:baseline;"><span style="font-family:var(--font-heading); font-weight:700; font-size:14px; color:#c9a6ff;">点数 · 圣水</span><span style="font-family:var(--font-num); font-size:13px; color:#c9a6ff;">${Math.floor(view.points)}/${view.pointsMax}</span></div><div style="height:12px; border-radius:99px; background:var(--track); overflow:hidden; border:1px solid rgba(168,85,247,.5);"><div style="width:${elixirPct}%; height:100%; background:linear-gradient(90deg,#8b3fd9,#c77dff); box-shadow:0 0 8px rgba(168,85,247,.6);"></div></div></div><div style="display:flex; flex-direction:column; justify-content:center; gap:6px; padding:0 14px; height:100%; border-radius:14px; background:var(--chip-bg); border:1px solid var(--panel-border); min-width:128px;"><div style="display:flex; justify-content:space-between; align-items:baseline;"><span style="font-family:var(--font-heading); font-weight:700; font-size:13px; color:var(--ink);">干预能量</span><span style="font-family:var(--font-num); font-size:11px; color:var(--accent);">${view.energy}/${view.energyMax}</span></div><div style="display:flex; gap:5px;">${energyPips}</div></div></div>
+        <div style="display:flex; align-items:center; gap:10px;"><div style="display:flex; align-items:center; gap:9px; padding:0 14px; height:100%; border-radius:14px; background:var(--gold-chip); border:1px solid var(--gold);"><span style="font-size:20px;">◈</span><span style="font-family:var(--font-num); font-size:24px; color:var(--gold);">${view.materials}</span></div><div style="display:flex; flex-direction:column; justify-content:center; gap:6px; padding:0 16px; height:100%; border-radius:14px; background:rgba(168,85,247,.12); border:1px solid #a855f7; min-width:172px;"><div style="display:flex; justify-content:space-between; align-items:baseline;"><span style="font-family:var(--font-heading); font-weight:700; font-size:14px; color:#c9a6ff;">点数 · 圣水</span><span style="font-family:var(--font-num); font-size:13px; color:#c9a6ff;">${Math.floor(view.points)}/${view.pointsMax}</span></div><div style="height:12px; border-radius:99px; background:var(--track); overflow:hidden; border:1px solid rgba(168,85,247,.5);"><div style="width:${elixirPct}%; height:100%; background:linear-gradient(90deg,#8b3fd9,#c77dff); box-shadow:0 0 8px rgba(168,85,247,.6);"></div></div></div></div>
         <div style="flex:1; display:flex; flex-direction:column; gap:7px; justify-content:center; padding:8px 18px; border-radius:16px; background:var(--accent-soft); border:1px solid var(--accent); box-shadow:inset 0 0 0 1px var(--hairline);"><div style="display:flex; align-items:center; gap:10px;"><span style="font-family:var(--font-heading); font-weight:700; font-size:17px; color:var(--accent); letter-spacing:.03em;">手牌 · 出牌</span><span style="font-size:12px; color:var(--ink-dim);">点选一张 → 上/中/下（普通=部署 · 天罡=施法）；空手点路 = 三路调兵（迁出→迁入）；点数攒够花点数摸牌</span><span style="flex:1;"></span><span style="font-family:var(--font-num); font-size:11px; color:var(--ink-dim);">普通库 ${view.deckCount} · 天罡库 ${view.tengangDeckCount}</span></div><div style="display:flex; gap:8px; align-items:flex-end; min-height:86px;">${handHTML}${view.tengang.length ? `<div style="width:1px; align-self:stretch; margin:6px 4px; background:var(--hairline);"></div>${tengangHTML}` : ''}</div></div>
         <div style="width:236px; flex:none; display:flex; flex-direction:column; gap:8px; justify-content:center;"><div style="display:flex; gap:8px;">${laneBtnsHTML}</div><div style="display:flex; gap:8px;">${drawBtn('draw-normal', '摸普通', view.normalDrawCost, view.canDrawNormal)}${drawBtn('draw-tengang', '摸天罡', view.tengangDrawCost, view.canDrawTengang)}</div><div style="font-size:10px; color:var(--ink-dim); text-align:center; letter-spacing:.03em;">花点数摸牌 · 选普通/天罡库（天罡 cap5 · 打掉才补）</div></div>
       </div>
-      ${clashHTML}
+      ${cv ? clashCloseup(cv, s.theme) : ''}
     </div></div></div>`;
 }
 
@@ -324,14 +376,20 @@ export interface BattleActions { selectCard: (i: number) => void; selectTengang:
 export function mountBattle(host: HTMLElement, getView: () => BattleView, actions?: BattleActions): { update: () => void; destroy: () => void } {
   if (!document.getElementById('gg-battle-css')) { const s = document.createElement('style'); s.id = 'gg-battle-css'; s.textContent = CSS; document.head.appendChild(s); }
   // 固定全局视角（owner：不放缩了）：相机锁定 zoom=0.4·居中，整片三路战场一屏尽收；占屏比由外层 container-query 撑满容器宽。
-  const state: CamState = { theme: 'onyx', lever: 'bless', lane: 'mid', zoom: 0.4, camX: 1500, camY: 750, gates: { g1: true, g2: false } };
-  const render = (): void => { host.innerHTML = buildHTML(getView(), state); };
+  const state: CamState = { theme: 'onyx', lane: 'mid', zoom: 0.4, camX: 1500, camY: 750, gates: { g1: true, g2: false } };
+  const render = (): void => {
+    host.innerHTML = buildHTML(getView(), state);
+    // 占屏缩放（owner「只看到左上角」修复）：不靠 container-query cqw（部分环境不解析→内层 1920×1080 不缩放、只露左上角）；
+    //   JS 实测容器宽 → 显式 scale 内层适配 720p，整屏（含底部圣水/摸牌坞）都进可视区。每帧 render 都重算 → 自然随窗口缩放。
+    const outer = host.querySelector('.gg-scale-outer') as HTMLElement | null;
+    const inner = host.querySelector('.gg-scale-inner') as HTMLElement | null;
+    if (outer && inner) { const w = outer.clientWidth || host.clientWidth; if (w > 0) { const sc = w / 1920; inner.style.transform = 'scale(' + sc + ')'; outer.style.height = Math.round(1080 * sc) + 'px'; } }
+  };
   const LANE_IDX: Record<string, number> = { top: 0, mid: 1, bot: 2 };
   const onClick = (e: MouseEvent): void => {
     const el = (e.target as HTMLElement).closest('[data-act]') as HTMLElement | null; if (!el) return;
     const act = el.dataset.act, k = el.dataset.k ?? '';
-    if (act === 'lever') { state.lever = k; render(); }
-    else if (act === 'hand') { actions?.selectCard(parseInt(el.dataset.i ?? '-1', 10)); render(); }
+    if (act === 'hand') { actions?.selectCard(parseInt(el.dataset.i ?? '-1', 10)); render(); }
     else if (act === 'tengang') { actions?.selectTengang(parseInt(el.dataset.i ?? '-1', 10)); render(); }
     else if (act === 'play') { actions?.playLane(LANE_IDX[k] ?? 0); render(); }
     else if (act === 'draw-normal') { actions?.drawNormal(); render(); }
@@ -351,7 +409,7 @@ const FONTS = '<link rel="preconnect" href="https://fonts.googleapis.com"><link 
 // 离线"看帧"：自包含 HTML 文档（CSS + 字体 + 真渲染器 buildHTML 输出）。浏览器直接开 = 真游戏战斗屏渲染。
 // 容器内确定性生成（同 game-f frameSvg），可 toMatchFileSnapshot 做无头视觉回归 golden。theme 缺省玄铁。
 export function renderBattleDoc(view: BattleView, theme: 'onyx' | 'brocade' = 'onyx'): string {
-  const s: CamState = { theme, lever: 'bless', lane: 'mid', zoom: 0.4, camX: 1500, camY: 750, gates: { g1: true, g2: false } };
+  const s: CamState = { theme, lane: 'mid', zoom: 0.4, camX: 1500, camY: 750, gates: { g1: true, g2: false } };
   return `<!DOCTYPE html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">${FONTS}<style>body{margin:0;background:#0a0d12;display:flex;justify-content:center;}${CSS}</style></head><body>${buildHTML(view, s)}</body></html>`;
 }
 

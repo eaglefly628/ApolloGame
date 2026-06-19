@@ -28,7 +28,6 @@ describe('Game G · 战斗屏视觉回归（真 live-combat → HTML golden · �
   it('行军中帧（tick6 · 兵面朝下沿三路一格格爬、还没接敌）匹配 golden', async () => {
     const html = frameAt(6);
     expect(html).toContain('我方老家'); // 顶部 HUD（真渲染器输出·非空）
-    expect(html).toContain('干预卡 · Levers'); // 左栏
     expect(html).toContain('占领敌方老家'); // 相位条
     expect(html).toContain('--accent:#ff5d2e'); // 玄铁皮
     await expect(html).toMatchFileSnapshot('./__frames__/battle-march.html');
