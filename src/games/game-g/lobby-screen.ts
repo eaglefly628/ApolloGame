@@ -150,6 +150,38 @@ const CSS = `
 .ggl-root .gi{ width:1em; height:1em; display:inline-block; vertical-align:-0.125em; flex-shrink:0; fill:currentColor }
 .ggl-root .deck-sumbar{ display:flex; gap:16px; flex-wrap:wrap; font-size:12px; padding:8px 0; border-bottom:1px solid var(--panel-border); margin-bottom:10px }
 .ggl-root .deck-sumbar b{ color:var(--gold) }
+/* ── polish: 入场 · hover · 点击手感 · 徽章生命感 ── */
+@keyframes ggl-fadein { from{ opacity:0; transform:translateY(7px) } to{ opacity:1; transform:translateY(0) } }
+@keyframes ggl-glow { 0%,100%{ box-shadow:0 0 22px rgba(232,205,130,.5),inset 0 1px 0 rgba(255,255,255,.5) } 50%{ box-shadow:0 0 50px rgba(232,205,130,.95),inset 0 1px 0 rgba(255,255,255,.65) } }
+.ggl-root .screen.on{ animation:ggl-fadein .22s ease-out both }
+.ggl-root .vs{ animation:ggl-glow 2.6s ease-in-out infinite }
+.ggl-root .nav button{ transition:background .15s,color .15s }
+.ggl-root .nav button:not(.on):hover{ background:rgba(255,255,255,.07); color:var(--ink) }
+.ggl-root .cta-main{ transition:transform .12s,box-shadow .12s }
+.ggl-root .cta-main:hover{ transform:translateY(-2px); box-shadow:0 18px 40px rgba(0,0,0,.65),inset 0 1px 0 rgba(255,255,255,.45) }
+.ggl-root .cta-main:active{ transform:translateY(1px) scale(.98); transition-duration:.06s }
+.ggl-root .cta-main::after{ content:''; position:absolute; inset:0; background:radial-gradient(circle at 50% 50%,rgba(255,255,255,.30) 0%,transparent 68%); opacity:0; pointer-events:none; transition:opacity .35s }
+.ggl-root .cta-main:active::after{ opacity:1; transition:none }
+.ggl-root .cta-sub{ transition:background .15s,transform .12s }
+.ggl-root .cta-sub:hover{ background:rgba(255,255,255,.25); transform:translateY(-1px) }
+.ggl-root .cta-sub:active{ transform:translateY(0) scale(.97) }
+.ggl-root .tutbtn{ transition:background .15s,box-shadow .15s }
+.ggl-root .tutbtn:hover{ background:rgba(232,205,130,.10); box-shadow:0 0 0 1px var(--gold) }
+.ggl-root .seg{ transition:background .15s,color .15s,border-color .15s }
+.ggl-root .good{ transition:transform .15s,box-shadow .15s }
+.ggl-root .good.buy:hover{ transform:translateY(-2px); box-shadow:0 0 0 1px var(--gold) inset,0 0 14px rgba(232,205,130,.15) }
+.ggl-root .good.buy:active{ transform:translateY(0) scale(.97) }
+.ggl-root .qcard{ transition:transform .15s,box-shadow .15s }
+.ggl-root .qcard:hover{ transform:translateY(-2px); box-shadow:0 8px 22px rgba(0,0,0,.32),inset 0 0 0 1px var(--hairline) }
+.ggl-root .joker-tog{ transition:background .12s,color .12s,border-color .12s }
+.ggl-root .joker-tog:not(.active):hover{ color:var(--ink); border-color:var(--gold) }
+.ggl-root .deck-nav button{ transition:background .15s,color .15s }
+.ggl-root .deck-nav button:not(.on):hover{ background:rgba(255,255,255,.08); color:var(--ink) }
+.ggl-root .earth-filter button{ transition:background .15s,color .15s }
+.ggl-root .earth-filter button:hover{ background:rgba(255,255,255,.10); color:var(--ink) }
+.ggl-root .btn{ transition:transform .10s,box-shadow .10s }
+.ggl-root .btn:not(.ghost):hover{ transform:translateY(-1px); box-shadow:0 6px 16px rgba(0,0,0,.32) }
+.ggl-root .btn:active{ transform:scale(.97) }
 `;
 
 const SUITS: [string, string][] = [['♠', 'var(--spade)'], ['♥', 'var(--heart)'], ['♦', 'var(--diamond)'], ['♣', 'var(--club)']];
