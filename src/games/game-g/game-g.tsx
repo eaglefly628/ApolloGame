@@ -44,14 +44,15 @@ interface Save {
   leverEnergy: number; // 干预能量◈（开局 3 / 每胜 +2 / 上限 6）
   lives: number; // 战役命线（开 run 3 命，输一场 −1，命尽=run 结束）
   bossIdx: number; // 本 run 终局 Boss（每 run 轮换一名，开 run 随机定，供针对性布阵）
-  jokers: string[]; // 已融小丑牌 id（局外持久 · 跨 run 不清零 · 牌组身份养成）
+  ownedJokers: string[]; // 已买入小丑 id（全部拥有集·跨 run 不清零）
+  jokers: string[]; // 战库 ≤5 张（从 ownedJokers 选入·契约②·甲读）
   planets: Record<string, number>; // 星球牌等级（局外持久 · 可叠加升档 · 第二养成轴）
   foils: string[]; // 已收集的 foil 闪艺皮肤 id（纯表现收集 · 零 gameplay）
 }
 
 const rollBoss = (): number => Math.floor(Math.random() * BOSS_ROSTER.length);
 export function freshSave(): Save {
-  return { materials: 0, stage: 1, deck: Array.from({ length: DECK_SIZE }, (_, i) => 44 + (i % 10) * 2), lastOfficers: [10, 10, 10], leverEnergy: LEVER_START, lives: RUN_LIVES, bossIdx: rollBoss(), jokers: [], planets: {}, foils: [] }; // 44..62 起步；stage=当前战 1..5
+  return { materials: 0, stage: 1, deck: Array.from({ length: DECK_SIZE }, (_, i) => 44 + (i % 10) * 2), lastOfficers: [10, 10, 10], leverEnergy: LEVER_START, lives: RUN_LIVES, bossIdx: rollBoss(), ownedJokers: [], jokers: [], planets: {}, foils: [] }; // 44..62 起步；stage=当前战 1..5
 }
 function loadSave(): Save {
   try {
@@ -63,6 +64,8 @@ function loadSave(): Save {
         if (typeof s.leverEnergy !== 'number') s.leverEnergy = LEVER_START;
         if (typeof s.bossIdx !== 'number') s.bossIdx = rollBoss();
         if (!Array.isArray(s.jokers)) s.jokers = [];
+        // B3 旧存档迁移：ownedJokers 未设时，视旧 jokers 全为已拥有；战库上限 5。
+        if (!Array.isArray(s.ownedJokers)) { s.ownedJokers = [...s.jokers]; s.jokers = s.jokers.slice(0, 5); }
         if (typeof s.planets !== 'object' || s.planets === null) s.planets = {};
         if (!Array.isArray(s.foils)) s.foils = [];
         if (typeof s.lives !== 'number') s.lives = effectiveLives(s.planets);
@@ -215,7 +218,8 @@ export function mount(container: HTMLElement): () => void {
         archLine = `流派 <span class="ghost">未成型</span> —— 去<b>改造坊</b>融小丑确立身份（克制本 run Boss【${bossArchName}】）`;
       }
       const cap = effectiveLeverCap(save.planets);
-      const jokers: LobbyShopItem[] = GAME_G_JOKERS.map((j) => { const owned = save.jokers.includes(j.id); return { id: j.id, name: j.name, sub: j.text, cost: j.cost, owned, buyable: !owned && save.materials >= j.cost }; });
+      // B3: owned=已买入(ownedJokers)；inDeck=已选入战库(jokers ≤5)；buyable=未买且材料够
+      const jokers: LobbyShopItem[] = GAME_G_JOKERS.map((j) => { const owned = save.ownedJokers.includes(j.id); return { id: j.id, name: j.name, sub: j.text, cost: j.cost, owned, inDeck: save.jokers.includes(j.id), buyable: !owned && save.materials >= j.cost }; });
       const planets: LobbyShopItem[] = GAME_G_PLANETS.map((p) => ({ id: p.id, name: p.name, sub: p.text, cost: p.cost, owned: false, level: save.planets[p.id] ?? 0, buyable: save.materials >= p.cost }));
       const foils: LobbyShopItem[] = GAME_G_FOILS.map((f) => { const owned = save.foils.includes(f.id); return { id: f.id, name: f.name, sub: f.desc, cost: f.cost, owned, buyable: !owned && save.materials >= f.cost }; });
       const heart = save.lives > 0 ? '❤'.repeat(save.lives) : '—';
@@ -226,6 +230,7 @@ export function mount(container: HTMLElement): () => void {
         archLine, bossLine: `${boss.persona} · 流派【${bossArchName}】— 据其针对布阵`,
         deckAvg: avg(save.deck), deckMin: Math.min(...save.deck), deckMax: Math.max(...save.deck), deck: save.deck,
         jokers, planets, foils,
+        deckArchName: arch?.name ?? null, deckArchActivated: activated !== null,
         ladderLines: [
           `<h2>⚔️ 战役进度</h2><div class="bigrank">第 ${save.stage} / ${RUN_BATTLES} 战</div><div class="meta" style="margin-top:6px">命 ${heart} · 能量 ◈${save.leverEnergy}/${cap} · 材料 🪙${save.materials}</div>`,
           `<h2>🏆 终局 Boss</h2><div class="bigrank" style="color:var(--heart)">${boss.name}</div><div class="meta" style="margin-top:6px">${boss.persona} · 流派【${bossArchName}】</div>`,
@@ -236,9 +241,12 @@ export function mount(container: HTMLElement): () => void {
     lobby = mountLobby(host, {
       getView: buildLobbyView,
       onPlay: () => showFormation([...save.lastOfficers] as [number, number, number]),
-      onBuyJoker: (id) => { const j = JOKER_BY_ID.get(id); if (!j || save.jokers.includes(id)) return; buy(j.cost, () => save.jokers.push(id)); },
+      // B3: 买入 → ownedJokers；战库未满时自动选入（方便新手无需手动选）
+      onBuyJoker: (id) => { const j = JOKER_BY_ID.get(id); if (!j || save.ownedJokers.includes(id)) return; buy(j.cost, () => { save.ownedJokers.push(id); if (save.jokers.length < 5) save.jokers.push(id); }); },
       onBuyPlanet: (id) => { const p = GAME_G_PLANETS.find((x) => x.id === id); if (!p) return; buy(p.cost, () => { save.planets[id] = (save.planets[id] ?? 0) + 1; }); },
       onBuyFoil: (id) => { const f = GAME_G_FOILS.find((x) => x.id === id); if (!f || save.foils.includes(id)) return; buy(f.cost, () => save.foils.push(id)); },
+      // B3: 选入/踢出战库（需已拥有；战库上限 5）
+      onToggleJoker: (id) => { if (!save.ownedJokers.includes(id)) return; const in5 = save.jokers.includes(id); if (in5) { save.jokers = save.jokers.filter((j) => j !== id); } else if (save.jokers.length < 5) { save.jokers.push(id); } persist(save); },
       onReset: () => { Object.assign(save, freshSave()); persist(save); },
       onSkin: (s) => { lobbySkin = s; },
     });

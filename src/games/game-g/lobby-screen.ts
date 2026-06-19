@@ -3,7 +3,7 @@
 //   + 玄铁(onyx)/锦霞(rosy=brocade)双皮（CSS 变量逐项对齐 .dc.html themes()）。数据接真存档；未接网项诚实占位。
 // 纯表现"固定解释器"：只渲染 view + 抛 data-act 回调，零 gameplay 计算。CSS 全 scope 在 .ggl-root 下。
 
-export interface LobbyShopItem { id: string; name: string; sub: string; cost: number; owned: boolean; buyable: boolean; level?: number }
+export interface LobbyShopItem { id: string; name: string; sub: string; cost: number; owned: boolean; buyable: boolean; level?: number; inDeck?: boolean }
 export interface LobbyView {
   skin: 'onyx' | 'rosy';
   coin: number; energy: number; energyMax: number; foilCount: number;
@@ -12,6 +12,7 @@ export interface LobbyView {
   deckAvg: number; deckMin: number; deckMax: number; deck: number[];
   jokers: LobbyShopItem[]; planets: LobbyShopItem[]; foils: LobbyShopItem[];
   ladderLines: string[];
+  deckArchName?: string | null; deckArchActivated?: boolean; // B3: 命牌战库流派状态（可选·框架测试不传）
 }
 
 // ── 双皮 CSS 变量（逐项照搬 .dc.html themes() · onyx 绿呢 / rosy=brocade 红呢）+ 招牌类 ──
@@ -92,6 +93,10 @@ const CSS = `
 .ggl-root .note{ font-size:11px; color:var(--ink-dim); text-align:center; margin-top:18px; line-height:1.7 }
 .ggl-root .tut-ov{ position:absolute; inset:0; background:#000a; display:flex; align-items:center; justify-content:center; padding:24px; z-index:50 }
 .ggl-root .tut-box{ max-width:920px; max-height:90%; overflow:auto; background:var(--panel); border:1px solid var(--gold); border-radius:14px; padding:22px } .ggl-root .tut-box h3{ color:var(--gold); font-size:18px; margin-bottom:12px } .ggl-root .tut-box .step{ border-left:3px solid var(--gold); padding:6px 0 6px 12px; margin:8px 0; font-size:14px; line-height:1.7 } .ggl-root .tut-box .step b{ color:var(--ink) }
+.ggl-root .joker-tog{ padding:2px 8px; border-radius:6px; background:var(--chip); border:1px solid var(--panel-border); color:var(--ink-dim); font-size:11px; cursor:pointer }
+.ggl-root .joker-tog.active{ background:var(--gold-grad); color:#2a1a08; border:0 }
+.ggl-root .jchips{ display:flex; flex-wrap:wrap; gap:8px; margin:10px 0 4px }
+.ggl-root .jchip{ display:flex; align-items:center; gap:4px; padding:4px 10px; border-radius:8px; background:var(--chip); border:1px solid var(--gold); font-size:12px }
 `;
 
 const SUITS: [string, string][] = [['♠', 'var(--spade)'], ['♥', 'var(--heart)'], ['♦', 'var(--diamond)'], ['♣', 'var(--club)']];
@@ -123,6 +128,31 @@ function tutorialBox(): string {
     <div class="step"><b>赢条件</b>：幸存者突破到敌大本营 −1 血（共 3 血），<b>先破者胜</b>。</div>
     <div style="text-align:center;margin-top:14px"><button class="cta-sub" style="color:#2a1a08;background:var(--gold-grad);border:0" data-act="tut-close">明白了，开打 →</button></div>
   </div></div>`;
+}
+
+// 改造坊小丑货架项（B3）：展示买入 + 选入/踢出战库的双动作。
+function craftJokerItem(it: LobbyShopItem, deckFull: boolean): string {
+  const cls = 'good' + (it.owned ? ' got' : it.buyable ? ' buy' : ' lock');
+  const buyAttr = it.buyable && !it.owned ? ` data-act="buyJoker" data-k="${it.id}"` : '';
+  let foot: string;
+  if (it.owned) {
+    const togLabel = it.inDeck ? '⚔ 战库' : (deckFull ? '战库满' : '+ 战库');
+    const togCls = 'joker-tog' + (it.inDeck ? ' active' : '');
+    const togDis = !it.inDeck && deckFull ? ' disabled' : '';
+    foot = `<div style="display:flex;gap:6px;margin-top:6px;align-items:center"><span style="font-size:11px;color:var(--gold)">✓ 已融</span><button class="${togCls}" data-act="toggleJoker" data-k="${it.id}"${togDis}>${togLabel}</button></div>`;
+  } else {
+    foot = `<div class="cost">🪙 ${it.cost}</div>`;
+  }
+  return `<div class="${cls}"${buyAttr} title="${esc(it.sub)}"><div class="gnm">🃏 ${esc(it.name)}</div>${foot}</div>`;
+}
+// 命牌战库预览面板（B3 · DECKS 屏顶部）：≤5 已选小丑 + 流派印记状态。
+function deckPreviewPanel(jokers: LobbyShopItem[], archName: string | null | undefined, activated: boolean | undefined): string {
+  const inDeck = jokers.filter((j) => j.inDeck);
+  const body = inDeck.length
+    ? `<div class="jchips">${inDeck.map((j) => `<div class="jchip" title="${esc(j.sub)}">🃏 <b>${esc(j.name)}</b></div>`).join('')}</div>`
+    : `<div class="note" style="text-align:left;margin:8px 0">战库空 · 去「改造坊」选入小丑（影响掷命规则·≤5 张）</div>`;
+  const arch = archName ? `流派 <b>${esc(archName)}</b>${activated ? '　🔥 招牌已激活' : ''}` : '流派未成型';
+  return `<div class="card" style="margin-bottom:14px"><h2>⚔ 命牌战库 <span class="ghost" style="font-size:12px;margin-left:auto">${inDeck.length}/5 · 局内打出生效</span></h2>${body}<div class="note" style="text-align:left;margin-top:4px">${arch}</div></div>`;
 }
 
 export function renderLobby(view: LobbyView, tab: string, tutorialOpen: boolean): string {
@@ -179,7 +209,7 @@ export function renderLobby(view: LobbyView, tab: string, tutorialOpen: boolean)
         <div class="friend"><span class="dot"></span> 周瑜 <span class="tag">占位</span></div>
         <div class="friend"><span class="dot"></span> 孔明 <span class="tag">占位</span></div></div>
     </section>
-    <section class="screen${on('decks')} full"><div class="card"><h2>📜 出战牌组 · 52 张 <span class="ghost" style="margin-left:auto;font-size:12px">favor 均 ${view.deckAvg} · 最低 ${view.deckMin} / 最高 ${view.deckMax}</span></h2>
+    <section class="screen${on('decks')} full">${deckPreviewPanel(view.jokers, view.deckArchName, view.deckArchActivated)}<div class="card"><h2>📜 出战牌组 · 52 张 <span class="ghost" style="margin-left:auto;font-size:12px">favor 均 ${view.deckAvg} · 最低 ${view.deckMin} / 最高 ${view.deckMax}</span></h2>
       <div class="colgrid">${deckGrid(view.deck)}</div>
       <div class="note" style="text-align:left">favor=该牌掷命翻正面(存活)的概率底盘。<b style="color:var(--gold)">金边</b>=强(≥70) / 暗格=弱(≤50)。牌组强度靠<b>小丑/星球/流派</b>提升 → 去「改造坊」经营。</div></div></section>
     <section class="screen${on('coll')} full"><div class="card"><h2>🗃 卡牌收藏 · 小丑 ${view.jokers.filter((j) => j.owned).length}/${view.jokers.length} · 闪艺 ${view.foils.filter((f) => f.owned).length}/${view.foils.length}</h2>
@@ -189,7 +219,8 @@ export function renderLobby(view: LobbyView, tab: string, tutorialOpen: boolean)
       <div class="shelf">${view.foils.map((f) => shopItem('buyFoil', '✨', f)).join('')}</div></div></section>
     <section class="screen${on('craft')} full"><div class="forge">
       <div class="card"><h2>⚒ 改造台 · 融小丑（持久牌组身份·公平骨架不泵点数）</h2><div class="fuse"><div class="slot" style="color:var(--club)">♣</div><div class="arrow">→</div><div class="slot" style="color:var(--gold)">🃏</div></div>
-        <div class="shelf">${view.jokers.map((j) => shopItem('buyJoker', '🃏', j)).join('')}</div></div>
+        <div class="note" style="text-align:left;margin-bottom:8px">买入后「+ 战库」选入（≤5 张进战库）；战库=流派身份，局内打出生效。</div>
+        <div class="shelf">${(() => { const full = view.jokers.filter((j) => j.inDeck).length >= 5; return view.jokers.map((j) => craftJokerItem(j, full)).join(''); })()}</div></div>
       <div class="card"><h2>🪐 星球牌 · 升档（可叠加 · 第二养成轴）</h2><div class="note" style="text-align:left;margin-bottom:8px">改 run 参数（命/能/兵档/牌型）· 持久存档 · 买一级累加</div>
         <div class="shelf">${view.planets.map((p) => shopItem('buyPlanet', '🪐', p)).join('')}</div></div>
     </div><div class="note" style="text-align:left">材料 🪙 ${kfmt(view.coin)} · 融小丑=改掷命规则(流派身份·持久) / 星球=升 run 参数。庄家货架买一张少一张为设计 IA（占位）。</div></section>
@@ -207,6 +238,7 @@ export interface LobbyHandlers {
   onBuyJoker?: (id: string) => void;
   onBuyPlanet?: (id: string) => void;
   onBuyFoil?: (id: string) => void;
+  onToggleJoker?: (id: string) => void; // B3: 选入/踢出战库（≤5）
   onReset?: () => void;
   onSkin?: (skin: 'onyx' | 'rosy') => void;
 }
@@ -228,6 +260,7 @@ export function mountLobby(host: HTMLElement, h: LobbyHandlers): { update: () =>
     else if (act === 'buyJoker') { h.onBuyJoker?.(k); render(); }
     else if (act === 'buyPlanet') { h.onBuyPlanet?.(k); render(); }
     else if (act === 'buyFoil') { h.onBuyFoil?.(k); render(); }
+    else if (act === 'toggleJoker') { h.onToggleJoker?.(k); render(); }
     else if (act === 'reset') { h.onReset?.(); render(); }
   };
   host.addEventListener('click', onClick);
