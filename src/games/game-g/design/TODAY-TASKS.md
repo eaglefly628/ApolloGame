@@ -58,3 +58,21 @@
 每片：① 对愿景（doc 17/18/19 + 大厅设计稿）② 绿（tsc+vitest+build）③ **看得见**（出帧/行为断言，非空绿）。甲乙各自完成 → 在 `PROGRAM-G-TASKS.md` BATON 翻棒回 design G、写产出+测数。
 
 > 一句话：**甲把"边打边投的心流博弈"做满（A1 脉冲领衔），乙把"大厅+布阵+养成"对齐设计稿做满（B1 大厅领衔）；两条轨靠两个契约（ArmyCard[] / save 构筑库）解耦，互不撞车。今天收口 Game G。**
+
+---
+
+## 🎴 天机牌·一期（20 张）双轨派单（doc 20 §三 · 继 B3 战库地基 · owner 新要求）
+> owner：天机牌逐期加厚，先建**一期 20 张**（每张带牌力）。库地基(`ownedJokers`/`jokers ≤5`)乙已落(B3)。现填这 20 张的**效果 + 改造坊上架 + 预览**。**完成 = 养成层能玩。**
+
+**🅰 甲 · A-JOKER 天机牌一期效果（战斗侧 · 库里常驻被动 apply）**
+- 实现 doc20 §三 20 张的战斗效果：按 10 个 kind 各写**一个解释器**（`odds/power/combo/morale/tempo/stamina/draw/lane/siege/arcane`），库里天机牌（`save.jokers` ≤5）开局**常驻被动**生效 → apply 进 `prepareArmies`/`clash-resolve`/`live-combat`（读 `save.jokers`，复用现成 buff 源）。
+- **20 张 = kind × 参数**（doc20 表的数据形）。**牌力对齐**：每张配测断言其 ΔWR 量级与 §三 P̂ 大致符。
+- odds/tempo 等需 `live-combat` 暴露挂点（你的地盘）；零引擎。含 owner 两例：**巧手**(odds +1)、**背水**(odds reroll afterLoss)。
+
+**🅱 乙 · B-JOKER 天机牌一期 · 改造坊上架 + 牌组预览（菜单侧）**
+- 改造坊：20 张天机牌**上架**（材料买 → `ownedJokers`）+ **选 ≤5 进战库**（`jokers`，B3 框架已有，填 20 张数据 + UI）。
+- **牌组预览面板**（doc20 §四 · owner 点名）：主页/牌组屏显**战库 ≤5 张**每张【名 + 效果 + 牌力⭐ + P̂】+ **整库总加成汇总**（点数总+ / 胜率总+ / 流派印记亮灯）。Balatro 式一眼看懂强度来源。
+- 数据：20 张 名/描述/牌力/稀有/cost（doc20 §三）→ 填进 `GAME_G_JOKERS`（你的养成数据地盘）。**UI 文案显「天机牌」。**
+
+**契约③（新增·先对齐再各做）**：`GAME_G_JOKERS` 每张 = `{id,name,rarity,kind,params,text,cost}`（doc20 §三数据形）。**乙写这份养成数据、甲写 kind 解释器读它**。先把 `{kind,params}` schema 钉死（doc20 §三 10 kind）再并行。
+
