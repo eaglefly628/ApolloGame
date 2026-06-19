@@ -3,105 +3,84 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>翻命扑克 · 对局流程图（design G · 待 owner 核对）</title>
+<title>翻命扑克 · 对局流程图（终版 · 新手指导）</title>
 <style>
   :root{
     --bg0:#0a0d12; --bg1:#141a23; --panel:#1b2531; --panel2:#222e3c; --line:#33404f;
     --ink:#e7edf3; --dim:#8294a6; --gold:#ffcb3d; --accent:#ff5d2e; --accent2:#ff8a4a;
-    --jade:#46d17a; --red:#ff404f; --blue:#5fa8e0; --silk:rgba(255,203,61,.08);
+    --jade:#46d17a; --red:#ff404f; --blue:#5fa8e0; --purple:#b98cff; --silk:rgba(255,203,61,.07);
   }
   *{box-sizing:border-box;margin:0}
-  body{
-    background:radial-gradient(130% 120% at 50% -10%,#1a2230 0%,#0a0d12 58%,#06080b 100%);
-    color:var(--ink);font-family:"Noto Serif SC","Songti SC",serif;min-height:100vh;
-    padding:30px 16px 60px;-webkit-font-smoothing:antialiased;
-  }
-  .wrap{max-width:880px;margin:0 auto}
+  body{background:radial-gradient(130% 120% at 50% -10%,#1a2230 0%,#0a0d12 58%,#06080b 100%);
+    color:var(--ink);font-family:"Noto Serif SC","Songti SC",serif;min-height:100vh;padding:30px 16px 64px;-webkit-font-smoothing:antialiased}
+  .wrap{max-width:920px;margin:0 auto}
   .zh{font-family:"Ma Shan Zheng","Zhi Mang Xing","Noto Serif SC",serif}
-
-  /* 标题 */
-  .head{text-align:center;margin-bottom:26px}
+  .head{text-align:center;margin-bottom:8px}
   .head .sub{font-size:13px;color:var(--gold);letter-spacing:3px}
-  .head h1{font-size:34px;font-weight:800;margin:6px 0 4px;
-    background:linear-gradient(180deg,#ffe08a,#ff7a45);-webkit-background-clip:text;background-clip:text;color:transparent}
-  .head .tag{font-size:13px;color:var(--dim)}
+  .head h1{font-size:34px;font-weight:800;margin:6px 0 4px;background:linear-gradient(180deg,#ffe08a,#ff7a45);-webkit-background-clip:text;background-clip:text;color:transparent}
+  .head .tag{font-size:12.5px;color:var(--dim);line-height:1.7}
   .head .tag b{color:var(--jade)}
+  .lineage{display:flex;gap:8px;justify-content:center;flex-wrap:wrap;margin:14px 0 22px}
+  .lineage span{font-size:11.5px;color:var(--dim);background:var(--panel);border:1px solid var(--line);border-radius:20px;padding:5px 13px}
+  .lineage b{color:var(--gold)}
 
-  /* 节点 */
-  .node{position:relative;background:linear-gradient(180deg,var(--panel),var(--bg1));
-    border:1px solid var(--line);border-radius:16px;padding:16px 20px;box-shadow:0 8px 26px #0007}
-  .node .ph{position:absolute;top:-11px;left:18px;font-size:11px;letter-spacing:2px;
-    background:var(--accent);color:#1c0d06;font-weight:700;padding:3px 10px;border-radius:20px}
-  .node .row{display:flex;align-items:flex-start;gap:14px}
-  .node .ic{font-size:30px;line-height:1;flex:0 0 auto;margin-top:2px}
-  .node .ti{font-size:18px;font-weight:700;margin-bottom:4px}
-  .node .ds{font-size:13.5px;color:var(--dim);line-height:1.7}
-  .node .ds b{color:var(--ink);font-weight:600}
-  .node .ds .g{color:var(--gold)} .node .ds .j{color:var(--jade)} .node .ds .r{color:var(--red)}
+  .node{position:relative;background:linear-gradient(180deg,var(--panel),var(--bg1));border:1px solid var(--line);border-radius:16px;padding:15px 18px;box-shadow:0 8px 26px #0007}
+  .ph{position:absolute;top:-11px;left:18px;font-size:11px;letter-spacing:2px;background:var(--accent);color:#1c0d06;font-weight:700;padding:3px 11px;border-radius:20px}
+  .ph.meta{background:var(--purple);color:#1a0d2e} .ph.loop{background:var(--gold);color:#241a02} .ph.win{background:var(--jade);color:#062012}
+  .row{display:flex;align-items:flex-start;gap:13px}
+  .ic{font-size:27px;line-height:1;flex:0 0 auto;margin-top:3px}
+  .ti{font-size:17px;font-weight:700;margin-bottom:4px}
+  .ds{font-size:13px;color:var(--dim);line-height:1.7}
+  .ds b{color:var(--ink);font-weight:600}
+  .ds .g{color:var(--gold)} .ds .j{color:var(--jade)} .ds .r{color:var(--red)} .ds .p{color:var(--purple)} .ds .b{color:var(--blue)}
 
-  /* 连接箭头 */
-  .arrow{height:30px;width:2px;margin:0 auto;background:linear-gradient(var(--accent),var(--accent2));position:relative}
-  .arrow::after{content:"";position:absolute;bottom:-2px;left:50%;transform:translateX(-50%);
-    border:6px solid transparent;border-top-color:var(--accent2)}
-  .arrow.sm{height:20px}
+  .arrow{height:26px;width:2px;margin:0 auto;background:linear-gradient(var(--accent),var(--accent2));position:relative}
+  .arrow::after{content:"";position:absolute;bottom:-2px;left:50%;transform:translateX(-50%);border:6px solid transparent;border-top-color:var(--accent2)}
+  .arrow.sm{height:18px}
 
-  /* 实时对局循环容器 */
-  .loop{border:2px dashed var(--gold);border-radius:20px;padding:30px 16px 18px;position:relative;
-    background:var(--silk);margin:4px 0}
-  .loop > .cap{position:absolute;top:-13px;left:50%;transform:translateX(-50%);white-space:nowrap;
-    background:var(--gold);color:#241a02;font-weight:800;font-size:13px;letter-spacing:1px;padding:4px 16px;border-radius:20px}
-  .loop > .back{position:absolute;bottom:8px;right:16px;font-size:12px;color:var(--gold);font-weight:700}
+  .trio{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-top:10px}
+  @media(max-width:680px){.trio{grid-template-columns:1fr}}
+  .deck{border:1px solid var(--line);border-radius:12px;padding:11px 12px;background:var(--panel2)}
+  .deck .dt{font-size:14px;font-weight:700} .deck .dd{font-size:11.5px;color:var(--dim);line-height:1.55;margin-top:3px}
+  .deck.poker{border-color:var(--blue)} .deck.poker .dt{color:var(--blue)}
+  .deck.gang{border-color:var(--gold)} .deck.gang .dt{color:var(--gold)}
+  .deck.zhi{border-color:var(--jade)} .deck.zhi .dt{color:var(--jade)}
 
-  /* 循环内步骤行（看→断→投→抽） */
-  .steps{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:4px}
-  @media(max-width:680px){.steps{grid-template-columns:1fr 1fr}}
-  .step{background:var(--panel2);border:1px solid var(--line);border-radius:12px;padding:11px 10px;text-align:center}
-  .step .si{font-size:22px}
-  .step .st{font-size:13.5px;font-weight:700;margin:5px 0 3px}
-  .step .sd{font-size:11.5px;color:var(--dim);line-height:1.5}
+  .loop{border:2px dashed var(--gold);border-radius:20px;padding:30px 16px 20px;position:relative;background:var(--silk);margin:4px 0}
+  .loop>.cap{position:absolute;top:-13px;left:50%;transform:translateX(-50%);white-space:nowrap;background:var(--gold);color:#241a02;font-weight:800;font-size:13px;letter-spacing:.5px;padding:4px 16px;border-radius:20px}
+  .loop>.back{position:absolute;bottom:8px;right:16px;font-size:12px;color:var(--gold);font-weight:700}
+  .steps{display:grid;grid-template-columns:repeat(2,1fr);gap:10px}
+  @media(max-width:680px){.steps{grid-template-columns:1fr}}
+  .step{background:var(--panel2);border:1px solid var(--line);border-radius:12px;padding:11px 12px}
+  .step .si{font-size:20px} .step .st{font-size:14px;font-weight:700;margin:4px 0 3px} .step .sd{font-size:11.5px;color:var(--dim);line-height:1.6}
+  .step .sd b{color:var(--ink)}
 
-  /* 对决核 */
-  .clash{background:linear-gradient(180deg,#241a06,#1a1305);border:2px solid var(--gold);
-    border-radius:18px;padding:16px 18px;box-shadow:0 0 30px rgba(255,203,61,.18),inset 0 1px 0 rgba(255,255,255,.06)}
+  .clash{background:linear-gradient(180deg,#241a06,#1a1305);border:2px solid var(--gold);border-radius:18px;padding:16px 18px;box-shadow:0 0 30px rgba(255,203,61,.18),inset 0 1px 0 rgba(255,255,255,.06)}
   .clash .ti{font-size:18px;font-weight:800;color:var(--gold);display:flex;align-items:center;gap:8px}
-  .clash .lead{font-size:13px;color:#e9d9a8;margin:4px 0 12px;line-height:1.6}
-  .formula{background:#0d0f14;border:1px solid #4a3d18;border-radius:10px;padding:12px 14px;
-    font-family:"Silkscreen",ui-monospace,monospace;font-size:12.5px;line-height:2;color:#ffe08a;overflow-x:auto}
+  .clash .lead{font-size:13px;color:#e9d9a8;margin:5px 0 12px;line-height:1.6}
+  .formula{background:#0d0f14;border:1px solid #4a3d18;border-radius:10px;padding:12px 14px;font-family:ui-monospace,monospace;font-size:12px;line-height:2;color:#ffe08a;overflow-x:auto}
   .formula .c{color:var(--jade)} .formula .k{color:var(--accent2)} .formula .d{color:var(--dim)}
   .winbar{display:flex;height:22px;border-radius:6px;overflow:hidden;margin-top:12px;border:1px solid #4a3d18;font-size:11px}
-  .winbar .a{background:linear-gradient(180deg,#ff7a45,#ee4515);width:73%;display:grid;place-items:center;color:#1c0d06;font-weight:700}
+  .winbar .a{background:linear-gradient(180deg,#ff7a45,#ee4515);width:71%;display:grid;place-items:center;color:#1c0d06;font-weight:700}
   .winbar .b{background:#2a323d;flex:1;display:grid;place-items:center;color:var(--dim)}
-
-  /* 对决三分支 */
-  .branches{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-top:6px}
+  .branches{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-top:12px}
   @media(max-width:680px){.branches{grid-template-columns:1fr}}
-  .branch{border-radius:12px;padding:11px 12px;border:1px solid var(--line);background:var(--panel)}
+  .branch{border-radius:11px;padding:10px 11px;border:1px solid var(--line);background:var(--panel)}
   .branch.win{border-color:var(--jade)} .branch.tired{border-color:var(--gold)} .branch.lose{border-color:var(--red)}
-  .branch .bt{font-size:13.5px;font-weight:700;margin-bottom:3px}
+  .branch .bt{font-size:13px;font-weight:700;margin-bottom:3px}
   .branch.win .bt{color:var(--jade)} .branch.tired .bt{color:var(--gold)} .branch.lose .bt{color:var(--red)}
-  .branch .bd{font-size:11.5px;color:var(--dim);line-height:1.55}
+  .branch .bd{font-size:11px;color:var(--dim);line-height:1.5}
 
-  /* 大本营 */
-  .home .hearts{font-size:22px;letter-spacing:4px;color:var(--red)}
-  .exits{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:10px}
-  @media(max-width:680px){.exits{grid-template-columns:1fr}}
-  .exit{border:1px solid var(--line);border-radius:10px;padding:10px 12px;font-size:12.5px;color:var(--dim);line-height:1.55}
-  .exit b{color:var(--ink)} .exit.win{border-color:var(--jade)} .exit.win b{color:var(--jade)}
-
-  /* 两条体验支柱 */
-  .pillars{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:26px}
+  .hearts{font-size:20px;letter-spacing:3px;color:var(--red)}
+  .pillars{display:grid;grid-template-columns:repeat(3,1fr);gap:11px;margin-top:24px}
   @media(max-width:680px){.pillars{grid-template-columns:1fr}}
-  .pillar{background:var(--panel);border:1px solid var(--line);border-left:3px solid var(--blue);
-    border-radius:12px;padding:13px 15px}
-  .pillar .pt{font-size:14px;font-weight:700;color:var(--blue);margin-bottom:4px}
-  .pillar .pd{font-size:12.5px;color:var(--dim);line-height:1.6}
-
-  .foot{margin-top:24px;text-align:center;font-size:12px;color:var(--dim);line-height:1.8;
-    border-top:1px solid var(--line);padding-top:16px}
+  .pillar{background:var(--panel);border:1px solid var(--line);border-left:3px solid var(--blue);border-radius:11px;padding:12px 13px}
+  .pillar.lore{border-left-color:var(--purple)} .pillar.sim{border-left-color:var(--jade)}
+  .pillar .pt{font-size:13.5px;font-weight:700;color:var(--blue);margin-bottom:3px}
+  .pillar.lore .pt{color:var(--purple)} .pillar.sim .pt{color:var(--jade)}
+  .pillar .pd{font-size:11.5px;color:var(--dim);line-height:1.6}
+  .foot{margin-top:24px;text-align:center;font-size:12px;color:var(--dim);line-height:1.8;border-top:1px solid var(--line);padding-top:16px}
   .foot b{color:var(--gold)}
-  .legend{display:flex;gap:16px;justify-content:center;flex-wrap:wrap;font-size:11.5px;color:var(--dim);margin-top:10px}
-  .legend span{display:inline-flex;align-items:center;gap:5px}
-  .dot{width:10px;height:10px;border-radius:3px;display:inline-block}
 </style>
 </head>
 <body>
@@ -110,111 +89,89 @@
   <div class="head">
     <div class="sub">FATEFLIP · 翻命扑克</div>
     <h1 class="zh">对 局 流 程</h1>
-    <div class="tag">三路慢行军 · 田忌赛马 · 以少胜多 ｜ design G 统一案（doc 18×19）· <b>待 owner 核对是否一致</b></div>
+    <div class="tag">终版设计 · 新手指导图 ｜ <b>每张牌 = 一位被诅咒的历史英雄，你执掌他们的命运</b></div>
+  </div>
+  <div class="lineage">
+    <span>祖型 <b>Commands & Colors</b>（三路 · 牌驱动 · 掷骰）</span>
+    <span>节奏 <b>皇室战争</b>（点数 · 实时 · 推塔）</span>
+    <span>骨架 <b>标准扑克</b>（公平 · 掷命翻牌）</span>
   </div>
 
-  <!-- 0 赛前 -->
+  <!-- META -->
   <div class="node">
-    <span class="ph">赛 前</span>
-    <div class="row">
-      <div class="ic">🛠️</div>
-      <div>
-        <div class="ti">改造坊 · 构筑（养成）</div>
-        <div class="ds">攒 <span class="g">小丑 / 附魔 / 星球</span> 定你的构筑与<b>流派身份</b>。点数牌是<b>一副公平的标准 54 牌</b>——人人相同，<b>强弱来自经营、不来自抽到强牌</b>。</div>
+    <span class="ph meta">局外 · 养成</span>
+    <div class="row"><div class="ic">🛠️</div><div style="flex:1">
+      <div class="ti">改造坊 · 三个独立牌组（不融合）</div>
+      <div class="ds">赛前经营你的三套牌；每张牌都是一位<b class="p">被诅咒的历史英雄</b>（有名有姓有故事）。</div>
+      <div class="trio">
+        <div class="deck poker"><div class="dt">♠ 扑克牌组 · 52</div><div class="dd">52 名将 · <b>局内上场</b>打三路 · 公平骨架（同副、不泵点数）</div></div>
+        <div class="deck gang"><div class="dt">✦ 天罡牌组 · 36</div><div class="dd">三十六天罡星宿 · <b>局内法术</b> · 改造坊构筑战库</div></div>
+        <div class="deck zhi"><div class="dt">⏾ 地支牌组 · 12</div><div class="dd">十二天命 · <b>局外养成</b>你的 52 牌组/军队（升档）</div></div>
       </div>
-    </div>
+    </div></div>
   </div>
   <div class="arrow"></div>
 
-  <!-- 1 开局 -->
+  <!-- 开局 -->
   <div class="node">
     <span class="ph">开 局</span>
-    <div class="row">
-      <div class="ic">🎴</div>
-      <div>
-        <div class="ti">三路就位 · 起手</div>
-        <div class="ds">上/中/下三路，每路<b>预铺基础布局 ~3 张</b>；起手<b>混合手牌</b>（点数牌 + 小丑/功能牌）；<span class="g">读秒暂停银行</span>满；老家前<b>短带迷雾</b>（走出即显形）。</div>
-      </div>
-    </div>
+    <div class="row"><div class="ic">🎴</div><div>
+      <div class="ti">三路就位 · 起手</div>
+      <div class="ds">上 / 中 / 下三路，双方各 <span class="r">♥♥♥ 3 血大本营</span>。起手给你<b>几张手牌 + 起始点数</b>。<b class="g">两个牌库</b>：普通库(52 兵) · 天罡库(法术)。</div>
+    </div></div>
   </div>
   <div class="arrow"></div>
 
-  <!-- 2 实时对局循环 -->
+  <!-- 局内实时循环 -->
   <div class="loop">
-    <div class="cap zh">⟳ 实时对局 · 连续博弈（牌慢慢往对方推 · 给双方思考时间）</div>
-
+    <div class="cap zh">⟳ 局内实时循环 · 无暂停（点数回复中，你边攒边打）</div>
     <div class="steps">
-      <div class="step"><div class="si">👁️</div><div class="st">看 / 侦查 / 读题</div><div class="sd">三路战线 + 胜率预览；打侦查牌刺破迷雾</div></div>
-      <div class="step"><div class="si">⚖️</div><div class="st">田忌断舍</div><div class="sd">投哪路 / 弃哪路 / 续航下怎么轮转</div></div>
-      <div class="step"><div class="si">🎯</div><div class="st">投牌 + 干预</div><div class="sd">投点数牌进路 + 打小丑/功能牌加 buff·戳缺陷</div></div>
-      <div class="step"><div class="si">🌊</div><div class="st">战潮抽牌</div><div class="sd">底流 + 战斗脉冲涌牌 = 心流</div></div>
+      <div class="step"><div class="si">💧</div><div class="st">① 点数(圣水)回复</div><div class="sd">点数随时间<b>回复</b>，<b>两库共享一个池</b>。有限点数怎么花 = 核心抉择。</div></div>
+      <div class="step"><div class="si">🃏</div><div class="st">② 花点数 · 摸牌选库</div><div class="sd">摸<b>普通牌 ~1 点</b>(拿兵) / 摸<b class="g">天罡牌 ~2 点</b>(拿法术)。天罡<b>上限 5 · 打掉才补</b>；普通可囤积 ~7。</div></div>
+      <div class="step"><div class="si">🎯</div><div class="st">③ 部署 / 施法</div><div class="sd">点数牌 → 投<b>上/中/下三路</b>（<b class="j">三路可互相迁移</b>调度）；天罡牌 → <b class="g">施法术</b>(改命/加成/延缓敌)。</div></div>
+      <div class="step"><div class="si">🐌</div><div class="st">④ 慢行军</div><div class="sd">兵<b>一格格慢慢爬</b>向敌方 → 给你和对手<b>看局、调度、出牌</b>的时间（田忌赛马的舞台）。</div></div>
     </div>
-
-    <div class="arrow sm"></div>
-
-    <!-- 对决核 -->
-    <div class="clash">
-      <div class="ti zh">⚔ 遭遇对决核 —— 两张牌一碰，谁赢谁输</div>
-      <div class="lead">最前两张牌相邻 → 聚合战力 → 算胜率 → <b>种子骰一掷</b>定生死（翻正面活 / 翻反面亡）。</div>
-      <div class="formula">
-        P_eff = clamp( <span class="c">点数</span> + Σ <span class="c">buff</span>(协同·士气·附魔·路·干涉) , <span class="d">下限,上限</span> )<br>
-        胜率(A) = clamp( <span class="k">logistic</span>( (P_eff_A − P_eff_B) / <span class="k">k</span> ) , <span class="d">3%, 97%</span> )　<span class="d">← 留爆冷缝</span><br>
-        <span class="k">seededRand</span>(局种子 ⊕ 对决序号) &lt; 胜率 → A 胜　<span class="d">（种子化·可回放）</span>
-      </div>
-      <div class="winbar"><div class="a">A 73%</div><div class="b">27% B</div></div>
-    </div>
-
-    <div class="arrow sm"></div>
-
-    <!-- 三分支 -->
-    <div class="branches">
-      <div class="branch win"><div class="bt">✦ 赢</div><div class="bd">翻正存活，<b>占敌格前进一步</b>；续航 −1，战线接力前压</div></div>
-      <div class="branch tired"><div class="bt">⏳ 续航尽</div><div class="bd"><b>沉牌底 + 冷却</b>（按波回归）→ 逼牌组轮转，神牌也得回家歇</div></div>
-      <div class="branch lose"><div class="bt">✕ 输</div><div class="bd">翻反阵亡，进<b>本局弃牌堆</b>（局外收藏不减）</div></div>
-    </div>
-
-    <div class="back zh">↻ 战线推进 · 回到「看局」</div>
+    <div class="back zh">↻ 回到 ① 继续攒打</div>
   </div>
-
   <div class="arrow"></div>
 
-  <!-- 3 大本营 -->
-  <div class="node home">
-    <span class="ph">收 口</span>
-    <div class="row">
-      <div class="ic">🏯</div>
-      <div>
-        <div class="ti">攻克大本营 <span class="hearts">♥♥♥</span></div>
-        <div class="ds">net 突破累积 → 攻到敌大本营<b>扣 1 滴血</b>（共 3 滴·皇室战争式·不做大血条）。</div>
-        <div class="exits">
-          <div class="exit win"><b>先破 3 血 = 胜</b></div>
-          <div class="exit">回合上限到 → 按<b>剩余血 / 推进度</b>判（<b>可平局</b>·防无限拖）</div>
-        </div>
-      </div>
+  <!-- 对决核 -->
+  <div class="clash">
+    <div class="ti zh">⚔ 遭遇掷命对决 —— 两将相遇，翻命定生死</div>
+    <div class="lead">最前两张牌相遇 → 聚合战力 → 算胜率 → <b>种子骰一掷</b>：翻正面<b style="color:#46d17a">活·占格前进</b> / 翻反面<b style="color:#ff404f">亡</b>。天罡法术可在此<b>改命</b>。</div>
+    <div class="formula">
+      P_eff = clamp( <span class="c">点数(军衔)</span> + Σ <span class="c">buff</span>(协同·士气·天罡·地支) , <span class="d">下限,上限</span> )<br>
+      胜率(A) = clamp( <span class="k">logistic</span>( (P_eff_A − P_eff_B)/<span class="k">k</span> ) , <span class="d">3%, 97%</span> )　<span class="d">← 留爆冷缝</span><br>
+      <span class="k">种子骰</span>(局种子 ⊕ 对决序号) &lt; 胜率 → A 胜　<span class="d">（确定性·可回放）</span>
+    </div>
+    <div class="winbar"><div class="a">A 71%</div><div class="b">29% B</div></div>
+    <div class="branches">
+      <div class="branch win"><div class="bt">✦ 赢</div><div class="bd">翻正存活、<b>占格前进</b>；续航 −1，战线接力</div></div>
+      <div class="branch tired"><div class="bt">⏳ 续航尽</div><div class="bd"><b>沉牌底 + 冷却</b> → 逼牌组轮转，神牌也得歇</div></div>
+      <div class="branch lose"><div class="bt">✕ 输</div><div class="bd">翻反阵亡（局外收藏不减）</div></div>
     </div>
   </div>
+  <div class="arrow"></div>
 
-  <!-- 两条体验支柱 -->
+  <!-- 收口 -->
+  <div class="node">
+    <span class="ph win">收 口</span>
+    <div class="row"><div class="ic">🏯</div><div>
+      <div class="ti">攻克大本营 <span class="hearts">♥♥♥</span></div>
+      <div class="ds">net 突破累积 → 抵敌大本营每次 <b>−1 血</b>（共 3 血）。<b class="j">先破敌 3 血大本营 = 胜</b>（皇室战争式推塔，有回合上限·可平）。</div>
+    </div></div>
+  </div>
+
+  <!-- 支柱 -->
   <div class="pillars">
-    <div class="pillar">
-      <div class="pt">📊 胜率可读（不是老虎机）</div>
-      <div class="pd">对决前悬停显「A 76% : 24% B」+ 可展开 buff 明细 → 玩家<b>戳得动对方布阵缺陷</b>，而非黑箱赌运。</div>
-    </div>
-    <div class="pillar">
-      <div class="pt">🧪 仿真台（平衡命脉）</div>
-      <div class="pd">离线蒙特卡洛扫「全小丑 × 全牌组 × 对手分布」→ 胜率矩阵 + 退化告警（统治解/死牌亮红）→ 当<b>平衡回归测试</b>。</div>
-    </div>
+    <div class="pillar"><div class="pt">📊 胜率可读</div><div class="pd">对决前 hover 显「A 76% : 24% B」+ buff 明细 → 戳得动对方缺陷，<b>不是黑箱老虎机</b>。</div></div>
+    <div class="pillar sim"><div class="pt">🧪 仿真台</div><div class="pd">离线蒙特卡洛扫全配置 → 胜率矩阵 + 退化告警，当<b>平衡回归测</b>（守天罡不破平衡）。</div></div>
+    <div class="pillar lore"><div class="pt">📜 世界观</div><div class="pd">每张牌一位<b>被诅咒的历史英雄</b>，杀敌→称号→成长弧；<b>收集即灵魂</b>。</div></div>
   </div>
 
   <div class="foot">
-    <div>核心乐趣 = <b>组合牌组 × 扑克点数 × 随机 → 博弈</b>：用公平的牌做骨架，靠经营(小丑/附魔/buff) + 时机 + 组合，掰动掷命的随机、戳对方布阵缺陷。</div>
-    <div class="legend">
-      <span><i class="dot" style="background:var(--jade)"></i>赢 / 存活 / 推进</span>
-      <span><i class="dot" style="background:var(--gold)"></i>关键节点 / 续航</span>
-      <span><i class="dot" style="background:var(--red)"></i>阵亡 / 破家</span>
-      <span><i class="dot" style="background:var(--blue)"></i>体验支柱</span>
-    </div>
-    <div style="margin-top:10px">= owner 童年「扑克翻转大战」的灵魂 · 长成一个有心流的实时博弈</div>
+    <div>核心乐趣 = <b>有限点数的分配</b>（摸兵还是摸天罡）× <b>三路田忌赛马</b>（投哪路·迁移） × <b>掷命的随机</b>（用组合掰动它）。</div>
+    <div style="margin-top:8px">= owner 童年「扑克翻转大战」的灵魂 · 长成 皇室战争 × Commands&Colors × 扑克掷命 的实时博弈</div>
   </div>
 
 </div>
