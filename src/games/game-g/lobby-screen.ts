@@ -4,6 +4,7 @@
 // 纯表现"固定解释器"：只渲染 view + 抛 data-act 回调，零 gameplay 计算。CSS 全 scope 在 .ggl-root 下。
 
 import { GI } from './icons.js';
+import { HERO_CARDS } from './blueprint.js';
 
 export interface LobbyShopItem { id: string; name: string; sub: string; cost: number; owned: boolean; buyable: boolean; level?: number; inDeck?: boolean; power?: number; phat?: number }
 export type EarthRarity = 'bronze' | 'blue' | 'purple' | 'gold';
@@ -35,6 +36,7 @@ const CSS = `
   --frame-edge:#2a3a4e; --felt:radial-gradient(120% 110% at 50% 26%,#1d6f4e 0%,#11543a 46%,#0a3325 100%); --felt-edge:#0c2a1f;
   --spade:#8ba2c9; --heart:#d8504e; --diamond:#e0973a; --club:#3fae6e;
   --chamfer:polygon(13px 0,100% 0,100% calc(100% - 13px),calc(100% - 13px) 100%,0 100%,0 13px);
+  --hp:#46d17a; --danger:#ff5d62;
   --fd:'Zhi Mang Xing',cursive; --fh:'Rajdhani',sans-serif; --fb:'Noto Sans SC',sans-serif; --fn:'Silkscreen',monospace; }
 .ggl-root[data-skin="rosy"]{ --ink:#5a3f44; --ink-dim:#a98b8f; --gold:#cf9a3f; --gold-grad:linear-gradient(180deg,#f3e2a4,#cf9a3f);
   --paper:radial-gradient(120% 120% at 50% -10%,#fdf4ee 0%,#f3e2dc 60%,#ecd6cf 100%);
@@ -43,6 +45,7 @@ const CSS = `
   --frame-edge:#6b4a2e; --felt:radial-gradient(120% 110% at 50% 26%,#c97f86 0%,#b15f6b 46%,#8c4654 100%); --felt-edge:#6e3a44;
   --spade:#4a6390; --heart:#c14b66; --diamond:#b8862f; --club:#2f8f56;
   --chamfer:polygon(13px 0,100% 0,100% calc(100% - 13px),calc(100% - 13px) 100%,0 100%,0 13px);
+  --hp:#2f8f6b; --danger:#d65668;
   --fd:'Ma Shan Zheng',cursive; --fh:'Cormorant Garamond',serif; --fb:'Noto Serif SC',serif; --fn:'Silkscreen',monospace; }
 .ggl-root{ background:#0c0a08; color:var(--ink); font-family:'Noto Sans SC',sans-serif; min-height:100%; padding:22px; display:flex; justify-content:center }
 .ggl-root *{ box-sizing:border-box; margin:0 }
@@ -182,6 +185,55 @@ const CSS = `
 .ggl-root .btn{ transition:transform .10s,box-shadow .10s }
 .ggl-root .btn:not(.ghost):hover{ transform:translateY(-1px); box-shadow:0 6px 16px rgba(0,0,0,.32) }
 .ggl-root .btn:active{ transform:scale(.97) }
+/* ── 收藏·牌谱 ── */
+.ggl-root .coll-filter-bar{ display:flex; align-items:center; gap:14px; padding:12px 2px; margin-bottom:6px; flex-wrap:wrap }
+.ggl-root .filter-lbl{ font-size:11px; letter-spacing:.14em; color:var(--ink-dim); text-transform:uppercase; white-space:nowrap }
+.ggl-root .filter-pill{ padding:5px 13px; border-radius:99px; cursor:pointer; border:1px solid var(--panel-border); background:var(--chip); color:var(--ink-dim); font-family:var(--fh); font-weight:700; font-size:13px; white-space:nowrap; transition:all .12s }
+.ggl-root .filter-pill.on{ border-color:var(--gold); background:var(--gold-grad); color:#2a1a08 }
+.ggl-root .filter-div{ width:1px; height:24px; background:var(--panel-border); flex:none }
+.ggl-root .hero-grid6{ display:grid; grid-template-columns:repeat(6,1fr); gap:14px }
+.ggl-root .hcard2{ border-radius:12px; overflow:hidden; cursor:pointer; background:var(--chip); border:1px solid var(--panel-border); box-shadow:inset 0 0 0 1px var(--hairline); transition:all .15s }
+.ggl-root .hcard2:hover{ border-color:var(--gold); box-shadow:0 6px 18px rgba(0,0,0,.4),inset 0 0 0 1px var(--hairline) }
+.ggl-root .hcard2.sel{ border-color:var(--gold); box-shadow:0 0 16px rgba(232,205,130,.18),inset 0 0 0 1px var(--hairline) }
+.ggl-root .hcard2.locked{ opacity:.58 }
+.ggl-root .hc2-portrait{ position:relative; height:128px; display:flex; align-items:center; justify-content:center; overflow:hidden }
+.ggl-root .hc2-fig{ font-family:var(--fd); font-size:52px; color:#fff; text-shadow:0 3px 10px rgba(0,0,0,.5); pointer-events:none }
+.ggl-root .hc2-corner{ position:absolute; top:5px; left:7px; font-family:var(--fh); font-weight:700; font-size:14px; line-height:.85; text-align:center; text-shadow:0 1px 2px rgba(0,0,0,.4) }
+.ggl-root .hc2-gem{ position:absolute; top:6px; right:7px; width:11px; height:11px; border-radius:50%; box-shadow:0 0 8px currentColor }
+.ggl-root .hc2-lock{ position:absolute; inset:0; background:rgba(6,9,14,.55); display:flex; align-items:center; justify-content:center; font-size:26px }
+.ggl-root .hc2-name{ padding:7px 8px 3px; font-family:var(--fb); font-weight:700; font-size:13px; color:var(--ink); text-align:center; white-space:nowrap; overflow:hidden; text-overflow:ellipsis }
+.ggl-root .hc2-own{ padding:0 8px 8px; font-family:var(--fn); font-size:10px; text-align:center }
+.ggl-root .hero-detail-pane{ width:300px; flex:none; padding:22px; border-radius:16px; clip-path:var(--chamfer); background:var(--panel); border:1px solid var(--panel-border); box-shadow:inset 0 0 0 1px var(--hairline); display:flex; flex-direction:column; overflow-y:auto }
+.ggl-root .hd2-art{ position:relative; align-self:center; width:184px; height:256px; border-radius:15px; display:flex; align-items:center; justify-content:center; overflow:hidden }
+.ggl-root .hd2-fig{ font-family:var(--fd); font-size:108px; color:#fff; text-shadow:0 4px 14px rgba(0,0,0,.5) }
+.ggl-root .hd2-corner{ position:absolute; font-family:var(--fh); font-weight:700; font-size:22px; line-height:.86; text-align:center; text-shadow:0 1px 3px rgba(0,0,0,.4) }
+.ggl-root .hd2-chips{ display:flex; gap:7px; margin-top:12px; flex-wrap:wrap }
+.ggl-root .hd2-chip{ font-size:11px; padding:3px 11px; border-radius:99px; font-weight:700 }
+.ggl-root .hd2-stat-grid{ display:flex; gap:8px; margin-top:16px }
+.ggl-root .hd2-stat-cell{ flex:1; display:flex; flex-direction:column; align-items:center; gap:4px; padding:10px 4px; border-radius:10px; background:var(--chip); border:1px solid var(--panel-border) }
+.ggl-root .hd2-stat-lbl{ font-size:10px; color:var(--ink-dim) }
+.ggl-root .hd2-stat-val{ font-family:var(--fn); font-size:13px; color:var(--ink) }
+.ggl-root .hd2-stat-gold{ font-family:var(--fn); font-size:15px; color:var(--gold) }
+/* ── 天梯·榜 ── */
+.ggl-root .rank-card{ display:flex; flex-direction:column; align-items:center; padding:26px 22px; border-radius:16px; clip-path:var(--chamfer); background:var(--panel); border:1px solid var(--gold); box-shadow:inset 0 0 0 1px var(--hairline) }
+.ggl-root .rank-crest{ width:92px; height:92px; border-radius:20px; background:var(--gold-grad); display:flex; align-items:center; justify-content:center; font-size:50px; color:#2a1a08; box-shadow:0 8px 22px rgba(0,0,0,.4),inset 0 1px 0 rgba(255,255,255,.5) }
+.ggl-root .rank-bar-wrap{ width:100%; height:9px; border-radius:99px; background:var(--track); overflow:hidden; margin-top:16px; border:1px solid var(--panel-border) }
+.ggl-root .rank-bar-fill{ height:100%; border-radius:99px; background:var(--gold-grad) }
+.ggl-root .mini-stat{ flex:1; display:flex; flex-direction:column; align-items:center; gap:3px; padding:10px 4px; border-radius:11px; background:var(--chip); border:1px solid var(--panel-border) }
+.ggl-root .mini-num{ font-family:var(--fn); font-size:16px; color:var(--ink) }
+.ggl-root .mini-num-hp{ font-family:var(--fn); font-size:16px; color:var(--hp) }
+.ggl-root .mini-lbl{ font-size:10px; color:var(--ink-dim) }
+.ggl-root .rec-sheet{ background:var(--panel); border-radius:16px; border:1px solid var(--panel-border); box-shadow:inset 0 0 0 1px var(--hairline); padding:20px 22px; display:flex; flex-direction:column; flex:1; min-height:0 }
+.ggl-root .rec-sheet-hd{ font-family:var(--fh); font-weight:700; font-size:15px; color:var(--ink); letter-spacing:.04em; margin-bottom:13px }
+.ggl-root .rec-row{ display:flex; align-items:center; gap:11px; padding:9px 11px; border-radius:11px; background:var(--chip); border:1px solid var(--panel-border) }
+.ggl-root .rec-result{ width:34px; height:34px; flex:none; border-radius:9px; display:flex; align-items:center; justify-content:center; font-family:var(--fh); font-weight:700; font-size:14px }
+.ggl-root .rec-result.win{ background:rgba(70,209,122,.18); color:var(--hp); border:1px solid var(--hp) }
+.ggl-root .rec-result.lose{ background:rgba(255,93,98,.16); color:var(--danger); border:1px solid var(--danger) }
+.ggl-root .ldr-head-row{ display:flex; align-items:center; gap:11px; padding:0 11px 9px; border-bottom:1px solid var(--panel-border); font-size:10px; letter-spacing:.1em; text-transform:uppercase; color:var(--ink-dim) }
+.ggl-root .ldr-row{ display:flex; align-items:center; gap:11px; padding:10px 11px; border-radius:10px; margin-top:4px; border-bottom:1px solid var(--panel-border) }
+.ggl-root .ldr-av{ width:34px; height:34px; flex:none; border-radius:9px; display:flex; align-items:center; justify-content:center; color:#fff; font-size:17px }
+.ggl-root .scope-on{ padding:5px 12px; border-radius:8px; background:var(--gold-grad); color:#2a1a08; font-family:var(--fh); font-weight:700; font-size:12px; cursor:pointer; border:none }
+.ggl-root .scope-off{ padding:5px 12px; border-radius:8px; background:var(--chip); color:var(--ink-dim); border:1px solid var(--panel-border); font-family:var(--fh); font-weight:700; font-size:12px; cursor:pointer }
 `;
 
 const SUITS: [string, string][] = [['♠', 'var(--spade)'], ['♥', 'var(--heart)'], ['♦', 'var(--diamond)'], ['♣', 'var(--club)']];
@@ -320,9 +372,94 @@ function deckPreviewPanel(tiangangs: LobbyShopItem[], archName: string | null | 
   return `<div class="card" style="margin-bottom:14px"><h2>${GI.bolt} 天罡战库 <span class="ghost" style="font-size:12px;margin-left:auto">${inDeck.length}/5 · 局内打出生效</span></h2>${body}<div class="note" style="text-align:left;margin-top:4px">${arch}${summary}</div></div>`;
 }
 
-export function renderLobby(view: LobbyView, tab: string, tutorialOpen: boolean, deckTab: 'base' | 'gang' = 'base', earthFilter = 'all'): string {
+// 花色均势面板（B1 · DECKS 扑克牌组）：4 花色 favor 平均值 → 竖条高度 + 预估强度 ★
+function suitBarsPanel(deck: number[], deckAvg: number): string {
+  const suits = SUITS.map(([su, c], si) => {
+    const fvs = deck.slice(si * 13, si * 13 + 13);
+    return { su, c, avg: fvs.reduce((a, b) => a + b, 0) / 13 };
+  });
+  const maxAvg = Math.max(...suits.map(s => s.avg));
+  const bars = suits.map(({ su, c, avg }) => {
+    const pct = (avg / maxAvg * 100).toFixed(0);
+    return `<div style="flex:1;display:flex;flex-direction:column;align-items:center;gap:5px"><div style="width:32px;height:80px;background:var(--track);border-radius:6px;overflow:hidden;position:relative;border:1px solid var(--panel-border)"><div style="position:absolute;bottom:0;left:0;right:0;height:${pct}%;background:${c}99;border-top:2px solid ${c}"></div></div><span style="font-size:18px;color:${c}">${su}</span><span style="font-family:var(--fn);font-size:10px;color:var(--ink-dim)">${avg.toFixed(0)}</span></div>`;
+  }).join('');
+  const stars = Math.min(4, Math.floor(deckAvg / 16));
+  return `<div style="display:flex;align-items:center;gap:18px;padding:10px 0 12px;border-bottom:1px solid var(--panel-border);margin-bottom:10px"><div style="display:flex;gap:10px;align-items:flex-end;height:80px">${bars}</div><div style="display:flex;flex-direction:column;gap:5px"><span style="font-family:var(--fh);font-weight:700;font-size:14px;color:var(--ink)">花色均势</span><span style="font-size:12px;color:var(--ink-dim)">favor 均 <b style="color:var(--gold)">${deckAvg}</b></span><span style="font-size:12px;color:var(--ink-dim)">预估强度 <span style="color:var(--gold)">${'★'.repeat(stars)}${'☆'.repeat(4 - stars)}</span></span><span style="font-size:11px;color:var(--ink-dim)">公平骨架 52 张</span></div></div>`;
+}
+
+const RAR_META: Record<string, [string, string]> = {
+  white: ['普通', '#b9bec8'], green: ['精良', '#5bbf7a'], blue: ['稀有', '#3a9bff'],
+  purple: ['史诗', '#bf6bff'], orange: ['传说', '#f0972f'],
+};
+const SUIT_H: Record<string, string> = { '♠': '#5b7fb0', '♥': '#d8504e', '♦': '#e0973a', '♣': '#3fae6e' };
+const SUIT_N: Record<string, string> = { '♠': '黑桃', '♥': '红桃', '♦': '方块', '♣': '梅花' };
+function heroCollSection(heroSuit: string, heroRar: string, heroDetail: string, ownedOnly: boolean): string {
+  const filtered = HERO_CARDS.filter(h =>
+    (heroSuit === 'all' || h.suit === heroSuit) &&
+    (heroRar === 'all' || h.rar === heroRar) &&
+    (!ownedOnly || h.own > 0)
+  );
+  const selId = heroDetail || filtered[0]?.id || '';
+  const selCard = HERO_CARDS.find(h => h.id === selId);
+  const pill = (on: boolean, act: string, k: string, lbl: string): string =>
+    `<button class="filter-pill${on?' on':''}" data-act="${act}" data-k="${esc(k)}">${lbl}</button>`;
+  const suitPills: [string, string][] = [['all','全部'],['♠','♠'],['♥','♥'],['♦','♦'],['♣','♣']];
+  const rarPills: [string, string][] = [['all','全部'],['blue','稀有'],['purple','史诗'],['orange','传说'],['white','普通']];
+  const filterBar = `<div class="coll-filter-bar"><div style="display:flex;align-items:center;gap:10px"><span class="filter-lbl">花色</span>${suitPills.map(([k,l]) => pill(heroSuit===k,'heroSuit',k,l)).join('')}</div><div class="filter-div"></div><div style="display:flex;align-items:center;gap:10px"><span class="filter-lbl">稀有度</span>${rarPills.map(([k,l]) => pill(heroRar===k,'heroRar',k,l)).join('')}</div><div style="flex:1"></div><button class="filter-pill${ownedOnly?' on':''}" data-act="heroOwned" data-k="">${ownedOnly?'☑ 仅已拥有':'☐ 仅已拥有'}</button><div class="filter-pill" style="cursor:pointer">点数 ▾</div></div>`;
+  const grid = `<div style="flex:1;min-width:0;overflow-y:auto;padding-right:6px"><div class="hero-grid6">${
+    filtered.map(h => {
+      const sc = SUIT_H[h.suit] ?? '#9ca3af';
+      const rc = RAR_META[h.rar]?.[1] ?? '#9ca3af';
+      const locked = h.own === 0;
+      const isSel = selId === h.id;
+      return `<div class="hcard2${isSel?' sel':''}${locked?' locked':''}" data-act="heroDetail" data-k="${h.id}"><div class="hc2-portrait" style="background:linear-gradient(165deg,${sc}33,${sc}11),radial-gradient(circle at 50% 36%,${sc}55,transparent 62%);border-bottom:2px solid ${rc}"><div class="hc2-corner" style="color:${sc}">${h.rank}<br>${h.suit}</div><div class="hc2-fig">${esc(h.name[0])}</div><div class="hc2-gem" style="background:${rc};color:${rc}"></div>${locked?'<div class="hc2-lock">🔒</div>':''}</div><div class="hc2-name">${esc(h.name)}</div><div class="hc2-own" style="color:${locked?'var(--ink-dim)':rc}">${locked?'未拥有':'×'+h.own}</div></div>`;
+    }).join('')
+  }</div></div>`;
+  let detailPane = `<div class="hero-detail-pane" style="display:flex;flex-direction:column;align-items:center;justify-content:center;color:var(--ink-dim);font-size:13px">← 选择英雄查看详情</div>`;
+  if (selCard) {
+    const sc = SUIT_H[selCard.suit] ?? '#9ca3af';
+    const [rarName, rarColor] = RAR_META[selCard.rar] ?? ['普通', '#9ca3af'];
+    detailPane = `<div class="hero-detail-pane"><div class="hd2-art" style="background:linear-gradient(165deg,${sc}44,${sc}14),radial-gradient(circle at 50% 34%,${sc}66,transparent 60%);border:4px solid ${rarColor};box-shadow:0 0 26px ${rarColor}55,inset 0 0 0 2px rgba(255,255,255,.5)"><div class="hd2-corner" style="top:10px;left:12px;color:${sc}">${selCard.rank}<br>${selCard.suit}</div><div class="hd2-fig">${esc(selCard.name[0])}</div><div class="hd2-corner" style="bottom:10px;right:12px;transform:rotate(180deg);color:${sc}">${selCard.rank}<br>${selCard.suit}</div></div><div style="font-family:var(--fd);font-size:30px;color:var(--ink);margin-top:14px;line-height:1">${esc(selCard.name)}</div><div style="font-size:12px;color:var(--ink-dim);margin-top:5px">${esc(selCard.title)}</div><div class="hd2-chips"><span class="hd2-chip" style="background:${rarColor}22;color:${rarColor};border:1px solid ${rarColor}66">${rarName}</span><span class="hd2-chip" style="background:${sc}22;color:${sc};border:1px solid ${sc}66">${selCard.suit} ${SUIT_N[selCard.suit] ?? ''}</span><span class="hd2-chip" style="background:var(--chip);color:var(--ink-dim);border:1px solid var(--panel-border)">点数 ${selCard.rank}</span></div><p style="font-size:13px;color:var(--ink);line-height:1.7;margin:14px 0 0">${esc(selCard.lore)}</p><div class="hd2-stat-grid"><div class="hd2-stat-cell"><span class="hd2-stat-lbl">转速</span><span class="hd2-stat-val">${esc(selCard.spin)}</span></div><div class="hd2-stat-cell"><span class="hd2-stat-lbl">正面率</span><span class="hd2-stat-val">${esc(selCard.face)}</span></div><div class="hd2-stat-cell"><span class="hd2-stat-lbl">favor</span><span class="hd2-stat-gold">${selCard.favor}</span></div></div><div style="display:flex;gap:9px;margin-top:16px"><button style="flex:1;padding:11px;border-radius:11px;cursor:pointer;background:var(--chip);border:1px solid var(--panel-border);color:var(--ink);font-family:var(--fh);font-weight:700;font-size:14px">改造</button><button style="flex:2;padding:11px;border-radius:11px;clip-path:var(--chamfer);cursor:pointer;border:none;background:var(--gold-grad);color:#2a1a08;font-family:var(--fh);font-weight:700;font-size:15px;box-shadow:inset 0 1px 0 rgba(255,255,255,.4)">加入牌组</button></div></div>`;
+  }
+  return `${filterBar}<div style="display:flex;gap:20px;flex:1;min-height:0">${grid}${detailPane}</div>`;
+}
+
+function ladderSection(name: string, rankText: string): string {
+  const RECENTS: [string, string, string, string, string][] = [
+    ['胜', 'win', '天梯掷命 1v1', '黑桃急袭 · 翻正 4/5', '+22'],
+    ['胜', 'win', '天梯掷命 1v1', '红桃火攻 · 斩首奏效', '+19'],
+    ['负', 'lose', '天梯掷命 1v1', '田忌阵被识破', '−16'],
+    ['胜', 'win', '天梯掷命 1v1', '锋矢破中路', '+21'],
+    ['胜', 'win', '天梯掷命 1v1', '黑杰克级正面率', '+18'],
+    ['负', 'lose', '天梯掷命 1v1', '能量误判', '−14'],
+  ];
+  const LADDER_DATA: [string, string, string, string, string, string, string][] = [
+    ['1', '同花顺王', '♠', '黑桃A', '♠ 顺子', '78%', '2880'],
+    ['2', '红桃皇后', '♥', '红桃K', '♥ 火攻', '74%', '2710'],
+    ['3', '方块老千', '♦', '方块Q', '♦ 配重', '71%', '2640'],
+    ['4', '梅花骑士', '♣', '梅花J', '♣ 连携', '69%', '2510'],
+    ['5', '百搭小丑', '♠', '黑桃10', '混 · 干预', '67%', '2380'],
+    ['6', '黑桃暗影', '♠', '黑桃A', '♠ 速攻', '65%', '2240'],
+    ['7', name, '♠', '黑桃A', '♠ 急袭', '64%', '1240'],
+    ['8', '掷地有声', '♦', '方块K', '♦ 稳翻', '61%', '1180'],
+  ];
+  const recentsHtml = RECENTS.map(([result, k, mode, detail, lp]) => {
+    const win = k === 'win';
+    return `<div class="rec-row"><div class="rec-result ${win?'win':'lose'}">${result}</div><div style="flex:1;min-width:0"><div style="font-family:var(--fh);font-weight:700;font-size:13px;color:var(--ink)">${esc(mode)}</div><div style="font-size:10px;color:var(--ink-dim)">${esc(detail)}</div></div><span style="font-family:var(--fn);font-size:13px;color:${win?'var(--hp)':'var(--danger)'}">${esc(lp)}</span></div>`;
+  }).join('');
+  const ladderHtml = LADDER_DATA.map(([rank, lname, suit, mainCard, deck, wr, lp]) => {
+    const top3 = +rank <= 3;
+    const isMe = lname === name;
+    const sc = SUIT_H[suit] ?? '#9ca3af';
+    return `<div class="ldr-row" style="${isMe?'background:rgba(232,205,130,.08);border-color:var(--gold);':''}"><span style="width:48px;text-align:center;font-family:var(--fn);font-size:${top3?'18px':'14px'};color:${top3?'var(--gold)':'var(--ink-dim)'}">${esc(rank)}</span><div class="ldr-av" style="background:linear-gradient(150deg,${sc}dd,${sc}88)">${esc(suit)}</div><div style="flex:1;min-width:0"><div style="font-family:var(--fh);font-weight:700;font-size:14px;color:var(--ink);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${esc(lname)}</div><div style="font-size:10px;color:var(--ink-dim);white-space:nowrap">主牌 ${esc(mainCard)}</div></div><span style="width:90px;flex:none;text-align:center;font-family:var(--fh);font-weight:700;font-size:12px;color:var(--ink-dim);white-space:nowrap">${esc(deck)}</span><span style="width:70px;text-align:right;font-family:var(--fn);font-size:12px;color:var(--ink-dim)">${esc(wr)}</span><span style="width:80px;text-align:right;font-family:var(--fn);font-size:14px;color:var(--gold)">${esc(lp)}</span></div>`;
+  }).join('');
+  return `<div style="display:flex;gap:20px;flex:1;min-height:0"><div style="width:340px;flex:none;display:flex;flex-direction:column;gap:16px"><div class="rank-card"><div class="rank-crest">♠</div><div style="font-family:var(--fd);font-size:40px;color:var(--ink);margin-top:10px;line-height:1">${esc(rankText)}</div><div style="font-family:var(--fn);font-size:15px;color:var(--gold);margin-top:6px">1240 LP</div><div class="rank-bar-wrap"><div class="rank-bar-fill" style="width:62%"></div></div><div style="display:flex;justify-content:space-between;width:100%;margin-top:8px;font-size:11px;color:var(--ink-dim)"><span>${esc(rankText)}</span><span>距晋级 60 LP</span><span>—</span></div><div style="display:flex;gap:8px;margin-top:16px;width:100%"><div class="mini-stat"><span class="mini-num">64%</span><span class="mini-lbl">胜率</span></div><div class="mini-stat"><span class="mini-num-hp">3</span><span class="mini-lbl">连胜</span></div><div class="mini-stat"><span class="mini-num">71%</span><span class="mini-lbl">翻正率</span></div></div></div><div class="rec-sheet"><div class="rec-sheet-hd">近 10 局</div><div style="display:flex;flex-direction:column;gap:7px">${recentsHtml}</div></div></div><div class="rec-sheet"><div style="display:flex;align-items:center;gap:12px;margin-bottom:14px"><span style="font-family:var(--fd);font-size:26px;color:var(--ink)">全服榜</span><div style="display:flex;gap:5px;margin-left:6px"><button class="scope-on">全服</button><button class="scope-off">好友</button><button class="scope-off">同段</button></div><div style="flex:1"></div><span style="font-size:11px;color:var(--ink-dim)">每 5 分钟刷新 · 赛季 7</span></div><div class="ldr-head-row"><span style="width:48px">名次</span><span style="flex:1">玩家 / 主牌</span><span style="width:90px;text-align:center">主流派</span><span style="width:70px;text-align:right">胜率</span><span style="width:80px;text-align:right">LP</span></div><div style="flex:1;overflow-y:auto">${ladderHtml}</div></div></div>`;
+}
+
+export function renderLobby(view: LobbyView, tab: string, tutorialOpen: boolean, deckTab: 'base' | 'gang' = 'base', earthFilter = 'all', collTab = 'cards', heroSuit = 'all', heroDetail = '', heroRar = 'all', ownedOnly = false): string {
   const on = (t: string): string => (tab === t ? ' on' : '');
   const dOn = (t: string): string => (deckTab === t ? ' on' : '');
+  const cOn = (t: string): string => (collTab === t ? ' on' : '');
   const efBtn = (k: string, lbl: string, style: string): string =>
     `<button class="${earthFilter===k?'on':''}" style="${earthFilter===k?style:''}" data-act="earthFilter" data-k="${k}">${lbl}</button>`;
   const stags = SUITS.map(([g, c], i) => `<div class="stag"><span style="color:${c};font-size:14px;text-shadow:0 0 6px ${c}">${g}</span>${['黑桃', '红桃', '方块', '梅花'][i]}</div>`).join('');
@@ -378,15 +515,12 @@ export function renderLobby(view: LobbyView, tab: string, tutorialOpen: boolean,
         <div class="friend"><span class="dot"></span> 周瑜 <span class="tag">占位</span></div>
         <div class="friend"><span class="dot"></span> 孔明 <span class="tag">占位</span></div></div>
     </section>
-    <section class="screen${on('decks')} full">${deckPreviewPanel(view.tiangangs, view.deckArchName, view.deckArchActivated)}<div class="deck-nav"><button class="${deckTab==='base'?'on':''}" data-act="deckTab" data-k="base">扑克牌组</button><button class="${deckTab==='gang'?'on':''}" data-act="deckTab" data-k="gang">天罡战牌</button></div><div class="dsub${dOn('base')}"><div class="card"><h2>📜 扑克牌组 · 52 张 <span class="ghost" style="margin-left:auto;font-size:12px">favor 均 ${view.deckAvg} · 最低 ${view.deckMin} / 最高 ${view.deckMax}</span></h2><div>${deckGrid(view.deck, view.foils)}</div><div class="note" style="text-align:left">favor=该牌掷命翻正面(存活)的概率底盘。<b style="color:var(--gold)">金边</b>=强(≥70) / 暗格=弱(≤50)。牌组强度靠<b>天罡牌/地支牌/流派</b>提升 → 去「改造坊」经营。</div></div></div><div class="dsub${dOn('gang')}"><div class="card" style="margin-bottom:14px"><h2>${GI.bolt} 天罡战牌 <span class="ghost" style="margin-left:auto;font-size:12px">三十六天罡 · 一期 20 张已上架</span></h2><div class="gang-grid"><div class="gang-empty"><span style="font-size:28px;opacity:.5">⚡</span><b>天罡战牌 · 去改造坊选入战库</b><span style="font-size:11px">改造坊买入 → 选 ≤5 入战库 → 局内打出生效</span></div></div></div><div class="card"><h2>${GI.planet} 地支牌 <span class="ghost" style="margin-left:auto;font-size:12px">12 支脉 · 青铜→蓝→紫→金</span></h2><div class="earth-filter">${efBtn('all','全部','background:var(--gold-grad);color:#2a1a08;border:0')}${efBtn('bronze','青铜','background:#b8732a;color:#fff;border:0')}${efBtn('blue','蓝色','background:#4a9fd5;color:#fff;border:0')}${efBtn('purple','紫色','background:#9b5fc7;color:#fff;border:0')}${efBtn('gold','黄金','background:var(--gold-grad);color:#2a1a08;border:0')}</div><div class="earth-groups">${earthSection(view.earthCards ?? [], earthFilter)}</div></div></div></section>
-    <section class="screen${on('coll')} full"><div class="card"><h2>🗃 卡牌收藏 · 天罡牌 ${view.tiangangs.filter((j) => j.owned).length}/${view.tiangangs.length} · 闪艺 ${view.foils.filter((f) => f.owned).length}/${view.foils.length}</h2>
-      <div class="note" style="text-align:left;margin-bottom:6px">⚡ 天罡牌（局内法术·效果牌 · 到改造坊解锁选入战库）</div>
-      <div class="shelf">${view.tiangangs.map((j) => shopItem('', '⚡', { ...j, buyable: false })).join('')}</div>
-      <div class="note" style="text-align:left;margin:12px 0 6px">✨ 闪艺 foil（纯装饰收集 · 点亮可购买）</div>
-      <div class="shelf">${view.foils.map((f) => shopItem('buyFoil', '✨', f)).join('')}</div></div></section>
+    <section class="screen${on('decks')} full">${deckPreviewPanel(view.tiangangs, view.deckArchName, view.deckArchActivated)}<div class="deck-nav"><button class="${deckTab==='base'?'on':''}" data-act="deckTab" data-k="base">扑克牌组</button><button class="${deckTab==='gang'?'on':''}" data-act="deckTab" data-k="gang">天罡战牌</button></div><div class="dsub${dOn('base')}"><div class="card"><h2>📜 扑克牌组 · 52 张 <span class="ghost" style="margin-left:auto;font-size:12px">favor 均 ${view.deckAvg} · 最低 ${view.deckMin} / 最高 ${view.deckMax}</span></h2>${suitBarsPanel(view.deck, view.deckAvg)}<div>${deckGrid(view.deck, view.foils)}</div><div class="note" style="text-align:left">favor=该牌掷命翻正面(存活)的概率底盘。<b style="color:var(--gold)">金边</b>=强(≥70) / 暗格=弱(≤50)。牌组强度靠<b>天罡牌/地支牌/流派</b>提升 → 去「改造坊」经营。</div></div></div><div class="dsub${dOn('gang')}"><div class="card" style="margin-bottom:14px"><h2>${GI.bolt} 天罡战牌 <span class="ghost" style="margin-left:auto;font-size:12px">三十六天罡 · 一期 20 张已上架</span></h2><div class="gang-grid"><div class="gang-empty"><span style="font-size:28px;opacity:.5">⚡</span><b>天罡战牌 · 去改造坊选入战库</b><span style="font-size:11px">改造坊买入 → 选 ≤5 入战库 → 局内打出生效</span></div></div></div><div class="card"><h2>${GI.planet} 地支牌 <span class="ghost" style="margin-left:auto;font-size:12px">12 支脉 · 青铜→蓝→紫→金</span></h2><div class="earth-filter">${efBtn('all','全部','background:var(--gold-grad);color:#2a1a08;border:0')}${efBtn('bronze','青铜','background:#b8732a;color:#fff;border:0')}${efBtn('blue','蓝色','background:#4a9fd5;color:#fff;border:0')}${efBtn('purple','紫色','background:#9b5fc7;color:#fff;border:0')}${efBtn('gold','黄金','background:var(--gold-grad);color:#2a1a08;border:0')}</div><div class="earth-groups">${earthSection(view.earthCards ?? [], earthFilter)}</div></div></div></section>
+    <section class="screen${on('coll')} full" style="flex-direction:column"><div class="deck-nav"><button class="${collTab==='cards'?'on':''}" data-act="collTab" data-k="cards">收藏·牌谱</button><button class="${collTab==='ladder'?'on':''}" data-act="collTab" data-k="ladder">天梯·榜</button><button class="${collTab==='collect'?'on':''}" data-act="collTab" data-k="collect">天罡&amp;闪艺</button></div><div class="dsub${cOn('cards')}" style="flex:1;min-height:0;flex-direction:column">${heroCollSection(heroSuit, heroRar, heroDetail, ownedOnly)}</div><div class="dsub${cOn('ladder')}" style="flex:1;min-height:0;flex-direction:column">${ladderSection(view.name, view.rankText)}</div><div class="dsub${cOn('collect')}"><div class="card"><h2>🗃 天罡牌 · 收藏 ${view.tiangangs.filter((j) => j.owned).length}/${view.tiangangs.length}</h2><div class="note" style="text-align:left;margin-bottom:6px">⚡ 已解锁天罡牌（到改造坊选入战库 ≤5 张）</div><div class="shelf">${view.tiangangs.map((j) => shopItem('', '⚡', { ...j, buyable: false })).join('')}</div><div class="note" style="text-align:left;margin:12px 0 6px">✨ 闪艺 foil（纯装饰收集 · 点亮可购买）· ${view.foils.filter((f) => f.owned).length}/${view.foils.length}</div><div class="shelf">${view.foils.map((f) => shopItem('buyFoil', '✨', f)).join('')}</div></div></div></section>
     <section class="screen${on('craft')} full"><div class="craft-zones">
       <div class="card"><h2>♠ 扑克牌组 <span class="ghost" style="margin-left:auto;font-size:12px">52 张 · 公平骨架 · 上场打三路</span></h2>
         <div class="deck-sumbar"><span>favor 均 <b>${view.deckAvg}</b></span><span>最低 <b>${view.deckMin}</b></span><span>最高 <b>${view.deckMax}</b></span></div>
+        <div style="display:flex;align-items:center;gap:14px;padding:12px 0 8px;border-bottom:1px solid var(--panel-border);margin-bottom:8px"><div style="width:62px;height:88px;border-radius:9px;background:var(--chip);border:1px solid var(--panel-border);display:flex;flex-direction:column;justify-content:space-between;padding:5px 6px;flex:none"><span style="color:var(--spade);font-family:var(--fh);font-weight:700;font-size:14px;line-height:.9">7<br>♠</span><span style="color:var(--spade);font-size:32px;line-height:1;text-align:right">♠</span></div><div style="display:flex;flex-direction:column;align-items:center;gap:3px;color:var(--gold)"><span style="font-size:22px">→</span><span style="font-family:var(--fn);font-size:9px;letter-spacing:.06em">CRAFT</span></div><div style="width:62px;height:88px;border-radius:9px;background:var(--chip);border:2px solid var(--gold);display:flex;flex-direction:column;justify-content:space-between;padding:5px 6px;position:relative;flex:none;box-shadow:0 0 10px rgba(232,205,130,.15)"><span style="color:var(--spade);font-family:var(--fh);font-weight:700;font-size:14px;line-height:.9">7<br>♠</span><span style="color:var(--spade);font-size:32px;line-height:1;text-align:right">♠</span><div style="position:absolute;bottom:-8px;right:5px;background:var(--gold);color:#2a1a08;font-family:var(--fn);font-size:8px;padding:2px 5px;border-radius:99px;font-weight:700">重翻</div></div><div style="display:flex;flex-direction:column;gap:5px"><span style="font-family:var(--fh);font-weight:700;font-size:14px;color:var(--ink)">改造台 · 卡牌改造</span><span style="font-size:12px;color:var(--ink-dim)">选一张扑克 + 材料 → 镶 gem（重翻/镶字/配重）</span><div style="display:flex;gap:8px;margin-top:4px"><button class="btn ghost" style="font-size:12px;padding:7px 12px" data-act="tab" data-k="decks">选牌 →</button><span style="font-size:11px;color:var(--ink-dim);align-self:center">材料 🪙 24~48</span></div></div></div>
         <div class="note" style="text-align:left">扑克牌组 = 标准 52 张公平骨架；强度靠天罡/地支经营、不泵点数。<button class="btn ghost" style="margin-left:8px" data-act="tab" data-k="decks">查看牌组 →</button></div></div>
       <div class="forge">
         <div class="card"><h2>${GI.crafting} 改造台 · 天罡牌组（≤5 入战库·局内法术）</h2><div class="fuse"><div class="slot" style="color:var(--gold)">⚡</div><div class="arrow">→</div><div class="slot" style="color:var(--gold)">⚔</div></div>
@@ -396,9 +530,7 @@ export function renderLobby(view: LobbyView, tab: string, tutorialOpen: boolean,
           <div class="shelf">${view.planets.map((p) => shopItem('buyPlanet', '🪐', p)).join('')}</div></div>
       </div>
     </div><div class="note" style="text-align:left;margin-top:14px">材料 🪙 ${kfmt(view.coin)} · 天罡牌=局内法术(流派身份·持久) / 地支牌=升 run 参数。庄家货架为设计 IA（占位）。</div></section>
-    <section class="screen${on('ladder')} full"><div class="ladder-top">${view.ladderLines.map((l) => `<div class="card box">${l}</div>`).join('')}</div>
-      <div class="card" style="margin-top:14px"><div class="rankrow"><span class="n">1</span> 不败战神 <span class="lp">2480</span></div><div class="rankrow"><span class="n">2</span> 一掷千金 <span class="lp">2310</span></div><div class="rankrow"><span class="n">…</span> ${esc(view.name)} <span class="lp">${esc(view.rankText)}</span></div></div>
-      <div class="note" style="text-align:left">天梯 1v1 / LP / 全服榜为设计 IA、尚未接入网络（占位）。当前=单人战役 vs AI Boss，段位即战役进度。</div></section>
+    <section class="screen${on('ladder')} full">${ladderSection(view.name, view.rankText)}</section>
   </div>
   <div class="note" style="margin:0 0 14px">大厅忠实港 · 对照 UI/Game G 大厅.dc.html：纸框 + 顶栏 + 绿呢牌桌(漂浮对决卡/掷 emblem/sheen 出征) + 5 屏 + 玄铁/锦霞双皮 · 真实存档数据 · 未接网项诚实占位</div>
   </div>${tutorialOpen ? tutorialBox() : ''}</div>`;
@@ -420,15 +552,25 @@ export function mountLobby(host: HTMLElement, h: LobbyHandlers): { update: () =>
   let tab = 'home';
   let deckTab: 'base' | 'gang' = 'base';
   let earthFilter = 'all';
+  let collTab = 'cards';
+  let heroSuit = 'all';
+  let heroDetail = '';
+  let heroRar = 'all';
+  let ownedOnly = false;
   let skin: 'onyx' | 'rosy' = h.getView().skin;
   let tut = false;
-  const render = (): void => { host.innerHTML = renderLobby({ ...h.getView(), skin }, tab, tut, deckTab, earthFilter); };
+  const render = (): void => { host.innerHTML = renderLobby({ ...h.getView(), skin }, tab, tut, deckTab, earthFilter, collTab, heroSuit, heroDetail, heroRar, ownedOnly); };
   const onClick = (e: MouseEvent): void => {
     const el = (e.target as HTMLElement).closest('[data-act]') as HTMLElement | null; if (!el) return;
     const act = el.dataset.act, k = el.dataset.k ?? '';
     if (act === 'tab') { tab = k; render(); }
     else if (act === 'deckTab') { deckTab = k === 'gang' ? 'gang' : 'base'; render(); }
     else if (act === 'earthFilter') { earthFilter = k; render(); }
+    else if (act === 'collTab') { collTab = k; render(); }
+    else if (act === 'heroSuit') { heroSuit = k; heroDetail = ''; render(); }
+    else if (act === 'heroRar') { heroRar = k; heroDetail = ''; render(); }
+    else if (act === 'heroDetail') { heroDetail = heroDetail === k ? '' : k; render(); }
+    else if (act === 'heroOwned') { ownedOnly = !ownedOnly; render(); }
     else if (act === 'skin') { skin = k === 'rosy' ? 'rosy' : 'onyx'; h.onSkin?.(skin); render(); }
     else if (act === 'tut') { tut = true; render(); }
     else if (act === 'tut-close') { tut = false; render(); }

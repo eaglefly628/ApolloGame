@@ -82,7 +82,7 @@ describe('Game G · lobby-screen mountLobby 点击交互（DOM · happy-dom）',
       mountLobby(host, { getView: makeView, onPlay: vi.fn() });
       click(navBtn(host, '天梯'));
       expect(host.querySelector('.nav button.on')?.textContent?.trim()).toBe('天梯');
-      expect(host.innerHTML).toContain('战役进度');
+      expect(host.innerHTML).toContain('全服榜');
     });
 
     it('5 tab 全循环：每次只有 1 个 section 带 .on', () => {
