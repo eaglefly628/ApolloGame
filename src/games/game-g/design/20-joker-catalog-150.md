@@ -107,6 +107,32 @@
 > **36 = 4+4+2+4+4+3+3+4+2+6**｜牌力 ⭐1×6 / ⭐2×14 / ⭐3×10 / ⭐5×6（可调）。**确定生效 · 功能优先 · 名字临时**（后面慢慢改）。**砍**：同花魁 / 同花旗 / 顺子阵 / 牌型印（牌型）+ 背水 / 不死鸟 / 玄机印（赌味）。**补 / 改**：铁骰 / 锋矢 / 鼎立 / 薪火 / 调虎 + 双锋印 / 铁律印；战潮 → CR 返圣水。
 > **icon 映射见 §二·尾「天罡 icon 配表」**（给乙）。逐张效果由甲 G 程序实装（owner：慢慢对、逐张实现）。
 
+### 天罡 icon 配表（给乙 · 36 张 · 已对 `assets/index.json` 验证 36/36 存在）
+> 渲染：复用现有 game-icons 管道（单色 SVG 前景染成 tint，同 `assets/curated/game-g-icons.json`）。乙把 `icon`+`tint` 加到每张天罡数据上（改造坊上架 + 牌组预览都用）。tint 按维度配色。
+
+| 牌名 | icon id | tint | | 牌名 | icon id | tint |
+|---|---|---|---|---|---|---|
+| 鬼手 | `gameicons/skoll/d10` | #a78bfa | | 老兵 | `gameicons/delapouite/sergeant` | #38bdf8 |
+| 磐石 | `gameicons/delapouite/stone-wall` | #a78bfa | | 不屈 | `gameicons/lorc/mailed-fist` | #38bdf8 |
+| 灌铅骰 | `gameicons/delapouite/rolling-dices` | #a78bfa | | 薪火 | `gameicons/delapouite/torch` | #38bdf8 |
+| 铁骰 | `gameicons/delapouite/dice-shield` | #a78bfa | | 广纳 | `gameicons/faithtoken/card-pick` | #06b6d4 |
+| 虎符 | `gameicons/delapouite/tiger-head` | #ef4444 | | 川流 | `gameicons/faithtoken/card-draw` | #06b6d4 |
+| 锋矢 | `gameicons/lorc/arrowhead` | #ef4444 | | 战潮 | `gameicons/delapouite/two-coins` | #06b6d4 |
+| 擎天 | `gameicons/delapouite/atlas` | #ef4444 | | 城门令 | `gameicons/delapouite/gate` | #94a3b8 |
+| 寡兵 | `gameicons/delapouite/star-medal` | #ef4444 | | 驰援 | `gameicons/lorc/backup` | #94a3b8 |
+| 双锋 | `gameicons/lorc/crossed-swords` | #2dd4bf | | 舍车 | `gameicons/lorc/trade` | #94a3b8 |
+| 鼎立 | `gameicons/lorc/cauldron` | #2dd4bf | | 调虎 | `gameicons/delapouite/fishing-lure` | #94a3b8 |
+| 旗手 | `gameicons/lorc/rally-the-troops` | #fcd34d | | 死守 | `gameicons/badges/shield` | #a8a29e |
+| 擒王 | `gameicons/lorc/decapitation` | #fcd34d | | 攻城锤 | `gameicons/darkzaitzev/ram` | #a8a29e |
+| 哀兵 | `gameicons/delapouite/enrage` | #fcd34d | | 斩首印 | `gameicons/lorc/backstab` | #fbbf24 |
+| 督战 | `gameicons/delapouite/drum` | #fcd34d | | 将魂印 | `gameicons/lorc/crown` | #fbbf24 |
+| 疾行 | `gameicons/lorc/sprint` | #22c55e | | 铺场印 | `gameicons/sbed/overmind` | #fbbf24 |
+| 泥沼 | `gameicons/delapouite/swamp` | #22c55e | | 田忌印 | `gameicons/skoll/chess-king` | #fbbf24 |
+| 抢滩 | `gameicons/delapouite/jump-across` | #22c55e | | 双锋印 | `gameicons/lorc/duality` | #fbbf24 |
+| 铁索 | `gameicons/lorc/linked-rings` | #22c55e | | 铁律印 | `gameicons/delapouite/weight-scale` | #fbbf24 |
+
+> 备选（owner 想换时）：攻城锤→`delapouite/trebuchet`/`siege-tower`；铁律印→`badges/justice`；督战→`lorc/slavery-whip`(督战队)。
+
 ---
 
 ## 三、十二地支（养成系统：12 生肖属性 · 单生肖镶嵌牌 · 镶英雄 ≤3 → 连携）
