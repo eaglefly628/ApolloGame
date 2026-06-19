@@ -20,7 +20,9 @@ async function gemoji() {
 }
 
 const all = await gemoji();
-const pool = all.filter((e) => USEFUL.has(e.category) && e.aliases?.length);
+// 默认全类目；传第 2 参 'useful' 只取游戏常用类目。每条都要有别名(=可搜的人话名)。
+const onlyUseful = process.argv[3] === 'useful';
+const pool = all.filter((e) => e.aliases?.length && (!onlyUseful || USEFUL.has(e.category)));
 // 均匀采样到 CAP（跨类取变化，不偏头部）
 const pick = [];
 const step = Math.max(1, pool.length / CAP);
