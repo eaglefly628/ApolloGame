@@ -56,6 +56,40 @@ const PACKS = {
     idPrefix: 'tabler',
     transparent: true,
   },
+  // Phosphor 图标族（MIT）：圆润成体系，取 regular 权重。
+  phosphor: {
+    repo: 'phosphor-icons/core',
+    ref: 'main',
+    tarTop: 'core-main',
+    ext: '.svg',
+    subdir: 'assets/regular',
+    flatId: true,
+    sample: 'even',
+    style: 'cartoon.flat',
+    license: 'MIT',
+    source: 'phosphor',
+    category: 'icon.ui',
+    dest: 'phosphor',
+    idPrefix: 'phosphor',
+    transparent: true,
+  },
+  // Material Design Icons（Apache-2.0）：最全的统一填充风图标体系。
+  mdi: {
+    repo: 'Templarian/MaterialDesign',
+    ref: 'master',
+    tarTop: 'MaterialDesign-master',
+    ext: '.svg',
+    subdir: 'svg',
+    flatId: true,
+    sample: 'even',
+    style: 'cartoon.flat',
+    license: 'Apache-2.0',
+    source: 'mdi',
+    category: 'icon.ui',
+    dest: 'mdi',
+    idPrefix: 'mdi',
+    transparent: true,
+  },
 };
 
 function walk(dir) {
