@@ -100,5 +100,7 @@
 **契约③（新增·先对齐再各做）**：`GAME_G_JOKERS` 每张 = `{id,name,rarity,kind,params,text,cost}`（doc20 §三数据形）。**乙写这份养成数据、甲写 kind 解释器读它**。先把 `{kind,params}` schema 钉死（doc20 §三 10 kind）再并行。
 
 > **✅ 契约③ 已对齐（2026-06-19 · 甲乙合流）**：乙已交付 **B-JOKER 一期 20 张天罡** —— `GAME_G_JOKERS` 已扩 contract③ 形（`kind: odds/power/combo/morale/tempo/stamina/draw/lane/siege/arcane` + `rarity/power/phat/params`），如 巧手 `odds{op:add,value:1}`、背水 `odds{op:reroll,when:afterLoss}`、寡兵 `power{op:add,value:6,filter:countLE3}`。
-> **A-JOKER 解锁 = 甲可开工**：10 个 kind 解释器读 `save.jokers`(契约②·已激活集) 的 `{kind,params}` → apply 进 `prepareArmies`/`clash-resolve`/`live-combat`（复用现成 buff 源·零引擎）。每张配测断言 ΔWR 量级与 `phat` 大致符。**等 owner 排期**（当前 owner 选先调 CR 手感数值）。
+> **A-JOKER v1 已落（2026-06-19 · 甲）**：天罡=CR 法术，**施法(cast)即生效·持续整局·一种牌算一次·只己方**（`aggregateTengang`→`live.tengangA`，live-combat clash/deploy 钩子读·零引擎·不破逐拍 hash）。
+> 实装 6 kind / 9 张：**odds**(巧手 pEff+1 / 稳手 winFloor+5%) · **power**(虎符 全军+2 / 寡兵 ≤3张+6 / 同花魁 同花+3) · **combo**(对子诀 含对子+6) · **morale**(令旗 士气+4) · **stamina**(铁汉 续航+1) · **draw**(广纳 手牌上限+2)。配测：参数映射 + clash ΔWR 量级（虎符/巧手/寡兵 抬胜率·稳手抬底）。
+> **v2 待接**（flag·原因）：背水 `odds.reroll`(改 rng 消费序·要专设) / 顺子阵 `combo.straight`(整路牌型评估) / 擒王 `morale.decapCost`(依**干预·斩首令**·干预系统待重设计) / 疾行·迟滞 `tempo`(需 live-combat 行军速挂点) / 增援路·弃一保二 `lane`(一次性 spawn/路转移) / 攻城锤 `siege`(大本营 chip) / 斩首印·田忌印 `arcane`(印记集齐质变·需流派集合系统) / 战潮 `draw.pulse`(**CR 已取代被动涌牌·语义需 owner 重定**)。未接 kind 返回零修正、不崩。
 

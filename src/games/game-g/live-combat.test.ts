@@ -1,6 +1,7 @@
 import { describe, it, expect } from 'vitest';
 import { standardArmy } from './index.js';
-import { initLiveBattle, stepLiveBattle, runLiveBattle, liveHash, cardStamina, tideDrawPulse, TIDE_PULSE, MARCH_STEP, migrateRear, type DeployCmd, type ClashEvent } from './live-combat.js';
+import { initLiveBattle, stepLiveBattle, runLiveBattle, liveHash, cardStamina, tideDrawPulse, TIDE_PULSE, MARCH_STEP, migrateRear, NO_TENGANG, type DeployCmd, type ClashEvent, type TengangFx } from './live-combat.js';
+import { aggregateTengang } from './game-g.js';
 
 // doc 18/19 · live 解析器 + 3D-CLASH 对决核 + 3D-STAM 续航：验证 live 化后 outcome-first 不破（确定性逐拍 hash）
 // + 公平骨架（base=点数·双方同副；强弱来自经营 buff）+ 胜负方向 + live buff 杠杆 + 续航退场（战线接力·神牌不包打）。
@@ -124,5 +125,39 @@ describe('Game G · A1 战潮抽牌·事件脉冲（doc18 §10.3 乙 · tideDraw
     // 确定性：同序列迁移 → 同 hash
     const run = (): string => { const b = initLiveBattle(5); stepLiveBattle(b, dep); migrateRear(b, 'a', 0, 2); stepLiveBattle(b, dep); return liveHash(b); };
     expect(run()).toBe(run());
+  });
+
+  it('A-JOKER 天罡效果（doc20 §二 · cast 后持续·只己方）：aggregateTengang 映射 + clash ΔWR 量级对', () => {
+    // 契约③ {kind,params} → 扁平修正 映射
+    expect(aggregateTengang(['hufu']).powerAll).toBe(2);              // 虎符 power+2
+    expect(aggregateTengang(['qiaoshou']).pEffAdd).toBe(1);           // 巧手 odds add+1
+    expect(aggregateTengang(['wenshou']).winFloor).toBeCloseTo(0.05); // 稳手 winFloor+5%
+    expect(aggregateTengang(['guabing']).powerLE3).toBe(6);           // 寡兵 ≤3张+6
+    expect(aggregateTengang(['tonghuakui']).powerSameSuit).toBe(3);   // 同花魁 同花+3
+    expect(aggregateTengang(['duizijue']).comboPair).toBe(6);         // 对子诀 含对子+6
+    expect(aggregateTengang(['lingqi']).moraleLeader).toBe(4);        // 令旗 士气+4
+    expect(aggregateTengang(['tiehan']).stamPlus).toBe(1);            // 铁汉 续航+1
+    expect(aggregateTengang(['guangna']).handMaxAdd).toBe(2);         // 广纳 手牌上限+2
+    expect(aggregateTengang(['beishui'])).toEqual(NO_TENGANG);        // 背水(odds.reroll)=v2 未接 → 零修正·不崩
+    const both = aggregateTengang(['hufu', 'qiaoshou']);              // 多种叠加
+    expect(both.powerAll).toBe(2); expect(both.pEffAdd).toBe(1);
+
+    // clash ΔWR：跑到首次对决读 winrate（=我方胜率）。天罡只己方 → 各加成抬我方胜率。
+    const clashWR = (fx: TengangFx, bBuff = 0): number => {
+      const b = initLiveBattle(11); b.tengangA = fx;
+      const dep: DeployCmd[] = [
+        { tick: 1, side: 'a', lane: 0, unit: { id: 'a', rank: '7', suit: 'S', general: false } },
+        { tick: 1, side: 'b', lane: 0, unit: { id: 'b', rank: '7', suit: 'H', general: false, buff: bBuff } },
+      ];
+      for (let i = 0; i < 300 && b.clashSeq === 0; i++) stepLiveBattle(b, dep);
+      return b.lastClash!.winrate;
+    };
+    const base = clashWR(NO_TENGANG); // 均势 7v7 ≈ .5
+    expect(clashWR(aggregateTengang(['hufu']))).toBeGreaterThan(base);     // 虎符 +2 战力 → 胜率↑
+    expect(clashWR(aggregateTengang(['qiaoshou']))).toBeGreaterThan(base); // 巧手 +1 掷命点 → 胜率↑
+    expect(clashWR(aggregateTengang(['guabing']))).toBeGreaterThan(base);  // 寡兵：我方本路仅 1 张(≤3) → +6 → 胜率↑
+    const weak = clashWR(NO_TENGANG, 40);                                  // 敌 +40 → 我方触底(≈3%)
+    expect(weak).toBeLessThan(0.1);                                        // 确实压到底附近
+    expect(clashWR(aggregateTengang(['wenshou']), 40)).toBeGreaterThan(weak); // 稳手 winFloor 抬底(→≈8%)
   });
 });

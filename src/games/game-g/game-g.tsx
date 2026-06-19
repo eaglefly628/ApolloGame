@@ -1,7 +1,7 @@
 import { mountBattle, type BattleView, type BattleUnit, type BattleLane, type BattleLever, type HandCardView, type TengangCardView, type BattleActions, type ClashView, type BattleFx } from './battle-screen.js';
 import { mountLobby, type LobbyView, type LobbyShopItem } from './lobby-screen.js';
 import { prepareArmies, armyFromFormation, laneEstimates, quartermasterEnergy, FORMATION_PRESETS, PRESET_NAMES, LEVER_CATALOG, LEVER_START, battleSpec, RUN_BATTLES, RUN_LIVES, BETWEEN_BUFFS, applyBuff, jokerKeyBuffs, BOSS_ROSTER, bossFor, GAME_G_JOKERS, JOKER_BY_ID, ARCHETYPES, detectArchetype, archetypeMatchup, activeArchetype, pickAiFormation, GAME_G_PLANETS, GAME_G_FOILS, effectiveLives, effectiveLeverCap, effectiveLeverRegen, type Formation, type Intervention, type LeverKind, type RunBuff, type ArmyCard } from './index.js';
-import { initLiveBattle, stepLiveBattle, liveActive, migrateRear, LANE_LEN, HOME_BLOOD, type LiveBattle, type DeployCmd, type ClashEvent } from './live-combat.js';
+import { initLiveBattle, stepLiveBattle, liveActive, migrateRear, NO_TENGANG, LANE_LEN, HOME_BLOOD, type LiveBattle, type DeployCmd, type ClashEvent, type TengangFx } from './live-combat.js';
 import { cardPoints, P_MAX } from './clash-resolve.js';
 
 // Game G ·《翻命扑克》—— 大厅 ↔ 出征 闭环（launcher 卡带槽：export mount(container)→cleanup）。自包含于本目录。
@@ -147,6 +147,23 @@ function snapLivePos(live: LiveBattle): Map<string, number> {
 // CR 摸牌可行性（doc21 §二.5 · 纯函数·便于测）：点数够 & 该手牌未到上限 & 该库还有牌。普通/天罡两库共用此判。
 export function canDrawFrom(points: number, cost: number, handLen: number, cap: number, deckLen: number): boolean {
   return points >= cost && handLen < cap && deckLen > 0;
+}
+// A-JOKER：已施天罡(契约②·玩家施法集) → 聚合扁平战斗修正（live-combat 钩子读·只己方）。读 GAME_G_JOKERS 的 {kind,params}（契约③）。
+// 一种牌算一次（不叠）。v1 实装 6 kind；v2 待接（背水 reroll / 顺子阵 straight / 擒王 decapCost·依干预 / tempo / lane 一次性 / siege / arcane 印记 / 战潮 pulse·CR 已取代被动涌牌）—— 未实装 kind 返回零修正、不崩。
+export function aggregateTengang(castIds: readonly string[]): TengangFx {
+  const fx: TengangFx = { ...NO_TENGANG };
+  for (const id of castIds) {
+    const j = JOKER_BY_ID.get(id); const p = j?.params as Record<string, unknown> | undefined;
+    if (!j || !p) continue;
+    const v = typeof p.value === 'number' ? p.value : 0;
+    if (j.kind === 'odds') { if (p.op === 'add') fx.pEffAdd += v; else if (p.op === 'winFloor') fx.winFloor += v / 100; }
+    else if (j.kind === 'power' && p.op === 'add') { if (p.filter === 'countLE3') fx.powerLE3 += v; else if (p.filter === 'sameSuit') fx.powerSameSuit += v; else fx.powerAll += v; }
+    else if (j.kind === 'combo' && p.op === 'pair') fx.comboPair += typeof p.bonus === 'number' ? p.bonus : 0;
+    else if (j.kind === 'morale' && p.op === 'leaderBuff') fx.moraleLeader += v;
+    else if (j.kind === 'stamina' && p.op === 'stamPlus') fx.stamPlus += v;
+    else if (j.kind === 'draw' && p.op === 'handMax') fx.handMaxAdd += v;
+  }
+  return fx;
 }
 
 // 从 live-combat 逐拍 sim + save 派生战场视图（喂 battle-screen 渲染设计稿）。纯读 sim 真相、不回灌。
@@ -467,8 +484,9 @@ export function mount(container: HTMLElement): () => void {
     // 天罡库（法术·≤5·读 save.jokers 契约②）：cycle 队列 —— 摸牌从库顶取、施法回库底；cap5 打掉才补。
     const tDeck: { id: string; name: string }[] = save.jokers.map((id) => ({ id, name: JOKER_BY_ID.get(id)?.name ?? id }));
     const tHand: { id: string; name: string }[] = [];
+    const castIds = new Set<string>(); // A-JOKER：已施天罡集（施法即加入 → 聚合持续修正 live.tengangA·一种算一次）
     let aiNext = bDeck.length ? AI_PERIOD_TICKS : Infinity; // 敌下次滴投拍
-    const canDrawNormal = (): boolean => live.winner === 'pending' && canDrawFrom(points, NORMAL_DRAW_COST, aHand.length, NORMAL_HAND_CAP, aDeck.length);
+    const canDrawNormal = (): boolean => live.winner === 'pending' && canDrawFrom(points, NORMAL_DRAW_COST, aHand.length, NORMAL_HAND_CAP + live.tengangA.handMaxAdd, aDeck.length);
     const canDrawTengang = (): boolean => live.winner === 'pending' && canDrawFrom(points, TENGANG_DRAW_COST, tHand.length, TENGANG_CAP, tDeck.length);
     const control = (): BattleControl => ({
       hand: aHand.map((c): HandCardView => ({ id: c.id, rank: cardRank(c), suit: c.suit.toLowerCase() as 's' | 'h' | 'd' | 'c', general: c.general })),
@@ -500,9 +518,10 @@ export function mount(container: HTMLElement): () => void {
           const c = aHand.splice(selectedCard, 1)[0];
           deploys.push({ tick: live.tick + 1, side: 'a', lane, unit: toUnit(c) });
           selectedCard = -1;
-        } else if (selectedTengang >= 0 && selectedTengang < tHand.length) { // 施天罡法术：消耗 + 回库底(cycle·解锁再摸)；效果数值 = A-JOKER 后续
+        } else if (selectedTengang >= 0 && selectedTengang < tHand.length) { // 施天罡法术（A-JOKER）：施其效果(持续战斗修正) + 消耗回库底(cycle·解锁再摸)
           const c = tHand.splice(selectedTengang, 1)[0];
           tDeck.push(c);
+          castIds.add(c.id); live.tengangA = aggregateTengang([...castIds]); // 施法 → 持续修正生效（一种牌算一次·不叠）
           selectedTengang = -1;
         } else { // 迁移模式（无选中牌）：先点迁出路（须有后备）→ 再点迁入路 → 搬队尾后备一张
           if (migrateSource < 0) { if (live.lanes[lane].a.length > 0) migrateSource = lane; }
