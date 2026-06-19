@@ -588,7 +588,8 @@ describe('Game G · T-G6 小丑牌（融牌面 · build 时 favor 变换 · 持�
 
   it('小丑目录 10 张(全)，kind 合法、cost>0、有 text；JOKER_BY_ID 覆盖全', () => {
     expect(GAME_G_JOKERS.length).toBeGreaterThanOrEqual(10);
-    const kinds = new Set(['suit-synergy', 'polarize', 'lane-pref', 'diehard', 'morale', 'link', 'economy', 'revenge']);
+    const kinds = new Set(['suit-synergy', 'polarize', 'lane-pref', 'diehard', 'morale', 'link', 'economy', 'revenge',
+      'odds', 'power', 'combo', 'tempo', 'stamina', 'draw', 'lane', 'siege', 'arcane']);
     for (const j of GAME_G_JOKERS) {
       expect(kinds.has(j.kind)).toBe(true);
       expect(j.cost).toBeGreaterThan(0);
