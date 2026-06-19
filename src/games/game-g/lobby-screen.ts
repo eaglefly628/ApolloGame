@@ -96,6 +96,13 @@ const CSS = `
 .ggl-root .pcard-lbl{ font-size:8.5px; font-weight:900; letter-spacing:.04em; line-height:1; text-align:center; text-shadow:0 1px 3px rgba(0,0,0,.7) }
 .ggl-root .pcard-portrait{ position:absolute; inset:0; display:flex; align-items:center; justify-content:center; pointer-events:none; opacity:.28 }
 .ggl-root .pcard-portrait svg{ width:66%; height:66% }
+.ggl-root .deck-nav{ display:flex; gap:6px; margin-bottom:14px }
+.ggl-root .deck-nav button{ padding:6px 20px; border-radius:8px; background:var(--chip); border:1px solid var(--panel-border); color:var(--ink-dim); font-family:var(--fh); font-weight:600; font-size:14px; cursor:pointer }
+.ggl-root .deck-nav button.on{ background:var(--gold-grad); color:#2a1a08; border:0 }
+.ggl-root .dsub{ display:none; flex-direction:column }
+.ggl-root .dsub.on{ display:flex }
+.ggl-root .gang-grid{ display:grid; grid-template-columns:repeat(auto-fill,minmax(78px,1fr)); gap:8px; min-height:240px }
+.ggl-root .gang-empty{ grid-column:1/-1; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:10px; padding:56px 0; color:var(--ink-dim); font-size:13px; text-align:center }
 .ggl-root .shelf{ display:grid; grid-template-columns:repeat(auto-fill,minmax(120px,1fr)); gap:10px }
 .ggl-root .good{ background:var(--chip); border:1px solid var(--panel-border); border-radius:10px; padding:10px; text-align:center; font-size:12px; position:relative; min-height:74px; clip-path:var(--chamfer) } .ggl-root .good .gnm{ font-weight:700; color:var(--ink); line-height:1.25 } .ggl-root .good .cost{ color:var(--gold); font-weight:700; margin-top:6px; font-family:var(--fn) }
 .ggl-root .good.got{ border-color:var(--gold) } .ggl-root .good.buy{ cursor:pointer } .ggl-root .good.buy:hover{ box-shadow:0 0 0 1px var(--gold) inset } .ggl-root .good.lock{ opacity:.5 }
@@ -214,8 +221,9 @@ function deckPreviewPanel(jokers: LobbyShopItem[], archName: string | null | und
   return `<div class="card" style="margin-bottom:14px"><h2>⚔ 命牌战库 <span class="ghost" style="font-size:12px;margin-left:auto">${inDeck.length}/5 · 局内打出生效</span></h2>${body}<div class="note" style="text-align:left;margin-top:4px">${arch}</div></div>`;
 }
 
-export function renderLobby(view: LobbyView, tab: string, tutorialOpen: boolean): string {
+export function renderLobby(view: LobbyView, tab: string, tutorialOpen: boolean, deckTab: 'base' | 'gang' = 'base'): string {
   const on = (t: string): string => (tab === t ? ' on' : '');
+  const dOn = (t: string): string => (deckTab === t ? ' on' : '');
   const stags = SUITS.map(([g, c], i) => `<div class="stag"><span style="color:${c};font-size:14px;text-shadow:0 0 6px ${c}">${g}</span>${['黑桃', '红桃', '方块', '梅花'][i]}</div>`).join('');
   return `<div class="ggl-root" data-skin="${view.skin}"><div class="frame">
   <div class="topbar">
@@ -268,9 +276,7 @@ export function renderLobby(view: LobbyView, tab: string, tutorialOpen: boolean)
         <div class="friend"><span class="dot"></span> 周瑜 <span class="tag">占位</span></div>
         <div class="friend"><span class="dot"></span> 孔明 <span class="tag">占位</span></div></div>
     </section>
-    <section class="screen${on('decks')} full">${deckPreviewPanel(view.jokers, view.deckArchName, view.deckArchActivated)}<div class="card"><h2>📜 出战牌组 · 52 张 <span class="ghost" style="margin-left:auto;font-size:12px">favor 均 ${view.deckAvg} · 最低 ${view.deckMin} / 最高 ${view.deckMax}</span></h2>
-      <div>${deckGrid(view.deck, view.foils)}</div>
-      <div class="note" style="text-align:left">favor=该牌掷命翻正面(存活)的概率底盘。<b style="color:var(--gold)">金边</b>=强(≥70) / 暗格=弱(≤50)。牌组强度靠<b>小丑/星球/流派</b>提升 → 去「改造坊」经营。</div></div></section>
+    <section class="screen${on('decks')} full">${deckPreviewPanel(view.jokers, view.deckArchName, view.deckArchActivated)}<div class="deck-nav"><button class="${deckTab==='base'?'on':''}" data-act="deckTab" data-k="base">基础牌组</button><button class="${deckTab==='gang'?'on':''}" data-act="deckTab" data-k="gang">天罡战牌</button></div><div class="dsub${dOn('base')}"><div class="card"><h2>📜 基础牌组 · 52 张 <span class="ghost" style="margin-left:auto;font-size:12px">favor 均 ${view.deckAvg} · 最低 ${view.deckMin} / 最高 ${view.deckMax}</span></h2><div>${deckGrid(view.deck, view.foils)}</div><div class="note" style="text-align:left">favor=该牌掷命翻正面(存活)的概率底盘。<b style="color:var(--gold)">金边</b>=强(≥70) / 暗格=弱(≤50)。牌组强度靠<b>小丑/星球/流派</b>提升 → 去「改造坊」经营。</div></div></div><div class="dsub${dOn('gang')}"><div class="card"><h2>⚡ 天罡战牌 <span class="ghost" style="margin-left:auto;font-size:12px">容量 150 · 当前 0 张</span></h2><div class="gang-grid"><div class="gang-empty"><span style="font-size:36px;opacity:.5">⚡</span><b>天罡战牌 · 尚未开放</b><span style="font-size:11px">战役推进后逐步解锁 · 容量上限 150 张</span></div></div></div></div></section>
     <section class="screen${on('coll')} full"><div class="card"><h2>🗃 卡牌收藏 · 小丑 ${view.jokers.filter((j) => j.owned).length}/${view.jokers.length} · 闪艺 ${view.foils.filter((f) => f.owned).length}/${view.foils.length}</h2>
       <div class="note" style="text-align:left;margin-bottom:6px">🃏 小丑牌（改掷命规则=流派身份 · 到改造坊融取）</div>
       <div class="shelf">${view.jokers.map((j) => shopItem('', '🃏', { ...j, buyable: false })).join('')}</div>
@@ -305,13 +311,15 @@ export interface LobbyHandlers {
 export function mountLobby(host: HTMLElement, h: LobbyHandlers): { update: () => void; destroy: () => void } {
   if (!document.getElementById('ggl-css')) { const s = document.createElement('style'); s.id = 'ggl-css'; s.textContent = CSS; document.head.appendChild(s); }
   let tab = 'home';
+  let deckTab: 'base' | 'gang' = 'base';
   let skin: 'onyx' | 'rosy' = h.getView().skin;
   let tut = false;
-  const render = (): void => { host.innerHTML = renderLobby({ ...h.getView(), skin }, tab, tut); };
+  const render = (): void => { host.innerHTML = renderLobby({ ...h.getView(), skin }, tab, tut, deckTab); };
   const onClick = (e: MouseEvent): void => {
     const el = (e.target as HTMLElement).closest('[data-act]') as HTMLElement | null; if (!el) return;
     const act = el.dataset.act, k = el.dataset.k ?? '';
     if (act === 'tab') { tab = k; render(); }
+    else if (act === 'deckTab') { deckTab = k === 'gang' ? 'gang' : 'base'; render(); }
     else if (act === 'skin') { skin = k === 'rosy' ? 'rosy' : 'onyx'; h.onSkin?.(skin); render(); }
     else if (act === 'tut') { tut = true; render(); }
     else if (act === 'tut-close') { tut = false; render(); }
