@@ -32,7 +32,7 @@ describe('Game G · lobby-screen 视觉回归（忠实港大厅 · 真渲染器 
 
   it('牌组帧 = 真 52 张 favor 网格匹配 golden', async () => {
     const html = renderLobbyDoc(view(), 'decks');
-    expect((html.match(/class="pcard/g) || []).length).toBe(52); // 真牌组 52 张
+    expect((html.match(/class="pcard[^-]/g) || []).length).toBe(52); // 真牌组 52 张（排除 pcard-wm/pcard-info 等子类）
     expect(html).toContain('favor 均 53');
     await expect(html).toMatchFileSnapshot('./__frames__/lobby-decks.html');
   });
