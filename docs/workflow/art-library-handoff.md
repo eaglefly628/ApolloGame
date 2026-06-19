@@ -4,15 +4,17 @@
 
 ## 1. 库现状（按来源 / 风格 / 许可）
 
-**项目索引 `assets/index.json`：共 ~8967 项**（另有 DCSS 货架 `assets/FreeArtLib/index.json` ~4892 项，CC0 像素，预先存在）。
+**项目索引 `assets/index.json`：共 20019 项**（另有 DCSS 货架 `assets/FreeArtLib/index.json` ~4892 项，CC0 像素，预先存在）。
+
+> 2026-06-19 更新：tabler/phosphor/mdi 三套已由采样 1000 → **拉全**（见 §7 待办 3 已办）。
 
 | 来源 | 数量 | 风格 style | 类目 category | 许可 | 形态 |
 |---|---|---|---|---|---|
 | game-icons | 4239 | `cartoon.flat` | icon.ui（+ `playing-card` 57） | CC BY 3.0 | SVG 单色奇幻线/填充 |
 | twemoji | 1725 | `cartoon.flat` | `emoji` | CC BY 4.0 | PNG 72×72 **彩色**，全带标签可搜 |
-| tabler | 1000 | `cartoon.flat` | icon.ui | MIT | SVG 细描线（均匀采样自 ~5000） |
-| phosphor | 1000 | `cartoon.flat` | icon.ui | MIT | SVG 圆润（采样自 regular 权重） |
-| mdi | 1000 | `cartoon.flat` | icon.ui | Apache-2.0 | SVG 填充（采样自 ~7500） |
+| tabler | 5093 | `cartoon.flat` | icon.ui | MIT | SVG 细描线（**全集** outline） |
+| phosphor | 1512 | `cartoon.flat` | icon.ui | MIT | SVG 圆润（**全集** regular 权重） |
+| mdi | 7447 | `cartoon.flat` | icon.ui | Apache-2.0 | SVG 填充（**全集**） |
 | DCSS FreeArtLib | 4892 | `pixel`（默认） | 各 slot | CC0 | PNG 32×32 像素 |
 
 **风格覆盖**：`pixel` ✓（DCSS）｜`cartoon.flat` ✓（5 套，含彩色 twemoji）｜**`cartoon.ink`（水墨）/ `cartoon.western` / `cartoon.anime` = 仍 0**（源被网络挡，见 §4）。
@@ -27,7 +29,7 @@
 - **`scripts/import-art-pack.mjs`**（SVG 包，codeload 整包→解压→sniff→盖 style/license/source→并进 index）。
   - 用法：`node scripts/import-art-pack.mjs <pack> <limit>`，已配 `game-icons/tabler/phosphor/mdi`。
   - pack 字段：`subdir`(只取子目录) / `flatId`(id=前缀/名，无作者层) / `sample:'even'`(均匀采样) / `categoryRules`(按名归类，如扑克牌)。
-  - **拉更多**：tabler/phosphor/mdi 现各只取 1000，全集 ~5000/1500/7500，调大 limit 即可；game-icons 已全量 4239。
+  - **拉更多**：tabler/phosphor/mdi 已拉全（5093/1512/7447，2026-06-19）；game-icons 已全量 4239。复放：`node scripts/import-art-pack.mjs <pack> 100000`（幂等，按 id 去重覆盖）。
 - **`scripts/import-emoji.mjs`**（Twemoji 图 + gemoji 名表→可搜彩色表情）。用法 `node scripts/import-emoji.mjs <cap> [useful]`。已全量（1725）。
 - **预览**：用 `@resvg/resvg-js`（`npm i --no-save` 临时装，**不是项目依赖**）把 SVG/PNG 拼网格 PNG；或 `scripts/contact-sheet.mjs`（仅吃 8-bit PNG）。
 
@@ -47,8 +49,8 @@
 - Phase-B（把游戏配置做成内容表来编辑）**未做**，需 PE/Lead。
 
 ## 7. 待办 / 下一步
-1. **水墨 / 卡通角色 / 像素游戏美术系列**（最缺）：需 ① 新 session + 放宽网络去逛 OGA/itch/Kenney；或 ② 用户给具体 GitHub 仓库地址；或 ③ 用户下载上传。扑克牌面用户拟用 Canva 出图。
-2. GitHub MCP 搜索恢复后，关键字捞像素/tileset 系列。
-3. tabler/phosphor/mdi 可调大 limit 拉全。
+1. **水墨 / 卡通角色 / 像素游戏美术系列**（最缺）：2026-06-19 复核——网络（OGA/itch/Kenney/api.github 全 403）与 GitHub MCP 搜索（502，走被挡的 api.github）**仍双双不可用**。用户已选路径 ② **自己下载上传**：素材落进 `assets/<风格>/` 后，跑 `src/assets/import/sniff.ts` 同源逻辑或导入器补 index 条目（盖 style/license/source/provenance）。扑克牌面用户拟用 Canva 出图。
+2. GitHub MCP 搜索恢复后，关键字捞像素/tileset 系列（本会话仍 502）。
+3. ~~tabler/phosphor/mdi 调大 limit 拉全~~ ✅ 已办（2026-06-19，5093/1512/7447，全绿推送）。
 4. 把 `game-g-icons.json` 接进 Game G 渲染（game 层）。
 5. 纪律：分支 `claude/mainbranch`，每次 `fetch→rebase→push`；tsc+vitest+build 全绿才推；提交署名 `Claude <noreply@anthropic.com>`、信息以 session URL 结尾。
