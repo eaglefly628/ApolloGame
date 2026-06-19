@@ -145,26 +145,50 @@ export function inferCategory(e: AssetIndexEntry): string {
 }
 
 /** assets/index.json → 统一记录。`assetsBase` 为站点上资产根（dev 下 '/assets/'）。 */
-export function projectRecords(index: AssetIndex, assetsBase = '/assets/'): LibraryRecord[] {
-  return index.assets.map((e) => ({
-    id: e.id,
-    type: e.type,
-    category: inferCategory(e),
-    name: e.id,
-    description: e.description,
-    tags: e.tags ? [...e.tags] : [],
-    source: 'project' as const,
-    sourceLabel: 'assets/',
-    license: e.license,
-    style: e.style as ArtStyle | undefined,
-    status: e.status,
-    thumb: e.status === 'filled' && e.path && e.type === 'texture' ? assetsBase + e.path : undefined,
-    path: e.path,
-    width: numOrUndef(e.spec?.width),
-    height: numOrUndef(e.spec?.height),
-    format: strOrUndef(e.spec?.format),
-    transparent: typeof e.spec?.transparent === 'boolean' ? e.spec.transparent : undefined,
-  }));
+export function projectRecords(index: AssetIndex, assetsBase = '/assets/', aliases?: AliasMap): LibraryRecord[] {
+  return index.assets.map((e) => {
+    const baseTags = e.tags ? [...e.tags] : [];
+    const tags = aliases ? [...baseTags, ...expandAliases(baseTags, aliases)] : baseTags;
+    return {
+      id: e.id,
+      type: e.type,
+      category: inferCategory(e),
+      name: e.id,
+      description: e.description,
+      tags,
+      source: 'project' as const,
+      sourceLabel: 'assets/',
+      license: e.license,
+      style: e.style as ArtStyle | undefined,
+      status: e.status,
+      thumb: e.status === 'filled' && e.path && e.type === 'texture' ? assetsBase + e.path : undefined,
+      path: e.path,
+      width: numOrUndef(e.spec?.width),
+      height: numOrUndef(e.spec?.height),
+      format: strOrUndef(e.spec?.format),
+      transparent: typeof e.spec?.transparent === 'boolean' ? e.spec.transparent : undefined,
+    };
+  });
+}
+
+// ── 检索别名层（概念/同义词/中文）──
+//
+//  导入器只把图标文件名拆词当 tag（sword→[sword]），搜不到 剑/weapon/blade。
+//  这里按 token 命中补检索词（数据来自 assets/curated/search-aliases.json，运行时并入 tags，
+//  不入 index.json：省体积、改即生效——同 artlib-tags.ts 的运行时并标签思路）。
+//  纯函数、确定性（去重、定序）→ queryLibrary/rankRecords 行为可预期、可测。
+export type AliasMap = { readonly [token: string]: readonly string[] };
+
+/** 给定一组已有 token，返回应补充的检索词（去重、字典序、不含原有）。 */
+export function expandAliases(tags: readonly string[], aliases: AliasMap): string[] {
+  const have = new Set(tags.map((t) => t.toLowerCase()));
+  const extra = new Set<string>();
+  for (const t of tags) {
+    const al = aliases[t.toLowerCase()];
+    if (!al) continue;
+    for (const a of al) if (!have.has(a.toLowerCase())) extra.add(a);
+  }
+  return [...extra].sort();
 }
 
 // ── 适配器 2：FreeArtLib（素材货架，slot 即分类）──

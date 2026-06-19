@@ -8,6 +8,8 @@ import {
   manifestRecords,
   queryLibrary,
   libraryCounts,
+  type AliasMap,
+  type AssetIndex,
   type LibraryRecord,
   type LibrarySource,
   type LibraryStatus,
@@ -45,7 +47,9 @@ const STATUS_LABEL: Record<LibraryStatus, string> = { filled: '已填', tbf: '�
 export function AssetLibrary({ onBack }: { onBack: () => void }) {
   // ── 数据源 ──
   const [artIndex, setArtIndex] = useState<ArtLibIndex | null>(null);
-  const [projRecords, setProjRecords] = useState<LibraryRecord[]>([]);
+  const [projIndex, setProjIndex] = useState<AssetIndex | null>(null);
+  // 检索别名层（概念/同义词/中文）：补图标名读不出的搜索词，让 剑/weapon/blade 互搜。
+  const [aliases, setAliases] = useState<AliasMap>({});
   const [loadErr, setLoadErr] = useState<string | null>(null);
 
   useEffect(() => {
@@ -54,14 +58,25 @@ export function AssetLibrary({ onBack }: { onBack: () => void }) {
       .then((j) => setArtIndex(j as ArtLibIndex))
       .catch((e) => setLoadErr(`FreeArtLib 索引加载失败：${String(e)}（需 python3 apollo.py 起 vite）`));
   }, []);
+  useEffect(() => {
+    fetch('/assets/curated/search-aliases.json')
+      .then((r) => r.json())
+      .then((j) => setAliases((j?.aliases ?? {}) as AliasMap))
+      .catch(() => setAliases({})); // 别名缺失只是少了同义词增益，不阻塞库
+  }, []);
 
   const reloadProject = useCallback(() => {
     fetch('/assets/index.json')
       .then((r) => r.json())
-      .then((j) => setProjRecords(projectRecords(parseAssetIndex(j))))
-      .catch(() => setProjRecords([]));
+      .then((j) => setProjIndex(parseAssetIndex(j)))
+      .catch(() => setProjIndex(null));
   }, []);
   useEffect(() => reloadProject(), [reloadProject]);
+  // 别名是运行时并入 tags 的（不入 index.json）→ index 或 aliases 任一就绪/变更都重算记录。
+  const projRecords = useMemo(
+    () => (projIndex ? projectRecords(projIndex, '/assets/', aliases) : []),
+    [projIndex, aliases],
+  );
 
   const gameRecords = useMemo(
     () => GAME_MANIFESTS.flatMap(([id, m]) => manifestRecords(id, m)),

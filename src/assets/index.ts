@@ -42,6 +42,8 @@ export {
   queryLibrary,
   rankRecords,
   libraryCounts,
+  expandAliases,
+  type AliasMap,
   type RankedRecord,
   type LibraryRecord,
   type LibrarySource,
