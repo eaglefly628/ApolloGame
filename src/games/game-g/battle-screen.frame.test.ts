@@ -2,7 +2,7 @@ import { describe, it, expect } from 'vitest';
 import { prepareArmies, FORMATION_PRESETS, bossFor } from './index.js';
 import { initLiveBattle, stepLiveBattle, liveActive, HOME_BLOOD, type DeployCmd } from './live-combat.js';
 import { renderBattleDoc, renderClashSvg, type ClashView, type BattleFx } from './battle-screen.js';
-import { armyToDeploys, buildBattleViewLive, freshSave } from './game-g.js';
+import { armyToDeploys, buildBattleViewLive, canDrawFrom, freshSave } from './game-g.js';
 
 // ═══════════════════════════════════════════════════════════════
 //  Game G 战斗屏视觉回归（无头）—— WIRE-MARCH：真 live-combat 逐拍 sim → buildBattleViewLive → battle-screen 真渲染器 → 自包含 HTML。
@@ -48,17 +48,22 @@ describe('Game G · 战斗屏视觉回归（真 live-combat → HTML golden · �
     await expect(html).toMatchFileSnapshot('./__frames__/battle-brocade.html');
   });
 
-  it('出牌坞帧（底部手牌 + 选牌派三路 + 读秒银行 · doc18 控盘层）匹配 golden', async () => {
+  it('出牌坞帧（CR 经济：点数圣水条 + 普通/天罡手牌 + 花点数摸牌选库 · 砍读秒暂停 · doc21）匹配 golden', async () => {
     const { live, deploys } = setup();
     while (live.tick < 40) stepLiveBattle(live, deploys);
-    const control = { // 样例控盘态：手牌 5 张(选中第2张)、抽牌堆 33、读秒银行 64/90s
-      hand: [{ id: 'h0', rank: 'K', suit: 's' as const, general: true }, { id: 'h1', rank: '9', suit: 'h' as const, general: false }, { id: 'h2', rank: 'Q', suit: 'd' as const, general: false }, { id: 'h3', rank: '4', suit: 'c' as const, general: false }, { id: 'h4', rank: '★', suit: 's' as const, general: true }],
-      selectedCard: 1, deckCount: 33, pauseBank: 64000, pauseMax: 90000, paused: false,
+    const control = { // 样例 CR 控盘态：普通手牌 4 张(选中第2张) + 天罡手牌 2 张 + 点数 6/10
+      hand: [{ id: 'h0', rank: 'K', suit: 's' as const, general: true }, { id: 'h1', rank: '9', suit: 'h' as const, general: false }, { id: 'h2', rank: 'Q', suit: 'd' as const, general: false }, { id: 'h3', rank: '4', suit: 'c' as const, general: false }],
+      selectedCard: 1, deckCount: 33,
+      tengang: [{ id: 'gambler', name: '赌徒' }, { id: 'warlord', name: '枭雄' }], selectedTengang: -1, tengangDeckCount: 3,
+      points: 6, pointsMax: 10, normalDrawCost: 1, tengangDrawCost: 2, canDrawNormal: true, canDrawTengang: true,
     };
     const html = renderBattleDoc(buildBattleViewLive(live, save(), bossFor(2).name, bossFor(2).persona, 'd', control));
     expect(html).toContain('手牌 · 出牌'); // 出牌坞标题
-    expect(html).toContain('抽牌堆 33'); // 抽牌堆余量
-    expect(html).toContain('⏸ 暂停思考 (空格)'); // 读秒暂停
+    expect(html).toContain('点数 · 圣水'); // CR 圣水条（局内经济核心）
+    expect(html).toContain('摸普通'); expect(html).toContain('摸天罡'); // 花点数摸牌(玩家选库)
+    expect(html).toContain('普通库 33 · 天罡库 3'); // 两库余量
+    expect(html).toContain('赌徒'); // 天罡手牌(法术)
+    expect(html).not.toContain('暂停思考'); // 砍读秒暂停（CR 纯实时）
     await expect(html).toMatchFileSnapshot('./__frames__/battle-dock.html');
   });
 
@@ -133,6 +138,14 @@ describe('Game G · 战斗屏视觉回归（真 live-combat → HTML golden · �
     const death = (t: number): string => renderBattleDoc(buildBattleViewLive(live, save(), 'X', 'p', 'd', undefined, null, [{ kind: 'death', lane: 1, side: 'b', pos01: 0.5, rank: '7', suit: 'h', general: false, t }]));
     expect(death(0.05)).toContain('opacity:0.950'); // 刚阵亡 → 最实
     expect(death(0.95)).toContain('opacity:0.050'); // 将散 → 淡出
+  });
+
+  it('CR 经济摸牌门槛（doc21 §二.5）：点数不够/到上限/库空 → 不可摸；满足 → 可摸', () => {
+    expect(canDrawFrom(2, 1, 3, 7, 30)).toBe(true);  // 点数够 + 未满 + 库有 → 可摸普通
+    expect(canDrawFrom(0, 1, 3, 7, 30)).toBe(false); // 点数不够 → 攒点数
+    expect(canDrawFrom(5, 2, 5, 5, 4)).toBe(false);  // 天罡到 cap5 → 打掉才补（play-to-draw）
+    expect(canDrawFrom(5, 1, 6, 7, 0)).toBe(false);  // 库空 → 没得摸
+    expect(canDrawFrom(2, 2, 0, 5, 3)).toBe(true);   // 点数刚够摸天罡(cost2)
   });
 
   it('确定性：同帧两次渲染逐字符一致（回归基线稳）', () => {

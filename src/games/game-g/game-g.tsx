@@ -1,7 +1,7 @@
-import { mountBattle, type BattleView, type BattleUnit, type BattleLane, type BattleLever, type HandCardView, type BattleActions, type ClashView, type BattleFx } from './battle-screen.js';
+import { mountBattle, type BattleView, type BattleUnit, type BattleLane, type BattleLever, type HandCardView, type TengangCardView, type BattleActions, type ClashView, type BattleFx } from './battle-screen.js';
 import { mountLobby, type LobbyView, type LobbyShopItem } from './lobby-screen.js';
 import { prepareArmies, armyFromFormation, laneEstimates, quartermasterEnergy, FORMATION_PRESETS, PRESET_NAMES, LEVER_CATALOG, LEVER_START, battleSpec, RUN_BATTLES, RUN_LIVES, BETWEEN_BUFFS, applyBuff, jokerKeyBuffs, BOSS_ROSTER, bossFor, GAME_G_JOKERS, JOKER_BY_ID, ARCHETYPES, detectArchetype, archetypeMatchup, activeArchetype, pickAiFormation, GAME_G_PLANETS, GAME_G_FOILS, effectiveLives, effectiveLeverCap, effectiveLeverRegen, type Formation, type Intervention, type LeverKind, type RunBuff, type ArmyCard } from './index.js';
-import { initLiveBattle, stepLiveBattle, liveActive, tideDrawPulse, LANE_LEN, HOME_BLOOD, type LiveBattle, type DeployCmd, type ClashEvent } from './live-combat.js';
+import { initLiveBattle, stepLiveBattle, liveActive, LANE_LEN, HOME_BLOOD, type LiveBattle, type DeployCmd, type ClashEvent } from './live-combat.js';
 import { cardPoints, P_MAX } from './clash-resolve.js';
 
 // Game G ·《翻命扑克》—— 大厅 ↔ 出征 闭环（launcher 卡带槽：export mount(container)→cleanup）。自包含于本目录。
@@ -28,13 +28,18 @@ const FOG_A_EDGE = 0.18;    // A 的 fogged 兵越过此线 → 显形（pos01 �
 const FOG_B_EDGE = 0.82;    // B 的 fogged 兵越过此线 → 显形（pos01 ≤）
 // 出牌控盘层（doc18 §10 · 布局阶段 base 打底 + 抽牌堆 + 手牌实时派三路 + 读秒暂停银行）。数值初版、待真机/仿真台磨。
 const BASE_PER_LANE = 3;        // 布局阶段每路预铺张数（共 9 打底，doc18 §10.2）
-const OPENING_HAND = 5;         // 起手摸牌
-const HAND_MAX = 6;             // 手牌上限（满则停抽、逼出牌 → 心流压力）
-const DRAW_PERIOD_TICKS = 18;   // 底流：每 N 拍涌一张进手（×0.3s≈5.4s，doc18 §10.3 乙底流）
-const AI_PERIOD_TICKS = 16;     // 敌方滴投：每 N 拍从其抽牌堆投一张（入该牌原路 → 随阵型分布）
-const PAUSE_BANK_MS = 90000;    // 读秒暂停银行（围棋读秒·doc18 §10.4 / §10.6）
-type BattleControl = { hand: HandCardView[]; selectedCard: number; deckCount: number; pauseBank: number; pauseMax: number; paused: boolean };
-const NO_CONTROL: BattleControl = { hand: [], selectedCard: -1, deckCount: 0, pauseBank: 0, pauseMax: 0, paused: false }; // 看帧/无控盘默认
+const AI_PERIOD_TICKS = 16;     // 敌方滴投：每 N 拍从其牌库投一张（入该牌原路 → 随阵型分布）
+// ── CR 局内经济（doc21 · owner 抄皇室战争）：点数(圣水)随真实时间回复 → 花点数摸牌(玩家选库) → 普通部署/天罡施法。砍读秒暂停。──
+const POINTS_MAX = 10;          // 点数池上限（CR 圣水 10）
+const POINTS_START = 5;         // 起手点数
+const POINTS_REGEN_MS = 1100;   // 每回 1 点的真实时长（owner 要快节奏；待真机/仿真台调）
+const NORMAL_DRAW_COST = 1;     // 摸普通库花点数（doc21 §二.5 ~1）
+const TENGANG_DRAW_COST = 2;    // 摸天罡库花点数（~2·更贵 = 故意限流 + 一次点数投资）
+const NORMAL_HAND_CAP = 7;      // 普通手牌可囤积上限（doc21 ~7）
+const TENGANG_CAP = 5;          // 天罡在手上限（打掉一张才能再摸 · play-to-draw）
+const OPENING_NORMAL = 4;       // 起手普通手牌（CR 起手 4）
+type BattleControl = { hand: HandCardView[]; selectedCard: number; deckCount: number; tengang: TengangCardView[]; selectedTengang: number; tengangDeckCount: number; points: number; pointsMax: number; normalDrawCost: number; tengangDrawCost: number; canDrawNormal: boolean; canDrawTengang: boolean };
+const NO_CONTROL: BattleControl = { hand: [], selectedCard: -1, deckCount: 0, tengang: [], selectedTengang: -1, tengangDeckCount: 0, points: 0, pointsMax: 0, normalDrawCost: 0, tengangDrawCost: 0, canDrawNormal: false, canDrawTengang: false }; // 看帧/无控盘默认
 
 interface Save {
   materials: number;
@@ -134,6 +139,10 @@ function snapLivePos(live: LiveBattle): Map<string, number> {
   for (const L of live.lanes) { for (const u of L.a) m.set(u.id, u.pos); for (const u of L.b) m.set(u.id, u.pos); }
   return m;
 }
+// CR 摸牌可行性（doc21 §二.5 · 纯函数·便于测）：点数够 & 该手牌未到上限 & 该库还有牌。普通/天罡两库共用此判。
+export function canDrawFrom(points: number, cost: number, handLen: number, cap: number, deckLen: number): boolean {
+  return points >= cost && handLen < cap && deckLen > 0;
+}
 
 // 从 live-combat 逐拍 sim + save 派生战场视图（喂 battle-screen 渲染设计稿）。纯读 sim 真相、不回灌。
 // owner「一格格慢慢走」：兵位 = 真 slot pos01（live pos/LANE_LEN）；最前两张相邻(接敌)才 revealed 翻开。
@@ -158,9 +167,11 @@ export function buildBattleViewLive(live: LiveBattle, save: Save, oppName: strin
   return {
     homeA: live.homeA, homeAMax: live.homeMax, homeB: live.homeB, homeBMax: live.homeMax,
     oppName, oppPersona, oppSuit, energy: save.leverEnergy, energyMax: effectiveLeverCap(save.planets), materials: save.materials,
-    phaseText: control.paused ? '暂停部署 · 读秒中' : '占领敌方老家 · 即胜', timeText: `${String(Math.floor(secs / 60)).padStart(2, '0')}:${String(secs % 60).padStart(2, '0')}`,
+    phaseText: '占领敌方老家 · 即胜', timeText: `${String(Math.floor(secs / 60)).padStart(2, '0')}:${String(secs % 60).padStart(2, '0')}`,
     levers, lanes, units,
-    hand: control.hand, selectedCard: control.selectedCard, deckCount: control.deckCount, pauseBank: control.pauseBank, pauseMax: control.pauseMax, paused: control.paused,
+    hand: control.hand, selectedCard: control.selectedCard, deckCount: control.deckCount,
+    tengang: control.tengang, selectedTengang: control.selectedTengang, tengangDeckCount: control.tengangDeckCount,
+    points: control.points, pointsMax: control.pointsMax, normalDrawCost: control.normalDrawCost, tengangDrawCost: control.tengangDrawCost, canDrawNormal: control.canDrawNormal, canDrawTengang: control.canDrawTengang,
     clash, fx,
   };
 }
@@ -439,17 +450,26 @@ export function mount(container: HTMLElement): () => void {
     const aSplit = splitBaseDeck(a), bSplit = splitBaseDeck(b);
     const aDeck = seededShuffle(aSplit.deck, live.rng.seed ^ 0x9e37);
     const bDeck = seededShuffle(bSplit.deck, live.rng.seed ^ 0x51ed); // 敌抽牌堆（滴投顺序确定）
-    const aHand: ArmyCard[] = aDeck.splice(0, OPENING_HAND); // 起手手牌
+    const aHand: ArmyCard[] = aDeck.splice(0, OPENING_NORMAL); // 起手普通手牌（CR 起手 4）
     const deploys: DeployCmd[] = [
       ...aSplit.base.map((c): DeployCmd => ({ tick: 1, side: 'a', lane: c.lane, unit: toUnit(c) })),
       ...bSplit.base.map((c): DeployCmd => ({ tick: 1, side: 'b', lane: c.lane, unit: toUnit(c) })),
     ];
-    // 出牌控盘运行时态（手牌/选中/读秒银行/暂停）。
-    let selectedCard = -1;
-    let pauseBank = PAUSE_BANK_MS;
-    let paused = false;
+    // CR 出牌控盘运行时态（doc21）：普通/天罡手牌 + 选中 + 点数池（圣水·浮点·真实时间回复）。
+    let selectedCard = -1, selectedTengang = -1;
+    let points = POINTS_START;
+    // 天罡库（法术·≤5·读 save.jokers 契约②）：cycle 队列 —— 摸牌从库顶取、施法回库底；cap5 打掉才补。
+    const tDeck: { id: string; name: string }[] = save.jokers.map((id) => ({ id, name: JOKER_BY_ID.get(id)?.name ?? id }));
+    const tHand: { id: string; name: string }[] = [];
     let aiNext = bDeck.length ? AI_PERIOD_TICKS : Infinity; // 敌下次滴投拍
-    const control = (): BattleControl => ({ hand: aHand.map((c): HandCardView => ({ id: c.id, rank: cardRank(c), suit: c.suit.toLowerCase() as 's' | 'h' | 'd' | 'c', general: c.general })), selectedCard, deckCount: aDeck.length, pauseBank, pauseMax: PAUSE_BANK_MS, paused });
+    const canDrawNormal = (): boolean => live.winner === 'pending' && canDrawFrom(points, NORMAL_DRAW_COST, aHand.length, NORMAL_HAND_CAP, aDeck.length);
+    const canDrawTengang = (): boolean => live.winner === 'pending' && canDrawFrom(points, TENGANG_DRAW_COST, tHand.length, TENGANG_CAP, tDeck.length);
+    const control = (): BattleControl => ({
+      hand: aHand.map((c): HandCardView => ({ id: c.id, rank: cardRank(c), suit: c.suit.toLowerCase() as 's' | 'h' | 'd' | 'c', general: c.general })),
+      selectedCard, deckCount: aDeck.length,
+      tengang: tHand.map((c): TengangCardView => ({ id: c.id, name: c.name })), selectedTengang, tengangDeckCount: tDeck.length,
+      points, pointsMax: POINTS_MAX, normalDrawCost: NORMAL_DRAW_COST, tengangDrawCost: TENGANG_DRAW_COST, canDrawNormal: canDrawNormal(), canDrawTengang: canDrawTengang(),
+    });
     let prevPos = snapLivePos(live); // 真拍间插值锚（渲染层据此平滑滑行）
     let frac = 1;
     // 对决特写表演队列（owner：每场对决拉到屏幕前·看为什么胜败）：每拍新生对决进队，逐个冻结战场演 PERF_MS。
@@ -466,14 +486,22 @@ export function mount(container: HTMLElement): () => void {
     let heldClash: ClashEvent | null = null; // 已定格渲染的特写：演出期间不每帧重画 → CSS 3D 翻转/掷点动画得以播完（不再每 33ms 重启卡在起手）
     const lc = (s: string): 's' | 'h' | 'd' | 'c' => s.toLowerCase() as 's' | 'h' | 'd' | 'c';
     const actions: BattleActions = {
-      selectCard: (i) => { selectedCard = i === selectedCard ? -1 : i; }, // 再点取消
-      playLane: (lane) => { // 选中手牌派往该路：下一拍从老家出发（实时投放；暂停时也可从容部署）
-        if (selectedCard < 0 || selectedCard >= aHand.length || live.winner !== 'pending') return;
-        const c = aHand.splice(selectedCard, 1)[0];
-        deploys.push({ tick: live.tick + 1, side: 'a', lane, unit: toUnit(c) });
-        selectedCard = -1;
+      selectCard: (i) => { selectedCard = i === selectedCard ? -1 : i; selectedTengang = -1; }, // 二选一：选普通清天罡
+      selectTengang: (i) => { selectedTengang = i === selectedTengang ? -1 : i; selectedCard = -1; },
+      playLane: (lane) => { // 普通=部署慢行军 / 天罡=施法（按当前选中）；下一拍从老家出发（实时投放，CR 落点自选·非牌原路）
+        if (live.winner !== 'pending') return;
+        if (selectedCard >= 0 && selectedCard < aHand.length) {
+          const c = aHand.splice(selectedCard, 1)[0];
+          deploys.push({ tick: live.tick + 1, side: 'a', lane, unit: toUnit(c) });
+          selectedCard = -1;
+        } else if (selectedTengang >= 0 && selectedTengang < tHand.length) { // 施天罡法术：消耗 + 回库底(cycle·解锁再摸)；效果数值 = A-JOKER 后续
+          const c = tHand.splice(selectedTengang, 1)[0];
+          tDeck.push(c);
+          selectedTengang = -1;
+        }
       },
-      togglePause: () => { if (pauseBank > 0 || paused) paused = !paused; },
+      drawNormal: () => { if (canDrawNormal()) { points -= NORMAL_DRAW_COST; aHand.push(aDeck.shift()!); } }, // 花点数摸普通库
+      drawTengang: () => { if (canDrawTengang()) { points -= TENGANG_DRAW_COST; tHand.push(tDeck.shift()!); } }, // 花点数摸天罡库（cap5·打掉才补）
     };
     battle = mountBattle(stage, () => {
       const now = performance.now();
@@ -526,8 +554,8 @@ export function mount(container: HTMLElement): () => void {
       back.textContent = `→ ${cont}`;
       back.onclick = route;
     };
-    // rAF 实时驱动：每 LIVE_STEP_MS 走一拍（一格格爬）+ 底流涌牌 + 敌滴投；暂停时耗读秒银行、sim 冻结、可从容出牌；
-    // 渲染 ~30fps 按 frac 平滑；落定即结算、停步。
+    // rAF 实时驱动（CR 纯实时·无暂停·doc21）：点数(圣水)随真实时间回复；每 LIVE_STEP_MS 走一拍（一格格爬）+ 敌滴投；
+    // 渲染 ~30fps 按 frac 平滑；演对决特写时世界静止（点数/sim 皆冻）；落定即结算、停步。
     const loop = (ts: number): void => {
       if (last === 0) last = ts;
       const dt = ts - last; last = ts;
@@ -539,18 +567,17 @@ export function mount(container: HTMLElement): () => void {
         perfClash = null;
       }
       if (!perfClash && perfQueue.length) { perfClash = perfQueue.shift()!; perfUntil = ts + PERF_MS; acc = 0; }
-      if (!perfClash) { // 无特写在演 → 正常推进/暂停
-        if (paused) { pauseBank -= dt; if (pauseBank <= 0) { pauseBank = 0; paused = false; } } // 读秒银行耗尽 → 强制继续
-        else if (!settled && live.winner === 'pending') {
+      if (!perfClash) { // 无特写在演 → 点数回复 + 推进（CR 纯实时·无暂停）
+        if (!settled && live.winner === 'pending') {
+          points = Math.min(POINTS_MAX, points + dt / POINTS_REGEN_MS); // 圣水随真实时间回复（演特写=世界静止时不回）
           acc += dt;
           if (acc > LIVE_STEP_MS * 3) acc = LIVE_STEP_MS; // 切后台回来防暴冲
           if (acc >= LIVE_STEP_MS) {
             prevPos = snapLivePos(live);
             const frontA = live.lanes.map((L) => L.a[0]?.id), frontB = live.lanes.map((L) => L.b[0]?.id); // 步进前各路前锋（阵亡处定位用）
-            const beforeHA = live.homeA, beforeHB = live.homeB;
             stepLiveBattle(live, deploys);
             acc -= LIVE_STEP_MS;
-            const newClashes = live.clashLog.slice(drained); drained = live.clashLog.length; // 本拍新生对决（特写 + 战潮抽牌同源）
+            const newClashes = live.clashLog.slice(drained); drained = live.clashLog.length; // 本拍新生对决（驱动特写 + 斩残影）
             for (const ev of newClashes) { // → 进特写队列 + 记下败者阵亡 pos01（步进前前锋位，特写演完落到板上斩残影）
               perfQueue.push(ev);
               const loserId = ev.aWins ? frontB[ev.lane] : frontA[ev.lane];
@@ -563,10 +590,7 @@ export function mount(container: HTMLElement): () => void {
             }
             lastUnitIds = new Set<string>();
             for (const li of [0, 1, 2]) { for (const u of live.lanes[li].a) lastUnitIds.add(u.id); for (const u of live.lanes[li].b) lastUnitIds.add(u.id); }
-            // A1 战潮抽牌：底流(每 DRAW_PERIOD_TICKS +1) + 事件脉冲(遭遇/斩将/告急/破阵)，「啪嗒」涌牌；手牌满则自然停抽=节流。
-            let pulse = tideDrawPulse(newClashes, beforeHA - live.homeA, beforeHB - live.homeB);
-            if (live.tick % DRAW_PERIOD_TICKS === 0) pulse += 1; // 底流保底
-            for (let d = 0; d < pulse && aHand.length < HAND_MAX && aDeck.length; d++) aHand.push(aDeck.shift()!);
+            // 抽牌改 CR（doc21 §四 · A1 superseded）：玩家花点数主动摸牌（drawNormal/drawTengang），不再底流/事件被动涌牌。
             if (live.tick >= aiNext && bDeck.length) { const c = bDeck.shift()!; deploys.push({ tick: live.tick + 1, side: 'b', lane: c.lane, unit: toUnit(c) }); aiNext = live.tick + AI_PERIOD_TICKS; } // 敌滴投入该牌原路（随阵型）
             if (live.winner === 'pending' && !liveActive(live)) live.winner = live.homeB < live.homeA ? 'a' : live.homeA < live.homeB ? 'b' : 'draw'; // 两军互清无突破 → 比残血定（同 runLiveBattle 收尾）
           }

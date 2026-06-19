@@ -12,6 +12,8 @@
 export interface BattleUnit { id: string; lane: number; side: 'a' | 'b'; pos01: number; revealed: boolean; faceUp: boolean; rank: string; suit: 's' | 'h' | 'd' | 'c'; general: boolean; fogged: boolean }
 // 手牌（底部坞展示·点选派往三路）：rank/suit/将；id 供出牌回调定位。
 export interface HandCardView { id: string; rank: string; suit: 's' | 'h' | 'd' | 'c'; general: boolean }
+// 天罡（法术）手牌：名 + id（cost 是摸牌时花的点数·固定·见 BattleView.tengangDrawCost，故牌上不带 cost）。
+export interface TengangCardView { id: string; name: string }
 export interface BattleLane { name: string; mine: number; enemy: number; lead: 'a' | 'b' | 'n'; state: string; mineText: string; enemyText: string }
 export interface BattleLever { key: string; glyph: string; name: string; cost: number; desc: string; on?: boolean }
 // 对决特写（owner：拉到屏幕前·战斗表演）：两张牌放大 + 点数/加成/战力计算 + 胜率区间条 + 掷点落区间 → 生/死翻转。
@@ -27,9 +29,11 @@ export interface BattleView {
   energy: number; energyMax: number; materials: number;
   phaseText: string; timeText: string;
   levers: BattleLever[]; lanes: BattleLane[]; units: BattleUnit[];
-  // 出牌控盘层（doc18 §10 · 实时流+暂停银行+手牌派三路）：
-  hand: HandCardView[]; selectedCard: number; deckCount: number; // 手牌 / 选中索引(-1 无) / 抽牌堆余量
-  pauseBank: number; pauseMax: number; paused: boolean; // 暂停银行(ms·围棋读秒) / 上限 / 当前是否暂停
+  // CR 局内经济层（doc21 · 抄皇室战争）：点数(圣水)随真实时间回复 → 花点数摸牌(玩家选库) → 普通部署三路 / 天罡施法。砍读秒暂停。
+  hand: HandCardView[]; selectedCard: number; deckCount: number; // 普通手牌(可囤积) / 选中(-1 无) / 普通库余量
+  tengang: TengangCardView[]; selectedTengang: number; tengangDeckCount: number; // 天罡手牌(法术·cap5) / 选中(-1 无) / 天罡库可摸余量
+  points: number; pointsMax: number; // 点数池(圣水·回复) / 上限
+  normalDrawCost: number; tengangDrawCost: number; canDrawNormal: boolean; canDrawTengang: boolean; // 摸牌花点数 + 是否可摸(点数够 & 未到上限 & 库有)
   clash?: ClashView | null; // 非空 → 叠加对决特写表演（冻结战场、放大两牌、读数、掷点定生死）
   fx?: BattleFx[]; // 板上瞬时特效（斩残影 / 出牌啪嗒）—— 缺省无；纯表现 juice
 }
@@ -204,22 +208,33 @@ function buildHTML(view: BattleView, s: CamState): string {
     return `<div data-act="lever" data-k="${l.key}" style="${st(rowS)}"><div style="${st(iconS)}">${l.glyph}</div><div style="flex:1; min-width:0;"><div style="display:flex; justify-content:space-between; align-items:baseline;"><span style="font-family:var(--font-heading); font-weight:700; font-size:15px; color:var(--ink);">${esc(l.name)}</span><span style="font-family:var(--font-num); font-size:12px; color:var(--accent);">⚡${l.cost}</span></div><div style="font-size:11px; color:var(--ink-dim); margin-top:3px; line-height:1.35;">${esc(l.desc)}</div></div></div>`;
   });
   const energyPips = [0, 1, 2, 3, 4].map((i) => `<div style="${st({ flex: 1, height: '8px', borderRadius: '99px', background: i < view.energy ? 'var(--accent-grad)' : 'var(--track)', boxShadow: i < view.energy ? '0 0 6px var(--accent-soft)' : 'none' })}"></div>`).join('');
-  // 出牌坞·派牌目标（选中手牌后点上/中/下 → 派往该路出发）。selectedCard≥0 时高亮可投。
-  const hasSel = view.selectedCard >= 0 && view.selectedCard < view.hand.length;
+  // CR 出牌坞：选普通牌(部署) 或 天罡牌(施法) → 点上/中/下生效。selectedCard / selectedTengang 二选一。
+  const castMode = view.selectedTengang >= 0 && view.selectedTengang < view.tengang.length; // 选中天罡 → lane 按钮 = 施法
+  const hasSel = (view.selectedCard >= 0 && view.selectedCard < view.hand.length) || castMode;
   const laneBtnDefs: [string, number, string][] = [['top', 0, '上路'], ['mid', 1, '中路'], ['bot', 2, '下路']];
   const laneBtnsHTML = forr(laneBtnDefs, ([key, i, label]) => {
     const ln = view.lanes[i];
     const style = { flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '2px', padding: '9px 6px', borderRadius: '11px', cursor: hasSel ? 'pointer' : 'not-allowed', border: '1px solid ' + (hasSel ? 'var(--accent)' : 'var(--btn-edge)'), background: hasSel ? 'var(--accent-grad)' : 'var(--btn-bg)', color: hasSel ? '#fff' : 'var(--btn-text)', fontFamily: 'var(--font-heading)', fontWeight: 700, fontSize: '15px', transition: 'all .15s ease', opacity: hasSel ? '1' : '.6', boxShadow: hasSel ? '0 0 14px var(--accent-soft)' : 'none' };
-    return `<button data-act="play" data-k="${key}" style="${st(style)}">${label}<span style="font-family:var(--font-num); font-size:9px; opacity:.8; color:${hasSel ? '#fff' : 'var(--ink-dim)'};">${esc(ln ? ln.state : '')}</span></button>`;
+    return `<button data-act="play" data-k="${key}" style="${st(style)}">${label}<span style="font-family:var(--font-num); font-size:9px; opacity:.8; color:${hasSel ? '#fff' : 'var(--ink-dim)'};">${castMode ? '施法' : esc(ln ? ln.state : '')}</span></button>`;
   });
-  // 手牌：底部坞点选 → 高亮（抬起）→ 点上/中/下派出。将领带♔。
+  // 普通手牌：点选 → 高亮(抬起) → 点上/中/下部署慢行军。将领带♔。
   const handHTML = view.hand.length ? forr(view.hand, (c, i) => {
     const sel = i === view.selectedCard; const sc = SUITC[c.suit];
-    const cardS = { position: 'relative', width: '60px', height: '84px', flex: 'none', borderRadius: '9px', cursor: 'pointer', background: 'linear-gradient(160deg,#fbf7ef,#e9dcc6)', border: (c.general ? 3 : 2) + 'px solid ' + (sel ? 'var(--accent)' : sc), boxShadow: sel ? '0 0 0 2px var(--accent), 0 10px 20px rgba(0,0,0,.55)' : '0 4px 10px rgba(0,0,0,.45)', transform: sel ? 'translateY(-10px)' : 'none', transition: 'all .12s ease', display: 'flex', alignItems: 'center', justifyContent: 'center' };
+    const cardS = { position: 'relative', width: '58px', height: '82px', flex: 'none', borderRadius: '9px', cursor: 'pointer', background: 'linear-gradient(160deg,#fbf7ef,#e9dcc6)', border: (c.general ? 3 : 2) + 'px solid ' + (sel ? 'var(--accent)' : sc), boxShadow: sel ? '0 0 0 2px var(--accent), 0 10px 20px rgba(0,0,0,.55)' : '0 4px 10px rgba(0,0,0,.45)', transform: sel ? 'translateY(-10px)' : 'none', transition: 'all .12s ease', display: 'flex', alignItems: 'center', justifyContent: 'center' };
     return `<div data-act="hand" data-i="${i}" style="${st(cardS)}"><div style="position:absolute; top:3px; left:6px; font-family:var(--font-heading); font-weight:700; font-size:16px; color:${sc};">${esc(c.rank)}</div><span style="font-size:32px; color:${sc};">${SUITG[c.suit]}</span>${c.general ? '<span style="position:absolute; top:-15px; left:50%; transform:translateX(-50%); font-size:20px; color:var(--gold);">♔</span>' : ''}</div>`;
-  }) : `<span style="color:var(--ink-dim); font-size:13px; padding:0 8px;">（手牌空 · 等抽牌堆涌牌）</span>`;
-  const bankPct = Math.max(0, Math.min(100, Math.round((view.pauseBank / Math.max(1, view.pauseMax)) * 100)));
-  const pauseBtnS = { width: '100%', padding: '10px 0', borderRadius: '11px', cursor: 'pointer', border: '1px solid ' + (view.paused ? 'var(--accent)' : 'var(--btn-edge)'), background: view.paused ? 'var(--accent-grad)' : 'var(--btn-bg)', color: view.paused ? '#fff' : 'var(--btn-text)', fontFamily: 'var(--font-heading)', fontWeight: 700, fontSize: '15px' };
+  }) : `<span style="color:var(--ink-dim); font-size:13px; padding:0 8px;">（普通手牌空 · 花点数摸牌）</span>`;
+  // 天罡（法术）手牌：紫皮 · 显名 · 点选 → 点上/中/下施法。
+  const tengangHTML = forr(view.tengang, (c, i) => {
+    const sel = i === view.selectedTengang;
+    const cardS = { position: 'relative', width: '58px', height: '82px', flex: 'none', borderRadius: '9px', cursor: 'pointer', background: 'linear-gradient(160deg,#3b2a5e,#241640)', border: '2px solid ' + (sel ? 'var(--gold)' : '#7c5cc4'), boxShadow: sel ? '0 0 0 2px var(--gold), 0 10px 20px rgba(0,0,0,.55)' : '0 6px 14px rgba(80,50,160,.5)', transform: sel ? 'translateY(-10px)' : 'none', transition: 'all .12s ease', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: '3px', padding: '4px', textAlign: 'center' };
+    return `<div data-act="tengang" data-i="${i}" style="${st(cardS)}"><span style="font-size:20px; color:#c9b6ff;">✦</span><span style="font-family:var(--font-body); font-weight:700; font-size:10px; line-height:1.1; color:#e7deff;">${esc(c.name)}</span></div>`;
+  });
+  // 点数(圣水)条 + 摸牌按钮（花点数·玩家选库；CR 经济核心·可见）。
+  const elixirPct = Math.max(0, Math.min(100, Math.round((view.points / Math.max(1, view.pointsMax)) * 100)));
+  const drawBtn = (act: string, label: string, cost: number, can: boolean): string => {
+    const s = { flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '5px', padding: '9px 6px', borderRadius: '11px', cursor: can ? 'pointer' : 'not-allowed', border: '1px solid ' + (can ? '#a855f7' : 'var(--btn-edge)'), background: can ? 'linear-gradient(180deg,#b06bf5,#8b3fd9)' : 'var(--btn-bg)', color: can ? '#fff' : 'var(--ink-dim)', fontFamily: 'var(--font-heading)', fontWeight: 700, fontSize: '13px', opacity: can ? '1' : '.55', transition: 'all .15s ease' };
+    return `<button data-act="${act}" style="${st(s)}">${label}<span style="font-family:var(--font-num); font-size:11px;">◈${cost}</span></button>`;
+  };
 
   // 对决特写表演（owner：拉到屏幕前·看为什么胜败）：冻结战场 → 放大两牌 + 点数/加成/战力 → 胜率区间条 + 掷点落区间 → 生者翻正/死者斩。
   const cv = view.clash;
@@ -289,16 +304,16 @@ function buildHTML(view: BattleView, s: CamState): string {
         <div style="${st(panel)}"><div style="${st(panelHead)}">台面机关</div><div style="display:flex; align-items:center; gap:11px; padding:9px 11px; border-radius:9px; background:var(--chip-bg); border:1px solid var(--panel-border);"><span style="font-size:18px;">🌪</span><div><div style="font-family:var(--font-heading); font-weight:700; font-size:13px; color:var(--ink);">河道·低重力</div><div style="font-size:11px; color:var(--ink-dim);">过河掷命滞空更久</div></div></div></div>
       </div>
       <div style="position:absolute; left:0; right:0; bottom:0; height:160px; background:var(--dock-bg); border-top:1px solid var(--panel-border); padding:18px 30px; z-index:7; display:flex; align-items:stretch; gap:16px;">
-        <div style="display:flex; align-items:center; gap:10px;"><div style="display:flex; align-items:center; gap:9px; padding:0 16px; height:100%; border-radius:14px; background:var(--gold-chip); border:1px solid var(--gold);"><span style="font-size:22px;">◈</span><span style="font-family:var(--font-num); font-size:28px; color:var(--gold);">${view.materials}</span></div><div style="display:flex; flex-direction:column; justify-content:center; gap:7px; padding:0 16px; height:100%; border-radius:14px; background:var(--chip-bg); border:1px solid var(--panel-border); min-width:150px;"><div style="display:flex; justify-content:space-between; align-items:baseline;"><span style="font-family:var(--font-heading); font-weight:700; font-size:14px; color:var(--ink);">干预能量</span><span style="font-family:var(--font-num); font-size:11px; color:var(--accent);">${view.energy}/${view.energyMax}</span></div><div style="display:flex; gap:5px;">${energyPips}</div></div></div>
-        <div style="flex:1; display:flex; flex-direction:column; gap:7px; justify-content:center; padding:8px 18px; border-radius:16px; background:var(--accent-soft); border:1px solid var(--accent); box-shadow:inset 0 0 0 1px var(--hairline);"><div style="display:flex; align-items:center; gap:10px;"><span style="font-family:var(--font-heading); font-weight:700; font-size:17px; color:var(--accent); letter-spacing:.03em;">手牌 · 出牌</span><span style="font-size:12px; color:var(--ink-dim);">点选一张 → 派往上/中/下，从老家出发慢慢推进</span><span style="flex:1;"></span><span style="font-family:var(--font-num); font-size:11px; color:var(--ink-dim);">抽牌堆 ${view.deckCount}</span></div><div style="display:flex; gap:8px; align-items:flex-end; min-height:86px;">${handHTML}</div></div>
-        <div style="width:228px; flex:none; display:flex; flex-direction:column; gap:8px; justify-content:center;"><div style="display:flex; gap:8px;">${laneBtnsHTML}</div><button data-act="pause" style="${st(pauseBtnS)}">${view.paused ? '▶ 继续 (空格)' : '⏸ 暂停思考 (空格)'}</button><div style="display:flex; align-items:center; gap:7px;"><span style="font-size:10px; letter-spacing:.12em; color:var(--ink-dim); white-space:nowrap;">读秒银行</span><div style="flex:1; height:8px; border-radius:99px; background:var(--track); overflow:hidden; border:1px solid var(--panel-border);"><div style="width:${bankPct}%; height:100%; background:${bankPct < 25 ? 'var(--danger)' : 'var(--accent-grad)'};"></div></div><span style="font-family:var(--font-num); font-size:11px; color:var(--ink);">${Math.ceil(view.pauseBank / 1000)}s</span></div></div>
+        <div style="display:flex; align-items:center; gap:10px;"><div style="display:flex; align-items:center; gap:9px; padding:0 14px; height:100%; border-radius:14px; background:var(--gold-chip); border:1px solid var(--gold);"><span style="font-size:20px;">◈</span><span style="font-family:var(--font-num); font-size:24px; color:var(--gold);">${view.materials}</span></div><div style="display:flex; flex-direction:column; justify-content:center; gap:6px; padding:0 16px; height:100%; border-radius:14px; background:rgba(168,85,247,.12); border:1px solid #a855f7; min-width:172px;"><div style="display:flex; justify-content:space-between; align-items:baseline;"><span style="font-family:var(--font-heading); font-weight:700; font-size:14px; color:#c9a6ff;">点数 · 圣水</span><span style="font-family:var(--font-num); font-size:13px; color:#c9a6ff;">${Math.floor(view.points)}/${view.pointsMax}</span></div><div style="height:12px; border-radius:99px; background:var(--track); overflow:hidden; border:1px solid rgba(168,85,247,.5);"><div style="width:${elixirPct}%; height:100%; background:linear-gradient(90deg,#8b3fd9,#c77dff); box-shadow:0 0 8px rgba(168,85,247,.6);"></div></div></div><div style="display:flex; flex-direction:column; justify-content:center; gap:6px; padding:0 14px; height:100%; border-radius:14px; background:var(--chip-bg); border:1px solid var(--panel-border); min-width:128px;"><div style="display:flex; justify-content:space-between; align-items:baseline;"><span style="font-family:var(--font-heading); font-weight:700; font-size:13px; color:var(--ink);">干预能量</span><span style="font-family:var(--font-num); font-size:11px; color:var(--accent);">${view.energy}/${view.energyMax}</span></div><div style="display:flex; gap:5px;">${energyPips}</div></div></div>
+        <div style="flex:1; display:flex; flex-direction:column; gap:7px; justify-content:center; padding:8px 18px; border-radius:16px; background:var(--accent-soft); border:1px solid var(--accent); box-shadow:inset 0 0 0 1px var(--hairline);"><div style="display:flex; align-items:center; gap:10px;"><span style="font-family:var(--font-heading); font-weight:700; font-size:17px; color:var(--accent); letter-spacing:.03em;">手牌 · 出牌</span><span style="font-size:12px; color:var(--ink-dim);">点选一张 → 上/中/下（普通=部署慢行军 · 天罡=施法）；点数攒够花点数摸牌</span><span style="flex:1;"></span><span style="font-family:var(--font-num); font-size:11px; color:var(--ink-dim);">普通库 ${view.deckCount} · 天罡库 ${view.tengangDeckCount}</span></div><div style="display:flex; gap:8px; align-items:flex-end; min-height:86px;">${handHTML}${view.tengang.length ? `<div style="width:1px; align-self:stretch; margin:6px 4px; background:var(--hairline);"></div>${tengangHTML}` : ''}</div></div>
+        <div style="width:236px; flex:none; display:flex; flex-direction:column; gap:8px; justify-content:center;"><div style="display:flex; gap:8px;">${laneBtnsHTML}</div><div style="display:flex; gap:8px;">${drawBtn('draw-normal', '摸普通', view.normalDrawCost, view.canDrawNormal)}${drawBtn('draw-tengang', '摸天罡', view.tengangDrawCost, view.canDrawTengang)}</div><div style="font-size:10px; color:var(--ink-dim); text-align:center; letter-spacing:.03em;">花点数摸牌 · 选普通/天罡库（天罡 cap5 · 打掉才补）</div></div>
       </div>
       ${clashHTML}
     </div></div></div>`;
 }
 
-// 出牌控盘回调（game-g.tsx 提供）：选手牌 / 把选中牌派往某路(0/1/2) / 切换暂停。
-export interface BattleActions { selectCard: (i: number) => void; playLane: (lane: number) => void; togglePause: () => void }
+// CR 出牌控盘回调（game-g.tsx 提供）：选普通/天罡手牌 · 把选中牌派往某路(0/1/2 · 普通部署/天罡施法) · 花点数摸普通/天罡库。
+export interface BattleActions { selectCard: (i: number) => void; selectTengang: (i: number) => void; playLane: (lane: number) => void; drawNormal: () => void; drawTengang: () => void }
 
 // 挂载：把设计稿渲进 host，wire 相机/门/聚焦 + 出牌/暂停交互；update() 每帧从 getView() 拉真数据重渲。
 export function mountBattle(host: HTMLElement, getView: () => BattleView, actions?: BattleActions): { update: () => void; destroy: () => void } {
@@ -312,17 +327,17 @@ export function mountBattle(host: HTMLElement, getView: () => BattleView, action
     const act = el.dataset.act, k = el.dataset.k ?? '';
     if (act === 'lever') { state.lever = k; render(); }
     else if (act === 'hand') { actions?.selectCard(parseInt(el.dataset.i ?? '-1', 10)); render(); }
+    else if (act === 'tengang') { actions?.selectTengang(parseInt(el.dataset.i ?? '-1', 10)); render(); }
     else if (act === 'play') { actions?.playLane(LANE_IDX[k] ?? 0); render(); }
-    else if (act === 'pause') { actions?.togglePause(); render(); }
+    else if (act === 'draw-normal') { actions?.drawNormal(); render(); }
+    else if (act === 'draw-tengang') { actions?.drawTengang(); render(); }
     else if (act === 'gate') { state.gates[k] = !state.gates[k]; render(); }
   };
-  const onKey = (e: KeyboardEvent): void => { if (e.code === 'Space') { e.preventDefault(); actions?.togglePause(); render(); } };
   host.addEventListener('click', onClick);
-  if (actions) window.addEventListener('keydown', onKey);
   render();
   return {
     update: render,
-    destroy: () => { window.removeEventListener('keydown', onKey); host.replaceChildren(); },
+    destroy: () => { host.replaceChildren(); },
   };
 }
 
