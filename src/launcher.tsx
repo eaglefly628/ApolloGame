@@ -114,8 +114,8 @@ const GAMES: GameEntry[] = [
   {
     id: 'game-g',
     title: 'Game G: Fateflip Poker',
-    subtitle: '翻命扑克 · 3D 掷命骨架',
-    description: '拟人扑克的空中掷命对决（3D 表现骨架）：outcome-first——胜负先定，物理翻牌是反推的表现（tween 把牌翻到既定面，正面金=活/反面石板=死）。Three.js 渲染后端骨架，验证 3D 表现层接入；翻牌不决定胜负→跨端浮点不影响 gameplay。',
+    subtitle: '翻命扑克 · 实时三路掷命',
+    description: '拟人扑克的实时三路行军博弈：布局阶段铺底牌 → 手牌实时派上/中/下、读秒暂停 → 兵一格格慢慢爬、过门线显形 → 最前两张相邻「命运一掷」（点数+经营+士气=战力 → 胜率区间 → 掷点定生死，可读）→ 突破敌 3 血大本营先破者胜。outcome-first：胜负规则定、可回放；大厅忠实港绿呢牌桌双皮。',
     color: '#10212a',
     accentColor: '#22d3ee',
     icon: '🎴',
