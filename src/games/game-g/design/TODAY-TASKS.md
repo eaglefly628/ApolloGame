@@ -65,7 +65,8 @@
 > owner：天机牌逐期加厚，先建**一期 20 张**（每张带牌力）。库地基(`ownedJokers`/`jokers ≤5`)乙已落(B3)。现填这 20 张的**效果 + 改造坊上架 + 预览**。**完成 = 养成层能玩。**
 
 **🅰 甲 · A-JOKER 天机牌一期效果（战斗侧 · 库里常驻被动 apply）**
-- 实现 doc20 §三 20 张的战斗效果：按 10 个 kind 各写**一个解释器**（`odds/power/combo/morale/tempo/stamina/draw/lane/siege/arcane`），库里天机牌（`save.jokers` ≤5）开局**常驻被动**生效 → apply 进 `prepareArmies`/`clash-resolve`/`live-combat`（读 `save.jokers`，复用现成 buff 源）。
+- ⭐ **天机能量经济 + draft（doc20 §〇基础 · owner 共设计 · 触发模型已变）**：开局**三选一**激活 1 张（非 5 张全开局被动）；战斗中"打击"(对决胜/翻正/破阵)产**天机能量** → 攒够**选择**：抽/激活一张天机牌 or 别的操作(重摇/改命)。新建天机能量资源 + 选择 UI（你的战斗地盘·零引擎）。**初值待 owner 推敲定**（doc20 §〇开放：起手方式/能量来源/操作清单）。
+- **10 kind 解释器**：每 kind 一个解释器（`odds/power/combo/morale/tempo/stamina/draw/lane/siege/arcane`），**激活后的**天机牌 apply 进 `prepareArmies`/`clash-resolve`/`live-combat`（读已激活集，复用现成 buff 源）。20 张 = kind × 参数。
 - **20 张 = kind × 参数**（doc20 表的数据形）。**牌力对齐**：每张配测断言其 ΔWR 量级与 §三 P̂ 大致符。
 - odds/tempo 等需 `live-combat` 暴露挂点（你的地盘）；零引擎。含 owner 两例：**巧手**(odds +1)、**背水**(odds reroll afterLoss)。
 
