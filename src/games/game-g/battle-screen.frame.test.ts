@@ -1,7 +1,7 @@
 import { describe, it, expect } from 'vitest';
 import { prepareArmies, FORMATION_PRESETS, bossFor } from './index.js';
 import { initLiveBattle, stepLiveBattle, liveActive, HOME_BLOOD, type DeployCmd } from './live-combat.js';
-import { renderBattleDoc, renderClashSvg, type ClashView } from './battle-screen.js';
+import { renderBattleDoc, renderClashSvg, type ClashView, type BattleFx } from './battle-screen.js';
 import { armyToDeploys, buildBattleViewLive, freshSave } from './game-g.js';
 
 // ═══════════════════════════════════════════════════════════════
@@ -114,6 +114,25 @@ describe('Game G · 战斗屏视觉回归（真 live-combat → HTML golden · �
     expect(rev('fog')).toBe(false); // fogged 面朝下
     while ((live.lanes[0].a[0]?.pos ?? 99) < 18 && live.tick < 200) stepLiveBattle(live, dep); // 推到越过 0.18 短线
     expect(rev('fog')).toBe(true); // 过短线 → 显形（迷雾时间短）
+  });
+
+  it('板上瞬时特效（A6 斩残影 + A2 出牌啪嗒 · fx 层按 t 淡出放大）匹配 golden + 看得见淡出', async () => {
+    const { live, deploys } = setup();
+    while (live.tick < 30) stepLiveBattle(live, deploys);
+    const fx: BattleFx[] = [
+      { kind: 'death', lane: 0, side: 'b', pos01: 0.56, rank: '7', suit: 'h', general: false, t: 0.35 }, // 敌7 阵亡残影（半程淡出）
+      { kind: 'death', lane: 1, side: 'a', pos01: 0.5, rank: 'K', suit: 's', general: true, t: 0.1 },     // 我方主将 K 刚斩
+      { kind: 'deploy', lane: 2, side: 'a', pos01: 0.08, suit: 's', general: true, t: 0.45 },             // 出牌啪嗒（己·上场）
+      { kind: 'deploy', lane: 1, side: 'b', pos01: 0.92, suit: 'd', general: false, t: 0.2 },             // 敌滴投啪嗒
+    ];
+    const html = renderBattleDoc(buildBattleViewLive(live, save(), bossFor(2).name, bossFor(2).persona, 'd', undefined, null, fx));
+    expect(html).toContain('斩'); // 死亡闪帧（板上斩残影·非凭空消失）
+    expect(html).toContain('0 0 24px #ff5d2e'); // 出牌啪嗒环（己方橙·入场反馈）
+    await expect(html).toMatchFileSnapshot('./__frames__/battle-fx.html');
+    // 「看得见的淡出」：刚阵亡(t≈0)斩残影最实、将散(t≈1)趋透明 —— 同一特效随 t 单调淡出（juice 是真动的，非静态贴图）。
+    const death = (t: number): string => renderBattleDoc(buildBattleViewLive(live, save(), 'X', 'p', 'd', undefined, null, [{ kind: 'death', lane: 1, side: 'b', pos01: 0.5, rank: '7', suit: 'h', general: false, t }]));
+    expect(death(0.05)).toContain('opacity:0.950'); // 刚阵亡 → 最实
+    expect(death(0.95)).toContain('opacity:0.050'); // 将散 → 淡出
   });
 
   it('确定性：同帧两次渲染逐字符一致（回归基线稳）', () => {

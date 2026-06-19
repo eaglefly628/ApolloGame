@@ -17,6 +17,10 @@ export interface BattleLever { key: string; glyph: string; name: string; cost: n
 // 对决特写（owner：拉到屏幕前·战斗表演）：两张牌放大 + 点数/加成/战力计算 + 胜率区间条 + 掷点落区间 → 生/死翻转。
 export interface ClashCardView { rank: string; suit: 's' | 'h' | 'd' | 'c'; general: boolean; points: number; buff: number; morale: number; pEff: number }
 export interface ClashView { lane: number; winrate: number; roll: number; aWins: boolean; a: ClashCardView; b: ClashCardView }
+// 板上瞬时特效（A6 死亡闪帧 / A2 出牌啪嗒 —— 纯表现 juice）：t∈[0,1] 由驱动层按真实时间算好的淡出进度，渲染器只如实画当下那一帧
+//   （故每帧重画 innerHTML 也连续，不靠会被重渲打断的 CSS 关键帧）。kind=death → 斩残影(石板+斩，外扩红环淡出·延续 overlay→棋盘)；
+//   kind=deploy → 入场啪嗒(己橙/敌蓝环放大淡出)。位置同兵 = laneAt(lane, pos01)。不进 hash、不改判定（同 ThreeRenderer 固定解释器）。
+export interface BattleFx { kind: 'death' | 'deploy'; lane: number; side: 'a' | 'b'; pos01: number; rank?: string; suit?: 's' | 'h' | 'd' | 'c'; general?: boolean; t: number }
 export interface BattleView {
   homeA: number; homeAMax: number; homeB: number; homeBMax: number;
   oppName: string; oppPersona: string; oppSuit: 's' | 'h' | 'd' | 'c';
@@ -27,6 +31,7 @@ export interface BattleView {
   hand: HandCardView[]; selectedCard: number; deckCount: number; // 手牌 / 选中索引(-1 无) / 抽牌堆余量
   pauseBank: number; pauseMax: number; paused: boolean; // 暂停银行(ms·围棋读秒) / 上限 / 当前是否暂停
   clash?: ClashView | null; // 非空 → 叠加对决特写表演（冻结战场、放大两牌、读数、掷点定生死）
+  fx?: BattleFx[]; // 板上瞬时特效（斩残影 / 出牌啪嗒）—— 缺省无；纯表现 juice
 }
 
 type Theme = Record<string, string>;
@@ -150,6 +155,23 @@ function buildHTML(view: BattleView, s: CamState): string {
     return `<div style="${st(Object.assign({}, base, { background: '#9c3324', border: '4px solid var(--danger)', opacity: '.9', boxShadow: '0 8px 18px rgba(0,0,0,.5)' }))}"><div style="position:absolute; inset:9px; border-radius:6px; border:2px solid rgba(255,255,255,.35); background:repeating-linear-gradient(45deg, rgba(255,255,255,.14) 0 8px, transparent 8px 16px);"></div>${u.general ? '<span style="position:absolute; font-family:var(--font-heading); font-weight:800; font-size:34px; color:#fff;">斩</span>' : ''}</div>`;
   });
 
+  // 板上瞬时特效层（A6 斩残影 / A2 出牌啪嗒）：位置同兵 laneAt(pos01)，opacity/scale 全由 t 算 → 每帧重画也连续（不靠 CSS 关键帧）。
+  const fxHTML = forr(view.fx ?? [], (f) => {
+    const p = laneAt(f.lane, clamp01(f.pos01));
+    const t = f.t < 0 ? 0 : f.t > 1 ? 1 : f.t;
+    const op = 1 - t;
+    if (f.kind === 'death') { // 斩残影：石板上浮放大旋出 + 外扩红环，淡出
+      const slab = Object.assign({ position: 'absolute', width: '74px', height: '102px', transform: 'translate(-50%,-50%) scale(' + (1 + t * 0.8).toFixed(3) + ') rotate(' + (t * 16).toFixed(1) + 'deg)', borderRadius: '11px', background: '#9c3324', border: '4px solid var(--danger)', opacity: op.toFixed(3), boxShadow: '0 0 ' + Math.round(34 * op) + 'px rgba(255,64,79,.85)', display: 'flex', alignItems: 'center', justifyContent: 'center', pointerEvents: 'none', zIndex: '5' }, at(p));
+      const ring = Object.assign({ position: 'absolute', width: '120px', height: '120px', transform: 'translate(-50%,-50%) scale(' + (0.7 + t * 2).toFixed(3) + ')', borderRadius: '50%', border: '5px solid rgba(255,64,79,' + (op * 0.85).toFixed(3) + ')', opacity: op.toFixed(3), pointerEvents: 'none', zIndex: '4' }, at(p));
+      return `<div style="${st(ring)}"></div><div style="${st(slab)}"><span style="font-family:var(--font-heading); font-weight:800; font-size:36px; color:#fff;">斩</span></div>`;
+    }
+    // deploy 啪嗒：入场彩色环放大淡出 + 中心亮点（己方橙 / 敌蓝）
+    const col = f.side === 'a' ? '#ff5d2e' : '#3a86d4';
+    const ring = Object.assign({ position: 'absolute', width: '108px', height: '108px', transform: 'translate(-50%,-50%) scale(' + (0.4 + t * 1.5).toFixed(3) + ')', borderRadius: '50%', border: '5px solid ' + col, opacity: (op * 0.9).toFixed(3), boxShadow: '0 0 24px ' + col, pointerEvents: 'none', zIndex: '4' }, at(p));
+    const dot = Object.assign({ position: 'absolute', width: '26px', height: '26px', transform: 'translate(-50%,-50%) scale(' + (1 + t).toFixed(3) + ')', borderRadius: '50%', background: col, opacity: (op * 0.7).toFixed(3), pointerEvents: 'none', zIndex: '5' }, at(p));
+    return `<div style="${st(ring)}"></div><div style="${st(dot)}"></div>`;
+  });
+
   const laneLbl = (lane: number, dy: number, name: string): string => { const p = laneAt(lane, 0.13); return `<div style="${st(Object.assign({ position: 'absolute', transform: 'translate(-50%,-50%)', padding: '6px 20px', borderRadius: '99px', background: 'rgba(8,12,10,.55)', color: 'rgba(255,255,255,.85)', fontFamily: 'var(--font-heading)', fontWeight: 700, fontSize: '30px', letterSpacing: '.12em', border: '1px solid rgba(255,255,255,.18)' }, at([p[0], p[1] + dy])))}">${name}</div>`; };
 
   const gateDefs: [string, number, number, number, string][] = [['g1', 0.34, 0, 1, '上 ⇄ 中'], ['g2', 0.66, 1, 2, '中 ⇄ 下']];
@@ -255,7 +277,7 @@ function buildHTML(view: BattleView, s: CamState): string {
             <svg viewBox="0 0 3000 1500" preserveAspectRatio="none" style="position:absolute; inset:0; width:100%; height:100%;"><polygon points="1380,-40 1620,-40 1620,1540 1380,1540" fill="rgba(86,150,205,.10)"></polygon><g fill="none" stroke="rgba(238,222,180,.16)" stroke-width="140" stroke-linecap="round" stroke-linejoin="round"><path d="M460,750 Q1500,640 2540,750"></path><path d="M380,650 Q1500,150 2620,650"></path><path d="M380,850 Q1500,1350 2620,850"></path></g><g fill="none" stroke="rgba(238,222,180,.34)" stroke-width="7" stroke-dasharray="40 28" style="animation:gg-dash 1.6s linear infinite;"><path d="M460,750 Q1500,640 2540,750"></path><path d="M380,650 Q1500,150 2620,650"></path><path d="M380,850 Q1500,1350 2620,850"></path></g></svg>
             ${mkNexus(A_POS, '#ff5d2e', 'rgba(255,93,46,.6)', view.homeA, view.homeAMax, '我方老家', '♠')}
             ${mkNexus(B_POS, '#3a86d4', 'rgba(58,134,212,.55)', view.homeB, view.homeBMax, '敌方老家', SUITG[view.oppSuit])}
-            ${towersHTML}${unitsHTML}${gatesHTML}
+            ${towersHTML}${unitsHTML}${gatesHTML}${fxHTML}
             ${laneLbl(0, -34, '上路')}${laneLbl(1, -70, '中路')}${laneLbl(2, 34, '下路')}
           </div>
         </div>
