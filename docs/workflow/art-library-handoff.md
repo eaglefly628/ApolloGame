@@ -42,6 +42,8 @@
 ## 5. 策展映射（数据 handoff，纯引用现有资产）
 - `assets/curated/game-g-icons.json`：Game G《翻命扑克》41 个能力图标 → game-icons id + 建议主题色 tint（单色 SVG 渲染时染色）。**接线在 Game G 的 game 层 session**。
 - `assets/curated/zodiac.json`：十二生肖 → twemoji 全身动物 id（彩色统一）。
+- `assets/curated/search-aliases.json`（2026-06-19）：**检索别名层** = `token → [同义词/上位概念/中文]`。导入器只把图标文件名拆词当 tag（`sword→[sword]`），搜不到 `剑`/`weapon`/`blade`。本表在 `library.ts` 运行时按 token 命中并入 tags（`expandAliases()`，**不入 index.json**：省体积、改即生效，同 `artlib-tags.ts` 思路）。`AssetLibrary.tsx` 自动 fetch 应用。**扩词只改这一个 JSON**，无需重跑导入器。实测：剑→42、weapon→160、金币/心/设置 均命中。
+  - 为什么不做像素匹配/全量 VLM：单色矢量图标像素扫描只得"颜色/形状"事实、说不出含义；这批图标**名字本就准**，全量 AI 看图多是复述名字、性价比低。AI 视觉留作下一步**按需**用于①名实校验出嫌疑单 ②打"用途/场景"高层标签（沿用 DCSS `tags-vision.json` 模式，产 `assets/curated/icons-tags-vision.json`）。
 
 ## 6. Studio 编辑器（本会话前半段，另一条线）
 - `src/studio/categorize.ts`：按组件类型签名给实体派「域」(单位/棋盘/经济/UI…) + 搜索 + 「能配啥」schema 清单。

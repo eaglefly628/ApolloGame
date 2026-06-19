@@ -7,12 +7,15 @@ import {
   rankRecords,
   libraryCounts,
   inferCategory,
+  expandAliases,
   LIBRARY_TAXONOMY,
   categoryLabel,
+  type AliasMap,
 } from './library.js';
 import { parseAssetIndex } from './asset-index.js';
 import type { ArtLibIndex } from './artlib.js';
 import type { AssetManifest } from './asset-types.js';
+import realAliases from '../../assets/curated/search-aliases.json';
 
 const projIndex = parseAssetIndex({
   version: 1,
@@ -126,6 +129,58 @@ describe('library — 语义标签与相关度排序', () => {
     const rs = queryLibrary(all, { text: 'undead', sort: 'relevance' });
     expect(rs[0].id).toBe('monster/undead/skeleton');
     expect(queryLibrary(all, { text: 'undead', sort: 'relevance', sources: ['project'] })).toHaveLength(0);
+  });
+});
+
+describe('library — 检索别名层（概念/同义词/中文）', () => {
+  const aliases: AliasMap = {
+    sword: ['blade', 'weapon', '剑', '武器'],
+    arrow: ['direction', '箭头'],
+  };
+
+  it('expandAliases：命中 token 补同义/中文，去重、字典序、不含原有', () => {
+    expect(expandAliases(['sword', 'cross'], aliases)).toEqual(['blade', 'weapon', '剑', '武器']);
+    // 原有词不重复补
+    expect(expandAliases(['sword', 'weapon'], aliases)).toEqual(['blade', '剑', '武器']);
+    // 无命中 → 空
+    expect(expandAliases(['cross', 'mdi'], aliases)).toEqual([]);
+    // 确定性：同输入同输出
+    expect(expandAliases(['sword'], aliases)).toEqual(expandAliases(['sword'], aliases));
+  });
+
+  it('projectRecords 带 aliases：把别名并入 tags（不传则行为不变）', () => {
+    const idx = parseAssetIndex({
+      version: 1,
+      assets: [{ id: 'mdi/sword', type: 'texture', description: 'sword · mdi', status: 'filled', path: 'mdi/sword.svg', tags: ['sword', 'mdi'] }],
+    });
+    const withAlias = projectRecords(idx, '/assets/', aliases);
+    expect(withAlias[0].tags).toContain('剑');
+    expect(withAlias[0].tags).toContain('weapon');
+    // 不传 aliases → tags 原样
+    expect(projectRecords(idx)[0].tags).toEqual(['sword', 'mdi']);
+  });
+
+  it('真实 search-aliases.json：合法 + 每个值是 string[] + 生效', () => {
+    const map = (realAliases as { aliases: AliasMap }).aliases;
+    expect(typeof map).toBe('object');
+    for (const v of Object.values(map)) {
+      expect(Array.isArray(v)).toBe(true);
+      expect(v.every((x) => typeof x === 'string' && x.length > 0)).toBe(true);
+    }
+    expect(expandAliases(['sword'], map)).toContain('剑');
+    expect(expandAliases(['coin'], map)).toContain('金币');
+  });
+
+  it('端到端：中文/同义词能搜到只按英文名命名的图标', () => {
+    const idx = parseAssetIndex({
+      version: 1,
+      assets: [{ id: 'mdi/sword', type: 'texture', description: 'sword · mdi', status: 'filled', path: 'mdi/sword.svg', tags: ['sword', 'mdi'] }],
+    });
+    const recs = projectRecords(idx, '/assets/', aliases);
+    expect(queryLibrary(recs, { text: '剑' }).map((r) => r.id)).toEqual(['mdi/sword']);
+    expect(queryLibrary(recs, { text: 'weapon' }).map((r) => r.id)).toEqual(['mdi/sword']);
+    // 别名命中走 tag 精确分（相关度排序也能出）
+    expect(queryLibrary(recs, { text: '武器', sort: 'relevance' }).map((r) => r.id)).toEqual(['mdi/sword']);
   });
 });
 
