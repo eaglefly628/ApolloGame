@@ -5,7 +5,13 @@
 // 事件、按下即派发到当下 DOM）后必中。本测固定 pointerdown 路径，防回退到会被重渲吃掉的 click。
 
 import { describe, it, expect, vi } from 'vitest';
-import { mountBattle, type BattleView, type BattleActions } from './battle-screen.js';
+import { mountBattle, type BattleView, type BattleActions, type ClashView } from './battle-screen.js';
+
+const sampleClash = (lane: number): ClashView => ({
+  lane, winrate: 0.62, roll: 0.4, aWins: true, tie: null,
+  a: { rank: 'A', suit: 's', general: true, points: 14, buff: 1, morale: 2, tengang: 0, pEff: 17 },
+  b: { rank: 'K', suit: 'h', general: false, points: 13, buff: 0, morale: 0, tengang: 0, pEff: 13 },
+});
 
 const makeView = (o: Partial<BattleView> = {}): BattleView => ({
   homeA: 3, homeAMax: 3, homeB: 3, homeBMax: 3,
@@ -101,5 +107,22 @@ describe('Game G · battle-screen 出牌坞交互（DOM · happy-dom）', () => 
     const { host, actions } = setup();
     press(host.querySelector('[data-act="draw-normal"]'), 2);
     expect(actions.drawNormal).not.toHaveBeenCalled();
+  });
+});
+
+describe('Game G · 「遭遇」前奏（owner：开打前看清谁和谁打·在哪条路）', () => {
+  it('encounter 非空 → 渲染遭遇提示（路名「遭遇」+ VS + 双方两张牌）', () => {
+    const { host } = setup({ encounter: sampleClash(1), clash: null });
+    const html = host.innerHTML;
+    expect(html).toContain('遭遇'); // 仅遭遇层有「· 遭遇」（特写用的是「前锋相遇」）
+    expect(html).toContain('中路'); // lane 1
+    expect(html).toContain('VS');
+  });
+  it('lane 映射：0→上路 / 2→下路', () => {
+    expect(setup({ encounter: sampleClash(0) }).host.innerHTML).toContain('上路 · 遭遇');
+    expect(setup({ encounter: sampleClash(2) }).host.innerHTML).toContain('下路 · 遭遇');
+  });
+  it('encounter 为 null → 不渲染遭遇层', () => {
+    expect(setup({ encounter: null }).host.innerHTML).not.toContain('· 遭遇');
   });
 });
