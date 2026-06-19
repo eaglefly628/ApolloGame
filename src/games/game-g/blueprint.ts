@@ -247,7 +247,7 @@ export function battleSpec(i: number): BattleSpec {
 // ── 场间三选一增益（design/11 §三 · roguelike 养成核）──
 // 胜一场后的短窗：三随机增益里选一项，改 牌组 favor / 命 / 干预能量◈ / 材料。**纯数据**（最弱 LLM 能填 {kind,amount}）
 // + 小解释器 applyBuff，与大厅商城同类的存档变更——零新 capability、headless 可测。选择即流派（养成核）。
-// kind 'joker' = 流派钥匙（白嫖一张小丑 → 构筑分叉，design reply#10 StS/Balatro 式，T-G6 小丑就绪后接）。
+// kind 'joker' = 流派钥匙（白嫖一张天罡 → 构筑分叉，design reply#10 StS/Balatro 式，T-G6 天罡就绪后接）。
 export type BuffKind = 'deck-all' | 'deck-weak' | 'lives' | 'energy' | 'materials' | 'tiangang';
 export interface RunBuff { id: string; name: string; desc: string; kind: BuffKind; amount: number; count?: number; tiangangId?: string }
 // 被增益作用的存档子集（Save 的子结构；解耦 mount 的 Save 类型，便于 headless 测）。含 jokers（流派钥匙落点）。
@@ -269,7 +269,7 @@ export function applyBuff(t: BuffTarget, b: RunBuff): void {
   } else if (b.kind === 'lives') t.lives += b.amount;
   else if (b.kind === 'energy') t.leverEnergy = Math.min(LEVER_CAP, t.leverEnergy + b.amount);
   else if (b.kind === 'materials') t.materials += b.amount;
-  else if (b.kind === 'tiangang') { if (b.tiangangId && !t.tiangangs.includes(b.tiangangId)) t.tiangangs.push(b.tiangangId); } // 流派钥匙：白嫖小丑（去重）
+  else if (b.kind === 'tiangang') { if (b.tiangangId && !t.tiangangs.includes(b.tiangangId)) t.tiangangs.push(b.tiangangId); } // 流派钥匙：白嫖天罡（去重）
 }
 
 // ═══════════════════════════════════════════════════════════════
@@ -323,7 +323,7 @@ export function standardArmy(prefix: string, favorBias = 0): ArmyCard[] {
   return army;
 }
 
-// 结局联动族小丑（design/12 §五.5）：在确定性单遍解析里**前向生效**（只改未翻牌 → 无二次解析、hash 稳）。
+// 结局联动族天罡（design/12 §五.5）：在确定性单遍解析里**前向生效**（只改未翻牌 → 无二次解析、hash 稳）。
 export interface LinkTiangangs { martyr: boolean; chain: boolean }
 const SHI_REVENGE = 10; // 死士：本路首死后，余下未翻的兵 +favor（报仇·死战）
 
@@ -592,7 +592,7 @@ export function bossFor(idx: number): BossSpec {
   return BOSS_ROSTER[((idx % n) + n) % n];
 }
 
-// ── T-G6 · 小丑牌（融牌面的持久"改规则"被动 · design/12 §二）──
+// ── T-G6 · 天罡牌（融牌面的持久"改规则"被动 · design/12 §二）──
 // 借 Game E 小丑的**声明式数据哲学**（每张 = 一条 {kind,params} 规则 + text 人话），但**域不同**：
 //   Game E joker = 运行时计分(on_hand_scored→chips/mult)；Game G **outcome-first** → joker = **build 时军阵 favor 变换**（揭晓前定、不回灌）。
 // 故复用"数据+解释器"范式、**不复用 Game E 运行时**（同 D0 §同花未复用 evaluateHand 之理）。applyJokers 在 resolveArmy 前跑、**零新能力**。
@@ -659,7 +659,7 @@ export const GAME_G_TIANGANGS: TiangangCard[] = [
   { id: 'zhanshouyin', name: '斩首印', kind: 'arcane', rarity: 'legendary', cost: 42, archetype: 'decap', power: 5, phat: 9, params: { mark: 'decap' }, text: '集齐斩首流印记 → 斩首额外−溃散·敌主将更脆（流派招牌质变）' },
   { id: 'tianjiyin', name: '田忌印', kind: 'arcane', rarity: 'legendary', cost: 42, archetype: 'tianji', power: 5, phat: 9, params: { mark: 'sacrifice' }, text: '集齐弃一保二流印记 → 弃路 favor 转移 ×1.5（流派招牌质变）' },
 ];
-/** 从已融小丑取结局联动开关（死士/连环）→ 喂 resolveArmy 前向生效。 */
+/** 从已融天罡取结局联动开关（死士/连环）→ 喂 resolveArmy 前向生效。 */
 export function tiangangLinks(tiangangIds: readonly string[]): LinkTiangangs {
   return { martyr: tiangangIds.includes('martyr'), chain: tiangangIds.includes('chain') };
 }
@@ -670,7 +670,7 @@ export function quartermasterEnergy(tiangangIds: readonly string[], lanesWon: nu
 }
 
 // ── T-G6 · 星球牌（第二养成轴 · design/12 §三 · 升档/可叠加）──
-// 与小丑（一次性·改规则·身份）正交：星球 = **可叠加的升档**（买 N 级累加），改 run 参数 / 军阵底盘。持久存档、跨 run。
+// 与天罡（一次性·改规则·身份）正交：星球 = **可叠加的升档**（买 N 级累加），改 run 参数 / 军阵底盘。持久存档、跨 run。
 // 本批 3 张：命(run 命线上限)/能(干预能量上限+回能)/军(「兵」档 favor 底盘)——皆**与大厅 deck-favor 商店不重叠**的新轴
 // （命/能=run 经济无现成；军=作用在 built 军阵的兵档结构，非 deck 均值偏置）。路(选路)/型(牌型档) 待 design 定目标 UI，见 finish。
 export type PlanetKind = 'lives' | 'energy' | 'rank-favor' | 'tier';
@@ -706,16 +706,16 @@ export function applyPlanetArmy(army: ArmyCard[], planets: Record<string, number
 }
 export const TIANGANG_BY_ID: ReadonlyMap<string, TiangangCard> = new Map(GAME_G_TIANGANGS.map((j) => [j.id, j]));
 
-/** 流派钥匙：把"未拥有的小丑"包成场间三选一可白嫖的 RunBuff（design reply#10：场间选择=构筑分叉）。已拥有的不再出。 */
+/** 流派钥匙：把"未拥有的天罡牌"包成场间三选一可白嫖的 RunBuff（design reply#10：场间选择=构筑分叉）。已拥有的不再出。 */
 export function tiangangKeyBuffs(ownedIds: readonly string[]): RunBuff[] {
   return GAME_G_TIANGANGS.filter((j) => !ownedIds.includes(j.id)).map((j) => ({
-    id: `key_${j.id}`, name: `🃏钥匙·${j.name}`, desc: `融入小丑【${j.name}】：${j.text}`, kind: 'tiangang', amount: 0, tiangangId: j.id,
+    id: `key_${j.id}`, name: `🃏钥匙·${j.name}`, desc: `融入天罡【${j.name}】：${j.text}`, kind: 'tiangang', amount: 0, tiangangId: j.id,
   }));
 }
 
 // ── T-G6 · 流派 + 克制网（design/12 §四 · 身份 + 石头剪刀布）──
-// 流派 = 由已融小丑浮现的身份；克制网 = **双 3-环** rock-paper-scissors（无唯一最优 → 看对手临场调布阵/干预）。
-// 纯数据：每流派 {keyJokers, counters} 最弱 LLM 能填；detectArchetype 数已融小丑归属、archetypeMatchup 查克制——零新能力。
+// 流派 = 由已融天罡浮现的身份；克制网 = **双 3-环** rock-paper-scissors（无唯一最优 → 看对手临场调布阵/干预）。
+// 纯数据：每流派 {keyJokers, counters} 最弱 LLM 能填；detectArchetype 数已融天罡归属、archetypeMatchup 查克制——零新能力。
 export interface ArchetypeSpec { id: Archetype; name: string; desc: string; keyTiangangs: string[]; counters: Archetype }
 export const ARCHETYPES: ArchetypeSpec[] = [
   // 核心 3-环（`12` §四明示）：斩首 克 将领 克 铺场 克 斩首。
@@ -728,7 +728,7 @@ export const ARCHETYPES: ArchetypeSpec[] = [
   { id: 'tianji', name: '弃一保二流', desc: '弃一路、经济滚两路', keyTiangangs: [], counters: 'cardtype' }, // 钥匙：田忌布阵/督粮(待)
 ];
 const ARCH_BY_ID: ReadonlyMap<Archetype, ArchetypeSpec> = new Map(ARCHETYPES.map((a) => [a.id, a]));
-/** 由已融小丑浮现的主流派：数每流派 keyTiangangs 命中数，取最高（平局取 ARCHETYPES 靠前）；无命中 → null。 */
+/** 由已融天罡浮现的主流派：数每流派 keyTiangangs 命中数，取最高（平局取 ARCHETYPES 靠前）；无命中 → null。 */
 export function detectArchetype(tiangangIds: readonly string[]): ArchetypeSpec | null {
   let best: ArchetypeSpec | null = null;
   let bestN = 0;
@@ -781,7 +781,7 @@ export function applyArchetypeActivation(active: Archetype, armyA: ArmyCard[], a
   return { a, b, moraleMul, tierBonusAdd };
 }
 
-// 从已融小丑算每路士气倍率（旗手全路、枭雄仅顶级主将路）→ 喂 resolveArmy。复用 `06` 士气、不新机制。
+// 从已融天罡算每路士气倍率（旗手全路、枭雄仅顶级主将路）→ 喂 resolveArmy。复用 `06` 士气、不新机制。
 const TOP_RANKS = new Set(['JOKER', 'K']); // 顶级军衔（枭雄触发档）
 export function tiangangMoraleScale(army: ArmyCard[], tiangangIds: readonly string[]): number[] {
   const scale = [1, 1, 1];
@@ -799,8 +799,8 @@ export function tiangangMoraleScale(army: ArmyCard[], tiangangIds: readonly stri
 }
 
 /**
- * 融小丑：揭晓前按已融小丑（持久）把军阵 favor 变换 → 返回新军，喂 applyInterventions/build。
- * outcome-first：只改掷命前输入；同军+同小丑集 → 同结果（确定性、可回放）。纯 build 时、零 rng、零新能力。
+ * 融天罡：揭晓前按已融天罡（持久）把军阵 favor 变换 → 返回新军，喂 applyInterventions/build。
+ * outcome-first：只改掷命前输入；同军+同天罡集 → 同结果（确定性、可回放）。纯 build 时、零 rng、零新能力。
  */
 export function applyTiangangs(army: ArmyCard[], tiangangIds: readonly string[]): ArmyCard[] {
   let out = army.map((c) => ({ ...c }));
@@ -825,13 +825,13 @@ export function applyTiangangs(army: ArmyCard[], tiangangIds: readonly string[])
 
 /**
  * 揭晓前的**完整 build 时编排**（单一真相 · showMatch 与测试共用，杜绝两路漂移）：
- *   成军(布阵+deck偏置) → 融小丑(applyJokers) → 玩家干预(caster='a') → Boss 起手干预(caster='b') → 算士气倍率。
+ *   成军(布阵+deck偏置) → 融天罡(applyJokers) → 玩家干预(caster='a') → Boss 起手干预(caster='b') → 算士气倍率。
  * 全在揭晓前、不回灌 gameplay（outcome-first）；返回喂 buildGameGArmyMatch 的 {a,b,moraleA}。纯函数、可重放。
  */
 export interface MatchSetup { formation: Formation; deckBias: number; tiangangs: readonly string[]; interventions: Intervention[]; enemyForm?: Formation; enemyBias: number; boss?: BossSpec | null; planets?: Record<string, number> }
 export function prepareArmies(s: MatchSetup): { a: ArmyCard[]; b: ArmyCard[]; moraleA: number[]; linksA: LinkTiangangs } {
   const planets = s.planets ?? {};
-  let a = applyTiangangs(applyPlanetArmy(armyFromFormation('a', s.deckBias, s.formation), planets), s.tiangangs); // 星球·军(兵档底盘) → 融小丑（持久 favor 变换）
+  let a = applyTiangangs(applyPlanetArmy(armyFromFormation('a', s.deckBias, s.formation), planets), s.tiangangs); // 星球·军(兵档底盘) → 融天罡（持久 favor 变换）
   let b = armyFromFormation('b', s.enemyBias, s.enemyForm);
   // 流派激活质变：主流派集齐 keyJokers → 招牌增益（改 a/b + 士气倍率/牌型阶梯加成）。
   const active = activeArchetype(s.tiangangs);
@@ -855,8 +855,8 @@ export const MARCH_DURATION = MARCH_T0 + HOME_HP * MARCH_PERIOD; // 行军/攻�
  *   **行军突破·攻克大本营**定胜负（design/17 §二）：每路幸存差=突破到敌老家的兵，净突破方逐拍 chip 敌
  *   `home_hp`→0=攻克=胜（取代旧 best-of-3）。掷命结果仍 build 时规则定(outcome-first)，行军是确定性时间结构。
  * 装配顺序 A 全军 → B 全军（PRNG 序列确定、可回放）。胜负 build 时即定；3D 行军/抛飞为表现。
- * moraleA：我方各路士气倍率（旗手/枭雄小丑放大，缺省 [1,1,1]）；敌方无小丑。缩放不改掷命次数→确定性不变。
- * linksA：我方结局联动（死士/连环，缺省关）；前向单遍生效、只动未翻牌 → hash 稳。敌方无小丑。
+ * moraleA：我方各路士气倍率（旗手/枭雄天罡放大，缺省 [1,1,1]）；敌方无天罡。缩放不改掷命次数→确定性不变。
+ * linksA：我方结局联动（死士/连环，缺省关）；前向单遍生效、只动未翻牌 → hash 稳。敌方无天罡。
  */
 export function buildGameGArmyMatch(armyA: ArmyCard[], armyB: ArmyCard[], seed = 1, reward = MATCH_REWARD, moraleA: readonly number[] = [1, 1, 1], linksA: LinkTiangangs = { martyr: false, chain: false }): WorldBlueprint {
   const rng: RandomSeed = { type: 'RandomSeed', seed, sequence: 0 };

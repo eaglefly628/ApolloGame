@@ -58,17 +58,17 @@ describe('Game G · lobby-screen mountLobby 点击交互（DOM · happy-dom）',
       expect(host.querySelectorAll('.pcard').length).toBe(52);
     });
 
-    it('点击「收藏」→ coll section 激活，显示小丑收藏', () => {
+    it('点击「收藏」→ coll section 激活，显示天罡收藏', () => {
       const host = document.createElement('div');
       mountLobby(host, { getView: makeView, onPlay: vi.fn() });
       click(navBtn(host, '收藏'));
       expect(host.querySelector('.nav button.on')?.textContent?.trim()).toBe('收藏');
       expect(host.querySelector('.screen.on.full')).not.toBeNull();
-      // 收藏屏中应有小丑列表
+      // 收藏屏中应有天罡列表
       expect(host.innerHTML).toContain('同袍');
     });
 
-    it('点击「改造坊」→ craft section 激活，显示小丑货架和星球牌', () => {
+    it('点击「改造坊」→ craft section 激活，显示天罡货架和星球牌', () => {
       const host = document.createElement('div');
       mountLobby(host, { getView: makeView, onPlay: vi.fn() });
       click(navBtn(host, '改造坊'));
@@ -160,9 +160,9 @@ describe('Game G · lobby-screen mountLobby 点击交互（DOM · happy-dom）',
     });
   });
 
-  // ── 5. 买入小丑 ──
-  describe('改造坊·买入小丑', () => {
-    it('点击可买小丑→ onBuyTiangang 以正确 id 调用', () => {
+  // ── 5. 买入天罡 ──
+  describe('改造坊·买入天罡', () => {
+    it('点击可买天罡→ onBuyTiangang 以正确 id 调用', () => {
       const onBuyTiangang = vi.fn();
       const host = document.createElement('div');
       mountLobby(host, { getView: makeView, onPlay: vi.fn(), onBuyTiangang });
@@ -173,7 +173,7 @@ describe('Game G · lobby-screen mountLobby 点击交互（DOM · happy-dom）',
       expect(onBuyTiangang).toHaveBeenCalledWith('gambler');
     });
 
-    it('locked 小丑（warlord）不渲染 data-act="buyTiangang"', () => {
+    it('locked 天罡（warlord）不渲染 data-act="buyTiangang"', () => {
       const host = document.createElement('div');
       mountLobby(host, { getView: makeView, onPlay: vi.fn() });
       click(navBtn(host, '改造坊'));
@@ -183,9 +183,9 @@ describe('Game G · lobby-screen mountLobby 点击交互（DOM · happy-dom）',
 
   // ── 6. 战库切换（B3）──
   describe('改造坊·命牌战库切换（B3）', () => {
-    it('已拥有且未入战库的小丑：点「+ 战库」→ onToggleTiangang 以 id 调用', () => {
+    it('已拥有且未入战库的天罡：点「+ 战库」→ onToggleTiangang 以 id 调用', () => {
       const onToggleTiangang = vi.fn();
-      // 构造一个 owned=true，inDeck=false 的小丑
+      // 构造一个 owned=true，inDeck=false 的天罡
       const view = makeView({
         tiangangs: [J('comrade', '同袍', true, false)],
       });
@@ -198,7 +198,7 @@ describe('Game G · lobby-screen mountLobby 点击交互（DOM · happy-dom）',
       expect(onToggleTiangang).toHaveBeenCalledWith('comrade');
     });
 
-    it('已入战库的小丑：显示「⚔ 战库」active 态按钮', () => {
+    it('已入战库的天罡：显示「⚔ 战库」active 态按钮', () => {
       const view = makeView({
         tiangangs: [J('comrade', '同袍', true, true)],
       });
@@ -211,7 +211,7 @@ describe('Game G · lobby-screen mountLobby 点击交互（DOM · happy-dom）',
       expect(togBtn.textContent).toContain('⚔ 战库');
     });
 
-    it('战库已满（5 张）：未入战库的 owned 小丑显示「战库满」且 disabled', () => {
+    it('战库已满（5 张）：未入战库的 owned 天罡显示「战库满」且 disabled', () => {
       const tiangangs: LobbyShopItem[] = [
         J('a', 'A', true, true), J('b', 'B', true, true), J('c', 'C', true, true),
         J('d', 'D', true, true), J('e', 'E', true, true),

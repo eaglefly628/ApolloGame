@@ -54,7 +54,7 @@ interface Save {
   leverEnergy: number; // 干预能量◈（开局 3 / 每胜 +2 / 上限 6）
   lives: number; // 战役命线（开 run 3 命，输一场 −1，命尽=run 结束）
   bossIdx: number; // 本 run 终局 Boss（每 run 轮换一名，开 run 随机定，供针对性布阵）
-  ownedTiangangs: string[]; // 已买入小丑 id（全部拥有集·跨 run 不清零）
+  ownedTiangangs: string[]; // 已买入天罡 id（全部拥有集·跨 run 不清零）
   tiangangs: string[]; // 战库 ≤5 张（从 ownedTiangangs 选入·契约②·甲读）
   planets: Record<string, number>; // 星球牌等级（局外持久 · 可叠加升档 · 第二养成轴）
   foils: string[]; // 已收集的 foil 闪艺皮肤 id（纯表现收集 · 零 gameplay）
@@ -238,7 +238,7 @@ export function mount(container: HTMLElement): () => void {
     root.style.cssText = LOBBY_ROOT_CSS;
     const host = document.createElement('div');
     root.appendChild(host);
-    // 大厅视图：真实存档（材料/能量/牌组 favor/小丑/星球/闪艺/战役进度/流派↔Boss 克制）→ 喂忠实港渲染器。未接网项渲染器内诚实占位。
+    // 大厅视图：真实存档（材料/能量/牌组 favor/天罡/星球/闪艺/战役进度/流派↔Boss 克制）→ 喂忠实港渲染器。未接网项渲染器内诚实占位。
     const buildLobbyView = (): LobbyView => {
       const boss = bossFor(save.bossIdx);
       const arch = detectArchetype(save.tiangangs);
@@ -300,14 +300,14 @@ export function mount(container: HTMLElement): () => void {
   }
 
   // ───────────────────────── 场间整备 · 三选一增益（roguelike 养成核 · 胜后短窗）─────────────────────────
-  // 胜一场后进军前的短窗：三随机里选一项 → 选择即流派。池=资源增益 + **流派钥匙(白嫖未拥有小丑)**，
+  // 胜一场后进军前的短窗：三随机里选一项 → 选择即流派。池=资源增益 + **流派钥匙(白嫖未拥有天罡)**，
   // 后者把场间选择做成 StS/Balatro 式构筑分叉（design reply#10），不只 +stat。改后落存档、回大厅看下一战。
   function showBetween(nextLabel: string): void {
     clear();
     const title = el('div', 'font:600 18px system-ui;color:#22c55e', '🎉 战间整备 · 三选一');
     const sub = el('div', 'max-width:520px;text-align:center;opacity:.82;line-height:1.6',
       `胜一场！<b>${nextLabel}</b>前选<b>一项</b>——资源增益，或<b style="color:#c4b5fd">🃏流派钥匙</b>(白嫖天罡牌、定你的构筑分叉)。`);
-    const pool: RunBuff[] = [...BETWEEN_BUFFS, ...tiangangKeyBuffs(save.tiangangs)]; // 资源增益 + 未拥有小丑钥匙
+    const pool: RunBuff[] = [...BETWEEN_BUFFS, ...tiangangKeyBuffs(save.tiangangs)]; // 资源增益 + 未拥有天罡钥匙
     const cardsBox = el('div', 'display:flex;gap:12px;justify-content:center;flex-wrap:wrap');
     cardsBox.replaceChildren(...pick3(pool).map((bf: RunBuff) => {
       const isKey = bf.kind === 'tiangang';
