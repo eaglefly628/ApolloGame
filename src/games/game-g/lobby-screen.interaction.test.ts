@@ -27,7 +27,7 @@ describe('Game G · lobby tab 渲染逻辑（on(tab) 切激活屏 + 回调挂钩
   it('切屏 CSS 守恒：非激活屏 display:none、激活才 display:flex；homerow 不得带 display（否则 HOME 永显盖住别屏 = 点 tab 还停在主页）', () => {
     const doc = renderLobbyDoc(view(), 'decks');
     expect(doc).toContain('.ggl-root .screen{ display:none }');
-    expect(doc).toContain('.ggl-root .screen.on{ display:flex }');
+    expect(doc).toContain('.ggl-root .screen.on{ display:flex; flex:1; min-height:0 }');
     expect(doc).toContain('.ggl-root .homerow{ gap:14px'); // homerow 仅 gap/width，无 display
     expect(doc).not.toMatch(/\.homerow\{ display/); // ⛔ 守：homerow 一旦带 display 就会覆盖 .screen 的隐藏、HOME 永显
   });
