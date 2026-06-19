@@ -235,7 +235,7 @@ export function mount(container: HTMLElement): () => void {
       }
       const cap = effectiveLeverCap(save.planets);
       // B3: owned=已买入(ownedJokers)；inDeck=已选入战库(jokers ≤5)；buyable=未买且材料够
-      const jokers: LobbyShopItem[] = GAME_G_JOKERS.map((j) => { const owned = save.ownedJokers.includes(j.id); return { id: j.id, name: j.name, sub: j.text, cost: j.cost, owned, inDeck: save.jokers.includes(j.id), buyable: !owned && save.materials >= j.cost }; });
+      const jokers: LobbyShopItem[] = GAME_G_JOKERS.map((j) => { const owned = save.ownedJokers.includes(j.id); return { id: j.id, name: j.name, sub: j.text, cost: j.cost, owned, inDeck: save.jokers.includes(j.id), buyable: !owned && save.materials >= j.cost, power: j.power, phat: j.phat }; });
       const planets: LobbyShopItem[] = GAME_G_PLANETS.map((p) => ({ id: p.id, name: p.name, sub: p.text, cost: p.cost, owned: false, level: save.planets[p.id] ?? 0, buyable: save.materials >= p.cost }));
       const foils: LobbyShopItem[] = GAME_G_FOILS.map((f) => { const owned = save.foils.includes(f.id); return { id: f.id, name: f.name, sub: f.desc, cost: f.cost, owned, buyable: !owned && save.materials >= f.cost }; });
       const heart = save.lives > 0 ? '❤'.repeat(save.lives) : '—';

@@ -598,15 +598,25 @@ export function bossFor(idx: number): BossSpec {
 // 故复用"数据+解释器"范式、**不复用 Game E 运行时**（同 D0 §同花未复用 evaluateHand 之理）。applyJokers 在 resolveArmy 前跑、**零新能力**。
 // 局外持久：融在玩家牌组上（save.jokers），跨 run 不清零——"牌组身份"养成核(owner 愿景)。
 // 本批 4 张=纯 build 时 favor 变换(同袍/赌徒/先登/不屈)；士气放大族(旗手/枭雄)、结局联动族(死士/连环/督粮/影武者)待后续切片(需 resolve 时钩子)。
-export type JokerKind = 'suit-synergy' | 'polarize' | 'lane-pref' | 'diehard' | 'morale' | 'link' | 'economy' | 'revenge';
+// contract③ 天罡牌稀有度（doc20 §一）普/稀/史/传
+export type TiangangRarity = 'common' | 'rare' | 'epic' | 'legendary';
+// 旧 build-时 favor 变换 kinds + 新 contract③ 10 维度 kinds（甲写解释器）
+export type JokerKind = 'suit-synergy' | 'polarize' | 'lane-pref' | 'diehard' | 'morale' | 'link' | 'economy' | 'revenge'
+  | 'odds' | 'power' | 'combo' | 'tempo' | 'stamina' | 'draw' | 'lane' | 'siege' | 'arcane';
 export type Archetype = 'decap' | 'cardtype' | 'general' | 'wide' | 'probability' | 'tianji'; // 6 流派 id（design/12 §四）
 export interface JokerCard {
   id: string; name: string; kind: JokerKind; cost: number; archetype: Archetype; text: string;
-  amount?: number; // favor 量
+  amount?: number; // favor 量（旧 build-时变换用）
   lane?: number; // lane-pref 偏好路
   moraleMul?: number; // morale：本路士气倍率（旗手 1.5 / 枭雄 2）
+  // contract③ 天罡牌字段（一期 20 张）：
+  rarity?: TiangangRarity; // 稀有度
+  params?: Record<string, unknown>; // kind-specific params（甲写解释器读）
+  power?: number; // 牌力 ⭐1–5
+  phat?: number; // P̂ 0–10 设计估胜率影响（仿真台实测校准）
 }
 export const GAME_G_JOKERS: JokerCard[] = [
+  // ── 旧批（T-G6 · build-时 favor 变换 · 甲已有解释器）──
   { id: 'comrade', name: '同袍', kind: 'suit-synergy', cost: 18, archetype: 'cardtype', amount: 2, text: '本路每有 1 张同花色 → 该牌 +2 favor（牌型流：往一路堆同花越爽）' },
   { id: 'gambler', name: '赌徒', kind: 'polarize', cost: 16, archetype: 'probability', amount: 12, text: '全军 favor 两极化：≥50 的更高、<50 的更低（概率流：高风险高回报）' },
   { id: 'vanguard', name: '先登', kind: 'lane-pref', cost: 15, archetype: 'wide', amount: 8, lane: 0, text: '上路全员 +8 favor（铺场流：主攻上路）' },
@@ -617,6 +627,37 @@ export const GAME_G_JOKERS: JokerCard[] = [
   { id: 'chain', name: '连环', kind: 'link', cost: 19, archetype: 'wide', text: '本路首张兵翻正 → 牵起下一张未翻的兵必活（连环索 · 铺场流）' },
   { id: 'quartermaster', name: '督粮', kind: 'economy', cost: 18, archetype: 'decap', text: '每胜一路 → 下场备战 +1◈ 干预能量（攒能秒将 · 斩首流）' },
   { id: 'shadow', name: '影武者', kind: 'revenge', cost: 20, archetype: 'decap', text: '我某路主将被斩首 → 该路余部 +12 favor 复仇（替身死战 · 斩首流）' },
+  // ── 天罡牌一期（20张 · contract③ · doc20 §二 · 甲写解释器）──
+  // A · 概率系 odds
+  { id: 'qiaoshou', name: '巧手', kind: 'odds', rarity: 'common', cost: 12, archetype: 'probability', power: 1, phat: 2, params: { op: 'add', value: 1 }, text: '我方每次对决掷命 +1 点（微稳·地基）' },
+  { id: 'wenshou', name: '稳手', kind: 'odds', rarity: 'rare', cost: 16, archetype: 'probability', power: 2, phat: 4, params: { op: 'winFloor', value: 5 }, text: '我方胜率下限 +5%（少翻车·进阶）' },
+  { id: 'beishui', name: '背水', kind: 'odds', rarity: 'epic', cost: 22, archetype: 'probability', power: 3, phat: 6, params: { op: 'reroll', when: 'afterLoss', value: 1 }, text: '该路输一场 → 下场 +1 重摇（强力·死缠流）' },
+  // B · 点数系 power
+  { id: 'hufu', name: '虎符', kind: 'power', rarity: 'common', cost: 12, archetype: 'general', power: 1, phat: 2, params: { op: 'add', value: 2 }, text: '全军 +2 战力点数（全局微加·地基）' },
+  { id: 'tonghuakui', name: '同花魁', kind: 'power', rarity: 'rare', cost: 18, archetype: 'cardtype', power: 2, phat: 4, params: { op: 'add', value: 3, filter: 'sameSuit' }, text: '同花色牌互 +3 战力（同花流核心）' },
+  { id: 'guabing', name: '寡兵', kind: 'power', rarity: 'epic', cost: 22, archetype: 'tianji', power: 3, phat: 6, params: { op: 'add', value: 6, filter: 'countLE3' }, text: '本路 ≤3 张 → 每张 +6 战力（以少胜多）' },
+  // C · 牌型系 combo
+  { id: 'duizijue', name: '对子诀', kind: 'combo', rarity: 'common', cost: 14, archetype: 'cardtype', power: 1, phat: 3, params: { op: 'pair', bonus: 6 }, text: '本路含对子 → +6 战力（入门牌型流）' },
+  { id: 'shunzizhen', name: '顺子阵', kind: 'combo', rarity: 'epic', cost: 22, archetype: 'cardtype', power: 3, phat: 6, params: { op: 'straight', bonus: 'tier1' }, text: '本路成顺子 → 牌型阶梯 +1 档（顺子流）' },
+  // D · 将领系 morale
+  { id: 'lingqi', name: '令旗', kind: 'morale', rarity: 'common', cost: 16, archetype: 'general', power: 1, phat: 3, params: { op: 'leaderBuff', value: 4 }, text: '主将在 → 下属士气 +8→+12（将领流地基）' },
+  { id: 'qinwang', name: '擒王', kind: 'morale', rarity: 'rare', cost: 18, archetype: 'decap', power: 2, phat: 4, params: { op: 'decapCost', value: -1 }, text: '斩首令 −1◈ 成本（斩首流降门槛）' },
+  // E · 行军系 tempo
+  { id: 'jixing', name: '疾行', kind: 'tempo', rarity: 'rare', cost: 16, archetype: 'wide', power: 2, phat: 4, params: { op: 'speedUp', value: 50, target: 'self' }, text: '我一路行军 +50% 速（抢线先手）' },
+  { id: 'chizhi', name: '迟滞', kind: 'tempo', rarity: 'rare', cost: 18, archetype: 'decap', power: 2, phat: 4, params: { op: 'slowEnemy', value: -40, target: 'enemy' }, text: '敌一路行军 −40% 速（拖延打时差）' },
+  // F · 续航系 stamina
+  { id: 'tiehan', name: '铁汉', kind: 'stamina', rarity: 'rare', cost: 16, archetype: 'wide', power: 2, phat: 4, params: { op: 'stamPlus', value: 1 }, text: '全军续航 +1（多凿一格·铺场流）' },
+  // G · 抽牌系 draw
+  { id: 'guangna', name: '广纳', kind: 'draw', rarity: 'common', cost: 14, archetype: 'general', power: 1, phat: 3, params: { op: 'handMax', value: 2 }, text: '手牌上限 +2（更多选择·地基）' },
+  { id: 'zhanchao', name: '战潮', kind: 'draw', rarity: 'epic', cost: 22, archetype: 'wide', power: 3, phat: 6, params: { op: 'pulse', when: 'clash', value: 2 }, text: '遭遇翻牌涌牌 ×2（心流峰值·大心脏）' },
+  // H · 三路系 lane
+  { id: 'zengyuanlu', name: '增援路', kind: 'lane', rarity: 'rare', cost: 16, archetype: 'wide', power: 2, phat: 4, params: { op: 'reinforce', value: 2 }, text: '指定一路 +2 张兵（铺场补路）' },
+  { id: 'qiyibaer', name: '弃一保二', kind: 'lane', rarity: 'epic', cost: 22, archetype: 'tianji', power: 3, phat: 6, params: { op: 'sacrifice', value: 10 }, text: '主动弃一路 → 另两路各 +10（田忌精髓）' },
+  // I · 攻守系 siege
+  { id: 'gongchengchui', name: '攻城锤', kind: 'siege', rarity: 'epic', cost: 24, archetype: 'decap', power: 3, phat: 7, params: { op: 'chipMore', value: 1 }, text: '突破方破老家多 chip 1 血（加速收口）' },
+  // J · 流派印记 arcane（传说 · 集齐解锁质变）
+  { id: 'zhanshouyin', name: '斩首印', kind: 'arcane', rarity: 'legendary', cost: 42, archetype: 'decap', power: 5, phat: 9, params: { mark: 'decap' }, text: '集齐斩首流印记 → 斩首额外−溃散·敌主将更脆（流派招牌质变）' },
+  { id: 'tianjiyin', name: '田忌印', kind: 'arcane', rarity: 'legendary', cost: 42, archetype: 'tianji', power: 5, phat: 9, params: { mark: 'sacrifice' }, text: '集齐弃一保二流印记 → 弃路 favor 转移 ×1.5（流派招牌质变）' },
 ];
 /** 从已融小丑取结局联动开关（死士/连环）→ 喂 resolveArmy 前向生效。 */
 export function jokerLinks(jokerIds: readonly string[]): LinkJokers {

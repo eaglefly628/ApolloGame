@@ -39,6 +39,57 @@ const PACKS = {
       { re: /^(?:clubs|spades|hearts|diamonds)$/, category: 'playing-card' },
     ],
   },
+  // 统一描线风格成系列图标（MIT）。subdir 只取 outline；flatId：id=tabler/<名>（无作者层）。
+  tabler: {
+    repo: 'tabler/tabler-icons',
+    ref: 'main',
+    tarTop: 'tabler-icons-main',
+    ext: '.svg',
+    subdir: 'icons/outline',
+    flatId: true,
+    sample: 'even',
+    style: 'cartoon.flat',
+    license: 'MIT',
+    source: 'tabler',
+    category: 'icon.ui',
+    dest: 'tabler',
+    idPrefix: 'tabler',
+    transparent: true,
+  },
+  // Phosphor 图标族（MIT）：圆润成体系，取 regular 权重。
+  phosphor: {
+    repo: 'phosphor-icons/core',
+    ref: 'main',
+    tarTop: 'core-main',
+    ext: '.svg',
+    subdir: 'assets/regular',
+    flatId: true,
+    sample: 'even',
+    style: 'cartoon.flat',
+    license: 'MIT',
+    source: 'phosphor',
+    category: 'icon.ui',
+    dest: 'phosphor',
+    idPrefix: 'phosphor',
+    transparent: true,
+  },
+  // Material Design Icons（Apache-2.0）：最全的统一填充风图标体系。
+  mdi: {
+    repo: 'Templarian/MaterialDesign',
+    ref: 'master',
+    tarTop: 'MaterialDesign-master',
+    ext: '.svg',
+    subdir: 'svg',
+    flatId: true,
+    sample: 'even',
+    style: 'cartoon.flat',
+    license: 'Apache-2.0',
+    source: 'mdi',
+    category: 'icon.ui',
+    dest: 'mdi',
+    idPrefix: 'mdi',
+    transparent: true,
+  },
 };
 
 function walk(dir) {
@@ -79,26 +130,34 @@ try {
   execFileSync('tar', ['-xzf', tgz, '-C', tmp]);
   const srcRoot = join(tmp, P.tarTop);
 
-  const files = walk(srcRoot)
+  let files = walk(srcRoot)
     .filter((f) => f.toLowerCase().endsWith(P.ext))
     .map((f) => relative(srcRoot, f).split(sep).join('/'))
-    .sort()
-    .slice(0, limit);
+    .filter((rel) => !P.subdir || rel.startsWith(P.subdir + '/'))
+    .sort();
+  if (files.length > limit) {
+    if (P.sample === 'even') {
+      const step = files.length / limit, picked = [];
+      for (let i = 0; picked.length < limit && Math.floor(i) < files.length; i += step) picked.push(files[Math.floor(i)]);
+      files = picked;
+    } else files = files.slice(0, limit);
+  }
 
   const idx = JSON.parse(readFileSync(INDEX, 'utf8'));
   const byId = new Map(idx.assets.map((a) => [a.id, a]));
 
   let added = 0;
   for (const rel of files) {
-    const parts = rel.split('/'); // <author>/<name>.svg
-    if (parts.length < 2) continue;
-    const author = parts[0];
+    const parts = rel.split('/');
     const name = parts[parts.length - 1].replace(/\.svg$/i, '');
+    if (!name) continue;
+    const author = P.flatId ? P.source : parts[0]; // flatId 包无作者层
+    if (!P.flatId && parts.length < 2) continue;
     const buf = readFileSync(join(srcRoot, rel));
     const { w, h } = svgDims(buf);
     if (!w || !h) continue; // 尺寸读不出 → 跳过
-    const id = `${P.idPrefix}/${author}/${name}`;
-    const destRel = `${P.dest}/${author}/${name}.svg`;
+    const id = P.flatId ? `${P.idPrefix}/${name}` : `${P.idPrefix}/${author}/${name}`;
+    const destRel = P.flatId ? `${P.dest}/${name}.svg` : `${P.dest}/${author}/${name}.svg`;
     const destAbs = join(ASSETS, destRel);
     mkdirSync(dirname(destAbs), { recursive: true });
     copyFileSync(join(srcRoot, rel), destAbs);
@@ -108,16 +167,16 @@ try {
     byId.set(id, {
       id,
       type: 'texture',
-      description: `${name.replace(/[-_]/g, ' ')} · ${P.source} (${author})`,
+      description: P.flatId ? `${name.replace(/[-_]/g, ' ')} · ${P.source}` : `${name.replace(/[-_]/g, ' ')} · ${P.source} (${author})`,
       status: 'filled',
       path: destRel,
       category,
       style: P.style,
       license: P.license,
       source: P.source,
-      tags: [...new Set([...words, author, ...extraTags])],
+      tags: [...new Set([...words, P.source, ...extraTags])],
       spec: { format: 'svg', width: w, height: h, transparent: P.transparent ?? true },
-      provenance: { repo: P.repo, ref: P.ref, author },
+      provenance: P.flatId ? { repo: P.repo, ref: P.ref } : { repo: P.repo, ref: P.ref, author },
     });
     added++;
   }

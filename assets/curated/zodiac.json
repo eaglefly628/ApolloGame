@@ -1,0 +1,79 @@
+{
+  "note": "十二生肖 → 现有库资产(twemoji 全身动物·CC-BY 4.0·彩色，统一风格)",
+  "order": [
+    "鼠",
+    "牛",
+    "虎",
+    "兔",
+    "龙",
+    "蛇",
+    "马",
+    "羊",
+    "猴",
+    "鸡",
+    "狗",
+    "猪"
+  ],
+  "map": {
+    "rat": {
+      "cn": "鼠",
+      "asset": "emoji/rat",
+      "path": "emoji/1f400.png"
+    },
+    "ox": {
+      "cn": "牛",
+      "asset": "emoji/ox",
+      "path": "emoji/1f402.png"
+    },
+    "tiger": {
+      "cn": "虎",
+      "asset": "emoji/tiger2",
+      "path": "emoji/1f405.png"
+    },
+    "rabbit": {
+      "cn": "兔",
+      "asset": "emoji/rabbit2",
+      "path": "emoji/1f407.png"
+    },
+    "dragon": {
+      "cn": "龙",
+      "asset": "emoji/dragon",
+      "path": "emoji/1f409.png"
+    },
+    "snake": {
+      "cn": "蛇",
+      "asset": "emoji/snake",
+      "path": "emoji/1f40d.png"
+    },
+    "horse": {
+      "cn": "马",
+      "asset": "emoji/racehorse",
+      "path": "emoji/1f40e.png"
+    },
+    "goat": {
+      "cn": "羊",
+      "asset": "emoji/goat",
+      "path": "emoji/1f410.png"
+    },
+    "monkey": {
+      "cn": "猴",
+      "asset": "emoji/monkey",
+      "path": "emoji/1f412.png"
+    },
+    "rooster": {
+      "cn": "鸡",
+      "asset": "emoji/rooster",
+      "path": "emoji/1f413.png"
+    },
+    "dog": {
+      "cn": "狗",
+      "asset": "emoji/dog2",
+      "path": "emoji/1f415.png"
+    },
+    "pig": {
+      "cn": "猪",
+      "asset": "emoji/pig2",
+      "path": "emoji/1f416.png"
+    }
+  }
+}
