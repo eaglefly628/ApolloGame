@@ -17,8 +17,8 @@ export interface TengangCardView { id: string; name: string }
 export interface BattleLane { name: string; mine: number; enemy: number; lead: 'a' | 'b' | 'n'; state: string; mineText: string; enemyText: string }
 export interface BattleLever { key: string; glyph: string; name: string; cost: number; desc: string; on?: boolean }
 // 对决特写（owner：拉到屏幕前·战斗表演）：两张牌放大 + 点数/加成/战力计算 + 胜率区间条 + 掷点落区间 → 生/死翻转。
-export interface ClashCardView { rank: string; suit: 's' | 'h' | 'd' | 'c'; general: boolean; points: number; buff: number; morale: number; pEff: number }
-export interface ClashView { lane: number; winrate: number; roll: number; aWins: boolean; a: ClashCardView; b: ClashCardView }
+export interface ClashCardView { rank: string; suit: 's' | 'h' | 'd' | 'c'; general: boolean; points: number; buff: number; morale: number; tengang: number; pEff: number }
+export interface ClashView { lane: number; winrate: number; roll: number; aWins: boolean; tie: 'points' | 'stamina' | 'roll' | null; a: ClashCardView; b: ClashCardView }
 // 板上瞬时特效（A6 死亡闪帧 / A2 出牌啪嗒 —— 纯表现 juice）：t∈[0,1] 由驱动层按真实时间算好的淡出进度，渲染器只如实画当下那一帧
 //   （故每帧重画 innerHTML 也连续，不靠会被重渲打断的 CSS 关键帧）。kind=death → 斩残影(石板+斩，外扩红环淡出·延续 overlay→棋盘)；
 //   kind=deploy → 入场啪嗒(己橙/敌蓝环放大淡出)。位置同兵 = laneAt(lane, pos01)。不进 hash、不改判定（同 ThreeRenderer 固定解释器）。
@@ -244,8 +244,8 @@ function buildHTML(view: BattleView, s: CamState): string {
   // 对决特写表演（owner：拉到屏幕前·看为什么胜败）：冻结战场 → 放大两牌 + 点数/加成/战力 → 胜率区间条 + 掷点落区间 → 生者翻正/死者斩。
   const cv = view.clash;
   const sgn = (n: number): string => (n >= 0 ? '+' + n : String(n));
-  // 主 Buff 明细（owner）：点数(公平骨架 base) + 经营(养成/干预聚合) [+ 士气(主将在/亡)] ＝ 战力 P_eff（夹 [0,30]）。
-  const detailTxt = (c: ClashCardView): string => `点数 ${c.points} · 经营 ${sgn(c.buff)}${c.morale ? ' · 士气 ' + sgn(c.morale) : ''} <b style="font-size:15px; color:var(--ink);">＝ 战力 ${c.pEff}</b>`;
+  // 主 Buff 明细（owner）：点数(公平骨架 base) + 经营(养成聚合) [+ 天罡(已施法术加成)] [+ 士气(主将在/亡)] ＝ 战力 P_eff（夹 [0,30]）。
+  const detailTxt = (c: ClashCardView): string => `点数 ${c.points} · 经营 ${sgn(c.buff)}${c.tengang ? ' · 天罡 ' + sgn(c.tengang) : ''}${c.morale ? ' · 士气 ' + sgn(c.morale) : ''} <b style="font-size:15px; color:var(--ink);">＝ 战力 ${c.pEff}</b>`;
   const bigCard = (c: ClashCardView, side: 'a' | 'b', win: boolean): string => {
     const col = side === 'a' ? '#ff5d2e' : '#3a86d4', sc = SUITC[c.suit];
     const slide = side === 'a' ? 'gg-clashL' : 'gg-clashR';
@@ -273,7 +273,7 @@ function buildHTML(view: BattleView, s: CamState): string {
           <div style="position:absolute; left:${wrPct}%; top:-5px; bottom:-5px; width:2px; background:#fff;"></div>
           <div style="position:absolute; left:${rollPct}%; top:-14px;"><div style="transform:translateX(-50%); width:0; height:0; border-left:11px solid transparent; border-right:11px solid transparent; border-top:18px solid #fff; filter:drop-shadow(0 2px 4px rgba(0,0,0,.6)); animation:gg-rolldrop .9s ease-out forwards;"></div></div>
         </div>
-        <div style="font-family:var(--font-num); font-size:13px; color:var(--ink-dim); margin-top:14px;">掷点 ${rollPct} 落在 ${cv.aWins ? '我方生区' : '敌方生区'} → <b style="color:${cv.aWins ? '#ff5d2e' : '#3a86d4'};">${cv.aWins ? '我方' + esc(cv.a.rank) + '翻正 · 敌' + esc(cv.b.rank) + '斩' : '敌' + esc(cv.b.rank) + '翻正 · 我方' + esc(cv.a.rank) + '斩'}</b></div>
+        <div style="font-family:var(--font-num); font-size:13px; color:var(--ink-dim); margin-top:14px;">${cv.tie === 'points' ? '战力相等 50:50 → 点数大者胜' : cv.tie === 'stamina' ? '战力·点数皆平 → 续航高者胜' : cv.tie === 'roll' ? '全平 → 重揉定' : '掷点 ' + rollPct + ' 落在 ' + (cv.aWins ? '我方生区' : '敌方生区')} → <b style="color:${cv.aWins ? '#ff5d2e' : '#3a86d4'};">${cv.aWins ? '我方' + esc(cv.a.rank) + '翻正 · 敌' + esc(cv.b.rank) + '斩' : '敌' + esc(cv.b.rank) + '翻正 · 我方' + esc(cv.a.rank) + '斩'}</b></div>
       </div>
     </div>`;
   })() : '';
@@ -363,7 +363,7 @@ export function renderClashSvg(cv: ClashView): string {
   const W = 940, Hh = 590;
   const sg: Record<string, string> = { s: '♠', h: '♥', d: '♦', c: '♣' };
   const sgn = (n: number): string => (n >= 0 ? '+' + n : String(n));
-  const detail = (c: ClashCardView): string => `点数 ${c.points} · 经营 ${sgn(c.buff)}${c.morale ? ' · 士气 ' + sgn(c.morale) : ''} ＝ 战力 ${c.pEff}`;
+  const detail = (c: ClashCardView): string => `点数 ${c.points} · 经营 ${sgn(c.buff)}${c.tengang ? ' · 天罡 ' + sgn(c.tengang) : ''}${c.morale ? ' · 士气 ' + sgn(c.morale) : ''} ＝ 战力 ${c.pEff}`;
   const card = (c: ClashCardView, x: number, win: boolean, mine: boolean): string => {
     const sc = SUITC[c.suit], bcol = win ? '#e0a93a' : '#d8504e', bg = win ? '#fff7e8' : '#7e2a20';
     return `<g transform="translate(${x},116)">
@@ -377,6 +377,10 @@ export function renderClashSvg(cv: ClashView): string {
   };
   const barX = 120, barY = 486, barW = 700, barH = 26, splitX = barX + barW * cv.winrate, rollX = barX + barW * cv.roll;
   const resultTxt = cv.aWins ? '我方' + cv.a.rank + ' 翻正 · 敌 ' + cv.b.rank + ' 斩' : '敌 ' + cv.b.rank + ' 翻正 · 我方 ' + cv.a.rank + ' 斩';
+  // 50:50 平局裁定（owner）：点数/续航决出时掷点无意义 → 不画掷标；result 行写明裁定理由。
+  const reason = cv.tie === 'points' ? '战力相等 50:50 → 点数大者胜' : cv.tie === 'stamina' ? '战力·点数皆平 → 续航高者胜' : cv.tie === 'roll' ? '全平 → 重揉定' : '掷点 ' + rollPct + ' 落在 ' + (cv.aWins ? '我方生区' : '敌方生区');
+  const showRoll = cv.tie !== 'points' && cv.tie !== 'stamina';
+  const rollLabelX = Math.max(barX + 26, Math.min(barX + barW - 26, rollX)); // 贴边夹住·不溢出/不压两端胜率标签
   return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${W} ${Hh}" font-family="'Noto Sans SC','PingFang SC',sans-serif">
     <rect width="${W}" height="${Hh}" fill="#0e1117"/>
     <text x="${W / 2}" y="58" font-size="28" font-weight="700" text-anchor="middle" fill="#ff7a45">⚔ ${LN} · 命运一掷</text>
@@ -388,8 +392,7 @@ export function renderClashSvg(cv: ClashView): string {
     <rect x="${barX}" y="${barY}" width="${barW}" height="${barH}" rx="13" fill="#2f72b8"/>
     <rect x="${barX}" y="${barY}" width="${Math.round(barW * cv.winrate)}" height="${barH}" rx="13" fill="#ee5520"/>
     <line x1="${splitX}" y1="${barY - 7}" x2="${splitX}" y2="${barY + barH + 7}" stroke="#fff" stroke-width="2"/>
-    <polygon points="${rollX - 11},${barY - 24} ${rollX + 11},${barY - 24} ${rollX},${barY - 4}" fill="#fff"/>
-    <text x="${rollX}" y="${barY - 30}" font-size="13" text-anchor="middle" fill="#fff" font-family="monospace">掷 ${rollPct}</text>
-    <text x="${W / 2}" y="556" font-size="15" text-anchor="middle" fill="#cbd5e1" font-family="monospace">掷点 ${rollPct} 落在 ${cv.aWins ? '我方生区' : '敌方生区'} → ${esc(resultTxt)}</text>
+    ${showRoll ? `<polygon points="${rollX - 11},${barY - 24} ${rollX + 11},${barY - 24} ${rollX},${barY - 4}" fill="#fff"/><text x="${rollLabelX}" y="${barY + barH + 20}" font-size="13" text-anchor="middle" fill="#fff" font-family="monospace">掷 ${rollPct}</text>` : ''}
+    <text x="${W / 2}" y="${barY + barH + 44}" font-size="15" text-anchor="middle" fill="#cbd5e1" font-family="monospace">${reason} → ${esc(resultTxt)}</text>
   </svg>`;
 }

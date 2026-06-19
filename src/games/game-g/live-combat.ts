@@ -27,8 +27,9 @@ export interface LiveUnit { id: string; rank: string; suit: string; points: numb
 export interface LiveLane { a: LiveUnit[]; b: LiveUnit[]; aGenDead: boolean; bGenDead: boolean; spentA: number; spentB: number; encT: number }
 // 对决事件（doc19 §三「胜率可读」+ 命运一掷 · 给战斗表演特写读数）：双方点数/经营加成/有效战力 P_eff、胜率、所掷点 roll、谁胜。
 // 纯记录（不进 liveHash、不改判定）：roll = clash 那一掷的 nextRandom 值，aWins = roll < winrate ——把"算出概率→掷→落在区间定生死"如实暴露。
-export interface ClashCard { rank: string; suit: string; general: boolean; points: number; buff: number; morale: number; pEff: number }
-export interface ClashEvent { tick: number; lane: number; winrate: number; roll: number; aWins: boolean; a: ClashCard; b: ClashCard }
+export interface ClashCard { rank: string; suit: string; general: boolean; points: number; buff: number; morale: number; tengang: number; pEff: number }
+// tie：50:50 平局如何裁定（owner）—— null=正常概率掷命(战力不等) / 'points'=战力相等·点数大者胜 / 'stamina'=点数也同·续航高者胜 / 'roll'=全同·这一掷定(重揉)。
+export interface ClashEvent { tick: number; lane: number; winrate: number; roll: number; aWins: boolean; tie: 'points' | 'stamina' | 'roll' | null; a: ClashCard; b: ClashCard }
 // 已施天罡 → 玩家侧(a)持续战斗修正（A-JOKER · cast 后整局生效·一种牌算一次不叠）。
 // 聚合(aggregateTengang)在 game-g 读 GAME_G_TIANGANGS 算（避免 live-combat ← blueprint 环依赖）；live-combat 只持有这份扁平修正、在 clash/deploy 钩子读。
 // v1 实装：odds(巧手 pEffAdd / 稳手 winFloor) · power(虎符 all / 寡兵 LE3 / 同花魁 sameSuit) · combo(对子诀 pair) · morale(令旗 leader) · stamina(铁汉) · draw(广纳 handMax)。
@@ -69,7 +70,7 @@ export function migrateRear(b: LiveBattle, side: 'a' | 'b', fromLane: number, to
 
 // 遭遇拍的有效战力 P_eff（doc19 §三）：基础点数 + 经营 buff + 本路士气（主将在 +MORALE_PTS / 亡 −ROUT_PTS）。读当下 → live。
 // 返回拆解（供对决特写「主 Buff 明细」）：pEff 终值 + shift（士气/溃散分量）。经营 buff = u.buff（养成/干预聚合）。
-function effPowerBreak(u: LiveUnit, lane: LiveLane, side: 'a' | 'b', fx: TengangFx): { pEff: number; shift: number } {
+function effPowerBreak(u: LiveUnit, lane: LiveLane, side: 'a' | 'b', fx: TengangFx): { pEff: number; shift: number; tg: number } {
   // 天罡(玩家 a 施法·持续·只己方)：点数加成 = 全军(虎符) + 巧手掷命点 + 本路≤3张(寡兵) + 同花伙伴(同花魁) + 本路含对子(对子诀)。
   let tg = 0;
   if (side === 'a') {
@@ -78,12 +79,12 @@ function effPowerBreak(u: LiveUnit, lane: LiveLane, side: 'a' | 'b', fx: Tengang
     if (fx.powerSameSuit && lane.a.filter((x) => x.suit === u.suit).length >= 2) tg += fx.powerSameSuit;
     if (fx.comboPair) { const rc = new Map<string, number>(); for (const x of lane.a) rc.set(x.rank, (rc.get(x.rank) ?? 0) + 1); if ([...rc.values()].some((n) => n >= 2)) tg += fx.comboPair; }
   }
-  if (u.general) return { pEff: pEff(u.points, u.buff + tg), shift: 0 }; // 主将自身=士气源、不再吃士气分量（仍吃天罡点数加成）
+  if (u.general) return { pEff: pEff(u.points, u.buff + tg), shift: 0, tg }; // 主将自身=士气源、不再吃士气分量（仍吃天罡点数加成）
   const genDead = side === 'a' ? lane.aGenDead : lane.bGenDead;
   const genHere = (side === 'a' ? lane.a : lane.b).some((x) => x.general && !x.dead);
-  const moraleBonus = side === 'a' && genHere ? fx.moraleLeader : 0; // 令旗：主将在 → 下属士气额外 +
+  const moraleBonus = side === 'a' && genHere ? fx.moraleLeader : 0; // 令旗：主将在 → 下属士气额外 +（计入 士气 分量）
   const shift = genDead ? -ROUT_PTS : genHere ? MORALE_PTS + moraleBonus : 0;
-  return { pEff: pEff(u.points, u.buff + tg + shift), shift };
+  return { pEff: pEff(u.points, u.buff + tg + shift), shift, tg };
 }
 
 function killFront(lane: LiveLane, side: 'a' | 'b'): void {
@@ -117,8 +118,16 @@ function stepLane(b: LiveBattle, li: number): void {
     let wr = winrate(ea, eb);
     if (b.tengangA.winFloor > 0) wr = Math.min(0.97, Math.max(wr, 0.03 + b.tengangA.winFloor)); // 稳手：玩家胜率下限抬高（少翻车）
     const roll = nextRandom(b.rng); // 同序消费 rng（天罡只改阈值/pEff·不改 rng 消费 → 逐拍 hash 仍确定）
-    const aWins = roll < wr;
-    const ev: ClashEvent = { tick: b.tick, lane: li, winrate: wr, roll, aWins, a: { rank: fa.rank, suit: fa.suit, general: fa.general, points: fa.points, buff: fa.buff, morale: ba.shift, pEff: ea }, b: { rank: fb.rank, suit: fb.suit, general: fb.general, points: fb.points, buff: fb.buff, morale: bb.shift, pEff: eb } };
+    // 50:50 平局阶梯（owner）：战力相等 → 不纯靠运气，按 点数大者胜 → 续航高者胜 → 全同则这一掷定(重揉)。战力不等 → 正常概率掷命(含爆冷缝)。
+    let aWins: boolean, tie: ClashEvent['tie'] = null;
+    if (ea === eb) {
+      if (fa.points !== fb.points) { aWins = fa.points > fb.points; tie = 'points'; }
+      else if (fa.staminaLeft !== fb.staminaLeft) { aWins = fa.staminaLeft > fb.staminaLeft; tie = 'stamina'; }
+      else { aWins = roll < 0.5; tie = 'roll'; }
+    } else {
+      aWins = roll < wr;
+    }
+    const ev: ClashEvent = { tick: b.tick, lane: li, winrate: wr, roll, aWins, tie, a: { rank: fa.rank, suit: fa.suit, general: fa.general, points: fa.points, buff: fa.buff, morale: ba.shift, tengang: ba.tg, pEff: ea }, b: { rank: fb.rank, suit: fb.suit, general: fb.general, points: fb.points, buff: fb.buff, morale: bb.shift, tengang: bb.tg, pEff: eb } };
     b.lastClash = ev; b.clashSeq += 1; b.clashLog.push(ev);
     killFront(lane, aWins ? 'b' : 'a'); // 输家翻反·阵亡 → 本局弃堆
     const wq = aWins ? A : B; const wf = wq[0]; // 赢家翻正·前进，续航 −1；尽则退场（沉牌底·3D-1 再部署轮转）

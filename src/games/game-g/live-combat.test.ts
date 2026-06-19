@@ -74,7 +74,7 @@ describe('Game G · live-combat（doc18/19 · live + pairwise clash + 续航）'
 
 // A1 战潮抽牌·事件脉冲（owner 北极星 Balatro「啪嗒」心流）：非线性涌牌 = 底流 + 遭遇/斩将/告急/破阵。
 describe('Game G · A1 战潮抽牌·事件脉冲（doc18 §10.3 乙 · tideDrawPulse 纯函数·确定性）', () => {
-  const ce = (aWins: boolean, aGen: boolean, bGen: boolean): ClashEvent => ({ tick: 1, lane: 0, winrate: 0.5, roll: 0.5, aWins, a: { rank: '7', suit: 'S', general: aGen, points: 7, buff: 0, morale: 0, pEff: 7 }, b: { rank: '7', suit: 'H', general: bGen, points: 7, buff: 0, morale: 0, pEff: 7 } });
+  const ce = (aWins: boolean, aGen: boolean, bGen: boolean): ClashEvent => ({ tick: 1, lane: 0, winrate: 0.5, roll: 0.5, aWins, tie: null, a: { rank: '7', suit: 'S', general: aGen, points: 7, buff: 0, morale: 0, tengang: 0, pEff: 7 }, b: { rank: '7', suit: 'H', general: bGen, points: 7, buff: 0, morale: 0, tengang: 0, pEff: 7 } });
 
   it('事件→张数：遭遇+1 / 斩将(输方主将)+1 / 告急(我家掉血)+2 / 破阵(敌家掉血)+1；负 chip 钳 0', () => {
     expect(tideDrawPulse([], 0, 0)).toBe(0); // 静拍不涌
@@ -159,5 +159,31 @@ describe('Game G · A1 战潮抽牌·事件脉冲（doc18 §10.3 乙 · tideDraw
     const weak = clashWR(NO_TENGANG, 40);                                  // 敌 +40 → 我方触底(≈3%)
     expect(weak).toBeLessThan(0.1);                                        // 确实压到底附近
     expect(clashWR(aggregateTengang(['wenshou']), 40)).toBeGreaterThan(weak); // 稳手 winFloor 抬底(→≈8%)
+  });
+
+  it('50:50 平局裁定（owner · 点数大者胜 → 续航高者 → 重揉）：战力相等不纯靠运气', () => {
+    const tieClash = (aRank: string, aBuff: number, bRank: string, bBuff: number): ClashEvent => {
+      const b = initLiveBattle(3);
+      const dep: DeployCmd[] = [
+        { tick: 1, side: 'a', lane: 0, unit: { id: 'a', rank: aRank, suit: 'S', general: false, buff: aBuff } },
+        { tick: 1, side: 'b', lane: 0, unit: { id: 'b', rank: bRank, suit: 'H', general: false, buff: bBuff } },
+      ];
+      for (let i = 0; i < 200 && b.clashSeq === 0; i++) stepLiveBattle(b, dep);
+      return b.lastClash!;
+    };
+    // 战力相等(7+8=15 vs 9+6=15)·点数不同 → 'points' 裁定·点数大者(敌9)胜
+    const ev1 = tieClash('7', 8, '9', 6);
+    expect(ev1.a.pEff).toBe(ev1.b.pEff); expect(ev1.winrate).toBeCloseTo(0.5);
+    expect(ev1.tie).toBe('points');
+    expect(ev1.aWins).toBe(false); // 敌 9 点数大 → 胜（不靠掷点）
+    // 全相等(7+5 vs 7+5) → 'roll' 裁定（重揉·这一掷定）
+    const ev2 = tieClash('7', 5, '7', 5);
+    expect(ev2.a.pEff).toBe(ev2.b.pEff); expect(ev2.tie).toBe('roll');
+    expect(typeof ev2.aWins).toBe('boolean');
+    // 战力不等(7+10=17 vs 9) → 正常概率掷命·tie=null
+    const ev3 = tieClash('7', 10, '9', 0);
+    expect(ev3.a.pEff).not.toBe(ev3.b.pEff); expect(ev3.tie).toBe(null);
+    // 确定性：同输入 → 同裁定
+    expect(tieClash('7', 8, '9', 6).aWins).toBe(ev1.aWins);
   });
 });

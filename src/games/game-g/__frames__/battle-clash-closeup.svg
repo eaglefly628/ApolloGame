@@ -23,7 +23,6 @@
     <rect x="120" y="486" width="700" height="26" rx="13" fill="#2f72b8"/>
     <rect x="120" y="486" width="281" height="26" rx="13" fill="#ee5520"/>
     <line x1="400.9186379212836" y1="479" x2="400.9186379212836" y2="519" stroke="#fff" stroke-width="2"/>
-    <polygon points="792.835342945531,462 814.835342945531,462 803.835342945531,482" fill="#fff"/>
-    <text x="803.835342945531" y="456" font-size="13" text-anchor="middle" fill="#fff" font-family="monospace">掷 98</text>
+    <polygon points="792.835342945531,462 814.835342945531,462 803.835342945531,482" fill="#fff"/><text x="794" y="532" font-size="13" text-anchor="middle" fill="#fff" font-family="monospace">掷 98</text>
     <text x="470" y="556" font-size="15" text-anchor="middle" fill="#cbd5e1" font-family="monospace">掷点 98 落在 敌方生区 → 敌 K 翻正 · 我方 K 斩</text>
   </svg>

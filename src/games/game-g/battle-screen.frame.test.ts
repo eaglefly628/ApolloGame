@@ -71,8 +71,8 @@ describe('Game G · 战斗屏视觉回归（真 live-combat → HTML golden · �
     const { live, deploys } = setup();
     while (live.tick < 400 && live.clashSeq === 0) stepLiveBattle(live, deploys); // 跑到首次对决，取真 clash 事件
     const ev = live.lastClash!;
-    const card = (c: typeof ev.a): ClashView['a'] => ({ rank: c.rank, suit: c.suit.toLowerCase() as 's' | 'h' | 'd' | 'c', general: c.general, points: c.points, buff: c.buff, morale: c.morale, pEff: c.pEff });
-    const clash: ClashView = { lane: ev.lane, winrate: ev.winrate, roll: ev.roll, aWins: ev.aWins, a: card(ev.a), b: card(ev.b) };
+    const card = (c: typeof ev.a): ClashView['a'] => ({ rank: c.rank, suit: c.suit.toLowerCase() as 's' | 'h' | 'd' | 'c', general: c.general, points: c.points, buff: c.buff, morale: c.morale, tengang: c.tengang, pEff: c.pEff });
+    const clash: ClashView = { lane: ev.lane, winrate: ev.winrate, roll: ev.roll, aWins: ev.aWins, tie: ev.tie, a: card(ev.a), b: card(ev.b) };
     const html = renderBattleDoc(buildBattleViewLive(live, save(), bossFor(2).name, bossFor(2).persona, 'd', undefined, clash));
     expect(html).toContain('命运一掷'); // 特写标题
     expect(html).toContain('经营'); // 主 Buff 明细：点数·经营·士气
