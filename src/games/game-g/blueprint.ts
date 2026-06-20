@@ -727,6 +727,17 @@ export const DIAMOND_EXCHANGES: DiamondExchange[] = [
   { id: 'x64', diamond: 64, gold: 900, tag: '至尊' }, // ~14🪙/💎
 ];
 
+// 💎→地支碎片 兑换（养地支专属材料·待甲镶嵌系统消耗）。Demo：先能买能囤。
+export interface ShardPack { id: string; diamond: number; shards: number; tag?: string }
+export const DIZHI_SHARD_PACKS: ShardPack[] = [
+  { id: 's4', diamond: 4, shards: 10 },
+  { id: 's12', diamond: 12, shards: 36, tag: '超值' },
+  { id: 's24', diamond: 24, shards: 80, tag: '热卖' },
+];
+
+// 投资人彩蛋（owner 2026-06-20）：首充免密「送一点点」，第二次起需密码。密码=数据常量·可改。
+export const RECHARGE_PASSWORD = 'am';
+
 const PLANET_TROOP_RANKS = new Set(['A', '2', '3', '4', '5', '6']); // 「兵」档（星球·军作用域）
 /** 星球·军：揭晓前给军阵「兵」档 +favor（叠加级数）。build-时变换、outcome-first；作用 built 军阵结构（非 deck 均值）。 */
 export function applyPlanetArmy(army: ArmyCard[], planets: Record<string, number>): ArmyCard[] {

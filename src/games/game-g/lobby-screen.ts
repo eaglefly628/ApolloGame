@@ -6,13 +6,13 @@
 import { GI, tiangangIcon } from './icons.js';
 import { HERO_CARDS, DIZHI_ZODIACS, DIZHI_TRINES, EARTH_FIENDS, type StageCampaign } from './blueprint.js';
 import { heroPortrait } from './portraits.js';
-import { RECHARGE_PACKS, rechargeTotal, DIAMOND_EXCHANGES } from './blueprint.js';
+import { RECHARGE_PACKS, rechargeTotal, DIAMOND_EXCHANGES, DIZHI_SHARD_PACKS } from './blueprint.js';
 
 export interface LobbyShopItem { id: string; name: string; sub: string; cost: number; owned: boolean; buyable: boolean; level?: number; inDeck?: boolean; power?: number; phat?: number; kind?: string; icon?: string; tint?: string; unlockStage?: number; locked?: boolean }
 export type EarthRarity = 'bronze' | 'silver' | 'gold';
 export interface LobbyView {
   skin: 'onyx' | 'rosy';
-  coin: number; diamond?: number; energy: number; energyMax: number; foilCount: number;
+  coin: number; diamond?: number; dizhiShards?: number; rechargeNeedsPassword?: boolean; energy: number; energyMax: number; foilCount: number;
   name: string; mainCard: string; rankText: string;
   stageLabel: string; archLine: string; bossLine: string;
   deckAvg: number; deckMin: number; deckMax: number; deck: number[];
@@ -391,8 +391,10 @@ function manualBox(tier: 'easy' | 'mid' | 'hard'): string {
 }
 // 钻石商城（owner 2026-06-20 · Demo 假支付）：充值(¥→💎·越充越送·上限64) + 兑换(💎→🪙材料)。
 // 全数据驱动：档位读 RECHARGE_PACKS / DIAMOND_EXCHANGES；点击 = 真发币（onRecharge/onExchange）。
-function rechargeBox(view: LobbyView): string {
+function rechargeBox(view: LobbyView, rechargeErr = ''): string {
   const dia = view.diamond ?? 0;
+  const shards = view.dizhiShards ?? 0;
+  const needPw = !!view.rechargeNeedsPassword;
   const packCard = (p: typeof RECHARGE_PACKS[number]): string => {
     const total = rechargeTotal(p);
     const bonus = p.bonus > 0 ? `<span style="color:var(--gold);font-size:11px">含赠 +${p.bonus}</span>` : `<span style="color:var(--ink-dim);font-size:11px">&nbsp;</span>`;
@@ -404,13 +406,25 @@ function rechargeBox(view: LobbyView): string {
     const tag = x.tag ? `<div style="position:absolute;top:-9px;right:8px;background:#3a6ea5;color:#dff;font-family:var(--fn);font-size:9px;font-weight:700;padding:2px 7px;border-radius:99px">${x.tag}</div>` : '';
     return `<button class="rc-pack${afford ? '' : ' off'}"${afford ? ` data-act="exchangeBuy" data-k="${x.id}"` : ' disabled'} style="position:relative">${tag}<div class="rc-amt" style="color:var(--gold)">🪙 ${x.gold}</div><div class="rc-price" style="background:#1c3a5a;color:#9fe0ff">💎 ${x.diamond}</div></button>`;
   };
+  const shardCard = (x: typeof DIZHI_SHARD_PACKS[number]): string => {
+    const afford = dia >= x.diamond;
+    const tag = x.tag ? `<div style="position:absolute;top:-9px;right:8px;background:#7a5a2a;color:#ffe;font-family:var(--fn);font-size:9px;font-weight:700;padding:2px 7px;border-radius:99px">${x.tag}</div>` : '';
+    return `<button class="rc-pack${afford ? '' : ' off'}"${afford ? ` data-act="shardBuy" data-k="${x.id}"` : ' disabled'} style="position:relative">${tag}<div class="rc-amt" style="color:#e6b96a">🧩 ${x.shards}</div><div class="rc-price" style="background:#1c3a5a;color:#9fe0ff">💎 ${x.diamond}</div></button>`;
+  };
+  // 投资人彩蛋：第二次起需密码（首充免密·已由 needPw 标识）
+  const pwBlock = needPw
+    ? `<div style="margin-top:8px;display:flex;gap:8px;align-items:center"><input class="rc-pw" type="password" placeholder="充值密码" autocomplete="off" style="flex:1;padding:9px 11px;border-radius:9px;background:var(--chip);border:1px solid ${rechargeErr ? '#e0635f' : 'var(--panel-border)'};color:var(--ink);font-size:13px"><span style="font-size:11px;color:var(--ink-dim)">🔒 复充需密码</span></div>${rechargeErr ? `<div style="color:#e0635f;font-size:12px;margin-top:5px">${rechargeErr}</div>` : ''}`
+    : `<div class="note" style="text-align:left;margin-top:6px;font-size:11px">🎁 首充免密「送一点点」体验。</div>`;
   return `<div class="tut-ov" data-act="recharge-close"><div class="tut-box intro-scroll" data-stop="1" style="max-width:560px">
     <h2>💎 钻石商城</h2>
-    <div style="display:flex;align-items:center;gap:8px;color:var(--ink-dim);font-size:12px;margin-bottom:4px">当前持有 <b style="color:#7fd0ff;font-size:15px">💎 ${dia}</b><span style="margin-left:auto">🪙 ${view.coin}</span></div>
+    <div style="display:flex;align-items:center;gap:12px;color:var(--ink-dim);font-size:12px;margin-bottom:4px">当前持有 <b style="color:#7fd0ff;font-size:15px">💎 ${dia}</b><span>🧩 ${shards}</span><span style="margin-left:auto">🪙 ${view.coin}</span></div>
     <div style="font-family:var(--fh);font-weight:700;font-size:14px;color:var(--ink);margin:12px 0 8px">充值 · 越充越送（Demo·点即到账）</div>
     <div class="rc-grid">${RECHARGE_PACKS.map(packCard).join('')}</div>
-    <div style="font-family:var(--fh);font-weight:700;font-size:14px;color:var(--ink);margin:16px 0 8px">兑换材料 · 💎 → 🪙（拿去改造坊升级）</div>
+    ${pwBlock}
+    <div style="font-family:var(--fh);font-weight:700;font-size:14px;color:var(--ink);margin:16px 0 8px">兑换金币 · 💎 → 🪙（改造坊通用材料）</div>
     <div class="rc-grid">${DIAMOND_EXCHANGES.map(exCard).join('')}</div>
+    <div style="font-family:var(--fh);font-weight:700;font-size:14px;color:var(--ink);margin:16px 0 8px">兑换地支碎片 · 💎 → 🧩（养地支专属材料）</div>
+    <div class="rc-grid">${DIZHI_SHARD_PACKS.map(shardCard).join('')}</div>
     <div class="note" style="text-align:left;margin-top:12px;font-size:11px">Demo 演示：充值为模拟，点击直接到账、不走真实支付。</div>
     <div style="text-align:center;margin-top:12px"><button class="cta-sub" style="color:#2a1a08;background:var(--gold-grad);border:0" data-act="recharge-close">完成 →</button></div>
   </div></div>`;
@@ -581,7 +595,7 @@ function fiendsCodex(): string {
   }).join('')}</div>`;
 }
 
-export function renderLobby(view: LobbyView, tab: string, tutorialOpen: boolean, deckTab: 'base' | 'gang' = 'base', earthFilter = 'all', collTab = 'cards', heroSuit = 'all', heroDetail = '', heroRar = 'all', ownedOnly = false, introOpen = false, manualTier: '' | 'easy' | 'mid' | 'hard' = '', rechargeOpen = false): string {
+export function renderLobby(view: LobbyView, tab: string, tutorialOpen: boolean, deckTab: 'base' | 'gang' = 'base', earthFilter = 'all', collTab = 'cards', heroSuit = 'all', heroDetail = '', heroRar = 'all', ownedOnly = false, introOpen = false, manualTier: '' | 'easy' | 'mid' | 'hard' = '', rechargeOpen = false, rechargeErr = ''): string {
   const on = (t: string): string => (tab === t ? ' on' : '');
   const dOn = (t: string): string => (deckTab === t ? ' on' : '');
   const cOn = (t: string): string => (collTab === t ? ' on' : '');
@@ -598,6 +612,7 @@ export function renderLobby(view: LobbyView, tab: string, tutorialOpen: boolean,
     <button class="seg ${view.skin === 'rosy' ? 'on' : ''}" data-act="skin" data-k="rosy">锦霞</button>
     <div class="coin" title="金币 · 打战斗赚 · 解锁天罡/地支"><span>🪙</span><b>${kfmt(view.coin)}</b></div>
     <button class="coin tap" data-act="recharge" title="钻石商城 · 充值 / 兑换材料"><span>💎</span><b style="color:#7fd0ff">${kfmt(view.diamond ?? 0)}</b><span style="color:var(--gold);font-weight:700;margin-left:2px">＋</span></button>
+    <button class="coin tap" data-act="recharge" title="地支碎片 · 养地支专属材料（💎可换）"><span>🧩</span><b style="color:#e6b96a">${kfmt(view.dizhiShards ?? 0)}</b></button>
     <div class="coin"><span>◈</span><span style="color:var(--gold)">${view.energy}/${view.energyMax}</span></div>
     <div class="coin"><span>✨</span><span style="color:#7fb0d8">${view.foilCount}</span></div>
     <button class="tutbtn" data-act="intro">📜 游戏介绍</button>
@@ -663,7 +678,7 @@ export function renderLobby(view: LobbyView, tab: string, tutorialOpen: boolean,
     </div></section>
     <section class="screen${on('ladder')} full">${ladderSection(view.name, view.rankText)}</section>
   </div>
-  </div>${tutorialOpen ? tutorialBox() : ''}${introOpen ? gameIntroBox() : ''}${manualTier ? manualBox(manualTier) : ''}${rechargeOpen ? rechargeBox(view) : ''}</div>`;
+  </div>${tutorialOpen ? tutorialBox() : ''}${introOpen ? gameIntroBox() : ''}${manualTier ? manualBox(manualTier) : ''}${rechargeOpen ? rechargeBox(view, rechargeErr) : ''}</div>`;
 }
 
 export interface LobbyHandlers {
@@ -674,8 +689,9 @@ export interface LobbyHandlers {
   onBuyFoil?: (id: string) => void;
   onToggleTiangang?: (id: string) => void; // 选入/踢出**出战牌组**（≤deckSize）
   onDiamondUnlock?: (id: string) => void; // 钻石速购解锁天罡（doc25·跳关门槛）
-  onRecharge?: (packId: string) => void; // 充值 ¥→💎（Demo 假支付）
-  onExchange?: (exId: string) => void; // 兑换 💎→🪙材料
+  onRecharge?: (packId: string, password: string) => boolean | void; // 充值 ¥→💎（Demo·首充免密/复充需密码）→ true=成功
+  onExchange?: (exId: string) => void; // 兑换 💎→🪙金币
+  onBuyShards?: (exId: string) => void; // 兑换 💎→🧩地支碎片
   onSelectDeck?: (id: string) => void; // 选某牌组出战
   onNewDeck?: () => void; // 新建牌组
   onDelDeck?: (id: string) => void; // 删除牌组
@@ -698,7 +714,8 @@ export function mountLobby(host: HTMLElement, h: LobbyHandlers): { update: () =>
   let intro = false;
   let manTier: '' | 'easy' | 'mid' | 'hard' = '';
   let recharge = false;
-  const render = (): void => { host.innerHTML = renderLobby({ ...h.getView(), skin }, tab, tut, deckTab, earthFilter, collTab, heroSuit, heroDetail, heroRar, ownedOnly, intro, manTier, recharge); };
+  let rechargeErr = '';
+  const render = (): void => { host.innerHTML = renderLobby({ ...h.getView(), skin }, tab, tut, deckTab, earthFilter, collTab, heroSuit, heroDetail, heroRar, ownedOnly, intro, manTier, recharge, rechargeErr); };
   const onClick = (e: MouseEvent): void => {
     const el = (e.target as HTMLElement).closest('[data-act]') as HTMLElement | null; if (!el) return;
     const act = el.dataset.act, k = el.dataset.k ?? '';
@@ -724,10 +741,11 @@ export function mountLobby(host: HTMLElement, h: LobbyHandlers): { update: () =>
     else if (act === 'buyFoil') { h.onBuyFoil?.(k); render(); }
     else if (act === 'toggleTiangang') { h.onToggleTiangang?.(k); render(); }
     else if (act === 'diamondUnlock') { h.onDiamondUnlock?.(k); render(); }
-    else if (act === 'recharge') { recharge = true; render(); }
-    else if (act === 'recharge-close') { recharge = false; render(); }
-    else if (act === 'rechargeBuy') { h.onRecharge?.(k); render(); }
+    else if (act === 'recharge') { recharge = true; rechargeErr = ''; render(); }
+    else if (act === 'recharge-close') { recharge = false; rechargeErr = ''; render(); }
+    else if (act === 'rechargeBuy') { const pw = (host.querySelector('.rc-pw') as HTMLInputElement | null)?.value ?? ''; const ok = h.onRecharge?.(k, pw); rechargeErr = ok === false ? '密码错误，请重试' : ''; render(); }
     else if (act === 'exchangeBuy') { h.onExchange?.(k); render(); }
+    else if (act === 'shardBuy') { h.onBuyShards?.(k); render(); }
     else if (act === 'selectDeck') { h.onSelectDeck?.(k); render(); }
     else if (act === 'newDeck') { h.onNewDeck?.(); render(); }
     else if (act === 'delDeck') { h.onDelDeck?.(k); render(); }

@@ -164,8 +164,8 @@ describe('Game G · lobby-screen mountLobby 点击交互（DOM · happy-dom）',
       const onRecharge = vi.fn();
       mountLobby(host, { getView: () => makeView({ diamond: 0 }), onPlay: vi.fn(), onRecharge });
       click(host.querySelector('[data-act="recharge"]'));
-      click(host.querySelector('[data-act="rechargeBuy"]')); // 第一档 r6
-      expect(onRecharge).toHaveBeenCalledWith('r6');
+      click(host.querySelector('[data-act="rechargeBuy"]')); // 第一档 r6（首充免密·password=''）
+      expect(onRecharge).toHaveBeenCalledWith('r6', '');
     });
 
     it('余额够 → 点兑换 → onExchange 以 exId 调用', () => {
@@ -184,6 +184,47 @@ describe('Game G · lobby-screen mountLobby 点击交互（DOM · happy-dom）',
       click(host.querySelector('[data-act="recharge"]'));
       expect(host.querySelector('[data-act="exchangeBuy"]')).toBeNull(); // 0💎 全买不起
       expect(onExchange).not.toHaveBeenCalled();
+    });
+
+    it('💎→地支碎片：余额够点档 → onBuyShards 以 exId 调用', () => {
+      const host = document.createElement('div');
+      const onBuyShards = vi.fn();
+      mountLobby(host, { getView: () => makeView({ diamond: 50 }), onPlay: vi.fn(), onBuyShards });
+      click(host.querySelector('[data-act="recharge"]'));
+      click(host.querySelector('[data-act="shardBuy"]')); // 第一档 s4
+      expect(onBuyShards).toHaveBeenCalledWith('s4');
+    });
+
+    it('首充免密：rechargeNeedsPassword 假 → 无密码框、显示首充免密', () => {
+      const host = document.createElement('div');
+      mountLobby(host, { getView: () => makeView({ diamond: 6, rechargeNeedsPassword: false }), onPlay: vi.fn(), onRecharge: () => true });
+      click(host.querySelector('[data-act="recharge"]'));
+      expect(host.querySelector('.rc-pw')).toBeNull();
+      expect(host.innerHTML).toContain('首充免密');
+    });
+
+    it('复充需密码：密码错误（onRecharge 返回 false）→ 显示「密码错误」', () => {
+      const host = document.createElement('div');
+      const onRecharge = vi.fn(() => false); // 引擎判定密码错
+      mountLobby(host, { getView: () => makeView({ diamond: 6, rechargeNeedsPassword: true }), onPlay: vi.fn(), onRecharge });
+      click(host.querySelector('[data-act="recharge"]'));
+      const pw = host.querySelector('.rc-pw') as HTMLInputElement;
+      expect(pw).not.toBeNull();
+      pw.value = '乱填';
+      click(host.querySelector('[data-act="rechargeBuy"]'));
+      expect(onRecharge).toHaveBeenCalledWith('r6', '乱填');
+      expect(host.innerHTML).toContain('密码错误');
+    });
+
+    it('复充需密码：密码正确（onRecharge 返回 true）→ 无报错', () => {
+      const host = document.createElement('div');
+      const onRecharge = vi.fn(() => true);
+      mountLobby(host, { getView: () => makeView({ diamond: 6, rechargeNeedsPassword: true }), onPlay: vi.fn(), onRecharge });
+      click(host.querySelector('[data-act="recharge"]'));
+      (host.querySelector('.rc-pw') as HTMLInputElement).value = 'am';
+      click(host.querySelector('[data-act="rechargeBuy"]'));
+      expect(onRecharge).toHaveBeenCalledWith('r6', 'am');
+      expect(host.innerHTML).not.toContain('密码错误');
     });
   });
 
