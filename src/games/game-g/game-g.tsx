@@ -527,7 +527,7 @@ export function mount(container: HTMLElement): () => void {
         <div style="font-size:14px;color:#9fb0c2;margin-bottom:22px;min-height:18px;">${tail}</div>
         <button id="gg-result-cont" style="padding:14px 44px;border-radius:13px;border:none;cursor:pointer;background:linear-gradient(180deg,#ff8d5a,#ee5a25);color:#fff;font-family:'Rajdhani',sans-serif;font-weight:700;font-size:19px;letter-spacing:.04em;box-shadow:0 10px 28px rgba(238,90,37,.5);">${cont} →</button>
       </div>`;
-      stage.appendChild(result);
+      root.appendChild(result); // 结算覆盖层挂 root（非 stage=mountTurnBattle 宿主）→ 战斗屏重渲(render 整片重建 stage)不会抹掉它
       result.querySelector('#gg-result-cont')?.addEventListener('click', route);
     }
   }
@@ -708,7 +708,7 @@ export function mount(container: HTMLElement): () => void {
         <button id="gg-result-cont" style="padding:14px 44px;border-radius:13px;border:none;cursor:pointer;background:linear-gradient(180deg,#ff8d5a,#ee5a25);color:#fff;font-family:'Rajdhani',sans-serif;font-weight:700;font-size:19px;letter-spacing:.04em;box-shadow:0 10px 28px rgba(238,90,37,.5);">${cont} →</button>
       </div>`;
       stage.style.position = 'relative';
-      stage.appendChild(result);
+      root.appendChild(result); // 同 showTurnMatch：结算覆盖层挂 root·避免 mount 重渲抹掉（superseded 路·一并修）
       result.querySelector('#gg-result-cont')?.addEventListener('click', route);
     };
     // rAF 实时驱动（CR 纯实时·无暂停·doc21）：点数(召唤源泉)随真实时间回复；每 LIVE_STEP_MS 走一拍（一格格爬）+ 敌滴投；
