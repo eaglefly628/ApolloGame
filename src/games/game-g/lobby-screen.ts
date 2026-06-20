@@ -6,14 +6,14 @@
 import { GI, tiangangIcon } from './icons.js';
 import { HERO_CARDS, DIZHI_ZODIACS, DIZHI_TRINES, EARTH_FIENDS, STAGE_CAMPAIGN, STORY_OPENING, type StageCampaign, type StoryBeat } from './blueprint.js';
 import { heroPortrait } from './portraits.js';
-import { RECHARGE_PACKS, rechargeTotal, DIAMOND_EXCHANGES, DIZHI_SHARD_PACKS, GACHA } from './blueprint.js';
+import { RECHARGE_PACKS, rechargeTotal, DIAMOND_EXCHANGES, DIZHI_SHARD_PACKS, GACHA, INLAY_MAX, DIZHI_INLAY_FAVOR, inlayBonus } from './blueprint.js';
 
 export interface LobbyShopItem { id: string; name: string; sub: string; cost: number; owned: boolean; buyable: boolean; level?: number; inDeck?: boolean; power?: number; phat?: number; kind?: string; icon?: string; tint?: string; unlockStage?: number; locked?: boolean }
 export interface GachaResult { kind: 'tiangang' | 'dizhi'; id: string; name: string; rarity?: string; outcome: 'new' | 'dup-shard' | 'dizhi-up' | 'dizhi-shard'; detail: string } // 抽卡结果（开包演出读）
 export type EarthRarity = 'bronze' | 'silver' | 'gold';
 export interface LobbyView {
   skin: 'onyx' | 'rosy';
-  coin: number; diamond?: number; dizhiShards?: number; tiangangShards?: number; dizhiOwned?: Record<string, number>; rechargeNeedsPassword?: boolean; energy: number; energyMax: number; foilCount: number;
+  coin: number; diamond?: number; dizhiShards?: number; tiangangShards?: number; dizhiOwned?: Record<string, number>; inlays?: Record<string, string[]>; rechargeNeedsPassword?: boolean; energy: number; energyMax: number; foilCount: number;
   name: string; mainCard: string; rankText: string;
   stageLabel: string; archLine: string; bossLine: string;
   deckAvg: number; deckMin: number; deckMax: number; deck: number[];
@@ -181,6 +181,27 @@ const CSS = `
 .ggl-root .pick-item:disabled{ opacity:.4; cursor:not-allowed }
 .ggl-root .pick-hd{ font-family:var(--fh); font-weight:700; font-size:14px }
 .ggl-root .pick-sub{ font-size:11px; color:var(--ink-dim); margin-top:2px }
+.ggl-root .ench-grid{ display:grid; grid-template-columns:repeat(13,1fr); gap:4px; margin-bottom:12px }
+.ggl-root .ench-card{ display:flex; flex-direction:column; align-items:center; gap:1px; padding:5px 2px; border-radius:7px; background:var(--chip); border:1px solid var(--panel-border); cursor:pointer; overflow:hidden }
+.ggl-root .ench-card:hover{ border-color:var(--gold) }
+.ggl-root .ench-card.sel{ border-color:var(--gold); background:rgba(232,205,130,.14); box-shadow:0 0 8px rgba(232,205,130,.3) }
+.ggl-root .ench-rk{ font-family:var(--fh); font-weight:700; font-size:12px; line-height:1 }
+.ggl-root .ench-nm{ font-size:8px; color:var(--ink-dim); max-width:100%; white-space:nowrap; overflow:hidden; text-overflow:ellipsis }
+.ggl-root .ench-fv{ font-family:var(--fn); font-size:9px; color:var(--ink) }
+.ggl-root .ench-detail{ display:flex; gap:14px; padding-top:10px; border-top:1px solid var(--panel-border) }
+.ggl-root .ench-sel-card{ flex:none; width:90px; border-radius:10px; border:2px solid; background:var(--chip); padding:8px; display:flex; flex-direction:column; align-items:center; gap:6px }
+.ggl-root .ench-sel-rk{ font-family:var(--fh); font-weight:700; font-size:20px; line-height:1; text-align:center }
+.ggl-root .ench-sel-nm{ font-family:var(--fh); font-weight:700; font-size:12px; text-align:center; color:var(--ink) }
+.ggl-root .ench-sel-fv{ font-size:11px; color:var(--ink-dim); text-align:center }
+.ggl-root .ench-slots{ display:flex; gap:8px }
+.ggl-root .ench-slot{ position:relative; width:44px; height:44px; border-radius:9px; display:flex; align-items:center; justify-content:center; font-size:20px }
+.ggl-root .ench-slot.empty{ border:1px dashed var(--panel-border); color:var(--ink-dim) }
+.ggl-root .ench-slot.filled{ border:1px solid var(--gold); background:rgba(232,205,130,.12); cursor:pointer }
+.ggl-root .ench-rm{ position:absolute; top:-6px; right:-6px; width:16px; height:16px; line-height:14px; text-align:center; font-size:10px; border-radius:50%; background:var(--panel); border:1px solid var(--danger); color:var(--danger) }
+.ggl-root .ench-picks{ display:flex; flex-wrap:wrap; gap:6px }
+.ggl-root .ench-pick{ font-size:12px; padding:6px 10px; border-radius:8px; background:var(--chip); border:1px solid var(--panel-border); color:var(--ink); cursor:pointer }
+.ggl-root .ench-pick:hover{ border-color:var(--gold) }
+.ggl-root .ench-pick:disabled{ opacity:.4; cursor:not-allowed }
 .ggl-root .earth-filter{ display:flex; gap:6px; flex-wrap:wrap; margin-bottom:14px }
 .ggl-root .earth-filter button{ padding:4px 14px; border-radius:6px; background:var(--chip); border:1px solid var(--panel-border); color:var(--ink-dim); font-size:12px; cursor:pointer; transition:background .15s }
 .ggl-root .earth-groups{ display:flex; flex-direction:column; gap:10px }
@@ -561,6 +582,51 @@ function campaignSection(view: LobbyView): string {
 }
 
 // 改造坊天罡牌货架项（B3）：买入 + 选入/踢出战库双动作 + 牌力/P̂ 展示。
+// 地支附魔台（owner 2026-06-20 · 乙简版）：① 选一张扑克牌 → ② 把已拥有的地支生肖镶进去（≤INLAY_MAX 槽）→ +favor。
+// 真影响战斗（经 effectiveDeckFavors→myBias）。连携(三合/六合)留甲契约④。
+function enchantPanel(view: LobbyView, craftSel: string): string {
+  const deck = view.deck;
+  const inlays = view.inlays ?? {};
+  const owned = view.dizhiOwned ?? {};
+  const tierName = ['', '铜', '银', '金'];
+  const zodOf = (b: string): typeof DIZHI_ZODIACS[number] | undefined => DIZHI_ZODIACS.find((z) => z.branch === b);
+  // 52 牌选择网格
+  const grid = SUITS.flatMap(([su, c], si) => RANKS.map((rank, ri) => {
+    const idx = si * 13 + ri;
+    const hero = HERO_CARDS.find((h) => h.suit === su && h.rank === rank);
+    const fv = deck[idx] ?? 50;
+    const n = (inlays[String(idx)] ?? []).length;
+    const sel = craftSel === String(idx);
+    return `<button class="ench-card${sel ? ' sel' : ''}" data-act="craftSel" data-k="${idx}"><span class="ench-rk" style="color:${c}">${rank}${su}</span><span class="ench-nm">${hero ? esc(hero.name) : ''}</span><span class="ench-fv">${fv}${n ? ` <span style="color:var(--gold)">🀄${n}</span>` : ''}</span></button>`;
+  })).join('');
+  // 选中牌的镶嵌详情
+  let detail = `<div class="note" style="text-align:left;color:var(--ink-dim);padding:14px 0">← 选一张牌，给它镶地支附魔</div>`;
+  if (craftSel !== '' && deck[+craftSel] !== undefined) {
+    const ix = +craftSel;
+    const [su, c] = SUITS[Math.floor(ix / 13)];
+    const rank = RANKS[ix % 13];
+    const hero = HERO_CARDS.find((h) => h.suit === su && h.rank === rank);
+    const inlaid = inlays[String(ix)] ?? [];
+    const bonus = inlayBonus(inlaid, owned);
+    const full = inlaid.length >= INLAY_MAX;
+    const slots = Array.from({ length: INLAY_MAX }, (_, k) => {
+      const b = inlaid[k];
+      if (b) { const z = zodOf(b); return `<button class="ench-slot filled" data-act="removeInlay" data-k="${ix}:${b}" title="卸下 ${z?.animal ?? b}"><span>${esc(z?.animal ?? b)}</span><span class="ench-rm">✕</span></button>`; }
+      return `<div class="ench-slot empty">＋</div>`;
+    }).join('');
+    const ownedZ = DIZHI_ZODIACS.filter((z) => (owned[z.branch] ?? 0) >= 1);
+    const pick = ownedZ.length
+      ? ownedZ.map((z) => { const t = owned[z.branch]; return `<button class="ench-pick"${full ? ' disabled' : ` data-act="inlay" data-k="${ix}:${z.branch}"`}>${esc(z.branch)}·${esc(z.animal)}·${tierName[t]} <b style="color:var(--gold)">+${DIZHI_INLAY_FAVOR[t]}</b></button>`; }).join('')
+      : '<span class="ghost" style="font-size:12px">还没有地支生肖 · 去「🛒商城」抽卡获取</span>';
+    detail = `<div class="ench-detail"><div class="ench-sel-card" style="border-color:${c}"><div class="ench-sel-rk" style="color:${c}">${rank}<br>${su}</div><div class="ench-sel-nm">${hero ? esc(hero.name) : ''}</div><div class="ench-sel-fv">favor <b style="color:var(--gold)">${deck[ix]}</b>${bonus ? ` <span style="color:var(--club);font-size:11px">(含附魔 +${bonus})</span>` : ''}</div></div>
+      <div style="flex:1"><div class="note" style="text-align:left;margin-bottom:5px">镶嵌槽（${inlaid.length}/${INLAY_MAX}）· 点✕卸下</div><div class="ench-slots">${slots}</div>
+      <div class="note" style="text-align:left;margin:10px 0 5px">${full ? '<span style="color:var(--gold)">槽位已满</span>' : '点一个地支镶入：'}</div><div class="ench-picks">${pick}</div></div></div>`;
+  }
+  return `<div class="card"><h2>${GI.crafting} 附魔台 · 地支镶嵌 <span class="ghost" style="margin-left:auto;font-size:12px">生肖镶进牌 → +favor · ≤${INLAY_MAX} 槽</span></h2>
+    <div class="note" style="text-align:left;margin-bottom:8px">用收集的地支生肖给扑克牌附魔（铜+${DIZHI_INLAY_FAVOR[1]}/银+${DIZHI_INLAY_FAVOR[2]}/金+${DIZHI_INLAY_FAVOR[3]} favor），真提升战力。</div>
+    <div class="ench-grid">${grid}</div>
+    ${detail}</div>`;
+}
 function craftTiangangItem(it: LobbyShopItem): string {
   const cls = 'good' + (it.owned ? ' got' : it.buyable ? ' buy' : ' lock');
   // 金币解锁仅在「已解锁关·可购」时挂点击；关未到 → 锁态（钻石速购单独按钮）。
@@ -737,7 +803,7 @@ function fiendsCodex(): string {
   }).join('')}</div>`;
 }
 
-export function renderLobby(view: LobbyView, tab: string, tutorialOpen: boolean, deckTab: 'base' | 'gang' = 'base', earthFilter = 'all', collTab = 'cards', heroSuit = 'all', heroDetail = '', heroRar = 'all', ownedOnly = false, introOpen = false, manualTier: '' | 'easy' | 'mid' | 'hard' = '', rechargeOpen = false, rechargeErr = '', story: { beats: StoryBeat[]; idx: number; label: string; cta: string } | null = null, guideSkipAsk = false, shopTab: 'gacha' | 'wallet' = 'wallet', gachaReveal: GachaResult[] | null = null, deckPickerOpen = false): string {
+export function renderLobby(view: LobbyView, tab: string, tutorialOpen: boolean, deckTab: 'base' | 'gang' = 'base', earthFilter = 'all', collTab = 'cards', heroSuit = 'all', heroDetail = '', heroRar = 'all', ownedOnly = false, introOpen = false, manualTier: '' | 'easy' | 'mid' | 'hard' = '', rechargeOpen = false, rechargeErr = '', story: { beats: StoryBeat[]; idx: number; label: string; cta: string } | null = null, guideSkipAsk = false, shopTab: 'gacha' | 'wallet' = 'wallet', gachaReveal: GachaResult[] | null = null, deckPickerOpen = false, craftSel = ''): string {
   const on = (t: string): string => (tab === t ? ' on' : '');
   const dOn = (t: string): string => (deckTab === t ? ' on' : '');
   const cOn = (t: string): string => (collTab === t ? ' on' : '');
@@ -810,15 +876,12 @@ export function renderLobby(view: LobbyView, tab: string, tutorialOpen: boolean,
     <section class="screen${on('decks')} full">${deckPreviewPanel(view.tiangangs, view.deckArchName, view.deckArchActivated, view.deckSize ?? 12, view.activeDeckName)}<div class="deck-nav"><button class="${deckTab==='base'?'on':''}" data-act="deckTab" data-k="base">扑克牌组</button><button class="${deckTab==='gang'?'on':''}" data-act="deckTab" data-k="gang">天罡战牌</button></div><div class="dsub${dOn('base')}"><div class="card"><h2>📜 扑克牌组 · 52 张 <span class="ghost" style="margin-left:auto;font-size:12px">favor 均 ${view.deckAvg} · 最低 ${view.deckMin} / 最高 ${view.deckMax}</span></h2>${suitBarsPanel(view.deck, view.deckAvg)}<div>${deckGrid(view.deck, view.foils)}</div><div class="note" style="text-align:left">favor=该牌掷命翻正面(存活)的概率底盘。<b style="color:var(--gold)">金边</b>=强(≥70) / 暗格=弱(≤50)。牌组强度靠<b>天罡牌/地支牌/流派</b>提升 → 去「改造坊」经营。</div></div></div><div class="dsub${dOn('gang')}">${tiangangDeckManager(view)}<div class="card"><h2>${GI.planet} 地支牌 <span class="ghost" style="margin-left:auto;font-size:12px">12 生肖 · 铜→银→金 · 镶英雄 ≤3 凑连携</span></h2><div class="earth-filter">${efBtn('all','全部','background:var(--gold-grad);color:#2a1a08;border:0')}${efBtn('bronze','铜','background:#cd7f32;color:#fff;border:0')}${efBtn('silver','银','background:#c4ccd6;color:#2a2a2a;border:0')}${efBtn('gold','金','background:var(--gold-grad);color:#2a1a08;border:0')}</div><div class="earth-groups">${earthSection(earthFilter)}</div></div></div></section>
     <section class="screen${on('coll')} full" style="flex-direction:column"><div class="deck-nav"><button class="${collTab==='cards'?'on':''}" data-act="collTab" data-k="cards">收藏·牌谱</button><button class="${collTab==='ladder'?'on':''}" data-act="collTab" data-k="ladder">天梯·榜</button><button class="${collTab==='fiends'?'on':''}" data-act="collTab" data-k="fiends">地煞·战法</button><button class="${collTab==='collect'?'on':''}" data-act="collTab" data-k="collect">天罡&amp;闪艺</button></div><div class="dsub${cOn('cards')}" style="flex:1;min-height:0;flex-direction:column">${heroCollSection(heroSuit, heroRar, heroDetail, ownedOnly)}</div><div class="dsub${cOn('ladder')}" style="flex:1;min-height:0;flex-direction:column">${ladderSection(view.name, view.rankText)}</div><div class="dsub${cOn('fiends')}" style="flex:1;min-height:0;flex-direction:column">${fiendsCodex()}</div><div class="dsub${cOn('collect')}"><div class="card"><h2>🗃 天罡牌 · 收藏 ${view.tiangangs.filter((j) => j.owned).length}/${view.tiangangs.length}</h2><div class="note" style="text-align:left;margin-bottom:6px">⚡ 已解锁天罡牌（到「牌组」屏编入出战牌组）</div><div class="shelf">${view.tiangangs.map((j) => shopItem('', tiangangIcon(j.icon, j.tint), { ...j, buyable: false })).join('')}</div><div class="note" style="text-align:left;margin:12px 0 6px">✨ 闪艺 foil（纯装饰收集 · 点亮可购买）· ${view.foils.filter((f) => f.owned).length}/${view.foils.length}</div><div class="shelf">${view.foils.map((f) => shopItem('buyFoil', '✨', f)).join('')}</div></div></div></section>
     <section class="screen${on('craft')} full"><div class="craft-zones">
-      <div class="card"><h2>♠ 扑克牌组 <span class="ghost" style="margin-left:auto;font-size:12px">52 张 · 公平骨架 · 上场打三路</span></h2>
-        <div class="deck-sumbar"><span>favor 均 <b>${view.deckAvg}</b></span><span>最低 <b>${view.deckMin}</b></span><span>最高 <b>${view.deckMax}</b></span></div>
-        <div style="display:flex;align-items:center;gap:14px;padding:12px 0 8px;border-bottom:1px solid var(--panel-border);margin-bottom:8px"><div style="width:62px;height:88px;border-radius:9px;background:var(--chip);border:1px solid var(--panel-border);display:flex;flex-direction:column;justify-content:space-between;padding:5px 6px;flex:none"><span style="color:var(--spade);font-family:var(--fh);font-weight:700;font-size:14px;line-height:.9">7<br>♠</span><span style="color:var(--spade);font-size:32px;line-height:1;text-align:right">♠</span></div><div style="display:flex;flex-direction:column;align-items:center;gap:3px;color:var(--gold)"><span style="font-size:22px">→</span><span style="font-family:var(--fn);font-size:9px;letter-spacing:.06em">CRAFT</span></div><div style="width:62px;height:88px;border-radius:9px;background:var(--chip);border:2px solid var(--gold);display:flex;flex-direction:column;justify-content:space-between;padding:5px 6px;position:relative;flex:none;box-shadow:0 0 10px rgba(232,205,130,.15)"><span style="color:var(--spade);font-family:var(--fh);font-weight:700;font-size:14px;line-height:.9">7<br>♠</span><span style="color:var(--spade);font-size:32px;line-height:1;text-align:right">♠</span><div style="position:absolute;bottom:-8px;right:5px;background:var(--gold);color:#2a1a08;font-family:var(--fn);font-size:8px;padding:2px 5px;border-radius:99px;font-weight:700">重翻</div></div><div style="display:flex;flex-direction:column;gap:5px"><span style="font-family:var(--fh);font-weight:700;font-size:14px;color:var(--ink)">改造台 · 卡牌改造</span><span style="font-size:12px;color:var(--ink-dim)">选一张扑克 → 镶 gem（重翻/镶字/配重）</span><div style="display:flex;gap:8px;margin-top:4px"><button class="btn ghost" style="font-size:12px;padding:7px 12px" data-act="tab" data-k="decks">选牌 →</button></div></div></div>
-        <div class="note" style="text-align:left">扑克牌组 = 标准 52 张公平骨架；强度靠天罡/地支经营、不泵点数。<button class="btn ghost" style="margin-left:8px" data-act="tab" data-k="decks">查看牌组 →</button></div></div>
+      ${enchantPanel(view, craftSel)}
       <div class="forge">
-        <div class="card"><h2>${GI.crafting} 改造台 · 天罡牌组（≤5 入战库·局内法术）</h2><div class="fuse"><div class="slot" style="color:var(--gold)">⚡</div><div class="arrow">→</div><div class="slot" style="color:var(--gold)">⚔</div></div>
-          <div class="note" style="text-align:left;margin-bottom:8px">买入后「+ 战库」选入（≤5 张进战库）；战库=流派身份·法术牌，局内打出生效。</div>
+        <div class="card"><h2>${GI.bolt} 天罡牌 · 购买 <span class="ghost" style="margin-left:auto;font-size:12px">局内法术·买入后到牌组编入</span></h2>
+          <div class="note" style="text-align:left;margin-bottom:8px">花金币买入天罡牌（解锁后入「拥有」）；编进出战牌组到「牌组」屏做。</div>
           <div class="shelf">${view.tiangangs.map((j) => craftTiangangItem(j)).join('')}</div></div>
-        <div class="card"><h2>${GI.planet} 地支牌 · 升档（可叠加 · 第二养成轴）</h2><div class="note" style="text-align:left;margin-bottom:8px">升档改 run 参数（命/能/兵档/牌型）· 持久存档 · 买一级累加</div>
+        <div class="card"><h2>${GI.planet} 星球牌 · 升档 <span class="ghost" style="margin-left:auto;font-size:12px">第二养成轴</span></h2><div class="note" style="text-align:left;margin-bottom:8px">升档改 run 参数（命/能/兵档/牌型）· 持久存档 · 买一级累加</div>
           <div class="shelf">${view.planets.map((p) => shopItem('buyPlanet', '🪐', p)).join('')}</div></div>
       </div>
     </div></section>
@@ -840,6 +903,8 @@ export interface LobbyHandlers {
   onBuyShards?: (exId: string) => void; // 兑换 💎→🧩地支碎片
   onGacha?: (pool: 'tiangang' | 'dizhi', count: 1 | 10, pay: 'gold' | 'diamond') => GachaResult[] | null; // 抽卡（doc25 §四）→ 结果/null(买不起)
   onCraftTiangang?: (id: string) => boolean | void; // 天罡碎片定向兑换指定天罡（保底）
+  onInlay?: (idx: string, branch: string) => boolean | void; // 地支附魔：生肖镶进牌位（≤INLAY_MAX）
+  onRemoveInlay?: (idx: string, branch: string) => void; // 卸下某牌位的某生肖
   onSelectDeck?: (id: string) => void; // 选某牌组出战
   onNewDeck?: () => void; // 新建牌组
   onDelDeck?: (id: string) => void; // 删除牌组
@@ -872,7 +937,8 @@ export function mountLobby(host: HTMLElement, h: LobbyHandlers): { update: () =>
   let shopTab: 'gacha' | 'wallet' = 'wallet';
   let gachaReveal: GachaResult[] | null = null;
   let deckPicker = false;
-  const render = (): void => { host.innerHTML = renderLobby({ ...h.getView(), skin }, tab, tut, deckTab, earthFilter, collTab, heroSuit, heroDetail, heroRar, ownedOnly, intro, manTier, recharge, rechargeErr, story, guideSkipAsk, shopTab, gachaReveal, deckPicker); };
+  let craftSel = '';
+  const render = (): void => { host.innerHTML = renderLobby({ ...h.getView(), skin }, tab, tut, deckTab, earthFilter, collTab, heroSuit, heroDetail, heroRar, ownedOnly, intro, manTier, recharge, rechargeErr, story, guideSkipAsk, shopTab, gachaReveal, deckPicker, craftSel); };
   // 每关开局演出（doc27 §五）：战役背景 + Boss 开场白 → 出征。缺 intro 则直接进战斗。
   const levelBeats = (c: StageCampaign): StoryBeat[] => [
     { scene: c.battle, text: c.intro ?? c.oneLiner },
@@ -933,6 +999,10 @@ export function mountLobby(host: HTMLElement, h: LobbyHandlers): { update: () =>
     else if (act === 'editDeck') { tab = 'decks'; deckTab = 'gang'; render(); }
     else if (act === 'deckAdd') { deckPicker = true; render(); }
     else if (act === 'deckPicker-close') { deckPicker = false; render(); }
+    // 地支附魔台：选牌 / 镶入 / 卸下
+    else if (act === 'craftSel') { craftSel = craftSel === k ? '' : k; render(); }
+    else if (act === 'inlay') { const [idx, br] = k.split(':'); h.onInlay?.(idx, br); render(); }
+    else if (act === 'removeInlay') { const [idx, br] = k.split(':'); h.onRemoveInlay?.(idx, br); render(); }
     else if (act === 'reset') { h.onReset?.(); render(); }
   };
   host.addEventListener('click', onClick);
@@ -944,6 +1014,6 @@ export function mountLobby(host: HTMLElement, h: LobbyHandlers): { update: () =>
 const FONTS = '<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin><link href="https://fonts.googleapis.com/css2?family=Silkscreen:wght@400;700&family=Rajdhani:wght@500;600;700&family=Cormorant+Garamond:wght@500;600;700&family=Noto+Sans+SC:wght@400;500;700;900&family=Noto+Serif+SC:wght@500;700;900&family=Zhi+Mang+Xing&family=Ma+Shan+Zheng&display=swap" rel="stylesheet">';
 
 // 离线"看帧" golden：自包含 HTML（CSS + 字体 + 真渲染器输出）。浏览器开 = 真大厅。
-export function renderLobbyDoc(view: LobbyView, tab = 'home', collTab = 'cards', deckTab: 'base' | 'gang' = 'base', rechargeOpen = false, story: { beats: StoryBeat[]; idx: number; label: string; cta: string } | null = null, guideSkipAsk = false, shopTab: 'gacha' | 'wallet' = 'wallet', gachaReveal: GachaResult[] | null = null, deckPickerOpen = false): string {
-  return `<!DOCTYPE html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">${FONTS}<style>html,body{margin:0;background:#0c0a08}${CSS}</style></head><body>${renderLobby(view, tab, false, deckTab, 'all', collTab, 'all', '', 'all', false, false, '', rechargeOpen, '', story, guideSkipAsk, shopTab, gachaReveal, deckPickerOpen)}</body></html>`;
+export function renderLobbyDoc(view: LobbyView, tab = 'home', collTab = 'cards', deckTab: 'base' | 'gang' = 'base', rechargeOpen = false, story: { beats: StoryBeat[]; idx: number; label: string; cta: string } | null = null, guideSkipAsk = false, shopTab: 'gacha' | 'wallet' = 'wallet', gachaReveal: GachaResult[] | null = null, deckPickerOpen = false, craftSel = ''): string {
+  return `<!DOCTYPE html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">${FONTS}<style>html,body{margin:0;background:#0c0a08}${CSS}</style></head><body>${renderLobby(view, tab, false, deckTab, 'all', collTab, 'all', '', 'all', false, false, '', rechargeOpen, '', story, guideSkipAsk, shopTab, gachaReveal, deckPickerOpen, craftSel)}</body></html>`;
 }

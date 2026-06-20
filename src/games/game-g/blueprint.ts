@@ -738,6 +738,22 @@ export const DIZHI_SHARD_PACKS: ShardPack[] = [
 // 投资人彩蛋（owner 2026-06-20）：首充免密「送一点点」，第二次起需密码。密码=数据常量·可改。
 export const RECHARGE_PASSWORD = 'am';
 
+// 地支附魔（owner 2026-06-20 · 乙简版）：地支生肖镶进扑克牌 → 给那张牌 +favor（铜/银/金 递增）。
+// 每张牌 ≤INLAY_MAX 槽。save.inlays 按「牌位索引(0-51)→镶入生肖 branch[]」记录。连携(三合/六合)留甲契约④。
+export const INLAY_MAX = 3;
+export const DIZHI_INLAY_FAVOR = [0, 4, 8, 14]; // 索引=该生肖档位（1铜/2银/3金）→ +favor
+/** 一张牌镶入若干地支 → 总 +favor（按各生肖已拥有档位）。 */
+export function inlayBonus(branches: string[], dizhiOwned: Record<string, number>): number {
+  return (branches ?? []).reduce((s, b) => s + (DIZHI_INLAY_FAVOR[dizhiOwned[b] ?? 1] ?? 0), 0);
+}
+/** 应用附魔：返回 effective deck favor（base + 各牌位镶嵌加成）。喂 myBias(战斗) 与 牌面展示。 */
+export function effectiveDeckFavors(deck: number[], inlays: Record<string, string[]> | undefined, dizhiOwned: Record<string, number>): number[] {
+  if (!inlays) return deck;
+  const out = deck.slice();
+  for (const k in inlays) { const i = +k; if (i >= 0 && i < out.length) out[i] = clampFavor(out[i] + inlayBonus(inlays[k], dizhiOwned)); }
+  return out;
+}
+
 // === 抽卡商城（doc25 §四 · Demo）===
 // 商城=抽卡枢纽：花🪙/💎 从「已解锁池」随机出天罡/地支；天罡重复→天罡碎片→定向兑换(保底·可控build)；
 // 地支 新得=铜·重复=升档(铜→银→金)·满金重复→地支碎片。全数据驱动·价格/汇率可调。

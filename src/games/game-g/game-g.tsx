@@ -1,6 +1,6 @@
 import { mountBattle, type BattleView, type BattleUnit, type BattleLane, type BattleLever, type HandCardView, type TengangCardView, type BattleActions, type ClashView, type BattleFx } from './battle-screen.js';
 import { mountLobby, type LobbyView, type LobbyShopItem } from './lobby-screen.js';
-import { prepareArmies, quartermasterEnergy, FORMATION_PRESETS, PRESET_NAMES, LEVER_CATALOG, LEVER_START, battleSpec, RUN_BATTLES, RUN_LIVES, BETWEEN_BUFFS, applyBuff, tiangangKeyBuffs, BOSS_ROSTER, bossFor, GAME_G_TIANGANGS, TIANGANG_BY_ID, ARCHETYPES, detectArchetype, archetypeMatchup, activeArchetype, pickAiFormation, GAME_G_PLANETS, GAME_G_FOILS, RECHARGE_PACKS, rechargeTotal, DIAMOND_EXCHANGES, DIZHI_SHARD_PACKS, RECHARGE_PASSWORD, GACHA, gachaCost, DIZHI_MAX_TIER, DIZHI_ZODIACS, effectiveLives, effectiveLeverCap, effectiveLeverRegen, campaignFor, unlockStageOf, type Formation, type Intervention, type LeverKind, type RunBuff, type ArmyCard } from './index.js';
+import { prepareArmies, quartermasterEnergy, FORMATION_PRESETS, PRESET_NAMES, LEVER_CATALOG, LEVER_START, battleSpec, RUN_BATTLES, RUN_LIVES, BETWEEN_BUFFS, applyBuff, tiangangKeyBuffs, BOSS_ROSTER, bossFor, GAME_G_TIANGANGS, TIANGANG_BY_ID, ARCHETYPES, detectArchetype, archetypeMatchup, activeArchetype, pickAiFormation, GAME_G_PLANETS, GAME_G_FOILS, RECHARGE_PACKS, rechargeTotal, DIAMOND_EXCHANGES, DIZHI_SHARD_PACKS, RECHARGE_PASSWORD, GACHA, gachaCost, DIZHI_MAX_TIER, DIZHI_ZODIACS, INLAY_MAX, effectiveDeckFavors, effectiveLives, effectiveLeverCap, effectiveLeverRegen, campaignFor, unlockStageOf, type Formation, type Intervention, type LeverKind, type RunBuff, type ArmyCard } from './index.js';
 import { initLiveBattle, stepLiveBattle, liveActive, migrateRear, NO_TENGANG, LANE_LEN, HOME_BLOOD, type LiveBattle, type DeployCmd, type ClashEvent, type TengangFx } from './live-combat.js';
 import { initTurnBattle, drawCard, deployUnit, castTengang, discardCard, endTurn, aiTakeTurn, toggleGate, GATES, OPENING_HAND, type PokerCard, type TengangHandCard } from './turn-combat.js';
 import { mountTurnBattle, buildTurnBattleView, type TurnBattleView, type TurnBattleActions, type TurnClashView, type TurnClashCardView, type TurnShaView } from './turn-battle-screen.js';
@@ -61,6 +61,7 @@ interface Save {
   guideStep: number; // 新手引导进度（doc28 §二）：0..N 进行中 · -1 完成/跳过
   tiangangShards: number; // 天罡碎片（抽卡重复转化 → 定向兑换指定天罡·保底 doc25 §四）
   dizhiOwned: Record<string, number>; // 已拥有地支生肖 → 档位（1铜/2银/3金 · 抽卡收集·升档）
+  inlays: Record<string, string[]>; // 地支附魔：牌位索引(0-51) → 镶入生肖 branch[]（≤INLAY_MAX·乙简版 +favor）
   campaignMax: number; // 已抵达的最高关（持久·天罡解锁门槛 = unlockStage ≤ campaignMax）
   stage: number;
   deck: number[]; // 我方 52 张的 favor（0..95）
@@ -86,7 +87,7 @@ const newDeckId = (): string => `deck_${Date.now().toString(36)}_${Math.floor(Ma
 
 const rollBoss = (): number => Math.floor(Math.random() * BOSS_ROSTER.length);
 export function freshSave(): Save {
-  return { materials: 120, diamond: 6, dizhiShards: 0, rechargeCount: 0, seenIntro: false, guideStep: 0, tiangangShards: 0, dizhiOwned: {}, campaignMax: 1, stage: 1, deck: Array.from({ length: DECK_SIZE }, (_, i) => 44 + (i % 10) * 2), lastOfficers: [10, 10, 10], leverEnergy: LEVER_START, lives: RUN_LIVES, bossIdx: rollBoss(), ownedTiangangs: [], tiangangDecks: [{ id: 'deck1', name: '牌组 1', cards: [] }], activeDeckId: 'deck1', tiangangs: [], planets: {}, foils: [] }; // 44..62 起步；金币 120 起手够解锁关1；钻石送 6（新手一点点·首充免密）；新存档播开场故事+引导
+  return { materials: 120, diamond: 6, dizhiShards: 0, rechargeCount: 0, seenIntro: false, guideStep: 0, tiangangShards: 0, dizhiOwned: {}, inlays: {}, campaignMax: 1, stage: 1, deck: Array.from({ length: DECK_SIZE }, (_, i) => 44 + (i % 10) * 2), lastOfficers: [10, 10, 10], leverEnergy: LEVER_START, lives: RUN_LIVES, bossIdx: rollBoss(), ownedTiangangs: [], tiangangDecks: [{ id: 'deck1', name: '牌组 1', cards: [] }], activeDeckId: 'deck1', tiangangs: [], planets: {}, foils: [] }; // 44..62 起步；金币 120 起手够解锁关1；钻石送 6（新手一点点·首充免密）；新存档播开场故事+引导
 }
 function loadSave(): Save {
   try {
@@ -104,6 +105,7 @@ function loadSave(): Save {
         if (typeof s.guideStep !== 'number') s.guideStep = -1; // 老存档引导视为已完成
         if (typeof s.tiangangShards !== 'number') s.tiangangShards = 0; // 天罡碎片迁移
         if (typeof s.dizhiOwned !== 'object' || s.dizhiOwned === null) s.dizhiOwned = {}; // 地支收集迁移
+        if (typeof s.inlays !== 'object' || s.inlays === null) s.inlays = {}; // 地支附魔迁移
         if (typeof s.campaignMax !== 'number') s.campaignMax = Math.max(1, s.stage || 1);
         // 重命名(joker→天罡)迁移 + owner 拍「清空老存档战库」：老存档键为 jokers/ownedJokers → 战库(tiangangs)清空、收藏(ownedTiangangs)沿用旧 ownedJokers；丢弃遗留键。
         const legacy = s as unknown as { jokers?: unknown; ownedJokers?: unknown };
@@ -311,6 +313,7 @@ export function mount(container: HTMLElement): () => void {
     root.appendChild(host);
     // 大厅视图：真实存档（材料/能量/牌组 favor/天罡/星球/闪艺/战役进度/流派↔Boss 克制）→ 喂忠实港渲染器。未接网项渲染器内诚实占位。
     const buildLobbyView = (): LobbyView => {
+      const effDeck = effectiveDeckFavors(save.deck, save.inlays, save.dizhiOwned); // 地支附魔后的有效 favor（展示+战斗一致）
       const boss = bossFor(save.bossIdx);
       const arch = detectArchetype(save.tiangangs);
       const activated = activeArchetype(save.tiangangs);
@@ -335,7 +338,7 @@ export function mount(container: HTMLElement): () => void {
         name: '不翻就赢_07', mainCard: '黑桃A「掷命尖兵」', rankText: `战役 ${save.stage}/${RUN_BATTLES}`,
         stageLabel: `第 ${save.stage} 战 / 共 ${RUN_BATTLES} · 终局 Boss【${boss.name}】`,
         archLine, bossLine: `${boss.persona} · 流派【${bossArchName}】— 据其针对布阵`,
-        deckAvg: avg(save.deck), deckMin: Math.min(...save.deck), deckMax: Math.max(...save.deck), deck: save.deck,
+        deckAvg: avg(effDeck), deckMin: Math.min(...effDeck), deckMax: Math.max(...effDeck), deck: effDeck, inlays: save.inlays,
         tiangangs, planets, foils,
         campaign: campaignFor(save.stage),
         decks: save.tiangangDecks.map((d) => ({ id: d.id, name: d.name, size: d.cards.length, active: d.id === save.activeDeckId })),
@@ -396,6 +399,9 @@ export function mount(container: HTMLElement): () => void {
         const d = activeDeck(save); if (d && d.cards.length < TIANGANG_DECK_SIZE) { d.cards.push(id); syncTiangangs(save); }
         persist(save); return true;
       },
+      // 地支附魔（乙简版）：把已拥有的生肖镶进某牌位（≤INLAY_MAX 槽）→ +favor。idx=牌位索引串。
+      onInlay: (idx, branch) => { if ((save.dizhiOwned[branch] ?? 0) < 1) return false; const cur = save.inlays[idx] ?? []; if (cur.length >= INLAY_MAX) return false; save.inlays[idx] = [...cur, branch]; persist(save); return true; },
+      onRemoveInlay: (idx, branch) => { const cur = save.inlays[idx]; if (!cur) return; const i = cur.indexOf(branch); if (i < 0) return; cur.splice(i, 1); if (cur.length === 0) delete save.inlays[idx]; persist(save); },
       onBuyPlanet: (id) => { const p = GAME_G_PLANETS.find((x) => x.id === id); if (!p) return; buy(p.cost, () => { save.planets[id] = (save.planets[id] ?? 0) + 1; }); },
       onBuyFoil: (id) => { const f = GAME_G_FOILS.find((x) => x.id === id); if (!f || save.foils.includes(id)) return; buy(f.cost, () => save.foils.push(id)); },
       // 选入/踢出**出战牌组**（需已拥有；每组上限 TIANGANG_DECK_SIZE）；改完同步 save.tiangangs（契约②）
@@ -472,7 +478,7 @@ export function mount(container: HTMLElement): () => void {
     root.append(stage, bar);
 
     // 揭晓前完整编排（与旧路 + 测试共用 prepareArmies）→ 折成回合制扑克兵牌库（lane 由玩家放牌时自选·非预派）。
-    const { a, b } = prepareArmies({ formation, deckBias: myBias(save.deck), tiangangs: save.tiangangs, planets: save.planets, interventions, enemyForm: aiForm, enemyBias, boss });
+    const { a, b } = prepareArmies({ formation, deckBias: myBias(effectiveDeckFavors(save.deck, save.inlays, save.dizhiOwned)), tiangangs: save.tiangangs, planets: save.planets, interventions, enemyForm: aiForm, enemyBias, boss });
     const seed = Math.floor(Math.random() * 1e9);
     const toPoker = (c: ArmyCard): PokerCard => ({ kind: 'poker', id: c.id, rank: cardRank(c), suit: c.suit, general: c.general, buff: Math.round(favorToP(c.favor) - cardPoints(cardRank(c))) });
     // loadoutCap（doc27 §四·难度档）：玩家本关天罡上限（新手区 2→3）→ 截断出战天罡。
@@ -594,7 +600,7 @@ export function mount(container: HTMLElement): () => void {
     root.append(stage, bar);
 
     // 揭晓前完整编排（融天罡→玩家干预→Boss 起手→士气倍率+结局联动），与测试共用 prepareArmies、杜绝漂移；均 outcome-first。
-    const { a, b } = prepareArmies({ formation, deckBias: myBias(save.deck), tiangangs: save.tiangangs, planets: save.planets, interventions, enemyForm: aiForm, enemyBias, boss });
+    const { a, b } = prepareArmies({ formation, deckBias: myBias(effectiveDeckFavors(save.deck, save.inlays, save.dizhiOwned)), tiangangs: save.tiangangs, planets: save.planets, interventions, enemyForm: aiForm, enemyBias, boss });
     const oppPersona = boss ? boss.persona : '伺机而动 · 见招拆招';
     const oppSuit = suitOf(aiName);
     // 布局阶段 → 实时出牌（doc18 §10）：每路 base 打底（共 9）tick1 预铺，余牌洗成抽牌堆，起手摸 OPENING_HAND；

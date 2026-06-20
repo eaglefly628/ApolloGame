@@ -68,12 +68,12 @@ describe('Game G · lobby-screen mountLobby 点击交互（DOM · happy-dom）',
       expect(host.innerHTML).toContain('同袍');
     });
 
-    it('点击「改造坊」→ craft section 激活，显示天罡货架和星球牌', () => {
+    it('点击「改造坊」→ craft section 激活，显示附魔台 + 天罡货架 + 星球牌', () => {
       const host = document.createElement('div');
       mountLobby(host, { getView: makeView, onPlay: vi.fn() });
       click(navBtn(host, '改造坊'));
       expect(host.querySelector('.nav button.on')?.textContent?.trim()).toBe('改造坊');
-      expect(host.innerHTML).toContain('改造台');
+      expect(host.innerHTML).toContain('附魔台'); // 地支附魔台（替换原占位改造台）
       expect(host.innerHTML).toContain('星球·命');
     });
 
@@ -505,6 +505,43 @@ describe('Game G · lobby-screen mountLobby 点击交互（DOM · happy-dom）',
       expect(onNewDeck).toHaveBeenCalled();
       click(host.querySelector('[data-act="delDeck"][data-k="d2"]')!);
       expect(onDelDeck).toHaveBeenCalledWith('d2');
+    });
+  });
+
+  // ── 改造坊·地支附魔台 ──
+  describe('地支附魔台（选牌→镶地支→+favor）', () => {
+    const enView = (over: Partial<LobbyView> = {}): LobbyView => makeView({ dizhiOwned: { 子: 2 }, inlays: {}, ...over });
+
+    it('改造坊→附魔台：选一张牌 → 出镶嵌槽 + 已拥有地支可镶', () => {
+      const host = document.createElement('div');
+      mountLobby(host, { getView: () => enView(), onPlay: vi.fn() });
+      click(navBtn(host, '改造坊'));
+      expect(host.innerHTML).toContain('附魔台'); // 占位改造台已替换为真附魔台
+      click(host.querySelector('[data-act="craftSel"][data-k="0"]')!); // 选第一张牌
+      expect(host.querySelector('.ench-slots')).not.toBeNull(); // 镶嵌槽出现
+      expect(host.querySelector('[data-act="inlay"][data-k="0:子"]')).not.toBeNull(); // 已拥有的子鼠可镶
+    });
+
+    it('镶入地支 → onInlay(idx, branch) 调用', () => {
+      const onInlay = vi.fn(() => true);
+      const host = document.createElement('div');
+      mountLobby(host, { getView: () => enView(), onPlay: vi.fn(), onInlay });
+      click(navBtn(host, '改造坊'));
+      click(host.querySelector('[data-act="craftSel"][data-k="0"]')!);
+      click(host.querySelector('[data-act="inlay"][data-k="0:子"]')!);
+      expect(onInlay).toHaveBeenCalledWith('0', '子');
+    });
+
+    it('已镶的槽显示 ✕ 卸下 → onRemoveInlay(idx, branch)', () => {
+      const onRemoveInlay = vi.fn();
+      const host = document.createElement('div');
+      mountLobby(host, { getView: () => enView({ inlays: { '0': ['子'] } }), onPlay: vi.fn(), onRemoveInlay });
+      click(navBtn(host, '改造坊'));
+      click(host.querySelector('[data-act="craftSel"][data-k="0"]')!);
+      const rm = host.querySelector('[data-act="removeInlay"][data-k="0:子"]')!;
+      expect(rm).not.toBeNull();
+      click(rm);
+      expect(onRemoveInlay).toHaveBeenCalledWith('0', '子');
     });
   });
 

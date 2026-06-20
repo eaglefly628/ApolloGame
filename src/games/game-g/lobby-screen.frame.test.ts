@@ -71,9 +71,9 @@ describe('Game G · lobby-screen 视觉回归（忠实港大厅 · 真渲染器 
     await expect(html).toMatchFileSnapshot('./__frames__/lobby-coll.html');
   });
 
-  it('改造坊帧（天罡货架 + 地支升档·接真材料/拥有）匹配 golden', async () => {
+  it('改造坊帧（地支附魔台 + 天罡货架 + 星球牌·接真材料/拥有）匹配 golden', async () => {
     const html = renderLobbyDoc(view(), 'craft');
-    expect(html).toContain('改造台');
+    expect(html).toContain('附魔台'); // 地支镶嵌附魔台
     expect(html).toContain('🪐 星球·命');
     await expect(html).toMatchFileSnapshot('./__frames__/lobby-craft.html');
   });
