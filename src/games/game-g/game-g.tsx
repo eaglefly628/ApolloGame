@@ -12,6 +12,9 @@ const W = 600;
 const H = 540;
 const DECK_SIZE = 52;
 const SAVE_KEY = 'gameG-save-v1';
+// 天罡牌组（owner 2026-06-20）：每场带 12 张天罡出战；玩家可建多套具名牌组、选一套出战、预览。数字可变 → 改这一处。
+const TIANGANG_DECK_SIZE = 12;
+const MAX_TIANGANG_DECKS = 6; // 牌组槽位上限
 // 大厅根容器样式：默认屏(布阵/备战/战斗)居中竖排；大厅屏改顶对齐可滚动(承载 5 tab 古风布局)。
 const DEFAULT_ROOT_CSS = 'position:absolute;inset:0;background:#0a0a14;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:14px;color:#cbd5e1;font:13px system-ui';
 const LOBBY_ROOT_CSS = 'position:absolute;inset:0;overflow:auto';
@@ -55,14 +58,24 @@ interface Save {
   lives: number; // 战役命线（开 run 3 命，输一场 −1，命尽=run 结束）
   bossIdx: number; // 本 run 终局 Boss（每 run 轮换一名，开 run 随机定，供针对性布阵）
   ownedTiangangs: string[]; // 已买入天罡 id（全部拥有集·跨 run 不清零）
-  tiangangs: string[]; // 战库 ≤5 张（从 ownedTiangangs 选入·契约②·甲读）
+  tiangangDecks: TiangangDeck[]; // 玩家自建的天罡牌组（每组 ≤12 张·可建多套）
+  activeDeckId: string; // 出战中的牌组 id
+  tiangangs: string[]; // 出战牌组的卡表（= activeDeck.cards 的派生镜像·契约②·甲读·勿手改）
   planets: Record<string, number>; // 星球牌等级（局外持久 · 可叠加升档 · 第二养成轴）
   foils: string[]; // 已收集的 foil 闪艺皮肤 id（纯表现收集 · 零 gameplay）
 }
+interface TiangangDeck { id: string; name: string; cards: string[] } // cards = 天罡 id（≤TIANGANG_DECK_SIZE）
+
+// 出战牌组（找不到则取第一个；都空则造默认）。syncTiangangs：把出战牌组卡表派生进 save.tiangangs（契约②·甲读）。
+function activeDeck(s: Save): TiangangDeck {
+  return s.tiangangDecks.find((d) => d.id === s.activeDeckId) ?? s.tiangangDecks[0];
+}
+function syncTiangangs(s: Save): void { s.tiangangs = [...(activeDeck(s)?.cards ?? [])]; }
+const newDeckId = (): string => `deck_${Date.now().toString(36)}_${Math.floor(Math.random() * 1e4)}`;
 
 const rollBoss = (): number => Math.floor(Math.random() * BOSS_ROSTER.length);
 export function freshSave(): Save {
-  return { materials: 0, stage: 1, deck: Array.from({ length: DECK_SIZE }, (_, i) => 44 + (i % 10) * 2), lastOfficers: [10, 10, 10], leverEnergy: LEVER_START, lives: RUN_LIVES, bossIdx: rollBoss(), ownedTiangangs: [], tiangangs: [], planets: {}, foils: [] }; // 44..62 起步；stage=当前战 1..5
+  return { materials: 0, stage: 1, deck: Array.from({ length: DECK_SIZE }, (_, i) => 44 + (i % 10) * 2), lastOfficers: [10, 10, 10], leverEnergy: LEVER_START, lives: RUN_LIVES, bossIdx: rollBoss(), ownedTiangangs: [], tiangangDecks: [{ id: 'deck1', name: '牌组 1', cards: [] }], activeDeckId: 'deck1', tiangangs: [], planets: {}, foils: [] }; // 44..62 起步；stage=当前战 1..5
 }
 function loadSave(): Save {
   try {
@@ -80,7 +93,15 @@ function loadSave(): Save {
           s.tiangangs = []; // 老存档战库清空（owner）
           delete legacy.jokers; delete legacy.ownedJokers;
         }
-        if (s.tiangangs.length > 5) s.tiangangs = s.tiangangs.slice(0, 5); // 战库上限 5
+        // 牌组迁移（owner 2026-06-20 多牌组）：老存档只有单战库 s.tiangangs（≤5）→ 包成「牌组 1」；无牌组则建默认。
+        if (!Array.isArray(s.tiangangDecks) || s.tiangangDecks.length === 0) {
+          const seed = Array.isArray(s.tiangangs) ? s.tiangangs.slice(0, TIANGANG_DECK_SIZE) : [];
+          s.tiangangDecks = [{ id: 'deck1', name: '牌组 1', cards: seed }];
+        }
+        // 清洗：每组卡表去无效/超额、去重；activeDeckId 落到存在的组
+        s.tiangangDecks = s.tiangangDecks.map((d) => ({ id: d.id, name: d.name || '牌组', cards: [...new Set(d.cards)].filter((c) => TIANGANG_BY_ID.has(c)).slice(0, TIANGANG_DECK_SIZE) }));
+        if (!s.tiangangDecks.some((d) => d.id === s.activeDeckId)) s.activeDeckId = s.tiangangDecks[0].id;
+        syncTiangangs(s); // 派生出战牌组卡表 → save.tiangangs（契约②）
         if (typeof s.planets !== 'object' || s.planets === null) s.planets = {};
         if (!Array.isArray(s.foils)) s.foils = [];
         if (typeof s.lives !== 'number') s.lives = effectiveLives(s.planets);
@@ -266,6 +287,8 @@ export function mount(container: HTMLElement): () => void {
         archLine, bossLine: `${boss.persona} · 流派【${bossArchName}】— 据其针对布阵`,
         deckAvg: avg(save.deck), deckMin: Math.min(...save.deck), deckMax: Math.max(...save.deck), deck: save.deck,
         tiangangs, planets, foils,
+        decks: save.tiangangDecks.map((d) => ({ id: d.id, name: d.name, size: d.cards.length, active: d.id === save.activeDeckId })),
+        deckSize: TIANGANG_DECK_SIZE, activeDeckName: activeDeck(save).name, canAddDeck: save.tiangangDecks.length < MAX_TIANGANG_DECKS,
         deckArchName: arch?.name ?? null, deckArchActivated: activated !== null,
         ladderLines: [
           `<h2>⚔️ 战役进度</h2><div class="bigrank">第 ${save.stage} / ${RUN_BATTLES} 战</div><div class="meta" style="margin-top:6px">命 ${heart} · 能量 ◈${save.leverEnergy}/${cap} · 材料 🪙${save.materials}</div>`,
@@ -277,12 +300,16 @@ export function mount(container: HTMLElement): () => void {
     lobby = mountLobby(host, {
       getView: buildLobbyView,
       onPlay: () => startBattle(),
-      // B3: 买入 → ownedTiangangs；战库未满时自动选入（方便新手无需手动选）
-      onBuyTiangang: (id) => { const j = TIANGANG_BY_ID.get(id); if (!j || save.ownedTiangangs.includes(id)) return; buy(j.cost, () => { save.ownedTiangangs.push(id); if (save.tiangangs.length < 5) save.tiangangs.push(id); }); },
+      // 买入 → ownedTiangangs；出战牌组未满则自动选入（方便新手）
+      onBuyTiangang: (id) => { const j = TIANGANG_BY_ID.get(id); if (!j || save.ownedTiangangs.includes(id)) return; buy(j.cost, () => { save.ownedTiangangs.push(id); const d = activeDeck(save); if (d && d.cards.length < TIANGANG_DECK_SIZE) { d.cards.push(id); syncTiangangs(save); } }); },
       onBuyPlanet: (id) => { const p = GAME_G_PLANETS.find((x) => x.id === id); if (!p) return; buy(p.cost, () => { save.planets[id] = (save.planets[id] ?? 0) + 1; }); },
       onBuyFoil: (id) => { const f = GAME_G_FOILS.find((x) => x.id === id); if (!f || save.foils.includes(id)) return; buy(f.cost, () => save.foils.push(id)); },
-      // B3: 选入/踢出战库（需已拥有；战库上限 5）
-      onToggleTiangang: (id) => { if (!save.ownedTiangangs.includes(id)) return; const in5 = save.tiangangs.includes(id); if (in5) { save.tiangangs = save.tiangangs.filter((j) => j !== id); } else if (save.tiangangs.length < 5) { save.tiangangs.push(id); } persist(save); },
+      // 选入/踢出**出战牌组**（需已拥有；每组上限 TIANGANG_DECK_SIZE）；改完同步 save.tiangangs（契约②）
+      onToggleTiangang: (id) => { if (!save.ownedTiangangs.includes(id)) return; const d = activeDeck(save); if (!d) return; if (d.cards.includes(id)) { d.cards = d.cards.filter((c) => c !== id); } else if (d.cards.length < TIANGANG_DECK_SIZE) { d.cards.push(id); } syncTiangangs(save); persist(save); },
+      // 牌组管理（owner 2026-06-20 多牌组）：选出战 / 新建 / 删除
+      onSelectDeck: (id) => { if (save.tiangangDecks.some((d) => d.id === id)) { save.activeDeckId = id; syncTiangangs(save); persist(save); } },
+      onNewDeck: () => { if (save.tiangangDecks.length >= MAX_TIANGANG_DECKS) return; const id = newDeckId(); save.tiangangDecks.push({ id, name: `牌组 ${save.tiangangDecks.length + 1}`, cards: [] }); save.activeDeckId = id; syncTiangangs(save); persist(save); },
+      onDelDeck: (id) => { if (save.tiangangDecks.length <= 1) return; save.tiangangDecks = save.tiangangDecks.filter((d) => d.id !== id); if (!save.tiangangDecks.some((d) => d.id === save.activeDeckId)) save.activeDeckId = save.tiangangDecks[0].id; syncTiangangs(save); persist(save); },
       onReset: () => { Object.assign(save, freshSave()); persist(save); },
       onSkin: (s) => { lobbySkin = s; },
     });

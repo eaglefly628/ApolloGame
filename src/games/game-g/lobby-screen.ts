@@ -17,6 +17,9 @@ export interface LobbyView {
   tiangangs: LobbyShopItem[]; planets: LobbyShopItem[]; foils: LobbyShopItem[];
   ladderLines: string[];
   deckArchName?: string | null; deckArchActivated?: boolean;
+  // 天罡牌组（owner 2026-06-20 多牌组）：decks=各牌组概览 / deckSize=每组上限 / activeDeckName=出战组名 / canAddDeck=可否再建
+  decks?: { id: string; name: string; size: number; active: boolean }[];
+  deckSize?: number; activeDeckName?: string; canAddDeck?: boolean;
 }
 
 // ── 双皮 CSS 变量（逐项照搬 .dc.html themes() · onyx 绿呢 / rosy=brocade 红呢）+ 招牌类 ──
@@ -109,6 +112,12 @@ const CSS = `
 .ggl-root .dsub.on{ display:flex }
 .ggl-root .gang-grid{ display:grid; grid-template-columns:repeat(auto-fill,minmax(78px,1fr)); gap:8px; min-height:240px }
 .ggl-root .gang-empty{ grid-column:1/-1; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:10px; padding:56px 0; color:var(--ink-dim); font-size:13px; text-align:center }
+.ggl-root .deck-chips{ display:flex; gap:8px; flex-wrap:wrap; margin-bottom:4px }
+.ggl-root .deck-chip{ position:relative; display:flex; align-items:center; gap:6px; padding:8px 14px; border-radius:10px; background:var(--chip); border:1px solid var(--panel-border); color:var(--ink); font-family:var(--fh); font-weight:700; font-size:13px }
+.ggl-root .deck-chip.on{ border-color:var(--gold); background:rgba(232,205,130,.12); color:var(--gold) }
+.ggl-root .deck-chip.add{ color:var(--gold); border-style:dashed }
+.ggl-root .deck-chip .deck-del{ margin-left:4px; width:16px; height:16px; line-height:15px; text-align:center; border-radius:50%; background:rgba(0,0,0,.25); color:var(--danger); font-size:11px }
+.ggl-root .deck-chip .deck-del:hover{ background:var(--danger); color:#fff }
 .ggl-root .earth-filter{ display:flex; gap:6px; flex-wrap:wrap; margin-bottom:14px }
 .ggl-root .earth-filter button{ padding:4px 14px; border-radius:6px; background:var(--chip); border:1px solid var(--panel-border); color:var(--ink-dim); font-size:12px; cursor:pointer; transition:background .15s }
 .ggl-root .earth-groups{ display:flex; flex-direction:column; gap:10px }
@@ -331,7 +340,7 @@ function craftTiangangItem(it: LobbyShopItem, deckFull: boolean): string {
   const phat = it.phat !== undefined ? `<span class="phat-badge"> P̂${it.phat}</span>` : '';
   let foot: string;
   if (it.owned) {
-    const togLabel = it.inDeck ? '⚔ 战库' : (deckFull ? '战库满' : '+ 战库');
+    const togLabel = it.inDeck ? '⚔ 牌组' : (deckFull ? '牌组满' : '+ 牌组');
     const togCls = 'tiangang-tog' + (it.inDeck ? ' active' : '');
     const togDis = !it.inDeck && deckFull ? ' disabled' : '';
     foot = `<div style="display:flex;gap:6px;margin-top:6px;align-items:center"><span style="font-size:11px;color:var(--gold)">✓ 已解锁</span><button class="${togCls}" data-act="toggleTiangang" data-k="${it.id}"${togDis}>${togLabel}</button></div>`;
@@ -341,7 +350,7 @@ function craftTiangangItem(it: LobbyShopItem, deckFull: boolean): string {
   return `<div class="${cls}"${buyAttr} title="${esc(it.sub)}"><div class="gnm">${tiangangIcon(it.kind)} ${esc(it.name)}${stars}${phat}</div>${foot}</div>`;
 }
 // 天罡战库预览面板（B3 · HOME+DECKS 屏）：≤5 已选天罡牌 每张【名 + 效果 + 牌力⭐ + P̂】+ 整库总加成汇总。
-function deckPreviewPanel(tiangangs: LobbyShopItem[], archName: string | null | undefined, activated: boolean | undefined): string {
+function deckPreviewPanel(tiangangs: LobbyShopItem[], archName: string | null | undefined, activated: boolean | undefined, size = 12, deckName = ''): string {
   const inDeck = tiangangs.filter((j) => j.inDeck);
   const totalPhat = inDeck.reduce((s, j) => s + (j.phat ?? 0), 0);
   const hasLeg = inDeck.some((j) => j.power === 5);
@@ -354,7 +363,28 @@ function deckPreviewPanel(tiangangs: LobbyShopItem[], archName: string | null | 
     : `<div class="note" style="text-align:left;margin:8px 0">战库空 · 去「改造坊」选入天罡牌（局内法术·≤5 张）</div>`;
   const arch = archName ? `流派 <b>${esc(archName)}</b>${activated ? '　🔥 招牌已激活' : ''}` : '流派未成型';
   const summary = inDeck.length ? `　整库 P̂ <b style="color:var(--gold)">${totalPhat}</b>${hasLeg ? '　🔥 传说激活' : ''}` : '';
-  return `<div class="card" style="margin-bottom:14px"><h2>${GI.bolt} 天罡战库 <span class="ghost" style="font-size:12px;margin-left:auto">${inDeck.length}/5 · 局内打出生效</span></h2>${body}<div class="note" style="text-align:left;margin-top:4px">${arch}${summary}</div></div>`;
+  const title = deckName ? `天罡牌组 · ${esc(deckName)}` : '天罡牌组';
+  return `<div class="card" style="margin-bottom:14px"><h2>${GI.bolt} ${title} <span class="ghost" style="font-size:12px;margin-left:auto">${inDeck.length}/${size} · 出战带 ${size} 张</span></h2>${body}<div class="note" style="text-align:left;margin-top:4px">${arch}${summary}</div></div>`;
+}
+
+// 天罡牌组管理（owner 2026-06-20）：多牌组 chips（选出战/新建/删除）+ 出战牌组预览 + 我的天罡（点击加入/移出 ≤deckSize）。
+function tiangangDeckManager(view: LobbyView): string {
+  const decks = view.decks ?? [];
+  const size = view.deckSize ?? 12;
+  const owned = view.tiangangs.filter((j) => j.owned);
+  const inDeckCount = view.tiangangs.filter((j) => j.inDeck).length;
+  const deckFull = inDeckCount >= size;
+  const chips = decks.map((d) => `<button class="deck-chip${d.active ? ' on' : ''}" data-act="selectDeck" data-k="${d.id}">${d.active ? '⚔ ' : ''}${esc(d.name)} <span class="ghost">${d.size}/${size}</span>${decks.length > 1 ? `<span class="deck-del" data-act="delDeck" data-k="${d.id}" title="删除">✕</span>` : ''}</button>`).join('');
+  const addBtn = view.canAddDeck ? `<button class="deck-chip add" data-act="newDeck">＋ 新建</button>` : '';
+  const editor = owned.length
+    ? `<div class="shelf">${owned.map((j) => craftTiangangItem(j, deckFull)).join('')}</div>`
+    : `<div class="gang-empty"><span style="font-size:28px;opacity:.5">⚡</span><b>还没有天罡牌</b><span style="font-size:11px">去「改造坊」买入天罡牌 → 回这里编进出战牌组</span></div>`;
+  return `<div class="card" style="margin-bottom:14px"><h2>${GI.bolt} 天罡牌组 <span class="ghost" style="margin-left:auto;font-size:12px">每场出战带 ${size} 张 · 自建多套切换</span></h2>
+    <div class="deck-chips">${chips}${addBtn}</div>
+    <div class="note" style="text-align:left;margin:6px 0 10px">选中的牌组 = <b style="color:var(--gold)">出战牌组</b>；下方点天罡牌<b>加入/移出</b>该组（上限 ${size}）。</div>
+    ${deckPreviewPanel(view.tiangangs, view.deckArchName, view.deckArchActivated, size, view.activeDeckName)}
+    <div class="note" style="text-align:left;margin:10px 0 6px">⚡ 我的天罡（点「+ 牌组 / ⚔ 牌组」加入或移出出战牌组）</div>
+    ${editor}</div>`;
 }
 
 // 花色均势面板（B1 · DECKS 扑克牌组）：4 花色 favor 平均值 → 竖条高度 + 预估强度 ★
@@ -502,8 +532,8 @@ export function renderLobby(view: LobbyView, tab: string, tutorialOpen: boolean,
         <div class="friend"><span class="dot"></span> 周瑜 <span class="tag">占位</span></div>
         <div class="friend"><span class="dot"></span> 孔明 <span class="tag">占位</span></div></div>
     </section>
-    <section class="screen${on('decks')} full">${deckPreviewPanel(view.tiangangs, view.deckArchName, view.deckArchActivated)}<div class="deck-nav"><button class="${deckTab==='base'?'on':''}" data-act="deckTab" data-k="base">扑克牌组</button><button class="${deckTab==='gang'?'on':''}" data-act="deckTab" data-k="gang">天罡战牌</button></div><div class="dsub${dOn('base')}"><div class="card"><h2>📜 扑克牌组 · 52 张 <span class="ghost" style="margin-left:auto;font-size:12px">favor 均 ${view.deckAvg} · 最低 ${view.deckMin} / 最高 ${view.deckMax}</span></h2>${suitBarsPanel(view.deck, view.deckAvg)}<div>${deckGrid(view.deck, view.foils)}</div><div class="note" style="text-align:left">favor=该牌掷命翻正面(存活)的概率底盘。<b style="color:var(--gold)">金边</b>=强(≥70) / 暗格=弱(≤50)。牌组强度靠<b>天罡牌/地支牌/流派</b>提升 → 去「改造坊」经营。</div></div></div><div class="dsub${dOn('gang')}"><div class="card" style="margin-bottom:14px"><h2>${GI.bolt} 天罡战牌 <span class="ghost" style="margin-left:auto;font-size:12px">三十六天罡 · 全数上架（doc20 §二）</span></h2><div class="gang-grid"><div class="gang-empty"><span style="font-size:28px;opacity:.5">⚡</span><b>天罡战牌 · 去改造坊选入战库</b><span style="font-size:11px">改造坊买入 → 选 ≤5 入战库 → 局内打出生效</span></div></div></div><div class="card"><h2>${GI.planet} 地支牌 <span class="ghost" style="margin-left:auto;font-size:12px">12 生肖 · 铜→银→金 · 镶英雄 ≤3 凑连携</span></h2><div class="earth-filter">${efBtn('all','全部','background:var(--gold-grad);color:#2a1a08;border:0')}${efBtn('bronze','铜','background:#cd7f32;color:#fff;border:0')}${efBtn('silver','银','background:#c4ccd6;color:#2a2a2a;border:0')}${efBtn('gold','金','background:var(--gold-grad);color:#2a1a08;border:0')}</div><div class="earth-groups">${earthSection(earthFilter)}</div></div></div></section>
-    <section class="screen${on('coll')} full" style="flex-direction:column"><div class="deck-nav"><button class="${collTab==='cards'?'on':''}" data-act="collTab" data-k="cards">收藏·牌谱</button><button class="${collTab==='ladder'?'on':''}" data-act="collTab" data-k="ladder">天梯·榜</button><button class="${collTab==='collect'?'on':''}" data-act="collTab" data-k="collect">天罡&amp;闪艺</button></div><div class="dsub${cOn('cards')}" style="flex:1;min-height:0;flex-direction:column">${heroCollSection(heroSuit, heroRar, heroDetail, ownedOnly)}</div><div class="dsub${cOn('ladder')}" style="flex:1;min-height:0;flex-direction:column">${ladderSection(view.name, view.rankText)}</div><div class="dsub${cOn('collect')}"><div class="card"><h2>🗃 天罡牌 · 收藏 ${view.tiangangs.filter((j) => j.owned).length}/${view.tiangangs.length}</h2><div class="note" style="text-align:left;margin-bottom:6px">⚡ 已解锁天罡牌（到改造坊选入战库 ≤5 张）</div><div class="shelf">${view.tiangangs.map((j) => shopItem('', tiangangIcon(j.kind), { ...j, buyable: false })).join('')}</div><div class="note" style="text-align:left;margin:12px 0 6px">✨ 闪艺 foil（纯装饰收集 · 点亮可购买）· ${view.foils.filter((f) => f.owned).length}/${view.foils.length}</div><div class="shelf">${view.foils.map((f) => shopItem('buyFoil', '✨', f)).join('')}</div></div></div></section>
+    <section class="screen${on('decks')} full">${deckPreviewPanel(view.tiangangs, view.deckArchName, view.deckArchActivated, view.deckSize ?? 12, view.activeDeckName)}<div class="deck-nav"><button class="${deckTab==='base'?'on':''}" data-act="deckTab" data-k="base">扑克牌组</button><button class="${deckTab==='gang'?'on':''}" data-act="deckTab" data-k="gang">天罡战牌</button></div><div class="dsub${dOn('base')}"><div class="card"><h2>📜 扑克牌组 · 52 张 <span class="ghost" style="margin-left:auto;font-size:12px">favor 均 ${view.deckAvg} · 最低 ${view.deckMin} / 最高 ${view.deckMax}</span></h2>${suitBarsPanel(view.deck, view.deckAvg)}<div>${deckGrid(view.deck, view.foils)}</div><div class="note" style="text-align:left">favor=该牌掷命翻正面(存活)的概率底盘。<b style="color:var(--gold)">金边</b>=强(≥70) / 暗格=弱(≤50)。牌组强度靠<b>天罡牌/地支牌/流派</b>提升 → 去「改造坊」经营。</div></div></div><div class="dsub${dOn('gang')}">${tiangangDeckManager(view)}<div class="card"><h2>${GI.planet} 地支牌 <span class="ghost" style="margin-left:auto;font-size:12px">12 生肖 · 铜→银→金 · 镶英雄 ≤3 凑连携</span></h2><div class="earth-filter">${efBtn('all','全部','background:var(--gold-grad);color:#2a1a08;border:0')}${efBtn('bronze','铜','background:#cd7f32;color:#fff;border:0')}${efBtn('silver','银','background:#c4ccd6;color:#2a2a2a;border:0')}${efBtn('gold','金','background:var(--gold-grad);color:#2a1a08;border:0')}</div><div class="earth-groups">${earthSection(earthFilter)}</div></div></div></section>
+    <section class="screen${on('coll')} full" style="flex-direction:column"><div class="deck-nav"><button class="${collTab==='cards'?'on':''}" data-act="collTab" data-k="cards">收藏·牌谱</button><button class="${collTab==='ladder'?'on':''}" data-act="collTab" data-k="ladder">天梯·榜</button><button class="${collTab==='collect'?'on':''}" data-act="collTab" data-k="collect">天罡&amp;闪艺</button></div><div class="dsub${cOn('cards')}" style="flex:1;min-height:0;flex-direction:column">${heroCollSection(heroSuit, heroRar, heroDetail, ownedOnly)}</div><div class="dsub${cOn('ladder')}" style="flex:1;min-height:0;flex-direction:column">${ladderSection(view.name, view.rankText)}</div><div class="dsub${cOn('collect')}"><div class="card"><h2>🗃 天罡牌 · 收藏 ${view.tiangangs.filter((j) => j.owned).length}/${view.tiangangs.length}</h2><div class="note" style="text-align:left;margin-bottom:6px">⚡ 已解锁天罡牌（到「牌组」屏编入出战牌组）</div><div class="shelf">${view.tiangangs.map((j) => shopItem('', tiangangIcon(j.kind), { ...j, buyable: false })).join('')}</div><div class="note" style="text-align:left;margin:12px 0 6px">✨ 闪艺 foil（纯装饰收集 · 点亮可购买）· ${view.foils.filter((f) => f.owned).length}/${view.foils.length}</div><div class="shelf">${view.foils.map((f) => shopItem('buyFoil', '✨', f)).join('')}</div></div></div></section>
     <section class="screen${on('craft')} full"><div class="craft-zones">
       <div class="card"><h2>♠ 扑克牌组 <span class="ghost" style="margin-left:auto;font-size:12px">52 张 · 公平骨架 · 上场打三路</span></h2>
         <div class="deck-sumbar"><span>favor 均 <b>${view.deckAvg}</b></span><span>最低 <b>${view.deckMin}</b></span><span>最高 <b>${view.deckMax}</b></span></div>
@@ -512,7 +542,7 @@ export function renderLobby(view: LobbyView, tab: string, tutorialOpen: boolean,
       <div class="forge">
         <div class="card"><h2>${GI.crafting} 改造台 · 天罡牌组（≤5 入战库·局内法术）</h2><div class="fuse"><div class="slot" style="color:var(--gold)">⚡</div><div class="arrow">→</div><div class="slot" style="color:var(--gold)">⚔</div></div>
           <div class="note" style="text-align:left;margin-bottom:8px">买入后「+ 战库」选入（≤5 张进战库）；战库=流派身份·法术牌，局内打出生效。</div>
-          <div class="shelf">${(() => { const full = view.tiangangs.filter((j) => j.inDeck).length >= 5; return view.tiangangs.map((j) => craftTiangangItem(j, full)).join(''); })()}</div></div>
+          <div class="shelf">${(() => { const full = view.tiangangs.filter((j) => j.inDeck).length >= (view.deckSize ?? 12); return view.tiangangs.map((j) => craftTiangangItem(j, full)).join(''); })()}</div></div>
         <div class="card"><h2>${GI.planet} 地支牌 · 升档（可叠加 · 第二养成轴）</h2><div class="note" style="text-align:left;margin-bottom:8px">升档改 run 参数（命/能/兵档/牌型）· 持久存档 · 买一级累加</div>
           <div class="shelf">${view.planets.map((p) => shopItem('buyPlanet', '🪐', p)).join('')}</div></div>
       </div>
@@ -528,7 +558,10 @@ export interface LobbyHandlers {
   onBuyTiangang?: (id: string) => void;
   onBuyPlanet?: (id: string) => void;
   onBuyFoil?: (id: string) => void;
-  onToggleTiangang?: (id: string) => void; // B3: 选入/踢出战库（≤5）
+  onToggleTiangang?: (id: string) => void; // 选入/踢出**出战牌组**（≤deckSize）
+  onSelectDeck?: (id: string) => void; // 选某牌组出战
+  onNewDeck?: () => void; // 新建牌组
+  onDelDeck?: (id: string) => void; // 删除牌组
   onReset?: () => void;
   onSkin?: (skin: 'onyx' | 'rosy') => void;
 }
@@ -565,6 +598,9 @@ export function mountLobby(host: HTMLElement, h: LobbyHandlers): { update: () =>
     else if (act === 'buyPlanet') { h.onBuyPlanet?.(k); render(); }
     else if (act === 'buyFoil') { h.onBuyFoil?.(k); render(); }
     else if (act === 'toggleTiangang') { h.onToggleTiangang?.(k); render(); }
+    else if (act === 'selectDeck') { h.onSelectDeck?.(k); render(); }
+    else if (act === 'newDeck') { h.onNewDeck?.(); render(); }
+    else if (act === 'delDeck') { h.onDelDeck?.(k); render(); }
     else if (act === 'reset') { h.onReset?.(); render(); }
   };
   host.addEventListener('click', onClick);

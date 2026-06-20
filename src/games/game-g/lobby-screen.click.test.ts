@@ -181,9 +181,9 @@ describe('Game G · lobby-screen mountLobby 点击交互（DOM · happy-dom）',
     });
   });
 
-  // ── 6. 战库切换（B3）──
-  describe('改造坊·命牌战库切换（B3）', () => {
-    it('已拥有且未入战库的天罡：点「+ 战库」→ onToggleTiangang 以 id 调用', () => {
+  // ── 6. 出战牌组切换（多牌组 · owner 2026-06-20）──
+  describe('改造坊·天罡牌组切换', () => {
+    it('已拥有且未入牌组的天罡：点「+ 牌组」→ onToggleTiangang 以 id 调用', () => {
       const onToggleTiangang = vi.fn();
       // 构造一个 owned=true，inDeck=false 的天罡
       const view = makeView({
@@ -198,7 +198,7 @@ describe('Game G · lobby-screen mountLobby 点击交互（DOM · happy-dom）',
       expect(onToggleTiangang).toHaveBeenCalledWith('comrade');
     });
 
-    it('已入战库的天罡：显示「⚔ 战库」active 态按钮', () => {
+    it('已入牌组的天罡：显示「⚔ 牌组」active 态按钮', () => {
       const view = makeView({
         tiangangs: [J('comrade', '同袍', true, true)],
       });
@@ -208,23 +208,42 @@ describe('Game G · lobby-screen mountLobby 点击交互（DOM · happy-dom）',
       const togBtn = host.querySelector('[data-act="toggleTiangang"][data-k="comrade"]')!;
       expect(togBtn).not.toBeNull();
       expect(togBtn.classList.contains('active')).toBe(true);
-      expect(togBtn.textContent).toContain('⚔ 战库');
+      expect(togBtn.textContent).toContain('⚔ 牌组');
     });
 
-    it('战库已满（5 张）：未入战库的 owned 天罡显示「战库满」且 disabled', () => {
+    it('出战牌组已满（deckSize 张）：未入组的 owned 天罡显示「牌组满」且 disabled', () => {
       const tiangangs: LobbyShopItem[] = [
         J('a', 'A', true, true), J('b', 'B', true, true), J('c', 'C', true, true),
         J('d', 'D', true, true), J('e', 'E', true, true),
-        J('f', 'F', true, false), // owned 但未入战库，且战库已满
+        J('f', 'F', true, false), // owned 但未入组，且牌组已满
       ];
-      const view = makeView({ tiangangs });
+      const view = makeView({ tiangangs, deckSize: 5 }); // 本例上限设 5，5 张即满
       const host = document.createElement('div');
       mountLobby(host, { getView: () => view, onPlay: vi.fn() });
       click(navBtn(host, '改造坊'));
       const togBtn = host.querySelector('[data-act="toggleTiangang"][data-k="f"]') as HTMLButtonElement | null;
       expect(togBtn).not.toBeNull();
       expect(togBtn?.disabled).toBe(true);
-      expect(togBtn?.textContent).toContain('战库满');
+      expect(togBtn?.textContent).toContain('牌组满');
+    });
+
+    it('多牌组：选牌组→onSelectDeck / 新建→onNewDeck / 删除→onDelDeck', () => {
+      const onSelectDeck = vi.fn(), onNewDeck = vi.fn(), onDelDeck = vi.fn();
+      const view = makeView({
+        tiangangs: [J('comrade', '同袍', true, true)],
+        decks: [{ id: 'd1', name: '牌组 1', size: 1, active: true }, { id: 'd2', name: '牌组 2', size: 0, active: false }],
+        deckSize: 12, activeDeckName: '牌组 1', canAddDeck: true,
+      });
+      const host = document.createElement('div');
+      mountLobby(host, { getView: () => view, onPlay: vi.fn(), onSelectDeck, onNewDeck, onDelDeck });
+      click(navBtn(host, '牌组')); // DECKS tab
+      click(host.querySelector('[data-act="deckTab"][data-k="gang"]')!); // 天罡战牌 子页
+      click(host.querySelector('[data-act="selectDeck"][data-k="d2"]')!);
+      expect(onSelectDeck).toHaveBeenCalledWith('d2');
+      click(host.querySelector('[data-act="newDeck"]')!);
+      expect(onNewDeck).toHaveBeenCalled();
+      click(host.querySelector('[data-act="delDeck"][data-k="d2"]')!);
+      expect(onDelDeck).toHaveBeenCalledWith('d2');
     });
   });
 
