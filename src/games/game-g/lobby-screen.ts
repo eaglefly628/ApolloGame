@@ -24,6 +24,8 @@ export interface LobbyView {
   deckSize?: number; activeDeckName?: string; canAddDeck?: boolean;
   campaign?: StageCampaign; // 当前关战役（Boss/战役/难度/地煞/解锁 · doc23 §八）
   campaignMax?: number; // 已抵达的最高关（战役进度屏 锁/通关判定）
+  firstLaunch?: boolean; // 首次启动（未看过开场故事）→ 进大厅自动播放（doc28 §一）
+  guideStep?: number; // 新手引导进度（doc28 §二）：0..N 进行中 · -1 完成/跳过
 }
 
 // ── 双皮 CSS 变量（逐项照搬 .dc.html themes() · onyx 绿呢 / rosy=brocade 红呢）+ 招牌类 ──
@@ -78,6 +80,12 @@ const CSS = `
 .ggl-root .camp-fiend b{ color:var(--ink) }
 .ggl-root .story-ov{ background:rgba(6,8,11,.88) }
 .ggl-root .story-box{ max-width:520px; text-align:left }
+.ggl-root .guide-coach{ position:absolute; left:50%; bottom:22px; transform:translateX(-50%); width:min(560px,90%); z-index:40; padding:15px 18px; border-radius:14px; background:var(--panel); border:1px solid var(--gold); box-shadow:0 10px 40px rgba(0,0,0,.5),0 0 22px rgba(232,205,130,.2) }
+.ggl-root .guide-hd{ display:flex; align-items:center; font-family:var(--fn); font-size:11px; letter-spacing:.1em; color:var(--gold) }
+.ggl-root .guide-skip{ margin-left:auto; background:none; border:0; color:var(--ink-dim); font-size:12px; text-decoration:underline; cursor:pointer }
+.ggl-root .guide-title{ font-family:var(--fh); font-weight:700; font-size:17px; color:var(--ink); margin:8px 0 5px }
+.ggl-root .guide-body{ font-size:13px; line-height:1.7; color:var(--ink-dim) }
+.ggl-root .guide-act{ display:flex; gap:10px; margin-top:12px }
 .ggl-root .icon{ width:34px; height:34px; border-radius:9px; display:flex; align-items:center; justify-content:center; background:var(--chip); border:1px solid var(--panel-border); color:var(--ink-dim); font-size:15px }
 .ggl-root .tutbtn{ padding:0 12px; height:34px; border-radius:9px; background:var(--chip); border:1px solid var(--gold); color:var(--gold); font-size:13px; font-weight:700 }
 .ggl-root .nav{ display:flex; gap:4px; padding:10px 22px 0 }
@@ -455,6 +463,24 @@ function narrationBox(beats: StoryBeat[], idx: number, label: string, cta: strin
   </div></div>`;
 }
 
+// 新手引导 coach（doc28 §二 · 线性·底部锚定·可跳过）。教学关战斗=甲（turn-combat 脚本弱敌），此处=菜单引导壳。
+const GUIDE_STEPS = 2;
+function guideBox(step: number): string {
+  const s = Math.max(0, Math.min(GUIDE_STEPS - 1, step));
+  const card = (title: string, body: string, action: string): string =>
+    `<div class="guide-coach"><div class="guide-hd"><span>🧭 新手引导 · 第 ${s + 1}/${GUIDE_STEPS} 步</span><button class="guide-skip" data-act="guide-skip">跳过引导</button></div><div class="guide-title">${title}</div><div class="guide-body">${body}</div><div class="guide-act">${action}</div></div>`;
+  if (s === 0) return card('先翻一遍《玩法手册》', '30 秒看懂怎么打：三路九格 · 每回合四选一 · 掷命对决（正面活/反面亡）· 先破对面 3 血大本营。', `<button class="cta-sub" data-act="man">📖 打开手册</button><button class="cta-sub" style="color:#2a1a08;background:var(--gold-grad);border:0" data-act="guide-next">看过了，下一步 →</button>`);
+  return card('打你的第一战', '准备好了——进第一场命运之战：温泉关 · 列奥尼达（最易）。打赢，解封你的第一缕英雄之魂。', `<button class="cta-sub" style="color:#2a1a08;background:var(--gold-grad);border:0" data-act="guide-finish">${GI.swords} 开始第一战 →</button>`);
+}
+// 跳过引导确认对话框（owner 2026-06-20「首页加个跳过引导的对话框」）。
+function guideSkipDialog(): string {
+  return `<div class="tut-ov"><div class="tut-box" data-stop="1" style="max-width:380px;text-align:center">
+    <h3>跳过新手引导？</h3>
+    <div class="note" style="margin-top:6px">老手可直接上手。你随时能在顶栏「↻ 引导」重新观看开场与引导。</div>
+    <div style="display:flex;gap:10px;margin-top:18px"><button class="cta-sub" style="flex:1" data-act="guide-skip-cancel">继续引导</button><button class="cta-sub" style="flex:1;color:#2a1a08;background:var(--gold-grad);border:0" data-act="guide-skip-confirm">跳过</button></div>
+  </div></div>`;
+}
+
 // 战役进度屏（doc27 · 关卡选择/进度 + 每关战役背景/Boss对白/地煞/解锁）。锁/通关/当前 由 campaignMax/当前 stage。
 function campaignSection(view: LobbyView): string {
   const cur = view.campaign?.stage ?? 1;
@@ -640,7 +666,7 @@ function fiendsCodex(): string {
   }).join('')}</div>`;
 }
 
-export function renderLobby(view: LobbyView, tab: string, tutorialOpen: boolean, deckTab: 'base' | 'gang' = 'base', earthFilter = 'all', collTab = 'cards', heroSuit = 'all', heroDetail = '', heroRar = 'all', ownedOnly = false, introOpen = false, manualTier: '' | 'easy' | 'mid' | 'hard' = '', rechargeOpen = false, rechargeErr = '', story: { beats: StoryBeat[]; idx: number; label: string; cta: string } | null = null): string {
+export function renderLobby(view: LobbyView, tab: string, tutorialOpen: boolean, deckTab: 'base' | 'gang' = 'base', earthFilter = 'all', collTab = 'cards', heroSuit = 'all', heroDetail = '', heroRar = 'all', ownedOnly = false, introOpen = false, manualTier: '' | 'easy' | 'mid' | 'hard' = '', rechargeOpen = false, rechargeErr = '', story: { beats: StoryBeat[]; idx: number; label: string; cta: string } | null = null, guideSkipAsk = false): string {
   const on = (t: string): string => (tab === t ? ' on' : '');
   const dOn = (t: string): string => (deckTab === t ? ' on' : '');
   const cOn = (t: string): string => (collTab === t ? ' on' : '');
@@ -663,6 +689,7 @@ export function renderLobby(view: LobbyView, tab: string, tutorialOpen: boolean,
     <button class="tutbtn" data-act="intro">📜 游戏介绍</button>
     <button class="tutbtn" data-act="man">📚 玩法手册</button>
     <button class="tutbtn" data-act="tut">📖 新手指导</button>
+    <button class="icon" data-act="replayIntro" title="重看开场故事与新手引导">↻</button>
     <button class="icon" data-act="reset" title="重置进度">⚙</button>
   </div>
   <div class="nav">
@@ -725,7 +752,7 @@ export function renderLobby(view: LobbyView, tab: string, tutorialOpen: boolean,
     </div></section>
     <section class="screen${on('ladder')} full">${ladderSection(view.name, view.rankText)}</section>
   </div>
-  </div>${tutorialOpen ? tutorialBox() : ''}${introOpen ? gameIntroBox() : ''}${manualTier ? manualBox(manualTier) : ''}${rechargeOpen ? rechargeBox(view, rechargeErr) : ''}${story ? narrationBox(story.beats, story.idx, story.label, story.cta) : ''}</div>`;
+  </div>${tutorialOpen ? tutorialBox() : ''}${introOpen ? gameIntroBox() : ''}${manualTier ? manualBox(manualTier) : ''}${rechargeOpen ? rechargeBox(view, rechargeErr) : ''}${story ? narrationBox(story.beats, story.idx, story.label, story.cta) : (!view.firstLaunch && (view.guideStep ?? -1) >= 0 ? guideBox(view.guideStep ?? 0) : '')}${guideSkipAsk ? guideSkipDialog() : ''}</div>`;
 }
 
 export interface LobbyHandlers {
@@ -744,6 +771,10 @@ export interface LobbyHandlers {
   onDelDeck?: (id: string) => void; // 删除牌组
   onReset?: () => void;
   onSkin?: (skin: 'onyx' | 'rosy') => void;
+  onIntroSeen?: () => void; // 看完开场故事（doc28 §一）→ 标记已看 + 起引导
+  onGuideStep?: (n: number) => void; // 新手引导步进（doc28 §二）
+  onGuideDone?: () => void; // 完成/跳过引导
+  onReplayIntro?: () => void; // 重看开场故事 + 引导
 }
 
 export function mountLobby(host: HTMLElement, h: LobbyHandlers): { update: () => void; destroy: () => void } {
@@ -762,14 +793,17 @@ export function mountLobby(host: HTMLElement, h: LobbyHandlers): { update: () =>
   let manTier: '' | 'easy' | 'mid' | 'hard' = '';
   let recharge = false;
   let rechargeErr = '';
-  let story: { beats: StoryBeat[]; idx: number; label: string; cta: string; then: 'close' | 'play' } | null = null;
-  const render = (): void => { host.innerHTML = renderLobby({ ...h.getView(), skin }, tab, tut, deckTab, earthFilter, collTab, heroSuit, heroDetail, heroRar, ownedOnly, intro, manTier, recharge, rechargeErr, story); };
+  let story: { beats: StoryBeat[]; idx: number; label: string; cta: string; then: 'close' | 'play' | 'guide' } | null = null;
+  let guideSkipAsk = false;
+  const render = (): void => { host.innerHTML = renderLobby({ ...h.getView(), skin }, tab, tut, deckTab, earthFilter, collTab, heroSuit, heroDetail, heroRar, ownedOnly, intro, manTier, recharge, rechargeErr, story, guideSkipAsk); };
   // 每关开局演出（doc27 §五）：战役背景 + Boss 开场白 → 出征。缺 intro 则直接进战斗。
   const levelBeats = (c: StageCampaign): StoryBeat[] => [
     { scene: c.battle, text: c.intro ?? c.oneLiner },
     ...(c.bossLines ? [{ scene: `${c.boss} · 开场`, text: c.bossLines.open }] : []),
   ];
-  const finishStory = (): void => { const then = story?.then ?? 'close'; story = null; render(); if (then === 'play') h.onPlay(); };
+  const startPlay = (): void => { const c = h.getView().campaign; if (c && c.intro) { story = { beats: levelBeats(c), idx: 0, label: `第 ${c.stage} 关 · ${c.battle}`, cta: `出征 · 第 ${c.stage} 关`, then: 'play' }; render(); } else h.onPlay(); };
+  const playOpeningStory = (): void => { story = { beats: STORY_OPENING, idx: 0, label: '翻命扑克 · 序章', cta: '执掌命运 →', then: 'guide' }; };
+  const finishStory = (): void => { const then = story?.then ?? 'close'; story = null; if (then === 'play') { render(); h.onPlay(); } else if (then === 'guide') { h.onIntroSeen?.(); render(); } else render(); };
   const onClick = (e: MouseEvent): void => {
     const el = (e.target as HTMLElement).closest('[data-act]') as HTMLElement | null; if (!el) return;
     const act = el.dataset.act, k = el.dataset.k ?? '';
@@ -789,9 +823,16 @@ export function mountLobby(host: HTMLElement, h: LobbyHandlers): { update: () =>
     else if (act === 'manTier') { manTier = k as 'easy' | 'mid' | 'hard'; render(); }
     else if (act === 'man-close') { manTier = ''; render(); }
     else if (act === 'tut-close') { tut = false; render(); }
-    else if (act === 'play') { const c = h.getView().campaign; if (c && c.intro) { story = { beats: levelBeats(c), idx: 0, label: `第 ${c.stage} 关 · ${c.battle}`, cta: `出征 · 第 ${c.stage} 关`, then: 'play' }; render(); } else h.onPlay(); }
+    else if (act === 'play') { startPlay(); }
     else if (act === 'story-next') { if (!story) return; if (story.idx < story.beats.length - 1) { story.idx++; render(); } else finishStory(); }
     else if (act === 'story-skip') { finishStory(); }
+    // 新手引导（doc28 §二）：步进 / 末步开打 / 跳过确认 / 重看
+    else if (act === 'guide-next') { h.onGuideStep?.((h.getView().guideStep ?? 0) + 1); render(); }
+    else if (act === 'guide-finish') { h.onGuideDone?.(); startPlay(); }
+    else if (act === 'guide-skip') { guideSkipAsk = true; render(); }
+    else if (act === 'guide-skip-cancel') { guideSkipAsk = false; render(); }
+    else if (act === 'guide-skip-confirm') { guideSkipAsk = false; h.onGuideDone?.(); render(); }
+    else if (act === 'replayIntro') { h.onReplayIntro?.(); tab = 'home'; playOpeningStory(); render(); }
     else if (act === 'buyTiangang') { h.onBuyTiangang?.(k); render(); }
     else if (act === 'buyPlanet') { h.onBuyPlanet?.(k); render(); }
     else if (act === 'buyFoil') { h.onBuyFoil?.(k); render(); }
@@ -808,6 +849,7 @@ export function mountLobby(host: HTMLElement, h: LobbyHandlers): { update: () =>
     else if (act === 'reset') { h.onReset?.(); render(); }
   };
   host.addEventListener('click', onClick);
+  if (h.getView().firstLaunch) playOpeningStory(); // 首启自动播开场故事 → 引导（doc28）
   render();
   return { update: render, destroy: () => { host.removeEventListener('click', onClick); host.replaceChildren(); } };
 }
@@ -815,6 +857,6 @@ export function mountLobby(host: HTMLElement, h: LobbyHandlers): { update: () =>
 const FONTS = '<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin><link href="https://fonts.googleapis.com/css2?family=Silkscreen:wght@400;700&family=Rajdhani:wght@500;600;700&family=Cormorant+Garamond:wght@500;600;700&family=Noto+Sans+SC:wght@400;500;700;900&family=Noto+Serif+SC:wght@500;700;900&family=Zhi+Mang+Xing&family=Ma+Shan+Zheng&display=swap" rel="stylesheet">';
 
 // 离线"看帧" golden：自包含 HTML（CSS + 字体 + 真渲染器输出）。浏览器开 = 真大厅。
-export function renderLobbyDoc(view: LobbyView, tab = 'home', collTab = 'cards', deckTab: 'base' | 'gang' = 'base', rechargeOpen = false): string {
-  return `<!DOCTYPE html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">${FONTS}<style>html,body{margin:0;background:#0c0a08}${CSS}</style></head><body>${renderLobby(view, tab, false, deckTab, 'all', collTab, 'all', '', 'all', false, false, '', rechargeOpen)}</body></html>`;
+export function renderLobbyDoc(view: LobbyView, tab = 'home', collTab = 'cards', deckTab: 'base' | 'gang' = 'base', rechargeOpen = false, story: { beats: StoryBeat[]; idx: number; label: string; cta: string } | null = null, guideSkipAsk = false): string {
+  return `<!DOCTYPE html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">${FONTS}<style>html,body{margin:0;background:#0c0a08}${CSS}</style></head><body>${renderLobby(view, tab, false, deckTab, 'all', collTab, 'all', '', 'all', false, false, '', rechargeOpen, '', story, guideSkipAsk)}</body></html>`;
 }

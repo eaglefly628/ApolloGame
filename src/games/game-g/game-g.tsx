@@ -57,6 +57,8 @@ interface Save {
   diamond: number; // 钻石 Diamond（doc25 · 付费·只加速速解·不卖强度）
   dizhiShards: number; // 地支碎片（养地支专属材料 · 💎可换 · 待甲镶嵌系统消耗）
   rechargeCount: number; // 已完成充值次数（投资人彩蛋：首充免密·第二次起需密码）
+  seenIntro: boolean; // 是否已看过首启开场故事（doc28 §一·只播一次）
+  guideStep: number; // 新手引导进度（doc28 §二）：0..N 进行中 · -1 完成/跳过
   campaignMax: number; // 已抵达的最高关（持久·天罡解锁门槛 = unlockStage ≤ campaignMax）
   stage: number;
   deck: number[]; // 我方 52 张的 favor（0..95）
@@ -82,7 +84,7 @@ const newDeckId = (): string => `deck_${Date.now().toString(36)}_${Math.floor(Ma
 
 const rollBoss = (): number => Math.floor(Math.random() * BOSS_ROSTER.length);
 export function freshSave(): Save {
-  return { materials: 120, diamond: 6, dizhiShards: 0, rechargeCount: 0, campaignMax: 1, stage: 1, deck: Array.from({ length: DECK_SIZE }, (_, i) => 44 + (i % 10) * 2), lastOfficers: [10, 10, 10], leverEnergy: LEVER_START, lives: RUN_LIVES, bossIdx: rollBoss(), ownedTiangangs: [], tiangangDecks: [{ id: 'deck1', name: '牌组 1', cards: [] }], activeDeckId: 'deck1', tiangangs: [], planets: {}, foils: [] }; // 44..62 起步；金币 120 起手够解锁关1；钻石送 6（新手一点点·首充免密）
+  return { materials: 120, diamond: 6, dizhiShards: 0, rechargeCount: 0, seenIntro: false, guideStep: 0, campaignMax: 1, stage: 1, deck: Array.from({ length: DECK_SIZE }, (_, i) => 44 + (i % 10) * 2), lastOfficers: [10, 10, 10], leverEnergy: LEVER_START, lives: RUN_LIVES, bossIdx: rollBoss(), ownedTiangangs: [], tiangangDecks: [{ id: 'deck1', name: '牌组 1', cards: [] }], activeDeckId: 'deck1', tiangangs: [], planets: {}, foils: [] }; // 44..62 起步；金币 120 起手够解锁关1；钻石送 6（新手一点点·首充免密）；新存档播开场故事+引导
 }
 function loadSave(): Save {
   try {
@@ -96,6 +98,8 @@ function loadSave(): Save {
         if (typeof s.diamond !== 'number') s.diamond = 0; // doc25 货币迁移
         if (typeof s.dizhiShards !== 'number') s.dizhiShards = 0; // 地支碎片迁移
         if (typeof s.rechargeCount !== 'number') s.rechargeCount = 0; // 充值次数迁移
+        if (typeof s.seenIntro !== 'boolean') s.seenIntro = true; // 老存档视为已看过开场（不打扰老玩家）
+        if (typeof s.guideStep !== 'number') s.guideStep = -1; // 老存档引导视为已完成
         if (typeof s.campaignMax !== 'number') s.campaignMax = Math.max(1, s.stage || 1);
         // 重命名(joker→天罡)迁移 + owner 拍「清空老存档战库」：老存档键为 jokers/ownedJokers → 战库(tiangangs)清空、收藏(ownedTiangangs)沿用旧 ownedJokers；丢弃遗留键。
         const legacy = s as unknown as { jokers?: unknown; ownedJokers?: unknown };
@@ -323,7 +327,7 @@ export function mount(container: HTMLElement): () => void {
       const foils: LobbyShopItem[] = GAME_G_FOILS.map((f) => { const owned = save.foils.includes(f.id); return { id: f.id, name: f.name, sub: f.desc, cost: f.cost, owned, buyable: !owned && save.materials >= f.cost }; });
       const heart = save.lives > 0 ? '❤'.repeat(save.lives) : '—';
       return {
-        skin: lobbySkin, coin: save.materials, diamond: save.diamond, dizhiShards: save.dizhiShards, rechargeNeedsPassword: save.rechargeCount >= 1, campaignMax: save.campaignMax, energy: save.leverEnergy, energyMax: cap, foilCount: save.foils.length,
+        skin: lobbySkin, coin: save.materials, diamond: save.diamond, dizhiShards: save.dizhiShards, rechargeNeedsPassword: save.rechargeCount >= 1, campaignMax: save.campaignMax, firstLaunch: !save.seenIntro, guideStep: save.guideStep, energy: save.leverEnergy, energyMax: cap, foilCount: save.foils.length,
         name: '不翻就赢_07', mainCard: '黑桃A「掷命尖兵」', rankText: `战役 ${save.stage}/${RUN_BATTLES}`,
         stageLabel: `第 ${save.stage} 战 / 共 ${RUN_BATTLES} · 终局 Boss【${boss.name}】`,
         archLine, bossLine: `${boss.persona} · 流派【${bossArchName}】— 据其针对布阵`,
@@ -362,6 +366,11 @@ export function mount(container: HTMLElement): () => void {
       onDelDeck: (id) => { if (save.tiangangDecks.length <= 1) return; save.tiangangDecks = save.tiangangDecks.filter((d) => d.id !== id); if (!save.tiangangDecks.some((d) => d.id === save.activeDeckId)) save.activeDeckId = save.tiangangDecks[0].id; syncTiangangs(save); persist(save); },
       onReset: () => { Object.assign(save, freshSave()); persist(save); },
       onSkin: (s) => { lobbySkin = s; },
+      // 首启引导（doc28）：看完开场故事 → 起引导第0步；引导逐步推进；跳过/完成 → guideStep=-1
+      onIntroSeen: () => { save.seenIntro = true; if (save.guideStep < 0) save.guideStep = 0; persist(save); },
+      onGuideStep: (n) => { save.guideStep = n; persist(save); },
+      onGuideDone: () => { save.seenIntro = true; save.guideStep = -1; persist(save); },
+      onReplayIntro: () => { save.seenIntro = false; save.guideStep = 0; persist(save); },
     });
   }
 

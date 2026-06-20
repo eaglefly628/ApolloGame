@@ -49,6 +49,12 @@
 .ggl-root .camp-fiend b{ color:var(--ink) }
 .ggl-root .story-ov{ background:rgba(6,8,11,.88) }
 .ggl-root .story-box{ max-width:520px; text-align:left }
+.ggl-root .guide-coach{ position:absolute; left:50%; bottom:22px; transform:translateX(-50%); width:min(560px,90%); z-index:40; padding:15px 18px; border-radius:14px; background:var(--panel); border:1px solid var(--gold); box-shadow:0 10px 40px rgba(0,0,0,.5),0 0 22px rgba(232,205,130,.2) }
+.ggl-root .guide-hd{ display:flex; align-items:center; font-family:var(--fn); font-size:11px; letter-spacing:.1em; color:var(--gold) }
+.ggl-root .guide-skip{ margin-left:auto; background:none; border:0; color:var(--ink-dim); font-size:12px; text-decoration:underline; cursor:pointer }
+.ggl-root .guide-title{ font-family:var(--fh); font-weight:700; font-size:17px; color:var(--ink); margin:8px 0 5px }
+.ggl-root .guide-body{ font-size:13px; line-height:1.7; color:var(--ink-dim) }
+.ggl-root .guide-act{ display:flex; gap:10px; margin-top:12px }
 .ggl-root .icon{ width:34px; height:34px; border-radius:9px; display:flex; align-items:center; justify-content:center; background:var(--chip); border:1px solid var(--panel-border); color:var(--ink-dim); font-size:15px }
 .ggl-root .tutbtn{ padding:0 12px; height:34px; border-radius:9px; background:var(--chip); border:1px solid var(--gold); color:var(--gold); font-size:13px; font-weight:700 }
 .ggl-root .nav{ display:flex; gap:4px; padding:10px 22px 0 }
@@ -252,6 +258,7 @@
     <button class="tutbtn" data-act="intro">📜 游戏介绍</button>
     <button class="tutbtn" data-act="man">📚 玩法手册</button>
     <button class="tutbtn" data-act="tut">📖 新手指导</button>
+    <button class="icon" data-act="replayIntro" title="重看开场故事与新手引导">↻</button>
     <button class="icon" data-act="reset" title="重置进度">⚙</button>
   </div>
   <div class="nav">
