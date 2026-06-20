@@ -137,6 +137,14 @@ describe('Game G · A1 战潮抽牌·事件脉冲（doc18 §10.3 乙 · tideDraw
     expect(aggregateTengang(['bannerman']).moraleLeader).toBe(4);     // 旗手 士气+4
     expect(aggregateTengang(['unyield']).stamPlus).toBe(1);           // 不屈 续航+1
     expect(aggregateTengang(['widehand']).handMaxAdd).toBe(2);        // 广纳 手牌上限+2
+    // 回合制接搁浅维度（doc20 §二·design G 2026-06-20 派甲）：morale/stamina/draw/siege
+    expect(aggregateTengang(['grieve']).revenge).toBe(14);           // 哀兵 主将亡→余部+14
+    expect(aggregateTengang(['deathwatch']).noRout).toBe(1);         // 督战 主将亡不溃
+    expect(aggregateTengang(['relay']).relay).toBe(2);              // 薪火 接棒续航+2
+    expect(aggregateTengang(['flow']).onPlay).toBe(1);             // 川流 出牌后补抽1
+    expect(aggregateTengang(['tidewave']).clashElixir).toBe(1);    // 战潮 每遭遇返1源泉
+    expect(aggregateTengang(['laststand']).siegeDefend).toBe(1);   // 死守 我家首破免疫
+    expect(aggregateTengang(['ram']).siegeChip).toBe(1);          // 攻城锤 破敌家多chip1
     expect(aggregateTengang(['markdecap'])).toEqual(NO_TENGANG);      // 斩首印(arcane 质变)=甲 v2 未接 → 零修正·不崩
     const both = aggregateTengang(['tigertally', 'ghosthand']);       // 多种叠加
     expect(both.powerAll).toBe(2); expect(both.pEffAdd).toBe(1);

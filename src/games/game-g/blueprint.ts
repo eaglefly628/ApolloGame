@@ -638,10 +638,10 @@ export const GAME_G_TIANGANGS: TiangangCard[] = [
   { id: 'grieve', name: '哀兵', kind: 'morale', rarity: 'rare', cost: 16, archetype: 'general', power: 2, params: { op: 'revenge', value: 14 }, icon: 'delapouite/enrage', tint: '#fcd34d', text: '我主将被斩 → 该路余部 +14' },
   { id: 'deathwatch', name: '督战', kind: 'morale', rarity: 'epic', cost: 22, archetype: 'general', power: 3, params: { op: 'noRout' }, icon: 'delapouite/drum', tint: '#fcd34d', text: '主将阵亡不溃散' },
   // E 行军系 tempo
-  { id: 'swiftmarch', name: '疾行', kind: 'tempo', rarity: 'rare', cost: 16, archetype: 'wide', power: 2, params: { op: 'speedUp', value: 50, target: 'self' }, icon: 'lorc/sprint', tint: '#22c55e', text: '我一路 +50% 速' },
-  { id: 'mire', name: '泥沼', kind: 'tempo', rarity: 'rare', cost: 16, archetype: 'decap', power: 2, params: { op: 'slowEnemy', value: -40, target: 'enemy' }, icon: 'delapouite/swamp', tint: '#22c55e', text: '敌一路 −40% 速' },
-  { id: 'beachhead', name: '抢滩', kind: 'tempo', rarity: 'epic', cost: 22, archetype: 'wide', power: 3, params: { op: 'jumpLine' }, icon: 'delapouite/jump-across', tint: '#22c55e', text: '我该路起步即过中线' },
-  { id: 'ironchain', name: '铁索', kind: 'tempo', rarity: 'epic', cost: 22, archetype: 'decap', power: 3, params: { op: 'slowEnemy', value: -20, target: 'enemy', scope: 'all' }, icon: 'lorc/linked-rings', tint: '#22c55e', text: '敌全军 −20% 速（连环）' },
+  { id: 'swiftmarch', name: '疾行', kind: 'tempo', rarity: 'rare', cost: 16, archetype: 'wide', power: 2, params: { op: 'advance', value: 1, target: 'self' }, icon: 'lorc/sprint', tint: '#22c55e', text: '指定我一路，该路兵每回合多推进 1 格（抢攻）' },
+  { id: 'mire', name: '泥沼', kind: 'tempo', rarity: 'rare', cost: 16, archetype: 'decap', power: 2, params: { op: 'slow', target: 'enemy' }, icon: 'delapouite/swamp', tint: '#22c55e', text: '指定敌一路，该路敌兵隔回合才推进（拖住）' },
+  { id: 'beachhead', name: '抢滩', kind: 'tempo', rarity: 'epic', cost: 22, archetype: 'wide', power: 3, params: { op: 'jumpToMid' }, icon: 'delapouite/jump-across', tint: '#22c55e', text: '指定一路，该路新部署兵直接到中线格（抢线）' },
+  { id: 'ironchain', name: '铁索', kind: 'tempo', rarity: 'epic', cost: 22, archetype: 'decap', power: 3, params: { op: 'slow', target: 'enemy', scope: 'all' }, icon: 'lorc/linked-rings', tint: '#22c55e', text: '敌全军隔回合才推进（连环锁脚）' },
   // F 续航系 stamina
   { id: 'veteran', name: '老兵', kind: 'stamina', rarity: 'common', cost: 12, archetype: 'wide', power: 1, params: { op: 'stamPlus', value: 1, filter: 'faces' }, icon: 'delapouite/sergeant', tint: '#38bdf8', text: '人头牌(JQKA) 续航 +1' },
   { id: 'unyield', name: '不屈', kind: 'stamina', rarity: 'rare', cost: 16, archetype: 'wide', power: 2, params: { op: 'stamPlus', value: 1 }, icon: 'lorc/mailed-fist', tint: '#38bdf8', text: '全军续航 +1' },

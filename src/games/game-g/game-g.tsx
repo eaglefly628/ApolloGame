@@ -204,9 +204,10 @@ export function tengangFxOf(cards: Iterable<{ kind: string; params?: Record<stri
       else if (p.op === 'add') { if (p.filter === 'countLE3') fx.powerLE3 += v; else if (p.filter === 'sameSuit') fx.powerSameSuit += v; else if (p.scope === 'front') fx.powerFront += v; else fx.powerAll += v; } // 寡兵 / 同花魁 / 锋矢(front) / 虎符(全军·scope:all 或无)
     }
     else if (j.kind === 'combo') { if (p.op === 'pair') fx.comboPair += bonus; else if (p.op === 'trips') fx.comboTrips += bonus; }
-    else if (j.kind === 'morale' && p.op === 'leaderBuff') fx.moraleLeader += v;
-    else if (j.kind === 'stamina' && p.op === 'stamPlus') { if (p.filter === 'faces') fx.stamFaces += v; else fx.stamPlus += v; }
-    else if (j.kind === 'draw' && p.op === 'handMax') fx.handMaxAdd += v;
+    else if (j.kind === 'morale') { if (p.op === 'leaderBuff') fx.moraleLeader += v; else if (p.op === 'revenge') fx.revenge += v; else if (p.op === 'noRout') fx.noRout = 1; } // 旗手/哀兵/督战
+    else if (j.kind === 'stamina') { if (p.op === 'stamPlus') { if (p.filter === 'faces') fx.stamFaces += v; else fx.stamPlus += v; } else if (p.op === 'relay') fx.relay += v; } // 老兵/不屈/薪火
+    else if (j.kind === 'draw') { if (p.op === 'handMax') fx.handMaxAdd += v; else if (p.op === 'onPlay') fx.onPlay += v; else if (p.op === 'clashElixir') fx.clashElixir += v; } // 广纳/川流/战潮
+    else if (j.kind === 'siege') { if (p.op === 'defend') fx.siegeDefend += v; else if (p.op === 'chipMore') fx.siegeChip += v; } // 死守/攻城锤
   }
   return fx;
 }

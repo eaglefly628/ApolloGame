@@ -24,6 +24,7 @@ export const TURN_HOME_BLOOD = 3;
 export const MANA_START = 1, MANA_PER_TURN = 1;
 export const DRAW_COST = 1, DEPLOY_COST = 1, CAST_COST = 1; // 抽/放/打天罡 花召唤源泉；弃免费
 export const OPENING_HAND = 3; // 起手摸 N（doc24 §六/七 待定）
+export const HAND_MAX = 8; // 手牌上限（天罡·广纳 handMaxAdd 抬高）
 const MORALE_PTS = 2, ROUT_PTS = 4; // 同 live-combat/doc06：主将在→下属 +战力 / 主将亡→溃散 −战力
 
 // ── 捷径门（owner 2026-06-20 定向·doc21/24 跨路调度·8 门：我方 4 + 敌方对称镜像 4）──
@@ -75,6 +76,7 @@ export interface TurnBattle {
   lastClash: ClashEvent | null; clashLog: ClashEvent[]; clashSeq: number; // clashLog：逐场掷命流水（驱动层抽特写·不进 hash）
   dishaB: DishaFx; bossWinStreak: number; batteryLane: number; bossLastStandUsed: boolean; // 地煞(Boss 招牌战术·doc23 §八)运行态
   aiProfile: AiProfile; aiTier: number; // Boss 通用 utility AI（doc27 §八）：画像 + 难度档(高=更优·低=会犯错)
+  homeAShieldUsed: number; // 死守(天罡 siegeDefend)：我大本营已吸收次数
 }
 
 const mkLane = (): TurnLane => ({ a: [], b: [], aGenDead: false, bGenDead: false, spentA: 0, spentB: 0 });
@@ -98,6 +100,7 @@ export function initTurnBattle(cfg: TurnInit): TurnBattle {
     winner: 'pending', actionTaken: null, lastClash: null, clashLog: [], clashSeq: 0,
     dishaB, bossWinStreak: 0, batteryLane: -1, bossLastStandUsed: false,
     aiProfile: cfg.aiProfile ?? NEUTRAL_AI, aiTier: cfg.aiTier ?? 2,
+    homeAShieldUsed: 0,
   };
   battle.b.mana = 0; // 后手方召唤源泉在其回合开始才 +1（每回合 +1 对称·turn-1 的 +1 已含在先手起步值里）
   return battle;
@@ -118,10 +121,16 @@ function canAct(b: TurnBattle, side: 'a' | 'b', kind: ActionKind, cost: number):
 export function drawCard(b: TurnBattle, side: 'a' | 'b', from: 'poker' | 'tengang'): boolean {
   if (!canAct(b, side, 'draw', DRAW_COST)) return false;
   const sd = sideOf(b, side);
+  if (sd.hand.length >= HAND_MAX + sd.tengangA.handMaxAdd) return false; // 手牌上限（广纳 +2）
   const card: Card | undefined = from === 'poker' ? sd.pokerDeck.shift() : sd.tengangDeck.shift();
   if (!card) return false;
   sd.mana -= DRAW_COST; sd.hand.push(card); b.actionTaken = 'draw';
   return true;
+}
+
+// 川流（天罡·draw onPlay）：放牌/施法后免费补抽（不耗源泉·不算动作·受手牌上限约束）。
+function onPlayDraw(sd: TurnSide): void {
+  for (let i = 0; i < sd.tengangA.onPlay && sd.pokerDeck.length && sd.hand.length < HAND_MAX + sd.tengangA.handMaxAdd; i++) sd.hand.push(sd.pokerDeck.shift()!);
 }
 
 // ② 放牌：把手牌第 handIdx 张扑克兵部署到 lane（入我方/敌方部署格·队尾排队）+ 可选改机关（开/关门）。花召唤源泉（互斥·同类无限）。
@@ -135,10 +144,11 @@ export function deployUnit(b: TurnBattle, side: 'a' | 'b', handIdx: number, lane
   const slot = side === 'a' ? deploySlot - col.length : deploySlot + col.length;
   if (side === 'a' ? slot < B_GOAL : slot > A_GOAL) return false; // 我方区满(挤不下) → 拒绝
   sd.hand.splice(handIdx, 1); sd.mana -= DEPLOY_COST; b.actionTaken = 'deploy';
-  const stamBonus = side === 'a' ? sd.tengangA.stamPlus + (isFaceRank(card.rank) ? sd.tengangA.stamFaces : 0) : 0;
+  const stamBonus = sd.tengangA.stamPlus + (isFaceRank(card.rank) ? sd.tengangA.stamFaces : 0); // 不屈/老兵（双侧·Boss 施法亦得）
   const stam = cardStamina(card.rank) + stamBonus;
   col.push({ id: card.id, rank: card.rank, suit: card.suit, points: cardPoints(card.rank), buff: card.buff, general: card.general, stamina: stam, staminaLeft: stam, slot });
   if (gateToggle >= 0 && gateToggle < GATES.length) b.gatesOpen[gateToggle] = !b.gatesOpen[gateToggle]; // 放牌附赠：开/关一道捷径门（doc24 §三·可不用）
+  onPlayDraw(sd); // 川流：放牌后免费补抽
   return true;
 }
 
@@ -148,6 +158,7 @@ export function castTengang(b: TurnBattle, side: 'a' | 'b', handIdx: number): bo
   const sd = sideOf(b, side); const card = sd.hand[handIdx];
   if (!card || card.kind !== 'tengang') return false;
   sd.hand.splice(handIdx, 1); sd.mana -= CAST_COST; sd.castIds.push(card.id); b.actionTaken = 'cast';
+  onPlayDraw(sd); // 川流：施法后免费补抽（用本次之前已生效的 onPlay）
   return true; // tengangA 重算：caller 做 sd.tengangA = aggregateTengang(sd.castIds)（避免 turn-combat ← blueprint 环依赖）
 }
 
@@ -206,8 +217,12 @@ function effPower(u: TurnUnit, lane: TurnLane, side: 'a' | 'b', fx: TengangFx, c
   if (u.general) return { pEff: pEff(u.points, u.buff + tg, mul), shift: 0, tg };
   const genDead = side === 'a' ? lane.aGenDead : lane.bGenDead;
   const genHere = col.some((x) => x.general);
-  const moraleBonus = genHere ? fx.moraleLeader : 0; // 令旗
-  const shift = (genDead && !noRout) ? -ROUT_PTS : genHere ? MORALE_PTS + moraleBonus : 0;
+  const moraleBonus = genHere ? fx.moraleLeader : 0; // 令旗(旗手)
+  const noRoutEff = noRout || fx.noRout > 0; // 督战(天罡) 或 破釜沉舟/死战不退(Boss disha)
+  const shift = !genDead ? (genHere ? MORALE_PTS + moraleBonus : 0)
+    : fx.revenge > 0 ? fx.revenge // 哀兵：主将亡 → 余部暴怒 +N
+    : noRoutEff ? 0               // 督战：主将亡不溃散
+    : -ROUT_PTS;                  // 默认：主将亡 → 溃散
   return { pEff: pEff(u.points, u.buff + tg + shift, mul), shift, tg };
 }
 
@@ -277,10 +292,14 @@ function resolveClash(b: TurnBattle, li: number): void {
     b.bossLastStandUsed = true; const q = lane.b; const u = q.shift();
     if (u) { u.slot = Math.min(SLOTS - 1, u.slot + 1); q.push(u); q.sort((x, y) => x.slot - y.slot); }
   } else {
-    killFront(lane, aWins ? 'b' : 'a'); // 输家阵亡
+    const loser = aWins ? 'b' : 'a';
+    killFront(lane, loser); // 输家阵亡
+    const relay = sideOf(b, loser).tengangA.relay; // 薪火：一张阵亡 → 同路下一张接棒续航 +N
+    const next = colOf(lane, loser)[0]; if (relay > 0 && next) next.staminaLeft += relay;
   }
   const wq = colOf(lane, aWins ? 'a' : 'b'); const wf = wq[0]; // 赢家续航 −1·尽则退场
   if (wf) { wf.staminaLeft -= 1; if (wf.staminaLeft <= 0) { wq.shift(); if (aWins) lane.spentA += 1; else lane.spentB += 1; } }
+  b.a.mana += b.a.tengangA.clashElixir; b.b.mana += b.b.tengangA.clashElixir; // 战潮：每遭遇返召唤源泉（喂经济）
 }
 
 // 推进阶段（doc24 §七·只推 active 方自己的兵）：①开门分流(下一步该格己兵按门向过门·替直进) → ②各路前锋向敌家推一格 → 相邻敌前锋则掷命 / 无敌则抵敌家 chip 血。
@@ -315,7 +334,11 @@ function advanceSide(b: TurnBattle, side: 'a' | 'b'): void {
       const goal = side === 'a' ? A_GOAL : B_GOAL;
       for (let i = own.length - 1; i >= 0; i--) {
         const past = dir > 0 ? own[i].slot > goal : own[i].slot < goal;
-        if (past) { own.splice(i, 1); if (side === 'a') b.homeB = Math.max(0, b.homeB - 1); else b.homeA = Math.max(0, b.homeA - 1); }
+        if (!past) continue;
+        own.splice(i, 1);
+        if (side === 'a') b.homeB = Math.max(0, b.homeB - (1 + b.a.tengangA.siegeChip)); // 攻城锤：破敌家多 chip
+        else if (b.homeAShieldUsed < b.a.tengangA.siegeDefend) b.homeAShieldUsed += 1; // 死守：我家首破免疫(吸收·不掉血)
+        else b.homeA = Math.max(0, b.homeA - 1);
       }
     }
   }

@@ -24,13 +24,14 @@ const AI_PROFILES: Record<number, AiProfile> = {
   5: { aggression: 10, lanePref: 1, spellEager: 8, targetPref: 'strong', risk: 9, economy: 9 },  // 项羽·莽·全压一路
 };
 
-// 难度档（doc27 §四·按星级）：大本营血 / loadoutCap / AI 智能档。关1-5 = ★~★★★。
+// 难度档（doc27 §四）：大本营血 / loadoutCap / AI 智能档。**按 stage 索引**（design G 2026-06-20 修 bug：原按 c.stars 索引·STAGE_CAMPAIGN stars 仅 1-3 → 4/5 档死表·项羽实拿 tier2）。
+// 当前 5 战 run = 关1-5 难度阶梯 ★→★★★★★（项羽=run 终 boss·最难）。52 关批量铺开时按 doc27 §四 阶段区间重定（design G「按批出关」）。
 const DIFFICULTY: Record<number, { homeHp: number; loadoutCap: number; aiTier: number }> = {
-  1: { homeHp: 3, loadoutCap: 2, aiTier: 1 }, // ★ 教学
+  1: { homeHp: 3, loadoutCap: 2, aiTier: 1 }, // ★
   2: { homeHp: 3, loadoutCap: 3, aiTier: 2 }, // ★★
-  3: { homeHp: 3, loadoutCap: 3, aiTier: 2 }, // ★★★（关1-5 终·血由地煞或后续调）
-  4: { homeHp: 4, loadoutCap: 4, aiTier: 3 }, // ★★★★
-  5: { homeHp: 5, loadoutCap: 5, aiTier: 4 }, // ★★★★★ 终章
+  3: { homeHp: 4, loadoutCap: 3, aiTier: 3 }, // ★★★
+  4: { homeHp: 4, loadoutCap: 4, aiTier: 4 }, // ★★★★
+  5: { homeHp: 5, loadoutCap: 5, aiTier: 5 }, // ★★★★★ 终章
 };
 
 // 关1-5 战役背景 + Boss 对白（doc27 §五·全文）。关6+ 暂复用占位（§六文案后续逐期接入）。
@@ -66,7 +67,7 @@ export function tutorialEnemyDeck(): PokerCard[] {
 /** 按 stage（1 基）加载一关定义（越界取末关 lore 占位·数据全拼装）。纯数据·确定性。 */
 export function loadLevel(stage: number): LevelDef {
   const c: StageCampaign = campaignFor(stage);
-  const diff = DIFFICULTY[c.stars] ?? DIFFICULTY[1];
+  const diff = DIFFICULTY[stage] ?? DIFFICULTY[5]; // 按 stage 索引（design G 修 bug·原 c.stars 致 4/5 档死表）；越界取终章档
   const lore = LEVEL_LORE[stage] ?? LEVEL_LORE[5]; // 关6+ 暂复用占位
   const unlock = TIANGANG_UNLOCK.find((u) => u.stage === stage)?.ids ?? [];
   return {
