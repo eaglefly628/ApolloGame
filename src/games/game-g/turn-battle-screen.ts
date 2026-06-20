@@ -16,6 +16,11 @@ const SUITNM: Record<string, string> = { s: '黑桃', h: '红桃', d: '方块', 
 const ZOD_ICON: Record<string, string> = { 鼠: '🐀', 牛: '🐂', 虎: '🐅', 兔: '🐇', 龙: '🐉', 蛇: '🐍', 马: '🐎', 羊: '🐑', 猴: '🐒', 鸡: '🐓', 狗: '🐕', 猪: '🐖' };
 const RAR: Record<string, [string, string]> = { white: ['普通', '#b9bec8'], green: ['优良', '#5bbf7a'], blue: ['稀有', '#3a9bff'], gold: ['传世', '#e8cd82'] };
 
+// 敌我牌面底纹（owner 2026-06-20「敌我难分·底纹花纹要不同」）：我方=暖橙 45°斜纹·敌方=冷蓝 −45°斜纹（颜色+纹向都不同·一眼分清）。
+const sideFace = (mine: boolean): string => mine
+  ? 'repeating-linear-gradient(45deg, rgba(238,90,37,.14) 0 6px, rgba(0,0,0,0) 6px 13px), linear-gradient(158deg,#fff3ea,#ffd6c2)'
+  : 'repeating-linear-gradient(-45deg, rgba(42,95,158,.16) 0 6px, rgba(0,0,0,0) 6px 13px), linear-gradient(158deg,#edf3fc,#cbdcf3)';
+
 // 双皮 token（逐字搬自设计稿 themes()）。
 type Theme = Record<string, string>;
 export const THEMES: Record<string, Theme> = {
@@ -178,7 +183,7 @@ function slotCell(s: TurnSlotView): string {
   let unitHTML = '';
   if (s.hasUnit && s.rank && s.suit) {
     const col = s.mine ? '#ff7a45' : '#3a86d4'; const sc = SUITC[s.suit]; const zod = s.zod || [];
-    const unit = { position: 'relative', width: '100%', height: '90%', borderRadius: '10px', background: 'var(--card-face)', border: '2px solid ' + col, boxShadow: '0 3px 8px rgba(0,0,0,.4), inset 0 0 0 1px rgba(255,255,255,.5)', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center' };
+    const unit = { position: 'relative', width: '100%', height: '90%', borderRadius: '10px', background: sideFace(s.mine), border: '3px solid ' + col, boxShadow: `0 3px 8px rgba(0,0,0,.4), 0 0 0 1px ${col}, inset 0 0 0 1px rgba(255,255,255,.5)`, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center' };
     const corner = { position: 'absolute', top: '4px', left: '5px', fontFamily: 'var(--fh)', fontWeight: 700, fontSize: '15px', color: sc, zIndex: 2 };
     const big = { fontSize: '40px', color: sc, marginTop: '-6px' };
     const badge = { position: 'absolute', top: '4px', right: '5px', minWidth: '22px', padding: '1px 6px', borderRadius: '99px', background: col, color: '#fff', fontFamily: 'var(--fn)', fontSize: '11px', textAlign: 'center', boxShadow: '0 2px 5px rgba(0,0,0,.4)', zIndex: 2 };
@@ -213,7 +218,7 @@ function handCard(c: TurnHandCardView, i: number, hiOn = false): string {
     return `<div data-hand="${i}" style="${st(card)};cursor:pointer${selSty}"><div style="${st(rarDot)}"></div><div style="${st(top)}"><div style="${st(icon)}">${esc(c.glyph || '✦')}</div></div><div style="padding:10px 9px;"><div style="font-family:var(--fb); font-weight:700; font-size:13px; color:var(--ink); text-align:center;">${esc(c.name)}</div><div style="font-size:10px; color:var(--ink-dim); text-align:center; line-height:1.4; margin-top:4px;">${esc(c.desc || '')}</div></div><div style="${st(costPill)}">★${c.cost}</div></div>`;
   }
   const sc = c.suit ? SUITC[c.suit] : '#22303f'; const zod = c.zod || [];
-  const card = { position: 'relative', width: '96px', height: '120px', borderRadius: '12px', background: 'var(--card-face)', border: '2px solid ' + rc[1], boxShadow: '0 6px 16px rgba(0,0,0,.4), inset 0 0 0 1px rgba(255,255,255,.5)', display: 'flex', alignItems: 'center', justifyContent: 'center' };
+  const card = { position: 'relative', width: '96px', height: '120px', borderRadius: '12px', background: sideFace(true), border: '2px solid ' + rc[1], boxShadow: '0 6px 16px rgba(0,0,0,.4), inset 0 0 0 1px rgba(255,255,255,.5)', display: 'flex', alignItems: 'center', justifyContent: 'center' }; // 手牌=我方·暖橙底纹
   const cornerTL = { position: 'absolute', top: '5px', left: '7px', fontFamily: 'var(--fh)', fontWeight: 700, fontSize: '14px', lineHeight: '.86', color: sc, textAlign: 'center' };
   const big = { fontSize: '36px', color: sc, marginTop: '-14px' };
   const nameP = { position: 'absolute', bottom: '30px', left: '50%', transform: 'translateX(-50%)', padding: '1px 9px', borderRadius: '99px', background: 'rgba(20,16,10,.8)', color: '#fff', fontFamily: 'var(--fb)', fontWeight: 700, fontSize: '11px', whiteSpace: 'nowrap' };
@@ -232,14 +237,15 @@ function clashOverlay(cv: TurnClashView): string {
     const col = isMine ? '#ff7a45' : '#3a86d4'; const sc = SUITC[c.suit];
     // 入场：从「桌面」3D 翻起飞到眼前（我方左下 / 敌方右下·flat→竖立·小→大），落到特写就位点。owner 2026-06-20。
     const flyIn = isMine ? 'g-fly-mine .6s cubic-bezier(.16,.84,.3,1) both' : 'g-fly-foe .6s cubic-bezier(.16,.84,.3,1) both';
-    const card = { position: 'relative', width: '180px', height: '252px', borderRadius: '15px', background: 'var(--card-face)', border: '4px solid ' + (c.won ? col : 'var(--danger)'), boxShadow: c.won ? `0 0 44px ${col}88, 0 20px 40px rgba(0,0,0,.5)` : '0 20px 40px rgba(0,0,0,.6)', display: 'flex', alignItems: 'center', justifyContent: 'center', opacity: c.won ? 1 : 0.6, filter: c.won ? 'none' : 'grayscale(.5) brightness(.8)', backfaceVisibility: 'hidden', animation: flyIn };
+    const card = { position: 'relative', width: '180px', height: '252px', borderRadius: '15px', background: sideFace(isMine), border: '4px solid ' + col, boxShadow: c.won ? `0 0 44px ${col}aa, 0 20px 40px rgba(0,0,0,.5)` : `0 0 0 3px ${col}66, 0 20px 40px rgba(0,0,0,.6)`, display: 'flex', alignItems: 'center', justifyContent: 'center', opacity: c.won ? 1 : 0.72, filter: c.won ? 'none' : 'grayscale(.35) brightness(.82)', backfaceVisibility: 'hidden', animation: flyIn };
     const corner = { position: 'absolute', top: '9px', left: '11px', fontFamily: 'var(--fh)', fontWeight: 700, fontSize: '22px', lineHeight: '.86', color: sc, textAlign: 'center' };
     const big = { fontSize: '96px', color: sc };
     const zchip = { position: 'absolute', top: '10px', right: '12px', width: '32px', height: '32px', borderRadius: '8px', border: '1.5px solid ' + sc, display: 'flex', alignItems: 'center', justifyContent: 'center', fontFamily: 'var(--fd)', fontSize: '21px', color: sc };
     const nameP = { position: 'absolute', bottom: '34px', left: '50%', transform: 'translateX(-50%)', padding: '3px 15px', borderRadius: '99px', background: 'rgba(20,16,10,.8)', color: '#fff', fontFamily: 'var(--fb)', fontWeight: 700, fontSize: '15px', whiteSpace: 'nowrap' };
     const verdict = { position: 'absolute', bottom: '-15px', left: '50%', transform: 'translateX(-50%)', padding: '4px 16px', borderRadius: '99px', background: c.won ? 'var(--hp)' : 'var(--danger)', color: c.won ? '#06281a' : '#fff', fontFamily: 'var(--fh)', fontWeight: 700, fontSize: '14px', whiteSpace: 'nowrap', boxShadow: '0 4px 12px rgba(0,0,0,.4)' };
     const glow = c.won && isMine ? `<div style="${st({ position: 'absolute', inset: '-20px', borderRadius: '24px', background: 'radial-gradient(circle, rgba(255,122,69,.4), transparent 70%)', pointerEvents: 'none' })}"></div>` : '';
-    return `<div style="${st(card)}">${glow}<div style="${st(corner)}">${esc(c.rank)}<br>${SUITG[c.suit]}</div><span style="${st(big)}">${SUITG[c.suit]}</span>${c.zod ? `<div style="${st(zchip)}">${esc(c.zod)}</div>` : ''}<div style="${st(nameP)}">${esc(c.name)}</div><div style="${st(verdict)}">${c.won ? '正面 · 存活' : '反面 · 阵亡'}</div></div>`;
+    const sideTag = `<div style="${st({ position: 'absolute', top: '-15px', left: '50%', transform: 'translateX(-50%)', padding: '4px 18px', borderRadius: '99px', background: col, color: '#fff', fontFamily: 'var(--fh)', fontWeight: 700, fontSize: '15px', letterSpacing: '.08em', whiteSpace: 'nowrap', boxShadow: `0 4px 14px ${col}88`, zIndex: 4 })}">${isMine ? '我方' : '敌方'}</div>`;
+    return `<div style="${st(card)}">${glow}${sideTag}<div style="${st(corner)}">${esc(c.rank)}<br>${SUITG[c.suit]}</div><span style="${st(big)}">${SUITG[c.suit]}</span>${c.zod ? `<div style="${st(zchip)}">${esc(c.zod)}</div>` : ''}<div style="${st(nameP)}">${esc(c.name)}</div><div style="${st(verdict)}">${c.won ? '正面 · 存活' : '反面 · 阵亡'}</div></div>`;
   };
   const spark = { width: '90px', height: '90px', borderRadius: '50%', background: 'radial-gradient(circle, rgba(255,235,160,.95), rgba(255,150,40,.4) 50%, transparent 72%)', animation: 'g-spark 1.2s ease-in-out infinite' };
   const coin = { width: '72px', height: '72px', borderRadius: '50%', background: 'var(--gold-grad)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#2a1a08', border: '3px solid #fff', boxShadow: '0 0 26px rgba(232,205,138,.6)', marginTop: '-30px', animation: 'g-coin-pop .45s .4s cubic-bezier(.2,1.3,.4,1) both' };
@@ -251,8 +257,8 @@ function clashOverlay(cv: TurnClashView): string {
     return `<div style="${st(col)}"><div style="${st(hd)}">${esc(head)}</div>${forr(rows, ([label, num]) => `<div style="${st({ display: 'flex', alignItems: 'center', padding: '4px 0' })}"><span style="flex:1; font-size:12px; color:rgba(255,255,255,.8);">${esc(label)}</span><span style="font-family:var(--fn); font-size:14px; color:${valCol};">${num}</span></div>`)}</div>`;
   };
   return `<div style="${st(backdrop)}"><div style="${st(panel)}">
-    <div style="position:absolute; top:18px; left:24px; display:flex; align-items:center; gap:8px;"><span style="${st({ width: '10px', height: '10px', borderRadius: '50%', background: '#e0973a', boxShadow: '0 0 10px #e0973a' })}"></span><span style="font-family:var(--fh); font-weight:700; font-size:15px; color:#fff; letter-spacing:.05em;">${esc(cv.laneName)} · 交界格 · 掷命对决</span></div>
-    <div style="display:flex; align-items:center; justify-content:center; gap:36px; margin-top:34px; perspective:1100px;">
+    <div style="position:absolute; top:14px; left:50%; transform:translateX(-50%); display:flex; align-items:center; gap:10px; padding:6px 22px; border-radius:99px; background:rgba(232,205,138,.14); border:1px solid var(--gold);"><span style="${st({ width: '10px', height: '10px', borderRadius: '50%', background: 'var(--accent)', boxShadow: '0 0 10px var(--accent)' })}"></span><span style="font-family:var(--fh); font-weight:700; font-size:19px; color:var(--gold); letter-spacing:.08em;">⚔ ${esc(cv.laneName)} · 掷命对决</span><span style="${st({ width: '10px', height: '10px', borderRadius: '50%', background: '#3a86d4', boxShadow: '0 0 10px #3a86d4' })}"></span></div>
+    <div style="display:flex; align-items:center; justify-content:center; gap:36px; margin-top:52px; perspective:1100px;">
       ${duelCard(cv.mine, true)}
       <div style="display:flex; flex-direction:column; align-items:center; gap:14px;"><div style="${st(spark)}"></div><div style="${st(coin)}"><span style="font-family:var(--fd); font-size:30px;">掷</span></div><div style="font-family:var(--fn); font-size:13px; color:var(--gold);">命点 ${cv.rollPct}/100</div></div>
       ${duelCard(cv.foe, false)}
