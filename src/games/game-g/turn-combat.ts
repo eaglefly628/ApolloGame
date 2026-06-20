@@ -15,8 +15,8 @@ import { aggregateDisha, type DishaFx } from './disha.js';
 
 // ── 棋盘几何（doc24 §一）──
 export const SLOTS = 9;          // 每路格数：我方 0..3 / 中线 4 / 敌方 5..8
-export const A_DEPLOY_SLOT = 2;  // 放牌区=贴自家大本营的 3 格(0/1/2)·队首在 2(区前沿)向家排(owner 2026-06-20：放家边·非贴中线·从家行军出去)
-export const B_DEPLOY_SLOT = 6;  // 敌方对称：放牌区=贴敌家 3 格(6/7/8)·队首在 6
+export const A_DEPLOY_SLOT = 0;  // 放牌区起点=自家大本营边(slot 0)；新兵落最靠家的空格(0→1→2 向中线填)·从家行军出去(owner 2026-06-20)
+export const B_DEPLOY_SLOT = 8;  // 敌方对称：放牌区起点=敌家边(slot 8)·新兵落 8→7→6
 export const A_GOAL = 8;         // 我兵越过此格(→9) → 敌大本营 −1 血
 export const B_GOAL = 0;         // 敌兵越过此格(→−1) → 我大本营 −1 血
 // ── 回合经济（doc24 §四·真机调；各 cost 暂定 1）──
@@ -139,14 +139,16 @@ export function deployUnit(b: TurnBattle, side: 'a' | 'b', handIdx: number, lane
   const sd = sideOf(b, side); const card = sd.hand[handIdx];
   if (!card || card.kind !== 'poker' || lane < 0 || lane > 2) return false;
   const L = b.lanes[lane]; const col = colOf(L, side);
-  const deploySlot = side === 'a' ? A_DEPLOY_SLOT : B_DEPLOY_SLOT;
-  // 入场格 = 部署格往家方向错开（队尾·离敌最远；占格不重叠）。
-  const slot = side === 'a' ? deploySlot - col.length : deploySlot + col.length;
-  if (side === 'a' ? slot < B_GOAL : slot > A_GOAL) return false; // 我方区满(挤不下) → 拒绝
+  // 放牌区=贴自家大本营 3 格(home→中线)：新兵落最靠家的空格(owner 2026-06-20·从城堡那一竖列入场)·满则拒。
+  const occ = new Set(col.map((u) => u.slot));
+  const zone = side === 'a' ? [A_DEPLOY_SLOT, A_DEPLOY_SLOT + 1, A_DEPLOY_SLOT + 2] : [B_DEPLOY_SLOT, B_DEPLOY_SLOT - 1, B_DEPLOY_SLOT - 2];
+  const slot = zone.find((s) => !occ.has(s));
+  if (slot === undefined) return false; // 放牌区(贴家3格)已满 → 拒绝
   sd.hand.splice(handIdx, 1); sd.mana -= DEPLOY_COST; b.actionTaken = 'deploy';
   const stamBonus = sd.tengangA.stamPlus + (isFaceRank(card.rank) ? sd.tengangA.stamFaces : 0); // 不屈/老兵（双侧·Boss 施法亦得）
   const stam = cardStamina(card.rank) + stamBonus;
   col.push({ id: card.id, rank: card.rank, suit: card.suit, points: cardPoints(card.rank), buff: card.buff, general: card.general, stamina: stam, staminaLeft: stam, slot });
+  col.sort((x, y) => (side === 'a' ? y.slot - x.slot : x.slot - y.slot)); // 维持 [0]=前锋(贴敌·最高/最低 slot)
   if (gateToggle >= 0 && gateToggle < GATES.length) b.gatesOpen[gateToggle] = !b.gatesOpen[gateToggle]; // 放牌附赠：开/关一道捷径门（doc24 §三·可不用）
   onPlayDraw(sd); // 川流：放牌后免费补抽
   return true;

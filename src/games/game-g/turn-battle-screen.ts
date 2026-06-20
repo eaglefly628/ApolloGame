@@ -367,11 +367,11 @@ export function buildTurnBattleView(b: TurnBattle, opts: TurnViewOpts = {}): Tur
     for (const u of L.a) bySlot.set(u.slot, { u, mine: true });
     for (const u of L.b) bySlot.set(u.slot, { u, mine: false });
     const adj = L.a.length > 0 && L.b.length > 0 && Math.abs(L.a[0].slot - L.b[0].slot) <= 1;
-    const dep = (i: number): 1 | 2 | undefined => (i <= A_DEPLOY_SLOT ? 1 : i >= B_DEPLOY_SLOT ? 2 : undefined); // 我方放牌区 0..2 / 敌方 6..8
+    const dep = (i: number): 1 | 2 | undefined => (i <= A_DEPLOY_SLOT + 2 ? 1 : i >= B_DEPLOY_SLOT - 2 ? 2 : undefined); // 我方放牌区 0..2 / 敌方 6..8
     const slots: TurnSlotView[] = Array.from({ length: SLOTS }, (_, i) => {
       const hit = bySlot.get(i);
-      // isClash 标在两军真前锋格(landed bugfix·非固定中线 4) + 放牌区底纹/标签
-      const base = { isBorder: i === 4, isClash: adj && (i === L.a[0]?.slot || i === L.b[0]?.slot), deploy: dep(i), deployLabel: i === 1 || i === 7 };
+      // isClash 标在两军真前锋格(landed bugfix·非固定中线 4) + 放牌区底纹/标签(标在贴各自城堡那格)
+      const base = { isBorder: i === 4, isClash: adj && (i === L.a[0]?.slot || i === L.b[0]?.slot), deploy: dep(i), deployLabel: i === A_DEPLOY_SLOT || i === B_DEPLOY_SLOT };
       return hit
         ? { ...base, hasUnit: true, mine: hit.mine, rank: hit.u.rank, suit: lc(hit.u.suit), power: hit.u.points + hit.u.buff, zod: [] }
         : { ...base, hasUnit: false, mine: i < 4 };
