@@ -167,7 +167,10 @@ export function tengangFxOf(cards: Iterable<{ kind: string; params?: Record<stri
     const p = j.params; if (!p) continue;
     const v = typeof p.value === 'number' ? p.value : 0; const bonus = typeof p.bonus === 'number' ? p.bonus : 0;
     if (j.kind === 'odds') { if (p.op === 'add') fx.pEffAdd += v; else if (p.op === 'winFloor') fx.winFloor += v / 100; else if (p.op === 'kHard') fx.kHard += v; else if (p.op === 'noUpset') fx.noUpset += 1; }
-    else if (j.kind === 'power' && p.op === 'add') { if (p.filter === 'countLE3') fx.powerLE3 += v; else if (p.filter === 'sameSuit') fx.powerSameSuit += v; else fx.powerAll += v; }
+    else if (j.kind === 'power') {
+      if (p.op === 'mul' && p.scope === 'highestRank') fx.powerMulHighest = Math.max(fx.powerMulHighest, v); // 擎天：全军最强单张 ×mul（一种算一次·取最大·非叠加）
+      else if (p.op === 'add') { if (p.filter === 'countLE3') fx.powerLE3 += v; else if (p.filter === 'sameSuit') fx.powerSameSuit += v; else if (p.scope === 'front') fx.powerFront += v; else fx.powerAll += v; } // 寡兵 / 同花魁 / 锋矢(front) / 虎符(全军·scope:all 或无)
+    }
     else if (j.kind === 'combo') { if (p.op === 'pair') fx.comboPair += bonus; else if (p.op === 'trips') fx.comboTrips += bonus; }
     else if (j.kind === 'morale' && p.op === 'leaderBuff') fx.moraleLeader += v;
     else if (j.kind === 'stamina' && p.op === 'stamPlus') { if (p.filter === 'faces') fx.stamFaces += v; else fx.stamPlus += v; }

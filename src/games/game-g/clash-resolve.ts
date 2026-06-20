@@ -26,8 +26,9 @@ export function cardPoints(rank: string): number {
   return Number.isFinite(n) ? Math.max(2, Math.min(15, n)) : 2;
 }
 
-// 有效战力：基础点数 + Σbuff（各源已自带 ±Δ bounded）→ 夹 [P_min,P_max]。
-export function pEff(base: number, buffSum: number): number { return clamp(base + buffSum, P_MIN, P_MAX); }
+// 有效战力：基础点数 + Σbuff（各源已自带 ±Δ bounded）→ [×mul·擎天最强单张] → floor(仅 mul 时·防小数) → 夹 [P_min,P_max]。
+// apply 顺序铁律（doc20 §二「实装细则」）：add → mul → floor → clamp。mul 缺省 1 → 与旧行为逐字一致（不引入 floor·不动既有非整 buff）。
+export function pEff(base: number, buffSum: number, mul = 1): number { return clamp(mul === 1 ? base + buffSum : Math.floor((base + buffSum) * mul), P_MIN, P_MAX); }
 
 // A 对 B 的胜率：clamp( logistic((Pa−Pb)/k), 爆冷缝 )。点数差大 → 趋碾压但永不 0/100%。
 export function winrate(pa: number, pb: number, k: number = CLASH_K): number {

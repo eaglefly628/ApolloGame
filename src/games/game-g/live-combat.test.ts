@@ -222,6 +222,34 @@ describe('Game G · A1 战潮抽牌·事件脉冲（doc18 §10.3 乙 · tideDraw
     expect(stamOf('5', 2)).toBe(stamOf('5', 0));     // 非人头牌 不加
   });
 
+  it('天罡 power 4 锁（doc20 §二「实装细则」·派甲实装）：锋矢 front / 擎天 highestRank ×mul（虎符/寡兵 v1 已测）', () => {
+    // ① 映射（合成卡·锁定 scope/op 形 = 甲侧契约）
+    expect(tengangFxOf([{ kind: 'power', params: { op: 'add', value: 4, scope: 'front' } }]).powerFront).toBe(4);                // 锋矢
+    expect(tengangFxOf([{ kind: 'power', params: { op: 'mul', value: 1.5, scope: 'highestRank' } }]).powerMulHighest).toBe(1.5); // 擎天
+    expect(tengangFxOf([{ kind: 'power', params: { op: 'add', value: 2, scope: 'all' } }]).powerAll).toBe(2);                    // 虎符(scope:all)→全军
+    expect(tengangFxOf([{ kind: 'power', params: { op: 'add', value: 6, scope: 'lane', filter: 'countLE3' } }]).powerLE3).toBe(6); // 寡兵
+
+    // ② 效果：投 a 牌(指定 rank/lane) + 目标路投弱 b → 跑到首对决 → 读拆解(lastClash.a)。
+    const clashA = (fx: TengangFx, aCards: { rank: string; lane: number }[], bLane: number) => {
+      const b = initLiveBattle(7); b.tengangA = fx;
+      const dep: DeployCmd[] = [
+        ...aCards.map((c, i) => ({ tick: 1, side: 'a' as const, lane: c.lane, unit: { id: 'a' + i, rank: c.rank, suit: 'S', general: false } })),
+        { tick: 1, side: 'b', lane: bLane, unit: { id: 'b', rank: '2', suit: 'H', general: false } },
+      ];
+      for (let i = 0; i < 300 && b.clashSeq === 0; i++) stepLiveBattle(b, dep);
+      return b.lastClash!.a;
+    };
+    // 锋矢：每路最前(前锋)+4 → 该牌 tengang 含 +4。
+    expect(clashA({ ...NO_TENGANG, powerFront: 4 }, [{ rank: '7', lane: 0 }], 0).tengang).toBe(4);
+    expect(clashA(NO_TENGANG, [{ rank: '7', lane: 0 }], 0).tengang).toBe(0); // 无锋矢 → 0
+
+    // 擎天：全军 base 点数最高的单张 ×1.5（add→mul→floor）；非最强不×（单张·army-wide）。
+    expect(clashA({ ...NO_TENGANG, powerMulHighest: 1.5 }, [{ rank: 'A', lane: 0 }], 0).pEff).toBe(Math.floor(14 * 1.5)); // A(14) 独军最强 → 21
+    expect(clashA(NO_TENGANG, [{ rank: 'A', lane: 0 }], 0).pEff).toBe(14);                                              // 无擎天 → 14
+    expect(clashA({ ...NO_TENGANG, powerMulHighest: 1.5 }, [{ rank: 'K', lane: 0 }, { rank: 'A', lane: 0 }], 0).pEff).toBe(13); // K 前锋·同军有更强 A → K 非最强 → 不×
+    expect(clashA({ ...NO_TENGANG, powerMulHighest: 1.5 }, [{ rank: 'K', lane: 0 }], 0).pEff).toBe(Math.floor(13 * 1.5)); // K 独军最强 → 19
+  });
+
   it('50:50 平局裁定（owner · 点数大者胜 → 续航高者 → 重揉）：战力相等不纯靠运气', () => {
     const tieClash = (aRank: string, aBuff: number, bRank: string, bBuff: number): ClashEvent => {
       const b = initLiveBattle(3);
