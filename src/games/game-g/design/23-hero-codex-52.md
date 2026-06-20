@@ -233,6 +233,32 @@
 - **数据形**：`disha:[ {homeDefense, homeHp:4, nearBaseSlots:2, winPct:+15}, {phalanx, perAdj8:+6, cap:+24}, {lastStand, lives:2, scope:generalOnly} ]`
 > 关 1 = ★：以上为弱版小值，sim 调到基准牌组胜率 ~80%。其余关 Boss 地煞数值逐关由 design G + sim 给（先关1示范这套"落数值"格式）。
 
+**🔢 关 2 · 亚历山大 · 高加米拉（★★ · ~70%）**
+- **伙伴骑兵**：每 **3 回合**一次，他一队骑兵**跳过你前排、直击你后排/主将格**，该次掷命 **+20% 胜率**（无视拦截·斩首向）。
+- **锤砧**：你的兵若**左右两侧相邻都被他的兵夹住** → 该兵掷命 **−15%**（被夹）。
+- **长枪方阵**：他的前排**先手**——遭遇掷命他先判，且 **+10% 胜率**（他赢你即亡·你赢他正常退场）。
+- **数据形**：`disha:[ {companionCavalry,everyTurns:3,target:rearOrGeneral,winPct:+20}, {hammerAnvil,ifFlankedBothSides,yourWinPct:−15}, {sarissa,firstStrike,winPct:+10} ]`
+
+**🔢 关 3 · 曹操 · 赤壁（★★ · ~70%）**
+- **大军压境**：他**每回合免费多铺 1 个兵**（不花召唤源泉·兵海铺场）。
+- **连环船**：他**同路相邻的兵共享战力**（整串取最高 P）；**弱点**：你用「火/范围」打中其一 → **连锁烧整串**（明牌可破·呼应火烧赤壁）。
+- **挟天子**：他**全军掷命 +10% 胜率**（大义名分·士气高）。
+- **数据形**：`disha:[ {swarm,freeDeployPerTurn:1}, {chainBoats,sameLaneShareMaxP,weakness:fire→chain}, {morale,allWinPct:+10} ]`
+
+**🔢 关 4 · 拿破仑 · 滑铁卢（★★★ · ~60%）**
+- **大炮兵**：每 **3 回合**选你一路 → 该路全员掷命 **−15%**（一回合·被炮压制）。
+- **近卫军**：他**中路一张精锐近卫**，战力极高、掷命 **+25%**（中央突破·难挡）。
+- **机动调度**：他**每回合多一个动作**（额外迁一路兵 / 多部署一次·比你多一手）。
+- **数据形**：`disha:[ {grandBattery,everyTurns:3,target:yourLane,winPct:−15}, {imperialGuard,midLane,eliteP,winPct:+25}, {maneuver,extraActionPerTurn:1} ]`
+
+**🔢 关 5 · 项羽 · 霸王别姬（★★★ · 新手区终·~60%）**
+- **破釜沉舟**：他**全军掷命 +20% 胜率**，且**绝不溃散/不退**（全员死战）。
+- **霸王之勇**：项羽**主将那张战力恐怖**·掷命 **+40%**（单骑无双）。**破法**：解锁的「擒王」正好斩他主将 → 该路崩。
+- **九战九捷**：他**每赢一场掷命 → 全军 +5% 胜率**（连胜滚雪球·封顶 +30%）。
+- **数据形**：`disha:[ {burnBoats,allWinPct:+20,noRout}, {overlordMight,general,winPct:+40}, {winStreak,perWin:+5,cap:+30} ]`
+
+> 关 2-5 数值随难度递增（sim 调到 ~70%→~60%）；关 5 项羽是新手区小高潮（破法=擒王斩主将 / 火攻破连环是关3 的教学点）。全部占位·真机调。
+
 > 节奏：**天罡解锁 = 每关 4 张 · 9 关解锁全 36**（顺序简单→复杂 · 货币=金币赚/钻石付费 · 详见 `doc25` 解锁表）· loadout 上限另计（新手区 2→3 张）。地煞精确数据形借天罡 kind 词汇（power/morale/lane/siege/tempo…·Boss 侧可更猛）·真机调。
 > **余 47 位英雄的 141 张地煞**：见 §九（子代理批量生成·design G 复核）。
 
