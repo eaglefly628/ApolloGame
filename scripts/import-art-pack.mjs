@@ -117,6 +117,27 @@ const PACKS = {
     source: 'weather-icons', category: 'icon.ui', dest: 'weather', idPrefix: 'weather',
     transparent: true, extraTags: ['weather', 'icon'],
   },
+  // unDraw（MIT）：~417 张扁平场景插画，文件名 概念词+hash（Astronaut_xxxx）。
+  undraw: {
+    repo: 'cuuupid/undraw-illustrations', ref: 'master', tarTop: 'undraw-illustrations-master', ext: '.svg',
+    subdir: 'svg', flatId: true, style: 'cartoon.flat', license: 'MIT',
+    source: 'undraw', category: 'illustration', dest: 'undraw', idPrefix: 'undraw',
+    transparent: true, extraTags: ['illustration', 'scene', 'flat'],
+  },
+  // Fluent Emoji（MIT）：取 Flat 风格的彩色 emoji（assets/<名>/Flat/*_flat.svg），~3145。
+  'fluentui-emoji': {
+    repo: 'microsoft/fluentui-emoji', ref: 'main', tarTop: 'fluentui-emoji-main', ext: '.svg',
+    subdir: 'assets', pathIncludes: '/flat/', flatId: true, style: 'cartoon.flat', license: 'MIT',
+    source: 'fluentui-emoji', category: 'emoji', dest: 'fluentui', idPrefix: 'fluentui',
+    transparent: true, extraTags: ['emoji', 'color', 'flat'],
+  },
+  // Devicon（MIT）：取每个技术的 -original 变体（icons/<名>/<名>-original.svg），~559 开发/品牌 logo。
+  devicon: {
+    repo: 'devicons/devicon', ref: 'master', tarTop: 'devicon-master', ext: '.svg',
+    subdir: 'icons', pathIncludes: '-original.svg', flatId: true, style: 'cartoon.flat', license: 'MIT',
+    source: 'devicon', category: 'icon.ui', dest: 'devicon', idPrefix: 'devicon',
+    transparent: true, extraTags: ['brand', 'logo', 'dev', 'tech'],
+  },
 };
 
 function walk(dir) {
@@ -161,6 +182,7 @@ try {
     .filter((f) => f.toLowerCase().endsWith(P.ext))
     .map((f) => relative(srcRoot, f).split(sep).join('/'))
     .filter((rel) => !P.subdir || rel.startsWith(P.subdir + '/'))
+    .filter((rel) => !P.pathIncludes || rel.toLowerCase().includes(P.pathIncludes)) // 选风格/变体（如 fluentui 取 /flat/、devicon 取 -original）
     .sort();
   if (files.length > limit) {
     if (P.sample === 'even') {

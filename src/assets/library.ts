@@ -80,6 +80,7 @@ export const LIBRARY_TAXONOMY: readonly LibraryTypeDef[] = [
       { id: 'card', label: '卡面' },
       { id: 'playing-card', label: '扑克牌' },
       { id: 'emoji', label: '彩色表情' },
+      { id: 'illustration', label: '插画/场景' },
       { id: 'fx', label: '特效' },
       { id: 'background', label: '背景' },
       { id: 'portrait', label: '立绘' },

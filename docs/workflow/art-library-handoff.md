@@ -4,10 +4,11 @@
 
 ## 1. 库现状（按来源 / 风格 / 许可）
 
-**项目索引 `assets/index.json`：共 25697 项**（另有 DCSS 货架 `assets/FreeArtLib/index.json` ~4892 项，CC0 像素，预先存在）。
+**项目索引 `assets/index.json`：共 29818 项**（另有 DCSS 货架 `assets/FreeArtLib/index.json` ~4892 项，CC0 像素，预先存在）。
 
 > 2026-06-19 更新：tabler/phosphor/mdi 三套已由采样 1000 → **拉全**。
-> 2026-06-20 更新：agent 搜罗后**第一波**并入 4 套平铺 SVG 图标集（见下表 + §8 候选 backlog）。
+> 2026-06-20 更新：agent 搜罗后并入第一波（4 套平铺 SVG 图标）+ 第二波（undraw/fluentui/devicon），见下表 + §8。
+> ⚠️ tsc 提速：`asset-index.test.ts` 改为运行时 fs 读 index.json（不再静态 import）——索引涨到 2.9 万项/19MB 后，静态 import 会让 tsc 推断巨型字面量类型而卡死（分钟级）；改后 tsc ~9s。**后续若再加静态 import 大 JSON 要警惕这条。**
 
 | 来源 | 数量 | 风格 style | 类目 category | 许可 | 形态 |
 |---|---|---|---|---|---|
@@ -20,6 +21,9 @@
 | simple-icons | 3445 | `cartoon.flat` | icon.ui | CC0-1.0 | SVG 品牌/产品 logo（⚠️图形含商标，渲染品牌标识自行把关） |
 | flag-icons | 271 | `cartoon.flat` | icon.ui | MIT | SVG 国旗 4×3（名=ISO 码，补 flag/country 检索词） |
 | weather-icons | 219 | `cartoon.flat` | icon.ui | SIL OFL 1.1 | SVG 天气 |
+| fluentui-emoji | 3145 | `cartoon.flat` | `emoji` | MIT | SVG **彩色** emoji（取 Flat 风格） |
+| devicon | 559 | `cartoon.flat` | icon.ui | MIT | SVG 开发/品牌 logo（取 -original 变体） |
+| undraw | 417 | `cartoon.flat` | `illustration` | MIT | SVG 扁平场景插画 |
 | DCSS FreeArtLib | 4892 | `pixel`（默认） | 各 slot | CC0 | PNG 32×32 像素 |
 
 **风格覆盖**：`pixel` ✓（DCSS）｜`cartoon.flat` ✓（5 套，含彩色 twemoji）｜**`cartoon.ink`（水墨）/ `cartoon.western` / `cartoon.anime` = 仍 0**（源被网络挡，见 §4）。
@@ -66,13 +70,13 @@
 
 **发现通道**：GitHub MCP 关键字搜索仍 502（走 api.github，被挡）；但 **`github.com` HTML/topics 页 + `WebSearch`/`WebFetch` 工具可达**（走另一后端），4 个 agent 据此搜罗 + 逐仓库核许可。下载仍走 `codeload`。许可分级 🟢A=CC0/MIT/Apache/ISC｜🟡B=CC-BY(署名)｜🔴C=避免(SA/GPL/专有)。
 
-**✅ 第一波已并入**（平铺 SVG、文件名有语义、零导入器改动）：lucide / simple-icons / flag-icons / weather-icons（见 §1 表）。导入器加了数据驱动字段 `P.extraTags`（给国旗/天气补检索词）。
+**✅ 第一波已并入**（平铺 SVG、零导入器改动）：lucide / simple-icons / flag-icons / weather-icons。导入器加了数据驱动字段 `P.extraTags`（给国旗/天气补检索词）。
+**✅ 第二波已并入**：undraw(417 插画) / fluentui-emoji(3145 彩色 emoji，取 Flat) / devicon(559 开发 logo，取 -original)。导入器加了 `P.pathIncludes`（按子路径选风格/变体，如 `/flat/`、`-original.svg`）；`library.ts` 加了 `illustration` 分类。**humaaans 已拒**（仓库只 1 个 SVG，其余是 React 组件、非素材）。
 
-**⏭ 后续波次候选**（用户已要"四组全拉"，按工序分波）：
-- **彩色 emoji**：`microsoft/fluentui-emoji`(🟢MIT，多风格→**需按 `/Flat/` 或 `/Color/` 过滤选一种**)、`googlefonts/noto-emoji`(🟢Apache，**文件名是码点 `emoji_u1f600`、无语义→需接 gemoji 名表**，参考既有 `scripts/import-emoji.mjs`)。
-- **开发 logo**：`devicons/devicon`(🟢MIT，`icons/<名>/<名>-original.svg`，**需过滤变体只取 original**)。
-- **卡通插画**：`MariaLetta/free-gophers-pack`(🟢CC0，**文件名纯数字 `1.svg` 无语义→需补 category/tags**)、`jktzes/humaaans`(🟢MIT)、`cuuupid/undraw-illustrations`(🟢MIT ~1000)、`ira-design/ira-illustrations`(🟢MIT，**资源在 `svg` 分支**)。
-- **像素 / 游戏 UI（PNG/9-patch，需给导入器加 PNG 路径——当前只吃 SVG）**：`ETdoFresh/kenney.nl`·`iwenzhou/kenney`(🟢CC0 Kenney 全镜像)、`sparklinlabs/superpowers-asset-packs`(🟢CC0)、`czyzby/gdx-skins`(🟡按皮肤混，kenney-pixel=CC0；9-patch GUI)、`mr-breakfast/mrbreakfasts_free_prompts`(🟢CC0 输入提示，SVG/PNG)、`ereborstudios/kenney-ui-pack`(🟢CC0)。
+**⏭ 仍欠波次**（用户已要"四组全拉"）：
+- `googlefonts/noto-emoji`(🟢Apache，**文件名码点、无语义→需接 gemoji 名表**，参考 `scripts/import-emoji.mjs`；且彩色 emoji 已有 twemoji+fluentui，冗余、优先级低)。
+- `MariaLetta/free-gophers-pack`(🟢CC0，**文件名纯数字 `1.svg`→需补 category/tags**)、`ira-design/ira-illustrations`(🟢MIT，**`svg` 分支 codeload 拉取报错、待查**)。
+- **像素 / 游戏 UI（PNG/9-patch，需给导入器加 PNG 路径——当前 `svgDims` 只吃 SVG）**：`ETdoFresh/kenney.nl`·`iwenzhou/kenney`(🟢CC0 Kenney 全镜像，**很大、会显著增大仓库**)、`sparklinlabs/superpowers-asset-packs`(🟢CC0)、`czyzby/gdx-skins`(🟡按皮肤混，kenney-pixel=CC0；9-patch GUI)、`mr-breakfast/mrbreakfasts_free_prompts`(🟢CC0 输入提示，SVG/PNG)、`ereborstudios/kenney-ui-pack`(🟢CC0)。
 
 **🔴 已拒（许可/法务）**：openmoji/mega-doodles/saasui(CC-BY-**SA**)、LPC 角色生成器(GPL+SA 混)、Live2D 样例(专有 Free Material License)、GARbro/翻译器扒图(盗版)。
 
