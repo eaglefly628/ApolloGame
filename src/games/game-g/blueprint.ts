@@ -614,77 +614,57 @@ export interface TiangangCard {
   params?: Record<string, unknown>; // kind-specific params（甲写解释器读）
   power?: number; // 牌力 ⭐1–5
   phat?: number; // P̂ 0–10 设计估胜率影响（仿真台实测校准）
+  icon?: string; // game-icons 路径（doc20 §二尾 icon 配表 · 逐张）
+  tint?: string; // icon 染色（按维度配色）
 }
 export const GAME_G_TIANGANGS: TiangangCard[] = [
-  // ── 旧批（T-G6 · build-时 favor 变换 · 甲已有解释器）──
-  { id: 'comrade', name: '同袍', kind: 'suit-synergy', cost: 18, archetype: 'cardtype', amount: 2, text: '本路每有 1 张同花色 → 该牌 +2 favor（牌型流：往一路堆同花越爽）' },
-  { id: 'gambler', name: '赌徒', kind: 'polarize', cost: 16, archetype: 'probability', amount: 12, text: '全军 favor 两极化：≥50 的更高、<50 的更低（概率流：高风险高回报）' },
-  { id: 'vanguard', name: '先登', kind: 'lane-pref', cost: 15, archetype: 'wide', amount: 8, lane: 0, text: '上路全员 +8 favor（铺场流：主攻上路）' },
-  { id: 'diehard', name: '不屈', kind: 'diehard', cost: 22, archetype: 'probability', amount: 88, text: '全军 favor 不足 88 的拉到 88（近免死、稳翻正面）' },
-  { id: 'bannerman', name: '旗手', kind: 'morale', cost: 17, archetype: 'general', moraleMul: 1.5, text: '全军主将士气加成 ×1.5（主将活则全路涌 · 将领流核心）' },
-  { id: 'warlord', name: '枭雄', kind: 'morale', cost: 24, archetype: 'general', moraleMul: 2, text: '顶级主将(K/王)所在路，士气加成 ×2（堆高军衔主将碾压一路）' },
-  { id: 'martyr', name: '死士', kind: 'link', cost: 16, archetype: 'wide', text: '本路首张兵阵亡 → 该路余下未翻的兵 +10 favor（报仇·死战 · 铺场流）' },
-  { id: 'chain', name: '连环', kind: 'link', cost: 19, archetype: 'wide', text: '本路首张兵翻正 → 牵起下一张未翻的兵必活（连环索 · 铺场流）' },
-  { id: 'quartermaster', name: '督粮', kind: 'economy', cost: 18, archetype: 'decap', text: '每胜一路 → 下场备战 +1◈ 干预能量（攒能秒将 · 斩首流）' },
-  { id: 'shadow', name: '影武者', kind: 'revenge', cost: 20, archetype: 'decap', text: '我某路主将被斩首 → 该路余部 +12 favor 复仇（替身死战 · 斩首流）' },
-  // ── 天罡牌一期（20张 · contract③ · doc20 §二 · 甲写解释器）──
-  // A · 概率系 odds
-  { id: 'qiaoshou', name: '巧手', kind: 'odds', rarity: 'common', cost: 12, archetype: 'probability', power: 1, phat: 2, params: { op: 'add', value: 1 }, text: '我方每次对决掷命 +1 点（微稳·地基）' },
-  { id: 'wenshou', name: '稳手', kind: 'odds', rarity: 'rare', cost: 16, archetype: 'probability', power: 2, phat: 4, params: { op: 'winFloor', value: 5 }, text: '我方胜率下限 +5%（少翻车·进阶）' },
-  { id: 'beishui', name: '背水', kind: 'odds', rarity: 'epic', cost: 22, archetype: 'probability', power: 3, phat: 6, params: { op: 'reroll', when: 'afterLoss', value: 1 }, text: '该路输一场 → 下场 +1 重摇（强力·死缠流）' },
-  // B · 点数系 power
-  { id: 'hufu', name: '虎符', kind: 'power', rarity: 'common', cost: 12, archetype: 'general', power: 1, phat: 2, params: { op: 'add', value: 2 }, text: '全军 +2 战力点数（全局微加·地基）' },
-  { id: 'tonghuakui', name: '同花魁', kind: 'power', rarity: 'rare', cost: 18, archetype: 'cardtype', power: 2, phat: 4, params: { op: 'add', value: 3, filter: 'sameSuit' }, text: '同花色牌互 +3 战力（同花流核心）' },
-  { id: 'guabing', name: '寡兵', kind: 'power', rarity: 'epic', cost: 22, archetype: 'tianji', power: 3, phat: 6, params: { op: 'add', value: 6, filter: 'countLE3' }, text: '本路 ≤3 张 → 每张 +6 战力（以少胜多）' },
-  // C · 牌型系 combo
-  { id: 'duizijue', name: '对子诀', kind: 'combo', rarity: 'common', cost: 14, archetype: 'cardtype', power: 1, phat: 3, params: { op: 'pair', bonus: 6 }, text: '本路含对子 → +6 战力（入门牌型流）' },
-  { id: 'shunzizhen', name: '顺子阵', kind: 'combo', rarity: 'epic', cost: 22, archetype: 'cardtype', power: 3, phat: 6, params: { op: 'straight', bonus: 'tier1' }, text: '本路成顺子 → 牌型阶梯 +1 档（顺子流）' },
-  // D · 将领系 morale
-  { id: 'lingqi', name: '令旗', kind: 'morale', rarity: 'common', cost: 16, archetype: 'general', power: 1, phat: 3, params: { op: 'leaderBuff', value: 4 }, text: '主将在 → 下属士气 +8→+12（将领流地基）' },
-  { id: 'qinwang', name: '擒王', kind: 'morale', rarity: 'rare', cost: 18, archetype: 'decap', power: 2, phat: 4, params: { op: 'decapCost', value: -1 }, text: '斩首令 −1◈ 成本（斩首流降门槛）' },
-  // E · 行军系 tempo
-  { id: 'jixing', name: '疾行', kind: 'tempo', rarity: 'rare', cost: 16, archetype: 'wide', power: 2, phat: 4, params: { op: 'speedUp', value: 50, target: 'self' }, text: '我一路行军 +50% 速（抢线先手）' },
-  { id: 'chizhi', name: '迟滞', kind: 'tempo', rarity: 'rare', cost: 18, archetype: 'decap', power: 2, phat: 4, params: { op: 'slowEnemy', value: -40, target: 'enemy' }, text: '敌一路行军 −40% 速（拖延打时差）' },
-  // F · 续航系 stamina
-  { id: 'tiehan', name: '铁汉', kind: 'stamina', rarity: 'rare', cost: 16, archetype: 'wide', power: 2, phat: 4, params: { op: 'stamPlus', value: 1 }, text: '全军续航 +1（多凿一格·铺场流）' },
-  // G · 抽牌系 draw
-  { id: 'guangna', name: '广纳', kind: 'draw', rarity: 'common', cost: 14, archetype: 'general', power: 1, phat: 3, params: { op: 'handMax', value: 2 }, text: '手牌上限 +2（更多选择·地基）' },
-  { id: 'zhanchao', name: '战潮', kind: 'draw', rarity: 'epic', cost: 22, archetype: 'wide', power: 3, phat: 6, params: { op: 'pulse', when: 'clash', value: 2 }, text: '遭遇翻牌涌牌 ×2（心流峰值·大心脏）' },
-  // H · 三路系 lane
-  { id: 'zengyuanlu', name: '增援路', kind: 'lane', rarity: 'rare', cost: 16, archetype: 'wide', power: 2, phat: 4, params: { op: 'reinforce', value: 2 }, text: '指定一路 +2 张兵（铺场补路）' },
-  { id: 'qiyibaer', name: '弃一保二', kind: 'lane', rarity: 'epic', cost: 22, archetype: 'tianji', power: 3, phat: 6, params: { op: 'sacrifice', value: 10 }, text: '主动弃一路 → 另两路各 +10（田忌精髓）' },
-  // I · 攻守系 siege
-  { id: 'gongchengchui', name: '攻城锤', kind: 'siege', rarity: 'epic', cost: 24, archetype: 'decap', power: 3, phat: 7, params: { op: 'chipMore', value: 1 }, text: '突破方破老家多 chip 1 血（加速收口）' },
-  // J · 流派印记 arcane（传说 · 集齐解锁质变）
-  { id: 'zhanshouyin', name: '斩首印', kind: 'arcane', rarity: 'legendary', cost: 42, archetype: 'decap', power: 5, phat: 9, params: { mark: 'decap' }, text: '集齐斩首流印记 → 斩首额外−溃散·敌主将更脆（流派招牌质变）' },
-  { id: 'tianjiyin', name: '田忌印', kind: 'arcane', rarity: 'legendary', cost: 42, archetype: 'tianji', power: 5, phat: 9, params: { mark: 'sacrifice' }, text: '集齐弃一保二流印记 → 弃路 favor 转移 ×1.5（流派招牌质变）' },
-  // ── 天罡牌补满 36（doc20 §二 余 16 张 · 二期 · 乙补数据先到位，甲逐期补 kind 解释器；未接 kind 战斗侧零修正不崩） ──
-  // A · 概率系 odds
-  { id: 'leaddice', name: '灌铅骰', kind: 'odds', rarity: 'rare', cost: 16, archetype: 'probability', power: 2, phat: 5, params: { op: 'kHard', value: 1 }, text: 'logistic k−1·点数差更硬（强者愈强·二期）' },
-  // B · 点数系 power
-  { id: 'colossus', name: '巨擘', kind: 'power', rarity: 'rare', cost: 18, archetype: 'general', power: 2, phat: 5, params: { op: 'mul', value: 1.5, filter: 'highest' }, text: '最高点数牌 +50% 战力（强者愈强·二期）' },
-  // C · 牌型系 combo
-  { id: 'flushbanner', name: '同花旗', kind: 'combo', rarity: 'rare', cost: 18, archetype: 'cardtype', power: 2, phat: 5, params: { op: 'flush', bonus: 15 }, text: '本路成同花 → +15 战力（同花流核心·二期）' },
-  // D · 将领系 morale
-  { id: 'vengeance', name: '复仇', kind: 'morale', rarity: 'rare', cost: 18, archetype: 'general', power: 2, phat: 5, params: { op: 'revenge', value: 14 }, text: '我主将被斩 → 该路余部 +14（哀兵·将领流·二期）' },
-  { id: 'deathwatch', name: '督战', kind: 'morale', rarity: 'epic', cost: 22, archetype: 'general', power: 3, phat: 6, params: { op: 'noRout' }, text: '主将阵亡不溃散（将领流强力·二期）' },
-  // E · 行军系 tempo
-  { id: 'beachhead', name: '抢滩', kind: 'tempo', rarity: 'epic', cost: 22, archetype: 'wide', power: 3, phat: 6, params: { op: 'jumpLine' }, text: '我该路起步即过中线（抢线·二期）' },
-  { id: 'ironchains', name: '铁索', kind: 'tempo', rarity: 'epic', cost: 22, archetype: 'decap', power: 3, phat: 6, params: { op: 'slowEnemy', value: -20, target: 'enemy', scope: 'all' }, text: '敌全军 −20% 速（连环锁脚·二期）' },
-  // F · 续航系 stamina
-  { id: 'veteran', name: '老兵', kind: 'stamina', rarity: 'common', cost: 14, archetype: 'wide', power: 1, phat: 3, params: { op: 'stamPlus', value: 1, filter: 'faces' }, text: '人头牌(JQKA)续航 +1（地基·二期）' },
-  { id: 'phoenix', name: '不死鸟', kind: 'stamina', rarity: 'epic', cost: 22, archetype: 'wide', power: 3, phat: 6, params: { op: 'revive', value: 0.2 }, text: '阵亡牌 20% 复活回抽牌堆（强力·二期）' },
-  // G · 抽牌系 draw
-  { id: 'quickdraw', name: '妙手', kind: 'draw', rarity: 'rare', cost: 16, archetype: 'general', power: 2, phat: 4, params: { op: 'onPlay', value: 1 }, text: '出牌后立即补抽 1 张（手不空·二期）' },
-  // H · 三路系 lane
-  { id: 'gateorder', name: '城门令', kind: 'lane', rarity: 'rare', cost: 16, archetype: 'tianji', power: 2, phat: 4, params: { op: 'gate', mode: 'toggle' }, text: '开/关一道捷径门·控跨路通断（调度·二期）' },
-  // I · 攻守系 siege
-  { id: 'laststand', name: '死守', kind: 'siege', rarity: 'rare', cost: 18, archetype: 'general', power: 2, phat: 5, params: { op: 'defend', value: 1 }, text: '我老家首次被破免疫·守一血（二期）' },
-  // J · 流派印记 arcane（传说 · 集齐解锁质变 · 补齐 6 招牌印）
-  { id: 'markcombo', name: '牌型印', kind: 'arcane', rarity: 'legendary', cost: 42, archetype: 'cardtype', power: 5, phat: 9, params: { mark: 'combo' }, text: '集齐牌型流印记 → 牌型阶梯再 +1 档（流派招牌质变）' },
-  { id: 'markmorale', name: '将魂印', kind: 'arcane', rarity: 'legendary', cost: 42, archetype: 'general', power: 5, phat: 9, params: { mark: 'morale' }, text: '集齐将领流印记 → 主将士气 ×1.3（流派招牌质变）' },
-  { id: 'markswarm', name: '铺场印', kind: 'arcane', rarity: 'legendary', cost: 42, archetype: 'wide', power: 5, phat: 9, params: { mark: 'swarm' }, text: '集齐铺场流印记 → 每路 +2 兵（流派招牌质变）' },
-  { id: 'markodds', name: '玄机印', kind: 'arcane', rarity: 'legendary', cost: 42, archetype: 'probability', power: 5, phat: 9, params: { mark: 'odds' }, text: '集齐概率流印记 → 爆冷缝 +宽·高方差（流派招牌质变）' },
+  // 三十六天罡（doc20 §二 定稿 · owner 2026-06-20「用新的」· 主动施法·确定生效·功能优先·名字临时 · icon 配表 §二尾）
+  // A 概率系 odds
+  { id: 'ghosthand', name: '鬼手', kind: 'odds', rarity: 'common', cost: 12, archetype: 'probability', power: 1, params: { op: 'add', value: 1 }, icon: 'skoll/d10', tint: '#a78bfa', text: '对决掷命 +1（稳稳偏向你）' },
+  { id: 'bedrock', name: '磐石', kind: 'odds', rarity: 'rare', cost: 16, archetype: 'probability', power: 2, params: { op: 'winFloor', value: 5 }, icon: 'delapouite/stone-wall', tint: '#a78bfa', text: '胜率下限 +5%（少翻车·收窄下风）' },
+  { id: 'leaddice', name: '灌铅骰', kind: 'odds', rarity: 'rare', cost: 16, archetype: 'probability', power: 2, params: { op: 'kHard', value: 1 }, icon: 'delapouite/rolling-dices', tint: '#a78bfa', text: '点数差更硬·强者愈强（logistic k−1）' },
+  { id: 'irondice', name: '铁骰', kind: 'odds', rarity: 'epic', cost: 22, archetype: 'probability', power: 3, params: { op: 'noUpset' }, icon: 'delapouite/dice-shield', tint: '#a78bfa', text: '你方免疫爆冷（占优就稳拿）' },
+  // B 点数系 power
+  { id: 'tigertally', name: '虎符', kind: 'power', rarity: 'common', cost: 12, archetype: 'general', power: 1, params: { op: 'add', value: 2 }, icon: 'delapouite/tiger-head', tint: '#ef4444', text: '全军 +2 点数' },
+  { id: 'arrowhead', name: '锋矢', kind: 'power', rarity: 'rare', cost: 16, archetype: 'wide', power: 2, params: { op: 'add', value: 4, filter: 'front' }, icon: 'lorc/arrowhead', tint: '#ef4444', text: '每路最前一张 +4（前锋破阵）' },
+  { id: 'atlas', name: '擎天', kind: 'power', rarity: 'rare', cost: 16, archetype: 'general', power: 2, params: { op: 'mul', value: 1.5, filter: 'highest' }, icon: 'delapouite/atlas', tint: '#ef4444', text: '最强一张 +50%（强者愈强）' },
+  { id: 'fewtroops', name: '寡兵', kind: 'power', rarity: 'epic', cost: 22, archetype: 'tianji', power: 3, params: { op: 'add', value: 6, filter: 'countLE3' }, icon: 'delapouite/star-medal', tint: '#ef4444', text: '本路 ≤3 张 → 每张 +6（以少胜多）' },
+  // C 成组系(同rank) combo
+  { id: 'twinblade', name: '双锋', kind: 'combo', rarity: 'common', cost: 12, archetype: 'cardtype', power: 1, params: { op: 'pair', bonus: 6 }, icon: 'lorc/crossed-swords', tint: '#2dd4bf', text: '本路含对子(两张同点) → +6' },
+  { id: 'tripod', name: '鼎立', kind: 'combo', rarity: 'rare', cost: 16, archetype: 'cardtype', power: 2, params: { op: 'trips', bonus: 12 }, icon: 'lorc/cauldron', tint: '#2dd4bf', text: '本路含三条(三张同点) → +12' },
+  // D 将领系 morale
+  { id: 'bannerman', name: '旗手', kind: 'morale', rarity: 'common', cost: 12, archetype: 'general', power: 1, params: { op: 'leaderBuff', value: 4 }, icon: 'lorc/rally-the-troops', tint: '#fcd34d', text: '主将在 → 同路士气 +（光环）' },
+  { id: 'capturektg', name: '擒王', kind: 'morale', rarity: 'rare', cost: 16, archetype: 'decap', power: 2, params: { op: 'killGeneralRout' }, icon: 'lorc/decapitation', tint: '#fcd34d', text: '打掉敌方主将 → 敌该路全体溃散（擒贼擒王）' },
+  { id: 'grieve', name: '哀兵', kind: 'morale', rarity: 'rare', cost: 16, archetype: 'general', power: 2, params: { op: 'revenge', value: 14 }, icon: 'delapouite/enrage', tint: '#fcd34d', text: '我主将被斩 → 该路余部 +14' },
+  { id: 'deathwatch', name: '督战', kind: 'morale', rarity: 'epic', cost: 22, archetype: 'general', power: 3, params: { op: 'noRout' }, icon: 'delapouite/drum', tint: '#fcd34d', text: '主将阵亡不溃散' },
+  // E 行军系 tempo
+  { id: 'swiftmarch', name: '疾行', kind: 'tempo', rarity: 'rare', cost: 16, archetype: 'wide', power: 2, params: { op: 'speedUp', value: 50, target: 'self' }, icon: 'lorc/sprint', tint: '#22c55e', text: '我一路 +50% 速' },
+  { id: 'mire', name: '泥沼', kind: 'tempo', rarity: 'rare', cost: 16, archetype: 'decap', power: 2, params: { op: 'slowEnemy', value: -40, target: 'enemy' }, icon: 'delapouite/swamp', tint: '#22c55e', text: '敌一路 −40% 速' },
+  { id: 'beachhead', name: '抢滩', kind: 'tempo', rarity: 'epic', cost: 22, archetype: 'wide', power: 3, params: { op: 'jumpLine' }, icon: 'delapouite/jump-across', tint: '#22c55e', text: '我该路起步即过中线' },
+  { id: 'ironchain', name: '铁索', kind: 'tempo', rarity: 'epic', cost: 22, archetype: 'decap', power: 3, params: { op: 'slowEnemy', value: -20, target: 'enemy', scope: 'all' }, icon: 'lorc/linked-rings', tint: '#22c55e', text: '敌全军 −20% 速（连环）' },
+  // F 续航系 stamina
+  { id: 'veteran', name: '老兵', kind: 'stamina', rarity: 'common', cost: 12, archetype: 'wide', power: 1, params: { op: 'stamPlus', value: 1, filter: 'faces' }, icon: 'delapouite/sergeant', tint: '#38bdf8', text: '人头牌(JQKA) 续航 +1' },
+  { id: 'unyield', name: '不屈', kind: 'stamina', rarity: 'rare', cost: 16, archetype: 'wide', power: 2, params: { op: 'stamPlus', value: 1 }, icon: 'lorc/mailed-fist', tint: '#38bdf8', text: '全军续航 +1' },
+  { id: 'relay', name: '薪火', kind: 'stamina', rarity: 'epic', cost: 22, archetype: 'wide', power: 3, params: { op: 'relay', value: 2 }, icon: 'delapouite/torch', tint: '#38bdf8', text: '一张阵亡 → 同路下一张续航 +2（接棒·非复活）' },
+  // G 抽牌系 draw
+  { id: 'widehand', name: '广纳', kind: 'draw', rarity: 'common', cost: 12, archetype: 'general', power: 1, params: { op: 'handMax', value: 2 }, icon: 'faithtoken/card-pick', tint: '#06b6d4', text: '手牌上限 +2' },
+  { id: 'flow', name: '川流', kind: 'draw', rarity: 'rare', cost: 16, archetype: 'general', power: 2, params: { op: 'onPlay', value: 1 }, icon: 'faithtoken/card-draw', tint: '#06b6d4', text: '出牌后立即补抽 1 张（手不空）' },
+  { id: 'tidewave', name: '战潮', kind: 'draw', rarity: 'epic', cost: 22, archetype: 'wide', power: 3, params: { op: 'clashElixir', value: 1 }, icon: 'delapouite/two-coins', tint: '#06b6d4', text: '遭遇对决 → 返圣水（经济·心流回点）' },
+  // H 三路系 lane
+  { id: 'gateorder', name: '城门令', kind: 'lane', rarity: 'rare', cost: 16, archetype: 'tianji', power: 2, params: { op: 'gate', mode: 'toggle' }, icon: 'delapouite/gate', tint: '#94a3b8', text: '开/关一道捷径门（增援 / 堵敌）' },
+  { id: 'rush', name: '驰援', kind: 'lane', rarity: 'rare', cost: 16, archetype: 'wide', power: 2, params: { op: 'reinforce', value: 2 }, icon: 'lorc/backup', tint: '#94a3b8', text: '指定一路 +2 张兵' },
+  { id: 'discard2', name: '舍车', kind: 'lane', rarity: 'epic', cost: 22, archetype: 'tianji', power: 3, params: { op: 'sacrifice', value: 10 }, icon: 'lorc/trade', tint: '#94a3b8', text: '弃一路 → 另两路各 +10' },
+  { id: 'lurefoe', name: '调虎', kind: 'lane', rarity: 'epic', cost: 22, archetype: 'decap', power: 3, params: { op: 'forceMigrate' }, icon: 'delapouite/fishing-lure', tint: '#94a3b8', text: '强制敌一路一张迁去别路（调虎离山）' },
+  // I 攻守系 siege
+  { id: 'laststand', name: '死守', kind: 'siege', rarity: 'rare', cost: 16, archetype: 'general', power: 2, params: { op: 'defend', value: 1 }, icon: 'badges/shield', tint: '#a8a29e', text: '我老家首次被破免疫' },
+  { id: 'ram', name: '攻城锤', kind: 'siege', rarity: 'epic', cost: 22, archetype: 'decap', power: 3, params: { op: 'chipMore', value: 1 }, icon: 'darkzaitzev/ram', tint: '#a8a29e', text: '破老家多 chip 1 血' },
+  // J 流派印记(传说) arcane
+  { id: 'markdecap', name: '斩首印', kind: 'arcane', rarity: 'legendary', cost: 42, archetype: 'decap', power: 5, params: { mark: 'decap' }, icon: 'lorc/backstab', tint: '#fbbf24', text: '集齐斩首流 → 斩首额外 −溃散·敌主将更脆（招牌质变）' },
+  { id: 'markmorale', name: '将魂印', kind: 'arcane', rarity: 'legendary', cost: 42, archetype: 'general', power: 5, params: { mark: 'morale' }, icon: 'lorc/crown', tint: '#fbbf24', text: '集齐将领流 → 主将士气 ×1.3（招牌质变）' },
+  { id: 'markswarm', name: '铺场印', kind: 'arcane', rarity: 'legendary', cost: 42, archetype: 'wide', power: 5, params: { mark: 'swarm' }, icon: 'sbed/overmind', tint: '#fbbf24', text: '集齐铺场流 → 每路 +2 兵（招牌质变）' },
+  { id: 'marktianji', name: '田忌印', kind: 'arcane', rarity: 'legendary', cost: 42, archetype: 'tianji', power: 5, params: { mark: 'sacrifice' }, icon: 'skoll/chess-king', tint: '#fbbf24', text: '集齐弃一保二流 → 弃路 favor 转移 ×1.5（招牌质变）' },
+  { id: 'marksamerank', name: '双锋印', kind: 'arcane', rarity: 'legendary', cost: 42, archetype: 'cardtype', power: 5, params: { mark: 'sameRank' }, icon: 'lorc/duality', tint: '#fbbf24', text: '集齐同 rank 流 → 对子/三条加成再 +1 档（招牌质变）' },
+  { id: 'markodds', name: '铁律印', kind: 'arcane', rarity: 'legendary', cost: 42, archetype: 'probability', power: 5, params: { mark: 'odds' }, icon: 'delapouite/weight-scale', tint: '#fbbf24', text: '集齐确定流 → 下限再抬 + 方差再收（招牌质变）' },
 ];
 /** 从已融天罡取结局联动开关（死士/连环）→ 喂 resolveArmy 前向生效。 */
 export function tiangangLinks(tiangangIds: readonly string[]): LinkTiangangs {
@@ -746,13 +726,13 @@ export function tiangangKeyBuffs(ownedIds: readonly string[]): RunBuff[] {
 export interface ArchetypeSpec { id: Archetype; name: string; desc: string; keyTiangangs: string[]; counters: Archetype }
 export const ARCHETYPES: ArchetypeSpec[] = [
   // 核心 3-环（`12` §四明示）：斩首 克 将领 克 铺场 克 斩首。
-  { id: 'decap', name: '斩首流', desc: '攒能量秒敌主将引溃散', keyTiangangs: ['quartermaster', 'shadow'], counters: 'general' },
-  { id: 'general', name: '将领流', desc: '主将士气碾压一路', keyTiangangs: ['bannerman', 'warlord'], counters: 'wide' },
-  { id: 'wide', name: '铺场流', desc: 'go-wide + 连锁必活', keyTiangangs: ['vanguard', 'martyr', 'chain'], counters: 'decap' },
-  // 次 3-环（我的合理映射，待 design 校准）：牌型 克 概率 克 弃一保二 克 牌型。
-  { id: 'cardtype', name: '牌型流', desc: '堆同花色/连号成高牌型', keyTiangangs: ['comrade'], counters: 'probability' },
-  { id: 'probability', name: '概率流', desc: '改命堆高 favor 稳翻正', keyTiangangs: ['gambler', 'diehard'], counters: 'tianji' },
-  { id: 'tianji', name: '弃一保二流', desc: '弃一路、经济滚两路', keyTiangangs: [], counters: 'cardtype' }, // 钥匙：田忌布阵/督粮(待)
+  { id: 'decap', name: '斩首流', desc: '擒贼擒王引溃散', keyTiangangs: ['capturektg', 'markdecap'], counters: 'general' },
+  { id: 'general', name: '将领流', desc: '主将光环碾压一路', keyTiangangs: ['bannerman', 'markmorale'], counters: 'wide' },
+  { id: 'wide', name: '铺场流', desc: 'go-wide 铺满三路', keyTiangangs: ['rush', 'markswarm'], counters: 'decap' },
+  // 次 3-环（doc20 §二尾 印记定稿）：同 rank 克 概率·确定 克 弃一保二 克 同 rank。
+  { id: 'cardtype', name: '同rank流', desc: '堆同点数凑对子/三条', keyTiangangs: ['twinblade', 'tripod', 'marksamerank'], counters: 'probability' },
+  { id: 'probability', name: '概率·确定流', desc: '抬下限收方差·占优稳拿', keyTiangangs: ['ghosthand', 'bedrock', 'markodds'], counters: 'tianji' },
+  { id: 'tianji', name: '弃一保二流', desc: '弃一路、集中滚两路', keyTiangangs: ['discard2', 'marktianji'], counters: 'cardtype' },
 ];
 const ARCH_BY_ID: ReadonlyMap<Archetype, ArchetypeSpec> = new Map(ARCHETYPES.map((a) => [a.id, a]));
 /** 由已融天罡浮现的主流派：数每流派 keyTiangangs 命中数，取最高（平局取 ARCHETYPES 靠前）；无命中 → null。 */

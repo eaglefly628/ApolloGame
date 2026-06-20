@@ -129,17 +129,16 @@ describe('Game G · A1 战潮抽牌·事件脉冲（doc18 §10.3 乙 · tideDraw
 
   it('A-JOKER 天罡效果（doc20 §二 · cast 后持续·只己方）：aggregateTengang 映射 + clash ΔWR 量级对', () => {
     // 契约③ {kind,params} → 扁平修正 映射
-    expect(aggregateTengang(['hufu']).powerAll).toBe(2);              // 虎符 power+2
-    expect(aggregateTengang(['qiaoshou']).pEffAdd).toBe(1);           // 巧手 odds add+1
-    expect(aggregateTengang(['wenshou']).winFloor).toBeCloseTo(0.05); // 稳手 winFloor+5%
-    expect(aggregateTengang(['guabing']).powerLE3).toBe(6);           // 寡兵 ≤3张+6
-    expect(aggregateTengang(['tonghuakui']).powerSameSuit).toBe(3);   // 同花魁 同花+3
-    expect(aggregateTengang(['duizijue']).comboPair).toBe(6);         // 对子诀 含对子+6
-    expect(aggregateTengang(['lingqi']).moraleLeader).toBe(4);        // 令旗 士气+4
-    expect(aggregateTengang(['tiehan']).stamPlus).toBe(1);            // 铁汉 续航+1
-    expect(aggregateTengang(['guangna']).handMaxAdd).toBe(2);         // 广纳 手牌上限+2
-    expect(aggregateTengang(['beishui'])).toEqual(NO_TENGANG);        // 背水(odds.reroll)=v2 未接 → 零修正·不崩
-    const both = aggregateTengang(['hufu', 'qiaoshou']);              // 多种叠加
+    expect(aggregateTengang(['tigertally']).powerAll).toBe(2);        // 虎符 power+2
+    expect(aggregateTengang(['ghosthand']).pEffAdd).toBe(1);          // 鬼手 odds add+1
+    expect(aggregateTengang(['bedrock']).winFloor).toBeCloseTo(0.05); // 磐石 winFloor+5%
+    expect(aggregateTengang(['fewtroops']).powerLE3).toBe(6);         // 寡兵 ≤3张+6
+    expect(aggregateTengang(['twinblade']).comboPair).toBe(6);        // 双锋 含对子+6
+    expect(aggregateTengang(['bannerman']).moraleLeader).toBe(4);     // 旗手 士气+4
+    expect(aggregateTengang(['unyield']).stamPlus).toBe(1);           // 不屈 续航+1
+    expect(aggregateTengang(['widehand']).handMaxAdd).toBe(2);        // 广纳 手牌上限+2
+    expect(aggregateTengang(['markdecap'])).toEqual(NO_TENGANG);      // 斩首印(arcane 质变)=甲 v2 未接 → 零修正·不崩
+    const both = aggregateTengang(['tigertally', 'ghosthand']);       // 多种叠加
     expect(both.powerAll).toBe(2); expect(both.pEffAdd).toBe(1);
 
     // clash ΔWR：跑到首次对决读 winrate（=我方胜率）。天罡只己方 → 各加成抬我方胜率。
@@ -153,12 +152,12 @@ describe('Game G · A1 战潮抽牌·事件脉冲（doc18 §10.3 乙 · tideDraw
       return b.lastClash!.winrate;
     };
     const base = clashWR(NO_TENGANG); // 均势 7v7 ≈ .5
-    expect(clashWR(aggregateTengang(['hufu']))).toBeGreaterThan(base);     // 虎符 +2 战力 → 胜率↑
-    expect(clashWR(aggregateTengang(['qiaoshou']))).toBeGreaterThan(base); // 巧手 +1 掷命点 → 胜率↑
-    expect(clashWR(aggregateTengang(['guabing']))).toBeGreaterThan(base);  // 寡兵：我方本路仅 1 张(≤3) → +6 → 胜率↑
+    expect(clashWR(aggregateTengang(['tigertally']))).toBeGreaterThan(base);     // 虎符 +2 战力 → 胜率↑
+    expect(clashWR(aggregateTengang(['ghosthand']))).toBeGreaterThan(base); // 巧手 +1 掷命点 → 胜率↑
+    expect(clashWR(aggregateTengang(['fewtroops']))).toBeGreaterThan(base);  // 寡兵：我方本路仅 1 张(≤3) → +6 → 胜率↑
     const weak = clashWR(NO_TENGANG, 40);                                  // 敌 +40 → 我方触底(≈3%)
     expect(weak).toBeLessThan(0.1);                                        // 确实压到底附近
-    expect(clashWR(aggregateTengang(['wenshou']), 40)).toBeGreaterThan(weak); // 稳手 winFloor 抬底(→≈8%)
+    expect(clashWR(aggregateTengang(['bedrock']), 40)).toBeGreaterThan(weak); // 稳手 winFloor 抬底(→≈8%)
   });
 
   it('50:50 平局裁定（owner · 点数大者胜 → 续航高者 → 重揉）：战力相等不纯靠运气', () => {
