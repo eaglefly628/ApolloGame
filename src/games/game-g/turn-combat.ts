@@ -53,6 +53,16 @@ export type Card = PokerCard | TengangHandCard;
 // 一方运行态：圣水 / 手牌 / 两库 / 已施天罡集 + 其聚合修正。
 export interface TurnSide { mana: number; hand: Card[]; pokerDeck: PokerCard[]; tengangDeck: TengangHandCard[]; castIds: string[]; tengangA: TengangFx }
 export type ActionKind = 'draw' | 'deploy' | 'cast' | 'discard';
+// Boss 策略画像（doc27 §八·性格即数据·最弱 LLM 也能填权重）：通用 utility AI 读它打分→选动作。0-10。
+export interface AiProfile {
+  aggression: number;  // 攻 10 ↔ 守 0
+  lanePref: number;    // 铺三路 10 ↔ 专一路 0
+  spellEager: number;  // 早放天罡 10 ↔ 攒大招 0
+  targetPref: 'weak' | 'strong' | 'general'; // 打弱/打强/取主将路
+  risk: number;        // 赌低胜率 10 ↔ 求稳 0
+  economy: number;     // 快花源泉 10 ↔ 囤积 0
+}
+export const NEUTRAL_AI: AiProfile = { aggression: 5, lanePref: 5, spellEager: 5, targetPref: 'weak', risk: 5, economy: 5 };
 // 整局态。active = 当前回合方；actionTaken = 本回合已锁定的互斥动作类别(同类无限·null=未选)。
 export interface TurnBattle {
   turn: number; active: 'a' | 'b';
@@ -64,13 +74,14 @@ export interface TurnBattle {
   actionTaken: ActionKind | null;
   lastClash: ClashEvent | null; clashLog: ClashEvent[]; clashSeq: number; // clashLog：逐场掷命流水（驱动层抽特写·不进 hash）
   dishaB: DishaFx; bossWinStreak: number; batteryLane: number; bossLastStandUsed: boolean; // 地煞(Boss 招牌战术·doc23 §八)运行态
+  aiProfile: AiProfile; aiTier: number; // Boss 通用 utility AI（doc27 §八）：画像 + 难度档(高=更优·低=会犯错)
 }
 
 const mkLane = (): TurnLane => ({ a: [], b: [], aGenDead: false, bGenDead: false, spentA: 0, spentB: 0 });
 const mkSide = (pokerDeck: PokerCard[] = [], tengangDeck: TengangHandCard[] = []): TurnSide =>
   ({ mana: MANA_START, hand: [], pokerDeck: [...pokerDeck], tengangDeck: [...tengangDeck], castIds: [], tengangA: NO_TENGANG });
 
-export interface TurnInit { seed: number; homeMax?: number; disha?: readonly string[]; a?: { pokerDeck?: PokerCard[]; tengangDeck?: TengangHandCard[] }; b?: { pokerDeck?: PokerCard[]; tengangDeck?: TengangHandCard[] } }
+export interface TurnInit { seed: number; homeMax?: number; disha?: readonly string[]; aiProfile?: AiProfile; aiTier?: number; a?: { pokerDeck?: PokerCard[]; tengangDeck?: TengangHandCard[] }; b?: { pokerDeck?: PokerCard[]; tengangDeck?: TengangHandCard[] } }
 /** 开战 init（doc24 §七）：三路 ×9 空轨；双方大本营 3 hp；圣水=起步；A 先手。牌库由 caller（game-g/save）喂；起手摸由 caller 调 drawCard。
  *  cfg.disha：Boss 关卡地煞 id 集（doc23 §八）→ 聚合成 dishaB 在 Boss 侧 apply；温泉关死守覆写 Boss 大本营血。 */
 export function initTurnBattle(cfg: TurnInit): TurnBattle {
@@ -86,6 +97,7 @@ export function initTurnBattle(cfg: TurnInit): TurnBattle {
     rng: { type: 'RandomSeed', seed: cfg.seed, sequence: 0 },
     winner: 'pending', actionTaken: null, lastClash: null, clashLog: [], clashSeq: 0,
     dishaB, bossWinStreak: 0, batteryLane: -1, bossLastStandUsed: false,
+    aiProfile: cfg.aiProfile ?? NEUTRAL_AI, aiTier: cfg.aiTier ?? 2,
   };
   battle.b.mana = 0; // 后手方圣水在其回合开始才 +1（每回合 +1 对称·turn-1 的 +1 已含在先手起步值里）
   return battle;
@@ -174,30 +186,27 @@ export function tryGate(b: TurnBattle, gateIdx: number): boolean {
   return gateMove(b, gateIdx) !== null;
 }
 
-// 擎天「最强单张」：side a 全军(跨三路) base 点数最高一张 id（防 buff 循环·ties 队首确定性）。
-function championIdA(b: TurnBattle): string | undefined {
+// 擎天「最强单张」：某方全军(跨三路) base 点数最高一张 id（防 buff 循环·ties 队首确定性）。
+function championId(b: TurnBattle, side: 'a' | 'b'): string | undefined {
   let best: TurnUnit | undefined;
-  for (const L of b.lanes) for (const u of L.a) if (!best || u.points > best.points) best = u;
+  for (const L of b.lanes) for (const u of colOf(L, side)) if (!best || u.points > best.points) best = u;
   return best?.id;
 }
 
-// 有效战力 P_eff（doc19 §三 · 复用 live-combat 同款：base + 经营 buff + 天罡(只己方 a) + 士气；apply add→mul→floor→clamp）。
-// noRout（地煞·破釜沉舟/死战不退）：Boss 主将亡不溃散（shift 不取 −ROUT）。
-function effPower(u: TurnUnit, lane: TurnLane, side: 'a' | 'b', fx: TengangFx, championId?: string, noRout = false): { pEff: number; shift: number; tg: number } {
+// 有效战力 P_eff（doc19 §三 · 复用 live-combat 同款：base + 经营 buff + 天罡(双方己侧·Boss 施法亦生效) + 士气；apply add→mul→floor→clamp）。
+// noRout（地煞·破釜沉舟/死战不退）：Boss 主将亡不溃散（shift 不取 −ROUT）。fx=该侧 tengangA（NO_TENGANG → 零修正·行为同前）。
+function effPower(u: TurnUnit, lane: TurnLane, side: 'a' | 'b', fx: TengangFx, champId?: string, noRout = false): { pEff: number; shift: number; tg: number } {
   const col = colOf(lane, side);
-  let tg = 0;
-  if (side === 'a') {
-    tg += fx.powerAll + fx.pEffAdd;
-    if (fx.powerFront && col.length && u.id === col[0].id) tg += fx.powerFront; // 锋矢：前锋
-    if (col.length <= 3) tg += fx.powerLE3;                                     // 寡兵
-    if (fx.powerSameSuit && col.filter((x) => x.suit === u.suit).length >= 2) tg += fx.powerSameSuit; // 同花魁
-    if (fx.comboPair || fx.comboTrips) { const rc = new Map<string, number>(); for (const x of col) rc.set(x.rank, (rc.get(x.rank) ?? 0) + 1); const vals = [...rc.values()]; if (fx.comboPair && vals.some((n) => n >= 2)) tg += fx.comboPair; if (fx.comboTrips && vals.some((n) => n >= 3)) tg += fx.comboTrips; } // 对子诀/鼎立
-  }
-  const mul = side === 'a' && fx.powerMulHighest > 1 && u.id === championId ? fx.powerMulHighest : 1; // 擎天
+  let tg = fx.powerAll + fx.pEffAdd;
+  if (fx.powerFront && col.length && u.id === col[0].id) tg += fx.powerFront; // 锋矢：前锋
+  if (col.length <= 3) tg += fx.powerLE3;                                     // 寡兵
+  if (fx.powerSameSuit && col.filter((x) => x.suit === u.suit).length >= 2) tg += fx.powerSameSuit; // 同花魁
+  if (fx.comboPair || fx.comboTrips) { const rc = new Map<string, number>(); for (const x of col) rc.set(x.rank, (rc.get(x.rank) ?? 0) + 1); const vals = [...rc.values()]; if (fx.comboPair && vals.some((n) => n >= 2)) tg += fx.comboPair; if (fx.comboTrips && vals.some((n) => n >= 3)) tg += fx.comboTrips; } // 对子诀/鼎立
+  const mul = fx.powerMulHighest > 1 && u.id === champId ? fx.powerMulHighest : 1; // 擎天
   if (u.general) return { pEff: pEff(u.points, u.buff + tg, mul), shift: 0, tg };
   const genDead = side === 'a' ? lane.aGenDead : lane.bGenDead;
   const genHere = col.some((x) => x.general);
-  const moraleBonus = side === 'a' && genHere ? fx.moraleLeader : 0; // 令旗
+  const moraleBonus = genHere ? fx.moraleLeader : 0; // 令旗
   const shift = (genDead && !noRout) ? -ROUT_PTS : genHere ? MORALE_PTS + moraleBonus : 0;
   return { pEff: pEff(u.points, u.buff + tg + shift, mul), shift, tg };
 }
@@ -241,8 +250,9 @@ function killFront(lane: TurnLane, side: 'a' | 'b'): void {
 function resolveClash(b: TurnBattle, li: number): void {
   const lane = b.lanes[li]; const fa = lane.a[0], fb = lane.b[0];
   if (!fa || !fb) return;
-  const champId = b.a.tengangA.powerMulHighest > 1 ? championIdA(b) : undefined;
-  const ba = effPower(fa, lane, 'a', b.a.tengangA, champId), bb = effPower(fb, lane, 'b', b.b.tengangA, undefined, b.dishaB.noRout);
+  const champA = b.a.tengangA.powerMulHighest > 1 ? championId(b, 'a') : undefined;
+  const champB = b.b.tengangA.powerMulHighest > 1 ? championId(b, 'b') : undefined;
+  const ba = effPower(fa, lane, 'a', b.a.tengangA, champA), bb = effPower(fb, lane, 'b', b.b.tengangA, champB, b.dishaB.noRout);
   const ea = ba.pEff, eb = bb.pEff;
   let wr = winrate(ea, eb, Math.max(2, CLASH_K - b.a.tengangA.kHard)); // 灌铅骰
   if (b.a.tengangA.winFloor > 0) wr = Math.min(0.97, Math.max(wr, 0.03 + b.a.tengangA.winFloor)); // 稳手
@@ -331,22 +341,61 @@ export function endTurn(b: TurnBattle): void {
   b.turn += 1;
 }
 
-// 极简脚本 AI（doc24 §七 AI 回合·占位）：手里有扑克且够圣水就部署到兵最少的路，否则尽量摸普通，再不行就结束。真 AI/难度参数后续切片。
-export function aiTakeTurn(b: TurnBattle): void {
+// ── Boss 通用 utility AI（doc27 §八·甲一次写好·零 per-boss 代码·性格全在 aiProfile 数据）──
+// 每回合：枚举可行动作(放兵×路 / 打天罡 / 抽兵·抽天罡) → 效用函数(局面因子 × 画像权重)打分 → 选最高(seed 破平局)。
+// 难度 aiTier：低档有概率选次优(会犯错·好赢)·高档总最优。确定性(单一 rng)·可回放·可喂仿真。教学关用固定脚本(不走此)。
+const wt = (v: number): number => v / 10; // 画像 0-10 → 权重 0-1
+// 放兵到某路的效用：路偏好(铺/专) + 攻击性×目标偏好(弱/强/将) + 方阵扎堆协同 + 兵牌强度。
+function scoreDeploy(b: TurnBattle, card: PokerCard, lane: number): number {
+  const p = b.aiProfile; const own = b.lanes[lane].b; const foe = b.lanes[lane].a; const foeFront = foe[0];
+  let s = 10 + cardPoints(card.rank) * 0.4; // 基础 + 强牌更值
+  s += (p.lanePref >= 5 ? -own.length : own.length) * (Math.abs(p.lanePref - 5) / 5) * 5; // 铺(少己兵处)↔专(扎堆)
+  const ag = wt(p.aggression);
+  if (p.targetPref === 'weak') s += (foe.length === 0 ? 7 : -(foeFront ? foeFront.points : 0) * 0.4) * ag; // 避实击虚
+  else if (p.targetPref === 'strong') s += (foeFront ? foeFront.points : 0) * 0.4 * ag; // 硬碰强
+  else s += (foe.some((u) => u.general) ? 9 : 0) * ag; // 取主将路(斩首)
+  if (b.dishaB.phalanxPerAdj > 0) s += own.length * 1.5; // 地煞·方阵/连环：扎堆协同
+  return s;
+}
+// 打天罡效用：早放↔攒(spellEager) + 场上己兵越多越值得加 buff。
+function scoreCast(b: TurnBattle): number {
+  const units = b.lanes.reduce((n, L) => n + L.b.length, 0);
+  return 7 + b.aiProfile.spellEager * 1.0 + units * 0.6;
+}
+// 抽牌效用：手空更该抽 + economy 囤(低)更爱抽攒手牌。抽天罡随 spellEager。
+function scoreDraw(b: TurnBattle, from: 'poker' | 'tengang'): number {
+  const sd = b.b; const have = sd.hand.filter((c) => (from === 'poker' ? c.kind === 'poker' : c.kind === 'tengang')).length;
+  if (from === 'poker') return (have === 0 ? 9 : 4 - have) + (10 - b.aiProfile.economy) * 0.3;
+  return (have === 0 ? b.aiProfile.spellEager * 0.7 : 0.5);
+}
+type AiCand = { kind: 'deploy' | 'cast' | 'draw'; handIdx: number; lane: number; from: 'poker' | 'tengang'; score: number };
+/** Boss 回合（utility AI）。aggTengang：caller(game-g) 传天罡聚合器 → Boss 施法后重算 tengangA 即时生效(避免 turn-combat ← blueprint 环依赖)。 */
+export function aiTakeTurn(b: TurnBattle, aggTengang?: (ids: readonly string[]) => TengangFx): void {
   if (b.winner !== 'pending' || b.active !== 'b') return;
   // 大炮兵（地煞·关4）：每 N 回合压你兵最多的一路 → 该路你掷命 −winPct（应用到你下个推进的遭遇）。
   b.batteryLane = (b.dishaB.batteryEveryTurns > 0 && b.turn % b.dishaB.batteryEveryTurns === 0)
     ? [0, 1, 2].reduce((m, li) => (b.lanes[li].a.length > b.lanes[m].a.length ? li : m), 0) : -1;
+  const sd = b.b; const mistakeChance = Math.max(0, 0.5 - b.aiTier * 0.12); // 低档会犯错·高档总最优
   let guard = 0;
-  while (guard++ < 32) {
-    const sd = b.b;
-    const pokerIdx = sd.hand.findIndex((c) => c.kind === 'poker');
-    if (pokerIdx >= 0 && sd.mana >= DEPLOY_COST && (b.actionTaken === null || b.actionTaken === 'deploy')) {
-      const lane = [0, 1, 2].reduce((m, li) => (b.lanes[li].b.length < b.lanes[m].b.length ? li : m), 0);
-      if (deployUnit(b, 'b', pokerIdx, lane)) continue;
+  while (guard++ < 40) {
+    const locked = b.actionTaken; const cands: AiCand[] = [];
+    if ((locked === null || locked === 'deploy') && sd.mana >= DEPLOY_COST) {
+      sd.hand.forEach((c, i) => { if (c.kind === 'poker') for (const lane of [0, 1, 2]) cands.push({ kind: 'deploy', handIdx: i, lane, from: 'poker', score: scoreDeploy(b, c, lane) }); });
     }
-    if (b.actionTaken === null && sd.mana >= DRAW_COST && sd.pokerDeck.length && drawCard(b, 'b', 'poker')) continue;
-    break;
+    if ((locked === null || locked === 'cast') && sd.mana >= CAST_COST) {
+      sd.hand.forEach((c, i) => { if (c.kind === 'tengang') cands.push({ kind: 'cast', handIdx: i, lane: 0, from: 'poker', score: scoreCast(b) }); });
+    }
+    if (locked === null && sd.mana >= DRAW_COST) {
+      if (sd.pokerDeck.length) cands.push({ kind: 'draw', handIdx: -1, lane: 0, from: 'poker', score: scoreDraw(b, 'poker') });
+      if (sd.tengangDeck.length) cands.push({ kind: 'draw', handIdx: -1, lane: 0, from: 'tengang', score: scoreDraw(b, 'tengang') });
+    }
+    if (cands.length === 0) break;
+    const pick = nextRandom(b.rng) < mistakeChance ? cands[Math.floor(nextRandom(b.rng) * cands.length)] : cands.reduce((bst, c) => (c.score > bst.score ? c : bst), cands[0]);
+    let ok = false;
+    if (pick.kind === 'deploy') ok = deployUnit(b, 'b', pick.handIdx, pick.lane);
+    else if (pick.kind === 'cast') { ok = castTengang(b, 'b', pick.handIdx); if (ok && aggTengang) sd.tengangA = aggTengang(sd.castIds); } // 施法即重算·当回合推进生效
+    else ok = drawCard(b, 'b', pick.from);
+    if (!ok) break;
   }
   endTurn(b);
 }

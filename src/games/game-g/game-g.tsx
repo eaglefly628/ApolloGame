@@ -428,7 +428,7 @@ export function mount(container: HTMLElement): () => void {
     // loadoutCap（doc27 §四·难度档）：玩家本关天罡上限（新手区 2→3）→ 截断出战天罡。
     const aTengang: TengangHandCard[] = save.tiangangs.slice(0, lvl.loadoutCap).map((id) => ({ kind: 'tengang', id }));
     const bTengang: TengangHandCard[] = lvl.boss.tiangang.map((id) => ({ kind: 'tengang', id })); // Boss 随机 12 天罡(seed=关id·可复现)·待 Boss AI 施放
-    const tb = initTurnBattle({ seed, disha: lvl.boss.disha, a: { pokerDeck: seededShuffleArr(a.map(toPoker), seed ^ 0x9e37), tengangDeck: aTengang }, b: { pokerDeck: seededShuffleArr(b.map(toPoker), seed ^ 0x51ed), tengangDeck: bTengang } });
+    const tb = initTurnBattle({ seed, disha: lvl.boss.disha, aiProfile: lvl.boss.aiProfile, aiTier: lvl.boss.aiTier, a: { pokerDeck: seededShuffleArr(a.map(toPoker), seed ^ 0x9e37), tengangDeck: aTengang }, b: { pokerDeck: seededShuffleArr(b.map(toPoker), seed ^ 0x51ed), tengangDeck: bTengang } });
     for (let i = 0; i < OPENING_HAND && tb.a.pokerDeck.length; i++) tb.a.hand.push(tb.a.pokerDeck.shift()!); // 起手摸
     for (let i = 0; i < OPENING_HAND && tb.b.pokerDeck.length; i++) tb.b.hand.push(tb.b.pokerDeck.shift()!);
     const shaView: TurnShaView[] = campaignFor(save.stage).fiends.map((f, i) => ({ filled: true, name: f.name, rar: (['gold', 'blue', 'green'] as const)[i] ?? 'white', desc: f.desc })); // 敌堡垒 3 地煞明牌
@@ -454,7 +454,7 @@ export function mount(container: HTMLElement): () => void {
     const finishTurnSeq = (): void => { busy = false; selMode = null; selHand = -1; if (tb.winner !== 'pending') settleTurn(); else mounted?.update(); };
     const runAiThenContinue = (): void => { // 玩家推进特写演完 → AI 回合(脚本) → AI 推进特写 → 回到玩家
       if (tb.winner !== 'pending') { finishTurnSeq(); return; }
-      aiTakeTurn(tb); drainClashes(); playPerf(finishTurnSeq);
+      aiTakeTurn(tb, aggregateTengang); drainClashes(); playPerf(finishTurnSeq); // Boss utility AI（画像驱动·施法即重算 tengangA 生效）
     };
     const commitEndTurn = (): void => {
       if (busy || tb.winner !== 'pending' || tb.active !== 'a') return;

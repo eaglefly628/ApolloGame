@@ -3,16 +3,26 @@
 // 引擎按 id 逐关加载喂 turn-combat（doc24 回合制）：Boss 大本营血/地煞/12 天罡 seed 随机/loadoutCap 上限。
 import { campaignFor, TIANGANG_UNLOCK, type StageCampaign } from './blueprint.js';
 import { stageDisha } from './disha.js';
+import { NEUTRAL_AI, type AiProfile } from './turn-combat.js';
 
 export interface LevelDef {
   id: number; heroId: string; stars: number;
   battle: { name: string; oneLine: string };
   intro: string;                                  // 开场战役背景旁白
   bossLines: { open: string; mid: string; lose: string }; // Boss 对白（开场/劣势/败北）
-  boss: { homeHp: number; disha: string[]; tiangang: string[]; aiTier: number }; // 地煞 3 + 随机 12 天罡 + AI 档
+  boss: { homeHp: number; disha: string[]; tiangang: string[]; aiTier: number; aiProfile: AiProfile }; // 地煞 3 + 随机 12 天罡 + AI 档 + 策略画像
   reward: { unlock: string[]; gold: number };
   loadoutCap: number;                             // 玩家本关天罡 loadout 上限（新手区 2→3）
 }
+
+// 关1-5 Boss 策略画像（doc27 §八·design G 填·性格即数据·与各自地煞自洽）。关6+ 暂 NEUTRAL（逐期填）。
+const AI_PROFILES: Record<number, AiProfile> = {
+  1: { aggression: 2, lanePref: 3, spellEager: 4, targetPref: 'strong', risk: 2, economy: 3 },   // 列奥尼达·守家硬汉
+  2: { aggression: 8, lanePref: 4, spellEager: 6, targetPref: 'general', risk: 6, economy: 6 },  // 亚历山大·突击斩首
+  3: { aggression: 6, lanePref: 9, spellEager: 5, targetPref: 'weak', risk: 4, economy: 8 },     // 曹操·兵海铺三路
+  4: { aggression: 7, lanePref: 2, spellEager: 7, targetPref: 'weak', risk: 6, economy: 7 },     // 拿破仑·集中突破
+  5: { aggression: 10, lanePref: 1, spellEager: 8, targetPref: 'strong', risk: 9, economy: 9 },  // 项羽·莽·全压一路
+};
 
 // 难度档（doc27 §四·按星级）：大本营血 / loadoutCap / AI 智能档。关1-5 = ★~★★★。
 const DIFFICULTY: Record<number, { homeHp: number; loadoutCap: number; aiTier: number }> = {
@@ -58,7 +68,7 @@ export function loadLevel(stage: number): LevelDef {
     battle: { name: c.battle, oneLine: c.oneLiner },
     intro: lore.intro,
     bossLines: { open: lore.open, mid: lore.mid, lose: lore.lose },
-    boss: { homeHp: diff.homeHp, disha: stageDisha(stage), tiangang: bossTiangang(stage), aiTier: diff.aiTier },
+    boss: { homeHp: diff.homeHp, disha: stageDisha(stage), tiangang: bossTiangang(stage), aiTier: diff.aiTier, aiProfile: AI_PROFILES[stage] ?? NEUTRAL_AI },
     reward: { unlock, gold: 20 + stage * 10 },
     loadoutCap: diff.loadoutCap,
   };
