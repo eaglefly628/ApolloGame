@@ -13,7 +13,7 @@
 > | 字段 | 值 |
 > |---|---|
 > | **owner 直派追加（2026-06-18 · 3 连反馈 → program G 已落地，`05bb4be`）** | owner 跑 WIRE-MARCH 后纠正节奏「跟想象完全不一样」，3 连反馈 → 已实现：**①战场修正三连**(`2f5303e`)：单列行进(删三行错开)、三路皆平滑曲线(中路改贝塞尔)、**迷雾门线显形**(出 t=0.34/0.66 门线才翻、非接敌才翻)。**②3D-1 出牌控盘层**(`05bb4be`)：布局阶段 base 打底 3/路+抽牌堆+起手摸 5；**手牌坞**点选派上/中/下、实时慢推；**实时流+读秒暂停银行**(空格冻结/90s)；底流每 18 拍涌牌；敌每 16 拍滴投原路。owner 节奏决议=实时流+暂停银行 / 基础布局打底+抽牌堆（AskUserQuestion 拍板）。owner 北极星=**Balatro「啪嗒啪嗒」心流**。|
-> | **持棒方 BATON** | 🔵 **design G**（program G 乙 B1 大厅收尾 ✅ 完成 · `0a80dbe1` · vitest 1521 全绿 → 翻棒 design G 验收；余 B5 COLL/地支实装/契约①+ 待下一派单）|
+> | **持棒方 BATON** | 🟢 **program G 甲**（owner 2026-06-19 **立即派发** ⛔ **战斗实时 → 回合制 PVE 重构** = 甲当前**头号任务**·见 `doc24` §七/八 + TODAY-TASKS **A0**·logic 可先做不等 UI）。乙线并行不冲突：B1 收尾 ✅`0a80dbe1` 待 design G 验 · icon/地支/列传/COLL 待接。|
 > | **🎯 最终模型已派（owner 确认 · 见 TODAY-TASKS 顶）** | 致命翻牌 = 皇室战争 × Commands&Colors × 扑克。**甲**：重做局内经济为 CR 两牌库（点数 regen+共享池 / 普通库52+天罡库 / 花点数摸牌选库 普通~1·天罡~2 / 天罡 cap5 打掉才补 / 三路可迁移 / 慢行军遭遇 logistic 对决 / 无暂停；A1 战潮 superseded，march/clash/续航/大本营保留）。**乙**：改造坊三区(扑克/天罡构筑/地支养成) + 地支养成52牌组 + 牌组预览 + 填 36 天罡/12 地支。正典 doc 19/20/21。|
 > | **🎴 天罡牌一期（owner 新要求·已派）** | doc20 §三 20 张（每张牌力）→ **甲** A-JOKER：10 kind 解释器、库 `save.jokers≤5` 常驻被动 apply（含巧手/背水两例）；**乙** B-JOKER：改造坊上架买入+选≤5 战库 + 牌组预览面板（名+效果+牌力+库总加成）+ 填 `GAME_G_JOKERS` 数据。**契约③** `{id,name,rarity,kind,params,text,cost}`（乙写数据/甲写解释器）。详见 `TODAY-TASKS.md` 末「天罡牌·一期」。|
 > | **📋 今日·双程序员正交** | owner 建了**两个程序员** → 今日余下全套已拆成正交双轨，**详见 `TODAY-TASKS.md`**：**甲=开发(战斗)**（`live-combat`/`clash-resolve`/`battle-screen`/`showMatch`）· **乙=菜单**（`lobby-screen`/菜单屏/养成数据）。两轨靠 2 契约解耦（① `prepareArmies→ArmyCard[]` ② `save.jokers/planets` 构筑库）、互不撞车。甲乙各自完成翻棒回 design G 驻片验。|
