@@ -4,14 +4,10 @@
 // 纯表现"固定解释器"：只渲染 view + 抛 data-act 回调，零 gameplay 计算。CSS 全 scope 在 .ggl-root 下。
 
 import { GI } from './icons.js';
-import { HERO_CARDS } from './blueprint.js';
+import { HERO_CARDS, DIZHI_ZODIACS, DIZHI_TRINES } from './blueprint.js';
 
 export interface LobbyShopItem { id: string; name: string; sub: string; cost: number; owned: boolean; buyable: boolean; level?: number; inDeck?: boolean; power?: number; phat?: number }
-export type EarthRarity = 'bronze' | 'blue' | 'purple' | 'gold';
-export interface EarthBranchCard {
-  id: string; branch: string; name: string; effect: string;
-  rarity: EarthRarity; owned: boolean; equipped: boolean;
-}
+export type EarthRarity = 'bronze' | 'silver' | 'gold';
 export interface LobbyView {
   skin: 'onyx' | 'rosy';
   coin: number; energy: number; energyMax: number; foilCount: number;
@@ -21,7 +17,6 @@ export interface LobbyView {
   tiangangs: LobbyShopItem[]; planets: LobbyShopItem[]; foils: LobbyShopItem[];
   ladderLines: string[];
   deckArchName?: string | null; deckArchActivated?: boolean;
-  earthCards?: EarthBranchCard[];
 }
 
 // ── 双皮 CSS 变量（逐项照搬 .dc.html themes() · onyx 绿呢 / rosy=brocade 红呢）+ 招牌类 ──
@@ -122,10 +117,12 @@ const CSS = `
 .ggl-root .earth-branch{ font-family:var(--fh); font-size:22px; font-weight:800; color:var(--gold); width:26px }
 .ggl-root .earth-cards{ display:flex; gap:8px; flex-wrap:wrap }
 .ggl-root .ecard{ border-radius:8px; padding:8px 10px; background:var(--chip); border:1px solid var(--panel-border); font-size:12px; min-width:84px; position:relative }
-.ggl-root .ecard.r-bronze{ border-color:#b8732a }
-.ggl-root .ecard.r-blue{ border-color:#4a9fd5 }
-.ggl-root .ecard.r-purple{ border-color:#9b5fc7 }
+.ggl-root .ecard.r-bronze{ border-color:#cd7f32 }
+.ggl-root .ecard.r-silver{ border-color:#c4ccd6 }
 .ggl-root .ecard.r-gold{ border-color:var(--gold); box-shadow:0 0 8px rgba(232,205,130,.18) }
+.ggl-root .zo-icon{ width:34px; height:34px; flex:none; image-rendering:auto }
+.ggl-root .earth-legend{ font-size:11px; color:var(--ink-dim); line-height:1.55; margin:2px 0 8px; font-style:italic }
+.ggl-root .trine-row{ display:flex; align-items:center; gap:10px; padding:7px 10px; border-radius:8px; background:rgba(255,255,255,.03); border:1px solid var(--panel-border); font-size:12px; margin-bottom:6px }
 .ggl-root .ecard.unowned{ opacity:.36 }
 .ggl-root .ecard.equipped::after{ content:'⚔'; position:absolute; top:3px; right:5px; font-size:10px; color:var(--gold) }
 .ggl-root .shelf{ display:grid; grid-template-columns:repeat(auto-fill,minmax(120px,1fr)); gap:10px }
@@ -237,29 +234,22 @@ const kfmt = (n: number): string => (n >= 1000 ? (n / 1000).toFixed(1) + 'k' : S
 const esc = (s: string): string => String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
 
 // 十二地支支脉（子→亥，animal，theme）
-const BRANCHES = [
-  { b: '子', a: '鼠', t: '隐匿' }, { b: '丑', a: '牛', t: '坚韧' },
-  { b: '寅', a: '虎', t: '猛攻' }, { b: '卯', a: '兔', t: '疾速' },
-  { b: '辰', a: '龙', t: '威压' }, { b: '巳', a: '蛇', t: '毒创' },
-  { b: '午', a: '马', t: '冲锋' }, { b: '未', a: '羊', t: '群势' },
-  { b: '申', a: '猴', t: '奇袭' }, { b: '酉', a: '鸡', t: '号令' },
-  { b: '戌', a: '狗', t: '守卫' }, { b: '亥', a: '猪', t: '蛮力' },
-];
-const RARITY_CLR: Record<EarthRarity, string> = { bronze: '#b8732a', blue: '#4a9fd5', purple: '#9b5fc7', gold: '#e8cd82' };
-const RARITY_LBL: Record<EarthRarity, string> = { bronze: '青铜', blue: '蓝色', purple: '紫色', gold: '黄金' };
+const RARITY_CLR: Record<EarthRarity, string> = { bronze: '#cd7f32', silver: '#c4ccd6', gold: '#e8cd82' };
+const RARITY_LBL: Record<EarthRarity, string> = { bronze: '铜', silver: '银', gold: '金' };
 
-function earthSection(cards: EarthBranchCard[], filter: string): string {
-  if (!cards.length) return `<div class="gang-empty"><span style="font-size:28px;opacity:.5">🌿</span><b>地支灵牌 · 尚未开放</b><span style="font-size:11px">战役推进后逐步解锁 · 12 支脉 · 青铜→蓝→紫→金</span></div>`;
-  return BRANCHES.map(({ b, a, t }) => {
-    const bc = cards.filter(c => c.branch === b);
-    const shown = filter === 'all' ? bc : bc.filter(c => c.rarity === filter);
-    if (shown.length === 0 && bc.length > 0 && filter !== 'all') return ''; // 当前等级无牌时折叠
-    const cs = shown.map(c => {
-      const cls = `ecard r-${c.rarity}${c.owned ? '' : ' unowned'}${c.equipped ? ' equipped' : ''}`;
-      return `<div class="${cls}" title="${esc(c.effect)}"><div style="font-size:10px;font-weight:700;color:${RARITY_CLR[c.rarity]}">${RARITY_LBL[c.rarity]}</div><div style="font-size:12px;font-weight:700;color:var(--ink);margin:2px 0">${esc(c.name)}</div><div style="font-size:11px;color:var(--ink-dim)">${esc(c.effect)}</div></div>`;
-    }).join('');
-    return `<div class="earth-group"><div class="earth-group-hd"><span class="earth-branch">${b}</span><span style="font-size:13px;color:var(--ink)">${a}</span><span style="font-size:11px;color:var(--ink-dim)">· ${t}</span><span style="font-size:11px;color:var(--ink-dim);margin-left:auto">${bc.filter(c => c.owned).length}/${bc.length}</span></div>${cs ? `<div class="earth-cards">${cs}</div>` : ''}</div>`;
+// 地支 codex（doc20 §三 + doc23 §五 · 美术 zodiac.json）：12 生肖 × 铜银金三档 + 牌背传说 + 三合连携。
+// 镶嵌/揉获取/连携 gameplay 待契约④（甲战斗侧 apply）；此处为养成图鉴展示（图标真接美术库 twemoji）。
+function earthSection(filter: string): string {
+  const tier = (z: typeof DIZHI_ZODIACS[number], r: EarthRarity, eff: string): string =>
+    `<div class="ecard r-${r}" title="${esc(eff)}"><div style="font-size:10px;font-weight:700;color:${RARITY_CLR[r]}">${RARITY_LBL[r]}</div><div style="font-size:11px;color:var(--ink-dim);line-height:1.5">${esc(eff)}</div></div>`;
+  const groups = DIZHI_ZODIACS.map(z => {
+    const tiers: [EarthRarity, string][] = [['bronze', z.bronze], ['silver', z.silver], ['gold', z.gold]];
+    const shown = filter === 'all' ? tiers : tiers.filter(([r]) => r === filter);
+    const cs = shown.map(([r, eff]) => tier(z, r, eff)).join('');
+    return `<div class="earth-group"><div class="earth-group-hd"><img class="zo-icon" src="${z.png}" alt="${z.animal}" loading="lazy"><span class="earth-branch">${z.branch}</span><span style="font-size:13px;color:var(--ink)">${z.animal}</span><span style="font-size:11px;color:var(--ink-dim)">· ${z.symbol}</span></div><div class="earth-legend">${esc(z.legend)}</div>${cs ? `<div class="earth-cards">${cs}</div>` : ''}</div>`;
   }).join('');
+  const trines = DIZHI_TRINES.map(t => `<div class="trine-row"><b style="color:var(--gold);min-width:104px">${t.name}</b><span style="color:var(--ink-dim);min-width:96px">${esc(t.members)}</span><span style="color:var(--ink)">${esc(t.effect)}</span></div>`).join('');
+  return `${groups}<div style="margin-top:14px"><div style="font-family:var(--fh);font-size:14px;color:var(--gold);margin-bottom:8px">🔗 三合连携（一卡镶满 3 槽 · 凑成组合激发）</div>${trines}</div>`;
 }
 
 // 人头牌（A/K/Q/J）中文标签（RANKS 索引 0-3 = A K Q J）
@@ -512,7 +502,7 @@ export function renderLobby(view: LobbyView, tab: string, tutorialOpen: boolean,
         <div class="friend"><span class="dot"></span> 周瑜 <span class="tag">占位</span></div>
         <div class="friend"><span class="dot"></span> 孔明 <span class="tag">占位</span></div></div>
     </section>
-    <section class="screen${on('decks')} full">${deckPreviewPanel(view.tiangangs, view.deckArchName, view.deckArchActivated)}<div class="deck-nav"><button class="${deckTab==='base'?'on':''}" data-act="deckTab" data-k="base">扑克牌组</button><button class="${deckTab==='gang'?'on':''}" data-act="deckTab" data-k="gang">天罡战牌</button></div><div class="dsub${dOn('base')}"><div class="card"><h2>📜 扑克牌组 · 52 张 <span class="ghost" style="margin-left:auto;font-size:12px">favor 均 ${view.deckAvg} · 最低 ${view.deckMin} / 最高 ${view.deckMax}</span></h2>${suitBarsPanel(view.deck, view.deckAvg)}<div>${deckGrid(view.deck, view.foils)}</div><div class="note" style="text-align:left">favor=该牌掷命翻正面(存活)的概率底盘。<b style="color:var(--gold)">金边</b>=强(≥70) / 暗格=弱(≤50)。牌组强度靠<b>天罡牌/地支牌/流派</b>提升 → 去「改造坊」经营。</div></div></div><div class="dsub${dOn('gang')}"><div class="card" style="margin-bottom:14px"><h2>${GI.bolt} 天罡战牌 <span class="ghost" style="margin-left:auto;font-size:12px">三十六天罡 · 一期 20 张已上架</span></h2><div class="gang-grid"><div class="gang-empty"><span style="font-size:28px;opacity:.5">⚡</span><b>天罡战牌 · 去改造坊选入战库</b><span style="font-size:11px">改造坊买入 → 选 ≤5 入战库 → 局内打出生效</span></div></div></div><div class="card"><h2>${GI.planet} 地支牌 <span class="ghost" style="margin-left:auto;font-size:12px">12 支脉 · 青铜→蓝→紫→金</span></h2><div class="earth-filter">${efBtn('all','全部','background:var(--gold-grad);color:#2a1a08;border:0')}${efBtn('bronze','青铜','background:#b8732a;color:#fff;border:0')}${efBtn('blue','蓝色','background:#4a9fd5;color:#fff;border:0')}${efBtn('purple','紫色','background:#9b5fc7;color:#fff;border:0')}${efBtn('gold','黄金','background:var(--gold-grad);color:#2a1a08;border:0')}</div><div class="earth-groups">${earthSection(view.earthCards ?? [], earthFilter)}</div></div></div></section>
+    <section class="screen${on('decks')} full">${deckPreviewPanel(view.tiangangs, view.deckArchName, view.deckArchActivated)}<div class="deck-nav"><button class="${deckTab==='base'?'on':''}" data-act="deckTab" data-k="base">扑克牌组</button><button class="${deckTab==='gang'?'on':''}" data-act="deckTab" data-k="gang">天罡战牌</button></div><div class="dsub${dOn('base')}"><div class="card"><h2>📜 扑克牌组 · 52 张 <span class="ghost" style="margin-left:auto;font-size:12px">favor 均 ${view.deckAvg} · 最低 ${view.deckMin} / 最高 ${view.deckMax}</span></h2>${suitBarsPanel(view.deck, view.deckAvg)}<div>${deckGrid(view.deck, view.foils)}</div><div class="note" style="text-align:left">favor=该牌掷命翻正面(存活)的概率底盘。<b style="color:var(--gold)">金边</b>=强(≥70) / 暗格=弱(≤50)。牌组强度靠<b>天罡牌/地支牌/流派</b>提升 → 去「改造坊」经营。</div></div></div><div class="dsub${dOn('gang')}"><div class="card" style="margin-bottom:14px"><h2>${GI.bolt} 天罡战牌 <span class="ghost" style="margin-left:auto;font-size:12px">三十六天罡 · 一期 20 张已上架</span></h2><div class="gang-grid"><div class="gang-empty"><span style="font-size:28px;opacity:.5">⚡</span><b>天罡战牌 · 去改造坊选入战库</b><span style="font-size:11px">改造坊买入 → 选 ≤5 入战库 → 局内打出生效</span></div></div></div><div class="card"><h2>${GI.planet} 地支牌 <span class="ghost" style="margin-left:auto;font-size:12px">12 生肖 · 铜→银→金 · 镶英雄 ≤3 凑连携</span></h2><div class="earth-filter">${efBtn('all','全部','background:var(--gold-grad);color:#2a1a08;border:0')}${efBtn('bronze','铜','background:#cd7f32;color:#fff;border:0')}${efBtn('silver','银','background:#c4ccd6;color:#2a2a2a;border:0')}${efBtn('gold','金','background:var(--gold-grad);color:#2a1a08;border:0')}</div><div class="earth-groups">${earthSection(earthFilter)}</div></div></div></section>
     <section class="screen${on('coll')} full" style="flex-direction:column"><div class="deck-nav"><button class="${collTab==='cards'?'on':''}" data-act="collTab" data-k="cards">收藏·牌谱</button><button class="${collTab==='ladder'?'on':''}" data-act="collTab" data-k="ladder">天梯·榜</button><button class="${collTab==='collect'?'on':''}" data-act="collTab" data-k="collect">天罡&amp;闪艺</button></div><div class="dsub${cOn('cards')}" style="flex:1;min-height:0;flex-direction:column">${heroCollSection(heroSuit, heroRar, heroDetail, ownedOnly)}</div><div class="dsub${cOn('ladder')}" style="flex:1;min-height:0;flex-direction:column">${ladderSection(view.name, view.rankText)}</div><div class="dsub${cOn('collect')}"><div class="card"><h2>🗃 天罡牌 · 收藏 ${view.tiangangs.filter((j) => j.owned).length}/${view.tiangangs.length}</h2><div class="note" style="text-align:left;margin-bottom:6px">⚡ 已解锁天罡牌（到改造坊选入战库 ≤5 张）</div><div class="shelf">${view.tiangangs.map((j) => shopItem('', '⚡', { ...j, buyable: false })).join('')}</div><div class="note" style="text-align:left;margin:12px 0 6px">✨ 闪艺 foil（纯装饰收集 · 点亮可购买）· ${view.foils.filter((f) => f.owned).length}/${view.foils.length}</div><div class="shelf">${view.foils.map((f) => shopItem('buyFoil', '✨', f)).join('')}</div></div></div></section>
     <section class="screen${on('craft')} full"><div class="craft-zones">
       <div class="card"><h2>♠ 扑克牌组 <span class="ghost" style="margin-left:auto;font-size:12px">52 张 · 公平骨架 · 上场打三路</span></h2>
