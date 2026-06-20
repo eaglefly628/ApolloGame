@@ -4,6 +4,7 @@ import { cardPoints } from './clash-resolve.js';
 import { cardStamina } from './live-combat.js';
 import {
   initTurnBattle, drawCard, deployUnit, castTengang, discardCard, endTurn, aiTakeTurn, turnHash, turnActive,
+  toggleGate, tryGate, GATES,
   MANA_START, A_DEPLOY_SLOT, A_GOAL, TURN_HOME_BLOOD,
   type PokerCard, type TengangHandCard, type TurnUnit, type TurnBattle,
 } from './turn-combat.js';
@@ -46,12 +47,30 @@ describe('Game G · turn-combat（doc24 单机回合制 · A0 重构）', () => 
 
   it('放牌：扑克兵上场到我方部署格 + 花圣水；放牌可顺手开门', () => {
     const b = initTurnBattle({ seed: 1 }); b.a.mana = 2; b.a.hand.push(poker('h0', 'Q'));
-    expect(deployUnit(b, 'a', 0, 1, true)).toBe(true);
+    expect(deployUnit(b, 'a', 0, 1, 0)).toBe(true);  // gateToggle=0 → 顺手翻 0 号捷径门
     expect(b.lanes[1].a.length).toBe(1);
     expect(b.lanes[1].a[0].slot).toBe(A_DEPLOY_SLOT);
-    expect(b.lanes[1].gate).toBe(true);              // 附赠开门
+    expect(b.gatesOpen[0]).toBe(true);               // 附赠开门
     expect(b.a.mana).toBe(1); expect(b.actionTaken).toBe('deploy');
     expect(turnActive(b)).toBe(true);                // 场上有兵 → 未决
+  });
+
+  it('捷径门：8 门定向；toggleGate 开/关；门开+源格有兵+目标空 → tryGate 过门跨路（占位逻辑）', () => {
+    expect(GATES.length).toBe(8); // 我方 4 + 敌方镜像 4
+    const b = initTurnBattle({ seed: 1 });
+    expect(b.gatesOpen.every((o) => o === false)).toBe(true);
+    // GATES[0]：side a · 上路(0) slot1 → 中路(1) slot2
+    expect(tryGate(b, 0)).toBe(false);               // 门闭 → 不可过
+    expect(toggleGate(b, 0)).toBe(true); expect(b.gatesOpen[0]).toBe(true);
+    expect(turnHash(b)).toContain('|g10000000|');    // 门态进 hash（确定性回放）
+    expect(tryGate(b, 0)).toBe(false);               // 门开但源格无兵 → 不可过
+    b.lanes[0].a.push(unit('a0', '7', 1));           // 源格(上路 slot1)放一兵
+    expect(tryGate(b, 0)).toBe(true);                // 过门
+    expect(b.lanes[0].a.length).toBe(0);             // 离开上路
+    expect(b.lanes[1].a.some((u) => u.slot === 2 && u.id === 'a0')).toBe(true); // 抵中路 slot2
+    b.lanes[0].a.push(unit('a1', '8', 1));           // 再来一兵
+    expect(tryGate(b, 0)).toBe(false);               // 目标格已被 a0 占 → 失败
+    expect(b.lanes[0].a.length).toBe(1);             // a1 留原地
   });
 
   it('endTurn：active 方推进自己兵一格 + 切换 + 下一方 +1 圣水', () => {
