@@ -31,8 +31,12 @@ export function mountUI(
     if (!fn) return;
 
     if (e.type === 'change') {
-      if (el.tagName === 'SELECT') fn((el as HTMLSelectElement).value);
-      else if (el.tagName === 'INPUT') fn((el as HTMLInputElement).value);
+      if (el.tagName === 'SELECT') {
+        fn((el as HTMLSelectElement).value);
+      } else if (el.tagName === 'INPUT') {
+        const inp = el as HTMLInputElement;
+        fn(inp.type === 'checkbox' ? String(inp.checked) : inp.value);
+      }
     } else {
       fn(el.dataset['arg']);
     }

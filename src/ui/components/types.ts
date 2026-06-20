@@ -4,9 +4,11 @@
 // 引擎的工作：renderNode() + mountUI() 解释这棵树。
 // 红线：游戏层不得在此之外手写 HTML 模板或 DOM 操作。
 
-export type ComponentType = 'Panel' | 'Button' | 'Label' | 'Dropdown' | 'Badge' | 'Input' | 'Divider';
+export type ComponentType =
+  | 'Panel' | 'Button' | 'Label' | 'Dropdown' | 'Badge' | 'Input' | 'Divider'
+  | 'Checkbox' | 'Toggle' | 'RadioGroup' | 'Image' | 'Screen' | 'Slider';
 
-/** 布局约束：坐标/尺寸/弹性。x/y 触发绝对定位；flex 在父 Panel 内生效。 */
+/** 布局约束：坐标/尺寸/弹性。x/y 触发绝对定位；flex 在父 Panel/Screen 内生效。 */
 export interface LayoutConstraints {
   x?: number;
   y?: number;
@@ -60,13 +62,60 @@ export interface PanelProps {
   scroll?: boolean;
 }
 
+/** 单个开/关复选框。handler 收到 'true' | 'false'。 */
+export interface CheckboxProps {
+  label: string;
+  checked?: boolean;
+  action?: string;
+}
+
+/** 药丸形开关（Toggle Switch）。handler 收到 'true' | 'false'。 */
+export interface ToggleProps {
+  label: string;
+  checked?: boolean;
+  action?: string;
+}
+
+/** 互斥单选组。name 用于分组；handler 收到所选 value。 */
+export interface RadioGroupProps {
+  name: string;
+  options: Array<{ value: string; label: string }>;
+  value?: string;
+  action?: string;
+}
+
+/** 图片/图标。fit 控制 object-fit；radius 为圆角 px。 */
+export interface ImageProps {
+  src: string;
+  alt?: string;
+  fit?: 'cover' | 'contain' | 'fill';
+  radius?: number;
+}
+
+/**
+ * 全屏根容器——页面背景层。
+ * bg：CSS 颜色或渐变；image：背景图 URL；center：垂直水平居中子项。
+ */
+export interface ScreenProps {
+  bg?: string;
+  image?: string;
+  blur?: number;
+  center?: boolean;
+}
+
+/** 数值滑块。handler 收到数值字符串（Number(arg) 转回）。 */
+export interface SliderProps {
+  min?: number;
+  max?: number;
+  step?: number;
+  value?: number;
+  label?: string;
+  action?: string;
+}
+
 export type ComponentProps =
-  | ButtonProps
-  | LabelProps
-  | DropdownProps
-  | BadgeProps
-  | InputProps
-  | PanelProps
+  | ButtonProps | LabelProps | DropdownProps | BadgeProps | InputProps | PanelProps
+  | CheckboxProps | ToggleProps | RadioGroupProps | ImageProps | ScreenProps | SliderProps
   | Record<string, never>;
 
 /** LayoutNode = 弱模型填写的 UI 数据单元。type + id + props 必填；layout/children 按需。 */

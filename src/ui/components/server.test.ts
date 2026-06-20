@@ -1,6 +1,7 @@
 import { describe, it, expect } from 'vitest';
 import { renderNode } from './render.js';
 import { settingsScreen } from './demo.js';
+import { SHELL } from '../shell-theme.js';
 import type { LayoutNode } from './types.js';
 
 describe('UI Components · renderNode', () => {
@@ -189,5 +190,104 @@ describe('UI Components · renderNode', () => {
     expect(html).toContain('data-action="save"');
     expect(html).toContain('data-action="close"');
     expect(html).toContain('UI Server v0.1');
+  });
+
+  // ── 新增 6 个控件 ──────────────────────────────────────────
+
+  it('Checkbox: checked=true 显示勾选标记 + hidden input + label', () => {
+    const node: LayoutNode = { type: 'Checkbox', id: 'cb1', props: { label: 'Sound', checked: true, action: 'toggle' } };
+    const html = renderNode(node);
+    expect(html).toContain('Sound');
+    expect(html).toContain('✓');
+    expect(html).toContain('type="checkbox"');
+    expect(html).toContain('data-action="toggle"');
+    expect(html).toContain('checked');
+    expect(html).toContain('for="cb1-i"');
+  });
+
+  it('Checkbox: checked=false 无勾选标记', () => {
+    const html = renderNode({ type: 'Checkbox', id: 'cb2', props: { label: 'Mute', checked: false } });
+    expect(html).not.toContain('✓');
+    expect(html).not.toContain(' checked');
+  });
+
+  it('Toggle: on=true jade 轨道 + knob 靠右', () => {
+    const node: LayoutNode = { type: 'Toggle', id: 'tg1', props: { label: 'FX', checked: true, action: 'fx' } };
+    const html = renderNode(node);
+    expect(html).toContain('FX');
+    expect(html).toContain('data-action="fx"');
+    expect(html).toContain('left:18px');
+    expect(html).toContain(SHELL.jade);
+  });
+
+  it('Toggle: on=false knob 靠左 暗色轨道', () => {
+    const html = renderNode({ type: 'Toggle', id: 'tg2', props: { label: 'BGM', checked: false } });
+    expect(html).toContain('left:2px');
+    expect(html).not.toContain(SHELL.jade);
+  });
+
+  it('RadioGroup: 选项渲染 + 选中项 jade dot + action', () => {
+    const node: LayoutNode = {
+      type: 'RadioGroup', id: 'rg1',
+      props: { name: 'diff', options: [{ value: 'easy', label: '简单' }, { value: 'hard', label: '困难' }], value: 'easy', action: 'setDiff' },
+    };
+    const html = renderNode(node);
+    expect(html).toContain('简单');
+    expect(html).toContain('困难');
+    expect(html).toContain('name="diff"');
+    expect(html).toContain('data-action="setDiff"');
+    expect(html).toContain('value="easy" checked');
+    expect(html).toContain(SHELL.jade);
+  });
+
+  it('Image: src/alt/fit/radius 正确输出', () => {
+    const node: LayoutNode = { type: 'Image', id: 'img1', props: { src: '/logo.png', alt: 'Logo', fit: 'cover', radius: 8 } };
+    const html = renderNode(node);
+    expect(html).toContain('src="/logo.png"');
+    expect(html).toContain('alt="Logo"');
+    expect(html).toContain('object-fit:cover');
+    expect(html).toContain('border-radius:8px');
+    expect(html).toMatch(/<img/);
+  });
+
+  it('Image: XSS src 被转义', () => {
+    const html = renderNode({ type: 'Image', id: 'img2', props: { src: '" onerror="alert(1)' } });
+    expect(html).not.toContain('" onerror=');
+    expect(html).toContain('&quot;');
+  });
+
+  it('Screen: 全屏容器 + 自定义 bg + center', () => {
+    const node: LayoutNode = {
+      type: 'Screen', id: 'scr1',
+      props: { bg: '#001122', center: true },
+      children: [{ type: 'Label', id: 'l', props: { text: 'Hello' } }],
+    };
+    const html = renderNode(node);
+    expect(html).toContain('min-height:100vh');
+    expect(html).toContain('background:#001122');
+    expect(html).toContain('align-items:center');
+    expect(html).toContain('Hello');
+  });
+
+  it('Screen: 默认 pageBg 渐变', () => {
+    const html = renderNode({ type: 'Screen', id: 'scr2', props: {}, children: [] });
+    expect(html).toContain(SHELL.pageBg);
+  });
+
+  it('Slider: min/max/value/label/action 正确', () => {
+    const node: LayoutNode = { type: 'Slider', id: 'sl1', props: { min: 0, max: 10, step: 1, value: 7, label: 'Vol', action: 'vol' } };
+    const html = renderNode(node);
+    expect(html).toContain('type="range"');
+    expect(html).toContain('min="0"');
+    expect(html).toContain('max="10"');
+    expect(html).toContain('value="7"');
+    expect(html).toContain('data-action="vol"');
+    expect(html).toContain('Vol');
+    expect(html).toContain('accent-color');
+  });
+
+  it('Slider: 无 label 时不渲染 header', () => {
+    const html = renderNode({ type: 'Slider', id: 'sl2', props: { value: 50 } });
+    expect(html).not.toContain('justify-content:space-between');
   });
 });
