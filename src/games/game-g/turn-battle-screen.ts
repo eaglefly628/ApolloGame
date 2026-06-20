@@ -366,8 +366,8 @@ export function buildTurnBattleView(b: TurnBattle, opts: TurnViewOpts = {}): Tur
     const slots: TurnSlotView[] = Array.from({ length: SLOTS }, (_, i) => {
       const hit = bySlot.get(i);
       return hit
-        ? { hasUnit: true, mine: hit.mine, isBorder: i === 4, isClash: adj && i === 4, rank: hit.u.rank, suit: lc(hit.u.suit), power: hit.u.points + hit.u.buff, zod: [] }
-        : { hasUnit: false, mine: i < 4, isBorder: i === 4, isClash: adj && i === 4 };
+        ? { hasUnit: true, mine: hit.mine, isBorder: i === 4, isClash: adj && (i === L.a[0]?.slot || i === L.b[0]?.slot), rank: hit.u.rank, suit: lc(hit.u.suit), power: hit.u.points + hit.u.buff, zod: [] }
+        : { hasUnit: false, mine: i < 4, isBorder: i === 4, isClash: adj && (i === L.a[0]?.slot || i === L.b[0]?.slot) };
     });
     return { name: laneNames[li] ?? ('路' + li), slots };
   });

@@ -487,7 +487,7 @@ export function mount(container: HTMLElement): () => void {
     let theme: 'onyx' | 'brocade' = 'onyx';
     let selMode: string | null = null; // 当前选中的动作类（draw/deploy/cast/discard·UI 先选后做）
     let selHand = -1;                  // 放牌/施法/弃牌 选中的手牌
-    let drained = 0; const perfQueue: ClashEvent[] = []; let perfClash: ClashEvent | null = null; let busy = false; let perfTimer = 0;
+    let drained = 0; const perfQueue: ClashEvent[] = []; let perfClash: ClashEvent | null = null; let busy = false; let perfTimer = 0; let perfGapTimer = 0;
     const tgName = (id: string): string => TIANGANG_BY_ID.get(id)?.name ?? id;
     const view = (): TurnBattleView => buildTurnBattleView(tb, { theme, tengangName: tgName, selMode, selHand, clash: perfClash ? clashToTurnView(perfClash) : null, bossName: aiName, sha: shaView });
     let mounted: { update: () => void; destroy: () => void } | null = null;
@@ -498,7 +498,7 @@ export function mount(container: HTMLElement): () => void {
       perfClash = perfQueue.shift()!; mounted?.update();
       perfTimer = window.setTimeout(() => {
         perfClash = null; mounted?.update(); // 收场 → 回战场表现一下
-        perfTimer = window.setTimeout(() => playPerf(onDone), CLASH_GAP_MS);
+        perfGapTimer = window.setTimeout(() => playPerf(onDone), CLASH_GAP_MS);
       }, PERF_MS);
     };
     const finishTurnSeq = (): void => { busy = false; selMode = null; selHand = -1; if (tb.winner !== 'pending') settleTurn(); else mounted?.update(); };
@@ -527,7 +527,7 @@ export function mount(container: HTMLElement): () => void {
     };
     mounted = mountTurnBattle(stage, view, actions);
     battle = mounted; // teardownMatch 清理（destroy）
-    stopLoop = () => { if (perfTimer) { clearTimeout(perfTimer); perfTimer = 0; } }; // 清未决特写计时
+    stopLoop = () => { if (perfTimer) { clearTimeout(perfTimer); perfTimer = 0; } if (perfGapTimer) { clearTimeout(perfGapTimer); perfGapTimer = 0; } }; // 清未决特写计时
 
     function settleTurn(): void {
       const survA = tb.lanes.reduce((s, L) => s + L.a.length + L.spentA, 0);
@@ -538,6 +538,7 @@ export function mount(container: HTMLElement): () => void {
       save.materials += gain;
       let tail = '', cont = '回大厅', route: () => void = showLobby;
       if (winner === 'a') {
+        save.campaignMax = Math.max(save.campaignMax, save.stage);
         save.leverEnergy = Math.min(effectiveLeverCap(save.planets), save.leverEnergy + effectiveLeverRegen(save.planets));
         if (save.stage >= RUN_BATTLES) { save.materials += 50; tail = '🏆 <b>通关战役！</b>（+50 材料）回大厅开新战役'; save.stage = 1; save.lives = effectiveLives(save.planets); save.bossIdx = rollBoss(); }
         else { save.stage += 1; tail = `进军 第 ${save.stage}/${RUN_BATTLES} 战`; cont = '战间整备（三选一）'; const nl = `进军第 ${save.stage} 战`; route = () => showBetween(nl); }

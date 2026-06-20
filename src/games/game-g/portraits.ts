@@ -44,6 +44,7 @@ function weapon(r: Region, accent: string): string {
     case 'cn': return shaft(92, 18, 70, 96) + `<path d="M92 18l6-8-1 10z" fill="${accent}"/>`; // 矛
     case 'steppe': return `<path d="M86 22q14 22 0 44" stroke="#2a2018" stroke-width="3" fill="none"/><line x1="86" y1="22" x2="86" y2="66" stroke="${accent}" stroke-width="1.5"/>`; // 弓
     case 'mideast': return `<path d="M92 24q12 30 -16 70" stroke="#2a2018" stroke-width="3" fill="none" stroke-linecap="round"/><path d="M92 24l7-3-3 8z" fill="${accent}"/>`; // 弯刀
+    case 'jp': return `<path d="M88 20 q-2 36-18 76" stroke="#2a2018" stroke-width="3" fill="none" stroke-linecap="round"/><path d="M88 20l6-6-3 10z" fill="${accent}"/><rect x="64" y="70" width="12" height="3" rx="1.5" fill="${accent}" opacity=".85" transform="rotate(-15,70,71)"/>`; // 太刀
     default: return shaft(90, 22, 72, 92) + `<rect x="85" y="16" width="10" height="3" rx="1" fill="${accent}"/><path d="M89 18v6" stroke="${accent}" stroke-width="2"/>`; // 直剑
   }
 }
@@ -54,7 +55,8 @@ export function heroPortrait(suit: Suit, era: string, rank: string, rar = 'white
   const region = regionOf(era);
   const isRoyal = rank === 'A' || rank === 'K';
   const plume = isRoyal ? '#e8cd82' : rar === 'orange' ? '#e8cd82' : accent;
-  const id = `hp${suit}${rank}${region}`.replace(/[^a-zA-Z0-9]/g, '');
+  const SUIT_LETTER: Record<string, string> = { '♠': 's', '♥': 'h', '♦': 'd', '♣': 'c' };
+  const id = `hp${SUIT_LETTER[suit] ?? 'x'}${rank}${region}`;
   return `<svg viewBox="0 0 120 150" width="100%" height="100%" preserveAspectRatio="xMidYMid meet" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
     <defs>
       <radialGradient id="${id}bg" cx="50%" cy="34%" r="72%"><stop offset="0%" stop-color="${accent}" stop-opacity=".34"/><stop offset="62%" stop-color="${accent}" stop-opacity=".10"/><stop offset="100%" stop-color="#0c0f14" stop-opacity="0"/></radialGradient>
