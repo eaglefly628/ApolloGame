@@ -154,7 +154,7 @@ describe('Game G · lobby-screen mountLobby 点击交互（DOM · happy-dom）',
       mountLobby(host, { getView: () => makeView({ diamond: 12 }), onPlay: vi.fn() });
       click(host.querySelector('[data-act="recharge"]'));
       expect(host.querySelector('.tut-ov')).not.toBeNull();
-      expect(host.innerHTML).toContain('钻石商城');
+      expect(host.innerHTML).toContain('🛒 商城');
       expect(host.innerHTML).toContain('越充越送');
       expect(host.querySelector('[data-act="rechargeBuy"]')).not.toBeNull();
     });
@@ -225,6 +225,62 @@ describe('Game G · lobby-screen mountLobby 点击交互（DOM · happy-dom）',
       click(host.querySelector('[data-act="rechargeBuy"]'));
       expect(onRecharge).toHaveBeenCalledWith('r6', 'am');
       expect(host.innerHTML).not.toContain('密码错误');
+    });
+  });
+
+  // ── 抽卡商城 gacha（doc25 §四）──
+  describe('抽卡商城 gacha', () => {
+    const drawn = [{ kind: 'tiangang' as const, id: 'tigertally', name: '虎符', outcome: 'new' as const, detail: '新获得！' }];
+
+    it('🛒 商城 → 抽卡 tab：天罡卡池 + 地支卡池齐', () => {
+      const host = document.createElement('div');
+      mountLobby(host, { getView: () => makeView({ tiangangShards: 0, coin: 2000, diamond: 100 }), onPlay: vi.fn() });
+      click(host.querySelector('[data-act="shop"]'));
+      expect(host.innerHTML).toContain('天罡卡池');
+      expect(host.innerHTML).toContain('地支卡池');
+      expect(host.querySelector('[data-k="tiangang:1:gold"]')).not.toBeNull(); // 天罡单抽🪙
+      expect(host.querySelector('[data-k="dizhi:10:diamond"]')).not.toBeNull(); // 地支十连💎（diamond 够）
+    });
+
+    it('抽天罡单抽 → onGacha(tiangang,1,gold) → 开包演出', () => {
+      const host = document.createElement('div');
+      const onGacha = vi.fn(() => drawn);
+      mountLobby(host, { getView: makeView, onPlay: vi.fn(), onGacha });
+      click(host.querySelector('[data-act="shop"]'));
+      click(host.querySelector('[data-k="tiangang:1:gold"]'));
+      expect(onGacha).toHaveBeenCalledWith('tiangang', 1, 'gold');
+      expect(host.querySelector('.reveal-card')).not.toBeNull(); // 开包演出
+      expect(host.innerHTML).toContain('虎符');
+      click(host.querySelector('[data-act="reveal-close"]'));
+      expect(host.querySelector('.reveal-card')).toBeNull(); // 收起
+    });
+
+    it('买不起 → 抽卡按钮禁用（无 data-act·不触发抽卡）', () => {
+      const host = document.createElement('div');
+      const onGacha = vi.fn();
+      mountLobby(host, { getView: () => makeView({ coin: 0, diamond: 0 }), onPlay: vi.fn(), onGacha });
+      click(host.querySelector('[data-act="shop"]'));
+      expect(host.querySelector('[data-act="gacha"]')).toBeNull(); // 全买不起 → 无可点抽卡按钮
+      expect(host.querySelector('.reveal-card')).toBeNull();
+    });
+
+    it('天罡碎片定向兑换：碎片够 → onCraftTiangang 以 id 调用 + 演出', () => {
+      const host = document.createElement('div');
+      const onCraftTiangang = vi.fn(() => true);
+      mountLobby(host, { getView: () => makeView({ tiangangShards: 50 }), onPlay: vi.fn(), onCraftTiangang });
+      click(host.querySelector('[data-act="shop"]'));
+      const craft = host.querySelector('[data-act="craftTiangang"]') as HTMLElement;
+      expect(craft).not.toBeNull(); // 有未拥有的已解锁天罡可兑换
+      click(craft);
+      expect(onCraftTiangang).toHaveBeenCalledWith(craft.dataset.k);
+      expect(host.querySelector('.reveal-card')).not.toBeNull();
+    });
+
+    it('碎片不足 → 定向兑换档禁用（无 data-act）', () => {
+      const host = document.createElement('div');
+      mountLobby(host, { getView: () => makeView({ tiangangShards: 0 }), onPlay: vi.fn(), onCraftTiangang: vi.fn() });
+      click(host.querySelector('[data-act="shop"]'));
+      expect(host.querySelector('[data-act="craftTiangang"]')).toBeNull(); // 0 碎片全禁用
     });
   });
 

@@ -5,7 +5,7 @@ import { renderLobby, renderLobbyDoc, type LobbyView, type LobbyShopItem } from 
 // 数据接真存档（材料/能量/牌组 favor/天罡牌/地支牌/闪艺/战役进度）；此处喂代表性样例 view。
 const J = (id: string, name: string, cost: number, owned: boolean, buyable: boolean, kind = 'morale'): LobbyShopItem => ({ id, name, sub: `${name} 效果`, cost, owned, buyable, kind });
 const view = (skin: 'onyx' | 'rosy' = 'onyx'): LobbyView => ({
-  skin, coin: 1200, diamond: 18, energy: 4, energyMax: 6, foilCount: 1,
+  skin, coin: 1200, diamond: 18, dizhiShards: 12, tiangangShards: 45, dizhiOwned: { 子: 2, 丑: 1 }, energy: 4, energyMax: 6, foilCount: 1,
   name: '不翻就赢_07', mainCard: '黑桃A「掷命尖兵」', rankText: '战役 3/5',
   stageLabel: '第 3 战 / 共 5 · 终局 Boss【方块J·诡牌】',
   archLine: '你的流派 <b>将领流</b>（主将士气碾压）　<b style="color:var(--club)">⮞ 克制 Boss</b>',
@@ -45,6 +45,16 @@ describe('Game G · lobby-screen 视觉回归（忠实港大厅 · 真渲染器 
     expect(html).toContain('▶ 当前'); // 当前关标记
     expect(html).toContain('🔒 未解锁'); // 关5 未解锁（campaignMax=4）
     await expect(html).toMatchFileSnapshot('./__frames__/lobby-campaign.html');
+  });
+
+  it('抽卡商城帧（天罡/地支卡池 + 碎片定向兑换 · doc25 §四）匹配 golden', async () => {
+    const html = renderLobbyDoc(view(), 'home', 'cards', 'base', true, null, false, 'gacha');
+    expect(html).toContain('🛒 商城');
+    expect(html).toContain('天罡卡池');
+    expect(html).toContain('地支卡池');
+    expect(html).toContain('定向兑换'); // 碎片保底
+    expect(html).toContain('🔶'); // 天罡碎片余额
+    await expect(html).toMatchFileSnapshot('./__frames__/lobby-shop-gacha.html');
   });
 
   it('牌组帧 = 真 52 张 favor 网格匹配 golden', async () => {

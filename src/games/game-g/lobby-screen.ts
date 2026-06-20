@@ -6,13 +6,14 @@
 import { GI, tiangangIcon } from './icons.js';
 import { HERO_CARDS, DIZHI_ZODIACS, DIZHI_TRINES, EARTH_FIENDS, STAGE_CAMPAIGN, STORY_OPENING, type StageCampaign, type StoryBeat } from './blueprint.js';
 import { heroPortrait } from './portraits.js';
-import { RECHARGE_PACKS, rechargeTotal, DIAMOND_EXCHANGES, DIZHI_SHARD_PACKS } from './blueprint.js';
+import { RECHARGE_PACKS, rechargeTotal, DIAMOND_EXCHANGES, DIZHI_SHARD_PACKS, GACHA } from './blueprint.js';
 
 export interface LobbyShopItem { id: string; name: string; sub: string; cost: number; owned: boolean; buyable: boolean; level?: number; inDeck?: boolean; power?: number; phat?: number; kind?: string; icon?: string; tint?: string; unlockStage?: number; locked?: boolean }
+export interface GachaResult { kind: 'tiangang' | 'dizhi'; id: string; name: string; rarity?: string; outcome: 'new' | 'dup-shard' | 'dizhi-up' | 'dizhi-shard'; detail: string } // 抽卡结果（开包演出读）
 export type EarthRarity = 'bronze' | 'silver' | 'gold';
 export interface LobbyView {
   skin: 'onyx' | 'rosy';
-  coin: number; diamond?: number; dizhiShards?: number; rechargeNeedsPassword?: boolean; energy: number; energyMax: number; foilCount: number;
+  coin: number; diamond?: number; dizhiShards?: number; tiangangShards?: number; dizhiOwned?: Record<string, number>; rechargeNeedsPassword?: boolean; energy: number; energyMax: number; foilCount: number;
   name: string; mainCard: string; rankText: string;
   stageLabel: string; archLine: string; bossLine: string;
   deckAvg: number; deckMin: number; deckMax: number; deck: number[];
@@ -80,6 +81,22 @@ const CSS = `
 .ggl-root .camp-fiend b{ color:var(--ink) }
 .ggl-root .story-ov{ background:rgba(6,8,11,.88) }
 .ggl-root .story-box{ max-width:520px; text-align:left }
+.ggl-root .gacha-pool{ padding:13px 15px; border-radius:12px; background:var(--chip); border:1px solid var(--panel-border); margin-bottom:11px }
+.ggl-root .gacha-pool-hd{ font-family:var(--fh); font-weight:700; font-size:15px; color:var(--ink) }
+.ggl-root .gacha-btns{ display:grid; grid-template-columns:repeat(4,1fr); gap:8px }
+.ggl-root .gacha-draw{ display:flex; flex-direction:column; align-items:center; gap:3px; padding:9px 4px; border-radius:10px; background:var(--panel); border:1px solid var(--gold); color:var(--ink); cursor:pointer; font-size:12px }
+.ggl-root .gacha-draw b{ font-size:13px; color:var(--gold) }
+.ggl-root .gacha-draw:hover{ background:rgba(232,205,130,.12) }
+.ggl-root .gacha-draw.off{ opacity:.4; cursor:not-allowed; border-color:var(--panel-border) }
+.ggl-root .gacha-crafts{ display:flex; flex-wrap:wrap; gap:7px }
+.ggl-root .gacha-craft{ font-size:12px; padding:6px 11px; border-radius:8px; background:var(--panel); border:1px solid #b8862f; color:var(--ink); cursor:pointer }
+.ggl-root .gacha-craft span{ color:#e6b96a; font-weight:700 }
+.ggl-root .gacha-craft.off{ opacity:.4; cursor:not-allowed; border-color:var(--panel-border) }
+.ggl-root .reveal-grid{ display:grid; grid-template-columns:repeat(auto-fill,minmax(96px,1fr)); gap:12px; margin-top:14px }
+.ggl-root .reveal-card{ padding:14px 8px; border-radius:12px; background:var(--chip); border:2px solid; display:flex; flex-direction:column; align-items:center; gap:6px; animation:ggl-pulse .5s ease }
+.ggl-root .reveal-emoji{ font-size:34px }
+.ggl-root .reveal-name{ font-family:var(--fh); font-weight:700; font-size:13px; color:var(--ink) }
+.ggl-root .reveal-tag{ font-size:11px }
 .ggl-root .guide-coach{ position:absolute; left:50%; bottom:22px; transform:translateX(-50%); width:min(560px,90%); z-index:40; padding:15px 18px; border-radius:14px; background:var(--panel); border:1px solid var(--gold); box-shadow:0 10px 40px rgba(0,0,0,.5),0 0 22px rgba(232,205,130,.2) }
 .ggl-root .guide-hd{ display:flex; align-items:center; font-family:var(--fn); font-size:11px; letter-spacing:.1em; color:var(--gold) }
 .ggl-root .guide-skip{ margin-left:auto; background:none; border:0; color:var(--ink-dim); font-size:12px; text-decoration:underline; cursor:pointer }
@@ -407,12 +424,36 @@ function manualBox(tier: 'easy' | 'mid' | 'hard'): string {
     <div style="text-align:center;margin-top:12px"><button class="cta-sub" style="color:#2a1a08;background:var(--gold-grad);border:0" data-act="man-close">明白了 →</button></div>
   </div></div>`;
 }
-// 钻石商城（owner 2026-06-20 · Demo 假支付）：充值(¥→💎·越充越送·上限64) + 兑换(💎→🪙材料)。
-// 全数据驱动：档位读 RECHARGE_PACKS / DIAMOND_EXCHANGES；点击 = 真发币（onRecharge/onExchange）。
-function rechargeBox(view: LobbyView, rechargeErr = ''): string {
+// 商城（owner 2026-06-20 · Demo）：🎴抽卡(doc25 §四·从已解锁池随机·重复转碎片·碎片定向兑换) + 💎钱包(充值/兑换)。
+// 全数据驱动：池/价格/汇率读 GACHA / RECHARGE_PACKS / DIAMOND_EXCHANGES；点击 = 真发卡/发币。
+function shopBox(view: LobbyView, shopTab: 'gacha' | 'wallet', rechargeErr = ''): string {
   const dia = view.diamond ?? 0;
   const shards = view.dizhiShards ?? 0;
+  const tShards = view.tiangangShards ?? 0;
   const needPw = !!view.rechargeNeedsPassword;
+  const tabBtn = (k: 'gacha' | 'wallet', lbl: string): string =>
+    `<button class="cta-sub" style="${shopTab === k ? 'background:var(--gold-grad);color:#1a1206;border:0' : ''}" data-act="shopTab" data-k="${k}">${lbl}</button>`;
+  const bal = `<div style="display:flex;align-items:center;gap:14px;color:var(--ink-dim);font-size:12px;margin:6px 0 12px"><span>🪙 <b style="color:var(--ink)">${view.coin}</b></span><span>💎 <b style="color:#7fd0ff">${dia}</b></span><span>🔶 <b style="color:#e6b96a">${tShards}</b> 天罡碎片</span><span>🧩 <b style="color:#e6b96a">${shards}</b> 地支碎片</span></div>`;
+  // ── 🎴 抽卡 tab ──
+  const poolN = view.tiangangs.filter((j) => !j.locked).length;
+  const dizhiN = Object.keys(view.dizhiOwned ?? {}).length;
+  const drawBtn = (pool: 'tiangang' | 'dizhi', count: 1 | 10, pay: 'gold' | 'diamond'): string => {
+    const g = GACHA[pool];
+    const cost = pay === 'gold' ? (count === 10 ? g.tenGold : g.singleGold) : (count === 10 ? g.tenDiamond : g.singleDiamond);
+    const afford = pay === 'gold' ? view.coin >= cost : dia >= cost;
+    return `<button class="gacha-draw${afford ? '' : ' off'}"${afford ? ` data-act="gacha" data-k="${pool}:${count}:${pay}"` : ' disabled'}><span>${count === 10 ? '十连' : '单抽'}</span><b>${pay === 'gold' ? '🪙' : '💎'}${cost}</b></button>`;
+  };
+  const poolCard = (pool: 'tiangang' | 'dizhi', emoji: string, title: string, sub: string): string =>
+    `<div class="gacha-pool"><div class="gacha-pool-hd">${emoji} ${title}</div><div class="note" style="text-align:left;margin:2px 0 8px">${sub}</div><div class="gacha-btns">${drawBtn(pool, 1, 'gold')}${drawBtn(pool, 1, 'diamond')}${drawBtn(pool, 10, 'gold')}${drawBtn(pool, 10, 'diamond')}</div></div>`;
+  const craftable = view.tiangangs.filter((j) => !j.locked && !j.owned);
+  const craftChips = craftable.length
+    ? craftable.map((j) => { const can = tShards >= GACHA.tiangang.craftShards; return `<button class="gacha-craft${can ? '' : ' off'}"${can ? ` data-act="craftTiangang" data-k="${j.id}"` : ' disabled'}>${esc(j.name)} <span>🔶${GACHA.tiangang.craftShards}</span></button>`; }).join('')
+    : '<span class="ghost" style="font-size:12px">已解锁天罡均已拥有 🎉</span>';
+  const gachaTab = `${poolCard('tiangang', '🎴', '天罡卡池', `已解锁 ${poolN} 张 · 抽到重复 → +${GACHA.tiangang.dupShards} 天罡碎片`)}
+    ${poolCard('dizhi', '🀄', '地支卡池', `12 生肖（已集 ${dizhiN}/12）· 重复自动升档 铜→银→金 · 满金转地支碎片`)}
+    <div class="gacha-pool"><div class="gacha-pool-hd">🔶 天罡碎片 · 定向兑换（保底）</div><div class="note" style="text-align:left;margin:2px 0 8px">攒够碎片直接换你想要的天罡——防"抽不到配不出 build"。每张 ${GACHA.tiangang.craftShards} 碎片。</div><div class="gacha-crafts">${craftChips}</div></div>
+    <div class="note" style="text-align:left;margin-top:10px;font-size:11px">从「已解锁池」随机（通关解锁更多）。地支镶嵌入战待养成系统开放。</div>`;
+  // ── 💎 钱包 tab（充值 + 兑换）──
   const packCard = (p: typeof RECHARGE_PACKS[number]): string => {
     const total = rechargeTotal(p);
     const bonus = p.bonus > 0 ? `<span style="color:var(--gold);font-size:11px">含赠 +${p.bonus}</span>` : `<span style="color:var(--ink-dim);font-size:11px">&nbsp;</span>`;
@@ -433,18 +474,34 @@ function rechargeBox(view: LobbyView, rechargeErr = ''): string {
   const pwBlock = needPw
     ? `<div style="margin-top:8px;display:flex;gap:8px;align-items:center"><input class="rc-pw" type="password" placeholder="充值密码" autocomplete="off" style="flex:1;padding:9px 11px;border-radius:9px;background:var(--chip);border:1px solid ${rechargeErr ? '#e0635f' : 'var(--panel-border)'};color:var(--ink);font-size:13px"><span style="font-size:11px;color:var(--ink-dim)">🔒 复充需密码</span></div>${rechargeErr ? `<div style="color:#e0635f;font-size:12px;margin-top:5px">${rechargeErr}</div>` : ''}`
     : `<div class="note" style="text-align:left;margin-top:6px;font-size:11px">🎁 首充免密「送一点点」体验。</div>`;
-  return `<div class="tut-ov" data-act="recharge-close"><div class="tut-box intro-scroll" data-stop="1" style="max-width:560px">
-    <h2>💎 钻石商城</h2>
-    <div style="display:flex;align-items:center;gap:12px;color:var(--ink-dim);font-size:12px;margin-bottom:4px">当前持有 <b style="color:#7fd0ff;font-size:15px">💎 ${dia}</b><span>🧩 ${shards}</span><span style="margin-left:auto">🪙 ${view.coin}</span></div>
-    <div style="font-family:var(--fh);font-weight:700;font-size:14px;color:var(--ink);margin:12px 0 8px">充值 · 越充越送（Demo·点即到账）</div>
+  const walletTab = `<div style="font-family:var(--fh);font-weight:700;font-size:14px;color:var(--ink);margin:4px 0 8px">充值 · 越充越送（Demo·点即到账）</div>
     <div class="rc-grid">${RECHARGE_PACKS.map(packCard).join('')}</div>
     ${pwBlock}
     <div style="font-family:var(--fh);font-weight:700;font-size:14px;color:var(--ink);margin:16px 0 8px">兑换金币 · 💎 → 🪙（改造坊通用材料）</div>
     <div class="rc-grid">${DIAMOND_EXCHANGES.map(exCard).join('')}</div>
     <div style="font-family:var(--fh);font-weight:700;font-size:14px;color:var(--ink);margin:16px 0 8px">兑换地支碎片 · 💎 → 🧩（养地支专属材料）</div>
     <div class="rc-grid">${DIZHI_SHARD_PACKS.map(shardCard).join('')}</div>
-    <div class="note" style="text-align:left;margin-top:12px;font-size:11px">Demo 演示：充值为模拟，点击直接到账、不走真实支付。</div>
-    <div style="text-align:center;margin-top:12px"><button class="cta-sub" style="color:#2a1a08;background:var(--gold-grad);border:0" data-act="recharge-close">完成 →</button></div>
+    <div class="note" style="text-align:left;margin-top:12px;font-size:11px">Demo 演示：充值为模拟，点击直接到账、不走真实支付。</div>`;
+  return `<div class="tut-ov" data-act="recharge-close"><div class="tut-box intro-scroll" data-stop="1" style="max-width:560px">
+    <h2>🛒 商城</h2>
+    <div class="ctarow" style="margin:4px 0 2px">${tabBtn('gacha', '🎴 抽卡')}${tabBtn('wallet', '💎 钱包')}</div>
+    ${bal}
+    ${shopTab === 'gacha' ? gachaTab : walletTab}
+    <div style="text-align:center;margin-top:14px"><button class="cta-sub" style="color:#2a1a08;background:var(--gold-grad);border:0" data-act="recharge-close">完成 →</button></div>
+  </div></div>`;
+}
+// 开包演出（doc25 §四）：展示抽到的卡 + 新得/重复转化结果。
+function gachaRevealBox(results: GachaResult[]): string {
+  const OUT_CLR: Record<GachaResult['outcome'], string> = { new: 'var(--gold)', 'dup-shard': '#7fb0d8', 'dizhi-up': '#56be84', 'dizhi-shard': '#7fb0d8' };
+  const cards = results.map((r) => {
+    const clr = OUT_CLR[r.outcome];
+    const isNew = r.outcome === 'new' || r.outcome === 'dizhi-up';
+    return `<div class="reveal-card" style="border-color:${clr};box-shadow:0 0 16px ${clr}55"><div class="reveal-emoji">${r.kind === 'tiangang' ? '🎴' : '🀄'}</div><div class="reveal-name">${esc(r.name)}</div><div class="reveal-tag" style="color:${clr}">${isNew ? '✦ ' : ''}${esc(r.detail)}</div></div>`;
+  }).join('');
+  return `<div class="tut-ov" data-act="reveal-close"><div class="tut-box" data-stop="1" style="max-width:560px;text-align:center">
+    <h2>🎴 开 包</h2>
+    <div class="reveal-grid">${cards}</div>
+    <div style="margin-top:14px"><button class="cta-sub" style="color:#2a1a08;background:var(--gold-grad);border:0" data-act="reveal-close">收下 →</button></div>
   </div></div>`;
 }
 
@@ -666,7 +723,7 @@ function fiendsCodex(): string {
   }).join('')}</div>`;
 }
 
-export function renderLobby(view: LobbyView, tab: string, tutorialOpen: boolean, deckTab: 'base' | 'gang' = 'base', earthFilter = 'all', collTab = 'cards', heroSuit = 'all', heroDetail = '', heroRar = 'all', ownedOnly = false, introOpen = false, manualTier: '' | 'easy' | 'mid' | 'hard' = '', rechargeOpen = false, rechargeErr = '', story: { beats: StoryBeat[]; idx: number; label: string; cta: string } | null = null, guideSkipAsk = false): string {
+export function renderLobby(view: LobbyView, tab: string, tutorialOpen: boolean, deckTab: 'base' | 'gang' = 'base', earthFilter = 'all', collTab = 'cards', heroSuit = 'all', heroDetail = '', heroRar = 'all', ownedOnly = false, introOpen = false, manualTier: '' | 'easy' | 'mid' | 'hard' = '', rechargeOpen = false, rechargeErr = '', story: { beats: StoryBeat[]; idx: number; label: string; cta: string } | null = null, guideSkipAsk = false, shopTab: 'gacha' | 'wallet' = 'wallet', gachaReveal: GachaResult[] | null = null): string {
   const on = (t: string): string => (tab === t ? ' on' : '');
   const dOn = (t: string): string => (deckTab === t ? ' on' : '');
   const cOn = (t: string): string => (collTab === t ? ' on' : '');
@@ -681,8 +738,9 @@ export function renderLobby(view: LobbyView, tab: string, tutorialOpen: boolean,
     <div style="flex:1"></div>
     <button class="seg ${view.skin === 'onyx' ? 'on' : ''}" data-act="skin" data-k="onyx">玄铁</button>
     <button class="seg ${view.skin === 'rosy' ? 'on' : ''}" data-act="skin" data-k="rosy">锦霞</button>
+    <button class="tutbtn" data-act="shop" title="商城 · 抽卡 / 充值 / 兑换">🛒 商城</button>
     <div class="coin" title="金币 · 打战斗赚 · 解锁天罡/地支"><span>🪙</span><b>${kfmt(view.coin)}</b></div>
-    <button class="coin tap" data-act="recharge" title="钻石商城 · 充值 / 兑换材料"><span>💎</span><b style="color:#7fd0ff">${kfmt(view.diamond ?? 0)}</b><span style="color:var(--gold);font-weight:700;margin-left:2px">＋</span></button>
+    <button class="coin tap" data-act="recharge" title="商城 · 充值 / 兑换材料"><span>💎</span><b style="color:#7fd0ff">${kfmt(view.diamond ?? 0)}</b><span style="color:var(--gold);font-weight:700;margin-left:2px">＋</span></button>
     <button class="coin tap" data-act="recharge" title="地支碎片 · 养地支专属材料（💎可换）"><span>🧩</span><b style="color:#e6b96a">${kfmt(view.dizhiShards ?? 0)}</b></button>
     <div class="coin"><span>◈</span><span style="color:var(--gold)">${view.energy}/${view.energyMax}</span></div>
     <div class="coin"><span>✨</span><span style="color:#7fb0d8">${view.foilCount}</span></div>
@@ -752,7 +810,7 @@ export function renderLobby(view: LobbyView, tab: string, tutorialOpen: boolean,
     </div></section>
     <section class="screen${on('ladder')} full">${ladderSection(view.name, view.rankText)}</section>
   </div>
-  </div>${tutorialOpen ? tutorialBox() : ''}${introOpen ? gameIntroBox() : ''}${manualTier ? manualBox(manualTier) : ''}${rechargeOpen ? rechargeBox(view, rechargeErr) : ''}${story ? narrationBox(story.beats, story.idx, story.label, story.cta) : (!view.firstLaunch && (view.guideStep ?? -1) >= 0 ? guideBox(view.guideStep ?? 0) : '')}${guideSkipAsk ? guideSkipDialog() : ''}</div>`;
+  </div>${tutorialOpen ? tutorialBox() : ''}${introOpen ? gameIntroBox() : ''}${manualTier ? manualBox(manualTier) : ''}${rechargeOpen ? shopBox(view, shopTab, rechargeErr) : ''}${gachaReveal ? gachaRevealBox(gachaReveal) : ''}${story ? narrationBox(story.beats, story.idx, story.label, story.cta) : (!view.firstLaunch && (view.guideStep ?? -1) >= 0 ? guideBox(view.guideStep ?? 0) : '')}${guideSkipAsk ? guideSkipDialog() : ''}</div>`;
 }
 
 export interface LobbyHandlers {
@@ -766,6 +824,8 @@ export interface LobbyHandlers {
   onRecharge?: (packId: string, password: string) => boolean | void; // 充值 ¥→💎（Demo·首充免密/复充需密码）→ true=成功
   onExchange?: (exId: string) => void; // 兑换 💎→🪙金币
   onBuyShards?: (exId: string) => void; // 兑换 💎→🧩地支碎片
+  onGacha?: (pool: 'tiangang' | 'dizhi', count: 1 | 10, pay: 'gold' | 'diamond') => GachaResult[] | null; // 抽卡（doc25 §四）→ 结果/null(买不起)
+  onCraftTiangang?: (id: string) => boolean | void; // 天罡碎片定向兑换指定天罡（保底）
   onSelectDeck?: (id: string) => void; // 选某牌组出战
   onNewDeck?: () => void; // 新建牌组
   onDelDeck?: (id: string) => void; // 删除牌组
@@ -795,7 +855,9 @@ export function mountLobby(host: HTMLElement, h: LobbyHandlers): { update: () =>
   let rechargeErr = '';
   let story: { beats: StoryBeat[]; idx: number; label: string; cta: string; then: 'close' | 'play' | 'guide' } | null = null;
   let guideSkipAsk = false;
-  const render = (): void => { host.innerHTML = renderLobby({ ...h.getView(), skin }, tab, tut, deckTab, earthFilter, collTab, heroSuit, heroDetail, heroRar, ownedOnly, intro, manTier, recharge, rechargeErr, story, guideSkipAsk); };
+  let shopTab: 'gacha' | 'wallet' = 'wallet';
+  let gachaReveal: GachaResult[] | null = null;
+  const render = (): void => { host.innerHTML = renderLobby({ ...h.getView(), skin }, tab, tut, deckTab, earthFilter, collTab, heroSuit, heroDetail, heroRar, ownedOnly, intro, manTier, recharge, rechargeErr, story, guideSkipAsk, shopTab, gachaReveal); };
   // 每关开局演出（doc27 §五）：战役背景 + Boss 开场白 → 出征。缺 intro 则直接进战斗。
   const levelBeats = (c: StageCampaign): StoryBeat[] => [
     { scene: c.battle, text: c.intro ?? c.oneLiner },
@@ -838,11 +900,17 @@ export function mountLobby(host: HTMLElement, h: LobbyHandlers): { update: () =>
     else if (act === 'buyFoil') { h.onBuyFoil?.(k); render(); }
     else if (act === 'toggleTiangang') { h.onToggleTiangang?.(k); render(); }
     else if (act === 'diamondUnlock') { h.onDiamondUnlock?.(k); render(); }
-    else if (act === 'recharge') { recharge = true; rechargeErr = ''; render(); }
+    else if (act === 'shop') { recharge = true; shopTab = 'gacha'; rechargeErr = ''; render(); }
+    else if (act === 'recharge') { recharge = true; shopTab = 'wallet'; rechargeErr = ''; render(); }
     else if (act === 'recharge-close') { recharge = false; rechargeErr = ''; render(); }
+    else if (act === 'shopTab') { shopTab = k === 'gacha' ? 'gacha' : 'wallet'; render(); }
     else if (act === 'rechargeBuy') { const pw = (host.querySelector('.rc-pw') as HTMLInputElement | null)?.value ?? ''; const ok = h.onRecharge?.(k, pw); rechargeErr = ok === false ? '密码错误，请重试' : ''; render(); }
     else if (act === 'exchangeBuy') { h.onExchange?.(k); render(); }
     else if (act === 'shardBuy') { h.onBuyShards?.(k); render(); }
+    // 抽卡（doc25 §四）：data-k="pool:count:pay" → onGacha → 开包演出；定向兑换 / 关闭演出
+    else if (act === 'gacha') { const [pool, cnt, pay] = k.split(':'); const r = h.onGacha?.(pool as 'tiangang' | 'dizhi', cnt === '10' ? 10 : 1, pay === 'diamond' ? 'diamond' : 'gold'); if (r && r.length) gachaReveal = r; render(); }
+    else if (act === 'craftTiangang') { const ok = h.onCraftTiangang?.(k); if (ok) { const nm = h.getView().tiangangs.find((t) => t.id === k)?.name ?? k; gachaReveal = [{ kind: 'tiangang', id: k, name: nm, outcome: 'new', detail: '碎片定向兑换 ✓' }]; } render(); }
+    else if (act === 'reveal-close') { gachaReveal = null; render(); }
     else if (act === 'selectDeck') { h.onSelectDeck?.(k); render(); }
     else if (act === 'newDeck') { h.onNewDeck?.(); render(); }
     else if (act === 'delDeck') { h.onDelDeck?.(k); render(); }
@@ -857,6 +925,6 @@ export function mountLobby(host: HTMLElement, h: LobbyHandlers): { update: () =>
 const FONTS = '<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin><link href="https://fonts.googleapis.com/css2?family=Silkscreen:wght@400;700&family=Rajdhani:wght@500;600;700&family=Cormorant+Garamond:wght@500;600;700&family=Noto+Sans+SC:wght@400;500;700;900&family=Noto+Serif+SC:wght@500;700;900&family=Zhi+Mang+Xing&family=Ma+Shan+Zheng&display=swap" rel="stylesheet">';
 
 // 离线"看帧" golden：自包含 HTML（CSS + 字体 + 真渲染器输出）。浏览器开 = 真大厅。
-export function renderLobbyDoc(view: LobbyView, tab = 'home', collTab = 'cards', deckTab: 'base' | 'gang' = 'base', rechargeOpen = false, story: { beats: StoryBeat[]; idx: number; label: string; cta: string } | null = null, guideSkipAsk = false): string {
-  return `<!DOCTYPE html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">${FONTS}<style>html,body{margin:0;background:#0c0a08}${CSS}</style></head><body>${renderLobby(view, tab, false, deckTab, 'all', collTab, 'all', '', 'all', false, false, '', rechargeOpen, '', story, guideSkipAsk)}</body></html>`;
+export function renderLobbyDoc(view: LobbyView, tab = 'home', collTab = 'cards', deckTab: 'base' | 'gang' = 'base', rechargeOpen = false, story: { beats: StoryBeat[]; idx: number; label: string; cta: string } | null = null, guideSkipAsk = false, shopTab: 'gacha' | 'wallet' = 'wallet', gachaReveal: GachaResult[] | null = null): string {
+  return `<!DOCTYPE html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">${FONTS}<style>html,body{margin:0;background:#0c0a08}${CSS}</style></head><body>${renderLobby(view, tab, false, deckTab, 'all', collTab, 'all', '', 'all', false, false, '', rechargeOpen, '', story, guideSkipAsk, shopTab, gachaReveal)}</body></html>`;
 }

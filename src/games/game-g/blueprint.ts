@@ -738,6 +738,22 @@ export const DIZHI_SHARD_PACKS: ShardPack[] = [
 // 投资人彩蛋（owner 2026-06-20）：首充免密「送一点点」，第二次起需密码。密码=数据常量·可改。
 export const RECHARGE_PASSWORD = 'am';
 
+// === 抽卡商城（doc25 §四 · Demo）===
+// 商城=抽卡枢纽：花🪙/💎 从「已解锁池」随机出天罡/地支；天罡重复→天罡碎片→定向兑换(保底·可控build)；
+// 地支 新得=铜·重复=升档(铜→银→金)·满金重复→地支碎片。全数据驱动·价格/汇率可调。
+export const DIZHI_MAX_TIER = 3; // 1铜 2银 3金
+export const GACHA = {
+  tiangang: { singleGold: 80, singleDiamond: 8, tenGold: 720, tenDiamond: 72, dupShards: 5, craftShards: 20 },
+  dizhi: { singleGold: 60, singleDiamond: 6, tenGold: 540, tenDiamond: 54, maxDupShards: 8 },
+};
+/** 抽卡花费（pool×count×pay）。返回 {gold,diamond} 其一>0。 */
+export function gachaCost(pool: 'tiangang' | 'dizhi', count: 1 | 10, pay: 'gold' | 'diamond'): { gold: number; diamond: number } {
+  const g = GACHA[pool];
+  const gold = pay === 'gold' ? (count === 10 ? g.tenGold : g.singleGold) : 0;
+  const diamond = pay === 'diamond' ? (count === 10 ? g.tenDiamond : g.singleDiamond) : 0;
+  return { gold, diamond };
+}
+
 const PLANET_TROOP_RANKS = new Set(['A', '2', '3', '4', '5', '6']); // 「兵」档（星球·军作用域）
 /** 星球·军：揭晓前给军阵「兵」档 +favor（叠加级数）。build-时变换、outcome-first；作用 built 军阵结构（非 deck 均值）。 */
 export function applyPlanetArmy(army: ArmyCard[], planets: Record<string, number>): ArmyCard[] {

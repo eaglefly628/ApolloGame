@@ -49,6 +49,22 @@
 .ggl-root .camp-fiend b{ color:var(--ink) }
 .ggl-root .story-ov{ background:rgba(6,8,11,.88) }
 .ggl-root .story-box{ max-width:520px; text-align:left }
+.ggl-root .gacha-pool{ padding:13px 15px; border-radius:12px; background:var(--chip); border:1px solid var(--panel-border); margin-bottom:11px }
+.ggl-root .gacha-pool-hd{ font-family:var(--fh); font-weight:700; font-size:15px; color:var(--ink) }
+.ggl-root .gacha-btns{ display:grid; grid-template-columns:repeat(4,1fr); gap:8px }
+.ggl-root .gacha-draw{ display:flex; flex-direction:column; align-items:center; gap:3px; padding:9px 4px; border-radius:10px; background:var(--panel); border:1px solid var(--gold); color:var(--ink); cursor:pointer; font-size:12px }
+.ggl-root .gacha-draw b{ font-size:13px; color:var(--gold) }
+.ggl-root .gacha-draw:hover{ background:rgba(232,205,130,.12) }
+.ggl-root .gacha-draw.off{ opacity:.4; cursor:not-allowed; border-color:var(--panel-border) }
+.ggl-root .gacha-crafts{ display:flex; flex-wrap:wrap; gap:7px }
+.ggl-root .gacha-craft{ font-size:12px; padding:6px 11px; border-radius:8px; background:var(--panel); border:1px solid #b8862f; color:var(--ink); cursor:pointer }
+.ggl-root .gacha-craft span{ color:#e6b96a; font-weight:700 }
+.ggl-root .gacha-craft.off{ opacity:.4; cursor:not-allowed; border-color:var(--panel-border) }
+.ggl-root .reveal-grid{ display:grid; grid-template-columns:repeat(auto-fill,minmax(96px,1fr)); gap:12px; margin-top:14px }
+.ggl-root .reveal-card{ padding:14px 8px; border-radius:12px; background:var(--chip); border:2px solid; display:flex; flex-direction:column; align-items:center; gap:6px; animation:ggl-pulse .5s ease }
+.ggl-root .reveal-emoji{ font-size:34px }
+.ggl-root .reveal-name{ font-family:var(--fh); font-weight:700; font-size:13px; color:var(--ink) }
+.ggl-root .reveal-tag{ font-size:11px }
 .ggl-root .guide-coach{ position:absolute; left:50%; bottom:22px; transform:translateX(-50%); width:min(560px,90%); z-index:40; padding:15px 18px; border-radius:14px; background:var(--panel); border:1px solid var(--gold); box-shadow:0 10px 40px rgba(0,0,0,.5),0 0 22px rgba(232,205,130,.2) }
 .ggl-root .guide-hd{ display:flex; align-items:center; font-family:var(--fn); font-size:11px; letter-spacing:.1em; color:var(--gold) }
 .ggl-root .guide-skip{ margin-left:auto; background:none; border:0; color:var(--ink-dim); font-size:12px; text-decoration:underline; cursor:pointer }
@@ -250,9 +266,10 @@
     <div style="flex:1"></div>
     <button class="seg " data-act="skin" data-k="onyx">玄铁</button>
     <button class="seg on" data-act="skin" data-k="rosy">锦霞</button>
+    <button class="tutbtn" data-act="shop" title="商城 · 抽卡 / 充值 / 兑换">🛒 商城</button>
     <div class="coin" title="金币 · 打战斗赚 · 解锁天罡/地支"><span>🪙</span><b>1.2k</b></div>
-    <button class="coin tap" data-act="recharge" title="钻石商城 · 充值 / 兑换材料"><span>💎</span><b style="color:#7fd0ff">18</b><span style="color:var(--gold);font-weight:700;margin-left:2px">＋</span></button>
-    <button class="coin tap" data-act="recharge" title="地支碎片 · 养地支专属材料（💎可换）"><span>🧩</span><b style="color:#e6b96a">0</b></button>
+    <button class="coin tap" data-act="recharge" title="商城 · 充值 / 兑换材料"><span>💎</span><b style="color:#7fd0ff">18</b><span style="color:var(--gold);font-weight:700;margin-left:2px">＋</span></button>
+    <button class="coin tap" data-act="recharge" title="地支碎片 · 养地支专属材料（💎可换）"><span>🧩</span><b style="color:#e6b96a">12</b></button>
     <div class="coin"><span>◈</span><span style="color:var(--gold)">4/6</span></div>
     <div class="coin"><span>✨</span><span style="color:#7fb0d8">1</span></div>
     <button class="tutbtn" data-act="intro">📜 游戏介绍</button>
