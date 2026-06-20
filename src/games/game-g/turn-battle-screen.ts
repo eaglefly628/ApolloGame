@@ -231,8 +231,8 @@ function handCard(c: TurnHandCardView, i: number, hiOn = false): string {
 }
 
 function clashOverlay(cv: TurnClashView): string {
-  const backdrop = { position: 'absolute', inset: 0, zIndex: 40, display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'rgba(6,9,13,.74)', backdropFilter: 'blur(5px)', animation: 'g-fade .3s ease both' };
-  const panel = { position: 'relative', width: '760px', padding: '30px 34px 36px', borderRadius: '22px', background: 'radial-gradient(80% 70% at 50% 30%, #1c2940, #0e1828)', border: '2px solid var(--gold)', boxShadow: 'inset 0 0 0 1px var(--hairline), 0 40px 90px rgba(0,0,0,.7), 0 0 60px rgba(232,205,138,.2)' };
+  const backdrop = { position: 'absolute', inset: 0, zIndex: 60, display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'rgba(6,9,13,.74)', backdropFilter: 'blur(5px)', animation: 'g-fade .3s ease both' }; // z60 > 底部手牌坞(z50)：对决覆盖层盖住一切·确认钮不被遮
+  const panel = { position: 'relative', width: '760px', padding: '22px 34px 24px', borderRadius: '22px', background: 'radial-gradient(80% 70% at 50% 30%, #1c2940, #0e1828)', border: '2px solid var(--gold)', boxShadow: 'inset 0 0 0 1px var(--hairline), 0 40px 90px rgba(0,0,0,.7), 0 0 60px rgba(232,205,138,.2)' };
   const duelCard = (c: TurnClashCardView, isMine: boolean): string => {
     const col = isMine ? '#ff7a45' : '#3a86d4'; const sc = SUITC[c.suit];
     // 入场：从「桌面」3D 翻起飞到眼前（我方左下 / 敌方右下·flat→竖立·小→大），落到特写就位点。owner 2026-06-20。
@@ -258,15 +258,19 @@ function clashOverlay(cv: TurnClashView): string {
   };
   return `<div style="${st(backdrop)}"><div style="${st(panel)}">
     <div style="position:absolute; top:14px; left:50%; transform:translateX(-50%); display:flex; align-items:center; gap:10px; padding:6px 22px; border-radius:99px; background:rgba(232,205,138,.14); border:1px solid var(--gold);"><span style="${st({ width: '10px', height: '10px', borderRadius: '50%', background: 'var(--accent)', boxShadow: '0 0 10px var(--accent)' })}"></span><span style="font-family:var(--fh); font-weight:700; font-size:19px; color:var(--gold); letter-spacing:.08em;">⚔ ${esc(cv.laneName)} · 掷命对决</span><span style="${st({ width: '10px', height: '10px', borderRadius: '50%', background: '#3a86d4', boxShadow: '0 0 10px #3a86d4' })}"></span></div>
-    <div style="display:flex; align-items:center; justify-content:center; gap:36px; margin-top:52px; perspective:1100px;">
+    <div style="display:flex; align-items:center; justify-content:center; gap:36px; margin-top:42px; perspective:1100px;">
       ${duelCard(cv.mine, true)}
       <div style="display:flex; flex-direction:column; align-items:center; gap:14px;"><div style="${st(spark)}"></div><div style="${st(coin)}"><span style="font-family:var(--fd); font-size:30px;">掷</span></div><div style="font-family:var(--fn); font-size:13px; color:var(--gold);">命点 ${cv.rollPct}/100</div></div>
       ${duelCard(cv.foe, false)}
     </div>
-    <div style="margin-top:30px; padding:0 30px;">
+    <div style="margin-top:22px; padding:0 30px;">
       <div style="display:flex; justify-content:space-between; align-items:flex-end; margin-bottom:8px;"><span style="font-family:var(--fn); font-size:24px; color:var(--accent);">${cv.oddsMine}%</span><span style="font-size:11px; letter-spacing:.14em; text-transform:uppercase; color:rgba(255,255,255,.6);">胜率 · 战力差→概率</span><span style="font-family:var(--fn); font-size:24px; color:#5ea0e0;">${foePct}%</span></div>
       <div style="${st(oddsTrack)}"><div style="${st({ width: cv.oddsMine + '%', background: 'var(--accent-grad)', boxShadow: '0 0 14px var(--accent-soft)' })}"></div><div style="${st({ width: foePct + '%', background: 'linear-gradient(180deg,#5ea0e0,#2a5f9e)' })}"></div></div>
       <div style="display:flex; gap:10px; margin-top:16px;">${bonusCol(cv.bonusMine, '我方加成明细', 'var(--accent)', 'var(--accent)')}${bonusCol(cv.bonusFoe, '敌方加成明细', '#5ea0e0', '#5ea0e0')}</div>
+    </div>
+    <div style="display:flex; flex-direction:column; align-items:center; gap:10px; margin-top:16px;">
+      <div style="font-family:var(--fh); font-weight:700; font-size:17px; letter-spacing:.06em; color:${cv.mine.won ? 'var(--hp)' : 'var(--danger)'};">本场 ${cv.mine.won ? '我方胜' : '敌方胜'}｜${esc(cv.laneName)}前锋对决</div>
+      <button data-act="clash-ok" style="${st({ padding: '13px 40px', borderRadius: '13px', border: 'none', cursor: 'pointer', background: 'var(--gold-grad)', color: '#2a1a08', fontFamily: 'var(--fh)', fontWeight: 700, fontSize: '17px', letterSpacing: '.04em', boxShadow: '0 10px 28px rgba(232,205,138,.4)' })}">看明白了 · 继续 ▸</button>
     </div>
   </div></div>`;
 }
@@ -417,6 +421,7 @@ export interface TurnBattleActions {
   toggleGate?: (idx: number) => void;             // 翻捷径门（门钮）
   endTurn?: () => void;                           // 结束回合
   setTheme?: (theme: 'onyx' | 'brocade') => void; // 换皮
+  clashConfirm?: () => void;                      // 掷命对决「看明白了」→ 演下一场（玩家确认才关·owner 2026-06-20）
 }
 
 /** live mount（忠实 mirror battle-screen.mountBattle）：按需重渲 + pointerdown 委派——重渲再频繁也夹不进按下→抬起。
@@ -443,6 +448,7 @@ export function mountTurnBattle(host: HTMLElement, getView: () => TurnBattleView
     if (act) {
       const a = act.dataset.act, k = act.dataset.k ?? '';
       if (a === 'end') actions.endTurn?.();
+      else if (a === 'clash-ok') actions.clashConfirm?.();
       else if (a === 'theme') actions.setTheme?.(k === 'brocade' ? 'brocade' : 'onyx');
       else if (a === 'draw-poker') actions.drawFrom?.('poker');
       else if (a === 'draw-tengang') actions.drawFrom?.('tengang');

@@ -31,6 +31,8 @@ describe('Game G · 流程走查（出征→结算→继续·happy-dom）', () =
             press(c.querySelector('[data-act="draw-poker"]'));
           }
           press(c.querySelector('[data-act="end"]'));
+          // 掷命对决确认制（owner 2026-06-20）：逐场点「看明白了」推进，直到无对决
+          let g = 0; while (c.querySelector('[data-act="clash-ok"]') && g++ < 300) press(c.querySelector('[data-act="clash-ok"]'));
           vi.runAllTimers();
           if (c.querySelector('#gg-result-cont')) settled = true;
         }

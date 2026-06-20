@@ -42,7 +42,8 @@ describe('Game G · 集成：出征进【回合制】战斗屏（doc24·happy-do
         press(container.querySelector('[data-lane="1"]'));        // 落子中路
         press(container.querySelector('[data-gate="0"]'));        // 翻一道捷径门
         press(container.querySelector('[data-act="end"]'));       // 结束回合 → 推进 + AI
-        vi.runAllTimers();                                        // 冲掉掷命特写 setTimeout 链
+        let g = 0; while (container.querySelector('[data-act="clash-ok"]') && g++ < 300) press(container.querySelector('[data-act="clash-ok"]')); // 掷命对决确认制：逐场「看明白了」
+        vi.runAllTimers();
       }).not.toThrow();
       // 流程后仍在战斗(回到我方回合)或已结算(结果面板)——两者皆合法、皆不应崩
       const stillBattle = container.querySelector('[data-act="end"]');

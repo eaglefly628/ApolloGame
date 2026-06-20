@@ -493,19 +493,16 @@ export function mount(container: HTMLElement): () => void {
     let theme: 'onyx' | 'brocade' = 'onyx';
     let selMode: string | null = null; // 当前选中的动作类（draw/deploy/cast/discard·UI 先选后做）
     let selHand = -1;                  // 放牌/施法/弃牌 选中的手牌
-    let drained = 0; const perfQueue: ClashEvent[] = []; let perfClash: ClashEvent | null = null; let busy = false; let perfTimer = 0; let perfGapTimer = 0;
+    let drained = 0; const perfQueue: ClashEvent[] = []; let perfClash: ClashEvent | null = null; let busy = false; let perfResume: (() => void) | null = null;
     const tgName = (id: string): string => TIANGANG_BY_ID.get(id)?.name ?? id;
     const view = (): TurnBattleView => buildTurnBattleView(tb, { theme, tengangName: tgName, selMode, selHand, clash: perfClash ? clashToTurnView(perfClash) : null, bossName: aiName, sha: shaView });
     let mounted: { update: () => void; destroy: () => void } | null = null;
 
     const drainClashes = (): void => { for (const ev of tb.clashLog.slice(drained)) perfQueue.push(ev); drained = tb.clashLog.length; };
-    const playPerf = (onDone: () => void): void => { // 逐场掷命特写：3D 飞入→定格 PERF_MS→回战场缓冲(owner：打完一个回战场再演下一场)→下一场
-      if (perfQueue.length === 0) { perfClash = null; mounted?.update(); onDone(); return; }
-      perfClash = perfQueue.shift()!; mounted?.update();
-      perfTimer = window.setTimeout(() => {
-        perfClash = null; mounted?.update(); // 收场 → 回战场表现一下
-        perfGapTimer = window.setTimeout(() => playPerf(onDone), CLASH_GAP_MS);
-      }, PERF_MS);
+    // 逐场掷命特写：3D 飞入 → 停留 → **玩家点「看明白了」才演下一场/收场**（owner 2026-06-20：不能自动关·要看清为什么胜败）。
+    const playPerf = (onDone: () => void): void => {
+      if (perfQueue.length === 0) { perfClash = null; perfResume = null; mounted?.update(); onDone(); return; }
+      perfClash = perfQueue.shift()!; perfResume = () => { perfResume = null; playPerf(onDone); }; mounted?.update();
     };
     const finishTurnSeq = (): void => { busy = false; selMode = null; selHand = -1; if (tb.winner !== 'pending') settleTurn(); else mounted?.update(); };
     const runAiThenContinue = (): void => { // 玩家推进特写演完 → AI 回合(脚本) → AI 推进特写 → 回到玩家
@@ -530,10 +527,11 @@ export function mount(container: HTMLElement): () => void {
       toggleGate: (idx) => { if (busy || tb.active !== 'a' || GATES[idx]?.side !== 'a') return; toggleGate(tb, idx); }, // 仅本方 4 门可翻
       endTurn: commitEndTurn,
       setTheme: (t) => { theme = t; },
+      clashConfirm: () => { const r = perfResume; if (r) r(); }, // 「看明白了」→ 演下一场掷命/收场
     };
     mounted = mountTurnBattle(stage, view, actions);
     battle = mounted; // teardownMatch 清理（destroy）
-    stopLoop = () => { if (perfTimer) { clearTimeout(perfTimer); perfTimer = 0; } if (perfGapTimer) { clearTimeout(perfGapTimer); perfGapTimer = 0; } }; // 清未决特写计时
+    stopLoop = () => { perfResume = null; }; // 离场：弃掉未决特写续演（无计时器·确认制）
 
     function settleTurn(): void {
       const survA = tb.lanes.reduce((s, L) => s + L.a.length + L.spentA, 0);
