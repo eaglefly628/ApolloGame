@@ -20,11 +20,16 @@ describe('Game G · 流程走查（出征→结算→继续·happy-dom）', () =
 
       let settled = false;
       expect(() => {
-        for (let turn = 0; turn < 120 && !settled; turn++) {
-          // 放牌：选放牌→第一张手牌→落子(轮转三路)→结束回合→冲特写计时
-          press(c.querySelector('[data-act="deploy"]'));
-          press(c.querySelector('[data-hand="0"]'));
-          press(c.querySelector(`[data-lane="${turn % 3}"]`));
+        for (let turn = 0; turn < 160 && !settled; turn++) {
+          // 有手牌→放牌(轮转三路)；手空→抽牌补；再结束回合→冲特写计时（智能些·能赢→也走三选一）
+          if (c.querySelector('[data-hand="0"]')) {
+            press(c.querySelector('[data-act="deploy"]'));
+            press(c.querySelector('[data-hand="0"]'));
+            press(c.querySelector(`[data-lane="${turn % 3}"]`));
+          } else {
+            press(c.querySelector('[data-act="draw"]'));
+            press(c.querySelector('[data-act="draw-poker"]'));
+          }
           press(c.querySelector('[data-act="end"]'));
           vi.runAllTimers();
           if (c.querySelector('#gg-result-cont')) settled = true;
