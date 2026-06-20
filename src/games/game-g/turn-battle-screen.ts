@@ -50,14 +50,16 @@ const CSS = `
 @keyframes g-emblem { 0% { transform:translate(-50%,-50%) scale(.6); opacity:0;} 60% { transform:translate(-50%,-50%) scale(1.12); opacity:1;} 100% { transform:translate(-50%,-50%) scale(1); opacity:1;} }
 @keyframes g-pulse { 0%,100% { box-shadow:0 0 0 0 var(--accent-soft);} 50% { box-shadow:0 0 0 6px transparent;} }
 @keyframes g-water { 0% { background-position:0 0;} 100% { background-position:0 -28px;} }
-@keyframes g-aura { 0%,100% { opacity:.5; transform:scale(1);} 50% { opacity:.95; transform:scale(1.04);} }`;
+@keyframes g-aura { 0%,100% { opacity:.5; transform:scale(1);} 50% { opacity:.95; transform:scale(1.04);} }
+@keyframes g-flow { to { stroke-dashoffset: -32; } }
+@keyframes g-knob { 0%,100% { box-shadow:0 0 6px var(--kc), inset 0 1px 1px rgba(255,255,255,.3);} 50% { box-shadow:0 0 16px var(--kc), 0 0 24px var(--kc), inset 0 1px 1px rgba(255,255,255,.3);} }`;
 
 // ── 视图（buildTurnBattleView 从 turn-combat 派生喂渲染器；纯数据） ──
 export interface TurnSlotView { hasUnit: boolean; mine: boolean; isBorder: boolean; isClash: boolean; rank?: string; suit?: 's' | 'h' | 'd' | 'c'; power?: number; zod?: string[] }
 export interface TurnLaneView { name: string; slots: TurnSlotView[] }
 // 捷径门箭头（占位·8 门·真视觉待 owner 参考图）。idx=GATES 下标·供 live mount data-gate 钩子。
 export interface TurnGateView { idx: number; open: boolean; side: 'a' | 'b'; fromLane: number; fromSlot: number; toLane: number; toSlot: number }
-export interface TurnHandCardView { kind: 'pawn' | 'gang'; rank?: string; suit?: 's' | 'h' | 'd' | 'c'; name: string; power?: number; cost: number; zod?: string[]; rar: 'white' | 'green' | 'blue' | 'gold'; desc?: string; glyph?: string }
+export interface TurnHandCardView { kind: 'pawn' | 'gang'; rank?: string; suit?: 's' | 'h' | 'd' | 'c'; name: string; power?: number; cost: number; zod?: string[]; rar: 'white' | 'green' | 'blue' | 'gold'; desc?: string; glyph?: string; selected?: boolean }
 export interface TurnActionView { key: string; glyph: string; label: string; on: boolean; dim: boolean }
 export interface TurnClashCardView { rank: string; suit: 's' | 'h' | 'd' | 'c'; name: string; zod?: string; won: boolean }
 export interface TurnClashView { laneName: string; mine: TurnClashCardView; foe: TurnClashCardView; oddsMine: number; rollPct: number; bonusMine: [string, number][]; bonusFoe: [string, number][] }
@@ -67,26 +69,49 @@ export interface TurnBattleView {
   turnWho: string; roundNo: number; timerLabel: string;
   water: number; waterMax: number;
   homeA: number; homeB: number; homeMax: number;
-  lanes: TurnLaneView[]; gates: TurnGateView[];
+  lanes: TurnLaneView[]; gates: TurnGateView[]; gatesLive: boolean;
   hand: TurnHandCardView[]; handPawnCount: number; handGangCount: number;
-  actions: TurnActionView[]; actionSub: string;
+  actions: TurnActionView[]; actionSub: string; drawPick: boolean;
   sha: TurnShaView[]; bossName: string;
   clash: TurnClashView | null;
 }
 
-// 捷径门箭头几何（占位）：slot s 横向中心 % · lane l 纵向中心 % · 由源/目标方向取斜箭头字形。
-const slotX = (s: number): number => 5 + ((s + 0.5) / 9) * 94;
-const laneY = (l: number): number => ((l + 0.5) / 3) * 100;
-const arrowGlyph = (dLane: number, dSlot: number): string => (dLane > 0 ? (dSlot > 0 ? '↘' : '↙') : (dSlot > 0 ? '↗' : '↖'));
-const gateArrow = (g: TurnGateView): string => {
-  const midX = (slotX(g.fromSlot) + slotX(g.toSlot)) / 2;
-  const midY = (laneY(g.fromLane) + laneY(g.toLane)) / 2;
-  const sideCol = g.side === 'a' ? 'var(--accent)' : '#3a86d4';
-  const base: Style = { position: 'absolute', left: midX + '%', top: midY + '%', transform: 'translate(-50%,-50%)', zIndex: 6, cursor: 'pointer', fontFamily: 'var(--fh)', fontWeight: 700, lineHeight: 1, userSelect: 'none' };
-  const s: Style = g.open
-    ? { ...base, fontSize: '30px', color: 'var(--hp)', textShadow: '0 0 14px var(--hp), 0 0 6px var(--hp)', animation: 'g-gate 2s ease-in-out infinite' }
-    : { ...base, fontSize: '24px', color: sideCol, opacity: 0.4 };
-  return `<div data-gate="${g.idx}" title="${g.side === 'a' ? '我方' : '敌方'}捷径门 · ${g.open ? '开' : '闭'}" style="${st(s)}">${arrowGlyph(g.toLane - g.fromLane, g.toSlot - g.fromSlot)}</div>`;
+// ── 上下通路梯子（owner 2026-06-20 Cloud Design 参考图·忠实端口 LAD 像素坐标·900×400 viewBox）──
+// 8 道：我方(a) 上1→中2 · 下1→中2 · 中3→上4 · 中3→下4；敌方(b·镜像)。index 同 turn-combat GATES。
+const GATE_LAD: ['a' | 'b', number, number, number, number][] = [
+  ['a', 205, 110, 295, 156], ['a', 205, 290, 295, 244], ['a', 385, 156, 475, 110], ['a', 385, 244, 475, 290],
+  ['b', 745, 110, 655, 156], ['b', 745, 290, 655, 244], ['b', 565, 156, 475, 110], ['b', 565, 244, 475, 290],
+];
+// 斜梯路径 d（取中段 44% 显形）。
+const ladderPath = ([, x1, y1, x2, y2]: ['a' | 'b', number, number, number, number]): string => {
+  const cx = (x1 + x2) / 2, cy = (y1 + y2) / 2, f = 0.44;
+  return `M${(cx + (x1 - cx) * f).toFixed(0)},${(cy + (y1 - cy) * f).toFixed(0)} L${(cx + (x2 - cx) * f).toFixed(0)},${(cy + (y2 - cy) * f).toFixed(0)}`;
+};
+// 一道梯子的双 path（底轨 + 流动虚线箭头）。live = 放牌中(本方梯子高亮)。
+const ladderSvg = (lad: ['a' | 'b', number, number, number, number], open: boolean, live: boolean): string => {
+  const mine = lad[0] === 'a';
+  const d = ladderPath(lad);
+  const baseStroke = mine ? '#3c2010' : '#12283e', flowStroke = mine ? '#6b3c20' : '#21425f';
+  const baseOpacity = open ? (live ? 0.5 : 0.32) : 0.16;
+  const marker = open ? (mine ? 'url(#ar-a)' : 'url(#ar-b)') : '';
+  const flowStyle: Style = { opacity: open ? (live ? 0.62 : 0.38) : 0, animation: open ? 'g-flow .9s linear infinite' : 'none' };
+  return `<path d="${d}" fill="none" stroke="${baseStroke}" stroke-width="17" stroke-linecap="round" opacity="${baseOpacity}"></path><path d="${d}" fill="none" stroke="${flowStroke}" stroke-width="11" stroke-linecap="butt" stroke-dasharray="10 11" marker-end="${marker}" style="${st(flowStyle)}"></path>`;
+};
+// 梯子中点门钮（◉ 通路 / ✕ 闭）·data-gate 供 live mount 翻门。
+const gateKnob = (lad: ['a' | 'b', number, number, number, number], idx: number, open: boolean): string => {
+  const [team, x1, y1, x2, y2] = lad; const mine = team === 'a';
+  const cx = (x1 + x2) / 2, cy = (y1 + y2) / 2; const col = mine ? '#c46a38' : '#3a6e9e';
+  const wrap: Style = { position: 'absolute', left: (cx / 900 * 100) + '%', top: (cy / 400 * 100) + '%', transform: 'translate(-50%,-50%)', width: '22px', height: '22px', borderRadius: '50%', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', background: open ? `radial-gradient(circle at 38% 32%, ${col}, #1a1208)` : 'radial-gradient(circle at 38% 32%, #4a4640, #15130f)', border: '1.5px solid ' + (open ? col : '#6a4a3a'), boxShadow: open ? `0 0 8px ${col}88, inset 0 1px 1px rgba(255,255,255,.3)` : 'inset 0 1px 2px rgba(0,0,0,.6)', '--kc': col + '99', animation: open ? 'g-knob 1.6s ease-in-out infinite' : 'none', pointerEvents: 'auto', zIndex: 7 };
+  const mark: Style = { fontSize: open ? '9px' : '12px', fontWeight: 700, lineHeight: 1, color: open ? 'rgba(255,255,255,.85)' : '#d8504e', fontFamily: 'var(--fh)' };
+  return `<div data-gate="${idx}" style="${st(wrap)}"><span style="${st(mark)}">${open ? '◉' : '✕'}</span></div>`;
+};
+// 梯层（SVG 斜梯 + 门钮）·覆盖三路区。
+const laddersLayer = (view: TurnBattleView): string => {
+  const svgStyle: Style = { position: 'absolute', inset: 0, width: '100%', height: '100%', pointerEvents: 'none', zIndex: 4, overflow: 'visible' };
+  const layerStyle: Style = { position: 'absolute', inset: 0, pointerEvents: 'none', zIndex: 6 };
+  const paths = forr(GATE_LAD, (lad, i) => ladderSvg(lad, view.gates[i]?.open ?? true, lad[0] === 'a' && view.gatesLive));
+  const knobs = forr(GATE_LAD, (lad, i) => gateKnob(lad, i, view.gates[i]?.open ?? true));
+  return `<svg viewBox="0 0 900 400" preserveAspectRatio="none" style="${st(svgStyle)}"><defs><marker id="ar-a" markerWidth="4" markerHeight="4" refX="2" refY="2" orient="auto"><path d="M0,0 L4,2 L0,4 L1.3,2 Z" fill="#6b3c20"></path></marker><marker id="ar-b" markerWidth="4" markerHeight="4" refX="2" refY="2" orient="auto"><path d="M0,0 L4,2 L0,4 L1.3,2 Z" fill="#21425f"></path></marker></defs>${paths}</svg><div style="${st(layerStyle)}">${knobs}</div>`;
 };
 
 const hpGem = (alive: boolean): string => {
@@ -156,15 +181,16 @@ function slotCell(s: TurnSlotView): string {
   return `<div style="${st(cell)}"><div style="${st(dot)}"></div>${unitHTML}${ring}</div>`;
 }
 
-function laneRow(L: TurnLaneView): string {
+function laneRow(L: TurnLaneView, li: number): string {
   const row = { flex: 1, minHeight: 0, display: 'flex', alignItems: 'stretch', gap: '10px' };
   const tag = { width: '40px', flex: 'none', display: 'flex', alignItems: 'center', justifyContent: 'center', writingMode: 'vertical-rl', textAlign: 'center', padding: '8px 3px', borderRadius: '8px', background: 'var(--chip)', border: '1px solid var(--panel-border)', fontFamily: 'var(--fh)', fontWeight: 700, fontSize: '13px', color: 'var(--ink)', letterSpacing: '.1em' };
   const track = { position: 'relative', flex: 1, display: 'grid', gridTemplateColumns: 'repeat(9, 1fr)', gap: '6px', alignItems: 'stretch', padding: '8px 6px', borderRadius: '12px', background: 'var(--lane)', border: '1px solid var(--cell-edge)', boxShadow: 'inset 0 1px 0 rgba(255,255,255,.06), inset 0 0 26px rgba(0,0,0,.28)' };
-  return `<div style="${st(row)}"><div style="${st(tag)}">${esc(L.name)}</div><div style="${st(track)}">${forr(L.slots, slotCell)}</div></div>`;
+  return `<div style="${st(row)}"><div style="${st(tag)}">${esc(L.name)}</div><div data-lane="${li}" style="${st(track)}">${forr(L.slots, slotCell)}</div></div>`;
 }
 
-function handCard(c: TurnHandCardView): string {
+function handCard(c: TurnHandCardView, i: number): string {
   const rc = RAR[c.rar] || RAR.white;
+  const selSty = c.selected ? ';outline:3px solid var(--gold);outline-offset:2px' : '';
   const rarDot = { position: 'absolute', top: c.kind === 'gang' ? '8px' : '-4px', left: c.kind === 'gang' ? '8px' : '50%', transform: c.kind === 'gang' ? 'none' : 'translateX(-50%)', width: c.kind === 'gang' ? '10px' : '9px', height: c.kind === 'gang' ? '10px' : '9px', borderRadius: '50%', background: rc[1], boxShadow: `0 0 7px ${rc[1]}`, border: '1px solid rgba(255,255,255,.6)' };
   const costPill = { position: 'absolute', top: c.kind === 'gang' ? '7px' : '6px', right: c.kind === 'gang' ? '8px' : '7px', minWidth: '22px', padding: '1px 6px', borderRadius: '99px', background: 'var(--gold-grad)', color: '#2a1a08', fontFamily: 'var(--fn)', fontSize: '11px', textAlign: 'center', fontWeight: 700 };
   if (c.kind === 'gang') {
@@ -172,7 +198,7 @@ function handCard(c: TurnHandCardView): string {
     const card = { position: 'relative', width: '96px', height: '120px', borderRadius: '12px', background: 'var(--panel)', border: '2px solid ' + rc[1], boxShadow: '0 6px 16px rgba(0,0,0,.4), inset 0 0 0 1px var(--hairline)' };
     const top = { height: '44px', borderRadius: '10px 10px 0 0', display: 'flex', alignItems: 'center', justifyContent: 'center', background: `linear-gradient(180deg,${tint}44,${tint}11)`, borderBottom: '1px solid ' + tint };
     const icon = { width: '40px', height: '40px', borderRadius: '50%', background: tint, display: 'flex', alignItems: 'center', justifyContent: 'center', fontFamily: 'var(--fd)', fontSize: '24px', color: '#fff', boxShadow: `0 0 14px ${tint}` };
-    return `<div style="${st(card)}"><div style="${st(rarDot)}"></div><div style="${st(top)}"><div style="${st(icon)}">${esc(c.glyph || '✦')}</div></div><div style="padding:10px 9px;"><div style="font-family:var(--fb); font-weight:700; font-size:13px; color:var(--ink); text-align:center;">${esc(c.name)}</div><div style="font-size:10px; color:var(--ink-dim); text-align:center; line-height:1.4; margin-top:4px;">${esc(c.desc || '')}</div></div><div style="${st(costPill)}">★${c.cost}</div></div>`;
+    return `<div data-hand="${i}" style="${st(card)};cursor:pointer${selSty}"><div style="${st(rarDot)}"></div><div style="${st(top)}"><div style="${st(icon)}">${esc(c.glyph || '✦')}</div></div><div style="padding:10px 9px;"><div style="font-family:var(--fb); font-weight:700; font-size:13px; color:var(--ink); text-align:center;">${esc(c.name)}</div><div style="font-size:10px; color:var(--ink-dim); text-align:center; line-height:1.4; margin-top:4px;">${esc(c.desc || '')}</div></div><div style="${st(costPill)}">★${c.cost}</div></div>`;
   }
   const sc = c.suit ? SUITC[c.suit] : '#22303f'; const zod = c.zod || [];
   const card = { position: 'relative', width: '96px', height: '120px', borderRadius: '12px', background: 'var(--card-face)', border: '2px solid ' + rc[1], boxShadow: '0 6px 16px rgba(0,0,0,.4), inset 0 0 0 1px rgba(255,255,255,.5)', display: 'flex', alignItems: 'center', justifyContent: 'center' };
@@ -184,7 +210,7 @@ function handCard(c: TurnHandCardView): string {
   const zodRow = { position: 'absolute', bottom: '6px', left: '50%', transform: 'translateX(-50%)', display: 'flex', gap: '3px' };
   const zodCell = (g: string | undefined): string => { const f = !!g; return `<div style="${st({ width: '20px', height: '20px', borderRadius: '5px', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '13px', lineHeight: 1, background: f ? 'rgba(255,255,255,.92)' : 'rgba(0,0,0,.06)', border: '1px solid ' + (f ? sc : 'rgba(120,90,60,.3)'), boxShadow: f ? `0 0 5px ${sc}66` : 'inset 0 1px 2px rgba(0,0,0,.15)' })}">${f ? (ZOD_ICON[g!] || g) : ''}</div>`; };
   const g = c.suit ? SUITG[c.suit] : '';
-  return `<div style="${st(card)}"><div style="${st(rarDot)}"></div><div style="${st(cornerTL)}">${esc(c.rank || '')}<br>${g}</div><span style="${st(big)}">${g}</span><div style="${st(nameP)}">${esc(c.name)}</div><div style="${st(badge)}">${c.power ?? ''}</div><div style="${st(costPillL)}">★${c.cost}</div><div style="${st(zodRow)}">${forr([0, 1, 2], (z) => zodCell(zod[z]))}</div></div>`;
+  return `<div data-hand="${i}" style="${st(card)};cursor:pointer${selSty}"><div style="${st(rarDot)}"></div><div style="${st(cornerTL)}">${esc(c.rank || '')}<br>${g}</div><span style="${st(big)}">${g}</span><div style="${st(nameP)}">${esc(c.name)}</div><div style="${st(badge)}">${c.power ?? ''}</div><div style="${st(costPillL)}">★${c.cost}</div><div style="${st(zodRow)}">${forr([0, 1, 2], (z) => zodCell(zod[z]))}</div></div>`;
 }
 
 function clashOverlay(cv: TurnClashView): string {
@@ -225,10 +251,8 @@ function clashOverlay(cv: TurnClashView): string {
   </div></div>`;
 }
 
-/** 出回合制战斗屏 HTML（忠实端口设计稿；静息态 + 可选 clash 覆盖层）。root 上挂双皮 token。 */
-export function buildTurnBattleHTML(view: TurnBattleView): string {
-  const T = THEMES[view.theme] ?? THEMES.onyx;
-  const rootStyle = { ...T, minHeight: '100vh', background: '#0c0a08', padding: '22px', display: 'flex', justifyContent: 'center', fontFamily: 'var(--fb)' };
+/** 回合制战斗屏「画框」HTML（固定 1340×858·无页 root·供 live mount 缩放嵌入）。双皮 token 由外层挂。 */
+export function buildTurnFrameHTML(view: TurnBattleView): string {
   const frame = { position: 'relative', width: '1340px', height: '858px', borderRadius: '16px', overflow: 'hidden', background: 'var(--paper)', border: '3px solid var(--frame-edge)', boxShadow: '0 30px 80px rgba(0,0,0,.6), inset 0 0 0 1px var(--hairline)', display: 'flex', flexDirection: 'column' };
   const topbar = { display: 'flex', alignItems: 'center', gap: '10px', padding: '13px 22px', borderBottom: '1px solid var(--panel-border)' };
   const seal = { width: '42px', height: '42px', flex: 'none', borderRadius: '11px', background: 'linear-gradient(150deg,#3a4f78,#28385a)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#fff', fontSize: '22px', border: '1px solid var(--hairline)' };
@@ -262,19 +286,22 @@ export function buildTurnBattleHTML(view: TurnBattleView): string {
   const handCount = { padding: '3px 10px', borderRadius: '99px', background: 'var(--accent-soft)', color: 'var(--accent)', fontFamily: 'var(--fh)', fontWeight: 700, fontSize: '11px', border: '1px solid var(--accent)' };
   const handCountGang = { padding: '3px 10px', borderRadius: '99px', background: 'rgba(140,110,255,.16)', color: '#a98bff', fontFamily: 'var(--fh)', fontWeight: 700, fontSize: '11px', border: '1px solid #a98bff' };
 
-  return `<div style="${st(rootStyle)}"><div style="${st(frame)}">
+  const drawPanel = view.drawPick
+    ? `<div style="display:flex; gap:7px; margin-top:8px;"><button data-act="draw-poker" style="${st({ flex: 1, padding: '8px 6px', borderRadius: '9px', cursor: 'pointer', border: '1px solid var(--accent)', background: 'var(--chip)', color: 'var(--ink)', fontFamily: 'var(--fh)', fontWeight: 700, fontSize: '12px' })}">🎴 摸扑克</button><button data-act="draw-tengang" style="${st({ flex: 1, padding: '8px 6px', borderRadius: '9px', cursor: 'pointer', border: '1px solid #a98bff', background: 'var(--chip)', color: '#cdbcff', fontFamily: 'var(--fh)', fontWeight: 700, fontSize: '12px' })}">✦ 摸天罡</button></div>`
+    : '';
+  return `<div style="${st(frame)}">
     <div style="${st(topbar)}">
       <div style="display:flex; align-items:center; gap:13px;"><div style="${st(seal)}">♠</div><div style="display:flex; flex-direction:column; line-height:1.2;"><span style="font-family:var(--fh); font-weight:700; font-size:16px; color:var(--ink);">翻命扑克 · 棋枰对弈</span><span style="font-size:11px; color:var(--ink-dim);">单机 · 回合制 deck-builder</span></div></div>
       <div style="flex:1;"></div>
       <div style="${st(turnBox)}"><span style="${st(turnDot)}"></span><div style="display:flex; flex-direction:column; line-height:1.15;"><span style="font-family:var(--fh); font-weight:700; font-size:14px; color:var(--ink);">${esc(view.turnWho)}</span><span style="font-size:10px; color:var(--ink-dim);">第 ${view.roundNo} 回合</span></div></div>
-      <button style="${st(endBtn)}">结束回合 ▸</button>
+      <button data-act="end" style="${st(endBtn)}">结束回合 ▸</button>
       <div style="width:1px; height:26px; background:var(--panel-border); margin:0 4px;"></div>
-      <button style="${st(seg(view.theme === 'onyx'))}">玄铁</button><button style="${st(seg(view.theme === 'brocade'))}">锦霞</button>
+      <button data-act="theme" data-k="onyx" style="${st(seg(view.theme === 'onyx'))}">玄铁</button><button data-act="theme" data-k="brocade" style="${st(seg(view.theme === 'brocade'))}">锦霞</button>
     </div>
     <div style="${st(body)}">
       <div style="${st(boardWrap)}">
         ${fortBase(view, true)}
-        <div style="${st(lanesCol)}">${forr(view.lanes, laneRow)}${forr(view.gates, gateArrow)}</div>
+        <div style="${st(lanesCol)}">${forr(view.lanes, laneRow)}${laddersLayer(view)}</div>
         ${fortBase(view, false)}
       </div>
       <div style="${st(waterBar)}">
@@ -289,6 +316,7 @@ export function buildTurnBattleHTML(view: TurnBattleView): string {
       <div style="${st(actionMenu)}">
         <div style="font-size:10px; letter-spacing:.16em; text-transform:uppercase; color:var(--ink-dim); margin-bottom:8px;">本回合动作 · 四选一</div>
         <div style="display:grid; grid-template-columns:1fr 1fr; gap:8px;">${forr(view.actions, actBtn)}</div>
+        ${drawPanel}
         <div style="${st(actionHint)}">${esc(view.actionSub)}</div>
       </div>
       <div style="${st(handArea)}">
@@ -297,14 +325,20 @@ export function buildTurnBattleHTML(view: TurnBattleView): string {
       </div>
     </div>
     ${view.clash ? clashOverlay(view.clash) : ''}
-  </div></div>`;
+  </div>`;
+}
+
+/** 出回合制战斗屏 HTML（整页·忠实端口设计稿；静息态 + 可选 clash 覆盖层）。root 上挂双皮 token。 */
+export function buildTurnBattleHTML(view: TurnBattleView): string {
+  const rootStyle: Style = { ...(THEMES[view.theme] ?? THEMES.onyx), minHeight: '100vh', background: '#0c0a08', padding: '22px', display: 'flex', justifyContent: 'center', fontFamily: 'var(--fb)' };
+  return `<div style="${st(rootStyle)}">${buildTurnFrameHTML(view)}</div>`;
 }
 
 const SUIT_KEYS: Record<string, 's' | 'h' | 'd' | 'c'> = { S: 's', H: 'h', D: 'd', C: 'c', s: 's', h: 'h', d: 'd', c: 'c' };
 const lc = (s: string): 's' | 'h' | 'd' | 'c' => SUIT_KEYS[s] ?? 's';
 const rankOf = (r: string): 'white' | 'green' | 'blue' | 'gold' => (r === 'A' ? 'gold' : r === 'K' || r === 'Q' || r === 'J' ? 'blue' : 'white');
 
-export interface TurnViewOpts { theme?: 'onyx' | 'brocade'; tengangName?: (id: string) => string; clash?: TurnClashView | null; sha?: TurnShaView[]; bossName?: string }
+export interface TurnViewOpts { theme?: 'onyx' | 'brocade'; tengangName?: (id: string) => string; clash?: TurnClashView | null; sha?: TurnShaView[]; bossName?: string; selMode?: string | null; selHand?: number }
 /** 从 turn-combat 真状态派生战斗屏视图（玩家 = side a 视角）。纯读、不改 battle。 */
 export function buildTurnBattleView(b: TurnBattle, opts: TurnViewOpts = {}): TurnBattleView {
   const laneNames = ['上路', '中路', '下路'];
@@ -322,25 +356,77 @@ export function buildTurnBattleView(b: TurnBattle, opts: TurnViewOpts = {}): Tur
     return { name: laneNames[li] ?? ('路' + li), slots };
   });
   const nameOf = opts.tengangName ?? ((id: string) => id);
-  const hand: TurnHandCardView[] = b.a.hand.map((c) => c.kind === 'poker'
-    ? { kind: 'pawn', rank: c.rank, suit: lc(c.suit), name: SUITNM[lc(c.suit)] + c.rank, power: cardPoints(c.rank) + c.buff, cost: 1, zod: [], rar: rankOf(c.rank) }
-    : { kind: 'gang', name: nameOf(c.id), cost: 1, rar: 'gold', desc: '法术', glyph: '✦' });
+  const hand: TurnHandCardView[] = b.a.hand.map((c, i) => c.kind === 'poker'
+    ? { kind: 'pawn', rank: c.rank, suit: lc(c.suit), name: SUITNM[lc(c.suit)] + c.rank, power: cardPoints(c.rank) + c.buff, cost: 1, zod: [], rar: rankOf(c.rank), selected: opts.selHand === i }
+    : { kind: 'gang', name: nameOf(c.id), cost: 1, rar: 'gold', desc: '法术', glyph: '✦', selected: opts.selHand === i });
   const ACT: [string, string, string][] = [['draw', '🎴', '抽牌'], ['deploy', '♟', '放牌'], ['cast', '✦', '打天罡'], ['discard', '🗑', '弃牌']];
   const sel = b.actionTaken;
-  const SUB: Record<string, string> = { draw: '抽牌:天罡/扑克二选一', deploy: '放牌:消耗召唤源泉落子到格', cast: '打天罡:施放一张法术牌', discard: '弃牌:免费·弃手牌腾位', '': '选一类动作,其余本回合锁定' };
-  const actions: TurnActionView[] = ACT.map(([key, glyph, label]) => ({ key, glyph, label, on: sel === key, dim: !!sel && sel !== key }));
+  const mode = opts.selMode ?? sel; // 当前高亮动作类：未提交时取 UI 选中(selMode)，已锁则取 actionTaken
+  const SUB: Record<string, string> = { draw: '抽牌:天罡/扑克二选一', deploy: '放牌:选手牌→点路落子(放牌可翻门)', cast: '打天罡:选一张法术牌施放', discard: '弃牌:免费·选手牌弃掉腾位', '': '选一类动作,其余本回合锁定' };
+  const actions: TurnActionView[] = ACT.map(([key, glyph, label]) => ({ key, glyph, label, on: mode === key, dim: !!sel && sel !== key }));
   return {
     theme: opts.theme ?? 'onyx',
     turnWho: b.active === 'a' ? '我方回合' : '敌方回合', roundNo: b.turn, timerLabel: '∞ 无限时',
     water: b.a.mana, waterMax: 10,
     homeA: b.homeA, homeB: b.homeB, homeMax: b.homeMax,
-    lanes, gates: GATES.map((g, i) => ({ idx: i, open: b.gatesOpen[i], side: g.side, fromLane: g.fromLane, fromSlot: g.fromSlot, toLane: g.toLane, toSlot: g.toSlot })),
+    lanes, gates: GATES.map((g, i) => ({ idx: i, open: b.gatesOpen[i], side: g.side, fromLane: g.fromLane, fromSlot: g.fromSlot, toLane: g.toLane, toSlot: g.toSlot })), gatesLive: mode === 'deploy',
     hand, handPawnCount: hand.filter((c) => c.kind === 'pawn').length, handGangCount: hand.filter((c) => c.kind === 'gang').length,
-    actions, actionSub: SUB[sel ?? ''] ?? SUB[''],
+    actions, actionSub: SUB[mode ?? ''] ?? SUB[''], drawPick: mode === 'draw',
     sha: opts.sha ?? [{ filled: true, name: '地煞·破军', rar: 'gold', desc: '' }, { filled: true, name: '地煞·贪狼', rar: 'blue', desc: '' }, { filled: false, name: '未知', rar: 'white', desc: '' }],
     bossName: opts.bossName ?? '楚霸王 · 项羽',
     clash: opts.clash ?? null,
   };
+}
+
+// ── live mount（驱动层接 turn-combat·owner「运转逻辑跟以前一样」）──
+export interface TurnBattleActions {
+  pickAction?: (kind: string) => void;            // 点四选一动作类（draw/deploy/cast/discard）
+  drawFrom?: (from: 'poker' | 'tengang') => void; // 抽牌：选库
+  selectHand?: (i: number) => void;               // 选手牌
+  playLane?: (lane: number) => void;              // 放牌落子到路（点路/格）
+  toggleGate?: (idx: number) => void;             // 翻捷径门（门钮）
+  endTurn?: () => void;                           // 结束回合
+  setTheme?: (theme: 'onyx' | 'brocade') => void; // 换皮
+}
+
+/** live mount（忠实 mirror battle-screen.mountBattle）：按需重渲 + pointerdown 委派——重渲再频繁也夹不进按下→抬起。
+ *  固定 1340×858 画框按 host 宽显式 scale 铺满（不靠 cqw）。getView 每次重渲实时派生当前态。返回 {update,destroy}。 */
+export function mountTurnBattle(host: HTMLElement, getView: () => TurnBattleView, actions: TurnBattleActions = {}): { update: () => void; destroy: () => void } {
+  if (!document.getElementById('gg-turn-css')) { const s = document.createElement('style'); s.id = 'gg-turn-css'; s.textContent = CSS; document.head.appendChild(s); }
+  const render = (): void => {
+    const view = getView();
+    const innerStyle: Style = { ...(THEMES[view.theme] ?? THEMES.onyx), width: '1340px', height: '858px', transformOrigin: 'top left', fontFamily: 'var(--fb)' };
+    host.innerHTML = `<div class="ggt-outer" style="position:relative; width:100%; overflow:hidden; background:#0c0a08;"><div class="ggt-inner" style="${st(innerStyle)}">${buildTurnFrameHTML(view)}</div></div>`;
+    const outer = host.querySelector('.ggt-outer') as HTMLElement | null;
+    const inner = host.querySelector('.ggt-inner') as HTMLElement | null;
+    if (outer && inner) { const w = outer.clientWidth || host.clientWidth; if (w > 0) { const sc = w / 1340; inner.style.transform = `scale(${sc})`; outer.style.height = Math.round(858 * sc) + 'px'; } }
+  };
+  // 坞/格/牌/门 交互用 pointerdown（同 battle-screen）：rAF/重渲在按下↔抬起间整片重建 DOM，click 会落空 → 用单次离散 pointerdown。
+  const onPress = (e: MouseEvent): void => {
+    if (e.button > 0) return;
+    const t = e.target as HTMLElement;
+    const gate = t.closest('[data-gate]') as HTMLElement | null;
+    if (gate) { actions.toggleGate?.(parseInt(gate.dataset.gate ?? '-1', 10)); render(); return; }
+    const hand = t.closest('[data-hand]') as HTMLElement | null;
+    if (hand) { actions.selectHand?.(parseInt(hand.dataset.hand ?? '-1', 10)); render(); return; }
+    const act = t.closest('[data-act]') as HTMLElement | null;
+    if (act) {
+      const a = act.dataset.act, k = act.dataset.k ?? '';
+      if (a === 'end') actions.endTurn?.();
+      else if (a === 'theme') actions.setTheme?.(k === 'brocade' ? 'brocade' : 'onyx');
+      else if (a === 'draw-poker') actions.drawFrom?.('poker');
+      else if (a === 'draw-tengang') actions.drawFrom?.('tengang');
+      else if (a === 'draw' || a === 'deploy' || a === 'cast' || a === 'discard') actions.pickAction?.(a);
+      render(); return;
+    }
+    const lane = t.closest('[data-lane]') as HTMLElement | null;
+    if (lane) { actions.playLane?.(parseInt(lane.dataset.lane ?? '-1', 10)); render(); return; }
+  };
+  host.addEventListener('pointerdown', onPress);
+  render();
+  let ro: ResizeObserver | null = null;
+  if (typeof ResizeObserver !== 'undefined') { ro = new ResizeObserver(() => render()); ro.observe(host); }
+  return { update: render, destroy: () => { if (ro) ro.disconnect(); host.removeEventListener('pointerdown', onPress); host.replaceChildren(); } };
 }
 
 /** 自包含 HTML 文档（看帧/预览/无头截图；固定 1340×858·非 cqw·无需缩放注入）。 */

@@ -61,7 +61,7 @@ export interface TurnBattle {
   a: TurnSide; b: TurnSide;
   rng: RandomSeed; winner: 'a' | 'b' | 'draw' | 'pending';
   actionTaken: ActionKind | null;
-  lastClash: ClashEvent | null; clashSeq: number;
+  lastClash: ClashEvent | null; clashLog: ClashEvent[]; clashSeq: number; // clashLog：逐场掷命流水（驱动层抽特写·不进 hash）
 }
 
 const mkLane = (): TurnLane => ({ a: [], b: [], aGenDead: false, bGenDead: false, spentA: 0, spentB: 0 });
@@ -75,12 +75,12 @@ export function initTurnBattle(cfg: TurnInit): TurnBattle {
   const battle: TurnBattle = {
     turn: 1, active: 'a',
     lanes: [mkLane(), mkLane(), mkLane()],
-    gatesOpen: GATES.map(() => false),
+    gatesOpen: GATES.map(() => true), // 默认通路(开·对齐设计稿 ◉)：放牌时点门钮翻成 ✕ 闭路 / AI 亦可翻
     homeA: homeMax, homeB: homeMax, homeMax,
     a: mkSide(cfg.a?.pokerDeck, cfg.a?.tengangDeck),
     b: mkSide(cfg.b?.pokerDeck, cfg.b?.tengangDeck),
     rng: { type: 'RandomSeed', seed: cfg.seed, sequence: 0 },
-    winner: 'pending', actionTaken: null, lastClash: null, clashSeq: 0,
+    winner: 'pending', actionTaken: null, lastClash: null, clashLog: [], clashSeq: 0,
   };
   battle.b.mana = 0; // 后手方圣水在其回合开始才 +1（每回合 +1 对称·turn-1 的 +1 已含在先手起步值里）
   return battle;
@@ -144,24 +144,29 @@ export function discardCard(b: TurnBattle, side: 'a' | 'b', handIdx: number): bo
   return true;
 }
 
-// ── 捷径门操作（doc21/24·占位逻辑·真视觉待 owner 参考图）──
-// toggleGate：开/关一道门（放牌附赠或天罡「城门令」调）。tryGate：门开 + 源格有己兵 + 目标格空 → 把那张兵过门搬到目标格
-//   （跨路调度·增援/堵敌·确定性·不消耗 rng·同 live-combat migrateRear 语义）。返回是否成功。
+// ── 捷径门(上下通路梯子) 操作（owner 2026-06-20 Cloud Design 参考图）──
+// 门钮单击(放牌时)或 AI 触发 → 翻 通路(◉,开) ↔ ✕(闭)。开门 = 下一步(推进阶段)该格己兵按门向过门(替直进)；目标格已有牌(任一方)→ 失败留原地。
+// toggleGate：翻一道门开/关。gateMove(内部)：门开 + 源格有己兵 + 目标格空 → 搬过去，返回过门兵 id；否则 null。tryGate：单次手动过门(占位/测试)。
 export function toggleGate(b: TurnBattle, gateIdx: number): boolean {
   if (b.winner !== 'pending' || gateIdx < 0 || gateIdx >= GATES.length) return false;
   b.gatesOpen[gateIdx] = !b.gatesOpen[gateIdx];
   return true;
 }
-export function tryGate(b: TurnBattle, gateIdx: number): boolean {
-  if (b.winner !== 'pending' || gateIdx < 0 || gateIdx >= GATES.length || !b.gatesOpen[gateIdx]) return false;
+function gateMove(b: TurnBattle, gateIdx: number): string | null {
+  if (!b.gatesOpen[gateIdx]) return null;
   const g = GATES[gateIdx];
   const from = colOf(b.lanes[g.fromLane], g.side); const to = colOf(b.lanes[g.toLane], g.side);
+  const foeTo = colOf(b.lanes[g.toLane], g.side === 'a' ? 'b' : 'a');
   const idx = from.findIndex((u) => u.slot === g.fromSlot);
-  if (idx < 0 || to.some((u) => u.slot === g.toSlot)) return false; // 源格无兵 / 目标格被占
+  if (idx < 0 || to.some((u) => u.slot === g.toSlot) || foeTo.some((u) => u.slot === g.toSlot)) return null; // 源格无兵 / 目标格已有牌(任一方) → 失败
   const [u] = from.splice(idx, 1);
   u.slot = g.toSlot; to.push(u);
   to.sort((x, y) => (g.side === 'a' ? y.slot - x.slot : x.slot - y.slot)); // 维持 [0]=前锋(贴敌)序
-  return true;
+  return u.id;
+}
+export function tryGate(b: TurnBattle, gateIdx: number): boolean {
+  if (b.winner !== 'pending' || gateIdx < 0 || gateIdx >= GATES.length) return false;
+  return gateMove(b, gateIdx) !== null;
 }
 
 // 擎天「最强单张」：side a 全军(跨三路) base 点数最高一张 id（防 buff 循环·ties 队首确定性）。
@@ -216,22 +221,28 @@ function resolveClash(b: TurnBattle, li: number): void {
     if (b.a.tengangA.noUpset > 0 && wr >= 0.5) aWins = true; // 铁骰
   }
   b.lastClash = { tick: b.turn, lane: li, winrate: wr, roll, aWins, tie, a: { rank: fa.rank, suit: fa.suit, general: fa.general, points: fa.points, buff: fa.buff, morale: ba.shift, tengang: ba.tg, pEff: ea }, b: { rank: fb.rank, suit: fb.suit, general: fb.general, points: fb.points, buff: fb.buff, morale: bb.shift, tengang: bb.tg, pEff: eb } };
+  b.clashLog.push(b.lastClash); // 流水（驱动层逐场抽特写）
   b.clashSeq += 1;
   killFront(lane, aWins ? 'b' : 'a'); // 输家阵亡
   const wq = colOf(lane, aWins ? 'a' : 'b'); const wf = wq[0]; // 赢家续航 −1·尽则退场
   if (wf) { wf.staminaLeft -= 1; if (wf.staminaLeft <= 0) { wq.shift(); if (aWins) lane.spentA += 1; else lane.spentB += 1; } }
 }
 
-// 推进阶段（doc24 §七·只推 active 方自己的兵）：每路 own 前锋向敌家推一格 → 相邻敌前锋则掷命 / 无敌则抵敌家 chip 血。
+// 推进阶段（doc24 §七·只推 active 方自己的兵）：①开门分流(下一步该格己兵按门向过门·替直进) → ②各路前锋向敌家推一格 → 相邻敌前锋则掷命 / 无敌则抵敌家 chip 血。
 function advanceSide(b: TurnBattle, side: 'a' | 'b'): void {
   const dir = side === 'a' ? 1 : -1;
+  // ① 捷径门分流（owner 2026-06-20 上下通路梯子）：active 方每道开门 → 源格己兵过门(替本回合直进)；过门兵记入 diverted 不再直进。
+  const diverted = new Set<string>();
+  for (let gi = 0; gi < GATES.length; gi++) { if (GATES[gi].side !== side) continue; const id = gateMove(b, gi); if (id) diverted.add(id); }
+  // ② 直进
   for (let li = 0; li < 3; li++) {
     const lane = b.lanes[li]; const own = colOf(lane, side); const foe = colOf(lane, side === 'a' ? 'b' : 'a');
     if (own.length === 0) continue;
     if (foe.length > 0) {
       const foeFront = foe[0];
-      // own 各兵 +dir，保 slot 间距 1·前锋停在敌前锋相邻格(不重叠)。
+      // own 各兵 +dir，保 slot 间距 1·前锋停在敌前锋相邻格(不重叠)；已过门兵留原地。
       for (let i = 0; i < own.length; i++) {
+        if (diverted.has(own[i].id)) continue; // 本回合已过门 → 不再直进
         let t = own[i].slot + dir;
         if (i > 0) { const ahead = own[i - 1].slot; t = dir > 0 ? Math.min(t, ahead - 1) : Math.max(t, ahead + 1); }
         else { const limit = foeFront.slot - dir; t = dir > 0 ? Math.min(t, limit) : Math.max(t, limit); } // 停在敌前锋前一格
@@ -241,6 +252,7 @@ function advanceSide(b: TurnBattle, side: 'a' | 'b'): void {
     } else {
       // 无敌 → 向敌家推；越过敌区末格 → 敌大本营 −1·该兵退场。
       for (let i = 0; i < own.length; i++) {
+        if (diverted.has(own[i].id)) continue;
         let t = own[i].slot + dir;
         if (i > 0) { const ahead = own[i - 1].slot; t = dir > 0 ? Math.min(t, ahead - 1) : Math.max(t, ahead + 1); }
         own[i].slot = t;

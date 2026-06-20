@@ -18,6 +18,10 @@
   ::-webkit-scrollbar-thumb { background: rgba(120,90,50,.4); border-radius: 8px; }
   @keyframes g-spark { 0%,100% { opacity:.6; transform:translate(-50%,-50%) scale(1);} 50% { opacity:1; transform:translate(-50%,-50%) scale(1.12);} }
   @keyframes g-gate { 0%,100% { opacity:.5;} 50% { opacity:1;} }
+  @keyframes g-chevdn { 0% { opacity:.15; transform:translateY(-5px);} 50% { opacity:1;} 100% { opacity:.15; transform:translateY(5px);} }
+  @keyframes g-chevup { 0% { opacity:.15; transform:translateY(5px);} 50% { opacity:1;} 100% { opacity:.15; transform:translateY(-5px);} }
+  @keyframes g-flow { to { stroke-dashoffset: -32; } }
+  @keyframes g-knob { 0%,100% { box-shadow:0 0 6px var(--kc), inset 0 1px 1px rgba(255,255,255,.3);} 50% { box-shadow:0 0 16px var(--kc), 0 0 24px var(--kc), inset 0 1px 1px rgba(255,255,255,.3);} }
   @keyframes g-shimmer { 0% { background-position:-120% 0; } 100% { background-position:220% 0; } }
   @keyframes g-emblem { 0% { transform:translate(-50%,-50%) scale(.6); opacity:0;} 60% { transform:translate(-50%,-50%) scale(1.12); opacity:1;} 100% { transform:translate(-50%,-50%) scale(1); opacity:1;} }
   @keyframes g-pulse { 0%,100% { box-shadow:0 0 0 0 var(--accent-soft);} 50% { box-shadow:0 0 0 6px transparent;} }
@@ -105,9 +109,22 @@
             </div>
           </sc-for>
 
-          <!-- shortcut gates between lanes -->
-          <div style="{{ gateTopMid }}"><span style="{{ gateGlyphOpen }}">⛩</span><span style="{{ gateLabelOpen }}">上↔中 · 开</span></div>
-          <div style="{{ gateMidBot }}"><span style="{{ gateGlyphClosed }}">⛩</span><span style="{{ gateLabelClosed }}">中↔下 · 闭</span></div>
+          <!-- directional path-ladders (diagonal, flowing arrows) -->
+          <svg viewBox="0 0 900 400" preserveAspectRatio="none" style="{{ laddersSvg }}">
+            <defs>
+              <marker id="ar-a" markerWidth="4" markerHeight="4" refX="2" refY="2" orient="auto"><path d="M0,0 L4,2 L0,4 L1.3,2 Z" fill="#6b3c20"></path></marker>
+              <marker id="ar-b" markerWidth="4" markerHeight="4" refX="2" refY="2" orient="auto"><path d="M0,0 L4,2 L0,4 L1.3,2 Z" fill="#21425f"></path></marker>
+            </defs>
+            <sc-for list="{{ ladders }}" as="L" hint-placeholder-count="8">
+              <path d="{{ L.d }}" fill="none" stroke="{{ L.baseStroke }}" stroke-width="17" stroke-linecap="round" opacity="{{ L.baseOpacity }}"></path>
+              <path d="{{ L.d }}" fill="none" stroke="{{ L.flowStroke }}" stroke-width="11" stroke-linecap="butt" stroke-dasharray="10 11" marker-end="{{ L.marker }}" style="{{ L.flowStyle }}"></path>
+            </sc-for>
+          </svg>
+          <div style="{{ gateLayer }}">
+            <sc-for list="{{ gateBtns }}" as="g" hint-placeholder-count="8">
+              <div onClick="{{ g.onClick }}" style="{{ g.wrap }}"><span style="{{ g.mark }}">{{ g.glyph }}</span></div>
+            </sc-for>
+          </div>
         </div>
 
         <!-- enemy base : compact fort -->
@@ -290,7 +307,7 @@
 </x-dc>
 <script type="text/x-dc" data-dc-script>
 class Component extends DCLogic {
-  state = { skin: 'onyx', action: null, clash: false, hoverCard: null, hoverSha: null, hoverUnit: null, hoverBoss: false };
+  state = { skin: 'onyx', action: null, clash: false, hoverCard: null, hoverSha: null, hoverUnit: null, hoverBoss: false, switches: {}, gates: {} };
 
   themes() {
     return {
@@ -509,13 +526,43 @@ class Component extends DCLogic {
     });
 
     // gates between adjacent lanes (top↔mid, mid↔bot)
-    const gateBase = { position: 'absolute', left: '48px', display: 'flex', alignItems: 'center', gap: '6px', zIndex: 4 };
-    const gateTopMid = Object.assign({}, gateBase, { top: '33.3%', transform: 'translateY(-50%)' });
-    const gateMidBot = Object.assign({}, gateBase, { top: '66.6%', transform: 'translateY(-50%)' });
-    const gateGlyphOpen = { fontSize: '24px', color: 'var(--hp)', textShadow: '0 0 12px var(--hp)', animation: 'g-gate 2s ease-in-out infinite' };
-    const gateLabelOpen = { padding: '2px 9px', borderRadius: '99px', background: 'rgba(70,209,122,.18)', border: '1px solid var(--hp)', color: 'var(--hp)', fontFamily: 'var(--fh)', fontWeight: 700, fontSize: '10px', whiteSpace: 'nowrap' };
-    const gateGlyphClosed = { fontSize: '24px', color: 'var(--ink-dim)', opacity: .6 };
-    const gateLabelClosed = { padding: '2px 9px', borderRadius: '99px', background: 'var(--chip)', border: '1px solid var(--panel-border)', color: 'var(--ink-dim)', fontFamily: 'var(--fh)', fontWeight: 700, fontSize: '10px', whiteSpace: 'nowrap' };
+    // directional path-ladders (diagonal slot→slot), active on 放牌; foe mirrored
+    const placeActive = this.state.action === 'place';
+    const laddersSvg = { position: 'absolute', inset: 0, width: '100%', height: '100%', pointerEvents: 'none', zIndex: 4, overflow: 'visible' };
+    const LAD = [
+      ['a', 205, 110, 295, 156], ['a', 205, 290, 295, 244], ['a', 385, 156, 475, 110], ['a', 385, 244, 475, 290],
+      ['b', 745, 110, 655, 156], ['b', 745, 290, 655, 244], ['b', 565, 156, 475, 110], ['b', 565, 244, 475, 290],
+    ];
+    const ladders = LAD.map(([team, x1, y1, x2, y2], li) => {
+      const mine = team === 'a';
+      const live = mine ? placeActive : false;
+      const open = (this.state.gates || {})[li] !== false;
+      const cx = (x1 + x2) / 2, cy = (y1 + y2) / 2, f = 0.44;
+      const d = 'M' + (cx + (x1 - cx) * f).toFixed(0) + ',' + (cy + (y1 - cy) * f).toFixed(0) + ' L' + (cx + (x2 - cx) * f).toFixed(0) + ',' + (cy + (y2 - cy) * f).toFixed(0);
+      const baseStroke = mine ? '#3c2010' : '#12283e';
+      const flowStroke = mine ? '#6b3c20' : '#21425f';
+      return {
+        d, baseStroke, flowStroke,
+        baseOpacity: open ? (live ? 0.5 : 0.32) : 0.16,
+        marker: open ? (mine ? 'url(#ar-a)' : 'url(#ar-b)') : '',
+        flowStyle: { opacity: open ? (live ? 0.62 : 0.38) : 0, animation: open ? 'g-flow .9s linear infinite' : 'none' },
+      };
+    });
+    // gate toggle knobs at each ladder midpoint
+    const gateBtns = LAD.map(([team, x1, y1, x2, y2], li) => {
+      const mine = team === 'a';
+      const open = (this.state.gates || {})[li] !== false;
+      const cx = (x1 + x2) / 2, cy = (y1 + y2) / 2;
+      const col = mine ? '#c46a38' : '#3a6e9e';
+      return {
+        open,
+        onClick: () => { const g = Object.assign({}, this.state.gates); g[li] = !open; this.setState({ gates: g }); },
+        wrap: { position: 'absolute', left: (cx / 900 * 100) + '%', top: (cy / 400 * 100) + '%', transform: 'translate(-50%,-50%)', width: '22px', height: '22px', borderRadius: '50%', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', background: open ? 'radial-gradient(circle at 38% 32%, ' + col + ', #1a1208)' : 'radial-gradient(circle at 38% 32%, #4a4640, #15130f)', border: '1.5px solid ' + (open ? col : '#6a4a3a'), boxShadow: open ? '0 0 8px ' + col + '88, inset 0 1px 1px rgba(255,255,255,.3)' : 'inset 0 1px 2px rgba(0,0,0,.6)', '--kc': col + '99', animation: open ? 'g-knob 1.6s ease-in-out infinite' : 'none', pointerEvents: 'auto', zIndex: 6 },
+        mark: { fontSize: open ? '9px' : '12px', fontWeight: 700, lineHeight: 1, color: open ? 'rgba(255,255,255,.85)' : '#d8504e', fontFamily: 'var(--fh)' },
+        glyph: open ? '◉' : '✕',
+      };
+    });
+    const gateLayer = { position: 'absolute', inset: 0, pointerEvents: 'none', zIndex: 6 };
 
     // bottom bar
     const bottomBar = { position: 'relative', zIndex: 50, flex: 'none', height: '212px', display: 'flex', gap: '14px', padding: '12px 22px 16px', borderTop: '1px solid var(--panel-border)', background: 'linear-gradient(180deg,transparent,rgba(0,0,0,.18))' };
@@ -659,7 +706,7 @@ class Component extends DCLogic {
       timerBox, timerIcon, timerText, timerLabel, shaSlots, shaRow, shaLabel,
       boss, bossHover: this.state.hoverBoss, bossEnter: () => this.setState({ hoverBoss: true }), bossLeave: () => this.setState({ hoverBoss: false }),
       lanesCol, lanes,
-      gateTopMid, gateMidBot, gateGlyphOpen, gateLabelOpen, gateGlyphClosed, gateLabelClosed,
+      ladders, laddersSvg, gateBtns, gateLayer,
       bottomBar, actionMenu: { width: '230px', flex: 'none', padding: '13px 14px', borderRadius: '14px', background: 'var(--panel)', border: '1px solid var(--panel-border)', boxShadow: 'inset 0 0 0 1px var(--hairline)' }, actions,
       handArea, handCount, handCountGang, hand, actionHint, actionSub,
       clashBackdrop, clashPanel, clashLaneDot, clashClose, openClash: () => this.setState({ clash: true }), closeClash: () => this.setState({ clash: false }), stop: (e) => e.stopPropagation(),

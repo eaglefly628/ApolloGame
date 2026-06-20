@@ -2,6 +2,8 @@ import { mountBattle, type BattleView, type BattleUnit, type BattleLane, type Ba
 import { mountLobby, type LobbyView, type LobbyShopItem } from './lobby-screen.js';
 import { prepareArmies, quartermasterEnergy, FORMATION_PRESETS, PRESET_NAMES, LEVER_CATALOG, LEVER_START, battleSpec, RUN_BATTLES, RUN_LIVES, BETWEEN_BUFFS, applyBuff, tiangangKeyBuffs, BOSS_ROSTER, bossFor, GAME_G_TIANGANGS, TIANGANG_BY_ID, ARCHETYPES, detectArchetype, archetypeMatchup, activeArchetype, pickAiFormation, GAME_G_PLANETS, GAME_G_FOILS, effectiveLives, effectiveLeverCap, effectiveLeverRegen, campaignFor, unlockStageOf, type Formation, type Intervention, type LeverKind, type RunBuff, type ArmyCard } from './index.js';
 import { initLiveBattle, stepLiveBattle, liveActive, migrateRear, NO_TENGANG, LANE_LEN, HOME_BLOOD, type LiveBattle, type DeployCmd, type ClashEvent, type TengangFx } from './live-combat.js';
+import { initTurnBattle, drawCard, deployUnit, castTengang, discardCard, endTurn, aiTakeTurn, toggleGate, GATES, OPENING_HAND, type PokerCard, type TengangHandCard } from './turn-combat.js';
+import { mountTurnBattle, buildTurnBattleView, type TurnBattleView, type TurnBattleActions, type TurnClashView, type TurnClashCardView } from './turn-battle-screen.js';
 import { cardPoints, P_MAX } from './clash-resolve.js';
 
 // Game G ·《翻命扑克》—— 大厅 ↔ 出征 闭环（launcher 卡带槽：export mount(container)→cleanup）。自包含于本目录。
@@ -235,6 +237,26 @@ export function buildBattleViewLive(live: LiveBattle, save: Save, oppName: strin
     clash, fx,
   };
 }
+// 确定性洗牌（mulberry32·抽序可回放·不破 outcome-first）—— 回合制牌库铺牌用。
+function seededShuffleArr<T>(xs: T[], seed: number): T[] {
+  const arr = [...xs]; let t = seed >>> 0;
+  const rnd = (): number => { t += 0x6d2b79f5; let x = t; x = Math.imul(x ^ (x >>> 15), x | 1); x ^= x + Math.imul(x ^ (x >>> 7), x | 61); return ((x ^ (x >>> 14)) >>> 0) / 4294967296; };
+  for (let i = arr.length - 1; i > 0; i--) { const j = Math.floor(rnd() * (i + 1)); [arr[i], arr[j]] = [arr[j], arr[i]]; }
+  return arr;
+}
+const SUITNAME: Record<string, string> = { s: '黑桃', h: '红桃', d: '方块', c: '梅花' };
+// turn-combat 掷命事件 → 回合制特写视图（doc24 战斗屏·点数/经营/天罡/士气 明细如实透出）。
+function clashToTurnView(ev: ClashEvent): TurnClashView {
+  const lc2 = (s: string): 's' | 'h' | 'd' | 'c' => s.toLowerCase() as 's' | 'h' | 'd' | 'c';
+  const cardv = (c: ClashEvent['a'], won: boolean): TurnClashCardView => ({ rank: c.rank, suit: lc2(c.suit), name: SUITNAME[lc2(c.suit)] + c.rank, won });
+  return {
+    laneName: ['上路', '中路', '下路'][ev.lane] ?? '路',
+    mine: cardv(ev.a, ev.aWins), foe: cardv(ev.b, !ev.aWins),
+    oddsMine: Math.round(ev.winrate * 100), rollPct: Math.round(ev.roll * 100),
+    bonusMine: [['点数(基础)', ev.a.points], ['经营(养成)', ev.a.buff], ['天罡(法术)', ev.a.tengang], ['士气(主将)', ev.a.morale]],
+    bonusFoe: [['点数(基础)', ev.b.points], ['经营(养成)', ev.b.buff], ['天罡(法术)', ev.b.tengang], ['士气(主将)', ev.b.morale]],
+  };
+}
 // live-combat 对决事件 → 特写视图（a=我方/b=敌方；点数/加成/战力/胜率/掷点 如实透出）。
 function clashToView(ev: ClashEvent): ClashView {
   const card = (c: ClashEvent['a']): ClashView['a'] => ({ rank: c.rank, suit: c.suit.toLowerCase() as 's' | 'h' | 'd' | 'c', general: c.general, points: c.points, buff: c.buff, morale: c.morale, tengang: c.tengang, pEff: c.pEff });
@@ -336,11 +358,11 @@ export function mount(container: HTMLElement): () => void {
   // AI 暗布阵：纯逻辑下沉到 pickAiFormation（可测）；committed=玩家集齐招牌流派 → AI 全程反制攻你最弱一路。
   const aiFormation = (): Formation => pickAiFormation(save.stage, save.materials, save.lastOfficers, activeArchetype(save.tiangangs) !== null);
 
-  // 出征：旧「布阵分兵 / 备战干预」两屏已废弃（CR 实时出牌模型：派路 + 干预改在战斗中实时做）→ 点出征直接进战斗。
-  // 默认用上次布阵（初始均衡 10/10/10），开战前无预置干预。
+  // 出征：旧「布阵分兵 / 备战干预」两屏已废弃 → 点出征直接进战斗。默认用上次布阵；开战前无预置干预。
+  // doc24 大转向：战斗走【回合制】(showTurnMatch · turn-combat + turn-battle-screen)，取代旧实时三路(showMatch·保留作参考/帧测)。
   function startBattle(): void {
     const off = [...save.lastOfficers] as [number, number, number];
-    showMatch({ officers: off }, describeFormation(off), []);
+    showTurnMatch({ officers: off }, describeFormation(off), []);
   }
 
   // ───────────────────────── 场间整备 · 三选一增益（roguelike 养成核 · 胜后短窗）─────────────────────────
@@ -369,9 +391,121 @@ export function mount(container: HTMLElement): () => void {
     root.append(title, sub, cardsBox, skip);
   }
 
-  // ───────────────────────── 出征（一局 · live-combat 实时三路行军）─────────────────────────
-  // WIRE-MARCH：兵沿三路一格格慢慢爬（每 LIVE_STEP_MS 一拍）→ 最前两张相邻才翻牌成波对决 → 续航退场 →
-  //   突破到敌 3 血老家先破者胜。胜负仍 outcome-first（live-combat 种子化、可回放）；battle-screen 只如实画真 slot 位置。
+  // ───────────────────────── 出征（一局 · doc24 回合制 · turn-combat + turn-battle-screen）─────────────────────────
+  // owner 大转向：实时 CR → 回合制桌游。每回合 +1 圣水 → 四选一互斥动作(抽/放[+翻门]/打天罡/弃) → 结束回合推进一格 → 相邻遭遇掷命特写。
+  // 牌库由 prepareArmies 揭晓前编排(融天罡/干预/Boss·outcome-first)折成扑克兵库；先破敌 3 血大本营胜。结算复用旧养成闭环(命/材料/三选一)。
+  function showTurnMatch(formation: Formation, myName: string, interventions: Intervention[]): void {
+    clear();
+    const spec = battleSpec(save.stage - 1);
+    const boss = spec.boss ? bossFor(save.bossIdx) : null;
+    const aiForm = boss ? boss.formation : aiFormation();
+    const enemyBias = boss ? boss.favorBias : spec.enemyBias;
+    const aiName = boss ? boss.name : describeFormation(aiForm.officers);
+    const stage = document.createElement('div');
+    stage.style.cssText = 'width:min(100%, 140vh);max-width:1340px;margin:0 auto;border-radius:12px;overflow:hidden;position:relative';
+    const label = el('div', 'min-width:300px;text-align:center;font-weight:600;opacity:.85',
+      `第 ${save.stage}/${RUN_BATTLES} 战 · ${spec.label} ｜ 命 ${'❤'.repeat(save.lives)} ｜ 你的阵 ${myName}${boss ? ` ｜ ⚔ ${boss.name}：「${boss.taunt}」` : ''}`);
+    const back = mkBtn('← 返回大厅'); back.onclick = showLobby;
+    const bar = el('div', 'display:flex;gap:10px;align-items:center;max-width:1340px;flex-wrap:wrap;justify-content:center');
+    bar.append(label, back);
+    root.append(stage, bar);
+
+    // 揭晓前完整编排（与旧路 + 测试共用 prepareArmies）→ 折成回合制扑克兵牌库（lane 由玩家放牌时自选·非预派）。
+    const { a, b } = prepareArmies({ formation, deckBias: myBias(save.deck), tiangangs: save.tiangangs, planets: save.planets, interventions, enemyForm: aiForm, enemyBias, boss });
+    const seed = Math.floor(Math.random() * 1e9);
+    const toPoker = (c: ArmyCard): PokerCard => ({ kind: 'poker', id: c.id, rank: cardRank(c), suit: c.suit, general: c.general, buff: Math.round(favorToP(c.favor) - cardPoints(cardRank(c))) });
+    const aTengang: TengangHandCard[] = save.tiangangs.map((id) => ({ kind: 'tengang', id }));
+    const tb = initTurnBattle({ seed, a: { pokerDeck: seededShuffleArr(a.map(toPoker), seed ^ 0x9e37), tengangDeck: aTengang }, b: { pokerDeck: seededShuffleArr(b.map(toPoker), seed ^ 0x51ed), tengangDeck: [] } });
+    for (let i = 0; i < OPENING_HAND && tb.a.pokerDeck.length; i++) tb.a.hand.push(tb.a.pokerDeck.shift()!); // 起手摸
+    for (let i = 0; i < OPENING_HAND && tb.b.pokerDeck.length; i++) tb.b.hand.push(tb.b.pokerDeck.shift()!);
+
+    // ── 运行态（UI 选中 + 掷命特写队列）──
+    let theme: 'onyx' | 'brocade' = 'onyx';
+    let selMode: string | null = null; // 当前选中的动作类（draw/deploy/cast/discard·UI 先选后做）
+    let selHand = -1;                  // 放牌/施法/弃牌 选中的手牌
+    let drained = 0; const perfQueue: ClashEvent[] = []; let perfClash: ClashEvent | null = null; let busy = false; let perfTimer = 0;
+    const tgName = (id: string): string => TIANGANG_BY_ID.get(id)?.name ?? id;
+    const view = (): TurnBattleView => buildTurnBattleView(tb, { theme, tengangName: tgName, selMode, selHand, clash: perfClash ? clashToTurnView(perfClash) : null, bossName: aiName });
+    let mounted: { update: () => void; destroy: () => void } | null = null;
+
+    const drainClashes = (): void => { for (const ev of tb.clashLog.slice(drained)) perfQueue.push(ev); drained = tb.clashLog.length; };
+    const playPerf = (onDone: () => void): void => { // 逐场掷命特写（冻结战场·PERF_MS 一场）演完回调
+      if (perfQueue.length === 0) { perfClash = null; mounted?.update(); onDone(); return; }
+      perfClash = perfQueue.shift()!; mounted?.update();
+      perfTimer = window.setTimeout(() => playPerf(onDone), PERF_MS);
+    };
+    const finishTurnSeq = (): void => { busy = false; selMode = null; selHand = -1; if (tb.winner !== 'pending') settleTurn(); else mounted?.update(); };
+    const runAiThenContinue = (): void => { // 玩家推进特写演完 → AI 回合(脚本) → AI 推进特写 → 回到玩家
+      if (tb.winner !== 'pending') { finishTurnSeq(); return; }
+      aiTakeTurn(tb); drainClashes(); playPerf(finishTurnSeq);
+    };
+    const commitEndTurn = (): void => {
+      if (busy || tb.winner !== 'pending' || tb.active !== 'a') return;
+      busy = true; selMode = null; selHand = -1;
+      endTurn(tb); drainClashes(); playPerf(runAiThenContinue);
+    };
+    const actions: TurnBattleActions = {
+      pickAction: (kind) => { if (busy || tb.active !== 'a') return; if (tb.actionTaken && tb.actionTaken !== kind) return; selMode = selMode === kind ? null : kind; selHand = -1; },
+      drawFrom: (from) => { if (busy || selMode !== 'draw') return; drawCard(tb, 'a', from); },
+      selectHand: (i) => {
+        if (busy || tb.active !== 'a') return;
+        if (selMode === 'cast') { if (castTengang(tb, 'a', i)) tb.a.tengangA = aggregateTengang(tb.a.castIds); selHand = -1; } // 施法 → 持续修正重算
+        else if (selMode === 'discard') { discardCard(tb, 'a', i); selHand = -1; }
+        else if (selMode === 'deploy' || tb.actionTaken === null || tb.actionTaken === 'deploy') { selMode = 'deploy'; selHand = selHand === i ? -1 : i; } // 默认进放牌·选牌→点路落子
+      },
+      playLane: (lane) => { if (busy || selMode !== 'deploy' || selHand < 0) return; if (deployUnit(tb, 'a', selHand, lane)) selHand = -1; },
+      toggleGate: (idx) => { if (busy || tb.active !== 'a' || GATES[idx]?.side !== 'a') return; toggleGate(tb, idx); }, // 仅本方 4 门可翻
+      endTurn: commitEndTurn,
+      setTheme: (t) => { theme = t; },
+    };
+    mounted = mountTurnBattle(stage, view, actions);
+    battle = mounted; // teardownMatch 清理（destroy）
+    stopLoop = () => { if (perfTimer) { clearTimeout(perfTimer); perfTimer = 0; } }; // 清未决特写计时
+
+    function settleTurn(): void {
+      const survA = tb.lanes.reduce((s, L) => s + L.a.length + L.spentA, 0);
+      const lanesA = tb.lanes.filter((L) => L.a.length + L.spentA > L.b.length + L.spentB).length;
+      const lanesB = tb.lanes.filter((L) => L.b.length + L.spentB > L.a.length + L.spentA).length;
+      const homeA = tb.homeA, homeB = tb.homeB, winner = tb.winner, homeMax = tb.homeMax;
+      const gain = survA + (winner === 'a' ? 15 : 0);
+      save.materials += gain;
+      let tail = '', cont = '回大厅', route: () => void = showLobby;
+      if (winner === 'a') {
+        save.leverEnergy = Math.min(effectiveLeverCap(save.planets), save.leverEnergy + effectiveLeverRegen(save.planets));
+        if (save.stage >= RUN_BATTLES) { save.materials += 50; tail = '🏆 <b>通关战役！</b>（+50 材料）回大厅开新战役'; save.stage = 1; save.lives = effectiveLives(save.planets); save.bossIdx = rollBoss(); }
+        else { save.stage += 1; tail = `进军 第 ${save.stage}/${RUN_BATTLES} 战`; cont = '战间整备（三选一）'; const nl = `进军第 ${save.stage} 战`; route = () => showBetween(nl); }
+      } else {
+        save.lives -= 1;
+        if (save.lives <= 0) { tail = '💀 <b>命尽，战役结束</b> 回大厅重整'; save.stage = 1; save.lives = effectiveLives(save.planets); save.bossIdx = rollBoss(); }
+        else { tail = `命 −1（剩 ${save.lives}）重整旗鼓再战本场`; cont = '重整再战'; route = startBattle; }
+      }
+      const qm = quartermasterEnergy(save.tiangangs, lanesA);
+      if (qm > 0) { save.leverEnergy = Math.min(effectiveLeverCap(save.planets), save.leverEnergy + qm); tail += `（督粮 +${qm}◈）`; }
+      persist(save);
+      const who = winner === 'a' ? '我方胜（破敌大本营）' : winner === 'b' ? '敌方胜（我大本营被破）' : '平局（无人破家）';
+      const color = winner === 'a' ? '#eab308' : winner === 'b' ? '#94a3b8' : '#cbd5e1';
+      label.innerHTML = `<span style="color:${color}">${who}</span> ｜ 控路 ${lanesA}:${lanesB} ｜ 大本营 我${homeA}/敌${homeB}（满${homeMax}）｜ 敌阵【${aiName}】 ｜ +${gain} 材料 ｜ ${tail}`;
+      back.textContent = `→ ${cont}`; back.onclick = route;
+      const bigTxt = winner === 'a' ? '胜 利' : winner === 'b' ? '战 败' : '平 局';
+      const bigCol = winner === 'a' ? '#ffe09a' : winner === 'b' ? '#ff6b6b' : '#cbd5e1';
+      const stat = (lab: string, val: string, sub: string): string => `<div style="padding:14px 12px;border-radius:13px;background:rgba(255,255,255,.045);border:1px solid rgba(255,255,255,.1);text-align:center;"><div style="font-size:11px;letter-spacing:.14em;color:#8493a3;text-transform:uppercase;">${lab}</div><div style="font-family:'Rajdhani',sans-serif;font-weight:700;font-size:25px;color:#eaf0f6;margin:5px 0 2px;">${val}</div><div style="font-size:11px;color:#7d8b9a;">${sub}</div></div>`;
+      const result = document.createElement('div');
+      result.style.cssText = 'position:absolute;inset:0;z-index:40;display:flex;align-items:center;justify-content:center;padding:20px;background:radial-gradient(60% 60% at 50% 42%,rgba(8,12,18,.74),rgba(4,6,10,.93));backdrop-filter:blur(4px);-webkit-backdrop-filter:blur(4px);font-family:"Noto Sans SC",sans-serif;';
+      result.innerHTML = `<div style="width:min(86%,720px);padding:34px 40px;border-radius:22px;background:linear-gradient(180deg,rgba(26,38,54,.97),rgba(12,18,28,.99));border:2px solid ${bigCol}66;box-shadow:0 30px 90px rgba(0,0,0,.72),0 0 64px ${bigCol}33;text-align:center;">
+        <div style="font-family:'Zhi Mang Xing',cursive;font-size:80px;line-height:1;color:${bigCol};text-shadow:0 4px 26px ${bigCol}66;">${bigTxt}</div>
+        <div style="font-size:16px;color:#cdd7e3;margin-top:6px;">${who} ｜ 敌阵【${aiName}】</div>
+        <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:12px;margin:26px 0 18px;">
+          ${stat('战利品', '+' + gain, '材料 🪙')}${stat('控路', lanesA + ' : ' + lanesB, '我方 : 敌方')}${stat('大本营', '我 ' + homeA + ' / 敌 ' + homeB, '满 ' + homeMax)}${qm > 0 ? stat('督粮', '+' + qm + '◈', '入下场能量') : ''}
+        </div>
+        <div style="font-size:14px;color:#9fb0c2;margin-bottom:22px;min-height:18px;">${tail}</div>
+        <button id="gg-result-cont" style="padding:14px 44px;border-radius:13px;border:none;cursor:pointer;background:linear-gradient(180deg,#ff8d5a,#ee5a25);color:#fff;font-family:'Rajdhani',sans-serif;font-weight:700;font-size:19px;letter-spacing:.04em;box-shadow:0 10px 28px rgba(238,90,37,.5);">${cont} →</button>
+      </div>`;
+      stage.appendChild(result);
+      result.querySelector('#gg-result-cont')?.addEventListener('click', route);
+    }
+  }
+
+  // ───────────────────────── 〔superseded〕旧实时三路行军（doc24 前·留作参考/帧测；startBattle 已切回合制）─────────────────────────
   function showMatch(formation: Formation, myName: string, interventions: Intervention[]): void {
     clear();
     const spec = battleSpec(save.stage - 1); // stage 1→战 0
