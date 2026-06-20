@@ -6,6 +6,7 @@
 import { GI, tiangangIcon } from './icons.js';
 import { HERO_CARDS, DIZHI_ZODIACS, DIZHI_TRINES, EARTH_FIENDS, type StageCampaign } from './blueprint.js';
 import { heroPortrait } from './portraits.js';
+import { RECHARGE_PACKS, rechargeTotal, DIAMOND_EXCHANGES } from './blueprint.js';
 
 export interface LobbyShopItem { id: string; name: string; sub: string; cost: number; owned: boolean; buyable: boolean; level?: number; inDeck?: boolean; power?: number; phat?: number; kind?: string; icon?: string; tint?: string; unlockStage?: number; locked?: boolean }
 export type EarthRarity = 'bronze' | 'silver' | 'gold';
@@ -59,6 +60,14 @@ const CSS = `
 .ggl-root .rankb .lp{ font-family:var(--fn); font-size:11px; color:var(--gold) }
 .ggl-root .seg{ padding:6px 13px; border-radius:9px; background:transparent; border:1px solid var(--panel-border); color:var(--ink-dim); font-size:12px; font-weight:700 } .ggl-root .seg.on{ background:var(--gold-grad); color:#2a1a08; border:0 }
 .ggl-root .coin{ display:flex; align-items:center; gap:5px; padding:6px 11px; border-radius:9px; background:var(--chip); border:1px solid var(--panel-border); font-family:var(--fn); font-size:13px }
+.ggl-root .coin.tap{ cursor:pointer }
+.ggl-root .coin.tap:hover{ border-color:var(--gold) }
+.ggl-root .rc-grid{ display:grid; grid-template-columns:repeat(4,1fr); gap:10px }
+.ggl-root .rc-pack{ display:flex; flex-direction:column; align-items:center; gap:3px; padding:14px 6px 10px; border-radius:12px; background:var(--chip); border:1px solid var(--panel-border); cursor:pointer; transition:border-color .12s }
+.ggl-root .rc-pack:hover{ border-color:var(--gold) }
+.ggl-root .rc-pack.off{ opacity:.4; cursor:not-allowed }
+.ggl-root .rc-amt{ font-family:var(--fh); font-weight:700; font-size:18px; color:#7fd0ff }
+.ggl-root .rc-price{ margin-top:5px; font-family:var(--fn); font-size:14px; font-weight:700; color:var(--ink); padding:3px 12px; border-radius:99px; background:var(--gold-grad); color:#2a1a08 }
 .ggl-root .icon{ width:34px; height:34px; border-radius:9px; display:flex; align-items:center; justify-content:center; background:var(--chip); border:1px solid var(--panel-border); color:var(--ink-dim); font-size:15px }
 .ggl-root .tutbtn{ padding:0 12px; height:34px; border-radius:9px; background:var(--chip); border:1px solid var(--gold); color:var(--gold); font-size:13px; font-weight:700 }
 .ggl-root .nav{ display:flex; gap:4px; padding:10px 22px 0 }
@@ -380,6 +389,32 @@ function manualBox(tier: 'easy' | 'mid' | 'hard'): string {
     <div style="text-align:center;margin-top:12px"><button class="cta-sub" style="color:#2a1a08;background:var(--gold-grad);border:0" data-act="man-close">明白了 →</button></div>
   </div></div>`;
 }
+// 钻石商城（owner 2026-06-20 · Demo 假支付）：充值(¥→💎·越充越送·上限64) + 兑换(💎→🪙材料)。
+// 全数据驱动：档位读 RECHARGE_PACKS / DIAMOND_EXCHANGES；点击 = 真发币（onRecharge/onExchange）。
+function rechargeBox(view: LobbyView): string {
+  const dia = view.diamond ?? 0;
+  const packCard = (p: typeof RECHARGE_PACKS[number]): string => {
+    const total = rechargeTotal(p);
+    const bonus = p.bonus > 0 ? `<span style="color:var(--gold);font-size:11px">含赠 +${p.bonus}</span>` : `<span style="color:var(--ink-dim);font-size:11px">&nbsp;</span>`;
+    const tag = p.tag ? `<div style="position:absolute;top:-9px;right:8px;background:var(--gold-grad);color:#2a1a08;font-family:var(--fn);font-size:9px;font-weight:700;padding:2px 7px;border-radius:99px">${p.tag}</div>` : '';
+    return `<button class="rc-pack" data-act="rechargeBuy" data-k="${p.id}" style="position:relative">${tag}<div class="rc-amt">💎 ${total}</div>${bonus}<div class="rc-price">¥${p.price}</div></button>`;
+  };
+  const exCard = (x: typeof DIAMOND_EXCHANGES[number]): string => {
+    const afford = dia >= x.diamond;
+    const tag = x.tag ? `<div style="position:absolute;top:-9px;right:8px;background:#3a6ea5;color:#dff;font-family:var(--fn);font-size:9px;font-weight:700;padding:2px 7px;border-radius:99px">${x.tag}</div>` : '';
+    return `<button class="rc-pack${afford ? '' : ' off'}"${afford ? ` data-act="exchangeBuy" data-k="${x.id}"` : ' disabled'} style="position:relative">${tag}<div class="rc-amt" style="color:var(--gold)">🪙 ${x.gold}</div><div class="rc-price" style="background:#1c3a5a;color:#9fe0ff">💎 ${x.diamond}</div></button>`;
+  };
+  return `<div class="tut-ov" data-act="recharge-close"><div class="tut-box intro-scroll" data-stop="1" style="max-width:560px">
+    <h2>💎 钻石商城</h2>
+    <div style="display:flex;align-items:center;gap:8px;color:var(--ink-dim);font-size:12px;margin-bottom:4px">当前持有 <b style="color:#7fd0ff;font-size:15px">💎 ${dia}</b><span style="margin-left:auto">🪙 ${view.coin}</span></div>
+    <div style="font-family:var(--fh);font-weight:700;font-size:14px;color:var(--ink);margin:12px 0 8px">充值 · 越充越送（Demo·点即到账）</div>
+    <div class="rc-grid">${RECHARGE_PACKS.map(packCard).join('')}</div>
+    <div style="font-family:var(--fh);font-weight:700;font-size:14px;color:var(--ink);margin:16px 0 8px">兑换材料 · 💎 → 🪙（拿去改造坊升级）</div>
+    <div class="rc-grid">${DIAMOND_EXCHANGES.map(exCard).join('')}</div>
+    <div class="note" style="text-align:left;margin-top:12px;font-size:11px">Demo 演示：充值为模拟，点击直接到账、不走真实支付。</div>
+    <div style="text-align:center;margin-top:12px"><button class="cta-sub" style="color:#2a1a08;background:var(--gold-grad);border:0" data-act="recharge-close">完成 →</button></div>
+  </div></div>`;
+}
 
 // 改造坊天罡牌货架项（B3）：买入 + 选入/踢出战库双动作 + 牌力/P̂ 展示。
 function craftTiangangItem(it: LobbyShopItem, deckFull: boolean): string {
@@ -546,7 +581,7 @@ function fiendsCodex(): string {
   }).join('')}</div>`;
 }
 
-export function renderLobby(view: LobbyView, tab: string, tutorialOpen: boolean, deckTab: 'base' | 'gang' = 'base', earthFilter = 'all', collTab = 'cards', heroSuit = 'all', heroDetail = '', heroRar = 'all', ownedOnly = false, introOpen = false, manualTier: '' | 'easy' | 'mid' | 'hard' = ''): string {
+export function renderLobby(view: LobbyView, tab: string, tutorialOpen: boolean, deckTab: 'base' | 'gang' = 'base', earthFilter = 'all', collTab = 'cards', heroSuit = 'all', heroDetail = '', heroRar = 'all', ownedOnly = false, introOpen = false, manualTier: '' | 'easy' | 'mid' | 'hard' = '', rechargeOpen = false): string {
   const on = (t: string): string => (tab === t ? ' on' : '');
   const dOn = (t: string): string => (deckTab === t ? ' on' : '');
   const cOn = (t: string): string => (collTab === t ? ' on' : '');
@@ -562,7 +597,7 @@ export function renderLobby(view: LobbyView, tab: string, tutorialOpen: boolean,
     <button class="seg ${view.skin === 'onyx' ? 'on' : ''}" data-act="skin" data-k="onyx">玄铁</button>
     <button class="seg ${view.skin === 'rosy' ? 'on' : ''}" data-act="skin" data-k="rosy">锦霞</button>
     <div class="coin" title="金币 · 打战斗赚 · 解锁天罡/地支"><span>🪙</span><b>${kfmt(view.coin)}</b></div>
-    <div class="coin" title="钻石 · 速解天罡（只加速·不卖强度）"><span>💎</span><b style="color:#7fd0ff">${kfmt(view.diamond ?? 0)}</b></div>
+    <button class="coin tap" data-act="recharge" title="钻石商城 · 充值 / 兑换材料"><span>💎</span><b style="color:#7fd0ff">${kfmt(view.diamond ?? 0)}</b><span style="color:var(--gold);font-weight:700;margin-left:2px">＋</span></button>
     <div class="coin"><span>◈</span><span style="color:var(--gold)">${view.energy}/${view.energyMax}</span></div>
     <div class="coin"><span>✨</span><span style="color:#7fb0d8">${view.foilCount}</span></div>
     <button class="tutbtn" data-act="intro">📜 游戏介绍</button>
@@ -628,7 +663,7 @@ export function renderLobby(view: LobbyView, tab: string, tutorialOpen: boolean,
     </div></section>
     <section class="screen${on('ladder')} full">${ladderSection(view.name, view.rankText)}</section>
   </div>
-  </div>${tutorialOpen ? tutorialBox() : ''}${introOpen ? gameIntroBox() : ''}${manualTier ? manualBox(manualTier) : ''}</div>`;
+  </div>${tutorialOpen ? tutorialBox() : ''}${introOpen ? gameIntroBox() : ''}${manualTier ? manualBox(manualTier) : ''}${rechargeOpen ? rechargeBox(view) : ''}</div>`;
 }
 
 export interface LobbyHandlers {
@@ -639,6 +674,8 @@ export interface LobbyHandlers {
   onBuyFoil?: (id: string) => void;
   onToggleTiangang?: (id: string) => void; // 选入/踢出**出战牌组**（≤deckSize）
   onDiamondUnlock?: (id: string) => void; // 钻石速购解锁天罡（doc25·跳关门槛）
+  onRecharge?: (packId: string) => void; // 充值 ¥→💎（Demo 假支付）
+  onExchange?: (exId: string) => void; // 兑换 💎→🪙材料
   onSelectDeck?: (id: string) => void; // 选某牌组出战
   onNewDeck?: () => void; // 新建牌组
   onDelDeck?: (id: string) => void; // 删除牌组
@@ -660,7 +697,8 @@ export function mountLobby(host: HTMLElement, h: LobbyHandlers): { update: () =>
   let tut = false;
   let intro = false;
   let manTier: '' | 'easy' | 'mid' | 'hard' = '';
-  const render = (): void => { host.innerHTML = renderLobby({ ...h.getView(), skin }, tab, tut, deckTab, earthFilter, collTab, heroSuit, heroDetail, heroRar, ownedOnly, intro, manTier); };
+  let recharge = false;
+  const render = (): void => { host.innerHTML = renderLobby({ ...h.getView(), skin }, tab, tut, deckTab, earthFilter, collTab, heroSuit, heroDetail, heroRar, ownedOnly, intro, manTier, recharge); };
   const onClick = (e: MouseEvent): void => {
     const el = (e.target as HTMLElement).closest('[data-act]') as HTMLElement | null; if (!el) return;
     const act = el.dataset.act, k = el.dataset.k ?? '';
@@ -686,6 +724,10 @@ export function mountLobby(host: HTMLElement, h: LobbyHandlers): { update: () =>
     else if (act === 'buyFoil') { h.onBuyFoil?.(k); render(); }
     else if (act === 'toggleTiangang') { h.onToggleTiangang?.(k); render(); }
     else if (act === 'diamondUnlock') { h.onDiamondUnlock?.(k); render(); }
+    else if (act === 'recharge') { recharge = true; render(); }
+    else if (act === 'recharge-close') { recharge = false; render(); }
+    else if (act === 'rechargeBuy') { h.onRecharge?.(k); render(); }
+    else if (act === 'exchangeBuy') { h.onExchange?.(k); render(); }
     else if (act === 'selectDeck') { h.onSelectDeck?.(k); render(); }
     else if (act === 'newDeck') { h.onNewDeck?.(); render(); }
     else if (act === 'delDeck') { h.onDelDeck?.(k); render(); }
@@ -699,6 +741,6 @@ export function mountLobby(host: HTMLElement, h: LobbyHandlers): { update: () =>
 const FONTS = '<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin><link href="https://fonts.googleapis.com/css2?family=Silkscreen:wght@400;700&family=Rajdhani:wght@500;600;700&family=Cormorant+Garamond:wght@500;600;700&family=Noto+Sans+SC:wght@400;500;700;900&family=Noto+Serif+SC:wght@500;700;900&family=Zhi+Mang+Xing&family=Ma+Shan+Zheng&display=swap" rel="stylesheet">';
 
 // 离线"看帧" golden：自包含 HTML（CSS + 字体 + 真渲染器输出）。浏览器开 = 真大厅。
-export function renderLobbyDoc(view: LobbyView, tab = 'home', collTab = 'cards', deckTab: 'base' | 'gang' = 'base'): string {
-  return `<!DOCTYPE html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">${FONTS}<style>html,body{margin:0;background:#0c0a08}${CSS}</style></head><body>${renderLobby(view, tab, false, deckTab, 'all', collTab)}</body></html>`;
+export function renderLobbyDoc(view: LobbyView, tab = 'home', collTab = 'cards', deckTab: 'base' | 'gang' = 'base', rechargeOpen = false): string {
+  return `<!DOCTYPE html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">${FONTS}<style>html,body{margin:0;background:#0c0a08}${CSS}</style></head><body>${renderLobby(view, tab, false, deckTab, 'all', collTab, 'all', '', 'all', false, false, '', rechargeOpen)}</body></html>`;
 }

@@ -705,6 +705,28 @@ export const GAME_G_FOILS: FoilSkin[] = [
   { id: 'crimson', name: '赤焰', cost: 60, desc: '赤红炽芒' },
   { id: 'obsidian', name: '玄曜', cost: 90, desc: '玄黑曜辉' },
 ];
+
+// === 钻石经济（owner 2026-06-20 · Demo 假支付）===
+// 闭环：充值(¥→💎，越充越送·上限64) → 兑换(💎→🪙材料，拿去改造坊升级地支/天罡)。
+// 全数据驱动：调档位/价格/赠送只改下表，引擎只「读表发币」。numbers=Demo 占位，owner 可调。
+export interface RechargePack { id: string; price: number; base: number; bonus: number; tag?: string } // price=¥ · 到账=base+bonus
+export const RECHARGE_PACKS: RechargePack[] = [
+  { id: 'r6', price: 6, base: 6, bonus: 0 }, // ¥6=6💎（1:1·首档无赠）
+  { id: 'r18', price: 18, base: 18, bonus: 2, tag: '超值' }, // 到账 20（+11%）
+  { id: 'r30', price: 30, base: 30, bonus: 6, tag: '热卖' }, // 到账 36（+20%）
+  { id: 'r50', price: 50, base: 50, bonus: 14, tag: '至尊' }, // 到账 64（+28%·上限）
+];
+export const rechargeTotal = (p: RechargePack): number => p.base + p.bonus;
+
+// 💎→🪙材料 兑换（越换单价越优）；🪙 用于改造坊升级（地支材料/天罡/星球）。
+export interface DiamondExchange { id: string; diamond: number; gold: number; tag?: string }
+export const DIAMOND_EXCHANGES: DiamondExchange[] = [
+  { id: 'x6', diamond: 6, gold: 60 }, // 10🪙/💎
+  { id: 'x18', diamond: 18, gold: 200, tag: '超值' }, // ~11🪙/💎
+  { id: 'x36', diamond: 36, gold: 450, tag: '热卖' }, // 12.5🪙/💎
+  { id: 'x64', diamond: 64, gold: 900, tag: '至尊' }, // ~14🪙/💎
+];
+
 const PLANET_TROOP_RANKS = new Set(['A', '2', '3', '4', '5', '6']); // 「兵」档（星球·军作用域）
 /** 星球·军：揭晓前给军阵「兵」档 +favor（叠加级数）。build-时变换、outcome-first；作用 built 军阵结构（非 deck 均值）。 */
 export function applyPlanetArmy(army: ArmyCard[], planets: Record<string, number>): ArmyCard[] {

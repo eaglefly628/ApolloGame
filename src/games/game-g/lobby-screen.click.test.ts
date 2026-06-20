@@ -148,6 +148,45 @@ describe('Game G · lobby-screen mountLobby 点击交互（DOM · happy-dom）',
     });
   });
 
+  describe('钻石商城（充值 / 兑换）', () => {
+    it('点击顶栏💎→ 钻石商城 overlay 出现（含充值 + 兑换档位）', () => {
+      const host = document.createElement('div');
+      mountLobby(host, { getView: () => makeView({ diamond: 12 }), onPlay: vi.fn() });
+      click(host.querySelector('[data-act="recharge"]'));
+      expect(host.querySelector('.tut-ov')).not.toBeNull();
+      expect(host.innerHTML).toContain('钻石商城');
+      expect(host.innerHTML).toContain('越充越送');
+      expect(host.querySelector('[data-act="rechargeBuy"]')).not.toBeNull();
+    });
+
+    it('点充值档 → onRecharge 以 packId 调用', () => {
+      const host = document.createElement('div');
+      const onRecharge = vi.fn();
+      mountLobby(host, { getView: () => makeView({ diamond: 0 }), onPlay: vi.fn(), onRecharge });
+      click(host.querySelector('[data-act="recharge"]'));
+      click(host.querySelector('[data-act="rechargeBuy"]')); // 第一档 r6
+      expect(onRecharge).toHaveBeenCalledWith('r6');
+    });
+
+    it('余额够 → 点兑换 → onExchange 以 exId 调用', () => {
+      const host = document.createElement('div');
+      const onExchange = vi.fn();
+      mountLobby(host, { getView: () => makeView({ diamond: 100 }), onPlay: vi.fn(), onExchange });
+      click(host.querySelector('[data-act="recharge"]'));
+      click(host.querySelector('[data-act="exchangeBuy"]')); // 第一档 x6（100💎够）
+      expect(onExchange).toHaveBeenCalledWith('x6');
+    });
+
+    it('余额不足 → 兑换档位禁用（无 data-act·不触发回调）', () => {
+      const host = document.createElement('div');
+      const onExchange = vi.fn();
+      mountLobby(host, { getView: () => makeView({ diamond: 0 }), onPlay: vi.fn(), onExchange });
+      click(host.querySelector('[data-act="recharge"]'));
+      expect(host.querySelector('[data-act="exchangeBuy"]')).toBeNull(); // 0💎 全买不起
+      expect(onExchange).not.toHaveBeenCalled();
+    });
+  });
+
   // ── 4. 出征按钮 ──
   describe('出征（play）回调', () => {
     it('点击「出征」→ onPlay 回调触发', () => {

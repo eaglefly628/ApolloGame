@@ -32,6 +32,14 @@
 .ggl-root .rankb .lp{ font-family:var(--fn); font-size:11px; color:var(--gold) }
 .ggl-root .seg{ padding:6px 13px; border-radius:9px; background:transparent; border:1px solid var(--panel-border); color:var(--ink-dim); font-size:12px; font-weight:700 } .ggl-root .seg.on{ background:var(--gold-grad); color:#2a1a08; border:0 }
 .ggl-root .coin{ display:flex; align-items:center; gap:5px; padding:6px 11px; border-radius:9px; background:var(--chip); border:1px solid var(--panel-border); font-family:var(--fn); font-size:13px }
+.ggl-root .coin.tap{ cursor:pointer }
+.ggl-root .coin.tap:hover{ border-color:var(--gold) }
+.ggl-root .rc-grid{ display:grid; grid-template-columns:repeat(4,1fr); gap:10px }
+.ggl-root .rc-pack{ display:flex; flex-direction:column; align-items:center; gap:3px; padding:14px 6px 10px; border-radius:12px; background:var(--chip); border:1px solid var(--panel-border); cursor:pointer; transition:border-color .12s }
+.ggl-root .rc-pack:hover{ border-color:var(--gold) }
+.ggl-root .rc-pack.off{ opacity:.4; cursor:not-allowed }
+.ggl-root .rc-amt{ font-family:var(--fh); font-weight:700; font-size:18px; color:#7fd0ff }
+.ggl-root .rc-price{ margin-top:5px; font-family:var(--fn); font-size:14px; font-weight:700; color:var(--ink); padding:3px 12px; border-radius:99px; background:var(--gold-grad); color:#2a1a08 }
 .ggl-root .icon{ width:34px; height:34px; border-radius:9px; display:flex; align-items:center; justify-content:center; background:var(--chip); border:1px solid var(--panel-border); color:var(--ink-dim); font-size:15px }
 .ggl-root .tutbtn{ padding:0 12px; height:34px; border-radius:9px; background:var(--chip); border:1px solid var(--gold); color:var(--gold); font-size:13px; font-weight:700 }
 .ggl-root .nav{ display:flex; gap:4px; padding:10px 22px 0 }
@@ -228,7 +236,7 @@
     <button class="seg " data-act="skin" data-k="onyx">玄铁</button>
     <button class="seg on" data-act="skin" data-k="rosy">锦霞</button>
     <div class="coin" title="金币 · 打战斗赚 · 解锁天罡/地支"><span>🪙</span><b>1.2k</b></div>
-    <div class="coin" title="钻石 · 速解天罡（只加速·不卖强度）"><span>💎</span><b style="color:#7fd0ff">18</b></div>
+    <button class="coin tap" data-act="recharge" title="钻石商城 · 充值 / 兑换材料"><span>💎</span><b style="color:#7fd0ff">18</b><span style="color:var(--gold);font-weight:700;margin-left:2px">＋</span></button>
     <div class="coin"><span>◈</span><span style="color:var(--gold)">4/6</span></div>
     <div class="coin"><span>✨</span><span style="color:#7fb0d8">1</span></div>
     <button class="tutbtn" data-act="intro">📜 游戏介绍</button>
