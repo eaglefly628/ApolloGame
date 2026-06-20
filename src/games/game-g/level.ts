@@ -1,0 +1,65 @@
+// level.ts —— Campaign 关卡加载器（doc27 · owner 2026-06-19「52 关系统化入库·主程逐关加载」）。
+// 数据驱动：一关 = 一条 LevelDef（拼装 doc23 §三/七 英雄战役 + disha.ts 地煞 + doc25 解锁 + doc27 §四/五 难度/背景对白）。
+// 引擎按 id 逐关加载喂 turn-combat（doc24 回合制）：Boss 大本营血/地煞/12 天罡 seed 随机/loadoutCap 上限。
+import { campaignFor, TIANGANG_UNLOCK, type StageCampaign } from './blueprint.js';
+import { stageDisha } from './disha.js';
+
+export interface LevelDef {
+  id: number; heroId: string; stars: number;
+  battle: { name: string; oneLine: string };
+  intro: string;                                  // 开场战役背景旁白
+  bossLines: { open: string; mid: string; lose: string }; // Boss 对白（开场/劣势/败北）
+  boss: { homeHp: number; disha: string[]; tiangang: string[]; aiTier: number }; // 地煞 3 + 随机 12 天罡 + AI 档
+  reward: { unlock: string[]; gold: number };
+  loadoutCap: number;                             // 玩家本关天罡 loadout 上限（新手区 2→3）
+}
+
+// 难度档（doc27 §四·按星级）：大本营血 / loadoutCap / AI 智能档。关1-5 = ★~★★★。
+const DIFFICULTY: Record<number, { homeHp: number; loadoutCap: number; aiTier: number }> = {
+  1: { homeHp: 3, loadoutCap: 2, aiTier: 1 }, // ★ 教学
+  2: { homeHp: 3, loadoutCap: 3, aiTier: 2 }, // ★★
+  3: { homeHp: 3, loadoutCap: 3, aiTier: 2 }, // ★★★（关1-5 终·血由地煞或后续调）
+  4: { homeHp: 4, loadoutCap: 4, aiTier: 3 }, // ★★★★
+  5: { homeHp: 5, loadoutCap: 5, aiTier: 4 }, // ★★★★★ 终章
+};
+
+// 关1-5 战役背景 + Boss 对白（doc27 §五·全文）。关6+ 暂复用占位（§六文案后续逐期接入）。
+const LEVEL_LORE: Record<number, { intro: string; open: string; mid: string; lose: string }> = {
+  1: { intro: '公元前 480 年，波斯百万大军压境。列奥尼达率三百斯巴达勇士死守温泉关隘口——以血肉筑成不可逾越之墙。而你，要翻动这场死战的结局。',
+    open: '波斯人！来取我的长矛吧——如果你们能。', mid: '斯巴达人，早餐尽情吃——晚餐我们在冥府享用！', lose: '……斯巴达的荣耀，今日终结于你手。' },
+  2: { intro: '公元前 331 年，高加米拉平原。亚历山大以四万直面大流士二十万波斯大军，亲率伙伴骑兵直取王旗。',
+    open: '我不窃取胜利。来吧，让命运在阳光下见分晓。', mid: '看我的伙伴骑兵，如何凿穿你的中军！', lose: '……连我，也有马失前蹄之日。了不起。' },
+  3: { intro: '建安十三年，赤壁。曹操列八十万众于江北、铁索连环。一把火，将改写天下三分。这一回，你是那把火。',
+    open: '孤提百万雄师，踏平江东，弹指间耳。', mid: '区区火攻，也敢撼我连环巨舰？', lose: '……华容道上，孤竟败于这一炬。' },
+  4: { intro: '1815 年，滑铁卢。从厄尔巴归来的拿破仑，要在此重夺欧洲——或永远落幕。',
+    open: '近卫军从未后退。今日，让世界再记住我的名字。', mid: '大炮是我最忠诚的女儿——听她歌唱吧。', lose: '……普鲁士人来得太快。命运，终弃我而去。' },
+  5: { intro: '垓下，四面楚歌。西楚霸王力能扛鼎、勇冠三军，却已陷十面埋伏。虞兮虞兮奈若何——而你，能否为霸王翻这一局命？',
+    open: '力拔山兮气盖世！纵八千子弟散尽，此身亦战至最后一人！', mid: '此天亡我，非战之罪也！', lose: '……无颜见江东父老。罢了，就让你来翻这命吧。' },
+};
+
+const ALL_TIANGANG: readonly string[] = TIANGANG_UNLOCK.flatMap((u) => u.ids); // 36 天罡全池（9 关 ×4）
+
+/** Boss 随机 12 天罡（doc27 §三）：seed=关 id → 同关同 12 张·可复现喂 sim。从 36 池均匀不重复抽。 */
+export function bossTiangang(stage: number, count = 12): string[] {
+  const arr = [...ALL_TIANGANG]; let t = (stage * 2654435761) >>> 0;
+  const rnd = (): number => { t += 0x6d2b79f5; let x = t; x = Math.imul(x ^ (x >>> 15), x | 1); x ^= x + Math.imul(x ^ (x >>> 7), x | 61); return ((x ^ (x >>> 14)) >>> 0) / 4294967296; };
+  for (let i = arr.length - 1; i > 0; i--) { const j = Math.floor(rnd() * (i + 1)); [arr[i], arr[j]] = [arr[j], arr[i]]; }
+  return arr.slice(0, Math.min(count, arr.length));
+}
+
+/** 按 stage（1 基）加载一关定义（越界取末关 lore 占位·数据全拼装）。纯数据·确定性。 */
+export function loadLevel(stage: number): LevelDef {
+  const c: StageCampaign = campaignFor(stage);
+  const diff = DIFFICULTY[c.stars] ?? DIFFICULTY[1];
+  const lore = LEVEL_LORE[stage] ?? LEVEL_LORE[5]; // 关6+ 暂复用占位
+  const unlock = TIANGANG_UNLOCK.find((u) => u.stage === stage)?.ids ?? [];
+  return {
+    id: stage, heroId: c.boss, stars: c.stars,
+    battle: { name: c.battle, oneLine: c.oneLiner },
+    intro: lore.intro,
+    bossLines: { open: lore.open, mid: lore.mid, lose: lore.lose },
+    boss: { homeHp: diff.homeHp, disha: stageDisha(stage), tiangang: bossTiangang(stage), aiTier: diff.aiTier },
+    reward: { unlock, gold: 20 + stage * 10 },
+    loadoutCap: diff.loadoutCap,
+  };
+}

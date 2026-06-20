@@ -4,7 +4,7 @@ import { prepareArmies, quartermasterEnergy, FORMATION_PRESETS, PRESET_NAMES, LE
 import { initLiveBattle, stepLiveBattle, liveActive, migrateRear, NO_TENGANG, LANE_LEN, HOME_BLOOD, type LiveBattle, type DeployCmd, type ClashEvent, type TengangFx } from './live-combat.js';
 import { initTurnBattle, drawCard, deployUnit, castTengang, discardCard, endTurn, aiTakeTurn, toggleGate, GATES, OPENING_HAND, type PokerCard, type TengangHandCard } from './turn-combat.js';
 import { mountTurnBattle, buildTurnBattleView, type TurnBattleView, type TurnBattleActions, type TurnClashView, type TurnClashCardView, type TurnShaView } from './turn-battle-screen.js';
-import { stageDisha } from './disha.js';
+import { loadLevel } from './level.js';
 import { cardPoints, P_MAX } from './clash-resolve.js';
 
 // Game G ·《翻命扑克》—— 大厅 ↔ 出征 闭环（launcher 卡带槽：export mount(container)→cleanup）。自包含于本目录。
@@ -401,14 +401,15 @@ export function mount(container: HTMLElement): () => void {
   function showTurnMatch(formation: Formation, myName: string, interventions: Intervention[]): void {
     clear();
     const spec = battleSpec(save.stage - 1);
+    const lvl = loadLevel(save.stage); // doc27 关卡加载：本关 = 命运之战的英雄(列奥尼达..项羽)·地煞/12 天罡/难度/对白 逐关入库
     const boss = spec.boss ? bossFor(save.bossIdx) : null;
     const aiForm = boss ? boss.formation : aiFormation();
     const enemyBias = boss ? boss.favorBias : spec.enemyBias;
-    const aiName = boss ? boss.name : describeFormation(aiForm.officers);
+    const aiName = lvl.heroId; // 战役 Boss = 本关英雄（52 关 = 52 命运之战·doc23 §七）
     const stage = document.createElement('div');
     stage.style.cssText = 'width:min(100%, 140vh);max-width:1340px;margin:0 auto;border-radius:12px;overflow:hidden;position:relative';
     const label = el('div', 'min-width:300px;text-align:center;font-weight:600;opacity:.85',
-      `第 ${save.stage}/${RUN_BATTLES} 战 · ${spec.label} ｜ 命 ${'❤'.repeat(save.lives)} ｜ 你的阵 ${myName}${boss ? ` ｜ ⚔ ${boss.name}：「${boss.taunt}」` : ''}`);
+      `第 ${save.stage}/${RUN_BATTLES} 战 · ${lvl.battle.name}（${lvl.battle.oneLine}）｜ 命 ${'❤'.repeat(save.lives)} ｜ 你的阵 ${myName} ｜ ⚔ ${lvl.heroId}：「${lvl.bossLines.open}」`);
     const back = mkBtn('← 返回大厅'); back.onclick = showLobby;
     const bar = el('div', 'display:flex;gap:10px;align-items:center;max-width:1340px;flex-wrap:wrap;justify-content:center');
     bar.append(label, back);
@@ -418,10 +419,10 @@ export function mount(container: HTMLElement): () => void {
     const { a, b } = prepareArmies({ formation, deckBias: myBias(save.deck), tiangangs: save.tiangangs, planets: save.planets, interventions, enemyForm: aiForm, enemyBias, boss });
     const seed = Math.floor(Math.random() * 1e9);
     const toPoker = (c: ArmyCard): PokerCard => ({ kind: 'poker', id: c.id, rank: cardRank(c), suit: c.suit, general: c.general, buff: Math.round(favorToP(c.favor) - cardPoints(cardRank(c))) });
-    const aTengang: TengangHandCard[] = save.tiangangs.map((id) => ({ kind: 'tengang', id }));
-    // 地煞（doc23 §八）：本关 Boss 3 张招牌历史战术 → 喂 turn-combat 在 Boss 侧 apply（温泉关死守覆写 Boss 大本营血）。
-    const dishaIds = stageDisha(save.stage);
-    const tb = initTurnBattle({ seed, disha: dishaIds, a: { pokerDeck: seededShuffleArr(a.map(toPoker), seed ^ 0x9e37), tengangDeck: aTengang }, b: { pokerDeck: seededShuffleArr(b.map(toPoker), seed ^ 0x51ed), tengangDeck: [] } });
+    // loadoutCap（doc27 §四·难度档）：玩家本关天罡上限（新手区 2→3）→ 截断出战天罡。
+    const aTengang: TengangHandCard[] = save.tiangangs.slice(0, lvl.loadoutCap).map((id) => ({ kind: 'tengang', id }));
+    const bTengang: TengangHandCard[] = lvl.boss.tiangang.map((id) => ({ kind: 'tengang', id })); // Boss 随机 12 天罡(seed=关id·可复现)·待 Boss AI 施放
+    const tb = initTurnBattle({ seed, disha: lvl.boss.disha, a: { pokerDeck: seededShuffleArr(a.map(toPoker), seed ^ 0x9e37), tengangDeck: aTengang }, b: { pokerDeck: seededShuffleArr(b.map(toPoker), seed ^ 0x51ed), tengangDeck: bTengang } });
     for (let i = 0; i < OPENING_HAND && tb.a.pokerDeck.length; i++) tb.a.hand.push(tb.a.pokerDeck.shift()!); // 起手摸
     for (let i = 0; i < OPENING_HAND && tb.b.pokerDeck.length; i++) tb.b.hand.push(tb.b.pokerDeck.shift()!);
     const shaView: TurnShaView[] = campaignFor(save.stage).fiends.map((f, i) => ({ filled: true, name: f.name, rar: (['gold', 'blue', 'green'] as const)[i] ?? 'white', desc: f.desc })); // 敌堡垒 3 地煞明牌
