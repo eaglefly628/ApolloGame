@@ -1270,3 +1270,25 @@ export const DIZHI_TRINES: { name: string; members: string; effect: string }[] =
   { name:'⚔️ 金·肃杀', members:'巳蛇+酉鸡+丑牛', effect:'每场对决返 1 圣水 + 击败的敌人限时不能再上场' },
   { name:'🌿 木·生生', members:'亥猪+卯兔+未羊', effect:'阵亡回手牌可重新派遣 + 击杀返材料' },
 ];
+
+// === 战役·关 1-5 新手区（doc23 §八 定稿 · owner 2026-06-19「人物名气>战役名气」· 头三关简单） ===
+// 每关 = 一位名将困在其命运之战；打赢=破诅咒、解封其魂。Boss 牌库=12 随机天罡 + 3 专属地煞(招牌历史战术·明牌可破)。
+// 节奏：关1-3 简单(地煞弱/少触发) → 关4-5 放威力；每关通关解锁 1 张天罡。sim 基准胜率 关1~80%→关5~55%。
+export interface StageFiend { name: string; desc: string } // 地煞=Boss 招牌历史战术（明牌介绍）
+export interface StageCampaign { stage: number; boss: string; battle: string; oneLiner: string; stars: number; fiends: StageFiend[]; unlock: string }
+export const STAGE_CAMPAIGN: StageCampaign[] = [
+  { stage: 1, boss: '列奥尼达', battle: '温泉关', oneLiner: '三百斯巴达·死战波斯', stars: 1, unlock: '虎符', fiends: [
+    { name: '温泉关死守', desc: '隘口窄·大本营/前排极难破' }, { name: '斯巴达方阵', desc: '兵相邻越多·互 +战力' }, { name: '死战不退', desc: '濒死不溃·战至最后一人' } ] },
+  { stage: 2, boss: '亚历山大', battle: '高加米拉', oneLiner: '以少击溃大流士·灭波斯', stars: 1, unlock: '旗手', fiends: [
+    { name: '伙伴骑兵', desc: '一记突击·直插你主将/后排' }, { name: '锤砧', desc: '正面顶+侧翼砸·夹你减战力' }, { name: '长枪方阵', desc: '前排先手出击' } ] },
+  { stage: 3, boss: '曹操', battle: '赤壁（翻命）', oneLiner: '挟天子·连环船·火攻可破', stars: 2, unlock: '不屈', fiends: [
+    { name: '大军压境', desc: '兵海·额外铺兵' }, { name: '连环船', desc: '他兵串联共享战力·你可「火攻」一并烧' }, { name: '挟天子', desc: '全军士气 +' } ] },
+  { stage: 4, boss: '拿破仑', battle: '滑铁卢', oneLiner: '大炮兵·近卫军·机动突破', stars: 2, unlock: '疾行', fiends: [
+    { name: '大炮兵', desc: '开局炮轰一路·全路减战力' }, { name: '近卫军', desc: '一记精锐·中央突破' }, { name: '机动调度', desc: '额外迁路/多动一次' } ] },
+  { stage: 5, boss: '项羽', battle: '霸王别姬', oneLiner: '破釜沉舟·霸王之勇·不退', stars: 3, unlock: '擒王', fiends: [
+    { name: '破釜沉舟', desc: '全军战力暴涨·绝不退' }, { name: '霸王之勇', desc: '主将无双·战力恐怖' }, { name: '九战九捷', desc: '每胜叠加战力' } ] },
+];
+/** 当前关战役（stage 1..N → 关卡；越界取末关）。纯数据·HOME 展示用。 */
+export function campaignFor(stage: number): StageCampaign {
+  return STAGE_CAMPAIGN[Math.max(0, Math.min(STAGE_CAMPAIGN.length - 1, stage - 1))];
+}
