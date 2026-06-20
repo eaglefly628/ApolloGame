@@ -133,6 +133,21 @@
 
 > 备选（owner 想换时）：攻城锤→`delapouite/trebuchet`/`siege-tower`；铁律印→`badges/justice`；督战→`lorc/slavery-whip`(督战队)。
 
+### 实装细则 · 逐组锁定（给甲 G · owner 逐组确认后才进）
+> owner「慢慢对每张效果 → 甲实现」。每组 owner 确认即锁、甲实装。**共用施法模型**：cast 即生效 · 持续整局 · 一种牌算一次(叠同名不重复) · 只己方 · 确定生效。
+> **P_eff apply 顺序铁律（确定性）**：① 所有 `add` → ② 再 `mul` → ③ **floor 取整** → ④ clamp 进 bounds。复用 `aggregateTengang→live.tengangA`、clash 钩子读。
+
+**🔒 power 点数系（4 · owner 确认 2026-06-19 · 派甲实装）**
+
+| 牌 | 数据形 | 作用域 | 关键裁定 | 测试断言 |
+|---|---|---|---|---|
+| 虎符 ⭐1〔v1 已实装·确认〕 | `power{op:add,value:2,scope:all}` | 全军每张 +2 | 加法叠加·同名一次·敌方无效 | 所有己方 clash P+2·ΔWR>0 单调 |
+| 锋矢 ⭐2〔新增〕 | `power{op:add,value:4,scope:front}` | 每路最前一张 +4（动态·谁在最前谁吃） | "最前"=该路己方 **pos 最大者**（甲在 `live-combat` 暴露挂点）·空路无目标·与虎符叠 | 每路最前 +4 / 非最前不加 |
+| 擎天 ⭐2〔新增〕 | `power{op:mul,value:1.5,scope:highestRank}` | 基础点数最高的**单张** ×1.5 | **按 base-rank 判最强**（非 buff 后 P_eff·防循环）·ties 取确定性首张·×1.5 在加法后·floor·再 clamp | 最高 base-rank 牌 add 后 ×1.5 floor·余不变 |
+| 寡兵 ⭐3〔v1 已实装·确认〕 | `power{op:add,value:6,scope:lane,filter:countLE3}` | 每路在场 ≤3 张 → 该路全员 +6 | 数量=该路在场(未亡)己方牌·多路各判·>3 失效·与虎符/锋矢叠 | ≤3 的路全员 +6 / >3 不加 |
+
+> 甲：虎符/寡兵 确认 v1 spec 一致即可；**锋矢/擎天 新增**（锋矢需 `live-combat`「每路最前」挂点·甲地盘）。每张配测 = 参数映射 + clash ΔWR 量级方向。零引擎、复用现成 buff 源。
+
 ---
 
 ## 三、十二地支（养成系统：12 生肖属性 · 单生肖镶嵌牌 · 镶英雄 ≤3 → 连携）
