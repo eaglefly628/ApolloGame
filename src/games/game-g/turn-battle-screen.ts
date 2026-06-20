@@ -3,7 +3,7 @@
 //   只读 TurnBattleView（由 buildTurnBattleView 从 turn-combat 真状态派生）→ 出 HTML 串；不进 hash、不回灌判定。
 // 静态渲染 = 设计稿"静息态"(无 hover tooltip / 无 boss 飞出)；clash 特写覆盖层按 view.clash 选渲。live mount + 交互为后续切片。
 import { cardPoints } from './clash-resolve.js';
-import { SLOTS, MANA_PER_TURN, type TurnBattle, type TurnUnit } from './turn-combat.js';
+import { SLOTS, MANA_PER_TURN, GATES, type TurnBattle, type TurnUnit } from './turn-combat.js';
 
 type Style = Record<string, string | number | undefined>;
 const st = (o: Style): string => Object.entries(o).filter(([, v]) => v !== undefined).map(([k, v]) => k.replace(/[A-Z]/g, (m) => '-' + m.toLowerCase()) + ':' + v).join(';');
@@ -55,6 +55,8 @@ const CSS = `
 // ── 视图（buildTurnBattleView 从 turn-combat 派生喂渲染器；纯数据） ──
 export interface TurnSlotView { hasUnit: boolean; mine: boolean; isBorder: boolean; isClash: boolean; rank?: string; suit?: 's' | 'h' | 'd' | 'c'; power?: number; zod?: string[] }
 export interface TurnLaneView { name: string; slots: TurnSlotView[] }
+// 捷径门箭头（占位·8 门·真视觉待 owner 参考图）。idx=GATES 下标·供 live mount data-gate 钩子。
+export interface TurnGateView { idx: number; open: boolean; side: 'a' | 'b'; fromLane: number; fromSlot: number; toLane: number; toSlot: number }
 export interface TurnHandCardView { kind: 'pawn' | 'gang'; rank?: string; suit?: 's' | 'h' | 'd' | 'c'; name: string; power?: number; cost: number; zod?: string[]; rar: 'white' | 'green' | 'blue' | 'gold'; desc?: string; glyph?: string }
 export interface TurnActionView { key: string; glyph: string; label: string; on: boolean; dim: boolean }
 export interface TurnClashCardView { rank: string; suit: 's' | 'h' | 'd' | 'c'; name: string; zod?: string; won: boolean }
@@ -65,12 +67,27 @@ export interface TurnBattleView {
   turnWho: string; roundNo: number; timerLabel: string;
   water: number; waterMax: number;
   homeA: number; homeB: number; homeMax: number;
-  lanes: TurnLaneView[]; gateTopMid: boolean; gateMidBot: boolean;
+  lanes: TurnLaneView[]; gates: TurnGateView[];
   hand: TurnHandCardView[]; handPawnCount: number; handGangCount: number;
   actions: TurnActionView[]; actionSub: string;
   sha: TurnShaView[]; bossName: string;
   clash: TurnClashView | null;
 }
+
+// 捷径门箭头几何（占位）：slot s 横向中心 % · lane l 纵向中心 % · 由源/目标方向取斜箭头字形。
+const slotX = (s: number): number => 5 + ((s + 0.5) / 9) * 94;
+const laneY = (l: number): number => ((l + 0.5) / 3) * 100;
+const arrowGlyph = (dLane: number, dSlot: number): string => (dLane > 0 ? (dSlot > 0 ? '↘' : '↙') : (dSlot > 0 ? '↗' : '↖'));
+const gateArrow = (g: TurnGateView): string => {
+  const midX = (slotX(g.fromSlot) + slotX(g.toSlot)) / 2;
+  const midY = (laneY(g.fromLane) + laneY(g.toLane)) / 2;
+  const sideCol = g.side === 'a' ? 'var(--accent)' : '#3a86d4';
+  const base: Style = { position: 'absolute', left: midX + '%', top: midY + '%', transform: 'translate(-50%,-50%)', zIndex: 6, cursor: 'pointer', fontFamily: 'var(--fh)', fontWeight: 700, lineHeight: 1, userSelect: 'none' };
+  const s: Style = g.open
+    ? { ...base, fontSize: '30px', color: 'var(--hp)', textShadow: '0 0 14px var(--hp), 0 0 6px var(--hp)', animation: 'g-gate 2s ease-in-out infinite' }
+    : { ...base, fontSize: '24px', color: sideCol, opacity: 0.4 };
+  return `<div data-gate="${g.idx}" title="${g.side === 'a' ? '我方' : '敌方'}捷径门 · ${g.open ? '开' : '闭'}" style="${st(s)}">${arrowGlyph(g.toLane - g.fromLane, g.toSlot - g.fromSlot)}</div>`;
+};
 
 const hpGem = (alive: boolean): string => {
   const col = '#ff5d62';
@@ -222,12 +239,6 @@ export function buildTurnBattleHTML(view: TurnBattleView): string {
   const body = { flex: 1, display: 'flex', flexDirection: 'column', minHeight: 0, overflow: 'hidden', padding: '10px 22px 6px', gap: '10px' };
   const boardWrap = { position: 'relative', flex: 1, minHeight: 0, display: 'flex', alignItems: 'stretch', gap: '6px', padding: '12px 10px', borderRadius: '18px', background: 'var(--board)', backgroundImage: 'radial-gradient(46% 80% at 50% 50%, rgba(232,205,138,.10), transparent 70%), repeating-linear-gradient(0deg, rgba(255,255,255,.035) 0 1px, transparent 1px 34px), repeating-linear-gradient(90deg, rgba(255,255,255,.035) 0 1px, transparent 1px 34px)', border: '6px solid var(--board-edge)', boxShadow: 'inset 0 0 0 2px rgba(255,255,255,.06), inset 0 0 90px rgba(0,0,0,.5)' };
   const lanesCol = { position: 'relative', flex: 1, display: 'flex', flexDirection: 'column', gap: '10px', justifyContent: 'stretch', minHeight: 0 };
-  const gate = (open: boolean, top: string, label: string): string => {
-    const base = { position: 'absolute', left: '48px', top, transform: 'translateY(-50%)', display: 'flex', alignItems: 'center', gap: '6px', zIndex: 4 };
-    const glyph = open ? { fontSize: '24px', color: 'var(--hp)', textShadow: '0 0 12px var(--hp)', animation: 'g-gate 2s ease-in-out infinite' } : { fontSize: '24px', color: 'var(--ink-dim)', opacity: .6 };
-    const lab = open ? { padding: '2px 9px', borderRadius: '99px', background: 'rgba(70,209,122,.18)', border: '1px solid var(--hp)', color: 'var(--hp)', fontFamily: 'var(--fh)', fontWeight: 700, fontSize: '10px', whiteSpace: 'nowrap' } : { padding: '2px 9px', borderRadius: '99px', background: 'var(--chip)', border: '1px solid var(--panel-border)', color: 'var(--ink-dim)', fontFamily: 'var(--fh)', fontWeight: 700, fontSize: '10px', whiteSpace: 'nowrap' };
-    return `<div style="${st(base)}"><span style="${st(glyph)}">⛩</span><span style="${st(lab)}">${esc(label)}</span></div>`;
-  };
   // water bar
   const litCells = Math.max(0, Math.min(view.waterMax, Math.floor(view.water)));
   const waterBar = { flex: 'none', display: 'flex', alignItems: 'center', gap: '12px', padding: '9px 18px', borderRadius: '14px', background: 'var(--panel)', border: '1px solid var(--panel-border)', boxShadow: 'inset 0 0 0 1px var(--hairline)' };
@@ -263,7 +274,7 @@ export function buildTurnBattleHTML(view: TurnBattleView): string {
     <div style="${st(body)}">
       <div style="${st(boardWrap)}">
         ${fortBase(view, true)}
-        <div style="${st(lanesCol)}">${forr(view.lanes, laneRow)}${gate(view.gateTopMid, '33.3%', '上↔中 · ' + (view.gateTopMid ? '开' : '闭'))}${gate(view.gateMidBot, '66.6%', '中↔下 · ' + (view.gateMidBot ? '开' : '闭'))}</div>
+        <div style="${st(lanesCol)}">${forr(view.lanes, laneRow)}${forr(view.gates, gateArrow)}</div>
         ${fortBase(view, false)}
       </div>
       <div style="${st(waterBar)}">
@@ -323,7 +334,7 @@ export function buildTurnBattleView(b: TurnBattle, opts: TurnViewOpts = {}): Tur
     turnWho: b.active === 'a' ? '我方回合' : '敌方回合', roundNo: b.turn, timerLabel: '∞ 无限时',
     water: b.a.mana, waterMax: 10,
     homeA: b.homeA, homeB: b.homeB, homeMax: b.homeMax,
-    lanes, gateTopMid: b.lanes[0].gate, gateMidBot: b.lanes[1].gate,
+    lanes, gates: GATES.map((g, i) => ({ idx: i, open: b.gatesOpen[i], side: g.side, fromLane: g.fromLane, fromSlot: g.fromSlot, toLane: g.toLane, toSlot: g.toSlot })),
     hand, handPawnCount: hand.filter((c) => c.kind === 'pawn').length, handGangCount: hand.filter((c) => c.kind === 'gang').length,
     actions, actionSub: SUB[sel ?? ''] ?? SUB[''],
     sha: opts.sha ?? [{ filled: true, name: '地煞·破军', rar: 'gold', desc: '' }, { filled: true, name: '地煞·贪狼', rar: 'blue', desc: '' }, { filled: false, name: '未知', rar: 'white', desc: '' }],

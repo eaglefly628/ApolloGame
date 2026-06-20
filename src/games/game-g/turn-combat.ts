@@ -25,10 +25,26 @@ export const DRAW_COST = 1, DEPLOY_COST = 1, CAST_COST = 1; // 抽/放/打天罡
 export const OPENING_HAND = 3; // 起手摸 N（doc24 §六/七 待定）
 const MORALE_PTS = 2, ROUT_PTS = 4; // 同 live-combat/doc06：主将在→下属 +战力 / 主将亡→溃散 −战力
 
+// ── 捷径门（owner 2026-06-20 定向·doc21/24 跨路调度·8 门：我方 4 + 敌方对称镜像 4）──
+// 门开 → 源格(fromLane,fromSlot)的己兵可过门到目标格(toLane,toSlot)·增援/堵敌。第N格 = slot index N-1。
+// 我方(side a)：上[1]→中[2] · 下[1]→中[2] · 中[3]→上[4] · 中[3]→下[4]
+// 敌方(side b·镜像 8-s)：上[7]→中[6] · 下[7]→中[6] · 中[5]→上[4] · 中[5]→下[4]
+export interface Gate { side: 'a' | 'b'; fromLane: number; fromSlot: number; toLane: number; toSlot: number }
+export const GATES: readonly Gate[] = [
+  { side: 'a', fromLane: 0, fromSlot: 1, toLane: 1, toSlot: 2 },
+  { side: 'a', fromLane: 2, fromSlot: 1, toLane: 1, toSlot: 2 },
+  { side: 'a', fromLane: 1, fromSlot: 3, toLane: 0, toSlot: 4 },
+  { side: 'a', fromLane: 1, fromSlot: 3, toLane: 2, toSlot: 4 },
+  { side: 'b', fromLane: 0, fromSlot: 7, toLane: 1, toSlot: 6 },
+  { side: 'b', fromLane: 2, fromSlot: 7, toLane: 1, toSlot: 6 },
+  { side: 'b', fromLane: 1, fromSlot: 5, toLane: 0, toSlot: 4 },
+  { side: 'b', fromLane: 1, fromSlot: 5, toLane: 2, toSlot: 4 },
+];
+
 // 场上兵：占一格 slot；续航 staminaLeft 打光退场（同 live-combat 经济）。
 export interface TurnUnit { id: string; rank: string; suit: string; points: number; buff: number; general: boolean; stamina: number; staminaLeft: number; slot: number }
 // 一路：双方兵列（own[0] = 前锋·最贴敌）+ 捷径门开关 + 主将阵亡/续航退场记账。
-export interface TurnLane { a: TurnUnit[]; b: TurnUnit[]; gate: boolean; aGenDead: boolean; bGenDead: boolean; spentA: number; spentB: number }
+export interface TurnLane { a: TurnUnit[]; b: TurnUnit[]; aGenDead: boolean; bGenDead: boolean; spentA: number; spentB: number }
 // 手牌/牌库卡：扑克兵(上场) / 天罡(施法·id)。
 export interface PokerCard { kind: 'poker'; id: string; rank: string; suit: string; general: boolean; buff: number }
 export interface TengangHandCard { kind: 'tengang'; id: string }
@@ -40,6 +56,7 @@ export type ActionKind = 'draw' | 'deploy' | 'cast' | 'discard';
 export interface TurnBattle {
   turn: number; active: 'a' | 'b';
   lanes: [TurnLane, TurnLane, TurnLane];
+  gatesOpen: boolean[]; // 8 道捷径门开/关（index 同 GATES）
   homeA: number; homeB: number; homeMax: number;
   a: TurnSide; b: TurnSide;
   rng: RandomSeed; winner: 'a' | 'b' | 'draw' | 'pending';
@@ -47,7 +64,7 @@ export interface TurnBattle {
   lastClash: ClashEvent | null; clashSeq: number;
 }
 
-const mkLane = (): TurnLane => ({ a: [], b: [], gate: false, aGenDead: false, bGenDead: false, spentA: 0, spentB: 0 });
+const mkLane = (): TurnLane => ({ a: [], b: [], aGenDead: false, bGenDead: false, spentA: 0, spentB: 0 });
 const mkSide = (pokerDeck: PokerCard[] = [], tengangDeck: TengangHandCard[] = []): TurnSide =>
   ({ mana: MANA_START, hand: [], pokerDeck: [...pokerDeck], tengangDeck: [...tengangDeck], castIds: [], tengangA: NO_TENGANG });
 
@@ -58,6 +75,7 @@ export function initTurnBattle(cfg: TurnInit): TurnBattle {
   const battle: TurnBattle = {
     turn: 1, active: 'a',
     lanes: [mkLane(), mkLane(), mkLane()],
+    gatesOpen: GATES.map(() => false),
     homeA: homeMax, homeB: homeMax, homeMax,
     a: mkSide(cfg.a?.pokerDeck, cfg.a?.tengangDeck),
     b: mkSide(cfg.b?.pokerDeck, cfg.b?.tengangDeck),
@@ -90,7 +108,7 @@ export function drawCard(b: TurnBattle, side: 'a' | 'b', from: 'poker' | 'tengan
 }
 
 // ② 放牌：把手牌第 handIdx 张扑克兵部署到 lane（入我方/敌方部署格·队尾排队）+ 可选改机关（开/关门）。花圣水（互斥·同类无限）。
-export function deployUnit(b: TurnBattle, side: 'a' | 'b', handIdx: number, lane: number, toggleGate = false): boolean {
+export function deployUnit(b: TurnBattle, side: 'a' | 'b', handIdx: number, lane: number, gateToggle = -1): boolean {
   if (!canAct(b, side, 'deploy', DEPLOY_COST)) return false;
   const sd = sideOf(b, side); const card = sd.hand[handIdx];
   if (!card || card.kind !== 'poker' || lane < 0 || lane > 2) return false;
@@ -103,7 +121,7 @@ export function deployUnit(b: TurnBattle, side: 'a' | 'b', handIdx: number, lane
   const stamBonus = side === 'a' ? sd.tengangA.stamPlus + (isFaceRank(card.rank) ? sd.tengangA.stamFaces : 0) : 0;
   const stam = cardStamina(card.rank) + stamBonus;
   col.push({ id: card.id, rank: card.rank, suit: card.suit, points: cardPoints(card.rank), buff: card.buff, general: card.general, stamina: stam, staminaLeft: stam, slot });
-  if (toggleGate) L.gate = !L.gate; // 放牌附赠：开/关一道捷径门（doc24 §三·可不用）
+  if (gateToggle >= 0 && gateToggle < GATES.length) b.gatesOpen[gateToggle] = !b.gatesOpen[gateToggle]; // 放牌附赠：开/关一道捷径门（doc24 §三·可不用）
   return true;
 }
 
@@ -123,6 +141,26 @@ export function discardCard(b: TurnBattle, side: 'a' | 'b', handIdx: number): bo
   const sd = sideOf(b, side);
   if (handIdx < 0 || handIdx >= sd.hand.length) return false;
   sd.hand.splice(handIdx, 1); b.actionTaken = 'discard';
+  return true;
+}
+
+// ── 捷径门操作（doc21/24·占位逻辑·真视觉待 owner 参考图）──
+// toggleGate：开/关一道门（放牌附赠或天罡「城门令」调）。tryGate：门开 + 源格有己兵 + 目标格空 → 把那张兵过门搬到目标格
+//   （跨路调度·增援/堵敌·确定性·不消耗 rng·同 live-combat migrateRear 语义）。返回是否成功。
+export function toggleGate(b: TurnBattle, gateIdx: number): boolean {
+  if (b.winner !== 'pending' || gateIdx < 0 || gateIdx >= GATES.length) return false;
+  b.gatesOpen[gateIdx] = !b.gatesOpen[gateIdx];
+  return true;
+}
+export function tryGate(b: TurnBattle, gateIdx: number): boolean {
+  if (b.winner !== 'pending' || gateIdx < 0 || gateIdx >= GATES.length || !b.gatesOpen[gateIdx]) return false;
+  const g = GATES[gateIdx];
+  const from = colOf(b.lanes[g.fromLane], g.side); const to = colOf(b.lanes[g.toLane], g.side);
+  const idx = from.findIndex((u) => u.slot === g.fromSlot);
+  if (idx < 0 || to.some((u) => u.slot === g.toSlot)) return false; // 源格无兵 / 目标格被占
+  const [u] = from.splice(idx, 1);
+  u.slot = g.toSlot; to.push(u);
+  to.sort((x, y) => (g.side === 'a' ? y.slot - x.slot : x.slot - y.slot)); // 维持 [0]=前锋(贴敌)序
   return true;
 }
 
@@ -261,6 +299,6 @@ export function turnActive(b: TurnBattle): boolean {
 
 // 确定性状态指纹（逐回合对比·回归 + 仿真台）：回合/谁/圣水/手牌数/各路前锋 slot+队长/大本营/rng 序。
 export function turnHash(b: TurnBattle): string {
-  const lane = (l: TurnLane): string => `${l.a.length}@${l.a[0]?.slot ?? '_'},${l.b.length}@${l.b[0]?.slot ?? '_'},${l.gate ? 1 : 0},${l.aGenDead ? 1 : 0}${l.bGenDead ? 1 : 0},${l.spentA},${l.spentB}`;
-  return `T${b.turn}|${b.active}|mA${b.a.mana}|mB${b.b.mana}|hA${b.a.hand.length}|hB${b.b.hand.length}|HA${b.homeA}|HB${b.homeB}|w${b.winner}|s${b.rng.sequence}|${b.lanes.map(lane).join('|')}`;
+  const lane = (l: TurnLane): string => `${l.a.length}@${l.a[0]?.slot ?? '_'},${l.b.length}@${l.b[0]?.slot ?? '_'},${l.aGenDead ? 1 : 0}${l.bGenDead ? 1 : 0},${l.spentA},${l.spentB}`;
+  return `T${b.turn}|${b.active}|mA${b.a.mana}|mB${b.b.mana}|hA${b.a.hand.length}|hB${b.b.hand.length}|HA${b.homeA}|HB${b.homeB}|w${b.winner}|s${b.rng.sequence}|g${b.gatesOpen.map((o) => (o ? 1 : 0)).join('')}|${b.lanes.map(lane).join('|')}`;
 }
