@@ -649,7 +649,7 @@ export const GAME_G_TIANGANGS: TiangangCard[] = [
   // G 抽牌系 draw
   { id: 'widehand', name: '广纳', kind: 'draw', rarity: 'common', cost: 12, archetype: 'general', power: 1, params: { op: 'handMax', value: 2 }, icon: 'faithtoken/card-pick', tint: '#06b6d4', text: '手牌上限 +2' },
   { id: 'flow', name: '川流', kind: 'draw', rarity: 'rare', cost: 16, archetype: 'general', power: 2, params: { op: 'onPlay', value: 1 }, icon: 'faithtoken/card-draw', tint: '#06b6d4', text: '出牌后立即补抽 1 张（手不空）' },
-  { id: 'tidewave', name: '战潮', kind: 'draw', rarity: 'epic', cost: 22, archetype: 'wide', power: 3, params: { op: 'clashElixir', value: 1 }, icon: 'delapouite/two-coins', tint: '#06b6d4', text: '遭遇对决 → 返圣水（经济·心流回点）' },
+  { id: 'tidewave', name: '战潮', kind: 'draw', rarity: 'epic', cost: 22, archetype: 'wide', power: 3, params: { op: 'clashElixir', value: 1 }, icon: 'delapouite/two-coins', tint: '#06b6d4', text: '遭遇对决 → 返召唤源泉（经济·心流回点）' },
   // H 三路系 lane
   { id: 'gateorder', name: '城门令', kind: 'lane', rarity: 'rare', cost: 16, archetype: 'tianji', power: 2, params: { op: 'gate', mode: 'toggle' }, icon: 'delapouite/gate', tint: '#94a3b8', text: '开/关一道捷径门（增援 / 堵敌）' },
   { id: 'rush', name: '驰援', kind: 'lane', rarity: 'rare', cost: 16, archetype: 'wide', power: 2, params: { op: 'reinforce', value: 2 }, icon: 'lorc/backup', tint: '#94a3b8', text: '指定一路 +2 张兵' },
@@ -1256,7 +1256,7 @@ export const DIZHI_ZODIACS: DizhiZodiac[] = [
   { branch:'申',animal:'猴',symbol:'奇袭',png:'assets/emoji/1f412.png',legend:'猴机灵撑篙、协力划筏过河，居第九——机变百出；后世化为齐天大圣，神通无双。',
     bronze:'戏耍 30%：对决概率削当面敌战力',silver:'戏耍 50%',gold:'戏耍 70%' },
   { branch:'酉',animal:'鸡',symbol:'号令',png:'assets/emoji/1f413.png',legend:'鸡同筏而渡、司晨报晓，得第十——守信报时、唤醒光明。',
-    bronze:'返点 50%：打出时概率返 1 圣水',silver:'返点 75%',gold:'返点 100%' },
+    bronze:'返点 50%：打出时概率返 1 召唤源泉',silver:'返点 75%',gold:'返点 100%' },
   { branch:'戌',animal:'狗',symbol:'守家',png:'assets/emoji/1f415.png',legend:'狗本善泳，却贪戏水而误了时辰，居十一——忠诚护主、看家守户。',
     bronze:'守家 +3 战力（被动）',silver:'守家 +5',gold:'守家 +8 + 该路敌推进减速' },
   { branch:'亥',animal:'猪',symbol:'财富',png:'assets/emoji/1f416.png',legend:'猪贪食酣睡、最后方至，敬陪末座——憨厚有福、丰足安乐。',
@@ -1267,7 +1267,7 @@ export const DIZHI_ZODIACS: DizhiZodiac[] = [
 export const DIZHI_TRINES: { name: string; members: string; effect: string }[] = [
   { name:'🌊 水·灵动不败', members:'申猴+子鼠+辰龙', effect:'整局 1 次必重掷（用掉即消失）——一局一张保命符' },
   { name:'🔥 火·燎原', members:'寅虎+午马+戌狗', effect:'赢对决后连推 1 次 + 破大本营时少量额外伤害' },
-  { name:'⚔️ 金·肃杀', members:'巳蛇+酉鸡+丑牛', effect:'每场对决返 1 圣水 + 击败的敌人限时不能再上场' },
+  { name:'⚔️ 金·肃杀', members:'巳蛇+酉鸡+丑牛', effect:'每场对决返 1 召唤源泉 + 击败的敌人限时不能再上场' },
   { name:'🌿 木·生生', members:'亥猪+卯兔+未羊', effect:'阵亡回手牌可重新派遣 + 击杀返材料' },
 ];
 

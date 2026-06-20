@@ -348,6 +348,30 @@ function gameIntroBox(): string {
     <div style="text-align:center;margin-top:12px"><button class="cta-sub" style="color:#2a1a08;background:var(--gold-grad);border:0" data-act="intro-close">入局 →</button></div>
   </div></div>`;
 }
+// 玩法手册（doc26 · 初/中/高三档 · owner「放首页说明里」）。三档以 tier 标签切换。
+function manualBox(tier: 'easy' | 'mid' | 'hard'): string {
+  const tb = (k: 'easy' | 'mid' | 'hard', lbl: string, col: string): string =>
+    `<button class="cta-sub" data-act="manTier" data-k="${k}" style="${tier === k ? `background:${col};color:#1a1206;border:0` : ''}">${lbl}</button>`;
+  const easy = `<h3 style="color:#4ade80">🟢 初级 · 打赢第一场</h3>
+    <p><b>战场</b>：三条横路（上/中/下），每路 <b>9 格</b>（你 4 · 中 1 · 敌 4）；两端大本营各 <b>3 血</b>。<b>先把对面 3 血打光 = 赢。</b></p>
+    <p><b>回合制·每回合做一件事</b>：回合开始 <b>+1 召唤源泉</b>，然后<b>四选一</b>（互斥）：<br>· <b>抽牌</b>（抽扑克兵 / 天罡法术）· <b>放牌</b>（部署一兵到某路·可顺手开关机关门）· <b>打天罡</b>（放法术）· <b>弃牌</b>（免费腾手）。<br>做完 → 棋盘走一格，两军碰头 → <b>掷命对决</b>。</p>
+    <p><b>掷命对决（核心）</b>：比战力 → 算胜率 → 抛牌定生死（正面活·前进 / 反面亡·退场）。战力高则胜率高，但永远有 <b>爆冷缝</b>（再强 3% 翻车·再弱 3% 翻盘）。</p>`;
+  const mid = `<h3 style="color:#facc15">🟡 中级 · 三牌组 + 经营</h3>
+    <p><b>三套牌</b>：<br>· <b>扑克 52（名将·兵）</b>：上场部队，点数=战力、花色=阵营，双方同副（公平）。<br>· <b>天罡 36（兵法·法术）</b>：赛前挑 ≤5 张带上场，局内打出持续整局（虎符全军+2 / 疾行加速 / 擒王斩敌主将崩路）。<br>· <b>地支 12（天命·养成）</b>：局外镶到英雄上（每张 ≤3 颗）叠属性。</p>
+    <p><b>经营要点</b>：召唤源泉紧（每回合 +1）→ 每个抉择都重要；机关门换路（增援/堵敌）；续航轮换别打废；同点数凑对子/三条全路加战力；田忌赛马以强避弱、集中突破。</p>`;
+  const hard = `<h3 style="color:#f87171">🔴 高级 · 构筑 · 克制 · 养成</h3>
+    <p><b>赛前构筑</b>：天罡 loadout <b>针对当关 Boss 配牌</b>（每关 Boss 明牌亮 3 张地煞·照着 counter-pick）；地支镶嵌凑<b>三合/六合连携</b>质变；集齐流派天罡解锁<b>招牌印</b>（斩首/将领/铺场/弃一保二/同rank/概率 六流派）。</p>
+    <p><b>Boss 战（非对称）</b>：Boss 库 = 12 随机天罡 + 3 专属地煞 = 15 张，比你猛；开局看清地煞、<b>明牌可破</b>。</p>
+    <p><b>爆冷缝管理</b>：胜率 = clamp(logistic((P我−P敌)/k), 3%, 97%)。铁骰(占优封顶不被爆冷)·磐石(抬下限)·灌铅骰(强者愈强)·鬼手(押一场+25%)。</p>
+    <p><b>成长</b>：<b>金币</b>(打战斗赚·解锁天罡/地支) · <b>钻石</b>(付费·只加速不卖强度)；前 5 关可刷，通关 1-9 解锁全 36 天罡。</p>`;
+  const body = tier === 'easy' ? easy : tier === 'mid' ? mid : hard;
+  return `<div class="tut-ov" data-act="man-close"><div class="tut-box intro-scroll" data-stop="1">
+    <h2>📚 玩法手册</h2>
+    <div class="ctarow" style="margin-bottom:12px">${tb('easy', '🟢 初级', '#4ade80')}${tb('mid', '🟡 中级', '#facc15')}${tb('hard', '🔴 高级', '#f87171')}</div>
+    <div style="min-height:220px">${body}</div>
+    <div style="text-align:center;margin-top:12px"><button class="cta-sub" style="color:#2a1a08;background:var(--gold-grad);border:0" data-act="man-close">明白了 →</button></div>
+  </div></div>`;
+}
 
 // 改造坊天罡牌货架项（B3）：买入 + 选入/踢出战库双动作 + 牌力/P̂ 展示。
 function craftTiangangItem(it: LobbyShopItem, deckFull: boolean): string {
@@ -496,7 +520,7 @@ function ladderSection(name: string, rankText: string): string {
   return `<div style="display:flex;gap:20px;flex:1;min-height:0"><div style="width:340px;flex:none;display:flex;flex-direction:column;gap:16px"><div class="rank-card"><div class="rank-crest">♠</div><div style="font-family:var(--fd);font-size:40px;color:var(--ink);margin-top:10px;line-height:1">${esc(rankText)}</div><div style="font-family:var(--fn);font-size:15px;color:var(--gold);margin-top:6px">1240 LP</div><div class="rank-bar-wrap"><div class="rank-bar-fill" style="width:62%"></div></div><div style="display:flex;justify-content:space-between;width:100%;margin-top:8px;font-size:11px;color:var(--ink-dim)"><span>${esc(rankText)}</span><span>距晋级 60 LP</span><span>—</span></div><div style="display:flex;gap:8px;margin-top:16px;width:100%"><div class="mini-stat"><span class="mini-num">64%</span><span class="mini-lbl">胜率</span></div><div class="mini-stat"><span class="mini-num-hp">3</span><span class="mini-lbl">连胜</span></div><div class="mini-stat"><span class="mini-num">71%</span><span class="mini-lbl">翻正率</span></div></div></div><div class="rec-sheet"><div class="rec-sheet-hd">近 10 局</div><div style="display:flex;flex-direction:column;gap:7px">${recentsHtml}</div></div></div><div class="rec-sheet"><div style="display:flex;align-items:center;gap:12px;margin-bottom:14px"><span style="font-family:var(--fd);font-size:26px;color:var(--ink)">全服榜</span><div style="display:flex;gap:5px;margin-left:6px"><button class="scope-on">全服</button><button class="scope-off">好友</button><button class="scope-off">同段</button></div><div style="flex:1"></div><span style="font-size:11px;color:var(--ink-dim)">每 5 分钟刷新 · 赛季 7</span></div><div class="ldr-head-row"><span style="width:48px">名次</span><span style="flex:1">玩家 / 主牌</span><span style="width:90px;text-align:center">主流派</span><span style="width:70px;text-align:right">胜率</span><span style="width:80px;text-align:right">LP</span></div><div style="flex:1;overflow-y:auto">${ladderHtml}</div></div></div>`;
 }
 
-export function renderLobby(view: LobbyView, tab: string, tutorialOpen: boolean, deckTab: 'base' | 'gang' = 'base', earthFilter = 'all', collTab = 'cards', heroSuit = 'all', heroDetail = '', heroRar = 'all', ownedOnly = false, introOpen = false): string {
+export function renderLobby(view: LobbyView, tab: string, tutorialOpen: boolean, deckTab: 'base' | 'gang' = 'base', earthFilter = 'all', collTab = 'cards', heroSuit = 'all', heroDetail = '', heroRar = 'all', ownedOnly = false, introOpen = false, manualTier: '' | 'easy' | 'mid' | 'hard' = ''): string {
   const on = (t: string): string => (tab === t ? ' on' : '');
   const dOn = (t: string): string => (deckTab === t ? ' on' : '');
   const cOn = (t: string): string => (collTab === t ? ' on' : '');
@@ -515,6 +539,7 @@ export function renderLobby(view: LobbyView, tab: string, tutorialOpen: boolean,
     <div class="coin"><span>◈</span><span style="color:var(--gold)">${view.energy}/${view.energyMax}</span></div>
     <div class="coin"><span>✨</span><span style="color:#7fb0d8">${view.foilCount}</span></div>
     <button class="tutbtn" data-act="intro">📜 游戏介绍</button>
+    <button class="tutbtn" data-act="man">📚 玩法手册</button>
     <button class="tutbtn" data-act="tut">📖 新手指导</button>
     <button class="icon" data-act="reset" title="重置进度">⚙</button>
   </div>
@@ -576,7 +601,7 @@ export function renderLobby(view: LobbyView, tab: string, tutorialOpen: boolean,
     </div></section>
     <section class="screen${on('ladder')} full">${ladderSection(view.name, view.rankText)}</section>
   </div>
-  </div>${tutorialOpen ? tutorialBox() : ''}${introOpen ? gameIntroBox() : ''}</div>`;
+  </div>${tutorialOpen ? tutorialBox() : ''}${introOpen ? gameIntroBox() : ''}${manualTier ? manualBox(manualTier) : ''}</div>`;
 }
 
 export interface LobbyHandlers {
@@ -606,7 +631,8 @@ export function mountLobby(host: HTMLElement, h: LobbyHandlers): { update: () =>
   let skin: 'onyx' | 'rosy' = h.getView().skin;
   let tut = false;
   let intro = false;
-  const render = (): void => { host.innerHTML = renderLobby({ ...h.getView(), skin }, tab, tut, deckTab, earthFilter, collTab, heroSuit, heroDetail, heroRar, ownedOnly, intro); };
+  let manTier: '' | 'easy' | 'mid' | 'hard' = '';
+  const render = (): void => { host.innerHTML = renderLobby({ ...h.getView(), skin }, tab, tut, deckTab, earthFilter, collTab, heroSuit, heroDetail, heroRar, ownedOnly, intro, manTier); };
   const onClick = (e: MouseEvent): void => {
     const el = (e.target as HTMLElement).closest('[data-act]') as HTMLElement | null; if (!el) return;
     const act = el.dataset.act, k = el.dataset.k ?? '';
@@ -622,6 +648,9 @@ export function mountLobby(host: HTMLElement, h: LobbyHandlers): { update: () =>
     else if (act === 'tut') { tut = true; render(); }
     else if (act === 'intro') { intro = true; render(); }
     else if (act === 'intro-close') { intro = false; render(); }
+    else if (act === 'man') { manTier = 'easy'; render(); }
+    else if (act === 'manTier') { manTier = k as 'easy' | 'mid' | 'hard'; render(); }
+    else if (act === 'man-close') { manTier = ''; render(); }
     else if (act === 'tut-close') { tut = false; render(); }
     else if (act === 'play') h.onPlay();
     else if (act === 'buyTiangang') { h.onBuyTiangang?.(k); render(); }
