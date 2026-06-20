@@ -658,6 +658,33 @@ export const GAME_G_TIANGANGS: TiangangCard[] = [
   // J · 流派印记 arcane（传说 · 集齐解锁质变）
   { id: 'zhanshouyin', name: '斩首印', kind: 'arcane', rarity: 'legendary', cost: 42, archetype: 'decap', power: 5, phat: 9, params: { mark: 'decap' }, text: '集齐斩首流印记 → 斩首额外−溃散·敌主将更脆（流派招牌质变）' },
   { id: 'tianjiyin', name: '田忌印', kind: 'arcane', rarity: 'legendary', cost: 42, archetype: 'tianji', power: 5, phat: 9, params: { mark: 'sacrifice' }, text: '集齐弃一保二流印记 → 弃路 favor 转移 ×1.5（流派招牌质变）' },
+  // ── 天罡牌补满 36（doc20 §二 余 16 张 · 二期 · 乙补数据先到位，甲逐期补 kind 解释器；未接 kind 战斗侧零修正不崩） ──
+  // A · 概率系 odds
+  { id: 'leaddice', name: '灌铅骰', kind: 'odds', rarity: 'rare', cost: 16, archetype: 'probability', power: 2, phat: 5, params: { op: 'kHard', value: 1 }, text: 'logistic k−1·点数差更硬（强者愈强·二期）' },
+  // B · 点数系 power
+  { id: 'colossus', name: '巨擘', kind: 'power', rarity: 'rare', cost: 18, archetype: 'general', power: 2, phat: 5, params: { op: 'mul', value: 1.5, filter: 'highest' }, text: '最高点数牌 +50% 战力（强者愈强·二期）' },
+  // C · 牌型系 combo
+  { id: 'flushbanner', name: '同花旗', kind: 'combo', rarity: 'rare', cost: 18, archetype: 'cardtype', power: 2, phat: 5, params: { op: 'flush', bonus: 15 }, text: '本路成同花 → +15 战力（同花流核心·二期）' },
+  // D · 将领系 morale
+  { id: 'vengeance', name: '复仇', kind: 'morale', rarity: 'rare', cost: 18, archetype: 'general', power: 2, phat: 5, params: { op: 'revenge', value: 14 }, text: '我主将被斩 → 该路余部 +14（哀兵·将领流·二期）' },
+  { id: 'deathwatch', name: '督战', kind: 'morale', rarity: 'epic', cost: 22, archetype: 'general', power: 3, phat: 6, params: { op: 'noRout' }, text: '主将阵亡不溃散（将领流强力·二期）' },
+  // E · 行军系 tempo
+  { id: 'beachhead', name: '抢滩', kind: 'tempo', rarity: 'epic', cost: 22, archetype: 'wide', power: 3, phat: 6, params: { op: 'jumpLine' }, text: '我该路起步即过中线（抢线·二期）' },
+  { id: 'ironchains', name: '铁索', kind: 'tempo', rarity: 'epic', cost: 22, archetype: 'decap', power: 3, phat: 6, params: { op: 'slowEnemy', value: -20, target: 'enemy', scope: 'all' }, text: '敌全军 −20% 速（连环锁脚·二期）' },
+  // F · 续航系 stamina
+  { id: 'veteran', name: '老兵', kind: 'stamina', rarity: 'common', cost: 14, archetype: 'wide', power: 1, phat: 3, params: { op: 'stamPlus', value: 1, filter: 'faces' }, text: '人头牌(JQKA)续航 +1（地基·二期）' },
+  { id: 'phoenix', name: '不死鸟', kind: 'stamina', rarity: 'epic', cost: 22, archetype: 'wide', power: 3, phat: 6, params: { op: 'revive', value: 0.2 }, text: '阵亡牌 20% 复活回抽牌堆（强力·二期）' },
+  // G · 抽牌系 draw
+  { id: 'quickdraw', name: '妙手', kind: 'draw', rarity: 'rare', cost: 16, archetype: 'general', power: 2, phat: 4, params: { op: 'onPlay', value: 1 }, text: '出牌后立即补抽 1 张（手不空·二期）' },
+  // H · 三路系 lane
+  { id: 'gateorder', name: '城门令', kind: 'lane', rarity: 'rare', cost: 16, archetype: 'tianji', power: 2, phat: 4, params: { op: 'gate', mode: 'toggle' }, text: '开/关一道捷径门·控跨路通断（调度·二期）' },
+  // I · 攻守系 siege
+  { id: 'laststand', name: '死守', kind: 'siege', rarity: 'rare', cost: 18, archetype: 'general', power: 2, phat: 5, params: { op: 'defend', value: 1 }, text: '我老家首次被破免疫·守一血（二期）' },
+  // J · 流派印记 arcane（传说 · 集齐解锁质变 · 补齐 6 招牌印）
+  { id: 'markcombo', name: '牌型印', kind: 'arcane', rarity: 'legendary', cost: 42, archetype: 'cardtype', power: 5, phat: 9, params: { mark: 'combo' }, text: '集齐牌型流印记 → 牌型阶梯再 +1 档（流派招牌质变）' },
+  { id: 'markmorale', name: '将魂印', kind: 'arcane', rarity: 'legendary', cost: 42, archetype: 'general', power: 5, phat: 9, params: { mark: 'morale' }, text: '集齐将领流印记 → 主将士气 ×1.3（流派招牌质变）' },
+  { id: 'markswarm', name: '铺场印', kind: 'arcane', rarity: 'legendary', cost: 42, archetype: 'wide', power: 5, phat: 9, params: { mark: 'swarm' }, text: '集齐铺场流印记 → 每路 +2 兵（流派招牌质变）' },
+  { id: 'markodds', name: '玄机印', kind: 'arcane', rarity: 'legendary', cost: 42, archetype: 'probability', power: 5, phat: 9, params: { mark: 'odds' }, text: '集齐概率流印记 → 爆冷缝 +宽·高方差（流派招牌质变）' },
 ];
 /** 从已融天罡取结局联动开关（死士/连环）→ 喂 resolveArmy 前向生效。 */
 export function tiangangLinks(tiangangIds: readonly string[]): LinkTiangangs {
