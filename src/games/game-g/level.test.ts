@@ -1,7 +1,8 @@
 // level 关卡加载器（doc27 · 主程逐关加载）测试：拼装正确 + 确定性 12 天罡随机 + 难度档 + 关1-5 背景对白。
 import { describe, it, expect } from 'vitest';
-import { loadLevel, bossTiangang } from './level.js';
+import { loadLevel, bossTiangang, tutorialEnemyDeck, TUTORIAL_AI } from './level.js';
 import { stageDisha } from './disha.js';
+import { cardPoints } from './clash-resolve.js';
 
 describe('Game G · Campaign 关卡加载器（doc27）', () => {
   it('关1 列奥尼达：拼装战役/背景/对白/地煞/难度/解锁', () => {
@@ -34,5 +35,12 @@ describe('Game G · Campaign 关卡加载器（doc27）', () => {
   it('越界关（>5）取末关 lore 占位·仍拼装完整不崩', () => {
     const l = loadLevel(9);
     expect(l.id).toBe(9); expect(l.boss.disha.length).toBe(3); expect(l.boss.tiangang.length).toBe(12);
+  });
+
+  it('教学关稻草兵（doc28·关0）：全弱牌(低点)·守势画像·好赢', () => {
+    const deck = tutorialEnemyDeck();
+    expect(deck.length).toBeGreaterThan(0);
+    expect(deck.every((c) => cardPoints(c.rank) <= cardPoints('4'))).toBe(true); // 全是低点弱兵
+    expect(TUTORIAL_AI.aggression).toBeLessThanOrEqual(1); expect(TUTORIAL_AI.spellEager).toBe(0); // 极守·不施法 → 可预测好赢
   });
 });

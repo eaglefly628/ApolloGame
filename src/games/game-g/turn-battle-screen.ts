@@ -56,7 +56,10 @@ const CSS = `
 @keyframes g-fade { from { opacity:0; } to { opacity:1; } }
 @keyframes g-fly-mine { 0% { transform: translate(-90px,140px) scale(.16) rotateX(76deg) rotateY(-30deg); } 100% { transform: none; } }
 @keyframes g-fly-foe  { 0% { transform: translate(90px,140px) scale(.16) rotateX(76deg) rotateY(30deg); } 100% { transform: none; } }
-@keyframes g-coin-pop { 0% { transform: scale(0) rotate(-200deg); opacity:0; } 70% { transform: scale(1.14) rotate(10deg); } 100% { transform: scale(1) rotate(0); opacity:1; } }`;
+@keyframes g-coin-pop { 0% { transform: scale(0) rotate(-200deg); opacity:0; } 70% { transform: scale(1.14) rotate(10deg); } 100% { transform: scale(1) rotate(0); opacity:1; } }
+@keyframes g-hl { 0%,100% { box-shadow:0 0 0 0 var(--gold), 0 0 10px var(--gold); } 50% { box-shadow:0 0 0 5px rgba(232,205,138,.5), 0 0 18px var(--gold); } }`;
+// 教学高亮（doc28 教学钩子·纯表现）：金描边 + 脉冲，套在被强制点击的元素上。
+const HL = ';outline:3px solid var(--gold);outline-offset:2px;animation:g-hl 1s ease-in-out infinite;position:relative;z-index:55';
 
 // ── 视图（buildTurnBattleView 从 turn-combat 派生喂渲染器；纯数据） ──
 export interface TurnSlotView { hasUnit: boolean; mine: boolean; isBorder: boolean; isClash: boolean; rank?: string; suit?: 's' | 'h' | 'd' | 'c'; power?: number; zod?: string[] }
@@ -78,6 +81,7 @@ export interface TurnBattleView {
   actions: TurnActionView[]; actionSub: string; drawPick: boolean;
   sha: TurnShaView[]; bossName: string;
   clash: TurnClashView | null;
+  tutorial: { narration: string; highlight: string } | null; // 教学关（doc28）：旁白 + 高亮元素 key（act:draw/lane:1/hand:0/end…）
 }
 
 // ── 上下通路梯子（owner 2026-06-20 Cloud Design 参考图·忠实端口 LAD 像素坐标·900×400 viewBox）──
@@ -185,16 +189,16 @@ function slotCell(s: TurnSlotView): string {
   return `<div style="${st(cell)}"><div style="${st(dot)}"></div>${unitHTML}${ring}</div>`;
 }
 
-function laneRow(L: TurnLaneView, li: number): string {
+function laneRow(L: TurnLaneView, li: number, hiOn = false): string {
   const row = { flex: 1, minHeight: 0, display: 'flex', alignItems: 'stretch', gap: '10px' };
   const tag = { width: '40px', flex: 'none', display: 'flex', alignItems: 'center', justifyContent: 'center', writingMode: 'vertical-rl', textAlign: 'center', padding: '8px 3px', borderRadius: '8px', background: 'var(--chip)', border: '1px solid var(--panel-border)', fontFamily: 'var(--fh)', fontWeight: 700, fontSize: '13px', color: 'var(--ink)', letterSpacing: '.1em' };
   const track = { position: 'relative', flex: 1, display: 'grid', gridTemplateColumns: 'repeat(9, 1fr)', gap: '6px', alignItems: 'stretch', padding: '8px 6px', borderRadius: '12px', background: 'var(--lane)', border: '1px solid var(--cell-edge)', boxShadow: 'inset 0 1px 0 rgba(255,255,255,.06), inset 0 0 26px rgba(0,0,0,.28)' };
-  return `<div style="${st(row)}"><div style="${st(tag)}">${esc(L.name)}</div><div data-lane="${li}" style="${st(track)}">${forr(L.slots, slotCell)}</div></div>`;
+  return `<div style="${st(row)}"><div style="${st(tag)}">${esc(L.name)}</div><div data-lane="${li}" style="${st(track)}${hiOn ? HL : ''}">${forr(L.slots, slotCell)}</div></div>`;
 }
 
-function handCard(c: TurnHandCardView, i: number): string {
+function handCard(c: TurnHandCardView, i: number, hiOn = false): string {
   const rc = RAR[c.rar] || RAR.white;
-  const selSty = c.selected ? ';outline:3px solid var(--gold);outline-offset:2px' : '';
+  const selSty = (c.selected ? ';outline:3px solid var(--gold);outline-offset:2px' : '') + (hiOn ? HL : '');
   const rarDot = { position: 'absolute', top: c.kind === 'gang' ? '8px' : '-4px', left: c.kind === 'gang' ? '8px' : '50%', transform: c.kind === 'gang' ? 'none' : 'translateX(-50%)', width: c.kind === 'gang' ? '10px' : '9px', height: c.kind === 'gang' ? '10px' : '9px', borderRadius: '50%', background: rc[1], boxShadow: `0 0 7px ${rc[1]}`, border: '1px solid rgba(255,255,255,.6)' };
   const costPill = { position: 'absolute', top: c.kind === 'gang' ? '7px' : '6px', right: c.kind === 'gang' ? '8px' : '7px', minWidth: '22px', padding: '1px 6px', borderRadius: '99px', background: 'var(--gold-grad)', color: '#2a1a08', fontFamily: 'var(--fn)', fontSize: '11px', textAlign: 'center', fontWeight: 700 };
   if (c.kind === 'gang') {
@@ -282,11 +286,16 @@ export function buildTurnFrameHTML(view: TurnBattleView): string {
   // bottom
   const bottomBar = { position: 'relative', zIndex: 50, flex: 'none', height: '212px', display: 'flex', gap: '14px', padding: '12px 22px 16px', borderTop: '1px solid var(--panel-border)', background: 'linear-gradient(180deg,transparent,rgba(0,0,0,.18))' };
   const actionMenu = { width: '230px', flex: 'none', padding: '13px 14px', borderRadius: '14px', background: 'var(--panel)', border: '1px solid var(--panel-border)', boxShadow: 'inset 0 0 0 1px var(--hairline)' };
+  const hi = view.tutorial?.highlight ?? '';
   const actBtn = (a: TurnActionView): string => {
     const s = { display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px', padding: '9px 8px', borderRadius: '10px', cursor: a.dim ? 'not-allowed' : 'pointer', border: '1px solid ' + (a.on ? 'var(--accent)' : 'var(--panel-border)'), background: a.on ? 'var(--accent-grad)' : 'var(--chip)', color: a.on ? '#fff' : 'var(--ink)', opacity: a.dim ? 0.4 : 1, boxShadow: a.on ? '0 4px 14px var(--accent-soft)' : 'none', textAlign: 'center' };
     const icon = { width: '26px', height: '26px', flex: 'none', borderRadius: '7px', background: a.on ? 'rgba(255,255,255,.2)' : 'var(--track)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '15px' };
-    return `<button data-act="${esc(a.key)}" style="${st(s)}"><span style="${st(icon)}">${esc(a.glyph)}</span><span style="font-family:var(--fh); font-weight:700; font-size:14px;">${esc(a.label)}</span></button>`;
+    return `<button data-act="${esc(a.key)}" style="${st(s)}${hi === 'act:' + a.key ? HL : ''}"><span style="${st(icon)}">${esc(a.glyph)}</span><span style="font-family:var(--fh); font-weight:700; font-size:14px;">${esc(a.label)}</span></button>`;
   };
+  // 教学旁白横幅（doc28·教官旁白·覆于棋盘上方·不挡操作）。
+  const narrationBanner = view.tutorial?.narration
+    ? `<div style="${st({ position: 'absolute', top: '10px', left: '50%', transform: 'translateX(-50%)', zIndex: 56, maxWidth: '74%', padding: '10px 20px', borderRadius: '14px', background: 'linear-gradient(180deg,rgba(28,40,58,.97),rgba(14,24,38,.98))', border: '2px solid var(--gold)', boxShadow: '0 10px 30px rgba(0,0,0,.5), 0 0 30px rgba(232,205,138,.25)', color: 'var(--ink)', fontFamily: 'var(--fb)', fontSize: '14px', lineHeight: 1.5, textAlign: 'center', display: 'flex', alignItems: 'center', gap: '10px' })}"><span style="font-size:22px;">🎓</span><span>${esc(view.tutorial.narration)}</span></div>`
+    : '';
   const actionHint = { marginTop: '9px', padding: '8px 10px', borderRadius: '9px', background: 'var(--chip)', border: '1px solid var(--panel-border)', fontSize: '11px', color: 'var(--ink-dim)', lineHeight: 1.4, textAlign: 'center' };
   const handArea = { flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column', padding: '13px 16px', borderRadius: '14px', background: 'var(--panel)', border: '1px solid var(--panel-border)', boxShadow: 'inset 0 0 0 1px var(--hairline)' };
   const handCount = { padding: '3px 10px', borderRadius: '99px', background: 'var(--accent-soft)', color: 'var(--accent)', fontFamily: 'var(--fh)', fontWeight: 700, fontSize: '11px', border: '1px solid var(--accent)' };
@@ -300,14 +309,15 @@ export function buildTurnFrameHTML(view: TurnBattleView): string {
       <div style="display:flex; align-items:center; gap:13px;"><div style="${st(seal)}">♠</div><div style="display:flex; flex-direction:column; line-height:1.2;"><span style="font-family:var(--fh); font-weight:700; font-size:16px; color:var(--ink);">翻命扑克 · 棋枰对弈</span><span style="font-size:11px; color:var(--ink-dim);">单机 · 回合制 deck-builder</span></div></div>
       <div style="flex:1;"></div>
       <div style="${st(turnBox)}"><span style="${st(turnDot)}"></span><div style="display:flex; flex-direction:column; line-height:1.15;"><span style="font-family:var(--fh); font-weight:700; font-size:14px; color:var(--ink);">${esc(view.turnWho)}</span><span style="font-size:10px; color:var(--ink-dim);">第 ${view.roundNo} 回合</span></div></div>
-      <button data-act="end" style="${st(endBtn)}">结束回合 ▸</button>
+      <button data-act="end" style="${st(endBtn)}${hi === 'end' ? HL : ''}">结束回合 ▸</button>
       <div style="width:1px; height:26px; background:var(--panel-border); margin:0 4px;"></div>
       <button data-act="theme" data-k="onyx" style="${st(seg(view.theme === 'onyx'))}">玄铁</button><button data-act="theme" data-k="brocade" style="${st(seg(view.theme === 'brocade'))}">锦霞</button>
     </div>
     <div style="${st(body)}">
       <div style="${st(boardWrap)}">
+        ${narrationBanner}
         ${fortBase(view, true)}
-        <div style="${st(lanesCol)}">${forr(view.lanes, laneRow)}${laddersLayer(view)}</div>
+        <div style="${st(lanesCol)}">${forr(view.lanes, (L, li) => laneRow(L, li, hi === 'lane:' + li))}${laddersLayer(view)}</div>
         ${fortBase(view, false)}
       </div>
       <div style="${st(waterBar)}">
@@ -327,7 +337,7 @@ export function buildTurnFrameHTML(view: TurnBattleView): string {
       </div>
       <div style="${st(handArea)}">
         <div style="display:flex; align-items:center; gap:10px; margin-bottom:10px;"><span style="font-family:var(--fh); font-weight:700; font-size:14px; color:var(--ink); letter-spacing:.04em;">手牌</span><span style="${st(handCount)}">兵牌 ${view.handPawnCount}</span><span style="${st(handCountGang)}">天罡 ${view.handGangCount}</span><div style="flex:1;"></div><span style="font-size:11px; color:var(--ink-dim);">放牌消耗召唤源泉 · 点动作选「放牌」后落子</span></div>
-        <div style="display:flex; gap:11px; align-items:flex-end;">${forr(view.hand, handCard)}</div>
+        <div style="display:flex; gap:11px; align-items:flex-end;">${forr(view.hand, (c, i) => handCard(c, i, hi === 'hand:' + i))}</div>
       </div>
     </div>
     ${view.clash ? clashOverlay(view.clash) : ''}
@@ -344,7 +354,7 @@ const SUIT_KEYS: Record<string, 's' | 'h' | 'd' | 'c'> = { S: 's', H: 'h', D: 'd
 const lc = (s: string): 's' | 'h' | 'd' | 'c' => SUIT_KEYS[s] ?? 's';
 const rankOf = (r: string): 'white' | 'green' | 'blue' | 'gold' => (r === 'A' ? 'gold' : r === 'K' || r === 'Q' || r === 'J' ? 'blue' : 'white');
 
-export interface TurnViewOpts { theme?: 'onyx' | 'brocade'; tengangName?: (id: string) => string; clash?: TurnClashView | null; sha?: TurnShaView[]; bossName?: string; selMode?: string | null; selHand?: number }
+export interface TurnViewOpts { theme?: 'onyx' | 'brocade'; tengangName?: (id: string) => string; clash?: TurnClashView | null; sha?: TurnShaView[]; bossName?: string; selMode?: string | null; selHand?: number; tutorial?: { narration: string; highlight: string } | null }
 /** 从 turn-combat 真状态派生战斗屏视图（玩家 = side a 视角）。纯读、不改 battle。 */
 export function buildTurnBattleView(b: TurnBattle, opts: TurnViewOpts = {}): TurnBattleView {
   const laneNames = ['上路', '中路', '下路'];
@@ -381,6 +391,7 @@ export function buildTurnBattleView(b: TurnBattle, opts: TurnViewOpts = {}): Tur
     sha: opts.sha ?? [{ filled: true, name: '地煞·破军', rar: 'gold', desc: '' }, { filled: true, name: '地煞·贪狼', rar: 'blue', desc: '' }, { filled: false, name: '未知', rar: 'white', desc: '' }],
     bossName: opts.bossName ?? '楚霸王 · 项羽',
     clash: opts.clash ?? null,
+    tutorial: opts.tutorial ?? null,
   };
 }
 

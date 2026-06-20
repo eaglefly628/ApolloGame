@@ -70,4 +70,11 @@ describe('Game G · turn-battle-screen live mount 交互（doc24 回合制 · DO
     press(host.querySelector('[data-act="draw-tengang"]'));
     expect(actions.drawFrom.mock.calls.map((c) => c[0])).toEqual(['poker', 'tengang']);
   });
+
+  it('教学钩子（doc28·纯表现层）：tutorial 旁白横幅 + 高亮被强制元素', () => {
+    const { host } = setup({ tutorial: { narration: '每回合只能选一类，先【抽牌】。', highlight: 'act:draw' } });
+    expect(host.textContent).toContain('每回合只能选一类'); // 教官旁白横幅
+    expect(host.innerHTML).toContain('🎓');
+    expect(host.innerHTML).toContain('g-hl'); // 金描边脉冲高亮（套在抽牌钮上）
+  });
 });

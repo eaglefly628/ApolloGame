@@ -3,7 +3,7 @@
 // 引擎按 id 逐关加载喂 turn-combat（doc24 回合制）：Boss 大本营血/地煞/12 天罡 seed 随机/loadoutCap 上限。
 import { campaignFor, TIANGANG_UNLOCK, type StageCampaign } from './blueprint.js';
 import { stageDisha } from './disha.js';
-import { NEUTRAL_AI, type AiProfile } from './turn-combat.js';
+import { NEUTRAL_AI, type AiProfile, type PokerCard } from './turn-combat.js';
 
 export interface LevelDef {
   id: number; heroId: string; stars: number;
@@ -55,6 +55,12 @@ export function bossTiangang(stage: number, count = 12): string[] {
   const rnd = (): number => { t += 0x6d2b79f5; let x = t; x = Math.imul(x ^ (x >>> 15), x | 1); x ^= x + Math.imul(x ^ (x >>> 7), x | 61); return ((x ^ (x >>> 14)) >>> 0) / 4294967296; };
   for (let i = arr.length - 1; i > 0; i--) { const j = Math.floor(rnd() * (i + 1)); [arr[i], arr[j]] = [arr[j], arr[i]]; }
   return arr.slice(0, Math.min(count, arr.length));
+}
+
+// 教学关稻草兵（doc28 §三·关0·弱训练敌·固定弱牌·好赢）：几张低点扑克兵·无地煞无天罡·配 aiTier 0 + 守势画像 → 可预测好赢。乙 跑教学关用。
+export const TUTORIAL_AI: AiProfile = { aggression: 1, lanePref: 5, spellEager: 0, targetPref: 'weak', risk: 0, economy: 3 };
+export function tutorialEnemyDeck(): PokerCard[] {
+  return ['2', '3', '2', '4', '3', '2'].map((rank, i) => ({ kind: 'poker', id: 'straw' + i, rank, suit: 'C', general: false, buff: 0 }));
 }
 
 /** 按 stage（1 基）加载一关定义（越界取末关 lore 占位·数据全拼装）。纯数据·确定性。 */
