@@ -323,7 +323,7 @@ export function mount(container: HTMLElement): () => void {
       const foils: LobbyShopItem[] = GAME_G_FOILS.map((f) => { const owned = save.foils.includes(f.id); return { id: f.id, name: f.name, sub: f.desc, cost: f.cost, owned, buyable: !owned && save.materials >= f.cost }; });
       const heart = save.lives > 0 ? '❤'.repeat(save.lives) : '—';
       return {
-        skin: lobbySkin, coin: save.materials, diamond: save.diamond, dizhiShards: save.dizhiShards, rechargeNeedsPassword: save.rechargeCount >= 1, energy: save.leverEnergy, energyMax: cap, foilCount: save.foils.length,
+        skin: lobbySkin, coin: save.materials, diamond: save.diamond, dizhiShards: save.dizhiShards, rechargeNeedsPassword: save.rechargeCount >= 1, campaignMax: save.campaignMax, energy: save.leverEnergy, energyMax: cap, foilCount: save.foils.length,
         name: '不翻就赢_07', mainCard: '黑桃A「掷命尖兵」', rankText: `战役 ${save.stage}/${RUN_BATTLES}`,
         stageLabel: `第 ${save.stage} 战 / 共 ${RUN_BATTLES} · 终局 Boss【${boss.name}】`,
         archLine, bossLine: `${boss.persona} · 流派【${bossArchName}】— 据其针对布阵`,

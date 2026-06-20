@@ -4,7 +4,7 @@
 // 纯表现"固定解释器"：只渲染 view + 抛 data-act 回调，零 gameplay 计算。CSS 全 scope 在 .ggl-root 下。
 
 import { GI, tiangangIcon } from './icons.js';
-import { HERO_CARDS, DIZHI_ZODIACS, DIZHI_TRINES, EARTH_FIENDS, type StageCampaign } from './blueprint.js';
+import { HERO_CARDS, DIZHI_ZODIACS, DIZHI_TRINES, EARTH_FIENDS, STAGE_CAMPAIGN, STORY_OPENING, type StageCampaign, type StoryBeat } from './blueprint.js';
 import { heroPortrait } from './portraits.js';
 import { RECHARGE_PACKS, rechargeTotal, DIAMOND_EXCHANGES, DIZHI_SHARD_PACKS } from './blueprint.js';
 
@@ -23,6 +23,7 @@ export interface LobbyView {
   decks?: { id: string; name: string; size: number; active: boolean }[];
   deckSize?: number; activeDeckName?: string; canAddDeck?: boolean;
   campaign?: StageCampaign; // 当前关战役（Boss/战役/难度/地煞/解锁 · doc23 §八）
+  campaignMax?: number; // 已抵达的最高关（战役进度屏 锁/通关判定）
 }
 
 // ── 双皮 CSS 变量（逐项照搬 .dc.html themes() · onyx 绿呢 / rosy=brocade 红呢）+ 招牌类 ──
@@ -68,6 +69,15 @@ const CSS = `
 .ggl-root .rc-pack.off{ opacity:.4; cursor:not-allowed }
 .ggl-root .rc-amt{ font-family:var(--fh); font-weight:700; font-size:18px; color:#7fd0ff }
 .ggl-root .rc-price{ margin-top:5px; font-family:var(--fn); font-size:14px; font-weight:700; color:var(--ink); padding:3px 12px; border-radius:99px; background:var(--gold-grad); color:#2a1a08 }
+.ggl-root .camp-list{ display:flex; flex-direction:column; gap:12px }
+.ggl-root .camp-card{ padding:16px 18px; border-radius:14px; background:var(--panel); border:1px solid var(--panel-border); box-shadow:inset 0 0 0 1px var(--hairline) }
+.ggl-root .camp-card.cur{ border-color:var(--gold); box-shadow:0 0 22px rgba(232,205,130,.18) }
+.ggl-root .camp-card.locked{ opacity:.62 }
+.ggl-root .camp-fiends{ display:flex; flex-wrap:wrap; gap:7px }
+.ggl-root .camp-fiend{ font-size:11px; padding:4px 9px; border-radius:8px; background:var(--chip); border:1px solid var(--panel-border); color:var(--ink-dim) }
+.ggl-root .camp-fiend b{ color:var(--ink) }
+.ggl-root .story-ov{ background:rgba(6,8,11,.88) }
+.ggl-root .story-box{ max-width:520px; text-align:left }
 .ggl-root .icon{ width:34px; height:34px; border-radius:9px; display:flex; align-items:center; justify-content:center; background:var(--chip); border:1px solid var(--panel-border); color:var(--ink-dim); font-size:15px }
 .ggl-root .tutbtn{ padding:0 12px; height:34px; border-radius:9px; background:var(--chip); border:1px solid var(--gold); color:var(--gold); font-size:13px; font-weight:700 }
 .ggl-root .nav{ display:flex; gap:4px; padding:10px 22px 0 }
@@ -430,6 +440,41 @@ function rechargeBox(view: LobbyView, rechargeErr = ''): string {
   </div></div>`;
 }
 
+// 叙事演出 overlay（首启开场故事 doc28 §一 / 每关开局演出 doc27 §五 共用）：逐幕旁白 + 下一幕/跳过。
+function narrationBox(beats: StoryBeat[], idx: number, label: string, cta: string): string {
+  const i = Math.max(0, Math.min(beats.length - 1, idx));
+  const b = beats[i];
+  const last = i >= beats.length - 1;
+  const dots = beats.map((_, k) => `<span style="width:7px;height:7px;border-radius:50%;background:${k === i ? 'var(--gold)' : 'var(--panel-border)'}"></span>`).join('');
+  return `<div class="tut-ov story-ov"><div class="tut-box story-box" data-stop="1">
+    <div style="font-family:var(--fn);font-size:11px;letter-spacing:.18em;color:var(--gold);text-transform:uppercase">${esc(label)}</div>
+    <div style="font-family:var(--fd);font-size:23px;color:var(--ink);margin:10px 0 16px">〔 ${esc(b.scene)} 〕</div>
+    <div style="font-size:16px;line-height:2.05;color:var(--ink);min-height:104px">${esc(b.text)}</div>
+    <div style="display:flex;align-items:center;gap:7px;margin:18px 0 14px">${dots}</div>
+    <div style="display:flex;gap:10px;align-items:center"><button class="cta-sub" data-act="story-skip">跳过</button><div style="flex:1"></div><button class="cta-sub" style="color:#2a1a08;background:var(--gold-grad);border:0" data-act="story-next">${last ? esc(cta) : '下一幕 →'}</button></div>
+  </div></div>`;
+}
+
+// 战役进度屏（doc27 · 关卡选择/进度 + 每关战役背景/Boss对白/地煞/解锁）。锁/通关/当前 由 campaignMax/当前 stage。
+function campaignSection(view: LobbyView): string {
+  const cur = view.campaign?.stage ?? 1;
+  const maxReached = view.campaignMax ?? cur;
+  const cards = STAGE_CAMPAIGN.map((c) => {
+    const locked = c.stage > maxReached;
+    const isCur = c.stage === cur;
+    const cleared = c.stage < cur;
+    const stars = '★'.repeat(c.stars) + `<span style="opacity:.3">${'★'.repeat(Math.max(0, 3 - c.stars))}</span>`;
+    const badge = locked ? `<span style="color:var(--ink-dim)">🔒 未解锁</span>` : isCur ? `<span style="color:var(--gold)">▶ 当前</span>` : cleared ? `<span style="color:var(--club)">✓ 已通关</span>` : `<span style="color:var(--ink-dim)">可重打</span>`;
+    const head = `<div style="display:flex;align-items:baseline;gap:10px"><span style="font-family:var(--fd);font-size:26px;color:${locked ? 'var(--ink-dim)' : 'var(--gold)'}">第 ${c.stage} 关</span><span style="font-family:var(--fh);font-weight:700;font-size:16px;color:var(--ink)">${esc(c.battle)}</span><span style="font-size:13px;color:var(--ink-dim)">vs ${esc(c.boss)}</span><span style="margin-left:auto;font-size:12px">${badge}</span></div><div style="font-size:12px;color:var(--gold);margin-top:3px">难度 ${stars}　·　通关解锁天罡 <b>${esc(c.unlock)}</b></div>`;
+    if (locked) return `<div class="camp-card locked">${head}<div class="note" style="text-align:left;margin-top:8px;color:var(--ink-dim)">通关第 ${c.stage - 1} 关后解封这一缕英雄之魂。</div></div>`;
+    const lines = c.bossLines ? `<div style="margin-top:10px;display:flex;flex-direction:column;gap:5px;font-size:12px"><div>🗣️ <span style="color:var(--ink-dim)">开场</span>「${esc(c.bossLines.open)}」</div><div>⚔️ <span style="color:var(--ink-dim)">劣势</span>「${esc(c.bossLines.mid)}」</div><div>💀 <span style="color:var(--ink-dim)">败北</span>「${esc(c.bossLines.lose)}」</div></div>` : '';
+    const fiends = c.fiends.map((f) => `<span class="camp-fiend"><b>${esc(f.name)}</b> ${esc(f.desc)}</span>`).join('');
+    const cta = isCur ? `<button class="cta-sub" style="margin-top:12px;color:#2a1a08;background:var(--gold-grad);border:0" data-act="play">${GI.swords} 出征 · 第 ${c.stage} 关 →</button>` : '';
+    return `<div class="camp-card${isCur ? ' cur' : ''}">${head}<div style="font-size:13px;line-height:1.85;color:var(--ink);margin-top:9px">${esc(c.intro ?? c.oneLiner)}</div>${lines}<div style="margin-top:10px"><div class="note" style="text-align:left;margin-bottom:5px">🎴 地煞（明牌可破）</div><div class="camp-fiends">${fiends}</div></div>${cta}</div>`;
+  }).join('');
+  return `<div class="card" style="background:none;border:0;box-shadow:none;padding:0"><h2 style="margin-bottom:4px">⚔️ 命运之战 · 战役进度 <span class="ghost" style="margin-left:auto;font-size:12px">第 ${cur} / ${STAGE_CAMPAIGN.length} 关 · 全 52 役逐步解封</span></h2><div class="note" style="text-align:left;margin-bottom:12px">五十二位被诅咒的名将，每一关是一位英雄的成名之战。打赢=破其诅咒、收魂入麾。</div><div class="camp-list">${cards}</div><div class="note" style="text-align:left;margin-top:14px;color:var(--ink-dim)">🔮 关 6–52（孙武 · 成吉思汗 · 汉尼拔……）战役背景与 Boss 对白已入库，随战役章节逐步开放。</div></div>`;
+}
+
 // 改造坊天罡牌货架项（B3）：买入 + 选入/踢出战库双动作 + 牌力/P̂ 展示。
 function craftTiangangItem(it: LobbyShopItem, deckFull: boolean): string {
   const cls = 'good' + (it.owned ? ' got' : it.buyable ? ' buy' : ' lock');
@@ -595,7 +640,7 @@ function fiendsCodex(): string {
   }).join('')}</div>`;
 }
 
-export function renderLobby(view: LobbyView, tab: string, tutorialOpen: boolean, deckTab: 'base' | 'gang' = 'base', earthFilter = 'all', collTab = 'cards', heroSuit = 'all', heroDetail = '', heroRar = 'all', ownedOnly = false, introOpen = false, manualTier: '' | 'easy' | 'mid' | 'hard' = '', rechargeOpen = false, rechargeErr = ''): string {
+export function renderLobby(view: LobbyView, tab: string, tutorialOpen: boolean, deckTab: 'base' | 'gang' = 'base', earthFilter = 'all', collTab = 'cards', heroSuit = 'all', heroDetail = '', heroRar = 'all', ownedOnly = false, introOpen = false, manualTier: '' | 'easy' | 'mid' | 'hard' = '', rechargeOpen = false, rechargeErr = '', story: { beats: StoryBeat[]; idx: number; label: string; cta: string } | null = null): string {
   const on = (t: string): string => (tab === t ? ' on' : '');
   const dOn = (t: string): string => (deckTab === t ? ' on' : '');
   const cOn = (t: string): string => (collTab === t ? ' on' : '');
@@ -622,6 +667,7 @@ export function renderLobby(view: LobbyView, tab: string, tutorialOpen: boolean,
   </div>
   <div class="nav">
     <button class="${on('home')}" data-act="tab" data-k="home">大厅</button>
+    <button class="${on('campaign')}" data-act="tab" data-k="campaign">战役</button>
     <button class="${on('decks')}" data-act="tab" data-k="decks">牌组</button>
     <button class="${on('coll')}" data-act="tab" data-k="coll">收藏</button>
     <button class="${on('craft')}" data-act="tab" data-k="craft">改造坊</button>
@@ -661,6 +707,7 @@ export function renderLobby(view: LobbyView, tab: string, tutorialOpen: boolean,
       </div>
     </section>`;
     })()}
+    <section class="screen${on('campaign')} full" style="flex-direction:column;overflow-y:auto">${campaignSection(view)}</section>
     <section class="screen${on('decks')} full">${deckPreviewPanel(view.tiangangs, view.deckArchName, view.deckArchActivated, view.deckSize ?? 12, view.activeDeckName)}<div class="deck-nav"><button class="${deckTab==='base'?'on':''}" data-act="deckTab" data-k="base">扑克牌组</button><button class="${deckTab==='gang'?'on':''}" data-act="deckTab" data-k="gang">天罡战牌</button></div><div class="dsub${dOn('base')}"><div class="card"><h2>📜 扑克牌组 · 52 张 <span class="ghost" style="margin-left:auto;font-size:12px">favor 均 ${view.deckAvg} · 最低 ${view.deckMin} / 最高 ${view.deckMax}</span></h2>${suitBarsPanel(view.deck, view.deckAvg)}<div>${deckGrid(view.deck, view.foils)}</div><div class="note" style="text-align:left">favor=该牌掷命翻正面(存活)的概率底盘。<b style="color:var(--gold)">金边</b>=强(≥70) / 暗格=弱(≤50)。牌组强度靠<b>天罡牌/地支牌/流派</b>提升 → 去「改造坊」经营。</div></div></div><div class="dsub${dOn('gang')}">${tiangangDeckManager(view)}<div class="card"><h2>${GI.planet} 地支牌 <span class="ghost" style="margin-left:auto;font-size:12px">12 生肖 · 铜→银→金 · 镶英雄 ≤3 凑连携</span></h2><div class="earth-filter">${efBtn('all','全部','background:var(--gold-grad);color:#2a1a08;border:0')}${efBtn('bronze','铜','background:#cd7f32;color:#fff;border:0')}${efBtn('silver','银','background:#c4ccd6;color:#2a2a2a;border:0')}${efBtn('gold','金','background:var(--gold-grad);color:#2a1a08;border:0')}</div><div class="earth-groups">${earthSection(earthFilter)}</div></div></div></section>
     <section class="screen${on('coll')} full" style="flex-direction:column"><div class="deck-nav"><button class="${collTab==='cards'?'on':''}" data-act="collTab" data-k="cards">收藏·牌谱</button><button class="${collTab==='ladder'?'on':''}" data-act="collTab" data-k="ladder">天梯·榜</button><button class="${collTab==='fiends'?'on':''}" data-act="collTab" data-k="fiends">地煞·战法</button><button class="${collTab==='collect'?'on':''}" data-act="collTab" data-k="collect">天罡&amp;闪艺</button></div><div class="dsub${cOn('cards')}" style="flex:1;min-height:0;flex-direction:column">${heroCollSection(heroSuit, heroRar, heroDetail, ownedOnly)}</div><div class="dsub${cOn('ladder')}" style="flex:1;min-height:0;flex-direction:column">${ladderSection(view.name, view.rankText)}</div><div class="dsub${cOn('fiends')}" style="flex:1;min-height:0;flex-direction:column">${fiendsCodex()}</div><div class="dsub${cOn('collect')}"><div class="card"><h2>🗃 天罡牌 · 收藏 ${view.tiangangs.filter((j) => j.owned).length}/${view.tiangangs.length}</h2><div class="note" style="text-align:left;margin-bottom:6px">⚡ 已解锁天罡牌（到「牌组」屏编入出战牌组）</div><div class="shelf">${view.tiangangs.map((j) => shopItem('', tiangangIcon(j.icon, j.tint), { ...j, buyable: false })).join('')}</div><div class="note" style="text-align:left;margin:12px 0 6px">✨ 闪艺 foil（纯装饰收集 · 点亮可购买）· ${view.foils.filter((f) => f.owned).length}/${view.foils.length}</div><div class="shelf">${view.foils.map((f) => shopItem('buyFoil', '✨', f)).join('')}</div></div></div></section>
     <section class="screen${on('craft')} full"><div class="craft-zones">
@@ -678,7 +725,7 @@ export function renderLobby(view: LobbyView, tab: string, tutorialOpen: boolean,
     </div></section>
     <section class="screen${on('ladder')} full">${ladderSection(view.name, view.rankText)}</section>
   </div>
-  </div>${tutorialOpen ? tutorialBox() : ''}${introOpen ? gameIntroBox() : ''}${manualTier ? manualBox(manualTier) : ''}${rechargeOpen ? rechargeBox(view, rechargeErr) : ''}</div>`;
+  </div>${tutorialOpen ? tutorialBox() : ''}${introOpen ? gameIntroBox() : ''}${manualTier ? manualBox(manualTier) : ''}${rechargeOpen ? rechargeBox(view, rechargeErr) : ''}${story ? narrationBox(story.beats, story.idx, story.label, story.cta) : ''}</div>`;
 }
 
 export interface LobbyHandlers {
@@ -715,7 +762,14 @@ export function mountLobby(host: HTMLElement, h: LobbyHandlers): { update: () =>
   let manTier: '' | 'easy' | 'mid' | 'hard' = '';
   let recharge = false;
   let rechargeErr = '';
-  const render = (): void => { host.innerHTML = renderLobby({ ...h.getView(), skin }, tab, tut, deckTab, earthFilter, collTab, heroSuit, heroDetail, heroRar, ownedOnly, intro, manTier, recharge, rechargeErr); };
+  let story: { beats: StoryBeat[]; idx: number; label: string; cta: string; then: 'close' | 'play' } | null = null;
+  const render = (): void => { host.innerHTML = renderLobby({ ...h.getView(), skin }, tab, tut, deckTab, earthFilter, collTab, heroSuit, heroDetail, heroRar, ownedOnly, intro, manTier, recharge, rechargeErr, story); };
+  // 每关开局演出（doc27 §五）：战役背景 + Boss 开场白 → 出征。缺 intro 则直接进战斗。
+  const levelBeats = (c: StageCampaign): StoryBeat[] => [
+    { scene: c.battle, text: c.intro ?? c.oneLiner },
+    ...(c.bossLines ? [{ scene: `${c.boss} · 开场`, text: c.bossLines.open }] : []),
+  ];
+  const finishStory = (): void => { const then = story?.then ?? 'close'; story = null; render(); if (then === 'play') h.onPlay(); };
   const onClick = (e: MouseEvent): void => {
     const el = (e.target as HTMLElement).closest('[data-act]') as HTMLElement | null; if (!el) return;
     const act = el.dataset.act, k = el.dataset.k ?? '';
@@ -735,7 +789,9 @@ export function mountLobby(host: HTMLElement, h: LobbyHandlers): { update: () =>
     else if (act === 'manTier') { manTier = k as 'easy' | 'mid' | 'hard'; render(); }
     else if (act === 'man-close') { manTier = ''; render(); }
     else if (act === 'tut-close') { tut = false; render(); }
-    else if (act === 'play') h.onPlay();
+    else if (act === 'play') { const c = h.getView().campaign; if (c && c.intro) { story = { beats: levelBeats(c), idx: 0, label: `第 ${c.stage} 关 · ${c.battle}`, cta: `出征 · 第 ${c.stage} 关`, then: 'play' }; render(); } else h.onPlay(); }
+    else if (act === 'story-next') { if (!story) return; if (story.idx < story.beats.length - 1) { story.idx++; render(); } else finishStory(); }
+    else if (act === 'story-skip') { finishStory(); }
     else if (act === 'buyTiangang') { h.onBuyTiangang?.(k); render(); }
     else if (act === 'buyPlanet') { h.onBuyPlanet?.(k); render(); }
     else if (act === 'buyFoil') { h.onBuyFoil?.(k); render(); }

@@ -85,10 +85,10 @@ describe('Game G · lobby-screen mountLobby 点击交互（DOM · happy-dom）',
       expect(host.innerHTML).toContain('全服榜');
     });
 
-    it('5 tab 全循环：每次只有 1 个 section 带 .on', () => {
+    it('6 tab 全循环：每次只有 1 个 section 带 .on', () => {
       const host = document.createElement('div');
       mountLobby(host, { getView: makeView, onPlay: vi.fn() });
-      for (const label of ['牌组', '收藏', '改造坊', '天梯', '大厅']) {
+      for (const label of ['战役', '牌组', '收藏', '改造坊', '天梯', '大厅']) {
         click(navBtn(host, label));
         expect(host.querySelectorAll('.screen.on').length).toBe(1);
       }
@@ -230,12 +230,62 @@ describe('Game G · lobby-screen mountLobby 点击交互（DOM · happy-dom）',
 
   // ── 4. 出征按钮 ──
   describe('出征（play）回调', () => {
-    it('点击「出征」→ onPlay 回调触发', () => {
+    it('无战役 intro：点「出征」→ 直接 onPlay 回调触发', () => {
       const onPlay = vi.fn();
       const host = document.createElement('div');
-      mountLobby(host, { getView: makeView, onPlay });
+      mountLobby(host, { getView: makeView, onPlay }); // makeView 无 campaign → 直接打
       const playBtn = host.querySelector('[data-act="play"]')!;
       click(playBtn);
+      expect(onPlay).toHaveBeenCalledTimes(1);
+    });
+  });
+
+  // ── 战役进度屏 + 每关开局演出（doc27）──
+  describe('战役进度 + 开局演出', () => {
+    const campView = (over: Partial<LobbyView> = {}): LobbyView => makeView({
+      campaignMax: 2,
+      campaign: { stage: 1, boss: '列奥尼达', battle: '温泉关', oneLiner: '三百斯巴达', stars: 1, unlock: '虎符', intro: '波斯百万大军压境。', bossLines: { open: '来取我的长矛吧。', mid: '冥府见。', lose: '荣耀终结于你手。' }, fiends: [{ name: '温泉关死守', desc: '极难破' }] },
+      ...over,
+    });
+
+    it('「战役」tab → 战役进度屏（命运之战 + 第1关 + Boss对白）', () => {
+      const host = document.createElement('div');
+      mountLobby(host, { getView: campView, onPlay: vi.fn() });
+      click(navBtn(host, '战役'));
+      expect(host.querySelector('.screen.on')).not.toBeNull();
+      expect(host.innerHTML).toContain('命运之战');
+      expect(host.innerHTML).toContain('温泉关');
+      expect(host.innerHTML).toContain('来取我的长矛吧'); // Boss 开场白
+    });
+
+    it('点「出征」（有战役 intro）→ 开局演出 overlay 出现（非直接 onPlay）', () => {
+      const onPlay = vi.fn();
+      const host = document.createElement('div');
+      mountLobby(host, { getView: campView, onPlay });
+      click(host.querySelector('[data-act="play"]'));
+      expect(host.querySelector('.story-box')).not.toBeNull();
+      expect(host.innerHTML).toContain('波斯百万大军压境'); // 战役背景旁白
+      expect(onPlay).not.toHaveBeenCalled(); // 先演出·未直接进战斗
+    });
+
+    it('演出 → 跳过 → onPlay（进战斗）', () => {
+      const onPlay = vi.fn();
+      const host = document.createElement('div');
+      mountLobby(host, { getView: campView, onPlay });
+      click(host.querySelector('[data-act="play"]'));
+      click(host.querySelector('[data-act="story-skip"]'));
+      expect(onPlay).toHaveBeenCalledTimes(1);
+      expect(host.querySelector('.story-box')).toBeNull(); // overlay 收起
+    });
+
+    it('演出 → 逐幕「下一幕」走到末幕 → onPlay', () => {
+      const onPlay = vi.fn();
+      const host = document.createElement('div');
+      mountLobby(host, { getView: campView, onPlay });
+      click(host.querySelector('[data-act="play"]')); // 幕0=战役背景
+      click(host.querySelector('[data-act="story-next"]')); // 幕1=Boss开场
+      expect(onPlay).not.toHaveBeenCalled();
+      click(host.querySelector('[data-act="story-next"]')); // 末幕→出征
       expect(onPlay).toHaveBeenCalledTimes(1);
     });
   });

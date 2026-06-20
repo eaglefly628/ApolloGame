@@ -1308,23 +1308,50 @@ export const DIZHI_TRINES: { name: string; members: string; effect: string }[] =
 // 每关 = 一位名将困在其命运之战；打赢=破诅咒、解封其魂。Boss 牌库=12 随机天罡 + 3 专属地煞(招牌历史战术·明牌可破)。
 // 节奏：关1-3 简单(地煞弱/少触发) → 关4-5 放威力；每关通关解锁 1 张天罡。sim 基准胜率 关1~80%→关5~55%。
 export interface StageFiend { name: string; desc: string } // 地煞=Boss 招牌历史战术（明牌介绍）
-export interface StageCampaign { stage: number; boss: string; battle: string; oneLiner: string; stars: number; fiends: StageFiend[]; unlock: string }
+export interface StageBossLines { open: string; mid: string; lose: string } // Boss 对白：开场/劣势/败北（doc27 §五）
+export interface StageCampaign { stage: number; boss: string; battle: string; oneLiner: string; stars: number; fiends: StageFiend[]; unlock: string; intro?: string; bossLines?: StageBossLines }
 export const STAGE_CAMPAIGN: StageCampaign[] = [
-  { stage: 1, boss: '列奥尼达', battle: '温泉关', oneLiner: '三百斯巴达·死战波斯', stars: 1, unlock: '虎符', fiends: [
+  { stage: 1, boss: '列奥尼达', battle: '温泉关', oneLiner: '三百斯巴达·死战波斯', stars: 1, unlock: '虎符',
+    intro: '公元前 480 年，波斯百万大军压境。列奥尼达率三百斯巴达勇士死守温泉关隘口——以血肉筑成不可逾越之墙。而你，要翻动这场死战的结局。',
+    bossLines: { open: '波斯人！来取我的长矛吧——如果你们能。', mid: '斯巴达人，早餐尽情吃——晚餐我们在冥府享用！', lose: '……斯巴达的荣耀，今日终结于你手。' },
+    fiends: [
     { name: '温泉关死守', desc: '隘口窄·大本营/前排极难破' }, { name: '斯巴达方阵', desc: '兵相邻越多·互 +战力' }, { name: '死战不退', desc: '濒死不溃·战至最后一人' } ] },
-  { stage: 2, boss: '亚历山大', battle: '高加米拉', oneLiner: '以少击溃大流士·灭波斯', stars: 1, unlock: '旗手', fiends: [
+  { stage: 2, boss: '亚历山大', battle: '高加米拉', oneLiner: '以少击溃大流士·灭波斯', stars: 1, unlock: '旗手',
+    intro: '公元前 331 年，高加米拉平原。亚历山大以四万直面大流士二十万波斯大军，亲率伙伴骑兵直取王旗。',
+    bossLines: { open: '我不窃取胜利。来吧，让命运在阳光下见分晓。', mid: '看我的伙伴骑兵，如何凿穿你的中军！', lose: '……连我，也有马失前蹄之日。了不起。' },
+    fiends: [
     { name: '伙伴骑兵', desc: '一记突击·直插你主将/后排' }, { name: '锤砧', desc: '正面顶+侧翼砸·夹你减战力' }, { name: '长枪方阵', desc: '前排先手出击' } ] },
-  { stage: 3, boss: '曹操', battle: '赤壁（翻命）', oneLiner: '挟天子·连环船·火攻可破', stars: 2, unlock: '不屈', fiends: [
+  { stage: 3, boss: '曹操', battle: '赤壁（翻命）', oneLiner: '挟天子·连环船·火攻可破', stars: 2, unlock: '不屈',
+    intro: '建安十三年，赤壁。曹操列八十万众于江北、铁索连环。一把火，将改写天下三分。这一回，你是那把火。',
+    bossLines: { open: '孤提百万雄师，踏平江东，弹指间耳。', mid: '区区火攻，也敢撼我连环巨舰？', lose: '……华容道上，孤竟败于这一炬。' },
+    fiends: [
     { name: '大军压境', desc: '兵海·额外铺兵' }, { name: '连环船', desc: '他兵串联共享战力·你可「火攻」一并烧' }, { name: '挟天子', desc: '全军士气 +' } ] },
-  { stage: 4, boss: '拿破仑', battle: '滑铁卢', oneLiner: '大炮兵·近卫军·机动突破', stars: 2, unlock: '疾行', fiends: [
+  { stage: 4, boss: '拿破仑', battle: '滑铁卢', oneLiner: '大炮兵·近卫军·机动突破', stars: 2, unlock: '疾行',
+    intro: '1815 年，滑铁卢。从厄尔巴归来的拿破仑，要在此重夺欧洲——或永远落幕。',
+    bossLines: { open: '近卫军从未后退。今日，让世界再记住我的名字。', mid: '大炮是我最忠诚的女儿——听她歌唱吧。', lose: '……普鲁士人来得太快。命运，终弃我而去。' },
+    fiends: [
     { name: '大炮兵', desc: '开局炮轰一路·全路减战力' }, { name: '近卫军', desc: '一记精锐·中央突破' }, { name: '机动调度', desc: '额外迁路/多动一次' } ] },
-  { stage: 5, boss: '项羽', battle: '霸王别姬', oneLiner: '破釜沉舟·霸王之勇·不退', stars: 3, unlock: '擒王', fiends: [
+  { stage: 5, boss: '项羽', battle: '霸王别姬', oneLiner: '破釜沉舟·霸王之勇·不退', stars: 3, unlock: '擒王',
+    intro: '垓下，四面楚歌。西楚霸王力能扛鼎、勇冠三军，却已陷十面埋伏。虞兮虞兮奈若何——而你，能否为霸王翻这一局命？',
+    bossLines: { open: '力拔山兮气盖世！纵八千子弟散尽，此身亦战至最后一人！', mid: '此天亡我，非战之罪也！', lose: '……无颜见江东父老。罢了，就让你来翻这命吧。' },
+    fiends: [
     { name: '破釜沉舟', desc: '全军战力暴涨·绝不退' }, { name: '霸王之勇', desc: '主将无双·战力恐怖' }, { name: '九战九捷', desc: '每胜叠加战力' } ] },
 ];
 /** 当前关战役（stage 1..N → 关卡；越界取末关）。纯数据·HOME 展示用。 */
 export function campaignFor(stage: number): StageCampaign {
   return STAGE_CAMPAIGN[Math.max(0, Math.min(STAGE_CAMPAIGN.length - 1, stage - 1))];
 }
+
+// 首启开场故事（doc28 §一 · 逐屏旁白·可跳过）。数据驱动·叙事层·纯文案。
+export interface StoryBeat { scene: string; text: string }
+export const STORY_OPENING: StoryBeat[] = [
+  { scene: '夜 · 赌场', text: '传说，世上最伟大的将军，从未真正死去——他们只是，在等一个执牌的人。' },
+  { scene: '开关', text: '一只手无意间拨动了牌桌下一枚古旧的黄铜开关。咔哒。' },
+  { scene: '异变', text: '灯火骤灭，整副扑克腾空、光芒大作。远古以来，五十二位最负盛名的名将，魂魄被尽数封入这副牌中。' },
+  { scene: '群像', text: '孙武、成吉思汗、亚历山大、项羽……剪影在牌面一一闪现。他们困在各自一生最关键的那场战役里，命运永远定格在那一刻。' },
+  { scene: '庄家', text: '牌桌尽头，大王与小王缓缓浮现——执掌这副命运之牌的两位庄家。' },
+  { scene: '召唤', text: '你，无意间成了执掌命运之人。重打这五十二场命运之战、翻动他们的命——最终，掀翻这庄家的牌桌。' },
+];
 
 // === 天罡解锁表（doc25 §二 · 9 关 × 4 张 = 36 · 简单被动 → 复杂主动 → 流派印记） ===
 // 打通关 N → 解锁该关 4 张「可购」（花金币·或钻石速购）；前 5 关可刷攒币；通关 1-9 = 全 36 解锁。

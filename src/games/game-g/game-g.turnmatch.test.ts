@@ -17,6 +17,9 @@ describe('Game G · 集成：出征进【回合制】战斗屏（doc24·happy-do
     const play = container.querySelector('[data-act="play"]');
     expect(play, '大厅出征按钮').not.toBeNull();
     expect(() => click(play)).not.toThrow();
+    // 出征先放每关开局演出（doc27）→ 跳过进战斗
+    const skip = container.querySelector('[data-act="story-skip"]');
+    if (skip) click(skip);
     // 进回合制战斗屏：四选一动作 + 结束回合 + 8 门钮 + 三路格（旧实时三路屏没有这些 data 钩子）
     for (const sel of ['[data-act="end"]', '[data-act="draw"]', '[data-act="deploy"]', '[data-gate="0"]', '[data-lane="0"]', '[data-lane="2"]']) {
       expect(container.querySelector(sel), sel).not.toBeNull();
@@ -32,6 +35,7 @@ describe('Game G · 集成：出征进【回合制】战斗屏（doc24·happy-do
       const container = document.createElement('div'); document.body.appendChild(container);
       const cleanup = mount(container);
       click(container.querySelector('[data-act="play"]'));
+      { const skip = container.querySelector('[data-act="story-skip"]'); if (skip) click(skip); } // 跳过开局演出 → 进战斗
       expect(() => {
         press(container.querySelector('[data-act="deploy"]'));   // 选放牌
         press(container.querySelector('[data-hand="0"]'));        // 选第一张手牌
