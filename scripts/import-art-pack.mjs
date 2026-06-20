@@ -90,6 +90,33 @@ const PACKS = {
     idPrefix: 'mdi',
     transparent: true,
   },
+  // Lucide（ISC）：Feather 的维护分支，统一 24px 线性。
+  lucide: {
+    repo: 'lucide-icons/lucide', ref: 'main', tarTop: 'lucide-main', ext: '.svg',
+    subdir: 'icons', flatId: true, style: 'cartoon.flat', license: 'ISC',
+    source: 'lucide', category: 'icon.ui', dest: 'lucide', idPrefix: 'lucide', transparent: true,
+  },
+  // Simple Icons（CC0）：3400+ 品牌/产品 logo，文件名即品牌 slug。注：图形本身可能含商标，渲染品牌标识需自行把关。
+  'simple-icons': {
+    repo: 'simple-icons/simple-icons', ref: 'develop', tarTop: 'simple-icons-develop', ext: '.svg',
+    subdir: 'icons', flatId: true, style: 'cartoon.flat', license: 'CC0-1.0',
+    source: 'simple-icons', category: 'icon.ui', dest: 'simpleicons', idPrefix: 'simpleicons',
+    transparent: true, extraTags: ['brand', 'logo', 'icon'],
+  },
+  // flag-icons（MIT）：~260 国旗，取 4x3 矩形版。文件名是 ISO 国家码（ad/ae…），补 flag/country 检索词。
+  'flag-icons': {
+    repo: 'lipis/flag-icons', ref: 'main', tarTop: 'flag-icons-main', ext: '.svg',
+    subdir: 'flags/4x3', flatId: true, style: 'cartoon.flat', license: 'MIT',
+    source: 'flag-icons', category: 'icon.ui', dest: 'flags', idPrefix: 'flag',
+    transparent: false, extraTags: ['flag', 'country', 'nation'],
+  },
+  // Weather Icons（SIL OFL 1.1）：~219 天气图标，文件名 wi-*。
+  'weather-icons': {
+    repo: 'erikflowers/weather-icons', ref: 'master', tarTop: 'weather-icons-master', ext: '.svg',
+    subdir: 'svg', flatId: true, style: 'cartoon.flat', license: 'SIL OFL 1.1',
+    source: 'weather-icons', category: 'icon.ui', dest: 'weather', idPrefix: 'weather',
+    transparent: true, extraTags: ['weather', 'icon'],
+  },
 };
 
 function walk(dir) {
@@ -163,7 +190,7 @@ try {
     copyFileSync(join(srcRoot, rel), destAbs);
     const category = (P.categoryRules ?? []).find((r) => r.re.test(name))?.category ?? P.category;
     const words = name.split(/[-_]/).filter(Boolean);
-    const extraTags = category === 'playing-card' ? ['card', 'poker', 'playing-card'] : ['icon', 'flat', 'vector'];
+    const extraTags = category === 'playing-card' ? ['card', 'poker', 'playing-card'] : (P.extraTags ?? ['icon', 'flat', 'vector']);
     byId.set(id, {
       id,
       type: 'texture',

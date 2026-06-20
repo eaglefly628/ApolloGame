@@ -4,9 +4,10 @@
 
 ## 1. 库现状（按来源 / 风格 / 许可）
 
-**项目索引 `assets/index.json`：共 20019 项**（另有 DCSS 货架 `assets/FreeArtLib/index.json` ~4892 项，CC0 像素，预先存在）。
+**项目索引 `assets/index.json`：共 25697 项**（另有 DCSS 货架 `assets/FreeArtLib/index.json` ~4892 项，CC0 像素，预先存在）。
 
-> 2026-06-19 更新：tabler/phosphor/mdi 三套已由采样 1000 → **拉全**（见 §7 待办 3 已办）。
+> 2026-06-19 更新：tabler/phosphor/mdi 三套已由采样 1000 → **拉全**。
+> 2026-06-20 更新：agent 搜罗后**第一波**并入 4 套平铺 SVG 图标集（见下表 + §8 候选 backlog）。
 
 | 来源 | 数量 | 风格 style | 类目 category | 许可 | 形态 |
 |---|---|---|---|---|---|
@@ -15,6 +16,10 @@
 | tabler | 5093 | `cartoon.flat` | icon.ui | MIT | SVG 细描线（**全集** outline） |
 | phosphor | 1512 | `cartoon.flat` | icon.ui | MIT | SVG 圆润（**全集** regular 权重） |
 | mdi | 7447 | `cartoon.flat` | icon.ui | Apache-2.0 | SVG 填充（**全集**） |
+| lucide | 1743 | `cartoon.flat` | icon.ui | ISC | SVG 线性（Feather 维护分支，全集） |
+| simple-icons | 3445 | `cartoon.flat` | icon.ui | CC0-1.0 | SVG 品牌/产品 logo（⚠️图形含商标，渲染品牌标识自行把关） |
+| flag-icons | 271 | `cartoon.flat` | icon.ui | MIT | SVG 国旗 4×3（名=ISO 码，补 flag/country 检索词） |
+| weather-icons | 219 | `cartoon.flat` | icon.ui | SIL OFL 1.1 | SVG 天气 |
 | DCSS FreeArtLib | 4892 | `pixel`（默认） | 各 slot | CC0 | PNG 32×32 像素 |
 
 **风格覆盖**：`pixel` ✓（DCSS）｜`cartoon.flat` ✓（5 套，含彩色 twemoji）｜**`cartoon.ink`（水墨）/ `cartoon.western` / `cartoon.anime` = 仍 0**（源被网络挡，见 §4）。
@@ -56,3 +61,19 @@
 3. ~~tabler/phosphor/mdi 调大 limit 拉全~~ ✅ 已办（2026-06-19，5093/1512/7447，全绿推送）。
 4. 把 `game-g-icons.json` 接进 Game G 渲染（game 层）。
 5. 纪律：分支 `claude/mainbranch`，每次 `fetch→rebase→push`；tsc+vitest+build 全绿才推；提交署名 `Claude <noreply@anthropic.com>`、信息以 session URL 结尾。
+
+## 8. Agent 搜罗短名单 + 拉取波次（2026-06-20）
+
+**发现通道**：GitHub MCP 关键字搜索仍 502（走 api.github，被挡）；但 **`github.com` HTML/topics 页 + `WebSearch`/`WebFetch` 工具可达**（走另一后端），4 个 agent 据此搜罗 + 逐仓库核许可。下载仍走 `codeload`。许可分级 🟢A=CC0/MIT/Apache/ISC｜🟡B=CC-BY(署名)｜🔴C=避免(SA/GPL/专有)。
+
+**✅ 第一波已并入**（平铺 SVG、文件名有语义、零导入器改动）：lucide / simple-icons / flag-icons / weather-icons（见 §1 表）。导入器加了数据驱动字段 `P.extraTags`（给国旗/天气补检索词）。
+
+**⏭ 后续波次候选**（用户已要"四组全拉"，按工序分波）：
+- **彩色 emoji**：`microsoft/fluentui-emoji`(🟢MIT，多风格→**需按 `/Flat/` 或 `/Color/` 过滤选一种**)、`googlefonts/noto-emoji`(🟢Apache，**文件名是码点 `emoji_u1f600`、无语义→需接 gemoji 名表**，参考既有 `scripts/import-emoji.mjs`)。
+- **开发 logo**：`devicons/devicon`(🟢MIT，`icons/<名>/<名>-original.svg`，**需过滤变体只取 original**)。
+- **卡通插画**：`MariaLetta/free-gophers-pack`(🟢CC0，**文件名纯数字 `1.svg` 无语义→需补 category/tags**)、`jktzes/humaaans`(🟢MIT)、`cuuupid/undraw-illustrations`(🟢MIT ~1000)、`ira-design/ira-illustrations`(🟢MIT，**资源在 `svg` 分支**)。
+- **像素 / 游戏 UI（PNG/9-patch，需给导入器加 PNG 路径——当前只吃 SVG）**：`ETdoFresh/kenney.nl`·`iwenzhou/kenney`(🟢CC0 Kenney 全镜像)、`sparklinlabs/superpowers-asset-packs`(🟢CC0)、`czyzby/gdx-skins`(🟡按皮肤混，kenney-pixel=CC0；9-patch GUI)、`mr-breakfast/mrbreakfasts_free_prompts`(🟢CC0 输入提示，SVG/PNG)、`ereborstudios/kenney-ui-pack`(🟢CC0)。
+
+**🔴 已拒（许可/法务）**：openmoji/mega-doodles/saasui(CC-BY-**SA**)、LPC 角色生成器(GPL+SA 混)、Live2D 样例(专有 Free Material License)、GARbro/翻译器扒图(盗版)。
+
+**二次元结论**：GitHub 基本是空井——干净可用仅 `V-ktor/pixel-art-portraits`(🟢MIT，小、像素头像)。高清 VN/乙女立绘在 **OGA/itch.io**（被网络挡）。**建议搁置**，等放宽网络 session。
