@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import realIndex from '../../assets/index.json';
+import { readFileSync } from 'node:fs';
 import {
   parseAssetIndex,
   pendingAssets,
@@ -137,6 +137,9 @@ describe('asset-index — v2 字段（资源库）', () => {
 
 describe('asset-index — 真实 assets/index.json 自检', () => {
   it('仓库里的 index.json 合法可解析', () => {
+    // 运行时读取（不走静态 import）：index.json 已 ~2.9 万项/19MB，静态 import 会让 tsc
+    // 推断巨型字面量类型而极慢/卡死。fs 读取把它移出类型图，校验等价、tsc 飞快。
+    const realIndex = JSON.parse(readFileSync('assets/index.json', 'utf8'));
     const idx = parseAssetIndex(realIndex);
     expect(idx.version).toBeGreaterThanOrEqual(1);
     for (const a of idx.assets) expect(ASSET_TYPES).toContain(a.type);

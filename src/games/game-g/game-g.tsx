@@ -25,6 +25,8 @@ const LIVE_STEP_MS = 600;   // 一拍真实时长（owner 要更慢：300→600 
 const RENDER_MS = 33;       // 重渲间隔（~30fps 平滑）
 const SEC_PER_TICK = LIVE_STEP_MS / 1000;
 const PERF_MS = 1700;       // 对决特写表演时长（冻结战场·放大两牌·读数·掷点定生死，owner：拉到屏幕前看为什么胜败）
+const ENCOUNTER_MS = 800;   // 对决前奏「遭遇」：两张牌在战场相遇提示时长（owner：开打前看清谁和谁打·在哪条路）
+const CLASH_GAP_MS = 500;   // 两场对决之间回战场缓冲（owner：打完一个回到战场表现一下·再演下一场）
 // 迷雾显形（owner 2026-06-18 改：**默认无迷雾**，仅附魔牌 fogged 才面朝下 → 过线 3D 翻显形）。迷雾时间缩短：早点翻。
 // 非 fogged 牌一律即显形(face-up)；fogged 牌越过本侧短线(0.18/0.82·比旧 0.34/0.66 短)即翻。
 const FOG_A_EDGE = 0.18;    // A 的 fogged 兵越过此线 → 显形（pos01 ≥）
@@ -32,15 +34,13 @@ const FOG_B_EDGE = 0.82;    // B 的 fogged 兵越过此线 → 显形（pos01 �
 // 出牌控盘层（doc18 §10 · 布局阶段 base 打底 + 抽牌堆 + 手牌实时派三路 + 读秒暂停银行）。数值初版、待真机/仿真台磨。
 const BASE_PER_LANE = 3;        // 布局阶段每路预铺张数（共 9 打底，doc18 §10.2）
 const AI_PERIOD_TICKS = 16;     // 敌方滴投：每 N 拍从其牌库投一张（入该牌原路 → 随阵型分布）
-// ── CR 局内经济 TUNE（doc21 · owner 抄皇室战争 + 要「快节奏」）：点数(圣水)随真实时间回复 → 花点数摸牌(玩家选库) → 普通部署/天罡施法。砍读秒暂停。──
-// 改这一处即调手感。派生节奏（当前「快」档 regen 800ms）：≈1.25 点/秒 → 每 0.8s 可摸 1 普通 / 1.6s 摸 1 天罡；满池 10 点 ≈ 8s 攒满。
-// 档位（owner 真机选 · 改下面 3 个值即可）：    慢 | 中 | 快(当前)
-//   POINTS_REGEN_MS                          1100 | 950 | 800
-//   POINTS_START                                5 |  5  |  6
-//   OPENING_NORMAL                              4 |  4  |  5
-const POINTS_MAX = 10;          // 点数池上限（CR 圣水 10）
-const POINTS_START = 6;         // 起手点数（快档：开局多 1 点·更快开打）
-const POINTS_REGEN_MS = 800;    // 每回 1 点真实时长（快档·owner 要快；慢=1100 / 中=950）
+// ── CR 局内经济 TUNE（doc21 · owner 抄皇室战争）：点数(圣水)随真实时间回复 → 花点数摸牌(玩家选库) → 普通部署/天罡施法。砍读秒暂停。──
+// 改这一处即调手感。owner 2026-06-19 反馈「圣水涨太快·看不到心流·点数太多」→ 池砍半(5) + regen 大幅放慢(2000ms) + 起手压低。
+// 派生节奏（当前 regen 2000ms · 池 5）：≈0.5 点/秒 → 每 2s 摸 1 普通 / 4s 摸 1 天罡；满池 5 点从起手 2 攒满 ≈ 6s。心流＝攒→花的取舍张力。
+// 想再调：更慢/更少手感 = REGEN 调大、MAX/START 调小；更快 = 反之。CR 原版 regen≈2800ms 可作参考上界。
+const POINTS_MAX = 5;           // 点数池上限（owner：max 5·制造稀缺=心流；原 10 太满、无取舍）
+const POINTS_START = 2;         // 起手点数（须 ≤MAX·压低开局；靠起手手牌先免费铺路，点数攒着摸新牌）
+const POINTS_REGEN_MS = 2000;   // 每回 1 点真实时长（owner：放慢·看得见涨；原 800 太快近乎常满）
 const NORMAL_DRAW_COST = 1;     // 摸普通库花点数（doc21 §二.5 ~1）
 const TENGANG_DRAW_COST = 2;    // 摸天罡库花点数（~2·更贵 = 故意限流 + 一次点数投资）
 const NORMAL_HAND_CAP = 7;      // 普通手牌可囤积上限（攒一波"哗"出·doc21 ~7）
@@ -175,16 +175,26 @@ export function canDrawFrom(points: number, cost: number, handLen: number, cap: 
 // A-JOKER：已施天罡(契约②·玩家施法集) → 聚合扁平战斗修正（live-combat 钩子读·只己方）。读 GAME_G_TIANGANGS 的 {kind,params}（契约③）。
 // 一种牌算一次（不叠）。v1 实装 6 kind；v2 待接（背水 reroll / 顺子阵 straight / 擒王 decapCost·依干预 / tempo / lane 一次性 / siege / arcane 印记 / 战潮 pulse·CR 已取代被动涌牌）—— 未实装 kind 返回零修正、不崩。
 export function aggregateTengang(castIds: readonly string[]): TengangFx {
+  const cards: { kind: string; params?: Record<string, unknown> }[] = [];
+  for (const id of castIds) { const j = TIANGANG_BY_ID.get(id); if (j) cards.push({ kind: j.kind, params: j.params as Record<string, unknown> | undefined }); }
+  return tengangFxOf(cards);
+}
+// 纯映射（注入卡集·不依赖 blueprint 数据 → 可用合成卡单测新 op，先于乙上架数据）。op→效果 = 甲侧契约（乙照此编码 doc20 §二）：
+//   odds: add→pEffAdd · winFloor→% · kHard(灌铅骰)→logistic 变硬 · noUpset(铁骰)→占优免爆冷 ｜ power: add(+filter countLE3|sameSuit|无=全军)
+//   combo: pair(对子诀·≥2同点) / trips(鼎立·≥3同点) ｜ morale: leaderBuff ｜ stamina: stamPlus(全军) · +filter:faces(老兵)→人头牌 ｜ draw: handMax
+export function tengangFxOf(cards: Iterable<{ kind: string; params?: Record<string, unknown> }>): TengangFx {
   const fx: TengangFx = { ...NO_TENGANG };
-  for (const id of castIds) {
-    const j = TIANGANG_BY_ID.get(id); const p = j?.params as Record<string, unknown> | undefined;
-    if (!j || !p) continue;
-    const v = typeof p.value === 'number' ? p.value : 0;
-    if (j.kind === 'odds') { if (p.op === 'add') fx.pEffAdd += v; else if (p.op === 'winFloor') fx.winFloor += v / 100; }
-    else if (j.kind === 'power' && p.op === 'add') { if (p.filter === 'countLE3') fx.powerLE3 += v; else if (p.filter === 'sameSuit') fx.powerSameSuit += v; else fx.powerAll += v; }
-    else if (j.kind === 'combo' && p.op === 'pair') fx.comboPair += typeof p.bonus === 'number' ? p.bonus : 0;
+  for (const j of cards) {
+    const p = j.params; if (!p) continue;
+    const v = typeof p.value === 'number' ? p.value : 0; const bonus = typeof p.bonus === 'number' ? p.bonus : 0;
+    if (j.kind === 'odds') { if (p.op === 'add') fx.pEffAdd += v; else if (p.op === 'winFloor') fx.winFloor += v / 100; else if (p.op === 'kHard') fx.kHard += v; else if (p.op === 'noUpset') fx.noUpset += 1; }
+    else if (j.kind === 'power') {
+      if (p.op === 'mul' && p.scope === 'highestRank') fx.powerMulHighest = Math.max(fx.powerMulHighest, v); // 擎天：全军最强单张 ×mul（一种算一次·取最大·非叠加）
+      else if (p.op === 'add') { if (p.filter === 'countLE3') fx.powerLE3 += v; else if (p.filter === 'sameSuit') fx.powerSameSuit += v; else if (p.scope === 'front') fx.powerFront += v; else fx.powerAll += v; } // 寡兵 / 同花魁 / 锋矢(front) / 虎符(全军·scope:all 或无)
+    }
+    else if (j.kind === 'combo') { if (p.op === 'pair') fx.comboPair += bonus; else if (p.op === 'trips') fx.comboTrips += bonus; }
     else if (j.kind === 'morale' && p.op === 'leaderBuff') fx.moraleLeader += v;
-    else if (j.kind === 'stamina' && p.op === 'stamPlus') fx.stamPlus += v;
+    else if (j.kind === 'stamina' && p.op === 'stamPlus') { if (p.filter === 'faces') fx.stamFaces += v; else fx.stamPlus += v; }
     else if (j.kind === 'draw' && p.op === 'handMax') fx.handMaxAdd += v;
   }
   return fx;
@@ -423,6 +433,9 @@ export function mount(container: HTMLElement): () => void {
     const perfQueue: ClashEvent[] = [];
     let perfClash: ClashEvent | null = null;
     let perfUntil = 0;
+    let encounter: ClashEvent | null = null; // 遭遇前奏中的对决（先演战场相遇、再切特写）
+    let encUntil = 0;
+    let gapUntil = 0; // 两场对决间「回战场」缓冲到期 ts
     let drained = 0; // 已收进特写队列的 clashLog 下标
     // ── A6 死亡闪帧 + A2 出牌啪嗒：板上瞬时特效（纯表现·不进 sim/hash）──
     const FX_MS = 640; // 特效寿命（ms）
@@ -431,6 +444,7 @@ export function mount(container: HTMLElement): () => void {
     const deathPosByEv = new Map<ClashEvent, number>(); // 对决事件 → 败者阵亡处 pos01（特写演完落到板上斩残影）
     let lastUnitIds = new Set<string>(); // 上一拍在场牌 id（本拍新出现 = 刚投放 → 啪嗒）
     let heldClash: ClashEvent | null = null; // 已定格渲染的特写：演出期间不每帧重画 → CSS 3D 翻转/掷点动画得以播完（不再每 33ms 重启卡在起手）
+    let heldEnc: ClashEvent | null = null; // 遭遇前奏定格锚（同 heldClash·让左右滑入动画播完）
     const lc = (s: string): 's' | 'h' | 'd' | 'c' => s.toLowerCase() as 's' | 'h' | 'd' | 'c';
     const actions: BattleActions = {
       selectCard: (i) => { selectedCard = i === selectedCard ? -1 : i; selectedTengang = -1; migrateSource = -1; }, // 二选一：选普通清天罡，并退出迁移模式
@@ -460,6 +474,7 @@ export function mount(container: HTMLElement): () => void {
       for (let i = boardFx.length - 1; i >= 0; i--) if (now - boardFx[i].born >= FX_MS) boardFx.splice(i, 1); // 过期清理
       const fxv: BattleFx[] = boardFx.map((f) => ({ kind: f.kind, lane: f.lane, side: f.side, pos01: f.pos01, rank: f.rank, suit: f.suit, general: f.general, t: Math.min(1, (now - f.born) / FX_MS) }));
       const v = buildBattleViewLive(live, save, aiName, oppPersona, oppSuit, control(), perfClash ? clashToView(perfClash) : null, fxv);
+      v.encounter = encounter ? clashToView(encounter) : null; // 遭遇前奏（先于特写·两张牌战场相遇提示）
       for (const u of v.units) { const cur = u.pos01 * LANE_LEN; const prev = prevPos.has(u.id) ? prevPos.get(u.id)! : cur; u.pos01 = (prev + (cur - prev) * frac) / LANE_LEN; } // lerp 上一拍→当拍
       return v;
     }, actions);
@@ -505,6 +520,27 @@ export function mount(container: HTMLElement): () => void {
       label.innerHTML = `<span style="color:${color}">${who}</span> ｜ 控路 ${lanesA}:${lanesB} ｜ 老家 我${homeA}/敌${homeB}（满${HOME_BLOOD}）｜ 敌阵【${aiName}】 ｜ +${gain} 材料 ｜ ${tail}`;
       back.textContent = `→ ${cont}`;
       back.onclick = route;
+      // 结算大屏（owner：每次打完给玩家看清结果）—— 覆盖战场的结果面板：胜/负/平大字 + 战利品/控路/老家血 + 继续。loop 已停（settle 后不再 update），故 append 到 stage 不会被重渲清掉。
+      const bigTxt = winner === 'a' ? '胜 利' : winner === 'b' ? '战 败' : '平 局';
+      const bigCol = winner === 'a' ? '#ffe09a' : winner === 'b' ? '#ff6b6b' : '#cbd5e1';
+      const stat = (lab: string, val: string, sub: string): string => `<div style="padding:14px 12px;border-radius:13px;background:rgba(255,255,255,.045);border:1px solid rgba(255,255,255,.1);text-align:center;"><div style="font-size:11px;letter-spacing:.14em;color:#8493a3;text-transform:uppercase;">${lab}</div><div style="font-family:'Rajdhani',sans-serif;font-weight:700;font-size:25px;color:#eaf0f6;margin:5px 0 2px;">${val}</div><div style="font-size:11px;color:#7d8b9a;">${sub}</div></div>`;
+      const result = document.createElement('div');
+      result.style.cssText = 'position:absolute;inset:0;z-index:40;display:flex;align-items:center;justify-content:center;padding:20px;background:radial-gradient(60% 60% at 50% 42%,rgba(8,12,18,.74),rgba(4,6,10,.93));backdrop-filter:blur(4px);-webkit-backdrop-filter:blur(4px);font-family:"Noto Sans SC",sans-serif;';
+      result.innerHTML = `<div style="width:min(86%,720px);padding:34px 40px;border-radius:22px;background:linear-gradient(180deg,rgba(26,38,54,.97),rgba(12,18,28,.99));border:2px solid ${bigCol}66;box-shadow:0 30px 90px rgba(0,0,0,.72),0 0 64px ${bigCol}33;text-align:center;">
+        <div style="font-family:'Zhi Mang Xing',cursive;font-size:80px;line-height:1;color:${bigCol};text-shadow:0 4px 26px ${bigCol}66;">${bigTxt}</div>
+        <div style="font-size:16px;color:#cdd7e3;margin-top:6px;">${who} ｜ 敌阵【${aiName}】</div>
+        <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:12px;margin:26px 0 18px;">
+          ${stat('战利品', '+' + gain, '材料 🪙')}
+          ${stat('控路', lanesA + ' : ' + lanesB, '我方 : 敌方')}
+          ${stat('老家血', '我 ' + homeA + ' / 敌 ' + homeB, '满 ' + HOME_BLOOD)}
+          ${qm > 0 ? stat('督粮', '+' + qm + '◈', '入下场能量') : ''}
+        </div>
+        <div style="font-size:14px;color:#9fb0c2;margin-bottom:22px;min-height:18px;">${tail}</div>
+        <button id="gg-result-cont" style="padding:14px 44px;border-radius:13px;border:none;cursor:pointer;background:linear-gradient(180deg,#ff8d5a,#ee5a25);color:#fff;font-family:'Rajdhani',sans-serif;font-weight:700;font-size:19px;letter-spacing:.04em;box-shadow:0 10px 28px rgba(238,90,37,.5);">${cont} →</button>
+      </div>`;
+      stage.style.position = 'relative';
+      stage.appendChild(result);
+      result.querySelector('#gg-result-cont')?.addEventListener('click', route);
     };
     // rAF 实时驱动（CR 纯实时·无暂停·doc21）：点数(圣水)随真实时间回复；每 LIVE_STEP_MS 走一拍（一格格爬）+ 敌滴投；
     // 渲染 ~30fps 按 frac 平滑；演对决特写时世界静止（点数/sim 皆冻）；落定即结算、停步。
@@ -512,14 +548,16 @@ export function mount(container: HTMLElement): () => void {
       if (last === 0) last = ts;
       const dt = ts - last; last = ts;
       // 对决特写：演完(到 PERF_MS)收场；空闲且队列有 → 取下一场冻结战场演（sim 此刻不推进）。
-      if (perfClash && ts >= perfUntil) { // 收场 → 败者落到板上一记斩残影（A6·延续 overlay→棋盘，不再凭空消失）
+      if (perfClash && ts >= perfUntil) { // 特写收场 → 败者落斩残影（A6·延续 overlay→棋盘）+ 进入「回战场」缓冲
         const loser = perfClash.aWins ? perfClash.b : perfClash.a;
         boardFx.push({ kind: 'death', lane: perfClash.lane, side: perfClash.aWins ? 'b' : 'a', pos01: deathPosByEv.get(perfClash) ?? 0.5, rank: loser.rank, suit: lc(loser.suit), general: loser.general, born: performance.now() });
         deathPosByEv.delete(perfClash);
         perfClash = null;
+        gapUntil = ts + CLASH_GAP_MS; // owner：打完一个回到战场表现一下·再演下一场
       }
-      if (!perfClash && perfQueue.length) { perfClash = perfQueue.shift()!; perfUntil = ts + PERF_MS; acc = 0; }
-      if (!perfClash) { // 无特写在演 → 点数回复 + 推进（CR 纯实时·无暂停）
+      if (encounter && ts >= encUntil) { perfClash = encounter; perfUntil = ts + PERF_MS; encounter = null; acc = 0; } // 遭遇前奏演完 → 切对决特写
+      if (!perfClash && !encounter && ts >= gapUntil && perfQueue.length) { encounter = perfQueue.shift()!; encUntil = ts + ENCOUNTER_MS; acc = 0; } // 回战场缓冲过后 → 取下一场·先演「遭遇」前奏
+      if (!perfClash && !encounter && ts >= gapUntil) { // 无特写/无遭遇前奏/回战场缓冲已过 → 点数回复 + 推进（演出与缓冲期世界静止）
         if (!settled && live.winner === 'pending') {
           points = Math.min(POINTS_MAX, points + dt / POINTS_REGEN_MS); // 圣水随真实时间回复（演特写=世界静止时不回）
           acc += dt;
@@ -549,11 +587,12 @@ export function mount(container: HTMLElement): () => void {
           frac = Math.max(0, Math.min(1, acc / LIVE_STEP_MS));
         }
       }
-      if (battle) { // 渲染：特写演出期间「定格一次」(CSS 3D 翻转/掷点/滑入动画一次播完·不每 33ms 重建 DOM 把它们重启卡在起手)；其余 ~30fps 平滑
-        if (perfClash) { if (perfClash !== heldClash) { battle.update(); heldClash = perfClash; lastRender = ts; } }
-        else { if (ts - lastRender >= RENDER_MS) { battle.update(); lastRender = ts; } heldClash = null; }
+      if (battle) { // 渲染：特写/遭遇前奏「定格一次」(CSS 动画一次播完·不每 33ms 重建把它重启)；回战场缓冲与平时 ~30fps 平滑（斩残影在战场淡出可见）
+        if (perfClash) { if (perfClash !== heldClash) { battle.update(); heldClash = perfClash; heldEnc = null; lastRender = ts; } }
+        else if (encounter) { if (encounter !== heldEnc) { battle.update(); heldEnc = encounter; heldClash = null; lastRender = ts; } }
+        else { if (ts - lastRender >= RENDER_MS) { battle.update(); lastRender = ts; } heldClash = null; heldEnc = null; }
       }
-      if (!settled && live.winner !== 'pending' && !perfClash && perfQueue.length === 0) { settle(); return; } // 等特写全演完才结算（最后几场对决也演出来）
+      if (!settled && live.winner !== 'pending' && !perfClash && !encounter && ts >= gapUntil && perfQueue.length === 0) { settle(); return; } // 等遭遇前奏+特写+回战场缓冲全演完才结算
       raf = requestAnimationFrame(loop);
     };
     raf = requestAnimationFrame(loop);

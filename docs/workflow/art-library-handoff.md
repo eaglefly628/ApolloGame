@@ -4,9 +4,11 @@
 
 ## 1. 库现状（按来源 / 风格 / 许可）
 
-**项目索引 `assets/index.json`：共 20019 项**（另有 DCSS 货架 `assets/FreeArtLib/index.json` ~4892 项，CC0 像素，预先存在）。
+**项目索引 `assets/index.json`：共 29818 项**（另有 DCSS 货架 `assets/FreeArtLib/index.json` ~4892 项，CC0 像素，预先存在）。
 
-> 2026-06-19 更新：tabler/phosphor/mdi 三套已由采样 1000 → **拉全**（见 §7 待办 3 已办）。
+> 2026-06-19 更新：tabler/phosphor/mdi 三套已由采样 1000 → **拉全**。
+> 2026-06-20 更新：agent 搜罗后并入第一波（4 套平铺 SVG 图标）+ 第二波（undraw/fluentui/devicon），见下表 + §8。
+> ⚠️ tsc 提速：`asset-index.test.ts` 改为运行时 fs 读 index.json（不再静态 import）——索引涨到 2.9 万项/19MB 后，静态 import 会让 tsc 推断巨型字面量类型而卡死（分钟级）；改后 tsc ~9s。**后续若再加静态 import 大 JSON 要警惕这条。**
 
 | 来源 | 数量 | 风格 style | 类目 category | 许可 | 形态 |
 |---|---|---|---|---|---|
@@ -15,6 +17,13 @@
 | tabler | 5093 | `cartoon.flat` | icon.ui | MIT | SVG 细描线（**全集** outline） |
 | phosphor | 1512 | `cartoon.flat` | icon.ui | MIT | SVG 圆润（**全集** regular 权重） |
 | mdi | 7447 | `cartoon.flat` | icon.ui | Apache-2.0 | SVG 填充（**全集**） |
+| lucide | 1743 | `cartoon.flat` | icon.ui | ISC | SVG 线性（Feather 维护分支，全集） |
+| simple-icons | 3445 | `cartoon.flat` | icon.ui | CC0-1.0 | SVG 品牌/产品 logo（⚠️图形含商标，渲染品牌标识自行把关） |
+| flag-icons | 271 | `cartoon.flat` | icon.ui | MIT | SVG 国旗 4×3（名=ISO 码，补 flag/country 检索词） |
+| weather-icons | 219 | `cartoon.flat` | icon.ui | SIL OFL 1.1 | SVG 天气 |
+| fluentui-emoji | 3145 | `cartoon.flat` | `emoji` | MIT | SVG **彩色** emoji（取 Flat 风格） |
+| devicon | 559 | `cartoon.flat` | icon.ui | MIT | SVG 开发/品牌 logo（取 -original 变体） |
+| undraw | 417 | `cartoon.flat` | `illustration` | MIT | SVG 扁平场景插画 |
 | DCSS FreeArtLib | 4892 | `pixel`（默认） | 各 slot | CC0 | PNG 32×32 像素 |
 
 **风格覆盖**：`pixel` ✓（DCSS）｜`cartoon.flat` ✓（5 套，含彩色 twemoji）｜**`cartoon.ink`（水墨）/ `cartoon.western` / `cartoon.anime` = 仍 0**（源被网络挡，见 §4）。
@@ -56,3 +65,22 @@
 3. ~~tabler/phosphor/mdi 调大 limit 拉全~~ ✅ 已办（2026-06-19，5093/1512/7447，全绿推送）。
 4. 把 `game-g-icons.json` 接进 Game G 渲染（game 层）。
 5. 纪律：分支 `claude/mainbranch`，每次 `fetch→rebase→push`；tsc+vitest+build 全绿才推；提交署名 `Claude <noreply@anthropic.com>`、信息以 session URL 结尾。
+
+## 8. Agent 搜罗短名单 + 拉取波次（2026-06-20）
+
+**发现通道**：GitHub MCP 关键字搜索仍 502（走 api.github，被挡）；但 **`github.com` HTML/topics 页 + `WebSearch`/`WebFetch` 工具可达**（走另一后端），4 个 agent 据此搜罗 + 逐仓库核许可。下载仍走 `codeload`。许可分级 🟢A=CC0/MIT/Apache/ISC｜🟡B=CC-BY(署名)｜🔴C=避免(SA/GPL/专有)。
+
+**✅ 第一波已并入**（平铺 SVG、零导入器改动）：lucide / simple-icons / flag-icons / weather-icons。导入器加了数据驱动字段 `P.extraTags`（给国旗/天气补检索词）。
+**✅ 第二波已并入**：undraw(417 插画) / fluentui-emoji(3145 彩色 emoji，取 Flat) / devicon(559 开发 logo，取 -original)。导入器加了 `P.pathIncludes`（按子路径选风格/变体，如 `/flat/`、`-original.svg`）；`library.ts` 加了 `illustration` 分类。**humaaans 已拒**（仓库只 1 个 SVG，其余是 React 组件、非素材）。
+
+**✅ 第三波已并入（PNG/9-patch，导入器加位图支持）**：kenney-ui(146 游戏UI) / input-prompts(429 手柄键鼠提示SVG) / gdx-kenney-pixel(34 9-patch像素GUI) / superpowers ninja-adventure(161 像素RPG)。导入器加了 `pngDims`(读 IHDR)+`dimsAndFormat`(按扩展名)+`pathExcludes`+`keepSubpath`(保留并 slug 化子目录层级，避免 PNG 包跨目录同名互覆)。总增 ~8.6MB(只取 PNG/SVG，跳过 .json/源文件，远小于预估)。
+
+**⏭ 仍欠波次**（用户 2026-06-20 拍板"暂不改架构、继续 vendoring 拉完四组"）：
+- **更多像素/游戏 UI**：superpowers 其余 2D 包(rpg-battle-system 20M/western-fps 16M/medieval 15M… 各较大，按需加 `subdir` 一行即拉；3d-* 不要)；`mr-breakfast` 的 PNG 版(已取 SVG，冗余跳过)；`ereborstudios` 之外的 Kenney 全镜像 `iwenzhou/kenney`·`ETdoFresh/kenney.nl`(5190 文件，**很大**，要拉建议挑子目录而非全量)。
+- **零碎 SVG**：`googlefonts/noto-emoji`(🟢Apache，文件名是码点→需接 gemoji 名表，且彩色 emoji 已有 twemoji+fluentui、冗余低优先)、`MariaLetta/free-gophers-pack`(🟢CC0，数字命名→需补 tags)、`ira-design/ira-illustrations`(🟢MIT，`svg` 分支 codeload 报错待查)。
+
+> 📌 架构备忘（2026-06-20 讨论，用户暂选维持现状）：当前是"git 仓库当美术 CDN"，随库增长 `.git`(已 115M+)只涨不缩、index.json 单体(已 20M)。长久解=目录(catalog)与字节(blob)分家：货架层只存元数据+raw-url 不 vendoring 字节、出货层按内容哈希落 CDN/LFS。详见对话；真要发布或仓库失控时再启。
+
+**🔴 已拒（许可/法务）**：openmoji/mega-doodles/saasui(CC-BY-**SA**)、LPC 角色生成器(GPL+SA 混)、Live2D 样例(专有 Free Material License)、GARbro/翻译器扒图(盗版)。
+
+**二次元结论**：GitHub 基本是空井——干净可用仅 `V-ktor/pixel-art-portraits`(🟢MIT，小、像素头像)。高清 VN/乙女立绘在 **OGA/itch.io**（被网络挡）。**建议搁置**，等放宽网络 session。

@@ -36,6 +36,7 @@ export interface BattleView {
   normalDrawCost: number; tengangDrawCost: number; canDrawNormal: boolean; canDrawTengang: boolean; // 摸牌花点数 + 是否可摸(点数够 & 未到上限 & 库有)
   migrateSource: number; // 三路兵力迁移：已选迁出路(-1 无 · 无选中牌时点路 = 迁移模式)
   clash?: ClashView | null; // 非空 → 叠加对决特写表演（冻结战场、放大两牌、读数、掷点定生死）
+  encounter?: ClashView | null; // 非空 → 叠加「遭遇」前奏（两张牌战场相遇·知道谁和谁打·在哪条路·先于 clash 特写）
   fx?: BattleFx[]; // 板上瞬时特效（斩残影 / 出牌啪嗒）—— 缺省无；纯表现 juice
 }
 
@@ -97,6 +98,9 @@ const CSS = `
 @keyframes gg-fatedrop { 0% { top:-180px; opacity:0; } 40% { opacity:1; } 100% { top:-2px; opacity:1; } }
 @keyframes gg-shatter { 0%,100% { transform:translate(0,0) rotate(0);} 20% { transform:translate(-5px,3px) rotate(-1.6deg);} 60% { transform:translate(5px,-2px) rotate(1.6deg);} }
 @keyframes gg-cardflip { 0% { transform:rotateY(180deg);} 100% { transform:rotateY(0);} }
+@keyframes gg-enc-l { 0% { transform:translateX(-280px) rotate(-9deg); opacity:0; } 100% { transform:translateX(0) rotate(0); opacity:1; } }
+@keyframes gg-enc-r { 0% { transform:translateX(280px) rotate(9deg); opacity:0; } 100% { transform:translateX(0) rotate(0); opacity:1; } }
+@keyframes gg-enc-pop { 0% { transform:scale(.4); opacity:0; } 60% { transform:scale(1.16); opacity:1; } 100% { transform:scale(1); opacity:1; } }
 .gg-root input[type=range].gz { -webkit-appearance:none; appearance:none; height:6px; border-radius:99px; outline:none; }
 .gg-root input[type=range].gz::-webkit-slider-thumb { -webkit-appearance:none; width:18px; height:18px; border-radius:50%; background:#fff; border:2px solid var(--accent); cursor:pointer; box-shadow:0 2px 6px rgba(0,0,0,.4); }
 .gg-root [data-act="lever"]:hover, .gg-root [data-act="focus"]:hover, .gg-root [data-act="lane"]:hover, .gg-root [data-act="zoom"]:hover, .gg-root [data-act="gate"]:hover { filter:brightness(1.08); transform:translateY(-2px); border-color:var(--accent); }
@@ -197,6 +201,43 @@ function clashCloseup(cv: ClashView, theme: string): string {
         <div style="display:flex;justify-content:space-between;margin-top:6px;font-size:10px;color:${T.dim};"><span>3% 底缝</span><span style="font-family:${T.fn};font-size:11px;color:${T.gold};">${isTie ? '平局裁定 · 不掷命' : '命点 ' + rollPct + ' / 100 · 落于' + (rollPct <= wrPct ? '我方侧 → 活' : '敌方侧 → 斩')}</span><span>97% 顶缝</span></div>
       </div>
       <div style="position:absolute;top:42%;left:50%;transform:translate(-50%,-50%);display:flex;flex-direction:column;align-items:center;text-align:center;z-index:10;animation:gg-emblem .6s cubic-bezier(.2,.9,.3,1) 1.6s both;pointer-events:none;">${emblem}</div>
+    </div>
+  </div>`;
+}
+
+// 「遭遇」前奏（owner：开打前看清谁和谁打、在哪条路）—— 两张牌在该路战场相遇·左右滑入对撞 + ⚔ + 路名；先于 clashCloseup 演 ENCOUNTER_MS。纯表现·不入 hash。
+function clashEncounter(cv: ClashView, theme: string): string {
+  const onyx = theme !== 'brocade';
+  const gold = onyx ? '#f0d488' : '#b9842f';
+  const fh = onyx ? "'Rajdhani',sans-serif" : "'Cormorant Garamond',serif";
+  const fd = onyx ? "'Zhi Mang Xing',cursive" : "'Ma Shan Zheng',cursive";
+  const sgc: Record<string, string> = { s: '#22303f', h: '#c0392b', d: '#c0651a', c: '#2d6a3f' };
+  const sgg: Record<string, string> = { s: '♠', h: '♥', d: '♦', c: '♣' };
+  const LN = ['上路', '中路', '下路'][cv.lane] ?? '';
+  const laneCol = cv.lane === 0 ? '#ff7a45' : cv.lane === 1 ? '#e0973a' : '#46c6ff';
+  const laneY = [330, 510, 690][cv.lane] ?? 510; // 该路在 1080 画布的纵向锚（上/中/下 → 看清在哪条路）
+  const mini = (c: ClashCardView, mine: boolean): string => {
+    const sc = sgc[c.suit], team = mine ? '#ff7a45' : '#3a86d4';
+    return `<div style="animation:${mine ? 'gg-enc-l' : 'gg-enc-r'} .42s cubic-bezier(.2,.8,.3,1) both;display:flex;flex-direction:column;align-items:center;gap:9px;">
+      <div style="position:relative;width:152px;height:212px;border-radius:14px;background:linear-gradient(158deg,#fcf9f1,#e6d8bd);border:4px solid ${team};box-shadow:0 18px 38px rgba(0,0,0,.6),0 0 34px ${mine ? 'rgba(255,122,69,.45)' : 'rgba(58,134,212,.45)'};display:flex;align-items:center;justify-content:center;overflow:hidden;">
+        <div style="position:absolute;top:9px;left:12px;font-family:${fh};font-weight:700;font-size:30px;line-height:.82;color:${sc};text-align:center;">${esc(c.rank)}<br>${sgg[c.suit]}</div>
+        <div style="font-family:${fd};font-size:98px;color:${sc};text-shadow:0 3px 9px rgba(0,0,0,.22);">${sgg[c.suit]}</div>
+        ${c.general ? `<div style="position:absolute;top:-32px;left:50%;transform:translateX(-50%);font-size:36px;color:${gold};text-shadow:0 2px 8px rgba(0,0,0,.6);">♔</div>` : ''}
+        <div style="position:absolute;bottom:9px;right:12px;font-family:${fh};font-weight:700;font-size:30px;line-height:.82;color:${sc};text-align:center;transform:rotate(180deg);">${esc(c.rank)}<br>${sgg[c.suit]}</div>
+      </div>
+      <div style="padding:4px 16px;border-radius:99px;background:${mine ? 'rgba(255,122,69,.2)' : 'rgba(58,134,212,.2)'};border:1px solid ${team};color:${team};font-family:${fh};font-weight:700;font-size:14px;">${mine ? '我方' : '敌方'}</div>
+    </div>`;
+  };
+  return `<div style="position:absolute;inset:0;z-index:28;pointer-events:none;font-family:${fh};">
+    <div style="position:absolute;inset:0;background:radial-gradient(58% 46% at 50% ${((laneY / 1080) * 100).toFixed(1)}%,rgba(4,7,12,.28),rgba(4,7,12,.72));animation:gg-clashin .26s ease both;"></div>
+    <div style="position:absolute;left:0;right:0;top:${laneY}px;transform:translateY(-50%);display:flex;align-items:center;justify-content:center;gap:48px;">
+      ${mini(cv.a, true)}
+      <div style="display:flex;flex-direction:column;align-items:center;gap:12px;animation:gg-enc-pop .4s cubic-bezier(.2,1.5,.4,1) both;">
+        <div style="display:flex;align-items:center;gap:9px;padding:8px 22px;border-radius:99px;background:rgba(8,12,18,.72);border:1px solid ${laneCol};color:#fff;font-weight:700;font-size:19px;letter-spacing:.08em;"><span style="width:11px;height:11px;border-radius:50%;background:${laneCol};box-shadow:0 0 12px ${laneCol};"></span>${LN} · 遭遇</div>
+        <div style="position:relative;width:104px;height:104px;border-radius:50%;background:radial-gradient(circle,rgba(255,236,164,.95),rgba(255,150,40,.42) 50%,transparent 74%);display:flex;align-items:center;justify-content:center;"><span style="font-size:58px;filter:drop-shadow(0 3px 7px rgba(0,0,0,.55));">⚔</span></div>
+        <div style="font-family:'Silkscreen',monospace;font-size:17px;color:${gold};letter-spacing:.12em;">VS</div>
+      </div>
+      ${mini(cv.b, false)}
     </div>
   </div>`;
 }
@@ -365,6 +406,7 @@ function buildHTML(view: BattleView, s: CamState): string {
         <div style="flex:1; display:flex; flex-direction:column; gap:7px; justify-content:center; padding:8px 18px; border-radius:16px; background:var(--accent-soft); border:1px solid var(--accent); box-shadow:inset 0 0 0 1px var(--hairline);"><div style="display:flex; align-items:center; gap:10px;"><span style="font-family:var(--font-heading); font-weight:700; font-size:17px; color:var(--accent); letter-spacing:.03em;">手牌 · 出牌</span><span style="font-size:12px; color:var(--ink-dim);">点选一张 → 上/中/下（普通=部署 · 天罡=施法）；空手点路 = 三路调兵（迁出→迁入）；点数攒够花点数摸牌</span><span style="flex:1;"></span><span style="font-family:var(--font-num); font-size:11px; color:var(--ink-dim);">普通库 ${view.deckCount} · 天罡库 ${view.tengangDeckCount}</span></div><div style="display:flex; gap:8px; align-items:flex-end; min-height:86px;">${handHTML}${view.tengang.length ? `<div style="width:1px; align-self:stretch; margin:6px 4px; background:var(--hairline);"></div>${tengangHTML}` : ''}</div></div>
         <div style="width:236px; flex:none; display:flex; flex-direction:column; gap:8px; justify-content:center;"><div style="display:flex; gap:8px;">${laneBtnsHTML}</div><div style="display:flex; gap:8px;">${drawBtn('draw-normal', '摸普通', view.normalDrawCost, view.canDrawNormal)}${drawBtn('draw-tengang', '摸天罡', view.tengangDrawCost, view.canDrawTengang)}</div><div style="font-size:10px; color:var(--ink-dim); text-align:center; letter-spacing:.03em;">花点数摸牌 · 选普通/天罡库（天罡 cap5 · 打掉才补）</div></div>
       </div>
+      ${view.encounter ? clashEncounter(view.encounter, s.theme) : ''}
       ${cv ? clashCloseup(cv, s.theme) : ''}
     </div></div></div>`;
 }
