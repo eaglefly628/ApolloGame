@@ -15,7 +15,7 @@ const unit = (id: string, rank: string, slot: number, buff = 0, general = false)
   ({ id, rank, suit: 'S', points: cardPoints(rank), buff, general, stamina: cardStamina(rank), staminaLeft: cardStamina(rank), slot });
 
 describe('Game G · turn-combat（doc24 单机回合制 · A0 重构）', () => {
-  it('init：A 先手·圣水起步·双方 3 血·空轨', () => {
+  it('init：A 先手·召唤源泉起步·双方 3 血·空轨', () => {
     const b = initTurnBattle({ seed: 1 });
     expect(b.active).toBe('a'); expect(b.turn).toBe(1);
     expect(b.a.mana).toBe(MANA_START); expect(b.b.mana).toBe(0); // 后手 b 回合开始才 +1
@@ -23,11 +23,11 @@ describe('Game G · turn-combat（doc24 单机回合制 · A0 重构）', () => 
     expect(b.lanes.every((l) => l.a.length === 0 && l.b.length === 0)).toBe(true);
   });
 
-  it('抽牌：花圣水进手牌；圣水不够停', () => {
+  it('抽牌：花召唤源泉进手牌；召唤源泉不够停', () => {
     const b = initTurnBattle({ seed: 1, a: { pokerDeck: [poker('p0', '7'), poker('p1', '8')] } });
     expect(drawCard(b, 'a', 'poker')).toBe(true);
     expect(b.a.hand.length).toBe(1); expect(b.a.mana).toBe(0); expect(b.actionTaken).toBe('draw');
-    expect(drawCard(b, 'a', 'poker')).toBe(false); // 圣水 0 → 停
+    expect(drawCard(b, 'a', 'poker')).toBe(false); // 召唤源泉 0 → 停
     expect(b.a.hand.length).toBe(1);
   });
 
@@ -40,12 +40,12 @@ describe('Game G · turn-combat（doc24 单机回合制 · A0 重构）', () => 
     const c = initTurnBattle({ seed: 1 }); c.a.hand.push(poker('h0', 'K'), poker('h1', '3'));
     const manaBefore = c.a.mana;
     expect(discardCard(c, 'a', 0)).toBe(true);
-    expect(c.a.mana).toBe(manaBefore); // 弃牌不耗圣水
+    expect(c.a.mana).toBe(manaBefore); // 弃牌不耗召唤源泉
     expect(c.a.hand.length).toBe(1); expect(c.actionTaken).toBe('discard');
     expect(drawCard(c, 'a', 'poker')).toBe(false);  // 已锁 discard → 不能抽
   });
 
-  it('放牌：扑克兵上场到我方部署格 + 花圣水；放牌可顺手翻门(闭↔开)', () => {
+  it('放牌：扑克兵上场到我方部署格 + 花召唤源泉；放牌可顺手翻门(闭↔开)', () => {
     const b = initTurnBattle({ seed: 1 }); b.a.mana = 2; b.a.hand.push(poker('h0', 'Q'));
     expect(b.gatesOpen[0]).toBe(false);              // 默认闭 ✕
     expect(deployUnit(b, 'a', 0, 1, 0)).toBe(true);  // gateToggle=0 → 顺手翻 0 号捷径门
@@ -88,7 +88,7 @@ describe('Game G · turn-combat（doc24 单机回合制 · A0 重构）', () => 
     expect(c.lanes[0].a.some((u) => u.id === 'm0' && u.slot === 4)).toBe(true); // 过门抵上路 slot4
   });
 
-  it('endTurn：active 方推进自己兵一格 + 切换 + 下一方 +1 圣水', () => {
+  it('endTurn：active 方推进自己兵一格 + 切换 + 下一方 +1 召唤源泉', () => {
     const b = initTurnBattle({ seed: 1 });
     b.lanes[0].a.push(unit('a0', '7', A_DEPLOY_SLOT)); // 我方兵在部署格
     endTurn(b);
@@ -154,7 +154,7 @@ describe('Game G · turn-combat（doc24 单机回合制 · A0 重构）', () => 
     expect(r1.clashSeq).toBeGreaterThan(0);   // 掷命真发生过 → rng 真消费、clash 核真被复用
   });
 
-  it('castTengang：天罡进 castIds + 花圣水（持续修正由 caller 经 aggregateTengang 重算）', () => {
+  it('castTengang：天罡进 castIds + 花召唤源泉（持续修正由 caller 经 aggregateTengang 重算）', () => {
     const b = initTurnBattle({ seed: 1 }); b.a.mana = 2; b.a.hand.push(tg('hufu'));
     expect(castTengang(b, 'a', 0)).toBe(true);
     expect(b.a.castIds).toEqual(['hufu']); expect(b.a.mana).toBe(1); expect(b.actionTaken).toBe('cast');

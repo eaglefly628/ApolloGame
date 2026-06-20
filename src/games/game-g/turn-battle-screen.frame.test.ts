@@ -10,7 +10,7 @@ const u = (id: string, rank: string, suit: string, slot: number, buff = 0): Turn
   ({ id, rank, suit, points: cardPoints(rank), buff, general: false, stamina: cardStamina(rank), staminaLeft: cardStamina(rank), slot });
 const nm = (id: string): string => (({ hufu: '虎符', jixing: '疾行' } as Record<string, string>)[id] || id);
 
-// 确定性中局态：三路布兵（中路前锋相邻→clash ring）+ 6 圣水 + 放牌动作锁定 + 手牌(兵×4 + 天罡×2)。
+// 确定性中局态：三路布兵（中路前锋相邻→clash ring）+ 6 召唤源泉 + 放牌动作锁定 + 手牌(兵×4 + 天罡×2)。
 const setup = (): ReturnType<typeof initTurnBattle> => {
   const b = initTurnBattle({ seed: 1 });
   b.turn = 4; b.active = 'a'; b.homeA = 3; b.homeB = 2; b.a.mana = 6; b.actionTaken = 'deploy';
@@ -28,7 +28,7 @@ describe('Game G · turn-battle-screen（doc24 回合制战斗屏 · 忠实端�
   it('棋盘帧（三路9格 slot + 堡垒3血 + 召唤源泉 + 四选一互斥 + 手牌）匹配 golden', async () => {
     const html = renderTurnBattleDoc(buildTurnBattleView(setup(), { theme: 'onyx', tengangName: nm }));
     expect(html).toContain('翻命扑克 · 棋枰对弈'); // 顶 HUD 标题
-    expect(html).toContain('召唤源泉'); // 圣水横条
+    expect(html).toContain('召唤源泉'); // 召唤源泉横条
     expect(html).toContain('本回合动作 · 四选一'); // 互斥动作菜单
     for (const k of ['draw', 'deploy', 'cast', 'discard']) expect(html).toContain(`data-act="${k}"`); // 四动作钩子(供 live mount 接 turn-combat)
     expect(html).toContain('--accent:#ff7a45'); // 玄铁皮

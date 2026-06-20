@@ -1,6 +1,6 @@
 // @vitest-environment happy-dom
 // 战斗出牌坞交互测试：DOM 真按下(pointerdown) → 回调验证。
-// 回归守护 owner 报的「打仗时圣水摸牌/出牌/部署按键摁了都无效」——根因：驱动层 rAF 每 ~33ms 整片
+// 回归守护 owner 报的「打仗时召唤源泉摸牌/出牌/部署按键摁了都无效」——根因：驱动层 rAF 每 ~33ms 整片
 // host.innerHTML 重建，一次「按下→抬起」期间按钮节点被销毁，click 找不到落点。改 pointerdown（单次离散
 // 事件、按下即派发到当下 DOM）后必中。本测固定 pointerdown 路径，防回退到会被重渲吃掉的 click。
 
@@ -87,7 +87,7 @@ describe('Game G · battle-screen 出牌坞交互（DOM · happy-dom）', () => 
     expect(actions.playLane.mock.calls.map((c) => c[0])).toEqual([0, 1, 2]);
   });
 
-  it('按下「摸普通/摸天罡」→ drawNormal / drawTengang（圣水摸牌生效）', () => {
+  it('按下「摸普通/摸天罡」→ drawNormal / drawTengang（召唤源泉摸牌生效）', () => {
     const { host, actions } = setup();
     press(host.querySelector('[data-act="draw-normal"]'));
     press(host.querySelector('[data-act="draw-tengang"]'));

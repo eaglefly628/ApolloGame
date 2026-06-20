@@ -47,7 +47,7 @@ describe('Game G · 战斗屏视觉回归（真 live-combat → HTML golden · �
     await expect(html).toMatchFileSnapshot('./__frames__/battle-brocade.html');
   });
 
-  it('出牌坞帧（CR 经济：点数圣水条 + 普通/天罡手牌 + 花点数摸牌选库 · 砍读秒暂停 · doc21）匹配 golden', async () => {
+  it('出牌坞帧（CR 经济：点数召唤源泉条 + 普通/天罡手牌 + 花点数摸牌选库 · 砍读秒暂停 · doc21）匹配 golden', async () => {
     const { live, deploys } = setup();
     while (live.tick < 40) stepLiveBattle(live, deploys);
     const control = { // 样例 CR 控盘态：普通手牌 4 张(选中第2张) + 天罡手牌 2 张 + 点数 6/10
@@ -58,7 +58,7 @@ describe('Game G · 战斗屏视觉回归（真 live-combat → HTML golden · �
     };
     const html = renderBattleDoc(buildBattleViewLive(live, save(), bossFor(2).name, bossFor(2).persona, 'd', control));
     expect(html).toContain('手牌 · 出牌'); // 出牌坞标题
-    expect(html).toContain('点数 · 圣水'); // CR 圣水条（局内经济核心）
+    expect(html).toContain('点数 · 召唤源泉'); // CR 召唤源泉条（局内经济核心）
     expect(html).toContain('摸普通'); expect(html).toContain('摸天罡'); // 花点数摸牌(玩家选库)
     expect(html).toContain('普通库 33 · 天罡库 3'); // 两库余量
     expect(html).toContain('赌徒'); // 天罡手牌(法术)

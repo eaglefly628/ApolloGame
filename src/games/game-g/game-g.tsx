@@ -37,8 +37,8 @@ const FOG_B_EDGE = 0.82;    // B 的 fogged 兵越过此线 → 显形（pos01 �
 // 出牌控盘层（doc18 §10 · 布局阶段 base 打底 + 抽牌堆 + 手牌实时派三路 + 读秒暂停银行）。数值初版、待真机/仿真台磨。
 const BASE_PER_LANE = 3;        // 布局阶段每路预铺张数（共 9 打底，doc18 §10.2）
 const AI_PERIOD_TICKS = 16;     // 敌方滴投：每 N 拍从其牌库投一张（入该牌原路 → 随阵型分布）
-// ── CR 局内经济 TUNE（doc21 · owner 抄皇室战争）：点数(圣水)随真实时间回复 → 花点数摸牌(玩家选库) → 普通部署/天罡施法。砍读秒暂停。──
-// 改这一处即调手感。owner 2026-06-19 反馈「圣水涨太快·看不到心流·点数太多」→ 池砍半(5) + regen 大幅放慢(2000ms) + 起手压低。
+// ── CR 局内经济 TUNE（doc21 · owner 抄皇室战争）：点数(召唤源泉)随真实时间回复 → 花点数摸牌(玩家选库) → 普通部署/天罡施法。砍读秒暂停。──
+// 改这一处即调手感。owner 2026-06-19 反馈「召唤源泉涨太快·看不到心流·点数太多」→ 池砍半(5) + regen 大幅放慢(2000ms) + 起手压低。
 // 派生节奏（当前 regen 2000ms · 池 5）：≈0.5 点/秒 → 每 2s 摸 1 普通 / 4s 摸 1 天罡；满池 5 点从起手 2 攒满 ≈ 6s。心流＝攒→花的取舍张力。
 // 想再调：更慢/更少手感 = REGEN 调大、MAX/START 调小；更快 = 反之。CR 原版 regen≈2800ms 可作参考上界。
 const POINTS_MAX = 5;           // 点数池上限（owner：max 5·制造稀缺=心流；原 10 太满、无取舍）
@@ -402,7 +402,7 @@ export function mount(container: HTMLElement): () => void {
   }
 
   // ───────────────────────── 出征（一局 · doc24 回合制 · turn-combat + turn-battle-screen）─────────────────────────
-  // owner 大转向：实时 CR → 回合制桌游。每回合 +1 圣水 → 四选一互斥动作(抽/放[+翻门]/打天罡/弃) → 结束回合推进一格 → 相邻遭遇掷命特写。
+  // owner 大转向：实时 CR → 回合制桌游。每回合 +1 召唤源泉 → 四选一互斥动作(抽/放[+翻门]/打天罡/弃) → 结束回合推进一格 → 相邻遭遇掷命特写。
   // 牌库由 prepareArmies 揭晓前编排(融天罡/干预/Boss·outcome-first)折成扑克兵库；先破敌 3 血大本营胜。结算复用旧养成闭环(命/材料/三选一)。
   function showTurnMatch(formation: Formation, myName: string, interventions: Intervention[]): void {
     clear();
@@ -568,7 +568,7 @@ export function mount(container: HTMLElement): () => void {
       ...aSplit.base.map((c): DeployCmd => ({ tick: 1, side: 'a', lane: c.lane, unit: toUnit(c) })),
       ...bSplit.base.map((c): DeployCmd => ({ tick: 1, side: 'b', lane: c.lane, unit: toUnit(c) })),
     ];
-    // CR 出牌控盘运行时态（doc21）：普通/天罡手牌 + 选中 + 点数池（圣水·浮点·真实时间回复）。
+    // CR 出牌控盘运行时态（doc21）：普通/天罡手牌 + 选中 + 点数池（召唤源泉·浮点·真实时间回复）。
     let selectedCard = -1, selectedTengang = -1;
     let migrateSource = -1; // 三路兵力迁移：已选的迁出路（-1 无·无选中牌时点路 = 迁移模式）
     let points = POINTS_START;
@@ -701,7 +701,7 @@ export function mount(container: HTMLElement): () => void {
       stage.appendChild(result);
       result.querySelector('#gg-result-cont')?.addEventListener('click', route);
     };
-    // rAF 实时驱动（CR 纯实时·无暂停·doc21）：点数(圣水)随真实时间回复；每 LIVE_STEP_MS 走一拍（一格格爬）+ 敌滴投；
+    // rAF 实时驱动（CR 纯实时·无暂停·doc21）：点数(召唤源泉)随真实时间回复；每 LIVE_STEP_MS 走一拍（一格格爬）+ 敌滴投；
     // 渲染 ~30fps 按 frac 平滑；演对决特写时世界静止（点数/sim 皆冻）；落定即结算、停步。
     const loop = (ts: number): void => {
       if (last === 0) last = ts;
@@ -718,7 +718,7 @@ export function mount(container: HTMLElement): () => void {
       if (!perfClash && !encounter && ts >= gapUntil && perfQueue.length) { encounter = perfQueue.shift()!; encUntil = ts + ENCOUNTER_MS; acc = 0; } // 回战场缓冲过后 → 取下一场·先演「遭遇」前奏
       if (!perfClash && !encounter && ts >= gapUntil) { // 无特写/无遭遇前奏/回战场缓冲已过 → 点数回复 + 推进（演出与缓冲期世界静止）
         if (!settled && live.winner === 'pending') {
-          points = Math.min(POINTS_MAX, points + dt / POINTS_REGEN_MS); // 圣水随真实时间回复（演特写=世界静止时不回）
+          points = Math.min(POINTS_MAX, points + dt / POINTS_REGEN_MS); // 召唤源泉随真实时间回复（演特写=世界静止时不回）
           acc += dt;
           if (acc > LIVE_STEP_MS * 3) acc = LIVE_STEP_MS; // 切后台回来防暴冲
           if (acc >= LIVE_STEP_MS) {

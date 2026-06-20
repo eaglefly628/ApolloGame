@@ -29,10 +29,10 @@ export interface BattleView {
   energy: number; energyMax: number; materials: number;
   phaseText: string; timeText: string;
   levers: BattleLever[]; lanes: BattleLane[]; units: BattleUnit[];
-  // CR 局内经济层（doc21 · 抄皇室战争）：点数(圣水)随真实时间回复 → 花点数摸牌(玩家选库) → 普通部署三路 / 天罡施法。砍读秒暂停。
+  // CR 局内经济层（doc21 · 抄皇室战争）：点数(召唤源泉)随真实时间回复 → 花点数摸牌(玩家选库) → 普通部署三路 / 天罡施法。砍读秒暂停。
   hand: HandCardView[]; selectedCard: number; deckCount: number; // 普通手牌(可囤积) / 选中(-1 无) / 普通库余量
   tengang: TengangCardView[]; selectedTengang: number; tengangDeckCount: number; // 天罡手牌(法术·cap5) / 选中(-1 无) / 天罡库可摸余量
-  points: number; pointsMax: number; // 点数池(圣水·回复) / 上限
+  points: number; pointsMax: number; // 点数池(召唤源泉·回复) / 上限
   normalDrawCost: number; tengangDrawCost: number; canDrawNormal: boolean; canDrawTengang: boolean; // 摸牌花点数 + 是否可摸(点数够 & 未到上限 & 库有)
   migrateSource: number; // 三路兵力迁移：已选迁出路(-1 无 · 无选中牌时点路 = 迁移模式)
   clash?: ClashView | null; // 非空 → 叠加对决特写表演（冻结战场、放大两牌、读数、掷点定生死）
@@ -365,7 +365,7 @@ function buildHTML(view: BattleView, s: CamState): string {
     const cardS = { position: 'relative', width: '58px', height: '82px', flex: 'none', borderRadius: '9px', cursor: 'pointer', background: 'linear-gradient(160deg,#3b2a5e,#241640)', border: '2px solid ' + (sel ? 'var(--gold)' : '#7c5cc4'), boxShadow: sel ? '0 0 0 2px var(--gold), 0 10px 20px rgba(0,0,0,.55)' : '0 6px 14px rgba(80,50,160,.5)', transform: sel ? 'translateY(-10px)' : 'none', transition: 'all .12s ease', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: '3px', padding: '4px', textAlign: 'center' };
     return `<div data-act="tengang" data-i="${i}" style="${st(cardS)}"><span style="font-size:20px; color:#c9b6ff;">✦</span><span style="font-family:var(--font-body); font-weight:700; font-size:10px; line-height:1.1; color:#e7deff;">${esc(c.name)}</span></div>`;
   });
-  // 点数(圣水)条 + 摸牌按钮（花点数·玩家选库；CR 经济核心·可见）。
+  // 点数(召唤源泉)条 + 摸牌按钮（花点数·玩家选库；CR 经济核心·可见）。
   const elixirPct = Math.max(0, Math.min(100, Math.round((view.points / Math.max(1, view.pointsMax)) * 100)));
   const drawBtn = (act: string, label: string, cost: number, can: boolean): string => {
     const s = { flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '5px', padding: '9px 6px', borderRadius: '11px', cursor: can ? 'pointer' : 'not-allowed', border: '1px solid ' + (can ? '#a855f7' : 'var(--btn-edge)'), background: can ? 'linear-gradient(180deg,#b06bf5,#8b3fd9)' : 'var(--btn-bg)', color: can ? '#fff' : 'var(--ink-dim)', fontFamily: 'var(--font-heading)', fontWeight: 700, fontSize: '13px', opacity: can ? '1' : '.55', transition: 'all .15s ease' };
@@ -402,7 +402,7 @@ function buildHTML(view: BattleView, s: CamState): string {
         <div style="${st(panel)}"><div style="${st(panelHead)}">台面机关</div><div style="display:flex; align-items:center; gap:11px; padding:9px 11px; border-radius:9px; background:var(--chip-bg); border:1px solid var(--panel-border);"><span style="font-size:18px;">🌪</span><div><div style="font-family:var(--font-heading); font-weight:700; font-size:13px; color:var(--ink);">河道·低重力</div><div style="font-size:11px; color:var(--ink-dim);">过河掷命滞空更久</div></div></div></div>
       </div>
       <div style="position:absolute; left:0; right:0; bottom:0; height:160px; background:var(--dock-bg); border-top:1px solid var(--panel-border); padding:18px 30px; z-index:7; display:flex; align-items:stretch; gap:16px;">
-        <div style="display:flex; align-items:center; gap:10px;"><div style="display:flex; align-items:center; gap:9px; padding:0 14px; height:100%; border-radius:14px; background:var(--gold-chip); border:1px solid var(--gold);"><span style="font-size:20px;">◈</span><span style="font-family:var(--font-num); font-size:24px; color:var(--gold);">${view.materials}</span></div><div style="display:flex; flex-direction:column; justify-content:center; gap:6px; padding:0 16px; height:100%; border-radius:14px; background:rgba(168,85,247,.12); border:1px solid #a855f7; min-width:172px;"><div style="display:flex; justify-content:space-between; align-items:baseline;"><span style="font-family:var(--font-heading); font-weight:700; font-size:14px; color:#c9a6ff;">点数 · 圣水</span><span style="font-family:var(--font-num); font-size:13px; color:#c9a6ff;">${Math.floor(view.points)}/${view.pointsMax}</span></div><div style="height:12px; border-radius:99px; background:var(--track); overflow:hidden; border:1px solid rgba(168,85,247,.5);"><div style="width:${elixirPct}%; height:100%; background:linear-gradient(90deg,#8b3fd9,#c77dff); box-shadow:0 0 8px rgba(168,85,247,.6);"></div></div></div></div>
+        <div style="display:flex; align-items:center; gap:10px;"><div style="display:flex; align-items:center; gap:9px; padding:0 14px; height:100%; border-radius:14px; background:var(--gold-chip); border:1px solid var(--gold);"><span style="font-size:20px;">◈</span><span style="font-family:var(--font-num); font-size:24px; color:var(--gold);">${view.materials}</span></div><div style="display:flex; flex-direction:column; justify-content:center; gap:6px; padding:0 16px; height:100%; border-radius:14px; background:rgba(168,85,247,.12); border:1px solid #a855f7; min-width:172px;"><div style="display:flex; justify-content:space-between; align-items:baseline;"><span style="font-family:var(--font-heading); font-weight:700; font-size:14px; color:#c9a6ff;">点数 · 召唤源泉</span><span style="font-family:var(--font-num); font-size:13px; color:#c9a6ff;">${Math.floor(view.points)}/${view.pointsMax}</span></div><div style="height:12px; border-radius:99px; background:var(--track); overflow:hidden; border:1px solid rgba(168,85,247,.5);"><div style="width:${elixirPct}%; height:100%; background:linear-gradient(90deg,#8b3fd9,#c77dff); box-shadow:0 0 8px rgba(168,85,247,.6);"></div></div></div></div>
         <div style="flex:1; display:flex; flex-direction:column; gap:7px; justify-content:center; padding:8px 18px; border-radius:16px; background:var(--accent-soft); border:1px solid var(--accent); box-shadow:inset 0 0 0 1px var(--hairline);"><div style="display:flex; align-items:center; gap:10px;"><span style="font-family:var(--font-heading); font-weight:700; font-size:17px; color:var(--accent); letter-spacing:.03em;">手牌 · 出牌</span><span style="font-size:12px; color:var(--ink-dim);">点选一张 → 上/中/下（普通=部署 · 天罡=施法）；空手点路 = 三路调兵（迁出→迁入）；点数攒够花点数摸牌</span><span style="flex:1;"></span><span style="font-family:var(--font-num); font-size:11px; color:var(--ink-dim);">普通库 ${view.deckCount} · 天罡库 ${view.tengangDeckCount}</span></div><div style="display:flex; gap:8px; align-items:flex-end; min-height:86px;">${handHTML}${view.tengang.length ? `<div style="width:1px; align-self:stretch; margin:6px 4px; background:var(--hairline);"></div>${tengangHTML}` : ''}</div></div>
         <div style="width:236px; flex:none; display:flex; flex-direction:column; gap:8px; justify-content:center;"><div style="display:flex; gap:8px;">${laneBtnsHTML}</div><div style="display:flex; gap:8px;">${drawBtn('draw-normal', '摸普通', view.normalDrawCost, view.canDrawNormal)}${drawBtn('draw-tengang', '摸天罡', view.tengangDrawCost, view.canDrawTengang)}</div><div style="font-size:10px; color:var(--ink-dim); text-align:center; letter-spacing:.03em;">花点数摸牌 · 选普通/天罡库（天罡 cap5 · 打掉才补）</div></div>
       </div>
@@ -422,7 +422,7 @@ export function mountBattle(host: HTMLElement, getView: () => BattleView, action
   const render = (): void => {
     host.innerHTML = buildHTML(getView(), state);
     // 占屏缩放（owner「只看到左上角」修复）：不靠 container-query cqw（部分环境不解析→内层 1920×1080 不缩放、只露左上角）；
-    //   JS 实测容器宽 → 显式 scale 内层适配 720p，整屏（含底部圣水/摸牌坞）都进可视区。每帧 render 都重算 → 自然随窗口缩放。
+    //   JS 实测容器宽 → 显式 scale 内层适配 720p，整屏（含底部召唤源泉/摸牌坞）都进可视区。每帧 render 都重算 → 自然随窗口缩放。
     const outer = host.querySelector('.gg-scale-outer') as HTMLElement | null;
     const inner = host.querySelector('.gg-scale-inner') as HTMLElement | null;
     if (outer && inner) { const w = outer.clientWidth || host.clientWidth; if (w > 0) { const sc = w / 1920; inner.style.transform = 'scale(' + sc + ')'; outer.style.height = Math.round(1080 * sc) + 'px'; } }
@@ -430,7 +430,7 @@ export function mountBattle(host: HTMLElement, getView: () => BattleView, action
   const LANE_IDX: Record<string, number> = { top: 0, mid: 1, bot: 2 };
   // 出牌坞交互用 pointerdown，不是 click：驱动层 rAF 每 ~33ms 整片 host.innerHTML 重建一次，
   // 一次人手「按下→抬起」(~80–150ms) 期间 DOM 被重建数次 → 按下时那个按钮节点已被销毁、
-  // click 找不到落点（owner 报「圣水摸牌/出牌按键摁了都无效」）。pointerdown 是单次离散事件，
+  // click 找不到落点（owner 报「召唤源泉摸牌/出牌按键摁了都无效」）。pointerdown 是单次离散事件，
   // 在按下那一刻就派发到当下活着的 DOM，重渲再频繁也夹不进 down/up 之间 → 必中。
   const onPress = (e: MouseEvent): void => {
     if (e.button > 0) return; // 仅主键（触屏/笔 button=0）；右/中键不触发

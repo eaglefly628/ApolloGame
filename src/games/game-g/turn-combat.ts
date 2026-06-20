@@ -1,9 +1,9 @@
 // turn-combat.ts —— doc24 单机回合制战斗模型（owner 2026-06-19 大转向 · 取代 doc21 实时 CR）。
-// A0 头号任务：把"驱动层"从 实时(live-combat rAF 连续行军 + 圣水时间 regen + 读秒暂停) 换成 **回合制状态机**。
+// A0 头号任务：把"驱动层"从 实时(live-combat rAF 连续行军 + 召唤源泉时间 regen + 读秒暂停) 换成 **回合制状态机**。
 // 原封保留并复用：掷命对决核(clash-resolve) · 三路 · 3 血大本营 · 公平骨架(cardPoints) · 天罡 apply(TengangFx) · 续航(cardStamina)。只换驱动。
 //
 // 棋盘(doc24 §一)：每路一条 **9 格 slot 轨** —— 我方区 slot 0..3 · 中线 4 · 敌方区 5..8。我兵向 8(敌家)推、敌兵向 0(我家)推；先破敌 3 血大本营胜。
-// 回合(doc24 §二)：① 回合开始 +1 圣水 → ② 选「一类」互斥动作(抽/放[+机关]/打天罡/弃·同类无限) → ③ 结束→**推进一格**→相邻遭遇→掷命(doc19 原封)。
+// 回合(doc24 §二)：① 回合开始 +1 召唤源泉 → ② 选「一类」互斥动作(抽/放[+机关]/打天罡/弃·同类无限) → ③ 结束→**推进一格**→相邻遭遇→掷命(doc19 原封)。
 // 确定性：单一 seeded PRNG（同 live-combat·掷命点同序消费）；同输入流 → 同 turnHash、可回放、可喂仿真台。纯 game-side、零引擎。
 //
 // ⚠️ logic 先行·UI 待 Cloud Design 稿(doc24 §九)：本模块不碰 live-combat / showMatch / battle-screen（实时路保持可跑），待新战斗屏落地再切换、退役实时核。
@@ -22,7 +22,7 @@ export const B_GOAL = 0;         // 敌兵越过此格(→−1) → 我大本营
 // ── 回合经济（doc24 §四·真机调；各 cost 暂定 1）──
 export const TURN_HOME_BLOOD = 3;
 export const MANA_START = 1, MANA_PER_TURN = 1;
-export const DRAW_COST = 1, DEPLOY_COST = 1, CAST_COST = 1; // 抽/放/打天罡 花圣水；弃免费
+export const DRAW_COST = 1, DEPLOY_COST = 1, CAST_COST = 1; // 抽/放/打天罡 花召唤源泉；弃免费
 export const OPENING_HAND = 3; // 起手摸 N（doc24 §六/七 待定）
 const MORALE_PTS = 2, ROUT_PTS = 4; // 同 live-combat/doc06：主将在→下属 +战力 / 主将亡→溃散 −战力
 
@@ -50,7 +50,7 @@ export interface TurnLane { a: TurnUnit[]; b: TurnUnit[]; aGenDead: boolean; bGe
 export interface PokerCard { kind: 'poker'; id: string; rank: string; suit: string; general: boolean; buff: number }
 export interface TengangHandCard { kind: 'tengang'; id: string }
 export type Card = PokerCard | TengangHandCard;
-// 一方运行态：圣水 / 手牌 / 两库 / 已施天罡集 + 其聚合修正。
+// 一方运行态：召唤源泉 / 手牌 / 两库 / 已施天罡集 + 其聚合修正。
 export interface TurnSide { mana: number; hand: Card[]; pokerDeck: PokerCard[]; tengangDeck: TengangHandCard[]; castIds: string[]; tengangA: TengangFx }
 export type ActionKind = 'draw' | 'deploy' | 'cast' | 'discard';
 // Boss 策略画像（doc27 §八·性格即数据·最弱 LLM 也能填权重）：通用 utility AI 读它打分→选动作。0-10。
@@ -82,7 +82,7 @@ const mkSide = (pokerDeck: PokerCard[] = [], tengangDeck: TengangHandCard[] = []
   ({ mana: MANA_START, hand: [], pokerDeck: [...pokerDeck], tengangDeck: [...tengangDeck], castIds: [], tengangA: NO_TENGANG });
 
 export interface TurnInit { seed: number; homeMax?: number; disha?: readonly string[]; aiProfile?: AiProfile; aiTier?: number; a?: { pokerDeck?: PokerCard[]; tengangDeck?: TengangHandCard[] }; b?: { pokerDeck?: PokerCard[]; tengangDeck?: TengangHandCard[] } }
-/** 开战 init（doc24 §七）：三路 ×9 空轨；双方大本营 3 hp；圣水=起步；A 先手。牌库由 caller（game-g/save）喂；起手摸由 caller 调 drawCard。
+/** 开战 init（doc24 §七）：三路 ×9 空轨；双方大本营 3 hp；召唤源泉=起步；A 先手。牌库由 caller（game-g/save）喂；起手摸由 caller 调 drawCard。
  *  cfg.disha：Boss 关卡地煞 id 集（doc23 §八）→ 聚合成 dishaB 在 Boss 侧 apply；温泉关死守覆写 Boss 大本营血。 */
 export function initTurnBattle(cfg: TurnInit): TurnBattle {
   const homeMax = cfg.homeMax ?? TURN_HOME_BLOOD;
@@ -99,7 +99,7 @@ export function initTurnBattle(cfg: TurnInit): TurnBattle {
     dishaB, bossWinStreak: 0, batteryLane: -1, bossLastStandUsed: false,
     aiProfile: cfg.aiProfile ?? NEUTRAL_AI, aiTier: cfg.aiTier ?? 2,
   };
-  battle.b.mana = 0; // 后手方圣水在其回合开始才 +1（每回合 +1 对称·turn-1 的 +1 已含在先手起步值里）
+  battle.b.mana = 0; // 后手方召唤源泉在其回合开始才 +1（每回合 +1 对称·turn-1 的 +1 已含在先手起步值里）
   return battle;
 }
 
@@ -114,7 +114,7 @@ function canAct(b: TurnBattle, side: 'a' | 'b', kind: ActionKind, cost: number):
   return sideOf(b, side).mana >= cost;
 }
 
-// ① 抽牌：从 poker / tengang 库顶摸一张进手牌，花圣水（互斥·同类无限）。返回是否成功。
+// ① 抽牌：从 poker / tengang 库顶摸一张进手牌，花召唤源泉（互斥·同类无限）。返回是否成功。
 export function drawCard(b: TurnBattle, side: 'a' | 'b', from: 'poker' | 'tengang'): boolean {
   if (!canAct(b, side, 'draw', DRAW_COST)) return false;
   const sd = sideOf(b, side);
@@ -124,7 +124,7 @@ export function drawCard(b: TurnBattle, side: 'a' | 'b', from: 'poker' | 'tengan
   return true;
 }
 
-// ② 放牌：把手牌第 handIdx 张扑克兵部署到 lane（入我方/敌方部署格·队尾排队）+ 可选改机关（开/关门）。花圣水（互斥·同类无限）。
+// ② 放牌：把手牌第 handIdx 张扑克兵部署到 lane（入我方/敌方部署格·队尾排队）+ 可选改机关（开/关门）。花召唤源泉（互斥·同类无限）。
 export function deployUnit(b: TurnBattle, side: 'a' | 'b', handIdx: number, lane: number, gateToggle = -1): boolean {
   if (!canAct(b, side, 'deploy', DEPLOY_COST)) return false;
   const sd = sideOf(b, side); const card = sd.hand[handIdx];
@@ -142,7 +142,7 @@ export function deployUnit(b: TurnBattle, side: 'a' | 'b', handIdx: number, lane
   return true;
 }
 
-// ③ 打天罡：施手牌第 handIdx 张天罡 → 进 castIds（持续修正由 caller 经 aggregateTengang 重算喂 tengangA）。花圣水（互斥·同类无限）。
+// ③ 打天罡：施手牌第 handIdx 张天罡 → 进 castIds（持续修正由 caller 经 aggregateTengang 重算喂 tengangA）。花召唤源泉（互斥·同类无限）。
 export function castTengang(b: TurnBattle, side: 'a' | 'b', handIdx: number): boolean {
   if (!canAct(b, side, 'cast', CAST_COST)) return false;
   const sd = sideOf(b, side); const card = sd.hand[handIdx];
@@ -151,7 +151,7 @@ export function castTengang(b: TurnBattle, side: 'a' | 'b', handIdx: number): bo
   return true; // tengangA 重算：caller 做 sd.tengangA = aggregateTengang(sd.castIds)（避免 turn-combat ← blueprint 环依赖）
 }
 
-// ④ 弃牌：清手牌第 handIdx 张，免费·无限（互斥类别=discard，但不耗圣水）。
+// ④ 弃牌：清手牌第 handIdx 张，免费·无限（互斥类别=discard，但不耗召唤源泉）。
 export function discardCard(b: TurnBattle, side: 'a' | 'b', handIdx: number): boolean {
   if (b.winner !== 'pending' || b.active !== side) return false;
   if (b.actionTaken !== null && b.actionTaken !== 'discard') return false;
@@ -327,7 +327,7 @@ function checkWinner(b: TurnBattle): void {
   else if (b.homeA <= 0) b.winner = 'b';
 }
 
-// 结束当前回合（doc24 §七.3）：active 方推进一格 + 遭遇结算 → 判负 → 切换回合方、+1 圣水、回合数 +1、解锁动作。
+// 结束当前回合（doc24 §七.3）：active 方推进一格 + 遭遇结算 → 判负 → 切换回合方、+1 召唤源泉、回合数 +1、解锁动作。
 export function endTurn(b: TurnBattle): void {
   if (b.winner !== 'pending') return;
   advanceSide(b, b.active);
@@ -335,7 +335,7 @@ export function endTurn(b: TurnBattle): void {
   if (b.winner !== 'pending') return;
   b.active = b.active === 'a' ? 'b' : 'a';
   const sd = sideOf(b, b.active);
-  sd.mana += MANA_PER_TURN; // 回合开始 +1 圣水（doc24 §二.1）
+  sd.mana += MANA_PER_TURN; // 回合开始 +1 召唤源泉（doc24 §二.1）
   if (b.active === 'b' && b.dishaB.bonusMana > 0) sd.mana += b.dishaB.bonusMana; // 地煞·大军压境/机动调度：Boss 多铺(免费多动)
   b.actionTaken = null;     // 新回合解锁互斥动作
   b.turn += 1;
@@ -407,7 +407,7 @@ export function turnActive(b: TurnBattle): boolean {
   return b.lanes.some((l) => l.a.length || l.b.length) || sideCanProgress(b.a) || sideCanProgress(b.b);
 }
 
-// 确定性状态指纹（逐回合对比·回归 + 仿真台）：回合/谁/圣水/手牌数/各路前锋 slot+队长/大本营/rng 序。
+// 确定性状态指纹（逐回合对比·回归 + 仿真台）：回合/谁/召唤源泉/手牌数/各路前锋 slot+队长/大本营/rng 序。
 export function turnHash(b: TurnBattle): string {
   const lane = (l: TurnLane): string => `${l.a.length}@${l.a[0]?.slot ?? '_'},${l.b.length}@${l.b[0]?.slot ?? '_'},${l.aGenDead ? 1 : 0}${l.bGenDead ? 1 : 0},${l.spentA},${l.spentB}`;
   return `T${b.turn}|${b.active}|mA${b.a.mana}|mB${b.b.mana}|hA${b.a.hand.length}|hB${b.b.hand.length}|HA${b.homeA}|HB${b.homeB}|w${b.winner}|s${b.rng.sequence}|g${b.gatesOpen.map((o) => (o ? 1 : 0)).join('')}|${b.lanes.map(lane).join('|')}`;
