@@ -1,7 +1,7 @@
 import { describe, it, expect } from 'vitest';
 import { standardArmy } from './index.js';
 import { initLiveBattle, stepLiveBattle, runLiveBattle, liveHash, cardStamina, tideDrawPulse, TIDE_PULSE, MARCH_STEP, migrateRear, NO_TENGANG, type DeployCmd, type ClashEvent, type TengangFx } from './live-combat.js';
-import { aggregateTengang } from './game-g.js';
+import { aggregateTengang, tengangFxOf } from './game-g.js';
 
 // doc 18/19 · live 解析器 + 3D-CLASH 对决核 + 3D-STAM 续航：验证 live 化后 outcome-first 不破（确定性逐拍 hash）
 // + 公平骨架（base=点数·双方同副；强弱来自经营 buff）+ 胜负方向 + live buff 杠杆 + 续航退场（战线接力·神牌不包打）。
@@ -159,6 +159,67 @@ describe('Game G · A1 战潮抽牌·事件脉冲（doc18 §10.3 乙 · tideDraw
     const weak = clashWR(NO_TENGANG, 40);                                  // 敌 +40 → 我方触底(≈3%)
     expect(weak).toBeLessThan(0.1);                                        // 确实压到底附近
     expect(clashWR(aggregateTengang(['wenshou']), 40)).toBeGreaterThan(weak); // 稳手 winFloor 抬底(→≈8%)
+  });
+
+  it('天罡 flat 批补（doc20 §二·确定生效·无 live 挂点）：灌铅骰 kHard / 铁骰 noUpset / 鼎立 trips / 老兵 stamFaces —— 映射 + 效果', () => {
+    // ① 映射（合成卡·不依赖乙上架数据；op 形 = 甲侧契约 doc20 §二）
+    expect(tengangFxOf([{ kind: 'odds', params: { op: 'kHard', value: 1 } }]).kHard).toBe(1);           // 灌铅骰
+    expect(tengangFxOf([{ kind: 'odds', params: { op: 'noUpset' } }]).noUpset).toBe(1);                 // 铁骰
+    expect(tengangFxOf([{ kind: 'combo', params: { op: 'trips', bonus: 12 } }]).comboTrips).toBe(12);   // 鼎立
+    expect(tengangFxOf([{ kind: 'stamina', params: { op: 'stamPlus', value: 1, filter: 'faces' } }]).stamFaces).toBe(1); // 老兵
+    expect(tengangFxOf([{ kind: 'stamina', params: { op: 'stamPlus', value: 1 } }]).stamPlus).toBe(1);  // 全军(无 filter)→仍 stamPlus
+    expect(tengangFxOf([])).toEqual(NO_TENGANG);
+
+    // ② 灌铅骰 kHard：占优时 logistic 变硬(k↓) → 同样优势·胜率更高；均势(差0)仍 .5（logistic(0) 与 k 无关）。
+    const clashWR2 = (fx: TengangFx, aBuff = 0): number => {
+      const b = initLiveBattle(11); b.tengangA = fx;
+      const dep: DeployCmd[] = [
+        { tick: 1, side: 'a', lane: 0, unit: { id: 'a', rank: '7', suit: 'S', general: false, buff: aBuff } },
+        { tick: 1, side: 'b', lane: 0, unit: { id: 'b', rank: '7', suit: 'H', general: false } },
+      ];
+      for (let i = 0; i < 300 && b.clashSeq === 0; i++) stepLiveBattle(b, dep);
+      return b.lastClash!.winrate;
+    };
+    expect(clashWR2({ ...NO_TENGANG, kHard: 2 }, 6)).toBeGreaterThan(clashWR2(NO_TENGANG, 6)); // 占优 → kHard 抬更高
+    expect(clashWR2({ ...NO_TENGANG, kHard: 2 }, 0)).toBeCloseTo(0.5, 5);                      // 均势 → 不偏
+
+    // ③ 铁骰 noUpset：占优(胜率≥50%)必胜；同一"会翻车"的种子上 base 翻车 → 铁骰救回（证明确改了结果·非恒赢）。
+    const aWinsAt = (fx: TengangFx, seed: number): boolean => {
+      const b = initLiveBattle(seed); b.tengangA = fx;
+      const dep: DeployCmd[] = [
+        { tick: 1, side: 'a', lane: 0, unit: { id: 'a', rank: '7', suit: 'S', general: false, buff: 2 } }, // 我方占优 wr≈.6
+        { tick: 1, side: 'b', lane: 0, unit: { id: 'b', rank: '7', suit: 'H', general: false } },
+      ];
+      for (let i = 0; i < 300 && b.clashSeq === 0; i++) stepLiveBattle(b, dep);
+      return b.lastClash!.aWins;
+    };
+    const seeds = Array.from({ length: 30 }, (_, i) => i + 1);
+    const upsetSeed = seeds.find((s) => !aWinsAt(NO_TENGANG, s)); // base 会翻车的种子（占优仍可能爆冷）
+    expect(upsetSeed).toBeDefined();
+    expect(aWinsAt({ ...NO_TENGANG, noUpset: 1 }, upsetSeed!)).toBe(true);            // 同种子 → 铁骰救回
+    expect(seeds.every((s) => aWinsAt({ ...NO_TENGANG, noUpset: 1 }, s))).toBe(true); // 占优全胜·无爆冷
+
+    // ④ 鼎立 trips：本路≥3张同点 → 该牌 tengang 加成含 +12；仅对子不触发。
+    const tripTg = (ranks: string[]): number => {
+      const b = initLiveBattle(7); b.tengangA = { ...NO_TENGANG, comboTrips: 12 };
+      const dep: DeployCmd[] = [
+        ...ranks.map((r, i) => ({ tick: 1, side: 'a' as const, lane: 0, unit: { id: 'a' + i, rank: r, suit: 'S', general: false } })),
+        { tick: 1, side: 'b', lane: 0, unit: { id: 'b', rank: '7', suit: 'H', general: false } },
+      ];
+      for (let i = 0; i < 300 && b.clashSeq === 0; i++) stepLiveBattle(b, dep);
+      return b.lastClash!.a.tengang;
+    };
+    expect(tripTg(['7', '7', '7'])).toBe(12); // 三条 → +12
+    expect(tripTg(['7', '7', '8'])).toBe(0);  // 仅对子(2 同点) → 鼎立不触发
+
+    // ⑤ 老兵 stamFaces：只人头牌(JQKA)吃续航加成；非人头牌不吃。
+    const stamOf = (rank: string, faces: number): number => {
+      const b = initLiveBattle(5); b.tengangA = { ...NO_TENGANG, stamFaces: faces };
+      stepLiveBattle(b, [{ tick: 1, side: 'a', lane: 0, unit: { id: 'a', rank, suit: 'S', general: false } }]);
+      return b.lanes[0].a[0].stamina;
+    };
+    expect(stamOf('K', 2)).toBe(stamOf('K', 0) + 2); // 人头牌 +2
+    expect(stamOf('5', 2)).toBe(stamOf('5', 0));     // 非人头牌 不加
   });
 
   it('50:50 平局裁定（owner · 点数大者胜 → 续航高者 → 重揉）：战力相等不纯靠运气', () => {

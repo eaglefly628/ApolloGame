@@ -4,7 +4,7 @@
 //   （doc19 §三 pairwise logistic 定生死）→ 赢家前进·续航−1(尽则退场沉底)、输家弃堆 → 突破到敌大本营 −1 血(3 血)先破者胜。
 // outcome-first：单一 seeded PRNG 按 lane 序消费、逐拍 hash 稳；favor/buff 遭遇拍读 → 中途投放/干预只影响未遭遇牌。
 // 纯 game-side 解释器、零引擎；复用 clash-resolve（decideFaceUp 升级为 pairwise）+ seeded PRNG。
-import { winrate, pEff, cardPoints } from './clash-resolve.js';
+import { winrate, pEff, cardPoints, CLASH_K } from './clash-resolve.js';
 import { nextRandom } from '@atom-skills/index.js';
 import type { RandomSeed } from '@engine/protocol/components.js';
 
@@ -33,8 +33,9 @@ export interface ClashEvent { tick: number; lane: number; winrate: number; roll:
 // 已施天罡 → 玩家侧(a)持续战斗修正（A-JOKER · cast 后整局生效·一种牌算一次不叠）。
 // 聚合(aggregateTengang)在 game-g 读 GAME_G_TIANGANGS 算（避免 live-combat ← blueprint 环依赖）；live-combat 只持有这份扁平修正、在 clash/deploy 钩子读。
 // v1 实装：odds(巧手 pEffAdd / 稳手 winFloor) · power(虎符 all / 寡兵 LE3 / 同花魁 sameSuit) · combo(对子诀 pair) · morale(令旗 leader) · stamina(铁汉) · draw(广纳 handMax)。
-export interface TengangFx { pEffAdd: number; winFloor: number; powerAll: number; powerLE3: number; powerSameSuit: number; comboPair: number; moraleLeader: number; stamPlus: number; handMaxAdd: number }
-export const NO_TENGANG: TengangFx = { pEffAdd: 0, winFloor: 0, powerAll: 0, powerLE3: 0, powerSameSuit: 0, comboPair: 0, moraleLeader: 0, stamPlus: 0, handMaxAdd: 0 };
+// flat 批补（doc20 §二·确定生效·无 live 挂点）：odds(灌铅骰 kHard 变硬 / 铁骰 noUpset 占优免爆冷) · combo(鼎立 trips 三条) · stamina(老兵 stamFaces 人头牌续航)。
+export interface TengangFx { pEffAdd: number; winFloor: number; powerAll: number; powerLE3: number; powerSameSuit: number; comboPair: number; comboTrips: number; moraleLeader: number; stamPlus: number; stamFaces: number; handMaxAdd: number; kHard: number; noUpset: number }
+export const NO_TENGANG: TengangFx = { pEffAdd: 0, winFloor: 0, powerAll: 0, powerLE3: 0, powerSameSuit: 0, comboPair: 0, comboTrips: 0, moraleLeader: 0, stamPlus: 0, stamFaces: 0, handMaxAdd: 0, kHard: 0, noUpset: 0 };
 export interface LiveBattle { tick: number; lanes: [LiveLane, LiveLane, LiveLane]; homeA: number; homeB: number; homeMax: number; winner: 'a' | 'b' | 'draw' | 'pending'; rng: RandomSeed; lastClash: ClashEvent | null; clashSeq: number; clashLog: ClashEvent[]; tengangA: TengangFx }
 // 投放指令：第 tick 拍把 unit 投进 lane 的 side 侧（确定性输入流；预布阵 = tick 1 投放）。
 // 点数=公平骨架（cardPoints 由 rank 算·双方同副）；buff=经营（天罡/附魔/协同/路…聚合，缺省 0）。
@@ -45,10 +46,12 @@ export function initLiveBattle(seed: number, homeMax: number = HOME_BLOOD): Live
   return { tick: 0, lanes: [mkLane(), mkLane(), mkLane()], homeA: homeMax, homeB: homeMax, homeMax, winner: 'pending', rng: { type: 'RandomSeed', seed, sequence: 0 }, lastClash: null, clashSeq: 0, clashLog: [], tengangA: NO_TENGANG };
 }
 
+// 人头牌(JQKA)判定（老兵 stamFaces：只这些牌吃续航加成）。
+const isFaceRank = (r: string): boolean => r === 'A' || r === 'K' || r === 'Q' || r === 'J';
 function applyDeploy(b: LiveBattle, c: DeployCmd): void {
   const L = b.lanes[c.lane];
   const q = c.side === 'a' ? L.a : L.b;
-  const stam = cardStamina(c.unit.rank) + (c.side === 'a' ? b.tengangA.stamPlus : 0); // 天罡·铁汉：己方续航 +
+  const stam = cardStamina(c.unit.rank) + (c.side === 'a' ? b.tengangA.stamPlus + (isFaceRank(c.unit.rank) ? b.tengangA.stamFaces : 0) : 0); // 天罡·铁汉(全军)/老兵(人头牌)：己方续航 +
   // 入场位 = 己家边 + 已有同侧牌往后错开间距（一张张排队 staging，front=index0=先投者在最前）。
   const pos = c.side === 'a' ? -q.length * SPACING : LANE_LEN + q.length * SPACING;
   q.push({ id: c.unit.id, rank: c.unit.rank, suit: c.unit.suit, points: cardPoints(c.unit.rank), buff: c.unit.buff ?? 0, general: c.unit.general, dead: false, stamina: stam, staminaLeft: stam, pos, fogged: c.unit.fogged ?? false });
@@ -77,7 +80,7 @@ function effPowerBreak(u: LiveUnit, lane: LiveLane, side: 'a' | 'b', fx: Tengang
     tg += fx.powerAll + fx.pEffAdd;
     if (lane.a.length <= 3) tg += fx.powerLE3;
     if (fx.powerSameSuit && lane.a.filter((x) => x.suit === u.suit).length >= 2) tg += fx.powerSameSuit;
-    if (fx.comboPair) { const rc = new Map<string, number>(); for (const x of lane.a) rc.set(x.rank, (rc.get(x.rank) ?? 0) + 1); if ([...rc.values()].some((n) => n >= 2)) tg += fx.comboPair; }
+    if (fx.comboPair || fx.comboTrips) { const rc = new Map<string, number>(); for (const x of lane.a) rc.set(x.rank, (rc.get(x.rank) ?? 0) + 1); const vals = [...rc.values()]; if (fx.comboPair && vals.some((n) => n >= 2)) tg += fx.comboPair; if (fx.comboTrips && vals.some((n) => n >= 3)) tg += fx.comboTrips; } // 对子诀(≥2同点)/鼎立(≥3同点)
   }
   if (u.general) return { pEff: pEff(u.points, u.buff + tg), shift: 0, tg }; // 主将自身=士气源、不再吃士气分量（仍吃天罡点数加成）
   const genDead = side === 'a' ? lane.aGenDead : lane.bGenDead;
@@ -115,7 +118,7 @@ function stepLane(b: LiveBattle, li: number): void {
     // doc19 §三 pairwise logistic：算 P_eff → 胜率 → 掷一点 roll 落在区间定生死。内联 clashResolve 同序消费 rng（hash 不变），且暴露 roll/明细供特写。
     const ba = effPowerBreak(fa, lane, 'a', b.tengangA), bb = effPowerBreak(fb, lane, 'b', NO_TENGANG); // 天罡只己方(a)
     const ea = ba.pEff, eb = bb.pEff;
-    let wr = winrate(ea, eb);
+    let wr = winrate(ea, eb, Math.max(2, CLASH_K - b.tengangA.kHard)); // 灌铅骰：kHard 让 logistic 变硬(k↓)→点数差更决定胜负·强者愈强
     if (b.tengangA.winFloor > 0) wr = Math.min(0.97, Math.max(wr, 0.03 + b.tengangA.winFloor)); // 稳手：玩家胜率下限抬高（少翻车）
     const roll = nextRandom(b.rng); // 同序消费 rng（天罡只改阈值/pEff·不改 rng 消费 → 逐拍 hash 仍确定）
     // 50:50 平局阶梯（owner）：战力相等 → 不纯靠运气，按 点数大者胜 → 续航高者胜 → 全同则这一掷定(重揉)。战力不等 → 正常概率掷命(含爆冷缝)。
@@ -126,6 +129,7 @@ function stepLane(b: LiveBattle, li: number): void {
       else { aWins = roll < 0.5; tie = 'roll'; }
     } else {
       aWins = roll < wr;
+      if (b.tengangA.noUpset > 0 && wr >= 0.5) aWins = true; // 铁骰：占优(胜率≥50%)免疫爆冷·占优就稳拿（不改 rng 消费·仅覆盖结果·lockstep 安全）
     }
     const ev: ClashEvent = { tick: b.tick, lane: li, winrate: wr, roll, aWins, tie, a: { rank: fa.rank, suit: fa.suit, general: fa.general, points: fa.points, buff: fa.buff, morale: ba.shift, tengang: ba.tg, pEff: ea }, b: { rank: fb.rank, suit: fb.suit, general: fb.general, points: fb.points, buff: fb.buff, morale: bb.shift, tengang: bb.tg, pEff: eb } };
     b.lastClash = ev; b.clashSeq += 1; b.clashLog.push(ev);

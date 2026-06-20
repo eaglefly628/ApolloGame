@@ -154,16 +154,23 @@ export function canDrawFrom(points: number, cost: number, handLen: number, cap: 
 // A-JOKER：已施天罡(契约②·玩家施法集) → 聚合扁平战斗修正（live-combat 钩子读·只己方）。读 GAME_G_TIANGANGS 的 {kind,params}（契约③）。
 // 一种牌算一次（不叠）。v1 实装 6 kind；v2 待接（背水 reroll / 顺子阵 straight / 擒王 decapCost·依干预 / tempo / lane 一次性 / siege / arcane 印记 / 战潮 pulse·CR 已取代被动涌牌）—— 未实装 kind 返回零修正、不崩。
 export function aggregateTengang(castIds: readonly string[]): TengangFx {
+  const cards: { kind: string; params?: Record<string, unknown> }[] = [];
+  for (const id of castIds) { const j = TIANGANG_BY_ID.get(id); if (j) cards.push({ kind: j.kind, params: j.params as Record<string, unknown> | undefined }); }
+  return tengangFxOf(cards);
+}
+// 纯映射（注入卡集·不依赖 blueprint 数据 → 可用合成卡单测新 op，先于乙上架数据）。op→效果 = 甲侧契约（乙照此编码 doc20 §二）：
+//   odds: add→pEffAdd · winFloor→% · kHard(灌铅骰)→logistic 变硬 · noUpset(铁骰)→占优免爆冷 ｜ power: add(+filter countLE3|sameSuit|无=全军)
+//   combo: pair(对子诀·≥2同点) / trips(鼎立·≥3同点) ｜ morale: leaderBuff ｜ stamina: stamPlus(全军) · +filter:faces(老兵)→人头牌 ｜ draw: handMax
+export function tengangFxOf(cards: Iterable<{ kind: string; params?: Record<string, unknown> }>): TengangFx {
   const fx: TengangFx = { ...NO_TENGANG };
-  for (const id of castIds) {
-    const j = TIANGANG_BY_ID.get(id); const p = j?.params as Record<string, unknown> | undefined;
-    if (!j || !p) continue;
-    const v = typeof p.value === 'number' ? p.value : 0;
-    if (j.kind === 'odds') { if (p.op === 'add') fx.pEffAdd += v; else if (p.op === 'winFloor') fx.winFloor += v / 100; }
+  for (const j of cards) {
+    const p = j.params; if (!p) continue;
+    const v = typeof p.value === 'number' ? p.value : 0; const bonus = typeof p.bonus === 'number' ? p.bonus : 0;
+    if (j.kind === 'odds') { if (p.op === 'add') fx.pEffAdd += v; else if (p.op === 'winFloor') fx.winFloor += v / 100; else if (p.op === 'kHard') fx.kHard += v; else if (p.op === 'noUpset') fx.noUpset += 1; }
     else if (j.kind === 'power' && p.op === 'add') { if (p.filter === 'countLE3') fx.powerLE3 += v; else if (p.filter === 'sameSuit') fx.powerSameSuit += v; else fx.powerAll += v; }
-    else if (j.kind === 'combo' && p.op === 'pair') fx.comboPair += typeof p.bonus === 'number' ? p.bonus : 0;
+    else if (j.kind === 'combo') { if (p.op === 'pair') fx.comboPair += bonus; else if (p.op === 'trips') fx.comboTrips += bonus; }
     else if (j.kind === 'morale' && p.op === 'leaderBuff') fx.moraleLeader += v;
-    else if (j.kind === 'stamina' && p.op === 'stamPlus') fx.stamPlus += v;
+    else if (j.kind === 'stamina' && p.op === 'stamPlus') { if (p.filter === 'faces') fx.stamFaces += v; else fx.stamPlus += v; }
     else if (j.kind === 'draw' && p.op === 'handMax') fx.handMaxAdd += v;
   }
   return fx;
