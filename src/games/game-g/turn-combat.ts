@@ -11,6 +11,7 @@ import { winrate, pEff, cardPoints, CLASH_K } from './clash-resolve.js';
 import { nextRandom } from '@atom-skills/index.js';
 import type { RandomSeed } from '@engine/protocol/components.js';
 import { cardStamina, NO_TENGANG, type TengangFx, type ClashEvent } from './live-combat.js';
+import { aggregateDisha, type DishaFx } from './disha.js';
 
 // ── 棋盘几何（doc24 §一）──
 export const SLOTS = 9;          // 每路格数：我方 0..3 / 中线 4 / 敌方 5..8
@@ -62,25 +63,29 @@ export interface TurnBattle {
   rng: RandomSeed; winner: 'a' | 'b' | 'draw' | 'pending';
   actionTaken: ActionKind | null;
   lastClash: ClashEvent | null; clashLog: ClashEvent[]; clashSeq: number; // clashLog：逐场掷命流水（驱动层抽特写·不进 hash）
+  dishaB: DishaFx; bossWinStreak: number; batteryLane: number; bossLastStandUsed: boolean; // 地煞(Boss 招牌战术·doc23 §八)运行态
 }
 
 const mkLane = (): TurnLane => ({ a: [], b: [], aGenDead: false, bGenDead: false, spentA: 0, spentB: 0 });
 const mkSide = (pokerDeck: PokerCard[] = [], tengangDeck: TengangHandCard[] = []): TurnSide =>
   ({ mana: MANA_START, hand: [], pokerDeck: [...pokerDeck], tengangDeck: [...tengangDeck], castIds: [], tengangA: NO_TENGANG });
 
-export interface TurnInit { seed: number; homeMax?: number; a?: { pokerDeck?: PokerCard[]; tengangDeck?: TengangHandCard[] }; b?: { pokerDeck?: PokerCard[]; tengangDeck?: TengangHandCard[] } }
-/** 开战 init（doc24 §七）：三路 ×9 空轨；双方大本营 3 hp；圣水=起步；A 先手。牌库由 caller（game-g/save）喂；起手摸由 caller 调 drawCard。 */
+export interface TurnInit { seed: number; homeMax?: number; disha?: readonly string[]; a?: { pokerDeck?: PokerCard[]; tengangDeck?: TengangHandCard[] }; b?: { pokerDeck?: PokerCard[]; tengangDeck?: TengangHandCard[] } }
+/** 开战 init（doc24 §七）：三路 ×9 空轨；双方大本营 3 hp；圣水=起步；A 先手。牌库由 caller（game-g/save）喂；起手摸由 caller 调 drawCard。
+ *  cfg.disha：Boss 关卡地煞 id 集（doc23 §八）→ 聚合成 dishaB 在 Boss 侧 apply；温泉关死守覆写 Boss 大本营血。 */
 export function initTurnBattle(cfg: TurnInit): TurnBattle {
   const homeMax = cfg.homeMax ?? TURN_HOME_BLOOD;
+  const dishaB = aggregateDisha(cfg.disha ?? []);
   const battle: TurnBattle = {
     turn: 1, active: 'a',
     lanes: [mkLane(), mkLane(), mkLane()],
     gatesOpen: GATES.map(() => false), // 默认全闭 ✕(owner 2026-06-20 拍板)：放牌时点门钮翻成 ◉ 通路 / AI 亦可翻；开门才在推进时分流
-    homeA: homeMax, homeB: homeMax, homeMax,
+    homeA: homeMax, homeB: dishaB.homeHp > 0 ? dishaB.homeHp : homeMax, homeMax, // 地煞·温泉关死守 → Boss 大本营更厚
     a: mkSide(cfg.a?.pokerDeck, cfg.a?.tengangDeck),
     b: mkSide(cfg.b?.pokerDeck, cfg.b?.tengangDeck),
     rng: { type: 'RandomSeed', seed: cfg.seed, sequence: 0 },
     winner: 'pending', actionTaken: null, lastClash: null, clashLog: [], clashSeq: 0,
+    dishaB, bossWinStreak: 0, batteryLane: -1, bossLastStandUsed: false,
   };
   battle.b.mana = 0; // 后手方圣水在其回合开始才 +1（每回合 +1 对称·turn-1 的 +1 已含在先手起步值里）
   return battle;
@@ -177,7 +182,8 @@ function championIdA(b: TurnBattle): string | undefined {
 }
 
 // 有效战力 P_eff（doc19 §三 · 复用 live-combat 同款：base + 经营 buff + 天罡(只己方 a) + 士气；apply add→mul→floor→clamp）。
-function effPower(u: TurnUnit, lane: TurnLane, side: 'a' | 'b', fx: TengangFx, championId?: string): { pEff: number; shift: number; tg: number } {
+// noRout（地煞·破釜沉舟/死战不退）：Boss 主将亡不溃散（shift 不取 −ROUT）。
+function effPower(u: TurnUnit, lane: TurnLane, side: 'a' | 'b', fx: TengangFx, championId?: string, noRout = false): { pEff: number; shift: number; tg: number } {
   const col = colOf(lane, side);
   let tg = 0;
   if (side === 'a') {
@@ -192,8 +198,38 @@ function effPower(u: TurnUnit, lane: TurnLane, side: 'a' | 'b', fx: TengangFx, c
   const genDead = side === 'a' ? lane.aGenDead : lane.bGenDead;
   const genHere = col.some((x) => x.general);
   const moraleBonus = side === 'a' && genHere ? fx.moraleLeader : 0; // 令旗
-  const shift = genDead ? -ROUT_PTS : genHere ? MORALE_PTS + moraleBonus : 0;
+  const shift = (genDead && !noRout) ? -ROUT_PTS : genHere ? MORALE_PTS + moraleBonus : 0;
   return { pEff: pEff(u.points, u.buff + tg + shift, mul), shift, tg };
+}
+
+// ── 地煞 apply（Boss 侧·doc23 §八）：把 dishaB 各效果折成「Boss 掷命胜率 +X 百分点」(玩家 wr 相应减) ──
+// 8 邻/同路相邻 己兵计数（方阵/连环船）。bf=Boss 前锋；li=其所在路。
+function dishaAllies(b: TurnBattle, li: number, bf: TurnUnit, adj8: boolean): number {
+  let n = 0;
+  for (let lj = 0; lj < 3; lj++) {
+    if (adj8 ? Math.abs(lj - li) > 1 : lj !== li) continue;
+    for (const x of b.lanes[lj].b) { if (x.id === bf.id) continue; if (Math.abs(x.slot - bf.slot) <= 1) n += 1; }
+  }
+  return n;
+}
+// 锤砧：你前锋 pf 在 li 路被 Boss 兵左右(slot±1)夹住。
+function flankedBoth(b: TurnBattle, li: number, pf: TurnUnit): boolean {
+  const bb = b.lanes[li].b;
+  return bb.some((x) => x.slot === pf.slot - 1) && bb.some((x) => x.slot === pf.slot + 1);
+}
+// Boss 掷命胜率加成（百分点·apply 时 wr -= edge/100）。pf/bf=两军前锋·li=路。
+function bossEdge(b: TurnBattle, li: number, pf: TurnUnit, bf: TurnUnit): number {
+  const d = b.dishaB;
+  let e = d.allWinPct; // 挟天子/破釜沉舟：全军
+  if (bf.general) e += d.generalWinPct; // 霸王之勇/伙伴骑兵(简化)
+  if (d.phalanxPerAdj > 0) e += Math.min(d.phalanxCap, dishaAllies(b, li, bf, d.phalanxAdj8) * d.phalanxPerAdj); // 方阵/连环船
+  if (d.nearBaseSlots > 0 && bf.slot >= SLOTS - d.nearBaseSlots) e += d.nearBaseWinPct; // 温泉关·隘口(贴 Boss 家)
+  if (d.eliteMidWinPct > 0 && li === 1) e += d.eliteMidWinPct; // 近卫军(简化·中路前锋)
+  if (d.winStreakPer > 0) e += Math.min(d.winStreakCap, b.bossWinStreak * d.winStreakPer); // 九战九捷
+  if (d.firstStrike) e += d.firstStrikeWinPct; // 长枪方阵·先手
+  if (li === b.batteryLane) e += d.batteryWinPct; // 大炮兵·你这路被压
+  if (d.flankYouWinPct > 0 && flankedBoth(b, li, pf)) e += d.flankYouWinPct; // 锤砧·你被夹
+  return e;
 }
 
 function killFront(lane: TurnLane, side: 'a' | 'b'): void {
@@ -206,16 +242,18 @@ function resolveClash(b: TurnBattle, li: number): void {
   const lane = b.lanes[li]; const fa = lane.a[0], fb = lane.b[0];
   if (!fa || !fb) return;
   const champId = b.a.tengangA.powerMulHighest > 1 ? championIdA(b) : undefined;
-  const ba = effPower(fa, lane, 'a', b.a.tengangA, champId), bb = effPower(fb, lane, 'b', b.b.tengangA);
+  const ba = effPower(fa, lane, 'a', b.a.tengangA, champId), bb = effPower(fb, lane, 'b', b.b.tengangA, undefined, b.dishaB.noRout);
   const ea = ba.pEff, eb = bb.pEff;
   let wr = winrate(ea, eb, Math.max(2, CLASH_K - b.a.tengangA.kHard)); // 灌铅骰
   if (b.a.tengangA.winFloor > 0) wr = Math.min(0.97, Math.max(wr, 0.03 + b.a.tengangA.winFloor)); // 稳手
+  const edge = bossEdge(b, li, fa, fb); // 地煞：Boss 招牌战术压低玩家胜率
+  if (edge !== 0) wr = Math.min(0.97, Math.max(0.03, wr - edge / 100));
   const roll = nextRandom(b.rng);
   let aWins: boolean, tie: ClashEvent['tie'] = null;
   if (ea === eb) {
     if (fa.points !== fb.points) { aWins = fa.points > fb.points; tie = 'points'; }
     else if (fa.staminaLeft !== fb.staminaLeft) { aWins = fa.staminaLeft > fb.staminaLeft; tie = 'stamina'; }
-    else { aWins = roll < 0.5; tie = 'roll'; }
+    else { aWins = b.dishaB.firstStrike ? false : roll < 0.5; tie = 'roll'; } // 长枪方阵·先手 → 全平判 Boss 胜
   } else {
     aWins = roll < wr;
     if (b.a.tengangA.noUpset > 0 && wr >= 0.5) aWins = true; // 铁骰
@@ -223,7 +261,14 @@ function resolveClash(b: TurnBattle, li: number): void {
   b.lastClash = { tick: b.turn, lane: li, winrate: wr, roll, aWins, tie, a: { rank: fa.rank, suit: fa.suit, general: fa.general, points: fa.points, buff: fa.buff, morale: ba.shift, tengang: ba.tg, pEff: ea }, b: { rank: fb.rank, suit: fb.suit, general: fb.general, points: fb.points, buff: fb.buff, morale: bb.shift, tengang: bb.tg, pEff: eb } };
   b.clashLog.push(b.lastClash); // 流水（驱动层逐场抽特写）
   b.clashSeq += 1;
-  killFront(lane, aWins ? 'b' : 'a'); // 输家阵亡
+  if (!aWins) b.bossWinStreak += 1; // 九战九捷：Boss 胜累积
+  // 死战不退（地煞·关1 仅 Boss 主将）：首负不亡 → 残喘退 1 格(向 Boss 家 slot+1)·二次才真死。
+  if (aWins && fb.general && b.dishaB.lastStandGeneral && !b.bossLastStandUsed) {
+    b.bossLastStandUsed = true; const q = lane.b; const u = q.shift();
+    if (u) { u.slot = Math.min(SLOTS - 1, u.slot + 1); q.push(u); q.sort((x, y) => x.slot - y.slot); }
+  } else {
+    killFront(lane, aWins ? 'b' : 'a'); // 输家阵亡
+  }
   const wq = colOf(lane, aWins ? 'a' : 'b'); const wf = wq[0]; // 赢家续航 −1·尽则退场
   if (wf) { wf.staminaLeft -= 1; if (wf.staminaLeft <= 0) { wq.shift(); if (aWins) lane.spentA += 1; else lane.spentB += 1; } }
 }
@@ -281,6 +326,7 @@ export function endTurn(b: TurnBattle): void {
   b.active = b.active === 'a' ? 'b' : 'a';
   const sd = sideOf(b, b.active);
   sd.mana += MANA_PER_TURN; // 回合开始 +1 圣水（doc24 §二.1）
+  if (b.active === 'b' && b.dishaB.bonusMana > 0) sd.mana += b.dishaB.bonusMana; // 地煞·大军压境/机动调度：Boss 多铺(免费多动)
   b.actionTaken = null;     // 新回合解锁互斥动作
   b.turn += 1;
 }
@@ -288,6 +334,9 @@ export function endTurn(b: TurnBattle): void {
 // 极简脚本 AI（doc24 §七 AI 回合·占位）：手里有扑克且够圣水就部署到兵最少的路，否则尽量摸普通，再不行就结束。真 AI/难度参数后续切片。
 export function aiTakeTurn(b: TurnBattle): void {
   if (b.winner !== 'pending' || b.active !== 'b') return;
+  // 大炮兵（地煞·关4）：每 N 回合压你兵最多的一路 → 该路你掷命 −winPct（应用到你下个推进的遭遇）。
+  b.batteryLane = (b.dishaB.batteryEveryTurns > 0 && b.turn % b.dishaB.batteryEveryTurns === 0)
+    ? [0, 1, 2].reduce((m, li) => (b.lanes[li].a.length > b.lanes[m].a.length ? li : m), 0) : -1;
   let guard = 0;
   while (guard++ < 32) {
     const sd = b.b;
