@@ -1,0 +1,673 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Silkscreen:wght@400;700&family=Rajdhani:wght@500;600;700&family=Cormorant+Garamond:wght@500;600;700&family=Noto+Sans+SC:wght@400;500;700;900&family=Noto+Serif+SC:wght@500;700;900&family=Zhi+Mang+Xing&family=Ma+Shan+Zheng&display=swap" rel="stylesheet">
+<style>
+  * { box-sizing: border-box; }
+  body { margin: 0; background: #0c0a08; }
+  ::-webkit-scrollbar { width: 8px; height: 8px; }
+  ::-webkit-scrollbar-thumb { background: rgba(120,90,50,.4); border-radius: 8px; }
+  @keyframes g-spark { 0%,100% { opacity:.6; transform:translate(-50%,-50%) scale(1);} 50% { opacity:1; transform:translate(-50%,-50%) scale(1.12);} }
+  @keyframes g-gate { 0%,100% { opacity:.5;} 50% { opacity:1;} }
+  @keyframes g-shimmer { 0% { background-position:-120% 0; } 100% { background-position:220% 0; } }
+  @keyframes g-emblem { 0% { transform:translate(-50%,-50%) scale(.6); opacity:0;} 60% { transform:translate(-50%,-50%) scale(1.12); opacity:1;} 100% { transform:translate(-50%,-50%) scale(1); opacity:1;} }
+  @keyframes g-pulse { 0%,100% { box-shadow:0 0 0 0 var(--accent-soft);} 50% { box-shadow:0 0 0 6px transparent;} }
+  @keyframes g-water { 0% { background-position:0 0;} 100% { background-position:0 -28px;} }
+  @keyframes g-aura { 0%,100% { opacity:.5; transform:scale(1);} 50% { opacity:.95; transform:scale(1.04);} }
+  @keyframes g-rise { 0% { transform:translateY(6px); opacity:0;} 30% { opacity:.9;} 100% { transform:translateY(-22px); opacity:0;} }
+</style>
+</helmet>
+
+<div style="{{ rootStyle }}">
+  <div style="{{ frame }}">
+
+    <!-- ===== TOP HUD ===== -->
+    <div style="{{ topbar }}">
+      <div style="display:flex; align-items:center; gap:13px;">
+        <div style="{{ seal }}">♠</div>
+        <div style="display:flex; flex-direction:column; line-height:1.2;">
+          <span style="font-family:var(--fh); font-weight:700; font-size:16px; color:var(--ink);">翻命扑克 · 棋枰对弈</span>
+          <span style="font-size:11px; color:var(--ink-dim);">单机 · 回合制 deck-builder</span>
+        </div>
+      </div>
+      <div style="flex:1;"></div>
+      <!-- turn indicator -->
+      <div style="{{ turnBox }}">
+        <span style="{{ turnDot }}"></span>
+        <div style="display:flex; flex-direction:column; line-height:1.15;">
+          <span style="font-family:var(--fh); font-weight:700; font-size:14px; color:var(--ink);">{{ turnWho }}</span>
+          <span style="font-size:10px; color:var(--ink-dim);">第 {{ roundNo }} 回合</span>
+        </div>
+      </div>
+      <button style="{{ endTurnBtn }}" style-hover="{{ hoverLift }}">结束回合 ▸</button>
+      <div style="width:1px; height:26px; background:var(--panel-border); margin:0 4px;"></div>
+      <button onClick="{{ skinOnyx }}" style="{{ segOnyx }}">玄铁</button>
+      <button onClick="{{ skinBrocade }}" style="{{ segBrocade }}">锦霞</button>
+    </div>
+
+    <!-- ===== BODY ===== -->
+    <div style="{{ body }}">
+
+      <!-- BOARD -->
+      <div style="{{ boardWrap }}">
+        <!-- my base : compact fort -->
+        <div style="{{ baseMine }}">
+          <div style="{{ baseAura }}"></div>
+          <div style="{{ fortIcon }}">
+            <div style="{{ baseCrown }}">♔</div>
+            <div style="{{ battlements }}"><sc-for list="{{ merlonsMine }}" as="m" hint-placeholder-count="4"><div style="{{ m }}"></div></sc-for></div>
+            <div style="{{ baseShield }}"><span style="{{ baseGlyph }}">♠</span></div>
+          </div>
+          <div style="{{ baseTag }}">我方</div>
+          <div style="{{ baseHpRow }}"><sc-for list="{{ mineHp }}" as="h" hint-placeholder-count="3"><div style="{{ h.gem }}"><div style="{{ h.facet }}"></div></div></sc-for></div>
+          <div style="{{ timerBox }}"><span style="{{ timerIcon }}">⏳</span><span style="{{ timerText }}">{{ timerLabel }}</span></div>
+          <div style="{{ connMine }}"></div>
+        </div>
+
+        <!-- three lanes -->
+        <div style="{{ lanesCol }}">
+          <sc-for list="{{ lanes }}" as="L" hint-placeholder-count="3">
+            <div style="{{ L.laneRow }}">
+              <div style="{{ L.laneTag }}">{{ L.name }}</div>
+              <div style="{{ L.track }}">
+                <sc-for list="{{ L.slots }}" as="s" hint-placeholder-count="9">
+                  <div style="{{ s.cell }}">
+                    <div style="{{ s.dot }}"></div>
+                    <sc-if value="{{ s.hasUnit }}" hint-placeholder-val="{{ false }}">
+                      <div onMouseEnter="{{ s.uOnEnter }}" onMouseLeave="{{ s.uOnLeave }}" style="{{ s.unit }}">
+                        <div style="{{ s.corner }}">{{ s.rank }}{{ s.glyph }}</div>
+                        <span style="{{ s.bigGlyph }}">{{ s.glyph }}</span>
+                        <div style="{{ s.powerBadge }}">{{ s.power }}</div>
+                        <div style="{{ s.zodRow }}"><sc-for list="{{ s.zodSlots }}" as="z" hint-placeholder-count="3"><div style="{{ z.style }}">{{ z.glyph }}</div></sc-for></div>
+                        <sc-if value="{{ s.uHover }}" hint-placeholder-val="{{ false }}">
+                          <div style="{{ s.uTipWrap }}">
+                            <div style="{{ s.uTipName }}">{{ s.uName }}</div>
+                            <div style="{{ s.uTipMeta }}">{{ s.uSide }} · 战力 {{ s.power }}</div>
+                            <div style="{{ s.uTipZodLabel }}">地支附魔</div>
+                            <div style="{{ s.uZodRow2 }}"><sc-for list="{{ s.uZodChips }}" as="zc" hint-placeholder-count="3"><span style="{{ zc.style }}">{{ zc.icon }}</span></sc-for></div>
+                          </div>
+                        </sc-if>
+                      </div>
+                    </sc-if>
+                    <sc-if value="{{ s.isClash }}" hint-placeholder-val="{{ false }}"><div style="{{ s.clashRing }}"></div></sc-if>
+                  </div>
+                </sc-for>
+              </div>
+            </div>
+          </sc-for>
+
+          <!-- shortcut gates between lanes -->
+          <div style="{{ gateTopMid }}"><span style="{{ gateGlyphOpen }}">⛩</span><span style="{{ gateLabelOpen }}">上↔中 · 开</span></div>
+          <div style="{{ gateMidBot }}"><span style="{{ gateGlyphClosed }}">⛩</span><span style="{{ gateLabelClosed }}">中↔下 · 闭</span></div>
+        </div>
+
+        <!-- enemy base : compact fort -->
+        <div onMouseEnter="{{ bossEnter }}" onMouseLeave="{{ bossLeave }}" style="{{ baseFoe }}">
+          <div style="{{ baseAuraFoe }}"></div>
+          <div style="{{ connFoe }}"></div>
+          <sc-if value="{{ bossHover }}" hint-placeholder-val="{{ false }}">
+            <div style="{{ boss.panel }}">
+              <div style="{{ boss.art }}"><span style="{{ boss.artGlyph }}">♛</span><div style="{{ boss.artTag }}">BOSS 立绘</div></div>
+              <div style="{{ boss.titleRow }}"><span style="{{ boss.title }}">{{ boss.name }}</span><span style="{{ boss.lvl }}">第7关</span></div>
+              <div style="{{ boss.sub }}">{{ boss.epithet }}</div>
+              <p style="{{ boss.bio }}">{{ boss.bio }}</p>
+              <div style="{{ boss.warLabel }}">战争史</div>
+              <p style="{{ boss.war }}">{{ boss.warText }}</p>
+              <div style="{{ boss.arrow }}"></div>
+            </div>
+          </sc-if>
+          <div style="{{ fortIconFoe }}">
+            <div style="{{ baseCrownFoe }}">♔</div>
+            <div style="{{ battlements }}"><sc-for list="{{ merlonsFoe }}" as="m" hint-placeholder-count="4"><div style="{{ m }}"></div></sc-for></div>
+            <div style="{{ baseShieldFoe }}"><span style="{{ baseGlyphFoe }}">♥</span></div>
+          </div>
+          <div style="{{ baseTagFoe }}">敌方</div>
+          <div style="{{ baseHpRow }}"><sc-for list="{{ foeHp }}" as="h" hint-placeholder-count="3"><div style="{{ h.gem }}"><div style="{{ h.facet }}"></div></div></sc-for></div>
+          <div style="{{ shaLabel }}">地煞牌</div>
+          <div style="{{ shaRow }}">
+            <sc-for list="{{ shaSlots }}" as="s" hint-placeholder-count="3">
+              <div onMouseEnter="{{ s.onEnter }}" onMouseLeave="{{ s.onLeave }}" style="{{ s.slot }}">
+                <span style="{{ s.mark }}">煞</span>
+                <sc-if value="{{ s.isHover }}" hint-placeholder-val="{{ false }}">
+                  <div style="{{ s.tip }}"><span style="{{ s.tipName }}">{{ s.name }}</span><span style="{{ s.tipRar }}">{{ s.rarName }}</span><div style="{{ s.tipDesc }}">{{ s.desc }}</div></div>
+                </sc-if>
+              </div>
+            </sc-for>
+          </div>
+        </div>
+      </div>
+
+      <!-- holy water horizontal bar (below board) -->
+      <div style="{{ waterBar }}">
+        <div style="{{ waterCap }}"><span style="font-family:var(--fd); font-size:20px; color:#dff4ff;">源</span></div>
+        <span style="font-size:10px; letter-spacing:.16em; text-transform:uppercase; color:var(--ink-dim); white-space:nowrap;">召唤源泉 · SUMMON FONT</span>
+        <div style="{{ waterTube }}">
+          <div style="{{ waterGlow }}"></div>
+          <sc-for list="{{ waterCells }}" as="c" hint-placeholder-count="10"><div style="{{ c.cell }}"><sc-if value="{{ c.lit }}" hint-placeholder-val="{{ false }}"><div style="{{ c.shine }}"></div></sc-if></div></sc-for>
+          <div style="{{ waterShimmer }}"></div>
+        </div>
+        <span style="font-family:var(--fn); font-size:22px; color:#cdeeff; text-shadow:0 0 10px rgba(77,182,232,.9);">{{ water }}</span>
+        <span style="{{ waterPlus }}">本回合 +1</span>
+      </div>
+    </div>
+
+    <!-- ===== BOTTOM : hand + actions ===== -->
+    <div style="{{ bottomBar }}">
+      <!-- action menu -->
+      <div style="{{ actionMenu }}">
+        <div style="font-size:10px; letter-spacing:.16em; text-transform:uppercase; color:var(--ink-dim); margin-bottom:8px;">本回合动作 · 四选一</div>
+        <div style="display:grid; grid-template-columns:1fr 1fr; gap:8px;">
+          <sc-for list="{{ actions }}" as="a" hint-placeholder-count="4">
+            <button onClick="{{ a.click }}" data-k="{{ a.key }}" style="{{ a.style }}" style-hover="{{ a.hover }}">
+              <span style="{{ a.icon }}">{{ a.glyph }}</span>
+              <span style="font-family:var(--fh); font-weight:700; font-size:14px;">{{ a.label }}</span>
+            </button>
+          </sc-for>
+        </div>
+        <div style="{{ actionHint }}">{{ actionSub }}</div>
+      </div>
+
+      <!-- hand -->
+      <div style="{{ handArea }}">
+        <div style="display:flex; align-items:center; gap:10px; margin-bottom:10px;">
+          <span style="font-family:var(--fh); font-weight:700; font-size:14px; color:var(--ink); letter-spacing:.04em;">手牌</span>
+          <span style="{{ handCount }}">兵牌 4</span>
+          <span style="{{ handCountGang }}">天罡 2</span>
+          <div style="flex:1;"></div>
+          <span style="font-size:11px; color:var(--ink-dim);">放牌消耗召唤源泉 · 拖到棋盘格落子</span>
+        </div>
+        <div style="display:flex; gap:11px; align-items:flex-end;">
+          <sc-for list="{{ hand }}" as="c" hint-placeholder-count="6">
+            <div onMouseEnter="{{ c.onEnter }}" onMouseLeave="{{ c.onLeave }}" style="{{ c.card }}">
+              <div style="{{ c.rarDot }}"></div>
+              <sc-if value="{{ c.isGang }}" hint-placeholder-val="{{ false }}">
+                <div style="{{ c.gangTop }}"><span style="{{ c.gangIcon }}">{{ c.glyph }}</span></div>
+                <div style="{{ c.gangBody }}">
+                  <div style="font-family:var(--fb); font-weight:700; font-size:13px; color:var(--ink); text-align:center;">{{ c.name }}</div>
+                  <div style="font-size:10px; color:var(--ink-dim); text-align:center; line-height:1.4; margin-top:4px;">{{ c.desc }}</div>
+                </div>
+                <div style="{{ c.costPill }}">★{{ c.cost }}</div>
+              </sc-if>
+              <sc-if value="{{ c.isPawn }}" hint-placeholder-val="{{ true }}">
+                <div style="{{ c.cornerTL }}">{{ c.rank }}<br>{{ c.glyph }}</div>
+                <span style="{{ c.bigGlyph }}">{{ c.glyph }}</span>
+                <div style="{{ c.pawnName }}">{{ c.name }}</div>
+                <div style="{{ c.powerBadge }}">{{ c.power }}</div>
+                <div style="{{ c.costPill }}">★{{ c.cost }}</div>
+                <div style="{{ c.zodRow }}"><sc-for list="{{ c.zodSlots }}" as="z" hint-placeholder-count="3"><div style="{{ z.style }}">{{ z.glyph }}</div></sc-for></div>
+              </sc-if>
+              <sc-if value="{{ c.isHover }}" hint-placeholder-val="{{ false }}">
+                <div style="{{ c.tip.wrap }}">
+                  <div style="{{ c.tip.head }}">
+                    <span style="{{ c.tip.name }}">{{ c.name }}</span>
+                    <span style="{{ c.tip.rarChip }}">{{ c.tip.rarName }}</span>
+                  </div>
+                  <div style="display:flex; gap:6px; margin-bottom:8px;"><span style="{{ c.tip.typeChip }}">{{ c.tip.typeName }}</span></div>
+                  <p style="{{ c.tip.lore }}">{{ c.tip.lore }}</p>
+                  <sc-for list="{{ c.tip.attrRows }}" as="a" hint-placeholder-count="2"><div style="{{ a.row }}"><span style="{{ a.k }}">{{ a.kText }}</span><span style="{{ a.v }}">{{ a.vText }}</span></div></sc-for>
+                  <sc-if value="{{ c.tip.hasZod }}" hint-placeholder-val="{{ false }}">
+                    <div style="{{ c.tip.zodLabel }}">地支附魔</div>
+                    <div style="{{ c.tip.zodRowBig }}"><sc-for list="{{ c.tip.zodChipsBig }}" as="zb" hint-placeholder-count="3"><span style="{{ zb.style }}">{{ zb.icon }}</span></sc-for></div>
+                  </sc-if>
+                  <div style="{{ c.tip.arrow }}"></div>
+                </div>
+              </sc-if>
+            </div>
+          </sc-for>
+        </div>
+      </div>
+    </div>
+
+    <!-- ===== CLASH FOCUS OVERLAY ===== -->
+    <div onClick="{{ closeClash }}" style="{{ clashBackdrop }}">
+      <div onClick="{{ stop }}" style="{{ clashPanel }}">
+        <div style="position:absolute; top:18px; left:24px; display:flex; align-items:center; gap:8px;"><span style="{{ clashLaneDot }}"></span><span style="font-family:var(--fh); font-weight:700; font-size:15px; color:#fff; letter-spacing:.05em;">中路 · 交界格 · 掷命对决</span></div>
+        <div onClick="{{ closeClash }}" style="{{ clashClose }}">✕</div>
+
+        <div style="display:flex; align-items:center; justify-content:center; gap:36px; margin-top:34px;">
+          <!-- mine -->
+          <div style="{{ duelCardMine }}">
+            <div style="{{ duelGlow }}"></div>
+            <div style="{{ duelCornerMine }}">A<br>♠</div>
+            <span style="{{ duelBigMine }}">♠</span>
+            <div style="{{ duelZodMine }}">虎</div>
+            <div style="{{ duelName }}">霸王</div>
+            <div style="{{ duelVerdictWin }}">正面 · 存活</div>
+          </div>
+
+          <div style="display:flex; flex-direction:column; align-items:center; gap:14px;">
+            <div style="{{ duelSpark }}"></div>
+            <div style="{{ vsCoin }}"><span style="font-family:var(--fd); font-size:30px;">掷</span></div>
+            <div style="font-family:var(--fn); font-size:13px; color:var(--gold);">命点 31/100</div>
+          </div>
+
+          <!-- foe -->
+          <div style="{{ duelCardFoe }}">
+            <div style="{{ duelCornerFoe }}">9<br>♥</div>
+            <span style="{{ duelBigFoe }}">♥</span>
+            <div style="{{ duelZodFoe }}">蛇</div>
+            <div style="{{ duelName }}">荆轲</div>
+            <div style="{{ duelVerdictLose }}">反面 · 阵亡</div>
+          </div>
+        </div>
+
+        <!-- odds + bonus -->
+        <div style="margin-top:30px; padding:0 30px;">
+          <div style="display:flex; justify-content:space-between; align-items:flex-end; margin-bottom:8px;">
+            <span style="font-family:var(--fn); font-size:24px; color:var(--accent);">76%</span>
+            <span style="font-size:11px; letter-spacing:.14em; text-transform:uppercase; color:rgba(255,255,255,.6);">胜率 · 战力差→概率</span>
+            <span style="font-family:var(--fn); font-size:24px; color:#5ea0e0;">24%</span>
+          </div>
+          <div style="{{ oddsTrack }}"><div style="{{ oddsMine }}"></div><div style="{{ oddsFoe }}"></div></div>
+          <div style="display:flex; gap:10px; margin-top:16px;">
+            <div style="{{ bonusCol }}">
+              <div style="{{ bonusHead }}">我方加成明细</div>
+              <sc-for list="{{ bonusMine }}" as="b" hint-placeholder-count="4"><div style="{{ b.row }}"><span style="flex:1; font-size:12px; color:rgba(255,255,255,.8);">{{ b.label }}</span><span style="{{ b.val }}">{{ b.num }}</span></div></sc-for>
+            </div>
+            <div style="{{ bonusCol }}">
+              <div style="{{ bonusHeadFoe }}">敌方加成明细</div>
+              <sc-for list="{{ bonusFoe }}" as="b" hint-placeholder-count="4"><div style="{{ b.row }}"><span style="flex:1; font-size:12px; color:rgba(255,255,255,.8);">{{ b.label }}</span><span style="{{ b.valFoe }}">{{ b.num }}</span></div></sc-for>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- demo: open clash -->
+    <button onClick="{{ openClash }}" style="{{ demoBtn }}">▶ 演示掷命对决</button>
+
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script>
+class Component extends DCLogic {
+  state = { skin: 'onyx', action: null, clash: false, hoverCard: null, hoverSha: null, hoverUnit: null, hoverBoss: false };
+
+  themes() {
+    return {
+      onyx: {
+        '--ink': '#e7edf3', '--ink-dim': '#8493a3',
+        '--gold': '#e8cd82', '--gold-grad': 'linear-gradient(180deg,#f5e6ad,#c69a44)',
+        '--accent': '#ff7a45', '--accent-grad': 'linear-gradient(180deg,#ff8d5a,#ee5a25)', '--accent-soft': 'rgba(255,122,69,.22)',
+        '--paper': 'radial-gradient(130% 120% at 50% -10%, #16273a 0%, #0e1b28 52%, #070e16 100%)',
+        '--board': 'radial-gradient(120% 100% at 50% 50%, #1d3a2c, #112318 78%)', '--board-edge': '#0b1a12',
+        '--lane': 'linear-gradient(90deg, rgba(255,122,69,.08), rgba(0,0,0,.12) 50%, rgba(58,134,212,.08))',
+        '--cell': 'rgba(255,255,255,.04)', '--cell-edge': 'rgba(255,255,255,.1)', '--cell-mine': 'rgba(255,122,69,.07)', '--cell-foe': 'rgba(58,134,212,.07)',
+        '--panel': 'linear-gradient(165deg,#172636,#0f1d2a)', '--panel-border': '#33485f', '--hairline': 'rgba(232,205,138,.18)', '--chip': 'rgba(255,255,255,.05)', '--track': 'rgba(0,0,0,.5)',
+        '--frame-edge': '#26384a', '--hp': '#46d17a', '--danger': '#ff5d62',
+        '--card-face': 'linear-gradient(158deg,#fcf9f1,#e6d8bd)',
+        '--chamfer': 'polygon(11px 0,100% 0,100% calc(100% - 11px),calc(100% - 11px) 100%,0 100%,0 11px)',
+        '--fd': "'Zhi Mang Xing', cursive", '--fh': "'Rajdhani', sans-serif", '--fb': "'Noto Sans SC', sans-serif", '--fn': "'Silkscreen', monospace",
+      },
+      brocade: {
+        '--ink': '#5a3f44', '--ink-dim': '#9a7a7e',
+        '--gold': '#cf9a3f', '--gold-grad': 'linear-gradient(180deg,#f3e2a4,#cf9a3f)',
+        '--accent': '#cf5070', '--accent-grad': 'linear-gradient(180deg,#e887a0,#cf5070)', '--accent-soft': 'rgba(207,80,112,.2)',
+        '--paper': 'radial-gradient(130% 120% at 50% -10%, #fdf4ee 0%, #f3e2dc 60%, #ecd6cf 100%)',
+        '--board': 'radial-gradient(120% 100% at 50% 50%, #cf9aa0, #ab6470 78%)', '--board-edge': '#7a4450',
+        '--lane': 'linear-gradient(90deg, rgba(207,80,112,.1), rgba(255,255,255,.1) 50%, rgba(58,134,212,.08))',
+        '--cell': 'rgba(255,255,255,.34)', '--cell-edge': 'rgba(122,68,80,.3)', '--cell-mine': 'rgba(207,80,112,.12)', '--cell-foe': 'rgba(58,134,212,.1)',
+        '--panel': 'linear-gradient(165deg,#fffaf3,#f8e7d6)', '--panel-border': '#e0c290', '--hairline': 'rgba(207,154,63,.45)', '--chip': 'rgba(255,255,255,.55)', '--track': 'rgba(150,110,90,.18)',
+        '--frame-edge': '#caa463', '--hp': '#2f8f6b', '--danger': '#d65668',
+        '--card-face': 'linear-gradient(158deg,#fffdf8,#f1e2cf)',
+        '--chamfer': 'polygon(11px 0,100% 0,100% calc(100% - 11px),calc(100% - 11px) 100%,0 100%,0 11px)',
+        '--fd': "'Ma Shan Zheng', cursive", '--fh': "'Cormorant Garamond', serif", '--fb': "'Noto Serif SC', serif", '--fn': "'Silkscreen', monospace",
+      },
+    };
+  }
+
+  renderVals() {
+    const T = this.themes()[this.state.skin];
+    const SUIT = { s: '#22303f', h: '#c0392b', d: '#c0651a', c: '#2d6a3f' };
+    const SUITG = { s: '♠', h: '♥', d: '♦', c: '♣' };
+    const ZOD_ICON = { '鼠': '🐀', '牛': '🐂', '虎': '🐅', '兔': '🐇', '龙': '🐉', '蛇': '🐍', '马': '🐎', '羊': '🐑', '猴': '🐒', '鸡': '🐓', '狗': '🐕', '猪': '🐖' };
+    const RAR = { white: ['普通', '#b9bec8'], green: ['优良', '#5bbf7a'], blue: ['稀有', '#3a9bff'], gold: ['传世', '#e8cd82'] };
+
+    const rootStyle = Object.assign({}, T, { minHeight: '100vh', background: '#0c0a08', padding: '22px', display: 'flex', justifyContent: 'center', fontFamily: 'var(--fb)' });
+    const frame = { position: 'relative', width: '1340px', height: '858px', borderRadius: '16px', overflow: 'hidden', background: 'var(--paper)', border: '3px solid var(--frame-edge)', boxShadow: '0 30px 80px rgba(0,0,0,.6), inset 0 0 0 1px var(--hairline)', display: 'flex', flexDirection: 'column' };
+
+    const topbar = { display: 'flex', alignItems: 'center', gap: '10px', padding: '13px 22px', borderBottom: '1px solid var(--panel-border)' };
+    const seal = { width: '42px', height: '42px', flex: 'none', borderRadius: '11px', background: 'linear-gradient(150deg,#3a4f78,#28385a)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#fff', fontSize: '22px', border: '1px solid var(--hairline)' };
+    const turnBox = { display: 'flex', alignItems: 'center', gap: '9px', padding: '7px 14px', borderRadius: '11px', background: 'var(--accent-soft)', border: '1px solid var(--accent)' };
+    const turnDot = { width: '9px', height: '9px', borderRadius: '50%', background: 'var(--accent)', boxShadow: '0 0 8px var(--accent)' };
+    const endTurnBtn = { padding: '10px 20px', borderRadius: '11px', clipPath: 'var(--chamfer)', cursor: 'pointer', border: 'none', background: 'var(--gold-grad)', color: '#2a1a08', fontFamily: 'var(--fh)', fontWeight: 700, fontSize: '15px', boxShadow: 'inset 0 1px 0 rgba(255,255,255,.4)' };
+    const hoverLift = { transform: 'translateY(-2px)', filter: 'brightness(1.06)' };
+    const seg = (on) => ({ padding: '7px 13px', borderRadius: '9px', cursor: 'pointer', border: '1px solid ' + (on ? 'var(--gold)' : 'var(--panel-border)'), background: on ? 'var(--gold-grad)' : 'transparent', color: on ? '#2a1a08' : 'var(--ink-dim)', fontFamily: 'var(--fh)', fontWeight: 700, fontSize: '13px', whiteSpace: 'nowrap' });
+
+    const body = { flex: 1, display: 'flex', flexDirection: 'column', minHeight: 0, overflow: 'hidden', padding: '10px 22px 6px', gap: '10px' };
+
+    // holy water HORIZONTAL bar (below board)
+    const waterMax = 10, waterVal = 6;
+    const waterBar = { flex: 'none', display: 'flex', alignItems: 'center', gap: '12px', padding: '9px 18px', borderRadius: '14px', background: 'var(--panel)', border: '1px solid var(--panel-border)', boxShadow: 'inset 0 0 0 1px var(--hairline)' };
+    const waterCap = { width: '36px', height: '36px', flex: 'none', borderRadius: '10px', background: 'radial-gradient(circle at 38% 30%, #7fd8f5, #2a7fb8)', border: '2px solid #bfeaff', display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: '0 0 16px rgba(77,182,232,.7), inset 0 1px 0 rgba(255,255,255,.6)' };
+    const waterTube = { position: 'relative', flex: 1, height: '34px', borderRadius: '12px', background: 'linear-gradient(180deg, rgba(10,30,46,.9), rgba(6,16,26,.95))', border: '2px solid #2f5e7e', overflow: 'hidden', display: 'flex', gap: '4px', padding: '4px', boxShadow: 'inset 0 0 14px rgba(0,0,0,.7), 0 0 0 1px rgba(191,234,255,.12)' };
+    const waterGlow = { position: 'absolute', left: 0, top: 0, bottom: 0, width: (waterVal / waterMax * 100) + '%', background: 'linear-gradient(90deg, rgba(127,216,245,.4), rgba(42,127,184,.15))', filter: 'blur(4px)', pointerEvents: 'none', zIndex: 0 };
+    const waterCells = Array.from({ length: waterMax }, (_, i) => {
+      const lit = i < waterVal;
+      return {
+        lit,
+        cell: { position: 'relative', flex: 1, borderRadius: '5px', zIndex: 1, background: lit ? 'linear-gradient(180deg,#8fe0ff,#2f93cf)' : 'rgba(255,255,255,.05)', border: '1px solid ' + (lit ? 'rgba(190,238,255,.8)' : 'rgba(255,255,255,.08)'), boxShadow: lit ? '0 0 10px rgba(95,200,240,.7), inset 0 1px 0 rgba(255,255,255,.6)' : 'none' },
+        shine: { position: 'absolute', top: '3px', left: '2px', right: '2px', height: '40%', borderRadius: '4px', background: 'linear-gradient(180deg, rgba(255,255,255,.6), transparent)' },
+      };
+    });
+    const waterShimmer = { position: 'absolute', top: '4px', bottom: '4px', left: '4px', width: (waterVal / waterMax * 100) + '%', borderRadius: '8px', background: 'linear-gradient(90deg, transparent 40%, rgba(255,255,255,.18) 50%, transparent 60%)', backgroundSize: '28px 100%', animation: 'g-water 1.4s linear infinite', pointerEvents: 'none', zIndex: 2 };
+    const waterPlus = { padding: '2px 9px', borderRadius: '99px', background: 'rgba(70,209,122,.18)', border: '1px solid var(--hp)', color: 'var(--hp)', fontFamily: 'var(--fh)', fontWeight: 700, fontSize: '11px', whiteSpace: 'nowrap' };
+    const water = waterVal;
+
+    // board
+    const boardWrap = { position: 'relative', flex: 1, minHeight: 0, display: 'flex', alignItems: 'stretch', gap: '6px', padding: '12px 10px', borderRadius: '18px', background: 'var(--board)', backgroundImage: 'radial-gradient(46% 80% at 50% 50%, rgba(232,205,138,.10), transparent 70%), repeating-linear-gradient(0deg, rgba(255,255,255,.035) 0 1px, transparent 1px 34px), repeating-linear-gradient(90deg, rgba(255,255,255,.035) 0 1px, transparent 1px 34px), repeating-linear-gradient(45deg, rgba(0,0,0,.05) 0 2px, transparent 2px 16px)', border: '6px solid var(--board-edge)', boxShadow: 'inset 0 0 0 2px rgba(255,255,255,.06), inset 0 0 90px rgba(0,0,0,.5)' };
+
+    // compact fort bases (narrow) + connector line
+    const mkBase = (isMine) => ({ position: 'relative', width: '92px', flex: 'none', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: '7px' });
+    const baseMine = mkBase(true);
+    const baseFoe = mkBase(false);
+    const baseAura = { position: 'absolute', top: '50%', left: '50%', width: '120px', height: '120px', transform: 'translate(-50%,-50%)', borderRadius: '50%', background: 'radial-gradient(circle, rgba(255,122,69,.32), transparent 68%)', animation: 'g-aura 3s ease-in-out infinite', pointerEvents: 'none' };
+    const baseAuraFoe = Object.assign({}, baseAura, { background: 'radial-gradient(circle, rgba(58,134,212,.3), transparent 68%)' });
+    const mkFort = (isMine) => {
+      const col = isMine ? '#ff7a45' : '#3a86d4';
+      return { position: 'relative', width: '74px', height: '88px', display: 'flex', alignItems: 'flex-end', justifyContent: 'center', paddingBottom: '12px', borderRadius: '12px 12px 10px 10px', background: 'linear-gradient(170deg,#fbf7ef,#dccaa8)', border: '3px solid ' + col, boxShadow: '0 0 24px ' + col + '66, 0 10px 22px rgba(0,0,0,.5), inset 0 0 0 2px rgba(255,255,255,.5)' };
+    };
+    const fortIcon = mkFort(true);
+    const fortIconFoe = mkFort(false);
+    const battlements = { position: 'absolute', top: '-7px', left: '6px', right: '6px', height: '12px', display: 'flex', justifyContent: 'space-between' };
+    const merlon = (isMine) => ({ width: '11px', height: '12px', borderRadius: '3px 3px 0 0', background: 'linear-gradient(180deg,#fbf7ef,#d8c39e)', border: '2px solid ' + (isMine ? '#ff7a45' : '#3a86d4'), borderBottom: 'none' });
+    const merlonsMine = Array.from({ length: 4 }, () => merlon(true));
+    const merlonsFoe = Array.from({ length: 4 }, () => merlon(false));
+    const baseCrown = { position: 'absolute', top: '-30px', left: '50%', transform: 'translateX(-50%)', fontSize: '26px', color: 'var(--gold)', textShadow: '0 2px 8px rgba(0,0,0,.6)', zIndex: 3 };
+    const baseCrownFoe = baseCrown;
+    const baseShield = { width: '42px', height: '48px', borderRadius: '50% 50% 50% 50% / 38% 38% 62% 62%', background: 'linear-gradient(160deg,#fff,#ece0c6)', border: '2px solid #ff7a45', display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: 'inset 0 0 0 1px rgba(255,255,255,.6)' };
+    const baseShieldFoe = Object.assign({}, baseShield, { border: '2px solid #3a86d4' });
+    const baseGlyph = { fontSize: '30px', color: '#22303f' };
+    const baseGlyphFoe = { fontSize: '30px', color: '#c0392b' };
+    const baseTag = { padding: '2px 11px', borderRadius: '99px', background: 'rgba(20,16,10,.8)', color: '#fff', fontFamily: 'var(--fh)', fontWeight: 700, fontSize: '12px', whiteSpace: 'nowrap', zIndex: 2 };
+    const baseTagFoe = baseTag;
+    const baseHpRow = { display: 'flex', gap: '5px', zIndex: 2 };
+    const hpGem = (alive, col) => ({ gem: { position: 'relative', width: '15px', height: '15px', transform: 'rotate(45deg)', borderRadius: '4px', background: alive ? 'linear-gradient(135deg,' + col + ',' + col + 'aa)' : 'rgba(0,0,0,.3)', border: '1px solid ' + (alive ? 'rgba(255,255,255,.7)' : 'rgba(255,255,255,.15)'), boxShadow: alive ? '0 0 9px ' + col : 'none' }, facet: { position: 'absolute', top: '2px', left: '2px', width: '5px', height: '5px', borderRadius: '2px', background: alive ? 'rgba(255,255,255,.8)' : 'transparent' } });
+    const mineHp = [true, true, true].map((a) => hpGem(a, '#ff5d62'));
+    const foeHp = [true, true, false].map((a) => hpGem(a, '#ff5d62'));
+    const connMine = { position: 'absolute', top: '50%', right: '-6px', width: '14px', height: '4px', transform: 'translateY(-50%)', background: 'linear-gradient(90deg, #ff7a45, transparent)', borderRadius: '99px', boxShadow: '0 0 8px rgba(255,122,69,.6)' };
+    const connFoe = { position: 'absolute', top: '50%', left: '-6px', width: '14px', height: '4px', transform: 'translateY(-50%)', background: 'linear-gradient(270deg, #3a86d4, transparent)', borderRadius: '99px', boxShadow: '0 0 8px rgba(58,134,212,.6)' };
+
+    // turn countdown (default infinite, level-driven)
+    const LEVEL_TIME = null; // seconds; null = ∞
+    const timed = LEVEL_TIME != null;
+    const timerLabel = timed ? '0:' + String(LEVEL_TIME).padStart(2, '0') : '∞ 无限时';
+    const timerBox = { display: 'flex', alignItems: 'center', gap: '5px', marginTop: '4px', padding: '3px 11px', borderRadius: '99px', background: timed ? 'rgba(255,93,46,.18)' : 'rgba(255,255,255,.06)', border: '1px solid ' + (timed ? 'var(--accent)' : 'var(--panel-border)'), zIndex: 2 };
+    const timerIcon = { fontSize: '12px' };
+    const timerText = { fontFamily: 'var(--fn)', fontSize: '12px', color: timed ? 'var(--accent)' : 'var(--ink-dim)', whiteSpace: 'nowrap' };
+
+    // enemy fort 3 地煞 slots
+    const SHA = [
+      ['filled', '地煞·破军', 'gold', '出牌时压制我方最高战力一格。'],
+      ['filled', '地煞·贪狼', 'blue', '每回合抽牌 +1。'],
+      ['empty', '未知地煞', 'white', '尚未揭示。'],
+    ];
+    const shaSlots = SHA.map(([st, name, rar, desc], i) => {
+      const rc = (RAR[rar] || RAR.white); const filled = st === 'filled';
+      const isH = this.state.hoverSha === i;
+      return {
+        filled, name, desc, rarName: rc[0], idx: i,
+        onEnter: () => this.setState({ hoverSha: i }), onLeave: () => this.setState({ hoverSha: null }), isHover: isH,
+        slot: { position: 'relative', width: '26px', height: '34px', borderRadius: '5px', background: filled ? 'linear-gradient(160deg,#2a3346,#1a2230)' : 'rgba(255,255,255,.04)', border: '1px solid ' + (filled ? rc[1] : 'rgba(255,255,255,.15)'), boxShadow: filled ? '0 0 8px ' + rc[1] + '66' : 'inset 0 1px 2px rgba(0,0,0,.3)', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: filled ? 'help' : 'default' },
+        mark: { fontFamily: 'var(--fd)', fontSize: '15px', color: filled ? rc[1] : 'rgba(255,255,255,.2)' },
+        tip: { position: 'absolute', left: '50%', bottom: 'calc(100% + 9px)', transform: 'translateX(-50%)', width: '156px', padding: '10px 11px', borderRadius: '11px', background: 'rgba(16,26,38,.72)', backdropFilter: 'blur(10px)', WebkitBackdropFilter: 'blur(10px)', border: '1px solid ' + rc[1], boxShadow: '0 14px 32px rgba(0,0,0,.6), 0 0 18px ' + rc[1] + '55', zIndex: 200, pointerEvents: 'none' },
+        tipName: { fontFamily: 'var(--fh)', fontWeight: 700, fontSize: '13px', color: '#fff' },
+        tipRar: { marginLeft: '6px', fontFamily: 'var(--fh)', fontWeight: 700, fontSize: '10px', color: rc[1] },
+        tipDesc: { fontSize: '10.5px', color: 'rgba(255,255,255,.8)', lineHeight: 1.5, marginTop: '5px' },
+      };
+    });
+    const shaRow = { display: 'flex', gap: '5px', marginTop: '5px', zIndex: 2 };
+    const shaLabel = { fontSize: '9px', letterSpacing: '.1em', color: 'var(--ink-dim)', marginTop: '6px' };
+
+    // enemy BOSS / war-history flyout (pops LEFT)
+    const boss = {
+      name: '楚霸王 · 项羽', epithet: '西楚霸王 · 力拔山兮气盖世',
+      bio: '巨鹿一役破釜沉舟,九战九捷。然刚愎自用,终败垓下。此关化身命运庄家,执黑桃主牌镇守中军。',
+      warText: '第七关「垓下绝唱」:四面楚歌之夜,汉军十面埋伏。守住三路命线,翻正过半即可撼动霸王本阵。',
+      panel: { position: 'absolute', right: 'calc(100% + 14px)', top: '50%', transform: 'translateY(-50%)', width: '270px', padding: '16px', borderRadius: '15px', background: 'rgba(16,26,38,.8)', backdropFilter: 'blur(12px)', WebkitBackdropFilter: 'blur(12px)', border: '1px solid #3a86d4', boxShadow: '0 20px 50px rgba(0,0,0,.7), 0 0 28px rgba(58,134,212,.4)', zIndex: 200, pointerEvents: 'none' },
+      art: { position: 'relative', height: '120px', borderRadius: '11px', background: 'radial-gradient(circle at 50% 36%, #3a4f78, #1a2236), repeating-linear-gradient(45deg, rgba(255,255,255,.04) 0 6px, transparent 6px 12px)', border: '1px solid rgba(58,134,212,.5)', display: 'flex', alignItems: 'center', justifyContent: 'center', overflow: 'hidden' },
+      artGlyph: { fontSize: '60px', color: '#9fc2ee', textShadow: '0 2px 12px rgba(0,0,0,.6)' },
+      artTag: { position: 'absolute', bottom: '7px', right: '9px', fontSize: '9px', letterSpacing: '.1em', color: 'rgba(255,255,255,.4)' },
+      titleRow: { display: 'flex', alignItems: 'baseline', gap: '8px', marginTop: '12px' },
+      title: { fontFamily: 'var(--fd)', fontSize: '24px', color: '#fff' },
+      lvl: { marginLeft: 'auto', padding: '2px 9px', borderRadius: '99px', background: 'rgba(58,134,212,.2)', border: '1px solid #3a86d4', color: '#7fb0e6', fontFamily: 'var(--fh)', fontWeight: 700, fontSize: '11px' },
+      sub: { fontSize: '11px', color: 'var(--gold)', marginTop: '3px' },
+      bio: { fontSize: '11.5px', color: 'rgba(255,255,255,.82)', lineHeight: 1.6, margin: '10px 0 0' },
+      warLabel: { fontSize: '10px', letterSpacing: '.16em', color: '#7fb0e6', margin: '11px 0 5px', paddingTop: '10px', borderTop: '1px solid rgba(255,255,255,.1)' },
+      war: { fontSize: '11.5px', color: 'rgba(255,255,255,.78)', lineHeight: 1.6, margin: 0 },
+      arrow: { position: 'absolute', left: '100%', top: '50%', transform: 'translateY(-50%)', width: 0, height: 0, borderTop: '8px solid transparent', borderBottom: '8px solid transparent', borderLeft: '9px solid #3a86d4', opacity: .8 },
+    };
+
+    const lanesCol = { position: 'relative', flex: 1, display: 'flex', flexDirection: 'column', gap: '10px', justifyContent: 'stretch', minHeight: 0 };
+
+    // lane data: each 9 slots (0-3 mine, 4 border, 5-8 foe)
+    const LANES = [
+      { name: '上路', units: { 1: ['K', 's', 13, ['虎', '马']], 2: ['9', 'c', 9, []], 6: ['Q', 'h', 12, ['蛇', '鸡', '猪']] } },
+      { name: '中路', units: { 0: ['A', 's', 18, ['虎', '龙', '猴']], 3: ['7', 'd', 7, ['牛']], 4: null, 5: ['9', 'h', 11, ['蛇', '羊']], 7: ['J', 'h', 10, []] }, clashAt: 4 },
+      { name: '下路', units: { 2: ['10', 'c', 11, ['鼠']], 7: ['K', 'd', 13, ['龙', '虎', '兔']] } },
+    ];
+    const lanes = LANES.map((L) => {
+      const slots = Array.from({ length: 9 }, (_, i) => {
+        const isMineZone = i < 4, isBorder = i === 4, isFoeZone = i > 4;
+        const u = L.units && L.units[i];
+        const isClash = L.clashAt === i;
+        const dotCol = isBorder ? 'rgba(232,205,138,.8)' : (isMineZone ? 'rgba(255,122,69,.55)' : 'rgba(58,134,212,.55)');
+        const cell = { position: 'relative', minWidth: 0, height: '100%', minHeight: 0, borderRadius: '11px', background: isBorder ? 'rgba(232,205,138,.16)' : 'transparent', boxShadow: isBorder ? 'inset 0 0 0 1px rgba(232,205,138,.35), inset 0 0 18px rgba(232,205,138,.18)' : 'none', display: 'flex', alignItems: 'center', justifyContent: 'center' };
+        const dot = { position: 'absolute', top: '50%', left: '50%', transform: 'translate(-50%,-50%)', width: '40px', height: '40px', borderRadius: '50%', border: '2px dashed ' + dotCol, opacity: u ? 0.35 : 0.8, boxShadow: isBorder ? '0 0 10px rgba(232,205,138,.4)' : 'none' };
+        const base = { hasUnit: !!u, isBorder, isClash, cell, dot };
+        if (u) {
+          const [rank, sk, power, zod] = u;
+          const col = isMineZone ? '#ff7a45' : '#3a86d4';
+          const zodArr = zod || [];
+          const uid = L.name + i;
+          const uHover = this.state.hoverUnit === uid;
+          const SUITNM = { s: '黑桃', h: '红桃', d: '方块', c: '梅花' };
+          Object.assign(base, {
+            rank, glyph: SUITG[sk], power, hasZodiac: zodArr.length > 0,
+            uHover, uOnEnter: () => this.setState({ hoverUnit: uid }), uOnLeave: () => this.setState({ hoverUnit: null }),
+            uName: SUITNM[sk] + rank, uSide: isMineZone ? '我方单位' : '敌方单位',
+            uTipWrap: { position: 'absolute', left: '50%', bottom: 'calc(100% + 10px)', transform: 'translateX(-50%)', width: '180px', padding: '11px 12px', borderRadius: '12px', background: 'rgba(16,26,38,.72)', backdropFilter: 'blur(10px)', WebkitBackdropFilter: 'blur(10px)', border: '1px solid ' + col, boxShadow: '0 14px 34px rgba(0,0,0,.6), 0 0 18px ' + col + '66', zIndex: 200, pointerEvents: 'none' },
+            uTipName: { fontFamily: 'var(--fh)', fontWeight: 700, fontSize: '14px', color: '#fff' },
+            uTipMeta: { fontSize: '10px', color: 'rgba(255,255,255,.6)', marginTop: '2px' },
+            uTipZodLabel: { fontSize: '10px', color: 'rgba(255,255,255,.55)', margin: '8px 0 5px' },
+            uZodRow2: { display: 'flex', gap: '5px' },
+            uZodChips: zodArr.length ? zodArr.map((g) => ({ icon: ZOD_ICON[g] || g, style: { display: 'inline-flex', alignItems: 'center', justifyContent: 'center', width: '38px', height: '38px', borderRadius: '9px', background: 'rgba(255,255,255,.92)', border: '2px solid ' + col, fontSize: '24px', boxShadow: '0 0 9px ' + col + '66' } })) : [{ icon: '未附魔', style: { display: 'inline-flex', fontSize: '11px', color: 'rgba(255,255,255,.4)' } }],
+            unit: { position: 'relative', width: '100%', height: '90%', borderRadius: '10px', background: 'var(--card-face)', border: '2px solid ' + col, boxShadow: '0 3px 8px rgba(0,0,0,.4), inset 0 0 0 1px rgba(255,255,255,.5)', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center' },
+            corner: { position: 'absolute', top: '4px', left: '5px', fontFamily: 'var(--fh)', fontWeight: 700, fontSize: '15px', color: SUIT[sk], zIndex: 2 },
+            bigGlyph: { fontSize: '40px', color: SUIT[sk], marginTop: '-6px' },
+            zodRow: { position: 'absolute', bottom: '5px', left: '50%', transform: 'translateX(-50%)', display: 'flex', gap: '3px' },
+            zodSlots: Array.from({ length: 3 }, (_, z) => {
+              const g = zodArr[z]; const filled = !!g;
+              return {
+                filled, glyph: filled ? (ZOD_ICON[g] || g) : '',
+                style: { width: '22px', height: '22px', borderRadius: '6px', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '15px', lineHeight: 1, background: filled ? 'rgba(255,255,255,.92)' : 'rgba(0,0,0,.06)', border: '1px solid ' + (filled ? SUIT[sk] : 'rgba(120,90,60,.3)'), color: filled ? SUIT[sk] : 'transparent', boxShadow: filled ? '0 0 6px ' + SUIT[sk] + '66, inset 0 0 0 1px rgba(255,255,255,.6)' : 'inset 0 1px 2px rgba(0,0,0,.15)' },
+              };
+            }),
+            powerBadge: { position: 'absolute', top: '4px', right: '5px', minWidth: '22px', padding: '1px 6px', borderRadius: '99px', background: col, color: '#fff', fontFamily: 'var(--fn)', fontSize: '11px', textAlign: 'center', boxShadow: '0 2px 5px rgba(0,0,0,.4)', zIndex: 2 },
+          });
+        }
+        if (isBorder) base.borderMark = { width: '20px', height: '20px', borderRadius: '50%', border: '1px dashed var(--gold)', opacity: .5 };
+        if (isClash) base.clashRing = { position: 'absolute', inset: '-3px', borderRadius: '11px', border: '2px solid var(--accent)', boxShadow: '0 0 16px var(--accent-soft)', animation: 'g-pulse 1.4s ease-in-out infinite' };
+        return base;
+      });
+      return {
+        name: L.name,
+        laneRow: { flex: 1, minHeight: 0, display: 'flex', alignItems: 'stretch', gap: '10px' },
+        laneTag: { width: '40px', flex: 'none', display: 'flex', alignItems: 'center', justifyContent: 'center', writingMode: 'vertical-rl', textAlign: 'center', padding: '8px 3px', borderRadius: '8px', background: 'var(--chip)', border: '1px solid var(--panel-border)', fontFamily: 'var(--fh)', fontWeight: 700, fontSize: '13px', color: 'var(--ink)', letterSpacing: '.1em' },
+        track: { position: 'relative', flex: 1, display: 'grid', gridTemplateColumns: 'repeat(9, 1fr)', gap: '6px', alignItems: 'stretch', padding: '8px 6px', borderRadius: '12px', background: 'var(--lane)', backgroundImage: 'var(--lane)', border: '1px solid var(--cell-edge)', boxShadow: 'inset 0 1px 0 rgba(255,255,255,.06), inset 0 0 26px rgba(0,0,0,.28)' },
+        slots,
+      };
+    });
+
+    // gates between adjacent lanes (top↔mid, mid↔bot)
+    const gateBase = { position: 'absolute', left: '48px', display: 'flex', alignItems: 'center', gap: '6px', zIndex: 4 };
+    const gateTopMid = Object.assign({}, gateBase, { top: '33.3%', transform: 'translateY(-50%)' });
+    const gateMidBot = Object.assign({}, gateBase, { top: '66.6%', transform: 'translateY(-50%)' });
+    const gateGlyphOpen = { fontSize: '24px', color: 'var(--hp)', textShadow: '0 0 12px var(--hp)', animation: 'g-gate 2s ease-in-out infinite' };
+    const gateLabelOpen = { padding: '2px 9px', borderRadius: '99px', background: 'rgba(70,209,122,.18)', border: '1px solid var(--hp)', color: 'var(--hp)', fontFamily: 'var(--fh)', fontWeight: 700, fontSize: '10px', whiteSpace: 'nowrap' };
+    const gateGlyphClosed = { fontSize: '24px', color: 'var(--ink-dim)', opacity: .6 };
+    const gateLabelClosed = { padding: '2px 9px', borderRadius: '99px', background: 'var(--chip)', border: '1px solid var(--panel-border)', color: 'var(--ink-dim)', fontFamily: 'var(--fh)', fontWeight: 700, fontSize: '10px', whiteSpace: 'nowrap' };
+
+    // bottom bar
+    const bottomBar = { position: 'relative', zIndex: 50, flex: 'none', height: '212px', display: 'flex', gap: '14px', padding: '12px 22px 16px', borderTop: '1px solid var(--panel-border)', background: 'linear-gradient(180deg,transparent,rgba(0,0,0,.18))' };
+
+    // action menu (mutually exclusive)
+    const ACTIONS = [
+      ['draw', '🎴', '抽牌', '天罡 / 扑克 二选'],
+      ['place', '♟', '放牌', '消耗源泉落子'],
+      ['gang', '✦', '打天罡', '施放法术牌'],
+      ['discard', '🗑', '弃牌', '弃手牌换资源'],
+    ];
+    const sel = this.state.action;
+    const ACT_SUB = { draw: '抽牌:天罡/扑克二选一', place: '放牌:消耗召唤源泉落子到格', gang: '打天罡:施放一张法术牌', discard: '弃牌:弃手牌换取资源', null: '选一类动作,其余本回合锁定' };
+    const actions = ACTIONS.map(([key, glyph, label, sub]) => {
+      const on = sel === key; const dim = sel && !on;
+      return {
+        key, glyph, label, sub,
+        click: () => this.setState({ action: on ? null : key }),
+        style: { display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px', padding: '9px 8px', borderRadius: '10px', cursor: dim ? 'not-allowed' : 'pointer', border: '1px solid ' + (on ? 'var(--accent)' : 'var(--panel-border)'), background: on ? 'var(--accent-grad)' : 'var(--chip)', color: on ? '#fff' : 'var(--ink)', opacity: dim ? 0.4 : 1, boxShadow: on ? '0 4px 14px var(--accent-soft)' : 'none', transition: 'all .15s', textAlign: 'center' },
+        hover: dim ? {} : { transform: 'translateY(-2px)', borderColor: 'var(--accent)' },
+        icon: { width: '26px', height: '26px', flex: 'none', borderRadius: '7px', background: on ? 'rgba(255,255,255,.2)' : 'var(--track)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '15px' },
+      };
+    });
+    const actionHint = { marginTop: '9px', padding: '8px 10px', borderRadius: '9px', background: 'var(--chip)', border: '1px solid var(--panel-border)', fontSize: '11px', color: 'var(--ink-dim)', lineHeight: 1.4, textAlign: 'center' };
+    const actionSub = ACT_SUB[sel || 'null'];
+
+    const handArea = { flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column', padding: '13px 16px', borderRadius: '14px', background: 'var(--panel)', border: '1px solid var(--panel-border)', boxShadow: 'inset 0 0 0 1px var(--hairline)' };
+    const handCount = { padding: '3px 10px', borderRadius: '99px', background: 'var(--accent-soft)', color: 'var(--accent)', fontFamily: 'var(--fh)', fontWeight: 700, fontSize: '11px', border: '1px solid var(--accent)' };
+    const handCountGang = { padding: '3px 10px', borderRadius: '99px', background: 'rgba(140,110,255,.16)', color: '#a98bff', fontFamily: 'var(--fh)', fontWeight: 700, fontSize: '11px', border: '1px solid #a98bff' };
+
+    // hand cards
+    const GANG_TINT = { '风': '#5ec8f0', '火': '#ff6a3d', '雷': '#c08bff', '土': '#cf9a3f' };
+    // [type, rank/glyph, suit, name, power, cost, zod/desc, rarity, lore, attrs[]]
+    const HAND = [
+      ['pawn', 'A', 's', '霸王', 18, 3, ['虎', '龙', '猴'], 'gold', '力能扛鼎,初始转速极稳,落地正面率冠绝全场。', [['正面率', '+18%'], ['压制', '低点数牌']]],
+      ['pawn', 'K', 'h', '霸下', 13, 2, ['龙'], 'blue', '负重之兽,落定时溅射相邻敌牌。', [['溅射', '相邻1格']]],
+      ['pawn', '9', 'c', '专诸', 9, 1, [], 'white', '鱼肠藏锋,廉价铺场兵。', []],
+      ['pawn', '7', 'd', '白圭', 7, 1, ['牛', '羊'], 'green', '治生有道,为同路牌配重 +favor。', [['配重', '+2']]],
+      ['gang', '火', null, '燎原', null, 2, '落点灼烧 · 持续掉血', 'gold', '烈焰焚野,落点持续灼烧。', [['灼烧', '3回合'], ['范围', '十字']]],
+      ['gang', '风', null, '回风', null, 1, '己方一路 +转速', 'blue', '清风助势,提升一路友牌转速。', [['转速', '+15%'], ['作用', '整条路']]],
+    ];
+    const hover = this.state.hoverCard;
+    const mkTip = (rar, type, name, lore, attrs, zodArr) => {
+      const rc = RAR[rar];
+      const za = zodArr || [];
+      return {
+        wrap: { position: 'absolute', left: '50%', bottom: 'calc(100% + 12px)', transform: 'translateX(-50%)', width: '210px', padding: '13px 14px', borderRadius: '13px', background: 'linear-gradient(180deg, rgba(27,39,55,.66), rgba(16,26,38,.66))', backdropFilter: 'blur(10px)', WebkitBackdropFilter: 'blur(10px)', border: '1px solid ' + rc[1], boxShadow: '0 16px 40px rgba(0,0,0,.6), 0 0 22px ' + rc[1] + '55, inset 0 0 0 1px rgba(255,255,255,.08)', zIndex: 200, pointerEvents: 'none' },
+        head: { display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '8px' },
+        name: { fontFamily: 'var(--fh)', fontWeight: 700, fontSize: '16px', color: '#fff' },
+        rarChip: { marginLeft: 'auto', padding: '2px 9px', borderRadius: '99px', background: rc[1] + '26', border: '1px solid ' + rc[1], color: rc[1], fontFamily: 'var(--fh)', fontWeight: 700, fontSize: '11px', whiteSpace: 'nowrap' },
+        typeChip: { padding: '2px 8px', borderRadius: '6px', background: 'rgba(255,255,255,.08)', color: 'rgba(255,255,255,.75)', fontSize: '10px', fontWeight: 700 },
+        lore: { fontSize: '11.5px', color: 'rgba(255,255,255,.82)', lineHeight: 1.55, margin: '0 0 9px' },
+        attrs, attrRows: (attrs || []).map(([k, v]) => ({ kText: k, vText: v, row: { display: 'flex', justifyContent: 'space-between', padding: '4px 0', borderTop: '1px solid rgba(255,255,255,.08)' }, k: { fontSize: '11px', color: 'rgba(255,255,255,.6)' }, v: { fontFamily: 'var(--fn)', fontSize: '11px', color: rc[1] } })),
+        hasZod: type !== 'gang', zodLabel: { fontSize: '10px', letterSpacing: '.1em', color: 'rgba(255,255,255,.55)', margin: '10px 0 6px' },
+        zodRowBig: { display: 'flex', gap: '7px' },
+        zodChipsBig: za.length ? za.map((g) => ({ icon: ZOD_ICON[g] || g, style: { display: 'inline-flex', alignItems: 'center', justifyContent: 'center', width: '38px', height: '38px', borderRadius: '9px', background: 'rgba(255,255,255,.92)', border: '2px solid ' + rc[1], fontSize: '24px', boxShadow: '0 0 9px ' + rc[1] + '66' } })) : [{ icon: '未附魔', style: { fontSize: '11px', color: 'rgba(255,255,255,.4)' } }],
+        rarName: rc[0], typeName: type === 'gang' ? '天罡牌' : '兵牌', arrow: { position: 'absolute', left: '50%', top: '100%', transform: 'translateX(-50%)', width: 0, height: 0, borderLeft: '7px solid transparent', borderRight: '7px solid transparent', borderTop: '8px solid ' + rc[1], opacity: .7 },
+      };
+    };
+    const hand = HAND.map((c, idx) => {
+      const isHover = hover === idx;
+      const rar = c[7];
+      const rc = RAR[rar];
+      const tip = mkTip(rar, c[0], c[3], c[8], c[9], c[0] === 'pawn' ? c[6] : null);
+      const onEnter = () => this.setState({ hoverCard: idx });
+      const onLeave = () => this.setState({ hoverCard: null });
+      if (c[0] === 'gang') {
+        const [, glyph, , name, , cost, desc] = c; const tint = GANG_TINT[glyph] || '#a98bff';
+        return {
+          isGang: true, isPawn: false, glyph, name, cost, desc, idx, isHover, onEnter, onLeave, tip,
+          card: { position: 'relative', width: '96px', height: '120px', borderRadius: '12px', overflow: 'visible', background: 'var(--panel)', border: '2px solid ' + rc[1], boxShadow: isHover ? '0 10px 26px rgba(0,0,0,.5), 0 0 20px ' + rc[1] + '88' : '0 6px 16px rgba(0,0,0,.4), inset 0 0 0 1px var(--hairline)', cursor: 'grab', transition: 'transform .15s, box-shadow .15s', transform: isHover ? 'translateY(-10px)' : 'none' },
+          gangTop: { height: '44px', borderRadius: '10px 10px 0 0', display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'linear-gradient(180deg,' + tint + '44,' + tint + '11)', borderBottom: '1px solid ' + tint },
+          gangIcon: { width: '40px', height: '40px', borderRadius: '50%', background: tint, display: 'flex', alignItems: 'center', justifyContent: 'center', fontFamily: 'var(--fd)', fontSize: '24px', color: '#fff', boxShadow: '0 0 14px ' + tint },
+          gangBody: { padding: '10px 9px' },
+          costPill: { position: 'absolute', top: '7px', right: '8px', minWidth: '22px', padding: '1px 6px', borderRadius: '99px', background: 'var(--gold-grad)', color: '#2a1a08', fontFamily: 'var(--fn)', fontSize: '11px', textAlign: 'center', fontWeight: 700 },
+          rarDot: { position: 'absolute', top: '8px', left: '8px', width: '10px', height: '10px', borderRadius: '50%', background: rc[1], boxShadow: '0 0 7px ' + rc[1], border: '1px solid rgba(255,255,255,.6)' },
+        };
+      }
+      const [, rank, sk, name, power, cost, zod] = c;
+      const zodA = zod || [];
+      return {
+        isGang: false, isPawn: true, rank, glyph: SUITG[sk], name, power, cost, idx, isHover, onEnter, onLeave, tip,
+        card: { position: 'relative', width: '96px', height: '120px', borderRadius: '12px', background: 'var(--card-face)', border: '2px solid ' + rc[1], boxShadow: isHover ? '0 10px 26px rgba(0,0,0,.5), 0 0 20px ' + rc[1] + '88' : '0 6px 16px rgba(0,0,0,.4), inset 0 0 0 1px rgba(255,255,255,.5)', cursor: 'grab', display: 'flex', alignItems: 'center', justifyContent: 'center', transition: 'transform .15s, box-shadow .15s', transform: isHover ? 'translateY(-10px)' : 'none' },
+        cornerTL: { position: 'absolute', top: '5px', left: '7px', fontFamily: 'var(--fh)', fontWeight: 700, fontSize: '14px', lineHeight: '.86', color: SUIT[sk], textAlign: 'center' },
+        cornerBR: { position: 'absolute', bottom: '5px', right: '7px', fontFamily: 'var(--fh)', fontWeight: 700, fontSize: '14px', lineHeight: '.86', color: SUIT[sk], textAlign: 'center', transform: 'rotate(180deg)' },
+        bigGlyph: { fontSize: '36px', color: SUIT[sk], marginTop: '-14px' },
+        pawnName: { position: 'absolute', bottom: '30px', left: '50%', transform: 'translateX(-50%)', padding: '1px 9px', borderRadius: '99px', background: 'rgba(20,16,10,.8)', color: '#fff', fontFamily: 'var(--fb)', fontWeight: 700, fontSize: '11px', whiteSpace: 'nowrap' },
+        powerBadge: { position: 'absolute', top: '6px', right: '7px', minWidth: '22px', padding: '1px 6px', borderRadius: '99px', background: '#ff7a45', color: '#fff', fontFamily: 'var(--fn)', fontSize: '10px', textAlign: 'center', fontWeight: 700 },
+        costPill: { position: 'absolute', top: '6px', left: '7px', minWidth: '22px', padding: '1px 6px', borderRadius: '99px', background: 'var(--gold-grad)', color: '#2a1a08', fontFamily: 'var(--fn)', fontSize: '11px', textAlign: 'center', fontWeight: 700 },
+        rarDot: { position: 'absolute', top: '-4px', left: '50%', transform: 'translateX(-50%)', width: '9px', height: '9px', borderRadius: '50%', background: rc[1], boxShadow: '0 0 7px ' + rc[1], border: '1px solid rgba(255,255,255,.6)' },
+        zodRow: { position: 'absolute', bottom: '6px', left: '50%', transform: 'translateX(-50%)', display: 'flex', gap: '3px' },
+        zodSlots: Array.from({ length: 3 }, (_, z) => {
+          const g = zodA[z]; const filled = !!g;
+          return { filled, glyph: filled ? (ZOD_ICON[g] || g) : '', style: { width: '20px', height: '20px', borderRadius: '5px', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '13px', lineHeight: 1, background: filled ? 'rgba(255,255,255,.92)' : 'rgba(0,0,0,.06)', border: '1px solid ' + (filled ? SUIT[sk] : 'rgba(120,90,60,.3)'), boxShadow: filled ? '0 0 5px ' + SUIT[sk] + '66' : 'inset 0 1px 2px rgba(0,0,0,.15)' } };
+        }),
+      };
+    });
+
+    // clash overlay
+    const clashBackdrop = { position: 'absolute', inset: 0, zIndex: 40, display: this.state.clash ? 'flex' : 'none', alignItems: 'center', justifyContent: 'center', background: 'rgba(6,9,13,.74)', backdropFilter: 'blur(5px)' };
+    const clashPanel = { position: 'relative', width: '760px', padding: '30px 34px 36px', borderRadius: '22px', background: 'radial-gradient(80% 70% at 50% 30%, #1c2940, #0e1828)', border: '2px solid var(--gold)', boxShadow: 'inset 0 0 0 1px var(--hairline), 0 40px 90px rgba(0,0,0,.7), 0 0 60px rgba(232,205,138,.2)' };
+    const clashLaneDot = { width: '10px', height: '10px', borderRadius: '50%', background: '#e0973a', boxShadow: '0 0 10px #e0973a' };
+    const clashClose = { position: 'absolute', top: '16px', right: '20px', width: '34px', height: '34px', borderRadius: '9px', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', background: 'rgba(255,255,255,.08)', border: '1px solid rgba(255,255,255,.18)', color: 'rgba(255,255,255,.7)' };
+    const mkDuelCard = (isMine, won) => {
+      const col = isMine ? '#ff7a45' : '#3a86d4';
+      return { position: 'relative', width: '180px', height: '252px', borderRadius: '15px', background: 'var(--card-face)', border: '4px solid ' + (won ? col : 'var(--danger)'), boxShadow: won ? '0 0 44px ' + col + '88, 0 20px 40px rgba(0,0,0,.5)' : '0 20px 40px rgba(0,0,0,.6)', display: 'flex', alignItems: 'center', justifyContent: 'center', opacity: won ? 1 : 0.6, filter: won ? 'none' : 'grayscale(.5) brightness(.8)' };
+    };
+    const duelCardMine = mkDuelCard(true, true);
+    const duelCardFoe = mkDuelCard(false, false);
+    const duelGlow = { position: 'absolute', inset: '-20px', borderRadius: '24px', background: 'radial-gradient(circle, rgba(255,122,69,.4), transparent 70%)', pointerEvents: 'none' };
+    const duelCornerMine = { position: 'absolute', top: '9px', left: '11px', fontFamily: 'var(--fh)', fontWeight: 700, fontSize: '22px', lineHeight: '.86', color: '#22303f', textAlign: 'center' };
+    const duelCornerFoe = Object.assign({}, duelCornerMine, { color: '#c0392b' });
+    const duelBigMine = { fontSize: '96px', color: '#22303f' };
+    const duelBigFoe = { fontSize: '96px', color: '#c0392b' };
+    const duelZodMine = { position: 'absolute', top: '10px', right: '12px', width: '32px', height: '32px', borderRadius: '8px', background: 'rgba(150,30,30,.14)', border: '1.5px solid #22303f', display: 'flex', alignItems: 'center', justifyContent: 'center', fontFamily: 'var(--fd)', fontSize: '21px', color: '#22303f' };
+    const duelZodFoe = Object.assign({}, duelZodMine, { border: '1.5px solid #c0392b', color: '#c0392b' });
+    const duelName = { position: 'absolute', bottom: '34px', left: '50%', transform: 'translateX(-50%)', padding: '3px 15px', borderRadius: '99px', background: 'rgba(20,16,10,.8)', color: '#fff', fontFamily: 'var(--fb)', fontWeight: 700, fontSize: '15px', whiteSpace: 'nowrap' };
+    const duelVerdictWin = { position: 'absolute', bottom: '-15px', left: '50%', transform: 'translateX(-50%)', padding: '4px 16px', borderRadius: '99px', background: 'var(--hp)', color: '#06281a', fontFamily: 'var(--fh)', fontWeight: 700, fontSize: '14px', whiteSpace: 'nowrap', boxShadow: '0 4px 12px rgba(0,0,0,.4)' };
+    const duelVerdictLose = { position: 'absolute', bottom: '-15px', left: '50%', transform: 'translateX(-50%)', padding: '4px 16px', borderRadius: '99px', background: 'var(--danger)', color: '#fff', fontFamily: 'var(--fh)', fontWeight: 700, fontSize: '14px', whiteSpace: 'nowrap', boxShadow: '0 4px 12px rgba(0,0,0,.4)' };
+    const duelSpark = { width: '90px', height: '90px', borderRadius: '50%', background: 'radial-gradient(circle, rgba(255,235,160,.95), rgba(255,150,40,.4) 50%, transparent 72%)', animation: 'g-spark 1.2s ease-in-out infinite' };
+    const vsCoin = { width: '72px', height: '72px', borderRadius: '50%', background: 'var(--gold-grad)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#2a1a08', border: '3px solid #fff', boxShadow: '0 0 26px rgba(232,205,138,.6)', marginTop: '-30px' };
+    const oddsTrack = { position: 'relative', height: '26px', borderRadius: '99px', background: 'rgba(0,0,0,.5)', overflow: 'hidden', display: 'flex' };
+    const oddsMine = { width: '76%', background: 'var(--accent-grad)', boxShadow: '0 0 14px var(--accent-soft)' };
+    const oddsFoe = { width: '24%', background: 'linear-gradient(180deg,#5ea0e0,#2a5f9e)' };
+    const bonusCol = { flex: 1, padding: '12px 14px', borderRadius: '12px', background: 'rgba(255,255,255,.05)', border: '1px solid rgba(255,255,255,.12)' };
+    const bonusHead = { fontSize: '11px', letterSpacing: '.12em', textTransform: 'uppercase', color: 'var(--accent)', marginBottom: '9px', fontWeight: 700 };
+    const bonusHeadFoe = Object.assign({}, bonusHead, { color: '#5ea0e0' });
+    const mkBonus = (rows, col) => rows.map(([label, num]) => ({ label, num, row: { display: 'flex', alignItems: 'center', padding: '4px 0' }, val: { fontFamily: 'var(--fn)', fontSize: '14px', color: col }, valFoe: { fontFamily: 'var(--fn)', fontSize: '14px', color: '#5ea0e0' } }));
+    const bonusMine = mkBonus([['点数(基础)', 14], ['经营(养成)', 22], ['天罡(法术)', 18], ['士气(主将)', 30]], 'var(--accent)');
+    const bonusFoe = mkBonus([['点数(基础)', 9], ['经营(养成)', 10], ['天罡(法术)', 6], ['士气(主将)', 0]], '#5ea0e0');
+
+    const demoBtn = { position: 'absolute', bottom: '14px', right: '24px', zIndex: 20, padding: '8px 16px', borderRadius: '10px', cursor: 'pointer', border: '1px solid var(--gold)', background: 'rgba(232,205,138,.12)', color: 'var(--gold)', fontFamily: 'var(--fh)', fontWeight: 700, fontSize: '13px' };
+
+    return {
+      rootStyle, frame, topbar, seal,
+      turnBox, turnDot, turnWho: '我方回合', roundNo: 4, endTurnBtn, hoverLift,
+      skinOnyx: () => this.setState({ skin: 'onyx' }), skinBrocade: () => this.setState({ skin: 'brocade' }),
+      segOnyx: seg(this.state.skin === 'onyx'), segBrocade: seg(this.state.skin === 'brocade'),
+      body, waterBar, waterCap, waterTube, waterGlow, waterCells, waterShimmer, waterPlus, water,
+      boardWrap, baseMine, baseFoe, baseAura, baseAuraFoe, fortIcon, fortIconFoe, battlements, merlonsMine, merlonsFoe, baseCrown, baseCrownFoe, baseShield, baseShieldFoe, baseGlyph, baseGlyphFoe, baseTag, baseTagFoe, baseHpRow, mineHp, foeHp, connMine, connFoe,
+      timerBox, timerIcon, timerText, timerLabel, shaSlots, shaRow, shaLabel,
+      boss, bossHover: this.state.hoverBoss, bossEnter: () => this.setState({ hoverBoss: true }), bossLeave: () => this.setState({ hoverBoss: false }),
+      lanesCol, lanes,
+      gateTopMid, gateMidBot, gateGlyphOpen, gateLabelOpen, gateGlyphClosed, gateLabelClosed,
+      bottomBar, actionMenu: { width: '230px', flex: 'none', padding: '13px 14px', borderRadius: '14px', background: 'var(--panel)', border: '1px solid var(--panel-border)', boxShadow: 'inset 0 0 0 1px var(--hairline)' }, actions,
+      handArea, handCount, handCountGang, hand, actionHint, actionSub,
+      clashBackdrop, clashPanel, clashLaneDot, clashClose, openClash: () => this.setState({ clash: true }), closeClash: () => this.setState({ clash: false }), stop: (e) => e.stopPropagation(),
+      duelCardMine, duelCardFoe, duelGlow, duelCornerMine, duelCornerFoe, duelBigMine, duelBigFoe, duelZodMine, duelZodFoe, duelName, duelVerdictWin, duelVerdictLose, duelSpark, vsCoin,
+      oddsTrack, oddsMine, oddsFoe, bonusCol, bonusHead, bonusHeadFoe, bonusMine, bonusFoe, demoBtn,
+    };
+  }
+}
+</script>
+</body>
+</html>
