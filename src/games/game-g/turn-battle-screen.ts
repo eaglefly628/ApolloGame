@@ -3,7 +3,7 @@
 //   只读 TurnBattleView（由 buildTurnBattleView 从 turn-combat 真状态派生）→ 出 HTML 串；不进 hash、不回灌判定。
 // 静态渲染 = 设计稿"静息态"(无 hover tooltip / 无 boss 飞出)；clash 特写覆盖层按 view.clash 选渲。live mount + 交互为后续切片。
 import { cardPoints } from './clash-resolve.js';
-import { SLOTS, MANA_PER_TURN, GATES, type TurnBattle, type TurnUnit } from './turn-combat.js';
+import { SLOTS, MANA_PER_TURN, GATES, A_DEPLOY_SLOT, B_DEPLOY_SLOT, type TurnBattle, type TurnUnit } from './turn-combat.js';
 
 type Style = Record<string, string | number | undefined>;
 const st = (o: Style): string => Object.entries(o).filter(([, v]) => v !== undefined).map(([k, v]) => k.replace(/[A-Z]/g, (m) => '-' + m.toLowerCase()) + ':' + v).join(';');
@@ -62,7 +62,7 @@ const CSS = `
 const HL = ';outline:3px solid var(--gold);outline-offset:2px;animation:g-hl 1s ease-in-out infinite;position:relative;z-index:55';
 
 // ── 视图（buildTurnBattleView 从 turn-combat 派生喂渲染器；纯数据） ──
-export interface TurnSlotView { hasUnit: boolean; mine: boolean; isBorder: boolean; isClash: boolean; rank?: string; suit?: 's' | 'h' | 'd' | 'c'; power?: number; zod?: string[] }
+export interface TurnSlotView { hasUnit: boolean; mine: boolean; isBorder: boolean; isClash: boolean; rank?: string; suit?: 's' | 'h' | 'd' | 'c'; power?: number; zod?: string[]; deploy?: 1 | 2; deployLabel?: boolean } // deploy：1=我方放牌区 / 2=敌方放牌区（贴各自大本营 3 格）
 export interface TurnLaneView { name: string; slots: TurnSlotView[] }
 // 捷径门箭头（占位·8 门·真视觉待 owner 参考图）。idx=GATES 下标·供 live mount data-gate 钩子。
 export interface TurnGateView { idx: number; open: boolean; side: 'a' | 'b'; fromLane: number; fromSlot: number; toLane: number; toSlot: number }
@@ -169,7 +169,11 @@ function fortBase(view: TurnBattleView, isMine: boolean): string {
 // 一格 slot（设计稿 lanes.slots）。
 function slotCell(s: TurnSlotView): string {
   const isMineZone = !s.isBorder && s.mine; const dotCol = s.isBorder ? 'rgba(232,205,138,.8)' : (s.hasUnit ? (s.mine ? 'rgba(255,122,69,.55)' : 'rgba(58,134,212,.55)') : (isMineZone ? 'rgba(255,122,69,.55)' : 'rgba(58,134,212,.55)'));
-  const cell = { position: 'relative', minWidth: 0, height: '100%', minHeight: 0, borderRadius: '11px', background: s.isBorder ? 'rgba(232,205,138,.16)' : 'transparent', boxShadow: s.isBorder ? 'inset 0 0 0 1px rgba(232,205,138,.35), inset 0 0 18px rgba(232,205,138,.18)' : 'none', display: 'flex', alignItems: 'center', justifyContent: 'center' };
+  // 放牌区底纹（贴各自大本营 3 格·owner 2026-06-20）：我方暖橙 / 敌方冷蓝·虚线内框 + 中格「放牌区」标。
+  const depBg = s.deploy === 1 ? 'rgba(255,122,69,.10)' : s.deploy === 2 ? 'rgba(58,134,212,.09)' : 'transparent';
+  const depEdge = s.deploy === 1 ? 'inset 0 0 0 1.5px rgba(255,122,69,.34)' : s.deploy === 2 ? 'inset 0 0 0 1.5px rgba(58,134,212,.3)' : '';
+  const cell = { position: 'relative', minWidth: 0, height: '100%', minHeight: 0, borderRadius: '11px', background: s.isBorder ? 'rgba(232,205,138,.16)' : depBg, boxShadow: s.isBorder ? 'inset 0 0 0 1px rgba(232,205,138,.35), inset 0 0 18px rgba(232,205,138,.18)' : depEdge, display: 'flex', alignItems: 'center', justifyContent: 'center' };
+  const depLabel = s.deployLabel ? `<div style="${st({ position: 'absolute', top: '4px', left: '50%', transform: 'translateX(-50%)', fontFamily: 'var(--fh)', fontWeight: 700, fontSize: '9px', letterSpacing: '.12em', color: s.deploy === 1 ? 'rgba(255,160,110,.9)' : 'rgba(120,180,240,.85)', whiteSpace: 'nowrap', pointerEvents: 'none', zIndex: 1 })}">放牌区</div>` : '';
   const dot = { position: 'absolute', top: '50%', left: '50%', transform: 'translate(-50%,-50%)', width: '40px', height: '40px', borderRadius: '50%', border: '2px dashed ' + dotCol, opacity: s.hasUnit ? 0.35 : 0.8, boxShadow: s.isBorder ? '0 0 10px rgba(232,205,138,.4)' : 'none' };
   let unitHTML = '';
   if (s.hasUnit && s.rank && s.suit) {
@@ -186,7 +190,7 @@ function slotCell(s: TurnSlotView): string {
     unitHTML = `<div style="${st(unit)}"><div style="${st(corner)}">${esc(s.rank)}${SUITG[s.suit]}</div><span style="${st(big)}">${SUITG[s.suit]}</span><div style="${st(badge)}">${s.power ?? ''}</div><div style="${st(zodRow)}">${forr([0, 1, 2], (z) => zodCell(zod[z]))}</div></div>`;
   }
   const ring = s.isClash ? `<div style="${st({ position: 'absolute', inset: '-3px', borderRadius: '11px', border: '2px solid var(--accent)', boxShadow: '0 0 16px var(--accent-soft)', animation: 'g-pulse 1.4s ease-in-out infinite' })}"></div>` : '';
-  return `<div style="${st(cell)}"><div style="${st(dot)}"></div>${unitHTML}${ring}</div>`;
+  return `<div style="${st(cell)}">${depLabel}<div style="${st(dot)}"></div>${unitHTML}${ring}</div>`;
 }
 
 function laneRow(L: TurnLaneView, li: number, hiOn = false): string {
@@ -363,11 +367,14 @@ export function buildTurnBattleView(b: TurnBattle, opts: TurnViewOpts = {}): Tur
     for (const u of L.a) bySlot.set(u.slot, { u, mine: true });
     for (const u of L.b) bySlot.set(u.slot, { u, mine: false });
     const adj = L.a.length > 0 && L.b.length > 0 && Math.abs(L.a[0].slot - L.b[0].slot) <= 1;
+    const dep = (i: number): 1 | 2 | undefined => (i <= A_DEPLOY_SLOT ? 1 : i >= B_DEPLOY_SLOT ? 2 : undefined); // 我方放牌区 0..2 / 敌方 6..8
     const slots: TurnSlotView[] = Array.from({ length: SLOTS }, (_, i) => {
       const hit = bySlot.get(i);
+      // isClash 标在两军真前锋格(landed bugfix·非固定中线 4) + 放牌区底纹/标签
+      const base = { isBorder: i === 4, isClash: adj && (i === L.a[0]?.slot || i === L.b[0]?.slot), deploy: dep(i), deployLabel: i === 1 || i === 7 };
       return hit
-        ? { hasUnit: true, mine: hit.mine, isBorder: i === 4, isClash: adj && (i === L.a[0]?.slot || i === L.b[0]?.slot), rank: hit.u.rank, suit: lc(hit.u.suit), power: hit.u.points + hit.u.buff, zod: [] }
-        : { hasUnit: false, mine: i < 4, isBorder: i === 4, isClash: adj && (i === L.a[0]?.slot || i === L.b[0]?.slot) };
+        ? { ...base, hasUnit: true, mine: hit.mine, rank: hit.u.rank, suit: lc(hit.u.suit), power: hit.u.points + hit.u.buff, zod: [] }
+        : { ...base, hasUnit: false, mine: i < 4 };
     });
     return { name: laneNames[li] ?? ('路' + li), slots };
   });
@@ -378,7 +385,7 @@ export function buildTurnBattleView(b: TurnBattle, opts: TurnViewOpts = {}): Tur
   const ACT: [string, string, string][] = [['draw', '🎴', '抽牌'], ['deploy', '♟', '放牌'], ['cast', '✦', '打天罡'], ['discard', '🗑', '弃牌']];
   const sel = b.actionTaken;
   const mode = opts.selMode ?? sel; // 当前高亮动作类：未提交时取 UI 选中(selMode)，已锁则取 actionTaken
-  const SUB: Record<string, string> = { draw: '抽牌:天罡/扑克二选一', deploy: '放牌:选手牌→点路落子(放牌可翻门)', cast: '打天罡:选一张法术牌施放', discard: '弃牌:免费·选手牌弃掉腾位', '': '选一类动作,其余本回合锁定' };
+  const SUB: Record<string, string> = { draw: '抽牌:天罡/扑克二选一', deploy: '放牌:免费·有牌就一直放(放牌区=贴家3格)→放完可点机关门(箭头)翻门调度·或结束回合', cast: '打天罡:选一张法术牌施放', discard: '弃牌:免费·选手牌弃掉腾位', '': '选一类动作,其余本回合锁定' };
   const actions: TurnActionView[] = ACT.map(([key, glyph, label]) => ({ key, glyph, label, on: mode === key, dim: !!sel && sel !== key }));
   return {
     theme: opts.theme ?? 'onyx',

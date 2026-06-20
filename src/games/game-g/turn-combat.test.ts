@@ -45,14 +45,18 @@ describe('Game G · turn-combat（doc24 单机回合制 · A0 重构）', () => 
     expect(drawCard(c, 'a', 'poker')).toBe(false);  // 已锁 discard → 不能抽
   });
 
-  it('放牌：扑克兵上场到我方部署格 + 花召唤源泉；放牌可顺手翻门(闭↔开)', () => {
-    const b = initTurnBattle({ seed: 1 }); b.a.mana = 2; b.a.hand.push(poker('h0', 'Q'));
+  it('放牌：扑克兵上场到放牌区(贴家)·免费·有牌可一直放；放牌可顺手翻门(闭↔开)', () => {
+    const b = initTurnBattle({ seed: 1 }); b.a.mana = 2; b.a.hand.push(poker('h0', 'Q'), poker('h1', 'K'), poker('h2', '7'));
     expect(b.gatesOpen[0]).toBe(false);              // 默认闭 ✕
     expect(deployUnit(b, 'a', 0, 1, 0)).toBe(true);  // gateToggle=0 → 顺手翻 0 号捷径门
     expect(b.lanes[1].a.length).toBe(1);
-    expect(b.lanes[1].a[0].slot).toBe(A_DEPLOY_SLOT);
+    expect(b.lanes[1].a[0].slot).toBe(A_DEPLOY_SLOT); // 队首在放牌区前沿(贴家3格之首)
     expect(b.gatesOpen[0]).toBe(true);               // 翻成 ◉(通路)
-    expect(b.a.mana).toBe(1); expect(b.actionTaken).toBe('deploy');
+    expect(b.a.mana).toBe(2);                        // 放牌免费·召唤源泉不减(owner 2026-06-20)
+    expect(deployUnit(b, 'a', 0, 1)).toBe(true);     // 第二张照样放（同回合·无数张·只要有牌）
+    expect(deployUnit(b, 'a', 0, 1)).toBe(true);     // 第三张
+    expect(b.lanes[1].a.length).toBe(3); expect(b.a.mana).toBe(2); // 三张全上·源泉仍 2
+    expect(b.actionTaken).toBe('deploy');
     expect(turnActive(b)).toBe(true);                // 场上有兵 → 未决
   });
 

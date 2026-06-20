@@ -15,14 +15,14 @@ import { aggregateDisha, type DishaFx } from './disha.js';
 
 // ── 棋盘几何（doc24 §一）──
 export const SLOTS = 9;          // 每路格数：我方 0..3 / 中线 4 / 敌方 5..8
-export const A_DEPLOY_SLOT = 3;  // §七 建议：我方部署入"最后格"(我区最前·贴中线)
-export const B_DEPLOY_SLOT = 5;  // 敌方对称
+export const A_DEPLOY_SLOT = 2;  // 放牌区=贴自家大本营的 3 格(0/1/2)·队首在 2(区前沿)向家排(owner 2026-06-20：放家边·非贴中线·从家行军出去)
+export const B_DEPLOY_SLOT = 6;  // 敌方对称：放牌区=贴敌家 3 格(6/7/8)·队首在 6
 export const A_GOAL = 8;         // 我兵越过此格(→9) → 敌大本营 −1 血
 export const B_GOAL = 0;         // 敌兵越过此格(→−1) → 我大本营 −1 血
 // ── 回合经济（doc24 §四·真机调；各 cost 暂定 1）──
 export const TURN_HOME_BLOOD = 3;
 export const MANA_START = 1, MANA_PER_TURN = 1;
-export const DRAW_COST = 1, DEPLOY_COST = 1, CAST_COST = 1; // 抽/放/打天罡 花召唤源泉；弃免费
+export const DRAW_COST = 1, DEPLOY_COST = 0, CAST_COST = 1; // 抽/打天罡 花召唤源泉；放牌免费·只要有牌可一直放(owner 2026-06-20)；弃免费
 export const OPENING_HAND = 3; // 起手摸 N（doc24 §六/七 待定）
 export const HAND_MAX = 8; // 手牌上限（天罡·广纳 handMaxAdd 抬高）
 const MORALE_PTS = 2, ROUT_PTS = 4; // 同 live-combat/doc06：主将在→下属 +战力 / 主将亡→溃散 −战力
