@@ -73,10 +73,13 @@
 **✅ 第一波已并入**（平铺 SVG、零导入器改动）：lucide / simple-icons / flag-icons / weather-icons。导入器加了数据驱动字段 `P.extraTags`（给国旗/天气补检索词）。
 **✅ 第二波已并入**：undraw(417 插画) / fluentui-emoji(3145 彩色 emoji，取 Flat) / devicon(559 开发 logo，取 -original)。导入器加了 `P.pathIncludes`（按子路径选风格/变体，如 `/flat/`、`-original.svg`）；`library.ts` 加了 `illustration` 分类。**humaaans 已拒**（仓库只 1 个 SVG，其余是 React 组件、非素材）。
 
-**⏭ 仍欠波次**（用户已要"四组全拉"）：
-- `googlefonts/noto-emoji`(🟢Apache，**文件名码点、无语义→需接 gemoji 名表**，参考 `scripts/import-emoji.mjs`；且彩色 emoji 已有 twemoji+fluentui，冗余、优先级低)。
-- `MariaLetta/free-gophers-pack`(🟢CC0，**文件名纯数字 `1.svg`→需补 category/tags**)、`ira-design/ira-illustrations`(🟢MIT，**`svg` 分支 codeload 拉取报错、待查**)。
-- **像素 / 游戏 UI（PNG/9-patch，需给导入器加 PNG 路径——当前 `svgDims` 只吃 SVG）**：`ETdoFresh/kenney.nl`·`iwenzhou/kenney`(🟢CC0 Kenney 全镜像，**很大、会显著增大仓库**)、`sparklinlabs/superpowers-asset-packs`(🟢CC0)、`czyzby/gdx-skins`(🟡按皮肤混，kenney-pixel=CC0；9-patch GUI)、`mr-breakfast/mrbreakfasts_free_prompts`(🟢CC0 输入提示，SVG/PNG)、`ereborstudios/kenney-ui-pack`(🟢CC0)。
+**✅ 第三波已并入（PNG/9-patch，导入器加位图支持）**：kenney-ui(146 游戏UI) / input-prompts(429 手柄键鼠提示SVG) / gdx-kenney-pixel(34 9-patch像素GUI) / superpowers ninja-adventure(161 像素RPG)。导入器加了 `pngDims`(读 IHDR)+`dimsAndFormat`(按扩展名)+`pathExcludes`+`keepSubpath`(保留并 slug 化子目录层级，避免 PNG 包跨目录同名互覆)。总增 ~8.6MB(只取 PNG/SVG，跳过 .json/源文件，远小于预估)。
+
+**⏭ 仍欠波次**（用户 2026-06-20 拍板"暂不改架构、继续 vendoring 拉完四组"）：
+- **更多像素/游戏 UI**：superpowers 其余 2D 包(rpg-battle-system 20M/western-fps 16M/medieval 15M… 各较大，按需加 `subdir` 一行即拉；3d-* 不要)；`mr-breakfast` 的 PNG 版(已取 SVG，冗余跳过)；`ereborstudios` 之外的 Kenney 全镜像 `iwenzhou/kenney`·`ETdoFresh/kenney.nl`(5190 文件，**很大**，要拉建议挑子目录而非全量)。
+- **零碎 SVG**：`googlefonts/noto-emoji`(🟢Apache，文件名是码点→需接 gemoji 名表，且彩色 emoji 已有 twemoji+fluentui、冗余低优先)、`MariaLetta/free-gophers-pack`(🟢CC0，数字命名→需补 tags)、`ira-design/ira-illustrations`(🟢MIT，`svg` 分支 codeload 报错待查)。
+
+> 📌 架构备忘（2026-06-20 讨论，用户暂选维持现状）：当前是"git 仓库当美术 CDN"，随库增长 `.git`(已 115M+)只涨不缩、index.json 单体(已 20M)。长久解=目录(catalog)与字节(blob)分家：货架层只存元数据+raw-url 不 vendoring 字节、出货层按内容哈希落 CDN/LFS。详见对话；真要发布或仓库失控时再启。
 
 **🔴 已拒（许可/法务）**：openmoji/mega-doodles/saasui(CC-BY-**SA**)、LPC 角色生成器(GPL+SA 混)、Live2D 样例(专有 Free Material License)、GARbro/翻译器扒图(盗版)。
 

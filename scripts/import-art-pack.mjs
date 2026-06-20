@@ -138,6 +138,35 @@ const PACKS = {
     source: 'devicon', category: 'icon.ui', dest: 'devicon', idPrefix: 'devicon',
     transparent: true, extraTags: ['brand', 'logo', 'dev', 'tech'],
   },
+  // ── PNG / 9-patch 游戏素材（位图；用 pngDims 读尺寸）──
+  // Kenney UI Pack（CC0）：~148 个游戏 UI 元件（按钮/滑块/面板/勾选框）PNG。
+  'kenney-ui': {
+    repo: 'ereborstudios/kenney-ui-pack', ref: 'main', tarTop: 'kenney-ui-pack-main', ext: '.png',
+    subdir: 'sprites', keepSubpath: true, style: 'cartoon.flat', license: 'CC0-1.0',
+    source: 'kenney-ui', category: 'icon.ui', dest: 'kenney-ui', idPrefix: 'kenney-ui',
+    transparent: true, extraTags: ['ui', 'button', 'panel', 'kenney', 'game-ui'],
+  },
+  // 输入提示按钮（CC0）：手柄/键鼠按键提示，取 SVG（更清晰，~471）。
+  'input-prompts': {
+    repo: 'mr-breakfast/mrbreakfasts_free_prompts', ref: 'main', tarTop: 'mrbreakfasts_free_prompts-main', ext: '.svg',
+    keepSubpath: true, style: 'cartoon.flat', license: 'CC0-1.0',
+    source: 'input-prompts', category: 'icon.ui', dest: 'input-prompts', idPrefix: 'input',
+    transparent: true, extraTags: ['ui', 'button', 'input', 'controller', 'key', 'prompt'],
+  },
+  // gdx-skins 的 kenney-pixel 皮肤（CC0）：9-patch 像素 GUI（面板/按钮/窗口），~34 张。
+  'gdx-kenney-pixel': {
+    repo: 'czyzby/gdx-skins', ref: 'master', tarTop: 'gdx-skins-master', ext: '.png',
+    subdir: 'kenney-pixel', keepSubpath: true, style: 'pixel', license: 'CC0-1.0',
+    source: 'gdx-kenney-pixel', category: 'icon.ui', dest: 'gdx-kenney-pixel', idPrefix: 'gdxkp',
+    transparent: true, extraTags: ['ui', '9patch', 'panel', 'button', 'pixel', 'kenney', 'game-ui'],
+  },
+  // Superpowers Ninja Adventure（CC0，Pixel-boy）：完整像素 RPG 包之一，~161 PNG。去掉 3d-* 不涉及（已限定子目录）。
+  'superpowers-ninja': {
+    repo: 'sparklinlabs/superpowers-asset-packs', ref: 'master', tarTop: 'superpowers-asset-packs-master', ext: '.png',
+    subdir: 'ninja-adventure', keepSubpath: true, style: 'pixel', license: 'CC0-1.0',
+    source: 'superpowers', category: 'sheet', dest: 'superpowers/ninja-adventure', idPrefix: 'sp/ninja',
+    transparent: true, extraTags: ['pixel', 'rpg', 'sprite', 'ninja', 'game'],
+  },
 };
 
 function walk(dir) {
@@ -159,6 +188,19 @@ function svgDims(buf) {
   if (!w) w = Math.round(parseFloat(tag.match(/\bwidth\s*=\s*["']?\s*([\d.]+)/i)?.[1] ?? '0'));
   if (!h) h = Math.round(parseFloat(tag.match(/\bheight\s*=\s*["']?\s*([\d.]+)/i)?.[1] ?? '0'));
   return { w, h };
+}
+
+// PNG 尺寸：读 IHDR（8 字节签名后 = 长度4+类型4，宽高各 4 字节大端，偏移 16/20）。零外部依赖。
+function pngDims(buf) {
+  if (buf.length < 24 || buf.readUInt32BE(0) !== 0x89504e47) return { w: 0, h: 0 };
+  return { w: buf.readUInt32BE(16), h: buf.readUInt32BE(20) };
+}
+
+// 按扩展名取尺寸 + 格式（SVG 矢量 / PNG 位图）。
+function dimsAndFormat(buf, rel) {
+  return rel.toLowerCase().endsWith('.png')
+    ? { ...pngDims(buf), format: 'png' }
+    : { ...svgDims(buf), format: 'svg' };
 }
 
 const packKey = process.argv[2] ?? 'game-icons';
@@ -183,6 +225,7 @@ try {
     .map((f) => relative(srcRoot, f).split(sep).join('/'))
     .filter((rel) => !P.subdir || rel.startsWith(P.subdir + '/'))
     .filter((rel) => !P.pathIncludes || rel.toLowerCase().includes(P.pathIncludes)) // 选风格/变体（如 fluentui 取 /flat/、devicon 取 -original）
+    .filter((rel) => !P.pathExcludes || !P.pathExcludes.some((x) => rel.toLowerCase().includes(x))) // 排除子集（如 superpowers 去掉 3d-*）
     .sort();
   if (files.length > limit) {
     if (P.sample === 'even') {
@@ -198,15 +241,29 @@ try {
   let added = 0;
   for (const rel of files) {
     const parts = rel.split('/');
-    const name = parts[parts.length - 1].replace(/\.svg$/i, '');
+    const ext = rel.toLowerCase().endsWith('.png') ? '.png' : '.svg';
+    const stripExt = (s) => s.replace(/\.9\.png$/i, '').replace(/\.(svg|png)$/i, '');
+    const name = stripExt(parts[parts.length - 1]);
     if (!name) continue;
     const author = P.flatId ? P.source : parts[0]; // flatId 包无作者层
-    if (!P.flatId && parts.length < 2) continue;
+    if (!P.flatId && !P.keepSubpath && parts.length < 2) continue;
     const buf = readFileSync(join(srcRoot, rel));
-    const { w, h } = svgDims(buf);
+    const { w, h, format } = dimsAndFormat(buf, rel);
     if (!w || !h) continue; // 尺寸读不出 → 跳过
-    const id = P.flatId ? `${P.idPrefix}/${name}` : `${P.idPrefix}/${author}/${name}`;
-    const destRel = P.flatId ? `${P.dest}/${name}.svg` : `${P.dest}/${author}/${name}.svg`;
+    // keepSubpath：保留 subdir 下的层级（slug 化，避免不同子目录同名互相覆盖；PNG 包常见）。
+    let id, destRel;
+    if (P.keepSubpath) {
+      const under = P.subdir ? rel.slice(P.subdir.length + 1) : rel;
+      const slug = stripExt(under).toLowerCase().replace(/[^a-z0-9/]+/g, '-').replace(/-+/g, '-').replace(/(^-|-$)/g, '');
+      id = `${P.idPrefix}/${slug}`;
+      destRel = `${P.dest}/${slug}${ext}`;
+    } else if (P.flatId) {
+      id = `${P.idPrefix}/${name}`;
+      destRel = `${P.dest}/${name}${ext}`;
+    } else {
+      id = `${P.idPrefix}/${author}/${name}`;
+      destRel = `${P.dest}/${author}/${name}${ext}`;
+    }
     const destAbs = join(ASSETS, destRel);
     mkdirSync(dirname(destAbs), { recursive: true });
     copyFileSync(join(srcRoot, rel), destAbs);
@@ -216,7 +273,7 @@ try {
     byId.set(id, {
       id,
       type: 'texture',
-      description: P.flatId ? `${name.replace(/[-_]/g, ' ')} · ${P.source}` : `${name.replace(/[-_]/g, ' ')} · ${P.source} (${author})`,
+      description: (P.flatId || P.keepSubpath) ? `${name.replace(/[-_]/g, ' ')} · ${P.source}` : `${name.replace(/[-_]/g, ' ')} · ${P.source} (${author})`,
       status: 'filled',
       path: destRel,
       category,
@@ -224,8 +281,8 @@ try {
       license: P.license,
       source: P.source,
       tags: [...new Set([...words, P.source, ...extraTags])],
-      spec: { format: 'svg', width: w, height: h, transparent: P.transparent ?? true },
-      provenance: P.flatId ? { repo: P.repo, ref: P.ref } : { repo: P.repo, ref: P.ref, author },
+      spec: { format, width: w, height: h, transparent: P.transparent ?? true },
+      provenance: (P.flatId || P.keepSubpath) ? { repo: P.repo, ref: P.ref } : { repo: P.repo, ref: P.ref, author },
     });
     added++;
   }
