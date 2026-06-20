@@ -6,11 +6,11 @@
 import { GI, tiangangIcon } from './icons.js';
 import { HERO_CARDS, DIZHI_ZODIACS, DIZHI_TRINES, type StageCampaign } from './blueprint.js';
 
-export interface LobbyShopItem { id: string; name: string; sub: string; cost: number; owned: boolean; buyable: boolean; level?: number; inDeck?: boolean; power?: number; phat?: number; kind?: string; icon?: string; tint?: string }
+export interface LobbyShopItem { id: string; name: string; sub: string; cost: number; owned: boolean; buyable: boolean; level?: number; inDeck?: boolean; power?: number; phat?: number; kind?: string; icon?: string; tint?: string; unlockStage?: number; locked?: boolean }
 export type EarthRarity = 'bronze' | 'silver' | 'gold';
 export interface LobbyView {
   skin: 'onyx' | 'rosy';
-  coin: number; energy: number; energyMax: number; foilCount: number;
+  coin: number; diamond?: number; energy: number; energyMax: number; foilCount: number;
   name: string; mainCard: string; rankText: string;
   stageLabel: string; archLine: string; bossLine: string;
   deckAvg: number; deckMin: number; deckMax: number; deck: number[];
@@ -139,7 +139,8 @@ const CSS = `
 .ggl-root .ecard.equipped::after{ content:'⚔'; position:absolute; top:3px; right:5px; font-size:10px; color:var(--gold) }
 .ggl-root .shelf{ display:grid; grid-template-columns:repeat(auto-fill,minmax(120px,1fr)); gap:10px }
 .ggl-root .good{ background:var(--chip); border:1px solid var(--panel-border); border-radius:10px; padding:10px; text-align:center; font-size:12px; position:relative; min-height:74px; clip-path:var(--chamfer) } .ggl-root .good .gnm{ font-weight:700; color:var(--ink); line-height:1.25 } .ggl-root .good .cost{ color:var(--gold); font-weight:700; margin-top:6px; font-family:var(--fn) }
-.ggl-root .good.got{ border-color:var(--gold) } .ggl-root .good.buy{ cursor:pointer } .ggl-root .good.buy:hover{ box-shadow:0 0 0 1px var(--gold) inset } .ggl-root .good.lock{ opacity:.5 }
+.ggl-root .good.got{ border-color:var(--gold) } .ggl-root .good.buy{ cursor:pointer } .ggl-root .good.buy:hover{ box-shadow:0 0 0 1px var(--gold) inset } .ggl-root .good.lock{ opacity:.62 }
+.ggl-root .unlock-badge{ display:inline-block; font-size:9px; font-weight:700; padding:1px 5px; border-radius:5px; background:rgba(232,205,138,.16); border:1px solid var(--hairline); color:var(--gold); vertical-align:middle }
 .ggl-root .tools{ display:flex; gap:10px; flex-wrap:wrap; margin-top:12px } .ggl-root .btn{ padding:9px 15px; border-radius:10px; clip-path:var(--chamfer); background:var(--gold-grad); color:#2a1a08; border:0; font-family:var(--fh); font-weight:700; font-size:13px } .ggl-root .btn.ghost{ background:var(--chip); color:var(--ink); border:1px solid var(--panel-border) }
 .ggl-root .forge{ display:grid; grid-template-columns:1fr 1fr; gap:14px } @media(max-width:780px){ .ggl-root .forge{ grid-template-columns:1fr } }
 .ggl-root .fuse{ display:flex; align-items:center; gap:12px; justify-content:center; padding:12px 0 } .ggl-root .slot{ width:62px; height:86px; border-radius:10px; border:1px dashed var(--panel-border); display:flex; align-items:center; justify-content:center; font-size:26px; background:var(--chip) } .ggl-root .arrow{ font-size:24px; color:var(--gold) }
@@ -376,19 +377,25 @@ function manualBox(tier: 'easy' | 'mid' | 'hard'): string {
 // 改造坊天罡牌货架项（B3）：买入 + 选入/踢出战库双动作 + 牌力/P̂ 展示。
 function craftTiangangItem(it: LobbyShopItem, deckFull: boolean): string {
   const cls = 'good' + (it.owned ? ' got' : it.buyable ? ' buy' : ' lock');
+  // 金币解锁仅在「已解锁关·可购」时挂点击；关未到 → 锁态（钻石速购单独按钮）。
   const buyAttr = it.buyable && !it.owned ? ` data-act="buyTiangang" data-k="${it.id}"` : '';
   const stars = it.power ? `<span class="power-stars">${'⭐'.repeat(Math.min(it.power, 5))}</span>` : '';
   const phat = it.phat !== undefined ? `<span class="phat-badge"> P̂${it.phat}</span>` : '';
+  const us = it.unlockStage ?? 1;
+  const stageBadge = `<span class="unlock-badge" title="第 ${us} 关解锁">关${us}</span>`;
   let foot: string;
   if (it.owned) {
     const togLabel = it.inDeck ? '⚔ 牌组' : (deckFull ? '牌组满' : '+ 牌组');
     const togCls = 'tiangang-tog' + (it.inDeck ? ' active' : '');
     const togDis = !it.inDeck && deckFull ? ' disabled' : '';
     foot = `<div style="display:flex;gap:6px;margin-top:6px;align-items:center"><span style="font-size:11px;color:var(--gold)">✓ 已解锁</span><button class="${togCls}" data-act="toggleTiangang" data-k="${it.id}"${togDis}>${togLabel}</button></div>`;
+  } else if (it.locked) {
+    // 关未到 → 金币锁；可花钻石(=关序)速解（doc25·跳 grind）。
+    foot = `<div style="display:flex;gap:6px;margin-top:6px;align-items:center"><span style="font-size:11px;color:var(--ink-dim)">🔒 通关第 ${us} 关解锁</span><button class="tiangang-tog" data-act="diamondUnlock" data-k="${it.id}" style="color:#7fd0ff;border-color:#3a6ea5">💎${us} 速解</button></div>`;
   } else {
     foot = `<div class="cost">🪙 ${it.cost}</div>`;
   }
-  return `<div class="${cls}"${buyAttr} title="${esc(it.sub)}"><div class="gnm">${tiangangIcon(it.icon, it.tint)} ${esc(it.name)}${stars}${phat}</div>${foot}</div>`;
+  return `<div class="${cls}"${buyAttr} title="${esc(it.sub)}"><div class="gnm">${stageBadge} ${tiangangIcon(it.icon, it.tint)} ${esc(it.name)}${stars}${phat}</div>${foot}</div>`;
 }
 // 天罡战库预览面板（B3 · HOME+DECKS 屏）：≤5 已选天罡牌 每张【名 + 效果 + 牌力⭐ + P̂】+ 整库总加成汇总。
 function deckPreviewPanel(tiangangs: LobbyShopItem[], archName: string | null | undefined, activated: boolean | undefined, size = 12, deckName = ''): string {
@@ -535,7 +542,8 @@ export function renderLobby(view: LobbyView, tab: string, tutorialOpen: boolean,
     <div style="flex:1"></div>
     <button class="seg ${view.skin === 'onyx' ? 'on' : ''}" data-act="skin" data-k="onyx">玄铁</button>
     <button class="seg ${view.skin === 'rosy' ? 'on' : ''}" data-act="skin" data-k="rosy">锦霞</button>
-    <div class="coin"><span>🪙</span><b>${kfmt(view.coin)}</b></div>
+    <div class="coin" title="金币 · 打战斗赚 · 解锁天罡/地支"><span>🪙</span><b>${kfmt(view.coin)}</b></div>
+    <div class="coin" title="钻石 · 速解天罡（只加速·不卖强度）"><span>💎</span><b style="color:#7fd0ff">${kfmt(view.diamond ?? 0)}</b></div>
     <div class="coin"><span>◈</span><span style="color:var(--gold)">${view.energy}/${view.energyMax}</span></div>
     <div class="coin"><span>✨</span><span style="color:#7fb0d8">${view.foilCount}</span></div>
     <button class="tutbtn" data-act="intro">📜 游戏介绍</button>
@@ -611,6 +619,7 @@ export interface LobbyHandlers {
   onBuyPlanet?: (id: string) => void;
   onBuyFoil?: (id: string) => void;
   onToggleTiangang?: (id: string) => void; // 选入/踢出**出战牌组**（≤deckSize）
+  onDiamondUnlock?: (id: string) => void; // 钻石速购解锁天罡（doc25·跳关门槛）
   onSelectDeck?: (id: string) => void; // 选某牌组出战
   onNewDeck?: () => void; // 新建牌组
   onDelDeck?: (id: string) => void; // 删除牌组
@@ -657,6 +666,7 @@ export function mountLobby(host: HTMLElement, h: LobbyHandlers): { update: () =>
     else if (act === 'buyPlanet') { h.onBuyPlanet?.(k); render(); }
     else if (act === 'buyFoil') { h.onBuyFoil?.(k); render(); }
     else if (act === 'toggleTiangang') { h.onToggleTiangang?.(k); render(); }
+    else if (act === 'diamondUnlock') { h.onDiamondUnlock?.(k); render(); }
     else if (act === 'selectDeck') { h.onSelectDeck?.(k); render(); }
     else if (act === 'newDeck') { h.onNewDeck?.(); render(); }
     else if (act === 'delDeck') { h.onDelDeck?.(k); render(); }

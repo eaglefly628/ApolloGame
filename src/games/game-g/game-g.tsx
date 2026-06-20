@@ -1,6 +1,6 @@
 import { mountBattle, type BattleView, type BattleUnit, type BattleLane, type BattleLever, type HandCardView, type TengangCardView, type BattleActions, type ClashView, type BattleFx } from './battle-screen.js';
 import { mountLobby, type LobbyView, type LobbyShopItem } from './lobby-screen.js';
-import { prepareArmies, quartermasterEnergy, FORMATION_PRESETS, PRESET_NAMES, LEVER_CATALOG, LEVER_START, battleSpec, RUN_BATTLES, RUN_LIVES, BETWEEN_BUFFS, applyBuff, tiangangKeyBuffs, BOSS_ROSTER, bossFor, GAME_G_TIANGANGS, TIANGANG_BY_ID, ARCHETYPES, detectArchetype, archetypeMatchup, activeArchetype, pickAiFormation, GAME_G_PLANETS, GAME_G_FOILS, effectiveLives, effectiveLeverCap, effectiveLeverRegen, campaignFor, type Formation, type Intervention, type LeverKind, type RunBuff, type ArmyCard } from './index.js';
+import { prepareArmies, quartermasterEnergy, FORMATION_PRESETS, PRESET_NAMES, LEVER_CATALOG, LEVER_START, battleSpec, RUN_BATTLES, RUN_LIVES, BETWEEN_BUFFS, applyBuff, tiangangKeyBuffs, BOSS_ROSTER, bossFor, GAME_G_TIANGANGS, TIANGANG_BY_ID, ARCHETYPES, detectArchetype, archetypeMatchup, activeArchetype, pickAiFormation, GAME_G_PLANETS, GAME_G_FOILS, effectiveLives, effectiveLeverCap, effectiveLeverRegen, campaignFor, unlockStageOf, type Formation, type Intervention, type LeverKind, type RunBuff, type ArmyCard } from './index.js';
 import { initLiveBattle, stepLiveBattle, liveActive, migrateRear, NO_TENGANG, LANE_LEN, HOME_BLOOD, type LiveBattle, type DeployCmd, type ClashEvent, type TengangFx } from './live-combat.js';
 import { cardPoints, P_MAX } from './clash-resolve.js';
 
@@ -50,7 +50,9 @@ type BattleControl = { hand: HandCardView[]; selectedCard: number; deckCount: nu
 const NO_CONTROL: BattleControl = { hand: [], selectedCard: -1, deckCount: 0, tengang: [], selectedTengang: -1, tengangDeckCount: 0, points: 0, pointsMax: 0, normalDrawCost: 0, tengangDrawCost: 0, canDrawNormal: false, canDrawTengang: false, migrateSource: -1 }; // 看帧/无控盘默认
 
 interface Save {
-  materials: number;
+  materials: number; // 金币 Gold（doc25 · 打战斗赚·免费·解锁天罡/地支/改造坊）
+  diamond: number; // 钻石 Diamond（doc25 · 付费·只加速速解·不卖强度）
+  campaignMax: number; // 已抵达的最高关（持久·天罡解锁门槛 = unlockStage ≤ campaignMax）
   stage: number;
   deck: number[]; // 我方 52 张的 favor（0..95）
   lastOfficers: number[]; // 上次布阵的三路军官数 [上,中,下]（默认选中 + AI 克制依据）
@@ -75,7 +77,7 @@ const newDeckId = (): string => `deck_${Date.now().toString(36)}_${Math.floor(Ma
 
 const rollBoss = (): number => Math.floor(Math.random() * BOSS_ROSTER.length);
 export function freshSave(): Save {
-  return { materials: 0, stage: 1, deck: Array.from({ length: DECK_SIZE }, (_, i) => 44 + (i % 10) * 2), lastOfficers: [10, 10, 10], leverEnergy: LEVER_START, lives: RUN_LIVES, bossIdx: rollBoss(), ownedTiangangs: [], tiangangDecks: [{ id: 'deck1', name: '牌组 1', cards: [] }], activeDeckId: 'deck1', tiangangs: [], planets: {}, foils: [] }; // 44..62 起步；stage=当前战 1..5
+  return { materials: 120, diamond: 0, campaignMax: 1, stage: 1, deck: Array.from({ length: DECK_SIZE }, (_, i) => 44 + (i % 10) * 2), lastOfficers: [10, 10, 10], leverEnergy: LEVER_START, lives: RUN_LIVES, bossIdx: rollBoss(), ownedTiangangs: [], tiangangDecks: [{ id: 'deck1', name: '牌组 1', cards: [] }], activeDeckId: 'deck1', tiangangs: [], planets: {}, foils: [] }; // 44..62 起步；金币 120 起手够解锁关1
 }
 function loadSave(): Save {
   try {
@@ -86,6 +88,8 @@ function loadSave(): Save {
         if (!Array.isArray(s.lastOfficers) || s.lastOfficers.length !== 3) s.lastOfficers = [10, 10, 10]; // 旧存档兼容
         if (typeof s.leverEnergy !== 'number') s.leverEnergy = LEVER_START;
         if (typeof s.bossIdx !== 'number') s.bossIdx = rollBoss();
+        if (typeof s.diamond !== 'number') s.diamond = 0; // doc25 货币迁移
+        if (typeof s.campaignMax !== 'number') s.campaignMax = Math.max(1, s.stage || 1);
         // 重命名(joker→天罡)迁移 + owner 拍「清空老存档战库」：老存档键为 jokers/ownedJokers → 战库(tiangangs)清空、收藏(ownedTiangangs)沿用旧 ownedJokers；丢弃遗留键。
         const legacy = s as unknown as { jokers?: unknown; ownedJokers?: unknown };
         if (legacy.jokers !== undefined || legacy.ownedJokers !== undefined || !Array.isArray(s.tiangangs) || !Array.isArray(s.ownedTiangangs)) {
@@ -286,12 +290,12 @@ export function mount(container: HTMLElement): () => void {
       }
       const cap = effectiveLeverCap(save.planets);
       // B3: owned=已买入(ownedTiangangs)；inDeck=已选入战库(jokers ≤5)；buyable=未买且材料够
-      const tiangangs: LobbyShopItem[] = GAME_G_TIANGANGS.map((j) => { const owned = save.ownedTiangangs.includes(j.id); return { id: j.id, name: j.name, sub: j.text, cost: j.cost, owned, inDeck: save.tiangangs.includes(j.id), buyable: !owned && save.materials >= j.cost, power: j.power, phat: j.phat, kind: j.kind, icon: j.icon, tint: j.tint }; });
+      const tiangangs: LobbyShopItem[] = GAME_G_TIANGANGS.map((j) => { const owned = save.ownedTiangangs.includes(j.id); const us = unlockStageOf(j.id); const locked = us > save.campaignMax; return { id: j.id, name: j.name, sub: j.text, cost: j.cost, owned, inDeck: save.tiangangs.includes(j.id), buyable: !owned && !locked && save.materials >= j.cost, power: j.power, phat: j.phat, kind: j.kind, icon: j.icon, tint: j.tint, unlockStage: us, locked }; });
       const planets: LobbyShopItem[] = GAME_G_PLANETS.map((p) => ({ id: p.id, name: p.name, sub: p.text, cost: p.cost, owned: false, level: save.planets[p.id] ?? 0, buyable: save.materials >= p.cost }));
       const foils: LobbyShopItem[] = GAME_G_FOILS.map((f) => { const owned = save.foils.includes(f.id); return { id: f.id, name: f.name, sub: f.desc, cost: f.cost, owned, buyable: !owned && save.materials >= f.cost }; });
       const heart = save.lives > 0 ? '❤'.repeat(save.lives) : '—';
       return {
-        skin: lobbySkin, coin: save.materials, energy: save.leverEnergy, energyMax: cap, foilCount: save.foils.length,
+        skin: lobbySkin, coin: save.materials, diamond: save.diamond, energy: save.leverEnergy, energyMax: cap, foilCount: save.foils.length,
         name: '不翻就赢_07', mainCard: '黑桃A「掷命尖兵」', rankText: `战役 ${save.stage}/${RUN_BATTLES}`,
         stageLabel: `第 ${save.stage} 战 / 共 ${RUN_BATTLES} · 终局 Boss【${boss.name}】`,
         archLine, bossLine: `${boss.persona} · 流派【${bossArchName}】— 据其针对布阵`,
@@ -311,8 +315,10 @@ export function mount(container: HTMLElement): () => void {
     lobby = mountLobby(host, {
       getView: buildLobbyView,
       onPlay: () => startBattle(),
-      // 买入 → ownedTiangangs；出战牌组未满则自动选入（方便新手）
-      onBuyTiangang: (id) => { const j = TIANGANG_BY_ID.get(id); if (!j || save.ownedTiangangs.includes(id)) return; buy(j.cost, () => { save.ownedTiangangs.push(id); const d = activeDeck(save); if (d && d.cards.length < TIANGANG_DECK_SIZE) { d.cards.push(id); syncTiangangs(save); } }); },
+      // 金币解锁（doc25）：需该关已抵达(unlockStage ≤ campaignMax) + 金币够 → ownedTiangangs；牌组未满自动选入
+      onBuyTiangang: (id) => { const j = TIANGANG_BY_ID.get(id); if (!j || save.ownedTiangangs.includes(id) || unlockStageOf(id) > save.campaignMax) return; buy(j.cost, () => { save.ownedTiangangs.push(id); const d = activeDeck(save); if (d && d.cards.length < TIANGANG_DECK_SIZE) { d.cards.push(id); syncTiangangs(save); } }); },
+      // 钻石速购（doc25 · 跳 grind·只加速）：无视关门槛，花钻石(=unlockStage)直解。
+      onDiamondUnlock: (id) => { const j = TIANGANG_BY_ID.get(id); if (!j || save.ownedTiangangs.includes(id)) return; const dc = unlockStageOf(id); if (save.diamond < dc) return; save.diamond -= dc; save.ownedTiangangs.push(id); const d = activeDeck(save); if (d && d.cards.length < TIANGANG_DECK_SIZE) { d.cards.push(id); syncTiangangs(save); } persist(save); },
       onBuyPlanet: (id) => { const p = GAME_G_PLANETS.find((x) => x.id === id); if (!p) return; buy(p.cost, () => { save.planets[id] = (save.planets[id] ?? 0) + 1; }); },
       onBuyFoil: (id) => { const f = GAME_G_FOILS.find((x) => x.id === id); if (!f || save.foils.includes(id)) return; buy(f.cost, () => save.foils.push(id)); },
       // 选入/踢出**出战牌组**（需已拥有；每组上限 TIANGANG_DECK_SIZE）；改完同步 save.tiangangs（契约②）
@@ -496,6 +502,7 @@ export function mount(container: HTMLElement): () => void {
       let route: () => void = showLobby; // 结算后"继续"去向
       let cont = '回大厅';
       if (winner === 'a') {
+        save.campaignMax = Math.max(save.campaignMax, save.stage); // 通关 stage → 解锁该关 4 张天罡（doc25）
         save.leverEnergy = Math.min(effectiveLeverCap(save.planets), save.leverEnergy + effectiveLeverRegen(save.planets)); // 回能◈（星球·能 升档）
         if (save.stage >= RUN_BATTLES) { // 打穿终局 Boss → 通关
           save.materials += 50;

@@ -1292,3 +1292,20 @@ export const STAGE_CAMPAIGN: StageCampaign[] = [
 export function campaignFor(stage: number): StageCampaign {
   return STAGE_CAMPAIGN[Math.max(0, Math.min(STAGE_CAMPAIGN.length - 1, stage - 1))];
 }
+
+// === 天罡解锁表（doc25 §二 · 9 关 × 4 张 = 36 · 简单被动 → 复杂主动 → 流派印记） ===
+// 打通关 N → 解锁该关 4 张「可购」（花金币·或钻石速购）；前 5 关可刷攒币；通关 1-9 = 全 36 解锁。
+export const TIANGANG_UNLOCK: { stage: number; ids: string[] }[] = [
+  { stage: 1, ids: ['tigertally', 'widehand', 'veteran', 'bannerman'] },
+  { stage: 2, ids: ['unyield', 'bedrock', 'laststand', 'twinblade'] },
+  { stage: 3, ids: ['fewtroops', 'grieve', 'deathwatch', 'flow'] },
+  { stage: 4, ids: ['arrowhead', 'tripod', 'relay', 'ram'] },
+  { stage: 5, ids: ['atlas', 'irondice', 'leaddice', 'swiftmarch'] },
+  { stage: 6, ids: ['mire', 'beachhead', 'rush', 'gateorder'] },
+  { stage: 7, ids: ['ghosthand', 'ironchain', 'discard2', 'lurefoe'] },
+  { stage: 8, ids: ['capturektg', 'tidewave', 'markdecap', 'markmorale'] },
+  { stage: 9, ids: ['markswarm', 'marktianji', 'marksamerank', 'markodds'] },
+];
+const UNLOCK_STAGE_BY_ID: ReadonlyMap<string, number> = new Map(TIANGANG_UNLOCK.flatMap((u) => u.ids.map((id) => [id, u.stage] as [string, number])));
+/** 某天罡在第几关解锁（未列出 → 1）。 */
+export function unlockStageOf(id: string): number { return UNLOCK_STAGE_BY_ID.get(id) ?? 1; }
