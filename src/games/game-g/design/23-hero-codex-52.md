@@ -280,6 +280,28 @@
 ## 九、地煞全集（余 47 英雄 × 3 = 141 张 · 每 Boss 3 张招牌历史战术 · design G 复核·数值真机调）
 > ✅ **47 英雄 × 3 = 141 张全齐**（顶级 10 位已补 · 史实 web 核过）。kind 借天罡词汇·`+` 表多维。配关 1-5 的 15 张（§八）= **全 52 英雄 156 张地煞齐**。
 
+### ⭐ 数据形 v2 · 落地架构（design G 2026-06-20 · owner「全写掉」）
+
+> 下面这张表是**叙事/破法**视图（人读）。**可确定性实装的精确数据形**（每张 `{kind,op,value,scope}` + 每关难度档 + aiProfile）已逐关落进 4 个数据包：
+> - `disha-pack/pack-1-stages-6-16.md`（关 6–16 · 33 张 · 新手~中前·WR 68→58%）
+> - `disha-pack/pack-2-stages-17-27.md`（关 17–27 · 33 张 · 中期·WR 57→52%）
+> - `disha-pack/pack-3-stages-28-38.md`（关 28–38 · 33 张 · 中后·WR 51→46%）
+> - `disha-pack/pack-4-stages-39-52.md`（关 39–52 · 42 张 · 终章区·WR 45→40%·关52 孙武最硬）
+
+**① 架构裁决（CORE RULE·先重组）**：地煞**不另起 50 字段巨结构**。它复用**甲为天罡建的同一台 `{kind,op,params}` 解释器**（power/odds/combo/morale/tempo/stamina/lane/siege），只落在 **Boss 侧、数值可更猛**。→ 甲接完天罡 6 维 wiring，地煞绝大多数自动能跑、共用 clash/续航/源泉/大本营钩子。这是「能用现有 capability 重组表达」的正解。
+
+**② 关↔英雄顺序（贡献度反序爬·§七 rank）**：关 1-5 = owner 选的 5 famous（§八）已除外；其余 47 位按 rank **降序**填关 6-52（关 6 = #52 狮心王理查 最易 → 关 52 = #1 孙武 终章）。难度脊：sim 目标 WR 早关 ~68% → 终章 ~40%。
+
+**③ Boss 专属新 op（§八 DishaFx 之外·仅这 5 个真缺口·派甲 game-side 自建·勿扩引擎）**：
+- `{kind:fog,turns:N}` —— 前 N 回合敌看不清 Boss 真实战力（奇正相生/雪夜衔枚/暴雨奇袭）。
+- `{kind:odds,op:fewerStronger,perMissing:N}` —— Boss 兵越少·每缺 1 兵 +N% 胜率（以寡敌众族：白起/韩信/汉尼拔/织田）。
+- `{kind:power,op:deepDecay,perStep:N}` —— 玩家兵推进越深·每格 −N 战力（焦土诱敌：萨拉丁/凯撒）。
+- `{kind:stamina,op:drain,value:N,enemy:true}` —— 敌续航每回合 −N（断水断粮：帖木儿/萨拉丁/白起）。
+- `{kind:lane,op:freeDeploy,value:N}` —— Boss 每回合免费铺 N 兵（兵海：复用 §八 `bonusMana` 通道泛化）。
+> 其余全部复用既有 DishaFx 字段（phalanx/flank/firstStrike/nearBase/winStreak/noRout/killGeneralRout/leaderBuff/relay/advance/slow/jumpToMid/forceMigrate/reinforce/chipMore/homeHp…）或天罡 op，零新增。
+
+**④ 派甲（按数据包逐关实装·sim 调）**：(a) `blueprint.ts` `STAGE_CAMPAIGN` 补关 6-52 行（hero/battle/stars/unlock·见 §七，天罡解锁仅前 9 关有、关 10+ 无）；(b) `disha.ts` 按 v2 把 `{kind,op}` 与天罡解释器合流 + 补上述 5 个新 op + 录入 4 包的 `DISHA_SPECS`/`STAGE_DISHA`；(c) `level.ts` `AI_PROFILES`/`DIFFICULTY`/`LEVEL_LORE` 补关 6-52（aiProfile 见各包·lore 拉 doc27 §五/§六·**并修 `DIFFICULTY` 改按 `stage` 索引**=之前驻验那 bug）；(d) 每关配 sim 校 targetWR、每张地煞配行为断言测。
+
 | 英雄 | 地煞 | 效果 | kind | 破法 |
 |---|---|---|---|---|
 | 孙武 | 兵形如水 | 每回合开始随机把一路兵悄悄换到你防守最空的一路（避实击虚） | lane | 三路都留人·让他无虚可击 |
