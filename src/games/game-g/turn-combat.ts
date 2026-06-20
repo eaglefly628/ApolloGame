@@ -75,7 +75,7 @@ export function initTurnBattle(cfg: TurnInit): TurnBattle {
   const battle: TurnBattle = {
     turn: 1, active: 'a',
     lanes: [mkLane(), mkLane(), mkLane()],
-    gatesOpen: GATES.map(() => true), // 默认通路(开·对齐设计稿 ◉)：放牌时点门钮翻成 ✕ 闭路 / AI 亦可翻
+    gatesOpen: GATES.map(() => false), // 默认全闭 ✕(owner 2026-06-20 拍板)：放牌时点门钮翻成 ◉ 通路 / AI 亦可翻；开门才在推进时分流
     homeA: homeMax, homeB: homeMax, homeMax,
     a: mkSide(cfg.a?.pokerDeck, cfg.a?.tengangDeck),
     b: mkSide(cfg.b?.pokerDeck, cfg.b?.tengangDeck),

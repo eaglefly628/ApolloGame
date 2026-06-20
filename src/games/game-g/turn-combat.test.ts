@@ -45,26 +45,25 @@ describe('Game G · turn-combat（doc24 单机回合制 · A0 重构）', () => 
     expect(drawCard(c, 'a', 'poker')).toBe(false);  // 已锁 discard → 不能抽
   });
 
-  it('放牌：扑克兵上场到我方部署格 + 花圣水；放牌可顺手翻门(开↔闭)', () => {
+  it('放牌：扑克兵上场到我方部署格 + 花圣水；放牌可顺手翻门(闭↔开)', () => {
     const b = initTurnBattle({ seed: 1 }); b.a.mana = 2; b.a.hand.push(poker('h0', 'Q'));
-    expect(b.gatesOpen[0]).toBe(true);               // 默认通路
+    expect(b.gatesOpen[0]).toBe(false);              // 默认闭 ✕
     expect(deployUnit(b, 'a', 0, 1, 0)).toBe(true);  // gateToggle=0 → 顺手翻 0 号捷径门
     expect(b.lanes[1].a.length).toBe(1);
     expect(b.lanes[1].a[0].slot).toBe(A_DEPLOY_SLOT);
-    expect(b.gatesOpen[0]).toBe(false);              // 翻成 ✕(闭)
+    expect(b.gatesOpen[0]).toBe(true);               // 翻成 ◉(通路)
     expect(b.a.mana).toBe(1); expect(b.actionTaken).toBe('deploy');
     expect(turnActive(b)).toBe(true);                // 场上有兵 → 未决
   });
 
-  it('捷径门：8 门定向·默认通路(开)；toggleGate 通路↔✕；门开+源格有兵+目标空 → tryGate 过门跨路；目标占→失败', () => {
+  it('捷径门：8 门定向·默认全闭(✕)；toggleGate ✕↔通路；门开+源格有兵+目标空 → tryGate 过门跨路；目标占→失败', () => {
     expect(GATES.length).toBe(8); // 我方 4 + 敌方镜像 4
     const b = initTurnBattle({ seed: 1 });
-    expect(b.gatesOpen.every((o) => o === true)).toBe(true); // 默认全通路(对齐设计稿 ◉)
-    expect(turnHash(b)).toContain('|g11111111|');    // 门态进 hash（确定性回放）
+    expect(b.gatesOpen.every((o) => o === false)).toBe(true); // 默认全闭(owner 拍板)
+    expect(turnHash(b)).toContain('|g00000000|');    // 门态进 hash（确定性回放）
     // GATES[0]：side a · 上路(0) slot1 → 中路(1) slot2
-    expect(toggleGate(b, 0)).toBe(true); expect(b.gatesOpen[0]).toBe(false); // 翻 ✕
     expect(tryGate(b, 0)).toBe(false);               // 闭 → 不可过
-    expect(toggleGate(b, 0)).toBe(true); expect(b.gatesOpen[0]).toBe(true);  // 翻回通路
+    expect(toggleGate(b, 0)).toBe(true); expect(b.gatesOpen[0]).toBe(true); // 翻通路 ◉
     expect(tryGate(b, 0)).toBe(false);               // 门开但源格无兵 → 不可过
     b.lanes[0].a.push(unit('a0', '7', 1));           // 源格(上路 slot1)放一兵
     expect(tryGate(b, 0)).toBe(true);                // 过门
@@ -75,13 +74,18 @@ describe('Game G · turn-combat（doc24 单机回合制 · A0 重构）', () => 
     expect(b.lanes[0].a.length).toBe(1);             // a1 留原地
   });
 
-  it('开关门·下一步移动：推进阶段开门把源格己兵按门向过门到目标格(目标占则失败)', () => {
-    const b = initTurnBattle({ seed: 1 }); // 默认全通路
-    // GATES[2]：中路(1) slot3 → 上路(0) slot4。源格放一兵 → endTurn 推进时过门。
+  it('开关门·下一步移动：开门后推进阶段把源格己兵按门向过门到目标格(目标占则失败)', () => {
+    const b = initTurnBattle({ seed: 1 }); // 默认全闭
+    // GATES[2]：中路(1) slot3 → 上路(0) slot4。源格放一兵 + 开门 → endTurn 推进时过门。
     b.lanes[1].a.push(unit('m0', '7', 3));
-    endTurn(b);
-    expect(b.lanes[1].a.length).toBe(0);             // 离开中路
-    expect(b.lanes[0].a.some((u) => u.id === 'm0' && u.slot === 4)).toBe(true); // 过门抵上路 slot4
+    endTurn(b); // 门闭 → 不过门，正常直进
+    expect(b.lanes[1].a.some((u) => u.id === 'm0')).toBe(true); // 还在中路
+    const c = initTurnBattle({ seed: 1 });
+    c.lanes[1].a.push(unit('m0', '7', 3));
+    expect(toggleGate(c, 2)).toBe(true);             // 开 GATES[2]
+    endTurn(c);
+    expect(c.lanes[1].a.length).toBe(0);             // 离开中路
+    expect(c.lanes[0].a.some((u) => u.id === 'm0' && u.slot === 4)).toBe(true); // 过门抵上路 slot4
   });
 
   it('endTurn：active 方推进自己兵一格 + 切换 + 下一方 +1 圣水', () => {

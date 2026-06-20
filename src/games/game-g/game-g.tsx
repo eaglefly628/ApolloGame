@@ -429,10 +429,13 @@ export function mount(container: HTMLElement): () => void {
     let mounted: { update: () => void; destroy: () => void } | null = null;
 
     const drainClashes = (): void => { for (const ev of tb.clashLog.slice(drained)) perfQueue.push(ev); drained = tb.clashLog.length; };
-    const playPerf = (onDone: () => void): void => { // 逐场掷命特写（冻结战场·PERF_MS 一场）演完回调
+    const playPerf = (onDone: () => void): void => { // 逐场掷命特写：3D 飞入→定格 PERF_MS→回战场缓冲(owner：打完一个回战场再演下一场)→下一场
       if (perfQueue.length === 0) { perfClash = null; mounted?.update(); onDone(); return; }
       perfClash = perfQueue.shift()!; mounted?.update();
-      perfTimer = window.setTimeout(() => playPerf(onDone), PERF_MS);
+      perfTimer = window.setTimeout(() => {
+        perfClash = null; mounted?.update(); // 收场 → 回战场表现一下
+        perfTimer = window.setTimeout(() => playPerf(onDone), CLASH_GAP_MS);
+      }, PERF_MS);
     };
     const finishTurnSeq = (): void => { busy = false; selMode = null; selHand = -1; if (tb.winner !== 'pending') settleTurn(); else mounted?.update(); };
     const runAiThenContinue = (): void => { // 玩家推进特写演完 → AI 回合(脚本) → AI 推进特写 → 回到玩家

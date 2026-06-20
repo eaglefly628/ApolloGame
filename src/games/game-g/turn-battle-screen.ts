@@ -52,7 +52,11 @@ const CSS = `
 @keyframes g-water { 0% { background-position:0 0;} 100% { background-position:0 -28px;} }
 @keyframes g-aura { 0%,100% { opacity:.5; transform:scale(1);} 50% { opacity:.95; transform:scale(1.04);} }
 @keyframes g-flow { to { stroke-dashoffset: -32; } }
-@keyframes g-knob { 0%,100% { box-shadow:0 0 6px var(--kc), inset 0 1px 1px rgba(255,255,255,.3);} 50% { box-shadow:0 0 16px var(--kc), 0 0 24px var(--kc), inset 0 1px 1px rgba(255,255,255,.3);} }`;
+@keyframes g-knob { 0%,100% { box-shadow:0 0 6px var(--kc), inset 0 1px 1px rgba(255,255,255,.3);} 50% { box-shadow:0 0 16px var(--kc), 0 0 24px var(--kc), inset 0 1px 1px rgba(255,255,255,.3);} }
+@keyframes g-fade { from { opacity:0; } to { opacity:1; } }
+@keyframes g-fly-mine { 0% { transform: translate(-90px,140px) scale(.16) rotateX(76deg) rotateY(-30deg); } 100% { transform: none; } }
+@keyframes g-fly-foe  { 0% { transform: translate(90px,140px) scale(.16) rotateX(76deg) rotateY(30deg); } 100% { transform: none; } }
+@keyframes g-coin-pop { 0% { transform: scale(0) rotate(-200deg); opacity:0; } 70% { transform: scale(1.14) rotate(10deg); } 100% { transform: scale(1) rotate(0); opacity:1; } }`;
 
 // ── 视图（buildTurnBattleView 从 turn-combat 派生喂渲染器；纯数据） ──
 export interface TurnSlotView { hasUnit: boolean; mine: boolean; isBorder: boolean; isClash: boolean; rank?: string; suit?: 's' | 'h' | 'd' | 'c'; power?: number; zod?: string[] }
@@ -109,8 +113,8 @@ const gateKnob = (lad: ['a' | 'b', number, number, number, number], idx: number,
 const laddersLayer = (view: TurnBattleView): string => {
   const svgStyle: Style = { position: 'absolute', inset: 0, width: '100%', height: '100%', pointerEvents: 'none', zIndex: 4, overflow: 'visible' };
   const layerStyle: Style = { position: 'absolute', inset: 0, pointerEvents: 'none', zIndex: 6 };
-  const paths = forr(GATE_LAD, (lad, i) => ladderSvg(lad, view.gates[i]?.open ?? true, lad[0] === 'a' && view.gatesLive));
-  const knobs = forr(GATE_LAD, (lad, i) => gateKnob(lad, i, view.gates[i]?.open ?? true));
+  const paths = forr(GATE_LAD, (lad, i) => ladderSvg(lad, view.gates[i]?.open ?? false, lad[0] === 'a' && view.gatesLive));
+  const knobs = forr(GATE_LAD, (lad, i) => gateKnob(lad, i, view.gates[i]?.open ?? false));
   return `<svg viewBox="0 0 900 400" preserveAspectRatio="none" style="${st(svgStyle)}"><defs><marker id="ar-a" markerWidth="4" markerHeight="4" refX="2" refY="2" orient="auto"><path d="M0,0 L4,2 L0,4 L1.3,2 Z" fill="#6b3c20"></path></marker><marker id="ar-b" markerWidth="4" markerHeight="4" refX="2" refY="2" orient="auto"><path d="M0,0 L4,2 L0,4 L1.3,2 Z" fill="#21425f"></path></marker></defs>${paths}</svg><div style="${st(layerStyle)}">${knobs}</div>`;
 };
 
@@ -214,11 +218,13 @@ function handCard(c: TurnHandCardView, i: number): string {
 }
 
 function clashOverlay(cv: TurnClashView): string {
-  const backdrop = { position: 'absolute', inset: 0, zIndex: 40, display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'rgba(6,9,13,.74)', backdropFilter: 'blur(5px)' };
+  const backdrop = { position: 'absolute', inset: 0, zIndex: 40, display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'rgba(6,9,13,.74)', backdropFilter: 'blur(5px)', animation: 'g-fade .3s ease both' };
   const panel = { position: 'relative', width: '760px', padding: '30px 34px 36px', borderRadius: '22px', background: 'radial-gradient(80% 70% at 50% 30%, #1c2940, #0e1828)', border: '2px solid var(--gold)', boxShadow: 'inset 0 0 0 1px var(--hairline), 0 40px 90px rgba(0,0,0,.7), 0 0 60px rgba(232,205,138,.2)' };
   const duelCard = (c: TurnClashCardView, isMine: boolean): string => {
     const col = isMine ? '#ff7a45' : '#3a86d4'; const sc = SUITC[c.suit];
-    const card = { position: 'relative', width: '180px', height: '252px', borderRadius: '15px', background: 'var(--card-face)', border: '4px solid ' + (c.won ? col : 'var(--danger)'), boxShadow: c.won ? `0 0 44px ${col}88, 0 20px 40px rgba(0,0,0,.5)` : '0 20px 40px rgba(0,0,0,.6)', display: 'flex', alignItems: 'center', justifyContent: 'center', opacity: c.won ? 1 : 0.6, filter: c.won ? 'none' : 'grayscale(.5) brightness(.8)' };
+    // 入场：从「桌面」3D 翻起飞到眼前（我方左下 / 敌方右下·flat→竖立·小→大），落到特写就位点。owner 2026-06-20。
+    const flyIn = isMine ? 'g-fly-mine .6s cubic-bezier(.16,.84,.3,1) both' : 'g-fly-foe .6s cubic-bezier(.16,.84,.3,1) both';
+    const card = { position: 'relative', width: '180px', height: '252px', borderRadius: '15px', background: 'var(--card-face)', border: '4px solid ' + (c.won ? col : 'var(--danger)'), boxShadow: c.won ? `0 0 44px ${col}88, 0 20px 40px rgba(0,0,0,.5)` : '0 20px 40px rgba(0,0,0,.6)', display: 'flex', alignItems: 'center', justifyContent: 'center', opacity: c.won ? 1 : 0.6, filter: c.won ? 'none' : 'grayscale(.5) brightness(.8)', backfaceVisibility: 'hidden', animation: flyIn };
     const corner = { position: 'absolute', top: '9px', left: '11px', fontFamily: 'var(--fh)', fontWeight: 700, fontSize: '22px', lineHeight: '.86', color: sc, textAlign: 'center' };
     const big = { fontSize: '96px', color: sc };
     const zchip = { position: 'absolute', top: '10px', right: '12px', width: '32px', height: '32px', borderRadius: '8px', border: '1.5px solid ' + sc, display: 'flex', alignItems: 'center', justifyContent: 'center', fontFamily: 'var(--fd)', fontSize: '21px', color: sc };
@@ -228,7 +234,7 @@ function clashOverlay(cv: TurnClashView): string {
     return `<div style="${st(card)}">${glow}<div style="${st(corner)}">${esc(c.rank)}<br>${SUITG[c.suit]}</div><span style="${st(big)}">${SUITG[c.suit]}</span>${c.zod ? `<div style="${st(zchip)}">${esc(c.zod)}</div>` : ''}<div style="${st(nameP)}">${esc(c.name)}</div><div style="${st(verdict)}">${c.won ? '正面 · 存活' : '反面 · 阵亡'}</div></div>`;
   };
   const spark = { width: '90px', height: '90px', borderRadius: '50%', background: 'radial-gradient(circle, rgba(255,235,160,.95), rgba(255,150,40,.4) 50%, transparent 72%)', animation: 'g-spark 1.2s ease-in-out infinite' };
-  const coin = { width: '72px', height: '72px', borderRadius: '50%', background: 'var(--gold-grad)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#2a1a08', border: '3px solid #fff', boxShadow: '0 0 26px rgba(232,205,138,.6)', marginTop: '-30px' };
+  const coin = { width: '72px', height: '72px', borderRadius: '50%', background: 'var(--gold-grad)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#2a1a08', border: '3px solid #fff', boxShadow: '0 0 26px rgba(232,205,138,.6)', marginTop: '-30px', animation: 'g-coin-pop .45s .4s cubic-bezier(.2,1.3,.4,1) both' };
   const foePct = 100 - cv.oddsMine;
   const oddsTrack = { position: 'relative', height: '26px', borderRadius: '99px', background: 'rgba(0,0,0,.5)', overflow: 'hidden', display: 'flex' };
   const bonusCol = (rows: [string, number][], head: string, headCol: string, valCol: string): string => {
@@ -238,7 +244,7 @@ function clashOverlay(cv: TurnClashView): string {
   };
   return `<div style="${st(backdrop)}"><div style="${st(panel)}">
     <div style="position:absolute; top:18px; left:24px; display:flex; align-items:center; gap:8px;"><span style="${st({ width: '10px', height: '10px', borderRadius: '50%', background: '#e0973a', boxShadow: '0 0 10px #e0973a' })}"></span><span style="font-family:var(--fh); font-weight:700; font-size:15px; color:#fff; letter-spacing:.05em;">${esc(cv.laneName)} · 交界格 · 掷命对决</span></div>
-    <div style="display:flex; align-items:center; justify-content:center; gap:36px; margin-top:34px;">
+    <div style="display:flex; align-items:center; justify-content:center; gap:36px; margin-top:34px; perspective:1100px;">
       ${duelCard(cv.mine, true)}
       <div style="display:flex; flex-direction:column; align-items:center; gap:14px;"><div style="${st(spark)}"></div><div style="${st(coin)}"><span style="font-family:var(--fd); font-size:30px;">掷</span></div><div style="font-family:var(--fn); font-size:13px; color:var(--gold);">命点 ${cv.rollPct}/100</div></div>
       ${duelCard(cv.foe, false)}

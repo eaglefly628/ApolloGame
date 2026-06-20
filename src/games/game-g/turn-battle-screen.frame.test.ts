@@ -14,7 +14,7 @@ const nm = (id: string): string => (({ hufu: '虎符', jixing: '疾行' } as Rec
 const setup = (): ReturnType<typeof initTurnBattle> => {
   const b = initTurnBattle({ seed: 1 });
   b.turn = 4; b.active = 'a'; b.homeA = 3; b.homeB = 2; b.a.mana = 6; b.actionTaken = 'deploy';
-  b.gatesOpen[2] = false; b.gatesOpen[5] = false; // 两道捷径门翻 ✕(闭)·其余默认通路(◉)·看开/闭双态梯子
+  b.gatesOpen[0] = true; b.gatesOpen[3] = true; // 默认全闭 ✕·翻开两道通路(◉)·看开/闭双态梯子
   b.lanes[0].a = [u('a0', 'K', 'S', 2)]; b.lanes[0].b = [u('b0', 'Q', 'H', 6)];
   b.lanes[1].a = [u('a1', 'A', 'S', 4), u('a2', '7', 'D', 1)]; b.lanes[1].b = [u('b1', '9', 'H', 5), u('b2', 'J', 'H', 7)];
   b.lanes[2].a = [u('a3', '10', 'C', 2)]; b.lanes[2].b = [u('b3', 'K', 'D', 7)];
