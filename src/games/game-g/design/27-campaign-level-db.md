@@ -15,7 +15,8 @@ Level {
     deckTier: number,                     // 兵牌强度档(§四)
     tiangang: { pool:"all36"|ids[], pick:12, weights?, seed },  // 随机12天罡(§三)
     disha:    [dishaId×3],                // 3 专属地煞(doc23 §八/§九)
-    aiTier:   number,                     // AI 智能档(§四)
+    aiTier:   number,                     // AI 智能档(§四·难度)
+    aiProfile:{aggression,lanePref,spellEager,targetPref,risk,economy},  // Boss 策略画像(§八·数据·调通用AI)
   },
   reward:    { unlock:[tiangangId×4], gold:number },  // 解锁+金币(doc25)
   loadoutCap: 2..5,                       // 玩家本关 天罡 loadout 上限(§四)
@@ -262,3 +263,23 @@ Level {
 ## 七、派单
 - **甲（主程/战斗）**：建 **level loader**——按 §一 schema 把 doc23/25/27 拼成 `Level[]`、按 id 逐关加载到回合制战斗(doc24)；Boss 12 天罡 seed 随机；地煞/数值/loadoutCap 生效。
 - **乙（菜单）**：关卡选择/进度屏 + **每关开局演出**（战役背景旁白 + Boss 对白 open/mid/lose）。
+
+## 八、Boss AI（通用效用解释器 + 每 Boss 画像数据 · owner 2026-06-20 问）
+> 问题：Boss 与玩家**同规则**（同回合·四选一·15 张牌库[3 地煞 + 12 随机天罡]），AI 怎么每回合决策？
+> **答（数据驱动宪法）**：**不**为每个 Boss 写代码（52 段自由代码=失控、违宪），而是 **「一个通用 AI 解释器（写一次）+ 每 Boss 一份策略画像（数据）」**。
+
+**① 通用 AI = 效用(utility) AI（甲写一次 · game-side · 确定性 · 可仿真）**
+- 每回合：**枚举所有可行动作**（抽天罡/抽兵 · 放某兵到某路 · 打某天罡 · 弃）→ **效用函数打分** → **选最高分**（seed 破平局·确定性·可回放）。
+- 效用 = Σ(局面因子 × Boss 画像权重)：如 `放兵→X路` = f(该路我方劣势 · 推进价值 · 8 邻方阵收益…)；`打天罡` = f(全军/该路收益 · 时机)；`抽/弃` = f(手牌空否 · 源泉余量)。
+- **零 per-boss 代码**：所有 Boss 共用这一个解释器，差异全在数据画像。
+
+**② 每 Boss 画像（数据 · `Level.boss.aiProfile` · 最弱 LLM 能填权重）**
+`aggression`(攻↔守) · `lanePref`(专一路↔铺三路) · `spellEager`(早放↔攒大招) · `targetPref`(打弱/强/主将) · `risk`(赌低胜率↔求稳) · `economy`(囤源泉↔快花)。
+- 例：**列奥尼达**=守(aggression 低·lanePref 守家) · **项羽**=莽(aggression 高·risk 高·targetPref 强) · **曹操**=铺场(economy 快花·lanePref 铺三路)。**性格即数据**，与他的地煞自洽。
+
+**③ 难度 = `aiTier`（数据档·配 sim）**
+- 低档(新手)：有概率选**次优/随机**（会犯错·好赢）；高档(终章)：**总选最优** + 可加 1 步预判。aiTier 调每关目标胜率。
+
+**④ 教学关特例**：稻草兵 = **固定脚本**（数据序列·doc28）·不走 utility AI（要可预测·教学用）。
+
+> **谁写**：通用 utility AI 解释器 = **甲**（turn-combat·一次写好·零 per-boss 代码）；`aiProfile` + `aiTier` = **数据**（design G 填进各关）。真引擎缺口才提 REQ-G。**这正是宪法尺子的标准答案：逻辑下沉成一个 capability，个性全是数据。**
