@@ -3,10 +3,10 @@
 //   + 玄铁(onyx)/锦霞(rosy=brocade)双皮（CSS 变量逐项对齐 .dc.html themes()）。数据接真存档；未接网项诚实占位。
 // 纯表现"固定解释器"：只渲染 view + 抛 data-act 回调，零 gameplay 计算。CSS 全 scope 在 .ggl-root 下。
 
-import { GI } from './icons.js';
+import { GI, tiangangIcon } from './icons.js';
 import { HERO_CARDS, DIZHI_ZODIACS, DIZHI_TRINES } from './blueprint.js';
 
-export interface LobbyShopItem { id: string; name: string; sub: string; cost: number; owned: boolean; buyable: boolean; level?: number; inDeck?: boolean; power?: number; phat?: number }
+export interface LobbyShopItem { id: string; name: string; sub: string; cost: number; owned: boolean; buyable: boolean; level?: number; inDeck?: boolean; power?: number; phat?: number; kind?: string }
 export type EarthRarity = 'bronze' | 'silver' | 'gold';
 export interface LobbyView {
   skin: 'onyx' | 'rosy';
@@ -338,7 +338,7 @@ function craftTiangangItem(it: LobbyShopItem, deckFull: boolean): string {
   } else {
     foot = `<div class="cost">🪙 ${it.cost}</div>`;
   }
-  return `<div class="${cls}"${buyAttr} title="${esc(it.sub)}"><div class="gnm">⚡ ${esc(it.name)}${stars}${phat}</div>${foot}</div>`;
+  return `<div class="${cls}"${buyAttr} title="${esc(it.sub)}"><div class="gnm">${tiangangIcon(it.kind)} ${esc(it.name)}${stars}${phat}</div>${foot}</div>`;
 }
 // 天罡战库预览面板（B3 · HOME+DECKS 屏）：≤5 已选天罡牌 每张【名 + 效果 + 牌力⭐ + P̂】+ 整库总加成汇总。
 function deckPreviewPanel(tiangangs: LobbyShopItem[], archName: string | null | undefined, activated: boolean | undefined): string {
@@ -349,7 +349,7 @@ function deckPreviewPanel(tiangangs: LobbyShopItem[], archName: string | null | 
     ? `<div class="jchips">${inDeck.map((j) => {
         const stars = j.power ? '⭐'.repeat(Math.min(j.power, 5)) : '';
         const phat = j.phat !== undefined ? ` P̂${j.phat}` : '';
-        return `<div class="jchip" title="${esc(j.sub)}">⚡ <b>${esc(j.name)}</b><span class="power-stars">${stars}</span><span class="phat-badge">${phat}</span></div>`;
+        return `<div class="jchip" title="${esc(j.sub)}">${tiangangIcon(j.kind)} <b>${esc(j.name)}</b><span class="power-stars">${stars}</span><span class="phat-badge">${phat}</span></div>`;
       }).join('')}</div>`
     : `<div class="note" style="text-align:left;margin:8px 0">战库空 · 去「改造坊」选入天罡牌（局内法术·≤5 张）</div>`;
   const arch = archName ? `流派 <b>${esc(archName)}</b>${activated ? '　🔥 招牌已激活' : ''}` : '流派未成型';
@@ -503,7 +503,7 @@ export function renderLobby(view: LobbyView, tab: string, tutorialOpen: boolean,
         <div class="friend"><span class="dot"></span> 孔明 <span class="tag">占位</span></div></div>
     </section>
     <section class="screen${on('decks')} full">${deckPreviewPanel(view.tiangangs, view.deckArchName, view.deckArchActivated)}<div class="deck-nav"><button class="${deckTab==='base'?'on':''}" data-act="deckTab" data-k="base">扑克牌组</button><button class="${deckTab==='gang'?'on':''}" data-act="deckTab" data-k="gang">天罡战牌</button></div><div class="dsub${dOn('base')}"><div class="card"><h2>📜 扑克牌组 · 52 张 <span class="ghost" style="margin-left:auto;font-size:12px">favor 均 ${view.deckAvg} · 最低 ${view.deckMin} / 最高 ${view.deckMax}</span></h2>${suitBarsPanel(view.deck, view.deckAvg)}<div>${deckGrid(view.deck, view.foils)}</div><div class="note" style="text-align:left">favor=该牌掷命翻正面(存活)的概率底盘。<b style="color:var(--gold)">金边</b>=强(≥70) / 暗格=弱(≤50)。牌组强度靠<b>天罡牌/地支牌/流派</b>提升 → 去「改造坊」经营。</div></div></div><div class="dsub${dOn('gang')}"><div class="card" style="margin-bottom:14px"><h2>${GI.bolt} 天罡战牌 <span class="ghost" style="margin-left:auto;font-size:12px">三十六天罡 · 一期 20 张已上架</span></h2><div class="gang-grid"><div class="gang-empty"><span style="font-size:28px;opacity:.5">⚡</span><b>天罡战牌 · 去改造坊选入战库</b><span style="font-size:11px">改造坊买入 → 选 ≤5 入战库 → 局内打出生效</span></div></div></div><div class="card"><h2>${GI.planet} 地支牌 <span class="ghost" style="margin-left:auto;font-size:12px">12 生肖 · 铜→银→金 · 镶英雄 ≤3 凑连携</span></h2><div class="earth-filter">${efBtn('all','全部','background:var(--gold-grad);color:#2a1a08;border:0')}${efBtn('bronze','铜','background:#cd7f32;color:#fff;border:0')}${efBtn('silver','银','background:#c4ccd6;color:#2a2a2a;border:0')}${efBtn('gold','金','background:var(--gold-grad);color:#2a1a08;border:0')}</div><div class="earth-groups">${earthSection(earthFilter)}</div></div></div></section>
-    <section class="screen${on('coll')} full" style="flex-direction:column"><div class="deck-nav"><button class="${collTab==='cards'?'on':''}" data-act="collTab" data-k="cards">收藏·牌谱</button><button class="${collTab==='ladder'?'on':''}" data-act="collTab" data-k="ladder">天梯·榜</button><button class="${collTab==='collect'?'on':''}" data-act="collTab" data-k="collect">天罡&amp;闪艺</button></div><div class="dsub${cOn('cards')}" style="flex:1;min-height:0;flex-direction:column">${heroCollSection(heroSuit, heroRar, heroDetail, ownedOnly)}</div><div class="dsub${cOn('ladder')}" style="flex:1;min-height:0;flex-direction:column">${ladderSection(view.name, view.rankText)}</div><div class="dsub${cOn('collect')}"><div class="card"><h2>🗃 天罡牌 · 收藏 ${view.tiangangs.filter((j) => j.owned).length}/${view.tiangangs.length}</h2><div class="note" style="text-align:left;margin-bottom:6px">⚡ 已解锁天罡牌（到改造坊选入战库 ≤5 张）</div><div class="shelf">${view.tiangangs.map((j) => shopItem('', '⚡', { ...j, buyable: false })).join('')}</div><div class="note" style="text-align:left;margin:12px 0 6px">✨ 闪艺 foil（纯装饰收集 · 点亮可购买）· ${view.foils.filter((f) => f.owned).length}/${view.foils.length}</div><div class="shelf">${view.foils.map((f) => shopItem('buyFoil', '✨', f)).join('')}</div></div></div></section>
+    <section class="screen${on('coll')} full" style="flex-direction:column"><div class="deck-nav"><button class="${collTab==='cards'?'on':''}" data-act="collTab" data-k="cards">收藏·牌谱</button><button class="${collTab==='ladder'?'on':''}" data-act="collTab" data-k="ladder">天梯·榜</button><button class="${collTab==='collect'?'on':''}" data-act="collTab" data-k="collect">天罡&amp;闪艺</button></div><div class="dsub${cOn('cards')}" style="flex:1;min-height:0;flex-direction:column">${heroCollSection(heroSuit, heroRar, heroDetail, ownedOnly)}</div><div class="dsub${cOn('ladder')}" style="flex:1;min-height:0;flex-direction:column">${ladderSection(view.name, view.rankText)}</div><div class="dsub${cOn('collect')}"><div class="card"><h2>🗃 天罡牌 · 收藏 ${view.tiangangs.filter((j) => j.owned).length}/${view.tiangangs.length}</h2><div class="note" style="text-align:left;margin-bottom:6px">⚡ 已解锁天罡牌（到改造坊选入战库 ≤5 张）</div><div class="shelf">${view.tiangangs.map((j) => shopItem('', tiangangIcon(j.kind), { ...j, buyable: false })).join('')}</div><div class="note" style="text-align:left;margin:12px 0 6px">✨ 闪艺 foil（纯装饰收集 · 点亮可购买）· ${view.foils.filter((f) => f.owned).length}/${view.foils.length}</div><div class="shelf">${view.foils.map((f) => shopItem('buyFoil', '✨', f)).join('')}</div></div></div></section>
     <section class="screen${on('craft')} full"><div class="craft-zones">
       <div class="card"><h2>♠ 扑克牌组 <span class="ghost" style="margin-left:auto;font-size:12px">52 张 · 公平骨架 · 上场打三路</span></h2>
         <div class="deck-sumbar"><span>favor 均 <b>${view.deckAvg}</b></span><span>最低 <b>${view.deckMin}</b></span><span>最高 <b>${view.deckMax}</b></span></div>
