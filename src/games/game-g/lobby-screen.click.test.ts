@@ -436,49 +436,56 @@ describe('Game G · lobby-screen mountLobby 点击交互（DOM · happy-dom）',
   });
 
   // ── 6. 出战牌组切换（多牌组 · owner 2026-06-20）──
-  describe('改造坊·天罡牌组切换', () => {
-    it('已拥有且未入牌组的天罡：点「+ 牌组」→ onToggleTiangang 以 id 调用', () => {
+  describe('天罡牌组编辑器（选组→槽位移除/添加→弹窗选卡）', () => {
+    const gang = (host: HTMLElement): void => { click(navBtn(host, '牌组')); click(host.querySelector('[data-act="deckTab"][data-k="gang"]')!); };
+
+    it('空槽点「＋ 添加」→ 弹选卡窗 → 点已拥有天罡 → onToggleTiangang 以 id 调用', () => {
       const onToggleTiangang = vi.fn();
-      // 构造一个 owned=true，inDeck=false 的天罡
-      const view = makeView({
-        tiangangs: [J('comrade', '同袍', true, false)],
-      });
+      const view = makeView({ tiangangs: [J('comrade', '同袍', true, false)], deckSize: 12, activeDeckName: '牌组 1' });
       const host = document.createElement('div');
       mountLobby(host, { getView: () => view, onPlay: vi.fn(), onToggleTiangang });
-      click(navBtn(host, '改造坊'));
-      const togBtn = host.querySelector('[data-act="toggleTiangang"][data-k="comrade"]')!;
-      expect(togBtn).not.toBeNull();
-      click(togBtn);
+      gang(host);
+      click(host.querySelector('[data-act="deckAdd"]')!); // 点空槽 → 弹窗
+      expect(host.querySelector('.pick-list')).not.toBeNull();
+      const pick = host.querySelector('.pick-item[data-act="toggleTiangang"][data-k="comrade"]')!;
+      expect(pick).not.toBeNull();
+      click(pick);
       expect(onToggleTiangang).toHaveBeenCalledWith('comrade');
     });
 
-    it('已入牌组的天罡：显示「⚔ 牌组」active 态按钮', () => {
-      const view = makeView({
-        tiangangs: [J('comrade', '同袍', true, true)],
-      });
+    it('已入组的天罡：在牌组一排里显示为槽位 + ✕ 移除（toggleTiangang）', () => {
+      const onToggleTiangang = vi.fn();
+      const view = makeView({ tiangangs: [J('comrade', '同袍', true, true)], deckSize: 12, activeDeckName: '牌组 1' });
       const host = document.createElement('div');
-      mountLobby(host, { getView: () => view, onPlay: vi.fn() });
-      click(navBtn(host, '改造坊'));
-      const togBtn = host.querySelector('[data-act="toggleTiangang"][data-k="comrade"]')!;
-      expect(togBtn).not.toBeNull();
-      expect(togBtn.classList.contains('active')).toBe(true);
-      expect(togBtn.textContent).toContain('⚔ 牌组');
+      mountLobby(host, { getView: () => view, onPlay: vi.fn(), onToggleTiangang });
+      gang(host);
+      const slot = host.querySelector('.tg-slot:not(.empty)')!;
+      expect(slot.textContent).toContain('同袍');
+      const rm = host.querySelector('.tg-rm[data-act="toggleTiangang"][data-k="comrade"]')!;
+      expect(rm).not.toBeNull();
+      click(rm);
+      expect(onToggleTiangang).toHaveBeenCalledWith('comrade');
     });
 
-    it('出战牌组已满（deckSize 张）：未入组的 owned 天罡显示「牌组满」且 disabled', () => {
+    it('主页天罡牌组「✏ 编辑牌组」→ 跳牌组屏天罡页（出现槽位编辑器）', () => {
+      const host = document.createElement('div');
+      mountLobby(host, { getView: () => makeView({ tiangangs: [J('comrade', '同袍', true, true)], deckSize: 12, activeDeckName: '牌组 1' }), onPlay: vi.fn() });
+      click(host.querySelector('[data-act="editDeck"]')!); // 主页预览面板上的编辑按钮
+      expect(host.querySelector('.screen.on')).not.toBeNull();
+      expect(host.querySelector('.tg-deck')).not.toBeNull(); // 已在天罡编辑器
+    });
+
+    it('牌组已满（deckSize 张）：无空槽「＋」，弹窗提示已满', () => {
       const tiangangs: LobbyShopItem[] = [
         J('a', 'A', true, true), J('b', 'B', true, true), J('c', 'C', true, true),
         J('d', 'D', true, true), J('e', 'E', true, true),
-        J('f', 'F', true, false), // owned 但未入组，且牌组已满
       ];
-      const view = makeView({ tiangangs, deckSize: 5 }); // 本例上限设 5，5 张即满
+      const view = makeView({ tiangangs, deckSize: 5, activeDeckName: '牌组 1' });
       const host = document.createElement('div');
       mountLobby(host, { getView: () => view, onPlay: vi.fn() });
-      click(navBtn(host, '改造坊'));
-      const togBtn = host.querySelector('[data-act="toggleTiangang"][data-k="f"]') as HTMLButtonElement | null;
-      expect(togBtn).not.toBeNull();
-      expect(togBtn?.disabled).toBe(true);
-      expect(togBtn?.textContent).toContain('牌组满');
+      gang(host);
+      expect(host.querySelector('.tg-slot.empty')).toBeNull(); // 满 → 无空槽＋
+      expect(host.querySelectorAll('.tg-slot:not(.empty)').length).toBe(5);
     });
 
     it('多牌组：选牌组→onSelectDeck / 新建→onNewDeck / 删除→onDelDeck', () => {

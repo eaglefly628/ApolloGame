@@ -166,6 +166,19 @@ const CSS = `
 .ggl-root .deck-chip.add{ color:var(--gold); border-style:dashed }
 .ggl-root .deck-chip .deck-del{ margin-left:4px; width:16px; height:16px; line-height:15px; text-align:center; border-radius:50%; background:rgba(0,0,0,.25); color:var(--danger); font-size:11px }
 .ggl-root .deck-chip .deck-del:hover{ background:var(--danger); color:#fff }
+.ggl-root .tg-deck{ display:grid; grid-template-columns:repeat(6,1fr); gap:8px }
+.ggl-root .tg-slot{ position:relative; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:3px; min-height:64px; padding:8px 5px; border-radius:10px; background:var(--chip); border:1px solid var(--gold); color:var(--ink); font-size:11px; font-weight:700; text-align:center }
+.ggl-root .tg-slot .tg-slot-ic{ font-size:15px; line-height:1 }
+.ggl-root .tg-slot.empty{ border-style:dashed; border-color:var(--panel-border); color:var(--ink-dim); cursor:pointer; font-size:20px }
+.ggl-root .tg-slot.empty:hover{ border-color:var(--gold); color:var(--gold) }
+.ggl-root .tg-rm{ position:absolute; top:-7px; right:-7px; width:18px; height:18px; line-height:16px; text-align:center; border-radius:50%; background:var(--panel); border:1px solid var(--danger); color:var(--danger); font-size:11px; cursor:pointer }
+.ggl-root .tg-rm:hover{ background:var(--danger); color:#fff }
+.ggl-root .pick-list{ display:flex; flex-direction:column; gap:8px; max-height:48vh; overflow-y:auto }
+.ggl-root .pick-item{ display:block; width:100%; text-align:left; padding:10px 12px; border-radius:10px; background:var(--chip); border:1px solid var(--panel-border); color:var(--ink); cursor:pointer }
+.ggl-root .pick-item:hover{ border-color:var(--gold); background:rgba(232,205,130,.10) }
+.ggl-root .pick-item:disabled{ opacity:.4; cursor:not-allowed }
+.ggl-root .pick-hd{ font-family:var(--fh); font-weight:700; font-size:14px }
+.ggl-root .pick-sub{ font-size:11px; color:var(--ink-dim); margin-top:2px }
 .ggl-root .earth-filter{ display:flex; gap:6px; flex-wrap:wrap; margin-bottom:14px }
 .ggl-root .earth-filter button{ padding:4px 14px; border-radius:6px; background:var(--chip); border:1px solid var(--panel-border); color:var(--ink-dim); font-size:12px; cursor:pointer; transition:background .15s }
 .ggl-root .earth-groups{ display:flex; flex-direction:column; gap:10px }
@@ -559,7 +572,7 @@ function campaignSection(view: LobbyView): string {
 }
 
 // 改造坊天罡牌货架项（B3）：买入 + 选入/踢出战库双动作 + 牌力/P̂ 展示。
-function craftTiangangItem(it: LobbyShopItem, deckFull: boolean): string {
+function craftTiangangItem(it: LobbyShopItem): string {
   const cls = 'good' + (it.owned ? ' got' : it.buyable ? ' buy' : ' lock');
   // 金币解锁仅在「已解锁关·可购」时挂点击；关未到 → 锁态（钻石速购单独按钮）。
   const buyAttr = it.buyable && !it.owned ? ` data-act="buyTiangang" data-k="${it.id}"` : '';
@@ -569,10 +582,8 @@ function craftTiangangItem(it: LobbyShopItem, deckFull: boolean): string {
   const stageBadge = `<span class="unlock-badge" title="第 ${us} 关解锁">关${us}</span>`;
   let foot: string;
   if (it.owned) {
-    const togLabel = it.inDeck ? '⚔ 牌组' : (deckFull ? '牌组满' : '+ 牌组');
-    const togCls = 'tiangang-tog' + (it.inDeck ? ' active' : '');
-    const togDis = !it.inDeck && deckFull ? ' disabled' : '';
-    foot = `<div style="display:flex;gap:6px;margin-top:6px;align-items:center"><span style="font-size:11px;color:var(--gold)">✓ 已解锁</span><button class="${togCls}" data-act="toggleTiangang" data-k="${it.id}"${togDis}>${togLabel}</button></div>`;
+    // 改造坊只管"拥有"；编入牌组到「牌组」屏做（不在两处都能编·避免跳转混乱）
+    foot = `<div style="display:flex;gap:6px;margin-top:6px;align-items:center"><span style="font-size:11px;color:var(--gold)">✓ 已解锁${it.inDeck ? ' · ⚔ 已入组' : ''}</span><button class="tiangang-tog" data-act="editDeck">→ 牌组编入</button></div>`;
   } else if (it.locked) {
     // 关未到 → 金币锁；可花钻石(=关序)速解（doc25·跳 grind）。
     foot = `<div style="display:flex;gap:6px;margin-top:6px;align-items:center"><span style="font-size:11px;color:var(--ink-dim)">🔒 通关第 ${us} 关解锁</span><button class="tiangang-tog" data-act="diamondUnlock" data-k="${it.id}" style="color:#7fd0ff;border-color:#3a6ea5">💎${us} 速解</button></div>`;
@@ -596,27 +607,41 @@ function deckPreviewPanel(tiangangs: LobbyShopItem[], archName: string | null | 
   const arch = archName ? `流派 <b>${esc(archName)}</b>${activated ? '　🔥 招牌已激活' : ''}` : '流派未成型';
   const summary = inDeck.length ? `　整库 P̂ <b style="color:var(--gold)">${totalPhat}</b>${hasLeg ? '　🔥 传说激活' : ''}` : '';
   const title = deckName ? `天罡牌组 · ${esc(deckName)}` : '天罡牌组';
-  return `<div class="card" style="margin-bottom:14px"><h2>${GI.bolt} ${title} <span class="ghost" style="font-size:12px;margin-left:auto">${inDeck.length}/${size} · 出战带 ${size} 张</span></h2>${body}<div class="note" style="text-align:left;margin-top:4px">${arch}${summary}</div></div>`;
+  return `<div class="card" style="margin-bottom:14px"><h2>${GI.bolt} ${title} <span class="ghost" style="font-size:12px;margin-left:auto">${inDeck.length}/${size} · 出战带 ${size} 张</span></h2>${body}<div style="display:flex;align-items:center;gap:10px;margin-top:8px"><div class="note" style="text-align:left;margin:0;flex:1">${arch}${summary}</div><button class="cta-sub" data-act="editDeck" style="flex:none">✏ 编辑牌组</button></div></div>`;
 }
 
-// 天罡牌组管理（owner 2026-06-20）：多牌组 chips（选出战/新建/删除）+ 出战牌组预览 + 我的天罡（点击加入/移出 ≤deckSize）。
+// 天罡牌组编辑器（owner 2026-06-20 重做）：① 选/建/删牌组 → ② 一排 size 槽（满槽可✕移除·空槽＋添加）
+// → ③ 点＋弹「选卡弹窗」从已拥有天罡里挑一张入组。买卡=商城/改造坊；编组只在此处，不两地跳。
 function tiangangDeckManager(view: LobbyView): string {
   const decks = view.decks ?? [];
   const size = view.deckSize ?? 12;
-  const owned = view.tiangangs.filter((j) => j.owned);
-  const inDeckCount = view.tiangangs.filter((j) => j.inDeck).length;
-  const deckFull = inDeckCount >= size;
-  const chips = decks.map((d) => `<button class="deck-chip${d.active ? ' on' : ''}" data-act="selectDeck" data-k="${d.id}">${d.active ? '⚔ ' : ''}${esc(d.name)} <span class="ghost">${d.size}/${size}</span>${decks.length > 1 ? `<span class="deck-del" data-act="delDeck" data-k="${d.id}" title="删除">✕</span>` : ''}</button>`).join('');
-  const addBtn = view.canAddDeck ? `<button class="deck-chip add" data-act="newDeck">＋ 新建</button>` : '';
-  const editor = owned.length
-    ? `<div class="shelf">${owned.map((j) => craftTiangangItem(j, deckFull)).join('')}</div>`
-    : `<div class="gang-empty"><span style="font-size:28px;opacity:.5">⚡</span><b>还没有天罡牌</b><span style="font-size:11px">去「改造坊」买入天罡牌 → 回这里编进出战牌组</span></div>`;
-  return `<div class="card" style="margin-bottom:14px"><h2>${GI.bolt} 天罡牌组 <span class="ghost" style="margin-left:auto;font-size:12px">每场出战带 ${size} 张 · 自建多套切换</span></h2>
-    <div class="deck-chips">${chips}${addBtn}</div>
-    <div class="note" style="text-align:left;margin:6px 0 10px">选中的牌组 = <b style="color:var(--gold)">出战牌组</b>；下方点天罡牌<b>加入/移出</b>该组（上限 ${size}）。</div>
-    ${deckPreviewPanel(view.tiangangs, view.deckArchName, view.deckArchActivated, size, view.activeDeckName)}
-    <div class="note" style="text-align:left;margin:10px 0 6px">⚡ 我的天罡（点「+ 牌组 / ⚔ 牌组」加入或移出出战牌组）</div>
-    ${editor}</div>`;
+  const inDeck = view.tiangangs.filter((j) => j.inDeck);
+  const deckFull = inDeck.length >= size;
+  const chips = decks.map((d) => `<button class="deck-chip${d.active ? ' on' : ''}" data-act="selectDeck" data-k="${d.id}">${d.active ? '⚔ ' : ''}${esc(d.name)} <span class="ghost">${d.size}/${size}</span>${decks.length > 1 ? `<span class="deck-del" data-act="delDeck" data-k="${d.id}" title="删除牌组">✕</span>` : ''}</button>`).join('');
+  const addDeckBtn = view.canAddDeck ? `<button class="deck-chip add" data-act="newDeck">＋ 新建牌组</button>` : '';
+  const filled = inDeck.map((j) => `<div class="tg-slot" title="${esc(j.sub)}"><div class="tg-slot-ic">${tiangangIcon(j.icon, j.tint)}</div><b>${esc(j.name)}</b><button class="tg-rm" data-act="toggleTiangang" data-k="${j.id}" title="移出牌组">✕</button></div>`).join('');
+  const empties = Array.from({ length: Math.max(0, size - inDeck.length) }, () => `<button class="tg-slot empty" data-act="deckAdd" title="添加天罡牌"><span>＋</span></button>`).join('');
+  return `<div class="card" style="margin-bottom:14px"><h2>${GI.bolt} 天罡牌组 · 编辑 <span class="ghost" style="margin-left:auto;font-size:12px">出战带 ${size} 张 · 自建多套切换</span></h2>
+    <div class="note" style="text-align:left;margin-bottom:6px">① 选一个牌组（= 这场出战带的那套），或新建</div>
+    <div class="deck-chips">${chips}${addDeckBtn}</div>
+    <div class="note" style="text-align:left;margin:12px 0 7px">② 出战牌组「<b style="color:var(--gold)">${esc(view.activeDeckName ?? '')}</b>」 ${inDeck.length}/${size} —— 满槽点 <b>✕ 移除</b>，空槽点 <b>＋ 添加</b></div>
+    <div class="tg-deck">${filled}${empties}</div>
+    ${deckFull ? '<div class="note" style="text-align:left;margin-top:8px;color:var(--gold)">牌组已满 12 张，出战即带这套。</div>' : ''}</div>`;
+}
+// 选卡弹窗（添加天罡入组）：从已拥有但未入组的天罡里点选 → 加入。
+function deckPickerBox(view: LobbyView): string {
+  const size = view.deckSize ?? 12;
+  const deckFull = view.tiangangs.filter((j) => j.inDeck).length >= size;
+  const avail = view.tiangangs.filter((j) => j.owned && !j.inDeck);
+  const list = avail.length
+    ? avail.map((j) => { const stars = j.power ? '⭐'.repeat(Math.min(j.power, 5)) : ''; return `<button class="pick-item"${deckFull ? ' disabled' : ` data-act="toggleTiangang" data-k="${j.id}"`}><div class="pick-hd">${tiangangIcon(j.icon, j.tint)} <b>${esc(j.name)}</b> <span class="power-stars">${stars}</span></div><div class="pick-sub">${esc(j.sub)}</div></button>`; }).join('')
+    : `<div class="gang-empty"><span style="font-size:28px;opacity:.5">⚡</span><b>已拥有的天罡都进组了</b><span style="font-size:11px">去「改造坊 / 🛒商城」获取更多天罡牌</span></div>`;
+  return `<div class="tut-ov" data-act="deckPicker-close"><div class="tut-box intro-scroll" data-stop="1" style="max-width:480px">
+    <h3>添加天罡牌 · 选一张入组</h3>
+    <div class="note" style="text-align:left;margin-bottom:8px">${deckFull ? '<span style="color:var(--gold)">牌组已满，先移除再添加。</span>' : '从已拥有的天罡牌里点选 → 即加入出战牌组（可连选多张）'}</div>
+    <div class="pick-list">${list}</div>
+    <div style="text-align:center;margin-top:12px"><button class="cta-sub" style="color:#2a1a08;background:var(--gold-grad);border:0" data-act="deckPicker-close">完成 →</button></div>
+  </div></div>`;
 }
 
 // 花色均势面板（B1 · DECKS 扑克牌组）：4 花色 favor 平均值 → 竖条高度 + 预估强度 ★
@@ -723,7 +748,7 @@ function fiendsCodex(): string {
   }).join('')}</div>`;
 }
 
-export function renderLobby(view: LobbyView, tab: string, tutorialOpen: boolean, deckTab: 'base' | 'gang' = 'base', earthFilter = 'all', collTab = 'cards', heroSuit = 'all', heroDetail = '', heroRar = 'all', ownedOnly = false, introOpen = false, manualTier: '' | 'easy' | 'mid' | 'hard' = '', rechargeOpen = false, rechargeErr = '', story: { beats: StoryBeat[]; idx: number; label: string; cta: string } | null = null, guideSkipAsk = false, shopTab: 'gacha' | 'wallet' = 'wallet', gachaReveal: GachaResult[] | null = null): string {
+export function renderLobby(view: LobbyView, tab: string, tutorialOpen: boolean, deckTab: 'base' | 'gang' = 'base', earthFilter = 'all', collTab = 'cards', heroSuit = 'all', heroDetail = '', heroRar = 'all', ownedOnly = false, introOpen = false, manualTier: '' | 'easy' | 'mid' | 'hard' = '', rechargeOpen = false, rechargeErr = '', story: { beats: StoryBeat[]; idx: number; label: string; cta: string } | null = null, guideSkipAsk = false, shopTab: 'gacha' | 'wallet' = 'wallet', gachaReveal: GachaResult[] | null = null, deckPickerOpen = false): string {
   const on = (t: string): string => (tab === t ? ' on' : '');
   const dOn = (t: string): string => (deckTab === t ? ' on' : '');
   const cOn = (t: string): string => (collTab === t ? ' on' : '');
@@ -803,14 +828,14 @@ export function renderLobby(view: LobbyView, tab: string, tutorialOpen: boolean,
       <div class="forge">
         <div class="card"><h2>${GI.crafting} 改造台 · 天罡牌组（≤5 入战库·局内法术）</h2><div class="fuse"><div class="slot" style="color:var(--gold)">⚡</div><div class="arrow">→</div><div class="slot" style="color:var(--gold)">⚔</div></div>
           <div class="note" style="text-align:left;margin-bottom:8px">买入后「+ 战库」选入（≤5 张进战库）；战库=流派身份·法术牌，局内打出生效。</div>
-          <div class="shelf">${(() => { const full = view.tiangangs.filter((j) => j.inDeck).length >= (view.deckSize ?? 12); return view.tiangangs.map((j) => craftTiangangItem(j, full)).join(''); })()}</div></div>
+          <div class="shelf">${view.tiangangs.map((j) => craftTiangangItem(j)).join('')}</div></div>
         <div class="card"><h2>${GI.planet} 地支牌 · 升档（可叠加 · 第二养成轴）</h2><div class="note" style="text-align:left;margin-bottom:8px">升档改 run 参数（命/能/兵档/牌型）· 持久存档 · 买一级累加</div>
           <div class="shelf">${view.planets.map((p) => shopItem('buyPlanet', '🪐', p)).join('')}</div></div>
       </div>
     </div></section>
     <section class="screen${on('ladder')} full">${ladderSection(view.name, view.rankText)}</section>
   </div>
-  </div>${tutorialOpen ? tutorialBox() : ''}${introOpen ? gameIntroBox() : ''}${manualTier ? manualBox(manualTier) : ''}${rechargeOpen ? shopBox(view, shopTab, rechargeErr) : ''}${gachaReveal ? gachaRevealBox(gachaReveal) : ''}${story ? narrationBox(story.beats, story.idx, story.label, story.cta) : (!view.firstLaunch && (view.guideStep ?? -1) >= 0 ? guideBox(view.guideStep ?? 0) : '')}${guideSkipAsk ? guideSkipDialog() : ''}</div>`;
+  </div>${tutorialOpen ? tutorialBox() : ''}${introOpen ? gameIntroBox() : ''}${manualTier ? manualBox(manualTier) : ''}${rechargeOpen ? shopBox(view, shopTab, rechargeErr) : ''}${gachaReveal ? gachaRevealBox(gachaReveal) : ''}${story ? narrationBox(story.beats, story.idx, story.label, story.cta) : (!view.firstLaunch && (view.guideStep ?? -1) >= 0 ? guideBox(view.guideStep ?? 0) : '')}${guideSkipAsk ? guideSkipDialog() : ''}${deckPickerOpen ? deckPickerBox(view) : ''}</div>`;
 }
 
 export interface LobbyHandlers {
@@ -857,7 +882,8 @@ export function mountLobby(host: HTMLElement, h: LobbyHandlers): { update: () =>
   let guideSkipAsk = false;
   let shopTab: 'gacha' | 'wallet' = 'wallet';
   let gachaReveal: GachaResult[] | null = null;
-  const render = (): void => { host.innerHTML = renderLobby({ ...h.getView(), skin }, tab, tut, deckTab, earthFilter, collTab, heroSuit, heroDetail, heroRar, ownedOnly, intro, manTier, recharge, rechargeErr, story, guideSkipAsk, shopTab, gachaReveal); };
+  let deckPicker = false;
+  const render = (): void => { host.innerHTML = renderLobby({ ...h.getView(), skin }, tab, tut, deckTab, earthFilter, collTab, heroSuit, heroDetail, heroRar, ownedOnly, intro, manTier, recharge, rechargeErr, story, guideSkipAsk, shopTab, gachaReveal, deckPicker); };
   // 每关开局演出（doc27 §五）：战役背景 + Boss 开场白 → 出征。缺 intro 则直接进战斗。
   const levelBeats = (c: StageCampaign): StoryBeat[] => [
     { scene: c.battle, text: c.intro ?? c.oneLiner },
@@ -914,6 +940,10 @@ export function mountLobby(host: HTMLElement, h: LobbyHandlers): { update: () =>
     else if (act === 'selectDeck') { h.onSelectDeck?.(k); render(); }
     else if (act === 'newDeck') { h.onNewDeck?.(); render(); }
     else if (act === 'delDeck') { h.onDelDeck?.(k); render(); }
+    // 天罡牌组编辑：主页「编辑牌组」跳牌组屏天罡页 / 空槽弹选卡窗 / 关窗
+    else if (act === 'editDeck') { tab = 'decks'; deckTab = 'gang'; render(); }
+    else if (act === 'deckAdd') { deckPicker = true; render(); }
+    else if (act === 'deckPicker-close') { deckPicker = false; render(); }
     else if (act === 'reset') { h.onReset?.(); render(); }
   };
   host.addEventListener('click', onClick);
@@ -925,6 +955,6 @@ export function mountLobby(host: HTMLElement, h: LobbyHandlers): { update: () =>
 const FONTS = '<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin><link href="https://fonts.googleapis.com/css2?family=Silkscreen:wght@400;700&family=Rajdhani:wght@500;600;700&family=Cormorant+Garamond:wght@500;600;700&family=Noto+Sans+SC:wght@400;500;700;900&family=Noto+Serif+SC:wght@500;700;900&family=Zhi+Mang+Xing&family=Ma+Shan+Zheng&display=swap" rel="stylesheet">';
 
 // 离线"看帧" golden：自包含 HTML（CSS + 字体 + 真渲染器输出）。浏览器开 = 真大厅。
-export function renderLobbyDoc(view: LobbyView, tab = 'home', collTab = 'cards', deckTab: 'base' | 'gang' = 'base', rechargeOpen = false, story: { beats: StoryBeat[]; idx: number; label: string; cta: string } | null = null, guideSkipAsk = false, shopTab: 'gacha' | 'wallet' = 'wallet', gachaReveal: GachaResult[] | null = null): string {
-  return `<!DOCTYPE html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">${FONTS}<style>html,body{margin:0;background:#0c0a08}${CSS}</style></head><body>${renderLobby(view, tab, false, deckTab, 'all', collTab, 'all', '', 'all', false, false, '', rechargeOpen, '', story, guideSkipAsk, shopTab, gachaReveal)}</body></html>`;
+export function renderLobbyDoc(view: LobbyView, tab = 'home', collTab = 'cards', deckTab: 'base' | 'gang' = 'base', rechargeOpen = false, story: { beats: StoryBeat[]; idx: number; label: string; cta: string } | null = null, guideSkipAsk = false, shopTab: 'gacha' | 'wallet' = 'wallet', gachaReveal: GachaResult[] | null = null, deckPickerOpen = false): string {
+  return `<!DOCTYPE html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">${FONTS}<style>html,body{margin:0;background:#0c0a08}${CSS}</style></head><body>${renderLobby(view, tab, false, deckTab, 'all', collTab, 'all', '', 'all', false, false, '', rechargeOpen, '', story, guideSkipAsk, shopTab, gachaReveal, deckPickerOpen)}</body></html>`;
 }
