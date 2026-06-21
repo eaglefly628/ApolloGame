@@ -10,7 +10,7 @@ files:
   - package.json
 
 directories:
-  output: release
+  output: release/bin
 
 mac:
   category: public.app-category.games
