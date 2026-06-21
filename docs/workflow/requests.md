@@ -399,3 +399,24 @@ game-f 报「多数需新引擎能力」。Lead 实测：**三个已点名技能
 **活的·勿碰**：`showTurnMatch`(L457–574)、`showLobby/showBetween`、`settleTurn`、`aggregateTengang/tengangFxOf`、`seededShuffleArr`(L255–260)、`clashToTurnView`，及 turn-combat/turn-battle-screen/lobby-screen/level/disha 全目录。
 
 **建议**：甲确认清除时机后，整体砍实时血脉（~280 行 + 16 常量 + 3 测试文件）+ Engine 血脉占位（含 L12 注释），并给顶部 import/常量/helper **加分区注释**隔离三代实现。**乙不动**（战斗段=甲地盘）。
+
+---
+
+### REQ-G-战斗结构 · [2026-06-21] · design G → 甲（引擎域） · Game G · status: **open（待 owner 拍板战斗模型 A/B/C）** · 优先级: **P0（阻塞全部数值平衡）** · 类型: 真缺口（结构性·非数值）
+
+> design G 把 `simulate-balance.ts` 接到 mainbranch、按 owner 要求计入**玩家地支附魔 + 天罡 loadout + 放牌按点数收费**后实跑 N=300~500。**结论：关1 通关率恒 ~100%，对一切 Boss 数值旋钮（favorBias ±12 / 激进 AI / 家血 4~6 / 玩家天罡地支消融）全免疫 → 数值标定（owner 派我的活）被结构性问题阻塞。** 详见 `design/27-campaign-level-db.md §3.4`。
+
+**根因（读 `turn-combat.ts`·结构·非数字）**：
+1. `resolveClash` L345-353：**掷命后胜者立即「光荣回牌库」离场**（owner 2026-06-21 改）→ 每次遭遇双方前锋都清空 → **任何一路守不住**（强将赢了也走、下格立刻空）。
+2. `advanceColumnToBase` L368-383：**空路白送 chip**（某路只我方有兵 → 直接破家 −1·不经掷命）。
+3. 贪心玩家吞吐 > Boss utility AI 吞吐 → Boss **覆盖不全三路** → 玩家总有空路走进去破家。
+4. 合流 → **胜负由占路/到家先后决定，牌力(favor/地支/天罡)几乎不参与**；源泉堆到 20+ 没处花 → **「按点数收费」低牌价值杠杆当前咬不动**。
+
+**裁决（design G）**：触碰 owner「胜者回牌库」决定 → **不擅自回滚**，已上报 owner 定夺。推荐方向（owner 选）：
+- **(A 主推)** 胜者**留格继续把守**（staminaLeft 递减·打光才退场/回库）= owner 改前模型，保留"回库可再抽"作退场奖励 → 防守成立、牌力/养成/天罡才决定胜负、温泉关死守幻想立住。
+- **(B)** 保留"胜者回库"但**空路不白送**（攻坚判定/敌家守军门槛）+ 给 Boss 防守吞吐（disha 免费铺/增援）覆盖三路。
+- **(C)** 玩家吞吐加硬节流（每回合放牌软上限/降源泉 regen）让按点数收费咬住。
+
+**同时（§六派甲·独立于 A/B/C）**：level loader/sim 接 **16写死 pokerDeck + ≤5 tiangang + dishaScale**（当前仍跑旧 54张+favorBias+12随机天罡）→ 否则标定的不是真 Boss。
+
+**design G 侧已就绪**：`simulate-balance.ts` 已增强（玩家天罡/地支/cost + bossDelta 扫描 + 消融）；结构修好 + loader 接好后，design G 立即重跑、按 §3.2 把 dishaScale 收敛到 §四 targetWR。**不阻塞甲先做哪个——但数值平衡在此 P0 解决前无法定稿。**
