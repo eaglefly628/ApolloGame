@@ -1191,12 +1191,14 @@ export function mountLobby(host: HTMLElement, h: LobbyHandlers): { update: () =>
     const cx = c.x + c.w / 2;
     const ax = Math.max(b.x + 12, Math.min(cx, b.x + b.w - 12)); // 箭头横向对齐高亮中心（夹进气泡）
     const up = g.placement === 'bottom'; // 气泡在下方 → 箭头朝上指向高亮；否则朝下
+    // 气泡竖向锚定：朝上(placement top)时按**底边**锚定(气泡向上长·绝不盖住高亮按钮·owner 2026-06-21「往上一点」)；朝下时按顶边。
+    const vpos = up ? `top:${b.y}px` : `bottom:${Math.round(vp.h - (c.y - 14))}px`;
     const arrow = `<div style="position:absolute;left:${ax - 10}px;top:${up ? c.y + c.h + 3 : c.y - 15}px;width:0;height:0;border-left:10px solid transparent;border-right:10px solid transparent;${up ? 'border-bottom:12px solid var(--gold)' : 'border-top:12px solid var(--gold)'};filter:drop-shadow(0 0 5px rgba(232,205,130,.7));animation:gg-coach-arrow 1.1s ease-in-out infinite"></div>`;
     coachLayer.innerHTML =
       `<div style="position:absolute;left:${c.x}px;top:${c.y}px;width:${c.w}px;height:${c.h}px;border-radius:9px;box-shadow:0 0 0 9999px rgba(8,10,14,.72);transition:all .18s"></div>` +
       `<div style="position:absolute;left:${c.x}px;top:${c.y}px;width:${c.w}px;height:${c.h}px;border-radius:9px;animation:gg-coach-ring 1.4s ease-in-out infinite;pointer-events:none"></div>` + // 金边脉冲圈·让高亮醒目
       arrow +
-      `<div style="position:absolute;left:${b.x}px;top:${b.y}px;width:${b.w}px;background:linear-gradient(160deg,#1b2233,#10141d);border:1px solid var(--gold);border-radius:12px;color:#ece6f5;font:600 13px/1.62 var(--fb);padding:11px 14px;box-shadow:0 12px 32px rgba(0,0,0,.6);pointer-events:auto">` +
+      `<div style="position:absolute;left:${b.x}px;${vpos};width:${b.w}px;background:linear-gradient(160deg,#1b2233,#10141d);border:1px solid var(--gold);border-radius:12px;color:#ece6f5;font:600 13px/1.62 var(--fb);padding:11px 14px;box-shadow:0 12px 32px rgba(0,0,0,.6);pointer-events:auto">` +
         `<div style="display:flex;align-items:center;gap:8px"><span style="font-size:11px;letter-spacing:.1em;color:var(--gold)">🧭 新手引导 ${gs + 1}/${GUIDE_COACH.length}</span><button data-act="guide-skip" style="margin-left:auto;background:none;border:0;color:#9fb0c0;font-size:11px;text-decoration:underline;cursor:pointer">跳过引导</button></div>` +
         `<div style="margin-top:5px">${esc(spec.text)}</div>` +
       `</div>`;

@@ -35,13 +35,22 @@ export function mountOnboardingOverlay(host: HTMLElement, world: IWorld, anchorR
       const rect = rectOf(m.anchor);
       if (!rect) continue; // 锚点元素未渲出 → 本帧跳过（下一帧再试）
       const g = coachmarkGeometry(rect, vp, m);
-      const c = g.cutout;
+      const c = g.cutout, b = g.bubble;
       const dim = rgba(m.dimColor ?? 0x000000, m.dimAlpha ?? 0.6);
       const radius = c.shape === 'circle' ? '50%' : '8px';
       // 镂空：锚点处一块（无背景）+ 巨大 box-shadow 把四周压暗（spotlight 经典法，零 SVG mask）。
       html += `<div style="position:absolute;left:${c.x}px;top:${c.y}px;width:${c.w}px;height:${c.h}px;border-radius:${radius};box-shadow:0 0 0 9999px ${dim};transition:all .15s"></div>`;
-      // 气泡（**pointer-events:none**：纯文案·绝不拦截对高亮目标的点击——否则气泡盖住目标按钮=玩家卡死。owner 2026-06-21）。
-      html += `<div style="position:absolute;left:${g.bubble.x}px;top:${g.bubble.y}px;width:${g.bubble.w}px;min-height:${g.bubble.h}px;` +
+      // 高亮金边圈（让"要点的位置"醒目·owner 2026-06-21「没有高亮」）。
+      html += `<div style="position:absolute;left:${c.x}px;top:${c.y}px;width:${c.w}px;height:${c.h}px;border-radius:${radius};box-shadow:0 0 0 3px #e0973a,0 0 18px 4px rgba(224,151,58,.6);pointer-events:none"></div>`;
+      // 指向箭头（朝高亮元素·owner「有个箭头指向它」）。仅上下放置时画。
+      if (g.placement === 'top' || g.placement === 'bottom') {
+        const up = g.placement === 'bottom'; // 气泡在下→箭头朝上指；在上→朝下指
+        const ax = Math.max(b.x + 11, Math.min(c.x + c.w / 2, b.x + b.w - 11));
+        html += `<div style="position:absolute;left:${ax - 9}px;top:${up ? c.y + c.h + 2 : c.y - 14}px;width:0;height:0;border-left:9px solid transparent;border-right:9px solid transparent;${up ? 'border-bottom:11px solid #e0973a' : 'border-top:11px solid #e0973a'};pointer-events:none"></div>`;
+      }
+      // 气泡（**pointer-events:none**：纯文案·绝不拦截对高亮目标的点击）。朝上放置时按**底边**锚定→气泡向上长·绝不盖住按钮（owner 2026-06-21「挡住了按钮·往上一点」）。
+      const vpos = g.placement === 'top' ? `bottom:${Math.round(vp.h - (c.y - 13))}px` : `top:${b.y}px`;
+      html += `<div style="position:absolute;left:${b.x}px;${vpos};width:${b.w}px;min-height:${b.h}px;` +
         `background:#1b1822;border:1px solid #e0973a;border-radius:10px;color:#ece6f5;font:14px/1.5 sans-serif;padding:10px 14px;box-sizing:border-box;` +
         `box-shadow:0 8px 24px #0009;pointer-events:none">${escapeHtml(m.text)}</div>`;
     }
