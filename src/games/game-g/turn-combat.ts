@@ -338,7 +338,12 @@ function resolveClash(b: TurnBattle, li: number): void {
   // 死战不退（地煞·关1 仅 Boss 主将）：首负不亡 → 残喘退 1 格(向 Boss 家 slot+1)·二次才真死。
   if (aWins && fb.general && b.dishaB.lastStandGeneral && !b.bossLastStandUsed) {
     b.bossLastStandUsed = true; const q = lane.b; const u = q.shift();
-    if (u) { u.slot = Math.min(SLOTS - 1, u.slot + 1); q.push(u); q.sort((x, y) => x.slot - y.slot); }
+    if (u) {
+      const target = Math.min(SLOTS - 1, u.slot + 1);
+      const occ = q.find((x) => x.slot === target); // BUG#7：退入格若已有兵 → 与之换位（身后兵补到主将原格）·保一格一兵·防渲染同 slot 覆盖吞牌·确定无 RNG
+      if (occ) occ.slot = u.slot;
+      u.slot = target; q.push(u); q.sort((x, y) => x.slot - y.slot);
+    }
   } else {
     const loser = aWins ? 'b' : 'a';
     killFront(lane, loser); // 输家阵亡

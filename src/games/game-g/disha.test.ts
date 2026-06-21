@@ -95,6 +95,18 @@ describe('Game G · 地煞（doc23 §八 关1-5 · 15 张 · 甲实装）', () =
     expect(b.lanes[0].bGenDead).toBe(false); // 未判主将亡
   });
 
+  it('🟢 死战不退·退格不撞兵（BUG#7 修）：退入格已有兵 → 换位·保一格一兵·身后兵不被吞', () => {
+    const b = initTurnBattle({ seed: 2, disha: ['laststand'] });
+    b.lanes[0].a.push(u('a0', 'A', 4, { buff: 24 })); // 玩家碾压必胜
+    b.lanes[0].b.push(u('b0', '3', 5, { general: true })); // Boss 弱主将(前锋·slot5)
+    b.lanes[0].b.push(u('b1', '7', 6));                    // 身后紧贴一兵(slot6=主将退入格)
+    endTurn(b); endTurn(b); // 玩家胜 → 主将首负不亡·退1格(撞 b1) → 应换位而非同格
+    const slots = b.lanes[0].b.map((x) => x.slot);
+    expect(new Set(slots).size).toBe(slots.length);            // 无两兵同 slot（不再被渲染 bySlot 覆盖吞牌）
+    expect(b.lanes[0].b.some((x) => x.id === 'b0')).toBe(true); // 主将仍在场
+    expect(b.lanes[0].b.some((x) => x.id === 'b1')).toBe(true); // 身后兵也没消失
+  });
+
   it('🟢 大军压境：Boss 回合开始多 +1 召唤源泉(免费多铺)·机动调度§六调 0', () => {
     const swarm = initTurnBattle({ seed: 1, disha: ['swarm'] }); swarm.lanes[0].a.push(u('a0', '7', 4)); // 给个兵免推进即胜
     endTurn(swarm); // 切到 Boss 回合
