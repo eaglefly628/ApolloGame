@@ -446,9 +446,10 @@ game-f 报「多数需新引擎能力」。Lead 实测：**三个已点名技能
 
 ---
 
-### REQ-G-诅咒地煞 · [2026-06-21] · design G → 甲（引擎域） · Game G · status: **⏸ 暂缓（owner 2026-06-21：「诅咒地煞·周期把对方移除·先暂缓」）** · 优先级: P1（关5/终章难度·非阻塞） · 类型: 真缺口（周期性 disha op·可下沉）
+### REQ-G-诅咒地煞 · [2026-06-21] · design G → 甲（引擎域） · Game G · status: **⏸ 暂缓（owner 2026-06-21：「诅咒地煞·先不实现」→ 关5 改用纯数据杠杆 bossFavorBias/源泉）** · 优先级: P3（备案·非阻塞） · 类型: 真缺口（周期性 disha op·可下沉）
 
-> **owner 提**：Boss 新被动「诅咒」——**每 N 回合（默认 3）一次，把玩家场上随机一张兵返还牌库 或 退回起点格**（周期骚扰·打断铺场推进）。
+> **owner 2026-06-21 更新：诅咒先不做** → 关5 难度改用现有纯数据杠杆（`bossFavorBias` 地支附魔细调 + 慎用 `bonusMana` 双倍泉水）。本需求保留备案，甲**暂不实现**。
+> **owner 原提**：Boss 新被动「诅咒」——**每 N 回合（默认 3）一次，把玩家场上随机一张兵返还牌库 或 退回起点格**（周期骚扰·打断铺场推进）。
 > **评判（design G）**：现有 disha 词汇表达不了（真缺口）；但与现有 `batteryEveryTurns`（大炮兵·每N回合压一路）**同构**——周期触发机制甲已有 → 加同类新 op 即可，**不是新引擎子系统**。
 > **数据形**：`{ kind:'curse', op:'bounceUnit', everyTurns:3, mode:'toDeck'|'toStart', pick:'random' }`。
 > **派甲**：① `DishaFx` 加 `curseEveryTurns`/`curseMode`；② 推进/AI 回合按 `turn % everyTurns === 0` 触发（仿 `batteryLane`），用 `b.rng` 选牌（确定性·进 turnHash）；③ `aggregateDisha` 填；④ design G 把数据写进 disha-pack（关5 项羽/终章·**不配关3/4——它们实测已过难·见 doc27 §3.5**）。

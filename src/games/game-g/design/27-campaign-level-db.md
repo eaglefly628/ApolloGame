@@ -113,7 +113,7 @@ Level {
 | 2 | 亚历山大·伙伴骑兵 | 红桃高点尖兵 | companion(+10)+hammeranvil(−6)+sarissa(+4) | 0.5 / −2 / 3 | **89%** |
 | 3 | 曹操·连环兵海 | 梅花连环铺三路 | swarm(+1源泉)+chainboats(3/9)+mandate(+5) | 0.75 / 0 / 4 | **77%** |
 | 4 | 拿破仑·大炮近卫 | 方块中高集中 | battery(每4·−8)+guard(+12)+maneuver(0) | 0.75 / +2 / 4 | **71%** |
-| 5 | 项羽·破釜霸王 | 全高点莽军 | burnboats(+20)+overlord(+40)+winstreak(4/20)+**诅咒** | 0.75 / +4 / 5 | ~68%→**65**(诅咒补) |
+| 5 | 项羽·破釜霸王 | 全高点莽军 | burnboats(+20)+overlord(+40)+winstreak(4/20) | 0.75 / +4~+6 / 5 | ~68%→65（**诅咒撤·改 bossFavorBias 细调**·owner 6-21） |
 
 > **地煞重设值表 + 给甲接入清单**：见 `boss-config-1-5.md` §六/§七。**甲接 16牌组 loader + stayPMul + 诅咒 + 地煞改值后 → design G 重跑 simulate-balance.ts 定稿回填。**
 
