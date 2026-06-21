@@ -194,7 +194,7 @@ export function narrationBox(beats: StoryBeat[], idx: number, label: string, cta
   return `<div class="tut-ov story-ov"><div class="tut-box story-box" data-stop="1">
     <div style="font-family:var(--fn);font-size:11px;letter-spacing:.18em;color:var(--gold);text-transform:uppercase">${esc(label)}</div>
     <div style="font-family:var(--fd);font-size:23px;color:var(--ink);margin:10px 0 16px">〔 ${esc(b.scene)} 〕</div>
-    <div style="font-size:16px;line-height:2.05;color:var(--ink);min-height:104px">${esc(b.text)}</div>
+    <div style="font-size:16px;line-height:2.05;color:var(--ink);height:152px;overflow-y:auto">${esc(b.text)}</div>
     <div style="display:flex;align-items:center;gap:7px;margin:18px 0 14px">${dots}</div>
     <div style="display:flex;gap:10px;align-items:center"><button class="cta-sub" data-act="story-skip">跳过</button><div style="flex:1"></div><button class="cta-sub" style="color:#2a1a08;background:var(--gold-grad);border:0" data-act="story-next">${last ? esc(cta) : '下一幕 →'}</button></div>
   </div></div>`;
