@@ -32,7 +32,7 @@ describe('Game G · lobby-screen 视觉回归（忠实港大厅 · 真渲染器 
     expect(html).toContain('data-act="lucky"'); expect(html).toContain('>掷</button>'); // 漂浮对决卡 掷 emblem（可点·掷运势）
     expect(html).toContain('1.2k'); // 货币接真存档
     expect(html).toContain('将领流'); // 真流派↔Boss
-    expect(html).toContain('--felt:radial-gradient(120% 110% at 50% 26%,#1d6f4e'); // 玄铁绿呢牌桌
+    expect(html).toContain('--felt:radial-gradient(120% 110% at 50% 26%,#3a6b5b'); // 玄铁·淡雅牌桌绿
     expect(html).toContain('📚 玩法手册'); expect(html).toContain('⚙'); // 顶栏帮助 + 设置
     await expect(html).toMatchFileSnapshot('./__frames__/lobby-home.html');
   });

@@ -39,7 +39,7 @@ const CSS = `
   --paper:radial-gradient(120% 120% at 50% -8%,#1d2d42 0%,#0f1b29 55%,#070e17 100%);
   --panel:radial-gradient(130% 95% at 22% 10%,rgba(82,120,158,.30),transparent 56%),linear-gradient(165deg,#1a2a3c,#0f1c2a);
   --panel-border:#3a516e; --hairline:rgba(232,205,138,.24); --chip:rgba(255,255,255,.05); --track:rgba(0,0,0,.5);
-  --frame-edge:#2a3a4e; --felt:radial-gradient(120% 110% at 50% 26%,#1d6f4e 0%,#11543a 46%,#0a3325 100%); --felt-edge:#0c2a1f;
+  --frame-edge:#2a3a4e; --felt:radial-gradient(120% 110% at 50% 26%,#3a6b5b 0%,#274e43 46%,#15302a 100%); --felt-edge:#1a3a2e;
   --spade:#8ba2c9; --heart:#d8504e; --diamond:#e0973a; --club:#3fae6e;
   --chamfer:polygon(13px 0,100% 0,100% calc(100% - 13px),calc(100% - 13px) 100%,0 100%,0 13px);
   --hp:#46d17a; --danger:#ff5d62;
