@@ -6,6 +6,7 @@
 import { GI, tiangangIcon } from './icons.js';
 import { HERO_CARDS, DIZHI_ZODIACS, DIZHI_TRINES, EARTH_FIENDS, STAGE_CAMPAIGN, STORY_OPENING, type StageCampaign, type StoryBeat } from './blueprint.js';
 import { heroPortrait } from './portraits.js';
+import { playSfx, sfxForAct, isSfxMuted, setSfxMuted } from './sfx.js';
 import { RECHARGE_PACKS, rechargeTotal, DIAMOND_EXCHANGES, DIZHI_SHARD_PACKS, GACHA, INLAY_MAX, DIZHI_INLAY_FAVOR, inlayBonus } from './blueprint.js';
 
 export interface LobbyShopItem { id: string; name: string; sub: string; cost: number; owned: boolean; buyable: boolean; level?: number; inDeck?: boolean; power?: number; phat?: number; kind?: string; icon?: string; tint?: string; unlockStage?: number; locked?: boolean }
@@ -456,6 +457,7 @@ function settingsBox(view: LobbyView): string {
   return `<div class="tut-ov" data-act="settings-close"><div class="tut-box" data-stop="1" style="max-width:420px">
     <h2>⚙ 设置</h2>
     <div style="text-align:left;margin-top:10px"><div class="note" style="text-align:left;margin-bottom:6px">大厅皮肤</div><div class="ctarow">${seg('onyx', '玄铁（默认）')}${seg('rosy', '锦霞')}</div></div>
+    <div style="text-align:left;margin-top:16px"><div class="note" style="text-align:left;margin-bottom:6px">音效</div><button class="cta-sub" data-act="sfxToggle">${isSfxMuted() ? '🔇 音效：关（点击开启）' : '🔊 音效：开（点击静音）'}</button></div>
     <div style="text-align:left;margin-top:16px"><div class="note" style="text-align:left;margin-bottom:6px">新手内容</div><button class="cta-sub" data-act="replayIntro">↻ 重看开场故事与新手引导</button></div>
     <div style="text-align:left;margin-top:16px;padding-top:12px;border-top:1px solid var(--panel-border)"><div class="note" style="text-align:left;margin-bottom:6px">调试</div><button class="cta-sub" data-act="reset" style="color:var(--danger);border-color:var(--danger)">⚠ 重置所有数据（调试用）</button></div>
     <div style="text-align:center;margin-top:16px"><button class="cta-sub" style="color:#2a1a08;background:var(--gold-grad);border:0" data-act="settings-close">完成 →</button></div>
@@ -966,7 +968,9 @@ export function mountLobby(host: HTMLElement, h: LobbyHandlers): { update: () =>
   const onClick = (e: MouseEvent): void => {
     const el = (e.target as HTMLElement).closest('[data-act]') as HTMLElement | null; if (!el) return;
     const act = el.dataset.act, k = el.dataset.k ?? '';
-    if (act === 'tab') { tab = k; render(); }
+    if (act) playSfx(sfxForAct(act)); // 菜单音效（程序化合成·静音/无音频上下文则静默）
+    if (act === 'sfxToggle') { setSfxMuted(!isSfxMuted()); renderOv(); }
+    else if (act === 'tab') { tab = k; render(); }
     else if (act === 'deckTab') { deckTab = k === 'gang' ? 'gang' : k === 'dizhi' ? 'dizhi' : 'base'; render(); }
     else if (act === 'earthFilter') { earthFilter = k; render(); }
     else if (act === 'collTab') { collTab = k; render(); }
