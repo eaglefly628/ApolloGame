@@ -818,7 +818,7 @@ export function mount(container: HTMLElement, shell?: { exit?: () => void }): ()
       playPerf(runAiThenContinue);
     };
     const actions: TurnBattleActions = {
-      pickAction: (kind) => { if (busy || tb.active !== 'a') return; if (kind !== 'discard' && tb.actionTaken && tb.actionTaken !== kind) return; selMode = selMode === kind ? null : kind; selHand = -1; gateChance = false; playSfx('select'); syncCoach(); }, // 弃牌不互斥；进「抽」模式 → 引导高亮跟到摸牌钮
+      pickAction: (kind) => { if (busy || tb.active !== 'a') return; if (kind !== 'discard' && tb.actionTaken && tb.actionTaken !== kind) return; selMode = selMode === kind ? null : kind; selHand = -1; gateChance = false; playSfx('select'); mounted?.update(); syncCoach(); }, // 弃牌不互斥；进「抽」模式 → 先重渲让摸牌钮(combat-draw-pick)落 DOM，再 syncCoach 让引导高亮跟到它（owner 2026-06-21·否则高亮锚不到没渲出的钮）
       drawFrom: (from) => {
         if (busy || selMode !== 'draw') return;
         if (drawCard(tb, 'a', from)) { playSfx('draw'); coachDid(from === 'poker' ? 'draw-poker' : 'draw-tengang'); const nc = tb.a.hand[tb.a.hand.length - 1]; log(`我·抽牌(${from === 'poker' ? '扑克' : '天罡'}) -${DRAW_COST}源泉 → ${nc ? cardLabel(nc) : '?'} [剩${tb.a.mana}源泉]`); dealtId = tb.a.hand[tb.a.hand.length - 1]?.id ?? null; const did = dealtId; window.setTimeout(() => { if (dealtId === did) { dealtId = null; if (!perfClash) mounted?.update(); } }, 560); } // 抽到的牌飞入翻面入场·~560ms 后清标记
