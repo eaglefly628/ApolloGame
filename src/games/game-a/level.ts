@@ -130,6 +130,8 @@ export const LEVEL_SWITCH: Level = {
   spawnB: { x: 240, y: 80 }, // 门左侧，须穿门去右侧目标
   goal: { x: 580, y: 305, width: 120, height: 130 }, // 右侧目标（门后）
   goalRequires: ['B'], // 只需 B 到达（A 在按开关）
+  background: 'bg.sky', // 背景皮（地牢皮下 = 暗色地牢；SVG 皮下 = 天空）
+  goalArt: 'goal.flag', // 目标处贴图（地牢皮下 = 楼梯出口）
   doors: [
     { id: 'door1', box: { x: 380, y: 300, width: 24, height: 96 } }, // 实心门 x[368,392] y[252,348]
   ],

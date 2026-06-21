@@ -20,7 +20,7 @@ import {
   effectApplyCapability,
 } from '@skills/tier2/index.js';
 import type { Box, Level, Spawn } from './level.js';
-import { ASSET_PLAYER_A, ASSET_PLAYER_B } from './assets.js';
+import { ASSET_PLAYER_A, ASSET_PLAYER_B, ASSET_DOOR, ASSET_COIN } from './assets.js';
 
 // 协作通关状态：挂 Flag/Zone 的实体 id 与旗标名。
 // 原 coop-goal.ts（手写胜负系统）已下沉为通用 zone-occupancy capability（REQ-006）——通关条件现在是纯数据。
@@ -128,6 +128,8 @@ export function buildGameABlueprint(level: Level): WorldBlueprint {
       Transform: { x: d.box.x, y: d.box.y, rotation: 0, scaleX: 1, scaleY: 1 },
       Shape: { kind: 'box', width: d.box.width, height: d.box.height },
       Color: { tint: 0x9ca3af, alpha: 1 },
+      // 美术皮（textureKey 现成 → 渲染木门/铁门；缺图退化 Color 方块）。Shape 仍是碰撞真值。
+      Sprite: { textureKey: ASSET_DOOR, anchorX: 0.5, anchorY: 0.5, zOrder: 1 },
     };
     // 组合开门条件（openWhen，多机关联动）：把任意布尔树直接喂给 event-when 的 when（引擎已支持 and/or/not）。
     // 真→开门信号、其否定→合门信号（level 持续：条件成立时门开、任一松开自动复原）。零新能力、零游戏系统。
@@ -175,6 +177,7 @@ export function buildGameABlueprint(level: Level): WorldBlueprint {
       Transform: { x: r.x, y: r.y, rotation: 0, scaleX: 1, scaleY: 1 },
       Shape: { kind: 'box', width: r.width, height: r.height },
       Color: { tint: 0xfacc15, alpha: 1 },
+      Sprite: { textureKey: ASSET_COIN, anchorX: 0.5, anchorY: 0.5, zOrder: 1 }, // 美术皮（金币/宝石）；缺图退化
       Sensor: {}, // 非实心：玩家穿过即拾
       Flag: { id: `gem:${c.id}`, active: false },
       Zone: { outFlag: `gem:${c.id}`, minX: r.x - r.width / 2, minY: r.y - r.height / 2, maxX: r.x + r.width / 2, maxY: r.y + r.height / 2, requiredEntities: [PLAYER_A_ENTITY, PLAYER_B_ENTITY], count: 1 },

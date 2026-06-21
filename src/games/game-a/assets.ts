@@ -12,6 +12,9 @@ export const ASSET_BG = 'bg.sky';
 export const ASSET_GOAL = 'goal.flag';
 export const ASSET_PLAYER_A = 'player.a';
 export const ASSET_PLAYER_B = 'player.b';
+// 环境贴图 key（门/拾取物）：蓝图给实体挂这些 key，各「皮」分别提供其图（SVG 占位 / DCSS 像素）。
+export const ASSET_DOOR = 'door.wood';
+export const ASSET_COIN = 'coin.gold';
 
 export const GAME_A_ASSETS: AssetManifest = [
   {
@@ -66,5 +69,31 @@ export const GAME_A_ASSETS: AssetManifest = [
     ),
     width: 30,
     height: 30,
+  },
+  {
+    kind: 'texture',
+    key: ASSET_DOOR,
+    src: svg(
+      `<rect width="24" height="96" fill="rgb(120,86,52)"/>` +
+        `<rect x="3" y="3" width="18" height="90" fill="none" stroke="rgb(86,60,36)" stroke-width="2"/>` +
+        `<circle cx="18" cy="48" r="2.5" fill="rgb(60,42,24)"/>`,
+      24,
+      96,
+    ),
+    width: 24,
+    height: 96,
+  },
+  {
+    kind: 'texture',
+    key: ASSET_COIN,
+    src: svg(
+      `<circle cx="12" cy="13" r="9" fill="rgb(234,179,8)"/>` +
+        `<circle cx="12" cy="13" r="9" fill="none" stroke="rgb(161,98,7)" stroke-width="1.5"/>` +
+        `<text x="12" y="17" font-size="11" text-anchor="middle" fill="rgb(120,72,5)">$</text>`,
+      24,
+      26,
+    ),
+    width: 24,
+    height: 26,
   },
 ];
