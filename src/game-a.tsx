@@ -5,18 +5,18 @@ import { SwitchableInputSource } from './net/index.js';
 import {
   buildGameABlueprint,
   LEVEL_SWITCH,
+  GAME_A_ASSETS,
   KEYMAP_A,
   PLAYER_A,
   PLAYER_B,
   VIEWPORT_W,
   VIEWPORT_H,
 } from './games/game-a/index.js';
-import { DUNGEON_SKIN } from './games/game-a/dungeon-skin.js';
 
 // Game A 可挂载模块（launcher 卡带槽契约：export mount(container) → cleanup）。
-// 单人「切换双人玩」：一套键盘控制当前激活角色，Tab 在 精灵A/矮人B 间轮换（SwitchableInputSource，
-// 零引擎改动——非激活角色本 tick 无指令即原地待命）。地牢皮（DUNGEON_SKIN）把同一份数据换成 DCSS 像素美术。
-// 关卡 LEVEL_SWITCH「你踩我过」正是切换协作的范式：A 踩开关开门 → 切到 B → B 穿门到楼梯过关。
+// 单人「切换双人玩」：一套键盘控制当前激活角色，Tab 在 蓝A/橙B 间轮换（SwitchableInputSource，
+// 零引擎改动——非激活角色本 tick 无指令即原地待命）。美术用原版可爱小方块（GAME_A_ASSETS）。
+// 关卡 LEVEL_SWITCH「你踩我过」= 切换协作范式：A 踩开关开门 → 切到 B → B 穿门到目标过关。
 export function mount(container: HTMLElement): () => void {
   const wrapper = document.createElement('div');
   wrapper.style.cssText =
@@ -37,22 +37,21 @@ export function mount(container: HTMLElement): () => void {
 
   hint.innerHTML =
     'A/D 移动 · Space 跳 · <b>Tab 切换角色</b><br>' +
-    '玩法：操 🧝 精灵踩住开关把门打开 → Tab 切到 🧔 矮人 → 让矮人穿门走到楼梯即过关（精灵会留在开关上）';
+    '玩法：操 🟦 蓝方块踩住开关把门打开 → Tab 切到 🟧 橙方块 → 让橙方块穿门走到目标即过关（蓝方块会留在开关上）';
 
   // 单人轮替操控：一套键位驱动「当前激活」的 playerId，Tab 在 A/B 间循环。
   const input = new SwitchableInputSource([PLAYER_A, PLAYER_B], window, KEYMAP_A, 'Tab');
   const refreshActive = () => {
     const a = input.activePlayerId();
-    active.textContent = a === PLAYER_A ? '当前操控：🧝 精灵 A（守开关）' : '当前操控：🧔 矮人 B（去楼梯）';
+    active.textContent = a === PLAYER_A ? '当前操控：🟦 蓝 A（守开关）' : '当前操控：🟧 橙 B（去目标）';
     active.style.color = a === PLAYER_A ? '#60a5fa' : '#fb923c';
   };
   refreshActive();
   const activeTimer = window.setInterval(refreshActive, 120);
 
-  // 美术资产（数据驱动）：注册「地牢皮」→ 异步加载；就绪前渲染器退化占位方块，就绪后自动画 DCSS 像素图。
-  // 「换皮」= 换这一行注册的清单（GAME_A_ASSETS=SVG 占位 / DUNGEON_SKIN=DCSS），蓝图与逻辑一行不改。
+  // 美术资产（数据驱动）：注册原版可爱小方块清单。
   const assets = new AssetManager(new ImageAssetLoader());
-  assets.registerManifest(DUNGEON_SKIN);
+  assets.registerManifest(GAME_A_ASSETS);
   void assets.loadAll();
 
   const engine = new Engine({ tickRate: 60, input });
