@@ -448,3 +448,4 @@ game-f 报「多数需新引擎能力」。Lead 实测：**三个已点名技能
 > **数据形**：`{ kind:'curse', op:'bounceUnit', everyTurns:3, mode:'toDeck'|'toStart', pick:'random' }`。
 > **派甲**：① `DishaFx` 加 `curseEveryTurns`/`curseMode`；② 推进/AI 回合按 `turn % everyTurns === 0` 触发（仿 `batteryLane`），用 `b.rng` 选牌（确定性·进 turnHash）；③ `aggregateDisha` 填；④ design G 把数据写进 disha-pack（关5 项羽/终章·**不配关3/4——它们实测已过难·见 doc27 §3.5**）。
 > **配套（已覆盖·提醒甲）**：「每 Boss 招牌地煞=被动·掷命时全屏亮『XX 发作』」= 已在 `REQ-G-战斗逻辑批次·敌用地煞全屏通知`，本需求复用之。
+> **★ 关1-5 完整数据草案**（16写死牌组 + 地煞重设值 + 每 Boss 留场P/牌力偏置/家血/目标WR）= **`src/games/game-g/design/boss-config-1-5.md`**（design G 16v16 原型实测·甲已实装留场硬币）。甲接入清单见该档 §七：① loader 读 16牌组+bossFavorBias；② 地煞改值（§六表·关2/3/4 实测过强→调弱）；③ stayPMul 每 Boss 留场覆写；④ 诅咒（本需求）。接好后 design G 重跑 simulate-balance.ts 定稿。

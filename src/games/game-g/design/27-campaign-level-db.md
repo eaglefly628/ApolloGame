@@ -103,6 +103,20 @@ Level {
 - **同构先例**：现有 `batteryEveryTurns`（大炮兵·每N回合压一路）→ 周期触发机制甲已有·`curse.bounceUnit` 是同类新 op，**确定性**（用 `b.rng` 选牌·进 turnHash）。
 - **派甲**：`DishaFx` 加 `curseEveryTurns/curseMode`；`aiTakeTurn`/推进阶段按周期触发（仿 batteryLane）；`aggregateDisha` 填；数据写进 disha-pack（关5/终章）。
 
+### 3.6 ⭐ 关1-5 Boss 配置定稿（16牌组 + 地煞重设 + 标定）→ `boss-config-1-5.md`
+> owner 派「5 关 Boss 配置 + 16牌组 + 地煞**重新设置**·写成数据·自己跑」→ **完整数据草案见 `design/boss-config-1-5.md`**（每 Boss：16 写死扑克 + 3 招牌地煞 + 留场P + bossFavorBias + homeHp + 目标WR）。
+> **甲已实装"胜者掷人头留场续攻"硬币（flat 0.5·`resolveClash` winStays）**；本档 §3.5 旧表（54张模型）作废，以 **`boss-config-1-5.md`（16v16 模型·重设地煞）** 为准：
+
+| 关 | Boss·招牌被动 | 16牌组主题 | 地煞(重设值) | 留场P / bossFavorBias / homeHp | 实测 |
+|---|---|---|---|---|---|
+| 1 | 列奥尼达·温泉关死守 | 黑桃同点墙(三条7/8) | thermopylae(nearPwr1)+phalanx(4/12)+laststand | 0.5 / −2 / 2 | **98%** |
+| 2 | 亚历山大·伙伴骑兵 | 红桃高点尖兵 | companion(+10)+hammeranvil(−6)+sarissa(+4) | 0.5 / −2 / 3 | **89%** |
+| 3 | 曹操·连环兵海 | 梅花连环铺三路 | swarm(+1源泉)+chainboats(3/9)+mandate(+5) | 0.75 / 0 / 4 | **77%** |
+| 4 | 拿破仑·大炮近卫 | 方块中高集中 | battery(每4·−8)+guard(+12)+maneuver(0) | 0.75 / +2 / 4 | **71%** |
+| 5 | 项羽·破釜霸王 | 全高点莽军 | burnboats(+20)+overlord(+40)+winstreak(4/20)+**诅咒** | 0.75 / +4 / 5 | ~68%→**65**(诅咒补) |
+
+> **地煞重设值表 + 给甲接入清单**：见 `boss-config-1-5.md` §六/§七。**甲接 16牌组 loader + stayPMul + 诅咒 + 地煞改值后 → design G 重跑 simulate-balance.ts 定稿回填。**
+
 ## 四、难度档（★ → 数值 · sim 兜底）
 > **前五关目标通关率（owner 2026-06-21 锁定）**：**98 / 87 / 75 / 70 / 65**（关1→关5·见 §3.5 标定草案）。关6+ 沿用下表阶梯。
 
