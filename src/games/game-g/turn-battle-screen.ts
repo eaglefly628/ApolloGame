@@ -5,6 +5,7 @@
 import { cardPoints } from './clash-resolve.js';
 import { SLOTS, MANA_PER_TURN, GATES, A_DEPLOY_SLOT, B_DEPLOY_SLOT, DEPLOY_COST, CAST_COST, clashOdds, type TurnBattle, type TurnUnit } from './turn-combat.js';
 import { FONTS } from './fonts.js'; // 自托管字体（替代外部 Google Fonts <link>）
+import { heroNameOf } from './hero-codex.js'; // 场上牌悬浮显其对应武将名（owner 2026-06-21·数据已在 HERO_CARDS）
 
 type Style = Record<string, string | number | undefined>;
 const st = (o: Style): string => Object.entries(o).filter(([, v]) => v !== undefined).map(([k, v]) => k.replace(/[A-Z]/g, (m) => '-' + m.toLowerCase()) + ':' + v).join(';');
@@ -269,7 +270,7 @@ function slotCell(s: TurnSlotView): string {
       + `<div style="${st({ position: 'absolute', bottom: '5px', left: '50%', transform: 'translateX(-50%)', fontFamily: 'var(--fh)', fontWeight: 700, fontSize: '10px', letterSpacing: '.04em', color: 'var(--gold)', textShadow: '0 1px 3px rgba(0,0,0,.8)', pointerEvents: 'none', zIndex: 4, whiteSpace: 'nowrap' })}">放这里</div>`
     : '';
   // 场上兵的磨砂详情浮层（与手牌同 cardTip·战力拆解）。
-  const tip = s.hasUnit && s.rank && s.suit ? cardTip({ name: s.name ?? (SUITNM[s.suit] + s.rank), rar: s.rar ?? 'white', isGang: false, mine: s.mine, suit: s.suit, pts: s.pts, buff: s.buff, power: s.power, zod: s.zod }) : '';
+  const tip = s.hasUnit && s.rank && s.suit ? cardTip({ name: s.name ?? (SUITNM[s.suit] + s.rank), rar: s.rar ?? 'white', isGang: false, mine: s.mine, suit: s.suit, rank: s.rank, pts: s.pts, buff: s.buff, power: s.power, zod: s.zod }) : '';
   const wrapCls = s.hasUnit ? ` class="gg-tipwrap${s.tipDown ? ' tip-down' : ''}${s.tipSide === 'left' ? ' tip-left' : s.tipSide === 'right' ? ' tip-right' : ''}"` : '';
   // 掷命预报徽标（owner 2026-06-21·让玩家落子前就知道这仗几成赢）：贴此前锋格顶·档位词 + 具体 %。
   let fcast = '';
@@ -288,7 +289,7 @@ function laneRow(L: TurnLaneView, li: number, hiOn = false): string {
 }
 
 // 磨砂详情浮层内容（owner 2026-06-21）：战力拆解(点数+期待加成) + 对决随机骰提示 / 天罡效果文案。手牌与场上兵共用。
-function cardTip(o: { name: string; rar: string; isGang: boolean; mine: boolean; suit?: string; pts?: number; buff?: number; power?: number; zod?: string[]; desc?: string; cost?: number }): string {
+function cardTip(o: { name: string; rar: string; isGang: boolean; mine: boolean; suit?: string; rank?: string; pts?: number; buff?: number; power?: number; zod?: string[]; desc?: string; cost?: number }): string {
   const rc = RAR[o.rar] || RAR.white;
   const rows: string[] = [];
   if (o.isGang) {
@@ -299,7 +300,7 @@ function cardTip(o: { name: string; rar: string; isGang: boolean; mine: boolean;
     const sn = o.suit ? SUITNM[o.suit] : ''; const sg = o.suit ? SUITG[o.suit] : ''; const sc = o.suit ? SUITC[o.suit] : '#888';
     const buff = o.buff ?? 0; const pts = o.pts ?? ((o.power ?? 0) - buff); const pow = o.power ?? (pts + buff);
     const calc = buff ? `点数 ${pts} ${buff > 0 ? '+' : '−'} 加成 ${Math.abs(buff)}` : `点数 ${pts}`;
-    rows.push(`花色 <b style="color:${sc}">${sn} ${sg}</b>`);
+    rows.push(`牌面 <b style="color:${sc}">${sn}${o.rank ? ' ' + esc(o.rank) : ''} ${sg}</b>`);
     rows.push(`战力 <b style="color:#ffd27a;font-size:13px">${pow}</b> <span style="opacity:.62">= ${calc}</span>`);
     rows.push(`<span style="opacity:.6">掷命对决再 +一次随机骰(±) 定胜负</span>`);
     const zods = (o.zod || []).filter(Boolean);
@@ -547,7 +548,7 @@ export function buildTurnBattleView(b: TurnBattle, opts: TurnViewOpts = {}): Tur
       // isClash 标在两军真前锋格(landed bugfix·非固定中线 4) + 放牌区底纹/标签(标在贴各自城堡那格) + 待放落点高亮
       const base = { isBorder: i === 4, isClash: adj && (i === L.a[0]?.slot || i === L.b[0]?.slot), deploy: dep(i), deployLabel: i === A_DEPLOY_SLOT || i === B_DEPLOY_SLOT, placeable: !hit && i === target, forecast: i === L.a[0]?.slot && odds != null ? odds : undefined };
       return hit
-        ? { ...base, hasUnit: true, mine: hit.mine, rank: hit.u.rank, suit: lc(hit.u.suit), power: hit.u.points + hit.u.buff, pts: hit.u.points, buff: hit.u.buff, name: SUITNM[lc(hit.u.suit)] + hit.u.rank, rar: rankOf(hit.u.rank), zod: [], unitId: hit.u.id, justMoved: opts.movedIds?.has(hit.u.id) ?? false, fresh: opts.freshIds?.get(hit.u.id), tipDown: li === 0, tipSide: (i >= 7 ? 'left' : i <= 1 ? 'right' : '') as 'left' | 'right' | '' }
+        ? { ...base, hasUnit: true, mine: hit.mine, rank: hit.u.rank, suit: lc(hit.u.suit), power: hit.u.points + hit.u.buff, pts: hit.u.points, buff: hit.u.buff, name: heroNameOf(hit.u.rank, lc(hit.u.suit)) ?? (SUITNM[lc(hit.u.suit)] + hit.u.rank), rar: rankOf(hit.u.rank), zod: [], unitId: hit.u.id, justMoved: opts.movedIds?.has(hit.u.id) ?? false, fresh: opts.freshIds?.get(hit.u.id), tipDown: li === 0, tipSide: (i >= 7 ? 'left' : i <= 1 ? 'right' : '') as 'left' | 'right' | '' }
         : { ...base, hasUnit: false, mine: i < 4 };
     });
     return { name: laneNames[li] ?? ('路' + li), slots };

@@ -329,3 +329,9 @@ export const HERO_CARDS: HeroCard[] = [
 
 /** 按英雄名查收藏卡（关卡 heroId=Boss 名 → 该英雄那张牌·供 Boss 主将牌注入·owner 2026-06-21·甲）。 */
 export const heroCardByName = (name: string): HeroCard | undefined => HERO_CARDS.find((h) => h.name === name);
+
+// 花色字面（s/h/d/c·大小写）→ 牌面符号·统一查 HERO_CARDS（owner 2026-06-21·场上牌悬浮显武将名）。
+const SUIT_GLYPH: Record<string, '♠'|'♥'|'♦'|'♣'> = { s:'♠', h:'♥', d:'♦', c:'♣', S:'♠', H:'♥', D:'♦', C:'♣', '♠':'♠', '♥':'♥', '♦':'♦', '♣':'♣' };
+/** 按点数+花色查该牌对应的武将名（如 5♦→查理曼）；查无则 undefined（调用方回落 花色+点数）。 */
+export const heroNameOf = (rank: string, suit: string): string | undefined =>
+  HERO_CARDS.find((h) => h.rank === rank && h.suit === SUIT_GLYPH[suit])?.name;
