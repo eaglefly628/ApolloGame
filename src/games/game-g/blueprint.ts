@@ -708,8 +708,6 @@ export function autoBuildPokerPicks(opts: { favors: number[]; isOwned: (id: stri
 }
 /** 该收藏卡是否已解锁（读 HERO_CARDS.own·自动构筑偏好用·非战斗硬门·懒查 HERO_CARDS）。 */
 export const isHeroOwned = (id: string): boolean => (HERO_CARDS.find((h) => h.id === id)?.own ?? 0) > 0;
-/** 按英雄名查收藏卡（关卡 heroId=Boss 名 → 该英雄那张牌·供 Boss 主将牌注入·owner 2026-06-21）。 */
-export const heroCardByName = (name: string): HeroCard | undefined => HERO_CARDS.find((h) => h.name === name);
 
 // === 抽卡商城（doc25 §四 · Demo）===
 // 商城=抽卡枢纽：花🪙/💎 从「已解锁池」随机出天罡/地支；天罡重复→天罡碎片→定向兑换(保底·可控build)；

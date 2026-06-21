@@ -326,3 +326,6 @@ export const HERO_CARDS: HeroCard[] = [
     battleName:'阿苏夫之战',battleResult:'严整反击、大破萨拉丁军',
     titleOrigin:'勇猛善战、临阵无畏，敌我皆称「狮心王」。' },
 ];
+
+/** 按英雄名查收藏卡（关卡 heroId=Boss 名 → 该英雄那张牌·供 Boss 主将牌注入·owner 2026-06-21·甲）。 */
+export const heroCardByName = (name: string): HeroCard | undefined => HERO_CARDS.find((h) => h.name === name);
