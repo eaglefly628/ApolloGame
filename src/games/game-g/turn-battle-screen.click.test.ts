@@ -23,9 +23,9 @@ function setup(opts: TurnViewOpts = {}) {
 
 describe('Game G · turn-battle-screen live mount 交互（doc24 回合制 · DOM · happy-dom）', () => {
   it('画框渲齐 data 钩子：四选一/结束回合/换皮/手牌/三路格/8 门钮', () => {
-    const { host } = setup();
+    const { host } = setup({ settingsOpen: true }); // 换皮(主题)按钮现归 ⚙ 设置面板（topbar 重组 bfa0fd69）→ 开面板才渲
     for (const sel of ['[data-act="draw"]', '[data-act="deploy"]', '[data-act="cast"]', '[data-act="discard"]',
-      '[data-act="end"]', '[data-act="theme"][data-k="onyx"]', '[data-act="theme"][data-k="brocade"]',
+      '[data-act="end"]', '[data-act="settings-toggle"]', '[data-act="theme"][data-k="onyx"]', '[data-act="theme"][data-k="brocade"]',
       '[data-hand="0"]', '[data-hand="1"]', '[data-lane="0"]', '[data-lane="1"]', '[data-lane="2"]',
       '[data-gate="0"]', '[data-gate="7"]']) {
       expect(host.querySelector(sel), sel).not.toBeNull();
@@ -58,7 +58,7 @@ describe('Game G · turn-battle-screen live mount 交互（doc24 回合制 · DO
   });
 
   it('按下结束回合 / 换皮 → endTurn / setTheme', () => {
-    const { host, actions } = setup();
+    const { host, actions } = setup({ settingsOpen: true }); // 主题钮在 ⚙ 设置面板内
     press(host.querySelector('[data-act="end"]'));
     press(host.querySelector('[data-act="theme"][data-k="brocade"]'));
     expect(actions.endTurn).toHaveBeenCalledTimes(1);
