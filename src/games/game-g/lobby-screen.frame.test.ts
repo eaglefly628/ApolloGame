@@ -29,7 +29,7 @@ describe('Game G · lobby-screen 视觉回归（忠实港大厅 · 真渲染器 
     expect(html).toContain('连环船'); // Boss 地煞明牌
     expect(html).toContain('解锁天罡 <b style="color:var(--gold)">不屈'); // 通关解锁
     expect(html).toContain('出征 ·'); // sheen 大 CTA（SVG 图标 + 出征文本）
-    expect(html).toContain('class="vs">掷'); // 漂浮对决卡 掷 emblem（招牌）
+    expect(html).toContain('data-act="lucky"'); expect(html).toContain('>掷</button>'); // 漂浮对决卡 掷 emblem（可点·掷运势）
     expect(html).toContain('1.2k'); // 货币接真存档
     expect(html).toContain('将领流'); // 真流派↔Boss
     expect(html).toContain('--felt:radial-gradient(120% 110% at 50% 26%,#1d6f4e'); // 玄铁绿呢牌桌

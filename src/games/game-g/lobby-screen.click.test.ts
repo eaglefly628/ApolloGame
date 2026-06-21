@@ -387,6 +387,16 @@ describe('Game G · lobby-screen mountLobby 点击交互（DOM · happy-dom）',
       click(playBtn);
       expect(onPlay).toHaveBeenCalledTimes(1);
     });
+
+    it('点主页「掷」字 → 弹今日运势（含吉凶 + 再掷）', () => {
+      const host = document.createElement('div');
+      mountLobby(host, { getView: makeView, onPlay: vi.fn() });
+      click(host.querySelector('[data-act="lucky"]'));
+      expect(host.innerHTML).toContain('今日运势');
+      expect(host.querySelector('[data-act="lucky-close"]')).not.toBeNull();
+      click(host.querySelector('[data-act="lucky-close"]'));
+      expect(host.innerHTML).not.toContain('今日运势'); // 收起
+    });
   });
 
   // ── 战役进度屏 + 每关开局演出（doc27）──

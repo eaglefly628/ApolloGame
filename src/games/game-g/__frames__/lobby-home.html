@@ -93,6 +93,7 @@
 .ggl-root .dback{ position:relative; width:116px; height:160px; border-radius:12px; background:#b1402f; border:3px solid #7d2a1e; box-shadow:0 18px 40px rgba(0,0,0,.45); transform:rotate(11deg); --rot:11deg; animation:ggl-float 4.6s ease-in-out infinite }
 .ggl-root .dback i{ position:absolute; inset:7px; border-radius:7px; border:2px solid rgba(255,255,255,.5); background:repeating-linear-gradient(45deg,rgba(255,255,255,.14) 0 6px,transparent 6px 12px),repeating-linear-gradient(-45deg,rgba(255,255,255,.14) 0 6px,transparent 6px 12px) }
 .ggl-root .vs{ width:64px; height:64px; border-radius:50%; flex:none; background:radial-gradient(circle at 38% 32%,#ffe6a6,#c69a44); display:flex; align-items:center; justify-content:center; color:#2a1a08; box-shadow:0 0 30px rgba(232,205,130,.7), inset 0 1px 0 rgba(255,255,255,.5); border:2px solid #fff; font-family:var(--fd); font-size:30px }
+.ggl-root .vs-btn{ cursor:pointer; padding:0; transition:transform .12s } .ggl-root .vs-btn:hover{ transform:scale(1.08) } .ggl-root .vs-btn:active{ transform:scale(.94) }
 .ggl-root .ctawrap{ position:absolute; left:0; right:0; bottom:24px; display:flex; flex-direction:column; align-items:center; gap:13px }
 .ggl-root .cta-main{ position:relative; overflow:hidden; display:flex; flex-direction:column; align-items:center; gap:2px; padding:14px 52px; clip-path:var(--chamfer); border:none; background:linear-gradient(180deg,#e7b052,#bb7f2c); color:#2a1a08; box-shadow:0 10px 28px rgba(0,0,0,.5), inset 0 1px 0 rgba(255,255,255,.4) }
 .ggl-root .cta-main .big{ font-family:var(--fh); font-weight:700; font-size:21px; letter-spacing:.04em } .ggl-root .cta-main .sm{ font-size:11px; letter-spacing:.18em; opacity:.8 }
@@ -347,7 +348,7 @@
           <div class="stags"><div class="stag"><span style="color:var(--spade);font-size:14px;text-shadow:0 0 6px var(--spade)">♠</span>黑桃</div><div class="stag"><span style="color:var(--heart);font-size:14px;text-shadow:0 0 6px var(--heart)">♥</span>红桃</div><div class="stag"><span style="color:var(--diamond);font-size:14px;text-shadow:0 0 6px var(--diamond)">♦</span>方块</div><div class="stag"><span style="color:var(--club);font-size:14px;text-shadow:0 0 6px var(--club)">♣</span>梅花</div></div>
           <div class="duel">
             <div class="dcard" style="border:3px solid var(--spade);transform:rotate(-9deg);--rot:-9deg"><div class="corner" style="color:var(--spade)">A<br>♠</div><div class="big" style="color:var(--spade)">♠</div></div>
-            <div class="vs">掷</div>
+            <button class="vs vs-btn" data-act="lucky" title="掷一卦 · 看今日运势">掷</button>
             <div class="dback"><i></i></div>
           </div>
           <div style="position:absolute;left:0;right:0;bottom:104px;text-align:center;color:#fff;font-size:13px;text-shadow:0 2px 8px rgba(0,0,0,.7)">⚔ 对决 <b style="font-family:var(--fd);font-size:18px">曹操</b> · <span style="opacity:.85">挟天子·连环船·火攻可破</span></div>
