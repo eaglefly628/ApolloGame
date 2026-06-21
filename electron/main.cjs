@@ -19,10 +19,7 @@ function createWindow() {
   });
 
   win.loadFile(path.join(app.getAppPath(), 'dist-cartridge', 'cartridge.html'));
-  win.once('ready-to-show', () => {
-    win.show();
-    win.webContents.openDevTools();
-  });
+  win.once('ready-to-show', () => win.show());
 }
 
 app.whenReady().then(() => {
