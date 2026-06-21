@@ -7,6 +7,7 @@ import { GI, tiangangIcon } from './icons.js';
 import { HERO_CARDS, DIZHI_ZODIACS, DIZHI_TRINES, DIZHI_PAIRS, EARTH_FIENDS, STAGE_CAMPAIGN, STORY_OPENING, type StageCampaign, type StoryBeat } from './blueprint.js';
 import { heroPortrait } from './portraits.js';
 import { playSfx, sfxForAct, isSfxMuted, setSfxMuted } from './sfx.js';
+import { DISHA_SPECS, stageDisha } from './disha.js';
 import { RECHARGE_PACKS, rechargeTotal, DIAMOND_EXCHANGES, DIZHI_SHARD_PACKS, GACHA, INLAY_MAX, DIZHI_INLAY_FAVOR, inlayBonus } from './blueprint.js';
 
 export interface LobbyShopItem { id: string; name: string; sub: string; cost: number; owned: boolean; buyable: boolean; level?: number; inDeck?: boolean; power?: number; phat?: number; kind?: string; icon?: string; tint?: string; unlockStage?: number; locked?: boolean }
@@ -82,6 +83,7 @@ const CSS = `
 .ggl-root .camp-fiends{ display:flex; flex-wrap:wrap; gap:7px }
 .ggl-root .camp-fiend{ font-size:11px; padding:4px 9px; border-radius:8px; background:var(--chip); border:1px solid var(--panel-border); color:var(--ink-dim) }
 .ggl-root .camp-fiend b{ color:var(--ink) }
+.ggl-root .disha-num{ display:block; margin-top:3px; font-size:11px; font-weight:700; color:#e6b96a; line-height:1.5 }
 .ggl-root .story-ov{ background:rgba(6,8,11,.88) }
 .ggl-root .story-box{ max-width:520px; text-align:left }
 .ggl-root .gacha-pool{ padding:13px 15px; border-radius:12px; background:var(--chip); border:1px solid var(--panel-border); margin-bottom:11px }
@@ -640,7 +642,8 @@ function campaignSection(view: LobbyView): string {
     const head = `<div style="display:flex;align-items:baseline;gap:10px"><span style="font-family:var(--fd);font-size:26px;color:${locked ? 'var(--ink-dim)' : 'var(--gold)'}">第 ${c.stage} 关</span><span style="font-family:var(--fh);font-weight:700;font-size:16px;color:var(--ink)">${esc(c.battle)}</span><span style="font-size:13px;color:var(--ink-dim)">vs ${esc(c.boss)}</span><span style="margin-left:auto;font-size:12px">${badge}</span></div><div style="font-size:12px;color:var(--gold);margin-top:3px">难度 ${stars}　·　通关解锁天罡 <b>${esc(c.unlock)}</b></div>`;
     if (locked) return `<div class="camp-card locked">${head}<div class="note" style="text-align:left;margin-top:8px;color:var(--ink-dim)">通关第 ${c.stage - 1} 关后解封这一缕英雄之魂。</div></div>`;
     const lines = c.bossLines ? `<div style="margin-top:10px;display:flex;flex-direction:column;gap:5px;font-size:12px"><div>🗣️ <span style="color:var(--ink-dim)">开场</span>「${esc(c.bossLines.open)}」</div><div>⚔️ <span style="color:var(--ink-dim)">劣势</span>「${esc(c.bossLines.mid)}」</div><div>💀 <span style="color:var(--ink-dim)">败北</span>「${esc(c.bossLines.lose)}」</div></div>` : '';
-    const fiends = c.fiends.map((f) => `<span class="camp-fiend"><b>${esc(f.name)}</b> ${esc(f.desc)}</span>`).join('');
+    const cDisha = stageDisha(c.stage);
+    const fiends = c.fiends.map((f, i) => { const nums = dishaNumberLine(cDisha[i] ?? ''); return `<span class="camp-fiend"><b>${esc(f.name)}</b> ${esc(f.desc)}${nums ? `<br><span class="disha-num">📊 ${esc(nums)}</span>` : ''}</span>`; }).join('');
     const cta = isCur ? `<button class="cta-sub" style="margin-top:12px;color:#2a1a08;background:var(--gold-grad);border:0" data-act="play">${GI.swords} 出征 · 第 ${c.stage} 关 →</button>` : '';
     return `<div class="camp-card${isCur ? ' cur' : ''}">${head}<div style="font-size:13px;line-height:1.85;color:var(--ink);margin-top:9px">${esc(c.intro ?? c.oneLiner)}</div>${lines}<div style="margin-top:10px"><div class="note" style="text-align:left;margin-bottom:5px">🎴 地煞（明牌可破）</div><div class="camp-fiends">${fiends}</div></div>${cta}</div>`;
   }).join('');
@@ -876,6 +879,25 @@ function ladderSection(name: string, rankText: string): string {
 }
 
 const FIEND_KIND_CLR: Record<string, string> = { power: '#ef4444', odds: '#a78bfa', combo: '#2dd4bf', morale: '#fcd34d', tempo: '#22c55e', stamina: '#38bdf8', draw: '#06b6d4', lane: '#94a3b8', siege: '#a8a29e' };
+// 地煞「真正数值」（读甲 DISHA_SPECS·关1-5 精确数值）→ 人话一行，让玩家一目了然。
+function dishaNumberLine(dishaId: string): string {
+  const s = DISHA_SPECS[dishaId]; if (!s) return '';
+  const p: string[] = [];
+  if (s.homeHp) p.push(`大本营 ${s.homeHp} 血`);
+  if (s.allWinPct) p.push(`全军 +${s.allWinPct}% 胜率`);
+  if (s.generalWinPct) p.push(`主将 +${s.generalWinPct}%`);
+  if (s.phalanxPerAdj) p.push(`每相邻友兵 +${s.phalanxPerAdj}%${s.phalanxCap ? ` · 封顶 +${s.phalanxCap}%` : ''}`);
+  if (s.nearBaseSlots) p.push(`大本营前 ${s.nearBaseSlots} 格 +${s.nearBaseWinPct}%`);
+  if (s.eliteMidWinPct) p.push(`中路前锋 +${s.eliteMidWinPct}%`);
+  if (s.flankYouWinPct) p.push(`你被左右夹 −${s.flankYouWinPct}%`);
+  if (s.firstStrike) p.push(`先手出击${s.firstStrikeWinPct ? ` +${s.firstStrikeWinPct}%` : ''}`);
+  if (s.winStreakPer) p.push(`每连胜 +${s.winStreakPer}%${s.winStreakCap ? ` · 封顶 +${s.winStreakCap}%` : ''}`);
+  if (s.lastStandGeneral) p.push('主将 2 命（首负不亡·退一格）');
+  if (s.noRout) p.push('主将亡不溃散');
+  if (s.bonusMana) p.push(`每回合多 +${s.bonusMana} 召唤源泉`);
+  if (s.batteryEveryTurns) p.push(`每 ${s.batteryEveryTurns} 回合压一路 −${s.batteryWinPct}%`);
+  return p.join(' · ');
+}
 // 地煞图鉴（doc23 §八/§九 · 52 Boss × 3 招牌历史战术·明牌可破）。kind 借天罡词汇配色。
 function fiendsCodex(campaignMax = 1): string {
   // 按关卡顺位排序：战役 5 关 Boss 在前（按 stage），其余在后；未抵达的关卡置暗。
@@ -884,9 +906,11 @@ function fiendsCodex(campaignMax = 1): string {
   return `<div style="flex:1;min-height:0;overflow-y:auto;padding-right:6px"><div class="note" style="text-align:left;margin-bottom:10px">🎴 <b>地煞</b> = 每位 Boss 的招牌历史战术（明牌·公平可破）。按关卡顺位排列·未解锁的略暗。共 ${EARTH_FIENDS.length} 位 Boss。</div>${sorted.map((b) => {
     const st = stageOf.get(b.boss);
     const locked = st === undefined || st > campaignMax;
-    const fs = b.fiends.map((f) => {
+    const bDisha = st !== undefined ? stageDisha(st) : [];
+    const fs = b.fiends.map((f, i) => {
       const clr = FIEND_KIND_CLR[f.kind.split('+')[0]] ?? '#9ca3af';
-      return `<div class="fiend-card"><div class="fiend-hd"><b>${esc(f.name)}</b><span class="fiend-kind" style="color:${clr};border-color:${clr}66">${esc(f.kind)}</span></div><div class="fiend-eff">${esc(f.effect)}</div><div class="fiend-cnt">🛡 破：${esc(f.counter)}</div></div>`;
+      const nums = dishaNumberLine(bDisha[i] ?? '');
+      return `<div class="fiend-card"><div class="fiend-hd"><b>${esc(f.name)}</b><span class="fiend-kind" style="color:${clr};border-color:${clr}66">${esc(f.kind)}</span></div><div class="fiend-eff">${esc(f.effect)}</div>${nums ? `<div class="disha-num">📊 数值：${esc(nums)}</div>` : ''}<div class="fiend-cnt">🛡 破：${esc(f.counter)}</div></div>`;
     }).join('');
     const badge = st !== undefined ? `<span class="fiend-stage${locked ? ' lk' : ''}">${locked ? '🔒 ' : ''}第 ${st} 关</span>` : `<span class="fiend-stage lk">🔒 后续关卡</span>`;
     return `<div class="boss-block${locked ? ' locked' : ''}"><div class="boss-hd">${badge}<span class="boss-name">${esc(b.boss)}</span><span class="ghost" style="font-size:11px;margin-left:auto">招牌战术 ×${b.fiends.length}</span></div><div class="fiend-row">${fs}</div></div>`;
@@ -943,7 +967,8 @@ export function renderLobby(view: LobbyView, tab: string, helpOpen: boolean, dec
     ${(() => {
       const c = view.campaign;
       const stars = c ? '★'.repeat(c.stars) + '<span style="opacity:.35">' + '★'.repeat(3 - c.stars) + '</span>' : '';
-      const fiends = c ? c.fiends.map((f) => `<div class="fiend"><b>${esc(f.name)}</b><span>${esc(f.desc)}</span></div>`).join('') : '';
+      const hDisha = c ? stageDisha(c.stage) : [];
+      const fiends = c ? c.fiends.map((f, i) => { const nums = dishaNumberLine(hDisha[i] ?? ''); return `<div class="fiend"><b>${esc(f.name)}</b><span>${esc(f.desc)}</span>${nums ? `<span class="disha-num">📊 ${esc(nums)}</span>` : ''}</div>`; }).join('') : '';
       return `<section class="screen${on('home')} homerow" data-screen="home">
       <div class="herocol">
         <div class="felt">
