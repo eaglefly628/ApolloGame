@@ -65,7 +65,8 @@ interface Save {
   rechargeCount: number; // 已完成充值次数（投资人彩蛋：首充免密·第二次起需密码）
   seenIntro: boolean; // 是否已看过首启开场故事（doc28 §一·只播一次）
   guideStep: number; // 新手引导进度（doc28 §二）：0..N 进行中 · -1 完成/跳过
-  skipGuide: boolean; // 彻底跳过新手引导（owner 2026-06-21·卡住保险阀·默认 true=不启动任何引导·菜单可开）
+  skipGuide: boolean; // 跳过新手引导（owner 2026-06-21·默认 false=开·菜单手动关）
+  guideDefaultFixed?: boolean; // 一次性迁移标记：纠正早期「默认关」误版写入的 skipGuide=true
   seen: Record<string, boolean>; // 引导「看过不再弹」标记集（coachmark·seen_combat_* 等·owner 2026-06-21）
   tiangangShards: number; // 天罡碎片（抽卡重复转化 → 定向兑换指定天罡·保底 doc25 §四）
   dizhiBag: Record<string, number[]>; // 地支卡包（消耗品库存·owner 2026-06-21）：生肖 branch → 各档活化数 [铜,银,金]（满3自动升档·钻/史待开放）
@@ -116,6 +117,7 @@ function loadSave(): Save {
         if (typeof s.seenIntro !== 'boolean') s.seenIntro = true; // 老存档视为已看过开场（不打扰老玩家）
         if (typeof s.guideStep !== 'number') s.guideStep = -1; // 老存档引导视为已完成
         if (typeof s.skipGuide !== 'boolean') s.skipGuide = false; // 新手引导默认开（owner 2026-06-21）·菜单手动关；老存档 seen/guideStep 已完成→自然不再弹
+        if (!s.guideDefaultFixed) { s.skipGuide = false; s.guideDefaultFixed = true; } // 一次性纠正：早期「默认关」误版把 skipGuide=true 写进存档 → 纠回开一次（之后手动关照常保留·owner 2026-06-21）
         if (typeof s.tiangangShards !== 'number') s.tiangangShards = 0; // 天罡碎片迁移
         // 地支消耗品迁移（owner 2026-06-21）：老存档 dizhiOwned{branch:tier} → dizhiBag{branch:[铜,银,金]}（该档置 1 张）。
         const legacyDz = s as unknown as { dizhiOwned?: Record<string, number> };
