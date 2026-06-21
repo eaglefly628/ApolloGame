@@ -391,7 +391,7 @@ export function mountLobby(host: HTMLElement, h: LobbyHandlers): { update: () =>
     else if (act === 'inlay') { const [idx, br, t] = k.split(':'); h.onInlay?.(idx, br, parseInt(t, 10) || 1); render(); }
     else if (act === 'removeInlay') { const [idx, slot] = k.split(':'); h.onRemoveInlay?.(idx, parseInt(slot, 10) || 0); render(); }
     else if (act === 'exitGame') { settings = false; h.onExitGame?.(); } // 退出到游戏库（壳层接管·不再 render）
-    else if (act === 'reset') { h.onReset?.(); settings = false; render(); }
+    else if (act === 'reset') { h.onReset?.(); settings = false; tab = 'home'; playOpeningStory(); render(); } // 重置=回到首启态：清数据(freshSave 已清 seenIntro/guideStep/seen) + 立刻重播开场故事与新手引导（owner 2026-06-21）
     updateCoach(); // 任何点击后重算引导高亮（步进/开关弹层都可能改可见步）
   };
   host.addEventListener('click', onClick);

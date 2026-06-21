@@ -162,13 +162,16 @@ describe('Game G · lobby-screen mountLobby 点击交互（DOM · happy-dom）',
       expect(host.querySelector('[data-act="reset"]')).not.toBeNull();
     });
 
-    it('设置里点重置 → onReset 调用', () => {
+    it('设置里点重置 → onReset 调用 + 重播开场故事/新手引导（owner 2026-06-21·重置=回首启态）', () => {
       const host = document.createElement('div');
       const onReset = vi.fn();
       mountLobby(host, { getView: makeView, onPlay: vi.fn(), onReset });
       click(host.querySelector('[data-act="settings"]'));
       click(host.querySelector('[data-act="reset"]'));
       expect(onReset).toHaveBeenCalled();
+      expect(host.querySelector('[data-act="settings-close"]')).toBeNull(); // 设置已关
+      expect(host.querySelector('.story-box')).not.toBeNull(); // 开场故事重播=新手引导一并重置
+      expect(host.innerHTML).toContain('序章');
     });
 
     it('退出收进设置（owner 2026-06-21·替代右上角浮钮）：点「退出到游戏库」→ onExitGame 调用', () => {
