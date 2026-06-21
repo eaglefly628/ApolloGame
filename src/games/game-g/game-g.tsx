@@ -613,8 +613,7 @@ export function mount(container: HTMLElement, shell?: { exit?: () => void }): ()
 
     // 玩家牌库（契约A·甲读·owner 2026-06-21 #16：52 牌组是唯一真相·16 张按 ID 带 favor+地支附魔进场）：
     //   = 你配的 16 张 pokerPicks，每张挂自己的 effectiveDeckFavors(base+附魔)→战力；空 picks=自动构筑一副；
-    //   主将=favor 最高那张(留士气机制)。Boss(b) 仍走 prepareArmies 泛化 army。lane 由放牌时自选·非预派。
-    const { b } = prepareArmies({ formation, deckBias: myBias(effectiveDeckFavors(save.deck, save.inlays)), tiangangs: save.tiangangs, planets: save.planets, interventions, enemyForm: aiForm, enemyBias, boss });
+    //   主将=favor 最高那张(留士气机制)。lane 由放牌时自选·非预派。
     const seed = Math.floor(Math.random() * 1e9);
     const toPoker = (c: ArmyCard): PokerCard => ({ kind: 'poker', id: c.id, rank: cardRank(c), suit: c.suit, general: c.general, buff: Math.round(favorToP(c.favor) - cardPoints(cardRank(c))), cost: deployCost(cardRank(c)) });
     const effFav = effectiveDeckFavors(save.deck, save.inlays);
@@ -623,10 +622,23 @@ export function mount(container: HTMLElement, shell?: { exit?: () => void }): ()
     // loadoutCap（doc27 §四·难度档）：玩家本关天罡上限（新手区 2→3）→ 截断出战天罡。
     const aTengang: TengangHandCard[] = save.tiangangs.slice(0, lvl.loadoutCap).map((id) => ({ kind: 'tengang', id }));
     const bTengang: TengangHandCard[] = lvl.boss.tiangang.map((id) => ({ kind: 'tengang', id })); // Boss 随机 12 天罡(seed=关id·可复现)·待 Boss AI 施放
-    // Boss 主将牌 = 本关英雄那张牌（owner 2026-06-21·传奇主将·强化）：泛化兵全降为非主将，英雄牌强化后**置顶**(必进起手·当场亮相)；打赢=擒此英雄(解封)。
-    const bossDeck = seededShuffleArr(b.map((c) => ({ ...toPoker(c), general: false })), seed ^ 0x51ed);
-    const heroCard = bossHeroCard(aiName, enemyBias);
-    if (heroCard) bossDeck.unshift(heroCard);
+    // Boss 牌库（owner 2026-06-21 #1：敌方镜像玩家·~16 张·不再 prepareArmies 泛化 61 张全 army）：
+    //   关1-5 = design/boss-config-1-5 的 16 牌组（lvl.boss.deck·牌力偏置 favorBias 写卡 buff）；
+    //   本关英雄那张由 bossHeroCard 按 codex 真身**强化置顶**充当主将（如列奥尼达=3♠强化·名字显示正确）
+    //   → 让出列表里点数最高一张（=配置里的 A/K 主将位）保 16 总数。关6+（暂无 16 牌组）回退 prepareArmies 泛化 army。
+    const bossBias = lvl.boss.deck.length ? lvl.boss.favorBias : enemyBias;
+    const heroCard = bossHeroCard(aiName, bossBias);
+    let bossDeck: PokerCard[];
+    if (lvl.boss.deck.length) {
+      const codes = lvl.boss.deck.slice();
+      if (heroCard && codes.length) { let hi = 0; for (let i = 1; i < codes.length; i++) if (cardPoints(codes[i].rank) > cardPoints(codes[hi].rank)) hi = i; codes.splice(hi, 1); } // 强化主将顶替点数最高那张（配置主将位）
+      const generals: PokerCard[] = codes.map((c, i) => ({ kind: 'poker', id: `boss-${i}-${c.rank}${c.suit}`, rank: c.rank, suit: c.suit, general: false, buff: bossBias, cost: deployCost(c.rank) })); // 牌力偏置=写卡 buff
+      bossDeck = seededShuffleArr(generals, seed ^ 0x51ed);
+    } else {
+      const { b } = prepareArmies({ formation, deckBias: myBias(effectiveDeckFavors(save.deck, save.inlays)), tiangangs: save.tiangangs, planets: save.planets, interventions, enemyForm: aiForm, enemyBias, boss });
+      bossDeck = seededShuffleArr(b.map((c) => ({ ...toPoker(c), general: false })), seed ^ 0x51ed);
+    }
+    if (heroCard) bossDeck.unshift(heroCard); // 强化主将置顶·必进起手·当场亮相；打赢=擒此英雄
     resetFortuneIfNewDay(save);
     const fortuneBuff = save.fortune.keptVal != null ? luckyBattleBuff(save.fortune.keptVal) : 0;
     const tb = initTurnBattle({ seed, disha: lvl.boss.disha, aiProfile: lvl.boss.aiProfile, aiTier: lvl.boss.aiTier, fortuneBuff, a: { pokerDeck: seededShuffleArr(myDeck, seed ^ 0x9e37), tengangDeck: aTengang }, b: { pokerDeck: bossDeck, tengangDeck: bTengang } });

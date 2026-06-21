@@ -10,7 +10,8 @@ export interface LevelDef {
   battle: { name: string; oneLine: string };
   intro: string;                                  // 开场战役背景旁白
   bossLines: { open: string; mid: string; lose: string }; // Boss 对白（开场/劣势/败北）
-  boss: { homeHp: number; disha: string[]; tiangang: string[]; aiTier: number; aiProfile: AiProfile }; // 地煞 3 + 随机 12 天罡 + AI 档 + 策略画像
+  boss: { homeHp: number; disha: string[]; tiangang: string[]; aiTier: number; aiProfile: AiProfile;
+    deck: { rank: string; suit: string }[]; favorBias: number; stayP: number }; // 16 牌组(关1-5·空=回退泛化army) + 牌力偏置(写卡buff) + 留场P + 地煞 3 + 随机 12 天罡 + AI 档 + 策略画像
   reward: { unlock: string[]; gold: number };
   loadoutCap: number;                             // 玩家本关天罡 loadout 上限（新手区 2→3）
 }
@@ -33,6 +34,25 @@ const DIFFICULTY: Record<number, { homeHp: number; loadoutCap: number; aiTier: n
   4: { homeHp: 4, loadoutCap: 4, aiTier: 4 }, // ★★★★
   5: { homeHp: 5, loadoutCap: 5, aiTier: 5 }, // ★★★★★ 终章
 };
+
+// 关1-5 Boss「16 牌组」（design/boss-config-1-5.md §一-五·design G 2026-06-21 标定·rank+suit·与玩家 16 张对称）。
+// 主将那张（=本关英雄）由 bossHeroCard 强化提供，建库时从列表挪掉一张同 rank+suit → 15 泛兵 + 1 强化主将 = 16。
+// 关6+ 暂无（fall back 旧 prepareArmies 泛化 army·待逐期补 16 牌组）。
+const BOSS_DECK_1_5: Record<number, string[]> = {
+  1: ['5S', '6S', '6S', '7S', '7S', '7S', '8S', '8S', '8H', '9H', '9C', '10S', '10S', 'JS', 'KS', 'AS'], // 列奥尼达·黑桃同点墙
+  2: ['6H', '7H', '8D', '8S', '9H', '9C', '10D', '10S', 'JH', 'JD', 'QH', 'QS', 'KH', 'KD', 'AH', 'AS'], // 亚历山大·红桃高点尖兵
+  3: ['3C', '4C', '5C', '5C', '6C', '6C', '7D', '7D', '8D', '8D', '9S', '9S', '10H', 'JC', 'QC', 'KC'], // 曹操·梅花连环兵海
+  4: ['5D', '6D', '7S', '8H', '8C', '9D', '9C', '10D', '10S', 'JD', 'JH', 'QD', 'QS', 'KD', 'KH', 'AD'], // 拿破仑·方块大炮近卫
+  5: ['8S', '9S', '10S', '10H', 'JS', 'JH', 'QS', 'QH', 'KS', 'KH', 'KD', 'AS', 'AH', 'AD', 'QS', 'JH'], // 项羽·全高点莽军
+};
+// Boss 牌力偏置（写卡 buff·design/boss-config-1-5.md）：教学关弱(−2)→终章强(+4)。留场P：关3-5 守将乘胜 0.75（base 0.5）。
+const BOSS_FAVOR_BIAS: Record<number, number> = { 1: -2, 2: -2, 3: 0, 4: 2, 5: 4 };
+const BOSS_STAY_P: Record<number, number> = { 1: 0.5, 2: 0.5, 3: 0.75, 4: 0.75, 5: 0.75 };
+const CODE_RE = /^(10|[2-9]|[AKQJ])([SHDC])$/;
+/** 解析 '10S'/'AS'/'5H' → {rank,suit}（suit 用字母·与 bossHeroCard/SUITNAME·lc2 一致）。非法码丢弃。 */
+function parseCardCode(code: string): { rank: string; suit: string } | null {
+  const m = CODE_RE.exec(code); return m ? { rank: m[1], suit: m[2] } : null;
+}
 
 // 关1-5 战役背景 + Boss 对白（doc27 §五·全文）。关6+ 暂复用占位（§六文案后续逐期接入）。
 const LEVEL_LORE: Record<number, { intro: string; open: string; mid: string; lose: string }> = {
@@ -75,7 +95,8 @@ export function loadLevel(stage: number): LevelDef {
     battle: { name: c.battle, oneLine: c.oneLiner },
     intro: lore.intro,
     bossLines: { open: lore.open, mid: lore.mid, lose: lore.lose },
-    boss: { homeHp: diff.homeHp, disha: stageDisha(stage), tiangang: bossTiangang(stage), aiTier: diff.aiTier, aiProfile: AI_PROFILES[stage] ?? NEUTRAL_AI },
+    boss: { homeHp: diff.homeHp, disha: stageDisha(stage), tiangang: bossTiangang(stage), aiTier: diff.aiTier, aiProfile: AI_PROFILES[stage] ?? NEUTRAL_AI,
+      deck: (BOSS_DECK_1_5[stage] ?? []).map(parseCardCode).filter((c): c is { rank: string; suit: string } => c != null), favorBias: BOSS_FAVOR_BIAS[stage] ?? 0, stayP: BOSS_STAY_P[stage] ?? 0.5 },
     reward: { unlock, gold: 20 + stage * 10 },
     loadoutCap: diff.loadoutCap,
   };

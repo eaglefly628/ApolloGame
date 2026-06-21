@@ -37,6 +37,19 @@ describe('Game G · Campaign 关卡加载器（doc27）', () => {
     expect(l.id).toBe(9); expect(l.boss.disha.length).toBe(3); expect(l.boss.tiangang.length).toBe(12);
   });
 
+  it('关1-5 Boss 16 牌组（镜像玩家·boss-config-1-5）：每关 16 张 + 牌力偏置 + 留场P', () => {
+    for (let s = 1; s <= 5; s++) {
+      const b = loadLevel(s).boss;
+      expect(b.deck.length, `关${s} 应配 16 张`).toBe(16);
+      expect(b.deck.every((c) => /^(10|[2-9]|[AKQJ])$/.test(c.rank) && /^[SHDC]$/.test(c.suit)), `关${s} 卡码合法`).toBe(true);
+    }
+    expect(loadLevel(1).boss.favorBias).toBe(-2); // 教学关弱
+    expect(loadLevel(5).boss.favorBias).toBe(4);  // 终章强
+    expect(loadLevel(1).boss.stayP).toBe(0.5);    // 关1-2 base
+    expect(loadLevel(3).boss.stayP).toBe(0.75);   // 关3-5 守将乘胜
+    expect(loadLevel(9).boss.deck.length).toBe(0); // 关6+ 暂无 16 牌组 → 回退泛化 army
+  });
+
   it('教学关稻草兵（doc28·关0）：全弱牌(低点)·守势画像·好赢', () => {
     const deck = tutorialEnemyDeck();
     expect(deck.length).toBeGreaterThan(0);
