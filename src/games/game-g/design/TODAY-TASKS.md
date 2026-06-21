@@ -186,3 +186,19 @@
 **🅱 乙**：把详情面板升级为 **「列传」二阶菜单**（古卷/书法/朱印·渐入·先叙事后数值 · doc23 §一），**两牌组都接**：① 扑克英雄 → doc23 §四 列传（替换乙之前占位的 52 名）② **地支牌背 → doc23 §五 十二生肖传说**。content 走可选 lore 数据（`hero?{curseIntro,bio,famousBattle,quote,titleOrigin}` / `zodiacLore?`），**缺则优雅占位**。**叙事皮肤层·不进对战强度·0 文案也能跑。**
 **🟦 design G**：doc23 已落 52 名册(owner 批准)+schema+二阶规格+3 篇样板列传(孙武/成吉思汗/韩信) + **12 生肖传说全文**；余 49 篇英雄列传逐期补。
 
+
+---
+
+## 🧩 文件拆解进度（owner 2026-06-21「拆解所有文件到小文件」· 乙）
+> 手法：把内聚的「纯数据叶子 / CSS / 同主题渲染组」抽到 sibling 模块，原文件作 barrel `export *` 或具名再导出 → **下游 import 一律不变**，行为零改动（每步 tsc+vitest1689+build 全绿）。
+
+**已拆（本会话）**
+- `blueprint.ts` 1606 → 1065：→ `hero-codex.ts`(52名将列传) / `dizhi-data.ts`(12生肖) / `campaign-data.ts`(战役+地煞+故事) / `economy-data.ts`(充值/闪艺/抽卡密码)。
+- `lobby-screen.ts` 1427 → 582：→ `lobby-styles.ts`(CSS) / `lobby-util.ts`(共享 esc/常量/类型) / `lobby-collection.ts`(收藏/天梯/地煞图鉴) / `lobby-overlays.ts`(帮助/设置/商城/抽卡/旁白弹层) / `lobby-build.ts`(改造坊/构筑渲染)。
+
+**待续（下一批·风险递增·建议逐个绿）**
+- `lobby-screen.ts`(582)：余 `deckGrid`/`pokerBuild*`/`earthSection`/`campaignSection`/`shopItem` 渲染组可再抽 `lobby-deck.ts`；`mountLobby`(交互控制器·闭包态重) 暂留。
+- `blueprint.ts`(1065)：天罡数据+apply（`GAME_G_TIANGANGS`/`applyTiangangs`/`tiangangMoraleScale`…）→ `tiangang-data.ts`；3D/match 构建器（`buildGameG*`）→ `blueprint-3d.ts`（注意共享 `clampFavor`/`cardPoints`·防循环）。
+- `game-g.tsx`(1085·与甲共享)：存档迁移/freshSave、view 装配可抽，但 `showMatch`/战斗驱动归甲·乙只动菜单半。
+- `turn-battle-screen.ts`(641·甲屏·owner 授权乙动表现)：CSS/纯渲染子函数可抽 `turn-battle-style.ts`。
+- 测试大文件（`game-g.test.ts` 1051 / `lobby-screen.click.test.ts` 742）可按被测主题分文件。
