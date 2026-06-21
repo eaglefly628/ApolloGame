@@ -20,7 +20,9 @@
   --chamfer:polygon(13px 0,100% 0,100% calc(100% - 13px),calc(100% - 13px) 100%,0 100%,0 13px);
   --hp:#2f8f6b; --danger:#d65668;
   --fd:'Ma Shan Zheng',cursive; --fh:'Cormorant Garamond',serif; --fb:'Noto Serif SC',serif; --fn:'Silkscreen',monospace; }
-.ggl-root{ background:#0c0a08; color:var(--ink); font-family:'Noto Sans SC',sans-serif; height:100vh; box-sizing:border-box; padding:12px; overflow:hidden; display:flex; justify-content:center }
+.ggl-root{ background:#0c0a08; color:var(--ink); font-family:'Noto Sans SC',sans-serif; height:100vh; box-sizing:border-box; padding:12px; overflow:hidden; display:flex; justify-content:center; user-select:none; -webkit-user-select:none; cursor:default }
+.ggl-root button,.ggl-root [data-act]{ cursor:pointer }
+.ggl-root input,.ggl-root textarea{ user-select:text; -webkit-user-select:text; cursor:text }
 .ggl-root *{ box-sizing:border-box; margin:0 }
 .ggl-root button{ font-family:inherit; cursor:pointer } .ggl-root button:disabled{ opacity:.5; cursor:not-allowed }
 .ggl-root .ghost{ opacity:.62 }
@@ -112,11 +114,12 @@
 .ggl-root .pcard-wrap:hover>.pcard{ box-shadow:0 9px 26px rgba(0,0,0,.62),0 2px 8px rgba(0,0,0,.36),inset 0 1px 0 rgba(255,255,255,.12) }
 .ggl-root .pcard.leg{ border-color:var(--gold); box-shadow:0 4px 12px rgba(0,0,0,.44),0 0 10px rgba(232,205,130,.18),inset 0 1px 0 rgba(255,255,255,.14) }
 .ggl-root .pcard.lock{ opacity:.42 }
-.ggl-root .pcard-front,.ggl-root .pcard-back{ position:absolute; inset:0; border-radius:8px; transition:opacity .26s ease }
-.ggl-root .pcard-front{ display:flex; flex-direction:column; justify-content:space-between; padding:5px 5px 4px; overflow:hidden; background:linear-gradient(148deg,rgba(255,255,255,.055) 0%,transparent 55%,rgba(0,0,0,.045) 100%) }
-.ggl-root .pcard-back{ opacity:0; background:linear-gradient(148deg,#0d1b2c 0%,#14243a 100%); border:1px solid rgba(232,205,138,.2); display:flex; flex-direction:column; align-items:center; justify-content:center; gap:2px; padding:4px; color:#e7edf3; text-align:center }
-.ggl-root .pcard-wrap:hover .pcard-front{ opacity:0 }
-.ggl-root .pcard-wrap:hover .pcard-back{ opacity:1 }
+/* 翻牌：绕竖轴 scaleX 横向翻转（背面正向缩放·文字永不镜像）。前面翻没→背面翻出。 */
+.ggl-root .pcard-front,.ggl-root .pcard-back{ position:absolute; inset:0; border-radius:8px; transition:transform .3s cubic-bezier(.4,0,.2,1); transform-origin:50% 50%; backface-visibility:hidden }
+.ggl-root .pcard-front{ display:flex; flex-direction:column; justify-content:space-between; padding:5px 5px 4px; overflow:hidden; background:linear-gradient(148deg,rgba(255,255,255,.055) 0%,transparent 55%,rgba(0,0,0,.045) 100%); transform:scaleX(1) }
+.ggl-root .pcard-back{ transform:scaleX(0); background:linear-gradient(148deg,#0d1b2c 0%,#14243a 100%); border:1px solid rgba(232,205,138,.2); display:flex; flex-direction:column; align-items:center; justify-content:center; gap:2px; padding:4px; color:#e7edf3; text-align:center }
+.ggl-root .pcard-wrap:hover .pcard-front{ transform:scaleX(0) }
+.ggl-root .pcard-wrap:hover .pcard-back{ transform:scaleX(1) }
 .ggl-root .pcard .r{ position:relative; z-index:1; font-size:22px; line-height:1; text-shadow:0 1px 4px rgba(0,0,0,.6) }
 .ggl-root .pcard .own{ position:absolute; bottom:3px; right:5px; font-size:9px; color:var(--ink-dim) }
 .ggl-root .pcard-wm{ position:absolute; inset:0; display:flex; align-items:center; justify-content:center; pointer-events:none; user-select:none }
@@ -306,10 +309,10 @@
     <div class="rankb"><span>♠</span>战役 3/5</div>
     <div style="flex:1"></div>
     <button class="tutbtn" data-act="shop" title="商城 · 抽卡 / 充值 / 兑换">🛒 商城</button>
-    <div class="coin" title="金币 · 打战斗赚 · 解锁天罡/地支"><span>🪙</span><b>1.2k</b></div>
+    <button class="coin tap" data-act="recharge" title="金币 · 打战斗赚 · 商城可用💎兑换"><span>🪙</span><b>1.2k</b></button>
     <button class="coin tap" data-act="recharge" title="钻石 · 充值 / 兑换材料"><span>💎</span><b style="color:#7fd0ff">18</b><span style="color:var(--gold);font-weight:700;margin-left:2px">＋</span></button>
     <button class="coin tap" data-act="recharge" title="地支碎片 · 养地支专属材料（💎可换）"><span>🧩</span><b style="color:#e6b96a">12</b></button>
-    <div class="coin" title="闪艺 · 牌面皮肤收集（纯装饰·改造坊点亮）"><span>✨</span><span style="color:#7fb0d8">1</span></div>
+    <button class="coin tap" data-act="shopFoil" title="闪艺 · 牌面皮肤（商城购买）"><span>✨</span><span style="color:#7fb0d8">1</span></button>
     <button class="tutbtn" data-act="man">📚 玩法手册</button>
     <button class="icon" data-act="settings" title="设置 · 皮肤 / 重看引导 / 重置">⚙</button>
   </div>

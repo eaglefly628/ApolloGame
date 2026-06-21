@@ -53,7 +53,9 @@ const CSS = `
   --chamfer:polygon(13px 0,100% 0,100% calc(100% - 13px),calc(100% - 13px) 100%,0 100%,0 13px);
   --hp:#2f8f6b; --danger:#d65668;
   --fd:'Ma Shan Zheng',cursive; --fh:'Cormorant Garamond',serif; --fb:'Noto Serif SC',serif; --fn:'Silkscreen',monospace; }
-.ggl-root{ background:#0c0a08; color:var(--ink); font-family:'Noto Sans SC',sans-serif; height:100vh; box-sizing:border-box; padding:12px; overflow:hidden; display:flex; justify-content:center }
+.ggl-root{ background:#0c0a08; color:var(--ink); font-family:'Noto Sans SC',sans-serif; height:100vh; box-sizing:border-box; padding:12px; overflow:hidden; display:flex; justify-content:center; user-select:none; -webkit-user-select:none; cursor:default }
+.ggl-root button,.ggl-root [data-act]{ cursor:pointer }
+.ggl-root input,.ggl-root textarea{ user-select:text; -webkit-user-select:text; cursor:text }
 .ggl-root *{ box-sizing:border-box; margin:0 }
 .ggl-root button{ font-family:inherit; cursor:pointer } .ggl-root button:disabled{ opacity:.5; cursor:not-allowed }
 .ggl-root .ghost{ opacity:.62 }
@@ -145,11 +147,12 @@ const CSS = `
 .ggl-root .pcard-wrap:hover>.pcard{ box-shadow:0 9px 26px rgba(0,0,0,.62),0 2px 8px rgba(0,0,0,.36),inset 0 1px 0 rgba(255,255,255,.12) }
 .ggl-root .pcard.leg{ border-color:var(--gold); box-shadow:0 4px 12px rgba(0,0,0,.44),0 0 10px rgba(232,205,130,.18),inset 0 1px 0 rgba(255,255,255,.14) }
 .ggl-root .pcard.lock{ opacity:.42 }
-.ggl-root .pcard-front,.ggl-root .pcard-back{ position:absolute; inset:0; border-radius:8px; transition:opacity .26s ease }
-.ggl-root .pcard-front{ display:flex; flex-direction:column; justify-content:space-between; padding:5px 5px 4px; overflow:hidden; background:linear-gradient(148deg,rgba(255,255,255,.055) 0%,transparent 55%,rgba(0,0,0,.045) 100%) }
-.ggl-root .pcard-back{ opacity:0; background:linear-gradient(148deg,#0d1b2c 0%,#14243a 100%); border:1px solid rgba(232,205,138,.2); display:flex; flex-direction:column; align-items:center; justify-content:center; gap:2px; padding:4px; color:#e7edf3; text-align:center }
-.ggl-root .pcard-wrap:hover .pcard-front{ opacity:0 }
-.ggl-root .pcard-wrap:hover .pcard-back{ opacity:1 }
+/* 翻牌：绕竖轴 scaleX 横向翻转（背面正向缩放·文字永不镜像）。前面翻没→背面翻出。 */
+.ggl-root .pcard-front,.ggl-root .pcard-back{ position:absolute; inset:0; border-radius:8px; transition:transform .3s cubic-bezier(.4,0,.2,1); transform-origin:50% 50%; backface-visibility:hidden }
+.ggl-root .pcard-front{ display:flex; flex-direction:column; justify-content:space-between; padding:5px 5px 4px; overflow:hidden; background:linear-gradient(148deg,rgba(255,255,255,.055) 0%,transparent 55%,rgba(0,0,0,.045) 100%); transform:scaleX(1) }
+.ggl-root .pcard-back{ transform:scaleX(0); background:linear-gradient(148deg,#0d1b2c 0%,#14243a 100%); border:1px solid rgba(232,205,138,.2); display:flex; flex-direction:column; align-items:center; justify-content:center; gap:2px; padding:4px; color:#e7edf3; text-align:center }
+.ggl-root .pcard-wrap:hover .pcard-front{ transform:scaleX(0) }
+.ggl-root .pcard-wrap:hover .pcard-back{ transform:scaleX(1) }
 .ggl-root .pcard .r{ position:relative; z-index:1; font-size:22px; line-height:1; text-shadow:0 1px 4px rgba(0,0,0,.6) }
 .ggl-root .pcard .own{ position:absolute; bottom:3px; right:5px; font-size:9px; color:var(--ink-dim) }
 .ggl-root .pcard-wm{ position:absolute; inset:0; display:flex; align-items:center; justify-content:center; pointer-events:none; user-select:none }
@@ -444,9 +447,9 @@ function helpBox(helpTab: 'intro' | 'tut' | 'manual', tier: 'easy' | 'mid' | 'ha
     <p><b>爆冷缝管理</b>：胜率 = clamp(logistic((P我−P敌)/k), 3%, 97%)。铁骰·磐石·灌铅骰·鬼手 各调爆冷。</p>`;
   const manualBody = `<div class="ctarow" style="margin-bottom:12px">${tb('easy', '🟢 初级', '#4ade80')}${tb('mid', '🟡 中级', '#facc15')}${tb('hard', '🔴 高级', '#f87171')}</div><div style="min-height:200px">${tier === 'easy' ? easy : tier === 'mid' ? mid : hard}</div>`;
   const body = helpTab === 'intro' ? introBody : helpTab === 'tut' ? tutBody : manualBody;
-  return `<div class="tut-ov" data-act="help-close"><div class="tut-box intro-scroll" data-stop="1">
+  return `<div class="tut-ov" data-act="help-close"><div class="tut-box intro-scroll" data-stop="1" style="width:560px;max-width:100%;display:flex;flex-direction:column">
     <div class="ctarow" style="margin-bottom:12px">${nav('intro', '📜 游戏介绍')}${nav('tut', '📖 新手指导')}${nav('manual', '📚 玩法手册')}</div>
-    <div>${body}</div>
+    <div style="height:46vh;min-height:340px;overflow-y:auto;padding-right:4px">${body}</div>
     <div style="text-align:center;margin-top:12px"><button class="cta-sub" style="color:#2a1a08;background:var(--gold-grad);border:0" data-act="help-close">明白了 →</button></div>
   </div></div>`;
 }
@@ -465,12 +468,12 @@ function settingsBox(view: LobbyView): string {
 }
 // 商城（owner 2026-06-20 · Demo）：🎴抽卡(doc25 §四·从已解锁池随机·重复转碎片·碎片定向兑换) + 💎钱包(充值/兑换)。
 // 全数据驱动：池/价格/汇率读 GACHA / RECHARGE_PACKS / DIAMOND_EXCHANGES；点击 = 真发卡/发币。
-function shopBox(view: LobbyView, shopTab: 'gacha' | 'wallet', rechargeErr = ''): string {
+function shopBox(view: LobbyView, shopTab: 'gacha' | 'wallet' | 'foil', rechargeErr = ''): string {
   const dia = view.diamond ?? 0;
   const shards = view.dizhiShards ?? 0;
   const tShards = view.tiangangShards ?? 0;
   const needPw = !!view.rechargeNeedsPassword;
-  const tabBtn = (k: 'gacha' | 'wallet', lbl: string): string =>
+  const tabBtn = (k: 'gacha' | 'wallet' | 'foil', lbl: string): string =>
     `<button class="cta-sub" style="${shopTab === k ? 'background:var(--gold-grad);color:#1a1206;border:0' : ''}" data-act="shopTab" data-k="${k}">${lbl}</button>`;
   const bal = `<div style="display:flex;align-items:center;gap:14px;color:var(--ink-dim);font-size:12px;margin:6px 0 12px"><span>🪙 <b style="color:var(--ink)">${view.coin}</b></span><span>💎 <b style="color:#7fd0ff">${dia}</b></span><span>🔶 <b style="color:#e6b96a">${tShards}</b> 天罡碎片</span><span>🧩 <b style="color:#e6b96a">${shards}</b> 地支碎片</span></div>`;
   // ── 🎴 抽卡 tab ──
@@ -521,11 +524,18 @@ function shopBox(view: LobbyView, shopTab: 'gacha' | 'wallet', rechargeErr = '')
     <div style="font-family:var(--fh);font-weight:700;font-size:14px;color:var(--ink);margin:16px 0 8px">兑换地支碎片 · 💎 → 🧩（养地支专属材料）</div>
     <div class="rc-grid">${DIZHI_SHARD_PACKS.map(shardCard).join('')}</div>
     <div class="note" style="text-align:left;margin-top:12px;font-size:11px">Demo 演示：充值为模拟，点击直接到账、不走真实支付。</div>`;
-  return `<div class="tut-ov" data-act="recharge-close"><div class="tut-box intro-scroll" data-stop="1" style="max-width:560px">
+  // ── ✨ 皮肤 tab（闪艺·牌面皮肤·金币购买）──
+  const foilCard = (f: LobbyShopItem): string => {
+    const st = f.owned ? '<span style="color:var(--gold);font-size:11px">✓ 已拥有</span>' : f.buyable ? `<button class="gacha-craft" data-act="buyFoil" data-k="${f.id}">🪙 ${f.cost}</button>` : `<span style="color:var(--ink-dim);font-size:11px">🪙 ${f.cost}（金币不足）</span>`;
+    return `<div class="gacha-pool" style="display:flex;align-items:center;gap:10px"><div style="font-size:24px">✨</div><div style="flex:1"><div class="gacha-pool-hd">${esc(f.name)}</div><div class="note" style="text-align:left;margin:1px 0 0">${esc(f.sub)}</div></div>${st}</div>`;
+  };
+  const foilTab = `<div class="note" style="text-align:left;margin:2px 0 10px">✨ 闪艺 = 牌面皮肤（纯装饰·不影响战力）。点亮后牌组里的牌带流光皮肤。已拥有 ${view.foils.filter((f) => f.owned).length}/${view.foils.length}。</div>${view.foils.map(foilCard).join('')}`;
+  const body = shopTab === 'gacha' ? gachaTab : shopTab === 'foil' ? foilTab : walletTab;
+  return `<div class="tut-ov" data-act="recharge-close"><div class="tut-box intro-scroll" data-stop="1" style="width:560px;max-width:100%;display:flex;flex-direction:column">
     <h2>🛒 商城</h2>
-    <div class="ctarow" style="margin:4px 0 2px">${tabBtn('gacha', '🎴 抽卡')}${tabBtn('wallet', '💎 钱包')}</div>
+    <div class="ctarow" style="margin:4px 0 2px">${tabBtn('gacha', '🎴 抽卡')}${tabBtn('foil', '✨ 皮肤')}${tabBtn('wallet', '💎 钱包')}</div>
     ${bal}
-    ${shopTab === 'gacha' ? gachaTab : walletTab}
+    <div style="height:48vh;min-height:320px;overflow-y:auto;padding-right:4px">${body}</div>
     <div style="text-align:center;margin-top:14px"><button class="cta-sub" style="color:#2a1a08;background:var(--gold-grad);border:0" data-act="recharge-close">完成 →</button></div>
   </div></div>`;
 }
@@ -821,11 +831,11 @@ function fiendsCodex(): string {
 
 // 弹层独立层（owner 2026-06-20 抗闪屏）：所有 overlay 抽到这里，mountLobby 单独更新 #gv-ov，
 // 不重建大厅主体（含 52 SVG）→ 开/点商城·设置·帮助不再整屏闪。
-export interface LobbyOverlayState { helpOpen: boolean; helpTab: 'intro' | 'tut' | 'manual'; manualTier: 'easy' | 'mid' | 'hard'; settingsOpen: boolean; rechargeOpen: boolean; shopTab: 'gacha' | 'wallet'; rechargeErr: string; gachaReveal: GachaResult[] | null; story: { beats: StoryBeat[]; idx: number; label: string; cta: string } | null; guideSkipAsk: boolean; deckPickerOpen: boolean }
+export interface LobbyOverlayState { helpOpen: boolean; helpTab: 'intro' | 'tut' | 'manual'; manualTier: 'easy' | 'mid' | 'hard'; settingsOpen: boolean; rechargeOpen: boolean; shopTab: 'gacha' | 'wallet' | 'foil'; rechargeErr: string; gachaReveal: GachaResult[] | null; story: { beats: StoryBeat[]; idx: number; label: string; cta: string } | null; guideSkipAsk: boolean; deckPickerOpen: boolean }
 export function lobbyOverlaysHTML(view: LobbyView, s: LobbyOverlayState): string {
   return `${s.helpOpen ? helpBox(s.helpTab, s.manualTier) : ''}${s.settingsOpen ? settingsBox(view) : ''}${s.rechargeOpen ? shopBox(view, s.shopTab, s.rechargeErr) : ''}${s.gachaReveal ? gachaRevealBox(s.gachaReveal) : ''}${s.story ? narrationBox(s.story.beats, s.story.idx, s.story.label, s.story.cta) : (!view.firstLaunch && (view.guideStep ?? -1) >= 0 ? guideBox(view.guideStep ?? 0) : '')}${s.guideSkipAsk ? guideSkipDialog() : ''}${s.deckPickerOpen ? deckPickerBox(view) : ''}`;
 }
-export function renderLobby(view: LobbyView, tab: string, helpOpen: boolean, deckTab: 'base' | 'gang' | 'dizhi' = 'base', earthFilter = 'all', collTab = 'cards', heroSuit = 'all', heroDetail = '', heroRar = 'all', ownedOnly = false, settingsOpen = false, manualTier: 'easy' | 'mid' | 'hard' = 'easy', rechargeOpen = false, rechargeErr = '', story: { beats: StoryBeat[]; idx: number; label: string; cta: string } | null = null, guideSkipAsk = false, shopTab: 'gacha' | 'wallet' = 'wallet', gachaReveal: GachaResult[] | null = null, deckPickerOpen = false, craftSel = '', helpTab: 'intro' | 'tut' | 'manual' = 'intro'): string {
+export function renderLobby(view: LobbyView, tab: string, helpOpen: boolean, deckTab: 'base' | 'gang' | 'dizhi' = 'base', earthFilter = 'all', collTab = 'cards', heroSuit = 'all', heroDetail = '', heroRar = 'all', ownedOnly = false, settingsOpen = false, manualTier: 'easy' | 'mid' | 'hard' = 'easy', rechargeOpen = false, rechargeErr = '', story: { beats: StoryBeat[]; idx: number; label: string; cta: string } | null = null, guideSkipAsk = false, shopTab: 'gacha' | 'wallet' | 'foil' = 'wallet', gachaReveal: GachaResult[] | null = null, deckPickerOpen = false, craftSel = '', helpTab: 'intro' | 'tut' | 'manual' = 'intro'): string {
   const on = (t: string): string => (tab === t ? ' on' : '');
   const dOn = (t: string): string => (deckTab === t ? ' on' : '');
   const cOn = (t: string): string => (collTab === t ? ' on' : '');
@@ -839,10 +849,10 @@ export function renderLobby(view: LobbyView, tab: string, helpOpen: boolean, dec
     <div class="rankb"><span>♠</span>${esc(view.rankText)}</div>
     <div style="flex:1"></div>
     <button class="tutbtn" data-act="shop" title="商城 · 抽卡 / 充值 / 兑换">🛒 商城</button>
-    <div class="coin" title="金币 · 打战斗赚 · 解锁天罡/地支"><span>🪙</span><b>${kfmt(view.coin)}</b></div>
+    <button class="coin tap" data-act="recharge" title="金币 · 打战斗赚 · 商城可用💎兑换"><span>🪙</span><b>${kfmt(view.coin)}</b></button>
     <button class="coin tap" data-act="recharge" title="钻石 · 充值 / 兑换材料"><span>💎</span><b style="color:#7fd0ff">${kfmt(view.diamond ?? 0)}</b><span style="color:var(--gold);font-weight:700;margin-left:2px">＋</span></button>
     <button class="coin tap" data-act="recharge" title="地支碎片 · 养地支专属材料（💎可换）"><span>🧩</span><b style="color:#e6b96a">${kfmt(view.dizhiShards ?? 0)}</b></button>
-    <div class="coin" title="闪艺 · 牌面皮肤收集（纯装饰·改造坊点亮）"><span>✨</span><span style="color:#7fb0d8">${view.foilCount}</span></div>
+    <button class="coin tap" data-act="shopFoil" title="闪艺 · 牌面皮肤（商城购买）"><span>✨</span><span style="color:#7fb0d8">${view.foilCount}</span></button>
     <button class="tutbtn" data-act="man">📚 玩法手册</button>
     <button class="icon" data-act="settings" title="设置 · 皮肤 / 重看引导 / 重置">⚙</button>
   </div>
@@ -949,7 +959,7 @@ export function mountLobby(host: HTMLElement, h: LobbyHandlers): { update: () =>
   let rechargeErr = '';
   let story: { beats: StoryBeat[]; idx: number; label: string; cta: string; then: 'close' | 'play' | 'guide' } | null = null;
   let guideSkipAsk = false;
-  let shopTab: 'gacha' | 'wallet' = 'wallet';
+  let shopTab: 'gacha' | 'wallet' | 'foil' = 'wallet';
   let gachaReveal: GachaResult[] | null = null;
   let deckPicker = false;
   let craftSel = '';
@@ -1001,13 +1011,14 @@ export function mountLobby(host: HTMLElement, h: LobbyHandlers): { update: () =>
     else if (act === 'replayIntro') { h.onReplayIntro?.(); settings = false; tab = 'home'; playOpeningStory(); render(); }
     else if (act === 'buyTiangang') { h.onBuyTiangang?.(k); render(); }
     else if (act === 'buyPlanet') { h.onBuyPlanet?.(k); render(); }
-    else if (act === 'buyFoil') { h.onBuyFoil?.(k); render(); }
+    else if (act === 'buyFoil') { h.onBuyFoil?.(k); if (recharge) renderOv(); else render(); } // 商城里买→只刷弹层
     else if (act === 'toggleTiangang') { h.onToggleTiangang?.(k); if (deckPicker) renderOv(); else render(); } // 弹窗选卡时只更新弹层
     else if (act === 'diamondUnlock') { h.onDiamondUnlock?.(k); render(); }
     else if (act === 'shop') { recharge = true; shopTab = 'gacha'; rechargeErr = ''; renderOv(); }
+    else if (act === 'shopFoil') { recharge = true; shopTab = 'foil'; rechargeErr = ''; renderOv(); }
     else if (act === 'recharge') { recharge = true; shopTab = 'wallet'; rechargeErr = ''; renderOv(); }
     else if (act === 'recharge-close') { recharge = false; rechargeErr = ''; render(); } // 关商城→刷新主体（拥有/余额可能变）
-    else if (act === 'shopTab') { shopTab = k === 'gacha' ? 'gacha' : 'wallet'; renderOv(); }
+    else if (act === 'shopTab') { shopTab = k === 'gacha' ? 'gacha' : k === 'foil' ? 'foil' : 'wallet'; renderOv(); }
     else if (act === 'rechargeBuy') { const pw = (host.querySelector('.rc-pw') as HTMLInputElement | null)?.value ?? ''; const ok = h.onRecharge?.(k, pw); rechargeErr = ok === false ? '密码错误，请重试' : ''; renderOv(); }
     else if (act === 'exchangeBuy') { h.onExchange?.(k); renderOv(); }
     else if (act === 'shardBuy') { h.onBuyShards?.(k); renderOv(); }
@@ -1037,6 +1048,6 @@ export function mountLobby(host: HTMLElement, h: LobbyHandlers): { update: () =>
 const FONTS = '<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin><link href="https://fonts.googleapis.com/css2?family=Silkscreen:wght@400;700&family=Rajdhani:wght@500;600;700&family=Cormorant+Garamond:wght@500;600;700&family=Noto+Sans+SC:wght@400;500;700;900&family=Noto+Serif+SC:wght@500;700;900&family=Zhi+Mang+Xing&family=Ma+Shan+Zheng&display=swap" rel="stylesheet">';
 
 // 离线"看帧" golden：自包含 HTML（CSS + 字体 + 真渲染器输出）。浏览器开 = 真大厅。
-export function renderLobbyDoc(view: LobbyView, tab = 'home', collTab = 'cards', deckTab: 'base' | 'gang' | 'dizhi' = 'base', rechargeOpen = false, story: { beats: StoryBeat[]; idx: number; label: string; cta: string } | null = null, guideSkipAsk = false, shopTab: 'gacha' | 'wallet' = 'wallet', gachaReveal: GachaResult[] | null = null, deckPickerOpen = false, craftSel = '', settingsOpen = false): string {
+export function renderLobbyDoc(view: LobbyView, tab = 'home', collTab = 'cards', deckTab: 'base' | 'gang' | 'dizhi' = 'base', rechargeOpen = false, story: { beats: StoryBeat[]; idx: number; label: string; cta: string } | null = null, guideSkipAsk = false, shopTab: 'gacha' | 'wallet' | 'foil' = 'wallet', gachaReveal: GachaResult[] | null = null, deckPickerOpen = false, craftSel = '', settingsOpen = false): string {
   return `<!DOCTYPE html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">${FONTS}<style>html,body{margin:0;background:#0c0a08}${CSS}</style></head><body>${renderLobby(view, tab, false, deckTab, 'all', collTab, 'all', '', 'all', false, settingsOpen, 'easy', rechargeOpen, '', story, guideSkipAsk, shopTab, gachaReveal, deckPickerOpen, craftSel)}</body></html>`;
 }
