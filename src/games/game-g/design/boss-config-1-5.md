@@ -103,3 +103,12 @@
 4. ~~诅咒新 op~~：**owner 暂缓**（`REQ-G-诅咒地煞` ⏸·不做）。
 5. **被动发作全屏提示**：复用 `REQ-G-战斗逻辑批次·敌用地煞全屏通知`。
 > 接好后 **design G 用 `simulate-balance.ts` 重扫（纳入 Boss 16牌组+5天罡+地煞+留场）→ 收敛各关到 §〇 目标曲线 → 回填**。
+
+### 甲接入进度（2026-06-21）
+- ✅ **#1 16 牌组**：`level.ts` BOSS_DECK_1_5 + LevelDef.boss.deck/favorBias/stayP；`game-g.tsx` 关1-5 用 16 牌组建 Boss 库（偏置写卡 buff·镜像玩家·不再 61 张泛化army）。本关英雄按 codex 真身强化置顶充当主将（让出列表点数最高那张保 16 总数）。⚠ config 把主将标 A/K，codex 里却是列奥尼达=3♠/曹操=5♣/项羽=9♦——**以 codex 真身为准**（heroNameOf 显示正确）；关2「亚历山大」名不匹配 codex「亚历山大大帝」→ 暂无强化主将。
+- ✅ **#3 地煞重设值**：§六 表全部落 `DISHA_SPECS`（disha.test + lobby 数值条 golden 已同步）。
+- ⏸ **#1 余项·homeHp 每关 2/3/4/4/5**：暂缓——`homeMax` 当前是双方共享格数，Boss 家>玩家家会撑爆血条；需先把血条改**每侧独立 max**（战场屏=乙域渲染契约改动）。关1=2 已由 thermopylae disha 生效；关2-5 暂为默认 3。
+- ⏸ **#1 余项·≤5 写死天罡**：暂缓——当前 `lvl.boss.tiangang` 仍随机 12（`bossTiangang`）；改写死 ≤5（§五·五）待排。
+- ⏸ **#2 留场P stayPMul**：暂缓——base 0.5 已实装；每 Boss 覆写(关3-5=0.75)是 owner 早先暂缓的「调参钩子」，并入后续天罡/地煞重设计一起落 + design G 重扫定。
+- 🔀 **#4 诅咒** owner 暂缓；**#5 全屏通知** 转交他人。
+> **现状**：deck/偏置/地煞值已让对战「敌人像个对手·数值方向对」；homeHp/写死天罡/留场覆写 待续 → design G 可先就当前态跑一轮 `simulate-balance` 看曲线偏移。
