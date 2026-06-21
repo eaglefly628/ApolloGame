@@ -27,7 +27,8 @@ describe('Game G · 牌组构筑数据层（DEV-CHECKLIST 契约 A/B + 乙3）',
     expect(rankOfCardId('AS')).toBe('A');
   });
 
-  it('一键自动构筑：恰 13 张·合法·不重复·确定性（同输入恒同输出）', () => {
+  it('一键自动构筑：恰 16 张·合法·不重复·确定性（同输入恒同输出）', () => {
+    expect(POKER_PICK_SIZE).toBe(16); // owner 2026-06-21：13→16
     const favors = Array.from({ length: 52 }, (_, i) => 40 + (i % 20));
     const isOwned = (id: string): boolean => cardFavorIndex(id) % 3 === 0;
     const a = autoBuildPokerPicks({ favors, isOwned });
@@ -38,12 +39,12 @@ describe('Game G · 牌组构筑数据层（DEV-CHECKLIST 契约 A/B + 乙3）',
     for (const id of a) expect(isPoolCardId(id)).toBe(true); // 合法卡
   });
 
-  it('一键自动构筑：费用曲线铺开（每档都有·不全大点·目标 [4,3,3,3]）', () => {
+  it('一键自动构筑：费用曲线铺开（每档都有·不全大点·目标 [4,4,4,4]）', () => {
     const favors = Array.from({ length: 52 }, () => 50);
     const picks = autoBuildPokerPicks({ favors, isOwned: () => false });
     const byTier = [0, 0, 0, 0];
     for (const id of picks) byTier[deployCost(rankOfCardId(id))]++;
-    expect(byTier).toEqual([4, 3, 3, 3]); // 均匀分布·非全 3 费
+    expect(byTier).toEqual([4, 4, 4, 4]); // 均匀分布·非全 3 费
     expect(byTier[0]).toBeGreaterThan(0); // 有低费
     expect(byTier[3]).toBeLessThan(picks.length); // 不全大点
   });

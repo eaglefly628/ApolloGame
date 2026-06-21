@@ -959,12 +959,12 @@ export function renderLobby(view: LobbyView, tab: string, helpOpen: boolean, dec
     <div class="who"><span class="nm">${esc(view.name)}</span><span class="sub">主牌 · <b>${esc(view.mainCard)}</b></span><span class="sub" style="font-size:10px;margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:340px">${view.archLine}</span><span class="sub" style="font-size:10px;opacity:.7;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:340px">${esc(view.bossLine)}</span></div>
     <div class="rankb"><span>♠</span>${esc(view.rankText)}</div>
     <div style="flex:1"></div>
-    <button class="tutbtn" data-act="shop" title="商城 · 抽卡 / 充值 / 兑换">🛒 商城</button>
+    <button class="tutbtn" data-act="shop" data-anchor="shop" title="商城 · 抽卡 / 充值 / 兑换">🛒 商城</button>
     <button class="coin tap" data-act="recharge" title="金币 · 打战斗赚 · 商城可用💎兑换"><span>🪙</span><b>${kfmt(view.coin)}</b></button>
     <button class="coin tap" data-act="recharge" title="钻石 · 充值 / 兑换材料"><span>💎</span><b style="color:#7fd0ff">${kfmt(view.diamond ?? 0)}</b><span style="color:var(--gold);font-weight:700;margin-left:2px">＋</span></button>
     <button class="coin tap" data-act="recharge" title="地支碎片 · 养地支专属材料（💎可换）"><span>🧩</span><b style="color:#e6b96a">${kfmt(view.dizhiShards ?? 0)}</b></button>
     <button class="coin tap" data-act="shopFoil" title="闪艺 · 牌面皮肤（商城购买）"><span>✨</span><span style="color:#7fb0d8">${view.foilCount}</span></button>
-    <button class="tutbtn" data-act="man">📚 玩法手册</button>
+    <button class="tutbtn" data-act="man" data-anchor="help">📚 玩法手册</button>
     <button class="icon" data-act="settings" title="设置 · 皮肤 / 重看引导 / 重置">⚙</button>
   </div>
   <div class="nav">
@@ -994,7 +994,7 @@ export function renderLobby(view: LobbyView, tab: string, helpOpen: boolean, dec
           </div>
           ${c ? `<div style="position:absolute;left:0;right:0;bottom:104px;text-align:center;color:#fff;font-size:13px;text-shadow:0 2px 8px rgba(0,0,0,.7)">⚔ 对决 <b style="font-family:var(--fd);font-size:18px">${esc(c.boss)}</b> · <span style="opacity:.85">${esc(c.oneLiner)}</span></div>` : ''}
           <div class="ctawrap">
-            <button class="cta-main" data-act="play"><span class="sheen"></span><span class="big">${GI.swords} 出征 · ${c ? `第 ${c.stage} 关` : esc(view.rankText)}</span><span class="sm">${c ? `挑战 ${esc(c.boss)} · ${esc(c.battle)} · 难度 ${stars}` : 'DEPLOY · 单人战役 vs AI 庄家'}</span></button>
+            <button class="cta-main" data-act="play" data-anchor="play"><span class="sheen"></span><span class="big">${GI.swords} 出征 · ${c ? `第 ${c.stage} 关` : esc(view.rankText)}</span><span class="sm">${c ? `挑战 ${esc(c.boss)} · ${esc(c.battle)} · 难度 ${stars}` : 'DEPLOY · 单人战役 vs AI 庄家'}</span></button>
             <div class="ctarow"><button class="cta-sub" data-act="intro">📜 游戏介绍</button><button class="cta-sub" data-act="tut">📖 怎么打</button></div>
           </div>
         </div>
