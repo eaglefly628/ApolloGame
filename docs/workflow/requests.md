@@ -248,3 +248,17 @@ game-f 报「多数需新引擎能力」。Lead 实测：**三个已点名技能
 - 建议方案 / 伪代码 / 补丁（可选）：
 - 最小复现（若是 bug）：
 ```
+
+---
+
+### PG-乙→甲 · [2026-06-21] · Game G · status: **open（转交甲·owner 拍板"留给甲砸"）** · 类型: 战斗段死代码清理
+
+> owner 把一份 game-g.tsx「三套战斗血脉地图」review 转给乙。涉及的全是**甲的战斗段/文件**，按 甲/乙 正交铁律乙不碰；登记于此交甲，owner 已同意由甲清。
+
+**现状真相**：`onPlay → startBattle() → showTurnMatch()`（回合制·**活**·turn-combat.ts + turn-battle-screen.ts）。两条 UI 不到达的**死路**：
+- **实时血脉**：`showMatch()`（game-g.tsx L577–810·~234 行）+ 16 个实时常量（`LIVE_STEP_MS/RENDER_MS/POINTS_MAX`… L27–51）+ helpers（`buildBattleViewLive/snapLivePos/armyToDeploys/canDrawFrom/clashToView/BattleControl/NO_CONTROL`）+ import（L1 battle-screen / L4 live-combat）。续命测试：`battle-screen.{frame,click}.test.ts`、`live-combat.test.ts`。
+- **Engine 血脉**：`buildGameGMatch()`（blueprint.ts）UI 从不 import；续命测试 `game-g.test.ts`（~1028 行 oracle）；`game-g.tsx` L12 注释"出征打一关(buildGameGMatch)"已过时。
+
+**活的·勿碰**：`showTurnMatch`(L457–574)、`showLobby/showBetween`、`settleTurn`、`aggregateTengang/tengangFxOf`、`seededShuffleArr`(L255–260)、`clashToTurnView`，及 turn-combat/turn-battle-screen/lobby-screen/level/disha 全目录。
+
+**建议**：甲确认清除时机后，整体砍实时血脉（~280 行 + 16 常量 + 3 测试文件）+ Engine 血脉占位（含 L12 注释），并给顶部 import/常量/helper **加分区注释**隔离三代实现。**乙不动**（战斗段=甲地盘）。
