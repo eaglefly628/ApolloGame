@@ -9,6 +9,8 @@ export { LockstepSession } from './lockstep.js';
 export type { PeerHash, StepReport } from './lockstep.js';
 export { KeyboardInputSource, DEFAULT_KEYMAP } from './local-input.js';
 export type { KeyMap, KeyBinding } from './local-input.js';
+// 单人轮替操控（一套键盘按 Tab 在多角色间切换）；与 MultiInputSource(本地双人) 互为两种接线。
+export { SwitchableInputSource } from './switchable-input.js';
 // 帧同步（lockstep）双标签页：各端各跑确定性世界，只交换输入。
 export { LockstepClient } from './lockstep-tab.js';
 export type { Channel, NetMsg, ClientView, LockstepOptions, Dir } from './lockstep-tab.js';
