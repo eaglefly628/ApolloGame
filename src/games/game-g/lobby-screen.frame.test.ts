@@ -57,10 +57,12 @@ describe('Game G · lobby-screen 视觉回归（忠实港大厅 · 真渲染器 
     await expect(html).toMatchFileSnapshot('./__frames__/lobby-shop-gacha.html');
   });
 
-  it('牌组帧 = 真 52 张 favor 网格匹配 golden', async () => {
+  it('牌组帧 = 出战扑克构筑屏（52 池选 16·费用角标·一键自动构筑）匹配 golden', async () => {
     const html = renderLobbyDoc(view(), 'decks');
-    expect((html.match(/class="pcard[^-]/g) || []).length).toBe(52); // 真牌组 52 张（排除 pcard-wm/pcard-info 等子类）
-    expect(html).toContain('favor 均 53');
+    expect((html.match(/class="pcard[^-]/g) || []).length).toBe(52); // 52 池全张可选（排除 pcard-wm/pcard-info 等子类）
+    expect(html).toContain('出战扑克牌组 · 从 52 收藏选'); // 构筑屏标题
+    expect(html).toContain('✨ 一键自动构筑'); // 乙3 自动构筑按钮
+    expect(html).toContain('data-act="pickCard"'); // 卡可点入/出战库
     await expect(html).toMatchFileSnapshot('./__frames__/lobby-decks.html');
   });
 

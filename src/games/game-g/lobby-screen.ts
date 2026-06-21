@@ -8,7 +8,7 @@ import { HERO_CARDS, DIZHI_ZODIACS, DIZHI_TRINES, DIZHI_PAIRS, EARTH_FIENDS, STA
 import { heroPortrait } from './portraits.js';
 import { playSfx, sfxForAct, isSfxMuted, setSfxMuted } from './sfx.js';
 import { DISHA_SPECS, stageDisha } from './disha.js';
-import { RECHARGE_PACKS, rechargeTotal, DIAMOND_EXCHANGES, DIZHI_SHARD_PACKS, GACHA, INLAY_MAX, DIZHI_INLAY_FAVOR, inlayBonus } from './blueprint.js';
+import { RECHARGE_PACKS, rechargeTotal, DIAMOND_EXCHANGES, DIZHI_SHARD_PACKS, GACHA, INLAY_MAX, DIZHI_INLAY_FAVOR, inlayBonus, deployCost, POKER_PICK_SIZE } from './blueprint.js';
 
 export interface LobbyShopItem { id: string; name: string; sub: string; cost: number; owned: boolean; buyable: boolean; level?: number; inDeck?: boolean; power?: number; phat?: number; kind?: string; icon?: string; tint?: string; unlockStage?: number; locked?: boolean }
 export interface GachaResult { kind: 'tiangang' | 'dizhi'; id: string; name: string; rarity?: string; outcome: 'new' | 'dup-shard' | 'dizhi-up' | 'dizhi-shard'; detail: string } // 抽卡结果（开包演出读）
@@ -25,6 +25,8 @@ export interface LobbyView {
   // 天罡牌组（owner 2026-06-20 多牌组）：decks=各牌组概览 / deckSize=每组上限 / activeDeckName=出战组名 / canAddDeck=可否再建
   decks?: { id: string; name: string; size: number; active: boolean }[];
   deckSize?: number; activeDeckName?: string; canAddDeck?: boolean;
+  // 出战扑克牌组构筑（乙1·DEV-CHECKLIST 契约 A）：从 52 池自选 ≤pokerPickMax 张；pokerPicks=当前出战组已选卡 id；cost 角标读 deployCost。
+  pokerPicks?: string[]; pokerPickMax?: number;
   campaign?: StageCampaign; // 当前关战役（Boss/战役/难度/地煞/解锁 · doc23 §八）
   campaignMax?: number; // 已抵达的最高关（战役进度屏 锁/通关判定）
   firstLaunch?: boolean; // 首次启动（未看过开场故事）→ 进大厅自动播放（doc28 §一）
@@ -164,6 +166,16 @@ const CSS = `
 .ggl-root .pcard-bk-nm{ font-size:9px; font-weight:900; color:#e7edf3; line-height:1.05; text-align:center; max-width:100%; white-space:nowrap; overflow:hidden; text-overflow:ellipsis }
 .ggl-root .pcard-bk-tt{ font-size:7.5px; color:#9fb0c0; line-height:1; text-align:center; max-width:100%; white-space:nowrap; overflow:hidden; text-overflow:ellipsis }
 .ggl-root .pcard-portrait svg{ width:66%; height:66% }
+/* 构筑选牌（乙1）：选中态金描边 + ✓ 角标 + 费用角标 */
+.ggl-root .pcard.picked{ border-color:var(--gold); box-shadow:0 0 0 2px var(--gold),0 4px 14px rgba(232,205,130,.4) }
+.ggl-root .pcard-cost{ position:absolute; top:3px; left:4px; z-index:2; min-width:13px; height:13px; padding:0 2px; border-radius:4px; background:rgba(10,14,22,.82); color:#cfe0f3; font-size:9px; font-weight:800; line-height:13px; text-align:center }
+.ggl-root .pcard-pick{ position:absolute; top:2px; right:3px; z-index:3; width:15px; height:15px; border-radius:50%; background:var(--gold-grad); color:#2a1a08; font-size:11px; font-weight:900; line-height:15px; text-align:center; box-shadow:0 1px 4px rgba(0,0,0,.5) }
+.ggl-root .build-row{ display:flex; gap:14px; align-items:stretch; margin:10px 0 12px }
+.ggl-root .cost-curve{ display:flex; gap:8px; align-items:flex-end; flex:none; height:78px; padding:8px 12px; border-radius:11px; background:var(--chip); border:1px solid var(--panel-border) }
+.ggl-root .cc-col{ display:flex; flex-direction:column; align-items:center; justify-content:flex-end; width:34px; height:100% }
+.ggl-root .cc-bar{ width:18px; min-height:3px; border-radius:4px 4px 0 0; transition:height .2s }
+.ggl-root .cc-n{ font-size:11px; font-weight:800; color:var(--ink); margin-top:2px }
+.ggl-root .cc-l{ font-size:8.5px; color:var(--ink-dim); white-space:nowrap }
 .ggl-root .deck-nav{ display:flex; gap:6px; margin-bottom:14px }
 .ggl-root .deck-nav button{ padding:6px 20px; border-radius:8px; background:var(--chip); border:1px solid var(--panel-border); color:var(--ink-dim); font-family:var(--fh); font-weight:600; font-size:14px; cursor:pointer }
 .ggl-root .deck-nav button.on{ background:var(--gold-grad); color:#2a1a08; border:0 }
@@ -403,28 +415,36 @@ function earthSection(filter: string, owned: Record<string, number> = {}): strin
     <div style="margin-top:14px"><div style="font-family:var(--fh);font-size:14px;color:var(--gold);margin-bottom:8px">🔗 二合连携 · 六合（两颗相合 · 门槛低·效果轻 · 待战斗实装）</div>${pairs}</div>`;
 }
 
-function deckGrid(deck: number[], foils?: LobbyShopItem[]): string {
+const SUIT_LETTER: Record<string, string> = { '♠': 'S', '♥': 'H', '♦': 'D', '♣': 'C' };
+function deckGrid(deck: number[], foils?: LobbyShopItem[], picks?: Set<string>): string {
   const ownedFoilNames = (foils ?? []).filter(f => f.owned).map(f => f.name);
   const foilBack = ownedFoilNames.length
     ? `<div style="font-size:9px;color:var(--gold)">✨${esc(ownedFoilNames.join('+'))}</div>` : '';
+  const pickMode = !!picks; // 传 picks=进入构筑选牌模式（卡可点入/出战组·亮选中态·画费用角标）
+  const full = pickMode && picks.size >= POKER_PICK_SIZE;
   return SUITS.map(([su, c], si) => {
     const cards = Array.from({ length: 13 }, (_, ri) => {
       const fv = deck[si * 13 + ri] ?? 50;
       const rank = RANKS[ri];
       // 每张牌 = 一位名将（doc23 · 52 张全对应）：花色+点数 → 英雄
       const hero = HERO_CARDS.find((h) => h.suit === su && h.rank === rank);
+      const cardId = rank + (SUIT_LETTER[su] ?? 'S'); // 卡 id（'AS'/'10D'…·与 pokerPicks/blueprint 同口径）
+      const picked = pickMode && picks.has(cardId);
+      const cost = deployCost(rank); // 放牌费用角标（契约 B·doc14 §九）
       const isFace = ri <= 3;
       const qual = fv >= 70 ? '强' : fv >= 58 ? '良' : fv <= 50 ? '弱' : '中';
       const qualColor = fv >= 70 ? 'var(--gold)' : fv >= 58 ? 'var(--club)' : fv <= 50 ? 'var(--ink-dim)' : 'var(--ink)';
-      const cls = 'pcard' + (fv >= 70 ? ' leg' : '') + (fv <= 50 ? ' lock' : '');
+      const cls = 'pcard' + (fv >= 70 ? ' leg' : '') + (fv <= 50 ? ' lock' : '') + (picked ? ' picked' : '');
       const faceStyle = isFace ? `border-color:${c}90;` : '';
+      const costBadge = pickMode ? `<span class="pcard-cost" title="放牌费用 ${cost}">${cost}</span>` : '';
+      const pickMark = picked ? '<span class="pcard-pick">✓</span>' : '';
       // 正面（front）：花色水印 + 该将立绘剪影（全 52 张统一）+ 点数 + 将名 + favor
       const front = `<div class="pcard-front">` +
         `<div class="pcard-wm" style="color:${c};font-size:24px;opacity:.07">${su}</div>` +
         (hero ? `<div class="pcard-portrait">${heroPortrait(hero.suit, hero.era, hero.rank, hero.rar)}</div>` : '') +
         `<div class="r" style="color:${c}">${rank}</div>` +
         (hero ? `<div class="pcard-lbl" style="color:${c};opacity:.82">${esc(hero.name)}</div>` : '') +
-        `<span class="own">${fv}</span>` +
+        `<span class="own">${fv}</span>${costBadge}${pickMark}` +
       `</div>`;
       // 背面（back）：翻面看这位名将的身份 + favor（全 52 张统一·不再"有的有字有的没字"）
       const back = `<div class="pcard-back">` +
@@ -435,12 +455,39 @@ function deckGrid(deck: number[], foils?: LobbyShopItem[]): string {
         `<div style="font-size:8px;color:${qualColor}">${qual}</div>` +
         foilBack +
       `</div>`;
-      return `<div class="pcard-wrap" title="${esc(su + rank + (hero ? ' · ' + hero.name + '「' + hero.title + '」' : '') + ' · favor ' + fv)}">` +
-        `<div class="${cls}" style="${faceStyle}">${front}${back}</div>` +
+      // 构筑模式：整卡可点 → pickCard 切入/出战组（未选且满槽 → 置灰提示满）。非构筑：纯展示。
+      const wrapAttr = pickMode ? ` data-act="pickCard" data-k="${cardId}" style="cursor:pointer"` : '';
+      const dim = pickMode && !picked && full ? ';opacity:.4' : '';
+      return `<div class="pcard-wrap${picked ? ' is-picked' : ''}"${wrapAttr} title="${esc(su + rank + (hero ? ' · ' + hero.name + '「' + hero.title + '」' : '') + ' · favor ' + fv + ' · 费 ' + cost)}">` +
+        `<div class="${cls}" style="${faceStyle}${dim}">${front}${back}</div>` +
       `</div>`;
     }).join('');
     return `<div class="suit-row"><div class="suit-hd" style="color:${c}">${su}</div><div class="suit-line">${cards}</div></div>`;
   }).join('');
+}
+// 出战扑克牌组构筑屏（乙1·DEV-CHECKLIST §3）：从 52 池点选 ≤16 张入战斗牌库；费用曲线柱 + 一键自动构筑 + 清空。
+function pokerBuildPanel(view: LobbyView): string {
+  const max = view.pokerPickMax ?? POKER_PICK_SIZE;
+  const picks = new Set(view.pokerPicks ?? []);
+  const n = picks.size;
+  // 费用曲线（4 档各几张·提示别全大点）
+  const byTier = [0, 0, 0, 0];
+  for (const id of picks) byTier[deployCost(id.slice(0, -1))]++;
+  const tierMax = Math.max(1, ...byTier);
+  const TIER_LABEL = ['0 费', '1 费', '2 费', '3 费'];
+  const TIER_COLOR = ['var(--club)', 'var(--ink)', 'var(--diamond)', 'var(--gold)'];
+  const curve = byTier.map((cnt, t) => `<div class="cc-col" title="${TIER_LABEL[t]} · ${cnt} 张"><div class="cc-bar" style="height:${Math.round((cnt / tierMax) * 100)}%;background:${TIER_COLOR[t]}"></div><div class="cc-n">${cnt}</div><div class="cc-l">${TIER_LABEL[t]}</div></div>`).join('');
+  const okColor = n === max ? 'var(--gold)' : 'var(--ink-dim)';
+  return `<div class="card"><h2>🎴 出战扑克牌组 · 从 52 收藏选 <b style="color:${okColor}">${n}/${max}</b>
+    <span style="display:flex;gap:8px;margin-left:auto">
+      <button class="cta-sub" data-act="autoBuildDeck" title="按费用曲线+偏好已养成自动凑一副">✨ 一键自动构筑</button>
+      <button class="cta-sub" data-act="clearPicks" title="清空已选">清空</button>
+    </span></h2>
+    <div class="build-row">
+      <div class="cost-curve" title="放牌费用曲线（别全大点·低费才铺得开场面）">${curve}</div>
+      <div class="note" style="flex:1;text-align:left;margin:0">点牌入/出 <b>出战牌库</b>（满 ${max} 张）。左下角数字＝<b>放牌费用</b>（点 2-4=0 / 5-7=1 / 8-10=2 / JQKA=3）。<b style="color:var(--gold)">✓</b>＝已入战库；favor 越高越能扛掷命。带进下一场战斗的就是这 ${max} 张。</div>
+    </div>
+    <div>${deckGrid(view.deck, view.foils, picks)}</div></div>`;
 }
 function shopItem(act: string, glyph: string, it: LobbyShopItem): string {
   const cls = 'good' + (it.owned ? ' got' : it.buyable ? ' buy' : ' lock');
@@ -1011,7 +1058,7 @@ export function renderLobby(view: LobbyView, tab: string, helpOpen: boolean, dec
     </section>`;
     })()}
     <section class="screen${on('campaign')} full" data-screen="campaign" style="flex-direction:column;overflow-y:auto">${campaignSection(view)}</section>
-    <section class="screen${on('decks')} full" data-screen="decks">${deckPreviewPanel(view.tiangangs, view.deckArchName, view.deckArchActivated, view.deckSize ?? 12, view.activeDeckName)}<div class="deck-nav"><button class="${deckTab==='base'?'on':''}" data-act="deckTab" data-k="base">扑克牌组</button><button class="${deckTab==='gang'?'on':''}" data-act="deckTab" data-k="gang">天罡牌组</button><button class="${deckTab==='dizhi'?'on':''}" data-act="deckTab" data-k="dizhi">地支牌</button></div><div class="dsub${dOn('base')}" data-dsub="base"><div class="card"><h2>📜 扑克牌组 · 52 张 <span class="ghost" style="margin-left:auto;font-size:12px">favor 均 ${view.deckAvg} · 最低 ${view.deckMin} / 最高 ${view.deckMax}</span></h2>${suitBarsPanel(view.deck, view.deckAvg)}<div>${deckGrid(view.deck, view.foils)}</div><div class="note" style="text-align:left">favor=该牌掷命翻正面(存活)的概率底盘。<b style="color:var(--gold)">金边</b>=强(≥70) / 暗格=弱(≤50)。牌组强度靠<b>天罡牌/地支牌/流派</b>提升 → 去「改造坊」经营。</div></div></div><div class="dsub${dOn('gang')}" data-dsub="gang">${tiangangDeckManager(view)}</div><div class="dsub${dOn('dizhi')}" data-dsub="dizhi"><div class="card"><h2>${GI.planet} 地支牌 · 十二生肖 <span class="ghost" style="margin-left:auto;font-size:12px">铜→银→金 · 镶进牌附魔（改造坊）</span></h2><div class="earth-filter">${efBtn('all','全部','background:var(--gold-grad);color:#2a1a08;border:0')}${efBtn('bronze','铜','background:#cd7f32;color:#fff;border:0')}${efBtn('silver','银','background:#c4ccd6;color:#2a2a2a;border:0')}${efBtn('gold','金','background:var(--gold-grad);color:#2a1a08;border:0')}</div>${earthSection(earthFilter, view.dizhiOwned ?? {})}</div></div></section>
+    <section class="screen${on('decks')} full" data-screen="decks">${deckPreviewPanel(view.tiangangs, view.deckArchName, view.deckArchActivated, view.deckSize ?? 12, view.activeDeckName)}<div class="deck-nav"><button class="${deckTab==='base'?'on':''}" data-act="deckTab" data-k="base">扑克牌组</button><button class="${deckTab==='gang'?'on':''}" data-act="deckTab" data-k="gang">天罡牌组</button><button class="${deckTab==='dizhi'?'on':''}" data-act="deckTab" data-k="dizhi">地支牌</button></div><div class="dsub${dOn('base')}" data-dsub="base">${pokerBuildPanel(view)}</div><div class="dsub${dOn('gang')}" data-dsub="gang">${tiangangDeckManager(view)}</div><div class="dsub${dOn('dizhi')}" data-dsub="dizhi"><div class="card"><h2>${GI.planet} 地支牌 · 十二生肖 <span class="ghost" style="margin-left:auto;font-size:12px">铜→银→金 · 镶进牌附魔（改造坊）</span></h2><div class="earth-filter">${efBtn('all','全部','background:var(--gold-grad);color:#2a1a08;border:0')}${efBtn('bronze','铜','background:#cd7f32;color:#fff;border:0')}${efBtn('silver','银','background:#c4ccd6;color:#2a2a2a;border:0')}${efBtn('gold','金','background:var(--gold-grad);color:#2a1a08;border:0')}</div>${earthSection(earthFilter, view.dizhiOwned ?? {})}</div></div></section>
     <section class="screen${on('coll')} full" data-screen="coll" style="flex-direction:column"><div class="deck-nav"><button class="${collTab==='cards'?'on':''}" data-act="collTab" data-k="cards">收藏·牌谱</button><button class="${collTab==='ladder'?'on':''}" data-act="collTab" data-k="ladder">天梯·榜</button><button class="${collTab==='fiends'?'on':''}" data-act="collTab" data-k="fiends">地煞·战法</button><button class="${collTab==='collect'?'on':''}" data-act="collTab" data-k="collect">天罡&amp;闪艺</button></div><div class="dsub${cOn('cards')}" data-dsub="cards" style="flex:1;min-height:0;flex-direction:column">${heroCollSection(heroSuit, heroRar, heroDetail, ownedOnly)}</div><div class="dsub${cOn('ladder')}" data-dsub="ladder" style="flex:1;min-height:0;flex-direction:column">${ladderSection(view.name, view.rankText)}</div><div class="dsub${cOn('fiends')}" data-dsub="fiends" style="flex:1;min-height:0;flex-direction:column">${fiendsCodex(view.campaignMax ?? 1)}</div><div class="dsub${cOn('collect')}" data-dsub="collect"><div class="card"><h2>🗃 天罡牌 · 收藏 ${view.tiangangs.filter((j) => j.owned).length}/${view.tiangangs.length}</h2><div class="note" style="text-align:left;margin-bottom:6px">⚡ 已解锁天罡牌（到「牌组」屏编入出战牌组）</div><div class="shelf">${view.tiangangs.map((j) => shopItem('', tiangangIcon(j.icon, j.tint), { ...j, buyable: false })).join('')}</div><div class="note" style="text-align:left;margin:12px 0 6px">✨ 闪艺 foil（纯装饰收集 · 点亮可购买）· ${view.foils.filter((f) => f.owned).length}/${view.foils.length}</div><div class="shelf">${view.foils.map((f) => shopItem('buyFoil', '✨', f)).join('')}</div></div></div></section>
     <section class="screen${on('craft')} full" data-screen="craft"><div class="craft-zones">
       ${enchantPanel(view, craftSel)}
@@ -1044,6 +1091,9 @@ export interface LobbyHandlers {
   onSelectDeck?: (id: string) => void; // 选某牌组出战
   onNewDeck?: () => void; // 新建牌组
   onDelDeck?: (id: string) => void; // 删除牌组
+  onTogglePick?: (cardId: string) => void; // 出战扑克牌组：点牌入/出（≤POKER_PICK_SIZE·乙1）
+  onAutoBuildDeck?: () => void; // 一键自动构筑出战扑克牌组（乙3）
+  onClearPicks?: () => void; // 清空出战扑克牌组
   onReset?: () => void;
   onSkin?: (skin: 'onyx' | 'rosy') => void;
   onIntroSeen?: () => void; // 看完开场故事（doc28 §一）→ 标记已看 + 起引导
@@ -1157,6 +1207,10 @@ export function mountLobby(host: HTMLElement, h: LobbyHandlers): { update: () =>
     else if (act === 'selectDeck') { h.onSelectDeck?.(k); render(); }
     else if (act === 'newDeck') { h.onNewDeck?.(); render(); }
     else if (act === 'delDeck') { h.onDelDeck?.(k); render(); }
+    // 出战扑克牌组构筑（乙1/乙3）：点牌入/出 · 一键自动构筑 · 清空 → 改 save.pokerPicks → 只重渲牌组屏
+    else if (act === 'pickCard') { h.onTogglePick?.(k); render(); }
+    else if (act === 'autoBuildDeck') { h.onAutoBuildDeck?.(); render(); }
+    else if (act === 'clearPicks') { h.onClearPicks?.(); render(); }
     // 天罡牌组编辑：主页「编辑牌组」跳牌组屏天罡页 / 空槽弹选卡窗 / 关窗
     else if (act === 'editDeck') { tab = 'decks'; deckTab = 'gang'; render(); }
     else if (act === 'deckAdd') { deckPicker = true; renderOv(); }

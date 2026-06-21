@@ -602,4 +602,37 @@ describe('Game G · lobby-screen mountLobby 点击交互（DOM · happy-dom）',
       expect(host.innerHTML).toContain('777');
     });
   });
+
+  // ── 出战扑克牌组构筑（乙1/乙3·DEV-CHECKLIST §3）──
+  describe('出战扑克牌组构筑（52 池选 16）', () => {
+    const open = (host: HTMLElement, h: Parameters<typeof mountLobby>[1]): void => {
+      mountLobby(host, h);
+      click(navBtn(host, '我的牌组')); // 进牌组屏（默认 base=扑克构筑屏）
+    };
+    it('牌组屏显示构筑选牌：计数 N/16 + 一键自动构筑 + 卡可点', () => {
+      const host = document.createElement('div');
+      open(host, { getView: () => makeView({ pokerPicks: ['AS', 'KH'], pokerPickMax: 16 }), onPlay: vi.fn() });
+      expect(host.innerHTML).toContain('2/16'); // 已选 2/16
+      expect(host.querySelector('[data-act="autoBuildDeck"]')).not.toBeNull();
+      expect(host.querySelector('[data-act="pickCard"]')).not.toBeNull();
+      expect(host.querySelector('.pcard.picked')).not.toBeNull(); // AS/KH 选中态
+    });
+    it('点一张牌 → onTogglePick(卡id)', () => {
+      const onTogglePick = vi.fn();
+      const host = document.createElement('div');
+      open(host, { getView: () => makeView({ pokerPicks: [], pokerPickMax: 16 }), onPlay: vi.fn(), onTogglePick });
+      click(host.querySelector('[data-act="pickCard"]'));
+      expect(onTogglePick).toHaveBeenCalledTimes(1);
+      expect(typeof onTogglePick.mock.calls[0][0]).toBe('string'); // 传卡 id
+    });
+    it('一键自动构筑 → onAutoBuildDeck / 清空 → onClearPicks', () => {
+      const onAutoBuildDeck = vi.fn(); const onClearPicks = vi.fn();
+      const host = document.createElement('div');
+      open(host, { getView: () => makeView({ pokerPicks: [], pokerPickMax: 16 }), onPlay: vi.fn(), onAutoBuildDeck, onClearPicks });
+      click(host.querySelector('[data-act="autoBuildDeck"]'));
+      click(host.querySelector('[data-act="clearPicks"]'));
+      expect(onAutoBuildDeck).toHaveBeenCalledTimes(1);
+      expect(onClearPicks).toHaveBeenCalledTimes(1);
+    });
+  });
 });
