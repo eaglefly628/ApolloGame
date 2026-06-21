@@ -5,22 +5,24 @@ import type { Coachmark, Flag } from '@engine/protocol/components.js';
 // 战斗新手引导（甲·owner 2026-06-21·选「为 game-g 接 ECS coachmark 能力」）：用引擎通用 coachmark 能力
 // (REQ-ARCH-COACH) 表达——线性·情境首触·首通即教，seen_* 进 save 看过不再弹。本模块只建「承载引导的小 World」
 // + 步骤数据；驱动(game-g.tsx)按当前 step 置 Flag、玩家做对应操作即推进。纯表现·不进战斗 hash。
-export interface BattleCoachStep { flag: string; anchor: string; text: string; on: 'draw' | 'deploy' | 'endturn' | 'cast' }
+export interface BattleCoachStep { flag: string; anchor: string; text: string; on: 'draw' | 'deploy' | 'endturn' | 'cast'; needsTengang?: boolean }
 
-// 步骤序列（owner 2026-06-21 改流程）：第一回合先**放牌**(+顺手翻机关门) → **结束回合**(推进/掷命) → 第二回合**抽牌**(普通/天罡) → 打天罡。
-// 自然手感：开局已有起手牌，先铺场再说；抽牌是第二回合补充。cast 步无天罡可跳过（驱动判定）。
+// 步骤序列（owner 2026-06-21 改流程·修互斥 bug）：放牌(+翻机关门) → 结束回合(推进/掷命) → 抽牌(摸张天罡) → 再结束回合 → 下一回合打天罡。
+// 关键修正：抽牌与打天罡**同回合互斥**（一回合只能选一类动作·同类无限）。所以抽完必须先【结束回合】，
+// 打天罡得等下一回合——原来「抽牌紧接打天罡」会让玩家卡在做不到的操作上。cast 步仅当手里真有天罡时才出（驱动按手牌活检）。
 export const BATTLE_COACH: readonly BattleCoachStep[] = [
   { flag: 'seen_combat_deploy', anchor: 'combat-deploy', text: '👉 第一步【放牌】：先点一张手牌，再点一路（上/中/下）把战士部署上去。按牌点数花源泉（小牌免费·大牌贵）·有源泉就能继续放；放完还能顺手翻一道机关门(箭头)调度兵线。', on: 'deploy' },
   { flag: 'seen_combat_endturn', anchor: 'combat-end', text: '👉 铺好场点【结束回合】：双方兵线一起推进一格，前锋相遇就触发【掷命对决】（正面活/反面亡）。', on: 'endturn' },
-  { flag: 'seen_combat_draw', anchor: 'combat-draw', text: '👉 第二回合可【抽牌】：花 1 点召唤源泉（右上角源泉）从牌库摸一张——普通兵牌或天罡战法都能摸。源泉每回合自动 +1，悠着用。', on: 'draw' },
-  { flag: 'seen_combat_tiangang', anchor: 'combat-cast', text: '👉 点【打天罡】：施放持续战法，整局为你加成。看明白就毕业啦！', on: 'cast' },
+  { flag: 'seen_combat_draw', anchor: 'combat-draw', text: '👉 第二回合【抽牌】：花 1 点召唤源泉（右上角源泉）摸牌——普通兵牌或天罡战法都能摸（抽牌同类可连摸）。想学下一步，就摸一张天罡战法。', on: 'draw' },
+  { flag: 'seen_combat_endturn2', anchor: 'combat-end', text: '👉 抽完先【结束回合】：抽牌和打天罡是互斥的（一回合只能选一类动作），打天罡得等下一回合。', on: 'endturn', needsTengang: true },
+  { flag: 'seen_combat_tiangang', anchor: 'combat-cast', text: '👉 新回合点【打天罡】：施放手里的天罡战法，整局为你加成。看明白就毕业啦！', on: 'cast', needsTengang: true },
 ];
 
-// 第一条未看过的引导步（全看过 → null）。
+// 第一条未看过的引导步（全看过 → null）。needsTengang 步仅当手里真有天罡可打时才出（无 → 跳过·不卡死）。
 export function nextCoachStep(seen: Record<string, boolean> | undefined, opts?: { hasTengang?: boolean }): BattleCoachStep | null {
   for (const s of BATTLE_COACH) {
     if (seen?.[s.flag]) continue;
-    if (s.on === 'cast' && opts && !opts.hasTengang) continue; // 无天罡 → 跳过天罡步
+    if (s.needsTengang && opts && !opts.hasTengang) continue; // 手里无天罡 → 跳过打天罡相关步
     return s;
   }
   return null;

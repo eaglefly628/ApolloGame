@@ -92,7 +92,10 @@ const CSS = `
 .gg-tipwrap.tip-right:hover>.gg-tip{ transform:translateX(0) translateY(0) scale(1.5); }
 /* 顶排 + 边缘 复合：朝下且贴角 */
 .gg-tipwrap.tip-down.tip-left>.gg-tip{ bottom:auto; top:calc(100% + 9px); transform-origin:100% 0%; }
-.gg-tipwrap.tip-down.tip-right>.gg-tip{ bottom:auto; top:calc(100% + 9px); transform-origin:0% 0%; }`;
+.gg-tipwrap.tip-down.tip-right>.gg-tip{ bottom:auto; top:calc(100% + 9px); transform-origin:0% 0%; }
+/* 悬浮的牌+浮层整体抬层（owner 2026-06-21）：手牌/棋格 position:relative 但 z 默认 auto，
+   悬浮时拔高 → 浮层不再被相邻牌或棋盘(Table)盖住。 */
+.gg-tipwrap:hover{ z-index:90; }`;
 // 教学高亮（doc28 教学钩子·纯表现）：金描边 + 脉冲，套在被强制点击的元素上。
 const HL = ';outline:3px solid var(--gold);outline-offset:2px;animation:g-hl 1s ease-in-out infinite;position:relative;z-index:55';
 

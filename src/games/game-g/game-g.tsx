@@ -774,12 +774,14 @@ export function mount(container: HTMLElement, shell?: { exit?: () => void }): ()
     battle = mounted; // teardownMatch 清理（destroy）
 
     // ── 战斗新手引导（coachmark 能力·首通即教·seen 存档不再弹·owner 2026-06-21）──
-    const hasTengang = tb.a.tengangDeck.length > 0 || tb.a.hand.some((c) => c.kind === 'tengang');
-    let coachStep: BattleCoachStep | null = nextCoachStep(save.seen, { hasTengang });
+    // 打天罡相关步按**手牌活检**判定（owner 2026-06-21·修「抽牌紧接打天罡」互斥卡死）：手里真有天罡才推进到「结束回合→打天罡」，
+    // 否则跳过、不让玩家卡在做不到的操作上。抽牌步会引导玩家先摸一张天罡。
+    const hasTengangNow = (): boolean => tb.a.hand.some((c) => c.kind === 'tengang'); // 手里真有天罡才可打 → 才推进打天罡步（避免卡死）
+    let coachStep: BattleCoachStep | null = nextCoachStep(save.seen, { hasTengang: hasTengangNow() });
     const { world: coachWorld, setStep: setCoachStep } = makeCoachWorld();
     const coach = coachStep ? mountOnboardingOverlay(document.body, coachWorld, stage) : null; // 挂 body（非 root）→ 避开战场缩放/揭幕 transform 让 position:fixed 错位（owner 2026-06-21）
     syncCoach = (): void => { if (!coach) return; const show = coachStep != null && tb.active === 'a' && tb.winner === 'pending' && perfClash == null; setCoachStep(coachStep, show); coach.update(); };
-    coachDid = (on: BattleCoachStep['on']): void => { if (!coachStep || coachStep.on !== on) return; save.seen[coachStep.flag] = true; persist(save); coachStep = nextCoachStep(save.seen, { hasTengang }); syncCoach(); };
+    coachDid = (on: BattleCoachStep['on']): void => { if (!coachStep || coachStep.on !== on) return; save.seen[coachStep.flag] = true; persist(save); coachStep = nextCoachStep(save.seen, { hasTengang: hasTengangNow() }); syncCoach(); };
     const onCoachResize = (): void => syncCoach();
     if (coach) { syncCoach(); window.addEventListener('resize', onCoachResize); }
 
