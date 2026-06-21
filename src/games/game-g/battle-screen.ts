@@ -451,7 +451,7 @@ export function mountBattle(host: HTMLElement, getView: () => BattleView, action
   };
 }
 
-const FONTS = '<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin><link href="https://fonts.googleapis.com/css2?family=Silkscreen:wght@400;700&family=Rajdhani:wght@500;600;700&family=Cormorant+Garamond:wght@500;600;700&family=Noto+Sans+SC:wght@400;500;700;900&family=Noto+Serif+SC:wght@500;700;900&family=Zhi+Mang+Xing&family=Ma+Shan+Zheng&display=swap" rel="stylesheet">';
+import { FONTS } from './fonts.js'; // 自托管字体（替代外部 Google Fonts <link>·owner 2026-06-21）
 
 // 离线"看帧"：自包含 HTML 文档（CSS + 字体 + 真渲染器 buildHTML 输出）。浏览器直接开 = 真游戏战斗屏渲染。
 // 容器内确定性生成（同 game-f frameSvg），可 toMatchFileSnapshot 做无头视觉回归 golden。theme 缺省玄铁。

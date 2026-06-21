@@ -4,6 +4,7 @@
 // 静态渲染 = 设计稿"静息态"(无 hover tooltip / 无 boss 飞出)；clash 特写覆盖层按 view.clash 选渲。live mount + 交互为后续切片。
 import { cardPoints } from './clash-resolve.js';
 import { SLOTS, MANA_PER_TURN, GATES, A_DEPLOY_SLOT, B_DEPLOY_SLOT, DEPLOY_COST, CAST_COST, type TurnBattle, type TurnUnit } from './turn-combat.js';
+import { FONTS } from './fonts.js'; // 自托管字体（替代外部 Google Fonts <link>）
 
 type Style = Record<string, string | number | undefined>;
 const st = (o: Style): string => Object.entries(o).filter(([, v]) => v !== undefined).map(([k, v]) => k.replace(/[A-Z]/g, (m) => '-' + m.toLowerCase()) + ':' + v).join(';');
@@ -555,6 +556,5 @@ export function mountTurnBattle(host: HTMLElement, getView: () => TurnBattleView
 
 /** 自包含 HTML 文档（看帧/预览/无头截图；固定 1340×858·非 cqw·无需缩放注入）。 */
 export function renderTurnBattleDoc(view: TurnBattleView): string {
-  const FONTS = '<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin><link href="https://fonts.googleapis.com/css2?family=Silkscreen:wght@400;700&family=Rajdhani:wght@500;600;700&family=Cormorant+Garamond:wght@500;600;700&family=Noto+Sans+SC:wght@400;500;700;900&family=Noto+Serif+SC:wght@500;700;900&family=Zhi+Mang+Xing&family=Ma+Shan+Zheng&display=swap" rel="stylesheet">';
   return `<!DOCTYPE html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">${FONTS}<style>*{box-sizing:border-box;}body{margin:0;background:#0c0a08;}${CSS}</style></head><body>${buildTurnBattleHTML(view)}</body></html>`;
 }
