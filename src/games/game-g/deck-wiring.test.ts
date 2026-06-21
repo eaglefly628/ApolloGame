@@ -2,7 +2,7 @@
 // 牌组数据打通验收（契约A·甲读·owner 2026-06-21 #15/#16）：大厅配的 16 张 pokerPicks + 逐张地支附魔
 // 必须按卡 ID 真正进战斗牌库（不再被揉成全军平均 bias）。回归测，防再断。
 import { describe, it, expect } from 'vitest';
-import { buildPickDeck } from './game-g.js';
+import { buildPickDeck, bossHeroCard } from './game-g.js';
 import { effectiveDeckFavors, cardFavorIndex } from './index.js';
 import { initTurnBattle, deployUnit } from './turn-combat.js';
 
@@ -43,5 +43,13 @@ describe('Game G · 牌组数据打通（契约A甲读 · 地支附魔按 ID 进
     b.a.mana = 3;
     expect(deployUnit(b, 'a', 0, 0)).toBe(true);  // 够 → 放
     expect(b.a.mana).toBe(0);                     // 扣掉 3
+  });
+
+  it('Boss 主将牌 = 本关英雄那张牌·传奇强化（owner 2026-06-21）', () => {
+    const c = bossHeroCard('列奥尼达', 12); // 温泉关英雄 = 英雄谱 3♠
+    expect(c).toMatchObject({ kind: 'poker', rank: '3', suit: 'S', general: true });
+    expect(c!.buff).toBeGreaterThan(15);      // 强化：点数 3 但战力高(配得上传奇统帅)
+    expect(c!.cost).toBe(0);                  // rank 3 → deployCost 0
+    expect(bossHeroCard('查无此英雄', 0)).toBeNull(); // 查不到 → null(不注入)
   });
 });
