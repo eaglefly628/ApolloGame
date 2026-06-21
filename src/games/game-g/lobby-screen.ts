@@ -869,7 +869,7 @@ export function renderLobby(view: LobbyView, tab: string, helpOpen: boolean, dec
       const c = view.campaign;
       const stars = c ? '★'.repeat(c.stars) + '<span style="opacity:.35">' + '★'.repeat(3 - c.stars) + '</span>' : '';
       const fiends = c ? c.fiends.map((f) => `<div class="fiend"><b>${esc(f.name)}</b><span>${esc(f.desc)}</span></div>`).join('') : '';
-      return `<section class="screen${on('home')} homerow">
+      return `<section class="screen${on('home')} homerow" data-screen="home">
       <div class="herocol">
         <div class="felt">
           <div class="vignette"></div>
@@ -898,10 +898,10 @@ export function renderLobby(view: LobbyView, tab: string, helpOpen: boolean, dec
       </div>
     </section>`;
     })()}
-    <section class="screen${on('campaign')} full" style="flex-direction:column;overflow-y:auto">${campaignSection(view)}</section>
-    <section class="screen${on('decks')} full">${deckPreviewPanel(view.tiangangs, view.deckArchName, view.deckArchActivated, view.deckSize ?? 12, view.activeDeckName)}<div class="deck-nav"><button class="${deckTab==='base'?'on':''}" data-act="deckTab" data-k="base">扑克牌组</button><button class="${deckTab==='gang'?'on':''}" data-act="deckTab" data-k="gang">天罡牌组</button><button class="${deckTab==='dizhi'?'on':''}" data-act="deckTab" data-k="dizhi">地支牌</button></div><div class="dsub${dOn('base')}"><div class="card"><h2>📜 扑克牌组 · 52 张 <span class="ghost" style="margin-left:auto;font-size:12px">favor 均 ${view.deckAvg} · 最低 ${view.deckMin} / 最高 ${view.deckMax}</span></h2>${suitBarsPanel(view.deck, view.deckAvg)}<div>${deckGrid(view.deck, view.foils)}</div><div class="note" style="text-align:left">favor=该牌掷命翻正面(存活)的概率底盘。<b style="color:var(--gold)">金边</b>=强(≥70) / 暗格=弱(≤50)。牌组强度靠<b>天罡牌/地支牌/流派</b>提升 → 去「改造坊」经营。</div></div></div><div class="dsub${dOn('gang')}">${tiangangDeckManager(view)}</div><div class="dsub${dOn('dizhi')}"><div class="card"><h2>${GI.planet} 地支牌 · 十二生肖 <span class="ghost" style="margin-left:auto;font-size:12px">铜→银→金 · 镶进牌附魔（改造坊）</span></h2><div class="earth-filter">${efBtn('all','全部','background:var(--gold-grad);color:#2a1a08;border:0')}${efBtn('bronze','铜','background:#cd7f32;color:#fff;border:0')}${efBtn('silver','银','background:#c4ccd6;color:#2a2a2a;border:0')}${efBtn('gold','金','background:var(--gold-grad);color:#2a1a08;border:0')}</div>${earthSection(earthFilter, view.dizhiOwned ?? {})}</div></div></section>
-    <section class="screen${on('coll')} full" style="flex-direction:column"><div class="deck-nav"><button class="${collTab==='cards'?'on':''}" data-act="collTab" data-k="cards">收藏·牌谱</button><button class="${collTab==='ladder'?'on':''}" data-act="collTab" data-k="ladder">天梯·榜</button><button class="${collTab==='fiends'?'on':''}" data-act="collTab" data-k="fiends">地煞·战法</button><button class="${collTab==='collect'?'on':''}" data-act="collTab" data-k="collect">天罡&amp;闪艺</button></div><div class="dsub${cOn('cards')}" style="flex:1;min-height:0;flex-direction:column">${heroCollSection(heroSuit, heroRar, heroDetail, ownedOnly)}</div><div class="dsub${cOn('ladder')}" style="flex:1;min-height:0;flex-direction:column">${ladderSection(view.name, view.rankText)}</div><div class="dsub${cOn('fiends')}" style="flex:1;min-height:0;flex-direction:column">${fiendsCodex()}</div><div class="dsub${cOn('collect')}"><div class="card"><h2>🗃 天罡牌 · 收藏 ${view.tiangangs.filter((j) => j.owned).length}/${view.tiangangs.length}</h2><div class="note" style="text-align:left;margin-bottom:6px">⚡ 已解锁天罡牌（到「牌组」屏编入出战牌组）</div><div class="shelf">${view.tiangangs.map((j) => shopItem('', tiangangIcon(j.icon, j.tint), { ...j, buyable: false })).join('')}</div><div class="note" style="text-align:left;margin:12px 0 6px">✨ 闪艺 foil（纯装饰收集 · 点亮可购买）· ${view.foils.filter((f) => f.owned).length}/${view.foils.length}</div><div class="shelf">${view.foils.map((f) => shopItem('buyFoil', '✨', f)).join('')}</div></div></div></section>
-    <section class="screen${on('craft')} full"><div class="craft-zones">
+    <section class="screen${on('campaign')} full" data-screen="campaign" style="flex-direction:column;overflow-y:auto">${campaignSection(view)}</section>
+    <section class="screen${on('decks')} full" data-screen="decks">${deckPreviewPanel(view.tiangangs, view.deckArchName, view.deckArchActivated, view.deckSize ?? 12, view.activeDeckName)}<div class="deck-nav"><button class="${deckTab==='base'?'on':''}" data-act="deckTab" data-k="base">扑克牌组</button><button class="${deckTab==='gang'?'on':''}" data-act="deckTab" data-k="gang">天罡牌组</button><button class="${deckTab==='dizhi'?'on':''}" data-act="deckTab" data-k="dizhi">地支牌</button></div><div class="dsub${dOn('base')}" data-dsub="base"><div class="card"><h2>📜 扑克牌组 · 52 张 <span class="ghost" style="margin-left:auto;font-size:12px">favor 均 ${view.deckAvg} · 最低 ${view.deckMin} / 最高 ${view.deckMax}</span></h2>${suitBarsPanel(view.deck, view.deckAvg)}<div>${deckGrid(view.deck, view.foils)}</div><div class="note" style="text-align:left">favor=该牌掷命翻正面(存活)的概率底盘。<b style="color:var(--gold)">金边</b>=强(≥70) / 暗格=弱(≤50)。牌组强度靠<b>天罡牌/地支牌/流派</b>提升 → 去「改造坊」经营。</div></div></div><div class="dsub${dOn('gang')}" data-dsub="gang">${tiangangDeckManager(view)}</div><div class="dsub${dOn('dizhi')}" data-dsub="dizhi"><div class="card"><h2>${GI.planet} 地支牌 · 十二生肖 <span class="ghost" style="margin-left:auto;font-size:12px">铜→银→金 · 镶进牌附魔（改造坊）</span></h2><div class="earth-filter">${efBtn('all','全部','background:var(--gold-grad);color:#2a1a08;border:0')}${efBtn('bronze','铜','background:#cd7f32;color:#fff;border:0')}${efBtn('silver','银','background:#c4ccd6;color:#2a2a2a;border:0')}${efBtn('gold','金','background:var(--gold-grad);color:#2a1a08;border:0')}</div>${earthSection(earthFilter, view.dizhiOwned ?? {})}</div></div></section>
+    <section class="screen${on('coll')} full" data-screen="coll" style="flex-direction:column"><div class="deck-nav"><button class="${collTab==='cards'?'on':''}" data-act="collTab" data-k="cards">收藏·牌谱</button><button class="${collTab==='ladder'?'on':''}" data-act="collTab" data-k="ladder">天梯·榜</button><button class="${collTab==='fiends'?'on':''}" data-act="collTab" data-k="fiends">地煞·战法</button><button class="${collTab==='collect'?'on':''}" data-act="collTab" data-k="collect">天罡&amp;闪艺</button></div><div class="dsub${cOn('cards')}" data-dsub="cards" style="flex:1;min-height:0;flex-direction:column">${heroCollSection(heroSuit, heroRar, heroDetail, ownedOnly)}</div><div class="dsub${cOn('ladder')}" data-dsub="ladder" style="flex:1;min-height:0;flex-direction:column">${ladderSection(view.name, view.rankText)}</div><div class="dsub${cOn('fiends')}" data-dsub="fiends" style="flex:1;min-height:0;flex-direction:column">${fiendsCodex()}</div><div class="dsub${cOn('collect')}" data-dsub="collect"><div class="card"><h2>🗃 天罡牌 · 收藏 ${view.tiangangs.filter((j) => j.owned).length}/${view.tiangangs.length}</h2><div class="note" style="text-align:left;margin-bottom:6px">⚡ 已解锁天罡牌（到「牌组」屏编入出战牌组）</div><div class="shelf">${view.tiangangs.map((j) => shopItem('', tiangangIcon(j.icon, j.tint), { ...j, buyable: false })).join('')}</div><div class="note" style="text-align:left;margin:12px 0 6px">✨ 闪艺 foil（纯装饰收集 · 点亮可购买）· ${view.foils.filter((f) => f.owned).length}/${view.foils.length}</div><div class="shelf">${view.foils.map((f) => shopItem('buyFoil', '✨', f)).join('')}</div></div></div></section>
+    <section class="screen${on('craft')} full" data-screen="craft"><div class="craft-zones">
       ${enchantPanel(view, craftSel)}
       <div class="forge">
         <div class="card"><h2>${GI.bolt} 天罡牌 · 购买 <span class="ghost" style="margin-left:auto;font-size:12px">局内法术·买入后到牌组编入</span></h2>
@@ -909,7 +909,7 @@ export function renderLobby(view: LobbyView, tab: string, helpOpen: boolean, dec
           <div class="shelf">${view.tiangangs.map((j) => craftTiangangItem(j)).join('')}</div></div>
       </div>
     </div></section>
-    <section class="screen${on('ladder')} full">${ladderSection(view.name, view.rankText)}</section>
+    <section class="screen${on('ladder')} full" data-screen="ladder">${ladderSection(view.name, view.rankText)}</section>
   </div>
   </div><div id="gv-ov" style="display:contents">${lobbyOverlaysHTML(view, { helpOpen, helpTab, manualTier, settingsOpen, rechargeOpen, shopTab, rechargeErr, gachaReveal, story, guideSkipAsk, deckPickerOpen })}</div></div>`;
 }
@@ -967,6 +967,18 @@ export function mountLobby(host: HTMLElement, h: LobbyHandlers): { update: () =>
   const ovState = (): LobbyOverlayState => ({ helpOpen: help, helpTab, manualTier: manTier, settingsOpen: settings, rechargeOpen: recharge, shopTab, rechargeErr, gachaReveal, story, guideSkipAsk, deckPickerOpen: deckPicker });
   // 抗闪屏：只更新弹层 #gv-ov（不重建大厅主体）。弹层打开/内部导航/关闭都走它 → 不再整屏闪。
   const renderOv = (): void => { const o = host.querySelector('#gv-ov'); if (o) o.innerHTML = lobbyOverlaysHTML({ ...h.getView(), skin }, ovState()); else render(); };
+  // 抗闪屏·导航：切 tab/子页 = 只切 .on class，不重建任何内容（含 52 张 SVG）→ 不闪。
+  const setTab = (t: string): void => {
+    tab = t;
+    const root = host.querySelector('.ggl-root'); if (!root) { render(); return; }
+    root.querySelectorAll('.nav button[data-act="tab"]').forEach((b) => b.classList.toggle('on', (b as HTMLElement).dataset.k === t));
+    root.querySelectorAll('section[data-screen]').forEach((s) => s.classList.toggle('on', (s as HTMLElement).dataset.screen === t));
+  };
+  const setSub = (section: string, actName: string, k: string): void => {
+    const sec = host.querySelector(`section[data-screen="${section}"]`); if (!sec) { render(); return; }
+    sec.querySelectorAll(`[data-act="${actName}"]`).forEach((b) => b.classList.toggle('on', (b as HTMLElement).dataset.k === k));
+    sec.querySelectorAll('.dsub[data-dsub]').forEach((d) => d.classList.toggle('on', (d as HTMLElement).dataset.dsub === k));
+  };
   // 每关开局演出（doc27 §五）：战役背景 + Boss 开场白 → 出征。缺 intro 则直接进战斗。
   const levelBeats = (c: StageCampaign): StoryBeat[] => [
     { scene: c.battle, text: c.intro ?? c.oneLiner },
@@ -980,10 +992,10 @@ export function mountLobby(host: HTMLElement, h: LobbyHandlers): { update: () =>
     const act = el.dataset.act, k = el.dataset.k ?? '';
     if (act) playSfx(sfxForAct(act)); // 菜单音效（程序化合成·静音/无音频上下文则静默）
     if (act === 'sfxToggle') { setSfxMuted(!isSfxMuted()); renderOv(); }
-    else if (act === 'tab') { tab = k; render(); }
-    else if (act === 'deckTab') { deckTab = k === 'gang' ? 'gang' : k === 'dizhi' ? 'dizhi' : 'base'; render(); }
+    else if (act === 'tab') { setTab(k); }
+    else if (act === 'deckTab') { deckTab = k === 'gang' ? 'gang' : k === 'dizhi' ? 'dizhi' : 'base'; setSub('decks', 'deckTab', deckTab); }
     else if (act === 'earthFilter') { earthFilter = k; render(); }
-    else if (act === 'collTab') { collTab = k; render(); }
+    else if (act === 'collTab') { collTab = k; setSub('coll', 'collTab', k); }
     else if (act === 'heroSuit') { heroSuit = k; heroDetail = ''; render(); }
     else if (act === 'heroRar') { heroRar = k; heroDetail = ''; render(); }
     else if (act === 'heroDetail') { heroDetail = heroDetail === k ? '' : k; render(); }
