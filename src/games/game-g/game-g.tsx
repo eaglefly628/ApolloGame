@@ -80,7 +80,11 @@ interface Save {
   tiangangs: string[]; // 出战牌组的卡表（= activeDeck.cards 的派生镜像·契约②·甲读·勿手改）
   planets: Record<string, number>; // 星球牌等级（局外持久 · 可叠加升档 · 第二养成轴）
   foils: string[]; // 已收集的 foil 闪艺皮肤 id（纯表现收集 · 零 gameplay）
+  fortune: { date: string; rolls: number; keptVal: number | null }; // 今日卦象（owner 2026-06-21·制卦次数/收下的卦值·每日刷新·纯趣味不进战斗）
 }
+const FORTUNE_MAX = 3; // 每日制卦上限（owner 2026-06-21）
+const fortuneToday = (): string => { const d = new Date(); return `${d.getFullYear()}-${d.getMonth() + 1}-${d.getDate()}`; };
+function resetFortuneIfNewDay(s: Save): void { const t = fortuneToday(); if (!s.fortune || s.fortune.date !== t) s.fortune = { date: t, rolls: 0, keptVal: null }; }
 interface TiangangDeck { id: string; name: string; cards: string[]; pokerPicks: string[] } // cards = 天罡 id（≤TIANGANG_DECK_SIZE）；pokerPicks = 自选出战扑克卡 id（≤POKER_PICK_SIZE·契约A·乙写甲读·空=自动构筑一副）
 
 // 出战牌组（找不到则取第一个；都空则造默认）。syncTiangangs：把出战牌组卡表派生进 save.tiangangs（契约②·甲读）。
@@ -92,7 +96,7 @@ const newDeckId = (): string => `deck_${Date.now().toString(36)}_${Math.floor(Ma
 
 const rollBoss = (): number => Math.floor(Math.random() * BOSS_ROSTER.length);
 export function freshSave(): Save {
-  return { materials: 120, diamond: 6, dizhiShards: 30, rechargeCount: 0, seenIntro: false, guideStep: 0, seen: {}, tiangangShards: 0, dizhiOwned: { 子: 1, 丑: 1, 寅: 1, 卯: 1 }, inlays: {}, campaignMax: 1, stage: 1, deck: Array.from({ length: DECK_SIZE }, (_, i) => 44 + (i % 10) * 2), lastOfficers: [10, 10, 10], leverEnergy: LEVER_START, lives: RUN_LIVES, bossIdx: rollBoss(), ownedTiangangs: GAME_G_TIANGANGS.filter((t) => unlockStageOf(t.id) <= 1).map((t) => t.id), tiangangDecks: [{ id: 'deck1', name: '牌组 1', cards: [], pokerPicks: [] }, { id: 'deck2', name: '牌组 2', cards: [], pokerPicks: [] }, { id: 'deck3', name: '牌组 3', cards: [], pokerPicks: [] }, { id: 'deck4', name: '牌组 4', cards: [], pokerPicks: [] }], activeDeckId: 'deck1', tiangangs: [], planets: {}, foils: [] }; // 44..62 起步；金币 120；钻石送 6（首充免密）；开局默认给 4 个天罡牌组让玩家去组（owner 2026-06-21）；pokerPicks 空=自动构筑一副；新存档播开场故事+引导
+  return { materials: 120, diamond: 6, dizhiShards: 30, rechargeCount: 0, seenIntro: false, guideStep: 0, seen: {}, tiangangShards: 0, dizhiOwned: { 子: 1, 丑: 1, 寅: 1, 卯: 1 }, inlays: {}, campaignMax: 1, stage: 1, deck: Array.from({ length: DECK_SIZE }, (_, i) => 44 + (i % 10) * 2), lastOfficers: [10, 10, 10], leverEnergy: LEVER_START, lives: RUN_LIVES, bossIdx: rollBoss(), ownedTiangangs: GAME_G_TIANGANGS.filter((t) => unlockStageOf(t.id) <= 1).map((t) => t.id), tiangangDecks: [{ id: 'deck1', name: '牌组 1', cards: [], pokerPicks: [] }, { id: 'deck2', name: '牌组 2', cards: [], pokerPicks: [] }, { id: 'deck3', name: '牌组 3', cards: [], pokerPicks: [] }, { id: 'deck4', name: '牌组 4', cards: [], pokerPicks: [] }], activeDeckId: 'deck1', tiangangs: [], planets: {}, foils: [], fortune: { date: '', rolls: 0, keptVal: null } }; // 44..62 起步；金币 120；钻石送 6（首充免密）；开局默认给 4 个天罡牌组让玩家去组（owner 2026-06-21）；pokerPicks 空=自动构筑一副；新存档播开场故事+引导
 }
 function loadSave(): Save {
   try {
@@ -131,6 +135,7 @@ function loadSave(): Save {
         syncTiangangs(s); // 派生出战牌组卡表 → save.tiangangs（契约②）
         if (typeof s.planets !== 'object' || s.planets === null) s.planets = {};
         if (!Array.isArray(s.foils)) s.foils = [];
+        if (typeof s.fortune !== 'object' || s.fortune === null) s.fortune = { date: '', rolls: 0, keptVal: null }; // 今日卦象迁移
         if (typeof s.lives !== 'number') s.lives = effectiveLives(s.planets);
         if (s.stage < 1 || s.stage > RUN_BATTLES) s.stage = 1;
         return s;
@@ -399,6 +404,7 @@ export function mount(container: HTMLElement): () => void {
       const planets: LobbyShopItem[] = GAME_G_PLANETS.map((p) => ({ id: p.id, name: p.name, sub: p.text, cost: p.cost, owned: false, level: save.planets[p.id] ?? 0, buyable: save.materials >= p.cost }));
       const foils: LobbyShopItem[] = GAME_G_FOILS.map((f) => { const owned = save.foils.includes(f.id); return { id: f.id, name: f.name, sub: f.desc, cost: f.cost, owned, buyable: !owned && save.materials >= f.cost }; });
       const heart = save.lives > 0 ? '❤'.repeat(save.lives) : '—';
+      resetFortuneIfNewDay(save); // 跨日则清零今日卦象（不落盘·读时纠正即可）
       return {
         skin: lobbySkin, coin: save.materials, diamond: save.diamond, dizhiShards: save.dizhiShards, tiangangShards: save.tiangangShards, dizhiOwned: save.dizhiOwned, rechargeNeedsPassword: save.rechargeCount >= 1, campaignMax: save.campaignMax, firstLaunch: !save.seenIntro, guideStep: save.guideStep, energy: save.leverEnergy, energyMax: cap, foilCount: save.foils.length,
         name: '不翻就赢_07', mainCard: '黑桃A「掷命尖兵」', rankText: `战役 第 ${save.campaignMax} 关 / 共 52`,
@@ -411,6 +417,7 @@ export function mount(container: HTMLElement): () => void {
         deckSize: TIANGANG_DECK_SIZE, activeDeckName: activeDeck(save).name, canAddDeck: save.tiangangDecks.length < MAX_TIANGANG_DECKS,
         pokerPicks: activeDeck(save).pokerPicks, pokerPickMax: POKER_PICK_SIZE, // 出战扑克牌组构筑（乙1·契约A）
         deckArchName: arch?.name ?? null, deckArchActivated: activated !== null,
+        fortune: { rolls: save.fortune.rolls, max: FORTUNE_MAX, keptVal: save.fortune.keptVal }, // 今日卦象（owner 2026-06-21）
         ladderLines: [
           `<h2>⚔️ 战役进度</h2><div class="bigrank">第 ${save.stage} / ${RUN_BATTLES} 战</div><div class="meta" style="margin-top:6px">命 ${heart} · 能量 ◈${save.leverEnergy}/${cap} · 材料 🪙${save.materials}</div>`,
           `<h2>🏆 终局 Boss</h2><div class="bigrank" style="color:var(--heart)">${boss.name}</div><div class="meta" style="margin-top:6px">${boss.persona} · 流派【${bossArchName}】</div>`,
@@ -429,6 +436,9 @@ export function mount(container: HTMLElement): () => void {
       // 投资人彩蛋：首充（rechargeCount===0）免密「送一点点」；第二次起需密码=RECHARGE_PASSWORD。返回 true=成功（供 UI 提示密码错误）。
       onRecharge: (packId, password) => { const p = RECHARGE_PACKS.find((x) => x.id === packId); if (!p) return false; if (save.rechargeCount >= 1 && password !== RECHARGE_PASSWORD) return false; save.diamond += rechargeTotal(p); save.rechargeCount += 1; persist(save); return true; },
       onExchange: (exId) => { const x = DIAMOND_EXCHANGES.find((e) => e.id === exId); if (!x || save.diamond < x.diamond) return; save.diamond -= x.diamond; save.materials += x.gold; persist(save); },
+      // 今日卦象（owner 2026-06-21 · 纯趣味不进战斗）：每日限掷 FORTUNE_MAX 次（跨日刷新）；收下=持久化选中→主页顶展示。
+      onRollFortune: () => { resetFortuneIfNewDay(save); if (save.fortune.rolls >= FORTUNE_MAX) return null; save.fortune.rolls += 1; const v = 1 + Math.floor(Math.random() * 100); persist(save); return v; },
+      onKeepFortune: (val) => { resetFortuneIfNewDay(save); save.fortune.keptVal = Math.max(1, Math.min(100, Math.round(val))); persist(save); },
       onBuyShards: (exId) => { const x = DIZHI_SHARD_PACKS.find((e) => e.id === exId); if (!x || save.diamond < x.diamond) return; save.diamond -= x.diamond; save.dizhiShards += x.shards; persist(save); },
       // 抽卡（doc25 §四 · Demo）：从已解锁池随机；天罡重复→碎片，地支新得=铜/重复升档/满金→碎片。返回抽取结果供开包演出。
       onGacha: (pool, count, pay) => {

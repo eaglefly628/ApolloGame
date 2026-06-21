@@ -424,6 +424,32 @@ describe('Game G · lobby-screen mountLobby 点击交互（DOM · happy-dom）',
       click(host.querySelector('[data-act="lucky-close"]'));
       expect(host.innerHTML).not.toContain('再掷一卦'); // 收起
     });
+
+    it('今日卦象（owner 2026-06-21）：掷→onRollFortune 计数 / 收下此卦→onKeepFortune + 主页顶徽标显示', () => {
+      const host = document.createElement('div');
+      const fortune = { rolls: 0, max: 3, keptVal: null as number | null };
+      const onRollFortune = vi.fn(() => { fortune.rolls += 1; return 95; }); // 掷出「大吉 95」
+      const onKeepFortune = vi.fn((v: number) => { fortune.keptVal = v; });
+      mountLobby(host, { getView: () => makeView({ fortune: { ...fortune } }), onPlay: vi.fn(), onRollFortune, onKeepFortune });
+      click(host.querySelector('[data-act="lucky"]')); // 开弹框并掷一卦
+      expect(onRollFortune).toHaveBeenCalledTimes(1);
+      expect(host.innerHTML).toContain('今日制卦'); // 次数行
+      expect(host.innerHTML).toContain('大吉'); // 95 → 大吉
+      click(host.querySelector('[data-act="lucky-keep"]')); // 收下此卦
+      expect(onKeepFortune).toHaveBeenCalledWith(95);
+      expect(host.querySelector('.gg-fortune')).not.toBeNull(); // 主页顶徽标出现
+      expect(host.querySelector('.gg-fortune')?.textContent).toContain('今日卦象');
+    });
+
+    it('今日卦象：次数已尽（rolls≥max）→「再掷」禁用、展示已收下的卦', () => {
+      const host = document.createElement('div');
+      const onRollFortune = vi.fn(() => null); // 引擎判定已用尽
+      mountLobby(host, { getView: () => makeView({ fortune: { rolls: 3, max: 3, keptVal: 72 } }), onPlay: vi.fn(), onRollFortune });
+      click(host.querySelector('[data-act="lucky"]'));
+      expect(host.innerHTML).toContain('次数已尽');
+      expect(host.innerHTML).toContain('吉'); // keptVal 72 → 吉
+      expect(onRollFortune).not.toHaveBeenCalled(); // 用尽不再调引擎掷
+    });
   });
 
   // ── 战役进度屏 + 每关开局演出（doc27）──

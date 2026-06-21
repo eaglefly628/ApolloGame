@@ -33,6 +33,7 @@ export interface LobbyView {
   campaignMax?: number; // 已抵达的最高关（战役进度屏 锁/通关判定）
   firstLaunch?: boolean; // 首次启动（未看过开场故事）→ 进大厅自动播放（doc28 §一）
   guideStep?: number; // 新手引导进度（doc28 §二）：0..N 进行中 · -1 完成/跳过
+  fortune?: FortuneView; // 今日卦象（owner 2026-06-21）：制卦次数 + 收下的卦值 → 主页顶展示
 }
 
 // ── 双皮 CSS 变量（逐项照搬 .dc.html themes() · onyx 绿呢 / rosy=brocade 红呢）+ 招牌类 ──
@@ -1029,14 +1030,30 @@ function fiendsCodex(campaignMax = 1): string {
 // 弹层独立层（owner 2026-06-20 抗闪屏）：所有 overlay 抽到这里，mountLobby 单独更新 #gv-ov，
 // 不重建大厅主体（含 52 SVG）→ 开/点商城·设置·帮助不再整屏闪。
 export type LuckyRoll = { val: number; label: string; line: string; color: string };
-// 主页「掷」字互动（owner 2026-06-20）：掷一卦看今日运势·纯趣味·不进战斗。
-function luckyBox(r: LuckyRoll): string {
+export interface FortuneView { rolls: number; max: number; keptVal: number | null } // 今日卦象状态（owner 2026-06-21·持久化于存档）
+// 卦值(1-100) → 吉凶档（纯表现·主页徽标与弹框共用一处推导·不进战斗）。
+export function luckyFromVal(val: number): LuckyRoll {
+  return val >= 90 ? { val, label: '大吉', color: 'var(--gold)', line: '天命在你·此局必有奇遇，放胆去翻！' }
+    : val >= 70 ? { val, label: '吉', color: 'var(--club)', line: '顺风顺水·正是出征好时机。' }
+    : val >= 40 ? { val, label: '中平', color: 'var(--ink)', line: '胜负在人·稳扎稳打、看准爆冷缝。' }
+    : val >= 15 ? { val, label: '小凶', color: 'var(--diamond)', line: '谨慎出牌·手里留张保命天罡。' }
+    : { val, label: '凶', color: 'var(--heart)', line: '爆冷之日——正好赌一把翻盘命！' };
+}
+// 主页「掷」字互动（owner 2026-06-20）：掷一卦看今日卦象·纯趣味·不进战斗。
+// owner 2026-06-21：每日限掷 max 次（显示「今日制卦 N/M」）；「收下此卦」= 选中持久化 → 主页顶显示。
+function luckyBox(r: LuckyRoll, fortune?: FortuneView): string {
+  const canRoll = !fortune || fortune.rolls < fortune.max;
+  const countLine = fortune ? `<div class="note" style="margin-top:8px;font-size:12px">今日制卦 <b style="color:var(--gold)">${fortune.rolls}/${fortune.max}</b> 次${canRoll ? '' : ' · 次数已尽（明日刷新）'}</div>` : '';
+  const reroll = canRoll
+    ? `<button class="cta-sub" style="flex:1" data-act="lucky">再掷一卦</button>`
+    : `<button class="cta-sub" style="flex:1;opacity:.4;cursor:not-allowed" disabled>次数已尽</button>`;
   return `<div class="tut-ov" data-act="lucky-close"><div class="tut-box" data-stop="1" style="max-width:340px;text-align:center">
-    <div class="note">🎴 掷命 · 今日运势</div>
+    <div class="note">🎴 掷命 · 今日卦象</div>
     <div style="font-family:var(--fd);font-size:66px;line-height:1;color:var(--gold);margin:8px 0">${r.val}</div>
     <div style="font-family:var(--fd);font-size:28px;color:${r.color}">${esc(r.label)}</div>
     <div class="note" style="margin-top:8px">${esc(r.line)}</div>
-    <div style="display:flex;gap:10px;margin-top:18px"><button class="cta-sub" style="flex:1" data-act="lucky">再掷一卦</button><button class="cta-sub" style="flex:1;color:#2a1a08;background:var(--gold-grad);border:0" data-act="lucky-close">收</button></div>
+    ${countLine}
+    <div style="display:flex;gap:10px;margin-top:18px">${reroll}<button class="cta-sub" style="flex:1;color:#2a1a08;background:var(--gold-grad);border:0" data-act="lucky-keep">收下此卦</button></div>
   </div></div>`;
 }
 // 充值致谢弹框（owner 2026-06-21·Demo 彩蛋）：确认充值后弹「谢谢老板·已打到君白工资卡」。
@@ -1050,7 +1067,7 @@ function rechargeThanksBox(): string {
 }
 export interface LobbyOverlayState { helpOpen: boolean; helpTab: 'intro' | 'tut' | 'manual'; manualTier: 'easy' | 'mid' | 'hard'; settingsOpen: boolean; rechargeOpen: boolean; shopTab: 'gacha' | 'wallet' | 'foil'; rechargeErr: string; rcSuits: string[]; rechargeThanks: boolean; gachaReveal: GachaResult[] | null; story: { beats: StoryBeat[]; idx: number; label: string; cta: string } | null; guideSkipAsk: boolean; deckPickerOpen: boolean; lucky: LuckyRoll | null }
 export function lobbyOverlaysHTML(view: LobbyView, s: LobbyOverlayState): string {
-  return `${s.helpOpen ? helpBox(s.helpTab, s.manualTier) : ''}${s.settingsOpen ? settingsBox(view) : ''}${s.rechargeOpen ? shopBox(view, s.shopTab, s.rechargeErr, s.rcSuits) : ''}${s.rechargeThanks ? rechargeThanksBox() : ''}${s.gachaReveal ? gachaRevealBox(s.gachaReveal) : ''}${s.lucky ? luckyBox(s.lucky) : ''}${s.story ? narrationBox(s.story.beats, s.story.idx, s.story.label, s.story.cta) : ''}${s.guideSkipAsk ? guideSkipDialog() : ''}${s.deckPickerOpen ? deckPickerBox(view) : ''}`;
+  return `${s.helpOpen ? helpBox(s.helpTab, s.manualTier) : ''}${s.settingsOpen ? settingsBox(view) : ''}${s.rechargeOpen ? shopBox(view, s.shopTab, s.rechargeErr, s.rcSuits) : ''}${s.rechargeThanks ? rechargeThanksBox() : ''}${s.gachaReveal ? gachaRevealBox(s.gachaReveal) : ''}${s.lucky ? luckyBox(s.lucky, view.fortune) : ''}${s.story ? narrationBox(s.story.beats, s.story.idx, s.story.label, s.story.cta) : ''}${s.guideSkipAsk ? guideSkipDialog() : ''}${s.deckPickerOpen ? deckPickerBox(view) : ''}`;
 }
 export function renderLobby(view: LobbyView, tab: string, helpOpen: boolean, deckTab: 'base' | 'gang' | 'dizhi' = 'base', earthFilter = 'all', collTab = 'cards', heroSuit = 'all', heroDetail = '', heroRar = 'all', ownedOnly = false, settingsOpen = false, manualTier: 'easy' | 'mid' | 'hard' = 'easy', rechargeOpen = false, rechargeErr = '', story: { beats: StoryBeat[]; idx: number; label: string; cta: string } | null = null, guideSkipAsk = false, shopTab: 'gacha' | 'wallet' | 'foil' = 'wallet', gachaReveal: GachaResult[] | null = null, deckPickerOpen = false, craftSel = '', helpTab: 'intro' | 'tut' | 'manual' = 'intro'): string {
   const on = (t: string): string => (tab === t ? ' on' : '');
@@ -1091,6 +1108,13 @@ export function renderLobby(view: LobbyView, tab: string, helpOpen: boolean, dec
       <div class="herocol">
         <div class="felt">
           <div class="vignette"></div>
+          ${(() => {
+            // 今日卦象徽标（owner 2026-06-21）：收下卦后显示在主页顶；点徽标可再开掷命弹框。
+            const f = view.fortune;
+            if (!f || f.keptVal == null) return '';
+            const lk = luckyFromVal(f.keptVal);
+            return `<button class="gg-fortune" data-act="lucky" title="今日卦象 · 点开再掷/查看" style="position:absolute;top:12px;right:14px;z-index:4;display:flex;align-items:center;gap:8px;padding:7px 13px;border-radius:999px;cursor:pointer;background:linear-gradient(160deg,rgba(20,28,40,.92),rgba(12,18,28,.92));border:1px solid var(--gold);box-shadow:0 4px 14px rgba(0,0,0,.4)"><span style="font-size:14px">🎴</span><span style="font-family:var(--fh);font-weight:700;font-size:12px;color:var(--ink-dim)">今日卦象</span><span style="font-family:var(--fd);font-size:18px;color:${lk.color};line-height:1">${esc(lk.label)}</span><span style="font-family:var(--fn);font-size:13px;color:var(--gold)">${f.keptVal}</span></button>`;
+          })()}
           <div class="felt-h"><span class="t">${c ? `第 ${c.stage} 关 · ${esc(c.battle)}` : '戏牌师'}</span><span class="s">${c ? `执掌命运之人 · 挑战被诅咒的 ${esc(c.boss)}` : esc(view.stageLabel)}</span></div>
           <div class="stags">${stags}</div>
           <div class="duel">
@@ -1141,6 +1165,8 @@ export interface LobbyHandlers {
   onToggleTiangang?: (id: string) => void; // 选入/踢出**出战牌组**（≤deckSize）
   onDiamondUnlock?: (id: string) => void; // 钻石速购解锁天罡（doc25·跳关门槛）
   onRecharge?: (packId: string, password: string) => boolean | void; // 充值 ¥→💎（Demo·首充免密/复充需密码）→ true=成功
+  onRollFortune?: () => number | null; // 掷今日卦象（持久计数·返卦值1-100；次数已尽返 null）（owner 2026-06-21）
+  onKeepFortune?: (val: number) => void; // 收下今日卦象（持久化选中→主页顶展示）
   onExchange?: (exId: string) => void; // 兑换 💎→🪙金币
   onBuyShards?: (exId: string) => void; // 兑换 💎→🧩地支碎片
   onGacha?: (pool: 'tiangang' | 'dizhi', count: 1 | 10, pay: 'gold' | 'diamond') => GachaResult[] | null; // 抽卡（doc25 §四）→ 结果/null(买不起)
@@ -1227,7 +1253,7 @@ export function mountLobby(host: HTMLElement, h: LobbyHandlers): { update: () =>
   coachLayer.addEventListener('click', onCoachClick);
   const onResize = (): void => updateCoach();
   const ovState = (): LobbyOverlayState => ({ helpOpen: help, helpTab, manualTier: manTier, settingsOpen: settings, rechargeOpen: recharge, shopTab, rechargeErr, rcSuits, rechargeThanks, gachaReveal, story, guideSkipAsk, deckPickerOpen: deckPicker, lucky });
-  const rollLucky = (): LuckyRoll => { const v = 1 + Math.floor(Math.random() * 100); return v >= 90 ? { val: v, label: '大吉', color: 'var(--gold)', line: '天命在你·此局必有奇遇，放胆去翻！' } : v >= 70 ? { val: v, label: '吉', color: 'var(--club)', line: '顺风顺水·正是出征好时机。' } : v >= 40 ? { val: v, label: '中平', color: 'var(--ink)', line: '胜负在人·稳扎稳打、看准爆冷缝。' } : v >= 15 ? { val: v, label: '小凶', color: 'var(--diamond)', line: '谨慎出牌·手里留张保命天罡。' } : { val: v, label: '凶', color: 'var(--heart)', line: '爆冷之日——正好赌一把翻盘命！' }; };
+  const localRollVal = (): number => 1 + Math.floor(Math.random() * 100); // 无 onRollFortune 句柄时的本地兜底（测试/独立预览）
   // 抗闪屏：只更新弹层 #gv-ov（不重建大厅主体）。弹层打开/内部导航/关闭都走它 → 不再整屏闪。
   const renderOv = (): void => { const o = host.querySelector('#gv-ov'); if (o) o.innerHTML = lobbyOverlaysHTML({ ...h.getView(), skin }, ovState()); else render(); updateCoach(); };
   // 抗闪屏·导航：切 tab/子页 = 只切 .on class，不重建任何内容（含 52 张 SVG）→ 不闪。
@@ -1302,7 +1328,10 @@ export function mountLobby(host: HTMLElement, h: LobbyHandlers): { update: () =>
     else if (act === 'settings') { settings = true; renderOv(); }
     else if (act === 'settings-close') { settings = false; renderOv(); }
     else if (act === 'play') { startPlay(); }
-    else if (act === 'lucky') { lucky = rollLucky(); renderOv(); }
+    // 掷命卦象（owner 2026-06-21）：还能掷→走 onRollFortune（持久计数+1）取新卦；次数已尽→展示已收下的卦。
+    else if (act === 'lucky') { const fo = h.getView().fortune; if (!fo || fo.rolls < fo.max) { const v = h.onRollFortune?.(); lucky = luckyFromVal(typeof v === 'number' ? v : localRollVal()); } else { lucky = luckyFromVal(fo.keptVal ?? 50); } renderOv(); }
+    // 收下此卦：持久化为今日选中 → 关弹框 + 整屏重渲（主页顶徽标随之出现/更新）。
+    else if (act === 'lucky-keep') { if (lucky) h.onKeepFortune?.(lucky.val); lucky = null; render(); }
     else if (act === 'lucky-close') { lucky = null; renderOv(); }
     else if (act === 'story-next') { if (!story) return; if (story.idx < story.beats.length - 1) { story.idx++; renderOv(); } else finishStory(); }
     else if (act === 'story-skip') { finishStory(); }
