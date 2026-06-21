@@ -62,12 +62,14 @@ const CSS = `
 @keyframes g-fly-mine { 0% { transform: translate(-90px,140px) scale(.16) rotateX(76deg) rotateY(-30deg); } 100% { transform: none; } }
 @keyframes g-fly-foe  { 0% { transform: translate(90px,140px) scale(.16) rotateX(76deg) rotateY(30deg); } 100% { transform: none; } }
 @keyframes g-coin-pop { 0% { transform: scale(0) rotate(-200deg); opacity:0; } 70% { transform: scale(1.14) rotate(10deg); } 100% { transform: scale(1) rotate(0); opacity:1; } }
-@keyframes g-hl { 0%,100% { box-shadow:0 0 0 0 var(--gold), 0 0 10px var(--gold); } 50% { box-shadow:0 0 0 5px rgba(232,205,138,.5), 0 0 18px var(--gold); } }`;
+@keyframes g-hl { 0%,100% { box-shadow:0 0 0 0 var(--gold), 0 0 10px var(--gold); } 50% { box-shadow:0 0 0 5px rgba(232,205,138,.5), 0 0 18px var(--gold); } }
+@keyframes g-adv-a { 0%{transform:translateX(-38px) scale(.88);opacity:0} 65%{transform:translateX(3px)} 100%{transform:none;opacity:1} }
+@keyframes g-adv-b { 0%{transform:translateX(38px) scale(.88);opacity:0} 65%{transform:translateX(-3px)} 100%{transform:none;opacity:1} }`;
 // 教学高亮（doc28 教学钩子·纯表现）：金描边 + 脉冲，套在被强制点击的元素上。
 const HL = ';outline:3px solid var(--gold);outline-offset:2px;animation:g-hl 1s ease-in-out infinite;position:relative;z-index:55';
 
 // ── 视图（buildTurnBattleView 从 turn-combat 派生喂渲染器；纯数据） ──
-export interface TurnSlotView { hasUnit: boolean; mine: boolean; isBorder: boolean; isClash: boolean; rank?: string; suit?: 's' | 'h' | 'd' | 'c'; power?: number; zod?: string[]; deploy?: 1 | 2; deployLabel?: boolean } // deploy：1=我方放牌区 / 2=敌方放牌区（贴各自大本营 3 格）
+export interface TurnSlotView { hasUnit: boolean; mine: boolean; isBorder: boolean; isClash: boolean; rank?: string; suit?: 's' | 'h' | 'd' | 'c'; power?: number; zod?: string[]; deploy?: 1 | 2; deployLabel?: boolean; unitId?: string; justMoved?: boolean } // deploy：1=我方放牌区 / 2=敌方放牌区（贴各自大本营 3 格）
 export interface TurnLaneView { name: string; slots: TurnSlotView[] }
 // 捷径门箭头（占位·8 门·真视觉待 owner 参考图）。idx=GATES 下标·供 live mount data-gate 钩子。
 export interface TurnGateView { idx: number; open: boolean; side: 'a' | 'b'; fromLane: number; fromSlot: number; toLane: number; toSlot: number }
@@ -193,7 +195,8 @@ function slotCell(s: TurnSlotView): string {
       const filled = !!g; const cs = { width: '22px', height: '22px', borderRadius: '6px', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '15px', lineHeight: 1, background: filled ? 'rgba(255,255,255,.92)' : 'rgba(0,0,0,.06)', border: '1px solid ' + (filled ? sc : 'rgba(120,90,60,.3)'), color: filled ? sc : 'transparent', boxShadow: filled ? `0 0 6px ${sc}66, inset 0 0 0 1px rgba(255,255,255,.6)` : 'inset 0 1px 2px rgba(0,0,0,.15)' };
       return `<div style="${st(cs)}">${filled ? (ZOD_ICON[g!] || g) : ''}</div>`;
     };
-    unitHTML = `<div style="${st(unit)}"><div style="${st(corner)}">${esc(s.rank)}${SUITG[s.suit]}</div><span style="${st(big)}">${SUITG[s.suit]}</span><div style="${st(badge)}">${s.power ?? ''}</div><div style="${st(zodRow)}">${forr([0, 1, 2], (z) => zodCell(zod[z]))}</div></div>`;
+    const advAnim = s.justMoved ? `;animation:${s.mine ? 'g-adv-a' : 'g-adv-b'} .45s cubic-bezier(.2,.8,.3,1) both` : '';
+    unitHTML = `<div style="${st(unit)}${advAnim}"><div style="${st(corner)}">${esc(s.rank)}${SUITG[s.suit]}</div><span style="${st(big)}">${SUITG[s.suit]}</span><div style="${st(badge)}">${s.power ?? ''}</div><div style="${st(zodRow)}">${forr([0, 1, 2], (z) => zodCell(zod[z]))}</div></div>`;
   }
   const ring = s.isClash ? `<div style="${st({ position: 'absolute', inset: '-3px', borderRadius: '11px', border: '2px solid var(--accent)', boxShadow: '0 0 16px var(--accent-soft)', animation: 'g-pulse 1.4s ease-in-out infinite' })}"></div>` : '';
   return `<div style="${st(cell)}">${depLabel}<div style="${st(dot)}"></div>${unitHTML}${ring}</div>`;
@@ -374,7 +377,7 @@ const SUIT_KEYS: Record<string, 's' | 'h' | 'd' | 'c'> = { S: 's', H: 'h', D: 'd
 const lc = (s: string): 's' | 'h' | 'd' | 'c' => SUIT_KEYS[s] ?? 's';
 const rankOf = (r: string): 'white' | 'green' | 'blue' | 'gold' => (r === 'A' ? 'gold' : r === 'K' || r === 'Q' || r === 'J' ? 'blue' : 'white');
 
-export interface TurnViewOpts { theme?: 'onyx' | 'brocade'; tengangName?: (id: string) => string; clash?: TurnClashView | null; sha?: TurnShaView[]; bossName?: string; selMode?: string | null; selHand?: number; tutorial?: { narration: string; highlight: string } | null; gatesLive?: boolean; notice?: string | null }
+export interface TurnViewOpts { theme?: 'onyx' | 'brocade'; tengangName?: (id: string) => string; clash?: TurnClashView | null; sha?: TurnShaView[]; bossName?: string; selMode?: string | null; selHand?: number; tutorial?: { narration: string; highlight: string } | null; gatesLive?: boolean; notice?: string | null; movedIds?: Set<string> }
 /** 从 turn-combat 真状态派生战斗屏视图（玩家 = side a 视角）。纯读、不改 battle。 */
 export function buildTurnBattleView(b: TurnBattle, opts: TurnViewOpts = {}): TurnBattleView {
   const laneNames = ['上路', '中路', '下路'];
@@ -389,7 +392,7 @@ export function buildTurnBattleView(b: TurnBattle, opts: TurnViewOpts = {}): Tur
       // isClash 标在两军真前锋格(landed bugfix·非固定中线 4) + 放牌区底纹/标签(标在贴各自城堡那格)
       const base = { isBorder: i === 4, isClash: adj && (i === L.a[0]?.slot || i === L.b[0]?.slot), deploy: dep(i), deployLabel: i === A_DEPLOY_SLOT || i === B_DEPLOY_SLOT };
       return hit
-        ? { ...base, hasUnit: true, mine: hit.mine, rank: hit.u.rank, suit: lc(hit.u.suit), power: hit.u.points + hit.u.buff, zod: [] }
+        ? { ...base, hasUnit: true, mine: hit.mine, rank: hit.u.rank, suit: lc(hit.u.suit), power: hit.u.points + hit.u.buff, zod: [], unitId: hit.u.id, justMoved: opts.movedIds?.has(hit.u.id) ?? false }
         : { ...base, hasUnit: false, mine: i < 4 };
     });
     return { name: laneNames[li] ?? ('路' + li), slots };

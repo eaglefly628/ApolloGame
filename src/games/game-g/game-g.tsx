@@ -516,9 +516,30 @@ export function mount(container: HTMLElement): () => void {
     let gateChance = false;            // 放牌附赠：放完一张牌 → 可翻一道机关门(一次)·用掉/换动作即失效(doc24 §三·owner 2026-06-20)
     let notice: string | null = null; let noticeTimer = 0; // 临时提示 toast
     let drained = 0; const perfQueue: ClashEvent[] = []; let perfClash: ClashEvent | null = null; let busy = false; let perfResume: (() => void) | null = null;
+    let justMovedIds = new Set<string>(); let thinkTimer = 0; let thinkEl: HTMLElement | null = null;
     const tgName = (id: string): string => TIANGANG_BY_ID.get(id)?.name ?? id;
+    // 捕捉所有上场单位的位置（lane*9+slot 编码）
+    const snapSlots = (): Map<string, string> => { const m = new Map<string, string>(); tb.lanes.forEach((L, li) => { for (const u of L.a) m.set(u.id, `${li}:${u.slot}`); for (const u of L.b) m.set(u.id, `${li}:${u.slot}`); }); return m; };
+    // 与快照对比，返回移动了的单位 ID
+    const diffMoved = (before: Map<string, string>): Set<string> => { const s = new Set<string>(); tb.lanes.forEach((L, li) => { for (const u of [...L.a, ...L.b]) { const old = before.get(u.id); if (old !== undefined && old !== `${li}:${u.slot}`) s.add(u.id); } }); return s; };
+    // 全屏回合播报（fade in → hold → fade out）
+    const showBanner = (text: string, durationMs: number, onDone?: () => void): void => {
+      if (!document.getElementById('gg-bnr-css')) { const s = document.createElement('style'); s.id = 'gg-bnr-css'; s.textContent = '@keyframes gg-bnr{0%{opacity:0;transform:scale(.8)}15%{opacity:1;transform:scale(1)}78%{opacity:1;transform:scale(1)}100%{opacity:0;transform:scale(1.06)}}'; document.head.appendChild(s); }
+      const ov = document.createElement('div'); ov.style.cssText = `position:fixed;inset:0;z-index:300;display:flex;align-items:center;justify-content:center;pointer-events:none;animation:gg-bnr ${durationMs}ms ease both`;
+      ov.innerHTML = `<span style="font-size:clamp(36px,6vw,72px);font-weight:900;color:#e8cd82;text-shadow:0 0 60px rgba(232,205,138,.9),0 4px 24px rgba(0,0,0,.95);letter-spacing:.25em;font-family:'Rajdhani',sans-serif;">${text}</span>`;
+      document.body.appendChild(ov); setTimeout(() => { ov.remove(); onDone?.(); }, durationMs);
+    };
+    // 敌方思考中蒙层（3-5 秒随机）
+    const startThinking = (onDone: () => void): void => {
+      const ms = 3000 + Math.floor(Math.random() * 2000);
+      if (!document.getElementById('gg-spin-css')) { const s = document.createElement('style'); s.id = 'gg-spin-css'; s.textContent = '@keyframes gg-spin{to{transform:rotate(360deg)}}'; document.head.appendChild(s); }
+      thinkEl = document.createElement('div'); thinkEl.style.cssText = 'position:fixed;inset:0;z-index:250;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:18px;pointer-events:none;background:rgba(6,9,13,.45)';
+      thinkEl.innerHTML = `<div style="width:52px;height:52px;border:4px solid rgba(58,134,212,.25);border-top:4px solid #3a86d4;border-radius:50%;animation:gg-spin 1s linear infinite"></div><span style="font-size:20px;font-weight:700;color:#3a86d4;text-shadow:0 0 24px rgba(58,134,212,.8);letter-spacing:.18em;font-family:'Rajdhani',sans-serif;">敌方思考中</span>`;
+      document.body.appendChild(thinkEl);
+      thinkTimer = window.setTimeout(() => { if (thinkEl) { thinkEl.remove(); thinkEl = null; } onDone(); }, ms);
+    };
     const flash = (msg: string): void => { notice = msg; mounted?.update(); if (noticeTimer) clearTimeout(noticeTimer); noticeTimer = window.setTimeout(() => { notice = null; mounted?.update(); }, 1700); };
-    const view = (): TurnBattleView => buildTurnBattleView(tb, { theme, tengangName: tgName, selMode, selHand, clash: perfClash ? clashToTurnView(perfClash) : null, bossName: aiName, sha: shaView, gatesLive: gateChance, notice });
+    const view = (): TurnBattleView => buildTurnBattleView(tb, { theme, tengangName: tgName, selMode, selHand, clash: perfClash ? clashToTurnView(perfClash) : null, bossName: aiName, sha: shaView, gatesLive: gateChance, notice, movedIds: justMovedIds });
     let mounted: { update: () => void; destroy: () => void } | null = null;
 
     const drainClashes = (): void => { for (const ev of tb.clashLog.slice(drained)) perfQueue.push(ev); drained = tb.clashLog.length; };
@@ -530,14 +551,30 @@ export function mount(container: HTMLElement): () => void {
       perfResume = () => { perfResume = null; playPerf(onDone); }; mounted?.update();
     };
     const finishTurnSeq = (): void => { busy = false; selMode = null; selHand = -1; if (tb.winner !== 'pending') settleTurn(); else mounted?.update(); };
-    const runAiThenContinue = (): void => { // 玩家推进特写演完 → AI 回合(脚本) → AI 推进特写 → 回到玩家
+    const runAiThenContinue = (): void => { // 玩家推进特写演完 → 敌方回合播报 → AI 思考 → AI 行动 + 掷命 → 我方回合播报 → 回到玩家
       if (tb.winner !== 'pending') { finishTurnSeq(); return; }
-      aiTakeTurn(tb, aggregateTengang); drainClashes(); playPerf(finishTurnSeq); // Boss utility AI（画像驱动·施法即重算 tengangA 生效）
+      showBanner('敌方回合', 1300, () => {
+        startThinking(() => {
+          const before = snapSlots();
+          aiTakeTurn(tb, aggregateTengang); // Boss utility AI（画像驱动·施法即重算 tengangA 生效）
+          justMovedIds = diffMoved(before);
+          drainClashes();
+          mounted?.update();
+          window.setTimeout(() => { justMovedIds = new Set(); mounted?.update(); }, 550);
+          playPerf(() => showBanner('我方回合', 1100, finishTurnSeq));
+        });
+      });
     };
     const commitEndTurn = (): void => {
       if (busy || tb.winner !== 'pending' || tb.active !== 'a') return;
       busy = true; selMode = null; selHand = -1; gateChance = false; playSfx('endTurn');
-      endTurn(tb); drainClashes(); playPerf(runAiThenContinue);
+      const before = snapSlots();
+      endTurn(tb);
+      justMovedIds = diffMoved(before);
+      drainClashes();
+      mounted?.update(); // 立刻渲染推进动画，然后再演掷命特写
+      window.setTimeout(() => { justMovedIds = new Set(); mounted?.update(); }, 550); // 动画播完清标记
+      playPerf(runAiThenContinue);
     };
     const actions: TurnBattleActions = {
       pickAction: (kind) => { if (busy || tb.active !== 'a') return; if (tb.actionTaken && tb.actionTaken !== kind) return; selMode = selMode === kind ? null : kind; selHand = -1; gateChance = false; playSfx('select'); },
@@ -561,7 +598,7 @@ export function mount(container: HTMLElement): () => void {
     };
     mounted = mountTurnBattle(stage, view, actions);
     battle = mounted; // teardownMatch 清理（destroy）
-    stopLoop = () => { perfResume = null; if (noticeTimer) { clearTimeout(noticeTimer); noticeTimer = 0; } }; // 离场：弃未决特写续演 + 清提示计时
+    stopLoop = () => { perfResume = null; if (noticeTimer) { clearTimeout(noticeTimer); noticeTimer = 0; } if (thinkTimer) { clearTimeout(thinkTimer); thinkTimer = 0; } if (thinkEl) { thinkEl.remove(); thinkEl = null; } }; // 离场：弃未决特写续演 + 清提示计时 + 清思考蒙层
 
     function settleTurn(): void {
       const survA = tb.lanes.reduce((s, L) => s + L.a.length + L.spentA, 0);
