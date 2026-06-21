@@ -10,6 +10,24 @@
 
 ## 待处理 / 进行中
 
+### REQ-ARCH-COACH · [2026-06-21] · design G（owner 2026-06-21 钦定 · 引擎通用新手引导）· 框架级 · status: **open** · 优先级: 中 · 类型: 真缺口（仅表现层）+ 重组（逻辑层·无需引擎）
+
+**完整策划案见 `docs/design/onboarding-coachmark-capability.md`。** 一句话：新手引导 = 数据表（步骤/锚点/文案），引擎一台固定 coachmark 渲染器解释。owner 主诉求 = **首次使用任何功能即弹教学·高亮该框·指示点哪里**，且要**引擎通用、数据驱动**（任何游戏只填数据·零手写 UI）。
+
+**🟢 逻辑层 = 重组·无需引擎（design G 已自证可拼）**：首次检测 `not(flag(seen_x))` + `save` 持久化；步骤推进 `GameFlow{coach_steps}`；"点对才推进" `Clickable{onlyFlag}`→Signal→transition；门控其它 Clickable.onlyFlag。**这层不提需求**，游戏侧数据接线即可。
+
+**🔧 表现层 = 真缺口·请主程实现（≥2 游戏 F+G 拉动·过弱-LLM 尺子）**：现有组件无 overlay/spotlight/tooltip，手写遮罩=游戏代码违宪 → 下沉**最小包**：
+- ① `Coachmark` render-only 组件（POD·不进 hash）：`{anchor, shape:'rect'|'circle', pad?, dimColor?, dimAlpha?, text, placement?, arrow?, visibleWhen?}`。
+- ② `OnboardingOverlay` 渲染器（=解释器·合宪）：读激活 Coachmark → 全屏 dim + anchor rect 处镂空 + 气泡(text+arrow) 贴 placement。DOM 优先（覆盖现有 React/手写屏）+ SVG/Canvas 出帧（headless 验收）。
+- ③ **anchor 解析**：统一 `data-anchor="<key>"` 约定，`querySelector('[data-anchor=key]')`→rect。**同时覆盖 GameShell 与 game-g 手写 DOM 两套 UI**（手写屏加属性即可·零重构）。
+- ④ GameShell `UINode` 加 `anchor?: string`（落 `data-anchor`）。
+
+**确定性**：seen flags / flow step 进 hash + 存档（看过不再弹·跨端一致）；Coachmark 高亮纯表现·不进 hash·不回灌 gameplay（同 outcome-first）。
+**体积**：小-中（1 render 组件 + 1 表现渲染器 + 1 DOM helper + GameShell 一字段）·不碰 sim 结算/多人。
+**验收**：headless 断言流程状态机（触发→跳步→set seen→存档重载不再弹·hash 一致）；表现层出帧断言（镂空落在 anchor rect·气泡在 placement 侧）。
+**回驳记录**：R-1 不另造"Tutorial 能力"（flow+flag 已覆盖）；R-3 高亮不进 hash；R-4 富文本/分支树 YAGNI。
+
+
 ### REQ-E-023 · [2026-06-18] · PE（Game E 小丑牌 · 牌库扩展总纲，owner 指派陈陈飞）· 框架级 · status: **open** · 优先级: 见各子项 · 类型: 多个真缺口（整理为一份，逐项可独立落地）
 
 **目标**：可玩小丑 **31 → 趋近 150**（catalog 元数据已全 150）。下面按「能力」拆分；**每项是独立 capability，可分别落地、分别验收**，不是一个大泥球。
