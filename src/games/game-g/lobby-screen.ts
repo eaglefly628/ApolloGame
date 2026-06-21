@@ -6,6 +6,7 @@
 import { GI, tiangangIcon } from './icons.js';
 import { HERO_CARDS, DIZHI_ZODIACS, DIZHI_TRINES, DIZHI_PAIRS, EARTH_FIENDS, STAGE_CAMPAIGN, STORY_OPENING, type StageCampaign, type StoryBeat } from './blueprint.js';
 import { heroPortrait } from './portraits.js';
+import { coachmarkGeometry } from '@renderer/coachmark.js'; // 引擎通用高亮纯几何（REQ-ARCH-COACH·下沉能力·此处薄 DOM 适配）
 import { playSfx, sfxForAct, isSfxMuted, setSfxMuted } from './sfx.js';
 import { isBgmOn, toggleBgm, bgmTrackIdx, selectBgm, bgmVolume, setBgmVolume, BGM_TRACKS } from './bgm.js';
 import { DISHA_SPECS, stageDisha } from './disha.js';
@@ -685,15 +686,13 @@ function narrationBox(beats: StoryBeat[], idx: number, label: string, cta: strin
   </div></div>`;
 }
 
-// 新手引导 coach（doc28 §二 · 线性·底部锚定·可跳过）。教学关战斗=甲（turn-combat 脚本弱敌），此处=菜单引导壳。
-const GUIDE_STEPS = 2;
-function guideBox(step: number): string {
-  const s = Math.max(0, Math.min(GUIDE_STEPS - 1, step));
-  const card = (title: string, body: string, action: string): string =>
-    `<div class="guide-coach"><div class="guide-hd"><span>🧭 新手引导 · 第 ${s + 1}/${GUIDE_STEPS} 步</span><button class="guide-skip" data-act="guide-skip">跳过引导</button></div><div class="guide-title">${title}</div><div class="guide-body">${body}</div><div class="guide-act">${action}</div></div>`;
-  if (s === 0) return card('先翻一遍《玩法手册》', '30 秒看懂怎么打：三路九格 · 每回合四选一 · 掷命对决（正面活/反面亡）· 先破对面 3 血大本营。', `<button class="cta-sub" data-act="man">📖 打开手册</button><button class="cta-sub" style="color:#2a1a08;background:var(--gold-grad);border:0" data-act="guide-next">看过了，下一步 →</button>`);
-  return card('打你的第一战', '准备好了——进第一场命运之战：温泉关 · 列奥尼达（最易）。打赢，解封你的第一缕英雄之魂。', `<button class="cta-sub" style="color:#2a1a08;background:var(--gold-grad);border:0" data-act="guide-finish">${GI.swords} 开始第一战 →</button>`);
-}
+// 新手引导（doc28 §二 A/B/C · 线性·点对推进）：每步高亮一个锚点 + 一句话，点中该锚点的动作即进下一步。
+// 高亮遮罩复用引擎通用 coachmark 能力（@renderer/coachmark 纯几何 + mountLobby 内薄 DOM 适配·OnboardingOverlay 同法）。教学关战斗本体=甲。
+export const GUIDE_COACH: { anchor: string; text: string; advanceAct: string; placement: 'top' | 'bottom' }[] = [
+  { anchor: 'help', text: '① 先翻一遍《玩法手册》——30 秒看懂怎么打（三路九格 · 每回合四选一 · 掷命对决）。点这里 📖', advanceAct: 'man', placement: 'bottom' },
+  { anchor: 'play', text: '② 准备好了？点「出征」打第一战——温泉关 · 列奥尼达（最易），解封你的第一缕英雄之魂。', advanceAct: 'play', placement: 'top' },
+  { anchor: 'shop', text: '③ 开局送了你钻石 + 金币——来「商城」抽一发，体验开包变强，然后开打！', advanceAct: 'shop', placement: 'bottom' },
+];
 // 跳过引导确认对话框（owner 2026-06-20「首页加个跳过引导的对话框」）。
 function guideSkipDialog(): string {
   return `<div class="tut-ov"><div class="tut-box" data-stop="1" style="max-width:380px;text-align:center">
@@ -1006,7 +1005,7 @@ function luckyBox(r: LuckyRoll): string {
 }
 export interface LobbyOverlayState { helpOpen: boolean; helpTab: 'intro' | 'tut' | 'manual'; manualTier: 'easy' | 'mid' | 'hard'; settingsOpen: boolean; rechargeOpen: boolean; shopTab: 'gacha' | 'wallet' | 'foil'; rechargeErr: string; gachaReveal: GachaResult[] | null; story: { beats: StoryBeat[]; idx: number; label: string; cta: string } | null; guideSkipAsk: boolean; deckPickerOpen: boolean; lucky: LuckyRoll | null }
 export function lobbyOverlaysHTML(view: LobbyView, s: LobbyOverlayState): string {
-  return `${s.helpOpen ? helpBox(s.helpTab, s.manualTier) : ''}${s.settingsOpen ? settingsBox(view) : ''}${s.rechargeOpen ? shopBox(view, s.shopTab, s.rechargeErr) : ''}${s.gachaReveal ? gachaRevealBox(s.gachaReveal) : ''}${s.lucky ? luckyBox(s.lucky) : ''}${s.story ? narrationBox(s.story.beats, s.story.idx, s.story.label, s.story.cta) : (!view.firstLaunch && (view.guideStep ?? -1) >= 0 ? guideBox(view.guideStep ?? 0) : '')}${s.guideSkipAsk ? guideSkipDialog() : ''}${s.deckPickerOpen ? deckPickerBox(view) : ''}`;
+  return `${s.helpOpen ? helpBox(s.helpTab, s.manualTier) : ''}${s.settingsOpen ? settingsBox(view) : ''}${s.rechargeOpen ? shopBox(view, s.shopTab, s.rechargeErr) : ''}${s.gachaReveal ? gachaRevealBox(s.gachaReveal) : ''}${s.lucky ? luckyBox(s.lucky) : ''}${s.story ? narrationBox(s.story.beats, s.story.idx, s.story.label, s.story.cta) : ''}${s.guideSkipAsk ? guideSkipDialog() : ''}${s.deckPickerOpen ? deckPickerBox(view) : ''}`;
 }
 export function renderLobby(view: LobbyView, tab: string, helpOpen: boolean, deckTab: 'base' | 'gang' | 'dizhi' = 'base', earthFilter = 'all', collTab = 'cards', heroSuit = 'all', heroDetail = '', heroRar = 'all', ownedOnly = false, settingsOpen = false, manualTier: 'easy' | 'mid' | 'hard' = 'easy', rechargeOpen = false, rechargeErr = '', story: { beats: StoryBeat[]; idx: number; label: string; cta: string } | null = null, guideSkipAsk = false, shopTab: 'gacha' | 'wallet' | 'foil' = 'wallet', gachaReveal: GachaResult[] | null = null, deckPickerOpen = false, craftSel = '', helpTab: 'intro' | 'tut' | 'manual' = 'intro'): string {
   const on = (t: string): string => (tab === t ? ' on' : '');
@@ -1140,18 +1139,46 @@ export function mountLobby(host: HTMLElement, h: LobbyHandlers): { update: () =>
   let gachaReveal: GachaResult[] | null = null;
   let deckPicker = false;
   let craftSel = '';
-  const render = (): void => { host.innerHTML = renderLobby({ ...h.getView(), skin }, tab, help, deckTab, earthFilter, collTab, heroSuit, heroDetail, heroRar, ownedOnly, settings, manTier, recharge, rechargeErr, story, guideSkipAsk, shopTab, gachaReveal, deckPicker, craftSel, helpTab); };
+  const render = (): void => { host.innerHTML = renderLobby({ ...h.getView(), skin }, tab, help, deckTab, earthFilter, collTab, heroSuit, heroDetail, heroRar, ownedOnly, settings, manTier, recharge, rechargeErr, story, guideSkipAsk, shopTab, gachaReveal, deckPicker, craftSel, helpTab); updateCoach(); };
   let lucky: LuckyRoll | null = null;
+  // 新手引导高亮层（doc28 A/B/C·复用引擎 coachmark 纯几何 + 薄 DOM 适配）：全屏 dim 镂空当前步锚点 + 气泡 + 跳过。
+  // 挂 document.body 真视口固定（避开 .ggl-root 若有 transform 包住 fixed 的坑）；render 不会动它，只 updateCoach 重算。
+  const coachLayer = (host.ownerDocument ?? document).createElement('div');
+  coachLayer.className = 'gg-coach-layer';
+  coachLayer.style.cssText = 'position:fixed;inset:0;z-index:70;pointer-events:none';
+  const anyOverlayOpen = (): boolean => help || recharge || settings || guideSkipAsk || deckPicker || !!story || !!gachaReveal || !!lucky;
+  const updateCoach = (): void => {
+    const v = h.getView();
+    const gs = v.guideStep ?? -1;
+    if (v.firstLaunch || gs < 0 || gs >= GUIDE_COACH.length || anyOverlayOpen()) { coachLayer.innerHTML = ''; return; }
+    const spec = GUIDE_COACH[gs];
+    const el = host.querySelector(`[data-anchor="${spec.anchor}"]`) as HTMLElement | null;
+    if (!el) { coachLayer.innerHTML = ''; return; } // 锚点当前不可见（如不在主页）→ 本次不画
+    const r = el.getBoundingClientRect();
+    const vp = { w: window.innerWidth || 1280, h: window.innerHeight || 800 };
+    const g = coachmarkGeometry({ x: r.left, y: r.top, w: r.width, h: r.height }, vp, { shape: 'rect', pad: 7, placement: spec.placement, bubbleW: 304, bubbleH: 66 });
+    const c = g.cutout, b = g.bubble;
+    coachLayer.innerHTML =
+      `<div style="position:absolute;left:${c.x}px;top:${c.y}px;width:${c.w}px;height:${c.h}px;border-radius:9px;box-shadow:0 0 0 9999px rgba(8,10,14,.72);transition:all .18s"></div>` +
+      `<div style="position:absolute;left:${b.x}px;top:${b.y}px;width:${b.w}px;background:linear-gradient(160deg,#1b2233,#10141d);border:1px solid var(--gold);border-radius:12px;color:#ece6f5;font:600 13px/1.62 var(--fb);padding:11px 14px;box-shadow:0 12px 32px rgba(0,0,0,.6);pointer-events:auto">` +
+        `<div style="display:flex;align-items:center;gap:8px"><span style="font-size:11px;letter-spacing:.1em;color:var(--gold)">🧭 新手引导 ${gs + 1}/${GUIDE_COACH.length}</span><button data-act="guide-skip" style="margin-left:auto;background:none;border:0;color:#9fb0c0;font-size:11px;text-decoration:underline;cursor:pointer">跳过引导</button></div>` +
+        `<div style="margin-top:5px">${esc(spec.text)}</div>` +
+      `</div>`;
+  };
+  const onCoachClick = (e: MouseEvent): void => { const t = (e.target as HTMLElement).closest('[data-act="guide-skip"]'); if (t) { playSfx(sfxForAct('guide-skip')); guideSkipAsk = true; renderOv(); updateCoach(); } };
+  coachLayer.addEventListener('click', onCoachClick);
+  const onResize = (): void => updateCoach();
   const ovState = (): LobbyOverlayState => ({ helpOpen: help, helpTab, manualTier: manTier, settingsOpen: settings, rechargeOpen: recharge, shopTab, rechargeErr, gachaReveal, story, guideSkipAsk, deckPickerOpen: deckPicker, lucky });
   const rollLucky = (): LuckyRoll => { const v = 1 + Math.floor(Math.random() * 100); return v >= 90 ? { val: v, label: '大吉', color: 'var(--gold)', line: '天命在你·此局必有奇遇，放胆去翻！' } : v >= 70 ? { val: v, label: '吉', color: 'var(--club)', line: '顺风顺水·正是出征好时机。' } : v >= 40 ? { val: v, label: '中平', color: 'var(--ink)', line: '胜负在人·稳扎稳打、看准爆冷缝。' } : v >= 15 ? { val: v, label: '小凶', color: 'var(--diamond)', line: '谨慎出牌·手里留张保命天罡。' } : { val: v, label: '凶', color: 'var(--heart)', line: '爆冷之日——正好赌一把翻盘命！' }; };
   // 抗闪屏：只更新弹层 #gv-ov（不重建大厅主体）。弹层打开/内部导航/关闭都走它 → 不再整屏闪。
-  const renderOv = (): void => { const o = host.querySelector('#gv-ov'); if (o) o.innerHTML = lobbyOverlaysHTML({ ...h.getView(), skin }, ovState()); else render(); };
+  const renderOv = (): void => { const o = host.querySelector('#gv-ov'); if (o) o.innerHTML = lobbyOverlaysHTML({ ...h.getView(), skin }, ovState()); else render(); updateCoach(); };
   // 抗闪屏·导航：切 tab/子页 = 只切 .on class，不重建任何内容（含 52 张 SVG）→ 不闪。
   const setTab = (t: string): void => {
     tab = t;
     const root = host.querySelector('.ggl-root'); if (!root) { render(); return; }
     root.querySelectorAll('.nav button[data-act="tab"]').forEach((b) => b.classList.toggle('on', (b as HTMLElement).dataset.k === t));
     root.querySelectorAll('section[data-screen]').forEach((s) => s.classList.toggle('on', (s as HTMLElement).dataset.screen === t));
+    updateCoach(); // 换屏后锚点可见性变 → 重算高亮
   };
   const setSub = (section: string, actName: string, k: string): void => {
     const sec = host.querySelector(`section[data-screen="${section}"]`); if (!sec) { render(); return; }
@@ -1170,6 +1197,9 @@ export function mountLobby(host: HTMLElement, h: LobbyHandlers): { update: () =>
     const el = (e.target as HTMLElement).closest('[data-act]') as HTMLElement | null; if (!el) return;
     const act = el.dataset.act, k = el.dataset.k ?? '';
     if (act) playSfx(sfxForAct(act)); // 菜单音效（程序化合成·静音/无音频上下文则静默）
+    // 新手引导点对推进（doc28 A/B/C·coachmark）：点中当前步锚点的动作 → 进下一步/完成。advanceAct=man/play/shop。
+    const _gs = h.getView().guideStep ?? -1;
+    if (_gs >= 0 && _gs < GUIDE_COACH.length && act === GUIDE_COACH[_gs].advanceAct) { if (_gs < GUIDE_COACH.length - 1) h.onGuideStep?.(_gs + 1); else h.onGuideDone?.(); }
     if (act === 'sfxToggle') { setSfxMuted(!isSfxMuted()); renderOv(); }
     // 背景音乐（menu 设置·owner 2026-06-21）：开关 / 选 3 首之一 / 音量 −＋。直接调 bgm.ts（点击=用户手势·可起播）。
     else if (act === 'bgmToggle') { toggleBgm(); renderOv(); }
@@ -1199,9 +1229,7 @@ export function mountLobby(host: HTMLElement, h: LobbyHandlers): { update: () =>
     else if (act === 'lucky-close') { lucky = null; renderOv(); }
     else if (act === 'story-next') { if (!story) return; if (story.idx < story.beats.length - 1) { story.idx++; renderOv(); } else finishStory(); }
     else if (act === 'story-skip') { finishStory(); }
-    // 新手引导（doc28 §二）：步进 / 末步开打 / 跳过确认 / 重看
-    else if (act === 'guide-next') { h.onGuideStep?.((h.getView().guideStep ?? 0) + 1); renderOv(); }
-    else if (act === 'guide-finish') { h.onGuideDone?.(); startPlay(); }
+    // 新手引导（doc28 A/B/C·coachmark）：跳过确认 / 重看（步进=点对推进·见上方 advanceAct）
     else if (act === 'guide-skip') { guideSkipAsk = true; renderOv(); }
     else if (act === 'guide-skip-cancel') { guideSkipAsk = false; renderOv(); }
     else if (act === 'guide-skip-confirm') { guideSkipAsk = false; h.onGuideDone?.(); renderOv(); }
@@ -1239,11 +1267,14 @@ export function mountLobby(host: HTMLElement, h: LobbyHandlers): { update: () =>
     else if (act === 'inlay') { const [idx, br] = k.split(':'); h.onInlay?.(idx, br); render(); }
     else if (act === 'removeInlay') { const [idx, br] = k.split(':'); h.onRemoveInlay?.(idx, br); render(); }
     else if (act === 'reset') { h.onReset?.(); settings = false; render(); }
+    updateCoach(); // 任何点击后重算引导高亮（步进/开关弹层都可能改可见步）
   };
   host.addEventListener('click', onClick);
+  (host.ownerDocument ?? document).body.appendChild(coachLayer); // 引导高亮层挂 body（真视口固定）
+  if (typeof window !== 'undefined') window.addEventListener('resize', onResize);
   if (h.getView().firstLaunch) playOpeningStory(); // 首启自动播开场故事 → 引导（doc28）
   render();
-  return { update: render, destroy: () => { host.removeEventListener('click', onClick); host.replaceChildren(); } };
+  return { update: render, destroy: () => { host.removeEventListener('click', onClick); if (typeof window !== 'undefined') window.removeEventListener('resize', onResize); coachLayer.remove(); host.replaceChildren(); } };
 }
 
 import { FONTS } from './fonts.js'; // 自托管字体（替代外部 Google Fonts <link>·owner 2026-06-21）

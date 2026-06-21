@@ -2,7 +2,7 @@
 // 大厅 mountLobby 点击交互测试：DOM 真点击 → 状态/回调验证。
 // 覆盖：5 tab 切换 / 皮肤切换 / 新手指导 overlay / 出征回调 / 买入回调 / 战库切换
 
-import { describe, it, expect, vi } from 'vitest';
+import { describe, it, expect, vi, afterEach } from 'vitest';
 import { mountLobby, type LobbyView, type LobbyShopItem } from './lobby-screen.js';
 
 // ── 测试 view 工厂 ──
@@ -308,8 +308,11 @@ describe('Game G · lobby-screen mountLobby 点击交互（DOM · happy-dom）',
     });
   });
 
-  // ── 首启开场故事 + 新手引导（doc28）──
+  // ── 首启开场故事 + 新手引导（doc28 A/B/C·coachmark）──
   describe('首启开场故事 + 新手引导', () => {
+    afterEach(() => { document.querySelectorAll('.gg-coach-layer').forEach((e) => e.remove()); });
+    const coach = (): Element | null => [...document.querySelectorAll('.gg-coach-layer')].at(-1) ?? null; // 取本次 mount 的高亮层
+
     it('首启（firstLaunch）→ 自动播开场故事 overlay', () => {
       const host = document.createElement('div');
       mountLobby(host, { getView: () => makeView({ firstLaunch: true, guideStep: 0 }), onPlay: vi.fn() });
@@ -326,43 +329,42 @@ describe('Game G · lobby-screen mountLobby 点击交互（DOM · happy-dom）',
       expect(onIntroSeen).toHaveBeenCalledTimes(1);
     });
 
-    it('引导进行中（guideStep=0·非首启）→ 显示引导 coach（手册步）+ 跳过引导按钮', () => {
+    it('引导步0（手册）→ coachmark 层高亮手册 + 跳过引导', () => {
       const host = document.createElement('div');
       mountLobby(host, { getView: () => makeView({ firstLaunch: false, guideStep: 0 }), onPlay: vi.fn() });
-      expect(host.querySelector('.guide-coach')).not.toBeNull();
-      expect(host.innerHTML).toContain('玩法手册');
-      expect(host.querySelector('[data-act="guide-skip"]')).not.toBeNull();
+      const c = coach();
+      expect(c, '高亮层').not.toBeNull();
+      expect(c!.innerHTML).toContain('玩法手册'); // 步0 引导词（指向 📖 手册）
+      expect(c!.querySelector('[data-act="guide-skip"]')).not.toBeNull();
     });
 
-    it('引导步进：guide-next → onGuideStep(1)', () => {
+    it('点中当前步锚点动作（手册 man）→ onGuideStep(1) 点对推进', () => {
       const host = document.createElement('div');
       const onGuideStep = vi.fn();
       mountLobby(host, { getView: () => makeView({ firstLaunch: false, guideStep: 0 }), onPlay: vi.fn(), onGuideStep });
-      click(host.querySelector('[data-act="guide-next"]'));
+      click(host.querySelector('[data-act="man"]')); // 点手册按钮 = 步0 的 advanceAct
       expect(onGuideStep).toHaveBeenCalledWith(1);
     });
 
-    it('跳过引导 → 确认对话框 → 确认跳过 → onGuideDone', () => {
+    it('末步（商城 shop）点中锚点 → onGuideDone', () => {
       const host = document.createElement('div');
       const onGuideDone = vi.fn();
-      mountLobby(host, { getView: () => makeView({ firstLaunch: false, guideStep: 0 }), onPlay: vi.fn(), onGuideDone });
-      click(host.querySelector('[data-act="guide-skip"]'));
-      expect(host.innerHTML).toContain('跳过新手引导？'); // 首页跳过对话框（owner 点名）
-      click(host.querySelector('[data-act="guide-skip-cancel"]')); // 先取消
-      expect(onGuideDone).not.toHaveBeenCalled();
-      click(host.querySelector('[data-act="guide-skip"]'));
-      click(host.querySelector('[data-act="guide-skip-confirm"]'));
+      mountLobby(host, { getView: () => makeView({ firstLaunch: false, guideStep: 2 }), onPlay: vi.fn(), onGuideDone });
+      click(host.querySelector('[data-act="shop"]')); // 步2 的 advanceAct=shop
       expect(onGuideDone).toHaveBeenCalledTimes(1);
     });
 
-    it('引导末步「开始第一战」→ onGuideDone + 进战斗（onPlay）', () => {
+    it('跳过引导（coach 层）→ 确认对话框 → 确认跳过 → onGuideDone', () => {
       const host = document.createElement('div');
       const onGuideDone = vi.fn();
-      const onPlay = vi.fn();
-      mountLobby(host, { getView: () => makeView({ firstLaunch: false, guideStep: 1 }), onPlay, onGuideDone }); // 无 campaign → 直接 onPlay
-      click(host.querySelector('[data-act="guide-finish"]'));
+      mountLobby(host, { getView: () => makeView({ firstLaunch: false, guideStep: 0 }), onPlay: vi.fn(), onGuideDone });
+      click(coach()!.querySelector('[data-act="guide-skip"]'));
+      expect(host.innerHTML).toContain('跳过新手引导？'); // 首页跳过对话框（owner 点名）
+      click(host.querySelector('[data-act="guide-skip-cancel"]')); // 先取消
+      expect(onGuideDone).not.toHaveBeenCalled();
+      click(coach()!.querySelector('[data-act="guide-skip"]'));
+      click(host.querySelector('[data-act="guide-skip-confirm"]'));
       expect(onGuideDone).toHaveBeenCalledTimes(1);
-      expect(onPlay).toHaveBeenCalledTimes(1);
     });
 
     it('设置里「↻ 重看」→ onReplayIntro + 开场故事重现', () => {
