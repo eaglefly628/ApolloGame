@@ -318,6 +318,7 @@ function resolveClash(b: TurnBattle, li: number): void {
   const ev = clashEval(b, li); if (!ev) return;
   const lane = b.lanes[li]; const { fa, fb, ea, eb, wr, ba, bb } = ev;
   const roll = nextRandom(b.rng);
+  const winStays = nextRandom(b.rng) < 0.5; // 战胜硬币（owner 2026-06-21·种子化·可回放）：人头(true)=胜牌留场继续 / 人面(false)=回牌库+返还一半
   let aWins: boolean, tie: ClashEvent['tie'] = null;
   if (ea === eb) {
     if (fa.points !== fb.points) { aWins = fa.points > fb.points; tie = 'points'; }
@@ -328,7 +329,7 @@ function resolveClash(b: TurnBattle, li: number): void {
     if (b.a.tengangA.noUpset > 0 && wr >= 0.5) aWins = true; // 铁骰
   }
   const tgBreakOf = (sd: TurnSide, u: TurnUnit, sk: 'a' | 'b'): [string, number][] => sd.castFx.map(({ id, fx }) => [id, Math.round(tgContribOf(u, lane, sk, fx))] as [string, number]).filter((r) => r[1] !== 0); // 逐张天罡溯源
-  b.lastClash = { tick: b.turn, lane: li, winrate: wr, roll, aWins, tie, a: { rank: fa.rank, suit: fa.suit, general: fa.general, points: fa.points, buff: fa.buff, morale: ba.shift, tengang: ba.tg, pEff: ea, tgBreak: tgBreakOf(b.a, fa, 'a'), nearDef: ba.nearDef }, b: { rank: fb.rank, suit: fb.suit, general: fb.general, points: fb.points, buff: fb.buff, morale: bb.shift, tengang: bb.tg, pEff: eb, tgBreak: tgBreakOf(b.b, fb, 'b'), nearDef: bb.nearDef } };
+  b.lastClash = { tick: b.turn, lane: li, winrate: wr, roll, aWins, tie, winStays, a: { rank: fa.rank, suit: fa.suit, general: fa.general, points: fa.points, buff: fa.buff, morale: ba.shift, tengang: ba.tg, pEff: ea, tgBreak: tgBreakOf(b.a, fa, 'a'), nearDef: ba.nearDef }, b: { rank: fb.rank, suit: fb.suit, general: fb.general, points: fb.points, buff: fb.buff, morale: bb.shift, tengang: bb.tg, pEff: eb, tgBreak: tgBreakOf(b.b, fb, 'b'), nearDef: bb.nearDef } };
   b.clashLog.push(b.lastClash); // 流水（驱动层逐场抽特写）
   b.clashSeq += 1;
   if (!aWins) b.bossWinStreak += 1; // 九战九捷：Boss 胜累积
@@ -342,10 +343,10 @@ function resolveClash(b: TurnBattle, li: number): void {
     const relay = sideOf(b, loser).tengangA.relay; // 薪火：一张阵亡 → 同路下一张接棒续航 +N
     const next = colOf(lane, loser)[0]; if (relay > 0 && next) next.staminaLeft += relay;
   }
-  // 战胜牌「光荣回牌库」+ 返还一半部署花费（owner 2026-06-21·替原"续航−1·尽则退场"）：胜者下场入库、可再抽。
+  // 战胜牌去留由硬币定（owner 2026-06-21）：人面(winStays=false)→光荣回牌库+返还一半花费；人头(true)→留在场上继续作战。
   const winSide: 'a' | 'b' = aWins ? 'a' : 'b';
   const wq = colOf(lane, winSide); const wf = wq[0];
-  if (wf) {
+  if (wf && !winStays) {
     wq.shift(); if (aWins) lane.spentA += 1; else lane.spentB += 1; // 离场（记控路·同原退场口径）
     const wsd = sideOf(b, winSide);
     wsd.pokerDeck.push({ kind: 'poker', id: wf.id, rank: wf.rank, suit: wf.suit, general: wf.general, buff: wf.buff, cost: wf.cost }); // 回牌库

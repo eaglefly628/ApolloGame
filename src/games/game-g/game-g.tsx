@@ -4,6 +4,7 @@ import { prepareArmies, quartermasterEnergy, FORMATION_PRESETS, PRESET_NAMES, LE
 import { initLiveBattle, stepLiveBattle, liveActive, migrateRear, NO_TENGANG, LANE_LEN, HOME_BLOOD, type LiveBattle, type DeployCmd, type ClashEvent, type TengangFx } from './live-combat.js';
 import { initTurnBattle, drawCard, deployUnit, castTengang, discardCard, endTurn, aiTakeTurn, toggleGate, GATES, OPENING_HAND, DRAW_COST, type PokerCard, type TengangHandCard } from './turn-combat.js';
 import { mountTurnBattle, buildTurnBattleView, type TurnBattleView, type TurnBattleActions, type TurnClashView, type TurnClashCardView, type TurnShaView } from './turn-battle-screen.js';
+import { mountCoinFlip } from './coin-flip.js';
 import { loadLevel } from './level.js';
 import { cardPoints, P_MAX } from './clash-resolve.js';
 import { playSfx, isSfxOn, toggleSfx } from './sound.js';
@@ -627,7 +628,7 @@ export function mount(container: HTMLElement, shell?: { exit?: () => void }): ()
     let selHand = -1;                  // 放牌/施法/弃牌 选中的手牌
     let gateChance = false;            // 放牌附赠：放完一张牌 → 可翻一道机关门(一次)·用掉/换动作即失效(doc24 §三·owner 2026-06-20)
     let notice: string | null = null; let noticeTimer = 0; // 临时提示 toast
-    let drained = 0; const perfQueue: ClashEvent[] = []; let perfClash: ClashEvent | null = null; let busy = false; let perfResume: (() => void) | null = null;
+    let drained = 0; const perfQueue: ClashEvent[] = []; let perfClash: ClashEvent | null = null; let busy = false; let perfResume: (() => void) | null = null; let coinFx: { destroy: () => void } | null = null;
     let coachDid: (on: BattleCoachStep['on']) => void = () => {}; let syncCoach: () => void = () => {}; // 前置声明·真体在挂载后赋（战斗新手引导）
     let justMovedIds = new Set<string>(); let freshIds = new Map<string, number>(); let dealtId: string | null = null; let thinkTimer = 0; let thinkEl: HTMLElement | null = null; let settingsOpen = false;
     const tgName = (id: string): string => TIANGANG_BY_ID.get(id)?.name ?? id;
@@ -758,7 +759,12 @@ export function mount(container: HTMLElement, shell?: { exit?: () => void }): ()
       },
       endTurn: commitEndTurn,
       setTheme: (t) => { theme = t; },
-      clashConfirm: () => { playSfx('confirm'); const r = perfResume; if (r) r(); },
+      clashConfirm: () => { // 看完战力明细 → 战胜硬币定胜牌去留(人头留场/人面回库) → 继续=perfResume（owner 2026-06-21）
+        if (!perfClash) { const r = perfResume; if (r) r(); return; }
+        playSfx('confirm'); const e = perfClash; coinFx?.destroy();
+        const wName = e.aWins ? `${SUITNM2[e.a.suit] ?? ''}${e.a.rank}` : `${SUITNM2[e.b.suit] ?? ''}${e.b.rank}`;
+        coinFx = mountCoinFlip(root, { winnerName: wName, winnerMine: e.aWins, heads: e.winStays ?? false, sfx: playSfx }, () => { coinFx = null; const r = perfResume; if (r) r(); });
+      },
       goBack: () => {
         if (tb.winner !== 'pending') { showLobby(); return; }
         const ov = document.createElement('div');
@@ -841,7 +847,7 @@ export function mount(container: HTMLElement, shell?: { exit?: () => void }): ()
     };
     root.appendChild(dbgBtn); // 挂 root(非 stage·避免 mountTurnBattle 重渲抹掉)·左下角
 
-    stopLoop = () => { perfResume = null; if (noticeTimer) { clearTimeout(noticeTimer); noticeTimer = 0; } if (thinkTimer) { clearTimeout(thinkTimer); thinkTimer = 0; } if (thinkEl) { thinkEl.remove(); thinkEl = null; } if (coach) { window.removeEventListener('resize', onCoachResize); coach.destroy(); } }; // 离场：弃未决特写续演 + 清提示计时 + 清思考蒙层 + 卸引导
+    stopLoop = () => { perfResume = null; coinFx?.destroy(); coinFx = null; if (noticeTimer) { clearTimeout(noticeTimer); noticeTimer = 0; } if (thinkTimer) { clearTimeout(thinkTimer); thinkTimer = 0; } if (thinkEl) { thinkEl.remove(); thinkEl = null; } if (coach) { window.removeEventListener('resize', onCoachResize); coach.destroy(); } }; // 离场：弃未决特写续演 + 清硬币浮层 + 清提示计时 + 清思考蒙层 + 卸引导
 
     function settleTurn(): void {
       const survA = tb.lanes.reduce((s, L) => s + L.a.length + L.spentA, 0);

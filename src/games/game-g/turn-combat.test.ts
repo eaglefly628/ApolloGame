@@ -123,8 +123,9 @@ describe('Game G · turn-combat（doc24 单机回合制 · A0 重构）', () => 
     expect(b.lastClash?.tie).toBe('points');
     expect(b.lastClash?.aWins).toBe(false);
     expect(b.lanes[0].a.length).toBe(0); // A 输 → 阵亡
-    expect(b.lanes[0].b.length).toBe(0); // B 胜 → 光荣回牌库(下场·owner 2026-06-21)
-    expect(b.b.pokerDeck.some((c) => c.id === 'b0')).toBe(true); // B 回到牌库·可再抽
+    // B 胜 → 战胜硬币定去留：人头留场 / 人面回牌库（owner 2026-06-21）
+    if (b.lastClash?.winStays) expect(b.lanes[0].b.length).toBe(1); // 人头 → 留场
+    else { expect(b.lanes[0].b.length).toBe(0); expect(b.b.pokerDeck.some((c) => c.id === 'b0')).toBe(true); } // 人面 → 回库
   });
 
   it('判负：大本营血归 0 → 该方负', () => {
@@ -181,15 +182,19 @@ describe('Game G · turn-combat（doc24 单机回合制 · A0 重构）', () => 
     expect(deployUnit(c, 'a', 0, 0)).toBe(false); // 无空格 → 拒
   });
 
-  it('战胜牌光荣回牌库 + 返还一半花费（owner 2026-06-21）', () => {
-    const b = initTurnBattle({ seed: 1 }); b.a.mana = 0;
-    const w = unit('w', 'A', A_DEPLOY_SLOT); w.cost = 3; // A=14 点·费 3
-    b.lanes[0].a.push(w);
-    b.lanes[0].b.push(unit('lz', '2', A_DEPLOY_SLOT + 1, 12)); // 2+12=pEff14 → 平 → 点数 A(14)>2 → A 必胜(确定)
-    endTurn(b); endTurn(b); // 行动阶段掷命
-    expect(b.lastClash?.aWins).toBe(true);
-    expect(b.lanes[0].a.length).toBe(0);                       // 胜者下场
-    expect(b.a.pokerDeck.some((c) => c.id === 'w')).toBe(true); // 回牌库·可再抽
-    expect(b.a.mana).toBe(3 / 2 + 1);                           // 强制0 + 返还1.5 + 新回合+1 = 2.5
+  it('战胜硬币定胜牌去留（owner 2026-06-21）：人头留场 / 人面回牌库+返还一半花费', () => {
+    const run = (seed: number): { stays: boolean; onBoard: boolean; inDeck: boolean; mana: number } => {
+      const b = initTurnBattle({ seed }); b.a.mana = 0;
+      const w = unit('w', 'A', A_DEPLOY_SLOT); w.cost = 3; // A=14 点·费 3
+      b.lanes[0].a.push(w);
+      b.lanes[0].b.push(unit('lz', '2', A_DEPLOY_SLOT + 1, 12)); // 2+12=pEff14 → 点数 A(14)>2 → A 必胜(确定)
+      endTurn(b); endTurn(b);
+      expect(b.lastClash?.aWins).toBe(true);
+      return { stays: !!b.lastClash?.winStays, onBoard: b.lanes[0].a.some((c) => c.id === 'w'), inDeck: b.a.pokerDeck.some((c) => c.id === 'w'), mana: b.a.mana };
+    };
+    const rs = Array.from({ length: 10 }, (_, i) => run(i + 1));
+    const heads = rs.find((r) => r.stays)!, tails = rs.find((r) => !r.stays)!; // 种子里必有正反面各一
+    expect(heads.onBoard).toBe(true); expect(heads.inDeck).toBe(false); expect(heads.mana).toBe(1);          // 人头：留场·不回库·无返还(只新一轮+1)
+    expect(tails.onBoard).toBe(false); expect(tails.inDeck).toBe(true); expect(tails.mana).toBe(3 / 2 + 1);  // 人面：回库 + 返还1.5 + 新一轮1 = 2.5
   });
 });

@@ -29,7 +29,7 @@ export interface LiveLane { a: LiveUnit[]; b: LiveUnit[]; aGenDead: boolean; bGe
 // 纯记录（不进 liveHash、不改判定）：roll = clash 那一掷的 nextRandom 值，aWins = roll < winrate ——把"算出概率→掷→落在区间定生死"如实暴露。
 export interface ClashCard { rank: string; suit: string; general: boolean; points: number; buff: number; morale: number; tengang: number; pEff: number; tgBreak?: [string, number][]; nearDef?: number } // tgBreak：天罡逐张贡献 [天罡id, 加成]（owner 2026-06-21·对决明细溯源）；nearDef：地煞·隘口守军固守 +战力
 // tie：50:50 平局如何裁定（owner）—— null=正常概率掷命(战力不等) / 'points'=战力相等·点数大者胜 / 'stamina'=点数也同·续航高者胜 / 'roll'=全同·这一掷定(重揉)。
-export interface ClashEvent { tick: number; lane: number; winrate: number; roll: number; aWins: boolean; tie: 'points' | 'stamina' | 'roll' | null; a: ClashCard; b: ClashCard }
+export interface ClashEvent { tick: number; lane: number; winrate: number; roll: number; aWins: boolean; tie: 'points' | 'stamina' | 'roll' | null; winStays?: boolean; a: ClashCard; b: ClashCard } // winStays：战胜硬币·人头=胜牌留场/人面=回库（owner 2026-06-21）
 // 已施天罡 → 玩家侧(a)持续战斗修正（A-JOKER · cast 后整局生效·一种牌算一次不叠）。
 // 聚合(aggregateTengang)在 game-g 读 GAME_G_TIANGANGS 算（避免 live-combat ← blueprint 环依赖）；live-combat 只持有这份扁平修正、在 clash/deploy 钩子读。
 // v1 实装：odds(巧手 pEffAdd / 稳手 winFloor) · power(虎符 all / 寡兵 LE3 / 同花魁 sameSuit) · combo(对子诀 pair) · morale(令旗 leader) · stamina(铁汉) · draw(广纳 handMax)。
