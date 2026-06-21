@@ -264,15 +264,26 @@ function seededShuffleArr<T>(xs: T[], seed: number): T[] {
 }
 const SUITNAME: Record<string, string> = { s: '黑桃', h: '红桃', d: '方块', c: '梅花' };
 // turn-combat 掷命事件 → 回合制特写视图（doc24 战斗屏·点数/经营/天罡/士气 明细如实透出）。
-function clashToTurnView(ev: ClashEvent): TurnClashView {
+function clashToTurnView(ev: ClashEvent, tgName: (id: string) => string = (id) => id): TurnClashView {
   const lc2 = (s: string): 's' | 'h' | 'd' | 'c' => s.toLowerCase() as 's' | 'h' | 'd' | 'c';
   const cardv = (c: ClashEvent['a'], won: boolean): TurnClashCardView => ({ rank: c.rank, suit: lc2(c.suit), name: SUITNAME[lc2(c.suit)] + c.rank, won });
+  // 明细逐行 + 原因（owner 2026-06-21）：点数恒显；经营=改造/附魔；天罡总计 + 逐张溯源(哪张+多少)；士气标明主将坐镇/溃散。
+  const rows = (c: ClashEvent['a']): [string, number][] => {
+    const r: [string, number][] = [['点数 · 牌面基础', c.points]];
+    if (c.buff !== 0) r.push(['经营 · 改造/附魔', c.buff]);
+    if (c.tengang !== 0 || (c.tgBreak?.length ?? 0) > 0) {
+      r.push(['天罡 · 法术合计', c.tengang]);
+      for (const [id, amt] of c.tgBreak ?? []) r.push(['　└ ' + tgName(id), amt]);
+    }
+    if (c.morale !== 0) r.push([c.morale > 0 ? '士气 · 主将坐镇' : '士气 · 主将亡·溃散', c.morale]);
+    return r;
+  };
   return {
     laneName: ['上路', '中路', '下路'][ev.lane] ?? '路',
     mine: cardv(ev.a, ev.aWins), foe: cardv(ev.b, !ev.aWins),
     oddsMine: Math.round(ev.winrate * 100), rollPct: Math.round(ev.roll * 100),
-    bonusMine: [['点数(基础)', ev.a.points], ['经营(养成)', ev.a.buff], ['天罡(法术)', ev.a.tengang], ['士气(主将)', ev.a.morale]],
-    bonusFoe: [['点数(基础)', ev.b.points], ['经营(养成)', ev.b.buff], ['天罡(法术)', ev.b.tengang], ['士气(主将)', ev.b.morale]],
+    bonusMine: rows(ev.a), bonusFoe: rows(ev.b),
+    pEffMine: ev.a.pEff, pEffFoe: ev.b.pEff,
   };
 }
 // live-combat 对决事件 → 特写视图（a=我方/b=敌方；点数/加成/战力/胜率/掷点 如实透出）。
@@ -549,7 +560,7 @@ export function mount(container: HTMLElement): () => void {
       thinkTimer = window.setTimeout(() => { if (thinkEl) { thinkEl.remove(); thinkEl = null; } onDone(); }, ms);
     };
     const flash = (msg: string): void => { notice = msg; mounted?.update(); if (noticeTimer) clearTimeout(noticeTimer); noticeTimer = window.setTimeout(() => { notice = null; if (!perfClash) mounted?.update(); }, 1700); }; // 清提示时若正演掷命特写则不重渲（防飞入重启）
-    const view = (): TurnBattleView => buildTurnBattleView(tb, { theme, tengangName: tgName, tengangDesc: tgDesc, selMode, selHand, clash: perfClash ? clashToTurnView(perfClash) : null, bossName: aiName, sha: shaView, gatesLive: gateChance, notice, movedIds: justMovedIds, freshIds, dealtId: dealtId ?? undefined, battleLabel, sfxOn: isSfxOn(), settingsOpen, bgmOn: isBgmOn(), bgmIdx: bgmTrackIdx(), bgmVol: bgmVolume(), bgmNames: BGM_TRACKS.map((t) => t.name) });
+    const view = (): TurnBattleView => buildTurnBattleView(tb, { theme, tengangName: tgName, tengangDesc: tgDesc, selMode, selHand, clash: perfClash ? clashToTurnView(perfClash, tgName) : null, bossName: aiName, sha: shaView, gatesLive: gateChance, notice, movedIds: justMovedIds, freshIds, dealtId: dealtId ?? undefined, battleLabel, sfxOn: isSfxOn(), settingsOpen, bgmOn: isBgmOn(), bgmIdx: bgmTrackIdx(), bgmVol: bgmVolume(), bgmNames: BGM_TRACKS.map((t) => t.name) });
     let mounted: { update: () => void; destroy: () => void } | null = null;
 
     const drainClashes = (): void => { for (const ev of tb.clashLog.slice(drained)) perfQueue.push(ev); drained = tb.clashLog.length; };
@@ -594,7 +605,7 @@ export function mount(container: HTMLElement): () => void {
       drawFrom: (from) => { if (busy || selMode !== 'draw') return; if (drawCard(tb, 'a', from)) { playSfx('draw'); dealtId = tb.a.hand[tb.a.hand.length - 1]?.id ?? null; const did = dealtId; window.setTimeout(() => { if (dealtId === did) { dealtId = null; if (!perfClash) mounted?.update(); } }, 560); } }, // 抽到的牌飞入翻面入场·~560ms 后清标记
       selectHand: (i) => {
         if (busy || tb.active !== 'a') return;
-        if (selMode === 'cast') { if (castTengang(tb, 'a', i)) { tb.a.tengangA = aggregateTengang(tb.a.castIds); playSfx('cast'); } selHand = -1; } // 施法 → 持续修正重算
+        if (selMode === 'cast') { if (castTengang(tb, 'a', i)) { tb.a.tengangA = aggregateTengang(tb.a.castIds); tb.a.castFx = tb.a.castIds.map((id) => ({ id, fx: aggregateTengang([id]) })); playSfx('cast'); } selHand = -1; } // 施法 → 持续修正重算（+逐张 castFx 供对决溯源）
         else if (selMode === 'discard') { if (discardCard(tb, 'a', i)) playSfx('discard'); selHand = -1; }
         else if (selMode === 'deploy' || tb.actionTaken === null || tb.actionTaken === 'deploy') { selMode = 'deploy'; selHand = selHand === i ? -1 : i; playSfx('select'); } // 默认进放牌·选牌→点路落子
       },

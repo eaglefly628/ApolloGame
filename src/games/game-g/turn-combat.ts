@@ -52,7 +52,7 @@ export interface PokerCard { kind: 'poker'; id: string; rank: string; suit: stri
 export interface TengangHandCard { kind: 'tengang'; id: string }
 export type Card = PokerCard | TengangHandCard;
 // 一方运行态：召唤源泉 / 手牌 / 两库 / 已施天罡集 + 其聚合修正。
-export interface TurnSide { mana: number; hand: Card[]; pokerDeck: PokerCard[]; tengangDeck: TengangHandCard[]; castIds: string[]; tengangA: TengangFx }
+export interface TurnSide { mana: number; hand: Card[]; pokerDeck: PokerCard[]; tengangDeck: TengangHandCard[]; castIds: string[]; tengangA: TengangFx; castFx: { id: string; fx: TengangFx }[] } // castFx：逐张已打天罡的单卡修正(caller 经 aggregateTengang([id]) 填)·供对决明细逐张溯源
 export type ActionKind = 'draw' | 'deploy' | 'cast' | 'discard';
 // Boss 策略画像（doc27 §八·性格即数据·最弱 LLM 也能填权重）：通用 utility AI 读它打分→选动作。0-10。
 export interface AiProfile {
@@ -81,7 +81,7 @@ export interface TurnBattle {
 
 const mkLane = (): TurnLane => ({ a: [], b: [], aGenDead: false, bGenDead: false, spentA: 0, spentB: 0 });
 const mkSide = (pokerDeck: PokerCard[] = [], tengangDeck: TengangHandCard[] = []): TurnSide =>
-  ({ mana: MANA_START, hand: [], pokerDeck: [...pokerDeck], tengangDeck: [...tengangDeck], castIds: [], tengangA: NO_TENGANG });
+  ({ mana: MANA_START, hand: [], pokerDeck: [...pokerDeck], tengangDeck: [...tengangDeck], castIds: [], tengangA: NO_TENGANG, castFx: [] });
 
 export interface TurnInit { seed: number; homeMax?: number; disha?: readonly string[]; aiProfile?: AiProfile; aiTier?: number; a?: { pokerDeck?: PokerCard[]; tengangDeck?: TengangHandCard[] }; b?: { pokerDeck?: PokerCard[]; tengangDeck?: TengangHandCard[] } }
 /** 开战 init（doc24 §七）：三路 ×9 空轨；双方大本营 3 hp；召唤源泉=起步；A 先手。牌库由 caller（game-g/save）喂；起手摸由 caller 调 drawCard。
@@ -228,6 +228,17 @@ function effPower(u: TurnUnit, lane: TurnLane, side: 'a' | 'b', fx: TengangFx, c
   return { pEff: pEff(u.points, u.buff + tg + shift, mul), shift, tg };
 }
 
+// 单张天罡 fx 对该前锋的 tg 贡献（与 effPower 的 tg 门控逐字一致）→ 对决明细逐张溯源（owner 2026-06-21）。
+function tgContribOf(u: TurnUnit, lane: TurnLane, side: 'a' | 'b', fx: TengangFx): number {
+  const col = colOf(lane, side);
+  let tg = fx.powerAll + fx.pEffAdd;
+  if (fx.powerFront && col.length && u.id === col[0].id) tg += fx.powerFront;
+  if (col.length <= 3) tg += fx.powerLE3;
+  if (fx.powerSameSuit && col.filter((x) => x.suit === u.suit).length >= 2) tg += fx.powerSameSuit;
+  if (fx.comboPair || fx.comboTrips) { const rc = new Map<string, number>(); for (const x of col) rc.set(x.rank, (rc.get(x.rank) ?? 0) + 1); const vals = [...rc.values()]; if (fx.comboPair && vals.some((n) => n >= 2)) tg += fx.comboPair; if (fx.comboTrips && vals.some((n) => n >= 3)) tg += fx.comboTrips; }
+  return tg;
+}
+
 // ── 地煞 apply（Boss 侧·doc23 §八）：把 dishaB 各效果折成「Boss 掷命胜率 +X 百分点」(玩家 wr 相应减) ──
 // 8 邻/同路相邻 己兵计数（方阵/连环船）。bf=Boss 前锋；li=其所在路。
 function dishaAllies(b: TurnBattle, li: number, bf: TurnUnit, adj8: boolean): number {
@@ -307,7 +318,8 @@ function resolveClash(b: TurnBattle, li: number): void {
     aWins = roll < wr;
     if (b.a.tengangA.noUpset > 0 && wr >= 0.5) aWins = true; // 铁骰
   }
-  b.lastClash = { tick: b.turn, lane: li, winrate: wr, roll, aWins, tie, a: { rank: fa.rank, suit: fa.suit, general: fa.general, points: fa.points, buff: fa.buff, morale: ba.shift, tengang: ba.tg, pEff: ea }, b: { rank: fb.rank, suit: fb.suit, general: fb.general, points: fb.points, buff: fb.buff, morale: bb.shift, tengang: bb.tg, pEff: eb } };
+  const tgBreakOf = (sd: TurnSide, u: TurnUnit, sk: 'a' | 'b'): [string, number][] => sd.castFx.map(({ id, fx }) => [id, Math.round(tgContribOf(u, lane, sk, fx))] as [string, number]).filter((r) => r[1] !== 0); // 逐张天罡溯源
+  b.lastClash = { tick: b.turn, lane: li, winrate: wr, roll, aWins, tie, a: { rank: fa.rank, suit: fa.suit, general: fa.general, points: fa.points, buff: fa.buff, morale: ba.shift, tengang: ba.tg, pEff: ea, tgBreak: tgBreakOf(b.a, fa, 'a') }, b: { rank: fb.rank, suit: fb.suit, general: fb.general, points: fb.points, buff: fb.buff, morale: bb.shift, tengang: bb.tg, pEff: eb, tgBreak: tgBreakOf(b.b, fb, 'b') } };
   b.clashLog.push(b.lastClash); // 流水（驱动层逐场抽特写）
   b.clashSeq += 1;
   if (!aWins) b.bossWinStreak += 1; // 九战九捷：Boss 胜累积
@@ -440,7 +452,7 @@ export function aiTakeTurn(b: TurnBattle, aggTengang?: (ids: readonly string[]) 
     const pick = nextRandom(b.rng) < mistakeChance ? cands[Math.floor(nextRandom(b.rng) * cands.length)] : cands.reduce((bst, c) => (c.score > bst.score ? c : bst), cands[0]);
     let ok = false;
     if (pick.kind === 'deploy') ok = deployUnit(b, 'b', pick.handIdx, pick.lane);
-    else if (pick.kind === 'cast') { ok = castTengang(b, 'b', pick.handIdx); if (ok && aggTengang) sd.tengangA = aggTengang(sd.castIds); } // 施法即重算·当回合推进生效
+    else if (pick.kind === 'cast') { ok = castTengang(b, 'b', pick.handIdx); if (ok && aggTengang) { sd.tengangA = aggTengang(sd.castIds); sd.castFx = sd.castIds.map((id) => ({ id, fx: aggTengang([id]) })); } } // 施法即重算·当回合推进生效（+逐张 castFx 供溯源）
     else ok = drawCard(b, 'b', pick.from);
     if (!ok) break;
   }

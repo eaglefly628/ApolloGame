@@ -94,7 +94,7 @@ export interface TurnGateView { idx: number; open: boolean; side: 'a' | 'b'; fro
 export interface TurnHandCardView { kind: 'pawn' | 'gang'; rank?: string; suit?: 's' | 'h' | 'd' | 'c'; name: string; power?: number; pts?: number; buff?: number; cost: number; zod?: string[]; rar: 'white' | 'green' | 'blue' | 'gold'; desc?: string; glyph?: string; selected?: boolean; dealt?: boolean } // dealt=刚抽到的牌·飞入翻面入场动画(owner 2026-06-21)
 export interface TurnActionView { key: string; glyph: string; label: string; on: boolean; dim: boolean }
 export interface TurnClashCardView { rank: string; suit: 's' | 'h' | 'd' | 'c'; name: string; zod?: string; won: boolean }
-export interface TurnClashView { laneName: string; mine: TurnClashCardView; foe: TurnClashCardView; oddsMine: number; rollPct: number; bonusMine: [string, number][]; bonusFoe: [string, number][] }
+export interface TurnClashView { laneName: string; mine: TurnClashCardView; foe: TurnClashCardView; oddsMine: number; rollPct: number; bonusMine: [string, number][]; bonusFoe: [string, number][]; pEffMine?: number; pEffFoe?: number }
 export interface TurnShaView { filled: boolean; name: string; rar: 'white' | 'green' | 'blue' | 'gold'; desc: string }
 export interface TurnBattleView {
   theme: 'onyx' | 'brocade';
@@ -331,10 +331,15 @@ function clashOverlay(cv: TurnClashView): string {
   const coin = { width: '72px', height: '72px', borderRadius: '50%', background: 'var(--gold-grad)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#2a1a08', border: '3px solid #fff', boxShadow: '0 0 26px rgba(232,205,138,.6)', marginTop: '-30px', animation: 'g-coin-pop .45s .4s cubic-bezier(.2,1.3,.4,1) both' };
   const foePct = 100 - cv.oddsMine;
   const oddsTrack = { position: 'relative', height: '26px', borderRadius: '99px', background: 'rgba(0,0,0,.5)', overflow: 'hidden', display: 'flex' };
-  const bonusCol = (rows: [string, number][], head: string, headCol: string, valCol: string): string => {
+  const bonusCol = (rows: [string, number][], head: string, headCol: string, valCol: string, total?: number): string => {
     const col = { flex: 1, padding: '12px 14px', borderRadius: '12px', background: 'rgba(255,255,255,.05)', border: '1px solid rgba(255,255,255,.12)' };
     const hd = { fontSize: '11px', letterSpacing: '.12em', textTransform: 'uppercase', color: headCol, marginBottom: '9px', fontWeight: 700 };
-    return `<div style="${st(col)}"><div style="${st(hd)}">${esc(head)}</div>${forr(rows, ([label, num]) => `<div style="${st({ display: 'flex', alignItems: 'center', padding: '4px 0' })}"><span style="flex:1; font-size:12px; color:rgba(255,255,255,.8);">${esc(label)}</span><span style="font-family:var(--fn); font-size:14px; color:${valCol};">${num}</span></div>`)}</div>`;
+    const rowHtml = ([label, num]: [string, number]): string => {
+      const sub = label.startsWith('　'); // 逐张溯源子行：缩进/淡化
+      return `<div style="${st({ display: 'flex', alignItems: 'center', padding: sub ? '2px 0' : '4px 0' })}"><span style="flex:1; font-size:${sub ? '11px' : '12px'}; color:rgba(255,255,255,${sub ? '.58' : '.82'});">${esc(label)}</span><span style="font-family:var(--fn); font-size:${sub ? '12px' : '14px'}; color:${num < 0 ? '#e8804a' : valCol}; opacity:${sub ? 0.82 : 1};">${num > 0 ? '+' : ''}${num}</span></div>`;
+    };
+    const totalRow = total != null ? `<div style="${st({ display: 'flex', alignItems: 'center', marginTop: '6px', paddingTop: '7px', borderTop: '1px solid rgba(255,255,255,.16)' })}"><span style="flex:1; font-size:12px; font-weight:700; color:#fff;">＝ 战力</span><span style="font-family:var(--fn); font-size:18px; font-weight:700; color:${headCol};">${total}</span></div>` : '';
+    return `<div style="${st(col)}"><div style="${st(hd)}">${esc(head)}</div>${forr(rows, rowHtml)}${totalRow}</div>`;
   };
   return `<div style="${st(backdrop)}"><div style="${st(panel)}">
     <div style="position:absolute; top:14px; left:50%; transform:translateX(-50%); display:flex; align-items:center; gap:10px; padding:6px 22px; border-radius:99px; background:rgba(232,205,138,.14); border:1px solid var(--gold);"><span style="${st({ width: '10px', height: '10px', borderRadius: '50%', background: 'var(--accent)', boxShadow: '0 0 10px var(--accent)' })}"></span><span style="font-family:var(--fh); font-weight:700; font-size:19px; color:var(--gold); letter-spacing:.08em;">⚔ ${esc(cv.laneName)} · 掷命对决</span><span style="${st({ width: '10px', height: '10px', borderRadius: '50%', background: '#3a86d4', boxShadow: '0 0 10px #3a86d4' })}"></span></div>
@@ -346,7 +351,8 @@ function clashOverlay(cv: TurnClashView): string {
     <div style="margin-top:22px; padding:0 30px;">
       <div style="display:flex; justify-content:space-between; align-items:flex-end; margin-bottom:8px;"><span style="font-family:var(--fn); font-size:24px; color:var(--accent);">${cv.oddsMine}%</span><span style="font-size:11px; letter-spacing:.14em; text-transform:uppercase; color:rgba(255,255,255,.6);">胜率 · 战力差→概率</span><span style="font-family:var(--fn); font-size:24px; color:#5ea0e0;">${foePct}%</span></div>
       <div style="${st(oddsTrack)}"><div style="${st({ width: cv.oddsMine + '%', background: 'var(--accent-grad)', boxShadow: '0 0 14px var(--accent-soft)' })}"></div><div style="${st({ width: foePct + '%', background: 'linear-gradient(180deg,#5ea0e0,#2a5f9e)' })}"></div></div>
-      <div style="display:flex; gap:10px; margin-top:16px;">${bonusCol(cv.bonusMine, '我方加成明细', 'var(--accent)', 'var(--accent)')}${bonusCol(cv.bonusFoe, '敌方加成明细', '#5ea0e0', '#5ea0e0')}</div>
+      <div style="display:flex; gap:10px; margin-top:16px;">${bonusCol(cv.bonusMine, '我方加成明细', 'var(--accent)', 'var(--accent)', cv.pEffMine)}${bonusCol(cv.bonusFoe, '敌方加成明细', '#5ea0e0', '#5ea0e0', cv.pEffFoe)}</div>
+      <div style="margin-top:11px; text-align:center; font-size:11px; line-height:1.6; color:rgba(255,255,255,.62);">战力 = 点数 + 经营 + 天罡(逐张) + 士气　→　双方战力比差过 S 形曲线出<b style="color:var(--accent)">胜率 ${cv.oddsMine}%</b>（永留 3% 爆冷缝）　→　掷命点 <b style="color:var(--gold)">${cv.rollPct}</b> ${cv.rollPct < cv.oddsMine ? '＜' : '≥'} ${cv.oddsMine} 定${cv.mine.won ? '生' : '死'}</div>
     </div>
     <div style="display:flex; flex-direction:column; align-items:center; gap:10px; margin-top:16px;">
       <div style="font-family:var(--fh); font-weight:700; font-size:17px; letter-spacing:.06em; color:${cv.mine.won ? 'var(--hp)' : 'var(--danger)'};">本场 ${cv.mine.won ? '我方胜' : '敌方胜'}｜${esc(cv.laneName)}前锋对决</div>
