@@ -82,7 +82,7 @@ def build_cartridge(game_id: str) -> None:
         run(vite_cmd, env=env)
 
 
-def build_desktop(platforms: list[str]) -> None:
+def build_desktop(game_id: str, platforms: list[str]) -> None:
     flags = []
     if "mac" in platforms:
         flags.append("--mac")
@@ -90,18 +90,22 @@ def build_desktop(platforms: list[str]) -> None:
         flags.append("--win")
     if not flags:
         return
-    run(["npx", "electron-builder"] + flags + ["--config", "electron-builder.yml"])
+    out_dir = f"release/{game_id}/bin"
+    run(["npx", "electron-builder"] + flags + [
+        "--config", "electron-builder.yml",
+        f"-c.directories.output={out_dir}",
+    ])
 
 
 def build_handheld(game_id: str) -> None:
     run([sys.executable, str(ROOT / "scripts" / "build_game.py"), game_id])
     src = ROOT / f"apollo-{game_id}-rk3562.tar.gz"
-    dst = ROOT / "release" / "bin" / f"apollo-{game_id}-rk3562.tar.gz"
+    dst = ROOT / "release" / game_id / "bin" / f"apollo-{game_id}-rk3562.tar.gz"
     if src.exists():
         import shutil
-        (ROOT / "release" / "bin").mkdir(parents=True, exist_ok=True)
+        dst.parent.mkdir(parents=True, exist_ok=True)
         shutil.move(str(src), str(dst))
-        print(f"  → 已移至 release/bin/apollo-{game_id}-rk3562.tar.gz")
+        print(f"  → 已移至 release/{game_id}/bin/apollo-{game_id}-rk3562.tar.gz")
 
 
 def main() -> None:
@@ -137,7 +141,7 @@ def main() -> None:
     if desktop:
         n += 1
         print(f"\n  ┌─ [{n}/{total}] 打包桌面版 ({plat_str.replace(' + 掌机 .tar.gz', '')})")
-        build_desktop(desktop)
+        build_desktop(game_id, desktop)
 
     if "handheld" in platforms:
         n += 1
