@@ -2,7 +2,7 @@ import { mountBattle, type BattleView, type BattleUnit, type BattleLane, type Ba
 import { mountLobby, luckyBattleBuff, type LobbyView, type LobbyShopItem } from './lobby-screen.js';
 import { prepareArmies, quartermasterEnergy, FORMATION_PRESETS, PRESET_NAMES, LEVER_CATALOG, LEVER_START, battleSpec, RUN_BATTLES, RUN_LIVES, BETWEEN_BUFFS, applyBuff, tiangangKeyBuffs, BOSS_ROSTER, bossFor, GAME_G_TIANGANGS, TIANGANG_BY_ID, ARCHETYPES, detectArchetype, archetypeMatchup, activeArchetype, pickAiFormation, GAME_G_PLANETS, GAME_G_FOILS, RECHARGE_PACKS, rechargeTotal, DIAMOND_EXCHANGES, DIZHI_SHARD_PACKS, RECHARGE_PASSWORD, GACHA, gachaCost, DIZHI_MAX_TIER, DIZHI_TIER_NM, DIZHI_TIER_CAP, DIZHI_INLAY_FAVOR, dizhiMerge, dizhiTotal, dizhiTopTier, DIZHI_ZODIACS, INLAY_MAX, effectiveDeckFavors, POKER_PICK_SIZE, isPoolCardId, autoBuildPokerPicks, cardFavorIndex, rankOfCardId, deployCost, isHeroOwned, heroCardByName, heroNameOf, effectiveLives, effectiveLeverCap, effectiveLeverRegen, campaignFor, unlockStageOf, type Formation, type Intervention, type LeverKind, type RunBuff, type ArmyCard, type InlayEntry } from './index.js';
 import { initLiveBattle, stepLiveBattle, liveActive, migrateRear, NO_TENGANG, LANE_LEN, HOME_BLOOD, type LiveBattle, type DeployCmd, type ClashEvent, type TengangFx } from './live-combat.js';
-import { initTurnBattle, drawCard, deployUnit, castTengang, discardCard, endTurn, aiTakeTurn, toggleGate, GATES, OPENING_HAND, DRAW_COST, type PokerCard, type TengangHandCard } from './turn-combat.js';
+import { initTurnBattle, drawCard, deployUnit, castTengang, discardCard, endTurn, aiTakeTurn, toggleGate, GATES, OPENING_HAND, DRAW_COST, CAST_COST, manaGain, type PokerCard, type TengangHandCard } from './turn-combat.js';
 import { mountTurnBattle, buildTurnBattleView, type TurnBattleView, type TurnBattleActions, type TurnClashView, type TurnClashCardView, type TurnShaView } from './turn-battle-screen.js';
 import { mountCoinFlip } from './coin-flip.js';
 import { loadLevel } from './level.js';
@@ -707,8 +707,14 @@ export function mount(container: HTMLElement, shell?: { exit?: () => void }): ()
       const pBreak = (s: ClashEvent['a']): string => {
         const parts: string[] = [`底${s.points}`];
         if (s.buff) parts.push(`经营${s.buff > 0 ? '+' : ''}${s.buff}`);
-        if (s.tengang) parts.push(`天罡${s.tengang > 0 ? '+' : ''}${s.tengang}`);
-        if (s.morale) parts.push(`士气${s.morale > 0 ? '+' : ''}${s.morale}`);
+        if (s.tengang) {
+          const detail = s.tgBreak?.filter(([, d]) => d !== 0).map(([id, d]) => `${tgName(id)}${d > 0 ? '+' : ''}${d}`).join('/') ?? '';
+          parts.push(`天罡${s.tengang > 0 ? '+' : ''}${s.tengang}${detail ? `(${detail})` : ''}`);
+        }
+        if (s.morale) {
+          const src = s.morale > 0 ? (s.morale > 2 ? '主将在场+令旗' : '主将在场') : '主将阵亡';
+          parts.push(`士气${s.morale > 0 ? '+' : ''}${s.morale}(${src})`);
+        }
         if (s.nearDef) parts.push(`固守+${s.nearDef}`);
         return parts.length > 1 ? `${parts.join(' ')} = ${s.pEff}` : `${s.pEff}`;
       };
@@ -720,19 +726,21 @@ export function mount(container: HTMLElement, shell?: { exit?: () => void }): ()
         perfResume = () => { perfResume = null; playPerf(onDone); }; mounted?.update(); syncCoach(); // 引导：特写中隐
       });
     };
-    const finishTurnSeq = (): void => { busy = false; selMode = null; selHand = -1; if (tb.winner !== 'pending') settleTurn(); else mounted?.update(); syncCoach(); };
+    const finishTurnSeq = (): void => { busy = false; selMode = null; selHand = -1; if (tb.winner !== 'pending') settleTurn(); else { log(`◀ T${tb.turn} 我方回合开始 · 源泉 我${tb.a.mana} / 敌${tb.b.mana}`); mounted?.update(); } syncCoach(); };
     const runAiThenContinue = (): void => { // 玩家推进特写演完 → 敌方回合播报 → AI 思考 → AI 行动 + 掷命 → 我方回合播报 → 回到玩家
       if (tb.winner !== 'pending') { finishTurnSeq(); return; }
       showBanner('敌方回合', 1300, () => {
         startThinking(() => {
           const before = snapSlots();
+          const prevCastIds = [...tb.b.castIds];
           aiTakeTurn(tb, aggregateTengang); // Boss utility AI（画像驱动·施法即重算 tengangA 生效）
           justMovedIds = diffMoved(before);
           // 新部署的敌兵（before 没有的 id）→ 逐张落子 g-drop 错峰 + 叭叭叭部署音（owner 2026-06-21）
           freshIds = new Map(); let fi = 0;
           const newFoe: string[] = [];
           for (const L of tb.lanes) for (const u of L.b) if (!before.has(u.id)) { freshIds.set(u.id, fi); const d = fi * 150; window.setTimeout(() => playSfx('deploy'), d); fi++; newFoe.push(`${u.rank}${SUITNM2[u.suit] ?? ''}→${LANE_NM[tb.lanes.indexOf(L)] ?? '?'}`); }
-          log(`敌·行动：部署[${newFoe.join('、') || '无'}] → 结束放置 → ▶行动阶段（两线同时推进·相遇掷命）`);
+          const newCast = tb.b.castIds.filter((id) => !prevCastIds.includes(id)).map((id) => tgName(id));
+          log(`敌·行动：部署[${newFoe.join('、') || '无'}]${newCast.length ? ` 施天罡[${newCast.join('、')}]` : ''} → 结束放置 → ▶行动阶段（源泉 我${tb.a.mana}/敌${tb.b.mana}）`);
           drainClashes();
           mounted?.update();
           window.setTimeout(() => { justMovedIds = new Set(); freshIds = new Map(); if (!perfClash) mounted?.update(); }, Math.max(550, fi * 150 + 380)); // 错峰落子播完再清标记（掷命特写中不重渲·防 3D 飞入重启）
@@ -755,7 +763,7 @@ export function mount(container: HTMLElement, shell?: { exit?: () => void }): ()
       pickAction: (kind) => { if (busy || tb.active !== 'a') return; if (kind !== 'discard' && tb.actionTaken && tb.actionTaken !== kind) return; selMode = selMode === kind ? null : kind; selHand = -1; gateChance = false; playSfx('select'); }, // 弃牌不互斥：随时可进弃牌模式
       drawFrom: (from) => {
         if (busy || selMode !== 'draw') return;
-        if (drawCard(tb, 'a', from)) { playSfx('draw'); coachDid('draw'); const nc = tb.a.hand[tb.a.hand.length - 1]; log(`我·抽牌(${from === 'poker' ? '扑克' : '天罡'}) → ${nc ? cardLabel(nc) : '?'}`); dealtId = tb.a.hand[tb.a.hand.length - 1]?.id ?? null; const did = dealtId; window.setTimeout(() => { if (dealtId === did) { dealtId = null; if (!perfClash) mounted?.update(); } }, 560); } // 抽到的牌飞入翻面入场·~560ms 后清标记
+        if (drawCard(tb, 'a', from)) { playSfx('draw'); coachDid('draw'); const nc = tb.a.hand[tb.a.hand.length - 1]; log(`我·抽牌(${from === 'poker' ? '扑克' : '天罡'}) -${DRAW_COST}源泉 → ${nc ? cardLabel(nc) : '?'} [剩${tb.a.mana}源泉]`); dealtId = tb.a.hand[tb.a.hand.length - 1]?.id ?? null; const did = dealtId; window.setTimeout(() => { if (dealtId === did) { dealtId = null; if (!perfClash) mounted?.update(); } }, 560); } // 抽到的牌飞入翻面入场·~560ms 后清标记
         else { // 抽不了 → 明确提示原因（owner 2026-06-21：源泉不够要提示「抽不了」）
           const deck = from === 'poker' ? tb.a.pokerDeck : tb.a.tengangDeck;
           playSfx('invalid');
@@ -766,11 +774,11 @@ export function mount(container: HTMLElement, shell?: { exit?: () => void }): ()
       },
       selectHand: (i) => {
         if (busy || tb.active !== 'a') return;
-        if (selMode === 'cast') { const tc = tb.a.hand[i]; if (castTengang(tb, 'a', i)) { tb.a.tengangA = aggregateTengang(tb.a.castIds); tb.a.castFx = tb.a.castIds.map((id) => ({ id, fx: aggregateTengang([id]) })); playSfx('cast'); coachDid('cast'); log(`我·施天罡 ${tc ? cardLabel(tc) : '?'}`); } selHand = -1; } // 施法 → 持续修正重算（+逐张 castFx 供对决溯源）
+        if (selMode === 'cast') { const tc = tb.a.hand[i]; if (castTengang(tb, 'a', i)) { tb.a.tengangA = aggregateTengang(tb.a.castIds); tb.a.castFx = tb.a.castIds.map((id) => ({ id, fx: aggregateTengang([id]) })); playSfx('cast'); coachDid('cast'); log(`我·施天罡 ${tc ? cardLabel(tc) : '?'} -${CAST_COST}源泉 [剩${tb.a.mana}源泉]`); } selHand = -1; } // 施法 → 持续修正重算（+逐张 castFx 供对决溯源）
         else if (selMode === 'discard') { const dc = tb.a.hand[i]; if (discardCard(tb, 'a', i)) { playSfx('discard'); log(`我·弃牌 ${dc ? cardLabel(dc) : '?'}（返0.5源泉·不互斥）`); } selHand = -1; }
         else if (selMode === 'deploy' || tb.actionTaken === null || tb.actionTaken === 'deploy') { selMode = 'deploy'; selHand = selHand === i ? -1 : i; playSfx('select'); } // 默认进放牌·选牌→点路落子
       },
-      playLane: (lane) => { if (busy || selMode !== 'deploy' || selHand < 0) return; const pc = tb.a.hand[selHand]; if (deployUnit(tb, 'a', selHand, lane)) { selHand = -1; gateChance = true; playSfx('deploy'); coachDid('deploy'); log(`我·放牌 ${pc ? cardLabel(pc) : '?'} → ${LANE_NM[lane] ?? lane}`); flash('✓ 放牌成功——可翻一道机关门(箭头·一次)，或继续放牌'); } }, // 放牌附赠：一次翻门机会
+      playLane: (lane) => { if (busy || selMode !== 'deploy' || selHand < 0) return; const pc = tb.a.hand[selHand]; const pCost = pc?.kind === 'poker' ? (pc.cost ?? 0) : 0; if (deployUnit(tb, 'a', selHand, lane)) { selHand = -1; gateChance = true; playSfx('deploy'); coachDid('deploy'); log(`我·放牌 ${pc ? cardLabel(pc) : '?'} → ${LANE_NM[lane] ?? lane}${pCost ? ` -${pCost}源泉` : '（免费）'} [剩${tb.a.mana}源泉]`); flash('✓ 放牌成功——可翻一道机关门(箭头·一次)，或继续放牌'); } }, // 放牌附赠：一次翻门机会
       toggleGate: (idx) => { // 仅放牌后(gateChance)可翻一道本方门·一次；平时翻门无效（doc24 §三·owner 2026-06-20）
         if (busy || tb.active !== 'a') return;
         if (GATES[idx]?.side !== 'a') { playSfx('invalid'); flash('✗ 只能改自己的机关门'); return; }
