@@ -10,7 +10,10 @@
 
 ## 待处理 / 进行中
 
-### REQ-ARCH-COACH · [2026-06-21] · design G（owner 2026-06-21 钦定 · 引擎通用新手引导）· 框架级 · status: **open** · 优先级: 中 · 类型: 真缺口（仅表现层）+ 重组（逻辑层·无需引擎）
+### REQ-ARCH-COACH · [2026-06-21] · design G（owner 2026-06-21 钦定 · 引擎通用新手引导）· 框架级 · status: **done（表现层·Lead `ac64e1c1`·design G 验收 PASS 2026-06-21）** · 优先级: 中 · 类型: 真缺口（仅表现层）+ 重组（逻辑层·无需引擎）
+
+> ✅ **Lead 已落表现层最小包**（`ac64e1c1`）：`Coachmark` 组件 + `src/renderer/coachmark.ts`(纯·collect/几何/SVG·7测) + `src/ui/onboarding-overlay.ts`(`mountOnboardingOverlay`·DOM·覆盖两套UI) + GameShell `UINode.anchor`。**design G 验收 PASS**：逐条对上策划案（组件全字段/data-anchor 统一/纯表现不进hash/YAGNI）。小瑕：arrow 暂未画(后补)。**逻辑层(首次/步骤/seen/点对)=游戏侧重组**→甲乙接清单 `src/games/game-g/design/DEV-CHECKLIST-onboarding.md` 用起来。
+
 
 **完整策划案见 `docs/design/onboarding-coachmark-capability.md`。** 一句话：新手引导 = 数据表（步骤/锚点/文案），引擎一台固定 coachmark 渲染器解释。owner 主诉求 = **首次使用任何功能即弹教学·高亮该框·指示点哪里**，且要**引擎通用、数据驱动**（任何游戏只填数据·零手写 UI）。
 
