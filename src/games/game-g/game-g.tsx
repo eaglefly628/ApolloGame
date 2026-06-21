@@ -318,14 +318,23 @@ function clashToTurnView(ev: ClashEvent, tgName: (id: string) => string = (id) =
     }
     if (c.morale !== 0) r.push([c.morale > 0 ? '士气 · 主将坐镇' : '士气 · 主将亡·溃散', c.morale]);
     if (c.nearDef) r.push(['地煞 · 隘口固守', c.nearDef]); // 温泉关守军贴家 +战力（owner 2026-06-21）
+    // 对齐到最终战力（owner 2026-06-21「为什么这么高·来源要清晰」）：加成各源之和（不含 └ 逐张子行·避免与天罡合计重复）vs pEff；
+    // 差额来自 ① 封顶 P_MAX=30 截断（超高战力被砍）② 擎天·主将倍率(×mul)。补一行让明细恰好加到 ＝战力。
+    const sum = r.reduce((s, [label, n]) => s + (label.startsWith('　') ? 0 : n), 0);
+    if (c.pEff !== sum) r.push(c.pEff < sum ? [`　战力上限 · 封顶 ${P_MAX}（超出截断）`, c.pEff - sum] : ['　擎天 · 主将战力倍率', c.pEff - sum]);
     return r;
   };
+  // 额外效果（owner 2026-06-21「还有额外的效果」）：非数值、却左右这场胜负的特殊裁定——平局如何裁定 + 战胜硬币定胜牌去留。
+  const extras: string[] = [];
+  if (ev.tie) extras.push(ev.tie === 'points' ? '⚖ 战力相等 → 点数大者胜' : ev.tie === 'stamina' ? '⚖ 战力·点数皆同 → 续航高者胜' : '⚖ 三者全同 → 重掷定生死');
+  const w = ev.aWins ? ev.a : ev.b; const wn = SUITNAME[lc2(w.suit)] + w.rank;
+  extras.push(ev.winStays ? `🪙 ${wn} 战胜掷硬币 → 人头·留在场上乘胜追击` : `🪙 ${wn} 战胜掷硬币 → 人面·光荣回牌库 + 返还半费`);
   return {
     laneName: ['上路', '中路', '下路'][ev.lane] ?? '路',
     mine: cardv(ev.a, ev.aWins), foe: cardv(ev.b, !ev.aWins),
     oddsMine: Math.round(ev.winrate * 100), rollPct: Math.round(ev.roll * 100),
     bonusMine: rows(ev.a, true), bonusFoe: rows(ev.b, false),
-    pEffMine: ev.a.pEff, pEffFoe: ev.b.pEff,
+    pEffMine: ev.a.pEff, pEffFoe: ev.b.pEff, extras,
   };
 }
 // live-combat 对决事件 → 特写视图（a=我方/b=敌方；点数/加成/战力/胜率/掷点 如实透出）。

@@ -42,12 +42,15 @@ describe('Game G · turn-battle-screen（doc24 回合制战斗屏 · 忠实端�
       mine: { rank: 'A', suit: 's', name: '黑桃A', zod: '虎', won: true },
       foe: { rank: '9', suit: 'h', name: '红桃9', zod: '蛇', won: false },
       oddsMine: 76, rollPct: 31,
-      bonusMine: [['点数(基础)', 14], ['经营(养成)', 22], ['天罡(法术)', 18], ['士气(主将)', 30]],
+      bonusMine: [['点数(基础)', 14], ['经营(养成)', 22], ['天罡(法术)', 18], ['士气(主将)', 30], ['　战力上限 · 封顶 30（超出截断）', -54]],
       bonusFoe: [['点数(基础)', 9], ['经营(养成)', 10], ['天罡(法术)', 6], ['士气(主将)', 0]],
+      pEffMine: 30, pEffFoe: 25,
+      extras: ['⚖ 战力相等 → 点数大者胜', '🪙 黑桃A 战胜掷硬币 → 人头·留在场上乘胜追击'],
     };
     const html = renderTurnBattleDoc(buildTurnBattleView(setup(), { theme: 'onyx', tengangName: nm, clash }));
     expect(html).toContain('掷命对决');
     expect(html).toContain('我方加成明细'); expect(html).toContain('敌方加成明细');
+    expect(html).toContain('额外效果'); expect(html).toContain('封顶 30'); // 来源清晰：额外效果区 + 封顶对齐行（owner 2026-06-21）
     expect(html).toContain('正面 · 存活'); expect(html).toContain('反面 · 阵亡');
     await expect(html).toMatchFileSnapshot('./__frames__/turn-clash.html');
   });
