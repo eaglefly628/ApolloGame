@@ -304,7 +304,7 @@ const SUITNAME: Record<string, string> = { s: '黑桃', h: '红桃', d: '方块'
 // turn-combat 掷命事件 → 回合制特写视图（doc24 战斗屏·点数/经营/天罡/士气 明细如实透出）。
 function clashToTurnView(ev: ClashEvent, tgName: (id: string) => string = (id) => id, inlays?: Record<string, InlayEntry[]>): TurnClashView {
   const lc2 = (s: string): 's' | 'h' | 'd' | 'c' => s.toLowerCase() as 's' | 'h' | 'd' | 'c';
-  const cardv = (c: ClashEvent['a'], won: boolean): TurnClashCardView => ({ rank: c.rank, suit: lc2(c.suit), name: SUITNAME[lc2(c.suit)] + c.rank, won });
+  const cardv = (c: ClashEvent['a'], won: boolean, lastStand = false): TurnClashCardView => ({ rank: c.rank, suit: lc2(c.suit), name: SUITNAME[lc2(c.suit)] + c.rank, won, lastStand });
   // 明细逐行 + 原因（owner 2026-06-21）：点数恒显；经营=改造/附魔(我方逐源标注：哪生肖·哪档·+多少 favor·读 save.inlays)；天罡总计 + 逐张溯源；士气标明主将坐镇/溃散。
   const rows = (c: ClashEvent['a'], isMine: boolean): [string, number][] => {
     const r: [string, number][] = [['点数 · 牌面基础', c.points]];
@@ -333,7 +333,7 @@ function clashToTurnView(ev: ClashEvent, tgName: (id: string) => string = (id) =
   extras.push(`🪙 ${wn} 战胜 → 待亲掷硬币定去留（人面 = 留场续战 / 字面 = 回牌库 + 返还半费）`);
   return {
     laneName: ['上路', '中路', '下路'][ev.lane] ?? '路',
-    mine: cardv(ev.a, ev.aWins), foe: cardv(ev.b, !ev.aWins),
+    mine: cardv(ev.a, ev.aWins), foe: cardv(ev.b, !ev.aWins, ev.lastStand), // foe(=敌主将)死战不退 → 特写改显"死战不退"而非误导的"阵亡"
     oddsMine: Math.round(ev.winrate * 100), rollPct: Math.round(ev.roll * 100),
     bonusMine: rows(ev.a, true), bonusFoe: rows(ev.b, false),
     pEffMine: ev.a.pEff, pEffFoe: ev.b.pEff, extras,
@@ -738,7 +738,7 @@ export function mount(container: HTMLElement, shell?: { exit?: () => void }): ()
       ov.innerHTML = `<div style="position:absolute;top:42%;left:50%;font-size:120px;animation:g-die-shake .5s ease-in-out infinite;filter:drop-shadow(0 6px 16px rgba(0,0,0,.7));">🎲</div><div data-roll-num style="position:absolute;top:60%;left:50%;transform:translateX(-50%);font-family:'Silkscreen',monospace;font-size:76px;font-weight:700;color:#e8cd82;text-shadow:0 0 32px rgba(232,205,138,.95),0 4px 18px rgba(0,0,0,.9);">0</div>`;
       document.body.appendChild(ov);
       const numEl = ov.querySelector('[data-roll-num]') as HTMLElement | null;
-      const finish = (): void => { if (!ov.isConnected) return; ov.remove(); clashRolling = false; if (numEl) numEl.textContent = String(target); playSfx('clashReveal'); playSfx(e.aWins ? 'clashWin' : 'clashLose'); mounted?.update(); };
+      const finish = (): void => { if (!ov.isConnected) return; ov.remove(); clashRolling = false; if (numEl) numEl.textContent = String(target); playSfx('clashReveal'); playSfx(e.aWins ? 'clashWin' : 'clashLose'); if (e.lastStand) { log(`🛡 死战不退发作：敌主将【${aiName}】首负不亡·残喘退守 1 格`); showBanner('🛡 死战不退 · 敌主将首负不亡', 1700); } mounted?.update(); }; // 揭晓即报死战不退全屏通知（owner 2026-06-21·让玩家看懂"为何没死"）
       if (typeof requestAnimationFrame !== 'function') { finish(); return; } // 无头环境：直接揭晓
       const STEPS = 40; let step = 0; // 帧计数驱动（不依赖 wall-clock·有界·测试不挂）
       const tick = (): void => {

@@ -110,7 +110,7 @@ export interface TurnLaneView { name: string; slots: TurnSlotView[] }
 export interface TurnGateView { idx: number; open: boolean; side: 'a' | 'b'; fromLane: number; fromSlot: number; toLane: number; toSlot: number }
 export interface TurnHandCardView { kind: 'pawn' | 'gang'; rank?: string; suit?: 's' | 'h' | 'd' | 'c'; name: string; power?: number; pts?: number; buff?: number; cost: number; zod?: string[]; rar: 'white' | 'green' | 'blue' | 'gold'; desc?: string; glyph?: string; selected?: boolean; dealt?: boolean; affordable?: boolean; general?: boolean; ench?: [string, number][] } // dealt=刚抽到的牌·飞入翻面入场动画(owner 2026-06-21)
 export interface TurnActionView { key: string; glyph: string; label: string; on: boolean; dim: boolean }
-export interface TurnClashCardView { rank: string; suit: 's' | 'h' | 'd' | 'c'; name: string; zod?: string; won: boolean }
+export interface TurnClashCardView { rank: string; suit: 's' | 'h' | 'd' | 'c'; name: string; zod?: string; won: boolean; lastStand?: boolean } // lastStand：败者触发「死战不退·首负不亡」→ 显"死战不退"而非"阵亡"(owner 2026-06-21)
 export interface TurnClashView { laneName: string; mine: TurnClashCardView; foe: TurnClashCardView; oddsMine: number; rollPct: number; bonusMine: [string, number][]; bonusFoe: [string, number][]; pEffMine?: number; pEffFoe?: number; extras?: string[]; revealed?: boolean } // revealed=false：掷命前·藏命点/胜负·等玩家点骰（owner 2026-06-21）
 export interface TurnShaView { filled: boolean; name: string; rar: 'white' | 'green' | 'blue' | 'gold'; desc: string; used?: boolean }
 export interface TurnBattleView {
@@ -381,10 +381,11 @@ function clashOverlay(cv: TurnClashView): string {
     const big = { fontSize: '96px', color: sc };
     const zchip = { position: 'absolute', top: '10px', right: '12px', width: '32px', height: '32px', borderRadius: '8px', border: '1.5px solid ' + sc, display: 'flex', alignItems: 'center', justifyContent: 'center', fontFamily: 'var(--fd)', fontSize: '21px', color: sc };
     const nameP = { position: 'absolute', bottom: '34px', left: '50%', transform: 'translateX(-50%)', padding: '3px 15px', borderRadius: '99px', background: 'rgba(20,16,10,.8)', color: '#fff', fontFamily: 'var(--fb)', fontWeight: 700, fontSize: '15px', whiteSpace: 'nowrap' };
-    const verdict = { position: 'absolute', bottom: '-15px', left: '50%', transform: 'translateX(-50%)', padding: '4px 16px', borderRadius: '99px', background: c.won ? 'var(--hp)' : 'var(--danger)', color: c.won ? '#06281a' : '#fff', fontFamily: 'var(--fh)', fontWeight: 700, fontSize: '14px', whiteSpace: 'nowrap', boxShadow: '0 4px 12px rgba(0,0,0,.4)' };
+    const survived = !c.won && c.lastStand; // 败者死战不退·首负不亡：仍在场·非阵亡（显"死战不退"而非"阵亡"）
+    const verdict = { position: 'absolute', bottom: '-15px', left: '50%', transform: 'translateX(-50%)', padding: '4px 16px', borderRadius: '99px', background: c.won ? 'var(--hp)' : survived ? 'var(--gold)' : 'var(--danger)', color: c.won || survived ? '#06281a' : '#fff', fontFamily: 'var(--fh)', fontWeight: 700, fontSize: '14px', whiteSpace: 'nowrap', boxShadow: '0 4px 12px rgba(0,0,0,.4)' };
     const glow = won && isMine ? `<div style="${st({ position: 'absolute', inset: '-20px', borderRadius: '24px', background: 'radial-gradient(circle, rgba(220,38,38,.4), transparent 70%)', pointerEvents: 'none' })}"></div>` : '';
     const sideTag = `<div style="${st({ position: 'absolute', top: '-15px', left: '50%', transform: 'translateX(-50%)', padding: '4px 18px', borderRadius: '99px', background: col, color: '#fff', fontFamily: 'var(--fh)', fontWeight: 700, fontSize: '15px', letterSpacing: '.08em', whiteSpace: 'nowrap', boxShadow: `0 4px 14px ${col}88`, zIndex: 4 })}">${isMine ? '我方' : '敌方'}</div>`;
-    const verdictTag = revealed ? `<div style="${st(verdict)}">${c.won ? '正面 · 存活' : '反面 · 阵亡'}</div>` : ''; // 掷命前不显胜负
+    const verdictTag = revealed ? `<div style="${st(verdict)}">${c.won ? '正面 · 存活' : survived ? '🛡 死战不退 · 退守' : '反面 · 阵亡'}</div>` : ''; // 掷命前不显胜负·揭晓后败者若死战不退则显"死战不退"
     return `<div style="${st(card)}">${glow}${sideTag}<div style="${st(corner)}">${esc(c.rank)}<br>${SUITG[c.suit]}</div><span style="${st(big)}">${SUITG[c.suit]}</span>${c.zod ? `<div style="${st(zchip)}">${esc(c.zod)}</div>` : ''}<div style="${st(nameP)}">${esc(c.name)}</div>${verdictTag}</div>`;
   };
   const spark = { width: '90px', height: '90px', borderRadius: '50%', background: 'radial-gradient(circle, rgba(255,235,160,.95), rgba(255,150,40,.4) 50%, transparent 72%)', animation: 'g-spark 1.2s ease-in-out infinite' };

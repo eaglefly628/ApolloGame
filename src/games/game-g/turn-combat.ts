@@ -356,10 +356,15 @@ function resolveClash(b: TurnBattle, li: number): void {
   if (aWins && fb.general && b.dishaB.lastStandGeneral && !b.bossLastStandUsed) {
     b.bossLastStandUsed = true; const q = lane.b; const u = q.shift();
     if (u) {
-      const target = Math.min(SLOTS - 1, u.slot + 1);
-      const occ = q.find((x) => x.slot === target); // BUG#7：退入格若已有兵 → 与之换位（身后兵补到主将原格）·保一格一兵·防渲染同 slot 覆盖吞牌·确定无 RNG
-      if (occ) occ.slot = u.slot;
-      u.slot = target; q.push(u); q.sort((x, y) => x.slot - y.slot);
+      // BUG#7：退 1 格·主将仍居本列最前（整列后挤填空·不与身后兵换位 → 不会"看着退了两格"）·保一格一兵·确定无 RNG。
+      const target = u.slot + 1;
+      if (target <= SLOTS - 1) {
+        let e = target; while (e <= SLOTS - 1 && q.some((x) => x.slot === e)) e++; // 从退入格起找最近空格
+        if (e <= SLOTS - 1) { for (const s of q) if (s.slot >= target && s.slot < e) s.slot += 1; u.slot = target; } // [target,e) 的兵整体后挤 1 填空 → 主将退 1 格
+        // e 越界=后方全满到 Boss 家·退无可退 → 主将原地残喘（u.slot 不变·仍最前·不撞）
+      }
+      q.push(u); q.sort((x, y) => x.slot - y.slot);
+      if (b.lastClash) b.lastClash.lastStand = true; // 标记本场触发死战不退 → 特写改显"死战不退·残喘退守"(替误导的"阵亡")
     }
   } else {
     const loser = aWins ? 'b' : 'a';
