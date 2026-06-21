@@ -76,7 +76,7 @@ export function settingsBox(view: LobbyView): string {
     <div style="text-align:left;margin-top:10px"><div class="note" style="text-align:left;margin-bottom:6px">大厅皮肤</div><div class="ctarow">${seg('onyx', '玄铁（默认）')}${seg('rosy', '锦霞')}</div></div>
     <div style="text-align:left;margin-top:16px"><div class="note" style="text-align:left;margin-bottom:6px">音效</div><button class="cta-sub" data-act="sfxToggle">${isSfxMuted() ? '🔇 音效：关（点击开启）' : '🔊 音效：开（点击静音）'}</button></div>
     ${bgmSettingsBlock()}
-    <div style="text-align:left;margin-top:16px"><div class="note" style="text-align:left;margin-bottom:6px">新手内容</div><button class="cta-sub" data-act="replayIntro">↻ 重看开场故事与新手引导</button></div>
+    <div style="text-align:left;margin-top:16px"><div class="note" style="text-align:left;margin-bottom:6px">新手内容</div><button class="cta-sub" data-act="toggleGuide" style="margin-bottom:8px">${view.guideOn === false ? '🎓 新手引导：关（点击开启）' : '🎓 新手引导：开（点击关闭）'}</button><button class="cta-sub" data-act="replayIntro">↻ 重看开场故事与新手引导</button></div>
     <div style="text-align:left;margin-top:16px"><div class="note" style="text-align:left;margin-bottom:6px">退出</div><button class="cta-sub" data-act="exitGame">⏏ 退出到游戏库</button></div>
     <div style="text-align:left;margin-top:16px;padding-top:12px;border-top:1px solid var(--panel-border)"><div class="note" style="text-align:left;margin-bottom:6px">调试</div><button class="cta-sub" data-act="reset" style="color:var(--danger);border-color:var(--danger)">⚠ 重置所有数据（调试用）</button></div>
     <div style="text-align:center;margin-top:16px"><button class="cta-sub" style="color:#2a1a08;background:var(--gold-grad);border:0" data-act="settings-close">完成 →</button></div>

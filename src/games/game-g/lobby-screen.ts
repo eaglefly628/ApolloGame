@@ -33,6 +33,7 @@ export interface LobbyView {
   campaignMax?: number; // 已抵达的最高关（战役进度屏 锁/通关判定）
   firstLaunch?: boolean; // 首次启动（未看过开场故事）→ 进大厅自动播放（doc28 §一）
   guideStep?: number; // 新手引导进度（doc28 §二）：0..N 进行中 · -1 完成/跳过
+  guideOn?: boolean; // 新手引导开关（owner 2026-06-21·默认开·设置可关）
   fortune?: FortuneView; // 今日卦象（owner 2026-06-21）：制卦次数 + 收下的卦值 → 主页顶展示
 }
 
@@ -196,6 +197,7 @@ export interface LobbyHandlers {
   onGuideStep?: (n: number) => void; // 新手引导步进（doc28 §二）
   onGuideDone?: () => void; // 完成/跳过引导
   onReplayIntro?: () => void; // 重看开场故事 + 引导
+  onToggleGuide?: () => void; // 新手引导开/关（owner 2026-06-21·默认开·手动关）
   onExitGame?: () => void; // 退出到游戏库（壳层钩子·收进设置·owner 2026-06-21）
 }
 
@@ -350,6 +352,7 @@ export function mountLobby(host: HTMLElement, h: LobbyHandlers): { update: () =>
     else if (act === 'guide-skip-cancel') { guideSkipAsk = false; renderOv(); }
     else if (act === 'guide-skip-confirm') { guideSkipAsk = false; h.onGuideDone?.(); renderOv(); }
     else if (act === 'replayIntro') { h.onReplayIntro?.(); settings = false; tab = 'home'; playOpeningStory(); render(); }
+    else if (act === 'toggleGuide') { h.onToggleGuide?.(); render(); }
     // 直购天罡也走开包演出（owner 2026-06-21 bug：购买天罡没见卡牌包）：买成功(新解锁)→弹开包卡
     else if (act === 'buyTiangang') { const was = h.getView().tiangangs.find((t) => t.id === k)?.owned ?? false; h.onBuyTiangang?.(k); const t = h.getView().tiangangs.find((t) => t.id === k); if (t?.owned && !was) gachaReveal = [{ kind: 'tiangang', id: k, name: t.name, outcome: 'new', detail: '🎴 购买解锁 ✓ 已入收藏与出战牌组' }]; render(); }
     else if (act === 'buyPlanet') { h.onBuyPlanet?.(k); render(); }

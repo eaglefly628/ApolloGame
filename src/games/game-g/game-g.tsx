@@ -99,7 +99,7 @@ const newDeckId = (): string => `deck_${Date.now().toString(36)}_${Math.floor(Ma
 
 const rollBoss = (): number => Math.floor(Math.random() * BOSS_ROSTER.length);
 export function freshSave(): Save {
-  return { materials: 120, diamond: 6, dizhiShards: 30, rechargeCount: 0, seenIntro: false, guideStep: 0, skipGuide: true, seen: {}, tiangangShards: 0, dizhiBag: { 子: [2, 0, 0], 丑: [1, 0, 0], 寅: [1, 0, 0], 卯: [1, 0, 0] }, inlays: {}, campaignMax: 1, stage: 1, deck: Array.from({ length: DECK_SIZE }, (_, i) => 44 + (i % 10) * 2), lastOfficers: [10, 10, 10], leverEnergy: LEVER_START, lives: RUN_LIVES, bossIdx: rollBoss(), ownedTiangangs: GAME_G_TIANGANGS.filter((t) => unlockStageOf(t.id) <= 1).map((t) => t.id), tiangangDecks: [{ id: 'deck1', name: '牌组 1', cards: [], pokerPicks: [] }, { id: 'deck2', name: '牌组 2', cards: [], pokerPicks: [] }, { id: 'deck3', name: '牌组 3', cards: [], pokerPicks: [] }, { id: 'deck4', name: '牌组 4', cards: [], pokerPicks: [] }], activeDeckId: 'deck1', tiangangs: [], planets: {}, foils: [], fortune: { date: '', rolls: 0, keptVal: null } }; // 44..62 起步；金币 120；钻石送 6（首充免密）；开局默认给 4 个天罡牌组让玩家去组（owner 2026-06-21）；pokerPicks 空=自动构筑一副；新存档播开场故事+引导
+  return { materials: 120, diamond: 6, dizhiShards: 30, rechargeCount: 0, seenIntro: false, guideStep: 0, skipGuide: false, seen: {}, tiangangShards: 0, dizhiBag: { 子: [2, 0, 0], 丑: [1, 0, 0], 寅: [1, 0, 0], 卯: [1, 0, 0] }, inlays: {}, campaignMax: 1, stage: 1, deck: Array.from({ length: DECK_SIZE }, (_, i) => 44 + (i % 10) * 2), lastOfficers: [10, 10, 10], leverEnergy: LEVER_START, lives: RUN_LIVES, bossIdx: rollBoss(), ownedTiangangs: GAME_G_TIANGANGS.filter((t) => unlockStageOf(t.id) <= 1).map((t) => t.id), tiangangDecks: [{ id: 'deck1', name: '牌组 1', cards: [], pokerPicks: [] }, { id: 'deck2', name: '牌组 2', cards: [], pokerPicks: [] }, { id: 'deck3', name: '牌组 3', cards: [], pokerPicks: [] }, { id: 'deck4', name: '牌组 4', cards: [], pokerPicks: [] }], activeDeckId: 'deck1', tiangangs: [], planets: {}, foils: [], fortune: { date: '', rolls: 0, keptVal: null } }; // 44..62 起步；金币 120；钻石送 6（首充免密）；开局默认给 4 个天罡牌组让玩家去组（owner 2026-06-21）；pokerPicks 空=自动构筑一副；新存档播开场故事+引导
 }
 function loadSave(): Save {
   try {
@@ -115,7 +115,7 @@ function loadSave(): Save {
         if (typeof s.rechargeCount !== 'number') s.rechargeCount = 0; // 充值次数迁移
         if (typeof s.seenIntro !== 'boolean') s.seenIntro = true; // 老存档视为已看过开场（不打扰老玩家）
         if (typeof s.guideStep !== 'number') s.guideStep = -1; // 老存档引导视为已完成
-        if (typeof s.skipGuide !== 'boolean') s.skipGuide = true; // 默认彻底跳过新手引导（owner 2026-06-21·不启动任何引导）
+        if (typeof s.skipGuide !== 'boolean') s.skipGuide = false; // 新手引导默认开（owner 2026-06-21）·菜单手动关；老存档 seen/guideStep 已完成→自然不再弹
         if (typeof s.tiangangShards !== 'number') s.tiangangShards = 0; // 天罡碎片迁移
         // 地支消耗品迁移（owner 2026-06-21）：老存档 dizhiOwned{branch:tier} → dizhiBag{branch:[铜,银,金]}（该档置 1 张）。
         const legacyDz = s as unknown as { dizhiOwned?: Record<string, number> };
@@ -433,7 +433,7 @@ export function mount(container: HTMLElement, shell?: { exit?: () => void }): ()
       const heart = save.lives > 0 ? '❤'.repeat(save.lives) : '—';
       resetFortuneIfNewDay(save); // 跨日则清零今日卦象（不落盘·读时纠正即可）
       return {
-        skin: lobbySkin, coin: save.materials, diamond: save.diamond, dizhiShards: save.dizhiShards, tiangangShards: save.tiangangShards, dizhiBag: save.dizhiBag, rechargeNeedsPassword: save.rechargeCount >= 1, campaignMax: save.campaignMax, firstLaunch: !save.seenIntro, guideStep: save.skipGuide ? -1 : save.guideStep, energy: save.leverEnergy, energyMax: cap, foilCount: save.foils.length,
+        skin: lobbySkin, coin: save.materials, diamond: save.diamond, dizhiShards: save.dizhiShards, tiangangShards: save.tiangangShards, dizhiBag: save.dizhiBag, rechargeNeedsPassword: save.rechargeCount >= 1, campaignMax: save.campaignMax, firstLaunch: !save.seenIntro, guideStep: save.skipGuide ? -1 : save.guideStep, guideOn: !save.skipGuide, energy: save.leverEnergy, energyMax: cap, foilCount: save.foils.length,
         name: '不翻就赢_07', mainCard: '黑桃A「掷命尖兵」', rankText: `战役 第 ${save.campaignMax} 关 / 共 52`,
         stageLabel: `第 ${save.stage} 关 · 全 52 役 · 终局 Boss【${boss.name}】`,
         archLine, bossLine: `${boss.persona} · 流派【${bossArchName}】— 据其针对布阵`,
@@ -555,7 +555,8 @@ export function mount(container: HTMLElement, shell?: { exit?: () => void }): ()
       onIntroSeen: () => { save.seenIntro = true; if (save.guideStep < 0) save.guideStep = 0; persist(save); },
       onGuideStep: (n) => { save.guideStep = n; persist(save); },
       onGuideDone: () => { save.seenIntro = true; save.guideStep = -1; persist(save); },
-      onReplayIntro: () => { save.seenIntro = false; save.guideStep = 0; save.seen = {}; persist(save); }, // 全量重置引导：开场+大厅引导+战斗 coachmark(seen_*)一起清，从头走一遍（owner 2026-06-21）
+      onReplayIntro: () => { save.seenIntro = false; save.guideStep = 0; save.seen = {}; save.skipGuide = false; persist(save); }, // 全量重置引导：开场+大厅引导+战斗 coachmark(seen_*)一起清·并开启引导，从头走一遍（owner 2026-06-21）
+      onToggleGuide: () => { save.skipGuide = !save.skipGuide; persist(save); }, // 新手引导开/关（默认开·手动关·owner 2026-06-21）
       onExitGame: shell?.exit, // 退出到游戏库（壳层钩子·收进设置菜单·替代右上角浮钮·owner 2026-06-21）
     });
   }
