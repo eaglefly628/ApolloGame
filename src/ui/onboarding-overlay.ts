@@ -20,8 +20,9 @@ export function mountOnboardingOverlay(host: HTMLElement, world: IWorld, anchorR
   layer.style.cssText = 'position:fixed;inset:0;z-index:9999;pointer-events:none';
   host.appendChild(layer);
 
+  const escAttr = (k: string): string => (typeof CSS !== 'undefined' && CSS.escape ? CSS.escape(k) : k.replace(/["\\]/g, '\\$&'));
   const rectOf = (key: string): Rect | null => {
-    const el = anchorRoot.querySelector(`[data-anchor="${CSS.escape(key)}"]`) as HTMLElement | null;
+    const el = anchorRoot.querySelector(`[data-anchor="${escAttr(key)}"]`) as HTMLElement | null;
     if (!el) return null;
     const r = el.getBoundingClientRect();
     return { x: r.left, y: r.top, w: r.width, h: r.height };
