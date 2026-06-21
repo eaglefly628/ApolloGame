@@ -732,7 +732,7 @@ export function mount(container: HTMLElement, shell?: { exit?: () => void }): ()
       if (clashRolling || clashRevealed || !perfClash) return;
       clashRolling = true; clearClashTimers();
       const e = perfClash; const target = Math.round(e.roll * 100);
-      clashRevealed = true; mounted?.update(); // 结果落 DOM（被掷骰浮层盖住·撤层即见）
+      clashRevealed = true; coachDid('roll'); mounted?.update(); syncCoach(); // 结果落 DOM（被掷骰浮层盖住·撤层即见）+ 掷骰引导毕业
       playSfx('select');
       const ov = document.createElement('div'); ov.style.cssText = 'position:fixed;inset:0;z-index:320;display:flex;align-items:center;justify-content:center;pointer-events:none;background:radial-gradient(circle at center,rgba(8,10,15,.55),rgba(6,8,12,.82))';
       ov.innerHTML = `<div style="position:absolute;top:42%;left:50%;font-size:120px;animation:g-die-shake .5s ease-in-out infinite;filter:drop-shadow(0 6px 16px rgba(0,0,0,.7));">🎲</div><div data-roll-num style="position:absolute;top:60%;left:50%;transform:translateX(-50%);font-family:'Silkscreen',monospace;font-size:76px;font-weight:700;color:#e8cd82;text-shadow:0 0 32px rgba(232,205,138,.95),0 4px 18px rgba(0,0,0,.9);">0</div>`;
@@ -816,10 +816,10 @@ export function mount(container: HTMLElement, shell?: { exit?: () => void }): ()
       playPerf(runAiThenContinue);
     };
     const actions: TurnBattleActions = {
-      pickAction: (kind) => { if (busy || tb.active !== 'a') return; if (kind !== 'discard' && tb.actionTaken && tb.actionTaken !== kind) return; selMode = selMode === kind ? null : kind; selHand = -1; gateChance = false; playSfx('select'); }, // 弃牌不互斥：随时可进弃牌模式
+      pickAction: (kind) => { if (busy || tb.active !== 'a') return; if (kind !== 'discard' && tb.actionTaken && tb.actionTaken !== kind) return; selMode = selMode === kind ? null : kind; selHand = -1; gateChance = false; playSfx('select'); syncCoach(); }, // 弃牌不互斥；进「抽」模式 → 引导高亮跟到摸牌钮
       drawFrom: (from) => {
         if (busy || selMode !== 'draw') return;
-        if (drawCard(tb, 'a', from)) { playSfx('draw'); coachDid('draw'); const nc = tb.a.hand[tb.a.hand.length - 1]; log(`我·抽牌(${from === 'poker' ? '扑克' : '天罡'}) -${DRAW_COST}源泉 → ${nc ? cardLabel(nc) : '?'} [剩${tb.a.mana}源泉]`); dealtId = tb.a.hand[tb.a.hand.length - 1]?.id ?? null; const did = dealtId; window.setTimeout(() => { if (dealtId === did) { dealtId = null; if (!perfClash) mounted?.update(); } }, 560); } // 抽到的牌飞入翻面入场·~560ms 后清标记
+        if (drawCard(tb, 'a', from)) { playSfx('draw'); coachDid(from === 'poker' ? 'draw-poker' : 'draw-tengang'); const nc = tb.a.hand[tb.a.hand.length - 1]; log(`我·抽牌(${from === 'poker' ? '扑克' : '天罡'}) -${DRAW_COST}源泉 → ${nc ? cardLabel(nc) : '?'} [剩${tb.a.mana}源泉]`); dealtId = tb.a.hand[tb.a.hand.length - 1]?.id ?? null; const did = dealtId; window.setTimeout(() => { if (dealtId === did) { dealtId = null; if (!perfClash) mounted?.update(); } }, 560); } // 抽到的牌飞入翻面入场·~560ms 后清标记
         else { // 抽不了 → 明确提示原因（owner 2026-06-21：源泉不够要提示「抽不了」）
           const deck = from === 'poker' ? tb.a.pokerDeck : tb.a.tengangDeck;
           playSfx('invalid');
@@ -906,7 +906,20 @@ export function mount(container: HTMLElement, shell?: { exit?: () => void }): ()
     let coachStep: BattleCoachStep | null = nextCoachStep(save.seen, { hasTengang: hasTengangNow() });
     const { world: coachWorld, setStep: setCoachStep } = makeCoachWorld();
     const coach = coachStep ? mountOnboardingOverlay(document.body, coachWorld, stage) : null; // 挂 body（非 root）→ 避开战场缩放/揭幕 transform 让 position:fixed 错位（owner 2026-06-21）
-    syncCoach = (): void => { if (!coach) return; const show = coachStep != null && tb.active === 'a' && tb.winner === 'pending' && perfClash == null; setCoachStep(coachStep, show); coach.update(); };
+    // 抽牌步进入「抽」模式后高亮底部两个摸牌钮（combat-draw-pick）·否则高亮【抽牌】动作钮（combat-draw）。
+    const effectiveStep = (): BattleCoachStep | null => {
+      if (!coachStep) return null;
+      if ((coachStep.on === 'draw-poker' || coachStep.on === 'draw-tengang') && selMode === 'draw') return { ...coachStep, anchor: 'combat-draw-pick' };
+      return coachStep;
+    };
+    syncCoach = (): void => {
+      if (!coach) return;
+      // 掷骰步在对决特写里出（perfClash 在场且未揭晓·此时 active 多为 b/敌方推进结算·故不卡 active）；其余步在玩家可操作回合(active a·非特写)时出。
+      const show = coachStep?.on === 'roll'
+        ? (coachStep != null && tb.winner === 'pending' && perfClash != null && !clashRevealed)
+        : (coachStep != null && tb.active === 'a' && tb.winner === 'pending' && perfClash == null);
+      setCoachStep(effectiveStep(), show); coach.update();
+    };
     coachDid = (on: BattleCoachStep['on']): void => { if (!coachStep || coachStep.on !== on) return; save.seen[coachStep.flag] = true; persist(save); coachStep = nextCoachStep(save.seen, { hasTengang: hasTengangNow() }); syncCoach(); };
     const onCoachResize = (): void => syncCoach();
     if (coach) { syncCoach(); window.addEventListener('resize', onCoachResize); }

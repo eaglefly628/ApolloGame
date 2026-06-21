@@ -5,18 +5,20 @@ import type { Coachmark, Flag } from '@engine/protocol/components.js';
 // 战斗新手引导（甲·owner 2026-06-21·选「为 game-g 接 ECS coachmark 能力」）：用引擎通用 coachmark 能力
 // (REQ-ARCH-COACH) 表达——线性·情境首触·首通即教，seen_* 进 save 看过不再弹。本模块只建「承载引导的小 World」
 // + 步骤数据；驱动(game-g.tsx)按当前 step 置 Flag、玩家做对应操作即推进。纯表现·不进战斗 hash。
-export interface BattleCoachStep { flag: string; anchor: string; text: string; on: 'draw' | 'deploy' | 'endturn' | 'cast'; needsTengang?: boolean }
+export interface BattleCoachStep { flag: string; anchor: string; text: string; on: 'draw' | 'draw-poker' | 'draw-tengang' | 'deploy' | 'endturn' | 'cast' | 'roll'; needsTengang?: boolean }
 
-// 步骤序列（doc28 §三教学序 + owner 2026-06-21 修「放牌断掉」bug）：抽牌 → 结束回合 → 放牌 → 再结束回合(推进/掷命) → 打天罡。
-// 关键修正：原来**放牌打头**，但甲改「按点数收费」后，起手只有 1 源泉、起手 3 张牌可能都 ≥2 费 → **turn1 放不出 → 引导断掉**。
-//   改成 doc28 §三的「先抽牌」：抽牌固定 1 费=起手源泉，**turn1 必可抽**；攒到 turn2 再放（点数小的兵免费/便宜·总能放出）。
-//   动作**同回合互斥**（一回合只选一类·同类无限）→ 抽/放/打天罡之间都隔一个【结束回合】。cast 步仅当手里真有天罡才出（驱动按手牌活检·无则跳过·不卡死）。
+// 步骤序列（doc28 §三 + owner 2026-06-21 重排）：抽天罗→抽扑克→结束 ▸ 打天罡→结束 ▸ 放牌→结束(推进/相遇) ▸ 点🎲掷骰看结果。
+//   动作**同回合互斥**（一回合只选一类·同类无限）：抽天罡+抽扑克同属「抽」可连做；打天罡/放牌各自一回合 → 之间都隔【结束回合】。
+//   掷骰步在掷命对决特写里出（高亮🎲钮）——驱动按 perfClash 在场+未揭晓时才显。
 export const BATTLE_COACH: readonly BattleCoachStep[] = [
-  { flag: 'seen_combat_draw', anchor: 'combat-draw', text: '👉 第一步【抽牌】：花 1 点召唤源泉（右上角源泉）从牌库摸一张兵牌。每回合只能选一类动作（抽/放/打天罡/弃），同类可连做；源泉每回合自动 +1。', on: 'draw' },
-  { flag: 'seen_combat_endturn', anchor: 'combat-end', text: '👉 点【结束回合】：源泉 +1、双方兵线一起推进一格。下回合就能放牌啦。', on: 'endturn' },
-  { flag: 'seen_combat_deploy', anchor: 'combat-deploy', text: '👉 【放牌】：先点一张兵牌、再点一路（上/中/下）部署。按点数花源泉——**先放点数小的兵（2~4 点免费、5~7 点 1 费）**，源泉不够就先放便宜的。放完还能顺手翻一道机关门(箭头)调度兵线。', on: 'deploy' },
-  { flag: 'seen_combat_endturn2', anchor: 'combat-end', text: '👉 再点【结束回合】：兵沿路前进一格，前锋相遇就触发【掷命对决】（比战力算胜率·正面活/反面亡）。', on: 'endturn' },
-  { flag: 'seen_combat_tiangang', anchor: 'combat-cast', text: '👉 手里有天罡时点【打天罡】：施放持续战法、整局为你加成。看明白就毕业啦！', on: 'cast', needsTengang: true },
+  { flag: 'seen_combat_draw_tg', anchor: 'combat-draw', text: '👉 第一步【抽牌】：点【抽牌】，再点【✦摸天罡】——先摸一张天罡战法（持续加成牌）。每回合只能选一类动作，同类可连做；源泉每回合 +1。', on: 'draw-tengang' },
+  { flag: 'seen_combat_draw_pk', anchor: 'combat-draw', text: '👉 再点【🎴摸扑克】——摸一张扑克兵牌（上场打仗用）。抽牌同类可连摸，攒齐再行动。', on: 'draw-poker' },
+  { flag: 'seen_combat_end1', anchor: 'combat-end', text: '👉 点【结束回合】：源泉 +1、双方兵线一起推进一格。下回合换别的动作。', on: 'endturn' },
+  { flag: 'seen_combat_cast', anchor: 'combat-cast', text: '👉 这一轮【打天罡】：施放刚摸到的天罡战法，整局为你加成。', on: 'cast', needsTengang: true },
+  { flag: 'seen_combat_end2', anchor: 'combat-end', text: '👉 再点【结束回合】，进入下一轮。', on: 'endturn' },
+  { flag: 'seen_combat_deploy', anchor: 'combat-deploy', text: '👉 【放牌】：先点一张兵牌、再点一路（上/中/下）部署。按点数花源泉——先放点数小的兵（2~4 免费、5~7 收 1 费）。', on: 'deploy' },
+  { flag: 'seen_combat_end3', anchor: 'combat-end', text: '👉 再点【结束回合】：兵沿路前进，前锋相遇就触发【掷命对决】。', on: 'endturn' },
+  { flag: 'seen_combat_roll', anchor: 'combat-roll', text: '👉 点【🎲掷骰】掷命——看这一场的战斗结果（按胜率掷点·正面活/反面亡）。看明白就毕业啦！', on: 'roll' },
 ];
 
 // 第一条未看过的引导步（全看过 → null）。needsTengang 步仅当手里真有天罡可打时才出（无 → 跳过·不卡死）。
