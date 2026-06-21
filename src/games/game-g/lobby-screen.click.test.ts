@@ -95,56 +95,80 @@ describe('Game G · lobby-screen mountLobby 点击交互（DOM · happy-dom）',
     });
   });
 
-  // ── 2. 皮肤切换 ──
-  describe('皮肤切换（玄铁/锦霞）', () => {
-    it('点击「锦霞」→ data-skin 变 rosy，onSkin 回调触发', () => {
+  // ── 2. 皮肤切换（设置里）──
+  describe('皮肤切换（设置·玄铁/锦霞）', () => {
+    const openSettings = (host: HTMLElement): void => { click(host.querySelector('[data-act="settings"]')); };
+    it('设置里点「锦霞」→ data-skin 变 rosy，onSkin 回调触发', () => {
       const onSkin = vi.fn();
       const host = document.createElement('div');
       mountLobby(host, { getView: makeView, onPlay: vi.fn(), onSkin });
-      const rosyBtn = [...host.querySelectorAll('button')].find((b) => b.textContent?.includes('锦霞'))!;
-      click(rosyBtn);
+      openSettings(host);
+      click(host.querySelector('[data-act="skin"][data-k="rosy"]'));
       expect(host.querySelector('[data-skin]')?.getAttribute('data-skin')).toBe('rosy');
       expect(onSkin).toHaveBeenCalledWith('rosy');
     });
 
-    it('点击「玄铁」后再点「锦霞」→ 切回 onyx', () => {
+    it('点「锦霞」后再点「玄铁」→ 切回 onyx', () => {
       const onSkin = vi.fn();
       const host = document.createElement('div');
       mountLobby(host, { getView: makeView, onPlay: vi.fn(), onSkin });
-      click([...host.querySelectorAll('button')].find((b) => b.textContent?.includes('锦霞'))!);
-      click([...host.querySelectorAll('button')].find((b) => b.textContent?.includes('玄铁'))!);
+      openSettings(host);
+      click(host.querySelector('[data-act="skin"][data-k="rosy"]'));
+      click(host.querySelector('[data-act="skin"][data-k="onyx"]'));
       expect(host.querySelector('[data-skin]')?.getAttribute('data-skin')).toBe('onyx');
       expect(onSkin).toHaveBeenLastCalledWith('onyx');
     });
   });
 
-  // ── 3. 新手指导 overlay ──
-  describe('新手指导 overlay', () => {
-    it('点击「📖 新手指导」→ overlay 出现，含"新手指导·一局怎么打"', () => {
+  // ── 3. 帮助中心（介绍/指导/手册 三合一）──
+  describe('帮助中心 overlay', () => {
+    it('点击顶栏「📚 玩法手册」→ 帮助 overlay 出现，含三 tab', () => {
       const host = document.createElement('div');
       mountLobby(host, { getView: makeView, onPlay: vi.fn() });
-      const tutBtn = [...host.querySelectorAll('button')].find((b) => b.textContent?.includes('新手指导'))!;
-      click(tutBtn);
+      click([...host.querySelectorAll('button')].find((b) => b.textContent?.includes('玩法手册'))!);
       expect(host.querySelector('.tut-ov')).not.toBeNull();
-      expect(host.innerHTML).toContain('新手指导 · 一局怎么打');
+      expect(host.querySelector('[data-act="helpTab"][data-k="intro"]')).not.toBeNull();
+      expect(host.querySelector('[data-act="helpTab"][data-k="tut"]')).not.toBeNull();
+      expect(host.querySelector('[data-act="helpTab"][data-k="manual"]')).not.toBeNull();
     });
 
-    it('点击「明白了，开打」→ overlay 关闭', () => {
+    it('切到「新手指导」tab → 含对局核心要点（掷命对决/先破者胜）', () => {
       const host = document.createElement('div');
       mountLobby(host, { getView: makeView, onPlay: vi.fn() });
-      click([...host.querySelectorAll('button')].find((b) => b.textContent?.includes('新手指导'))!);
-      expect(host.querySelector('.tut-ov')).not.toBeNull(); // 先开
-      click([...host.querySelectorAll('button')].find((b) => b.textContent?.includes('明白了'))!);
-      expect(host.querySelector('.tut-ov')).toBeNull(); // 再关
-    });
-
-    it('新手指导内容包含对局核心要点（对决核/先破者胜/胜率可见）', () => {
-      const host = document.createElement('div');
-      mountLobby(host, { getView: makeView, onPlay: vi.fn() });
-      click([...host.querySelectorAll('button')].find((b) => b.textContent?.includes('新手指导'))!);
+      click([...host.querySelectorAll('button')].find((b) => b.textContent?.includes('玩法手册'))!);
+      click(host.querySelector('[data-act="helpTab"][data-k="tut"]')!);
       expect(host.innerHTML).toContain('对决核');
       expect(host.innerHTML).toContain('先破者胜');
-      expect(host.innerHTML).toContain('胜率可见');
+    });
+
+    it('点击「明白了」→ overlay 关闭', () => {
+      const host = document.createElement('div');
+      mountLobby(host, { getView: makeView, onPlay: vi.fn() });
+      click([...host.querySelectorAll('button')].find((b) => b.textContent?.includes('玩法手册'))!);
+      expect(host.querySelector('.tut-ov')).not.toBeNull();
+      click([...host.querySelectorAll('button')].find((b) => b.textContent?.includes('明白了'))!);
+      expect(host.querySelector('.tut-ov')).toBeNull();
+    });
+  });
+
+  describe('设置 overlay', () => {
+    it('点击顶栏 ⚙ → 设置出现（皮肤/重看引导/重置）', () => {
+      const host = document.createElement('div');
+      mountLobby(host, { getView: makeView, onPlay: vi.fn() });
+      click(host.querySelector('[data-act="settings"]'));
+      expect(host.innerHTML).toContain('⚙ 设置');
+      expect(host.querySelector('[data-act="skin"][data-k="rosy"]')).not.toBeNull();
+      expect(host.querySelector('[data-act="replayIntro"]')).not.toBeNull();
+      expect(host.querySelector('[data-act="reset"]')).not.toBeNull();
+    });
+
+    it('设置里点重置 → onReset 调用', () => {
+      const host = document.createElement('div');
+      const onReset = vi.fn();
+      mountLobby(host, { getView: makeView, onPlay: vi.fn(), onReset });
+      click(host.querySelector('[data-act="settings"]'));
+      click(host.querySelector('[data-act="reset"]'));
+      expect(onReset).toHaveBeenCalled();
     });
   });
 
@@ -341,11 +365,12 @@ describe('Game G · lobby-screen mountLobby 点击交互（DOM · happy-dom）',
       expect(onPlay).toHaveBeenCalledTimes(1);
     });
 
-    it('顶栏「↻」重看 → onReplayIntro + 开场故事重现', () => {
+    it('设置里「↻ 重看」→ onReplayIntro + 开场故事重现', () => {
       const host = document.createElement('div');
       const onReplayIntro = vi.fn();
       mountLobby(host, { getView: () => makeView({ firstLaunch: false, guideStep: -1 }), onPlay: vi.fn(), onReplayIntro });
       expect(host.querySelector('.story-box')).toBeNull(); // 初始无
+      click(host.querySelector('[data-act="settings"]')); // 打开设置
       click(host.querySelector('[data-act="replayIntro"]'));
       expect(onReplayIntro).toHaveBeenCalledTimes(1);
       expect(host.querySelector('.story-box')).not.toBeNull(); // 故事重现
