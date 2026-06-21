@@ -1,8 +1,8 @@
 import { describe, it, expect } from 'vitest';
 import { Engine } from '../../runtime/engine.js';
 import type { Component } from '@engine/core/types.js';
-import type { Transform, RandomSeed, Resource, State, Card3D } from '@engine/protocol/components.js';
-import { buildGameG3DFlip, buildGameGDuel3D, buildGameGMatch, buildGameGArmyMatch, prepareArmies, standardArmy, armyFromFormation, laneEstimates, applyInterventions, applyShadowRevenge, quartermasterEnergy, pickAiFormation, applyTiangangs, tiangangMoraleScale, tiangangLinks, tiangangKeyBuffs, GAME_G_TIANGANGS, TIANGANG_BY_ID, ARCHETYPES, detectArchetype, archetypeMatchup, activeArchetype, applyArchetypeActivation, GAME_G_PLANETS, GAME_G_FOILS, effectiveLives, effectiveLeverCap, effectiveLeverRegen, effectiveTierBonus, applyPlanetArmy, laneHandTier, battleSpec, RUN_BATTLES, RUN_LIVES, BETWEEN_BUFFS, applyBuff, BOSS_ROSTER, bossFor, LEVER_CATALOG, LEVER_START, LEVER_CAP, LEVER_REGEN, FORMATION_PRESETS, PRESET_NAMES, decideFaceUp, cardFace, flipTarget, FLIP_DURATION, FLIP_SPINS, MATCH_REWARD, MARCH_DURATION, type FateCard, type ArmyCard, type Intervention, type BuffTarget } from './blueprint.js';
+import type { Transform, RandomSeed, Resource, State } from '@engine/protocol/components.js';
+import { buildGameG3DFlip, buildGameGDuel3D, buildGameGArmyMatch, prepareArmies, standardArmy, armyFromFormation, laneEstimates, applyInterventions, applyShadowRevenge, quartermasterEnergy, pickAiFormation, applyTiangangs, tiangangMoraleScale, tiangangLinks, tiangangKeyBuffs, GAME_G_TIANGANGS, TIANGANG_BY_ID, ARCHETYPES, detectArchetype, archetypeMatchup, activeArchetype, applyArchetypeActivation, GAME_G_PLANETS, GAME_G_FOILS, effectiveLives, effectiveLeverCap, effectiveLeverRegen, effectiveTierBonus, applyPlanetArmy, laneHandTier, battleSpec, RUN_BATTLES, RUN_LIVES, BETWEEN_BUFFS, applyBuff, BOSS_ROSTER, bossFor, LEVER_CATALOG, LEVER_START, LEVER_CAP, LEVER_REGEN, FORMATION_PRESETS, PRESET_NAMES, decideFaceUp, cardFace, flipTarget, FLIP_DURATION, FLIP_SPINS, MARCH_DURATION, type FateCard, type ArmyCard, type Intervention, type BuffTarget } from './blueprint.js';
 
 const get = <T extends Component>(e: Engine, id: string, type: string): T | undefined => e.world.getComponent<T>(id, type);
 const rotOf = (e: Engine, id = 'card'): number => get<Transform>(e, id, 'Transform')!.rotation;
@@ -96,72 +96,6 @@ describe('Game G · 胜负规则（属性加权种子硬币，确定性）', () 
   });
 });
 
-describe('Game G · MVP-1 一局收口（掷命→数存活→判胜负→结算）', () => {
-  const teamA: FateCard[] = [{ id: 'a1', favor: 90 }, { id: 'a2', favor: 80 }, { id: 'a3', favor: 70 }];
-  const teamB: FateCard[] = [{ id: 'b1', favor: 30 }, { id: 'b2', favor: 20 }, { id: 'b3', favor: 10 }];
-
-  // 同 seed 回放规则算期望（顺序与装配一致：先 A 后 B）。
-  const expectMatch = (seed: number): { aAlive: number; bAlive: number; winner: string } => {
-    const rng = seedOf(seed);
-    const aAlive = teamA.filter((c) => decideFaceUp(c.favor, rng)).length;
-    const bAlive = teamB.filter((c) => decideFaceUp(c.favor, rng)).length;
-    const winner = aAlive > bAlive ? 'a' : aAlive < bAlive ? 'b' : 'draw';
-    return { aAlive, bAlive, winner };
-  };
-
-  const runMatch = (seed: number): Engine => {
-    const e = new Engine({ tickRate: 60 });
-    e.load(buildGameGMatch(teamA, teamB, seed));
-    for (let i = 0; i < FLIP_DURATION + 10; i++) e.world.tick();
-    return e;
-  };
-
-  it('数存活 = 各队落定正面数（group-count 按 队位|ALIVE 计）', () => {
-    const seed = 7;
-    const exp = expectMatch(seed);
-    const e = runMatch(seed);
-    expect(get<Resource>(e, 'res_a', 'Resource')!.current).toBe(exp.aAlive);
-    expect(get<Resource>(e, 'res_b', 'Resource')!.current).toBe(exp.bAlive);
-  });
-
-  it('判胜负：翻牌演完按存活数比 → winner 状态与规则回放一致', () => {
-    for (const seed of [1, 7, 42, 99, 123]) {
-      const exp = expectMatch(seed);
-      const e = runMatch(seed);
-      expect(get<State>(e, 'winner', 'State')!.current).toBe(exp.winner);
-    }
-  });
-
-  it('结算：我方(A)胜 → 材料 +reward；否则不掉材', () => {
-    for (const seed of [1, 7, 42, 99, 123]) {
-      const exp = expectMatch(seed);
-      const e = runMatch(seed);
-      expect(get<Resource>(e, 'res_mats', 'Resource')!.current).toBe(exp.winner === 'a' ? MATCH_REWARD : 0);
-    }
-  });
-
-  it('结算前(翻牌中) winner 仍 pending —— 演完才定', () => {
-    const e = new Engine({ tickRate: 60 });
-    e.load(buildGameGMatch(teamA, teamB, 7));
-    for (let i = 0; i < FLIP_DURATION - 5; i++) e.world.tick(); // 还没到结算门
-    expect(get<State>(e, 'winner', 'State')!.current).toBe('pending');
-    for (let i = 0; i < 10; i++) e.world.tick(); // 过门
-    expect(get<State>(e, 'winner', 'State')!.current).not.toBe('pending');
-  });
-
-  it('确定性：同牌+同 seed 两局逐拍 hash 一致', () => {
-    const e1 = new Engine({ tickRate: 60 });
-    const e2 = new Engine({ tickRate: 60 });
-    e1.load(buildGameGMatch(teamA, teamB, 7));
-    e2.load(buildGameGMatch(teamA, teamB, 7));
-    for (let i = 0; i < FLIP_DURATION + 10; i++) {
-      e1.world.tick();
-      e2.world.tick();
-      expect(e1.hash()).toBe(e2.hash());
-    }
-  });
-});
-
 describe('Game G · 体量与牌阵布局（撞击观感的数据底座）', () => {
   it('cardFace：序号 → 标准 52 牌点数/花色（循环）', () => {
     expect(cardFace(0)).toEqual({ rank: 'A', suit: 'S' });
@@ -169,20 +103,6 @@ describe('Game G · 体量与牌阵布局（撞击观感的数据底座）', () 
     expect(cardFace(13)).toEqual({ rank: 'A', suit: 'H' });
     expect(cardFace(51)).toEqual({ rank: 'K', suit: 'C' });
     expect(cardFace(52)).toEqual(cardFace(0)); // 满 52 循环
-  });
-
-  it('配对布局：A[i]/B[i] 同 pairKey、side 各为 a/b（渲染器据此让两牌相撞）', () => {
-    const A: FateCard[] = [{ id: 'a0', favor: 60 }, { id: 'a1', favor: 60 }];
-    const B: FateCard[] = [{ id: 'b0', favor: 40 }, { id: 'b1', favor: 40 }];
-    const e = new Engine({ tickRate: 60 });
-    e.load(buildGameGMatch(A, B, 1));
-    const ca0 = get<Card3D>(e, 'a0', 'Card3D')!;
-    const cb1 = get<Card3D>(e, 'b1', 'Card3D')!;
-    expect(ca0.side).toBe('a');
-    expect(ca0.pairKey).toBe(0);
-    expect(cb1.side).toBe('b');
-    expect(cb1.pairKey).toBe(1);
-    expect(ca0.rank).toBe('A'); // pairKey 0 → A♠
   });
 
   it('军阵：54/方·三路×18·军衔=点数（standardArmy 结构）', () => {
@@ -249,24 +169,6 @@ describe('Game G · 体量与牌阵布局（撞击观感的数据底座）', () 
       e2.world.tick();
       expect(e1.hash()).toBe(e2.hash());
     }
-  });
-
-  it('体量：52v52 一局照样按存活数定胜负（与规则回放一致）', () => {
-    const mk = (p: string, base: number): FateCard[] => Array.from({ length: 52 }, (_, i) => ({ id: `${p}${i}`, favor: base + (i % 12) * 3 }));
-    const A = mk('a', 50);
-    const B = mk('b', 28);
-    const seed = 7;
-    const rng: RandomSeed = { type: 'RandomSeed', seed, sequence: 0 };
-    const aAlive = A.filter((c) => decideFaceUp(c.favor, rng)).length;
-    const bAlive = B.filter((c) => decideFaceUp(c.favor, rng)).length;
-    const winner = aAlive > bAlive ? 'a' : aAlive < bAlive ? 'b' : 'draw';
-
-    const e = new Engine({ tickRate: 60 });
-    e.load(buildGameGMatch(A, B, seed));
-    for (let i = 0; i < FLIP_DURATION + 10; i++) e.world.tick();
-    expect(get<Resource>(e, 'res_a', 'Resource')!.current).toBe(aAlive);
-    expect(get<Resource>(e, 'res_b', 'Resource')!.current).toBe(bAlive);
-    expect(get<State>(e, 'winner', 'State')!.current).toBe(winner);
   });
 });
 

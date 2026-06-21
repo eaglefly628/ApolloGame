@@ -137,20 +137,7 @@ const MATCH_REWARD = 10; // 我方(A)胜 → 材料 +N
 const A_FRONT = 0xeab308; // 我方牌面暖金
 const B_FRONT = 0x38bdf8; // 敌方牌面冷青
 const CARD_BACK = 0x334155; // 反面石板
-// 牌阵网格（2D px）：每个 cell 一对（A 左 / B 右），跃向 cell 中心相撞。
-const CELL_W = 200;
-const CELL_H = 220;
-const PAIR_DX = 66; // 对内 A/B 左右分开
-
-function gridCols(pairs: number): number {
-  return Math.max(1, Math.ceil(Math.sqrt(pairs * 1.7))); // 略宽于正方，贴 16:9 台面
-}
-function cellCenter(i: number, cols: number, total: number): { cx: number; cy: number } {
-  const rows = Math.ceil(total / cols);
-  const col = i % cols;
-  const row = Math.floor(i / cols);
-  return { cx: (col - (cols - 1) / 2) * CELL_W, cy: (row - (rows - 1) / 2) * CELL_H };
-}
+const PAIR_DX = 66; // 对内 A/B 左右分开（cell 中心相撞）
 
 const MATCH_CAPS = [
   transformCapability,
@@ -163,72 +150,6 @@ const MATCH_CAPS = [
   eventWhenCapability,
   effectApplyCapability,
 ];
-
-/**
- * 一局 NvN 掷命（MVP-1）：teamA(我) vs teamB(敌)。装配顺序 teamA→teamB 先把胜负全定下来（PRNG 序列确定、
- * 与既有测试回放一致），再把 A[i]/B[i] 配对铺进牌阵网格（撞击观感由渲染器据 side/pairKey 编排）。
- * group-count 数两队存活 → Timer 到点(翻牌演完)→ 比存活数 → 写 winner 状态 + 我方胜给材料。
- */
-export function buildGameGMatch(teamA: FateCard[], teamB: FateCard[], seed: number = 1, reward: number = MATCH_REWARD): WorldBlueprint {
-  const rng: RandomSeed = { type: 'RandomSeed', seed, sequence: 0 };
-  const entities: Record<string, EntityBlueprint> = {};
-
-  // ① 先定胜负（顺序 A 全部 → B 全部，PRNG 序列确定、测试可回放）。
-  const facesA = teamA.map((c) => decideFaceUp(c.favor, rng));
-  const facesB = teamB.map((c) => decideFaceUp(c.favor, rng));
-
-  // ② 配对铺阵：A[i]/B[i] 同 cell（A 左 B 右、同 pairKey）→ 渲染器让两牌跃向 cell 中心相撞。
-  const pairs = Math.max(teamA.length, teamB.length);
-  const cols = gridCols(pairs);
-  const place = (c: FateCard, faceUp: boolean, team: number, side: 'a' | 'b', pairKey: number, front: number): void => {
-    const { cx, cy } = cellCenter(pairKey, cols, pairs);
-    const f = cardFace(pairKey);
-    const ent = flipCardEntity({
-      faceUp,
-      x: c.x ?? cx + (side === 'a' ? -PAIR_DX : PAIR_DX),
-      y: c.y ?? cy,
-      spins: c.spins,
-      frontTint: c.frontTint ?? front,
-      backTint: c.backTint ?? CARD_BACK,
-      side,
-      pairKey,
-      rank: c.rank ?? f.rank,
-      suit: c.suit ?? f.suit,
-    });
-    ent.Tag = { flags: team | (faceUp ? ALIVE : 0) }; // 正面=活 → 计入该队存活
-    entities[c.id] = ent;
-  };
-  teamA.forEach((c, i) => place(c, facesA[i], TEAM_A, 'a', i, A_FRONT));
-  teamB.forEach((c, i) => place(c, facesB[i], TEAM_B, 'b', i, B_FRONT));
-
-  // ③ 数存活（含齐 队位|ALIVE）→ 两个数值事实
-  entities.gc_a = { GroupCount: { countResource: 'a_alive', requiredTag: TEAM_A | ALIVE } };
-  entities.gc_b = { GroupCount: { countResource: 'b_alive', requiredTag: TEAM_B | ALIVE } };
-  entities.res_a = { Resource: { id: 'a_alive', current: 0, min: 0, max: 999 } };
-  entities.res_b = { Resource: { id: 'b_alive', current: 0, min: 0, max: 999 } };
-  entities.res_mats = { Resource: { id: 'mats', current: 0, min: 0, max: 99999 } };
-  entities.winner = { State: { fsmId: 'winner', current: 'pending' } };
-  entities.clock = { Timer: { id: 'match_clock', elapsed: 0, duration: FLIP_DURATION, loop: false } };
-
-  // ④ 结算门：Timer 到点(翻牌演完)那拍，按存活数 vsResource 比 → 三选一定胜负（edge，互斥各一发）。
-  const gate = (cmp: string, sig: string, winState: string, mats: number): void => {
-    const when = {
-      kind: 'and',
-      of: [
-        { kind: 'timer', id: 'match_clock', cmp: 'gte', value: FLIP_DURATION },
-        { kind: 'resource', id: 'a_alive', cmp, value: 0, vsResource: 'b_alive' },
-      ],
-    };
-    entities[`when_${sig}`] = { EventWhen: { signal: sig, when, mode: 'edge', armed: false } };
-    entities[`fx_${sig}_st`] = { Effect: { onSignal: sig, kind: 'set-state', targetId: 'winner', value: winState } };
-    if (mats > 0) entities[`fx_${sig}_mat`] = { Effect: { onSignal: sig, kind: 'modify-resource', targetId: 'mats', value: mats } };
-  };
-  gate('gt', 'a_wins', 'a', reward); // a_alive > b_alive → 我胜，掉材
-  gate('lt', 'b_wins', 'b', 0); // a_alive < b_alive → 敌胜
-  gate('eq', 'draw', 'draw', 0); // 平
-
-  return { capabilities: MATCH_CAPS, entities };
-}
 
 export { FLIP_DURATION, FLIP_SPINS, flipTarget, MATCH_REWARD };
 
