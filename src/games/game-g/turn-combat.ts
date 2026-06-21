@@ -22,7 +22,8 @@ export const B_GOAL = 0;         // 敌兵越过此格(→−1) → 我大本营
 // ── 回合经济（doc24 §四·真机调；各 cost 暂定 1）──
 export const TURN_HOME_BLOOD = 3;
 export const MANA_START = 1, MANA_PER_TURN = 1;
-export const DRAW_COST = 1, DEPLOY_COST = 0, CAST_COST = 1; // 抽/打天罡 花召唤源泉；放牌免费·只要有牌可一直放(owner 2026-06-20)；弃免费
+export const DRAW_COST = 1, DEPLOY_COST = 0, CAST_COST = 1; // 抽/打天罡 花召唤源泉；放牌按 rank 收费(契约B·写在卡 cost 上)
+export const DISCARD_REFUND = 0.5; // 弃牌返还 0.5 召唤源泉（owner 2026-06-21·源泉自此为半整数粒度）
 export const OPENING_HAND = 3; // 起手摸 N（doc24 §六/七 待定）
 export const HAND_MAX = 8; // 手牌上限（天罡·广纳 handMaxAdd 抬高）
 const MORALE_PTS = 2, ROUT_PTS = 4; // 同 live-combat/doc06：主将在→下属 +战力 / 主将亡→溃散 −战力
@@ -44,7 +45,7 @@ export const GATES: readonly Gate[] = [
 ];
 
 // 场上兵：占一格 slot；续航 staminaLeft 打光退场（同 live-combat 经济）。speed=每回合推进格数(默认1·缺省视作1·向后兼容旧字面量)。
-export interface TurnUnit { id: string; rank: string; suit: string; points: number; buff: number; general: boolean; stamina: number; staminaLeft: number; slot: number; speed?: number }
+export interface TurnUnit { id: string; rank: string; suit: string; points: number; buff: number; general: boolean; stamina: number; staminaLeft: number; slot: number; speed?: number; cost?: number } // cost=部署所花源泉(战胜回库返还一半用)
 // 行军速度（owner 2026-06-21）：大王/小王(★/王/JOKER) 与 老K 三类高阶兵·疾行 2 格/回合；其余 1 格。纯 rank 派生·确定性。
 const FAST_RANKS = new Set(['★', '王', 'JOKER', 'K']);
 export function unitSpeed(rank: string): number { return FAST_RANKS.has(rank) ? 2 : 1; }
@@ -142,16 +143,16 @@ export function deployUnit(b: TurnBattle, side: 'a' | 'b', handIdx: number, lane
   if (!card || card.kind !== 'poker' || lane < 0 || lane > 2) return false;
   const cost = card.cost ?? DEPLOY_COST; // 放牌按牌点数收费（契约B·建库时已写在卡上·2-4免费/5-7=1/8-10=2/JQKA=3）
   if (!canAct(b, side, 'deploy', cost)) return false;
-  const L = b.lanes[lane]; const col = colOf(L, side);
-  // 放牌区=贴自家大本营 3 格(home→中线)：新兵落最靠家的空格(owner 2026-06-20·从城堡那一竖列入场)·满则拒。
-  const occ = new Set(col.map((u) => u.slot));
+  const L = b.lanes[lane]; const col = colOf(L, side); const foeCol = colOf(L, side === 'a' ? 'b' : 'a');
+  // 放牌区=贴自家大本营 3 格(home→中线)：新兵落最靠家的空格(owner 2026-06-20)。**不可落在已占格——敌我皆不可**(owner 2026-06-21)。
+  const occ = new Set([...col, ...foeCol].map((u) => u.slot));
   const zone = side === 'a' ? [A_DEPLOY_SLOT, A_DEPLOY_SLOT + 1, A_DEPLOY_SLOT + 2] : [B_DEPLOY_SLOT, B_DEPLOY_SLOT - 1, B_DEPLOY_SLOT - 2];
   const slot = zone.find((s) => !occ.has(s));
-  if (slot === undefined) return false; // 放牌区(贴家3格)已满 → 拒绝
+  if (slot === undefined) return false; // 放牌区(贴家3格)被占满(含敌兵深入) → 拒绝
   sd.hand.splice(handIdx, 1); sd.mana -= cost; b.actionTaken = 'deploy';
   const stamBonus = sd.tengangA.stamPlus + (isFaceRank(card.rank) ? sd.tengangA.stamFaces : 0); // 不屈/老兵（双侧·Boss 施法亦得）
   const stam = cardStamina(card.rank) + stamBonus;
-  col.push({ id: card.id, rank: card.rank, suit: card.suit, points: cardPoints(card.rank), buff: card.buff, general: card.general, stamina: stam, staminaLeft: stam, slot, speed: unitSpeed(card.rank) });
+  col.push({ id: card.id, rank: card.rank, suit: card.suit, points: cardPoints(card.rank), buff: card.buff, general: card.general, stamina: stam, staminaLeft: stam, slot, speed: unitSpeed(card.rank), cost: card.cost });
   col.sort((x, y) => (side === 'a' ? y.slot - x.slot : x.slot - y.slot)); // 维持 [0]=前锋(贴敌·最高/最低 slot)
   if (gateToggle >= 0 && gateToggle < GATES.length) b.gatesOpen[gateToggle] = !b.gatesOpen[gateToggle]; // 放牌附赠：开/关一道捷径门（doc24 §三·可不用）
   onPlayDraw(sd); // 川流：放牌后免费补抽
@@ -168,13 +169,12 @@ export function castTengang(b: TurnBattle, side: 'a' | 'b', handIdx: number): bo
   return true; // tengangA 重算：caller 做 sd.tengangA = aggregateTengang(sd.castIds)（避免 turn-combat ← blueprint 环依赖）
 }
 
-// ④ 弃牌：清手牌第 handIdx 张，免费·无限（互斥类别=discard，但不耗召唤源泉）。
+// ④ 弃牌（owner 2026-06-21）：**不互斥**——不锁 actionTaken，弃完还能放牌/抽/打天罡；每弃 1 张**返还 0.5 源泉**。
 export function discardCard(b: TurnBattle, side: 'a' | 'b', handIdx: number): boolean {
   if (b.winner !== 'pending' || b.active !== side) return false;
-  if (b.actionTaken !== null && b.actionTaken !== 'discard') return false;
   const sd = sideOf(b, side);
   if (handIdx < 0 || handIdx >= sd.hand.length) return false;
-  sd.hand.splice(handIdx, 1); b.actionTaken = 'discard';
+  sd.hand.splice(handIdx, 1); sd.mana += DISCARD_REFUND; // 返 0.5·不动 actionTaken(不互斥)
   return true;
 }
 
@@ -339,8 +339,15 @@ function resolveClash(b: TurnBattle, li: number): void {
     const relay = sideOf(b, loser).tengangA.relay; // 薪火：一张阵亡 → 同路下一张接棒续航 +N
     const next = colOf(lane, loser)[0]; if (relay > 0 && next) next.staminaLeft += relay;
   }
-  const wq = colOf(lane, aWins ? 'a' : 'b'); const wf = wq[0]; // 赢家续航 −1·尽则退场
-  if (wf) { wf.staminaLeft -= 1; if (wf.staminaLeft <= 0) { wq.shift(); if (aWins) lane.spentA += 1; else lane.spentB += 1; } }
+  // 战胜牌「光荣回牌库」+ 返还一半部署花费（owner 2026-06-21·替原"续航−1·尽则退场"）：胜者下场入库、可再抽。
+  const winSide: 'a' | 'b' = aWins ? 'a' : 'b';
+  const wq = colOf(lane, winSide); const wf = wq[0];
+  if (wf) {
+    wq.shift(); if (aWins) lane.spentA += 1; else lane.spentB += 1; // 离场（记控路·同原退场口径）
+    const wsd = sideOf(b, winSide);
+    wsd.pokerDeck.push({ kind: 'poker', id: wf.id, rank: wf.rank, suit: wf.suit, general: wf.general, buff: wf.buff, cost: wf.cost }); // 回牌库
+    wsd.mana += (wf.cost ?? 0) / 2; // 返还一半花费（半整数）
+  }
   b.a.mana += b.a.tengangA.clashElixir; b.b.mana += b.b.tengangA.clashElixir; // 战潮：每遭遇返召唤源泉（喂经济）
 }
 

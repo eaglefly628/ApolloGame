@@ -31,18 +31,17 @@ describe('Game G · turn-combat（doc24 单机回合制 · A0 重构）', () => 
     expect(b.a.hand.length).toBe(1);
   });
 
-  it('互斥：本回合只能一类动作（抽后不能放）；弃牌免费且互斥', () => {
+  it('互斥：抽/放/打天罡 三类互斥（抽后不能放）；弃牌不互斥 + 返 0.5 源泉（owner 2026-06-21）', () => {
     const b = initTurnBattle({ seed: 1, a: { pokerDeck: [poker('p0', '7')] } });
     b.a.mana = 5; b.a.hand.push(poker('h0', 'K'));
     expect(drawCard(b, 'a', 'poker')).toBe(true);   // 选了"抽"
-    expect(deployUnit(b, 'a', 1, 0)).toBe(false);   // 同回合不能再"放"
-    // 弃牌：另起一局验免费
-    const c = initTurnBattle({ seed: 1 }); c.a.hand.push(poker('h0', 'K'), poker('h1', '3'));
-    const manaBefore = c.a.mana;
+    expect(deployUnit(b, 'a', 1, 0)).toBe(false);   // 同回合不能再"放"(互斥)
+    // 弃牌：不互斥·返 0.5 源泉·弃完还能抽
+    const c = initTurnBattle({ seed: 1, a: { pokerDeck: [poker('p1', '8')] } }); c.a.hand.push(poker('h0', 'K'), poker('h1', '3')); c.a.mana = 1;
     expect(discardCard(c, 'a', 0)).toBe(true);
-    expect(c.a.mana).toBe(manaBefore); // 弃牌不耗召唤源泉
-    expect(c.a.hand.length).toBe(1); expect(c.actionTaken).toBe('discard');
-    expect(drawCard(c, 'a', 'poker')).toBe(false);  // 已锁 discard → 不能抽
+    expect(c.a.mana).toBe(1.5);                     // 返 0.5 源泉
+    expect(c.a.hand.length).toBe(1); expect(c.actionTaken).toBe(null); // 不锁动作(不互斥)
+    expect(drawCard(c, 'a', 'poker')).toBe(true);   // 弃完还能抽(不互斥)
   });
 
   it('放牌：扑克兵上场到放牌区(贴家)·免费·有牌可一直放；放牌可顺手翻门(闭↔开)', () => {
@@ -123,7 +122,8 @@ describe('Game G · turn-combat（doc24 单机回合制 · A0 重构）', () => 
     expect(b.lastClash?.tie).toBe('points');
     expect(b.lastClash?.aWins).toBe(false);
     expect(b.lanes[0].a.length).toBe(0); // A 输 → 阵亡
-    expect(b.lanes[0].b.length).toBe(1);
+    expect(b.lanes[0].b.length).toBe(0); // B 胜 → 光荣回牌库(下场·owner 2026-06-21)
+    expect(b.b.pokerDeck.some((c) => c.id === 'b0')).toBe(true); // B 回到牌库·可再抽
   });
 
   it('判负：大本营血归 0 → 该方负', () => {
@@ -165,5 +165,30 @@ describe('Game G · turn-combat（doc24 单机回合制 · A0 重构）', () => 
     const b = initTurnBattle({ seed: 1 }); b.a.mana = 2; b.a.hand.push(tg('hufu'));
     expect(castTengang(b, 'a', 0)).toBe(true);
     expect(b.a.castIds).toEqual(['hufu']); expect(b.a.mana).toBe(1); expect(b.actionTaken).toBe('cast');
+  });
+
+  it('放置不可落在已占格（敌我皆不可·owner 2026-06-21）', () => {
+    const b = initTurnBattle({ seed: 1 });
+    b.lanes[0].b.push(unit('e', '7', A_DEPLOY_SLOT)); // 敌兵深入我放牌区 slot 0
+    b.a.hand.push(poker('h0', '7'));
+    expect(deployUnit(b, 'a', 0, 0)).toBe(true);
+    expect(b.lanes[0].a[0].slot).toBe(A_DEPLOY_SLOT + 1); // 跳过被敌占的 0 → 落 1
+    // 放牌区 3 格全被敌占 → 拒绝
+    const c = initTurnBattle({ seed: 1 });
+    c.lanes[0].b.push(unit('e0', '7', A_DEPLOY_SLOT), unit('e1', '7', A_DEPLOY_SLOT + 1), unit('e2', '7', A_DEPLOY_SLOT + 2));
+    c.a.hand.push(poker('h0', '7'));
+    expect(deployUnit(c, 'a', 0, 0)).toBe(false); // 无空格 → 拒
+  });
+
+  it('战胜牌光荣回牌库 + 返还一半花费（owner 2026-06-21）', () => {
+    const b = initTurnBattle({ seed: 1 }); b.a.mana = 0;
+    const w = unit('w', 'A', A_DEPLOY_SLOT); w.cost = 3; // A=14 点·费 3
+    b.lanes[0].a.push(w);
+    b.lanes[0].b.push(unit('lz', '2', A_DEPLOY_SLOT + 1, 12)); // 2+12=pEff14 → 平 → 点数 A(14)>2 → A 必胜(确定)
+    endTurn(b); endTurn(b); // 行动阶段掷命
+    expect(b.lastClash?.aWins).toBe(true);
+    expect(b.lanes[0].a.length).toBe(0);                       // 胜者下场
+    expect(b.a.pokerDeck.some((c) => c.id === 'w')).toBe(true); // 回牌库·可再抽
+    expect(b.a.mana).toBe(3 / 2 + 1);                          // 返还一半(1.5) + 新一轮放置(+1) = 2.5
   });
 });
