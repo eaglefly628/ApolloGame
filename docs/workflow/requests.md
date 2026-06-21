@@ -456,3 +456,11 @@ game-f 报「多数需新引擎能力」。Lead 实测：**三个已点名技能
 > **派甲**：① `DishaFx` 加 `curseEveryTurns`/`curseMode`；② 推进/AI 回合按 `turn % everyTurns === 0` 触发（仿 `batteryLane`），用 `b.rng` 选牌（确定性·进 turnHash）；③ `aggregateDisha` 填；④ design G 把数据写进 disha-pack（关5 项羽/终章·**不配关3/4——它们实测已过难·见 doc27 §3.5**）。
 > **配套（已覆盖·提醒甲）**：「每 Boss 招牌地煞=被动·掷命时全屏亮『XX 发作』」= 已在 `REQ-G-战斗逻辑批次·敌用地煞全屏通知`，本需求复用之。
 > **★ 关1-5 完整数据草案**（16写死牌组 + 地煞重设值 + 每 Boss 留场P/牌力偏置/家血/目标WR）= **`src/games/game-g/design/boss-config-1-5.md`**（design G 16v16 原型实测·甲已实装留场硬币）。甲接入清单见该档 §七：① loader 读 16牌组+bossFavorBias；② 地煞改值（§六表·关2/3/4 实测过强→调弱）；③ stayPMul 每 Boss 留场覆写；④ 诅咒（本需求）。接好后 design G 重跑 simulate-balance.ts 定稿。
+
+---
+
+### REQ-G-Boss牌面板 · [2026-06-21] · design G → 甲（战斗屏域） · Game G · status: open · 优先级: P2（明牌可破核心体验·非阻塞战斗逻辑） · 类型: 表现层（数据已在·纯渲染）
+
+> **owner 2026-06-21**：「Boss 5 张天罡也要这样去抽和摸；我们应该能看到他的手牌和天罡牌，但现在没地方看。」+「在他地煞牌下面放一个微小的牌组，手点上去就放大看具体哪几张·是缩小 scale 过的小牌。」
+> **评判（design G）**：纯**表现层**——数据全在（`TurnBattle.b`：`pokerDeck/tengangDeck/hand/castIds` + 关卡 16牌组+5天罡明牌）；**无引擎/数据缺口**，只差战斗屏渲染（甲地盘）。机制侧已对：Boss 天罡同玩家从 `tengangDeck` **抽/摸再打**（`drawCard('b','tengang')`→`castTengang`·花源泉·非免费）→ 面板只"看牌"不改机制。
+> **派甲（doc24 §九 已补规范）**：① 顶部 Boss 牌面板：3 地煞（明牌·在途）**之下**放 scale 过的 **mini-deck**（16扑克+5天罡 loadout·明牌 counter-pick 靶）；② 点/悬停 **放大**成可读网格看清具体哪几张；③ Boss **手牌+已打天罡可见**（数量+内容·明牌哲学）。乙不碰（战斗屏=甲）。
