@@ -3,7 +3,7 @@ import { describe, it, expect } from 'vitest';
 import { cardPoints } from './clash-resolve.js';
 import { cardStamina } from './live-combat.js';
 import { aggregateDisha, stageDisha, STAGE_DISHA, NO_DISHA } from './disha.js';
-import { initTurnBattle, endTurn, aiTakeTurn, type TurnUnit, type TurnBattle } from './turn-combat.js';
+import { initTurnBattle, endTurn, aiTakeTurn, clashOdds, type TurnUnit, type TurnBattle } from './turn-combat.js';
 
 const u = (id: string, rank: string, slot: number, o: { buff?: number; general?: boolean } = {}): TurnUnit =>
   ({ id, rank, suit: 'S', points: cardPoints(rank), buff: o.buff ?? 0, general: o.general ?? false, stamina: cardStamina(rank), staminaLeft: cardStamina(rank), slot });
@@ -11,7 +11,7 @@ const u = (id: string, rank: string, slot: number, o: { buff?: number; general?:
 // 跑一场遭遇掷命（玩家 K@4 vs Boss 9@5·上路相邻）→ 返回 lastClash 玩家胜率（地煞越狠·胜率越低）。
 const clashWr = (disha: string[], place: (b: TurnBattle) => void = (b) => { b.lanes[0].a.push(u('a0', 'K', 4)); b.lanes[0].b.push(u('b0', '9', 5)); }): number => {
   const b = initTurnBattle({ seed: 5, disha: place === undefined ? [] : disha });
-  place(b); endTurn(b); // 玩家推进 → 与 Boss 前锋相邻 → 掷命，wr 已含地煞调整
+  place(b); endTurn(b); endTurn(b); // 双方放置完 → 行动阶段两军逼近 → 相邻掷命，wr 已含地煞调整
   return b.lastClash?.winrate ?? -1;
 };
 
@@ -53,17 +53,19 @@ describe('Game G · 地煞（doc23 §八 关1-5 · 15 张 · 甲实装）', () =
 
   it('🟡 九战九捷：Boss 连胜累积 +5%/胜（封顶 +30%）→ streak 越高玩家越难', () => {
     const place = (x: TurnBattle): void => { x.lanes[0].a.push(u('a0', 'K', 4)); x.lanes[0].b.push(u('b0', '9', 5)); };
-    const at = (streak: number): number => { const b = initTurnBattle({ seed: 5, disha: ['winstreak'] }); place(b); b.bossWinStreak = streak; endTurn(b); return b.lastClash!.winrate; };
+    const at = (streak: number): number => { const b = initTurnBattle({ seed: 5, disha: ['winstreak'] }); place(b); b.bossWinStreak = streak; endTurn(b); endTurn(b); return b.lastClash!.winrate; };
     expect(at(4)).toBeLessThan(at(0));
     // Boss 胜一场 → streak +1
     const b = initTurnBattle({ seed: 9 }); b.lanes[0].a.push(u('a0', '2', 4)); b.lanes[0].b.push(u('b0', 'A', 5, { buff: 20 })); // Boss 碾压必胜
-    endTurn(b); expect(b.lastClash!.aWins).toBe(false); expect(b.bossWinStreak).toBe(1);
+    endTurn(b); endTurn(b); expect(b.lastClash!.aWins).toBe(false); expect(b.bossWinStreak).toBe(1);
   });
 
   it('🟡 锤砧：你前锋被 Boss 兵左右(slot±1)夹住 → 你掷命 −15%', () => {
-    const flanked = (x: TurnBattle): void => { x.lanes[0].a.push(u('a0', 'K', 4)); x.lanes[0].b.push(u('b0', '9', 5), u('b1', '9', 3)); }; // boss 在 3 和 5 夹住 a@4
-    const oneSide = (x: TurnBattle): void => { x.lanes[0].a.push(u('a0', 'K', 4)); x.lanes[0].b.push(u('b0', '9', 5)); };
-    expect(clashWr(['hammeranvil'], flanked)).toBeLessThan(clashWr(['hammeranvil'], oneSide));
+    // 夹击=瞬态阵位（同步推进模型里后方敌兵会走开），直接用纯 clashOdds 验当前前锋的 bossEdge·不走推进。
+    const odds = (place: (b: TurnBattle) => void): number => { const b = initTurnBattle({ seed: 5, disha: ['hammeranvil'] }); place(b); return clashOdds(b, 0) ?? -1; };
+    const flanked = odds((x) => { x.lanes[0].a.push(u('a0', 'K', 4)); x.lanes[0].b.push(u('b0', '9', 5), u('b1', '9', 3)); }); // boss 在 3 和 5 夹住 a@4
+    const oneSide = odds((x) => { x.lanes[0].a.push(u('a0', 'K', 4)); x.lanes[0].b.push(u('b0', '9', 5)); });
+    expect(flanked).toBeLessThan(oneSide);
   });
 
   it('🟡 大炮兵：每 3 回合压你兵最多的一路；被压路掷命 −15%', () => {
@@ -79,7 +81,7 @@ describe('Game G · 地煞（doc23 §八 关1-5 · 15 张 · 甲实装）', () =
   it('🟡 长枪方阵·先手：全平局判 Boss 胜（他先手）', () => {
     const b = initTurnBattle({ seed: 5, disha: ['sarissa'] });
     b.lanes[0].a.push(u('a0', '9', 4)); b.lanes[0].b.push(u('b0', '9', 5)); // 同点同续航 → 全平
-    endTurn(b);
+    endTurn(b); endTurn(b);
     expect(b.lastClash!.tie).toBe('roll'); expect(b.lastClash!.aWins).toBe(false); // 先手 → Boss 胜
   });
 
@@ -87,7 +89,7 @@ describe('Game G · 地煞（doc23 §八 关1-5 · 15 张 · 甲实装）', () =
     const b = initTurnBattle({ seed: 2, disha: ['laststand'] });
     b.lanes[0].a.push(u('a0', 'A', 4, { buff: 24 })); // 玩家碾压
     b.lanes[0].b.push(u('b0', '3', 5, { general: true })); // Boss 弱主将
-    endTurn(b); // 玩家胜 → 主将本应亡，但死战不退 → 残喘退格
+    endTurn(b); endTurn(b); // 行动阶段：玩家胜 → 主将本应亡，但死战不退 → 残喘退格
     expect(b.bossLastStandUsed).toBe(true);
     expect(b.lanes[0].b.some((x) => x.id === 'b0')).toBe(true); // 仍在场
     expect(b.lanes[0].bGenDead).toBe(false); // 未判主将亡

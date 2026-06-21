@@ -622,7 +622,7 @@ export function mount(container: HTMLElement): () => void {
           freshIds = new Map(); let fi = 0;
           const newFoe: string[] = [];
           for (const L of tb.lanes) for (const u of L.b) if (!before.has(u.id)) { freshIds.set(u.id, fi); const d = fi * 150; window.setTimeout(() => playSfx('deploy'), d); fi++; newFoe.push(`${u.rank}${SUITNM2[u.suit] ?? ''}→${LANE_NM[tb.lanes.indexOf(L)] ?? '?'}`); }
-          log(`敌·行动：部署[${newFoe.join('、') || '无'}] → 结束回合 → 推进阶段`);
+          log(`敌·行动：部署[${newFoe.join('、') || '无'}] → 结束放置 → ▶行动阶段（两线同时推进·相遇掷命）`);
           drainClashes();
           mounted?.update();
           window.setTimeout(() => { justMovedIds = new Set(); freshIds = new Map(); if (!perfClash) mounted?.update(); }, Math.max(550, fi * 150 + 380)); // 错峰落子播完再清标记（掷命特写中不重渲·防 3D 飞入重启）
@@ -632,7 +632,7 @@ export function mount(container: HTMLElement): () => void {
     };
     const commitEndTurn = (): void => {
       if (busy || tb.winner !== 'pending' || tb.active !== 'a') return;
-      busy = true; selMode = null; selHand = -1; gateChance = false; playSfx('endTurn'); coachDid('endturn'); log('我·结束回合 → 推进阶段（兵线前移·相遇才掷命）');
+      busy = true; selMode = null; selHand = -1; gateChance = false; playSfx('endTurn'); coachDid('endturn'); log('我·结束放置回合（无战斗）→ 待敌方放置 → 行动阶段两线同时推进');
       const before = snapSlots();
       endTurn(tb);
       justMovedIds = diffMoved(before);

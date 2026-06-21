@@ -344,45 +344,48 @@ function resolveClash(b: TurnBattle, li: number): void {
   b.a.mana += b.a.tengangA.clashElixir; b.b.mana += b.b.tengangA.clashElixir; // 战潮：每遭遇返召唤源泉（喂经济）
 }
 
-// 推进阶段（doc24 §七·只推 active 方自己的兵）：①开门分流(下一步该格己兵按门向过门·替直进) → ②各路前锋向敌家推一格 → 相邻敌前锋则掷命 / 无敌则抵敌家 chip 血。
-function advanceSide(b: TurnBattle, side: 'a' | 'b'): void {
-  const dir = side === 'a' ? 1 : -1;
-  // ① 捷径门分流（owner 2026-06-20 上下通路梯子）：active 方每道开门 → 源格己兵过门(替本回合直进)；过门兵记入 diverted 不再直进。
-  const diverted = new Set<string>();
-  for (let gi = 0; gi < GATES.length; gi++) { if (GATES[gi].side !== side) continue; const id = gateMove(b, gi); if (id) diverted.add(id); }
-  // ② 直进
-  for (let li = 0; li < 3; li++) {
-    const lane = b.lanes[li]; const own = colOf(lane, side); const foe = colOf(lane, side === 'a' ? 'b' : 'a');
-    if (own.length === 0) continue;
-    if (foe.length > 0) {
-      const foeFront = foe[0];
-      // own 各兵 +dir，保 slot 间距 1·前锋停在敌前锋相邻格(不重叠)；已过门兵留原地。
-      for (let i = 0; i < own.length; i++) {
-        if (diverted.has(own[i].id)) continue; // 本回合已过门 → 不再直进
-        let t = own[i].slot + dir * (own[i].speed ?? 1); // 疾行兵(★/王/K)一步 2 格；前锋仍被下方夹逼卡在敌前一格/越界判定兜底
-        if (i > 0) { const ahead = own[i - 1].slot; t = dir > 0 ? Math.min(t, ahead - 1) : Math.max(t, ahead + 1); }
-        else { const limit = foeFront.slot - dir; t = dir > 0 ? Math.min(t, limit) : Math.max(t, limit); } // 停在敌前锋前一格
-        own[i].slot = t;
-      }
-      if (Math.abs(own[0].slot - foeFront.slot) <= 1) resolveClash(b, li); // 相邻 → 遭遇掷命
-    } else {
-      // 无敌 → 向敌家推；越过敌区末格 → 敌大本营 −1·该兵退场。
-      for (let i = 0; i < own.length; i++) {
-        if (diverted.has(own[i].id)) continue;
-        let t = own[i].slot + dir * (own[i].speed ?? 1); // 疾行兵(★/王/K)一步 2 格；前锋仍被下方夹逼卡在敌前一格/越界判定兜底
-        if (i > 0) { const ahead = own[i - 1].slot; t = dir > 0 ? Math.min(t, ahead - 1) : Math.max(t, ahead + 1); }
-        own[i].slot = t;
-      }
-      const goal = side === 'a' ? A_GOAL : B_GOAL;
-      for (let i = own.length - 1; i >= 0; i--) {
-        const past = dir > 0 ? own[i].slot > goal : own[i].slot < goal;
-        if (!past) continue;
-        own.splice(i, 1);
-        if (side === 'a') b.homeB = Math.max(0, b.homeB - (1 + b.a.tengangA.siegeChip)); // 攻城锤：破敌家多 chip
-        else if (b.homeAShieldUsed < b.a.tengangA.siegeDefend) b.homeAShieldUsed += 1; // 死守：我家首破免疫(吸收·不掉血)
-        else b.homeA = Math.max(0, b.homeA - 1);
-      }
-    }
+// 单列向敌推进（有敌前锋）：各兵 +dir×speed(疾行2格)·保 slot 间距 1·前锋停在敌前锋相邻格(不重叠)；已过门兵留原地。
+function advanceColumnVsFoe(own: TurnUnit[], dir: number, foeFrontSlot: number, diverted: Set<string>): void {
+  for (let i = 0; i < own.length; i++) {
+    if (diverted.has(own[i].id)) continue; // 本回合已过门 → 不再直进
+    let t = own[i].slot + dir * (own[i].speed ?? 1);
+    if (i > 0) { const ahead = own[i - 1].slot; t = dir > 0 ? Math.min(t, ahead - 1) : Math.max(t, ahead + 1); }
+    else { const limit = foeFrontSlot - dir; t = dir > 0 ? Math.min(t, limit) : Math.max(t, limit); } // 停在敌前锋前一格
+    own[i].slot = t;
+  }
+}
+// 单列向敌家推进（本路无敌）：越过敌区末格 → 敌大本营 −1(攻城锤多 chip)·该兵退场（死守可吸我家首破）。
+function advanceColumnToBase(b: TurnBattle, own: TurnUnit[], dir: number, side: 'a' | 'b', diverted: Set<string>): void {
+  for (let i = 0; i < own.length; i++) {
+    if (diverted.has(own[i].id)) continue;
+    let t = own[i].slot + dir * (own[i].speed ?? 1);
+    if (i > 0) { const ahead = own[i - 1].slot; t = dir > 0 ? Math.min(t, ahead - 1) : Math.max(t, ahead + 1); }
+    own[i].slot = t;
+  }
+  const goal = side === 'a' ? A_GOAL : B_GOAL;
+  for (let i = own.length - 1; i >= 0; i--) {
+    const past = dir > 0 ? own[i].slot > goal : own[i].slot < goal;
+    if (!past) continue;
+    own.splice(i, 1);
+    if (side === 'a') b.homeB = Math.max(0, b.homeB - (1 + b.a.tengangA.siegeChip)); // 攻城锤：破敌家多 chip
+    else if (b.homeAShieldUsed < b.a.tengangA.siegeDefend) b.homeAShieldUsed += 1; // 死守：我家首破免疫(吸收·不掉血)
+    else b.homeA = Math.max(0, b.homeA - 1);
+  }
+}
+// 行动阶段（owner 2026-06-21 同步推进模型·替原"只推 active 方"·PvP 地基）：①双方捷径门分流 →
+// ②三路两军兵线**同时**向对家推进·前锋相遇才掷命/无敌则抵家 chip。放置回合不调用此函数（放置无 Action）。
+function advanceBoth(b: TurnBattle): void {
+  const diverted = new Set<string>(); // ① 双方门都处理（过门兵记入·不再直进）
+  for (let gi = 0; gi < GATES.length; gi++) { const id = gateMove(b, gi); if (id) diverted.add(id); }
+  for (let li = 0; li < 3; li++) { // ② 两线同时推进；前锋相遇才掷命
+    const lane = b.lanes[li]; const A = lane.a, B = lane.b;
+    if (A.length && B.length) {
+      const bFrontPre = B[0].slot; // 用推进前的敌前锋夹我方·再用我方新前锋夹敌方（确定性·同步逼近）
+      advanceColumnVsFoe(A, 1, bFrontPre, diverted);
+      advanceColumnVsFoe(B, -1, A[0].slot, diverted);
+      if (Math.abs(A[0].slot - B[0].slot) <= 1) resolveClash(b, li); // 相邻 → 遭遇掷命
+    } else if (A.length) advanceColumnToBase(b, A, 1, 'a', diverted);
+    else if (B.length) advanceColumnToBase(b, B, -1, 'b', diverted);
   }
 }
 
@@ -392,18 +395,24 @@ function checkWinner(b: TurnBattle): void {
   else if (b.homeA <= 0) b.winner = 'b';
 }
 
-// 结束当前回合（doc24 §七.3）：active 方推进一格 + 遭遇结算 → 判负 → 切换回合方、+1 召唤源泉、回合数 +1、解锁动作。
+// 结束当前放置回合（owner 2026-06-21 同步推进模型·PvP 地基）：**放置回合无 Action(战斗)**——
+// 我方结束→敌方放置回合(+源泉)；敌方结束→**行动阶段**(两军兵线同时推进·前锋相遇才掷命)→判负→回我方放置、回合数+1。
 export function endTurn(b: TurnBattle): void {
   if (b.winner !== 'pending') return;
-  advanceSide(b, b.active);
-  checkWinner(b);
-  if (b.winner !== 'pending') return;
-  b.active = b.active === 'a' ? 'b' : 'a';
-  const sd = sideOf(b, b.active);
-  sd.mana += MANA_PER_TURN; // 回合开始 +1 召唤源泉（doc24 §二.1）
-  if (b.active === 'b' && b.dishaB.bonusMana > 0) sd.mana += b.dishaB.bonusMana; // 地煞·大军压境/机动调度：Boss 多铺(免费多动)
-  b.actionTaken = null;     // 新回合解锁互斥动作
-  b.turn += 1;
+  if (b.active === 'a') {
+    b.active = 'b'; // 我方放置完 → 敌方放置回合（不推进·无战斗）
+    b.b.mana += MANA_PER_TURN; // 回合开始 +1 召唤源泉
+    if (b.dishaB.bonusMana > 0) b.b.mana += b.dishaB.bonusMana; // 地煞·大军压境/机动调度：Boss 多铺(免费多动)
+    b.actionTaken = null;
+  } else {
+    advanceBoth(b); // 敌方放置完 → 行动阶段：两军同时推进 + 相遇掷命
+    checkWinner(b);
+    if (b.winner !== 'pending') return;
+    b.active = 'a'; // 下一轮回到我方放置回合
+    b.a.mana += MANA_PER_TURN;
+    b.actionTaken = null;
+    b.turn += 1;
+  }
 }
 
 // ── Boss 通用 utility AI（doc27 §八·甲一次写好·零 per-boss 代码·性格全在 aiProfile 数据）──

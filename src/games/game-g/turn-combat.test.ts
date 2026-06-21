@@ -82,23 +82,26 @@ describe('Game G · turn-combat（doc24 单机回合制 · A0 重构）', () => 
     const b = initTurnBattle({ seed: 1 }); // 默认全闭
     // GATES[2]：中路(1) slot3 → 上路(0) slot4。源格放一兵 + 开门 → endTurn 推进时过门。
     b.lanes[1].a.push(unit('m0', '7', 3));
-    endTurn(b); // 门闭 → 不过门，正常直进
+    endTurn(b); endTurn(b); // 走完放置 → 行动阶段；门闭 → 不过门，正常直进
     expect(b.lanes[1].a.some((u) => u.id === 'm0')).toBe(true); // 还在中路
     const c = initTurnBattle({ seed: 1 });
     c.lanes[1].a.push(unit('m0', '7', 3));
     expect(toggleGate(c, 2)).toBe(true);             // 开 GATES[2]
-    endTurn(c);
+    endTurn(c); endTurn(c);                          // 行动阶段过门
     expect(c.lanes[1].a.length).toBe(0);             // 离开中路
     expect(c.lanes[0].a.some((u) => u.id === 'm0' && u.slot === 4)).toBe(true); // 过门抵上路 slot4
   });
 
-  it('endTurn：active 方推进自己兵一格 + 切换 + 下一方 +1 召唤源泉', () => {
+  it('放置回合无战斗 → 行动阶段两军同时推进（owner 2026-06-21 同步推进模型·PvP 地基）', () => {
     const b = initTurnBattle({ seed: 1 });
     b.lanes[0].a.push(unit('a0', '7', A_DEPLOY_SLOT)); // 我方兵在部署格
-    endTurn(b);
-    expect(b.lanes[0].a[0].slot).toBe(A_DEPLOY_SLOT + 1); // 向敌家推一格
-    expect(b.active).toBe('b'); expect(b.b.mana).toBe(1); // 后手开局 +1
-    expect(b.turn).toBe(2);
+    endTurn(b); // 我方结束放置 → 敌方放置回合（不推进·无战斗）
+    expect(b.active).toBe('b'); expect(b.b.mana).toBe(1); // 切敌方·后手 +1 源泉
+    expect(b.lanes[0].a[0].slot).toBe(A_DEPLOY_SLOT); // 放置回合兵未动
+    expect(b.turn).toBe(1); // 尚未进下一轮
+    endTurn(b); // 敌方结束放置 → 行动阶段：两军同时推进
+    expect(b.lanes[0].a[0].slot).toBe(A_DEPLOY_SLOT + 1); // 行动阶段才推进一格
+    expect(b.active).toBe('a'); expect(b.turn).toBe(2); // 回我方放置·回合数 +1
   });
 
   it('无敌路推进到底 → 敌大本营 −1 血、该兵退场', () => {
@@ -115,7 +118,7 @@ describe('Game G · turn-combat（doc24 单机回合制 · A0 重构）', () => 
     // A: 5 点 +9 buff = pEff 14；B: K(13) +1 buff = pEff 14 → 平 → 点数大者(K 13 > 5)胜 → A 阵亡。
     b.lanes[0].a.push(unit('a0', '5', A_DEPLOY_SLOT, 9));
     b.lanes[0].b.push(unit('b0', 'K', A_DEPLOY_SLOT + 2, 1)); // 敌前锋 2 格外
-    endTurn(b); // A 推进 → 与 B 相邻 → 掷命
+    endTurn(b); endTurn(b); // 行动阶段：两军逼近 → 相邻 → 掷命
     expect(b.clashSeq).toBe(1);
     expect(b.lastClash?.tie).toBe('points');
     expect(b.lastClash?.aWins).toBe(false);

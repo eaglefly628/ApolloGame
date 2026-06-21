@@ -14,7 +14,7 @@ describe('Game G · 天罡回合制接搁浅维度（morale/stamina/draw/siege·
     const b = initTurnBattle({ seed: 5 }); b.a.tengangA = { ...NO_TENGANG, revenge: 14 };
     b.lanes[0].aGenDead = true; // 主将已亡
     b.lanes[0].a = [unit('a0', '9', 4)]; b.lanes[0].b = [unit('b0', '9', 5)];
-    endTurn(b);
+    endTurn(b); endTurn(b); // 行动阶段一场遭遇
     expect(b.lastClash?.a.morale).toBe(14); // 余部暴怒(非 −ROUT)
   });
 
@@ -22,7 +22,7 @@ describe('Game G · 天罡回合制接搁浅维度（morale/stamina/draw/siege·
     const b = initTurnBattle({ seed: 5 }); b.a.tengangA = { ...NO_TENGANG, noRout: 1 };
     b.lanes[0].aGenDead = true;
     b.lanes[0].a = [unit('a0', '9', 4)]; b.lanes[0].b = [unit('b0', '9', 5)];
-    endTurn(b);
+    endTurn(b); endTurn(b); // 行动阶段一场遭遇
     expect(b.lastClash?.a.morale).toBe(0); // 不溃
   });
 
@@ -30,7 +30,7 @@ describe('Game G · 天罡回合制接搁浅维度（morale/stamina/draw/siege·
     const b = initTurnBattle({ seed: 1 }); b.a.tengangA = { ...NO_TENGANG, relay: 2 };
     b.lanes[0].a = [unit('a0', '2', 4), unit('a1', '9', 3)]; // 弱前锋 + 后备
     b.lanes[0].b = [unit('b0', 'A', 5, 20)];                  // 碾压敌 → 我前锋必死
-    endTurn(b);
+    endTurn(b); endTurn(b); // 行动阶段一场遭遇
     expect(b.lanes[0].a.some((u) => u.id === 'a0')).toBe(false);   // 前锋阵亡
     const back = b.lanes[0].a.find((u) => u.id === 'a1');
     expect(back?.staminaLeft).toBe(cardStamina('9') + 2);         // 接棒 +2
@@ -39,8 +39,8 @@ describe('Game G · 天罡回合制接搁浅维度（morale/stamina/draw/siege·
   it('战潮(clashElixir)：每遭遇掷命 → 返 1 召唤源泉', () => {
     const b = initTurnBattle({ seed: 5 }); b.a.tengangA = { ...NO_TENGANG, clashElixir: 1 }; b.a.mana = 0;
     b.lanes[0].a = [unit('a0', '9', 4)]; b.lanes[0].b = [unit('b0', '9', 5)];
-    endTurn(b); // 一场遭遇
-    expect(b.a.mana).toBe(1);
+    endTurn(b); endTurn(b); // 行动阶段一场遭遇 → 进下一轮我方放置
+    expect(b.a.mana).toBe(2); // 战潮返 1 + 新一轮放置回合 +1（无战潮则只 1·此处验返还）
   });
 
   it('川流(onPlay)：放牌后免费补抽 1 张', () => {
@@ -72,7 +72,7 @@ describe('Game G · 天罡回合制接搁浅维度（morale/stamina/draw/siege·
   it('攻城锤(siegeChip)：我兵破敌大本营 → 多 chip 1（共 −2）', () => {
     const b = initTurnBattle({ seed: 5 }); b.a.tengangA = { ...NO_TENGANG, siegeChip: 1 };
     b.lanes[0].a = [unit('a0', '7', A_GOAL)]; // 我兵已抵敌家末格
-    endTurn(b); // 越线破敌家 → −2
+    endTurn(b); endTurn(b); // 行动阶段：越线破敌家 → −2
     expect(b.homeB).toBe(b.homeMax - 2);
   });
 });

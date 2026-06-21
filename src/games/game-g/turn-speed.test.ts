@@ -14,11 +14,11 @@ describe('Game G · 行军速度（owner 2026-06-21）', () => {
   it('空路推进：K 一回合走 2 格、普通牌(7) 走 1 格', () => {
     const b = initTurnBattle({ seed: 1 });
     giveHand(b, 'K'); expect(deployUnit(b, 'a', 0, 0)).toBe(true); // 上路·落部署区 slot 0
-    endTurn(b); // side a 推进一拍
+    endTurn(b); endTurn(b); // 走完双方放置 → 行动阶段推进
     expect(b.lanes[0].a[0].slot).toBe(2); // 0 → 2（疾行）
 
     const c = initTurnBattle({ seed: 1 });
-    giveHand(c, '7'); deployUnit(c, 'a', 0, 0); endTurn(c);
+    giveHand(c, '7'); deployUnit(c, 'a', 0, 0); endTurn(c); endTurn(c);
     expect(c.lanes[0].a[0].slot).toBe(1); // 0 → 1（常速）
   });
 
@@ -26,7 +26,7 @@ describe('Game G · 行军速度（owner 2026-06-21）', () => {
     const b = initTurnBattle({ seed: 1 });
     b.lanes[0].b.push({ id: 'e', rank: '9', suit: 'S', points: cardPoints('9'), buff: 0, general: false, stamina: 3, staminaLeft: 3, slot: 3 }); // 敌兵深入到我半区 slot 3
     giveHand(b, 'K'); deployUnit(b, 'a', 0, 0); // 我 K 落 slot 0·speed 2
-    endTurn(b);
+    endTurn(b); endTurn(b); // 行动阶段：两军同时推进
     expect(b.lastClash).not.toBeNull(); // 疾行贴上敌前锋 → 触发掷命
     // 无论谁胜，场上不会出现我兵与敌兵同格(越位重叠)
     const occ = new Map<number, number>();
