@@ -29,7 +29,7 @@
   - B2 ✅ **「✨一键自动构筑」凑 16 张扑克**（owner 2026-06-21 改 13→16·文案"16 张"**正确**·非 bug）。
   - B3 ✅ 切「⚡天罡战法」页 → B4 ✅「✨一键配置天罡」→ B5 ✅ 回大厅。
 **C · 教学关（关 0 · 可玩）** ⏭ **owner 2026-06-21：先跳过（这版不做·暂缓）**。脚本留 §三、后续再接；当前直接进关1（列奥尼达=最易 ★·配玩法手册足够上手）。
-**D · 赛后领赠送 + 商城抽一发** ✅ **owner 2026-06-21：要做（派乙·§五）**：进关1 前引导一步——领 Demo 赠送的**钻石+金币** → 高亮「🛒 商城」**抽一发**（出天罡/地支·体验开包 + 演示碎片兑换/镶嵌）→ 摸到"打→赚→抽卡→变强"闭环（doc25 §四）。**🔑 充值/Demo 密码 = 红桃 + 黑桃（♥♠）**（owner 2026-06-21·替代旧占位 `RECHARGE_PASSWORD`·乙改）。
+**D · 赛后领赠送 + 商城抽一发** ✅ **owner 2026-06-21：要做（派乙·脚本详 §六）**：进关1 前引导几步——领 Demo 赠送的**钻石+金币** → 高亮「🛒 商城」**抽一发**（**首抽地支**·体验开包 + 接镶嵌叙事·见 §六）→ 摸到"打→赚→抽卡→变强"闭环（doc25 §四）。**🔑 充值/Demo 密码 = 红桃 + 黑桃（♥♠）**（owner 2026-06-21·替代旧占位 `RECHARGE_PASSWORD`·乙改）。
 **E · 出征关 1 · 温泉关** ✅：高亮「出征」→ 进关1 列奥尼达，解封第一缕英雄之魂。
 
 > **完整顺序（本版）**：开场故事 → A 手册 → B 配牌组(16+5·一键) → ⏭C 教学关(暂跳过) → **D 领赠送+商城抽一发**(要补·派乙) → E 出征关1。
@@ -67,16 +67,20 @@
 |---|---|
 | `shop` | 顶栏「🛒 商城」按钮（`data-act="shop"`）|
 | `shop-gacha` | 商城里「🎴 抽卡」标签（`tabBtn('gacha')`·`data-act="shopTab" data-k="gacha"`）|
-| `gacha-tiangang` | 天罡卡池「单抽」按钮（`data-act="gacha" data-k="tiangang:1:<pay>"`·乙选赠送货币能负担的 pay）|
+| `gacha-dizhi` | **地支**卡池「单抽」按钮（`data-act="gacha" data-k="dizhi:1:<pay>"`·乙选赠送货币能负担的 pay）|
+| `shop-close` | 商城「← 关闭」（`data-act="recharge-close"`）|
+
+> ⚠️ **首抽抽地支、不抽天罡（design G 复查 2026-06-21）**：开局 `ownedTiangangs` 已含全部 stage-1 解锁天罡 → **抽天罡只会出重复→碎片（无新卡·首抽体验差）**；而 `dizhiOwned` 仅 {子丑寅卯}=4/12 → **抽地支必有新生肖**、且接「改造坊镶嵌」叙事。故引导首抽 = 地支单抽。
 
 **追加的 `GUIDE_COACH` 步骤**（接现有 schema `{anchor,text,advanceAct,advanceK?,placement}`）：
 ```
-{ anchor:'shop',          text:'🎁 开局送了你 💎6+🪙120！点「🛒 商城」抽一发，体验开包。', advanceAct:'shop',   placement:'bottom' },
-{ anchor:'shop-gacha',    text:'点「🎴 抽卡」页。',                                  advanceAct:'shopTab', advanceK:'gacha', placement:'bottom' },
-{ anchor:'gacha-tiangang',text:'点「单抽」抽一张天罡——花赠送的货币、不花真钱。',        advanceAct:'gacha',   advanceK:'tiangang:1:<pay>', placement:'top' },
+{ anchor:'shop',       text:'🎁 开局送了你 💎6+🪙120！点「🛒 商城」抽一发，体验开包。', advanceAct:'shop',    placement:'bottom' },
+{ anchor:'shop-gacha', text:'点「🎴 抽卡」页。',                                   advanceAct:'shopTab', advanceK:'gacha', placement:'bottom' },
+{ anchor:'gacha-dizhi',text:'点地支池「单抽」抽一只生肖——花赠送货币、不花真钱。',      advanceAct:'gacha',   advanceK:'dizhi:1:<pay>', placement:'top' },
+{ anchor:'shop-close', text:'抽好了！关掉商城去打第一战。',                          advanceAct:'recharge-close', placement:'bottom' },
 ```
-- 抽完 → **开包演出**（现有 `gachaReveal` overlay·`reveal-close` 收下）自动播，无需引导步；收下后商城关、回大厅 → 接现有 **⑦ 出征关1**。
-- 旁白尾（收下时附一句）：「抽到的天罡去『改造坊』配进战库、地支去『改造坊』镶嵌附魔。」（点到即止·不强拉进改造坊·避免引导过长）。
+- 抽完 → **开包演出**（现有 `gachaReveal` overlay·`reveal-close` 收下）自动播，无需引导步；**收下后商城浮层仍在** → 上面第 4 步高亮「关闭商城」(`recharge-close`) → 回大厅 → 接现有 **⑦ 出征关1**（play 锚点这时才露出来·别让商城浮层挡住出征按钮）。
+- 旁白尾（收下时附一句）：「抽到的地支去『改造坊』镶到英雄牌上附魔（天罡同理配进战库）。」（点到即止·不强拉进改造坊·避免引导过长）。
 - ⏭ **教学关那步仍跳过**（直接出征关1）。
 
 ## 五、派单（owner 2026-06-21 最终）

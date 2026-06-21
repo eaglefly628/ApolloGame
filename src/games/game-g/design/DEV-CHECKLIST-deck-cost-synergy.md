@@ -11,7 +11,7 @@
 - **一键自动构筑** + **每张牌画费用角标**。
 
 ## 1. 契约（甲乙解耦 · 三条）
-- **契约 A · 牌组库存（13 选）** ⚠️最大件：`save` 每个牌组新增 `pokerPicks: string[]`（长度 13·卡 id 如 `'7S'`），从 52 收藏池选。**乙写**（构筑屏选牌）/ **甲读**（喂 pokerDeck）。养成（`save.inlays`/`dizhiOwned`/favor）仍按卡 id 挂。**迁移**：老 `save.deck:number[](52 favor)` 保留为收藏池 favor 源；新增 picks，缺省=自动构筑一副。
+- **契约 A · 牌组库存（16 选）** ⚠️最大件：`save` 每个牌组新增 `pokerPicks: string[]`（长度 16·卡 id 如 `'7S'`），从 52 收藏池选。**乙写**（构筑屏选牌）/ **甲读**（喂 pokerDeck）。养成（`save.inlays`/`dizhiOwned`/favor）仍按卡 id 挂。**迁移**：老 `save.deck:number[](52 favor)` 保留为收藏池 favor 源；新增 picks，缺省=自动构筑一副。
 - **契约 B · `deployCost(rank): number`**：turn-combat 导出纯函数（查 4 档表）。**甲实现+用**（deployUnit/canAct）/ **乙读**（牌面画费用角标）。
 - **契约 C · 基础连携**：在 turn-combat clash 内 base pass 算（甲）；`lastClash`/lane 暴露同点/同花成线信息 → **乙读**（战斗内亮连线）。
 
@@ -20,7 +20,7 @@
 |---|---|---|---|---|
 | 甲1 | 放牌费用 | `turn-combat.ts` `DEPLOY_COST`→`deployCost(rank)` · 接 `deployUnit`/`canAct` | 常量 0 → 查 4 档表（点2-4=0/5-7=1/8-10=2/JQKA=3·读 cardPoints(rank)）；`canAct('deploy', deployCost(card.rank))` | 低费可放/源泉不足不可放/turn1 只放得起 0-1 费 |
 | 甲2 | 基础连携 base 化 | `turn-combat.ts` L216-217（现 `fx.powerSameSuit`/`comboPair`/`comboTrips` 天罡门控） | 改：**无条件先加 base**（`COMBO_PAIR/TRIPS`·同点 ≥2/≥3；`SUIT_PER×(同花数−1)` 封顶 `SUIT_CAP`）；天罡（双锋/鼎立/同花魁/双锋印）**在 base 上叠加放大**。值读 doc14 §十 | 无天罡也吃 base 连携（路内对子/三条/同花各档加成 + 同点同花可叠 + 封顶） |
-| 甲3 | 13 张喂入 | `game-g.tsx` `prepareArmies`/`toPoker` 喂 `initTurnBattle({a:{pokerDeck}})` | pokerDeck 由 `save.pokerPicks`（13 张·按卡 id 取 rank/suit/favor/inlay）折，**非整副 52** | 牌库=13 张·确定性·养成 favor 正确带入 |
+| 甲3 | 16 张喂入 | `game-g.tsx` `prepareArmies`/`toPoker` 喂 `initTurnBattle({a:{pokerDeck}})` | pokerDeck 由 `save.pokerPicks`（16 张·按卡 id 取 rank/suit/favor/inlay）折，**非整副 52** | 牌库=16 张·确定性·养成 favor 正确带入 |
 | 甲4 | 连携信息暴露 | `turn-combat.ts` `lastClash`/lane 态 | 在 clash 态标该路同点/同花成线的牌（供乙亮线·纯表现位·不进 hash） | 出帧/字段断言 |
 
 ## 3. 乙（菜单）任务
