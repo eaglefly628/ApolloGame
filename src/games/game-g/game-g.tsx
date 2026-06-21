@@ -493,7 +493,7 @@ export function mount(container: HTMLElement): () => void {
     let gateChance = false;            // 放牌附赠：放完一张牌 → 可翻一道机关门(一次)·用掉/换动作即失效(doc24 §三·owner 2026-06-20)
     let notice: string | null = null; let noticeTimer = 0; // 临时提示 toast
     let drained = 0; const perfQueue: ClashEvent[] = []; let perfClash: ClashEvent | null = null; let busy = false; let perfResume: (() => void) | null = null;
-    let justMovedIds = new Set<string>(); let thinkTimer = 0; let thinkEl: HTMLElement | null = null; let settingsOpen = false;
+    let justMovedIds = new Set<string>(); let freshIds = new Map<string, number>(); let thinkTimer = 0; let thinkEl: HTMLElement | null = null; let settingsOpen = false;
     const tgName = (id: string): string => TIANGANG_BY_ID.get(id)?.name ?? id;
     const tgDesc = (id: string): string => TIANGANG_BY_ID.get(id)?.text ?? '持续战法·打出后整场生效'; // 磨砂浮层：天罡效果文案
     // 捕捉所有上场单位的位置（lane*9+slot 编码）
@@ -517,7 +517,7 @@ export function mount(container: HTMLElement): () => void {
       thinkTimer = window.setTimeout(() => { if (thinkEl) { thinkEl.remove(); thinkEl = null; } onDone(); }, ms);
     };
     const flash = (msg: string): void => { notice = msg; mounted?.update(); if (noticeTimer) clearTimeout(noticeTimer); noticeTimer = window.setTimeout(() => { notice = null; mounted?.update(); }, 1700); };
-    const view = (): TurnBattleView => buildTurnBattleView(tb, { theme, tengangName: tgName, tengangDesc: tgDesc, selMode, selHand, clash: perfClash ? clashToTurnView(perfClash) : null, bossName: aiName, sha: shaView, gatesLive: gateChance, notice, movedIds: justMovedIds, battleLabel, sfxOn: isSfxOn(), settingsOpen });
+    const view = (): TurnBattleView => buildTurnBattleView(tb, { theme, tengangName: tgName, tengangDesc: tgDesc, selMode, selHand, clash: perfClash ? clashToTurnView(perfClash) : null, bossName: aiName, sha: shaView, gatesLive: gateChance, notice, movedIds: justMovedIds, freshIds, battleLabel, sfxOn: isSfxOn(), settingsOpen });
     let mounted: { update: () => void; destroy: () => void } | null = null;
 
     const drainClashes = (): void => { for (const ev of tb.clashLog.slice(drained)) perfQueue.push(ev); drained = tb.clashLog.length; };
@@ -536,9 +536,12 @@ export function mount(container: HTMLElement): () => void {
           const before = snapSlots();
           aiTakeTurn(tb, aggregateTengang); // Boss utility AI（画像驱动·施法即重算 tengangA 生效）
           justMovedIds = diffMoved(before);
+          // 新部署的敌兵（before 没有的 id）→ 逐张落子 g-drop 错峰 + 叭叭叭部署音（owner 2026-06-21）
+          freshIds = new Map(); let fi = 0;
+          for (const L of tb.lanes) for (const u of L.b) if (!before.has(u.id)) { freshIds.set(u.id, fi); const d = fi * 150; window.setTimeout(() => playSfx('deploy'), d); fi++; }
           drainClashes();
           mounted?.update();
-          window.setTimeout(() => { justMovedIds = new Set(); mounted?.update(); }, 550);
+          window.setTimeout(() => { justMovedIds = new Set(); freshIds = new Map(); mounted?.update(); }, Math.max(550, fi * 150 + 380)); // 错峰落子播完再清标记
           playPerf(() => showBanner('我方回合', 1100, finishTurnSeq));
         });
       });
