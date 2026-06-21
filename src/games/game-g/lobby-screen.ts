@@ -4,7 +4,7 @@
 // 纯表现"固定解释器"：只渲染 view + 抛 data-act 回调，零 gameplay 计算。CSS 全 scope 在 .ggl-root 下。
 
 import { GI, tiangangIcon } from './icons.js';
-import { HERO_CARDS, DIZHI_ZODIACS, DIZHI_TRINES, EARTH_FIENDS, STAGE_CAMPAIGN, STORY_OPENING, type StageCampaign, type StoryBeat } from './blueprint.js';
+import { HERO_CARDS, DIZHI_ZODIACS, DIZHI_TRINES, DIZHI_PAIRS, EARTH_FIENDS, STAGE_CAMPAIGN, STORY_OPENING, type StageCampaign, type StoryBeat } from './blueprint.js';
 import { heroPortrait } from './portraits.js';
 import { playSfx, sfxForAct, isSfxMuted, setSfxMuted } from './sfx.js';
 import { RECHARGE_PACKS, rechargeTotal, DIAMOND_EXCHANGES, DIZHI_SHARD_PACKS, GACHA, INLAY_MAX, DIZHI_INLAY_FAVOR, inlayBonus } from './blueprint.js';
@@ -215,6 +215,11 @@ const CSS = `
 .ggl-root .earth-group.owned{ border-color:var(--gold); background:rgba(232,205,130,.06) }
 .ggl-root .earth-group-hd{ display:flex; align-items:center; gap:8px; margin-bottom:8px }
 .ggl-root .zo-own{ margin-left:auto; font-size:11px; font-weight:700 }
+.ggl-root .zo-slots{ display:flex; align-items:center; gap:8px; margin-top:8px }
+.ggl-root .zo-slot{ min-width:64px; height:40px; border-radius:9px; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:1px; font-size:11px }
+.ggl-root .zo-slot.have{ background:rgba(232,205,130,.08); border:1px solid }
+.ggl-root .zo-slot.empty{ border:1px dashed var(--panel-border); color:var(--ink-dim); font-size:14px }
+.ggl-root .zo-slot-t{ font-size:9px; font-weight:700 }
 .ggl-root .ecard.have{ border-color:var(--gold); box-shadow:inset 0 0 0 1px rgba(232,205,130,.3) }
 .ggl-root .earth-branch{ font-family:var(--fh); font-size:22px; font-weight:800; color:var(--gold); width:26px }
 .ggl-root .earth-cards{ display:flex; gap:8px; flex-wrap:wrap }
@@ -371,11 +376,20 @@ function earthSection(filter: string, owned: Record<string, number> = {}): strin
     const ownBadge = t >= 1
       ? `<span class="zo-own" style="color:${RARITY_CLR[t === 1 ? 'bronze' : t === 2 ? 'silver' : 'gold']}">已拥有 · ${TIER_NM[t]}</span>`
       : `<span class="zo-own" style="color:var(--ink-dim)">未拥有</span>`;
-    return `<div class="earth-group${t >= 1 ? ' owned' : ''}"><div class="earth-group-hd"><img class="zo-icon" src="${z.png}" alt="${z.animal}" loading="lazy"><span class="earth-branch">${z.branch}</span><span style="font-size:13px;color:var(--ink)">${z.animal}</span><span style="font-size:11px;color:var(--ink-dim)">· ${z.symbol}</span>${ownBadge}</div><div class="earth-legend">${esc(z.legend)}</div>${cs ? `<div class="earth-cards">${cs}</div>` : ''}</div>`;
+    const tClr = t >= 1 ? RARITY_CLR[t === 1 ? 'bronze' : t === 2 ? 'silver' : 'gold'] : 'var(--panel-border)';
+    const slot = t >= 1
+      ? `<div class="zo-slot have" style="border-color:${tClr}"><span style="font-size:15px">${z.animal}</span><span class="zo-slot-t" style="color:${tClr}">${TIER_NM[t]}档</span></div>`
+      : `<div class="zo-slot empty">＋<span style="font-size:9px">库中未拥有</span></div>`;
+    return `<div class="earth-group${t >= 1 ? ' owned' : ''}"><div class="earth-group-hd"><img class="zo-icon" src="${z.png}" alt="${z.animal}" loading="lazy"><span class="earth-branch">${z.branch}</span><span style="font-size:13px;color:var(--ink)">${z.animal}</span><span style="font-size:11px;color:var(--ink-dim)">· ${z.symbol}</span>${ownBadge}</div><div class="earth-legend">${esc(z.legend)}</div><div class="zo-slots"><span class="note" style="margin:0;font-size:10px">持有：</span>${slot}</div>${cs ? `<div class="earth-cards">${cs}</div>` : ''}</div>`;
   }).join('');
   const header = `<div class="note" style="text-align:left;margin-bottom:10px">🀄 我的地支收藏 <b style="color:var(--gold)">${ownedN}/12</b> 生肖 · 抽卡获取（🛒商城）· 重复升档 铜→银→金 · 到「改造坊」镶进牌附魔</div>`;
-  const trines = DIZHI_TRINES.map(t => `<div class="trine-row"><b style="color:var(--gold);min-width:104px">${t.name}</b><span style="color:var(--ink-dim);min-width:96px">${esc(t.members)}</span><span style="color:var(--ink)">${esc(t.effect)}</span></div>`).join('');
-  return `${header}<div class="earth-groups">${groups}</div><div style="margin-top:14px"><div style="font-family:var(--fh);font-size:14px;color:var(--gold);margin-bottom:8px">🔗 三合连携（一卡镶满 3 槽 · 凑成组合激发·待战斗实装）</div>${trines}</div>`;
+  const trineRow = (t: { name: string; members: string; effect: string }): string =>
+    `<div class="trine-row"><b style="color:var(--gold);min-width:120px">${t.name}</b><span style="color:var(--ink-dim);min-width:120px">${esc(t.members)}</span><span style="color:var(--ink)">${esc(t.effect)}</span></div>`;
+  const trines = DIZHI_TRINES.map(trineRow).join('');
+  const pairs = DIZHI_PAIRS.map(trineRow).join('');
+  return `${header}<div class="earth-groups">${groups}</div>
+    <div style="margin-top:14px"><div style="font-family:var(--fh);font-size:14px;color:var(--gold);margin-bottom:8px">🔗 三合连携（镶满 3 颗同组 · 强力质变 · 待战斗实装）</div>${trines}</div>
+    <div style="margin-top:14px"><div style="font-family:var(--fh);font-size:14px;color:var(--gold);margin-bottom:8px">🔗 二合连携 · 六合（两颗相合 · 门槛低·效果轻 · 待战斗实装）</div>${pairs}</div>`;
 }
 
 function deckGrid(deck: number[], foils?: LobbyShopItem[]): string {
@@ -460,10 +474,16 @@ function helpBox(helpTab: 'intro' | 'tut' | 'manual', tier: 'easy' | 'mid' | 'ha
   const mid = `<h3 style="color:#facc15">🟡 中级 · 三牌组 + 经营</h3>
     <p><b>三套牌</b>：<br>· <b>扑克 52（名将·兵）</b>：上场部队，点数=战力、花色=阵营，双方同副（公平）。<br>· <b>天罡 36（兵法·法术）</b>：赛前挑带上场，局内打出持续整局（虎符全军+2 / 疾行加速 / 擒王斩敌主将崩路）。<br>· <b>地支 12（天命·养成）</b>：局外镶到牌上叠属性（附魔台）。</p>
     <p><b>经营要点</b>：召唤源泉紧（每回合 +1）→ 每个抉择都重要；机关门换路；同点数凑对子/三条加战力；田忌赛马以强避弱、集中突破。</p>`;
-  const hard = `<h3 style="color:#f87171">🔴 高级 · 构筑 · 克制 · 养成</h3>
-    <p><b>赛前构筑</b>：天罡 loadout <b>针对当关 Boss 配牌</b>（每关 Boss 明牌亮 3 张地煞·照着 counter-pick）；地支镶嵌凑<b>三合/六合连携</b>质变；集齐流派天罡解锁<b>招牌印</b>。</p>
-    <p><b>Boss 战（非对称）</b>：Boss 库 = 12 随机天罡 + 3 专属地煞 = 15 张，比你猛；开局看清地煞、<b>明牌可破</b>。</p>
-    <p><b>爆冷缝管理</b>：胜率 = clamp(logistic((P我−P敌)/k), 3%, 97%)。铁骰·磐石·灌铅骰·鬼手 各调爆冷。</p>`;
+  const hard = `<h3 style="color:#f87171">🔴 高级 · 概率算法 · 连携 · 克制</h3>
+    <p><b>⭐ 掷命对决——最终概率怎么算出来的</b>（透明·非黑箱）：<br>
+    ① <b>各取战力</b>：碰头的两张牌，各算<b>有效战力 P_eff</b> = 点数底盘 + 天罡加成（虎符全军+2…）+ 地支附魔(镶嵌+favor) + 士气(主将活则全路涨) + 干预。<br>
+    ② <b>算差值</b>：取双方差 Δ = P我 − P敌。<br>
+    ③ <b>过 S 形曲线</b>：胜率 = <b>logistic(Δ / k)</b> = 1 / (1 + e^(−Δ/k))。差越大胜率越高，但平滑——不是"高 1 点就必胜"。k 是缓和系数。<br>
+    ④ <b>夹爆冷缝</b>：胜率 = <b>clamp(上式, 3%, 97%)</b>——再强也有 3% 翻车、再弱也有 3% 翻盘。<br>
+    ⑤ <b>种子骰</b>：用确定性随机数掷这个胜率 → 正面活·前进 / 反面亡。<b>同一局同种子结果可复现</b>。</p>
+    <p><b>调概率的牌</b>：铁骰(占优封顶不被爆冷) · 磐石(抬你下限) · 灌铅骰(强者愈强) · 鬼手(指定一场 +25%) · 巧手(P_eff +1) · 稳手(胜率下限 +5%)。</p>
+    <p><b>地支连携（镶嵌质变）</b>：<br>· <b>二合·六合</b>（两颗相合）：门槛低、效果轻——如 子丑合 大本营+1血、午未合 濒死免死。<br>· <b>三合</b>（三颗同组）：强力质变——如 水(申子辰)一局1次必重掷、火(寅午戌)赢后连推。<br>（镶嵌战斗 apply 待实装。）</p>
+    <p><b>赛前构筑</b>：天罡针对当关 Boss 明牌的 3 张地煞 counter-pick；集齐流派天罡解锁<b>招牌印</b>。Boss 库=12 随机天罡+3 专属地煞，比你猛但<b>明牌可破</b>。</p>`;
   const manualBody = `<div class="ctarow" style="margin-bottom:12px">${tb('easy', '🟢 初级', '#4ade80')}${tb('mid', '🟡 中级', '#facc15')}${tb('hard', '🔴 高级', '#f87171')}</div><div style="min-height:200px">${tier === 'easy' ? easy : tier === 'mid' ? mid : hard}</div>`;
   const body = helpTab === 'intro' ? introBody : helpTab === 'tut' ? tutBody : manualBody;
   return `<div class="tut-ov" data-act="help-close"><div class="tut-box intro-scroll" data-stop="1" style="width:560px;max-width:100%;display:flex;flex-direction:column">

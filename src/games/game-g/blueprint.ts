@@ -1335,6 +1335,15 @@ export const DIZHI_TRINES: { name: string; members: string; effect: string }[] =
   { name:'⚔️ 金·肃杀', members:'巳蛇+酉鸡+丑牛', effect:'每场对决返 1 召唤源泉 + 击败的敌人限时不能再上场' },
   { name:'🌿 木·生生', members:'亥猪+卯兔+未羊', effect:'阵亡回手牌可重新派遣 + 击杀返材料' },
 ];
+// 六合（二合连携 · 两生肖凑成 · 门槛比三合低、效果较轻）。镶嵌战斗 apply 待契约④（甲）。
+export const DIZHI_PAIRS: { name: string; members: string; effect: string }[] = [
+  { name:'土 · 子丑合', members:'子鼠 + 丑牛', effect:'大本营 +1 血（更耐打）' },
+  { name:'木 · 寅亥合', members:'寅虎 + 亥猪', effect:'起手多摸 1 张牌' },
+  { name:'火 · 卯戌合', members:'卯兔 + 戌狗', effect:'赢对决偶尔额外推进 1 格' },
+  { name:'金 · 辰酉合', members:'辰龙 + 酉鸡', effect:'全军 +少量战力' },
+  { name:'水 · 巳申合', members:'巳蛇 + 申猴', effect:'每回合首次抽牌返 1 召唤源泉' },
+  { name:'日月 · 午未合', members:'午马 + 未羊', effect:'濒死兵 1 次免死' },
+];
 
 // === 战役·关 1-5 新手区（doc23 §八 定稿 · owner 2026-06-19「人物名气>战役名气」· 头三关简单） ===
 // 每关 = 一位名将困在其命运之战；打赢=破诅咒、解封其魂。Boss 牌库=12 随机天罡 + 3 专属地煞(招牌历史战术·明牌可破)。
