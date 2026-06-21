@@ -817,6 +817,12 @@ function fiendsCodex(): string {
   }).join('')}</div>`;
 }
 
+// 弹层独立层（owner 2026-06-20 抗闪屏）：所有 overlay 抽到这里，mountLobby 单独更新 #gv-ov，
+// 不重建大厅主体（含 52 SVG）→ 开/点商城·设置·帮助不再整屏闪。
+export interface LobbyOverlayState { helpOpen: boolean; helpTab: 'intro' | 'tut' | 'manual'; manualTier: 'easy' | 'mid' | 'hard'; settingsOpen: boolean; rechargeOpen: boolean; shopTab: 'gacha' | 'wallet'; rechargeErr: string; gachaReveal: GachaResult[] | null; story: { beats: StoryBeat[]; idx: number; label: string; cta: string } | null; guideSkipAsk: boolean; deckPickerOpen: boolean }
+export function lobbyOverlaysHTML(view: LobbyView, s: LobbyOverlayState): string {
+  return `${s.helpOpen ? helpBox(s.helpTab, s.manualTier) : ''}${s.settingsOpen ? settingsBox(view) : ''}${s.rechargeOpen ? shopBox(view, s.shopTab, s.rechargeErr) : ''}${s.gachaReveal ? gachaRevealBox(s.gachaReveal) : ''}${s.story ? narrationBox(s.story.beats, s.story.idx, s.story.label, s.story.cta) : (!view.firstLaunch && (view.guideStep ?? -1) >= 0 ? guideBox(view.guideStep ?? 0) : '')}${s.guideSkipAsk ? guideSkipDialog() : ''}${s.deckPickerOpen ? deckPickerBox(view) : ''}`;
+}
 export function renderLobby(view: LobbyView, tab: string, helpOpen: boolean, deckTab: 'base' | 'gang' | 'dizhi' = 'base', earthFilter = 'all', collTab = 'cards', heroSuit = 'all', heroDetail = '', heroRar = 'all', ownedOnly = false, settingsOpen = false, manualTier: 'easy' | 'mid' | 'hard' = 'easy', rechargeOpen = false, rechargeErr = '', story: { beats: StoryBeat[]; idx: number; label: string; cta: string } | null = null, guideSkipAsk = false, shopTab: 'gacha' | 'wallet' = 'wallet', gachaReveal: GachaResult[] | null = null, deckPickerOpen = false, craftSel = '', helpTab: 'intro' | 'tut' | 'manual' = 'intro'): string {
   const on = (t: string): string => (tab === t ? ' on' : '');
   const dOn = (t: string): string => (deckTab === t ? ' on' : '');
@@ -893,7 +899,7 @@ export function renderLobby(view: LobbyView, tab: string, helpOpen: boolean, dec
     </div></section>
     <section class="screen${on('ladder')} full">${ladderSection(view.name, view.rankText)}</section>
   </div>
-  </div>${helpOpen ? helpBox(helpTab, manualTier) : ''}${settingsOpen ? settingsBox(view) : ''}${rechargeOpen ? shopBox(view, shopTab, rechargeErr) : ''}${gachaReveal ? gachaRevealBox(gachaReveal) : ''}${story ? narrationBox(story.beats, story.idx, story.label, story.cta) : (!view.firstLaunch && (view.guideStep ?? -1) >= 0 ? guideBox(view.guideStep ?? 0) : '')}${guideSkipAsk ? guideSkipDialog() : ''}${deckPickerOpen ? deckPickerBox(view) : ''}</div>`;
+  </div><div id="gv-ov" style="display:contents">${lobbyOverlaysHTML(view, { helpOpen, helpTab, manualTier, settingsOpen, rechargeOpen, shopTab, rechargeErr, gachaReveal, story, guideSkipAsk, deckPickerOpen })}</div></div>`;
 }
 
 export interface LobbyHandlers {
@@ -946,14 +952,17 @@ export function mountLobby(host: HTMLElement, h: LobbyHandlers): { update: () =>
   let deckPicker = false;
   let craftSel = '';
   const render = (): void => { host.innerHTML = renderLobby({ ...h.getView(), skin }, tab, help, deckTab, earthFilter, collTab, heroSuit, heroDetail, heroRar, ownedOnly, settings, manTier, recharge, rechargeErr, story, guideSkipAsk, shopTab, gachaReveal, deckPicker, craftSel, helpTab); };
+  const ovState = (): LobbyOverlayState => ({ helpOpen: help, helpTab, manualTier: manTier, settingsOpen: settings, rechargeOpen: recharge, shopTab, rechargeErr, gachaReveal, story, guideSkipAsk, deckPickerOpen: deckPicker });
+  // 抗闪屏：只更新弹层 #gv-ov（不重建大厅主体）。弹层打开/内部导航/关闭都走它 → 不再整屏闪。
+  const renderOv = (): void => { const o = host.querySelector('#gv-ov'); if (o) o.innerHTML = lobbyOverlaysHTML({ ...h.getView(), skin }, ovState()); else render(); };
   // 每关开局演出（doc27 §五）：战役背景 + Boss 开场白 → 出征。缺 intro 则直接进战斗。
   const levelBeats = (c: StageCampaign): StoryBeat[] => [
     { scene: c.battle, text: c.intro ?? c.oneLiner },
     ...(c.bossLines ? [{ scene: `${c.boss} · 开场`, text: c.bossLines.open }] : []),
   ];
-  const startPlay = (): void => { const c = h.getView().campaign; if (c && c.intro) { story = { beats: levelBeats(c), idx: 0, label: `第 ${c.stage} 关 · ${c.battle}`, cta: `出征 · 第 ${c.stage} 关`, then: 'play' }; render(); } else h.onPlay(); };
+  const startPlay = (): void => { const c = h.getView().campaign; if (c && c.intro) { story = { beats: levelBeats(c), idx: 0, label: `第 ${c.stage} 关 · ${c.battle}`, cta: `出征 · 第 ${c.stage} 关`, then: 'play' }; renderOv(); } else h.onPlay(); };
   const playOpeningStory = (): void => { story = { beats: STORY_OPENING, idx: 0, label: '翻命扑克 · 序章', cta: '执掌命运 →', then: 'guide' }; };
-  const finishStory = (): void => { const then = story?.then ?? 'close'; story = null; if (then === 'play') { render(); h.onPlay(); } else if (then === 'guide') { h.onIntroSeen?.(); render(); } else render(); };
+  const finishStory = (): void => { const then = story?.then ?? 'close'; story = null; if (then === 'play') { renderOv(); h.onPlay(); } else if (then === 'guide') { h.onIntroSeen?.(); renderOv(); } else renderOv(); };
   const onClick = (e: MouseEvent): void => {
     const el = (e.target as HTMLElement).closest('[data-act]') as HTMLElement | null; if (!el) return;
     const act = el.dataset.act, k = el.dataset.k ?? '';
@@ -965,50 +974,50 @@ export function mountLobby(host: HTMLElement, h: LobbyHandlers): { update: () =>
     else if (act === 'heroRar') { heroRar = k; heroDetail = ''; render(); }
     else if (act === 'heroDetail') { heroDetail = heroDetail === k ? '' : k; render(); }
     else if (act === 'heroOwned') { ownedOnly = !ownedOnly; render(); }
-    else if (act === 'skin') { skin = k === 'rosy' ? 'rosy' : 'onyx'; h.onSkin?.(skin); render(); }
-    // 帮助中心（介绍/指导/手册 三合一）：各入口开到对应页
-    else if (act === 'intro') { help = true; helpTab = 'intro'; render(); }
-    else if (act === 'tut') { help = true; helpTab = 'tut'; render(); }
-    else if (act === 'man') { help = true; helpTab = 'manual'; render(); }
-    else if (act === 'helpTab') { helpTab = k === 'tut' ? 'tut' : k === 'manual' ? 'manual' : 'intro'; render(); }
-    else if (act === 'manTier') { manTier = k as 'easy' | 'mid' | 'hard'; render(); }
-    else if (act === 'help-close') { help = false; render(); }
+    else if (act === 'skin') { skin = k === 'rosy' ? 'rosy' : 'onyx'; h.onSkin?.(skin); const r = host.querySelector('.ggl-root') as HTMLElement | null; if (r) r.dataset.skin = skin; renderOv(); } // 皮肤=改 data-skin 属性，不重建
+    // 帮助中心（介绍/指导/手册 三合一）：弹层导航 → 只更新弹层（不闪）
+    else if (act === 'intro') { help = true; helpTab = 'intro'; renderOv(); }
+    else if (act === 'tut') { help = true; helpTab = 'tut'; renderOv(); }
+    else if (act === 'man') { help = true; helpTab = 'manual'; renderOv(); }
+    else if (act === 'helpTab') { helpTab = k === 'tut' ? 'tut' : k === 'manual' ? 'manual' : 'intro'; renderOv(); }
+    else if (act === 'manTier') { manTier = k as 'easy' | 'mid' | 'hard'; renderOv(); }
+    else if (act === 'help-close') { help = false; renderOv(); }
     // 设置
-    else if (act === 'settings') { settings = true; render(); }
-    else if (act === 'settings-close') { settings = false; render(); }
+    else if (act === 'settings') { settings = true; renderOv(); }
+    else if (act === 'settings-close') { settings = false; renderOv(); }
     else if (act === 'play') { startPlay(); }
-    else if (act === 'story-next') { if (!story) return; if (story.idx < story.beats.length - 1) { story.idx++; render(); } else finishStory(); }
+    else if (act === 'story-next') { if (!story) return; if (story.idx < story.beats.length - 1) { story.idx++; renderOv(); } else finishStory(); }
     else if (act === 'story-skip') { finishStory(); }
     // 新手引导（doc28 §二）：步进 / 末步开打 / 跳过确认 / 重看
-    else if (act === 'guide-next') { h.onGuideStep?.((h.getView().guideStep ?? 0) + 1); render(); }
+    else if (act === 'guide-next') { h.onGuideStep?.((h.getView().guideStep ?? 0) + 1); renderOv(); }
     else if (act === 'guide-finish') { h.onGuideDone?.(); startPlay(); }
-    else if (act === 'guide-skip') { guideSkipAsk = true; render(); }
-    else if (act === 'guide-skip-cancel') { guideSkipAsk = false; render(); }
-    else if (act === 'guide-skip-confirm') { guideSkipAsk = false; h.onGuideDone?.(); render(); }
+    else if (act === 'guide-skip') { guideSkipAsk = true; renderOv(); }
+    else if (act === 'guide-skip-cancel') { guideSkipAsk = false; renderOv(); }
+    else if (act === 'guide-skip-confirm') { guideSkipAsk = false; h.onGuideDone?.(); renderOv(); }
     else if (act === 'replayIntro') { h.onReplayIntro?.(); settings = false; tab = 'home'; playOpeningStory(); render(); }
     else if (act === 'buyTiangang') { h.onBuyTiangang?.(k); render(); }
     else if (act === 'buyPlanet') { h.onBuyPlanet?.(k); render(); }
     else if (act === 'buyFoil') { h.onBuyFoil?.(k); render(); }
-    else if (act === 'toggleTiangang') { h.onToggleTiangang?.(k); render(); }
+    else if (act === 'toggleTiangang') { h.onToggleTiangang?.(k); if (deckPicker) renderOv(); else render(); } // 弹窗选卡时只更新弹层
     else if (act === 'diamondUnlock') { h.onDiamondUnlock?.(k); render(); }
-    else if (act === 'shop') { recharge = true; shopTab = 'gacha'; rechargeErr = ''; render(); }
-    else if (act === 'recharge') { recharge = true; shopTab = 'wallet'; rechargeErr = ''; render(); }
-    else if (act === 'recharge-close') { recharge = false; rechargeErr = ''; render(); }
-    else if (act === 'shopTab') { shopTab = k === 'gacha' ? 'gacha' : 'wallet'; render(); }
-    else if (act === 'rechargeBuy') { const pw = (host.querySelector('.rc-pw') as HTMLInputElement | null)?.value ?? ''; const ok = h.onRecharge?.(k, pw); rechargeErr = ok === false ? '密码错误，请重试' : ''; render(); }
-    else if (act === 'exchangeBuy') { h.onExchange?.(k); render(); }
-    else if (act === 'shardBuy') { h.onBuyShards?.(k); render(); }
+    else if (act === 'shop') { recharge = true; shopTab = 'gacha'; rechargeErr = ''; renderOv(); }
+    else if (act === 'recharge') { recharge = true; shopTab = 'wallet'; rechargeErr = ''; renderOv(); }
+    else if (act === 'recharge-close') { recharge = false; rechargeErr = ''; render(); } // 关商城→刷新主体（拥有/余额可能变）
+    else if (act === 'shopTab') { shopTab = k === 'gacha' ? 'gacha' : 'wallet'; renderOv(); }
+    else if (act === 'rechargeBuy') { const pw = (host.querySelector('.rc-pw') as HTMLInputElement | null)?.value ?? ''; const ok = h.onRecharge?.(k, pw); rechargeErr = ok === false ? '密码错误，请重试' : ''; renderOv(); }
+    else if (act === 'exchangeBuy') { h.onExchange?.(k); renderOv(); }
+    else if (act === 'shardBuy') { h.onBuyShards?.(k); renderOv(); }
     // 抽卡（doc25 §四）：data-k="pool:count:pay" → onGacha → 开包演出；定向兑换 / 关闭演出
-    else if (act === 'gacha') { const [pool, cnt, pay] = k.split(':'); const r = h.onGacha?.(pool as 'tiangang' | 'dizhi', cnt === '10' ? 10 : 1, pay === 'diamond' ? 'diamond' : 'gold'); if (r && r.length) gachaReveal = r; render(); }
-    else if (act === 'craftTiangang') { const ok = h.onCraftTiangang?.(k); if (ok) { const nm = h.getView().tiangangs.find((t) => t.id === k)?.name ?? k; gachaReveal = [{ kind: 'tiangang', id: k, name: nm, outcome: 'new', detail: '碎片定向兑换 ✓' }]; } render(); }
-    else if (act === 'reveal-close') { gachaReveal = null; render(); }
+    else if (act === 'gacha') { const [pool, cnt, pay] = k.split(':'); const r = h.onGacha?.(pool as 'tiangang' | 'dizhi', cnt === '10' ? 10 : 1, pay === 'diamond' ? 'diamond' : 'gold'); if (r && r.length) gachaReveal = r; renderOv(); }
+    else if (act === 'craftTiangang') { const ok = h.onCraftTiangang?.(k); if (ok) { const nm = h.getView().tiangangs.find((t) => t.id === k)?.name ?? k; gachaReveal = [{ kind: 'tiangang', id: k, name: nm, outcome: 'new', detail: '碎片定向兑换 ✓' }]; } renderOv(); }
+    else if (act === 'reveal-close') { gachaReveal = null; render(); } // 关开包→刷新主体（新卡入库）
     else if (act === 'selectDeck') { h.onSelectDeck?.(k); render(); }
     else if (act === 'newDeck') { h.onNewDeck?.(); render(); }
     else if (act === 'delDeck') { h.onDelDeck?.(k); render(); }
     // 天罡牌组编辑：主页「编辑牌组」跳牌组屏天罡页 / 空槽弹选卡窗 / 关窗
     else if (act === 'editDeck') { tab = 'decks'; deckTab = 'gang'; render(); }
-    else if (act === 'deckAdd') { deckPicker = true; render(); }
-    else if (act === 'deckPicker-close') { deckPicker = false; render(); }
+    else if (act === 'deckAdd') { deckPicker = true; renderOv(); }
+    else if (act === 'deckPicker-close') { deckPicker = false; render(); } // 关弹窗→刷新主体（牌组槽变化）
     // 地支附魔台：选牌 / 镶入 / 卸下
     else if (act === 'craftSel') { craftSel = craftSel === k ? '' : k; render(); }
     else if (act === 'inlay') { const [idx, br] = k.split(':'); h.onInlay?.(idx, br); render(); }
