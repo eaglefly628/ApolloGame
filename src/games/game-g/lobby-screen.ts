@@ -229,6 +229,12 @@ const CSS = `
 .ggl-root .ecard.equipped::after{ content:'⚔'; position:absolute; top:3px; right:5px; font-size:10px; color:var(--gold) }
 .ggl-root .shelf{ display:grid; grid-template-columns:repeat(auto-fill,minmax(120px,1fr)); gap:10px }
 .ggl-root .good{ background:var(--chip); border:1px solid var(--panel-border); border-radius:10px; padding:10px; text-align:center; font-size:12px; position:relative; min-height:74px; clip-path:var(--chamfer) } .ggl-root .good .gnm{ font-weight:700; color:var(--ink); line-height:1.25 } .ggl-root .good .cost{ color:var(--gold); font-weight:700; margin-top:6px; font-family:var(--fn) }
+.ggl-root .gg-tipwrap{ position:relative }
+.ggl-root .gg-tip{ position:absolute; left:50%; top:calc(100% + 8px); transform:translateX(-50%) translateY(-4px); width:240px; max-width:86vw; padding:11px 13px; border-radius:10px; background:linear-gradient(160deg,#1b2233,#10141d); border:1px solid var(--gold); box-shadow:0 14px 34px rgba(0,0,0,.65); opacity:0; pointer-events:none; transition:opacity .12s,transform .12s; z-index:200; text-align:left }
+.ggl-root .gg-tipwrap:hover>.gg-tip{ opacity:1; transform:translateX(-50%) translateY(0) }
+.ggl-root .gg-tip h4{ font-family:var(--fh); font-weight:700; font-size:15px; margin:0 0 6px; padding-bottom:6px; border-bottom:1px solid rgba(232,205,130,.25) }
+.ggl-root .gg-tip-eff{ font-size:12px; color:#cdd6e2; line-height:1.65; margin-bottom:8px }
+.ggl-root .gg-tip-row{ display:flex; justify-content:space-between; gap:10px; font-size:12px; color:var(--ink-dim); padding:1px 0 }
 .ggl-root .good.got{ border-color:var(--gold) } .ggl-root .good.buy{ cursor:pointer } .ggl-root .good.buy:hover{ box-shadow:0 0 0 1px var(--gold) inset } .ggl-root .good.lock{ opacity:.62 }
 .ggl-root .unlock-badge{ display:inline-block; font-size:9px; font-weight:700; padding:1px 5px; border-radius:5px; background:rgba(232,205,138,.16); border:1px solid var(--hairline); color:var(--gold); vertical-align:middle }
 .ggl-root .boss-block{ margin-bottom:14px; padding:10px 12px; border-radius:10px; background:rgba(255,255,255,.03); border:1px solid var(--panel-border) }
@@ -653,6 +659,24 @@ function enchantPanel(view: LobbyView, craftSel: string): string {
     <div class="ench-grid">${grid}</div>
     ${detail}</div>`;
 }
+// 统一富文本 tooltip（owner 2026-06-20 · MMO 装备框风格）：悬浮弹一个框·彩色数值·一套逻辑。
+// 用 .gg-tipwrap 包住任意条目 + 内嵌 .gg-tip 富文本框；纯 CSS 悬浮显示·pointer-events:none 不挡点击。
+function ggTip(inner: string): string { return `<div class="gg-tip">${inner}</div>`; }
+const KIND_LABEL: Record<string, string> = { odds: '概率·掷命', power: '战力·加成', combo: '牌型·连携', morale: '士气·将领', tempo: '节奏·行军', stamina: '续航·耐久', draw: '抽牌·手牌', lane: '路线·调度', siege: '攻城·破阵', arcane: '流派·印记' };
+const tipRow = (label: string, value: string, color = 'var(--ink)'): string =>
+  `<div class="gg-tip-row"><span>${label}</span><b style="color:${color}">${value}</b></div>`;
+// 天罡牌富文本说明（名/效果/类型/牌力/P̂/解锁/价）。
+function tiangangTipHTML(it: LobbyShopItem): string {
+  const us = it.unlockStage ?? 1;
+  const rows = [
+    it.kind ? tipRow('类型', KIND_LABEL[it.kind] ?? it.kind, '#a78bfa') : '',
+    it.power ? tipRow('牌力', '⭐'.repeat(Math.min(it.power, 5)), 'var(--gold)') : '',
+    it.phat !== undefined ? tipRow('胜率影响 P̂', `+${it.phat}`, '#56be84') : '',
+    tipRow('解锁', `通关第 ${us} 关`, it.locked ? '#e0635f' : 'var(--club)'),
+    it.owned ? tipRow('状态', it.inDeck ? '✓ 已入出战牌组' : '✓ 已拥有', 'var(--gold)') : tipRow('价格', `🪙 ${it.cost}`, 'var(--gold)'),
+  ].join('');
+  return ggTip(`<h4 style="color:${it.tint || 'var(--gold)'}">${esc(it.name)}</h4><div class="gg-tip-eff">${esc(it.sub)}</div>${rows}`);
+}
 function craftTiangangItem(it: LobbyShopItem): string {
   const cls = 'good' + (it.owned ? ' got' : it.buyable ? ' buy' : ' lock');
   // 金币解锁仅在「已解锁关·可购」时挂点击；关未到 → 锁态（钻石速购单独按钮）。
@@ -671,7 +695,7 @@ function craftTiangangItem(it: LobbyShopItem): string {
   } else {
     foot = `<div class="cost">🪙 ${it.cost}</div>`;
   }
-  return `<div class="${cls}"${buyAttr} title="${esc(it.sub)}"><div class="gnm">${stageBadge} ${tiangangIcon(it.icon, it.tint)} ${esc(it.name)}${stars}${phat}</div>${foot}</div>`;
+  return `<div class="gg-tipwrap"><div class="${cls}"${buyAttr}><div class="gnm">${stageBadge} ${tiangangIcon(it.icon, it.tint)} ${esc(it.name)}${stars}${phat}</div>${foot}</div>${tiangangTipHTML(it)}</div>`;
 }
 // 天罡战库预览面板（B3 · HOME+DECKS 屏）：≤5 已选天罡牌 每张【名 + 效果 + 牌力⭐ + P̂】+ 整库总加成汇总。
 function deckPreviewPanel(tiangangs: LobbyShopItem[], archName: string | null | undefined, activated: boolean | undefined, size = 12, deckName = ''): string {
