@@ -222,7 +222,9 @@ function slotCell(s: TurnSlotView): string {
   let unitHTML = '';
   if (s.hasUnit && s.rank && s.suit) {
     const col = s.mine ? '#ff7a45' : '#3a86d4'; const sc = SUITC[s.suit]; const zod = s.zod || [];
-    const unit = { position: 'relative', width: '100%', height: '90%', borderRadius: '10px', background: sideFace(s.mine), border: '3px solid ' + col, boxShadow: `0 3px 8px rgba(0,0,0,.4), 0 0 0 1px ${col}, inset 0 0 0 1px rgba(255,255,255,.5)`, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center' };
+    // 敌我分明（owner 2026-06-21）：边框描粗 + 背景打淡淡的「我 / 敌」水印字。
+    const unit = { position: 'relative', width: '100%', height: '90%', borderRadius: '10px', background: sideFace(s.mine), border: '4px solid ' + col, boxShadow: `0 3px 8px rgba(0,0,0,.45), 0 0 0 2px ${col}, inset 0 0 0 1px rgba(255,255,255,.5)`, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center' };
+    const sideMark = `<div style="${st({ position: 'absolute', inset: '0', display: 'flex', alignItems: 'center', justifyContent: 'center', fontFamily: 'var(--fh)', fontWeight: 900, fontSize: '50px', color: col, opacity: s.mine ? 0.13 : 0.18, pointerEvents: 'none', zIndex: 0 })}">${s.mine ? '我' : '敌'}</div>`;
     const corner = { position: 'absolute', top: '4px', left: '5px', fontFamily: 'var(--fh)', fontWeight: 700, fontSize: '15px', color: sc, zIndex: 2 };
     const big = { fontSize: '40px', color: sc, marginTop: '-6px' };
     const badge = { position: 'absolute', top: '4px', right: '5px', minWidth: '22px', padding: '1px 6px', borderRadius: '99px', background: col, color: '#fff', fontFamily: 'var(--fn)', fontSize: '11px', textAlign: 'center', boxShadow: '0 2px 5px rgba(0,0,0,.4)', zIndex: 2 };
@@ -233,7 +235,7 @@ function slotCell(s: TurnSlotView): string {
     };
     // 新部署的兵 → 逐张落子 g-drop（fresh 序号错峰·叭叭叭）；否则推进了的兵 → g-adv 滑入。
     const advAnim = s.fresh != null ? `;animation:g-drop .34s cubic-bezier(.2,.9,.3,1.25) both;animation-delay:${(s.fresh * 0.15).toFixed(2)}s` : (s.justMoved ? `;animation:${s.mine ? 'g-adv-a' : 'g-adv-b'} .45s cubic-bezier(.2,.8,.3,1) both` : '');
-    unitHTML = `<div style="${st(unit)}${advAnim}"><div style="${st(corner)}">${esc(s.rank)}${SUITG[s.suit]}</div><span style="${st(big)}">${SUITG[s.suit]}</span><div style="${st(badge)}">${s.power ?? ''}</div><div style="${st(zodRow)}">${forr([0, 1, 2], (z) => zodCell(zod[z]))}</div></div>`;
+    unitHTML = `<div style="${st(unit)}${advAnim}">${sideMark}<div style="${st(corner)}">${esc(s.rank)}${SUITG[s.suit]}</div><span style="${st(big)};position:relative;z-index:1">${SUITG[s.suit]}</span><div style="${st(badge)}">${s.power ?? ''}</div><div style="${st(zodRow)}">${forr([0, 1, 2], (z) => zodCell(zod[z]))}</div></div>`;
   }
   const ring = s.isClash ? `<div style="${st({ position: 'absolute', inset: '-3px', borderRadius: '11px', border: '2px solid var(--accent)', boxShadow: '0 0 16px var(--accent-soft)', animation: 'g-pulse 1.4s ease-in-out infinite' })}"></div>` : '';
   // 放牌区可落点高亮（owner 2026-06-21）：选牌待放时，此格金边脉冲 + 「＋放这」提示，点该路即落子。
