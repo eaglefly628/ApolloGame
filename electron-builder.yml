@@ -1,0 +1,23 @@
+appId: com.apollo.gameg
+productName: FateflipPoker
+copyright: "Copyright © 2025 Apollo Game Studio"
+
+# Only ship the Electron main + the pre-built web bundle; nothing else.
+files:
+  - electron/main.cjs
+  - dist-cartridge/**
+  - package.json
+
+directories:
+  output: release
+
+mac:
+  category: public.app-category.games
+  target:
+    - target: dmg
+      arch: [x64, arm64]   # universal: Intel + Apple Silicon
+
+win:
+  target:
+    - target: zip           # zip works without wine on Mac; use nsis on a Windows CI for .exe
+      arch: [x64]
