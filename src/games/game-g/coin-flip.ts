@@ -1,10 +1,10 @@
-// coin-flip.ts —— 战胜硬币「人头/人面」3D 抛掷表现（owner 2026-06-21）。纯表现·零判定：
-//   一枚硬币 3D 翻腾抛向空中 → 落定 人头(留场继续) / 人面(回牌库+返还源泉)。结果来自 ClashEvent.winStays(种子化·已定)，
-//   硬币只把既定结果演出来（玩家"操作"一下=点掷·AI 方自动掷）。挂在战力明细特写**之后**·不盖明细。
+// coin-flip.ts —— 战胜硬币「人面/字面」3D 抛掷表现（owner 2026-06-21）。纯表现·零判定：
+//   一枚硬币 3D 翻腾抛向空中 → 落定 人面(留场继续) / 字面(回牌库+返还源泉)。结果来自 ClashEvent.winStays(种子化·已定)，
+//   硬币只把既定结果演出来（玩家"操作"一下=点掷·AI 方自动掷）；**投掷之后才揭晓**·明细里不剧透（owner 2026-06-21·要仪式感）。
 export interface CoinFlipOpts {
   winnerName: string;   // 战胜的那张牌名
   winnerMine: boolean;  // 胜者是我方？(我方→玩家点掷·敌方→自动掷)
-  heads: boolean;       // 人头(true)=留场 / 人面(false)=回库（种子化既定结果）
+  heads: boolean;       // 人面(true)=留场 / 字面(false)=回库（种子化既定结果·投掷后才揭晓）
   sfx?: (ev: 'select' | 'clashWin' | 'clashLose' | 'confirm') => void;
 }
 
@@ -42,7 +42,7 @@ export function mountCoinFlip(host: HTMLElement, opts: CoinFlipOpts, onDone: () 
   ov.innerHTML = `<div class="gg-coin-panel">
     <div style="font-size:15px;font-weight:700;color:#ffd27a;margin-bottom:2px">⚔ ${esc(opts.winnerName)} 战胜！</div>
     <div class="gg-coin-cap">${opts.winnerMine ? '掷硬币决定它的去留' : '敌方掷硬币决定去留'}</div>
-    <div class="gg-coin-stage"><div class="gg-coin"><div class="face heads"><b>人头</b><small>留场</small></div><div class="face tails"><b>人面</b><small>回库</small></div></div></div>
+    <div class="gg-coin-stage"><div class="gg-coin"><div class="face heads"><b>人面</b><small>留场</small></div><div class="face tails"><b>字面</b><small>回库</small></div></div></div>
     <div class="gg-coin-btns">${opts.winnerMine ? '<button class="gg-coin-btn throw">🪙 掷 硬 币</button>' : ''}</div>
   </div>`;
   host.appendChild(ov);
@@ -59,7 +59,7 @@ export function mountCoinFlip(host: HTMLElement, opts: CoinFlipOpts, onDone: () 
     cap.textContent = '硬币翻腾中……';
     after(1250, () => { // 落定揭晓
       sfx(opts.heads ? 'clashWin' : 'clashLose');
-      cap.innerHTML = `<span class="gg-coin-res" style="color:${opts.heads ? '#43d07f' : '#9aa7b6'}">${opts.heads ? '🪙 人头！留在场上继续作战 ⚔' : '🪙 人面！光荣回牌库 · 返还源泉'}</span>`;
+      cap.innerHTML = `<span class="gg-coin-res" style="color:${opts.heads ? '#43d07f' : '#9aa7b6'}">${opts.heads ? '🪙 人面！留在场上继续作战 ⚔' : '🪙 字面！光荣回牌库 · 返还源泉'}</span>`;
       btns.innerHTML = '<button class="gg-coin-btn cont">继续 →</button>';
       (btns.querySelector('.cont') as HTMLButtonElement).onclick = (): void => { sfx('confirm'); destroy(); onDone(); };
     });
