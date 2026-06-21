@@ -392,10 +392,11 @@ describe('Game G · lobby-screen mountLobby 点击交互（DOM · happy-dom）',
       const host = document.createElement('div');
       mountLobby(host, { getView: makeView, onPlay: vi.fn() });
       click(host.querySelector('[data-act="lucky"]'));
-      expect(host.innerHTML).toContain('今日运势');
+      expect(host.querySelector('.story-box, .tut-box')).not.toBeNull();
+      expect(host.innerHTML).toContain('再掷一卦'); // 弹框独有（避开 title 里的"看今日运势"）
       expect(host.querySelector('[data-act="lucky-close"]')).not.toBeNull();
       click(host.querySelector('[data-act="lucky-close"]'));
-      expect(host.innerHTML).not.toContain('今日运势'); // 收起
+      expect(host.innerHTML).not.toContain('再掷一卦'); // 收起
     });
   });
 
