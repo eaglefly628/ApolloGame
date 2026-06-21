@@ -16,10 +16,10 @@ const SUITNM: Record<string, string> = { s: '黑桃', h: '红桃', d: '方块', 
 const ZOD_ICON: Record<string, string> = { 鼠: '🐀', 牛: '🐂', 虎: '🐅', 兔: '🐇', 龙: '🐉', 蛇: '🐍', 马: '🐎', 羊: '🐑', 猴: '🐒', 鸡: '🐓', 狗: '🐕', 猪: '🐖' };
 const RAR: Record<string, [string, string]> = { white: ['普通', '#b9bec8'], green: ['优良', '#5bbf7a'], blue: ['稀有', '#3a9bff'], gold: ['传世', '#e8cd82'] };
 
-// 敌我牌面底纹（owner 2026-06-20「敌我难分·底纹花纹要不同」）：我方=暖橙 45°斜纹·敌方=冷蓝 −45°斜纹（颜色+纹向都不同·一眼分清）。
+// 敌我牌面（owner 2026-06-20：底纹要好看·斜纹太丑）：改干净暖/冷渐变 + 左上玻璃高光。我方暖橙·敌方冷蓝（色温+描边色分清）。
 const sideFace = (mine: boolean): string => mine
-  ? 'repeating-linear-gradient(45deg, rgba(238,90,37,.14) 0 6px, rgba(0,0,0,0) 6px 13px), linear-gradient(158deg,#fff3ea,#ffd6c2)'
-  : 'repeating-linear-gradient(-45deg, rgba(42,95,158,.16) 0 6px, rgba(0,0,0,0) 6px 13px), linear-gradient(158deg,#edf3fc,#cbdcf3)';
+  ? 'radial-gradient(120% 78% at 26% 12%, rgba(255,255,255,.55), rgba(255,255,255,0) 58%), linear-gradient(160deg,#fff5ef 0%,#ffe0cf 68%,#ffceb5 100%)'
+  : 'radial-gradient(120% 78% at 26% 12%, rgba(255,255,255,.6), rgba(255,255,255,0) 58%), linear-gradient(160deg,#f0f6fe 0%,#d6e4f8 68%,#c1d6f2 100%)';
 
 // 双皮 token（逐字搬自设计稿 themes()）。
 type Theme = Record<string, string>;
