@@ -11,7 +11,8 @@ export interface DishaFx {
   phalanxCap: number;       // 方阵封顶
   phalanxAdj8: boolean;     // true=8 邻(方阵) / false=同路相邻(连环船)
   nearBaseSlots: number;    // 温泉关死守：自家大本营前 N 格(隘口)
-  nearBaseWinPct: number;   // 隘口内 +X%
+  nearBaseWinPct: number;   // 隘口内 +X% 胜率（winPct 式·留给文档里的战车环堡/内外双壕等）
+  nearBasePower: number;    // 隘口内 守军 +X 战力（power 式·进战力拆解·温泉关用此·owner 2026-06-21：替原 +15% 胜率）
   eliteMidWinPct: number;   // 近卫军(简化)：中路 Boss 前锋 +X%
   flankYouWinPct: number;   // 锤砧：你被左右夹 → 你 −X%（存正·apply 时减你胜率）
   firstStrike: boolean;     // 长枪方阵：前锋先手（平局判 Boss 胜）
@@ -28,7 +29,7 @@ export interface DishaFx {
 
 export const NO_DISHA: DishaFx = {
   allWinPct: 0, generalWinPct: 0, phalanxPerAdj: 0, phalanxCap: 0, phalanxAdj8: false,
-  nearBaseSlots: 0, nearBaseWinPct: 0, eliteMidWinPct: 0, flankYouWinPct: 0,
+  nearBaseSlots: 0, nearBaseWinPct: 0, nearBasePower: 0, eliteMidWinPct: 0, flankYouWinPct: 0,
   firstStrike: false, firstStrikeWinPct: 0, winStreakPer: 0, winStreakCap: 0,
   noRout: false, lastStandGeneral: false, bonusMana: 0, batteryEveryTurns: 0, batteryWinPct: 0, homeHp: 0,
 };
@@ -36,7 +37,7 @@ export const NO_DISHA: DishaFx = {
 // 关 1-5 共 15 张地煞精确数值（doc23 §八·★ 弱版起·sim 真机调）。每张 = Partial<DishaFx> 贡献。
 export const DISHA_SPECS: Record<string, Partial<DishaFx>> = {
   // 关 1 · 列奥尼达 · 温泉关（★ ~80%）
-  thermopylae: { homeHp: 4, nearBaseSlots: 2, nearBaseWinPct: 15 }, // 温泉关死守：4 血 + 隘口 +15%
+  thermopylae: { homeHp: 2, nearBaseSlots: 2, nearBasePower: 2 }, // 温泉关死守：家 2 血 + 隘口(后2格)守军 +2 战力（owner 2026-06-21·替原 4血/+15%胜率）
   phalanx: { phalanxPerAdj: 6, phalanxCap: 24, phalanxAdj8: true }, // 斯巴达方阵：8 邻每邻 +6%·封顶 +24%
   laststand: { lastStandGeneral: true },                            // 死战不退：主将 2 命（仅主将·关1）
   // 关 2 · 亚历山大 · 高加米拉（★★ ~70%）
@@ -82,6 +83,7 @@ export function aggregateDisha(ids: readonly string[]): DishaFx {
     if (s.phalanxAdj8) fx.phalanxAdj8 = true;
     fx.nearBaseSlots = Math.max(fx.nearBaseSlots, s.nearBaseSlots ?? 0);
     fx.nearBaseWinPct += s.nearBaseWinPct ?? 0;
+    fx.nearBasePower += s.nearBasePower ?? 0;
     fx.eliteMidWinPct += s.eliteMidWinPct ?? 0;
     fx.flankYouWinPct += s.flankYouWinPct ?? 0;
     if (s.firstStrike) fx.firstStrike = true;

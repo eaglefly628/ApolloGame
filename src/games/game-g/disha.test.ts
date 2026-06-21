@@ -16,20 +16,20 @@ const clashWr = (disha: string[], place: (b: TurnBattle) => void = (b) => { b.la
 };
 
 describe('Game G · 地煞（doc23 §八 关1-5 · 15 张 · 甲实装）', () => {
-  it('aggregateDisha + STAGE_DISHA：关1-5 各 3 张·关1 列奥尼达聚合(4血/方阵/2命)', () => {
+  it('aggregateDisha + STAGE_DISHA：关1-5 各 3 张·关1 列奥尼达聚合(2血/隘口+2战力/方阵/2命)', () => {
     expect(STAGE_DISHA.length).toBe(5);
     expect(STAGE_DISHA.every((s) => s.length === 3)).toBe(true);
     expect(stageDisha(1)).toEqual(['thermopylae', 'phalanx', 'laststand']);
     expect(stageDisha(99)).toEqual(STAGE_DISHA[4]); // 越界取末关
     const d = aggregateDisha(stageDisha(1));
-    expect(d.homeHp).toBe(4); expect(d.phalanxPerAdj).toBe(6); expect(d.phalanxCap).toBe(24); expect(d.lastStandGeneral).toBe(true);
+    expect(d.homeHp).toBe(2); expect(d.nearBasePower).toBe(2); expect(d.phalanxPerAdj).toBe(6); expect(d.phalanxCap).toBe(24); expect(d.lastStandGeneral).toBe(true);
     expect(aggregateDisha([])).toEqual(NO_DISHA);
   });
 
-  it('🟢 温泉关死守：Boss 大本营 4 血(普通 3) + 隘口(贴家 2 格)掷命 +15%', () => {
+  it('🟢 温泉关死守：Boss 大本营 2 血 + 隘口(贴家 2 格)守军 +2 战力（owner 2026-06-21·替原 4血/+15%胜率）', () => {
     const b = initTurnBattle({ seed: 1, disha: ['thermopylae'] });
-    expect(b.homeB).toBe(4); expect(b.homeA).toBe(3); // 仅 Boss 厚
-    // Boss 兵在自家隘口(slot 7,8)→ 玩家攻其掷命 −15%；同位无地煞作对比
+    expect(b.homeB).toBe(2); expect(b.homeA).toBe(3); // 薄血死守(2<普通3)·靠隘口+2战力固守
+    // Boss 兵在自家隘口(slot 7,8)→ 守军 +2 战力 → 玩家攻其更难(胜率更低)；同位无地煞作对比
     const inGap = clashWr(['thermopylae'], (x) => { x.lanes[0].a.push(u('a0', 'K', 7)); x.lanes[0].b.push(u('b0', '9', 8)); });
     const noGap = clashWr([], (x) => { x.lanes[0].a.push(u('a0', 'K', 7)); x.lanes[0].b.push(u('b0', '9', 8)); });
     expect(inGap).toBeLessThan(noGap);

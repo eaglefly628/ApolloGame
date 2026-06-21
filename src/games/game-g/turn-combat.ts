@@ -43,8 +43,11 @@ export const GATES: readonly Gate[] = [
   { side: 'b', fromLane: 1, fromSlot: 5, toLane: 2, toSlot: 4 },
 ];
 
-// 场上兵：占一格 slot；续航 staminaLeft 打光退场（同 live-combat 经济）。
-export interface TurnUnit { id: string; rank: string; suit: string; points: number; buff: number; general: boolean; stamina: number; staminaLeft: number; slot: number }
+// 场上兵：占一格 slot；续航 staminaLeft 打光退场（同 live-combat 经济）。speed=每回合推进格数(默认1·缺省视作1·向后兼容旧字面量)。
+export interface TurnUnit { id: string; rank: string; suit: string; points: number; buff: number; general: boolean; stamina: number; staminaLeft: number; slot: number; speed?: number }
+// 行军速度（owner 2026-06-21）：大王/小王(★/王/JOKER) 与 老K 三类高阶兵·疾行 2 格/回合；其余 1 格。纯 rank 派生·确定性。
+const FAST_RANKS = new Set(['★', '王', 'JOKER', 'K']);
+export function unitSpeed(rank: string): number { return FAST_RANKS.has(rank) ? 2 : 1; }
 // 一路：双方兵列（own[0] = 前锋·最贴敌）+ 捷径门开关 + 主将阵亡/续航退场记账。
 export interface TurnLane { a: TurnUnit[]; b: TurnUnit[]; aGenDead: boolean; bGenDead: boolean; spentA: number; spentB: number }
 // 手牌/牌库卡：扑克兵(上场) / 天罡(施法·id)。
@@ -147,7 +150,7 @@ export function deployUnit(b: TurnBattle, side: 'a' | 'b', handIdx: number, lane
   sd.hand.splice(handIdx, 1); sd.mana -= DEPLOY_COST; b.actionTaken = 'deploy';
   const stamBonus = sd.tengangA.stamPlus + (isFaceRank(card.rank) ? sd.tengangA.stamFaces : 0); // 不屈/老兵（双侧·Boss 施法亦得）
   const stam = cardStamina(card.rank) + stamBonus;
-  col.push({ id: card.id, rank: card.rank, suit: card.suit, points: cardPoints(card.rank), buff: card.buff, general: card.general, stamina: stam, staminaLeft: stam, slot });
+  col.push({ id: card.id, rank: card.rank, suit: card.suit, points: cardPoints(card.rank), buff: card.buff, general: card.general, stamina: stam, staminaLeft: stam, slot, speed: unitSpeed(card.rank) });
   col.sort((x, y) => (side === 'a' ? y.slot - x.slot : x.slot - y.slot)); // 维持 [0]=前锋(贴敌·最高/最低 slot)
   if (gateToggle >= 0 && gateToggle < GATES.length) b.gatesOpen[gateToggle] = !b.gatesOpen[gateToggle]; // 放牌附赠：开/关一道捷径门（doc24 §三·可不用）
   onPlayDraw(sd); // 川流：放牌后免费补抽
@@ -208,7 +211,7 @@ function championId(b: TurnBattle, side: 'a' | 'b'): string | undefined {
 
 // 有效战力 P_eff（doc19 §三 · 复用 live-combat 同款：base + 经营 buff + 天罡(双方己侧·Boss 施法亦生效) + 士气；apply add→mul→floor→clamp）。
 // noRout（地煞·破釜沉舟/死战不退）：Boss 主将亡不溃散（shift 不取 −ROUT）。fx=该侧 tengangA（NO_TENGANG → 零修正·行为同前）。
-function effPower(u: TurnUnit, lane: TurnLane, side: 'a' | 'b', fx: TengangFx, champId?: string, noRout = false): { pEff: number; shift: number; tg: number } {
+function effPower(u: TurnUnit, lane: TurnLane, side: 'a' | 'b', fx: TengangFx, champId?: string, noRout = false, nearDef = 0): { pEff: number; shift: number; tg: number; nearDef: number } {
   const col = colOf(lane, side);
   let tg = fx.powerAll + fx.pEffAdd;
   if (fx.powerFront && col.length && u.id === col[0].id) tg += fx.powerFront; // 锋矢：前锋
@@ -216,7 +219,7 @@ function effPower(u: TurnUnit, lane: TurnLane, side: 'a' | 'b', fx: TengangFx, c
   if (fx.powerSameSuit && col.filter((x) => x.suit === u.suit).length >= 2) tg += fx.powerSameSuit; // 同花魁
   if (fx.comboPair || fx.comboTrips) { const rc = new Map<string, number>(); for (const x of col) rc.set(x.rank, (rc.get(x.rank) ?? 0) + 1); const vals = [...rc.values()]; if (fx.comboPair && vals.some((n) => n >= 2)) tg += fx.comboPair; if (fx.comboTrips && vals.some((n) => n >= 3)) tg += fx.comboTrips; } // 对子诀/鼎立
   const mul = fx.powerMulHighest > 1 && u.id === champId ? fx.powerMulHighest : 1; // 擎天
-  if (u.general) return { pEff: pEff(u.points, u.buff + tg, mul), shift: 0, tg };
+  if (u.general) return { pEff: pEff(u.points, u.buff + tg + nearDef, mul), shift: 0, tg, nearDef };
   const genDead = side === 'a' ? lane.aGenDead : lane.bGenDead;
   const genHere = col.some((x) => x.general);
   const moraleBonus = genHere ? fx.moraleLeader : 0; // 令旗(旗手)
@@ -225,7 +228,7 @@ function effPower(u: TurnUnit, lane: TurnLane, side: 'a' | 'b', fx: TengangFx, c
     : fx.revenge > 0 ? fx.revenge // 哀兵：主将亡 → 余部暴怒 +N
     : noRoutEff ? 0               // 督战：主将亡不溃散
     : -ROUT_PTS;                  // 默认：主将亡 → 溃散
-  return { pEff: pEff(u.points, u.buff + tg + shift, mul), shift, tg };
+  return { pEff: pEff(u.points, u.buff + tg + shift + nearDef, mul), shift, tg, nearDef };
 }
 
 // 单张天罡 fx 对该前锋的 tg 贡献（与 effPower 的 tg 门控逐字一致）→ 对决明细逐张溯源（owner 2026-06-21）。
@@ -282,7 +285,9 @@ function clashEval(b: TurnBattle, li: number): ClashEval | null {
   if (!fa || !fb) return null;
   const champA = b.a.tengangA.powerMulHighest > 1 ? championId(b, 'a') : undefined;
   const champB = b.b.tengangA.powerMulHighest > 1 ? championId(b, 'b') : undefined;
-  const ba = effPower(fa, lane, 'a', b.a.tengangA, champA), bb = effPower(fb, lane, 'b', b.b.tengangA, champB, b.dishaB.noRout);
+  const dB = b.dishaB;
+  const nearDefB = dB.nearBaseSlots > 0 && fb.slot >= SLOTS - dB.nearBaseSlots ? dB.nearBasePower : 0; // 温泉关·隘口守军固守 +战力（贴 Boss 家·进战力拆解）
+  const ba = effPower(fa, lane, 'a', b.a.tengangA, champA), bb = effPower(fb, lane, 'b', b.b.tengangA, champB, dB.noRout, nearDefB);
   const ea = ba.pEff, eb = bb.pEff;
   let wr = winrate(ea, eb, Math.max(2, CLASH_K - b.a.tengangA.kHard)); // 灌铅骰
   if (b.a.tengangA.winFloor > 0) wr = Math.min(0.97, Math.max(wr, 0.03 + b.a.tengangA.winFloor)); // 稳手
@@ -319,7 +324,7 @@ function resolveClash(b: TurnBattle, li: number): void {
     if (b.a.tengangA.noUpset > 0 && wr >= 0.5) aWins = true; // 铁骰
   }
   const tgBreakOf = (sd: TurnSide, u: TurnUnit, sk: 'a' | 'b'): [string, number][] => sd.castFx.map(({ id, fx }) => [id, Math.round(tgContribOf(u, lane, sk, fx))] as [string, number]).filter((r) => r[1] !== 0); // 逐张天罡溯源
-  b.lastClash = { tick: b.turn, lane: li, winrate: wr, roll, aWins, tie, a: { rank: fa.rank, suit: fa.suit, general: fa.general, points: fa.points, buff: fa.buff, morale: ba.shift, tengang: ba.tg, pEff: ea, tgBreak: tgBreakOf(b.a, fa, 'a') }, b: { rank: fb.rank, suit: fb.suit, general: fb.general, points: fb.points, buff: fb.buff, morale: bb.shift, tengang: bb.tg, pEff: eb, tgBreak: tgBreakOf(b.b, fb, 'b') } };
+  b.lastClash = { tick: b.turn, lane: li, winrate: wr, roll, aWins, tie, a: { rank: fa.rank, suit: fa.suit, general: fa.general, points: fa.points, buff: fa.buff, morale: ba.shift, tengang: ba.tg, pEff: ea, tgBreak: tgBreakOf(b.a, fa, 'a'), nearDef: ba.nearDef }, b: { rank: fb.rank, suit: fb.suit, general: fb.general, points: fb.points, buff: fb.buff, morale: bb.shift, tengang: bb.tg, pEff: eb, tgBreak: tgBreakOf(b.b, fb, 'b'), nearDef: bb.nearDef } };
   b.clashLog.push(b.lastClash); // 流水（驱动层逐场抽特写）
   b.clashSeq += 1;
   if (!aWins) b.bossWinStreak += 1; // 九战九捷：Boss 胜累积
@@ -353,7 +358,7 @@ function advanceSide(b: TurnBattle, side: 'a' | 'b'): void {
       // own 各兵 +dir，保 slot 间距 1·前锋停在敌前锋相邻格(不重叠)；已过门兵留原地。
       for (let i = 0; i < own.length; i++) {
         if (diverted.has(own[i].id)) continue; // 本回合已过门 → 不再直进
-        let t = own[i].slot + dir;
+        let t = own[i].slot + dir * (own[i].speed ?? 1); // 疾行兵(★/王/K)一步 2 格；前锋仍被下方夹逼卡在敌前一格/越界判定兜底
         if (i > 0) { const ahead = own[i - 1].slot; t = dir > 0 ? Math.min(t, ahead - 1) : Math.max(t, ahead + 1); }
         else { const limit = foeFront.slot - dir; t = dir > 0 ? Math.min(t, limit) : Math.max(t, limit); } // 停在敌前锋前一格
         own[i].slot = t;
@@ -363,7 +368,7 @@ function advanceSide(b: TurnBattle, side: 'a' | 'b'): void {
       // 无敌 → 向敌家推；越过敌区末格 → 敌大本营 −1·该兵退场。
       for (let i = 0; i < own.length; i++) {
         if (diverted.has(own[i].id)) continue;
-        let t = own[i].slot + dir;
+        let t = own[i].slot + dir * (own[i].speed ?? 1); // 疾行兵(★/王/K)一步 2 格；前锋仍被下方夹逼卡在敌前一格/越界判定兜底
         if (i > 0) { const ahead = own[i - 1].slot; t = dir > 0 ? Math.min(t, ahead - 1) : Math.max(t, ahead + 1); }
         own[i].slot = t;
       }

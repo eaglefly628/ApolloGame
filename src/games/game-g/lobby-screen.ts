@@ -987,7 +987,7 @@ function dishaNumberLine(dishaId: string): string {
   if (s.allWinPct) p.push(`全军 +${s.allWinPct}% 胜率`);
   if (s.generalWinPct) p.push(`主将 +${s.generalWinPct}%`);
   if (s.phalanxPerAdj) p.push(`每相邻友兵 +${s.phalanxPerAdj}%${s.phalanxCap ? ` · 封顶 +${s.phalanxCap}%` : ''}`);
-  if (s.nearBaseSlots) p.push(`大本营前 ${s.nearBaseSlots} 格 +${s.nearBaseWinPct}%`);
+  if (s.nearBaseSlots) p.push(`大本营前 ${s.nearBaseSlots} 格 ${[s.nearBasePower ? `守军战力 +${s.nearBasePower}` : '', s.nearBaseWinPct ? `+${s.nearBaseWinPct}% 胜率` : ''].filter(Boolean).join('·') || '固守'}`);
   if (s.eliteMidWinPct) p.push(`中路前锋 +${s.eliteMidWinPct}%`);
   if (s.flankYouWinPct) p.push(`你被左右夹 −${s.flankYouWinPct}%`);
   if (s.firstStrike) p.push(`先手出击${s.firstStrikeWinPct ? ` +${s.firstStrikeWinPct}%` : ''}`);

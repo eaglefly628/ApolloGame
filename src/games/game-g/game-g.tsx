@@ -280,6 +280,7 @@ function clashToTurnView(ev: ClashEvent, tgName: (id: string) => string = (id) =
       for (const [id, amt] of c.tgBreak ?? []) r.push(['　└ ' + tgName(id), amt]);
     }
     if (c.morale !== 0) r.push([c.morale > 0 ? '士气 · 主将坐镇' : '士气 · 主将亡·溃散', c.morale]);
+    if (c.nearDef) r.push(['地煞 · 隘口固守', c.nearDef]); // 温泉关守军贴家 +战力（owner 2026-06-21）
     return r;
   };
   return {
