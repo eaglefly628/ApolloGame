@@ -6,6 +6,7 @@ import { initTurnBattle, drawCard, deployUnit, castTengang, discardCard, endTurn
 import { mountTurnBattle, buildTurnBattleView, type TurnBattleView, type TurnBattleActions, type TurnClashView, type TurnClashCardView, type TurnShaView } from './turn-battle-screen.js';
 import { loadLevel } from './level.js';
 import { cardPoints, P_MAX } from './clash-resolve.js';
+import { playSfx, isSfxOn, toggleSfx } from './sound.js';
 
 // Game G ·《翻命扑克》—— 大厅 ↔ 出征 闭环（launcher 卡带槽：export mount(container)→cleanup）。自包含于本目录。
 // outcome-first：每张牌按 favor 跑确定性种子硬币**先定生死**，3D 翻牌是**反推的表现**（抛飞→相撞→落定翻面）。
@@ -473,8 +474,10 @@ export function mount(container: HTMLElement): () => void {
     const label = el('div', 'min-width:300px;text-align:center;font-weight:600;opacity:.85',
       `第 ${save.stage}/${RUN_BATTLES} 战 · ${lvl.battle.name}（${lvl.battle.oneLine}）｜ 命 ${'❤'.repeat(save.lives)} ｜ 你的阵 ${myName} ｜ ⚔ ${lvl.heroId}：「${lvl.bossLines.open}」`);
     const back = mkBtn('← 返回大厅'); back.onclick = showLobby;
+    const sndBtn = mkBtn(isSfxOn() ? '🔊 音效' : '🔇 静音'); // 战斗音效开关（owner 2026-06-21）
+    sndBtn.onclick = () => { const on = toggleSfx(); sndBtn.textContent = on ? '🔊 音效' : '🔇 静音'; if (on) playSfx('select'); };
     const bar = el('div', 'display:flex;gap:10px;align-items:center;max-width:1340px;flex-wrap:wrap;justify-content:center');
-    bar.append(label, back);
+    bar.append(label, back, sndBtn);
     root.append(stage, bar);
 
     // 揭晓前完整编排（与旧路 + 测试共用 prepareArmies）→ 折成回合制扑克兵牌库（lane 由玩家放牌时自选·非预派）。
@@ -505,7 +508,9 @@ export function mount(container: HTMLElement): () => void {
     // 逐场掷命特写：3D 飞入 → 停留 → **玩家点「看明白了」才演下一场/收场**（owner 2026-06-20：不能自动关·要看清为什么胜败）。
     const playPerf = (onDone: () => void): void => {
       if (perfQueue.length === 0) { perfClash = null; perfResume = null; mounted?.update(); onDone(); return; }
-      perfClash = perfQueue.shift()!; perfResume = () => { perfResume = null; playPerf(onDone); }; mounted?.update();
+      perfClash = perfQueue.shift()!;
+      playSfx('clashReveal'); playSfx(perfClash.aWins ? 'clashWin' : 'clashLose'); // 揭晓撞击 + 我方胜/负的判定音
+      perfResume = () => { perfResume = null; playPerf(onDone); }; mounted?.update();
     };
     const finishTurnSeq = (): void => { busy = false; selMode = null; selHand = -1; if (tb.winner !== 'pending') settleTurn(); else mounted?.update(); };
     const runAiThenContinue = (): void => { // 玩家推进特写演完 → AI 回合(脚本) → AI 推进特写 → 回到玩家
@@ -514,28 +519,28 @@ export function mount(container: HTMLElement): () => void {
     };
     const commitEndTurn = (): void => {
       if (busy || tb.winner !== 'pending' || tb.active !== 'a') return;
-      busy = true; selMode = null; selHand = -1; gateChance = false;
+      busy = true; selMode = null; selHand = -1; gateChance = false; playSfx('endTurn');
       endTurn(tb); drainClashes(); playPerf(runAiThenContinue);
     };
     const actions: TurnBattleActions = {
-      pickAction: (kind) => { if (busy || tb.active !== 'a') return; if (tb.actionTaken && tb.actionTaken !== kind) return; selMode = selMode === kind ? null : kind; selHand = -1; gateChance = false; },
-      drawFrom: (from) => { if (busy || selMode !== 'draw') return; drawCard(tb, 'a', from); },
+      pickAction: (kind) => { if (busy || tb.active !== 'a') return; if (tb.actionTaken && tb.actionTaken !== kind) return; selMode = selMode === kind ? null : kind; selHand = -1; gateChance = false; playSfx('select'); },
+      drawFrom: (from) => { if (busy || selMode !== 'draw') return; if (drawCard(tb, 'a', from)) playSfx('draw'); },
       selectHand: (i) => {
         if (busy || tb.active !== 'a') return;
-        if (selMode === 'cast') { if (castTengang(tb, 'a', i)) tb.a.tengangA = aggregateTengang(tb.a.castIds); selHand = -1; } // 施法 → 持续修正重算
-        else if (selMode === 'discard') { discardCard(tb, 'a', i); selHand = -1; }
-        else if (selMode === 'deploy' || tb.actionTaken === null || tb.actionTaken === 'deploy') { selMode = 'deploy'; selHand = selHand === i ? -1 : i; } // 默认进放牌·选牌→点路落子
+        if (selMode === 'cast') { if (castTengang(tb, 'a', i)) { tb.a.tengangA = aggregateTengang(tb.a.castIds); playSfx('cast'); } selHand = -1; } // 施法 → 持续修正重算
+        else if (selMode === 'discard') { if (discardCard(tb, 'a', i)) playSfx('discard'); selHand = -1; }
+        else if (selMode === 'deploy' || tb.actionTaken === null || tb.actionTaken === 'deploy') { selMode = 'deploy'; selHand = selHand === i ? -1 : i; playSfx('select'); } // 默认进放牌·选牌→点路落子
       },
-      playLane: (lane) => { if (busy || selMode !== 'deploy' || selHand < 0) return; if (deployUnit(tb, 'a', selHand, lane)) { selHand = -1; gateChance = true; flash('✓ 放牌成功——可翻一道机关门(箭头·一次)，或继续放牌'); } }, // 放牌附赠：一次翻门机会
+      playLane: (lane) => { if (busy || selMode !== 'deploy' || selHand < 0) return; if (deployUnit(tb, 'a', selHand, lane)) { selHand = -1; gateChance = true; playSfx('deploy'); flash('✓ 放牌成功——可翻一道机关门(箭头·一次)，或继续放牌'); } }, // 放牌附赠：一次翻门机会
       toggleGate: (idx) => { // 仅放牌后(gateChance)可翻一道本方门·一次；平时翻门无效（doc24 §三·owner 2026-06-20）
         if (busy || tb.active !== 'a') return;
-        if (GATES[idx]?.side !== 'a') { flash('✗ 只能改自己的机关门'); return; }
-        if (!gateChance) { flash('✗ 放完牌后才能翻一道机关门（一次）'); return; }
-        toggleGate(tb, idx); gateChance = false; flash(tb.gatesOpen[idx] ? '机关门已开 ◉（下一步该格兵按门向过门）' : '机关门已闭 ✕');
+        if (GATES[idx]?.side !== 'a') { playSfx('invalid'); flash('✗ 只能改自己的机关门'); return; }
+        if (!gateChance) { playSfx('invalid'); flash('✗ 放完牌后才能翻一道机关门（一次）'); return; }
+        toggleGate(tb, idx); gateChance = false; playSfx(tb.gatesOpen[idx] ? 'gateOpen' : 'gateClose'); flash(tb.gatesOpen[idx] ? '机关门已开 ◉（下一步该格兵按门向过门）' : '机关门已闭 ✕');
       },
       endTurn: commitEndTurn,
       setTheme: (t) => { theme = t; },
-      clashConfirm: () => { const r = perfResume; if (r) r(); }, // 「看明白了」→ 演下一场掷命/收场
+      clashConfirm: () => { playSfx('confirm'); const r = perfResume; if (r) r(); }, // 「看明白了」→ 演下一场掷命/收场
     };
     mounted = mountTurnBattle(stage, view, actions);
     battle = mounted; // teardownMatch 清理（destroy）
@@ -546,6 +551,7 @@ export function mount(container: HTMLElement): () => void {
       const lanesA = tb.lanes.filter((L) => L.a.length + L.spentA > L.b.length + L.spentB).length;
       const lanesB = tb.lanes.filter((L) => L.b.length + L.spentB > L.a.length + L.spentA).length;
       const homeA = tb.homeA, homeB = tb.homeB, winner = tb.winner, homeMax = tb.homeMax;
+      playSfx(winner === 'a' ? 'victory' : 'defeat'); // 收场号角 / 哀落
       const gain = survA + (winner === 'a' ? 15 : 0);
       save.materials += gain;
       let tail = '', cont = '回大厅', route: () => void = showLobby;
