@@ -801,16 +801,6 @@ function inlayDetail(view: LobbyView, ix: number): string {
     <div style="flex:1"><div class="note" style="text-align:left;margin-bottom:5px">镶嵌槽（${inlaid.length}/${INLAY_MAX}）· 点✕卸下（永久消耗·不退卡包）</div><div class="ench-slots">${slots}</div>
     <div class="note" style="text-align:left;margin:10px 0 5px">${full ? '<span style="color:var(--gold)">槽位已满</span>' : '点卡包里的地支镶入（消耗一张）：'}</div><div class="ench-picks">${pick}</div></div></div>`;
 }
-// 牌库内附魔弹窗（owner 2026-06-21·E「点牌库里牌改地支附魔」）：不动选牌网格、走小徽标 → 弹此窗编辑。
-function deckInlayBox(view: LobbyView, ix: number): string {
-  if (view.deck[ix] === undefined) return '';
-  return `<div class="tut-ov" data-act="deckInlay-close"><div class="tut-box" data-stop="1" style="max-width:560px">
-    <h2 style="margin-bottom:4px">${GI.crafting} 地支附魔 · 单牌镶嵌</h2>
-    <div class="note" style="text-align:left;margin-bottom:10px">给这张牌镶地支生肖（消耗卡包·镶一张少一张）。改的就是「编辑/改造/战局」同一份 52 牌 favor。</div>
-    ${inlayDetail(view, ix)}
-    <div style="text-align:center;margin-top:14px"><button class="cta-sub" style="color:#2a1a08;background:var(--gold-grad);border:0" data-act="deckInlay-close">完成 →</button></div>
-  </div></div>`;
-}
 function enchantPanel(view: LobbyView, craftSel: string): string {
   const deck = view.deck;
   const inlays = view.inlays ?? {};
@@ -1100,9 +1090,9 @@ function rechargeThanksBox(): string {
     <div style="margin-top:18px"><button class="cta-sub" style="color:#2a1a08;background:var(--gold-grad);border:0" data-act="thanks-close">收下祝福 →</button></div>
   </div></div>`;
 }
-export interface LobbyOverlayState { helpOpen: boolean; helpTab: 'intro' | 'tut' | 'manual'; manualTier: 'easy' | 'mid' | 'hard'; settingsOpen: boolean; rechargeOpen: boolean; shopTab: 'gacha' | 'wallet' | 'foil'; rechargeErr: string; rcSuits: string[]; rechargeThanks: boolean; gachaReveal: GachaResult[] | null; story: { beats: StoryBeat[]; idx: number; label: string; cta: string } | null; guideSkipAsk: boolean; deckPickerOpen: boolean; lucky: LuckyRoll | null; deckInlaySel: number | null }
+export interface LobbyOverlayState { helpOpen: boolean; helpTab: 'intro' | 'tut' | 'manual'; manualTier: 'easy' | 'mid' | 'hard'; settingsOpen: boolean; rechargeOpen: boolean; shopTab: 'gacha' | 'wallet' | 'foil'; rechargeErr: string; rcSuits: string[]; rechargeThanks: boolean; gachaReveal: GachaResult[] | null; story: { beats: StoryBeat[]; idx: number; label: string; cta: string } | null; guideSkipAsk: boolean; deckPickerOpen: boolean; lucky: LuckyRoll | null }
 export function lobbyOverlaysHTML(view: LobbyView, s: LobbyOverlayState): string {
-  return `${s.helpOpen ? helpBox(s.helpTab, s.manualTier) : ''}${s.settingsOpen ? settingsBox(view) : ''}${s.rechargeOpen ? shopBox(view, s.shopTab, s.rechargeErr, s.rcSuits) : ''}${s.rechargeThanks ? rechargeThanksBox() : ''}${s.gachaReveal ? gachaRevealBox(s.gachaReveal) : ''}${s.lucky ? luckyBox(s.lucky, view.fortune) : ''}${s.story ? narrationBox(s.story.beats, s.story.idx, s.story.label, s.story.cta) : ''}${s.guideSkipAsk ? guideSkipDialog() : ''}${s.deckPickerOpen ? deckPickerBox(view) : ''}${s.deckInlaySel != null ? deckInlayBox(view, s.deckInlaySel) : ''}`;
+  return `${s.helpOpen ? helpBox(s.helpTab, s.manualTier) : ''}${s.settingsOpen ? settingsBox(view) : ''}${s.rechargeOpen ? shopBox(view, s.shopTab, s.rechargeErr, s.rcSuits) : ''}${s.rechargeThanks ? rechargeThanksBox() : ''}${s.gachaReveal ? gachaRevealBox(s.gachaReveal) : ''}${s.lucky ? luckyBox(s.lucky, view.fortune) : ''}${s.story ? narrationBox(s.story.beats, s.story.idx, s.story.label, s.story.cta) : ''}${s.guideSkipAsk ? guideSkipDialog() : ''}${s.deckPickerOpen ? deckPickerBox(view) : ''}`;
 }
 export function renderLobby(view: LobbyView, tab: string, helpOpen: boolean, deckTab: 'base' | 'gang' | 'dizhi' = 'base', earthFilter = 'all', collTab = 'cards', heroSuit = 'all', heroDetail = '', heroRar = 'all', ownedOnly = false, settingsOpen = false, manualTier: 'easy' | 'mid' | 'hard' = 'easy', rechargeOpen = false, rechargeErr = '', story: { beats: StoryBeat[]; idx: number; label: string; cta: string } | null = null, guideSkipAsk = false, shopTab: 'gacha' | 'wallet' | 'foil' = 'wallet', gachaReveal: GachaResult[] | null = null, deckPickerOpen = false, craftSel = '', helpTab: 'intro' | 'tut' | 'manual' = 'intro'): string {
   const on = (t: string): string => (tab === t ? ' on' : '');
@@ -1187,7 +1177,7 @@ export function renderLobby(view: LobbyView, tab: string, helpOpen: boolean, dec
     </div></section>
     <section class="screen${on('ladder')} full" data-screen="ladder">${ladderSection(view.name, view.rankText)}</section>
   </div>
-  </div><div id="gv-ov" style="display:contents">${lobbyOverlaysHTML(view, { helpOpen, helpTab, manualTier, settingsOpen, rechargeOpen, shopTab, rechargeErr, rcSuits: [], rechargeThanks: false, gachaReveal, story, guideSkipAsk, deckPickerOpen, lucky: null, deckInlaySel: null })}</div></div>`;
+  </div><div id="gv-ov" style="display:contents">${lobbyOverlaysHTML(view, { helpOpen, helpTab, manualTier, settingsOpen, rechargeOpen, shopTab, rechargeErr, rcSuits: [], rechargeThanks: false, gachaReveal, story, guideSkipAsk, deckPickerOpen, lucky: null })}</div></div>`;
 }
 
 export interface LobbyHandlers {
@@ -1249,7 +1239,6 @@ export function mountLobby(host: HTMLElement, h: LobbyHandlers): { update: () =>
   let gachaReveal: GachaResult[] | null = null;
   let deckPicker = false;
   let craftSel = '';
-  let deckInlaySel: number | null = null; // 牌库内附魔弹窗选中牌位（owner 2026-06-21·E）
   const render = (): void => { host.innerHTML = renderLobby({ ...h.getView(), skin }, tab, help, deckTab, earthFilter, collTab, heroSuit, heroDetail, heroRar, ownedOnly, settings, manTier, recharge, rechargeErr, story, guideSkipAsk, shopTab, gachaReveal, deckPicker, craftSel, helpTab); updateCoach(); };
   let lucky: LuckyRoll | null = null;
   // 新手引导高亮层（doc28 A/B/C·复用引擎 coachmark 纯几何 + 薄 DOM 适配）：全屏 dim 镂空当前步锚点 + 气泡 + 跳过。
@@ -1288,7 +1277,7 @@ export function mountLobby(host: HTMLElement, h: LobbyHandlers): { update: () =>
   const onCoachClick = (e: MouseEvent): void => { const t = (e.target as HTMLElement).closest('[data-act="guide-skip"]'); if (t) { playSfx(sfxForAct('guide-skip')); guideSkipAsk = true; renderOv(); updateCoach(); } };
   coachLayer.addEventListener('click', onCoachClick);
   const onResize = (): void => updateCoach();
-  const ovState = (): LobbyOverlayState => ({ helpOpen: help, helpTab, manualTier: manTier, settingsOpen: settings, rechargeOpen: recharge, shopTab, rechargeErr, rcSuits, rechargeThanks, gachaReveal, story, guideSkipAsk, deckPickerOpen: deckPicker, lucky, deckInlaySel });
+  const ovState = (): LobbyOverlayState => ({ helpOpen: help, helpTab, manualTier: manTier, settingsOpen: settings, rechargeOpen: recharge, shopTab, rechargeErr, rcSuits, rechargeThanks, gachaReveal, story, guideSkipAsk, deckPickerOpen: deckPicker, lucky });
   const localRollVal = (): number => 1 + Math.floor(Math.random() * 100); // 无 onRollFortune 句柄时的本地兜底（测试/独立预览）
   // 抗闪屏：只更新弹层 #gv-ov（不重建大厅主体）。弹层打开/内部导航/关闭都走它 → 不再整屏闪。
   const renderOv = (): void => { const o = host.querySelector('#gv-ov'); if (o) o.innerHTML = lobbyOverlaysHTML({ ...h.getView(), skin }, ovState()); else render(); updateCoach(); };
@@ -1413,11 +1402,10 @@ export function mountLobby(host: HTMLElement, h: LobbyHandlers): { update: () =>
     else if (act === 'deckPicker-close') { deckPicker = false; render(); } // 关弹窗→刷新主体（牌组槽变化）
     // 地支附魔台：选牌 / 镶入 / 卸下
     else if (act === 'craftSel') { craftSel = craftSel === k ? '' : k; render(); }
-    // 牌库内附魔（owner 2026-06-21·E）：点小徽标弹单牌附魔弹窗（不动选牌点击）；编辑时只刷弹窗(不重建网格·不跳屏)，关窗再整刷一遍刷新徽标。
-    else if (act === 'enchSel') { deckInlaySel = parseInt(k, 10); if (Number.isNaN(deckInlaySel)) deckInlaySel = null; renderOv(); }
-    else if (act === 'deckInlay-close') { deckInlaySel = null; render(); }
-    else if (act === 'inlay') { const [idx, br, t] = k.split(':'); h.onInlay?.(idx, br, parseInt(t, 10) || 1); if (deckInlaySel != null) renderOv(); else render(); }
-    else if (act === 'removeInlay') { const [idx, slot] = k.split(':'); h.onRemoveInlay?.(idx, parseInt(slot, 10) || 0); if (deckInlaySel != null) renderOv(); else render(); }
+    // 牌库内附魔（owner 2026-06-21·E）：点小徽标 → 进「改造坊」并跳到这张牌做附魔（复用真·附魔台·不动选牌点击）。
+    else if (act === 'enchSel') { tab = 'craft'; craftSel = k; render(); host.querySelector('.ench-card.sel')?.scrollIntoView({ block: 'nearest' }); }
+    else if (act === 'inlay') { const [idx, br, t] = k.split(':'); h.onInlay?.(idx, br, parseInt(t, 10) || 1); render(); }
+    else if (act === 'removeInlay') { const [idx, slot] = k.split(':'); h.onRemoveInlay?.(idx, parseInt(slot, 10) || 0); render(); }
     else if (act === 'exitGame') { settings = false; h.onExitGame?.(); } // 退出到游戏库（壳层接管·不再 render）
     else if (act === 'reset') { h.onReset?.(); settings = false; render(); }
     updateCoach(); // 任何点击后重算引导高亮（步进/开关弹层都可能改可见步）

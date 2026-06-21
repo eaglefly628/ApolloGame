@@ -621,7 +621,7 @@ describe('Game G · lobby-screen mountLobby 点击交互（DOM · happy-dom）',
       expect(host.querySelector('[data-act="inlay"][data-k="0:子:1"]')).not.toBeNull(); // 卡包子鼠·铜(档1)可镶
     });
 
-    it('牌库内附魔（E·owner 2026-06-21）：牌组屏每张牌有🀄徽标 → 点它弹单牌附魔弹窗（不动选牌）', () => {
+    it('牌库内附魔（E·owner 2026-06-21）：牌组屏每张牌有🀄徽标 → 点它进改造坊并选中该牌（不动选牌）', () => {
       const host = document.createElement('div');
       const onInlay = vi.fn(() => true);
       const onTogglePick = vi.fn();
@@ -631,8 +631,10 @@ describe('Game G · lobby-screen mountLobby 点击交互（DOM · happy-dom）',
       expect(badge).not.toBeNull(); // 每张牌带附魔小徽标
       click(badge!);
       expect(onTogglePick).not.toHaveBeenCalled(); // 点徽标不触发选牌（pickCard）
-      expect(host.querySelector('.ench-slots')).not.toBeNull(); // 弹出单牌附魔编辑
-      click(host.querySelector('[data-act="inlay"][data-k="0:子:1"]')!); // 在弹窗里镶入
+      expect(host.querySelector('[data-screen="craft"].on')).not.toBeNull(); // 跳到改造坊
+      expect(host.querySelector('.ench-card.sel[data-k="0"]')).not.toBeNull(); // 且选中这张牌
+      expect(host.querySelector('.ench-slots')).not.toBeNull(); // 出该牌的镶嵌编辑
+      click(host.querySelector('[data-act="inlay"][data-k="0:子:1"]')!); // 在改造坊里镶入这张牌
       expect(onInlay).toHaveBeenCalledWith('0', '子', 1);
     });
 
