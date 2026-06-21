@@ -483,7 +483,7 @@ function pokerBuildHead(view: LobbyView): string {
   const okColor = n === max ? 'var(--gold)' : 'var(--ink-dim)';
   return `<h2 style="margin:0">🎴 扑克牌库 ·「<b style="color:var(--gold)">${esc(view.activeDeckName ?? '')}</b>」· 从 52 选 <b style="color:${okColor}">${n}/${max}</b>
     <span style="display:flex;gap:8px;margin-left:auto">
-      <button class="cta-sub" data-act="autoBuildDeck" title="按费用曲线+偏好已养成自动凑一副">✨ 一键自动构筑</button>
+      <button class="cta-sub" data-act="autoBuildDeck" data-anchor="autobuild-poker" title="按费用曲线+偏好已养成自动凑一副">✨ 一键自动构筑</button>
       <button class="cta-sub" data-act="clearPicks" title="清空已选">清空</button>
     </span></h2>
     <div class="cost-curve" title="放牌费用曲线（别全大点·低费才铺得开场面）" style="margin-top:10px">${curve}</div>`;
@@ -696,9 +696,12 @@ function narrationBox(beats: StoryBeat[], idx: number, label: string, cta: strin
 // 高亮遮罩复用引擎通用 coachmark 能力（@renderer/coachmark 纯几何 + mountLobby 内薄 DOM 适配·OnboardingOverlay 同法）。教学关战斗本体=甲。
 export const GUIDE_COACH: { anchor: string; text: string; advanceAct: string; advanceK?: string; placement: 'top' | 'bottom' }[] = [
   { anchor: 'help', text: '① 先翻一遍《玩法手册》——30 秒看懂怎么打（三路九格 · 每回合四选一 · 掷命对决）。点这里 📖', advanceAct: 'man', placement: 'bottom' },
-  { anchor: 'decks', text: '② 先配一套出战牌组——进「我的牌组」，点牌选 16 张扑克（或用 ✨一键自动构筑），再配 5 张天罡。', advanceAct: 'tab', advanceK: 'decks', placement: 'bottom' },
-  { anchor: 'play', text: '③ 配好了？回大厅点「出征」打第一战——温泉关 · 列奥尼达（最易），解封你的第一缕英雄之魂。', advanceAct: 'play', placement: 'top' },
-  { anchor: 'shop', text: '④ 开局送了你钻石 + 金币——来「商城」抽一发，体验开包变强，然后开打！', advanceAct: 'shop', placement: 'bottom' },
+  { anchor: 'decks', text: '② 配一套出战牌组——点这里进「我的牌组」。', advanceAct: 'tab', advanceK: 'decks', placement: 'bottom' },
+  { anchor: 'autobuild-poker', text: '③ 点「✨一键自动构筑」，自动帮你凑 16 张扑克牌库。', advanceAct: 'autoBuildDeck', placement: 'bottom' },
+  { anchor: 'tab-gang', text: '④ 再切到「⚡天罡战法」页配天罡。', advanceAct: 'deckTab', advanceK: 'gang', placement: 'bottom' },
+  { anchor: 'autobuild-gang', text: '⑤ 点「✨一键配置天罡」，自动凑满天罡战法。', advanceAct: 'autoBuildTiangang', placement: 'bottom' },
+  { anchor: 'home', text: '⑥ 配好了！点这里返回「大厅」。', advanceAct: 'tab', advanceK: 'home', placement: 'bottom' },
+  { anchor: 'play', text: '⑦ 点「出征」打第一战——温泉关 · 列奥尼达（最易），解封你的第一缕英雄之魂！', advanceAct: 'play', placement: 'top' },
 ];
 // 跳过引导确认对话框（owner 2026-06-20「首页加个跳过引导的对话框」）。
 function guideSkipDialog(): string {
@@ -851,8 +854,9 @@ function tiangangDeckManager(view: LobbyView): string {
   const deckFull = inDeck.length >= size;
   const filled = inDeck.map((j) => `<div class="tg-slot" title="${esc(j.sub)}"><div class="tg-slot-ic">${tiangangIcon(j.icon, j.tint)}</div><b>${esc(j.name)}</b><button class="tg-rm" data-act="toggleTiangang" data-k="${j.id}" title="移出牌组">✕</button></div>`).join('');
   const empties = Array.from({ length: Math.max(0, size - inDeck.length) }, () => `<button class="tg-slot empty" data-act="deckAdd" title="添加天罡牌"><span>＋</span></button>`).join('');
-  return `<div class="card"><h2>${GI.bolt} 天罡战法 ·「<b style="color:var(--gold)">${esc(view.activeDeckName ?? '')}</b>」 <span class="ghost" style="margin-left:auto;font-size:12px">这套出战带 ${size} 张</span></h2>
-    <div class="note" style="text-align:left;margin:2px 0 7px">当前出战牌组的天罡（局内法术·≤${size}）——满槽点 <b>✕ 移除</b>，空槽点 <b>＋ 添加</b>（从已拥有里选）。换哪套到顶部「我的出战牌组」选。</div>
+  return `<div class="card"><h2>${GI.bolt} 天罡战法 ·「<b style="color:var(--gold)">${esc(view.activeDeckName ?? '')}</b>」
+    <span style="display:flex;gap:8px;margin-left:auto"><button class="cta-sub" data-act="autoBuildTiangang" data-anchor="autobuild-gang" title="从已拥有天罡自动凑满这套">✨ 一键配置天罡</button></span></h2>
+    <div class="note" style="text-align:left;margin:2px 0 7px">当前出战牌组的天罡（局内法术·≤${size}）——满槽点 <b>✕ 移除</b>，空槽点 <b>＋ 添加</b>（从已拥有里选），或上方<b>一键配置</b>。换哪套到顶部「我的出战牌组」选。</div>
     <div class="tg-deck">${filled}${empties}</div>
     ${deckFull ? `<div class="note" style="text-align:left;margin-top:8px;color:var(--gold)">天罡已满 ${size} 张。</div>` : ''}</div>`;
 }
@@ -1042,7 +1046,7 @@ export function renderLobby(view: LobbyView, tab: string, helpOpen: boolean, dec
     <button class="icon" data-act="settings" title="设置 · 皮肤 / 重看引导 / 重置">⚙</button>
   </div>
   <div class="nav">
-    <button class="${on('home')}" data-act="tab" data-k="home">大厅</button>
+    <button class="${on('home')}" data-act="tab" data-k="home" data-anchor="home">大厅</button>
     <button class="${on('campaign')}" data-act="tab" data-k="campaign">战役</button>
     <button class="${on('decks')}" data-act="tab" data-k="decks" data-anchor="decks">我的牌组</button>
     <button class="${on('coll')}" data-act="tab" data-k="coll">收藏</button>
@@ -1085,7 +1089,7 @@ export function renderLobby(view: LobbyView, tab: string, helpOpen: boolean, dec
     </section>`;
     })()}
     <section class="screen${on('campaign')} full" data-screen="campaign" style="flex-direction:column;overflow-y:auto">${campaignSection(view)}</section>
-    <section class="screen${on('decks')} full" data-screen="decks">${deckSetSelector(view)}<div class="deck-nav"><button class="${deckTab==='base'?'on':''}" data-act="deckTab" data-k="base">🎴 扑克牌库</button><button class="${deckTab==='gang'?'on':''}" data-act="deckTab" data-k="gang">⚡ 天罡战法</button><button class="${deckTab==='dizhi'?'on':''}" data-act="deckTab" data-k="dizhi">🀄 地支牌</button></div><div class="dsub${dOn('base')}" data-dsub="base">${pokerBuildPanel(view)}</div><div class="dsub${dOn('gang')}" data-dsub="gang">${tiangangDeckManager(view)}</div><div class="dsub${dOn('dizhi')}" data-dsub="dizhi"><div class="card"><h2>${GI.planet} 地支牌 · 十二生肖 <span class="ghost" style="margin-left:auto;font-size:12px">铜→银→金 · 镶进牌附魔（改造坊）</span></h2><div class="earth-filter">${efBtn('all','全部','background:var(--gold-grad);color:#2a1a08;border:0')}${efBtn('bronze','铜','background:#cd7f32;color:#fff;border:0')}${efBtn('silver','银','background:#c4ccd6;color:#2a2a2a;border:0')}${efBtn('gold','金','background:var(--gold-grad);color:#2a1a08;border:0')}</div>${earthSection(earthFilter, view.dizhiOwned ?? {})}</div></div></section>
+    <section class="screen${on('decks')} full" data-screen="decks">${deckSetSelector(view)}<div class="deck-nav"><button class="${deckTab==='base'?'on':''}" data-act="deckTab" data-k="base">🎴 扑克牌库</button><button class="${deckTab==='gang'?'on':''}" data-act="deckTab" data-k="gang" data-anchor="tab-gang">⚡ 天罡战法</button><button class="${deckTab==='dizhi'?'on':''}" data-act="deckTab" data-k="dizhi">🀄 地支牌</button></div><div class="dsub${dOn('base')}" data-dsub="base">${pokerBuildPanel(view)}</div><div class="dsub${dOn('gang')}" data-dsub="gang">${tiangangDeckManager(view)}</div><div class="dsub${dOn('dizhi')}" data-dsub="dizhi"><div class="card"><h2>${GI.planet} 地支牌 · 十二生肖 <span class="ghost" style="margin-left:auto;font-size:12px">铜→银→金 · 镶进牌附魔（改造坊）</span></h2><div class="earth-filter">${efBtn('all','全部','background:var(--gold-grad);color:#2a1a08;border:0')}${efBtn('bronze','铜','background:#cd7f32;color:#fff;border:0')}${efBtn('silver','银','background:#c4ccd6;color:#2a2a2a;border:0')}${efBtn('gold','金','background:var(--gold-grad);color:#2a1a08;border:0')}</div>${earthSection(earthFilter, view.dizhiOwned ?? {})}</div></div></section>
     <section class="screen${on('coll')} full" data-screen="coll" style="flex-direction:column"><div class="deck-nav"><button class="${collTab==='cards'?'on':''}" data-act="collTab" data-k="cards">收藏·牌谱</button><button class="${collTab==='ladder'?'on':''}" data-act="collTab" data-k="ladder">天梯·榜</button><button class="${collTab==='fiends'?'on':''}" data-act="collTab" data-k="fiends">地煞·战法</button><button class="${collTab==='collect'?'on':''}" data-act="collTab" data-k="collect">天罡&amp;闪艺</button></div><div class="dsub${cOn('cards')}" data-dsub="cards" style="flex:1;min-height:0;flex-direction:column">${heroCollSection(heroSuit, heroRar, heroDetail, ownedOnly)}</div><div class="dsub${cOn('ladder')}" data-dsub="ladder" style="flex:1;min-height:0;flex-direction:column">${ladderSection(view.name, view.rankText)}</div><div class="dsub${cOn('fiends')}" data-dsub="fiends" style="flex:1;min-height:0;flex-direction:column">${fiendsCodex(view.campaignMax ?? 1)}</div><div class="dsub${cOn('collect')}" data-dsub="collect"><div class="card"><h2>🗃 天罡牌 · 收藏 ${view.tiangangs.filter((j) => j.owned).length}/${view.tiangangs.length}</h2><div class="note" style="text-align:left;margin-bottom:6px">⚡ 已解锁天罡牌（到「牌组」屏编入出战牌组）</div><div class="shelf">${view.tiangangs.map((j) => shopItem('', tiangangIcon(j.icon, j.tint), { ...j, buyable: false })).join('')}</div><div class="note" style="text-align:left;margin:12px 0 6px">✨ 闪艺 foil（纯装饰收集 · 点亮可购买）· ${view.foils.filter((f) => f.owned).length}/${view.foils.length}</div><div class="shelf">${view.foils.map((f) => shopItem('buyFoil', '✨', f)).join('')}</div></div></div></section>
     <section class="screen${on('craft')} full" data-screen="craft"><div class="craft-zones">
       ${enchantPanel(view, craftSel)}
@@ -1121,6 +1125,7 @@ export interface LobbyHandlers {
   onTogglePick?: (cardId: string) => void; // 出战扑克牌组：点牌入/出（≤POKER_PICK_SIZE·乙1）
   onAutoBuildDeck?: () => void; // 一键自动构筑出战扑克牌组（乙3）
   onClearPicks?: () => void; // 清空出战扑克牌组
+  onAutoBuildTiangang?: () => void; // 一键配置天罡战法（从已拥有里自动凑满·owner 2026-06-21）
   onReset?: () => void;
   onSkin?: (skin: 'onyx' | 'rosy') => void;
   onIntroSeen?: () => void; // 看完开场故事（doc28 §一）→ 标记已看 + 起引导
@@ -1166,7 +1171,8 @@ export function mountLobby(host: HTMLElement, h: LobbyHandlers): { update: () =>
     if (v.firstLaunch || gs < 0 || gs >= GUIDE_COACH.length || anyOverlayOpen()) { coachLayer.innerHTML = ''; return; }
     const spec = GUIDE_COACH[gs];
     const el = host.querySelector(`[data-anchor="${spec.anchor}"]`) as HTMLElement | null;
-    if (!el) { coachLayer.innerHTML = ''; return; } // 锚点当前不可见（如不在主页）→ 本次不画
+    if (!el) { coachLayer.innerHTML = ''; return; } // 锚点不在当前 DOM → 本次不画
+    if (el.closest('.dsub:not(.on), .screen:not(.on)')) { coachLayer.innerHTML = ''; return; } // 锚点在隐藏子页/未激活屏 → 不画歪
     const r = el.getBoundingClientRect();
     const vp = { w: window.innerWidth || 1280, h: window.innerHeight || 800 };
     const g = coachmarkGeometry({ x: r.left, y: r.top, w: r.width, h: r.height }, vp, { shape: 'rect', pad: 7, placement: spec.placement, bubbleW: 304, bubbleH: 66 });
@@ -1297,6 +1303,7 @@ export function mountLobby(host: HTMLElement, h: LobbyHandlers): { update: () =>
     else if (act === 'pickCard') { h.onTogglePick?.(k); renderPicks(); }
     else if (act === 'autoBuildDeck') { h.onAutoBuildDeck?.(); renderPicks(); }
     else if (act === 'clearPicks') { h.onClearPicks?.(); renderPicks(); }
+    else if (act === 'autoBuildTiangang') { h.onAutoBuildTiangang?.(); render(); }
     // 天罡牌组编辑：主页「编辑牌组」跳牌组屏天罡页 / 空槽弹选卡窗 / 关窗
     else if (act === 'editDeck') { tab = 'decks'; deckTab = 'gang'; render(); }
     else if (act === 'deckAdd') { deckPicker = true; renderOv(); }

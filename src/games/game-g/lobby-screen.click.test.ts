@@ -354,11 +354,11 @@ describe('Game G · lobby-screen mountLobby 点击交互（DOM · happy-dom）',
       expect(onGuideStep).toHaveBeenCalledWith(2);
     });
 
-    it('末步（商城 shop）点中锚点 → onGuideDone', () => {
+    it('末步（出征 play）点中锚点 → onGuideDone', () => {
       const host = document.createElement('div');
       const onGuideDone = vi.fn();
-      mountLobby(host, { getView: () => makeView({ firstLaunch: false, guideStep: 3 }), onPlay: vi.fn(), onGuideDone }); // 4 步·末步=商城
-      click(host.querySelector('[data-act="shop"]')); // 步3 的 advanceAct=shop
+      mountLobby(host, { getView: () => makeView({ firstLaunch: false, guideStep: 6 }), onPlay: vi.fn(), onGuideDone }); // 7 步·末步=出征
+      click(host.querySelector('[data-act="play"]')); // 步6 的 advanceAct=play
       expect(onGuideDone).toHaveBeenCalledTimes(1);
     });
 
