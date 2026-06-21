@@ -87,6 +87,7 @@ export interface TurnBattleView {
   sha: TurnShaView[]; bossName: string;
   clash: TurnClashView | null;
   tutorial: { narration: string; highlight: string } | null; // 教学关（doc28）：旁白 + 高亮元素 key（act:draw/lane:1/hand:0/end…）
+  notice: string | null; // 临时提示（放牌后可翻一道机关门 / 非时翻门无效·owner 2026-06-20）
 }
 
 // ── 上下通路梯子（owner 2026-06-20 Cloud Design 参考图·忠实端口 LAD 像素坐标·900×400 viewBox）──
@@ -310,6 +311,11 @@ export function buildTurnFrameHTML(view: TurnBattleView): string {
   const narrationBanner = view.tutorial?.narration
     ? `<div style="${st({ position: 'absolute', top: '10px', left: '50%', transform: 'translateX(-50%)', zIndex: 56, maxWidth: '74%', padding: '10px 20px', borderRadius: '14px', background: 'linear-gradient(180deg,rgba(28,40,58,.97),rgba(14,24,38,.98))', border: '2px solid var(--gold)', boxShadow: '0 10px 30px rgba(0,0,0,.5), 0 0 30px rgba(232,205,138,.25)', color: 'var(--ink)', fontFamily: 'var(--fb)', fontSize: '14px', lineHeight: 1.5, textAlign: 'center', display: 'flex', alignItems: 'center', gap: '10px' })}"><span style="font-size:22px;">🎓</span><span>${esc(view.tutorial.narration)}</span></div>`
     : '';
+  // 临时提示 toast（放牌后可翻一道机关门 / 非时翻门无效）。✗ 开头=警示红·否则金提示。
+  const isWarn = view.notice?.startsWith('✗');
+  const noticeBanner = view.notice
+    ? `<div style="${st({ position: 'absolute', top: '10px', left: '50%', transform: 'translateX(-50%)', zIndex: 57, maxWidth: '78%', padding: '9px 20px', borderRadius: '99px', background: isWarn ? 'rgba(60,18,18,.96)' : 'rgba(20,34,26,.96)', border: '1.5px solid ' + (isWarn ? 'var(--danger)' : 'var(--hp)'), boxShadow: '0 8px 24px rgba(0,0,0,.5)', color: isWarn ? '#ffd2d2' : '#cdeccd', fontFamily: 'var(--fh)', fontWeight: 700, fontSize: '14px', whiteSpace: 'nowrap', animation: 'g-fade .2s ease both' })}">${esc(view.notice)}</div>`
+    : '';
   const actionHint = { marginTop: '9px', padding: '8px 10px', borderRadius: '9px', background: 'var(--chip)', border: '1px solid var(--panel-border)', fontSize: '11px', color: 'var(--ink-dim)', lineHeight: 1.4, textAlign: 'center' };
   const handArea = { flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column', padding: '13px 16px', borderRadius: '14px', background: 'var(--panel)', border: '1px solid var(--panel-border)', boxShadow: 'inset 0 0 0 1px var(--hairline)' };
   const handCount = { padding: '3px 10px', borderRadius: '99px', background: 'var(--accent-soft)', color: 'var(--accent)', fontFamily: 'var(--fh)', fontWeight: 700, fontSize: '11px', border: '1px solid var(--accent)' };
@@ -329,7 +335,7 @@ export function buildTurnFrameHTML(view: TurnBattleView): string {
     </div>
     <div style="${st(body)}">
       <div style="${st(boardWrap)}">
-        ${narrationBanner}
+        ${narrationBanner}${noticeBanner}
         ${fortBase(view, true)}
         <div style="${st(lanesCol)}">${forr(view.lanes, (L, li) => laneRow(L, li, hi === 'lane:' + li))}${laddersLayer(view)}</div>
         ${fortBase(view, false)}
@@ -368,7 +374,7 @@ const SUIT_KEYS: Record<string, 's' | 'h' | 'd' | 'c'> = { S: 's', H: 'h', D: 'd
 const lc = (s: string): 's' | 'h' | 'd' | 'c' => SUIT_KEYS[s] ?? 's';
 const rankOf = (r: string): 'white' | 'green' | 'blue' | 'gold' => (r === 'A' ? 'gold' : r === 'K' || r === 'Q' || r === 'J' ? 'blue' : 'white');
 
-export interface TurnViewOpts { theme?: 'onyx' | 'brocade'; tengangName?: (id: string) => string; clash?: TurnClashView | null; sha?: TurnShaView[]; bossName?: string; selMode?: string | null; selHand?: number; tutorial?: { narration: string; highlight: string } | null }
+export interface TurnViewOpts { theme?: 'onyx' | 'brocade'; tengangName?: (id: string) => string; clash?: TurnClashView | null; sha?: TurnShaView[]; bossName?: string; selMode?: string | null; selHand?: number; tutorial?: { narration: string; highlight: string } | null; gatesLive?: boolean; notice?: string | null }
 /** 从 turn-combat 真状态派生战斗屏视图（玩家 = side a 视角）。纯读、不改 battle。 */
 export function buildTurnBattleView(b: TurnBattle, opts: TurnViewOpts = {}): TurnBattleView {
   const laneNames = ['上路', '中路', '下路'];
@@ -402,13 +408,14 @@ export function buildTurnBattleView(b: TurnBattle, opts: TurnViewOpts = {}): Tur
     turnWho: b.active === 'a' ? '我方回合' : '敌方回合', roundNo: b.turn, timerLabel: '∞ 无限时',
     water: b.a.mana, waterMax: 10,
     homeA: b.homeA, homeB: b.homeB, homeMax: b.homeMax,
-    lanes, gates: GATES.map((g, i) => ({ idx: i, open: b.gatesOpen[i], side: g.side, fromLane: g.fromLane, fromSlot: g.fromSlot, toLane: g.toLane, toSlot: g.toSlot })), gatesLive: mode === 'deploy',
+    lanes, gates: GATES.map((g, i) => ({ idx: i, open: b.gatesOpen[i], side: g.side, fromLane: g.fromLane, fromSlot: g.fromSlot, toLane: g.toLane, toSlot: g.toSlot })), gatesLive: opts.gatesLive ?? (mode === 'deploy'),
     hand, handPawnCount: hand.filter((c) => c.kind === 'pawn').length, handGangCount: hand.filter((c) => c.kind === 'gang').length,
     actions, actionSub: SUB[mode ?? ''] ?? SUB[''], drawPick: mode === 'draw',
     sha: opts.sha ?? [{ filled: true, name: '地煞·破军', rar: 'gold', desc: '' }, { filled: true, name: '地煞·贪狼', rar: 'blue', desc: '' }, { filled: false, name: '未知', rar: 'white', desc: '' }],
     bossName: opts.bossName ?? '楚霸王 · 项羽',
     clash: opts.clash ?? null,
     tutorial: opts.tutorial ?? null,
+    notice: opts.notice ?? null,
   };
 }
 

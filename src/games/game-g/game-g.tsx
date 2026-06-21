@@ -493,9 +493,12 @@ export function mount(container: HTMLElement): () => void {
     let theme: 'onyx' | 'brocade' = 'onyx';
     let selMode: string | null = null; // 当前选中的动作类（draw/deploy/cast/discard·UI 先选后做）
     let selHand = -1;                  // 放牌/施法/弃牌 选中的手牌
+    let gateChance = false;            // 放牌附赠：放完一张牌 → 可翻一道机关门(一次)·用掉/换动作即失效(doc24 §三·owner 2026-06-20)
+    let notice: string | null = null; let noticeTimer = 0; // 临时提示 toast
     let drained = 0; const perfQueue: ClashEvent[] = []; let perfClash: ClashEvent | null = null; let busy = false; let perfResume: (() => void) | null = null;
     const tgName = (id: string): string => TIANGANG_BY_ID.get(id)?.name ?? id;
-    const view = (): TurnBattleView => buildTurnBattleView(tb, { theme, tengangName: tgName, selMode, selHand, clash: perfClash ? clashToTurnView(perfClash) : null, bossName: aiName, sha: shaView });
+    const flash = (msg: string): void => { notice = msg; mounted?.update(); if (noticeTimer) clearTimeout(noticeTimer); noticeTimer = window.setTimeout(() => { notice = null; mounted?.update(); }, 1700); };
+    const view = (): TurnBattleView => buildTurnBattleView(tb, { theme, tengangName: tgName, selMode, selHand, clash: perfClash ? clashToTurnView(perfClash) : null, bossName: aiName, sha: shaView, gatesLive: gateChance, notice });
     let mounted: { update: () => void; destroy: () => void } | null = null;
 
     const drainClashes = (): void => { for (const ev of tb.clashLog.slice(drained)) perfQueue.push(ev); drained = tb.clashLog.length; };
@@ -511,11 +514,11 @@ export function mount(container: HTMLElement): () => void {
     };
     const commitEndTurn = (): void => {
       if (busy || tb.winner !== 'pending' || tb.active !== 'a') return;
-      busy = true; selMode = null; selHand = -1;
+      busy = true; selMode = null; selHand = -1; gateChance = false;
       endTurn(tb); drainClashes(); playPerf(runAiThenContinue);
     };
     const actions: TurnBattleActions = {
-      pickAction: (kind) => { if (busy || tb.active !== 'a') return; if (tb.actionTaken && tb.actionTaken !== kind) return; selMode = selMode === kind ? null : kind; selHand = -1; },
+      pickAction: (kind) => { if (busy || tb.active !== 'a') return; if (tb.actionTaken && tb.actionTaken !== kind) return; selMode = selMode === kind ? null : kind; selHand = -1; gateChance = false; },
       drawFrom: (from) => { if (busy || selMode !== 'draw') return; drawCard(tb, 'a', from); },
       selectHand: (i) => {
         if (busy || tb.active !== 'a') return;
@@ -523,15 +526,20 @@ export function mount(container: HTMLElement): () => void {
         else if (selMode === 'discard') { discardCard(tb, 'a', i); selHand = -1; }
         else if (selMode === 'deploy' || tb.actionTaken === null || tb.actionTaken === 'deploy') { selMode = 'deploy'; selHand = selHand === i ? -1 : i; } // 默认进放牌·选牌→点路落子
       },
-      playLane: (lane) => { if (busy || selMode !== 'deploy' || selHand < 0) return; if (deployUnit(tb, 'a', selHand, lane)) selHand = -1; },
-      toggleGate: (idx) => { if (busy || tb.active !== 'a' || GATES[idx]?.side !== 'a') return; toggleGate(tb, idx); }, // 仅本方 4 门可翻
+      playLane: (lane) => { if (busy || selMode !== 'deploy' || selHand < 0) return; if (deployUnit(tb, 'a', selHand, lane)) { selHand = -1; gateChance = true; flash('✓ 放牌成功——可翻一道机关门(箭头·一次)，或继续放牌'); } }, // 放牌附赠：一次翻门机会
+      toggleGate: (idx) => { // 仅放牌后(gateChance)可翻一道本方门·一次；平时翻门无效（doc24 §三·owner 2026-06-20）
+        if (busy || tb.active !== 'a') return;
+        if (GATES[idx]?.side !== 'a') { flash('✗ 只能改自己的机关门'); return; }
+        if (!gateChance) { flash('✗ 放完牌后才能翻一道机关门（一次）'); return; }
+        toggleGate(tb, idx); gateChance = false; flash(tb.gatesOpen[idx] ? '机关门已开 ◉（下一步该格兵按门向过门）' : '机关门已闭 ✕');
+      },
       endTurn: commitEndTurn,
       setTheme: (t) => { theme = t; },
       clashConfirm: () => { const r = perfResume; if (r) r(); }, // 「看明白了」→ 演下一场掷命/收场
     };
     mounted = mountTurnBattle(stage, view, actions);
     battle = mounted; // teardownMatch 清理（destroy）
-    stopLoop = () => { perfResume = null; }; // 离场：弃掉未决特写续演（无计时器·确认制）
+    stopLoop = () => { perfResume = null; if (noticeTimer) { clearTimeout(noticeTimer); noticeTimer = 0; } }; // 离场：弃未决特写续演 + 清提示计时
 
     function settleTurn(): void {
       const survA = tb.lanes.reduce((s, L) => s + L.a.length + L.spentA, 0);
