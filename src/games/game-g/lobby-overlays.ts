@@ -1,5 +1,5 @@
 // Game G · 大厅弹层渲染（帮助/设置/商城/抽卡开包/旁白/跳过引导·拆分自 lobby-screen.ts）。
-import { esc, kfmt } from './lobby-util.js';
+import { esc, kfmt, type LuckyRoll, type FortuneView } from './lobby-util.js';
 import { GI } from './icons.js';
 import { isSfxMuted } from './sfx.js';
 import { isBgmOn, toggleBgm, bgmTrackIdx, selectBgm, bgmVolume, setBgmVolume, BGM_TRACKS } from './bgm.js';
@@ -220,3 +220,38 @@ export function guideSkipDialog(): string {
   </div></div>`;
 }
 
+
+// ── 今日卦象 + 充值致谢弹层（owner 2026-06-21·拆分自 lobby-screen.ts）──
+export function luckyFromVal(val: number): LuckyRoll {
+  return val >= 90 ? { val, label: '大吉', color: 'var(--gold)', line: '天命在你·此局必有奇遇，放胆去翻！' }
+    : val >= 70 ? { val, label: '吉', color: 'var(--club)', line: '顺风顺水·正是出征好时机。' }
+    : val >= 40 ? { val, label: '中平', color: 'var(--ink)', line: '胜负在人·稳扎稳打、看准爆冷缝。' }
+    : val >= 15 ? { val, label: '小凶', color: 'var(--diamond)', line: '谨慎出牌·手里留张保命天罡。' }
+    : { val, label: '凶', color: 'var(--heart)', line: '爆冷之日——正好赌一把翻盘命！' };
+}
+// 主页「掷」字互动（owner 2026-06-20）：掷一卦看今日卦象·纯趣味·不进战斗。
+// owner 2026-06-21：每日限掷 max 次（显示「今日制卦 N/M」）；「收下此卦」= 选中持久化 → 主页顶显示。
+export function luckyBox(r: LuckyRoll, fortune?: FortuneView): string {
+  const canRoll = !fortune || fortune.rolls < fortune.max;
+  const countLine = fortune ? `<div class="note" style="margin-top:8px;font-size:12px">今日制卦 <b style="color:var(--gold)">${fortune.rolls}/${fortune.max}</b> 次${canRoll ? '' : ' · 次数已尽（明日刷新）'}</div>` : '';
+  const reroll = canRoll
+    ? `<button class="cta-sub" style="flex:1" data-act="lucky">再掷一卦</button>`
+    : `<button class="cta-sub" style="flex:1;opacity:.4;cursor:not-allowed" disabled>次数已尽</button>`;
+  return `<div class="tut-ov" data-act="lucky-close"><div class="tut-box" data-stop="1" style="max-width:340px;text-align:center">
+    <div class="note">🎴 掷命 · 今日卦象</div>
+    <div style="font-family:var(--fd);font-size:66px;line-height:1;color:var(--gold);margin:8px 0">${r.val}</div>
+    <div style="font-family:var(--fd);font-size:28px;color:${r.color}">${esc(r.label)}</div>
+    <div class="note" style="margin-top:8px">${esc(r.line)}</div>
+    ${countLine}
+    <div style="display:flex;gap:10px;margin-top:18px">${reroll}<button class="cta-sub" style="flex:1;color:#2a1a08;background:var(--gold-grad);border:0" data-act="lucky-keep">收下此卦</button></div>
+  </div></div>`;
+}
+// 充值致谢弹框（owner 2026-06-21·Demo 彩蛋）：确认充值后弹「谢谢老板·已打到君白工资卡」。
+export function rechargeThanksBox(): string {
+  return `<div class="tut-ov" data-act="thanks-close"><div class="tut-box" data-stop="1" style="max-width:360px;text-align:center">
+    <div style="font-size:52px;line-height:1;margin:6px 0">💰</div>
+    <div style="font-family:var(--fd);font-size:24px;color:var(--gold)">谢谢老板！</div>
+    <div class="note" style="margin-top:10px;font-size:14px;line-height:1.7">您充值的金额已如数打到<br><b style="color:var(--ink)">君白</b> 的工资卡 🧧<br><span class="ghost" style="font-size:11px">（Demo 彩蛋·实为模拟到账）</span></div>
+    <div style="margin-top:18px"><button class="cta-sub" style="color:#2a1a08;background:var(--gold-grad);border:0" data-act="thanks-close">收下祝福 →</button></div>
+  </div></div>`;
+}
