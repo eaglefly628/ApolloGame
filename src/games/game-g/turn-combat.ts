@@ -310,24 +310,6 @@ export function clashOdds(b: TurnBattle, li: number): number | null {
   return wr;
 }
 
-// 掷命「10 颗十面骰」表现数据（owner 2026-06-21·3D 物理骰 → 表现层乙渲染）：把已定的 roll/winrate/胜负
-// 折成「10 粒 d10(0-9·共 0~90) 落点 + 需冲破的门槛线」。**胜率低→门槛高(难)·胜率高→门槛低(易)**；
-// 关键：sum>threshold ⟺ 实际胜负(aWins)，**强制对齐·绝不重新 RNG**——表现永不与真实结果矛盾(确定性/回放安全)。
-export interface ClashDice { dice: number[]; sum: number; threshold: number; win: boolean }
-export function clashDiceRoll(roll: number, winrate: number, aWins: boolean): ClashDice {
-  const SCALE = 90; // 10 颗 d10(每颗 0-9) → 总点 0..90
-  const c01 = (x: number): number => Math.max(0, Math.min(1, x));
-  const threshold = Math.round((1 - c01(winrate)) * SCALE); // 胜率低 → 门槛高(要扔很高才赢)
-  let sum = Math.round((1 - c01(roll)) * SCALE);
-  if (aWins && sum <= threshold) sum = Math.min(SCALE, threshold + 1); // 与实判对齐(含平局裁定)：赢则必冲破
-  if (!aWins && sum > threshold) sum = threshold;                       // 负则不冲破
-  const dice = Array.from({ length: 10 }, () => Math.floor(sum / 10)); // 摊到 10 粒·确定性(基数+余数均摊)
-  let rem = sum - dice.reduce((a, b) => a + b, 0);
-  for (let i = 0; i < 10 && rem > 0; i++) { const add = Math.min(9 - dice[i], rem); dice[i] += add; rem -= add; }
-  return { dice, sum, threshold, win: aWins };
-}
-
-
 // 一路前锋相遇 → 掷命对决（doc19 原封·复用 live-combat 同款解算：tie 阶梯 + kHard/winFloor/noUpset；同序消费 rng → hash 稳）。
 function resolveClash(b: TurnBattle, li: number): void {
   const ev = clashEval(b, li); if (!ev) return;

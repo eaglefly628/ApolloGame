@@ -2,8 +2,7 @@ import { mountBattle, type BattleView, type BattleUnit, type BattleLane, type Ba
 import { mountLobby, type LobbyView, type LobbyShopItem } from './lobby-screen.js';
 import { prepareArmies, quartermasterEnergy, FORMATION_PRESETS, PRESET_NAMES, LEVER_CATALOG, LEVER_START, battleSpec, RUN_BATTLES, RUN_LIVES, BETWEEN_BUFFS, applyBuff, tiangangKeyBuffs, BOSS_ROSTER, bossFor, GAME_G_TIANGANGS, TIANGANG_BY_ID, ARCHETYPES, detectArchetype, archetypeMatchup, activeArchetype, pickAiFormation, GAME_G_PLANETS, GAME_G_FOILS, RECHARGE_PACKS, rechargeTotal, DIAMOND_EXCHANGES, DIZHI_SHARD_PACKS, RECHARGE_PASSWORD, GACHA, gachaCost, DIZHI_MAX_TIER, DIZHI_TIER_NM, DIZHI_TIER_CAP, dizhiMerge, dizhiTotal, dizhiTopTier, DIZHI_ZODIACS, INLAY_MAX, effectiveDeckFavors, POKER_PICK_SIZE, isPoolCardId, autoBuildPokerPicks, cardFavorIndex, rankOfCardId, deployCost, isHeroOwned, heroCardByName, effectiveLives, effectiveLeverCap, effectiveLeverRegen, campaignFor, unlockStageOf, type Formation, type Intervention, type LeverKind, type RunBuff, type ArmyCard, type InlayEntry } from './index.js';
 import { initLiveBattle, stepLiveBattle, liveActive, migrateRear, NO_TENGANG, LANE_LEN, HOME_BLOOD, type LiveBattle, type DeployCmd, type ClashEvent, type TengangFx } from './live-combat.js';
-import { initTurnBattle, drawCard, deployUnit, castTengang, discardCard, endTurn, aiTakeTurn, toggleGate, GATES, OPENING_HAND, DRAW_COST, clashDiceRoll, type PokerCard, type TengangHandCard } from './turn-combat.js';
-import { mountDiceRoll } from './dice-roll.js';
+import { initTurnBattle, drawCard, deployUnit, castTengang, discardCard, endTurn, aiTakeTurn, toggleGate, GATES, OPENING_HAND, DRAW_COST, type PokerCard, type TengangHandCard } from './turn-combat.js';
 import { mountTurnBattle, buildTurnBattleView, type TurnBattleView, type TurnBattleActions, type TurnClashView, type TurnClashCardView, type TurnShaView } from './turn-battle-screen.js';
 import { loadLevel } from './level.js';
 import { cardPoints, P_MAX } from './clash-resolve.js';
@@ -624,7 +623,7 @@ export function mount(container: HTMLElement, shell?: { exit?: () => void }): ()
     let selHand = -1;                  // 放牌/施法/弃牌 选中的手牌
     let gateChance = false;            // 放牌附赠：放完一张牌 → 可翻一道机关门(一次)·用掉/换动作即失效(doc24 §三·owner 2026-06-20)
     let notice: string | null = null; let noticeTimer = 0; // 临时提示 toast
-    let drained = 0; const perfQueue: ClashEvent[] = []; let perfClash: ClashEvent | null = null; let busy = false; let perfResume: (() => void) | null = null; let diceFx: { destroy: () => void } | null = null;
+    let drained = 0; const perfQueue: ClashEvent[] = []; let perfClash: ClashEvent | null = null; let busy = false; let perfResume: (() => void) | null = null;
     let coachDid: (on: BattleCoachStep['on']) => void = () => {}; let syncCoach: () => void = () => {}; // 前置声明·真体在挂载后赋（战斗新手引导）
     let justMovedIds = new Set<string>(); let freshIds = new Map<string, number>(); let dealtId: string | null = null; let thinkTimer = 0; let thinkEl: HTMLElement | null = null; let settingsOpen = false;
     const tgName = (id: string): string => TIANGANG_BY_ID.get(id)?.name ?? id;
@@ -659,16 +658,13 @@ export function mount(container: HTMLElement, shell?: { exit?: () => void }): ()
     let mounted: { update: () => void; destroy: () => void } | null = null;
 
     const drainClashes = (): void => { for (const ev of tb.clashLog.slice(drained)) perfQueue.push(ev); drained = tb.clashLog.length; };
-    // 逐场掷命特写：盖一层「10 颗十面骰」3D 表现 → 点投掷 → 滚落冲破门槛 → 看明白了=演下一场/收场（owner 2026-06-21）。
+    // 逐场掷命特写：3D 飞入 → 停留 → **玩家点「看明白了」才演下一场/收场**（owner 2026-06-20：不能自动关·要看清为什么胜败）。
     const playPerf = (onDone: () => void): void => {
-      diceFx?.destroy(); diceFx = null;
       if (perfQueue.length === 0) { perfClash = null; perfResume = null; mounted?.update(); syncCoach(); onDone(); return; }
       const e = perfClash = perfQueue.shift()!;
       log(`⚔掷命[${LANE_NM[e.lane] ?? e.lane}] 我 ${e.a.rank}${SUITNM2[e.a.suit] ?? ''}(战力${e.a.pEff}) vs 敌 ${e.b.rank}${SUITNM2[e.b.suit] ?? ''}(战力${e.b.pEff}) ｜胜率${Math.round(e.winrate * 100)}% 掷${Math.round(e.roll * 100)} → ${e.aWins ? '我胜' : '敌胜'}`);
+      playSfx('clashReveal'); playSfx(e.aWins ? 'clashWin' : 'clashLose'); // 揭晓撞击 + 我方胜/负的判定音
       perfResume = () => { perfResume = null; playPerf(onDone); }; mounted?.update(); syncCoach(); // 引导：特写中隐
-      // 命运骰 3D 表现：浮层盖在特写上·点投掷→10 d10 滚→点数跳进度条→冲破门槛=我胜·继续=perfResume（骰子只演 clashDiceRoll 既定结果）
-      const dd = clashDiceRoll(e.roll, e.winrate, e.aWins);
-      diceFx = mountDiceRoll(root, { data: dd, mine: { rank: e.a.rank, suit: e.a.suit, pEff: e.a.pEff }, foe: { rank: e.b.rank, suit: e.b.suit, pEff: e.b.pEff }, winPct: Math.round(e.winrate * 100), laneName: LANE_NM[e.lane] ?? `第${e.lane + 1}路`, sfx: playSfx }, () => { diceFx = null; const r = perfResume; if (r) r(); });
     };
     const finishTurnSeq = (): void => { busy = false; selMode = null; selHand = -1; if (tb.winner !== 'pending') settleTurn(); else mounted?.update(); syncCoach(); };
     const runAiThenContinue = (): void => { // 玩家推进特写演完 → 敌方回合播报 → AI 思考 → AI 行动 + 掷命 → 我方回合播报 → 回到玩家
@@ -812,7 +808,7 @@ export function mount(container: HTMLElement, shell?: { exit?: () => void }): ()
     };
     root.appendChild(dbgBtn); // 挂 root(非 stage·避免 mountTurnBattle 重渲抹掉)·左下角
 
-    stopLoop = () => { perfResume = null; diceFx?.destroy(); diceFx = null; if (noticeTimer) { clearTimeout(noticeTimer); noticeTimer = 0; } if (thinkTimer) { clearTimeout(thinkTimer); thinkTimer = 0; } if (thinkEl) { thinkEl.remove(); thinkEl = null; } if (coach) { window.removeEventListener('resize', onCoachResize); coach.destroy(); } }; // 离场：弃未决特写续演 + 清骰子浮层 + 清提示计时 + 清思考蒙层 + 卸引导
+    stopLoop = () => { perfResume = null; if (noticeTimer) { clearTimeout(noticeTimer); noticeTimer = 0; } if (thinkTimer) { clearTimeout(thinkTimer); thinkTimer = 0; } if (thinkEl) { thinkEl.remove(); thinkEl = null; } if (coach) { window.removeEventListener('resize', onCoachResize); coach.destroy(); } }; // 离场：弃未决特写续演 + 清提示计时 + 清思考蒙层 + 卸引导
 
     function settleTurn(): void {
       const survA = tb.lanes.reduce((s, L) => s + L.a.length + L.spentA, 0);
