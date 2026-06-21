@@ -496,14 +496,14 @@ export function buildTurnBattleView(b: TurnBattle, opts: TurnViewOpts = {}): Tur
     for (const u of L.a) bySlot.set(u.slot, { u, mine: true });
     for (const u of L.b) bySlot.set(u.slot, { u, mine: false });
     const adj = L.a.length > 0 && L.b.length > 0 && Math.abs(L.a[0].slot - L.b[0].slot) <= 1;
-    const odds = adj ? clashOdds(b, li) : null; // 掷命预报：此路前锋若开战·我方胜率（纯读不掷骰）
+    const odds = L.a.length > 0 && L.b.length > 0 ? clashOdds(b, li) : null; // 掷命预报：只要两路都有前锋就预览我方胜率（新同步推进模型下·放置期就看得见·不必相邻·owner 2026-06-21）
     const occA = new Set(L.a.map((u) => u.slot));
     const target = selDeploy ? [A_DEPLOY_SLOT, A_DEPLOY_SLOT + 1, A_DEPLOY_SLOT + 2].find((sl) => !occA.has(sl)) : undefined;
     const dep = (i: number): 1 | 2 | undefined => (i <= A_DEPLOY_SLOT + 2 ? 1 : i >= B_DEPLOY_SLOT - 2 ? 2 : undefined); // 我方放牌区 0..2 / 敌方 6..8
     const slots: TurnSlotView[] = Array.from({ length: SLOTS }, (_, i) => {
       const hit = bySlot.get(i);
       // isClash 标在两军真前锋格(landed bugfix·非固定中线 4) + 放牌区底纹/标签(标在贴各自城堡那格) + 待放落点高亮
-      const base = { isBorder: i === 4, isClash: adj && (i === L.a[0]?.slot || i === L.b[0]?.slot), deploy: dep(i), deployLabel: i === A_DEPLOY_SLOT || i === B_DEPLOY_SLOT, placeable: !hit && i === target, forecast: adj && i === L.a[0]?.slot && odds != null ? odds : undefined };
+      const base = { isBorder: i === 4, isClash: adj && (i === L.a[0]?.slot || i === L.b[0]?.slot), deploy: dep(i), deployLabel: i === A_DEPLOY_SLOT || i === B_DEPLOY_SLOT, placeable: !hit && i === target, forecast: i === L.a[0]?.slot && odds != null ? odds : undefined };
       return hit
         ? { ...base, hasUnit: true, mine: hit.mine, rank: hit.u.rank, suit: lc(hit.u.suit), power: hit.u.points + hit.u.buff, pts: hit.u.points, buff: hit.u.buff, name: SUITNM[lc(hit.u.suit)] + hit.u.rank, rar: rankOf(hit.u.rank), zod: [], unitId: hit.u.id, justMoved: opts.movedIds?.has(hit.u.id) ?? false, fresh: opts.freshIds?.get(hit.u.id), tipDown: li === 0 }
         : { ...base, hasUnit: false, mine: i < 4 };
