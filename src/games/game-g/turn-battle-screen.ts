@@ -101,7 +101,7 @@ const CSS = `
 const HL = ';outline:3px solid var(--gold);outline-offset:2px;animation:g-hl 1s ease-in-out infinite;position:relative;z-index:55';
 
 // ── 视图（buildTurnBattleView 从 turn-combat 派生喂渲染器；纯数据） ──
-export interface TurnSlotView { hasUnit: boolean; mine: boolean; isBorder: boolean; isClash: boolean; rank?: string; suit?: 's' | 'h' | 'd' | 'c'; power?: number; pts?: number; buff?: number; name?: string; rar?: 'white' | 'green' | 'blue' | 'gold'; zod?: string[]; deploy?: 1 | 2; deployLabel?: boolean; placeable?: boolean; unitId?: string; justMoved?: boolean; fresh?: number; tipDown?: boolean; tipSide?: 'left' | 'right' | ''; forecast?: number } // placeable=选牌待放可落子(高亮)；fresh=新部署落子序号(g-drop)；tipDown=顶排牌磨砂浮层朝下弹避免被画框裁；tipSide=边缘列浮层往内弹避免溢出左右屏(owner 2026-06-21)；forecast=此前锋若开战的我方胜率0~1(掷命预报·owner 2026-06-21)
+export interface TurnSlotView { hasUnit: boolean; mine: boolean; isBorder: boolean; isClash: boolean; rank?: string; suit?: 's' | 'h' | 'd' | 'c'; power?: number; pts?: number; buff?: number; name?: string; rar?: 'white' | 'green' | 'blue' | 'gold'; zod?: string[]; deploy?: 1 | 2; deployLabel?: boolean; placeable?: boolean; unitId?: string; justMoved?: boolean; fresh?: number; tipDown?: boolean; tipSide?: 'left' | 'right' | ''; forecast?: number; general?: boolean } // placeable=选牌待放可落子(高亮)；fresh=新部署落子序号(g-drop)；tipDown=顶排牌磨砂浮层朝下弹避免被画框裁；tipSide=边缘列浮层往内弹避免溢出左右屏(owner 2026-06-21)；forecast=此前锋若开战的我方胜率0~1(掷命预报·owner 2026-06-21)
 export interface TurnLaneView { name: string; slots: TurnSlotView[] }
 // 捷径门箭头（占位·8 门·真视觉待 owner 参考图）。idx=GATES 下标·供 live mount data-gate 钩子。
 export interface TurnGateView { idx: number; open: boolean; side: 'a' | 'b'; fromLane: number; fromSlot: number; toLane: number; toSlot: number }
@@ -217,7 +217,7 @@ function fortBase(view: TurnBattleView, isMine: boolean): string {
   // 敌方大本营可点 → 弹 Boss 名号 + 战役故事（owner 2026-06-21）。
   const bossTipRows = forr(view.sha.filter((s) => s.filled), (s) => { const rc = RAR[s.rar] || RAR.white; const used = s.used ?? false; return `<div style="display:flex;align-items:center;gap:6px;padding:3px 0;border-top:1px solid rgba(255,255,255,.08);"><span style="width:6px;height:6px;border-radius:50%;flex-shrink:0;background:${rc[1]};"></span><span style="flex:1;font-size:10px;color:rgba(255,255,255,.85);">${esc(s.name)}</span><span style="font-size:9px;color:${used ? '#ff9966' : '#7fcc9a'};">${used ? '已用' : '备用'}</span></div>`; });
   const bossTip = `<div class="gg-tip" style="width:210px;text-align:left;"><div style="font-size:12px;font-weight:700;color:var(--gold);margin-bottom:8px;">👑 ${esc(view.bossName)}</div>${bossTipRows}<div style="margin-top:7px;padding-top:6px;border-top:1px solid rgba(255,255,255,.12);font-size:10px;color:rgba(255,255,255,.55);">牌库剩余 <b style="color:#cdeeff;">${view.deckB}</b> 张</div></div>`;
-  return `<div data-act="boss-info" class="gg-tipwrap" style="${st(baseStyle)}; cursor:pointer"><div style="${st(conn)}"></div>${fortInner}<div style="${st(shaLabel)}">地煞牌</div><div style="${st(shaRow)}">${forr(view.sha, shaSlot)}</div>${bossTip}</div>`;
+  return `<div data-act="boss-info" class="gg-tipwrap tip-left" style="${st(baseStyle)}; cursor:pointer"><div style="${st(conn)}"></div>${fortInner}<div style="${st(shaLabel)}">地煞牌</div><div style="${st(shaRow)}">${forr(view.sha, shaSlot)}</div>${bossTip}</div>`;
 }
 
 // 一格 slot（设计稿 lanes.slots）。
@@ -246,20 +246,31 @@ function slotCell(s: TurnSlotView): string {
   let unitHTML = '';
   if (s.hasUnit && s.rank && s.suit) {
     const col = s.mine ? '#ff7a45' : '#3a86d4'; const sc = SUITC[s.suit]; const zod = s.zod || [];
+    const isGen = !!s.general;
+    // 主将光环（owner 2026-06-21）：我方主将=金边脉冲；敌方主将=深红重度光晕（比我方厉害·令人胆寒）。
+    const genBorderCol = isGen ? (s.mine ? 'var(--gold)' : '#c0392b') : col;
+    const genShadow = isGen
+      ? (s.mine ? `0 0 18px rgba(232,205,130,.8), 0 3px 8px rgba(0,0,0,.45), inset 0 0 0 1px rgba(255,255,255,.5)` : `0 0 28px rgba(192,57,43,.9), 0 0 50px rgba(192,57,43,.45), 0 3px 8px rgba(0,0,0,.6), inset 0 0 0 1px rgba(255,80,60,.3)`)
+      : `0 3px 8px rgba(0,0,0,.45), 0 0 0 2px ${col}, inset 0 0 0 1px rgba(255,255,255,.5)`;
+    const genAnim = isGen ? (s.mine ? ';animation:g-hl 1.4s ease-in-out infinite' : ';animation:g-hl 0.9s ease-in-out infinite') : '';
     // 敌我分明（owner 2026-06-21）：边框描粗 + 背景打淡淡的「我 / 敌」水印字。
-    const unit = { position: 'relative', width: '100%', height: '90%', borderRadius: '10px', background: sideFace(s.mine), border: '4px solid ' + col, boxShadow: `0 3px 8px rgba(0,0,0,.45), 0 0 0 2px ${col}, inset 0 0 0 1px rgba(255,255,255,.5)`, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center' };
-    const sideMark = `<div style="${st({ position: 'absolute', inset: '0', display: 'flex', alignItems: 'center', justifyContent: 'center', fontFamily: 'var(--fh)', fontWeight: 900, fontSize: '50px', color: col, opacity: s.mine ? 0.13 : 0.18, pointerEvents: 'none', zIndex: 0 })}">${s.mine ? '我' : '敌'}</div>`;
+    const unit = { position: 'relative', width: '100%', height: '90%', borderRadius: '10px', background: sideFace(s.mine), border: `${isGen ? '4px' : '4px'} solid ${genBorderCol}`, boxShadow: genShadow, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center' };
+    const watermarkText = isGen ? '将' : (s.mine ? '我' : '敌');
+    const watermarkColor = isGen ? (s.mine ? 'var(--gold)' : '#c0392b') : col;
+    const watermarkOpacity = isGen ? (s.mine ? 0.18 : 0.28) : (s.mine ? 0.13 : 0.18);
+    const sideMark = `<div style="${st({ position: 'absolute', inset: '0', display: 'flex', alignItems: 'center', justifyContent: 'center', fontFamily: 'var(--fh)', fontWeight: 900, fontSize: isGen ? '62px' : '50px', color: watermarkColor, opacity: watermarkOpacity, pointerEvents: 'none', zIndex: 0 })}">${watermarkText}</div>`;
     const corner = { position: 'absolute', top: '4px', left: '5px', fontFamily: 'var(--fh)', fontWeight: 700, fontSize: '15px', color: sc, zIndex: 2 };
     const big = { fontSize: '40px', color: sc, marginTop: '-6px' };
-    const badge = { position: 'absolute', top: '4px', right: '5px', minWidth: '22px', padding: '1px 6px', borderRadius: '99px', background: col, color: '#fff', fontFamily: 'var(--fn)', fontSize: '11px', textAlign: 'center', boxShadow: '0 2px 5px rgba(0,0,0,.4)', zIndex: 2 };
+    const badge = { position: 'absolute', top: '4px', right: '5px', minWidth: '22px', padding: '1px 6px', borderRadius: '99px', background: isGen ? genBorderCol : col, color: '#fff', fontFamily: 'var(--fn)', fontSize: '11px', textAlign: 'center', boxShadow: '0 2px 5px rgba(0,0,0,.4)', zIndex: 2 };
     const zodRow = { position: 'absolute', bottom: '5px', left: '50%', transform: 'translateX(-50%)', display: 'flex', gap: '3px' };
     const zodCell = (g: string | undefined): string => {
       const filled = !!g; const cs = { width: '22px', height: '22px', borderRadius: '6px', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '15px', lineHeight: 1, background: filled ? 'rgba(255,255,255,.92)' : 'rgba(0,0,0,.06)', border: '1px solid ' + (filled ? sc : 'rgba(120,90,60,.3)'), color: filled ? sc : 'transparent', boxShadow: filled ? `0 0 6px ${sc}66, inset 0 0 0 1px rgba(255,255,255,.6)` : 'inset 0 1px 2px rgba(0,0,0,.15)' };
       return `<div style="${st(cs)}">${filled ? (ZOD_ICON[g!] || g) : ''}</div>`;
     };
+    const genFloatBadge = isGen ? `<div style="position:absolute;top:-11px;left:50%;transform:translateX(-50%);background:${s.mine ? 'linear-gradient(135deg,#c8920a,#f0d060)' : 'linear-gradient(135deg,#8b0000,#c0392b)'};color:#fff;font-family:var(--fb);font-weight:900;font-size:8px;padding:2px 7px;border-radius:99px;white-space:nowrap;border:1.5px solid rgba(255,255,255,.5);box-shadow:0 2px 10px ${s.mine ? 'rgba(232,205,130,.7)' : 'rgba(192,57,43,.8)'};z-index:5">${s.mine ? '⭐ 主将' : '☠ 敌将'}</div>` : '';
     // 新部署的兵 → 逐张落子 g-drop（fresh 序号错峰·叭叭叭）；否则推进了的兵 → g-adv 滑入。
     const advAnim = s.fresh != null ? `;animation:g-drop .34s cubic-bezier(.2,.9,.3,1.25) both;animation-delay:${(s.fresh * 0.15).toFixed(2)}s` : (s.justMoved ? `;animation:${s.mine ? 'g-adv-a' : 'g-adv-b'} .45s cubic-bezier(.2,.8,.3,1) both` : '');
-    unitHTML = `<div style="${st(unit)}${advAnim}">${sideMark}<div style="${st(corner)}">${esc(s.rank)}${SUITG[s.suit]}</div><span style="${st(big)};position:relative;z-index:1">${SUITG[s.suit]}</span><div style="${st(badge)}">${s.power ?? ''}</div><div style="${st(zodRow)}">${forr([0, 1, 2], (z) => zodCell(zod[z]))}</div></div>`;
+    unitHTML = `<div style="${st(unit)}${genAnim || advAnim}">${genFloatBadge}${sideMark}<div style="${st(corner)}">${esc(s.rank)}${SUITG[s.suit]}</div><span style="${st(big)};position:relative;z-index:1">${SUITG[s.suit]}</span><div style="${st(badge)}">${s.power ?? ''}</div><div style="${st(zodRow)}">${forr([0, 1, 2], (z) => zodCell(zod[z]))}</div></div>`;
   }
   const ring = s.isClash ? `<div style="${st({ position: 'absolute', inset: '-3px', borderRadius: '11px', border: '2px solid var(--accent)', boxShadow: '0 0 16px var(--accent-soft)', animation: 'g-pulse 1.4s ease-in-out infinite' })}"></div>` : '';
   // 放牌区可落点高亮（owner 2026-06-21）：选牌待放时，此格金边脉冲 + 「＋放这」提示，点该路即落子。
@@ -560,7 +571,7 @@ export function buildTurnBattleView(b: TurnBattle, opts: TurnViewOpts = {}): Tur
       // isClash 标在两军真前锋格(landed bugfix·非固定中线 4) + 放牌区底纹/标签(标在贴各自城堡那格) + 待放落点高亮
       const base = { isBorder: i === 4, isClash: adj && (i === L.a[0]?.slot || i === L.b[0]?.slot), deploy: dep(i), deployLabel: i === A_DEPLOY_SLOT || i === B_DEPLOY_SLOT, placeable: !hit && i === target, forecast: i === L.a[0]?.slot && odds != null ? odds : undefined };
       return hit
-        ? { ...base, hasUnit: true, mine: hit.mine, rank: hit.u.rank, suit: lc(hit.u.suit), power: hit.u.points + hit.u.buff, pts: hit.u.points, buff: hit.u.buff, name: heroNameOf(hit.u.rank, lc(hit.u.suit)) ?? (SUITNM[lc(hit.u.suit)] + hit.u.rank), rar: rankOf(hit.u.rank), zod: [], unitId: hit.u.id, justMoved: opts.movedIds?.has(hit.u.id) ?? false, fresh: opts.freshIds?.get(hit.u.id), tipDown: li === 0, tipSide: (i >= 7 ? 'left' : i <= 1 ? 'right' : '') as 'left' | 'right' | '' }
+        ? { ...base, hasUnit: true, mine: hit.mine, rank: hit.u.rank, suit: lc(hit.u.suit), power: hit.u.points + hit.u.buff, pts: hit.u.points, buff: hit.u.buff, name: heroNameOf(hit.u.rank, lc(hit.u.suit)) ?? (SUITNM[lc(hit.u.suit)] + hit.u.rank), rar: rankOf(hit.u.rank), zod: [], unitId: hit.u.id, justMoved: opts.movedIds?.has(hit.u.id) ?? false, fresh: opts.freshIds?.get(hit.u.id), tipDown: li === 0, tipSide: (i >= 7 ? 'left' : i <= 1 ? 'right' : '') as 'left' | 'right' | '', general: hit.u.general }
         : { ...base, hasUnit: false, mine: i < 4 };
     });
     return { name: laneNames[li] ?? ('路' + li), slots };
