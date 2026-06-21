@@ -1,6 +1,6 @@
 import { mountBattle, type BattleView, type BattleUnit, type BattleLane, type BattleLever, type HandCardView, type TengangCardView, type BattleActions, type ClashView, type BattleFx } from './battle-screen.js';
 import { mountLobby, type LobbyView, type LobbyShopItem } from './lobby-screen.js';
-import { prepareArmies, quartermasterEnergy, FORMATION_PRESETS, PRESET_NAMES, LEVER_CATALOG, LEVER_START, battleSpec, RUN_BATTLES, RUN_LIVES, BETWEEN_BUFFS, applyBuff, tiangangKeyBuffs, BOSS_ROSTER, bossFor, GAME_G_TIANGANGS, TIANGANG_BY_ID, ARCHETYPES, detectArchetype, archetypeMatchup, activeArchetype, pickAiFormation, GAME_G_PLANETS, GAME_G_FOILS, RECHARGE_PACKS, rechargeTotal, DIAMOND_EXCHANGES, DIZHI_SHARD_PACKS, RECHARGE_PASSWORD, GACHA, gachaCost, DIZHI_MAX_TIER, DIZHI_TIER_NM, DIZHI_TIER_CAP, dizhiMerge, dizhiTotal, dizhiTopTier, DIZHI_ZODIACS, INLAY_MAX, effectiveDeckFavors, POKER_PICK_SIZE, isPoolCardId, autoBuildPokerPicks, cardFavorIndex, rankOfCardId, deployCost, isHeroOwned, heroCardByName, effectiveLives, effectiveLeverCap, effectiveLeverRegen, campaignFor, unlockStageOf, type Formation, type Intervention, type LeverKind, type RunBuff, type ArmyCard, type InlayEntry } from './index.js';
+import { prepareArmies, quartermasterEnergy, FORMATION_PRESETS, PRESET_NAMES, LEVER_CATALOG, LEVER_START, battleSpec, RUN_BATTLES, RUN_LIVES, BETWEEN_BUFFS, applyBuff, tiangangKeyBuffs, BOSS_ROSTER, bossFor, GAME_G_TIANGANGS, TIANGANG_BY_ID, ARCHETYPES, detectArchetype, archetypeMatchup, activeArchetype, pickAiFormation, GAME_G_PLANETS, GAME_G_FOILS, RECHARGE_PACKS, rechargeTotal, DIAMOND_EXCHANGES, DIZHI_SHARD_PACKS, RECHARGE_PASSWORD, GACHA, gachaCost, DIZHI_MAX_TIER, DIZHI_TIER_NM, DIZHI_TIER_CAP, dizhiMerge, dizhiTotal, dizhiTopTier, DIZHI_ZODIACS, INLAY_MAX, effectiveDeckFavors, POKER_PICK_SIZE, isPoolCardId, autoBuildPokerPicks, cardFavorIndex, rankOfCardId, deployCost, isHeroOwned, heroCardByName, heroNameOf, effectiveLives, effectiveLeverCap, effectiveLeverRegen, campaignFor, unlockStageOf, type Formation, type Intervention, type LeverKind, type RunBuff, type ArmyCard, type InlayEntry } from './index.js';
 import { initLiveBattle, stepLiveBattle, liveActive, migrateRear, NO_TENGANG, LANE_LEN, HOME_BLOOD, type LiveBattle, type DeployCmd, type ClashEvent, type TengangFx } from './live-combat.js';
 import { initTurnBattle, drawCard, deployUnit, castTengang, discardCard, endTurn, aiTakeTurn, toggleGate, GATES, OPENING_HAND, DRAW_COST, type PokerCard, type TengangHandCard } from './turn-combat.js';
 import { mountTurnBattle, buildTurnBattleView, type TurnBattleView, type TurnBattleActions, type TurnClashView, type TurnClashCardView, type TurnShaView } from './turn-battle-screen.js';
@@ -644,6 +644,31 @@ export function mount(container: HTMLElement, shell?: { exit?: () => void }): ()
       ov.innerHTML = `<span style="font-size:clamp(36px,6vw,72px);font-weight:900;color:#e8cd82;text-shadow:0 0 60px rgba(232,205,138,.9),0 4px 24px rgba(0,0,0,.95);letter-spacing:.25em;font-family:'Rajdhani',sans-serif;">${text}</span>`;
       document.body.appendChild(ov); setTimeout(() => { ov.remove(); onDone?.(); }, durationMs);
     };
+    // 掷命前奏：先把「哪两张牌即将交战」摆到屏幕前 ~2s（武将名+牌面+战力·我橙敌蓝 VS），再切对决特写（owner 2026-06-21：看不清是谁打谁）。
+    const showClashCue = (e: ClashEvent, onDone: () => void): void => {
+      if (!document.getElementById('gg-cue-css')) { const s = document.createElement('style'); s.id = 'gg-cue-css'; s.textContent = '@keyframes gg-cue{0%{opacity:0}12%{opacity:1}82%{opacity:1}100%{opacity:0}}@keyframes gg-cue-l{0%{transform:translateX(-60px);opacity:0}30%{transform:translateX(0);opacity:1}}@keyframes gg-cue-r{0%{transform:translateX(60px);opacity:0}30%{transform:translateX(0);opacity:1}}@keyframes gg-cue-vs{0%,30%{transform:scale(0);opacity:0}45%{transform:scale(1.4);opacity:1}60%{transform:scale(1)}}'; document.head.appendChild(s); }
+      const DUR = 2000;
+      const SUITG: Record<string, string> = { s: '♠', h: '♥', d: '♦', c: '♣', S: '♠', H: '♥', D: '♦', C: '♣' };
+      const SUIT_HOT: Record<string, boolean> = { h: true, d: true, H: true, D: true };
+      const face = (c: ClashEvent['a'], mine: boolean): string => {
+        const col = mine ? '#ff7a45' : '#3a86d4'; const su = SUITG[c.suit] ?? ''; const hot = SUIT_HOT[c.suit]; const hn = heroNameOf(c.rank, c.suit) ?? ((SUITNM2[c.suit] ?? '') + c.rank);
+        return `<div style="animation:gg-cue-${mine ? 'l' : 'r'} ${DUR}ms ease both;display:flex;flex-direction:column;align-items:center;gap:8px;">
+          <div style="width:118px;height:158px;border-radius:14px;background:linear-gradient(160deg,#fff,#e9eef5);border:3px solid ${col};box-shadow:0 0 34px ${col}aa,0 10px 30px rgba(0,0,0,.6);display:flex;flex-direction:column;align-items:center;justify-content:center;position:relative;">
+            <div style="position:absolute;top:7px;left:9px;font-size:20px;font-weight:900;color:${hot ? '#c0392b' : '#22303f'};line-height:1;">${c.rank}<br>${su}</div>
+            <div style="font-size:46px;color:${hot ? '#c0392b' : '#22303f'};">${su}</div>
+            <div style="position:absolute;bottom:8px;font-size:13px;font-weight:800;color:#fff;background:${col};padding:2px 10px;border-radius:99px;">战力 ${c.pEff}</div>
+          </div>
+          <div style="font-size:19px;font-weight:900;color:${col};text-shadow:0 2px 12px rgba(0,0,0,.8);letter-spacing:.04em;">${hn}</div>
+          <div style="font-size:12px;font-weight:700;color:#cdd6e2;opacity:.85;">${mine ? '我方' : '敌方'}前锋</div>
+        </div>`;
+      };
+      const ov = document.createElement('div'); ov.style.cssText = `position:fixed;inset:0;z-index:280;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:22px;pointer-events:none;background:radial-gradient(circle at center,rgba(8,10,15,.62),rgba(6,8,12,.88));animation:gg-cue ${DUR}ms ease both`;
+      ov.innerHTML = `<div style="font-size:24px;font-weight:900;color:#e8cd82;letter-spacing:.22em;text-shadow:0 0 30px rgba(232,205,138,.8);font-family:'Rajdhani',sans-serif;">⚔ ${LANE_NM[e.lane] ?? ''} · 即将交战</div>
+        <div style="display:flex;align-items:center;gap:34px;">${face(e.a, true)}<div style="animation:gg-cue-vs ${DUR}ms ease both;font-size:54px;font-weight:900;color:#fff;text-shadow:0 0 40px rgba(255,80,40,.9);font-family:'Rajdhani',sans-serif;">VS</div>${face(e.b, false)}</div>`;
+      document.body.appendChild(ov);
+      playSfx('select');
+      window.setTimeout(() => { ov.remove(); onDone(); }, DUR);
+    };
     // 敌方思考中蒙层（owner 2026-06-21：平均缩 2 秒 → 1-3 秒随机，均值 2s）
     const startThinking = (onDone: () => void): void => {
       const ms = 1000 + Math.floor(Math.random() * 2000);
@@ -661,10 +686,14 @@ export function mount(container: HTMLElement, shell?: { exit?: () => void }): ()
     // 逐场掷命特写：3D 飞入 → 停留 → **玩家点「看明白了」才演下一场/收场**（owner 2026-06-20：不能自动关·要看清为什么胜败）。
     const playPerf = (onDone: () => void): void => {
       if (perfQueue.length === 0) { perfClash = null; perfResume = null; mounted?.update(); syncCoach(); onDone(); return; }
-      const e = perfClash = perfQueue.shift()!;
+      const e = perfQueue.shift()!;
       log(`⚔掷命[${LANE_NM[e.lane] ?? e.lane}] 我 ${e.a.rank}${SUITNM2[e.a.suit] ?? ''}(战力${e.a.pEff}) vs 敌 ${e.b.rank}${SUITNM2[e.b.suit] ?? ''}(战力${e.b.pEff}) ｜胜率${Math.round(e.winrate * 100)}% 掷${Math.round(e.roll * 100)} → ${e.aWins ? '我胜' : '敌胜'}`);
-      playSfx('clashReveal'); playSfx(e.aWins ? 'clashWin' : 'clashLose'); // 揭晓撞击 + 我方胜/负的判定音
-      perfResume = () => { perfResume = null; playPerf(onDone); }; mounted?.update(); syncCoach(); // 引导：特写中隐
+      // 先演 ~2s「哪两张牌即将交战」前奏 → 再切对决特写（owner 2026-06-21）
+      showClashCue(e, () => {
+        perfClash = e;
+        playSfx('clashReveal'); playSfx(e.aWins ? 'clashWin' : 'clashLose'); // 揭晓撞击 + 我方胜/负的判定音
+        perfResume = () => { perfResume = null; playPerf(onDone); }; mounted?.update(); syncCoach(); // 引导：特写中隐
+      });
     };
     const finishTurnSeq = (): void => { busy = false; selMode = null; selHand = -1; if (tb.winner !== 'pending') settleTurn(); else mounted?.update(); syncCoach(); };
     const runAiThenContinue = (): void => { // 玩家推进特写演完 → 敌方回合播报 → AI 思考 → AI 行动 + 掷命 → 我方回合播报 → 回到玩家
