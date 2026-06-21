@@ -121,9 +121,10 @@ export function renderLobby(view: LobbyView, tab: string, helpOpen: boolean, dec
           ${(() => {
             // 今日卦象徽标（owner 2026-06-21）：收下卦后显示在主页顶；点徽标可再开掷命弹框。
             const f = view.fortune;
-            if (!f || f.keptVal == null) return '';
-            const lk = luckyFromVal(f.keptVal);
-            return `<button class="gg-fortune" data-act="lucky" title="今日卦象 · 点开再掷/查看" style="position:absolute;left:50%;top:22%;transform:translateX(-50%);z-index:4;display:flex;align-items:center;gap:8px;padding:7px 13px;border-radius:999px;cursor:pointer;background:linear-gradient(160deg,rgba(20,28,40,.92),rgba(12,18,28,.92));border:1px solid var(--gold);box-shadow:0 4px 14px rgba(0,0,0,.4);white-space:nowrap"><span style="font-size:14px">🎴</span><span style="font-family:var(--fh);font-weight:700;font-size:12px;color:var(--ink-dim)">今日卦象</span><span style="font-family:var(--fd);font-size:18px;color:${lk.color};line-height:1">${esc(lk.label)}</span><span style="font-family:var(--fn);font-size:13px;color:var(--gold)">${f.keptVal}</span></button>`;
+            const keptVal = f?.keptVal ?? 50; // 默认中庸
+            const lk = luckyFromVal(keptVal);
+            const hasKept = f?.keptVal != null;
+            return `<button class="gg-fortune" data-act="lucky" title="今日卦象 · 点开再掷/查看" style="position:absolute;left:50%;top:22%;transform:translateX(-50%);z-index:4;display:flex;align-items:center;gap:8px;padding:7px 13px;border-radius:999px;cursor:pointer;background:linear-gradient(160deg,rgba(20,28,40,.92),rgba(12,18,28,.92));border:1px solid var(--gold);box-shadow:0 4px 14px rgba(0,0,0,.4);white-space:nowrap"><span style="font-size:14px">🎴</span><span style="font-family:var(--fh);font-weight:700;font-size:12px;color:var(--ink-dim)">今日卦象</span><span style="font-family:var(--fd);font-size:18px;color:${lk.color};line-height:1">${esc(lk.label)}</span>${hasKept ? `<span style="font-family:var(--fn);font-size:13px;color:var(--gold)">${keptVal}</span>` : ''}</button>`;
           })()}
           <div class="felt-h"><span class="t">${c ? `第 ${c.stage} 关 · ${esc(c.battle)}` : '戏牌师'}</span><span class="s">${c ? `执掌命运之人 · 挑战被诅咒的 ${esc(c.boss)}` : esc(view.stageLabel)}</span></div>
           <div class="stags">${stags}</div>
