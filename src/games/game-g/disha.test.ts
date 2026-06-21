@@ -2,16 +2,24 @@
 import { describe, it, expect } from 'vitest';
 import { cardPoints } from './clash-resolve.js';
 import { cardStamina } from './live-combat.js';
-import { aggregateDisha, stageDisha, STAGE_DISHA, NO_DISHA } from './disha.js';
-import { initTurnBattle, endTurn, aiTakeTurn, clashOdds, type TurnUnit, type TurnBattle } from './turn-combat.js';
+import { aggregateDisha, stageDisha, STAGE_DISHA, NO_DISHA, DISHA_PLAYABLE } from './disha.js';
+import { initTurnBattle, endTurn, aiTakeTurn, castDisha, clashOdds, type TurnUnit, type TurnBattle } from './turn-combat.js';
 
 const u = (id: string, rank: string, slot: number, o: { buff?: number; general?: boolean } = {}): TurnUnit =>
   ({ id, rank, suit: 'S', points: cardPoints(rank), buff: o.buff ?? 0, general: o.general ?? false, stamina: cardStamina(rank), staminaLeft: cardStamina(rank), slot });
 
+// 混合模型（owner 2026-06-21）：可施放地煞开局进 Boss 手牌·须打出才生效。测 fx 机制时把开局塞进手牌的地煞先打出（不扰乱回合态）。
+const activatePlayable = (b: TurnBattle): void => {
+  const sv = { active: b.active, mana: b.b.mana, action: b.actionTaken };
+  b.active = 'b';
+  for (let i = b.b.hand.length - 1; i >= 0; i--) if (b.b.hand[i].kind === 'disha') { b.b.mana = 2; b.actionTaken = null; castDisha(b, 'b', i); }
+  b.active = sv.active; b.b.mana = sv.mana; b.actionTaken = sv.action;
+};
+
 // 跑一场遭遇掷命（玩家 K@4 vs Boss 9@5·上路相邻）→ 返回 lastClash 玩家胜率（地煞越狠·胜率越低）。
 const clashWr = (disha: string[], place: (b: TurnBattle) => void = (b) => { b.lanes[0].a.push(u('a0', 'K', 4)); b.lanes[0].b.push(u('b0', '9', 5)); }): number => {
   const b = initTurnBattle({ seed: 5, disha: place === undefined ? [] : disha });
-  place(b); endTurn(b); endTurn(b); // 双方放置完 → 行动阶段两军逼近 → 相邻掷命，wr 已含地煞调整
+  place(b); activatePlayable(b); endTurn(b); endTurn(b); // 双方放置完(可施放地煞先打出) → 行动阶段两军逼近 → 相邻掷命，wr 已含地煞调整
   return b.lastClash?.winrate ?? -1;
 };
 
@@ -53,7 +61,7 @@ describe('Game G · 地煞（doc23 §八 关1-5 · 15 张 · 甲实装）', () =
 
   it('🟡 九战九捷：Boss 连胜累积 +4%/胜（封顶 +20%·§六 5/30→4/20）→ streak 越高玩家越难', () => {
     const place = (x: TurnBattle): void => { x.lanes[0].a.push(u('a0', 'K', 4)); x.lanes[0].b.push(u('b0', '9', 5)); };
-    const at = (streak: number): number => { const b = initTurnBattle({ seed: 5, disha: ['winstreak'] }); place(b); b.bossWinStreak = streak; endTurn(b); endTurn(b); return b.lastClash!.winrate; };
+    const at = (streak: number): number => { const b = initTurnBattle({ seed: 5, disha: ['winstreak'] }); place(b); activatePlayable(b); b.bossWinStreak = streak; endTurn(b); endTurn(b); return b.lastClash!.winrate; };
     expect(at(4)).toBeLessThan(at(0));
     // Boss 胜一场 → streak +1
     const b = initTurnBattle({ seed: 9 }); b.lanes[0].a.push(u('a0', '2', 4)); b.lanes[0].b.push(u('b0', 'A', 5, { buff: 20 })); // Boss 碾压必胜
@@ -89,6 +97,7 @@ describe('Game G · 地煞（doc23 §八 关1-5 · 15 张 · 甲实装）', () =
     const b = initTurnBattle({ seed: 2, disha: ['laststand'] });
     b.lanes[0].a.push(u('a0', 'A', 4, { buff: 24 })); // 玩家碾压
     b.lanes[0].b.push(u('b0', '3', 5, { general: true })); // Boss 弱主将
+    activatePlayable(b); // 死战不退=可施放地煞·打出才生效
     endTurn(b); endTurn(b); // 行动阶段：玩家胜 → 主将本应亡，但死战不退 → 残喘退格
     expect(b.bossLastStandUsed).toBe(true);
     expect(b.lanes[0].b.some((x) => x.id === 'b0')).toBe(true); // 仍在场
@@ -113,6 +122,33 @@ describe('Game G · 地煞（doc23 §八 关1-5 · 15 张 · 甲实装）', () =
     expect(swarm.active).toBe('b'); expect(swarm.b.mana).toBe(2); // +1 基础 +1 大军压境
     const plain = initTurnBattle({ seed: 1 }); plain.lanes[0].a.push(u('a0', '7', 4)); endTurn(plain);
     expect(plain.b.mana).toBe(1); // 仅基础 +1
+  });
+
+  it('混合·可施放地煞（owner 2026-06-21）：开局进 Boss 手牌(非被动)·打出才并入 dishaB·AI 攒够 2 源泉择机打+返回 id', () => {
+    // 可施放型不进开局 dishaB（被动型才进）；关5 三张全可施放 → 开局 dishaB 零修正、3 张在 Boss 手牌。
+    const b = initTurnBattle({ seed: 5, disha: ['burnboats', 'overlord', 'winstreak'] });
+    expect(b.dishaB).toEqual(NO_DISHA);
+    expect(b.b.hand.filter((c) => c.kind === 'disha').length).toBe(3);
+    expect(['burnboats', 'overlord', 'winstreak'].every((id) => DISHA_PLAYABLE.has(id))).toBe(true);
+    // 手动打出一张 → 并入 dishaB（全军 +20%）
+    b.active = 'b'; b.b.mana = 2;
+    const idx = b.b.hand.findIndex((c) => c.kind === 'disha' && c.id === 'burnboats');
+    expect(castDisha(b, 'b', idx)).toBe(true);
+    expect(b.dishaCastIds).toContain('burnboats'); expect(b.dishaB.allWinPct).toBe(20); expect(b.dishaB.noRout).toBe(true);
+    expect(b.b.mana).toBe(0); // 花了 2
+
+    // 混合：被动型(温泉关 homeHp)仍开局生效；可施放型不动 homeB。
+    const mix = initTurnBattle({ seed: 1, disha: ['thermopylae', 'phalanx', 'laststand'] });
+    expect(mix.homeB).toBe(2); // 温泉关被动 homeHp 仍开局生效
+    expect(mix.dishaB.phalanxPerAdj).toBe(0); // 方阵=可施放·未打出 → 不在 dishaB
+    expect(mix.b.hand.filter((c) => c.kind === 'disha').map((c) => c.kind === 'disha' && c.id)).toEqual(['phalanx', 'laststand']);
+
+    // AI：攒够 2 源泉 + 场上有兵 → 打出地煞，aiTakeTurn 返回打出的 id。
+    const ai = initTurnBattle({ seed: 5, disha: ['mandate'] });
+    ai.lanes[0].b.push(u('bx', '9', 5)); // 给 Boss 场上一个兵(地煞加成有受益对象)
+    ai.active = 'b'; ai.b.mana = 3;
+    const used = aiTakeTurn(ai);
+    expect(used).toContain('mandate'); expect(ai.dishaB.allWinPct).toBe(10);
   });
 
   it('确定性：无地煞 → 与基线行为一致（地煞不入 hash·dishaB 默认零修正）', () => {

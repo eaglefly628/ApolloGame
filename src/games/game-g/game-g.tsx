@@ -2,7 +2,8 @@ import { mountBattle, type BattleView, type BattleUnit, type BattleLane, type Ba
 import { mountLobby, luckyBattleBuff, luckyFromVal, type LobbyView, type LobbyShopItem } from './lobby-screen.js';
 import { prepareArmies, quartermasterEnergy, FORMATION_PRESETS, PRESET_NAMES, LEVER_CATALOG, LEVER_START, battleSpec, RUN_BATTLES, RUN_LIVES, BETWEEN_BUFFS, applyBuff, tiangangKeyBuffs, BOSS_ROSTER, bossFor, GAME_G_TIANGANGS, TIANGANG_BY_ID, ARCHETYPES, detectArchetype, archetypeMatchup, activeArchetype, pickAiFormation, GAME_G_PLANETS, GAME_G_FOILS, RECHARGE_PACKS, rechargeTotal, DIAMOND_EXCHANGES, DIZHI_SHARD_PACKS, RECHARGE_PASSWORD, GACHA, gachaCost, DIZHI_MAX_TIER, DIZHI_TIER_NM, DIZHI_TIER_CAP, DIZHI_INLAY_FAVOR, dizhiMerge, dizhiTotal, dizhiTopTier, DIZHI_ZODIACS, INLAY_MAX, effectiveDeckFavors, POKER_PICK_SIZE, isPoolCardId, autoBuildPokerPicks, cardFavorIndex, rankOfCardId, deployCost, isHeroOwned, heroCardByName, heroNameOf, effectiveLives, effectiveLeverCap, effectiveLeverRegen, campaignFor, unlockStageOf, type Formation, type Intervention, type LeverKind, type RunBuff, type ArmyCard, type InlayEntry } from './index.js';
 import { initLiveBattle, stepLiveBattle, liveActive, migrateRear, NO_TENGANG, LANE_LEN, HOME_BLOOD, type LiveBattle, type DeployCmd, type ClashEvent, type TengangFx } from './live-combat.js';
-import { initTurnBattle, drawCard, deployUnit, castTengang, discardCard, endTurn, aiTakeTurn, toggleGate, GATES, OPENING_HAND, DRAW_COST, CAST_COST, manaGain, type PokerCard, type TengangHandCard } from './turn-combat.js';
+import { initTurnBattle, drawCard, deployUnit, castTengang, discardCard, endTurn, aiTakeTurn, toggleGate, GATES, OPENING_HAND, DRAW_COST, CAST_COST, manaGain, type PokerCard, type TengangHandCard, type Card } from './turn-combat.js';
+import { DISHA_NAME } from './disha.js';
 import { mountTurnBattle, buildTurnBattleView, type TurnBattleView, type TurnBattleActions, type TurnClashView, type TurnClashCardView, type TurnShaView } from './turn-battle-screen.js';
 import { mountCoinFlip } from './coin-flip.js';
 import { loadLevel } from './level.js';
@@ -664,7 +665,7 @@ export function mount(container: HTMLElement, shell?: { exit?: () => void }): ()
     // ── 战场操作日志（debug·owner 2026-06-21：出 bug 把日志贴来排查）。逐条记 玩家/AI 操作 + 掷命 + 结算。──
     const dbg: string[] = []; const SUITNM2: Record<string, string> = { S: '黑桃', H: '红桃', D: '方块', C: '梅花', s: '黑桃', h: '红桃', d: '方块', c: '梅花' };
     const log = (s: string): void => { if (dbg.length > 1200) dbg.shift(); dbg.push(`[T${tb.turn}|源泉 我${tb.a.mana}/敌${tb.b.mana}] ${s}`); };
-    const cardLabel = (c: PokerCard | TengangHandCard): string => (c.kind === 'poker' ? (SUITNM2[c.suit] ?? '') + c.rank : '天罡·' + tgName(c.id));
+    const cardLabel = (c: Card): string => (c.kind === 'poker' ? (SUITNM2[c.suit] ?? '') + c.rank : c.kind === 'tengang' ? '天罡·' + tgName(c.id) : '地煞·' + (DISHA_NAME[c.id] ?? c.id));
     const LANE_NM = ['上路', '中路', '下路'];
     // 捕捉所有上场单位的位置（lane*9+slot 编码）
     const snapSlots = (): Map<string, string> => { const m = new Map<string, string>(); tb.lanes.forEach((L, li) => { for (const u of L.a) m.set(u.id, `${li}:${u.slot}`); for (const u of L.b) m.set(u.id, `${li}:${u.slot}`); }); return m; };
@@ -749,18 +750,24 @@ export function mount(container: HTMLElement, shell?: { exit?: () => void }): ()
         startThinking(() => {
           const before = snapSlots();
           const prevCastIds = [...tb.b.castIds];
-          aiTakeTurn(tb, aggregateTengang); // Boss utility AI（画像驱动·施法即重算 tengangA 生效）
+          const usedDisha = aiTakeTurn(tb, aggregateTengang); // Boss utility AI（画像驱动·施法即重算 tengangA 生效）→ 返回本回合 AI 打出的地煞 id
           justMovedIds = diffMoved(before);
           // 新部署的敌兵（before 没有的 id）→ 逐张落子 g-drop 错峰 + 叭叭叭部署音（owner 2026-06-21）
           freshIds = new Map(); let fi = 0;
           const newFoe: string[] = [];
           for (const L of tb.lanes) for (const u of L.b) if (!before.has(u.id)) { freshIds.set(u.id, fi); const d = fi * 150; window.setTimeout(() => playSfx('deploy'), d); fi++; newFoe.push(`${u.rank}${SUITNM2[u.suit] ?? ''}→${LANE_NM[tb.lanes.indexOf(L)] ?? '?'}`); }
           const newCast = tb.b.castIds.filter((id) => !prevCastIds.includes(id)).map((id) => tgName(id));
+          usedDisha.forEach((id) => log(`敌·施放地煞「${DISHA_NAME[id] ?? id}」（整场生效）`));
           log(`敌·行动：部署[${newFoe.join('、') || '无'}]${newCast.length ? ` 施天罡[${newCast.join('、')}]` : ''} → 结束放置 → ▶行动阶段（源泉 我${tb.a.mana}/敌${tb.b.mana}）`);
-          drainClashes();
           mounted?.update();
           window.setTimeout(() => { justMovedIds = new Set(); freshIds = new Map(); if (!perfClash) mounted?.update(); }, Math.max(550, fi * 150 + 380)); // 错峰落子播完再清标记（掷命特写中不重渲·防 3D 飞入重启）
-          playPerf(() => showBanner('我方回合', 1100, finishTurnSeq));
+          // 推进掷命 + 回合交还；若 AI 打了地煞 → 先全屏通知（REQ-G #6）再演（逐张串行）。
+          const proceedPerf = (): void => { drainClashes(); playPerf(() => showBanner('我方回合', 1100, finishTurnSeq)); };
+          if (usedDisha.length) {
+            let qi = 0;
+            const nextDisha = (): void => { if (qi >= usedDisha.length) { proceedPerf(); return; } const nm = DISHA_NAME[usedDisha[qi++]] ?? '地煞'; playSfx('cast'); showBanner(`敌人使用地煞 · ${nm}`, 1500, nextDisha); };
+            nextDisha();
+          } else proceedPerf();
         });
       });
     };

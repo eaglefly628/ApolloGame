@@ -11,7 +11,7 @@ import { winrate, pEff, cardPoints, CLASH_K } from './clash-resolve.js';
 import { nextRandom } from '@atom-skills/index.js';
 import type { RandomSeed } from '@engine/protocol/components.js';
 import { cardStamina, NO_TENGANG, type TengangFx, type ClashEvent } from './live-combat.js';
-import { aggregateDisha, type DishaFx } from './disha.js';
+import { aggregateDisha, splitDisha, type DishaFx } from './disha.js';
 
 // ── 棋盘几何（doc24 §一）──
 export const SLOTS = 9;          // 每路格数：我方 0..3 / 中线 4 / 敌方 5..8
@@ -25,7 +25,7 @@ export const MANA_START = 6, MANA_PER_TURN = 1; // 起始 6 点；每回合 +1�
 export const MANA_PER_TURN_LATE = 2, MANA_RAMP_TURN = 10; // 第 10 回合后提速到 +2（owner 2026-06-21·后期放大节奏）
 /** 该回合开始应 +多少召唤源泉（turn>10 提速到 2·否则 1）。 */
 export const manaGain = (turn: number): number => (turn > MANA_RAMP_TURN ? MANA_PER_TURN_LATE : MANA_PER_TURN);
-export const DRAW_COST = 1, DEPLOY_COST = 0, CAST_COST = 1; // 抽/打天罡 花召唤源泉；放牌按 rank 收费(契约B·写在卡 cost 上)
+export const DRAW_COST = 1, DEPLOY_COST = 0, CAST_COST = 1, DISHA_COST = 2; // 抽/打天罡 花召唤源泉；放牌按 rank 收费(契约B·写在卡 cost 上)；地煞牌固定 2
 export const DISCARD_REFUND = 0.5; // 弃牌返还 0.5 召唤源泉（owner 2026-06-21·源泉自此为半整数粒度）
 export const OPENING_HAND = 3; // 起手摸 N（doc24 §六/七 待定）
 export const HAND_MAX = 8; // 手牌上限（天罡·广纳 handMaxAdd 抬高）
@@ -57,7 +57,8 @@ export interface TurnLane { a: TurnUnit[]; b: TurnUnit[]; aGenDead: boolean; bGe
 // 手牌/牌库卡：扑克兵(上场) / 天罡(施法·id)。
 export interface PokerCard { kind: 'poker'; id: string; rank: string; suit: string; general: boolean; buff: number; cost?: number } // cost=放牌召唤源泉费(契约B·deployCost·建库时按 rank 写在卡上·缺省=DEPLOY_COST·避免 turn-combat←blueprint 环依赖)
 export interface TengangHandCard { kind: 'tengang'; id: string }
-export type Card = PokerCard | TengangHandCard;
+export interface DishaHandCard { kind: 'disha'; id: string } // 地煞牌(owner 2026-06-21·混合)：Boss 手牌·cost2 打出 → 该地煞 fx 整场生效
+export type Card = PokerCard | TengangHandCard | DishaHandCard;
 // 一方运行态：召唤源泉 / 手牌 / 两库 / 已施天罡集 + 其聚合修正。
 export interface TurnSide { mana: number; hand: Card[]; pokerDeck: PokerCard[]; tengangDeck: TengangHandCard[]; castIds: string[]; tengangA: TengangFx; castFx: { id: string; fx: TengangFx }[] } // castFx：逐张已打天罡的单卡修正(caller 经 aggregateTengang([id]) 填)·供对决明细逐张溯源
 export type ActionKind = 'draw' | 'deploy' | 'cast' | 'discard';
@@ -82,6 +83,7 @@ export interface TurnBattle {
   actionTaken: ActionKind | null;
   lastClash: ClashEvent | null; clashLog: ClashEvent[]; clashSeq: number; // clashLog：逐场掷命流水（驱动层抽特写·不进 hash）
   dishaB: DishaFx; bossWinStreak: number; batteryLane: number; bossLastStandUsed: boolean; // 地煞(Boss 招牌战术·doc23 §八)运行态
+  dishaBaseIds: string[]; dishaCastIds: string[]; // 地煞被动基线 ids(开局聚合) + 已打出的可施放地煞 ids(打一张并进 dishaB 重算)
   aiProfile: AiProfile; aiTier: number; // Boss 通用 utility AI（doc27 §八）：画像 + 难度档(高=更优·低=会犯错)
   homeAShieldUsed: number; // 死守(天罡 siegeDefend)：我大本营已吸收次数
   fortuneBuff: number; // 今日卦象加成（owner 2026-06-21）：大吉+2 / 吉+1 / 中庸0 / 小凶−1 / 大凶−2 → 玩家部署每张兵追加此 buff
@@ -96,7 +98,9 @@ export interface TurnInit { seed: number; homeMax?: number; disha?: readonly str
  *  cfg.disha：Boss 关卡地煞 id 集（doc23 §八）→ 聚合成 dishaB 在 Boss 侧 apply；温泉关死守覆写 Boss 大本营血。 */
 export function initTurnBattle(cfg: TurnInit): TurnBattle {
   const homeMax = cfg.homeMax ?? TURN_HOME_BLOOD;
-  const dishaB = aggregateDisha(cfg.disha ?? []);
+  // 地煞拆分（owner 2026-06-21·混合）：被动型开局聚合进 dishaB；可施放型进 Boss 手牌·打出才并入。
+  const { passive, playable } = splitDisha(cfg.disha ?? []);
+  const dishaB = aggregateDisha(passive);
   const battle: TurnBattle = {
     turn: 1, active: 'a',
     lanes: [mkLane(), mkLane(), mkLane()],
@@ -107,9 +111,11 @@ export function initTurnBattle(cfg: TurnInit): TurnBattle {
     rng: { type: 'RandomSeed', seed: cfg.seed, sequence: 0 },
     winner: 'pending', actionTaken: null, lastClash: null, clashLog: [], clashSeq: 0,
     dishaB, bossWinStreak: 0, batteryLane: -1, bossLastStandUsed: false,
+    dishaBaseIds: passive, dishaCastIds: [],
     aiProfile: cfg.aiProfile ?? NEUTRAL_AI, aiTier: cfg.aiTier ?? 2,
     homeAShieldUsed: 0, fortuneBuff: cfg.fortuneBuff ?? 0,
   };
+  for (const id of playable) battle.b.hand.push({ kind: 'disha', id }); // 可施放地煞 → Boss 起手即在手·AI 攒够 2 源泉择机打
   battle.b.mana = 0; // 后手方召唤源泉在其回合开始才 +1（每回合 +1 对称·turn-1 的 +1 已含在先手起步值里）
   return battle;
 }
@@ -172,6 +178,17 @@ export function castTengang(b: TurnBattle, side: 'a' | 'b', handIdx: number): bo
   sd.hand.splice(handIdx, 1); sd.mana -= CAST_COST; sd.castIds.push(card.id); b.actionTaken = 'cast';
   onPlayDraw(sd); // 川流：施法后免费补抽（用本次之前已生效的 onPlay）
   return true; // tengangA 重算：caller 做 sd.tengangA = aggregateTengang(sd.castIds)（避免 turn-combat ← blueprint 环依赖）
+}
+
+// ③' 打地煞（owner 2026-06-21·混合）：施手牌第 handIdx 张地煞 → 该 fx 并入 dishaB 整场生效。花 DISHA_COST(2)·与天罡共用 cast 互斥锁。
+export function castDisha(b: TurnBattle, side: 'a' | 'b', handIdx: number): boolean {
+  if (!canAct(b, side, 'cast', DISHA_COST)) return false;
+  const sd = sideOf(b, side); const card = sd.hand[handIdx];
+  if (!card || card.kind !== 'disha') return false;
+  sd.hand.splice(handIdx, 1); sd.mana -= DISHA_COST; b.actionTaken = 'cast';
+  if (side === 'b') { b.dishaCastIds.push(card.id); b.dishaB = aggregateDisha([...b.dishaBaseIds, ...b.dishaCastIds]); } // 并入并重算 dishaB（玩家侧无地煞·仅 Boss 生效）
+  onPlayDraw(sd);
+  return true;
 }
 
 // ④ 弃牌（owner 2026-06-21）：**不互斥**——不锁 actionTaken，弃完还能放牌/抽/打天罡；每弃 1 张**返还 0.5 源泉**。
@@ -497,6 +514,11 @@ function scoreCast(b: TurnBattle): number {
   }
   return s;
 }
+// 打地煞效用（owner 2026-06-21）：攒够 2 源泉 + 场上有兵(加成有受益对象)才值得开；越多兵越值、aggression 推一把。空场不急（低于抽/铺）。
+function scoreDisha(b: TurnBattle): number {
+  const units = b.lanes.reduce((n, L) => n + L.b.length, 0);
+  return (units > 0 ? 11 : 3) + units * 0.9 + b.aiProfile.aggression * 0.5;
+}
 // 抽牌效用：手空更该抽 + economy 囤(低)更爱抽攒手牌。抽天罡随 spellEager。
 function scoreDraw(b: TurnBattle, from: 'poker' | 'tengang'): number {
   const sd = b.b; const have = sd.hand.filter((c) => (from === 'poker' ? c.kind === 'poker' : c.kind === 'tengang')).length;
@@ -512,10 +534,12 @@ function scoreDraw(b: TurnBattle, from: 'poker' | 'tengang'): number {
   }
   return s;
 }
-type AiCand = { kind: 'deploy' | 'cast' | 'draw'; handIdx: number; lane: number; from: 'poker' | 'tengang'; score: number };
-/** Boss 回合（utility AI）。aggTengang：caller(game-g) 传天罡聚合器 → Boss 施法后重算 tengangA 即时生效(避免 turn-combat ← blueprint 环依赖)。 */
-export function aiTakeTurn(b: TurnBattle, aggTengang?: (ids: readonly string[]) => TengangFx): void {
-  if (b.winner !== 'pending' || b.active !== 'b') return;
+type AiCand = { kind: 'deploy' | 'cast' | 'draw' | 'disha'; handIdx: number; lane: number; from: 'poker' | 'tengang'; score: number };
+/** Boss 回合（utility AI）。aggTengang：caller(game-g) 传天罡聚合器 → Boss 施法后重算 tengangA 即时生效(避免 turn-combat ← blueprint 环依赖)。
+ *  返回本回合 AI 打出的地煞 id 列表（caller 据此放「敌用地煞」全屏通知·REQ-G #6）。 */
+export function aiTakeTurn(b: TurnBattle, aggTengang?: (ids: readonly string[]) => TengangFx): string[] {
+  const castDishaIds: string[] = [];
+  if (b.winner !== 'pending' || b.active !== 'b') return castDishaIds;
   // 大炮兵（地煞·关4）：每 N 回合压你兵最多的一路 → 该路你掷命 −winPct（应用到你下个推进的遭遇）。
   b.batteryLane = (b.dishaB.batteryEveryTurns > 0 && b.turn % b.dishaB.batteryEveryTurns === 0)
     ? [0, 1, 2].reduce((m, li) => (b.lanes[li].a.length > b.lanes[m].a.length ? li : m), 0) : -1;
@@ -529,6 +553,9 @@ export function aiTakeTurn(b: TurnBattle, aggTengang?: (ids: readonly string[]) 
     if ((locked === null || locked === 'cast') && sd.mana >= CAST_COST) {
       sd.hand.forEach((c, i) => { if (c.kind === 'tengang') cands.push({ kind: 'cast', handIdx: i, lane: 0, from: 'poker', score: scoreCast(b) }); });
     }
+    if ((locked === null || locked === 'cast') && sd.mana >= DISHA_COST) {
+      sd.hand.forEach((c, i) => { if (c.kind === 'disha') cands.push({ kind: 'disha', handIdx: i, lane: 0, from: 'poker', score: scoreDisha(b) }); });
+    }
     if (locked === null && sd.mana >= DRAW_COST) {
       if (sd.pokerDeck.length) cands.push({ kind: 'draw', handIdx: -1, lane: 0, from: 'poker', score: scoreDraw(b, 'poker') });
       if (sd.tengangDeck.length) cands.push({ kind: 'draw', handIdx: -1, lane: 0, from: 'tengang', score: scoreDraw(b, 'tengang') });
@@ -538,10 +565,12 @@ export function aiTakeTurn(b: TurnBattle, aggTengang?: (ids: readonly string[]) 
     let ok = false;
     if (pick.kind === 'deploy') ok = deployUnit(b, 'b', pick.handIdx, pick.lane);
     else if (pick.kind === 'cast') { ok = castTengang(b, 'b', pick.handIdx); if (ok && aggTengang) { sd.tengangA = aggTengang(sd.castIds); sd.castFx = sd.castIds.map((id) => ({ id, fx: aggTengang([id]) })); } } // 施法即重算·当回合推进生效（+逐张 castFx 供溯源）
+    else if (pick.kind === 'disha') { const dc = sd.hand[pick.handIdx]; ok = castDisha(b, 'b', pick.handIdx); if (ok && dc?.kind === 'disha') castDishaIds.push(dc.id); } // 打地煞 → 记 id 供 caller 全屏通知
     else ok = drawCard(b, 'b', pick.from);
     if (!ok) break;
   }
   endTurn(b);
+  return castDishaIds;
 }
 
 // 战局是否还有未决（任一路有兵 / 任一方手牌或牌库还能动）——给跑到底/仿真台用。

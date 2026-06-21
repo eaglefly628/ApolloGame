@@ -73,6 +73,27 @@ export function stageDisha(stage: number): string[] {
   return STAGE_DISHA[Math.max(0, Math.min(STAGE_DISHA.length - 1, stage - 1))];
 }
 
+// 地煞招牌名（id→名·单一真相·通知/牌面/日志复用·与 campaign-data fiends 对齐）。
+export const DISHA_NAME: Record<string, string> = {
+  thermopylae: '温泉关死守', phalanx: '斯巴达方阵', laststand: '死战不退',
+  companion: '伙伴骑兵', hammeranvil: '锤砧', sarissa: '长枪方阵',
+  swarm: '大军压境', chainboats: '连环船', mandate: '挟天子',
+  battery: '大炮兵', guard: '近卫军', maneuver: '机动调度',
+  burnboats: '破釜沉舟', overlord: '霸王之勇', winstreak: '九战九捷',
+};
+
+// 可施放地煞（owner 2026-06-21·混合方案）：「打出 → 整场持续加成」型 → 转成 cost2 可打牌(进 Boss 手牌·AI 攒够源泉择机打)。
+// 留 Boss 被动的（开局/定时/经济/地形结构型·不适合「打张牌开启」）：温泉关死守(homeHp 开局定)、大军压境/机动调度(每回合 +源泉)、大炮兵(定时轰)、锤砧(对你的地形夹击)。
+export const DISHA_PLAYABLE = new Set<string>(['phalanx', 'laststand', 'companion', 'sarissa', 'chainboats', 'mandate', 'guard', 'burnboats', 'overlord', 'winstreak']);
+export const isPlayableDisha = (id: string): boolean => DISHA_PLAYABLE.has(id);
+
+/** 拆一关地煞 id → {passive:开局即生效(聚合进 dishaB), playable:可施放牌(进 Boss 手牌)}。纯函数·保序。 */
+export function splitDisha(ids: readonly string[]): { passive: string[]; playable: string[] } {
+  const passive: string[] = []; const playable: string[] = [];
+  for (const id of ids) (DISHA_PLAYABLE.has(id) ? playable : passive).push(id);
+  return { passive, playable };
+}
+
 /** 聚合一组地煞 id → DishaFx（数值相加·布尔取或·封顶/血取最大）。纯函数·确定性。 */
 export function aggregateDisha(ids: readonly string[]): DishaFx {
   const fx: DishaFx = { ...NO_DISHA };
