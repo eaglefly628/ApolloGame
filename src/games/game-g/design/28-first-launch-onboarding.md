@@ -57,6 +57,28 @@
 - = campaign 最终 Boss（比 52 名将更强·uber 地煞/特殊机制）。**掀翻牌桌 = 通关、破尽诅咒。**
 - 这俩的专属牌组/机制 = **后续单独设计**（54 张牌：52 名将 + 大王 + 小王，刚好整副）。
 
+## 六、商城抽卡引导 · 脚本（给乙 · `GUIDE_COACH` 追加 · owner 2026-06-21）
+> 在现 `GUIDE_COACH`（…⑥回大厅 → ⑦出征）的 **⑥ 与 ⑦ 之间**插入下面 3 步（领赠送→商城→抽一发），出征前走完。高亮复用 coachmark（同现有引导）。
+
+**前置（一次性·乙）**：首启即发 Demo 赠送（`freshSave` 已含 💎6 + 🪙120）。引导进到本步时弹一句 toast：「🎁 开局赠送：💎6 + 🪙120 已到账——拿去抽一发！」（一次性·`seen` 标记）。
+
+**要加的锚点（乙在对应元素加 `data-anchor`）**：
+| data-anchor | 加在哪个元素 |
+|---|---|
+| `shop` | 顶栏「🛒 商城」按钮（`data-act="shop"`）|
+| `shop-gacha` | 商城里「🎴 抽卡」标签（`tabBtn('gacha')`·`data-act="shopTab" data-k="gacha"`）|
+| `gacha-tiangang` | 天罡卡池「单抽」按钮（`data-act="gacha" data-k="tiangang:1:<pay>"`·乙选赠送货币能负担的 pay）|
+
+**追加的 `GUIDE_COACH` 步骤**（接现有 schema `{anchor,text,advanceAct,advanceK?,placement}`）：
+```
+{ anchor:'shop',          text:'🎁 开局送了你 💎6+🪙120！点「🛒 商城」抽一发，体验开包。', advanceAct:'shop',   placement:'bottom' },
+{ anchor:'shop-gacha',    text:'点「🎴 抽卡」页。',                                  advanceAct:'shopTab', advanceK:'gacha', placement:'bottom' },
+{ anchor:'gacha-tiangang',text:'点「单抽」抽一张天罡——花赠送的货币、不花真钱。',        advanceAct:'gacha',   advanceK:'tiangang:1:<pay>', placement:'top' },
+```
+- 抽完 → **开包演出**（现有 `gachaReveal` overlay·`reveal-close` 收下）自动播，无需引导步；收下后商城关、回大厅 → 接现有 **⑦ 出征关1**。
+- 旁白尾（收下时附一句）：「抽到的天罡去『改造坊』配进战库、地支去『改造坊』镶嵌附魔。」（点到即止·不强拉进改造坊·避免引导过长）。
+- ⏭ **教学关那步仍跳过**（直接出征关1）。
+
 ## 五、派单（owner 2026-06-21 最终）
 - **乙（菜单/流程）·本版要做**：① 开场故事屏（旁白逐屏·已有）② 新人引导线性高亮（手册→配牌组一键 16+5→回大厅·**用 coachmark 能力**）③ **新增引导步「领 Demo 赠送货币 + 商城抽一发」**（出征关1 前·`GUIDE_COACH` 加一步指向「🛒 商城」+ 抽一发演示·doc25 §四）④ **改 `RECHARGE_PASSWORD` = 红桃+黑桃（♥♠）**（owner·替代旧 `'am'`·blueprint.ts:739）⑤ 出征关1。
 - **⏭ 暂缓（owner 先跳过·这版不做）**：**教学关（关 0 · 可玩）**——§三脚本留档；甲的脚本化弱敌教学钩子**后续再做**，当前直接进关1。
