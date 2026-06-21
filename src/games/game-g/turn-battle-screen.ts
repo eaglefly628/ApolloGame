@@ -71,12 +71,16 @@ const CSS = `
 /* 磨砂详情浮层（owner 2026-06-21·悬浮看牌：战力=点数+加成，对决再 +随机骰）：纯 CSS hover，重渲不丢 */
 .gg-tipwrap>.gg-tip{ position:absolute; left:50%; bottom:calc(100% + 9px); transform:translateX(-50%) translateY(5px); width:194px; padding:11px 13px 9px; border-radius:13px; background:rgba(18,24,36,.58); backdrop-filter:blur(13px) saturate(1.5); -webkit-backdrop-filter:blur(13px) saturate(1.5); border:1px solid rgba(255,255,255,.2); box-shadow:0 16px 44px rgba(0,0,0,.55), inset 0 1px 0 rgba(255,255,255,.14); color:#eaf0f6; font-family:var(--fb); font-size:11px; line-height:1.5; text-align:left; opacity:0; pointer-events:none; transition:opacity .15s ease, transform .15s ease; z-index:80; }
 .gg-tipwrap>.gg-tip::after{ content:''; position:absolute; left:50%; top:100%; transform:translateX(-50%); border:7px solid transparent; border-top-color:rgba(18,24,36,.58); }
-.gg-tipwrap:hover>.gg-tip{ opacity:1; transform:translateX(-50%) translateY(0); }`;
+.gg-tipwrap:hover>.gg-tip{ opacity:1; transform:translateX(-50%) translateY(0); }
+/* 顶排(上路)牌：浮层朝下弹，否则朝上会顶出画框被裁掉(owner 2026-06-21) */
+.gg-tipwrap.tip-down>.gg-tip{ bottom:auto; top:calc(100% + 9px); transform:translateX(-50%) translateY(-5px); }
+.gg-tipwrap.tip-down>.gg-tip::after{ top:auto; bottom:100%; border-top-color:transparent; border-bottom-color:rgba(18,24,36,.58); }
+.gg-tipwrap.tip-down:hover>.gg-tip{ transform:translateX(-50%) translateY(0); }`;
 // 教学高亮（doc28 教学钩子·纯表现）：金描边 + 脉冲，套在被强制点击的元素上。
 const HL = ';outline:3px solid var(--gold);outline-offset:2px;animation:g-hl 1s ease-in-out infinite;position:relative;z-index:55';
 
 // ── 视图（buildTurnBattleView 从 turn-combat 派生喂渲染器；纯数据） ──
-export interface TurnSlotView { hasUnit: boolean; mine: boolean; isBorder: boolean; isClash: boolean; rank?: string; suit?: 's' | 'h' | 'd' | 'c'; power?: number; pts?: number; buff?: number; name?: string; rar?: 'white' | 'green' | 'blue' | 'gold'; zod?: string[]; deploy?: 1 | 2; deployLabel?: boolean; placeable?: boolean; unitId?: string; justMoved?: boolean; fresh?: number } // deploy：1=我方放牌区 / 2=敌方放牌区（贴各自大本营 3 格）；placeable=选牌待放时此格可落子(高亮·owner 2026-06-21)；fresh=本回合新部署的落子序号(逐张 g-drop 动画·叭叭叭)
+export interface TurnSlotView { hasUnit: boolean; mine: boolean; isBorder: boolean; isClash: boolean; rank?: string; suit?: 's' | 'h' | 'd' | 'c'; power?: number; pts?: number; buff?: number; name?: string; rar?: 'white' | 'green' | 'blue' | 'gold'; zod?: string[]; deploy?: 1 | 2; deployLabel?: boolean; placeable?: boolean; unitId?: string; justMoved?: boolean; fresh?: number; tipDown?: boolean } // deploy：1=我方放牌区 / 2=敌方放牌区（贴各自大本营 3 格）；placeable=选牌待放时此格可落子(高亮·owner 2026-06-21)；fresh=本回合新部署的落子序号(逐张 g-drop 动画·叭叭叭)；tipDown=顶排(上路)的牌·磨砂浮层朝下弹避免被画框裁掉(owner 2026-06-21)
 export interface TurnLaneView { name: string; slots: TurnSlotView[] }
 // 捷径门箭头（占位·8 门·真视觉待 owner 参考图）。idx=GATES 下标·供 live mount data-gate 钩子。
 export interface TurnGateView { idx: number; open: boolean; side: 'a' | 'b'; fromLane: number; fromSlot: number; toLane: number; toSlot: number }
@@ -180,7 +184,9 @@ function fortBase(view: TurnBattleView, isMine: boolean): string {
     const mark = { fontFamily: 'var(--fd)', fontSize: '15px', color: s.filled ? rc[1] : 'rgba(255,255,255,.2)' };
     return `<div style="${st(slot)}"><span style="${st(mark)}">煞</span></div>`;
   };
-  return `<div style="${st(baseStyle)}"><div style="${st(conn)}"></div>${fortInner}<div style="${st(shaLabel)}">地煞牌</div><div style="${st(shaRow)}">${forr(view.sha, shaSlot)}</div></div>`;
+  // 敌方大本营可点 → 弹 Boss 名号 + 战役故事（owner 2026-06-21）。
+  const bossHint = { marginTop: '5px', padding: '2px 9px', borderRadius: '99px', background: 'rgba(58,134,212,.16)', border: '1px solid rgba(58,134,212,.6)', color: '#bcd8f5', fontFamily: 'var(--fh)', fontWeight: 700, fontSize: '10px', whiteSpace: 'nowrap', zIndex: 2 };
+  return `<div data-act="boss-info" style="${st(baseStyle)}; cursor:pointer"><div style="${st(conn)}"></div>${fortInner}<div style="${st(shaLabel)}">地煞牌</div><div style="${st(shaRow)}">${forr(view.sha, shaSlot)}</div><div style="${st(bossHint)}">ⓘ 看 Boss</div></div>`;
 }
 
 // 一格 slot（设计稿 lanes.slots）。
@@ -215,7 +221,7 @@ function slotCell(s: TurnSlotView): string {
     : '';
   // 场上兵的磨砂详情浮层（与手牌同 cardTip·战力拆解）。
   const tip = s.hasUnit && s.rank && s.suit ? cardTip({ name: s.name ?? (SUITNM[s.suit] + s.rank), rar: s.rar ?? 'white', isGang: false, mine: s.mine, suit: s.suit, pts: s.pts, buff: s.buff, power: s.power, zod: s.zod }) : '';
-  const wrapCls = s.hasUnit ? ' class="gg-tipwrap"' : '';
+  const wrapCls = s.hasUnit ? ` class="gg-tipwrap${s.tipDown ? ' tip-down' : ''}"` : '';
   return `<div${wrapCls} style="${st(cell)}">${depLabel}<div style="${st(dot)}"></div>${unitHTML}${placeMark}${ring}${tip}</div>`;
 }
 
@@ -454,7 +460,7 @@ export function buildTurnBattleView(b: TurnBattle, opts: TurnViewOpts = {}): Tur
       // isClash 标在两军真前锋格(landed bugfix·非固定中线 4) + 放牌区底纹/标签(标在贴各自城堡那格) + 待放落点高亮
       const base = { isBorder: i === 4, isClash: adj && (i === L.a[0]?.slot || i === L.b[0]?.slot), deploy: dep(i), deployLabel: i === A_DEPLOY_SLOT || i === B_DEPLOY_SLOT, placeable: !hit && i === target };
       return hit
-        ? { ...base, hasUnit: true, mine: hit.mine, rank: hit.u.rank, suit: lc(hit.u.suit), power: hit.u.points + hit.u.buff, pts: hit.u.points, buff: hit.u.buff, name: SUITNM[lc(hit.u.suit)] + hit.u.rank, rar: rankOf(hit.u.rank), zod: [], unitId: hit.u.id, justMoved: opts.movedIds?.has(hit.u.id) ?? false, fresh: opts.freshIds?.get(hit.u.id) }
+        ? { ...base, hasUnit: true, mine: hit.mine, rank: hit.u.rank, suit: lc(hit.u.suit), power: hit.u.points + hit.u.buff, pts: hit.u.points, buff: hit.u.buff, name: SUITNM[lc(hit.u.suit)] + hit.u.rank, rar: rankOf(hit.u.rank), zod: [], unitId: hit.u.id, justMoved: opts.movedIds?.has(hit.u.id) ?? false, fresh: opts.freshIds?.get(hit.u.id), tipDown: li === 0 }
         : { ...base, hasUnit: false, mine: i < 4 };
     });
     return { name: laneNames[li] ?? ('路' + li), slots };
@@ -500,6 +506,7 @@ export interface TurnBattleActions {
   setTheme?: (theme: 'onyx' | 'brocade') => void;
   clashConfirm?: () => void;
   goBack?: () => void;       // 返回大厅（带确认）
+  bossInfo?: () => void;     // 点敌方大本营 → 弹 Boss 名号 + 战役故事
   toggleSfx?: () => void;    // 切换音效开/关
   toggleSettings?: () => void; // 开/关设置面板
   toggleBgm?: () => void;    // 切换背景音乐开/关（与音效分开）
@@ -533,6 +540,7 @@ export function mountTurnBattle(host: HTMLElement, getView: () => TurnBattleView
       if (a === 'end') actions.endTurn?.();
       else if (a === 'clash-ok') actions.clashConfirm?.();
       else if (a === 'go-back') { actions.goBack?.(); render(); return; }
+      else if (a === 'boss-info') { actions.bossInfo?.(); return; }
       else if (a === 'settings-toggle') { actions.toggleSettings?.(); }
       else if (a === 'toggle-sfx') { actions.toggleSfx?.(); }
       else if (a === 'toggle-bgm') { actions.toggleBgm?.(); }

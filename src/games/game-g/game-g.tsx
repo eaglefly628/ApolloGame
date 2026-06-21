@@ -625,6 +625,27 @@ export function mount(container: HTMLElement): () => void {
         ov.querySelector('#gg-back-yes')?.addEventListener('click', () => { ov.remove(); showLobby(); });
         ov.addEventListener('click', (e) => { if (e.target === ov) ov.remove(); });
       },
+      // 点敌方大本营 → 弹本关 Boss 名号 + 战役历史故事（owner 2026-06-21·边打边读历史）。数据接 blueprint STAGE_CAMPAIGN。
+      bossInfo: () => {
+        const camp = campaignFor(save.stage);
+        const quote = camp.bossLines?.open ?? '';
+        const ov = document.createElement('div');
+        ov.style.cssText = 'position:fixed;inset:0;z-index:210;background:rgba(0,0,0,.78);display:flex;align-items:center;justify-content:center;padding:24px;font-family:"Noto Serif SC",serif';
+        ov.innerHTML = `<div style="background:linear-gradient(165deg,#1b2336,#0f1622);border:1px solid #3a4f78;border-radius:16px;padding:26px 30px;max-width:560px;max-height:82vh;overflow:auto;box-shadow:0 20px 60px rgba(0,0,0,.85)">
+          <div style="font-size:12px;letter-spacing:.16em;color:#5ea0e0;font-weight:700;margin-bottom:6px">⚔ 终局 Boss · 第 ${save.stage} 关</div>
+          <div style="font-weight:800;font-size:26px;color:#e8cd82;margin-bottom:3px">${camp.boss}</div>
+          <div style="font-size:13px;color:#9fb3cc;margin-bottom:14px">${camp.battle} · ${camp.oneLiner}</div>
+          ${quote ? `<div style="border-left:3px solid #5ea0e0;padding:6px 0 6px 13px;margin-bottom:15px;color:#cfe0f3;font-size:14px;line-height:1.65">「${quote}」</div>` : ''}
+          <div style="font-size:13.5px;color:#d6dee8;line-height:1.9;text-align:justify">${camp.intro ?? '（这位名将的故事，正在续写……）'}</div>
+          <div style="display:flex;justify-content:flex-end;margin-top:20px">
+            <button id="gg-boss-ok" style="padding:9px 26px;border-radius:9px;border:none;background:linear-gradient(180deg,#f0d68f,#d9b86a);color:#2a1a08;cursor:pointer;font:700 13px system-ui">知道了 ▸</button>
+          </div>
+        </div>`;
+        document.body.appendChild(ov);
+        ov.querySelector('#gg-boss-ok')?.addEventListener('click', () => ov.remove());
+        ov.addEventListener('click', (e) => { if (e.target === ov) ov.remove(); });
+        playSfx('select');
+      },
       toggleSfx: () => { const on = toggleSfx(); if (on) playSfx('select'); mounted?.update(); },
       toggleSettings: () => { settingsOpen = !settingsOpen; mounted?.update(); },
       toggleBgm: () => { toggleBgmState(); mounted?.update(); }, // BGM 开/关·与音效分开

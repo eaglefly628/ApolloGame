@@ -9,7 +9,7 @@ const press = (el: Element | null, button = 0): void => { if (!el) throw new Err
 
 const makeActions = (): { [K in keyof TurnBattleActions]-?: ReturnType<typeof vi.fn> } => ({
   pickAction: vi.fn(), drawFrom: vi.fn(), selectHand: vi.fn(), playLane: vi.fn(), toggleGate: vi.fn(), endTurn: vi.fn(), setTheme: vi.fn(), clashConfirm: vi.fn(),
-  goBack: vi.fn(), toggleSfx: vi.fn(), toggleSettings: vi.fn(), toggleBgm: vi.fn(), selectBgm: vi.fn(), setBgmVol: vi.fn(),
+  goBack: vi.fn(), bossInfo: vi.fn(), toggleSfx: vi.fn(), toggleSettings: vi.fn(), toggleBgm: vi.fn(), selectBgm: vi.fn(), setBgmVol: vi.fn(),
 });
 
 function setup(opts: TurnViewOpts = {}) {
@@ -63,6 +63,14 @@ describe('Game G · turn-battle-screen live mount 交互（doc24 回合制 · DO
     press(host.querySelector('[data-act="theme"][data-k="brocade"]'));
     expect(actions.endTurn).toHaveBeenCalledTimes(1);
     expect(actions.setTheme).toHaveBeenCalledWith('brocade');
+  });
+
+  it('按下敌方大本营 → bossInfo（弹 Boss 名号+战役故事·owner 2026-06-21）', () => {
+    const { host, actions } = setup();
+    const fort = host.querySelector('[data-act="boss-info"]');
+    expect(fort, '敌方大本营应可点（boss-info 钩子）').not.toBeNull();
+    press(fort);
+    expect(actions.bossInfo).toHaveBeenCalledTimes(1);
   });
 
   it('抽牌模式 → 渲两库钮，按下 → drawFrom(poker/tengang)', () => {
