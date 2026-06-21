@@ -622,7 +622,7 @@ function enchantPanel(view: LobbyView, craftSel: string): string {
       <div style="flex:1"><div class="note" style="text-align:left;margin-bottom:5px">镶嵌槽（${inlaid.length}/${INLAY_MAX}）· 点✕卸下</div><div class="ench-slots">${slots}</div>
       <div class="note" style="text-align:left;margin:10px 0 5px">${full ? '<span style="color:var(--gold)">槽位已满</span>' : '点一个地支镶入：'}</div><div class="ench-picks">${pick}</div></div></div>`;
   }
-  return `<div class="card"><h2>${GI.crafting} 附魔台 · 地支镶嵌 <span class="ghost" style="margin-left:auto;font-size:12px">生肖镶进牌 → +favor · ≤${INLAY_MAX} 槽</span></h2>
+  return `<div class="card"><h2>${GI.crafting} 地支牌 · 生肖镶嵌（附魔） <span class="ghost" style="margin-left:auto;font-size:12px">生肖镶进牌 → +favor · ≤${INLAY_MAX} 槽</span></h2>
     <div class="note" style="text-align:left;margin-bottom:8px">用收集的地支生肖给扑克牌附魔（铜+${DIZHI_INLAY_FAVOR[1]}/银+${DIZHI_INLAY_FAVOR[2]}/金+${DIZHI_INLAY_FAVOR[3]} favor），真提升战力。</div>
     <div class="ench-grid">${grid}</div>
     ${detail}</div>`;
@@ -881,8 +881,8 @@ export function renderLobby(view: LobbyView, tab: string, tutorialOpen: boolean,
         <div class="card"><h2>${GI.bolt} 天罡牌 · 购买 <span class="ghost" style="margin-left:auto;font-size:12px">局内法术·买入后到牌组编入</span></h2>
           <div class="note" style="text-align:left;margin-bottom:8px">花金币买入天罡牌（解锁后入「拥有」）；编进出战牌组到「牌组」屏做。</div>
           <div class="shelf">${view.tiangangs.map((j) => craftTiangangItem(j)).join('')}</div></div>
-        <div class="card"><h2>${GI.planet} 星球牌 · 升档 <span class="ghost" style="margin-left:auto;font-size:12px">第二养成轴</span></h2><div class="note" style="text-align:left;margin-bottom:8px">升档改 run 参数（命/能/兵档/牌型）· 持久存档 · 买一级累加</div>
-          <div class="shelf">${view.planets.map((p) => shopItem('buyPlanet', '🪐', p)).join('')}</div></div>
+        <div class="card"><h2>${GI.planet} 地支牌 · 升档 <span class="ghost" style="margin-left:auto;font-size:12px">底盘养成（命/能/军/型）</span></h2><div class="note" style="text-align:left;margin-bottom:8px">叠加升档改 run 参数（命线/能量/兵档/牌型）· 持久存档 · 买一级累加。与上方「生肖镶嵌」同属地支养成的两面。</div>
+          <div class="shelf">${view.planets.map((p) => shopItem('buyPlanet', '🀄', p)).join('')}</div></div>
       </div>
     </div></section>
     <section class="screen${on('ladder')} full">${ladderSection(view.name, view.rankText)}</section>

@@ -16,7 +16,7 @@ const view = (skin: 'onyx' | 'rosy' = 'onyx'): LobbyView => ({
   deckSize: 12, activeDeckName: '将领流', canAddDeck: true,
   campaignMax: 4,
   campaign: { stage: 3, boss: '曹操', battle: '赤壁（翻命）', oneLiner: '挟天子·连环船·火攻可破', stars: 2, unlock: '不屈', intro: '建安十三年，赤壁。曹操列八十万众于江北、铁索连环。这一回，你是那把火。', bossLines: { open: '孤提百万雄师，踏平江东。', mid: '区区火攻，也敢撼我连环巨舰？', lose: '……华容道上，孤竟败于这一炬。' }, fiends: [{ name: '大军压境', desc: '兵海·额外铺兵' }, { name: '连环船', desc: '串联共享战力·可火攻一并烧' }, { name: '挟天子', desc: '全军士气 +' }] },
-  planets: [{ id: 'saturn', name: '星球·命', sub: '命线 +1/级', cost: 24, owned: false, level: 1, buyable: true }, { id: 'mars', name: '星球·军', sub: '兵档 +3/级', cost: 14, owned: false, level: 0, buyable: true }],
+  planets: [{ id: 'saturn', name: '地支·命', sub: '命线 +1/级', cost: 24, owned: false, level: 1, buyable: true }, { id: 'mars', name: '地支·军', sub: '兵档 +3/级', cost: 14, owned: false, level: 0, buyable: true }],
   foils: [{ id: 'gilt', name: '鎏金', sub: '金箔流光', cost: 30, owned: true, buyable: false }, { id: 'azure', name: '碧霄', sub: '青碧全息', cost: 45, owned: false, buyable: true }],
   ladderLines: ['<h2>⚔️ 战役进度</h2><div class="bigrank">第 3 / 5 战</div><div class="meta">命 ❤❤❤</div>', '<h2>🏆 终局 Boss</h2><div class="bigrank" style="color:var(--heart)">方块J·诡牌</div>'],
 });
@@ -73,8 +73,8 @@ describe('Game G · lobby-screen 视觉回归（忠实港大厅 · 真渲染器 
 
   it('改造坊帧（地支附魔台 + 天罡货架 + 星球牌·接真材料/拥有）匹配 golden', async () => {
     const html = renderLobbyDoc(view(), 'craft');
-    expect(html).toContain('附魔台'); // 地支镶嵌附魔台
-    expect(html).toContain('🪐 星球·命');
+    expect(html).toContain('生肖镶嵌'); // 地支·生肖镶嵌附魔台
+    expect(html).toContain('🀄 地支·命'); // 地支·升档（原误标星球）
     await expect(html).toMatchFileSnapshot('./__frames__/lobby-craft.html');
   });
 

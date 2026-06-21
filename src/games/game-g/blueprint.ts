@@ -683,10 +683,10 @@ export function quartermasterEnergy(tiangangIds: readonly string[], lanesWon: nu
 export type PlanetKind = 'lives' | 'energy' | 'rank-favor' | 'tier';
 export interface PlanetCard { id: string; name: string; kind: PlanetKind; cost: number; amount: number; text: string }
 export const GAME_G_PLANETS: PlanetCard[] = [
-  { id: 'saturn', name: '星球·命', kind: 'lives', cost: 24, amount: 1, text: '战役命线上限 +1/级（更长的 run）' },
-  { id: 'jupiter', name: '星球·能', kind: 'energy', cost: 20, amount: 1, text: '干预能量上限 +1 且每胜回能 +1/级' },
-  { id: 'mars', name: '星球·军', kind: 'rank-favor', cost: 14, amount: 3, text: '全军「兵」档(A–6) favor +3/级（夯实底盘）' },
-  { id: 'mercury', name: '星球·型', kind: 'tier', cost: 16, amount: 4, text: '牌型羁绊（同花/顺子卡）整条阶梯 +4/级（牌型流升档）' },
+  { id: 'saturn', name: '地支·命', kind: 'lives', cost: 24, amount: 1, text: '战役命线上限 +1/级（更长的 run）' },
+  { id: 'jupiter', name: '地支·能', kind: 'energy', cost: 20, amount: 1, text: '干预能量上限 +1 且每胜回能 +1/级' },
+  { id: 'mars', name: '地支·军', kind: 'rank-favor', cost: 14, amount: 3, text: '全军「兵」档(A–6) favor +3/级（夯实底盘）' },
+  { id: 'mercury', name: '地支·型', kind: 'tier', cost: 16, amount: 4, text: '牌型羁绊（同花/顺子卡）整条阶梯 +4/级（牌型流升档）' },
 ];
 export const PLANET_BY_ID: ReadonlyMap<string, PlanetCard> = new Map(GAME_G_PLANETS.map((p) => [p.id, p]));
 const planetBump = (planets: Record<string, number> | undefined, id: string): number => (planets?.[id] ?? 0) * (PLANET_BY_ID.get(id)?.amount ?? 0);

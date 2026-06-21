@@ -16,7 +16,7 @@ const makeView = (overrides: Partial<LobbyView> = {}): LobbyView => ({
   deckAvg: 53, deckMin: 44, deckMax: 62,
   deck: Array.from({ length: 52 }, (_, i) => 44 + (i % 10) * 2),
   tiangangs: [J('comrade', '同袍', true, true), J('gambler', '赌徒', false, false, true), J('warlord', '枭雄', false, false, false)],
-  planets: [{ id: 'saturn', name: '星球·命', sub: '命线', cost: 24, owned: false, level: 1, buyable: true }],
+  planets: [{ id: 'saturn', name: '地支·命', sub: '命线', cost: 24, owned: false, level: 1, buyable: true }],
   foils: [{ id: 'gilt', name: '鎏金', sub: '金箔', cost: 30, owned: false, buyable: true }],
   ladderLines: ['<h2>战役进度</h2><div class="bigrank">第 3/5 战</div>'],
   deckArchName: '将领流', deckArchActivated: true,
@@ -68,13 +68,13 @@ describe('Game G · lobby-screen mountLobby 点击交互（DOM · happy-dom）',
       expect(host.innerHTML).toContain('同袍');
     });
 
-    it('点击「改造坊」→ craft section 激活，显示附魔台 + 天罡货架 + 星球牌', () => {
+    it('点击「改造坊」→ craft section 激活，显示地支附魔 + 天罡货架 + 地支升档', () => {
       const host = document.createElement('div');
       mountLobby(host, { getView: makeView, onPlay: vi.fn() });
       click(navBtn(host, '改造坊'));
       expect(host.querySelector('.nav button.on')?.textContent?.trim()).toBe('改造坊');
-      expect(host.innerHTML).toContain('附魔台'); // 地支附魔台（替换原占位改造台）
-      expect(host.innerHTML).toContain('星球·命');
+      expect(host.innerHTML).toContain('生肖镶嵌'); // 地支·生肖镶嵌附魔台（替换原占位改造台）
+      expect(host.innerHTML).toContain('地支·命'); // 地支·升档（原误标星球）
     });
 
     it('点击「天梯」→ ladder section 激活', () => {
@@ -516,7 +516,7 @@ describe('Game G · lobby-screen mountLobby 点击交互（DOM · happy-dom）',
       const host = document.createElement('div');
       mountLobby(host, { getView: () => enView(), onPlay: vi.fn() });
       click(navBtn(host, '改造坊'));
-      expect(host.innerHTML).toContain('附魔台'); // 占位改造台已替换为真附魔台
+      expect(host.innerHTML).toContain('生肖镶嵌'); // 占位改造台已替换为真·地支生肖镶嵌附魔
       click(host.querySelector('[data-act="craftSel"][data-k="0"]')!); // 选第一张牌
       expect(host.querySelector('.ench-slots')).not.toBeNull(); // 镶嵌槽出现
       expect(host.querySelector('[data-act="inlay"][data-k="0:子"]')).not.toBeNull(); // 已拥有的子鼠可镶
