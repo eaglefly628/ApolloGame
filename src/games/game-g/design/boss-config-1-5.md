@@ -62,6 +62,21 @@
 
 ---
 
+## 五·五、每关 Boss ≤5 明牌天罡（counter-pick 靶 · 写死 `boss.tiangang`）
+> Boss 也带天罡（doc27 §3.1·≤5·与玩家对称）；**开局明牌亮出 → 玩家照着配克制**。张数随难度爬（同 loadoutCap：2/3/3/4/5）。贴 Boss 流派选，皆取自 36 天罡池。
+
+| 关 | Boss | 明牌天罡（写死） | 主题 | 玩家 counter-pick 提示 |
+|---|---|---|---|---|
+| 1 | 列奥尼达 | `bannerman` 旗手 · `unyield` 不屈 | 守墙·士气耐久 | 铺场快攻绕开耐久；点数压过士气 |
+| 2 | 亚历山大 | `tigertally` 虎符 · `bannerman` 旗手 · `bedrock` 磐石 | 全军突击·主将带队·稳 | `capturektg` 擒王斩其主将断光环；`leaddice` 拉差距 |
+| 3 | 曹操 | `tigertally` 虎符 · `flow` 川流 · `twinblade` 双锋 | 兵海·源源补牌·连环对子 | `discard2` 舍车集中一路；同花/三条压连环 |
+| 4 | 拿破仑 | `arrowhead` 锋矢 · `tripod` 鼎立 · `tigertally` 虎符 · `relay` 薪火 | 集中突破·前锋·接棒续航 | `swiftmarch` 疾行抢攻；`irondice` 防大炮爆冷路 |
+| 5 | 项羽 | `atlas` 擎天 · `leaddice` 灌铅骰 · `irondice` 铁骰 · `tigertally` 虎符 · `arrowhead` 锋矢 | 霸王·强者愈强·莽 | `capturektg` 擒王断霸王之勇+擎天；`bedrock` 抬下限抗碾压 |
+
+> ⚠ Boss 天罡当前 sim 未计入（原型只跑扑克+地煞+留场）→ 这 5 张会让 Boss **更强**，甲接入后 design G 把它纳入 sim 重扫、必要时回调 bossFavorBias/地煞。**明牌 counter-pick 是核心乐趣**：每关玩家看 Boss 天罡+地煞 → 针对配 loadout。
+
+---
+
 ## 六、地煞数值「重新设置」（派甲改 `disha.ts · DISHA_SPECS`）
 > design G 实测发现旧值**关2/3/4 过强**（非单调难度）→ 按"该关玩家真实养成"重标。改动如下（旧→新）：
 
@@ -82,9 +97,9 @@
 > **诅咒（curse）owner 先不实现** → 关5 难度改用现有数据杠杆：`bossFavorBias`（地支附魔·细调）+ 慎用 `bonusMana`（双倍泉水=悬崖·见 §五）。
 
 ## 七、给甲的接入清单（数据驱动·引擎域）
-1. **level loader 读 Boss 16写死牌组**（本档 §一-五 的 16 张 rank+suit）+ `bossFavorBias`（每关偏置·写卡 buff）+ `homeHp`（已支持）。
+1. **level loader 读 Boss 16写死牌组**（本档 §一-五 的 16 张 rank+suit）+ `bossFavorBias`（每关偏置·写卡 buff）+ `homeHp`（已支持）+ **≤5 写死天罡 `boss.tiangang`**（§五·五·已有 `lvl.boss.tiangang` 通道·把随机改写死）。
 2. **每 Boss 留场P**：§4.2 `stayPMul` 钩子（甲已实装 base 0.5 硬币 → 加每侧/每 Boss 概率覆写）；关3-5 守将留场 0.75。
 3. **地煞重设值**：§六 表（改 `DISHA_SPECS`）。
-4. **诅咒新 op**：`REQ-G-诅咒地煞`（仿 batteryEveryTurns 周期触发）。
+4. ~~诅咒新 op~~：**owner 暂缓**（`REQ-G-诅咒地煞` ⏸·不做）。
 5. **被动发作全屏提示**：复用 `REQ-G-战斗逻辑批次·敌用地煞全屏通知`。
-> 接好后 **design G 用 `simulate-balance.ts` 重扫 → 收敛各关到 §〇 目标曲线 → 回填**。
+> 接好后 **design G 用 `simulate-balance.ts` 重扫（纳入 Boss 16牌组+5天罡+地煞+留场）→ 收敛各关到 §〇 目标曲线 → 回填**。
