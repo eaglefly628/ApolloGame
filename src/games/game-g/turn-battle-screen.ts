@@ -3,7 +3,7 @@
 //   只读 TurnBattleView（由 buildTurnBattleView 从 turn-combat 真状态派生）→ 出 HTML 串；不进 hash、不回灌判定。
 // 静态渲染 = 设计稿"静息态"(无 hover tooltip / 无 boss 飞出)；clash 特写覆盖层按 view.clash 选渲。live mount + 交互为后续切片。
 import { cardPoints } from './clash-resolve.js';
-import { SLOTS, MANA_PER_TURN, GATES, A_DEPLOY_SLOT, B_DEPLOY_SLOT, DEPLOY_COST, CAST_COST, type TurnBattle, type TurnUnit } from './turn-combat.js';
+import { SLOTS, MANA_PER_TURN, GATES, A_DEPLOY_SLOT, B_DEPLOY_SLOT, DEPLOY_COST, CAST_COST, clashOdds, type TurnBattle, type TurnUnit } from './turn-combat.js';
 import { FONTS } from './fonts.js'; // 自托管字体（替代外部 Google Fonts <link>）
 
 type Style = Record<string, string | number | undefined>;
@@ -86,7 +86,7 @@ const CSS = `
 const HL = ';outline:3px solid var(--gold);outline-offset:2px;animation:g-hl 1s ease-in-out infinite;position:relative;z-index:55';
 
 // ── 视图（buildTurnBattleView 从 turn-combat 派生喂渲染器；纯数据） ──
-export interface TurnSlotView { hasUnit: boolean; mine: boolean; isBorder: boolean; isClash: boolean; rank?: string; suit?: 's' | 'h' | 'd' | 'c'; power?: number; pts?: number; buff?: number; name?: string; rar?: 'white' | 'green' | 'blue' | 'gold'; zod?: string[]; deploy?: 1 | 2; deployLabel?: boolean; placeable?: boolean; unitId?: string; justMoved?: boolean; fresh?: number; tipDown?: boolean } // deploy：1=我方放牌区 / 2=敌方放牌区（贴各自大本营 3 格）；placeable=选牌待放时此格可落子(高亮·owner 2026-06-21)；fresh=本回合新部署的落子序号(逐张 g-drop 动画·叭叭叭)；tipDown=顶排(上路)的牌·磨砂浮层朝下弹避免被画框裁掉(owner 2026-06-21)
+export interface TurnSlotView { hasUnit: boolean; mine: boolean; isBorder: boolean; isClash: boolean; rank?: string; suit?: 's' | 'h' | 'd' | 'c'; power?: number; pts?: number; buff?: number; name?: string; rar?: 'white' | 'green' | 'blue' | 'gold'; zod?: string[]; deploy?: 1 | 2; deployLabel?: boolean; placeable?: boolean; unitId?: string; justMoved?: boolean; fresh?: number; tipDown?: boolean; forecast?: number } // placeable=选牌待放可落子(高亮)；fresh=新部署落子序号(g-drop)；tipDown=顶排牌磨砂浮层朝下弹避免被画框裁；forecast=此前锋若开战的我方胜率0~1(掷命预报·owner 2026-06-21)
 export interface TurnLaneView { name: string; slots: TurnSlotView[] }
 // 捷径门箭头（占位·8 门·真视觉待 owner 参考图）。idx=GATES 下标·供 live mount data-gate 钩子。
 export interface TurnGateView { idx: number; open: boolean; side: 'a' | 'b'; fromLane: number; fromSlot: number; toLane: number; toSlot: number }
@@ -196,6 +196,20 @@ function fortBase(view: TurnBattleView, isMine: boolean): string {
 }
 
 // 一格 slot（设计稿 lanes.slots）。
+// 掷命预报档位（玩家视角胜率 → 词 + 色）：占优 小优/优势/大优/碾压；吃亏 小弱/弱势/大弱/被碾压；中间均势。
+export function oddsTier(p: number): [string, string] {
+  const pc = p * 100;
+  if (pc >= 90) return ['碾压', '#2fbf6a'];
+  if (pc >= 80) return ['大优', '#5bbf7a'];
+  if (pc >= 65) return ['优势', '#84c97f'];
+  if (pc >= 55) return ['小优', '#bcc857'];
+  if (pc > 45) return ['均势', '#cdb86a'];
+  if (pc > 35) return ['小弱', '#e8a64a'];
+  if (pc > 20) return ['弱势', '#e8814a'];
+  if (pc > 10) return ['大弱', '#e25a4a'];
+  return ['被碾压', '#cf3b3b'];
+}
+
 function slotCell(s: TurnSlotView): string {
   const isMineZone = !s.isBorder && s.mine; const dotCol = s.isBorder ? 'rgba(232,205,138,.8)' : (s.hasUnit ? (s.mine ? 'rgba(255,122,69,.55)' : 'rgba(58,134,212,.55)') : (isMineZone ? 'rgba(255,122,69,.55)' : 'rgba(58,134,212,.55)'));
   // 放牌区底纹（贴各自大本营 3 格·owner 2026-06-20）：我方暖橙 / 敌方冷蓝·虚线内框 + 中格「放牌区」标。
@@ -231,7 +245,13 @@ function slotCell(s: TurnSlotView): string {
   // 场上兵的磨砂详情浮层（与手牌同 cardTip·战力拆解）。
   const tip = s.hasUnit && s.rank && s.suit ? cardTip({ name: s.name ?? (SUITNM[s.suit] + s.rank), rar: s.rar ?? 'white', isGang: false, mine: s.mine, suit: s.suit, pts: s.pts, buff: s.buff, power: s.power, zod: s.zod }) : '';
   const wrapCls = s.hasUnit ? ` class="gg-tipwrap${s.tipDown ? ' tip-down' : ''}"` : '';
-  return `<div${wrapCls} style="${st(cell)}">${depLabel}<div style="${st(dot)}"></div>${unitHTML}${placeMark}${ring}${tip}</div>`;
+  // 掷命预报徽标（owner 2026-06-21·让玩家落子前就知道这仗几成赢）：贴此前锋格顶·档位词 + 具体 %。
+  let fcast = '';
+  if (s.forecast != null) {
+    const [lab, col] = oddsTier(s.forecast); const pct = Math.round(s.forecast * 100);
+    fcast = `<div style="${st({ position: 'absolute', top: '-20px', left: '50%', transform: 'translateX(-50%)', padding: '2px 9px', borderRadius: '99px', background: 'rgba(10,14,20,.92)', border: '1px solid ' + col, color: col, fontFamily: 'var(--fh)', fontWeight: 700, fontSize: '11px', whiteSpace: 'nowrap', zIndex: 8, boxShadow: `0 2px 9px rgba(0,0,0,.55), 0 0 10px ${col}55` })}">⚔ ${lab} ${pct}%</div>`;
+  }
+  return `<div${wrapCls} style="${st(cell)}">${depLabel}<div style="${st(dot)}"></div>${unitHTML}${placeMark}${ring}${tip}${fcast}</div>`;
 }
 
 function laneRow(L: TurnLaneView, li: number, hiOn = false): string {
@@ -467,13 +487,14 @@ export function buildTurnBattleView(b: TurnBattle, opts: TurnViewOpts = {}): Tur
     for (const u of L.a) bySlot.set(u.slot, { u, mine: true });
     for (const u of L.b) bySlot.set(u.slot, { u, mine: false });
     const adj = L.a.length > 0 && L.b.length > 0 && Math.abs(L.a[0].slot - L.b[0].slot) <= 1;
+    const odds = adj ? clashOdds(b, li) : null; // 掷命预报：此路前锋若开战·我方胜率（纯读不掷骰）
     const occA = new Set(L.a.map((u) => u.slot));
     const target = selDeploy ? [A_DEPLOY_SLOT, A_DEPLOY_SLOT + 1, A_DEPLOY_SLOT + 2].find((sl) => !occA.has(sl)) : undefined;
     const dep = (i: number): 1 | 2 | undefined => (i <= A_DEPLOY_SLOT + 2 ? 1 : i >= B_DEPLOY_SLOT - 2 ? 2 : undefined); // 我方放牌区 0..2 / 敌方 6..8
     const slots: TurnSlotView[] = Array.from({ length: SLOTS }, (_, i) => {
       const hit = bySlot.get(i);
       // isClash 标在两军真前锋格(landed bugfix·非固定中线 4) + 放牌区底纹/标签(标在贴各自城堡那格) + 待放落点高亮
-      const base = { isBorder: i === 4, isClash: adj && (i === L.a[0]?.slot || i === L.b[0]?.slot), deploy: dep(i), deployLabel: i === A_DEPLOY_SLOT || i === B_DEPLOY_SLOT, placeable: !hit && i === target };
+      const base = { isBorder: i === 4, isClash: adj && (i === L.a[0]?.slot || i === L.b[0]?.slot), deploy: dep(i), deployLabel: i === A_DEPLOY_SLOT || i === B_DEPLOY_SLOT, placeable: !hit && i === target, forecast: adj && i === L.a[0]?.slot && odds != null ? odds : undefined };
       return hit
         ? { ...base, hasUnit: true, mine: hit.mine, rank: hit.u.rank, suit: lc(hit.u.suit), power: hit.u.points + hit.u.buff, pts: hit.u.points, buff: hit.u.buff, name: SUITNM[lc(hit.u.suit)] + hit.u.rank, rar: rankOf(hit.u.rank), zod: [], unitId: hit.u.id, justMoved: opts.movedIds?.has(hit.u.id) ?? false, fresh: opts.freshIds?.get(hit.u.id), tipDown: li === 0 }
         : { ...base, hasUnit: false, mine: i < 4 };

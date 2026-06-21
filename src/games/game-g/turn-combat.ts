@@ -263,10 +263,12 @@ function killFront(lane: TurnLane, side: 'a' | 'b'): void {
   if (u?.general) { if (side === 'a') lane.aGenDead = true; else lane.bGenDead = true; }
 }
 
-// 一路前锋相遇 → 掷命对决（doc19 原封·复用 live-combat 同款解算：tie 阶梯 + kHard/winFloor/noUpset；同序消费 rng → hash 稳）。
-function resolveClash(b: TurnBattle, li: number): void {
+// 掷命解算评估（纯读·不掷骰不改状态）：算两军前锋有效战力 + 玩家(a)胜率 wr（含 kHard/winFloor/地煞 edge）。
+// resolveClash 与 UI 预报 clashOdds 共用此**单一真相**，杜绝"预报与实判不一致"。
+interface ClashEval { fa: TurnUnit; fb: TurnUnit; ea: number; eb: number; wr: number; ba: ReturnType<typeof effPower>; bb: ReturnType<typeof effPower> }
+function clashEval(b: TurnBattle, li: number): ClashEval | null {
   const lane = b.lanes[li]; const fa = lane.a[0], fb = lane.b[0];
-  if (!fa || !fb) return;
+  if (!fa || !fb) return null;
   const champA = b.a.tengangA.powerMulHighest > 1 ? championId(b, 'a') : undefined;
   const champB = b.b.tengangA.powerMulHighest > 1 ? championId(b, 'b') : undefined;
   const ba = effPower(fa, lane, 'a', b.a.tengangA, champA), bb = effPower(fb, lane, 'b', b.b.tengangA, champB, b.dishaB.noRout);
@@ -275,6 +277,26 @@ function resolveClash(b: TurnBattle, li: number): void {
   if (b.a.tengangA.winFloor > 0) wr = Math.min(0.97, Math.max(wr, 0.03 + b.a.tengangA.winFloor)); // 稳手
   const edge = bossEdge(b, li, fa, fb); // 地煞：Boss 招牌战术压低玩家胜率
   if (edge !== 0) wr = Math.min(0.97, Math.max(0.03, wr - edge / 100));
+  return { fa, fb, ea, eb, wr, ba, bb };
+}
+
+// 玩家(a)视角·当前若开战的胜率(0~1)·纯读不掷骰；无前锋相遇→null。供 UI「掷命预报」（owner 2026-06-21）。
+export function clashOdds(b: TurnBattle, li: number): number | null {
+  const ev = clashEval(b, li); if (!ev) return null;
+  const { fa, fb, ea, eb, wr } = ev;
+  if (ea === eb) { // 战力全平 → 破平阶梯的确定性部分（点数→续航→先手/掷骰）
+    if (fa.points !== fb.points) return fa.points > fb.points ? 1 : 0;
+    if (fa.staminaLeft !== fb.staminaLeft) return fa.staminaLeft > fb.staminaLeft ? 1 : 0;
+    return b.dishaB.firstStrike ? 0 : 0.5;
+  }
+  if (b.a.tengangA.noUpset > 0 && wr >= 0.5) return 1; // 铁骰：稳赢
+  return wr;
+}
+
+// 一路前锋相遇 → 掷命对决（doc19 原封·复用 live-combat 同款解算：tie 阶梯 + kHard/winFloor/noUpset；同序消费 rng → hash 稳）。
+function resolveClash(b: TurnBattle, li: number): void {
+  const ev = clashEval(b, li); if (!ev) return;
+  const lane = b.lanes[li]; const { fa, fb, ea, eb, wr, ba, bb } = ev;
   const roll = nextRandom(b.rng);
   let aWins: boolean, tie: ClashEvent['tie'] = null;
   if (ea === eb) {

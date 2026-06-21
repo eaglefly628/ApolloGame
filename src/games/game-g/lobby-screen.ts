@@ -484,7 +484,11 @@ function helpBox(helpTab: 'intro' | 'tut' | 'manual', tier: 'easy' | 'mid' | 'ha
     <p><b>掷命对决（核心）</b>：比战力 → 算胜率 → 抛牌定生死。战力高则胜率高，但永远有 <b>爆冷缝</b>（再强 3% 翻车·再弱 3% 翻盘）。</p>`;
   const mid = `<h3 style="color:#facc15">🟡 中级 · 三牌组 + 经营</h3>
     <p><b>三套牌</b>：<br>· <b>扑克 52（名将·兵）</b>：上场部队，点数=战力、花色=阵营，双方同副（公平）。<br>· <b>天罡 36（兵法·法术）</b>：赛前挑带上场，局内打出持续整局（虎符全军+2 / 疾行加速 / 擒王斩敌主将崩路）。<br>· <b>地支 12（天命·养成）</b>：局外镶到牌上叠属性（附魔台）。</p>
-    <p><b>经营要点</b>：召唤源泉紧（每回合 +1）→ 每个抉择都重要；机关门换路；同点数凑对子/三条加战力；田忌赛马以强避弱、集中突破。</p>`;
+    <p><b>⚔ 掷命预报（落子前就看得见·owner 2026-06-21 新增）</b>：两军前锋将要相遇的那一路，棋盘上会在你前锋头顶浮出<b>档位词 + 具体胜率%</b>，让你<b>开战前</b>就心里有数：<br>
+    · 占优：<span style="color:#bcc857;font-weight:700">小优 55%↑</span> → <span style="color:#84c97f;font-weight:700">优势 65%↑</span> → <span style="color:#5bbf7a;font-weight:700">大优 80%↑</span> → <span style="color:#2fbf6a;font-weight:700">碾压 90%↑</span><br>
+    · 吃亏：<span style="color:#e8a64a;font-weight:700">小弱</span> → <span style="color:#e8814a;font-weight:700">弱势</span> → <span style="color:#e25a4a;font-weight:700">大弱</span> → <span style="color:#cf3b3b;font-weight:700">被碾压</span>；中间 <span style="color:#cdb86a;font-weight:700">均势 ~50%</span><br>
+    （胜率含天罡/地支/士气全部加成，与真实开战同一套算法——预报即结果的概率，详见 🔴 高级）。</p>
+    <p><b>经营要点</b>：召唤源泉紧（每回合 +1）→ 每个抉择都重要；机关门换路；同点数凑对子/三条加战力；<b>看预报田忌赛马</b>——避开"大弱/被碾压"的路、把强牌送去"大优/碾压"集中突破。</p>`;
   const hard = `<h3 style="color:#f87171">🔴 高级 · 概率算法 · 连携 · 克制</h3>
     <p><b>⭐ 掷命对决——最终概率怎么算出来的</b>（透明·非黑箱）：<br>
     ① <b>各取战力</b>：碰头的两张牌，各算<b>有效战力 P_eff</b> = 点数底盘 + 天罡加成（虎符全军+2…）+ 地支附魔(镶嵌+favor) + 士气(主将活则全路涨) + 干预。<br>
