@@ -29,8 +29,7 @@ describe('Game G · turn-battle-screen（doc24 回合制战斗屏 · 忠实端�
     const html = renderTurnBattleDoc(buildTurnBattleView(setup(), { theme: 'onyx', tengangName: nm }));
     expect(html).toContain('回合制 · 翻命扑克'); // topbar battleLabel 默认值
     expect(html).toContain('召唤源泉'); // 召唤源泉横条
-    expect(html).toContain('本回合动作（弃牌可追加）'); // 动作菜单标题
-    for (const k of ['draw', 'deploy', 'cast', 'discard']) expect(html).toContain(`data-act="${k}"`); // 四动作钩子(供 live mount 接 turn-combat)
+    for (const k of ['draw', 'deploy', 'cast', 'discard']) expect(html).toContain(`data-act="${k}"`); // 四动作钩子(供 live mount 接 turn-combat)·动作菜单标题已移除(owner 2026-06-21·别挡引导)
     expect(html).toContain('--accent:#ff7a45'); // 玄铁皮
     expect(html).toContain('地煞牌'); // 敌堡垒地煞
     await expect(html).toMatchFileSnapshot('./__frames__/turn-board.html');

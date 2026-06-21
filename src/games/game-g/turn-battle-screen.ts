@@ -544,7 +544,6 @@ export function buildTurnFrameHTML(view: TurnBattleView, drain: { from: number; 
     </div>
     <div style="${st(bottomBar)}">
       <div style="${st(actionMenu)}">
-        <div style="font-size:10px; letter-spacing:.16em; text-transform:uppercase; color:var(--ink-dim); margin-bottom:8px;">本回合动作（弃牌可追加）</div>
         <div style="display:grid; grid-template-columns:1fr 1fr; gap:8px;">${forr(view.actions, actBtn)}</div>
         ${drawPanel}
         <div style="${st(actionHint)}">${esc(view.actionSub)}</div>
