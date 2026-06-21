@@ -548,7 +548,7 @@ export function mount(container: HTMLElement): () => void {
       document.body.appendChild(thinkEl);
       thinkTimer = window.setTimeout(() => { if (thinkEl) { thinkEl.remove(); thinkEl = null; } onDone(); }, ms);
     };
-    const flash = (msg: string): void => { notice = msg; mounted?.update(); if (noticeTimer) clearTimeout(noticeTimer); noticeTimer = window.setTimeout(() => { notice = null; mounted?.update(); }, 1700); };
+    const flash = (msg: string): void => { notice = msg; mounted?.update(); if (noticeTimer) clearTimeout(noticeTimer); noticeTimer = window.setTimeout(() => { notice = null; if (!perfClash) mounted?.update(); }, 1700); }; // 清提示时若正演掷命特写则不重渲（防飞入重启）
     const view = (): TurnBattleView => buildTurnBattleView(tb, { theme, tengangName: tgName, tengangDesc: tgDesc, selMode, selHand, clash: perfClash ? clashToTurnView(perfClash) : null, bossName: aiName, sha: shaView, gatesLive: gateChance, notice, movedIds: justMovedIds, freshIds, battleLabel, sfxOn: isSfxOn(), settingsOpen, bgmOn: isBgmOn(), bgmIdx: bgmTrackIdx(), bgmVol: bgmVolume(), bgmNames: BGM_TRACKS.map((t) => t.name) });
     let mounted: { update: () => void; destroy: () => void } | null = null;
 
@@ -573,7 +573,7 @@ export function mount(container: HTMLElement): () => void {
           for (const L of tb.lanes) for (const u of L.b) if (!before.has(u.id)) { freshIds.set(u.id, fi); const d = fi * 150; window.setTimeout(() => playSfx('deploy'), d); fi++; }
           drainClashes();
           mounted?.update();
-          window.setTimeout(() => { justMovedIds = new Set(); freshIds = new Map(); mounted?.update(); }, Math.max(550, fi * 150 + 380)); // 错峰落子播完再清标记
+          window.setTimeout(() => { justMovedIds = new Set(); freshIds = new Map(); if (!perfClash) mounted?.update(); }, Math.max(550, fi * 150 + 380)); // 错峰落子播完再清标记（掷命特写中不重渲·防 3D 飞入重启）
           playPerf(() => showBanner('我方回合', 1100, finishTurnSeq));
         });
       });
@@ -586,7 +586,7 @@ export function mount(container: HTMLElement): () => void {
       justMovedIds = diffMoved(before);
       drainClashes();
       mounted?.update(); // 立刻渲染推进动画，然后再演掷命特写
-      window.setTimeout(() => { justMovedIds = new Set(); mounted?.update(); }, 550); // 动画播完清标记
+      window.setTimeout(() => { justMovedIds = new Set(); if (!perfClash) mounted?.update(); }, 550); // 动画播完清标记（掷命特写中不重渲·否则 3D 飞入会重启=弹两次·owner 2026-06-21）
       playPerf(runAiThenContinue);
     };
     const actions: TurnBattleActions = {
