@@ -27,7 +27,7 @@ const setup = (): ReturnType<typeof initTurnBattle> => {
 describe('Game G · turn-battle-screen（doc24 回合制战斗屏 · 忠实端口 Cloud Design · 无头 golden）', () => {
   it('棋盘帧（三路9格 slot + 堡垒3血 + 召唤源泉 + 四选一互斥 + 手牌）匹配 golden', async () => {
     const html = renderTurnBattleDoc(buildTurnBattleView(setup(), { theme: 'onyx', tengangName: nm }));
-    expect(html).toContain('翻命扑克 · 棋枰对弈'); // 顶 HUD 标题
+    expect(html).toContain('回合制 · 翻命扑克'); // topbar battleLabel 默认值
     expect(html).toContain('召唤源泉'); // 召唤源泉横条
     expect(html).toContain('本回合动作 · 四选一'); // 互斥动作菜单
     for (const k of ['draw', 'deploy', 'cast', 'discard']) expect(html).toContain(`data-act="${k}"`); // 四动作钩子(供 live mount 接 turn-combat)

@@ -471,31 +471,8 @@ export function mount(container: HTMLElement): () => void {
     const aiName = lvl.heroId; // 战役 Boss = 本关英雄（52 关 = 52 命运之战·doc23 §七）
     const stage = document.createElement('div');
     stage.style.cssText = 'width:min(100%, 140vh);max-width:1340px;margin:0 auto;border-radius:12px;overflow:hidden;position:relative';
-    const label = el('div', 'min-width:300px;text-align:center;font-weight:600;opacity:.85',
-      `第 ${save.stage}/${RUN_BATTLES} 战 · ${lvl.battle.name}（${lvl.battle.oneLine}）｜ 命 ${'❤'.repeat(save.lives)} ｜ 你的阵 ${myName} ｜ ⚔ ${lvl.heroId}：「${lvl.bossLines.open}」`);
-    const back = mkBtn('← 返回大厅');
-    back.onclick = () => {
-      if (tb.winner !== 'pending') { showLobby(); return; } // 已结算 → 直跳，无需确认
-      const ov = document.createElement('div');
-      ov.style.cssText = 'position:fixed;inset:0;z-index:100;background:rgba(0,0,0,.72);display:flex;align-items:center;justify-content:center';
-      ov.innerHTML = `<div style="background:#1a2638;border:1px solid #334155;border-radius:14px;padding:28px 32px;text-align:center;min-width:280px;box-shadow:0 16px 48px rgba(0,0,0,.8)">
-        <div style="font-size:16px;font-weight:600;color:#e2e8f0;margin-bottom:8px">返回大厅？</div>
-        <div style="font-size:13px;color:#94a3b8;line-height:1.6;margin-bottom:20px">当前战斗进度将丢失，无法恢复。</div>
-        <div style="display:flex;gap:10px;justify-content:center">
-          <button id="gg-back-no"  style="padding:9px 22px;border-radius:8px;border:1px solid #334155;background:#15202b;color:#e2e8f0;cursor:pointer;font:13px system-ui">继续战斗</button>
-          <button id="gg-back-yes" style="padding:9px 22px;border-radius:8px;border:none;background:#dc2626;color:#fff;cursor:pointer;font:13px system-ui;font-weight:600">确认返回</button>
-        </div>
-      </div>`;
-      document.body.appendChild(ov);
-      ov.querySelector('#gg-back-no')?.addEventListener('click', () => ov.remove());
-      ov.querySelector('#gg-back-yes')?.addEventListener('click', () => { ov.remove(); showLobby(); });
-      ov.addEventListener('click', (e) => { if (e.target === ov) ov.remove(); }); // 点遮罩关闭
-    };
-    const sndBtn = mkBtn(isSfxOn() ? '🔊 音效' : '🔇 静音'); // 战斗音效开关（owner 2026-06-21）
-    sndBtn.onclick = () => { const on = toggleSfx(); sndBtn.textContent = on ? '🔊 音效' : '🔇 静音'; if (on) playSfx('select'); };
-    const bar = el('div', 'display:flex;gap:10px;align-items:center;max-width:1340px;flex-wrap:wrap;justify-content:center;padding:6px 0');
-    bar.append(label, back, sndBtn);
-    root.append(bar, stage); // bar 顶部状态栏，stage 在下方
+    const battleLabel = `第 ${save.stage}/${RUN_BATTLES} 战 · ${lvl.battle.name} · ⚔ ${lvl.heroId}`;
+    root.append(stage); // 战斗信息/返回/设置已内化到 turn-battle-screen topbar
 
     // 揭晓前完整编排（与旧路 + 测试共用 prepareArmies）→ 折成回合制扑克兵牌库（lane 由玩家放牌时自选·非预派）。
     const { a, b } = prepareArmies({ formation, deckBias: myBias(effectiveDeckFavors(save.deck, save.inlays, save.dizhiOwned)), tiangangs: save.tiangangs, planets: save.planets, interventions, enemyForm: aiForm, enemyBias, boss });
@@ -516,7 +493,7 @@ export function mount(container: HTMLElement): () => void {
     let gateChance = false;            // 放牌附赠：放完一张牌 → 可翻一道机关门(一次)·用掉/换动作即失效(doc24 §三·owner 2026-06-20)
     let notice: string | null = null; let noticeTimer = 0; // 临时提示 toast
     let drained = 0; const perfQueue: ClashEvent[] = []; let perfClash: ClashEvent | null = null; let busy = false; let perfResume: (() => void) | null = null;
-    let justMovedIds = new Set<string>(); let thinkTimer = 0; let thinkEl: HTMLElement | null = null;
+    let justMovedIds = new Set<string>(); let thinkTimer = 0; let thinkEl: HTMLElement | null = null; let settingsOpen = false;
     const tgName = (id: string): string => TIANGANG_BY_ID.get(id)?.name ?? id;
     // 捕捉所有上场单位的位置（lane*9+slot 编码）
     const snapSlots = (): Map<string, string> => { const m = new Map<string, string>(); tb.lanes.forEach((L, li) => { for (const u of L.a) m.set(u.id, `${li}:${u.slot}`); for (const u of L.b) m.set(u.id, `${li}:${u.slot}`); }); return m; };
@@ -539,7 +516,7 @@ export function mount(container: HTMLElement): () => void {
       thinkTimer = window.setTimeout(() => { if (thinkEl) { thinkEl.remove(); thinkEl = null; } onDone(); }, ms);
     };
     const flash = (msg: string): void => { notice = msg; mounted?.update(); if (noticeTimer) clearTimeout(noticeTimer); noticeTimer = window.setTimeout(() => { notice = null; mounted?.update(); }, 1700); };
-    const view = (): TurnBattleView => buildTurnBattleView(tb, { theme, tengangName: tgName, selMode, selHand, clash: perfClash ? clashToTurnView(perfClash) : null, bossName: aiName, sha: shaView, gatesLive: gateChance, notice, movedIds: justMovedIds });
+    const view = (): TurnBattleView => buildTurnBattleView(tb, { theme, tengangName: tgName, selMode, selHand, clash: perfClash ? clashToTurnView(perfClash) : null, bossName: aiName, sha: shaView, gatesLive: gateChance, notice, movedIds: justMovedIds, battleLabel, sfxOn: isSfxOn(), settingsOpen });
     let mounted: { update: () => void; destroy: () => void } | null = null;
 
     const drainClashes = (): void => { for (const ev of tb.clashLog.slice(drained)) perfQueue.push(ev); drained = tb.clashLog.length; };
@@ -594,7 +571,26 @@ export function mount(container: HTMLElement): () => void {
       },
       endTurn: commitEndTurn,
       setTheme: (t) => { theme = t; },
-      clashConfirm: () => { playSfx('confirm'); const r = perfResume; if (r) r(); }, // 「看明白了」→ 演下一场掷命/收场
+      clashConfirm: () => { playSfx('confirm'); const r = perfResume; if (r) r(); },
+      goBack: () => {
+        if (tb.winner !== 'pending') { showLobby(); return; }
+        const ov = document.createElement('div');
+        ov.style.cssText = 'position:fixed;inset:0;z-index:200;background:rgba(0,0,0,.72);display:flex;align-items:center;justify-content:center';
+        ov.innerHTML = `<div style="background:#1a2638;border:1px solid #334155;border-radius:14px;padding:28px 32px;text-align:center;min-width:280px;box-shadow:0 16px 48px rgba(0,0,0,.8)">
+          <div style="font-size:16px;font-weight:600;color:#e2e8f0;margin-bottom:8px">返回大厅？</div>
+          <div style="font-size:13px;color:#94a3b8;line-height:1.6;margin-bottom:20px">当前战斗进度将丢失，无法恢复。</div>
+          <div style="display:flex;gap:10px;justify-content:center">
+            <button id="gg-back-no"  style="padding:9px 22px;border-radius:8px;border:1px solid #334155;background:#15202b;color:#e2e8f0;cursor:pointer;font:13px system-ui">继续战斗</button>
+            <button id="gg-back-yes" style="padding:9px 22px;border-radius:8px;border:none;background:#dc2626;color:#fff;cursor:pointer;font:13px system-ui;font-weight:600">确认返回</button>
+          </div>
+        </div>`;
+        document.body.appendChild(ov);
+        ov.querySelector('#gg-back-no')?.addEventListener('click', () => ov.remove());
+        ov.querySelector('#gg-back-yes')?.addEventListener('click', () => { ov.remove(); showLobby(); });
+        ov.addEventListener('click', (e) => { if (e.target === ov) ov.remove(); });
+      },
+      toggleSfx: () => { const on = toggleSfx(); if (on) playSfx('select'); mounted?.update(); },
+      toggleSettings: () => { settingsOpen = !settingsOpen; mounted?.update(); },
     };
     mounted = mountTurnBattle(stage, view, actions);
     battle = mounted; // teardownMatch 清理（destroy）
@@ -623,9 +619,6 @@ export function mount(container: HTMLElement): () => void {
       if (qm > 0) { save.leverEnergy = Math.min(effectiveLeverCap(save.planets), save.leverEnergy + qm); tail += `（督粮 +${qm}◈）`; }
       persist(save);
       const who = winner === 'a' ? '我方胜（破敌大本营）' : winner === 'b' ? '敌方胜（我大本营被破）' : '平局（无人破家）';
-      const color = winner === 'a' ? '#eab308' : winner === 'b' ? '#94a3b8' : '#cbd5e1';
-      label.innerHTML = `<span style="color:${color}">${who}</span> ｜ 控路 ${lanesA}:${lanesB} ｜ 大本营 我${homeA}/敌${homeB}（满${homeMax}）｜ 敌阵【${aiName}】 ｜ +${gain} 材料 ｜ ${tail}`;
-      back.textContent = `→ ${cont}`; back.onclick = route;
       const bigTxt = winner === 'a' ? '胜 利' : winner === 'b' ? '战 败' : '平 局';
       const bigCol = winner === 'a' ? '#ffe09a' : winner === 'b' ? '#ff6b6b' : '#cbd5e1';
       const stat = (lab: string, val: string, sub: string): string => `<div style="padding:14px 12px;border-radius:13px;background:rgba(255,255,255,.045);border:1px solid rgba(255,255,255,.1);text-align:center;"><div style="font-size:11px;letter-spacing:.14em;color:#8493a3;text-transform:uppercase;">${lab}</div><div style="font-family:'Rajdhani',sans-serif;font-weight:700;font-size:25px;color:#eaf0f6;margin:5px 0 2px;">${val}</div><div style="font-size:11px;color:#7d8b9a;">${sub}</div></div>`;

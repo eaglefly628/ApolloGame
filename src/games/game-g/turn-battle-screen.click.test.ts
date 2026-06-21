@@ -9,6 +9,7 @@ const press = (el: Element | null, button = 0): void => { if (!el) throw new Err
 
 const makeActions = (): { [K in keyof TurnBattleActions]-?: ReturnType<typeof vi.fn> } => ({
   pickAction: vi.fn(), drawFrom: vi.fn(), selectHand: vi.fn(), playLane: vi.fn(), toggleGate: vi.fn(), endTurn: vi.fn(), setTheme: vi.fn(), clashConfirm: vi.fn(),
+  goBack: vi.fn(), toggleSfx: vi.fn(), toggleSettings: vi.fn(),
 });
 
 function setup(opts: TurnViewOpts = {}) {
