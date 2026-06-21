@@ -26,19 +26,22 @@ export const G_SFX = {
 export type GSfx = keyof typeof G_SFX;
 
 // ── 静音开关（本地持久化·默认开）──
-const MUTE_KEY = 'gameG-sfx-on';
-let muted = (() => { try { return localStorage.getItem(MUTE_KEY) === '0'; } catch { return false; } })();
+// 全局静音键：菜单音效(sfx.ts)与战斗音效共用一键，'1'=静音 → 顶栏 🔊 钮与大厅设置开关彼此同步。
+// 每次读 localStorage 取最新（不缓存）：任一处切换，另一处即刻生效。
+export const SFX_MUTE_KEY = 'gg_sfx_muted';
 let port: SynthAudioPort | null = null;
 const getPort = (): SynthAudioPort => (port ??= new SynthAudioPort(G_SFX));
+function muted(): boolean {
+  try { return typeof localStorage !== 'undefined' && localStorage.getItem(SFX_MUTE_KEY) === '1'; } catch { return false; }
+}
 
 export function playSfx(ev: GSfx): void {
-  if (muted) return;
+  if (muted()) return;
   getPort().play(ev); // 无 AudioContext → 端口内部静默
 }
-export function isSfxOn(): boolean { return !muted; }
+export function isSfxOn(): boolean { return !muted(); }
 export function setSfxOn(on: boolean): void {
-  muted = !on;
-  try { localStorage.setItem(MUTE_KEY, on ? '1' : '0'); } catch { /* 无 localStorage */ }
-  if (muted) port?.stopAll();
+  try { localStorage.setItem(SFX_MUTE_KEY, on ? '0' : '1'); } catch { /* 无 localStorage */ }
+  if (!on) port?.stopAll();
 }
-export function toggleSfx(): boolean { setSfxOn(muted); return !muted; }
+export function toggleSfx(): boolean { const on = muted(); setSfxOn(on); return on; }
