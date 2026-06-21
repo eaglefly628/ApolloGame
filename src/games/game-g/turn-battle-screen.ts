@@ -376,19 +376,14 @@ export function buildTurnFrameHTML(view: TurnBattleView, drain: { from: number; 
   const lanesCol = { position: 'relative', flex: 1, display: 'flex', flexDirection: 'column', gap: '10px', justifyContent: 'stretch', minHeight: 0 };
   // water bar
   const litCells = Math.max(0, Math.min(view.waterMax, Math.floor(view.water)));
-  const waterBar = { flex: 'none', display: 'flex', alignItems: 'center', gap: '12px', padding: '9px 18px', borderRadius: '14px', background: 'var(--panel)', border: '1px solid var(--panel-border)', boxShadow: 'inset 0 0 0 1px var(--hairline)' };
-  const waterCap = { width: '36px', height: '36px', flex: 'none', borderRadius: '10px', background: 'radial-gradient(circle at 38% 30%, #7fd8f5, #2a7fb8)', border: '2px solid #bfeaff', display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: '0 0 16px rgba(77,182,232,.7), inset 0 1px 0 rgba(255,255,255,.6)' };
-  const waterTube = { position: 'relative', flex: 1, height: '34px', borderRadius: '12px', background: 'linear-gradient(180deg, rgba(10,30,46,.9), rgba(6,16,26,.95))', border: '2px solid #2f5e7e', overflow: 'hidden', display: 'flex', gap: '4px', padding: '4px', boxShadow: 'inset 0 0 14px rgba(0,0,0,.7), 0 0 0 1px rgba(191,234,255,.12)' };
-  // 收退残影：刚花掉的格里覆一层「仍亮」的鬼影，g-drain 向源头收退淡出 + 升腾火花（owner 2026-06-21·别 biang 剪掉）。
-  const drainGhost = { position: 'absolute', inset: 0, borderRadius: '5px', transformOrigin: 'left center', background: 'linear-gradient(180deg,#8fe0ff,#2f93cf)', boxShadow: '0 0 14px rgba(95,200,240,.95), inset 0 1px 0 rgba(255,255,255,.6)', animation: 'g-drain .52s ease both', pointerEvents: 'none', zIndex: 2 };
-  const drainSpark = { position: 'absolute', top: '-2px', left: '50%', width: '6px', height: '6px', borderRadius: '50%', background: 'radial-gradient(circle,#dff6ff,#7fd0f0 60%,transparent)', boxShadow: '0 0 8px rgba(150,220,255,.9)', animation: 'g-drainspark .52s ease-out both', pointerEvents: 'none', zIndex: 3 };
-  const waterCellsHTML = forr(Array.from({ length: view.waterMax }, (_, i) => i), (i) => {
-    const lit = i < litCells;
-    const draining = drain.count > 0 && i >= drain.from && i < drain.from + drain.count;
-    const cs = { position: 'relative', flex: 1, borderRadius: '5px', zIndex: 1, background: lit ? 'linear-gradient(180deg,#8fe0ff,#2f93cf)' : 'rgba(255,255,255,.05)', border: '1px solid ' + (lit ? 'rgba(190,238,255,.8)' : 'rgba(255,255,255,.08)'), boxShadow: lit ? '0 0 10px rgba(95,200,240,.7), inset 0 1px 0 rgba(255,255,255,.6)' : 'none' };
-    return `<div style="${st(cs)}">${draining ? `<div style="${st(drainGhost)}"></div><div style="${st(drainSpark)}"></div>` : ''}</div>`;
-  });
+  // 召唤源泉徽标（owner 2026-06-21：旧「三滴泔水」横条难看 → 移棋盘右上角 · 画源泉(水滴)图标 · 大数字）。
+  const fontIcon = `<svg viewBox="0 0 48 48" width="32" height="32" aria-hidden="true"><defs><radialGradient id="gg-wf" cx="42%" cy="26%" r="78%"><stop offset="0" stop-color="#dff6ff"/><stop offset="52%" stop-color="#5fb8e8"/><stop offset="100%" stop-color="#1f6ea6"/></radialGradient></defs><path d="M24 5C31 17 38 23 38 31a14 14 0 0 1-28 0C10 23 17 17 24 5Z" fill="url(#gg-wf)" stroke="#eaffff" stroke-width="1.6"/><ellipse cx="19" cy="29" rx="3.4" ry="6" fill="rgba(255,255,255,.6)"/></svg>`;
+  const fontBadge = { position: 'absolute', top: '12px', right: '14px', zIndex: 58, display: 'flex', alignItems: 'center', gap: '10px', padding: '7px 15px 7px 11px', borderRadius: '17px', background: 'radial-gradient(120% 120% at 28% 18%, rgba(50,132,182,.55), rgba(8,26,42,.93))', border: '2px solid #7fd8f5', boxShadow: '0 6px 22px rgba(0,0,0,.45), 0 0 22px rgba(77,182,232,.45), inset 0 1px 0 rgba(255,255,255,.4)' };
+  const fontNum = { fontFamily: 'var(--fn)', fontSize: '42px', lineHeight: '1', color: '#eaffff', textShadow: '0 0 15px rgba(120,210,255,.95), 0 2px 4px rgba(0,0,0,.5)' };
   const waterPlus = { padding: '2px 9px', borderRadius: '99px', background: 'rgba(70,209,122,.18)', border: '1px solid var(--hp)', color: 'var(--hp)', fontFamily: 'var(--fh)', fontWeight: 700, fontSize: '11px', whiteSpace: 'nowrap' };
+  // 消耗反馈：刚花掉 N 点 → 徽标上浮一个「−N」升腾淡出（替代旧 pip 收退·owner「别 biang 剪掉」）。
+  const drainFloat = { position: 'absolute', left: '50%', top: '2px', transform: 'translateX(-50%)', fontFamily: 'var(--fn)', fontSize: '22px', fontWeight: 700, color: '#9fe0ff', textShadow: '0 0 10px rgba(120,210,255,.95)', animation: 'g-drainspark .6s ease-out both', pointerEvents: 'none', zIndex: 4 };
+  const fontBadgeHTML = `<div style="${st(fontBadge)}">${fontIcon}<div style="display:flex;flex-direction:column;align-items:flex-start;gap:1px;line-height:1"><span style="font-size:9px;letter-spacing:.14em;color:#bfeaff;opacity:.85">召唤源泉</span><div style="display:flex;align-items:baseline;gap:3px"><span style="${st(fontNum)}">${litCells}</span><span style="font-size:14px;color:#9fd4ef">/${view.waterMax}</span></div></div><span style="${st(waterPlus)}">+${MANA_PER_TURN}/回合</span>${drain.count > 0 ? `<div style="${st(drainFloat)}">−${drain.count}</div>` : ''}</div>`;
   // bottom
   const bottomBar = { position: 'relative', zIndex: 50, flex: 'none', height: '212px', display: 'flex', gap: '14px', padding: '12px 22px 16px', borderTop: '1px solid var(--panel-border)', background: 'linear-gradient(180deg,transparent,rgba(0,0,0,.18))' };
   const actionMenu = { width: '230px', flex: 'none', padding: '13px 14px', borderRadius: '14px', background: 'var(--panel)', border: '1px solid var(--panel-border)', boxShadow: 'inset 0 0 0 1px var(--hairline)' };
@@ -444,17 +439,10 @@ export function buildTurnFrameHTML(view: TurnBattleView, drain: { from: number; 
     ${settingsPanel}
     <div style="${st(body)}">
       <div style="${st(boardWrap)}">
-        ${narrationBanner}${noticeBanner}
+        ${narrationBanner}${noticeBanner}${fontBadgeHTML}
         ${fortBase(view, true)}
         <div style="${st(lanesCol)}">${forr(view.lanes, (L, li) => laneRow(L, li, hi === 'lane:' + li))}${laddersLayer(view)}</div>
         ${fortBase(view, false)}
-      </div>
-      <div style="${st(waterBar)}">
-        <div style="${st(waterCap)}"><span style="font-family:var(--fd); font-size:20px; color:#dff4ff;">源</span></div>
-        <span style="font-size:10px; letter-spacing:.16em; text-transform:uppercase; color:var(--ink-dim); white-space:nowrap;">召唤源泉 · SUMMON FONT</span>
-        <div style="${st(waterTube)}">${waterCellsHTML}</div>
-        <span style="font-family:var(--fn); font-size:22px; color:#cdeeff; text-shadow:0 0 10px rgba(77,182,232,.9);">${litCells}</span>
-        <span style="${st(waterPlus)}">本回合 +${MANA_PER_TURN}</span>
       </div>
     </div>
     <div style="${st(bottomBar)}">
