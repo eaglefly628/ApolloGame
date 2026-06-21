@@ -404,7 +404,8 @@ export function buildTurnFrameHTML(view: TurnBattleView, drain: { from: number; 
   const seal = { width: '42px', height: '42px', flex: 'none', borderRadius: '11px', background: 'linear-gradient(150deg,#3a4f78,#28385a)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#fff', fontSize: '22px', border: '1px solid var(--hairline)' };
   const turnBox = { display: 'flex', alignItems: 'center', gap: '9px', padding: '7px 14px', borderRadius: '11px', background: 'var(--accent-soft)', border: '1px solid var(--accent)' };
   const turnDot = { width: '9px', height: '9px', borderRadius: '50%', background: 'var(--accent)', boxShadow: '0 0 8px var(--accent)' };
-  const endBtn = { padding: '10px 20px', borderRadius: '11px', clipPath: 'var(--chamfer)', cursor: 'pointer', border: 'none', background: 'var(--gold-grad)', color: '#2a1a08', fontFamily: 'var(--fh)', fontWeight: 700, fontSize: '15px', boxShadow: 'inset 0 1px 0 rgba(255,255,255,.4)' };
+  // 结束回合钮（owner 2026-06-21·从顶栏移到右下角·牌后·正方显眼位）：方形大钮·金底·收口动作流。
+  const endSquare: Style = { width: '156px', flex: 'none', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: '7px', borderRadius: '16px', clipPath: 'var(--chamfer)', cursor: 'pointer', border: 'none', background: 'var(--gold-grad)', color: '#2a1a08', fontFamily: 'var(--fh)', fontWeight: 700, fontSize: '20px', letterSpacing: '.04em', boxShadow: 'inset 0 1px 0 rgba(255,255,255,.45), 0 8px 24px rgba(232,205,138,.35)' };
   const seg = (on: boolean): Style => ({ padding: '7px 13px', borderRadius: '9px', cursor: 'pointer', border: '1px solid ' + (on ? 'var(--gold)' : 'var(--panel-border)'), background: on ? 'var(--gold-grad)' : 'transparent', color: on ? '#2a1a08' : 'var(--ink-dim)', fontFamily: 'var(--fh)', fontWeight: 700, fontSize: '13px', whiteSpace: 'nowrap' });
   const body = { flex: 1, display: 'flex', flexDirection: 'column', minHeight: 0, overflow: 'hidden', padding: '10px 22px 6px', gap: '10px' };
   const boardWrap = { position: 'relative', flex: 1, minHeight: 0, display: 'flex', alignItems: 'stretch', gap: '6px', padding: '12px 10px', borderRadius: '18px', background: 'var(--board)', backgroundImage: 'radial-gradient(46% 80% at 50% 50%, rgba(232,205,138,.10), transparent 70%), repeating-linear-gradient(0deg, rgba(255,255,255,.035) 0 1px, transparent 1px 34px), repeating-linear-gradient(90deg, rgba(255,255,255,.035) 0 1px, transparent 1px 34px)', border: '6px solid var(--board-edge)', boxShadow: 'inset 0 0 0 2px rgba(255,255,255,.06), inset 0 0 90px rgba(0,0,0,.5)' };
@@ -471,8 +472,6 @@ export function buildTurnFrameHTML(view: TurnBattleView, drain: { from: number; 
       <div style="display:flex; align-items:center; gap:11px;"><div style="${st(seal)}">♠</div><div style="display:flex; flex-direction:column; line-height:1.2;"><span style="font-family:var(--fh); font-weight:700; font-size:15px; color:var(--ink); white-space:nowrap;">${esc(view.battleLabel)}</span><span style="font-size:10px; color:var(--ink-dim);">单机 · 回合制</span></div></div>
       <div style="flex:1;"></div>
       <div style="${st(turnBox)}"><span style="${st(turnDot)}"></span><div style="display:flex; flex-direction:column; line-height:1.15;"><span style="font-family:var(--fh); font-weight:700; font-size:14px; color:var(--ink);">${esc(view.turnWho)}</span><span style="font-size:10px; color:var(--ink-dim);">第 ${view.roundNo} 回合</span></div></div>
-      <button data-act="end" data-anchor="combat-end" style="${st(endBtn)}${hi === 'end' ? HL : ''}">结束回合 ▸</button>
-      <div style="width:1px; height:26px; background:var(--panel-border); margin:0 4px;"></div>
       <button data-act="go-back" style="${st(backBtnSty)}">← 返回大厅</button>
       <button data-act="settings-toggle" style="${st(gearSty)}">⚙</button>
     </div>
@@ -513,6 +512,7 @@ export function buildTurnFrameHTML(view: TurnBattleView, drain: { from: number; 
         <div style="display:flex; align-items:center; gap:10px; margin-bottom:10px;"><span style="font-family:var(--fh); font-weight:700; font-size:14px; color:var(--ink); letter-spacing:.04em;">手牌</span><span style="${st(handCount)}">兵牌 ${view.handPawnCount}</span><span style="${st(handCountGang)}">天罡 ${view.handGangCount}</span><div style="flex:1;"></div><span style="font-size:11px; color:var(--ink-dim);">放牌消耗召唤源泉 · 点动作选「放牌」后落子</span></div>
         <div style="display:flex; gap:11px; align-items:flex-end;">${forr(view.hand, (c, i) => handCard(c, i, hi === 'hand:' + i, i === 0 ? 'right' : i === view.hand.length - 1 ? 'left' : ''))}</div>
       </div>
+      <button data-act="end" data-anchor="combat-end" style="${st(endSquare)}${hi === 'end' ? HL : ''}"><span style="font-size:34px;line-height:1">▸</span><span>结束回合</span></button>
     </div>
     ${view.clash ? clashOverlay(view.clash) : ''}
   </div>`;
