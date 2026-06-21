@@ -68,6 +68,12 @@ const CSS = `
 @keyframes g-adv-b { 0%{transform:translateX(38px) scale(.88);opacity:0} 65%{transform:translateX(-3px)} 100%{transform:none;opacity:1} }
 @keyframes g-drop { 0%{transform:translateY(-26px) scale(.5);opacity:0} 55%{transform:translateY(3px) scale(1.08);opacity:1} 75%{transform:translateY(-1px) scale(.99)} 100%{transform:none;opacity:1} }
 @keyframes g-place { 0%,100% { box-shadow:inset 0 0 0 2px rgba(232,205,138,.55), 0 0 12px rgba(232,205,138,.3); } 50% { box-shadow:inset 0 0 0 3px var(--gold), 0 0 22px rgba(232,205,138,.6); } }
+/* 放牌指示手指（owner 2026-06-21·点这里）：手指轻点 + 点击涟漪 */
+@keyframes g-tap { 0%,100% { transform:translate(-50%,-50%) scale(1);} 45% { transform:translate(-50%,-74%) scale(1.16);} }
+@keyframes g-ripple { 0% { opacity:.6; transform:translate(-50%,-50%) scale(.45);} 100% { opacity:0; transform:translate(-50%,-50%) scale(1.75);} }
+/* 召唤源泉消耗（owner 2026-06-21·往后退·别 biang 剪掉）：花掉的格亮闪一下→向源头收退淡出 + 升腾火花 */
+@keyframes g-drain { 0% { opacity:1; transform:scaleX(1); filter:brightness(1.85);} 65% { opacity:.7;} 100% { opacity:0; transform:scaleX(0);} }
+@keyframes g-drainspark { 0% { opacity:.95; transform:translate(-50%,0) scale(1);} 100% { opacity:0; transform:translate(-50%,-24px) scale(.35);} }
 /* 磨砂详情浮层（owner 2026-06-21·悬浮看牌：战力=点数+加成，对决再 +随机骰）：纯 CSS hover，重渲不丢 */
 .gg-tipwrap>.gg-tip{ position:absolute; left:50%; bottom:calc(100% + 9px); transform:translateX(-50%) translateY(5px); width:194px; padding:11px 13px 9px; border-radius:13px; background:rgba(18,24,36,.58); backdrop-filter:blur(13px) saturate(1.5); -webkit-backdrop-filter:blur(13px) saturate(1.5); border:1px solid rgba(255,255,255,.2); box-shadow:0 16px 44px rgba(0,0,0,.55), inset 0 1px 0 rgba(255,255,255,.14); color:#eaf0f6; font-family:var(--fb); font-size:11px; line-height:1.5; text-align:left; opacity:0; pointer-events:none; transition:opacity .15s ease, transform .15s ease; z-index:80; }
 .gg-tipwrap>.gg-tip::after{ content:''; position:absolute; left:50%; top:100%; transform:translateX(-50%); border:7px solid transparent; border-top-color:rgba(18,24,36,.58); }
@@ -217,7 +223,10 @@ function slotCell(s: TurnSlotView): string {
   const ring = s.isClash ? `<div style="${st({ position: 'absolute', inset: '-3px', borderRadius: '11px', border: '2px solid var(--accent)', boxShadow: '0 0 16px var(--accent-soft)', animation: 'g-pulse 1.4s ease-in-out infinite' })}"></div>` : '';
   // 放牌区可落点高亮（owner 2026-06-21）：选牌待放时，此格金边脉冲 + 「＋放这」提示，点该路即落子。
   const placeMark = s.placeable
-    ? `<div style="${st({ position: 'absolute', inset: '2px', borderRadius: '10px', animation: 'g-place 1.05s ease-in-out infinite', pointerEvents: 'none', zIndex: 3 })}"></div><div style="${st({ position: 'absolute', bottom: '6px', left: '50%', transform: 'translateX(-50%)', fontFamily: 'var(--fh)', fontWeight: 700, fontSize: '10px', letterSpacing: '.06em', color: 'var(--gold)', textShadow: '0 1px 3px rgba(0,0,0,.7)', pointerEvents: 'none', zIndex: 3, whiteSpace: 'nowrap' })}">＋ 放这</div>`
+    ? `<div style="${st({ position: 'absolute', inset: '2px', borderRadius: '10px', animation: 'g-place 1.05s ease-in-out infinite', pointerEvents: 'none', zIndex: 3 })}"></div>`
+      + `<div style="${st({ position: 'absolute', top: '50%', left: '50%', width: '46px', height: '46px', borderRadius: '50%', border: '2px solid var(--gold)', animation: 'g-ripple 1.05s ease-out infinite', pointerEvents: 'none', zIndex: 3 })}"></div>`
+      + `<div style="${st({ position: 'absolute', top: '50%', left: '50%', transform: 'translate(-50%,-50%)', fontSize: '27px', lineHeight: 1, animation: 'g-tap 1.05s ease-in-out infinite', pointerEvents: 'none', zIndex: 4, filter: 'drop-shadow(0 2px 4px rgba(0,0,0,.75))' })}">👆</div>`
+      + `<div style="${st({ position: 'absolute', bottom: '5px', left: '50%', transform: 'translateX(-50%)', fontFamily: 'var(--fh)', fontWeight: 700, fontSize: '10px', letterSpacing: '.04em', color: 'var(--gold)', textShadow: '0 1px 3px rgba(0,0,0,.8)', pointerEvents: 'none', zIndex: 4, whiteSpace: 'nowrap' })}">放这里</div>`
     : '';
   // 场上兵的磨砂详情浮层（与手牌同 cardTip·战力拆解）。
   const tip = s.hasUnit && s.rank && s.suit ? cardTip({ name: s.name ?? (SUITNM[s.suit] + s.rank), rar: s.rar ?? 'white', isGang: false, mine: s.mine, suit: s.suit, pts: s.pts, buff: s.buff, power: s.power, zod: s.zod }) : '';
@@ -325,8 +334,9 @@ function clashOverlay(cv: TurnClashView): string {
   </div></div>`;
 }
 
-/** 回合制战斗屏「画框」HTML（固定 1340×858·无页 root·供 live mount 缩放嵌入）。双皮 token 由外层挂。 */
-export function buildTurnFrameHTML(view: TurnBattleView): string {
+/** 回合制战斗屏「画框」HTML（固定 1340×858·无页 root·供 live mount 缩放嵌入）。双皮 token 由外层挂。
+ *  drain：本次刚消耗的召唤源泉（from=收退起格·count=退几格）→ 源泉「往后退」收退动效（owner 2026-06-21）。静态渲染/golden 默认无。 */
+export function buildTurnFrameHTML(view: TurnBattleView, drain: { from: number; count: number } = { from: 0, count: 0 }): string {
   const frame = { position: 'relative', width: '1340px', height: '858px', borderRadius: '16px', overflow: 'hidden', background: 'var(--paper)', border: '3px solid var(--frame-edge)', boxShadow: '0 30px 80px rgba(0,0,0,.6), inset 0 0 0 1px var(--hairline)', display: 'flex', flexDirection: 'column' };
   const topbar = { display: 'flex', alignItems: 'center', gap: '10px', padding: '13px 22px', borderBottom: '1px solid var(--panel-border)' };
   const seal = { width: '42px', height: '42px', flex: 'none', borderRadius: '11px', background: 'linear-gradient(150deg,#3a4f78,#28385a)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#fff', fontSize: '22px', border: '1px solid var(--hairline)' };
@@ -342,9 +352,14 @@ export function buildTurnFrameHTML(view: TurnBattleView): string {
   const waterBar = { flex: 'none', display: 'flex', alignItems: 'center', gap: '12px', padding: '9px 18px', borderRadius: '14px', background: 'var(--panel)', border: '1px solid var(--panel-border)', boxShadow: 'inset 0 0 0 1px var(--hairline)' };
   const waterCap = { width: '36px', height: '36px', flex: 'none', borderRadius: '10px', background: 'radial-gradient(circle at 38% 30%, #7fd8f5, #2a7fb8)', border: '2px solid #bfeaff', display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: '0 0 16px rgba(77,182,232,.7), inset 0 1px 0 rgba(255,255,255,.6)' };
   const waterTube = { position: 'relative', flex: 1, height: '34px', borderRadius: '12px', background: 'linear-gradient(180deg, rgba(10,30,46,.9), rgba(6,16,26,.95))', border: '2px solid #2f5e7e', overflow: 'hidden', display: 'flex', gap: '4px', padding: '4px', boxShadow: 'inset 0 0 14px rgba(0,0,0,.7), 0 0 0 1px rgba(191,234,255,.12)' };
-  const waterCellsHTML = forr(Array.from({ length: view.waterMax }, (_, i) => i < litCells), (lit) => {
+  // 收退残影：刚花掉的格里覆一层「仍亮」的鬼影，g-drain 向源头收退淡出 + 升腾火花（owner 2026-06-21·别 biang 剪掉）。
+  const drainGhost = { position: 'absolute', inset: 0, borderRadius: '5px', transformOrigin: 'left center', background: 'linear-gradient(180deg,#8fe0ff,#2f93cf)', boxShadow: '0 0 14px rgba(95,200,240,.95), inset 0 1px 0 rgba(255,255,255,.6)', animation: 'g-drain .52s ease both', pointerEvents: 'none', zIndex: 2 };
+  const drainSpark = { position: 'absolute', top: '-2px', left: '50%', width: '6px', height: '6px', borderRadius: '50%', background: 'radial-gradient(circle,#dff6ff,#7fd0f0 60%,transparent)', boxShadow: '0 0 8px rgba(150,220,255,.9)', animation: 'g-drainspark .52s ease-out both', pointerEvents: 'none', zIndex: 3 };
+  const waterCellsHTML = forr(Array.from({ length: view.waterMax }, (_, i) => i), (i) => {
+    const lit = i < litCells;
+    const draining = drain.count > 0 && i >= drain.from && i < drain.from + drain.count;
     const cs = { position: 'relative', flex: 1, borderRadius: '5px', zIndex: 1, background: lit ? 'linear-gradient(180deg,#8fe0ff,#2f93cf)' : 'rgba(255,255,255,.05)', border: '1px solid ' + (lit ? 'rgba(190,238,255,.8)' : 'rgba(255,255,255,.08)'), boxShadow: lit ? '0 0 10px rgba(95,200,240,.7), inset 0 1px 0 rgba(255,255,255,.6)' : 'none' };
-    return `<div style="${st(cs)}"></div>`;
+    return `<div style="${st(cs)}">${draining ? `<div style="${st(drainGhost)}"></div><div style="${st(drainSpark)}"></div>` : ''}</div>`;
   });
   const waterPlus = { padding: '2px 9px', borderRadius: '99px', background: 'rgba(70,209,122,.18)', border: '1px solid var(--hp)', color: 'var(--hp)', fontFamily: 'var(--fh)', fontWeight: 700, fontSize: '11px', whiteSpace: 'nowrap' };
   // bottom
@@ -518,10 +533,20 @@ export interface TurnBattleActions {
  *  固定 1340×858 画框按 host 宽显式 scale 铺满（不靠 cqw）。getView 每次重渲实时派生当前态。返回 {update,destroy}。 */
 export function mountTurnBattle(host: HTMLElement, getView: () => TurnBattleView, actions: TurnBattleActions = {}): { update: () => void; destroy: () => void } {
   if (!document.getElementById('gg-turn-css')) { const s = document.createElement('style'); s.id = 'gg-turn-css'; s.textContent = CSS; document.head.appendChild(s); }
+  // 召唤源泉收退动效（owner 2026-06-21）：跨重渲对比上次亮格数 → 本次刚花掉的格走 g-drain「往后退」收退。
+  // 重渲极频(选牌也重渲)：只在亮格「减少」时记一次 drain，并用计时器在动画时长后清掉——中途无关重渲不会打断/重放。
+  let prevLit = -1; let drain = { from: 0, count: 0 }; let drainTimer = 0;
   const render = (): void => {
     const view = getView();
+    const litNow = Math.max(0, Math.min(view.waterMax, Math.floor(view.water)));
+    if (prevLit >= 0 && litNow < prevLit) {
+      drain = { from: litNow, count: prevLit - litNow };
+      if (drainTimer) clearTimeout(drainTimer);
+      drainTimer = window.setTimeout(() => { drain = { from: 0, count: 0 }; drainTimer = 0; render(); }, 540);
+    }
+    prevLit = litNow;
     const innerStyle: Style = { ...(THEMES[view.theme] ?? THEMES.onyx), width: '1340px', height: '858px', transformOrigin: 'top left', fontFamily: 'var(--fb)' };
-    host.innerHTML = `<div class="ggt-outer" style="position:relative; width:100%; overflow:hidden; background:#0c0a08;"><div class="ggt-inner" style="${st(innerStyle)}">${buildTurnFrameHTML(view)}</div></div>`;
+    host.innerHTML = `<div class="ggt-outer" style="position:relative; width:100%; overflow:hidden; background:#0c0a08;"><div class="ggt-inner" style="${st(innerStyle)}">${buildTurnFrameHTML(view, drain)}</div></div>`;
     const outer = host.querySelector('.ggt-outer') as HTMLElement | null;
     const inner = host.querySelector('.ggt-inner') as HTMLElement | null;
     if (outer && inner) { const w = outer.clientWidth || host.clientWidth; if (w > 0) { const sc = w / 1340; inner.style.transform = `scale(${sc})`; outer.style.height = Math.round(858 * sc) + 'px'; } }
@@ -559,7 +584,7 @@ export function mountTurnBattle(host: HTMLElement, getView: () => TurnBattleView
   render();
   let ro: ResizeObserver | null = null;
   if (typeof ResizeObserver !== 'undefined') { ro = new ResizeObserver(() => render()); ro.observe(host); }
-  return { update: render, destroy: () => { if (ro) ro.disconnect(); host.removeEventListener('pointerdown', onPress); host.replaceChildren(); } };
+  return { update: render, destroy: () => { if (ro) ro.disconnect(); if (drainTimer) clearTimeout(drainTimer); host.removeEventListener('pointerdown', onPress); host.replaceChildren(); } };
 }
 
 /** 自包含 HTML 文档（看帧/预览/无头截图；固定 1340×858·非 cqw·无需缩放注入）。 */

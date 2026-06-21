@@ -3,7 +3,7 @@
 // 同 battle-screen.click.test.ts 守护：驱动层重渲会吃掉 click → 必须 pointerdown（按下即派发到当下 DOM）。固定四选一/选牌/落子/翻门/结束回合/换皮 钩子。
 import { describe, it, expect, vi } from 'vitest';
 import { initTurnBattle } from './turn-combat.js';
-import { mountTurnBattle, buildTurnBattleView, type TurnBattleActions, type TurnViewOpts } from './turn-battle-screen.js';
+import { mountTurnBattle, buildTurnBattleView, buildTurnFrameHTML, type TurnBattleActions, type TurnViewOpts } from './turn-battle-screen.js';
 
 const press = (el: Element | null, button = 0): void => { if (!el) throw new Error('press target null'); el.dispatchEvent(new MouseEvent('pointerdown', { bubbles: true, button })); };
 
@@ -85,5 +85,25 @@ describe('Game G · turn-battle-screen live mount 交互（doc24 回合制 · DO
     expect(host.textContent).toContain('每回合只能选一类'); // 教官旁白横幅
     expect(host.innerHTML).toContain('🎓');
     expect(host.innerHTML).toContain('g-hl'); // 金描边脉冲高亮（套在抽牌钮上）
+  });
+
+  it('放牌待落点：渲手指 👆 +「放这里」轻点指示（owner 2026-06-21）', () => {
+    const b = initTurnBattle({ seed: 1, a: { pokerDeck: [] } });
+    b.a.mana = 4; b.a.hand.push({ kind: 'poker', id: 'h0', rank: 'K', suit: 'S', general: false, buff: 0 });
+    const html = buildTurnFrameHTML(buildTurnBattleView(b, { selMode: 'deploy', selHand: 0 })); // 选中兵牌待放 → 落点高亮+手指
+    expect(html).toContain('👆'); // 指示手指
+    expect(html).toContain('放这里'); // 文案
+    expect(html).toContain('g-tap'); // 手指轻点动画
+    expect(html).toContain('g-ripple'); // 点击涟漪
+  });
+
+  it('召唤源泉消耗：drain 透传 → 渲「往后退」收退动效（owner 2026-06-21·别 biang 剪掉）', () => {
+    const b = initTurnBattle({ seed: 1, a: { pokerDeck: [] } });
+    b.a.mana = 2;
+    const drained = buildTurnFrameHTML(buildTurnBattleView(b), { from: 2, count: 2 }); // 刚花掉 2 格
+    expect(drained).toContain('animation:g-drain'); // 收退鬼影
+    expect(drained).toContain('animation:g-drainspark'); // 升腾火花
+    const still = buildTurnFrameHTML(buildTurnBattleView(b)); // 无消耗：不渲收退
+    expect(still).not.toContain('animation:g-drain');
   });
 });
