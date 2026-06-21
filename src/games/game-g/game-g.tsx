@@ -8,6 +8,8 @@ import { loadLevel } from './level.js';
 import { cardPoints, P_MAX } from './clash-resolve.js';
 import { playSfx, isSfxOn, toggleSfx } from './sound.js';
 import { startBgm, stopBgm, toggleBgm as toggleBgmState, selectBgm as selectBgmState, setBgmVolume, isBgmOn, bgmTrackIdx, bgmVolume, BGM_TRACKS } from './bgm.js';
+import { makeCoachWorld, nextCoachStep, type BattleCoachStep } from './battle-coach.js';
+import { mountOnboardingOverlay } from '@ui/onboarding-overlay.js';
 
 // Game G ·《翻命扑克》—— 大厅 ↔ 出征 闭环（launcher 卡带槽：export mount(container)→cleanup）。自包含于本目录。
 // outcome-first：每张牌按 favor 跑确定性种子硬币**先定生死**，3D 翻牌是**反推的表现**（抛飞→相撞→落定翻面）。
@@ -61,6 +63,7 @@ interface Save {
   rechargeCount: number; // 已完成充值次数（投资人彩蛋：首充免密·第二次起需密码）
   seenIntro: boolean; // 是否已看过首启开场故事（doc28 §一·只播一次）
   guideStep: number; // 新手引导进度（doc28 §二）：0..N 进行中 · -1 完成/跳过
+  seen: Record<string, boolean>; // 引导「看过不再弹」标记集（coachmark·seen_combat_* 等·owner 2026-06-21）
   tiangangShards: number; // 天罡碎片（抽卡重复转化 → 定向兑换指定天罡·保底 doc25 §四）
   dizhiOwned: Record<string, number>; // 已拥有地支生肖 → 档位（1铜/2银/3金 · 抽卡收集·升档）
   inlays: Record<string, string[]>; // 地支附魔：牌位索引(0-51) → 镶入生肖 branch[]（≤INLAY_MAX·乙简版 +favor）
@@ -89,7 +92,7 @@ const newDeckId = (): string => `deck_${Date.now().toString(36)}_${Math.floor(Ma
 
 const rollBoss = (): number => Math.floor(Math.random() * BOSS_ROSTER.length);
 export function freshSave(): Save {
-  return { materials: 120, diamond: 6, dizhiShards: 0, rechargeCount: 0, seenIntro: false, guideStep: 0, tiangangShards: 0, dizhiOwned: {}, inlays: {}, campaignMax: 1, stage: 1, deck: Array.from({ length: DECK_SIZE }, (_, i) => 44 + (i % 10) * 2), lastOfficers: [10, 10, 10], leverEnergy: LEVER_START, lives: RUN_LIVES, bossIdx: rollBoss(), ownedTiangangs: [], tiangangDecks: [{ id: 'deck1', name: '牌组 1', cards: [], pokerPicks: [] }, { id: 'deck2', name: '牌组 2', cards: [], pokerPicks: [] }, { id: 'deck3', name: '牌组 3', cards: [], pokerPicks: [] }, { id: 'deck4', name: '牌组 4', cards: [], pokerPicks: [] }], activeDeckId: 'deck1', tiangangs: [], planets: {}, foils: [] }; // 44..62 起步；金币 120；钻石送 6（首充免密）；开局默认给 4 个天罡牌组让玩家去组（owner 2026-06-21）；pokerPicks 空=自动构筑一副；新存档播开场故事+引导
+  return { materials: 120, diamond: 6, dizhiShards: 0, rechargeCount: 0, seenIntro: false, guideStep: 0, seen: {}, tiangangShards: 0, dizhiOwned: {}, inlays: {}, campaignMax: 1, stage: 1, deck: Array.from({ length: DECK_SIZE }, (_, i) => 44 + (i % 10) * 2), lastOfficers: [10, 10, 10], leverEnergy: LEVER_START, lives: RUN_LIVES, bossIdx: rollBoss(), ownedTiangangs: [], tiangangDecks: [{ id: 'deck1', name: '牌组 1', cards: [], pokerPicks: [] }, { id: 'deck2', name: '牌组 2', cards: [], pokerPicks: [] }, { id: 'deck3', name: '牌组 3', cards: [], pokerPicks: [] }, { id: 'deck4', name: '牌组 4', cards: [], pokerPicks: [] }], activeDeckId: 'deck1', tiangangs: [], planets: {}, foils: [] }; // 44..62 起步；金币 120；钻石送 6（首充免密）；开局默认给 4 个天罡牌组让玩家去组（owner 2026-06-21）；pokerPicks 空=自动构筑一副；新存档播开场故事+引导
 }
 function loadSave(): Save {
   try {
@@ -108,6 +111,7 @@ function loadSave(): Save {
         if (typeof s.tiangangShards !== 'number') s.tiangangShards = 0; // 天罡碎片迁移
         if (typeof s.dizhiOwned !== 'object' || s.dizhiOwned === null) s.dizhiOwned = {}; // 地支收集迁移
         if (typeof s.inlays !== 'object' || s.inlays === null) s.inlays = {}; // 地支附魔迁移
+        if (typeof s.seen !== 'object' || s.seen === null) s.seen = {}; // 引导 seen 标记迁移（coachmark）
         if (typeof s.campaignMax !== 'number') s.campaignMax = Math.max(1, s.stage || 1);
         // 重命名(joker→天罡)迁移 + owner 拍「清空老存档战库」：老存档键为 jokers/ownedJokers → 战库(tiangangs)清空、收藏(ownedTiangangs)沿用旧 ownedJokers；丢弃遗留键。
         const legacy = s as unknown as { jokers?: unknown; ownedJokers?: unknown };
@@ -541,6 +545,7 @@ export function mount(container: HTMLElement): () => void {
     let gateChance = false;            // 放牌附赠：放完一张牌 → 可翻一道机关门(一次)·用掉/换动作即失效(doc24 §三·owner 2026-06-20)
     let notice: string | null = null; let noticeTimer = 0; // 临时提示 toast
     let drained = 0; const perfQueue: ClashEvent[] = []; let perfClash: ClashEvent | null = null; let busy = false; let perfResume: (() => void) | null = null;
+    let coachDid: (on: BattleCoachStep['on']) => void = () => {}; let syncCoach: () => void = () => {}; // 前置声明·真体在挂载后赋（战斗新手引导）
     let justMovedIds = new Set<string>(); let freshIds = new Map<string, number>(); let dealtId: string | null = null; let thinkTimer = 0; let thinkEl: HTMLElement | null = null; let settingsOpen = false;
     const tgName = (id: string): string => TIANGANG_BY_ID.get(id)?.name ?? id;
     const tgDesc = (id: string): string => TIANGANG_BY_ID.get(id)?.text ?? '持续战法·打出后整场生效'; // 磨砂浮层：天罡效果文案
@@ -571,12 +576,12 @@ export function mount(container: HTMLElement): () => void {
     const drainClashes = (): void => { for (const ev of tb.clashLog.slice(drained)) perfQueue.push(ev); drained = tb.clashLog.length; };
     // 逐场掷命特写：3D 飞入 → 停留 → **玩家点「看明白了」才演下一场/收场**（owner 2026-06-20：不能自动关·要看清为什么胜败）。
     const playPerf = (onDone: () => void): void => {
-      if (perfQueue.length === 0) { perfClash = null; perfResume = null; mounted?.update(); onDone(); return; }
+      if (perfQueue.length === 0) { perfClash = null; perfResume = null; mounted?.update(); syncCoach(); onDone(); return; }
       perfClash = perfQueue.shift()!;
       playSfx('clashReveal'); playSfx(perfClash.aWins ? 'clashWin' : 'clashLose'); // 揭晓撞击 + 我方胜/负的判定音
-      perfResume = () => { perfResume = null; playPerf(onDone); }; mounted?.update();
+      perfResume = () => { perfResume = null; playPerf(onDone); }; mounted?.update(); syncCoach(); // 引导：特写中隐
     };
-    const finishTurnSeq = (): void => { busy = false; selMode = null; selHand = -1; if (tb.winner !== 'pending') settleTurn(); else mounted?.update(); };
+    const finishTurnSeq = (): void => { busy = false; selMode = null; selHand = -1; if (tb.winner !== 'pending') settleTurn(); else mounted?.update(); syncCoach(); };
     const runAiThenContinue = (): void => { // 玩家推进特写演完 → 敌方回合播报 → AI 思考 → AI 行动 + 掷命 → 我方回合播报 → 回到玩家
       if (tb.winner !== 'pending') { finishTurnSeq(); return; }
       showBanner('敌方回合', 1300, () => {
@@ -596,7 +601,7 @@ export function mount(container: HTMLElement): () => void {
     };
     const commitEndTurn = (): void => {
       if (busy || tb.winner !== 'pending' || tb.active !== 'a') return;
-      busy = true; selMode = null; selHand = -1; gateChance = false; playSfx('endTurn');
+      busy = true; selMode = null; selHand = -1; gateChance = false; playSfx('endTurn'); coachDid('endturn');
       const before = snapSlots();
       endTurn(tb);
       justMovedIds = diffMoved(before);
@@ -610,11 +615,11 @@ export function mount(container: HTMLElement): () => void {
       drawFrom: (from) => { if (busy || selMode !== 'draw') return; if (drawCard(tb, 'a', from)) { playSfx('draw'); dealtId = tb.a.hand[tb.a.hand.length - 1]?.id ?? null; const did = dealtId; window.setTimeout(() => { if (dealtId === did) { dealtId = null; if (!perfClash) mounted?.update(); } }, 560); } }, // 抽到的牌飞入翻面入场·~560ms 后清标记
       selectHand: (i) => {
         if (busy || tb.active !== 'a') return;
-        if (selMode === 'cast') { if (castTengang(tb, 'a', i)) { tb.a.tengangA = aggregateTengang(tb.a.castIds); tb.a.castFx = tb.a.castIds.map((id) => ({ id, fx: aggregateTengang([id]) })); playSfx('cast'); } selHand = -1; } // 施法 → 持续修正重算（+逐张 castFx 供对决溯源）
+        if (selMode === 'cast') { if (castTengang(tb, 'a', i)) { tb.a.tengangA = aggregateTengang(tb.a.castIds); tb.a.castFx = tb.a.castIds.map((id) => ({ id, fx: aggregateTengang([id]) })); playSfx('cast'); coachDid('cast'); } selHand = -1; } // 施法 → 持续修正重算（+逐张 castFx 供对决溯源）
         else if (selMode === 'discard') { if (discardCard(tb, 'a', i)) playSfx('discard'); selHand = -1; }
         else if (selMode === 'deploy' || tb.actionTaken === null || tb.actionTaken === 'deploy') { selMode = 'deploy'; selHand = selHand === i ? -1 : i; playSfx('select'); } // 默认进放牌·选牌→点路落子
       },
-      playLane: (lane) => { if (busy || selMode !== 'deploy' || selHand < 0) return; if (deployUnit(tb, 'a', selHand, lane)) { selHand = -1; gateChance = true; playSfx('deploy'); flash('✓ 放牌成功——可翻一道机关门(箭头·一次)，或继续放牌'); } }, // 放牌附赠：一次翻门机会
+      playLane: (lane) => { if (busy || selMode !== 'deploy' || selHand < 0) return; if (deployUnit(tb, 'a', selHand, lane)) { selHand = -1; gateChance = true; playSfx('deploy'); coachDid('deploy'); flash('✓ 放牌成功——可翻一道机关门(箭头·一次)，或继续放牌'); } }, // 放牌附赠：一次翻门机会
       toggleGate: (idx) => { // 仅放牌后(gateChance)可翻一道本方门·一次；平时翻门无效（doc24 §三·owner 2026-06-20）
         if (busy || tb.active !== 'a') return;
         if (GATES[idx]?.side !== 'a') { playSfx('invalid'); flash('✗ 只能改自己的机关门'); return; }
@@ -670,7 +675,18 @@ export function mount(container: HTMLElement): () => void {
     };
     mounted = mountTurnBattle(stage, view, actions);
     battle = mounted; // teardownMatch 清理（destroy）
-    stopLoop = () => { perfResume = null; if (noticeTimer) { clearTimeout(noticeTimer); noticeTimer = 0; } if (thinkTimer) { clearTimeout(thinkTimer); thinkTimer = 0; } if (thinkEl) { thinkEl.remove(); thinkEl = null; } }; // 离场：弃未决特写续演 + 清提示计时 + 清思考蒙层
+
+    // ── 战斗新手引导（coachmark 能力·首通即教·seen 存档不再弹·owner 2026-06-21）──
+    const hasTengang = tb.a.tengangDeck.length > 0 || tb.a.hand.some((c) => c.kind === 'tengang');
+    let coachStep: BattleCoachStep | null = nextCoachStep(save.seen, { hasTengang });
+    const { world: coachWorld, setStep: setCoachStep } = makeCoachWorld();
+    const coach = coachStep ? mountOnboardingOverlay(root, coachWorld, stage) : null; // 仅有未看过步骤才挂（老玩家无）
+    syncCoach = (): void => { if (!coach) return; const show = coachStep != null && tb.active === 'a' && tb.winner === 'pending' && perfClash == null; setCoachStep(coachStep, show); coach.update(); };
+    coachDid = (on: BattleCoachStep['on']): void => { if (!coachStep || coachStep.on !== on) return; save.seen[coachStep.flag] = true; persist(save); coachStep = nextCoachStep(save.seen, { hasTengang }); syncCoach(); };
+    const onCoachResize = (): void => syncCoach();
+    if (coach) { syncCoach(); window.addEventListener('resize', onCoachResize); }
+
+    stopLoop = () => { perfResume = null; if (noticeTimer) { clearTimeout(noticeTimer); noticeTimer = 0; } if (thinkTimer) { clearTimeout(thinkTimer); thinkTimer = 0; } if (thinkEl) { thinkEl.remove(); thinkEl = null; } if (coach) { window.removeEventListener('resize', onCoachResize); coach.destroy(); } }; // 离场：弃未决特写续演 + 清提示计时 + 清思考蒙层 + 卸引导
 
     function settleTurn(): void {
       const survA = tb.lanes.reduce((s, L) => s + L.a.length + L.spentA, 0);

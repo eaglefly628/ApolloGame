@@ -396,7 +396,7 @@ export function buildTurnFrameHTML(view: TurnBattleView, drain: { from: number; 
   const actBtn = (a: TurnActionView): string => {
     const s = { display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px', padding: '9px 8px', borderRadius: '10px', cursor: a.dim ? 'not-allowed' : 'pointer', border: '1px solid ' + (a.on ? 'var(--accent)' : 'var(--panel-border)'), background: a.on ? 'var(--accent-grad)' : 'var(--chip)', color: a.on ? '#fff' : 'var(--ink)', opacity: a.dim ? 0.4 : 1, boxShadow: a.on ? '0 4px 14px var(--accent-soft)' : 'none', textAlign: 'center' };
     const icon = { width: '26px', height: '26px', flex: 'none', borderRadius: '7px', background: a.on ? 'rgba(255,255,255,.2)' : 'var(--track)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '15px' };
-    return `<button data-act="${esc(a.key)}" style="${st(s)}${hi === 'act:' + a.key ? HL : ''}"><span style="${st(icon)}">${esc(a.glyph)}</span><span style="font-family:var(--fh); font-weight:700; font-size:14px;">${esc(a.label)}</span></button>`;
+    return `<button data-act="${esc(a.key)}" data-anchor="combat-${esc(a.key)}" style="${st(s)}${hi === 'act:' + a.key ? HL : ''}"><span style="${st(icon)}">${esc(a.glyph)}</span><span style="font-family:var(--fh); font-weight:700; font-size:14px;">${esc(a.label)}</span></button>`;
   };
   // 教学旁白横幅（doc28·教官旁白·覆于棋盘上方·不挡操作）。
   const narrationBanner = view.tutorial?.narration
@@ -436,7 +436,7 @@ export function buildTurnFrameHTML(view: TurnBattleView, drain: { from: number; 
       <div style="display:flex; align-items:center; gap:11px;"><div style="${st(seal)}">♠</div><div style="display:flex; flex-direction:column; line-height:1.2;"><span style="font-family:var(--fh); font-weight:700; font-size:15px; color:var(--ink); white-space:nowrap;">${esc(view.battleLabel)}</span><span style="font-size:10px; color:var(--ink-dim);">单机 · 回合制</span></div></div>
       <div style="flex:1;"></div>
       <div style="${st(turnBox)}"><span style="${st(turnDot)}"></span><div style="display:flex; flex-direction:column; line-height:1.15;"><span style="font-family:var(--fh); font-weight:700; font-size:14px; color:var(--ink);">${esc(view.turnWho)}</span><span style="font-size:10px; color:var(--ink-dim);">第 ${view.roundNo} 回合</span></div></div>
-      <button data-act="end" style="${st(endBtn)}${hi === 'end' ? HL : ''}">结束回合 ▸</button>
+      <button data-act="end" data-anchor="combat-end" style="${st(endBtn)}${hi === 'end' ? HL : ''}">结束回合 ▸</button>
       <div style="width:1px; height:26px; background:var(--panel-border); margin:0 4px;"></div>
       <button data-act="go-back" style="${st(backBtnSty)}">← 返回大厅</button>
       <button data-act="settings-toggle" style="${st(gearSty)}">⚙</button>
