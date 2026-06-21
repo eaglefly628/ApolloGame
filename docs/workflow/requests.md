@@ -434,3 +434,13 @@ game-f 报「多数需新引擎能力」。Lead 实测：**三个已点名技能
 > 2. `advanceColumnToBase` L368-383：空路白送 chip（某路只一方有兵 → 直接破家·不掷命）。
 > 3. 贪心玩家吞吐 > Boss AI → Boss 覆盖不全三路 → 玩家走空路破家。
 > 4. 合流 → 胜负由占路/到家先后决定·牌力几乎不参与；源泉堆 20+ → 按点数收费咬不动。**「人头留场续攻」让赢家(尤其强牌)能持续推进/反推 → Boss 终于能攒攻势 → 牌力决定胜负·数值可标定。**
+
+---
+
+### REQ-G-诅咒地煞 · [2026-06-21] · design G → 甲（引擎域） · Game G · status: open · 优先级: P1（关5/终章难度·非阻塞） · 类型: 真缺口（周期性 disha op·可下沉）
+
+> **owner 提**：Boss 新被动「诅咒」——**每 N 回合（默认 3）一次，把玩家场上随机一张兵返还牌库 或 退回起点格**（周期骚扰·打断铺场推进）。
+> **评判（design G）**：现有 disha 词汇表达不了（真缺口）；但与现有 `batteryEveryTurns`（大炮兵·每N回合压一路）**同构**——周期触发机制甲已有 → 加同类新 op 即可，**不是新引擎子系统**。
+> **数据形**：`{ kind:'curse', op:'bounceUnit', everyTurns:3, mode:'toDeck'|'toStart', pick:'random' }`。
+> **派甲**：① `DishaFx` 加 `curseEveryTurns`/`curseMode`；② 推进/AI 回合按 `turn % everyTurns === 0` 触发（仿 `batteryLane`），用 `b.rng` 选牌（确定性·进 turnHash）；③ `aggregateDisha` 填；④ design G 把数据写进 disha-pack（关5 项羽/终章·**不配关3/4——它们实测已过难·见 doc27 §3.5**）。
+> **配套（已覆盖·提醒甲）**：「每 Boss 招牌地煞=被动·掷命时全屏亮『XX 发作』」= 已在 `REQ-G-战斗逻辑批次·敌用地煞全屏通知`，本需求复用之。
