@@ -16,7 +16,7 @@ mac:
   category: public.app-category.games
   target:
     - target: dmg
-      arch: [x64, arm64]   # universal: Intel + Apple Silicon
+      arch: [arm64]
 
 win:
   target:
