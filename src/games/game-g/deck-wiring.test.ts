@@ -4,6 +4,7 @@
 import { describe, it, expect } from 'vitest';
 import { buildPickDeck } from './game-g.js';
 import { effectiveDeckFavors, cardFavorIndex } from './index.js';
+import { initTurnBattle, deployUnit } from './turn-combat.js';
 
 describe('Game G · 牌组数据打通（契约A甲读 · 地支附魔按 ID 进战斗）', () => {
   it('buildPickDeck：战斗牌库=你配的那几张(id/rank/suit)，且附魔真抬高其战力', () => {
@@ -27,5 +28,20 @@ describe('Game G · 牌组数据打通（契约A甲读 · 地支附魔按 ID 进
     const built = buildPickDeck(['2C', 'KS', '5D'], effFav);
     expect(built.find((c) => c.general)?.id).toBe('KS');
     expect(built.filter((c) => c.general)).toHaveLength(1);
+  });
+
+  it('放牌按档收费（契约B·deployCost）：每张挂 cost·建库时按 rank 写在卡上', () => {
+    const base = Array.from({ length: 52 }, () => 50);
+    const built = buildPickDeck(['2C', '7H', '10D', 'KS'], base);
+    expect(built.map((c) => c.cost)).toEqual([0, 1, 2, 3]); // 2→免费·7→1·10→2·K→3
+  });
+
+  it('deployUnit 按 cost 收源泉：买不起→拒；够→扣对应源泉', () => {
+    const b = initTurnBattle({ seed: 1 });
+    b.a.mana = 2; b.a.hand.push({ kind: 'poker', id: 'k', rank: 'K', suit: 'S', general: false, buff: 0, cost: 3 });
+    expect(deployUnit(b, 'a', 0, 0)).toBe(false); // 费 3 > 源泉 2 → 拒
+    b.a.mana = 3;
+    expect(deployUnit(b, 'a', 0, 0)).toBe(true);  // 够 → 放
+    expect(b.a.mana).toBe(0);                     // 扣掉 3
   });
 });

@@ -10,7 +10,7 @@ export interface BattleCoachStep { flag: string; anchor: string; text: string; o
 // 步骤序列（owner 2026-06-21 改流程）：第一回合先**放牌**(+顺手翻机关门) → **结束回合**(推进/掷命) → 第二回合**抽牌**(普通/天罡) → 打天罡。
 // 自然手感：开局已有起手牌，先铺场再说；抽牌是第二回合补充。cast 步无天罡可跳过（驱动判定）。
 export const BATTLE_COACH: readonly BattleCoachStep[] = [
-  { flag: 'seen_combat_deploy', anchor: 'combat-deploy', text: '👉 第一步【放牌】：先点一张手牌，再点一路（上/中/下）把战士部署上去。免费·有牌就能一直放；放完还能顺手翻一道机关门(箭头)调度兵线。', on: 'deploy' },
+  { flag: 'seen_combat_deploy', anchor: 'combat-deploy', text: '👉 第一步【放牌】：先点一张手牌，再点一路（上/中/下）把战士部署上去。按牌点数花源泉（小牌免费·大牌贵）·有源泉就能继续放；放完还能顺手翻一道机关门(箭头)调度兵线。', on: 'deploy' },
   { flag: 'seen_combat_endturn', anchor: 'combat-end', text: '👉 铺好场点【结束回合】：双方兵线一起推进一格，前锋相遇就触发【掷命对决】（正面活/反面亡）。', on: 'endturn' },
   { flag: 'seen_combat_draw', anchor: 'combat-draw', text: '👉 第二回合可【抽牌】：花 1 点召唤源泉（右上角源泉）从牌库摸一张——普通兵牌或天罡战法都能摸。源泉每回合自动 +1，悠着用。', on: 'draw' },
   { flag: 'seen_combat_tiangang', anchor: 'combat-cast', text: '👉 点【打天罡】：施放持续战法，整局为你加成。看明白就毕业啦！', on: 'cast' },

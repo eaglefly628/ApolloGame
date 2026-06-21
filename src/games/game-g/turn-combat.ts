@@ -51,7 +51,7 @@ export function unitSpeed(rank: string): number { return FAST_RANKS.has(rank) ? 
 // 一路：双方兵列（own[0] = 前锋·最贴敌）+ 捷径门开关 + 主将阵亡/续航退场记账。
 export interface TurnLane { a: TurnUnit[]; b: TurnUnit[]; aGenDead: boolean; bGenDead: boolean; spentA: number; spentB: number }
 // 手牌/牌库卡：扑克兵(上场) / 天罡(施法·id)。
-export interface PokerCard { kind: 'poker'; id: string; rank: string; suit: string; general: boolean; buff: number }
+export interface PokerCard { kind: 'poker'; id: string; rank: string; suit: string; general: boolean; buff: number; cost?: number } // cost=放牌召唤源泉费(契约B·deployCost·建库时按 rank 写在卡上·缺省=DEPLOY_COST·避免 turn-combat←blueprint 环依赖)
 export interface TengangHandCard { kind: 'tengang'; id: string }
 export type Card = PokerCard | TengangHandCard;
 // 一方运行态：召唤源泉 / 手牌 / 两库 / 已施天罡集 + 其聚合修正。
@@ -138,16 +138,17 @@ function onPlayDraw(sd: TurnSide): void {
 
 // ② 放牌：把手牌第 handIdx 张扑克兵部署到 lane（入我方/敌方部署格·队尾排队）+ 可选改机关（开/关门）。花召唤源泉（互斥·同类无限）。
 export function deployUnit(b: TurnBattle, side: 'a' | 'b', handIdx: number, lane: number, gateToggle = -1): boolean {
-  if (!canAct(b, side, 'deploy', DEPLOY_COST)) return false;
   const sd = sideOf(b, side); const card = sd.hand[handIdx];
   if (!card || card.kind !== 'poker' || lane < 0 || lane > 2) return false;
+  const cost = card.cost ?? DEPLOY_COST; // 放牌按牌点数收费（契约B·建库时已写在卡上·2-4免费/5-7=1/8-10=2/JQKA=3）
+  if (!canAct(b, side, 'deploy', cost)) return false;
   const L = b.lanes[lane]; const col = colOf(L, side);
   // 放牌区=贴自家大本营 3 格(home→中线)：新兵落最靠家的空格(owner 2026-06-20·从城堡那一竖列入场)·满则拒。
   const occ = new Set(col.map((u) => u.slot));
   const zone = side === 'a' ? [A_DEPLOY_SLOT, A_DEPLOY_SLOT + 1, A_DEPLOY_SLOT + 2] : [B_DEPLOY_SLOT, B_DEPLOY_SLOT - 1, B_DEPLOY_SLOT - 2];
   const slot = zone.find((s) => !occ.has(s));
   if (slot === undefined) return false; // 放牌区(贴家3格)已满 → 拒绝
-  sd.hand.splice(handIdx, 1); sd.mana -= DEPLOY_COST; b.actionTaken = 'deploy';
+  sd.hand.splice(handIdx, 1); sd.mana -= cost; b.actionTaken = 'deploy';
   const stamBonus = sd.tengangA.stamPlus + (isFaceRank(card.rank) ? sd.tengangA.stamFaces : 0); // 不屈/老兵（双侧·Boss 施法亦得）
   const stam = cardStamina(card.rank) + stamBonus;
   col.push({ id: card.id, rank: card.rank, suit: card.suit, points: cardPoints(card.rank), buff: card.buff, general: card.general, stamina: stam, staminaLeft: stam, slot, speed: unitSpeed(card.rank) });
@@ -443,8 +444,8 @@ export function aiTakeTurn(b: TurnBattle, aggTengang?: (ids: readonly string[]) 
   let guard = 0;
   while (guard++ < 40) {
     const locked = b.actionTaken; const cands: AiCand[] = [];
-    if ((locked === null || locked === 'deploy') && sd.mana >= DEPLOY_COST) {
-      sd.hand.forEach((c, i) => { if (c.kind === 'poker') for (const lane of [0, 1, 2]) cands.push({ kind: 'deploy', handIdx: i, lane, from: 'poker', score: scoreDeploy(b, c, lane) }); });
+    if (locked === null || locked === 'deploy') {
+      sd.hand.forEach((c, i) => { if (c.kind === 'poker' && (c.cost ?? DEPLOY_COST) <= sd.mana) for (const lane of [0, 1, 2]) cands.push({ kind: 'deploy', handIdx: i, lane, from: 'poker', score: scoreDeploy(b, c, lane) }); }); // 只考虑买得起的兵
     }
     if ((locked === null || locked === 'cast') && sd.mana >= CAST_COST) {
       sd.hand.forEach((c, i) => { if (c.kind === 'tengang') cands.push({ kind: 'cast', handIdx: i, lane: 0, from: 'poker', score: scoreCast(b) }); });
