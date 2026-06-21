@@ -60,7 +60,8 @@ describe('Game G · lobby-screen 视觉回归（忠实港大厅 · 真渲染器 
   it('牌组帧 = 出战扑克构筑屏（52 池选 16·费用角标·一键自动构筑）匹配 golden', async () => {
     const html = renderLobbyDoc(view(), 'decks');
     expect((html.match(/class="pcard[^-]/g) || []).length).toBe(52); // 52 池全张可选（排除 pcard-wm/pcard-info 等子类）
-    expect(html).toContain('出战扑克牌组 · 从 52 收藏选'); // 构筑屏标题
+    expect(html).toContain('🎖 我的出战牌组'); // 统一出战牌组选择条（一套=16扑克+5天罡）
+    expect(html).toContain('扑克牌库 ·'); // 扑克子页标题（带出战牌组名）
     expect(html).toContain('✨ 一键自动构筑'); // 乙3 自动构筑按钮
     expect(html).toContain('data-act="pickCard"'); // 卡可点入/出战库
     await expect(html).toMatchFileSnapshot('./__frames__/lobby-decks.html');

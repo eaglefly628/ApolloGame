@@ -25,7 +25,7 @@ export interface LobbyView {
   ladderLines: string[];
   deckArchName?: string | null; deckArchActivated?: boolean;
   // 天罡牌组（owner 2026-06-20 多牌组）：decks=各牌组概览 / deckSize=每组上限 / activeDeckName=出战组名 / canAddDeck=可否再建
-  decks?: { id: string; name: string; size: number; active: boolean }[];
+  decks?: { id: string; name: string; size: number; pokerSize?: number; active: boolean }[];
   deckSize?: number; activeDeckName?: string; canAddDeck?: boolean;
   // 出战扑克牌组构筑（乙1·DEV-CHECKLIST 契约 A）：从 52 池自选 ≤pokerPickMax 张；pokerPicks=当前出战组已选卡 id；cost 角标读 deployCost。
   pokerPicks?: string[]; pokerPickMax?: number;
@@ -479,7 +479,7 @@ function pokerBuildHead(view: LobbyView): string {
   const TIER_COLOR = ['var(--club)', 'var(--ink)', 'var(--diamond)', 'var(--gold)'];
   const curve = byTier.map((cnt, t) => `<div class="cc-col" title="${TIER_LABEL[t]} · ${cnt} 张"><div class="cc-bar" style="height:${Math.round((cnt / tierMax) * 100)}%;background:${TIER_COLOR[t]}"></div><div class="cc-n">${cnt}</div><div class="cc-l">${TIER_LABEL[t]}</div></div>`).join('');
   const okColor = n === max ? 'var(--gold)' : 'var(--ink-dim)';
-  return `<h2 style="margin:0">🎴 出战扑克牌组 · 从 52 收藏选 <b style="color:${okColor}">${n}/${max}</b>
+  return `<h2 style="margin:0">🎴 扑克牌库 ·「<b style="color:var(--gold)">${esc(view.activeDeckName ?? '')}</b>」· 从 52 选 <b style="color:${okColor}">${n}/${max}</b>
     <span style="display:flex;gap:8px;margin-left:auto">
       <button class="cta-sub" data-act="autoBuildDeck" title="按费用曲线+偏好已养成自动凑一副">✨ 一键自动构筑</button>
       <button class="cta-sub" data-act="clearPicks" title="清空已选">清空</button>
@@ -829,23 +829,29 @@ function deckPreviewPanel(tiangangs: LobbyShopItem[], archName: string | null | 
   return `<div class="card" style="margin-bottom:14px"><h2>${GI.bolt} ${title} <span class="ghost" style="font-size:12px;margin-left:auto">${inDeck.length}/${size} · 出战带 ${size} 张</span></h2>${body}<div style="display:flex;align-items:center;gap:10px;margin-top:8px"><div class="note" style="text-align:left;margin:0;flex:1">${arch}${summary}</div><button class="cta-sub" data-act="editDeck" style="flex:none">✏ 编辑牌组</button></div></div>`;
 }
 
-// 天罡牌组编辑器（owner 2026-06-20 重做）：① 选/建/删牌组 → ② 一排 size 槽（满槽可✕移除·空槽＋添加）
-// → ③ 点＋弹「选卡弹窗」从已拥有天罡里挑一张入组。买卡=商城/改造坊；编组只在此处，不两地跳。
-function tiangangDeckManager(view: LobbyView): string {
+// 出战牌组选择条（owner 2026-06-21「出征牌组和天罡牌组是一套的·选一套出征」）：一套 = 16 扑克 + 5 天罡。
+// 顶级选择器·统领下面两子页（扑克牌库 / 天罡战法 同改这选中的一套）。选一套=设为⚔出战；可新建/删。
+function deckSetSelector(view: LobbyView): string {
   const decks = view.decks ?? [];
+  const pokerMax = view.pokerPickMax ?? POKER_PICK_SIZE;
+  const tgMax = view.deckSize ?? 12;
+  const chips = decks.map((d) => `<button class="deck-chip${d.active ? ' on' : ''}" data-act="selectDeck" data-k="${d.id}">${d.active ? '⚔ ' : ''}${esc(d.name)} <span class="ghost">扑${d.pokerSize ?? 0}/罡${d.size}</span>${decks.length > 1 ? `<span class="deck-del" data-act="delDeck" data-k="${d.id}" title="删除这套牌组">✕</span>` : ''}</button>`).join('');
+  const addBtn = view.canAddDeck ? `<button class="deck-chip add" data-act="newDeck">＋ 新建一套</button>` : '';
+  return `<div class="card" style="margin-bottom:14px"><h2>🎖 我的出战牌组 <span class="ghost" style="font-size:12px;margin-left:auto">一套 = ${pokerMax} 扑克 + ${tgMax} 天罡</span></h2>
+    <div class="note" style="text-align:left;margin-bottom:7px">点一套设为 <b style="color:var(--gold)">⚔ 出战</b>（带去打的就是它·已保存）。下面两页分别配<b>这一套</b>的扑克牌库与天罡战法；地支牌是通用养成材料。</div>
+    <div class="deck-chips">${chips}${addBtn}</div></div>`;
+}
+// 天罡战法编辑器：当前出战这套牌组的 ≤size 天罡槽（满槽可✕移除·空槽＋添加从已拥有里选）。选哪套在顶部选择条。
+function tiangangDeckManager(view: LobbyView): string {
   const size = view.deckSize ?? 12;
   const inDeck = view.tiangangs.filter((j) => j.inDeck);
   const deckFull = inDeck.length >= size;
-  const chips = decks.map((d) => `<button class="deck-chip${d.active ? ' on' : ''}" data-act="selectDeck" data-k="${d.id}">${d.active ? '⚔ ' : ''}${esc(d.name)} <span class="ghost">${d.size}/${size}</span>${decks.length > 1 ? `<span class="deck-del" data-act="delDeck" data-k="${d.id}" title="删除牌组">✕</span>` : ''}</button>`).join('');
-  const addDeckBtn = view.canAddDeck ? `<button class="deck-chip add" data-act="newDeck">＋ 新建牌组</button>` : '';
   const filled = inDeck.map((j) => `<div class="tg-slot" title="${esc(j.sub)}"><div class="tg-slot-ic">${tiangangIcon(j.icon, j.tint)}</div><b>${esc(j.name)}</b><button class="tg-rm" data-act="toggleTiangang" data-k="${j.id}" title="移出牌组">✕</button></div>`).join('');
   const empties = Array.from({ length: Math.max(0, size - inDeck.length) }, () => `<button class="tg-slot empty" data-act="deckAdd" title="添加天罡牌"><span>＋</span></button>`).join('');
-  return `<div class="card" style="margin-bottom:14px"><h2>${GI.bolt} 天罡牌组 · 编辑 <span class="ghost" style="margin-left:auto;font-size:12px">出战带 ${size} 张 · 自建多套切换</span></h2>
-    <div class="note" style="text-align:left;margin-bottom:6px">① 选一个牌组（= 这场出战带的那套），或新建</div>
-    <div class="deck-chips">${chips}${addDeckBtn}</div>
-    <div class="note" style="text-align:left;margin:12px 0 7px">② 出战牌组「<b style="color:var(--gold)">${esc(view.activeDeckName ?? '')}</b>」 ${inDeck.length}/${size} —— 满槽点 <b>✕ 移除</b>，空槽点 <b>＋ 添加</b></div>
+  return `<div class="card"><h2>${GI.bolt} 天罡战法 ·「<b style="color:var(--gold)">${esc(view.activeDeckName ?? '')}</b>」 <span class="ghost" style="margin-left:auto;font-size:12px">这套出战带 ${size} 张</span></h2>
+    <div class="note" style="text-align:left;margin:2px 0 7px">当前出战牌组的天罡（局内法术·≤${size}）——满槽点 <b>✕ 移除</b>，空槽点 <b>＋ 添加</b>（从已拥有里选）。换哪套到顶部「我的出战牌组」选。</div>
     <div class="tg-deck">${filled}${empties}</div>
-    ${deckFull ? '<div class="note" style="text-align:left;margin-top:8px;color:var(--gold)">牌组已满 12 张，出战即带这套。</div>' : ''}</div>`;
+    ${deckFull ? `<div class="note" style="text-align:left;margin-top:8px;color:var(--gold)">天罡已满 ${size} 张。</div>` : ''}</div>`;
 }
 // 选卡弹窗（添加天罡入组）：从已拥有但未入组的天罡里点选 → 加入。
 function deckPickerBox(view: LobbyView): string {
@@ -1076,7 +1082,7 @@ export function renderLobby(view: LobbyView, tab: string, helpOpen: boolean, dec
     </section>`;
     })()}
     <section class="screen${on('campaign')} full" data-screen="campaign" style="flex-direction:column;overflow-y:auto">${campaignSection(view)}</section>
-    <section class="screen${on('decks')} full" data-screen="decks">${deckPreviewPanel(view.tiangangs, view.deckArchName, view.deckArchActivated, view.deckSize ?? 12, view.activeDeckName)}<div class="deck-nav"><button class="${deckTab==='base'?'on':''}" data-act="deckTab" data-k="base">扑克牌组</button><button class="${deckTab==='gang'?'on':''}" data-act="deckTab" data-k="gang">天罡牌组</button><button class="${deckTab==='dizhi'?'on':''}" data-act="deckTab" data-k="dizhi">地支牌</button></div><div class="dsub${dOn('base')}" data-dsub="base">${pokerBuildPanel(view)}</div><div class="dsub${dOn('gang')}" data-dsub="gang">${tiangangDeckManager(view)}</div><div class="dsub${dOn('dizhi')}" data-dsub="dizhi"><div class="card"><h2>${GI.planet} 地支牌 · 十二生肖 <span class="ghost" style="margin-left:auto;font-size:12px">铜→银→金 · 镶进牌附魔（改造坊）</span></h2><div class="earth-filter">${efBtn('all','全部','background:var(--gold-grad);color:#2a1a08;border:0')}${efBtn('bronze','铜','background:#cd7f32;color:#fff;border:0')}${efBtn('silver','银','background:#c4ccd6;color:#2a2a2a;border:0')}${efBtn('gold','金','background:var(--gold-grad);color:#2a1a08;border:0')}</div>${earthSection(earthFilter, view.dizhiOwned ?? {})}</div></div></section>
+    <section class="screen${on('decks')} full" data-screen="decks">${deckSetSelector(view)}<div class="deck-nav"><button class="${deckTab==='base'?'on':''}" data-act="deckTab" data-k="base">🎴 扑克牌库</button><button class="${deckTab==='gang'?'on':''}" data-act="deckTab" data-k="gang">⚡ 天罡战法</button><button class="${deckTab==='dizhi'?'on':''}" data-act="deckTab" data-k="dizhi">🀄 地支牌</button></div><div class="dsub${dOn('base')}" data-dsub="base">${pokerBuildPanel(view)}</div><div class="dsub${dOn('gang')}" data-dsub="gang">${tiangangDeckManager(view)}</div><div class="dsub${dOn('dizhi')}" data-dsub="dizhi"><div class="card"><h2>${GI.planet} 地支牌 · 十二生肖 <span class="ghost" style="margin-left:auto;font-size:12px">铜→银→金 · 镶进牌附魔（改造坊）</span></h2><div class="earth-filter">${efBtn('all','全部','background:var(--gold-grad);color:#2a1a08;border:0')}${efBtn('bronze','铜','background:#cd7f32;color:#fff;border:0')}${efBtn('silver','银','background:#c4ccd6;color:#2a2a2a;border:0')}${efBtn('gold','金','background:var(--gold-grad);color:#2a1a08;border:0')}</div>${earthSection(earthFilter, view.dizhiOwned ?? {})}</div></div></section>
     <section class="screen${on('coll')} full" data-screen="coll" style="flex-direction:column"><div class="deck-nav"><button class="${collTab==='cards'?'on':''}" data-act="collTab" data-k="cards">收藏·牌谱</button><button class="${collTab==='ladder'?'on':''}" data-act="collTab" data-k="ladder">天梯·榜</button><button class="${collTab==='fiends'?'on':''}" data-act="collTab" data-k="fiends">地煞·战法</button><button class="${collTab==='collect'?'on':''}" data-act="collTab" data-k="collect">天罡&amp;闪艺</button></div><div class="dsub${cOn('cards')}" data-dsub="cards" style="flex:1;min-height:0;flex-direction:column">${heroCollSection(heroSuit, heroRar, heroDetail, ownedOnly)}</div><div class="dsub${cOn('ladder')}" data-dsub="ladder" style="flex:1;min-height:0;flex-direction:column">${ladderSection(view.name, view.rankText)}</div><div class="dsub${cOn('fiends')}" data-dsub="fiends" style="flex:1;min-height:0;flex-direction:column">${fiendsCodex(view.campaignMax ?? 1)}</div><div class="dsub${cOn('collect')}" data-dsub="collect"><div class="card"><h2>🗃 天罡牌 · 收藏 ${view.tiangangs.filter((j) => j.owned).length}/${view.tiangangs.length}</h2><div class="note" style="text-align:left;margin-bottom:6px">⚡ 已解锁天罡牌（到「牌组」屏编入出战牌组）</div><div class="shelf">${view.tiangangs.map((j) => shopItem('', tiangangIcon(j.icon, j.tint), { ...j, buyable: false })).join('')}</div><div class="note" style="text-align:left;margin:12px 0 6px">✨ 闪艺 foil（纯装饰收集 · 点亮可购买）· ${view.foils.filter((f) => f.owned).length}/${view.foils.length}</div><div class="shelf">${view.foils.map((f) => shopItem('buyFoil', '✨', f)).join('')}</div></div></div></section>
     <section class="screen${on('craft')} full" data-screen="craft"><div class="craft-zones">
       ${enchantPanel(view, craftSel)}

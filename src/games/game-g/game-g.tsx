@@ -388,7 +388,7 @@ export function mount(container: HTMLElement): () => void {
         deckAvg: avg(effDeck), deckMin: Math.min(...effDeck), deckMax: Math.max(...effDeck), deck: effDeck, inlays: save.inlays,
         tiangangs, planets, foils,
         campaign: campaignFor(save.stage),
-        decks: save.tiangangDecks.map((d) => ({ id: d.id, name: d.name, size: d.cards.length, active: d.id === save.activeDeckId })),
+        decks: save.tiangangDecks.map((d) => ({ id: d.id, name: d.name, size: d.cards.length, pokerSize: d.pokerPicks.length, active: d.id === save.activeDeckId })),
         deckSize: TIANGANG_DECK_SIZE, activeDeckName: activeDeck(save).name, canAddDeck: save.tiangangDecks.length < MAX_TIANGANG_DECKS,
         pokerPicks: activeDeck(save).pokerPicks, pokerPickMax: POKER_PICK_SIZE, // 出战扑克牌组构筑（乙1·契约A）
         deckArchName: arch?.name ?? null, deckArchActivated: activated !== null,
