@@ -176,6 +176,7 @@ export const LOBBY_CSS = `
 .ggl-root .ench-card{ display:flex; flex-direction:column; align-items:center; gap:1px; padding:5px 2px; border-radius:7px; background:var(--chip); border:1px solid var(--panel-border); cursor:pointer; overflow:hidden }
 .ggl-root .ench-card:hover{ border-color:var(--gold) }
 .ggl-root .ench-card.sel{ border-color:var(--gold); background:rgba(232,205,130,.14); box-shadow:0 0 8px rgba(232,205,130,.3) }
+.ggl-root .ench-card.in-deck{ border-color:var(--gold); box-shadow:0 0 6px rgba(232,205,130,.4) }
 .ggl-root .ench-rk{ font-family:var(--fh); font-weight:700; font-size:12px; line-height:1 }
 .ggl-root .ench-nm{ font-size:8px; color:var(--ink-dim); max-width:100%; white-space:nowrap; overflow:hidden; text-overflow:ellipsis }
 .ggl-root .ench-fv{ font-family:var(--fn); font-size:9px; color:var(--ink) }
@@ -232,6 +233,11 @@ export const LOBBY_CSS = `
 .ggl-root .gg-tipwrap.tip-left:hover>.gg-tip{ transform:translateX(0) translateY(0) }
 .ggl-root .gg-tipwrap.tip-right>.gg-tip{ left:0; right:auto; transform:translateX(0) translateY(-4px) }
 .ggl-root .gg-tipwrap.tip-right:hover>.gg-tip{ transform:translateX(0) translateY(0) }
+/* tip-up：浮层向上弹（grid 末行/底部条目用·防被容器 overflow 截断）。 */
+.ggl-root .gg-tipwrap.tip-up>.gg-tip{ top:auto; bottom:calc(100% + 8px); transform:translateX(-50%) translateY(4px) }
+.ggl-root .gg-tipwrap.tip-up:hover>.gg-tip{ transform:translateX(-50%) translateY(0) }
+.ggl-root .gg-tipwrap.tip-up.tip-left>.gg-tip{ left:auto; right:0; transform:translateX(0) translateY(4px) }
+.ggl-root .gg-tipwrap.tip-up.tip-left:hover>.gg-tip{ transform:translateX(0) translateY(0) }
 .ggl-root .good.got{ border-color:var(--gold) } .ggl-root .good.buy{ cursor:pointer } .ggl-root .good.buy:hover{ box-shadow:0 0 0 1px var(--gold) inset } .ggl-root .good.lock{ opacity:.62 }
 .ggl-root .unlock-badge{ display:inline-block; font-size:9px; font-weight:700; padding:1px 5px; border-radius:5px; background:rgba(232,205,138,.16); border:1px solid var(--hairline); color:var(--gold); vertical-align:middle }
 .ggl-root .boss-block{ margin-bottom:14px; padding:10px 12px; border-radius:10px; background:rgba(255,255,255,.03); border:1px solid var(--panel-border) }

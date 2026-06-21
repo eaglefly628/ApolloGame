@@ -84,13 +84,14 @@ export interface TurnBattle {
   dishaB: DishaFx; bossWinStreak: number; batteryLane: number; bossLastStandUsed: boolean; // 地煞(Boss 招牌战术·doc23 §八)运行态
   aiProfile: AiProfile; aiTier: number; // Boss 通用 utility AI（doc27 §八）：画像 + 难度档(高=更优·低=会犯错)
   homeAShieldUsed: number; // 死守(天罡 siegeDefend)：我大本营已吸收次数
+  fortuneBuff: number; // 今日卦象加成（owner 2026-06-21）：大吉+2 / 吉+1 / 中庸0 / 小凶−1 / 大凶−2 → 玩家部署每张兵追加此 buff
 }
 
 const mkLane = (): TurnLane => ({ a: [], b: [], aGenDead: false, bGenDead: false, spentA: 0, spentB: 0 });
 const mkSide = (pokerDeck: PokerCard[] = [], tengangDeck: TengangHandCard[] = []): TurnSide =>
   ({ mana: MANA_START, hand: [], pokerDeck: [...pokerDeck], tengangDeck: [...tengangDeck], castIds: [], tengangA: NO_TENGANG, castFx: [] });
 
-export interface TurnInit { seed: number; homeMax?: number; disha?: readonly string[]; aiProfile?: AiProfile; aiTier?: number; a?: { pokerDeck?: PokerCard[]; tengangDeck?: TengangHandCard[] }; b?: { pokerDeck?: PokerCard[]; tengangDeck?: TengangHandCard[] } }
+export interface TurnInit { seed: number; homeMax?: number; disha?: readonly string[]; aiProfile?: AiProfile; aiTier?: number; fortuneBuff?: number; a?: { pokerDeck?: PokerCard[]; tengangDeck?: TengangHandCard[] }; b?: { pokerDeck?: PokerCard[]; tengangDeck?: TengangHandCard[] } }
 /** 开战 init（doc24 §七）：三路 ×9 空轨；双方大本营 3 hp；召唤源泉=起步；A 先手。牌库由 caller（game-g/save）喂；起手摸由 caller 调 drawCard。
  *  cfg.disha：Boss 关卡地煞 id 集（doc23 §八）→ 聚合成 dishaB 在 Boss 侧 apply；温泉关死守覆写 Boss 大本营血。 */
 export function initTurnBattle(cfg: TurnInit): TurnBattle {
@@ -107,7 +108,7 @@ export function initTurnBattle(cfg: TurnInit): TurnBattle {
     winner: 'pending', actionTaken: null, lastClash: null, clashLog: [], clashSeq: 0,
     dishaB, bossWinStreak: 0, batteryLane: -1, bossLastStandUsed: false,
     aiProfile: cfg.aiProfile ?? NEUTRAL_AI, aiTier: cfg.aiTier ?? 2,
-    homeAShieldUsed: 0,
+    homeAShieldUsed: 0, fortuneBuff: cfg.fortuneBuff ?? 0,
   };
   battle.b.mana = 0; // 后手方召唤源泉在其回合开始才 +1（每回合 +1 对称·turn-1 的 +1 已含在先手起步值里）
   return battle;
@@ -155,7 +156,8 @@ export function deployUnit(b: TurnBattle, side: 'a' | 'b', handIdx: number, lane
   sd.hand.splice(handIdx, 1); sd.mana -= cost; b.actionTaken = 'deploy';
   const stamBonus = sd.tengangA.stamPlus + (isFaceRank(card.rank) ? sd.tengangA.stamFaces : 0); // 不屈/老兵（双侧·Boss 施法亦得）
   const stam = cardStamina(card.rank) + stamBonus;
-  col.push({ id: card.id, rank: card.rank, suit: card.suit, points: cardPoints(card.rank), buff: card.buff, general: card.general, stamina: stam, staminaLeft: stam, slot, speed: unitSpeed(card.rank), cost: card.cost });
+  const extraBuff = side === 'a' ? b.fortuneBuff : 0; // 今日卦象：玩家部署兵追加卦象 buff
+  col.push({ id: card.id, rank: card.rank, suit: card.suit, points: cardPoints(card.rank), buff: (card.buff ?? 0) + extraBuff, general: card.general, stamina: stam, staminaLeft: stam, slot, speed: unitSpeed(card.rank), cost: card.cost });
   col.sort((x, y) => (side === 'a' ? y.slot - x.slot : x.slot - y.slot)); // 维持 [0]=前锋(贴敌·最高/最低 slot)
   if (gateToggle >= 0 && gateToggle < GATES.length) b.gatesOpen[gateToggle] = !b.gatesOpen[gateToggle]; // 放牌附赠：开/关一道捷径门（doc24 §三·可不用）
   onPlayDraw(sd); // 川流：放牌后免费补抽

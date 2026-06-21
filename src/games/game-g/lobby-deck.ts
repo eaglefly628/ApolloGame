@@ -135,7 +135,7 @@ export function shopItem(act: string, glyph: string, it: LobbyShopItem): string 
   const attr = it.buyable && !it.owned ? ` data-act="${act}" data-k="${it.id}"` : '';
   const lv = it.level !== undefined ? ` <span class="ghost">Lv.${it.level}</span>` : '';
   const foot = it.owned && it.level === undefined ? '<div class="cost">✓ 已融</div>' : `<div class="cost">🪙 ${it.cost}</div>`;
-  return `<div class="gg-tipwrap"><div class="${cls}"${attr}><div class="gnm">${glyph} ${esc(it.name)}${lv}</div>${foot}</div>${itemTipHTML(it, glyph)}</div>`;
+  return `<div class="gg-tipwrap tip-up"><div class="${cls}"${attr}><div class="gnm">${glyph} ${esc(it.name)}${lv}</div>${foot}</div>${itemTipHTML(it, glyph)}</div>`;
 }
 // 通用条目富文本说明（闪艺/天罡收藏等·共用 shopItem）。
 export function itemTipHTML(it: LobbyShopItem, glyph: string): string {

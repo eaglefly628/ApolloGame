@@ -34,13 +34,17 @@ export function inlayDetail(view: LobbyView, ix: number): string {
 export function enchantPanel(view: LobbyView, craftSel: string): string {
   const deck = view.deck;
   const inlays = view.inlays ?? {};
+  const picksSet = new Set(view.pokerPicks ?? []);
+  const SUIT_LETTERS = ['S', 'H', 'D', 'C']; // 与 POOL_CARD_IDS 同序
   const grid = SUITS.flatMap(([su, c], si) => RANKS.map((rank, ri) => {
     const idx = si * 13 + ri;
     const hero = HERO_CARDS.find((h) => h.suit === su && h.rank === rank);
     const fv = deck[idx] ?? 50;
     const n = (inlays[String(idx)] ?? []).length;
     const sel = craftSel === String(idx);
-    return `<button class="ench-card${sel ? ' sel' : ''}" data-act="craftSel" data-k="${idx}"><span class="ench-rk" style="color:${c}">${rank}${su}</span><span class="ench-nm">${hero ? esc(hero.name) : ''}</span><span class="ench-fv">${fv}${n ? ` <span style="color:var(--gold)">🀄${n}</span>` : ''}</span></button>`;
+    const inDeck = picksSet.has(rank + SUIT_LETTERS[si]);
+    // inDeck：当前出战牌组包含此牌 → 加金色外框 + 小勋章提示玩家「这是我带上去的牌」
+    return `<button class="ench-card${sel ? ' sel' : ''}${inDeck ? ' in-deck' : ''}" data-act="craftSel" data-k="${idx}" title="${inDeck ? '已入出战牌组' : ''}"><span class="ench-rk" style="color:${c}">${rank}${su}</span><span class="ench-nm">${hero ? esc(hero.name) : ''}</span><span class="ench-fv">${fv}${n ? ` <span style="color:var(--gold)">🀄${n}</span>` : ''}${inDeck ? ' <span style="color:var(--gold);font-size:9px">⚔</span>' : ''}</span></button>`;
   })).join('');
   // 选中牌的镶嵌详情（与牌库内附魔弹窗共用 inlayDetail）
   const detail = (craftSel !== '' && deck[+craftSel] !== undefined)
@@ -83,7 +87,7 @@ export function craftTiangangItem(it: LobbyShopItem): string {
   } else {
     foot = `<div class="cost">🪙 ${it.cost}</div>`;
   }
-  return `<div class="gg-tipwrap"><div class="${cls}"${buyAttr}><div class="gnm">${stageBadge} ${tiangangIcon(it.icon, it.tint)} ${esc(it.name)}${stars}${phat}</div>${foot}</div>${tiangangTipHTML(it)}</div>`;
+  return `<div class="gg-tipwrap tip-up"><div class="${cls}"${buyAttr}><div class="gnm">${stageBadge} ${tiangangIcon(it.icon, it.tint)} ${esc(it.name)}${stars}${phat}</div>${foot}</div>${tiangangTipHTML(it)}</div>`;
 }
 // 天罡战库预览面板（B3 · HOME+DECKS 屏）：≤5 已选天罡牌 每张【名 + 效果 + 牌力⭐ + P̂】+ 整库总加成汇总。
 export function deckPreviewPanel(tiangangs: LobbyShopItem[], archName: string | null | undefined, activated: boolean | undefined, size = 12, deckName = ''): string {

@@ -1,5 +1,5 @@
 import { mountBattle, type BattleView, type BattleUnit, type BattleLane, type BattleLever, type HandCardView, type TengangCardView, type BattleActions, type ClashView, type BattleFx } from './battle-screen.js';
-import { mountLobby, type LobbyView, type LobbyShopItem } from './lobby-screen.js';
+import { mountLobby, luckyBattleBuff, type LobbyView, type LobbyShopItem } from './lobby-screen.js';
 import { prepareArmies, quartermasterEnergy, FORMATION_PRESETS, PRESET_NAMES, LEVER_CATALOG, LEVER_START, battleSpec, RUN_BATTLES, RUN_LIVES, BETWEEN_BUFFS, applyBuff, tiangangKeyBuffs, BOSS_ROSTER, bossFor, GAME_G_TIANGANGS, TIANGANG_BY_ID, ARCHETYPES, detectArchetype, archetypeMatchup, activeArchetype, pickAiFormation, GAME_G_PLANETS, GAME_G_FOILS, RECHARGE_PACKS, rechargeTotal, DIAMOND_EXCHANGES, DIZHI_SHARD_PACKS, RECHARGE_PASSWORD, GACHA, gachaCost, DIZHI_MAX_TIER, DIZHI_TIER_NM, DIZHI_TIER_CAP, DIZHI_INLAY_FAVOR, dizhiMerge, dizhiTotal, dizhiTopTier, DIZHI_ZODIACS, INLAY_MAX, effectiveDeckFavors, POKER_PICK_SIZE, isPoolCardId, autoBuildPokerPicks, cardFavorIndex, rankOfCardId, deployCost, isHeroOwned, heroCardByName, heroNameOf, effectiveLives, effectiveLeverCap, effectiveLeverRegen, campaignFor, unlockStageOf, type Formation, type Intervention, type LeverKind, type RunBuff, type ArmyCard, type InlayEntry } from './index.js';
 import { initLiveBattle, stepLiveBattle, liveActive, migrateRear, NO_TENGANG, LANE_LEN, HOME_BLOOD, type LiveBattle, type DeployCmd, type ClashEvent, type TengangFx } from './live-combat.js';
 import { initTurnBattle, drawCard, deployUnit, castTengang, discardCard, endTurn, aiTakeTurn, toggleGate, GATES, OPENING_HAND, DRAW_COST, type PokerCard, type TengangHandCard } from './turn-combat.js';
@@ -617,7 +617,9 @@ export function mount(container: HTMLElement, shell?: { exit?: () => void }): ()
     const bossDeck = seededShuffleArr(b.map((c) => ({ ...toPoker(c), general: false })), seed ^ 0x51ed);
     const heroCard = bossHeroCard(aiName, enemyBias);
     if (heroCard) bossDeck.unshift(heroCard);
-    const tb = initTurnBattle({ seed, disha: lvl.boss.disha, aiProfile: lvl.boss.aiProfile, aiTier: lvl.boss.aiTier, a: { pokerDeck: seededShuffleArr(myDeck, seed ^ 0x9e37), tengangDeck: aTengang }, b: { pokerDeck: bossDeck, tengangDeck: bTengang } });
+    resetFortuneIfNewDay(save);
+    const fortuneBuff = save.fortune.keptVal != null ? luckyBattleBuff(save.fortune.keptVal) : 0;
+    const tb = initTurnBattle({ seed, disha: lvl.boss.disha, aiProfile: lvl.boss.aiProfile, aiTier: lvl.boss.aiTier, fortuneBuff, a: { pokerDeck: seededShuffleArr(myDeck, seed ^ 0x9e37), tengangDeck: aTengang }, b: { pokerDeck: bossDeck, tengangDeck: bTengang } });
     for (let i = 0; i < OPENING_HAND && tb.a.pokerDeck.length; i++) tb.a.hand.push(tb.a.pokerDeck.shift()!); // 起手摸
     for (let i = 0; i < OPENING_HAND && tb.b.pokerDeck.length; i++) tb.b.hand.push(tb.b.pokerDeck.shift()!);
     const shaView: TurnShaView[] = campaignFor(save.stage).fiends.map((f, i) => ({ filled: true, name: f.name, rar: (['gold', 'blue', 'green'] as const)[i] ?? 'white', desc: f.desc })); // 敌堡垒 3 地煞明牌

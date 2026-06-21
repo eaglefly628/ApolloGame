@@ -42,7 +42,7 @@ import { helpBox, settingsBox, shopBox, gachaRevealBox, narrationBox, guideSkipD
 import { inlayDetail, enchantPanel, craftTiangangItem, deckPreviewPanel, deckSetSelector, tiangangDeckManager, deckPickerBox, suitBarsPanel } from './lobby-build.js';
 import { earthSection, pokerBuildHead, pokerBuildPanel, shopItem } from './lobby-deck.js';
 import { luckyFromVal, luckyBox, rechargeThanksBox } from './lobby-overlays.js';
-export { luckyFromVal } from './lobby-overlays.js';
+export { luckyFromVal, luckyBattleBuff } from './lobby-overlays.js';
 
 import { esc, kfmt, SUITS, RANKS, SUIT_LETTER, ENCH_TIER_CLR, KIND_LABEL, ggTip, tipRow, type EarthRarity, type LuckyRoll, type FortuneView } from './lobby-util.js';
 export type { LuckyRoll, FortuneView } from './lobby-util.js';
@@ -113,7 +113,7 @@ export function renderLobby(view: LobbyView, tab: string, helpOpen: boolean, dec
       const stars = c ? '★'.repeat(c.stars) + '<span style="opacity:.35">' + '★'.repeat(3 - c.stars) + '</span>' : '';
       const hDisha = c ? stageDisha(c.stage) : [];
       // 地煞牌悬浮即出详情（owner 2026-06-21·不用点·往左弹不溢出右屏）：名 + 招牌战术说明 + 数值。
-      const fiends = c ? c.fiends.map((f, i) => { const nums = dishaNumberLine(hDisha[i] ?? ''); return `<div class="fiend gg-tipwrap tip-left" style="cursor:help"><b>${esc(f.name)}</b><span>${esc(f.desc)}</span>${nums ? `<span class="disha-num">📊 ${esc(nums)}</span>` : ''}<div class="gg-tip"><h4 style="color:var(--gold)">🎴 ${esc(f.name)}</h4><div class="gg-tip-eff">${esc(f.desc)}</div>${nums ? `<div class="gg-tip-row"><span>📊 数值</span><b style="color:var(--gold)">${esc(nums)}</b></div>` : ''}<div class="gg-tip-row"><span>性质</span><b style="color:var(--club)">明牌 · 公平可破</b></div></div></div>`; }).join('') : '';
+      const fiends = c ? c.fiends.map((f, i) => { const nums = dishaNumberLine(hDisha[i] ?? ''); return `<div class="fiend gg-tipwrap tip-left tip-up" style="cursor:help"><b>${esc(f.name)}</b><span>${esc(f.desc)}</span>${nums ? `<span class="disha-num">📊 ${esc(nums)}</span>` : ''}<div class="gg-tip"><h4 style="color:var(--gold)">🎴 ${esc(f.name)}</h4><div class="gg-tip-eff">${esc(f.desc)}</div>${nums ? `<div class="gg-tip-row"><span>📊 数值</span><b style="color:var(--gold)">${esc(nums)}</b></div>` : ''}<div class="gg-tip-row"><span>性质</span><b style="color:var(--club)">明牌 · 公平可破</b></div></div></div>`; }).join('') : '';
       return `<section class="screen${on('home')} homerow" data-screen="home">
       <div class="herocol">
         <div class="felt">
@@ -123,7 +123,7 @@ export function renderLobby(view: LobbyView, tab: string, helpOpen: boolean, dec
             const f = view.fortune;
             if (!f || f.keptVal == null) return '';
             const lk = luckyFromVal(f.keptVal);
-            return `<button class="gg-fortune" data-act="lucky" title="今日卦象 · 点开再掷/查看" style="position:absolute;top:12px;right:14px;z-index:4;display:flex;align-items:center;gap:8px;padding:7px 13px;border-radius:999px;cursor:pointer;background:linear-gradient(160deg,rgba(20,28,40,.92),rgba(12,18,28,.92));border:1px solid var(--gold);box-shadow:0 4px 14px rgba(0,0,0,.4)"><span style="font-size:14px">🎴</span><span style="font-family:var(--fh);font-weight:700;font-size:12px;color:var(--ink-dim)">今日卦象</span><span style="font-family:var(--fd);font-size:18px;color:${lk.color};line-height:1">${esc(lk.label)}</span><span style="font-family:var(--fn);font-size:13px;color:var(--gold)">${f.keptVal}</span></button>`;
+            return `<button class="gg-fortune" data-act="lucky" title="今日卦象 · 点开再掷/查看" style="position:absolute;left:50%;top:22%;transform:translateX(-50%);z-index:4;display:flex;align-items:center;gap:8px;padding:7px 13px;border-radius:999px;cursor:pointer;background:linear-gradient(160deg,rgba(20,28,40,.92),rgba(12,18,28,.92));border:1px solid var(--gold);box-shadow:0 4px 14px rgba(0,0,0,.4);white-space:nowrap"><span style="font-size:14px">🎴</span><span style="font-family:var(--fh);font-weight:700;font-size:12px;color:var(--ink-dim)">今日卦象</span><span style="font-family:var(--fd);font-size:18px;color:${lk.color};line-height:1">${esc(lk.label)}</span><span style="font-family:var(--fn);font-size:13px;color:var(--gold)">${f.keptVal}</span></button>`;
           })()}
           <div class="felt-h"><span class="t">${c ? `第 ${c.stage} 关 · ${esc(c.battle)}` : '戏牌师'}</span><span class="s">${c ? `执掌命运之人 · 挑战被诅咒的 ${esc(c.boss)}` : esc(view.stageLabel)}</span></div>
           <div class="stags">${stags}</div>

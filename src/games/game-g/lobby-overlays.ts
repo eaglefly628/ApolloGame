@@ -145,7 +145,7 @@ export function shopBox(view: LobbyView, shopTab: 'gacha' | 'wallet' | 'foil', r
     return `<button class="rc-suit${on ? ' on' : ''}" data-act="rcSuit" data-k="${g}" style="flex:1;padding:10px 0;border-radius:10px;cursor:pointer;background:${on ? c : 'var(--chip)'};border:2px solid ${on ? c : 'var(--panel-border)'};color:${on ? '#fff' : c};display:flex;flex-direction:column;align-items:center;gap:2px;box-shadow:${on ? `0 0 12px ${c}88` : 'none'};transition:all .12s"><span style="font-size:24px;line-height:1">${g}</span><span style="font-size:11px;color:${on ? '#fff' : 'var(--ink-dim)'}">${nm}</span></button>`;
   }).join('');
   const pwBlock = needPw
-    ? `<div style="margin-top:10px"><div style="font-size:12px;color:var(--ink-dim);margin-bottom:6px">🔒 复充需密码 · <b style="color:var(--ink)">点选 2 张花色</b>（测试版·免打字）<span style="color:var(--gold);margin-left:4px">已选 ${rcSuits.length}/2</span></div><div style="display:flex;gap:8px">${suitTiles}</div>${rechargeErr ? `<div style="color:#e0635f;font-size:12px;margin-top:6px">${rechargeErr}</div>` : ''}</div>`
+    ? `<div style="margin-top:10px"><div style="font-size:12px;color:var(--ink-dim);margin-bottom:6px">🔒 复充需密码 · <b style="color:var(--ink)">点选 2 张花色</b><span style="color:var(--gold);margin-left:6px">已选 ${rcSuits.length}/2</span></div><div style="font-size:11px;color:var(--ink-dim);margin-bottom:8px;line-height:1.5">💡 提示：一张代表<b style="color:#d8504e"> 爱意 </b>的花色 + 一张代表<b style="color:#5b7fb0"> 黑色水果 </b>的花色</div><div style="display:flex;gap:8px">${suitTiles}</div>${rechargeErr ? `<div style="color:#e0635f;font-size:12px;margin-top:6px">${rechargeErr}</div>` : ''}</div>`
     : `<div class="note" style="text-align:left;margin-top:6px;font-size:11px">🎁 首充免密「送一点点」体验。</div>`;
   const walletTab = `<div style="font-family:var(--fh);font-weight:700;font-size:14px;color:var(--ink);margin:4px 0 8px">充值 · 越充越送（Demo·点即到账）</div>
     <div class="rc-grid">${RECHARGE_PACKS.map(packCard).join('')}</div>
@@ -225,15 +225,22 @@ export function guideSkipDialog(): string {
 export function luckyFromVal(val: number): LuckyRoll {
   return val >= 90 ? { val, label: '大吉', color: 'var(--gold)', line: '天命在你·此局必有奇遇，放胆去翻！' }
     : val >= 70 ? { val, label: '吉', color: 'var(--club)', line: '顺风顺水·正是出征好时机。' }
-    : val >= 40 ? { val, label: '中平', color: 'var(--ink)', line: '胜负在人·稳扎稳打、看准爆冷缝。' }
+    : val >= 40 ? { val, label: '中庸', color: 'var(--ink)', line: '胜负在人·稳扎稳打、看准爆冷缝。' }
     : val >= 15 ? { val, label: '小凶', color: 'var(--diamond)', line: '谨慎出牌·手里留张保命天罡。' }
-    : { val, label: '凶', color: 'var(--heart)', line: '爆冷之日——正好赌一把翻盘命！' };
+    : { val, label: '大凶', color: 'var(--heart)', line: '爆冷之日——正好赌一把翻盘命！' };
 }
-// 主页「掷」字互动（owner 2026-06-20）：掷一卦看今日卦象·纯趣味·不进战斗。
-// owner 2026-06-21：每日限掷 max 次（显示「今日制卦 N/M」）；「收下此卦」= 选中持久化 → 主页顶显示。
+// 卦象战场加成：收下的卦象会影响出战时所有部署兵的 buff（大吉+2 / 吉+1 / 中庸0 / 小凶−1 / 大凶−2）。
+export const luckyBattleBuff = (val: number): number =>
+  val >= 90 ? 2 : val >= 70 ? 1 : val >= 40 ? 0 : val >= 15 ? -1 : -2;
+// 主页「掷」字互动（owner 2026-06-20）：掷一卦看今日卦象·收下影响战场。
+// owner 2026-06-21：每日限掷 max 次；「收下此卦」= 持久化 → 主页顶显示 + 出战时场上所有兵追加卦象 buff。
 export function luckyBox(r: LuckyRoll, fortune?: FortuneView): string {
   const canRoll = !fortune || fortune.rolls < fortune.max;
-  const countLine = fortune ? `<div class="note" style="margin-top:8px;font-size:12px">今日制卦 <b style="color:var(--gold)">${fortune.rolls}/${fortune.max}</b> 次${canRoll ? '' : ' · 次数已尽（明日刷新）'}</div>` : '';
+  const isLast = fortune ? fortune.rolls >= fortune.max - 1 : false; // 本次是最后一掷
+  const countLine = fortune ? `<div class="note" style="margin-top:8px;font-size:12px">今日制卦 <b style="color:var(--gold)">${fortune.rolls}/${fortune.max}</b> 次${canRoll ? '' : ' · 次数已尽（明日刷新）'}${isLast && canRoll ? ' · <span style="color:var(--diamond)">最后一掷，务必收下！</span>' : ''}</div>` : '';
+  const buffHint = `<div class="note" style="margin-top:6px;font-size:11px;line-height:1.6">收下卦象 → 出战全军获得加成<br><b style="color:var(--gold)">大吉+2 · 吉+1 · 中庸±0 · 小凶−1 · 大凶−2</b><br><span style="color:var(--ink-dim)">每日必须保留一卦方可受益</span></div>`;
+  const buff = luckyBattleBuff(r.val);
+  const buffTag = `<div style="margin-top:4px;font-size:13px;color:${buff >= 0 ? 'var(--club)' : 'var(--heart)'}">${buff >= 0 ? `全军 +${buff}` : `全军 ${buff}`}</div>`;
   const reroll = canRoll
     ? `<button class="cta-sub" style="flex:1" data-act="lucky">再掷一卦</button>`
     : `<button class="cta-sub" style="flex:1;opacity:.4;cursor:not-allowed" disabled>次数已尽</button>`;
@@ -241,8 +248,10 @@ export function luckyBox(r: LuckyRoll, fortune?: FortuneView): string {
     <div class="note">🎴 掷命 · 今日卦象</div>
     <div style="font-family:var(--fd);font-size:66px;line-height:1;color:var(--gold);margin:8px 0">${r.val}</div>
     <div style="font-family:var(--fd);font-size:28px;color:${r.color}">${esc(r.label)}</div>
+    ${buffTag}
     <div class="note" style="margin-top:8px">${esc(r.line)}</div>
     ${countLine}
+    ${buffHint}
     <div style="display:flex;gap:10px;margin-top:18px">${reroll}<button class="cta-sub" style="flex:1;color:#2a1a08;background:var(--gold-grad);border:0" data-act="lucky-keep">收下此卦</button></div>
   </div></div>`;
 }
