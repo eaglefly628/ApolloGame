@@ -525,7 +525,7 @@ export function mount(container: HTMLElement): () => void {
     let gateChance = false;            // 放牌附赠：放完一张牌 → 可翻一道机关门(一次)·用掉/换动作即失效(doc24 §三·owner 2026-06-20)
     let notice: string | null = null; let noticeTimer = 0; // 临时提示 toast
     let drained = 0; const perfQueue: ClashEvent[] = []; let perfClash: ClashEvent | null = null; let busy = false; let perfResume: (() => void) | null = null;
-    let justMovedIds = new Set<string>(); let freshIds = new Map<string, number>(); let thinkTimer = 0; let thinkEl: HTMLElement | null = null; let settingsOpen = false;
+    let justMovedIds = new Set<string>(); let freshIds = new Map<string, number>(); let dealtId: string | null = null; let thinkTimer = 0; let thinkEl: HTMLElement | null = null; let settingsOpen = false;
     const tgName = (id: string): string => TIANGANG_BY_ID.get(id)?.name ?? id;
     const tgDesc = (id: string): string => TIANGANG_BY_ID.get(id)?.text ?? '持续战法·打出后整场生效'; // 磨砂浮层：天罡效果文案
     // 捕捉所有上场单位的位置（lane*9+slot 编码）
@@ -549,7 +549,7 @@ export function mount(container: HTMLElement): () => void {
       thinkTimer = window.setTimeout(() => { if (thinkEl) { thinkEl.remove(); thinkEl = null; } onDone(); }, ms);
     };
     const flash = (msg: string): void => { notice = msg; mounted?.update(); if (noticeTimer) clearTimeout(noticeTimer); noticeTimer = window.setTimeout(() => { notice = null; if (!perfClash) mounted?.update(); }, 1700); }; // 清提示时若正演掷命特写则不重渲（防飞入重启）
-    const view = (): TurnBattleView => buildTurnBattleView(tb, { theme, tengangName: tgName, tengangDesc: tgDesc, selMode, selHand, clash: perfClash ? clashToTurnView(perfClash) : null, bossName: aiName, sha: shaView, gatesLive: gateChance, notice, movedIds: justMovedIds, freshIds, battleLabel, sfxOn: isSfxOn(), settingsOpen, bgmOn: isBgmOn(), bgmIdx: bgmTrackIdx(), bgmVol: bgmVolume(), bgmNames: BGM_TRACKS.map((t) => t.name) });
+    const view = (): TurnBattleView => buildTurnBattleView(tb, { theme, tengangName: tgName, tengangDesc: tgDesc, selMode, selHand, clash: perfClash ? clashToTurnView(perfClash) : null, bossName: aiName, sha: shaView, gatesLive: gateChance, notice, movedIds: justMovedIds, freshIds, dealtId: dealtId ?? undefined, battleLabel, sfxOn: isSfxOn(), settingsOpen, bgmOn: isBgmOn(), bgmIdx: bgmTrackIdx(), bgmVol: bgmVolume(), bgmNames: BGM_TRACKS.map((t) => t.name) });
     let mounted: { update: () => void; destroy: () => void } | null = null;
 
     const drainClashes = (): void => { for (const ev of tb.clashLog.slice(drained)) perfQueue.push(ev); drained = tb.clashLog.length; };
@@ -591,7 +591,7 @@ export function mount(container: HTMLElement): () => void {
     };
     const actions: TurnBattleActions = {
       pickAction: (kind) => { if (busy || tb.active !== 'a') return; if (tb.actionTaken && tb.actionTaken !== kind) return; selMode = selMode === kind ? null : kind; selHand = -1; gateChance = false; playSfx('select'); },
-      drawFrom: (from) => { if (busy || selMode !== 'draw') return; if (drawCard(tb, 'a', from)) playSfx('draw'); },
+      drawFrom: (from) => { if (busy || selMode !== 'draw') return; if (drawCard(tb, 'a', from)) { playSfx('draw'); dealtId = tb.a.hand[tb.a.hand.length - 1]?.id ?? null; const did = dealtId; window.setTimeout(() => { if (dealtId === did) { dealtId = null; if (!perfClash) mounted?.update(); } }, 560); } }, // 抽到的牌飞入翻面入场·~560ms 后清标记
       selectHand: (i) => {
         if (busy || tb.active !== 'a') return;
         if (selMode === 'cast') { if (castTengang(tb, 'a', i)) { tb.a.tengangA = aggregateTengang(tb.a.castIds); playSfx('cast'); } selHand = -1; } // 施法 → 持续修正重算
