@@ -473,12 +473,29 @@ export function mount(container: HTMLElement): () => void {
     stage.style.cssText = 'width:min(100%, 140vh);max-width:1340px;margin:0 auto;border-radius:12px;overflow:hidden;position:relative';
     const label = el('div', 'min-width:300px;text-align:center;font-weight:600;opacity:.85',
       `第 ${save.stage}/${RUN_BATTLES} 战 · ${lvl.battle.name}（${lvl.battle.oneLine}）｜ 命 ${'❤'.repeat(save.lives)} ｜ 你的阵 ${myName} ｜ ⚔ ${lvl.heroId}：「${lvl.bossLines.open}」`);
-    const back = mkBtn('← 返回大厅'); back.onclick = showLobby;
+    const back = mkBtn('← 返回大厅');
+    back.onclick = () => {
+      if (tb.winner !== 'pending') { showLobby(); return; } // 已结算 → 直跳，无需确认
+      const ov = document.createElement('div');
+      ov.style.cssText = 'position:fixed;inset:0;z-index:100;background:rgba(0,0,0,.72);display:flex;align-items:center;justify-content:center';
+      ov.innerHTML = `<div style="background:#1a2638;border:1px solid #334155;border-radius:14px;padding:28px 32px;text-align:center;min-width:280px;box-shadow:0 16px 48px rgba(0,0,0,.8)">
+        <div style="font-size:16px;font-weight:600;color:#e2e8f0;margin-bottom:8px">返回大厅？</div>
+        <div style="font-size:13px;color:#94a3b8;line-height:1.6;margin-bottom:20px">当前战斗进度将丢失，无法恢复。</div>
+        <div style="display:flex;gap:10px;justify-content:center">
+          <button id="gg-back-no"  style="padding:9px 22px;border-radius:8px;border:1px solid #334155;background:#15202b;color:#e2e8f0;cursor:pointer;font:13px system-ui">继续战斗</button>
+          <button id="gg-back-yes" style="padding:9px 22px;border-radius:8px;border:none;background:#dc2626;color:#fff;cursor:pointer;font:13px system-ui;font-weight:600">确认返回</button>
+        </div>
+      </div>`;
+      document.body.appendChild(ov);
+      ov.querySelector('#gg-back-no')?.addEventListener('click', () => ov.remove());
+      ov.querySelector('#gg-back-yes')?.addEventListener('click', () => { ov.remove(); showLobby(); });
+      ov.addEventListener('click', (e) => { if (e.target === ov) ov.remove(); }); // 点遮罩关闭
+    };
     const sndBtn = mkBtn(isSfxOn() ? '🔊 音效' : '🔇 静音'); // 战斗音效开关（owner 2026-06-21）
     sndBtn.onclick = () => { const on = toggleSfx(); sndBtn.textContent = on ? '🔊 音效' : '🔇 静音'; if (on) playSfx('select'); };
-    const bar = el('div', 'display:flex;gap:10px;align-items:center;max-width:1340px;flex-wrap:wrap;justify-content:center');
+    const bar = el('div', 'display:flex;gap:10px;align-items:center;max-width:1340px;flex-wrap:wrap;justify-content:center;padding:6px 0');
     bar.append(label, back, sndBtn);
-    root.append(stage, bar);
+    root.append(bar, stage); // bar 顶部状态栏，stage 在下方
 
     // 揭晓前完整编排（与旧路 + 测试共用 prepareArmies）→ 折成回合制扑克兵牌库（lane 由玩家放牌时自选·非预派）。
     const { a, b } = prepareArmies({ formation, deckBias: myBias(effectiveDeckFavors(save.deck, save.inlays, save.dizhiOwned)), tiangangs: save.tiangangs, planets: save.planets, interventions, enemyForm: aiForm, enemyBias, boss });
