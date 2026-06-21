@@ -40,7 +40,7 @@ describe('Game G · 天罡回合制接搁浅维度（morale/stamina/draw/siege·
     const b = initTurnBattle({ seed: 5 }); b.a.tengangA = { ...NO_TENGANG, clashElixir: 1 }; b.a.mana = 0;
     b.lanes[0].a = [unit('a0', '9', 4)]; b.lanes[0].b = [unit('b0', '9', 5)];
     endTurn(b); endTurn(b); // 行动阶段一场遭遇 → 进下一轮我方放置
-    expect(b.a.mana).toBe(2.5); // 战潮返 1 + 新一轮放置回合 +1.5（无战潮则只 1.5·此处验返还）
+    expect(b.a.mana).toBe(2); // 战潮返 1 + 新一轮放置回合 +1（无战潮则只 1·此处验返还）
   });
 
   it('川流(onPlay)：放牌后免费补抽 1 张', () => {

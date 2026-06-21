@@ -25,9 +25,10 @@ describe('Game G · turn-combat（doc24 单机回合制 · A0 重构）', () => 
 
   it('抽牌：花召唤源泉进手牌；召唤源泉不够停', () => {
     const b = initTurnBattle({ seed: 1, a: { pokerDeck: [poker('p0', '7'), poker('p1', '8')] } });
+    b.a.mana = 1; // 强制只剩 1 点：抽一张后 mana=0 → 第二次抽失败
     expect(drawCard(b, 'a', 'poker')).toBe(true);
     expect(b.a.hand.length).toBe(1); expect(b.a.mana).toBe(0); expect(b.actionTaken).toBe('draw');
-    expect(drawCard(b, 'a', 'poker')).toBe(false); // 召唤源泉 0 → 停
+    expect(drawCard(b, 'a', 'poker')).toBe(false); // mana=0 → 源泉不足停
     expect(b.a.hand.length).toBe(1);
   });
 
@@ -95,7 +96,7 @@ describe('Game G · turn-combat（doc24 单机回合制 · A0 重构）', () => 
     const b = initTurnBattle({ seed: 1 });
     b.lanes[0].a.push(unit('a0', '7', A_DEPLOY_SLOT)); // 我方兵在部署格
     endTurn(b); // 我方结束放置 → 敌方放置回合（不推进·无战斗）
-    expect(b.active).toBe('b'); expect(b.b.mana).toBe(1.5); // 切敌方·后手 +1.5 源泉
+    expect(b.active).toBe('b'); expect(b.b.mana).toBe(1); // 切敌方·后手 +1 源泉
     expect(b.lanes[0].a[0].slot).toBe(A_DEPLOY_SLOT); // 放置回合兵未动
     expect(b.turn).toBe(1); // 尚未进下一轮
     endTurn(b); // 敌方结束放置 → 行动阶段：两军同时推进
@@ -189,6 +190,6 @@ describe('Game G · turn-combat（doc24 单机回合制 · A0 重构）', () => 
     expect(b.lastClash?.aWins).toBe(true);
     expect(b.lanes[0].a.length).toBe(0);                       // 胜者下场
     expect(b.a.pokerDeck.some((c) => c.id === 'w')).toBe(true); // 回牌库·可再抽
-    expect(b.a.mana).toBe(3 / 2 + 1.5);                        // 返还一半(1.5) + 新一轮放置(+1.5) = 3
+    expect(b.a.mana).toBe(3 / 2 + 1);                           // 强制0 + 返还1.5 + 新回合+1 = 2.5
   });
 });
