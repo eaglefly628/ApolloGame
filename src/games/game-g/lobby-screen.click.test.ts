@@ -307,7 +307,7 @@ describe('Game G · lobby-screen mountLobby 点击交互（DOM · happy-dom）',
     it('地支碎片定向兑换：碎片够 → onCraftDizhi 以 branch 调用 + 演出（owner 2026-06-21）', () => {
       const host = document.createElement('div');
       const onCraftDizhi = vi.fn(() => true);
-      mountLobby(host, { getView: () => makeView({ dizhiShards: 50, dizhiOwned: {} }), onPlay: vi.fn(), onCraftDizhi });
+      mountLobby(host, { getView: () => makeView({ dizhiShards: 50, dizhiBag: {} }), onPlay: vi.fn(), onCraftDizhi });
       click(host.querySelector('[data-act="shop"]'));
       const craft = host.querySelector('[data-act="craftDizhi"]') as HTMLElement;
       expect(craft, '有地支可兑换').not.toBeNull();
@@ -598,38 +598,39 @@ describe('Game G · lobby-screen mountLobby 点击交互（DOM · happy-dom）',
 
   // ── 改造坊·地支附魔台 ──
   describe('地支附魔台（选牌→镶地支→+favor）', () => {
-    const enView = (over: Partial<LobbyView> = {}): LobbyView => makeView({ dizhiOwned: { 子: 2 }, inlays: {}, ...over });
+    // 地支消耗品模型（owner 2026-06-21）：卡包 {子:[铜,银,金]}；镶入消耗一张、按 (生肖:档位) 选。
+    const enView = (over: Partial<LobbyView> = {}): LobbyView => makeView({ dizhiBag: { 子: [2, 0, 0] }, inlays: {}, ...over });
 
-    it('改造坊→附魔台：选一张牌 → 出镶嵌槽 + 已拥有地支可镶', () => {
+    it('改造坊→附魔台：选一张牌 → 出镶嵌槽 + 卡包里的地支可镶（按档位）', () => {
       const host = document.createElement('div');
       mountLobby(host, { getView: () => enView(), onPlay: vi.fn() });
       click(navBtn(host, '改造坊'));
       expect(host.innerHTML).toContain('生肖镶嵌'); // 占位改造台已替换为真·地支生肖镶嵌附魔
       click(host.querySelector('[data-act="craftSel"][data-k="0"]')!); // 选第一张牌
       expect(host.querySelector('.ench-slots')).not.toBeNull(); // 镶嵌槽出现
-      expect(host.querySelector('[data-act="inlay"][data-k="0:子"]')).not.toBeNull(); // 已拥有的子鼠可镶
+      expect(host.querySelector('[data-act="inlay"][data-k="0:子:1"]')).not.toBeNull(); // 卡包子鼠·铜(档1)可镶
     });
 
-    it('镶入地支 → onInlay(idx, branch) 调用', () => {
+    it('镶入地支 → onInlay(idx, branch, tier) 调用（消耗一张）', () => {
       const onInlay = vi.fn(() => true);
       const host = document.createElement('div');
       mountLobby(host, { getView: () => enView(), onPlay: vi.fn(), onInlay });
       click(navBtn(host, '改造坊'));
       click(host.querySelector('[data-act="craftSel"][data-k="0"]')!);
-      click(host.querySelector('[data-act="inlay"][data-k="0:子"]')!);
-      expect(onInlay).toHaveBeenCalledWith('0', '子');
+      click(host.querySelector('[data-act="inlay"][data-k="0:子:1"]')!);
+      expect(onInlay).toHaveBeenCalledWith('0', '子', 1);
     });
 
-    it('已镶的槽显示 ✕ 卸下 → onRemoveInlay(idx, branch)', () => {
+    it('已镶的槽显示 ✕ 卸下 → onRemoveInlay(idx, slot)（永久消耗不退）', () => {
       const onRemoveInlay = vi.fn();
       const host = document.createElement('div');
-      mountLobby(host, { getView: () => enView({ inlays: { '0': ['子'] } }), onPlay: vi.fn(), onRemoveInlay });
+      mountLobby(host, { getView: () => enView({ inlays: { '0': [{ b: '子', t: 1 }] } }), onPlay: vi.fn(), onRemoveInlay });
       click(navBtn(host, '改造坊'));
       click(host.querySelector('[data-act="craftSel"][data-k="0"]')!);
-      const rm = host.querySelector('[data-act="removeInlay"][data-k="0:子"]')!;
+      const rm = host.querySelector('[data-act="removeInlay"][data-k="0:0"]')!;
       expect(rm).not.toBeNull();
       click(rm);
-      expect(onRemoveInlay).toHaveBeenCalledWith('0', '子');
+      expect(onRemoveInlay).toHaveBeenCalledWith('0', 0);
     });
   });
 

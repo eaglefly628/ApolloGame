@@ -1,6 +1,6 @@
 import { mountBattle, type BattleView, type BattleUnit, type BattleLane, type BattleLever, type HandCardView, type TengangCardView, type BattleActions, type ClashView, type BattleFx } from './battle-screen.js';
 import { mountLobby, type LobbyView, type LobbyShopItem } from './lobby-screen.js';
-import { prepareArmies, quartermasterEnergy, FORMATION_PRESETS, PRESET_NAMES, LEVER_CATALOG, LEVER_START, battleSpec, RUN_BATTLES, RUN_LIVES, BETWEEN_BUFFS, applyBuff, tiangangKeyBuffs, BOSS_ROSTER, bossFor, GAME_G_TIANGANGS, TIANGANG_BY_ID, ARCHETYPES, detectArchetype, archetypeMatchup, activeArchetype, pickAiFormation, GAME_G_PLANETS, GAME_G_FOILS, RECHARGE_PACKS, rechargeTotal, DIAMOND_EXCHANGES, DIZHI_SHARD_PACKS, RECHARGE_PASSWORD, GACHA, gachaCost, DIZHI_MAX_TIER, DIZHI_ZODIACS, INLAY_MAX, effectiveDeckFavors, POKER_PICK_SIZE, isPoolCardId, autoBuildPokerPicks, cardFavorIndex, rankOfCardId, deployCost, isHeroOwned, heroCardByName, effectiveLives, effectiveLeverCap, effectiveLeverRegen, campaignFor, unlockStageOf, type Formation, type Intervention, type LeverKind, type RunBuff, type ArmyCard } from './index.js';
+import { prepareArmies, quartermasterEnergy, FORMATION_PRESETS, PRESET_NAMES, LEVER_CATALOG, LEVER_START, battleSpec, RUN_BATTLES, RUN_LIVES, BETWEEN_BUFFS, applyBuff, tiangangKeyBuffs, BOSS_ROSTER, bossFor, GAME_G_TIANGANGS, TIANGANG_BY_ID, ARCHETYPES, detectArchetype, archetypeMatchup, activeArchetype, pickAiFormation, GAME_G_PLANETS, GAME_G_FOILS, RECHARGE_PACKS, rechargeTotal, DIAMOND_EXCHANGES, DIZHI_SHARD_PACKS, RECHARGE_PASSWORD, GACHA, gachaCost, DIZHI_MAX_TIER, DIZHI_TIER_NM, DIZHI_TIER_CAP, dizhiMerge, dizhiTotal, dizhiTopTier, DIZHI_ZODIACS, INLAY_MAX, effectiveDeckFavors, POKER_PICK_SIZE, isPoolCardId, autoBuildPokerPicks, cardFavorIndex, rankOfCardId, deployCost, isHeroOwned, heroCardByName, effectiveLives, effectiveLeverCap, effectiveLeverRegen, campaignFor, unlockStageOf, type Formation, type Intervention, type LeverKind, type RunBuff, type ArmyCard, type InlayEntry } from './index.js';
 import { initLiveBattle, stepLiveBattle, liveActive, migrateRear, NO_TENGANG, LANE_LEN, HOME_BLOOD, type LiveBattle, type DeployCmd, type ClashEvent, type TengangFx } from './live-combat.js';
 import { initTurnBattle, drawCard, deployUnit, castTengang, discardCard, endTurn, aiTakeTurn, toggleGate, GATES, OPENING_HAND, DRAW_COST, type PokerCard, type TengangHandCard } from './turn-combat.js';
 import { mountTurnBattle, buildTurnBattleView, type TurnBattleView, type TurnBattleActions, type TurnClashView, type TurnClashCardView, type TurnShaView } from './turn-battle-screen.js';
@@ -65,8 +65,8 @@ interface Save {
   guideStep: number; // 新手引导进度（doc28 §二）：0..N 进行中 · -1 完成/跳过
   seen: Record<string, boolean>; // 引导「看过不再弹」标记集（coachmark·seen_combat_* 等·owner 2026-06-21）
   tiangangShards: number; // 天罡碎片（抽卡重复转化 → 定向兑换指定天罡·保底 doc25 §四）
-  dizhiOwned: Record<string, number>; // 已拥有地支生肖 → 档位（1铜/2银/3金 · 抽卡收集·升档）
-  inlays: Record<string, string[]>; // 地支附魔：牌位索引(0-51) → 镶入生肖 branch[]（≤INLAY_MAX·乙简版 +favor）
+  dizhiBag: Record<string, number[]>; // 地支卡包（消耗品库存·owner 2026-06-21）：生肖 branch → 各档活化数 [铜,银,金]（满3自动升档·钻/史待开放）
+  inlays: Record<string, InlayEntry[]>; // 地支附魔：牌位索引(0-51) → 已镶条目 {b,t}[]（≤INLAY_MAX·档位镶入时锁定·永久消耗不退）
   campaignMax: number; // 已抵达的最高关（持久·天罡解锁门槛 = unlockStage ≤ campaignMax）
   stage: number;
   deck: number[]; // 我方 52 张的 favor（0..95）
@@ -96,7 +96,7 @@ const newDeckId = (): string => `deck_${Date.now().toString(36)}_${Math.floor(Ma
 
 const rollBoss = (): number => Math.floor(Math.random() * BOSS_ROSTER.length);
 export function freshSave(): Save {
-  return { materials: 120, diamond: 6, dizhiShards: 30, rechargeCount: 0, seenIntro: false, guideStep: 0, seen: {}, tiangangShards: 0, dizhiOwned: { 子: 1, 丑: 1, 寅: 1, 卯: 1 }, inlays: {}, campaignMax: 1, stage: 1, deck: Array.from({ length: DECK_SIZE }, (_, i) => 44 + (i % 10) * 2), lastOfficers: [10, 10, 10], leverEnergy: LEVER_START, lives: RUN_LIVES, bossIdx: rollBoss(), ownedTiangangs: GAME_G_TIANGANGS.filter((t) => unlockStageOf(t.id) <= 1).map((t) => t.id), tiangangDecks: [{ id: 'deck1', name: '牌组 1', cards: [], pokerPicks: [] }, { id: 'deck2', name: '牌组 2', cards: [], pokerPicks: [] }, { id: 'deck3', name: '牌组 3', cards: [], pokerPicks: [] }, { id: 'deck4', name: '牌组 4', cards: [], pokerPicks: [] }], activeDeckId: 'deck1', tiangangs: [], planets: {}, foils: [], fortune: { date: '', rolls: 0, keptVal: null } }; // 44..62 起步；金币 120；钻石送 6（首充免密）；开局默认给 4 个天罡牌组让玩家去组（owner 2026-06-21）；pokerPicks 空=自动构筑一副；新存档播开场故事+引导
+  return { materials: 120, diamond: 6, dizhiShards: 30, rechargeCount: 0, seenIntro: false, guideStep: 0, seen: {}, tiangangShards: 0, dizhiBag: { 子: [2, 0, 0], 丑: [1, 0, 0], 寅: [1, 0, 0], 卯: [1, 0, 0] }, inlays: {}, campaignMax: 1, stage: 1, deck: Array.from({ length: DECK_SIZE }, (_, i) => 44 + (i % 10) * 2), lastOfficers: [10, 10, 10], leverEnergy: LEVER_START, lives: RUN_LIVES, bossIdx: rollBoss(), ownedTiangangs: GAME_G_TIANGANGS.filter((t) => unlockStageOf(t.id) <= 1).map((t) => t.id), tiangangDecks: [{ id: 'deck1', name: '牌组 1', cards: [], pokerPicks: [] }, { id: 'deck2', name: '牌组 2', cards: [], pokerPicks: [] }, { id: 'deck3', name: '牌组 3', cards: [], pokerPicks: [] }, { id: 'deck4', name: '牌组 4', cards: [], pokerPicks: [] }], activeDeckId: 'deck1', tiangangs: [], planets: {}, foils: [], fortune: { date: '', rolls: 0, keptVal: null } }; // 44..62 起步；金币 120；钻石送 6（首充免密）；开局默认给 4 个天罡牌组让玩家去组（owner 2026-06-21）；pokerPicks 空=自动构筑一副；新存档播开场故事+引导
 }
 function loadSave(): Save {
   try {
@@ -113,8 +113,17 @@ function loadSave(): Save {
         if (typeof s.seenIntro !== 'boolean') s.seenIntro = true; // 老存档视为已看过开场（不打扰老玩家）
         if (typeof s.guideStep !== 'number') s.guideStep = -1; // 老存档引导视为已完成
         if (typeof s.tiangangShards !== 'number') s.tiangangShards = 0; // 天罡碎片迁移
-        if (typeof s.dizhiOwned !== 'object' || s.dizhiOwned === null) s.dizhiOwned = {}; // 地支收集迁移
-        if (typeof s.inlays !== 'object' || s.inlays === null) s.inlays = {}; // 地支附魔迁移
+        // 地支消耗品迁移（owner 2026-06-21）：老存档 dizhiOwned{branch:tier} → dizhiBag{branch:[铜,银,金]}（该档置 1 张）。
+        const legacyDz = s as unknown as { dizhiOwned?: Record<string, number> };
+        if (typeof s.dizhiBag !== 'object' || s.dizhiBag === null) {
+          s.dizhiBag = {};
+          const od = legacyDz.dizhiOwned;
+          if (od && typeof od === 'object') for (const b in od) { const t = od[b]; if (t >= 1 && t <= 3) { const arr = [0, 0, 0]; arr[t - 1] = 1; s.dizhiBag[b] = arr; } }
+          delete legacyDz.dizhiOwned;
+        }
+        // 地支附魔迁移：老 inlays{idx:branch[]} → {idx:{b,t}[]}（档位取老 dizhiOwned 该生肖档·缺则铜）。
+        if (typeof s.inlays !== 'object' || s.inlays === null) s.inlays = {};
+        else { const od = legacyDz.dizhiOwned ?? {}; for (const k in s.inlays) { const v = s.inlays[k] as unknown; if (Array.isArray(v) && v.length && typeof v[0] === 'string') s.inlays[k] = (v as unknown as string[]).map((b) => ({ b, t: od[b] ?? 1 })); } }
         if (typeof s.seen !== 'object' || s.seen === null) s.seen = {}; // 引导 seen 标记迁移（coachmark）
         if (typeof s.campaignMax !== 'number') s.campaignMax = Math.max(1, s.stage || 1);
         // 重命名(joker→天罡)迁移 + owner 拍「清空老存档战库」：老存档键为 jokers/ownedJokers → 战库(tiangangs)清空、收藏(ownedTiangangs)沿用旧 ownedJokers；丢弃遗留键。
@@ -384,7 +393,7 @@ export function mount(container: HTMLElement): () => void {
     root.appendChild(host);
     // 大厅视图：真实存档（材料/能量/牌组 favor/天罡/星球/闪艺/战役进度/流派↔Boss 克制）→ 喂忠实港渲染器。未接网项渲染器内诚实占位。
     const buildLobbyView = (): LobbyView => {
-      const effDeck = effectiveDeckFavors(save.deck, save.inlays, save.dizhiOwned); // 地支附魔后的有效 favor（展示+战斗一致）
+      const effDeck = effectiveDeckFavors(save.deck, save.inlays); // 地支附魔后的有效 favor（展示+战斗一致·档位锁定在 inlays 条目里）
       const boss = bossFor(save.bossIdx);
       const arch = detectArchetype(save.tiangangs);
       const activated = activeArchetype(save.tiangangs);
@@ -406,7 +415,7 @@ export function mount(container: HTMLElement): () => void {
       const heart = save.lives > 0 ? '❤'.repeat(save.lives) : '—';
       resetFortuneIfNewDay(save); // 跨日则清零今日卦象（不落盘·读时纠正即可）
       return {
-        skin: lobbySkin, coin: save.materials, diamond: save.diamond, dizhiShards: save.dizhiShards, tiangangShards: save.tiangangShards, dizhiOwned: save.dizhiOwned, rechargeNeedsPassword: save.rechargeCount >= 1, campaignMax: save.campaignMax, firstLaunch: !save.seenIntro, guideStep: save.guideStep, energy: save.leverEnergy, energyMax: cap, foilCount: save.foils.length,
+        skin: lobbySkin, coin: save.materials, diamond: save.diamond, dizhiShards: save.dizhiShards, tiangangShards: save.tiangangShards, dizhiBag: save.dizhiBag, rechargeNeedsPassword: save.rechargeCount >= 1, campaignMax: save.campaignMax, firstLaunch: !save.seenIntro, guideStep: save.guideStep, energy: save.leverEnergy, energyMax: cap, foilCount: save.foils.length,
         name: '不翻就赢_07', mainCard: '黑桃A「掷命尖兵」', rankText: `战役 第 ${save.campaignMax} 关 / 共 52`,
         stageLabel: `第 ${save.stage} 关 · 全 52 役 · 终局 Boss【${boss.name}】`,
         archLine, bossLine: `${boss.persona} · 流派【${bossArchName}】— 据其针对布阵`,
@@ -461,10 +470,20 @@ export function mount(container: HTMLElement): () => void {
         const res = [];
         for (let i = 0; i < count; i++) {
           const z = DIZHI_ZODIACS[Math.floor(Math.random() * DIZHI_ZODIACS.length)];
-          const cur = save.dizhiOwned[z.branch] ?? 0;
-          if (cur === 0) { save.dizhiOwned[z.branch] = 1; res.push({ kind: 'dizhi' as const, id: z.branch, name: `${z.animal}·铜`, outcome: 'new' as const, detail: '新生肖 · 铜' }); }
-          else if (cur < DIZHI_MAX_TIER) { save.dizhiOwned[z.branch] = cur + 1; res.push({ kind: 'dizhi' as const, id: z.branch, name: `${z.animal}·${tierName[cur + 1]}`, outcome: 'dizhi-up' as const, detail: `升档 → ${tierName[cur + 1]}` }); }
-          else { save.dizhiShards += GACHA.dizhi.maxDupShards; res.push({ kind: 'dizhi' as const, id: z.branch, name: `${z.animal}·金`, outcome: 'dizhi-shard' as const, detail: `满金 · +${GACHA.dizhi.maxDupShards} 地支碎片` }); }
+          // 抽地支 = 进卡包一张「铜」活化 → 自动三合升档（满3铜→1银→1金；封顶金·钻待开放·满金溢出转碎片）。
+          const before = save.dizhiBag[z.branch] ?? [0, 0, 0];
+          const wasNew = dizhiTotal(before) === 0;
+          const merged = dizhiMerge([(before[0] ?? 0) + 1, before[1] ?? 0, before[2] ?? 0]);
+          const topBefore = dizhiTopTier(before), topNow = dizhiTopTier(merged);
+          if (topBefore >= DIZHI_TIER_CAP) {
+            // 已满金：不再堆叠，溢出转地支碎片（避免无限堆金）。
+            save.dizhiShards += GACHA.dizhi.maxDupShards;
+            res.push({ kind: 'dizhi' as const, id: z.branch, name: `${z.animal}·金`, outcome: 'dizhi-shard' as const, detail: `${z.animal} 满金 · +${GACHA.dizhi.maxDupShards} 地支碎片` });
+          } else {
+            save.dizhiBag[z.branch] = merged;
+            const outcome: 'new' | 'dizhi-up' = wasNew ? 'new' : 'dizhi-up';
+            res.push({ kind: 'dizhi' as const, id: z.branch, name: `${z.animal}·${DIZHI_TIER_NM[topNow]}`, outcome, detail: wasNew ? `新生肖 ${z.animal} · 铜 ×1` : topNow > topBefore ? `${z.animal} 三合升档 → ${DIZHI_TIER_NM[topNow]}` : `${z.animal} 卡包 +1（${DIZHI_TIER_NM[topNow]} ×${dizhiTotal(merged)}）` });
+          }
         }
         persist(save); return res;
       },
@@ -476,16 +495,28 @@ export function mount(container: HTMLElement): () => void {
         const d = activeDeck(save); if (d && d.cards.length < TIANGANG_DECK_SIZE) { d.cards.push(id); syncTiangangs(save); }
         persist(save); return true;
       },
-      // 地支碎片定向兑换（owner 2026-06-21）：花地支碎片换/升指定生肖（铜→银→金·封顶满金）。
+      // 地支碎片定向兑换（owner 2026-06-21）：花地支碎片 → 卡包 +1 铜活化 → 自动三合升档（满金封顶·钻待开放）。
       onCraftDizhi: (branch) => {
-        const cur = save.dizhiOwned[branch] ?? 0; if (cur >= DIZHI_MAX_TIER) return false;
+        const before = save.dizhiBag[branch] ?? [0, 0, 0];
+        if (dizhiTopTier(before) >= DIZHI_TIER_CAP && (before[DIZHI_TIER_CAP - 1] ?? 0) >= 3) return false; // 满金且无法再合：不收碎片
         if (save.dizhiShards < GACHA.dizhi.craftShards) return false;
-        save.dizhiShards -= GACHA.dizhi.craftShards; save.dizhiOwned[branch] = cur + 1;
+        save.dizhiShards -= GACHA.dizhi.craftShards;
+        save.dizhiBag[branch] = dizhiMerge([(before[0] ?? 0) + 1, before[1] ?? 0, before[2] ?? 0]);
         persist(save); return true;
       },
-      // 地支附魔（乙简版）：把已拥有的生肖镶进某牌位（≤INLAY_MAX 槽）→ +favor。idx=牌位索引串。
-      onInlay: (idx, branch) => { if ((save.dizhiOwned[branch] ?? 0) < 1) return false; const cur = save.inlays[idx] ?? []; if (cur.length >= INLAY_MAX) return false; save.inlays[idx] = [...cur, branch]; persist(save); return true; },
-      onRemoveInlay: (idx, branch) => { const cur = save.inlays[idx]; if (!cur) return; const i = cur.indexOf(branch); if (i < 0) return; cur.splice(i, 1); if (cur.length === 0) delete save.inlays[idx]; persist(save); },
+      // 地支附魔（owner 2026-06-21 消耗品）：把卡包里某生肖某档的一张活化镶进牌位（≤INLAY_MAX 槽）→ +favor。
+      // **消耗**：卡包该档 −1（永久·镶入即扣）；条目锁定 {b,t}（favor 固定此档）。tier 缺省取该生肖最高在持档。
+      onInlay: (idx, branch, tier) => {
+        const bag = save.dizhiBag[branch]; if (!bag) return false;
+        const t = (tier && tier >= 1 && tier <= DIZHI_TIER_CAP) ? tier : dizhiTopTier(bag);
+        if (t < 1 || (bag[t - 1] ?? 0) < 1) return false; // 该档无在持活化
+        const cur = save.inlays[idx] ?? []; if (cur.length >= INLAY_MAX) return false;
+        bag[t - 1] -= 1; // 消耗一张（不退）
+        save.inlays[idx] = [...cur, { b: branch, t }];
+        persist(save); return true;
+      },
+      // 卸下某牌位第 slot 个镶嵌条目（永久消耗不退·只腾槽，不回卡包）。
+      onRemoveInlay: (idx, slot) => { const cur = save.inlays[idx]; if (!cur || slot < 0 || slot >= cur.length) return; cur.splice(slot, 1); if (cur.length === 0) delete save.inlays[idx]; persist(save); },
       onBuyPlanet: (id) => { const p = GAME_G_PLANETS.find((x) => x.id === id); if (!p) return; buy(p.cost, () => { save.planets[id] = (save.planets[id] ?? 0) + 1; }); },
       onBuyFoil: (id) => { const f = GAME_G_FOILS.find((x) => x.id === id); if (!f || save.foils.includes(id)) return; buy(f.cost, () => save.foils.push(id)); },
       // 选入/踢出**出战牌组**（需已拥有；每组上限 TIANGANG_DECK_SIZE）；改完同步 save.tiangangs（契约②）
@@ -495,7 +526,7 @@ export function mount(container: HTMLElement): () => void {
       onNewDeck: () => { if (save.tiangangDecks.length >= MAX_TIANGANG_DECKS) return; const id = newDeckId(); save.tiangangDecks.push({ id, name: `牌组 ${save.tiangangDecks.length + 1}`, cards: [], pokerPicks: [] }); save.activeDeckId = id; syncTiangangs(save); persist(save); },
       // 出战扑克牌组构筑（乙1/乙3·契约A）：点牌入/出（≤16）/ 一键自动构筑（确定性·铺曲线+偏好已养成）/ 清空 → 写 activeDeck.pokerPicks
       onTogglePick: (cardId) => { const d = activeDeck(save); if (!d) return; if (d.pokerPicks.includes(cardId)) d.pokerPicks = d.pokerPicks.filter((c) => c !== cardId); else if (d.pokerPicks.length < POKER_PICK_SIZE && isPoolCardId(cardId)) d.pokerPicks.push(cardId); persist(save); },
-      onAutoBuildDeck: () => { const d = activeDeck(save); if (!d) return; d.pokerPicks = autoBuildPokerPicks({ favors: effectiveDeckFavors(save.deck, save.inlays, save.dizhiOwned), isOwned: isHeroOwned }); persist(save); },
+      onAutoBuildDeck: () => { const d = activeDeck(save); if (!d) return; d.pokerPicks = autoBuildPokerPicks({ favors: effectiveDeckFavors(save.deck, save.inlays), isOwned: isHeroOwned }); persist(save); },
       onClearPicks: () => { const d = activeDeck(save); if (!d) return; d.pokerPicks = []; persist(save); },
       // 一键配置天罡（owner 2026-06-21）：从已拥有天罡按牌力/胜率影响排序自动凑满这套（≤TIANGANG_DECK_SIZE）。
       onAutoBuildTiangang: () => { const d = activeDeck(save); if (!d) return; const owned = [...save.ownedTiangangs].sort((a, b) => { const ja = TIANGANG_BY_ID.get(a), jb = TIANGANG_BY_ID.get(b); return (jb?.power ?? 0) - (ja?.power ?? 0) || (jb?.phat ?? 0) - (ja?.phat ?? 0) || a.localeCompare(b); }); d.cards = owned.slice(0, TIANGANG_DECK_SIZE); syncTiangangs(save); persist(save); },
@@ -567,10 +598,10 @@ export function mount(container: HTMLElement): () => void {
     // 玩家牌库（契约A·甲读·owner 2026-06-21 #16：52 牌组是唯一真相·16 张按 ID 带 favor+地支附魔进场）：
     //   = 你配的 16 张 pokerPicks，每张挂自己的 effectiveDeckFavors(base+附魔)→战力；空 picks=自动构筑一副；
     //   主将=favor 最高那张(留士气机制)。Boss(b) 仍走 prepareArmies 泛化 army。lane 由放牌时自选·非预派。
-    const { b } = prepareArmies({ formation, deckBias: myBias(effectiveDeckFavors(save.deck, save.inlays, save.dizhiOwned)), tiangangs: save.tiangangs, planets: save.planets, interventions, enemyForm: aiForm, enemyBias, boss });
+    const { b } = prepareArmies({ formation, deckBias: myBias(effectiveDeckFavors(save.deck, save.inlays)), tiangangs: save.tiangangs, planets: save.planets, interventions, enemyForm: aiForm, enemyBias, boss });
     const seed = Math.floor(Math.random() * 1e9);
     const toPoker = (c: ArmyCard): PokerCard => ({ kind: 'poker', id: c.id, rank: cardRank(c), suit: c.suit, general: c.general, buff: Math.round(favorToP(c.favor) - cardPoints(cardRank(c))), cost: deployCost(cardRank(c)) });
-    const effFav = effectiveDeckFavors(save.deck, save.inlays, save.dizhiOwned);
+    const effFav = effectiveDeckFavors(save.deck, save.inlays);
     const myPicks = activeDeck(save).pokerPicks.length ? activeDeck(save).pokerPicks : autoBuildPokerPicks({ favors: effFav, isOwned: isHeroOwned });
     const myDeck = buildPickDeck(myPicks, effFav); // 你的 16 张 pick（含逐张地支附魔）→ 战斗牌库
     // loadoutCap（doc27 §四·难度档）：玩家本关天罡上限（新手区 2→3）→ 截断出战天罡。
@@ -840,7 +871,7 @@ export function mount(container: HTMLElement): () => void {
     root.append(stage, bar);
 
     // 揭晓前完整编排（融天罡→玩家干预→Boss 起手→士气倍率+结局联动），与测试共用 prepareArmies、杜绝漂移；均 outcome-first。
-    const { a, b } = prepareArmies({ formation, deckBias: myBias(effectiveDeckFavors(save.deck, save.inlays, save.dizhiOwned)), tiangangs: save.tiangangs, planets: save.planets, interventions, enemyForm: aiForm, enemyBias, boss });
+    const { a, b } = prepareArmies({ formation, deckBias: myBias(effectiveDeckFavors(save.deck, save.inlays)), tiangangs: save.tiangangs, planets: save.planets, interventions, enemyForm: aiForm, enemyBias, boss });
     const oppPersona = boss ? boss.persona : '伺机而动 · 见招拆招';
     const oppSuit = suitOf(aiName);
     // 布局阶段 → 实时出牌（doc18 §10）：每路 base 打底（共 9）tick1 预铺，余牌洗成抽牌堆，起手摸 OPENING_HAND；

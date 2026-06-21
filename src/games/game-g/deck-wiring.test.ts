@@ -10,7 +10,7 @@ describe('Game G · 牌组数据打通（契约A甲读 · 地支附魔按 ID 进
   it('buildPickDeck：战斗牌库=你配的那几张(id/rank/suit)，且附魔真抬高其战力', () => {
     const base = Array.from({ length: 52 }, () => 50); // 基线 favor 全 50
     const idx = cardFavorIndex('AS'); // 黑桃A 的 favor/inlays 索引
-    const effFav = effectiveDeckFavors(base, { [idx]: ['子', '丑'] }, { 子: 3, 丑: 3 }); // 给黑桃A 镶两个金生肖
+    const effFav = effectiveDeckFavors(base, { [idx]: [{ b: '子', t: 3 }, { b: '丑', t: 3 }] }); // 给黑桃A 镶两个金生肖
     expect(effFav[idx]).toBeGreaterThan(50); // 附魔确实抬高了该卡 effective favor
 
     const built = buildPickDeck(['AS', '2C', '10D'], effFav);
@@ -24,7 +24,7 @@ describe('Game G · 牌组数据打通（契约A甲读 · 地支附魔按 ID 进
 
   it('主将 = favor 最高那张（保留士气机制）· 且唯一', () => {
     const base = Array.from({ length: 52 }, () => 50);
-    const effFav = effectiveDeckFavors(base, { [cardFavorIndex('KS')]: ['子'] }, { 子: 3 }); // KS 被附魔→最高
+    const effFav = effectiveDeckFavors(base, { [cardFavorIndex('KS')]: [{ b: '子', t: 3 }] }); // KS 被附魔→最高
     const built = buildPickDeck(['2C', 'KS', '5D'], effFav);
     expect(built.find((c) => c.general)?.id).toBe('KS');
     expect(built.filter((c) => c.general)).toHaveLength(1);

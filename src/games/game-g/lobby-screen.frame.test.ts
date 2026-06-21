@@ -5,7 +5,7 @@ import { renderLobby, renderLobbyDoc, type LobbyView, type LobbyShopItem } from 
 // 数据接真存档（材料/能量/牌组 favor/天罡牌/地支牌/闪艺/战役进度）；此处喂代表性样例 view。
 const J = (id: string, name: string, cost: number, owned: boolean, buyable: boolean, kind = 'morale'): LobbyShopItem => ({ id, name, sub: `${name} 效果`, cost, owned, buyable, kind });
 const view = (skin: 'onyx' | 'rosy' = 'onyx'): LobbyView => ({
-  skin, coin: 1200, diamond: 18, dizhiShards: 12, tiangangShards: 45, dizhiOwned: { 子: 2, 丑: 1 }, energy: 4, energyMax: 6, foilCount: 1,
+  skin, coin: 1200, diamond: 18, dizhiShards: 12, tiangangShards: 45, dizhiBag: { 子: [2, 1, 0], 丑: [1, 0, 0] }, energy: 4, energyMax: 6, foilCount: 1,
   name: '不翻就赢_07', mainCard: '黑桃A「掷命尖兵」', rankText: '战役 3/5',
   stageLabel: '第 3 战 / 共 5 · 终局 Boss【方块J·诡牌】',
   archLine: '你的流派 <b>将领流</b>（主将士气碾压）　<b style="color:var(--club)">⮞ 克制 Boss</b>',

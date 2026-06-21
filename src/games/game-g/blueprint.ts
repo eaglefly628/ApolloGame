@@ -746,19 +746,35 @@ export function canonSuitPw(suits: string[]): string {
 export const RECHARGE_SUIT_PW = ['♥', '♠']; // 正确密码：红心 + 黑桃
 export const RECHARGE_PASSWORD = canonSuitPw(RECHARGE_SUIT_PW); // 规范化后 = '♠♥'
 
-// 地支附魔（owner 2026-06-20 · 乙简版）：地支生肖镶进扑克牌 → 给那张牌 +favor（铜/银/金 递增）。
-// 每张牌 ≤INLAY_MAX 槽。save.inlays 按「牌位索引(0-51)→镶入生肖 branch[]」记录。连携(三合/六合)留甲契约④。
+// 地支附魔（owner 2026-06-20 · 乙简版 → 2026-06-21 改消耗品模型）：地支生肖镶进扑克牌 → 给那张牌 +favor（铜/银/金 递增）。
+// 地支是**消耗牌**：镶一张少一张（永久消耗·不退）。每张牌 ≤INLAY_MAX 槽。
+// save.inlays 记「牌位索引(0-51) → 已镶条目 {b:生肖 branch, t:档位 1铜/2银/3金}[]」——**档位在镶入时锁定**（消耗的就是那张·favor 固定，不随后续升档变）。连携(三合/六合)留甲契约④。
 export const INLAY_MAX = 3;
-export const DIZHI_INLAY_FAVOR = [0, 4, 8, 14]; // 索引=该生肖档位（1铜/2银/3金）→ +favor
-/** 一张牌镶入若干地支 → 总 +favor（按各生肖已拥有档位）。 */
-export function inlayBonus(branches: string[], dizhiOwned: Record<string, number>): number {
-  return (branches ?? []).reduce((s, b) => s + (DIZHI_INLAY_FAVOR[dizhiOwned[b] ?? 1] ?? 0), 0);
+export const DIZHI_INLAY_FAVOR = [0, 4, 8, 14, 22, 32]; // 索引=档位（1铜/2银/3金 · 4钻/5史 待开放占位）→ +favor
+export const DIZHI_TIER_NM = ['', '铜', '银', '金', '钻', '史']; // 1铜2银3金 · 4钻5史(待开放)
+export const DIZHI_TIER_CAP = 3; // 当前开放到「金(3)」；钻4/史5 待开放（merge 不越过此档）
+export interface InlayEntry { b: string; t: number } // 镶入条目：生肖 branch + 锁定档位
+/** 地支卡包：每生肖按档位计活化数（消耗品库存）。数组 index 0=铜,1=银,2=金（钻/史待开放·不计入）。 */
+export type DizhiBag = Record<string, number[]>;
+/** 三合升档：每满 3 张同档 → 合并成 1 张高一档（铜→银→金；封顶金·钻待开放）。返回规整后的新数组。 */
+export function dizhiMerge(counts: number[]): number[] {
+  const out = counts.slice();
+  for (let t = 0; t < DIZHI_TIER_CAP - 1; t++) { while ((out[t] ?? 0) >= 3) { out[t] -= 3; out[t + 1] = (out[t + 1] ?? 0) + 1; } }
+  return out;
 }
-/** 应用附魔：返回 effective deck favor（base + 各牌位镶嵌加成）。喂 myBias(战斗) 与 牌面展示。 */
-export function effectiveDeckFavors(deck: number[], inlays: Record<string, string[]> | undefined, dizhiOwned: Record<string, number>): number[] {
+/** 卡包某生肖的活化总数（跨档求和）。 */
+export function dizhiTotal(counts: number[] | undefined): number { return (counts ?? []).reduce((s, n) => s + (n || 0), 0); }
+/** 卡包某生肖的最高在持档位（1铜/2银/3金 · 0=无）。 */
+export function dizhiTopTier(counts: number[] | undefined): number { const c = counts ?? []; for (let t = c.length - 1; t >= 0; t--) if ((c[t] ?? 0) > 0) return t + 1; return 0; }
+/** 一张牌镶入若干地支条目 → 总 +favor（各条目按其锁定档位）。 */
+export function inlayBonus(entries: InlayEntry[] | undefined): number {
+  return (entries ?? []).reduce((s, e) => s + (DIZHI_INLAY_FAVOR[e.t] ?? 0), 0);
+}
+/** 应用附魔：返回 effective deck favor（base + 各牌位镶嵌加成）。喂 myBias(战斗) 与 牌面展示——52 牌单一真相。 */
+export function effectiveDeckFavors(deck: number[], inlays: Record<string, InlayEntry[]> | undefined): number[] {
   if (!inlays) return deck;
   const out = deck.slice();
-  for (const k in inlays) { const i = +k; if (i >= 0 && i < out.length) out[i] = clampFavor(out[i] + inlayBonus(inlays[k], dizhiOwned)); }
+  for (const k in inlays) { const i = +k; if (i >= 0 && i < out.length) out[i] = clampFavor(out[i] + inlayBonus(inlays[k])); }
   return out;
 }
 
