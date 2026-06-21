@@ -170,6 +170,16 @@ describe('Game G · lobby-screen mountLobby 点击交互（DOM · happy-dom）',
       click(host.querySelector('[data-act="reset"]'));
       expect(onReset).toHaveBeenCalled();
     });
+
+    it('退出收进设置（owner 2026-06-21·替代右上角浮钮）：点「退出到游戏库」→ onExitGame 调用', () => {
+      const host = document.createElement('div');
+      const onExitGame = vi.fn();
+      mountLobby(host, { getView: makeView, onPlay: vi.fn(), onExitGame });
+      click(host.querySelector('[data-act="settings"]'));
+      expect(host.querySelector('[data-act="exitGame"]')).not.toBeNull(); // 退出项在设置里
+      click(host.querySelector('[data-act="exitGame"]'));
+      expect(onExitGame).toHaveBeenCalled();
+    });
   });
 
   describe('钻石商城（充值 / 兑换）', () => {

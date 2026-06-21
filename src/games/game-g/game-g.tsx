@@ -355,7 +355,7 @@ function playBattleEntrance(root: HTMLElement): void {
   window.setTimeout(clean, 1400); // 兜底：无头/动画被打断也清干净
 }
 
-export function mount(container: HTMLElement): () => void {
+export function mount(container: HTMLElement, shell?: { exit?: () => void }): () => void {
   const save = loadSave();
   let stopLoop: (() => void) | null = null; // live-combat rAF 驱动停手（替掉旧 Engine 时钟）
   let battle: { update: () => void; destroy: () => void } | null = null;
@@ -538,6 +538,7 @@ export function mount(container: HTMLElement): () => void {
       onGuideStep: (n) => { save.guideStep = n; persist(save); },
       onGuideDone: () => { save.seenIntro = true; save.guideStep = -1; persist(save); },
       onReplayIntro: () => { save.seenIntro = false; save.guideStep = 0; save.seen = {}; persist(save); }, // 全量重置引导：开场+大厅引导+战斗 coachmark(seen_*)一起清，从头走一遍（owner 2026-06-21）
+      onExitGame: shell?.exit, // 退出到游戏库（壳层钩子·收进设置菜单·替代右上角浮钮·owner 2026-06-21）
     });
   }
 

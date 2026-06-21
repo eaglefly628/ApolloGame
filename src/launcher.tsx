@@ -621,7 +621,8 @@ function GameRunner({ gameId, onBack }: { gameId: string; onBack: () => void }) 
 
   useEffect(() => {
     if (!containerRef.current) return;
-    const loaders: Record<string, () => Promise<{ mount: (el: HTMLElement) => () => void }>> = {
+    // mount 第二参 host（可选·向后兼容）：把壳层「退出到游戏库」钩子传给游戏，让游戏可把退出收进自己的设置菜单（owner 2026-06-21）。
+    const loaders: Record<string, () => Promise<{ mount: (el: HTMLElement, host?: { exit: () => void }) => () => void }>> = {
       'game-a': () => import('./game-a.js'),
       'game-b': () => import('./game-b.js'),
       'game-c': () => import('./game-c.js'),
@@ -639,7 +640,7 @@ function GameRunner({ gameId, onBack }: { gameId: string; onBack: () => void }) 
     let cleanup: (() => void) | undefined;
     loader().then(mod => {
       if (disposed || !containerRef.current) return;
-      cleanup = mod.mount(containerRef.current);
+      cleanup = mod.mount(containerRef.current, { exit: onBack });
       if (disposed) { cleanup?.(); cleanup = undefined; } // mount 期间又被卸载 → 立即清
     });
     return () => { disposed = true; cleanup?.(); };
@@ -647,12 +648,15 @@ function GameRunner({ gameId, onBack }: { gameId: string; onBack: () => void }) 
 
   return (
     <div style={{ position: 'absolute', inset: 0, background: SHELL.bg0 }}>
-      {/* 全游戏统一的返回浮钮（壳层所有，游戏代码不掺和）—— 视觉基调见 ui/shell-theme.ts */}
-      <div style={{ position: 'absolute', top: 10, right: 10, zIndex: 100 }}>
-        <button onClick={onBack} style={sBackPill()}>
-          ⟵ 返回主界面
-        </button>
-      </div>
+      {/* 全游戏统一的返回浮钮（壳层所有，游戏代码不掺和）—— 视觉基调见 ui/shell-theme.ts。
+          game-g 把退出收进了自己的设置菜单（owner 2026-06-21「去掉右上角返回·收进设置」）→ 不再叠这颗浮钮。 */}
+      {gameId !== 'game-g' && (
+        <div style={{ position: 'absolute', top: 10, right: 10, zIndex: 100 }}>
+          <button onClick={onBack} style={sBackPill()}>
+            ⟵ 返回主界面
+          </button>
+        </div>
+      )}
       <div ref={containerRef} style={{ width: '100%', height: '100%' }} />
     </div>
   );
