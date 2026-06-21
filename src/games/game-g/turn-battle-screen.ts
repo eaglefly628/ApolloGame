@@ -101,11 +101,11 @@ const CSS = `
 const HL = ';outline:3px solid var(--gold);outline-offset:2px;animation:g-hl 1s ease-in-out infinite;position:relative;z-index:55';
 
 // ── 视图（buildTurnBattleView 从 turn-combat 派生喂渲染器；纯数据） ──
-export interface TurnSlotView { hasUnit: boolean; mine: boolean; isBorder: boolean; isClash: boolean; rank?: string; suit?: 's' | 'h' | 'd' | 'c'; power?: number; pts?: number; buff?: number; name?: string; rar?: 'white' | 'green' | 'blue' | 'gold'; zod?: string[]; deploy?: 1 | 2; deployLabel?: boolean; placeable?: boolean; unitId?: string; justMoved?: boolean; fresh?: number; tipDown?: boolean; tipSide?: 'left' | 'right' | ''; forecast?: number; general?: boolean } // placeable=选牌待放可落子(高亮)；fresh=新部署落子序号(g-drop)；tipDown=顶排牌磨砂浮层朝下弹避免被画框裁；tipSide=边缘列浮层往内弹避免溢出左右屏(owner 2026-06-21)；forecast=此前锋若开战的我方胜率0~1(掷命预报·owner 2026-06-21)
+export interface TurnSlotView { hasUnit: boolean; mine: boolean; isBorder: boolean; isClash: boolean; rank?: string; suit?: 's' | 'h' | 'd' | 'c'; power?: number; pts?: number; buff?: number; name?: string; rar?: 'white' | 'green' | 'blue' | 'gold'; zod?: string[]; deploy?: 1 | 2; deployLabel?: boolean; placeable?: boolean; unitId?: string; justMoved?: boolean; fresh?: number; tipDown?: boolean; tipSide?: 'left' | 'right' | ''; forecast?: number; general?: boolean; ench?: [string, number][] } // placeable=选牌待放可落子(高亮)；fresh=新部署落子序号(g-drop)；tipDown=顶排牌磨砂浮层朝下弹避免被画框裁；tipSide=边缘列浮层往内弹避免溢出左右屏(owner 2026-06-21)；forecast=此前锋若开战的我方胜率0~1(掷命预报·owner 2026-06-21)
 export interface TurnLaneView { name: string; slots: TurnSlotView[] }
 // 捷径门箭头（占位·8 门·真视觉待 owner 参考图）。idx=GATES 下标·供 live mount data-gate 钩子。
 export interface TurnGateView { idx: number; open: boolean; side: 'a' | 'b'; fromLane: number; fromSlot: number; toLane: number; toSlot: number }
-export interface TurnHandCardView { kind: 'pawn' | 'gang'; rank?: string; suit?: 's' | 'h' | 'd' | 'c'; name: string; power?: number; pts?: number; buff?: number; cost: number; zod?: string[]; rar: 'white' | 'green' | 'blue' | 'gold'; desc?: string; glyph?: string; selected?: boolean; dealt?: boolean; affordable?: boolean; general?: boolean } // dealt=刚抽到的牌·飞入翻面入场动画(owner 2026-06-21)
+export interface TurnHandCardView { kind: 'pawn' | 'gang'; rank?: string; suit?: 's' | 'h' | 'd' | 'c'; name: string; power?: number; pts?: number; buff?: number; cost: number; zod?: string[]; rar: 'white' | 'green' | 'blue' | 'gold'; desc?: string; glyph?: string; selected?: boolean; dealt?: boolean; affordable?: boolean; general?: boolean; ench?: [string, number][] } // dealt=刚抽到的牌·飞入翻面入场动画(owner 2026-06-21)
 export interface TurnActionView { key: string; glyph: string; label: string; on: boolean; dim: boolean }
 export interface TurnClashCardView { rank: string; suit: 's' | 'h' | 'd' | 'c'; name: string; zod?: string; won: boolean }
 export interface TurnClashView { laneName: string; mine: TurnClashCardView; foe: TurnClashCardView; oddsMine: number; rollPct: number; bonusMine: [string, number][]; bonusFoe: [string, number][]; pEffMine?: number; pEffFoe?: number; extras?: string[] }
@@ -281,7 +281,7 @@ function slotCell(s: TurnSlotView): string {
       + `<div style="${st({ position: 'absolute', bottom: '5px', left: '50%', transform: 'translateX(-50%)', fontFamily: 'var(--fh)', fontWeight: 700, fontSize: '10px', letterSpacing: '.04em', color: 'var(--gold)', textShadow: '0 1px 3px rgba(0,0,0,.8)', pointerEvents: 'none', zIndex: 4, whiteSpace: 'nowrap' })}">放这里</div>`
     : '';
   // 场上兵的磨砂详情浮层（与手牌同 cardTip·战力拆解）。
-  const tip = s.hasUnit && s.rank && s.suit ? cardTip({ name: s.name ?? (SUITNM[s.suit] + s.rank), rar: s.rar ?? 'white', isGang: false, mine: s.mine, suit: s.suit, rank: s.rank, pts: s.pts, buff: s.buff, power: s.power, zod: s.zod }) : '';
+  const tip = s.hasUnit && s.rank && s.suit ? cardTip({ name: s.name ?? (SUITNM[s.suit] + s.rank), rar: s.rar ?? 'white', isGang: false, mine: s.mine, suit: s.suit, rank: s.rank, pts: s.pts, buff: s.buff, power: s.power, zod: s.zod, ench: s.ench }) : '';
   const wrapCls = s.hasUnit ? ` class="gg-tipwrap${s.tipDown ? ' tip-down' : ''}${s.tipSide === 'left' ? ' tip-left' : s.tipSide === 'right' ? ' tip-right' : ''}"` : '';
   // 掷命预报徽标（owner 2026-06-21·让玩家落子前就知道这仗几成赢）：贴此前锋格顶·档位词 + 具体 %。
   let fcast = '';
@@ -300,7 +300,7 @@ function laneRow(L: TurnLaneView, li: number, hiOn = false): string {
 }
 
 // 磨砂详情浮层内容（owner 2026-06-21）：战力拆解(点数+期待加成) + 对决随机骰提示 / 天罡效果文案。手牌与场上兵共用。
-function cardTip(o: { name: string; rar: string; isGang: boolean; mine: boolean; suit?: string; rank?: string; pts?: number; buff?: number; power?: number; zod?: string[]; desc?: string; cost?: number }): string {
+function cardTip(o: { name: string; rar: string; isGang: boolean; mine: boolean; suit?: string; rank?: string; pts?: number; buff?: number; power?: number; zod?: string[]; desc?: string; cost?: number; ench?: [string, number][] }): string {
   const rc = RAR[o.rar] || RAR.white;
   const rows: string[] = [];
   if (o.isGang) {
@@ -310,10 +310,12 @@ function cardTip(o: { name: string; rar: string; isGang: boolean; mine: boolean;
   } else {
     const sn = o.suit ? SUITNM[o.suit] : ''; const sg = o.suit ? SUITG[o.suit] : ''; const sc = o.suit ? SUITC[o.suit] : '#888';
     const buff = o.buff ?? 0; const pts = o.pts ?? ((o.power ?? 0) - buff); const pow = o.power ?? (pts + buff);
-    const calc = buff ? `点数 ${pts} ${buff > 0 ? '+' : '−'} 加成 ${Math.abs(buff)}` : `点数 ${pts}`;
+    const calc = buff ? `点数 ${pts} ${buff > 0 ? '+' : '−'} 经营 ${Math.abs(buff)}` : `点数 ${pts}`;
     rows.push(`牌面 <b style="color:${sc}">${sn}${o.rank ? ' ' + esc(o.rank) : ''} ${sg}</b>`);
     rows.push(`战力 <b style="color:#ffd27a;font-size:13px">${pow}</b> <span style="opacity:.62">= ${calc}</span>`);
-    rows.push(`<span style="opacity:.6">掷命对决再 +一次随机骰(±) 定胜负</span>`);
+    // 经营加成来源逐项（owner 2026-06-21·这张牌的地支附魔从哪来·加多少 favor）。天罡/士气=对决时按场计入(见掷命特写)。
+    if (o.mine && o.ench && o.ench.length) rows.push(`<span style="color:#7fd0ff">改造 · 地支附魔</span>：${o.ench.map(([l, v]) => `${esc(l)} <b style="color:#9fe0ff">+${v}</b>`).join(' · ')}`);
+    rows.push(`<span style="opacity:.6">天罡/士气 对决时按场计入（见掷命特写明细）· 再 +随机骰定胜负</span>`);
     const zods = (o.zod || []).filter(Boolean);
     if (zods.length) rows.push(`生肖 ${zods.map((z) => ZOD_ICON[z] || z).join(' ')}`);
   }
@@ -359,7 +361,7 @@ function handCard(c: TurnHandCardView, i: number, hiOn = false, edge: 'left' | '
   const g = c.suit ? SUITG[c.suit] : '';
   const genWatermark = isGen ? `<div style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;pointer-events:none;overflow:hidden;border-radius:10px"><span style="font-family:var(--fh);font-size:72px;font-weight:900;color:#dc2626;opacity:.5;line-height:1;user-select:none">将</span></div>` : '';
   const genFloatBadge = isGen ? `<div style="position:absolute;top:-13px;left:50%;transform:translateX(-50%);background:linear-gradient(135deg,#c8920a,#f0d060);color:#1a0e00;font-family:var(--fb);font-weight:900;font-size:9px;padding:2px 8px;border-radius:99px;white-space:nowrap;border:1.5px solid rgba(255,255,255,.6);box-shadow:0 2px 10px rgba(232,205,130,.7);z-index:2">⭐ 主将</div>` : '';
-  return `<div data-hand="${i}" class="gg-tipwrap${edgeCls}" style="${st(card)};cursor:pointer${selSty}${affordSty}${c.dealt ? ';animation:g-deal .46s cubic-bezier(.2,.85,.3,1.12) both' : genAnim}">${genFloatBadge}${genWatermark}<div style="${st(rarDot)}"></div><div style="${st(cornerTL)}">${esc(c.rank || '')}<br>${g}</div><span style="${st(big)}">${g}</span><div style="${st(nameP)}">${esc(c.name)}</div><div style="${st(badge)}">${c.power ?? ''}</div>${c.cost > 0 ? `<div style="position:absolute;bottom:7px;left:7px;">${costDropHtml(c.cost)}</div>` : ''}<div style="${st(zodRow)}">${forr([0, 1, 2], (z) => zodCell(zod[z]))}</div>${cardTip({ name: c.name, rar: c.rar, isGang: false, mine: true, suit: c.suit, pts: c.pts, buff: c.buff, power: c.power, zod: c.zod })}</div>`;
+  return `<div data-hand="${i}" class="gg-tipwrap${edgeCls}" style="${st(card)};cursor:pointer${selSty}${affordSty}${c.dealt ? ';animation:g-deal .46s cubic-bezier(.2,.85,.3,1.12) both' : genAnim}">${genFloatBadge}${genWatermark}<div style="${st(rarDot)}"></div><div style="${st(cornerTL)}">${esc(c.rank || '')}<br>${g}</div><span style="${st(big)}">${g}</span><div style="${st(nameP)}">${esc(c.name)}</div><div style="${st(badge)}">${c.power ?? ''}</div>${c.cost > 0 ? `<div style="position:absolute;bottom:7px;left:7px;">${costDropHtml(c.cost)}</div>` : ''}<div style="${st(zodRow)}">${forr([0, 1, 2], (z) => zodCell(zod[z]))}</div>${cardTip({ name: c.name, rar: c.rar, isGang: false, mine: true, suit: c.suit, pts: c.pts, buff: c.buff, power: c.power, zod: c.zod, ench: c.ench })}</div>`;
 }
 
 function clashOverlay(cv: TurnClashView): string {
@@ -551,7 +553,7 @@ const SUIT_KEYS: Record<string, 's' | 'h' | 'd' | 'c'> = { S: 's', H: 'h', D: 'd
 const lc = (s: string): 's' | 'h' | 'd' | 'c' => SUIT_KEYS[s] ?? 's';
 const rankOf = (r: string): 'white' | 'green' | 'blue' | 'gold' => (r === 'A' ? 'gold' : r === 'K' || r === 'Q' || r === 'J' ? 'blue' : 'white');
 
-export interface TurnViewOpts { theme?: 'onyx' | 'brocade'; tengangName?: (id: string) => string; tengangDesc?: (id: string) => string; clash?: TurnClashView | null; sha?: TurnShaView[]; bossName?: string; selMode?: string | null; selHand?: number; tutorial?: { narration: string; highlight: string } | null; gatesLive?: boolean; notice?: string | null; movedIds?: Set<string>; freshIds?: Map<string, number>; dealtId?: string; battleLabel?: string; sfxOn?: boolean; settingsOpen?: boolean; bgmOn?: boolean; bgmIdx?: number; bgmVol?: number; bgmNames?: string[] }
+export interface TurnViewOpts { theme?: 'onyx' | 'brocade'; tengangName?: (id: string) => string; tengangDesc?: (id: string) => string; clash?: TurnClashView | null; sha?: TurnShaView[]; bossName?: string; selMode?: string | null; selHand?: number; tutorial?: { narration: string; highlight: string } | null; gatesLive?: boolean; notice?: string | null; movedIds?: Set<string>; freshIds?: Map<string, number>; dealtId?: string; battleLabel?: string; sfxOn?: boolean; settingsOpen?: boolean; bgmOn?: boolean; bgmIdx?: number; bgmVol?: number; bgmNames?: string[]; enchOf?: (rank: string, suit: string) => [string, number][] }
 /** 从 turn-combat 真状态派生战斗屏视图（玩家 = side a 视角）。纯读、不改 battle。 */
 export function buildTurnBattleView(b: TurnBattle, opts: TurnViewOpts = {}): TurnBattleView {
   const laneNames = ['上路', '中路', '下路'];
@@ -571,7 +573,7 @@ export function buildTurnBattleView(b: TurnBattle, opts: TurnViewOpts = {}): Tur
       // isClash 标在两军真前锋格(landed bugfix·非固定中线 4) + 放牌区底纹/标签(标在贴各自城堡那格) + 待放落点高亮
       const base = { isBorder: i === 4, isClash: adj && (i === L.a[0]?.slot || i === L.b[0]?.slot), deploy: dep(i), deployLabel: i === A_DEPLOY_SLOT || i === B_DEPLOY_SLOT, placeable: !hit && i === target, forecast: i === L.a[0]?.slot && odds != null ? odds : undefined };
       return hit
-        ? { ...base, hasUnit: true, mine: hit.mine, rank: hit.u.rank, suit: lc(hit.u.suit), power: hit.u.points + hit.u.buff, pts: hit.u.points, buff: hit.u.buff, name: heroNameOf(hit.u.rank, lc(hit.u.suit)) ?? (SUITNM[lc(hit.u.suit)] + hit.u.rank), rar: rankOf(hit.u.rank), zod: [], unitId: hit.u.id, justMoved: opts.movedIds?.has(hit.u.id) ?? false, fresh: opts.freshIds?.get(hit.u.id), tipDown: li === 0, tipSide: (i >= 7 ? 'left' : i <= 1 ? 'right' : '') as 'left' | 'right' | '', general: hit.u.general }
+        ? { ...base, hasUnit: true, mine: hit.mine, rank: hit.u.rank, suit: lc(hit.u.suit), power: hit.u.points + hit.u.buff, pts: hit.u.points, buff: hit.u.buff, name: heroNameOf(hit.u.rank, lc(hit.u.suit)) ?? (SUITNM[lc(hit.u.suit)] + hit.u.rank), rar: rankOf(hit.u.rank), zod: [], unitId: hit.u.id, justMoved: opts.movedIds?.has(hit.u.id) ?? false, fresh: opts.freshIds?.get(hit.u.id), tipDown: li === 0, tipSide: (i >= 7 ? 'left' : i <= 1 ? 'right' : '') as 'left' | 'right' | '', general: hit.u.general, ench: hit.mine ? opts.enchOf?.(hit.u.rank, hit.u.suit) : undefined }
         : { ...base, hasUnit: false, mine: i < 4 };
     });
     return { name: laneNames[li] ?? ('路' + li), slots };
@@ -579,7 +581,7 @@ export function buildTurnBattleView(b: TurnBattle, opts: TurnViewOpts = {}): Tur
   const nameOf = opts.tengangName ?? ((id: string) => id);
   const descOf = opts.tengangDesc ?? (() => '持续战法·打出后整场生效');
   const hand: TurnHandCardView[] = b.a.hand.map((c, i) => c.kind === 'poker'
-    ? { kind: 'pawn', rank: c.rank, suit: lc(c.suit), name: SUITNM[lc(c.suit)] + c.rank, power: cardPoints(c.rank) + c.buff, pts: cardPoints(c.rank), buff: c.buff, cost: c.cost ?? DEPLOY_COST, zod: [], rar: rankOf(c.rank), selected: opts.selHand === i, dealt: opts.dealtId != null && c.id === opts.dealtId, affordable: (c.cost ?? DEPLOY_COST) <= b.a.mana, general: c.general }
+    ? { kind: 'pawn', rank: c.rank, suit: lc(c.suit), name: SUITNM[lc(c.suit)] + c.rank, power: cardPoints(c.rank) + c.buff, pts: cardPoints(c.rank), buff: c.buff, cost: c.cost ?? DEPLOY_COST, zod: [], rar: rankOf(c.rank), selected: opts.selHand === i, dealt: opts.dealtId != null && c.id === opts.dealtId, affordable: (c.cost ?? DEPLOY_COST) <= b.a.mana, general: c.general, ench: opts.enchOf?.(c.rank, c.suit) }
     : { kind: 'gang', name: nameOf(c.id), cost: CAST_COST, rar: 'gold', desc: descOf(c.id), glyph: '✦', selected: opts.selHand === i, dealt: opts.dealtId != null && c.id === opts.dealtId, affordable: CAST_COST <= b.a.mana });
   const ACT: [string, string, string][] = [['draw', '🎴', '抽牌'], ['deploy', '♟', '放牌'], ['cast', '✦', '打天罡'], ['discard', '🗑', '弃牌']];
   const sel = b.actionTaken;
