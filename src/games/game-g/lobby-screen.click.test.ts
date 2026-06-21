@@ -53,7 +53,7 @@ describe('Game G · lobby-screen mountLobby 点击交互（DOM · happy-dom）',
       const sections = host.querySelectorAll('.screen.on');
       expect(sections.length).toBe(1);
       expect(sections[0].classList.contains('homerow')).toBe(false); // home 不激活
-      expect(host.querySelector('.nav button.on')?.textContent?.trim()).toBe('牌组');
+      expect(host.querySelector('.nav button.on')?.textContent?.trim()).toBe('我的牌组');
       // 牌组内容可见：52 张牌格
       expect(host.querySelectorAll('.pcard').length).toBe(52);
     });

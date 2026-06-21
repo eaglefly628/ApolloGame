@@ -958,7 +958,7 @@ export function renderLobby(view: LobbyView, tab: string, helpOpen: boolean, dec
   <div class="nav">
     <button class="${on('home')}" data-act="tab" data-k="home">大厅</button>
     <button class="${on('campaign')}" data-act="tab" data-k="campaign">战役</button>
-    <button class="${on('decks')}" data-act="tab" data-k="decks">牌组</button>
+    <button class="${on('decks')}" data-act="tab" data-k="decks">我的牌组</button>
     <button class="${on('coll')}" data-act="tab" data-k="coll">收藏</button>
     <button class="${on('craft')}" data-act="tab" data-k="craft">改造坊</button>
     <button class="${on('ladder')}" data-act="tab" data-k="ladder">天梯</button>
