@@ -713,10 +713,42 @@ export function mount(container: HTMLElement, shell?: { exit?: () => void }): ()
       thinkTimer = window.setTimeout(() => { if (thinkEl) { thinkEl.remove(); thinkEl = null; } onDone(); }, ms);
     };
     const flash = (msg: string): void => { notice = msg; mounted?.update(); if (noticeTimer) clearTimeout(noticeTimer); noticeTimer = window.setTimeout(() => { notice = null; if (!perfClash) mounted?.update(); }, 1700); }; // 清提示时若正演掷命特写则不重渲（防飞入重启）
-    const view = (): TurnBattleView => buildTurnBattleView(tb, { theme, tengangName: tgName, tengangDesc: tgDesc, selMode, selHand, clash: perfClash ? clashToTurnView(perfClash, tgName, save.inlays) : null, bossName: aiName, sha: shaView, gatesLive: gateChance, notice, movedIds: justMovedIds, freshIds, dealtId: dealtId ?? undefined, battleLabel, sfxOn: isSfxOn(), settingsOpen, bgmOn: isBgmOn(), bgmIdx: bgmTrackIdx(), bgmVol: bgmVolume(), bgmNames: BGM_TRACKS.map((t) => t.name), enchOf: (rank, suit) => (save.inlays[String(cardFavorIndex(rank + suit))] ?? []).map((e) => [`${e.b}${DIZHI_TIER_NM[e.t]}`, DIZHI_INLAY_FAVOR[e.t]] as [string, number]) });
+    // 掷命对决·玩家点骰（owner 2026-06-21）：进特写先藏命点/胜负→显掷骰钮+手指+5s倒计时→点(或自动)→蓄力+数字滚动→揭晓。
+    let clashRevealed = false; let clashCdTimer = 0; let clashCdInterval = 0; let clashRolling = false;
+    const clearClashTimers = (): void => { if (clashCdTimer) { clearTimeout(clashCdTimer); clashCdTimer = 0; } if (clashCdInterval) { clearInterval(clashCdInterval); clashCdInterval = 0; } };
+    const buildClashView = (): TurnClashView | null => { if (!perfClash) return null; const cv = clashToTurnView(perfClash, tgName, save.inlays); cv.revealed = clashRevealed; return cv; };
+    const view = (): TurnBattleView => buildTurnBattleView(tb, { theme, tengangName: tgName, tengangDesc: tgDesc, selMode, selHand, clash: buildClashView(), bossName: aiName, sha: shaView, gatesLive: gateChance, notice, movedIds: justMovedIds, freshIds, dealtId: dealtId ?? undefined, battleLabel, sfxOn: isSfxOn(), settingsOpen, bgmOn: isBgmOn(), bgmIdx: bgmTrackIdx(), bgmVol: bgmVolume(), bgmNames: BGM_TRACKS.map((t) => t.name), enchOf: (rank, suit) => (save.inlays[String(cardFavorIndex(rank + suit))] ?? []).map((e) => [`${e.b}${DIZHI_TIER_NM[e.t]}`, DIZHI_INLAY_FAVOR[e.t]] as [string, number]) });
     let mounted: { update: () => void; destroy: () => void } | null = null;
 
     const drainClashes = (): void => { for (const ev of tb.clashLog.slice(drained)) perfQueue.push(ev); drained = tb.clashLog.length; };
+    // 掷命倒计时：进特写起 5s·每秒更新钮上数字（直改 DOM·不整片重渲防卡牌飞入重启）·到点自动掷。
+    const startClashCountdown = (): void => {
+      clearClashTimers(); let left = 5;
+      clashCdInterval = window.setInterval(() => { left -= 1; const el = document.querySelector('[data-cd]'); if (el) el.textContent = String(Math.max(0, left)); if (left <= 0 && clashCdInterval) { clearInterval(clashCdInterval); clashCdInterval = 0; } }, 1000);
+      clashCdTimer = window.setTimeout(() => doClashRoll(), 5000);
+    };
+    // 玩家点骰（或倒计时自动）：先翻 revealed（结果即进 DOM·测试/逻辑可即取）→ 全屏掷骰蓄力 + 数字哒哒哒滚到命点 → 撤层揭晓胜负。
+    const doClashRoll = (): void => {
+      if (clashRolling || clashRevealed || !perfClash) return;
+      clashRolling = true; clearClashTimers();
+      const e = perfClash; const target = Math.round(e.roll * 100);
+      clashRevealed = true; mounted?.update(); // 结果落 DOM（被掷骰浮层盖住·撤层即见）
+      playSfx('select');
+      const ov = document.createElement('div'); ov.style.cssText = 'position:fixed;inset:0;z-index:320;display:flex;align-items:center;justify-content:center;pointer-events:none;background:radial-gradient(circle at center,rgba(8,10,15,.55),rgba(6,8,12,.82))';
+      ov.innerHTML = `<div style="position:absolute;top:42%;left:50%;font-size:120px;animation:g-die-shake .5s ease-in-out infinite;filter:drop-shadow(0 6px 16px rgba(0,0,0,.7));">🎲</div><div data-roll-num style="position:absolute;top:60%;left:50%;transform:translateX(-50%);font-family:'Silkscreen',monospace;font-size:76px;font-weight:700;color:#e8cd82;text-shadow:0 0 32px rgba(232,205,138,.95),0 4px 18px rgba(0,0,0,.9);">0</div>`;
+      document.body.appendChild(ov);
+      const numEl = ov.querySelector('[data-roll-num]') as HTMLElement | null;
+      const finish = (): void => { if (!ov.isConnected) return; ov.remove(); clashRolling = false; if (numEl) numEl.textContent = String(target); playSfx('clashReveal'); playSfx(e.aWins ? 'clashWin' : 'clashLose'); mounted?.update(); };
+      if (typeof requestAnimationFrame !== 'function') { finish(); return; } // 无头环境：直接揭晓
+      const STEPS = 40; let step = 0; // 帧计数驱动（不依赖 wall-clock·有界·测试不挂）
+      const tick = (): void => {
+        step += 1; const t = Math.min(1, step / STEPS); const val = Math.round((1 - Math.pow(1 - t, 3)) * target); // ease-out 哒哒哒升到命点
+        if (numEl) numEl.textContent = String(val);
+        if (step % 3 === 0) playSfx('select');
+        if (t < 1) requestAnimationFrame(tick); else window.setTimeout(finish, 360);
+      };
+      requestAnimationFrame(tick);
+    };
     // 逐场掷命特写：3D 飞入 → 停留 → **玩家点「看明白了」才演下一场/收场**（owner 2026-06-20：不能自动关·要看清为什么胜败）。
     const playPerf = (onDone: () => void): void => {
       if (perfQueue.length === 0) { perfClash = null; perfResume = null; mounted?.update(); syncCoach(); onDone(); return; }
@@ -739,8 +771,9 @@ export function mount(container: HTMLElement, shell?: { exit?: () => void }): ()
       // 先演 ~2s「哪两张牌即将交战」前奏 → 再切对决特写（owner 2026-06-21）
       showClashCue(e, () => {
         perfClash = e;
-        playSfx('clashReveal'); playSfx(e.aWins ? 'clashWin' : 'clashLose'); // 揭晓撞击 + 我方胜/负的判定音
-        perfResume = () => { perfResume = null; playPerf(onDone); }; mounted?.update(); syncCoach(); // 引导：特写中隐
+        clashRevealed = false; clashRolling = false; // 每场先掷命：藏命点/胜负·等玩家点骰(或 5s 自动)
+        perfResume = () => { perfResume = null; clearClashTimers(); playPerf(onDone); }; mounted?.update(); syncCoach(); // 引导：特写中隐
+        startClashCountdown();
       });
     };
     const finishTurnSeq = (): void => { busy = false; selMode = null; selHand = -1; if (tb.winner !== 'pending') settleTurn(); else { log(`◀ T${tb.turn} 我方回合开始 · 源泉 我${tb.a.mana} / 敌${tb.b.mana}`); mounted?.update(); } syncCoach(); };
@@ -810,12 +843,15 @@ export function mount(container: HTMLElement, shell?: { exit?: () => void }): ()
       },
       endTurn: commitEndTurn,
       setTheme: (t) => { theme = t; },
-      clashConfirm: () => { // 看完战力明细 → 战胜硬币定胜牌去留(人头留场/人面回库) → 继续=perfResume（owner 2026-06-21）
+      clashConfirm: () => { // 掷命未揭晓→先点骰；已揭晓→看战力明细确认 → 战胜硬币定胜牌去留(人头留场/人面回库) → perfResume
+        if (perfClash && !clashRevealed) { doClashRoll(); return; } // 未揭晓先掷命（owner 2026-06-21）
+        clearClashTimers();
         if (!perfClash) { const r = perfResume; if (r) r(); return; }
         playSfx('confirm'); const e = perfClash; coinFx?.destroy();
         const wName = e.aWins ? `${SUITNM2[e.a.suit] ?? ''}${e.a.rank}` : `${SUITNM2[e.b.suit] ?? ''}${e.b.rank}`;
         coinFx = mountCoinFlip(root, { winnerName: wName, winnerMine: e.aWins, heads: e.winStays ?? false, sfx: playSfx }, () => { coinFx = null; const r = perfResume; if (r) r(); });
       },
+      clashRoll: () => doClashRoll(),
       goBack: () => {
         if (tb.winner !== 'pending') { showLobby(); return; }
         const ov = document.createElement('div');
@@ -898,7 +934,7 @@ export function mount(container: HTMLElement, shell?: { exit?: () => void }): ()
     };
     root.appendChild(dbgBtn); // 挂 root(非 stage·避免 mountTurnBattle 重渲抹掉)·左下角
 
-    stopLoop = () => { perfResume = null; coinFx?.destroy(); coinFx = null; if (noticeTimer) { clearTimeout(noticeTimer); noticeTimer = 0; } if (thinkTimer) { clearTimeout(thinkTimer); thinkTimer = 0; } if (thinkEl) { thinkEl.remove(); thinkEl = null; } if (coach) { window.removeEventListener('resize', onCoachResize); coach.destroy(); } }; // 离场：弃未决特写续演 + 清硬币浮层 + 清提示计时 + 清思考蒙层 + 卸引导
+    stopLoop = () => { perfResume = null; clearClashTimers(); coinFx?.destroy(); coinFx = null; if (noticeTimer) { clearTimeout(noticeTimer); noticeTimer = 0; } if (thinkTimer) { clearTimeout(thinkTimer); thinkTimer = 0; } if (thinkEl) { thinkEl.remove(); thinkEl = null; } if (coach) { window.removeEventListener('resize', onCoachResize); coach.destroy(); } }; // 离场：弃未决特写续演 + 清硬币浮层/倒计时 + 清提示计时 + 清思考蒙层 + 卸引导
 
     function settleTurn(): void {
       const survA = tb.lanes.reduce((s, L) => s + L.a.length + L.spentA, 0);

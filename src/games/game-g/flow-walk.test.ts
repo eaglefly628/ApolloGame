@@ -31,15 +31,17 @@ describe('Game G · 流程走查（出征→结算→继续·happy-dom）', () =
             press(c.querySelector('[data-act="draw-poker"]'));
           }
           press(c.querySelector('[data-act="end"]'));
-          // 逐场掷命（owner 2026-06-21）：前奏(2s「即将交战」)→看明白了→战胜硬币(我方点掷/敌方自动)落定→继续，推进直到无对决
+          // 逐场掷命（owner 2026-06-21）：前奏→点🎲掷骰揭晓→看明白了→战胜硬币(我方点掷/敌方自动)落定→继续，推进直到无对决
           let g = 0;
-          vi.runAllTimers();                                                                  // 冲掉「即将交战」前奏 → 现首个「看明白了」
-          while (c.querySelector('[data-act="clash-ok"]') && g++ < 400) {
+          vi.runAllTimers();                                                                  // 冲掉「即将交战」前奏 → 现首个掷骰/看明白了
+          while ((c.querySelector('[data-act="clash-roll"]') || c.querySelector('[data-act="clash-ok"]')) && g++ < 600) {
+            const roll = c.querySelector('[data-act="clash-roll"]');
+            if (roll) { press(roll); vi.runAllTimers(); continue; }                            // 先点🎲掷骰 → 揭晓胜负 → 现「看明白了」
             press(c.querySelector('[data-act="clash-ok"]'));                                   // 看明白了 → 弹战胜硬币
             const thr = c.querySelector('.gg-coin-btn.throw'); if (thr) click(thr);            // 我方胜→玩家点掷；敌方→自动掷
             vi.runAllTimers();                                                                 // 硬币翻腾落定 → 现「继续」
             const cont = c.querySelector('.gg-coin-btn.cont'); if (cont) click(cont);          // 继续 → perfResume → 下一场
-            vi.runAllTimers();                                                                 // 冲掉下一场前奏 → 现下一「看明白了」(或收场)
+            vi.runAllTimers();                                                                 // 冲掉下一场前奏 → 现下一掷骰/看明白了(或收场)
           }
           vi.runAllTimers();
           if (c.querySelector('#gg-result-cont')) settled = true;

@@ -8,7 +8,7 @@ import { mountTurnBattle, buildTurnBattleView, buildTurnFrameHTML, type TurnBatt
 const press = (el: Element | null, button = 0): void => { if (!el) throw new Error('press target null'); el.dispatchEvent(new MouseEvent('pointerdown', { bubbles: true, button })); };
 
 const makeActions = (): { [K in keyof TurnBattleActions]-?: ReturnType<typeof vi.fn> } => ({
-  pickAction: vi.fn(), drawFrom: vi.fn(), selectHand: vi.fn(), playLane: vi.fn(), toggleGate: vi.fn(), endTurn: vi.fn(), setTheme: vi.fn(), clashConfirm: vi.fn(),
+  pickAction: vi.fn(), drawFrom: vi.fn(), selectHand: vi.fn(), playLane: vi.fn(), toggleGate: vi.fn(), endTurn: vi.fn(), setTheme: vi.fn(), clashConfirm: vi.fn(), clashRoll: vi.fn(),
   goBack: vi.fn(), bossInfo: vi.fn(), toggleSfx: vi.fn(), toggleSettings: vi.fn(), toggleBgm: vi.fn(), selectBgm: vi.fn(), setBgmVol: vi.fn(),
 });
 
