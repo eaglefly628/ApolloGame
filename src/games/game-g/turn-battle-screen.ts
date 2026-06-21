@@ -503,7 +503,7 @@ export function buildTurnFrameHTML(view: TurnBattleView, drain: { from: number; 
     </div>
     <div style="${st(bottomBar)}">
       <div style="${st(actionMenu)}">
-        <div style="font-size:10px; letter-spacing:.16em; text-transform:uppercase; color:var(--ink-dim); margin-bottom:8px;">本回合动作 · 四选一</div>
+        <div style="font-size:10px; letter-spacing:.16em; text-transform:uppercase; color:var(--ink-dim); margin-bottom:8px;">本回合动作（弃牌可追加）</div>
         <div style="display:grid; grid-template-columns:1fr 1fr; gap:8px;">${forr(view.actions, actBtn)}</div>
         ${drawPanel}
         <div style="${st(actionHint)}">${esc(view.actionSub)}</div>
@@ -560,7 +560,7 @@ export function buildTurnBattleView(b: TurnBattle, opts: TurnViewOpts = {}): Tur
   const ACT: [string, string, string][] = [['draw', '🎴', '抽牌'], ['deploy', '♟', '放牌'], ['cast', '✦', '打天罡'], ['discard', '🗑', '弃牌']];
   const sel = b.actionTaken;
   const mode = opts.selMode ?? sel; // 当前高亮动作类：未提交时取 UI 选中(selMode)，已锁则取 actionTaken
-  const SUB: Record<string, string> = { draw: '抽牌:天罡/扑克二选一', deploy: '放牌:免费·有牌就一直放(放牌区=贴家3格)→放完可点机关门(箭头)翻门调度·或结束回合', cast: '打天罡:选一张法术牌施放', discard: '弃牌:免费·选手牌弃掉腾位', '': '选一类动作,其余本回合锁定' };
+  const SUB: Record<string, string> = { draw: '抽牌:天罡/扑克二选一', deploy: '放牌:免费·有牌就一直放(放牌区=贴家3格)→放完可点机关门(箭头)翻门调度·或结束回合', cast: '打天罡:选一张法术牌施放', discard: '弃牌:不互斥·弃后可再选一类动作(抽/放/打天罡)', '': '选一类动作·其余本回合锁定（弃牌例外：弃后可追加）' };
   const actions: TurnActionView[] = ACT.map(([key, glyph, label]) => ({ key, glyph, label, on: mode === key, dim: !!sel && sel !== key }));
   return {
     theme: opts.theme ?? 'onyx',
