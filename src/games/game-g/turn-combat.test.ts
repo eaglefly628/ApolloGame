@@ -95,7 +95,7 @@ describe('Game G · turn-combat（doc24 单机回合制 · A0 重构）', () => 
     const b = initTurnBattle({ seed: 1 });
     b.lanes[0].a.push(unit('a0', '7', A_DEPLOY_SLOT)); // 我方兵在部署格
     endTurn(b); // 我方结束放置 → 敌方放置回合（不推进·无战斗）
-    expect(b.active).toBe('b'); expect(b.b.mana).toBe(1); // 切敌方·后手 +1 源泉
+    expect(b.active).toBe('b'); expect(b.b.mana).toBe(1.5); // 切敌方·后手 +1.5 源泉
     expect(b.lanes[0].a[0].slot).toBe(A_DEPLOY_SLOT); // 放置回合兵未动
     expect(b.turn).toBe(1); // 尚未进下一轮
     endTurn(b); // 敌方结束放置 → 行动阶段：两军同时推进
@@ -189,6 +189,6 @@ describe('Game G · turn-combat（doc24 单机回合制 · A0 重构）', () => 
     expect(b.lastClash?.aWins).toBe(true);
     expect(b.lanes[0].a.length).toBe(0);                       // 胜者下场
     expect(b.a.pokerDeck.some((c) => c.id === 'w')).toBe(true); // 回牌库·可再抽
-    expect(b.a.mana).toBe(3 / 2 + 1);                          // 返还一半(1.5) + 新一轮放置(+1) = 2.5
+    expect(b.a.mana).toBe(3 / 2 + 1.5);                        // 返还一半(1.5) + 新一轮放置(+1.5) = 3
   });
 });

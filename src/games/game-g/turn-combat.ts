@@ -21,7 +21,10 @@ export const A_GOAL = 8;         // 我兵越过此格(→9) → 敌大本营 �
 export const B_GOAL = 0;         // 敌兵越过此格(→−1) → 我大本营 −1 血
 // ── 回合经济（doc24 §四·真机调；各 cost 暂定 1）──
 export const TURN_HOME_BLOOD = 3;
-export const MANA_START = 1, MANA_PER_TURN = 1;
+export const MANA_START = 1, MANA_PER_TURN = 1.5; // 每回合 +1.5 召唤源泉（owner 2026-06-21·原 +1 太紧·支持半格显示）
+export const MANA_PER_TURN_LATE = 2, MANA_RAMP_TURN = 10; // 第 10 回合后提速到 +2（owner 2026-06-21·后期放大节奏）
+/** 该回合开始应 +多少召唤源泉（turn>10 提速到 2·否则 1.5）。 */
+export const manaGain = (turn: number): number => (turn > MANA_RAMP_TURN ? MANA_PER_TURN_LATE : MANA_PER_TURN);
 export const DRAW_COST = 1, DEPLOY_COST = 0, CAST_COST = 1; // 抽/打天罡 花召唤源泉；放牌按 rank 收费(契约B·写在卡 cost 上)
 export const DISCARD_REFUND = 0.5; // 弃牌返还 0.5 召唤源泉（owner 2026-06-21·源泉自此为半整数粒度）
 export const OPENING_HAND = 3; // 起手摸 N（doc24 §六/七 待定）
@@ -408,7 +411,7 @@ export function endTurn(b: TurnBattle): void {
   if (b.winner !== 'pending') return;
   if (b.active === 'a') {
     b.active = 'b'; // 我方放置完 → 敌方放置回合（不推进·无战斗）
-    b.b.mana += MANA_PER_TURN; // 回合开始 +1 召唤源泉
+    b.b.mana += manaGain(b.turn); // 回合开始 +源泉（1.5·第10回合后 2）
     if (b.dishaB.bonusMana > 0) b.b.mana += b.dishaB.bonusMana; // 地煞·大军压境/机动调度：Boss 多铺(免费多动)
     b.actionTaken = null;
   } else {
@@ -416,9 +419,9 @@ export function endTurn(b: TurnBattle): void {
     checkWinner(b);
     if (b.winner !== 'pending') return;
     b.active = 'a'; // 下一轮回到我方放置回合
-    b.a.mana += MANA_PER_TURN;
-    b.actionTaken = null;
     b.turn += 1;
+    b.a.mana += manaGain(b.turn);
+    b.actionTaken = null;
   }
 }
 

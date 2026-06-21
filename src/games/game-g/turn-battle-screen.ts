@@ -3,7 +3,7 @@
 //   只读 TurnBattleView（由 buildTurnBattleView 从 turn-combat 真状态派生）→ 出 HTML 串；不进 hash、不回灌判定。
 // 静态渲染 = 设计稿"静息态"(无 hover tooltip / 无 boss 飞出)；clash 特写覆盖层按 view.clash 选渲。live mount + 交互为后续切片。
 import { cardPoints } from './clash-resolve.js';
-import { SLOTS, MANA_PER_TURN, GATES, A_DEPLOY_SLOT, B_DEPLOY_SLOT, DEPLOY_COST, CAST_COST, clashOdds, type TurnBattle, type TurnUnit } from './turn-combat.js';
+import { SLOTS, manaGain, GATES, A_DEPLOY_SLOT, B_DEPLOY_SLOT, DEPLOY_COST, CAST_COST, clashOdds, type TurnBattle, type TurnUnit } from './turn-combat.js';
 import { FONTS } from './fonts.js'; // 自托管字体（替代外部 Google Fonts <link>）
 import { heroNameOf } from './hero-codex.js'; // 场上牌悬浮显其对应武将名（owner 2026-06-21·数据已在 HERO_CARDS）
 
@@ -113,7 +113,7 @@ export interface TurnShaView { filled: boolean; name: string; rar: 'white' | 'gr
 export interface TurnBattleView {
   theme: 'onyx' | 'brocade';
   turnWho: string; roundNo: number; timerLabel: string;
-  water: number; waterMax: number; waterB: number; deckA: number; deckB: number;
+  water: number; waterMax: number; waterB: number; waterGain: number; deckA: number; deckB: number;
   homeA: number; homeB: number; homeMax: number;
   lanes: TurnLaneView[]; gates: TurnGateView[]; gatesLive: boolean;
   hand: TurnHandCardView[]; handPawnCount: number; handGangCount: number;
@@ -411,7 +411,9 @@ export function buildTurnFrameHTML(view: TurnBattleView, drain: { from: number; 
   const boardWrap = { position: 'relative', flex: 1, minHeight: 0, display: 'flex', alignItems: 'stretch', gap: '6px', padding: '12px 10px', borderRadius: '18px', background: 'var(--board)', backgroundImage: 'radial-gradient(46% 80% at 50% 50%, rgba(232,205,138,.10), transparent 70%), repeating-linear-gradient(0deg, rgba(255,255,255,.035) 0 1px, transparent 1px 34px), repeating-linear-gradient(90deg, rgba(255,255,255,.035) 0 1px, transparent 1px 34px)', border: '6px solid var(--board-edge)', boxShadow: 'inset 0 0 0 2px rgba(255,255,255,.06), inset 0 0 90px rgba(0,0,0,.5)' };
   const lanesCol = { position: 'relative', flex: 1, display: 'flex', flexDirection: 'column', gap: '10px', justifyContent: 'stretch', minHeight: 0 };
   // water bar
-  const litCells = Math.max(0, Math.min(view.waterMax, Math.floor(view.water)));
+  const litCells = Math.max(0, Math.min(view.waterMax, Math.floor(view.water + 1e-6)));
+  const halfCell = view.water - litCells >= 0.5 - 1e-6 && litCells < view.waterMax; // 半格：源泉含 0.5（每回合 +1.5·弃牌返 0.5）
+  const litLabel = Number.isInteger(view.water) ? String(view.water) : view.water.toFixed(1);
   const waterBar = { flex: 'none', display: 'flex', alignItems: 'center', gap: '12px', padding: '9px 18px', borderRadius: '14px', background: 'var(--panel)', border: '1px solid var(--panel-border)', boxShadow: 'inset 0 0 0 1px var(--hairline)' };
   const waterCap = { width: '36px', height: '36px', flex: 'none', borderRadius: '10px', background: 'radial-gradient(circle at 38% 30%, #7fd8f5, #2a7fb8)', border: '2px solid #bfeaff', display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: '0 0 16px rgba(77,182,232,.7), inset 0 1px 0 rgba(255,255,255,.6)' };
   const waterTube = { position: 'relative', flex: 1, height: '34px', borderRadius: '12px', background: 'linear-gradient(180deg, rgba(10,30,46,.9), rgba(6,16,26,.95))', border: '2px solid #2f5e7e', overflow: 'hidden', display: 'flex', gap: '4px', padding: '4px', boxShadow: 'inset 0 0 14px rgba(0,0,0,.7), 0 0 0 1px rgba(191,234,255,.12)' };
@@ -420,8 +422,11 @@ export function buildTurnFrameHTML(view: TurnBattleView, drain: { from: number; 
   const drainSpark = { position: 'absolute', top: '-2px', left: '50%', width: '6px', height: '6px', borderRadius: '50%', background: 'radial-gradient(circle,#dff6ff,#7fd0f0 60%,transparent)', boxShadow: '0 0 8px rgba(150,220,255,.9)', animation: 'g-drainspark .52s ease-out both', pointerEvents: 'none', zIndex: 3 };
   const waterCellsHTML = forr(Array.from({ length: view.waterMax }, (_, i) => i), (i) => {
     const lit = i < litCells;
+    const half = !lit && i === litCells && halfCell; // 该格只填左半（半格源泉）
     const draining = drain.count > 0 && i >= drain.from && i < drain.from + drain.count;
-    const cs = { position: 'relative', flex: 1, borderRadius: '5px', zIndex: 1, background: lit ? 'linear-gradient(180deg,#8fe0ff,#2f93cf)' : 'rgba(255,255,255,.05)', border: '1px solid ' + (lit ? 'rgba(190,238,255,.8)' : 'rgba(255,255,255,.08)'), boxShadow: lit ? '0 0 10px rgba(95,200,240,.7), inset 0 1px 0 rgba(255,255,255,.6)' : 'none' };
+    const litFill = 'linear-gradient(180deg,#8fe0ff,#2f93cf)';
+    const bg = lit ? litFill : half ? 'linear-gradient(90deg,#8fe0ff,#2f93cf 50%,rgba(255,255,255,.05) 50%)' : 'rgba(255,255,255,.05)';
+    const cs = { position: 'relative', flex: 1, borderRadius: '5px', zIndex: 1, background: bg, border: '1px solid ' + (lit || half ? 'rgba(190,238,255,.8)' : 'rgba(255,255,255,.08)'), boxShadow: lit || half ? '0 0 10px rgba(95,200,240,.7), inset 0 1px 0 rgba(255,255,255,.6)' : 'none' };
     return `<div style="${st(cs)}">${draining ? `<div style="${st(drainGhost)}"></div><div style="${st(drainSpark)}"></div>` : ''}</div>`;
   });
   const waterPlus = { padding: '2px 9px', borderRadius: '99px', background: 'rgba(70,209,122,.18)', border: '1px solid var(--hp)', color: 'var(--hp)', fontFamily: 'var(--fh)', fontWeight: 700, fontSize: '11px', whiteSpace: 'nowrap' };
@@ -487,7 +492,7 @@ export function buildTurnFrameHTML(view: TurnBattleView, drain: { from: number; 
         <div style="${st(waterCap)}"><span style="font-family:var(--fd); font-size:20px; color:#dff4ff;">源</span></div>
         <span style="font-size:10px; letter-spacing:.16em; text-transform:uppercase; color:var(--ink-dim); white-space:nowrap;">召唤源泉 · SUMMON FONT</span>
         <div style="${st(waterTube)}">${waterCellsHTML}</div>
-        <span style="font-family:var(--fn); font-size:22px; color:#cdeeff; text-shadow:0 0 10px rgba(77,182,232,.9);">${litCells}</span>
+        <span style="font-family:var(--fn); font-size:22px; color:#cdeeff; text-shadow:0 0 10px rgba(77,182,232,.9);">${litLabel}</span>
         <div style="width:1px;height:28px;background:var(--panel-border);flex-shrink:0;"></div>
         <div style="display:flex;flex-direction:column;align-items:center;gap:1px;flex-shrink:0;">
           <span style="font-size:9px;letter-spacing:.1em;color:var(--ink-dim);white-space:nowrap;">敌源泉</span>
@@ -498,7 +503,7 @@ export function buildTurnFrameHTML(view: TurnBattleView, drain: { from: number; 
           <span style="font-size:9px;letter-spacing:.1em;color:var(--ink-dim);white-space:nowrap;">牌库</span>
           <span style="font-family:var(--fn);font-size:12px;color:var(--ink);">我 ${view.deckA} ｜ 敌 ${view.deckB}</span>
         </div>
-        <span style="${st(waterPlus)}">本回合 +${MANA_PER_TURN}</span>
+        <span style="${st(waterPlus)}">本回合 +${view.waterGain}</span>
       </div>
     </div>
     <div style="${st(bottomBar)}">
@@ -566,7 +571,7 @@ export function buildTurnBattleView(b: TurnBattle, opts: TurnViewOpts = {}): Tur
   return {
     theme: opts.theme ?? 'onyx',
     turnWho: b.active === 'a' ? '我方回合' : '敌方回合', roundNo: b.turn, timerLabel: '∞ 无限时',
-    water: b.a.mana, waterMax: 10, waterB: b.b.mana,
+    water: b.a.mana, waterMax: 10, waterB: b.b.mana, waterGain: manaGain(b.turn),
     deckA: b.a.pokerDeck.length + b.a.tengangDeck.length,
     deckB: b.b.pokerDeck.length + b.b.tengangDeck.length,
     homeA: b.homeA, homeB: b.homeB, homeMax: b.homeMax,

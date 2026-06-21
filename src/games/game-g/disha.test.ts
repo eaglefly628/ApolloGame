@@ -98,9 +98,9 @@ describe('Game G · 地煞（doc23 §八 关1-5 · 15 张 · 甲实装）', () =
   it('🟢 大军压境/机动调度：Boss 回合开始多 +1 召唤源泉(免费多铺)', () => {
     const swarm = initTurnBattle({ seed: 1, disha: ['swarm'] }); swarm.lanes[0].a.push(u('a0', '7', 4)); // 给个兵免推进即胜
     endTurn(swarm); // 切到 Boss 回合
-    expect(swarm.active).toBe('b'); expect(swarm.b.mana).toBe(2); // +1 基础 +1 大军压境
+    expect(swarm.active).toBe('b'); expect(swarm.b.mana).toBe(2.5); // +1.5 基础 +1 大军压境
     const plain = initTurnBattle({ seed: 1 }); plain.lanes[0].a.push(u('a0', '7', 4)); endTurn(plain);
-    expect(plain.b.mana).toBe(1); // 仅基础 +1
+    expect(plain.b.mana).toBe(1.5); // 仅基础 +1.5
   });
 
   it('确定性：无地煞 → 与基线行为一致（地煞不入 hash·dishaB 默认零修正）', () => {
