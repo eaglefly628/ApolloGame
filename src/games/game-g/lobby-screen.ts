@@ -262,6 +262,11 @@ const CSS = `
 .ggl-root .gg-tip h4{ font-family:var(--fh); font-weight:700; font-size:15px; margin:0 0 6px; padding-bottom:6px; border-bottom:1px solid rgba(232,205,130,.25) }
 .ggl-root .gg-tip-eff{ font-size:12px; color:#cdd6e2; line-height:1.65; margin-bottom:8px }
 .ggl-root .gg-tip-row{ display:flex; justify-content:space-between; gap:10px; font-size:12px; color:var(--ink-dim); padding:1px 0 }
+/* 浮层左右弹（owner 2026-06-21·别弹出屏幕外）：tip-left=贴右缘向左展开(右侧栏用·不溢出右屏)；tip-right=贴左缘向右展开(最左侧用)。 */
+.ggl-root .gg-tipwrap.tip-left>.gg-tip{ left:auto; right:0; transform:translateX(0) translateY(-4px) }
+.ggl-root .gg-tipwrap.tip-left:hover>.gg-tip{ transform:translateX(0) translateY(0) }
+.ggl-root .gg-tipwrap.tip-right>.gg-tip{ left:0; right:auto; transform:translateX(0) translateY(-4px) }
+.ggl-root .gg-tipwrap.tip-right:hover>.gg-tip{ transform:translateX(0) translateY(0) }
 .ggl-root .good.got{ border-color:var(--gold) } .ggl-root .good.buy{ cursor:pointer } .ggl-root .good.buy:hover{ box-shadow:0 0 0 1px var(--gold) inset } .ggl-root .good.lock{ opacity:.62 }
 .ggl-root .unlock-badge{ display:inline-block; font-size:9px; font-weight:700; padding:1px 5px; border-radius:5px; background:rgba(232,205,138,.16); border:1px solid var(--hairline); color:var(--gold); vertical-align:middle }
 .ggl-root .boss-block{ margin-bottom:14px; padding:10px 12px; border-radius:10px; background:rgba(255,255,255,.03); border:1px solid var(--panel-border) }
@@ -1116,7 +1121,8 @@ export function renderLobby(view: LobbyView, tab: string, helpOpen: boolean, dec
       const c = view.campaign;
       const stars = c ? '★'.repeat(c.stars) + '<span style="opacity:.35">' + '★'.repeat(3 - c.stars) + '</span>' : '';
       const hDisha = c ? stageDisha(c.stage) : [];
-      const fiends = c ? c.fiends.map((f, i) => { const nums = dishaNumberLine(hDisha[i] ?? ''); return `<div class="fiend"><b>${esc(f.name)}</b><span>${esc(f.desc)}</span>${nums ? `<span class="disha-num">📊 ${esc(nums)}</span>` : ''}</div>`; }).join('') : '';
+      // 地煞牌悬浮即出详情（owner 2026-06-21·不用点·往左弹不溢出右屏）：名 + 招牌战术说明 + 数值。
+      const fiends = c ? c.fiends.map((f, i) => { const nums = dishaNumberLine(hDisha[i] ?? ''); return `<div class="fiend gg-tipwrap tip-left" style="cursor:help"><b>${esc(f.name)}</b><span>${esc(f.desc)}</span>${nums ? `<span class="disha-num">📊 ${esc(nums)}</span>` : ''}<div class="gg-tip"><h4 style="color:var(--gold)">🎴 ${esc(f.name)}</h4><div class="gg-tip-eff">${esc(f.desc)}</div>${nums ? `<div class="gg-tip-row"><span>📊 数值</span><b style="color:var(--gold)">${esc(nums)}</b></div>` : ''}<div class="gg-tip-row"><span>性质</span><b style="color:var(--club)">明牌 · 公平可破</b></div></div></div>`; }).join('') : '';
       return `<section class="screen${on('home')} homerow" data-screen="home">
       <div class="herocol">
         <div class="felt">
@@ -1143,7 +1149,7 @@ export function renderLobby(view: LobbyView, tab: string, helpOpen: boolean, dec
         </div>
         ${deckPreviewPanel(view.tiangangs, view.deckArchName, view.deckArchActivated, view.deckSize ?? 12, view.activeDeckName)}
       </div>
-      <div class="rail"><h2>⚔ 本关 Boss · ${esc(c?.boss ?? '—')}</h2>
+      <div class="rail"><h2 class="${c ? 'gg-tipwrap tip-left' : ''}" style="${c ? 'cursor:help' : ''}">⚔ 本关 Boss · ${esc(c?.boss ?? '—')}${c ? `<div class="gg-tip"><h4 style="color:var(--heart)">${esc(c.boss)} · ${esc(c.battle)}</h4><div class="gg-tip-eff">${esc(c.intro ?? c.oneLiner)}</div>${c.bossLines ? `<div style="font-family:var(--fd);font-size:14px;color:var(--gold);margin-top:6px">「${esc(c.bossLines.open)}」</div>` : ''}<div class="gg-tip-row"><span>难度</span><b style="color:var(--gold)">${stars}</b></div><div class="gg-tip-row"><span>通关解锁</span><b style="color:var(--gold)">${esc(c.unlock)}</b></div></div>` : ''}</h2>
         <div style="font-size:13px;color:var(--ink);margin-bottom:4px">${c ? `${esc(c.boss)} · <span class="ghost">${esc(c.battle)}</span>` : ''}</div>
         <div style="font-size:12px;color:var(--ink-dim);margin-bottom:10px">难度 <span style="color:var(--gold)">${stars}</span>　${c ? esc(c.oneLiner) : ''}</div>
         <div class="note" style="text-align:left;margin-bottom:8px">🎴 <b>地煞</b>（明牌·公平可破）— Boss 的招牌历史战术：</div>
