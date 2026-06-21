@@ -419,7 +419,17 @@ function shopItem(act: string, glyph: string, it: LobbyShopItem): string {
   const attr = it.buyable && !it.owned ? ` data-act="${act}" data-k="${it.id}"` : '';
   const lv = it.level !== undefined ? ` <span class="ghost">Lv.${it.level}</span>` : '';
   const foot = it.owned && it.level === undefined ? '<div class="cost">✓ 已融</div>' : `<div class="cost">🪙 ${it.cost}</div>`;
-  return `<div class="${cls}"${attr} title="${esc(it.sub)}"><div class="gnm">${glyph} ${esc(it.name)}${lv}</div>${foot}</div>`;
+  return `<div class="gg-tipwrap"><div class="${cls}"${attr}><div class="gnm">${glyph} ${esc(it.name)}${lv}</div>${foot}</div>${itemTipHTML(it, glyph)}</div>`;
+}
+// 通用条目富文本说明（闪艺/天罡收藏等·共用 shopItem）。
+function itemTipHTML(it: LobbyShopItem, glyph: string): string {
+  const rows = [
+    it.power ? tipRow('牌力', '⭐'.repeat(Math.min(it.power, 5)), 'var(--gold)') : '',
+    it.phat !== undefined ? tipRow('胜率 P̂', `+${it.phat}`, '#56be84') : '',
+    it.level !== undefined ? tipRow('等级', `Lv.${it.level}`, 'var(--gold)') : '',
+    it.owned ? tipRow('状态', '✓ 已拥有', 'var(--gold)') : tipRow('价格', `🪙 ${it.cost}`, 'var(--gold)'),
+  ].join('');
+  return ggTip(`<h4 style="color:var(--gold)">${glyph} ${esc(it.name)}</h4><div class="gg-tip-eff">${esc(it.sub)}</div>${rows}`);
 }
 // 帮助中心（owner 2026-06-20 合并）：游戏介绍 + 新手指导 + 玩法手册(初/中/高) 三合一·一个入口。
 function helpBox(helpTab: 'intro' | 'tut' | 'manual', tier: 'easy' | 'mid' | 'hard'): string {
