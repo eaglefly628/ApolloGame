@@ -1,5 +1,5 @@
 import { mountBattle, type BattleView, type BattleUnit, type BattleLane, type BattleLever, type HandCardView, type TengangCardView, type BattleActions, type ClashView, type BattleFx } from './battle-screen.js';
-import { mountLobby, luckyBattleBuff, type LobbyView, type LobbyShopItem } from './lobby-screen.js';
+import { mountLobby, luckyBattleBuff, luckyFromVal, type LobbyView, type LobbyShopItem } from './lobby-screen.js';
 import { prepareArmies, quartermasterEnergy, FORMATION_PRESETS, PRESET_NAMES, LEVER_CATALOG, LEVER_START, battleSpec, RUN_BATTLES, RUN_LIVES, BETWEEN_BUFFS, applyBuff, tiangangKeyBuffs, BOSS_ROSTER, bossFor, GAME_G_TIANGANGS, TIANGANG_BY_ID, ARCHETYPES, detectArchetype, archetypeMatchup, activeArchetype, pickAiFormation, GAME_G_PLANETS, GAME_G_FOILS, RECHARGE_PACKS, rechargeTotal, DIAMOND_EXCHANGES, DIZHI_SHARD_PACKS, RECHARGE_PASSWORD, GACHA, gachaCost, DIZHI_MAX_TIER, DIZHI_TIER_NM, DIZHI_TIER_CAP, DIZHI_INLAY_FAVOR, dizhiMerge, dizhiTotal, dizhiTopTier, DIZHI_ZODIACS, INLAY_MAX, effectiveDeckFavors, POKER_PICK_SIZE, isPoolCardId, autoBuildPokerPicks, cardFavorIndex, rankOfCardId, deployCost, isHeroOwned, heroCardByName, heroNameOf, effectiveLives, effectiveLeverCap, effectiveLeverRegen, campaignFor, unlockStageOf, type Formation, type Intervention, type LeverKind, type RunBuff, type ArmyCard, type InlayEntry } from './index.js';
 import { initLiveBattle, stepLiveBattle, liveActive, migrateRear, NO_TENGANG, LANE_LEN, HOME_BLOOD, type LiveBattle, type DeployCmd, type ClashEvent, type TengangFx } from './live-combat.js';
 import { initTurnBattle, drawCard, deployUnit, castTengang, discardCard, endTurn, aiTakeTurn, toggleGate, GATES, OPENING_HAND, DRAW_COST, CAST_COST, manaGain, type PokerCard, type TengangHandCard } from './turn-combat.js';
@@ -898,10 +898,14 @@ export function mount(container: HTMLElement, shell?: { exit?: () => void }): ()
       const lanesA = tb.lanes.filter((L) => L.a.length + L.spentA > L.b.length + L.spentB).length;
       const lanesB = tb.lanes.filter((L) => L.b.length + L.spentB > L.a.length + L.spentA).length;
       const homeA = tb.homeA, homeB = tb.homeB, winner = tb.winner, homeMax = tb.homeMax;
-      log(`▼结算：${winner === 'a' ? '我方胜' : winner === 'b' ? '敌方胜' : '平局'} ｜控路 我${lanesA}:敌${lanesB} ｜大本营 我${homeA}/敌${homeB}（满${homeMax}）`);
       playSfx(winner === 'a' ? 'victory' : 'defeat'); // 收场号角 / 哀落
-      const gain = survA + (winner === 'a' ? 15 : 0);
+      // 战利品 = 全局战果(幸存兵 + 胜方 +15)，再按【今日卦象】做 ±（owner 2026-06-21：大吉多得/大凶少得·这是卦象在结算层的加减·与出战部署 buff 并存）。
+      const baseGain = survA + (winner === 'a' ? 15 : 0);
+      const gain = Math.max(0, baseGain + fortuneBuff); // 卦象 ±：大吉+2/吉+1/中庸0/小凶−1/大凶−2（夹 ≥0）
+      const fortuneLabel = save.fortune.keptVal != null ? luckyFromVal(save.fortune.keptVal).label : null;
+      const lootSub = fortuneLabel ? `基础 ${baseGain} · 卦象${fortuneLabel} ${fortuneBuff >= 0 ? '+' : ''}${fortuneBuff}` : '材料 🪙';
       save.materials += gain;
+      log(`▼结算：${winner === 'a' ? '我方胜' : winner === 'b' ? '敌方胜' : '平局'} ｜控路 我${lanesA}:敌${lanesB} ｜大本营 我${homeA}/敌${homeB}（满${homeMax}）｜战利品 +${gain}（基础${baseGain}${fortuneLabel ? `·卦象${fortuneLabel}${fortuneBuff >= 0 ? '+' : ''}${fortuneBuff}` : ''}）`);
       let tail = '', cont = '回大厅', route: () => void = showLobby;
       if (winner === 'a') {
         save.campaignMax = Math.max(save.campaignMax, save.stage);
@@ -926,7 +930,7 @@ export function mount(container: HTMLElement, shell?: { exit?: () => void }): ()
         <div style="font-family:'Zhi Mang Xing',cursive;font-size:80px;line-height:1;color:${bigCol};text-shadow:0 4px 26px ${bigCol}66;">${bigTxt}</div>
         <div style="font-size:16px;color:#cdd7e3;margin-top:6px;">${who} ｜ 敌阵【${aiName}】</div>
         <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:12px;margin:26px 0 18px;">
-          ${stat('战利品', '+' + gain, '材料 🪙')}${stat('控路', lanesA + ' : ' + lanesB, '我方 : 敌方')}${stat('大本营', '我 ' + homeA + ' / 敌 ' + homeB, '满 ' + homeMax)}${qm > 0 ? stat('督粮', '+' + qm + '◈', '入下场能量') : ''}
+          ${stat('战利品', '+' + gain, lootSub)}${stat('控路', lanesA + ' : ' + lanesB, '我方 : 敌方')}${stat('大本营', '我 ' + homeA + ' / 敌 ' + homeB, '满 ' + homeMax)}${qm > 0 ? stat('督粮', '+' + qm + '◈', '入下场能量') : ''}
         </div>
         <div style="font-size:14px;color:#9fb0c2;margin-bottom:22px;min-height:18px;">${tail}</div>
         <button id="gg-result-cont" style="padding:14px 44px;border-radius:13px;border:none;cursor:pointer;background:linear-gradient(180deg,#ff8d5a,#ee5a25);color:#fff;font-family:'Rajdhani',sans-serif;font-weight:700;font-size:19px;letter-spacing:.04em;box-shadow:0 10px 28px rgba(238,90,37,.5);">${cont} →</button>
