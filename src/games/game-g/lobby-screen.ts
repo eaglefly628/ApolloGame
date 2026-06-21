@@ -174,6 +174,9 @@ const CSS = `
 .ggl-root .pcard-cost{ position:absolute; top:3px; left:4px; z-index:2; min-width:13px; height:13px; padding:0 2px; border-radius:4px; background:rgba(10,14,22,.82); color:#cfe0f3; font-size:9px; font-weight:800; line-height:13px; text-align:center }
 .ggl-root .pcard-pick{ position:absolute; top:2px; right:3px; z-index:3; width:15px; height:15px; border-radius:50%; background:var(--gold-grad); color:#2a1a08; font-size:11px; font-weight:900; line-height:15px; text-align:center; box-shadow:0 1px 4px rgba(0,0,0,.5) }
 .ggl-root .pcard:not(.picked) .pcard-pick{ display:none } /* ✓ 常驻·未选隐藏（定点切 .picked 类·不重建格） */
+.ggl-root .pcard-ench{ position:absolute; top:2px; left:3px; z-index:4; min-width:15px; height:15px; padding:0 3px; border-radius:8px; background:rgba(12,16,24,.78); border:1px solid var(--hairline); color:var(--ink-dim); font-size:9px; font-weight:800; line-height:14px; text-align:center; cursor:pointer; transition:transform .12s,border-color .12s } /* 牌库内附魔徽标（owner 2026-06-21·E）*/
+.ggl-root .pcard-ench:hover{ transform:scale(1.18); border-color:var(--gold) }
+.ggl-root .pcard-ench.on{ background:var(--gold-grad); color:#2a1a08; border-color:var(--gold) }
 .ggl-root .pbuild-grid.full .pcard-wrap:not(.is-picked) .pcard{ opacity:.42 } /* 满 16 → 未选置灰（容器类·无逐卡 DOM 改） */
 .ggl-root .build-row{ display:flex; gap:14px; align-items:stretch; margin:10px 0 12px }
 .ggl-root .cost-curve{ display:flex; gap:8px; align-items:flex-end; flex:none; height:78px; padding:8px 12px; border-radius:11px; background:var(--chip); border:1px solid var(--panel-border) }
@@ -436,7 +439,7 @@ function earthSection(filter: string, bag: Record<string, number[]> = {}): strin
 }
 
 const SUIT_LETTER: Record<string, string> = { '♠': 'S', '♥': 'H', '♦': 'D', '♣': 'C' };
-function deckGrid(deck: number[], foils?: LobbyShopItem[], picks?: Set<string>): string {
+function deckGrid(deck: number[], foils?: LobbyShopItem[], picks?: Set<string>, inlays?: Record<string, InlayEntry[]>): string {
   const ownedFoilNames = (foils ?? []).filter(f => f.owned).map(f => f.name);
   const foilBack = ownedFoilNames.length
     ? `<div style="font-size:9px;color:var(--gold)">✨${esc(ownedFoilNames.join('+'))}</div>` : '';
@@ -457,13 +460,16 @@ function deckGrid(deck: number[], foils?: LobbyShopItem[], picks?: Set<string>):
       const faceStyle = isFace ? `border-color:${c}90;` : '';
       const costBadge = pickMode ? `<span class="pcard-cost" title="放牌费用 ${cost}">${cost}</span>` : '';
       const pickMark = pickMode ? '<span class="pcard-pick">✓</span>' : ''; // 常驻·选中态由 .picked 控制显隐（定点切类·不重建）
+      // 牌库内附魔小徽标（owner 2026-06-21·E）：点它弹单牌附魔编辑·不影响选牌点击（自带 data-act·closest 命中徽标本身）。
+      const inlayN = (inlays?.[String(si * 13 + ri)] ?? []).length;
+      const enchBadge = pickMode ? `<span class="pcard-ench${inlayN ? ' on' : ''}" data-act="enchSel" data-k="${si * 13 + ri}" title="地支附魔（镶 ${inlayN}/${INLAY_MAX}）">🀄${inlayN || ''}</span>` : '';
       // 正面（front）：花色水印 + 该将立绘剪影（全 52 张统一）+ 点数 + 将名 + favor
       const front = `<div class="pcard-front">` +
         `<div class="pcard-wm" style="color:${c};font-size:24px;opacity:.07">${su}</div>` +
         (hero ? `<div class="pcard-portrait">${heroPortrait(hero.suit, hero.era, hero.rank, hero.rar)}</div>` : '') +
         `<div class="r" style="color:${c}">${rank}</div>` +
         (hero ? `<div class="pcard-lbl" style="color:${c};opacity:.82">${esc(hero.name)}</div>` : '') +
-        `<span class="own">${fv}</span>${costBadge}${pickMark}` +
+        `<span class="own">${fv}</span>${costBadge}${pickMark}${enchBadge}` +
       `</div>`;
       // 背面（back）：翻面看这位名将的身份 + favor（全 52 张统一·不再"有的有字有的没字"）
       const back = `<div class="pcard-back">` +
@@ -509,7 +515,7 @@ function pokerBuildPanel(view: LobbyView): string {
   const full = picks.size >= max;
   return `<div class="card"><div class="pbuild-head">${pokerBuildHead(view)}</div>
     <div class="note" style="text-align:left;margin:9px 0 4px">点牌入/出 <b>出战牌库</b>（满 ${max} 张）。左下角数字＝<b>放牌费用</b>（点 2-4=0 / 5-7=1 / 8-10=2 / JQKA=3）。<b style="color:var(--gold)">✓</b>＝已入战库；favor 越高越能扛掷命。带进下一场战斗的就是这 ${max} 张。</div>
-    <div class="pbuild-grid${full ? ' full' : ''}">${deckGrid(view.deck, view.foils, picks)}</div></div>`;
+    <div class="pbuild-grid${full ? ' full' : ''}">${deckGrid(view.deck, view.foils, picks, view.inlays)}</div></div>`;
 }
 function shopItem(act: string, glyph: string, it: LobbyShopItem): string {
   const cls = 'good' + (it.owned ? ' got' : it.buyable ? ' buy' : ' lock');
@@ -766,13 +772,48 @@ function campaignSection(view: LobbyView): string {
 // 改造坊天罡牌货架项（B3）：买入 + 选入/踢出战库双动作 + 牌力/P̂ 展示。
 // 地支附魔台（owner 2026-06-20 · 乙简版）：① 选一张扑克牌 → ② 把已拥有的地支生肖镶进去（≤INLAY_MAX 槽）→ +favor。
 // 真影响战斗（经 effectiveDeckFavors→myBias）。连携(三合/六合)留甲契约④。
+const ENCH_TIER_CLR = ['', '#cd7f32', '#c4ccd6', '#e8cd82']; // 铜银金
+// 单牌镶嵌详情（slots + 卡包可镶项）·改造坊附魔台与牌库内附魔弹窗共用（owner 2026-06-21）。
+function inlayDetail(view: LobbyView, ix: number): string {
+  const deck = view.deck; const inlays = view.inlays ?? {}; const bag = view.dizhiBag ?? {};
+  const zodOf = (b: string): typeof DIZHI_ZODIACS[number] | undefined => DIZHI_ZODIACS.find((z) => z.branch === b);
+  const [su, c] = SUITS[Math.floor(ix / 13)];
+  const rank = RANKS[ix % 13];
+  const hero = HERO_CARDS.find((h) => h.suit === su && h.rank === rank);
+  const inlaid = inlays[String(ix)] ?? [];
+  const bonus = inlayBonus(inlaid);
+  const full = inlaid.length >= INLAY_MAX;
+  const slots = Array.from({ length: INLAY_MAX }, (_, k) => {
+    const e = inlaid[k];
+    if (e) { const z = zodOf(e.b); return `<button class="ench-slot filled" data-act="removeInlay" data-k="${ix}:${k}" title="卸下 ${z?.animal ?? e.b}·${DIZHI_TIER_NM[e.t]}（不退卡包）" style="border-color:${ENCH_TIER_CLR[e.t] ?? 'var(--gold)'}"><span>${esc(z?.animal ?? e.b)}<sub style="font-size:8px;color:${ENCH_TIER_CLR[e.t]}">${DIZHI_TIER_NM[e.t]}</sub></span><span class="ench-rm">✕</span></button>`; }
+    return `<div class="ench-slot empty">＋</div>`;
+  }).join('');
+  // 可镶 = 卡包里每个 (生肖×档位) 有在持活化的，逐项可选（点哪个消耗哪个档）。
+  const picks: string[] = [];
+  for (const z of DIZHI_ZODIACS) {
+    for (let t = DIZHI_TIER_CAP; t >= 1; t--) {
+      const n = (bag[z.branch] ?? [])[t - 1] ?? 0;
+      if (n > 0) picks.push(`<button class="ench-pick"${full ? ' disabled' : ` data-act="inlay" data-k="${ix}:${z.branch}:${t}"`} style="border-color:${ENCH_TIER_CLR[t]}"><span style="color:${ENCH_TIER_CLR[t]}">${esc(z.animal)}·${DIZHI_TIER_NM[t]}</span> <span style="opacity:.6">×${Math.min(n, 3)}</span> <b style="color:var(--gold)">+${DIZHI_INLAY_FAVOR[t]}</b></button>`);
+    }
+  }
+  const pick = picks.length ? picks.join('') : '<span class="ghost" style="font-size:12px">卡包里没有地支了 · 去「🛒商城」抽卡获取</span>';
+  return `<div class="ench-detail"><div class="ench-sel-card" style="border-color:${c}"><div class="ench-sel-rk" style="color:${c}">${rank}<br>${su}</div><div class="ench-sel-nm">${hero ? esc(hero.name) : ''}</div><div class="ench-sel-fv">favor <b style="color:var(--gold)">${deck[ix]}</b>${bonus ? ` <span style="color:var(--club);font-size:11px">(含附魔 +${bonus})</span>` : ''}</div></div>
+    <div style="flex:1"><div class="note" style="text-align:left;margin-bottom:5px">镶嵌槽（${inlaid.length}/${INLAY_MAX}）· 点✕卸下（永久消耗·不退卡包）</div><div class="ench-slots">${slots}</div>
+    <div class="note" style="text-align:left;margin:10px 0 5px">${full ? '<span style="color:var(--gold)">槽位已满</span>' : '点卡包里的地支镶入（消耗一张）：'}</div><div class="ench-picks">${pick}</div></div></div>`;
+}
+// 牌库内附魔弹窗（owner 2026-06-21·E「点牌库里牌改地支附魔」）：不动选牌网格、走小徽标 → 弹此窗编辑。
+function deckInlayBox(view: LobbyView, ix: number): string {
+  if (view.deck[ix] === undefined) return '';
+  return `<div class="tut-ov" data-act="deckInlay-close"><div class="tut-box" data-stop="1" style="max-width:560px">
+    <h2 style="margin-bottom:4px">${GI.crafting} 地支附魔 · 单牌镶嵌</h2>
+    <div class="note" style="text-align:left;margin-bottom:10px">给这张牌镶地支生肖（消耗卡包·镶一张少一张）。改的就是「编辑/改造/战局」同一份 52 牌 favor。</div>
+    ${inlayDetail(view, ix)}
+    <div style="text-align:center;margin-top:14px"><button class="cta-sub" style="color:#2a1a08;background:var(--gold-grad);border:0" data-act="deckInlay-close">完成 →</button></div>
+  </div></div>`;
+}
 function enchantPanel(view: LobbyView, craftSel: string): string {
   const deck = view.deck;
   const inlays = view.inlays ?? {};
-  const bag = view.dizhiBag ?? {};
-  const TIER_CLR = ['', '#cd7f32', '#c4ccd6', '#e8cd82'];
-  const zodOf = (b: string): typeof DIZHI_ZODIACS[number] | undefined => DIZHI_ZODIACS.find((z) => z.branch === b);
-  // 52 牌选择网格（idx=si*13+ri·与 save.deck/inlays 同序·单一真相）
   const grid = SUITS.flatMap(([su, c], si) => RANKS.map((rank, ri) => {
     const idx = si * 13 + ri;
     const hero = HERO_CARDS.find((h) => h.suit === su && h.rank === rank);
@@ -781,34 +822,10 @@ function enchantPanel(view: LobbyView, craftSel: string): string {
     const sel = craftSel === String(idx);
     return `<button class="ench-card${sel ? ' sel' : ''}" data-act="craftSel" data-k="${idx}"><span class="ench-rk" style="color:${c}">${rank}${su}</span><span class="ench-nm">${hero ? esc(hero.name) : ''}</span><span class="ench-fv">${fv}${n ? ` <span style="color:var(--gold)">🀄${n}</span>` : ''}</span></button>`;
   })).join('');
-  // 选中牌的镶嵌详情
-  let detail = `<div class="note" style="text-align:left;color:var(--ink-dim);padding:14px 0">← 选一张牌，给它镶地支附魔（消耗卡包·镶一张少一张）</div>`;
-  if (craftSel !== '' && deck[+craftSel] !== undefined) {
-    const ix = +craftSel;
-    const [su, c] = SUITS[Math.floor(ix / 13)];
-    const rank = RANKS[ix % 13];
-    const hero = HERO_CARDS.find((h) => h.suit === su && h.rank === rank);
-    const inlaid = inlays[String(ix)] ?? [];
-    const bonus = inlayBonus(inlaid);
-    const full = inlaid.length >= INLAY_MAX;
-    const slots = Array.from({ length: INLAY_MAX }, (_, k) => {
-      const e = inlaid[k];
-      if (e) { const z = zodOf(e.b); return `<button class="ench-slot filled" data-act="removeInlay" data-k="${ix}:${k}" title="卸下 ${z?.animal ?? e.b}·${DIZHI_TIER_NM[e.t]}（不退卡包）" style="border-color:${TIER_CLR[e.t] ?? 'var(--gold)'}"><span>${esc(z?.animal ?? e.b)}<sub style="font-size:8px;color:${TIER_CLR[e.t]}">${DIZHI_TIER_NM[e.t]}</sub></span><span class="ench-rm">✕</span></button>`; }
-      return `<div class="ench-slot empty">＋</div>`;
-    }).join('');
-    // 可镶 = 卡包里每个 (生肖×档位) 有在持活化的，逐项可选（点哪个消耗哪个档）。
-    const picks: string[] = [];
-    for (const z of DIZHI_ZODIACS) {
-      for (let t = DIZHI_TIER_CAP; t >= 1; t--) {
-        const n = (bag[z.branch] ?? [])[t - 1] ?? 0;
-        if (n > 0) picks.push(`<button class="ench-pick"${full ? ' disabled' : ` data-act="inlay" data-k="${ix}:${z.branch}:${t}"`} style="border-color:${TIER_CLR[t]}"><span style="color:${TIER_CLR[t]}">${esc(z.animal)}·${DIZHI_TIER_NM[t]}</span> <span style="opacity:.6">×${Math.min(n, 3)}</span> <b style="color:var(--gold)">+${DIZHI_INLAY_FAVOR[t]}</b></button>`);
-      }
-    }
-    const pick = picks.length ? picks.join('') : '<span class="ghost" style="font-size:12px">卡包里没有地支了 · 去「🛒商城」抽卡获取</span>';
-    detail = `<div class="ench-detail"><div class="ench-sel-card" style="border-color:${c}"><div class="ench-sel-rk" style="color:${c}">${rank}<br>${su}</div><div class="ench-sel-nm">${hero ? esc(hero.name) : ''}</div><div class="ench-sel-fv">favor <b style="color:var(--gold)">${deck[ix]}</b>${bonus ? ` <span style="color:var(--club);font-size:11px">(含附魔 +${bonus})</span>` : ''}</div></div>
-      <div style="flex:1"><div class="note" style="text-align:left;margin-bottom:5px">镶嵌槽（${inlaid.length}/${INLAY_MAX}）· 点✕卸下（永久消耗·不退卡包）</div><div class="ench-slots">${slots}</div>
-      <div class="note" style="text-align:left;margin:10px 0 5px">${full ? '<span style="color:var(--gold)">槽位已满</span>' : '点卡包里的地支镶入（消耗一张）：'}</div><div class="ench-picks">${pick}</div></div></div>`;
-  }
+  // 选中牌的镶嵌详情（与牌库内附魔弹窗共用 inlayDetail）
+  const detail = (craftSel !== '' && deck[+craftSel] !== undefined)
+    ? inlayDetail(view, +craftSel)
+    : `<div class="note" style="text-align:left;color:var(--ink-dim);padding:14px 0">← 选一张牌，给它镶地支附魔（消耗卡包·镶一张少一张）</div>`;
   return `<div class="card"><h2>${GI.crafting} 地支牌 · 生肖镶嵌（附魔） <span class="ghost" style="margin-left:auto;font-size:12px">消耗卡包·镶进牌 → +favor · ≤${INLAY_MAX} 槽</span></h2>
     <div class="note" style="text-align:left;margin-bottom:8px">用卡包里的地支生肖给扑克牌附魔（铜+${DIZHI_INLAY_FAVOR[1]}/银+${DIZHI_INLAY_FAVOR[2]}/金+${DIZHI_INLAY_FAVOR[3]} favor）·<b style="color:var(--heart)">消耗品：镶一张少一张</b>·真提升战力。</div>
     <div class="ench-grid">${grid}</div>
@@ -1083,9 +1100,9 @@ function rechargeThanksBox(): string {
     <div style="margin-top:18px"><button class="cta-sub" style="color:#2a1a08;background:var(--gold-grad);border:0" data-act="thanks-close">收下祝福 →</button></div>
   </div></div>`;
 }
-export interface LobbyOverlayState { helpOpen: boolean; helpTab: 'intro' | 'tut' | 'manual'; manualTier: 'easy' | 'mid' | 'hard'; settingsOpen: boolean; rechargeOpen: boolean; shopTab: 'gacha' | 'wallet' | 'foil'; rechargeErr: string; rcSuits: string[]; rechargeThanks: boolean; gachaReveal: GachaResult[] | null; story: { beats: StoryBeat[]; idx: number; label: string; cta: string } | null; guideSkipAsk: boolean; deckPickerOpen: boolean; lucky: LuckyRoll | null }
+export interface LobbyOverlayState { helpOpen: boolean; helpTab: 'intro' | 'tut' | 'manual'; manualTier: 'easy' | 'mid' | 'hard'; settingsOpen: boolean; rechargeOpen: boolean; shopTab: 'gacha' | 'wallet' | 'foil'; rechargeErr: string; rcSuits: string[]; rechargeThanks: boolean; gachaReveal: GachaResult[] | null; story: { beats: StoryBeat[]; idx: number; label: string; cta: string } | null; guideSkipAsk: boolean; deckPickerOpen: boolean; lucky: LuckyRoll | null; deckInlaySel: number | null }
 export function lobbyOverlaysHTML(view: LobbyView, s: LobbyOverlayState): string {
-  return `${s.helpOpen ? helpBox(s.helpTab, s.manualTier) : ''}${s.settingsOpen ? settingsBox(view) : ''}${s.rechargeOpen ? shopBox(view, s.shopTab, s.rechargeErr, s.rcSuits) : ''}${s.rechargeThanks ? rechargeThanksBox() : ''}${s.gachaReveal ? gachaRevealBox(s.gachaReveal) : ''}${s.lucky ? luckyBox(s.lucky, view.fortune) : ''}${s.story ? narrationBox(s.story.beats, s.story.idx, s.story.label, s.story.cta) : ''}${s.guideSkipAsk ? guideSkipDialog() : ''}${s.deckPickerOpen ? deckPickerBox(view) : ''}`;
+  return `${s.helpOpen ? helpBox(s.helpTab, s.manualTier) : ''}${s.settingsOpen ? settingsBox(view) : ''}${s.rechargeOpen ? shopBox(view, s.shopTab, s.rechargeErr, s.rcSuits) : ''}${s.rechargeThanks ? rechargeThanksBox() : ''}${s.gachaReveal ? gachaRevealBox(s.gachaReveal) : ''}${s.lucky ? luckyBox(s.lucky, view.fortune) : ''}${s.story ? narrationBox(s.story.beats, s.story.idx, s.story.label, s.story.cta) : ''}${s.guideSkipAsk ? guideSkipDialog() : ''}${s.deckPickerOpen ? deckPickerBox(view) : ''}${s.deckInlaySel != null ? deckInlayBox(view, s.deckInlaySel) : ''}`;
 }
 export function renderLobby(view: LobbyView, tab: string, helpOpen: boolean, deckTab: 'base' | 'gang' | 'dizhi' = 'base', earthFilter = 'all', collTab = 'cards', heroSuit = 'all', heroDetail = '', heroRar = 'all', ownedOnly = false, settingsOpen = false, manualTier: 'easy' | 'mid' | 'hard' = 'easy', rechargeOpen = false, rechargeErr = '', story: { beats: StoryBeat[]; idx: number; label: string; cta: string } | null = null, guideSkipAsk = false, shopTab: 'gacha' | 'wallet' | 'foil' = 'wallet', gachaReveal: GachaResult[] | null = null, deckPickerOpen = false, craftSel = '', helpTab: 'intro' | 'tut' | 'manual' = 'intro'): string {
   const on = (t: string): string => (tab === t ? ' on' : '');
@@ -1170,7 +1187,7 @@ export function renderLobby(view: LobbyView, tab: string, helpOpen: boolean, dec
     </div></section>
     <section class="screen${on('ladder')} full" data-screen="ladder">${ladderSection(view.name, view.rankText)}</section>
   </div>
-  </div><div id="gv-ov" style="display:contents">${lobbyOverlaysHTML(view, { helpOpen, helpTab, manualTier, settingsOpen, rechargeOpen, shopTab, rechargeErr, rcSuits: [], rechargeThanks: false, gachaReveal, story, guideSkipAsk, deckPickerOpen, lucky: null })}</div></div>`;
+  </div><div id="gv-ov" style="display:contents">${lobbyOverlaysHTML(view, { helpOpen, helpTab, manualTier, settingsOpen, rechargeOpen, shopTab, rechargeErr, rcSuits: [], rechargeThanks: false, gachaReveal, story, guideSkipAsk, deckPickerOpen, lucky: null, deckInlaySel: null })}</div></div>`;
 }
 
 export interface LobbyHandlers {
@@ -1232,6 +1249,7 @@ export function mountLobby(host: HTMLElement, h: LobbyHandlers): { update: () =>
   let gachaReveal: GachaResult[] | null = null;
   let deckPicker = false;
   let craftSel = '';
+  let deckInlaySel: number | null = null; // 牌库内附魔弹窗选中牌位（owner 2026-06-21·E）
   const render = (): void => { host.innerHTML = renderLobby({ ...h.getView(), skin }, tab, help, deckTab, earthFilter, collTab, heroSuit, heroDetail, heroRar, ownedOnly, settings, manTier, recharge, rechargeErr, story, guideSkipAsk, shopTab, gachaReveal, deckPicker, craftSel, helpTab); updateCoach(); };
   let lucky: LuckyRoll | null = null;
   // 新手引导高亮层（doc28 A/B/C·复用引擎 coachmark 纯几何 + 薄 DOM 适配）：全屏 dim 镂空当前步锚点 + 气泡 + 跳过。
@@ -1270,7 +1288,7 @@ export function mountLobby(host: HTMLElement, h: LobbyHandlers): { update: () =>
   const onCoachClick = (e: MouseEvent): void => { const t = (e.target as HTMLElement).closest('[data-act="guide-skip"]'); if (t) { playSfx(sfxForAct('guide-skip')); guideSkipAsk = true; renderOv(); updateCoach(); } };
   coachLayer.addEventListener('click', onCoachClick);
   const onResize = (): void => updateCoach();
-  const ovState = (): LobbyOverlayState => ({ helpOpen: help, helpTab, manualTier: manTier, settingsOpen: settings, rechargeOpen: recharge, shopTab, rechargeErr, rcSuits, rechargeThanks, gachaReveal, story, guideSkipAsk, deckPickerOpen: deckPicker, lucky });
+  const ovState = (): LobbyOverlayState => ({ helpOpen: help, helpTab, manualTier: manTier, settingsOpen: settings, rechargeOpen: recharge, shopTab, rechargeErr, rcSuits, rechargeThanks, gachaReveal, story, guideSkipAsk, deckPickerOpen: deckPicker, lucky, deckInlaySel });
   const localRollVal = (): number => 1 + Math.floor(Math.random() * 100); // 无 onRollFortune 句柄时的本地兜底（测试/独立预览）
   // 抗闪屏：只更新弹层 #gv-ov（不重建大厅主体）。弹层打开/内部导航/关闭都走它 → 不再整屏闪。
   const renderOv = (): void => { const o = host.querySelector('#gv-ov'); if (o) o.innerHTML = lobbyOverlaysHTML({ ...h.getView(), skin }, ovState()); else render(); updateCoach(); };
@@ -1395,8 +1413,11 @@ export function mountLobby(host: HTMLElement, h: LobbyHandlers): { update: () =>
     else if (act === 'deckPicker-close') { deckPicker = false; render(); } // 关弹窗→刷新主体（牌组槽变化）
     // 地支附魔台：选牌 / 镶入 / 卸下
     else if (act === 'craftSel') { craftSel = craftSel === k ? '' : k; render(); }
-    else if (act === 'inlay') { const [idx, br, t] = k.split(':'); h.onInlay?.(idx, br, parseInt(t, 10) || 1); render(); }
-    else if (act === 'removeInlay') { const [idx, slot] = k.split(':'); h.onRemoveInlay?.(idx, parseInt(slot, 10) || 0); render(); }
+    // 牌库内附魔（owner 2026-06-21·E）：点小徽标弹单牌附魔弹窗（不动选牌点击）；编辑时只刷弹窗(不重建网格·不跳屏)，关窗再整刷一遍刷新徽标。
+    else if (act === 'enchSel') { deckInlaySel = parseInt(k, 10); if (Number.isNaN(deckInlaySel)) deckInlaySel = null; renderOv(); }
+    else if (act === 'deckInlay-close') { deckInlaySel = null; render(); }
+    else if (act === 'inlay') { const [idx, br, t] = k.split(':'); h.onInlay?.(idx, br, parseInt(t, 10) || 1); if (deckInlaySel != null) renderOv(); else render(); }
+    else if (act === 'removeInlay') { const [idx, slot] = k.split(':'); h.onRemoveInlay?.(idx, parseInt(slot, 10) || 0); if (deckInlaySel != null) renderOv(); else render(); }
     else if (act === 'exitGame') { settings = false; h.onExitGame?.(); } // 退出到游戏库（壳层接管·不再 render）
     else if (act === 'reset') { h.onReset?.(); settings = false; render(); }
     updateCoach(); // 任何点击后重算引导高亮（步进/开关弹层都可能改可见步）
