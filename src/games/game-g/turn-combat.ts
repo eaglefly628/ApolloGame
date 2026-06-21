@@ -432,6 +432,31 @@ export function endTurn(b: TurnBattle): void {
 // 每回合：枚举可行动作(放兵×路 / 打天罡 / 抽兵·抽天罡) → 效用函数(局面因子 × 画像权重)打分 → 选最高(seed 破平局)。
 // 难度 aiTier：低档有概率选次优(会犯错·好赢)·高档总最优。确定性(单一 rng)·可回放·可喂仿真。教学关用固定脚本(不走此)。
 const wt = (v: number): number => v / 10; // 画像 0-10 → 权重 0-1
+
+// ── aiTier >= 3 明牌情报（作弊档·Boss 全知全览）──
+// 读玩家手牌 + 牌库顶，给各评分函数提供对手视角加成。
+function foeIntel(b: TurnBattle): {
+  handMaxPts: number;   // 玩家手牌最高底点
+  handHasGeneral: boolean; // 玩家手里有没有主将
+  nextIsGeneral: boolean;  // 牌库顶3张含主将（即将入手）
+  nextMaxPts: number;      // 牌库顶3张最高底点
+  laneWinProb: [number, number, number]; // 我方当前这路前锋 vs 玩家前锋：底点差（正=我占优）
+} {
+  const peek = b.a.pokerDeck.slice(0, 3).filter((c) => c.kind === 'poker') as PokerCard[];
+  const handCards = b.a.hand.filter((c) => c.kind === 'poker') as PokerCard[];
+  const handMaxPts = handCards.reduce((m, c) => Math.max(m, cardPoints(c.rank)), 0);
+  const handHasGeneral = handCards.some((c) => c.general);
+  const nextIsGeneral = peek.some((c) => c.general);
+  const nextMaxPts = peek.reduce((m, c) => Math.max(m, cardPoints(c.rank)), 0);
+  const laneWinProb = [0, 1, 2].map((li) => {
+    const myFront = b.lanes[li].b[0]; const foeFront = b.lanes[li].a[0];
+    const myPts = myFront ? myFront.points + myFront.buff : 0;
+    const foePts = foeFront ? foeFront.points + foeFront.buff : 0;
+    return myPts - foePts; // 正数=我占优
+  }) as [number, number, number];
+  return { handMaxPts, handHasGeneral, nextIsGeneral, nextMaxPts, laneWinProb };
+}
+
 // 放兵到某路的效用：路偏好(铺/专) + 攻击性×目标偏好(弱/强/将) + 方阵扎堆协同 + 兵牌强度。
 function scoreDeploy(b: TurnBattle, card: PokerCard, lane: number): number {
   const p = b.aiProfile; const own = b.lanes[lane].b; const foe = b.lanes[lane].a; const foeFront = foe[0];
@@ -442,18 +467,45 @@ function scoreDeploy(b: TurnBattle, card: PokerCard, lane: number): number {
   else if (p.targetPref === 'strong') s += (foeFront ? foeFront.points : 0) * 0.4 * ag; // 硬碰强
   else s += (foe.some((u) => u.general) ? 9 : 0) * ag; // 取主将路(斩首)
   if (b.dishaB.phalanxPerAdj > 0) s += own.length * 1.5; // 地煞·方阵/连环：扎堆协同
+  // 全知视角加成（aiTier >= 3）：看玩家手牌 + 牌库顶，做更精准的反制决策。
+  if (b.aiTier >= 3) {
+    const intel = foeIntel(b);
+    const myPts = cardPoints(card.rank) + (card.buff ?? 0);
+    const foePts = foeFront ? foeFront.points + foeFront.buff : 0;
+    if (myPts > foePts + 3) s += 4;   // 这路我方明显占优 → 力压
+    if (myPts < foePts - 3) s -= 3;   // 这路我方明显劣势 → 避开
+    if (intel.nextIsGeneral && foe.length === 0) s += 5; // 玩家即将入手主将 → 抢占空路
+    if (intel.handHasGeneral && foe.some((u) => u.general)) s += 3; // 玩家主将在此路 → 施压
+    if (intel.handMaxPts > cardPoints(card.rank) + 4) s -= 2; // 玩家手牌比我这张强很多 → 换路
+  }
   return s;
 }
 // 打天罡效用：早放↔攒(spellEager) + 场上己兵越多越值得加 buff。
 function scoreCast(b: TurnBattle): number {
   const units = b.lanes.reduce((n, L) => n + L.b.length, 0);
-  return 7 + b.aiProfile.spellEager * 1.0 + units * 0.6;
+  let s = 7 + b.aiProfile.spellEager * 1.0 + units * 0.6;
+  // 全知加成：玩家下一张是强牌/主将 → 赶紧先施天罡占优。
+  if (b.aiTier >= 3) {
+    const intel = foeIntel(b);
+    if (intel.nextIsGeneral || intel.nextMaxPts >= 12) s += 4;
+    if (intel.handHasGeneral) s += 2;
+  }
+  return s;
 }
 // 抽牌效用：手空更该抽 + economy 囤(低)更爱抽攒手牌。抽天罡随 spellEager。
 function scoreDraw(b: TurnBattle, from: 'poker' | 'tengang'): number {
   const sd = b.b; const have = sd.hand.filter((c) => (from === 'poker' ? c.kind === 'poker' : c.kind === 'tengang')).length;
-  if (from === 'poker') return (have === 0 ? 9 : 4 - have) + (10 - b.aiProfile.economy) * 0.3;
-  return (have === 0 ? b.aiProfile.spellEager * 0.7 : 0.5);
+  let s: number;
+  if (from === 'poker') s = (have === 0 ? 9 : 4 - have) + (10 - b.aiProfile.economy) * 0.3;
+  else s = (have === 0 ? b.aiProfile.spellEager * 0.7 : 0.5);
+  // 全知加成：知道自己牌库顶是强牌/主将 → 更积极抽。
+  if (b.aiTier >= 3 && from === 'poker' && sd.pokerDeck.length > 0) {
+    const top = sd.pokerDeck[0]; if (top.kind === 'poker') {
+      if (top.general) s += 5;          // 主将在库顶 → 立刻抽
+      else if (cardPoints(top.rank) >= 12) s += 3; // 强牌（Q/K/A）
+    }
+  }
+  return s;
 }
 type AiCand = { kind: 'deploy' | 'cast' | 'draw'; handIdx: number; lane: number; from: 'poker' | 'tengang'; score: number };
 /** Boss 回合（utility AI）。aggTengang：caller(game-g) 传天罡聚合器 → Boss 施法后重算 tengangA 即时生效(避免 turn-combat ← blueprint 环依赖)。 */
