@@ -1,6 +1,6 @@
 import { mountBattle, type BattleView, type BattleUnit, type BattleLane, type BattleLever, type HandCardView, type TengangCardView, type BattleActions, type ClashView, type BattleFx } from './battle-screen.js';
 import { mountLobby, type LobbyView, type LobbyShopItem } from './lobby-screen.js';
-import { prepareArmies, quartermasterEnergy, FORMATION_PRESETS, PRESET_NAMES, LEVER_CATALOG, LEVER_START, battleSpec, RUN_BATTLES, RUN_LIVES, BETWEEN_BUFFS, applyBuff, tiangangKeyBuffs, BOSS_ROSTER, bossFor, GAME_G_TIANGANGS, TIANGANG_BY_ID, ARCHETYPES, detectArchetype, archetypeMatchup, activeArchetype, pickAiFormation, GAME_G_PLANETS, GAME_G_FOILS, RECHARGE_PACKS, rechargeTotal, DIAMOND_EXCHANGES, DIZHI_SHARD_PACKS, RECHARGE_PASSWORD, GACHA, gachaCost, DIZHI_MAX_TIER, DIZHI_ZODIACS, INLAY_MAX, effectiveDeckFavors, effectiveLives, effectiveLeverCap, effectiveLeverRegen, campaignFor, unlockStageOf, type Formation, type Intervention, type LeverKind, type RunBuff, type ArmyCard } from './index.js';
+import { prepareArmies, quartermasterEnergy, FORMATION_PRESETS, PRESET_NAMES, LEVER_CATALOG, LEVER_START, battleSpec, RUN_BATTLES, RUN_LIVES, BETWEEN_BUFFS, applyBuff, tiangangKeyBuffs, BOSS_ROSTER, bossFor, GAME_G_TIANGANGS, TIANGANG_BY_ID, ARCHETYPES, detectArchetype, archetypeMatchup, activeArchetype, pickAiFormation, GAME_G_PLANETS, GAME_G_FOILS, RECHARGE_PACKS, rechargeTotal, DIAMOND_EXCHANGES, DIZHI_SHARD_PACKS, RECHARGE_PASSWORD, GACHA, gachaCost, DIZHI_MAX_TIER, DIZHI_ZODIACS, INLAY_MAX, effectiveDeckFavors, POKER_PICK_SIZE, isPoolCardId, effectiveLives, effectiveLeverCap, effectiveLeverRegen, campaignFor, unlockStageOf, type Formation, type Intervention, type LeverKind, type RunBuff, type ArmyCard } from './index.js';
 import { initLiveBattle, stepLiveBattle, liveActive, migrateRear, NO_TENGANG, LANE_LEN, HOME_BLOOD, type LiveBattle, type DeployCmd, type ClashEvent, type TengangFx } from './live-combat.js';
 import { initTurnBattle, drawCard, deployUnit, castTengang, discardCard, endTurn, aiTakeTurn, toggleGate, GATES, OPENING_HAND, type PokerCard, type TengangHandCard } from './turn-combat.js';
 import { mountTurnBattle, buildTurnBattleView, type TurnBattleView, type TurnBattleActions, type TurnClashView, type TurnClashCardView, type TurnShaView } from './turn-battle-screen.js';
@@ -78,7 +78,7 @@ interface Save {
   planets: Record<string, number>; // 星球牌等级（局外持久 · 可叠加升档 · 第二养成轴）
   foils: string[]; // 已收集的 foil 闪艺皮肤 id（纯表现收集 · 零 gameplay）
 }
-interface TiangangDeck { id: string; name: string; cards: string[] } // cards = 天罡 id（≤TIANGANG_DECK_SIZE）
+interface TiangangDeck { id: string; name: string; cards: string[]; pokerPicks: string[] } // cards = 天罡 id（≤TIANGANG_DECK_SIZE）；pokerPicks = 自选出战扑克卡 id（≤POKER_PICK_SIZE·契约A·乙写甲读·空=自动构筑一副）
 
 // 出战牌组（找不到则取第一个；都空则造默认）。syncTiangangs：把出战牌组卡表派生进 save.tiangangs（契约②·甲读）。
 function activeDeck(s: Save): TiangangDeck {
@@ -89,7 +89,7 @@ const newDeckId = (): string => `deck_${Date.now().toString(36)}_${Math.floor(Ma
 
 const rollBoss = (): number => Math.floor(Math.random() * BOSS_ROSTER.length);
 export function freshSave(): Save {
-  return { materials: 120, diamond: 6, dizhiShards: 0, rechargeCount: 0, seenIntro: false, guideStep: 0, tiangangShards: 0, dizhiOwned: {}, inlays: {}, campaignMax: 1, stage: 1, deck: Array.from({ length: DECK_SIZE }, (_, i) => 44 + (i % 10) * 2), lastOfficers: [10, 10, 10], leverEnergy: LEVER_START, lives: RUN_LIVES, bossIdx: rollBoss(), ownedTiangangs: [], tiangangDecks: [{ id: 'deck1', name: '牌组 1', cards: [] }, { id: 'deck2', name: '牌组 2', cards: [] }, { id: 'deck3', name: '牌组 3', cards: [] }, { id: 'deck4', name: '牌组 4', cards: [] }], activeDeckId: 'deck1', tiangangs: [], planets: {}, foils: [] }; // 44..62 起步；金币 120；钻石送 6（首充免密）；开局默认给 4 个天罡牌组让玩家去组（owner 2026-06-21）；新存档播开场故事+引导
+  return { materials: 120, diamond: 6, dizhiShards: 0, rechargeCount: 0, seenIntro: false, guideStep: 0, tiangangShards: 0, dizhiOwned: {}, inlays: {}, campaignMax: 1, stage: 1, deck: Array.from({ length: DECK_SIZE }, (_, i) => 44 + (i % 10) * 2), lastOfficers: [10, 10, 10], leverEnergy: LEVER_START, lives: RUN_LIVES, bossIdx: rollBoss(), ownedTiangangs: [], tiangangDecks: [{ id: 'deck1', name: '牌组 1', cards: [], pokerPicks: [] }, { id: 'deck2', name: '牌组 2', cards: [], pokerPicks: [] }, { id: 'deck3', name: '牌组 3', cards: [], pokerPicks: [] }, { id: 'deck4', name: '牌组 4', cards: [], pokerPicks: [] }], activeDeckId: 'deck1', tiangangs: [], planets: {}, foils: [] }; // 44..62 起步；金币 120；钻石送 6（首充免密）；开局默认给 4 个天罡牌组让玩家去组（owner 2026-06-21）；pokerPicks 空=自动构筑一副；新存档播开场故事+引导
 }
 function loadSave(): Save {
   try {
@@ -119,10 +119,10 @@ function loadSave(): Save {
         // 牌组迁移（owner 2026-06-20 多牌组）：老存档只有单战库 s.tiangangs（≤5）→ 包成「牌组 1」；无牌组则建默认。
         if (!Array.isArray(s.tiangangDecks) || s.tiangangDecks.length === 0) {
           const seed = Array.isArray(s.tiangangs) ? s.tiangangs.slice(0, TIANGANG_DECK_SIZE) : [];
-          s.tiangangDecks = [{ id: 'deck1', name: '牌组 1', cards: seed }];
+          s.tiangangDecks = [{ id: 'deck1', name: '牌组 1', cards: seed, pokerPicks: [] }];
         }
-        // 清洗：每组卡表去无效/超额、去重；activeDeckId 落到存在的组
-        s.tiangangDecks = s.tiangangDecks.map((d) => ({ id: d.id, name: d.name || '牌组', cards: [...new Set(d.cards)].filter((c) => TIANGANG_BY_ID.has(c)).slice(0, TIANGANG_DECK_SIZE) }));
+        // 清洗：每组卡表去无效/超额、去重；pokerPicks 去无效卡 id/超额/去重（缺=[] 即自动构筑）；activeDeckId 落到存在的组
+        s.tiangangDecks = s.tiangangDecks.map((d) => ({ id: d.id, name: d.name || '牌组', cards: [...new Set(d.cards)].filter((c) => TIANGANG_BY_ID.has(c)).slice(0, TIANGANG_DECK_SIZE), pokerPicks: Array.isArray(d.pokerPicks) ? [...new Set(d.pokerPicks)].filter((c) => isPoolCardId(c)).slice(0, POKER_PICK_SIZE) : [] }));
         if (!s.tiangangDecks.some((d) => d.id === s.activeDeckId)) s.activeDeckId = s.tiangangDecks[0].id;
         syncTiangangs(s); // 派生出战牌组卡表 → save.tiangangs（契约②）
         if (typeof s.planets !== 'object' || s.planets === null) s.planets = {};
@@ -440,7 +440,7 @@ export function mount(container: HTMLElement): () => void {
       onToggleTiangang: (id) => { if (!save.ownedTiangangs.includes(id)) return; const d = activeDeck(save); if (!d) return; if (d.cards.includes(id)) { d.cards = d.cards.filter((c) => c !== id); } else if (d.cards.length < TIANGANG_DECK_SIZE) { d.cards.push(id); } syncTiangangs(save); persist(save); },
       // 牌组管理（owner 2026-06-20 多牌组）：选出战 / 新建 / 删除
       onSelectDeck: (id) => { if (save.tiangangDecks.some((d) => d.id === id)) { save.activeDeckId = id; syncTiangangs(save); persist(save); } },
-      onNewDeck: () => { if (save.tiangangDecks.length >= MAX_TIANGANG_DECKS) return; const id = newDeckId(); save.tiangangDecks.push({ id, name: `牌组 ${save.tiangangDecks.length + 1}`, cards: [] }); save.activeDeckId = id; syncTiangangs(save); persist(save); },
+      onNewDeck: () => { if (save.tiangangDecks.length >= MAX_TIANGANG_DECKS) return; const id = newDeckId(); save.tiangangDecks.push({ id, name: `牌组 ${save.tiangangDecks.length + 1}`, cards: [], pokerPicks: [] }); save.activeDeckId = id; syncTiangangs(save); persist(save); },
       onDelDeck: (id) => { if (save.tiangangDecks.length <= 1) return; save.tiangangDecks = save.tiangangDecks.filter((d) => d.id !== id); if (!save.tiangangDecks.some((d) => d.id === save.activeDeckId)) save.activeDeckId = save.tiangangDecks[0].id; syncTiangangs(save); persist(save); },
       onReset: () => { Object.assign(save, freshSave()); persist(save); },
       onSkin: (s) => { lobbySkin = s; },
