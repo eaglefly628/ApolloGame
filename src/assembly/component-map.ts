@@ -16,6 +16,7 @@ import type {
   CardPile,
   Caster,
   Clickable,
+  Coachmark,
   Color,
   Controllable,
   CraftRecipe,
@@ -105,6 +106,7 @@ export interface ComponentDataMap {
   CardPile: Omit<CardPile, 'type'>;
   Caster: Omit<Caster, 'type'>;
   Clickable: Omit<Clickable, 'type'>;
+  Coachmark: Omit<Coachmark, 'type'>;
   Color: Omit<Color, 'type'>;
   Controllable: Omit<Controllable, 'type'>;
   CraftRecipe: Omit<CraftRecipe, 'type'>;

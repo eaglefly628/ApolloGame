@@ -85,7 +85,7 @@ export function GameShell({ engine, layout, theme, input, resolveAsset }: GameSh
         );
       case 'panel':
         return (
-          <div key={key} style={{ border: `${t.borderWidth} solid ${t.border}`, borderRadius: t.borderRadius, background: t.bgSecondary, padding: t.spacing }}>
+          <div key={key} data-anchor={node.anchor} style={{ border: `${t.borderWidth} solid ${t.border}`, borderRadius: t.borderRadius, background: t.bgSecondary, padding: t.spacing }}>
             {node.title && <div style={{ color: t.accent, fontWeight: 700, marginBottom: 6 }}>{node.title}</div>}
             {node.children.map((c, i) => render(c, i))}
           </div>
@@ -130,7 +130,7 @@ export function GameShell({ engine, layout, theme, input, resolveAsset }: GameSh
       }
       case 'button':
         return (
-          <button key={key} onClick={() => input?.enqueueAction(node.signal)} style={{ padding: '8px 18px', borderRadius: t.borderRadius, border: node.primary ? 'none' : `1px solid ${t.border}`, background: node.primary ? t.accent : t.bg, color: node.primary ? '#fff' : t.text, cursor: 'pointer' }}>
+          <button key={key} data-anchor={node.anchor} onClick={() => input?.enqueueAction(node.signal)} style={{ padding: '8px 18px', borderRadius: t.borderRadius, border: node.primary ? 'none' : `1px solid ${t.border}`, background: node.primary ? t.accent : t.bg, color: node.primary ? '#fff' : t.text, cursor: 'pointer' }}>
             {node.label}
           </button>
         );

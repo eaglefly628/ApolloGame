@@ -22,13 +22,13 @@ export interface ActionEnqueuer {
 export type UINode =
   | { kind: 'col'; gap?: number; children: UINode[] } // 纵向容器
   | { kind: 'row'; gap?: number; children: UINode[] } // 横向容器
-  | { kind: 'panel'; title?: string; children: UINode[] } // 带边框/标题的面板
+  | { kind: 'panel'; title?: string; children: UINode[]; anchor?: string } // 带边框/标题的面板（anchor=新手引导锚点键 REQ-ARCH-COACH，落 data-anchor）
   | { kind: 'tabs'; tabs: Array<{ label: string; content: UINode }> } // 标签页（选中态=纯表现局部态）
   | { kind: 'text'; text: string; size?: 'sm' | 'md' | 'lg'; tone?: 'normal' | 'dim' | 'accent' } // 静态文字
   | { kind: 'stat'; bind: string; label?: string; icon?: string } // 数值：读 Resource{id:bind}.current
   | { kind: 'bar'; bind: string; tone?: 'hp' | 'mp' | 'xp' | 'accent' } // 比例条：Resource current/max
   | { kind: 'image'; src?: string; bind?: string; width?: number; height?: number; alt?: string } // 图：src 静态 / bind=StringVar id 动态(取其 value 作 src)
-  | { kind: 'button'; label: string; signal: string; primary?: boolean }; // 按钮：点击 → enqueueAction(signal)
+  | { kind: 'button'; label: string; signal: string; primary?: boolean; anchor?: string }; // 按钮：点击 → enqueueAction(signal)；anchor=新手引导锚点键
 
 export interface UILayout {
   root: UINode;

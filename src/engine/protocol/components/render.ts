@@ -187,3 +187,20 @@ export interface TextBinding extends Component {
   prefix?: string; // 文案前缀（如「金币 」）
   suffix?: string; // 文案后缀（如「 金」）
 }
+
+// ── Coachmark（REQ-ARCH-COACH · render-only 新手引导高亮）── 一步引导的表现数据：把某个 UI 元素（data-anchor 键）
+// 高亮出来——全屏半透明遮罩 + 锚点处镂空 + 一句话气泡。OnboardingOverlay 解释器读它渲染。红线：**纯表现**——
+// 绝不进 hash/sim、不被 Condition 读、不回灌 gameplay（高亮各端可不同，同 outcome-first）。可见性由 visibleWhen
+// 绑的 Flag（如当前 step 的 coach_active）驱动——流程/「看过不再弹」用现有 flow+flag+save 重组，本组件只管「画高亮」。
+export interface Coachmark extends Component {
+  readonly type: 'Coachmark';
+  anchor: string; // 目标 UI 元素的 data-anchor 键（GameShell UINode.anchor 或手写 DOM 的 data-anchor 属性）
+  text: string; // 气泡文案（一句话）
+  shape?: 'rect' | 'circle'; // 镂空形（缺省 rect）
+  pad?: number; // 镂空外扩像素（缺省 8）
+  placement?: 'top' | 'bottom' | 'left' | 'right' | 'auto'; // 气泡相对锚点位置（缺省 auto：择空间大的一侧）
+  arrow?: boolean; // 气泡指向箭头（缺省 true）
+  dimColor?: number; // 遮罩色 0xRRGGBB（缺省 0x000000）
+  dimAlpha?: number; // 遮罩透明度 [0,1]（缺省 0.6）
+  visibleWhen?: string; // 绑定 Flag id：该 Flag active 才显示（缺省=总显示）。流程把当前 step 的 flag 置真即亮对应 mark
+}
