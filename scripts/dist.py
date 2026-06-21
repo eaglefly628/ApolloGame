@@ -95,6 +95,13 @@ def build_desktop(platforms: list[str]) -> None:
 
 def build_handheld(game_id: str) -> None:
     run([sys.executable, str(ROOT / "scripts" / "build_game.py"), game_id])
+    src = ROOT / f"apollo-{game_id}-rk3562.tar.gz"
+    dst = ROOT / "release" / f"apollo-{game_id}-rk3562.tar.gz"
+    if src.exists():
+        import shutil
+        (ROOT / "release").mkdir(exist_ok=True)
+        shutil.move(str(src), str(dst))
+        print(f"  → 已移至 release/apollo-{game_id}-rk3562.tar.gz")
 
 
 def main() -> None:
