@@ -97,15 +97,14 @@ describe('Game G · turn-battle-screen live mount 交互（doc24 回合制 · DO
     expect(html).toContain('g-ripple'); // 点击涟漪
   });
 
-  it('召唤源泉徽标（右上角·源泉图标·大数字）+ 消耗浮「−N」升腾（owner 2026-06-21·别 biang 剪掉）', () => {
+  it('召唤源泉消耗：drain 透传 → 底部横条格「往后退」收退动效（owner 2026-06-21·别 biang 剪掉·徽标已回滚）', () => {
     const b = initTurnBattle({ seed: 1, a: { pokerDeck: [] } });
     b.a.mana = 2;
-    const html = buildTurnFrameHTML(buildTurnBattleView(b));
-    expect(html).toContain('召唤源泉'); // 徽标标签
-    expect(html).toContain('url(#gg-wf)'); // 源泉(水滴)SVG 图标
-    const drained = buildTurnFrameHTML(buildTurnBattleView(b), { from: 0, count: 2 }); // 刚花掉 2 点
-    expect(drained).toContain('animation:g-drainspark'); // 「−N」升腾淡出
-    const still = buildTurnFrameHTML(buildTurnBattleView(b)); // 无消耗：不浮
-    expect(still).not.toContain('animation:g-drainspark');
+    const drained = buildTurnFrameHTML(buildTurnBattleView(b), { from: 2, count: 2 }); // 刚花掉 2 格
+    expect(drained).toContain('召唤源泉 · SUMMON FONT'); // 旧版底部横条（owner 要回来·挺好看）
+    expect(drained).toContain('animation:g-drain'); // 收退鬼影
+    expect(drained).toContain('animation:g-drainspark'); // 升腾火花
+    const still = buildTurnFrameHTML(buildTurnBattleView(b)); // 无消耗：不渲收退
+    expect(still).not.toContain('animation:g-drain');
   });
 });
