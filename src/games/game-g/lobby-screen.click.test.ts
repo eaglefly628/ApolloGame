@@ -603,6 +603,28 @@ describe('Game G · lobby-screen mountLobby 点击交互（DOM · happy-dom）',
     });
   });
 
+  // ── 背景音乐（菜单设置·owner 2026-06-21）──
+  describe('背景音乐设置（菜单·开关/选 3 首/音量）', () => {
+    it('设置面板含 BGM 开关 + 3 首选曲 + 音量', () => {
+      const host = document.createElement('div');
+      mountLobby(host, { getView: makeView, onPlay: vi.fn() });
+      click(host.querySelector('[data-act="settings"]')); // 开设置
+      expect(host.querySelector('[data-act="bgmToggle"]'), 'BGM 开关').not.toBeNull();
+      expect(host.querySelectorAll('[data-act="bgmTrack"]').length, '3 首选曲').toBe(3);
+      expect(host.querySelector('[data-act="bgmVol"]'), '音量').not.toBeNull();
+    });
+    it('点选曲 / 开关 不抛错（直调 bgm.ts·无 AudioContext 静默）', () => {
+      const host = document.createElement('div');
+      mountLobby(host, { getView: makeView, onPlay: vi.fn() });
+      click(host.querySelector('[data-act="settings"]'));
+      expect(() => {
+        click(host.querySelectorAll('[data-act="bgmTrack"]')[1]);
+        click(host.querySelector('[data-act="bgmVol"]'));
+        click(host.querySelector('[data-act="bgmToggle"]'));
+      }).not.toThrow();
+    });
+  });
+
   // ── 出战扑克牌组构筑（乙1/乙3·DEV-CHECKLIST §3）──
   describe('出战扑克牌组构筑（52 池选 16）', () => {
     const open = (host: HTMLElement, h: Parameters<typeof mountLobby>[1]): void => {

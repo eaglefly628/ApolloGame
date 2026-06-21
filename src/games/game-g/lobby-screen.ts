@@ -7,6 +7,7 @@ import { GI, tiangangIcon } from './icons.js';
 import { HERO_CARDS, DIZHI_ZODIACS, DIZHI_TRINES, DIZHI_PAIRS, EARTH_FIENDS, STAGE_CAMPAIGN, STORY_OPENING, type StageCampaign, type StoryBeat } from './blueprint.js';
 import { heroPortrait } from './portraits.js';
 import { playSfx, sfxForAct, isSfxMuted, setSfxMuted } from './sfx.js';
+import { isBgmOn, toggleBgm, bgmTrackIdx, selectBgm, bgmVolume, setBgmVolume, BGM_TRACKS } from './bgm.js';
 import { DISHA_SPECS, stageDisha } from './disha.js';
 import { RECHARGE_PACKS, rechargeTotal, DIAMOND_EXCHANGES, DIZHI_SHARD_PACKS, GACHA, INLAY_MAX, DIZHI_INLAY_FAVOR, inlayBonus, deployCost, POKER_PICK_SIZE } from './blueprint.js';
 
@@ -554,6 +555,19 @@ function helpBox(helpTab: 'intro' | 'tut' | 'manual', tier: 'easy' | 'mid' | 'ha
     <div style="text-align:center;margin-top:12px"><button class="cta-sub" style="color:#2a1a08;background:var(--gold-grad);border:0" data-act="help-close">明白了 →</button></div>
   </div></div>`;
 }
+// 背景音乐设置（owner 2026-06-21「把开关加菜单·让我选 3 首」）：开/关 + 3 首选曲 + 音量。状态读 bgm.ts（localStorage·与 SFX 分开）。
+function bgmSettingsBlock(): string {
+  const on = isBgmOn();
+  const cur = bgmTrackIdx();
+  const vol = Math.round(bgmVolume() * 100);
+  const trackBtns = BGM_TRACKS.map((t, i) =>
+    `<button class="cta-sub" style="${i === cur ? 'background:var(--gold-grad);color:#1a1206;border:0' : ''}" data-act="bgmTrack" data-k="${i}">${i === cur ? '♪ ' : ''}${esc(t.name)}</button>`).join('');
+  return `<div style="text-align:left;margin-top:16px"><div class="note" style="text-align:left;margin-bottom:6px">背景音乐</div>
+    <button class="cta-sub" data-act="bgmToggle">${on ? '🎵 音乐：开（点击关闭）' : '🔇 音乐：关（点击开启）'}</button>
+    ${on ? `<div class="ctarow" style="flex-wrap:wrap;gap:6px;margin-top:8px">${trackBtns}</div>
+    <div style="display:flex;align-items:center;gap:8px;margin-top:8px"><span class="note" style="margin:0">音量</span><button class="cta-sub" data-act="bgmVol" data-k="down" style="min-width:34px">−</button><b style="min-width:42px;text-align:center;color:var(--ink)">${vol}%</b><button class="cta-sub" data-act="bgmVol" data-k="up" style="min-width:34px">＋</button></div>` : ''}
+  </div>`;
+}
 // 设置（owner 2026-06-20）：皮肤(默认玄铁) + 重看开场/引导 + 重置数据(调试)。
 function settingsBox(view: LobbyView): string {
   const seg = (k: 'onyx' | 'rosy', lbl: string): string =>
@@ -562,6 +576,7 @@ function settingsBox(view: LobbyView): string {
     <h2>⚙ 设置</h2>
     <div style="text-align:left;margin-top:10px"><div class="note" style="text-align:left;margin-bottom:6px">大厅皮肤</div><div class="ctarow">${seg('onyx', '玄铁（默认）')}${seg('rosy', '锦霞')}</div></div>
     <div style="text-align:left;margin-top:16px"><div class="note" style="text-align:left;margin-bottom:6px">音效</div><button class="cta-sub" data-act="sfxToggle">${isSfxMuted() ? '🔇 音效：关（点击开启）' : '🔊 音效：开（点击静音）'}</button></div>
+    ${bgmSettingsBlock()}
     <div style="text-align:left;margin-top:16px"><div class="note" style="text-align:left;margin-bottom:6px">新手内容</div><button class="cta-sub" data-act="replayIntro">↻ 重看开场故事与新手引导</button></div>
     <div style="text-align:left;margin-top:16px;padding-top:12px;border-top:1px solid var(--panel-border)"><div class="note" style="text-align:left;margin-bottom:6px">调试</div><button class="cta-sub" data-act="reset" style="color:var(--danger);border-color:var(--danger)">⚠ 重置所有数据（调试用）</button></div>
     <div style="text-align:center;margin-top:16px"><button class="cta-sub" style="color:#2a1a08;background:var(--gold-grad);border:0" data-act="settings-close">完成 →</button></div>
@@ -1156,6 +1171,10 @@ export function mountLobby(host: HTMLElement, h: LobbyHandlers): { update: () =>
     const act = el.dataset.act, k = el.dataset.k ?? '';
     if (act) playSfx(sfxForAct(act)); // 菜单音效（程序化合成·静音/无音频上下文则静默）
     if (act === 'sfxToggle') { setSfxMuted(!isSfxMuted()); renderOv(); }
+    // 背景音乐（menu 设置·owner 2026-06-21）：开关 / 选 3 首之一 / 音量 −＋。直接调 bgm.ts（点击=用户手势·可起播）。
+    else if (act === 'bgmToggle') { toggleBgm(); renderOv(); }
+    else if (act === 'bgmTrack') { selectBgm(parseInt(k, 10) || 0); renderOv(); }
+    else if (act === 'bgmVol') { setBgmVolume(bgmVolume() + (k === 'up' ? 0.1 : -0.1)); renderOv(); }
     else if (act === 'tab') { setTab(k); }
     else if (act === 'deckTab') { deckTab = k === 'gang' ? 'gang' : k === 'dizhi' ? 'dizhi' : 'base'; setSub('decks', 'deckTab', deckTab); }
     else if (act === 'earthFilter') { earthFilter = k; render(); }
