@@ -4,7 +4,7 @@ import { cardPoints } from './clash-resolve.js';
 import { cardStamina } from './live-combat.js';
 import {
   initTurnBattle, drawCard, deployUnit, castTengang, discardCard, endTurn, aiTakeTurn, turnHash, turnActive,
-  toggleGate, tryGate, GATES,
+  toggleGate, tryGate, GATES, clashDiceRoll,
   MANA_START, A_DEPLOY_SLOT, A_GOAL, TURN_HOME_BLOOD,
   type PokerCard, type TengangHandCard, type TurnUnit, type TurnBattle,
 } from './turn-combat.js';
@@ -178,6 +178,20 @@ describe('Game G · turn-combat（doc24 单机回合制 · A0 重构）', () => 
     c.lanes[0].b.push(unit('e0', '7', A_DEPLOY_SLOT), unit('e1', '7', A_DEPLOY_SLOT + 1), unit('e2', '7', A_DEPLOY_SLOT + 2));
     c.a.hand.push(poker('h0', '7'));
     expect(deployUnit(c, 'a', 0, 0)).toBe(false); // 无空格 → 拒
+  });
+
+  it('clashDiceRoll：10 颗 d10 表现 — 胜率低→门槛高·总点冲破与否永等于实际胜负（不重新 RNG）', () => {
+    // 胜率低 → 门槛高(难)；胜率高 → 门槛低(易)
+    expect(clashDiceRoll(0.5, 0.1, false).threshold).toBeGreaterThan(clashDiceRoll(0.5, 0.9, true).threshold);
+    // 全覆盖：sum>threshold ⟺ win；10 粒 0-9·和=总点
+    for (const roll of [0.02, 0.3, 0.5, 0.8, 0.98]) for (const wr of [0.03, 0.2, 0.5, 0.8, 0.97]) for (const aWins of [true, false]) {
+      const d = clashDiceRoll(roll, wr, aWins);
+      expect(d.sum > d.threshold).toBe(aWins);                        // 表现冲破 == 实判胜负（强制对齐）
+      expect(d.win).toBe(aWins);
+      expect(d.dice).toHaveLength(10);
+      expect(d.dice.reduce((a, b) => a + b, 0)).toBe(d.sum);          // 10 粒点数之和 = 总点
+      expect(d.dice.every((x) => x >= 0 && x <= 9)).toBe(true);       // 每颗 d10 → 0..9
+    }
   });
 
   it('战胜牌光荣回牌库 + 返还一半花费（owner 2026-06-21）', () => {
