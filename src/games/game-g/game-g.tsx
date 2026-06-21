@@ -558,6 +558,11 @@ export function mount(container: HTMLElement): () => void {
     let justMovedIds = new Set<string>(); let freshIds = new Map<string, number>(); let dealtId: string | null = null; let thinkTimer = 0; let thinkEl: HTMLElement | null = null; let settingsOpen = false;
     const tgName = (id: string): string => TIANGANG_BY_ID.get(id)?.name ?? id;
     const tgDesc = (id: string): string => TIANGANG_BY_ID.get(id)?.text ?? '持续战法·打出后整场生效'; // 磨砂浮层：天罡效果文案
+    // ── 战场操作日志（debug·owner 2026-06-21：出 bug 把日志贴来排查）。逐条记 玩家/AI 操作 + 掷命 + 结算。──
+    const dbg: string[] = []; const SUITNM2: Record<string, string> = { S: '黑桃', H: '红桃', D: '方块', C: '梅花', s: '黑桃', h: '红桃', d: '方块', c: '梅花' };
+    const log = (s: string): void => { if (dbg.length > 1200) dbg.shift(); dbg.push(`[T${tb.turn}|源泉 我${tb.a.mana}/敌${tb.b.mana}] ${s}`); };
+    const cardLabel = (c: PokerCard | TengangHandCard): string => (c.kind === 'poker' ? (SUITNM2[c.suit] ?? '') + c.rank : '天罡·' + tgName(c.id));
+    const LANE_NM = ['上路', '中路', '下路'];
     // 捕捉所有上场单位的位置（lane*9+slot 编码）
     const snapSlots = (): Map<string, string> => { const m = new Map<string, string>(); tb.lanes.forEach((L, li) => { for (const u of L.a) m.set(u.id, `${li}:${u.slot}`); for (const u of L.b) m.set(u.id, `${li}:${u.slot}`); }); return m; };
     // 与快照对比，返回移动了的单位 ID
@@ -587,6 +592,7 @@ export function mount(container: HTMLElement): () => void {
     const playPerf = (onDone: () => void): void => {
       if (perfQueue.length === 0) { perfClash = null; perfResume = null; mounted?.update(); syncCoach(); onDone(); return; }
       perfClash = perfQueue.shift()!;
+      { const e = perfClash; log(`⚔掷命[${LANE_NM[e.lane] ?? e.lane}] 我 ${e.a.rank}${SUITNM2[e.a.suit] ?? ''}(战力${e.a.pEff}) vs 敌 ${e.b.rank}${SUITNM2[e.b.suit] ?? ''}(战力${e.b.pEff}) ｜胜率${Math.round(e.winrate * 100)}% 掷${Math.round(e.roll * 100)} → ${e.aWins ? '我胜' : '敌胜'}`); }
       playSfx('clashReveal'); playSfx(perfClash.aWins ? 'clashWin' : 'clashLose'); // 揭晓撞击 + 我方胜/负的判定音
       perfResume = () => { perfResume = null; playPerf(onDone); }; mounted?.update(); syncCoach(); // 引导：特写中隐
     };
@@ -600,7 +606,9 @@ export function mount(container: HTMLElement): () => void {
           justMovedIds = diffMoved(before);
           // 新部署的敌兵（before 没有的 id）→ 逐张落子 g-drop 错峰 + 叭叭叭部署音（owner 2026-06-21）
           freshIds = new Map(); let fi = 0;
-          for (const L of tb.lanes) for (const u of L.b) if (!before.has(u.id)) { freshIds.set(u.id, fi); const d = fi * 150; window.setTimeout(() => playSfx('deploy'), d); fi++; }
+          const newFoe: string[] = [];
+          for (const L of tb.lanes) for (const u of L.b) if (!before.has(u.id)) { freshIds.set(u.id, fi); const d = fi * 150; window.setTimeout(() => playSfx('deploy'), d); fi++; newFoe.push(`${u.rank}${SUITNM2[u.suit] ?? ''}→${LANE_NM[tb.lanes.indexOf(L)] ?? '?'}`); }
+          log(`敌·行动：部署[${newFoe.join('、') || '无'}] → 结束回合 → 推进阶段`);
           drainClashes();
           mounted?.update();
           window.setTimeout(() => { justMovedIds = new Set(); freshIds = new Map(); if (!perfClash) mounted?.update(); }, Math.max(550, fi * 150 + 380)); // 错峰落子播完再清标记（掷命特写中不重渲·防 3D 飞入重启）
@@ -610,7 +618,7 @@ export function mount(container: HTMLElement): () => void {
     };
     const commitEndTurn = (): void => {
       if (busy || tb.winner !== 'pending' || tb.active !== 'a') return;
-      busy = true; selMode = null; selHand = -1; gateChance = false; playSfx('endTurn'); coachDid('endturn');
+      busy = true; selMode = null; selHand = -1; gateChance = false; playSfx('endTurn'); coachDid('endturn'); log('我·结束回合 → 推进阶段（兵线前移·相遇才掷命）');
       const before = snapSlots();
       endTurn(tb);
       justMovedIds = diffMoved(before);
@@ -621,19 +629,19 @@ export function mount(container: HTMLElement): () => void {
     };
     const actions: TurnBattleActions = {
       pickAction: (kind) => { if (busy || tb.active !== 'a') return; if (tb.actionTaken && tb.actionTaken !== kind) return; selMode = selMode === kind ? null : kind; selHand = -1; gateChance = false; playSfx('select'); },
-      drawFrom: (from) => { if (busy || selMode !== 'draw') return; if (drawCard(tb, 'a', from)) { playSfx('draw'); coachDid('draw'); dealtId = tb.a.hand[tb.a.hand.length - 1]?.id ?? null; const did = dealtId; window.setTimeout(() => { if (dealtId === did) { dealtId = null; if (!perfClash) mounted?.update(); } }, 560); } }, // 抽到的牌飞入翻面入场·~560ms 后清标记
+      drawFrom: (from) => { if (busy || selMode !== 'draw') return; if (drawCard(tb, 'a', from)) { playSfx('draw'); coachDid('draw'); const nc = tb.a.hand[tb.a.hand.length - 1]; log(`我·抽牌(${from === 'poker' ? '扑克' : '天罡'}) → ${nc ? cardLabel(nc) : '?'}`); dealtId = tb.a.hand[tb.a.hand.length - 1]?.id ?? null; const did = dealtId; window.setTimeout(() => { if (dealtId === did) { dealtId = null; if (!perfClash) mounted?.update(); } }, 560); } }, // 抽到的牌飞入翻面入场·~560ms 后清标记
       selectHand: (i) => {
         if (busy || tb.active !== 'a') return;
-        if (selMode === 'cast') { if (castTengang(tb, 'a', i)) { tb.a.tengangA = aggregateTengang(tb.a.castIds); tb.a.castFx = tb.a.castIds.map((id) => ({ id, fx: aggregateTengang([id]) })); playSfx('cast'); coachDid('cast'); } selHand = -1; } // 施法 → 持续修正重算（+逐张 castFx 供对决溯源）
-        else if (selMode === 'discard') { if (discardCard(tb, 'a', i)) playSfx('discard'); selHand = -1; }
+        if (selMode === 'cast') { const tc = tb.a.hand[i]; if (castTengang(tb, 'a', i)) { tb.a.tengangA = aggregateTengang(tb.a.castIds); tb.a.castFx = tb.a.castIds.map((id) => ({ id, fx: aggregateTengang([id]) })); playSfx('cast'); coachDid('cast'); log(`我·施天罡 ${tc ? cardLabel(tc) : '?'}`); } selHand = -1; } // 施法 → 持续修正重算（+逐张 castFx 供对决溯源）
+        else if (selMode === 'discard') { const dc = tb.a.hand[i]; if (discardCard(tb, 'a', i)) { playSfx('discard'); log(`我·弃牌 ${dc ? cardLabel(dc) : '?'}`); } selHand = -1; }
         else if (selMode === 'deploy' || tb.actionTaken === null || tb.actionTaken === 'deploy') { selMode = 'deploy'; selHand = selHand === i ? -1 : i; playSfx('select'); } // 默认进放牌·选牌→点路落子
       },
-      playLane: (lane) => { if (busy || selMode !== 'deploy' || selHand < 0) return; if (deployUnit(tb, 'a', selHand, lane)) { selHand = -1; gateChance = true; playSfx('deploy'); coachDid('deploy'); flash('✓ 放牌成功——可翻一道机关门(箭头·一次)，或继续放牌'); } }, // 放牌附赠：一次翻门机会
+      playLane: (lane) => { if (busy || selMode !== 'deploy' || selHand < 0) return; const pc = tb.a.hand[selHand]; if (deployUnit(tb, 'a', selHand, lane)) { selHand = -1; gateChance = true; playSfx('deploy'); coachDid('deploy'); log(`我·放牌 ${pc ? cardLabel(pc) : '?'} → ${LANE_NM[lane] ?? lane}`); flash('✓ 放牌成功——可翻一道机关门(箭头·一次)，或继续放牌'); } }, // 放牌附赠：一次翻门机会
       toggleGate: (idx) => { // 仅放牌后(gateChance)可翻一道本方门·一次；平时翻门无效（doc24 §三·owner 2026-06-20）
         if (busy || tb.active !== 'a') return;
         if (GATES[idx]?.side !== 'a') { playSfx('invalid'); flash('✗ 只能改自己的机关门'); return; }
         if (!gateChance) { playSfx('invalid'); flash('✗ 放完牌后才能翻一道机关门（一次）'); return; }
-        toggleGate(tb, idx); gateChance = false; playSfx(tb.gatesOpen[idx] ? 'gateOpen' : 'gateClose'); flash(tb.gatesOpen[idx] ? '机关门已开 ◉（下一步该格兵按门向过门）' : '机关门已闭 ✕');
+        toggleGate(tb, idx); gateChance = false; playSfx(tb.gatesOpen[idx] ? 'gateOpen' : 'gateClose'); log(`我·翻门#${idx} ${tb.gatesOpen[idx] ? '开◉' : '闭✕'}`); flash(tb.gatesOpen[idx] ? '机关门已开 ◉（下一步该格兵按门向过门）' : '机关门已闭 ✕');
       },
       endTurn: commitEndTurn,
       setTheme: (t) => { theme = t; },
@@ -695,6 +703,29 @@ export function mount(container: HTMLElement): () => void {
     const onCoachResize = (): void => syncCoach();
     if (coach) { syncCoach(); window.addEventListener('resize', onCoachResize); }
 
+    // ── 操作日志 debug 钮（owner 2026-06-21）：左下小钮 → 弹可复制日志（出 bug 贴给开发排查）──
+    const dbgBtn = el('div', 'position:absolute;left:10px;bottom:10px;z-index:120;padding:5px 10px;border-radius:8px;cursor:pointer;background:rgba(20,26,38,.82);border:1px solid rgba(255,255,255,.16);color:#9fb0c2;font:11px system-ui;user-select:none', '📋 操作日志');
+    dbgBtn.onclick = () => {
+      const ov = document.createElement('div');
+      ov.style.cssText = 'position:fixed;inset:0;z-index:400;display:flex;align-items:center;justify-content:center;padding:24px;background:rgba(6,9,13,.82);backdrop-filter:blur(4px);font-family:system-ui';
+      const text = `Game G 战场操作日志（第 ${save.stage} 战 · ${dbg.length} 条）\n${'='.repeat(40)}\n${dbg.join('\n') || '（暂无操作）'}`;
+      ov.innerHTML = `<div style="width:min(92%,820px);max-height:84vh;display:flex;flex-direction:column;gap:10px;background:#121826;border:1px solid #2a3346;border-radius:14px;padding:16px">
+        <div style="display:flex;align-items:center;gap:10px"><b style="color:#eaf0f6;font-size:15px;flex:1">📋 战场操作日志</b><button id="dbg-copy" style="padding:7px 16px;border-radius:8px;border:none;cursor:pointer;background:linear-gradient(180deg,#ff8d5a,#ee5a25);color:#fff;font-weight:700">复制</button><button id="dbg-close" style="padding:7px 14px;border-radius:8px;border:1px solid #3a4659;cursor:pointer;background:transparent;color:#cdd7e3">关闭</button></div>
+        <textarea id="dbg-text" readonly style="flex:1;min-height:340px;resize:none;background:#0b0f17;color:#bcd;border:1px solid #2a3346;border-radius:10px;padding:11px;font:12px/1.5 ui-monospace,monospace;white-space:pre"></textarea>
+        <div id="dbg-hint" style="font-size:11px;color:#7d8b9a">出 bug 时点「复制」把日志贴给开发排查。</div></div>`;
+      root.appendChild(ov);
+      const ta = ov.querySelector('#dbg-text') as HTMLTextAreaElement; ta.value = text;
+      const close = (): void => ov.remove();
+      ov.querySelector('#dbg-close')?.addEventListener('click', close);
+      ov.addEventListener('click', (e) => { if (e.target === ov) close(); });
+      ov.querySelector('#dbg-copy')?.addEventListener('click', () => {
+        ta.select(); let ok = false; try { ok = document.execCommand('copy'); } catch { /* ignore */ }
+        if (!ok && navigator.clipboard) void navigator.clipboard.writeText(text).catch(() => {});
+        const h = ov.querySelector('#dbg-hint'); if (h) h.textContent = '✓ 已复制到剪贴板。';
+      });
+    };
+    root.appendChild(dbgBtn); // 挂 root(非 stage·避免 mountTurnBattle 重渲抹掉)·左下角
+
     stopLoop = () => { perfResume = null; if (noticeTimer) { clearTimeout(noticeTimer); noticeTimer = 0; } if (thinkTimer) { clearTimeout(thinkTimer); thinkTimer = 0; } if (thinkEl) { thinkEl.remove(); thinkEl = null; } if (coach) { window.removeEventListener('resize', onCoachResize); coach.destroy(); } }; // 离场：弃未决特写续演 + 清提示计时 + 清思考蒙层 + 卸引导
 
     function settleTurn(): void {
@@ -702,6 +733,7 @@ export function mount(container: HTMLElement): () => void {
       const lanesA = tb.lanes.filter((L) => L.a.length + L.spentA > L.b.length + L.spentB).length;
       const lanesB = tb.lanes.filter((L) => L.b.length + L.spentB > L.a.length + L.spentA).length;
       const homeA = tb.homeA, homeB = tb.homeB, winner = tb.winner, homeMax = tb.homeMax;
+      log(`▼结算：${winner === 'a' ? '我方胜' : winner === 'b' ? '敌方胜' : '平局'} ｜控路 我${lanesA}:敌${lanesB} ｜大本营 我${homeA}/敌${homeB}（满${homeMax}）`);
       playSfx(winner === 'a' ? 'victory' : 'defeat'); // 收场号角 / 哀落
       const gain = survA + (winner === 'a' ? 15 : 0);
       save.materials += gain;

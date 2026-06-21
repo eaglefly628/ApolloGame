@@ -10,6 +10,16 @@
 
 ## 待处理 / 进行中
 
+### BUG-G-源泉徽标 · [2026-06-21] · owner→game-g 乙（甲代登记·勿越界）· status: **open** · 类型: 表现回滚
+
+> owner（2026-06-21·playtest）：「战场中的那个源泉，总变成右上角一个水滴了，变回来老版本。」——要的是**旧版底部横条**（带格子的 water bar），不要现在棋盘右上角的小水滴徽标。
+>
+> **定位**：是 commit `3791fcde`（"召唤源泉重做——移棋盘右上角徽标 + 源泉(水滴)图标 + 大数字"）改的 `src/games/game-g/turn-battle-screen.ts`。
+> **请乙**：revert `3791fcde` 对 `turn-battle-screen.ts` 的源泉那段——恢复旧的底部 `waterBar/waterCap/waterTube/waterCellsHTML` 横条，删掉右上角 `fontBadge` 水滴。其余两文件（若有）按需保留。
+> **边界**：战场屏(`turn-battle-screen.ts`)是 owner 授权乙动的，甲不越界自行 revert，仅代登记转交。改完记得 regen 受影响金图 + 走全套门禁。
+
+---
+
 ### REQ-ARCH-SAVE · [2026-06-21] · program G 乙（owner 2026-06-21 钦定 · 存档持久化 + 云存档服务）· 框架级 · status: **open** · 优先级: 中 · 类型: 真缺口（持久化/同步=易错基础设施·过弱-LLM 尺子·≥多游戏拉动）
 
 > owner 2026-06-21：「开一个 REQ 给主程——游戏的存档任务 + 云服务存储任务。」「开了本地一个 Save 目录，打完包以后也有地方可以存。」
