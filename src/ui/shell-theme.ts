@@ -144,19 +144,63 @@ export const sChecker: CSSProperties = {
   background: 'repeating-conic-gradient(#161c2b 0% 25%, #0d1220 0% 50%) 50% / 16px 16px',
 };
 
-/** 游戏内右上角「返回主界面」浮钮 —— 全游戏统一的一颗。 */
-export function sBackPill(): CSSProperties {
+/** 游戏内右上角壳层菜单 · 齿轮触发钮（替代旧常驻「返回」pill：缩成一颗图标，不再压住游戏右上角 HUD）。 */
+export function sGearBtn(open = false): CSSProperties {
   return {
-    padding: '6px 16px',
-    background: 'rgba(6,8,13,0.78)',
-    color: SHELL.sub,
-    border: `1px solid ${SHELL.lineStrong}`,
+    width: 34,
+    height: 34,
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    background: open ? 'rgba(15,21,35,0.92)' : 'rgba(6,8,13,0.78)',
+    color: open ? SHELL.text : SHELL.sub,
+    border: `1px solid ${open ? SHELL.jadeLine : SHELL.lineStrong}`,
     borderRadius: 999,
-    fontSize: 12,
-    letterSpacing: 1,
+    fontSize: 15,
+    lineHeight: 1,
     cursor: 'pointer',
     fontFamily: SHELL.fontUi,
     backdropFilter: 'blur(8px)',
     outline: 'none',
+    transition: 'all .15s',
+  };
+}
+
+/** 壳层菜单浮层（齿轮正下方 · 右对齐展开）。 */
+export function sMenuPanel(): CSSProperties {
+  return {
+    position: 'absolute',
+    top: 40,
+    right: 0,
+    minWidth: 152,
+    padding: 5,
+    background: 'rgba(10,14,23,0.96)',
+    border: `1px solid ${SHELL.lineStrong}`,
+    borderRadius: 10,
+    boxShadow: SHELL.shadow,
+    backdropFilter: 'blur(10px)',
+    display: 'flex',
+    flexDirection: 'column',
+    gap: 2,
+  };
+}
+
+/** 壳层菜单项（整行可点 · hover 高亮）。 */
+export function sMenuItem(hover = false): CSSProperties {
+  return {
+    width: '100%',
+    padding: '8px 12px',
+    textAlign: 'left',
+    background: hover ? SHELL.jadeWash : 'transparent',
+    color: hover ? SHELL.jade : SHELL.sub,
+    border: '1px solid transparent',
+    borderRadius: 7,
+    fontSize: 12,
+    letterSpacing: 1,
+    cursor: 'pointer',
+    fontFamily: SHELL.fontUi,
+    whiteSpace: 'nowrap',
+    outline: 'none',
+    transition: 'all .12s',
   };
 }

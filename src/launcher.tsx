@@ -2,7 +2,7 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { createRoot } from 'react-dom/client';
 import { StudioInspector } from './studio/StudioInspector.js';
 import { AssetLibrary } from './studio/AssetLibrary.js';
-import { SHELL, sBackPill } from './ui/shell-theme.js';
+import { SHELL, sGearBtn, sMenuPanel, sMenuItem } from './ui/shell-theme.js';
 import { resolveArtRefs } from './assembly/resolve-art-refs.js';
 import { artlibRecords, type LibraryRecord } from '@assets/index.js';
 import type { ArtLibIndex } from '@assets/artlib.js';
@@ -616,6 +616,55 @@ function DevTools() {
 //  Game Runtime
 // ══════════════════════════════════════
 
+interface OverlayMenuItem { label: string; onClick: () => void; }
+
+// 全游戏统一的壳层菜单：齿轮钮 → 浮层，收纳「返回主界面」等全局动作（壳层所有，游戏代码不掺和）。
+// 收编旧的常驻「返回」pill —— 缩成一颗齿轮、按需展开，给未来壳层级开关（全屏/重开/静音…）留好统一的位置；今天只放返回。
+// Esc / 点浮层外关闭；齿轮常显、不藏，退出仍一眼可寻。
+function GameOverlayMenu({ items }: { items: OverlayMenuItem[] }) {
+  const [open, setOpen] = useState(false);
+  const [hover, setHover] = useState<number | null>(null);
+  const ref = React.useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (!open) return;
+    const onDoc = (e: MouseEvent) => {
+      if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false);
+    };
+    const onKey = (e: KeyboardEvent) => { if (e.key === 'Escape') setOpen(false); };
+    document.addEventListener('mousedown', onDoc);
+    window.addEventListener('keydown', onKey);
+    return () => {
+      document.removeEventListener('mousedown', onDoc);
+      window.removeEventListener('keydown', onKey);
+    };
+  }, [open]);
+
+  return (
+    <div ref={ref} style={{ position: 'absolute', top: 10, right: 10, zIndex: 100 }}>
+      <button onClick={() => setOpen((o) => !o)} style={sGearBtn(open)} aria-label="菜单" aria-expanded={open} title="菜单">
+        ⚙
+      </button>
+      {open && (
+        <div style={sMenuPanel()} role="menu">
+          {items.map((it, i) => (
+            <button
+              key={i}
+              role="menuitem"
+              onClick={() => { setOpen(false); it.onClick(); }}
+              onMouseEnter={() => setHover(i)}
+              onMouseLeave={() => setHover((h) => (h === i ? null : h))}
+              style={sMenuItem(hover === i)}
+            >
+              {it.label}
+            </button>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
 function GameRunner({ gameId, onBack }: { gameId: string; onBack: () => void }) {
   const containerRef = React.useRef<HTMLDivElement>(null);
 
@@ -648,14 +697,10 @@ function GameRunner({ gameId, onBack }: { gameId: string; onBack: () => void }) 
 
   return (
     <div style={{ position: 'absolute', inset: 0, background: SHELL.bg0 }}>
-      {/* 全游戏统一的返回浮钮（壳层所有，游戏代码不掺和）—— 视觉基调见 ui/shell-theme.ts。
-          game-g 把退出收进了自己的设置菜单（owner 2026-06-21「去掉右上角返回·收进设置」）→ 不再叠这颗浮钮。 */}
+      {/* 全游戏统一的壳层菜单（齿轮 → 收纳「返回主界面」等全局动作；游戏代码不掺和）—— 视觉基调见 ui/shell-theme.ts。
+          game-g 已把退出收进自己的设置菜单（owner 2026-06-21「去掉右上角返回·收进设置」，经 mount(el,{exit}) 接走）→ 壳层不再为它叠这颗。 */}
       {gameId !== 'game-g' && (
-        <div style={{ position: 'absolute', top: 10, right: 10, zIndex: 100 }}>
-          <button onClick={onBack} style={sBackPill()}>
-            ⟵ 返回主界面
-          </button>
-        </div>
+        <GameOverlayMenu items={[{ label: '⟵ 返回主界面', onClick: onBack }]} />
       )}
       <div ref={containerRef} style={{ width: '100%', height: '100%' }} />
     </div>
