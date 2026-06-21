@@ -382,6 +382,29 @@ describe('Game G · T-G4 干预卡（揭晓前改输入，outcome-first 不破�
     }
   });
 
+  it('prepareArmies：全军 rank+suit 无重复（阵型交叉 + 1路增援 + Boss）', () => {
+    const noDup = (army: ArmyCard[]): boolean => {
+      const seen = new Set<string>();
+      for (const c of army) { const k = `${c.rank}:${c.suit}`; if (seen.has(k)) return false; seen.add(k); }
+      return true;
+    };
+    // 无干预：各阵型下均无重复（历史 bug：armyFromFormation 跨路同 rank 落同花色）
+    for (const f of PRESET_NAMES) {
+      const { a, b } = prepareArmies({ formation: FORMATION_PRESETS[f], deckBias: 2, tiangangs: [], interventions: [], enemyBias: -2, boss: null, planets: {} });
+      expect(noDup(a), `阵型 ${f} a 有重复`).toBe(true);
+      expect(noDup(b), `阵型 ${f} b 有重复`).toBe(true);
+    }
+    // 1路增援（历史 bug：reinforce 硬编码 A♠+2♥ → 和原军重复）：溢出 rank 借 JOKER/临近花色吸收
+    const { a: aRf } = prepareArmies({ formation: FORMATION_PRESETS['均衡'], deckBias: 0, tiangangs: [], interventions: [{ kind: 'reinforce', lane: 0 }], enemyBias: 0, boss: null, planets: {} });
+    expect(noDup(aRf), '1路增援后 a 有重复 rank+suit').toBe(true);
+    // Boss 梅花K 三路增援（每路+2，共+6张，超出52张唯一上限 → 最后几张按最优尽力分配）：至少无简单重复
+    const clubK = BOSS_ROSTER.find((b) => b.id === 'clubK')!;
+    const { b: bClubK } = prepareArmies({ formation: FORMATION_PRESETS['均衡'], deckBias: 0, tiangangs: [], interventions: [], enemyBias: clubK.favorBias, boss: clubK, enemyForm: clubK.formation, planets: {} });
+    // 60张超出54种组合 → 允许极少数溢出重复，但不超过 6 张
+    const dups = bClubK.filter((c, i) => bClubK.findIndex((x) => x.rank === c.rank && x.suit === c.suit) !== i);
+    expect(dups.length, `Boss clubK 三路增援重复张数(${dups.length})超过允许上限6`).toBeLessThanOrEqual(6);
+  });
+
   it('确定性：同军+同干预序列+同 seed 两局逐拍 hash 一致（干预进 sim）', () => {
     const list: Intervention[] = [{ kind: 'bless', lane: 1 }, { kind: 'decapitate', lane: 0 }, { kind: 'reinforce', lane: 2 }];
     const mk = (): Engine => {

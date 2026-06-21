@@ -944,6 +944,30 @@ export function applyTiangangs(army: ArmyCard[], tiangangIds: readonly string[])
  * 全在揭晓前、不回灌 gameplay（outcome-first）；返回喂 buildGameGArmyMatch 的 {a,b,moraleA}。纯函数、可重放。
  */
 export interface MatchSetup { formation: Formation; deckBias: number; tiangangs: readonly string[]; interventions: Intervention[]; enemyForm?: Formation; enemyBias: number; boss?: BossSpec | null; planets?: Record<string, number> }
+// 确保全军 rank+suit 不重复：按出现顺序为每张牌分配未用花色；rank 全满(>4张)时换 JOKER/临近 rank 吸收溢出。
+// 所有 favor/掷命运算已在调用前完成 → outcome-first 安全；只改展示身份。
+function ensureUniqueSuits(army: ArmyCard[]): ArmyCard[] {
+  const OVERFLOW = ['JOKER', 'K', 'Q', 'J', '10', '9', '8', '7', 'A', '2', '3', '4', '5', '6'];
+  const used = new Map<string, Set<string>>();
+  const grab = (rank: string): { rank: string; suit: string } | null => {
+    if (!used.has(rank)) used.set(rank, new Set());
+    const u = used.get(rank)!;
+    const s = SUITS.find((x) => !u.has(x));
+    if (s) { u.add(s); return { rank, suit: s }; }
+    return null;
+  };
+  return army.map((c) => {
+    if (!used.has(c.rank)) used.set(c.rank, new Set());
+    const u = used.get(c.rank)!;
+    if (!u.has(c.suit)) { u.add(c.suit); return c; }
+    const alt = SUITS.find((s) => !u.has(s));
+    if (alt) { u.add(alt); return { ...c, suit: alt }; }
+    // rank fully saturated (>4 cards) → absorb into nearest rank that still has a free suit
+    for (const nr of OVERFLOW) { const slot = grab(nr); if (slot) return { ...c, ...slot }; }
+    return c; // exhausted (>54 unique cards) — unavoidable
+  });
+}
+
 export function prepareArmies(s: MatchSetup): { a: ArmyCard[]; b: ArmyCard[]; moraleA: number[]; linksA: LinkTiangangs } {
   const planets = s.planets ?? {};
   let a = applyTiangangs(applyPlanetArmy(armyFromFormation('a', s.deckBias, s.formation), planets), s.tiangangs); // 星球·军(兵档底盘) → 融天罡（持久 favor 变换）
@@ -956,7 +980,7 @@ export function prepareArmies(s: MatchSetup): { a: ArmyCard[]; b: ArmyCard[]; mo
   ({ a, b } = applyInterventions(a, b, s.interventions, s.deckBias, 'a', effectiveTierBonus(planets) + tierAdd)); // 玩家干预（flush 吃星球·型 + 牌型流激活）
   if (s.boss && s.boss.openingLevers.length) ({ a, b } = applyInterventions(a, b, s.boss.openingLevers, s.enemyBias, 'b')); // Boss 起手（对称）
   if (s.tiangangs.includes('shadow')) a = applyShadowRevenge(a); // 影武者：敌斩首命中我主将 → 该路余部复仇（在 Boss 干预后侦测）
-  return { a, b, moraleA: tiangangMoraleScale(a, s.tiangangs).map((m) => m * moraleMul), linksA: tiangangLinks(s.tiangangs) }; // 士气倍率(×将领流激活) + 结局联动
+  return { a: ensureUniqueSuits(a), b: ensureUniqueSuits(b), moraleA: tiangangMoraleScale(a, s.tiangangs).map((m) => m * moraleMul), linksA: tiangangLinks(s.tiangangs) }; // 士气倍率(×将领流激活) + 结局联动
 }
 
 // ── 行军·攻克大本营 调参（design/17 §二；owner 纠偏：实时三路行军取代瞬间翻牌；先破者胜）──
