@@ -300,6 +300,18 @@ describe('Game G · lobby-screen mountLobby 点击交互（DOM · happy-dom）',
       expect(host.querySelector('.reveal-card')).not.toBeNull();
     });
 
+    it('地支碎片定向兑换：碎片够 → onCraftDizhi 以 branch 调用 + 演出（owner 2026-06-21）', () => {
+      const host = document.createElement('div');
+      const onCraftDizhi = vi.fn(() => true);
+      mountLobby(host, { getView: () => makeView({ dizhiShards: 50, dizhiOwned: {} }), onPlay: vi.fn(), onCraftDizhi });
+      click(host.querySelector('[data-act="shop"]'));
+      const craft = host.querySelector('[data-act="craftDizhi"]') as HTMLElement;
+      expect(craft, '有地支可兑换').not.toBeNull();
+      click(craft);
+      expect(onCraftDizhi).toHaveBeenCalledWith(craft.dataset.k); // 传生肖 branch
+      expect(host.querySelector('.reveal-card')).not.toBeNull();
+    });
+
     it('碎片不足 → 定向兑换档禁用（无 data-act）', () => {
       const host = document.createElement('div');
       mountLobby(host, { getView: () => makeView({ tiangangShards: 0 }), onPlay: vi.fn(), onCraftTiangang: vi.fn() });

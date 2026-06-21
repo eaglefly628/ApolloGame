@@ -805,7 +805,7 @@ export const isHeroOwned = (id: string): boolean => (HERO_CARDS.find((h) => h.id
 export const DIZHI_MAX_TIER = 3; // 1铜 2银 3金
 export const GACHA = {
   tiangang: { singleGold: 80, singleDiamond: 8, tenGold: 720, tenDiamond: 72, dupShards: 5, craftShards: 20 },
-  dizhi: { singleGold: 60, singleDiamond: 6, tenGold: 540, tenDiamond: 54, maxDupShards: 8 },
+  dizhi: { singleGold: 60, singleDiamond: 6, tenGold: 540, tenDiamond: 54, maxDupShards: 8, craftShards: 12 },
 };
 /** 抽卡花费（pool×count×pay）。返回 {gold,diamond} 其一>0。 */
 export function gachaCost(pool: 'tiangang' | 'dizhi', count: 1 | 10, pay: 'gold' | 'diamond'): { gold: number; diamond: number } {

@@ -10,7 +10,7 @@ import { coachmarkGeometry } from '@renderer/coachmark.js'; // 引擎通用高�
 import { playSfx, sfxForAct, isSfxMuted, setSfxMuted } from './sfx.js';
 import { isBgmOn, toggleBgm, bgmTrackIdx, selectBgm, bgmVolume, setBgmVolume, BGM_TRACKS } from './bgm.js';
 import { DISHA_SPECS, stageDisha } from './disha.js';
-import { RECHARGE_PACKS, rechargeTotal, DIAMOND_EXCHANGES, DIZHI_SHARD_PACKS, GACHA, INLAY_MAX, DIZHI_INLAY_FAVOR, inlayBonus, deployCost, POKER_PICK_SIZE } from './blueprint.js';
+import { RECHARGE_PACKS, rechargeTotal, DIAMOND_EXCHANGES, DIZHI_SHARD_PACKS, GACHA, DIZHI_MAX_TIER, INLAY_MAX, DIZHI_INLAY_FAVOR, inlayBonus, deployCost, POKER_PICK_SIZE } from './blueprint.js';
 
 export interface LobbyShopItem { id: string; name: string; sub: string; cost: number; owned: boolean; buyable: boolean; level?: number; inDeck?: boolean; power?: number; phat?: number; kind?: string; icon?: string; tint?: string; unlockStage?: number; locked?: boolean }
 export interface GachaResult { kind: 'tiangang' | 'dizhi'; id: string; name: string; rarity?: string; outcome: 'new' | 'dup-shard' | 'dizhi-up' | 'dizhi-shard'; detail: string } // 抽卡结果（开包演出读）
@@ -614,10 +614,20 @@ function shopBox(view: LobbyView, shopTab: 'gacha' | 'wallet' | 'foil', recharge
   const craftChips = craftable.length
     ? craftable.map((j) => { const can = tShards >= GACHA.tiangang.craftShards; return `<button class="gacha-craft${can ? '' : ' off'}"${can ? ` data-act="craftTiangang" data-k="${j.id}"` : ' disabled'}>${esc(j.name)} <span>🔶${GACHA.tiangang.craftShards}</span></button>`; }).join('')
     : '<span class="ghost" style="font-size:12px">已解锁天罡均已拥有 🎉</span>';
+  // 地支碎片定向兑换（owner 2026-06-21「走通用碎片兑换地支牌」）：花地支碎片换/升指定生肖（铜→银→金·封顶满金）。
+  const TIER_NM = ['未有', '铜', '银', '金'];
+  const dizhiCraftChips = DIZHI_ZODIACS.map((z) => {
+    const cur = (view.dizhiOwned ?? {})[z.branch] ?? 0;
+    const maxed = cur >= DIZHI_MAX_TIER;
+    const can = !maxed && shards >= GACHA.dizhi.craftShards;
+    const label = `${z.animal}${cur > 0 ? '·' + TIER_NM[cur] : ''}${maxed ? ' 满' : cur > 0 ? '→' + TIER_NM[cur + 1] : ''}`;
+    return `<button class="gacha-craft${can ? '' : ' off'}"${can ? ` data-act="craftDizhi" data-k="${z.branch}"` : ' disabled'} title="${esc(z.animal)}（${esc(z.symbol)}）">${esc(label)} <span>🧩${GACHA.dizhi.craftShards}</span></button>`;
+  }).join('');
   const gachaTab = `${poolCard('tiangang', '🎴', '天罡卡池', `已解锁 ${poolN} 张 · 抽到重复 → +${GACHA.tiangang.dupShards} 天罡碎片`)}
     ${poolCard('dizhi', '🀄', '地支卡池', `12 生肖（已集 ${dizhiN}/12）· 重复自动升档 铜→银→金 · 满金转地支碎片`)}
     <div class="gacha-pool"><div class="gacha-pool-hd">🔶 天罡碎片 · 定向兑换（保底）</div><div class="note" style="text-align:left;margin:2px 0 8px">攒够碎片直接换你想要的天罡——防"抽不到配不出 build"。每张 ${GACHA.tiangang.craftShards} 碎片。</div><div class="gacha-crafts">${craftChips}</div></div>
-    <div class="note" style="text-align:left;margin-top:10px;font-size:11px">从「已解锁池」随机（通关解锁更多）。地支镶嵌入战待养成系统开放。</div>`;
+    <div class="gacha-pool"><div class="gacha-pool-hd">🧩 地支碎片 · 定向兑换（升档）</div><div class="note" style="text-align:left;margin:2px 0 8px">攒够地支碎片直接换/升你想要的生肖（铜→银→金）。每次 ${GACHA.dizhi.craftShards} 碎片。<b style="color:#e6b96a">你有 ${shards} 🧩</b></div><div class="gacha-crafts">${dizhiCraftChips}</div></div>
+    <div class="note" style="text-align:left;margin-top:10px;font-size:11px">从「已解锁池」随机（通关解锁更多）。地支镶嵌到「改造坊」给牌附魔。</div>`;
   // ── 💎 钱包 tab（充值 + 兑换）──
   const packCard = (p: typeof RECHARGE_PACKS[number]): string => {
     const total = rechargeTotal(p);
@@ -1117,6 +1127,7 @@ export interface LobbyHandlers {
   onBuyShards?: (exId: string) => void; // 兑换 💎→🧩地支碎片
   onGacha?: (pool: 'tiangang' | 'dizhi', count: 1 | 10, pay: 'gold' | 'diamond') => GachaResult[] | null; // 抽卡（doc25 §四）→ 结果/null(买不起)
   onCraftTiangang?: (id: string) => boolean | void; // 天罡碎片定向兑换指定天罡（保底）
+  onCraftDizhi?: (branch: string) => boolean | void; // 地支碎片定向兑换/升指定生肖（owner 2026-06-21）
   onInlay?: (idx: string, branch: string) => boolean | void; // 地支附魔：生肖镶进牌位（≤INLAY_MAX）
   onRemoveInlay?: (idx: string, branch: string) => void; // 卸下某牌位的某生肖
   onSelectDeck?: (id: string) => void; // 选某牌组出战
@@ -1295,6 +1306,7 @@ export function mountLobby(host: HTMLElement, h: LobbyHandlers): { update: () =>
     // 抽卡（doc25 §四）：data-k="pool:count:pay" → onGacha → 开包演出；定向兑换 / 关闭演出
     else if (act === 'gacha') { const [pool, cnt, pay] = k.split(':'); const r = h.onGacha?.(pool as 'tiangang' | 'dizhi', cnt === '10' ? 10 : 1, pay === 'diamond' ? 'diamond' : 'gold'); if (r && r.length) gachaReveal = r; renderOv(); }
     else if (act === 'craftTiangang') { const ok = h.onCraftTiangang?.(k); if (ok) { const nm = h.getView().tiangangs.find((t) => t.id === k)?.name ?? k; gachaReveal = [{ kind: 'tiangang', id: k, name: nm, outcome: 'new', detail: '碎片定向兑换 ✓' }]; } renderOv(); }
+    else if (act === 'craftDizhi') { const ok = h.onCraftDizhi?.(k); if (ok) { const z = DIZHI_ZODIACS.find((z) => z.branch === k); const cur = (h.getView().dizhiOwned ?? {})[k] ?? 1; const tn = ['', '铜', '银', '金'][cur] ?? ''; gachaReveal = [{ kind: 'dizhi', id: k, name: `${z?.animal ?? k}·${tn}`, outcome: 'dizhi-up', detail: '🧩 地支碎片兑换 ✓' }]; } renderOv(); }
     else if (act === 'reveal-close') { gachaReveal = null; render(); } // 关开包→刷新主体（新卡入库）
     else if (act === 'selectDeck') { h.onSelectDeck?.(k); render(); }
     else if (act === 'newDeck') { h.onNewDeck?.(); render(); }
