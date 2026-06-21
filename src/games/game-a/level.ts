@@ -31,6 +31,7 @@ export interface Level {
   doors?: Door[]; // 实心门（默认实心；被开关 set-sensor 切成可穿过）
   switches?: Switch[]; // 压力开关（踩上→开门），纯数据 zone-occupancy→event-when→effect
   collectibles?: Collectible[]; // 拾取物（金币/宝石）：碰到 → 自毁 + coins++
+  phantoms?: PhantomPlatform[]; // 幻影台（机关）：默认可穿过；solidWhen 成立时变实体可踩
   goalRequires?: ('A' | 'B')[]; // 通关需哪些角色到达目标区（缺省 ['A','B'] 双人缺一不可）
 }
 
@@ -64,6 +65,16 @@ export interface Switch {
   requires?: ('A' | 'B')[]; // 需同时站上才满足的角色（缺省 [by]）；['A','B'] = 重量台（双人缺一不可）
   opensDoor?: string; // 直连：满足时打开的门 id（站着开、离开合）。与 openWhen 二选一。
   outFlag?: string; // 命名旗标：满足时置真，供 Door.openWhen 组合（多台联动）。缺省 `switch{i}`。
+}
+
+// 幻影台（数据驱动·机关）：默认"虚"（带 Sensor，可穿过）；当 solidWhen 条件成立 → effect
+// 去掉 Sensor 变"实"（可站可踩），条件不成立又复原。与门相反极性（门：条件真→可穿过）。
+// 纯能力链：plate→flag（zone-occupancy）→ event-when（flag→solid/soft 信号）→ effect set-sensor。零新能力。
+// 协作：A 踩住压力板把幻影台变实 → B 才能踩着它跨过否则跳不过去的缺口。
+export interface PhantomPlatform {
+  id: string;
+  box: Box;
+  solidWhen: ConditionExpr; // 成立=实体可踩；不成立=虚可穿过（典型：{kind:'flag',id:某开关 outFlag}）
 }
 
 // 拾取物（数据驱动）：任一玩家碰到 → 自毁 + coins 增 amount。零游戏系统。
@@ -191,3 +202,47 @@ export const LEVEL_W1_4: Level = {
     { plate: { x: 560, y: 336, width: 80, height: 44 }, by: 'B', requires: ['B'], outFlag: 'cover-right' }, // 右台 → cover-right
   ],
 };
+
+// 世界 1-2 · 协力攀塔 —— 真·双人垂直闯关（平台 + 机关 + 互动，全现有能力组合，零新能力）。
+//  · 平台：p1..p6 错位锯齿向上（相邻不水平重叠 → 从侧面落上，避免撞到上层底面；间距 ≤90 < 单跳163 跳得上）。
+//  · 机关：p3 与 p5 几乎正上下、相距 170，B 直跳会撞 p5 底面、跳不过去；中间有一块"幻影台 ph1"（默认虚·可穿过）。
+//  · 互动：蓝A 踩住 p3 上的压力板 → ph1 变"实" → 橙B 才能踩着 ph1 从 p3 跨到 p5 继续登顶；A 离板 ph1 复原。
+//  通关只需 B 登顶（goalRequires:['B']）——A 的职责是踩板撑住幻影台（非对称协作，单人切换：停 A 踩板→切 B 跨桥）。
+export const LEVEL_CLIMB: Level = {
+  id: 'climb-coop',
+  name: '世界1-2 · 协力攀塔',
+  bounds: { width: 640, height: 900 }, // 高 > 视口 → 相机向上卷动
+  ground: { x: 320, y: 872, width: 620, height: 48 }, // 顶边 848，落点 833
+  platforms: [
+    { x: 250, y: 790, width: 120, height: 18 }, // p1 顶 781（地面833→781:52）
+    { x: 390, y: 700, width: 110, height: 18 }, // p2 顶 691（781→691:90，错位右）
+    { x: 250, y: 610, width: 130, height: 18 }, // p3 顶 601（691→601:90，错位左）← A 踩板处
+    { x: 250, y: 440, width: 130, height: 18 }, // p5 顶 431（与 p3 几乎正上下、相距 170：直跳撞底面，须借 ph1）
+    { x: 390, y: 355, width: 150, height: 18 }, // p6 顶 346（431→346:85）顶台
+  ],
+  spawnA: { x: 230, y: 560 }, // 蓝A：协助者（落到 p3 一带）
+  spawnB: { x: 360, y: 560 }, // 橙B：攀登者
+  goal: { x: 390, y: 325, width: 150, height: 110 }, // 顶部（站上 p6 即在区内）
+  goalRequires: ['B'], // 只需 B 登顶
+  switches: [
+    // 蓝A 踩 p3 上的压力板 → 置 flag aHold（撑起幻影台）。outFlag 不直连门，只产出旗标供 phantom 读。
+    { plate: { x: 250, y: 594, width: 140, height: 40 }, by: 'A', outFlag: 'aHold' },
+  ],
+  phantoms: [
+    // 幻影台：p3↔p5 之间偏右的踏板；A 踩板(aHold)时变实 → B 踩它 p3→ph1→p5。默认虚=跨不过去。
+    { id: 'ph1', box: { x: 410, y: 525, width: 110, height: 18 }, solidWhen: { kind: 'flag', id: 'aHold' } },
+  ],
+  collectibles: [{ id: 'gem1', box: { x: 390, y: 672, width: 24, height: 30 } }], // p2 上方金币（点缀）
+};
+
+// Game A 闯关展示序（数字键 1/2/3 选关）。关2 = 协力攀塔（按 owner 要求把"往上跳"放第 2 关）。
+export interface Stage {
+  key: string;
+  name: string;
+  level: Level;
+}
+export const GAME_A_STAGES: readonly Stage[] = [
+  { key: '1', name: '关1 · 你踩我过', level: LEVEL_SWITCH },
+  { key: '2', name: '关2 · 协力攀塔', level: LEVEL_CLIMB },
+  { key: '3', name: '关3 · 各守一台', level: LEVEL_W1_4 },
+];

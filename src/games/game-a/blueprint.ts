@@ -167,6 +167,20 @@ export function buildGameABlueprint(level: Level): WorldBlueprint {
       entities[`swCloseFx${i}`] = { Effect: { onSignal: `close:${dn}`, kind: 'set-sensor', targetEntity: dn, value: false } };
     }
   });
+  // 幻影台（纯能力链·机关，零游戏系统）：默认带 Sensor=虚可穿过；solidWhen 成立 → effect set-sensor(false)
+  // 去掉 Sensor 变实可踩，不成立 → set-sensor(true) 复原。与门相反极性，复用 event-when + effect set-sensor。
+  (level.phantoms ?? []).forEach((ph) => {
+    entities[ph.id] = {
+      Transform: { x: ph.box.x, y: ph.box.y, rotation: 0, scaleX: 1, scaleY: 1 },
+      Shape: { kind: 'box', width: ph.box.width, height: ph.box.height },
+      Color: { tint: 0x38bdf8, alpha: 0.55 }, // 半透明青：暗示"虚/可控"踏板
+      Sensor: {}, // 默认可穿过（虚）
+    };
+    entities[`phSolid:${ph.id}`] = { EventWhen: { signal: `solid:${ph.id}`, when: ph.solidWhen, mode: 'level', armed: false } };
+    entities[`phSoft:${ph.id}`] = { EventWhen: { signal: `soft:${ph.id}`, when: { kind: 'not', of: ph.solidWhen }, mode: 'level', armed: false } };
+    entities[`phSolidFx:${ph.id}`] = { Effect: { onSignal: `solid:${ph.id}`, kind: 'set-sensor', targetEntity: ph.id, value: false } }; // 去 Sensor → 实
+    entities[`phSoftFx:${ph.id}`] = { Effect: { onSignal: `soft:${ph.id}`, kind: 'set-sensor', targetEntity: ph.id, value: true } }; // 加 Sensor → 虚
+  });
   // 拾取物（纯能力链，零游戏系统）：zone(任一玩家进 box, count:1)→flag → event-when(edge) → effect destroy + effect modify-resource(coins)。
   if ((level.collectibles ?? []).length > 0) {
     entities.score = { Resource: { id: 'coins', current: 0, min: 0, max: 999 } };
