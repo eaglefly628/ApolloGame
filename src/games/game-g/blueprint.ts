@@ -735,8 +735,16 @@ export const DIZHI_SHARD_PACKS: ShardPack[] = [
   { id: 's24', diamond: 24, shards: 80, tag: '热卖' },
 ];
 
-// 投资人彩蛋（owner 2026-06-20）：首充免密「送一点点」，第二次起需密码。密码=数据常量·可改。
-export const RECHARGE_PASSWORD = 'am';
+// 投资人彩蛋（owner 2026-06-20）：首充免密「送一点点」，第二次起需密码。
+// 测试版改点选花色（owner 2026-06-21·不让打字）：点选 2 张花色当密码，正确=♥红心+♠黑桃。
+// 顺序无关——按固定花色序规范化后比较。密码=数据常量·可改。
+const SUIT_PW_ORDER = ['♠', '♥', '♦', '♣'];
+/** 规范化点选的花色组合（去重 + 固定序）→ 可比较的密码串。 */
+export function canonSuitPw(suits: string[]): string {
+  return [...new Set(suits)].sort((a, b) => SUIT_PW_ORDER.indexOf(a) - SUIT_PW_ORDER.indexOf(b)).join('');
+}
+export const RECHARGE_SUIT_PW = ['♥', '♠']; // 正确密码：红心 + 黑桃
+export const RECHARGE_PASSWORD = canonSuitPw(RECHARGE_SUIT_PW); // 规范化后 = '♠♥'
 
 // 地支附魔（owner 2026-06-20 · 乙简版）：地支生肖镶进扑克牌 → 给那张牌 +favor（铜/银/金 递增）。
 // 每张牌 ≤INLAY_MAX 槽。save.inlays 按「牌位索引(0-51)→镶入生肖 branch[]」记录。连携(三合/六合)留甲契约④。

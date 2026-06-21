@@ -10,7 +10,7 @@ import { coachmarkGeometry } from '@renderer/coachmark.js'; // 引擎通用高�
 import { playSfx, sfxForAct, isSfxMuted, setSfxMuted } from './sfx.js';
 import { isBgmOn, toggleBgm, bgmTrackIdx, selectBgm, bgmVolume, setBgmVolume, BGM_TRACKS } from './bgm.js';
 import { DISHA_SPECS, stageDisha } from './disha.js';
-import { RECHARGE_PACKS, rechargeTotal, DIAMOND_EXCHANGES, DIZHI_SHARD_PACKS, GACHA, DIZHI_MAX_TIER, INLAY_MAX, DIZHI_INLAY_FAVOR, inlayBonus, deployCost, POKER_PICK_SIZE } from './blueprint.js';
+import { RECHARGE_PACKS, rechargeTotal, DIAMOND_EXCHANGES, DIZHI_SHARD_PACKS, GACHA, DIZHI_MAX_TIER, INLAY_MAX, DIZHI_INLAY_FAVOR, inlayBonus, deployCost, POKER_PICK_SIZE, canonSuitPw } from './blueprint.js';
 
 export interface LobbyShopItem { id: string; name: string; sub: string; cost: number; owned: boolean; buyable: boolean; level?: number; inDeck?: boolean; power?: number; phat?: number; kind?: string; icon?: string; tint?: string; unlockStage?: number; locked?: boolean }
 export interface GachaResult { kind: 'tiangang' | 'dizhi'; id: string; name: string; rarity?: string; outcome: 'new' | 'dup-shard' | 'dizhi-up' | 'dizhi-shard'; detail: string } // 抽卡结果（开包演出读）
@@ -591,7 +591,7 @@ function settingsBox(view: LobbyView): string {
 }
 // 商城（owner 2026-06-20 · Demo）：🎴抽卡(doc25 §四·从已解锁池随机·重复转碎片·碎片定向兑换) + 💎钱包(充值/兑换)。
 // 全数据驱动：池/价格/汇率读 GACHA / RECHARGE_PACKS / DIAMOND_EXCHANGES；点击 = 真发卡/发币。
-function shopBox(view: LobbyView, shopTab: 'gacha' | 'wallet' | 'foil', rechargeErr = ''): string {
+function shopBox(view: LobbyView, shopTab: 'gacha' | 'wallet' | 'foil', rechargeErr = '', rcSuits: string[] = []): string {
   const dia = view.diamond ?? 0;
   const shards = view.dizhiShards ?? 0;
   const tShards = view.tiangangShards ?? 0;
@@ -645,9 +645,15 @@ function shopBox(view: LobbyView, shopTab: 'gacha' | 'wallet' | 'foil', recharge
     const tag = x.tag ? `<div style="position:absolute;top:-9px;right:8px;background:#7a5a2a;color:#ffe;font-family:var(--fn);font-size:9px;font-weight:700;padding:2px 7px;border-radius:99px">${x.tag}</div>` : '';
     return `<button class="rc-pack${afford ? '' : ' off'}"${afford ? ` data-act="shardBuy" data-k="${x.id}"` : ' disabled'} style="position:relative">${tag}<div class="rc-amt" style="color:#e6b96a">🧩 ${x.shards}</div><div class="rc-price" style="background:#1c3a5a;color:#9fe0ff">💎 ${x.diamond}</div></button>`;
   };
-  // 投资人彩蛋：第二次起需密码（首充免密·已由 needPw 标识）
+  // 投资人彩蛋：第二次起需密码（首充免密·已由 needPw 标识）。
+  // 测试版改「点选花色」当密码（owner 2026-06-21·不让打字）：点亮 2 张花色 → 即密码。正确=♥+♠。
+  const SUIT_PW: [string, string, string][] = [['♠', '黑桃', '#5b7fb0'], ['♥', '红桃', '#d8504e'], ['♦', '方块', '#e0973a'], ['♣', '梅花', '#3fae6e']];
+  const suitTiles = SUIT_PW.map(([g, nm, c]) => {
+    const on = rcSuits.includes(g);
+    return `<button class="rc-suit${on ? ' on' : ''}" data-act="rcSuit" data-k="${g}" style="flex:1;padding:10px 0;border-radius:10px;cursor:pointer;background:${on ? c : 'var(--chip)'};border:2px solid ${on ? c : 'var(--panel-border)'};color:${on ? '#fff' : c};display:flex;flex-direction:column;align-items:center;gap:2px;box-shadow:${on ? `0 0 12px ${c}88` : 'none'};transition:all .12s"><span style="font-size:24px;line-height:1">${g}</span><span style="font-size:11px;color:${on ? '#fff' : 'var(--ink-dim)'}">${nm}</span></button>`;
+  }).join('');
   const pwBlock = needPw
-    ? `<div style="margin-top:8px;display:flex;gap:8px;align-items:center"><input class="rc-pw" type="password" placeholder="充值密码" autocomplete="off" style="flex:1;padding:9px 11px;border-radius:9px;background:var(--chip);border:1px solid ${rechargeErr ? '#e0635f' : 'var(--panel-border)'};color:var(--ink);font-size:13px"><span style="font-size:11px;color:var(--ink-dim)">🔒 复充需密码</span></div>${rechargeErr ? `<div style="color:#e0635f;font-size:12px;margin-top:5px">${rechargeErr}</div>` : ''}`
+    ? `<div style="margin-top:10px"><div style="font-size:12px;color:var(--ink-dim);margin-bottom:6px">🔒 复充需密码 · <b style="color:var(--ink)">点选 2 张花色</b>（测试版·免打字）<span style="color:var(--gold);margin-left:4px">已选 ${rcSuits.length}/2</span></div><div style="display:flex;gap:8px">${suitTiles}</div>${rechargeErr ? `<div style="color:#e0635f;font-size:12px;margin-top:6px">${rechargeErr}</div>` : ''}</div>`
     : `<div class="note" style="text-align:left;margin-top:6px;font-size:11px">🎁 首充免密「送一点点」体验。</div>`;
   const walletTab = `<div style="font-family:var(--fh);font-weight:700;font-size:14px;color:var(--ink);margin:4px 0 8px">充值 · 越充越送（Demo·点即到账）</div>
     <div class="rc-grid">${RECHARGE_PACKS.map(packCard).join('')}</div>
@@ -1033,9 +1039,18 @@ function luckyBox(r: LuckyRoll): string {
     <div style="display:flex;gap:10px;margin-top:18px"><button class="cta-sub" style="flex:1" data-act="lucky">再掷一卦</button><button class="cta-sub" style="flex:1;color:#2a1a08;background:var(--gold-grad);border:0" data-act="lucky-close">收</button></div>
   </div></div>`;
 }
-export interface LobbyOverlayState { helpOpen: boolean; helpTab: 'intro' | 'tut' | 'manual'; manualTier: 'easy' | 'mid' | 'hard'; settingsOpen: boolean; rechargeOpen: boolean; shopTab: 'gacha' | 'wallet' | 'foil'; rechargeErr: string; gachaReveal: GachaResult[] | null; story: { beats: StoryBeat[]; idx: number; label: string; cta: string } | null; guideSkipAsk: boolean; deckPickerOpen: boolean; lucky: LuckyRoll | null }
+// 充值致谢弹框（owner 2026-06-21·Demo 彩蛋）：确认充值后弹「谢谢老板·已打到君白工资卡」。
+function rechargeThanksBox(): string {
+  return `<div class="tut-ov" data-act="thanks-close"><div class="tut-box" data-stop="1" style="max-width:360px;text-align:center">
+    <div style="font-size:52px;line-height:1;margin:6px 0">💰</div>
+    <div style="font-family:var(--fd);font-size:24px;color:var(--gold)">谢谢老板！</div>
+    <div class="note" style="margin-top:10px;font-size:14px;line-height:1.7">您充值的金额已如数打到<br><b style="color:var(--ink)">君白</b> 的工资卡 🧧<br><span class="ghost" style="font-size:11px">（Demo 彩蛋·实为模拟到账）</span></div>
+    <div style="margin-top:18px"><button class="cta-sub" style="color:#2a1a08;background:var(--gold-grad);border:0" data-act="thanks-close">收下祝福 →</button></div>
+  </div></div>`;
+}
+export interface LobbyOverlayState { helpOpen: boolean; helpTab: 'intro' | 'tut' | 'manual'; manualTier: 'easy' | 'mid' | 'hard'; settingsOpen: boolean; rechargeOpen: boolean; shopTab: 'gacha' | 'wallet' | 'foil'; rechargeErr: string; rcSuits: string[]; rechargeThanks: boolean; gachaReveal: GachaResult[] | null; story: { beats: StoryBeat[]; idx: number; label: string; cta: string } | null; guideSkipAsk: boolean; deckPickerOpen: boolean; lucky: LuckyRoll | null }
 export function lobbyOverlaysHTML(view: LobbyView, s: LobbyOverlayState): string {
-  return `${s.helpOpen ? helpBox(s.helpTab, s.manualTier) : ''}${s.settingsOpen ? settingsBox(view) : ''}${s.rechargeOpen ? shopBox(view, s.shopTab, s.rechargeErr) : ''}${s.gachaReveal ? gachaRevealBox(s.gachaReveal) : ''}${s.lucky ? luckyBox(s.lucky) : ''}${s.story ? narrationBox(s.story.beats, s.story.idx, s.story.label, s.story.cta) : ''}${s.guideSkipAsk ? guideSkipDialog() : ''}${s.deckPickerOpen ? deckPickerBox(view) : ''}`;
+  return `${s.helpOpen ? helpBox(s.helpTab, s.manualTier) : ''}${s.settingsOpen ? settingsBox(view) : ''}${s.rechargeOpen ? shopBox(view, s.shopTab, s.rechargeErr, s.rcSuits) : ''}${s.rechargeThanks ? rechargeThanksBox() : ''}${s.gachaReveal ? gachaRevealBox(s.gachaReveal) : ''}${s.lucky ? luckyBox(s.lucky) : ''}${s.story ? narrationBox(s.story.beats, s.story.idx, s.story.label, s.story.cta) : ''}${s.guideSkipAsk ? guideSkipDialog() : ''}${s.deckPickerOpen ? deckPickerBox(view) : ''}`;
 }
 export function renderLobby(view: LobbyView, tab: string, helpOpen: boolean, deckTab: 'base' | 'gang' | 'dizhi' = 'base', earthFilter = 'all', collTab = 'cards', heroSuit = 'all', heroDetail = '', heroRar = 'all', ownedOnly = false, settingsOpen = false, manualTier: 'easy' | 'mid' | 'hard' = 'easy', rechargeOpen = false, rechargeErr = '', story: { beats: StoryBeat[]; idx: number; label: string; cta: string } | null = null, guideSkipAsk = false, shopTab: 'gacha' | 'wallet' | 'foil' = 'wallet', gachaReveal: GachaResult[] | null = null, deckPickerOpen = false, craftSel = '', helpTab: 'intro' | 'tut' | 'manual' = 'intro'): string {
   const on = (t: string): string => (tab === t ? ' on' : '');
@@ -1086,7 +1101,7 @@ export function renderLobby(view: LobbyView, tab: string, helpOpen: boolean, dec
           ${c ? `<div style="position:absolute;left:0;right:0;bottom:104px;text-align:center;color:#fff;font-size:13px;text-shadow:0 2px 8px rgba(0,0,0,.7)">⚔ 对决 <b style="font-family:var(--fd);font-size:18px">${esc(c.boss)}</b> · <span style="opacity:.85">${esc(c.oneLiner)}</span></div>` : ''}
           <div class="ctawrap">
             <button class="cta-main" data-act="play" data-anchor="play"><span class="sheen"></span><span class="big">${GI.swords} 出征 · ${c ? `第 ${c.stage} 关` : esc(view.rankText)}</span><span class="sm">${c ? `挑战 ${esc(c.boss)} · ${esc(c.battle)} · 难度 ${stars}` : 'DEPLOY · 单人战役 vs AI 庄家'}</span></button>
-            <div class="ctarow"><button class="cta-sub" data-act="intro">📜 游戏介绍</button><button class="cta-sub" data-act="tut">📖 怎么打</button></div>
+            <div class="ctarow"><button class="cta-sub" data-act="man">📖 玩法手册</button></div>
           </div>
         </div>
         ${deckPreviewPanel(view.tiangangs, view.deckArchName, view.deckArchActivated, view.deckSize ?? 12, view.activeDeckName)}
@@ -1114,7 +1129,7 @@ export function renderLobby(view: LobbyView, tab: string, helpOpen: boolean, dec
     </div></section>
     <section class="screen${on('ladder')} full" data-screen="ladder">${ladderSection(view.name, view.rankText)}</section>
   </div>
-  </div><div id="gv-ov" style="display:contents">${lobbyOverlaysHTML(view, { helpOpen, helpTab, manualTier, settingsOpen, rechargeOpen, shopTab, rechargeErr, gachaReveal, story, guideSkipAsk, deckPickerOpen, lucky: null })}</div></div>`;
+  </div><div id="gv-ov" style="display:contents">${lobbyOverlaysHTML(view, { helpOpen, helpTab, manualTier, settingsOpen, rechargeOpen, shopTab, rechargeErr, rcSuits: [], rechargeThanks: false, gachaReveal, story, guideSkipAsk, deckPickerOpen, lucky: null })}</div></div>`;
 }
 
 export interface LobbyHandlers {
@@ -1165,6 +1180,8 @@ export function mountLobby(host: HTMLElement, h: LobbyHandlers): { update: () =>
   let settings = false;
   let recharge = false;
   let rechargeErr = '';
+  let rcSuits: string[] = []; // 充值密码点选的花色（测试版·≤2·owner 2026-06-21）
+  let rechargeThanks = false; // 充值成功致谢弹框
   let story: { beats: StoryBeat[]; idx: number; label: string; cta: string; then: 'close' | 'play' | 'guide' } | null = null;
   let guideSkipAsk = false;
   let shopTab: 'gacha' | 'wallet' | 'foil' = 'wallet';
@@ -1178,7 +1195,7 @@ export function mountLobby(host: HTMLElement, h: LobbyHandlers): { update: () =>
   const coachLayer = (host.ownerDocument ?? document).createElement('div');
   coachLayer.className = 'gg-coach-layer';
   coachLayer.style.cssText = 'position:fixed;inset:0;z-index:70;pointer-events:none';
-  const anyOverlayOpen = (): boolean => help || recharge || settings || guideSkipAsk || deckPicker || !!story || !!gachaReveal || !!lucky;
+  const anyOverlayOpen = (): boolean => help || recharge || settings || guideSkipAsk || deckPicker || rechargeThanks || !!story || !!gachaReveal || !!lucky;
   const updateCoach = (): void => {
     const v = h.getView();
     const gs = v.guideStep ?? -1;
@@ -1209,7 +1226,7 @@ export function mountLobby(host: HTMLElement, h: LobbyHandlers): { update: () =>
   const onCoachClick = (e: MouseEvent): void => { const t = (e.target as HTMLElement).closest('[data-act="guide-skip"]'); if (t) { playSfx(sfxForAct('guide-skip')); guideSkipAsk = true; renderOv(); updateCoach(); } };
   coachLayer.addEventListener('click', onCoachClick);
   const onResize = (): void => updateCoach();
-  const ovState = (): LobbyOverlayState => ({ helpOpen: help, helpTab, manualTier: manTier, settingsOpen: settings, rechargeOpen: recharge, shopTab, rechargeErr, gachaReveal, story, guideSkipAsk, deckPickerOpen: deckPicker, lucky });
+  const ovState = (): LobbyOverlayState => ({ helpOpen: help, helpTab, manualTier: manTier, settingsOpen: settings, rechargeOpen: recharge, shopTab, rechargeErr, rcSuits, rechargeThanks, gachaReveal, story, guideSkipAsk, deckPickerOpen: deckPicker, lucky });
   const rollLucky = (): LuckyRoll => { const v = 1 + Math.floor(Math.random() * 100); return v >= 90 ? { val: v, label: '大吉', color: 'var(--gold)', line: '天命在你·此局必有奇遇，放胆去翻！' } : v >= 70 ? { val: v, label: '吉', color: 'var(--club)', line: '顺风顺水·正是出征好时机。' } : v >= 40 ? { val: v, label: '中平', color: 'var(--ink)', line: '胜负在人·稳扎稳打、看准爆冷缝。' } : v >= 15 ? { val: v, label: '小凶', color: 'var(--diamond)', line: '谨慎出牌·手里留张保命天罡。' } : { val: v, label: '凶', color: 'var(--heart)', line: '爆冷之日——正好赌一把翻盘命！' }; };
   // 抗闪屏：只更新弹层 #gv-ov（不重建大厅主体）。弹层打开/内部导航/关闭都走它 → 不再整屏闪。
   const renderOv = (): void => { const o = host.querySelector('#gv-ov'); if (o) o.innerHTML = lobbyOverlaysHTML({ ...h.getView(), skin }, ovState()); else render(); updateCoach(); };
@@ -1303,9 +1320,13 @@ export function mountLobby(host: HTMLElement, h: LobbyHandlers): { update: () =>
     else if (act === 'shop') { recharge = true; shopTab = 'gacha'; rechargeErr = ''; renderOv(); }
     else if (act === 'shopFoil') { recharge = true; shopTab = 'foil'; rechargeErr = ''; renderOv(); }
     else if (act === 'recharge') { recharge = true; shopTab = 'wallet'; rechargeErr = ''; renderOv(); }
-    else if (act === 'recharge-close') { recharge = false; rechargeErr = ''; render(); } // 关商城→刷新主体（拥有/余额可能变）
+    else if (act === 'recharge-close') { recharge = false; rechargeErr = ''; rcSuits = []; render(); } // 关商城→刷新主体（拥有/余额可能变）
     else if (act === 'shopTab') { shopTab = k === 'gacha' ? 'gacha' : k === 'foil' ? 'foil' : 'wallet'; renderOv(); }
-    else if (act === 'rechargeBuy') { const pw = (host.querySelector('.rc-pw') as HTMLInputElement | null)?.value ?? ''; const ok = h.onRecharge?.(k, pw); rechargeErr = ok === false ? '密码错误，请重试' : ''; renderOv(); }
+    // 充值密码点选花色（测试版·owner 2026-06-21）：点亮/熄灭花色（≤2）；满 2 后再点别的先顶掉最早一张。
+    else if (act === 'rcSuit') { if (rcSuits.includes(k)) rcSuits = rcSuits.filter((s) => s !== k); else { rcSuits = [...rcSuits, k]; if (rcSuits.length > 2) rcSuits = rcSuits.slice(-2); } rechargeErr = ''; renderOv(); }
+    // 确认充值：花色组合→规范化密码→onRecharge。成功(非 false)→清花色+弹「谢谢老板」致谢；失败→提示密码错。
+    else if (act === 'rechargeBuy') { const pw = canonSuitPw(rcSuits); const ok = h.onRecharge?.(k, pw); if (ok === false) { rechargeErr = '密码不对·请点选正确的 2 张花色'; renderOv(); } else { rcSuits = []; rechargeErr = ''; rechargeThanks = true; renderOv(); } }
+    else if (act === 'thanks-close') { rechargeThanks = false; renderOv(); }
     else if (act === 'exchangeBuy') { h.onExchange?.(k); renderOv(); }
     else if (act === 'shardBuy') { h.onBuyShards?.(k); renderOv(); }
     // 抽卡（doc25 §四）：data-k="pool:count:pay" → onGacha → 开包演出；定向兑换 / 关闭演出

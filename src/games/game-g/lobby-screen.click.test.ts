@@ -227,28 +227,32 @@ describe('Game G · lobby-screen mountLobby 点击交互（DOM · happy-dom）',
       expect(host.innerHTML).toContain('首充免密');
     });
 
-    it('复充需密码：密码错误（onRecharge 返回 false）→ 显示「密码错误」', () => {
+    it('复充需密码（测试版点选花色）：选错花色（onRecharge 返回 false）→ 显示「密码不对」', () => {
       const host = document.createElement('div');
       const onRecharge = vi.fn(() => false); // 引擎判定密码错
       mountLobby(host, { getView: () => makeView({ diamond: 6, rechargeNeedsPassword: true }), onPlay: vi.fn(), onRecharge });
       click(host.querySelector('[data-act="recharge"]'));
-      const pw = host.querySelector('.rc-pw') as HTMLInputElement;
-      expect(pw).not.toBeNull();
-      pw.value = '乱填';
+      expect(host.querySelector('.rc-pw')).toBeNull(); // 文本框已废弃
+      expect(host.querySelector('[data-act="rcSuit"][data-k="♥"]')).not.toBeNull(); // 改点选花色
+      click(host.querySelector('[data-act="rcSuit"][data-k="♦"]')); // 选错：♦+♣
+      click(host.querySelector('[data-act="rcSuit"][data-k="♣"]'));
       click(host.querySelector('[data-act="rechargeBuy"]'));
-      expect(onRecharge).toHaveBeenCalledWith('r6', '乱填');
-      expect(host.innerHTML).toContain('密码错误');
+      expect(onRecharge).toHaveBeenCalledWith('r6', '♦♣'); // 规范化密码串（固定花色序）
+      expect(host.innerHTML).toContain('密码不对');
     });
 
-    it('复充需密码：密码正确（onRecharge 返回 true）→ 无报错', () => {
+    it('复充需密码（测试版点选花色）：选对 ♥红心+♠黑桃（顺序无关·规范化为♠♥）→ 弹「谢谢老板」致谢', () => {
       const host = document.createElement('div');
       const onRecharge = vi.fn(() => true);
       mountLobby(host, { getView: () => makeView({ diamond: 6, rechargeNeedsPassword: true }), onPlay: vi.fn(), onRecharge });
       click(host.querySelector('[data-act="recharge"]'));
-      (host.querySelector('.rc-pw') as HTMLInputElement).value = 'am';
+      click(host.querySelector('[data-act="rcSuit"][data-k="♥"]')); // 先红心
+      click(host.querySelector('[data-act="rcSuit"][data-k="♠"]')); // 再黑桃
       click(host.querySelector('[data-act="rechargeBuy"]'));
-      expect(onRecharge).toHaveBeenCalledWith('r6', 'am');
-      expect(host.innerHTML).not.toContain('密码错误');
+      expect(onRecharge).toHaveBeenCalledWith('r6', '♠♥'); // 顺序无关·规范化
+      expect(host.innerHTML).not.toContain('密码不对');
+      expect(host.innerHTML).toContain('谢谢老板'); // 致谢弹框
+      expect(host.innerHTML).toContain('君白'); // 打到君白工资卡
     });
   });
 
