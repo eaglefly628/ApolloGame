@@ -127,6 +127,7 @@ export interface TurnBattleView {
   notice: string | null;
   battleLabel: string; sfxOn: boolean; settingsOpen: boolean;
   bgmOn: boolean; bgmIdx: number; bgmVol: number; bgmNames: string[];
+  guideOn?: boolean; // 新手引导开/关（owner 2026-06-21·卡住保险阀·默认关）
 }
 
 // ── 上下通路梯子（owner 2026-06-20 Cloud Design 参考图·忠实端口 LAD 像素坐标·900×400 viewBox）──
@@ -505,6 +506,7 @@ export function buildTurnFrameHTML(view: TurnBattleView, drain: { from: number; 
     <div style="display:flex;align-items:center;gap:8px;margin-bottom:10px;"><span style="flex:1;font-size:13px;color:var(--ink);font-family:var(--fh);">${view.sfxOn ? '🔊' : '🔇'} 音效</span><button data-act="toggle-sfx" style="${st(sfxTogSty)}">${view.sfxOn ? '开' : '关'}</button></div>
     <div style="display:flex;align-items:center;gap:8px;margin-bottom:2px;"><span style="flex:1;font-size:13px;color:var(--ink);font-family:var(--fh);">${view.bgmOn ? '🎵' : '🎵'} 背景音乐</span><button data-act="toggle-bgm" style="${st(togSty(view.bgmOn, 'var(--accent)'))}">${view.bgmOn ? '开' : '关'}</button></div>
     ${bgmBlock}
+    <div style="display:flex;align-items:center;gap:8px;margin:10px 0;"><span style="flex:1;font-size:13px;color:var(--ink);font-family:var(--fh);">🎓 新手引导</span><button data-act="toggle-guide" style="${st(togSty(!!view.guideOn, 'var(--accent)'))}">${view.guideOn ? '开' : '关'}</button></div>
     <div style="font-size:10px;letter-spacing:.12em;text-transform:uppercase;color:var(--ink-dim);margin-bottom:6px;font-weight:700;">主题</div>
     <div style="display:flex;gap:6px;"><button data-act="theme" data-k="onyx" style="${st(seg(view.theme === 'onyx'))}">玄铁</button><button data-act="theme" data-k="brocade" style="${st(seg(view.theme === 'brocade'))}">锦霞</button></div>
   </div>` : '';
@@ -568,7 +570,7 @@ const SUIT_KEYS: Record<string, 's' | 'h' | 'd' | 'c'> = { S: 's', H: 'h', D: 'd
 const lc = (s: string): 's' | 'h' | 'd' | 'c' => SUIT_KEYS[s] ?? 's';
 const rankOf = (r: string): 'white' | 'green' | 'blue' | 'gold' => (r === 'A' ? 'gold' : r === 'K' || r === 'Q' || r === 'J' ? 'blue' : 'white');
 
-export interface TurnViewOpts { theme?: 'onyx' | 'brocade'; tengangName?: (id: string) => string; tengangDesc?: (id: string) => string; clash?: TurnClashView | null; sha?: TurnShaView[]; bossName?: string; selMode?: string | null; selHand?: number; tutorial?: { narration: string; highlight: string } | null; gatesLive?: boolean; notice?: string | null; movedIds?: Set<string>; freshIds?: Map<string, number>; dealtId?: string; battleLabel?: string; sfxOn?: boolean; settingsOpen?: boolean; bgmOn?: boolean; bgmIdx?: number; bgmVol?: number; bgmNames?: string[]; enchOf?: (rank: string, suit: string) => [string, number][] }
+export interface TurnViewOpts { theme?: 'onyx' | 'brocade'; tengangName?: (id: string) => string; tengangDesc?: (id: string) => string; clash?: TurnClashView | null; sha?: TurnShaView[]; bossName?: string; selMode?: string | null; selHand?: number; tutorial?: { narration: string; highlight: string } | null; gatesLive?: boolean; notice?: string | null; movedIds?: Set<string>; freshIds?: Map<string, number>; dealtId?: string; battleLabel?: string; sfxOn?: boolean; settingsOpen?: boolean; bgmOn?: boolean; bgmIdx?: number; bgmVol?: number; bgmNames?: string[]; guideOn?: boolean; enchOf?: (rank: string, suit: string) => [string, number][] }
 /** 从 turn-combat 真状态派生战斗屏视图（玩家 = side a 视角）。纯读、不改 battle。 */
 export function buildTurnBattleView(b: TurnBattle, opts: TurnViewOpts = {}): TurnBattleView {
   const laneNames = ['上路', '中路', '下路'];
@@ -621,7 +623,7 @@ export function buildTurnBattleView(b: TurnBattle, opts: TurnViewOpts = {}): Tur
     battleLabel: opts.battleLabel ?? '回合制 · 翻命扑克',
     sfxOn: opts.sfxOn ?? false,
     settingsOpen: opts.settingsOpen ?? false,
-    bgmOn: opts.bgmOn ?? false, bgmIdx: opts.bgmIdx ?? 0, bgmVol: opts.bgmVol ?? 0.35, bgmNames: opts.bgmNames ?? [],
+    bgmOn: opts.bgmOn ?? false, bgmIdx: opts.bgmIdx ?? 0, bgmVol: opts.bgmVol ?? 0.35, bgmNames: opts.bgmNames ?? [], guideOn: opts.guideOn ?? false,
   };
 }
 
@@ -641,6 +643,7 @@ export interface TurnBattleActions {
   toggleSfx?: () => void;    // 切换音效开/关
   toggleSettings?: () => void; // 开/关设置面板
   toggleBgm?: () => void;    // 切换背景音乐开/关（与音效分开）
+  toggleGuide?: () => void;  // 切换新手引导开/关（owner 2026-06-21·卡住保险阀）
   selectBgm?: (idx: number) => void; // 选第几首 BGM
   setBgmVol?: (dir: 'up' | 'down') => void; // BGM 音量 −/＋
 }
@@ -698,6 +701,7 @@ export function mountTurnBattle(host: HTMLElement, getView: () => TurnBattleView
       else if (a === 'settings-toggle') { actions.toggleSettings?.(); }
       else if (a === 'toggle-sfx') { actions.toggleSfx?.(); }
       else if (a === 'toggle-bgm') { actions.toggleBgm?.(); }
+      else if (a === 'toggle-guide') { actions.toggleGuide?.(); }
       else if (a === 'bgm-track') { actions.selectBgm?.(parseInt(k, 10)); }
       else if (a === 'bgm-vol') { actions.setBgmVol?.(k === 'up' ? 'up' : 'down'); }
       else if (a === 'theme') actions.setTheme?.(k === 'brocade' ? 'brocade' : 'onyx');

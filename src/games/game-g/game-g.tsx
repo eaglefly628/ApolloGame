@@ -65,6 +65,7 @@ interface Save {
   rechargeCount: number; // 已完成充值次数（投资人彩蛋：首充免密·第二次起需密码）
   seenIntro: boolean; // 是否已看过首启开场故事（doc28 §一·只播一次）
   guideStep: number; // 新手引导进度（doc28 §二）：0..N 进行中 · -1 完成/跳过
+  skipGuide: boolean; // 彻底跳过新手引导（owner 2026-06-21·卡住保险阀·默认 true=不启动任何引导·菜单可开）
   seen: Record<string, boolean>; // 引导「看过不再弹」标记集（coachmark·seen_combat_* 等·owner 2026-06-21）
   tiangangShards: number; // 天罡碎片（抽卡重复转化 → 定向兑换指定天罡·保底 doc25 §四）
   dizhiBag: Record<string, number[]>; // 地支卡包（消耗品库存·owner 2026-06-21）：生肖 branch → 各档活化数 [铜,银,金]（满3自动升档·钻/史待开放）
@@ -98,7 +99,7 @@ const newDeckId = (): string => `deck_${Date.now().toString(36)}_${Math.floor(Ma
 
 const rollBoss = (): number => Math.floor(Math.random() * BOSS_ROSTER.length);
 export function freshSave(): Save {
-  return { materials: 120, diamond: 6, dizhiShards: 30, rechargeCount: 0, seenIntro: false, guideStep: 0, seen: {}, tiangangShards: 0, dizhiBag: { 子: [2, 0, 0], 丑: [1, 0, 0], 寅: [1, 0, 0], 卯: [1, 0, 0] }, inlays: {}, campaignMax: 1, stage: 1, deck: Array.from({ length: DECK_SIZE }, (_, i) => 44 + (i % 10) * 2), lastOfficers: [10, 10, 10], leverEnergy: LEVER_START, lives: RUN_LIVES, bossIdx: rollBoss(), ownedTiangangs: GAME_G_TIANGANGS.filter((t) => unlockStageOf(t.id) <= 1).map((t) => t.id), tiangangDecks: [{ id: 'deck1', name: '牌组 1', cards: [], pokerPicks: [] }, { id: 'deck2', name: '牌组 2', cards: [], pokerPicks: [] }, { id: 'deck3', name: '牌组 3', cards: [], pokerPicks: [] }, { id: 'deck4', name: '牌组 4', cards: [], pokerPicks: [] }], activeDeckId: 'deck1', tiangangs: [], planets: {}, foils: [], fortune: { date: '', rolls: 0, keptVal: null } }; // 44..62 起步；金币 120；钻石送 6（首充免密）；开局默认给 4 个天罡牌组让玩家去组（owner 2026-06-21）；pokerPicks 空=自动构筑一副；新存档播开场故事+引导
+  return { materials: 120, diamond: 6, dizhiShards: 30, rechargeCount: 0, seenIntro: false, guideStep: 0, skipGuide: true, seen: {}, tiangangShards: 0, dizhiBag: { 子: [2, 0, 0], 丑: [1, 0, 0], 寅: [1, 0, 0], 卯: [1, 0, 0] }, inlays: {}, campaignMax: 1, stage: 1, deck: Array.from({ length: DECK_SIZE }, (_, i) => 44 + (i % 10) * 2), lastOfficers: [10, 10, 10], leverEnergy: LEVER_START, lives: RUN_LIVES, bossIdx: rollBoss(), ownedTiangangs: GAME_G_TIANGANGS.filter((t) => unlockStageOf(t.id) <= 1).map((t) => t.id), tiangangDecks: [{ id: 'deck1', name: '牌组 1', cards: [], pokerPicks: [] }, { id: 'deck2', name: '牌组 2', cards: [], pokerPicks: [] }, { id: 'deck3', name: '牌组 3', cards: [], pokerPicks: [] }, { id: 'deck4', name: '牌组 4', cards: [], pokerPicks: [] }], activeDeckId: 'deck1', tiangangs: [], planets: {}, foils: [], fortune: { date: '', rolls: 0, keptVal: null } }; // 44..62 起步；金币 120；钻石送 6（首充免密）；开局默认给 4 个天罡牌组让玩家去组（owner 2026-06-21）；pokerPicks 空=自动构筑一副；新存档播开场故事+引导
 }
 function loadSave(): Save {
   try {
@@ -114,6 +115,7 @@ function loadSave(): Save {
         if (typeof s.rechargeCount !== 'number') s.rechargeCount = 0; // 充值次数迁移
         if (typeof s.seenIntro !== 'boolean') s.seenIntro = true; // 老存档视为已看过开场（不打扰老玩家）
         if (typeof s.guideStep !== 'number') s.guideStep = -1; // 老存档引导视为已完成
+        if (typeof s.skipGuide !== 'boolean') s.skipGuide = true; // 默认彻底跳过新手引导（owner 2026-06-21·不启动任何引导）
         if (typeof s.tiangangShards !== 'number') s.tiangangShards = 0; // 天罡碎片迁移
         // 地支消耗品迁移（owner 2026-06-21）：老存档 dizhiOwned{branch:tier} → dizhiBag{branch:[铜,银,金]}（该档置 1 张）。
         const legacyDz = s as unknown as { dizhiOwned?: Record<string, number> };
@@ -431,7 +433,7 @@ export function mount(container: HTMLElement, shell?: { exit?: () => void }): ()
       const heart = save.lives > 0 ? '❤'.repeat(save.lives) : '—';
       resetFortuneIfNewDay(save); // 跨日则清零今日卦象（不落盘·读时纠正即可）
       return {
-        skin: lobbySkin, coin: save.materials, diamond: save.diamond, dizhiShards: save.dizhiShards, tiangangShards: save.tiangangShards, dizhiBag: save.dizhiBag, rechargeNeedsPassword: save.rechargeCount >= 1, campaignMax: save.campaignMax, firstLaunch: !save.seenIntro, guideStep: save.guideStep, energy: save.leverEnergy, energyMax: cap, foilCount: save.foils.length,
+        skin: lobbySkin, coin: save.materials, diamond: save.diamond, dizhiShards: save.dizhiShards, tiangangShards: save.tiangangShards, dizhiBag: save.dizhiBag, rechargeNeedsPassword: save.rechargeCount >= 1, campaignMax: save.campaignMax, firstLaunch: !save.seenIntro, guideStep: save.skipGuide ? -1 : save.guideStep, energy: save.leverEnergy, energyMax: cap, foilCount: save.foils.length,
         name: '不翻就赢_07', mainCard: '黑桃A「掷命尖兵」', rankText: `战役 第 ${save.campaignMax} 关 / 共 52`,
         stageLabel: `第 ${save.stage} 关 · 全 52 役 · 终局 Boss【${boss.name}】`,
         archLine, bossLine: `${boss.persona} · 流派【${bossArchName}】— 据其针对布阵`,
@@ -717,7 +719,7 @@ export function mount(container: HTMLElement, shell?: { exit?: () => void }): ()
     let clashRevealed = false; let clashCdTimer = 0; let clashCdInterval = 0; let clashRolling = false;
     const clearClashTimers = (): void => { if (clashCdTimer) { clearTimeout(clashCdTimer); clashCdTimer = 0; } if (clashCdInterval) { clearInterval(clashCdInterval); clashCdInterval = 0; } };
     const buildClashView = (): TurnClashView | null => { if (!perfClash) return null; const cv = clashToTurnView(perfClash, tgName, save.inlays); cv.revealed = clashRevealed; return cv; };
-    const view = (): TurnBattleView => buildTurnBattleView(tb, { theme, tengangName: tgName, tengangDesc: tgDesc, selMode, selHand, clash: buildClashView(), bossName: aiName, sha: shaView, gatesLive: gateChance, notice, movedIds: justMovedIds, freshIds, dealtId: dealtId ?? undefined, battleLabel, sfxOn: isSfxOn(), settingsOpen, bgmOn: isBgmOn(), bgmIdx: bgmTrackIdx(), bgmVol: bgmVolume(), bgmNames: BGM_TRACKS.map((t) => t.name), enchOf: (rank, suit) => (save.inlays[String(cardFavorIndex(rank + suit))] ?? []).map((e) => [`${e.b}${DIZHI_TIER_NM[e.t]}`, DIZHI_INLAY_FAVOR[e.t]] as [string, number]) });
+    const view = (): TurnBattleView => buildTurnBattleView(tb, { theme, tengangName: tgName, tengangDesc: tgDesc, selMode, selHand, clash: buildClashView(), bossName: aiName, sha: shaView, gatesLive: gateChance, notice, movedIds: justMovedIds, freshIds, dealtId: dealtId ?? undefined, battleLabel, sfxOn: isSfxOn(), settingsOpen, bgmOn: isBgmOn(), bgmIdx: bgmTrackIdx(), bgmVol: bgmVolume(), bgmNames: BGM_TRACKS.map((t) => t.name), guideOn: !save.skipGuide, enchOf: (rank, suit) => (save.inlays[String(cardFavorIndex(rank + suit))] ?? []).map((e) => [`${e.b}${DIZHI_TIER_NM[e.t]}`, DIZHI_INLAY_FAVOR[e.t]] as [string, number]) });
     let mounted: { update: () => void; destroy: () => void } | null = null;
 
     const drainClashes = (): void => { for (const ev of tb.clashLog.slice(drained)) perfQueue.push(ev); drained = tb.clashLog.length; };
@@ -893,6 +895,7 @@ export function mount(container: HTMLElement, shell?: { exit?: () => void }): ()
       toggleSfx: () => { const on = toggleSfx(); if (on) playSfx('select'); mounted?.update(); },
       toggleSettings: () => { settingsOpen = !settingsOpen; mounted?.update(); },
       toggleBgm: () => { toggleBgmState(); mounted?.update(); }, // BGM 开/关·与音效分开
+      toggleGuide: () => { save.skipGuide = !save.skipGuide; persist(save); coachStep = save.skipGuide ? null : nextCoachStep(save.seen, { hasTengang: hasTengangNow() }); flash(save.skipGuide ? '✓ 已关闭新手引导' : '✓ 已开启新手引导'); syncCoach(); mounted?.update(); }, // 彻底跳过/重启引导（卡住保险阀·owner 2026-06-21）
       selectBgm: (i) => { selectBgmState(i); playSfx('select'); mounted?.update(); },
       setBgmVol: (dir) => { setBgmVolume(bgmVolume() + (dir === 'up' ? 0.1 : -0.1)); mounted?.update(); },
     };
@@ -903,9 +906,9 @@ export function mount(container: HTMLElement, shell?: { exit?: () => void }): ()
     // 打天罡相关步按**手牌活检**判定（owner 2026-06-21·修「抽牌紧接打天罡」互斥卡死）：手里真有天罡才推进到「结束回合→打天罡」，
     // 否则跳过、不让玩家卡在做不到的操作上。抽牌步会引导玩家先摸一张天罡。
     const hasTengangNow = (): boolean => tb.a.hand.some((c) => c.kind === 'tengang'); // 手里真有天罡才可打 → 才推进打天罡步（避免卡死）
-    let coachStep: BattleCoachStep | null = nextCoachStep(save.seen, { hasTengang: hasTengangNow() });
+    let coachStep: BattleCoachStep | null = save.skipGuide ? null : nextCoachStep(save.seen, { hasTengang: hasTengangNow() }); // 跳过引导 → 不启动战斗 coach
     const { world: coachWorld, setStep: setCoachStep } = makeCoachWorld();
-    const coach = coachStep ? mountOnboardingOverlay(document.body, coachWorld, stage) : null; // 挂 body（非 root）→ 避开战场缩放/揭幕 transform 让 position:fixed 错位（owner 2026-06-21）
+    const coach = mountOnboardingOverlay(document.body, coachWorld, stage); // 总是挂（挂 body·避战场缩放偏移）；可见性由 coachStep/syncCoach 控（菜单可实时开关·owner 2026-06-21）
     // 抽牌步进入「抽」模式后高亮底部两个摸牌钮（combat-draw-pick）·否则高亮【抽牌】动作钮（combat-draw）。
     const effectiveStep = (): BattleCoachStep | null => {
       if (!coachStep) return null;
