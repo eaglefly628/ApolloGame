@@ -10,3 +10,5 @@ export const KIND_LABEL: Record<string, string> = { odds: '概率·掷命', powe
 export function ggTip(inner: string): string { return `<div class="gg-tip">${inner}</div>`; }
 export const tipRow = (label: string, value: string, color = 'var(--ink)'): string =>
   `<div class="gg-tip-row"><span>${label}</span><b style="color:${color}">${value}</b></div>`;
+export type LuckyRoll = { val: number; label: string; line: string; color: string };
+export interface FortuneView { rolls: number; max: number; keptVal: number | null } // 今日卦象状态（owner 2026-06-21·持久化于存档）
