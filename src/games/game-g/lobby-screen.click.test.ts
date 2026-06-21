@@ -617,6 +617,7 @@ describe('Game G · lobby-screen mountLobby 点击交互（DOM · happy-dom）',
   describe('背景音乐设置（菜单·开关/选 3 首/音量）', () => {
     it('设置面板含 BGM 开关 + 3 首选曲 + 音量', () => {
       const host = document.createElement('div');
+      try { localStorage.setItem('gg_bgm_on', '1'); } catch { /* noop */ } // owner 改默认关 → 需开启才显选曲/音量
       mountLobby(host, { getView: makeView, onPlay: vi.fn() });
       click(host.querySelector('[data-act="settings"]')); // 开设置
       expect(host.querySelector('[data-act="bgmToggle"]'), 'BGM 开关').not.toBeNull();
@@ -625,6 +626,7 @@ describe('Game G · lobby-screen mountLobby 点击交互（DOM · happy-dom）',
     });
     it('点选曲 / 开关 不抛错（直调 bgm.ts·无 AudioContext 静默）', () => {
       const host = document.createElement('div');
+      try { localStorage.setItem('gg_bgm_on', '1'); } catch { /* noop */ } // 开启才有选曲/音量钮可点
       mountLobby(host, { getView: makeView, onPlay: vi.fn() });
       click(host.querySelector('[data-act="settings"]'));
       expect(() => {

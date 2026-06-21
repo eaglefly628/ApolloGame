@@ -259,6 +259,8 @@
 /* ── polish: 入场 · hover · 点击手感 · 徽章生命感 ── */
 @keyframes ggl-fadein { from{ opacity:0; transform:translateY(7px) } to{ opacity:1; transform:translateY(0) } }
 @keyframes ggl-glow { 0%,100%{ box-shadow:0 0 22px rgba(232,205,130,.5),inset 0 1px 0 rgba(255,255,255,.5) } 50%{ box-shadow:0 0 50px rgba(232,205,130,.95),inset 0 1px 0 rgba(255,255,255,.65) } }
+@keyframes gg-coach-ring { 0%,100%{ box-shadow:0 0 0 3px var(--gold),0 0 16px 3px rgba(232,205,130,.55) } 50%{ box-shadow:0 0 0 4px var(--gold),0 0 28px 7px rgba(232,205,130,.9) } }
+@keyframes gg-coach-arrow { 0%,100%{ transform:translateY(0) } 50%{ transform:translateY(-5px) } }
 .ggl-root .screen.on{ animation:ggl-fadein .22s ease-out both }
 .ggl-root .vs{ animation:ggl-glow 2.6s ease-in-out infinite }
 .ggl-root .nav button{ transition:background .15s,color .15s }
@@ -352,7 +354,7 @@
   <div class="nav">
     <button class=" on" data-act="tab" data-k="home">大厅</button>
     <button class="" data-act="tab" data-k="campaign">战役</button>
-    <button class="" data-act="tab" data-k="decks">我的牌组</button>
+    <button class="" data-act="tab" data-k="decks" data-anchor="decks">我的牌组</button>
     <button class="" data-act="tab" data-k="coll">收藏</button>
     <button class="" data-act="tab" data-k="craft">改造坊</button>
     <button class="" data-act="tab" data-k="ladder">天梯</button>

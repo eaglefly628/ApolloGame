@@ -468,7 +468,7 @@ export function mount(container: HTMLElement): () => void {
       onIntroSeen: () => { save.seenIntro = true; if (save.guideStep < 0) save.guideStep = 0; persist(save); },
       onGuideStep: (n) => { save.guideStep = n; persist(save); },
       onGuideDone: () => { save.seenIntro = true; save.guideStep = -1; persist(save); },
-      onReplayIntro: () => { save.seenIntro = false; save.guideStep = 0; persist(save); },
+      onReplayIntro: () => { save.seenIntro = false; save.guideStep = 0; save.seen = {}; persist(save); }, // 全量重置引导：开场+大厅引导+战斗 coachmark(seen_*)一起清，从头走一遍（owner 2026-06-21）
     });
   }
 
@@ -612,7 +612,7 @@ export function mount(container: HTMLElement): () => void {
     };
     const actions: TurnBattleActions = {
       pickAction: (kind) => { if (busy || tb.active !== 'a') return; if (tb.actionTaken && tb.actionTaken !== kind) return; selMode = selMode === kind ? null : kind; selHand = -1; gateChance = false; playSfx('select'); },
-      drawFrom: (from) => { if (busy || selMode !== 'draw') return; if (drawCard(tb, 'a', from)) { playSfx('draw'); dealtId = tb.a.hand[tb.a.hand.length - 1]?.id ?? null; const did = dealtId; window.setTimeout(() => { if (dealtId === did) { dealtId = null; if (!perfClash) mounted?.update(); } }, 560); } }, // 抽到的牌飞入翻面入场·~560ms 后清标记
+      drawFrom: (from) => { if (busy || selMode !== 'draw') return; if (drawCard(tb, 'a', from)) { playSfx('draw'); coachDid('draw'); dealtId = tb.a.hand[tb.a.hand.length - 1]?.id ?? null; const did = dealtId; window.setTimeout(() => { if (dealtId === did) { dealtId = null; if (!perfClash) mounted?.update(); } }, 560); } }, // 抽到的牌飞入翻面入场·~560ms 后清标记
       selectHand: (i) => {
         if (busy || tb.active !== 'a') return;
         if (selMode === 'cast') { if (castTengang(tb, 'a', i)) { tb.a.tengangA = aggregateTengang(tb.a.castIds); tb.a.castFx = tb.a.castIds.map((id) => ({ id, fx: aggregateTengang([id]) })); playSfx('cast'); coachDid('cast'); } selHand = -1; } // 施法 → 持续修正重算（+逐张 castFx 供对决溯源）

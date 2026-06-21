@@ -72,9 +72,9 @@ const ls = {
 let port: SynthMusicPort | null = null;
 const getPort = (): SynthMusicPort => (port ??= new SynthMusicPort({ volume: bgmVolume() }));
 
-export const isBgmOn = (): boolean => ls.get(ON_KEY) !== '0'; // 默认开
+export const isBgmOn = (): boolean => ls.get(ON_KEY) === '1'; // 默认关（owner 2026-06-21）：未设置=关，仅显式开过(='1')才放
 export const bgmTrackIdx = (): number => { const i = parseInt(ls.get(TRK_KEY) ?? '0', 10); return Number.isFinite(i) && i >= 0 && i < BGM_TRACKS.length ? i : 0; };
-export const bgmVolume = (): number => { const v = parseFloat(ls.get(VOL_KEY) ?? '0.35'); return Number.isFinite(v) ? Math.max(0, Math.min(1, v)) : 0.35; };
+export const bgmVolume = (): number => { const v = parseFloat(ls.get(VOL_KEY) ?? '0.15'); return Number.isFinite(v) ? Math.max(0, Math.min(1, v)) : 0.15; }; // 默认 15%（owner 2026-06-21）
 
 /** 起播当前曲（若开）。须由用户手势触发（autoplay 策略）——引擎端口内部 resume。 */
 export function startBgm(): void { if (!isBgmOn()) return; const p = getPort(); p.setVolume(bgmVolume()); p.play(BGM_TRACKS[bgmTrackIdx()].track); }
