@@ -1,6 +1,6 @@
 import { mountBattle, type BattleView, type BattleUnit, type BattleLane, type BattleLever, type HandCardView, type TengangCardView, type BattleActions, type ClashView, type BattleFx } from './battle-screen.js';
 import { mountLobby, type LobbyView, type LobbyShopItem } from './lobby-screen.js';
-import { prepareArmies, quartermasterEnergy, FORMATION_PRESETS, PRESET_NAMES, LEVER_CATALOG, LEVER_START, battleSpec, RUN_BATTLES, RUN_LIVES, BETWEEN_BUFFS, applyBuff, tiangangKeyBuffs, BOSS_ROSTER, bossFor, GAME_G_TIANGANGS, TIANGANG_BY_ID, ARCHETYPES, detectArchetype, archetypeMatchup, activeArchetype, pickAiFormation, GAME_G_PLANETS, GAME_G_FOILS, RECHARGE_PACKS, rechargeTotal, DIAMOND_EXCHANGES, DIZHI_SHARD_PACKS, RECHARGE_PASSWORD, GACHA, gachaCost, DIZHI_MAX_TIER, DIZHI_TIER_NM, DIZHI_TIER_CAP, dizhiMerge, dizhiTotal, dizhiTopTier, DIZHI_ZODIACS, INLAY_MAX, effectiveDeckFavors, POKER_PICK_SIZE, isPoolCardId, autoBuildPokerPicks, cardFavorIndex, rankOfCardId, deployCost, isHeroOwned, heroCardByName, heroNameOf, effectiveLives, effectiveLeverCap, effectiveLeverRegen, campaignFor, unlockStageOf, type Formation, type Intervention, type LeverKind, type RunBuff, type ArmyCard, type InlayEntry } from './index.js';
+import { prepareArmies, quartermasterEnergy, FORMATION_PRESETS, PRESET_NAMES, LEVER_CATALOG, LEVER_START, battleSpec, RUN_BATTLES, RUN_LIVES, BETWEEN_BUFFS, applyBuff, tiangangKeyBuffs, BOSS_ROSTER, bossFor, GAME_G_TIANGANGS, TIANGANG_BY_ID, ARCHETYPES, detectArchetype, archetypeMatchup, activeArchetype, pickAiFormation, GAME_G_PLANETS, GAME_G_FOILS, RECHARGE_PACKS, rechargeTotal, DIAMOND_EXCHANGES, DIZHI_SHARD_PACKS, RECHARGE_PASSWORD, GACHA, gachaCost, DIZHI_MAX_TIER, DIZHI_TIER_NM, DIZHI_TIER_CAP, DIZHI_INLAY_FAVOR, dizhiMerge, dizhiTotal, dizhiTopTier, DIZHI_ZODIACS, INLAY_MAX, effectiveDeckFavors, POKER_PICK_SIZE, isPoolCardId, autoBuildPokerPicks, cardFavorIndex, rankOfCardId, deployCost, isHeroOwned, heroCardByName, heroNameOf, effectiveLives, effectiveLeverCap, effectiveLeverRegen, campaignFor, unlockStageOf, type Formation, type Intervention, type LeverKind, type RunBuff, type ArmyCard, type InlayEntry } from './index.js';
 import { initLiveBattle, stepLiveBattle, liveActive, migrateRear, NO_TENGANG, LANE_LEN, HOME_BLOOD, type LiveBattle, type DeployCmd, type ClashEvent, type TengangFx } from './live-combat.js';
 import { initTurnBattle, drawCard, deployUnit, castTengang, discardCard, endTurn, aiTakeTurn, toggleGate, GATES, OPENING_HAND, DRAW_COST, type PokerCard, type TengangHandCard } from './turn-combat.js';
 import { mountTurnBattle, buildTurnBattleView, type TurnBattleView, type TurnBattleActions, type TurnClashView, type TurnClashCardView, type TurnShaView } from './turn-battle-screen.js';
@@ -300,13 +300,17 @@ function seededShuffleArr<T>(xs: T[], seed: number): T[] {
 }
 const SUITNAME: Record<string, string> = { s: '黑桃', h: '红桃', d: '方块', c: '梅花' };
 // turn-combat 掷命事件 → 回合制特写视图（doc24 战斗屏·点数/经营/天罡/士气 明细如实透出）。
-function clashToTurnView(ev: ClashEvent, tgName: (id: string) => string = (id) => id): TurnClashView {
+function clashToTurnView(ev: ClashEvent, tgName: (id: string) => string = (id) => id, inlays?: Record<string, InlayEntry[]>): TurnClashView {
   const lc2 = (s: string): 's' | 'h' | 'd' | 'c' => s.toLowerCase() as 's' | 'h' | 'd' | 'c';
   const cardv = (c: ClashEvent['a'], won: boolean): TurnClashCardView => ({ rank: c.rank, suit: lc2(c.suit), name: SUITNAME[lc2(c.suit)] + c.rank, won });
-  // 明细逐行 + 原因（owner 2026-06-21）：点数恒显；经营=改造/附魔；天罡总计 + 逐张溯源(哪张+多少)；士气标明主将坐镇/溃散。
-  const rows = (c: ClashEvent['a']): [string, number][] => {
+  // 明细逐行 + 原因（owner 2026-06-21）：点数恒显；经营=改造/附魔(我方逐源标注：哪生肖·哪档·+多少 favor·读 save.inlays)；天罡总计 + 逐张溯源；士气标明主将坐镇/溃散。
+  const rows = (c: ClashEvent['a'], isMine: boolean): [string, number][] => {
     const r: [string, number][] = [['点数 · 牌面基础', c.points]];
-    if (c.buff !== 0) r.push(['经营 · 改造/附魔', c.buff]);
+    if (c.buff !== 0) {
+      let label = '经营 · 改造/附魔';
+      if (isMine && inlays) { const inl = inlays[String(cardFavorIndex(c.rank + c.suit))] ?? []; if (inl.length) label += '：' + inl.map((e) => `${e.b}${DIZHI_TIER_NM[e.t]}+${DIZHI_INLAY_FAVOR[e.t]}`).join('·'); } // 这张牌的地支附魔逐源（子金+14·丑铜+4…）
+      r.push([label, c.buff]);
+    }
     if (c.tengang !== 0 || (c.tgBreak?.length ?? 0) > 0) {
       r.push(['天罡 · 法术合计', c.tengang]);
       for (const [id, amt] of c.tgBreak ?? []) r.push(['　└ ' + tgName(id), amt]);
@@ -319,7 +323,7 @@ function clashToTurnView(ev: ClashEvent, tgName: (id: string) => string = (id) =
     laneName: ['上路', '中路', '下路'][ev.lane] ?? '路',
     mine: cardv(ev.a, ev.aWins), foe: cardv(ev.b, !ev.aWins),
     oddsMine: Math.round(ev.winrate * 100), rollPct: Math.round(ev.roll * 100),
-    bonusMine: rows(ev.a), bonusFoe: rows(ev.b),
+    bonusMine: rows(ev.a, true), bonusFoe: rows(ev.b, false),
     pEffMine: ev.a.pEff, pEffFoe: ev.b.pEff,
   };
 }
@@ -679,7 +683,7 @@ export function mount(container: HTMLElement, shell?: { exit?: () => void }): ()
       thinkTimer = window.setTimeout(() => { if (thinkEl) { thinkEl.remove(); thinkEl = null; } onDone(); }, ms);
     };
     const flash = (msg: string): void => { notice = msg; mounted?.update(); if (noticeTimer) clearTimeout(noticeTimer); noticeTimer = window.setTimeout(() => { notice = null; if (!perfClash) mounted?.update(); }, 1700); }; // 清提示时若正演掷命特写则不重渲（防飞入重启）
-    const view = (): TurnBattleView => buildTurnBattleView(tb, { theme, tengangName: tgName, tengangDesc: tgDesc, selMode, selHand, clash: perfClash ? clashToTurnView(perfClash, tgName) : null, bossName: aiName, sha: shaView, gatesLive: gateChance, notice, movedIds: justMovedIds, freshIds, dealtId: dealtId ?? undefined, battleLabel, sfxOn: isSfxOn(), settingsOpen, bgmOn: isBgmOn(), bgmIdx: bgmTrackIdx(), bgmVol: bgmVolume(), bgmNames: BGM_TRACKS.map((t) => t.name) });
+    const view = (): TurnBattleView => buildTurnBattleView(tb, { theme, tengangName: tgName, tengangDesc: tgDesc, selMode, selHand, clash: perfClash ? clashToTurnView(perfClash, tgName, save.inlays) : null, bossName: aiName, sha: shaView, gatesLive: gateChance, notice, movedIds: justMovedIds, freshIds, dealtId: dealtId ?? undefined, battleLabel, sfxOn: isSfxOn(), settingsOpen, bgmOn: isBgmOn(), bgmIdx: bgmTrackIdx(), bgmVol: bgmVolume(), bgmNames: BGM_TRACKS.map((t) => t.name) });
     let mounted: { update: () => void; destroy: () => void } | null = null;
 
     const drainClashes = (): void => { for (const ev of tb.clashLog.slice(drained)) perfQueue.push(ev); drained = tb.clashLog.length; };
