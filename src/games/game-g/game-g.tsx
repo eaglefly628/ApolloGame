@@ -7,6 +7,7 @@ import { mountTurnBattle, buildTurnBattleView, type TurnBattleView, type TurnBat
 import { loadLevel } from './level.js';
 import { cardPoints, P_MAX } from './clash-resolve.js';
 import { playSfx, isSfxOn, toggleSfx } from './sound.js';
+import { startBgm, stopBgm, toggleBgm as toggleBgmState, selectBgm as selectBgmState, setBgmVolume, isBgmOn, bgmTrackIdx, bgmVolume, BGM_TRACKS } from './bgm.js';
 
 // Game G ·《翻命扑克》—— 大厅 ↔ 出征 闭环（launcher 卡带槽：export mount(container)→cleanup）。自包含于本目录。
 // outcome-first：每张牌按 favor 跑确定性种子硬币**先定生死**，3D 翻牌是**反推的表现**（抛飞→相撞→落定翻面）。
@@ -291,6 +292,10 @@ export function mount(container: HTMLElement): () => void {
   root.style.cssText = DEFAULT_ROOT_CSS;
   container.appendChild(root);
 
+  // 背景音乐：autoplay 策略要求用户手势后才能出声 → 首次 pointerdown 起播（若开·引擎端口内部 resume）。
+  const bgmKick = (): void => { startBgm(); };
+  container.addEventListener('pointerdown', bgmKick, { once: true });
+
   const teardownMatch = (): void => {
     if (stopLoop) stopLoop();
     if (battle) battle.destroy();
@@ -517,7 +522,7 @@ export function mount(container: HTMLElement): () => void {
       thinkTimer = window.setTimeout(() => { if (thinkEl) { thinkEl.remove(); thinkEl = null; } onDone(); }, ms);
     };
     const flash = (msg: string): void => { notice = msg; mounted?.update(); if (noticeTimer) clearTimeout(noticeTimer); noticeTimer = window.setTimeout(() => { notice = null; mounted?.update(); }, 1700); };
-    const view = (): TurnBattleView => buildTurnBattleView(tb, { theme, tengangName: tgName, tengangDesc: tgDesc, selMode, selHand, clash: perfClash ? clashToTurnView(perfClash) : null, bossName: aiName, sha: shaView, gatesLive: gateChance, notice, movedIds: justMovedIds, freshIds, battleLabel, sfxOn: isSfxOn(), settingsOpen });
+    const view = (): TurnBattleView => buildTurnBattleView(tb, { theme, tengangName: tgName, tengangDesc: tgDesc, selMode, selHand, clash: perfClash ? clashToTurnView(perfClash) : null, bossName: aiName, sha: shaView, gatesLive: gateChance, notice, movedIds: justMovedIds, freshIds, battleLabel, sfxOn: isSfxOn(), settingsOpen, bgmOn: isBgmOn(), bgmIdx: bgmTrackIdx(), bgmVol: bgmVolume(), bgmNames: BGM_TRACKS.map((t) => t.name) });
     let mounted: { update: () => void; destroy: () => void } | null = null;
 
     const drainClashes = (): void => { for (const ev of tb.clashLog.slice(drained)) perfQueue.push(ev); drained = tb.clashLog.length; };
@@ -595,6 +600,9 @@ export function mount(container: HTMLElement): () => void {
       },
       toggleSfx: () => { const on = toggleSfx(); if (on) playSfx('select'); mounted?.update(); },
       toggleSettings: () => { settingsOpen = !settingsOpen; mounted?.update(); },
+      toggleBgm: () => { toggleBgmState(); mounted?.update(); }, // BGM 开/关·与音效分开
+      selectBgm: (i) => { selectBgmState(i); playSfx('select'); mounted?.update(); },
+      setBgmVol: (dir) => { setBgmVolume(bgmVolume() + (dir === 'up' ? 0.1 : -0.1)); mounted?.update(); },
     };
     mounted = mountTurnBattle(stage, view, actions);
     battle = mounted; // teardownMatch 清理（destroy）
@@ -880,6 +888,8 @@ export function mount(container: HTMLElement): () => void {
 
   showLobby();
   return () => {
+    container.removeEventListener('pointerdown', bgmKick);
+    stopBgm();
     teardownMatch();
     root.remove();
   };

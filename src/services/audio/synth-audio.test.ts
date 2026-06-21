@@ -4,8 +4,8 @@ import { SynthAudioPort, type AudioCtxLike, type SfxSpec } from './synth-audio.j
 // ── 假 AudioContext：记录建了哪些节点 / 起停 / 包络目标值，供断言（解释器审计）──
 function fakeCtx() {
   const log = { osc: 0, buf: 0, gain: 0, started: 0, stopped: 0, ramps: [] as number[], waves: [] as string[] };
-  const param = (): { setValueAtTime: (v: number) => void; linearRampToValueAtTime: (v: number) => void; exponentialRampToValueAtTime: (v: number) => void } => ({
-    setValueAtTime: () => {}, linearRampToValueAtTime: (v: number) => { log.ramps.push(v); }, exponentialRampToValueAtTime: () => {},
+  const param = (): { value: number; setValueAtTime: (v: number) => void; linearRampToValueAtTime: (v: number) => void; exponentialRampToValueAtTime: (v: number) => void } => ({
+    value: 0, setValueAtTime: () => {}, linearRampToValueAtTime: (v: number) => { log.ramps.push(v); }, exponentialRampToValueAtTime: () => {},
   });
   const node = (): { connect: () => void; disconnect: () => void } => ({ connect: () => {}, disconnect: () => {} });
   const src = (): { connect: () => void; disconnect: () => void; start: () => void; stop: () => void; onended: (() => void) | null } => ({

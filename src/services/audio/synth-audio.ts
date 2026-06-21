@@ -24,6 +24,7 @@ export interface SfxSpec {
 
 // ── 解释器只用到的 Web Audio 子集（结构化类型：真 AudioContext 满足之，测试可注入假实现）──
 interface ParamLike {
+  value: number;
   setValueAtTime(v: number, t: number): void;
   linearRampToValueAtTime(v: number, t: number): void;
   exponentialRampToValueAtTime(v: number, t: number): void;

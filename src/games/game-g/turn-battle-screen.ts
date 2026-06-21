@@ -97,6 +97,7 @@ export interface TurnBattleView {
   tutorial: { narration: string; highlight: string } | null;
   notice: string | null;
   battleLabel: string; sfxOn: boolean; settingsOpen: boolean;
+  bgmOn: boolean; bgmIdx: number; bgmVol: number; bgmNames: string[];
 }
 
 // ── 上下通路梯子（owner 2026-06-20 Cloud Design 参考图·忠实端口 LAD 像素坐标·900×400 viewBox）──
@@ -367,10 +368,17 @@ export function buildTurnFrameHTML(view: TurnBattleView): string {
     : '';
   const backBtnSty: Style = { padding: '7px 13px', borderRadius: '9px', cursor: 'pointer', border: '1px solid var(--panel-border)', background: 'transparent', color: 'var(--ink-dim)', fontFamily: 'var(--fh)', fontWeight: 700, fontSize: '12px', whiteSpace: 'nowrap' };
   const gearSty: Style = { padding: '7px 10px', borderRadius: '9px', cursor: 'pointer', border: '1px solid ' + (view.settingsOpen ? 'var(--gold)' : 'var(--panel-border)'), background: view.settingsOpen ? 'rgba(232,205,138,.18)' : 'transparent', color: view.settingsOpen ? 'var(--gold)' : 'var(--ink-dim)', fontSize: '15px', lineHeight: 1 };
-  const sfxTogSty: Style = { padding: '4px 11px', borderRadius: '7px', cursor: 'pointer', border: '1px solid ' + (view.sfxOn ? 'var(--hp)' : 'var(--panel-border)'), background: view.sfxOn ? 'rgba(70,209,122,.14)' : 'transparent', color: view.sfxOn ? 'var(--hp)' : 'var(--ink-dim)', fontFamily: 'var(--fh)', fontWeight: 700, fontSize: '12px' };
-  const settingsPanel = view.settingsOpen ? `<div style="${st({ position: 'absolute', top: '70px', right: '22px', zIndex: 80, padding: '14px 16px', borderRadius: '14px', background: 'var(--panel)', border: '1px solid var(--panel-border)', boxShadow: '0 8px 30px rgba(0,0,0,.6), inset 0 0 0 1px var(--hairline)', minWidth: '188px', animation: 'g-fade .18s ease both' })}">
+  const togSty = (on: boolean, col = 'var(--hp)'): Style => ({ padding: '4px 11px', borderRadius: '7px', cursor: 'pointer', border: '1px solid ' + (on ? col : 'var(--panel-border)'), background: on ? 'rgba(70,209,122,.14)' : 'transparent', color: on ? col : 'var(--ink-dim)', fontFamily: 'var(--fh)', fontWeight: 700, fontSize: '12px' });
+  const sfxTogSty: Style = togSty(view.sfxOn);
+  const volBtnSty: Style = { width: '24px', height: '24px', borderRadius: '7px', cursor: 'pointer', border: '1px solid var(--panel-border)', background: 'transparent', color: 'var(--ink)', fontWeight: 700, fontSize: '14px', lineHeight: 1, fontFamily: 'var(--fh)' };
+  const trackRow = (nm: string, i: number): string => `<button data-act="bgm-track" data-k="${i}" style="${st({ display: 'block', width: '100%', textAlign: 'left', padding: '5px 9px', marginBottom: '4px', borderRadius: '7px', cursor: 'pointer', border: '1px solid ' + (view.bgmIdx === i ? 'var(--accent)' : 'var(--panel-border)'), background: view.bgmIdx === i ? 'var(--accent-soft)' : 'transparent', color: view.bgmIdx === i ? 'var(--accent)' : 'var(--ink-dim)', fontFamily: 'var(--fh)', fontWeight: 700, fontSize: '12px' })}">${view.bgmIdx === i ? '♪ ' : ''}${esc(nm)}</button>`;
+  const bgmBlock = view.bgmOn ? `<div style="margin:8px 0 2px;">${forr(view.bgmNames, (nm, i) => trackRow(nm, i))}</div>
+    <div style="display:flex;align-items:center;gap:8px;margin-bottom:6px;"><span style="flex:1;font-size:11px;color:var(--ink-dim);font-family:var(--fh);">音量</span><button data-act="bgm-vol" data-k="down" style="${st(volBtnSty)}">−</button><span style="min-width:34px;text-align:center;font-size:12px;color:var(--ink);font-family:var(--fn);">${Math.round(view.bgmVol * 100)}%</span><button data-act="bgm-vol" data-k="up" style="${st(volBtnSty)}">＋</button></div>` : '';
+  const settingsPanel = view.settingsOpen ? `<div style="${st({ position: 'absolute', top: '70px', right: '22px', zIndex: 80, padding: '14px 16px', borderRadius: '14px', background: 'var(--panel)', border: '1px solid var(--panel-border)', boxShadow: '0 8px 30px rgba(0,0,0,.6), inset 0 0 0 1px var(--hairline)', minWidth: '214px', animation: 'g-fade .18s ease both' })}">
     <div style="font-size:10px;letter-spacing:.16em;text-transform:uppercase;color:var(--ink-dim);margin-bottom:10px;font-weight:700;">⚙ 设置</div>
     <div style="display:flex;align-items:center;gap:8px;margin-bottom:10px;"><span style="flex:1;font-size:13px;color:var(--ink);font-family:var(--fh);">${view.sfxOn ? '🔊' : '🔇'} 音效</span><button data-act="toggle-sfx" style="${st(sfxTogSty)}">${view.sfxOn ? '开' : '关'}</button></div>
+    <div style="display:flex;align-items:center;gap:8px;margin-bottom:2px;"><span style="flex:1;font-size:13px;color:var(--ink);font-family:var(--fh);">${view.bgmOn ? '🎵' : '🎵'} 背景音乐</span><button data-act="toggle-bgm" style="${st(togSty(view.bgmOn, 'var(--accent)'))}">${view.bgmOn ? '开' : '关'}</button></div>
+    ${bgmBlock}
     <div style="font-size:10px;letter-spacing:.12em;text-transform:uppercase;color:var(--ink-dim);margin-bottom:6px;font-weight:700;">主题</div>
     <div style="display:flex;gap:6px;"><button data-act="theme" data-k="onyx" style="${st(seg(view.theme === 'onyx'))}">玄铁</button><button data-act="theme" data-k="brocade" style="${st(seg(view.theme === 'brocade'))}">锦霞</button></div>
   </div>` : '';
@@ -426,7 +434,7 @@ const SUIT_KEYS: Record<string, 's' | 'h' | 'd' | 'c'> = { S: 's', H: 'h', D: 'd
 const lc = (s: string): 's' | 'h' | 'd' | 'c' => SUIT_KEYS[s] ?? 's';
 const rankOf = (r: string): 'white' | 'green' | 'blue' | 'gold' => (r === 'A' ? 'gold' : r === 'K' || r === 'Q' || r === 'J' ? 'blue' : 'white');
 
-export interface TurnViewOpts { theme?: 'onyx' | 'brocade'; tengangName?: (id: string) => string; tengangDesc?: (id: string) => string; clash?: TurnClashView | null; sha?: TurnShaView[]; bossName?: string; selMode?: string | null; selHand?: number; tutorial?: { narration: string; highlight: string } | null; gatesLive?: boolean; notice?: string | null; movedIds?: Set<string>; freshIds?: Map<string, number>; battleLabel?: string; sfxOn?: boolean; settingsOpen?: boolean }
+export interface TurnViewOpts { theme?: 'onyx' | 'brocade'; tengangName?: (id: string) => string; tengangDesc?: (id: string) => string; clash?: TurnClashView | null; sha?: TurnShaView[]; bossName?: string; selMode?: string | null; selHand?: number; tutorial?: { narration: string; highlight: string } | null; gatesLive?: boolean; notice?: string | null; movedIds?: Set<string>; freshIds?: Map<string, number>; battleLabel?: string; sfxOn?: boolean; settingsOpen?: boolean; bgmOn?: boolean; bgmIdx?: number; bgmVol?: number; bgmNames?: string[] }
 /** 从 turn-combat 真状态派生战斗屏视图（玩家 = side a 视角）。纯读、不改 battle。 */
 export function buildTurnBattleView(b: TurnBattle, opts: TurnViewOpts = {}): TurnBattleView {
   const laneNames = ['上路', '中路', '下路'];
@@ -476,6 +484,7 @@ export function buildTurnBattleView(b: TurnBattle, opts: TurnViewOpts = {}): Tur
     battleLabel: opts.battleLabel ?? '回合制 · 翻命扑克',
     sfxOn: opts.sfxOn ?? false,
     settingsOpen: opts.settingsOpen ?? false,
+    bgmOn: opts.bgmOn ?? false, bgmIdx: opts.bgmIdx ?? 0, bgmVol: opts.bgmVol ?? 0.35, bgmNames: opts.bgmNames ?? [],
   };
 }
 
@@ -492,6 +501,9 @@ export interface TurnBattleActions {
   goBack?: () => void;       // 返回大厅（带确认）
   toggleSfx?: () => void;    // 切换音效开/关
   toggleSettings?: () => void; // 开/关设置面板
+  toggleBgm?: () => void;    // 切换背景音乐开/关（与音效分开）
+  selectBgm?: (idx: number) => void; // 选第几首 BGM
+  setBgmVol?: (dir: 'up' | 'down') => void; // BGM 音量 −/＋
 }
 
 /** live mount（忠实 mirror battle-screen.mountBattle）：按需重渲 + pointerdown 委派——重渲再频繁也夹不进按下→抬起。
@@ -522,6 +534,9 @@ export function mountTurnBattle(host: HTMLElement, getView: () => TurnBattleView
       else if (a === 'go-back') { actions.goBack?.(); render(); return; }
       else if (a === 'settings-toggle') { actions.toggleSettings?.(); }
       else if (a === 'toggle-sfx') { actions.toggleSfx?.(); }
+      else if (a === 'toggle-bgm') { actions.toggleBgm?.(); }
+      else if (a === 'bgm-track') { actions.selectBgm?.(parseInt(k, 10)); }
+      else if (a === 'bgm-vol') { actions.setBgmVol?.(k === 'up' ? 'up' : 'down'); }
       else if (a === 'theme') actions.setTheme?.(k === 'brocade' ? 'brocade' : 'onyx');
       else if (a === 'draw-poker') actions.drawFrom?.('poker');
       else if (a === 'draw-tengang') actions.drawFrom?.('tengang');
