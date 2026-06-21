@@ -172,6 +172,8 @@ const CSS = `
 .ggl-root .pcard.picked{ border-color:var(--gold); box-shadow:0 0 0 2px var(--gold),0 4px 14px rgba(232,205,130,.4) }
 .ggl-root .pcard-cost{ position:absolute; top:3px; left:4px; z-index:2; min-width:13px; height:13px; padding:0 2px; border-radius:4px; background:rgba(10,14,22,.82); color:#cfe0f3; font-size:9px; font-weight:800; line-height:13px; text-align:center }
 .ggl-root .pcard-pick{ position:absolute; top:2px; right:3px; z-index:3; width:15px; height:15px; border-radius:50%; background:var(--gold-grad); color:#2a1a08; font-size:11px; font-weight:900; line-height:15px; text-align:center; box-shadow:0 1px 4px rgba(0,0,0,.5) }
+.ggl-root .pcard:not(.picked) .pcard-pick{ display:none } /* ✓ 常驻·未选隐藏（定点切 .picked 类·不重建格） */
+.ggl-root .pbuild-grid.full .pcard-wrap:not(.is-picked) .pcard{ opacity:.42 } /* 满 16 → 未选置灰（容器类·无逐卡 DOM 改） */
 .ggl-root .build-row{ display:flex; gap:14px; align-items:stretch; margin:10px 0 12px }
 .ggl-root .cost-curve{ display:flex; gap:8px; align-items:flex-end; flex:none; height:78px; padding:8px 12px; border-radius:11px; background:var(--chip); border:1px solid var(--panel-border) }
 .ggl-root .cc-col{ display:flex; flex-direction:column; align-items:center; justify-content:flex-end; width:34px; height:100% }
@@ -423,7 +425,6 @@ function deckGrid(deck: number[], foils?: LobbyShopItem[], picks?: Set<string>):
   const foilBack = ownedFoilNames.length
     ? `<div style="font-size:9px;color:var(--gold)">✨${esc(ownedFoilNames.join('+'))}</div>` : '';
   const pickMode = !!picks; // 传 picks=进入构筑选牌模式（卡可点入/出战组·亮选中态·画费用角标）
-  const full = pickMode && picks.size >= POKER_PICK_SIZE;
   return SUITS.map(([su, c], si) => {
     const cards = Array.from({ length: 13 }, (_, ri) => {
       const fv = deck[si * 13 + ri] ?? 50;
@@ -439,7 +440,7 @@ function deckGrid(deck: number[], foils?: LobbyShopItem[], picks?: Set<string>):
       const cls = 'pcard' + (fv >= 70 ? ' leg' : '') + (fv <= 50 ? ' lock' : '') + (picked ? ' picked' : '');
       const faceStyle = isFace ? `border-color:${c}90;` : '';
       const costBadge = pickMode ? `<span class="pcard-cost" title="放牌费用 ${cost}">${cost}</span>` : '';
-      const pickMark = picked ? '<span class="pcard-pick">✓</span>' : '';
+      const pickMark = pickMode ? '<span class="pcard-pick">✓</span>' : ''; // 常驻·选中态由 .picked 控制显隐（定点切类·不重建）
       // 正面（front）：花色水印 + 该将立绘剪影（全 52 张统一）+ 点数 + 将名 + favor
       const front = `<div class="pcard-front">` +
         `<div class="pcard-wm" style="color:${c};font-size:24px;opacity:.07">${su}</div>` +
@@ -457,22 +458,20 @@ function deckGrid(deck: number[], foils?: LobbyShopItem[], picks?: Set<string>):
         `<div style="font-size:8px;color:${qualColor}">${qual}</div>` +
         foilBack +
       `</div>`;
-      // 构筑模式：整卡可点 → pickCard 切入/出战组（未选且满槽 → 置灰提示满）。非构筑：纯展示。
+      // 构筑模式：整卡可点 → pickCard 切入/出战组。满槽的置灰由容器 .full 类管（定点·不重建）。非构筑：纯展示。
       const wrapAttr = pickMode ? ` data-act="pickCard" data-k="${cardId}" style="cursor:pointer"` : '';
-      const dim = pickMode && !picked && full ? ';opacity:.4' : '';
       return `<div class="pcard-wrap${picked ? ' is-picked' : ''}"${wrapAttr} title="${esc(su + rank + (hero ? ' · ' + hero.name + '「' + hero.title + '」' : '') + ' · favor ' + fv + ' · 费 ' + cost)}">` +
-        `<div class="${cls}" style="${faceStyle}${dim}">${front}${back}</div>` +
+        `<div class="${cls}" style="${faceStyle}">${front}${back}</div>` +
       `</div>`;
     }).join('');
     return `<div class="suit-row"><div class="suit-hd" style="color:${c}">${su}</div><div class="suit-line">${cards}</div></div>`;
   }).join('');
 }
-// 出战扑克牌组构筑屏（乙1·DEV-CHECKLIST §3）：从 52 池点选 ≤16 张入战斗牌库；费用曲线柱 + 一键自动构筑 + 清空。
-function pokerBuildPanel(view: LobbyView): string {
+// 构筑屏「动态头」（计数 + 一键/清空 + 费用曲线）：随选牌变化·定点重渲（pbuild-head innerHTML），不重建 52 网格、不跳屏。
+function pokerBuildHead(view: LobbyView): string {
   const max = view.pokerPickMax ?? POKER_PICK_SIZE;
   const picks = new Set(view.pokerPicks ?? []);
   const n = picks.size;
-  // 费用曲线（4 档各几张·提示别全大点）
   const byTier = [0, 0, 0, 0];
   for (const id of picks) byTier[deployCost(id.slice(0, -1))]++;
   const tierMax = Math.max(1, ...byTier);
@@ -480,16 +479,21 @@ function pokerBuildPanel(view: LobbyView): string {
   const TIER_COLOR = ['var(--club)', 'var(--ink)', 'var(--diamond)', 'var(--gold)'];
   const curve = byTier.map((cnt, t) => `<div class="cc-col" title="${TIER_LABEL[t]} · ${cnt} 张"><div class="cc-bar" style="height:${Math.round((cnt / tierMax) * 100)}%;background:${TIER_COLOR[t]}"></div><div class="cc-n">${cnt}</div><div class="cc-l">${TIER_LABEL[t]}</div></div>`).join('');
   const okColor = n === max ? 'var(--gold)' : 'var(--ink-dim)';
-  return `<div class="card"><h2>🎴 出战扑克牌组 · 从 52 收藏选 <b style="color:${okColor}">${n}/${max}</b>
+  return `<h2 style="margin:0">🎴 出战扑克牌组 · 从 52 收藏选 <b style="color:${okColor}">${n}/${max}</b>
     <span style="display:flex;gap:8px;margin-left:auto">
       <button class="cta-sub" data-act="autoBuildDeck" title="按费用曲线+偏好已养成自动凑一副">✨ 一键自动构筑</button>
       <button class="cta-sub" data-act="clearPicks" title="清空已选">清空</button>
     </span></h2>
-    <div class="build-row">
-      <div class="cost-curve" title="放牌费用曲线（别全大点·低费才铺得开场面）">${curve}</div>
-      <div class="note" style="flex:1;text-align:left;margin:0">点牌入/出 <b>出战牌库</b>（满 ${max} 张）。左下角数字＝<b>放牌费用</b>（点 2-4=0 / 5-7=1 / 8-10=2 / JQKA=3）。<b style="color:var(--gold)">✓</b>＝已入战库；favor 越高越能扛掷命。带进下一场战斗的就是这 ${max} 张。</div>
-    </div>
-    <div>${deckGrid(view.deck, view.foils, picks)}</div></div>`;
+    <div class="cost-curve" title="放牌费用曲线（别全大点·低费才铺得开场面）" style="margin-top:10px">${curve}</div>`;
+}
+// 出战扑克牌组构筑屏（乙1·DEV-CHECKLIST §3）：从 52 池点选 ≤16 张入战斗牌库；费用曲线柱 + 一键自动构筑 + 清空。
+function pokerBuildPanel(view: LobbyView): string {
+  const max = view.pokerPickMax ?? POKER_PICK_SIZE;
+  const picks = new Set(view.pokerPicks ?? []);
+  const full = picks.size >= max;
+  return `<div class="card"><div class="pbuild-head">${pokerBuildHead(view)}</div>
+    <div class="note" style="text-align:left;margin:9px 0 4px">点牌入/出 <b>出战牌库</b>（满 ${max} 张）。左下角数字＝<b>放牌费用</b>（点 2-4=0 / 5-7=1 / 8-10=2 / JQKA=3）。<b style="color:var(--gold)">✓</b>＝已入战库；favor 越高越能扛掷命。带进下一场战斗的就是这 ${max} 张。</div>
+    <div class="pbuild-grid${full ? ' full' : ''}">${deckGrid(view.deck, view.foils, picks)}</div></div>`;
 }
 function shopItem(act: string, glyph: string, it: LobbyShopItem): string {
   const cls = 'good' + (it.owned ? ' got' : it.buyable ? ' buy' : ' lock');
@@ -1180,6 +1184,20 @@ export function mountLobby(host: HTMLElement, h: LobbyHandlers): { update: () =>
     root.querySelectorAll('section[data-screen]').forEach((s) => s.classList.toggle('on', (s as HTMLElement).dataset.screen === t));
     updateCoach(); // 换屏后锚点可见性变 → 重算高亮
   };
+  // 构筑选牌定点刷新（owner 2026-06-21 bug：点牌不该整屏重渲+跳回顶部）：只切卡的选中态类 + 重渲动态头（计数/曲线），不重建 52 网格、不动滚动。
+  const renderPicks = (): void => {
+    const base = host.querySelector('section[data-screen="decks"] .dsub[data-dsub="base"]');
+    if (!base) { render(); return; }
+    const picks = new Set(h.getView().pokerPicks ?? []);
+    const max = h.getView().pokerPickMax ?? POKER_PICK_SIZE;
+    base.querySelectorAll('.pcard-wrap[data-act="pickCard"]').forEach((w) => {
+      const on = picks.has((w as HTMLElement).dataset.k ?? '');
+      w.classList.toggle('is-picked', on);
+      w.querySelector('.pcard')?.classList.toggle('picked', on);
+    });
+    base.querySelector('.pbuild-grid')?.classList.toggle('full', picks.size >= max);
+    const head = base.querySelector('.pbuild-head'); if (head) head.innerHTML = pokerBuildHead({ ...h.getView(), skin });
+  };
   const setSub = (section: string, actName: string, k: string): void => {
     const sec = host.querySelector(`section[data-screen="${section}"]`); if (!sec) { render(); return; }
     sec.querySelectorAll(`[data-act="${actName}"]`).forEach((b) => b.classList.toggle('on', (b as HTMLElement).dataset.k === k));
@@ -1194,7 +1212,12 @@ export function mountLobby(host: HTMLElement, h: LobbyHandlers): { update: () =>
   const playOpeningStory = (): void => { story = { beats: STORY_OPENING, idx: 0, label: '翻命扑克 · 序章', cta: '执掌命运 →', then: 'guide' }; };
   const finishStory = (): void => { const then = story?.then ?? 'close'; story = null; if (then === 'play') { renderOv(); h.onPlay(); } else if (then === 'guide') { h.onIntroSeen?.(); renderOv(); } else renderOv(); };
   const onClick = (e: MouseEvent): void => {
-    const el = (e.target as HTMLElement).closest('[data-act]') as HTMLElement | null; if (!el) return;
+    const tgt = e.target as HTMLElement;
+    const el = tgt.closest('[data-act]') as HTMLElement | null; if (!el) return;
+    // 弹层「点背景关闭」防误触（owner 2026-06-21 bug：充值想点密码框→反而关了菜单）：
+    // 命中的 data-act 是背景(.tut-ov)、但点击其实落在对话框(data-stop)内空白处 → 不关。真背景点(stop=null)或框内按钮(el 在 stop 内)照常。
+    const stop = tgt.closest('[data-stop]');
+    if (stop && el !== stop && el.contains(stop)) return;
     const act = el.dataset.act, k = el.dataset.k ?? '';
     if (act) playSfx(sfxForAct(act)); // 菜单音效（程序化合成·静音/无音频上下文则静默）
     // 新手引导点对推进（doc28 A/B/C·coachmark）：点中当前步锚点的动作 → 进下一步/完成。advanceAct=man/play/shop。
@@ -1254,10 +1277,10 @@ export function mountLobby(host: HTMLElement, h: LobbyHandlers): { update: () =>
     else if (act === 'selectDeck') { h.onSelectDeck?.(k); render(); }
     else if (act === 'newDeck') { h.onNewDeck?.(); render(); }
     else if (act === 'delDeck') { h.onDelDeck?.(k); render(); }
-    // 出战扑克牌组构筑（乙1/乙3）：点牌入/出 · 一键自动构筑 · 清空 → 改 save.pokerPicks → 只重渲牌组屏
-    else if (act === 'pickCard') { h.onTogglePick?.(k); render(); }
-    else if (act === 'autoBuildDeck') { h.onAutoBuildDeck?.(); render(); }
-    else if (act === 'clearPicks') { h.onClearPicks?.(); render(); }
+    // 出战扑克牌组构筑（乙1/乙3）：点牌入/出 · 一键自动构筑 · 清空 → 改 save.pokerPicks → **定点刷新**（不重建网格·不跳屏）
+    else if (act === 'pickCard') { h.onTogglePick?.(k); renderPicks(); }
+    else if (act === 'autoBuildDeck') { h.onAutoBuildDeck?.(); renderPicks(); }
+    else if (act === 'clearPicks') { h.onClearPicks?.(); renderPicks(); }
     // 天罡牌组编辑：主页「编辑牌组」跳牌组屏天罡页 / 空槽弹选卡窗 / 关窗
     else if (act === 'editDeck') { tab = 'decks'; deckTab = 'gang'; render(); }
     else if (act === 'deckAdd') { deckPicker = true; renderOv(); }
