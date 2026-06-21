@@ -68,13 +68,13 @@ describe('Game G · lobby-screen mountLobby 点击交互（DOM · happy-dom）',
       expect(host.innerHTML).toContain('同袍');
     });
 
-    it('点击「改造坊」→ craft section 激活，显示地支附魔 + 天罡货架 + 地支升档', () => {
+    it('点击「改造坊」→ craft section 激活，显示地支生肖镶嵌 + 天罡货架', () => {
       const host = document.createElement('div');
       mountLobby(host, { getView: makeView, onPlay: vi.fn() });
       click(navBtn(host, '改造坊'));
       expect(host.querySelector('.nav button.on')?.textContent?.trim()).toBe('改造坊');
-      expect(host.innerHTML).toContain('生肖镶嵌'); // 地支·生肖镶嵌附魔台（替换原占位改造台）
-      expect(host.innerHTML).toContain('地支·命'); // 地支·升档（原误标星球）
+      expect(host.innerHTML).toContain('生肖镶嵌'); // 地支·生肖镶嵌附魔台
+      expect(host.innerHTML).toContain('天罡牌 · 购买'); // 天罡货架
     });
 
     it('点击「天梯」→ ladder section 激活', () => {
@@ -542,19 +542,6 @@ describe('Game G · lobby-screen mountLobby 点击交互（DOM · happy-dom）',
       expect(rm).not.toBeNull();
       click(rm);
       expect(onRemoveInlay).toHaveBeenCalledWith('0', '子');
-    });
-  });
-
-  // ── 7. 买入星球牌 ──
-  describe('改造坊·买入星球牌', () => {
-    it('点击可买星球牌→ onBuyPlanet 以正确 id 调用', () => {
-      const onBuyPlanet = vi.fn();
-      const host = document.createElement('div');
-      mountLobby(host, { getView: makeView, onPlay: vi.fn(), onBuyPlanet });
-      click(navBtn(host, '改造坊'));
-      const buyEl = host.querySelector('[data-act="buyPlanet"][data-k="saturn"]')!;
-      click(buyEl);
-      expect(onBuyPlanet).toHaveBeenCalledWith('saturn');
     });
   });
 

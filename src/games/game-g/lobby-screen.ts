@@ -881,8 +881,6 @@ export function renderLobby(view: LobbyView, tab: string, tutorialOpen: boolean,
         <div class="card"><h2>${GI.bolt} 天罡牌 · 购买 <span class="ghost" style="margin-left:auto;font-size:12px">局内法术·买入后到牌组编入</span></h2>
           <div class="note" style="text-align:left;margin-bottom:8px">花金币买入天罡牌（解锁后入「拥有」）；编进出战牌组到「牌组」屏做。</div>
           <div class="shelf">${view.tiangangs.map((j) => craftTiangangItem(j)).join('')}</div></div>
-        <div class="card"><h2>${GI.planet} 地支牌 · 升档 <span class="ghost" style="margin-left:auto;font-size:12px">底盘养成（命/能/军/型）</span></h2><div class="note" style="text-align:left;margin-bottom:8px">叠加升档改 run 参数（命线/能量/兵档/牌型）· 持久存档 · 买一级累加。与上方「生肖镶嵌」同属地支养成的两面。</div>
-          <div class="shelf">${view.planets.map((p) => shopItem('buyPlanet', '🀄', p)).join('')}</div></div>
       </div>
     </div></section>
     <section class="screen${on('ladder')} full">${ladderSection(view.name, view.rankText)}</section>

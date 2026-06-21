@@ -71,10 +71,10 @@ describe('Game G · lobby-screen 视觉回归（忠实港大厅 · 真渲染器 
     await expect(html).toMatchFileSnapshot('./__frames__/lobby-coll.html');
   });
 
-  it('改造坊帧（地支附魔台 + 天罡货架 + 星球牌·接真材料/拥有）匹配 golden', async () => {
+  it('改造坊帧（地支生肖镶嵌附魔 + 天罡货架·接真材料/拥有）匹配 golden', async () => {
     const html = renderLobbyDoc(view(), 'craft');
     expect(html).toContain('生肖镶嵌'); // 地支·生肖镶嵌附魔台
-    expect(html).toContain('🀄 地支·命'); // 地支·升档（原误标星球）
+    expect(html).toContain('天罡牌 · 购买'); // 天罡货架（升档卡已去掉）
     await expect(html).toMatchFileSnapshot('./__frames__/lobby-craft.html');
   });
 

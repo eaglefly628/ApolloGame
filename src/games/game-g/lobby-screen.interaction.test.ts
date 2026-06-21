@@ -21,7 +21,7 @@ describe('Game G · lobby tab 渲染逻辑（on(tab) 切激活屏 + 回调挂钩
     }
     // 交互钩子齐全（mountLobby 据此分发）
     const h = renderLobby(view(), 'craft', false);
-    for (const a of ['data-act="tab"', 'data-act="skin"', 'data-act="play"', 'data-act="buyTiangang"', 'data-act="buyPlanet"', 'data-act="reset"', 'data-act="tut"']) expect(h).toContain(a);
+    for (const a of ['data-act="tab"', 'data-act="skin"', 'data-act="play"', 'data-act="buyTiangang"', 'data-act="craftSel"', 'data-act="reset"', 'data-act="tut"']) expect(h).toContain(a);
   });
 
   it('切屏 CSS 守恒：非激活屏 display:none、激活才 display:flex；homerow 不得带 display（否则 HOME 永显盖住别屏 = 点 tab 还停在主页）', () => {
