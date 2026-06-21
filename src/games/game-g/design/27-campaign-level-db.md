@@ -12,18 +12,19 @@ Level {
   bossLines: { open[], mid[], lose[] },   // Boss 对白(开场/劣势/败北·本doc §五)
   boss: {
     homeHp:   number,                     // 大本营血(难度档·§四)
-    deckTier: number,                     // 兵牌强度档(§四)
-    tiangang: { pool:"all36"|ids[], pick:12, weights?, seed },  // 随机12天罡(§三)
+    pokerDeck:[cardId×16],                // ⭐ Boss 16 张扑克牌组·**写死在关卡配置**(owner 2026-06-21·与玩家 16 对称·authored/确定·可仿真)
+    tiangang: [tiangangId≤5] | {pool:"all36"|ids[],pick:5,seed},  // ⭐ Boss 5 天罡·**可写死 或 定义随机给 5 组**(owner 2026-06-21·改自旧 12 随机)
     disha:    [dishaId×3],                // 3 专属地煞(doc23 §八/§九)
+    dishaScale:number,                    // ⭐ 地煞加成系数·**由 sim 标定**(§三·调到 targetWR·非手填)
     aiTier:   number,                     // AI 智能档(§四·难度)
     aiProfile:{aggression,lanePref,spellEager,targetPref,risk,economy},  // Boss 策略画像(§八·数据·调通用AI)
   },
   reward:    { unlock:[tiangangId×4], gold:number },  // 解锁+金币(doc25)
   loadoutCap: 2..5,                       // 玩家本关 天罡 loadout 上限(§四)
-  targetWR:  number,                      // 基准牌组 sim 目标胜率(§四·平衡用)
+  targetWR:  number,                      // 基准牌组 sim 目标胜率(§四·**地煞 sim 标定的目标**)
 }
 ```
-> 全字段可选缺省·缺则用难度档默认。引擎按 `id` 逐关加载；`tiangang.seed` 保证同关随机可复现(配 sim 平衡)。
+> 全字段可选缺省·缺则用难度档默认。引擎按 `id` 逐关加载。**Boss `pokerDeck` 16 张写死**（关1-5 手挑贴 Boss 风格·关6-52 可先用 `seed` 确定性铺一副、再逐期手调）；`tiangang` 写死或带 `seed` 随机 5；`dishaScale` 由 §三 sim 标定回填。
 
 ## 二、数据来源（拼装·不重复存）
 - **英雄/战役** → `doc23 §三`(名册) + `§七`(52 战役表)。
@@ -32,10 +33,26 @@ Level {
 - **背景/对白 + Boss 数值/随机法** → 本 doc（§三/四/五）。
 > 主程 loader 按 schema 把这几处拼成 `Level[]`。
 
-## 三、Boss 天罡随机法（12 张）
-- **默认**：从 **36 天罡池**（或"玩家已解锁集"）**均匀随机抽 12**（不重复·一种算一张）。
-- **确定性**：用 `seed = 关id`（同关同 seed → 同 12 张）→ 可复现、可喂 sim 扫平衡。
-- **进阶(可选)**：每 Boss 配**偏好权重**贴其风格（攻击型偏 power/tempo、守势偏 siege/stamina…）；缺省=纯随机。
+## 三、Boss 牌组配置 + 地煞 sim 标定（owner 2026-06-21 · 策划=调数值）
+### 3.1 Boss 出战牌组（与玩家 16+5 对称）
+- **16 扑克·写死**：`boss.pokerDeck = [cardId×16]` 直接写在关卡配置里（authored·确定·可仿真）。**关1-5 手挑贴 Boss 风格**（守势 Boss 多低点铺场 / 突击 Boss 多高点尖兵 + 同花/同点线）；**关6-52** 可先 `seed=关id` 确定性铺一副、逐期手调。
+- **5 天罡·可随机**：`boss.tiangang` = 写死 5 张 或 `{pool, pick:5, seed}` 随机给 5（贴 Boss 流派权重·缺省纯随机）。**改自旧 12 随机**（与玩家 loadout≤5 对称）。
+- **3 地煞**：`boss.disha`（doc23 §八/§九）= Boss 招牌战术·非对称难度来源。
+
+### 3.2 地煞加成 = sim 标定到 targetWR（核心·策划主调）
+> owner：地煞给多少加成，**不手拍**——跑 sim 测胜率、不断调到该关 `targetWR`。
+- **标定量 = `boss.dishaScale`**（地煞加成全局系数·乘在 disha-pack 的 base 数值上）。disha-pack 的 winPct/power 等 = **起点 base**；最终强度 = `base × dishaScale`。
+- **标定循环（对每关）**：① 构「**该关玩家真实强度基线牌组**」(见 3.3) ② sim 跑 N 局（基线玩家 vs Boss[16+5+disha×dishaScale]）→ 实测 WR ③ 二分调 `dishaScale`（WR 高于目标→调大加成、低于→调小）④ 收敛到 `|WR − targetWR| < ε` → 回填 `dishaScale`。
+- targetWR 见 §四（早关 ~80% → 终章 ~40%）。
+
+### 3.3 ⭐ 玩家该关真实强度基线（标定的"对照玩家"·策划定）
+> 关键：Boss 牌力要**对着玩家在这一关真实能有的强度**调，不是对空气。基线 = 该关玩家**合理拥有**的：
+- **地支镶嵌加成**：开局送子丑寅卯(铜)；按 doc25 揉/合成节奏，关N 估 player 有 ~`min(12, 4+关数×?)` 生肖、部分升银/金 + 少量三合/六合连携 → 折成基线牌的 favor/buff。
+- **天罡解锁 + 配合**：天罡按 9关×4 解锁（关N 已解锁 ~`min(36, 4×已通关数)` 张）→ 基线带其中**贴流派的 ≤5 张**（不是乱配·按一个能成型的流派 build·体现"天罡配合"）。
+- **扑克养成**：基线 16 扑克 = 一副「一键自动构筑」式均衡曲线 + 已养成 favor。
+- **基线分档**（策划给·sim 用）：新手区(关1-5)=弱基线(少地支/2-3天罡)；中期(关6-30)=中基线；终章=满养成强基线。**每关 sim 对照各自基线**，dishaScale 调到 targetWR。
+
+> **派甲**：① 真缺口=**sim harness**（自动双方 AI 跑 turn-combat 到底 × N seed → WR·见 §六派单/REQ）；② level loader 读 `pokerDeck(16)+tiangang(≤5)+dishaScale`；③ 标定脚本：扫 dishaScale 收敛 targetWR、回填关卡配置。**策划(design G)出基线模型 + Boss 牌组草案 + 复核 sim 结果调参。**
 
 ## 四、难度档（★ → 数值 · sim 兜底）
 | 难度 | 大本营血 | 兵牌强度 | AI | loadoutCap | 目标胜率(基准牌) | 用于 |
@@ -261,7 +278,7 @@ Level {
 - **对白**：开场「萨拉丁的箭雨都没能乱我的阵脚。你算什么东西，敢拦狮心王的去路？」｜劣势「再忍一刻，再撑一阵……理查的反击，从来只在最后一刻才出鞘！」｜败北「我能压住萨拉丁，能压住满天的箭……独独压不住你这命。罢了——这命，由你去翻吧。」
 
 ## 七、派单
-- **甲（主程/战斗）**：建 **level loader**——按 §一 schema 把 doc23/25/27 拼成 `Level[]`、按 id 逐关加载到回合制战斗(doc24)；Boss 12 天罡 seed 随机；地煞/数值/loadoutCap 生效。
+- **甲（主程/战斗）**：① 建 **level loader**——按 §一 schema 拼 `Level[]`、按 id 逐关加载到回合制(doc24)；Boss **`pokerDeck` 16 写死 + `tiangang` ≤5(写死/随机) + `disha×dishaScale`**(改自旧 12 随机)·地煞/数值/loadoutCap 生效。② **建 sim harness（真缺口·owner 以为已上传·实未有）**：自动双方 AI（Boss 用现 utility AI·玩家侧加一个基线 AI）跑 `turn-combat` 到底（复用 `unsettled`/`stepXXX`）× N seed → 出 WR；再加**标定脚本**扫 `dishaScale` 收敛到 `targetWR`、回填关卡配置。可跑的 `.run.ts`/bench 形式给策划调参。
 - **乙（菜单）**：关卡选择/进度屏 + **每关开局演出**（战役背景旁白 + Boss 对白 open/mid/lose）。
 
 ## 八、Boss AI（通用效用解释器 + 每 Boss 画像数据 · owner 2026-06-20 问）
