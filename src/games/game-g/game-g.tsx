@@ -704,7 +704,15 @@ export function mount(container: HTMLElement, shell?: { exit?: () => void }): ()
     const playPerf = (onDone: () => void): void => {
       if (perfQueue.length === 0) { perfClash = null; perfResume = null; mounted?.update(); syncCoach(); onDone(); return; }
       const e = perfQueue.shift()!;
-      log(`⚔掷命[${LANE_NM[e.lane] ?? e.lane}] 我 ${e.a.rank}${SUITNM2[e.a.suit] ?? ''}(战力${e.a.pEff}) vs 敌 ${e.b.rank}${SUITNM2[e.b.suit] ?? ''}(战力${e.b.pEff}) ｜胜率${Math.round(e.winrate * 100)}% 掷${Math.round(e.roll * 100)} → ${e.aWins ? '我胜' : '敌胜'}`);
+      const pBreak = (s: ClashEvent['a']): string => {
+        const parts: string[] = [`底${s.points}`];
+        if (s.buff) parts.push(`经营${s.buff > 0 ? '+' : ''}${s.buff}`);
+        if (s.tengang) parts.push(`天罡${s.tengang > 0 ? '+' : ''}${s.tengang}`);
+        if (s.morale) parts.push(`士气${s.morale > 0 ? '+' : ''}${s.morale}`);
+        if (s.nearDef) parts.push(`固守+${s.nearDef}`);
+        return parts.length > 1 ? `${parts.join(' ')} = ${s.pEff}` : `${s.pEff}`;
+      };
+      log(`⚔掷命[${LANE_NM[e.lane] ?? e.lane}] 我 ${e.a.rank}${SUITNM2[e.a.suit] ?? ''}(战力 ${pBreak(e.a)}) vs 敌 ${e.b.rank}${SUITNM2[e.b.suit] ?? ''}(战力 ${pBreak(e.b)}) ｜胜率${Math.round(e.winrate * 100)}% 掷${Math.round(e.roll * 100)} → ${e.aWins ? '我胜' : '敌胜'}`);
       // 先演 ~2s「哪两张牌即将交战」前奏 → 再切对决特写（owner 2026-06-21）
       showClashCue(e, () => {
         perfClash = e;
