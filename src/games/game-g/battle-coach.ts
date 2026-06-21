@@ -7,15 +7,16 @@ import type { Coachmark, Flag } from '@engine/protocol/components.js';
 // + 步骤数据；驱动(game-g.tsx)按当前 step 置 Flag、玩家做对应操作即推进。纯表现·不进战斗 hash。
 export interface BattleCoachStep { flag: string; anchor: string; text: string; on: 'draw' | 'deploy' | 'endturn' | 'cast'; needsTengang?: boolean }
 
-// 步骤序列（owner 2026-06-21 改流程·修互斥 bug）：放牌(+翻机关门) → 结束回合(推进/掷命) → 抽牌(摸张天罡) → 再结束回合 → 下一回合打天罡。
-// 关键修正：抽牌与打天罡**同回合互斥**（一回合只能选一类动作·同类无限）。所以抽完必须先【结束回合】，
-// 打天罡得等下一回合——原来「抽牌紧接打天罡」会让玩家卡在做不到的操作上。cast 步仅当手里真有天罡时才出（驱动按手牌活检）。
+// 步骤序列（doc28 §三教学序 + owner 2026-06-21 修「放牌断掉」bug）：抽牌 → 结束回合 → 放牌 → 再结束回合(推进/掷命) → 打天罡。
+// 关键修正：原来**放牌打头**，但甲改「按点数收费」后，起手只有 1 源泉、起手 3 张牌可能都 ≥2 费 → **turn1 放不出 → 引导断掉**。
+//   改成 doc28 §三的「先抽牌」：抽牌固定 1 费=起手源泉，**turn1 必可抽**；攒到 turn2 再放（点数小的兵免费/便宜·总能放出）。
+//   动作**同回合互斥**（一回合只选一类·同类无限）→ 抽/放/打天罡之间都隔一个【结束回合】。cast 步仅当手里真有天罡才出（驱动按手牌活检·无则跳过·不卡死）。
 export const BATTLE_COACH: readonly BattleCoachStep[] = [
-  { flag: 'seen_combat_deploy', anchor: 'combat-deploy', text: '👉 第一步【放牌】：先点一张手牌，再点一路（上/中/下）把战士部署上去。按牌点数花源泉（小牌免费·大牌贵）·有源泉就能继续放；放完还能顺手翻一道机关门(箭头)调度兵线。', on: 'deploy' },
-  { flag: 'seen_combat_endturn', anchor: 'combat-end', text: '👉 铺好场点【结束回合】：双方兵线一起推进一格，前锋相遇就触发【掷命对决】（正面活/反面亡）。', on: 'endturn' },
-  { flag: 'seen_combat_draw', anchor: 'combat-draw', text: '👉 第二回合【抽牌】：花 1 点召唤源泉（右上角源泉）摸牌——普通兵牌或天罡战法都能摸（抽牌同类可连摸）。想学下一步，就摸一张天罡战法。', on: 'draw' },
-  { flag: 'seen_combat_endturn2', anchor: 'combat-end', text: '👉 抽完先【结束回合】：抽牌和打天罡是互斥的（一回合只能选一类动作），打天罡得等下一回合。', on: 'endturn', needsTengang: true },
-  { flag: 'seen_combat_tiangang', anchor: 'combat-cast', text: '👉 新回合点【打天罡】：施放手里的天罡战法，整局为你加成。看明白就毕业啦！', on: 'cast', needsTengang: true },
+  { flag: 'seen_combat_draw', anchor: 'combat-draw', text: '👉 第一步【抽牌】：花 1 点召唤源泉（右上角源泉）从牌库摸一张兵牌。每回合只能选一类动作（抽/放/打天罡/弃），同类可连做；源泉每回合自动 +1。', on: 'draw' },
+  { flag: 'seen_combat_endturn', anchor: 'combat-end', text: '👉 点【结束回合】：源泉 +1、双方兵线一起推进一格。下回合就能放牌啦。', on: 'endturn' },
+  { flag: 'seen_combat_deploy', anchor: 'combat-deploy', text: '👉 【放牌】：先点一张兵牌、再点一路（上/中/下）部署。按点数花源泉——**先放点数小的兵（2~4 点免费、5~7 点 1 费）**，源泉不够就先放便宜的。放完还能顺手翻一道机关门(箭头)调度兵线。', on: 'deploy' },
+  { flag: 'seen_combat_endturn2', anchor: 'combat-end', text: '👉 再点【结束回合】：兵沿路前进一格，前锋相遇就触发【掷命对决】（比战力算胜率·正面活/反面亡）。', on: 'endturn' },
+  { flag: 'seen_combat_tiangang', anchor: 'combat-cast', text: '👉 手里有天罡时点【打天罡】：施放持续战法、整局为你加成。看明白就毕业啦！', on: 'cast', needsTengang: true },
 ];
 
 // 第一条未看过的引导步（全看过 → null）。needsTengang 步仅当手里真有天罡可打时才出（无 → 跳过·不卡死）。
