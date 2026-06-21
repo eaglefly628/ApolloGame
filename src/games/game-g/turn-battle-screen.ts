@@ -76,13 +76,13 @@ const CSS = `
 @keyframes g-drain { 0% { opacity:1; transform:scaleX(1); filter:brightness(1.85);} 65% { opacity:.7;} 100% { opacity:0; transform:scaleX(0);} }
 @keyframes g-drainspark { 0% { opacity:.95; transform:translate(-50%,0) scale(1);} 100% { opacity:0; transform:translate(-50%,-24px) scale(.35);} }
 /* 磨砂详情浮层（owner 2026-06-21·悬浮看牌：战力=点数+加成，对决再 +随机骰）：纯 CSS hover，重渲不丢 */
-.gg-tipwrap>.gg-tip{ position:absolute; left:50%; bottom:calc(100% + 9px); transform:translateX(-50%) translateY(5px); width:194px; padding:11px 13px 9px; border-radius:13px; background:rgba(18,24,36,.58); backdrop-filter:blur(13px) saturate(1.5); -webkit-backdrop-filter:blur(13px) saturate(1.5); border:1px solid rgba(255,255,255,.2); box-shadow:0 16px 44px rgba(0,0,0,.55), inset 0 1px 0 rgba(255,255,255,.14); color:#eaf0f6; font-family:var(--fb); font-size:11px; line-height:1.5; text-align:left; opacity:0; pointer-events:none; transition:opacity .15s ease, transform .15s ease; z-index:80; }
+.gg-tipwrap>.gg-tip{ position:absolute; left:50%; bottom:calc(100% + 9px); transform:translateX(-50%) translateY(5px) scale(1); transform-origin:50% 100%; width:194px; padding:11px 13px 9px; border-radius:13px; background:rgba(18,24,36,.58); backdrop-filter:blur(13px) saturate(1.5); -webkit-backdrop-filter:blur(13px) saturate(1.5); border:1px solid rgba(255,255,255,.2); box-shadow:0 16px 44px rgba(0,0,0,.55), inset 0 1px 0 rgba(255,255,255,.14); color:#eaf0f6; font-family:var(--fb); font-size:11px; line-height:1.5; text-align:left; opacity:0; pointer-events:none; transition:opacity .15s ease, transform .15s ease; z-index:80; }
 .gg-tipwrap>.gg-tip::after{ content:''; position:absolute; left:50%; top:100%; transform:translateX(-50%); border:7px solid transparent; border-top-color:rgba(18,24,36,.58); }
-.gg-tipwrap:hover>.gg-tip{ opacity:1; transform:translateX(-50%) translateY(0); }
+.gg-tipwrap:hover>.gg-tip{ opacity:1; transform:translateX(-50%) translateY(0) scale(1.5); } /* 悬浮放大 50%·看得清(owner 2026-06-21) */
 /* 顶排(上路)牌：浮层朝下弹，否则朝上会顶出画框被裁掉(owner 2026-06-21) */
-.gg-tipwrap.tip-down>.gg-tip{ bottom:auto; top:calc(100% + 9px); transform:translateX(-50%) translateY(-5px); }
+.gg-tipwrap.tip-down>.gg-tip{ bottom:auto; top:calc(100% + 9px); transform:translateX(-50%) translateY(-5px) scale(1); transform-origin:50% 0%; }
 .gg-tipwrap.tip-down>.gg-tip::after{ top:auto; bottom:100%; border-top-color:transparent; border-bottom-color:rgba(18,24,36,.58); }
-.gg-tipwrap.tip-down:hover>.gg-tip{ transform:translateX(-50%) translateY(0); }`;
+.gg-tipwrap.tip-down:hover>.gg-tip{ transform:translateX(-50%) translateY(0) scale(1.5); }`;
 // 教学高亮（doc28 教学钩子·纯表现）：金描边 + 脉冲，套在被强制点击的元素上。
 const HL = ';outline:3px solid var(--gold);outline-offset:2px;animation:g-hl 1s ease-in-out infinite;position:relative;z-index:55';
 
