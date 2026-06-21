@@ -680,7 +680,7 @@ export function mount(container: HTMLElement): () => void {
     const hasTengang = tb.a.tengangDeck.length > 0 || tb.a.hand.some((c) => c.kind === 'tengang');
     let coachStep: BattleCoachStep | null = nextCoachStep(save.seen, { hasTengang });
     const { world: coachWorld, setStep: setCoachStep } = makeCoachWorld();
-    const coach = coachStep ? mountOnboardingOverlay(root, coachWorld, stage) : null; // 仅有未看过步骤才挂（老玩家无）
+    const coach = coachStep ? mountOnboardingOverlay(document.body, coachWorld, stage) : null; // 挂 body（非 root）→ 避开战场缩放/揭幕 transform 让 position:fixed 错位（owner 2026-06-21）
     syncCoach = (): void => { if (!coach) return; const show = coachStep != null && tb.active === 'a' && tb.winner === 'pending' && perfClash == null; setCoachStep(coachStep, show); coach.update(); };
     coachDid = (on: BattleCoachStep['on']): void => { if (!coachStep || coachStep.on !== on) return; save.seen[coachStep.flag] = true; persist(save); coachStep = nextCoachStep(save.seen, { hasTengang }); syncCoach(); };
     const onCoachResize = (): void => syncCoach();

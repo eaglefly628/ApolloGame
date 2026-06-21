@@ -28,7 +28,7 @@ export function nextCoachStep(seen: Record<string, boolean> | undefined, opts?: 
 export function makeCoachWorld(): { world: IWorld; setStep: (s: BattleCoachStep | null, visible: boolean) => void } {
   const world = new World();
   world.createEntity('coach-flag'); world.addComponent<Flag>('coach-flag', { type: 'Flag', id: 'combat_coach', active: false });
-  world.createEntity('coach-mark'); world.addComponent<Coachmark>('coach-mark', { type: 'Coachmark', anchor: 'combat-deploy', text: '', visibleWhen: 'combat_coach', pad: 6, placement: 'top' });
+  world.createEntity('coach-mark'); world.addComponent<Coachmark>('coach-mark', { type: 'Coachmark', anchor: 'combat-deploy', text: '', visibleWhen: 'combat_coach', pad: 6, placement: 'auto' }); // auto：气泡放空间大的一侧·避免盖住顶部的结束回合钮
   const setStep = (s: BattleCoachStep | null, visible: boolean): void => {
     const flag = world.getComponent<Flag>('coach-flag', 'Flag'); const mark = world.getComponent<Coachmark>('coach-mark', 'Coachmark');
     if (!flag || !mark) return;

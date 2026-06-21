@@ -40,10 +40,10 @@ export function mountOnboardingOverlay(host: HTMLElement, world: IWorld, anchorR
       const radius = c.shape === 'circle' ? '50%' : '8px';
       // 镂空：锚点处一块（无背景）+ 巨大 box-shadow 把四周压暗（spotlight 经典法，零 SVG mask）。
       html += `<div style="position:absolute;left:${c.x}px;top:${c.y}px;width:${c.w}px;height:${c.h}px;border-radius:${radius};box-shadow:0 0 0 9999px ${dim};transition:all .15s"></div>`;
-      // 气泡（可点：pointer-events auto，便于放"知道了"按钮场景；此处只文案）。
+      // 气泡（**pointer-events:none**：纯文案·绝不拦截对高亮目标的点击——否则气泡盖住目标按钮=玩家卡死。owner 2026-06-21）。
       html += `<div style="position:absolute;left:${g.bubble.x}px;top:${g.bubble.y}px;width:${g.bubble.w}px;min-height:${g.bubble.h}px;` +
         `background:#1b1822;border:1px solid #e0973a;border-radius:10px;color:#ece6f5;font:14px/1.5 sans-serif;padding:10px 14px;box-sizing:border-box;` +
-        `box-shadow:0 8px 24px #0009;pointer-events:auto">${escapeHtml(m.text)}</div>`;
+        `box-shadow:0 8px 24px #0009;pointer-events:none">${escapeHtml(m.text)}</div>`;
     }
     layer.innerHTML = html;
   };
