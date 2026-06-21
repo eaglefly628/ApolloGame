@@ -495,6 +495,7 @@ export function mount(container: HTMLElement): () => void {
     let drained = 0; const perfQueue: ClashEvent[] = []; let perfClash: ClashEvent | null = null; let busy = false; let perfResume: (() => void) | null = null;
     let justMovedIds = new Set<string>(); let thinkTimer = 0; let thinkEl: HTMLElement | null = null; let settingsOpen = false;
     const tgName = (id: string): string => TIANGANG_BY_ID.get(id)?.name ?? id;
+    const tgDesc = (id: string): string => TIANGANG_BY_ID.get(id)?.text ?? '持续战法·打出后整场生效'; // 磨砂浮层：天罡效果文案
     // 捕捉所有上场单位的位置（lane*9+slot 编码）
     const snapSlots = (): Map<string, string> => { const m = new Map<string, string>(); tb.lanes.forEach((L, li) => { for (const u of L.a) m.set(u.id, `${li}:${u.slot}`); for (const u of L.b) m.set(u.id, `${li}:${u.slot}`); }); return m; };
     // 与快照对比，返回移动了的单位 ID
@@ -506,9 +507,9 @@ export function mount(container: HTMLElement): () => void {
       ov.innerHTML = `<span style="font-size:clamp(36px,6vw,72px);font-weight:900;color:#e8cd82;text-shadow:0 0 60px rgba(232,205,138,.9),0 4px 24px rgba(0,0,0,.95);letter-spacing:.25em;font-family:'Rajdhani',sans-serif;">${text}</span>`;
       document.body.appendChild(ov); setTimeout(() => { ov.remove(); onDone?.(); }, durationMs);
     };
-    // 敌方思考中蒙层（3-5 秒随机）
+    // 敌方思考中蒙层（owner 2026-06-21：平均缩 2 秒 → 1-3 秒随机，均值 2s）
     const startThinking = (onDone: () => void): void => {
-      const ms = 3000 + Math.floor(Math.random() * 2000);
+      const ms = 1000 + Math.floor(Math.random() * 2000);
       if (!document.getElementById('gg-spin-css')) { const s = document.createElement('style'); s.id = 'gg-spin-css'; s.textContent = '@keyframes gg-spin{to{transform:rotate(360deg)}}'; document.head.appendChild(s); }
       thinkEl = document.createElement('div'); thinkEl.style.cssText = 'position:fixed;inset:0;z-index:250;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:18px;pointer-events:none;background:rgba(6,9,13,.45)';
       thinkEl.innerHTML = `<div style="width:52px;height:52px;border:4px solid rgba(58,134,212,.25);border-top:4px solid #3a86d4;border-radius:50%;animation:gg-spin 1s linear infinite"></div><span style="font-size:20px;font-weight:700;color:#3a86d4;text-shadow:0 0 24px rgba(58,134,212,.8);letter-spacing:.18em;font-family:'Rajdhani',sans-serif;">敌方思考中</span>`;
@@ -516,7 +517,7 @@ export function mount(container: HTMLElement): () => void {
       thinkTimer = window.setTimeout(() => { if (thinkEl) { thinkEl.remove(); thinkEl = null; } onDone(); }, ms);
     };
     const flash = (msg: string): void => { notice = msg; mounted?.update(); if (noticeTimer) clearTimeout(noticeTimer); noticeTimer = window.setTimeout(() => { notice = null; mounted?.update(); }, 1700); };
-    const view = (): TurnBattleView => buildTurnBattleView(tb, { theme, tengangName: tgName, selMode, selHand, clash: perfClash ? clashToTurnView(perfClash) : null, bossName: aiName, sha: shaView, gatesLive: gateChance, notice, movedIds: justMovedIds, battleLabel, sfxOn: isSfxOn(), settingsOpen });
+    const view = (): TurnBattleView => buildTurnBattleView(tb, { theme, tengangName: tgName, tengangDesc: tgDesc, selMode, selHand, clash: perfClash ? clashToTurnView(perfClash) : null, bossName: aiName, sha: shaView, gatesLive: gateChance, notice, movedIds: justMovedIds, battleLabel, sfxOn: isSfxOn(), settingsOpen });
     let mounted: { update: () => void; destroy: () => void } | null = null;
 
     const drainClashes = (): void => { for (const ev of tb.clashLog.slice(drained)) perfQueue.push(ev); drained = tb.clashLog.length; };

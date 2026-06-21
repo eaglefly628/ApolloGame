@@ -3,7 +3,7 @@
 //   只读 TurnBattleView（由 buildTurnBattleView 从 turn-combat 真状态派生）→ 出 HTML 串；不进 hash、不回灌判定。
 // 静态渲染 = 设计稿"静息态"(无 hover tooltip / 无 boss 飞出)；clash 特写覆盖层按 view.clash 选渲。live mount + 交互为后续切片。
 import { cardPoints } from './clash-resolve.js';
-import { SLOTS, MANA_PER_TURN, GATES, A_DEPLOY_SLOT, B_DEPLOY_SLOT, type TurnBattle, type TurnUnit } from './turn-combat.js';
+import { SLOTS, MANA_PER_TURN, GATES, A_DEPLOY_SLOT, B_DEPLOY_SLOT, DEPLOY_COST, CAST_COST, type TurnBattle, type TurnUnit } from './turn-combat.js';
 
 type Style = Record<string, string | number | undefined>;
 const st = (o: Style): string => Object.entries(o).filter(([, v]) => v !== undefined).map(([k, v]) => k.replace(/[A-Z]/g, (m) => '-' + m.toLowerCase()) + ':' + v).join(';');
@@ -64,16 +64,21 @@ const CSS = `
 @keyframes g-coin-pop { 0% { transform: scale(0) rotate(-200deg); opacity:0; } 70% { transform: scale(1.14) rotate(10deg); } 100% { transform: scale(1) rotate(0); opacity:1; } }
 @keyframes g-hl { 0%,100% { box-shadow:0 0 0 0 var(--gold), 0 0 10px var(--gold); } 50% { box-shadow:0 0 0 5px rgba(232,205,138,.5), 0 0 18px var(--gold); } }
 @keyframes g-adv-a { 0%{transform:translateX(-38px) scale(.88);opacity:0} 65%{transform:translateX(3px)} 100%{transform:none;opacity:1} }
-@keyframes g-adv-b { 0%{transform:translateX(38px) scale(.88);opacity:0} 65%{transform:translateX(-3px)} 100%{transform:none;opacity:1} }`;
+@keyframes g-adv-b { 0%{transform:translateX(38px) scale(.88);opacity:0} 65%{transform:translateX(-3px)} 100%{transform:none;opacity:1} }
+@keyframes g-place { 0%,100% { box-shadow:inset 0 0 0 2px rgba(232,205,138,.55), 0 0 12px rgba(232,205,138,.3); } 50% { box-shadow:inset 0 0 0 3px var(--gold), 0 0 22px rgba(232,205,138,.6); } }
+/* 磨砂详情浮层（owner 2026-06-21·悬浮看牌：战力=点数+加成，对决再 +随机骰）：纯 CSS hover，重渲不丢 */
+.gg-tipwrap>.gg-tip{ position:absolute; left:50%; bottom:calc(100% + 9px); transform:translateX(-50%) translateY(5px); width:194px; padding:11px 13px 9px; border-radius:13px; background:rgba(18,24,36,.58); backdrop-filter:blur(13px) saturate(1.5); -webkit-backdrop-filter:blur(13px) saturate(1.5); border:1px solid rgba(255,255,255,.2); box-shadow:0 16px 44px rgba(0,0,0,.55), inset 0 1px 0 rgba(255,255,255,.14); color:#eaf0f6; font-family:var(--fb); font-size:11px; line-height:1.5; text-align:left; opacity:0; pointer-events:none; transition:opacity .15s ease, transform .15s ease; z-index:80; }
+.gg-tipwrap>.gg-tip::after{ content:''; position:absolute; left:50%; top:100%; transform:translateX(-50%); border:7px solid transparent; border-top-color:rgba(18,24,36,.58); }
+.gg-tipwrap:hover>.gg-tip{ opacity:1; transform:translateX(-50%) translateY(0); }`;
 // 教学高亮（doc28 教学钩子·纯表现）：金描边 + 脉冲，套在被强制点击的元素上。
 const HL = ';outline:3px solid var(--gold);outline-offset:2px;animation:g-hl 1s ease-in-out infinite;position:relative;z-index:55';
 
 // ── 视图（buildTurnBattleView 从 turn-combat 派生喂渲染器；纯数据） ──
-export interface TurnSlotView { hasUnit: boolean; mine: boolean; isBorder: boolean; isClash: boolean; rank?: string; suit?: 's' | 'h' | 'd' | 'c'; power?: number; zod?: string[]; deploy?: 1 | 2; deployLabel?: boolean; unitId?: string; justMoved?: boolean } // deploy：1=我方放牌区 / 2=敌方放牌区（贴各自大本营 3 格）
+export interface TurnSlotView { hasUnit: boolean; mine: boolean; isBorder: boolean; isClash: boolean; rank?: string; suit?: 's' | 'h' | 'd' | 'c'; power?: number; pts?: number; buff?: number; name?: string; rar?: 'white' | 'green' | 'blue' | 'gold'; zod?: string[]; deploy?: 1 | 2; deployLabel?: boolean; placeable?: boolean; unitId?: string; justMoved?: boolean } // deploy：1=我方放牌区 / 2=敌方放牌区（贴各自大本营 3 格）；placeable=选牌待放时此格可落子(高亮·owner 2026-06-21)
 export interface TurnLaneView { name: string; slots: TurnSlotView[] }
 // 捷径门箭头（占位·8 门·真视觉待 owner 参考图）。idx=GATES 下标·供 live mount data-gate 钩子。
 export interface TurnGateView { idx: number; open: boolean; side: 'a' | 'b'; fromLane: number; fromSlot: number; toLane: number; toSlot: number }
-export interface TurnHandCardView { kind: 'pawn' | 'gang'; rank?: string; suit?: 's' | 'h' | 'd' | 'c'; name: string; power?: number; cost: number; zod?: string[]; rar: 'white' | 'green' | 'blue' | 'gold'; desc?: string; glyph?: string; selected?: boolean }
+export interface TurnHandCardView { kind: 'pawn' | 'gang'; rank?: string; suit?: 's' | 'h' | 'd' | 'c'; name: string; power?: number; pts?: number; buff?: number; cost: number; zod?: string[]; rar: 'white' | 'green' | 'blue' | 'gold'; desc?: string; glyph?: string; selected?: boolean }
 export interface TurnActionView { key: string; glyph: string; label: string; on: boolean; dim: boolean }
 export interface TurnClashCardView { rank: string; suit: 's' | 'h' | 'd' | 'c'; name: string; zod?: string; won: boolean }
 export interface TurnClashView { laneName: string; mine: TurnClashCardView; foe: TurnClashCardView; oddsMine: number; rollPct: number; bonusMine: [string, number][]; bonusFoe: [string, number][] }
@@ -200,7 +205,14 @@ function slotCell(s: TurnSlotView): string {
     unitHTML = `<div style="${st(unit)}${advAnim}"><div style="${st(corner)}">${esc(s.rank)}${SUITG[s.suit]}</div><span style="${st(big)}">${SUITG[s.suit]}</span><div style="${st(badge)}">${s.power ?? ''}</div><div style="${st(zodRow)}">${forr([0, 1, 2], (z) => zodCell(zod[z]))}</div></div>`;
   }
   const ring = s.isClash ? `<div style="${st({ position: 'absolute', inset: '-3px', borderRadius: '11px', border: '2px solid var(--accent)', boxShadow: '0 0 16px var(--accent-soft)', animation: 'g-pulse 1.4s ease-in-out infinite' })}"></div>` : '';
-  return `<div style="${st(cell)}">${depLabel}<div style="${st(dot)}"></div>${unitHTML}${ring}</div>`;
+  // 放牌区可落点高亮（owner 2026-06-21）：选牌待放时，此格金边脉冲 + 「＋放这」提示，点该路即落子。
+  const placeMark = s.placeable
+    ? `<div style="${st({ position: 'absolute', inset: '2px', borderRadius: '10px', animation: 'g-place 1.05s ease-in-out infinite', pointerEvents: 'none', zIndex: 3 })}"></div><div style="${st({ position: 'absolute', bottom: '6px', left: '50%', transform: 'translateX(-50%)', fontFamily: 'var(--fh)', fontWeight: 700, fontSize: '10px', letterSpacing: '.06em', color: 'var(--gold)', textShadow: '0 1px 3px rgba(0,0,0,.7)', pointerEvents: 'none', zIndex: 3, whiteSpace: 'nowrap' })}">＋ 放这</div>`
+    : '';
+  // 场上兵的磨砂详情浮层（与手牌同 cardTip·战力拆解）。
+  const tip = s.hasUnit && s.rank && s.suit ? cardTip({ name: s.name ?? (SUITNM[s.suit] + s.rank), rar: s.rar ?? 'white', isGang: false, mine: s.mine, suit: s.suit, pts: s.pts, buff: s.buff, power: s.power, zod: s.zod }) : '';
+  const wrapCls = s.hasUnit ? ' class="gg-tipwrap"' : '';
+  return `<div${wrapCls} style="${st(cell)}">${depLabel}<div style="${st(dot)}"></div>${unitHTML}${placeMark}${ring}${tip}</div>`;
 }
 
 function laneRow(L: TurnLaneView, li: number, hiOn = false): string {
@@ -208,6 +220,29 @@ function laneRow(L: TurnLaneView, li: number, hiOn = false): string {
   const tag = { width: '40px', flex: 'none', display: 'flex', alignItems: 'center', justifyContent: 'center', writingMode: 'vertical-rl', textAlign: 'center', padding: '8px 3px', borderRadius: '8px', background: 'var(--chip)', border: '1px solid var(--panel-border)', fontFamily: 'var(--fh)', fontWeight: 700, fontSize: '13px', color: 'var(--ink)', letterSpacing: '.1em' };
   const track = { position: 'relative', flex: 1, display: 'grid', gridTemplateColumns: 'repeat(9, 1fr)', gap: '6px', alignItems: 'stretch', padding: '8px 6px', borderRadius: '12px', background: 'var(--lane)', border: '1px solid var(--cell-edge)', boxShadow: 'inset 0 1px 0 rgba(255,255,255,.06), inset 0 0 26px rgba(0,0,0,.28)' };
   return `<div style="${st(row)}"><div style="${st(tag)}">${esc(L.name)}</div><div data-lane="${li}" style="${st(track)}${hiOn ? HL : ''}">${forr(L.slots, slotCell)}</div></div>`;
+}
+
+// 磨砂详情浮层内容（owner 2026-06-21）：战力拆解(点数+期待加成) + 对决随机骰提示 / 天罡效果文案。手牌与场上兵共用。
+function cardTip(o: { name: string; rar: string; isGang: boolean; mine: boolean; suit?: string; pts?: number; buff?: number; power?: number; zod?: string[]; desc?: string; cost?: number }): string {
+  const rc = RAR[o.rar] || RAR.white;
+  const rows: string[] = [];
+  if (o.isGang) {
+    rows.push(`<span style="color:#a98bff;font-weight:700">持续战法</span> · 消耗 ${o.cost ?? CAST_COST} 召唤源泉`);
+    if (o.desc) rows.push(`<span style="opacity:.9">${esc(o.desc)}</span>`);
+    rows.push(`<span style="opacity:.58">打出后整场为你加成</span>`);
+  } else {
+    const sn = o.suit ? SUITNM[o.suit] : ''; const sg = o.suit ? SUITG[o.suit] : ''; const sc = o.suit ? SUITC[o.suit] : '#888';
+    const buff = o.buff ?? 0; const pts = o.pts ?? ((o.power ?? 0) - buff); const pow = o.power ?? (pts + buff);
+    const calc = buff ? `点数 ${pts} ${buff > 0 ? '+' : '−'} 加成 ${Math.abs(buff)}` : `点数 ${pts}`;
+    rows.push(`花色 <b style="color:${sc}">${sn} ${sg}</b>`);
+    rows.push(`战力 <b style="color:#ffd27a;font-size:13px">${pow}</b> <span style="opacity:.62">= ${calc}</span>`);
+    rows.push(`<span style="opacity:.6">掷命对决再 +一次随机骰(±) 定胜负</span>`);
+    const zods = (o.zod || []).filter(Boolean);
+    if (zods.length) rows.push(`生肖 ${zods.map((z) => ZOD_ICON[z] || z).join(' ')}`);
+  }
+  const head = `<div style="display:flex;align-items:center;gap:6px;margin-bottom:6px;"><span style="width:8px;height:8px;border-radius:50%;background:${rc[1]};box-shadow:0 0 6px ${rc[1]}"></span><b style="font-size:12px;color:#fff">${esc(o.name)}</b><span style="margin-left:auto;font-size:10px;color:${rc[1]}">${rc[0]}</span></div>`;
+  const body = rows.map((r) => `<div>${r}</div>`).join('');
+  return `<div class="gg-tip">${head}<div style="display:flex;flex-direction:column;gap:3px;">${body}</div><div style="margin-top:7px;font-size:9px;opacity:.5;letter-spacing:.05em">${o.mine ? '我方' : '敌方'}牌 · 悬浮查看</div></div>`;
 }
 
 function handCard(c: TurnHandCardView, i: number, hiOn = false): string {
@@ -220,7 +255,7 @@ function handCard(c: TurnHandCardView, i: number, hiOn = false): string {
     const card = { position: 'relative', width: '96px', height: '120px', borderRadius: '12px', background: 'var(--panel)', border: '2px solid ' + rc[1], boxShadow: '0 6px 16px rgba(0,0,0,.4), inset 0 0 0 1px var(--hairline)' };
     const top = { height: '44px', borderRadius: '10px 10px 0 0', display: 'flex', alignItems: 'center', justifyContent: 'center', background: `linear-gradient(180deg,${tint}44,${tint}11)`, borderBottom: '1px solid ' + tint };
     const icon = { width: '40px', height: '40px', borderRadius: '50%', background: tint, display: 'flex', alignItems: 'center', justifyContent: 'center', fontFamily: 'var(--fd)', fontSize: '24px', color: '#fff', boxShadow: `0 0 14px ${tint}` };
-    return `<div data-hand="${i}" style="${st(card)};cursor:pointer${selSty}"><div style="${st(rarDot)}"></div><div style="${st(top)}"><div style="${st(icon)}">${esc(c.glyph || '✦')}</div></div><div style="padding:10px 9px;"><div style="font-family:var(--fb); font-weight:700; font-size:13px; color:var(--ink); text-align:center;">${esc(c.name)}</div><div style="font-size:10px; color:var(--ink-dim); text-align:center; line-height:1.4; margin-top:4px;">${esc(c.desc || '')}</div></div><div style="${st(costPill)}">★${c.cost}</div></div>`;
+    return `<div data-hand="${i}" class="gg-tipwrap" style="${st(card)};cursor:pointer${selSty}"><div style="${st(rarDot)}"></div><div style="${st(top)}"><div style="${st(icon)}">${esc(c.glyph || '✦')}</div></div><div style="padding:10px 9px;"><div style="font-family:var(--fb); font-weight:700; font-size:13px; color:var(--ink); text-align:center;">${esc(c.name)}</div><div style="font-size:10px; color:var(--ink-dim); text-align:center; line-height:1.4; margin-top:4px;">${esc(c.desc || '')}</div></div>${c.cost > 0 ? `<div style="${st(costPill)}">★${c.cost}</div>` : ''}${cardTip({ name: c.name, rar: c.rar, isGang: true, mine: true, desc: c.desc, cost: c.cost })}</div>`;
   }
   const sc = c.suit ? SUITC[c.suit] : '#22303f'; const zod = c.zod || [];
   const card = { position: 'relative', width: '96px', height: '120px', borderRadius: '12px', background: sideFace(true), border: '2px solid ' + rc[1], boxShadow: '0 6px 16px rgba(0,0,0,.4), inset 0 0 0 1px rgba(255,255,255,.5)', display: 'flex', alignItems: 'center', justifyContent: 'center' }; // 手牌=我方·暖橙底纹
@@ -232,7 +267,7 @@ function handCard(c: TurnHandCardView, i: number, hiOn = false): string {
   const zodRow = { position: 'absolute', bottom: '6px', left: '50%', transform: 'translateX(-50%)', display: 'flex', gap: '3px' };
   const zodCell = (g: string | undefined): string => { const f = !!g; return `<div style="${st({ width: '20px', height: '20px', borderRadius: '5px', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '13px', lineHeight: 1, background: f ? 'rgba(255,255,255,.92)' : 'rgba(0,0,0,.06)', border: '1px solid ' + (f ? sc : 'rgba(120,90,60,.3)'), boxShadow: f ? `0 0 5px ${sc}66` : 'inset 0 1px 2px rgba(0,0,0,.15)' })}">${f ? (ZOD_ICON[g!] || g) : ''}</div>`; };
   const g = c.suit ? SUITG[c.suit] : '';
-  return `<div data-hand="${i}" style="${st(card)};cursor:pointer${selSty}"><div style="${st(rarDot)}"></div><div style="${st(cornerTL)}">${esc(c.rank || '')}<br>${g}</div><span style="${st(big)}">${g}</span><div style="${st(nameP)}">${esc(c.name)}</div><div style="${st(badge)}">${c.power ?? ''}</div><div style="${st(costPillL)}">★${c.cost}</div><div style="${st(zodRow)}">${forr([0, 1, 2], (z) => zodCell(zod[z]))}</div></div>`;
+  return `<div data-hand="${i}" class="gg-tipwrap" style="${st(card)};cursor:pointer${selSty}"><div style="${st(rarDot)}"></div><div style="${st(cornerTL)}">${esc(c.rank || '')}<br>${g}</div><span style="${st(big)}">${g}</span><div style="${st(nameP)}">${esc(c.name)}</div><div style="${st(badge)}">${c.power ?? ''}</div>${c.cost > 0 ? `<div style="${st(costPillL)}">★${c.cost}</div>` : ''}<div style="${st(zodRow)}">${forr([0, 1, 2], (z) => zodCell(zod[z]))}</div>${cardTip({ name: c.name, rar: c.rar, isGang: false, mine: true, suit: c.suit, pts: c.pts, buff: c.buff, power: c.power, zod: c.zod })}</div>`;
 }
 
 function clashOverlay(cv: TurnClashView): string {
@@ -389,30 +424,35 @@ const SUIT_KEYS: Record<string, 's' | 'h' | 'd' | 'c'> = { S: 's', H: 'h', D: 'd
 const lc = (s: string): 's' | 'h' | 'd' | 'c' => SUIT_KEYS[s] ?? 's';
 const rankOf = (r: string): 'white' | 'green' | 'blue' | 'gold' => (r === 'A' ? 'gold' : r === 'K' || r === 'Q' || r === 'J' ? 'blue' : 'white');
 
-export interface TurnViewOpts { theme?: 'onyx' | 'brocade'; tengangName?: (id: string) => string; clash?: TurnClashView | null; sha?: TurnShaView[]; bossName?: string; selMode?: string | null; selHand?: number; tutorial?: { narration: string; highlight: string } | null; gatesLive?: boolean; notice?: string | null; movedIds?: Set<string>; battleLabel?: string; sfxOn?: boolean; settingsOpen?: boolean }
+export interface TurnViewOpts { theme?: 'onyx' | 'brocade'; tengangName?: (id: string) => string; tengangDesc?: (id: string) => string; clash?: TurnClashView | null; sha?: TurnShaView[]; bossName?: string; selMode?: string | null; selHand?: number; tutorial?: { narration: string; highlight: string } | null; gatesLive?: boolean; notice?: string | null; movedIds?: Set<string>; battleLabel?: string; sfxOn?: boolean; settingsOpen?: boolean }
 /** 从 turn-combat 真状态派生战斗屏视图（玩家 = side a 视角）。纯读、不改 battle。 */
 export function buildTurnBattleView(b: TurnBattle, opts: TurnViewOpts = {}): TurnBattleView {
   const laneNames = ['上路', '中路', '下路'];
+  // 选牌待放(放的是兵牌)→ 各路放牌区「下一落点」高亮（owner 2026-06-21·与 turn-combat deployUnit 同找法：贴家那格起首个空位）。
+  const selDeploy = opts.selMode === 'deploy' && (opts.selHand ?? -1) >= 0 && b.a.hand[opts.selHand ?? -1]?.kind === 'poker';
   const lanes: TurnLaneView[] = b.lanes.map((L, li) => {
     const bySlot = new Map<number, { u: TurnUnit; mine: boolean }>();
     for (const u of L.a) bySlot.set(u.slot, { u, mine: true });
     for (const u of L.b) bySlot.set(u.slot, { u, mine: false });
     const adj = L.a.length > 0 && L.b.length > 0 && Math.abs(L.a[0].slot - L.b[0].slot) <= 1;
+    const occA = new Set(L.a.map((u) => u.slot));
+    const target = selDeploy ? [A_DEPLOY_SLOT, A_DEPLOY_SLOT + 1, A_DEPLOY_SLOT + 2].find((sl) => !occA.has(sl)) : undefined;
     const dep = (i: number): 1 | 2 | undefined => (i <= A_DEPLOY_SLOT + 2 ? 1 : i >= B_DEPLOY_SLOT - 2 ? 2 : undefined); // 我方放牌区 0..2 / 敌方 6..8
     const slots: TurnSlotView[] = Array.from({ length: SLOTS }, (_, i) => {
       const hit = bySlot.get(i);
-      // isClash 标在两军真前锋格(landed bugfix·非固定中线 4) + 放牌区底纹/标签(标在贴各自城堡那格)
-      const base = { isBorder: i === 4, isClash: adj && (i === L.a[0]?.slot || i === L.b[0]?.slot), deploy: dep(i), deployLabel: i === A_DEPLOY_SLOT || i === B_DEPLOY_SLOT };
+      // isClash 标在两军真前锋格(landed bugfix·非固定中线 4) + 放牌区底纹/标签(标在贴各自城堡那格) + 待放落点高亮
+      const base = { isBorder: i === 4, isClash: adj && (i === L.a[0]?.slot || i === L.b[0]?.slot), deploy: dep(i), deployLabel: i === A_DEPLOY_SLOT || i === B_DEPLOY_SLOT, placeable: !hit && i === target };
       return hit
-        ? { ...base, hasUnit: true, mine: hit.mine, rank: hit.u.rank, suit: lc(hit.u.suit), power: hit.u.points + hit.u.buff, zod: [], unitId: hit.u.id, justMoved: opts.movedIds?.has(hit.u.id) ?? false }
+        ? { ...base, hasUnit: true, mine: hit.mine, rank: hit.u.rank, suit: lc(hit.u.suit), power: hit.u.points + hit.u.buff, pts: hit.u.points, buff: hit.u.buff, name: SUITNM[lc(hit.u.suit)] + hit.u.rank, rar: rankOf(hit.u.rank), zod: [], unitId: hit.u.id, justMoved: opts.movedIds?.has(hit.u.id) ?? false }
         : { ...base, hasUnit: false, mine: i < 4 };
     });
     return { name: laneNames[li] ?? ('路' + li), slots };
   });
   const nameOf = opts.tengangName ?? ((id: string) => id);
+  const descOf = opts.tengangDesc ?? (() => '持续战法·打出后整场生效');
   const hand: TurnHandCardView[] = b.a.hand.map((c, i) => c.kind === 'poker'
-    ? { kind: 'pawn', rank: c.rank, suit: lc(c.suit), name: SUITNM[lc(c.suit)] + c.rank, power: cardPoints(c.rank) + c.buff, cost: 1, zod: [], rar: rankOf(c.rank), selected: opts.selHand === i }
-    : { kind: 'gang', name: nameOf(c.id), cost: 1, rar: 'gold', desc: '法术', glyph: '✦', selected: opts.selHand === i });
+    ? { kind: 'pawn', rank: c.rank, suit: lc(c.suit), name: SUITNM[lc(c.suit)] + c.rank, power: cardPoints(c.rank) + c.buff, pts: cardPoints(c.rank), buff: c.buff, cost: DEPLOY_COST, zod: [], rar: rankOf(c.rank), selected: opts.selHand === i }
+    : { kind: 'gang', name: nameOf(c.id), cost: CAST_COST, rar: 'gold', desc: descOf(c.id), glyph: '✦', selected: opts.selHand === i });
   const ACT: [string, string, string][] = [['draw', '🎴', '抽牌'], ['deploy', '♟', '放牌'], ['cast', '✦', '打天罡'], ['discard', '🗑', '弃牌']];
   const sel = b.actionTaken;
   const mode = opts.selMode ?? sel; // 当前高亮动作类：未提交时取 UI 选中(selMode)，已锁则取 actionTaken
