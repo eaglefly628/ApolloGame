@@ -7,6 +7,7 @@ const targetGame = process.env.VITE_TARGET_GAME ?? 'game-f';
 export default defineConfig({
   plugins: [react()],
   root: '.',
+  base: './',
   build: {
     outDir: 'dist-cartridge',
     emptyOutDir: true,
