@@ -641,7 +641,11 @@ export function mount(container: HTMLElement, shell?: { exit?: () => void }): ()
     if (heroCard) bossDeck.unshift(heroCard); // 强化主将置顶·必进起手·当场亮相；打赢=擒此英雄
     resetFortuneIfNewDay(save);
     const fortuneBuff = save.fortune.keptVal != null ? luckyBattleBuff(save.fortune.keptVal) : 0;
-    const tb = initTurnBattle({ seed, disha: lvl.boss.disha, aiProfile: lvl.boss.aiProfile, aiTier: lvl.boss.aiTier, fortuneBuff, a: { pokerDeck: seededShuffleArr(myDeck, seed ^ 0x9e37), tengangDeck: aTengang }, b: { pokerDeck: bossDeck, tengangDeck: bTengang } });
+    // 玩家主将必进起手（同 Boss 英雄牌置顶·owner 2026-06-21）：洗完牌后找到 general:true 那张，提到牌库顶。
+    const shuffledMyDeck = seededShuffleArr(myDeck, seed ^ 0x9e37);
+    const genIdx = shuffledMyDeck.findIndex((c) => c.general);
+    if (genIdx > 0) { const [gen] = shuffledMyDeck.splice(genIdx, 1); shuffledMyDeck.unshift(gen); }
+    const tb = initTurnBattle({ seed, disha: lvl.boss.disha, aiProfile: lvl.boss.aiProfile, aiTier: lvl.boss.aiTier, fortuneBuff, a: { pokerDeck: shuffledMyDeck, tengangDeck: aTengang }, b: { pokerDeck: bossDeck, tengangDeck: bTengang } });
     for (let i = 0; i < OPENING_HAND && tb.a.pokerDeck.length; i++) tb.a.hand.push(tb.a.pokerDeck.shift()!); // 起手摸
     for (let i = 0; i < OPENING_HAND && tb.b.pokerDeck.length; i++) tb.b.hand.push(tb.b.pokerDeck.shift()!);
     const shaView: TurnShaView[] = campaignFor(save.stage).fiends.map((f, i) => ({ filled: true, name: f.name, rar: (['gold', 'blue', 'green'] as const)[i] ?? 'white', desc: f.desc })); // 敌堡垒 3 地煞明牌
