@@ -1263,11 +1263,12 @@ export function mountLobby(host: HTMLElement, h: LobbyHandlers): { update: () =>
     else if (act === 'guide-skip-cancel') { guideSkipAsk = false; renderOv(); }
     else if (act === 'guide-skip-confirm') { guideSkipAsk = false; h.onGuideDone?.(); renderOv(); }
     else if (act === 'replayIntro') { h.onReplayIntro?.(); settings = false; tab = 'home'; playOpeningStory(); render(); }
-    else if (act === 'buyTiangang') { h.onBuyTiangang?.(k); render(); }
+    // 直购天罡也走开包演出（owner 2026-06-21 bug：购买天罡没见卡牌包）：买成功(新解锁)→弹开包卡
+    else if (act === 'buyTiangang') { const was = h.getView().tiangangs.find((t) => t.id === k)?.owned ?? false; h.onBuyTiangang?.(k); const t = h.getView().tiangangs.find((t) => t.id === k); if (t?.owned && !was) gachaReveal = [{ kind: 'tiangang', id: k, name: t.name, outcome: 'new', detail: '🎴 购买解锁 ✓ 已入收藏与出战牌组' }]; render(); }
     else if (act === 'buyPlanet') { h.onBuyPlanet?.(k); render(); }
     else if (act === 'buyFoil') { h.onBuyFoil?.(k); if (recharge) renderOv(); else render(); } // 商城里买→只刷弹层
     else if (act === 'toggleTiangang') { h.onToggleTiangang?.(k); if (deckPicker) renderOv(); else render(); } // 弹窗选卡时只更新弹层
-    else if (act === 'diamondUnlock') { h.onDiamondUnlock?.(k); render(); }
+    else if (act === 'diamondUnlock') { const was = h.getView().tiangangs.find((t) => t.id === k)?.owned ?? false; h.onDiamondUnlock?.(k); const t = h.getView().tiangangs.find((t) => t.id === k); if (t?.owned && !was) gachaReveal = [{ kind: 'tiangang', id: k, name: t.name, outcome: 'new', detail: '💎 速解解锁 ✓ 已入收藏与出战牌组' }]; render(); }
     else if (act === 'shop') { recharge = true; shopTab = 'gacha'; rechargeErr = ''; renderOv(); }
     else if (act === 'shopFoil') { recharge = true; shopTab = 'foil'; rechargeErr = ''; renderOv(); }
     else if (act === 'recharge') { recharge = true; shopTab = 'wallet'; rechargeErr = ''; renderOv(); }
