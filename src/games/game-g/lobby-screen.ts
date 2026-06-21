@@ -297,6 +297,8 @@ const CSS = `
 /* ── polish: 入场 · hover · 点击手感 · 徽章生命感 ── */
 @keyframes ggl-fadein { from{ opacity:0; transform:translateY(7px) } to{ opacity:1; transform:translateY(0) } }
 @keyframes ggl-glow { 0%,100%{ box-shadow:0 0 22px rgba(232,205,130,.5),inset 0 1px 0 rgba(255,255,255,.5) } 50%{ box-shadow:0 0 50px rgba(232,205,130,.95),inset 0 1px 0 rgba(255,255,255,.65) } }
+@keyframes gg-coach-ring { 0%,100%{ box-shadow:0 0 0 3px var(--gold),0 0 16px 3px rgba(232,205,130,.55) } 50%{ box-shadow:0 0 0 4px var(--gold),0 0 28px 7px rgba(232,205,130,.9) } }
+@keyframes gg-coach-arrow { 0%,100%{ transform:translateY(0) } 50%{ transform:translateY(-5px) } }
 .ggl-root .screen.on{ animation:ggl-fadein .22s ease-out both }
 .ggl-root .vs{ animation:ggl-glow 2.6s ease-in-out infinite }
 .ggl-root .nav button{ transition:background .15s,color .15s }
@@ -692,10 +694,11 @@ function narrationBox(beats: StoryBeat[], idx: number, label: string, cta: strin
 
 // 新手引导（doc28 §二 A/B/C · 线性·点对推进）：每步高亮一个锚点 + 一句话，点中该锚点的动作即进下一步。
 // 高亮遮罩复用引擎通用 coachmark 能力（@renderer/coachmark 纯几何 + mountLobby 内薄 DOM 适配·OnboardingOverlay 同法）。教学关战斗本体=甲。
-export const GUIDE_COACH: { anchor: string; text: string; advanceAct: string; placement: 'top' | 'bottom' }[] = [
+export const GUIDE_COACH: { anchor: string; text: string; advanceAct: string; advanceK?: string; placement: 'top' | 'bottom' }[] = [
   { anchor: 'help', text: '① 先翻一遍《玩法手册》——30 秒看懂怎么打（三路九格 · 每回合四选一 · 掷命对决）。点这里 📖', advanceAct: 'man', placement: 'bottom' },
-  { anchor: 'play', text: '② 准备好了？点「出征」打第一战——温泉关 · 列奥尼达（最易），解封你的第一缕英雄之魂。', advanceAct: 'play', placement: 'top' },
-  { anchor: 'shop', text: '③ 开局送了你钻石 + 金币——来「商城」抽一发，体验开包变强，然后开打！', advanceAct: 'shop', placement: 'bottom' },
+  { anchor: 'decks', text: '② 先配一套出战牌组——进「我的牌组」，点牌选 16 张扑克（或用 ✨一键自动构筑），再配 5 张天罡。', advanceAct: 'tab', advanceK: 'decks', placement: 'bottom' },
+  { anchor: 'play', text: '③ 配好了？回大厅点「出征」打第一战——温泉关 · 列奥尼达（最易），解封你的第一缕英雄之魂。', advanceAct: 'play', placement: 'top' },
+  { anchor: 'shop', text: '④ 开局送了你钻石 + 金币——来「商城」抽一发，体验开包变强，然后开打！', advanceAct: 'shop', placement: 'bottom' },
 ];
 // 跳过引导确认对话框（owner 2026-06-20「首页加个跳过引导的对话框」）。
 function guideSkipDialog(): string {
@@ -1041,7 +1044,7 @@ export function renderLobby(view: LobbyView, tab: string, helpOpen: boolean, dec
   <div class="nav">
     <button class="${on('home')}" data-act="tab" data-k="home">大厅</button>
     <button class="${on('campaign')}" data-act="tab" data-k="campaign">战役</button>
-    <button class="${on('decks')}" data-act="tab" data-k="decks">我的牌组</button>
+    <button class="${on('decks')}" data-act="tab" data-k="decks" data-anchor="decks">我的牌组</button>
     <button class="${on('coll')}" data-act="tab" data-k="coll">收藏</button>
     <button class="${on('craft')}" data-act="tab" data-k="craft">改造坊</button>
     <button class="${on('ladder')}" data-act="tab" data-k="ladder">天梯</button>
@@ -1168,8 +1171,14 @@ export function mountLobby(host: HTMLElement, h: LobbyHandlers): { update: () =>
     const vp = { w: window.innerWidth || 1280, h: window.innerHeight || 800 };
     const g = coachmarkGeometry({ x: r.left, y: r.top, w: r.width, h: r.height }, vp, { shape: 'rect', pad: 7, placement: spec.placement, bubbleW: 304, bubbleH: 66 });
     const c = g.cutout, b = g.bubble;
+    const cx = c.x + c.w / 2;
+    const ax = Math.max(b.x + 12, Math.min(cx, b.x + b.w - 12)); // 箭头横向对齐高亮中心（夹进气泡）
+    const up = g.placement === 'bottom'; // 气泡在下方 → 箭头朝上指向高亮；否则朝下
+    const arrow = `<div style="position:absolute;left:${ax - 10}px;top:${up ? c.y + c.h + 3 : c.y - 15}px;width:0;height:0;border-left:10px solid transparent;border-right:10px solid transparent;${up ? 'border-bottom:12px solid var(--gold)' : 'border-top:12px solid var(--gold)'};filter:drop-shadow(0 0 5px rgba(232,205,130,.7));animation:gg-coach-arrow 1.1s ease-in-out infinite"></div>`;
     coachLayer.innerHTML =
       `<div style="position:absolute;left:${c.x}px;top:${c.y}px;width:${c.w}px;height:${c.h}px;border-radius:9px;box-shadow:0 0 0 9999px rgba(8,10,14,.72);transition:all .18s"></div>` +
+      `<div style="position:absolute;left:${c.x}px;top:${c.y}px;width:${c.w}px;height:${c.h}px;border-radius:9px;animation:gg-coach-ring 1.4s ease-in-out infinite;pointer-events:none"></div>` + // 金边脉冲圈·让高亮醒目
+      arrow +
       `<div style="position:absolute;left:${b.x}px;top:${b.y}px;width:${b.w}px;background:linear-gradient(160deg,#1b2233,#10141d);border:1px solid var(--gold);border-radius:12px;color:#ece6f5;font:600 13px/1.62 var(--fb);padding:11px 14px;box-shadow:0 12px 32px rgba(0,0,0,.6);pointer-events:auto">` +
         `<div style="display:flex;align-items:center;gap:8px"><span style="font-size:11px;letter-spacing:.1em;color:var(--gold)">🧭 新手引导 ${gs + 1}/${GUIDE_COACH.length}</span><button data-act="guide-skip" style="margin-left:auto;background:none;border:0;color:#9fb0c0;font-size:11px;text-decoration:underline;cursor:pointer">跳过引导</button></div>` +
         `<div style="margin-top:5px">${esc(spec.text)}</div>` +
@@ -1226,9 +1235,9 @@ export function mountLobby(host: HTMLElement, h: LobbyHandlers): { update: () =>
     if (stop && el !== stop && el.contains(stop)) return;
     const act = el.dataset.act, k = el.dataset.k ?? '';
     if (act) playSfx(sfxForAct(act)); // 菜单音效（程序化合成·静音/无音频上下文则静默）
-    // 新手引导点对推进（doc28 A/B/C·coachmark）：点中当前步锚点的动作 → 进下一步/完成。advanceAct=man/play/shop。
+    // 新手引导点对推进（doc28·coachmark）：点中当前步锚点的动作（advanceAct[+advanceK]）→ 进下一步/完成。
     const _gs = h.getView().guideStep ?? -1;
-    if (_gs >= 0 && _gs < GUIDE_COACH.length && act === GUIDE_COACH[_gs].advanceAct) { if (_gs < GUIDE_COACH.length - 1) h.onGuideStep?.(_gs + 1); else h.onGuideDone?.(); }
+    if (_gs >= 0 && _gs < GUIDE_COACH.length) { const _st = GUIDE_COACH[_gs]; if (act === _st.advanceAct && (!_st.advanceK || k === _st.advanceK)) { if (_gs < GUIDE_COACH.length - 1) h.onGuideStep?.(_gs + 1); else h.onGuideDone?.(); } }
     if (act === 'sfxToggle') { setSfxMuted(!isSfxMuted()); renderOv(); }
     // 背景音乐（menu 设置·owner 2026-06-21）：开关 / 选 3 首之一 / 音量 −＋。直接调 bgm.ts（点击=用户手势·可起播）。
     else if (act === 'bgmToggle') { toggleBgm(); renderOv(); }

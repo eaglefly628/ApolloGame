@@ -346,11 +346,19 @@ describe('Game G · lobby-screen mountLobby 点击交互（DOM · happy-dom）',
       expect(onGuideStep).toHaveBeenCalledWith(1);
     });
 
+    it('步1（配牌组）点「我的牌组」tab → onGuideStep(2)（advanceK 校验）', () => {
+      const host = document.createElement('div');
+      const onGuideStep = vi.fn();
+      mountLobby(host, { getView: () => makeView({ firstLaunch: false, guideStep: 1 }), onPlay: vi.fn(), onGuideStep });
+      click([...host.querySelectorAll('.nav button')].find((b) => b.textContent?.includes('我的牌组')) ?? null); // tab k=decks
+      expect(onGuideStep).toHaveBeenCalledWith(2);
+    });
+
     it('末步（商城 shop）点中锚点 → onGuideDone', () => {
       const host = document.createElement('div');
       const onGuideDone = vi.fn();
-      mountLobby(host, { getView: () => makeView({ firstLaunch: false, guideStep: 2 }), onPlay: vi.fn(), onGuideDone });
-      click(host.querySelector('[data-act="shop"]')); // 步2 的 advanceAct=shop
+      mountLobby(host, { getView: () => makeView({ firstLaunch: false, guideStep: 3 }), onPlay: vi.fn(), onGuideDone }); // 4 步·末步=商城
+      click(host.querySelector('[data-act="shop"]')); // 步3 的 advanceAct=shop
       expect(onGuideDone).toHaveBeenCalledTimes(1);
     });
 
