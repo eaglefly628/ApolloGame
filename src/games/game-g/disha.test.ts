@@ -109,6 +109,7 @@ describe('Game G · 地煞（doc23 §八 关1-5 · 15 张 · 甲实装）', () =
     b.lanes[0].a.push(u('a0', 'A', 4, { buff: 24 })); // 玩家碾压必胜
     b.lanes[0].b.push(u('b0', '3', 5, { general: true })); // Boss 弱主将(前锋·slot5)
     b.lanes[0].b.push(u('b1', '7', 6));                    // 身后紧贴一兵(slot6=主将退入格)
+    activatePlayable(b); // 死战不退=可施放地煞·打出才生效（混合模型）
     endTurn(b); endTurn(b); // 玩家胜 → 主将首负不亡·退1格(撞 b1) → 应换位而非同格
     const slots = b.lanes[0].b.map((x) => x.slot);
     expect(new Set(slots).size).toBe(slots.length);            // 无两兵同 slot（不再被渲染 bySlot 覆盖吞牌）
@@ -148,7 +149,7 @@ describe('Game G · 地煞（doc23 §八 关1-5 · 15 张 · 甲实装）', () =
     ai.lanes[0].b.push(u('bx', '9', 5)); // 给 Boss 场上一个兵(地煞加成有受益对象)
     ai.active = 'b'; ai.b.mana = 3;
     const used = aiTakeTurn(ai);
-    expect(used).toContain('mandate'); expect(ai.dishaB.allWinPct).toBe(10);
+    expect(used).toContain('mandate'); expect(ai.dishaB.allWinPct).toBe(5); // 挟天子 §六：10→5
   });
 
   it('确定性：无地煞 → 与基线行为一致（地煞不入 hash·dishaB 默认零修正）', () => {
