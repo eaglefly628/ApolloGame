@@ -1,16 +1,25 @@
 import { mountLobby, luckyBattleBuff, luckyFromVal, type LobbyView, type LobbyShopItem } from './lobby-screen.js';
-import { prepareArmies, quartermasterEnergy, FORMATION_PRESETS, PRESET_NAMES, LEVER_START, battleSpec, RUN_BATTLES, RUN_LIVES, BETWEEN_BUFFS, applyBuff, tiangangKeyBuffs, BOSS_ROSTER, bossFor, GAME_G_TIANGANGS, TIANGANG_BY_ID, ARCHETYPES, detectArchetype, archetypeMatchup, activeArchetype, pickAiFormation, GAME_G_PLANETS, GAME_G_FOILS, RECHARGE_PACKS, rechargeTotal, DIAMOND_EXCHANGES, DIZHI_SHARD_PACKS, RECHARGE_PASSWORD, GACHA, gachaCost, DIZHI_MAX_TIER, DIZHI_TIER_NM, DIZHI_TIER_CAP, DIZHI_INLAY_FAVOR, dizhiMerge, dizhiTotal, dizhiTopTier, DIZHI_ZODIACS, INLAY_MAX, effectiveDeckFavors, POKER_PICK_SIZE, isPoolCardId, autoBuildPokerPicks, cardFavorIndex, rankOfCardId, deployCost, isHeroOwned, heroCardByName, heroNameOf, effectiveLives, effectiveLeverCap, effectiveLeverRegen, campaignFor, unlockStageOf, type Formation, type Intervention, type RunBuff, type ArmyCard, type InlayEntry } from './index.js';
-import { NO_TENGANG, type ClashEvent, type TengangFx } from './live-combat.js';
+import { prepareArmies, quartermasterEnergy, LEVER_START, battleSpec, RUN_BATTLES, BETWEEN_BUFFS, applyBuff, tiangangKeyBuffs, bossFor, GAME_G_TIANGANGS, TIANGANG_BY_ID, ARCHETYPES, detectArchetype, archetypeMatchup, activeArchetype, pickAiFormation, GAME_G_PLANETS, GAME_G_FOILS, RECHARGE_PACKS, rechargeTotal, DIAMOND_EXCHANGES, DIZHI_SHARD_PACKS, RECHARGE_PASSWORD, GACHA, gachaCost, DIZHI_MAX_TIER, DIZHI_TIER_NM, DIZHI_TIER_CAP, DIZHI_INLAY_FAVOR, dizhiMerge, dizhiTotal, dizhiTopTier, DIZHI_ZODIACS, INLAY_MAX, effectiveDeckFavors, POKER_PICK_SIZE, isPoolCardId, autoBuildPokerPicks, cardFavorIndex, deployCost, isHeroOwned, heroNameOf, effectiveLives, effectiveLeverCap, effectiveLeverRegen, campaignFor, unlockStageOf, type Formation, type Intervention, type RunBuff, type ArmyCard } from './index.js';
+import { type ClashEvent } from './live-combat.js';
+// 抽出的纯函数模块（Phase 2 拆分·见各文件头注）：存档/出战编排/掷命特写视图。公共 API(buildPickDeck/bossHeroCard/
+// aggregateTengang/tengangFxOf/freshSave)在文件尾从这里再导出，保 deck-wiring/live-combat/turnmatch 测试 import 不变。
+import { freshSave, loadSave, persist, resetFortuneIfNewDay, FORTUNE_MAX, activeDeck, syncTiangangs, newDeckId, rollBoss, TIANGANG_DECK_SIZE, MAX_TIANGANG_DECKS } from './game-g-save.js';
+import { favorToP, cardRank, avg, myBias, describeFormation, pick3, buildPickDeck, bossHeroCard, aggregateTengang, tengangFxOf, seededShuffleArr } from './game-g-build.js';
+import { clashToTurnView } from './game-g-clash-view.js';
 import { initTurnBattle, drawCard, deployUnit, castTengang, discardCard, endTurn, aiTakeTurn, toggleGate, GATES, OPENING_HAND, DRAW_COST, CAST_COST, manaGain, type PokerCard, type TengangHandCard, type Card } from './turn-combat.js';
 import { DISHA_NAME } from './disha.js';
 import { mountTurnBattle, buildTurnBattleView, type TurnBattleView, type TurnBattleActions, type TurnClashView, type TurnClashCardView, type TurnShaView } from './turn-battle-screen.js';
 import { mountCoinFlip } from './coin-flip.js';
 import { loadLevel } from './level.js';
-import { cardPoints, P_MAX } from './clash-resolve.js';
+import { cardPoints } from './clash-resolve.js';
 import { playSfx, isSfxOn, toggleSfx } from './sound.js';
 import { startBgm, stopBgm, toggleBgm as toggleBgmState, selectBgm as selectBgmState, setBgmVolume, isBgmOn, bgmTrackIdx, bgmVolume, BGM_TRACKS } from './bgm.js';
 import { makeCoachWorld, nextCoachStep, type BattleCoachStep } from './battle-coach.js';
 import { mountOnboardingOverlay } from '@ui/onboarding-overlay.js';
+
+// 公共 API 再导出（保旧 import 路径不变·勿删）：deck-wiring 测 ← buildPickDeck/bossHeroCard；live-combat 测 ← aggregateTengang/tengangFxOf；freshSave 历史导出。
+export { buildPickDeck, bossHeroCard, aggregateTengang, tengangFxOf } from './game-g-build.js';
+export { freshSave } from './game-g-save.js';
 
 // Game G ·《翻命扑克》—— 大厅 ↔ 出征 闭环（launcher 卡带槽：export mount(container)→cleanup）。自包含于本目录。
 // outcome-first：每张牌按 favor 跑确定性种子硬币**先定生死**，3D 翻牌是**反推的表现**（抛飞→相撞→落定翻面）。
@@ -18,248 +27,11 @@ import { mountOnboardingOverlay } from '@ui/onboarding-overlay.js';
 // 进度本地存档；胜负=数据决策（不回灌）；3D 只在 ThreeRenderer 表现层。是 gameF 大厅式挂载编排，复用现成能力。
 const W = 600;
 const H = 540;
-const DECK_SIZE = 52;
-const SAVE_KEY = 'gameG-save-v1';
-// 天罡牌组（owner 2026-06-20）：每场带 12 张天罡出战；玩家可建多套具名牌组、选一套出战、预览。数字可变 → 改这一处。
-const TIANGANG_DECK_SIZE = 12;
-const MAX_TIANGANG_DECKS = 6; // 牌组槽位上限
 // 大厅根容器样式：默认屏(布阵/备战/战斗)居中竖排；大厅屏改顶对齐可滚动(承载 5 tab 古风布局)。
 const DEFAULT_ROOT_CSS = 'position:absolute;inset:0;background:#0a0a14;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:14px;color:#cbd5e1;font:13px system-ui';
 const LOBBY_ROOT_CSS = 'position:absolute;inset:0;overflow:auto';
-
-interface Save {
-  materials: number; // 金币 Gold（doc25 · 打战斗赚·免费·解锁天罡/地支/改造坊）
-  diamond: number; // 钻石 Diamond（doc25 · 付费·只加速速解·不卖强度）
-  dizhiShards: number; // 地支碎片（养地支专属材料 · 💎可换 · 待甲镶嵌系统消耗）
-  rechargeCount: number; // 已完成充值次数（投资人彩蛋：首充免密·第二次起需密码）
-  seenIntro: boolean; // 是否已看过首启开场故事（doc28 §一·只播一次）
-  guideStep: number; // 新手引导进度（doc28 §二）：0..N 进行中 · -1 完成/跳过
-  skipGuide: boolean; // 跳过新手引导（owner 2026-06-21·默认 false=开·菜单手动关）
-  guideDefaultFixed?: boolean; // 一次性迁移标记：纠正早期「默认关」误版写入的 skipGuide=true
-  seen: Record<string, boolean>; // 引导「看过不再弹」标记集（coachmark·seen_combat_* 等·owner 2026-06-21）
-  tiangangShards: number; // 天罡碎片（抽卡重复转化 → 定向兑换指定天罡·保底 doc25 §四）
-  dizhiBag: Record<string, number[]>; // 地支卡包（消耗品库存·owner 2026-06-21）：生肖 branch → 各档活化数 [铜,银,金]（满3自动升档·钻/史待开放）
-  inlays: Record<string, InlayEntry[]>; // 地支附魔：牌位索引(0-51) → 已镶条目 {b,t}[]（≤INLAY_MAX·档位镶入时锁定·永久消耗不退）
-  campaignMax: number; // 已抵达的最高关（持久·天罡解锁门槛 = unlockStage ≤ campaignMax）
-  stage: number;
-  deck: number[]; // 我方 52 张的 favor（0..95）
-  lastOfficers: number[]; // 上次布阵的三路军官数 [上,中,下]（默认选中 + AI 克制依据）
-  leverEnergy: number; // 干预能量◈（开局 3 / 每胜 +2 / 上限 6）
-  lives: number; // 战役命线（开 run 3 命，输一场 −1，命尽=run 结束）
-  bossIdx: number; // 本 run 终局 Boss（每 run 轮换一名，开 run 随机定，供针对性布阵）
-  ownedTiangangs: string[]; // 已买入天罡 id（全部拥有集·跨 run 不清零）
-  tiangangDecks: TiangangDeck[]; // 玩家自建的天罡牌组（每组 ≤12 张·可建多套）
-  activeDeckId: string; // 出战中的牌组 id
-  tiangangs: string[]; // 出战牌组的卡表（= activeDeck.cards 的派生镜像·契约②·甲读·勿手改）
-  planets: Record<string, number>; // 星球牌等级（局外持久 · 可叠加升档 · 第二养成轴）
-  foils: string[]; // 已收集的 foil 闪艺皮肤 id（纯表现收集 · 零 gameplay）
-  fortune: { date: string; rolls: number; keptVal: number | null }; // 今日卦象（owner 2026-06-21·制卦次数/收下的卦值·每日刷新·纯趣味不进战斗）
-}
-const FORTUNE_MAX = 3; // 每日制卦上限（owner 2026-06-21）
-const fortuneToday = (): string => { const d = new Date(); return `${d.getFullYear()}-${d.getMonth() + 1}-${d.getDate()}`; };
-function resetFortuneIfNewDay(s: Save): void { const t = fortuneToday(); if (!s.fortune || s.fortune.date !== t) s.fortune = { date: t, rolls: 0, keptVal: null }; }
-interface TiangangDeck { id: string; name: string; cards: string[]; pokerPicks: string[] } // cards = 天罡 id（≤TIANGANG_DECK_SIZE）；pokerPicks = 自选出战扑克卡 id（≤POKER_PICK_SIZE·契约A·乙写甲读·空=自动构筑一副）
-
-// 出战牌组（找不到则取第一个；都空则造默认）。syncTiangangs：把出战牌组卡表派生进 save.tiangangs（契约②·甲读）。
-function activeDeck(s: Save): TiangangDeck {
-  return s.tiangangDecks.find((d) => d.id === s.activeDeckId) ?? s.tiangangDecks[0];
-}
-function syncTiangangs(s: Save): void { s.tiangangs = [...(activeDeck(s)?.cards ?? [])]; }
-const newDeckId = (): string => `deck_${Date.now().toString(36)}_${Math.floor(Math.random() * 1e4)}`;
-
-const rollBoss = (): number => Math.floor(Math.random() * BOSS_ROSTER.length);
-export function freshSave(): Save {
-  return { materials: 120, diamond: 6, dizhiShards: 30, rechargeCount: 0, seenIntro: false, guideStep: 0, skipGuide: false, seen: {}, tiangangShards: 0, dizhiBag: { 子: [2, 0, 0], 丑: [1, 0, 0], 寅: [1, 0, 0], 卯: [1, 0, 0] }, inlays: {}, campaignMax: 1, stage: 1, deck: Array.from({ length: DECK_SIZE }, (_, i) => 44 + (i % 10) * 2), lastOfficers: [10, 10, 10], leverEnergy: LEVER_START, lives: RUN_LIVES, bossIdx: rollBoss(), ownedTiangangs: GAME_G_TIANGANGS.filter((t) => unlockStageOf(t.id) <= 1).map((t) => t.id), tiangangDecks: [{ id: 'deck1', name: '牌组 1', cards: [], pokerPicks: [] }, { id: 'deck2', name: '牌组 2', cards: [], pokerPicks: [] }, { id: 'deck3', name: '牌组 3', cards: [], pokerPicks: [] }, { id: 'deck4', name: '牌组 4', cards: [], pokerPicks: [] }], activeDeckId: 'deck1', tiangangs: [], planets: {}, foils: [], fortune: { date: '', rolls: 0, keptVal: null } }; // 44..62 起步；金币 120；钻石送 6（首充免密）；开局默认给 4 个天罡牌组让玩家去组（owner 2026-06-21）；pokerPicks 空=自动构筑一副；新存档播开场故事+引导
-}
-function loadSave(): Save {
-  try {
-    const raw = localStorage.getItem(SAVE_KEY);
-    if (raw) {
-      const s = JSON.parse(raw) as Save;
-      if (Array.isArray(s.deck) && s.deck.length === DECK_SIZE) {
-        if (!Array.isArray(s.lastOfficers) || s.lastOfficers.length !== 3) s.lastOfficers = [10, 10, 10]; // 旧存档兼容
-        if (typeof s.leverEnergy !== 'number') s.leverEnergy = LEVER_START;
-        if (typeof s.bossIdx !== 'number') s.bossIdx = rollBoss();
-        if (typeof s.diamond !== 'number') s.diamond = 0; // doc25 货币迁移
-        if (typeof s.dizhiShards !== 'number') s.dizhiShards = 0; // 地支碎片迁移
-        if (typeof s.rechargeCount !== 'number') s.rechargeCount = 0; // 充值次数迁移
-        if (typeof s.seenIntro !== 'boolean') s.seenIntro = true; // 老存档视为已看过开场（不打扰老玩家）
-        if (typeof s.guideStep !== 'number') s.guideStep = -1; // 老存档引导视为已完成
-        if (typeof s.skipGuide !== 'boolean') s.skipGuide = false; // 新手引导默认开（owner 2026-06-21）·菜单手动关；老存档 seen/guideStep 已完成→自然不再弹
-        if (!s.guideDefaultFixed) { s.skipGuide = false; s.guideDefaultFixed = true; } // 一次性纠正：早期「默认关」误版把 skipGuide=true 写进存档 → 纠回开一次（之后手动关照常保留·owner 2026-06-21）
-        if (typeof s.tiangangShards !== 'number') s.tiangangShards = 0; // 天罡碎片迁移
-        // 地支消耗品迁移（owner 2026-06-21）：老存档 dizhiOwned{branch:tier} → dizhiBag{branch:[铜,银,金]}（该档置 1 张）。
-        const legacyDz = s as unknown as { dizhiOwned?: Record<string, number> };
-        if (typeof s.dizhiBag !== 'object' || s.dizhiBag === null) {
-          s.dizhiBag = {};
-          const od = legacyDz.dizhiOwned;
-          if (od && typeof od === 'object') for (const b in od) { const t = od[b]; if (t >= 1 && t <= 3) { const arr = [0, 0, 0]; arr[t - 1] = 1; s.dizhiBag[b] = arr; } }
-          delete legacyDz.dizhiOwned;
-        }
-        // 地支附魔迁移：老 inlays{idx:branch[]} → {idx:{b,t}[]}（档位取老 dizhiOwned 该生肖档·缺则铜）。
-        if (typeof s.inlays !== 'object' || s.inlays === null) s.inlays = {};
-        else { const od = legacyDz.dizhiOwned ?? {}; for (const k in s.inlays) { const v = s.inlays[k] as unknown; if (Array.isArray(v) && v.length && typeof v[0] === 'string') s.inlays[k] = (v as unknown as string[]).map((b) => ({ b, t: od[b] ?? 1 })); } }
-        if (typeof s.seen !== 'object' || s.seen === null) s.seen = {}; // 引导 seen 标记迁移（coachmark）
-        if (typeof s.campaignMax !== 'number') s.campaignMax = Math.max(1, s.stage || 1);
-        // 重命名(joker→天罡)迁移 + owner 拍「清空老存档战库」：老存档键为 jokers/ownedJokers → 战库(tiangangs)清空、收藏(ownedTiangangs)沿用旧 ownedJokers；丢弃遗留键。
-        const legacy = s as unknown as { jokers?: unknown; ownedJokers?: unknown };
-        if (legacy.jokers !== undefined || legacy.ownedJokers !== undefined || !Array.isArray(s.tiangangs) || !Array.isArray(s.ownedTiangangs)) {
-          if (!Array.isArray(s.ownedTiangangs)) s.ownedTiangangs = Array.isArray(legacy.ownedJokers) ? (legacy.ownedJokers as string[]) : [];
-          s.tiangangs = []; // 老存档战库清空（owner）
-          delete legacy.jokers; delete legacy.ownedJokers;
-        }
-        // 牌组迁移（owner 2026-06-20 多牌组）：老存档只有单战库 s.tiangangs（≤5）→ 包成「牌组 1」；无牌组则建默认。
-        if (!Array.isArray(s.tiangangDecks) || s.tiangangDecks.length === 0) {
-          const seed = Array.isArray(s.tiangangs) ? s.tiangangs.slice(0, TIANGANG_DECK_SIZE) : [];
-          s.tiangangDecks = [{ id: 'deck1', name: '牌组 1', cards: seed, pokerPicks: [] }];
-        }
-        // 清洗：每组卡表去无效/超额、去重；pokerPicks 去无效卡 id/超额/去重（缺=[] 即自动构筑）；activeDeckId 落到存在的组
-        s.tiangangDecks = s.tiangangDecks.map((d) => ({ id: d.id, name: d.name || '牌组', cards: [...new Set(d.cards)].filter((c) => TIANGANG_BY_ID.has(c)).slice(0, TIANGANG_DECK_SIZE), pokerPicks: Array.isArray(d.pokerPicks) ? [...new Set(d.pokerPicks)].filter((c) => isPoolCardId(c)).slice(0, POKER_PICK_SIZE) : [] }));
-        if (!s.tiangangDecks.some((d) => d.id === s.activeDeckId)) s.activeDeckId = s.tiangangDecks[0].id;
-        syncTiangangs(s); // 派生出战牌组卡表 → save.tiangangs（契约②）
-        if (typeof s.planets !== 'object' || s.planets === null) s.planets = {};
-        if (!Array.isArray(s.foils)) s.foils = [];
-        if (typeof s.fortune !== 'object' || s.fortune === null) s.fortune = { date: '', rolls: 0, keptVal: null }; // 今日卦象迁移
-        if (typeof s.lives !== 'number') s.lives = effectiveLives(s.planets);
-        if (s.stage < 1 || s.stage > RUN_BATTLES) s.stage = 1;
-        return s;
-      }
-    }
-  } catch {
-    /* localStorage 不可用 → 用全新存档 */
-  }
-  return freshSave();
-}
-function persist(s: Save): void {
-  try {
-    localStorage.setItem(SAVE_KEY, JSON.stringify(s));
-  } catch {
-    /* 忽略 */
-  }
-}
-
-const clampFavor = (f: number): number => Math.max(5, Math.min(95, Math.round(f)));
-const avg = (xs: number[]): number => Math.round(xs.reduce((a, b) => a + b, 0) / xs.length);
-// 牌组均 favor → 全军 favor 偏置（改造越多越强）；敌方偏置随关卡递增。
-const myBias = (deck: number[]): number => avg(deck) - 50;
+// 敌方 favor 偏置随关卡递增（旧实时路遗留·当前回合制 spec.enemyBias 直供·保留）。
 const enemyBias = (stage: number): number => -8 + stage * 2;
-// AI 暗布阵：低关固定均衡 / 中关变化 / 高关克制你上局阵型（石头剪刀布闭环）。对玩家隐藏，开战揭晓。
-// 布阵 → 名称（命中预设则用预设名，否则"自定义 x/y/z"），用于战后揭晓敌阵。
-function describeFormation(off: number[]): string {
-  for (const n of PRESET_NAMES) {
-    const p = FORMATION_PRESETS[n].officers;
-    if (p[0] === off[0] && p[1] === off[1] && p[2] === off[2]) return n;
-  }
-  return `自定义 ${off[0]}/${off[1]}/${off[2]}`;
-}
-// 场间三选一：从增益池随机取 3 张（Fisher–Yates；元层奖励，非确定性 gameplay，用 Math.random 即可）。
-function pick3<T>(xs: readonly T[]): T[] {
-  const a = [...xs];
-  for (let i = a.length - 1; i > 0; i--) {
-    const j = Math.floor(Math.random() * (i + 1));
-    [a[i], a[j]] = [a[j], a[i]];
-  }
-  return a.slice(0, 3);
-}
-
-// favor → 战力（公平骨架 doc19）：rank→points(fair) 走 cardPoints；该牌全部强度经 favor 折算进 buff，使 P_eff=clamp(favorToP(favor))
-//   单调随 favor（军衔已在 favor 里）——buff 抵消 cardPoints 噪声，让既有 favor 经济无缝驱动 pairwise 对决核。
-const FAVOR_LO = 5, FAVOR_HI = 95; // favor 钳域（blueprint clampFavor）
-const favorToP = (favor: number): number => ((Math.max(FAVOR_LO, Math.min(FAVOR_HI, favor)) - FAVOR_LO) / (FAVOR_HI - FAVOR_LO)) * P_MAX; // favor → P_eff 空间 [0,30]
-const cardRank = (c: ArmyCard): string => (c.rank === 'JOKER' ? '★' : c.rank); // 显示 + cardPoints/cardStamina 同口径（★≡JOKER：点数15/续航3）
-// 契约A·甲读（owner 2026-06-21 #15/#16）：把你配的 pokerPicks(卡 id) 折成回合制战斗牌库——每张挂自己的
-// effectiveDeckFavors(base favor + 逐张地支附魔)→战力 buff，suit/rank 取自卡 id，主将=favor 最高那张(留士气)。
-// 纯函数·确定性（同 picks+effFav → 同牌库），让大厅配的牌(含附魔)真正按 ID 进场，不再被揉成平均 bias。
-export function buildPickDeck(picks: readonly string[], effFav: readonly number[]): PokerCard[] {
-  const favOf = (id: string): number => { const fi = cardFavorIndex(id); return fi >= 0 ? (effFav[fi] ?? 50) : 50; };
-  const genId = picks.length ? picks.reduce((best, id) => (favOf(id) > favOf(best) ? id : best), picks[0]) : '';
-  return picks.map((id) => { const rk = rankOfCardId(id); return { kind: 'poker', id, rank: rk, suit: id.slice(-1), general: id === genId, buff: Math.round(favorToP(favOf(id)) - cardPoints(rk)), cost: deployCost(rk) }; });
-}
-// Boss 主将牌 = 本关英雄那张牌（owner 2026-06-21·传奇主将·强化）：用英雄谱 rank/suit + 强 favor(随关卡 bias 略升)
-// → 一张强力主将 PokerCard(general:true·点数虽弱但战力高)。heroName=关卡 heroId(Boss 名)；查无 → null。纯函数·可测。
-const SUIT_SYM2LET: Record<string, string> = { '♠': 'S', '♥': 'H', '♦': 'D', '♣': 'C' };
-export function bossHeroCard(heroName: string, enemyBias: number): PokerCard | null {
-  const heroDef = heroCardByName(heroName);
-  if (!heroDef) return null;
-  const hr = heroDef.rank === 'JOKER' ? '★' : heroDef.rank;
-  const hFav = Math.min(FAVOR_HI, 65 + enemyBias); // 强 favor·随 bias 略升（细调留给重跑仿真）
-  return { kind: 'poker', id: `boss-hero-${heroDef.id}`, rank: hr, suit: SUIT_SYM2LET[heroDef.suit] ?? 'S', general: true, buff: Math.round(favorToP(hFav) - cardPoints(hr)), cost: deployCost(hr) };
-}
-// A-JOKER：已施天罡(契约②·玩家施法集) → 聚合扁平战斗修正（live-combat 钩子读·只己方）。读 GAME_G_TIANGANGS 的 {kind,params}（契约③）。
-// 一种牌算一次（不叠）。v1 实装 6 kind；v2 待接（背水 reroll / 顺子阵 straight / 擒王 decapCost·依干预 / tempo / lane 一次性 / siege / arcane 印记 / 战潮 pulse·CR 已取代被动涌牌）—— 未实装 kind 返回零修正、不崩。
-export function aggregateTengang(castIds: readonly string[]): TengangFx {
-  const cards: { kind: string; params?: Record<string, unknown> }[] = [];
-  for (const id of castIds) { const j = TIANGANG_BY_ID.get(id); if (j) cards.push({ kind: j.kind, params: j.params as Record<string, unknown> | undefined }); }
-  return tengangFxOf(cards);
-}
-// 纯映射（注入卡集·不依赖 blueprint 数据 → 可用合成卡单测新 op，先于乙上架数据）。op→效果 = 甲侧契约（乙照此编码 doc20 §二）：
-//   odds: add→pEffAdd · winFloor→% · kHard(灌铅骰)→logistic 变硬 · noUpset(铁骰)→占优免爆冷 ｜ power: add(+filter countLE3|sameSuit|无=全军)
-//   combo: pair(对子诀·≥2同点) / trips(鼎立·≥3同点) ｜ morale: leaderBuff ｜ stamina: stamPlus(全军) · +filter:faces(老兵)→人头牌 ｜ draw: handMax
-export function tengangFxOf(cards: Iterable<{ kind: string; params?: Record<string, unknown> }>): TengangFx {
-  const fx: TengangFx = { ...NO_TENGANG };
-  for (const j of cards) {
-    const p = j.params; if (!p) continue;
-    const v = typeof p.value === 'number' ? p.value : 0; const bonus = typeof p.bonus === 'number' ? p.bonus : 0;
-    if (j.kind === 'odds') { if (p.op === 'add') fx.pEffAdd += v; else if (p.op === 'winFloor') fx.winFloor += v / 100; else if (p.op === 'kHard') fx.kHard += v; else if (p.op === 'noUpset') fx.noUpset += 1; }
-    else if (j.kind === 'power') {
-      if (p.op === 'mul' && p.scope === 'highestRank') fx.powerMulHighest = Math.max(fx.powerMulHighest, v); // 擎天：全军最强单张 ×mul（一种算一次·取最大·非叠加）
-      else if (p.op === 'add') { if (p.filter === 'countLE3') fx.powerLE3 += v; else if (p.filter === 'sameSuit') fx.powerSameSuit += v; else if (p.scope === 'front') fx.powerFront += v; else fx.powerAll += v; } // 寡兵 / 同花魁 / 锋矢(front) / 虎符(全军·scope:all 或无)
-    }
-    else if (j.kind === 'combo') { if (p.op === 'pair') fx.comboPair += bonus; else if (p.op === 'trips') fx.comboTrips += bonus; }
-    else if (j.kind === 'morale') { if (p.op === 'leaderBuff') fx.moraleLeader += v; else if (p.op === 'revenge') fx.revenge += v; else if (p.op === 'noRout') fx.noRout = 1; } // 旗手/哀兵/督战
-    else if (j.kind === 'stamina') { if (p.op === 'stamPlus') { if (p.filter === 'faces') fx.stamFaces += v; else fx.stamPlus += v; } else if (p.op === 'relay') fx.relay += v; } // 老兵/不屈/薪火
-    else if (j.kind === 'draw') { if (p.op === 'handMax') fx.handMaxAdd += v; else if (p.op === 'onPlay') fx.onPlay += v; else if (p.op === 'clashElixir') fx.clashElixir += v; } // 广纳/川流/战潮
-    else if (j.kind === 'siege') { if (p.op === 'defend') fx.siegeDefend += v; else if (p.op === 'chipMore') fx.siegeChip += v; } // 死守/攻城锤
-  }
-  return fx;
-}
-
-// 确定性洗牌（mulberry32·抽序可回放·不破 outcome-first）—— 回合制牌库铺牌用。
-function seededShuffleArr<T>(xs: T[], seed: number): T[] {
-  const arr = [...xs]; let t = seed >>> 0;
-  const rnd = (): number => { t += 0x6d2b79f5; let x = t; x = Math.imul(x ^ (x >>> 15), x | 1); x ^= x + Math.imul(x ^ (x >>> 7), x | 61); return ((x ^ (x >>> 14)) >>> 0) / 4294967296; };
-  for (let i = arr.length - 1; i > 0; i--) { const j = Math.floor(rnd() * (i + 1)); [arr[i], arr[j]] = [arr[j], arr[i]]; }
-  return arr;
-}
-const SUITNAME: Record<string, string> = { s: '黑桃', h: '红桃', d: '方块', c: '梅花' };
-// turn-combat 掷命事件 → 回合制特写视图（doc24 战斗屏·点数/经营/天罡/士气 明细如实透出）。
-function clashToTurnView(ev: ClashEvent, tgName: (id: string) => string = (id) => id, inlays?: Record<string, InlayEntry[]>): TurnClashView {
-  const lc2 = (s: string): 's' | 'h' | 'd' | 'c' => s.toLowerCase() as 's' | 'h' | 'd' | 'c';
-  const cardv = (c: ClashEvent['a'], won: boolean, lastStand = false): TurnClashCardView => ({ rank: c.rank, suit: lc2(c.suit), name: SUITNAME[lc2(c.suit)] + c.rank, won, lastStand });
-  // 明细逐行 + 原因（owner 2026-06-21）：点数恒显；经营=改造/附魔(我方逐源标注：哪生肖·哪档·+多少 favor·读 save.inlays)；天罡总计 + 逐张溯源；士气标明主将坐镇/溃散。
-  const rows = (c: ClashEvent['a'], isMine: boolean): [string, number][] => {
-    const r: [string, number][] = [['点数 · 牌面基础', c.points]];
-    if (c.buff !== 0) {
-      let label = '经营 · 改造/附魔';
-      if (isMine && inlays) { const inl = inlays[String(cardFavorIndex(c.rank + c.suit))] ?? []; if (inl.length) label += '：' + inl.map((e) => `${e.b}${DIZHI_TIER_NM[e.t]}+${DIZHI_INLAY_FAVOR[e.t]}`).join('·'); } // 这张牌的地支附魔逐源（子金+14·丑铜+4…）
-      r.push([label, c.buff]);
-    }
-    if (c.tengang !== 0 || (c.tgBreak?.length ?? 0) > 0) {
-      r.push(['天罡 · 法术合计', c.tengang]);
-      for (const [id, amt] of c.tgBreak ?? []) r.push(['　└ ' + tgName(id), amt]);
-    }
-    if (c.morale !== 0) r.push([c.morale > 0 ? '士气 · 主将坐镇' : '士气 · 主将亡·溃散', c.morale]);
-    if (c.nearDef) r.push(['地煞 · 隘口固守', c.nearDef]); // 温泉关守军贴家 +战力（owner 2026-06-21）
-    // 对齐到最终战力（owner 2026-06-21「为什么这么高·来源要清晰」）：加成各源之和（不含 └ 逐张子行·避免与天罡合计重复）vs pEff；
-    // 差额来自 ① 封顶 P_MAX=30 截断（超高战力被砍）② 擎天·主将倍率(×mul)。补一行让明细恰好加到 ＝战力。
-    const sum = r.reduce((s, [label, n]) => s + (label.startsWith('　') ? 0 : n), 0);
-    if (c.pEff !== sum) r.push(c.pEff < sum ? [`　战力上限 · 封顶 ${P_MAX}（超出截断）`, c.pEff - sum] : ['　擎天 · 主将战力倍率', c.pEff - sum]);
-    return r;
-  };
-  // 额外效果（owner 2026-06-21「还有额外的效果」）：非数值、却左右这场胜负的特殊裁定——平局如何裁定 + 战胜硬币（只预告·不剧透）。
-  const extras: string[] = [];
-  if (ev.tie) extras.push(ev.tie === 'points' ? '⚖ 战力相等 → 点数大者胜' : ev.tie === 'stamina' ? '⚖ 战力·点数皆同 → 续航高者胜' : '⚖ 三者全同 → 重掷定生死');
-  // 战胜硬币只**预告**「待掷」·绝不预先公布结果（owner 2026-06-21：要仪式感·投掷后才显示去留）；人面=留场/字面=回库由 coin-flip 浮层亲掷揭晓。
-  const w = ev.aWins ? ev.a : ev.b; const wn = SUITNAME[lc2(w.suit)] + w.rank;
-  extras.push(`🪙 ${wn} 战胜 → 待亲掷硬币定去留（人面 = 留场续战 / 字面 = 回牌库 + 返还半费）`);
-  return {
-    laneName: ['上路', '中路', '下路'][ev.lane] ?? '路',
-    mine: cardv(ev.a, ev.aWins), foe: cardv(ev.b, !ev.aWins, ev.lastStand), // foe(=敌主将)死战不退 → 特写改显"死战不退"而非误导的"阵亡"
-    oddsMine: Math.round(ev.winrate * 100), rollPct: Math.round(ev.roll * 100),
-    bonusMine: rows(ev.a, true), bonusFoe: rows(ev.b, false),
-    pEffMine: ev.a.pEff, pEffFoe: ev.b.pEff, extras,
-  };
-}
 
 // 出征入场演出（owner 2026-06-21）：点开始打这一关 → 战场以 UI 效果从无到有「展开」，二选一随机：
 //   · iris  —— 圆圈从里向外爆发、再略收敛（clip-path 圆 + 微弹缩）
