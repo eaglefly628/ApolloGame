@@ -104,15 +104,15 @@ export interface TurnSlotView { hasUnit: boolean; mine: boolean; isBorder: boole
 export interface TurnLaneView { name: string; slots: TurnSlotView[] }
 // 捷径门箭头（占位·8 门·真视觉待 owner 参考图）。idx=GATES 下标·供 live mount data-gate 钩子。
 export interface TurnGateView { idx: number; open: boolean; side: 'a' | 'b'; fromLane: number; fromSlot: number; toLane: number; toSlot: number }
-export interface TurnHandCardView { kind: 'pawn' | 'gang'; rank?: string; suit?: 's' | 'h' | 'd' | 'c'; name: string; power?: number; pts?: number; buff?: number; cost: number; zod?: string[]; rar: 'white' | 'green' | 'blue' | 'gold'; desc?: string; glyph?: string; selected?: boolean; dealt?: boolean } // dealt=刚抽到的牌·飞入翻面入场动画(owner 2026-06-21)
+export interface TurnHandCardView { kind: 'pawn' | 'gang'; rank?: string; suit?: 's' | 'h' | 'd' | 'c'; name: string; power?: number; pts?: number; buff?: number; cost: number; zod?: string[]; rar: 'white' | 'green' | 'blue' | 'gold'; desc?: string; glyph?: string; selected?: boolean; dealt?: boolean; affordable?: boolean } // dealt=刚抽到的牌·飞入翻面入场动画(owner 2026-06-21)
 export interface TurnActionView { key: string; glyph: string; label: string; on: boolean; dim: boolean }
 export interface TurnClashCardView { rank: string; suit: 's' | 'h' | 'd' | 'c'; name: string; zod?: string; won: boolean }
 export interface TurnClashView { laneName: string; mine: TurnClashCardView; foe: TurnClashCardView; oddsMine: number; rollPct: number; bonusMine: [string, number][]; bonusFoe: [string, number][]; pEffMine?: number; pEffFoe?: number }
-export interface TurnShaView { filled: boolean; name: string; rar: 'white' | 'green' | 'blue' | 'gold'; desc: string }
+export interface TurnShaView { filled: boolean; name: string; rar: 'white' | 'green' | 'blue' | 'gold'; desc: string; used?: boolean }
 export interface TurnBattleView {
   theme: 'onyx' | 'brocade';
   turnWho: string; roundNo: number; timerLabel: string;
-  water: number; waterMax: number;
+  water: number; waterMax: number; waterB: number; deckA: number; deckB: number;
   homeA: number; homeB: number; homeMax: number;
   lanes: TurnLaneView[]; gates: TurnGateView[]; gatesLive: boolean;
   hand: TurnHandCardView[]; handPawnCount: number; handGangCount: number;
@@ -200,17 +200,23 @@ function fortBase(view: TurnBattleView, isMine: boolean): string {
   const shaRow = { display: 'flex', gap: '5px', marginTop: '5px', zIndex: 2 };
   const shaSlot = (s: TurnShaView): string => {
     const rc = RAR[s.rar] || RAR.white;
-    const slot = { position: 'relative', width: '26px', height: '34px', borderRadius: '5px', background: s.filled ? 'linear-gradient(160deg,#2a3346,#1a2230)' : 'rgba(255,255,255,.04)', border: '1px solid ' + (s.filled ? rc[1] : 'rgba(255,255,255,.15)'), boxShadow: s.filled ? `0 0 8px ${rc[1]}66` : 'inset 0 1px 2px rgba(0,0,0,.3)', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'help' };
-    const mark = { fontFamily: 'var(--fd)', fontSize: '15px', color: s.filled ? rc[1] : 'rgba(255,255,255,.2)' };
-    // 地煞牌悬停即出详情（owner 2026-06-21·"移上去看不到描述"）：名 + 招牌战术功效。地煞在敌堡(上方)→浮层朝下弹。
-    const tip = s.filled
-      ? `<div class="gg-tip" style="width:208px"><div style="font-family:var(--fh);font-weight:700;font-size:13px;color:${rc[1]};padding-bottom:5px;margin-bottom:5px;border-bottom:1px solid rgba(255,255,255,.16)">🎴 ${esc(s.name)}</div><div style="font-size:11px;color:#cdd6e2;line-height:1.55">${esc(s.desc || 'Boss 的招牌历史战术（明牌·公平可破）。')}</div></div>`
-      : `<div class="gg-tip" style="width:170px"><div style="font-size:11px;color:#cdd6e2;line-height:1.55">尚未揭示的地煞牌位。</div></div>`;
-    return `<div class="gg-tipwrap tip-down" style="${st(slot)}"><span style="${st(mark)}">煞</span>${tip}</div>`;
+    const used = s.used ?? false;
+    const slot: Style = { position: 'relative', width: '26px', height: '34px', borderRadius: '5px', background: s.filled ? (used ? 'rgba(20,24,34,.8)' : 'linear-gradient(160deg,#2a3346,#1a2230)') : 'rgba(255,255,255,.04)', border: '1px solid ' + (s.filled ? (used ? 'rgba(255,255,255,.2)' : rc[1]) : 'rgba(255,255,255,.15)'), boxShadow: s.filled && !used ? `0 0 8px ${rc[1]}66` : 'inset 0 1px 2px rgba(0,0,0,.3)', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: '1px', opacity: used ? 0.55 : 1, cursor: 'help' };
+    if (!s.filled) {
+      const qMark: Style = { fontFamily: 'var(--fd)', fontSize: '15px', color: 'rgba(255,255,255,.2)' };
+      const tip = `<div class="gg-tip" style="width:170px"><div style="font-size:11px;color:#cdd6e2;line-height:1.55">尚未揭示的地煞牌位。</div></div>`;
+      return `<div class="gg-tipwrap tip-down" style="${st(slot)}"><span style="${st(qMark)}">？</span>${tip}</div>`;
+    }
+    const shortName = s.name.replace('地煞·', '').replace('地煞 · ', '').slice(0, 2);
+    const mark: Style = { fontFamily: 'var(--fd)', fontSize: '13px', color: used ? 'rgba(255,255,255,.38)' : rc[1], lineHeight: '1' };
+    const usedPip = used ? `<span style="font-family:var(--fb);font-size:6px;color:rgba(255,180,140,.7);line-height:1;">已用</span>` : '';
+    const tipContent = `<div style="display:flex;align-items:center;gap:5px;margin-bottom:5px;"><span style="width:7px;height:7px;border-radius:50%;flex-shrink:0;background:${rc[1]};box-shadow:0 0 5px ${rc[1]}"></span><b style="font-size:11px;color:#fff">${esc(s.name)}</b></div>${s.desc ? `<div style="font-size:10px;color:rgba(255,255,255,.75);line-height:1.4;margin-bottom:5px;">${esc(s.desc)}</div>` : ''}<div style="font-size:9px;color:${used ? '#ff9966' : '#7fcc9a'};">${used ? '● 已使用' : '○ 待发动'}</div>`;
+    return `<div class="gg-tipwrap tip-down" style="${st(slot)}"><span style="${st(mark)}">${esc(shortName)}</span>${usedPip}<div class="gg-tip" style="width:152px;">${tipContent}</div></div>`;
   };
   // 敌方大本营可点 → 弹 Boss 名号 + 战役故事（owner 2026-06-21）。
-  const bossHint = { marginTop: '5px', padding: '2px 9px', borderRadius: '99px', background: 'rgba(58,134,212,.16)', border: '1px solid rgba(58,134,212,.6)', color: '#bcd8f5', fontFamily: 'var(--fh)', fontWeight: 700, fontSize: '10px', whiteSpace: 'nowrap', zIndex: 2 };
-  return `<div data-act="boss-info" style="${st(baseStyle)}; cursor:pointer"><div style="${st(conn)}"></div>${fortInner}<div style="${st(shaLabel)}">地煞牌</div><div style="${st(shaRow)}">${forr(view.sha, shaSlot)}</div><div style="${st(bossHint)}">ⓘ 看 Boss</div></div>`;
+  const bossTipRows = forr(view.sha.filter((s) => s.filled), (s) => { const rc = RAR[s.rar] || RAR.white; const used = s.used ?? false; return `<div style="display:flex;align-items:center;gap:6px;padding:3px 0;border-top:1px solid rgba(255,255,255,.08);"><span style="width:6px;height:6px;border-radius:50%;flex-shrink:0;background:${rc[1]};"></span><span style="flex:1;font-size:10px;color:rgba(255,255,255,.85);">${esc(s.name)}</span><span style="font-size:9px;color:${used ? '#ff9966' : '#7fcc9a'};">${used ? '已用' : '备用'}</span></div>`; });
+  const bossTip = `<div class="gg-tip" style="width:210px;text-align:left;"><div style="font-size:12px;font-weight:700;color:var(--gold);margin-bottom:8px;">👑 ${esc(view.bossName)}</div>${bossTipRows}<div style="margin-top:7px;padding-top:6px;border-top:1px solid rgba(255,255,255,.12);font-size:10px;color:rgba(255,255,255,.55);">牌库剩余 <b style="color:#cdeeff;">${view.deckB}</b> 张</div></div>`;
+  return `<div data-act="boss-info" class="gg-tipwrap" style="${st(baseStyle)}; cursor:pointer"><div style="${st(conn)}"></div>${fortInner}<div style="${st(shaLabel)}">地煞牌</div><div style="${st(shaRow)}">${forr(view.sha, shaSlot)}</div>${bossTip}</div>`;
 }
 
 // 一格 slot（设计稿 lanes.slots）。
@@ -304,9 +310,18 @@ function cardTip(o: { name: string; rar: string; isGang: boolean; mine: boolean;
   return `<div class="gg-tip">${head}<div style="display:flex;flex-direction:column;gap:3px;">${body}</div><div style="margin-top:7px;font-size:9px;opacity:.5;letter-spacing:.05em">${o.mine ? '我方' : '敌方'}牌 · 悬浮查看</div></div>`;
 }
 
+const costDropHtml = (n: number): string => {
+  if (n <= 0) return '';
+  const drop = st({ display: 'inline-block', width: '7px', height: '9px', borderRadius: '50% 50% 50% 50% / 60% 60% 40% 40%', background: 'linear-gradient(180deg,#8fe0ff,#2f93cf)', boxShadow: '0 0 3px rgba(95,200,240,.7)', flexShrink: '0' });
+  const drops = Array.from({ length: Math.min(n, 5) }, () => `<div style="${drop}"></div>`).join('');
+  return `<div style="display:flex;gap:2px;align-items:center;">${drops}</div>`;
+};
+
 function handCard(c: TurnHandCardView, i: number, hiOn = false, edge: 'left' | 'right' | '' = ''): string {
   const rc = RAR[c.rar] || RAR.white;
   const edgeCls = edge === 'left' ? ' tip-left' : edge === 'right' ? ' tip-right' : ''; // 边缘牌浮层往内弹·不溢出屏幕（owner 2026-06-21）
+  const notAfford = c.affordable === false;
+  const affordSty = notAfford ? ';opacity:0.42;filter:grayscale(0.65)' : '';
   const selSty = (c.selected ? ';outline:3px solid var(--gold);outline-offset:2px' : '') + (hiOn ? HL : '');
   const rarDot = { position: 'absolute', top: c.kind === 'gang' ? '8px' : '-4px', left: c.kind === 'gang' ? '8px' : '50%', transform: c.kind === 'gang' ? 'none' : 'translateX(-50%)', width: c.kind === 'gang' ? '10px' : '9px', height: c.kind === 'gang' ? '10px' : '9px', borderRadius: '50%', background: rc[1], boxShadow: `0 0 7px ${rc[1]}`, border: '1px solid rgba(255,255,255,.6)' };
   const costPill = { position: 'absolute', top: c.kind === 'gang' ? '7px' : '6px', right: c.kind === 'gang' ? '8px' : '7px', minWidth: '22px', padding: '1px 6px', borderRadius: '99px', background: 'var(--gold-grad)', color: '#2a1a08', fontFamily: 'var(--fn)', fontSize: '11px', textAlign: 'center', fontWeight: 700 };
@@ -315,7 +330,7 @@ function handCard(c: TurnHandCardView, i: number, hiOn = false, edge: 'left' | '
     const card = { position: 'relative', width: '96px', height: '120px', borderRadius: '12px', background: 'var(--panel)', border: '2px solid ' + rc[1], boxShadow: '0 6px 16px rgba(0,0,0,.4), inset 0 0 0 1px var(--hairline)' };
     const top = { height: '44px', borderRadius: '10px 10px 0 0', display: 'flex', alignItems: 'center', justifyContent: 'center', background: `linear-gradient(180deg,${tint}44,${tint}11)`, borderBottom: '1px solid ' + tint };
     const icon = { width: '40px', height: '40px', borderRadius: '50%', background: tint, display: 'flex', alignItems: 'center', justifyContent: 'center', fontFamily: 'var(--fd)', fontSize: '24px', color: '#fff', boxShadow: `0 0 14px ${tint}` };
-    return `<div data-hand="${i}" class="gg-tipwrap${edgeCls}" style="${st(card)};cursor:pointer${selSty}${c.dealt ? ';animation:g-deal .46s cubic-bezier(.2,.85,.3,1.12) both' : ''}"><div style="${st(rarDot)}"></div><div style="${st(top)}"><div style="${st(icon)}">${esc(c.glyph || '✦')}</div></div><div style="padding:10px 9px;"><div style="font-family:var(--fb); font-weight:700; font-size:13px; color:var(--ink); text-align:center;">${esc(c.name)}</div><div style="font-size:10px; color:var(--ink-dim); text-align:center; line-height:1.4; margin-top:4px;">${esc(c.desc || '')}</div></div>${c.cost > 0 ? `<div style="${st(costPill)}">★${c.cost}</div>` : ''}${cardTip({ name: c.name, rar: c.rar, isGang: true, mine: true, desc: c.desc, cost: c.cost })}</div>`;
+    return `<div data-hand="${i}" class="gg-tipwrap${edgeCls}" style="${st(card)};cursor:pointer${selSty}${affordSty}${c.dealt ? ';animation:g-deal .46s cubic-bezier(.2,.85,.3,1.12) both' : ''}"><div style="${st(rarDot)}"></div><div style="${st(top)}"><div style="${st(icon)}">${esc(c.glyph || '✦')}</div></div><div style="padding:10px 9px;"><div style="font-family:var(--fb); font-weight:700; font-size:13px; color:var(--ink); text-align:center;">${esc(c.name)}</div><div style="font-size:10px; color:var(--ink-dim); text-align:center; line-height:1.4; margin-top:4px;">${esc(c.desc || '')}</div></div>${c.cost > 0 ? `<div style="position:absolute;bottom:7px;left:8px;">${costDropHtml(c.cost)}</div>` : ''}${cardTip({ name: c.name, rar: c.rar, isGang: true, mine: true, desc: c.desc, cost: c.cost })}</div>`;
   }
   const sc = c.suit ? SUITC[c.suit] : '#22303f'; const zod = c.zod || [];
   const card = { position: 'relative', width: '96px', height: '120px', borderRadius: '12px', background: sideFace(true), border: '2px solid ' + rc[1], boxShadow: '0 6px 16px rgba(0,0,0,.4), inset 0 0 0 1px rgba(255,255,255,.5)', display: 'flex', alignItems: 'center', justifyContent: 'center' }; // 手牌=我方·暖橙底纹
@@ -323,11 +338,10 @@ function handCard(c: TurnHandCardView, i: number, hiOn = false, edge: 'left' | '
   const big = { fontSize: '36px', color: sc, marginTop: '-14px' };
   const nameP = { position: 'absolute', bottom: '30px', left: '50%', transform: 'translateX(-50%)', padding: '1px 9px', borderRadius: '99px', background: 'rgba(20,16,10,.8)', color: '#fff', fontFamily: 'var(--fb)', fontWeight: 700, fontSize: '11px', whiteSpace: 'nowrap' };
   const badge = { position: 'absolute', top: '6px', right: '7px', minWidth: '22px', padding: '1px 6px', borderRadius: '99px', background: '#ff7a45', color: '#fff', fontFamily: 'var(--fn)', fontSize: '10px', textAlign: 'center', fontWeight: 700 };
-  const costPillL = { ...costPill, left: '7px', right: 'auto' };
   const zodRow = { position: 'absolute', bottom: '6px', left: '50%', transform: 'translateX(-50%)', display: 'flex', gap: '3px' };
   const zodCell = (g: string | undefined): string => { const f = !!g; return `<div style="${st({ width: '20px', height: '20px', borderRadius: '5px', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '13px', lineHeight: 1, background: f ? 'rgba(255,255,255,.92)' : 'rgba(0,0,0,.06)', border: '1px solid ' + (f ? sc : 'rgba(120,90,60,.3)'), boxShadow: f ? `0 0 5px ${sc}66` : 'inset 0 1px 2px rgba(0,0,0,.15)' })}">${f ? (ZOD_ICON[g!] || g) : ''}</div>`; };
   const g = c.suit ? SUITG[c.suit] : '';
-  return `<div data-hand="${i}" class="gg-tipwrap${edgeCls}" style="${st(card)};cursor:pointer${selSty}${c.dealt ? ';animation:g-deal .46s cubic-bezier(.2,.85,.3,1.12) both' : ''}"><div style="${st(rarDot)}"></div><div style="${st(cornerTL)}">${esc(c.rank || '')}<br>${g}</div><span style="${st(big)}">${g}</span><div style="${st(nameP)}">${esc(c.name)}</div><div style="${st(badge)}">${c.power ?? ''}</div>${c.cost > 0 ? `<div style="${st(costPillL)}">★${c.cost}</div>` : ''}<div style="${st(zodRow)}">${forr([0, 1, 2], (z) => zodCell(zod[z]))}</div>${cardTip({ name: c.name, rar: c.rar, isGang: false, mine: true, suit: c.suit, pts: c.pts, buff: c.buff, power: c.power, zod: c.zod })}</div>`;
+  return `<div data-hand="${i}" class="gg-tipwrap${edgeCls}" style="${st(card)};cursor:pointer${selSty}${affordSty}${c.dealt ? ';animation:g-deal .46s cubic-bezier(.2,.85,.3,1.12) both' : ''}"><div style="${st(rarDot)}"></div><div style="${st(cornerTL)}">${esc(c.rank || '')}<br>${g}</div><span style="${st(big)}">${g}</span><div style="${st(nameP)}">${esc(c.name)}</div><div style="${st(badge)}">${c.power ?? ''}</div>${c.cost > 0 ? `<div style="position:absolute;bottom:7px;left:7px;">${costDropHtml(c.cost)}</div>` : ''}<div style="${st(zodRow)}">${forr([0, 1, 2], (z) => zodCell(zod[z]))}</div>${cardTip({ name: c.name, rar: c.rar, isGang: false, mine: true, suit: c.suit, pts: c.pts, buff: c.buff, power: c.power, zod: c.zod })}</div>`;
 }
 
 function clashOverlay(cv: TurnClashView): string {
@@ -474,6 +488,16 @@ export function buildTurnFrameHTML(view: TurnBattleView, drain: { from: number; 
         <span style="font-size:10px; letter-spacing:.16em; text-transform:uppercase; color:var(--ink-dim); white-space:nowrap;">召唤源泉 · SUMMON FONT</span>
         <div style="${st(waterTube)}">${waterCellsHTML}</div>
         <span style="font-family:var(--fn); font-size:22px; color:#cdeeff; text-shadow:0 0 10px rgba(77,182,232,.9);">${litCells}</span>
+        <div style="width:1px;height:28px;background:var(--panel-border);flex-shrink:0;"></div>
+        <div style="display:flex;flex-direction:column;align-items:center;gap:1px;flex-shrink:0;">
+          <span style="font-size:9px;letter-spacing:.1em;color:var(--ink-dim);white-space:nowrap;">敌源泉</span>
+          <span style="font-family:var(--fn);font-size:18px;color:#5ea0e0;">${view.waterB}</span>
+        </div>
+        <div style="width:1px;height:28px;background:var(--panel-border);flex-shrink:0;"></div>
+        <div style="display:flex;flex-direction:column;align-items:center;gap:1px;flex-shrink:0;">
+          <span style="font-size:9px;letter-spacing:.1em;color:var(--ink-dim);white-space:nowrap;">牌库</span>
+          <span style="font-family:var(--fn);font-size:12px;color:var(--ink);">我 ${view.deckA} ｜ 敌 ${view.deckB}</span>
+        </div>
         <span style="${st(waterPlus)}">本回合 +${MANA_PER_TURN}</span>
       </div>
     </div>
@@ -531,8 +555,8 @@ export function buildTurnBattleView(b: TurnBattle, opts: TurnViewOpts = {}): Tur
   const nameOf = opts.tengangName ?? ((id: string) => id);
   const descOf = opts.tengangDesc ?? (() => '持续战法·打出后整场生效');
   const hand: TurnHandCardView[] = b.a.hand.map((c, i) => c.kind === 'poker'
-    ? { kind: 'pawn', rank: c.rank, suit: lc(c.suit), name: SUITNM[lc(c.suit)] + c.rank, power: cardPoints(c.rank) + c.buff, pts: cardPoints(c.rank), buff: c.buff, cost: c.cost ?? DEPLOY_COST, zod: [], rar: rankOf(c.rank), selected: opts.selHand === i, dealt: opts.dealtId != null && c.id === opts.dealtId }
-    : { kind: 'gang', name: nameOf(c.id), cost: CAST_COST, rar: 'gold', desc: descOf(c.id), glyph: '✦', selected: opts.selHand === i, dealt: opts.dealtId != null && c.id === opts.dealtId });
+    ? { kind: 'pawn', rank: c.rank, suit: lc(c.suit), name: SUITNM[lc(c.suit)] + c.rank, power: cardPoints(c.rank) + c.buff, pts: cardPoints(c.rank), buff: c.buff, cost: c.cost ?? DEPLOY_COST, zod: [], rar: rankOf(c.rank), selected: opts.selHand === i, dealt: opts.dealtId != null && c.id === opts.dealtId, affordable: (c.cost ?? DEPLOY_COST) <= b.a.mana }
+    : { kind: 'gang', name: nameOf(c.id), cost: CAST_COST, rar: 'gold', desc: descOf(c.id), glyph: '✦', selected: opts.selHand === i, dealt: opts.dealtId != null && c.id === opts.dealtId, affordable: CAST_COST <= b.a.mana });
   const ACT: [string, string, string][] = [['draw', '🎴', '抽牌'], ['deploy', '♟', '放牌'], ['cast', '✦', '打天罡'], ['discard', '🗑', '弃牌']];
   const sel = b.actionTaken;
   const mode = opts.selMode ?? sel; // 当前高亮动作类：未提交时取 UI 选中(selMode)，已锁则取 actionTaken
@@ -541,7 +565,9 @@ export function buildTurnBattleView(b: TurnBattle, opts: TurnViewOpts = {}): Tur
   return {
     theme: opts.theme ?? 'onyx',
     turnWho: b.active === 'a' ? '我方回合' : '敌方回合', roundNo: b.turn, timerLabel: '∞ 无限时',
-    water: b.a.mana, waterMax: 10,
+    water: b.a.mana, waterMax: 10, waterB: b.b.mana,
+    deckA: b.a.pokerDeck.length + b.a.tengangDeck.length,
+    deckB: b.b.pokerDeck.length + b.b.tengangDeck.length,
     homeA: b.homeA, homeB: b.homeB, homeMax: b.homeMax,
     lanes, gates: GATES.map((g, i) => ({ idx: i, open: b.gatesOpen[i], side: g.side, fromLane: g.fromLane, fromSlot: g.fromSlot, toLane: g.toLane, toSlot: g.toSlot })), gatesLive: opts.gatesLive ?? (mode === 'deploy'),
     hand, handPawnCount: hand.filter((c) => c.kind === 'pawn').length, handGangCount: hand.filter((c) => c.kind === 'gang').length,
@@ -584,8 +610,10 @@ export function mountTurnBattle(host: HTMLElement, getView: () => TurnBattleView
   // 召唤源泉收退动效（owner 2026-06-21）：跨重渲对比上次亮格数 → 本次刚花掉的格走 g-drain「往后退」收退。
   // 重渲极频(选牌也重渲)：只在亮格「减少」时记一次 drain，并用计时器在动画时长后清掉——中途无关重渲不会打断/重放。
   let prevLit = -1; let drain = { from: 0, count: 0 }; let drainTimer = 0;
+  let localNotice = ''; let localNoticeTimer = 0;
   const render = (): void => {
-    const view = getView();
+    const viewRaw = getView();
+    const view: TurnBattleView = localNotice ? { ...viewRaw, notice: localNotice } : viewRaw;
     const litNow = Math.max(0, Math.min(view.waterMax, Math.floor(view.water)));
     if (prevLit >= 0 && litNow < prevLit) {
       drain = { from: litNow, count: prevLit - litNow };
@@ -606,7 +634,17 @@ export function mountTurnBattle(host: HTMLElement, getView: () => TurnBattleView
     const gate = t.closest('[data-gate]') as HTMLElement | null;
     if (gate) { actions.toggleGate?.(parseInt(gate.dataset.gate ?? '-1', 10)); render(); return; }
     const hand = t.closest('[data-hand]') as HTMLElement | null;
-    if (hand) { actions.selectHand?.(parseInt(hand.dataset.hand ?? '-1', 10)); render(); return; }
+    if (hand) {
+      const idx = parseInt(hand.dataset.hand ?? '-1', 10);
+      const hc = getView().hand[idx];
+      if (hc && hc.affordable === false) {
+        localNotice = '✗ 源泉不足';
+        if (localNoticeTimer) clearTimeout(localNoticeTimer);
+        localNoticeTimer = window.setTimeout(() => { localNotice = ''; render(); }, 1600);
+        render(); return;
+      }
+      actions.selectHand?.(idx); render(); return;
+    }
     const act = t.closest('[data-act]') as HTMLElement | null;
     if (act) {
       const a = act.dataset.act, k = act.dataset.k ?? '';
@@ -632,7 +670,7 @@ export function mountTurnBattle(host: HTMLElement, getView: () => TurnBattleView
   render();
   let ro: ResizeObserver | null = null;
   if (typeof ResizeObserver !== 'undefined') { ro = new ResizeObserver(() => render()); ro.observe(host); }
-  return { update: render, destroy: () => { if (ro) ro.disconnect(); if (drainTimer) clearTimeout(drainTimer); host.removeEventListener('pointerdown', onPress); host.replaceChildren(); } };
+  return { update: render, destroy: () => { if (ro) ro.disconnect(); if (drainTimer) clearTimeout(drainTimer); if (localNoticeTimer) clearTimeout(localNoticeTimer); host.removeEventListener('pointerdown', onPress); host.replaceChildren(); } };
 }
 
 /** 自包含 HTML 文档（看帧/预览/无头截图；固定 1340×858·非 cqw·无需缩放注入）。 */
