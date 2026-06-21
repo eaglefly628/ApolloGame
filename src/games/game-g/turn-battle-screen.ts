@@ -245,19 +245,19 @@ function slotCell(s: TurnSlotView): string {
   const dot = { position: 'absolute', top: '50%', left: '50%', transform: 'translate(-50%,-50%)', width: '40px', height: '40px', borderRadius: '50%', border: '2px dashed ' + dotCol, opacity: s.hasUnit ? 0.35 : 0.8, boxShadow: s.isBorder ? '0 0 10px rgba(232,205,138,.4)' : 'none' };
   let unitHTML = '';
   if (s.hasUnit && s.rank && s.suit) {
-    const col = s.mine ? '#ff7a45' : '#3a86d4'; const sc = SUITC[s.suit]; const zod = s.zod || [];
+    const col = s.mine ? '#dc2626' : '#111111'; const sc = SUITC[s.suit]; const zod = s.zod || [];
     const isGen = !!s.general;
-    // 主将光环（owner 2026-06-21）：我方主将=金边脉冲；敌方主将=深红重度光晕（比我方厉害·令人胆寒）。
-    const genBorderCol = isGen ? (s.mine ? 'var(--gold)' : '#c0392b') : col;
+    // 主将光环（owner 2026-06-21）：边框色同阵营（红/黑）但加粗+光晕；水印「将」50%透明度两边统一。
+    const genBorderCol = isGen ? (s.mine ? '#dc2626' : '#111111') : col;
     const genShadow = isGen
-      ? (s.mine ? `0 0 18px rgba(232,205,130,.8), 0 3px 8px rgba(0,0,0,.45), inset 0 0 0 1px rgba(255,255,255,.5)` : `0 0 28px rgba(192,57,43,.9), 0 0 50px rgba(192,57,43,.45), 0 3px 8px rgba(0,0,0,.6), inset 0 0 0 1px rgba(255,80,60,.3)`)
-      : `0 3px 8px rgba(0,0,0,.45), 0 0 0 2px ${col}, inset 0 0 0 1px rgba(255,255,255,.5)`;
+      ? (s.mine ? `0 0 18px rgba(220,38,38,.8), 0 3px 8px rgba(0,0,0,.45), inset 0 0 0 1px rgba(255,255,255,.5)` : `0 0 28px rgba(17,17,17,.9), 0 0 50px rgba(100,100,100,.35), 0 3px 8px rgba(0,0,0,.7), inset 0 0 0 1px rgba(255,255,255,.15)`)
+      : `0 3px 8px rgba(0,0,0,.45), 0 0 0 2px ${col}66, inset 0 0 0 1px rgba(255,255,255,.5)`;
     const genAnim = isGen ? (s.mine ? ';animation:g-hl 1.4s ease-in-out infinite' : ';animation:g-hl 0.9s ease-in-out infinite') : '';
     // 敌我分明（owner 2026-06-21）：边框描粗 + 背景打淡淡的「我 / 敌」水印字。
     const unit = { position: 'relative', width: '100%', height: '90%', borderRadius: '10px', background: sideFace(s.mine), border: `${isGen ? '4px' : '4px'} solid ${genBorderCol}`, boxShadow: genShadow, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center' };
     const watermarkText = isGen ? '将' : (s.mine ? '我' : '敌');
-    const watermarkColor = isGen ? (s.mine ? 'var(--gold)' : '#c0392b') : col;
-    const watermarkOpacity = isGen ? (s.mine ? 0.18 : 0.28) : (s.mine ? 0.13 : 0.18);
+    const watermarkColor = isGen ? (s.mine ? '#dc2626' : '#555') : col;
+    const watermarkOpacity = isGen ? 0.5 : (s.mine ? 0.13 : 0.18);
     const sideMark = `<div style="${st({ position: 'absolute', inset: '0', display: 'flex', alignItems: 'center', justifyContent: 'center', fontFamily: 'var(--fh)', fontWeight: 900, fontSize: isGen ? '62px' : '50px', color: watermarkColor, opacity: watermarkOpacity, pointerEvents: 'none', zIndex: 0 })}">${watermarkText}</div>`;
     const corner = { position: 'absolute', top: '4px', left: '5px', fontFamily: 'var(--fh)', fontWeight: 700, fontSize: '15px', color: sc, zIndex: 2 };
     const big = { fontSize: '40px', color: sc, marginTop: '-6px' };
@@ -346,18 +346,18 @@ function handCard(c: TurnHandCardView, i: number, hiOn = false, edge: 'left' | '
   }
   const sc = c.suit ? SUITC[c.suit] : '#22303f'; const zod = c.zod || [];
   const isGen = !!c.general;
-  const genBorder = isGen ? '3px solid var(--gold)' : '2px solid ' + rc[1];
+  const genBorder = isGen ? '3px solid #dc2626' : '2px solid #dc2626';
   const genShadow = isGen ? '0 0 22px rgba(232,205,130,.8), 0 8px 20px rgba(0,0,0,.5), inset 0 0 0 1px rgba(255,255,255,.5)' : '0 6px 16px rgba(0,0,0,.4), inset 0 0 0 1px rgba(255,255,255,.5)';
   const genAnim = isGen ? ';animation:g-hl 1.4s ease-in-out infinite' : '';
   const card = { position: 'relative', width: '96px', height: '120px', borderRadius: '12px', background: sideFace(true), border: genBorder, boxShadow: genShadow, display: 'flex', alignItems: 'center', justifyContent: 'center' }; // 手牌=我方·暖橙底纹
   const cornerTL = { position: 'absolute', top: '5px', left: '7px', fontFamily: 'var(--fh)', fontWeight: 700, fontSize: '14px', lineHeight: '.86', color: sc, textAlign: 'center' };
   const big = { fontSize: '36px', color: sc, marginTop: '-14px' };
   const nameP = { position: 'absolute', bottom: '30px', left: '50%', transform: 'translateX(-50%)', padding: '1px 9px', borderRadius: '99px', background: 'rgba(20,16,10,.8)', color: '#fff', fontFamily: 'var(--fb)', fontWeight: 700, fontSize: '11px', whiteSpace: 'nowrap' };
-  const badge = { position: 'absolute', top: '6px', right: '7px', minWidth: '22px', padding: '1px 6px', borderRadius: '99px', background: '#ff7a45', color: '#fff', fontFamily: 'var(--fn)', fontSize: '10px', textAlign: 'center', fontWeight: 700 };
+  const badge = { position: 'absolute', top: '6px', right: '7px', minWidth: '22px', padding: '1px 6px', borderRadius: '99px', background: '#dc2626', color: '#fff', fontFamily: 'var(--fn)', fontSize: '10px', textAlign: 'center', fontWeight: 700 };
   const zodRow = { position: 'absolute', bottom: '6px', left: '50%', transform: 'translateX(-50%)', display: 'flex', gap: '3px' };
   const zodCell = (g: string | undefined): string => { const f = !!g; return `<div style="${st({ width: '20px', height: '20px', borderRadius: '5px', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '13px', lineHeight: 1, background: f ? 'rgba(255,255,255,.92)' : 'rgba(0,0,0,.06)', border: '1px solid ' + (f ? sc : 'rgba(120,90,60,.3)'), boxShadow: f ? `0 0 5px ${sc}66` : 'inset 0 1px 2px rgba(0,0,0,.15)' })}">${f ? (ZOD_ICON[g!] || g) : ''}</div>`; };
   const g = c.suit ? SUITG[c.suit] : '';
-  const genWatermark = isGen ? `<div style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;pointer-events:none;overflow:hidden;border-radius:10px"><span style="font-family:var(--fh);font-size:72px;font-weight:900;color:var(--gold);opacity:.12;line-height:1;user-select:none">将</span></div>` : '';
+  const genWatermark = isGen ? `<div style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;pointer-events:none;overflow:hidden;border-radius:10px"><span style="font-family:var(--fh);font-size:72px;font-weight:900;color:#dc2626;opacity:.5;line-height:1;user-select:none">将</span></div>` : '';
   const genFloatBadge = isGen ? `<div style="position:absolute;top:-13px;left:50%;transform:translateX(-50%);background:linear-gradient(135deg,#c8920a,#f0d060);color:#1a0e00;font-family:var(--fb);font-weight:900;font-size:9px;padding:2px 8px;border-radius:99px;white-space:nowrap;border:1.5px solid rgba(255,255,255,.6);box-shadow:0 2px 10px rgba(232,205,130,.7);z-index:2">⭐ 主将</div>` : '';
   return `<div data-hand="${i}" class="gg-tipwrap${edgeCls}" style="${st(card)};cursor:pointer${selSty}${affordSty}${c.dealt ? ';animation:g-deal .46s cubic-bezier(.2,.85,.3,1.12) both' : genAnim}">${genFloatBadge}${genWatermark}<div style="${st(rarDot)}"></div><div style="${st(cornerTL)}">${esc(c.rank || '')}<br>${g}</div><span style="${st(big)}">${g}</span><div style="${st(nameP)}">${esc(c.name)}</div><div style="${st(badge)}">${c.power ?? ''}</div>${c.cost > 0 ? `<div style="position:absolute;bottom:7px;left:7px;">${costDropHtml(c.cost)}</div>` : ''}<div style="${st(zodRow)}">${forr([0, 1, 2], (z) => zodCell(zod[z]))}</div>${cardTip({ name: c.name, rar: c.rar, isGang: false, mine: true, suit: c.suit, pts: c.pts, buff: c.buff, power: c.power, zod: c.zod })}</div>`;
 }
