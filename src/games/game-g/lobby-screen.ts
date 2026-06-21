@@ -171,10 +171,10 @@ const CSS = `
 .ggl-root .pcard-portrait svg{ width:66%; height:66% }
 /* 构筑选牌（乙1）：选中态金描边 + ✓ 角标 + 费用角标 */
 .ggl-root .pcard.picked{ border-color:var(--gold); box-shadow:0 0 0 2px var(--gold),0 4px 14px rgba(232,205,130,.4) }
-.ggl-root .pcard-cost{ position:absolute; top:3px; left:4px; z-index:2; min-width:13px; height:13px; padding:0 2px; border-radius:4px; background:rgba(10,14,22,.82); color:#cfe0f3; font-size:9px; font-weight:800; line-height:13px; text-align:center }
+.ggl-root .pcard-cost{ position:absolute; top:3px; left:4px; z-index:2; height:13px; padding:0 3px; border-radius:5px; background:rgba(10,14,22,.82); color:#cfe0f3; font-size:8px; font-weight:800; line-height:13px; text-align:center; letter-spacing:-1px; white-space:nowrap } /* 放牌费用=小水滴(owner 2026-06-21) */
 .ggl-root .pcard-pick{ position:absolute; top:2px; right:3px; z-index:3; width:15px; height:15px; border-radius:50%; background:var(--gold-grad); color:#2a1a08; font-size:11px; font-weight:900; line-height:15px; text-align:center; box-shadow:0 1px 4px rgba(0,0,0,.5) }
 .ggl-root .pcard:not(.picked) .pcard-pick{ display:none } /* ✓ 常驻·未选隐藏（定点切 .picked 类·不重建格） */
-.ggl-root .pcard-ench{ position:absolute; top:2px; left:3px; z-index:4; min-width:15px; height:15px; padding:0 3px; border-radius:8px; background:rgba(12,16,24,.78); border:1px solid var(--hairline); color:var(--ink-dim); font-size:9px; font-weight:800; line-height:14px; text-align:center; cursor:pointer; transition:transform .12s,border-color .12s } /* 牌库内附魔徽标（owner 2026-06-21·E）*/
+.ggl-root .pcard-ench{ position:absolute; bottom:3px; left:3px; z-index:4; min-width:15px; height:15px; padding:0 3px; border-radius:8px; background:rgba(12,16,24,.78); border:1px solid var(--hairline); color:var(--ink-dim); font-size:9px; font-weight:800; line-height:14px; text-align:center; cursor:pointer; transition:transform .12s,border-color .12s } /* 牌库内附魔徽标（owner 2026-06-21·E·挪左下避开左上费用水滴）*/
 .ggl-root .pcard-ench:hover{ transform:scale(1.18); border-color:var(--gold) }
 .ggl-root .pcard-ench.on{ background:var(--gold-grad); color:#2a1a08; border-color:var(--gold) }
 .ggl-root .pbuild-grid.full .pcard-wrap:not(.is-picked) .pcard{ opacity:.42 } /* 满 16 → 未选置灰（容器类·无逐卡 DOM 改） */
@@ -458,7 +458,8 @@ function deckGrid(deck: number[], foils?: LobbyShopItem[], picks?: Set<string>, 
       const qualColor = fv >= 70 ? 'var(--gold)' : fv >= 58 ? 'var(--club)' : fv <= 50 ? 'var(--ink-dim)' : 'var(--ink)';
       const cls = 'pcard' + (fv >= 70 ? ' leg' : '') + (fv <= 50 ? ' lock' : '') + (picked ? ' picked' : '');
       const faceStyle = isFace ? `border-color:${c}90;` : '';
-      const costBadge = pickMode ? `<span class="pcard-cost" title="放牌费用 ${cost}">${cost}</span>` : '';
+      // 放牌费用画成「源泉水滴」(owner 2026-06-21)：1/2/3 滴蓝水滴；0 费=免（不再是个挡字的数字）。
+      const costBadge = pickMode ? `<span class="pcard-cost" title="放牌费用 ${cost} 源泉">${cost > 0 ? '💧'.repeat(cost) : '免'}</span>` : '';
       const pickMark = pickMode ? '<span class="pcard-pick">✓</span>' : ''; // 常驻·选中态由 .picked 控制显隐（定点切类·不重建）
       // 牌库内附魔小徽标（owner 2026-06-21·E）：点它弹单牌附魔编辑·不影响选牌点击（自带 data-act·closest 命中徽标本身）。
       const inlayN = (inlays?.[String(si * 13 + ri)] ?? []).length;

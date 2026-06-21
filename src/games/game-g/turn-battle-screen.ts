@@ -200,9 +200,13 @@ function fortBase(view: TurnBattleView, isMine: boolean): string {
   const shaRow = { display: 'flex', gap: '5px', marginTop: '5px', zIndex: 2 };
   const shaSlot = (s: TurnShaView): string => {
     const rc = RAR[s.rar] || RAR.white;
-    const slot = { position: 'relative', width: '26px', height: '34px', borderRadius: '5px', background: s.filled ? 'linear-gradient(160deg,#2a3346,#1a2230)' : 'rgba(255,255,255,.04)', border: '1px solid ' + (s.filled ? rc[1] : 'rgba(255,255,255,.15)'), boxShadow: s.filled ? `0 0 8px ${rc[1]}66` : 'inset 0 1px 2px rgba(0,0,0,.3)', display: 'flex', alignItems: 'center', justifyContent: 'center' };
+    const slot = { position: 'relative', width: '26px', height: '34px', borderRadius: '5px', background: s.filled ? 'linear-gradient(160deg,#2a3346,#1a2230)' : 'rgba(255,255,255,.04)', border: '1px solid ' + (s.filled ? rc[1] : 'rgba(255,255,255,.15)'), boxShadow: s.filled ? `0 0 8px ${rc[1]}66` : 'inset 0 1px 2px rgba(0,0,0,.3)', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'help' };
     const mark = { fontFamily: 'var(--fd)', fontSize: '15px', color: s.filled ? rc[1] : 'rgba(255,255,255,.2)' };
-    return `<div style="${st(slot)}"><span style="${st(mark)}">煞</span></div>`;
+    // 地煞牌悬停即出详情（owner 2026-06-21·"移上去看不到描述"）：名 + 招牌战术功效。地煞在敌堡(上方)→浮层朝下弹。
+    const tip = s.filled
+      ? `<div class="gg-tip" style="width:208px"><div style="font-family:var(--fh);font-weight:700;font-size:13px;color:${rc[1]};padding-bottom:5px;margin-bottom:5px;border-bottom:1px solid rgba(255,255,255,.16)">🎴 ${esc(s.name)}</div><div style="font-size:11px;color:#cdd6e2;line-height:1.55">${esc(s.desc || 'Boss 的招牌历史战术（明牌·公平可破）。')}</div></div>`
+      : `<div class="gg-tip" style="width:170px"><div style="font-size:11px;color:#cdd6e2;line-height:1.55">尚未揭示的地煞牌位。</div></div>`;
+    return `<div class="gg-tipwrap tip-down" style="${st(slot)}"><span style="${st(mark)}">煞</span>${tip}</div>`;
   };
   // 敌方大本营可点 → 弹 Boss 名号 + 战役故事（owner 2026-06-21）。
   const bossHint = { marginTop: '5px', padding: '2px 9px', borderRadius: '99px', background: 'rgba(58,134,212,.16)', border: '1px solid rgba(58,134,212,.6)', color: '#bcd8f5', fontFamily: 'var(--fh)', fontWeight: 700, fontSize: '10px', whiteSpace: 'nowrap', zIndex: 2 };
