@@ -96,9 +96,13 @@ function renderPanel(id: string, p: PanelProps, c: LayoutConstraints | undefined
   const pad = c?.padding ?? 16;
   const ls = layoutStyle(c);
   const overflow = p.scroll ? 'overflow-y:auto;' : '';
-  const style = `display:flex;flex-direction:${dir};gap:${gap}px;align-items:${align};padding:${pad}px;background:${t.bg1};border:1px solid ${t.line};border-radius:10px;position:relative;${overflow}${ls}`;
+  // grid 排布模式（卡牌格/货架）：auto-fill 自适应列数（minCol 定最小列宽）；非 grid 走原 flex 行/列。
+  const box = dir === 'grid'
+    ? `display:grid;grid-template-columns:repeat(auto-fill,minmax(${c?.minCol ?? 96}px,1fr));gap:${gap}px;align-items:${align}`
+    : `display:flex;flex-direction:${dir};gap:${gap}px;align-items:${align}`;
+  const style = `${box};padding:${pad}px;background:${t.bg1};border:1px solid ${t.line};border-radius:10px;position:relative;${overflow}${ls}`;
   const title = p.title
-    ? `<div style="font-size:10px;letter-spacing:2.4px;text-transform:uppercase;color:${t.dim};font-family:${t.fontUi};margin-bottom:4px">${esc(p.title)}</div>`
+    ? `<div style="font-size:10px;letter-spacing:2.4px;text-transform:uppercase;color:${t.dim};font-family:${t.fontUi};margin-bottom:4px${dir === 'grid' ? ';grid-column:1/-1' : ''}">${esc(p.title)}</div>`
     : '';
   const inner = children.map((ch) => renderNode(ch, t)).join('');
   return `<div id="${esc(id)}" style="${style}">${title}${inner}</div>`;

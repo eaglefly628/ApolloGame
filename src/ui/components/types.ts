@@ -17,7 +17,9 @@ export interface LayoutConstraints {
   height?: number;
   flex?: number;
   gap?: number;
-  direction?: 'row' | 'column';
+  direction?: 'row' | 'column' | 'grid';
+  /** 仅 direction:'grid' 生效：单元格最小列宽 px（auto-fill 自适应列数·缺省 96）。卡牌格/货架填这一个数即得自适应网格。 */
+  minCol?: number;
   align?: 'start' | 'center' | 'end' | 'stretch';
   padding?: number;
   margin?: number;

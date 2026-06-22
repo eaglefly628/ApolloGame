@@ -136,6 +136,30 @@ describe('UI Components · renderNode', () => {
     expect(renderNode(node)).toContain('overflow-y:auto');
   });
 
+  it('Panel grid 模式: auto-fill 自适应网格（卡牌格/货架）+ minCol 列宽 + title 跨整行', () => {
+    const node: LayoutNode = {
+      type: 'Panel', id: 'shelf', props: { title: 'SHELF' },
+      layout: { direction: 'grid', minCol: 120, gap: 10 },
+      children: [
+        { type: 'Label', id: 'c1', props: { text: 'A' } },
+        { type: 'Label', id: 'c2', props: { text: 'B' } },
+        { type: 'Label', id: 'c3', props: { text: 'C' } },
+      ],
+    };
+    const html = renderNode(node);
+    expect(html).toContain('display:grid');
+    expect(html).toContain('grid-template-columns:repeat(auto-fill,minmax(120px,1fr))');
+    expect(html).toContain('gap:10px');
+    expect(html).toContain('grid-column:1/-1'); // title 跨整行
+    expect(html).toContain('>A<'); expect(html).toContain('>B<'); expect(html).toContain('>C<'); // 子项为格
+    expect(html).not.toContain('flex-direction'); // grid 模式不走 flex
+  });
+
+  it('Panel grid 模式: minCol 缺省 96', () => {
+    const html = renderNode({ type: 'Panel', id: 'g', props: {}, layout: { direction: 'grid' }, children: [] });
+    expect(html).toContain('minmax(96px,1fr)');
+  });
+
   it('layout x/y 触发绝对定位', () => {
     const node: LayoutNode = {
       type: 'Button', id: 'abs', props: { label: 'Pin' },
