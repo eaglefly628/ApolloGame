@@ -10,7 +10,15 @@
 
 ## 待处理 / 进行中
 
-### REQ-G-退役旧战斗核 · [2026-06-22] · owner→game-g 甲（combat 域 · 主程评审登记） · status: **open（owner 优先派办）** · 类型: 技术债清理（双核/双屏并存 → 单一真相）
+### BUG-G-掌机黑屏 · [2026-06-22] · owner→甲（cartridge/战斗屏域·owner 直派 bug 修） · status: **🟡 已修（zoom·`c5608bbc`）· 待真机烧版验证** · 类型: 弱 GPU 渲染回归
+
+> owner 报新烧 cartridge 包「APOLLO OS 绿字开机条 + 黑屏」、同代码 Mac 正常。掌机 = `build:cartridge`（`dist-cartridge`·base `./`·直挂 game-g 无 launcher）·弱 GPU webview。
+> **穷尽定位**：非 JS 崩溃——cartridge 真产物无头(happy-dom)挂 game-g 零报错·大厅/战斗 DOM 全渲(605KB)·tsc/vitest1664/build:cartridge 全绿 → 弱 GPU 合成失败。
+> **根因**：闪烁修(`7634b027`)把战斗屏首帧烤成 transform:scale 单合成图层·弱 GPU 合成整屏图层失败→黑（旧两段绘制 CPU 先画可见帧＝"闪烁"）。
+> **修(`c5608bbc`)**：战斗屏 1340×858 适配 transform:scale → **CSS zoom**（CPU 布局缩放·不合成图层·消闪烁·Mac 等价·zoom 不支持也只裁切不黑＝fail-safe）。
+> **待 owner 真机验**。若仍黑次候选：① `cartridge-entry.ts` 整屏 `#game-root` opacity 渐变；② 战斗浮层 backdrop-filter。详见 `SESSION-HANDOFF.md §0`。
+
+### REQ-G-退役旧战斗核 · [2026-06-22] · owner→game-g 甲（combat 域 · 主程评审登记） · status: **✅ done（甲·5 步全清·单一真相·`8c6c2751`/`a0970248`/`d91221a3`）** · 类型: 技术债清理（双核/双屏并存 → 单一真相）
 
 > **缘起**：主程（Lead）全面评审 game-g 发现——doc24 大转向（实时→回合制）后，**旧实时战斗核与新回合制核长期并存**，旧战斗屏也一并留着。owner 2026-06-22 拍板：专项清债，退役旧核、收敛为单一真相，派甲处理。
 >
@@ -131,7 +139,7 @@
 
 ---
 
-### REQ-G-卦象结算加减 · [2026-06-21] · owner→甲（Game G·结算逻辑） · status: **open（甲·待排期·卦象系统已落地）** · 类型: 战斗逻辑（结算期·甲域）
+### REQ-G-卦象结算加减 · [2026-06-21] · owner→甲（Game G·结算逻辑） · status: **✅ done（甲·`settleTurn` 战利品按今日卦象±·确定性·大吉+2…大凶−2·夹≥0）** · 类型: 战斗逻辑（结算期·甲域）
 > owner 2026-06-21：**卦象系统已落地**（另 session·commit `9ea8b577`）。甲在**一局最后结算时**按**全局数据**做**卦象的加减**——结算分/奖励按当前卦象做 ±调整（看全局态）。
 > **甲待办**：① 摸清卦象系统落地形（数据在哪/怎么读当前卦象/有无现成 aggregate）；② 在 `settleTurn`/结算路径接入卦象 ±；③ 确定性（进 hash·可回放）；④ 数据驱动（卦象效果走数据表·非硬编码 if）。先调研落地形再动手。
 ### REQ-ARCH-SAVE · [2026-06-21] · program G 乙（owner 2026-06-21 钦定 · 存档持久化 + 云存档服务）· 框架级 · status: **open** · 优先级: 中 · 类型: 真缺口（持久化/同步=易错基础设施·过弱-LLM 尺子·≥多游戏拉动）
@@ -433,7 +441,7 @@ game-f 报「多数需新引擎能力」。Lead 实测：**三个已点名技能
 
 ---
 
-### PG-乙→甲 · [2026-06-21] · Game G · status: **⏸ 推迟（owner 2026-06-21「以后再砍吧」）·待 game-g.tsx 多 session 热度退去再一次性砍（避免 280 行删除撞并发编辑大面积冲突）** · 类型: 战斗段死代码清理
+### PG-乙→甲 · [2026-06-21] · Game G · status: **✅ done（并入 `REQ-G-退役旧战斗核`·showMatch/live-combat/battle-screen/buildGameGMatch + 续命测试全删·`a0970248`/`8c6c2751`）** · 类型: 战斗段死代码清理
 
 > owner 把一份 game-g.tsx「三套战斗血脉地图」review 转给乙。涉及的全是**甲的战斗段/文件**，按 甲/乙 正交铁律乙不碰；登记于此交甲，owner 已同意由甲清。
 
