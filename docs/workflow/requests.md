@@ -10,6 +10,32 @@
 
 ## 待处理 / 进行中
 
+### REQ-G-退役旧战斗核 · [2026-06-22] · owner→game-g 甲（combat 域 · 主程评审登记） · status: **open（owner 优先派办）** · 类型: 技术债清理（双核/双屏并存 → 单一真相）
+
+> **缘起**：主程（Lead）全面评审 game-g 发现——doc24 大转向（实时→回合制）后，**旧实时战斗核与新回合制核长期并存**，旧战斗屏也一并留着。owner 2026-06-22 拍板：专项清债，退役旧核、收敛为单一真相，派甲处理。
+>
+> **主程已核实的现状（附证据·甲可直接照查）：**
+> - **两套战斗核**：旧实时 `live-combat.ts`（`initLiveBattle/stepLiveBattle/liveActive/migrateRear`）↔ 新回合 `turn-combat.ts`（`initTurnBattle/endTurn/aiTakeTurn…`）。
+> - **两个战斗屏**：旧 `battle-screen.ts`（`mountBattle`）↔ 新 `turn-battle-screen.ts`（`mountTurnBattle`）。
+> - **两条出征路并存于 `game-g.tsx`**：旧 `showMatch()`（live + battle-screen·现 ~line 857）↔ 新回合路（turn-combat + turn-battle-screen·现 ~line 583）。出货走回合制；`showMatch` 自标「保留作参考/帧测」（~line 550）——**非出货路径，却仍编进 bundle + 拖双份维护**。
+> - **退役意图本就写在代码里**：`turn-combat.ts` 头「待新战斗屏落地再切换、退役实时核」——新屏早已落地，**退役逾期**。
+>
+> **⚠️ 必须先解的纠缠（别 naive 删）**：`turn-combat.ts`（line 13）**反向依赖** `live-combat.ts` 的共享物 `cardStamina / NO_TENGANG / TengangFx / ClashEvent`。直接删旧核 → 新核编不过。**先把这些共享类型/helper 抽出**（搬进 `turn-combat.ts`，或新建一个小 `combat-types.ts`），切断 `turn-combat → live-combat` 依赖，再删旧核。
+>
+> **目标终态（步骤）：**
+> 1. 抽离共享类型/helper，切断新核对旧核的 import。
+> 2. `game-g.tsx`：删旧出征路 `showMatch()` + 其 live 专属胶水（`snapLivePos / buildBattleViewLive / clashToView` + 旧 `BattleView/BattleUnit/…` 引入）。
+> 3. 删 `live-combat.ts` + `live-combat.test.ts`。
+> 4. 删旧战斗屏 `battle-screen.ts` + `battle-screen.frame.test.ts` + `battle-screen.click.test.ts`（**此步属乙域 UI 删除**：甲主導本清债，删 `battle-screen*` 与乙协同/转手乙做）。
+> 5. 保留为唯一真相：`turn-combat` + `turn-battle-screen` + `clash-resolve`（解算核·保留）。
+>
+> **验收：**
+> - `live-combat` / `battle-screen` / `showMatch` 全仓零引用（含测试），只在 git 历史可见。
+> - 受影响 golden 帧（`battle-screen.frame`）随文件一并退役；其余 golden 不变。
+> - **全套门禁绿**：tsc + vitest + build；**`turnHash` 回归测仍绿**（清债不得让新核行为漂移）。
+>
+> **边界**：纯删旧码 + 抽共享类型，**不改新回合核行为**（turnHash 不变）。combat 域归甲；`battle-screen*`（表现）删除与乙协同。
+
 ### REQ-ARCH-MENU-DSL · [2026-06-21] · 框架级（PG-乙 转呈 · owner 拍板「提主程评」）· status: **open（待主程评判）** · 类型: 可能的通用能力缺口（带 YAGNI 警告）
 
 > **缘起**：owner review `lobby-screen.ts` 的 `onClick` —— 一条 ~60 分支的 `else if (act === 'x') { … }` 链，质疑「为什么不用一张表映射、而写条件跳转代码？以后想数据驱动改写还容易吗？真要这样应让引擎提供能力去填数据」。乙作架构评审，结论转呈主程。
