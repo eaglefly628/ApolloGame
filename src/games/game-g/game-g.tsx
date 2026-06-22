@@ -16,6 +16,8 @@ import { playSfx, isSfxOn, toggleSfx } from './sound.js';
 import { startBgm, stopBgm, toggleBgm as toggleBgmState, selectBgm as selectBgmState, setBgmVolume, isBgmOn, bgmTrackIdx, bgmVolume, BGM_TRACKS } from './bgm.js';
 import { makeCoachWorld, nextCoachStep, type BattleCoachStep } from './battle-coach.js';
 import { mountOnboardingOverlay } from '@ui/onboarding-overlay.js';
+import { mountUI } from '@ui/components/index.js'; // 引擎数据驱动 UI 解释器（采纳·替手写 DOM）
+import type { LayoutNode, ButtonProps, LabelProps, PanelProps, ScreenProps } from '@ui/components/types.js';
 
 // 公共 API 再导出（保旧 import 路径不变·勿删）：deck-wiring 测 ← buildPickDeck/bossHeroCard；live-combat 测 ← aggregateTengang/tengangFxOf；freshSave 历史导出。
 export { buildPickDeck, bossHeroCard, aggregateTengang, tengangFxOf } from './game-g-build.js';
@@ -516,20 +518,28 @@ export function mount(container: HTMLElement, shell?: { exit?: () => void }): ()
       clashRoll: () => doClashRoll(),
       goBack: () => {
         if (tb.winner !== 'pending') { showLobby(); return; }
+        // 数据驱动 UI 采纳试点（用引擎 components/LayoutNode 替手写 innerHTML）：确认框 = LayoutNode 数据树，mountUI 是固定解释器。
         const ov = document.createElement('div');
-        ov.style.cssText = 'position:fixed;inset:0;z-index:200;background:rgba(0,0,0,.72);display:flex;align-items:center;justify-content:center';
-        ov.innerHTML = `<div style="background:#1a2638;border:1px solid #334155;border-radius:14px;padding:28px 32px;text-align:center;min-width:280px;box-shadow:0 16px 48px rgba(0,0,0,.8)">
-          <div style="font-size:16px;font-weight:600;color:#e2e8f0;margin-bottom:8px">返回大厅？</div>
-          <div style="font-size:13px;color:#94a3b8;line-height:1.6;margin-bottom:20px">当前战斗进度将丢失，无法恢复。</div>
-          <div style="display:flex;gap:10px;justify-content:center">
-            <button id="gg-back-no"  style="padding:9px 22px;border-radius:8px;border:1px solid #334155;background:#15202b;color:#e2e8f0;cursor:pointer;font:13px system-ui">继续战斗</button>
-            <button id="gg-back-yes" style="padding:9px 22px;border-radius:8px;border:none;background:#dc2626;color:#fff;cursor:pointer;font:13px system-ui;font-weight:600">确认返回</button>
-          </div>
-        </div>`;
+        ov.style.cssText = 'position:fixed;inset:0;z-index:200';
         document.body.appendChild(ov);
-        ov.querySelector('#gg-back-no')?.addEventListener('click', () => ov.remove());
-        ov.querySelector('#gg-back-yes')?.addEventListener('click', () => { ov.remove(); showLobby(); });
-        ov.addEventListener('click', (e) => { if (e.target === ov) ov.remove(); });
+        const tree: LayoutNode = {
+          type: 'Screen', id: 'gg-back-screen', props: { bg: 'rgba(0,0,0,.72)', center: true } as ScreenProps,
+          children: [{
+            type: 'Panel', id: 'gg-back-panel', props: {} as PanelProps,
+            layout: { gap: 12, padding: 26, width: 300, align: 'stretch' },
+            children: [
+              { type: 'Label', id: 'gg-back-title', props: { text: '返回大厅？', size: 'lg', bold: true } as LabelProps },
+              { type: 'Label', id: 'gg-back-warn', props: { text: '当前战斗进度将丢失，无法恢复。', size: 'sm', color: 'sub' } as LabelProps },
+              { type: 'Button', id: 'gg-back-no', props: { label: '继续战斗', kind: 'ghost', action: 'cancel' } as ButtonProps },
+              { type: 'Button', id: 'gg-back-yes', props: { label: '确认返回', kind: 'primary', action: 'confirm' } as ButtonProps },
+            ],
+          }],
+        };
+        const teardown = mountUI(ov, tree, {
+          cancel: () => { teardown(); ov.remove(); },
+          confirm: () => { teardown(); ov.remove(); showLobby(); },
+        });
+        ov.addEventListener('click', (e) => { if ((e.target as HTMLElement).id === 'gg-back-screen') { teardown(); ov.remove(); } }); // 点背景关闭
       },
       // 点敌方大本营 → 弹本关 Boss 名号 + 战役历史故事（owner 2026-06-21·边打边读历史）。数据接 blueprint STAGE_CAMPAIGN。
       bossInfo: () => {
