@@ -129,3 +129,18 @@ export interface LayoutNode {
 
 export type Handler = (arg?: string) => void;
 export type HandlerMap = Record<string, Handler>;
+
+/**
+ * UI 主题令牌（renderNode/mountUI 取色取字的唯一来源）。
+ * 游戏可传自己的一份 → 同一份 LayoutNode 数据换皮（数据驱动·零改解释器）。缺省 = 引擎 SHELL 脸。
+ * 红线不变：游戏只填**令牌值**（颜色/字体字符串，最弱 LLM 能填），不写 CSS/DOM。
+ */
+export interface UITheme {
+  bg0: string; bg1: string; bg2: string; bg3: string; pageBg: string;
+  line: string;
+  text: string; sub: string; dim: string;
+  jade: string; jadeWash: string; jadeLine: string;
+  gold: string;
+  ok: string; okWash: string; warn: string; warnWash: string; danger: string;
+  fontUi: string; fontMono: string;
+}

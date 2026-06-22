@@ -5,7 +5,8 @@
 // 游戏层只提供 LayoutNode（数据）+ HandlerMap（回调），无需写 DOM 代码。
 
 import { renderNode } from './render.js';
-import type { LayoutNode, HandlerMap } from './types.js';
+import { SHELL } from '../shell-theme.js';
+import type { LayoutNode, HandlerMap, UITheme } from './types.js';
 
 /**
  * 挂载静态 UI：渲染 LayoutNode 树到 host，绑定事件，返回清理函数。
@@ -19,8 +20,9 @@ export function mountUI(
   host: HTMLElement,
   root: LayoutNode,
   handlers: HandlerMap = {},
+  theme: UITheme = SHELL,
 ): () => void {
-  host.innerHTML = renderNode(root);
+  host.innerHTML = renderNode(root, theme);
 
   const dispatch = (e: Event): void => {
     const el = (e.target as HTMLElement).closest('[data-action]') as HTMLElement | null;

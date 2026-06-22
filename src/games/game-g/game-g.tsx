@@ -18,6 +18,7 @@ import { makeCoachWorld, nextCoachStep, type BattleCoachStep } from './battle-co
 import { mountOnboardingOverlay } from '@ui/onboarding-overlay.js';
 import { mountUI } from '@ui/components/index.js'; // 引擎数据驱动 UI 解释器（采纳·替手写 DOM）
 import type { LayoutNode, ButtonProps, LabelProps, PanelProps, ScreenProps } from '@ui/components/types.js';
+import { GG_THEME_ONYX } from './ui-theme.js'; // game-g 古风主题（数据·喂引擎 UI 解释器换皮）
 
 // 公共 API 再导出（保旧 import 路径不变·勿删）：deck-wiring 测 ← buildPickDeck/bossHeroCard；live-combat 测 ← aggregateTengang/tengangFxOf；freshSave 历史导出。
 export { buildPickDeck, bossHeroCard, aggregateTengang, tengangFxOf } from './game-g-build.js';
@@ -538,7 +539,7 @@ export function mount(container: HTMLElement, shell?: { exit?: () => void }): ()
         const teardown = mountUI(ov, tree, {
           cancel: () => { teardown(); ov.remove(); },
           confirm: () => { teardown(); ov.remove(); showLobby(); },
-        });
+        }, GG_THEME_ONYX); // 喂 game-g 古风主题 → 同一份 LayoutNode 数据渲成古风皮
         ov.addEventListener('click', (e) => { if ((e.target as HTMLElement).id === 'gg-back-screen') { teardown(); ov.remove(); } }); // 点背景关闭
       },
       // 点敌方大本营 → 弹本关 Boss 名号 + 战役历史故事（owner 2026-06-21·边打边读历史）。数据接 blueprint STAGE_CAMPAIGN。

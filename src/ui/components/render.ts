@@ -1,9 +1,9 @@
 // renderNode — LayoutNode 树 → HTML 字符串。纯函数，无副作用，可单测。
-// 样式全部来自 SHELL 主题，不接受内联色值。
+// 样式来自传入的 UITheme（缺省 = 引擎 SHELL 脸）。游戏传自己那份主题即「换皮」，不接受内联色值。
 
 import { SHELL } from '../shell-theme.js';
 import type {
-  LayoutNode, LayoutConstraints,
+  LayoutNode, LayoutConstraints, UITheme,
   ButtonProps, LabelProps, DropdownProps, BadgeProps, InputProps, PanelProps,
   CheckboxProps, ToggleProps, RadioGroupProps, ImageProps, ScreenProps, SliderProps,
 } from './types.js';
@@ -26,38 +26,38 @@ function layoutStyle(c?: LayoutConstraints): string {
 
 // ── 原有 7 个控件 ───────────────────────────────────────────────
 
-function renderButton(id: string, p: ButtonProps, ls: string): string {
+function renderButton(id: string, p: ButtonProps, ls: string, t: UITheme): string {
   const kindStyle: Record<string, string> = {
-    primary: `background:${SHELL.jadeWash};color:${SHELL.jade};border:1px solid ${SHELL.jadeLine};font-weight:600`,
-    ghost:   `background:rgba(255,255,255,0.03);color:${SHELL.sub};border:1px solid ${SHELL.line}`,
-    quiet:   `background:transparent;color:${SHELL.dim};border:1px solid transparent`,
+    primary: `background:${t.jadeWash};color:${t.jade};border:1px solid ${t.jadeLine};font-weight:600`,
+    ghost:   `background:rgba(255,255,255,0.03);color:${t.sub};border:1px solid ${t.line}`,
+    quiet:   `background:transparent;color:${t.dim};border:1px solid transparent`,
   };
   const kind = p.kind ?? 'ghost';
-  const base = `padding:6px 14px;border-radius:7px;font-size:12px;cursor:${p.disabled ? 'not-allowed' : 'pointer'};font-family:${SHELL.fontUi};outline:none;transition:all .15s;opacity:${p.disabled ? 0.4 : 1}`;
+  const base = `padding:6px 14px;border-radius:7px;font-size:12px;cursor:${p.disabled ? 'not-allowed' : 'pointer'};font-family:${t.fontUi};outline:none;transition:all .15s;opacity:${p.disabled ? 0.4 : 1}`;
   const action = p.action ? ` data-action="${esc(p.action)}"${p.actionArg ? ` data-arg="${esc(p.actionArg)}"` : ''}` : '';
   return `<button id="${esc(id)}"${action}${p.disabled ? ' disabled' : ''} style="${base};${kindStyle[kind]};${ls}">${esc(p.label)}</button>`;
 }
 
-function renderLabel(id: string, p: LabelProps, ls: string): string {
+function renderLabel(id: string, p: LabelProps, ls: string, t: UITheme): string {
   const sizeMap: Record<string, number> = { xs: 10, sm: 11, md: 13, lg: 16, xl: 22 };
   const colorMap: Record<string, string> = {
-    text: SHELL.text, sub: SHELL.sub, dim: SHELL.dim,
-    jade: SHELL.jade, gold: SHELL.gold,
-    ok: SHELL.ok, warn: SHELL.warn, danger: SHELL.danger,
+    text: t.text, sub: t.sub, dim: t.dim,
+    jade: t.jade, gold: t.gold,
+    ok: t.ok, warn: t.warn, danger: t.danger,
   };
   const sz = sizeMap[p.size ?? 'md'] ?? 13;
-  const cl = colorMap[p.color ?? 'text'] ?? SHELL.text;
+  const cl = colorMap[p.color ?? 'text'] ?? t.text;
   const style = [
     `font-size:${sz}px`, `color:${cl}`,
     p.bold ? 'font-weight:700' : '',
-    p.mono ? `font-family:${SHELL.fontMono}` : `font-family:${SHELL.fontUi}`,
+    p.mono ? `font-family:${t.fontMono}` : `font-family:${t.fontUi}`,
     ls,
   ].filter(Boolean).join(';');
   return `<span id="${esc(id)}" style="${style}">${esc(p.text)}</span>`;
 }
 
-function renderDropdown(id: string, p: DropdownProps, ls: string): string {
-  const base = `background:${SHELL.bg2};color:${SHELL.sub};border:1px solid ${SHELL.line};border-radius:6px;font-size:12px;padding:6px 10px;outline:none;font-family:${SHELL.fontUi};cursor:pointer`;
+function renderDropdown(id: string, p: DropdownProps, ls: string, t: UITheme): string {
+  const base = `background:${t.bg2};color:${t.sub};border:1px solid ${t.line};border-radius:6px;font-size:12px;padding:6px 10px;outline:none;font-family:${t.fontUi};cursor:pointer`;
   const action = p.action ? ` data-action="${esc(p.action)}"` : '';
   const ph = p.placeholder
     ? `<option value="" disabled${!p.value ? ' selected' : ''}>${esc(p.placeholder)}</option>`
@@ -68,38 +68,38 @@ function renderDropdown(id: string, p: DropdownProps, ls: string): string {
   return `<select id="${esc(id)}"${action} style="${base};${ls}">${ph}${opts}</select>`;
 }
 
-function renderBadge(id: string, p: BadgeProps, ls: string): string {
+function renderBadge(id: string, p: BadgeProps, ls: string, t: UITheme): string {
   const toneStyle: Record<string, string> = {
-    ok:   `background:${SHELL.okWash};color:${SHELL.ok}`,
-    warn: `background:${SHELL.warnWash};color:${SHELL.warn}`,
-    dim:  `background:rgba(154,170,196,0.10);color:${SHELL.dim}`,
+    ok:   `background:${t.okWash};color:${t.ok}`,
+    warn: `background:${t.warnWash};color:${t.warn}`,
+    dim:  `background:rgba(154,170,196,0.10);color:${t.dim}`,
   };
-  const style = `${toneStyle[p.tone ?? 'dim']};font-size:9px;padding:1px 7px;border-radius:8px;white-space:nowrap;font-family:${SHELL.fontUi};${ls}`;
+  const style = `${toneStyle[p.tone ?? 'dim']};font-size:9px;padding:1px 7px;border-radius:8px;white-space:nowrap;font-family:${t.fontUi};${ls}`;
   return `<span id="${esc(id)}" style="${style}">${esc(p.text)}</span>`;
 }
 
-function renderInput(id: string, p: InputProps, ls: string): string {
-  const base = `background:rgba(0,0,0,0.35);color:${SHELL.text};border:1px solid ${SHELL.line};border-radius:6px;font-size:12px;padding:6px 10px;outline:none;font-family:${SHELL.fontUi}`;
+function renderInput(id: string, p: InputProps, ls: string, t: UITheme): string {
+  const base = `background:rgba(0,0,0,0.35);color:${t.text};border:1px solid ${t.line};border-radius:6px;font-size:12px;padding:6px 10px;outline:none;font-family:${t.fontUi}`;
   const action = p.action ? ` data-action="${esc(p.action)}"` : '';
   return `<input id="${esc(id)}" type="${p.type ?? 'text'}" value="${esc(p.value ?? '')}" placeholder="${esc(p.placeholder ?? '')}"${action} style="${base};${ls}">`;
 }
 
-function renderDivider(id: string, ls: string): string {
-  return `<hr id="${esc(id)}" style="border:none;border-top:1px solid ${SHELL.line};margin:8px 0;${ls}">`;
+function renderDivider(id: string, ls: string, t: UITheme): string {
+  return `<hr id="${esc(id)}" style="border:none;border-top:1px solid ${t.line};margin:8px 0;${ls}">`;
 }
 
-function renderPanel(id: string, p: PanelProps, c: LayoutConstraints | undefined, children: LayoutNode[]): string {
+function renderPanel(id: string, p: PanelProps, c: LayoutConstraints | undefined, children: LayoutNode[], t: UITheme): string {
   const dir = c?.direction ?? 'column';
   const gap = c?.gap ?? 8;
   const align = c?.align ?? 'stretch';
   const pad = c?.padding ?? 16;
   const ls = layoutStyle(c);
   const overflow = p.scroll ? 'overflow-y:auto;' : '';
-  const style = `display:flex;flex-direction:${dir};gap:${gap}px;align-items:${align};padding:${pad}px;background:${SHELL.bg1};border:1px solid ${SHELL.line};border-radius:10px;position:relative;${overflow}${ls}`;
+  const style = `display:flex;flex-direction:${dir};gap:${gap}px;align-items:${align};padding:${pad}px;background:${t.bg1};border:1px solid ${t.line};border-radius:10px;position:relative;${overflow}${ls}`;
   const title = p.title
-    ? `<div style="font-size:10px;letter-spacing:2.4px;text-transform:uppercase;color:${SHELL.dim};font-family:${SHELL.fontUi};margin-bottom:4px">${esc(p.title)}</div>`
+    ? `<div style="font-size:10px;letter-spacing:2.4px;text-transform:uppercase;color:${t.dim};font-family:${t.fontUi};margin-bottom:4px">${esc(p.title)}</div>`
     : '';
-  const inner = children.map(renderNode).join('');
+  const inner = children.map((ch) => renderNode(ch, t)).join('');
   return `<div id="${esc(id)}" style="${style}">${title}${inner}</div>`;
 }
 
@@ -109,25 +109,25 @@ function renderPanel(id: string, p: PanelProps, c: LayoutConstraints | undefined
 const hiddenInput = (id: string, type: string, action: string, extra = ''): string =>
   `<input type="${type}" id="${esc(id)}"${action ? ` data-action="${esc(action)}"` : ''} ${extra} style="opacity:0;width:0;height:0;position:absolute">`;
 
-function renderCheckbox(id: string, p: CheckboxProps, ls: string): string {
+function renderCheckbox(id: string, p: CheckboxProps, ls: string, t: UITheme): string {
   const checked = p.checked ?? false;
-  const boxBg     = checked ? SHELL.jadeWash : 'rgba(0,0,0,0.25)';
-  const boxBorder = checked ? SHELL.jadeLine  : SHELL.line;
-  const mark      = checked ? `<span style="color:${SHELL.jade};font-size:10px;line-height:1;font-weight:700">✓</span>` : '';
+  const boxBg     = checked ? t.jadeWash : 'rgba(0,0,0,0.25)';
+  const boxBorder = checked ? t.jadeLine  : t.line;
+  const mark      = checked ? `<span style="color:${t.jade};font-size:10px;line-height:1;font-weight:700">✓</span>` : '';
   return `<span id="${esc(id)}" style="display:inline-flex;align-items:center;${ls}">
   ${hiddenInput(`${id}-i`, 'checkbox', p.action ?? '', checked ? 'checked' : '')}
   <label for="${esc(id)}-i" style="display:inline-flex;align-items:center;gap:8px;cursor:pointer">
     <span style="display:inline-flex;align-items:center;justify-content:center;width:16px;height:16px;border:1px solid ${boxBorder};border-radius:3px;background:${boxBg};flex-shrink:0">${mark}</span>
-    <span style="font-size:12px;color:${SHELL.sub};font-family:${SHELL.fontUi}">${esc(p.label)}</span>
+    <span style="font-size:12px;color:${t.sub};font-family:${t.fontUi}">${esc(p.label)}</span>
   </label>
 </span>`;
 }
 
-function renderToggle(id: string, p: ToggleProps, ls: string): string {
+function renderToggle(id: string, p: ToggleProps, ls: string, t: UITheme): string {
   const on = p.checked ?? false;
-  const trackBg = on ? SHELL.jade        : SHELL.bg3;
-  const border   = on ? SHELL.jadeLine   : SHELL.line;
-  const knob     = on ? SHELL.bg0        : SHELL.dim;
+  const trackBg = on ? t.jade        : t.bg3;
+  const border   = on ? t.jadeLine   : t.line;
+  const knob     = on ? t.bg0        : t.dim;
   const knobLeft = on ? '18px'           : '2px';
   return `<span id="${esc(id)}" style="display:inline-flex;align-items:center;${ls}">
   ${hiddenInput(`${id}-i`, 'checkbox', p.action ?? '', on ? 'checked' : '')}
@@ -135,22 +135,22 @@ function renderToggle(id: string, p: ToggleProps, ls: string): string {
     <span style="display:inline-block;width:36px;height:20px;border-radius:10px;background:${trackBg};border:1px solid ${border};position:relative;flex-shrink:0">
       <span style="width:14px;height:14px;border-radius:50%;background:${knob};position:absolute;top:2px;left:${knobLeft}"></span>
     </span>
-    <span style="font-size:12px;color:${SHELL.sub};font-family:${SHELL.fontUi}">${esc(p.label)}</span>
+    <span style="font-size:12px;color:${t.sub};font-family:${t.fontUi}">${esc(p.label)}</span>
   </label>
 </span>`;
 }
 
-function renderRadioGroup(id: string, p: RadioGroupProps, ls: string): string {
+function renderRadioGroup(id: string, p: RadioGroupProps, ls: string, t: UITheme): string {
   const items = p.options.map((opt, i) => {
     const rid = `${id}-r${i}`;
     const sel = p.value === opt.value;
-    const dot    = sel ? `<span style="width:7px;height:7px;border-radius:50%;background:${SHELL.jade}"></span>` : '';
-    const border = sel ? SHELL.jade : SHELL.line;
+    const dot    = sel ? `<span style="width:7px;height:7px;border-radius:50%;background:${t.jade}"></span>` : '';
+    const border = sel ? t.jade : t.line;
     return `<span style="display:inline-flex;align-items:center">
     ${hiddenInput(rid, 'radio', p.action ?? '', `name="${esc(p.name)}" value="${esc(opt.value)}"${sel ? ' checked' : ''}`)}
     <label for="${esc(rid)}" style="display:inline-flex;align-items:center;gap:8px;cursor:pointer">
       <span style="width:14px;height:14px;border-radius:50%;border:1.5px solid ${border};display:inline-flex;align-items:center;justify-content:center;flex-shrink:0">${dot}</span>
-      <span style="font-size:12px;color:${SHELL.sub};font-family:${SHELL.fontUi}">${esc(opt.label)}</span>
+      <span style="font-size:12px;color:${t.sub};font-family:${t.fontUi}">${esc(opt.label)}</span>
     </label>
   </span>`;
   }).join('');
@@ -163,16 +163,16 @@ function renderImage(id: string, p: ImageProps, ls: string): string {
   return `<img id="${esc(id)}" src="${esc(p.src)}" alt="${esc(p.alt ?? '')}" style="object-fit:${fit};border-radius:${radius}px;display:block;max-width:100%;${ls}">`;
 }
 
-function renderScreen(id: string, p: ScreenProps, children: LayoutNode[]): string {
-  const bg     = p.bg ?? SHELL.pageBg;
+function renderScreen(id: string, p: ScreenProps, children: LayoutNode[], t: UITheme): string {
+  const bg     = p.bg ?? t.pageBg;
   const center = p.center ? 'align-items:center;justify-content:center;' : 'align-items:stretch;';
   const bgImg  = p.image ? `background-image:url('${esc(p.image)}');background-size:cover;background-position:center;` : '';
   const blur   = p.blur ? `backdrop-filter:blur(${p.blur}px);` : '';
-  const style  = `width:100%;min-height:100vh;display:flex;flex-direction:column;${center}background:${bg};${bgImg}${blur}font-family:${SHELL.fontUi};position:relative;`;
-  return `<div id="${esc(id)}" style="${style}">${children.map(renderNode).join('')}</div>`;
+  const style  = `width:100%;min-height:100vh;display:flex;flex-direction:column;${center}background:${bg};${bgImg}${blur}font-family:${t.fontUi};position:relative;`;
+  return `<div id="${esc(id)}" style="${style}">${children.map((ch) => renderNode(ch, t)).join('')}</div>`;
 }
 
-function renderSlider(id: string, p: SliderProps, ls: string): string {
+function renderSlider(id: string, p: SliderProps, ls: string, t: UITheme): string {
   const min   = p.min   ?? 0;
   const max   = p.max   ?? 100;
   const step  = p.step  ?? 1;
@@ -180,34 +180,35 @@ function renderSlider(id: string, p: SliderProps, ls: string): string {
   const action = p.action ? ` data-action="${esc(p.action)}"` : '';
   const header = p.label
     ? `<div style="display:flex;justify-content:space-between;margin-bottom:4px">
-        <span style="font-size:11px;color:${SHELL.sub};font-family:${SHELL.fontUi}">${esc(p.label)}</span>
-        <span style="font-size:11px;color:${SHELL.dim};font-family:${SHELL.fontMono}">${value}</span>
+        <span style="font-size:11px;color:${t.sub};font-family:${t.fontUi}">${esc(p.label)}</span>
+        <span style="font-size:11px;color:${t.dim};font-family:${t.fontMono}">${value}</span>
       </div>`
     : '';
   return `<div id="${esc(id)}" style="display:flex;flex-direction:column;${ls}">
-  ${header}<input type="range" min="${min}" max="${max}" step="${step}" value="${value}"${action} style="width:100%;accent-color:${SHELL.jade};cursor:pointer">
+  ${header}<input type="range" min="${min}" max="${max}" step="${step}" value="${value}"${action} style="width:100%;accent-color:${t.jade};cursor:pointer">
 </div>`;
 }
 
 // ── 统一入口 ────────────────────────────────────────────────────
 
-/** 将 LayoutNode 树渲染为 HTML 字符串。弱模型提供数据，此函数是解释器。 */
-export function renderNode(node: LayoutNode): string {
+/** 将 LayoutNode 树渲染为 HTML 字符串。弱模型提供数据 + 可选主题；此函数是解释器。缺省主题 = 引擎 SHELL 脸。 */
+export function renderNode(node: LayoutNode, theme: UITheme = SHELL): string {
+  const t = theme;
   const ls = layoutStyle(node.layout);
   switch (node.type) {
-    case 'Button':     return renderButton(node.id, node.props as ButtonProps, ls);
-    case 'Label':      return renderLabel(node.id, node.props as LabelProps, ls);
-    case 'Dropdown':   return renderDropdown(node.id, node.props as DropdownProps, ls);
-    case 'Badge':      return renderBadge(node.id, node.props as BadgeProps, ls);
-    case 'Input':      return renderInput(node.id, node.props as InputProps, ls);
-    case 'Divider':    return renderDivider(node.id, ls);
-    case 'Panel':      return renderPanel(node.id, node.props as PanelProps, node.layout, node.children ?? []);
-    case 'Checkbox':   return renderCheckbox(node.id, node.props as CheckboxProps, ls);
-    case 'Toggle':     return renderToggle(node.id, node.props as ToggleProps, ls);
-    case 'RadioGroup': return renderRadioGroup(node.id, node.props as RadioGroupProps, ls);
+    case 'Button':     return renderButton(node.id, node.props as ButtonProps, ls, t);
+    case 'Label':      return renderLabel(node.id, node.props as LabelProps, ls, t);
+    case 'Dropdown':   return renderDropdown(node.id, node.props as DropdownProps, ls, t);
+    case 'Badge':      return renderBadge(node.id, node.props as BadgeProps, ls, t);
+    case 'Input':      return renderInput(node.id, node.props as InputProps, ls, t);
+    case 'Divider':    return renderDivider(node.id, ls, t);
+    case 'Panel':      return renderPanel(node.id, node.props as PanelProps, node.layout, node.children ?? [], t);
+    case 'Checkbox':   return renderCheckbox(node.id, node.props as CheckboxProps, ls, t);
+    case 'Toggle':     return renderToggle(node.id, node.props as ToggleProps, ls, t);
+    case 'RadioGroup': return renderRadioGroup(node.id, node.props as RadioGroupProps, ls, t);
     case 'Image':      return renderImage(node.id, node.props as ImageProps, ls);
-    case 'Screen':     return renderScreen(node.id, node.props as ScreenProps, node.children ?? []);
-    case 'Slider':     return renderSlider(node.id, node.props as SliderProps, ls);
+    case 'Screen':     return renderScreen(node.id, node.props as ScreenProps, node.children ?? [], t);
+    case 'Slider':     return renderSlider(node.id, node.props as SliderProps, ls, t);
     default:           return `<!-- unknown: ${String((node as LayoutNode).type)} -->`;
   }
 }
