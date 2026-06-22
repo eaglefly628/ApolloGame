@@ -6,7 +6,7 @@
 // 回合(doc24 §二)：① 回合开始 +1 召唤源泉 → ② 选「一类」互斥动作(抽/放[+机关]/打天罡/弃·同类无限) → ③ 结束→**推进一格**→相邻遭遇→掷命(doc19 原封)。
 // 确定性：单一 seeded PRNG（同 live-combat·掷命点同序消费）；同输入流 → 同 turnHash、可回放、可喂仿真台。纯 game-side、零引擎。
 //
-// ⚠️ logic 先行·UI 待 Cloud Design 稿(doc24 §九)：本模块不碰 live-combat / showMatch / battle-screen（实时路保持可跑），待新战斗屏落地再切换、退役实时核。
+// 战斗屏：回合制走 turn-battle-screen.ts（live）。旧实时核（showMatch + battle-screen.ts 渲染器）已**退役删除**（2026-06-21）；本模块仍从 live-combat.ts 复用 cardStamina/掷命核/TengangFx 等纯件。
 import { winrate, pEff, cardPoints, CLASH_K } from './clash-resolve.js';
 import { nextRandom } from '@atom-skills/index.js';
 import type { RandomSeed } from '@engine/protocol/components.js';
