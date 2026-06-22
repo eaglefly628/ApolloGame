@@ -1,7 +1,7 @@
 // turn-combat 单机回合制核（doc24 · A0 重构）：回合状态机 + 离散 9 格 slot 棋盘 + 互斥动作 + 推进/遭遇掷命(复用 clash-resolve) + 确定性 hash。
 import { describe, it, expect } from 'vitest';
 import { cardPoints } from './clash-resolve.js';
-import { cardStamina } from './live-combat.js';
+import { cardStamina } from './combat-types.js';
 import {
   initTurnBattle, drawCard, deployUnit, castTengang, discardCard, endTurn, aiTakeTurn, turnHash, turnActive,
   toggleGate, tryGate, GATES,

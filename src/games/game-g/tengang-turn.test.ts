@@ -2,7 +2,7 @@
 // 直接设 tengangA（绕过聚合器·只验 turn-combat 的 apply 钩子）。
 import { describe, it, expect } from 'vitest';
 import { cardPoints } from './clash-resolve.js';
-import { cardStamina, NO_TENGANG } from './live-combat.js';
+import { cardStamina, NO_TENGANG } from './combat-types.js';
 import { initTurnBattle, deployUnit, drawCard, endTurn, HAND_MAX, A_GOAL, B_GOAL, type TurnUnit, type PokerCard } from './turn-combat.js';
 
 const unit = (id: string, rank: string, slot: number, buff = 0, general = false): TurnUnit =>

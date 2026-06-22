@@ -10,7 +10,7 @@
 import { winrate, pEff, cardPoints, CLASH_K } from './clash-resolve.js';
 import { nextRandom } from '@atom-skills/index.js';
 import type { RandomSeed } from '@engine/protocol/components.js';
-import { cardStamina, NO_TENGANG, type TengangFx, type ClashEvent } from './live-combat.js';
+import { cardStamina, NO_TENGANG, type TengangFx, type ClashEvent } from './combat-types.js';
 import { aggregateDisha, splitDisha, type DishaFx } from './disha.js';
 
 // ── 棋盘几何（doc24 §一）──

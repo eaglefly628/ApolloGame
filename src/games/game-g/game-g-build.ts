@@ -3,7 +3,7 @@
 // aggregateTengang/tengangFxOf)还经 game-g.tsx 再导出供 deck-wiring/live-combat 测试用。
 import { FORMATION_PRESETS, PRESET_NAMES, TIANGANG_BY_ID, cardFavorIndex, rankOfCardId, deployCost, heroCardByName, type ArmyCard } from './index.js';
 import { cardPoints, P_MAX } from './clash-resolve.js';
-import { NO_TENGANG, type TengangFx } from './live-combat.js';
+import { NO_TENGANG, type TengangFx } from './combat-types.js';
 import { type PokerCard } from './turn-combat.js';
 
 export const clampFavor = (f: number): number => Math.max(5, Math.min(95, Math.round(f)));

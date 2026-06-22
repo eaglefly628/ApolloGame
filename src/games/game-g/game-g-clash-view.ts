@@ -2,7 +2,7 @@
 // 纯函数·只读 ev + 注入的 tgName/inlays，把点数/经营/天罡/士气逐行明细 + 平局裁定/战胜硬币预告如实透出。不依赖 mount() 运行态。
 import { cardFavorIndex, DIZHI_TIER_NM, DIZHI_INLAY_FAVOR, type InlayEntry } from './index.js';
 import { P_MAX } from './clash-resolve.js';
-import { type ClashEvent } from './live-combat.js';
+import { type ClashEvent } from './combat-types.js';
 import { type TurnClashView, type TurnClashCardView } from './turn-battle-screen.js';
 
 const SUITNAME: Record<string, string> = { s: '黑桃', h: '红桃', d: '方块', c: '梅花' };

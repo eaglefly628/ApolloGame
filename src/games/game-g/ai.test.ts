@@ -1,6 +1,6 @@
 // Boss 通用 utility AI（doc27 §八·甲一次写好·零 per-boss 代码）行为测试：画像驱动的不同打法 + 难度档 + 施法 + 确定性。
 import { describe, it, expect } from 'vitest';
-import { NO_TENGANG } from './live-combat.js';
+import { NO_TENGANG } from './combat-types.js';
 import { initTurnBattle, aiTakeTurn, turnHash, NEUTRAL_AI, type PokerCard, type Card, type TurnBattle } from './turn-combat.js';
 import { loadLevel } from './level.js';
 

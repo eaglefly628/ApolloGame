@@ -1,7 +1,7 @@
 // disha 地煞（Boss 招牌历史战术·doc23 §八·关1-5 共 15 张）实装行为测试 —— 甲逐个实现的验收（参数→掷命/推进/大本营 行为断言）。
 import { describe, it, expect } from 'vitest';
 import { cardPoints } from './clash-resolve.js';
-import { cardStamina } from './live-combat.js';
+import { cardStamina } from './combat-types.js';
 import { aggregateDisha, stageDisha, STAGE_DISHA, NO_DISHA, DISHA_PLAYABLE } from './disha.js';
 import { initTurnBattle, endTurn, aiTakeTurn, castDisha, clashOdds, type TurnUnit, type TurnBattle } from './turn-combat.js';
 

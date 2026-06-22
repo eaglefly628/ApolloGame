@@ -9,7 +9,7 @@ import {
   initTurnBattle, drawCard, deployUnit, castTengang, endTurn, aiTakeTurn,
   OPENING_HAND, DRAW_COST, CAST_COST, type TurnBattle, type PokerCard, type TengangHandCard,
 } from './turn-combat.js';
-import { NO_TENGANG, type TengangFx } from './live-combat.js';
+import { NO_TENGANG, type TengangFx } from './combat-types.js';
 import { cardPoints, P_MAX } from './clash-resolve.js';
 import { loadLevel } from './level.js';
 

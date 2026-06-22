@@ -2,7 +2,7 @@
 // 渲 HTML golden（固定 1340×858·非 cqw）：棋盘静息态 / 掷命特写 / 锦霞皮。改了视觉 → toMatchFileSnapshot 当场 diff。
 import { describe, it, expect } from 'vitest';
 import { cardPoints } from './clash-resolve.js';
-import { cardStamina } from './live-combat.js';
+import { cardStamina } from './combat-types.js';
 import { initTurnBattle, type TurnUnit, type PokerCard, type TengangHandCard } from './turn-combat.js';
 import { buildTurnBattleView, renderTurnBattleDoc, type TurnClashView } from './turn-battle-screen.js';
 
