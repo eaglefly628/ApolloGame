@@ -28,17 +28,6 @@ describe('Game G · 集成：出征进【回合制】战斗屏（doc24·happy-do
     container.remove();
   });
 
-  it('出征入场：战场挂载即套揭幕演出（圆爆/孔雀开屏二选一·owner 2026-06-21）', () => {
-    localStorage.clear();
-    const container = document.createElement('div'); document.body.appendChild(container);
-    const cleanup = mount(container);
-    click(container.querySelector('[data-act="play"]'));
-    { const skip = container.querySelector('[data-act="story-skip"]'); if (skip) click(skip); } // 跳过开局演出 → 进战斗
-    expect(container.querySelector('.gg-enter-iris, .gg-enter-fan'), '战场容器应带揭幕动画类').not.toBeNull();
-    expect(document.getElementById('gg-enter-css'), '揭幕动画 keyframes 已注入').not.toBeNull();
-    cleanup();
-    container.remove();
-  });
 
   it('冒烟一回合：放牌(选牌→落子) + 翻门 + 结束回合(AI+特写) 全流程不抛错', () => {
     vi.useFakeTimers();

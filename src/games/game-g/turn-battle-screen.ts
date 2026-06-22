@@ -656,6 +656,11 @@ export function mountTurnBattle(host: HTMLElement, getView: () => TurnBattleView
   // 重渲极频(选牌也重渲)：只在亮格「减少」时记一次 drain，并用计时器在动画时长后清掉——中途无关重渲不会打断/重放。
   let prevLit = -1; let drain = { from: 0, count: 0 }; let drainTimer = 0;
   let localNotice = ''; let localNoticeTimer = 0;
+  const scaleOf = (): number => { const w = host.clientWidth || 1340; return w > 0 ? w / 1340 : 1; }; // 缩放=宿主宽/1340（宿主宽由外层 CSS 定·与内容无关·量它稳定）
+  const applyScale = (): void => { // ResizeObserver 走这条：只重算 GPU 缩放·不整片重建 DOM（断开「RO→render→改 outer 高→再触发 RO」循环·消掌机持续闪烁·owner 2026-06-22）
+    const inner = host.querySelector('.ggt-inner') as HTMLElement | null; const outer = host.querySelector('.ggt-outer') as HTMLElement | null;
+    if (!inner || !outer) return; const sc = scaleOf(); inner.style.transform = `scale(${sc})`; outer.style.height = Math.round(858 * sc) + 'px';
+  };
   const render = (): void => {
     const viewRaw = getView();
     const view: TurnBattleView = localNotice ? { ...viewRaw, notice: localNotice } : viewRaw;
@@ -666,11 +671,9 @@ export function mountTurnBattle(host: HTMLElement, getView: () => TurnBattleView
       drainTimer = window.setTimeout(() => { drain = { from: 0, count: 0 }; drainTimer = 0; render(); }, 540);
     }
     prevLit = litNow;
-    const innerStyle: Style = { ...(THEMES[view.theme] ?? THEMES.onyx), width: '1340px', height: '858px', transformOrigin: 'top left', fontFamily: 'var(--fb)' };
-    host.innerHTML = `<div class="ggt-outer" style="position:relative; width:100%; overflow:hidden; background:#0c0a08;"><div class="ggt-inner" style="${st(innerStyle)}">${buildTurnFrameHTML(view, drain)}</div></div>`;
-    const outer = host.querySelector('.ggt-outer') as HTMLElement | null;
-    const inner = host.querySelector('.ggt-inner') as HTMLElement | null;
-    if (outer && inner) { const w = outer.clientWidth || host.clientWidth; if (w > 0) { const sc = w / 1340; inner.style.transform = `scale(${sc})`; outer.style.height = Math.round(858 * sc) + 'px'; } }
+    const sc = scaleOf(); // 先量后写：把缩放烤进首帧 markup → 单次绘制，避免「内容先按 1340 全尺寸铺开 → 再 JS 量宽缩放」两段绘制闪烁（掌机弱合成器尤甚·owner 2026-06-22）
+    const innerStyle: Style = { ...(THEMES[view.theme] ?? THEMES.onyx), width: '1340px', height: '858px', transformOrigin: 'top left', transform: `scale(${sc})`, fontFamily: 'var(--fb)' };
+    host.innerHTML = `<div class="ggt-outer" style="position:relative; width:100%; overflow:hidden; background:#0c0a08; height:${Math.round(858 * sc)}px"><div class="ggt-inner" style="${st(innerStyle)}">${buildTurnFrameHTML(view, drain)}</div></div>`;
   };
   // 坞/格/牌/门 交互用 pointerdown（同 battle-screen）：rAF/重渲在按下↔抬起间整片重建 DOM，click 会落空 → 用单次离散 pointerdown。
   const onPress = (e: MouseEvent): void => {
@@ -716,7 +719,7 @@ export function mountTurnBattle(host: HTMLElement, getView: () => TurnBattleView
   host.addEventListener('pointerdown', onPress);
   render();
   let ro: ResizeObserver | null = null;
-  if (typeof ResizeObserver !== 'undefined') { ro = new ResizeObserver(() => render()); ro.observe(host); }
+  if (typeof ResizeObserver !== 'undefined') { ro = new ResizeObserver(() => applyScale()); ro.observe(host); } // 只重缩放·不整片重渲（断 RO 反馈循环·owner 2026-06-22 掌机闪烁修）
   return { update: render, destroy: () => { if (ro) ro.disconnect(); if (drainTimer) clearTimeout(drainTimer); if (localNoticeTimer) clearTimeout(localNoticeTimer); host.removeEventListener('pointerdown', onPress); host.replaceChildren(); } };
 }
 

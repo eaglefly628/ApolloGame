@@ -31,31 +31,6 @@ const LOBBY_ROOT_CSS = 'position:absolute;inset:0;overflow:auto';
 // 敌方 favor 偏置随关卡递增（旧实时路遗留·当前回合制 spec.enemyBias 直供·保留）。
 const enemyBias = (stage: number): number => -8 + stage * 2;
 
-// 出征入场演出（owner 2026-06-21）：点开始打这一关 → 战场以 UI 效果从无到有「展开」，二选一随机：
-//   · iris  —— 圆圈从里向外爆发、再略收敛（clip-path 圆 + 微弹缩）
-//   · fan   —— 孔雀开屏，从中线向两侧展开（clip-path inset + 透视微缩）
-// 纯表现：战斗已挂载到 stage 后给容器套一段揭幕动画，animationend 即撤、不留残留样式；与战斗逻辑零耦合。
-function ensureEntranceCss(): void {
-  if (document.getElementById('gg-enter-css')) return;
-  const s = document.createElement('style');
-  s.id = 'gg-enter-css';
-  s.textContent =
-    '@keyframes gg-enter-iris{0%{clip-path:circle(0% at 50% 50%);transform:scale(.94);opacity:.25}55%{opacity:1}72%{clip-path:circle(118% at 50% 50%);transform:scale(1.025)}100%{clip-path:circle(150% at 50% 50%);transform:scale(1);opacity:1}}' +
-    '@keyframes gg-enter-fan{0%{clip-path:inset(0 50% 0 50%);transform:perspective(1500px) scale(.9);opacity:.2}58%{opacity:1}100%{clip-path:inset(0 0 0 0);transform:perspective(1500px) scale(1);opacity:1}}' +
-    '.gg-enter-iris{animation:gg-enter-iris .82s cubic-bezier(.16,.84,.3,1) both;transform-origin:50% 50%;will-change:clip-path,transform}' +
-    '.gg-enter-fan{animation:gg-enter-fan .8s cubic-bezier(.22,.9,.27,1) both;transform-origin:50% 50%;will-change:clip-path,transform}';
-  document.head.appendChild(s);
-}
-function playBattleEntrance(root: HTMLElement): void {
-  const target = (root.firstElementChild as HTMLElement | null) ?? root;
-  ensureEntranceCss();
-  const fx = Math.random() < 0.5 ? 'iris' : 'fan'; // 孔雀开屏 / 圆爆 二选一
-  const cls = `gg-enter-${fx}`;
-  const clean = (): void => { target.classList.remove(cls); target.removeEventListener('animationend', clean); };
-  target.classList.add(cls);
-  target.addEventListener('animationend', clean);
-  window.setTimeout(clean, 1400); // 兜底：无头/动画被打断也清干净
-}
 
 export function mount(container: HTMLElement, shell?: { exit?: () => void }): () => void {
   const save = loadSave();
@@ -254,7 +229,7 @@ export function mount(container: HTMLElement, shell?: { exit?: () => void }): ()
   function startBattle(): void {
     const off = [...save.lastOfficers] as [number, number, number];
     showTurnMatch({ officers: off }, describeFormation(off), []);
-    playBattleEntrance(root); // 战场挂载完毕 → 揭幕演出（圆爆/孔雀开屏随机）
+    // 入场揭幕动画已移除（owner 2026-06-22：掌机模拟器进战斗场闪烁·clip-path/perspective/will-change 在弱合成器上重绘闪）
   }
 
   // ───────────────────────── 场间整备 · 三选一增益（roguelike 养成核 · 胜后短窗）─────────────────────────
