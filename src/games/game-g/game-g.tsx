@@ -25,8 +25,6 @@ export { freshSave } from './game-g-save.js';
 // outcome-first：每张牌按 favor 跑确定性种子硬币**先定生死**，3D 翻牌是**反推的表现**（抛飞→相撞→落定翻面）。
 // 闭环：大厅看材料/牌组 → 花材料改造牌组(升 favor) → 出征打一关(回合制 showTurnMatch) → 赢取材料、关卡递增 → 再改造。
 // 进度本地存档；胜负=数据决策（不回灌）；3D 只在 ThreeRenderer 表现层。是 gameF 大厅式挂载编排，复用现成能力。
-const W = 600;
-const H = 540;
 // 大厅根容器样式：默认屏(布阵/备战/战斗)居中竖排；大厅屏改顶对齐可滚动(承载 5 tab 古风布局)。
 const DEFAULT_ROOT_CSS = 'position:absolute;inset:0;background:#0a0a14;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:14px;color:#cbd5e1;font:13px system-ui';
 const LOBBY_ROOT_CSS = 'position:absolute;inset:0;overflow:auto';
