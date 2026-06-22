@@ -526,3 +526,16 @@ game-f 报「多数需新引擎能力」。Lead 实测：**三个已点名技能
 > 3. `{kind:control, op:freeze, everyTurns:N}` —— 每 N 回合冻玩家本回合 1 类动作。仿 batteryEveryTurns。
 > 4. `{kind:control, op:intimidate, everyTurns:N}` —— 每 N 回合吓退玩家某路前锋 1 张（退场/回库·b.rng 选·确定性）。**与暂缓的 REQ-G-诅咒地煞(bounce) 同族**·甲可一并参数化实现（mode: bounce回起点/库 vs intimidate吓退）。
 > 落地后 design G 把这些织进关6-20 地煞组合 + sim 标定。当前 lore/disha 重写子代理用现有词汇·不阻塞。
+
+---
+
+### REQ-G-地煞新op-v3 · [2026-06-21] · design G → 甲（引擎域） · Game G · status: open · 优先级: P2（关11-52 特色·非阻塞·有降级兜底） · 类型: 真缺口（通用 op·下沉）
+
+> 关11-52 想象力设计提了 ~38 个新 op，design G 收敛成 8 个通用原语 + 优先级清单（详 `design/disha-op-vocab-v3.md`）。**每条都有现有 op 降级映射 → sim 现在能跑·不阻塞。** 甲择优实装高杠杆通用 op（覆盖最多关·复用最大）：
+> 1. 🥇 `terrain.laneLock`/`chokepoint`（棋盘几何改写·一个 op 给 N 关地形特色·李舜臣窄海峡）。
+> 2. 🥇 `phase.cycle`（Boss 周期切换 fx 组·一关多形态·武田风林火山）。
+> 3. 🥈 `aura.invulnerable{everyTurns,dur}` + `rally.revive`（周期无敌/复生·终章）。
+> 4. 🥈 `control.disarm`/`sever`（点杀玩家最强牌/废连携）+ v2 freeze/intimidate。
+> 5. 🥉 `offense.breakthrough`/`jumpAdvance`（胜后连推/跳格）+ 已设计 deepDecay。
+> 6. 🥉 v2 四件（extraAction/freeze/intimidate/withdrawRefundMul·见 REQ-G-地煞新op）。
+> 长尾(mirage/minefield/volleyRelay…)先用降级映射上线。实装后 design G 用真地煞重跑 sim 定稿。
