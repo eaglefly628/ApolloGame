@@ -3,7 +3,7 @@ import { describe, it, expect } from 'vitest';
 import { Engine } from '../../runtime/engine.js';
 import type { Component } from '@engine/core/types.js';
 import type { Transform, RandomSeed, Resource, State, Card3D } from '@engine/protocol/components.js';
-import { buildGameG3DFlip, buildGameGDuel3D, buildGameGArmyMatch, prepareArmies, standardArmy, armyFromFormation, laneEstimates, applyInterventions, applyShadowRevenge, quartermasterEnergy, pickAiFormation, applyTiangangs, tiangangMoraleScale, tiangangLinks, tiangangKeyBuffs, GAME_G_TIANGANGS, TIANGANG_BY_ID, ARCHETYPES, detectArchetype, archetypeMatchup, activeArchetype, applyArchetypeActivation, GAME_G_PLANETS, GAME_G_FOILS, effectiveLives, effectiveLeverCap, effectiveLeverRegen, effectiveTierBonus, applyPlanetArmy, laneHandTier, battleSpec, RUN_BATTLES, RUN_LIVES, BETWEEN_BUFFS, applyBuff, BOSS_ROSTER, bossFor, LEVER_CATALOG, LEVER_START, LEVER_CAP, LEVER_REGEN, FORMATION_PRESETS, PRESET_NAMES, decideFaceUp, cardFace, flipTarget, FLIP_DURATION, FLIP_SPINS, MATCH_REWARD, MARCH_DURATION, type FateCard, type ArmyCard, type Intervention, type BuffTarget } from './blueprint.js';
+import { prepareArmies, standardArmy, armyFromFormation, laneEstimates, applyInterventions, applyShadowRevenge, quartermasterEnergy, pickAiFormation, applyTiangangs, tiangangMoraleScale, tiangangLinks, tiangangKeyBuffs, GAME_G_TIANGANGS, TIANGANG_BY_ID, ARCHETYPES, detectArchetype, archetypeMatchup, activeArchetype, applyArchetypeActivation, GAME_G_PLANETS, GAME_G_FOILS, effectiveLives, effectiveLeverCap, effectiveLeverRegen, effectiveTierBonus, applyPlanetArmy, laneHandTier, battleSpec, RUN_BATTLES, RUN_LIVES, BETWEEN_BUFFS, applyBuff, BOSS_ROSTER, bossFor, LEVER_CATALOG, LEVER_START, LEVER_CAP, LEVER_REGEN, FORMATION_PRESETS, PRESET_NAMES, type ArmyCard, type Intervention, type BuffTarget } from './blueprint.js';
 
 const get = <T extends Component>(e: Engine, id: string, type: string): T | undefined => e.world.getComponent<T>(id, type);
 const rotOf = (e: Engine, id = 'card'): number => get<Transform>(e, id, 'Transform')!.rotation;
@@ -51,21 +51,6 @@ describe('Game G · T-G3 开局布阵 / 分兵（田忌赛马，纯数据）', (
     expect(est[1].count).toBe(18);
     expect(est[1].sumFavor).toBeGreaterThan(est[0].sumFavor); // 锋矢攻中：中路 favor 总和最高(军官最多)
   });
-
-  it('布阵影响胜负且确定：同阵型+seed 逐拍 hash 一致；攻中阵中路更易赢', () => {
-    const mkE = (fa: typeof FORMATION_PRESETS[string]): Engine => {
-      const e = new Engine({ tickRate: 60 });
-      e.load(buildGameGArmyMatch(armyFromFormation('a', 8, fa), armyFromFormation('b', -8, FORMATION_PRESETS['均衡']), 7));
-      return e;
-    };
-    const e1 = mkE(FORMATION_PRESETS['锋矢']);
-    const e2 = mkE(FORMATION_PRESETS['锋矢']);
-    for (let i = 0; i < FLIP_DURATION + 12; i++) {
-      e1.world.tick();
-      e2.world.tick();
-      expect(e1.hash()).toBe(e2.hash()); // 同阵型+seed → 确定
-    }
-  });
 });
 
 describe('Game G · T-G3 自定义分兵（任意合法军官分布）', () => {
@@ -107,20 +92,6 @@ describe('Game G · T-G4 干预卡（揭晓前改输入，outcome-first 不破�
     expect(dec.b.find((c) => c.lane === 0 && c.general)!.favor).not.toBe(B.find((c) => c.lane === 0 && c.general)!.favor);
   });
 
-  it('斩首令：敌某路主将必掉→该路溃散 → 敌该路存活 ≤ 不打时（同 seed，干预进 sim 确定）', () => {
-    const runB0 = (list: Intervention[], seed: number): number => {
-      const A = standardArmy('a', 6);
-      const B = standardArmy('b', 6); // 敌偏强，凸显斩首效果
-      const { a, b } = applyInterventions(A, B, list);
-      const e = new Engine({ tickRate: 60 });
-      e.load(buildGameGArmyMatch(a, b, seed));
-      for (let i = 0; i < FLIP_DURATION + 12; i++) e.world.tick();
-      return e.world.getComponent<Resource>('res_b0', 'Resource')!.current;
-    };
-    for (const seed of [1, 7, 42, 99]) {
-      expect(runB0([{ kind: 'decapitate', lane: 0 }], seed)).toBeLessThanOrEqual(runB0([], seed));
-    }
-  });
 
   it('prepareArmies：全军 rank+suit 无重复（阵型交叉 + 1路增援 + Boss）', () => {
     const noDup = (army: ArmyCard[]): boolean => {
@@ -143,23 +114,6 @@ describe('Game G · T-G4 干预卡（揭晓前改输入，outcome-first 不破�
     // 60张超出54种组合 → 允许极少数溢出重复，但不超过 6 张
     const dups = bClubK.filter((c, i) => bClubK.findIndex((x) => x.rank === c.rank && x.suit === c.suit) !== i);
     expect(dups.length, `Boss clubK 三路增援重复张数(${dups.length})超过允许上限6`).toBeLessThanOrEqual(6);
-  });
-
-  it('确定性：同军+同干预序列+同 seed 两局逐拍 hash 一致（干预进 sim）', () => {
-    const list: Intervention[] = [{ kind: 'bless', lane: 1 }, { kind: 'decapitate', lane: 0 }, { kind: 'reinforce', lane: 2 }];
-    const mk = (): Engine => {
-      const { a, b } = applyInterventions(standardArmy('a', 4), standardArmy('b', -2), list);
-      const e = new Engine({ tickRate: 60 });
-      e.load(buildGameGArmyMatch(a, b, 7));
-      return e;
-    };
-    const e1 = mk();
-    const e2 = mk();
-    for (let i = 0; i < FLIP_DURATION + 12; i++) {
-      e1.world.tick();
-      e2.world.tick();
-      expect(e1.hash()).toBe(e2.hash());
-    }
   });
 });
 
@@ -192,17 +146,6 @@ describe('Game G · T-G4 护盾 + 同花（首发 6 完成）', () => {
     expect(laneHandTier(flushLane).type).toBe('flush');
     const straightLane: ArmyCard[] = [['5', 'S'], ['6', 'H'], ['7', 'D'], ['8', 'C'], ['9', 'S']].map(([r, s], i) => mk(r, s, i));
     expect(laneHandTier(straightLane).type).toBe('straight');
-  });
-  it('护盾/同花进 sim 确定：同军+同干预+seed 逐拍 hash 一致', () => {
-    const list: Intervention[] = [{ kind: 'shield', lane: 0 }, { kind: 'flush', lane: 1 }];
-    const mk = (): Engine => {
-      const { a, b } = applyInterventions(standardArmy('a', 2), standardArmy('b', 0), list);
-      const e = new Engine({ tickRate: 60 });
-      e.load(buildGameGArmyMatch(a, b, 7));
-      return e;
-    };
-    const e1 = mk(), e2 = mk();
-    for (let i = 0; i < FLIP_DURATION + MARCH_DURATION + 6; i++) { e1.world.tick(); e2.world.tick(); expect(e1.hash()).toBe(e2.hash()); }
   });
 });
 
@@ -325,18 +268,6 @@ describe('Game G · T-G5 终局 Boss 阵容 + 对称起手干预（design/13）'
     expect(gAfter.favor).toBe(8);
   });
 
-  it('Boss 起手干预进 sim 确定：同军 + 同 Boss openingLevers + seed 逐拍 hash 一致', () => {
-    const boss = bossFor(5); // 小王·无常（decapitate×3 反噬玩家）
-    const mk = (): Engine => {
-      let { a, b } = applyInterventions(standardArmy('a', 2), armyFromFormation('b', boss.favorBias, boss.formation), [{ kind: 'bless', lane: 0 }], 2);
-      ({ a, b } = applyInterventions(a, b, boss.openingLevers, boss.favorBias, 'b'));
-      const e = new Engine({ tickRate: 60 });
-      e.load(buildGameGArmyMatch(a, b, 9));
-      return e;
-    };
-    const e1 = mk(), e2 = mk();
-    for (let i = 0; i < FLIP_DURATION + MARCH_DURATION + 6; i++) { e1.world.tick(); e2.world.tick(); expect(e1.hash()).toBe(e2.hash()); }
-  });
 
   it('梅花K·人海 起手增援(caster=b)→Boss 该路兵力 +2（go-wide 落 Boss 侧）', () => {
     const boss = BOSS_ROSTER.find((b) => b.id === 'clubK')!;

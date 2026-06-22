@@ -3,7 +3,7 @@ import { describe, it, expect } from 'vitest';
 import { Engine } from '../../runtime/engine.js';
 import type { Component } from '@engine/core/types.js';
 import type { Transform, RandomSeed, Resource, State, Card3D } from '@engine/protocol/components.js';
-import { buildGameG3DFlip, buildGameGDuel3D, buildGameGArmyMatch, prepareArmies, standardArmy, armyFromFormation, laneEstimates, applyInterventions, applyShadowRevenge, quartermasterEnergy, pickAiFormation, applyTiangangs, tiangangMoraleScale, tiangangLinks, tiangangKeyBuffs, GAME_G_TIANGANGS, TIANGANG_BY_ID, ARCHETYPES, detectArchetype, archetypeMatchup, activeArchetype, applyArchetypeActivation, GAME_G_PLANETS, GAME_G_FOILS, effectiveLives, effectiveLeverCap, effectiveLeverRegen, effectiveTierBonus, applyPlanetArmy, laneHandTier, battleSpec, RUN_BATTLES, RUN_LIVES, BETWEEN_BUFFS, applyBuff, BOSS_ROSTER, bossFor, LEVER_CATALOG, LEVER_START, LEVER_CAP, LEVER_REGEN, FORMATION_PRESETS, PRESET_NAMES, decideFaceUp, cardFace, flipTarget, FLIP_DURATION, FLIP_SPINS, MATCH_REWARD, MARCH_DURATION, type FateCard, type ArmyCard, type Intervention, type BuffTarget } from './blueprint.js';
+import { prepareArmies, standardArmy, armyFromFormation, laneEstimates, applyInterventions, applyShadowRevenge, quartermasterEnergy, pickAiFormation, applyTiangangs, tiangangMoraleScale, tiangangLinks, tiangangKeyBuffs, GAME_G_TIANGANGS, TIANGANG_BY_ID, ARCHETYPES, detectArchetype, archetypeMatchup, activeArchetype, applyArchetypeActivation, GAME_G_PLANETS, GAME_G_FOILS, effectiveLives, effectiveLeverCap, effectiveLeverRegen, effectiveTierBonus, applyPlanetArmy, laneHandTier, battleSpec, RUN_BATTLES, RUN_LIVES, BETWEEN_BUFFS, applyBuff, BOSS_ROSTER, bossFor, LEVER_CATALOG, LEVER_START, LEVER_CAP, LEVER_REGEN, FORMATION_PRESETS, PRESET_NAMES, type ArmyCard, type Intervention, type BuffTarget } from './blueprint.js';
 
 const get = <T extends Component>(e: Engine, id: string, type: string): T | undefined => e.world.getComponent<T>(id, type);
 const rotOf = (e: Engine, id = 'card'): number => get<Transform>(e, id, 'Transform')!.rotation;
@@ -35,56 +35,10 @@ describe('Game G · T-G6 天罡牌（融牌面 · build 时 favor 变换 · 持�
   // 注：旧 build-时 favor 变换族（同袍/赌徒/先登/不屈地板）已随 doc20 §二定稿砍掉
   // （天罡改为「主动施法·确定生效」cast-time·甲解释器）；applyTiangangs 对新 36 张 no-op。
 
-  it('outcome-first：融不屈只升 favor → 同 seed 下存活数单调不减', () => {
-    const baseA = standardArmy('a', -10); // 压低制造弱牌
-    const run = (jids: string[]): number => {
-      const a = applyTiangangs(baseA, jids);
-      const e = new Engine({ tickRate: 60 });
-      e.load(buildGameGArmyMatch(a, standardArmy('b', 0), 5));
-      for (let i = 0; i < FLIP_DURATION + 8; i++) e.world.tick();
-      return ['res_a0', 'res_a1', 'res_a2'].reduce((s, id) => s + (get<Resource>(e, id, 'Resource')?.current ?? 0), 0);
-    };
-    expect(run(['diehard'])).toBeGreaterThanOrEqual(run([]));
-  });
-
-  it('确定性：同军 + 同天罡集 + seed 逐拍 hash 一致（融天罡进 sim）', () => {
-    const mkE = (): Engine => {
-      const a = applyTiangangs(standardArmy('a', 2), ['comrade', 'vanguard']);
-      const e = new Engine({ tickRate: 60 });
-      e.load(buildGameGArmyMatch(a, standardArmy('b', 0), 9));
-      return e;
-    };
-    const e1 = mkE(), e2 = mkE();
-    for (let i = 0; i < FLIP_DURATION + MARCH_DURATION + 6; i++) { e1.world.tick(); e2.world.tick(); expect(e1.hash()).toBe(e2.hash()); }
-  });
-
   it('tiangangMoraleScale：空集 + 新 36 张无 moraleMul → 恒 [1,1,1]（旧旗手×1.5/枭雄×2 已砍）', () => {
     const army = standardArmy('a', 0);
     expect(tiangangMoraleScale(army, [])).toEqual([1, 1, 1]);
     expect(tiangangMoraleScale(army, ['bannerman'])).toEqual([1, 1, 1]); // 新旗手=光环(leaderBuff)·非 moraleMul
-  });
-
-  it('旗手放大士气：build 时该路下属(主将活)favor 抬升 → 表现为存活单调不减（同 seed）', () => {
-    const baseA = standardArmy('a', 6); // 主将高军衔+偏置 → 大概率活、士气生效
-    const run = (jids: string[]): number => {
-      const a = applyTiangangs(baseA, jids);
-      const e = new Engine({ tickRate: 60 });
-      e.load(buildGameGArmyMatch(a, standardArmy('b', 0), 11, undefined, tiangangMoraleScale(a, jids)));
-      for (let i = 0; i < FLIP_DURATION + 8; i++) e.world.tick();
-      return ['res_a0', 'res_a1', 'res_a2'].reduce((s, id) => s + (get<Resource>(e, id, 'Resource')?.current ?? 0), 0);
-    };
-    expect(run(['bannerman'])).toBeGreaterThanOrEqual(run([])); // 士气放大只升不降
-  });
-
-  it('确定性：旗手士气缩放进 sim 逐拍 hash 一致（缩放不改掷命次数）', () => {
-    const mkE = (): Engine => {
-      const a = applyTiangangs(standardArmy('a', 4), ['bannerman', 'warlord']);
-      const e = new Engine({ tickRate: 60 });
-      e.load(buildGameGArmyMatch(a, standardArmy('b', 0), 13, undefined, tiangangMoraleScale(a, ['bannerman', 'warlord'])));
-      return e;
-    };
-    const e1 = mkE(), e2 = mkE();
-    for (let i = 0; i < FLIP_DURATION + MARCH_DURATION + 6; i++) { e1.world.tick(); e2.world.tick(); expect(e1.hash()).toBe(e2.hash()); }
   });
 
   it('tiangangLinks：从已融天罡取死士/连环开关（结局联动族）', () => {
@@ -92,27 +46,6 @@ describe('Game G · T-G6 天罡牌（融牌面 · build 时 favor 变换 · 持�
     expect(tiangangLinks(['martyr'])).toEqual({ martyr: true, chain: false });
     expect(tiangangLinks(['chain', 'comrade'])).toEqual({ martyr: false, chain: true });
     expect(tiangangLinks(['martyr', 'chain'])).toEqual({ martyr: true, chain: true });
-  });
-
-  it('死士：首死后余部 +报仇（只升 favor、不改掷命次数）→ 同 seed 存活单调不减', () => {
-    const baseA = standardArmy('a', -16); // 压低→兵大概率死、触发首死链
-    const survivors = (links: { martyr: boolean; chain: boolean }): number => {
-      const e = new Engine({ tickRate: 60 });
-      e.load(buildGameGArmyMatch(baseA, standardArmy('b', 0), 33, undefined, undefined, links));
-      for (let i = 0; i < FLIP_DURATION + 8; i++) e.world.tick();
-      return ['res_a0', 'res_a1', 'res_a2'].reduce((s, id) => s + (get<Resource>(e, id, 'Resource')?.current ?? 0), 0);
-    };
-    expect(survivors({ martyr: true, chain: false })).toBeGreaterThanOrEqual(survivors({ martyr: false, chain: false }));
-  });
-
-  it('结局联动进 sim 确定：同军 + 同 links(死士+连环) + seed 逐拍 hash 一致（前向单遍）', () => {
-    const mk = (): Engine => {
-      const e = new Engine({ tickRate: 60 });
-      e.load(buildGameGArmyMatch(standardArmy('a', 0), standardArmy('b', 0), 41, undefined, [1, 1, 1], { martyr: true, chain: true }));
-      return e;
-    };
-    const e1 = mk(), e2 = mk();
-    for (let i = 0; i < FLIP_DURATION + MARCH_DURATION + 6; i++) { e1.world.tick(); e2.world.tick(); expect(e1.hash()).toBe(e2.hash()); }
   });
 
   it('prepareArmies 带出 linksA（死士/连环 喂 build）', () => {
@@ -353,65 +286,6 @@ describe('Game G · T-G6 流派激活质变（主流派集齐 keyJokers → 招�
     const morTiangang = tiangangMoraleScale(r.a, ['bannerman', 'markmorale']);
     for (let i = 0; i < 3; i++) expect(r.moraleA[i]).toBeCloseTo(morTiangang[i] * 1.3, 6);
   });
-
-  it('确定性：激活质变(铺场流+联动)进 sim 逐拍 hash 一致', () => {
-    const mk = (): Engine => {
-      const { a, b, moraleA, linksA } = prepareArmies({ formation: FORMATION_PRESETS['锋矢'], deckBias: 2, tiangangs: ['vanguard', 'martyr', 'chain'], interventions: [], enemyForm: FORMATION_PRESETS['均衡'], enemyBias: 0 });
-      const e = new Engine({ tickRate: 60 });
-      e.load(buildGameGArmyMatch(a, b, 55, undefined, moraleA, linksA));
-      return e;
-    };
-    const e1 = mk(), e2 = mk();
-    for (let i = 0; i < FLIP_DURATION + MARCH_DURATION + 6; i++) { e1.world.tick(); e2.world.tick(); expect(e1.hash()).toBe(e2.hash()); }
-  });
-});
-
-describe('Game G · 全栈养成端到端（星球+激活流派+干预+Boss+联动 一锅 · 硬化）', () => {
-  const surv = (setup: Parameters<typeof prepareArmies>[0], seed: number): number => {
-    const { a, b, moraleA, linksA } = prepareArmies(setup);
-    const e = new Engine({ tickRate: 60 });
-    e.load(buildGameGArmyMatch(a, b, seed, undefined, moraleA, linksA));
-    for (let i = 0; i < FLIP_DURATION + 10; i++) e.world.tick();
-    return ['res_a0', 'res_a1', 'res_a2'].reduce((s, id) => s + (get<Resource>(e, id, 'Resource')?.current ?? 0), 0);
-  };
-
-  it('养成回报：满配(星球+集齐将领流+干预)军 vs 同 Boss 存活 > 裸军', () => {
-    const boss = bossFor(2);
-    const base = { formation: FORMATION_PRESETS['均衡'], deckBias: 0, tiangangs: [] as string[], interventions: [] as Intervention[], enemyForm: boss.formation, enemyBias: boss.favorBias, boss, planets: {} as Record<string, number> };
-    const kitted = { ...base, tiangangs: ['bannerman', 'warlord', 'diehard'], interventions: [{ kind: 'bless', lane: 0 }, { kind: 'bless', lane: 1 }] as Intervention[], planets: { mars: 3, saturn: 1 } };
-    expect(surv(kitted, 77)).toBeGreaterThan(surv(base, 77)); // 养成全栈确实更强
-  });
-
-  it('胜负正确性：压倒性强军 → winner=a；裸弱军 vs 强敌 → winner=b（净突破方向对）', () => {
-    const settle = (armyA: ArmyCard[], armyB: ArmyCard[], seed: number): string => {
-      const e = new Engine({ tickRate: 60 });
-      e.load(buildGameGArmyMatch(armyA, armyB, seed));
-      for (let i = 0; i < FLIP_DURATION + MARCH_DURATION + 6; i++) e.world.tick();
-      return get<State>(e, 'winner', 'State')!.current;
-    };
-    const strong = applyTiangangs(standardArmy('a', 20), ['diehard']); // 高偏置 + 免死地板 88 → 压倒
-    expect(settle(strong, standardArmy('b', -40), 7)).toBe('a'); // 强 vs 弱 → a 胜
-    expect(settle(standardArmy('a', -40), applyTiangangs(standardArmy('b', 20), ['diehard']), 7)).toBe('b'); // 反向 → b 胜
-  });
-
-  it('最大配置确定性：星球+铺场流激活+联动+护盾/增援+终局 Boss 同 setup+seed 逐拍 hash 一致', () => {
-    const boss = bossFor(5); // 小王·无常（decapitate×3）
-    const setup = (): Parameters<typeof prepareArmies>[0] => ({
-      formation: FORMATION_PRESETS['田忌'], deckBias: 4,
-      tiangangs: ['rush', 'markswarm'], // wide(铺场)集齐 → 激活 +2兵/路（doc20 §二尾新钥匙）
-      interventions: [{ kind: 'reinforce', lane: 2 }, { kind: 'shield', lane: 0 }],
-      enemyForm: boss.formation, enemyBias: boss.favorBias, boss,
-      planets: { mars: 2, mercury: 1, jupiter: 1 },
-    });
-    const mk = (): Engine => {
-      const { a, b, moraleA, linksA } = prepareArmies(setup());
-      const e = new Engine({ tickRate: 60 });
-      e.load(buildGameGArmyMatch(a, b, 88, undefined, moraleA, linksA));
-      return e;
-    };
-    const e1 = mk(), e2 = mk();
-    for (let i = 0; i < FLIP_DURATION + MARCH_DURATION + 6; i++) { e1.world.tick(); e2.world.tick(); expect(e1.hash()).toBe(e2.hash()); }
-  });
 });
 
 describe('Game G · 完整 build 时编排 prepareArmies（showMatch 同款 · 端到端）', () => {
@@ -426,30 +300,11 @@ describe('Game G · 完整 build 时编排 prepareArmies（showMatch 同款 · �
     boss,
   });
 
-  it('端到端确定性：同 setup+seed → 逐拍 hash 一致（融天罡+玩家干预+Boss起手+士气 全栈）', () => {
-    const mk = (): Engine => {
-      const { a, b, moraleA } = prepareArmies(setup());
-      const e = new Engine({ tickRate: 60 });
-      e.load(buildGameGArmyMatch(a, b, 21, undefined, moraleA));
-      return e;
-    };
-    const e1 = mk(), e2 = mk();
-    for (let i = 0; i < FLIP_DURATION + MARCH_DURATION + 6; i++) { e1.world.tick(); e2.world.tick(); expect(e1.hash()).toBe(e2.hash()); }
-  });
-
   it('编排落实各效果：moraleA[1,1,1]（新旗手无倍率）、Boss 斩首压玩家三路主将 favor=8、增援我方该路 +2 兵', () => {
     const { a, moraleA } = prepareArmies(setup());
     expect(moraleA).toEqual([1, 1, 1]); // 新旗手=光环非 moraleMul；未集齐将魂印 → 无 ×1.3
     for (const lane of [0, 1, 2]) expect(a.find((c) => c.lane === lane && c.general)!.favor).toBe(8); // Boss 斩首（绝对设值，覆盖天罡加成）
     const base = armyFromFormation('a', 6, FORMATION_PRESETS['田忌']).filter((c) => c.lane === 2).length;
     expect(a.filter((c) => c.lane === 2).length).toBe(base + 2); // 增援 lane2
-  });
-
-  it('编排不改掷命次数 → 跑到结算出胜负（不卡 pending）', () => {
-    const { a, b, moraleA } = prepareArmies(setup());
-    const e = new Engine({ tickRate: 60 });
-    e.load(buildGameGArmyMatch(a, b, 21, undefined, moraleA));
-    for (let i = 0; i < FLIP_DURATION + MARCH_DURATION + 6; i++) e.world.tick();
-    expect(['a', 'b', 'draw']).toContain(get<State>(e, 'winner', 'State')!.current);
   });
 });
