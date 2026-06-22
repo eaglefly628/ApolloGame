@@ -3,6 +3,8 @@ import { esc } from './lobby-util.js';
 import { HERO_CARDS, EARTH_FIENDS, STAGE_CAMPAIGN } from './blueprint.js';
 import { heroPortrait } from './portraits.js';
 import { DISHA_SPECS, stageDisha } from './disha.js';
+import { renderNode, type LayoutNode, type TableRow } from '@ui/components/index.js'; // 引擎数据驱动 UI（实验·菜单逐个重写）
+import { GG_LOBBY_THEME } from './ui-theme.js'; // 大厅内嵌皮：桥接 .ggl-root 的 CSS 变量 → 随玄铁/锦霞皮自适应
 
 const RAR_META: Record<string, [string, string]> = {
   white: ['普通', '#b9bec8'], green: ['精良', '#5bbf7a'], blue: ['稀有', '#3a9bff'],
@@ -71,17 +73,36 @@ export function ladderSection(name: string, rankText: string): string {
     ['7', name, '♠', '黑桃A', '♠ 急袭', '64%', '1240'],
     ['8', '掷地有声', '♦', '方块K', '♦ 稳翻', '61%', '1180'],
   ];
-  const recentsHtml = RECENTS.map(([result, k, mode, detail, lp]) => {
-    const win = k === 'win';
-    return `<div class="rec-row"><div class="rec-result ${win?'win':'lose'}">${result}</div><div style="flex:1;min-width:0"><div style="font-family:var(--fh);font-weight:700;font-size:13px;color:var(--ink)">${esc(mode)}</div><div style="font-size:10px;color:var(--ink-dim)">${esc(detail)}</div></div><span style="font-family:var(--fn);font-size:13px;color:${win?'var(--hp)':'var(--danger)'}">${esc(lp)}</span></div>`;
-  }).join('');
-  const ladderHtml = LADDER_DATA.map(([rank, lname, suit, mainCard, deck, wr, lp]) => {
-    const top3 = +rank <= 3;
-    const isMe = lname === name;
-    const sc = SUIT_H[suit] ?? '#9ca3af';
-    return `<div class="ldr-row" style="${isMe?'background:rgba(232,205,130,.08);border-color:var(--gold);':''}"><span style="width:48px;text-align:center;font-family:var(--fn);font-size:${top3?'18px':'14px'};color:${top3?'var(--gold)':'var(--ink-dim)'}">${esc(rank)}</span><div class="ldr-av" style="background:linear-gradient(150deg,${sc}dd,${sc}88)">${esc(suit)}</div><div style="flex:1;min-width:0"><div style="font-family:var(--fh);font-weight:700;font-size:14px;color:var(--ink);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${esc(lname)}</div><div style="font-size:10px;color:var(--ink-dim);white-space:nowrap">主牌 ${esc(mainCard)}</div></div><span style="width:90px;flex:none;text-align:center;font-family:var(--fh);font-weight:700;font-size:12px;color:var(--ink-dim);white-space:nowrap">${esc(deck)}</span><span style="width:70px;text-align:right;font-family:var(--fn);font-size:12px;color:var(--ink-dim)">${esc(wr)}</span><span style="width:80px;text-align:right;font-family:var(--fn);font-size:14px;color:var(--gold)">${esc(lp)}</span></div>`;
-  }).join('');
-  return `<div style="display:flex;gap:20px;flex:1;min-height:0"><div style="width:340px;flex:none;display:flex;flex-direction:column;gap:16px"><div class="rank-card"><div class="rank-crest">♠</div><div style="font-family:var(--fd);font-size:40px;color:var(--ink);margin-top:10px;line-height:1">${esc(rankText)}</div><div style="font-family:var(--fn);font-size:15px;color:var(--gold);margin-top:6px">1240 LP</div><div class="rank-bar-wrap"><div class="rank-bar-fill" style="width:62%"></div></div><div style="display:flex;justify-content:space-between;width:100%;margin-top:8px;font-size:11px;color:var(--ink-dim)"><span>${esc(rankText)}</span><span>距晋级 60 LP</span><span>—</span></div><div style="display:flex;gap:8px;margin-top:16px;width:100%"><div class="mini-stat"><span class="mini-num">64%</span><span class="mini-lbl">胜率</span></div><div class="mini-stat"><span class="mini-num-hp">3</span><span class="mini-lbl">连胜</span></div><div class="mini-stat"><span class="mini-num">71%</span><span class="mini-lbl">翻正率</span></div></div></div><div class="rec-sheet"><div class="rec-sheet-hd">近 10 局</div><div style="display:flex;flex-direction:column;gap:7px">${recentsHtml}</div></div></div><div class="rec-sheet"><div style="display:flex;align-items:center;gap:12px;margin-bottom:14px"><span style="font-family:var(--fd);font-size:26px;color:var(--ink)">全服榜</span><div style="display:flex;gap:5px;margin-left:6px"><button class="scope-on">全服</button><button class="scope-off">好友</button><button class="scope-off">同段</button></div><div style="flex:1"></div><span style="font-size:11px;color:var(--ink-dim)">每 5 分钟刷新 · 赛季 7</span></div><div class="ldr-head-row"><span style="width:48px">名次</span><span style="flex:1">玩家 / 主牌</span><span style="width:90px;text-align:center">主流派</span><span style="width:70px;text-align:right">胜率</span><span style="width:80px;text-align:right">LP</span></div><div style="flex:1;overflow-y:auto">${ladderHtml}</div></div></div>`;
+  // ⭐ 数据驱动 UI（实验·从菜单逐个入手）：手写 DOM → LayoutNode **数据** + 引擎 renderNode + 古风主题。
+  //   布局=纯数据(本屏无回调·纯展示·逻辑天然分离)；同份数据换主题即换皮。引擎 Table 渲表头/行/对齐/着色。
+  const recentRows: TableRow[] = RECENTS.map(([result, k, mode, detail, lp], i) => ({ id: `rec-${i}`, cells: { r: result, mode: `${mode} · ${detail}`, lp }, tone: k === 'win' ? 'accent' : 'dim' }));
+  const boardRows: TableRow[] = LADDER_DATA.map(([rank, lname, suit, mainCard, deck, wr, lp]) => ({ id: `ldr-${rank}`, cells: { rank, name: `${suit} ${lname} · ${mainCard}`, deck, wr, lp }, tone: lname === name ? 'accent' : (+rank <= 3 ? 'accent' : 'normal') }));
+  const tree: LayoutNode = {
+    type: 'Panel', id: 'ladder', props: {}, layout: { direction: 'row', gap: 16 },
+    children: [
+      {
+        type: 'Panel', id: 'ldr-left', props: {}, layout: { direction: 'column', gap: 14, width: 320 },
+        children: [
+          {
+            type: 'Panel', id: 'ldr-rank', props: { title: '我的段位' }, layout: { gap: 6 },
+            children: [
+              { type: 'Label', id: 'ldr-rank-t', props: { text: `♠ ${rankText}`, size: 'xl', color: 'gold', bold: true } },
+              { type: 'Label', id: 'ldr-rank-lp', props: { text: '1240 LP · 距晋级 60 LP', size: 'sm', color: 'sub' } },
+              { type: 'Label', id: 'ldr-rank-st', props: { text: '胜率 64% · 连胜 3 · 翻正率 71%', size: 'sm', color: 'dim' } },
+            ],
+          },
+          { type: 'Table', id: 'ldr-recents', props: { title: '近 10 局', columns: [{ key: 'r', label: '', width: 30, align: 'center' }, { key: 'mode', label: '对局' }, { key: 'lp', label: 'LP', width: 52, align: 'right' }], rows: recentRows } },
+        ],
+      },
+      {
+        type: 'Panel', id: 'ldr-right', props: {}, layout: { flex: 1 },
+        children: [
+          { type: 'Table', id: 'ldr-board', props: { title: '全服榜 · 赛季 7 · 每 5 分钟刷新', columns: [{ key: 'rank', label: '名次', width: 48, align: 'center' }, { key: 'name', label: '玩家 / 主牌' }, { key: 'deck', label: '主流派', width: 96, align: 'center' }, { key: 'wr', label: '胜率', width: 60, align: 'right' }, { key: 'lp', label: 'LP', width: 68, align: 'right' }], rows: boardRows } },
+        ],
+      },
+    ],
+  };
+  return renderNode(tree, GG_LOBBY_THEME);
 }
 
 const FIEND_KIND_CLR: Record<string, string> = { power: '#ef4444', odds: '#a78bfa', combo: '#2dd4bf', morale: '#fcd34d', tempo: '#22c55e', stamina: '#38bdf8', draw: '#06b6d4', lane: '#94a3b8', siege: '#a8a29e' };

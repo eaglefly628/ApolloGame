@@ -81,6 +81,16 @@ describe('Game G · lobby-screen 视觉回归（忠实港大厅 · 真渲染器 
     await expect(html).toMatchFileSnapshot('./__frames__/lobby-craft.html');
   });
 
+  it('天梯帧（⭐数据驱动 UI 试点：手写 DOM → 引擎 LayoutNode/Table + 大厅内嵌皮）匹配 golden', async () => {
+    const html = renderLobbyDoc(view(), 'ladder');
+    expect(html).toContain('我的段位'); // 左栏段位面板（引擎 Panel + Label）
+    expect(html).toContain('全服榜 · 赛季 7'); // 右栏榜单（引擎 Table title）
+    expect(html).toContain('同花顺王'); // 榜首行（Table row 数据）
+    expect(html).toContain('background:var(--panel)'); // ⭐ 引擎 renderNode 输出 + 桥接大厅 CSS 变量（随玄铁/锦霞皮走）
+    expect(html).toContain('不翻就赢_07'); // 玩家自己那行（tone=accent 高亮）
+    await expect(html).toMatchFileSnapshot('./__frames__/lobby-ladder.html');
+  });
+
   it('锦霞皮帧匹配 golden', async () => {
     const html = renderLobbyDoc(view('rosy'), 'home');
     expect(html).toContain('#c97f86'); // 锦霞红呢牌桌 felt

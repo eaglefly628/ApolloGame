@@ -4,6 +4,8 @@ import type { UITheme } from '@ui/components/types.js';
 // 喂引擎 components 的 renderNode/mountUI 即「换皮」——同一份 LayoutNode 数据、零改解释器。
 // 这就是「数据驱动 UI·主题作数据」的 game-g 那份令牌：最弱 LLM 也只是填颜色/字体字符串，不写 CSS/DOM。
 // （注：引擎 components 只表达**配色/字体**；大厅的绿呢牌桌/漂浮对决卡等 bespoke 结构视觉不在主题范畴。）
+// ① 独立浮层皮（自包含 hex）：用于 **脱离大厅 .ggl-root** 的全屏浮层(挂 document.body)——
+//    如战斗内「返回大厅？」确认框。此处大厅 CSS 变量不在作用域，必须给死值。
 export const GG_THEME_ONYX: UITheme = {
   bg0: '#0c0a07', bg1: '#171109', bg2: '#1f1810', bg3: '#281f15',
   pageBg: 'linear-gradient(180deg,#0c0a07 0%,#171109 100%)',
@@ -16,4 +18,22 @@ export const GG_THEME_ONYX: UITheme = {
   danger: '#d3897a',
   fontUi: '"Noto Serif SC","Songti SC","Source Han Serif SC",serif',
   fontMono: 'ui-monospace,"SF Mono",Menlo,Consolas,monospace',
+};
+
+// ② 大厅内嵌皮（桥接 CSS 变量）：用于**嵌在大厅 .ggl-root 内**的引擎组件(天梯榜/榜单/数值表…)。
+//    令牌不写死值、而是引用大厅自己的设计令牌(var(--ink)/--panel/--gold…) → 引擎渲染的片段
+//    **自动随皮(玄铁/锦霞)走**、与四周大厅零视觉割裂。这就是「引擎组件嵌入 CSS 变量宿主」的通用桥：
+//    最弱 LLM 也只是把令牌填成 'var(--panel)' 这种字符串，照样不写 CSS/DOM。
+export const GG_LOBBY_THEME: UITheme = {
+  bg0: 'var(--track)', bg1: 'var(--panel)', bg2: 'var(--chip)', bg3: 'var(--chip)',
+  pageBg: 'var(--paper)',
+  line: 'var(--panel-border)',
+  text: 'var(--ink)', sub: 'var(--ink-dim)', dim: 'var(--ink-dim)',
+  jade: 'var(--gold)', jadeWash: 'rgba(232,205,138,0.14)', jadeLine: 'var(--hairline)',
+  gold: 'var(--gold)',
+  ok: 'var(--club)', okWash: 'rgba(63,174,110,0.14)',
+  warn: 'var(--gold)', warnWash: 'rgba(232,205,138,0.14)',
+  danger: 'var(--heart)',
+  fontUi: 'var(--fb)',
+  fontMono: 'var(--fn)',
 };
