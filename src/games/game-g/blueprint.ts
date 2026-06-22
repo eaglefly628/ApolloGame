@@ -69,16 +69,10 @@ export function applyBuff(t: BuffTarget, b: RunBuff): void {
 // ═══════════════════════════════════════════════════════════════
 //  G2 · 战场结构（军衔 / 三路 / 布阵 / 将领牵动）—— design/06。owner 愿景核心。
 //
-//  一副 54 张(52+2王) = 一支按军衔(点数)成军、分三路(各18)列阵的军队。开局布阵分兵三路，
-//  交战时**自上而下逐级掷命**：先掷该路主将——主将活→本路下属 +士气 favor、主将亡→−溃散 favor
-//  （擒贼先擒王 → 连锁溃散）——再掷下属。三路各自数存活定路胜负，**胜 2/3 路 = 赢**(best-of-3)。
-//
-//  全是现成能力重组、**零新 capability**（守 §六）：军衔/三路/布阵=数据(tag+布局)；逐张掷命=decideFaceUp；
-//  将领牵动="集合写"用 **build 时逐级 favor 调整**重组(不预设 group-effect 缺口)；数存活/路胜负=group-count+event-when。
-//  outcome-first 红线不变：胜负 build 时即定(确定性/可重放)，3D 抛飞相撞只是表现。
+//  一副 54 张(52+2王) = 一支按军衔(点数)成军、分三路(各18)列阵的军队。开局布阵分兵三路。
+//  本段 = 纯数据装配：军衔→favor / 三路布阵 / 田忌赛马分兵 / 干预·天罡·星球对 favor 的 build 时变换。
+//  装配产物 ArmyCard[] 经 game-g.tsx 折成扑克兵库，交回合制 turn-combat 推进遭遇掷命对决（clash-resolve）。
 // ═══════════════════════════════════════════════════════════════
-const MORALE = 8; // 主将在场：本路下属 +favor（士气）
-const ROUT = 14; // 主将阵亡：本路下属 −favor（溃散连锁）
 
 // 军衔 → 基础 favor（高军衔更易活）。JOKER/K=大队长, Q/J=中队长, 10-7=小队长, A-6=兵。
 function rankFavor(rank: string): number {
@@ -178,7 +172,7 @@ function deployOfficers(quota: readonly number[]): string[][] {
 
 /**
  * 按布阵发兵成军：30 军官按 Formation 分三路、24 兵自动补到 18/路，每路首席(最高军衔)=主将。
- * 无 Formation → 回退 standardArmy(军衔蛇形=均衡，零迁移)。输出与 standardArmy 同构(ArmyCard[])，喂 buildGameGArmyMatch。
+ * 无 Formation → 回退 standardArmy(军衔蛇形=均衡，零迁移)。输出与 standardArmy 同构(ArmyCard[])，供出战编排（→ turn-combat）。
  */
 export function armyFromFormation(prefix: string, favorBias: number, formation?: Formation): ArmyCard[] {
   if (!formation) return standardArmy(prefix, favorBias);
@@ -261,7 +255,7 @@ export function laneHandTier(cards: ArmyCard[], tierBonus = 0): { type: HandType
 }
 
 /**
- * 揭晓前施加干预（改 favor / 斩将 / 加兵）→ 返回改后的 a/b 军，喂 buildGameGArmyMatch。
+ * 揭晓前施加干预（改 favor / 斩将 / 加兵）→ 返回改后的 a/b 军，供出战编排（→ turn-combat）。
  * outcome-first：只改掷命前输入；胜负仍 build 时由规则定、可回放（同 seed+同干预序列 → 同结果）。
  * 斩首=把敌该路主将 favor 压到 8(极易掉)，掉则经 06 将领牵动自动 −14 溃散；增援=该路 +2 兵(路可达 20)。
  *
@@ -347,12 +341,12 @@ export function bossFor(idx: number): BossSpec {
 // ── T-G6 · 天罡牌（融牌面的持久"改规则"被动 · design/12 §二）──
 // 借 Game E 小丑的**声明式数据哲学**（每张 = 一条 {kind,params} 规则 + text 人话），但**域不同**：
 //   Game E joker = 运行时计分(on_hand_scored→chips/mult)；Game G **outcome-first** → joker = **build 时军阵 favor 变换**（揭晓前定、不回灌）。
-// 故复用"数据+解释器"范式、**不复用 Game E 运行时**（同 D0 §同花未复用 evaluateHand 之理）。applyJokers 在 resolveArmy 前跑、**零新能力**。
+// 故复用"数据+解释器"范式、**不复用 Game E 运行时**（同 D0 §同花未复用 evaluateHand 之理）。applyTiangangs 在出战编排前跑、**零新能力**。
 // 局外持久：融在玩家牌组上（save.jokers），跨 run 不清零——"牌组身份"养成核(owner 愿景)。
 // 本批 4 张=纯 build 时 favor 变换(同袍/赌徒/先登/不屈)；士气放大族(旗手/枭雄)、结局联动族(死士/连环/督粮/影武者)待后续切片(需 resolve 时钩子)。
 import { GAME_G_TIANGANGS, type TiangangCard, type Archetype } from './tiangang-data.js'; // 天罡数据拆出·本地引用 + 下方 export* 再导出
 export * from './tiangang-data.js';
-/** 从已融天罡取结局联动开关（死士/连环）→ 喂 resolveArmy 前向生效。 */
+/** 从已融天罡取结局联动开关（死士/连环）→ 出战编排前向生效。 */
 export function tiangangLinks(tiangangIds: readonly string[]): LinkTiangangs {
   return { martyr: tiangangIds.includes('martyr'), chain: tiangangIds.includes('chain') };
 }
@@ -526,7 +520,7 @@ export function archetypeMatchup(a: Archetype, b: Archetype): 'counter' | 'count
 // ── T-G6 · 流派激活质变（design/12 §四.5 · "钥匙解锁招牌强度" → 闭合"选择即流派"）──
 // 触发：你的**主流派**(detectArchetype 多数决)且**集齐其 keyJokers**(全融承诺) → 施该流派**招牌增益**。只主流派激活(防混搭叠猛)。
 // ⚠️ 与 design#16 的差异(已报 finish，待 design 核)：① 原阈值"≥3 keyJokers"与现 keyJoker 数(多为 2)不符 → 改"集齐主流派全 keyJokers"(6 流派皆可达)；
-//    ② 原招式 概率(改 decideFaceUp 下限)/弃一保二(favor 转移)/斩首(−1◈+溃散−20) 需新机制/改核 → 取**等价 build-时近似**(各注)。全 build 时、outcome-first、零新能力。
+//    ② 原招式 概率(改对决胜率下限·clash-resolve)/弃一保二(favor 转移)/斩首(−1◈+溃散−20) 需新机制/改核 → 取**等价 build-时近似**(各注)。全 build 时、零新能力。
 const ACTIVATION_FAVOR = 8; // 弃一保二：两强路集中 +favor
 export function activeArchetype(tiangangIds: readonly string[]): Archetype | null {
   const main = detectArchetype(tiangangIds); // 多数决主流派
@@ -559,7 +553,7 @@ export function applyArchetypeActivation(active: Archetype, armyA: ArmyCard[], a
   return { a, b, moraleMul, tierBonusAdd };
 }
 
-// 从已融天罡算每路士气倍率（旗手全路、枭雄仅顶级主将路）→ 喂 resolveArmy。复用 `06` 士气、不新机制。
+// 从已融天罡算每路士气倍率（旗手全路、枭雄仅顶级主将路）→ 供出战编排。复用 `06` 士气、不新机制。
 const TOP_RANKS = new Set(['JOKER', 'K']); // 顶级军衔（枭雄触发档）
 export function tiangangMoraleScale(army: ArmyCard[], tiangangIds: readonly string[]): number[] {
   const scale = [1, 1, 1];
@@ -602,9 +596,9 @@ export function applyTiangangs(army: ArmyCard[], tiangangIds: readonly string[])
 }
 
 /**
- * 揭晓前的**完整 build 时编排**（单一真相 · showMatch 与测试共用，杜绝两路漂移）：
- *   成军(布阵+deck偏置) → 融天罡(applyJokers) → 玩家干预(caster='a') → Boss 起手干预(caster='b') → 算士气倍率。
- * 全在揭晓前、不回灌 gameplay（outcome-first）；返回喂 buildGameGArmyMatch 的 {a,b,moraleA}。纯函数、可重放。
+ * 揭晓前的**完整 build 时编排**（单一真相 · 出战编排与测试共用，杜绝两路漂移）：
+ *   成军(布阵+deck偏置) → 融天罡(applyTiangangs) → 玩家干预(caster='a') → Boss 起手干预(caster='b') → 算士气倍率。
+ * 全在揭晓前、不回灌 gameplay（outcome-first）；返回 {a,b,moraleA}（供出战编排 → turn-combat）。纯函数、可重放。
  */
 export interface MatchSetup { formation: Formation; deckBias: number; tiangangs: readonly string[]; interventions: Intervention[]; enemyForm?: Formation; enemyBias: number; boss?: BossSpec | null; planets?: Record<string, number> }
 // 确保全军 rank+suit 不重复：按出现顺序为每张牌分配未用花色；rank 全满(>4张)时换 JOKER/临近 rank 吸收溢出。
