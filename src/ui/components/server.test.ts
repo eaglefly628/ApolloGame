@@ -290,4 +290,52 @@ describe('UI Components · renderNode', () => {
     const html = renderNode({ type: 'Slider', id: 'sl2', props: { value: 50 } });
     expect(html).not.toContain('justify-content:space-between');
   });
+
+  it('Table: 列头 + 行数据 + 固定列宽/对齐 + 可点行 + tone 着色', () => {
+    const html = renderNode({
+      type: 'Table', id: 'lb', props: {
+        title: '天梯榜',
+        columns: [{ key: 'rank', label: '名次', width: 50 }, { key: 'name', label: '玩家' }, { key: 'score', label: '积分', align: 'right' }],
+        rows: [
+          { id: 'r1', cells: { rank: '1', name: '不翻就赢', score: '2380' }, tone: 'accent' },
+          { id: 'r2', cells: { rank: '2', name: '常胜将军', score: '2210' }, action: 'viewRow' },
+        ],
+      },
+    });
+    expect(html).toContain('天梯榜');
+    expect(html).toContain('>名次<'); expect(html).toContain('>玩家<'); expect(html).toContain('>积分<');
+    expect(html).toContain('不翻就赢'); expect(html).toContain('2380');
+    expect(html).toContain('flex:0 0 50px');      // 固定列宽
+    expect(html).toContain('text-align:right');    // 列对齐
+    expect(html).toContain('data-action="viewRow"'); expect(html).toContain('data-arg="r2"'); // 整行可点
+    expect(html).toContain('#d4bd8a');             // accent tone = SHELL.gold
+  });
+
+  it('Table: 空行显示 empty 占位', () => {
+    const html = renderNode({ type: 'Table', id: 'lbe', props: { columns: [{ key: 'a', label: 'A' }], rows: [], empty: '暂无记录' } });
+    expect(html).toContain('暂无记录');
+  });
+
+  it('Tabs: nav 标签 + 各页 data-tabpage + 两页全渲染(仅 active 显示)', () => {
+    const html = renderNode({
+      type: 'Tabs', id: 'tt',
+      props: { tabs: [{ id: 'a', label: '牌谱' }, { id: 'b', label: '榜单' }], active: 'b' },
+      children: [
+        { type: 'Label', id: 'pa', props: { text: 'PAGE-A' } },
+        { type: 'Label', id: 'pb', props: { text: 'PAGE-B' } },
+      ],
+    });
+    expect(html).toContain('data-tabs="tt"');
+    expect(html).toContain('data-tab="a"'); expect(html).toContain('data-tab="b"');
+    expect(html).toContain('>牌谱<'); expect(html).toContain('>榜单<');
+    expect(html).toContain('PAGE-A'); expect(html).toContain('PAGE-B'); // 两页都渲染→切页只 toggle display·不重建
+    expect(html).toMatch(/data-tabpage="b"[^>]*display:block/);  // active=b 显示
+    expect(html).toMatch(/data-tabpage="a"[^>]*display:none/);   // 非 active 隐藏
+  });
+
+  it('Tabs: 缺省 active = 第一页', () => {
+    const html = renderNode({ type: 'Tabs', id: 't2', props: { tabs: [{ id: 'x', label: 'X' }, { id: 'y', label: 'Y' }] }, children: [{ type: 'Label', id: 'lx', props: { text: 'X' } }, { type: 'Label', id: 'ly', props: { text: 'Y' } }] });
+    expect(html).toMatch(/data-tabpage="x"[^>]*display:block/);
+    expect(html).toMatch(/data-tabpage="y"[^>]*display:none/);
+  });
 });

@@ -6,7 +6,8 @@
 
 export type ComponentType =
   | 'Panel' | 'Button' | 'Label' | 'Dropdown' | 'Badge' | 'Input' | 'Divider'
-  | 'Checkbox' | 'Toggle' | 'RadioGroup' | 'Image' | 'Screen' | 'Slider';
+  | 'Checkbox' | 'Toggle' | 'RadioGroup' | 'Image' | 'Screen' | 'Slider'
+  | 'Table' | 'Tabs';
 
 /** 布局约束：坐标/尺寸/弹性。x/y 触发绝对定位；flex 在父 Panel/Screen 内生效。 */
 export interface LayoutConstraints {
@@ -113,9 +114,23 @@ export interface SliderProps {
   action?: string;
 }
 
+// ── Table（数据表 / 榜单 / 数值表）：列定义 + 行数据。游戏只填 columns + rows（最弱 LLM 能填）。 ──
+// 列：key 取行 cells[key]；align 对齐；width 固定列宽 px（缺省弹性均分）。
+export interface TableColumn { key: string; label: string; align?: 'left' | 'center' | 'right'; width?: number }
+// 行：id 唯一；cells = 列 key → 文本；action 可选（整行可点·arg=行 id）；tone 着色（普通/强调/淡）。
+export interface TableRow { id: string; cells: Record<string, string>; action?: string; tone?: 'normal' | 'accent' | 'dim' }
+export interface TableProps { columns: TableColumn[]; rows: TableRow[]; title?: string; empty?: string }
+
+// ── Tabs（= Table Pages）：带标签的多页。引擎管切换——点 label 切页、**不重建页内容**
+//    （抗闪屏内建·下沉自 game-g 大厅 setTab 定点刷新；解决"切页重建 52 网格/跳滚动"一类 bug 一次）。 ──
+// LayoutNode.children = 各页内容（顺序对齐 tabs：tabs[i] ↔ children[i]）。
+// active = 当前页 id（缺省第一页）；action = 切页额外回调（可选·core 切换由引擎做、无需游戏处理）。
+export interface TabsProps { tabs: { id: string; label: string }[]; active?: string; action?: string }
+
 export type ComponentProps =
   | ButtonProps | LabelProps | DropdownProps | BadgeProps | InputProps | PanelProps
   | CheckboxProps | ToggleProps | RadioGroupProps | ImageProps | ScreenProps | SliderProps
+  | TableProps | TabsProps
   | Record<string, never>;
 
 /** LayoutNode = 弱模型填写的 UI 数据单元。type + id + props 必填；layout/children 按需。 */

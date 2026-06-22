@@ -6,6 +6,7 @@ import type {
   LayoutNode, LayoutConstraints, UITheme,
   ButtonProps, LabelProps, DropdownProps, BadgeProps, InputProps, PanelProps,
   CheckboxProps, ToggleProps, RadioGroupProps, ImageProps, ScreenProps, SliderProps,
+  TableProps, TableColumn, TabsProps,
 } from './types.js';
 
 const esc = (s: string): string =>
@@ -189,6 +190,46 @@ function renderSlider(id: string, p: SliderProps, ls: string, t: UITheme): strin
 </div>`;
 }
 
+// ── Table / Tabs（以 game-g 大厅榜单/数值表 + 抗闪屏切页为出发点·下沉成引擎组件）────────
+
+const colFlex = (c: TableColumn): string => (c.width !== undefined ? `flex:0 0 ${c.width}px` : 'flex:1');
+
+// 数据表：列定义 + 行数据 → 表头(淡色阔字距) + 行(发丝线分隔·可点·tone 着色)。游戏只填 columns/rows。
+function renderTable(id: string, p: TableProps, ls: string, t: UITheme): string {
+  const title = p.title
+    ? `<div style="font-size:10px;letter-spacing:2.4px;text-transform:uppercase;color:${t.dim};font-family:${t.fontUi};margin-bottom:8px">${esc(p.title)}</div>`
+    : '';
+  const head = `<div style="display:flex;gap:10px;padding:0 4px 6px;border-bottom:1px solid ${t.line}">${p.columns.map((c) => `<span style="${colFlex(c)};text-align:${c.align ?? 'left'};font-size:9px;letter-spacing:1.6px;text-transform:uppercase;color:${t.dim};font-family:${t.fontUi}">${esc(c.label)}</span>`).join('')}</div>`;
+  const toneColor: Record<string, string> = { normal: t.text, accent: t.gold, dim: t.dim };
+  const body = p.rows.length
+    ? p.rows.map((r) => {
+        const act = r.action ? ` data-action="${esc(r.action)}" data-arg="${esc(r.id)}"` : '';
+        const cur = r.action ? 'cursor:pointer;' : '';
+        const cells = p.columns.map((c) => `<span style="${colFlex(c)};text-align:${c.align ?? 'left'};font-size:12px;color:${toneColor[r.tone ?? 'normal'] ?? t.text};font-family:${t.fontUi};overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${esc(r.cells[c.key] ?? '')}</span>`).join('');
+        return `<div${act} style="display:flex;gap:10px;align-items:center;padding:8px 4px;border-bottom:1px solid ${t.line};${cur}">${cells}</div>`;
+      }).join('')
+    : `<div style="padding:18px 4px;text-align:center;font-size:12px;color:${t.dim};font-family:${t.fontUi}">${esc(p.empty ?? '—')}</div>`;
+  return `<div id="${esc(id)}" style="display:flex;flex-direction:column;background:${t.bg1};border:1px solid ${t.line};border-radius:10px;padding:12px 14px;${ls}">${title}${head}${body}</div>`;
+}
+
+// 多页(Table Pages)：nav 标签栏 + 各页全渲染(仅 active 显示)。切页由 mountUI 就地 toggle display(不重建·抗闪屏)。
+// children 顺序对齐 tabs；data-tab/data-tabpage/data-tabs 是 mountUI 切页的锚点。
+function renderTabs(id: string, p: TabsProps, children: LayoutNode[], ls: string, t: UITheme): string {
+  const active = p.active ?? p.tabs[0]?.id ?? '';
+  const navBtn = (tb: { id: string; label: string }): string => {
+    const on = tb.id === active;
+    const act = p.action ? ` data-action="${esc(p.action)}" data-arg="${esc(tb.id)}"` : '';
+    const style = `padding:7px 14px;font-size:12px;cursor:pointer;background:none;outline:none;font-family:${t.fontUi};border:none;border-bottom:2px solid ${on ? t.gold : 'transparent'};color:${on ? t.gold : t.sub};transition:all .15s`;
+    return `<button data-tab="${esc(tb.id)}"${act} style="${style}">${esc(tb.label)}</button>`;
+  };
+  const nav = `<div style="display:flex;gap:4px;border-bottom:1px solid ${t.line};flex-wrap:wrap">${p.tabs.map(navBtn).join('')}</div>`;
+  const pages = p.tabs.map((tb, i) => {
+    const content = children[i] ? renderNode(children[i], t) : '';
+    return `<div data-tabpage="${esc(tb.id)}" style="display:${tb.id === active ? 'block' : 'none'}">${content}</div>`;
+  }).join('');
+  return `<div id="${esc(id)}" data-tabs="${esc(id)}" style="display:flex;flex-direction:column;gap:12px;${ls}">${nav}${pages}</div>`;
+}
+
 // ── 统一入口 ────────────────────────────────────────────────────
 
 /** 将 LayoutNode 树渲染为 HTML 字符串。弱模型提供数据 + 可选主题；此函数是解释器。缺省主题 = 引擎 SHELL 脸。 */
@@ -209,6 +250,8 @@ export function renderNode(node: LayoutNode, theme: UITheme = SHELL): string {
     case 'Image':      return renderImage(node.id, node.props as ImageProps, ls);
     case 'Screen':     return renderScreen(node.id, node.props as ScreenProps, node.children ?? [], t);
     case 'Slider':     return renderSlider(node.id, node.props as SliderProps, ls, t);
+    case 'Table':      return renderTable(node.id, node.props as TableProps, ls, t);
+    case 'Tabs':       return renderTabs(node.id, node.props as TabsProps, node.children ?? [], ls, t);
     default:           return `<!-- unknown: ${String((node as LayoutNode).type)} -->`;
   }
 }

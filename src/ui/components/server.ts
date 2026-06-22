@@ -44,11 +44,34 @@ export function mountUI(
     }
   };
 
+  // Tabs 切页（抗闪屏·引擎内建·下沉自 game-g 大厅 setTab）：点 [data-tab] → 就地 toggle 页 display + nav 高亮，
+  // **不重建页内容**（解决"切页重建大网格/跳滚动"一类 bug 一次·所有游戏受益）。嵌套 Tabs 按 closest 归属隔离。
+  const switchTab = (e: Event): void => {
+    const btn = (e.target as HTMLElement).closest('[data-tab]') as HTMLElement | null;
+    if (!btn) return;
+    const tabsRoot = btn.closest('[data-tabs]') as HTMLElement | null;
+    if (!tabsRoot) return;
+    const id = btn.dataset['tab'];
+    if (!id) return;
+    tabsRoot.querySelectorAll<HTMLElement>('[data-tabpage]').forEach((pg) => {
+      if (pg.closest('[data-tabs]') !== tabsRoot) return; // 跳过嵌套 Tabs 的页
+      pg.style.display = pg.dataset['tabpage'] === id ? 'block' : 'none';
+    });
+    tabsRoot.querySelectorAll<HTMLElement>('[data-tab]').forEach((b) => {
+      if (b.closest('[data-tabs]') !== tabsRoot) return;
+      const on = b.dataset['tab'] === id;
+      b.style.color = on ? theme.gold : theme.sub;
+      b.style.borderBottomColor = on ? theme.gold : 'transparent';
+    });
+  };
+
   host.addEventListener('click',  dispatch);
+  host.addEventListener('click',  switchTab);
   host.addEventListener('change', dispatch);
 
   return () => {
     host.removeEventListener('click',  dispatch);
+    host.removeEventListener('click',  switchTab);
     host.removeEventListener('change', dispatch);
     host.innerHTML = '';
   };
