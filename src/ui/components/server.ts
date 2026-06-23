@@ -95,9 +95,24 @@ export function mountUI(
     if (b) b.style.display = 'none';
   };
 
+  // Accordion 折叠切换（引擎内建）：点标题行 → 就地 toggle 折叠体 display + 箭头旋转（不重建·可选 action 信号另由 dispatch 发）。
+  const accordionToggle = (e: Event): void => {
+    const head = (e.target as HTMLElement).closest('[data-accordion-head]') as HTMLElement | null;
+    if (!head) return;
+    const root = head.closest('[data-accordion]') as HTMLElement | null;
+    if (!root) return;
+    const body = root.querySelector<HTMLElement>(':scope > [data-accordion-body]');
+    if (!body) return;
+    const willOpen = body.style.display === 'none';
+    body.style.display = willOpen ? 'block' : 'none';
+    const caret = head.querySelector<HTMLElement>('[data-accordion-caret]');
+    if (caret) caret.style.transform = `rotate(${willOpen ? 90 : 0}deg)`;
+  };
+
   host.addEventListener('click',     dispatch);
   host.addEventListener('click',     switchTab);
   host.addEventListener('click',     modalClose);
+  host.addEventListener('click',     accordionToggle);
   host.addEventListener('change',    dispatch);
   host.addEventListener('mouseover', tipShow);
   host.addEventListener('mouseout',  tipHide);
@@ -108,6 +123,7 @@ export function mountUI(
     host.removeEventListener('click',     dispatch);
     host.removeEventListener('click',     switchTab);
     host.removeEventListener('click',     modalClose);
+    host.removeEventListener('click',     accordionToggle);
     host.removeEventListener('change',    dispatch);
     host.removeEventListener('mouseover', tipShow);
     host.removeEventListener('mouseout',  tipHide);

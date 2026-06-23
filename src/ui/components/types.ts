@@ -7,7 +7,8 @@
 export type ComponentType =
   | 'Panel' | 'Button' | 'Label' | 'Dropdown' | 'Badge' | 'Input' | 'Divider'
   | 'Checkbox' | 'Toggle' | 'RadioGroup' | 'Image' | 'Screen' | 'Slider'
-  | 'Table' | 'Tabs' | 'ProgressBar' | 'Tag' | 'Modal' | 'Toast' | 'Tooltip';
+  | 'Table' | 'Tabs' | 'ProgressBar' | 'Tag' | 'Modal' | 'Toast' | 'Tooltip'
+  | 'Card' | 'Stepper' | 'Segmented' | 'Avatar' | 'Accordion';
 
 /** 布局约束：坐标/尺寸/弹性。x/y 触发绝对定位；flex 在父 Panel/Screen 内生效。 */
 export interface LayoutConstraints {
@@ -161,10 +162,38 @@ export interface TooltipProps {
   content: string; placement?: 'top' | 'bottom' | 'left' | 'right';
 }
 
+// ── Card（网格卡单元·配 Panel grid 用）：媒体字形 + 标题 + 副标 + 角标 + tone/锁态 + 可点。──
+// children 可放自定义体（覆盖默认 title/sub 排版）。Card + Panel(grid) = 卡牌格/货架标准组合。
+export interface CardProps {
+  title?: string; sub?: string; media?: string; corner?: string;
+  tone?: 'normal' | 'accent' | 'dim' | 'locked'; action?: string; actionArg?: string;
+}
+
+// ── Stepper（数量 ± 加减）：value 当前值；±按钮 data-arg=钳位后的新值；到界禁用。handler 收到新值字符串。 ──
+export interface StepperProps {
+  value: number; min?: number; max?: number; step?: number; action?: string;
+}
+
+// ── Segmented（紧凑分段选择·比 RadioGroup 省地方）：options + value(选中)；handler 收到所选 value。 ──
+export interface SegmentedProps {
+  options: { value: string; label: string }[]; value?: string; action?: string;
+}
+
+// ── Avatar（头像/立绘位）：src 有则图、无则取 name 首字；size 尺寸 px；shape 圆/圆角/方。 ──
+export interface AvatarProps {
+  src?: string; name?: string; size?: number; shape?: 'circle' | 'rounded' | 'square';
+}
+
+// ── Accordion（折叠面板）：title 行点击切开合（mountUI 内建）；open 初始展开；children = 折叠体。action 可选通知信号。 ──
+export interface AccordionProps {
+  title: string; open?: boolean; action?: string;
+}
+
 export type ComponentProps =
   | ButtonProps | LabelProps | DropdownProps | BadgeProps | InputProps | PanelProps
   | CheckboxProps | ToggleProps | RadioGroupProps | ImageProps | ScreenProps | SliderProps
   | TableProps | TabsProps | ProgressBarProps | TagProps | ModalProps | ToastProps | TooltipProps
+  | CardProps | StepperProps | SegmentedProps | AvatarProps | AccordionProps
   | Record<string, never>;
 
 /** LayoutNode = 弱模型填写的 UI 数据单元。type + id + props 必填；layout/children 按需。 */

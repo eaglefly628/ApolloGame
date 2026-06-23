@@ -431,4 +431,47 @@ describe('UI Components · renderNode', () => {
     expect(html).toContain('top:calc(100% + 6px)');      // placement=bottom 在下方
     expect(html).toContain('>?<');                       // child 触发元素
   });
+
+  it('Card: 媒体/标题/副标/角标 + 可点(action+arg) + accent 边框', () => {
+    const html = renderNode({ type: 'Card', id: 'c', props: { media: '🃏', title: '同袍', sub: '🪙 16', corner: '稀有', tone: 'accent', action: 'buy', actionArg: 'comrade' } });
+    expect(html).toContain('🃏'); expect(html).toContain('同袍'); expect(html).toContain('🪙 16'); expect(html).toContain('稀有');
+    expect(html).toContain('data-action="buy"'); expect(html).toContain('data-arg="comrade"');
+    expect(html).toContain('cursor:pointer');
+  });
+
+  it('Card: locked 暗化；children 非空则替默认排版', () => {
+    expect(renderNode({ type: 'Card', id: 'c', props: { title: 'X', tone: 'locked' } })).toContain('opacity:.55');
+    const custom = renderNode({ type: 'Card', id: 'c', props: { title: '默认' }, children: [{ type: 'Label', id: 'l', props: { text: '自定义体' } }] });
+    expect(custom).toContain('自定义体'); expect(custom).not.toContain('默认'); // 有 children 不渲染默认 title
+  });
+
+  it('Stepper: ± 按钮 data-arg=钳位新值；到界禁用', () => {
+    const html = renderNode({ type: 'Stepper', id: 's', props: { value: 3, min: 0, max: 5, step: 1, action: 'qty' } });
+    expect(html).toContain('data-arg="2"'); // − → 2
+    expect(html).toContain('data-arg="4"'); // + → 4
+    expect(html).toContain('>3<');          // 当前值
+    const atMax = renderNode({ type: 'Stepper', id: 's', props: { value: 5, max: 5, action: 'qty' } });
+    expect(atMax).toMatch(/disabled[^>]*>\+</); // 到上界 + 禁用
+  });
+
+  it('Segmented: 选中段高亮 + 点段 action(arg=value)', () => {
+    const html = renderNode({ type: 'Segmented', id: 'sg', props: { options: [{ value: 'a', label: '甲' }, { value: 'b', label: '乙' }], value: 'b', action: 'pick' } });
+    expect(html).toContain('data-arg="a"'); expect(html).toContain('data-arg="b"');
+    expect(html).toContain('甲'); expect(html).toContain('乙');
+  });
+
+  it('Avatar: 有 src 渲 img；无 src 取 name 首字 + shape 圆角', () => {
+    expect(renderNode({ type: 'Avatar', id: 'a', props: { src: 'x.png', name: '关羽' } })).toContain('<img');
+    const initial = renderNode({ type: 'Avatar', id: 'a', props: { name: '关羽', shape: 'square', size: 50 } });
+    expect(initial).toContain('>关<'); // 首字
+    expect(initial).toContain('width:50px'); expect(initial).toContain('border-radius:0px'); // square
+  });
+
+  it('Accordion: 标题 + 折叠体(open 决定 display) + 切换锚点', () => {
+    const closed = renderNode({ type: 'Accordion', id: 'ac', props: { title: '高级设置' }, children: [{ type: 'Label', id: 'l', props: { text: '内容' } }] });
+    expect(closed).toContain('data-accordion-head'); expect(closed).toContain('data-accordion-body');
+    expect(closed).toContain('高级设置'); expect(closed).toContain('内容');
+    expect(closed).toMatch(/data-accordion-body[^>]*display:none/); // 缺省收起
+    expect(renderNode({ type: 'Accordion', id: 'ac', props: { title: 'X', open: true }, children: [] })).toMatch(/data-accordion-body[^>]*display:block/);
+  });
 });

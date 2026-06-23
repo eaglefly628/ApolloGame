@@ -7,6 +7,7 @@ import type {
   ButtonProps, LabelProps, DropdownProps, BadgeProps, InputProps, PanelProps,
   CheckboxProps, ToggleProps, RadioGroupProps, ImageProps, ScreenProps, SliderProps,
   TableProps, TableColumn, TabsProps, ProgressBarProps, TagProps, ModalProps, ToastProps, TooltipProps,
+  CardProps, StepperProps, SegmentedProps, AvatarProps, AccordionProps,
 } from './types.js';
 
 const esc = (s: string): string =>
@@ -308,6 +309,58 @@ function renderModal(id: string, p: ModalProps, children: LayoutNode[], ls: stri
   return `<div id="${esc(id)}"${scrimClose} style="position:fixed;inset:0;z-index:200;display:flex;align-items:center;justify-content:center;padding:24px;background:rgba(0,0,0,0.62);${ls}"><div style="position:relative;width:${w}px;max-width:100%;max-height:88vh;overflow-y:auto;background:${t.bg1};border:1px solid ${t.line};border-radius:12px;padding:22px;box-shadow:0 24px 70px rgba(0,0,0,0.55)">${xBtn}${title}${body}</div></div>`;
 }
 
+// ── Card / Stepper / Segmented / Avatar / Accordion（P1·网格卡/数量/分段/头像/折叠）──────
+
+// 网格卡单元：媒体字形 + 标题 + 副标 + 角标 + tone 边框/暗化 + 可点。children 非空则替默认排版。
+function renderCard(id: string, p: CardProps, children: LayoutNode[], ls: string, t: UITheme): string {
+  const border = p.tone === 'accent' ? t.jadeLine : t.line;
+  const dimmed = (p.tone === 'locked' || p.tone === 'dim') ? 'opacity:.55;' : '';
+  const action = p.action ? ` data-action="${esc(p.action)}"${p.actionArg ? ` data-arg="${esc(p.actionArg)}"` : ''}` : '';
+  const cursor = p.action ? 'cursor:pointer;' : '';
+  const corner = p.corner ? `<span style="position:absolute;top:7px;right:8px;font-size:9px;padding:1px 6px;border-radius:7px;background:${t.jadeWash};color:${t.jade};font-family:${t.fontUi}">${esc(p.corner)}</span>` : '';
+  const body = children.length
+    ? children.map((ch) => renderNode(ch, t)).join('')
+    : `${p.media ? `<div style="font-size:26px;text-align:center;margin-bottom:6px">${esc(p.media)}</div>` : ''}${p.title ? `<div style="font-size:12px;font-weight:700;color:${t.text};font-family:${t.fontUi};text-align:center;line-height:1.3">${esc(p.title)}</div>` : ''}${p.sub ? `<div style="font-size:10px;color:${t.dim};font-family:${t.fontUi};text-align:center;margin-top:3px">${esc(p.sub)}</div>` : ''}`;
+  return `<div id="${esc(id)}"${action} style="position:relative;display:flex;flex-direction:column;justify-content:center;padding:12px 10px;border-radius:10px;background:${t.bg2};border:1px solid ${border};font-family:${t.fontUi};${dimmed}${cursor}${ls}">${corner}${body}</div>`;
+}
+
+// 数量 ±：到界或无 action 则禁用按钮（不发信号）；按钮 data-arg=钳位后新值。
+function renderStepper(id: string, p: StepperProps, ls: string, t: UITheme): string {
+  const min = p.min ?? 0, max = p.max ?? 99, step = p.step ?? 1, v = p.value;
+  const btn = (lbl: string, target: number, disabled: boolean): string =>
+    `<button${disabled ? ' disabled' : ` data-action="${esc(p.action ?? '')}" data-arg="${target}"`} style="width:26px;height:26px;border-radius:6px;background:${t.bg2};border:1px solid ${t.line};color:${t.sub};font-size:15px;line-height:1;cursor:${disabled ? 'not-allowed' : 'pointer'};font-family:${t.fontUi};opacity:${disabled ? 0.4 : 1}">${lbl}</button>`;
+  return `<div id="${esc(id)}" style="display:inline-flex;align-items:center;gap:8px;${ls}">${btn('−', Math.max(min, v - step), !p.action || v <= min)}<span style="min-width:28px;text-align:center;font-size:13px;color:${t.text};font-family:${t.fontMono}">${v}</span>${btn('+', Math.min(max, v + step), !p.action || v >= max)}</div>`;
+}
+
+// 紧凑分段选择：选中段洗色高亮；点段 → action(arg=value)。
+function renderSegmented(id: string, p: SegmentedProps, ls: string, t: UITheme): string {
+  const segs = p.options.map((o) => {
+    const on = p.value === o.value;
+    const action = p.action ? ` data-action="${esc(p.action)}" data-arg="${esc(o.value)}"` : '';
+    return `<button${action} style="padding:5px 12px;border:none;border-radius:6px;background:${on ? t.jadeWash : 'transparent'};color:${on ? t.jade : t.sub};font-size:12px;cursor:pointer;font-family:${t.fontUi}">${esc(o.label)}</button>`;
+  }).join('');
+  return `<div id="${esc(id)}" style="display:inline-flex;gap:2px;padding:2px;border-radius:8px;background:${t.bg2};border:1px solid ${t.line};${ls}">${segs}</div>`;
+}
+
+// 头像/立绘位：src 有则图、无则 name 首字；shape 决定圆角。
+function renderAvatar(id: string, p: AvatarProps, ls: string, t: UITheme): string {
+  const size = p.size ?? 40;
+  const radius = p.shape === 'square' ? 0 : p.shape === 'rounded' ? Math.round(size * 0.22) : size;
+  const inner = p.src
+    ? `<img src="${esc(p.src)}" alt="${esc(p.name ?? '')}" style="width:100%;height:100%;object-fit:cover">`
+    : `<span style="font-size:${Math.round(size * 0.42)}px;color:${t.sub};font-family:${t.fontUi}">${esc((p.name ?? '?').slice(0, 1))}</span>`;
+  return `<span id="${esc(id)}" title="${esc(p.name ?? '')}" style="display:inline-flex;align-items:center;justify-content:center;width:${size}px;height:${size}px;border-radius:${radius}px;overflow:hidden;background:${t.bg3};border:1px solid ${t.line};${ls}">${inner}</span>`;
+}
+
+// 折叠面板：title 行点击切开合（mountUI 内建·锚 data-accordion*）；open 初始展开。
+function renderAccordion(id: string, p: AccordionProps, children: LayoutNode[], ls: string, t: UITheme): string {
+  const open = p.open ?? false;
+  const action = p.action ? ` data-action="${esc(p.action)}"` : '';
+  const head = `<button data-accordion-head${action} style="display:flex;align-items:center;justify-content:space-between;width:100%;padding:10px 12px;background:${t.bg2};border:1px solid ${t.line};border-radius:8px;color:${t.text};font-size:13px;font-weight:600;cursor:pointer;font-family:${t.fontUi}"><span>${esc(p.title)}</span><span data-accordion-caret style="color:${t.dim};transition:transform .15s;transform:rotate(${open ? 90 : 0}deg)">▸</span></button>`;
+  const body = `<div data-accordion-body style="display:${open ? 'block' : 'none'};padding:10px 12px">${children.map((ch) => renderNode(ch, t)).join('')}</div>`;
+  return `<div id="${esc(id)}" data-accordion style="display:flex;flex-direction:column;gap:4px;${ls}">${head}${body}</div>`;
+}
+
 // ── 统一入口 ────────────────────────────────────────────────────
 
 /** 将 LayoutNode 树渲染为 HTML 字符串。弱模型提供数据 + 可选主题；此函数是解释器。缺省主题 = 引擎 SHELL 脸。 */
@@ -335,6 +388,11 @@ export function renderNode(node: LayoutNode, theme: UITheme = SHELL): string {
     case 'Modal':      return renderModal(node.id, node.props as ModalProps, node.children ?? [], ls, t);
     case 'Toast':      return renderToast(node.id, node.props as ToastProps, ls, t);
     case 'Tooltip':    return renderTooltip(node.id, node.props as TooltipProps, node.children ?? [], ls, t);
+    case 'Card':       return renderCard(node.id, node.props as CardProps, node.children ?? [], ls, t);
+    case 'Stepper':    return renderStepper(node.id, node.props as StepperProps, ls, t);
+    case 'Segmented':  return renderSegmented(node.id, node.props as SegmentedProps, ls, t);
+    case 'Avatar':     return renderAvatar(node.id, node.props as AvatarProps, ls, t);
+    case 'Accordion':  return renderAccordion(node.id, node.props as AccordionProps, node.children ?? [], ls, t);
     default:           return `<!-- unknown: ${String((node as LayoutNode).type)} -->`;
   }
 }
