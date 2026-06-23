@@ -9,8 +9,8 @@
 // 注意：画廊本体（gallery.ts）是 100% 数据；事件日志面板与换皮重挂属于宿主运行时，
 // 不是游戏数据——这正是契约里「工程师写 mountUI/host 层」该待的地方。
 
-import { mountUI, showToast } from '@ui/components/index.js';
-import type { UITheme } from '@ui/components/index.js';
+import { mountUI, showToast, resolveBindings } from '@ui/components/index.js';
+import type { UITheme, UIDataSource } from '@ui/components/index.js';
 import { buildGallery } from './gallery.js';
 import { buildHandlers } from './handlers.js';
 import { THEMES } from './themes.js';
@@ -85,6 +85,12 @@ export function mount(container: HTMLElement): () => void {
   let drawerOpen = false;
   let teardown: (() => void) | null = null;
 
+  // 演示用「世界」状态 + 注入式数据源（resolveBindings 活 HUD 用·解耦 ECS）。
+  const world = { hp: { current: 70, max: 100 }, gold: { current: 1280 } };
+  const dataSource: UIDataSource = {
+    resource: (id) => (world as Record<string, { current: number; max?: number }>)[id],
+  };
+
   const handlers = buildHandlers({
     log: (action, arg) => {
       lines.push({ action, arg, t: now() });
@@ -108,12 +114,23 @@ export function mount(container: HTMLElement): () => void {
       // 挂进外层 root（跨画廊重挂存活·teardown 时随 root 一并清理）。
       showToast(root, text, { tone: tone as 'ok' | 'warn' | 'danger' | undefined, theme });
     },
+    hurt: (n) => {
+      world.hp.current = Math.max(0, world.hp.current - n);
+      remount();
+    },
+    heal: (n) => {
+      world.hp.current = Math.min(world.hp.max, world.hp.current + n);
+      world.gold.current += n; // 顺带演示第二个绑定资源变化
+      remount();
+    },
   });
 
   function remount(): void {
     const theme = THEMES[currentTheme] ?? THEMES['onyx']!;
     if (teardown) teardown();
-    teardown = mountUI(galleryHost, buildGallery(currentTheme, modalOpen, drawerOpen), handlers, theme);
+    // 渲染前先用数据源把 bind 节点解析成字面值（活 HUD·resolveBindings 返回新树·纯函数）。
+    const tree = resolveBindings(buildGallery(currentTheme, modalOpen, drawerOpen), dataSource);
+    teardown = mountUI(galleryHost, tree, handlers, theme);
     applyPaneTheme(theme);
     renderLog(theme);
   }

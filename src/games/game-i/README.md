@@ -14,6 +14,8 @@ Game I 把 `docs/design/apollo-ui-contract.md`（Apollo UI 控件契约总表）
   点遮罩/× 关；Toast 飘字由按钮触发自动消失；Tooltip 悬停显气泡；Accordion 点标题开合；
   Combobox 可输入过滤；Rating 点星评分。
 - **换皮**：顶部下拉切 `UITheme` 令牌包（青瓷 / 暖金 / 冷雾），同一棵 `LayoutNode` 数据一字不改即变脸。
+- **世界数据绑定（活 HUD）**：Label / ProgressBar / Image 可填 `bind=resourceId`，渲染前由
+  `resolveBindings(tree, dataSource)` 读世界填字面值；「数据展示」页 HUD 演示受伤/治疗驱动血条与数字实时更新。
 - **事件日志**：右栏实时打印每个控件发出的信号名 + 当前值，直观看到「填数据即出 UI、动一下就有信号」。
 
 ## 红线（沿用引擎契约）

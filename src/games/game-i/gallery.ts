@@ -203,6 +203,29 @@ const pageDisplay: LayoutNode = {
       ],
     },
     divider('d-d6b'),
+    sectionTitle('t-bind', 'BINDINGS · 世界数据绑定（bind=resourceId·resolveBindings 读世界填值·活 HUD）'),
+    {
+      type: 'Panel',
+      id: 'demo-bind',
+      props: { title: '活 HUD（绑定数据·非手搭文字）' },
+      layout: { direction: 'column', gap: 10, padding: 12 },
+      children: [
+        { type: 'Label', id: 'bind-hp-lbl', props: { text: '生命值 ', bind: 'hp', size: 'md', bold: true, color: 'danger' } },
+        { type: 'ProgressBar', id: 'bind-hp-bar', props: { value: 0, bind: 'hp', tone: 'danger', showValue: true } },
+        { type: 'Label', id: 'bind-gold-lbl', props: { text: '金币 ', bind: 'gold', color: 'gold', bold: true } },
+        {
+          type: 'Panel',
+          id: 'bind-btns',
+          props: {},
+          layout: { direction: 'row', gap: 10, padding: 0 },
+          children: [
+            { type: 'Button', id: 'bind-hurt', props: { label: '受伤 −10', kind: 'ghost', action: 'hurt', actionArg: '10' } },
+            { type: 'Button', id: 'bind-heal', props: { label: '治疗 +10', kind: 'primary', action: 'heal', actionArg: '10' } },
+          ],
+        },
+      ],
+    },
+    divider('d-d6c'),
     sectionTitle('t-toast', 'TOAST · 飘字提示（静态样式预览·五语义色；实时弹出见「输入与交互」页）'),
     {
       type: 'Panel',

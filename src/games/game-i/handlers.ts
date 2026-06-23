@@ -19,6 +19,9 @@ export interface GalleryHooks {
   setDrawer: (open: boolean) => void;
   /** 弹一条实时飘字提示（宿主调引擎 showToast·到时自动消失）。tone 取自按钮 actionArg。 */
   toast: (tone?: string) => void;
+  /** 改世界资源（演示 resolveBindings 活 HUD）：受伤/治疗后宿主重绑重挂。 */
+  hurt: (amount: number) => void;
+  heal: (amount: number) => void;
 }
 
 export function buildHandlers(hooks: GalleryHooks): HandlerMap {
@@ -64,6 +67,14 @@ export function buildHandlers(hooks: GalleryHooks): HandlerMap {
     showToast: (a) => {
       L('showToast', a);
       hooks.toast(a);
+    },
+    hurt: (a) => {
+      L('hurt', a);
+      hooks.hurt(Number(a) || 10);
+    },
+    heal: (a) => {
+      L('heal', a);
+      hooks.heal(Number(a) || 10);
     },
   };
 }

@@ -2,7 +2,8 @@
 // 验证「填数据即出 UI」：整棵画廊数据经引擎纯函数渲染，应含全部控件标记、且文本转义防 XSS。
 
 import { describe, it, expect } from 'vitest';
-import { renderNode } from '@ui/components/index.js';
+import { renderNode, resolveBindings } from '@ui/components/index.js';
+import type { UIDataSource } from '@ui/components/index.js';
 import { buildGallery } from './gallery.js';
 import { THEMES, onyx } from './themes.js';
 
@@ -67,12 +68,25 @@ describe('Game I gallery', () => {
       'setFlag', 'setSound', 'setSpeed', 'setVolume', 'setTheme', 'switchTab',
       'pickRow', 'pickTag', 'openModal', 'closeModal', 'showToast',
       'pickCard', 'setView', 'setQty', 'toggleAcc',
-      'setRating', 'openDrawer', 'closeDrawer',
+      'setRating', 'openDrawer', 'closeDrawer', 'hurt', 'heal',
     ]) {
       expect(html).toContain(`data-action="${action}"`);
     }
     // Combobox 走引擎内建 data-combo（非 data-action）→ 单独断言
     expect(html).toContain('data-combo="setCity"');
+  });
+
+  it('demonstrates world-binding: resolveBindings fills bound HUD nodes', () => {
+    const ds: UIDataSource = {
+      resource: (id) => (id === 'hp' ? { current: 42, max: 100 } : id === 'gold' ? { current: 999 } : undefined),
+    };
+    const resolved = resolveBindings(buildGallery('onyx'), ds);
+    const html = renderNode(resolved, onyx);
+    // 绑定后：Label 把 current 接在 text 后；ProgressBar value 取 current。
+    expect(html).toContain('生命值 42');
+    expect(html).toContain('金币 999');
+    // 未绑定渲染时 HUD 不含解析值（bind 占位）
+    expect(renderNode(buildGallery('onyx'), onyx)).not.toContain('生命值 42');
   });
 
   it('reflects the active theme in the theme picker', () => {
