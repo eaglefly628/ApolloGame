@@ -24,10 +24,11 @@
 - **招牌被动（地煞）**：**温泉关死守** — 守墙硬汉·靠隘口与抱团把守，但牌力偏弱、易被铺场流碾过（教学关·近保送）。
 - **16 牌组**（同点抱团[三条7/三条8] + 黑桃同花墙·主题=300 斯巴达同质重步兵）：
   `5♠ 6♠ 6♠ 7♠ 7♠ 7♠ 8♠ 8♠ 8♥ 9♥ 9♣ 10♠ 10♠ J♠ K♠ A♠`（主将=A♠ 列奥尼达）
-- **地煞 3**：`thermopylae`(温泉关死守) + `phalanx`(斯巴达方阵) + `laststand`(死战不退·主将)
+- **地煞 3**：`thermopylae`(温泉关死守·家**3**血+隘口守军) + `phalanx`(斯巴达方阵) + `laststand`(死战不退·主将)
 - **留场P**：0.5（base）·`laststand` 令**主将**留场更久（死战不退）
-- **Boss 牌力偏置 `bossFavorBias`**：**−2**（教学·弱）
-- **大本营血 homeHp**：**2**
+- **Boss 牌力偏置 `bossFavorBias`**：**0**（owner 2026-06-21：−2 反直觉·改 0=正常牌力；sim 偏置0=~99%·关1 本就该好赢）
+- **大本营血 homeHp**：**3**（owner 2026-06-21：2→3·"死守"该厚不该薄·破家多一推）
+- **⛔ 关1 明确不放**：主将 debuff / stay 偏置 / 任何阴间压迫 buff（owner：教学第一关保持干净·只有最基础推进+连携）。这类留给后期关。
 
 ## 二、关2 · 亚历山大「伙伴骑兵突击」★★ · 目标 87%
 - **招牌被动**：**伙伴骑兵** — 主将带队凿穿中军·锋矢突击；尖兵强但阵浅。
@@ -93,7 +94,7 @@
 | guard | eliteMidWinPct | 25 | **12** | 4 |
 | maneuver | bonusMana | 1 | **0** | 4 |
 | winstreak | winStreakPer / cap | 5 / 30 | **4 / 20** | 5 |
-> 未列 = 不变（thermopylae.homeHp=2/nearBaseSlots=2、laststand、swarm、burnboats、overlord）。
+> 未列 = 不变（nearBaseSlots=2、laststand、swarm、burnboats、overlord）。**thermopylae.homeHp：2→3**（owner 2026-06-21）；**关1 bossFavorBias：−2→0**（owner·−2 反直觉）。
 > **诅咒（curse）owner 先不实现** → 关5 难度改用现有数据杠杆：`bossFavorBias`（地支附魔·细调）+ 慎用 `bonusMana`（双倍泉水=悬崖·见 §五）。
 
 ## 七、给甲的接入清单（数据驱动·引擎域）
