@@ -41,6 +41,8 @@ export interface LabelProps {
   color?: 'text' | 'sub' | 'dim' | 'jade' | 'gold' | 'ok' | 'warn' | 'danger';
   bold?: boolean;
   mono?: boolean;
+  /** 世界绑定(收编 GameShell stat)：resourceId·resolveBindings 时把 Resource.current 接到 text 后（text 作前缀/标签）。 */
+  bind?: string;
 }
 
 export interface DropdownProps {
@@ -95,6 +97,8 @@ export interface ImageProps {
   alt?: string;
   fit?: 'cover' | 'contain' | 'fill';
   radius?: number;
+  /** 世界绑定(收编 GameShell image bind)：StringVar id·resolveBindings 时 src 取自其 value。 */
+  bind?: string;
 }
 
 /**
@@ -137,6 +141,8 @@ export interface ProgressBarProps {
   value: number; max?: number;
   tone?: 'accent' | 'gold' | 'ok' | 'warn' | 'danger';
   label?: string; showValue?: boolean;
+  /** 世界绑定(收编 GameShell bar)：resourceId·resolveBindings 时 value/max 取自 Resource.current/max。 */
+  bind?: string;
 }
 
 // ── Tag（可点过滤标签/词条·筛选条大量用）：active 高亮；可点(action·arg=actionArg)；可删(removable 显 ×)。──
