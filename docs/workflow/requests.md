@@ -10,6 +10,32 @@
 
 ## 待处理 / 进行中
 
+### REQ-UI-3缺口（变换/动画/拖放） · [2026-06-23] · Lead 主导（UI 库域·跨游戏重构前置） · status: **✅ done（声明式下沉·game-i 同提交）** · 类型: 真能力缺口下沉（manifesto §4 评审通过）
+
+> **缘起**：用户问「若 Game E(小丑牌)/F(自走棋)/G(翻命扑克) 用数据驱动 UI 重构，还缺什么」。Lead 派 3 个 Explore 实测三游戏 UI 现状，对照 30 控件 + resolveBindings + solveLayout 做缺口判断。
+>
+> **结论（用宣言尺子量过）**：菜单/HUD/列表/弹窗已覆盖 70~85%（G 已在生产用 mountUI 跑通「返回确认框」验证）。真缺口高度收敛到 3 个，**且都能填成声明式数据（弱模型能填）→ 该下沉**：
+>
+> **① 下沉（本提交已实现·`src/ui/components`）：**
+> - `LayoutConstraints.rotate / scale` → CSS transform。扇形手牌(E/G)、选中放大。`render.ts layoutStyle`。
+> - `LayoutConstraints.anim / animMs / animDelay` → 具名关键帧入场动画（fadeIn/slideUp/pop/shake/dealIn/flyIn）。发牌/部署错峰(E/G)、计分弹跳。`render.ts` + `mountUI` 注入 keyframes。
+> - `LayoutConstraints.draggable / dropZone` → HTML5 拖放，`mountUI` 内建 dragstart/dragover/drop，drop 时调 `handlers[dropZone信号](被拖节点 id)`。放牌落子(G)、棋子上阵(F)、拖牌入选(E)。`render.ts` 出标签注入 + `server.ts` 手势。
+> - 尺子判定：`rotate:8`/`anim:'dealIn'`/`draggable:true`/`dropZone:'lane0'` 都是数据字段，最弱 LLM 能填；手势/keyframes 由解释器一次做完（同 hover/accordion/modal-close 套路），非游戏专属自由代码。
+> - 验证：`dnd-transform-anim.test.ts`（5 测）+ game-i 第 5 页「选牌计分」端到端实测（rotate 扇形/scale 选中/anim 发牌/drag 入选）。
+>
+> **② 回驳（不进 `@ui/components`·属游戏世界 Canvas 渲染·别让引擎被单游戏拖肿）：**
+> - 浮动血条/伤害飘字跟随单位(F)：跟世界实体坐标 → 归 renderer 的 gauge/Text（F 已用 canvas 自动追随）。
+> - 精灵逐帧动画 / 兵沿路径行军(F/G)：世界渲染，归 renderer。
+> - 六角棋盘 hex 布局(F)：仅 1 游戏需要，YAGNI，F 自己 canvas 解；不为单游戏加宽共享布局核。
+> - SVG 斜梯路径(G)：单用途，CSS 凑或归世界层。
+> - 与游戏逻辑逐帧同步的命令式计分时间轴(E `advanceSeq`)：那是自由代码，保留宿主/renderer 层，**不**强塞 LayoutNode。
+>
+> **③ 假缺口（无需新能力·纯重组·已在 game-i 证伪）：**
+> - 多选≤N（E 选 5 张 / G 牌组 52 选 16）：状态 + Card tone，= game-i 第 5 页「选牌计分」做法。
+> - 牌面渲染：Image + 贴图坐标，业务数据够用。
+>
+> **边界**：本条只下沉 ①；②③ 是 Lead 带理由的回驳，记录在案供后续重构引用。
+
 ### BUG-G-掌机黑屏 · [2026-06-22] · owner→甲（cartridge/战斗屏域·owner 直派 bug 修） · status: **🟡 已修（zoom·`c5608bbc`）· 待真机烧版验证** · 类型: 弱 GPU 渲染回归
 
 > owner 报新烧 cartridge 包「APOLLO OS 绿字开机条 + 黑屏」、同代码 Mac 正常。掌机 = `build:cartridge`（`dist-cartridge`·base `./`·直挂 game-g 无 launcher）·弱 GPU webview。

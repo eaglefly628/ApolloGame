@@ -24,6 +24,8 @@ export interface GalleryHooks {
   heal: (amount: number) => void;
   /** 组合演示「商店」的联动信号（kind=cat/search/select/qty/buy）→ 宿主跑 reducer 重挂。 */
   shopDispatch: (kind: string, arg?: string) => void;
+  /** 组合演示「选牌」的联动信号（kind=toggle/drop/play/clear）→ 宿主跑 reducer 重挂。 */
+  pickDispatch: (kind: string, arg?: string) => void;
 }
 
 export function buildHandlers(hooks: GalleryHooks): HandlerMap {
@@ -86,5 +88,10 @@ export function buildHandlers(hooks: GalleryHooks): HandlerMap {
     shopSelect: (a) => { L('shopSelect', a); hooks.shopDispatch('select', a); },
     shopQty: (a) => { L('shopQty', a); hooks.shopDispatch('qty', a); },
     shopBuy: (a) => { L('shopBuy', a); hooks.shopDispatch('buy', a); },
+    // 选牌联动：点选/拖入/结算/清空。
+    pickHand: (a) => { L('pickHand', a); hooks.pickDispatch('toggle', a); },
+    dropPick: (a) => { L('dropPick', a); hooks.pickDispatch('drop', a); },
+    playHand: (a) => { L('playHand', a); hooks.pickDispatch('play', a); },
+    clearHand: (a) => { L('clearHand', a); hooks.pickDispatch('clear', a); },
   };
 }

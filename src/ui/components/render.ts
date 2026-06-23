@@ -24,6 +24,14 @@ function layoutStyle(c?: LayoutConstraints): string {
   if (c.flex    !== undefined) p.push(`flex:${c.flex}`);
   if (c.padding !== undefined) p.push(`padding:${c.padding}px`);
   if (c.margin  !== undefined) p.push(`margin:${c.margin}px`);
+  // Transform（旋转/缩放）：声明式数据 → CSS transform。扇形手牌/选中放大等。
+  const tf: string[] = [];
+  if (c.rotate !== undefined) tf.push(`rotate(${c.rotate}deg)`);
+  if (c.scale  !== undefined) tf.push(`scale(${c.scale})`);
+  if (tf.length) p.push(`transform:${tf.join(' ')}`);
+  // 动画：具名关键帧预设（mountUI 注入 keyframes）。注意 anim 与 rotate/scale 共用 transform，二选一。
+  if (c.anim) p.push(`animation:apollo-${c.anim} ${c.animMs ?? 360}ms ${c.animDelay ? `${c.animDelay}ms ` : ''}both ease-out`);
+  if (c.draggable) p.push('cursor:grab');
   return p.join(';');
 }
 
@@ -441,7 +449,23 @@ function renderContextMenu(id: string, p: ContextMenuProps, children: LayoutNode
 // ── 统一入口 ────────────────────────────────────────────────────
 
 /** 将 LayoutNode 树渲染为 HTML 字符串。弱模型提供数据 + 可选主题；此函数是解释器。缺省主题 = 引擎 SHELL 脸。 */
+/**
+ * 渲染 LayoutNode → HTML 串。出口处理拖拽声明（draggable/dropZone）：
+ * 把 draggable/data-drag/data-drop 注入到元素的开标签（不加包裹层·不破布局），mountUI 收手势。
+ */
 export function renderNode(node: LayoutNode, theme: UITheme = SHELL): string {
+  const html = renderDispatch(node, theme);
+  const c = node.layout;
+  if (c && (c.draggable || c.dropZone)) {
+    const a: string[] = [];
+    if (c.draggable) a.push(`draggable="true" data-drag="${esc(node.id)}"`);
+    if (c.dropZone)  a.push(`data-drop="${esc(c.dropZone)}"`);
+    return html.replace(/^(\s*<[a-zA-Z][\w-]*)/, `$1 ${a.join(' ')}`);
+  }
+  return html;
+}
+
+function renderDispatch(node: LayoutNode, theme: UITheme = SHELL): string {
   const t = theme;
   const ls = layoutStyle(node.layout);
   switch (node.type) {

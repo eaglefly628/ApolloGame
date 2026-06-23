@@ -23,12 +23,30 @@ function findNode(node: LayoutNode, id: string): LayoutNode | undefined {
  * @param handlers - action key → 回调函数（引擎或游戏层提供）
  * @returns        - teardown()：移除 DOM + 解绑事件
  */
+// 动画关键帧预设（引擎内建·一次注入 document·LayoutConstraints.anim 引用）。
+const APOLLO_KEYFRAMES = `
+@keyframes apollo-fadeIn{from{opacity:0}to{opacity:1}}
+@keyframes apollo-slideUp{from{opacity:0;transform:translateY(12px)}to{opacity:1;transform:translateY(0)}}
+@keyframes apollo-pop{0%{transform:scale(.6);opacity:0}60%{transform:scale(1.08)}100%{transform:scale(1);opacity:1}}
+@keyframes apollo-shake{0%,100%{transform:translateX(0)}25%{transform:translateX(-4px)}75%{transform:translateX(4px)}}
+@keyframes apollo-dealIn{from{opacity:0;transform:translateY(-20px) rotate(-8deg)}to{opacity:1;transform:translateY(0) rotate(0)}}
+@keyframes apollo-flyIn{from{opacity:0;transform:translateX(-24px)}to{opacity:1;transform:translateX(0)}}`;
+function ensureKeyframes(): void {
+  if (typeof document === 'undefined') return;
+  if (document.getElementById('apollo-ui-keyframes')) return;
+  const st = document.createElement('style');
+  st.id = 'apollo-ui-keyframes';
+  st.textContent = APOLLO_KEYFRAMES;
+  (document.head ?? document.documentElement).appendChild(st);
+}
+
 export function mountUI(
   host: HTMLElement,
   root: LayoutNode,
   handlers: HandlerMap = {},
   theme: UITheme = SHELL,
 ): () => void {
+  ensureKeyframes();
   host.innerHTML = renderNode(root, theme);
 
   // 打字机（收编 VN DialogBox 逐字显）：挂载时把带 data-typewriter 的元素逐字揭示；teardown 清定时器。
@@ -194,6 +212,30 @@ export function mountUI(
     host.querySelectorAll<HTMLElement>('[data-ctxmenu-pop]').forEach((pp) => { pp.style.display = 'none'; });
   };
 
+  // 拖放（引擎内建·声明式 draggable/dropZone）：dragstart 记下被拖节点 id；
+  // 在 [data-drop] 上 dragover 放行、drop 时调 handlers[dropZone信号](被拖节点 id)。HTML5 DnD 一次做完。
+  let dragId: string | null = null;
+  const onDragStart = (e: Event): void => {
+    const el = (e.target as HTMLElement).closest('[data-drag]') as HTMLElement | null;
+    if (!el) return;
+    dragId = el.dataset['drag'] ?? null;
+    const dt = (e as DragEvent).dataTransfer;
+    if (dt && dragId != null) dt.setData('text/plain', dragId);
+  };
+  const onDragOver = (e: Event): void => {
+    const zone = (e.target as HTMLElement).closest('[data-drop]') as HTMLElement | null;
+    if (zone) e.preventDefault(); // 允许 drop
+  };
+  const onDrop = (e: Event): void => {
+    const zone = (e.target as HTMLElement).closest('[data-drop]') as HTMLElement | null;
+    if (!zone) return;
+    e.preventDefault();
+    const action = zone.dataset['drop'];
+    const payload = dragId ?? (e as DragEvent).dataTransfer?.getData('text/plain') ?? '';
+    dragId = null;
+    if (action) { const fn = handlers[action]; if (fn) fn(payload); }
+  };
+
   host.addEventListener('click',       dispatch);
   host.addEventListener('click',       switchTab);
   host.addEventListener('click',       modalClose);
@@ -203,6 +245,9 @@ export function mountUI(
   host.addEventListener('change',      dispatch);
   host.addEventListener('input',       comboFilter);
   host.addEventListener('contextmenu', ctxOpen);
+  host.addEventListener('dragstart',   onDragStart);
+  host.addEventListener('dragover',    onDragOver);
+  host.addEventListener('drop',        onDrop);
   host.addEventListener('mouseover',   tipShow);
   host.addEventListener('mouseout',    tipHide);
   host.addEventListener('focusin',     tipShow);
@@ -219,6 +264,9 @@ export function mountUI(
     host.removeEventListener('change',      dispatch);
     host.removeEventListener('input',       comboFilter);
     host.removeEventListener('contextmenu', ctxOpen);
+    host.removeEventListener('dragstart',   onDragStart);
+    host.removeEventListener('dragover',    onDragOver);
+    host.removeEventListener('drop',        onDrop);
     host.removeEventListener('mouseover',   tipShow);
     host.removeEventListener('mouseout',    tipHide);
     host.removeEventListener('focusin',     tipShow);

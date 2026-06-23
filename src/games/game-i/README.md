@@ -21,6 +21,13 @@ Game I 把 `docs/design/apollo-ui-contract.md`（Apollo UI 控件契约总表）
   搜索 Input 联动过滤 Card 网格；点商品出详情，Stepper 选数量→合计=单价×数量实时算；购买扣金币、
   记拥有、弹 Toast，买不起则按钮禁用。视图 `buildShop(state)` 与 reducer `applyShop(state,信号)` 全是
   纯函数（见 `shop.ts`），联动从「UI=状态的纯函数」涌现，宿主只持有状态 + 重挂，零命令式 UI 代码。
+- **组合演示·选牌计分（多选 + 新能力）**：第 5 页证伪「多选是缺口」——多选≤5 = 状态 + Card tone 纯重组；
+  同时实测三项新声明式能力：`rotate` 扇形手牌、`scale` 选中放大、`anim:dealIn` 发牌错峰入场、
+  `draggable/dropZone` 把牌拖进「选入区」=点选。视图 `buildPickHand` + reducer `applyPick` + 牌型评估
+  `evalHand` 全是纯函数（见 `pickcards.ts`）。
+- **新增声明式 UI 能力（本会话下沉·三游戏重构所需真缺口）**：`LayoutConstraints` 新增
+  `rotate/scale`（变换）、`anim/animMs/animDelay`（具名关键帧入场动画）、`draggable/dropZone`（HTML5 拖放·
+  mountUI 内建手势）。全是数据字段（弱模型能填），渲染/手势由引擎解释，详见 `docs/workflow/requests.md`。
 - **事件日志**：右栏实时打印每个控件发出的信号名 + 当前值，直观看到「填数据即出 UI、动一下就有信号」。
 
 ## 红线（沿用引擎契约）

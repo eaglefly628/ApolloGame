@@ -25,6 +25,20 @@ export interface LayoutConstraints {
   align?: 'start' | 'center' | 'end' | 'stretch';
   padding?: number;
   margin?: number;
+  /** 旋转角度（度·CSS transform rotate）。扇形手牌/卡牌斜摆填这一个数即得。 */
+  rotate?: number;
+  /** 缩放倍率（CSS transform scale）。选中态放大、强调用。 */
+  scale?: number;
+  /** 入场/强调动画预设名（引擎内建关键帧·mountUI 注入）：fadeIn/slideUp/pop/shake/dealIn/flyIn。 */
+  anim?: string;
+  /** 动画时长 ms（缺省 360）。 */
+  animMs?: number;
+  /** 动画延迟 ms（错峰发牌/逐元素入场用·缺省 0）。 */
+  animDelay?: number;
+  /** 可拖拽：渲染加 draggable + data-drag(=节点 id 作载荷)；mountUI 收 dragstart。 */
+  draggable?: boolean;
+  /** 放置区：信号名·渲染加 data-drop；mountUI 在此 drop 时调 handlers[信号](被拖节点 id)。 */
+  dropZone?: string;
 }
 
 export interface ButtonProps {

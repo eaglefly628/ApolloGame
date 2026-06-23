@@ -7,6 +7,7 @@
 import type { LayoutNode } from '@ui/components/index.js';
 import { THEME_OPTIONS } from './themes.js';
 import { buildShop, INITIAL_SHOP, type ShopState } from './shop.js';
+import { buildPickHand, INITIAL_PICK, type PickState } from './pickcards.js';
 
 // 自包含演示图：内联 data-URI SVG（纯数据·不依赖外部资源文件），用于 Image 控件展示。
 const DEMO_IMG =
@@ -537,7 +538,8 @@ const drawerOverlay: LayoutNode = {
  * 整棵树是纯数据：换主题只是换令牌包重挂载，这份数据一字不改。
  */
 export function buildGallery(
-  activeTheme: string, modalOpen = false, drawerOpen = false, shop: ShopState = INITIAL_SHOP,
+  activeTheme: string, modalOpen = false, drawerOpen = false,
+  shop: ShopState = INITIAL_SHOP, pick: PickState = INITIAL_PICK,
 ): LayoutNode {
   return {
     type: 'Screen',
@@ -573,12 +575,13 @@ export function buildGallery(
             { id: 'tab-display', label: '数据展示' },
             { id: 'tab-input', label: '输入与交互' },
             { id: 'tab-shop', label: '🧩 组合演示·商店' },
+            { id: 'tab-pick', label: '🎴 组合演示·选牌' },
           ],
           active: 'tab-layout',
           action: 'switchTab',
         },
         layout: { flex: 1 },
-        children: [pageLayout, pageDisplay, pageInput, buildShop(shop)],
+        children: [pageLayout, pageDisplay, pageInput, buildShop(shop), buildPickHand(pick)],
       },
       // 模态浮层 / 抽屉按需叠加（满屏遮罩·盖在主界面之上）
       ...(modalOpen ? [modalOverlay] : []),
