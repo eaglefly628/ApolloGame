@@ -8,6 +8,28 @@
 
 ---
 
+## ✅ 实现现状（本表已从"蓝图"转为"现状"·就地建在 `src/ui/components/`）
+
+控件库已基本完工。**30 个控件** + 主题系统 + 世界绑定 + 平台无关布局核，全部落地、门禁全绿。
+
+| 块 | 内容 | 状态 |
+|---|---|---|
+| 原有 15 | Panel(含 grid 模式)/Screen/Tabs/Table/Label/Badge/Image/Divider/Button/Input/Dropdown/Checkbox/Toggle/RadioGroup/Slider | ✅ |
+| P0(5) | ProgressBar / Tag / Modal / Toast / Tooltip | ✅ |
+| P1(5) | Card / Stepper / Segmented / Avatar / Accordion | ✅ |
+| P2(5) | Rating / Combobox / Drawer / **VirtualList** / **ContextMenu** | ✅ |
+| 运行时(mountUI 内建) | 切页 / 遮罩关 / 定时 toast / hover tooltip / 折叠 / 搜索下拉 / 打字机 / 虚拟滚动 / 右键菜单 | ✅ |
+| 世界绑定 | `Label/ProgressBar/Image.bind` + `resolveBindings(tree, ds)` + `UIDataSource`（收编 GameShell stat/bar/image-bind） | ✅ |
+| VN 收编 | 演出 = 现有控件**组合**（StatPanel=Panel+绑定·Portrait=Avatar·ChoiceList=Panel+Button·VNStage=Screen+组合）+ 唯一真缺口 `Label.typewriter` | ✅ |
+| 跨平台 | `solveLayout(root, viewport, measure)` 平台无关布局核（逻辑/视觉分离·支援微信小游戏 Canvas 后端） | ✅ |
+
+**配套文档**：`docs/design/apollo-ui-porting-contract.md`（HTML→Canvas/微信小游戏 后端移植契约）。
+
+**尚未落地（需 owner 调度·跨游戏·有风险）**：把现有用 React 两套（GameShell→game-f HUD/商店；VN→game-b/game-c 演出）的游戏**实际迁移**到统一 LayoutNode 底座、删 React 代码。能力层已就绪（绑定 + 打字机 + 组合都齐），但迁移触及多游戏代码，宜逐游戏审慎做。
+**待办**：把各控件的"样式解析"（主题令牌→颜色/字号/边框）从 `render.ts` 抽成共享模块（让 Canvas 后端连样式都白捡）。
+
+---
+
 ## 0. 设计不变量（Apollo UI 的红线 · 任何控件都不许破）
 
 1. **整个 UI 是数据**：一棵 `LayoutNode` 树，弱模型只填数据，引擎解释成像素。
@@ -135,9 +157,10 @@ interface SliderProps { min?: number; max?: number; step?: number; value?: numbe
 
 ---
 
-## 3. 待补控件契约（设计待实现 · 按优先级）
+## 3. 控件契约（曾为"待补"·**现已全部实现**·见顶部现状表）
 
-> props 按现有风格设计：可选字段、tone 闭集、事件=信号名。标 `[mountUI]` 的需挂载器加运行时行为（不只渲染）。
+> ✅ 下列 P0/P1/P2 控件**均已落地** `src/ui/components/`（实际 props 以 `types.ts` 为准·部分字段较本设计略有微调）。
+> 本节 props 规格保留作**设计参考**。props 风格：可选字段、tone 闭集、事件=信号名；标 `[mountUI]` 的有挂载器运行时行为。
 
 ### P0 · 高频刚需（做任何游戏几乎都要）
 
