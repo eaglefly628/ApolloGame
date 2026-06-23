@@ -11,7 +11,7 @@
 
 import { mountUI, showToast, resolveBindings } from '@ui/components/index.js';
 import type { UITheme, UIDataSource, LayoutNode } from '@ui/components/index.js';
-import { buildGallery, INITIAL_CONTROLS, type ControlsState } from './gallery.js';
+import { buildGallery, modalOverlay, drawerOverlay, INITIAL_CONTROLS, type ControlsState } from './gallery.js';
 import { buildHandlers } from './handlers.js';
 import { THEMES } from './themes.js';
 import { applyShop, INITIAL_SHOP, type ShopState } from './shop.js';
@@ -23,8 +23,9 @@ export function mount(container: HTMLElement): () => void {
   root.style.cssText =
     'position:absolute;inset:0;display:flex;overflow:hidden;background:#06080d';
 
-  const galleryHost = document.createElement('div');
-  galleryHost.style.cssText = 'flex:1;min-width:0;overflow-y:auto';
+  let galleryHost = document.createElement('div');
+  const galleryHostCss = 'flex:1;min-width:0;overflow-y:auto';
+  galleryHost.style.cssText = galleryHostCss;
 
   const logPane = document.createElement('aside');
   logPane.style.cssText =
@@ -39,6 +40,9 @@ export function mount(container: HTMLElement): () => void {
 
   logPane.append(logTitle, logBody);
   root.append(galleryHost, logPane);
+  // 模态/抽屉的独立浮层宿主（满屏 fixed·开关它不碰画廊 → 不跳不黑）。
+  const overlayHost = document.createElement('div');
+  root.appendChild(overlayHost);
   container.appendChild(root);
 
   // ── 事件日志状态 ─────────────────────────────────────────────
@@ -83,8 +87,6 @@ export function mount(container: HTMLElement): () => void {
 
   // ── 宿主状态（MVU：UI = 状态的纯函数；改状态 → ui.update 局部更新·不整树重挂）──
   let currentTheme = 'onyx';
-  let modalOpen = false;
-  let drawerOpen = false;
   let shop: ShopState = INITIAL_SHOP;  // 组合演示·商店
   let pick: PickState = INITIAL_PICK;  // 组合演示·选牌
   let controls: ControlsState = INITIAL_CONTROLS; // 自定义画选中态的控件值（speed/view/rating/qty/city/flag/sound）
@@ -97,11 +99,20 @@ export function mount(container: HTMLElement): () => void {
 
   const theme = (): UITheme => THEMES[currentTheme] ?? THEMES['onyx']!;
 
+  // 模态/抽屉作独立浮层挂在 overlayHost（与画廊解耦·开关不触发画廊重渲 → 不跳不黑）。
+  let overlayNode: LayoutNode | null = null;
+  let overlayTeardown: (() => void) | null = null;
+  function showOverlay(node: LayoutNode | null): void {
+    overlayNode = node;
+    if (overlayTeardown) { overlayTeardown(); overlayTeardown = null; }
+    if (node) overlayTeardown = mountUI(overlayHost, node, handlers, theme());
+  }
+
   const handlers = buildHandlers({
     log: (action, arg) => { lines.push({ action, arg, t: now() }); renderLog(theme()); },
     setTheme: (value) => { currentTheme = value; rerender(true); },
-    setModal: (open) => { modalOpen = open; rerender(); },
-    setDrawer: (open) => { drawerOpen = open; rerender(); },
+    setModal: (open) => { showOverlay(open ? modalOverlay : null); },
+    setDrawer: (open) => { showOverlay(open ? drawerOverlay : null); },
     setControl: (kind, arg) => {
       if (kind === 'flag') controls = { ...controls, flag: arg === 'true' };
       else if (kind === 'sound') controls = { ...controls, sound: arg === 'true' };
@@ -136,19 +147,34 @@ export function mount(container: HTMLElement): () => void {
   // activeTab 恒为首页常量：Tab 切换由 mountUI 内建就地处理（不重渲），数据里 active 不变 →
   // reconcile 永不替换整个 Tabs（含各页/表格）→ 切页态/滚动/输入态全保留、不回弹、不黑。
   const buildTree = (): LayoutNode =>
-    resolveBindings(buildGallery(currentTheme, modalOpen, drawerOpen, shop, pick, 'tab-layout', controls), dataSource);
+    resolveBindings(buildGallery(currentTheme, false, false, shop, pick, 'tab-layout', controls), dataSource);
 
   // 挂载一次；之后改状态都走 ui.update 局部更新（只补丁变化的子树·不整树重挂·Tab/滚动/输入态不丢·无黑屏）。
-  const ui = mountUI(galleryHost, buildTree(), handlers, theme());
+  let ui = mountUI(galleryHost, buildTree(), handlers, theme());
   applyPaneTheme(theme());
   renderLog(theme());
 
   function rerender(themeChanged = false): void {
-    ui.update(buildTree(), themeChanged ? theme() : undefined);
-    if (themeChanged) applyPaneTheme(theme());
+    if (themeChanged) {
+      // 换皮整盘换色：重建 galleryHost（全新元素 = 全新合成层），规避大改后旧滚动层「陈旧黑字」。
+      ui();
+      const fresh = document.createElement('div');
+      fresh.style.cssText = galleryHostCss;
+      galleryHost.replaceWith(fresh);
+      galleryHost = fresh;
+      ui = mountUI(galleryHost, buildTree(), handlers, theme());
+      applyPaneTheme(theme());
+      if (overlayNode) showOverlay(overlayNode); // 浮层也换新皮
+    } else {
+      ui.update(buildTree()); // 局部更新（diff/patch）
+    }
     renderLog(theme());
   }
 
   // ── 卡带 cleanup ─────────────────────────────────────────────
-  return () => { ui(); root.remove(); };
+  return () => {
+    if (overlayTeardown) overlayTeardown();
+    ui();
+    root.remove();
+  };
 }

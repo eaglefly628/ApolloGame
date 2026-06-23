@@ -506,7 +506,8 @@ function buildPageInput(c: ControlsState): LayoutNode {
 
 // ── 模态浮层（按需叠加于 Screen 之上）─────────────────────────
 // Modal 是满屏遮罩浮层：开 = 宿主把它挂进树重渲染；关 = 引擎内建（点遮罩/× → closeModal）。
-const modalOverlay: LayoutNode = {
+// 模态/抽屉浮层节点（导出供宿主作「独立浮层」挂载·不进画廊树 → 开关不触发画廊重渲）。
+export const modalOverlay: LayoutNode = {
   type: 'Modal',
   id: 'demo-modal-overlay',
   props: { title: '示例模态框', size: 'md', closable: true, closeAction: 'closeModal' },
@@ -528,7 +529,7 @@ const modalOverlay: LayoutNode = {
 };
 
 // ── 抽屉浮层（按需叠加·右侧滑入·开靠宿主、关靠引擎内建 closeAction）─────
-const drawerOverlay: LayoutNode = {
+export const drawerOverlay: LayoutNode = {
   type: 'Drawer',
   id: 'demo-drawer-overlay',
   props: { side: 'right', title: '示例抽屉', closeAction: 'closeDrawer' },
