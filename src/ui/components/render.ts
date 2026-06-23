@@ -56,7 +56,8 @@ function renderLabel(id: string, p: LabelProps, ls: string, t: UITheme): string 
     p.mono ? `font-family:${t.fontMono}` : `font-family:${t.fontUi}`,
     ls,
   ].filter(Boolean).join(';');
-  return `<span id="${esc(id)}" style="${style}">${esc(p.text)}</span>`;
+  const tw = p.typewriter ? ` data-typewriter="${p.typewriter}"` : '';
+  return `<span id="${esc(id)}"${tw} style="${style}">${esc(p.text)}</span>`;
 }
 
 function renderDropdown(id: string, p: DropdownProps, ls: string, t: UITheme): string {

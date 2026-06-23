@@ -43,6 +43,8 @@ export interface LabelProps {
   mono?: boolean;
   /** 世界绑定(收编 GameShell stat)：resourceId·resolveBindings 时把 Resource.current 接到 text 后（text 作前缀/标签）。 */
   bind?: string;
+  /** 打字机(收编 VN DialogBox 逐字显)：每字毫秒(>0 开)。mountUI 挂载时逐字揭示·teardown 清定时器。 */
+  typewriter?: number;
 }
 
 export interface DropdownProps {

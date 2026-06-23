@@ -103,6 +103,11 @@ describe('UI Components · renderNode', () => {
     expect(html).toMatch(/<input/);
   });
 
+  it('Label typewriter: 加 data-typewriter 锚点（收编 VN 逐字显）', () => {
+    expect(renderNode({ type: 'Label', id: 'd', props: { text: '主公，赤壁已备', typewriter: 30 } })).toContain('data-typewriter="30"');
+    expect(renderNode({ type: 'Label', id: 'd', props: { text: 'x' } })).not.toContain('data-typewriter'); // 无则不加
+  });
+
   it('Divider: 渲染 hr 带分隔线色', () => {
     const html = renderNode({ type: 'Divider', id: 'hr1', props: {} });
     expect(html).toMatch(/<hr/);

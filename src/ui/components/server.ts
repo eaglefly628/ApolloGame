@@ -24,6 +24,20 @@ export function mountUI(
 ): () => void {
   host.innerHTML = renderNode(root, theme);
 
+  // 打字机（收编 VN DialogBox 逐字显）：挂载时把带 data-typewriter 的元素逐字揭示；teardown 清定时器。
+  const typers: ReturnType<typeof setInterval>[] = [];
+  host.querySelectorAll<HTMLElement>('[data-typewriter]').forEach((el) => {
+    const speed = Number(el.dataset['typewriter']) || 30;
+    const full = el.textContent ?? '';
+    el.textContent = '';
+    let i = 0;
+    const iv = setInterval(() => {
+      el.textContent = full.slice(0, ++i);
+      if (i >= full.length) clearInterval(iv);
+    }, speed);
+    typers.push(iv);
+  });
+
   const dispatch = (e: Event): void => {
     const el = (e.target as HTMLElement).closest('[data-action]') as HTMLElement | null;
     if (!el) return;
@@ -169,6 +183,7 @@ export function mountUI(
     host.removeEventListener('focusin',   tipShow);
     host.removeEventListener('focusin',   comboOpen);
     host.removeEventListener('focusout',  tipHide);
+    typers.forEach((iv) => clearInterval(iv));
     host.innerHTML = '';
   };
 }
