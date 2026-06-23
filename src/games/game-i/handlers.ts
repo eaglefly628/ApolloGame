@@ -15,6 +15,8 @@ export interface GalleryHooks {
   setTheme: (value: string) => void;
   /** 开/关演示模态浮层（宿主状态驱动·重挂载整棵树）。 */
   setModal: (open: boolean) => void;
+  /** 开/关演示抽屉浮层（宿主状态驱动·重挂载整棵树）。 */
+  setDrawer: (open: boolean) => void;
   /** 弹一条实时飘字提示（宿主调引擎 showToast·到时自动消失）。tone 取自按钮 actionArg。 */
   toast: (tone?: string) => void;
 }
@@ -32,6 +34,12 @@ export function buildHandlers(hooks: GalleryHooks): HandlerMap {
     setVolume: (a) => L('setVolume', a),
     pickRow: (a) => L('pickRow', a),
     pickTag: (a) => L('pickTag', a),
+    pickCard: (a) => L('pickCard', a),
+    setView: (a) => L('setView', a),
+    setQty: (a) => L('setQty', a),
+    setCity: (a) => L('setCity', a),
+    setRating: (a) => L('setRating', a),
+    toggleAcc: (a) => L('toggleAcc', a),
     switchTab: (a) => L('switchTab', a),
     setTheme: (a) => {
       L('setTheme', a);
@@ -44,6 +52,14 @@ export function buildHandlers(hooks: GalleryHooks): HandlerMap {
     closeModal: (a) => {
       L('closeModal', a);
       hooks.setModal(false);
+    },
+    openDrawer: (a) => {
+      L('openDrawer', a);
+      hooks.setDrawer(true);
+    },
+    closeDrawer: (a) => {
+      L('closeDrawer', a);
+      hooks.setDrawer(false);
     },
     showToast: (a) => {
       L('showToast', a);

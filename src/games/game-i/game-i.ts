@@ -79,9 +79,10 @@ export function mount(container: HTMLElement): () => void {
     }
   }
 
-  // ── 挂载 / 换皮重挂 / 模态开关 ────────────────────────────────
+  // ── 挂载 / 换皮重挂 / 模态·抽屉开关 ──────────────────────────
   let currentTheme = 'onyx';
   let modalOpen = false;
+  let drawerOpen = false;
   let teardown: (() => void) | null = null;
 
   const handlers = buildHandlers({
@@ -97,6 +98,10 @@ export function mount(container: HTMLElement): () => void {
       modalOpen = open;
       remount();
     },
+    setDrawer: (open) => {
+      drawerOpen = open;
+      remount();
+    },
     toast: (tone) => {
       const theme = THEMES[currentTheme] ?? THEMES['onyx']!;
       const text = { ok: '操作成功 ✓', warn: '请注意 ⚠', danger: '出错了 ✕' }[tone ?? 'ok'] ?? '提示';
@@ -108,7 +113,7 @@ export function mount(container: HTMLElement): () => void {
   function remount(): void {
     const theme = THEMES[currentTheme] ?? THEMES['onyx']!;
     if (teardown) teardown();
-    teardown = mountUI(galleryHost, buildGallery(currentTheme, modalOpen), handlers, theme);
+    teardown = mountUI(galleryHost, buildGallery(currentTheme, modalOpen, drawerOpen), handlers, theme);
     applyPaneTheme(theme);
     renderLog(theme);
   }

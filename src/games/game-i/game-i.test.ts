@@ -17,10 +17,10 @@ describe('Game I gallery', () => {
     expect(html).toContain('data-tabpage="tab-input"');
   });
 
-  it('lists ALL 20 engine components (showcase coverage gate)', () => {
-    // 模态需开启态才入树；用 modalOpen=true 覆盖到 Modal。
-    const html = renderNode(buildGallery('onyx', true), onyx);
-    // 渲染器分发表认识的全部 20 个控件，展示款里一个都不能漏。
+  it('lists ALL 28 engine components (showcase coverage gate)', () => {
+    // 模态/抽屉需开启态才入树；用 modalOpen=drawerOpen=true 覆盖到 Modal/Drawer。
+    const html = renderNode(buildGallery('onyx', true, true), onyx);
+    // 渲染器分发表认识的全部 28 个控件，展示款里一个都不能漏。
     for (const id of [
       'topbar',              // Panel
       'gameui-root',         // Screen
@@ -42,6 +42,14 @@ describe('Game I gallery', () => {
       'demo-modal-overlay',  // Modal
       'toast-ok',            // Toast（静态预览节点）
       'tip-top',             // Tooltip
+      'demo-accordion',      // Accordion
+      'av-circle',           // Avatar
+      'card-1',              // Card
+      'seg-view',            // Segmented
+      'stp-qty',             // Stepper
+      'cb-city',             // Combobox
+      'demo-drawer-overlay', // Drawer
+      'rt-stars',            // Rating
     ]) {
       expect(html).toContain(`"${id}"`);
     }
@@ -53,14 +61,18 @@ describe('Game I gallery', () => {
   });
 
   it('exercises every input control with an action signal', () => {
-    const html = renderNode(buildGallery('onyx', true), onyx);
+    const html = renderNode(buildGallery('onyx', true, true), onyx);
     for (const action of [
       'click', 'setText', 'setNum', 'setDifficulty',
       'setFlag', 'setSound', 'setSpeed', 'setVolume', 'setTheme', 'switchTab',
       'pickRow', 'pickTag', 'openModal', 'closeModal', 'showToast',
+      'pickCard', 'setView', 'setQty', 'toggleAcc',
+      'setRating', 'openDrawer', 'closeDrawer',
     ]) {
       expect(html).toContain(`data-action="${action}"`);
     }
+    // Combobox 走引擎内建 data-combo（非 data-action）→ 单独断言
+    expect(html).toContain('data-combo="setCity"');
   });
 
   it('reflects the active theme in the theme picker', () => {

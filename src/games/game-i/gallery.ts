@@ -68,6 +68,17 @@ const pageLayout: LayoutNode = {
         ],
       })),
     },
+    divider('d-l3'),
+    sectionTitle('t-accordion', 'ACCORDION · 折叠面板（点标题展开/收起·引擎内建 → 信号 toggleAcc）'),
+    {
+      type: 'Accordion',
+      id: 'demo-accordion',
+      props: { title: '点我展开这段说明', open: false, action: 'toggleAcc' },
+      children: [
+        { type: 'Label', id: 'acc-l1', props: { text: '折叠面板用于收纳次要内容，点标题即可展开/收起。', color: 'sub' } },
+        { type: 'Label', id: 'acc-l2', props: { text: '开合由引擎 mountUI 内建处理，数据只填 title / open / action。', color: 'dim', size: 'sm' } },
+      ],
+    },
   ],
 };
 
@@ -162,6 +173,36 @@ const pageDisplay: LayoutNode = {
       ],
     },
     divider('d-d5'),
+    sectionTitle('t-avatar', 'AVATAR · 头像（图片/首字母占位·circle/rounded/square·多尺寸）'),
+    {
+      type: 'Panel',
+      id: 'demo-avatar',
+      props: {},
+      layout: { direction: 'row', gap: 14, align: 'center', padding: 10 },
+      children: [
+        { type: 'Avatar', id: 'av-img', props: { src: DEMO_IMG, name: '图片头像', size: 48, shape: 'circle' } },
+        { type: 'Avatar', id: 'av-circle', props: { name: '赵', size: 48, shape: 'circle' } },
+        { type: 'Avatar', id: 'av-rounded', props: { name: '关', size: 48, shape: 'rounded' } },
+        { type: 'Avatar', id: 'av-square', props: { name: '张', size: 48, shape: 'square' } },
+        { type: 'Avatar', id: 'av-sm', props: { name: '马', size: 32, shape: 'circle' } },
+        { type: 'Avatar', id: 'av-lg', props: { name: '黄', size: 64, shape: 'circle' } },
+      ],
+    },
+    divider('d-d6a'),
+    sectionTitle('t-card', 'CARD · 内容卡（media/title/sub/角标·可点 → 信号 pickCard·四态）'),
+    {
+      type: 'Panel',
+      id: 'demo-card',
+      props: {},
+      layout: { direction: 'grid', minCol: 130, gap: 10, padding: 10 },
+      children: [
+        { type: 'Card', id: 'card-1', props: { media: '⚔️', title: '青釭剑', sub: '攻击 +12', corner: 'SSR', tone: 'accent', action: 'pickCard', actionArg: 'sword' } },
+        { type: 'Card', id: 'card-2', props: { media: '🛡️', title: '玄铁盾', sub: '防御 +8', corner: 'SR', tone: 'normal', action: 'pickCard', actionArg: 'shield' } },
+        { type: 'Card', id: 'card-3', props: { media: '🏹', title: '连弩', sub: '暴击 +5%', tone: 'normal', action: 'pickCard', actionArg: 'bow' } },
+        { type: 'Card', id: 'card-4', props: { media: '🔒', title: '未解锁', sub: '通关第三章', tone: 'locked' } },
+      ],
+    },
+    divider('d-d6b'),
     sectionTitle('t-toast', 'TOAST · 飘字提示（静态样式预览·五语义色；实时弹出见「输入与交互」页）'),
     {
       type: 'Panel',
@@ -301,6 +342,49 @@ const pageInput: LayoutNode = {
       id: 'sl-volume',
       props: { min: 0, max: 100, step: 5, value: 60, label: '音量', action: 'setVolume' },
     },
+    divider('d-i3b'),
+    sectionTitle('t-segmented', 'SEGMENTED · 分段选择器（互斥·紧凑·→ 信号 setView）'),
+    {
+      type: 'Segmented',
+      id: 'seg-view',
+      props: {
+        options: [
+          { value: 'grid', label: '网格' },
+          { value: 'list', label: '列表' },
+          { value: 'card', label: '卡片' },
+        ],
+        value: 'grid',
+        action: 'setView',
+      },
+    },
+    sectionTitle('t-stepper', 'STEPPER · 步进器（±按钮调数值·边界禁用·→ 信号 setQty）'),
+    {
+      type: 'Stepper',
+      id: 'stp-qty',
+      props: { value: 3, min: 0, max: 10, step: 1, action: 'setQty' },
+    },
+    sectionTitle('t-combobox', 'COMBOBOX · 可搜索下拉（输入过滤·点项回填·引擎内建 → 信号 setCity）'),
+    {
+      type: 'Combobox',
+      id: 'cb-city',
+      props: {
+        options: [
+          { value: 'cd', label: '成都' },
+          { value: 'luoyang', label: '洛阳' },
+          { value: 'xuchang', label: '许昌' },
+          { value: 'jianye', label: '建业' },
+          { value: 'changan', label: '长安' },
+        ],
+        placeholder: '搜索城市…',
+        action: 'setCity',
+      },
+    },
+    sectionTitle('t-rating', 'RATING · 星级评分（点星 → 信号 setRating）'),
+    {
+      type: 'Rating',
+      id: 'rt-stars',
+      props: { value: 3, max: 5, action: 'setRating' },
+    },
     divider('d-i4'),
     sectionTitle('t-modal', 'MODAL · 模态浮层（按钮开 → 点遮罩/× 关·引擎内建 closeAction）'),
     {
@@ -311,6 +395,18 @@ const pageInput: LayoutNode = {
       children: [
         { type: 'Button', id: 'btn-open-modal', props: { label: '打开模态框', kind: 'primary', action: 'openModal' } },
         { type: 'Label', id: 'modal-hint', props: { text: '点遮罩本身或右上角 × 即关闭', size: 'sm', color: 'dim' } },
+      ],
+    },
+    divider('d-i4b'),
+    sectionTitle('t-drawer', 'DRAWER · 抽屉浮层（按钮开 → 右侧滑入·点遮罩/× 关·引擎内建）'),
+    {
+      type: 'Panel',
+      id: 'demo-drawer',
+      props: {},
+      layout: { direction: 'row', gap: 10, align: 'center', padding: 10 },
+      children: [
+        { type: 'Button', id: 'btn-open-drawer', props: { label: '打开抽屉', kind: 'primary', action: 'openDrawer' } },
+        { type: 'Label', id: 'drawer-hint', props: { text: '从右侧滑入·遮罩/× 关闭', size: 'sm', color: 'dim' } },
       ],
     },
     divider('d-i5'),
@@ -352,12 +448,26 @@ const modalOverlay: LayoutNode = {
   ],
 };
 
+// ── 抽屉浮层（按需叠加·右侧滑入·开靠宿主、关靠引擎内建 closeAction）─────
+const drawerOverlay: LayoutNode = {
+  type: 'Drawer',
+  id: 'demo-drawer-overlay',
+  props: { side: 'right', title: '示例抽屉', closeAction: 'closeDrawer' },
+  layout: {},
+  children: [
+    { type: 'Label', id: 'dw-body', props: { text: '抽屉常用于侧边设置 / 详情面板，从屏幕一侧滑入。', color: 'sub' } },
+    { type: 'Divider', id: 'dw-div', props: {} },
+    { type: 'Toggle', id: 'dw-tg', props: { label: '抽屉里的开关', checked: true, action: 'setFlag' } },
+    { type: 'Button', id: 'dw-ok', props: { label: '收起抽屉', kind: 'primary', action: 'closeDrawer' } },
+  ],
+};
+
 /**
  * 画廊根节点。activeTheme = 当前主题 value（让顶部主题下拉回显当前选择）；
- * modalOpen = 是否叠加演示用模态浮层（宿主状态驱动·开关都是数据/信号）。
+ * modalOpen / drawerOpen = 是否叠加演示用模态浮层 / 抽屉（宿主状态驱动·开关都是数据/信号）。
  * 整棵树是纯数据：换主题只是换令牌包重挂载，这份数据一字不改。
  */
-export function buildGallery(activeTheme: string, modalOpen = false): LayoutNode {
+export function buildGallery(activeTheme: string, modalOpen = false, drawerOpen = false): LayoutNode {
   return {
     type: 'Screen',
     id: 'gameui-root',
@@ -398,8 +508,9 @@ export function buildGallery(activeTheme: string, modalOpen = false): LayoutNode
         layout: { flex: 1 },
         children: [pageLayout, pageDisplay, pageInput],
       },
-      // 模态浮层按需叠加（满屏遮罩·盖在主界面之上）
+      // 模态浮层 / 抽屉按需叠加（满屏遮罩·盖在主界面之上）
       ...(modalOpen ? [modalOverlay] : []),
+      ...(drawerOpen ? [drawerOverlay] : []),
     ],
   };
 }
