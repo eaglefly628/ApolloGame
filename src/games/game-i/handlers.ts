@@ -13,8 +13,6 @@ export interface GalleryHooks {
   log: (action: string, arg?: string) => void;
   /** 切换主题令牌包（宿主负责重挂载整棵树）。 */
   setTheme: (value: string) => void;
-  /** 记住当前 Tab（mountUI 已就地切页·此处只记录，使后续重挂不回弹第一页）。 */
-  setTab: (id: string) => void;
   /** 开/关演示模态浮层（宿主状态驱动·重挂载整棵树）。 */
   setModal: (open: boolean) => void;
   /** 开/关演示抽屉浮层（宿主状态驱动·重挂载整棵树）。 */
@@ -28,30 +26,33 @@ export interface GalleryHooks {
   shopDispatch: (kind: string, arg?: string) => void;
   /** 组合演示「选牌」的联动信号（kind=toggle/drop/play/clear）→ 宿主跑 reducer 重挂。 */
   pickDispatch: (kind: string, arg?: string) => void;
+  /** 自定义画选中态的控件改值（kind=flag/sound/speed/view/qty/rating/city）→ 宿主改 state + 局部更新。 */
+  setControl: (kind: string, arg?: string) => void;
 }
 
 export function buildHandlers(hooks: GalleryHooks): HandlerMap {
   const L = hooks.log;
   return {
     click: (a) => L('click', a),
-    setText: (a) => L('setText', a),
-    setNum: (a) => L('setNum', a),
-    setDifficulty: (a) => L('setDifficulty', a),
-    setFlag: (a) => L('setFlag', a),
-    setSound: (a) => L('setSound', a),
-    setSpeed: (a) => L('setSpeed', a),
-    setVolume: (a) => L('setVolume', a),
+    setText: (a) => L('setText', a),       // native input·DOM 自己更新
+    setNum: (a) => L('setNum', a),         // native input
+    setDifficulty: (a) => L('setDifficulty', a), // native select
+    setVolume: (a) => L('setVolume', a),   // native range
+    // 自定义画选中态的控件：必须把值写回 state + 局部更新才会动（圆点/勾/高亮/星由 value 画）。
+    setFlag: (a) => { L('setFlag', a); hooks.setControl('flag', a); },
+    setSound: (a) => { L('setSound', a); hooks.setControl('sound', a); },
+    setSpeed: (a) => { L('setSpeed', a); hooks.setControl('speed', a); },
+    setView: (a) => { L('setView', a); hooks.setControl('view', a); },
+    setQty: (a) => { L('setQty', a); hooks.setControl('qty', a); },
+    setCity: (a) => { L('setCity', a); hooks.setControl('city', a); },
+    setRating: (a) => { L('setRating', a); hooks.setControl('rating', a); },
     pickRow: (a) => L('pickRow', a),
     pickVRow: (a) => L('pickVRow', a),
     ctxAction: (a) => L('ctxAction', a),
     pickTag: (a) => L('pickTag', a),
     pickCard: (a) => L('pickCard', a),
-    setView: (a) => L('setView', a),
-    setQty: (a) => L('setQty', a),
-    setCity: (a) => L('setCity', a),
-    setRating: (a) => L('setRating', a),
     toggleAcc: (a) => L('toggleAcc', a),
-    switchTab: (a) => { L('switchTab', a); if (a) hooks.setTab(a); },
+    switchTab: (a) => L('switchTab', a), // Tab 切换由 mountUI 内建就地处理·宿主不介入
     setTheme: (a) => {
       L('setTheme', a);
       if (a) hooks.setTheme(a);

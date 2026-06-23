@@ -9,6 +9,12 @@ import { THEME_OPTIONS } from './themes.js';
 import { buildShop, INITIAL_SHOP, type ShopState } from './shop.js';
 import { buildPickHand, INITIAL_PICK, type PickState } from './pickcards.js';
 
+// 自定义画选中态的交互控件值（必须进 state·点击改值 + 局部更新才会动）。
+export interface ControlsState {
+  flag: boolean; sound: boolean; speed: string; view: string; qty: number; rating: number; city: string;
+}
+export const INITIAL_CONTROLS: ControlsState = { flag: true, sound: true, speed: '1', view: 'grid', qty: 3, rating: 3, city: '' };
+
 // 自包含演示图：内联 data-URI SVG（纯数据·不依赖外部资源文件），用于 Image 控件展示。
 const DEMO_IMG =
   'data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%22160%22%20height%3D%22100%22%3E%3Cdefs%3E%3ClinearGradient%20id%3D%22g%22%20x1%3D%220%22%20y1%3D%220%22%20x2%3D%221%22%20y2%3D%221%22%3E%3Cstop%20offset%3D%220%22%20stop-color%3D%22%2322d3ee%22%2F%3E%3Cstop%20offset%3D%221%22%20stop-color%3D%22%237c3aed%22%2F%3E%3C%2FlinearGradient%3E%3C%2Fdefs%3E%3Crect%20width%3D%22160%22%20height%3D%22100%22%20fill%3D%22url(%23g)%22%2F%3E%3Ctext%20x%3D%2280%22%20y%3D%2258%22%20font-size%3D%2222%22%20fill%3D%22white%22%20text-anchor%3D%22middle%22%20font-family%3D%22sans-serif%22%20font-weight%3D%22bold%22%3EAPOLLO%3C%2Ftext%3E%3C%2Fsvg%3E';
@@ -308,7 +314,8 @@ const pageDisplay: LayoutNode = {
 };
 
 // ── 页 3 · 输入与交互 ────────────────────────────────────────
-const pageInput: LayoutNode = {
+function buildPageInput(c: ControlsState): LayoutNode {
+  return {
   type: 'Panel',
   id: 'page-input',
   props: { scroll: true },
@@ -361,8 +368,8 @@ const pageInput: LayoutNode = {
       props: {},
       layout: { direction: 'row', gap: 24, align: 'center', padding: 10 },
       children: [
-        { type: 'Checkbox', id: 'cb-tutorial', props: { label: '开启新手引导', checked: true, action: 'setFlag' } },
-        { type: 'Toggle', id: 'tg-sound', props: { label: '音效', checked: true, action: 'setSound' } },
+        { type: 'Checkbox', id: 'cb-tutorial', props: { label: '开启新手引导', checked: c.flag, action: 'setFlag' } },
+        { type: 'Toggle', id: 'tg-sound', props: { label: '音效', checked: c.sound, action: 'setSound' } },
       ],
     },
     sectionTitle('t-radio', 'RADIOGROUP · 互斥单选（→ 信号 setSpeed）'),
@@ -376,7 +383,7 @@ const pageInput: LayoutNode = {
           { value: '2', label: '2×' },
           { value: '4', label: '4×' },
         ],
-        value: '1',
+        value: c.speed,
         action: 'setSpeed',
       },
     },
@@ -398,7 +405,7 @@ const pageInput: LayoutNode = {
           { value: 'list', label: '列表' },
           { value: 'card', label: '卡片' },
         ],
-        value: 'grid',
+        value: c.view,
         action: 'setView',
       },
     },
@@ -406,7 +413,7 @@ const pageInput: LayoutNode = {
     {
       type: 'Stepper',
       id: 'stp-qty',
-      props: { value: 3, min: 0, max: 10, step: 1, action: 'setQty' },
+      props: { value: c.qty, min: 0, max: 10, step: 1, action: 'setQty' },
     },
     sectionTitle('t-combobox', 'COMBOBOX · 可搜索下拉（输入过滤·点项回填·引擎内建 → 信号 setCity）'),
     {
@@ -421,6 +428,7 @@ const pageInput: LayoutNode = {
           { value: 'changan', label: '长安' },
         ],
         placeholder: '搜索城市…',
+        value: c.city,
         action: 'setCity',
       },
     },
@@ -428,7 +436,7 @@ const pageInput: LayoutNode = {
     {
       type: 'Rating',
       id: 'rt-stars',
-      props: { value: 3, max: 5, action: 'setRating' },
+      props: { value: c.rating, max: 5, action: 'setRating' },
     },
     divider('d-i4'),
     sectionTitle('t-modal', 'MODAL · 模态浮层（按钮开 → 点遮罩/× 关·引擎内建 closeAction）'),
@@ -493,7 +501,8 @@ const pageInput: LayoutNode = {
       ],
     },
   ],
-};
+  };
+}
 
 // ── 模态浮层（按需叠加于 Screen 之上）─────────────────────────
 // Modal 是满屏遮罩浮层：开 = 宿主把它挂进树重渲染；关 = 引擎内建（点遮罩/× → closeModal）。
@@ -540,6 +549,7 @@ const drawerOverlay: LayoutNode = {
 export function buildGallery(
   activeTheme: string, modalOpen = false, drawerOpen = false,
   shop: ShopState = INITIAL_SHOP, pick: PickState = INITIAL_PICK, activeTab = 'tab-layout',
+  controls: ControlsState = INITIAL_CONTROLS,
 ): LayoutNode {
   return {
     type: 'Screen',
@@ -581,7 +591,7 @@ export function buildGallery(
           action: 'switchTab',
         },
         layout: { flex: 1 },
-        children: [pageLayout, pageDisplay, pageInput, buildShop(shop), buildPickHand(pick)],
+        children: [pageLayout, pageDisplay, buildPageInput(controls), buildShop(shop), buildPickHand(pick)],
       },
       // 模态浮层 / 抽屉按需叠加（满屏遮罩·盖在主界面之上）
       ...(modalOpen ? [modalOverlay] : []),

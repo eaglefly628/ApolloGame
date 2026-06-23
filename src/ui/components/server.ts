@@ -8,11 +8,48 @@ import { renderNode, renderVListWindow } from './render.js';
 import { SHELL } from '../shell-theme.js';
 import type { LayoutNode, HandlerMap, UITheme, ToastProps, VirtualListProps } from './types.js';
 
+/** mountUI 句柄：调用即 teardown（向后兼容）；`.update(newTree, theme?)` 做局部更新（最小 diff）。 */
+export type MountHandle = (() => void) & { update: (root: LayoutNode, theme?: UITheme) => void };
+
 // 按 id 在 LayoutNode 树里找节点（VirtualList 滚动重渲要从 root 取行数据）。
 function findNode(node: LayoutNode, id: string): LayoutNode | undefined {
   if (node.id === id) return node;
   for (const ch of node.children ?? []) { const f = findNode(ch, id); if (f) return f; }
   return undefined;
+}
+
+// ── 局部更新（diff/patch）核心 ───────────────────────────────────
+// 标准 UI 做法：不整树重挂，按 id 最小化打补丁——只替换「自身或子集真变了」的最浅子树，
+// 其余 DOM 原样保留（Tab 切页态/滚动位/焦点/native 输入态天然不丢；避免整树 innerHTML 替换
+// 在合成滚动容器上的陈旧重绘故障）。每个节点都渲染成带 id 的元素，故可按 id 定位与递归。
+
+function uiEscId(id: string): string { return id.replace(/(["\\])/g, '\\$1'); }
+function uiFindById(scope: ParentNode, id: string): HTMLElement | null {
+  return scope.querySelector<HTMLElement>(`[id="${uiEscId(id)}"]`);
+}
+/** 节点「自身」是否未变（类型 + props + layout 相等；不看 children）。 */
+function uiOwnSame(a: LayoutNode, b: LayoutNode): boolean {
+  return a.type === b.type
+    && JSON.stringify(a.props) === JSON.stringify(b.props)
+    && JSON.stringify(a.layout ?? null) === JSON.stringify(b.layout ?? null);
+}
+/** 子节点的「键序」（id + type）是否一致（增删/换位/换型 → 不一致）。 */
+function uiChildKeysSame(a: LayoutNode, b: LayoutNode): boolean {
+  const ak = a.children ?? [], bk = b.children ?? [];
+  if (ak.length !== bk.length) return false;
+  for (let i = 0; i < ak.length; i++) if (ak[i]!.id !== bk[i]!.id || ak[i]!.type !== bk[i]!.type) return false;
+  return true;
+}
+/** 把 newN 最小化打补丁到 scope 内 id=newN.id 的元素上（与 oldN 比较）。 */
+function reconcileNode(scope: ParentNode, oldN: LayoutNode, newN: LayoutNode, theme: UITheme): void {
+  const el = uiFindById(scope, newN.id);
+  if (!el) return; // 上层未变才会递进到此；找不到则跳过（安全）
+  if (!uiOwnSame(oldN, newN) || !uiChildKeysSame(oldN, newN)) {
+    el.outerHTML = renderNode(newN, theme); // 自身或子集变了 → 整体替换这棵最浅子树
+    return;
+  }
+  const ak = oldN.children ?? [], bk = newN.children ?? [];
+  for (let i = 0; i < ak.length; i++) reconcileNode(el, ak[i]!, bk[i]!, theme); // 自身同 → 递归子节点
 }
 
 /**
@@ -45,9 +82,13 @@ export function mountUI(
   root: LayoutNode,
   handlers: HandlerMap = {},
   theme: UITheme = SHELL,
-): () => void {
+): MountHandle {
   ensureKeyframes();
   host.innerHTML = renderNode(root, theme);
+
+  // 当前已挂载的树与主题（update 做最小 diff 的基线·VirtualList 复绑取数据）。
+  let curRoot = root;
+  let curTheme = theme;
 
   // 打字机（收编 VN DialogBox 逐字显）：挂载时把带 data-typewriter 的元素逐字揭示；teardown 清定时器。
   const typers: ReturnType<typeof setInterval>[] = [];
@@ -185,15 +226,26 @@ export function mountUI(
   // VirtualList 虚拟滚动（引擎内建）：滚动时只把可视窗口的行渲进 spacer（不一次性渲全部·解决千行级卡顿）。
   // 行数据从 root 树取（mountUI 持 root）；每个列表一个 scroll 监听，teardown 逐个解绑。
   const vlistScrolls: Array<{ el: HTMLElement; fn: (e: Event) => void }> = [];
-  host.querySelectorAll<HTMLElement>('[data-vlist]').forEach((el) => {
-    const node = findNode(root, el.dataset['vlist'] ?? '');
-    const spacer = el.querySelector<HTMLElement>(':scope > [data-vlist-spacer]');
-    if (!node || !spacer) return;
-    const p = node.props as VirtualListProps;
-    const fn = (): void => { spacer.innerHTML = renderVListWindow(p, el.scrollTop, theme); };
-    el.addEventListener('scroll', fn);
-    vlistScrolls.push({ el, fn });
-  });
+  const bindVlists = (): void => {
+    // 幂等：局部更新后剔除已脱离 DOM 的旧监听，再给新出现的 vlist 绑定（读 curRoot/curTheme）。
+    for (let i = vlistScrolls.length - 1; i >= 0; i--) {
+      if (!host.contains(vlistScrolls[i]!.el)) {
+        vlistScrolls[i]!.el.removeEventListener('scroll', vlistScrolls[i]!.fn);
+        vlistScrolls.splice(i, 1);
+      }
+    }
+    host.querySelectorAll<HTMLElement>('[data-vlist]').forEach((el) => {
+      if (vlistScrolls.some((v) => v.el === el)) return; // 已绑过
+      const node = findNode(curRoot, el.dataset['vlist'] ?? '');
+      const spacer = el.querySelector<HTMLElement>(':scope > [data-vlist-spacer]');
+      if (!node || !spacer) return;
+      const p = node.props as VirtualListProps;
+      const fn = (): void => { spacer.innerHTML = renderVListWindow(p, el.scrollTop, curTheme); };
+      el.addEventListener('scroll', fn);
+      vlistScrolls.push({ el, fn });
+    });
+  };
+  bindVlists();
 
   // ContextMenu 右键菜单（引擎内建）：右键在光标处弹菜单；任意点击合（项的 action 由 dispatch 发）。
   const ctxOpen = (e: Event): void => {
@@ -254,7 +306,23 @@ export function mountUI(
   host.addEventListener('focusin',     comboOpen);
   host.addEventListener('focusout',    tipHide);
 
-  return () => {
+  // 局部更新（标准 UI patch）：把新树最小化打补丁到现有 DOM，不整树重挂。
+  // 换皮（theme 变）：颜色烤进渲染串、props 不变 → diff 测不出，整根子树按新主题重渲一次
+  // （替换 host 的单个子元素，非 host.innerHTML 全清）；其余情况走按 id 的 reconcile。
+  const update = (newRoot: LayoutNode, newTheme?: UITheme): void => {
+    if (newTheme && newTheme !== curTheme) {
+      curTheme = newTheme;
+      const rootEl = uiFindById(host, curRoot.id);
+      if (rootEl) rootEl.outerHTML = renderNode(newRoot, newTheme);
+      else host.innerHTML = renderNode(newRoot, newTheme);
+    } else {
+      reconcileNode(host, curRoot, newRoot, curTheme);
+    }
+    curRoot = newRoot;
+    bindVlists(); // 子树可能被替换 → 复绑 vlist 滚动监听
+  };
+
+  const teardown = (() => {
     host.removeEventListener('click',       dispatch);
     host.removeEventListener('click',       switchTab);
     host.removeEventListener('click',       modalClose);
@@ -275,7 +343,9 @@ export function mountUI(
     vlistScrolls.forEach(({ el, fn }) => el.removeEventListener('scroll', fn));
     typers.forEach((iv) => clearInterval(iv));
     host.innerHTML = '';
-  };
+  }) as MountHandle;
+  teardown.update = update;
+  return teardown;
 }
 
 /**

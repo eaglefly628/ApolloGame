@@ -10,21 +10,12 @@
 // 不是游戏数据——这正是契约里「工程师写 mountUI/host 层」该待的地方。
 
 import { mountUI, showToast, resolveBindings } from '@ui/components/index.js';
-import type { UITheme, UIDataSource } from '@ui/components/index.js';
-import { buildGallery } from './gallery.js';
+import type { UITheme, UIDataSource, LayoutNode } from '@ui/components/index.js';
+import { buildGallery, INITIAL_CONTROLS, type ControlsState } from './gallery.js';
 import { buildHandlers } from './handlers.js';
 import { THEMES } from './themes.js';
 import { applyShop, INITIAL_SHOP, type ShopState } from './shop.js';
 import { applyPick, INITIAL_PICK, type PickState } from './pickcards.js';
-
-// 同步切 display 触发重排重绘（同一帧内完成·无可见闪烁），清掉部分 GPU 在整树 innerHTML
-// 替换后遗留的「陈旧黑字」合成层——与用户「点一下就恢复颜色」同效，但自动化。
-function forceRepaint(el: HTMLElement): void {
-  const prev = el.style.display;
-  el.style.display = 'none';
-  void el.offsetHeight; // 强制 reflow
-  el.style.display = prev;
-}
 
 export function mount(container: HTMLElement): () => void {
   // ── 两栏骨架：左画廊（弹性）+ 右事件日志（固定宽）──────────────
@@ -90,12 +81,13 @@ export function mount(container: HTMLElement): () => void {
     }
   }
 
-  // ── 挂载 / 换皮重挂 / 模态·抽屉开关 ──────────────────────────
+  // ── 宿主状态（MVU：UI = 状态的纯函数；改状态 → ui.update 局部更新·不整树重挂）──
   let currentTheme = 'onyx';
   let modalOpen = false;
   let drawerOpen = false;
-  let activeTab = 'tab-layout'; // 记住当前页·重挂不回弹第一页
-  let teardown: (() => void) | null = null;
+  let shop: ShopState = INITIAL_SHOP;  // 组合演示·商店
+  let pick: PickState = INITIAL_PICK;  // 组合演示·选牌
+  let controls: ControlsState = INITIAL_CONTROLS; // 自定义画选中态的控件值（speed/view/rating/qty/city/flag/sound）
 
   // 演示用「世界」状态 + 注入式数据源（resolveBindings 活 HUD 用·解耦 ECS）。
   const world = { hp: { current: 70, max: 100 }, gold: { current: 1280 } };
@@ -103,76 +95,60 @@ export function mount(container: HTMLElement): () => void {
     resource: (id) => (world as Record<string, { current: number; max?: number }>)[id],
   };
 
-  // 组合演示「商店」的有状态存储（UI = 状态的纯函数·联动从 applyShop reducer 涌现）。
-  let shop: ShopState = INITIAL_SHOP;
-  // 组合演示「选牌」的有状态存储（多选≤5·拖放入选·从 applyPick reducer 涌现）。
-  let pick: PickState = INITIAL_PICK;
+  const theme = (): UITheme => THEMES[currentTheme] ?? THEMES['onyx']!;
 
   const handlers = buildHandlers({
-    log: (action, arg) => {
-      lines.push({ action, arg, t: now() });
-      renderLog(THEMES[currentTheme] ?? THEMES['onyx']!);
-    },
-    setTheme: (value) => {
-      currentTheme = value;
-      remount();
-    },
-    setTab: (id) => { activeTab = id; }, // mountUI 已就地切页·只记录·不重挂
-    setModal: (open) => {
-      modalOpen = open;
-      remount();
-    },
-    setDrawer: (open) => {
-      drawerOpen = open;
-      remount();
+    log: (action, arg) => { lines.push({ action, arg, t: now() }); renderLog(theme()); },
+    setTheme: (value) => { currentTheme = value; rerender(true); },
+    setModal: (open) => { modalOpen = open; rerender(); },
+    setDrawer: (open) => { drawerOpen = open; rerender(); },
+    setControl: (kind, arg) => {
+      if (kind === 'flag') controls = { ...controls, flag: arg === 'true' };
+      else if (kind === 'sound') controls = { ...controls, sound: arg === 'true' };
+      else if (kind === 'speed') controls = { ...controls, speed: arg ?? controls.speed };
+      else if (kind === 'view') controls = { ...controls, view: arg ?? controls.view };
+      else if (kind === 'qty') controls = { ...controls, qty: Math.max(0, Number(arg) || 0) };
+      else if (kind === 'rating') controls = { ...controls, rating: Number(arg) || controls.rating };
+      else if (kind === 'city') controls = { ...controls, city: arg ?? controls.city };
+      rerender();
     },
     toast: (tone) => {
-      const theme = THEMES[currentTheme] ?? THEMES['onyx']!;
       const text = { ok: '操作成功 ✓', warn: '请注意 ⚠', danger: '出错了 ✕' }[tone ?? 'ok'] ?? '提示';
-      // 挂进外层 root（跨画廊重挂存活·teardown 时随 root 一并清理）。
-      showToast(root, text, { tone: tone as 'ok' | 'warn' | 'danger' | undefined, theme });
+      showToast(root, text, { tone: tone as 'ok' | 'warn' | 'danger' | undefined, theme: theme() });
     },
-    hurt: (n) => {
-      world.hp.current = Math.max(0, world.hp.current - n);
-      remount();
-    },
-    heal: (n) => {
-      world.hp.current = Math.min(world.hp.max, world.hp.current + n);
-      world.gold.current += n; // 顺带演示第二个绑定资源变化
-      remount();
-    },
+    hurt: (n) => { world.hp.current = Math.max(0, world.hp.current - n); rerender(); },
+    heal: (n) => { world.hp.current = Math.min(world.hp.max, world.hp.current + n); world.gold.current += n; rerender(); },
     shopDispatch: (kind, arg) => {
-      const theme = THEMES[currentTheme] ?? THEMES['onyx']!;
       const { state, toast } = applyShop(shop, kind, arg); // 纯 reducer 出新状态 + toast 意图
       shop = state;
-      if (toast) showToast(root, toast.text, { tone: toast.tone, theme });
-      remount(); // UI = 状态的纯函数 → 联动（过滤/详情/合计/禁用）一次重渲全部成立
+      if (toast) showToast(root, toast.text, { tone: toast.tone, theme: theme() });
+      rerender();
     },
     pickDispatch: (kind, arg) => {
-      const theme = THEMES[currentTheme] ?? THEMES['onyx']!;
       const { state, toast } = applyPick(pick, kind, arg);
       pick = state;
-      if (toast) showToast(root, toast.text, { tone: toast.tone, theme });
-      remount();
+      if (toast) showToast(root, toast.text, { tone: toast.tone, theme: theme() });
+      rerender();
     },
   });
 
-  function remount(): void {
-    const theme = THEMES[currentTheme] ?? THEMES['onyx']!;
-    if (teardown) teardown();
-    // 渲染前先用数据源把 bind 节点解析成字面值（活 HUD·resolveBindings 返回新树·纯函数）。
-    const tree = resolveBindings(buildGallery(currentTheme, modalOpen, drawerOpen, shop, pick, activeTab), dataSource);
-    teardown = mountUI(galleryHost, tree, handlers, theme);
-    applyPaneTheme(theme);
-    renderLog(theme);
-    forceRepaint(galleryHost); // 规避整树重挂后 GPU 遗留「陈旧黑字」合成层
+  // 渲染前用数据源把 bind 节点解析成字面值（活 HUD·resolveBindings 返回新树·纯函数）。
+  // activeTab 恒为首页常量：Tab 切换由 mountUI 内建就地处理（不重渲），数据里 active 不变 →
+  // reconcile 永不替换整个 Tabs（含各页/表格）→ 切页态/滚动/输入态全保留、不回弹、不黑。
+  const buildTree = (): LayoutNode =>
+    resolveBindings(buildGallery(currentTheme, modalOpen, drawerOpen, shop, pick, 'tab-layout', controls), dataSource);
+
+  // 挂载一次；之后改状态都走 ui.update 局部更新（只补丁变化的子树·不整树重挂·Tab/滚动/输入态不丢·无黑屏）。
+  const ui = mountUI(galleryHost, buildTree(), handlers, theme());
+  applyPaneTheme(theme());
+  renderLog(theme());
+
+  function rerender(themeChanged = false): void {
+    ui.update(buildTree(), themeChanged ? theme() : undefined);
+    if (themeChanged) applyPaneTheme(theme());
+    renderLog(theme());
   }
 
-  remount();
-
   // ── 卡带 cleanup ─────────────────────────────────────────────
-  return () => {
-    if (teardown) teardown();
-    root.remove();
-  };
+  return () => { ui(); root.remove(); };
 }
