@@ -5,4 +5,5 @@ export type {
   ButtonProps, LabelProps, DropdownProps, BadgeProps, InputProps, PanelProps,
   TableProps, TableColumn, TableRow, TabsProps, ProgressBarProps, TagProps, ModalProps, ToastProps, TooltipProps,
   CardProps, StepperProps, SegmentedProps, AvatarProps, AccordionProps,
+  RatingProps, ComboboxProps, DrawerProps,
 } from './types.js';

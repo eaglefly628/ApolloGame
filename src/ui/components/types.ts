@@ -8,7 +8,8 @@ export type ComponentType =
   | 'Panel' | 'Button' | 'Label' | 'Dropdown' | 'Badge' | 'Input' | 'Divider'
   | 'Checkbox' | 'Toggle' | 'RadioGroup' | 'Image' | 'Screen' | 'Slider'
   | 'Table' | 'Tabs' | 'ProgressBar' | 'Tag' | 'Modal' | 'Toast' | 'Tooltip'
-  | 'Card' | 'Stepper' | 'Segmented' | 'Avatar' | 'Accordion';
+  | 'Card' | 'Stepper' | 'Segmented' | 'Avatar' | 'Accordion'
+  | 'Rating' | 'Combobox' | 'Drawer';
 
 /** 布局约束：坐标/尺寸/弹性。x/y 触发绝对定位；flex 在父 Panel/Screen 内生效。 */
 export interface LayoutConstraints {
@@ -189,11 +190,29 @@ export interface AccordionProps {
   title: string; open?: boolean; action?: string;
 }
 
+// ── Rating（星级评分）：value 已亮颗数；max 总颗（缺省 5）；有 action 则可点设值(arg=点中颗数)，无则只读展示。 ──
+export interface RatingProps {
+  value: number; max?: number; action?: string;
+}
+
+// ── Combobox（带搜索的下拉）：输入框过滤选项、点选回填。──
+// 过滤/开合/点选由 mountUI 内建（focus 开、input 过滤、点项选+合、点外合）；选中 → action(arg=value)。
+export interface ComboboxProps {
+  options: { value: string; label: string }[]; value?: string; placeholder?: string; action?: string;
+}
+
+// ── Drawer（侧滑/底部抽屉）：children = 抽屉体。──
+// 机制同 Modal（遮罩 + 关闭复用 mountUI 遮罩关闭）；side 定贴边方位。closeAction = 点 × / 点遮罩信号。
+export interface DrawerProps {
+  side?: 'left' | 'right' | 'bottom'; title?: string; closeAction?: string;
+}
+
 export type ComponentProps =
   | ButtonProps | LabelProps | DropdownProps | BadgeProps | InputProps | PanelProps
   | CheckboxProps | ToggleProps | RadioGroupProps | ImageProps | ScreenProps | SliderProps
   | TableProps | TabsProps | ProgressBarProps | TagProps | ModalProps | ToastProps | TooltipProps
   | CardProps | StepperProps | SegmentedProps | AvatarProps | AccordionProps
+  | RatingProps | ComboboxProps | DrawerProps
   | Record<string, never>;
 
 /** LayoutNode = 弱模型填写的 UI 数据单元。type + id + props 必填；layout/children 按需。 */

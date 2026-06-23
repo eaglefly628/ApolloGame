@@ -8,6 +8,7 @@ import type {
   CheckboxProps, ToggleProps, RadioGroupProps, ImageProps, ScreenProps, SliderProps,
   TableProps, TableColumn, TabsProps, ProgressBarProps, TagProps, ModalProps, ToastProps, TooltipProps,
   CardProps, StepperProps, SegmentedProps, AvatarProps, AccordionProps,
+  RatingProps, ComboboxProps, DrawerProps,
 } from './types.js';
 
 const esc = (s: string): string =>
@@ -361,6 +362,46 @@ function renderAccordion(id: string, p: AccordionProps, children: LayoutNode[], 
   return `<div id="${esc(id)}" data-accordion style="display:flex;flex-direction:column;gap:4px;${ls}">${head}${body}</div>`;
 }
 
+// ── Rating / Combobox / Drawer（P2·星级 / 搜索下拉 / 抽屉）──────────────────────
+
+// 星级：1..max 颗，≤value 点亮(金)；有 action 则每颗可点(arg=颗数)设值，无则只读。
+function renderRating(id: string, p: RatingProps, ls: string, t: UITheme): string {
+  const max = p.max ?? 5;
+  const stars = Array.from({ length: max }, (_, i) => {
+    const n = i + 1, on = n <= p.value;
+    const act = p.action ? ` data-action="${esc(p.action)}" data-arg="${n}"` : '';
+    return `<span${act} style="font-size:16px;line-height:1;color:${on ? t.gold : t.dim};${p.action ? 'cursor:pointer;' : ''}">${on ? '★' : '☆'}</span>`;
+  }).join('');
+  return `<span id="${esc(id)}" style="display:inline-flex;gap:2px;${ls}">${stars}</span>`;
+}
+
+// 搜索下拉：输入框 + 选项面板（缺省隐）。开合/过滤/点选/点外合由 mountUI 内建（data-combo* 锚点）。
+function renderCombobox(id: string, p: ComboboxProps, ls: string, t: UITheme): string {
+  const selected = p.options.find((o) => o.value === p.value);
+  const opts = p.options
+    .map((o) => `<div data-combo-opt="${esc(o.value)}" data-combo-label="${esc(o.label)}" style="padding:7px 10px;font-size:12px;color:${t.text};cursor:pointer;font-family:${t.fontUi}">${esc(o.label)}</div>`)
+    .join('');
+  const inp = `background:${t.bg2};color:${t.text};border:1px solid ${t.line};border-radius:6px;font-size:12px;padding:6px 10px;outline:none;font-family:${t.fontUi};width:100%`;
+  return `<div id="${esc(id)}" data-combo="${esc(p.action ?? '')}" style="position:relative;${ls}"><input data-combo-search type="text" autocomplete="off" placeholder="${esc(p.placeholder ?? '搜索…')}" value="${esc(selected?.label ?? '')}" style="${inp}"><div data-combo-panel style="display:none;position:absolute;top:calc(100% + 4px);left:0;right:0;z-index:250;max-height:220px;overflow:auto;background:${t.bg2};border:1px solid ${t.line};border-radius:8px;box-shadow:0 12px 30px rgba(0,0,0,0.4)">${opts}</div></div>`;
+}
+
+// 抽屉：贴边面板 + 遮罩。遮罩关闭复用 mountUI 的 data-modal-close（与 Modal 同套路·零新增运行时）。
+function renderDrawer(id: string, p: DrawerProps, children: LayoutNode[], ls: string, t: UITheme): string {
+  const side = p.side ?? 'right';
+  const panelPos: Record<string, string> = {
+    left:   `top:0;left:0;bottom:0;width:340px;max-width:86%;border-right:1px solid ${t.line}`,
+    right:  `top:0;right:0;bottom:0;width:340px;max-width:86%;border-left:1px solid ${t.line}`,
+    bottom: `left:0;right:0;bottom:0;max-height:82%;border-top:1px solid ${t.line};border-radius:14px 14px 0 0`,
+  };
+  const scrimClose = p.closeAction ? ` data-modal-close="${esc(p.closeAction)}"` : '';
+  const xBtn = p.closeAction
+    ? `<button data-action="${esc(p.closeAction)}" aria-label="close" style="position:absolute;top:10px;right:13px;width:26px;height:26px;background:none;border:none;color:${t.dim};font-size:19px;line-height:1;cursor:pointer;font-family:${t.fontUi}">×</button>`
+    : '';
+  const title = p.title ? `<div style="font-size:15px;font-weight:700;color:${t.text};font-family:${t.fontUi};margin-bottom:12px;padding-right:26px">${esc(p.title)}</div>` : '';
+  const body = children.map((ch) => renderNode(ch, t)).join('');
+  return `<div id="${esc(id)}"${scrimClose} style="position:fixed;inset:0;z-index:200;background:rgba(0,0,0,0.62);${ls}"><div style="position:absolute;${panelPos[side]};background:${t.bg1};padding:20px;overflow:auto;box-shadow:0 0 50px rgba(0,0,0,0.5)">${xBtn}${title}${body}</div></div>`;
+}
+
 // ── 统一入口 ────────────────────────────────────────────────────
 
 /** 将 LayoutNode 树渲染为 HTML 字符串。弱模型提供数据 + 可选主题；此函数是解释器。缺省主题 = 引擎 SHELL 脸。 */
@@ -393,6 +434,9 @@ export function renderNode(node: LayoutNode, theme: UITheme = SHELL): string {
     case 'Segmented':  return renderSegmented(node.id, node.props as SegmentedProps, ls, t);
     case 'Avatar':     return renderAvatar(node.id, node.props as AvatarProps, ls, t);
     case 'Accordion':  return renderAccordion(node.id, node.props as AccordionProps, node.children ?? [], ls, t);
+    case 'Rating':     return renderRating(node.id, node.props as RatingProps, ls, t);
+    case 'Combobox':   return renderCombobox(node.id, node.props as ComboboxProps, ls, t);
+    case 'Drawer':     return renderDrawer(node.id, node.props as DrawerProps, node.children ?? [], ls, t);
     default:           return `<!-- unknown: ${String((node as LayoutNode).type)} -->`;
   }
 }

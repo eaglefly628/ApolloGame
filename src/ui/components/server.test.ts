@@ -474,4 +474,28 @@ describe('UI Components · renderNode', () => {
     expect(closed).toMatch(/data-accordion-body[^>]*display:none/); // 缺省收起
     expect(renderNode({ type: 'Accordion', id: 'ac', props: { title: 'X', open: true }, children: [] })).toMatch(/data-accordion-body[^>]*display:block/);
   });
+
+  it('Rating: ≤value 点亮(★)、其余空(☆)；有 action 每颗可点(arg=颗数)', () => {
+    const html = renderNode({ type: 'Rating', id: 'r', props: { value: 3, max: 5, action: 'rate' } });
+    expect((html.match(/★/g) || []).length).toBe(3); // 3 颗亮
+    expect((html.match(/☆/g) || []).length).toBe(2); // 2 颗空
+    expect(html).toContain('data-arg="1"'); expect(html).toContain('data-arg="5"'); // 每颗带颗数
+    expect(renderNode({ type: 'Rating', id: 'r', props: { value: 2 } })).not.toContain('data-action'); // 无 action 只读
+  });
+
+  it('Combobox: 输入框 + 选项面板(缺省隐) + 选项带 value/label + 回填选中', () => {
+    const html = renderNode({ type: 'Combobox', id: 'cb', props: { options: [{ value: 'gx', label: '关羽' }, { value: 'zf', label: '张飞' }], value: 'zf', action: 'pickHero' } });
+    expect(html).toContain('data-combo="pickHero"');        // action 挂根
+    expect(html).toMatch(/data-combo-panel[^>]*display:none/); // 面板缺省隐
+    expect(html).toContain('data-combo-opt="gx"'); expect(html).toContain('data-combo-label="关羽"');
+    expect(html).toContain('value="张飞"');                  // 选中回填输入框
+  });
+
+  it('Drawer: 贴边面板 + 遮罩(复用 data-modal-close) + side 方位 + ×', () => {
+    const html = renderNode({ type: 'Drawer', id: 'dw', props: { side: 'left', title: '设置', closeAction: 'closeDrawer' }, children: [{ type: 'Label', id: 'l', props: { text: '抽屉体' } }] });
+    expect(html).toContain('data-modal-close="closeDrawer"'); // 复用遮罩关闭
+    expect(html).toContain('data-action="closeDrawer"');      // × 信号
+    expect(html).toContain('left:0;bottom:0');                // side=left 贴左
+    expect(html).toContain('设置'); expect(html).toContain('抽屉体');
+  });
 });

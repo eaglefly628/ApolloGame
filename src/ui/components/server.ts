@@ -109,14 +109,51 @@ export function mountUI(
     if (caret) caret.style.transform = `rotate(${willOpen ? 90 : 0}deg)`;
   };
 
+  // Combobox 搜索下拉（引擎内建）：focus 开面板、input 过滤项、点项回填+发 action(arg=value)+合、点外合。
+  const comboOpen = (e: Event): void => {
+    const input = (e.target as HTMLElement).closest('[data-combo-search]') as HTMLElement | null;
+    if (!input) return;
+    const panel = input.closest('[data-combo]')?.querySelector<HTMLElement>(':scope > [data-combo-panel]');
+    if (panel) panel.style.display = 'block';
+  };
+  const comboFilter = (e: Event): void => {
+    const input = (e.target as HTMLElement).closest('[data-combo-search]') as HTMLInputElement | null;
+    if (!input) return;
+    const q = input.value.toLowerCase();
+    input.closest('[data-combo]')?.querySelectorAll<HTMLElement>('[data-combo-opt]').forEach((opt) => {
+      opt.style.display = (opt.dataset['comboLabel'] ?? '').toLowerCase().includes(q) ? 'block' : 'none';
+    });
+  };
+  const comboClick = (e: Event): void => {
+    const target = e.target as HTMLElement;
+    const opt = target.closest('[data-combo-opt]') as HTMLElement | null;
+    if (opt) {
+      const root = opt.closest('[data-combo]') as HTMLElement | null;
+      const input = root?.querySelector<HTMLInputElement>(':scope > [data-combo-search]');
+      const panel = root?.querySelector<HTMLElement>(':scope > [data-combo-panel]');
+      if (input) input.value = opt.dataset['comboLabel'] ?? '';
+      if (panel) panel.style.display = 'none';
+      const action = root?.dataset['combo'], val = opt.dataset['comboOpt'];
+      if (action && val != null) { const fn = handlers[action]; if (fn) fn(val); }
+      return;
+    }
+    host.querySelectorAll<HTMLElement>('[data-combo-panel]').forEach((panel) => { // 点外 → 合
+      const root = panel.closest('[data-combo]');
+      if (root && !root.contains(target)) panel.style.display = 'none';
+    });
+  };
+
   host.addEventListener('click',     dispatch);
   host.addEventListener('click',     switchTab);
   host.addEventListener('click',     modalClose);
   host.addEventListener('click',     accordionToggle);
+  host.addEventListener('click',     comboClick);
   host.addEventListener('change',    dispatch);
+  host.addEventListener('input',     comboFilter);
   host.addEventListener('mouseover', tipShow);
   host.addEventListener('mouseout',  tipHide);
   host.addEventListener('focusin',   tipShow);
+  host.addEventListener('focusin',   comboOpen);
   host.addEventListener('focusout',  tipHide);
 
   return () => {
@@ -124,10 +161,13 @@ export function mountUI(
     host.removeEventListener('click',     switchTab);
     host.removeEventListener('click',     modalClose);
     host.removeEventListener('click',     accordionToggle);
+    host.removeEventListener('click',     comboClick);
     host.removeEventListener('change',    dispatch);
+    host.removeEventListener('input',     comboFilter);
     host.removeEventListener('mouseover', tipShow);
     host.removeEventListener('mouseout',  tipHide);
     host.removeEventListener('focusin',   tipShow);
+    host.removeEventListener('focusin',   comboOpen);
     host.removeEventListener('focusout',  tipHide);
     host.innerHTML = '';
   };
