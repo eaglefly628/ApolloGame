@@ -1,14 +1,6 @@
 // Game G · 战斗编排数据层测试（布阵/分兵/干预/护盾/战役/Boss/场间增益·拆分自 game-g.test.ts）。
 import { describe, it, expect } from 'vitest';
-import { Engine } from '../../runtime/engine.js';
-import type { Component } from '@engine/core/types.js';
-import type { Transform, RandomSeed, Resource, State, Card3D } from '@engine/protocol/components.js';
-import { prepareArmies, standardArmy, armyFromFormation, laneEstimates, applyInterventions, applyShadowRevenge, quartermasterEnergy, pickAiFormation, applyTiangangs, tiangangMoraleScale, tiangangLinks, tiangangKeyBuffs, GAME_G_TIANGANGS, TIANGANG_BY_ID, ARCHETYPES, detectArchetype, archetypeMatchup, activeArchetype, applyArchetypeActivation, GAME_G_PLANETS, GAME_G_FOILS, effectiveLives, effectiveLeverCap, effectiveLeverRegen, effectiveTierBonus, applyPlanetArmy, laneHandTier, battleSpec, RUN_BATTLES, RUN_LIVES, BETWEEN_BUFFS, applyBuff, BOSS_ROSTER, bossFor, LEVER_CATALOG, LEVER_START, LEVER_CAP, LEVER_REGEN, FORMATION_PRESETS, PRESET_NAMES, type ArmyCard, type Intervention, type BuffTarget } from './blueprint.js';
-
-const get = <T extends Component>(e: Engine, id: string, type: string): T | undefined => e.world.getComponent<T>(id, type);
-const rotOf = (e: Engine, id = 'card'): number => get<Transform>(e, id, 'Transform')!.rotation;
-const faceUpVisible = (rot: number): boolean => Math.cos(rot) > 0; // 正面=朝镜头(+z) ⟺ cos>0
-const seedOf = (seed: number): RandomSeed => ({ type: 'RandomSeed', seed, sequence: 0 });
+import { prepareArmies, standardArmy, armyFromFormation, laneEstimates, applyInterventions, laneHandTier, battleSpec, RUN_BATTLES, RUN_LIVES, BETWEEN_BUFFS, applyBuff, BOSS_ROSTER, bossFor, LEVER_CATALOG, LEVER_START, LEVER_CAP, LEVER_REGEN, FORMATION_PRESETS, PRESET_NAMES, type ArmyCard, type BuffTarget } from './blueprint.js';
 
 describe('Game G · T-G3 开局布阵 / 分兵（田忌赛马，纯数据）', () => {
   const OFFICER = new Set(['JOKER', 'K', 'Q', 'J', '10', '9', '8', '7']);

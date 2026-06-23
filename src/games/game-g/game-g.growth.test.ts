@@ -1,14 +1,6 @@
 // Game G · 养成数据层测试（天罡/流派克制/AI布阵/星球/流派激活/全栈端到端·拆分自 game-g.test.ts）。
 import { describe, it, expect } from 'vitest';
-import { Engine } from '../../runtime/engine.js';
-import type { Component } from '@engine/core/types.js';
-import type { Transform, RandomSeed, Resource, State, Card3D } from '@engine/protocol/components.js';
-import { prepareArmies, standardArmy, armyFromFormation, laneEstimates, applyInterventions, applyShadowRevenge, quartermasterEnergy, pickAiFormation, applyTiangangs, tiangangMoraleScale, tiangangLinks, tiangangKeyBuffs, GAME_G_TIANGANGS, TIANGANG_BY_ID, ARCHETYPES, detectArchetype, archetypeMatchup, activeArchetype, applyArchetypeActivation, GAME_G_PLANETS, GAME_G_FOILS, effectiveLives, effectiveLeverCap, effectiveLeverRegen, effectiveTierBonus, applyPlanetArmy, laneHandTier, battleSpec, RUN_BATTLES, RUN_LIVES, BETWEEN_BUFFS, applyBuff, BOSS_ROSTER, bossFor, LEVER_CATALOG, LEVER_START, LEVER_CAP, LEVER_REGEN, FORMATION_PRESETS, PRESET_NAMES, type ArmyCard, type Intervention, type BuffTarget } from './blueprint.js';
-
-const get = <T extends Component>(e: Engine, id: string, type: string): T | undefined => e.world.getComponent<T>(id, type);
-const rotOf = (e: Engine, id = 'card'): number => get<Transform>(e, id, 'Transform')!.rotation;
-const faceUpVisible = (rot: number): boolean => Math.cos(rot) > 0; // 正面=朝镜头(+z) ⟺ cos>0
-const seedOf = (seed: number): RandomSeed => ({ type: 'RandomSeed', seed, sequence: 0 });
+import { prepareArmies, standardArmy, armyFromFormation, applyShadowRevenge, quartermasterEnergy, pickAiFormation, applyTiangangs, tiangangMoraleScale, tiangangLinks, tiangangKeyBuffs, GAME_G_TIANGANGS, TIANGANG_BY_ID, ARCHETYPES, detectArchetype, archetypeMatchup, activeArchetype, applyArchetypeActivation, GAME_G_PLANETS, GAME_G_FOILS, effectiveLives, effectiveLeverCap, effectiveLeverRegen, effectiveTierBonus, applyPlanetArmy, laneHandTier, RUN_LIVES, applyBuff, BOSS_ROSTER, bossFor, LEVER_CAP, LEVER_REGEN, FORMATION_PRESETS, PRESET_NAMES, type ArmyCard, type Intervention, type BuffTarget } from './blueprint.js';
 
 describe('Game G · T-G6 天罡牌（融牌面 · build 时 favor 变换 · 持久牌组身份）', () => {
   const mk = (id: string, lane: number, suit: string, favor: number): ArmyCard => ({ id, rank: 'A', lane, favor, general: false, suit });

@@ -1,11 +1,6 @@
-import type { WorldBlueprint, EntityBlueprint } from '../../assembly/demo.assembly.js';
-import { transformCapability, nextRandom, tagCapability, resourceCapability, stateCapability, timerCapability } from '@atom-skills/index.js';
-import { tweenCapability } from '@skills/tier1/index.js';
 import { HERO_CARDS } from './hero-codex.js'; // isHeroOwned 本地引用（拆分后从 hero-codex 取·并经下方 export* 再导出）
-import { groupCountCapability, eventWhenCapability, effectApplyCapability } from '@skills/tier2/index.js';
 import { isStraightRanks } from '@skills/tier3/poker-hand.js'; // 复用 Game E 牌型算法(顺子检测)
 import type { HandType } from '@skills/tier3/poker-hand.js';
-import type { RandomSeed } from '@engine/protocol/components.js';
 
 // ═══════════════════════════════════════════════════════════════
 //  Game G《翻命扑克 Fateflip》—— 历史名将 · 单机回合制 deck-builder 的**数据装配层**（doc24）。
