@@ -58,24 +58,40 @@ export function aggregateTengang(castIds: readonly string[]): TengangFx {
   for (const id of castIds) { const j = TIANGANG_BY_ID.get(id); if (j) cards.push({ kind: j.kind, params: j.params as Record<string, unknown> | undefined }); }
   return tengangFxOf(cards);
 }
-// 纯映射（注入卡集·不依赖 blueprint 数据 → 可用合成卡单测新 op，先于乙上架数据）。op→效果 = 甲侧契约（乙照此编码 doc20 §二）：
-//   odds: add→pEffAdd · winFloor→% · kHard(灌铅骰)→logistic 变硬 · noUpset(铁骰)→占优免爆冷 ｜ power: add(+filter countLE3|sameSuit|无=全军)
-//   combo: pair(对子诀·≥2同点) / trips(鼎立·≥3同点) ｜ morale: leaderBuff ｜ stamina: stamPlus(全军) · +filter:faces(老兵)→人头牌 ｜ draw: handMax
+// 天罡 op 注册表（doc20 §二·op→IR 单一真相）：DSL 的「op 词汇」枚举在此一处。
+// 新增一个 op = 加一行 handler（不再改 tengangFxOf 主体·不再加 if 分支）。key=`${kind}:${op}`；
+// handler 把该 op 折进 TengangFx IR（apply 侧逐字段消费见 turn-combat effPower/clashEval/advance）。
+// v=params.value · bonus=params.bonus · p=原始 params（取 filter/scope）。
+type TgOp = (fx: TengangFx, v: number, bonus: number, p: Record<string, unknown>) => void;
+const TENGANG_OPS: Record<string, TgOp> = {
+  'odds:add': (fx, v) => { fx.pEffAdd += v; },                               // 鬼手：掷命 +v
+  'odds:winFloor': (fx, v) => { fx.winFloor += v / 100; },                  // 磐石：胜率下限 +v%
+  'odds:kHard': (fx, v) => { fx.kHard += v; },                              // 灌铅骰：logistic 变硬
+  'odds:noUpset': (fx) => { fx.noUpset += 1; },                             // 铁骰：占优免爆冷
+  'power:mul': (fx, v, _b, p) => { if (p.scope === 'highestRank') fx.powerMulHighest = Math.max(fx.powerMulHighest, v); }, // 擎天：最强单张 ×v（取最大·非叠加）
+  'power:add': (fx, v, _b, p) => { if (p.filter === 'countLE3') fx.powerLE3 += v; else if (p.filter === 'sameSuit') fx.powerSameSuit += v; else if (p.scope === 'front') fx.powerFront += v; else fx.powerAll += v; }, // 寡兵/同花魁/锋矢/虎符(全军)
+  'combo:pair': (fx, _v, bonus) => { fx.comboPair += bonus; },              // 对子诀
+  'combo:trips': (fx, _v, bonus) => { fx.comboTrips += bonus; },            // 鼎立
+  'morale:leaderBuff': (fx, v) => { fx.moraleLeader += v; },                // 旗手
+  'morale:revenge': (fx, v) => { fx.revenge += v; },                       // 哀兵
+  'morale:noRout': (fx) => { fx.noRout = 1; },                              // 督战
+  'stamina:stamPlus': (fx, v, _b, p) => { if (p.filter === 'faces') fx.stamFaces += v; else fx.stamPlus += v; }, // 老兵(faces)/不屈(全军)
+  'stamina:relay': (fx, v) => { fx.relay += v; },                          // 薪火
+  'draw:handMax': (fx, v) => { fx.handMaxAdd += v; },                       // 广纳
+  'draw:onPlay': (fx, v) => { fx.onPlay += v; },                           // 川流
+  'draw:clashElixir': (fx, v) => { fx.clashElixir += v; },                 // 战潮
+  'siege:defend': (fx, v) => { fx.siegeDefend += v; },                     // 死守
+  'siege:chipMore': (fx, v) => { fx.siegeChip += v; },                     // 攻城锤
+};
+
+// 纯映射（注入卡集·不依赖 blueprint 数据 → 可用合成卡单测新 op，先于乙上架数据）。
+// op 词汇 = TENGANG_OPS 注册表（单一真相·上方）；未知 op 静默跳过（与旧 if-else 落空一致）。
 export function tengangFxOf(cards: Iterable<{ kind: string; params?: Record<string, unknown> }>): TengangFx {
   const fx: TengangFx = { ...NO_TENGANG };
   for (const j of cards) {
     const p = j.params; if (!p) continue;
     const v = typeof p.value === 'number' ? p.value : 0; const bonus = typeof p.bonus === 'number' ? p.bonus : 0;
-    if (j.kind === 'odds') { if (p.op === 'add') fx.pEffAdd += v; else if (p.op === 'winFloor') fx.winFloor += v / 100; else if (p.op === 'kHard') fx.kHard += v; else if (p.op === 'noUpset') fx.noUpset += 1; }
-    else if (j.kind === 'power') {
-      if (p.op === 'mul' && p.scope === 'highestRank') fx.powerMulHighest = Math.max(fx.powerMulHighest, v); // 擎天：全军最强单张 ×mul（一种算一次·取最大·非叠加）
-      else if (p.op === 'add') { if (p.filter === 'countLE3') fx.powerLE3 += v; else if (p.filter === 'sameSuit') fx.powerSameSuit += v; else if (p.scope === 'front') fx.powerFront += v; else fx.powerAll += v; } // 寡兵 / 同花魁 / 锋矢(front) / 虎符(全军·scope:all 或无)
-    }
-    else if (j.kind === 'combo') { if (p.op === 'pair') fx.comboPair += bonus; else if (p.op === 'trips') fx.comboTrips += bonus; }
-    else if (j.kind === 'morale') { if (p.op === 'leaderBuff') fx.moraleLeader += v; else if (p.op === 'revenge') fx.revenge += v; else if (p.op === 'noRout') fx.noRout = 1; } // 旗手/哀兵/督战
-    else if (j.kind === 'stamina') { if (p.op === 'stamPlus') { if (p.filter === 'faces') fx.stamFaces += v; else fx.stamPlus += v; } else if (p.op === 'relay') fx.relay += v; } // 老兵/不屈/薪火
-    else if (j.kind === 'draw') { if (p.op === 'handMax') fx.handMaxAdd += v; else if (p.op === 'onPlay') fx.onPlay += v; else if (p.op === 'clashElixir') fx.clashElixir += v; } // 广纳/川流/战潮
-    else if (j.kind === 'siege') { if (p.op === 'defend') fx.siegeDefend += v; else if (p.op === 'chipMore') fx.siegeChip += v; } // 死守/攻城锤
+    TENGANG_OPS[`${j.kind}:${String(p.op)}`]?.(fx, v, bonus, p);
   }
   return fx;
 }

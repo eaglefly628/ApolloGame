@@ -72,3 +72,36 @@
 
 ## 为什么这是对的（非过度设计）
 effect-op DSL 是「owner 要个新 Boss 战术 → **甲写代码**」（今天）和「→ **谁都能写一行数据**」（目标）之间的差。这正是宪法的全部意义。
+
+---
+
+## 附录 · Step 1 实施记录（2026-06-23 · 主干解锁后）
+
+### 效果 apply 全表（读 `turn-combat` 实测 · 设计解释器的依据）
+天罡/地煞 **不是**「一次性聚合后乘一下」——它在 **~9 个 hook** 被消费，且重的几个与掷命数学**深度交织**：
+
+| hook | 位置 | 消费的效果 |
+|---|---|---|
+| init | `initTurnBattle` | `disha.homeHp`（Boss 家血） |
+| action-gate | `drawCard` | `tengang.handMaxAdd`（手牌上限） |
+| on-deploy | `deployUnit` | `tengang.stamPlus/stamFaces`（续航） |
+| post-play | `onPlayDraw` | `tengang.onPlay`（川流补抽） |
+| **clash(power)** | `effPower` | `powerAll/pEffAdd/powerFront/powerLE3/powerSameSuit/comboPair/comboTrips/powerMulHighest/moraleLeader/noRout/revenge`（**逐字段·按列组成/前锋/花色/对子/主将 门控**） |
+| **clash(winrate)** | `clashEval` | `tengang.kHard/winFloor/noUpset` + `disha.nearBase*` |
+| **clash(boss-edge)** | `bossEdge` | `disha.allWinPct/generalWinPct/phalanx*/nearBase*/eliteMid/winStreak*/firstStrike*/battery/flank`（**按邻接几何/路/连胜 门控**） |
+| clash(tie) | `resolveClash` | `disha.firstStrike`（破平判负） |
+| clash-post | `resolveClash` | `disha.lastStandGeneral` · `tengang.relay` · `tengang.clashElixir` · `bossWinStreak` |
+| advance-to-base | `advanceColumnToBase` | `tengang.siegeChip/siegeDefend`（破家/护家） |
+| turn-start | `endTurn`/`aiTakeTurn` | `disha.bonusMana` · `disha.batteryEveryTurns` |
+
+**结论**：「一个通用 effect 解释器」是**真能力**（含 target-filter 词汇：全军/前锋/最强/同路相邻/同花/对子/主将/路/隘口），不是一次性 swap。必须**分相迁移·每相 `turnHash` 绿**，否则数值悄悄漂移。
+
+### Phase 1 ✅（本次 · 主干）：数据驱动 effect 的**编译层**（行为零改 · `turnHash` 绿）
+- `tengangFxOf` 的 if-else 链 → **`TENGANG_OPS` 注册表**（`game-g-build.ts`）：op 词汇变成可枚举单一真相表；**新增天罡 op = 加一行 handler**（不再改函数体/加分支）。
+- `aggregateDisha` 的 20 行手写合并 → **`DISHA_MERGE` 策略表**（`disha.ts`·field→sum/max/or）：**新增地煞字段 = 加一行**（不再改聚合体）。
+- 验收：tsc 0 · disha 13 / tengang 8 / game-g 230 全绿（含 `turnHash` 确定性）· build ✓。
+
+### Phase 2-3（待排 · 建议走安全切片）
+- **Phase 2**：地煞 authoring 收敛到与天罡同形的 `params` op-DSL（`DISHA_SPECS` → `{op,…}`）+ 共享 op 注册表；同时把 **target-filter 词汇**（上表第 3 列）定为数据。
+- **Phase 3（最硬）**：apply 侧——把 `effPower`/`bossEdge` 的逐字段 if 改成「按 hook 取该侧 op-list → 解释器按 target-filter 求值」，删宽结构体 `TengangFx`/`DishaFx`。**逐 hook 迁 · 每步 `turnHash` 绿**；先迁简单 hook（init/turn-start/post-play）再啃 clash 核。
+- ⚠️ 关6+ 回退路 `prepareArmies`/`applyTiangangs` 是**第二条 apply 路**——Phase 3 要么一并收编，要么先确认关6+ 是否真出货（没出货=它本身就是退役候选）。

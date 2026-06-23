@@ -94,31 +94,29 @@ export function splitDisha(ids: readonly string[]): { passive: string[]; playabl
   return { passive, playable };
 }
 
-/** 聚合一组地煞 id → DishaFx（数值相加·布尔取或·封顶/血取最大）。纯函数·确定性。 */
+// 地煞字段合并策略（聚合一关多张时·单一真相）：新增一个 DishaFx 字段 = 加一行·不改 aggregateDisha 主体。
+//   sum=数值累加 ｜ max=取最大（开局/结构型：隘口格数·炮兵周期·家血） ｜ or=布尔取或（先手/不溃/2命/8邻）
+type DishaMerge = 'sum' | 'max' | 'or';
+const DISHA_MERGE: Record<keyof DishaFx, DishaMerge> = {
+  allWinPct: 'sum', generalWinPct: 'sum', phalanxPerAdj: 'sum', phalanxCap: 'sum', phalanxAdj8: 'or',
+  nearBaseSlots: 'max', nearBaseWinPct: 'sum', nearBasePower: 'sum', eliteMidWinPct: 'sum', flankYouWinPct: 'sum',
+  firstStrike: 'or', firstStrikeWinPct: 'sum', winStreakPer: 'sum', winStreakCap: 'sum',
+  noRout: 'or', lastStandGeneral: 'or', bonusMana: 'sum', batteryEveryTurns: 'max', batteryWinPct: 'sum', homeHp: 'max',
+};
+
+/** 聚合一组地煞 id → DishaFx（按 DISHA_MERGE 策略：数值累加 / 取最大 / 布尔取或）。纯函数·确定性。 */
 export function aggregateDisha(ids: readonly string[]): DishaFx {
   const fx: DishaFx = { ...NO_DISHA };
+  const f = fx as Record<keyof DishaFx, number | boolean>;
   for (const id of ids) {
     const s = DISHA_SPECS[id]; if (!s) continue;
-    fx.allWinPct += s.allWinPct ?? 0;
-    fx.generalWinPct += s.generalWinPct ?? 0;
-    fx.phalanxPerAdj += s.phalanxPerAdj ?? 0;
-    fx.phalanxCap += s.phalanxCap ?? 0;
-    if (s.phalanxAdj8) fx.phalanxAdj8 = true;
-    fx.nearBaseSlots = Math.max(fx.nearBaseSlots, s.nearBaseSlots ?? 0);
-    fx.nearBaseWinPct += s.nearBaseWinPct ?? 0;
-    fx.nearBasePower += s.nearBasePower ?? 0;
-    fx.eliteMidWinPct += s.eliteMidWinPct ?? 0;
-    fx.flankYouWinPct += s.flankYouWinPct ?? 0;
-    if (s.firstStrike) fx.firstStrike = true;
-    fx.firstStrikeWinPct += s.firstStrikeWinPct ?? 0;
-    fx.winStreakPer += s.winStreakPer ?? 0;
-    fx.winStreakCap += s.winStreakCap ?? 0;
-    if (s.noRout) fx.noRout = true;
-    if (s.lastStandGeneral) fx.lastStandGeneral = true;
-    fx.bonusMana += s.bonusMana ?? 0;
-    fx.batteryEveryTurns = Math.max(fx.batteryEveryTurns, s.batteryEveryTurns ?? 0);
-    fx.batteryWinPct += s.batteryWinPct ?? 0;
-    fx.homeHp = Math.max(fx.homeHp, s.homeHp ?? 0);
+    for (const key of Object.keys(DISHA_MERGE) as (keyof DishaFx)[]) {
+      const sv = s[key]; if (sv === undefined) continue;
+      const pol = DISHA_MERGE[key];
+      if (pol === 'or') f[key] = (f[key] as boolean) || (sv as boolean);
+      else if (pol === 'max') f[key] = Math.max(f[key] as number, sv as number);
+      else f[key] = (f[key] as number) + (sv as number);
+    }
   }
   return fx;
 }
