@@ -362,4 +362,33 @@ describe('UI Components · renderNode', () => {
     expect(html).toMatch(/data-tabpage="x"[^>]*display:block/);
     expect(html).toMatch(/data-tabpage="y"[^>]*display:none/);
   });
+
+  it('ProgressBar: value/max → 填充宽度% + tone 着色 + 标签/数值', () => {
+    const html = renderNode({ type: 'ProgressBar', id: 'hp', props: { value: 30, max: 120, tone: 'danger', label: '生命', showValue: true } });
+    expect(html).toContain('width:25%');      // 30/120 = 25%
+    expect(html).toContain('生命');
+    expect(html).toContain('30/120');         // showValue 显 value/max
+  });
+
+  it('ProgressBar: max 缺省 1（value 当 0..1 比例）+ showValue 显百分比 + 钳位', () => {
+    expect(renderNode({ type: 'ProgressBar', id: 'p', props: { value: 0.5, showValue: true } })).toContain('width:50%');
+    expect(renderNode({ type: 'ProgressBar', id: 'p', props: { value: 0.5, showValue: true } })).toContain('50%');
+    expect(renderNode({ type: 'ProgressBar', id: 'p', props: { value: 9, max: 3 } })).toContain('width:100%'); // 超满钳 100
+    expect(renderNode({ type: 'ProgressBar', id: 'p', props: { value: -2, max: 3 } })).toContain('width:0%');  // 负值钳 0
+  });
+
+  it('Tag: 可点(data-action+arg) + active 高亮 + removable 加 ×', () => {
+    const html = renderNode({ type: 'Tag', id: 'tg', props: { label: '黑桃', active: true, action: 'filterSuit', actionArg: 'spade', removable: true } });
+    expect(html).toContain('data-action="filterSuit"');
+    expect(html).toContain('data-arg="spade"');
+    expect(html).toContain('cursor:pointer');
+    expect(html).toContain('黑桃');
+    expect(html).toContain('×');
+  });
+
+  it('Tag: 无 action 则不可点（无 data-action / cursor:pointer）', () => {
+    const html = renderNode({ type: 'Tag', id: 'tg', props: { label: '只读' } });
+    expect(html).not.toContain('data-action');
+    expect(html).not.toContain('cursor:pointer');
+  });
 });

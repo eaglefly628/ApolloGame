@@ -7,7 +7,7 @@
 export type ComponentType =
   | 'Panel' | 'Button' | 'Label' | 'Dropdown' | 'Badge' | 'Input' | 'Divider'
   | 'Checkbox' | 'Toggle' | 'RadioGroup' | 'Image' | 'Screen' | 'Slider'
-  | 'Table' | 'Tabs';
+  | 'Table' | 'Tabs' | 'ProgressBar' | 'Tag';
 
 /** 布局约束：坐标/尺寸/弹性。x/y 触发绝对定位；flex 在父 Panel/Screen 内生效。 */
 export interface LayoutConstraints {
@@ -129,10 +129,24 @@ export interface TableProps { columns: TableColumn[]; rows: TableRow[]; title?: 
 // active = 当前页 id（缺省第一页）；action = 切页额外回调（可选·core 切换由引擎做、无需游戏处理）。
 export interface TabsProps { tabs: { id: string; label: string }[]; active?: string; action?: string }
 
+// ── ProgressBar（纯展示比例条·血/蓝/经验/进度）：区别于可拖的 Slider。value/max → 填充宽度；tone 取主题令牌。──
+// max 缺省 1（value 当 0..1 比例）；showValue=true 右上显示 百分比(max=1) 或 value/max。纯展示·无事件。
+export interface ProgressBarProps {
+  value: number; max?: number;
+  tone?: 'accent' | 'gold' | 'ok' | 'warn' | 'danger';
+  label?: string; showValue?: boolean;
+}
+
+// ── Tag（可点过滤标签/词条·筛选条大量用）：active 高亮；可点(action·arg=actionArg)；可删(removable 显 ×)。──
+export interface TagProps {
+  label: string; active?: boolean; tone?: 'normal' | 'accent' | 'dim';
+  action?: string; actionArg?: string; removable?: boolean;
+}
+
 export type ComponentProps =
   | ButtonProps | LabelProps | DropdownProps | BadgeProps | InputProps | PanelProps
   | CheckboxProps | ToggleProps | RadioGroupProps | ImageProps | ScreenProps | SliderProps
-  | TableProps | TabsProps
+  | TableProps | TabsProps | ProgressBarProps | TagProps
   | Record<string, never>;
 
 /** LayoutNode = 弱模型填写的 UI 数据单元。type + id + props 必填；layout/children 按需。 */

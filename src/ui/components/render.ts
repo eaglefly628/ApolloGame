@@ -6,7 +6,7 @@ import type {
   LayoutNode, LayoutConstraints, UITheme,
   ButtonProps, LabelProps, DropdownProps, BadgeProps, InputProps, PanelProps,
   CheckboxProps, ToggleProps, RadioGroupProps, ImageProps, ScreenProps, SliderProps,
-  TableProps, TableColumn, TabsProps,
+  TableProps, TableColumn, TabsProps, ProgressBarProps, TagProps,
 } from './types.js';
 
 const esc = (s: string): string =>
@@ -234,6 +234,35 @@ function renderTabs(id: string, p: TabsProps, children: LayoutNode[], ls: string
   return `<div id="${esc(id)}" data-tabs="${esc(id)}" style="display:flex;flex-direction:column;gap:12px;${ls}">${nav}${pages}</div>`;
 }
 
+// ── ProgressBar / Tag（纯展示比例条 + 可点标签·下沉自游戏 HUD/筛选条）──────────
+
+// 比例条：value/max → 填充宽度%（钳 0..100）；tone 映射主题令牌；可选标签 + 右上数值。纯展示·无事件。
+function renderProgressBar(id: string, p: ProgressBarProps, ls: string, t: UITheme): string {
+  const max = p.max ?? 1;
+  const pct = Math.max(0, Math.min(100, max > 0 ? (p.value / max) * 100 : 0));
+  const fillColor: Record<string, string> = { accent: t.jade, gold: t.gold, ok: t.ok, warn: t.warn, danger: t.danger };
+  const fill = fillColor[p.tone ?? 'accent'] ?? t.jade;
+  const valTxt = max === 1 ? `${Math.round(pct)}%` : `${p.value}/${max}`;
+  const header = (p.label || p.showValue)
+    ? `<div style="display:flex;justify-content:space-between;align-items:baseline;margin-bottom:4px">${p.label ? `<span style="font-size:11px;color:${t.sub};font-family:${t.fontUi}">${esc(p.label)}</span>` : '<span></span>'}${p.showValue ? `<span style="font-size:11px;color:${t.dim};font-family:${t.fontMono}">${esc(valTxt)}</span>` : ''}</div>`
+    : '';
+  return `<div id="${esc(id)}" style="display:flex;flex-direction:column;${ls}">${header}<div style="height:8px;border-radius:5px;background:${t.bg3};overflow:hidden"><div style="width:${pct}%;height:100%;background:${fill};border-radius:5px;transition:width .2s"></div></div></div>`;
+}
+
+// 可点标签：active 或 tone 决定底/字/线色；有 action 则整体可点(arg=actionArg)；removable 加 ×。
+function renderTag(id: string, p: TagProps, ls: string, t: UITheme): string {
+  const on = p.active ?? false;
+  const toneBg: Record<string, string> = { normal: 'rgba(255,255,255,0.04)', accent: t.jadeWash, dim: 'transparent' };
+  const toneFg: Record<string, string> = { normal: t.sub, accent: t.jade, dim: t.dim };
+  const bg = on ? t.jadeWash : (toneBg[p.tone ?? 'normal'] ?? 'rgba(255,255,255,0.04)');
+  const fg = on ? t.jade : (toneFg[p.tone ?? 'normal'] ?? t.sub);
+  const border = on ? t.jadeLine : t.line;
+  const action = p.action ? ` data-action="${esc(p.action)}"${p.actionArg ? ` data-arg="${esc(p.actionArg)}"` : ''}` : '';
+  const cursor = p.action ? 'cursor:pointer;' : '';
+  const x = p.removable ? '<span style="margin-left:6px;opacity:.7">×</span>' : '';
+  return `<span id="${esc(id)}"${action} style="display:inline-flex;align-items:center;padding:3px 10px;font-size:11px;border-radius:12px;background:${bg};color:${fg};border:1px solid ${border};font-family:${t.fontUi};white-space:nowrap;${cursor}${ls}">${esc(p.label)}${x}</span>`;
+}
+
 // ── 统一入口 ────────────────────────────────────────────────────
 
 /** 将 LayoutNode 树渲染为 HTML 字符串。弱模型提供数据 + 可选主题；此函数是解释器。缺省主题 = 引擎 SHELL 脸。 */
@@ -256,6 +285,8 @@ export function renderNode(node: LayoutNode, theme: UITheme = SHELL): string {
     case 'Slider':     return renderSlider(node.id, node.props as SliderProps, ls, t);
     case 'Table':      return renderTable(node.id, node.props as TableProps, ls, t);
     case 'Tabs':       return renderTabs(node.id, node.props as TabsProps, node.children ?? [], ls, t);
+    case 'ProgressBar':return renderProgressBar(node.id, node.props as ProgressBarProps, ls, t);
+    case 'Tag':        return renderTag(node.id, node.props as TagProps, ls, t);
     default:           return `<!-- unknown: ${String((node as LayoutNode).type)} -->`;
   }
 }
