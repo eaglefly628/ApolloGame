@@ -1,4 +1,4 @@
-// GameUI — 回调层（HandlerMap）。
+// Game I · 回调层（HandlerMap）。
 //
 // 红线（契约 §3）：布局数据只出现「信号名字符串」（action: string）；
 // 「按下去干什么」由工程师在这里写。数据与逻辑只在信号名处相遇。

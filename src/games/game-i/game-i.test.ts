@@ -1,12 +1,12 @@
-// GameUI 画廊冒烟测试（契约 DoD：renderNode 串测·结构/主题/转义）。
+// Game I 画廊冒烟测试（契约 DoD：renderNode 串测·结构/主题/转义）。
 // 验证「填数据即出 UI」：整棵画廊数据经引擎纯函数渲染，应含全部控件标记、且文本转义防 XSS。
 
 import { describe, it, expect } from 'vitest';
 import { renderNode } from '@ui/components/index.js';
-import { buildGallery } from './src/gallery.js';
-import { THEMES, onyx } from './src/themes.js';
+import { buildGallery } from './gallery.js';
+import { THEMES, onyx } from './themes.js';
 
-describe('GameUI gallery', () => {
+describe('Game I gallery', () => {
   it('renders the full control gallery as an HTML string', () => {
     const html = renderNode(buildGallery('onyx'), onyx);
     expect(html).toContain('id="gameui-root"');          // Screen 根

@@ -131,6 +131,16 @@ const GAMES: GameEntry[] = [
     icon: '💰',
     status: 'playable',
   },
+  {
+    id: 'game-i',
+    title: 'Game I: UI Gallery',
+    subtitle: '控件测试场 · 数据驱动 UI',
+    description: '它不做玩法——「玩法」就是玩 UI。把引擎 15 个数据驱动控件按「容器与布局 / 数据展示 / 输入与交互」三页铺成可玩画廊：换皮（三套 UITheme 令牌）、事件日志实时看信号流。画廊本体 100% LayoutNode 纯数据，渲染走 renderNode、挂载走 mountUI，零重造控件。以后游戏的 UI 都从这套底座搭。',
+    color: '#0f1722',
+    accentColor: '#7fc7e8',
+    icon: '🎛️',
+    status: 'playable',
+  },
 ];
 
 // ══════════════════════════════════════

@@ -1,7 +1,7 @@
-// GameUI — 控件画廊（纯 LayoutNode 数据，零渲染逻辑）。
+// Game I · 控件画廊（纯 LayoutNode 数据，零渲染逻辑）。
 //
 // 这就是「玩 UI」的测试场：把引擎现有 15 个控件全部铺开、可交互、可换皮。
-// 红线：本文件只产出数据。渲染/事件/换皮由引擎 renderNode + mountUI 解释（见 main.ts）。
+// 红线：本文件只产出数据。渲染/事件/换皮由引擎 renderNode + mountUI 解释（见 game-i.ts）。
 // 母法：docs/design/apollo-ui-contract.md（控件契约总表）。
 
 import type { LayoutNode } from '@ui/components/index.js';
@@ -239,7 +239,7 @@ export function buildGallery(activeTheme: string): LayoutNode {
         props: {},
         layout: { direction: 'row', gap: 12, align: 'center', padding: 16 },
         children: [
-          { type: 'Label', id: 'app-title', props: { text: 'GameUI · 控件测试场', size: 'lg', bold: true }, layout: { flex: 1 } },
+          { type: 'Label', id: 'app-title', props: { text: 'Game I · 控件测试场', size: 'lg', bold: true }, layout: { flex: 1 } },
           { type: 'Badge', id: 'app-engine', props: { text: 'Apollo Engine · 数据驱动 UI', tone: 'dim' } },
           { type: 'Label', id: 'theme-lbl', props: { text: '换皮', size: 'sm', color: 'sub' } },
           {
