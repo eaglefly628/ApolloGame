@@ -50,3 +50,19 @@ export function canonSuitPw(suits: string[]): string {
 }
 export const RECHARGE_SUIT_PW = ['♥', '♠']; // 正确密码：红心 + 黑桃
 export const RECHARGE_PASSWORD = canonSuitPw(RECHARGE_SUIT_PW); // 规范化后 = '♠♥'
+
+// === 抽卡商城（doc25 §四 · Demo）===
+// 商城=抽卡枢纽：花🪙/💎 从「已解锁池」随机出天罡/地支；天罡重复→天罡碎片→定向兑换(保底·可控build)；
+// 地支 新得=铜·重复=升档(铜→银→金)·满金重复→地支碎片。全数据驱动·价格/汇率可调。
+export const DIZHI_MAX_TIER = 3; // 1铜 2银 3金
+export const GACHA = {
+  tiangang: { singleGold: 80, singleDiamond: 8, tenGold: 720, tenDiamond: 72, dupShards: 5, craftShards: 20 },
+  dizhi: { singleGold: 60, singleDiamond: 6, tenGold: 540, tenDiamond: 54, maxDupShards: 8, craftShards: 12 },
+};
+/** 抽卡花费（pool×count×pay）。返回 {gold,diamond} 其一>0。 */
+export function gachaCost(pool: 'tiangang' | 'dizhi', count: 1 | 10, pay: 'gold' | 'diamond'): { gold: number; diamond: number } {
+  const g = GACHA[pool];
+  const gold = pay === 'gold' ? (count === 10 ? g.tenGold : g.singleGold) : 0;
+  const diamond = pay === 'diamond' ? (count === 10 ? g.tenDiamond : g.singleDiamond) : 0;
+  return { gold, diamond };
+}

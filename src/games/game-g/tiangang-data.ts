@@ -68,3 +68,5 @@ export const GAME_G_TIANGANGS: TiangangCard[] = [
   { id: 'marksamerank', name: '双锋印', kind: 'arcane', rarity: 'legendary', cost: 42, archetype: 'cardtype', power: 5, params: { mark: 'sameRank' }, icon: 'lorc/duality', tint: '#fbbf24', text: '集齐同 rank 流 → 对子/三条加成再 +1 档（招牌质变）' },
   { id: 'markodds', name: '铁律印', kind: 'arcane', rarity: 'legendary', cost: 42, archetype: 'probability', power: 5, params: { mark: 'odds' }, icon: 'delapouite/weight-scale', tint: '#fbbf24', text: '集齐确定流 → 下限再抬 + 方差再收（招牌质变）' },
 ];
+
+export const TIANGANG_BY_ID: ReadonlyMap<string, TiangangCard> = new Map(GAME_G_TIANGANGS.map((j) => [j.id, j]));

@@ -1,6 +1,19 @@
 // Game G · 战役 + 地煞 + 开场故事 + 天罡解锁数据（doc23 §八/§九·拆分自 blueprint.ts·自包含·无 blueprint 反向依赖）。
 
 
+// ── T-G5 · 战役 / run 结构（design/11）──
+// 一个 run = 5 场连战 + 3 命线：输一场扣 1 命，命尽=结束，打穿 5 场=通关。
+// 战役曲线：敌方 favor 偏置逐场升，终局第 5 场=Boss 牌王座(更强 + 起手干预)。场间养成另在 mount。
+export const RUN_BATTLES = 5;
+export const RUN_LIVES = 3;
+const BATTLE_LABELS = ['序战 · 杂兵', '前哨 · 偏师', '中军 · 名将', '精锐 · 机关', '终局 · 牌王座 BOSS'];
+export interface BattleSpec { enemyBias: number; boss: boolean; label: string }
+/** 第 i 场(0-based)的敌军强度/是否 Boss。敌 favor 偏置逐场升(-10,-5,0,5)，终局 Boss 额外 +8(=18,牌王座)。 */
+export function battleSpec(i: number): BattleSpec {
+  const boss = i >= RUN_BATTLES - 1;
+  return { enemyBias: -10 + i * 5 + (boss ? 8 : 0), boss, label: BATTLE_LABELS[i] ?? `第 ${i + 1} 战` };
+}
+
 // === 战役·关 1-5 新手区（doc23 §八 定稿 · owner 2026-06-19「人物名气>战役名气」· 头三关简单） ===
 // 每关 = 一位名将困在其命运之战；打赢=破诅咒、解封其魂。Boss 牌库=12 随机天罡 + 3 专属地煞(招牌历史战术·明牌可破)。
 // 节奏：关1-3 简单(地煞弱/少触发) → 关4-5 放威力；每关通关解锁 1 张天罡。sim 基准胜率 关1~80%→关5~55%。
