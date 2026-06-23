@@ -28,8 +28,8 @@ const AI_PROFILES: Record<number, AiProfile> = {
 // 难度档（doc27 §四）：大本营血 / loadoutCap / AI 智能档。**按 stage 索引**（design G 2026-06-20 修 bug：原按 c.stars 索引·STAGE_CAMPAIGN stars 仅 1-3 → 4/5 档死表·项羽实拿 tier2）。
 // 当前 5 战 run = 关1-5 难度阶梯 ★→★★★★★（项羽=run 终 boss·最难）。52 关批量铺开时按 doc27 §四 阶段区间重定（design G「按批出关」）。
 const DIFFICULTY: Record<number, { homeHp: number; loadoutCap: number; aiTier: number }> = {
-  1: { homeHp: 3, loadoutCap: 2, aiTier: 1 }, // ★
-  2: { homeHp: 3, loadoutCap: 3, aiTier: 2 }, // ★★
+  1: { homeHp: 3, loadoutCap: 2, aiTier: 3 }, // ★（AI 智能档 1→3：owner 2026-06-23 要关1 也全知预判玩家抽牌·foeIntel 在 tier≥3 触发·嫌难再调回 1）
+  2: { homeHp: 3, loadoutCap: 3, aiTier: 3 }, // ★★（AI 智能档 2→3：同上·开全知预判；家血/loadout 不动=只让 AI 变聪明·非整关变难）
   3: { homeHp: 4, loadoutCap: 3, aiTier: 3 }, // ★★★
   4: { homeHp: 4, loadoutCap: 4, aiTier: 4 }, // ★★★★
   5: { homeHp: 5, loadoutCap: 5, aiTier: 5 }, // ★★★★★ 终章
