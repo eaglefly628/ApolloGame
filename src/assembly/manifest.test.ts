@@ -5,13 +5,9 @@ import { Engine } from '../runtime/engine.js';
 import { benchBlueprint } from '../bench/apollo-bench.js';
 import type { WorldBlueprint } from './demo.assembly.js';
 import { buildGameABlueprint, LEVEL_SCROLL } from '../games/game-a/index.js';
-import { buildGameBBlueprint } from '../games/game-b/index.js';
-import { buildGameCBlueprint } from '../games/game-c/index.js';
 
 const games: Array<[string, () => WorldBlueprint]> = [
   ['game-a', () => buildGameABlueprint(LEVEL_SCROLL)],
-  ['game-b', () => buildGameBBlueprint()],
-  ['game-c', () => buildGameCBlueprint()],
 ];
 
 function hashAfter(bp: WorldBlueprint, n = 60): string {
@@ -77,8 +73,8 @@ describe('manifest 桥接：导出↔导入对称、可加载、可玩', () => {
     expect(r.passed, JSON.stringify(r.axes)).toBe(true);
   });
 
-  it('entities-only（无 capabilities）→ 据组件推断，game-c(sim) 可加载运行', () => {
-    const entitiesOnly = { entities: JSON.parse(exportManifest(buildGameCBlueprint())).entities };
+  it('entities-only（无 capabilities）→ 据组件推断，可加载运行', () => {
+    const entitiesOnly = { entities: JSON.parse(exportManifest(buildGameABlueprint(LEVEL_SCROLL))).entities };
     const r = parseManifestDetailed(entitiesOnly);
     expect(r.inferredCapabilities).toBe(true);
     expect(r.blueprint.capabilities.length).toBeGreaterThan(0);

@@ -62,26 +62,6 @@ const GAMES: GameEntry[] = [
     status: 'playable',
   },
   {
-    id: 'game-b',
-    title: 'Game B: Otome VN',
-    subtitle: '乙游视觉小说',
-    description: '娱乐圈乙女养成。选择驱动剧情，属性决定命运，多结局。',
-    color: '#3a1e3a',
-    accentColor: '#e8618c',
-    icon: '🌸',
-    status: 'playable',
-  },
-  {
-    id: 'game-c',
-    title: 'Game C: Stitch & Style',
-    subtitle: '缝纫物语 · 换装三消',
-    description: '针线主题三消攒材料 → 主动缝制升级缝纫店做新衣 → 爱诗生成换装短视频。v0.3 可玩：点格消除、缝制解锁、换装展示。',
-    color: '#3a1e2c',
-    accentColor: '#ff7aa2',
-    icon: '👗',
-    status: 'playable',
-  },
-  {
     id: 'game-e',
     title: 'Game E: Balatro-like',
     subtitle: '小丑牌 · 卡牌构建',
@@ -683,8 +663,6 @@ function GameRunner({ gameId, onBack }: { gameId: string; onBack: () => void }) 
     // mount 第二参 host（可选·向后兼容）：把壳层「退出到游戏库」钩子传给游戏，让游戏可把退出收进自己的设置菜单（owner 2026-06-21）。
     const loaders: Record<string, () => Promise<{ mount: (el: HTMLElement, host?: { exit: () => void }) => () => void }>> = {
       'game-a': () => import('./game-a.js'),
-      'game-b': () => import('./game-b.js'),
-      'game-c': () => import('./game-c.js'),
       'game-e': () => import('./game-e.js'),
       'game-d': () => import('./game-d.js'),
       'game-f': () => import('./games/game-f/game-f.js'),

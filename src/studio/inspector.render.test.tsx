@@ -8,8 +8,6 @@ import { inspectBlueprint } from './inspect.js';
 import { parseManifest } from '../assembly/manifest.js';
 import type { WorldBlueprint } from '../assembly/demo.assembly.js';
 import { buildGameABlueprint, LEVEL_SCROLL } from '../games/game-a/index.js';
-import { buildGameBBlueprint } from '../games/game-b/index.js';
-import { buildGameCBlueprint } from '../games/game-c/index.js';
 import { demoBlueprint } from '../assembly/demo.assembly.js';
 
 // 回归：透视器曾因 game-a 的可选字段 Tween.loops=undefined → kindOf 落 'json' →
@@ -20,8 +18,6 @@ import { demoBlueprint } from '../assembly/demo.assembly.js';
 
 const GAMES: Array<[string, () => WorldBlueprint]> = [
   ['game-a', () => buildGameABlueprint(LEVEL_SCROLL)],
-  ['game-b', () => buildGameBBlueprint()],
-  ['game-c', () => buildGameCBlueprint()],
   ['demo', () => demoBlueprint],
 ];
 

@@ -18,8 +18,6 @@ import {
   VIEWPORT_H,
   GAME_A_ASSETS,
 } from '../games/game-a/index.js';
-import { buildGameBBlueprint } from '../games/game-b/index.js';
-import { buildGameCBlueprint } from '../games/game-c/index.js';
 import { buildGameEBlueprint } from '../games/game-e/index.js';
 import { buildGameFBlueprint, GAME_F_ASSETS } from '../games/game-f/index.js';
 import {
@@ -91,8 +89,6 @@ const GAMES: GameDef[] = [
       return a;
     },
   },
-  { id: 'game-b', title: 'Game B · 乙游 VN', build: () => buildGameBBlueprint() },
-  { id: 'game-c', title: 'Game C · 缝纫物语', build: () => buildGameCBlueprint() },
   { id: 'game-e', title: 'Game E · Balatro 小丑牌', build: () => buildGameEBlueprint() },
   {
     id: 'game-f',

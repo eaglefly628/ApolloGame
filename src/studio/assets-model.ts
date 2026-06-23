@@ -1,18 +1,15 @@
 import type { WorldBlueprint } from '../assembly/demo.assembly.js';
 import type { AssetIndex } from '@assets/index.js';
 import { GAME_A_ASSETS } from '../games/game-a/index.js';
-import { MATERIALS, GARMENTS, ACCESSORIES } from '../games/game-c/index.js';
 import { JOKER_ART_FILES, JOKER_ART_MISSING, jokerArtKey } from '../games/game-e/assets.js';
 import { JOKER_CATALOG } from '../games/game-e/index.js';
-import gameBManifestRaw from '../games/game-b/assets/asset-manifest.json';
 
 // ═══════════════════════════════════════════════════════════════
 //  资产透视 · 统一模型 (Asset Browser model — pure, no DOM/React)
 //
 //  把每个游戏"这局要哪些美术、填了没、谁在用"摊成一份统一 StudioAsset[]：
 //   · game-a → GAME_A_ASSETS 声明清单(内联 SVG 占位)，usedBy 扫蓝图 textureKey。
-//   · game-b → asset-manifest.json 槽位(背景/立绘/BGM + variants)，usedBy=requiredBy(场景)。
-//   · game-c → 材料/衣服/配饰即"内容资产"(emoji 占位 + 爱诗 AIGP 提示词)，usedBy 指向真实实体。
+//   · game-e → 小丑牌(JOKER_CATALOG)真美术切图 + 额外参考素材。
 //   · 其它   → 通用扫描 textureKey/clipId。
 //  再和 assets/index.json 对照，让 tbf/filled 状态权威。供 UI 做分类/收缩/搜索/双击定位。
 // ═══════════════════════════════════════════════════════════════
@@ -32,23 +29,6 @@ export interface StudioAsset {
   usedBy: string[];
   variants?: string[];
 }
-
-// ── game-b 清单形状（局部声明，仅取用到的字段）──
-interface GameBSlot {
-  id: string;
-  category: string;
-  name: string;
-  description: string;
-  requiredBy?: string[];
-  consistencyGroup?: string;
-  status?: string;
-  variants?: Array<{ key: string; description: string }>;
-}
-interface GameBManifest {
-  styleAnchor?: { id: string; description: string };
-  slots: GameBSlot[];
-}
-const gameBManifest = gameBManifestRaw as unknown as GameBManifest;
 
 function entitiesReferencing(bp: WorldBlueprint, key: string): string[] {
   const ids: string[] = [];
@@ -75,64 +55,6 @@ function gameAAssets(bp: WorldBlueprint): StudioAsset[] {
       usedBy: entitiesReferencing(bp, a.key),
     };
   });
-}
-
-function gameBAssets(): StudioAsset[] {
-  const anchor = gameBManifest.styleAnchor?.id;
-  return gameBManifest.slots.map((s) => ({
-    id: s.id,
-    type: s.category,
-    name: s.name,
-    description: s.description,
-    status: (s.status === 'filled' ? 'filled' : 'placeholder') as StudioAssetStatus,
-    tags: [s.category, s.consistencyGroup, anchor, ...(s.variants?.map((v) => v.key) ?? [])].filter(
-      (t): t is string => typeof t === 'string' && t.length > 0,
-    ),
-    usedBy: s.requiredBy ?? [],
-    variants: s.variants?.map((v) => v.key),
-  }));
-}
-
-function hex(tint: number): string {
-  return `#${(tint & 0xffffff).toString(16).padStart(6, '0')}`;
-}
-
-function gameCAssets(): StudioAsset[] {
-  const out: StudioAsset[] = [];
-  for (const m of MATERIALS) {
-    out.push({
-      id: m.id,
-      type: 'material',
-      name: `${m.glyph} ${m.name}`,
-      description: m.blurb,
-      status: 'placeholder',
-      tags: ['material', 'tile', m.glyph, hex(m.tint)],
-      usedBy: [`mat_${m.id}`],
-    });
-  }
-  for (const g of GARMENTS) {
-    out.push({
-      id: g.id,
-      type: 'garment',
-      name: `${g.icon} ${g.name}`,
-      description: g.aishePrompt, // 爱诗(AIGP)视频提示词即此衣服的"生成式美术"
-      status: 'placeholder',
-      tags: ['garment', 'aigp', `tier${g.tier}`, ...g.requires.map((r) => r.material)],
-      usedBy: [`flag_${g.id}`, `btn_${g.id}`], // v0.3：解锁 flag + 缝制按钮（均为真实实体）
-    });
-  }
-  for (const a of ACCESSORIES) {
-    out.push({
-      id: a.id,
-      type: 'accessory',
-      name: `${a.icon} ${a.name}`,
-      description: a.promptFragment,
-      status: 'placeholder',
-      tags: ['accessory', 'aigp', a.slot, ...a.requires.map((r) => r.material)],
-      usedBy: [], // 配饰为设计内容，v0.3 蓝图尚未接线 → 无对应实体可定位
-    });
-  }
-  return out;
 }
 
 const CARD_DIR = 'assets/FreeArtLib/cardgame/card';
@@ -256,12 +178,6 @@ export function studioAssets(
   switch (gameId) {
     case 'game-a':
       list = gameAAssets(bp);
-      break;
-    case 'game-b':
-      list = gameBAssets();
-      break;
-    case 'game-c':
-      list = gameCAssets();
       break;
     case 'game-e':
       list = gameEAssets();

@@ -16,15 +16,11 @@ describe('ApolloBench · 执行落地体检', () => {
     });
   }
 
-  it('游戏类型感知：game-a/c 空间(有 Transform) / game-b 非空间(VN)，且都通过', () => {
+  it('游戏类型感知：game-a 空间(有 Transform) 且通过体检', () => {
     const byId = (id: string) => BENCH_GAMES.find((g) => g.id === id)!;
     const a = benchBlueprint('game-a', byId('game-a').build);
-    const b = benchBlueprint('game-b', byId('game-b').build);
-    const c = benchBlueprint('game-c', byId('game-c').build);
     expect(a.spatial).toBe(true);
-    expect(b.spatial).toBe(false);
-    expect(c.spatial).toBe(true); // v0.3 三消棋盘格子带 Transform → 空间游戏
-    expect(b.passed && c.passed).toBe(true);
+    expect(a.passed).toBe(true);
   });
 
   it('能识别坏游戏：NaN 炸裂(物理失稳) → Numeric 0 → 不通过', () => {
