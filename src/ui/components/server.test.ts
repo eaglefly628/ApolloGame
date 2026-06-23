@@ -391,4 +391,23 @@ describe('UI Components · renderNode', () => {
     expect(html).not.toContain('data-action');
     expect(html).not.toContain('cursor:pointer');
   });
+
+  it('Modal: 遮罩居中 + 标题 + ×(closeAction) + 弹窗体 + size 宽度 + 遮罩关闭锚点', () => {
+    const html = renderNode({
+      type: 'Modal', id: 'm', props: { title: '返回大厅？', size: 'sm', closeAction: 'close' },
+      children: [{ type: 'Label', id: 'b', props: { text: '进度将丢失' } }],
+    });
+    expect(html).toContain('position:fixed');           // 满屏遮罩
+    expect(html).toContain('data-modal-close="close"');  // 遮罩关闭锚点（mountUI 用）
+    expect(html).toContain('data-action="close"');       // × 按钮信号
+    expect(html).toContain('width:320px');               // size=sm
+    expect(html).toContain('返回大厅？');
+    expect(html).toContain('进度将丢失');                 // 弹窗体子节点
+  });
+
+  it('Modal: closable=false 不渲染 ×（但遮罩关闭锚点仍在）', () => {
+    const html = renderNode({ type: 'Modal', id: 'm', props: { closable: false, closeAction: 'x' }, children: [] });
+    expect(html).not.toContain('aria-label="close"');
+    expect(html).toContain('data-modal-close="x"');
+  });
 });

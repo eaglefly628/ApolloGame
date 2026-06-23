@@ -7,7 +7,7 @@
 export type ComponentType =
   | 'Panel' | 'Button' | 'Label' | 'Dropdown' | 'Badge' | 'Input' | 'Divider'
   | 'Checkbox' | 'Toggle' | 'RadioGroup' | 'Image' | 'Screen' | 'Slider'
-  | 'Table' | 'Tabs' | 'ProgressBar' | 'Tag';
+  | 'Table' | 'Tabs' | 'ProgressBar' | 'Tag' | 'Modal';
 
 /** 布局约束：坐标/尺寸/弹性。x/y 触发绝对定位；flex 在父 Panel/Screen 内生效。 */
 export interface LayoutConstraints {
@@ -143,10 +143,16 @@ export interface TagProps {
   action?: string; actionArg?: string; removable?: boolean;
 }
 
+// ── Modal（居中模态浮层 + 遮罩 + 关闭语义）：children = 弹窗体。──
+// closable 显示右上 ×（缺省 true）；closeAction = 点 × / 点遮罩本身 时触发的信号（遮罩关闭由 mountUI 内建）。
+export interface ModalProps {
+  title?: string; size?: 'sm' | 'md' | 'lg'; closable?: boolean; closeAction?: string;
+}
+
 export type ComponentProps =
   | ButtonProps | LabelProps | DropdownProps | BadgeProps | InputProps | PanelProps
   | CheckboxProps | ToggleProps | RadioGroupProps | ImageProps | ScreenProps | SliderProps
-  | TableProps | TabsProps | ProgressBarProps | TagProps
+  | TableProps | TabsProps | ProgressBarProps | TagProps | ModalProps
   | Record<string, never>;
 
 /** LayoutNode = 弱模型填写的 UI 数据单元。type + id + props 必填；layout/children 按需。 */

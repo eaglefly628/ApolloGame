@@ -6,7 +6,7 @@ import type {
   LayoutNode, LayoutConstraints, UITheme,
   ButtonProps, LabelProps, DropdownProps, BadgeProps, InputProps, PanelProps,
   CheckboxProps, ToggleProps, RadioGroupProps, ImageProps, ScreenProps, SliderProps,
-  TableProps, TableColumn, TabsProps, ProgressBarProps, TagProps,
+  TableProps, TableColumn, TabsProps, ProgressBarProps, TagProps, ModalProps,
 } from './types.js';
 
 const esc = (s: string): string =>
@@ -263,6 +263,24 @@ function renderTag(id: string, p: TagProps, ls: string, t: UITheme): string {
   return `<span id="${esc(id)}"${action} style="display:inline-flex;align-items:center;padding:3px 10px;font-size:11px;border-radius:12px;background:${bg};color:${fg};border:1px solid ${border};font-family:${t.fontUi};white-space:nowrap;${cursor}${ls}">${esc(p.label)}${x}</span>`;
 }
 
+// ── Modal（居中模态浮层 + 遮罩·下沉自各游戏手搭确认框/详情弹窗）─────────────────
+
+// 遮罩满屏居中弹窗体；点 ×(data-action) 或点遮罩本身(data-modal-close·mountUI 内建) → closeAction。
+function renderModal(id: string, p: ModalProps, children: LayoutNode[], ls: string, t: UITheme): string {
+  const widthMap: Record<string, number> = { sm: 320, md: 460, lg: 640 };
+  const w = widthMap[p.size ?? 'md'] ?? 460;
+  const closable = p.closable ?? true;
+  const scrimClose = p.closeAction ? ` data-modal-close="${esc(p.closeAction)}"` : '';
+  const xBtn = (closable && p.closeAction)
+    ? `<button data-action="${esc(p.closeAction)}" aria-label="close" style="position:absolute;top:10px;right:13px;width:26px;height:26px;background:none;border:none;color:${t.dim};font-size:19px;line-height:1;cursor:pointer;font-family:${t.fontUi}">×</button>`
+    : '';
+  const title = p.title
+    ? `<div style="font-size:15px;font-weight:700;color:${t.text};font-family:${t.fontUi};margin-bottom:12px;padding-right:26px">${esc(p.title)}</div>`
+    : '';
+  const body = children.map((ch) => renderNode(ch, t)).join('');
+  return `<div id="${esc(id)}"${scrimClose} style="position:fixed;inset:0;z-index:200;display:flex;align-items:center;justify-content:center;padding:24px;background:rgba(0,0,0,0.62);${ls}"><div style="position:relative;width:${w}px;max-width:100%;max-height:88vh;overflow-y:auto;background:${t.bg1};border:1px solid ${t.line};border-radius:12px;padding:22px;box-shadow:0 24px 70px rgba(0,0,0,0.55)">${xBtn}${title}${body}</div></div>`;
+}
+
 // ── 统一入口 ────────────────────────────────────────────────────
 
 /** 将 LayoutNode 树渲染为 HTML 字符串。弱模型提供数据 + 可选主题；此函数是解释器。缺省主题 = 引擎 SHELL 脸。 */
@@ -287,6 +305,7 @@ export function renderNode(node: LayoutNode, theme: UITheme = SHELL): string {
     case 'Tabs':       return renderTabs(node.id, node.props as TabsProps, node.children ?? [], ls, t);
     case 'ProgressBar':return renderProgressBar(node.id, node.props as ProgressBarProps, ls, t);
     case 'Tag':        return renderTag(node.id, node.props as TagProps, ls, t);
+    case 'Modal':      return renderModal(node.id, node.props as ModalProps, node.children ?? [], ls, t);
     default:           return `<!-- unknown: ${String((node as LayoutNode).type)} -->`;
   }
 }

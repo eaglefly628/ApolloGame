@@ -65,13 +65,26 @@ export function mountUI(
     });
   };
 
+  // Modal 遮罩点击关闭（引擎内建）：仅当点击**落在遮罩本身**（非弹窗体内部）时触发 closeAction。
+  // 弹窗体的 × 按钮走 data-action（上面 dispatch 处理）；此处只管点背景关闭。
+  const modalClose = (e: Event): void => {
+    const scrim = (e.target as HTMLElement).closest('[data-modal-close]') as HTMLElement | null;
+    if (!scrim || e.target !== scrim) return; // 点的是弹窗体内部 → 不关
+    const action = scrim.dataset['modalClose'];
+    if (!action) return;
+    const fn = handlers[action];
+    if (fn) fn();
+  };
+
   host.addEventListener('click',  dispatch);
   host.addEventListener('click',  switchTab);
+  host.addEventListener('click',  modalClose);
   host.addEventListener('change', dispatch);
 
   return () => {
     host.removeEventListener('click',  dispatch);
     host.removeEventListener('click',  switchTab);
+    host.removeEventListener('click',  modalClose);
     host.removeEventListener('change', dispatch);
     host.innerHTML = '';
   };
