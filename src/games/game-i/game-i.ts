@@ -17,6 +17,15 @@ import { THEMES } from './themes.js';
 import { applyShop, INITIAL_SHOP, type ShopState } from './shop.js';
 import { applyPick, INITIAL_PICK, type PickState } from './pickcards.js';
 
+// 同步切 display 触发重排重绘（同一帧内完成·无可见闪烁），清掉部分 GPU 在整树 innerHTML
+// 替换后遗留的「陈旧黑字」合成层——与用户「点一下就恢复颜色」同效，但自动化。
+function forceRepaint(el: HTMLElement): void {
+  const prev = el.style.display;
+  el.style.display = 'none';
+  void el.offsetHeight; // 强制 reflow
+  el.style.display = prev;
+}
+
 export function mount(container: HTMLElement): () => void {
   // ── 两栏骨架：左画廊（弹性）+ 右事件日志（固定宽）──────────────
   const root = document.createElement('div');
@@ -85,6 +94,7 @@ export function mount(container: HTMLElement): () => void {
   let currentTheme = 'onyx';
   let modalOpen = false;
   let drawerOpen = false;
+  let activeTab = 'tab-layout'; // 记住当前页·重挂不回弹第一页
   let teardown: (() => void) | null = null;
 
   // 演示用「世界」状态 + 注入式数据源（resolveBindings 活 HUD 用·解耦 ECS）。
@@ -107,6 +117,7 @@ export function mount(container: HTMLElement): () => void {
       currentTheme = value;
       remount();
     },
+    setTab: (id) => { activeTab = id; }, // mountUI 已就地切页·只记录·不重挂
     setModal: (open) => {
       modalOpen = open;
       remount();
@@ -150,10 +161,11 @@ export function mount(container: HTMLElement): () => void {
     const theme = THEMES[currentTheme] ?? THEMES['onyx']!;
     if (teardown) teardown();
     // 渲染前先用数据源把 bind 节点解析成字面值（活 HUD·resolveBindings 返回新树·纯函数）。
-    const tree = resolveBindings(buildGallery(currentTheme, modalOpen, drawerOpen, shop, pick), dataSource);
+    const tree = resolveBindings(buildGallery(currentTheme, modalOpen, drawerOpen, shop, pick, activeTab), dataSource);
     teardown = mountUI(galleryHost, tree, handlers, theme);
     applyPaneTheme(theme);
     renderLog(theme);
+    forceRepaint(galleryHost); // 规避整树重挂后 GPU 遗留「陈旧黑字」合成层
   }
 
   remount();

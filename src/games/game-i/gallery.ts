@@ -539,7 +539,7 @@ const drawerOverlay: LayoutNode = {
  */
 export function buildGallery(
   activeTheme: string, modalOpen = false, drawerOpen = false,
-  shop: ShopState = INITIAL_SHOP, pick: PickState = INITIAL_PICK,
+  shop: ShopState = INITIAL_SHOP, pick: PickState = INITIAL_PICK, activeTab = 'tab-layout',
 ): LayoutNode {
   return {
     type: 'Screen',
@@ -577,7 +577,7 @@ export function buildGallery(
             { id: 'tab-shop', label: '🧩 组合演示·商店' },
             { id: 'tab-pick', label: '🎴 组合演示·选牌' },
           ],
-          active: 'tab-layout',
+          active: activeTab,
           action: 'switchTab',
         },
         layout: { flex: 1 },

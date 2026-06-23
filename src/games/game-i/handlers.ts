@@ -13,6 +13,8 @@ export interface GalleryHooks {
   log: (action: string, arg?: string) => void;
   /** 切换主题令牌包（宿主负责重挂载整棵树）。 */
   setTheme: (value: string) => void;
+  /** 记住当前 Tab（mountUI 已就地切页·此处只记录，使后续重挂不回弹第一页）。 */
+  setTab: (id: string) => void;
   /** 开/关演示模态浮层（宿主状态驱动·重挂载整棵树）。 */
   setModal: (open: boolean) => void;
   /** 开/关演示抽屉浮层（宿主状态驱动·重挂载整棵树）。 */
@@ -49,7 +51,7 @@ export function buildHandlers(hooks: GalleryHooks): HandlerMap {
     setCity: (a) => L('setCity', a),
     setRating: (a) => L('setRating', a),
     toggleAcc: (a) => L('toggleAcc', a),
-    switchTab: (a) => L('switchTab', a),
+    switchTab: (a) => { L('switchTab', a); if (a) hooks.setTab(a); },
     setTheme: (a) => {
       L('setTheme', a);
       if (a) hooks.setTheme(a);

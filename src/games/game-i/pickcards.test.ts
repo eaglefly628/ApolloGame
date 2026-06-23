@@ -44,11 +44,11 @@ describe('Game I 组合演示·选牌（多选≤5·纯重组）', () => {
     expect(r.toast?.text).toContain('同花顺');
   });
 
-  it('视图：选中牌进 accent + 放大 scale + 拉正 rotate(0)；牌都可拖拽', () => {
+  it('视图：选中牌进 accent + 放大 scale + 拉正 rotate(0)；牌都可拖拽·非选中扇形', () => {
     const html = renderNode(buildPickHand(P(['h4'])), onyx);
     expect(html).toContain('data-drag="h4"');                 // 可拖拽
     expect(html).toContain('scale(1.12)');                    // 选中放大
     expect(html).toContain('data-drop="dropPick"');           // 选入区 dropZone
-    expect(html).toContain('animation:apollo-dealIn');        // 发牌入场动画
+    expect(html).toContain('transform:rotate(');              // 扇形手牌（非选中牌斜摆）
   });
 });

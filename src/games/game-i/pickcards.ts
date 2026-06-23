@@ -80,7 +80,6 @@ function cardNode(c: PCard, i: number, selected: boolean): LayoutNode {
       rotate,
       ...(selected ? { scale: 1.12 } : {}),
       draggable: true,                 // 可拖入「选入区」
-      anim: 'dealIn', animDelay: i * 60, // 发牌错峰入场
     },
   };
 }
