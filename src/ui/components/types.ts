@@ -9,7 +9,7 @@ export type ComponentType =
   | 'Checkbox' | 'Toggle' | 'RadioGroup' | 'Image' | 'Screen' | 'Slider'
   | 'Table' | 'Tabs' | 'ProgressBar' | 'Tag' | 'Modal' | 'Toast' | 'Tooltip'
   | 'Card' | 'Stepper' | 'Segmented' | 'Avatar' | 'Accordion'
-  | 'Rating' | 'Combobox' | 'Drawer';
+  | 'Rating' | 'Combobox' | 'Drawer' | 'VirtualList' | 'ContextMenu';
 
 /** 布局约束：坐标/尺寸/弹性。x/y 触发绝对定位；flex 在父 Panel/Screen 内生效。 */
 export interface LayoutConstraints {
@@ -215,12 +215,26 @@ export interface DrawerProps {
   side?: 'left' | 'right' | 'bottom'; title?: string; closeAction?: string;
 }
 
+// ── VirtualList（长列表虚拟滚动）：只渲可视窗口的行（不一次性渲全部·解决千行级卡顿）。──
+// 列定义同 Table；rowHeight 固定行高；height 视口高(缺省 320)；action 行可点(arg=row.id)。
+// 滚动重渲窗口由 mountUI 内建（持 root 数据·按 scrollTop 算窗口）。
+export interface VirtualListProps {
+  rows: { id: string; cells: Record<string, string> }[];
+  columns?: TableColumn[]; rowHeight: number; height?: number; action?: string;
+}
+
+// ── ContextMenu（右键/长按菜单）：包裹 children 作触发元素；右键(contextmenu)在光标处弹菜单。──
+// 弹出/定位/点项/点外合由 mountUI 内建；点项 → 该项 action(arg=item.id)。
+export interface ContextMenuProps {
+  items: { id: string; label: string; action: string }[];
+}
+
 export type ComponentProps =
   | ButtonProps | LabelProps | DropdownProps | BadgeProps | InputProps | PanelProps
   | CheckboxProps | ToggleProps | RadioGroupProps | ImageProps | ScreenProps | SliderProps
   | TableProps | TabsProps | ProgressBarProps | TagProps | ModalProps | ToastProps | TooltipProps
   | CardProps | StepperProps | SegmentedProps | AvatarProps | AccordionProps
-  | RatingProps | ComboboxProps | DrawerProps
+  | RatingProps | ComboboxProps | DrawerProps | VirtualListProps | ContextMenuProps
   | Record<string, never>;
 
 /** LayoutNode = 弱模型填写的 UI 数据单元。type + id + props 必填；layout/children 按需。 */

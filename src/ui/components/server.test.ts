@@ -503,4 +503,24 @@ describe('UI Components · renderNode', () => {
     expect(html).toContain('left:0;bottom:0');                // side=left 贴左
     expect(html).toContain('设置'); expect(html).toContain('抽屉体');
   });
+
+  it('VirtualList: 仅渲可视窗口的行(非全部) + spacer 总高 + 行 data-arg=row.id', () => {
+    const rows = Array.from({ length: 500 }, (_, i) => ({ id: `r${i}`, cells: { name: `第 ${i} 行` } }));
+    const html = renderNode({ type: 'VirtualList', id: 'vl', props: { rows, rowHeight: 20, height: 100, columns: [{ key: 'name', label: '名' }], action: 'pickRow' } });
+    expect(html).toContain('height:10000px');                 // spacer 总高 = 500×20
+    expect(html).toContain('第 0 行');                         // 窗口含首行
+    expect(html).not.toContain('第 400 行');                   // 远处行不渲（虚拟化）
+    const rendered = (html.match(/data-vlist-row=/g) || []).length;
+    expect(rendered).toBeLessThan(20);                        // 只渲一窗口(~9 行)·非 500
+    expect(html).toContain('data-arg="r0"');                  // 行可点
+  });
+
+  it('ContextMenu: 包裹触发元素 + 隐藏菜单(items 带 action) + 弹出锚点', () => {
+    const html = renderNode({ type: 'ContextMenu', id: 'cm', props: { items: [{ id: 'del', label: '删除', action: 'doDelete' }] }, children: [{ type: 'Label', id: 'l', props: { text: '右键我' } }] });
+    expect(html).toContain('data-ctxmenu');                   // 触发锚点
+    expect(html).toMatch(/data-ctxmenu-pop[^>]*display:none/); // 菜单缺省隐
+    expect(html).toContain('data-ctxmenu-item');
+    expect(html).toContain('data-action="doDelete"'); expect(html).toContain('data-arg="del"');
+    expect(html).toContain('右键我'); expect(html).toContain('删除');
+  });
 });

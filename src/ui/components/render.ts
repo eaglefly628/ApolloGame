@@ -8,7 +8,7 @@ import type {
   CheckboxProps, ToggleProps, RadioGroupProps, ImageProps, ScreenProps, SliderProps,
   TableProps, TableColumn, TabsProps, ProgressBarProps, TagProps, ModalProps, ToastProps, TooltipProps,
   CardProps, StepperProps, SegmentedProps, AvatarProps, AccordionProps,
-  RatingProps, ComboboxProps, DrawerProps,
+  RatingProps, ComboboxProps, DrawerProps, VirtualListProps, ContextMenuProps,
 } from './types.js';
 
 const esc = (s: string): string =>
@@ -403,6 +403,41 @@ function renderDrawer(id: string, p: DrawerProps, children: LayoutNode[], ls: st
   return `<div id="${esc(id)}"${scrimClose} style="position:fixed;inset:0;z-index:200;background:rgba(0,0,0,0.62);${ls}"><div style="position:absolute;${panelPos[side]};background:${t.bg1};padding:20px;overflow:auto;box-shadow:0 0 50px rgba(0,0,0,0.5)">${xBtn}${title}${body}</div></div>`;
 }
 
+// ── VirtualList / ContextMenu（P2 收尾·长列表虚拟滚动 / 右键菜单）──────────────────
+
+// 单行（绝对定位在 index*rowHeight）：列定义同 Table；可点(arg=row.id)。
+function vlistRowHtml(p: VirtualListProps, row: { id: string; cells: Record<string, string> }, index: number, t: UITheme): string {
+  const cols = p.columns ?? [{ key: Object.keys(row.cells)[0] ?? '', label: '' }];
+  const act = p.action ? ` data-action="${esc(p.action)}" data-arg="${esc(row.id)}"` : '';
+  const cells = cols.map((c) => `<span style="${c.width !== undefined ? `flex:0 0 ${c.width}px` : 'flex:1'};text-align:${c.align ?? 'left'};font-size:12px;color:${t.text};font-family:${t.fontUi};overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${esc(row.cells[c.key] ?? '')}</span>`).join('');
+  return `<div data-vlist-row="${esc(row.id)}"${act} style="position:absolute;top:${index * p.rowHeight}px;left:0;right:0;height:${p.rowHeight}px;display:flex;align-items:center;gap:10px;padding:0 12px;${p.action ? 'cursor:pointer;' : ''}border-bottom:1px solid ${t.line}">${cells}</div>`;
+}
+
+// 可视窗口（按 scrollTop 算 [start,end)·带缓冲）。renderNode 初次用 scrollTop=0；mountUI 滚动时复用本函数。
+export function renderVListWindow(p: VirtualListProps, scrollTop: number, t: UITheme): string {
+  const viewport = p.height ?? 320;
+  const count = Math.ceil(viewport / p.rowHeight) + 4; // 窗口 + 缓冲
+  const start = Math.max(0, Math.floor(scrollTop / p.rowHeight) - 2);
+  const end = Math.min(p.rows.length, start + count);
+  let html = '';
+  for (let i = start; i < end; i++) html += vlistRowHtml(p, p.rows[i]!, i, t);
+  return html;
+}
+
+function renderVirtualList(id: string, p: VirtualListProps, ls: string, t: UITheme): string {
+  const h = p.height ?? 320;
+  const total = p.rows.length * p.rowHeight;
+  return `<div id="${esc(id)}" data-vlist="${esc(id)}" style="height:${h}px;overflow-y:auto;background:${t.bg1};border:1px solid ${t.line};border-radius:10px;${ls}"><div data-vlist-spacer style="position:relative;height:${total}px">${renderVListWindow(p, 0, t)}</div></div>`;
+}
+
+// 右键菜单：包裹 children 作触发元素 + 一个隐藏菜单(右键在光标处弹·mountUI 内建)。项带 data-action(arg=item.id)。
+function renderContextMenu(id: string, p: ContextMenuProps, children: LayoutNode[], ls: string, t: UITheme): string {
+  const items = p.items.map((it) => `<button data-action="${esc(it.action)}" data-arg="${esc(it.id)}" data-ctxmenu-item style="display:block;width:100%;text-align:left;padding:7px 14px;background:none;border:none;color:${t.text};font-size:12px;cursor:pointer;font-family:${t.fontUi};white-space:nowrap;border-radius:5px">${esc(it.label)}</button>`).join('');
+  const pop = `<div data-ctxmenu-pop style="display:none;position:fixed;z-index:260;min-width:140px;background:${t.bg2};border:1px solid ${t.line};border-radius:8px;padding:4px;box-shadow:0 12px 30px rgba(0,0,0,0.4)">${items}</div>`;
+  const inner = children.map((ch) => renderNode(ch, t)).join('');
+  return `<span id="${esc(id)}" data-ctxmenu style="position:relative;display:inline-flex;${ls}">${inner}${pop}</span>`;
+}
+
 // ── 统一入口 ────────────────────────────────────────────────────
 
 /** 将 LayoutNode 树渲染为 HTML 字符串。弱模型提供数据 + 可选主题；此函数是解释器。缺省主题 = 引擎 SHELL 脸。 */
@@ -438,6 +473,8 @@ export function renderNode(node: LayoutNode, theme: UITheme = SHELL): string {
     case 'Rating':     return renderRating(node.id, node.props as RatingProps, ls, t);
     case 'Combobox':   return renderCombobox(node.id, node.props as ComboboxProps, ls, t);
     case 'Drawer':     return renderDrawer(node.id, node.props as DrawerProps, node.children ?? [], ls, t);
+    case 'VirtualList':return renderVirtualList(node.id, node.props as VirtualListProps, ls, t);
+    case 'ContextMenu':return renderContextMenu(node.id, node.props as ContextMenuProps, node.children ?? [], ls, t);
     default:           return `<!-- unknown: ${String((node as LayoutNode).type)} -->`;
   }
 }

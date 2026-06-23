@@ -4,9 +4,16 @@
 // server 在根节点监听冒泡，按 action key 路由到 handlers。
 // 游戏层只提供 LayoutNode（数据）+ HandlerMap（回调），无需写 DOM 代码。
 
-import { renderNode } from './render.js';
+import { renderNode, renderVListWindow } from './render.js';
 import { SHELL } from '../shell-theme.js';
-import type { LayoutNode, HandlerMap, UITheme, ToastProps } from './types.js';
+import type { LayoutNode, HandlerMap, UITheme, ToastProps, VirtualListProps } from './types.js';
+
+// 按 id 在 LayoutNode 树里找节点（VirtualList 滚动重渲要从 root 取行数据）。
+function findNode(node: LayoutNode, id: string): LayoutNode | undefined {
+  if (node.id === id) return node;
+  for (const ch of node.children ?? []) { const f = findNode(ch, id); if (f) return f; }
+  return undefined;
+}
 
 /**
  * 挂载静态 UI：渲染 LayoutNode 树到 host，绑定事件，返回清理函数。
@@ -157,32 +164,67 @@ export function mountUI(
     });
   };
 
-  host.addEventListener('click',     dispatch);
-  host.addEventListener('click',     switchTab);
-  host.addEventListener('click',     modalClose);
-  host.addEventListener('click',     accordionToggle);
-  host.addEventListener('click',     comboClick);
-  host.addEventListener('change',    dispatch);
-  host.addEventListener('input',     comboFilter);
-  host.addEventListener('mouseover', tipShow);
-  host.addEventListener('mouseout',  tipHide);
-  host.addEventListener('focusin',   tipShow);
-  host.addEventListener('focusin',   comboOpen);
-  host.addEventListener('focusout',  tipHide);
+  // VirtualList 虚拟滚动（引擎内建）：滚动时只把可视窗口的行渲进 spacer（不一次性渲全部·解决千行级卡顿）。
+  // 行数据从 root 树取（mountUI 持 root）；每个列表一个 scroll 监听，teardown 逐个解绑。
+  const vlistScrolls: Array<{ el: HTMLElement; fn: (e: Event) => void }> = [];
+  host.querySelectorAll<HTMLElement>('[data-vlist]').forEach((el) => {
+    const node = findNode(root, el.dataset['vlist'] ?? '');
+    const spacer = el.querySelector<HTMLElement>(':scope > [data-vlist-spacer]');
+    if (!node || !spacer) return;
+    const p = node.props as VirtualListProps;
+    const fn = (): void => { spacer.innerHTML = renderVListWindow(p, el.scrollTop, theme); };
+    el.addEventListener('scroll', fn);
+    vlistScrolls.push({ el, fn });
+  });
+
+  // ContextMenu 右键菜单（引擎内建）：右键在光标处弹菜单；任意点击合（项的 action 由 dispatch 发）。
+  const ctxOpen = (e: Event): void => {
+    const trigger = (e.target as HTMLElement).closest('[data-ctxmenu]') as HTMLElement | null;
+    if (!trigger) return;
+    e.preventDefault();
+    host.querySelectorAll<HTMLElement>('[data-ctxmenu-pop]').forEach((pp) => { pp.style.display = 'none'; });
+    const pop = trigger.querySelector<HTMLElement>(':scope > [data-ctxmenu-pop]');
+    if (!pop) return;
+    const me = e as MouseEvent;
+    pop.style.left = `${me.clientX}px`;
+    pop.style.top = `${me.clientY}px`;
+    pop.style.display = 'block';
+  };
+  const ctxClose = (): void => {
+    host.querySelectorAll<HTMLElement>('[data-ctxmenu-pop]').forEach((pp) => { pp.style.display = 'none'; });
+  };
+
+  host.addEventListener('click',       dispatch);
+  host.addEventListener('click',       switchTab);
+  host.addEventListener('click',       modalClose);
+  host.addEventListener('click',       accordionToggle);
+  host.addEventListener('click',       comboClick);
+  host.addEventListener('click',       ctxClose);
+  host.addEventListener('change',      dispatch);
+  host.addEventListener('input',       comboFilter);
+  host.addEventListener('contextmenu', ctxOpen);
+  host.addEventListener('mouseover',   tipShow);
+  host.addEventListener('mouseout',    tipHide);
+  host.addEventListener('focusin',     tipShow);
+  host.addEventListener('focusin',     comboOpen);
+  host.addEventListener('focusout',    tipHide);
 
   return () => {
-    host.removeEventListener('click',     dispatch);
-    host.removeEventListener('click',     switchTab);
-    host.removeEventListener('click',     modalClose);
-    host.removeEventListener('click',     accordionToggle);
-    host.removeEventListener('click',     comboClick);
-    host.removeEventListener('change',    dispatch);
-    host.removeEventListener('input',     comboFilter);
-    host.removeEventListener('mouseover', tipShow);
-    host.removeEventListener('mouseout',  tipHide);
-    host.removeEventListener('focusin',   tipShow);
-    host.removeEventListener('focusin',   comboOpen);
-    host.removeEventListener('focusout',  tipHide);
+    host.removeEventListener('click',       dispatch);
+    host.removeEventListener('click',       switchTab);
+    host.removeEventListener('click',       modalClose);
+    host.removeEventListener('click',       accordionToggle);
+    host.removeEventListener('click',       comboClick);
+    host.removeEventListener('click',       ctxClose);
+    host.removeEventListener('change',      dispatch);
+    host.removeEventListener('input',       comboFilter);
+    host.removeEventListener('contextmenu', ctxOpen);
+    host.removeEventListener('mouseover',   tipShow);
+    host.removeEventListener('mouseout',    tipHide);
+    host.removeEventListener('focusin',     tipShow);
+    host.removeEventListener('focusin',     comboOpen);
+    host.removeEventListener('focusout',    tipHide);
+    vlistScrolls.forEach(({ el, fn }) => el.removeEventListener('scroll', fn));
     typers.forEach((iv) => clearInterval(iv));
     host.innerHTML = '';
   };
