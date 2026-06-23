@@ -668,6 +668,7 @@ function GameRunner({ gameId, onBack }: { gameId: string; onBack: () => void }) 
       'game-f': () => import('./games/game-f/game-f.js'),
       'game-g': () => import('./games/game-g/game-g.js'),
       'game-h': () => import('./game-h.js'),
+      'game-i': () => import('./games/game-i/game-i.js'),
     };
     const loader = loaders[gameId];
     if (!loader) return;
