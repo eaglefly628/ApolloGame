@@ -22,6 +22,8 @@ export interface GalleryHooks {
   /** 改世界资源（演示 resolveBindings 活 HUD）：受伤/治疗后宿主重绑重挂。 */
   hurt: (amount: number) => void;
   heal: (amount: number) => void;
+  /** 组合演示「商店」的联动信号（kind=cat/search/select/qty/buy）→ 宿主跑 reducer 重挂。 */
+  shopDispatch: (kind: string, arg?: string) => void;
 }
 
 export function buildHandlers(hooks: GalleryHooks): HandlerMap {
@@ -76,5 +78,11 @@ export function buildHandlers(hooks: GalleryHooks): HandlerMap {
       L('heal', a);
       hooks.heal(Number(a) || 10);
     },
+    // 商店联动：信号名 → reducer 类别（视图与逻辑只在信号名处相遇）。
+    shopCat: (a) => { L('shopCat', a); hooks.shopDispatch('cat', a); },
+    shopSearch: (a) => { L('shopSearch', a); hooks.shopDispatch('search', a); },
+    shopSelect: (a) => { L('shopSelect', a); hooks.shopDispatch('select', a); },
+    shopQty: (a) => { L('shopQty', a); hooks.shopDispatch('qty', a); },
+    shopBuy: (a) => { L('shopBuy', a); hooks.shopDispatch('buy', a); },
   };
 }

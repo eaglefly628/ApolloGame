@@ -16,6 +16,7 @@ describe('Game I gallery', () => {
     expect(html).toContain('data-tabpage="tab-layout"');
     expect(html).toContain('data-tabpage="tab-display"');
     expect(html).toContain('data-tabpage="tab-input"');
+    expect(html).toContain('data-tabpage="tab-shop"');   // 组合演示·商店
   });
 
   it('lists ALL 28 engine components (showcase coverage gate)', () => {

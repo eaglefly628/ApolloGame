@@ -14,6 +14,7 @@ import type { UITheme, UIDataSource } from '@ui/components/index.js';
 import { buildGallery } from './gallery.js';
 import { buildHandlers } from './handlers.js';
 import { THEMES } from './themes.js';
+import { applyShop, INITIAL_SHOP, type ShopState } from './shop.js';
 
 export function mount(container: HTMLElement): () => void {
   // ── 两栏骨架：左画廊（弹性）+ 右事件日志（固定宽）──────────────
@@ -91,6 +92,9 @@ export function mount(container: HTMLElement): () => void {
     resource: (id) => (world as Record<string, { current: number; max?: number }>)[id],
   };
 
+  // 组合演示「商店」的有状态存储（UI = 状态的纯函数·联动从 applyShop reducer 涌现）。
+  let shop: ShopState = INITIAL_SHOP;
+
   const handlers = buildHandlers({
     log: (action, arg) => {
       lines.push({ action, arg, t: now() });
@@ -123,13 +127,20 @@ export function mount(container: HTMLElement): () => void {
       world.gold.current += n; // 顺带演示第二个绑定资源变化
       remount();
     },
+    shopDispatch: (kind, arg) => {
+      const theme = THEMES[currentTheme] ?? THEMES['onyx']!;
+      const { state, toast } = applyShop(shop, kind, arg); // 纯 reducer 出新状态 + toast 意图
+      shop = state;
+      if (toast) showToast(root, toast.text, { tone: toast.tone, theme });
+      remount(); // UI = 状态的纯函数 → 联动（过滤/详情/合计/禁用）一次重渲全部成立
+    },
   });
 
   function remount(): void {
     const theme = THEMES[currentTheme] ?? THEMES['onyx']!;
     if (teardown) teardown();
     // 渲染前先用数据源把 bind 节点解析成字面值（活 HUD·resolveBindings 返回新树·纯函数）。
-    const tree = resolveBindings(buildGallery(currentTheme, modalOpen, drawerOpen), dataSource);
+    const tree = resolveBindings(buildGallery(currentTheme, modalOpen, drawerOpen, shop), dataSource);
     teardown = mountUI(galleryHost, tree, handlers, theme);
     applyPaneTheme(theme);
     renderLog(theme);

@@ -16,6 +16,10 @@ Game I 把 `docs/design/apollo-ui-contract.md`（Apollo UI 控件契约总表）
 - **换皮**：顶部下拉切 `UITheme` 令牌包（青瓷 / 暖金 / 冷雾），同一棵 `LayoutNode` 数据一字不改即变脸。
 - **世界数据绑定（活 HUD）**：Label / ProgressBar / Image 可填 `bind=resourceId`，渲染前由
   `resolveBindings(tree, dataSource)` 读世界填字面值；「数据展示」页 HUD 演示受伤/治疗驱动血条与数字实时更新。
+- **组合演示·商店（联动）**：第 4 页是一个多控件联动的小应用（MVU 模式）——分类 Segmented +
+  搜索 Input 联动过滤 Card 网格；点商品出详情，Stepper 选数量→合计=单价×数量实时算；购买扣金币、
+  记拥有、弹 Toast，买不起则按钮禁用。视图 `buildShop(state)` 与 reducer `applyShop(state,信号)` 全是
+  纯函数（见 `shop.ts`），联动从「UI=状态的纯函数」涌现，宿主只持有状态 + 重挂，零命令式 UI 代码。
 - **事件日志**：右栏实时打印每个控件发出的信号名 + 当前值，直观看到「填数据即出 UI、动一下就有信号」。
 
 ## 红线（沿用引擎契约）
