@@ -410,4 +410,12 @@ describe('UI Components · renderNode', () => {
     expect(html).not.toContain('aria-label="close"');
     expect(html).toContain('data-modal-close="x"');
   });
+
+  it('Toast: tone 着色药丸 + 文本', () => {
+    const ok = renderNode({ type: 'Toast', id: 't', props: { text: '保存成功', tone: 'ok' } });
+    expect(ok).toContain('保存成功');
+    const danger = renderNode({ type: 'Toast', id: 't', props: { text: '错误', tone: 'danger' } });
+    expect(danger).toContain('错误');
+    expect(ok).not.toBe(danger); // 不同 tone 渲染不同
+  });
 });

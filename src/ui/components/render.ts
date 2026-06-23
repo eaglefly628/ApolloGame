@@ -6,7 +6,7 @@ import type {
   LayoutNode, LayoutConstraints, UITheme,
   ButtonProps, LabelProps, DropdownProps, BadgeProps, InputProps, PanelProps,
   CheckboxProps, ToggleProps, RadioGroupProps, ImageProps, ScreenProps, SliderProps,
-  TableProps, TableColumn, TabsProps, ProgressBarProps, TagProps, ModalProps,
+  TableProps, TableColumn, TabsProps, ProgressBarProps, TagProps, ModalProps, ToastProps,
 } from './types.js';
 
 const esc = (s: string): string =>
@@ -263,6 +263,19 @@ function renderTag(id: string, p: TagProps, ls: string, t: UITheme): string {
   return `<span id="${esc(id)}"${action} style="display:inline-flex;align-items:center;padding:3px 10px;font-size:11px;border-radius:12px;background:${bg};color:${fg};border:1px solid ${border};font-family:${t.fontUi};white-space:nowrap;${cursor}${ls}">${esc(p.label)}${x}</span>`;
 }
 
+// 飘字提示药丸：tone 着色（语义令牌）。挂载器 showToast() 复用它做定时自消浮层。
+function renderToast(id: string, p: ToastProps, ls: string, t: UITheme): string {
+  const toneMap: Record<string, [string, string, string]> = {
+    ok:     [t.okWash, t.ok, t.ok],
+    warn:   [t.warnWash, t.warn, t.warn],
+    danger: ['rgba(211,137,122,0.16)', t.danger, t.danger],
+    accent: [t.jadeWash, t.jade, t.jadeLine],
+    dim:    ['rgba(255,255,255,0.06)', t.sub, t.line],
+  };
+  const [bg, fg, bd] = toneMap[p.tone ?? 'dim'] ?? toneMap['dim'] as [string, string, string];
+  return `<div id="${esc(id)}" style="display:inline-flex;align-items:center;gap:8px;padding:9px 15px;border-radius:9px;background:${bg};color:${fg};border:1px solid ${bd};font-size:12px;font-family:${t.fontUi};box-shadow:0 6px 20px rgba(0,0,0,0.3);${ls}">${esc(p.text)}</div>`;
+}
+
 // ── Modal（居中模态浮层 + 遮罩·下沉自各游戏手搭确认框/详情弹窗）─────────────────
 
 // 遮罩满屏居中弹窗体；点 ×(data-action) 或点遮罩本身(data-modal-close·mountUI 内建) → closeAction。
@@ -306,6 +319,7 @@ export function renderNode(node: LayoutNode, theme: UITheme = SHELL): string {
     case 'ProgressBar':return renderProgressBar(node.id, node.props as ProgressBarProps, ls, t);
     case 'Tag':        return renderTag(node.id, node.props as TagProps, ls, t);
     case 'Modal':      return renderModal(node.id, node.props as ModalProps, node.children ?? [], ls, t);
+    case 'Toast':      return renderToast(node.id, node.props as ToastProps, ls, t);
     default:           return `<!-- unknown: ${String((node as LayoutNode).type)} -->`;
   }
 }

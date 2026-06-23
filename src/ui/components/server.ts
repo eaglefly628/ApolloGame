@@ -6,7 +6,7 @@
 
 import { renderNode } from './render.js';
 import { SHELL } from '../shell-theme.js';
-import type { LayoutNode, HandlerMap, UITheme } from './types.js';
+import type { LayoutNode, HandlerMap, UITheme, ToastProps } from './types.js';
 
 /**
  * 挂载静态 UI：渲染 LayoutNode 树到 host，绑定事件，返回清理函数。
@@ -88,4 +88,44 @@ export function mountUI(
     host.removeEventListener('change', dispatch);
     host.innerHTML = '';
   };
+}
+
+/**
+ * 飘字提示（非模态·定时自消）—— fire-and-forget 的挂载器 API。
+ * 复用 renderNode 出 Toast 药丸标记，挂到 host 底部居中的堆叠容器；duration(ms·缺省 2600) 后移除。
+ * 返回手动关闭函数（提前清掉）。游戏层只调 showToast(host, '保存成功', { tone:'ok' })，不写 DOM。
+ *
+ * @param host - 挂载目标（toast 浮层挂在它内部·fixed 定位）
+ * @param text - 提示文本
+ * @param opts - tone 着色 / duration 自消毫秒 / theme 主题
+ */
+export function showToast(
+  host: HTMLElement,
+  text: string,
+  opts: { tone?: ToastProps['tone']; duration?: number; theme?: UITheme } = {},
+): () => void {
+  const theme = opts.theme ?? SHELL;
+  let stack = host.querySelector<HTMLElement>(':scope > [data-toast-stack]');
+  if (!stack) {
+    stack = document.createElement('div');
+    stack.setAttribute('data-toast-stack', '');
+    stack.style.cssText = 'position:fixed;left:50%;bottom:28px;transform:translateX(-50%);z-index:300;display:flex;flex-direction:column;gap:8px;align-items:center;pointer-events:none';
+    host.appendChild(stack);
+  }
+  const holder = document.createElement('div');
+  holder.innerHTML = renderNode({ type: 'Toast', id: `toast-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`, props: { text, tone: opts.tone } }, theme);
+  const toastEl = holder.firstElementChild as HTMLElement | null;
+  if (!toastEl) return () => {};
+  stack.appendChild(toastEl);
+
+  let done = false;
+  const remove = (): void => {
+    if (done) return;
+    done = true;
+    clearTimeout(timer);
+    toastEl.remove();
+    if (stack && stack.childElementCount === 0) stack.remove();
+  };
+  const timer = setTimeout(remove, opts.duration ?? 2600);
+  return remove;
 }

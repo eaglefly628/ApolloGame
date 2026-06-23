@@ -7,7 +7,7 @@
 export type ComponentType =
   | 'Panel' | 'Button' | 'Label' | 'Dropdown' | 'Badge' | 'Input' | 'Divider'
   | 'Checkbox' | 'Toggle' | 'RadioGroup' | 'Image' | 'Screen' | 'Slider'
-  | 'Table' | 'Tabs' | 'ProgressBar' | 'Tag' | 'Modal';
+  | 'Table' | 'Tabs' | 'ProgressBar' | 'Tag' | 'Modal' | 'Toast';
 
 /** 布局约束：坐标/尺寸/弹性。x/y 触发绝对定位；flex 在父 Panel/Screen 内生效。 */
 export interface LayoutConstraints {
@@ -149,10 +149,16 @@ export interface ModalProps {
   title?: string; size?: 'sm' | 'md' | 'lg'; closable?: boolean; closeAction?: string;
 }
 
+// ── Toast（飘字提示·非模态）：tone 着色的小药丸。──
+// 既可作静态节点(渲染提示药丸)，也由挂载器 API showToast() 触发「定时自消」的浮层（duration ms·缺省 2600）。
+export interface ToastProps {
+  text: string; tone?: 'ok' | 'warn' | 'danger' | 'accent' | 'dim'; duration?: number;
+}
+
 export type ComponentProps =
   | ButtonProps | LabelProps | DropdownProps | BadgeProps | InputProps | PanelProps
   | CheckboxProps | ToggleProps | RadioGroupProps | ImageProps | ScreenProps | SliderProps
-  | TableProps | TabsProps | ProgressBarProps | TagProps | ModalProps
+  | TableProps | TabsProps | ProgressBarProps | TagProps | ModalProps | ToastProps
   | Record<string, never>;
 
 /** LayoutNode = 弱模型填写的 UI 数据单元。type + id + props 必填；layout/children 按需。 */
