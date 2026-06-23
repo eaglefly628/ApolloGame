@@ -10,6 +10,19 @@
 
 ## 待处理 / 进行中
 
+### REQ-UI-数字补间 / 富文本 · [2026-06-23] · Lead 登记（UI 库域·game-g 迁移撞到再排） · status: **open（候选下沉·待排期）** · 类型: 真能力缺口候选（manifesto 尺子已过·暂未实现）
+
+> **缘起**：写 `apollo-ui-migration-guide.md` 时复核库现状，3 游戏迁移仍会撞到两项**可数据化、且复用**的缺口（其余如 3D/SVG/hex/WorldFollower 已回驳为单游戏或世界渲染·见指南 §4）。先登记，game-g 迁到此处再由 Lead 下沉，**游戏层勿硬写**。
+>
+> 1. **数值补间 / 数字滚动（number tween）** —— 掷骰数字滚到命点(G)、筹码/倍率/分数跳动(E)。
+>    - 候选数据形态：`Label` 加 `tween:{ from, to, ms }`（或 `Counter` 控件），mountUI 用 rAF 动画到目标值。
+>    - 尺子：`tween:{from:0,to:18,ms:600}` 是数据，弱模型能填；动画由解释器接 → **该下沉**。recurring（E/G 都要）。
+> 2. **富文本 / 多段着色（richText spans）** —— 天罡/地煞词条带高亮、说明/故事分色文本。
+>    - 现 `Label` 单色纯文本（已有 `typewriter` 逐字显）。候选：`Label.spans:[{text,color,bold}]` 或 `RichText` 控件。
+>    - 尺子：spans 是结构化数据，弱模型能填 → 可下沉；优先级中（多数文案纯文本+typewriter 够用）。
+>
+> **暂不做**：3D transform（掷骰/硬币·演出，CSS/canvas 保留）、SVGPath（斜梯·单用途）、hex 布局（仅 F）、WorldFollower（浮动血条·归 renderer）——回驳理由见迁移指南 §4。
+
 ### REQ-UI-3缺口（变换/动画/拖放） · [2026-06-23] · Lead 主导（UI 库域·跨游戏重构前置） · status: **✅ done（声明式下沉·game-i 同提交）** · 类型: 真能力缺口下沉（manifesto §4 评审通过）
 
 > **缘起**：用户问「若 Game E(小丑牌)/F(自走棋)/G(翻命扑克) 用数据驱动 UI 重构，还缺什么」。Lead 派 3 个 Explore 实测三游戏 UI 现状，对照 30 控件 + resolveBindings + solveLayout 做缺口判断。
