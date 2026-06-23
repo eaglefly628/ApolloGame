@@ -542,7 +542,11 @@ game-f 报「多数需新引擎能力」。Lead 实测：**三个已点名技能
 
 ---
 
-### REQ-G-Boss-AI · [2026-06-21] · design G → 甲（引擎域·AI） · Game G · status: open · 优先级: **P0（解锁整个公平难度模型）** · 类型: 真缺口（Boss AI 太弱）
+### REQ-G-Boss-AI · [2026-06-21] · design G → 甲（引擎域·AI） · Game G · status: **✅ 实装+sim验证（2026-06-23·甲 commit 4c8b9d6e+aa8728c1）·待接真 loader 重标** · 优先级: **P0（解锁整个公平难度模型）** · 类型: 真缺口（Boss AI 太弱）
+
+> **✅ design G 2026-06-23 验收**：甲改进后重扫 `simulate-balance.ts`（N=500）——**两层都忠实实装**：① 公平·公开盘面反应式启发（防漏路回防/趁势压优势路/疾行驰援·全档生效·零 per-boss 代码）；② 信息不对称 `foeIntel`（读玩家手牌+牌库顶3张预读·**仅 aiTier≥3 启用**·关3-5）·正合 `boss-ai-spec.md` 难度阶梯。
+> **效果**：关1（aiTier=1·仅靠①层·不读手牌）WR 从坏态 ~96-100% → **新手 76%**；**难度旋钮复活**（bossDelta 0→76%·+6→54%·+12→37%·旧坏态对旋钮免疫）→ 整个公平难度模型解锁。
+> **剩余**：(a) 待 `REQ-G-Player-AI` 强玩家落地后 sim 才完全可信（现玩家仍贪心）；(b) 待接真 loader（我更新的 boss-config：favorBias0/源泉4/主将3命/破家回库/16写死牌组）后 design G 重扫定稿 98%→60% 曲线。**核心 AI 缺口已闭合。**
 
 > **owner 公平性原则 + design G sim 实证**（详 `design/balance-philosophy-fairness.md`）：难度只能来自明牌地煞·禁止偷源泉/暗数值。但 sim 镜像测试发现根因——**Boss AI 太菜**：
 > - 纯镜像（双方同牌组+天罡+地支·都贪心）→ 玩家 **52.8% ≈ 50%**（战斗公平 ✓）。
