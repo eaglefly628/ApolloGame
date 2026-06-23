@@ -227,6 +227,26 @@ const pageDisplay: LayoutNode = {
       ],
     },
     divider('d-d6c'),
+    sectionTitle('t-vlist', 'VIRTUALLIST · 虚拟滚动列表（500 行只渲可视窗口·千行不卡·行可点 → pickVRow）'),
+    {
+      type: 'VirtualList',
+      id: 'demo-vlist',
+      props: {
+        rows: Array.from({ length: 500 }, (_, i) => ({
+          id: `v${i}`,
+          cells: { idx: String(i + 1).padStart(3, '0'), name: `单位 #${i + 1}`, hp: String(((i * 37) % 100) + 1) },
+        })),
+        columns: [
+          { key: 'idx', label: '#', align: 'center', width: 56 },
+          { key: 'name', label: '名称', align: 'left' },
+          { key: 'hp', label: '生命', align: 'right' },
+        ],
+        rowHeight: 34,
+        height: 240,
+        action: 'pickVRow',
+      },
+    },
+    divider('d-d6d'),
     sectionTitle('t-toast', 'TOAST · 飘字提示（静态样式预览·五语义色；实时弹出见「输入与交互」页）'),
     {
       type: 'Panel',
@@ -431,6 +451,31 @@ const pageInput: LayoutNode = {
       children: [
         { type: 'Button', id: 'btn-open-drawer', props: { label: '打开抽屉', kind: 'primary', action: 'openDrawer' } },
         { type: 'Label', id: 'drawer-hint', props: { text: '从右侧滑入·遮罩/× 关闭', size: 'sm', color: 'dim' } },
+      ],
+    },
+    divider('d-i4c'),
+    sectionTitle('t-ctxmenu', 'CONTEXTMENU · 右键菜单（在下方区域点右键 → 光标处弹菜单·引擎内建 → ctxAction）'),
+    {
+      type: 'ContextMenu',
+      id: 'demo-ctxmenu',
+      props: {
+        items: [
+          { id: 'open', label: '打开', action: 'ctxAction' },
+          { id: 'rename', label: '重命名', action: 'ctxAction' },
+          { id: 'dup', label: '复制', action: 'ctxAction' },
+          { id: 'delete', label: '删除', action: 'ctxAction' },
+        ],
+      },
+      children: [
+        {
+          type: 'Panel',
+          id: 'ctx-target',
+          props: { title: '右键点我' },
+          layout: { direction: 'column', gap: 4, padding: 18, align: 'center' },
+          children: [
+            { type: 'Label', id: 'ctx-hint', props: { text: '在此区域点鼠标右键，菜单会在光标处弹出', color: 'sub', size: 'sm' } },
+          ],
+        },
       ],
     },
     divider('d-i5'),

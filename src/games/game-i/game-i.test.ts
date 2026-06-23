@@ -19,10 +19,10 @@ describe('Game I gallery', () => {
     expect(html).toContain('data-tabpage="tab-shop"');   // 组合演示·商店
   });
 
-  it('lists ALL 28 engine components (showcase coverage gate)', () => {
+  it('lists ALL 30 engine components (showcase coverage gate)', () => {
     // 模态/抽屉需开启态才入树；用 modalOpen=drawerOpen=true 覆盖到 Modal/Drawer。
     const html = renderNode(buildGallery('onyx', true, true), onyx);
-    // 渲染器分发表认识的全部 28 个控件，展示款里一个都不能漏。
+    // 渲染器分发表认识的全部 30 个控件，展示款里一个都不能漏。
     for (const id of [
       'topbar',              // Panel
       'gameui-root',         // Screen
@@ -52,6 +52,8 @@ describe('Game I gallery', () => {
       'cb-city',             // Combobox
       'demo-drawer-overlay', // Drawer
       'rt-stars',            // Rating
+      'demo-vlist',          // VirtualList
+      'demo-ctxmenu',        // ContextMenu
     ]) {
       expect(html).toContain(`"${id}"`);
     }
@@ -70,6 +72,7 @@ describe('Game I gallery', () => {
       'pickRow', 'pickTag', 'openModal', 'closeModal', 'showToast',
       'pickCard', 'setView', 'setQty', 'toggleAcc',
       'setRating', 'openDrawer', 'closeDrawer', 'hurt', 'heal',
+      'pickVRow', 'ctxAction',
     ]) {
       expect(html).toContain(`data-action="${action}"`);
     }

@@ -38,6 +38,8 @@ export function buildHandlers(hooks: GalleryHooks): HandlerMap {
     setSpeed: (a) => L('setSpeed', a),
     setVolume: (a) => L('setVolume', a),
     pickRow: (a) => L('pickRow', a),
+    pickVRow: (a) => L('pickVRow', a),
+    ctxAction: (a) => L('ctxAction', a),
     pickTag: (a) => L('pickTag', a),
     pickCard: (a) => L('pickCard', a),
     setView: (a) => L('setView', a),

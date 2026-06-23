@@ -7,12 +7,13 @@
 
 Game I 把 `docs/design/apollo-ui-contract.md`（Apollo UI 控件契约总表）落地成一个**活的控件画廊**：
 
-- **控件全家桶**：引擎现有 28 个控件（Panel / Screen / Tabs / Table / Label / Badge / Image /
+- **控件全家桶**：引擎现有 30 个控件（Panel / Screen / Tabs / Table / Label / Badge / Image /
   Divider / Button / Input / Dropdown / Checkbox / Toggle / RadioGroup / Slider / ProgressBar /
   Tag / Modal / Toast / Tooltip / Accordion / Avatar / Card / Segmented / Stepper / Combobox /
-  Drawer / Rating）按「容器与布局 / 数据展示 / 输入与交互」三页铺开；模态浮层 / 抽屉由按钮开、
-  点遮罩/× 关；Toast 飘字由按钮触发自动消失；Tooltip 悬停显气泡；Accordion 点标题开合；
-  Combobox 可输入过滤；Rating 点星评分。
+  Drawer / Rating / VirtualList / ContextMenu）按「容器与布局 / 数据展示 / 输入与交互」三页铺开；
+  模态浮层 / 抽屉由按钮开、点遮罩/× 关；Toast 飘字由按钮触发自动消失；Tooltip 悬停显气泡；
+  Accordion 点标题开合；Combobox 可输入过滤；Rating 点星评分；VirtualList 千行虚拟滚动；
+  ContextMenu 右键弹菜单。
 - **换皮**：顶部下拉切 `UITheme` 令牌包（青瓷 / 暖金 / 冷雾），同一棵 `LayoutNode` 数据一字不改即变脸。
 - **世界数据绑定（活 HUD）**：Label / ProgressBar / Image 可填 `bind=resourceId`，渲染前由
   `resolveBindings(tree, dataSource)` 读世界填字面值；「数据展示」页 HUD 演示受伤/治疗驱动血条与数字实时更新。
