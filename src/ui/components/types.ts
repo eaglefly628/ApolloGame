@@ -7,7 +7,7 @@
 export type ComponentType =
   | 'Panel' | 'Button' | 'Label' | 'Dropdown' | 'Badge' | 'Input' | 'Divider'
   | 'Checkbox' | 'Toggle' | 'RadioGroup' | 'Image' | 'Screen' | 'Slider'
-  | 'Table' | 'Tabs' | 'ProgressBar' | 'Tag' | 'Modal' | 'Toast';
+  | 'Table' | 'Tabs' | 'ProgressBar' | 'Tag' | 'Modal' | 'Toast' | 'Tooltip';
 
 /** 布局约束：坐标/尺寸/弹性。x/y 触发绝对定位；flex 在父 Panel/Screen 内生效。 */
 export interface LayoutConstraints {
@@ -155,10 +155,16 @@ export interface ToastProps {
   text: string; tone?: 'ok' | 'warn' | 'danger' | 'accent' | 'dim'; duration?: number;
 }
 
+// ── Tooltip（悬浮提示/词条浮窗）：包裹 children 作触发元素；hover/focus 显示 content 气泡。──
+// 内联样式表达不了 :hover → 显隐由 mountUI 内建（mouseover/focusin 显、移出隐）。placement 定气泡方位。
+export interface TooltipProps {
+  content: string; placement?: 'top' | 'bottom' | 'left' | 'right';
+}
+
 export type ComponentProps =
   | ButtonProps | LabelProps | DropdownProps | BadgeProps | InputProps | PanelProps
   | CheckboxProps | ToggleProps | RadioGroupProps | ImageProps | ScreenProps | SliderProps
-  | TableProps | TabsProps | ProgressBarProps | TagProps | ModalProps | ToastProps
+  | TableProps | TabsProps | ProgressBarProps | TagProps | ModalProps | ToastProps | TooltipProps
   | Record<string, never>;
 
 /** LayoutNode = 弱模型填写的 UI 数据单元。type + id + props 必填；layout/children 按需。 */

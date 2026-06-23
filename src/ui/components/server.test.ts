@@ -418,4 +418,17 @@ describe('UI Components · renderNode', () => {
     expect(danger).toContain('错误');
     expect(ok).not.toBe(danger); // 不同 tone 渲染不同
   });
+
+  it('Tooltip: 包裹 child 触发元素 + 隐藏气泡(content/placement) + 显隐锚点', () => {
+    const html = renderNode({
+      type: 'Tooltip', id: 'tip', props: { content: '该牌掷命翻正概率', placement: 'bottom' },
+      children: [{ type: 'Badge', id: 'b', props: { text: '?' } }],
+    });
+    expect(html).toContain('data-tooltip');              // 触发锚点（mountUI hover 用）
+    expect(html).toContain('data-tooltip-bubble');       // 气泡
+    expect(html).toContain('该牌掷命翻正概率');           // content
+    expect(html).toMatch(/data-tooltip-bubble[^>]*display:none/); // 缺省隐藏
+    expect(html).toContain('top:calc(100% + 6px)');      // placement=bottom 在下方
+    expect(html).toContain('>?<');                       // child 触发元素
+  });
 });

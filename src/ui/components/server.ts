@@ -76,16 +76,43 @@ export function mountUI(
     if (fn) fn();
   };
 
-  host.addEventListener('click',  dispatch);
-  host.addEventListener('click',  switchTab);
-  host.addEventListener('click',  modalClose);
-  host.addEventListener('change', dispatch);
+  // Tooltip 悬浮显隐（引擎内建·内联样式表达不了 :hover）：mouseover/focusin 显气泡、移出隐。
+  // 用冒泡的 mouseover/mouseout（mouseenter 不冒泡）；移到同一触发元素内部(child↔气泡)不隐藏。
+  const bubbleOf = (trigger: HTMLElement): HTMLElement | null =>
+    trigger.querySelector<HTMLElement>(':scope > [data-tooltip-bubble]');
+  const tipShow = (e: Event): void => {
+    const trigger = (e.target as HTMLElement).closest('[data-tooltip]') as HTMLElement | null;
+    if (!trigger) return;
+    const b = bubbleOf(trigger);
+    if (b) b.style.display = 'block';
+  };
+  const tipHide = (e: Event): void => {
+    const trigger = (e.target as HTMLElement).closest('[data-tooltip]') as HTMLElement | null;
+    if (!trigger) return;
+    const to = (e as MouseEvent | FocusEvent).relatedTarget as Node | null;
+    if (to && trigger.contains(to)) return; // 仍在触发元素内部 → 不隐
+    const b = bubbleOf(trigger);
+    if (b) b.style.display = 'none';
+  };
+
+  host.addEventListener('click',     dispatch);
+  host.addEventListener('click',     switchTab);
+  host.addEventListener('click',     modalClose);
+  host.addEventListener('change',    dispatch);
+  host.addEventListener('mouseover', tipShow);
+  host.addEventListener('mouseout',  tipHide);
+  host.addEventListener('focusin',   tipShow);
+  host.addEventListener('focusout',  tipHide);
 
   return () => {
-    host.removeEventListener('click',  dispatch);
-    host.removeEventListener('click',  switchTab);
-    host.removeEventListener('click',  modalClose);
-    host.removeEventListener('change', dispatch);
+    host.removeEventListener('click',     dispatch);
+    host.removeEventListener('click',     switchTab);
+    host.removeEventListener('click',     modalClose);
+    host.removeEventListener('change',    dispatch);
+    host.removeEventListener('mouseover', tipShow);
+    host.removeEventListener('mouseout',  tipHide);
+    host.removeEventListener('focusin',   tipShow);
+    host.removeEventListener('focusout',  tipHide);
     host.innerHTML = '';
   };
 }

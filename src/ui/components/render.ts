@@ -6,7 +6,7 @@ import type {
   LayoutNode, LayoutConstraints, UITheme,
   ButtonProps, LabelProps, DropdownProps, BadgeProps, InputProps, PanelProps,
   CheckboxProps, ToggleProps, RadioGroupProps, ImageProps, ScreenProps, SliderProps,
-  TableProps, TableColumn, TabsProps, ProgressBarProps, TagProps, ModalProps, ToastProps,
+  TableProps, TableColumn, TabsProps, ProgressBarProps, TagProps, ModalProps, ToastProps, TooltipProps,
 } from './types.js';
 
 const esc = (s: string): string =>
@@ -276,6 +276,20 @@ function renderToast(id: string, p: ToastProps, ls: string, t: UITheme): string 
   return `<div id="${esc(id)}" style="display:inline-flex;align-items:center;gap:8px;padding:9px 15px;border-radius:9px;background:${bg};color:${fg};border:1px solid ${bd};font-size:12px;font-family:${t.fontUi};box-shadow:0 6px 20px rgba(0,0,0,0.3);${ls}">${esc(p.text)}</div>`;
 }
 
+// 悬浮提示：包裹 children 作触发元素 + 一颗隐藏气泡(按 placement 定位)。显隐由 mountUI hover 内建。
+function renderTooltip(id: string, p: TooltipProps, children: LayoutNode[], ls: string, t: UITheme): string {
+  const inner = children.map((ch) => renderNode(ch, t)).join('');
+  const posMap: Record<string, string> = {
+    top:    'bottom:calc(100% + 6px);left:50%;transform:translateX(-50%)',
+    bottom: 'top:calc(100% + 6px);left:50%;transform:translateX(-50%)',
+    left:   'right:calc(100% + 6px);top:50%;transform:translateY(-50%)',
+    right:  'left:calc(100% + 6px);top:50%;transform:translateY(-50%)',
+  };
+  const pos = posMap[p.placement ?? 'top'] ?? posMap['top'];
+  const bubble = `<span data-tooltip-bubble style="display:none;position:absolute;${pos};z-index:250;padding:5px 9px;border-radius:6px;background:${t.bg3};color:${t.text};border:1px solid ${t.line};font-size:11px;font-family:${t.fontUi};white-space:nowrap;box-shadow:0 6px 18px rgba(0,0,0,0.4);pointer-events:none">${esc(p.content)}</span>`;
+  return `<span id="${esc(id)}" data-tooltip tabindex="0" style="position:relative;display:inline-flex;${ls}">${inner}${bubble}</span>`;
+}
+
 // ── Modal（居中模态浮层 + 遮罩·下沉自各游戏手搭确认框/详情弹窗）─────────────────
 
 // 遮罩满屏居中弹窗体；点 ×(data-action) 或点遮罩本身(data-modal-close·mountUI 内建) → closeAction。
@@ -320,6 +334,7 @@ export function renderNode(node: LayoutNode, theme: UITheme = SHELL): string {
     case 'Tag':        return renderTag(node.id, node.props as TagProps, ls, t);
     case 'Modal':      return renderModal(node.id, node.props as ModalProps, node.children ?? [], ls, t);
     case 'Toast':      return renderToast(node.id, node.props as ToastProps, ls, t);
+    case 'Tooltip':    return renderTooltip(node.id, node.props as TooltipProps, node.children ?? [], ls, t);
     default:           return `<!-- unknown: ${String((node as LayoutNode).type)} -->`;
   }
 }

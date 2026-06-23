@@ -3,5 +3,5 @@ export { mountUI, showToast } from './server.js';
 export type {
   LayoutNode, LayoutConstraints, ComponentType, ComponentProps, HandlerMap, Handler, UITheme,
   ButtonProps, LabelProps, DropdownProps, BadgeProps, InputProps, PanelProps,
-  TableProps, TableColumn, TableRow, TabsProps, ProgressBarProps, TagProps, ModalProps, ToastProps,
+  TableProps, TableColumn, TableRow, TabsProps, ProgressBarProps, TagProps, ModalProps, ToastProps, TooltipProps,
 } from './types.js';
