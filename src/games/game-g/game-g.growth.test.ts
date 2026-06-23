@@ -1,10 +1,8 @@
 // Game G · 养成数据层测试（天罡/流派克制/AI布阵/星球/流派激活/全栈端到端·拆分自 game-g.test.ts）。
 import { describe, it, expect } from 'vitest';
-import { prepareArmies, standardArmy, armyFromFormation, applyShadowRevenge, quartermasterEnergy, pickAiFormation, applyTiangangs, tiangangMoraleScale, tiangangLinks, tiangangKeyBuffs, GAME_G_TIANGANGS, TIANGANG_BY_ID, ARCHETYPES, detectArchetype, archetypeMatchup, activeArchetype, applyArchetypeActivation, GAME_G_PLANETS, GAME_G_FOILS, effectiveLives, effectiveLeverCap, effectiveLeverRegen, effectiveTierBonus, applyPlanetArmy, laneHandTier, RUN_LIVES, applyBuff, BOSS_ROSTER, bossFor, LEVER_CAP, LEVER_REGEN, FORMATION_PRESETS, PRESET_NAMES, type ArmyCard, type Intervention, type BuffTarget } from './blueprint.js';
+import { quartermasterEnergy, pickAiFormation, tiangangKeyBuffs, GAME_G_TIANGANGS, TIANGANG_BY_ID, ARCHETYPES, detectArchetype, archetypeMatchup, activeArchetype, GAME_G_PLANETS, GAME_G_FOILS, effectiveLives, effectiveLeverCap, effectiveLeverRegen, RUN_LIVES, applyBuff, BOSS_ROSTER, LEVER_CAP, LEVER_REGEN, FORMATION_PRESETS, PRESET_NAMES, type BuffTarget } from './blueprint.js';
 
 describe('Game G · T-G6 天罡牌（融牌面 · build 时 favor 变换 · 持久牌组身份）', () => {
-  const mk = (id: string, lane: number, suit: string, favor: number): ArmyCard => ({ id, rank: 'A', lane, favor, general: false, suit });
-
   it('天罡目录(三十六天罡定稿)，kind 合法、cost>0、有 text、有 icon；TIANGANG_BY_ID 覆盖全', () => {
     expect(GAME_G_TIANGANGS.length).toBe(36);
     const kinds = new Set(['suit-synergy', 'polarize', 'lane-pref', 'diehard', 'morale', 'link', 'economy', 'revenge',
@@ -17,61 +15,16 @@ describe('Game G · T-G6 天罡牌（融牌面 · build 时 favor 变换 · 持�
     }
   });
 
-  it('空天罡集 → 原样复制（不改 favor、非别名）', () => {
-    const army = [mk('x', 0, 'H', 50)];
-    const out = applyTiangangs(army, []);
-    expect(out).toEqual(army);
-    expect(out).not.toBe(army);
-  });
-
   // 注：旧 build-时 favor 变换族（同袍/赌徒/先登/不屈地板）已随 doc20 §二定稿砍掉
-  // （天罡改为「主动施法·确定生效」cast-time·甲解释器）；applyTiangangs 对新 36 张 no-op。
-
-  it('tiangangMoraleScale：空集 + 新 36 张无 moraleMul → 恒 [1,1,1]（旧旗手×1.5/枭雄×2 已砍）', () => {
-    const army = standardArmy('a', 0);
-    expect(tiangangMoraleScale(army, [])).toEqual([1, 1, 1]);
-    expect(tiangangMoraleScale(army, ['bannerman'])).toEqual([1, 1, 1]); // 新旗手=光环(leaderBuff)·非 moraleMul
-  });
-
-  it('tiangangLinks：从已融天罡取死士/连环开关（结局联动族）', () => {
-    expect(tiangangLinks([])).toEqual({ martyr: false, chain: false });
-    expect(tiangangLinks(['martyr'])).toEqual({ martyr: true, chain: false });
-    expect(tiangangLinks(['chain', 'comrade'])).toEqual({ martyr: false, chain: true });
-    expect(tiangangLinks(['martyr', 'chain'])).toEqual({ martyr: true, chain: true });
-  });
-
-  it('prepareArmies 带出 linksA（死士/连环 喂 build）', () => {
-    const { linksA } = prepareArmies({ formation: FORMATION_PRESETS['均衡'], deckBias: 0, tiangangs: ['martyr', 'chain'], interventions: [], enemyBias: 0 });
-    expect(linksA).toEqual({ martyr: true, chain: true });
-  });
+  // （天罡改为「主动施法·确定生效」cast-time·甲解释器）。旧 build-时编排族
+  // （applyTiangangs / tiangangMoraleScale / tiangangLinks / applyShadowRevenge / prepareArmies）
+  // 随旧 effect-apply 路退役（见 git 史）→ 其专测块已删。
 
   it('督粮：每胜一路 +1◈（仅拥有时；lanesWon clamp≥0）', () => {
     expect(quartermasterEnergy([], 3)).toBe(0);
     expect(quartermasterEnergy(['quartermaster'], 2)).toBe(2);
     expect(quartermasterEnergy(['quartermaster'], 0)).toBe(0);
     expect(quartermasterEnergy(['quartermaster'], -1)).toBe(0); // 负数钳 0
-  });
-
-  it('applyShadowRevenge：仅被斩路(主将 favor≤8)余部 +复仇，主将不变、他路不变', () => {
-    const army = standardArmy('a', 0);
-    const hit = army.map((c) => (c.lane === 1 && c.general ? { ...c, favor: 8 } : c)); // 人工把 lane1 主将斩到 8
-    const out = applyShadowRevenge(hit);
-    const soldierSum = (arr: ArmyCard[], lane: number): number => arr.filter((c) => c.lane === lane && !c.general).reduce((s, c) => s + c.favor, 0);
-    expect(soldierSum(out, 1)).toBeGreaterThan(soldierSum(hit, 1)); // 被斩路余部复仇
-    expect(soldierSum(out, 0)).toBe(soldierSum(hit, 0)); // 他路不变
-    expect(out.find((c) => c.lane === 1 && c.general)!.favor).toBe(8); // 主将仍被斩（退路不救将）
-  });
-
-  it('影武者：Boss 斩首命中我三路主将 → prepareArmies 让三路余部 +复仇（vs 不带影武者）', () => {
-    const boss = BOSS_ROSTER.find((b) => b.id === 'smallJoker')!; // decapitate×3
-    const make = (tiangangs: string[]): ArmyCard[] => prepareArmies({ formation: FORMATION_PRESETS['均衡'], deckBias: 0, tiangangs, interventions: [], enemyForm: boss.formation, enemyBias: boss.favorBias, boss }).a;
-    const without = make([]);
-    const withShadow = make(['shadow']);
-    const soldierSum = (arr: ArmyCard[], lane: number): number => arr.filter((c) => c.lane === lane && !c.general).reduce((s, c) => s + c.favor, 0);
-    for (const lane of [0, 1, 2]) {
-      expect(without.find((c) => c.lane === lane && c.general)!.favor).toBe(8); // 三路主将都被斩
-      expect(soldierSum(withShadow, lane)).toBeGreaterThan(soldierSum(without, lane)); // 影武者 → 余部复仇
-    }
   });
 
   it('流派钥匙：tiangangKeyBuffs 为每张"未拥有"天罡产 kind=joker 的 RunBuff（已拥有不出）', () => {
@@ -158,7 +111,6 @@ describe('Game G · AI 暗布阵 pickAiFormation（纯逻辑下沉 · committed�
 });
 
 describe('Game G · T-G6 星球牌（第二养成轴 · 可叠加升档 · 纯数据）', () => {
-  const TROOP = ['A', '2', '3', '4', '5', '6'];
   it('星球池≥4，kind 合法、cost/amount>0、有 text', () => {
     expect(GAME_G_PLANETS.length).toBeGreaterThanOrEqual(4);
     const kinds = new Set(['lives', 'energy', 'rank-favor', 'tier']);
@@ -178,125 +130,26 @@ describe('Game G · T-G6 星球牌（第二养成轴 · 可叠加升档 · 纯�
     expect(effectiveLeverRegen({ jupiter: 3 })).toBe(LEVER_REGEN + 3);
   });
 
-  it('星球·军：仅「兵」档(A–6) +3/级、军官不变；无 mars → 原样复制', () => {
-    const army = standardArmy('a', 0);
-    const out = applyPlanetArmy(army, { mars: 1 });
-    for (const c of out) {
-      const o = army.find((x) => x.id === c.id)!;
-      if (TROOP.includes(c.rank)) expect(c.favor).toBe(Math.min(95, o.favor + 3)); // 兵 +3
-      else expect(c.favor).toBe(o.favor); // 军官/王 不变
-    }
-    expect(applyPlanetArmy(army, {})).toEqual(army);
-  });
-
-  it('星球·军 进 prepareArmies：兵档底盘抬升（vs 无星球）', () => {
-    const sumTroop = (a: ArmyCard[]): number => a.filter((c) => TROOP.includes(c.rank)).reduce((s, c) => s + c.favor, 0);
-    const opt = { formation: FORMATION_PRESETS['均衡'], deckBias: 0, tiangangs: [], interventions: [] as Intervention[], enemyBias: 0 };
-    const base = prepareArmies({ ...opt, planets: {} }).a;
-    const withMars = prepareArmies({ ...opt, planets: { mars: 2 } }).a;
-    expect(sumTroop(withMars)).toBeGreaterThan(sumTroop(base));
-  });
-
-  it('星球·型：成型(非高牌)整条阶梯 +bonus；高牌(0)不吃', () => {
-    const mk = (rank: string, suit: string, i: number): ArmyCard => ({ id: `x${i}`, rank, lane: 0, favor: 50, general: i === 0, suit });
-    const flushLane = ['A', 'K', 'Q', '9', '3'].map((r, i) => mk(r, 'H', i)); // 同花
-    expect(laneHandTier(flushLane).buff).toBe(10); // flush 基础
-    expect(laneHandTier(flushLane, 4).buff).toBe(14); // +星球·型 4
-    const highCard = [['A', 'H'], ['K', 'S'], ['9', 'D'], ['7', 'C'], ['3', 'H']].map(([r, s], i) => mk(r, s, i));
-    expect(laneHandTier(highCard).type).toBe('high-card');
-    expect(laneHandTier(highCard, 4).buff).toBe(0); // 高牌不成型 → 不吃加成
-    expect(effectiveTierBonus({ mercury: 2 })).toBe(8); // amount 4 × 2 级
-  });
+  // 旧 build-时星球施加器 applyPlanetArmy / 牌型阶梯 laneHandTier / effectiveTierBonus 及其
+  // prepareArmies 集成测随旧 effect-apply 路退役（见 git 史）→ 专测块已删。
+  // 此处保留星球数据表 + effective 派生 run 参数（kept-data 覆盖）。
 
   it('foil 闪艺：池≥4、id 唯一、cost>0、有名/述（纯表现收集·零 gameplay）', () => {
     expect(GAME_G_FOILS.length).toBeGreaterThanOrEqual(4);
     expect(new Set(GAME_G_FOILS.map((f) => f.id)).size).toBe(GAME_G_FOILS.length);
     for (const f of GAME_G_FOILS) { expect(f.cost).toBeGreaterThan(0); expect(f.name.length).toBeGreaterThan(0); expect(f.desc.length).toBeGreaterThan(0); }
   });
-
-  it('星球·型 进 prepareArmies：flush 干预受益于 mercury（vs 无星球）', () => {
-    const opt = { formation: FORMATION_PRESETS['均衡'], deckBias: 0, tiangangs: [], interventions: [{ kind: 'flush', lane: 0 }] as Intervention[], enemyBias: 0 };
-    const sumLane0 = (a: ArmyCard[]): number => a.filter((c) => c.lane === 0).reduce((s, c) => s + c.favor, 0);
-    const base = prepareArmies({ ...opt, planets: {} }).a;
-    const withTier = prepareArmies({ ...opt, planets: { mercury: 2 } }).a;
-    expect(sumLane0(withTier)).toBeGreaterThan(sumLane0(base)); // 牌型阶梯被星球·型抬高 → flush 给该路更多 favor
-  });
 });
 
-describe('Game G · T-G6 流派激活质变（主流派集齐 keyJokers → 招牌增益）', () => {
-  const sumLane = (arr: ArmyCard[], lane: number): number => arr.filter((c) => c.lane === lane).reduce((s, c) => s + c.favor, 0);
-
+// 旧 build-时招牌增益施加器 applyArchetypeActivation 及完整编排 prepareArmies（端到端）随旧
+// effect-apply 路退役（见 git 史）→ 其专测块已删。activeArchetype（流派激活检测器·game-g.tsx 活用）
+// 仍存活，保留其纯逻辑回归（此块是它的唯一覆盖）。
+describe('Game G · T-G6 流派激活检测 activeArchetype（主流派集齐 keyJokers）', () => {
   it('activeArchetype：空/部分→null；集齐主流派→该流派；混搭只激活主流派', () => {
     expect(activeArchetype([])).toBeNull();
     expect(activeArchetype(['bannerman'])).toBeNull(); // 部分(缺将魂印)
     expect(activeArchetype(['bannerman', 'markmorale'])).toBe('general');
     expect(activeArchetype(['rush', 'markswarm'])).toBe('wide');
     expect(activeArchetype(['bannerman', 'markmorale', 'rush'])).toBe('general'); // 将领集齐(2)>铺场部分(1) 主流派
-  });
-
-  it('将领流激活：moraleMul=1.3、军不变', () => {
-    const A = standardArmy('a', 0);
-    const r = applyArchetypeActivation('general', A, standardArmy('b', 0), 0);
-    expect(r.moraleMul).toBe(1.3);
-    expect(r.a.map((c) => c.favor)).toEqual(A.map((c) => c.favor));
-  });
-
-  it('铺场流激活：每路 +2 兵（共 +6）', () => {
-    const A = standardArmy('a', 0);
-    const r = applyArchetypeActivation('wide', A, standardArmy('b', 0), 0);
-    expect(r.a.length).toBe(A.length + 6);
-    for (const lane of [0, 1, 2]) expect(r.a.filter((c) => c.lane === lane).length).toBe(A.filter((c) => c.lane === lane).length + 2);
-  });
-
-  it('牌型流激活：tierBonusAdd=12（阶梯近×2）；概率流：favor 下限拉到 15', () => {
-    expect(applyArchetypeActivation('cardtype', standardArmy('a', 0), standardArmy('b', 0), 0).tierBonusAdd).toBe(12);
-    const r = applyArchetypeActivation('probability', standardArmy('a', -40), standardArmy('b', 0), 0);
-    expect(Math.min(...r.a.map((c) => c.favor))).toBeGreaterThanOrEqual(15);
-  });
-
-  it('斩首流激活：敌主将先怯 −12（仅敌主将）', () => {
-    const B = standardArmy('b', 0);
-    const r = applyArchetypeActivation('decap', standardArmy('a', 0), B, 0);
-    for (const lane of [0, 1, 2]) {
-      const g0 = B.find((c) => c.lane === lane && c.general)!;
-      const g1 = r.b.find((c) => c.lane === lane && c.general)!;
-      expect(g1.favor).toBe(Math.max(5, g0.favor - 12));
-    }
-  });
-
-  it('弃一保二激活：两强路 +favor、最弱路不变', () => {
-    const A = armyFromFormation('a', 0, FORMATION_PRESETS['田忌']); // 上路最弱(2 军官)
-    const r = applyArchetypeActivation('tianji', A, standardArmy('b', 0), 0);
-    const sums = [0, 1, 2].map((l) => sumLane(A, l));
-    const weakest = sums.indexOf(Math.min(...sums));
-    expect(sumLane(r.a, weakest)).toBe(sumLane(A, weakest)); // 最弱路不变
-    for (const lane of [0, 1, 2]) if (lane !== weakest) expect(sumLane(r.a, lane)).toBeGreaterThan(sumLane(A, lane));
-  });
-
-  it('将领流激活进 prepareArmies：集齐 将领钥匙 → moraleA = ×1.3（新旗手无 moraleMul → 1×1.3）', () => {
-    const r = prepareArmies({ formation: FORMATION_PRESETS['均衡'], deckBias: 0, tiangangs: ['bannerman', 'markmorale'], interventions: [], enemyBias: 0 });
-    const morTiangang = tiangangMoraleScale(r.a, ['bannerman', 'markmorale']);
-    for (let i = 0; i < 3; i++) expect(r.moraleA[i]).toBeCloseTo(morTiangang[i] * 1.3, 6);
-  });
-});
-
-describe('Game G · 完整 build 时编排 prepareArmies（showMatch 同款 · 端到端）', () => {
-  const boss = bossFor(5); // 小王·无常（decapitate×3 反噬玩家）
-  const setup = () => ({
-    formation: FORMATION_PRESETS['田忌'],
-    deckBias: 6,
-    tiangangs: ['bannerman'],
-    interventions: [{ kind: 'bless', lane: 1 }, { kind: 'reinforce', lane: 2 }] as Intervention[],
-    enemyForm: boss.formation,
-    enemyBias: boss.favorBias,
-    boss,
-  });
-
-  it('编排落实各效果：moraleA[1,1,1]（新旗手无倍率）、Boss 斩首压玩家三路主将 favor=8、增援我方该路 +2 兵', () => {
-    const { a, moraleA } = prepareArmies(setup());
-    expect(moraleA).toEqual([1, 1, 1]); // 新旗手=光环非 moraleMul；未集齐将魂印 → 无 ×1.3
-    for (const lane of [0, 1, 2]) expect(a.find((c) => c.lane === lane && c.general)!.favor).toBe(8); // Boss 斩首（绝对设值，覆盖天罡加成）
-    const base = armyFromFormation('a', 6, FORMATION_PRESETS['田忌']).filter((c) => c.lane === 2).length;
-    expect(a.filter((c) => c.lane === 2).length).toBe(base + 2); // 增援 lane2
   });
 });

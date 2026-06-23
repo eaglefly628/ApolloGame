@@ -1,8 +1,11 @@
 // simulate-balance.ts -- Game-G 数值平衡仿真台（回合制战斗·关1温泉关通关率）
 // Run: npx vite-node src/games/game-g/simulate-balance.ts
-
+//
+// ⚠ Boss openingLevers 随旧 build-时 effect-apply 路（prepareArmies/applyInterventions）退役·已移除：
+//   军队改用裸生成器 armyFromFormation 造（玩家侧零效果·行为不变；Boss 侧丢弃起手干预）。
+//   sim 本就标「临时旧模型」，Boss 力量后续由 16 写死牌组 + 地煞 loader 表达，非本仿真台职责。
 import {
-  prepareArmies, FORMATION_PRESETS, battleSpec, pickAiFormation,
+  FORMATION_PRESETS, battleSpec, pickAiFormation, armyFromFormation,
   TIANGANG_BY_ID, bossFor, RUN_BATTLES, deployCost, type ArmyCard,
 } from './index.js';
 import {
@@ -175,27 +178,20 @@ function runBattle(
 
   let enemyBias: number;
   let enemyForm = pickAiFormation(stage, 0, [], false);
-  let openingLevers: import('./blueprint.js').Intervention[] = [];
 
   if (spec.boss) {
     const boss = bossFor(0); // fixed boss index 0 for reproducibility
     enemyBias = boss.favorBias + bossDelta;
     enemyForm = boss.formation;
-    openingLevers = boss.openingLevers;
   } else {
     enemyBias = spec.enemyBias + bossDelta;
   }
 
-  const { a, b } = prepareArmies({
-    formation: FORMATION_PRESETS['均衡'],
-    deckBias: pcfg.deckBias,
-    tiangangs: [],
-    interventions: [],
-    enemyForm,
-    enemyBias,
-    boss: spec.boss ? { ...bossFor(0), favorBias: bossFor(0).favorBias + bossDelta, openingLevers } : null,
-    planets: {},
-  });
+  // 裸军队生成器（旧 build-时 effect-apply 路 prepareArmies 已退役）：
+  //   玩家侧均衡布阵 + deckBias；Boss 侧用 boss/spec 的 enemyForm + enemyBias。
+  // 玩家侧本就传 tiangangs:[]/interventions:[]/planets:{}（零效果）→ army 行为不变（等价旧路）。
+  const a = armyFromFormation('a', pcfg.deckBias, FORMATION_PRESETS['均衡']);
+  const b = armyFromFormation('b', enemyBias, enemyForm);
 
   // 地支附魔：把玩家整体养成的 inlayFavor 摊到最值得镶的核心英雄上（owner 要求 sim 计入地支加成）。
   const aInlaid = applyInlayFavor(a, pcfg.inlayFavor);

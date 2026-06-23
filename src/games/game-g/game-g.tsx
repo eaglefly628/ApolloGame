@@ -1,5 +1,5 @@
 import { mountLobby, luckyBattleBuff, luckyFromVal, type LobbyView, type LobbyShopItem } from './lobby-screen.js';
-import { prepareArmies, quartermasterEnergy, LEVER_START, battleSpec, RUN_BATTLES, BETWEEN_BUFFS, applyBuff, tiangangKeyBuffs, bossFor, GAME_G_TIANGANGS, TIANGANG_BY_ID, ARCHETYPES, detectArchetype, archetypeMatchup, activeArchetype, pickAiFormation, GAME_G_PLANETS, GAME_G_FOILS, RECHARGE_PACKS, rechargeTotal, DIAMOND_EXCHANGES, DIZHI_SHARD_PACKS, RECHARGE_PASSWORD, GACHA, gachaCost, DIZHI_MAX_TIER, DIZHI_TIER_NM, DIZHI_TIER_CAP, DIZHI_INLAY_FAVOR, dizhiMerge, dizhiTotal, dizhiTopTier, DIZHI_ZODIACS, INLAY_MAX, effectiveDeckFavors, POKER_PICK_SIZE, isPoolCardId, autoBuildPokerPicks, cardFavorIndex, deployCost, isHeroOwned, heroNameOf, effectiveLives, effectiveLeverCap, effectiveLeverRegen, campaignFor, unlockStageOf, type Formation, type Intervention, type RunBuff, type ArmyCard } from './index.js';
+import { armyFromFormation, quartermasterEnergy, LEVER_START, battleSpec, RUN_BATTLES, BETWEEN_BUFFS, applyBuff, tiangangKeyBuffs, bossFor, GAME_G_TIANGANGS, TIANGANG_BY_ID, ARCHETYPES, detectArchetype, archetypeMatchup, activeArchetype, pickAiFormation, GAME_G_PLANETS, GAME_G_FOILS, RECHARGE_PACKS, rechargeTotal, DIAMOND_EXCHANGES, DIZHI_SHARD_PACKS, RECHARGE_PASSWORD, GACHA, gachaCost, DIZHI_MAX_TIER, DIZHI_TIER_NM, DIZHI_TIER_CAP, DIZHI_INLAY_FAVOR, dizhiMerge, dizhiTotal, dizhiTopTier, DIZHI_ZODIACS, INLAY_MAX, effectiveDeckFavors, POKER_PICK_SIZE, isPoolCardId, autoBuildPokerPicks, cardFavorIndex, deployCost, isHeroOwned, heroNameOf, effectiveLives, effectiveLeverCap, effectiveLeverRegen, campaignFor, unlockStageOf, type Formation, type Intervention, type RunBuff, type ArmyCard } from './index.js';
 import { type ClashEvent } from './combat-types.js';
 // 抽出的纯函数模块（Phase 2 拆分·见各文件头注）：存档/出战编排/掷命特写视图。公共 API(buildPickDeck/bossHeroCard/
 // aggregateTengang/tengangFxOf/freshSave)在文件尾从这里再导出，保 deck-wiring/live-combat/turnmatch 测试 import 不变。
@@ -301,7 +301,7 @@ export function mount(container: HTMLElement, shell?: { exit?: () => void }): ()
       const generals: PokerCard[] = codes.map((c, i) => ({ kind: 'poker', id: `boss-${i}-${c.rank}${c.suit}`, rank: c.rank, suit: c.suit, general: false, buff: bossBias, cost: deployCost(c.rank) })); // 牌力偏置=写卡 buff
       bossDeck = seededShuffleArr(generals, seed ^ 0x51ed);
     } else {
-      const { b } = prepareArmies({ formation, deckBias: myBias(effectiveDeckFavors(save.deck, save.inlays)), tiangangs: save.tiangangs, planets: save.planets, interventions, enemyForm: aiForm, enemyBias, boss });
+      const b = armyFromFormation('b', enemyBias, aiForm); // 关6+（暂无 16 写死牌组）回退：裸军队生成器造 boss army → 折成 bossDeck（旧 effect-apply 路已退役）
       bossDeck = seededShuffleArr(b.map((c) => ({ ...toPoker(c), general: false })), seed ^ 0x51ed);
     }
     if (heroCard) bossDeck.unshift(heroCard); // 强化主将置顶·必进起手·当场亮相；打赢=擒此英雄

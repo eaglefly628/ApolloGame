@@ -1,6 +1,4 @@
 import { HERO_CARDS } from './hero-codex.js'; // isHeroOwned 本地引用（拆分后从 hero-codex 取·并经下方 export* 再导出）
-import { isStraightRanks } from '@skills/tier3/poker-hand.js'; // 复用 Game E 牌型算法(顺子检测)
-import type { HandType } from '@skills/tier3/poker-hand.js';
 
 // ═══════════════════════════════════════════════════════════════
 //  Game G《翻命扑克 Fateflip》—— 历史名将 · 单机回合制 deck-builder 的**数据装配层**（doc24）。
@@ -101,9 +99,6 @@ export function standardArmy(prefix: string, favorBias = 0): ArmyCard[] {
   });
   return army;
 }
-
-// 结局联动族天罡（design/12 §五.5）：在确定性单遍解析里**前向生效**（只改未翻牌 → 无二次解析、hash 稳）。
-export interface LinkTiangangs { martyr: boolean; chain: boolean }
 
 // ── T-G3 · 开局布阵 / 分兵（design/09，田忌赛马）──
 // 30 军官(大队长6/中队长8/小队长16) 由玩家分三路，24 兵自动补到 18/路；每路最高军衔=主将。
@@ -209,109 +204,6 @@ export const LEVER_CATALOG: Record<LeverKind, { name: string; cost: number; side
   flush: { name: '牌型', cost: 2, side: 'a', desc: '我某路凑成的最高牌型→逐级 +favor(对子→同花顺)' },
 };
 export interface Intervention { kind: LeverKind; lane: number }
-const BLESS = 20, CURSE = 20, DECAP_FAVOR = 8;
-
-// 牌型阶梯（design/10 D 类，复用 Game E poker-hand 思想）：评一路(18+张)凑成的最高扑克牌型 → 逐级 favor。
-// 注：evaluateHand 限定恰 5 张/全同花，整路不适用——故按"路"语义算特征(同花=≥5 同色/顺子=路内含 5 连点,
-//   用 poker-hand 的 isStraightRanks 真算法 + HandType 枚举)，体现"52 张扑克身份的回报"。
-const RANK_NUM: Record<string, number> = { A: 14, K: 13, Q: 12, J: 11, '10': 10, '9': 9, '8': 8, '7': 7, '6': 6, '5': 5, '4': 4, '3': 3, '2': 2, JOKER: 15 };
-const TIER_BUFF: Partial<Record<HandType, number>> = {
-  'straight-flush': 18, 'four-of-a-kind': 14, 'full-house': 12, flush: 10, straight: 9, 'three-of-a-kind': 7, 'two-pair': 5, pair: 3, 'high-card': 0,
-};
-// tierBonus（星球·型）：成型(非高牌)时整条阶梯全局 +bonus —— 放大牌型流的羁绊回报（design reply#15 全局形，零目标 UI）。
-export function laneHandTier(cards: ArmyCard[], tierBonus = 0): { type: HandType; buff: number } {
-  const rankCounts = new Map<number, number>();
-  const suitCounts = new Map<string, number>();
-  for (const c of cards) {
-    const r = RANK_NUM[c.rank] ?? 0;
-    rankCounts.set(r, (rankCounts.get(r) ?? 0) + 1);
-    suitCounts.set(c.suit, (suitCounts.get(c.suit) ?? 0) + 1);
-  }
-  const counts = [...rankCounts.values()].sort((a, b) => b - a);
-  const maxR = counts[0] ?? 0, secR = counts[1] ?? 0;
-  const maxSuit = Math.max(0, ...suitCounts.values());
-  const distinct = [...rankCounts.keys()].sort((a, b) => a - b);
-  let hasStraight = false;
-  for (let i = 0; i + 5 <= distinct.length && !hasStraight; i++) hasStraight = isStraightRanks(distinct.slice(i, i + 5));
-  if (!hasStraight && [2, 3, 4, 5, 14].every((r) => rankCounts.has(r))) hasStraight = isStraightRanks([2, 3, 4, 5, 14]); // A 低轮子
-  const isFlush = maxSuit >= 5; // 路内同色 ≥5
-  let type: HandType;
-  if (isFlush && hasStraight) type = 'straight-flush';
-  else if (maxR >= 4) type = 'four-of-a-kind';
-  else if (maxR === 3 && secR >= 2) type = 'full-house';
-  else if (isFlush) type = 'flush';
-  else if (hasStraight) type = 'straight';
-  else if (maxR === 3) type = 'three-of-a-kind';
-  else if (maxR === 2 && secR === 2) type = 'two-pair';
-  else if (maxR === 2) type = 'pair';
-  else type = 'high-card';
-  const base = TIER_BUFF[type] ?? 0;
-  return { type, buff: base + (base > 0 ? tierBonus : 0) }; // 成型(非高牌)才吃星球·型加成
-}
-
-/**
- * 揭晓前施加干预（改 favor / 斩将 / 加兵）→ 返回改后的 a/b 军，供出战编排（→ turn-combat）。
- * outcome-first：只改掷命前输入；胜负仍 build 时由规则定、可回放（同 seed+同干预序列 → 同结果）。
- * 斩首=把敌该路主将 favor 压到 8(极易掉)，掉则经 06 将领牵动自动 −14 溃散；增援=该路 +2 兵(路可达 20)。
- *
- * **对称（design/13 §二）**：`caster` = 施加方。增益(bless/shield/reinforce/flush)落己方、削弱(curse/decapitate)落敌方——
- * side 参数化、非两套算子。玩家干预 caster='a'(默认，行为不变)；**Boss 起手干预 caster='b'**：诅咒/斩首落玩家(a)、增益落 Boss(b)。
- * bias = 施加方整体偏置（增援新兵用）。两次调用(先玩家 caster='a'、再 Boss caster='b')链式叠加，均揭晓前、outcome-first 不破。
- */
-export function applyInterventions(armyA: ArmyCard[], armyB: ArmyCard[], list: Intervention[], bias = 0, caster: 'a' | 'b' = 'a', tierBonus = 0): { a: ArmyCard[]; b: ArmyCard[] } {
-  let a = armyA.map((c) => ({ ...c }));
-  let b = armyB.map((c) => ({ ...c }));
-  const selfIsA = caster === 'a';
-  const self = (): ArmyCard[] => (selfIsA ? a : b); // 施加方己军
-  const enemy = (): ArmyCard[] => (selfIsA ? b : a); // 对手军
-  const setSelf = (next: ArmyCard[]): void => { if (selfIsA) a = next; else b = next; };
-  const setEnemy = (next: ArmyCard[]): void => { if (selfIsA) b = next; else a = next; };
-  for (const iv of list) {
-    if (iv.kind === 'bless') setSelf(self().map((c) => (c.lane === iv.lane ? { ...c, favor: clampFavor(c.favor + BLESS) } : c)));
-    else if (iv.kind === 'curse') setEnemy(enemy().map((c) => (c.lane === iv.lane ? { ...c, favor: clampFavor(c.favor - CURSE) } : c)));
-    else if (iv.kind === 'decapitate') setEnemy(enemy().map((c) => (c.lane === iv.lane && c.general ? { ...c, favor: DECAP_FAVOR } : c)));
-    else if (iv.kind === 'reinforce') {
-      const cur = self();
-      const n = cur.filter((c) => c.lane === iv.lane).length;
-      setSelf([...cur,
-        { id: `${caster}_l${iv.lane}_rf${n}`, rank: 'A', lane: iv.lane, favor: clampFavor(46 + bias), general: false, suit: 'S' },
-        { id: `${caster}_l${iv.lane}_rf${n + 1}`, rank: '2', lane: iv.lane, favor: clampFavor(46 + bias), general: false, suit: 'H' }]);
-    } else if (iv.kind === 'shield') {
-      // 护盾：本路最弱牌 favor 拉到 92（≈反面免死，揭晓前抬高其活率）。
-      const cur = self();
-      const lane = cur.filter((c) => c.lane === iv.lane);
-      if (lane.length) {
-        const weak = lane.reduce((m, c) => (c.favor < m.favor ? c : m), lane[0]);
-        setSelf(cur.map((c) => (c.id === weak.id ? { ...c, favor: 92 } : c)));
-      }
-    } else if (iv.kind === 'flush') {
-      // 牌型：评本路凑成的最高扑克牌型 → 逐级 +favor（对子→同花顺，复用 poker-hand 阶梯）；星球·型 全局抬整条阶梯。
-      const cur = self();
-      const { buff } = laneHandTier(cur.filter((c) => c.lane === iv.lane), tierBonus);
-      if (buff > 0) setSelf(cur.map((c) => (c.lane === iv.lane ? { ...c, favor: clampFavor(c.favor + buff) } : c)));
-    }
-  }
-  return { a, b };
-}
-
-const SHADOW_REVENGE = 12; // 影武者：本路主将被斩(favor≤8)→该路余部 +favor 复仇
-/**
- * 影武者（design/12 §五.5 退路·零缺口）：敌斩首把我某路主将压到 favor≤8(=被斩) → 该路**余部** +复仇 favor（替身死战）。
- * 揭晓前 build-时变换（在 Boss 起手干预之后调用，故能侦测被斩主将）；只升余部 favor、主将仍被斩 → outcome-first、可重放。
- */
-export function applyShadowRevenge(army: ArmyCard[]): ArmyCard[] {
-  const hitLanes = new Set(army.filter((c) => c.general && c.favor <= DECAP_FAVOR).map((c) => c.lane));
-  return army.map((c) => (!c.general && hitLanes.has(c.lane) ? { ...c, favor: clampFavor(c.favor + SHADOW_REVENGE) } : { ...c }));
-}
-
-/** 布阵预估（build 时算，喂布阵屏预估条）：每路 Σfavor / 主将军衔点数 / 牌数。 */
-export function laneEstimates(army: ArmyCard[]): { sumFavor: number; general: string; count: number }[] {
-  return [0, 1, 2].map((lane) => {
-    const lc = army.filter((c) => c.lane === lane);
-    const gen = lc.find((c) => c.general);
-    return { sumFavor: lc.reduce((a, c) => a + c.favor, 0), general: gen ? (gen.rank === 'JOKER' ? '★' : gen.rank) : '-', count: lc.length };
-  });
-}
 
 // ── 终局 Boss 阵容（design/13 · 每 run 轮换一名牌王座）──
 // 每 Boss = 一个拟人化扑克人格，强度全用 3 个**数据**杠杆表达：formation(力压哪路)/favorBias(多强)/openingLevers(起手干预)。
@@ -341,10 +233,6 @@ export function bossFor(idx: number): BossSpec {
 // 本批 4 张=纯 build 时 favor 变换(同袍/赌徒/先登/不屈)；士气放大族(旗手/枭雄)、结局联动族(死士/连环/督粮/影武者)待后续切片(需 resolve 时钩子)。
 import { GAME_G_TIANGANGS, type TiangangCard, type Archetype } from './tiangang-data.js'; // 天罡数据拆出·本地引用 + 下方 export* 再导出
 export * from './tiangang-data.js';
-/** 从已融天罡取结局联动开关（死士/连环）→ 出战编排前向生效。 */
-export function tiangangLinks(tiangangIds: readonly string[]): LinkTiangangs {
-  return { martyr: tiangangIds.includes('martyr'), chain: tiangangIds.includes('chain') };
-}
 const QUARTERMASTER_PER_LANE = 1; // 督粮：每胜一路 +1◈（入下场 run 能量池，post-resolve）
 /** 督粮：结算后按胜路数算给下场的 ◈ 增益（拥有才有；run 经济，不破本场揭晓前花能量的相位）。 */
 export function quartermasterEnergy(tiangangIds: readonly string[], lanesWon: number): number {
@@ -369,7 +257,6 @@ const planetBump = (planets: Record<string, number> | undefined, id: string): nu
 export function effectiveLives(planets: Record<string, number>): number { return RUN_LIVES + planetBump(planets, 'saturn'); }
 export function effectiveLeverCap(planets: Record<string, number>): number { return LEVER_CAP + planetBump(planets, 'jupiter'); }
 export function effectiveLeverRegen(planets: Record<string, number>): number { return LEVER_REGEN + planetBump(planets, 'jupiter'); }
-export function effectiveTierBonus(planets: Record<string, number>): number { return planetBump(planets, 'mercury'); } // 星球·型：牌型阶梯全局加成
 export * from './economy-data.js'; // 经济/充值/闪艺数据（拆分·barrel 再导出）
 
 // 地支附魔（owner 2026-06-20 · 乙简版 → 2026-06-21 改消耗品模型）：地支生肖镶进扑克牌 → 给那张牌 +favor（铜/银/金 递增）。
@@ -465,12 +352,6 @@ export function gachaCost(pool: 'tiangang' | 'dizhi', count: 1 | 10, pay: 'gold'
   return { gold, diamond };
 }
 
-const PLANET_TROOP_RANKS = new Set(['A', '2', '3', '4', '5', '6']); // 「兵」档（星球·军作用域）
-/** 星球·军：揭晓前给军阵「兵」档 +favor（叠加级数）。build-时变换、outcome-first；作用 built 军阵结构（非 deck 均值）。 */
-export function applyPlanetArmy(army: ArmyCard[], planets: Record<string, number>): ArmyCard[] {
-  const bump = planetBump(planets, 'mars');
-  return army.map((c) => (bump > 0 && PLANET_TROOP_RANKS.has(c.rank) ? { ...c, favor: clampFavor(c.favor + bump) } : { ...c }));
-}
 export const TIANGANG_BY_ID: ReadonlyMap<string, TiangangCard> = new Map(GAME_G_TIANGANGS.map((j) => [j.id, j]));
 
 /** 流派钥匙：把"未拥有的天罡牌"包成场间三选一可白嫖的 RunBuff（design reply#10：场间选择=构筑分叉）。已拥有的不再出。 */
@@ -512,127 +393,14 @@ export function archetypeMatchup(a: Archetype, b: Archetype): 'counter' | 'count
   return 'neutral';
 }
 
-// ── T-G6 · 流派激活质变（design/12 §四.5 · "钥匙解锁招牌强度" → 闭合"选择即流派"）──
-// 触发：你的**主流派**(detectArchetype 多数决)且**集齐其 keyJokers**(全融承诺) → 施该流派**招牌增益**。只主流派激活(防混搭叠猛)。
-// ⚠️ 与 design#16 的差异(已报 finish，待 design 核)：① 原阈值"≥3 keyJokers"与现 keyJoker 数(多为 2)不符 → 改"集齐主流派全 keyJokers"(6 流派皆可达)；
-//    ② 原招式 概率(改对决胜率下限·clash-resolve)/弃一保二(favor 转移)/斩首(−1◈+溃散−20) 需新机制/改核 → 取**等价 build-时近似**(各注)。全 build 时、零新能力。
-const ACTIVATION_FAVOR = 8; // 弃一保二：两强路集中 +favor
+// ── T-G6 · 流派激活检测（design/12 §四.5 · "钥匙解锁招牌强度" → 闭合"选择即流派"）──
+// activeArchetype = 你的**主流派**(detectArchetype 多数决)且**集齐其 keyJokers**(全融承诺) 才返回该流派 id（否则 null）。
+// 游戏层(game-g.tsx)用它作"招牌激活"开关：committed 玩家 → AI 反制布阵 / 流派激活提示。
+// （旧 build-时招牌增益施加器 applyArchetypeActivation 随旧 effect-apply 路退役·见 git 史。）
 export function activeArchetype(tiangangIds: readonly string[]): Archetype | null {
   const main = detectArchetype(tiangangIds); // 多数决主流派
   if (!main || main.keyTiangangs.length === 0) return null;
   return main.keyTiangangs.every((k) => tiangangIds.includes(k)) ? main.id : null; // 集齐主流派 keyJokers 才质变
-}
-/**
- * 施主流派招牌增益（揭晓前 build-时）。返回改后 a/b + 士气倍率/牌型阶梯加成（喂下游 moraleA / 干预 tierBonus）。
- * 纯函数、确定性：将领=士气×1.3 / 铺场=每路+2兵 / 牌型=阶梯+12(≈×2) / 概率=favor下限15 / 斩首=敌主将−12先怯 / 弃一保二=两强路+favor。
- */
-export function applyArchetypeActivation(active: Archetype, armyA: ArmyCard[], armyB: ArmyCard[], biasA: number): { a: ArmyCard[]; b: ArmyCard[]; moraleMul: number; tierBonusAdd: number } {
-  let a = armyA.map((c) => ({ ...c }));
-  let b = armyB.map((c) => ({ ...c }));
-  let moraleMul = 1;
-  let tierBonusAdd = 0;
-  if (active === 'general') moraleMul = 1.3; // 将领流：主将士气 ×1.3
-  else if (active === 'wide') {
-    for (const lane of [0, 1, 2]) a.push(
-      { id: `a_l${lane}_act0`, rank: 'A', lane, favor: clampFavor(46 + biasA), general: false, suit: 'S' },
-      { id: `a_l${lane}_act1`, rank: '2', lane, favor: clampFavor(46 + biasA), general: false, suit: 'H' },
-    ); // 铺场流：每路 +2 兵
-  } else if (active === 'cardtype') tierBonusAdd = 12; // 牌型流：阶梯近 ×2（近似 design 的 ×2）
-  else if (active === 'probability') a = a.map((c) => (c.favor < 15 ? { ...c, favor: 15 } : c)); // 概率流：favor 下限 15（≈下限 5%→15%）
-  else if (active === 'decap') b = b.map((c) => (c.general ? { ...c, favor: clampFavor(c.favor - 12) } : c)); // 斩首流：敌主将先怯 −12（近似 −1◈/溃散−20）
-  else if (active === 'tianji') {
-    const sums = [0, 1, 2].map((l) => a.filter((c) => c.lane === l).reduce((s, c) => s + c.favor, 0));
-    const weakest = sums.indexOf(Math.min(...sums));
-    a = a.map((c) => (c.lane !== weakest ? { ...c, favor: clampFavor(c.favor + ACTIVATION_FAVOR) } : c)); // 弃一保二：两强路集中
-  }
-  return { a, b, moraleMul, tierBonusAdd };
-}
-
-// 从已融天罡算每路士气倍率（旗手全路、枭雄仅顶级主将路）→ 供出战编排。复用 `06` 士气、不新机制。
-const TOP_RANKS = new Set(['JOKER', 'K']); // 顶级军衔（枭雄触发档）
-export function tiangangMoraleScale(army: ArmyCard[], tiangangIds: readonly string[]): number[] {
-  const scale = [1, 1, 1];
-  for (const id of tiangangIds) {
-    const j = TIANGANG_BY_ID.get(id);
-    if (!j || j.kind !== 'morale') continue;
-    for (const lane of [0, 1, 2]) {
-      if (j.id === 'warlord') {
-        const gen = army.find((c) => c.lane === lane && c.general); // 枭雄：仅本路主将顶级时放大
-        if (gen && TOP_RANKS.has(gen.rank)) scale[lane] *= j.moraleMul ?? 1;
-      } else scale[lane] *= j.moraleMul ?? 1; // 旗手：全路
-    }
-  }
-  return scale;
-}
-
-/**
- * 融天罡：揭晓前按已融天罡（持久）把军阵 favor 变换 → 返回新军，喂 applyInterventions/build。
- * outcome-first：只改掷命前输入；同军+同天罡集 → 同结果（确定性、可回放）。纯 build 时、零 rng、零新能力。
- */
-export function applyTiangangs(army: ArmyCard[], tiangangIds: readonly string[]): ArmyCard[] {
-  let out = army.map((c) => ({ ...c }));
-  for (const id of tiangangIds) {
-    const j = TIANGANG_BY_ID.get(id);
-    if (!j) continue;
-    const amt = j.amount ?? 0;
-    if (j.kind === 'suit-synergy') {
-      const src = out; // 同花色计数基于当前花色分布（花色不变，计数稳定）
-      out = out.map((c) => ({ ...c, favor: clampFavor(c.favor + amt * src.filter((d) => d.lane === c.lane && d.suit === c.suit).length) }));
-    } else if (j.kind === 'polarize') {
-      out = out.map((c) => ({ ...c, favor: clampFavor(c.favor + (c.favor >= 50 ? amt : -amt)) }));
-    } else if (j.kind === 'lane-pref') {
-      const lane = j.lane ?? 0;
-      out = out.map((c) => (c.lane === lane ? { ...c, favor: clampFavor(c.favor + amt) } : c));
-    } else if (j.kind === 'diehard') {
-      out = out.map((c) => (c.favor < amt ? { ...c, favor: amt } : c));
-    }
-  }
-  return out;
-}
-
-/**
- * 揭晓前的**完整 build 时编排**（单一真相 · 出战编排与测试共用，杜绝两路漂移）：
- *   成军(布阵+deck偏置) → 融天罡(applyTiangangs) → 玩家干预(caster='a') → Boss 起手干预(caster='b') → 算士气倍率。
- * 全在揭晓前、不回灌 gameplay（outcome-first）；返回 {a,b,moraleA}（供出战编排 → turn-combat）。纯函数、可重放。
- */
-export interface MatchSetup { formation: Formation; deckBias: number; tiangangs: readonly string[]; interventions: Intervention[]; enemyForm?: Formation; enemyBias: number; boss?: BossSpec | null; planets?: Record<string, number> }
-// 确保全军 rank+suit 不重复：按出现顺序为每张牌分配未用花色；rank 全满(>4张)时换 JOKER/临近 rank 吸收溢出。
-// 所有 favor/掷命运算已在调用前完成 → outcome-first 安全；只改展示身份。
-function ensureUniqueSuits(army: ArmyCard[]): ArmyCard[] {
-  const OVERFLOW = ['JOKER', 'K', 'Q', 'J', '10', '9', '8', '7', 'A', '2', '3', '4', '5', '6'];
-  const used = new Map<string, Set<string>>();
-  const grab = (rank: string): { rank: string; suit: string } | null => {
-    if (!used.has(rank)) used.set(rank, new Set());
-    const u = used.get(rank)!;
-    const s = SUITS.find((x) => !u.has(x));
-    if (s) { u.add(s); return { rank, suit: s }; }
-    return null;
-  };
-  return army.map((c) => {
-    if (!used.has(c.rank)) used.set(c.rank, new Set());
-    const u = used.get(c.rank)!;
-    if (!u.has(c.suit)) { u.add(c.suit); return c; }
-    const alt = SUITS.find((s) => !u.has(s));
-    if (alt) { u.add(alt); return { ...c, suit: alt }; }
-    // rank fully saturated (>4 cards) → absorb into nearest rank that still has a free suit
-    for (const nr of OVERFLOW) { const slot = grab(nr); if (slot) return { ...c, ...slot }; }
-    return c; // exhausted (>54 unique cards) — unavoidable
-  });
-}
-
-export function prepareArmies(s: MatchSetup): { a: ArmyCard[]; b: ArmyCard[]; moraleA: number[]; linksA: LinkTiangangs } {
-  const planets = s.planets ?? {};
-  let a = applyTiangangs(applyPlanetArmy(armyFromFormation('a', s.deckBias, s.formation), planets), s.tiangangs); // 星球·军(兵档底盘) → 融天罡（持久 favor 变换）
-  let b = armyFromFormation('b', s.enemyBias, s.enemyForm);
-  // 流派激活质变：主流派集齐 keyJokers → 招牌增益（改 a/b + 士气倍率/牌型阶梯加成）。
-  const active = activeArchetype(s.tiangangs);
-  let moraleMul = 1;
-  let tierAdd = 0;
-  if (active) { const r = applyArchetypeActivation(active, a, b, s.deckBias); a = r.a; b = r.b; moraleMul = r.moraleMul; tierAdd = r.tierBonusAdd; }
-  ({ a, b } = applyInterventions(a, b, s.interventions, s.deckBias, 'a', effectiveTierBonus(planets) + tierAdd)); // 玩家干预（flush 吃星球·型 + 牌型流激活）
-  if (s.boss && s.boss.openingLevers.length) ({ a, b } = applyInterventions(a, b, s.boss.openingLevers, s.enemyBias, 'b')); // Boss 起手（对称）
-  if (s.tiangangs.includes('shadow')) a = applyShadowRevenge(a); // 影武者：敌斩首命中我主将 → 该路余部复仇（在 Boss 干预后侦测）
-  return { a: ensureUniqueSuits(a), b: ensureUniqueSuits(b), moraleA: tiangangMoraleScale(a, s.tiangangs).map((m) => m * moraleMul), linksA: tiangangLinks(s.tiangangs) }; // 士气倍率(×将领流激活) + 结局联动
 }
 
 
