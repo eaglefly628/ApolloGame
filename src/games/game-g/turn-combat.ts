@@ -484,7 +484,7 @@ function foeIntel(b: TurnBattle): {
   return { handMaxPts, handHasGeneral, nextIsGeneral, nextMaxPts, laneWinProb };
 }
 
-// 放兵到某路的效用：路偏好(铺/专) + 攻击性×目标偏好(弱/强/将) + 防守威胁响应(回防空/劣势路) + 方阵扎堆协同 + 兵牌强度。
+// 放兵到某路的效用：路偏好(铺/专) + 攻击性×目标偏好(弱/强/将) + 攻防情势响应(回防空/劣势·趁势压优势路) + 节奏(疾行驰援) + 方阵扎堆 + 兵牌强度。
 function scoreDeploy(b: TurnBattle, card: PokerCard, lane: number): number {
   const p = b.aiProfile; const own = b.lanes[lane].b; const foe = b.lanes[lane].a; const foeFront = foe[0];
   let s = 10 + cardPoints(card.rank) * 0.4; // 基础 + 强牌更值
@@ -499,9 +499,10 @@ function scoreDeploy(b: TurnBattle, card: PokerCard, lane: number): number {
   if (foe.length > 0) {
     const deepest = foe.reduce((m, u) => Math.max(m, u.slot), 0);
     const defendW = 0.6 + wt(10 - p.aggression) * 0.9; // aggression 低→回防权重高（守性 boss 更补防）
-    s += own.length === 0
-      ? (10 + Math.max(0, deepest - 3) * 3) * defendW      // 真空漏路：强回防·敌越深越急（防守压过进攻铺场·堵直捣高速路）
-      : Math.max(0, foe.length - own.length) * 2.2 * defendW; // 劣势路：兵力落后则补强
+    if (own.length === 0) s += (10 + Math.max(0, deepest - 3) * 3) * defendW;        // 真空漏路：强回防·敌越深越急（防守压过进攻铺场·堵直捣高速路）
+    else if (foe.length > own.length) s += (foe.length - own.length) * 2.2 * defendW; // 劣势路：兵力落后则补强
+    else s += (own.length - foe.length) * 1.4 * wt(p.aggression);                     // 优势路：趁势压上扩大战果（攻击性放大·收割·win 不是只守平）
+    if (foe.length > own.length && unitSpeed(card.rank) === 2) s += 2.5;              // ③ 节奏：吃紧/劣势的路优先派疾行兵(2格/回合·更快驰援堵口)
   }
   if (b.dishaB.phalanxPerAdj > 0) s += own.length * 1.5; // 地煞·方阵/连环：扎堆协同
   // 全知视角加成（aiTier >= 3）：看玩家手牌 + 牌库顶，做更精准的反制决策。
