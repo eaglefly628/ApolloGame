@@ -484,7 +484,7 @@ function foeIntel(b: TurnBattle): {
   return { handMaxPts, handHasGeneral, nextIsGeneral, nextMaxPts, laneWinProb };
 }
 
-// 放兵到某路的效用：路偏好(铺/专) + 攻击性×目标偏好(弱/强/将) + 方阵扎堆协同 + 兵牌强度。
+// 放兵到某路的效用：路偏好(铺/专) + 攻击性×目标偏好(弱/强/将) + 防守威胁响应(回防空/劣势路) + 方阵扎堆协同 + 兵牌强度。
 function scoreDeploy(b: TurnBattle, card: PokerCard, lane: number): number {
   const p = b.aiProfile; const own = b.lanes[lane].b; const foe = b.lanes[lane].a; const foeFront = foe[0];
   let s = 10 + cardPoints(card.rank) * 0.4; // 基础 + 强牌更值
@@ -493,6 +493,16 @@ function scoreDeploy(b: TurnBattle, card: PokerCard, lane: number): number {
   if (p.targetPref === 'weak') s += (foe.length === 0 ? 7 : -(foeFront ? foeFront.points : 0) * 0.4) * ag; // 避实击虚
   else if (p.targetPref === 'strong') s += (foeFront ? foeFront.points : 0) * 0.4 * ag; // 硬碰强
   else s += (foe.some((u) => u.general) ? 9 : 0) * ag; // 取主将路(斩首)
+  // 防守威胁响应（owner 2026-06-23·修 sim 实锤「玩家走空路直捣 Boss 家」requests#491）：
+  // 玩家(foe)在这路推进、Boss(own)这路空虚 → 通往大本营的高速路·急回防堵漏。仅玩家真有兵才触发
+  // （空板=0·不动 ai.test 画像断言）；守性(低 aggression)更看重回防·敌越深(slot→A_GOAL=8)越急。
+  if (foe.length > 0) {
+    const deepest = foe.reduce((m, u) => Math.max(m, u.slot), 0);
+    const defendW = 0.6 + wt(10 - p.aggression) * 0.9; // aggression 低→回防权重高（守性 boss 更补防）
+    s += own.length === 0
+      ? (10 + Math.max(0, deepest - 3) * 3) * defendW      // 真空漏路：强回防·敌越深越急（防守压过进攻铺场·堵直捣高速路）
+      : Math.max(0, foe.length - own.length) * 2.2 * defendW; // 劣势路：兵力落后则补强
+  }
   if (b.dishaB.phalanxPerAdj > 0) s += own.length * 1.5; // 地煞·方阵/连环：扎堆协同
   // 全知视角加成（aiTier >= 3）：看玩家手牌 + 牌库顶，做更精准的反制决策。
   if (b.aiTier >= 3) {

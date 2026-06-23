@@ -1,7 +1,8 @@
 // Boss 通用 utility AI（doc27 §八·甲一次写好·零 per-boss 代码）行为测试：画像驱动的不同打法 + 难度档 + 施法 + 确定性。
 import { describe, it, expect } from 'vitest';
 import { NO_TENGANG } from './combat-types.js';
-import { initTurnBattle, aiTakeTurn, turnHash, NEUTRAL_AI, type PokerCard, type Card, type TurnBattle } from './turn-combat.js';
+import { initTurnBattle, aiTakeTurn, turnHash, NEUTRAL_AI, type PokerCard, type Card, type TurnBattle, type TurnUnit } from './turn-combat.js';
+import { cardPoints } from './clash-resolve.js';
 import { loadLevel } from './level.js';
 
 const pk = (id: string, rank: string): PokerCard => ({ kind: 'poker', id, rank, suit: 'S', general: false, buff: 0 });
@@ -55,5 +56,16 @@ describe('Game G · Boss 通用 utility AI（doc27 §八·性格即数据）', (
       aiTakeTurn(b); return turnHash(b);
     };
     expect(run()).toBe(run());
+  });
+
+  it('防守威胁响应：玩家压某路、Boss 这路空 → AI 回防（修「空路直捣大本营」exploit·requests#491）', () => {
+    const mkU = (id: string, rank: string, slot: number): TurnUnit =>
+      ({ id, rank, suit: 'S', points: cardPoints(rank), buff: 0, general: false, stamina: 3, staminaLeft: 3, slot, speed: 1 });
+    // 专一路画像(lanePref=0·最爱扎堆·最易漏路) + 高 tier(最优·无失误)：旧贪心会把兵全堆进空敌路、漏掉被压的 lane2。
+    const b = initTurnBattle({ seed: 7, aiProfile: { ...NEUTRAL_AI, lanePref: 0 }, aiTier: 4 });
+    b.active = 'b'; b.b.mana = 6; b.b.hand = [pk('p0', '9'), pk('p1', '8'), pk('p2', '7')];
+    b.lanes[2].a = [mkU('a0', 'K', 7), mkU('a1', 'Q', 6)]; // 玩家两兵压 lane2·逼近 Boss 家(slot7/6)·Boss 三路皆空=漏路
+    aiTakeTurn(b); // 含 endTurn→推进→掷命：Boss 回防兵会与玩家前锋交手（胜负不论·关键是"有没有去堵"）
+    expect(b.clashLog.some((c) => c.lane === 2)).toBe(true); // Boss 在 lane2 接战了=去堵了漏路（旧贪心会漏→玩家直捣大本营·零掷命）
   });
 });
