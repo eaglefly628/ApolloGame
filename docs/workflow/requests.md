@@ -563,3 +563,20 @@ game-f 报「多数需新引擎能力」。Lead 实测：**三个已点名技能
 > - `aiSkill` 分级：skill1=退化贪心(新手对照)→ skill5=N=3~4+全规划层(高手)。**它只用合法可见信息**（看不到 Boss 手牌·与 Boss-AI 的信息不对称互补）。
 > **验收**：① skill1≈老贪心(回归)；② skill5 在纯镜像(Boss-AI 也修好)下 ≈50%(两 AI 旗鼓相当·公平底层成立)；③ 接 3 明牌地煞能把 skill5 玩家标到各关 targetWR（关1 ~70%）。
 > **与 REQ-G-Boss-AI 的关系**：两套独立智能·**都做完** sim WR 才可信（Boss 靠多看·玩家靠多算）。design G 用 skill5 高手当基准重标整条曲线。
+
+---
+
+### REQ-G-起手源泉 · [2026-06-23] · design G → 甲（引擎域·常量） · Game G · status: open · 优先级: P1 · 类型: 已覆盖（纯常量调值·非新能力）
+
+> **owner 2026-06-23**：起手源泉 6 太高（玩家一上来铺满·开局没张力）→ 改 **4**·**双方对称**（玩家和 Boss 都起手 4）。
+> **派甲（一行改）**：`turn-combat.ts` `MANA_START = 6` → `MANA_START = 4`（`MANA_PER_TURN=1` 不变·双方同源·sim 经 `initTurnBattle` 自动继承）。
+> **无新能力**——只调常量。design G 在 4 源泉 + 两 AI 落地后重标 WR 曲线。
+
+---
+
+### REQ-G-主将命数参数化 · [2026-06-23] · design G → 甲（引擎域·地煞参数） · Game G · status: open · 优先级: P1 · 类型: 已覆盖 + 小泛化（布尔→整数）
+
+> **owner 2026-06-23**：关1 列奥尼达有"温泉关"属性 → **主将战败 3 次才退场**（噱头 + 教学：玩家学会"避开主将路·田忌赛马打别路破家"）。
+> **现状**：`disha.ts` `lastStandGeneral: boolean`（=主将硬编码 **2 命**·首负残喘退1格不亡）。
+> **派甲（小泛化·不是新能力）**：把 `lastStandGeneral` 从 `boolean` 改成 **命数 `number`**（`lastStandGeneral: 0|n`·n=主将战败几次才退）；`laststand` spec → `{ lastStandGeneral: 3 }`（关1 列奥尼达）。**老的 true 等价 2**（兼容）。明牌·玩家可见可破·不偷。
+> **为何不是新 capability**：现有 op 已表达"主将多命"·只是把写死的 2 提成参数·属 manifesto §4「已覆盖+参数化」·不新增能力面。
