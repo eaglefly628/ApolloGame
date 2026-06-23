@@ -1,0 +1,56 @@
+# GameUI · Apollo 控件测试场
+
+> 它不做任何玩法——它的「玩法」就是玩 UI。把阿波罗引擎的**数据驱动 UI 控件**全部铺在一起，
+> 可交互、可换皮、能看到信号流的逻辑测试场。以后游戏的 UI 都从这套底座里搭。
+
+## 这是什么
+
+GameUI 把 `docs/design/apollo-ui-contract.md`（Apollo UI 控件契约总表）落地成一个**活的控件画廊**：
+
+- **控件全家桶**：引擎现有 15 个控件（Panel / Screen / Tabs / Table / Label / Badge / Image /
+  Divider / Button / Input / Dropdown / Checkbox / Toggle / RadioGroup / Slider）按
+  「容器与布局 / 数据展示 / 输入与交互」三页铺开。
+- **换皮**：顶部下拉切 `UITheme` 令牌包（青瓷 / 暖金 / 冷雾），同一棵 `LayoutNode` 数据一字不改即变脸。
+- **事件日志**：右栏实时打印每个控件发出的信号名 + 当前值，直观看到「填数据即出 UI、动一下就有信号」。
+
+## 红线（沿用引擎契约）
+
+- 画廊本体 `src/gallery.ts` 是 **100% `LayoutNode` 纯数据**：弱模型只填数据，引擎解释成像素。
+- 事件 = **信号名字符串**（`action`）；回调逻辑写在 `src/handlers.ts`，二者只在信号名处相遇。
+- 主题 = **`UITheme` 令牌**（颜色/字体字符串）；控件内不写死色值，数据层不碰 CSS/DOM。
+- 渲染走引擎 `renderNode`（纯函数），挂载走引擎 `mountUI`（事件委托）。GameUI 不重造任何控件。
+
+## 目录
+
+```
+GameUI/
+  index.html          入口页（挂到 #app）
+  src/
+    gallery.ts        控件画廊（纯 LayoutNode 数据·所有控件在此）
+    handlers.ts       回调层（信号名 → 写事件日志）
+    themes.ts         三套 UITheme 令牌包（换皮演示）
+    main.ts           宿主入口（两栏骨架 + mountUI + 换皮重挂）
+  gallery.test.ts     渲染冒烟测试（结构/信号/换皮/转义）
+```
+
+## 运行
+
+依赖与引擎共用仓库根（`@ui/*` 别名指向 `src/ui/*`）。在仓库根：
+
+```bash
+npm install         # 首次
+npm run dev         # 启动 vite
+# 浏览器打开 http://localhost:5173/GameUI/
+```
+
+测试：
+
+```bash
+npx vitest run GameUI
+```
+
+## 怎么加新控件
+
+契约 §3 已排好待补控件队列（P0：Modal / ProgressBar / Tag / Toast / Tooltip → P1 → P2）。
+每补一个引擎控件（`src/ui/components`），就在 `src/gallery.ts` 加一段它的样板数据，
+GameUI 即多一个可玩可验的格子——这里始终是所有控件的「逻辑测试场」。

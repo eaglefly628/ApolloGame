@@ -22,6 +22,6 @@
       "@net/*": ["./src/net/*"]
     }
   },
-  "include": ["src"],
+  "include": ["src", "GameUI"],
   "exclude": ["node_modules"]
 }
