@@ -539,3 +539,13 @@ game-f 报「多数需新引擎能力」。Lead 实测：**三个已点名技能
 > 5. 🥉 `offense.breakthrough`/`jumpAdvance`（胜后连推/跳格）+ 已设计 deepDecay。
 > 6. 🥉 v2 四件（extraAction/freeze/intimidate/withdrawRefundMul·见 REQ-G-地煞新op）。
 > 长尾(mirage/minefield/volleyRelay…)先用降级映射上线。实装后 design G 用真地煞重跑 sim 定稿。
+
+---
+
+### REQ-G-Boss-AI · [2026-06-21] · design G → 甲（引擎域·AI） · Game G · status: open · 优先级: **P0（解锁整个公平难度模型）** · 类型: 真缺口（Boss AI 太弱）
+
+> **owner 公平性原则 + design G sim 实证**（详 `design/balance-philosophy-fairness.md`）：难度只能来自明牌地煞·禁止偷源泉/暗数值。但 sim 镜像测试发现根因——**Boss AI 太菜**：
+> - 纯镜像（双方同牌组+天罡+地支·都贪心）→ 玩家 **52.8% ≈ 50%**（战斗公平 ✓）。
+> - 同配置但 Boss 用现 utility-AI(aiTier5) → 玩家 **82.5%**（AI 同牌也输 82.5%）。
+> **派甲（P0）**：强化 `aiTakeTurn` utility-AI 到 ~玩家水平：① 不被"贪心铺最便宜兵+推进"白嫖压制（学会铺场/卡位/集中突破）；② 守势 boss 也要会抓机会反推、威胁玩家家（现在守势 boss 永远威胁不到玩家·只能拖）。**修好前**所有关卡只能靠偷资源造假难度（owner 已禁）→ 这是平衡模型的总开关。
+> 修好后 design G 用**纯明牌地煞**重标 98%→60%(前10关) 难度曲线·全公平。
