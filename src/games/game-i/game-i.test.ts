@@ -17,11 +17,47 @@ describe('Game I gallery', () => {
     expect(html).toContain('data-tabpage="tab-input"');
   });
 
+  it('lists ALL 20 engine components (showcase coverage gate)', () => {
+    // 模态需开启态才入树；用 modalOpen=true 覆盖到 Modal。
+    const html = renderNode(buildGallery('onyx', true), onyx);
+    // 渲染器分发表认识的全部 20 个控件，展示款里一个都不能漏。
+    for (const id of [
+      'topbar',              // Panel
+      'gameui-root',         // Screen
+      'gallery-tabs',        // Tabs
+      'demo-table',          // Table
+      'app-title',           // Label
+      'app-engine',          // Badge
+      'img-cover',           // Image
+      'top-div',             // Divider
+      'btn-p',               // Button
+      'in-text',             // Input
+      'dd-diff',             // Dropdown
+      'cb-tutorial',         // Checkbox
+      'tg-sound',            // Toggle
+      'rg-speed',            // RadioGroup
+      'sl-volume',           // Slider
+      'pb-accent',           // ProgressBar
+      'tag-all',             // Tag
+      'demo-modal-overlay',  // Modal
+      'toast-ok',            // Toast（静态预览节点）
+      'tip-top',             // Tooltip
+    ]) {
+      expect(html).toContain(`"${id}"`);
+    }
+  });
+
+  it('overlays the Modal only when modalOpen=true', () => {
+    expect(renderNode(buildGallery('onyx', false), onyx)).not.toContain('demo-modal-overlay');
+    expect(renderNode(buildGallery('onyx', true), onyx)).toContain('demo-modal-overlay');
+  });
+
   it('exercises every input control with an action signal', () => {
-    const html = renderNode(buildGallery('onyx'), onyx);
+    const html = renderNode(buildGallery('onyx', true), onyx);
     for (const action of [
       'click', 'setText', 'setNum', 'setDifficulty',
       'setFlag', 'setSound', 'setSpeed', 'setVolume', 'setTheme', 'switchTab',
+      'pickRow', 'pickTag', 'openModal', 'closeModal', 'showToast',
     ]) {
       expect(html).toContain(`data-action="${action}"`);
     }

@@ -13,6 +13,10 @@ export interface GalleryHooks {
   log: (action: string, arg?: string) => void;
   /** 切换主题令牌包（宿主负责重挂载整棵树）。 */
   setTheme: (value: string) => void;
+  /** 开/关演示模态浮层（宿主状态驱动·重挂载整棵树）。 */
+  setModal: (open: boolean) => void;
+  /** 弹一条实时飘字提示（宿主调引擎 showToast·到时自动消失）。tone 取自按钮 actionArg。 */
+  toast: (tone?: string) => void;
 }
 
 export function buildHandlers(hooks: GalleryHooks): HandlerMap {
@@ -27,10 +31,23 @@ export function buildHandlers(hooks: GalleryHooks): HandlerMap {
     setSpeed: (a) => L('setSpeed', a),
     setVolume: (a) => L('setVolume', a),
     pickRow: (a) => L('pickRow', a),
+    pickTag: (a) => L('pickTag', a),
     switchTab: (a) => L('switchTab', a),
     setTheme: (a) => {
       L('setTheme', a);
       if (a) hooks.setTheme(a);
+    },
+    openModal: (a) => {
+      L('openModal', a);
+      hooks.setModal(true);
+    },
+    closeModal: (a) => {
+      L('closeModal', a);
+      hooks.setModal(false);
+    },
+    showToast: (a) => {
+      L('showToast', a);
+      hooks.toast(a);
     },
   };
 }

@@ -7,6 +7,10 @@
 import type { LayoutNode } from '@ui/components/index.js';
 import { THEME_OPTIONS } from './themes.js';
 
+// 自包含演示图：内联 data-URI SVG（纯数据·不依赖外部资源文件），用于 Image 控件展示。
+const DEMO_IMG =
+  'data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%22160%22%20height%3D%22100%22%3E%3Cdefs%3E%3ClinearGradient%20id%3D%22g%22%20x1%3D%220%22%20y1%3D%220%22%20x2%3D%221%22%20y2%3D%221%22%3E%3Cstop%20offset%3D%220%22%20stop-color%3D%22%2322d3ee%22%2F%3E%3Cstop%20offset%3D%221%22%20stop-color%3D%22%237c3aed%22%2F%3E%3C%2FlinearGradient%3E%3C%2Fdefs%3E%3Crect%20width%3D%22160%22%20height%3D%22100%22%20fill%3D%22url(%23g)%22%2F%3E%3Ctext%20x%3D%2280%22%20y%3D%2258%22%20font-size%3D%2222%22%20fill%3D%22white%22%20text-anchor%3D%22middle%22%20font-family%3D%22sans-serif%22%20font-weight%3D%22bold%22%3EAPOLLO%3C%2Ftext%3E%3C%2Fsvg%3E';
+
 // ── 段落标题小工具（统一风格：阔字距小标签）──────────────────
 function sectionTitle(id: string, text: string): LayoutNode {
   return { type: 'Label', id, props: { text, size: 'xs', color: 'dim', bold: true } };
@@ -115,6 +119,85 @@ const pageDisplay: LayoutNode = {
       ],
     },
     divider('d-d2'),
+    sectionTitle('t-image', 'IMAGE · 图片（内联 data-URI · fit 三态 + 圆角 radius）'),
+    {
+      type: 'Panel',
+      id: 'demo-image',
+      props: {},
+      layout: { direction: 'row', gap: 12, padding: 10 },
+      children: [
+        { type: 'Image', id: 'img-cover', props: { src: DEMO_IMG, alt: 'cover', fit: 'cover' }, layout: { width: 110, height: 70 } },
+        { type: 'Image', id: 'img-contain', props: { src: DEMO_IMG, alt: 'contain', fit: 'contain' }, layout: { width: 110, height: 70 } },
+        { type: 'Image', id: 'img-fill', props: { src: DEMO_IMG, alt: 'fill', fit: 'fill' }, layout: { width: 110, height: 70 } },
+        { type: 'Image', id: 'img-radius', props: { src: DEMO_IMG, alt: 'radius 12', fit: 'cover', radius: 12 }, layout: { width: 110, height: 70 } },
+      ],
+    },
+    divider('d-d3'),
+    sectionTitle('t-progress', 'PROGRESSBAR · 进度条（五语义色 + 标签 + 显数值）'),
+    {
+      type: 'Panel',
+      id: 'demo-progress',
+      props: {},
+      layout: { direction: 'column', gap: 10, padding: 10 },
+      children: [
+        { type: 'ProgressBar', id: 'pb-accent', props: { value: 72, label: '加载进度', showValue: true, tone: 'accent' } },
+        { type: 'ProgressBar', id: 'pb-ok', props: { value: 100, label: '已完成', showValue: true, tone: 'ok' } },
+        { type: 'ProgressBar', id: 'pb-warn', props: { value: 45, max: 100, label: '体力', tone: 'warn' } },
+        { type: 'ProgressBar', id: 'pb-danger', props: { value: 12, label: '血量', showValue: true, tone: 'danger' } },
+      ],
+    },
+    divider('d-d4'),
+    sectionTitle('t-tag', 'TAG · 标签 / 筛选 chip（可点 → 信号 pickTag·active/removable）'),
+    {
+      type: 'Panel',
+      id: 'demo-tag',
+      props: {},
+      layout: { direction: 'row', gap: 8, align: 'center', padding: 10 },
+      children: [
+        { type: 'Tag', id: 'tag-all', props: { label: '全部', active: true, tone: 'accent', action: 'pickTag', actionArg: 'all' } },
+        { type: 'Tag', id: 'tag-new', props: { label: '最新', action: 'pickTag', actionArg: 'new' } },
+        { type: 'Tag', id: 'tag-hot', props: { label: '热门', action: 'pickTag', actionArg: 'hot' } },
+        { type: 'Tag', id: 'tag-dim', props: { label: '已归档', tone: 'dim' } },
+        { type: 'Tag', id: 'tag-rm', props: { label: '可移除', removable: true, action: 'pickTag', actionArg: 'remove' } },
+      ],
+    },
+    divider('d-d5'),
+    sectionTitle('t-toast', 'TOAST · 飘字提示（静态样式预览·五语义色；实时弹出见「输入与交互」页）'),
+    {
+      type: 'Panel',
+      id: 'demo-toast',
+      props: {},
+      layout: { direction: 'row', gap: 10, align: 'center', padding: 10 },
+      children: [
+        { type: 'Toast', id: 'toast-ok', props: { text: '保存成功', tone: 'ok' } },
+        { type: 'Toast', id: 'toast-warn', props: { text: '网络不稳', tone: 'warn' } },
+        { type: 'Toast', id: 'toast-danger', props: { text: '操作失败', tone: 'danger' } },
+        { type: 'Toast', id: 'toast-accent', props: { text: '有新消息', tone: 'accent' } },
+      ],
+    },
+    divider('d-d6'),
+    sectionTitle('t-tooltip', 'TOOLTIP · 悬浮提示（hover 触发元素 → 气泡·四方位·引擎内建 hover）'),
+    {
+      type: 'Panel',
+      id: 'demo-tooltip',
+      props: {},
+      layout: { direction: 'row', gap: 18, align: 'center', padding: 14 },
+      children: [
+        {
+          type: 'Tooltip', id: 'tip-top', props: { content: '上方提示气泡', placement: 'top' },
+          children: [{ type: 'Badge', id: 'tip-top-t', props: { text: '悬停我 · top', tone: 'ok' } }],
+        },
+        {
+          type: 'Tooltip', id: 'tip-bottom', props: { content: '下方提示气泡', placement: 'bottom' },
+          children: [{ type: 'Badge', id: 'tip-bottom-t', props: { text: '悬停我 · bottom', tone: 'warn' } }],
+        },
+        {
+          type: 'Tooltip', id: 'tip-right', props: { content: '右侧说明文本', placement: 'right' },
+          children: [{ type: 'Button', id: 'tip-right-t', props: { label: '按钮 + 提示', kind: 'ghost', action: 'click', actionArg: 'tooltip-btn' } }],
+        },
+      ],
+    },
+    divider('d-d7'),
     sectionTitle('t-table', 'TABLE · 数据表 / 榜单（行可点 → 信号 pickRow）'),
     {
       type: 'Table',
@@ -218,14 +301,63 @@ const pageInput: LayoutNode = {
       id: 'sl-volume',
       props: { min: 0, max: 100, step: 5, value: 60, label: '音量', action: 'setVolume' },
     },
+    divider('d-i4'),
+    sectionTitle('t-modal', 'MODAL · 模态浮层（按钮开 → 点遮罩/× 关·引擎内建 closeAction）'),
+    {
+      type: 'Panel',
+      id: 'demo-modal',
+      props: {},
+      layout: { direction: 'row', gap: 10, align: 'center', padding: 10 },
+      children: [
+        { type: 'Button', id: 'btn-open-modal', props: { label: '打开模态框', kind: 'primary', action: 'openModal' } },
+        { type: 'Label', id: 'modal-hint', props: { text: '点遮罩本身或右上角 × 即关闭', size: 'sm', color: 'dim' } },
+      ],
+    },
+    divider('d-i5'),
+    sectionTitle('t-toast-live', 'TOAST · 实时飘字（点击 → showToast·底部居中堆叠·到时自动消失）'),
+    {
+      type: 'Panel',
+      id: 'demo-toast-live',
+      props: {},
+      layout: { direction: 'row', gap: 10, align: 'center', padding: 10 },
+      children: [
+        { type: 'Button', id: 'btn-toast-ok', props: { label: '成功提示', kind: 'primary', action: 'showToast', actionArg: 'ok' } },
+        { type: 'Button', id: 'btn-toast-warn', props: { label: '警告提示', kind: 'ghost', action: 'showToast', actionArg: 'warn' } },
+        { type: 'Button', id: 'btn-toast-danger', props: { label: '错误提示', kind: 'ghost', action: 'showToast', actionArg: 'danger' } },
+      ],
+    },
+  ],
+};
+
+// ── 模态浮层（按需叠加于 Screen 之上）─────────────────────────
+// Modal 是满屏遮罩浮层：开 = 宿主把它挂进树重渲染；关 = 引擎内建（点遮罩/× → closeModal）。
+const modalOverlay: LayoutNode = {
+  type: 'Modal',
+  id: 'demo-modal-overlay',
+  props: { title: '示例模态框', size: 'md', closable: true, closeAction: 'closeModal' },
+  layout: {},
+  children: [
+    { type: 'Label', id: 'mo-body', props: { text: '这是一个数据驱动的模态浮层——标题/尺寸/可关均由数据配置。', color: 'sub' } },
+    { type: 'Divider', id: 'mo-div', props: {} },
+    {
+      type: 'Panel',
+      id: 'mo-actions',
+      props: {},
+      layout: { direction: 'row', gap: 10, align: 'center', padding: 0 },
+      children: [
+        { type: 'Tag', id: 'mo-tag', props: { label: '弹窗内也能放控件', tone: 'accent' } },
+        { type: 'Button', id: 'mo-ok', props: { label: '知道了', kind: 'primary', action: 'closeModal' } },
+      ],
+    },
   ],
 };
 
 /**
- * 画廊根节点。activeTheme = 当前主题 value（让顶部主题下拉回显当前选择）。
+ * 画廊根节点。activeTheme = 当前主题 value（让顶部主题下拉回显当前选择）；
+ * modalOpen = 是否叠加演示用模态浮层（宿主状态驱动·开关都是数据/信号）。
  * 整棵树是纯数据：换主题只是换令牌包重挂载，这份数据一字不改。
  */
-export function buildGallery(activeTheme: string): LayoutNode {
+export function buildGallery(activeTheme: string, modalOpen = false): LayoutNode {
   return {
     type: 'Screen',
     id: 'gameui-root',
@@ -266,6 +398,8 @@ export function buildGallery(activeTheme: string): LayoutNode {
         layout: { flex: 1 },
         children: [pageLayout, pageDisplay, pageInput],
       },
+      // 模态浮层按需叠加（满屏遮罩·盖在主界面之上）
+      ...(modalOpen ? [modalOverlay] : []),
     ],
   };
 }

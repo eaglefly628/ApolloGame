@@ -9,7 +9,7 @@
 // 注意：画廊本体（gallery.ts）是 100% 数据；事件日志面板与换皮重挂属于宿主运行时，
 // 不是游戏数据——这正是契约里「工程师写 mountUI/host 层」该待的地方。
 
-import { mountUI } from '@ui/components/index.js';
+import { mountUI, showToast } from '@ui/components/index.js';
 import type { UITheme } from '@ui/components/index.js';
 import { buildGallery } from './gallery.js';
 import { buildHandlers } from './handlers.js';
@@ -79,8 +79,9 @@ export function mount(container: HTMLElement): () => void {
     }
   }
 
-  // ── 挂载 / 换皮重挂 ──────────────────────────────────────────
+  // ── 挂载 / 换皮重挂 / 模态开关 ────────────────────────────────
   let currentTheme = 'onyx';
+  let modalOpen = false;
   let teardown: (() => void) | null = null;
 
   const handlers = buildHandlers({
@@ -92,12 +93,22 @@ export function mount(container: HTMLElement): () => void {
       currentTheme = value;
       remount();
     },
+    setModal: (open) => {
+      modalOpen = open;
+      remount();
+    },
+    toast: (tone) => {
+      const theme = THEMES[currentTheme] ?? THEMES['onyx']!;
+      const text = { ok: '操作成功 ✓', warn: '请注意 ⚠', danger: '出错了 ✕' }[tone ?? 'ok'] ?? '提示';
+      // 挂进外层 root（跨画廊重挂存活·teardown 时随 root 一并清理）。
+      showToast(root, text, { tone: tone as 'ok' | 'warn' | 'danger' | undefined, theme });
+    },
   });
 
   function remount(): void {
     const theme = THEMES[currentTheme] ?? THEMES['onyx']!;
     if (teardown) teardown();
-    teardown = mountUI(galleryHost, buildGallery(currentTheme), handlers, theme);
+    teardown = mountUI(galleryHost, buildGallery(currentTheme, modalOpen), handlers, theme);
     applyPaneTheme(theme);
     renderLog(theme);
   }
