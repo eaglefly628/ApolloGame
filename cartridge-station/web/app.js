@@ -138,9 +138,12 @@ $('#btnPack').onclick=async()=>{
   try{
     const r=await fetch('/api/pack',{method:'POST',body:JSON.stringify({ids,name})});
     if(!r.ok){ throw new Error((await r.json()).error); }
+    const cd=r.headers.get('Content-Disposition')||''; const mm=cd.match(/filename="([^"]+)"/);
+    const fname=mm?mm[1]:name+'.html';
     const blob=await r.blob(); const a=document.createElement('a');
-    a.href=URL.createObjectURL(blob); a.download=name+'.html'; a.click(); URL.revokeObjectURL(a.href);
-    toast(`📦 新 OS 已生成：${name}.html（单 HTML · ${ids.length} 新游戏 + 基座内置）`,'ok');
+    a.href=URL.createObjectURL(blob); a.download=fname; a.click(); URL.revokeObjectURL(a.href);
+    const single=fname.endsWith('.html');
+    toast(`📦 新 OS：${fname}（${single?'单 HTML':'tar.gz·含 games/'} · ${ids.length} 游戏 + 基座内置）`,'ok');
   }catch(e){ toast('✕ 打包失败：'+e.message,'err'); }
 };
 
