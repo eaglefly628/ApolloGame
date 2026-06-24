@@ -1,0 +1,66 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Cartridge Station — Apollo OS 编辑器</title>
+<link rel="stylesheet" href="/style.css">
+</head>
+<body>
+<header>
+  <div class="brand">🎮 CARTRIDGE STATION</div>
+  <nav class="tabs">
+    <button class="tab active" data-view="library">📚 游戏</button>
+    <button class="tab" data-view="keymap">🎛 Settings · 按键映射</button>
+  </nav>
+  <div class="toolbar">
+    <span class="osstat" id="osStat">基座 OS：未加载</span>
+    <button id="btnLoadOs">📂 加载 OS</button>
+    <span class="sep"></span>
+    <button id="btnAdd" class="primary">➕ 添加</button>
+    <button id="btnReplace" disabled>🔁 替换</button>
+    <button id="btnRemove" class="danger" disabled>➖ 移除</button>
+    <button id="btnPack" disabled>📦 打包新 OS</button>
+  </div>
+</header>
+
+<!-- 游戏视图 -->
+<main id="view-library" class="view">
+  <section class="left">
+    <div id="drop" class="drop">
+      拖入 <b>.tar.gz</b> 游戏构建包，或点「添加」<span class="dim">（Shift/右键 多选 → 移除 / 打包）</span>
+      <div class="hint">游戏包 = cartridge.html + assets/ + start.sh</div>
+    </div>
+    <div id="grid" class="grid"></div>
+  </section>
+  <aside class="right" id="detail"><div class="ph">选一张卡带 → 预览启动 + 元数据</div></aside>
+</main>
+
+<!-- 按键映射视图 -->
+<main id="view-keymap" class="view" hidden>
+  <section class="keymap-wrap">
+    <div class="km-head">
+      <div>
+        <h2 id="kmTitle">按键映射</h2>
+        <p class="dim">逐游戏配置。左侧选游戏 → 自动探测或手动编辑 → 保存。映射随游戏打进 OS。</p>
+      </div>
+      <div class="toolbar" id="kmTools" style="display:none">
+        <button id="kmAuto">🔍 自动填（探测）</button>
+        <button id="kmReset">↺ 默认</button>
+        <button id="kmSave" class="primary">💾 保存</button>
+      </div>
+    </div>
+    <div class="km-layout">
+      <div class="km-list" id="kmList"></div>
+      <div class="km-main" id="kmMain"><div class="ph">← 选一个游戏配置按键</div></div>
+    </div>
+  </section>
+</main>
+
+<input type="file" id="fileInput" multiple accept=".gz,.tgz,application/gzip">
+<input type="file" id="osInput" accept=".html,text/html">
+<input type="file" id="replaceInput" accept=".gz,.tgz,application/gzip">
+<div id="status"></div>
+<script src="/app.js"></script>
+</body>
+</html>

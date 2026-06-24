@@ -1,0 +1,6 @@
+# 用户自带的大文件不入库
+library/*
+!library/.gitkeep
+base/*
+!base/.gitkeep
+keymap.json
