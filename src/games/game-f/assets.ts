@@ -8,8 +8,11 @@ const svg = (body: string, w: number, h: number): string =>
 
 // 英雄皮 = 真 DCSS 角色图（assets/FreeArtLib/monster/<name>.png，32×32，CC0；同 game-e 路径加载）。
 // 注：DCSS 是奇幻角色图、固定色；势力(蜀魏吴)由头顶名字颜色 + 棋盘半场体现（drawImage 不吃 tint，见 art-data.md §C）。
-const dcss = (name: string): string => `assets/FreeArtLib/monster/${name}.png`;
-const fx = (name: string): string => `assets/FreeArtLib/effect/${name}.png`; // 打斗特效图（DCSS effect/，已逐像素验过）
+// 资源前缀：dev/web='/'、烧录(electron file://, base './')='./' —— 让文件路径在两边都解析（同 game-e）。
+// 仅作用于真文件(dcss/fx)；下方 svg() 产的是 data: URL，绝不能加前缀。
+const ASSET_BASE: string = (import.meta as unknown as { env?: { BASE_URL?: string } }).env?.BASE_URL ?? '/';
+const dcss = (name: string): string => `${ASSET_BASE}assets/FreeArtLib/monster/${name}.png`;
+const fx = (name: string): string => `${ASSET_BASE}assets/FreeArtLib/effect/${name}.png`; // 打斗特效图（DCSS effect/，已逐像素验过）
 
 // 英雄 textureKey（每英雄唯一 → 后期 1:1 换 DCSS 皮，见 art-data.md）。
 export const F_HERO = {
