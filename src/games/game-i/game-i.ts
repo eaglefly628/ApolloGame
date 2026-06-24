@@ -16,7 +16,7 @@ import { buildHandlers } from './handlers.js';
 import { THEMES } from './themes.js';
 import { applyShop, INITIAL_SHOP, type ShopState } from './shop.js';
 import { applyPick, INITIAL_PICK, type PickState } from './pickcards.js';
-import { makeSoundPlayer } from './sounds.js';
+import { makeSoundPlayer, CHORDS } from './sounds.js';
 
 export function mount(container: HTMLElement): () => void {
   // ── 两栏骨架：左画廊（弹性）+ 右事件日志（固定宽）──────────────
@@ -99,7 +99,8 @@ export function mount(container: HTMLElement): () => void {
 
   // 声音测试播放器（Web Audio·宿主胶水）。
   const player = makeSoundPlayer();
-  let sndVol = 0.7;
+  let sndVol = 0.7;   // 0~1
+  let sndPan = 0;     // -1~1
 
   // 演示用「世界」状态 + 注入式数据源（resolveBindings 活 HUD 用·解耦 ECS）。
   const world = { hp: { current: 70, max: 100 }, gold: { current: 1280 } };
@@ -124,8 +125,13 @@ export function mount(container: HTMLElement): () => void {
     setModal: (open) => { showOverlay(open ? modalOverlay : null); },
     setDrawer: (open) => { showOverlay(open ? drawerOverlay : null); },
     afterTabSwitch: () => { nudgeRepaint(); }, // 切到的新页（之前 display:none）强制重栅格 → 消除「显示即黑」
-    playSound: (id) => { if (id && !controls.muted) player.play(id, sndVol); },
+    playSound: (id) => { if (id) player.play(id, { volume: sndVol, pan: sndPan }); },
+    playChord: (id) => { player.playChord(CHORDS[id ?? 'major'] ?? CHORDS['major']!, { volume: sndVol * 0.6, pan: sndPan }); },
+    playPan: (where) => { const pan = where === 'left' ? -1 : where === 'right' ? 1 : 0; player.play('success', { volume: sndVol, pan }); },
+    startBgm: (id) => { if (id) player.startBgm(id); },
+    stopBgm: () => { player.stopBgm(); },
     setSndVol: (v) => { sndVol = Math.max(0, Math.min(1, v / 100)); },
+    setPan: (v) => { sndPan = Math.max(-1, Math.min(1, v / 100)); },
     setControl: (kind, arg) => {
       if (kind === 'flag') controls = { ...controls, flag: arg === 'true' };
       else if (kind === 'sound') controls = { ...controls, sound: arg === 'true' };
@@ -134,6 +140,8 @@ export function mount(container: HTMLElement): () => void {
       else if (kind === 'qty') controls = { ...controls, qty: Math.max(0, Number(arg) || 0) };
       else if (kind === 'rating') controls = { ...controls, rating: Number(arg) || controls.rating };
       else if (kind === 'city') controls = { ...controls, city: arg ?? controls.city };
+      else if (kind === 'muted') { controls = { ...controls, muted: arg === 'true' }; player.setMuted(controls.muted); }
+      else if (kind === 'reverb') { controls = { ...controls, reverb: arg === 'true' }; player.setReverb(controls.reverb); }
       rerender();
     },
     toast: (tone) => {

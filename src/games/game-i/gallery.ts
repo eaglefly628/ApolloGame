@@ -8,13 +8,13 @@ import type { LayoutNode } from '@ui/components/index.js';
 import { THEME_OPTIONS } from './themes.js';
 import { buildShop, INITIAL_SHOP, type ShopState } from './shop.js';
 import { buildPickHand, INITIAL_PICK, type PickState } from './pickcards.js';
-import { SOUNDS } from './sounds.js';
+import { SOUNDS, BGM } from './sounds.js';
 
 // 自定义画选中态的交互控件值（必须进 state·点击改值 + 局部更新才会动）。
 export interface ControlsState {
-  flag: boolean; sound: boolean; speed: string; view: string; qty: number; rating: number; city: string; muted: boolean;
+  flag: boolean; sound: boolean; speed: string; view: string; qty: number; rating: number; city: string; muted: boolean; reverb: boolean;
 }
-export const INITIAL_CONTROLS: ControlsState = { flag: true, sound: true, speed: '1', view: 'grid', qty: 3, rating: 3, city: '', muted: false };
+export const INITIAL_CONTROLS: ControlsState = { flag: true, sound: true, speed: '1', view: 'grid', qty: 3, rating: 3, city: '', muted: false, reverb: false };
 
 // 自包含演示图：内联 data-URI SVG（纯数据·不依赖外部资源文件），用于 Image 控件展示。
 const DEMO_IMG =
@@ -560,7 +560,7 @@ function buildSoundPage(c: ControlsState): LayoutNode {
         ],
       },
       { type: 'Label', id: 'snd-hint', props: { text: '点按钮播放合成音（纯频率/波形数据驱动）。下方可调音量、静音。', color: 'dim', size: 'sm' } },
-      sectionTitle('snd-t-play', 'PLAY · 点击播放（→ 信号 playSound）'),
+      sectionTitle('snd-t-play', '单音 · 点击播放（→ 信号 playSound·应用当前声像/混响）'),
       {
         type: 'Panel', id: 'demo-sounds', props: {},
         layout: { direction: 'grid', minCol: 120, gap: 10, padding: 8 },
@@ -570,11 +570,54 @@ function buildSoundPage(c: ControlsState): LayoutNode {
         })),
       },
       divider('snd-d1'),
-      sectionTitle('snd-t-ctl', '音量 / 静音'),
+      sectionTitle('snd-t-mix', '混音 · 多音同时发声（Web Audio 天然混合·多声道）'),
+      {
+        type: 'Panel', id: 'snd-mix', props: {},
+        layout: { direction: 'row', gap: 10, align: 'center', padding: 8 },
+        children: [
+          { type: 'Button', id: 'snd-chord', props: { label: '🎶 和弦（3 音齐发）', kind: 'primary', action: 'playChord', actionArg: 'major' } },
+          { type: 'Button', id: 'snd-all', props: { label: '💥 8 音齐发', kind: 'ghost', action: 'playChord', actionArg: 'all' } },
+        ],
+      },
+      divider('snd-d2'),
+      sectionTitle('snd-t-pan', '立体声 · 左右声像（StereoPanner·-100 左 ~ +100 右）'),
+      {
+        type: 'Panel', id: 'snd-pan', props: {},
+        layout: { direction: 'column', gap: 10, padding: 8 },
+        children: [
+          { type: 'Slider', id: 'snd-pan-sl', props: { min: -100, max: 100, step: 10, value: 0, label: '声像', action: 'setPan' } },
+          {
+            type: 'Panel', id: 'snd-pan-btn', props: {},
+            layout: { direction: 'row', gap: 10, align: 'center', padding: 0 },
+            children: [
+              { type: 'Button', id: 'snd-pan-l', props: { label: '◀ 左', kind: 'ghost', action: 'playPan', actionArg: 'left' } },
+              { type: 'Button', id: 'snd-pan-c', props: { label: '● 中', kind: 'ghost', action: 'playPan', actionArg: 'center' } },
+              { type: 'Button', id: 'snd-pan-r', props: { label: '右 ▶', kind: 'ghost', action: 'playPan', actionArg: 'right' } },
+              { type: 'Label', id: 'snd-pan-hint', props: { text: '戴耳机更明显', size: 'sm', color: 'dim' } },
+            ],
+          },
+        ],
+      },
+      divider('snd-d3'),
+      sectionTitle('snd-t-bgm', '背景音乐 · 循环播放（音序数据驱动）'),
+      {
+        type: 'Panel', id: 'snd-bgm', props: {},
+        layout: { direction: 'row', gap: 10, align: 'center', padding: 8 },
+        children: [
+          ...BGM.map((b): LayoutNode => ({
+            type: 'Button', id: `snd-bgm-${b.id}`,
+            props: { label: `▶ ${b.label}`, kind: 'ghost', action: 'startBgm', actionArg: b.id },
+          })),
+          { type: 'Button', id: 'snd-bgm-stop', props: { label: '⏹ 停止', kind: 'quiet', action: 'stopBgm' } },
+        ],
+      },
+      divider('snd-d4'),
+      sectionTitle('snd-t-ctl', '混响 / 音量 / 静音'),
       {
         type: 'Panel', id: 'snd-ctl', props: {},
         layout: { direction: 'column', gap: 12, padding: 8 },
         children: [
+          { type: 'Toggle', id: 'snd-reverb', props: { label: '混响（Convolver 卷积）', checked: c.reverb, action: 'toggleReverb' } },
           { type: 'Slider', id: 'snd-vol', props: { min: 0, max: 100, step: 5, value: 70, label: '音量', action: 'setSndVol' } },
           { type: 'Toggle', id: 'snd-mute', props: { label: '静音', checked: c.muted, action: 'toggleMute' } },
         ],

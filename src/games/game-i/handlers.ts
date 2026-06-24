@@ -30,10 +30,18 @@ export interface GalleryHooks {
   setControl: (kind: string, arg?: string) => void;
   /** 切 Tab 后回调（mountUI 已就地显示新页·宿主借此强制重绘刚显示的页·消除「显示即黑」）。 */
   afterTabSwitch: () => void;
-  /** 播放合成音（宿主 Web Audio 播放器·按 id 出声）。 */
+  /** 播放合成音（宿主 Web Audio·按 id 出声·应用当前声像/混响）。 */
   playSound: (id?: string) => void;
-  /** 设音量（0~100·宿主存为播放增益）。 */
+  /** 混音：和弦预设 id（major/all）多音齐发。 */
+  playChord: (id?: string) => void;
+  /** 立体声试听：在 left/center/right 声像播放一个音。 */
+  playPan: (where?: string) => void;
+  /** 背景乐循环 / 停止。 */
+  startBgm: (id?: string) => void;
+  stopBgm: () => void;
+  /** 设音量（0~100）/ 设声像（-100~100）。 */
   setSndVol: (v: number) => void;
+  setPan: (v: number) => void;
 }
 
 export function buildHandlers(hooks: GalleryHooks): HandlerMap {
@@ -52,10 +60,16 @@ export function buildHandlers(hooks: GalleryHooks): HandlerMap {
     setQty: (a) => { L('setQty', a); hooks.setControl('qty', a); },
     setCity: (a) => { L('setCity', a); hooks.setControl('city', a); },
     setRating: (a) => { L('setRating', a); hooks.setControl('rating', a); },
-    // 声音测试：播放 / 音量 / 静音。
+    // 声音测试：单音 / 混音 / 立体声 / 背景乐 / 混响 / 音量 / 静音。
     playSound: (a) => { L('playSound', a); hooks.playSound(a); },
+    playChord: (a) => { L('playChord', a); hooks.playChord(a); },
+    playPan: (a) => { L('playPan', a); hooks.playPan(a); },
+    startBgm: (a) => { L('startBgm', a); hooks.startBgm(a); },
+    stopBgm: (a) => { L('stopBgm', a); hooks.stopBgm(); },
     setSndVol: (a) => { L('setSndVol', a); hooks.setSndVol(Number(a) || 0); },
+    setPan: (a) => { L('setPan', a); hooks.setPan(Number(a) || 0); },
     toggleMute: (a) => { L('toggleMute', a); hooks.setControl('muted', a); },
+    toggleReverb: (a) => { L('toggleReverb', a); hooks.setControl('reverb', a); },
     pickRow: (a) => L('pickRow', a),
     pickVRow: (a) => L('pickVRow', a),
     ctxAction: (a) => L('ctxAction', a),
