@@ -525,6 +525,7 @@ export function BlackjackStage({ engine }: BlackjackStageProps): React.ReactElem
         padding: 18,
         overflow: 'hidden',
         position: 'relative',
+        paddingBottom: isPlayerTurn && currentHand?.status === 'active' ? 'calc(118px + 18px)' : 18,
       }}>
         {/* LEFT: Game Table */}
         <div style={{ flex: 1, display: 'flex', flexDirection: 'column', minWidth: 0 }}>
@@ -928,6 +929,10 @@ export function BlackjackStage({ engine }: BlackjackStageProps): React.ReactElem
       {/* ===== BOTTOM ACTION BAR ===== */}
       {isPlayerTurn && currentHand && currentHand.status === 'active' && (
         <div style={{
+          position: 'absolute',
+          bottom: 0,
+          left: 0,
+          right: 0,
           height: 118,
           display: 'flex',
           alignItems: 'center',
@@ -935,7 +940,7 @@ export function BlackjackStage({ engine }: BlackjackStageProps): React.ReactElem
           padding: '0 30px',
           background: T['--dock-bg'],
           borderTop: `1px solid ${T['--panel-border']}`,
-          zIndex: 10,
+          zIndex: 11,
         }}>
           {[
             { glyph: '🃏', label: '要牌', sub: 'HIT', primary: true, action: onHit },
