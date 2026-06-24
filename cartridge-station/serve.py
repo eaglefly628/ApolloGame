@@ -233,8 +233,8 @@ def game_html_b64(cid, keymap):
     p = os.path.join(LIBRARY, cid, 'cartridge.html')
     html = open(p, encoding='utf-8', errors='ignore').read()
     shim = keymap_shim(keymap)
-    m = re.search(r'</body\s*>', html, re.I)
-    html = html[:m.start()] + shim + html[m.start():] if m else html + shim
+    i = html.lower().rfind('</body>')   # 用最后一个 </body>，避免扎进内嵌字符串
+    html = (html[:i] + shim + html[i:]) if i != -1 else (html + shim)
     return base64.b64encode(html.encode('utf-8')).decode('ascii')
 
 def build_game_objects(metas):
@@ -281,9 +281,10 @@ def inject_os(os_html, game_objs):
                       "try{GAMES.push(g);}catch(e){console.warn('[station] push',e);}})();")
     script = ("<script>/* cartridge-station: appended games (inline pgame.html) */\n"
               + "\n".join(pushes) + "\n</script>")
-    m = re.search(r'</body\s*>', os_html, re.I)
-    if m:
-        return os_html[:m.start()] + script + "\n" + os_html[m.start():]
+    # 用最后一个 </body>（文档真正结尾）——OS 里有多个 </body> 字面量藏在 JS 模板字符串中
+    i = os_html.lower().rfind('</body>')
+    if i != -1:
+        return os_html[:i] + script + "\n" + os_html[i:]
     return os_html + script
 
 def pack_os(ids, out_name):
