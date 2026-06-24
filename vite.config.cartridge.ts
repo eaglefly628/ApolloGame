@@ -2,11 +2,18 @@ import { defineConfig } from 'vite';
 import react from '@vitejs/plugin-react';
 import { resolve } from 'path';
 import { copyUsedAssets } from './vite.assets';
+import { viteSingleFile } from 'vite-plugin-singlefile';
 
 const targetGame = process.env.VITE_TARGET_GAME ?? 'game-f';
+// VITE_SINGLEFILE=1 → 把 JS/CSS/字体内联进单个自包含 cartridge.html
+// （供 cartridge-station 打成单 HTML OS）。默认关闭，团队正常多文件 tar.gz 构建不受影响。
+const singleFile = process.env.VITE_SINGLEFILE === '1';
 
 export default defineConfig({
-  plugins: [react(), copyUsedAssets(__dirname, 'dist-cartridge')],
+  plugins: [
+    react(),
+    ...(singleFile ? [viteSingleFile()] : [copyUsedAssets(__dirname, 'dist-cartridge')]),
+  ],
   root: '.',
   base: './',
   build: {

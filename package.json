@@ -16,6 +16,7 @@
     "net:demo": "vite-node src/net/lockstep.demo.ts",
     "bench": "vite-node src/bench/run-bench.ts",
     "build:cartridge": "tsc --noEmit && vite build --config vite.config.cartridge.ts",
+    "build:cartridge:single": "VITE_SINGLEFILE=1 vite build --config vite.config.cartridge.ts",
     "pack:mac": "electron-builder --mac --config electron-builder.yml",
     "pack:win": "electron-builder --win --config electron-builder.yml",
     "dist": "python3 scripts/dist.py"
@@ -37,6 +38,7 @@
     "happy-dom": "^20.10.6",
     "typescript": "^5.5.3",
     "vite": "^5.4.2",
+    "vite-plugin-singlefile": "^2.3.3",
     "vitest": "^2.0.5"
   }
 }
