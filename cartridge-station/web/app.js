@@ -31,12 +31,10 @@ async function refresh(){
 }
 function updateButtons(){
   const builds = LIB.filter(c=>c.source!=='os');
-  // 移除：有选中(多选) 或 有焦点卡 即可
-  $('#btnRemove').disabled = !(picks.size>=1 || curId);
-  // 替换：聚焦了某张卡
-  $('#btnReplace').disabled = !curId;
-  // 打包：加载了 OS 且至少有 1 个已添加构建（不强制多选——默认打包全部）
-  $('#btnPack').disabled = !(OS.loaded && builds.length>=1);
+  // 按钮常亮（不再用 disabled 灰态迷惑人）——点击时各自校验、给 toast 提示
+  $('#btnRemove').disabled = false;
+  $('#btnReplace').disabled = false;
+  $('#btnPack').disabled = false;
   $('#btnPack').textContent = picks.size>=1 ? `📦 打包(${picks.size})` : (builds.length?`📦 打包全部(${builds.length})`:'📦 打包新 OS');
 }
 function renderGrid(){

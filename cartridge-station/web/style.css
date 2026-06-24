@@ -89,3 +89,6 @@ input[type=file]{display:none}
 .km-table td .det{font-size:10px;font-weight:700;color:var(--accent);background:rgba(0,223,160,.12);padding:2px 6px;border-radius:4px}
 
 .cart .hw.os{background:rgba(126,134,153,.2);color:#aeb6c6}
+
+/* 修复：让 [hidden] 真正隐藏视图（.view 的 display:grid 会盖掉 UA 的 [hidden]）*/
+.view[hidden]{display:none!important}
