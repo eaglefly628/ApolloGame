@@ -20,8 +20,12 @@ import { applyPick, INITIAL_PICK, type PickState } from './pickcards.js';
 export function mount(container: HTMLElement): () => void {
   // ── 两栏骨架：左画廊（弹性）+ 右事件日志（固定宽）──────────────
   const root = document.createElement('div');
+  // -webkit-font-smoothing:antialiased：关掉 subpixel(LCD) 文字抗锯齿。
+  // M1/Mac Chrome 下 subpixel 文字在合成滚动层上会被 GPU 栅格成黑（点击才恢复·滚动不行）；
+  // 灰度抗锯齿不依赖不透明背景、不触发该缺陷。这是此 M1 黑字 bug 的对症修法。
   root.style.cssText =
-    'position:absolute;inset:0;display:flex;overflow:hidden;background:#06080d';
+    'position:absolute;inset:0;display:flex;overflow:hidden;background:#06080d;' +
+    '-webkit-font-smoothing:antialiased;-moz-osx-font-smoothing:grayscale';
 
   let galleryHost = document.createElement('div');
   // 不透明背景：合成滚动层背景透明时，部分 GPU 会算错文字栅格（字变黑）→ 给它实底色。
@@ -156,10 +160,10 @@ export function mount(container: HTMLElement): () => void {
   function nudgeRepaint(): void {
     if (typeof requestAnimationFrame === 'undefined') return;
     requestAnimationFrame(() => requestAnimationFrame(() => {
-      const d = galleryHost.style.display;
-      galleryHost.style.display = 'none';
+      // visibility 切换强制重绘但不重置滚动位（兜底·主修是 font-smoothing）。
+      galleryHost.style.visibility = 'hidden';
       void galleryHost.offsetHeight; // 强制重排
-      galleryHost.style.display = d; // 复原 → 触发整棵子树重新栅格化
+      galleryHost.style.visibility = '';
     }));
   }
 
