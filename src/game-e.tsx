@@ -16,6 +16,7 @@ import {
 // 消耗位道具 = 星球牌（升级牌型）或 塔罗牌（盖附魔）。
 type Consumable = PlanetCard | TarotCard;
 import { cardCell, CELL_W, CELL_H, SHEET_W, SHEET_H } from './games/game-e/cards-atlas.js';
+import { inlineUrl } from './assets/inline-url.js';
 import { evaluateHand } from './skills/tier3/index.js';
 
 // 引擎牌型名(连字符) → 游戏牌型表键(下划线)，供选牌时的牌型预览取基础 chips/mult。
@@ -37,9 +38,10 @@ const ENGINE_TO_HR: Record<string, HandType> = {
 
 // 资源前缀：dev/web 为 '/'，烧录(electron file://, base './') 为 './' —— 用 BASE_URL 让 /assets 路径在两边都解析。
 const ASSET_BASE: string = (import.meta as unknown as { env?: { BASE_URL?: string } }).env?.BASE_URL ?? '/';
-const CARDS_URL = `${ASSET_BASE}assets/FreeArtLib/cardgame/cards.png`;
-const COIN_URL = `${ASSET_BASE}assets/FreeArtLib/item/gold/gold_pile.png`; // 过关金币迸射（真素材，缺图回退 🪙）
-const JOKER_URL = (name: string) => `${ASSET_BASE}assets/FreeArtLib/cardgame/card/${name.replace(/ /g, '_')}.webp`;
+// inlineUrl：单文件构建命中内联表给 data: URI；否则走 ASSET_BASE+路径（多文件不变）。
+const CARDS_URL = inlineUrl('assets/FreeArtLib/cardgame/cards.png', ASSET_BASE);
+const COIN_URL = inlineUrl('assets/FreeArtLib/item/gold/gold_pile.png', ASSET_BASE); // 过关金币迸射（真素材，缺图回退 🪙）
+const JOKER_URL = (name: string) => inlineUrl(`assets/FreeArtLib/cardgame/card/${name.replace(/ /g, '_')}.webp`, ASSET_BASE);
 const SCALE = 0.82; // 手牌显示缩放（8 张一行排得下）
 const CW = Math.round(CELL_W * SCALE);
 const CH = Math.round(CELL_H * SCALE);
