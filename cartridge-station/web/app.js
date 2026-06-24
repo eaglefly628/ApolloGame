@@ -30,9 +30,14 @@ async function refresh(){
   renderGrid();
 }
 function updateButtons(){
-  $('#btnRemove').disabled = picks.size<1;
+  const builds = LIB.filter(c=>c.source!=='os');
+  // 移除：有选中(多选) 或 有焦点卡 即可
+  $('#btnRemove').disabled = !(picks.size>=1 || curId);
+  // 替换：聚焦了某张卡
   $('#btnReplace').disabled = !curId;
-  $('#btnPack').disabled = !(OS.loaded && picks.size>=1);
+  // 打包：加载了 OS 且至少有 1 个已添加构建（不强制多选——默认打包全部）
+  $('#btnPack').disabled = !(OS.loaded && builds.length>=1);
+  $('#btnPack').textContent = picks.size>=1 ? `📦 打包(${picks.size})` : (builds.length?`📦 打包全部(${builds.length})`:'📦 打包新 OS');
 }
 function renderGrid(){
   const g=$('#grid');
@@ -103,26 +108,30 @@ $('#fileInput').onchange=e=>{ addFiles([...e.target.files],false); e.target.valu
 $('#btnReplace').onclick=()=>{ if(!curId){toast('先选一个游戏','err');return;} $('#replaceInput').click(); };
 $('#replaceInput').onchange=e=>{ addFiles([...e.target.files],true); e.target.value=''; };
 
-/* 移除 */
+/* 移除：选中(多选) 优先，否则移除当前焦点卡。内置游戏不可移除 */
 $('#btnRemove').onclick=async()=>{
-  if(!picks.size){ toast('Shift/右键 选要移除的','err'); return; }
-  if(!confirm(`移除 ${picks.size} 个游戏？`)) return;
-  for(const id of [...picks]) await fetch('/api/remove',{method:'POST',body:JSON.stringify({id})});
+  let ids = picks.size ? [...picks] : (curId ? [curId] : []);
+  ids = ids.filter(id => { const c=LIB.find(x=>x.id===id); return c && c.source!=='os'; });
+  if(!ids.length){ toast('选一个已添加的游戏再移除（内置游戏随基座 OS，不在这删）','err'); return; }
+  if(!confirm(`移除 ${ids.length} 个游戏？`)) return;
+  for(const id of ids) await fetch('/api/remove',{method:'POST',body:JSON.stringify({id})});
   picks.clear(); curId=null; await refresh(); toast('已移除','ok');
 };
 
-/* 打包新 OS */
+/* 打包新 OS：选中则打选中，否则默认打包全部已添加的构建 */
 $('#btnPack').onclick=async()=>{
-  if(!OS.loaded){ toast('先加载基座 OS','err'); return; }
-  if(picks.size<1){ toast('Shift/右键 选要放进 OS 的游戏','err'); return; }
+  if(!OS.loaded){ toast('先加载基座 OS（📂 加载 OS）','err'); return; }
+  const builds = LIB.filter(c=>c.source!=='os');
+  const ids = picks.size ? [...picks].filter(id=>{const c=LIB.find(x=>x.id===id);return c&&c.source!=='os';}) : builds.map(c=>c.id);
+  if(!ids.length){ toast('先添加至少一个 .tar.gz 游戏','err'); return; }
   const name=prompt('新 OS 包名（不含扩展名）：','apollo-os')||'apollo-os';
   toast('打包中…');
   try{
-    const r=await fetch('/api/pack',{method:'POST',body:JSON.stringify({ids:[...picks],name})});
+    const r=await fetch('/api/pack',{method:'POST',body:JSON.stringify({ids,name})});
     if(!r.ok){ throw new Error((await r.json()).error); }
     const blob=await r.blob(); const a=document.createElement('a');
     a.href=URL.createObjectURL(blob); a.download=name+'.tar.gz'; a.click(); URL.revokeObjectURL(a.href);
-    toast(`📦 新 OS 已生成：${name}.tar.gz（${picks.size} 游戏）`,'ok');
+    toast(`📦 新 OS 已生成：${name}.tar.gz（${ids.length} 游戏 + 基座内置）`,'ok');
   }catch(e){ toast('✕ 打包失败：'+e.message,'err'); }
 };
 
