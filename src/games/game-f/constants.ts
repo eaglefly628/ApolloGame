@@ -20,13 +20,13 @@ export const FACT_WU = 1 << 5; // 吴
 export const FROZEN = 1 << 10; // 冰冻定身（REQ-F-030）
 export const PROTAG = 1 << 11; // 主角（小小英雄）
 export const LOOT = 1 << 12; // 法球/掉落
-export const BAG = 1 << 19; // 主公行囊（收集装备 orb）
+export const BAG = 1 << 21; // 主公行囊（收集装备 orb）；⚠ 不可用 1<<19——与 MARKER_VIS 撞位会让隐形收集框在备战期被 marker_show 点亮、糊住整盘六角格（实测回归）
 export const EQUIP = 1 << 20; // 装备 orb（战中敌死掉落）
 export const SHOPSLOT_BITS = [1 << 13, 1 << 14, 1 << 15]; // 三大框
 export const RUNE = 1 << 18; // 开局符文卡
 export const SHOPSLOT_ALL = SHOPSLOT_BITS.reduce((a, b) => a | b, 0);
 export const BENCH_OCC = 1 << 25; // 席位 marker 位（不含 TEAM → 不参战）
-export const MARKER_VIS = 1 << 19; // marker 显隐位（战斗期隐藏）
+export const MARKER_VIS = 1 << 19; // marker 显隐位（战斗期隐藏）；独占此位——勿与任何「带 Visibility 的常驻实体」标位撞（撞位会被相位 set-visible-tagged 误翻）
 export const PROJ = 1 << 26; // 在飞弹道（庆祝拍清扫）
 export const RESULT = 1 << 27; // 战果面板行
 export const BUSHO = 1 << 28; // 太阁部将位（国人众/天守 Boss）：毛利·三矢「部将≥3 全军 buff」group-count 用
