@@ -1,11 +1,26 @@
 import { defineConfig } from 'vite';
 import react from '@vitejs/plugin-react';
 import { resolve } from 'path';
+import { cpSync, existsSync } from 'node:fs';
 
 const targetGame = process.env.VITE_TARGET_GAME ?? 'game-f';
 
+// 烧录版同样把 assets/ 拷进产物 /assets（否则扑克牌/小丑美术 404）。
+function copyAssets() {
+  let outDir = 'dist-cartridge';
+  return {
+    name: 'copy-freeartlib-assets',
+    apply: 'build' as const,
+    configResolved(c: { build: { outDir: string } }) { outDir = c.build.outDir; },
+    closeBundle() {
+      const src = resolve(__dirname, 'assets');
+      if (existsSync(src)) cpSync(src, resolve(__dirname, outDir, 'assets'), { recursive: true });
+    },
+  };
+}
+
 export default defineConfig({
-  plugins: [react()],
+  plugins: [react(), copyAssets()],
   root: '.',
   base: './',
   build: {
