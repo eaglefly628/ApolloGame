@@ -77,6 +77,7 @@ export function makeSoundPlayer() {
     const ac = ensure();
     if (!ac || !dry || !reverb) return;
     if (ac.state === 'suspended') void ac.resume();
+    try {
     const now = ac.currentTime;
     const osc = ac.createOscillator();
     const g = ac.createGain();
@@ -94,6 +95,7 @@ export function makeSoundPlayer() {
     panner.connect(reverb);  // 混响发送（湿增益控制响度）
     osc.start(now);
     osc.stop(now + def.dur + 0.05);
+    } catch { /* 单次发声异常不影响后续播放 */ }
   }
 
   return {

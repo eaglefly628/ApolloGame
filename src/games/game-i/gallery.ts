@@ -12,9 +12,10 @@ import { SOUNDS, BGM } from './sounds.js';
 
 // 自定义画选中态的交互控件值（必须进 state·点击改值 + 局部更新才会动）。
 export interface ControlsState {
-  flag: boolean; sound: boolean; speed: string; view: string; qty: number; rating: number; city: string; muted: boolean; reverb: boolean;
+  flag: boolean; sound: boolean; speed: string; view: string; qty: number; rating: number; city: string;
+  muted: boolean; reverb: boolean; vol: number; pan: number;
 }
-export const INITIAL_CONTROLS: ControlsState = { flag: true, sound: true, speed: '1', view: 'grid', qty: 3, rating: 3, city: '', muted: false, reverb: false };
+export const INITIAL_CONTROLS: ControlsState = { flag: true, sound: true, speed: '1', view: 'grid', qty: 3, rating: 3, city: '', muted: false, reverb: false, vol: 70, pan: 0 };
 
 // 自包含演示图：内联 data-URI SVG（纯数据·不依赖外部资源文件），用于 Image 控件展示。
 const DEMO_IMG =
@@ -585,7 +586,7 @@ function buildSoundPage(c: ControlsState): LayoutNode {
         type: 'Panel', id: 'snd-pan', props: {},
         layout: { direction: 'column', gap: 10, padding: 8 },
         children: [
-          { type: 'Slider', id: 'snd-pan-sl', props: { min: -100, max: 100, step: 10, value: 0, label: '声像', action: 'setPan' } },
+          { type: 'Slider', id: 'snd-pan-sl', props: { min: -100, max: 100, step: 10, value: c.pan, label: `声像 ${c.pan < 0 ? '偏左' : c.pan > 0 ? '偏右' : '居中'}`, action: 'setPan' } },
           {
             type: 'Panel', id: 'snd-pan-btn', props: {},
             layout: { direction: 'row', gap: 10, align: 'center', padding: 0 },
@@ -618,8 +619,8 @@ function buildSoundPage(c: ControlsState): LayoutNode {
         layout: { direction: 'column', gap: 12, padding: 8 },
         children: [
           { type: 'Toggle', id: 'snd-reverb', props: { label: '混响（Convolver 卷积）', checked: c.reverb, action: 'toggleReverb' } },
-          { type: 'Slider', id: 'snd-vol', props: { min: 0, max: 100, step: 5, value: 70, label: '音量', action: 'setSndVol' } },
-          { type: 'Toggle', id: 'snd-mute', props: { label: '静音', checked: c.muted, action: 'toggleMute' } },
+          { type: 'Slider', id: 'snd-vol', props: { min: 0, max: 100, step: 5, value: c.vol, label: '音量', action: 'setSndVol' } },
+          { type: 'Toggle', id: 'snd-mute', props: { label: c.muted ? '静音（已静音·点此恢复）' : '静音', checked: c.muted, action: 'toggleMute' } },
         ],
       },
     ],

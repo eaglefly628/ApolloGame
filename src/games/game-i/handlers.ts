@@ -39,9 +39,6 @@ export interface GalleryHooks {
   /** 背景乐循环 / 停止。 */
   startBgm: (id?: string) => void;
   stopBgm: () => void;
-  /** 设音量（0~100）/ 设声像（-100~100）。 */
-  setSndVol: (v: number) => void;
-  setPan: (v: number) => void;
 }
 
 export function buildHandlers(hooks: GalleryHooks): HandlerMap {
@@ -66,8 +63,8 @@ export function buildHandlers(hooks: GalleryHooks): HandlerMap {
     playPan: (a) => { L('playPan', a); hooks.playPan(a); },
     startBgm: (a) => { L('startBgm', a); hooks.startBgm(a); },
     stopBgm: (a) => { L('stopBgm', a); hooks.stopBgm(); },
-    setSndVol: (a) => { L('setSndVol', a); hooks.setSndVol(Number(a) || 0); },
-    setPan: (a) => { L('setPan', a); hooks.setPan(Number(a) || 0); },
+    setSndVol: (a) => { L('setSndVol', a); hooks.setControl('vol', a); },
+    setPan: (a) => { L('setPan', a); hooks.setControl('pan', a); },
     toggleMute: (a) => { L('toggleMute', a); hooks.setControl('muted', a); },
     toggleReverb: (a) => { L('toggleReverb', a); hooks.setControl('reverb', a); },
     pickRow: (a) => L('pickRow', a),
