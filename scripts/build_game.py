@@ -71,6 +71,7 @@ def run_vite_build(game_id: str) -> None:
     """Invoke `npx vite build` with VITE_TARGET_GAME baked in."""
     env = os.environ.copy()
     env["VITE_TARGET_GAME"] = game_id
+    env["VITE_SINGLEFILE"] = "1"   # 手街机版 = 单文件：JS/CSS 全内联进自包含 cartridge.html
 
     args = ["vite", "build", "--config", CONFIG]
     if IS_WIN:
@@ -99,13 +100,23 @@ def package(game_id: str) -> Path:
 
 
 def build_one(game_id: str) -> None:
+    import shutil
+
     print(f"\n  ▶ Building {game_id}...\n")
     run_vite_build(game_id)
     write_start_script()
-    out_pkg = package(game_id)
-    size_kb = out_pkg.stat().st_size / 1024
 
-    print(f"\n  ✓  {out_pkg.name}  ({size_kb:.0f} kB)\n")
+    # 单 HTML 产物：自包含的 cartridge.html → apollo-{game}-rk3562.html
+    out_html = ROOT / f"apollo-{game_id}-rk3562.html"
+    shutil.copyfile(DIST_DIR / "cartridge.html", out_html)
+    html_kb = out_html.stat().st_size / 1024
+
+    # tar.gz 仍产出（单 cartridge.html + start.sh），设备部署不变
+    out_pkg = package(game_id)
+    pkg_kb = out_pkg.stat().st_size / 1024
+
+    print(f"\n  ✓  {out_html.name}  ({html_kb:.0f} kB)   ← 单 HTML（喂给 cartridge-station）")
+    print(f"  ✓  {out_pkg.name}  ({pkg_kb:.0f} kB)   ← 掌机 tar.gz（设备部署）\n")
     print("  Deploy to RK3562:")
     print(f"    scp {out_pkg.name} user@<device>:/home/user/")
     print(
