@@ -24,7 +24,8 @@ export function mount(container: HTMLElement): () => void {
     'position:absolute;inset:0;display:flex;overflow:hidden;background:#06080d';
 
   let galleryHost = document.createElement('div');
-  const galleryHostCss = 'flex:1;min-width:0;overflow-y:auto';
+  // 不透明背景：合成滚动层背景透明时，部分 GPU 会算错文字栅格（字变黑）→ 给它实底色。
+  const galleryHostCss = 'flex:1;min-width:0;overflow-y:auto;background:#06080d';
   galleryHost.style.cssText = galleryHostCss;
 
   const logPane = document.createElement('aside');
@@ -149,10 +150,23 @@ export function mount(container: HTMLElement): () => void {
   const buildTree = (): LayoutNode =>
     resolveBindings(buildGallery(currentTheme, false, false, shop, pick, 'tab-layout', controls), dataSource);
 
+  // 整体挂载后延后一帧强制重绘：消除部分 GPU 在合成滚动层首帧把文字栅格成「陈旧黑字」的故障
+  // （等效用户「点一下」，但时机对——必须晚于首帧黑色绘制，所以用双 rAF；同步切 display 在首帧前跑无效）。
+  function nudgeRepaint(): void {
+    if (typeof requestAnimationFrame === 'undefined') return;
+    requestAnimationFrame(() => requestAnimationFrame(() => {
+      const d = galleryHost.style.display;
+      galleryHost.style.display = 'none';
+      void galleryHost.offsetHeight; // 强制重排
+      galleryHost.style.display = d; // 复原 → 触发整棵子树重新栅格化
+    }));
+  }
+
   // 挂载一次；之后改状态都走 ui.update 局部更新（只补丁变化的子树·不整树重挂·Tab/滚动/输入态不丢·无黑屏）。
   let ui = mountUI(galleryHost, buildTree(), handlers, theme());
   applyPaneTheme(theme());
   renderLog(theme());
+  nudgeRepaint(); // 初次挂载
 
   function rerender(themeChanged = false): void {
     if (themeChanged) {
@@ -165,6 +179,7 @@ export function mount(container: HTMLElement): () => void {
       ui = mountUI(galleryHost, buildTree(), handlers, theme());
       applyPaneTheme(theme());
       if (overlayNode) showOverlay(overlayNode); // 浮层也换新皮
+      nudgeRepaint(); // 换皮整盘换色后同样消除陈旧黑字
     } else {
       ui.update(buildTree()); // 局部更新（diff/patch）
     }
