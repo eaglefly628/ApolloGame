@@ -526,6 +526,9 @@ export function BlackjackStage({ engine }: BlackjackStageProps): React.ReactElem
         overflow: 'hidden',
         position: 'relative',
         minHeight: 0,
+        maxHeight: isPlayerTurn && currentHand?.status === 'active'
+          ? 'calc(100vh - 88px - 118px)'
+          : 'calc(100vh - 88px)',
       }}>
         {/* LEFT: Game Table */}
         <div style={{ flex: 1, display: 'flex', flexDirection: 'column', minWidth: 0 }}>
