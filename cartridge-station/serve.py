@@ -212,11 +212,37 @@ GRADS = ['linear-gradient(160deg,#1A0A05,#100A15,#050308)',
          'linear-gradient(160deg,#1A0518,#120A15,#08030A)',
          'linear-gradient(160deg,#0A1A05,#0F1010,#030A05)']
 
+import base64
+# 按键转换 shim：把掌机物理键（标准手柄索引）翻译成游戏所读的键盘键。
+# 注入进每个游戏的单文件 HTML，使「按键映射」真正生效。
+def keymap_shim(keymap):
+    km = json.dumps(keymap or [], ensure_ascii=False)
+    return ("<script>/* cartridge-station input shim: gamepad→keyboard per keymap */(function(){"
+            "var KM=" + km + ",map={};KM.forEach(function(b){(b.gamepad||[]).forEach(function(gi){"
+            "if(b.keys&&b.keys[0])map[gi]=b.keys[0];});});var prev={};"
+            "function fire(t,c){try{var e=new KeyboardEvent(t,{code:c,key:c,bubbles:true});"
+            "window.dispatchEvent(e);document.dispatchEvent(e);}catch(_){}}"
+            "function poll(){try{var g=navigator.getGamepads?navigator.getGamepads():[];"
+            "for(var i=0;i<g.length;i++){var p=g[i];if(!p)continue;for(var j=0;j<p.buttons.length;j++){"
+            "var c=map[j];if(!c)continue;var d=p.buttons[j].pressed;if(d&&!prev[j])fire('keydown',c);"
+            "else if(!d&&prev[j])fire('keyup',c);prev[j]=d;}}}catch(_){}"
+            "requestAnimationFrame(poll);}requestAnimationFrame(poll);})();</script>")
+
+def game_html_b64(cid, keymap):
+    """读游戏的单文件 cartridge.html，注入按键 shim，base64 编码。"""
+    p = os.path.join(LIBRARY, cid, 'cartridge.html')
+    html = open(p, encoding='utf-8', errors='ignore').read()
+    shim = keymap_shim(keymap)
+    m = re.search(r'</body\s*>', html, re.I)
+    html = html[:m.start()] + shim + html[m.start():] if m else html + shim
+    return base64.b64encode(html.encode('utf-8')).decode('ascii')
+
 def build_game_objects(metas):
-    """把库里游戏转成 CartridgeOS 的 g 对象（pgame.url + keymap）。"""
+    """把库里游戏转成 CartridgeOS 的 g 对象（pgame.html 内联 + keymap）。
+    返回 (g_dict_无pgame, base64_html) 列表，pgame 由 inject 时拼成 atob(...)。"""
     objs = []
     for i, c in enumerate(metas):
-        objs.append({
+        g = {
             "id": "gen-" + c["id"],
             "num": f"{i+1:03d}",
             "title": c["title"],
@@ -225,10 +251,10 @@ def build_game_objects(metas):
             "rating": "T", "ratingFull": "TEEN",
             "grad": GRADS[i % len(GRADS)], "accent": "#00dfa0", "color": "#00dfa0",
             "desc": f"Apollo game build · {c['pkg']}",
-            "pgame": {"url": f"./games/{c['id']}/{c['entry'] or 'cartridge.html'}"},
             "keymap": c.get("keymap", default_keymap()),
             "_ts": 0,
-        })
+        }
+        objs.append((g, game_html_b64(c["id"], c.get("keymap"))))
     return objs
 
 OS_START = """#!/bin/sh
@@ -245,35 +271,33 @@ kill $SERVER_PID 2>/dev/null || true
 """
 
 def inject_os(os_html, game_objs):
-    """把 games 注入基座 OS：在 <body> 后插 seed 脚本写 localStorage.cart_library_v2。"""
-    seed = ("<script>/* cartridge-station: injected game set */(function(){try{"
-            "localStorage.setItem('cart_library_v2'," + json.dumps(json.dumps(game_objs, ensure_ascii=False)) + ");"
-            "}catch(e){console.warn('seed failed',e);}})();</script>")
-    m = re.search(r'<body[^>]*>', os_html, re.I)
+    """单 HTML all-in-one：像 OS 自己那样 GAMES.push（不动 localStorage → 内置游戏保留），
+    每个游戏 pgame.html = atob(base64 单文件 HTML)。插在 </body> 前：此时内置游戏 IIFE
+    已执行、轮盘构建(window load)还没跑 → 内置 + 新增都进 GAMES。"""
+    pushes = []
+    for g, b64 in game_objs:
+        pushes.append("(function(){var g=" + json.dumps(g, ensure_ascii=False) +
+                      ";g.pgame={html:atob('" + b64 + "')};"
+                      "try{GAMES.push(g);}catch(e){console.warn('[station] push',e);}})();")
+    script = ("<script>/* cartridge-station: appended games (inline pgame.html) */\n"
+              + "\n".join(pushes) + "\n</script>")
+    m = re.search(r'</body\s*>', os_html, re.I)
     if m:
-        i = m.end()
-        return os_html[:i] + "\n" + seed + "\n" + os_html[i:]
-    return seed + os_html
+        return os_html[:m.start()] + script + "\n" + os_html[m.start():]
+    return os_html + script
 
 def pack_os(ids, out_name):
+    """单 HTML all-in-one：基座 OS + 内联游戏 → 一个自包含 HTML（同输入 OS 的格式）。
+    要求游戏是单文件构建（cartridge.html 自包含）；多文件构建嵌进去能显示但跑不起来。"""
     if not os.path.exists(OS_PATH):
         raise ValueError("还没加载基座 OS（先点「加载 OS」）")
     lib = {c["id"]: c for c in list_library()}
-    chosen = [lib[i] for i in ids if i in lib]
+    chosen = [lib[i] for i in ids if i in lib and lib[i].get("source") != "os"]
     if not chosen:
-        raise ValueError("没选要放进 OS 的游戏")
+        raise ValueError("没选要放进 OS 的（已添加）游戏")
     os_html = open(OS_PATH, encoding='utf-8', errors='ignore').read()
     injected = inject_os(os_html, build_game_objects(chosen))
-    buf = io.BytesIO()
-    with tarfile.open(fileobj=buf, mode='w:gz') as tf:
-        def add_str(arc, text, mode=0o644):
-            b = text.encode('utf-8'); ti = tarfile.TarInfo('./' + arc); ti.size = len(b); ti.mode = mode
-            tf.addfile(ti, io.BytesIO(b))
-        add_str('cartridge.html', injected)
-        add_str('start.sh', OS_START, mode=0o755)
-        for c in chosen:
-            tf.add(os.path.join(LIBRARY, c["id"]), arcname='./games/' + c["id"], recursive=True)
-    return buf.getvalue()
+    return injected.encode('utf-8')
 
 # ── HTTP ──────────────────────────────────────────────────────────────
 class Handler(http.server.BaseHTTPRequestHandler):
@@ -335,8 +359,8 @@ class Handler(http.server.BaseHTTPRequestHandler):
                 req = json.loads(body or b'{}')
                 name = safe_id(req.get('name', 'apollo-os'))
                 data = pack_os(req.get('ids', []), name)
-                return self._send(200, data, 'application/gzip',
-                                  extra={'Content-Disposition': f'attachment; filename="{name}.tar.gz"'})
+                return self._send(200, data, 'text/html; charset=utf-8',
+                                  extra={'Content-Disposition': f'attachment; filename="{name}.html"'})
         except Exception as e:
             return self._json({"ok": False, "error": str(e)}, code=400)
         return self._send(404, 'not found', 'text/plain')

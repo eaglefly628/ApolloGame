@@ -128,8 +128,8 @@ $('#btnPack').onclick=async()=>{
     const r=await fetch('/api/pack',{method:'POST',body:JSON.stringify({ids,name})});
     if(!r.ok){ throw new Error((await r.json()).error); }
     const blob=await r.blob(); const a=document.createElement('a');
-    a.href=URL.createObjectURL(blob); a.download=name+'.tar.gz'; a.click(); URL.revokeObjectURL(a.href);
-    toast(`📦 新 OS 已生成：${name}.tar.gz（${ids.length} 游戏 + 基座内置）`,'ok');
+    a.href=URL.createObjectURL(blob); a.download=name+'.html'; a.click(); URL.revokeObjectURL(a.href);
+    toast(`📦 新 OS 已生成：${name}.html（单 HTML · ${ids.length} 新游戏 + 基座内置）`,'ok');
   }catch(e){ toast('✕ 打包失败：'+e.message,'err'); }
 };
 
