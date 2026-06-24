@@ -15,18 +15,13 @@ except Exception:
 ROOT = Path(__file__).resolve().parent.parent
 IS_WIN = os.name == "nt"
 
-GAME_IDS = ["game-a", "game-b", "game-c", "game-d", "game-e", "game-f", "game-g", "game-h"]
+GAME_IDS = ["game-e", "game-f", "game-g"]
 
 # (productName, appId) per game — overrides the defaults in electron-builder.yml
 GAME_META: dict[str, tuple[str, str]] = {
-    "game-a": ("ApolloCoopAdventure",     "com.apollo.gamea"),
-    "game-b": ("ApolloOtomeVN",           "com.apollo.gameb"),
-    "game-c": ("ApolloStitchStyle",       "com.apollo.gamec"),
-    "game-d": ("ApolloWarriorARPG",       "com.apollo.gamed"),
-    "game-e": ("ApolloBalatroDeck",       "com.apollo.gamee"),
-    "game-f": ("ApolloPixelKingdoms",     "com.apollo.gamef"),
-    "game-g": ("FateflipPoker",           "com.apollo.gameg"),
-    "game-h": ("ApolloGameH",             "com.apollo.gameh"),
+    "game-e": ("ApolloBalatroDeck",   "com.apollo.gamee"),
+    "game-f": ("ApolloPixelKingdoms", "com.apollo.gamef"),
+    "game-g": ("FateflipPoker",       "com.apollo.gameg"),
 }
 
 
