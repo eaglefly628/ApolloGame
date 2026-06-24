@@ -30,7 +30,7 @@
 <main id="view-library" class="view">
   <section class="left">
     <div id="drop" class="drop">
-      拖入 <b>.tar.gz</b> 游戏构建包，或点「添加」<span class="dim">（加完直接「打包全部」；Shift/右键可只选部分）</span>
+      拖入 <b>.tar.gz</b> 或<b>单文件 .html</b> 游戏，或点「添加」<span class="dim">（加完直接「打包全部」；Shift/右键可只选部分）</span>
       <div class="hint">游戏包 = cartridge.html + assets/ + start.sh</div>
     </div>
     <div id="grid" class="grid"></div>
@@ -59,9 +59,9 @@
   </section>
 </main>
 
-<input type="file" id="fileInput" multiple accept=".gz,.tgz,application/gzip">
+<input type="file" id="fileInput" multiple accept=".gz,.tgz,.html,application/gzip,text/html">
 <input type="file" id="osInput" accept=".html,text/html">
-<input type="file" id="replaceInput" accept=".gz,.tgz,application/gzip">
+<input type="file" id="replaceInput" accept=".gz,.tgz,.html,application/gzip,text/html">
 <div id="status"></div>
 <script src="/app.js"></script>
 </body>

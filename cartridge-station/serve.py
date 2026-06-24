@@ -53,30 +53,53 @@ def safe_id(name):
     return re.sub(r'[^a-zA-Z0-9._-]', '_', name)
 
 # ── 卡带元数据 ────────────────────────────────────────────────────────
-def extract_game_name(cart_dir, game_code):
-    """从游戏 cartridge-*.js 壳里的游戏注册表取真名：
-    "game-g":{title:"Game G: Fateflip Poker",subtitle:"翻命扑克 · 3D 掷命骨架"}
-    优先用中文 subtitle。"""
-    if not game_code:
-        return None
-    import glob
-    for js in glob.glob(os.path.join(cart_dir, 'assets', 'cartridge-*.js')):
+import glob as _glob
+def _game_sources(cart_dir):
+    """游戏注册表/代号可能在的文本：多文件壳 assets/cartridge-*.js 或单文件 cartridge.html。"""
+    srcs = _glob.glob(os.path.join(cart_dir, 'assets', 'cartridge-*.js'))
+    idx = os.path.join(cart_dir, 'cartridge.html')
+    if os.path.exists(idx):
+        srcs.append(idx)
+    for p in srcs:
         try:
-            txt = open(js, encoding='utf-8', errors='ignore').read()
+            yield open(p, encoding='utf-8', errors='ignore').read()
         except Exception:
             continue
+
+def detect_game_code(cart_dir):
+    """单文件无法从包名拿代号时，按内容里 "game-X" 出现频率推断目标游戏
+    （注册表里每个 game-X 各 1 次，目标游戏因实际引用会多出现 → 取最高且唯一）。"""
+    from collections import Counter
+    cnt = Counter()
+    for txt in _game_sources(cart_dir):
+        for code in re.findall(r'["\']game-([a-h])["\']', txt):   # 游戏代号=单字母 a–h
+            cnt[code] += 1
+    if not cnt:
+        return ''
+    top = cnt.most_common(2)
+    if len(top) == 1 or top[0][1] > top[1][1]:
+        return top[0][0]
+    return ''   # 并列 → 无法判定
+
+def extract_game_name(cart_dir, game_code):
+    """从游戏注册表取真名（优先中文 subtitle）：
+    "game-g":{title:"Game G: Fateflip Poker",subtitle:"翻命扑克 · 3D 掷命骨架"}"""
+    if not game_code:
+        return None
+    for txt in _game_sources(cart_dir):
         m = re.search(r'"game-' + re.escape(game_code) +
                       r'"\s*:\s*\{\s*title:\s*"([^"]+)"\s*,\s*subtitle:\s*"([^"]+)"', txt)
         if m:
-            sub = m.group(2).strip()
-            return sub or m.group(1).strip()
+            return m.group(2).strip() or m.group(1).strip()
     return None
 
 def parse_meta(cart_dir, pkg_name):
-    base = re.sub(r'\.tar\.gz$|\.tgz$', '', pkg_name)
+    base = re.sub(r'\.tar\.gz$|\.tgz$|\.html?$', '', pkg_name)
     m = re.search(r'game-([a-z0-9]+)-([a-z0-9]+)$', base)
     game_code = m.group(1) if m else ''
     hw = m.group(2) if m else ''
+    if not game_code:                       # 单文件/任意命名 → 从内容推断代号
+        game_code = detect_game_code(cart_dir)
     idx = os.path.join(cart_dir, 'cartridge.html')
     # 真名优先：从游戏壳注册表取（翻命扑克/小丑牌…）；否则 cartridge.html <title>；再否则包名
     title = extract_game_name(cart_dir, game_code) or base
@@ -148,23 +171,27 @@ def auto_keymap(cid):
     return km, sorted(found)
 
 def add_package(pkg_name, data_bytes, keep_keymap=None):
-    cid = safe_id(re.sub(r'\.tar\.gz$|\.tgz$', '', pkg_name))
+    cid = safe_id(re.sub(r'\.tar\.gz$|\.tgz$|\.html?$', '', pkg_name))
     dest = os.path.join(LIBRARY, cid)
     if os.path.exists(dest):
         shutil.rmtree(dest)
     os.makedirs(dest, exist_ok=True)
-    with tarfile.open(fileobj=io.BytesIO(data_bytes), mode='r:gz') as tf:
-        for m in tf.getmembers():
-            mp = os.path.normpath(m.name).lstrip('./')
-            if mp.startswith('..') or os.path.isabs(mp):
-                continue
-            target = os.path.join(dest, mp)
-            if m.isdir():
-                os.makedirs(target, exist_ok=True)
-            elif m.isfile():
-                os.makedirs(os.path.dirname(target), exist_ok=True)
-                with tf.extractfile(m) as src, open(target, 'wb') as dst:
-                    shutil.copyfileobj(src, dst)
+    if data_bytes[:2] == b'\x1f\x8b':          # gzip → tar.gz 多文件包
+        with tarfile.open(fileobj=io.BytesIO(data_bytes), mode='r:gz') as tf:
+            for m in tf.getmembers():
+                mp = os.path.normpath(m.name).lstrip('./')
+                if mp.startswith('..') or os.path.isabs(mp):
+                    continue
+                target = os.path.join(dest, mp)
+                if m.isdir():
+                    os.makedirs(target, exist_ok=True)
+                elif m.isfile():
+                    os.makedirs(os.path.dirname(target), exist_ok=True)
+                    with tf.extractfile(m) as src, open(target, 'wb') as dst:
+                        shutil.copyfileobj(src, dst)
+    else:                                       # 单个 HTML（单文件构建）→ 直接存为 cartridge.html
+        with open(os.path.join(dest, 'cartridge.html'), 'wb') as f:
+            f.write(data_bytes)
     meta = parse_meta(dest, pkg_name)
     if keep_keymap:
         meta["keymap"] = keep_keymap

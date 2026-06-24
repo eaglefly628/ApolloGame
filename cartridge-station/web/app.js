@@ -95,7 +95,7 @@ $('#osInput').onchange=async e=>{
 /* 添加 / 替换 */
 async function addFiles(files, replace){
   for(const f of files){
-    if(!/\.(tar\.gz|tgz|gz)$/i.test(f.name)){ toast('✕ 跳过非 .tar.gz：'+f.name,'err'); continue; }
+    if(!/\.(tar\.gz|tgz|gz|html?)$/i.test(f.name)){ toast('✕ 跳过：'+f.name+'（要 .tar.gz 或 .html）','err'); continue; }
     try{
       const q='/api/add?name='+encodeURIComponent(f.name)+(replace?'&replace=1':'');
       const d=await (await fetch(q,{method:'POST',body:f})).json();
