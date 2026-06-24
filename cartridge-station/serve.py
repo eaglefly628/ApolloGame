@@ -53,18 +53,38 @@ def safe_id(name):
     return re.sub(r'[^a-zA-Z0-9._-]', '_', name)
 
 # ── 卡带元数据 ────────────────────────────────────────────────────────
+def extract_game_name(cart_dir, game_code):
+    """从游戏 cartridge-*.js 壳里的游戏注册表取真名：
+    "game-g":{title:"Game G: Fateflip Poker",subtitle:"翻命扑克 · 3D 掷命骨架"}
+    优先用中文 subtitle。"""
+    if not game_code:
+        return None
+    import glob
+    for js in glob.glob(os.path.join(cart_dir, 'assets', 'cartridge-*.js')):
+        try:
+            txt = open(js, encoding='utf-8', errors='ignore').read()
+        except Exception:
+            continue
+        m = re.search(r'"game-' + re.escape(game_code) +
+                      r'"\s*:\s*\{\s*title:\s*"([^"]+)"\s*,\s*subtitle:\s*"([^"]+)"', txt)
+        if m:
+            sub = m.group(2).strip()
+            return sub or m.group(1).strip()
+    return None
+
 def parse_meta(cart_dir, pkg_name):
     base = re.sub(r'\.tar\.gz$|\.tgz$', '', pkg_name)
     m = re.search(r'game-([a-z0-9]+)-([a-z0-9]+)$', base)
     game_code = m.group(1) if m else ''
     hw = m.group(2) if m else ''
-    title = base
     idx = os.path.join(cart_dir, 'cartridge.html')
-    if os.path.exists(idx):
+    # 真名优先：从游戏壳注册表取（翻命扑克/小丑牌…）；否则 cartridge.html <title>；再否则包名
+    title = extract_game_name(cart_dir, game_code) or base
+    if title == base and os.path.exists(idx):
         try:
             t = open(idx, encoding='utf-8', errors='ignore').read(4000)
             mt = re.search(r'<title>(.*?)</title>', t, re.I | re.S)
-            if mt and mt.group(1).strip():
+            if mt and mt.group(1).strip() and mt.group(1).strip().lower() != 'apollo os':
                 title = mt.group(1).strip()
         except Exception:
             pass
