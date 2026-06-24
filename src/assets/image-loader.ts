@@ -17,9 +17,11 @@ export class ImageAssetLoader implements AssetLoader {
     // 命中则用 data: URI（无需外部文件）；否则走 baseUrl + src。
     const inline = (globalThis as unknown as { __APOLLO_INLINE_ASSETS__?: Record<string, string> })
       .__APOLLO_INLINE_ASSETS__;
-    const key = descriptor.src.replace(/^\//, '');
+    // 内联表键是裸路径（assets/FreeArtLib/...）；descriptor.src 可能带 BASE_URL 前缀（'./' 或 '/'）
+    // 或 baseUrl，统一剥掉前导 ./、/ 再匹配。
+    const bare = descriptor.src.replace(/^(\.?\/)+/, '');
     const url =
-      (inline && (inline[descriptor.src] ?? inline[key] ?? inline['/' + key])) ||
+      (inline && (inline[descriptor.src] ?? inline[bare] ?? inline['/' + bare])) ||
       this.baseUrl + descriptor.src;
     return new Promise((resolve, reject) => {
       const image = new Image();
