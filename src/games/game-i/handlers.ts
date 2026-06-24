@@ -30,6 +30,10 @@ export interface GalleryHooks {
   setControl: (kind: string, arg?: string) => void;
   /** 切 Tab 后回调（mountUI 已就地显示新页·宿主借此强制重绘刚显示的页·消除「显示即黑」）。 */
   afterTabSwitch: () => void;
+  /** 播放合成音（宿主 Web Audio 播放器·按 id 出声）。 */
+  playSound: (id?: string) => void;
+  /** 设音量（0~100·宿主存为播放增益）。 */
+  setSndVol: (v: number) => void;
 }
 
 export function buildHandlers(hooks: GalleryHooks): HandlerMap {
@@ -48,6 +52,10 @@ export function buildHandlers(hooks: GalleryHooks): HandlerMap {
     setQty: (a) => { L('setQty', a); hooks.setControl('qty', a); },
     setCity: (a) => { L('setCity', a); hooks.setControl('city', a); },
     setRating: (a) => { L('setRating', a); hooks.setControl('rating', a); },
+    // 声音测试：播放 / 音量 / 静音。
+    playSound: (a) => { L('playSound', a); hooks.playSound(a); },
+    setSndVol: (a) => { L('setSndVol', a); hooks.setSndVol(Number(a) || 0); },
+    toggleMute: (a) => { L('toggleMute', a); hooks.setControl('muted', a); },
     pickRow: (a) => L('pickRow', a),
     pickVRow: (a) => L('pickVRow', a),
     ctxAction: (a) => L('ctxAction', a),

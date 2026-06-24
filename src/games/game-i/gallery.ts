@@ -8,12 +8,13 @@ import type { LayoutNode } from '@ui/components/index.js';
 import { THEME_OPTIONS } from './themes.js';
 import { buildShop, INITIAL_SHOP, type ShopState } from './shop.js';
 import { buildPickHand, INITIAL_PICK, type PickState } from './pickcards.js';
+import { SOUNDS } from './sounds.js';
 
 // 自定义画选中态的交互控件值（必须进 state·点击改值 + 局部更新才会动）。
 export interface ControlsState {
-  flag: boolean; sound: boolean; speed: string; view: string; qty: number; rating: number; city: string;
+  flag: boolean; sound: boolean; speed: string; view: string; qty: number; rating: number; city: string; muted: boolean;
 }
-export const INITIAL_CONTROLS: ControlsState = { flag: true, sound: true, speed: '1', view: 'grid', qty: 3, rating: 3, city: '' };
+export const INITIAL_CONTROLS: ControlsState = { flag: true, sound: true, speed: '1', view: 'grid', qty: 3, rating: 3, city: '', muted: false };
 
 // 自包含演示图：内联 data-URI SVG（纯数据·不依赖外部资源文件），用于 Image 控件展示。
 const DEMO_IMG =
@@ -542,8 +543,47 @@ export const drawerOverlay: LayoutNode = {
   ],
 };
 
+// ── 页 6 · 声音测试（Web Audio 合成·无需音频文件）────────────────
+function buildSoundPage(c: ControlsState): LayoutNode {
+  return {
+    type: 'Panel',
+    id: 'page-sound',
+    props: { scroll: true },
+    layout: { direction: 'column', gap: 16, padding: 20 },
+    children: [
+      {
+        type: 'Panel', id: 'snd-hud', props: {},
+        layout: { direction: 'row', gap: 12, align: 'center', padding: 12 },
+        children: [
+          { type: 'Label', id: 'snd-title', props: { text: '🔊 声音测试', size: 'lg', bold: true }, layout: { flex: 1 } },
+          { type: 'Badge', id: 'snd-engine', props: { text: 'Web Audio 合成 · 无需音频文件', tone: 'dim' } },
+        ],
+      },
+      { type: 'Label', id: 'snd-hint', props: { text: '点按钮播放合成音（纯频率/波形数据驱动）。下方可调音量、静音。', color: 'dim', size: 'sm' } },
+      sectionTitle('snd-t-play', 'PLAY · 点击播放（→ 信号 playSound）'),
+      {
+        type: 'Panel', id: 'demo-sounds', props: {},
+        layout: { direction: 'grid', minCol: 120, gap: 10, padding: 8 },
+        children: SOUNDS.map((s): LayoutNode => ({
+          type: 'Button', id: `snd-${s.id}`,
+          props: { label: s.label, kind: 'ghost', action: 'playSound', actionArg: s.id },
+        })),
+      },
+      divider('snd-d1'),
+      sectionTitle('snd-t-ctl', '音量 / 静音'),
+      {
+        type: 'Panel', id: 'snd-ctl', props: {},
+        layout: { direction: 'column', gap: 12, padding: 8 },
+        children: [
+          { type: 'Slider', id: 'snd-vol', props: { min: 0, max: 100, step: 5, value: 70, label: '音量', action: 'setSndVol' } },
+          { type: 'Toggle', id: 'snd-mute', props: { label: '静音', checked: c.muted, action: 'toggleMute' } },
+        ],
+      },
+    ],
+  };
+}
+
 /**
- * 画廊根节点。activeTheme = 当前主题 value（让顶部主题下拉回显当前选择）；
  * modalOpen / drawerOpen = 是否叠加演示用模态浮层 / 抽屉（宿主状态驱动·开关都是数据/信号）。
  * 整棵树是纯数据：换主题只是换令牌包重挂载，这份数据一字不改。
  */
@@ -587,12 +627,13 @@ export function buildGallery(
             { id: 'tab-input', label: '输入与交互' },
             { id: 'tab-shop', label: '🧩 组合演示·商店' },
             { id: 'tab-pick', label: '🎴 组合演示·选牌' },
+            { id: 'tab-sound', label: '🔊 声音测试' },
           ],
           active: activeTab,
           action: 'switchTab',
         },
         layout: { flex: 1 },
-        children: [pageLayout, pageDisplay, buildPageInput(controls), buildShop(shop), buildPickHand(pick)],
+        children: [pageLayout, pageDisplay, buildPageInput(controls), buildShop(shop), buildPickHand(pick), buildSoundPage(controls)],
       },
       // 模态浮层 / 抽屉按需叠加（满屏遮罩·盖在主界面之上）
       ...(modalOpen ? [modalOverlay] : []),
