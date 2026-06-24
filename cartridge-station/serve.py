@@ -25,17 +25,25 @@ PORT    = int(os.environ.get('PORT', '8777'))
 for d in (LIBRARY, BASE):
     os.makedirs(d, exist_ok=True)
 
-# ── 默认按键映射（CartridgeOS PICO-8 六键掌机方案）─────────────────────
+# ── 默认按键映射 ──────────────────────────────────────────────────────
+# 掌机 = W3C「标准手柄」布局（浏览器 Gamepad API 固定索引，RK3562 等标准手柄通用）。
+# gamepad = 标准手柄按钮索引；keys = 键盘 e.code（模拟器常用约定：Z=A/X=B/A=X/S=Y/Q=L/W=R）。
 DEFAULT_KEYMAP = [
-    {"id": "up",     "label": "D-Pad ↑", "keys": ["ArrowUp", "KeyW"],        "gamepad": [12]},
-    {"id": "down",   "label": "D-Pad ↓", "keys": ["ArrowDown", "KeyS"],      "gamepad": [13]},
-    {"id": "left",   "label": "D-Pad ←", "keys": ["ArrowLeft", "KeyA"],      "gamepad": [14]},
-    {"id": "right",  "label": "D-Pad →", "keys": ["ArrowRight", "KeyD"],     "gamepad": [15]},
-    {"id": "a",      "label": "O · 确认", "keys": ["KeyZ", "KeyC", "Space"],  "gamepad": [0, 3]},
-    {"id": "b",      "label": "X · 取消", "keys": ["KeyX", "KeyV"],           "gamepad": [1, 2]},
-    {"id": "start",  "label": "START",   "keys": ["Enter"],                  "gamepad": [9]},
-    {"id": "select", "label": "SELECT",  "keys": ["ShiftRight"],             "gamepad": [8]},
-    {"id": "menu",   "label": "MENU",    "keys": ["Escape"],                 "gamepad": [16]},
+    {"id": "up",     "label": "↑ 上",    "keys": ["ArrowUp"],          "gamepad": [12]},
+    {"id": "down",   "label": "↓ 下",    "keys": ["ArrowDown"],        "gamepad": [13]},
+    {"id": "left",   "label": "← 左",    "keys": ["ArrowLeft"],        "gamepad": [14]},
+    {"id": "right",  "label": "→ 右",    "keys": ["ArrowRight"],       "gamepad": [15]},
+    {"id": "a",      "label": "A",       "keys": ["KeyZ", "Space"],    "gamepad": [0]},
+    {"id": "b",      "label": "B",       "keys": ["KeyX"],             "gamepad": [1]},
+    {"id": "x",      "label": "X",       "keys": ["KeyA"],             "gamepad": [2]},
+    {"id": "y",      "label": "Y",       "keys": ["KeyS"],             "gamepad": [3]},
+    {"id": "l1",     "label": "L · 左肩", "keys": ["KeyQ"],             "gamepad": [4]},
+    {"id": "r1",     "label": "R · 右肩", "keys": ["KeyW"],             "gamepad": [5]},
+    {"id": "l2",     "label": "L2 · 左扳机", "keys": ["Digit1"],       "gamepad": [6]},
+    {"id": "r2",     "label": "R2 · 右扳机", "keys": ["Digit2"],       "gamepad": [7]},
+    {"id": "select", "label": "SELECT",  "keys": ["ShiftRight"],       "gamepad": [8]},
+    {"id": "start",  "label": "START",   "keys": ["Enter"],            "gamepad": [9]},
+    {"id": "menu",   "label": "MENU · 菜单", "keys": ["Escape"],       "gamepad": [16]},
 ]
 import copy
 def default_keymap():
