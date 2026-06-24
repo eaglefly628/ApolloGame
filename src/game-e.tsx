@@ -39,8 +39,9 @@ const ENGINE_TO_HR: Record<string, HandType> = {
 // 资源前缀：dev/web 为 '/'，烧录(electron file://, base './') 为 './' —— 用 BASE_URL 让 /assets 路径在两边都解析。
 const ASSET_BASE: string = (import.meta as unknown as { env?: { BASE_URL?: string } }).env?.BASE_URL ?? '/';
 // inlineUrl：单文件构建命中内联表给 data: URI；否则走 ASSET_BASE+路径（多文件不变）。
-const CARDS_URL = inlineUrl('assets/FreeArtLib/cardgame/cards.png', ASSET_BASE);
-const COIN_URL = inlineUrl('assets/FreeArtLib/item/gold/gold_pile.png', ASSET_BASE); // 过关金币迸射（真素材，缺图回退 🪙）
+// 写成函数=懒求值：在渲染时才算，确保内联表（classic 脚本）已就绪（避免模块顶层早求值拿到坏路径）。
+const CARDS_URL = () => inlineUrl('assets/FreeArtLib/cardgame/cards.png', ASSET_BASE);
+const COIN_URL = () => inlineUrl('assets/FreeArtLib/item/gold/gold_pile.png', ASSET_BASE); // 过关金币迸射（真素材，缺图回退 🪙）
 const JOKER_URL = (name: string) => inlineUrl(`assets/FreeArtLib/cardgame/card/${name.replace(/ /g, '_')}.webp`, ASSET_BASE);
 const SCALE = 0.82; // 手牌显示缩放（8 张一行排得下）
 const CW = Math.round(CELL_W * SCALE);
@@ -79,7 +80,7 @@ function cardBg(suit: Suit, rank: Rank): React.CSSProperties {
   const { col, row } = cardCell(suit, rank);
   return {
     width: CW, height: CH,
-    backgroundImage: `url(${CARDS_URL})`,
+    backgroundImage: `url(${CARDS_URL()})`,
     backgroundSize: `${SHEET_W * SCALE}px ${SHEET_H * SCALE}px`,
     backgroundPosition: `-${col * CELL_W * SCALE}px -${row * CELL_H * SCALE}px`,
     borderRadius: 6,
@@ -608,7 +609,7 @@ function GameE() {
           <div style={{ position: 'relative', display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
             {/* 金币迸射（真素材 gold_pile，缺图回退 🪙）*/}
             {Array.from({ length: 6 }).map((_, i) => (
-              <img key={i} src={COIN_URL} alt="" style={{ position: 'absolute', bottom: 18, left: `${6 + i * 16}px`, width: 26, height: 26, imageRendering: 'pixelated', animation: `ge-coinfly ${0.9 + (i % 3) * 0.25}s ease-out ${0.15 + i * 0.12}s infinite`, zIndex: 2 }} onError={(e) => { const s = e.currentTarget; s.outerHTML = '<span style="position:absolute;bottom:18px;left:' + (6 + i * 16) + 'px;font-size:22px;animation:ge-coinfly ' + (0.9 + (i % 3) * 0.25) + 's ease-out ' + (0.15 + i * 0.12) + 's infinite">🪙</span>'; }} />
+              <img key={i} src={COIN_URL()} alt="" style={{ position: 'absolute', bottom: 18, left: `${6 + i * 16}px`, width: 26, height: 26, imageRendering: 'pixelated', animation: `ge-coinfly ${0.9 + (i % 3) * 0.25}s ease-out ${0.15 + i * 0.12}s infinite`, zIndex: 2 }} onError={(e) => { const s = e.currentTarget; s.outerHTML = '<span style="position:absolute;bottom:18px;left:' + (6 + i * 16) + 'px;font-size:22px;animation:ge-coinfly ' + (0.9 + (i % 3) * 0.25) + 's ease-out ' + (0.15 + i * 0.12) + 's infinite">🪙</span>'; }} />
             ))}
             {/* 牌子 */}
             <div style={{ transformOrigin: 'bottom center', animation: 'ge-signWave 1.1s ease-in-out infinite', marginBottom: -6, zIndex: 3 }}>
