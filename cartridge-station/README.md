@@ -31,7 +31,7 @@ start.sh         python3 http.server + chromium --kiosk 启动脚本
 |---|---|
 | ➕ **添加包** | 选择 / 拖入 `.tar.gz` → 解包入库（`library/<id>/`） |
 | ➖ **移除** | 从库删除（先 Shift+点 或 右键 多选） |
-| 📦 **打包新 OS** | 加载基座 OS + 添加游戏 → 生成**单 HTML**（all-in-one，与基座 OS 同格式）：内置游戏保留 + 新游戏内联为 `pgame.html` + 注入按键映射 shim。**游戏需单文件构建**（vite-plugin-singlefile）才能真正运行。 |
+| 📦 **打包新 OS** | 永远输出**单 HTML**（与输入 OS 同格式）：内置游戏保留 + 每个游戏内联为 `pgame.html` + 按键 shim。游戏须**单文件构建**（`npm run build:cartridge:single`）才能跑；多文件会警告（只内联了壳）。 |
 
 - **预览**：点卡带 → 右侧「▶ 启动」用 iframe 真启动 `cartridge.html`。
 - **多选**：Shift/Ctrl/⌘+点 或 右键，用于移除 / 打包。

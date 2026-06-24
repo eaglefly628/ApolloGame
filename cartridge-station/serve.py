@@ -262,8 +262,8 @@ def is_single_file(cid):
     return not re.search(r'(src|href)\s*=\s*["\']\.?/?assets/', html, re.I)
 
 def build_game_objects(metas):
-    """每个游戏 → (g对象, mode, payload)。
-    mode='inline' → payload=base64(自包含HTML+shim)；mode='relative' → payload=相对url。"""
+    """每个游戏 → (g对象, base64_html, is_single)。永远内联（单 HTML 输出）。
+    多文件游戏 is_single=False（只内联了壳，跑不起来，前端会警告）。"""
     objs = []
     for i, c in enumerate(metas):
         cid = c["id"]; keymap = c.get("keymap")
@@ -276,13 +276,9 @@ def build_game_objects(metas):
             "desc": f"Apollo game build · {c['pkg']}",
             "keymap": keymap or default_keymap(), "_ts": 0,
         }
-        if is_single_file(cid):
-            html = open(os.path.join(LIBRARY, cid, 'cartridge.html'), encoding='utf-8', errors='ignore').read()
-            b64 = base64.b64encode(inject_shim(html, keymap).encode('utf-8')).decode('ascii')
-            objs.append((g, 'inline', b64))
-        else:
-            entry = c.get("entry") or "cartridge.html"
-            objs.append((g, 'relative', f"./games/{cid}/{entry}"))
+        html = open(os.path.join(LIBRARY, cid, 'cartridge.html'), encoding='utf-8', errors='ignore').read()
+        b64 = base64.b64encode(inject_shim(html, keymap).encode('utf-8')).decode('ascii')
+        objs.append((g, b64, is_single_file(cid)))
     return objs
 
 OS_START = """#!/bin/sh
@@ -303,12 +299,8 @@ def inject_os(os_html, game_objs):
     并主动复用 OS 的 makeCartridge + repositionAll + buildDots 把新游戏加进轮盘
     （轮盘解析期就建好了，单纯 push 太晚）。inline → pgame.html=atob；relative → pgame.url。"""
     items = []
-    for g, mode, payload in game_objs:
-        if mode == 'inline':
-            pg = "{html:atob('" + payload + "')}"
-        else:
-            pg = "{url:" + json.dumps(payload, ensure_ascii=False) + "}"
-        items.append("{g:" + json.dumps(g, ensure_ascii=False) + ",pg:" + pg + "}")
+    for g, b64, _single in game_objs:
+        items.append("{g:" + json.dumps(g, ensure_ascii=False) + ",pg:{html:atob('" + b64 + "')}}")
     script = (
         "<script>/* cartridge-station: append games + rebuild carousel */(function(){\n"
         "var NEW=[" + ",".join(items) + "];\n"
@@ -326,8 +318,8 @@ def inject_os(os_html, game_objs):
     return (os_html[:i] + script + "\n" + os_html[i:]) if i != -1 else os_html + script
 
 def pack_os(ids, out_name):
-    """自动混合：单文件游戏内联进 OS HTML；多文件游戏走相对 games/<id>/。
-    全单文件 → 返回 (html_bytes, '.html')；有多文件 → 返回 (tar.gz, '.tar.gz')。"""
+    """永远输出单 HTML（与输入 OS 同格式）：每个游戏内联为 pgame.html。
+    返回 (html_bytes, multi_file_titles)。多文件游戏只内联壳、跑不起来，标题回报供前端警告。"""
     if not os.path.exists(OS_PATH):
         raise ValueError("还没加载基座 OS（先点「加载 OS」）")
     lib = {c["id"]: c for c in list_library()}
@@ -337,32 +329,8 @@ def pack_os(ids, out_name):
     objs = build_game_objects(chosen)
     os_html = open(OS_PATH, encoding='utf-8', errors='ignore').read()
     injected = inject_os(os_html, objs)
-    relative = [c for c, (g, mode, _) in zip(chosen, objs) if mode == 'relative']
-    if not relative:                       # 全单文件 → 单 HTML
-        return injected.encode('utf-8'), '.html'
-    # 有多文件 → tar.gz：OS壳 + start.sh + 每个多文件游戏的 games/<id>/（注入 shim）
-    buf = io.BytesIO()
-    with tarfile.open(fileobj=buf, mode='w:gz') as tf:
-        def add_str(arc, text, mode=0o644):
-            b = text.encode('utf-8'); ti = tarfile.TarInfo('./' + arc); ti.size = len(b); ti.mode = mode
-            tf.addfile(ti, io.BytesIO(b))
-        add_str('cartridge.html', injected)
-        add_str('start.sh', OS_START, mode=0o755)
-        for c in relative:
-            base = os.path.join(LIBRARY, c["id"])
-            for dp, _, fns in os.walk(base):
-                for fn in fns:
-                    if fn == '.station.json':
-                        continue
-                    full = os.path.join(dp, fn)
-                    rel = os.path.relpath(full, base)
-                    arc = './games/' + c["id"] + '/' + rel.replace(os.sep, '/')
-                    if fn == 'cartridge.html':   # 注入按键 shim
-                        h = inject_shim(open(full, encoding='utf-8', errors='ignore').read(), c.get("keymap"))
-                        add_str('games/' + c["id"] + '/' + rel.replace(os.sep, '/'), h)
-                    else:
-                        tf.add(full, arcname=arc)
-    return buf.getvalue(), '.tar.gz'
+    multi = [c["title"] for c, (_g, _b, single) in zip(chosen, objs) if not single]
+    return injected.encode('utf-8'), multi
 
 # ── HTTP ──────────────────────────────────────────────────────────────
 class Handler(http.server.BaseHTTPRequestHandler):
@@ -432,10 +400,11 @@ class Handler(http.server.BaseHTTPRequestHandler):
             if u.path == '/api/pack':
                 req = json.loads(body or b'{}')
                 name = safe_id(req.get('name', 'apollo-os'))
-                data, ext = pack_os(req.get('ids', []), name)
-                ct = 'text/html; charset=utf-8' if ext == '.html' else 'application/gzip'
-                return self._send(200, data, ct,
-                                  extra={'Content-Disposition': f'attachment; filename="{name}{ext}"'})
+                data, multi = pack_os(req.get('ids', []), name)
+                extra = {'Content-Disposition': f'attachment; filename="{name}.html"'}
+                if multi:
+                    extra['X-Multifile-Warning'] = urllib.parse.quote(' / '.join(multi))
+                return self._send(200, data, 'text/html; charset=utf-8', extra=extra)
         except Exception as e:
             return self._json({"ok": False, "error": str(e)}, code=400)
         return self._send(404, 'not found', 'text/plain')
