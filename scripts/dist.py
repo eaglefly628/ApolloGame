@@ -56,7 +56,7 @@ def pick_platforms() -> list[str]:
     print("  选平台（多选用逗号，如 1,3）：")
     print("    1) Mac .dmg")
     print("    2) Windows .zip")
-    print("    3) 掌机 .tar.gz")
+    print("    3) 掌机 单 HTML + .tar.gz")
     print("    4) 全部")
     raw = input("  > ").strip()
     if not raw:
@@ -108,14 +108,16 @@ def build_desktop(game_id: str, platforms: list[str]) -> None:
 
 
 def build_handheld(game_id: str) -> None:
+    import shutil
     run([sys.executable, str(ROOT / "scripts" / "build_game.py"), game_id])
-    src = ROOT / f"apollo-{game_id}-rk3562.tar.gz"
-    dst = ROOT / "release" / game_id / "bin" / f"apollo-{game_id}-rk3562.tar.gz"
-    if src.exists():
-        import shutil
-        dst.parent.mkdir(parents=True, exist_ok=True)
-        shutil.move(str(src), str(dst))
-        print(f"  → 已移至 release/{game_id}/bin/apollo-{game_id}-rk3562.tar.gz")
+    bin_dir = ROOT / "release" / game_id / "bin"
+    bin_dir.mkdir(parents=True, exist_ok=True)
+    # 掌机版产物：单 HTML（喂 cartridge-station）+ tar.gz（设备部署）
+    for fname in (f"apollo-{game_id}-rk3562.html", f"apollo-{game_id}-rk3562.tar.gz"):
+        src = ROOT / fname
+        if src.exists():
+            shutil.move(str(src), str(bin_dir / fname))
+            print(f"  → 已移至 release/{game_id}/bin/{fname}")
 
 
 def main() -> None:
@@ -127,7 +129,7 @@ def main() -> None:
     game_id = pick_game()
     platforms = pick_platforms()
 
-    labels = {"mac": "Mac .dmg", "win": "Windows .zip", "handheld": "掌机 .tar.gz"}
+    labels = {"mac": "Mac .dmg", "win": "Windows .zip", "handheld": "掌机 单HTML+tar.gz"}
     plat_str = " + ".join(labels[p] for p in platforms)
 
     print()
@@ -150,12 +152,12 @@ def main() -> None:
     desktop = [p for p in platforms if p in ("mac", "win")]
     if desktop:
         n += 1
-        print(f"\n  ┌─ [{n}/{total}] 打包桌面版 ({plat_str.replace(' + 掌机 .tar.gz', '')})")
+        print(f"\n  ┌─ [{n}/{total}] 打包桌面版 ({plat_str.replace(' + 掌机 单HTML+tar.gz', '')})")
         build_desktop(game_id, desktop)
 
     if "handheld" in platforms:
         n += 1
-        print(f"\n  ┌─ [{n}/{total}] 打包掌机版 (RK3562 .tar.gz)")
+        print(f"\n  ┌─ [{n}/{total}] 打包掌机版 (RK3562 · 单 HTML + tar.gz)")
         build_handheld(game_id)
 
     print()
