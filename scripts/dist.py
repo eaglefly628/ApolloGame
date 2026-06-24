@@ -17,6 +17,18 @@ IS_WIN = os.name == "nt"
 
 GAME_IDS = ["game-a", "game-b", "game-c", "game-d", "game-e", "game-f", "game-g", "game-h"]
 
+# (productName, appId) per game — overrides the defaults in electron-builder.yml
+GAME_META: dict[str, tuple[str, str]] = {
+    "game-a": ("ApolloCoopAdventure",     "com.apollo.gamea"),
+    "game-b": ("ApolloOtomeVN",           "com.apollo.gameb"),
+    "game-c": ("ApolloStitchStyle",       "com.apollo.gamec"),
+    "game-d": ("ApolloWarriorARPG",       "com.apollo.gamed"),
+    "game-e": ("ApolloBalatroDeck",       "com.apollo.gamee"),
+    "game-f": ("ApolloPixelKingdoms",     "com.apollo.gamef"),
+    "game-g": ("FateflipPoker",           "com.apollo.gameg"),
+    "game-h": ("ApolloGameH",             "com.apollo.gameh"),
+}
+
 
 def run(cmd: list[str] | str, env: dict | None = None, **kwargs) -> None:
     label = cmd if isinstance(cmd, str) else " ".join(cmd)
@@ -91,9 +103,12 @@ def build_desktop(game_id: str, platforms: list[str]) -> None:
     if not flags:
         return
     out_dir = f"release/{game_id}/bin"
+    product_name, app_id = GAME_META.get(game_id, (game_id, f"com.apollo.{game_id.replace('-', '')}"))
     run(["npx", "electron-builder"] + flags + [
         "--config", "electron-builder.yml",
         f"-c.directories.output={out_dir}",
+        f"-c.productName={product_name}",
+        f"-c.appId={app_id}",
     ])
 
 
