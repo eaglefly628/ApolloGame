@@ -2,7 +2,6 @@ import { defineConfig } from 'vite';
 import react from '@vitejs/plugin-react';
 import { resolve } from 'path';
 import { copyUsedAssets, inlineUsedAssets } from './vite.assets';
-import { viteSingleFile } from 'vite-plugin-singlefile';
 
 const targetGame = process.env.VITE_TARGET_GAME ?? 'game-f';
 
@@ -25,12 +24,14 @@ function setTitlePlugin() {
 // （供 cartridge-station 打成单 HTML OS）。默认关闭，团队正常多文件 tar.gz 构建不受影响。
 const singleFile = process.env.VITE_SINGLEFILE === '1';
 
-export default defineConfig({
+// 配置写成 async：vite-plugin-singlefile 仅单文件模式按需 import —— 桌面版(Mac/Win)
+// 不依赖它、未装也能编译；只有单 HTML 构建才需要（先 npm install 拉取）。
+export default defineConfig(async () => ({
   plugins: [
     react(),
     setTitlePlugin(),
     ...(singleFile
-      ? [inlineUsedAssets(__dirname, targetGame), viteSingleFile()]   // 只内联本游戏美术 + JS/CSS → 单 HTML 自带美术
+      ? [inlineUsedAssets(__dirname, targetGame), (await import('vite-plugin-singlefile')).viteSingleFile()]
       : [copyUsedAssets(__dirname, 'dist-cartridge')]),
   ],
   root: '.',
@@ -57,4 +58,4 @@ export default defineConfig({
       '@net':        resolve(__dirname, 'src/net'),
     },
   },
-});
+}));
