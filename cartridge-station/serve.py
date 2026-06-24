@@ -274,18 +274,26 @@ def inject_os(os_html, game_objs):
     """单 HTML all-in-one：像 OS 自己那样 GAMES.push（不动 localStorage → 内置游戏保留），
     每个游戏 pgame.html = atob(base64 单文件 HTML)。插在 </body> 前：此时内置游戏 IIFE
     已执行、轮盘构建(window load)还没跑 → 内置 + 新增都进 GAMES。"""
-    pushes = []
+    items = []
     for g, b64 in game_objs:
-        pushes.append("(function(){var g=" + json.dumps(g, ensure_ascii=False) +
-                      ";g.pgame={html:atob('" + b64 + "')};"
-                      "try{GAMES.push(g);}catch(e){console.warn('[station] push',e);}})();")
-    script = ("<script>/* cartridge-station: appended games (inline pgame.html) */\n"
-              + "\n".join(pushes) + "\n</script>")
-    # 用最后一个 </body>（文档真正结尾）——OS 里有多个 </body> 字面量藏在 JS 模板字符串中
-    i = os_html.lower().rfind('</body>')
-    if i != -1:
-        return os_html[:i] + script + "\n" + os_html[i:]
-    return os_html + script
+        items.append("{g:" + json.dumps(g, ensure_ascii=False) + ",b:'" + b64 + "'}")
+    # 不只 GAMES.push（轮盘在解析期就建好了，push 太晚）——主动复用 OS 自己的
+    # makeCartridge + repositionAll + buildDots 把新游戏加进轮盘（同运行时加游戏的套路）。
+    script = (
+        "<script>/* cartridge-station: append games + rebuild carousel */(function(){\n"
+        "var NEW=[" + ",".join(items) + "];\n"
+        "function go(){\n"
+        "  if(typeof GAMES==='undefined'||typeof makeCartridge!=='function'||typeof carousel==='undefined')return setTimeout(go,60);\n"
+        "  NEW.forEach(function(it){try{var g=it.g;g.pgame={html:atob(it.b)};"
+        "if(GAMES.some(function(x){return x.id===g.id}))return;GAMES.push(g);"
+        "var el=makeCartridge(g,GAMES.length-1);carousel.ring.appendChild(el);carousel.elements.push(el);"
+        "}catch(e){console.warn('[station] add',e);}});\n"
+        "  try{carousel.N=GAMES.length;carousel.repositionAll&&carousel.repositionAll();carousel.buildDots&&carousel.buildDots();}catch(e){console.warn('[station] rebuild',e);}\n"
+        "}\n"
+        "if(document.readyState==='loading')window.addEventListener('DOMContentLoaded',go);else go();\n"
+        "})();</script>")
+    i = os_html.lower().rfind('</body>')   # 文档真正结尾（OS 里有多个 </body> 藏在 JS 字符串）
+    return (os_html[:i] + script + "\n" + os_html[i:]) if i != -1 else os_html + script
 
 def pack_os(ids, out_name):
     """单 HTML all-in-one：基座 OS + 内联游戏 → 一个自包含 HTML（同输入 OS 的格式）。
@@ -348,6 +356,15 @@ class Handler(http.server.BaseHTTPRequestHandler):
                 return self._json({"ok": True, "cartridge": add_package(name, body, keep_keymap=keep)})
             if u.path == '/api/remove':
                 return self._json({"ok": remove_package(json.loads(body or b'{}').get('id', ''))})
+            if u.path == '/api/clear':
+                for name in os.listdir(LIBRARY):
+                    if os.path.isdir(os.path.join(LIBRARY, name)):
+                        remove_package(name)
+                return self._json({"ok": True})
+            if u.path == '/api/unload-os':
+                for p in (OS_PATH, OS_GAMES_PATH):
+                    if os.path.exists(p): os.remove(p)
+                return self._json({"ok": True})
             if u.path == '/api/keymap/set':
                 req = json.loads(body or b'{}'); cid = safe_id(req.get('id', ''))
                 meta = read_meta(cid); meta['keymap'] = req.get('keymap', default_keymap()); write_meta(cid, meta)

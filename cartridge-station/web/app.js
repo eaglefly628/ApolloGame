@@ -25,17 +25,20 @@ $$('.tab').forEach(t=>t.onclick=()=>{
 async function refresh(){
   const d = await (await fetch('/api/state')).json();
   LIB = d.cartridges||[]; OS = d.os||{loaded:false};
-  $('#osStat').textContent = '基座 OS：' + (OS.loaded ? '已加载 ('+fmtBytes(OS.bytes)+')' : '未加载');
+  const builtin = LIB.filter(c=>c.source==='os').length;
+  const added = LIB.length - builtin;
+  $('#osStat').innerHTML = OS.loaded
+    ? `基座 OS ✓ <b>${builtin}</b> 内置 + <b>${added}</b> 添加 → 打包 ${added} 个`
+    : '基座 OS：未加载';
   $('#osStat').classList.toggle('ok', OS.loaded);
   renderGrid();
 }
 function updateButtons(){
   const builds = LIB.filter(c=>c.source!=='os');
-  // 按钮常亮（不再用 disabled 灰态迷惑人）——点击时各自校验、给 toast 提示
-  $('#btnRemove').disabled = false;
-  $('#btnReplace').disabled = false;
-  $('#btnPack').disabled = false;
-  $('#btnPack').textContent = picks.size>=1 ? `📦 打包(${picks.size})` : (builds.length?`📦 打包全部(${builds.length})`:'📦 打包新 OS');
+  // 按钮常亮，点击时各自校验给 toast
+  ['#btnRemove','#btnReplace','#btnPack','#btnClear'].forEach(s=>$(s)&&($(s).disabled=false));
+  // 打包 = 库里全部已添加游戏（所见即所打）
+  $('#btnPack').textContent = builds.length ? `📦 打包新 OS (${builds.length} 游戏)` : '📦 打包新 OS';
 }
 function renderGrid(){
   const g=$('#grid');
@@ -116,12 +119,20 @@ $('#btnRemove').onclick=async()=>{
   picks.clear(); curId=null; await refresh(); toast('已移除','ok');
 };
 
-/* 打包新 OS：选中则打选中，否则默认打包全部已添加的构建 */
+/* 清空已添加的游戏（不动基座 OS）*/
+$('#btnClear').onclick=async()=>{
+  const builds = LIB.filter(c=>c.source!=='os');
+  if(!builds.length){ toast('库里没有已添加的游戏','err'); return; }
+  if(!confirm(`清空全部 ${builds.length} 个已添加的游戏？（基座 OS 及其内置游戏不动）`)) return;
+  await fetch('/api/clear',{method:'POST'}); picks.clear(); curId=null;
+  await refresh(); toast('已清空添加的游戏','ok');
+};
+
+/* 打包新 OS = 基座 OS + 库里全部已添加游戏（所见即所打）*/
 $('#btnPack').onclick=async()=>{
   if(!OS.loaded){ toast('先加载基座 OS（📂 加载 OS）','err'); return; }
-  const builds = LIB.filter(c=>c.source!=='os');
-  const ids = picks.size ? [...picks].filter(id=>{const c=LIB.find(x=>x.id===id);return c&&c.source!=='os';}) : builds.map(c=>c.id);
-  if(!ids.length){ toast('先添加至少一个 .tar.gz 游戏','err'); return; }
+  const ids = LIB.filter(c=>c.source!=='os').map(c=>c.id);
+  if(!ids.length){ toast('先添加至少一个游戏再打包','err'); return; }
   const name=prompt('新 OS 包名（不含扩展名）：','apollo-os')||'apollo-os';
   toast('打包中…');
   try{
