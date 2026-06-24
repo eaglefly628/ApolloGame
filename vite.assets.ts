@@ -9,19 +9,20 @@ function parseNames(root: string, file: string, re: RegExp): string[] | null {
   try { return [...readFileSync(resolve(root, file), 'utf8').matchAll(re)].map((m) => m[1]); } catch { return null; }
 }
 
-/** 返回用到的美术相对路径列表（相对 assets/FreeArtLib/）。 */
-export function usedAssetRels(root: string): string[] {
+/** 返回用到的美术相对路径列表（相对 assets/FreeArtLib/）。target 给定时只返回该游戏的。 */
+export function usedAssetRels(root: string, target?: string): string[] {
   const rels: string[] = [];
-  // ── game-e（小丑牌）──
-  rels.push('cardgame/cards.png');
-  const jn = parseNames(root, 'src/games/game-e/jokers.ts', /name: '([^']+)'/g);
-  if (jn) for (const n of new Set(jn)) rels.push(`cardgame/card/${n.replace(/ /g, '_')}.webp`);
-  rels.push('item/gold/gold_pile.png', 'gui/tavern.png', 'gui/spells/components/scroll.png');
-  // ── game-f（自走棋）──
-  const mn = parseNames(root, 'src/games/game-f/assets.ts', /dcss\('([^']+)'\)/g);
-  if (mn) for (const n of new Set(mn)) rels.push(`monster/${n}.png`);
-  const fn = parseNames(root, 'src/games/game-f/assets.ts', /fx\('([^']+)'\)/g);
-  if (fn) for (const n of new Set(fn)) rels.push(`effect/${n}.png`);
+  if (!target || target === 'game-e') {
+    rels.push('cardgame/cards.png', 'item/gold/gold_pile.png', 'gui/tavern.png', 'gui/spells/components/scroll.png');
+    const jn = parseNames(root, 'src/games/game-e/jokers.ts', /name: '([^']+)'/g);
+    if (jn) for (const n of new Set(jn)) rels.push(`cardgame/card/${n.replace(/ /g, '_')}.webp`);
+  }
+  if (!target || target === 'game-f') {
+    const mn = parseNames(root, 'src/games/game-f/assets.ts', /dcss\('([^']+)'\)/g);
+    if (mn) for (const n of new Set(mn)) rels.push(`monster/${n}.png`);
+    const fn = parseNames(root, 'src/games/game-f/assets.ts', /fx\('([^']+)'\)/g);
+    if (fn) for (const n of new Set(fn)) rels.push(`effect/${n}.png`);
+  }
   return rels;
 }
 
@@ -50,14 +51,14 @@ const MIME: Record<string, string> = {
 // 单文件模式：把用到的美术 base64 注入 globalThis.__APOLLO_INLINE_ASSETS__
 // （键 = 'assets/FreeArtLib/<rel>'，与 game-*/assets.ts 的 descriptor.src 一致），
 // 让单 HTML 自带美术、运行时无需外部文件。配合 vite-plugin-singlefile。
-export function inlineUsedAssets(root: string) {
+export function inlineUsedAssets(root: string, target?: string) {
   const srcDir = resolve(root, 'assets/FreeArtLib');
   return {
     name: 'inline-used-assets',
     apply: 'build' as const,
     transformIndexHtml(html: string) {
       const map: Record<string, string> = {};
-      for (const rel of usedAssetRels(root)) {
+      for (const rel of usedAssetRels(root, target)) {
         const s = resolve(srcDir, rel);
         if (!existsSync(s)) continue;
         const ext = rel.slice(rel.lastIndexOf('.')).toLowerCase();
