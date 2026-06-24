@@ -44,8 +44,8 @@ function renderGrid(){
     el.innerHTML=`<div class="scrim"></div><div class="pick">✓</div>
       <span class="n">${String(i+1).padStart(2,'0')}</span>
       <div class="body"><div class="t">${esc(c.title)}</div>
-      <div class="meta">${c.files} 文件 · ${fmtBytes(c.bytes)}${c.playable?'':' · ⚠无入口'}</div>
-      ${c.hw?`<span class="hw">${esc(c.hw)}</span>`:''}</div>`;
+      <div class="meta">${c.source==='os'?'OS 内置 · '+esc(c.genre||''):c.files+' 文件 · '+fmtBytes(c.bytes)+(c.playable?'':' · ⚠无入口')}</div>
+      ${c.source==='os'?'<span class="hw os">内置</span>':(c.hw?`<span class="hw">${esc(c.hw)}</span>`:'')}</div>`;
     el.onclick=e=>{ if(e.shiftKey||e.metaKey||e.ctrlKey) togglePick(c.id); else { curId=c.id; renderDetail(); renderGrid(); } };
     el.oncontextmenu=e=>{ e.preventDefault(); togglePick(c.id); };
     g.appendChild(el);

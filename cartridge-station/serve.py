@@ -151,14 +151,51 @@ def remove_package(cid):
 
 # ── 基座 OS ───────────────────────────────────────────────────────────
 OS_PATH = os.path.join(BASE, 'os.html')
+OS_GAMES_PATH = os.path.join(BASE, 'os_games.json')
+
+def parse_os_games(html):
+    """解析 OS HTML 里内置的游戏（var g={...}; GAMES.push(g)）。"""
+    out = []
+    for m in re.finditer(r'var g\s*=\s*\{(.*?)\};\s*GAMES\.push\(g\)', html, re.S):
+        body = m.group(1)
+        def fld(name):
+            mm = re.search(name + r"\s*:\s*'((?:[^'\\]|\\.)*)'", body)
+            return mm.group(1) if mm else ''
+        gid = fld('id')
+        if not gid:
+            continue
+        tags = []
+        mt = re.search(r'tags\s*:\s*\[([^\]]*)\]', body)
+        if mt:
+            tags = [a or b for a, b in re.findall(r"'([^']*)'|\"([^\"]*)\"", mt.group(1))]
+        out.append({
+            "id": gid, "pkg": "(OS 内置)", "title": fld('title') or gid,
+            "game": "", "hw": "", "genre": fld('genre'),
+            "tags": tags, "grad": fld('grad'), "accent": fld('accent'), "num": fld('num'),
+            "files": 0, "bytes": 0, "entry": None, "playable": False,
+            "source": "os", "keymap": default_keymap(),
+        })
+    return out
+
+def load_os_games():
+    if os.path.exists(OS_GAMES_PATH):
+        try: return json.load(open(OS_GAMES_PATH, encoding='utf-8'))
+        except Exception: pass
+    return []
+
 def os_status():
-    if os.path.exists(OS_PATH):
-        return {"loaded": True, "bytes": os.path.getsize(OS_PATH)}
-    return {"loaded": False, "bytes": 0}
+    loaded = os.path.exists(OS_PATH)
+    return {"loaded": loaded, "bytes": os.path.getsize(OS_PATH) if loaded else 0,
+            "builtin": len(load_os_games())}
 
 def save_base_os(data_bytes):
     with open(OS_PATH, 'wb') as f:
         f.write(data_bytes)
+    try:
+        games = parse_os_games(data_bytes.decode('utf-8', errors='ignore'))
+    except Exception:
+        games = []
+    json.dump(games, open(OS_GAMES_PATH, 'w', encoding='utf-8'), ensure_ascii=False)
     return os_status()
 
 # ── 打包：注入基座 OS + 捆绑游戏 → 新版 OS tar.gz ─────────────────────
@@ -252,7 +289,10 @@ class Handler(http.server.BaseHTTPRequestHandler):
         p = urllib.parse.urlparse(self.path).path
         if p in ('/', '/index.html'): return self._file(os.path.join(WEB, 'index.html'))
         if p in ('/app.js', '/style.css'): return self._file(os.path.join(WEB, p.lstrip('/')))
-        if p == '/api/state': return self._json({"os": os_status(), "cartridges": list_library()})
+        if p == '/api/state':
+            added = list_library()
+            for c in added: c["source"] = "build"
+            return self._json({"os": os_status(), "cartridges": load_os_games() + added})
         if p.startswith('/preview/'):
             rest = urllib.parse.unquote(p[len('/preview/'):]); cid, _, sub = rest.partition('/')
             base = os.path.join(LIBRARY, safe_id(cid)); target = os.path.normpath(os.path.join(base, sub or 'cartridge.html'))
