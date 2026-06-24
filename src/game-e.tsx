@@ -35,9 +35,11 @@ const ENGINE_TO_HR: Record<string, HandType> = {
 //  逻辑全在引擎（poker-hand/card-scoring/effect-apply）；本文件是回合流程 + 表现的薄层（读/写世界资源）。
 // ════════════════════════════════════════════════════════════════════════
 
-const CARDS_URL = '/assets/FreeArtLib/cardgame/cards.png';
-const COIN_URL = '/assets/FreeArtLib/item/gold/gold_pile.png'; // 过关金币迸射（真素材，缺图回退 🪙）
-const JOKER_URL = (name: string) => `/assets/FreeArtLib/cardgame/card/${name.replace(/ /g, '_')}.webp`;
+// 资源前缀：dev/web 为 '/'，烧录(electron file://, base './') 为 './' —— 用 BASE_URL 让 /assets 路径在两边都解析。
+const ASSET_BASE: string = (import.meta as unknown as { env?: { BASE_URL?: string } }).env?.BASE_URL ?? '/';
+const CARDS_URL = `${ASSET_BASE}assets/FreeArtLib/cardgame/cards.png`;
+const COIN_URL = `${ASSET_BASE}assets/FreeArtLib/item/gold/gold_pile.png`; // 过关金币迸射（真素材，缺图回退 🪙）
+const JOKER_URL = (name: string) => `${ASSET_BASE}assets/FreeArtLib/cardgame/card/${name.replace(/ /g, '_')}.webp`;
 const SCALE = 0.82; // 手牌显示缩放（8 张一行排得下）
 const CW = Math.round(CELL_W * SCALE);
 const CH = Math.round(CELL_H * SCALE);
@@ -54,8 +56,8 @@ const SUIT_SYM: Record<Suit, string> = { spades: '♠', hearts: '♥', diamonds:
 interface SeqFrame { chips: number; mult: number; score: number | null; hi: number | null; wiggle: string | null; dur: number; }
 
 // 素材库 GUI 图标（DCSS）：仅用语义贴切的两张——tavern≈商店、scroll≈日志卷轴；加载失败回退 emoji。
-const GUI_TAVERN = '/assets/FreeArtLib/gui/tavern.png';
-const GUI_SCROLL = '/assets/FreeArtLib/gui/spells/components/scroll.png';
+const GUI_TAVERN = `${ASSET_BASE}assets/FreeArtLib/gui/tavern.png`;
+const GUI_SCROLL = `${ASSET_BASE}assets/FreeArtLib/gui/spells/components/scroll.png`;
 function GuiIcon({ src, emoji, size = 22 }: { src: string; emoji: string; size?: number }) {
   return (
     <span style={{ position: 'relative', display: 'inline-block', width: size, height: size, verticalAlign: 'middle' }}>
