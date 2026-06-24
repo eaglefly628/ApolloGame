@@ -1,7 +1,7 @@
 import { defineConfig } from 'vite';
 import react from '@vitejs/plugin-react';
 import { resolve } from 'path';
-import { copyUsedAssets } from './vite.assets';
+import { copyUsedAssets, inlineUsedAssets } from './vite.assets';
 import { viteSingleFile } from 'vite-plugin-singlefile';
 
 const targetGame = process.env.VITE_TARGET_GAME ?? 'game-f';
@@ -12,7 +12,9 @@ const singleFile = process.env.VITE_SINGLEFILE === '1';
 export default defineConfig({
   plugins: [
     react(),
-    ...(singleFile ? [viteSingleFile()] : [copyUsedAssets(__dirname, 'dist-cartridge')]),
+    ...(singleFile
+      ? [inlineUsedAssets(__dirname), viteSingleFile()]   // 美术 base64 内联 + JS/CSS 内联 → 单 HTML 自带美术
+      : [copyUsedAssets(__dirname, 'dist-cartridge')]),
   ],
   root: '.',
   base: './',

@@ -13,7 +13,14 @@ export class ImageAssetLoader implements AssetLoader {
   constructor(private readonly baseUrl = '') {}
 
   load(descriptor: AssetDescriptor): Promise<{ handle: ImageAssetHandle; width: number; height: number }> {
-    const url = this.baseUrl + descriptor.src;
+    // 单文件构建会把用到的美术 base64 注入 globalThis.__APOLLO_INLINE_ASSETS__（键=descriptor.src）。
+    // 命中则用 data: URI（无需外部文件）；否则走 baseUrl + src。
+    const inline = (globalThis as unknown as { __APOLLO_INLINE_ASSETS__?: Record<string, string> })
+      .__APOLLO_INLINE_ASSETS__;
+    const key = descriptor.src.replace(/^\//, '');
+    const url =
+      (inline && (inline[descriptor.src] ?? inline[key] ?? inline['/' + key])) ||
+      this.baseUrl + descriptor.src;
     return new Promise((resolve, reject) => {
       const image = new Image();
       image.onload = () =>
