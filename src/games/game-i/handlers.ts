@@ -28,6 +28,8 @@ export interface GalleryHooks {
   pickDispatch: (kind: string, arg?: string) => void;
   /** 自定义画选中态的控件改值（kind=flag/sound/speed/view/qty/rating/city）→ 宿主改 state + 局部更新。 */
   setControl: (kind: string, arg?: string) => void;
+  /** 切 Tab 后回调（mountUI 已就地显示新页·宿主借此强制重绘刚显示的页·消除「显示即黑」）。 */
+  afterTabSwitch: () => void;
 }
 
 export function buildHandlers(hooks: GalleryHooks): HandlerMap {
@@ -52,7 +54,7 @@ export function buildHandlers(hooks: GalleryHooks): HandlerMap {
     pickTag: (a) => L('pickTag', a),
     pickCard: (a) => L('pickCard', a),
     toggleAcc: (a) => L('toggleAcc', a),
-    switchTab: (a) => L('switchTab', a), // Tab 切换由 mountUI 内建就地处理·宿主不介入
+    switchTab: (a) => { L('switchTab', a); hooks.afterTabSwitch(); }, // 切页后宿主强制重绘刚显示的页
     setTheme: (a) => {
       L('setTheme', a);
       if (a) hooks.setTheme(a);

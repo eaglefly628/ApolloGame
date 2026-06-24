@@ -114,6 +114,7 @@ export function mount(container: HTMLElement): () => void {
     setTheme: (value) => { currentTheme = value; rerender(true); },
     setModal: (open) => { showOverlay(open ? modalOverlay : null); },
     setDrawer: (open) => { showOverlay(open ? drawerOverlay : null); },
+    afterTabSwitch: () => { nudgeRepaint(); }, // 切到的新页（之前 display:none）强制重栅格 → 消除「显示即黑」
     setControl: (kind, arg) => {
       if (kind === 'flag') controls = { ...controls, flag: arg === 'true' };
       else if (kind === 'sound') controls = { ...controls, sound: arg === 'true' };
