@@ -238,6 +238,28 @@ def load_os_games():
         except Exception: pass
     return []
 
+# 被排除的内置 demo 游戏 id（用户在工具里「移除」内置游戏 → 打包时从 OS 剥掉）。
+EXCLUDED_PATH = os.path.join(BASE, 'excluded.json')
+def load_excluded():
+    if os.path.exists(EXCLUDED_PATH):
+        try: return set(json.load(open(EXCLUDED_PATH, encoding='utf-8')))
+        except Exception: pass
+    return set()
+def save_excluded(s):
+    json.dump(sorted(s), open(EXCLUDED_PATH, 'w', encoding='utf-8'), ensure_ascii=False)
+
+def strip_builtin(os_html, ids):
+    """把指定内置 demo 游戏从 OS HTML 剥掉：中和它的 var g={...id:'X'...};GAMES.push(g)。"""
+    if not ids:
+        return os_html
+    def repl(m):
+        body = m.group(1)
+        mid = re.search(r"id\s*:\s*'((?:[^'\\]|\\.)*)'", body)
+        if mid and mid.group(1) in ids:
+            return 'var g={};void 0'   # 中和 → 不 push、不进轮盘
+        return m.group(0)
+    return re.sub(r'var g\s*=\s*\{(.*?)\};\s*GAMES\.push\(g\)', repl, os_html, flags=re.S)
+
 def os_status():
     loaded = os.path.exists(OS_PATH)
     return {"loaded": loaded, "bytes": os.path.getsize(OS_PATH) if loaded else 0,
@@ -251,6 +273,7 @@ def save_base_os(data_bytes):
     except Exception:
         games = []
     json.dump(games, open(OS_GAMES_PATH, 'w', encoding='utf-8'), ensure_ascii=False)
+    save_excluded(set())   # 换基座 → 重置排除
     return os_status()
 
 # ── 打包：注入基座 OS + 捆绑游戏 → 新版 OS tar.gz ─────────────────────
@@ -355,6 +378,7 @@ def pack_os(ids, out_name):
         raise ValueError("没选要放进 OS 的（已添加）游戏")
     objs = build_game_objects(chosen)
     os_html = open(OS_PATH, encoding='utf-8', errors='ignore').read()
+    os_html = strip_builtin(os_html, load_excluded())   # 剥掉被排除的内置 demo
     injected = inject_os(os_html, objs)
     multi = [c["title"] for c, (_g, _b, single) in zip(chosen, objs) if not single]
     return injected.encode('utf-8'), multi
@@ -384,7 +408,9 @@ class Handler(http.server.BaseHTTPRequestHandler):
         if p == '/api/state':
             added = list_library()
             for c in added: c["source"] = "build"
-            return self._json({"os": os_status(), "cartridges": load_os_games() + added})
+            ex = load_excluded()
+            builtin = [c for c in load_os_games() if c["id"] not in ex]   # 排除已移除的内置
+            return self._json({"os": os_status(), "cartridges": builtin + added})
         if p.startswith('/preview/'):
             rest = urllib.parse.unquote(p[len('/preview/'):]); cid, _, sub = rest.partition('/')
             base = os.path.join(LIBRARY, safe_id(cid)); target = os.path.normpath(os.path.join(base, sub or 'cartridge.html'))
@@ -406,7 +432,19 @@ class Handler(http.server.BaseHTTPRequestHandler):
                     keep = read_meta(cid).get('keymap')
                 return self._json({"ok": True, "cartridge": add_package(name, body, keep_keymap=keep)})
             if u.path == '/api/remove':
-                return self._json({"ok": remove_package(json.loads(body or b'{}').get('id', ''))})
+                rid = json.loads(body or b'{}').get('id', '')
+                if remove_package(rid):                      # 已添加的游戏 → 删目录
+                    return self._json({"ok": True})
+                if any(g["id"] == rid for g in load_os_games()):   # 内置 demo → 排除
+                    ex = load_excluded(); ex.add(rid); save_excluded(ex)
+                    return self._json({"ok": True, "excluded": True})
+                return self._json({"ok": False})
+            if u.path == '/api/restore-builtin':                 # 恢复全部内置 demo
+                save_excluded(set())
+                return self._json({"ok": True})
+            if u.path == '/api/strip-builtin':                   # 一键去掉全部内置 demo
+                save_excluded({g["id"] for g in load_os_games()})
+                return self._json({"ok": True})
             if u.path == '/api/clear':
                 for name in os.listdir(LIBRARY):
                     if os.path.isdir(os.path.join(LIBRARY, name)):

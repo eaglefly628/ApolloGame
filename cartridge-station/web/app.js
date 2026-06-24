@@ -109,15 +109,20 @@ $('#fileInput').onchange=e=>{ addFiles([...e.target.files],false); e.target.valu
 $('#btnReplace').onclick=()=>{ if(!curId){toast('先选一个游戏','err');return;} $('#replaceInput').click(); };
 $('#replaceInput').onchange=e=>{ addFiles([...e.target.files],true); e.target.value=''; };
 
-/* 移除：选中(多选) 优先，否则移除当前焦点卡。内置游戏不可移除 */
+/* 移除：选中(多选) 优先，否则移除当前焦点卡。内置 demo 也可移除（打包时从 OS 剥掉）*/
 $('#btnRemove').onclick=async()=>{
   let ids = picks.size ? [...picks] : (curId ? [curId] : []);
-  ids = ids.filter(id => { const c=LIB.find(x=>x.id===id); return c && c.source!=='os'; });
-  if(!ids.length){ toast('选一个已添加的游戏再移除（内置游戏随基座 OS，不在这删）','err'); return; }
-  if(!confirm(`移除 ${ids.length} 个游戏？`)) return;
+  if(!ids.length){ toast('先点/选要移除的游戏','err'); return; }
+  if(!confirm(`移除 ${ids.length} 个游戏？（内置 demo 会从打包的 OS 里去掉）`)) return;
   for(const id of ids) await fetch('/api/remove',{method:'POST',body:JSON.stringify({id})});
   picks.clear(); curId=null; await refresh(); toast('已移除','ok');
 };
+/* 一键去掉基座所有内置 demo 游戏 */
+$('#btnStripBuiltin')&&($('#btnStripBuiltin').onclick=async()=>{
+  if(!confirm('去掉基座 OS 自带的全部内置 demo 游戏？（只保留你添加的；可重新加载 OS 恢复）')) return;
+  await fetch('/api/strip-builtin',{method:'POST'}); picks.clear(); curId=null;
+  await refresh(); toast('已去掉全部内置 demo','ok');
+});
 
 /* 清空已添加的游戏（不动基座 OS）*/
 $('#btnClear').onclick=async()=>{
