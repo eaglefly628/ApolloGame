@@ -59,18 +59,9 @@ export function mount(container: HTMLElement): () => void {
   const galleryHostCss = 'flex:1;min-width:0;overflow-y:auto;background:#06080d';
   galleryHost.style.cssText = galleryHostCss;
 
+  // 右栏事件日志：宿主只提供「固定宽·可滚」的挂载容器；内容 100% 走 Apollo Kit（mountUI + LayoutNode·见 buildLogPanel）。
   const logPane = document.createElement('aside');
-  logPane.style.cssText =
-    'width:320px;flex-shrink:0;padding:16px;overflow-y:auto';
-
-  const logTitle = document.createElement('div');
-  logTitle.textContent = '事件日志 · EVENT LOG';
-  logTitle.style.cssText = 'font-size:10px;letter-spacing:2.4px;margin-bottom:10px';
-
-  const logBody = document.createElement('div');
-  logBody.style.cssText = 'display:flex;flex-direction:column;gap:4px;font-size:12px';
-
-  logPane.append(logTitle, logBody);
+  logPane.style.cssText = 'width:320px;flex-shrink:0;overflow-y:auto;background:#06080d';
   root.append(galleryHost, logPane);
   // 模态/抽屉的独立浮层宿主（满屏 fixed·开关它不碰画廊 → 不跳不黑）。
   const overlayHost = document.createElement('div');
@@ -84,38 +75,26 @@ export function mount(container: HTMLElement): () => void {
   const now = (): string =>
     new Date().toLocaleTimeString('zh-CN', { hour12: false });
 
-  function applyPaneTheme(theme: UITheme): void {
-    logPane.style.background = theme.bg2;
-    logPane.style.borderLeft = `1px solid ${theme.line}`;
-    logPane.style.fontFamily = theme.fontMono;
-    logTitle.style.color = theme.dim;
-  }
-
-  function escapeHtml(s: string): string {
-    return s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
-  }
-
-  function renderLog(theme: UITheme): void {
-    logBody.innerHTML = '';
-    if (lines.length === 0) {
-      const hint = document.createElement('div');
-      hint.textContent = '动一下任意控件，信号会出现在这里。';
-      hint.style.color = theme.dim;
-      logBody.append(hint);
-      return;
-    }
-    for (const ln of lines.slice(-200).reverse()) {
-      const row = document.createElement('div');
-      row.style.fontFamily = theme.fontMono;
-      const time = `<span style="color:${theme.dim}">${ln.t}</span>`;
-      const name = `<span style="color:${theme.jade}">${ln.action}</span>`;
-      const arg = ln.arg !== undefined
-        ? ` <span style="color:${theme.text}">${escapeHtml(ln.arg)}</span>`
-        : '';
-      row.innerHTML = `${time} ${name}${arg}`;
-      logBody.append(row);
-    }
-  }
+  // 事件日志面板（纯数据·Apollo Kit）：Panel + 每行一个 Label（spans 多段着色：时间·dim / 信号名·jade / 参数·text）。
+  // Label 内置 esc 防注入；换皮随 theme 令牌走。最新在上、封顶 200 行。
+  const buildLogPanel = (): LayoutNode => ({
+    type: 'Panel', id: 'log-panel', props: { title: '事件日志 · EVENT LOG', scroll: true },
+    layout: { direction: 'column', gap: 4, padding: 14 },
+    children: lines.length === 0
+      ? [{ type: 'Label', id: 'log-empty', props: { text: '动一下任意控件，信号会出现在这里。', color: 'dim', size: 'sm' } }]
+      : lines.slice(-200).reverse().map((ln, i): LayoutNode => ({
+          type: 'Label', id: `log-${i}`, props: {
+            mono: true, size: 'sm',
+            spans: [
+              { text: `${ln.t} `, color: 'dim' as const },
+              { text: ln.action, color: 'jade' as const },
+              ...(ln.arg !== undefined ? [{ text: ` ${ln.arg}`, color: 'text' as const }] : []),
+            ],
+          },
+        })),
+  });
+  let logUi: ReturnType<typeof mountUI> | null = null; // 在挂载段 mountUI 赋值
+  function renderLog(): void { logUi?.update(buildLogPanel(), theme()); }
 
   // ── 宿主状态（MVU：UI = 状态的纯函数；改状态 → ui.update 局部更新·不整树重挂）──
   let currentTheme = 'onyx';
@@ -151,7 +130,7 @@ export function mount(container: HTMLElement): () => void {
   }
 
   const handlers = buildHandlers({
-    log: (action, arg) => { lines.push({ action, arg, t: now() }); renderLog(theme()); },
+    log: (action, arg) => { lines.push({ action, arg, t: now() }); renderLog(); },
     setTheme: (value) => { currentTheme = value; rerender(true); },
     setModal: (open) => { showOverlay(open ? modalOverlay : null); },
     setDrawer: (open) => { showOverlay(open ? drawerOverlay : null); },
@@ -291,8 +270,7 @@ export function mount(container: HTMLElement): () => void {
 
   // 挂载一次；之后改状态都走 ui.update 局部更新（只补丁变化的子树·不整树重挂·Tab/滚动/输入态不丢·无黑屏）。
   let ui = mountUI(galleryHost, buildTree(), handlers, theme());
-  applyPaneTheme(theme());
-  renderLog(theme());
+  logUi = mountUI(logPane, buildLogPanel(), {}, theme()); // 事件日志面板：纯 LayoutNode 走 Apollo Kit
   bindInputPad(); // 初次挂载后绑捕获板监听
   syncStage();    // 初次挂载：若直接进 sim 模块则挂渲染器
   nudgeRepaint(); // 初次挂载
@@ -306,7 +284,6 @@ export function mount(container: HTMLElement): () => void {
       galleryHost.replaceWith(fresh);
       galleryHost = fresh;
       ui = mountUI(galleryHost, buildTree(activeTab), handlers, theme()); // 挂在原停留页
-      applyPaneTheme(theme());
       if (overlayNode) showOverlay(overlayNode); // 浮层也换新皮
       reselectTab(); // 换皮后重选原 tab：程序化「点一下」逼重绘（修 M1 黑字）
     } else {
@@ -314,7 +291,7 @@ export function mount(container: HTMLElement): () => void {
     }
     bindInputPad(); // 换皮重挂出新 pad → 重绑；非换皮 pad 不变 → 幂等 no-op
     syncStage();    // 进/出 sim 模块或换皮换容器 → 对齐渲染舞台
-    renderLog(theme());
+    renderLog();
   }
 
   // ── 卡带 cleanup ─────────────────────────────────────────────
@@ -323,6 +300,7 @@ export function mount(container: HTMLElement): () => void {
     teardownStage(); // 停引擎循环 + 销毁渲染器
     player.close();
     ui();
+    logUi?.();
     root.remove();
   };
 }
