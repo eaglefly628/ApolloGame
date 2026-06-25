@@ -133,6 +133,25 @@ export function mountUI(
     typers.push(iv);
   });
 
+  // 数字滚动补间（收编自掷骰滚到命点/计分跳动·render-only）：把带 data-tween-to 的元素从当前值(=from)动画到 to。
+  // 定时器分步 + easeOutCubic；与打字机共用 typers 数组 → teardown 一并清。纯表现·不碰 sim/hash。
+  host.querySelectorAll<HTMLElement>('[data-tween-to]').forEach((el) => {
+    const to = Number(el.dataset['tweenTo']);
+    if (!Number.isFinite(to)) return;
+    const ms = Number(el.dataset['tweenMs']) || 600;
+    const dec = Number(el.dataset['tweenDec']) || 0;
+    const from = Number(el.textContent) || 0;
+    const steps = Math.max(1, Math.round(ms / 16));
+    let i = 0;
+    const iv = setInterval(() => {
+      i++;
+      const k = i >= steps ? 1 : 1 - Math.pow(1 - i / steps, 3); // easeOutCubic
+      el.textContent = (from + (to - from) * k).toFixed(dec);
+      if (i >= steps) clearInterval(iv);
+    }, 16);
+    typers.push(iv);
+  });
+
   const dispatch = (e: Event): void => {
     const el = (e.target as HTMLElement).closest('[data-action]') as HTMLElement | null;
     if (!el) return;

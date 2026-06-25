@@ -58,16 +58,18 @@
 >
 > **边界**：C2/C3 本提交已做（src/ui·Lead 域）；A2 记录待用例；A1/A3/C1/C4 回驳留档。
 
-### REQ-UI-数字补间 / 富文本 · [2026-06-23] · Lead 登记（UI 库域·game-g 迁移撞到再排） · status: **open（候选下沉·待排期）** · 类型: 真能力缺口候选（manifesto 尺子已过·暂未实现）
+### REQ-UI-数字补间 / 富文本 · [2026-06-23] · Lead 登记（UI 库域） · status: **✅ done（owner 2026-06-25「都做完不要等·早晚需求」·下沉为 Label.tween / Label.spans）** · 类型: 真能力缺口下沉（manifesto 尺子已过）
 
 > **缘起**：写 `apollo-ui-migration-guide.md` 时复核库现状，3 游戏迁移仍会撞到两项**可数据化、且复用**的缺口（其余如 3D/SVG/hex/WorldFollower 已回驳为单游戏或世界渲染·见指南 §4）。先登记，game-g 迁到此处再由 Lead 下沉，**游戏层勿硬写**。
 >
-> 1. **数值补间 / 数字滚动（number tween）** —— 掷骰数字滚到命点(G)、筹码/倍率/分数跳动(E)。
->    - 候选数据形态：`Label` 加 `tween:{ from, to, ms }`（或 `Counter` 控件），mountUI 用 rAF 动画到目标值。
->    - 尺子：`tween:{from:0,to:18,ms:600}` 是数据，弱模型能填；动画由解释器接 → **该下沉**。recurring（E/G 都要）。
-> 2. **富文本 / 多段着色（richText spans）** —— 天罡/地煞词条带高亮、说明/故事分色文本。
->    - 现 `Label` 单色纯文本（已有 `typewriter` 逐字显）。候选：`Label.spans:[{text,color,bold}]` 或 `RichText` 控件。
->    - 尺子：spans 是结构化数据，弱模型能填 → 可下沉；优先级中（多数文案纯文本+typewriter 够用）。
+> 1. **数值补间 / 数字滚动（number tween）** ✅ —— 掷骰数字滚到命点(G)、筹码/倍率/分数跳动(E)。
+>    - 下沉为 `LabelProps.tween:{from,to,ms?,decimals?}`：renderNode 出初值 + `data-tween-*`，mountUI 定时器 easeOutCubic 动画到 to（与打字机共用 `typers`·teardown 一并清）。**render-only·不进 sim hash**。decimals 支小数（倍率）。
+>    - 折进 Label 而非新建 Counter 控件（manifesto：扩字段优先于加控件类型）。
+> 2. **富文本 / 多段着色（richText spans）** ✅ —— 天罡/地煞词条带高亮、说明/故事分色文本。
+>    - 下沉为 `LabelProps.spans:[{text,color?,bold?}]`：renderLabel 逐段出自带 color(令牌)/bold 的子 span，有 spans 忽略 text。**纯函数·render-only**。
+>    - 折进 Label 而非新建 RichText 控件（同上）。
+>
+> **验收** `label-tween-spans.test.ts`（tween 到位/decimals/teardown 清 + spans 多段/XSS/不回归）。
 >
 > **暂不做**：3D transform（掷骰/硬币·演出，CSS/canvas 保留）、SVGPath（斜梯·单用途）、hex 布局（仅 F）、WorldFollower（浮动血条·归 renderer）——回驳理由见迁移指南 §4。
 

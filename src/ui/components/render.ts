@@ -87,6 +87,19 @@ function renderLabel(id: string, p: LabelProps, ls: string, t: UITheme): string 
     p.mono ? `font-family:${t.fontMono}` : `font-family:${t.fontUi}`,
     ls,
   ].filter(Boolean).join(';');
+  // 富文本多段着色(render-only·有 spans 忽略 text)：逐段自带 color(令牌)/bold，外层保字号/字体。
+  if (p.spans) {
+    const inner = p.spans.map((s) =>
+      `<span style="color:${colorMap[s.color ?? 'text'] ?? cl}${s.bold ? ';font-weight:700' : ''}">${esc(s.text)}</span>`,
+    ).join('');
+    return `<span id="${esc(id)}" style="${style}">${inner}</span>`;
+  }
+  // 数字滚动补间(render-only)：初值=from(按 decimals 格式化)，mountUI 读 data-tween-* 用定时器动画到 to。
+  if (p.tween) {
+    const dec = num(p.tween.decimals, 0);
+    const tweenAttr = ` data-tween-to="${num(p.tween.to)}" data-tween-ms="${num(p.tween.ms, 600)}" data-tween-dec="${dec}"`;
+    return `<span id="${esc(id)}"${tweenAttr} style="${style}">${esc(num(p.tween.from).toFixed(dec))}</span>`;
+  }
   const tw = p.typewriter ? ` data-typewriter="${p.typewriter}"` : '';
   return `<span id="${esc(id)}"${tw} style="${style}">${esc(p.text)}</span>`;
 }

@@ -64,6 +64,12 @@ export interface LabelProps {
   bind?: string;
   /** 打字机(收编 VN DialogBox 逐字显)：每字毫秒(>0 开)。mountUI 挂载时逐字揭示·teardown 清定时器。 */
   typewriter?: number;
+  /** 数字滚动补间(render-only·掷骰滚到命点/筹码倍率分数跳动)：from→to 在 ms(缺省 600) 内由 mountUI 定时器动画到位；
+   *  decimals=小数位(倍率用·缺省 0)。纯表现·不进 sim hash(同 typewriter)。弱模型只填 {from,to,ms} 数字。 */
+  tween?: { from: number; to: number; ms?: number; decimals?: number };
+  /** 富文本多段着色(render-only·词条高亮/分色说明)：替代单色 text，逐段自带 color(同 Label 令牌)/bold。
+   *  纯数据(段数组)·最弱 LLM 能填；有 spans 时忽略 text。 */
+  spans?: Array<{ text: string; color?: 'text' | 'sub' | 'dim' | 'jade' | 'gold' | 'ok' | 'warn' | 'danger'; bold?: boolean }>;
 }
 
 export interface DropdownProps {
