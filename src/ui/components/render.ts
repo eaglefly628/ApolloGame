@@ -55,6 +55,14 @@ function bgScrollAttr(s?: { x?: number; y?: number; ms?: number }): string {
   return s ? ` data-bgscroll="${num(s.x)},${num(s.y)},${num(s.ms, 6000)}"` : '';
 }
 
+// 图片贴图 → 一个 background 平铺层。url 先剥离能逃出 url('...') 的字符（引号/括号/空白/反斜杠）防 CSS 注入，
+// 再 esc（防属性逃逸）；size 过 num。空 url → ''。配进 background 多层合成。
+function texLayer(url?: string, size?: number): string {
+  if (!url) return '';
+  const safe = esc(String(url).replace(/['"()\\\s]/g, ''));
+  return `url('${safe}') 0 0${size !== undefined ? ` / ${num(size)}px` : ''} repeat`;
+}
+
 // ── 原有 7 个控件 ───────────────────────────────────────────────
 
 function renderButton(id: string, p: ButtonProps, ls: string, t: UITheme): string {
@@ -157,7 +165,11 @@ function renderPanel(id: string, p: PanelProps, c: LayoutConstraints | undefined
   // accent：高亮框（jade 描边 + 柔光投影）用于活动视口/强调面板；缺省细线边。bare 时不画框故忽略 accent。
   const border = p.accent ? t.jadeLine : t.line;
   const glow = (!bare && p.accent) ? `box-shadow:0 0 0 1px ${t.jadeWash},0 10px 34px rgba(0,0,0,.4);` : '';
-  const chrome = bare ? '' : `background:${p.bg ?? t.bg1};border:1px solid ${border};border-radius:10px;${glow}`;
+  // 图片贴图层（平铺·叠在面板底上）。bare 但有贴图 → 只铺贴图、仍无框。
+  const tex = texLayer(p.bgTexture, p.bgTextureSize);
+  const chrome = bare
+    ? (tex ? `background:${tex}, transparent;` : '')
+    : `background:${tex ? `${tex}, ` : ''}${p.bg ?? t.bg1};border:1px solid ${border};border-radius:10px;${glow}`;
   const style = `${box};padding:${pad}px;${chrome}position:relative;${overflow}${ls}`;
   const title = p.title
     ? `<div style="font-size:10px;letter-spacing:2.4px;text-transform:uppercase;color:${t.dim};font-family:${t.fontUi};margin-bottom:4px${dir === 'grid' ? ';grid-column:1/-1' : ''}">${esc(p.title)}</div>`
@@ -231,8 +243,9 @@ function renderImage(id: string, p: ImageProps, ls: string): string {
 
 function renderScreen(id: string, p: ScreenProps, children: LayoutNode[], t: UITheme): string {
   const baseBg = p.bg ?? t.pageBg;
-  // 分层底：wash(晕染) , texture(贴图) , baseBg(底色) 三层合成（Apollo Kit 口径）。无 wash/texture → 纯底色（老主题零变化）。
-  const bg     = [t.wash, t.texture, baseBg].filter(Boolean).join(', ');
+  // 分层底（上→下）：wash(晕染) , 图片贴图(bgTexture·平铺) , 程序化纹理(theme.texture) , 底色。任意层缺省即跳过。
+  // 三路贴图并存：程序化(theme.texture) / cover 整图(下方 bgImg) / 平铺图片(bgTexture)。
+  const bg     = [t.wash, texLayer(p.bgTexture, p.bgTextureSize), t.texture, baseBg].filter(Boolean).join(', ');
   const center = p.center ? 'align-items:center;justify-content:center;' : 'align-items:stretch;';
   const bgImg  = p.image ? `background-image:url('${esc(p.image)}');background-size:cover;background-position:center;` : '';
   const blur   = p.blur ? `backdrop-filter:blur(${p.blur}px);` : '';

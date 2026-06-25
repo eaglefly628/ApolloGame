@@ -103,6 +103,10 @@ export interface PanelProps {
   /** 无框纯布局容器（owner 2026-06-25「别千层框」）：true=不画边框/底/圆角、padding 缺省 0——只做 row/column/grid 分组。
    *  边框只留给「真该成一个框的东西」（外框/牌桌/侧栏/卡片）；行列分组一律 bare，避免嵌套出层层框。 */
   bare?: boolean;
+  /** 图片贴图层（平铺·同 Screen.bgTexture）：贴图 URL → repeat 平铺叠在面板底上、可被 bgScroll 滚动。 */
+  bgTexture?: string;
+  /** 贴图平铺单元尺寸 px（配 bgTexture·缺省=图原始尺寸）。 */
+  bgTextureSize?: number;
   /** UV 背景滚动（同 Screen.bgScroll·面板底纹滚动特效·render-only）。 */
   bgScroll?: { x?: number; y?: number; ms?: number };
 }
@@ -146,6 +150,10 @@ export interface ImageProps {
 export interface ScreenProps {
   bg?: string;
   image?: string;
+  /** 图片贴图层（平铺·区别于 image 的 cover 整图 & 主题 texture 的程序化纹理）：贴图 URL → 渲成 repeat 平铺、叠在底色上、可被 bgScroll 滚动。游戏填**已解析 URL**（资产 key 自行经 resolveAsset 解析·sim 持 key 保纯）。三路并存：程序化(主题 texture) / cover 整图(image) / 平铺图片(bgTexture)。 */
+  bgTexture?: string;
+  /** 贴图平铺单元尺寸 px（配 bgTexture·缺省=图原始尺寸）。 */
+  bgTextureSize?: number;
   blur?: number;
   center?: boolean;
   /** UV 背景滚动（render-only·滚动 UI 特效）：背景每 ms(缺省 6000) 平移 (x,y) px 循环。配 texture/平铺底纹·mountUI 注入滚动动画。纯数字（弱模型能填）。 */

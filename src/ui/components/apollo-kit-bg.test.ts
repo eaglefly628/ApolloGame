@@ -52,6 +52,45 @@ describe('UI Components · bgScroll UV 背景滚动（mountUI 注入关键帧）
   });
 });
 
+describe('UI Components · bgTexture 图片贴图层（平铺·Screen/Panel·三路并存）', () => {
+  it('Screen.bgTexture → background 含平铺图层（url repeat）+ bgTextureSize 控单元尺寸', () => {
+    const html = renderNode({ type: 'Screen', id: 's', props: { bgTexture: '/paper.png', bgTextureSize: 48 }, children: [] }, SHELL);
+    expect(html).toContain("url('/paper.png') 0 0 / 48px repeat");
+  });
+
+  it('三路并存：程序化(theme.texture) + 平铺图片(bgTexture) + cover 整图(image) 同时表达', () => {
+    const tex: UITheme = { ...SHELL, texture: 'repeating-linear-gradient(45deg,#111 0 1px,transparent 1px 9px)' };
+    const html = renderNode({ type: 'Screen', id: 's', props: { bgTexture: '/grain.png', image: '/photo.jpg' }, children: [] }, tex);
+    expect(html).toContain("url('/grain.png')");                       // 平铺图片层
+    expect(html).toContain('repeating-linear-gradient(45deg,#111');     // 程序化纹理层
+    expect(html).toContain("background-image:url('/photo.jpg')");       // cover 整图（覆盖层）
+    // 顺序：wash/bgTexture 在 theme.texture 前（合成串里平铺图片层先于程序化纹理）
+    const bg = html.slice(html.indexOf('background:'));
+    expect(bg.indexOf("url('/grain.png')")).toBeLessThan(bg.indexOf('repeating-linear-gradient(45deg,#111'));
+  });
+
+  it('Panel.bgTexture → 平铺图层叠在面板底上；bare + 贴图 → 只铺贴图、仍无框', () => {
+    const normal = renderNode({ type: 'Panel', id: 'p', props: { bgTexture: '/wood.png' }, children: [] }, SHELL);
+    expect(normal).toContain("url('/wood.png')"); expect(normal).toContain('border:1px solid');
+    const bare = renderNode({ type: 'Panel', id: 'pb', props: { bare: true, bgTexture: '/wood.png' }, children: [] }, SHELL);
+    expect(bare).toContain("url('/wood.png') 0 0 repeat, transparent"); // 贴图 over transparent
+    expect(bare).not.toContain('border:1px solid');                      // 仍无框
+  });
+
+  it('bgTexture + bgScroll 共存（平铺贴图可被 UV 滚动）', () => {
+    const html = renderNode({ type: 'Screen', id: 's', props: { bgTexture: '/grain.png', bgScroll: { x: 32, y: 0 } }, children: [] }, SHELL);
+    expect(html).toContain("url('/grain.png')");
+    expect(html).toContain('data-bgscroll="32,0,6000"');
+  });
+
+  it('bgTexture 注入硬化：引号/括号/空白被剥离，无法逃出 url(...)', () => {
+    const html = renderNode({ type: 'Screen', id: 's', props: { bgTexture: "x'); background:url(evil" }, children: [] }, SHELL);
+    expect(html).not.toContain("');");      // 无法闭合 url(' 逃出
+    expect(html).not.toContain('url(evil'); // 括号被剥离 → 注入失败
+    expect(html).toContain("url('x;background:urlevil')"); // 净化成无害串
+  });
+});
+
 describe('UI Components · Apollo Kit 双皮主题（玄铁 onyx / 锦霞 brocade）', () => {
   it('apolloOnyx：暗墨蓝底 + 程序化交叉纹 texture + 熔岩橙主色', () => {
     expect(apolloOnyx.texture).toContain('repeating-linear-gradient');
