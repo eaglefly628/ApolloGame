@@ -61,7 +61,7 @@ function enchantPanel(view: LobbyView, craftSel: string): LayoutNode {
         art: hero ? heroPortraitUri(su as Suit, hero.era, rank, hero.rar) : undefined,
         selected: sel, action: 'craftSel', actionArg: String(idx) } };
   }));
-  const grid: LayoutNode = { type: 'Panel', id: 'ench-grid', props: { scroll: true }, layout: { direction: 'grid', minCol: 76, gap: 6, padding: 8, flex: 1 }, children: cards };
+  const grid: LayoutNode = { type: 'Panel', id: 'ench-grid', props: { bare: true, scroll: true }, layout: { direction: 'grid', minCol: 76, gap: 6, padding: 8, flex: 1 }, children: cards };
   const detail: LayoutNode = (craftSel !== '' && deck[+craftSel] !== undefined)
     ? buildEnchantDetail(view, +craftSel)
     : { type: 'Panel', id: 'ench-detail', props: { title: '附魔详情' }, layout: { width: 320, padding: 12 },
@@ -70,7 +70,7 @@ function enchantPanel(view: LobbyView, craftSel: string): LayoutNode {
     type: 'Panel', id: 'craft-ench', props: { title: `🔨 地支牌 · 生肖镶嵌（附魔）· ≤${INLAY_MAX} 槽` }, layout: { direction: 'column', gap: 8, padding: 10, flex: 1 },
     children: [
       { type: 'Label', id: 'ench-note', props: { text: `铜 +${DIZHI_INLAY_FAVOR[1]} / 银 +${DIZHI_INLAY_FAVOR[2]} / 金 +${DIZHI_INLAY_FAVOR[3]} favor · 消耗品：镶一张少一张 · 真提升战力。`, size: 'xs', color: 'sub' } },
-      { type: 'Panel', id: 'ench-row', props: {}, layout: { direction: 'row', gap: 12, flex: 1 }, children: [grid, detail] },
+      { type: 'Panel', id: 'ench-row', props: { bare: true }, layout: { direction: 'row', gap: 12, flex: 1 }, children: [grid, detail] },
     ],
   };
 }
@@ -91,7 +91,7 @@ function tiangangShelf(view: LobbyView): LayoutNode {
     layout: { direction: 'column', gap: 8, padding: 10, width: 360 },
     children: [
       { type: 'Label', id: 'shelf-note', props: { text: '花金币买入天罡牌（解锁后入「拥有」）·关未到可花 💎 速解（跳 grind）。', size: 'xs', color: 'sub' } },
-      { type: 'Panel', id: 'shelf-grid', props: {}, layout: { direction: 'grid', minCol: 160, gap: 8 }, children: cards },
+      { type: 'Panel', id: 'shelf-grid', props: { bare: true }, layout: { direction: 'grid', minCol: 160, gap: 8 }, children: cards },
     ],
   };
 }

@@ -100,6 +100,9 @@ export interface PanelProps {
   vignette?: boolean;
   /** 高亮框（强调态/活动视口）：true 时用 jade 描边 + 柔光投影，替代默认细线边·纯表现。 */
   accent?: boolean;
+  /** 无框纯布局容器（owner 2026-06-25「别千层框」）：true=不画边框/底/圆角、padding 缺省 0——只做 row/column/grid 分组。
+   *  边框只留给「真该成一个框的东西」（外框/牌桌/侧栏/卡片）；行列分组一律 bare，避免嵌套出层层框。 */
+  bare?: boolean;
 }
 
 /** 单个开/关复选框。handler 收到 'true' | 'false'。 */

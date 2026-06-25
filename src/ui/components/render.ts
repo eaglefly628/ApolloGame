@@ -140,23 +140,24 @@ function renderPanel(id: string, p: PanelProps, c: LayoutConstraints | undefined
   const dir = c?.direction ?? 'column';
   const gap = c?.gap ?? 8;
   const align = c?.align ?? 'stretch';
-  const pad = c?.padding ?? 16;
+  const bare = p.bare === true;          // 无框纯布局容器：不画框/底/圆角、padding 缺省 0（别千层框）。
+  const pad = c?.padding ?? (bare ? 0 : 16);
   const ls = layoutStyle(c);
   const overflow = p.scroll ? 'overflow-y:auto;' : '';
   // grid 排布模式（卡牌格/货架）：auto-fill 自适应列数（minCol 定最小列宽）；非 grid 走原 flex 行/列。
   const box = dir === 'grid'
     ? `display:grid;grid-template-columns:repeat(auto-fill,minmax(${c?.minCol ?? 96}px,1fr));gap:${gap}px;align-items:${align}`
     : `display:flex;flex-direction:${dir};gap:${gap}px;align-items:${align}`;
-  // bg：自定义底（令牌串·如绿呢牌桌 'var(--felt)'）；缺省主题 bg1。与 Screen.bg 同口径（取游戏令牌·不另转义）。
-  const bg = p.bg ?? t.bg1;
-  // accent：高亮框（jade 描边 + 柔光投影），用于活动视口/强调面板；缺省细线边。
+  // chrome：非 bare 才画底/边框/圆角（bg 缺省主题 bg1·与 Screen.bg 同口径·令牌如 'var(--felt)'）；bare=透明无框只做分组。
+  // accent：高亮框（jade 描边 + 柔光投影）用于活动视口/强调面板；缺省细线边。bare 时不画框故忽略 accent。
   const border = p.accent ? t.jadeLine : t.line;
-  const glow = p.accent ? `;box-shadow:0 0 0 1px ${t.jadeWash},0 10px 34px rgba(0,0,0,.4)` : '';
-  const style = `${box};padding:${pad}px;background:${bg};border:1px solid ${border};border-radius:10px;position:relative;${overflow}${ls}${glow}`;
+  const glow = (!bare && p.accent) ? `box-shadow:0 0 0 1px ${t.jadeWash},0 10px 34px rgba(0,0,0,.4);` : '';
+  const chrome = bare ? '' : `background:${p.bg ?? t.bg1};border:1px solid ${border};border-radius:10px;${glow}`;
+  const style = `${box};padding:${pad}px;${chrome}position:relative;${overflow}${ls}`;
   const title = p.title
     ? `<div style="font-size:10px;letter-spacing:2.4px;text-transform:uppercase;color:${t.dim};font-family:${t.fontUi};margin-bottom:4px${dir === 'grid' ? ';grid-column:1/-1' : ''}">${esc(p.title)}</div>`
     : '';
-  const vignette = p.vignette
+  const vignette = (p.vignette && !bare)
     ? `<div style="position:absolute;inset:0;border-radius:10px;pointer-events:none;background:radial-gradient(120% 100% at 50% 30%,transparent 55%,rgba(0,0,0,.45) 100%)"></div>`
     : '';
   const inner = children.map((ch) => renderNode(ch, t)).join('');

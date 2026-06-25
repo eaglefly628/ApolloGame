@@ -21,7 +21,7 @@ export function buildHomeScreen(view: LobbyView): LayoutNode {
 
   // 花色标条（♠♥♦♣）：贴近原版 stags。
   const stags: LayoutNode = {
-    type: 'Panel', id: 'home-stags', props: {}, layout: { direction: 'row', gap: 18, padding: 0, align: 'center' },
+    type: 'Panel', id: 'home-stags', props: { bare: true }, layout: { direction: 'row', gap: 18, padding: 0, align: 'center' },
     children: [
       { type: 'Label', id: 'st-s', props: { text: '♠ 黑桃', size: 'xs', color: 'sub' } },
       { type: 'Label', id: 'st-h', props: { text: '♥ 红桃', size: 'xs', color: 'danger' } },
@@ -32,7 +32,7 @@ export function buildHomeScreen(view: LobbyView): LayoutNode {
 
   // 漂浮对决牌：A♠ 白牌(左倾) · 掷 emblem · 牌背(右倾)——原 bespoke 绿呢旋转卡，现用 PlayingCard(light)+layout.rotate 复刻。
   const duel: LayoutNode = {
-    type: 'Panel', id: 'home-duel', props: {}, layout: { direction: 'row', gap: 4, align: 'center', padding: 0 },
+    type: 'Panel', id: 'home-duel', props: { bare: true }, layout: { direction: 'row', gap: 4, align: 'center', padding: 0 },
     children: [
       { type: 'PlayingCard', id: 'duel-a', props: { rank: 'A', suit: '♠', face: 'light', size: 'lg' }, layout: { rotate: -9 } },
       { type: 'Button', id: 'duel-roll', props: { label: '掷', kind: 'primary', action: 'lucky' } },
@@ -96,7 +96,7 @@ export function buildHomeScreen(view: LobbyView): LayoutNode {
     children: [...deckChips, { type: 'Button', id: 'home-editdeck', props: { label: '✏ 编辑牌组', kind: 'ghost', action: 'tab', actionArg: 'decks' } }],
   };
   const herocol: LayoutNode = {
-    type: 'Panel', id: 'home-herocol', props: {}, layout: { direction: 'column', gap: 14, flex: 1 },
+    type: 'Panel', id: 'home-herocol', props: { bare: true }, layout: { direction: 'column', gap: 14, flex: 1 },
     children: [felt, deckPreview],
   };
 

@@ -30,9 +30,9 @@ export const INITIAL_LOBBY_DD: LobbyDDState = { tab: 'home', coll: { ...INITIAL_
 function topbar(view: LobbyView): LayoutNode {
   const coinBtn = (label: string, action: string): LayoutNode => ({ type: 'Button', id: `tb-${action}-${label.slice(0, 2)}`, props: { label, kind: 'ghost', action } });
   return {
-    type: 'Panel', id: 'lobby-topbar', props: {}, layout: { direction: 'row', gap: 8, padding: 10, align: 'center' },
+    type: 'Panel', id: 'lobby-topbar', props: { bare: true }, layout: { direction: 'row', gap: 8, padding: 10, align: 'center' },
     children: [
-      { type: 'Panel', id: 'tb-who', props: {}, layout: { direction: 'column', gap: 1, flex: 1 },
+      { type: 'Panel', id: 'tb-who', props: { bare: true }, layout: { direction: 'column', gap: 1, flex: 1 },
         children: [
           { type: 'Label', id: 'tb-name', props: { text: `♠ ${view.name}`, size: 'lg', color: 'gold', bold: true } },
           { type: 'Label', id: 'tb-sub', props: { text: `主牌 ${view.mainCard} · ${view.rankText}`, size: 'xs', color: 'sub' } },
@@ -50,7 +50,7 @@ function topbar(view: LobbyView): LayoutNode {
 
 function navBar(tab: string): LayoutNode {
   return {
-    type: 'Panel', id: 'lobby-nav', props: {}, layout: { direction: 'row', gap: 8, padding: 8 },
+    type: 'Panel', id: 'lobby-nav', props: { bare: true }, layout: { direction: 'row', gap: 8, padding: 8 },
     children: TABS.map((t) => ({ type: 'Button', id: `nav-${t.id}`, props: { label: t.label, kind: (t.id === tab ? 'primary' : 'ghost') as 'primary' | 'ghost', action: 'tab', actionArg: t.id } })),
   };
 }
@@ -59,10 +59,10 @@ function navBar(tab: string): LayoutNode {
 function tabContent(view: LobbyView, st: LobbyDDState): LayoutNode {
   switch (st.tab) {
     case 'campaign': return buildCampaignScreen(view).children?.[0] ?? emptyTab('campaign');
-    case 'decks': return { type: 'Panel', id: 'lc-decks', props: {}, layout: { direction: 'column', gap: 10, flex: 1 }, children: buildDeckScreen(view, new Set(view.pokerPicks ?? [])).children ?? [] };
+    case 'decks': return { type: 'Panel', id: 'lc-decks', props: { bare: true }, layout: { direction: 'column', gap: 10, flex: 1 }, children: buildDeckScreen(view, new Set(view.pokerPicks ?? [])).children ?? [] };
     case 'coll': return buildCollectionScreen(view, st.coll).children?.[0] ?? emptyTab('coll');
-    case 'craft': return { type: 'Panel', id: 'lc-craft', props: {}, layout: { direction: 'row', gap: 12, flex: 1 }, children: buildCraftScreen(view, st.craftSel).children ?? [] };
-    default: return { type: 'Panel', id: 'lc-home', props: {}, layout: { direction: 'row', gap: 16, flex: 1 }, children: buildHomeScreen(view).children ?? [] };
+    case 'craft': return { type: 'Panel', id: 'lc-craft', props: { bare: true }, layout: { direction: 'row', gap: 12, flex: 1 }, children: buildCraftScreen(view, st.craftSel).children ?? [] };
+    default: return { type: 'Panel', id: 'lc-home', props: { bare: true }, layout: { direction: 'row', gap: 16, flex: 1 }, children: buildHomeScreen(view).children ?? [] };
   }
 }
 const emptyTab = (id: string): LayoutNode => ({ type: 'Panel', id: `lc-empty-${id}`, props: {}, layout: { padding: 16 }, children: [] });
@@ -71,7 +71,7 @@ export function buildLobby(view: LobbyView, st: LobbyDDState): LayoutNode {
   // 整厅外框（对齐原版 .frame）：maxWidth 1340 + 块居中——窄屏铺满、宽屏封顶居中。
   const frame: LayoutNode = {
     type: 'Panel', id: 'lobby-frame', props: {}, layout: { direction: 'column', gap: 10, padding: 14, maxWidth: 1340, flex: 1 },
-    children: [topbar(view), navBar(st.tab), { type: 'Panel', id: 'lobby-content', props: {}, layout: { direction: 'column', flex: 1 }, children: [tabContent(view, st)] }],
+    children: [topbar(view), navBar(st.tab), { type: 'Panel', id: 'lobby-content', props: { bare: true }, layout: { direction: 'column', flex: 1 }, children: [tabContent(view, st)] }],
   };
   return {
     type: 'Screen', id: 'lobby-screen-dd', props: { bg: GG_LOBBY_THEME.pageBg },

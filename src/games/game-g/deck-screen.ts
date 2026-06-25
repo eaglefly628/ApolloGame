@@ -58,15 +58,15 @@ function pokerGrid(view: LobbyView, picks: Set<string>): LayoutNode {
           selected: picked, dimmed: !picked && fv <= 50, action: 'pickCard', actionArg: cardId },
       };
     });
-    return { type: 'Panel', id: `poker-row-${si}`, props: { title: su }, layout: { direction: 'grid', minCol: 76, gap: 6, padding: 8 }, children: cards };
+    return { type: 'Panel', id: `poker-row-${si}`, props: { title: su, bare: true }, layout: { direction: 'grid', minCol: 76, gap: 6, padding: 8 }, children: cards };
   });
-  return { type: 'Panel', id: 'poker-grid', props: { scroll: true }, layout: { direction: 'column', gap: 8, padding: 4 }, children: rows };
+  return { type: 'Panel', id: 'poker-grid', props: { bare: true, scroll: true }, layout: { direction: 'column', gap: 8, padding: 4 }, children: rows };
 }
 
 function pokerPage(view: LobbyView, picks: Set<string>): LayoutNode {
   const max = view.pokerPickMax ?? POKER_PICK_SIZE;
   const head: LayoutNode = {
-    type: 'Panel', id: 'poker-head', props: {}, layout: { direction: 'row', gap: 8, padding: 10, align: 'center' },
+    type: 'Panel', id: 'poker-head', props: { bare: true }, layout: { direction: 'row', gap: 8, padding: 10, align: 'center' },
     children: [
       { type: 'Label', id: 'poker-count', props: { text: `🎴 扑克牌库 ·「${view.activeDeckName ?? ''}」· 从 52 选 ${picks.size}/${max}`, size: 'md', color: picks.size === max ? 'gold' : 'sub', bold: true } },
       { type: 'Button', id: 'poker-auto', props: { label: '✨ 一键自动构筑', kind: 'ghost', action: 'autoBuildDeck' } },
@@ -74,7 +74,7 @@ function pokerPage(view: LobbyView, picks: Set<string>): LayoutNode {
     ],
   };
   return {
-    type: 'Panel', id: 'deck-poker', props: {}, layout: { direction: 'column', gap: 8 },
+    type: 'Panel', id: 'deck-poker', props: { bare: true }, layout: { direction: 'column', gap: 8 },
     children: [head, costCurve(picks), pokerGrid(view, picks)],
   };
 }
@@ -94,7 +94,7 @@ function tiangangPage(view: LobbyView): LayoutNode {
     children: [
       { type: 'Label', id: 'tg-note', props: { text: '当前出战这套的天罡：已入组点✕移出·空槽点添加（从已拥有里选）·或一键配置。', size: 'xs', color: 'sub' } },
       { type: 'Button', id: 'tg-auto', props: { label: '✨ 一键配置天罡', kind: 'ghost', action: 'autoBuildTiangang' } },
-      { type: 'Panel', id: 'tg-slots', props: {}, layout: { direction: 'grid', minCol: 150, gap: 8 }, children: slots },
+      { type: 'Panel', id: 'tg-slots', props: { bare: true }, layout: { direction: 'grid', minCol: 150, gap: 8 }, children: slots },
     ],
   };
 }
@@ -117,7 +117,7 @@ function dizhiPage(view: LobbyView): LayoutNode {
     layout: { direction: 'column', gap: 8, padding: 10 },
     children: [
       { type: 'Label', id: 'dz-note', props: { text: '地支=消耗牌（镶进扑克牌附魔·镶一张少一张）·抽卡获取（🛒商城）。三合/六合连携待战斗实装。', size: 'xs', color: 'sub' } },
-      { type: 'Panel', id: 'dz-grid', props: {}, layout: { direction: 'grid', minCol: 200, gap: 8 }, children: cards },
+      { type: 'Panel', id: 'dz-grid', props: { bare: true }, layout: { direction: 'grid', minCol: 200, gap: 8 }, children: cards },
     ],
   };
 }

@@ -36,7 +36,7 @@ function heroesPage(st: CollectionState): LayoutNode {
   const rarTags: LayoutNode[] = ([['all', '全部'], ['blue', '稀有'], ['purple', '史诗'], ['orange', '传说'], ['white', '普通']] as [string, string][])
     .map(([k, l]) => ({ type: 'Tag', id: `coll-rar-${k}`, props: { label: l, active: st.rar === k, action: 'filterRar', actionArg: k } }));
   const filterBar: LayoutNode = {
-    type: 'Panel', id: 'coll-filter', props: {}, layout: { direction: 'row', gap: 8, padding: 8, align: 'center' },
+    type: 'Panel', id: 'coll-filter', props: { bare: true }, layout: { direction: 'row', gap: 8, padding: 8, align: 'center' },
     children: [
       { type: 'Label', id: 'coll-fl-suit', props: { text: '花色', size: 'xs', color: 'sub' } }, ...suitTags,
       { type: 'Label', id: 'coll-fl-rar', props: { text: '稀有度', size: 'xs', color: 'sub' } }, ...rarTags,
@@ -62,8 +62,8 @@ function heroesPage(st: CollectionState): LayoutNode {
   };
 
   return {
-    type: 'Panel', id: 'coll-heroes', props: {}, layout: { direction: 'column', gap: 10 },
-    children: [filterBar, { type: 'Panel', id: 'coll-heroes-row', props: {}, layout: { direction: 'row', gap: 14, flex: 1 }, children: [grid, detail] }],
+    type: 'Panel', id: 'coll-heroes', props: { bare: true }, layout: { direction: 'column', gap: 10 },
+    children: [filterBar, { type: 'Panel', id: 'coll-heroes-row', props: { bare: true }, layout: { direction: 'row', gap: 14, flex: 1 }, children: [grid, detail] }],
   };
 }
 
