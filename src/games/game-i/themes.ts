@@ -43,9 +43,66 @@ export const frost: UITheme = {
   fontUi: SHELL.fontUi, fontMono: SHELL.fontMono,
 };
 
-export const THEMES: Record<string, UITheme> = { onyx, brocade, frost };
+/** 晴·云白——亮色皮（浅底深字·区别于前三套暗皮）。亮皮须设 inputBg 浅色，否则输入框深底深字看不清。 */
+export const daylight: UITheme = {
+  bg0: '#dde4ee', bg1: '#f4f7fc', bg2: '#ffffff', bg3: '#e7edf6',
+  pageBg: 'linear-gradient(180deg, #eef3fa 0%, #dde6f1 100%)',
+  line: 'rgba(28,48,80,0.16)',
+  text: '#1b2434', sub: '#46546a', dim: '#8893a6',
+  jade: '#138a76', jadeWash: 'rgba(19,138,118,0.12)', jadeLine: 'rgba(19,138,118,0.42)',
+  gold: '#b07d22',
+  ok: '#2e9b5b', okWash: 'rgba(46,155,91,0.14)',
+  warn: '#c2871c', warnWash: 'rgba(194,135,28,0.14)', danger: '#cf513c',
+  inputBg: '#ffffff',
+  fontUi: SHELL.fontUi, fontMono: SHELL.fontMono,
+};
+
+/** 紫·霓晶——紫罗兰暗皮（jade 令牌当主强调色=紫）。 */
+export const amethyst: UITheme = {
+  bg0: '#0e0a18', bg1: '#161023', bg2: '#1f1730', bg3: '#2a2040',
+  pageBg: 'linear-gradient(180deg, #0e0a18 0%, #181029 100%)',
+  line: 'rgba(184,150,232,0.16)',
+  text: '#ece6f7', sub: '#b9a9d6', dim: '#7a6b97',
+  jade: '#b48be6', jadeWash: 'rgba(180,139,230,0.14)', jadeLine: 'rgba(180,139,230,0.42)',
+  gold: '#dca0e8',
+  ok: '#86d6a8', okWash: 'rgba(134,214,168,0.12)',
+  warn: '#e6c574', warnWash: 'rgba(230,197,116,0.12)', danger: '#e8889a',
+  fontUi: SHELL.fontUi, fontMono: SHELL.fontMono,
+};
+
+/** 青林·墨绿——森绿暗皮。 */
+export const forest: UITheme = {
+  bg0: '#08120c', bg1: '#0d1a12', bg2: '#122418', bg3: '#193024',
+  pageBg: 'linear-gradient(180deg, #08120c 0%, #0e1c14 100%)',
+  line: 'rgba(150,200,162,0.15)',
+  text: '#e6f2e9', sub: '#a6c4b0', dim: '#688574',
+  jade: '#5fc98a', jadeWash: 'rgba(95,201,138,0.13)', jadeLine: 'rgba(95,201,138,0.40)',
+  gold: '#d6c074',
+  ok: '#7fd6a0', okWash: 'rgba(127,214,160,0.12)',
+  warn: '#e0c06e', warnWash: 'rgba(224,192,110,0.12)', danger: '#e0876a',
+  fontUi: SHELL.fontUi, fontMono: SHELL.fontMono,
+};
+
+/** 绯樱·玫瑰——玫瑰粉暗皮（jade 令牌=玫红主强调）。 */
+export const sakura: UITheme = {
+  bg0: '#160a10', bg1: '#1e0f17', bg2: '#28151e', bg3: '#341d28',
+  pageBg: 'linear-gradient(180deg, #160a10 0%, #1f0f18 100%)',
+  line: 'rgba(230,160,190,0.16)',
+  text: '#f7e6ee', sub: '#d6a9bd', dim: '#9a6b80',
+  jade: '#e88aa8', jadeWash: 'rgba(232,138,168,0.14)', jadeLine: 'rgba(232,138,168,0.42)',
+  gold: '#e6b86a',
+  ok: '#9fd6a8', okWash: 'rgba(159,214,168,0.12)',
+  warn: '#e6c574', warnWash: 'rgba(230,197,116,0.12)', danger: '#e87a7a',
+  fontUi: SHELL.fontUi, fontMono: SHELL.fontMono,
+};
+
+export const THEMES: Record<string, UITheme> = { onyx, brocade, frost, daylight, amethyst, forest, sakura };
 export const THEME_OPTIONS = [
   { value: 'onyx', label: '青瓷·墨蓝' },
   { value: 'brocade', label: '暖金·锦缎' },
-  { value: 'frost', label: '冷雾·素白' },
+  { value: 'frost', label: '冷雾·靛蓝' },
+  { value: 'daylight', label: '晴·云白（亮）' },
+  { value: 'amethyst', label: '紫·霓晶' },
+  { value: 'forest', label: '青林·墨绿' },
+  { value: 'sakura', label: '绯樱·玫瑰' },
 ];

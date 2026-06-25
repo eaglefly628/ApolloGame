@@ -127,7 +127,7 @@ function renderBadge(id: string, p: BadgeProps, ls: string, t: UITheme): string 
 }
 
 function renderInput(id: string, p: InputProps, ls: string, t: UITheme): string {
-  const base = `background:rgba(0,0,0,0.35);color:${t.text};border:1px solid ${t.line};border-radius:6px;font-size:12px;padding:6px 10px;outline:none;font-family:${t.fontUi}`;
+  const base = `background:${t.inputBg ?? 'rgba(0,0,0,0.35)'};color:${t.text};border:1px solid ${t.line};border-radius:6px;font-size:12px;padding:6px 10px;outline:none;font-family:${t.fontUi}`;
   const action = p.action ? ` data-action="${esc(p.action)}"` : '';
   return `<input id="${esc(id)}" type="${p.type ?? 'text'}" value="${esc(p.value ?? '')}" placeholder="${esc(p.placeholder ?? '')}"${action} style="${base};${ls}">`;
 }

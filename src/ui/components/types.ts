@@ -359,4 +359,6 @@ export interface UITheme {
   gold: string;
   ok: string; okWash: string; warn: string; warnWash: string; danger: string;
   fontUi: string; fontMono: string;
+  /** 输入框底色（缺省深色半透 rgba(0,0,0,0.35)·适配暗皮）。亮皮须填浅色，否则深底深字看不清。 */
+  inputBg?: string;
 }
