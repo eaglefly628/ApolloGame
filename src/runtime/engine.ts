@@ -1,5 +1,5 @@
 import { World } from '@engine/core/world.js';
-import type { Component, RendererBackend } from '@engine/core/types.js';
+import type { Component, RendererBackend, IWorld } from '@engine/core/types.js';
 import type { WorldBlueprint } from '../assembly/demo.assembly.js';
 import { FixedStepClock, applyCommands, hashSnapshot } from '@net/index.js';
 import type { InputSource } from '@net/index.js';
@@ -11,11 +11,18 @@ export interface EngineOptions {
   input?: InputSource;
 }
 
+// 每帧「表现/平台服务」的统一宿主接口 —— 音频(AudioSync)/存档自动保存/Steam 在场等，
+// 都靠它接进规范运行时。与渲染器同侧：sim 外、不进 hash、只读世界 outcome-first（与 RendererBackend.sync 同构）。
+export interface FrameService {
+  sync(world: IWorld): void;
+}
+
 export class Engine {
   readonly world: World;
   private rafId: number | null = null;
   private listeners: Array<() => void> = [];
   private renderer: RendererBackend | null = null;
+  private readonly services: FrameService[] = []; // 每帧服务（音频/存档/平台…），与渲染器同侧同步
   private readonly tickRate: number;
   private readonly input: InputSource | null;
 
@@ -46,6 +53,13 @@ export class Engine {
     renderer.sync(this.world);
   }
 
+  // 挂一个每帧服务（如 AudioSync）。与渲染器同侧：attach 即同步一次，之后随循环每帧同步。
+  // sim 外、不进 hash —— 服务只读世界 outcome-first，不回灌（守住确定性红线）。
+  attachService(service: FrameService): void {
+    this.services.push(service);
+    service.sync(this.world);
+  }
+
   start(): void {
     if (this.rafId !== null) return;
 
@@ -58,6 +72,7 @@ export class Engine {
       last = now;
       for (let i = 0; i < steps; i++) this.step();
       this.renderer?.sync(this.world);
+      for (const s of this.services) s.sync(this.world); // 音频/存档/平台服务每帧随渲染同步
       this.notifyListeners();
       this.rafId = requestAnimationFrame(loop);
     };
