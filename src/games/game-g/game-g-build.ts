@@ -96,10 +96,5 @@ export function tengangFxOf(cards: Iterable<{ kind: string; params?: Record<stri
   return fx;
 }
 
-// 确定性洗牌（mulberry32·抽序可回放·不破 outcome-first）—— 回合制牌库铺牌用。
-export function seededShuffleArr<T>(xs: T[], seed: number): T[] {
-  const arr = [...xs]; let t = seed >>> 0;
-  const rnd = (): number => { t += 0x6d2b79f5; let x = t; x = Math.imul(x ^ (x >>> 15), x | 1); x ^= x + Math.imul(x ^ (x >>> 7), x | 61); return ((x ^ (x >>> 14)) >>> 0) / 4294967296; };
-  for (let i = arr.length - 1; i > 0; i--) { const j = Math.floor(rnd() * (i + 1)); [arr[i], arr[j]] = [arr[j], arr[i]]; }
-  return arr;
-}
+// 确定性洗牌已收敛到 atoms 单一真相（mulberry32·零漂移·见 atoms/random/seeded-shuffle.test）。保留同名 export 不破现有 import。
+export { seededShuffle as seededShuffleArr } from '@atom-skills/index.js';

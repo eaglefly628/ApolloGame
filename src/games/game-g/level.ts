@@ -4,6 +4,7 @@
 import { campaignFor, TIANGANG_UNLOCK, type StageCampaign } from './blueprint.js';
 import { stageDisha } from './disha.js';
 import { NEUTRAL_AI, type AiProfile, type PokerCard } from './turn-combat.js';
+import { seededShuffle } from '@atom-skills/index.js'; // 洗牌收敛 atoms 单一真相（零漂移）
 
 export interface LevelDef {
   id: number; heroId: string; stars: number;
@@ -72,10 +73,7 @@ const ALL_TIANGANG: readonly string[] = TIANGANG_UNLOCK.flatMap((u) => u.ids); /
 
 /** Boss 随机 12 天罡（doc27 §三）：seed=关 id → 同关同 12 张·可复现喂 sim。从 36 池均匀不重复抽。 */
 export function bossTiangang(stage: number, count = 12): string[] {
-  const arr = [...ALL_TIANGANG]; let t = (stage * 2654435761) >>> 0;
-  const rnd = (): number => { t += 0x6d2b79f5; let x = t; x = Math.imul(x ^ (x >>> 15), x | 1); x ^= x + Math.imul(x ^ (x >>> 7), x | 61); return ((x ^ (x >>> 14)) >>> 0) / 4294967296; };
-  for (let i = arr.length - 1; i > 0; i--) { const j = Math.floor(rnd() * (i + 1)); [arr[i], arr[j]] = [arr[j], arr[i]]; }
-  return arr.slice(0, Math.min(count, arr.length));
+  return seededShuffle(ALL_TIANGANG, (stage * 2654435761) >>> 0).slice(0, Math.min(count, ALL_TIANGANG.length));
 }
 
 // 教学关稻草兵（doc28 §三·关0·弱训练敌·固定弱牌·好赢）：几张低点扑克兵·无地煞无天罡·配 aiTier 0 + 守势画像 → 可预测好赢。乙 跑教学关用。

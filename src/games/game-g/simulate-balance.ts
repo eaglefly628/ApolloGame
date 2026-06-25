@@ -12,7 +12,8 @@ import {
   initTurnBattle, drawCard, deployUnit, castTengang, endTurn, aiTakeTurn,
   OPENING_HAND, DRAW_COST, CAST_COST, type TurnBattle, type PokerCard, type TengangHandCard,
 } from './turn-combat.js';
-import { NO_TENGANG, type TengangFx } from './combat-types.js';
+import { seededShuffle } from '@atom-skills/index.js'; // 洗牌收敛 atoms 单一真相（零漂移）
+import { tengangFxOf, aggregateTengang } from './game-g-build.js'; // 天罡聚合改用 game-g-build 注册表版（删 sim 过期 if-else 复制·零漂移·Phase1 已证注册表==if-else）
 import { cardPoints, P_MAX } from './clash-resolve.js';
 import { loadLevel } from './level.js';
 
@@ -47,67 +48,8 @@ function applyInlayFavor(cards: ArmyCard[], inlayFavorTotal: number, perCardCap 
   return out;
 }
 
-function seededShuffleArr<T>(xs: T[], seed: number): T[] {
-  const arr = [...xs]; let t = seed >>> 0;
-  const rnd = (): number => {
-    t += 0x6d2b79f5; let x = t;
-    x = Math.imul(x ^ (x >>> 15), x | 1);
-    x ^= x + Math.imul(x ^ (x >>> 7), x | 61);
-    return ((x ^ (x >>> 14)) >>> 0) / 4294967296;
-  };
-  for (let i = arr.length - 1; i > 0; i--) { const j = Math.floor(rnd() * (i + 1)); [arr[i], arr[j]] = [arr[j], arr[i]]; }
-  return arr;
-}
-
-function tengangFxOf(cards: Iterable<{ kind: string; params?: Record<string, unknown> }>): TengangFx {
-  const fx: TengangFx = { ...NO_TENGANG };
-  for (const j of cards) {
-    const p = j.params; if (!p) continue;
-    const v = typeof p.value === 'number' ? p.value : 0;
-    const bonus = typeof p.bonus === 'number' ? p.bonus : 0;
-    if (j.kind === 'odds') {
-      if (p.op === 'add') fx.pEffAdd += v;
-      else if (p.op === 'winFloor') fx.winFloor += v / 100;
-      else if (p.op === 'kHard') fx.kHard += v;
-      else if (p.op === 'noUpset') fx.noUpset += 1;
-    } else if (j.kind === 'power') {
-      if (p.op === 'mul' && p.scope === 'highestRank') fx.powerMulHighest = Math.max(fx.powerMulHighest, v);
-      else if (p.op === 'add') {
-        if (p.filter === 'countLE3') fx.powerLE3 += v;
-        else if (p.filter === 'sameSuit') fx.powerSameSuit += v;
-        else if (p.scope === 'front') fx.powerFront += v;
-        else fx.powerAll += v;
-      }
-    } else if (j.kind === 'combo') {
-      if (p.op === 'pair') fx.comboPair += bonus;
-      else if (p.op === 'trips') fx.comboTrips += bonus;
-    } else if (j.kind === 'morale') {
-      if (p.op === 'leaderBuff') fx.moraleLeader += v;
-      else if (p.op === 'revenge') fx.revenge += v;
-      else if (p.op === 'noRout') fx.noRout = 1;
-    } else if (j.kind === 'stamina') {
-      if (p.op === 'stamPlus') { if (p.filter === 'faces') fx.stamFaces += v; else fx.stamPlus += v; }
-      else if (p.op === 'relay') fx.relay += v;
-    } else if (j.kind === 'draw') {
-      if (p.op === 'handMax') fx.handMaxAdd += v;
-      else if (p.op === 'onPlay') fx.onPlay += v;
-      else if (p.op === 'clashElixir') fx.clashElixir += v;
-    } else if (j.kind === 'siege') {
-      if (p.op === 'defend') fx.siegeDefend += v;
-      else if (p.op === 'chipMore') fx.siegeChip += v;
-    }
-  }
-  return fx;
-}
-
-function aggregateTengang(castIds: readonly string[]): TengangFx {
-  const cards: { kind: string; params?: Record<string, unknown> }[] = [];
-  for (const id of castIds) {
-    const j = TIANGANG_BY_ID.get(id);
-    if (j) cards.push({ kind: j.kind, params: j.params });
-  }
-  return tengangFxOf(cards);
-}
+// seededShuffle / tengangFxOf / aggregateTengang 已收敛——洗牌→atoms、天罡聚合→game-g-build（删本地过期复制·见上方 import）。
+// 注：game-g-build.aggregateTengang 内部走 TIANGANG_BY_ID（与原 sim 同源）→ 行为一致。
 
 // ── Player greedy agent ──
 // Strategy: deploy all poker cards first (free); draw when hand is empty; always end turn.
@@ -204,8 +146,8 @@ function runBattle(
     disha: lvl.boss.disha,
     aiProfile: lvl.boss.aiProfile,
     aiTier: lvl.boss.aiTier,
-    a: { pokerDeck: seededShuffleArr(aInlaid.map(toPoker), seed ^ 0x9e37), tengangDeck: aTengang },
-    b: { pokerDeck: seededShuffleArr(b.map(toPoker), seed ^ 0x51ed), tengangDeck: bTengang },
+    a: { pokerDeck: seededShuffle(aInlaid.map(toPoker), seed ^ 0x9e37), tengangDeck: aTengang },
+    b: { pokerDeck: seededShuffle(b.map(toPoker), seed ^ 0x51ed), tengangDeck: bTengang },
   });
 
   for (let i = 0; i < OPENING_HAND && tb.a.pokerDeck.length; i++) tb.a.hand.push(tb.a.pokerDeck.shift()!);

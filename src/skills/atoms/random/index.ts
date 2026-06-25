@@ -25,6 +25,29 @@ export function chancePass(state: RandomSeed | undefined, num: number, den: numb
   return nextRandom(state) < num / den;
 }
 
+// mulberry32 确定性 PRNG 工厂：seed → 每次返回 [0,1) 的取数器（与 nextRandom 同算法·但脱离 RandomSeed 运行态，
+// 供纯数据层的确定性洗牌/抽样用）。各游戏原本各自手搓此函数（game-e/deck·game-g/{build,level,sim}）→ 收敛于此单一真相。
+export function mulberry32(seed: number): () => number {
+  let a = seed >>> 0;
+  return () => {
+    a = (a + 0x6d2b79f5) | 0;
+    let t = Math.imul(a ^ (a >>> 15), a | 1);
+    t = (t + Math.imul(t ^ (t >>> 7), t | 61)) ^ t;
+    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+  };
+}
+
+// 确定性 Fisher-Yates 洗牌（不改原数组·同 seed 同结果）。卡牌/抽牌/随机排列的单一真相。
+export function seededShuffle<T>(items: readonly T[], seed: number): T[] {
+  const out = [...items];
+  const rnd = mulberry32(seed);
+  for (let i = out.length - 1; i > 0; i--) {
+    const j = Math.floor(rnd() * (i + 1));
+    [out[i], out[j]] = [out[j], out[i]];
+  }
+  return out;
+}
+
 export const randomCapability = defineCapability({
   id: 'w1-random',
   version: '1.0.0',

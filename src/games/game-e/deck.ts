@@ -8,6 +8,7 @@ export type Suit = 'spades' | 'hearts' | 'diamonds' | 'clubs';
 export type Rank = '2' | '3' | '4' | '5' | '6' | '7' | '8' | '9' | '10' | 'J' | 'Q' | 'K' | 'A';
 
 import type { EnchantId } from './enchants.js';
+import { mulberry32, seededShuffle } from '@atom-skills/index.js'; // 洗牌收敛 atoms 单一真相（零漂移·见 atoms/random/seeded-shuffle.test）
 
 export interface Card {
   readonly suit: Suit;
@@ -66,27 +67,9 @@ export const STANDARD_DECK: readonly Card[] = SUITS.flatMap((suit) =>
 // 用 mulberry32（与引擎 RandomSeed 同族确定性 PRNG）→ 同 seed 同牌序，为后续 lockstep 联机铺路。
 // 注：若将来多游戏复用"牌库/抽弃/洗牌"，再评估下沉 card-pile capability（当前 YAGNI，先纯函数）。
 
-/** mulberry32 确定性 PRNG：返回每次 [0,1) 的取数器（与引擎 random 原子同算法）。 */
-export function mulberry32(seed: number): () => number {
-  let a = seed >>> 0;
-  return () => {
-    a = (a + 0x6d2b79f5) | 0;
-    let t = Math.imul(a ^ (a >>> 15), 1 | a);
-    t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
-    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
-  };
-}
-
-/** 确定性 Fisher-Yates 洗牌（不改原数组；同 seed 同结果）。 */
-export function shuffle<T>(cards: readonly T[], seed: number): T[] {
-  const out = [...cards];
-  const rng = mulberry32(seed);
-  for (let i = out.length - 1; i > 0; i--) {
-    const j = Math.floor(rng() * (i + 1));
-    [out[i], out[j]] = [out[j], out[i]];
-  }
-  return out;
-}
+// mulberry32 / 洗牌已收敛到 atoms 单一真相（零漂移）。保留同名 export 不破现有 import（session.ts / shuffledDeck）。
+export { mulberry32 };
+export const shuffle = seededShuffle;
 
 /** 一副洗好的标准牌（确定性，种子化）。 */
 export function shuffledDeck(seed: number): Card[] {

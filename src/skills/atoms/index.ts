@@ -65,7 +65,7 @@ export {
 };
 
 // 世界级服务的纯函数助手
-export { nextRandom, randomInt, chancePass } from './random/index.js';
+export { nextRandom, randomInt, chancePass, mulberry32, seededShuffle } from './random/index.js';
 export { queryRange, queryNearest } from './spatial-query/index.js';
 
 // 全部 26 个核心原子（用于注册到 World 或 assembly 蓝图）
