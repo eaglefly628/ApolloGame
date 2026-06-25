@@ -23,6 +23,7 @@
 
 ## 工作规范
 - **引擎只归主程（用户 2026-06-10 拍板）**：`src/{engine,skills,assembly,renderer,services,net}` 只由主程（Lead）session 修改；PE/策划 session 一律写 `requests.md` 提需求、**不得直接改引擎**。
+- **UI 铁律（owner 2026-06-25 拍板）**：所有游戏的 **UI / HUD / 菜单 / 面板 / VN chrome 必须用引擎统一 UI 库 `ui/shell` 的 `UINode` 数据描述**实现（事件=信号名、绑定=resourceId、闭集节点）。战场 / 棋盘等 play-field 走 **render 组件 + 引擎渲染器**（也是数据，非 UINode）。**禁止**：① 游戏层手写 React 屏；② 直用 `ui/components`(LayoutNode) / `ui/vn`（这两套待主程收敛 / 退役）。**UINode 表达不了的 → 写 `requests.md` 让主程扩 UINode（下沉成通用 UI 能力），绝不手写 React 逃生。** 新游戏 + 重写游戏一律照此；主程负责把三套 UI 收敛到 UINode 并补齐缺口。
 - 分支 `claude/mainbranch`，**直推不开 PR**；每次提交前 `fetch → rebase → push`（多 session 并行）。**tsc + vitest + build 全绿才推**；**rebase 带进新提交后必须重跑全套再推**（陈旧基线测的绿不算绿）。
 - 提交署名 `Claude <noreply@anthropic.com>`。提交信息以 session URL 结尾。不在产物里写模型标识。
 - 需求池 `docs/workflow/requests.md`（Lead 评审→标状态）；各程序员开工清单 `docs/workflow/finish/{PA,PB,PC}-finish-list.md`。
