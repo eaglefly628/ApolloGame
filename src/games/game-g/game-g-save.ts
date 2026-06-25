@@ -1,6 +1,7 @@
 // Game G · 本地存档（纯数据 + 迁移）—— 从 game-g.tsx 抽出的存档层：类型 Save/TiangangDeck + 读写迁移 + 出战牌组派生。
 // 全是纯函数（除 localStorage 读写），不依赖 mount() 运行态；驱动层(game-g.tsx)与各模块共享 Save 类型从这里取。
 import { LEVER_START, RUN_LIVES, RUN_BATTLES, BOSS_ROSTER, GAME_G_TIANGANGS, TIANGANG_BY_ID, unlockStageOf, isPoolCardId, POKER_PICK_SIZE, effectiveLives, type InlayEntry } from './index.js';
+import { ggCloudSave } from './platform-hooks.js'; // 存档镜像上（真/假）Steam 云
 
 const DECK_SIZE = 52;
 export const SAVE_KEY = 'gameG-save-v1';
@@ -113,7 +114,9 @@ export function loadSave(): Save {
 }
 export function persist(s: Save): void {
   try {
-    localStorage.setItem(SAVE_KEY, JSON.stringify(s));
+    const raw = JSON.stringify(s);
+    localStorage.setItem(SAVE_KEY, raw);
+    ggCloudSave(raw); // 镜像上（真/假）Steam 云·best-effort·失败不碰本地存档
   } catch {
     /* 忽略 */
   }

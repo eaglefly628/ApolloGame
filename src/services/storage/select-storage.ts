@@ -22,3 +22,14 @@ export function createStoragePort(
   } catch { /* fall through */ }
   return new MemoryStoragePort();
 }
+
+// resolveCloudBridge —— 拿到当前可用的云桥（真桥 / 假云·开关 / 无 → null）。供需要直接读写
+// 云文件的场景（如 game-g 把自有 localStorage 存档 blob 镜像上云，而非走 SaveSystem 快照）。
+export function resolveCloudBridge(
+  bridge: SteamCloudBridge | undefined = (globalThis as { __APOLLO_STEAM_CLOUD__?: SteamCloudBridge }).__APOLLO_STEAM_CLOUD__,
+  opts: { mock?: boolean } = {},
+): SteamCloudBridge | null {
+  if (bridge && bridge.available) return bridge;
+  if (opts.mock ?? isMockSteamEnabled()) return createMockSteamCloudBridge();
+  return null;
+}

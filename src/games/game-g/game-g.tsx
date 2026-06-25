@@ -20,6 +20,7 @@ import { mountOnboardingOverlay } from '@ui/onboarding-overlay.js';
 import { mountUI } from '@ui/components/index.js'; // 引擎数据驱动 UI 解释器（采纳·替手写 DOM）
 import type { LayoutNode, ButtonProps, LabelProps, PanelProps, ScreenProps } from '@ui/components/types.js';
 import { GG_THEME_ONYX } from './ui-theme.js'; // game-g 古风主题（数据·喂引擎 UI 解释器换皮）
+import { ggOnBattleWon } from './platform-hooks.js'; // 平台触点（Steam/假 Steam·胜利成就/排行/富状态）
 
 // 公共 API 再导出（保旧 import 路径不变·勿删）：deck-wiring 测 ← buildPickDeck/bossHeroCard；live-combat 测 ← aggregateTengang/tengangFxOf；freshSave 历史导出。
 export { buildPickDeck, bossHeroCard, aggregateTengang, tengangFxOf } from './game-g-build.js';
@@ -651,6 +652,8 @@ export function mount(container: HTMLElement, shell?: { exit?: () => void }): ()
       const qm = quartermasterEnergy(save.tiangangs, lanesA);
       if (qm > 0) { save.leverEnergy = Math.min(effectiveLeverCap(save.planets), save.leverEnergy + qm); tail += `（督粮 +${qm}◈）`; }
       persist(save);
+      // 平台触点（Steam/假 Steam·sim 外）：胜利解成就 + 传战役进度排行 + 富状态。不可用静默。
+      if (winner === 'a') ggOnBattleWon({ campaignMax: save.campaignMax, flawless: homeA === homeMax });
       const who = winner === 'a' ? '我方胜（破敌大本营）' : winner === 'b' ? '敌方胜（我大本营被破）' : '平局（无人破家）';
       const bigTxt = winner === 'a' ? '胜 利' : winner === 'b' ? '战 败' : '平 局';
       const bigCol = winner === 'a' ? '#ffe09a' : winner === 'b' ? '#ff6b6b' : '#cbd5e1';

@@ -33,7 +33,8 @@
       - ⏳ 余：接真 Steam 后台登记同名成就 id（需 owner 真 appid）；game-g 战役胜利点接 `GG_FIRST_WIN`（待 PG 数据化出 Flag 流后接 AchievementSync，或在胜利回调直接 `port.unlockAchievement`）。
 - [x] **P2 云存档（数据驱动 + 假云可验）** — ✅ `storage/steam-cloud-storage.ts`：`SteamCloudStoragePort implements StoragePort`（槽位=云文件 + 索引文件，索引缺失从文件重建；写失败回滚）。`cloud-bridge.ts` 定义 `SteamCloudBridge` 契约 + `createMockSteamCloudBridge()` 假云（内存+localStorage 持久化）。`select-storage.ts` 工厂：真云桥→假云(开关)→LocalStorage→Memory，零分支。Electron 侧 `steam.cjs` 加 `client.cloud` 防御封装 + preload `__APOLLO_STEAM_CLOUD__`(invoke) + main handle。单测 6（往返/索引重建/持久化/工厂）全绿，cloud 降级自检通过。
       - ⏳ 余：game-g 把 `new SaveSystem(createStoragePort())`（一行消费）接上，存档即走（假/真）云；真机验收需 owner appid。
-- [ ] **P3 富状态 / 排行榜** — `setRichPresence` + `uploadLeaderboard`。验收：好友列表见"正在玩 翻命扑克 第 N 关"。
+- [x] **P3 富状态 / 排行榜 + game-g 接线** — ✅ `game-g/platform-hooks.ts`：`ggOnBattleWon` 在战役胜利点（game-g.tsx persist 后）解 `GG_FIRST_WIN`、无伤(大本营满血)加 `GG_FLAWLESS`、传 `campaign_progress` 排行榜、`setRichPresence("战役 第 N 关")`、store。`ggCloudSave/ggCloudLoad` 经云桥镜像 game-g 自有存档 blob 上云（persist 时 best-effort）。工厂选实现，不可用静默。`resolveCloudBridge()` 加进 storage。单测 5（胜利/无伤/不可用/云往返）+ flow-walk 真打一局过结算全绿。tsc+vitest(1727)+build 全绿。
+      - ⏳ 真机：富状态/排行/成就需 owner 真 appid + 后台登记同名 id/排行榜。
 - [x] **P4 上架管线（一键傻瓜界面）** — ✅ 独立工具 `steam-publisher/`（纯 Python + 网页，同 cartridge-station 风格）。界面四步：① 配置(AppID/各平台 DepotID/builder/steamcmd/选游戏) → 🔨 构建裸目录(electron-builder --dir) → 📝 生成 VDF(app_build+depot·写真 steam_appid.txt) → 🚀 一键发布(steamcmd +run_app_build)，实时日志轮询。自检：server 起动 + /api/state + VDF 生成格式正确（SteamPipe 标准）。
       - ⏳ 真上传需 owner：合作伙伴账号($100)+真 AppID/DepotID + 装 steamcmd + 后台 Set Live + 登记成就 id/Cloud 配额。工具用占位 480 已跑通编排。
 
