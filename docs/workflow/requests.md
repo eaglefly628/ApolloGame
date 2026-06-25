@@ -642,5 +642,11 @@ game-f 报「多数需新引擎能力」。Lead 实测：**三个已点名技能
 >
 > **视频改判**：owner 明确「以后跟爱诗 AI 合作 + 开场视频要用」→ 不是 wontfix，是 **deferred 的底层真需求**：等真游戏拉动（要播放/渲染视频）再下沉成 capability，先放着不为凑 demo 提前建（避免 YAGNI）。
 >
-> **本轮已落地（Lead）**：① 「🎮 输入底座」样例 = `input-lab.ts`（`KeyBinding[]` 纯数据绑定表 + 确定性 `resolveSignal`/`applyRawInput` 纯函数 + `buildInputLab` 纯 LayoutNode 视图）+ 宿主 `bindInputPad` 监听胶水（捕获板 #input-pad 抓键盘/指针 → RawInputData → reducer → 局部更新）；`input-lab.test.ts` 10 测全绿。先作为新 tab 接入，**Hub 重组待 owner 下车能看画面再做**（模块布局是视觉/UX 决策，宜眼见为实）。
-> **TODO（待 owner 回去能拉版本后）**：Hub + 模块重组（顶层 module Tabs 套现有 UI 子 Tabs，已验证嵌套 Tabs 支持）；精灵/帧动画样例（renderer 宿主）；寻路可视化样例；3D 渲染样例；视频留待拉动。
+> **已落地（Lead）**：
+> - **Hub + 模块重组**：落地积木墙（Card grid·点块进各模块）+ 顶栏返回；mod-ui 套现有 5 UI 子 tab。
+> - **🎮 输入底座**：`input-lab.ts`（KeyBinding[] 纯数据 + resolveSignal/applyRawInput 纯函数 + LayoutNode 视图）+ 宿主 bindInputPad 监听胶水；10 测。
+> - **✨ 精灵动画**：`anim-lab.ts`（tween 蓝图·4 形状）+ 渲染舞台宿主 syncStage（Engine+CanvasRenderer 挂 #sim-stage·幂等·换皮/退出拆建）；3 测 + Chromium 截图验证。
+> - **🧠 游戏 AI（索敌+寻路）**：`ai-lab.ts`（aggro Perception→Relation 锁玩家 + grid-move hex A* 逐格逼近·到相邻停 的纯蓝图）；3 测 + 截图（5 敌从四周寻路合围玩家）。
+> - **🧊 3D 渲染**：`three-lab.ts`（Mesh3D 翻面卡/翻滚立方/倾转面 + tween 转 rotation）+ ThreeRenderer 后端（syncStage 按 backend 选 canvas/three）；3 测 + 截图（SwiftShader WebGL 真 3D）。
+> 全部「组合现成能力（蓝图 capabilities+entities）」，**零专属 system**。tsc+vitest(1740)+build 全绿。
+> **TODO**：序列帧 spritesheet 动画（需真实贴图资产·待资产接入）；视频模块（deferred·爱诗 AI/开场视频拉动再下沉）；Hub 积木异形/点阵底纹（待 owner 拍样式·必要时下沉 renderer 背景/异形布局能力）。

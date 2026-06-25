@@ -632,13 +632,13 @@ function buildSoundPage(c: ControlsState): LayoutNode {
  * 展示台模块清单——每块「积木」是一类底座能力的活样例。点一块进它自己的子菜单。
  * soon=规划中（占位·灰块不可点）。后续精灵动画/3D/视频逐块点亮。
  */
-export const MODULES = [
+export const MODULES: ReadonlyArray<{ id: string; glyph: string; label: string; desc: string; tone: 'accent' | 'normal' | 'dim'; soon?: boolean }> = [
   { id: 'mod-ui', glyph: '🎛', label: 'UI 控件', desc: '30+ 数据驱动控件 · 换皮', tone: 'accent' as const },
   { id: 'mod-sound', glyph: '🔊', label: '声音', desc: '合成 / 混音 / 立体声 / 混响', tone: 'normal' as const },
   { id: 'mod-input', glyph: '🎮', label: '输入底座', desc: 'RawInput → KeyBinding → 信号', tone: 'normal' as const },
   { id: 'mod-anim', glyph: '✨', label: '精灵动画', desc: 'tween 驱动 · Canvas 实时绘制', tone: 'normal' as const },
-  { id: 'mod-ai', glyph: '🧠', label: '游戏 AI', desc: '索敌 / 寻路（规划中）', tone: 'dim' as const, soon: true },
-  { id: 'mod-3d', glyph: '🧊', label: '3D 渲染', desc: 'three 投影（规划中）', tone: 'dim' as const, soon: true },
+  { id: 'mod-ai', glyph: '🧠', label: '游戏 AI', desc: '索敌 aggro / 寻路 grid-move', tone: 'normal' as const },
+  { id: 'mod-3d', glyph: '🧊', label: '3D 渲染', desc: 'Mesh3D · three 实时渲染', tone: 'normal' as const },
 ];
 
 /** 渲染舞台样例（canvas/three 宿主挂载点）：DOM 壳 + 固定尺寸的 #sim-stage 容器（宿主在其上 init 渲染器）。 */
@@ -721,9 +721,11 @@ function moduleBody(
     case 'mod-sound': return buildSoundPage(controls);
     case 'mod-input': return buildInputLab(input);
     case 'mod-anim': return buildSimStage('anim', '✨ 精灵动画 · tween 驱动',
-      '下面是引擎 Canvas 渲染器实时绘制：4 个形状由 tween 能力（平移巡逻 / 呼吸缩放 / 匀速自转 / 淡入淡出）驱动，纯蓝图数据、无专属代码。');
-    case 'mod-ai': return comingSoon('ai', '🧠 游戏 AI · 索敌 / 寻路');
-    case 'mod-3d': return comingSoon('3d', '🧊 3D 渲染');
+      '引擎 Canvas 渲染器实时绘制：4 个形状由 tween 能力（平移巡逻 / 呼吸缩放 / 匀速自转 / 淡入淡出）驱动，纯蓝图数据、无专属代码。');
+    case 'mod-ai': return buildSimStage('ai', '🧠 游戏 AI · 索敌 + 寻路',
+      '玩家居中（金圆），五个敌人挂 Perception（索敌 aggro：锁定最近玩家）+ GridMover（寻路 grid-move：hex A* 逐格逼近、到相邻停）。纯蓝图组合现成能力，无专属代码。');
+    case 'mod-3d': return buildSimStage('3d', '🧊 3D 渲染 · Mesh3D',
+      '引擎 ThreeRenderer 实时渲染：翻面卡 / 翻滚立方 / 倾转薄面，由 tween 转 Transform.rotation 当翻面角驱动。同一份 collectRenderables 换 three 后端即换维度。');
     default: return buildHub();
   }
 }

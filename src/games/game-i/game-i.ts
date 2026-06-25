@@ -20,13 +20,18 @@ import { makeSoundPlayer, CHORDS } from './sounds.js';
 import { applyRawInput, INITIAL_INPUT, resolveSignal, type InputLabState, type RawInputData } from './input-lab.js';
 import { Engine } from '../../runtime/engine.js';
 import { CanvasRenderer } from '@renderer/index.js';
+import { ThreeRenderer } from '@renderer/three-renderer.js';
 import type { RendererBackend } from '@engine/core/types.js';
 import type { WorldBlueprint } from '../../assembly/demo.assembly.js';
 import { animBlueprint } from './anim-lab.js';
+import { aiBlueprint } from './ai-lab.js';
+import { threeBlueprint } from './three-lab.js';
 
 // 渲染/仿真模块 → 蓝图 + 渲染后端（canvas/three）。进模块时宿主在 #sim-stage 上 init 引擎实时绘制。
 const SIM_MODULES: Record<string, { blueprint: () => WorldBlueprint; backend: 'canvas' | 'three' }> = {
   'mod-anim': { blueprint: animBlueprint, backend: 'canvas' },
+  'mod-ai': { blueprint: aiBlueprint, backend: 'canvas' },
+  'mod-3d': { blueprint: threeBlueprint, backend: 'three' },
 };
 
 export function mount(container: HTMLElement): () => void {
@@ -232,7 +237,9 @@ export function mount(container: HTMLElement): () => void {
     if (want && container && !stage) {
       const engine = new Engine({ tickRate: 60 });
       engine.load(want.blueprint());
-      const renderer: RendererBackend = new CanvasRenderer({ width: 640, height: 400, background: '#0a0f1e' });
+      const renderer: RendererBackend = want.backend === 'three'
+        ? new ThreeRenderer({ width: 640, height: 400, background: 0x0a0f1e })
+        : new CanvasRenderer({ width: 640, height: 400, background: '#0a0f1e' });
       engine.attachRenderer(renderer, container);
       engine.start();
       stage = { engine, renderer, module: currentModule!, container };
