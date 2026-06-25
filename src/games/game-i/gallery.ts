@@ -629,28 +629,116 @@ function buildSoundPage(c: ControlsState): LayoutNode {
 }
 
 /**
- * modalOpen / drawerOpen = 是否叠加演示用模态浮层 / 抽屉（宿主状态驱动·开关都是数据/信号）。
- * 整棵树是纯数据：换主题只是换令牌包重挂载，这份数据一字不改。
+ * 展示台模块清单——每块「积木」是一类底座能力的活样例。点一块进它自己的子菜单。
+ * soon=规划中（占位·灰块不可点）。后续精灵动画/3D/视频逐块点亮。
+ */
+export const MODULES = [
+  { id: 'mod-ui', glyph: '🎛', label: 'UI 控件', desc: '30+ 数据驱动控件 · 换皮', tone: 'accent' as const },
+  { id: 'mod-sound', glyph: '🔊', label: '声音', desc: '合成 / 混音 / 立体声 / 混响', tone: 'normal' as const },
+  { id: 'mod-input', glyph: '🎮', label: '输入底座', desc: 'RawInput → KeyBinding → 信号', tone: 'normal' as const },
+  { id: 'mod-anim', glyph: '✨', label: '精灵动画', desc: '帧 / 补间（规划中）', tone: 'dim' as const, soon: true },
+  { id: 'mod-3d', glyph: '🧊', label: '3D 渲染', desc: 'three 投影（规划中）', tone: 'dim' as const, soon: true },
+];
+
+/** 落地页：一块块「积木」拼起来的模块入口（grid 自适应·点 Card 进各自子菜单）。 */
+function buildHub(): LayoutNode {
+  return {
+    type: 'Panel', id: 'hub', props: { title: '🧩 Apollo 引擎 · 底座能力展示台' },
+    layout: { direction: 'column', gap: 14, padding: 20 },
+    children: [
+      { type: 'Label', id: 'hub-sub', props: {
+        text: '每块积木是一类底座能力的活样例——点一块进去，看它怎么用纯数据驱动。', color: 'sub', size: 'sm' } },
+      {
+        type: 'Panel', id: 'hub-grid', props: {},
+        layout: { direction: 'grid', minCol: 200, gap: 14, padding: 0 },
+        children: MODULES.map((m) => ({
+          type: 'Card', id: `hub-${m.id}`,
+          props: {
+            media: m.glyph, title: m.label, sub: m.desc,
+            corner: m.soon ? '规划中' : '',
+            tone: m.soon ? 'locked' : m.tone,
+            ...(m.soon ? {} : { action: 'enterModule', actionArg: m.id }),
+          },
+        })),
+      },
+    ],
+  };
+}
+
+/** 规划中模块的占位页。 */
+function comingSoon(id: string, label: string): LayoutNode {
+  return {
+    type: 'Panel', id: `soon-${id}`, props: { title: label },
+    layout: { direction: 'column', gap: 8, padding: 24, align: 'center' },
+    children: [
+      { type: 'Label', id: `soon-${id}-t`, props: { text: '🚧 规划中', size: 'lg', bold: true } },
+      { type: 'Label', id: `soon-${id}-d`, props: { text: '该底座能力的活样例即将点亮。', color: 'dim', size: 'sm' } },
+    ],
+  };
+}
+
+/** UI 控件模块（原 5 个 UI 子 tab：容器/展示/输入/商店/选牌）。 */
+function buildUIModule(shop: ShopState, pick: PickState, activeTab: string, controls: ControlsState): LayoutNode {
+  return {
+    type: 'Tabs', id: 'gallery-tabs',
+    props: {
+      tabs: [
+        { id: 'tab-layout', label: '容器与布局' },
+        { id: 'tab-display', label: '数据展示' },
+        { id: 'tab-input', label: '输入与交互' },
+        { id: 'tab-shop', label: '🧩 组合演示·商店' },
+        { id: 'tab-pick', label: '🎴 组合演示·选牌' },
+      ],
+      active: activeTab,
+      action: 'switchTab',
+    },
+    layout: { flex: 1 },
+    children: [pageLayout, pageDisplay, buildPageInput(controls), buildShop(shop), buildPickHand(pick)],
+  };
+}
+
+/** 模块体：按当前模块出对应样例。 */
+function moduleBody(
+  currentModule: string, shop: ShopState, pick: PickState, activeTab: string,
+  controls: ControlsState, input: InputLabState,
+): LayoutNode {
+  switch (currentModule) {
+    case 'mod-ui': return buildUIModule(shop, pick, activeTab, controls);
+    case 'mod-sound': return buildSoundPage(controls);
+    case 'mod-input': return buildInputLab(input);
+    case 'mod-anim': return comingSoon('anim', '✨ 精灵动画');
+    case 'mod-3d': return comingSoon('3d', '🧊 3D 渲染');
+    default: return buildHub();
+  }
+}
+
+/**
+ * 整棵展示台 = 顶栏 + （落地积木墙 Hub｜某模块子菜单）。currentModule=null → Hub；否则进该模块。
+ * modalOpen / drawerOpen = UI 模块里叠加演示用模态/抽屉（宿主状态驱动·开关都是数据/信号）。
+ * 整棵树是纯数据：换主题只是换令牌包重挂，这份数据一字不改。
  */
 export function buildGallery(
-  activeTheme: string, modalOpen = false, drawerOpen = false,
+  activeTheme: string, currentModule: string | null = null, modalOpen = false, drawerOpen = false,
   shop: ShopState = INITIAL_SHOP, pick: PickState = INITIAL_PICK, activeTab = 'tab-layout',
   controls: ControlsState = INITIAL_CONTROLS, input: InputLabState = INITIAL_INPUT,
 ): LayoutNode {
+  const mod = currentModule ? MODULES.find((m) => m.id === currentModule) : undefined;
+  const title = mod ? `${mod.glyph} ${mod.label}` : 'Game I · 底座能力展示台';
   return {
     type: 'Screen',
     id: 'gameui-root',
     props: { center: false },
     layout: { direction: 'column', padding: 0 },
     children: [
-      // 顶栏：标题 + 换皮下拉
+      // 顶栏：（返回展台·进模块时）+ 标题 + 换皮下拉
       {
         type: 'Panel',
         id: 'topbar',
         props: {},
         layout: { direction: 'row', gap: 12, align: 'center', padding: 16 },
         children: [
-          { type: 'Label', id: 'app-title', props: { text: 'Game I · 控件测试场', size: 'lg', bold: true }, layout: { flex: 1 } },
+          ...(currentModule ? [{ type: 'Button', id: 'hub-back', props: { label: '← 展台', kind: 'ghost', action: 'exitModule' } } as LayoutNode] : []),
+          { type: 'Label', id: 'app-title', props: { text: title, size: 'lg', bold: true }, layout: { flex: 1 } },
           { type: 'Badge', id: 'app-engine', props: { text: 'Apollo Engine · 数据驱动 UI', tone: 'dim' } },
           { type: 'Label', id: 'theme-lbl', props: { text: '换皮', size: 'sm', color: 'sub' } },
           {
@@ -661,26 +749,8 @@ export function buildGallery(
         ],
       },
       { type: 'Divider', id: 'top-div', props: {} },
-      // 分类多页
-      {
-        type: 'Tabs',
-        id: 'gallery-tabs',
-        props: {
-          tabs: [
-            { id: 'tab-layout', label: '容器与布局' },
-            { id: 'tab-display', label: '数据展示' },
-            { id: 'tab-input', label: '输入与交互' },
-            { id: 'tab-shop', label: '🧩 组合演示·商店' },
-            { id: 'tab-pick', label: '🎴 组合演示·选牌' },
-            { id: 'tab-sound', label: '🔊 声音测试' },
-            { id: 'tab-input-lab', label: '🎮 输入底座' },
-          ],
-          active: activeTab,
-          action: 'switchTab',
-        },
-        layout: { flex: 1 },
-        children: [pageLayout, pageDisplay, buildPageInput(controls), buildShop(shop), buildPickHand(pick), buildSoundPage(controls), buildInputLab(input)],
-      },
+      // 落地积木墙 或 某模块子菜单
+      currentModule ? moduleBody(currentModule, shop, pick, activeTab, controls, input) : buildHub(),
       // 模态浮层 / 抽屉按需叠加（满屏遮罩·盖在主界面之上）
       ...(modalOpen ? [modalOverlay] : []),
       ...(drawerOpen ? [drawerOverlay] : []),

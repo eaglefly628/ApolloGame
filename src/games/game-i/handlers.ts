@@ -30,6 +30,10 @@ export interface GalleryHooks {
   setControl: (kind: string, arg?: string) => void;
   /** 切 Tab 后回调（带新 tab id）：mountUI 已就地显示新页·宿主记住当前 tab + 强制重绘。 */
   afterTabSwitch: (tabId?: string) => void;
+  /** 进某模块子菜单（展台积木点击·arg=模块 id）。 */
+  enterModule: (id?: string) => void;
+  /** 退回展台落地页。 */
+  exitModule: () => void;
   /** 播放合成音（宿主 Web Audio·按 id 出声·应用当前声像/混响）。 */
   playSound: (id?: string) => void;
   /** 混音：和弦预设 id（major/all）多音齐发。 */
@@ -74,6 +78,8 @@ export function buildHandlers(hooks: GalleryHooks): HandlerMap {
     pickCard: (a) => L('pickCard', a),
     toggleAcc: (a) => L('toggleAcc', a),
     switchTab: (a) => { L('switchTab', a); hooks.afterTabSwitch(a); }, // 切页后宿主记住当前 tab + 强制重绘
+    enterModule: (a) => { L('enterModule', a); if (a) hooks.enterModule(a); },
+    exitModule: () => { L('exitModule', undefined); hooks.exitModule(); },
     setTheme: (a) => {
       L('setTheme', a);
       if (a) hooks.setTheme(a);

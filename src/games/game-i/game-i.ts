@@ -98,6 +98,7 @@ export function mount(container: HTMLElement): () => void {
   let pick: PickState = INITIAL_PICK;  // 组合演示·选牌
   let controls: ControlsState = INITIAL_CONTROLS; // 自定义画选中态的控件值（speed/view/rating/qty/city/flag/sound/muted）
   let activeTab = 'tab-layout'; // 当前选中的 tab（切页时记住）→ 换皮重挂后重选它（复位停留页 + 逼重绘修黑字）
+  let currentModule: string | null = null; // 展台导航：null=落地积木墙；否则进该模块子菜单
   let input: InputLabState = INITIAL_INPUT; // 输入底座样例状态（宿主 DOM 监听喂 RawInput → reducer）
 
   // 声音测试播放器（Web Audio·宿主胶水）。音量/声像/静音/混响全在 controls state。
@@ -126,6 +127,8 @@ export function mount(container: HTMLElement): () => void {
     setModal: (open) => { showOverlay(open ? modalOverlay : null); },
     setDrawer: (open) => { showOverlay(open ? drawerOverlay : null); },
     afterTabSwitch: (tabId) => { if (tabId) activeTab = tabId; nudgeRepaint(); }, // 记住当前 tab + 强制重栅格
+    enterModule: (id) => { currentModule = id ?? null; activeTab = 'tab-layout'; rerender(); nudgeRepaint(); }, // 进模块（大换页·逼重绘）
+    exitModule: () => { currentModule = null; rerender(); nudgeRepaint(); }, // 退回展台
     playSound: (id) => { if (id) player.play(id, { volume: controls.vol / 100, pan: controls.pan / 100 }); },
     playChord: (id) => { player.playChord(CHORDS[id ?? 'major'] ?? CHORDS['major']!, { volume: (controls.vol / 100) * 0.6, pan: controls.pan / 100 }); },
     playPan: (where) => { const pan = where === 'left' ? -1 : where === 'right' ? 1 : 0; player.play('success', { volume: controls.vol / 100, pan }); },
@@ -171,7 +174,7 @@ export function mount(container: HTMLElement): () => void {
   // 非换皮重渲：active 恒为 'tab-layout' 常量 → reconcile 永不替换整个 Tabs（切页态/滚动/输入态全保留）。
   // 换皮重挂：传入当前 activeTab → 直接在停留页上挂出（不闪回首页），再 reselectTab 逼重绘。
   const buildTree = (active = 'tab-layout'): LayoutNode =>
-    resolveBindings(buildGallery(currentTheme, false, false, shop, pick, active, controls, input), dataSource);
+    resolveBindings(buildGallery(currentTheme, currentModule, false, false, shop, pick, active, controls, input), dataSource);
 
   // 输入底座宿主胶水（「运行时职责」）：在捕获板 #input-pad 上挂 DOM 监听 → 造 RawInputData →
   // 喂纯 reducer → 局部更新读数。幂等绑定（dataset 标记）：reconcile 保留同一 pad 元素 → 监听不重复；
