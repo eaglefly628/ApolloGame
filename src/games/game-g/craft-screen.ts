@@ -54,11 +54,12 @@ function enchantPanel(view: LobbyView, craftSel: string): LayoutNode {
     const fv = deck[idx] ?? 50;
     const n = (inlays[String(idx)] ?? []).length;
     const sel = craftSel === String(idx);
-    return { type: 'Card', id: `ench-c-${idx}`,
-      props: { title: `${rank}${su}`, sub: `${hero?.name ?? ''} · ${fv}`, corner: n ? `🀄${n}` : undefined,
-        tone: (sel ? 'accent' : 'normal') as 'accent' | 'normal', action: 'craftSel', actionArg: String(idx) } };
+    // 保真：用 PlayingCard 原语（真扑克牌面·名将名 + favor·镶嵌数 value + 选中金边）。
+    return { type: 'PlayingCard', id: `ench-c-${idx}`,
+      props: { rank, suit: su, label: hero?.name, value: n ? `${fv}·🀄${n}` : String(fv),
+        selected: sel, action: 'craftSel', actionArg: String(idx) } };
   }));
-  const grid: LayoutNode = { type: 'Panel', id: 'ench-grid', props: { scroll: true }, layout: { direction: 'grid', minCol: 92, gap: 6, padding: 8, flex: 1 }, children: cards };
+  const grid: LayoutNode = { type: 'Panel', id: 'ench-grid', props: { scroll: true }, layout: { direction: 'grid', minCol: 76, gap: 6, padding: 8, flex: 1 }, children: cards };
   const detail: LayoutNode = (craftSel !== '' && deck[+craftSel] !== undefined)
     ? buildEnchantDetail(view, +craftSel)
     : { type: 'Panel', id: 'ench-detail', props: { title: '附魔详情' }, layout: { width: 320, padding: 12 },
