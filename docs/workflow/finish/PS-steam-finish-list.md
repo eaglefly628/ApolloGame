@@ -22,7 +22,12 @@
 
 ## 阶段（每阶段独立验收，绿了再下一步）
 
-- [ ] **P0 选型锁定 + 依赖落地** — electron 侧加 steamworks.js + Steamworks SDK redist + `steam_appid.txt(480)`。验收：Electron 起动 `SteamAPI_Init` 成功、读到本地 Steam 用户名。
+- [x] **P0 选型锁定 + 依赖落地 + init 自检骨架** — ✅ 代码全绿（tsc+vitest 1682+build）。落地：
+      - `steam_appid.txt(480)`；`package.json` optionalDependencies 加 `steamworks.js`。
+      - 主进程绑定 `electron/steam.cjs`（防御式 init，无 Steam→available:false 不崩）+ `electron/preload.cjs`（contextBridge 注入 `window.__APOLLO_STEAM__`）+ `electron/main.cjs`（IPC 两端 + 自检 log）。
+      - 渲染侧 `SteamworksPlatformPort`（委派桥）+ `createPlatformPort()` 工厂（有桥→Steam，无桥→Null，零分支）+ 单测。
+      - `electron-builder.yml`：ship preload/steam.cjs + steam_appid.txt，asarUnpack 原生 .node。
+      - ⏳ **待真机验收**（本环境无 Steam）：装了 Steam 客户端的机器上 `npm i`（拉 steamworks.js 原生模块）+ 放 Steamworks SDK redist → 跑 Electron，控制台应见 `[steam] init → {"available":true,"name":"<你的Steam名>"...}`。这步 owner 在本地做。
 - [ ] **P1 成就 / 统计直通** — 实现 `SteamworksPlatformPort`，`achievement-sync.ts` 接真 Steam；game-g 触发一个测试成就。验收：Steam 客户端弹出成就解锁。
 - [ ] **P2 云存档** — `StoragePort` 加 Steam Cloud(remote storage) 适配。验收：删本地存档、重进还在。
 - [ ] **P3 富状态 / 排行榜** — `setRichPresence` + `uploadLeaderboard`。验收：好友列表见"正在玩 翻命扑克 第 N 关"。

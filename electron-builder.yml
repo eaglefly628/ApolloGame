@@ -3,11 +3,23 @@ electronVersion: "33.0.0"
 productName: FateflipPoker
 copyright: "Copyright © 2025 Apollo Game Studio"
 
-# Only ship the Electron main + the pre-built web bundle; nothing else.
+# Only ship the Electron main + preload + Steam 绑定 + the pre-built web bundle; nothing else.
 files:
   - electron/main.cjs
+  - electron/preload.cjs
+  - electron/steam.cjs
   - dist-cartridge/**
   - package.json
+  - steam_appid.txt
+
+# steamworks.js 是原生 .node 模块，必须从 asar 解包才能在打包后 require 成功。
+asarUnpack:
+  - "**/node_modules/steamworks.js/**"
+
+# steam_appid.txt 需与可执行文件同目录（Steam 据它识别 appId）；放进 app 资源根。
+extraResources:
+  - from: steam_appid.txt
+    to: ../steam_appid.txt
 
 directories:
   output: release/game-g/bin

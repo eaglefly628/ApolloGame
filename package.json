@@ -21,6 +21,9 @@
     "pack:win": "electron-builder --win --config electron-builder.yml",
     "dist": "python3 scripts/dist.py"
   },
+  "optionalDependencies": {
+    "steamworks.js": "^0.4.0"
+  },
   "dependencies": {
     "@types/three": "^0.184.1",
     "phaser": "^3.80.1",

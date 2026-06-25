@@ -2,4 +2,6 @@
 // 真实 Steamworks 适配器在原生壳(Electron/Tauri)里落地；web/dev/测试用 NullPlatformPort。
 export type { PlatformPort } from './platform-port.js';
 export { NullPlatformPort } from './null-platform.js';
+export { SteamworksPlatformPort, type SteamBridge } from './steamworks-platform.js';
+export { createPlatformPort } from './select-platform.js';
 export { AchievementSync } from './achievement-sync.js';
