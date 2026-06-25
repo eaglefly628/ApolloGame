@@ -10,6 +10,7 @@ import { mountUI } from '@ui/components/index.js';
 import type { LayoutNode, HandlerMap } from '@ui/components/index.js';
 import { GG_LOBBY_THEME } from './ui-theme.js';
 import { HERO_CARDS } from './hero-codex.js';
+import { heroPortraitUri, type Suit } from './portraits.js';
 import { DIZHI_ZODIACS, DIZHI_TIER_NM, dizhiTopTier, dizhiTotal, deployCost, POKER_PICK_SIZE } from './blueprint.js';
 import { SUITS, RANKS, SUIT_LETTER } from './lobby-util.js';
 import type { LobbyView } from './lobby-screen.js';
@@ -49,10 +50,11 @@ function pokerGrid(view: LobbyView, picks: Set<string>): LayoutNode {
       const hero = HERO_CARDS.find((h) => h.suit === su && h.rank === rank);
       const cost = deployCost(rank);
       const picked = picks.has(cardId);
-      // 保真：用 PlayingCard 原语（真扑克牌面·名将名 + favor 值 + 选中金边/弱牌暗），取代通用 Card。
+      // 保真：用 PlayingCard 原语（真扑克牌面 + 英雄立绘 + 名将名 + favor 值 + 选中金边/弱牌暗）。
       return {
         type: 'PlayingCard', id: `pc-${cardId}`,
         props: { rank, suit: su, label: hero?.name, value: cost > 0 ? `${fv}·${'💧'.repeat(cost)}` : String(fv),
+          art: hero ? heroPortraitUri(su as Suit, hero.era, rank, hero.rar) : undefined,
           selected: picked, dimmed: !picked && fv <= 50, action: 'pickCard', actionArg: cardId },
       };
     });

@@ -8,6 +8,7 @@ import { mountUI } from '@ui/components/index.js';
 import type { LayoutNode, HandlerMap } from '@ui/components/index.js';
 import { GG_LOBBY_THEME } from './ui-theme.js';
 import { HERO_CARDS } from './hero-codex.js';
+import { heroPortraitUri, type Suit } from './portraits.js';
 import { DIZHI_ZODIACS, DIZHI_TIER_NM, DIZHI_TIER_CAP, DIZHI_INLAY_FAVOR, INLAY_MAX, inlayBonus, type InlayEntry } from './blueprint.js';
 import { SUITS, RANKS } from './lobby-util.js';
 import type { LobbyView } from './lobby-screen.js';
@@ -54,9 +55,10 @@ function enchantPanel(view: LobbyView, craftSel: string): LayoutNode {
     const fv = deck[idx] ?? 50;
     const n = (inlays[String(idx)] ?? []).length;
     const sel = craftSel === String(idx);
-    // 保真：用 PlayingCard 原语（真扑克牌面·名将名 + favor·镶嵌数 value + 选中金边）。
+    // 保真：用 PlayingCard 原语（真扑克牌面 + 英雄立绘 + 名将名 + favor·镶嵌数 value + 选中金边）。
     return { type: 'PlayingCard', id: `ench-c-${idx}`,
       props: { rank, suit: su, label: hero?.name, value: n ? `${fv}·🀄${n}` : String(fv),
+        art: hero ? heroPortraitUri(su as Suit, hero.era, rank, hero.rar) : undefined,
         selected: sel, action: 'craftSel', actionArg: String(idx) } };
   }));
   const grid: LayoutNode = { type: 'Panel', id: 'ench-grid', props: { scroll: true }, layout: { direction: 'grid', minCol: 76, gap: 6, padding: 8, flex: 1 }, children: cards };

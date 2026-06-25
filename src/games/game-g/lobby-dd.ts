@@ -68,10 +68,15 @@ function tabContent(view: LobbyView, st: LobbyDDState): LayoutNode {
 const emptyTab = (id: string): LayoutNode => ({ type: 'Panel', id: `lc-empty-${id}`, props: {}, layout: { padding: 16 }, children: [] });
 
 export function buildLobby(view: LobbyView, st: LobbyDDState): LayoutNode {
+  // 整厅外框（对齐原版 .frame）：maxWidth 1340 + 块居中——窄屏铺满、宽屏封顶居中。
+  const frame: LayoutNode = {
+    type: 'Panel', id: 'lobby-frame', props: {}, layout: { direction: 'column', gap: 10, padding: 14, maxWidth: 1340, flex: 1 },
+    children: [topbar(view), navBar(st.tab), { type: 'Panel', id: 'lobby-content', props: {}, layout: { direction: 'column', flex: 1 }, children: [tabContent(view, st)] }],
+  };
   return {
     type: 'Screen', id: 'lobby-screen-dd', props: { bg: GG_LOBBY_THEME.pageBg },
-    layout: { direction: 'column', padding: 14, gap: 10 },
-    children: [topbar(view), navBar(st.tab), { type: 'Panel', id: 'lobby-content', props: {}, layout: { direction: 'column', flex: 1 }, children: [tabContent(view, st)] }],
+    layout: { direction: 'column', padding: 0 },
+    children: [frame],
   };
 }
 

@@ -26,8 +26,10 @@ describe('lobby-dd · 全数据驱动大厅集成', () => {
   it('buildLobby 产出 LayoutNode 树（Screen 根 + 顶栏 + 导航 + 内容·纯数据）', () => {
     const tree = buildLobby(VIEW(), INITIAL_LOBBY_DD);
     expect(tree.type).toBe('Screen');
-    expect(tree.children?.[0]?.id).toBe('lobby-topbar');
-    expect(tree.children?.[1]?.id).toBe('lobby-nav');
+    const frame = tree.children?.[0]; // 居中外框（maxWidth）
+    expect(frame?.id).toBe('lobby-frame');
+    expect(frame?.children?.[0]?.id).toBe('lobby-topbar');
+    expect(frame?.children?.[1]?.id).toBe('lobby-nav');
     const json = JSON.stringify(tree);
     expect(json).toContain('大厅'); expect(json).toContain('改造坊'); // 导航
     expect(json).toContain('"action":"tab"'); expect(json).toContain('"action":"openShop"');

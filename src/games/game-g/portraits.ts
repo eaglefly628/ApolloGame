@@ -49,6 +49,11 @@ function weapon(r: Region, accent: string): string {
   }
 }
 
+/** 立绘 SVG → data URI（喂引擎 PlayingCard.art 的 <img src>·纯字符串·确定性）。供牌库/牌谱/改造坊牌面立绘用。 */
+export function heroPortraitUri(suit: Suit, era: string, rank: string, rar = 'white'): string {
+  return `data:image/svg+xml;utf8,${encodeURIComponent(heroPortrait(suit, era, rank, rar))}`;
+}
+
 /** 生成一张英雄立绘 SVG（自包含·可直接塞进 innerHTML）。size 由 CSS/外层控制（width/height 100%）。 */
 export function heroPortrait(suit: Suit, era: string, rank: string, rar = 'white'): string {
   const accent = SUIT_HEX[suit] ?? '#9ca3af';

@@ -11,6 +11,7 @@ import { mountUI } from '@ui/components/index.js';
 import type { LayoutNode, HandlerMap } from '@ui/components/index.js';
 import { GG_LOBBY_THEME } from './ui-theme.js';
 import { HERO_CARDS, type HeroCard, type HeroRar } from './hero-codex.js';
+import { heroPortraitUri } from './portraits.js';
 import { EARTH_FIENDS, STAGE_CAMPAIGN } from './campaign-data.js';
 import { stageDisha } from './disha.js';
 import { dishaNumberLine } from './lobby-collection.js'; // 纯函数复用（数值人话行·与 campaign-screen 一致）
@@ -47,6 +48,7 @@ function heroesPage(st: CollectionState): LayoutNode {
   const cards: LayoutNode[] = filtered.map((h) => ({
     type: 'PlayingCard', id: `coll-h-${h.id}`,
     props: { rank: h.rank, suit: h.suit, label: h.name, value: h.own > 0 ? `×${h.own}` : RAR_NAME[h.rar],
+      art: heroPortraitUri(h.suit, h.era, h.rank, h.rar),
       selected: h.id === sel?.id && h.own > 0, dimmed: h.own === 0, action: 'heroPick', actionArg: h.id },
   }));
   const grid: LayoutNode = {
