@@ -44,10 +44,11 @@ export interface LayoutConstraints {
 
 export interface ButtonProps {
   label: string;
-  kind?: 'primary' | 'ghost' | 'quiet';
+  kind?: 'primary' | 'ghost' | 'quiet' | 'hero'; // hero=金色倒角 sheen 大 CTA（下沉自 game-g 出征键·owner 2026-06-25）
   disabled?: boolean;
   action?: string;
   actionArg?: string;
+  sub?: string; // hero 键副标（小字第二行·如「挑战 曹操 · 难度 ★★」）
 }
 
 export interface LabelProps {
@@ -84,6 +85,10 @@ export interface InputProps {
 export interface PanelProps {
   title?: string;
   scroll?: boolean;
+  /** 自定义底（令牌串·如 'var(--felt)'）：表达绿呢牌桌等特殊表面（下沉自 game-g·owner 2026-06-25）。缺省=主题 bg1。 */
+  bg?: string;
+  /** 暗角叠加（felt 牌桌四周渐暗 vignette）：true 时叠一层径向暗角·纯表现。 */
+  vignette?: boolean;
 }
 
 /** 单个开/关复选框。handler 收到 'true' | 'false'。 */
@@ -207,6 +212,7 @@ export interface PlayingCardProps {
   selected?: boolean;                    // 选中高亮（入选出战组 → 金边发光）
   dimmed?: boolean;                      // 弱牌/未拥有 → 半透明
   size?: 'sm' | 'md' | 'lg';             // 牌面尺寸（缺省 md）
+  face?: 'dark' | 'light';               // 牌面底：dark=暗主题卡(缺省) / light=经典白扑克牌（红黑对比·对决卡用）
   back?: string;                         // 牌背中央纹样字符（缺省 ♠ 暗纹）
   action?: string; actionArg?: string;   // 可点 → handlers[action](actionArg)
 }

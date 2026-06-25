@@ -53,8 +53,16 @@ function renderButton(id: string, p: ButtonProps, ls: string, t: UITheme): strin
     quiet:   `background:transparent;color:${t.dim};border:1px solid transparent`,
   };
   const kind = p.kind ?? 'ghost';
-  const base = `padding:6px 14px;border-radius:7px;font-size:12px;cursor:${p.disabled ? 'not-allowed' : 'pointer'};font-family:${t.fontUi};outline:none;transition:all .15s;opacity:${p.disabled ? 0.4 : 1}`;
   const action = p.action ? ` data-action="${esc(p.action)}"${p.actionArg ? ` data-arg="${esc(p.actionArg)}"` : ''}` : '';
+  // hero：金色倒角 sheen 大 CTA（下沉自 game-g 出征键）。倒角 clip-path + 流光 span(apollo-sheen 关键帧) + 可选副标。
+  if (kind === 'hero') {
+    const hbase = `position:relative;overflow:hidden;padding:14px 30px;border:0;border-radius:4px;cursor:${p.disabled ? 'not-allowed' : 'pointer'};font-family:${t.fontUi};outline:none;background:linear-gradient(180deg,${t.gold},${t.warn});color:${t.bg0};font-weight:700;box-shadow:0 6px 18px rgba(0,0,0,.35),inset 0 1px 0 rgba(255,255,255,.45);clip-path:polygon(13px 0,100% 0,100% calc(100% - 13px),calc(100% - 13px) 100%,0 100%,0 13px);opacity:${p.disabled ? 0.4 : 1}`;
+    const sheen = `<span style="position:absolute;top:0;bottom:0;left:-60%;width:45%;background:linear-gradient(105deg,transparent,rgba(255,255,255,.55),transparent);transform:skewX(-18deg);animation:apollo-sheen 2.6s ease-in-out infinite;pointer-events:none"></span>`;
+    const big = `<span style="display:block;font-size:17px;line-height:1.15">${esc(p.label)}</span>`;
+    const sub = p.sub ? `<span style="display:block;font-size:11px;font-weight:600;opacity:.8;margin-top:2px">${esc(p.sub)}</span>` : '';
+    return `<button id="${esc(id)}"${action}${p.disabled ? ' disabled' : ''} style="${hbase};${ls}">${sheen}${big}${sub}</button>`;
+  }
+  const base = `padding:6px 14px;border-radius:7px;font-size:12px;cursor:${p.disabled ? 'not-allowed' : 'pointer'};font-family:${t.fontUi};outline:none;transition:all .15s;opacity:${p.disabled ? 0.4 : 1}`;
   return `<button id="${esc(id)}"${action}${p.disabled ? ' disabled' : ''} style="${base};${kindStyle[kind]};${ls}">${esc(p.label)}</button>`;
 }
 
@@ -120,12 +128,17 @@ function renderPanel(id: string, p: PanelProps, c: LayoutConstraints | undefined
   const box = dir === 'grid'
     ? `display:grid;grid-template-columns:repeat(auto-fill,minmax(${c?.minCol ?? 96}px,1fr));gap:${gap}px;align-items:${align}`
     : `display:flex;flex-direction:${dir};gap:${gap}px;align-items:${align}`;
-  const style = `${box};padding:${pad}px;background:${t.bg1};border:1px solid ${t.line};border-radius:10px;position:relative;${overflow}${ls}`;
+  // bg：自定义底（令牌串·如绿呢牌桌 'var(--felt)'）；缺省主题 bg1。与 Screen.bg 同口径（取游戏令牌·不另转义）。
+  const bg = p.bg ?? t.bg1;
+  const style = `${box};padding:${pad}px;background:${bg};border:1px solid ${t.line};border-radius:10px;position:relative;${overflow}${ls}`;
   const title = p.title
     ? `<div style="font-size:10px;letter-spacing:2.4px;text-transform:uppercase;color:${t.dim};font-family:${t.fontUi};margin-bottom:4px${dir === 'grid' ? ';grid-column:1/-1' : ''}">${esc(p.title)}</div>`
     : '';
+  const vignette = p.vignette
+    ? `<div style="position:absolute;inset:0;border-radius:10px;pointer-events:none;background:radial-gradient(120% 100% at 50% 30%,transparent 55%,rgba(0,0,0,.45) 100%)"></div>`
+    : '';
   const inner = children.map((ch) => renderNode(ch, t)).join('');
-  return `<div id="${esc(id)}" style="${style}">${title}${inner}</div>`;
+  return `<div id="${esc(id)}" style="${style}">${vignette}${title}${inner}</div>`;
 }
 
 // ── 新增 6 个控件 ───────────────────────────────────────────────
@@ -349,7 +362,9 @@ const PCARD_DIMS: Record<string, [number, number, number, number]> = { sm: [52, 
 function renderPlayingCard(id: string, p: PlayingCardProps, ls: string, t: UITheme): string {
   const [w, h, corner, big] = PCARD_DIMS[p.size ?? 'md'] ?? PCARD_DIMS['md']!;
   const isRed = p.suit === '♥' || p.suit === '♦';
-  const sc = isRed ? t.danger : t.text;
+  const light = p.face === 'light';
+  // light=经典白扑克牌（红黑对比·对决卡用）；dark=暗主题卡（牌库格/收藏用·缺省）。
+  const sc = light ? (isRed ? '#c0392b' : '#1a1a1a') : (isRed ? t.danger : t.text);
   const faceUp = p.faceUp !== false;
   const action = p.action ? ` data-action="${esc(p.action)}"${p.actionArg ? ` data-arg="${esc(p.actionArg)}"` : ''}` : '';
   const cursor = p.action ? 'cursor:pointer;' : '';
@@ -360,8 +375,9 @@ function renderPlayingCard(id: string, p: PlayingCardProps, ls: string, t: UIThe
   const inner = faceUp
     ? `${pip('top:5px;left:6px')}<span style="font-size:${big}px;color:${sc};opacity:.9">${esc(p.suit)}</span>${pip('bottom:5px;right:6px;transform:rotate(180deg)')}`
     : `<span style="font-size:${big}px;color:${t.jade};opacity:.5">${esc(p.back ?? '♠')}</span>`;
-  const faceBg = faceUp ? t.bg2 : t.bg3;
-  const label = p.label ? `<div style="position:absolute;bottom:3px;left:0;right:0;font-size:9px;color:${t.sub};font-family:${t.fontUi};text-align:center;text-shadow:0 1px 2px rgba(0,0,0,.6)">${esc(p.label)}</div>` : '';
+  const faceBg = faceUp ? (light ? 'linear-gradient(160deg,#fefdfb,#eceae3)' : t.bg2) : (light ? 'linear-gradient(160deg,#b34a4a,#8c3535)' : t.bg3);
+  const lblColor = light ? '#5a5048' : t.sub;
+  const label = p.label ? `<div style="position:absolute;bottom:3px;left:0;right:0;font-size:9px;color:${lblColor};font-family:${t.fontUi};text-align:center;${light ? '' : 'text-shadow:0 1px 2px rgba(0,0,0,.6)'}">${esc(p.label)}</div>` : '';
   const value = p.value ? `<span style="position:absolute;bottom:4px;right:6px;font-size:10px;font-weight:700;color:${t.gold};font-family:${t.fontUi}">${esc(p.value)}</span>` : '';
   return `<div id="${esc(id)}"${action} style="position:relative;display:inline-flex;align-items:center;justify-content:center;width:${w}px;height:${h}px;border-radius:8px;background:${faceBg};border:2px solid ${selBorder};font-family:${t.fontUi};${glow}${dimmed}${cursor}${ls}">${inner}${label}${value}</div>`;
 }

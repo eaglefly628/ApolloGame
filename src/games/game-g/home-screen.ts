@@ -11,15 +11,39 @@ import type { LayoutNode, HandlerMap } from '@ui/components/index.js';
 import { GG_LOBBY_THEME } from './ui-theme.js';
 import type { LobbyView } from './lobby-screen.js';
 
-/** 主页内容 → LayoutNode（纯数据）。view 给关卡/Boss/卦象/资源；交互全走 action 信号：play(出征)/man(手册)/lucky(卦象)。 */
+/** 主页内容 → LayoutNode（纯数据·保真原版绿呢牌桌·owner 2026-06-25「和原版一样」）。
+ *  用补齐后的控件：Panel(bg=felt+vignette) 绿呢牌桌 · PlayingCard(face:light·rotate) 漂浮对决卡 · Button(kind:hero) sheen 出征 CTA。
+ *  交互全走 action 信号：play(出征) / man(手册) / lucky(掷卦)。 */
 export function buildHomeScreen(view: LobbyView): LayoutNode {
   const c = view.campaign;
   const keptFortune = view.fortune?.keptVal;
+  const stars = c ? '★'.repeat(c.stars) + '☆'.repeat(Math.max(0, 3 - c.stars)) : '';
 
-  // 左栏·戏牌台：今日卦象 + 标题 + 对决牌(近似) + 出征 CTA + 手册。
+  // 花色标条（♠♥♦♣）：贴近原版 stags。
+  const stags: LayoutNode = {
+    type: 'Panel', id: 'home-stags', props: {}, layout: { direction: 'row', gap: 18, padding: 0, align: 'center' },
+    children: [
+      { type: 'Label', id: 'st-s', props: { text: '♠ 黑桃', size: 'xs', color: 'sub' } },
+      { type: 'Label', id: 'st-h', props: { text: '♥ 红桃', size: 'xs', color: 'danger' } },
+      { type: 'Label', id: 'st-d', props: { text: '♦ 方块', size: 'xs', color: 'warn' } },
+      { type: 'Label', id: 'st-c', props: { text: '♣ 梅花', size: 'xs', color: 'ok' } },
+    ],
+  };
+
+  // 漂浮对决牌：A♠ 白牌(左倾) · 掷 emblem · 牌背(右倾)——原 bespoke 绿呢旋转卡，现用 PlayingCard(light)+layout.rotate 复刻。
+  const duel: LayoutNode = {
+    type: 'Panel', id: 'home-duel', props: {}, layout: { direction: 'row', gap: 4, align: 'center', padding: 0 },
+    children: [
+      { type: 'PlayingCard', id: 'duel-a', props: { rank: 'A', suit: '♠', face: 'light', size: 'lg' }, layout: { rotate: -9 } },
+      { type: 'Button', id: 'duel-roll', props: { label: '掷', kind: 'primary', action: 'lucky' } },
+      { type: 'PlayingCard', id: 'duel-back', props: { rank: 'A', suit: '♠', face: 'light', faceUp: false, back: '❖', size: 'lg' }, layout: { rotate: 9 } },
+    ],
+  };
+
+  // 绿呢牌桌（felt）：bg=var(--felt) + vignette 暗角；今日卦象 + 标题 + 花色标 + 对决牌 + 对决线 + sheen 出征 CTA + 手册。
   const felt: LayoutNode = {
-    type: 'Panel', id: 'home-felt', props: { title: '' },
-    layout: { direction: 'column', align: 'center', gap: 14, padding: 22, flex: 1 },
+    type: 'Panel', id: 'home-felt', props: { bg: 'var(--felt)', vignette: true },
+    layout: { direction: 'column', align: 'center', gap: 13, padding: 24, flex: 1 },
     children: [
       { type: 'Button', id: 'home-fortune',
         props: { label: keptFortune != null ? `🎴 今日卦象 · ${keptFortune}` : '🎴 掷今日卦象', kind: 'ghost', action: 'lucky' } },
@@ -27,14 +51,13 @@ export function buildHomeScreen(view: LobbyView): LayoutNode {
         props: { text: c ? `第 ${c.stage} 关 · ${c.battle}` : '戏牌师', size: 'xl', color: 'gold', bold: true } },
       { type: 'Label', id: 'home-sub',
         props: { text: c ? `执掌命运之人 · 挑战被诅咒的 ${c.boss}` : view.stageLabel, size: 'sm', color: 'sub' } },
-      // 对决牌（原 bespoke 绿呢旋转 A♠ → 数据里用一张 Card 近似表达·点它=掷卦）
-      { type: 'Card', id: 'home-duel',
-        props: { title: 'A ♠', sub: c ? `⚔ 对决 ${c.boss}` : '掷命之牌', tone: 'accent', action: 'lucky' },
-        layout: { width: 150 } },
+      stags,
+      duel,
       { type: 'Label', id: 'home-duelline',
-        props: { text: c ? c.oneLiner : '', size: 'xs', color: 'dim' } },
+        props: { text: c ? `⚔ 对决 ${c.boss} · ${c.oneLiner}` : '掷命之牌', size: 'xs', color: 'dim' } },
       { type: 'Button', id: 'home-play',
-        props: { label: c ? `⚔ 出征 · 第 ${c.stage} 关` : `⚔ 出征 · ${view.rankText}`, kind: 'primary', action: 'play' } },
+        props: { label: c ? `⚔ 出征 · 第 ${c.stage} 关` : `⚔ 出征 · ${view.rankText}`, kind: 'hero',
+          sub: c ? `挑战 ${c.boss} · ${c.battle} · 难度 ${stars}` : 'DEPLOY · 单人战役 vs AI 庄家', action: 'play' } },
       { type: 'Button', id: 'home-man', props: { label: '📖 玩法手册', kind: 'ghost', action: 'man' } },
     ],
   };

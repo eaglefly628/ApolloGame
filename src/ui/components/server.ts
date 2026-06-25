@@ -94,7 +94,8 @@ const APOLLO_KEYFRAMES = `
 @keyframes apollo-coin-heads{0%{transform:rotateX(60deg)}100%{transform:rotateX(1800deg)}}
 @keyframes apollo-coin-tails{0%{transform:rotateX(60deg)}100%{transform:rotateX(1980deg)}}
 @keyframes apollo-spark{0%{transform:scale(.4);opacity:0}40%{transform:scale(1.25);opacity:1}100%{transform:scale(1);opacity:.9}}
-@keyframes apollo-clash{0%,100%{transform:translateX(0)}30%{transform:translateX(-5px)}60%{transform:translateX(5px)}}`;
+@keyframes apollo-clash{0%,100%{transform:translateX(0)}30%{transform:translateX(-5px)}60%{transform:translateX(5px)}}
+@keyframes apollo-sheen{0%{left:-60%}60%,100%{left:140%}}`;
 function ensureKeyframes(): void {
   if (typeof document === 'undefined') return;
   if (document.getElementById('apollo-ui-keyframes')) return;
