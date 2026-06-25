@@ -28,8 +28,8 @@ export interface GalleryHooks {
   pickDispatch: (kind: string, arg?: string) => void;
   /** 自定义画选中态的控件改值（kind=flag/sound/speed/view/qty/rating/city）→ 宿主改 state + 局部更新。 */
   setControl: (kind: string, arg?: string) => void;
-  /** 切 Tab 后回调（mountUI 已就地显示新页·宿主借此强制重绘刚显示的页·消除「显示即黑」）。 */
-  afterTabSwitch: () => void;
+  /** 切 Tab 后回调（带新 tab id）：mountUI 已就地显示新页·宿主记住当前 tab + 强制重绘。 */
+  afterTabSwitch: (tabId?: string) => void;
   /** 播放合成音（宿主 Web Audio·按 id 出声·应用当前声像/混响）。 */
   playSound: (id?: string) => void;
   /** 混音：和弦预设 id（major/all）多音齐发。 */
@@ -73,7 +73,7 @@ export function buildHandlers(hooks: GalleryHooks): HandlerMap {
     pickTag: (a) => L('pickTag', a),
     pickCard: (a) => L('pickCard', a),
     toggleAcc: (a) => L('toggleAcc', a),
-    switchTab: (a) => { L('switchTab', a); hooks.afterTabSwitch(); }, // 切页后宿主强制重绘刚显示的页
+    switchTab: (a) => { L('switchTab', a); hooks.afterTabSwitch(a); }, // 切页后宿主记住当前 tab + 强制重绘
     setTheme: (a) => {
       L('setTheme', a);
       if (a) hooks.setTheme(a);

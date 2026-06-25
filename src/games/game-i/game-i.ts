@@ -96,6 +96,7 @@ export function mount(container: HTMLElement): () => void {
   let shop: ShopState = INITIAL_SHOP;  // 组合演示·商店
   let pick: PickState = INITIAL_PICK;  // 组合演示·选牌
   let controls: ControlsState = INITIAL_CONTROLS; // 自定义画选中态的控件值（speed/view/rating/qty/city/flag/sound/muted）
+  let activeTab = 'tab-layout'; // 当前选中的 tab（切页时记住）→ 换皮重挂后重选它（复位停留页 + 逼重绘修黑字）
 
   // 声音测试播放器（Web Audio·宿主胶水）。音量/声像/静音/混响全在 controls state。
   const player = makeSoundPlayer();
@@ -122,7 +123,7 @@ export function mount(container: HTMLElement): () => void {
     setTheme: (value) => { currentTheme = value; rerender(true); },
     setModal: (open) => { showOverlay(open ? modalOverlay : null); },
     setDrawer: (open) => { showOverlay(open ? drawerOverlay : null); },
-    afterTabSwitch: () => { nudgeRepaint(); }, // 切到的新页（之前 display:none）强制重栅格 → 消除「显示即黑」
+    afterTabSwitch: (tabId) => { if (tabId) activeTab = tabId; nudgeRepaint(); }, // 记住当前 tab + 强制重栅格
     playSound: (id) => { if (id) player.play(id, { volume: controls.vol / 100, pan: controls.pan / 100 }); },
     playChord: (id) => { player.playChord(CHORDS[id ?? 'major'] ?? CHORDS['major']!, { volume: (controls.vol / 100) * 0.6, pan: controls.pan / 100 }); },
     playPan: (where) => { const pan = where === 'left' ? -1 : where === 'right' ? 1 : 0; player.play('success', { volume: controls.vol / 100, pan }); },
@@ -165,8 +166,10 @@ export function mount(container: HTMLElement): () => void {
   // 渲染前用数据源把 bind 节点解析成字面值（活 HUD·resolveBindings 返回新树·纯函数）。
   // activeTab 恒为首页常量：Tab 切换由 mountUI 内建就地处理（不重渲），数据里 active 不变 →
   // reconcile 永不替换整个 Tabs（含各页/表格）→ 切页态/滚动/输入态全保留、不回弹、不黑。
-  const buildTree = (): LayoutNode =>
-    resolveBindings(buildGallery(currentTheme, false, false, shop, pick, 'tab-layout', controls), dataSource);
+  // 非换皮重渲：active 恒为 'tab-layout' 常量 → reconcile 永不替换整个 Tabs（切页态/滚动/输入态全保留）。
+  // 换皮重挂：传入当前 activeTab → 直接在停留页上挂出（不闪回首页），再 reselectTab 逼重绘。
+  const buildTree = (active = 'tab-layout'): LayoutNode =>
+    resolveBindings(buildGallery(currentTheme, false, false, shop, pick, active, controls), dataSource);
 
   // 整体挂载后延后一帧强制重绘：消除部分 GPU 在合成滚动层首帧把文字栅格成「陈旧黑字」的故障
   // （等效用户「点一下」，但时机对——必须晚于首帧黑色绘制，所以用双 rAF；同步切 display 在首帧前跑无效）。
@@ -177,6 +180,18 @@ export function mount(container: HTMLElement): () => void {
       galleryHost.style.visibility = 'hidden';
       void galleryHost.offsetHeight; // 强制重排
       galleryHost.style.visibility = '';
+    }));
+  }
+
+  // 换皮重挂后「重选原 tab」：等效用户保存 index → selectIndex。
+  // 程序化点一下当前 tab 的按钮 → 跑 mountUI 内建 switchTab（切 display + 重设 nav 色）→
+  // 既复位停留页，又逼这块合成层重绘一次，消除 M1「新建合成层把字栅成黑」的首帧故障。
+  // 晚于首帧（双 rAF）才有效——必须发生在那帧黑色绘制之后，正如真实用户「点一下才好」。
+  function reselectTab(): void {
+    if (typeof requestAnimationFrame === 'undefined') return;
+    requestAnimationFrame(() => requestAnimationFrame(() => {
+      const btn = galleryHost.querySelector<HTMLElement>(`[data-tab="${activeTab}"]`);
+      if (btn) btn.dispatchEvent(new MouseEvent('click', { bubbles: true }));
     }));
   }
 
@@ -194,10 +209,10 @@ export function mount(container: HTMLElement): () => void {
       fresh.style.cssText = galleryHostCss;
       galleryHost.replaceWith(fresh);
       galleryHost = fresh;
-      ui = mountUI(galleryHost, buildTree(), handlers, theme());
+      ui = mountUI(galleryHost, buildTree(activeTab), handlers, theme()); // 挂在原停留页
       applyPaneTheme(theme());
       if (overlayNode) showOverlay(overlayNode); // 浮层也换新皮
-      nudgeRepaint(); // 换皮整盘换色后同样消除陈旧黑字
+      reselectTab(); // 换皮后重选原 tab：程序化「点一下」逼重绘（修 M1 黑字）
     } else {
       ui.update(buildTree()); // 局部更新（diff/patch）
     }
