@@ -17,6 +17,7 @@ import { THEMES } from './themes.js';
 import { applyShop, INITIAL_SHOP, type ShopState } from './shop.js';
 import { applyPick, INITIAL_PICK, type PickState } from './pickcards.js';
 import { makeSoundPlayer, CHORDS } from './sounds.js';
+import { applyRawInput, INITIAL_INPUT, resolveSignal, type InputLabState, type RawInputData } from './input-lab.js';
 
 export function mount(container: HTMLElement): () => void {
   // ── 两栏骨架：左画廊（弹性）+ 右事件日志（固定宽）──────────────
@@ -97,6 +98,7 @@ export function mount(container: HTMLElement): () => void {
   let pick: PickState = INITIAL_PICK;  // 组合演示·选牌
   let controls: ControlsState = INITIAL_CONTROLS; // 自定义画选中态的控件值（speed/view/rating/qty/city/flag/sound/muted）
   let activeTab = 'tab-layout'; // 当前选中的 tab（切页时记住）→ 换皮重挂后重选它（复位停留页 + 逼重绘修黑字）
+  let input: InputLabState = INITIAL_INPUT; // 输入底座样例状态（宿主 DOM 监听喂 RawInput → reducer）
 
   // 声音测试播放器（Web Audio·宿主胶水）。音量/声像/静音/混响全在 controls state。
   const player = makeSoundPlayer();
@@ -169,7 +171,32 @@ export function mount(container: HTMLElement): () => void {
   // 非换皮重渲：active 恒为 'tab-layout' 常量 → reconcile 永不替换整个 Tabs（切页态/滚动/输入态全保留）。
   // 换皮重挂：传入当前 activeTab → 直接在停留页上挂出（不闪回首页），再 reselectTab 逼重绘。
   const buildTree = (active = 'tab-layout'): LayoutNode =>
-    resolveBindings(buildGallery(currentTheme, false, false, shop, pick, active, controls), dataSource);
+    resolveBindings(buildGallery(currentTheme, false, false, shop, pick, active, controls, input), dataSource);
+
+  // 输入底座宿主胶水（「运行时职责」）：在捕获板 #input-pad 上挂 DOM 监听 → 造 RawInputData →
+  // 喂纯 reducer → 局部更新读数。幂等绑定（dataset 标记）：reconcile 保留同一 pad 元素 → 监听不重复；
+  // 换皮重挂出新 pad（无标记）→ 自动重绑。键盘需焦点（pad 设 tabindex），绑定键 preventDefault 防页面滚动。
+  function feedInput(raw: RawInputData): void { input = applyRawInput(input, raw); rerender(); }
+  function bindInputPad(): void {
+    if (typeof document === 'undefined') return;
+    const pad = galleryHost.querySelector<HTMLElement>('#input-pad');
+    if (!pad || pad.dataset['inputBound']) return;
+    pad.dataset['inputBound'] = '1';
+    pad.tabIndex = 0;
+    pad.style.cursor = 'crosshair';
+    pad.style.outline = 'none';
+    pad.addEventListener('keydown', (e) => {
+      if (resolveSignal({ source: 'keyboard', key: e.key, phase: 'down' })) e.preventDefault();
+      feedInput({ source: 'keyboard', key: e.key, phase: 'down' });
+    });
+    pad.addEventListener('keyup', (e) => feedInput({ source: 'keyboard', key: e.key, phase: 'up' }));
+    const ptr = (e: PointerEvent, phase: string): void => {
+      const r = pad.getBoundingClientRect();
+      feedInput({ source: 'pointer', x: e.clientX - r.left, y: e.clientY - r.top, phase });
+    };
+    pad.addEventListener('pointerdown', (e) => { pad.focus(); ptr(e, 'down'); });
+    pad.addEventListener('pointerup', (e) => ptr(e, 'up'));
+  }
 
   // 整体挂载后延后一帧强制重绘：消除部分 GPU 在合成滚动层首帧把文字栅格成「陈旧黑字」的故障
   // （等效用户「点一下」，但时机对——必须晚于首帧黑色绘制，所以用双 rAF；同步切 display 在首帧前跑无效）。
@@ -199,6 +226,7 @@ export function mount(container: HTMLElement): () => void {
   let ui = mountUI(galleryHost, buildTree(), handlers, theme());
   applyPaneTheme(theme());
   renderLog(theme());
+  bindInputPad(); // 初次挂载后绑捕获板监听
   nudgeRepaint(); // 初次挂载
 
   function rerender(themeChanged = false): void {
@@ -216,6 +244,7 @@ export function mount(container: HTMLElement): () => void {
     } else {
       ui.update(buildTree()); // 局部更新（diff/patch）
     }
+    bindInputPad(); // 换皮重挂出新 pad → 重绑；非换皮 pad 不变 → 幂等 no-op
     renderLog(theme());
   }
 

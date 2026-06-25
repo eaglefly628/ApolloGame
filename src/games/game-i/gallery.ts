@@ -8,6 +8,7 @@ import type { LayoutNode } from '@ui/components/index.js';
 import { THEME_OPTIONS } from './themes.js';
 import { buildShop, INITIAL_SHOP, type ShopState } from './shop.js';
 import { buildPickHand, INITIAL_PICK, type PickState } from './pickcards.js';
+import { buildInputLab, INITIAL_INPUT, type InputLabState } from './input-lab.js';
 import { SOUNDS, BGM } from './sounds.js';
 
 // 自定义画选中态的交互控件值（必须进 state·点击改值 + 局部更新才会动）。
@@ -634,7 +635,7 @@ function buildSoundPage(c: ControlsState): LayoutNode {
 export function buildGallery(
   activeTheme: string, modalOpen = false, drawerOpen = false,
   shop: ShopState = INITIAL_SHOP, pick: PickState = INITIAL_PICK, activeTab = 'tab-layout',
-  controls: ControlsState = INITIAL_CONTROLS,
+  controls: ControlsState = INITIAL_CONTROLS, input: InputLabState = INITIAL_INPUT,
 ): LayoutNode {
   return {
     type: 'Screen',
@@ -672,12 +673,13 @@ export function buildGallery(
             { id: 'tab-shop', label: '🧩 组合演示·商店' },
             { id: 'tab-pick', label: '🎴 组合演示·选牌' },
             { id: 'tab-sound', label: '🔊 声音测试' },
+            { id: 'tab-input-lab', label: '🎮 输入底座' },
           ],
           active: activeTab,
           action: 'switchTab',
         },
         layout: { flex: 1 },
-        children: [pageLayout, pageDisplay, buildPageInput(controls), buildShop(shop), buildPickHand(pick), buildSoundPage(controls)],
+        children: [pageLayout, pageDisplay, buildPageInput(controls), buildShop(shop), buildPickHand(pick), buildSoundPage(controls), buildInputLab(input)],
       },
       // 模态浮层 / 抽屉按需叠加（满屏遮罩·盖在主界面之上）
       ...(modalOpen ? [modalOverlay] : []),

@@ -604,3 +604,26 @@ game-f 报「多数需新引擎能力」。Lead 实测：**三个已点名技能
 > 3. `{kind:control, op:freeze, everyTurns:N}` —— 每 N 回合冻玩家本回合 1 类动作。仿 batteryEveryTurns。
 > 4. `{kind:control, op:intimidate, everyTurns:N}` —— 每 N 回合吓退玩家某路前锋 1 张（退场/回库·b.rng 选·确定性）。**与暂缓的 REQ-G-诅咒地煞(bounce) 同族**·甲可一并参数化实现（mode: bounce回起点/库 vs intimidate吓退）。
 > 落地后 design G 把这些织进关6-20 地煞组合 + sim 标定。当前 lore/disha 重写子代理用现有词汇·不阻塞。
+
+---
+
+### REQ-I-展示台升格 · [2026-06-25] · owner（火车上头脑风暴）→ Lead（引擎/展示台域）· Game I · status: **进行中（Lead）** · 类型: 方向 + 真需求若干 · 优先级: P2
+
+> **owner 意图**：把 game-i 从「UI/声音测试场」**升格为「引擎底座能力展示台 / sample 画廊」**——每个底座能力一个 canonical 活样例，作为活文档 + 回归面 + 迁移参照；以后标准代码下沉到这层当 sample。页面**重组为 Hub + 模块**（落地点几个大模块入口：UI / 声音 / 输入 / 动画 / 渲染3D…，点进去出现该块）。
+>
+> **Lead 评判（CORE RULE）**：接受方向（强对纲领：样例即「这能力真能数据驱动」的证明）。逐项核底座现状——多数是**组合现有 capability**，非新写引擎：
+> | 模块 | 底座现状 | 判定 |
+> |---|---|---|
+> | UI / 声音 | 已是数据样例（mountUI / Web Audio 胶水） | ✓ 已在 |
+> | 输入 | `atoms/input-capture`(RawInput)、`atoms/action-map`、`components/input.ts`(KeyBinding/Action) | ✓ 组合现有 → **本轮已做** |
+> | 精灵/帧动画 | `atoms/sprite`、`atoms/frame`、`tier1/tween`、`tier1/animation` | ✓ 组合现有（走 renderer 表面·非 mountUI） |
+> | 寻路 | `tier2/grid-move`、`tier2/hex`（game-f 在用） | ✓ 组合现有（走 renderer 表面） |
+> | 渲染 3D | `renderer/three-renderer`、`three-projection` | ✓ 已具备 |
+> | 视频 | 仅 `services/aigp`(AI 生成端口)+`assets`(资源索引)，**无播放渲染能力** | **deferred（真需求·待触发）** |
+>
+> **纪律**：能力永远在引擎（确定性解释器），样例永远是数据 + 薄宿主胶水（运行时职责），**绝不在游戏层写 bespoke system**；每样例保持「最弱 LLM 能照抄」纯度，**不许长成 mini-game**。分两类样例：**UI 数据样例（mountUI）** vs **渲染/仿真样例（renderer + skills）**，别混。
+>
+> **视频改判**：owner 明确「以后跟爱诗 AI 合作 + 开场视频要用」→ 不是 wontfix，是 **deferred 的底层真需求**：等真游戏拉动（要播放/渲染视频）再下沉成 capability，先放着不为凑 demo 提前建（避免 YAGNI）。
+>
+> **本轮已落地（Lead）**：① 「🎮 输入底座」样例 = `input-lab.ts`（`KeyBinding[]` 纯数据绑定表 + 确定性 `resolveSignal`/`applyRawInput` 纯函数 + `buildInputLab` 纯 LayoutNode 视图）+ 宿主 `bindInputPad` 监听胶水（捕获板 #input-pad 抓键盘/指针 → RawInputData → reducer → 局部更新）；`input-lab.test.ts` 10 测全绿。先作为新 tab 接入，**Hub 重组待 owner 下车能看画面再做**（模块布局是视觉/UX 决策，宜眼见为实）。
+> **TODO（待 owner 回去能拉版本后）**：Hub + 模块重组（顶层 module Tabs 套现有 UI 子 Tabs，已验证嵌套 Tabs 支持）；精灵/帧动画样例（renderer 宿主）；寻路可视化样例；3D 渲染样例；视频留待拉动。
