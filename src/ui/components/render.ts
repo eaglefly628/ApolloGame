@@ -149,7 +149,10 @@ function renderPanel(id: string, p: PanelProps, c: LayoutConstraints | undefined
     : `display:flex;flex-direction:${dir};gap:${gap}px;align-items:${align}`;
   // bg：自定义底（令牌串·如绿呢牌桌 'var(--felt)'）；缺省主题 bg1。与 Screen.bg 同口径（取游戏令牌·不另转义）。
   const bg = p.bg ?? t.bg1;
-  const style = `${box};padding:${pad}px;background:${bg};border:1px solid ${t.line};border-radius:10px;position:relative;${overflow}${ls}`;
+  // accent：高亮框（jade 描边 + 柔光投影），用于活动视口/强调面板；缺省细线边。
+  const border = p.accent ? t.jadeLine : t.line;
+  const glow = p.accent ? `;box-shadow:0 0 0 1px ${t.jadeWash},0 10px 34px rgba(0,0,0,.4)` : '';
+  const style = `${box};padding:${pad}px;background:${bg};border:1px solid ${border};border-radius:10px;position:relative;${overflow}${ls}${glow}`;
   const title = p.title
     ? `<div style="font-size:10px;letter-spacing:2.4px;text-transform:uppercase;color:${t.dim};font-family:${t.fontUi};margin-bottom:4px${dir === 'grid' ? ';grid-column:1/-1' : ''}">${esc(p.title)}</div>`
     : '';

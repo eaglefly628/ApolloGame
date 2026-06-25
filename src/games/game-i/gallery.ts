@@ -645,15 +645,30 @@ export const MODULES: ReadonlyArray<{ id: string; glyph: string; label: string; 
   { id: 'mod-fsm', glyph: '🔀', label: '状态机', desc: 'condition → signal → set-state', tone: 'normal' as const },
 ];
 
-/** 渲染舞台样例（canvas/three 宿主挂载点）：DOM 壳 + 固定尺寸的 #sim-stage 容器（宿主在其上 init 渲染器）。 */
-function buildSimStage(id: string, title: string, desc: string): LayoutNode {
+/**
+ * 渲染舞台样例（canvas/three 宿主挂载点）：标题条（图标 + LIVE）+ 说明 + 高亮框住的 #sim-stage 视口
+ * + 「组合能力」标签条。chrome 全是 LayoutNode 数据（accent Panel / Badge / Tag），不手写 CSS。
+ */
+function buildSimStage(id: string, glyph: string, title: string, desc: string, caps: string[]): LayoutNode {
   return {
-    type: 'Panel', id: `${id}-mod`, props: { title },
-    layout: { direction: 'column', gap: 12, padding: 16 },
+    type: 'Panel', id: `${id}-mod`, props: {},
+    layout: { direction: 'column', gap: 12, padding: 18 },
     children: [
+      // 标题条：图标 + 标题 + LIVE 徽标
+      { type: 'Panel', id: `${id}-hd`, props: {}, layout: { direction: 'row', align: 'center', gap: 10, padding: 12 },
+        children: [
+          { type: 'Label', id: `${id}-ttl`, props: { text: `${glyph}  ${title}`, size: 'lg', bold: true }, layout: { flex: 1 } },
+          { type: 'Badge', id: `${id}-live`, props: { text: '● LIVE', tone: 'ok' } },
+        ] },
       { type: 'Label', id: `${id}-desc`, props: { text: desc, color: 'sub', size: 'sm' } },
-      // #sim-stage：宿主在此 init 引擎 CanvasRenderer/ThreeRenderer（canvas 实时绘制·非 DOM）。
-      { type: 'Panel', id: 'sim-stage', props: {}, layout: { width: 656, height: 416, padding: 8 } },
+      // #sim-stage：高亮框住的活动视口（宿主在此 init 引擎渲染器·canvas 实时绘制·非 DOM）。
+      { type: 'Panel', id: 'sim-stage', props: { accent: true, bg: '#0a0f1e' }, layout: { width: 656, height: 416, padding: 8, align: 'center' } },
+      // 「组合能力」标签条：本样例由哪些现成 capability 拼出来（信息 + 装饰·强化数据驱动叙事）。
+      { type: 'Panel', id: `${id}-caps`, props: {}, layout: { direction: 'row', align: 'center', gap: 6, padding: 10 },
+        children: [
+          { type: 'Label', id: `${id}-capl`, props: { text: '组合能力', color: 'dim', size: 'xs', bold: true } },
+          ...caps.map((c, i): LayoutNode => ({ type: 'Tag', id: `${id}-cap-${i}`, props: { label: c, tone: 'accent' } })),
+        ] },
     ],
   };
 }
@@ -724,20 +739,27 @@ function moduleBody(
     case 'mod-ui': return buildUIModule(shop, pick, activeTab, controls);
     case 'mod-sound': return buildSoundPage(controls);
     case 'mod-input': return buildInputLab(input);
-    case 'mod-anim': return buildSimStage('anim', '✨ 精灵动画 · tween 驱动',
-      '引擎 Canvas 渲染器实时绘制：4 个形状由 tween 能力（平移巡逻 / 呼吸缩放 / 匀速自转 / 淡入淡出）驱动，纯蓝图数据、无专属代码。');
-    case 'mod-ai': return buildSimStage('ai', '🧠 游戏 AI · 索敌 + 寻路',
-      '玩家居中（金圆），五个敌人挂 Perception（索敌 aggro：锁定最近玩家）+ GridMover（寻路 grid-move：hex A* 逐格逼近、到相邻停）。纯蓝图组合现成能力，无专属代码。');
-    case 'mod-3d': return buildSimStage('3d', '🧊 3D 渲染 · Mesh3D',
-      '引擎 ThreeRenderer 实时渲染：翻面卡 / 翻滚立方 / 倾转薄面，由 tween 转 Transform.rotation 当翻面角驱动。同一份 collectRenderables 换 three 后端即换维度。');
-    case 'mod-physics': return buildSimStage('phys', '🟢 运动与碰撞',
-      'motion-apply（Velocity→Transform 运动学）+ overlap-detect（碰撞检测）+ collision-resolve（按质量推开=碰撞响应）。四物体相向运动、于中心相撞被推开。纯蓝图，无专属代码。');
-    case 'mod-combat': return buildSimStage('combat', '⚔️ 战斗结算',
-      '弹道（Sensor+Hitbox）飞行命中敌人 → trigger-zone → hitbox 扣血 / 挂灼烧 DoT → mortal 判死 → destroy 移除。整条战斗链全是现成能力组合，零游戏代码。');
-    case 'mod-spawn': return buildSimStage('spawn', '🎆 生成与寿命',
-      '发射器 Timer→event-when→caster 周期性从 PrefabLibrary 模板生成粒子，粒子带 Velocity 飞 + Tween 淡出 + Timer 到期 → lifetime 自毁。生成与销毁全数据驱动。');
-    case 'mod-fsm': return buildSimStage('fsm', '🔀 状态机 / 行为',
-      '自由计时器驱动 condition→signal→effect：idle→alert→flee→循环。状态转移（set-state）+ 指示块切换（set-visible）三段全是数据，非代码。');
+    case 'mod-anim': return buildSimStage('anim', '✨', '精灵动画 · tween 驱动',
+      '引擎 Canvas 渲染器实时绘制：4 个形状由 tween 能力（平移巡逻 / 呼吸缩放 / 匀速自转 / 淡入淡出）驱动，纯蓝图数据、无专属代码。',
+      ['tween', 'transform', 'shape', 'color', 'CanvasRenderer']);
+    case 'mod-ai': return buildSimStage('ai', '🧠', '游戏 AI · 索敌 + 寻路',
+      '玩家居中（金圆），五个敌人挂 Perception（索敌 aggro：锁定最近玩家）+ GridMover（寻路 grid-move：hex A* 逐格逼近、到相邻停）。纯蓝图组合现成能力，无专属代码。',
+      ['aggro', 'grid-move', 'hex A*', 'Perception']);
+    case 'mod-3d': return buildSimStage('3d', '🧊', '3D 渲染 · Mesh3D',
+      '引擎 ThreeRenderer 实时渲染：翻面卡 / 翻滚立方 / 倾转薄面，由 tween 转 Transform.rotation 当翻面角驱动。同一份 collectRenderables 换 three 后端即换维度。',
+      ['Mesh3D', 'tween', 'ThreeRenderer']);
+    case 'mod-physics': return buildSimStage('phys', '🟢', '运动与碰撞',
+      'motion-apply（Velocity→Transform 运动学）+ overlap-detect（碰撞检测）+ collision-resolve（按质量推开=碰撞响应）。四物体相向运动、于中心相撞被推开。纯蓝图，无专属代码。',
+      ['motion-apply', 'overlap-detect', 'collision-resolve']);
+    case 'mod-combat': return buildSimStage('combat', '⚔️', '战斗结算',
+      '弹道（Sensor+Hitbox）飞行命中敌人 → trigger-zone → hitbox 扣血 / 挂灼烧 DoT → mortal 判死 → destroy 移除。整条战斗链全是现成能力组合，零游戏代码。',
+      ['hitbox', 'trigger-zone', 'over-time', 'mortal']);
+    case 'mod-spawn': return buildSimStage('spawn', '🎆', '生成与寿命',
+      '发射器 Timer→event-when→caster 周期性从 PrefabLibrary 模板生成粒子，粒子带 Velocity 飞 + Tween 淡出 + Timer 到期 → lifetime 自毁。生成与销毁全数据驱动。',
+      ['caster', 'prefab', 'event-when', 'lifetime']);
+    case 'mod-fsm': return buildSimStage('fsm', '🔀', '状态机 / 行为',
+      '自由计时器驱动 condition→signal→effect：idle→alert→flee→循环。状态转移（set-state）+ 指示块切换（set-visible）三段全是数据，非代码。',
+      ['state', 'event-when', 'effect-apply']);
     default: return buildHub();
   }
 }

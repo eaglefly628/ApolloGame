@@ -98,6 +98,8 @@ export interface PanelProps {
   bg?: string;
   /** 暗角叠加（felt 牌桌四周渐暗 vignette）：true 时叠一层径向暗角·纯表现。 */
   vignette?: boolean;
+  /** 高亮框（强调态/活动视口）：true 时用 jade 描边 + 柔光投影，替代默认细线边·纯表现。 */
+  accent?: boolean;
 }
 
 /** 单个开/关复选框。handler 收到 'true' | 'false'。 */
