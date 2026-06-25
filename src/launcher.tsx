@@ -91,6 +91,16 @@ const GAMES: GameEntry[] = [
     icon: '🎛️',
     status: 'playable',
   },
+  {
+    id: 'game-h',
+    title: 'Game H: Climb Together',
+    subtitle: '是男人就上100层 · 双人合作',
+    description: '双人合作攀爬塔：锯齿平台往上跳，相机自动跟两人并缩放保证都在画面，两人都登顶过关。协作=踩队友头借力跳更高处（站在已着地队友身上也算着地→能起跳，零专属代码）。lockstep 联机：再开一个本游戏标签页即第 2 位玩家。世界与 HUD 全数据驱动（HUD 走 LayoutNode），方块小人精灵动画。',
+    color: '#0f1830',
+    accentColor: '#3b82f6',
+    icon: '🧗',
+    status: 'playable',
+  },
 ];
 
 // ══════════════════════════════════════
@@ -636,6 +646,7 @@ function GameRunner({ gameId, onBack }: { gameId: string; onBack: () => void }) 
       'game-f': () => import('./games/game-f/game-f.js'),
       'game-g': () => import('./games/game-g/game-g.js'),
       'game-i': () => import('./games/game-i/game-i.js'),
+      'game-h': () => import('./games/game-h/game-h.js'),
     };
     const loader = loaders[gameId];
     if (!loader) return;
