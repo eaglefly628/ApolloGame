@@ -3,5 +3,7 @@
 export type { PlatformPort } from './platform-port.js';
 export { NullPlatformPort } from './null-platform.js';
 export { SteamworksPlatformPort, type SteamBridge } from './steamworks-platform.js';
-export { createPlatformPort } from './select-platform.js';
+export { createPlatformPort, isMockSteamEnabled } from './select-platform.js';
+export { createMockSteamBridge, resetMockSteam, type MockSteamOptions, type MockSteamEvent } from './mock-steam.js';
 export { AchievementSync } from './achievement-sync.js';
+export { ACHIEVEMENTS, firstBootAchievement, type AchievementDef } from './achievements.js';

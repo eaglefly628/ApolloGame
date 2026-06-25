@@ -1,3 +1,5 @@
+import { createPlatformPort, firstBootAchievement } from './services/platform/index.js';
+
 interface GameModule { mount: (el: HTMLElement) => () => void }
 
 const GAMES: Record<string, { title: string; subtitle: string }> = {
@@ -102,6 +104,20 @@ async function main() {
 
   await sleep(80);
   gameRoot.style.opacity = '1';
+
+  // 平台层（Steam / 假 Steam · sim 外）：上报富状态 + 解锁「首次启动」成就。
+  // 无原生壳且未开假 Steam → createPlatformPort 返回 Null，全部 no-op（生产静默，零副作用）。
+  // 开假 Steam（?steammock=1 或 localStorage['apollo:steam:mock']=1）→ 右下角弹 Steam 风格成就。
+  try {
+    const platform = createPlatformPort();
+    if (platform.isAvailable()) {
+      platform.setRichPresence('status', meta.subtitle || meta.title);
+      const boot = firstBootAchievement(gameId);
+      if (boot) platform.unlockAchievement(boot);
+      platform.store();
+      log('PLATFORM: CONNECTED');
+    }
+  } catch (e) { /* 平台不可用绝不影响游戏启动 */ }
 
   const shell = el('shell');
   shell.classList.add('fade-out');
