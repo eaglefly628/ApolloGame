@@ -39,6 +39,9 @@ export default defineConfig(async () => ({
   build: {
     outDir: 'dist-cartridge',
     emptyOutDir: true,
+    // 单文件模式：把所有资产（字体等 import 的）内联成 data URI，整进单 HTML；
+    // 多文件模式用默认阈值（字体仍走外部文件，设备 http.server 部署不变）。
+    assetsInlineLimit: singleFile ? 100_000_000 : 4096,
     rollupOptions: {
       input: resolve(__dirname, 'cartridge.html'),
     },

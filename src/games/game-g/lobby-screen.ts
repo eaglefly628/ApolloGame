@@ -202,6 +202,7 @@ export interface LobbyHandlers {
 }
 
 export function mountLobby(host: HTMLElement, h: LobbyHandlers): { update: () => void; destroy: () => void } {
+  if (!document.getElementById('gg-fonts')) { const f = document.createElement('div'); f.id = 'gg-fonts'; f.style.display = 'none'; f.innerHTML = FONTS; const st = f.querySelector('style'); if (st) document.head.appendChild(st); }
   if (!document.getElementById('ggl-css')) { const s = document.createElement('style'); s.id = 'ggl-css'; s.textContent = LOBBY_CSS; document.head.appendChild(s); }
   let tab = 'home';
   let deckTab: 'base' | 'gang' | 'dizhi' = 'base';

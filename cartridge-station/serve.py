@@ -350,9 +350,12 @@ def inject_os(os_html, game_objs):
     （轮盘解析期就建好了，单纯 push 太晚）。inline → pgame.html=atob；relative → pgame.url。"""
     items = []
     for g, b64, _single in game_objs:
-        items.append("{g:" + json.dumps(g, ensure_ascii=False) + ",pg:{html:atob('" + b64 + "')}}")
+        # 用 _u8(b64) 做 UTF-8 解码，而非裸 atob：atob 返回 latin1 串，会把游戏 JS 里
+        # 多字节中文/emoji 拆坏 → 单文件游戏报 "Invalid or unexpected token" 卡在 LOADING。
+        items.append("{g:" + json.dumps(g, ensure_ascii=False) + ",pg:{html:_u8('" + b64 + "')}}")
     script = (
         "<script>/* cartridge-station: append games + rebuild carousel */(function(){\n"
+        "function _u8(b){var r=atob(b),a=new Uint8Array(r.length);for(var i=0;i<r.length;i++)a[i]=r.charCodeAt(i);return new TextDecoder('utf-8').decode(a);}\n"
         "var NEW=[" + ",".join(items) + "];\n"
         "function go(){\n"
         "  if(typeof GAMES==='undefined'||typeof makeCartridge!=='function'||typeof carousel==='undefined')return setTimeout(go,60);\n"

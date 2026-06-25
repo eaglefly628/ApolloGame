@@ -8,6 +8,10 @@ declare module '*.html?raw' {
 }
 
 // Vite ?url 资产导入（自托管字体 woff2 等 → 打包发出 URL，不引用外部库）
+declare module '*.woff2' {
+  const src: string;
+  export default src;
+}
 declare module '*.woff2?url' {
   const url: string;
   export default url;
