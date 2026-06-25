@@ -341,7 +341,7 @@ aggro(锁最近敌) → grid-move(六角 A* 逐格走) → loop Timer(攻速) �
 | 要素 | 数据形 |
 |---|---|
 | 主角实体 | `Transform+Velocity+Shape+Sprite`；**不带任何队伍/势力位** → 不被 aggro 锁、不被打击区 targetMask 命中；专属位 `PROTAG=1<<11`、法球位 `LOOT=1<<12`（Tag 注册表新增） |
-| 操控 | 仿 game-d 玩家操控（action-map → Velocity）；点地走作增强（指针命令→移动标记实体→Steering seek） |
+| 操控 | 通用玩家操控（action-map → Velocity）；点地走作增强（指针命令→移动标记实体→Steering seek） |
 | 掉落 | 野怪单位 `Mortal.dropTemplate:'loot_orb'`（引擎现成字段，mortal.ts:45）；宝箱=关卡表掉落条目经 deploy 同链展开 |
 | 法球实体 | `Sensor+Shape+Tag{LOOT}+Resource{id:'hp',1}+Mortal` + `Hitbox{resource:'loot', amount:+N, targetMask:PROTAG}`（把赏金写进主角的**本地** loot 资源——hitbox 局部路由，与棋子 hp 同机制） |
 | 拾取销毁 | 主角挂 `Hitbox{resource:'hp', amount:-9999, targetMask:LOOT}`——碰到法球即"杀"它（双向 hitbox，碰撞即两清） |

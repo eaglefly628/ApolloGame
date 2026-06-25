@@ -20,7 +20,7 @@
 - ❌ 牵绊栏（按势力/职业动态行）、装备格（grid）
 - ❌ namelayer / ghostlayer（画布叠层：头顶名 + 敌阵预览）
 
-→ **结论**：去腐的"展平 blueprint 生成器/脉冲""壳层数据化"**大部分可纯游戏侧做**；但「商店/富交互 HUD 完全 GameShell 化、30 行 mount」**卡在 GameShell 表达力**——需要 Lead 给 GameShell 加**通用** UI 节点（`card-grid`(绑组件列表+图)/`image`/`modal`/`drag-slot`），这些跨游戏复用（game-e 卡牌、game-d HUD 都吃）、**不是 game-f 脉冲下沉**，合规。已回写 requests.md 提请 Lead 评估（见末）。
+→ **结论**：去腐的"展平 blueprint 生成器/脉冲""壳层数据化"**大部分可纯游戏侧做**；但「商店/富交互 HUD 完全 GameShell 化、30 行 mount」**卡在 GameShell 表达力**——需要 Lead 给 GameShell 加**通用** UI 节点（`card-grid`(绑组件列表+图)/`image`/`modal`/`drag-slot`），这些跨游戏复用（game-e 卡牌、ARPG HUD 都吃）、**不是 game-f 脉冲下沉**，合规。已回写 requests.md 提请 Lead 评估（见末）。
 
 ---
 

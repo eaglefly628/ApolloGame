@@ -36,7 +36,7 @@
 1. **换种组合**：用现有 capability 重新拼（Condition→Event→Effect / tween / …）。
 2. **下沉成通用 capability**：把它做成**引擎侧的一个通用能力**（代码只加这一次，加在引擎/词汇表），之后**所有游戏用数据调用它**。
 
-> 例：VN 的"对话运行器"不是 game-b 的代码文件，是引擎的通用 `dialogue` capability，游戏只喂对话 JSON（数据）。
+> 例：VN 的"对话运行器"不是某个游戏的代码文件，是引擎的通用 `dialogue` capability，游戏只喂对话 JSON（数据）。
 
 ## 5. 唯一逃生舱：自定义能力（Custom Capability）
 
@@ -60,7 +60,7 @@
 ## 8. 当前诚实状态（2026-06-04）
 
 - ✅ 已有：数据驱动的 substrate（26 原子 + Tier1-4 涌现 capability + 蓝图 + Condition→Event→Effect + TBF 资产）。
-- ❌ 仍是代码债：`src/games/game-a/coop-goal.ts`（手写游戏系统）、`game-b/VNStage.tsx`（React UI）、对话运行器、`*.ts` 蓝图（应变纯数据 manifest）。
+- ❌ 仍是代码债：游戏层手写系统、手写 React UI、`*.ts` 蓝图（应变纯数据 manifest）。
 - 🚧 最硬的两座堡垒：**UI**（要变数据描述的 UI，不是每游戏手写 React）、**新玩法**（不写，要么组合、要么下沉）。
 - 偿还方向：把 coop-goal / dialogue 这类下沉成通用 capability；蓝图 .ts → 纯数据 Game Manifest；UI → 数据描述 + 通用解释器。
 

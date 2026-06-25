@@ -8,7 +8,7 @@
 
 ## 〇、目标范式(已读真实代码,照抄)
 
-- **game-b**:整个游戏 = `data/game-b.manifest.json`(`id`+`content`+`ui`+`modules`+**扁平 `entities`**:Resource/Flag/EventWhen/Effect 全是 JSON 字面量,**不靠循环生成**)+ 薄 loader。
+- **纯数据 manifest 范式**:整个游戏 = `manifest.json`(`id`+`content`+`ui`+`modules`+**扁平 `entities`**:Resource/Flag/EventWhen/Effect 全是 JSON 字面量,**不靠循环生成**)+ 薄 loader。
 - **GameShell**:DOM 壳 = 一份 `UILayout`(闭集 union:`col/row/panel/tabs/text/stat/bar/button`;**事件=信号名、绑定=resourceId**)交 `@ui/shell/GameShell` 渲染,游戏层不写 React 壳。
 
 ---
@@ -31,7 +31,7 @@
 | **2** | `makeRoundFlow()` 生成的 `GameFlow` + `visSwap()` 的可见性切换 → 展平成 flow/实体字面量 | 纯平移 | deep-equal + 绿 |
 | **3** | **商店两段脉冲**(`shop_marks/shop_marks2` destroy-tagged + 重铺,114 标记)→ **删**,改 **GameShell 按 `CardPile.hand` 声明式渲染** | ⚠️**redesign**(非平移,行为会变=不再多拍脉冲)→ deep-equal 不适用,改"商店买/刷/卖 26 测全绿"守 | 行为测 + 绿 |
 | **4** | `game-f.tsx`(623 行手写壳 + canvas 假点击桥 x=2000)→ `GAME_F_UI: UILayout` 数据 + `GameShell`;删假点击 | ⚠️redesign | 行为测 + 手验 |
-| **5** | 清理对账:脉冲标记归 0;EventWhen/Effect/Flag 回落到合理量级(对照 game-b);非测试码行数大降 | 核账 | 全绿 |
+| **5** | 清理对账:脉冲标记归 0;EventWhen/Effect/Flag 回落到合理量级(对照纯数据基线);非测试码行数大降 | 核账 | 全绿 |
 
 **不动**:`valueFrom` 经济链(10 处,合法跨游戏能力,game-e 亦用)。
 
@@ -50,6 +50,6 @@
 
 - `game-f.manifest.json`(扁平 entities)+ 薄 loader 取代 `buildGameFBlueprint` 生成器;`GAME_F_UI: UILayout` + GameShell 取代 `game-f.tsx` 手写壳;**脉冲标记 = 0**。
 - tsc 0 + vitest 全绿(含确定性 hash)+ 商店/战斗/流程行为不变。
-- 过"最弱 LLM 能一致产出 manifest 数据"尺子(对齐 game-b)。
+- 过"最弱 LLM 能一致产出 manifest 数据"尺子(对齐纯数据 manifest 范式)。
 
-> 复诵:去腐 = 把 blueprint.ts 的生成器/脉冲展平成 game-b 式 manifest + 把 game-f.tsx 换成 GameShell UILayout;命门是"片 0 快照守 + 绿灯逐关";平移片先行证方法、redesign 片(商店脉冲/手写壳)后啃;引擎不加能力。
+> 复诵:去腐 = 把 blueprint.ts 的生成器/脉冲展平成纯数据式 manifest + 把 game-f.tsx 换成 GameShell UILayout;命门是"片 0 快照守 + 绿灯逐关";平移片先行证方法、redesign 片(商店脉冲/手写壳)后啃;引擎不加能力。

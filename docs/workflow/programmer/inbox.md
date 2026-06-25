@@ -54,7 +54,7 @@
 - 注意：条实体的 Shape 仅作渲染几何，**别**给条挂 Collider/Velocity/Hitbox（条不参战）；`leftX` 缺省 -width/2 = 满条居中，通常无需设。
 
 #### 任务 F-6 · REQ-F-030 接入 CC 定身（纯数据） — status: **done（PE-F 2026-06-10 回执：FROZEN=1<<10（Status 位空间）+ 棋子 GridMover.haltStatusMask + 八阵图 Hitbox setMask/statusDuration:120；game-f 测 +1「冻敌」断言，vitest 959 全绿）**
-- 引擎已落 `GridMover.haltStatusMask`（对齐 Steering 同名语义，4 测绿）：自身 Status 命中掩码 → 本 tick 不走且**节奏时钟暂停**（解控按剩余节奏恢复、无补步突进）。定序已在引擎侧用 `runsBefore:['hitbox','over-time']` 破环——CC **延迟一帧生效**（与 steering/game-d 同纪律，60tps 不可感知）。
+- 引擎已落 `GridMover.haltStatusMask`（对齐 Steering 同名语义，4 测绿）：自身 Status 命中掩码 → 本 tick 不走且**节奏时钟暂停**（解控按剩余节奏恢复、无补步突进）。定序已在引擎侧用 `runsBefore:['hitbox','over-time']` 破环——CC **延迟一帧生效**（与 steering 同纪律，60tps 不可感知）。
 - 接入：① 每棋子 `GridMover` 加 `haltStatusMask: FROZEN位`；② 控制技（如诸葛"八阵图"）hitbox `setMask=FROZEN + statusDuration=持续 tick` → 被冻定身、over-time 到点解冻。全纯数据，零游戏代码。
 
 #### 任务 F-7 · REQ-F-032 接入回合重置（纯数据，MVP-1 多回合循环解锁） — status: **done（PE-F 2026-06-10 回执：F-033 落地后按清单接入——每英雄复合模板（10 实体，'@local:main' 互指）+ 8 持久槽位（Caster.overrides 写站位/阵营/数值）+ deploy/deploy_stage_1/wipe 三信号 + round_flow 改 prep⟲combat⟲resolution 循环 + destroy-tagged×2 清场；全局 id 已登记 flow-spec §3.1；game-f 测 9/9 绿（含两回合循环：清场无孤儿、槽位/库持久、新实例 id 全新满状态），vitest 967 全绿）**
@@ -128,7 +128,7 @@
 #### 任务 F-7 · MVP-1 多回合循环 + 商店 + 经济（纯数据） — status: **in-progress（PE-F 2026-06-10：多回合循环 + L1 run_flow + 经济三件套 + 阶段伤害 + 关卡表前 2 阶段 + ready 开战（按策划批注路线：clickable→'ready_btn'→set-flag，真实输入路验收测）已落、game-f 测 12/12；余 商店三件套 P0=REQ-F-040 等主程（原 038 撞号让位）、等级/经验 P2）**
 - 按 `game-f-flow-spec.md` §3.2/§3.3 接 run/round 双层 GameFlow + §3.3 操作表（card-pile 商店 5 槽/craft-recipe 扣价/买经验）+ §4.1 经济三件套（收入爬坡/利息 banded/连胜金）+ §4.5 关卡表前 2 阶段。
 - 全局 id **必须**先登记 flow-spec §3.1 注册表再用（防串台纪律）；验收测试随 §6.2 队列逐项补。
-- **策划审查批注（2026-06-10，第 6 轮）**：上行"ready 输入 P2 归主程"**回驳——不需要主程**。`ready` 用现有词汇可拼：输入命令→信号（game-d 锦囊/game-e card-play 同款入口）→ `Effect{kind:'set-flag', targetId:'ready'}`，纯数据零引擎改动；点击形态可仿 game-b/c 的 clickable 区。请 PE-F 自接（仍 P2 不抢商店 P0 的队列序）；只有实际接缝试过确实不通，再写明证伪过程提 requests.md。
+- **策划审查批注（2026-06-10，第 6 轮）**：上行"ready 输入 P2 归主程"**回驳——不需要主程**。`ready` 用现有词汇可拼：输入命令→信号（game-e card-play 同款入口）→ `Effect{kind:'set-flag', targetId:'ready'}`，纯数据零引擎改动；点击形态用现有 clickable 区。请 PE-F 自接（仍 P2 不抢商店 P0 的队列序）；只有实际接缝试过确实不通，再写明证伪过程提 requests.md。
 
 ---
 
@@ -142,7 +142,7 @@
 - **连败金纳入 MVP-1**（准则 P2 明示连败奖励；与连胜金同形 banded，读 `loss_streak`，id 先登记 §3.1）。
 
 #### 任务 F-13 · 主角（小小英雄）+ 野怪法球拾取（纯数据） — status: pending（Phase 2.5，用户点名；排商店之后）（原编 F-11 与商店买入任务撞号，策划让号改 F-13）
-- 照 **flow-spec §4.7** 数据映射整段执行：主角实体（无队伍位+PROTAG 位）/ 操控仿 game-d / 野怪 `Mortal.dropTemplate:'loot_orb'` / 法球双向 hitbox（球给主角本地 `loot`、主角"杀"球）/ `loot→gold` 经 `valueFrom` 转账入账。
+- 照 **flow-spec §4.7** 数据映射整段执行：主角实体（无队伍位+PROTAG 位）/ 操控走通用方向输入 / 野怪 `Mortal.dropTemplate:'loot_orb'` / 法球双向 hitbox（球给主角本地 `loot`、主角"杀"球）/ `loot→gold` 经 `valueFrom` 转账入账。
 - ⚠️ 防串台：主角赏金袋用独有 id `loot`，**禁用** 'gold' 作本地袋（与全局金币撞 id=陷阱②）；PROTAG/LOOT Tag 位先登记 blueprint 位表。
 - 前置：野怪回合（关卡表加野怪条目+掉落字段，同 deploy 链）；验收：野怪死→法球落地→主角走过→gold 增加、法球消失、确定性 hash 稳定。
 

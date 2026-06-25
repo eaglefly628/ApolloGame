@@ -61,7 +61,7 @@ Steam 能力全部经**端口（EnginePort 家族）**接入，与现有 AudioPo
 
 ## 5. 分期路线图（每期独立可交付、可停）
 
-1. **MVP·套壳能跑**：Tauri 壳加载现有 web bundle，桌面窗口里能玩 game-a/d。无 Steamworks。（≈最小，验证壳）
+1. **MVP·套壳能跑**：原生壳加载现有 web bundle，桌面窗口里能玩 game-e/f/g。无 Steamworks。（≈最小，验证壳）
 2. **存档 + 成就**：`SteamCloudStorage`(StoragePort 后端) + `SteamPort`(成就/统计)；信号驱动解锁。
 3. **Overlay / 富存在 / 排行榜**：表现层接入。
 4. **创意工坊**：Mod=数据包，上传/订阅 + parseManifest 加载（R12 校验防坏档）。
@@ -83,7 +83,7 @@ Steam 能力全部经**端口（EnginePort 家族）**接入，与现有 AudioPo
 | vite/tauri 配置文件 | 任何 manifest / 组件契约 |
 
 - **唯一协调点**：助理程序员若发现某端口缺方法（如 StoragePort 要补一个 Steam Cloud 需要的接口），向 Lead 提一个**小的、加性的**端口扩展 —— 这是少数、低频、不破坏现有实现。
-- **不阻塞**：他做壳/端口时，我和 D 照常推引擎/game-d；他基于**已发布的 web bundle + 已稳定的端口契约**工作，二者时间线独立。
+- **不阻塞**：他做壳/端口时，引擎/游戏照常推进；他基于**已发布的 web bundle + 已稳定的端口契约**工作，二者时间线独立。
 - **纪律**：同 `claude/mainbranch`，提交前 `fetch → rebase → push`，全绿才推（与全员一致）。他的改动几乎全在新文件里，rebase 几乎不冲突。
 
 > 一句话：**这是一个可以"摘出去单干"的工作包** —— 像资产管线、studio 那样的旁路层，不在引擎确定性核心的关键路径上。给他这份文档 + 端口范式参考（services/audio）即可开工。

@@ -3,7 +3,7 @@
 > 作者：**PB（Programmer B）** · 状态：**草案，待 review（Lead + Gemini）** · 日期：2026-06-03
 > 定位：**Skin 层契约 + 工具**——与"模块库"并列的护城河第二条腿。
 > 关联：`docs/design/modular-game-framework.md`（三层分离 / `EnginePort` / AIGP 旁路 X5·X7）、
-> `docs/workflow/requests.md`（R1 贴图渲染 / R8 音频后端）、`docs/game-design/game-b-otome-vn.md`。
+> `docs/workflow/requests.md`（R1 贴图渲染 / R8 音频后端）。
 
 ---
 
@@ -58,11 +58,11 @@
 - **`anchorRef` → X7 `LatentAnchor`**：锁角色身份/全局画风（seed / reference image / IP-Adapter，具体依生成后端，先留抽象）。
 - **`ui_theme` 槽位**关联全局画风锚点 → 背景、立绘、UI 风格统一（对应 X5 `SemanticMaterial`）。
 
-### 2.4 完整示例（Game B 节选）
+### 2.4 完整示例（乙游 VN 风格 · 节选）
 
 ```jsonc
 {
-  "gameId": "game-b-otome",
+  "gameId": "sample-otome",
   "styleAnchor": { "id": "global.style", "description": "日系乙游，柔粉色调，清透厚涂" },
   "slots": [
     {

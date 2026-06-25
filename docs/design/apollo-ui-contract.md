@@ -25,7 +25,7 @@
 
 **配套文档**：`docs/design/apollo-ui-porting-contract.md`（HTML→Canvas/微信小游戏 后端移植契约）。
 
-**尚未落地（需 owner 调度·跨游戏·有风险）**：把现有用 React 两套（GameShell→game-f HUD/商店；VN→game-b/game-c 演出）的游戏**实际迁移**到统一 LayoutNode 底座、删 React 代码。能力层已就绪（绑定 + 打字机 + 组合都齐），但迁移触及多游戏代码，宜逐游戏审慎做。
+**尚未落地（需 owner 调度·跨游戏·有风险）**：把现有用 React 的游戏（如 GameShell→game-f HUD/商店）**实际迁移**到统一 LayoutNode 底座、删 React 代码。能力层已就绪（绑定 + 打字机 + 组合都齐），但迁移触及多游戏代码，宜逐游戏审慎做。
 **待办**：把各控件的"样式解析"（主题令牌→颜色/字号/边框）从 `render.ts` 抽成共享模块（让 Canvas 后端连样式都白捡）。
 
 ---
