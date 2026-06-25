@@ -43,15 +43,15 @@ function heroesPage(st: CollectionState): LayoutNode {
     ],
   };
 
+  // 保真：牌谱用 PlayingCard 原语（真扑克牌面·名将名 + 拥有数/稀有 + 选中金边/未拥暗）。
   const cards: LayoutNode[] = filtered.map((h) => ({
-    type: 'Card', id: `coll-h-${h.id}`,
-    props: { title: `${h.rank}${h.suit} ${h.name}`, sub: h.own > 0 ? `${RAR_NAME[h.rar]} · ×${h.own}` : '未拥有',
-      corner: RAR_NAME[h.rar], tone: h.own === 0 ? 'locked' : h.id === sel?.id ? 'accent' : 'normal',
-      action: 'heroPick', actionArg: h.id },
+    type: 'PlayingCard', id: `coll-h-${h.id}`,
+    props: { rank: h.rank, suit: h.suit, label: h.name, value: h.own > 0 ? `×${h.own}` : RAR_NAME[h.rar],
+      selected: h.id === sel?.id && h.own > 0, dimmed: h.own === 0, action: 'heroPick', actionArg: h.id },
   }));
   const grid: LayoutNode = {
     type: 'Panel', id: 'coll-grid', props: { title: `英雄列传 · ${filtered.length}/${HERO_CARDS.length}`, scroll: true },
-    layout: { direction: 'grid', minCol: 130, gap: 8, padding: 10, flex: 1 }, children: cards,
+    layout: { direction: 'grid', minCol: 78, gap: 8, padding: 10, flex: 1 }, children: cards,
   };
 
   const detail: LayoutNode = sel ? buildHeroDetail(sel) : {

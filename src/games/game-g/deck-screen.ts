@@ -49,14 +49,14 @@ function pokerGrid(view: LobbyView, picks: Set<string>): LayoutNode {
       const hero = HERO_CARDS.find((h) => h.suit === su && h.rank === rank);
       const cost = deployCost(rank);
       const picked = picks.has(cardId);
-      const tone: 'accent' | 'dim' | 'normal' = picked ? 'accent' : fv <= 50 ? 'dim' : 'normal';
+      // 保真：用 PlayingCard 原语（真扑克牌面·名将名 + favor 值 + 选中金边/弱牌暗），取代通用 Card。
       return {
-        type: 'Card', id: `pc-${cardId}`,
-        props: { title: `${rank}${su}`, sub: `${hero ? hero.name + ' · ' : ''}favor ${fv}`, corner: cost > 0 ? '💧'.repeat(cost) : '免',
-          tone, action: 'pickCard', actionArg: cardId },
+        type: 'PlayingCard', id: `pc-${cardId}`,
+        props: { rank, suit: su, label: hero?.name, value: cost > 0 ? `${fv}·${'💧'.repeat(cost)}` : String(fv),
+          selected: picked, dimmed: !picked && fv <= 50, action: 'pickCard', actionArg: cardId },
       };
     });
-    return { type: 'Panel', id: `poker-row-${si}`, props: { title: su }, layout: { direction: 'grid', minCol: 96, gap: 6, padding: 8 }, children: cards };
+    return { type: 'Panel', id: `poker-row-${si}`, props: { title: su }, layout: { direction: 'grid', minCol: 76, gap: 6, padding: 8 }, children: cards };
   });
   return { type: 'Panel', id: 'poker-grid', props: { scroll: true }, layout: { direction: 'column', gap: 8, padding: 4 }, children: rows };
 }
