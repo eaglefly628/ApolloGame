@@ -36,4 +36,38 @@ describe('LayoutNode 缺口补齐 · 保真原版 UI', () => {
     const plain = renderNode({ type: 'Panel', id: 'pl', props: { title: 'x' }, children: [] });
     expect(plain).not.toContain('var(--felt)');
   });
+
+  it('G4 LayoutConstraints maxWidth：响应式封顶 + 自动外边距块居中（整页居中 chrome）', () => {
+    const html = renderNode({ type: 'Panel', id: 'chrome', props: {}, layout: { maxWidth: 1340 }, children: [] });
+    expect(html).toContain('max-width:1340px');   // 上限封顶
+    expect(html).toContain('margin-left:auto');    // 块居中
+    expect(html).toContain('margin-right:auto');
+    expect(html).toContain('width:100%');          // 无显式宽 → 填满到上限
+  });
+  it('G4 maxWidth 有显式 width 则不强加 width:100%（尊重显式宽）', () => {
+    const html = renderNode({ type: 'Panel', id: 'c', props: {}, layout: { maxWidth: 800, width: 400 }, children: [] });
+    expect(html).toContain('max-width:800px'); expect(html).toContain('width:400px');
+    expect(html).not.toContain('width:100%');
+  });
+  it('G4 无 maxWidth 不受影响（不回归）', () => {
+    const html = renderNode({ type: 'Panel', id: 'n', props: {}, children: [] });
+    expect(html).not.toContain('max-width');
+    expect(html).not.toContain('margin-left:auto');
+  });
+
+  it('G5 PlayingCard art：正面居中显立绘(img·替代中央大花色)；角标点数仍在', () => {
+    const html = renderNode({ type: 'PlayingCard', id: 'pc', props: { rank: 'K', suit: '♠', art: '/heroes/guanyu.svg', label: '关羽' } });
+    expect(html).toContain('src="/heroes/guanyu.svg"'); // 立绘
+    expect(html).toContain('object-fit:contain');
+    expect(html).toContain('K');                          // 角标点数仍在
+    expect(html).toContain('关羽');
+  });
+  it('G5 无 art 时回中央大花色(不渲 img·不回归)', () => {
+    const html = renderNode({ type: 'PlayingCard', id: 'p2', props: { rank: 'A', suit: '♥' } });
+    expect(html).not.toContain('<img');
+  });
+  it('G5 背面 + art：牌背不露立绘（仅正面显 art）', () => {
+    const html = renderNode({ type: 'PlayingCard', id: 'bk', props: { rank: 'A', suit: '♠', faceUp: false, art: '/x.svg' } });
+    expect(html).not.toContain('<img'); // 背面不显立绘
+  });
 });

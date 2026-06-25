@@ -18,6 +18,9 @@ export interface LayoutConstraints {
   y?: number;
   width?: number;
   height?: number;
+  /** 最大宽度上限 px（响应式·区别于固定 width）+ 自动外边距块居中。整页 chrome「居中圆角框」用：
+   *  填一个 maxWidth 数字即得「窄屏铺满、宽屏封顶居中」（无显式 width 时填满到上限再居中）。复用面：所有页面级 UI。 */
+  maxWidth?: number;
   flex?: number;
   gap?: number;
   direction?: 'row' | 'column' | 'grid';
@@ -214,6 +217,7 @@ export interface PlayingCardProps {
   size?: 'sm' | 'md' | 'lg';             // 牌面尺寸（缺省 md）
   face?: 'dark' | 'light';               // 牌面底：dark=暗主题卡(缺省) / light=经典白扑克牌（红黑对比·对决卡用）
   back?: string;                         // 牌背中央纹样字符（缺省 ♠ 暗纹）
+  art?: string;                          // 立绘槽（已解析 URL/SVG）：正面时居中显名将立绘剪影、替代中央大花色（角标点数花色仍在）。游戏经 resolveAsset 把资产 key 解析后填（sim 持 key 保纯）。复用面：所有卡牌游戏。
   action?: string; actionArg?: string;   // 可点 → handlers[action](actionArg)
 }
 

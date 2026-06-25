@@ -31,6 +31,12 @@ function layoutStyle(c?: LayoutConstraints): string {
   if (c.flex    !== undefined) p.push(`flex:${num(c.flex)}`);
   if (c.padding !== undefined) p.push(`padding:${num(c.padding)}px`);
   if (c.margin  !== undefined) p.push(`margin:${num(c.margin)}px`);
+  // maxWidth（响应式封顶 + 块居中·整页居中 chrome）：max-width 上限 + 自动外边距居中（flex item 亦生效）；
+  // 无显式 width 时补 width:100% → 窄屏铺满、宽屏封顶居中。放 margin 之后，让 auto 边距覆盖 margin 简写的左右值。
+  if (c.maxWidth !== undefined) {
+    p.push(`max-width:${num(c.maxWidth)}px`, 'margin-left:auto', 'margin-right:auto');
+    if (c.width === undefined) p.push('width:100%');
+  }
   // Transform（旋转/缩放）：声明式数据 → CSS transform。扇形手牌/选中放大等。
   const tf: string[] = [];
   if (c.rotate !== undefined) tf.push(`rotate(${num(c.rotate)}deg)`);
@@ -372,8 +378,12 @@ function renderPlayingCard(id: string, p: PlayingCardProps, ls: string, t: UIThe
   const selBorder = p.selected ? t.gold : sc;
   const glow = p.selected ? `box-shadow:0 0 0 1px ${t.gold},0 0 12px ${t.jadeLine};` : '';
   const pip = (pos: string): string => `<span style="position:absolute;${pos};font-size:${corner}px;line-height:1;color:${sc};font-family:${t.fontUi};text-align:center">${esc(p.rank)}<br>${esc(p.suit)}</span>`;
+  // 中央：有立绘 art（REQ-UI-G·G5）→ 居中显立绘剪影、替代中央大花色（角标点数花色仍在）；否则原大花色。
+  const center = (faceUp && p.art)
+    ? `<img src="${esc(p.art)}" alt="" style="position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);width:78%;height:78%;object-fit:contain;pointer-events:none">`
+    : `<span style="font-size:${big}px;color:${sc};opacity:.9">${esc(p.suit)}</span>`;
   const inner = faceUp
-    ? `${pip('top:5px;left:6px')}<span style="font-size:${big}px;color:${sc};opacity:.9">${esc(p.suit)}</span>${pip('bottom:5px;right:6px;transform:rotate(180deg)')}`
+    ? `${pip('top:5px;left:6px')}${center}${pip('bottom:5px;right:6px;transform:rotate(180deg)')}`
     : `<span style="font-size:${big}px;color:${t.jade};opacity:.5">${esc(p.back ?? '♠')}</span>`;
   const faceBg = faceUp ? (light ? 'linear-gradient(160deg,#fefdfb,#eceae3)' : t.bg2) : (light ? 'linear-gradient(160deg,#b34a4a,#8c3535)' : t.bg3);
   const lblColor = light ? '#5a5048' : t.sub;

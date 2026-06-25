@@ -10,7 +10,7 @@
 
 ## 待处理 / 进行中
 
-### REQ-UI-G保真原版 · [2026-06-25] · owner→主程（UI 库域·game-g 大厅数据驱动「和原版一模一样」缺口）· status: **部分 done（本 session 已下沉）· 余 open 待主程（owner 派单）** · 类型: 真能力缺口（对标原版保真·manifesto 尺子已过）
+### REQ-UI-G保真原版 · [2026-06-25] · owner→主程（UI 库域·game-g 大厅数据驱动「和原版一模一样」缺口）· status: **✅ done（两批下沉完成·G1-G3 + maxWidth/PlayingCard.art）** · 类型: 真能力缺口（对标原版保真·manifesto 尺子已过）
 
 > owner 2026-06-25：game-g 大厅改纯数据驱动后要做到「和原版手写版一模一样」。对标原版逐项找缺口，凡 `LayoutNode` 表达不了的 → **下沉成通用控件**（绝不手写 React/DOM 逃生）。owner 授权 game 层全权改、引擎缺口提主程实现。
 >
@@ -21,11 +21,11 @@
 > - `Panel bg`（令牌串如 `var(--felt)`）+ `vignette`（暗角）——绿呢牌桌等特殊表面通用。
 > - game-g 主页已用上述**复刻原版**（绿呢牌桌 + 白对决卡 + sheen 出征 CTA）。
 >
-> **🔲 open（待主程做·owner 派）—— 整厅完全一模一样还差的引擎缺口：**
-> 1. **`LayoutConstraints.maxWidth?` + 块居中**：整厅外圈「1340 居中圆角边框 chrome」。原版居中框，现数据厅全幅铺满。纯表现、可测；弱 LLM 只填 `maxWidth` 数字。复用面：所有页面级 UI。
-> 2. **`PlayingCardProps.art?`（立绘槽·SVG/image，走 `resolveAsset` DI 保纯）**：牌库 52 格 + 收藏牌谱原版有 `heroPortrait` 立绘剪影；当前牌面无立绘。复用面：所有卡牌游戏。
+> **✅ done（主程已下沉·本次提交）—— 整厅完全一模一样的余下引擎缺口：**
+> 1. **`LayoutConstraints.maxWidth?` + 块居中** ✅：max-width 上限 + 自动外边距居中（无显式 width 时补 width:100% → 窄屏铺满、宽屏封顶居中）。整厅外圈「1340 居中圆角 chrome」靠它，弱 LLM 只填 `maxWidth` 数字。复用面：所有页面级 UI。
+> 2. **`PlayingCardProps.art?`（立绘槽）** ✅：正面居中显立绘剪影、替代中央大花色（角标点数花色仍在）；`art`=已解析 URL，游戏经 `resolveAsset` 把资产 key 解析后填（sim 持 key 保纯）。牌库 52 格 / 收藏牌谱用。复用面：所有卡牌游戏。
 >
-> Lead 备注：1、2 均真缺口、尺子过（弱 LLM 只填 maxWidth 数字 / art key）。对决牌叠放等用现有 `layout.x/y/rotate` 游戏层自调，非引擎缺口。
+> Lead 备注：两项均真缺口、尺子过、纯表现加法（非破坏·新字段无则不变）。验收 `engine-ui-gaps.test.ts` G4/G5。对决牌叠放等用现有 `layout.x/y/rotate` 游戏层自调，非引擎缺口。
 
 ### REQ-STEAM · [2026-06-25] · 本 session 认领（平台轨·Steam 发行） · status: **in-progress（owner 指派·独立轨）** · 类型: 平台服务（非游戏数据）
 
