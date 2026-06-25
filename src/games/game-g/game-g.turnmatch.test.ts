@@ -14,7 +14,7 @@ describe('Game G · 集成：出征进【回合制】战斗屏（doc24·happy-do
     const container = document.createElement('div'); document.body.appendChild(container);
     const cleanup = mount(container);
     // 大厅「出征」CTA
-    const play = container.querySelector('[data-act="play"]');
+    const play = container.querySelector('[data-action="play"]');
     expect(play, '大厅出征按钮').not.toBeNull();
     expect(() => click(play)).not.toThrow();
     // 出征先放每关开局演出（doc27）→ 跳过进战斗
@@ -35,7 +35,7 @@ describe('Game G · 集成：出征进【回合制】战斗屏（doc24·happy-do
       localStorage.clear();
       const container = document.createElement('div'); document.body.appendChild(container);
       const cleanup = mount(container);
-      click(container.querySelector('[data-act="play"]'));
+      click(container.querySelector('[data-action="play"]'));
       { const skip = container.querySelector('[data-act="story-skip"]'); if (skip) click(skip); } // 跳过开局演出 → 进战斗
       expect(() => {
         press(container.querySelector('[data-act="deploy"]'));   // 选放牌

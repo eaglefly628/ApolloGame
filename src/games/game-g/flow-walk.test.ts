@@ -13,7 +13,7 @@ describe('Game G · 流程走查（出征→结算→继续·happy-dom）', () =
       localStorage.clear();
       const c = document.createElement('div'); document.body.appendChild(c);
       const cleanup = mount(c);
-      click(c.querySelector('[data-act="play"]'));
+      click(c.querySelector('[data-action="play"]'));
       const skipStory = (): void => { const s = c.querySelector('[data-act="story-skip"]'); if (s) click(s); }; // doc27 每关开局演出 → 跳过进战斗
       skipStory();
       expect(c.querySelector('[data-act="end"]'), '进战斗屏').not.toBeNull();
@@ -52,7 +52,7 @@ describe('Game G · 流程走查（出征→结算→继续·happy-dom）', () =
       // 结算面板 → 点继续（→ 三选一/重整/大厅）不抛错
       expect(() => { click(c.querySelector('#gg-result-cont')); vi.runAllTimers(); }, '结算继续转场').not.toThrow();
       // 转场后应落在某个合法屏（大厅出征 / 三选一 / 开局演出 / 又一场战斗）
-      const onLobby = c.querySelector('[data-act="play"]');
+      const onLobby = c.querySelector('[data-action="play"]');
       const onBetween = c.textContent?.includes('三选一') || c.querySelector('[data-between]');
       const onStory = c.querySelector('[data-act="story-skip"]');
       const onBattle = c.querySelector('[data-act="end"]');
