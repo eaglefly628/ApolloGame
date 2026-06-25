@@ -20,7 +20,7 @@ mac:
   identity: null
   target:
     - target: dmg
-      arch: [arm64, x64]   # arm64=Apple 芯片机, x64=Intel Mac；各出一份 dmg，避免对方「装不上/闪退」
+      arch: [arm64]   # 只打 Apple 芯片（对方机器也是 Apple 芯片，问题在签名而非架构）
 
 win:
   target:
