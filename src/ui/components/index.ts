@@ -3,6 +3,7 @@ export { mountUI, showToast } from './server.js';
 export type { MountHandle } from './server.js';
 export { resolveBindings, isVisible } from './bindings.js';
 export type { UIDataSource } from './bindings.js';
+export { apolloOnyx, apolloBrocade, APOLLO_KIT } from './apollo-kit.js';
 export { solveLayout } from './layout-solver.js';
 export type { Rect, Size, MeasureFn } from './layout-solver.js';
 export type {

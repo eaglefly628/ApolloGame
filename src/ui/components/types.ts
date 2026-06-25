@@ -103,6 +103,8 @@ export interface PanelProps {
   /** 无框纯布局容器（owner 2026-06-25「别千层框」）：true=不画边框/底/圆角、padding 缺省 0——只做 row/column/grid 分组。
    *  边框只留给「真该成一个框的东西」（外框/牌桌/侧栏/卡片）；行列分组一律 bare，避免嵌套出层层框。 */
   bare?: boolean;
+  /** UV 背景滚动（同 Screen.bgScroll·面板底纹滚动特效·render-only）。 */
+  bgScroll?: { x?: number; y?: number; ms?: number };
 }
 
 /** 单个开/关复选框。handler 收到 'true' | 'false'。 */
@@ -146,6 +148,8 @@ export interface ScreenProps {
   image?: string;
   blur?: number;
   center?: boolean;
+  /** UV 背景滚动（render-only·滚动 UI 特效）：背景每 ms(缺省 6000) 平移 (x,y) px 循环。配 texture/平铺底纹·mountUI 注入滚动动画。纯数字（弱模型能填）。 */
+  bgScroll?: { x?: number; y?: number; ms?: number };
 }
 
 /** 数值滑块。handler 收到数值字符串（Number(arg) 转回）。 */
@@ -368,4 +372,8 @@ export interface UITheme {
   fontUi: string; fontMono: string;
   /** 输入框底色（缺省深色半透 rgba(0,0,0,0.35)·适配暗皮）。亮皮须填浅色，否则深底深字看不清。 */
   inputBg?: string;
+  /** 背景贴图层（procedural CSS 图案 / 贴图 url·叠在 pageBg 上·renderScreen 合成）。主题作者填（可含 CSS），区别于游戏 LayoutNode 数据。缺省无 = 纯 pageBg（老主题零变化）。 */
+  texture?: string;
+  /** 背景晕染叠层（vignette/wash·盖在 texture 之上的柔光/暗角）。同 texture：主题作者填。 */
+  wash?: string;
 }

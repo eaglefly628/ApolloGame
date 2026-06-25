@@ -50,6 +50,11 @@ function layoutStyle(c?: LayoutConstraints): string {
   return p.join(';');
 }
 
+// 背景 UV 滚动声明 → data-bgscroll（mountUI 接逐元素滚动关键帧）。x,y=平移 px，ms=周期。纯数字（防注入过 num）。
+function bgScrollAttr(s?: { x?: number; y?: number; ms?: number }): string {
+  return s ? ` data-bgscroll="${num(s.x)},${num(s.y)},${num(s.ms, 6000)}"` : '';
+}
+
 // ── 原有 7 个控件 ───────────────────────────────────────────────
 
 function renderButton(id: string, p: ButtonProps, ls: string, t: UITheme): string {
@@ -161,7 +166,7 @@ function renderPanel(id: string, p: PanelProps, c: LayoutConstraints | undefined
     ? `<div style="position:absolute;inset:0;border-radius:10px;pointer-events:none;background:radial-gradient(120% 100% at 50% 30%,transparent 55%,rgba(0,0,0,.45) 100%)"></div>`
     : '';
   const inner = children.map((ch) => renderNode(ch, t)).join('');
-  return `<div id="${esc(id)}" style="${style}">${vignette}${title}${inner}</div>`;
+  return `<div id="${esc(id)}"${bgScrollAttr(p.bgScroll)} style="${style}">${vignette}${title}${inner}</div>`;
 }
 
 // ── 新增 6 个控件 ───────────────────────────────────────────────
@@ -225,12 +230,14 @@ function renderImage(id: string, p: ImageProps, ls: string): string {
 }
 
 function renderScreen(id: string, p: ScreenProps, children: LayoutNode[], t: UITheme): string {
-  const bg     = p.bg ?? t.pageBg;
+  const baseBg = p.bg ?? t.pageBg;
+  // 分层底：wash(晕染) , texture(贴图) , baseBg(底色) 三层合成（Apollo Kit 口径）。无 wash/texture → 纯底色（老主题零变化）。
+  const bg     = [t.wash, t.texture, baseBg].filter(Boolean).join(', ');
   const center = p.center ? 'align-items:center;justify-content:center;' : 'align-items:stretch;';
   const bgImg  = p.image ? `background-image:url('${esc(p.image)}');background-size:cover;background-position:center;` : '';
   const blur   = p.blur ? `backdrop-filter:blur(${p.blur}px);` : '';
   const style  = `width:100%;min-height:100vh;display:flex;flex-direction:column;${center}background:${bg};${bgImg}${blur}font-family:${t.fontUi};position:relative;`;
-  return `<div id="${esc(id)}" style="${style}">${children.map((ch) => renderNode(ch, t)).join('')}</div>`;
+  return `<div id="${esc(id)}"${bgScrollAttr(p.bgScroll)} style="${style}">${children.map((ch) => renderNode(ch, t)).join('')}</div>`;
 }
 
 function renderSlider(id: string, p: SliderProps, ls: string, t: UITheme): string {

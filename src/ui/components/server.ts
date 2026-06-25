@@ -11,6 +11,9 @@ import type { LayoutNode, HandlerMap, ActionSink, UITheme, ToastProps, VirtualLi
 /** mountUI 句柄：调用即 teardown（向后兼容）；`.update(newTree, theme?)` 做局部更新（最小 diff）。 */
 export type MountHandle = (() => void) & { update: (root: LayoutNode, theme?: UITheme) => void };
 
+// 背景滚动关键帧名全局序号（多 mount 不撞名）。
+let __bgScrollSeq = 0;
+
 // 按 id 在 LayoutNode 树里找节点（VirtualList 滚动重渲要从 root 取行数据）。
 function findNode(node: LayoutNode, id: string): LayoutNode | undefined {
   if (node.id === id) return node;
@@ -151,6 +154,21 @@ export function mountUI(
     }, 16);
     typers.push(iv);
   });
+
+  // 背景 UV 滚动（render-only·滚动 UI 特效）：给带 data-bgscroll 的元素注入逐元素关键帧（平移 background-position），
+  // 无限循环。配 repeating 贴图(texture)即得无缝滚动底纹；teardown 移除注入的 style。
+  const scrollStyles: HTMLStyleElement[] = [];
+  if (typeof document !== 'undefined') {
+    host.querySelectorAll<HTMLElement>('[data-bgscroll]').forEach((el) => {
+      const [x, y, ms] = (el.dataset['bgscroll'] ?? '0,0,6000').split(',').map(Number);
+      const name = `apollo-bgs-${__bgScrollSeq++}`;
+      const st = document.createElement('style');
+      st.textContent = `@keyframes ${name}{from{background-position:0 0}to{background-position:${x || 0}px ${y || 0}px}}`;
+      (document.head ?? document.documentElement).appendChild(st);
+      el.style.animation = `${name} ${ms || 6000}ms linear infinite`;
+      scrollStyles.push(st);
+    });
+  }
 
   const dispatch = (e: Event): void => {
     const el = (e.target as HTMLElement).closest('[data-action]') as HTMLElement | null;
@@ -397,6 +415,7 @@ export function mountUI(
     host.removeEventListener('focusout',    tipHide);
     vlistScrolls.forEach(({ el, fn }) => el.removeEventListener('scroll', fn));
     typers.forEach((iv) => clearInterval(iv));
+    scrollStyles.forEach((s) => s.remove()); // 移除背景滚动注入的 keyframe style
     host.innerHTML = '';
   }) as MountHandle;
   teardown.update = update;
