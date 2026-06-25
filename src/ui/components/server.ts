@@ -90,7 +90,11 @@ const APOLLO_KEYFRAMES = `
 @keyframes apollo-pop{0%{transform:scale(.6);opacity:0}60%{transform:scale(1.08)}100%{transform:scale(1);opacity:1}}
 @keyframes apollo-shake{0%,100%{transform:translateX(0)}25%{transform:translateX(-4px)}75%{transform:translateX(4px)}}
 @keyframes apollo-dealIn{from{opacity:0;transform:translateY(-20px) rotate(-8deg)}to{opacity:1;transform:translateY(0) rotate(0)}}
-@keyframes apollo-flyIn{from{opacity:0;transform:translateX(-24px)}to{opacity:1;transform:translateX(0)}}`;
+@keyframes apollo-flyIn{from{opacity:0;transform:translateX(-24px)}to{opacity:1;transform:translateX(0)}}
+@keyframes apollo-coin-heads{0%{transform:rotateX(60deg)}100%{transform:rotateX(1800deg)}}
+@keyframes apollo-coin-tails{0%{transform:rotateX(60deg)}100%{transform:rotateX(1980deg)}}
+@keyframes apollo-spark{0%{transform:scale(.4);opacity:0}40%{transform:scale(1.25);opacity:1}100%{transform:scale(1);opacity:.9}}
+@keyframes apollo-clash{0%,100%{transform:translateX(0)}30%{transform:translateX(-5px)}60%{transform:translateX(5px)}}`;
 function ensureKeyframes(): void {
   if (typeof document === 'undefined') return;
   if (document.getElementById('apollo-ui-keyframes')) return;

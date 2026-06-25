@@ -1,0 +1,69 @@
+// @vitest-environment happy-dom
+// 引擎新控件验收（下沉自 game-g bespoke 牌面/掷币/对决·owner 2026-06-25 批准·验证后推广）：
+// PlayingCard（扑克牌原语）/ CoinFlip（掷币）/ Versus（对决特写）—— 纯数据 → 引擎渲染，最弱 LLM 也能填数据。
+import { describe, it, expect, vi } from 'vitest';
+import { renderNode, mountUI } from './index.js';
+import type { LayoutNode } from './index.js';
+
+describe('UI Components · PlayingCard 扑克牌原语', () => {
+  it('正面：渲染点数 + 花色（双角镜像 + 中央大花色）', () => {
+    const html = renderNode({ type: 'PlayingCard', id: 'pc', props: { rank: 'A', suit: '♠', faceUp: true } });
+    expect(html).toContain('id="pc"');
+    expect(html).toContain('A'); expect(html).toContain('♠');
+  });
+  it('红黑自动判色：♥ 用 danger(红)·♠ 用 text(黑/墨)', () => {
+    const red = renderNode({ type: 'PlayingCard', id: 'r', props: { rank: 'K', suit: '♥' } });
+    const blk = renderNode({ type: 'PlayingCard', id: 'b', props: { rank: 'K', suit: '♠' } });
+    expect(red).not.toBe(blk); // 颜色不同（红牌走 danger 令牌）
+  });
+  it('背面：faceUp=false 显牌背纹样·不露点数花色中心', () => {
+    const back = renderNode({ type: 'PlayingCard', id: 'bk', props: { rank: 'A', suit: '♠', faceUp: false, back: '❖' } });
+    expect(back).toContain('❖');
+  });
+  it('选中态 selected → 金边发光；label/value 显示', () => {
+    const html = renderNode({ type: 'PlayingCard', id: 's', props: { rank: '10', suit: '♦', selected: true, label: '孙武', value: '66' } });
+    expect(html).toContain('box-shadow'); expect(html).toContain('孙武'); expect(html).toContain('66');
+  });
+  it('可点：action → data-action/data-arg；mountUI 点击触发 handler', () => {
+    const host = document.createElement('div'); document.body.appendChild(host);
+    const pick = vi.fn();
+    const tree: LayoutNode = { type: 'PlayingCard', id: 'p', props: { rank: 'A', suit: '♠', action: 'pick', actionArg: 'AS' } };
+    const ui = mountUI(host, tree, { pick });
+    const el = host.querySelector('[data-action="pick"][data-arg="AS"]') as HTMLElement;
+    expect(el).toBeTruthy();
+    el.dispatchEvent(new MouseEvent('click', { bubbles: true }));
+    expect(pick).toHaveBeenCalledWith('AS');
+    ui();
+  });
+});
+
+describe('UI Components · CoinFlip 掷币', () => {
+  it('静态：outcome=heads → 定到正面(rotateX 0)；tails → rotateX 180', () => {
+    const heads = renderNode({ type: 'CoinFlip', id: 'h', props: { outcome: 'heads' } });
+    const tails = renderNode({ type: 'CoinFlip', id: 't', props: { outcome: 'tails' } });
+    expect(heads).toContain('rotateX(0deg)');
+    expect(tails).toContain('rotateX(180deg)');
+  });
+  it('spinning=true → 用白名单关键帧 apollo-coin-* 落定到结果', () => {
+    const html = renderNode({ type: 'CoinFlip', id: 'c', props: { outcome: 'tails', spinning: true, durationMs: 900 } });
+    expect(html).toContain('apollo-coin-tails 900ms');
+  });
+  it('两面文字可定制（headsLabel/tailsLabel）', () => {
+    const html = renderNode({ type: 'CoinFlip', id: 'c2', props: { outcome: 'heads', headsLabel: '正·活', tailsLabel: '反·亡' } });
+    expect(html).toContain('正·活'); expect(html).toContain('反·亡');
+  });
+});
+
+describe('UI Components · Versus 对决特写', () => {
+  it('渲染左右两张牌 + 中央 ⚔/胜率 + 火花', () => {
+    const html = renderNode({ type: 'Versus', id: 'v', props: { left: { rank: 'A', suit: '♠' }, right: { rank: 'K', suit: '♥' }, label: '76 : 24', spark: true } });
+    expect(html).toContain('id="v-left"'); expect(html).toContain('id="v-right"');
+    expect(html).toContain('⚔'); expect(html).toContain('76 : 24');
+    expect(html).toContain('apollo-spark');
+  });
+  it('winner=left → 左牌选中(金边)·右牌暗', () => {
+    const html = renderNode({ type: 'Versus', id: 'v2', props: { left: { rank: 'A', suit: '♠' }, right: { rank: '2', suit: '♣' }, winner: 'left' } });
+    expect(html).toContain('box-shadow'); // 胜方金边发光
+    expect(html).toContain('opacity:.5'); // 败方暗
+  });
+});

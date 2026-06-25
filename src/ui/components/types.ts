@@ -8,8 +8,9 @@ export type ComponentType =
   | 'Panel' | 'Button' | 'Label' | 'Dropdown' | 'Badge' | 'Input' | 'Divider'
   | 'Checkbox' | 'Toggle' | 'RadioGroup' | 'Image' | 'Screen' | 'Slider'
   | 'Table' | 'Tabs' | 'ProgressBar' | 'Tag' | 'Modal' | 'Toast' | 'Tooltip'
-  | 'Card' | 'Stepper' | 'Segmented' | 'Avatar' | 'Accordion'
-  | 'Rating' | 'Combobox' | 'Drawer' | 'VirtualList' | 'ContextMenu';
+  | 'Card' | 'PlayingCard' | 'Stepper' | 'Segmented' | 'Avatar' | 'Accordion'
+  | 'Rating' | 'Combobox' | 'Drawer' | 'VirtualList' | 'ContextMenu'
+  | 'CoinFlip' | 'Versus';
 
 /** 布局约束：坐标/尺寸/弹性。x/y 触发绝对定位；flex 在父 Panel/Screen 内生效。 */
 export interface LayoutConstraints {
@@ -192,6 +193,24 @@ export interface CardProps {
   tone?: 'normal' | 'accent' | 'dim' | 'locked'; action?: string; actionArg?: string;
 }
 
+// ── PlayingCard（扑克牌原语·下沉自各卡牌游戏的 bespoke 牌面 · owner 2026-06-25）─────────────
+// 一张真正的扑克牌：花色角标(双角镜像) + 中央大花色 + 正/背面 + 选中/暗态 + 可点 + 牌下标签。
+// 旋转/缩放/发牌动画走 layout(rotate/scale/anim:dealIn|flyIn|pop)——不在本控件内重造。
+// 数据接口（最弱 LLM 也能填）：{ rank:'A', suit:'♠', faceUp:true }。花色色自动判红/黑（♥♦红·♠♣黑）。
+// 复用面：扑克/接龙/TCG/Balatro 类一大片；game-g 主页对决卡、牌库 52 牌、收藏牌谱共用。
+export interface PlayingCardProps {
+  rank: string;                          // 'A' 'K' 'Q' 'J' '10'..'2'（或自定义点数文本）
+  suit: string;                          // '♠'|'♥'|'♦'|'♣'（红黑自动判；其它符号按黑处理）
+  faceUp?: boolean;                      // 缺省 true；false=展示牌背
+  label?: string;                        // 牌下小标签（如名将名）
+  value?: string;                        // 牌右下小数值（如 favor）
+  selected?: boolean;                    // 选中高亮（入选出战组 → 金边发光）
+  dimmed?: boolean;                      // 弱牌/未拥有 → 半透明
+  size?: 'sm' | 'md' | 'lg';             // 牌面尺寸（缺省 md）
+  back?: string;                         // 牌背中央纹样字符（缺省 ♠ 暗纹）
+  action?: string; actionArg?: string;   // 可点 → handlers[action](actionArg)
+}
+
 // ── Stepper（数量 ± 加减）：value 当前值；±按钮 data-arg=钳位后的新值；到界禁用。handler 收到新值字符串。 ──
 export interface StepperProps {
   value: number; min?: number; max?: number; step?: number; action?: string;
@@ -243,12 +262,35 @@ export interface ContextMenuProps {
   items: { id: string; label: string; action: string }[];
 }
 
+// ── CoinFlip（掷币·下沉自 game-g 掷命对决 3D 硬币 · owner 2026-06-25）─────────────────
+// 确定性掷币：结果由游戏算好(outcome)传入·控件只演出。spinning=true 播 3D 翻转落定到 outcome；false=静态显示。
+// 数据接口：{ outcome:'heads' }。复用面：掷命/猜硬币/随机二选一演出（多游戏通用）。
+export interface CoinFlipProps {
+  outcome: 'heads' | 'tails';            // 结果（确定性·游戏侧算好）
+  headsLabel?: string; tailsLabel?: string; // 两面文字（缺省 正/反）
+  spinning?: boolean;                    // true=播翻转动画落定；false=静态显示结果
+  size?: number;                         // 直径 px（缺省 92）
+  durationMs?: number;                   // 翻转时长（缺省 1100）
+  action?: string;                       // 可选点击信号
+}
+
+// ── Versus（对决特写·下沉自 game-g 对决火花 · owner 2026-06-25）─────────────────────
+// 两张牌正面对决 + 中央胜率/火花 + 胜方高亮。复用面：卡牌对战/PVP 结算特写。
+// 数据接口：{ left:{rank,suit}, right:{rank,suit}, label:'76 : 24', winner:'left' }。
+export interface VersusProps {
+  left: PlayingCardProps; right: PlayingCardProps; // 左右两张牌
+  label?: string;                        // 中央文字（如胜率 '76 : 24'）
+  winner?: 'left' | 'right' | 'none';    // 胜方高亮（败方暗）
+  spark?: boolean;                       // 中央火花闪（缺省 true）
+}
+
 export type ComponentProps =
   | ButtonProps | LabelProps | DropdownProps | BadgeProps | InputProps | PanelProps
   | CheckboxProps | ToggleProps | RadioGroupProps | ImageProps | ScreenProps | SliderProps
   | TableProps | TabsProps | ProgressBarProps | TagProps | ModalProps | ToastProps | TooltipProps
-  | CardProps | StepperProps | SegmentedProps | AvatarProps | AccordionProps
+  | CardProps | PlayingCardProps | StepperProps | SegmentedProps | AvatarProps | AccordionProps
   | RatingProps | ComboboxProps | DrawerProps | VirtualListProps | ContextMenuProps
+  | CoinFlipProps | VersusProps
   | Record<string, never>;
 
 /** LayoutNode = 弱模型填写的 UI 数据单元。type + id + props 必填；layout/children 按需。 */

@@ -9,6 +9,7 @@ export type {
   LayoutNode, LayoutConstraints, ComponentType, ComponentProps, HandlerMap, Handler, UITheme,
   ButtonProps, LabelProps, DropdownProps, BadgeProps, InputProps, PanelProps,
   TableProps, TableColumn, TableRow, TabsProps, ProgressBarProps, TagProps, ModalProps, ToastProps, TooltipProps,
-  CardProps, StepperProps, SegmentedProps, AvatarProps, AccordionProps,
+  CardProps, PlayingCardProps, StepperProps, SegmentedProps, AvatarProps, AccordionProps,
   RatingProps, ComboboxProps, DrawerProps, VirtualListProps, ContextMenuProps,
+  CoinFlipProps, VersusProps,
 } from './types.js';

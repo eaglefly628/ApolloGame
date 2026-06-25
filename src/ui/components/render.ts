@@ -7,8 +7,9 @@ import type {
   ButtonProps, LabelProps, DropdownProps, BadgeProps, InputProps, PanelProps,
   CheckboxProps, ToggleProps, RadioGroupProps, ImageProps, ScreenProps, SliderProps,
   TableProps, TableColumn, TabsProps, ProgressBarProps, TagProps, ModalProps, ToastProps, TooltipProps,
-  CardProps, StepperProps, SegmentedProps, AvatarProps, AccordionProps,
+  CardProps, PlayingCardProps, StepperProps, SegmentedProps, AvatarProps, AccordionProps,
   RatingProps, ComboboxProps, DrawerProps, VirtualListProps, ContextMenuProps,
+  CoinFlipProps, VersusProps,
 } from './types.js';
 
 const esc = (s: string): string =>
@@ -342,6 +343,64 @@ function renderCard(id: string, p: CardProps, children: LayoutNode[], ls: string
   return `<div id="${esc(id)}"${action} style="position:relative;display:flex;flex-direction:column;justify-content:center;padding:12px 10px;border-radius:10px;background:${t.bg2};border:1px solid ${border};font-family:${t.fontUi};${dimmed}${cursor}${ls}">${corner}${body}</div>`;
 }
 
+// ── PlayingCard（扑克牌原语）：双角镜像 + 中央大花色 + 正/背面 + 选中/暗态 + 可点。──
+// 红黑自动判（♥♦红·其余黑·借主题 danger/text 令牌·随皮走）；尺寸 sm/md/lg；旋转缩放交给 layout。
+const PCARD_DIMS: Record<string, [number, number, number, number]> = { sm: [52, 72, 13, 26], md: [64, 90, 15, 34], lg: [82, 116, 18, 46] };
+function renderPlayingCard(id: string, p: PlayingCardProps, ls: string, t: UITheme): string {
+  const [w, h, corner, big] = PCARD_DIMS[p.size ?? 'md'] ?? PCARD_DIMS['md']!;
+  const isRed = p.suit === '♥' || p.suit === '♦';
+  const sc = isRed ? t.danger : t.text;
+  const faceUp = p.faceUp !== false;
+  const action = p.action ? ` data-action="${esc(p.action)}"${p.actionArg ? ` data-arg="${esc(p.actionArg)}"` : ''}` : '';
+  const cursor = p.action ? 'cursor:pointer;' : '';
+  const dimmed = p.dimmed ? 'opacity:.5;' : '';
+  const selBorder = p.selected ? t.gold : sc;
+  const glow = p.selected ? `box-shadow:0 0 0 1px ${t.gold},0 0 12px ${t.jadeLine};` : '';
+  const pip = (pos: string): string => `<span style="position:absolute;${pos};font-size:${corner}px;line-height:1;color:${sc};font-family:${t.fontUi};text-align:center">${esc(p.rank)}<br>${esc(p.suit)}</span>`;
+  const inner = faceUp
+    ? `${pip('top:5px;left:6px')}<span style="font-size:${big}px;color:${sc};opacity:.9">${esc(p.suit)}</span>${pip('bottom:5px;right:6px;transform:rotate(180deg)')}`
+    : `<span style="font-size:${big}px;color:${t.jade};opacity:.5">${esc(p.back ?? '♠')}</span>`;
+  const faceBg = faceUp ? t.bg2 : t.bg3;
+  const label = p.label ? `<div style="position:absolute;bottom:3px;left:0;right:0;font-size:9px;color:${t.sub};font-family:${t.fontUi};text-align:center;text-shadow:0 1px 2px rgba(0,0,0,.6)">${esc(p.label)}</div>` : '';
+  const value = p.value ? `<span style="position:absolute;bottom:4px;right:6px;font-size:10px;font-weight:700;color:${t.gold};font-family:${t.fontUi}">${esc(p.value)}</span>` : '';
+  return `<div id="${esc(id)}"${action} style="position:relative;display:inline-flex;align-items:center;justify-content:center;width:${w}px;height:${h}px;border-radius:8px;background:${faceBg};border:2px solid ${selBorder};font-family:${t.fontUi};${glow}${dimmed}${cursor}${ls}">${inner}${label}${value}</div>`;
+}
+
+// ── CoinFlip（掷币）：3D 双面硬币·spinning 播翻转落定到 outcome·静态则直接显示结果面。──
+function renderCoinFlip(id: string, p: CoinFlipProps, ls: string, t: UITheme): string {
+  const d = num(p.size, 92);
+  const ms = num(p.durationMs, 1100);
+  const tails = p.outcome === 'tails';
+  const action = p.action ? ` data-action="${esc(p.action)}"` : '';
+  const cursor = p.action ? 'cursor:pointer;' : '';
+  // spinning：用白名单关键帧（apollo-coin-heads/tails·server.ts 注入）落定；静态：直接定到结果面。
+  const spin = p.spinning
+    ? `animation:apollo-coin-${tails ? 'tails' : 'heads'} ${ms}ms ease-out both;`
+    : `transform:rotateX(${tails ? 180 : 0}deg);`;
+  const face = (label: string, bg: string, rot: number): string =>
+    `<div style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;border-radius:50%;backface-visibility:hidden;-webkit-backface-visibility:hidden;transform:rotateX(${rot}deg);background:${bg};border:3px solid ${t.gold};color:${t.bg0};font-family:${t.fontUi};font-weight:700;font-size:${Math.round(d / 5)}px">${esc(label)}</div>`;
+  return `<div id="${esc(id)}"${action} style="width:${d}px;height:${d}px;perspective:600px;${cursor}${ls}">` +
+    `<div style="position:relative;width:100%;height:100%;transform-style:preserve-3d;${spin}">` +
+    face(p.headsLabel ?? '正', t.gold, 0) + face(p.tailsLabel ?? '反', t.warn, 180) +
+    `</div></div>`;
+}
+
+// ── Versus（对决特写）：左右两张 PlayingCard 对决 + 中央胜率/火花 + 胜方高亮。──
+function renderVersus(id: string, p: VersusProps, ls: string, t: UITheme): string {
+  const spark = p.spark !== false;
+  const card = (cp: PlayingCardProps, side: 'left' | 'right'): string => {
+    const lose = p.winner && p.winner !== 'none' && p.winner !== side;
+    const win = p.winner === side;
+    return renderPlayingCard(`${id}-${side}`, { ...cp, size: cp.size ?? 'lg', selected: win, dimmed: lose }, '', t);
+  };
+  const center = `<div style="display:flex;flex-direction:column;align-items:center;gap:4px;padding:0 14px">` +
+    (spark ? `<span style="font-size:26px;color:${t.gold};animation:apollo-spark 700ms ease-out both">✦</span>` : '') +
+    `<span style="font-size:18px;color:${t.danger};font-family:${t.fontUi};font-weight:700">⚔</span>` +
+    (p.label ? `<span style="font-size:13px;color:${t.gold};font-family:${t.fontUi};font-weight:700;white-space:nowrap">${esc(p.label)}</span>` : '') +
+    `</div>`;
+  return `<div id="${esc(id)}" style="display:inline-flex;align-items:center;justify-content:center;animation:apollo-clash 500ms ease-out both;${ls}">${card(p.left, 'left')}${center}${card(p.right, 'right')}</div>`;
+}
+
 // 数量 ±：到界或无 action 则禁用按钮（不发信号）；按钮 data-arg=钳位后新值。
 function renderStepper(id: string, p: StepperProps, ls: string, t: UITheme): string {
   const min = p.min ?? 0, max = p.max ?? 99, step = p.step ?? 1, v = p.value;
@@ -498,6 +557,9 @@ function renderDispatch(node: LayoutNode, theme: UITheme = SHELL): string {
     case 'Toast':      return renderToast(node.id, node.props as ToastProps, ls, t);
     case 'Tooltip':    return renderTooltip(node.id, node.props as TooltipProps, node.children ?? [], ls, t);
     case 'Card':       return renderCard(node.id, node.props as CardProps, node.children ?? [], ls, t);
+    case 'PlayingCard':return renderPlayingCard(node.id, node.props as PlayingCardProps, ls, t);
+    case 'CoinFlip':   return renderCoinFlip(node.id, node.props as CoinFlipProps, ls, t);
+    case 'Versus':     return renderVersus(node.id, node.props as VersusProps, ls, t);
     case 'Stepper':    return renderStepper(node.id, node.props as StepperProps, ls, t);
     case 'Segmented':  return renderSegmented(node.id, node.props as SegmentedProps, ls, t);
     case 'Avatar':     return renderAvatar(node.id, node.props as AvatarProps, ls, t);
