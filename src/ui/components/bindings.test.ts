@@ -1,7 +1,7 @@
 // 世界绑定解析（收编 GameShell stat/bar/image-bind 入 LayoutNode）：resolveBindings 用注入的
 // UIDataSource 把 bind 节点填成字面值，纯函数、不改原树、未命中原样透传。
 import { describe, it, expect } from 'vitest';
-import { resolveBindings, type UIDataSource } from './bindings.js';
+import { resolveBindings, isVisible, type UIDataSource } from './bindings.js';
 import { renderNode } from './render.js';
 import type { LayoutNode } from './types.js';
 
@@ -42,5 +42,42 @@ describe('UI Components · resolveBindings 世界绑定', () => {
     expect((kids[1]!.props as { text: string }).text).toBe('X');             // 未命中不动
     expect((kids[2]!.props as { value: number }).value).toBe(30);            // 子节点也解析
     expect((tree.children![2]!.props as { value: number }).value).toBe(5);   // 原树未被改（纯函数）
+  });
+});
+
+describe('UI Components · visibleWhen 条件显隐（数据替代代码重建树）', () => {
+  const fds: UIDataSource = { flag: (id) => ({ locked: true, owned: false }[id]) };
+
+  it('isVisible：flag 真→显、假→隐；`!` 取反；缺 flag 读取器 / 无 visibleWhen → 恒显', () => {
+    const N = (id: string, vw?: string): LayoutNode => ({ type: 'Label', id, props: { text: '' }, ...(vw ? { visibleWhen: vw } : {}) });
+    expect(isVisible(N('a', 'locked'), fds)).toBe(true);   // locked=true → 显
+    expect(isVisible(N('b', 'owned'), fds)).toBe(false);   // owned=false → 隐
+    expect(isVisible(N('c', '!owned'), fds)).toBe(true);   // 取反 → 显
+    expect(isVisible(N('d', '!locked'), fds)).toBe(false); // 取反 → 隐
+    expect(isVisible(N('e', 'missing'), fds)).toBe(false); // 未命中 flag = falsy → 隐
+    expect(isVisible(N('f', 'locked'), {})).toBe(true);    // 无 flag reader → 恒显（安全默认）
+    expect(isVisible(N('g'), fds)).toBe(true);             // 无 visibleWhen → 恒显
+    expect(isVisible(N('h', '!'), fds)).toBe(true);        // 空 flag id（裸 "!"）→ 不误删
+  });
+
+  it('resolveBindings：children 里 visibleWhen 不满足的子树被剔除（其余顺序保留）', () => {
+    const tree: LayoutNode = { type: 'Panel', id: 'p', props: {}, children: [
+      { type: 'Label', id: 'always', props: { text: 'A' } },                            // 无条件
+      { type: 'Label', id: 'lockTag', props: { text: '🔒' }, visibleWhen: 'locked' },    // 显
+      { type: 'Button', id: 'buyBtn', props: { label: '购买' }, visibleWhen: '!owned' }, // 显（未拥有）
+      { type: 'Button', id: 'useBtn', props: { label: '使用' }, visibleWhen: 'owned' },  // 隐（未拥有）
+    ] };
+    const out = resolveBindings(tree, fds);
+    expect(out.children!.map((c) => c.id)).toEqual(['always', 'lockTag', 'buyBtn']); // useBtn 被剔除
+  });
+
+  it('隐藏子树不进渲染（不留 DOM·替代 display:none）；原树不被改（纯函数）', () => {
+    const tree: LayoutNode = { type: 'Panel', id: 'p', props: {}, children: [
+      { type: 'Button', id: 'useBtn', props: { label: '使用道具' }, visibleWhen: 'owned' }, // owned=false → 隐
+    ] };
+    const html = renderNode(resolveBindings(tree, fds));
+    expect(html).not.toContain('使用道具');
+    expect(html).not.toContain('useBtn');
+    expect(tree.children!.length).toBe(1); // 原树仍含被隐节点（只是过滤出了新 children 数组）
   });
 });

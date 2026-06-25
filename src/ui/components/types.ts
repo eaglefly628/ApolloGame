@@ -300,6 +300,15 @@ export interface LayoutNode {
   props: ComponentProps;
   layout?: LayoutConstraints;
   children?: LayoutNode[];
+  /**
+   * 条件显隐（数据·替代"游戏用代码重建 UI 树"这种代码回潮）：一个 **flag id**，可选 `!` 前缀取反。
+   * 在 resolveBindings 求值（经 UIDataSource.flag 读布尔）：为真 → 该节点连同子树留在树里；
+   * 为假 → 从父节点 children 里移除（不进渲染·不留 DOM，区别于 display:none）。
+   * 锁牌 / 选中态 / 买不起（先由 sim 算成 Flag）/ 阶段限定按钮等，靠它声明，不必让游戏 if/else 重建树。
+   * 红线同 bind：只收 **flag id 字符串**（最弱 LLM 能填），绝不收自由布尔表达式。
+   * 注：**树根**的 visibleWhen 不被求值（根恒渲染）——把条件内容放进某个子节点；若确需按根判可见用 isVisible()。
+   */
+  visibleWhen?: string;
 }
 
 export type Handler = (arg?: string) => void;

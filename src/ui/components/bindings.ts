@@ -10,10 +10,26 @@
 
 import type { LayoutNode, LabelProps, ProgressBarProps, ImageProps } from './types.js';
 
-/** 注入式世界数据源（游戏/引擎提供一份·解耦 ECS）：resource 读数值资源，value 读字符串变量。 */
+/** 注入式世界数据源（游戏/引擎提供一份·解耦 ECS）：resource 读数值资源，value 读字符串变量，flag 读布尔旗标。 */
 export interface UIDataSource {
   resource?(id: string): { current: number; max?: number } | undefined;
   value?(id: string): string | undefined;
+  /** 读布尔旗标（通常映射世界 Flag 组件）：LayoutNode.visibleWhen 条件显隐求值用。游戏/引擎注入。 */
+  flag?(id: string): boolean | undefined;
+}
+
+/**
+ * 求 LayoutNode.visibleWhen：flag id（可选 `!` 前缀取反）经 ds.flag 读布尔。
+ * 安全默认（与 bind 无 reader 即不解析同构）：无 visibleWhen / 无 ds.flag / 空 id → 恒可见（绝不误删节点）。
+ */
+export function isVisible(node: LayoutNode, ds: UIDataSource): boolean {
+  const vw = node.visibleWhen;
+  if (!vw || !ds.flag) return true;
+  const neg = vw[0] === '!';
+  const id = neg ? vw.slice(1) : vw;
+  if (!id) return true; // 空 flag id（如裸 "!"）→ 视为无条件，不误删
+  const v = ds.flag(id);
+  return neg ? !v : !!v;
 }
 
 /**
@@ -44,6 +60,7 @@ export function resolveBindings(node: LayoutNode, ds: UIDataSource): LayoutNode 
     }
   }
 
-  const children = node.children?.map((ch) => resolveBindings(ch, ds));
+  // visibleWhen 不满足的子节点先从 children 里剔除（连同子树·替代游戏用代码 if/else 重建树），再递归解析绑定。
+  const children = node.children?.filter((ch) => isVisible(ch, ds)).map((ch) => resolveBindings(ch, ds));
   return children ? { ...node, props, children } : { ...node, props };
 }
