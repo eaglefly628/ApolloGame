@@ -11,6 +11,30 @@ G2 战场结构（军衔/三路/将领牵动/best-of-3）核心已落、已接�
 
 ---
 
+## ⭐ Lead 派发 · 全数据驱动重写路线图（owner 定调：game-g 作上 Steam 旗舰）
+
+> **Lead（主程）注入 · 2026-06-22。** owner 拍板：**game-g 是上 Steam 的旗舰标杆**，要重写到**真正全数据驱动**。
+> **打法：增量数据化、始终保持可发布——绝不 big-bang 删重写。** 每阶段 tsc+vitest+build 全绿才推；outcome-first 红线不破、`turnHash` 不漂移。
+> ⚠️ **分清车道**：**game-g 的数据化 = 你（PG）的活**；**服务层（Steam/手柄/存档/音频端口）= 引擎/Lead 的活**，你只消费、不自己建。带「⏳引擎」的阶段需等 Lead 交付标准/能力后再起——**未就绪先别起，免得又手写 React 白干一遍。**
+
+**阶段（建议序，从低风险高产出起）：**
+
+0. **⏳引擎前置**：等 Lead 交付 ① **UINode 唯一 UI-as-data 标准**；② **manifest 成游戏加载入口**；③ **`SoundCue` render-only 音频数据组件**。Lead 会在 requests/handoff 通知就绪。
+1. **UI → UINode 数据**（最大块）：手写 React 屏（`lobby-screen` / `turn-battle-screen` / 各 overlay）逐屏改成 **UINode 布局数据**（事件=信号名、绑定=resourceId、闭集）。先大厅、后战场。**"游戏=数据"兑现最多的一步。**
+2. **流程 → `GameFlow` 数据**：把 `game-g.tsx`/`turn-combat` 里手写的回合阶段调度（放置→结束→推进→掷命→结算）改成挂 `GameFlow{states,transitions}`（用现成 `flow` 能力）。砍手写状态机，顺带给 `flow` 添个真实消费者。
+3. **算点/战斗 → 通用能力**：能用 `poker-hand`/`card-scoring`/`effect-apply` 表达的，**别再用 game-g 私有 `cardPoints`/手写解算**；逐项换，换不掉的留下并标注（供 Lead 评估是否下沉）。
+4. **退役旧战斗核**（= 已立 **`REQ-G-退役旧战斗核`**，见 requests.md）：先抽 `turn-combat ← live-combat` 共享类型解纠缠，再删旧实时核 `live-combat` + 旧屏 `battle-screen` + 死链 `showMatch`；与乙协同。
+5. **⏳引擎 音频 → `SoundCue` 数据**：命令式调 `bgm.ts/sfx.ts` 改成挂 **render-only `SoundCue` 组件**，audio 服务读它播（outcome-first）。让音效也"是数据"，还掉这笔代码债。
+6. **⏳引擎 资产 → `art:`/`assetKey` + 走 manifest 管线**：贴图/音频引用改成数据引用，经 `resolve-art-refs`/`derive-asset-index` 自动出资产清单；从 `.ts` builder 切到 canonical manifest 入口。
+
+**Steam/手柄（你这边几乎零额外代码）**：引擎给服务层，你只需 ① 动作**走现成 Signal**（手柄由引擎适配器喂同一套 Signal，自动兼容）；② 成就/排行用 **`Condition→Effect` 发 cue（数据）**，Steam 服务读 cue 触发——**不写任何平台代码**。
+
+**终态**：game-g = 旗舰级「全数据驱动卡牌」参考样板——sim 是组件数据、UI 是 UINode 数据、流程是 GameFlow 数据、音画是 cue 数据、资产是引用，仅留通用 mount + 消费引擎服务。**它定稿即新游戏标准。**
+
+**不变量（每阶段都守）**：始终可发布、每阶段独立绿可推、outcome-first、`turnHash` 不漂。
+
+---
+
 ## 已完成（✅）
 
 | 块 | 内容 | 证据 |
