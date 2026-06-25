@@ -6,7 +6,7 @@
 
 import { renderNode, renderVListWindow } from './render.js';
 import { SHELL } from '../shell-theme.js';
-import type { LayoutNode, HandlerMap, UITheme, ToastProps, VirtualListProps } from './types.js';
+import type { LayoutNode, HandlerMap, ActionSink, UITheme, ToastProps, VirtualListProps } from './types.js';
 
 /** mountUI 句柄：调用即 teardown（向后兼容）；`.update(newTree, theme?)` 做局部更新（最小 diff）。 */
 export type MountHandle = (() => void) & { update: (root: LayoutNode, theme?: UITheme) => void };
@@ -110,6 +110,7 @@ export function mountUI(
   root: LayoutNode,
   handlers: HandlerMap = {},
   theme: UITheme = SHELL,
+  input?: ActionSink, // 传它 → 无本地 handler 的 action 走信号入队（UI 只发信号·逻辑入 sim 能力层·人/AI 共用动作总线）
 ): MountHandle {
   ensureKeyframes();
   host.innerHTML = renderNode(root, theme);
@@ -137,19 +138,23 @@ export function mountUI(
     if (!el) return;
     const action = el.dataset['action'];
     if (!action) return;
-    const fn = handlers[action];
-    if (!fn) return;
 
+    // 本次动作的参数：change 取控件值（select / checkbox / 文本 input），其余取 data-arg。
+    let arg: string | undefined;
     if (e.type === 'change') {
-      if (el.tagName === 'SELECT') {
-        fn((el as HTMLSelectElement).value);
-      } else if (el.tagName === 'INPUT') {
+      if (el.tagName === 'SELECT') arg = (el as HTMLSelectElement).value;
+      else if (el.tagName === 'INPUT') {
         const inp = el as HTMLInputElement;
-        fn(inp.type === 'checkbox' ? String(inp.checked) : inp.value);
-      }
+        arg = inp.type === 'checkbox' ? String(inp.checked) : inp.value;
+      } else return; // change 只认 select/input
     } else {
-      fn(el.dataset['arg']);
+      arg = el.dataset['arg'];
     }
+
+    // 路由：本地 handler 优先（迁移期旧屏不破）；无 handler + 有 sink → 发信号入队（UI 只发信号·逻辑在 sim 能力层）。
+    const fn = handlers[action];
+    if (fn) { fn(arg); return; }
+    input?.enqueueAction(action, { arg });
   };
 
   // Tabs 切页（抗闪屏·引擎内建·下沉自 game-g 大厅 setTab）：点 [data-tab] → 就地 toggle 页 display + nav 高亮，
@@ -313,7 +318,10 @@ export function mountUI(
     const action = zone.dataset['drop'];
     const payload = dragId ?? (e as DragEvent).dataTransfer?.getData('text/plain') ?? '';
     dragId = null;
-    if (action) { const fn = handlers[action]; if (fn) fn(payload); }
+    if (!action) return;
+    const fn = handlers[action];
+    if (fn) { fn(payload); return; }                // 本地 handler 优先
+    input?.enqueueAction(action, { arg: payload }); // 无 handler + 有 sink → 落点信号 + 被拖 id 作 arg（带参动作走 Signal.arg）
   };
 
   host.addEventListener('click',       dispatch);

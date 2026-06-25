@@ -79,7 +79,8 @@ export const keybindCapability = defineCapability({
           const kb = world.getComponent<KeyBinding>(id, 'KeyBinding')!;
           for (const ev of queue.actions) {
             if (ev.key === kb.key && (kb.phase === undefined || ev.phase === kb.phase)) {
-              world.addComponent(id, { type: 'Signal', name: kb.signal, source: id } as Signal);
+              // arg 透传（带参 UI 动作·如买哪件 card_42）：仅在事件带 arg 时挂，无参动作不挂 arg:undefined（旧内容形状/hash 不变）。
+              world.addComponent(id, { type: 'Signal', name: kb.signal, source: id, ...(ev.arg !== undefined ? { arg: ev.arg } : {}) } as Signal);
               break;
             }
           }

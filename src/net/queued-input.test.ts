@@ -15,6 +15,13 @@ describe('QueuedInputSource — 异步事件按 tick 确定性释放', () => {
 
     expect(src.commandsForTick(3)).toEqual([]); // 已清空
   });
+
+  it('enqueueAction 带 arg → RawInputData.arg（带参 UI 动作进确定性命令流·透传至 Signal.arg）', () => {
+    const src = new QueuedInputSource('p1');
+    src.enqueueAction('buy', { arg: 'card_42' });
+    const cmds = src.commandsForTick(5);
+    expect(cmds[0].actions?.[0]).toMatchObject({ source: 'p1', key: 'buy', phase: 'action', arg: 'card_42' });
+  });
 });
 
 describe('applyCommands — actions 落成单例 InputQueue（零实体增删，Q3）', () => {

@@ -13,9 +13,9 @@ export class QueuedInputSource implements InputSource {
     this.queue.push(data);
   }
 
-  /** 便捷：压入一个语义动作（如选项点击 'choice:2'）。 */
-  enqueueAction(name: string, value?: { x?: number; y?: number }): void {
-    this.queue.push({ source: this.playerId, key: name, x: value?.x, y: value?.y, phase: 'action' });
+  /** 便捷：压入一个语义动作（如选项点击 'choice:2'）。arg=带参动作的字符串参数（买哪件/拖放 id/下拉值），透传进 Signal.arg。 */
+  enqueueAction(name: string, value?: { x?: number; y?: number; arg?: string }): void {
+    this.queue.push({ source: this.playerId, key: name, x: value?.x, y: value?.y, arg: value?.arg, phase: 'action' });
   }
 
   commandsForTick(tick: number): Command[] {

@@ -321,6 +321,17 @@ export type Handler = (arg?: string) => void;
 export type HandlerMap = Record<string, Handler>;
 
 /**
+ * UI 写世界接缝（铁律：写路径收紧成信号）——把 action 信号名 + 可选 arg **enqueue 进 sim 输入队列**，
+ * 而不是在 UI 回调里写自由逻辑。传给 mountUI 后，**无本地 handler** 的 data-action 即走：
+ *   enqueueAction(action,{arg}) → InputQueue{key:action,phase:'action',arg} → keybind 产 Signal{name,arg} → sim 能力按名消费。
+ * 这条就是「UI 只发信号、具体逻辑在 sim 能力层处理」的**人/AI 共用动作总线**：AI 玩家=另一个推同样具名动作的 InputSource。
+ * 形状与 net 的 QueuedInputSource.enqueueAction 同构，但此处不 import net（保 ui/components 解耦）。
+ */
+export interface ActionSink {
+  enqueueAction(name: string, value?: { arg?: string }): void;
+}
+
+/**
  * UI 主题令牌（renderNode/mountUI 取色取字的唯一来源）。
  * 游戏可传自己的一份 → 同一份 LayoutNode 数据换皮（数据驱动·零改解释器）。缺省 = 引擎 SHELL 脸。
  * 红线不变：游戏只填**令牌值**（颜色/字体字符串，最弱 LLM 能填），不写 CSS/DOM。

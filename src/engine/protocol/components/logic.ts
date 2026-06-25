@@ -93,6 +93,7 @@ export interface Signal extends Component {
   readonly type: 'Signal';
   name: string; // 信号名（= EventWhen.signal）
   source: EntityId; // 发出该信号的 EventWhen 实体 id
+  arg?: string; // 可选参数载荷（带参动作用·如「买哪件」card_42）：keybind 从 InputQueue 动作的 arg 透传。无参动作不挂此字段（旧内容形状/hash 不变）。
 }
 
 // ── effect-apply ── Condition→Event→**Effect** 的 Effect 侧：信号在场时施加一个声明式效果。

@@ -68,4 +68,20 @@ describe('keybind — 具名动作 → Signal', () => {
     w.tick();
     expect(sig(w, 'b2')).toBeUndefined();
   });
+
+  it('arg 透传：动作带 arg → Signal{name,arg}（带参 UI 动作通道·UI 发「买哪件」）', () => {
+    const w = world();
+    bind(w, 'b1', { key: 'buy', signal: 'buy' });
+    input(w, [{ source: 'p1', key: 'buy', phase: 'action', arg: 'card_42' }]);
+    w.tick();
+    expect(sig(w, 'b1')).toMatchObject({ name: 'buy', source: 'b1', arg: 'card_42' });
+  });
+
+  it('无 arg 的动作 → Signal 不挂 arg 字段（旧内容形状/hash 不变）', () => {
+    const w = world();
+    bind(w, 'b1', { key: '1', signal: 'cast' });
+    input(w, [{ source: 'p1', key: '1', phase: 'down' }]);
+    w.tick();
+    expect('arg' in sig(w, 'b1')!).toBe(false); // 不写 arg:undefined
+  });
 });

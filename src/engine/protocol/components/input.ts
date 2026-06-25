@@ -31,6 +31,9 @@ export interface RawInputData {
   // 结构化数值载荷（REQ-016/017）：承载列表型输入（如卡牌游戏「出哪几张牌」的牌码 suit*100+rank、菜单多选下标）。
   // 让富输入（不止指针 x/y）也能经确定性命令流注入 → lockstep 安全。
   readonly values?: readonly number[];
+  // 具名动作的字符串参数（带参 UI 动作用·如「买哪件」card_42 / 拖放被拖 id / 下拉所选 value）：
+  // 经确定性命令流注入，keybind 命中后透传进 Signal.arg。区别于 key（=动作名，keybind 匹配的对象）。
+  readonly arg?: string;
 }
 
 // ── 输入队列（单例）── 本 tick 的原始输入事件列表。挂在唯一实体上，每 tick 整体覆写（零实体分配），
