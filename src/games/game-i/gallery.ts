@@ -636,9 +636,23 @@ export const MODULES = [
   { id: 'mod-ui', glyph: '🎛', label: 'UI 控件', desc: '30+ 数据驱动控件 · 换皮', tone: 'accent' as const },
   { id: 'mod-sound', glyph: '🔊', label: '声音', desc: '合成 / 混音 / 立体声 / 混响', tone: 'normal' as const },
   { id: 'mod-input', glyph: '🎮', label: '输入底座', desc: 'RawInput → KeyBinding → 信号', tone: 'normal' as const },
-  { id: 'mod-anim', glyph: '✨', label: '精灵动画', desc: '帧 / 补间（规划中）', tone: 'dim' as const, soon: true },
+  { id: 'mod-anim', glyph: '✨', label: '精灵动画', desc: 'tween 驱动 · Canvas 实时绘制', tone: 'normal' as const },
+  { id: 'mod-ai', glyph: '🧠', label: '游戏 AI', desc: '索敌 / 寻路（规划中）', tone: 'dim' as const, soon: true },
   { id: 'mod-3d', glyph: '🧊', label: '3D 渲染', desc: 'three 投影（规划中）', tone: 'dim' as const, soon: true },
 ];
+
+/** 渲染舞台样例（canvas/three 宿主挂载点）：DOM 壳 + 固定尺寸的 #sim-stage 容器（宿主在其上 init 渲染器）。 */
+function buildSimStage(id: string, title: string, desc: string): LayoutNode {
+  return {
+    type: 'Panel', id: `${id}-mod`, props: { title },
+    layout: { direction: 'column', gap: 12, padding: 16 },
+    children: [
+      { type: 'Label', id: `${id}-desc`, props: { text: desc, color: 'sub', size: 'sm' } },
+      // #sim-stage：宿主在此 init 引擎 CanvasRenderer/ThreeRenderer（canvas 实时绘制·非 DOM）。
+      { type: 'Panel', id: 'sim-stage', props: {}, layout: { width: 656, height: 416, padding: 8 } },
+    ],
+  };
+}
 
 /** 落地页：一块块「积木」拼起来的模块入口（grid 自适应·点 Card 进各自子菜单）。 */
 function buildHub(): LayoutNode {
@@ -706,7 +720,9 @@ function moduleBody(
     case 'mod-ui': return buildUIModule(shop, pick, activeTab, controls);
     case 'mod-sound': return buildSoundPage(controls);
     case 'mod-input': return buildInputLab(input);
-    case 'mod-anim': return comingSoon('anim', '✨ 精灵动画');
+    case 'mod-anim': return buildSimStage('anim', '✨ 精灵动画 · tween 驱动',
+      '下面是引擎 Canvas 渲染器实时绘制：4 个形状由 tween 能力（平移巡逻 / 呼吸缩放 / 匀速自转 / 淡入淡出）驱动，纯蓝图数据、无专属代码。');
+    case 'mod-ai': return comingSoon('ai', '🧠 游戏 AI · 索敌 / 寻路');
     case 'mod-3d': return comingSoon('3d', '🧊 3D 渲染');
     default: return buildHub();
   }

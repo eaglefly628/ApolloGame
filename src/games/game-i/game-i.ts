@@ -18,6 +18,16 @@ import { applyShop, INITIAL_SHOP, type ShopState } from './shop.js';
 import { applyPick, INITIAL_PICK, type PickState } from './pickcards.js';
 import { makeSoundPlayer, CHORDS } from './sounds.js';
 import { applyRawInput, INITIAL_INPUT, resolveSignal, type InputLabState, type RawInputData } from './input-lab.js';
+import { Engine } from '../../runtime/engine.js';
+import { CanvasRenderer } from '@renderer/index.js';
+import type { RendererBackend } from '@engine/core/types.js';
+import type { WorldBlueprint } from '../../assembly/demo.assembly.js';
+import { animBlueprint } from './anim-lab.js';
+
+// 渲染/仿真模块 → 蓝图 + 渲染后端（canvas/three）。进模块时宿主在 #sim-stage 上 init 引擎实时绘制。
+const SIM_MODULES: Record<string, { blueprint: () => WorldBlueprint; backend: 'canvas' | 'three' }> = {
+  'mod-anim': { blueprint: animBlueprint, backend: 'canvas' },
+};
 
 export function mount(container: HTMLElement): () => void {
   // ── 两栏骨架：左画廊（弹性）+ 右事件日志（固定宽）──────────────
@@ -100,6 +110,8 @@ export function mount(container: HTMLElement): () => void {
   let activeTab = 'tab-layout'; // 当前选中的 tab（切页时记住）→ 换皮重挂后重选它（复位停留页 + 逼重绘修黑字）
   let currentModule: string | null = null; // 展台导航：null=落地积木墙；否则进该模块子菜单
   let input: InputLabState = INITIAL_INPUT; // 输入底座样例状态（宿主 DOM 监听喂 RawInput → reducer）
+  // 渲染舞台（第二种宿主）：sim 模块激活时把引擎渲染器挂到 #sim-stage；退出/换皮重挂时拆掉重建。
+  let stage: { engine: Engine; renderer: RendererBackend; module: string; container: HTMLElement } | null = null;
 
   // 声音测试播放器（Web Audio·宿主胶水）。音量/声像/静音/混响全在 controls state。
   const player = makeSoundPlayer();
@@ -201,6 +213,32 @@ export function mount(container: HTMLElement): () => void {
     pad.addEventListener('pointerup', (e) => ptr(e, 'up'));
   }
 
+  // 渲染舞台生命周期：让 #sim-stage 上挂着的引擎渲染器与「当前模块/当前 galleryHost」对齐。
+  // 进 sim 模块且舞台空 → 建 Engine+蓝图+渲染器、start；模块切走/容器换新（换皮重挂）/容器没了 → stop+destroy。
+  // 幂等：每次 render 后调一次。换皮重建 galleryHost 出新 #sim-stage 元素 → 容器变 → 自动拆旧建新。
+  function teardownStage(): void {
+    if (!stage) return;
+    stage.engine.stop();
+    stage.renderer.destroy();
+    stage = null;
+  }
+  function syncStage(): void {
+    if (typeof document === 'undefined' || typeof requestAnimationFrame === 'undefined') return;
+    const want = currentModule ? SIM_MODULES[currentModule] : undefined;
+    const container = want ? galleryHost.querySelector<HTMLElement>('#sim-stage') : null;
+    if (stage && (!want || stage.module !== currentModule || stage.container !== container || !container)) {
+      teardownStage();
+    }
+    if (want && container && !stage) {
+      const engine = new Engine({ tickRate: 60 });
+      engine.load(want.blueprint());
+      const renderer: RendererBackend = new CanvasRenderer({ width: 640, height: 400, background: '#0a0f1e' });
+      engine.attachRenderer(renderer, container);
+      engine.start();
+      stage = { engine, renderer, module: currentModule!, container };
+    }
+  }
+
   // 整体挂载后延后一帧强制重绘：消除部分 GPU 在合成滚动层首帧把文字栅格成「陈旧黑字」的故障
   // （等效用户「点一下」，但时机对——必须晚于首帧黑色绘制，所以用双 rAF；同步切 display 在首帧前跑无效）。
   function nudgeRepaint(): void {
@@ -230,6 +268,7 @@ export function mount(container: HTMLElement): () => void {
   applyPaneTheme(theme());
   renderLog(theme());
   bindInputPad(); // 初次挂载后绑捕获板监听
+  syncStage();    // 初次挂载：若直接进 sim 模块则挂渲染器
   nudgeRepaint(); // 初次挂载
 
   function rerender(themeChanged = false): void {
@@ -248,12 +287,14 @@ export function mount(container: HTMLElement): () => void {
       ui.update(buildTree()); // 局部更新（diff/patch）
     }
     bindInputPad(); // 换皮重挂出新 pad → 重绑；非换皮 pad 不变 → 幂等 no-op
+    syncStage();    // 进/出 sim 模块或换皮换容器 → 对齐渲染舞台
     renderLog(theme());
   }
 
   // ── 卡带 cleanup ─────────────────────────────────────────────
   return () => {
     if (overlayTeardown) overlayTeardown();
+    teardownStage(); // 停引擎循环 + 销毁渲染器
     player.close();
     ui();
     root.remove();
