@@ -26,12 +26,20 @@ import type { WorldBlueprint } from '../../assembly/demo.assembly.js';
 import { animBlueprint } from './anim-lab.js';
 import { aiBlueprint } from './ai-lab.js';
 import { threeBlueprint } from './three-lab.js';
+import { physicsBlueprint } from './physics-lab.js';
+import { combatBlueprint } from './combat-lab.js';
+import { spawnBlueprint } from './spawn-lab.js';
+import { fsmBlueprint } from './fsm-lab.js';
 
 // 渲染/仿真模块 → 蓝图 + 渲染后端（canvas/three）。进模块时宿主在 #sim-stage 上 init 引擎实时绘制。
 const SIM_MODULES: Record<string, { blueprint: () => WorldBlueprint; backend: 'canvas' | 'three' }> = {
   'mod-anim': { blueprint: animBlueprint, backend: 'canvas' },
   'mod-ai': { blueprint: aiBlueprint, backend: 'canvas' },
   'mod-3d': { blueprint: threeBlueprint, backend: 'three' },
+  'mod-physics': { blueprint: physicsBlueprint, backend: 'canvas' },
+  'mod-combat': { blueprint: combatBlueprint, backend: 'canvas' },
+  'mod-spawn': { blueprint: spawnBlueprint, backend: 'canvas' },
+  'mod-fsm': { blueprint: fsmBlueprint, backend: 'canvas' },
 };
 
 export function mount(container: HTMLElement): () => void {

@@ -639,6 +639,10 @@ export const MODULES: ReadonlyArray<{ id: string; glyph: string; label: string; 
   { id: 'mod-anim', glyph: '✨', label: '精灵动画', desc: 'tween 驱动 · Canvas 实时绘制', tone: 'normal' as const },
   { id: 'mod-ai', glyph: '🧠', label: '游戏 AI', desc: '索敌 aggro / 寻路 grid-move', tone: 'normal' as const },
   { id: 'mod-3d', glyph: '🧊', label: '3D 渲染', desc: 'Mesh3D · three 实时渲染', tone: 'normal' as const },
+  { id: 'mod-physics', glyph: '🟢', label: '运动与碰撞', desc: 'motion + overlap + 碰撞响应', tone: 'normal' as const },
+  { id: 'mod-combat', glyph: '⚔️', label: '战斗结算', desc: '命中 → 伤害 → DoT → 死亡', tone: 'normal' as const },
+  { id: 'mod-spawn', glyph: '🎆', label: '生成与寿命', desc: 'spawn → 飞 → 寿命自毁', tone: 'normal' as const },
+  { id: 'mod-fsm', glyph: '🔀', label: '状态机', desc: 'condition → signal → set-state', tone: 'normal' as const },
 ];
 
 /** 渲染舞台样例（canvas/three 宿主挂载点）：DOM 壳 + 固定尺寸的 #sim-stage 容器（宿主在其上 init 渲染器）。 */
@@ -726,6 +730,14 @@ function moduleBody(
       '玩家居中（金圆），五个敌人挂 Perception（索敌 aggro：锁定最近玩家）+ GridMover（寻路 grid-move：hex A* 逐格逼近、到相邻停）。纯蓝图组合现成能力，无专属代码。');
     case 'mod-3d': return buildSimStage('3d', '🧊 3D 渲染 · Mesh3D',
       '引擎 ThreeRenderer 实时渲染：翻面卡 / 翻滚立方 / 倾转薄面，由 tween 转 Transform.rotation 当翻面角驱动。同一份 collectRenderables 换 three 后端即换维度。');
+    case 'mod-physics': return buildSimStage('phys', '🟢 运动与碰撞',
+      'motion-apply（Velocity→Transform 运动学）+ overlap-detect（碰撞检测）+ collision-resolve（按质量推开=碰撞响应）。四物体相向运动、于中心相撞被推开。纯蓝图，无专属代码。');
+    case 'mod-combat': return buildSimStage('combat', '⚔️ 战斗结算',
+      '弹道（Sensor+Hitbox）飞行命中敌人 → trigger-zone → hitbox 扣血 / 挂灼烧 DoT → mortal 判死 → destroy 移除。整条战斗链全是现成能力组合，零游戏代码。');
+    case 'mod-spawn': return buildSimStage('spawn', '🎆 生成与寿命',
+      '发射器 Timer→event-when→caster 周期性从 PrefabLibrary 模板生成粒子，粒子带 Velocity 飞 + Tween 淡出 + Timer 到期 → lifetime 自毁。生成与销毁全数据驱动。');
+    case 'mod-fsm': return buildSimStage('fsm', '🔀 状态机 / 行为',
+      '自由计时器驱动 condition→signal→effect：idle→alert→flee→循环。状态转移（set-state）+ 指示块切换（set-visible）三段全是数据，非代码。');
     default: return buildHub();
   }
 }
