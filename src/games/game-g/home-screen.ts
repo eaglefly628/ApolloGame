@@ -83,10 +83,27 @@ export function buildHomeScreen(view: LobbyView): LayoutNode {
     ],
   };
 
+  // 天罡牌组预览条（原版 felt 下方 deckPreviewPanel）：已入组天罡 chips（名 + 牌力 + P̂）+ 编辑入口。
+  const inDeck = view.tiangangs.filter((j) => j.inDeck);
+  const totalPhat = inDeck.reduce((s, j) => s + (j.phat ?? 0), 0);
+  const deckChips: LayoutNode[] = inDeck.length
+    ? inDeck.map((j) => ({ type: 'Tag', id: `home-tg-${j.id}`,
+        props: { label: `${j.icon ?? '⚡'} ${j.name}${j.power ? ' ' + '⭐'.repeat(Math.min(j.power, 5)) : ''}${j.phat != null ? ' P̂' + j.phat : ''}`, tone: 'accent' } }))
+    : [{ type: 'Label', id: 'home-tg-empty', props: { text: '战库空 · 去「改造坊/牌组」选入天罡牌（≤5）', size: 'xs', color: 'dim' } }];
+  const deckPreview: LayoutNode = {
+    type: 'Panel', id: 'home-deckprev', props: { title: `⚡ 天罡牌组 · ${view.activeDeckName ?? ''}（${inDeck.length}/${view.deckSize ?? 12}${inDeck.length ? ' · 整库 P̂ ' + totalPhat : ''}）` },
+    layout: { direction: 'row', gap: 6, padding: 12, align: 'center' },
+    children: [...deckChips, { type: 'Button', id: 'home-editdeck', props: { label: '✏ 编辑牌组', kind: 'ghost', action: 'tab', actionArg: 'decks' } }],
+  };
+  const herocol: LayoutNode = {
+    type: 'Panel', id: 'home-herocol', props: {}, layout: { direction: 'column', gap: 14, flex: 1 },
+    children: [felt, deckPreview],
+  };
+
   return {
     type: 'Screen', id: 'home-screen', props: { bg: GG_LOBBY_THEME.pageBg },
     layout: { direction: 'row', gap: 16, padding: 16 },
-    children: [felt, rail],
+    children: [herocol, rail],
   };
 }
 
