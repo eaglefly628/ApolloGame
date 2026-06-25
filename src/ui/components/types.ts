@@ -10,7 +10,7 @@ export type ComponentType =
   | 'Table' | 'Tabs' | 'ProgressBar' | 'Tag' | 'Modal' | 'Toast' | 'Tooltip'
   | 'Card' | 'PlayingCard' | 'Stepper' | 'Segmented' | 'Avatar' | 'Accordion'
   | 'Rating' | 'Combobox' | 'Drawer' | 'VirtualList' | 'ContextMenu'
-  | 'CoinFlip' | 'Versus';
+  | 'CoinFlip' | 'Versus' | 'Video';
 
 /** 布局约束：坐标/尺寸/弹性。x/y 触发绝对定位；flex 在父 Panel/Screen 内生效。 */
 export interface LayoutConstraints {
@@ -305,13 +305,20 @@ export interface VersusProps {
   spark?: boolean;                       // 中央火花闪（缺省 true）
 }
 
+// ── Video（视频嵌入·爱诗 AIGP 生成的开场/转场短视频等）：原生 <video>·数据驱动播放。
+// src/poster 为 URL（爱诗句柄 url / 海报）；controls 缺省开；autoplay 自动补 muted（浏览器策略）。纯表现。
+export interface VideoProps {
+  src?: string; poster?: string;
+  controls?: boolean; loop?: boolean; autoplay?: boolean; muted?: boolean;
+}
+
 export type ComponentProps =
   | ButtonProps | LabelProps | DropdownProps | BadgeProps | InputProps | PanelProps
   | CheckboxProps | ToggleProps | RadioGroupProps | ImageProps | ScreenProps | SliderProps
   | TableProps | TabsProps | ProgressBarProps | TagProps | ModalProps | ToastProps | TooltipProps
   | CardProps | PlayingCardProps | StepperProps | SegmentedProps | AvatarProps | AccordionProps
   | RatingProps | ComboboxProps | DrawerProps | VirtualListProps | ContextMenuProps
-  | CoinFlipProps | VersusProps
+  | CoinFlipProps | VersusProps | VideoProps
   | Record<string, never>;
 
 /** LayoutNode = 弱模型填写的 UI 数据单元。type + id + props 必填；layout/children 按需。 */

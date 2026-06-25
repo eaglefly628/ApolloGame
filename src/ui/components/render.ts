@@ -9,7 +9,7 @@ import type {
   TableProps, TableColumn, TabsProps, ProgressBarProps, TagProps, ModalProps, ToastProps, TooltipProps,
   CardProps, PlayingCardProps, StepperProps, SegmentedProps, AvatarProps, AccordionProps,
   RatingProps, ComboboxProps, DrawerProps, VirtualListProps, ContextMenuProps,
-  CoinFlipProps, VersusProps,
+  CoinFlipProps, VersusProps, VideoProps,
 } from './types.js';
 
 const esc = (s: string): string =>
@@ -563,6 +563,17 @@ function renderContextMenu(id: string, p: ContextMenuProps, children: LayoutNode
  * 渲染 LayoutNode → HTML 串。出口处理拖拽声明（draggable/dropZone）：
  * 把 draggable/data-drag/data-drop 注入到元素的开标签（不加包裹层·不破布局），mountUI 收手势。
  */
+// Video：原生 <video> 数据驱动播放（爱诗 AIGP 开场/转场短视频等）。src/poster esc 防属性注入；
+// autoplay 自动补 muted（浏览器自动播放策略）；controls 缺省开。纯表现·无 sim 介入。
+function renderVideo(id: string, p: VideoProps, ls: string, t: UITheme): string {
+  const auto = p.autoplay ? ' autoplay muted' : (p.muted ? ' muted' : '');
+  const flags = `${p.controls === false ? '' : ' controls'}${p.loop ? ' loop' : ''}${auto} playsinline`;
+  const src = p.src ? ` src="${esc(p.src)}"` : '';
+  const poster = p.poster ? ` poster="${esc(p.poster)}"` : '';
+  const style = `display:block;max-width:100%;background:#000;border:1px solid ${t.line};border-radius:10px;${ls}`;
+  return `<video id="${esc(id)}"${src}${poster}${flags} style="${style}"></video>`;
+}
+
 export function renderNode(node: LayoutNode, theme: UITheme = SHELL): string {
   const html = renderDispatch(node, theme);
   const c = node.layout;
@@ -612,6 +623,7 @@ function renderDispatch(node: LayoutNode, theme: UITheme = SHELL): string {
     case 'Drawer':     return renderDrawer(node.id, node.props as DrawerProps, node.children ?? [], ls, t);
     case 'VirtualList':return renderVirtualList(node.id, node.props as VirtualListProps, ls, t);
     case 'ContextMenu':return renderContextMenu(node.id, node.props as ContextMenuProps, node.children ?? [], ls, t);
+    case 'Video':      return renderVideo(node.id, node.props as VideoProps, ls, t);
     default:           return `<!-- unknown: ${String((node as LayoutNode).type)} -->`;
   }
 }

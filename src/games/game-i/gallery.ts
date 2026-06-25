@@ -9,6 +9,7 @@ import { THEME_OPTIONS } from './themes.js';
 import { buildShop, INITIAL_SHOP, type ShopState } from './shop.js';
 import { buildPickHand, INITIAL_PICK, type PickState } from './pickcards.js';
 import { buildInputLab, INITIAL_INPUT, type InputLabState } from './input-lab.js';
+import { buildVideoLab, INITIAL_AISHE, type AisheState } from './video-lab.js';
 import { SOUNDS, BGM } from './sounds.js';
 
 // 自定义画选中态的交互控件值（必须进 state·点击改值 + 局部更新才会动）。
@@ -643,6 +644,7 @@ export const MODULES: ReadonlyArray<{ id: string; glyph: string; label: string; 
   { id: 'mod-combat', glyph: '⚔️', label: '战斗结算', desc: '命中 → 伤害 → DoT → 死亡', tone: 'normal' as const },
   { id: 'mod-spawn', glyph: '🎆', label: '生成与寿命', desc: 'spawn → 飞 → 寿命自毁', tone: 'normal' as const },
   { id: 'mod-fsm', glyph: '🔀', label: '状态机', desc: 'condition → signal → set-state', tone: 'normal' as const },
+  { id: 'mod-video', glyph: '🎬', label: '爱诗视频', desc: 'AIGP 端口 → 竖屏短视频', tone: 'normal' as const },
 ];
 
 /**
@@ -733,12 +735,13 @@ function buildUIModule(shop: ShopState, pick: PickState, activeTab: string, cont
 /** 模块体：按当前模块出对应样例。 */
 function moduleBody(
   currentModule: string, shop: ShopState, pick: PickState, activeTab: string,
-  controls: ControlsState, input: InputLabState,
+  controls: ControlsState, input: InputLabState, aishe: AisheState,
 ): LayoutNode {
   switch (currentModule) {
     case 'mod-ui': return buildUIModule(shop, pick, activeTab, controls);
     case 'mod-sound': return buildSoundPage(controls);
     case 'mod-input': return buildInputLab(input);
+    case 'mod-video': return buildVideoLab(aishe);
     case 'mod-anim': return buildSimStage('anim', '✨', '精灵动画 · tween 驱动',
       '引擎 Canvas 渲染器实时绘制：4 个形状由 tween 能力（平移巡逻 / 呼吸缩放 / 匀速自转 / 淡入淡出）驱动，纯蓝图数据、无专属代码。',
       ['tween', 'transform', 'shape', 'color', 'CanvasRenderer']);
@@ -773,6 +776,7 @@ export function buildGallery(
   activeTheme: string, currentModule: string | null = null, modalOpen = false, drawerOpen = false,
   shop: ShopState = INITIAL_SHOP, pick: PickState = INITIAL_PICK, activeTab = 'tab-layout',
   controls: ControlsState = INITIAL_CONTROLS, input: InputLabState = INITIAL_INPUT,
+  aishe: AisheState = INITIAL_AISHE,
 ): LayoutNode {
   const mod = currentModule ? MODULES.find((m) => m.id === currentModule) : undefined;
   const title = mod ? `${mod.glyph} ${mod.label}` : 'Game I · 底座能力展示台';
@@ -802,7 +806,7 @@ export function buildGallery(
       },
       { type: 'Divider', id: 'top-div', props: {} },
       // 落地积木墙 或 某模块子菜单
-      currentModule ? moduleBody(currentModule, shop, pick, activeTab, controls, input) : buildHub(),
+      currentModule ? moduleBody(currentModule, shop, pick, activeTab, controls, input, aishe) : buildHub(),
       // 模态浮层 / 抽屉按需叠加（满屏遮罩·盖在主界面之上）
       ...(modalOpen ? [modalOverlay] : []),
       ...(drawerOpen ? [drawerOverlay] : []),

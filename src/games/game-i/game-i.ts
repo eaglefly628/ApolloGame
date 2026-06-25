@@ -18,6 +18,8 @@ import { applyShop, INITIAL_SHOP, type ShopState } from './shop.js';
 import { applyPick, INITIAL_PICK, type PickState } from './pickcards.js';
 import { makeSoundPlayer, CHORDS } from './sounds.js';
 import { applyRawInput, INITIAL_INPUT, resolveSignal, type InputLabState, type RawInputData } from './input-lab.js';
+import { INITIAL_AISHE, SAMPLE_PROMPT, type AisheState } from './video-lab.js';
+import { NullAishePort } from '@services/aigp/index.js';
 import { Engine } from '../../runtime/engine.js';
 import { CanvasRenderer } from '@renderer/index.js';
 import { ThreeRenderer } from '@renderer/three-renderer.js';
@@ -123,6 +125,8 @@ export function mount(container: HTMLElement): () => void {
   let activeTab = 'tab-layout'; // 当前选中的 tab（切页时记住）→ 换皮重挂后重选它（复位停留页 + 逼重绘修黑字）
   let currentModule: string | null = null; // 展台导航：null=落地积木墙；否则进该模块子菜单
   let input: InputLabState = INITIAL_INPUT; // 输入底座样例状态（宿主 DOM 监听喂 RawInput → reducer）
+  let aishe: AisheState = INITIAL_AISHE;     // 爱诗视频样例状态（宿主调 AishePort → 句柄）
+  const aishePort = new NullAishePort();     // 占位后端（不发网络·即时 ready 占位句柄）
   // 渲染舞台（第二种宿主）：sim 模块激活时把引擎渲染器挂到 #sim-stage；退出/换皮重挂时拆掉重建。
   let stage: { engine: Engine; renderer: RendererBackend; module: string; container: HTMLElement } | null = null;
 
@@ -154,6 +158,13 @@ export function mount(container: HTMLElement): () => void {
     afterTabSwitch: (tabId) => { if (tabId) activeTab = tabId; nudgeRepaint(); }, // 记住当前 tab + 强制重栅格
     enterModule: (id) => { currentModule = id ?? null; activeTab = 'tab-layout'; rerender(); nudgeRepaint(); }, // 进模块（大换页·逼重绘）
     exitModule: () => { currentModule = null; rerender(); nudgeRepaint(); }, // 退回展台
+    aisheGen: () => { // 爱诗：调 AishePort 生成 → 句柄就绪 → 局部更新（异步旁路·不碰 sim）
+      if (aishe.generating) return;
+      aishe = { ...aishe, generating: true }; rerender();
+      void aishePort.generate(SAMPLE_PROMPT, { aspect: '9:16', seconds: 6 }).then((handle) => {
+        aishe = { handle, generating: false }; rerender();
+      });
+    },
     playSound: (id) => { if (id) player.play(id, { volume: controls.vol / 100, pan: controls.pan / 100 }); },
     playChord: (id) => { player.playChord(CHORDS[id ?? 'major'] ?? CHORDS['major']!, { volume: (controls.vol / 100) * 0.6, pan: controls.pan / 100 }); },
     playPan: (where) => { const pan = where === 'left' ? -1 : where === 'right' ? 1 : 0; player.play('success', { volume: controls.vol / 100, pan }); },
@@ -199,7 +210,7 @@ export function mount(container: HTMLElement): () => void {
   // 非换皮重渲：active 恒为 'tab-layout' 常量 → reconcile 永不替换整个 Tabs（切页态/滚动/输入态全保留）。
   // 换皮重挂：传入当前 activeTab → 直接在停留页上挂出（不闪回首页），再 reselectTab 逼重绘。
   const buildTree = (active = 'tab-layout'): LayoutNode =>
-    resolveBindings(buildGallery(currentTheme, currentModule, false, false, shop, pick, active, controls, input), dataSource);
+    resolveBindings(buildGallery(currentTheme, currentModule, false, false, shop, pick, active, controls, input, aishe), dataSource);
 
   // 输入底座宿主胶水（「运行时职责」）：在捕获板 #input-pad 上挂 DOM 监听 → 造 RawInputData →
   // 喂纯 reducer → 局部更新读数。幂等绑定（dataset 标记）：reconcile 保留同一 pad 元素 → 监听不重复；
