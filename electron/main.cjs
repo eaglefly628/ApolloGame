@@ -21,6 +21,12 @@ ipcMain.on('steam:uploadLeaderboard', (_e, boardId, score) => steam.uploadLeader
 ipcMain.on('steam:setRichPresence', (_e, key, value) => steam.setRichPresence(key, value));
 ipcMain.on('steam:store', () => steam.store());
 
+// Steam 云存储：异步 IO 用 handle/invoke（返回值回渲染进程）。
+ipcMain.handle('steam:cloud:read', (_e, name) => steam.cloudRead(name));
+ipcMain.handle('steam:cloud:write', (_e, name, content) => steam.cloudWrite(name, content));
+ipcMain.handle('steam:cloud:delete', (_e, name) => steam.cloudDelete(name));
+ipcMain.handle('steam:cloud:list', () => steam.cloudList());
+
 function createWindow() {
   const win = new BrowserWindow({
     width: 1280,

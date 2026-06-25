@@ -43,14 +43,23 @@ function init() {
   return status();
 }
 
+function cloudAvailable() { return available && !!(client && client.cloud); }
+
 function status() {
   return {
     available,
+    cloudAvailable: cloudAvailable(),
     appId: APP_ID,
     name: available ? safe(() => client.localplayer.getName(), null) : null,
     error: lastError,
   };
 }
+
+// ── Steam Cloud（Remote Storage）·防御式（API 形态各版本略异，真机 P2 验收坐实）──
+function cloudRead(name)   { return cloudAvailable() ? safe(() => client.cloud.readFile(name), null) : null; }
+function cloudWrite(name, content) { return cloudAvailable() ? !!safe(() => { client.cloud.writeFile(name, content); return true; }, false) : false; }
+function cloudDelete(name) { return cloudAvailable() ? !!safe(() => client.cloud.deleteFile(name), false) : false; }
+function cloudList()       { return cloudAvailable() ? safe(() => (client.cloud.listFiles ? client.cloud.listFiles() : []), []) : []; }
 
 // ── PlatformPort 镜像（全部防御式；不可用即 no-op / 0）─────────────────────
 function unlockAchievement(id) { if (available) safe(() => client.achievement.activate(id)); }
@@ -68,4 +77,5 @@ module.exports = {
   APP_ID, init, status,
   unlockAchievement, clearAchievement, setStat, getStat,
   uploadLeaderboard, setRichPresence, store,
+  cloudAvailable, cloudRead, cloudWrite, cloudDelete, cloudList,
 };

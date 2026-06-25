@@ -22,3 +22,12 @@ contextBridge.exposeInMainWorld('__APOLLO_STEAM__', {
   setRichPresence: (key, value) => ipcRenderer.send('steam:setRichPresence', key, value),
   store: () => ipcRenderer.send('steam:store'),
 });
+
+// Steam 云存储桥（异步文件 IO → ipcRenderer.invoke）。SteamCloudStoragePort 消费此桥。
+contextBridge.exposeInMainWorld('__APOLLO_STEAM_CLOUD__', {
+  available: !!status.cloudAvailable,
+  readFile: (name) => ipcRenderer.invoke('steam:cloud:read', name),
+  writeFile: (name, content) => ipcRenderer.invoke('steam:cloud:write', name, content),
+  deleteFile: (name) => ipcRenderer.invoke('steam:cloud:delete', name),
+  listFiles: () => ipcRenderer.invoke('steam:cloud:list'),
+});

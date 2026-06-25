@@ -3,3 +3,6 @@ export type { StoragePort, SaveGame, SaveMeta } from './storage-port.js';
 export { MemoryStoragePort } from './memory-storage.js';
 export { LocalStorageStoragePort } from './local-storage.js';
 export { SaveSystem } from './save-system.js';
+export { SteamCloudStoragePort } from './steam-cloud-storage.js';
+export { createStoragePort } from './select-storage.js';
+export { createMockSteamCloudBridge, resetMockSteamCloud, type SteamCloudBridge } from './cloud-bridge.js';

@@ -31,7 +31,8 @@
 - [x] **假 Steam 后端（owner 2026-06-25 指派·无真账号长期开发用）** — ✅ `mock-steam.ts`：实现与真桥**同一 `SteamBridge` 契约**的本地假 Steam（假玩家、内存+localStorage 持久化态、幂等成就、排行/统计/富状态、解锁弹 Steam 风格 toast「正常回馈」）。走与真 Steam **同一 `SteamworksPlatformPort` 代码路径**，换真账号零改动。开关：`?steammock=1` / `localStorage['apollo:steam:mock']=1` / `globalThis.__APOLLO_STEAM_MOCK__`。默认关→web 生产仍 Null。
 - [x] **P1 成就直通（数据驱动 + 端到端可见）** — ✅ `achievements.ts` 成就目录=数据（game-g/e/f，各含 *_FIRST_BOOT）；`cartridge-entry.ts` 启动时经 `createPlatformPort()` 上报富状态 + 解锁首启成就（无平台→Null 静默，零副作用）。**Playwright 真机验证**：game-g 单文件 `?steammock=1` 启动 → 控制台 `[steam:mock] unlock GG_FIRST_BOOT` + 右下角弹「🏆 成就解锁」。tsc+vitest(1692)+build 全绿。
       - ⏳ 余：接真 Steam 后台登记同名成就 id（需 owner 真 appid）；game-g 战役胜利点接 `GG_FIRST_WIN`（待 PG 数据化出 Flag 流后接 AchievementSync，或在胜利回调直接 `port.unlockAchievement`）。
-- [ ] **P2 云存档** — `StoragePort` 加 Steam Cloud(remote storage) 适配。验收：删本地存档、重进还在。
+- [x] **P2 云存档（数据驱动 + 假云可验）** — ✅ `storage/steam-cloud-storage.ts`：`SteamCloudStoragePort implements StoragePort`（槽位=云文件 + 索引文件，索引缺失从文件重建；写失败回滚）。`cloud-bridge.ts` 定义 `SteamCloudBridge` 契约 + `createMockSteamCloudBridge()` 假云（内存+localStorage 持久化）。`select-storage.ts` 工厂：真云桥→假云(开关)→LocalStorage→Memory，零分支。Electron 侧 `steam.cjs` 加 `client.cloud` 防御封装 + preload `__APOLLO_STEAM_CLOUD__`(invoke) + main handle。单测 6（往返/索引重建/持久化/工厂）全绿，cloud 降级自检通过。
+      - ⏳ 余：game-g 把 `new SaveSystem(createStoragePort())`（一行消费）接上，存档即走（假/真）云；真机验收需 owner appid。
 - [ ] **P3 富状态 / 排行榜** — `setRichPresence` + `uploadLeaderboard`。验收：好友列表见"正在玩 翻命扑克 第 N 关"。
 - [ ] **P4 上架管线** — `steam_appid` + depot vdf + `scripts/publish-steam.mjs`(steamcmd 上传) + CI。验收：steamcmd 能推到后台测试 depot。
 
