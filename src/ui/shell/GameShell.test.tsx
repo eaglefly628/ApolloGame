@@ -3,7 +3,7 @@ import { renderToString } from 'react-dom/server';
 import React from 'react';
 import { Engine } from '../../runtime/engine.js';
 import { sakuraOtomeTheme } from '../themes/sakura-otome/theme.js';
-import { GameShell, readResource, statDisplay, barFraction, collectButtons, imageSrc } from './GameShell.js';
+import { GameShell, readResource, statDisplay, barFraction, collectButtons, collectDropTargets, imageSrc } from './GameShell.js';
 import type { UILayout, ActionEnqueuer } from './types.js';
 
 // 起一个带具名 Resource 的世界（gold=5/99，hp=30/100）。
@@ -121,5 +121,34 @@ describe('GameShell — image 节点（静态 src / 绑 StringVar 动态 src）'
     const layout: UILayout = { root: { kind: 'image', bind: 'card_face' } };
     const html = renderToString(<GameShell engine={e} layout={layout} theme={sakuraOtomeTheme} resolveAsset={(k) => `/a/${k}.webp`} />);
     expect(html).toContain('/a/guan_yu.webp');
+  });
+});
+
+describe('GameShell — 拖放控件 draggable/dropzone（UI 拖拽 · 守红线：事件=信号名）', () => {
+  it('collectDropTargets：收集 dropzone 信号 + draggable dragId（嵌套递归）', () => {
+    const layout: UILayout = { root: { kind: 'col', children: [
+      { kind: 'draggable', dragId: 'card_3', children: [{ kind: 'text', text: '♣3' }] },
+      { kind: 'dropzone', signal: 'drop_slot', children: [{ kind: 'text', text: '空槽' }] },
+      { kind: 'panel', children: [{ kind: 'draggable', dragId: 'tian_gang_1', children: [{ kind: 'text', text: 'T' }] }] },
+    ] } };
+    expect(collectDropTargets(layout.root)).toEqual({ zones: ['drop_slot'], drags: ['card_3', 'tian_gang_1'] });
+  });
+
+  it('collectButtons 递归进 draggable/dropzone 子节点（嵌套按钮不漏）', () => {
+    const layout: UILayout = { root: { kind: 'dropzone', signal: 'z', children: [
+      { kind: 'draggable', dragId: 'd', children: [{ kind: 'button', label: '移除', signal: 'remove_btn' }] },
+    ] } };
+    expect(collectButtons(layout.root)).toEqual([{ label: '移除', signal: 'remove_btn' }]);
+  });
+
+  it('renderToString：draggable 出可拖属性、dropzone 渲染子节点（不崩）', () => {
+    const layout: UILayout = { root: { kind: 'row', children: [
+      { kind: 'draggable', dragId: 'card_3', children: [{ kind: 'text', text: '♣3' }] },
+      { kind: 'dropzone', signal: 'drop_slot', children: [{ kind: 'text', text: '空槽' }] },
+    ] } };
+    const html = renderToString(<GameShell engine={worldWith()} layout={layout} theme={sakuraOtomeTheme} />);
+    expect(html).toContain('draggable'); // 可拖属性
+    expect(html).toContain('♣3');
+    expect(html).toContain('空槽');
   });
 });

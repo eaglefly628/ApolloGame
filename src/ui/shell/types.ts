@@ -15,7 +15,7 @@ import type { Engine } from '../../runtime/engine.js';
 
 // R3 输入接缝（与 @ui/vn 同款）：UI 把语义动作 enqueue，引擎在 tick 边界确定性消费。
 export interface ActionEnqueuer {
-  enqueueAction(name: string, value?: { x?: number; y?: number }): void;
+  enqueueAction(name: string, value?: { x?: number; y?: number; drag?: string }): void; // drag=被拖元素 dragId（拖放落点信号带它，UI 拖拽控件用）
 }
 
 // 布局节点（闭集）：容器嵌套子节点；叶子绑定 sim（stat/bar）或发信号（button）。
@@ -28,6 +28,8 @@ export type UINode =
   | { kind: 'stat'; bind: string; label?: string; icon?: string } // 数值：读 Resource{id:bind}.current
   | { kind: 'bar'; bind: string; tone?: 'hp' | 'mp' | 'xp' | 'accent' } // 比例条：Resource current/max
   | { kind: 'image'; src?: string; bind?: string; width?: number; height?: number; alt?: string } // 图：src 静态 / bind=StringVar id 动态(取其 value 作 src)
+  | { kind: 'draggable'; dragId: string; children: UINode[] } // 可拖控件：拖起时记 dragId（UI 拖拽，如牌→牌组槽/背包格）
+  | { kind: 'dropzone'; signal: string; children: UINode[] } // 放置区：落下 → enqueueAction(signal,{drag:dragId})；事件仍=信号名（守红线）
   | { kind: 'button'; label: string; signal: string; primary?: boolean; anchor?: string }; // 按钮：点击 → enqueueAction(signal)；anchor=新手引导锚点键
 
 export interface UILayout {

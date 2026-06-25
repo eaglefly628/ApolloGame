@@ -56,12 +56,28 @@ export function collectButtons(node: UINode): Array<{ label: string; signal: str
     case 'col':
     case 'row':
     case 'panel':
+    case 'draggable':
+    case 'dropzone':
       return node.children.flatMap(collectButtons);
     case 'tabs':
       return node.tabs.flatMap((t) => collectButtons(t.content));
     default:
       return [];
   }
+}
+
+// 收集布局里的拖放声明（dropzone 信号 + draggable dragId）：证布局声明正确、与渲染解耦（同 collectButtons）。
+export function collectDropTargets(node: UINode): { zones: string[]; drags: string[] } {
+  const zones: string[] = [];
+  const drags: string[] = [];
+  const walk = (n: UINode): void => {
+    if (n.kind === 'dropzone') zones.push(n.signal);
+    if (n.kind === 'draggable') drags.push(n.dragId);
+    if (n.kind === 'col' || n.kind === 'row' || n.kind === 'panel' || n.kind === 'draggable' || n.kind === 'dropzone') n.children.forEach(walk);
+    else if (n.kind === 'tabs') n.tabs.forEach((t) => walk(t.content));
+  };
+  walk(node);
+  return { zones, drags };
 }
 
 const FONT_SIZE = { sm: 11, md: 14, lg: 22 } as const;
@@ -73,6 +89,7 @@ export function GameShell({ engine, layout, theme, input, resolveAsset }: GameSh
   const world = engine.world;
   const t = theme.tokens;
   const [tab, setTab] = useState(0);
+  const dragRef = React.useRef<string | null>(null); // 当前被拖元素 dragId（dragstart 记 / drop 取，同 shell 内拖放）
 
   const render = (node: UINode, key?: React.Key): React.ReactNode => {
     switch (node.kind) {
@@ -133,6 +150,28 @@ export function GameShell({ engine, layout, theme, input, resolveAsset }: GameSh
           <button key={key} data-anchor={node.anchor} onClick={() => input?.enqueueAction(node.signal)} style={{ padding: '8px 18px', borderRadius: t.borderRadius, border: node.primary ? 'none' : `1px solid ${t.border}`, background: node.primary ? t.accent : t.bg, color: node.primary ? '#fff' : t.text, cursor: 'pointer' }}>
             {node.label}
           </button>
+        );
+      case 'draggable':
+        return (
+          <div key={key} draggable
+            onDragStart={(e) => { dragRef.current = node.dragId; e.dataTransfer?.setData('text/plain', node.dragId); }}
+            onDragEnd={() => { dragRef.current = null; }}
+            style={{ cursor: 'grab' }}>
+            {node.children.map((c, i) => render(c, i))}
+          </div>
+        );
+      case 'dropzone':
+        return (
+          <div key={key}
+            onDragOver={(e) => e.preventDefault()}
+            onDrop={(e) => {
+              e.preventDefault();
+              const d = dragRef.current ?? (e.dataTransfer?.getData('text/plain') || null);
+              if (d) input?.enqueueAction(node.signal, { drag: d }); // 落点 → 信号 + 被拖 dragId（守红线：事件=信号名）
+              dragRef.current = null;
+            }}>
+            {node.children.map((c, i) => render(c, i))}
+          </div>
         );
       default:
         return null;
