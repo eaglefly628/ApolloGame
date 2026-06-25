@@ -1,0 +1,13 @@
+{
+  "appId": "480",
+  "description": "Apollo build v1",
+  "setLive": "",
+  "steamcmd": "steamcmd",
+  "builder": "你的_steam_builder_账号",
+  "game": "game-g",
+  "depots": [
+    { "plat": "win",   "depotId": "", "content": "release/game-g/bin/win-unpacked" },
+    { "plat": "mac",   "depotId": "", "content": "release/game-g/bin/mac" },
+    { "plat": "linux", "depotId": "", "content": "release/game-g/bin/linux-unpacked" }
+  ]
+}

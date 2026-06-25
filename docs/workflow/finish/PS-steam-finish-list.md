@@ -34,7 +34,8 @@
 - [x] **P2 云存档（数据驱动 + 假云可验）** — ✅ `storage/steam-cloud-storage.ts`：`SteamCloudStoragePort implements StoragePort`（槽位=云文件 + 索引文件，索引缺失从文件重建；写失败回滚）。`cloud-bridge.ts` 定义 `SteamCloudBridge` 契约 + `createMockSteamCloudBridge()` 假云（内存+localStorage 持久化）。`select-storage.ts` 工厂：真云桥→假云(开关)→LocalStorage→Memory，零分支。Electron 侧 `steam.cjs` 加 `client.cloud` 防御封装 + preload `__APOLLO_STEAM_CLOUD__`(invoke) + main handle。单测 6（往返/索引重建/持久化/工厂）全绿，cloud 降级自检通过。
       - ⏳ 余：game-g 把 `new SaveSystem(createStoragePort())`（一行消费）接上，存档即走（假/真）云；真机验收需 owner appid。
 - [ ] **P3 富状态 / 排行榜** — `setRichPresence` + `uploadLeaderboard`。验收：好友列表见"正在玩 翻命扑克 第 N 关"。
-- [ ] **P4 上架管线** — `steam_appid` + depot vdf + `scripts/publish-steam.mjs`(steamcmd 上传) + CI。验收：steamcmd 能推到后台测试 depot。
+- [x] **P4 上架管线（一键傻瓜界面）** — ✅ 独立工具 `steam-publisher/`（纯 Python + 网页，同 cartridge-station 风格）。界面四步：① 配置(AppID/各平台 DepotID/builder/steamcmd/选游戏) → 🔨 构建裸目录(electron-builder --dir) → 📝 生成 VDF(app_build+depot·写真 steam_appid.txt) → 🚀 一键发布(steamcmd +run_app_build)，实时日志轮询。自检：server 起动 + /api/state + VDF 生成格式正确（SteamPipe 标准）。
+      - ⏳ 真上传需 owner：合作伙伴账号($100)+真 AppID/DepotID + 装 steamcmd + 后台 Set Live + 登记成就 id/Cloud 配额。工具用占位 480 已跑通编排。
 
 ## 依赖 / 待 owner 提供
 

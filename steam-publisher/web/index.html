@@ -1,0 +1,70 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Steam Publisher — Apollo 一键发布</title>
+<link rel="stylesheet" href="/style.css">
+</head>
+<body>
+<header>
+  <div class="brand">🚀 STEAM PUBLISHER</div>
+  <div class="status" id="statusBar"></div>
+</header>
+
+<main>
+  <section class="panel">
+    <h2>① 配置</h2>
+    <div class="grid">
+      <label>游戏
+        <select id="game"></select>
+      </label>
+      <label>AppID <span class="hint">(480=演练位·换真 AppID)</span>
+        <input id="appId" placeholder="480">
+      </label>
+      <label>构建描述
+        <input id="description" placeholder="Apollo build v1">
+      </label>
+      <label>Set Live 分支 <span class="hint">(留空=只传不上线·推荐)</span>
+        <input id="setLive" placeholder="（留空）">
+      </label>
+      <label>steamcmd 路径/命令
+        <input id="steamcmd" placeholder="steamcmd">
+      </label>
+      <label>Steam builder 账号
+        <input id="builder" placeholder="你的 builder 账号名">
+      </label>
+    </div>
+
+    <h3>各平台 Depot（只填了 DepotID 的才会发布）</h3>
+    <table class="depots">
+      <thead><tr><th>平台</th><th>DepotID</th><th>构建裸目录 (content)</th></tr></thead>
+      <tbody id="depotRows"></tbody>
+    </table>
+    <div class="row">
+      <button id="btnDetect" class="ghost">🔍 探测裸目录</button>
+      <button id="btnSave" class="ghost">💾 保存配置</button>
+    </div>
+  </section>
+
+  <section class="panel">
+    <h2>② 构建 → ③ 生成配置 → ④ 发布</h2>
+    <div class="steps">
+      <button id="btnBuild">🔨 构建裸目录<span class="sub">electron-builder --dir</span></button>
+      <button id="btnGen" class="ghost">📝 生成 VDF<span class="sub">app_build + depot</span></button>
+      <button id="btnLogin" class="ghost">🔑 登录 steamcmd<span class="sub">缓存凭据(首次)</span></button>
+      <button id="btnPublish" class="primary">🚀 一键发布<span class="sub">生成+上传到 Steam</span></button>
+    </div>
+    <p class="warn">⚠️ 真上传需合作伙伴账号 + 真 AppID/DepotID + 已装 steamcmd。上传成功后还要去 Steamworks 后台 <b>Builds → Set Live</b>（Steam 不给 API，防误推）。</p>
+  </section>
+
+  <section class="panel">
+    <h2>实时日志</h2>
+    <pre id="log" class="log">（操作输出显示在这里）</pre>
+  </section>
+</main>
+
+<div id="toast"></div>
+<script src="/app.js"></script>
+</body>
+</html>

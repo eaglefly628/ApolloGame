@@ -1,0 +1,35 @@
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body { font: 14px/1.5 -apple-system, "Segoe UI", "Microsoft YaHei", sans-serif; background: #0e1419; color: #c7d5e0; }
+header { display: flex; align-items: center; justify-content: space-between; padding: 12px 20px;
+  background: linear-gradient(180deg, #1b2838, #16202a); border-bottom: 1px solid #2a475e; position: sticky; top: 0; z-index: 5; }
+.brand { font-weight: 800; font-size: 18px; color: #fff; letter-spacing: .5px; }
+.status { display: flex; gap: 12px; font-size: 12px; }
+.status .ok { color: #6bd968; } .status .bad { color: #e58a8a; }
+main { max-width: 920px; margin: 0 auto; padding: 18px; display: flex; flex-direction: column; gap: 16px; }
+.panel { background: #16202a; border: 1px solid #243441; border-radius: 8px; padding: 16px; }
+h2 { font-size: 15px; color: #fff; margin-bottom: 12px; }
+h3 { font-size: 13px; color: #8f98a0; margin: 16px 0 8px; font-weight: 600; }
+.grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+label { display: flex; flex-direction: column; gap: 4px; font-size: 12px; color: #8f98a0; }
+.hint { color: #5a6b78; font-weight: 400; }
+input, select { background: #0e1419; border: 1px solid #2a475e; color: #c7d5e0; padding: 8px 10px; border-radius: 5px; font-size: 13px; }
+input:focus, select:focus { outline: none; border-color: #4c91d4; }
+table.depots { width: 100%; border-collapse: collapse; }
+table.depots th { text-align: left; font-size: 11px; color: #5a6b78; padding: 4px 6px; font-weight: 600; }
+table.depots td { padding: 4px 6px; }
+table.depots input { width: 100%; }
+.row { display: flex; gap: 10px; margin-top: 12px; }
+.steps { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; }
+button { cursor: pointer; border: none; border-radius: 6px; padding: 10px 12px; font-size: 13px; font-weight: 700;
+  background: #2a475e; color: #fff; display: flex; flex-direction: column; align-items: center; gap: 2px; transition: filter .15s; }
+button:hover { filter: brightness(1.15); }
+button:disabled { opacity: .5; cursor: not-allowed; }
+button .sub { font-size: 10px; font-weight: 400; opacity: .8; }
+button.primary { background: linear-gradient(180deg, #5ba32b, #4a8a1f); }
+button.ghost { background: #243441; }
+.warn { margin-top: 12px; font-size: 12px; color: #d8b36a; background: #2a2418; border: 1px solid #4a3f24; padding: 8px 10px; border-radius: 5px; }
+.log { background: #06090c; border: 1px solid #243441; border-radius: 6px; padding: 12px; height: 320px; overflow: auto;
+  font: 12px/1.5 "SF Mono", Consolas, monospace; color: #9bb0bf; white-space: pre-wrap; word-break: break-all; }
+#toast { position: fixed; right: 18px; bottom: 18px; display: flex; flex-direction: column; gap: 8px; z-index: 9; }
+.t { background: #1b2838; border: 1px solid #2a475e; color: #c7d5e0; padding: 10px 14px; border-radius: 6px; font-size: 13px; box-shadow: 0 4px 16px rgba(0,0,0,.4); }
+.t.err { border-color: #a44; color: #e58a8a; }
