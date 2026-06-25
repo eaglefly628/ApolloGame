@@ -105,6 +105,18 @@ def build_desktop(game_id: str, platforms: list[str]) -> None:
         f"-c.productName={product_name}",
         f"-c.appId={app_id}",
     ])
+    # Mac 产物未公证（无 Apple 账号）→ 别的 Mac 报「已损坏」。把放行说明 + 一键修复脚本
+    # 放到 dmg 旁边，连同 dmg 一起发给对方即可。
+    if "mac" in platforms:
+        import shutil
+        help_src = ROOT / "build" / "mac-open-help"
+        dst = ROOT / out_dir
+        for f in help_src.iterdir():
+            d = dst / f.name
+            shutil.copy2(f, d)
+            if f.suffix == ".command":
+                os.chmod(d, 0o755)
+        print(f"  → 已附带 Mac 放行说明 + 修复脚本到 {out_dir}/")
 
 
 def build_handheld(game_id: str) -> None:

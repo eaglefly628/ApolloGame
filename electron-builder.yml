@@ -14,9 +14,13 @@ directories:
 
 mac:
   category: public.app-category.games
+  # 无 Apple 开发者账号 → 显式 ad-hoc 签名（identity:null），产物是「确定的本地签名」而非半签。
+  # 别的 Mac 仍会因「未公证」被 Gatekeeper 拦（报「已损坏」/「无法验证开发者」），
+  # 对方用「右键→打开」或 `xattr -cr <App>` 放行一次即可（见 release 里的 先读我_MAC放行.txt）。
+  identity: null
   target:
     - target: dmg
-      arch: [arm64]
+      arch: [arm64, x64]   # arm64=Apple 芯片机, x64=Intel Mac；各出一份 dmg，避免对方「装不上/闪退」
 
 win:
   target:
