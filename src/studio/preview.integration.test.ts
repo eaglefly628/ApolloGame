@@ -2,14 +2,14 @@ import { describe, it, expect } from 'vitest';
 import { Engine } from '../runtime/engine.js';
 import type { WorldBlueprint } from '../assembly/demo.assembly.js';
 import { demoBlueprint } from '../assembly/demo.assembly.js';
-import { buildGameABlueprint, LEVEL_SCROLL } from '../games/game-a/index.js';
+import { buildGameFBlueprint } from '../games/game-f/index.js';
 
 // 透视器预览路径的集成保护：把每个真实游戏的蓝图喂进引擎、真的跑 tick、读快照。
 // 这是项目里第一组"蓝图→引擎→运行"的集成测试（此前 SESSION-HANDOFF §4 自审：零集成、
 // 所有游戏蓝图从未在真实 ECS 循环里被 load+tick 过）。透视器的实时预览正是依赖这条路径。
 const cases: Array<[string, () => WorldBlueprint]> = [
   ['demo', () => demoBlueprint],
-  ['game-a', () => buildGameABlueprint(LEVEL_SCROLL)],
+  ['game-f', () => buildGameFBlueprint()],
 ];
 
 describe('数据透视器 · 预览路径集成（每个游戏蓝图 load+tick）', () => {

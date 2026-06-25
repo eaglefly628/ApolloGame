@@ -15,8 +15,6 @@ import {
   type LibraryStatus,
 } from '@assets/index.js';
 import type { ArtLibIndex } from '@assets/artlib.js';
-import { GAME_A_ASSETS } from '../games/game-a/index.js';
-import { GAME_D_ASSETS } from '../games/game-d/assets.js';
 import { GAME_F_ASSETS } from '../games/game-f/assets.js';
 import { JOKER_ART_MANIFEST } from '../games/game-e/assets.js';
 import { SHELL, sBtn, sInput, sSelect, sChip, sLabel, sBadge, sChecker } from '../ui/shell-theme.js';
@@ -36,8 +34,6 @@ import { AssetImportWizard } from './AssetImportWizard.js';
 const CAP = 400; // 网格一次最多渲染数（靠搜索/过滤收窄）
 
 const GAME_MANIFESTS: ReadonlyArray<readonly [string, Parameters<typeof manifestRecords>[1]]> = [
-  ['game-a', GAME_A_ASSETS],
-  ['game-d', GAME_D_ASSETS],
   ['game-e', JOKER_ART_MANIFEST],
   ['game-f', GAME_F_ASSETS],
 ];

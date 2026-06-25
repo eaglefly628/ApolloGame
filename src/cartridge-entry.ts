@@ -3,8 +3,6 @@ import { createPlatformPort, firstBootAchievement } from './services/platform/in
 interface GameModule { mount: (el: HTMLElement) => () => void }
 
 const GAMES: Record<string, { title: string; subtitle: string }> = {
-  'game-a': { title: 'Game A: Co-op Adventure',     subtitle: '双人协作冒险' },
-  'game-d': { title: 'Game D: Diablo-like ARPG',     subtitle: '暗黑类 ARPG 切片' },
   'game-e': { title: 'Game E: Balatro-like',         subtitle: '小丑牌 · 卡牌构建' },
   'game-f': { title: 'Game F: Pixel Three Kingdoms', subtitle: '像素三分天下 · 自走棋' },
   'game-g': { title: 'Game G: Fateflip Poker',       subtitle: '翻命扑克 · 3D 掷命骨架' },
@@ -14,8 +12,6 @@ const GAMES: Record<string, { title: string; subtitle: string }> = {
 // Statically-analyzable import chain — Rollup can DCE dead branches when
 // __TARGET_GAME__ is replaced by a string literal at build time.
 function startLoad(id: string): Promise<GameModule> {
-  if (id === 'game-a') return import('./game-a.js') as Promise<GameModule>;
-  if (id === 'game-d') return import('./game-d.js') as Promise<GameModule>;
   if (id === 'game-e') return import('./game-e.js') as Promise<GameModule>;
   if (id === 'game-f') return import('./games/game-f/game-f.js') as Promise<GameModule>;
   if (id === 'game-g') return import('./games/game-g/game-g.js') as Promise<GameModule>;

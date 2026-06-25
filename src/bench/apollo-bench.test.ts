@@ -1,7 +1,7 @@
 import { describe, it, expect } from 'vitest';
 import { benchBlueprint, BENCH_PASS_THRESHOLD } from './apollo-bench.js';
 import { BENCH_GAMES } from './games.js';
-import { buildGameABlueprint, LEVEL_SCROLL } from '../games/game-a/index.js';
+import { buildGameFBlueprint } from '../games/game-f/index.js';
 import type { WorldBlueprint } from '../assembly/demo.assembly.js';
 
 describe('ApolloBench · 执行落地体检', () => {
@@ -16,16 +16,16 @@ describe('ApolloBench · 执行落地体检', () => {
     });
   }
 
-  it('游戏类型感知：game-a 空间(有 Transform) 且通过体检', () => {
+  it('游戏类型感知：game-f 空间(有 Transform) 且通过体检', () => {
     const byId = (id: string) => BENCH_GAMES.find((g) => g.id === id)!;
-    const a = benchBlueprint('game-a', byId('game-a').build);
+    const a = benchBlueprint('game-f', byId('game-f').build);
     expect(a.spatial).toBe(true);
     expect(a.passed).toBe(true);
   });
 
   it('能识别坏游戏：NaN 炸裂(物理失稳) → Numeric 0 → 不通过', () => {
     const broken = (): WorldBlueprint => {
-      const bp = buildGameABlueprint(LEVEL_SCROLL);
+      const bp = buildGameFBlueprint();
       for (const comps of Object.values(bp.entities)) {
         const t = (comps as Record<string, { x?: number } | undefined>).Transform;
         if (t) t.x = NaN;

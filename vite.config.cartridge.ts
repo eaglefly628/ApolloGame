@@ -7,9 +7,9 @@ const targetGame = process.env.VITE_TARGET_GAME ?? 'game-f';
 
 // 每个游戏的真名（用于把 cartridge.html 的 <title> 从 "Apollo OS" 换成游戏名）。
 const GAME_TITLES: Record<string, string> = {
-  'game-a': '双人协作冒险', 'game-b': '乙游视觉小说', 'game-c': '缝纫物语 · 换装三消',
-  'game-d': '暗黑类 ARPG 切片', 'game-e': '小丑牌 · 卡牌构建',
+  'game-e': '小丑牌 · 卡牌构建',
   'game-f': '像素三分天下 · 自走棋', 'game-g': '翻命扑克 · 3D 掷命骨架',
+  'game-i': '控件测试场 · 数据驱动 UI',
 };
 function setTitlePlugin() {
   const title = GAME_TITLES[targetGame] ?? targetGame;

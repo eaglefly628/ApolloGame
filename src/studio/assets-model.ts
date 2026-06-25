@@ -1,6 +1,5 @@
 import type { WorldBlueprint } from '../assembly/demo.assembly.js';
 import type { AssetIndex } from '@assets/index.js';
-import { GAME_A_ASSETS } from '../games/game-a/index.js';
 import { JOKER_ART_FILES, JOKER_ART_MISSING, jokerArtKey } from '../games/game-e/assets.js';
 import { JOKER_CATALOG } from '../games/game-e/index.js';
 
@@ -8,7 +7,6 @@ import { JOKER_CATALOG } from '../games/game-e/index.js';
 //  资产透视 · 统一模型 (Asset Browser model — pure, no DOM/React)
 //
 //  把每个游戏"这局要哪些美术、填了没、谁在用"摊成一份统一 StudioAsset[]：
-//   · game-a → GAME_A_ASSETS 声明清单(内联 SVG 占位)，usedBy 扫蓝图 textureKey。
 //   · game-e → 小丑牌(JOKER_CATALOG)真美术切图 + 额外参考素材。
 //   · 其它   → 通用扫描 textureKey/clipId。
 //  再和 assets/index.json 对照，让 tbf/filled 状态权威。供 UI 做分类/收缩/搜索/双击定位。
@@ -28,33 +26,6 @@ export interface StudioAsset {
   /** 双击定位目标：实体 id（可跳数据树）或场景 id（game-b，仅展示）。 */
   usedBy: string[];
   variants?: string[];
-}
-
-function entitiesReferencing(bp: WorldBlueprint, key: string): string[] {
-  const ids: string[] = [];
-  for (const [eid, comps] of Object.entries(bp.entities)) {
-    for (const data of Object.values(comps as Record<string, unknown>)) {
-      const d = data as Record<string, unknown>;
-      if (d.textureKey === key || d.clipId === key) ids.push(eid);
-    }
-  }
-  return ids;
-}
-
-function gameAAssets(bp: WorldBlueprint): StudioAsset[] {
-  return GAME_A_ASSETS.map((a) => {
-    const dims = a.kind === 'texture' ? `${a.width ?? '?'}×${a.height ?? '?'}` : a.kind;
-    const sizeTag = a.kind === 'texture' ? `${a.width ?? 0}x${a.height ?? 0}` : a.kind;
-    return {
-      id: a.key,
-      type: a.kind,
-      name: a.key,
-      description: `内联 SVG 占位 · ${dims}`,
-      status: 'placeholder' as StudioAssetStatus,
-      tags: ['inline-svg', a.kind, sizeTag],
-      usedBy: entitiesReferencing(bp, a.key),
-    };
-  });
 }
 
 const CARD_DIR = 'assets/FreeArtLib/cardgame/card';
@@ -176,9 +147,6 @@ export function studioAssets(
 ): StudioAsset[] {
   let list: StudioAsset[];
   switch (gameId) {
-    case 'game-a':
-      list = gameAAssets(bp);
-      break;
     case 'game-e':
       list = gameEAssets();
       break;

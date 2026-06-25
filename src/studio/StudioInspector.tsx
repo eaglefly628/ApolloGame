@@ -7,25 +7,8 @@ import type { WorldSnapshot } from '@engine/core/types.js';
 import { getCameraView } from '@engine/protocol/camera-view.js';
 import type { WorldBlueprint } from '../assembly/demo.assembly.js';
 import { demoBlueprint } from '../assembly/demo.assembly.js';
-import {
-  buildGameABlueprint,
-  LEVEL_SCROLL,
-  KEYMAP_A,
-  KEYMAP_B,
-  PLAYER_A,
-  PLAYER_B,
-  VIEWPORT_W,
-  VIEWPORT_H,
-  GAME_A_ASSETS,
-} from '../games/game-a/index.js';
 import { buildGameEBlueprint } from '../games/game-e/index.js';
 import { buildGameFBlueprint, GAME_F_ASSETS } from '../games/game-f/index.js';
-import {
-  buildGameDBlueprint,
-  GAME_D_ASSETS,
-  VIEWPORT_W as GAME_D_VW,
-  VIEWPORT_H as GAME_D_VH,
-} from '../games/game-d/index.js';
 import {
   inspectBlueprint,
   blueprintStats,
@@ -48,7 +31,7 @@ import { resolveEdits, parseCommand } from './edit-resolve.js';
 //  左：引擎实时预览(画布) + 实时世界状态读出 + 启用能力 + 「能配啥」schema 参考 + 资产透视
 //  右：搜索 + 域分类(单位/棋盘/经济/UI…) 的完整数据树(可改每个字段) ｜ 顶：游戏选择 + 统计 + 导出
 //  改字段 → 改的是初始数据 → 点"重跑"用新数据从 t=0 重启 → 看涌现/手感变化。
-//  覆盖全部游戏(A/B/C/D/E/F)。分类导航见 categorize.ts —— 复杂游戏(game-f 上百实体)按域可读。
+//  覆盖在产游戏(E/F)。分类导航见 categorize.ts —— 复杂游戏(game-f 上百实体)按域可读。
 // ═══════════════════════════════════════════════════════════════
 
 interface PreviewInput {
@@ -69,26 +52,6 @@ interface GameDef {
 }
 
 const GAMES: GameDef[] = [
-  {
-    id: 'game-a',
-    title: 'Game A · 协作平台(卷轴)',
-    build: () => buildGameABlueprint(LEVEL_SCROLL),
-    viewport: { w: VIEWPORT_W, h: VIEWPORT_H },
-    inputHint: '点击画布聚焦后键盘试玩 —— 蓝 A：A/D 移动 · Space 跳　｜　橙 B：←/→ 移动 · / 跳',
-    makeInput: (target) => {
-      const sources = [
-        new KeyboardInputSource(PLAYER_A, target, KEYMAP_A),
-        new KeyboardInputSource(PLAYER_B, target, KEYMAP_B),
-      ];
-      return { input: new MultiInputSource(sources), dispose: () => sources.forEach((s) => s.dispose()) };
-    },
-    makeAssets: () => {
-      const a = new AssetManager(new ImageAssetLoader());
-      a.registerManifest(GAME_A_ASSETS);
-      void a.loadAll();
-      return a;
-    },
-  },
   { id: 'game-e', title: 'Game E · Balatro 小丑牌', build: () => buildGameEBlueprint() },
   {
     id: 'game-f',
@@ -99,18 +62,6 @@ const GAMES: GameDef[] = [
     makeAssets: () => {
       const a = new AssetManager(new ImageAssetLoader());
       a.registerManifest(GAME_F_ASSETS);
-      void a.loadAll();
-      return a;
-    },
-  },
-  {
-    id: 'game-d',
-    title: 'Game D · 暗黑 ARPG',
-    build: () => buildGameDBlueprint(),
-    viewport: { w: GAME_D_VW, h: GAME_D_VH },
-    makeAssets: () => {
-      const a = new AssetManager(new ImageAssetLoader());
-      a.registerManifest(GAME_D_ASSETS);
       void a.loadAll();
       return a;
     },

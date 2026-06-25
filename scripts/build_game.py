@@ -27,10 +27,6 @@ DIST_DIR = ROOT / "dist-cartridge"
 CONFIG = "vite.config.cartridge.ts"
 
 GAMES: list[tuple[str, str]] = [
-    ("game-a", "Game A: Co-op Adventure   · 双人协作冒险"),
-    ("game-b", "Game B: Otome VN          · 乙游视觉小说"),
-    ("game-c", "Game C: Stitch & Style    · 缝纫物语 · 换装三消"),
-    ("game-d", "Game D: Diablo-like ARPG  · 暗黑类 ARPG 切片"),
     ("game-e", "Game E: Balatro-like      · 小丑牌 · 卡牌构建"),
     ("game-f", "Game F: Pixel 3 Kingdoms  · 像素三分天下 · 自走棋"),
     ("game-g", "Game G: Fateflip Poker    · 翻命扑克 · 3D 掷命骨架"),

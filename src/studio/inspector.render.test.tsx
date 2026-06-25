@@ -7,7 +7,7 @@ import { studioAssets } from './assets-model.js';
 import { inspectBlueprint } from './inspect.js';
 import { parseManifest } from '../assembly/manifest.js';
 import type { WorldBlueprint } from '../assembly/demo.assembly.js';
-import { buildGameABlueprint, LEVEL_SCROLL } from '../games/game-a/index.js';
+import { buildGameFBlueprint } from '../games/game-f/index.js';
 import { demoBlueprint } from '../assembly/demo.assembly.js';
 
 // 回归：透视器曾因 game-a 的可选字段 Tween.loops=undefined → kindOf 落 'json' →
@@ -17,12 +17,12 @@ import { demoBlueprint } from '../assembly/demo.assembly.js';
 //   ② 不变式：任何"值缺省(undefined/null)"的字段都不能被判成 'json'（否则 JSON.stringify→undefined）。
 
 const GAMES: Array<[string, () => WorldBlueprint]> = [
-  ['game-a', () => buildGameABlueprint(LEVEL_SCROLL)],
+  ['game-f', () => buildGameFBlueprint()],
   ['demo', () => demoBlueprint],
 ];
 
 describe('数据透视器 · 渲染回归', () => {
-  it('StudioInspector(默认 game-a) renderToString 不抛异常', () => {
+  it('StudioInspector(默认 game-e) renderToString 不抛异常', () => {
     const html = renderToString(<StudioInspector onBack={() => {}} />);
     expect(html.length).toBeGreaterThan(0);
   });

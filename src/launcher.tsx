@@ -52,16 +52,6 @@ interface CmdResult {
 
 const GAMES: GameEntry[] = [
   {
-    id: 'game-a',
-    title: 'Game A: Co-op Adventure',
-    subtitle: '双人协作冒险',
-    description: '双人成行风格卷轴合作平台跳跃：两人携手穿越大关卡、合作相机跟随、踩升降台，到右端会合通关。',
-    color: '#1e3a2f',
-    accentColor: '#4ade80',
-    icon: '🤝',
-    status: 'playable',
-  },
-  {
     id: 'game-e',
     title: 'Game E: Balatro-like',
     subtitle: '小丑牌 · 卡牌构建',
@@ -69,16 +59,6 @@ const GAMES: GameEntry[] = [
     color: '#1a1020',
     accentColor: '#f59e0b',
     icon: '🃏',
-    status: 'playable',
-  },
-  {
-    id: 'game-d',
-    title: 'Game D: Diablo-like ARPG',
-    subtitle: '暗黑类 ARPG 切片',
-    description: '纯数据装配的暗黑类切片：WASD 移动，1/2/3 释放冰霜新星(冻)/碎冰重锤(对冰冻怪真伤)/烈焰(灼烧 DoT)。怪会追你、冻=定身、杀死掉落。AI/技能/战斗全由通用能力涌现，零 ARPG 专属代码。',
-    color: '#2a1118',
-    accentColor: '#ef4444',
-    icon: '⚔️',
     status: 'playable',
   },
   {
@@ -99,16 +79,6 @@ const GAMES: GameEntry[] = [
     color: '#10212a',
     accentColor: '#22d3ee',
     icon: '🎴',
-    status: 'playable',
-  },
-  {
-    id: 'game-h',
-    title: 'Game H: Blackjack',
-    subtitle: '二十一点 · 传统纸牌',
-    description: '经典 21 点纸牌游戏：玩家与庄家对赌，目标手牌总和接近 21 点不超出。纯数据驱动：蓝图装配 4 个原子能力，点数计算与胜负判定由 React 组件实现。庄家 AI 全自动（17 点站住）。',
-    color: '#1a2634',
-    accentColor: '#4ade80',
-    icon: '💰',
     status: 'playable',
   },
   {
@@ -662,12 +632,9 @@ function GameRunner({ gameId, onBack }: { gameId: string; onBack: () => void }) 
     if (!containerRef.current) return;
     // mount 第二参 host（可选·向后兼容）：把壳层「退出到游戏库」钩子传给游戏，让游戏可把退出收进自己的设置菜单（owner 2026-06-21）。
     const loaders: Record<string, () => Promise<{ mount: (el: HTMLElement, host?: { exit: () => void }) => () => void }>> = {
-      'game-a': () => import('./game-a.js'),
       'game-e': () => import('./game-e.js'),
-      'game-d': () => import('./game-d.js'),
       'game-f': () => import('./games/game-f/game-f.js'),
       'game-g': () => import('./games/game-g/game-g.js'),
-      'game-h': () => import('./game-h.js'),
       'game-i': () => import('./games/game-i/game-i.js'),
     };
     const loader = loaders[gameId];
