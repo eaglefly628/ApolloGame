@@ -39,6 +39,29 @@ describe('UI Components · mountUI().update 局部更新', () => {
     expect(host.innerHTML).toContain('#ff0000');
   });
 
+  it('焦点保护：update 改聚焦 Input 的 value 时不销毁重建（保焦点/光标）', () => {
+    const host = document.createElement('div');
+    document.body.appendChild(host);
+    const tree = (v: string): LayoutNode => ({
+      type: 'Panel', id: 'root', props: {}, children: [
+        { type: 'Input', id: 'in', props: { value: v, action: 'set' } },
+      ],
+    });
+    const handle = mountUI(host, tree('a'));
+    const inp = host.querySelector('#in') as HTMLInputElement;
+    (inp as HTMLElement & { _mark?: string })._mark = 'keep';
+    inp.focus();
+    expect(document.activeElement).toBe(inp);
+
+    handle.update(tree('ab')); // value 变（受控输入·像每次按键）
+
+    const after = host.querySelector('#in') as HTMLInputElement & { _mark?: string };
+    expect(after._mark).toBe('keep');           // 同一 DOM 实例（未重建）
+    expect(after.value).toBe('ab');             // 值已就地覆写
+    expect(document.activeElement).toBe(after);  // 焦点仍在
+    host.remove();
+  });
+
   it('teardown 仍可直接调用（向后兼容）', () => {
     const host = document.createElement('div');
     const handle = mountUI(host, tree('x', 1));

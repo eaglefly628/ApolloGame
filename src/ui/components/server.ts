@@ -40,11 +40,34 @@ function uiChildKeysSame(a: LayoutNode, b: LayoutNode): boolean {
   for (let i = 0; i < ak.length; i++) if (ak[i]!.id !== bk[i]!.id || ak[i]!.type !== bk[i]!.type) return false;
   return true;
 }
+/**
+ * 焦点保护：若将被销毁重建的子树里含当前焦点的输入元素（Input/Combobox 的 <input>），
+ * 用「就地覆写 value/属性」替代 outerHTML 重建——保住焦点/光标/IME 组合态。返回是否已就地处理。
+ */
+function patchFocusedInput(el: HTMLElement, newN: LayoutNode): boolean {
+  if (typeof document === 'undefined') return false;
+  const active = document.activeElement;
+  if (!active || !(el === active || el.contains(active))) return false;
+  if (active.tagName !== 'INPUT' && active.tagName !== 'TEXTAREA' && active.tagName !== 'SELECT') return false;
+  // 仅同步可控值，不动焦点元素本身的结构。
+  const p = newN.props as { value?: string | number; placeholder?: string };
+  if (newN.type === 'Input' && el === active) {
+    const inp = el as HTMLInputElement;
+    if (p.value !== undefined && inp.value !== String(p.value)) inp.value = String(p.value);
+    if (p.placeholder !== undefined) inp.placeholder = String(p.placeholder);
+    return true;
+  }
+  // Combobox 等：焦点在内部 input → 保守跳过本帧重建（避免毁焦点），下次失焦再整体对齐。
+  return true;
+}
+
 /** 把 newN 最小化打补丁到 scope 内 id=newN.id 的元素上（与 oldN 比较）。 */
 function reconcileNode(scope: ParentNode, oldN: LayoutNode, newN: LayoutNode, theme: UITheme): void {
   const el = uiFindById(scope, newN.id);
   if (!el) return; // 上层未变才会递进到此；找不到则跳过（安全）
   if (!uiOwnSame(oldN, newN) || !uiChildKeysSame(oldN, newN)) {
+    // 焦点在内的输入元素：就地覆写值，不销毁重建（保焦点/光标/IME）。
+    if (patchFocusedInput(el, newN)) return;
     el.outerHTML = renderNode(newN, theme); // 自身或子集变了 → 整体替换这棵最浅子树
     return;
   }

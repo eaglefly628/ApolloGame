@@ -10,6 +10,25 @@
 
 ## 待处理 / 进行中
 
+### REQ-UI-Gemini评审 · [2026-06-26] · Lead 评审（UI 库域·外部 Gemini code review 收敛） · status: **部分 done（C2/C3 已实现）· 余回驳/记录** · 类型: 架构评审收敛
+
+> 用户把 UI 代码打包给 Gemini review，回 7 条建议。Lead 逐条以宣言尺子评判，不照单全收：
+>
+> **✅ 接受并已实现（本提交）：**
+> - **C2 样式注入硬化**：`render.ts layoutStyle` 直接插 `c.x/width/anim…` 进 style 串，弱模型/外部数据运行时可能是恶意字符串 → CSS 注入。**真安全缺口**。加 `num()` 数值强制 + anim 白名单(`ANIM_PRESETS`)。配 XSS 测试。
+> - **C3 焦点丢失**：`server.ts` reconcile 用 outerHTML 重建会毁聚焦 Input 的焦点/光标/IME。**真缺口**（受控输入每次按键重建即失焦）。加 `patchFocusedInput`：焦点在内的输入元素就地覆写 value、不重建。配焦点保护测试。
+>
+> **🟡 接受为后续优化（记录·暂未做·待真实用例）：**
+> - **A2 bind Fast-Path**：帧级(60fps)绑定（血条/倒计时）走完整 diff→重建有 GC 压力。建议 bind 标量变化绕过 renderNode 直接改 DOM 属性。**合理**，但现有 reconcile 已只替换变化子树（非全树）；game-i 暂无帧级绑定。待 game-f/g HUD 真用到再下沉。
+>
+> **❌ 回驳（附理由）：**
+> - **A1 统一用 layout-solver 求绝对坐标、HTML 后端弃 CSS flex**：fix 方向错。CSS flex/grid/文本换行/原生滚动/无障碍是 HTML 后端的**优势**（浏览器免费干重活），改成 JS 绝对定位是巨复杂度倒退。跨平台像素级对齐**非需求**（Web 为主、小游戏为辅，目标是「同数据两端能跑」非「逐像素一致」）。YAGNI。需要局部对齐处已可用 x/y 绝对定位。
+> - **A3 引入 FSM 承载 DnD/长按/多点触控时序态**：前提误读。DnD 的时序态（dragId）已在**解释器**(mountUI 闭包)里，不在「纯函数」。纯函数约束是对**游戏数据/能力**，非引擎解释器。复杂手势若需要，按 dnd 先例**下沉为定向解释器特性**即可；通用 FSM 层无现用例，YAGNI。
+> - **C1 LayoutConstraints 拆 absolute/flex 判别联合类型**：理论更纯，但代价巨大——**所有游戏的 layout 数据**都要加判别字段迁移；且现 `layoutStyle` 对 x/y 与 flex 共存是**确定性优先级**处理(x/y→absolute 优先)，不崩。为理论纯度毁整个数据契约不值。改为**文档注明互斥与优先级**即可。
+> - **C4 actionArg 支持 Record 结构化上下文**：「传 id + handler 从 state 取完整对象」是**标准且更干净**的做法(shop/pickcards 已这么做)，非退化。JSON-in-attribute 增复杂度、收益小。回驳（manifesto §4 重组）。
+>
+> **边界**：C2/C3 本提交已做（src/ui·Lead 域）；A2 记录待用例；A1/A3/C1/C4 回驳留档。
+
 ### REQ-UI-数字补间 / 富文本 · [2026-06-23] · Lead 登记（UI 库域·game-g 迁移撞到再排） · status: **open（候选下沉·待排期）** · 类型: 真能力缺口候选（manifesto 尺子已过·暂未实现）
 
 > **缘起**：写 `apollo-ui-migration-guide.md` 时复核库现状，3 游戏迁移仍会撞到两项**可数据化、且复用**的缺口（其余如 3D/SVG/hex/WorldFollower 已回驳为单游戏或世界渲染·见指南 §4）。先登记，game-g 迁到此处再由 Lead 下沉，**游戏层勿硬写**。

@@ -23,6 +23,18 @@ describe('UI Components · 声明式 transform / anim', () => {
     const zone = renderNode({ type: 'Panel', id: 'bin', props: {}, layout: { dropZone: 'dropHere' }, children: [] });
     expect(zone).toMatch(/^<div data-drop="dropHere"/);
   });
+
+  it('XSS/CSS 注入硬化：恶意 layout 数值/anim 不进 style 串', () => {
+    // 弱模型/外部数据运行时塞字符串型恶意值（类型谎称 number/string）
+    const bad = renderNode({
+      type: 'Badge', id: 'x', props: { text: 'x' },
+      layout: ({ x: '0;background:url(http://evil)', width: '99px;position:fixed', anim: 'evil"></style>' } as never),
+    });
+    expect(bad).not.toContain('evil');            // 恶意片段被挡
+    expect(bad).not.toContain('url(');
+    expect(bad).toContain('left:0px');            // 非法数值降级为 0
+    expect(bad).not.toContain('animation:apollo-evil'); // 非白名单 anim 不渲染
+  });
 });
 
 describe('UI Components · mountUI 拖放（HTML5 DnD·引擎内建）', () => {

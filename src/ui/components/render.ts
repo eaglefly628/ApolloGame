@@ -14,23 +14,31 @@ import type {
 const esc = (s: string): string =>
   String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
 
+// 数值强制：layout 数值字段虽类型标 number，但弱模型/外部数据运行时可能是字符串
+// （如 "0;background:url(x)"）→ 直接插进 style 串即 CSS 注入。统一过 num() 只取有限数字。
+const num = (v: unknown, d = 0): number => { const n = Number(v); return Number.isFinite(n) ? n : d; };
+// anim 预设白名单（mountUI 注入的关键帧名）：拒绝任意字符串插入 animation。
+const ANIM_PRESETS = new Set(['fadeIn', 'slideUp', 'pop', 'shake', 'dealIn', 'flyIn']);
+
 function layoutStyle(c?: LayoutConstraints): string {
   if (!c) return '';
   const p: string[] = [];
-  if (c.x !== undefined) { p.push(`left:${c.x}px`); p.push(`top:${c.y ?? 0}px`); p.push('position:absolute'); }
-  else if (c.y !== undefined) { p.push(`top:${c.y}px`); p.push('position:absolute'); }
-  if (c.width   !== undefined) p.push(`width:${c.width}px`);
-  if (c.height  !== undefined) p.push(`height:${c.height}px`);
-  if (c.flex    !== undefined) p.push(`flex:${c.flex}`);
-  if (c.padding !== undefined) p.push(`padding:${c.padding}px`);
-  if (c.margin  !== undefined) p.push(`margin:${c.margin}px`);
+  if (c.x !== undefined) { p.push(`left:${num(c.x)}px`); p.push(`top:${num(c.y)}px`); p.push('position:absolute'); }
+  else if (c.y !== undefined) { p.push(`top:${num(c.y)}px`); p.push('position:absolute'); }
+  if (c.width   !== undefined) p.push(`width:${num(c.width)}px`);
+  if (c.height  !== undefined) p.push(`height:${num(c.height)}px`);
+  if (c.flex    !== undefined) p.push(`flex:${num(c.flex)}`);
+  if (c.padding !== undefined) p.push(`padding:${num(c.padding)}px`);
+  if (c.margin  !== undefined) p.push(`margin:${num(c.margin)}px`);
   // Transform（旋转/缩放）：声明式数据 → CSS transform。扇形手牌/选中放大等。
   const tf: string[] = [];
-  if (c.rotate !== undefined) tf.push(`rotate(${c.rotate}deg)`);
-  if (c.scale  !== undefined) tf.push(`scale(${c.scale})`);
+  if (c.rotate !== undefined) tf.push(`rotate(${num(c.rotate)}deg)`);
+  if (c.scale  !== undefined) tf.push(`scale(${num(c.scale)})`);
   if (tf.length) p.push(`transform:${tf.join(' ')}`);
-  // 动画：具名关键帧预设（mountUI 注入 keyframes）。注意 anim 与 rotate/scale 共用 transform，二选一。
-  if (c.anim) p.push(`animation:apollo-${c.anim} ${c.animMs ?? 360}ms ${c.animDelay ? `${c.animDelay}ms ` : ''}both ease-out`);
+  // 动画：仅允许白名单预设名（mountUI 注入 keyframes）；时长/延迟强制为数字。
+  if (c.anim && ANIM_PRESETS.has(c.anim)) {
+    p.push(`animation:apollo-${c.anim} ${num(c.animMs, 360)}ms ${c.animDelay ? `${num(c.animDelay)}ms ` : ''}both ease-out`);
+  }
   if (c.draggable) p.push('cursor:grab');
   return p.join(';');
 }
