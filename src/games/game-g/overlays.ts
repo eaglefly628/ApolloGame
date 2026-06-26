@@ -8,7 +8,7 @@
 import { mountUI } from '@ui/components/index.js';
 import type { LayoutNode, HandlerMap } from '@ui/components/index.js';
 import { GG_LOBBY_THEME } from './ui-theme.js';
-import { GACHA, RECHARGE_PACKS, rechargeTotal, DIAMOND_EXCHANGES, STORY_OPENING, type StoryBeat } from './blueprint.js';
+import { GACHA, RECHARGE_PACKS, rechargeTotal, DIAMOND_EXCHANGES, DIZHI_SHARD_PACKS, STORY_OPENING, type StoryBeat } from './blueprint.js';
 import { luckyFromVal } from './lobby-overlays.js'; // 纯函数复用（卦值→吉凶档）
 import type { LuckyRoll } from './lobby-util.js';
 import type { LobbyView } from './lobby-screen.js';
@@ -76,9 +76,11 @@ function settingsModal(view: LobbyView): LayoutNode {
   };
 }
 
-// ── 商城 Drawer（Tabs 抽卡/皮肤/钱包）──────────────────────────
-function shopDrawer(view: LobbyView, st: OverlayState): LayoutNode {
+// ── 商城 Modal（照抄原版居中弹窗·Tabs 抽卡/皮肤/钱包）─────────────
+function shopModal(view: LobbyView, st: OverlayState): LayoutNode {
   const dia = view.diamond ?? 0;
+  const tShards = view.tiangangShards ?? 0;
+  const shards = view.dizhiShards ?? 0;
   const drawBtn = (pool: 'tiangang' | 'dizhi', count: 1 | 10, pay: 'gold' | 'diamond'): LayoutNode => {
     const g = GACHA[pool];
     const cost = pay === 'gold' ? (count === 10 ? g.tenGold : g.singleGold) : (count === 10 ? g.tenDiamond : g.singleDiamond);
@@ -103,21 +105,31 @@ function shopDrawer(view: LobbyView, st: OverlayState): LayoutNode {
     props: { label: `💎${rechargeTotal(p)} · ¥${p.price}${p.tag ? ' · ' + p.tag : ''}`, kind: 'ghost', action: 'rechargeBuy', actionArg: p.id } }));
   const exBtns: LayoutNode[] = DIAMOND_EXCHANGES.map((x) => ({ type: 'Button', id: `shop-ex-${x.id}`,
     props: { label: `🪙${x.gold} ← 💎${x.diamond}`, kind: 'ghost', action: 'exchangeBuy', actionArg: x.id } }));
+  const shardBtns: LayoutNode[] = DIZHI_SHARD_PACKS.map((x) => ({ type: 'Button', id: `shop-shard-${x.id}`,
+    props: { label: `🧩${x.shards} ← 💎${x.diamond}${x.tag ? ' · ' + x.tag : ''}`, kind: 'ghost', action: 'shardBuy', actionArg: x.id } }));
   const walletPage: LayoutNode = { type: 'Panel', id: 'shop-wallet', props: {}, layout: { direction: 'column', gap: 8 },
     children: [
       { type: 'Label', id: 'wallet-rc-h', props: { text: '充值 · 越充越送（Demo·点即到账）', size: 'sm', color: 'gold', bold: true } },
       { type: 'Panel', id: 'wallet-rc', props: {}, layout: { direction: 'grid', minCol: 130, gap: 6 }, children: packBtns },
-      { type: 'Label', id: 'wallet-ex-h', props: { text: '兑换金币 · 💎 → 🪙', size: 'sm', color: 'gold', bold: true } },
+      { type: 'Label', id: 'wallet-ex-h', props: { text: '兑换金币 · 💎 → 🪙（改造坊通用材料）', size: 'sm', color: 'gold', bold: true } },
       { type: 'Panel', id: 'wallet-ex', props: {}, layout: { direction: 'grid', minCol: 130, gap: 6 }, children: exBtns },
+      { type: 'Label', id: 'wallet-shard-h', props: { text: '兑换地支碎片 · 💎 → 🧩（养地支专属材料）', size: 'sm', color: 'gold', bold: true } },
+      { type: 'Panel', id: 'wallet-shard', props: {}, layout: { direction: 'grid', minCol: 130, gap: 6 }, children: shardBtns },
     ] };
   return {
-    type: 'Drawer', id: 'shop-drawer', props: { side: 'right', title: '🛒 商城', closeAction: 'closeOverlay' },
+    type: 'Modal', id: 'shop-modal', props: { title: '🛒 商城', size: 'lg', closeAction: 'closeOverlay' },
     children: [{
-      type: 'Panel', id: 'shop-body', props: {}, layout: { direction: 'column', gap: 8, padding: 4 },
+      type: 'Panel', id: 'shop-body', props: { bare: true }, layout: { direction: 'column', gap: 8, padding: 0 },
       children: [
-        { type: 'Label', id: 'shop-bal', props: { text: `🪙 ${view.coin}　💎 ${dia}　🧩 ${view.dizhiShards ?? 0}`, size: 'sm', color: 'sub' } },
+        { type: 'Panel', id: 'shop-bal', props: { bare: true }, layout: { direction: 'row', gap: 14, align: 'center', padding: 0 }, children: [
+          { type: 'Label', id: 'shop-bal-coin', props: { text: `🪙 ${view.coin}`, size: 'sm', color: 'text' } },
+          { type: 'Label', id: 'shop-bal-dia', props: { text: `💎 ${dia}`, size: 'sm', color: 'sub' } },
+          { type: 'Label', id: 'shop-bal-tsh', props: { text: `🔶 ${tShards} 天罡碎片`, size: 'sm', color: 'warn' } },
+          { type: 'Label', id: 'shop-bal-dsh', props: { text: `🧩 ${shards} 地支碎片`, size: 'sm', color: 'warn' } },
+        ] },
         { type: 'Tabs', id: 'shop-tabs', props: { tabs: [{ id: 'gacha', label: '🎴 抽卡' }, { id: 'foil', label: '✨ 皮肤' }, { id: 'wallet', label: '💎 钱包' }], active: st.shopTab, action: 'shopTab' },
           children: [gachaPage, foilPage, walletPage] },
+        { type: 'Button', id: 'shop-done', props: { label: '完成 →', kind: 'primary', action: 'closeOverlay' } },
       ],
     }],
   };
@@ -188,7 +200,7 @@ export function buildOverlay(view: LobbyView, st: OverlayState): LayoutNode | nu
   switch (st.open) {
     case 'help': return helpModal(st);
     case 'settings': return settingsModal(view);
-    case 'shop': return shopDrawer(view, st);
+    case 'shop': return shopModal(view, st);
     case 'lucky': return luckyModal(st.lucky);
     case 'story': return storyModal(STORY_OPENING, st.storyIdx);
     default: return null;
