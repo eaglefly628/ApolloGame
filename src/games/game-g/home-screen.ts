@@ -30,42 +30,54 @@ export function buildHomeScreen(view: LobbyView): LayoutNode {
     ],
   };
 
-  // 漂浮对决牌：A♠ 白牌(左倾) · 掷 emblem · 牌背(右倾)——原 bespoke 绿呢旋转卡，现用 PlayingCard(light)+layout.rotate 复刻。
+  // 漂浮对决牌（对齐 Designer comp）：外层 Panel 做垂直 float、内层 PlayingCard 做静态 rotate+scale——
+  // 嵌套组合规避「apollo-float 纯 translateY 会盖掉同层 rotate」：外浮内倾，牌持续上下浮且保持倾斜。
+  const tiltFloat = (id: string, cardProps: Record<string, unknown>, rot: number): LayoutNode => ({
+    type: 'Panel', id: `${id}-fl`, props: { bare: true }, layout: { anim: 'float', padding: 0 },
+    children: [{ type: 'PlayingCard', id, props: cardProps as never, layout: { rotate: rot, scale: 1.15 } }],
+  });
   const duel: LayoutNode = {
-    type: 'Panel', id: 'home-duel', props: { bare: true }, layout: { direction: 'row', gap: 4, align: 'center', padding: 0 },
+    type: 'Panel', id: 'home-duel', props: { bare: true }, layout: { direction: 'row', gap: 14, align: 'center', padding: 0 },
     children: [
-      { type: 'PlayingCard', id: 'duel-a', props: { rank: 'A', suit: '♠', face: 'light', size: 'lg' }, layout: { rotate: -9, anim: 'float' } },
+      tiltFloat('duel-a', { rank: 'A', suit: '♠', face: 'light', size: 'lg' }, -9),
       { type: 'Button', id: 'duel-roll', props: { label: '掷', kind: 'primary', action: 'lucky' }, layout: { anim: 'glow' } },
-      { type: 'PlayingCard', id: 'duel-back', props: { rank: 'A', suit: '♠', face: 'light', faceUp: false, back: '❖', size: 'lg' }, layout: { rotate: 9, anim: 'float' } },
+      tiltFloat('duel-back', { rank: 'A', suit: '♠', face: 'light', faceUp: false, back: '❖', size: 'lg' }, 9),
     ],
   };
 
-  // 绿呢牌桌（felt）：bg=var(--felt) + vignette 暗角；今日卦象 + 标题 + 花色标 + 对决牌 + 对决线 + sheen 出征 CTA + 手册。
+  // 绿呢牌桌（felt·对齐 Designer comp 命运牌桌）：标题左上 + 花色标右上 / 中部今日卦象+漂浮对决牌 / 底部出征 CTA+手册。
+  // justify:between 三段分布（头顶/中央/底），消除原先全居中导致的标题居中偏差。
   const felt: LayoutNode = {
     type: 'Panel', id: 'home-felt', props: { bg: 'var(--felt)', vignette: true },
-    layout: { direction: 'column', align: 'center', justify: 'around', gap: 10, padding: 28, flex: 1 },
+    layout: { direction: 'column', align: 'stretch', justify: 'between', gap: 12, padding: 28, flex: 1 },
     children: [
-      { type: 'Button', id: 'home-fortune',
-        props: { label: keptFortune != null ? `🎴 今日卦象 · ${keptFortune}` : '🎴 掷今日卦象', kind: 'ghost', action: 'lucky' } },
-      { type: 'Label', id: 'home-title',
-        props: { text: c ? `第 ${c.stage} 关 · ${c.battle}` : '戏牌师', size: 'xl', color: 'gold', bold: true } },
-      { type: 'Label', id: 'home-sub',
-        props: { text: c ? `执掌命运之人 · 挑战被诅咒的 ${c.boss}` : view.stageLabel, size: 'sm', color: 'sub' } },
-      stags,
-      duel,
-      { type: 'Label', id: 'home-duelline',
-        props: { text: c ? `⚔ 对决 ${c.boss} · ${c.oneLiner}` : '掷命之牌', size: 'xs', color: 'dim' } },
-      { type: 'Button', id: 'home-play',
-        props: { label: c ? `⚔ 出征 · 第 ${c.stage} 关` : `⚔ 出征 · ${view.rankText}`, kind: 'hero',
-          sub: c ? `挑战 ${c.boss} · ${c.battle} · 难度 ${stars}` : 'DEPLOY · 单人战役 vs AI 庄家', action: 'play' } },
-      { type: 'Button', id: 'home-man', props: { label: '📖 玩法手册', kind: 'ghost', action: 'man' } },
+      { type: 'Panel', id: 'home-header', props: { bare: true }, layout: { direction: 'row', align: 'start', gap: 10, padding: 0 },
+        children: [
+          { type: 'Panel', id: 'home-titlecol', props: { bare: true }, layout: { direction: 'column', gap: 2, flex: 1 },
+            children: [
+              { type: 'Label', id: 'home-title', props: { text: c ? `第 ${c.stage} 关 · ${c.battle}` : '戏牌师', size: 'xl', color: 'gold', bold: true } },
+              { type: 'Label', id: 'home-sub', props: { text: c ? `执掌命运之人 · 挑战被诅咒的 ${c.boss}` : view.stageLabel, size: 'sm', color: 'sub' } },
+            ] },
+          stags,
+        ] },
+      { type: 'Panel', id: 'home-center', props: { bare: true }, layout: { direction: 'column', align: 'center', gap: 10, padding: 0 },
+        children: [
+          { type: 'Button', id: 'home-fortune', props: { label: keptFortune != null ? `🎴 今日卦象 · ${keptFortune}` : '🎴 掷今日卦象', kind: 'ghost', action: 'lucky' } },
+          duel,
+          { type: 'Label', id: 'home-duelline', props: { text: c ? `⚔ 对决 ${c.boss} · ${c.oneLiner}` : '掷命之牌', size: 'xs', color: 'dim' } },
+        ] },
+      { type: 'Panel', id: 'home-bottom', props: { bare: true }, layout: { direction: 'column', align: 'center', gap: 8, padding: 0 },
+        children: [
+          { type: 'Button', id: 'home-play', props: { label: c ? `⚔ 出征 · 第 ${c.stage} 关` : `⚔ 出征 · ${view.rankText}`, kind: 'hero',
+            sub: c ? `挑战 ${c.boss} · ${c.battle} · 难度 ${stars}` : 'DEPLOY · 单人战役 vs AI 庄家', action: 'play' } },
+          { type: 'Button', id: 'home-man', props: { label: '📖 玩法手册', kind: 'ghost', action: 'man' } },
+        ] },
     ],
   };
 
-  // 右栏·Boss 情报 + 地煞（明牌可破）。每张地煞 = Tooltip(说明) 裹一张 Card。
+  // 右栏·Boss 情报 + 地煞（明牌可破）。地煞 = 满宽 Card（去掉先前的 Tooltip inline-flex 包裹·那会让卡收缩成内容宽→有长有短）。
   const fiendNodes: LayoutNode[] = (c?.fiends ?? []).map((fd, i) => ({
-    type: 'Tooltip', id: `home-fiend-${i}`, props: { content: fd.desc, placement: 'left' },
-    children: [{ type: 'Card', id: `home-fiend-c-${i}`, props: { title: `🎴 ${fd.name}`, sub: fd.desc, tone: 'normal' } }],
+    type: 'Card', id: `home-fiend-${i}`, props: { title: `🎴 ${fd.name}`, sub: fd.desc, tone: 'normal' },
   }));
   const rail: LayoutNode = {
     type: 'Panel', id: 'home-rail', props: { title: `⚔ 本关 Boss · ${c?.boss ?? '—'}` },
