@@ -146,7 +146,7 @@ export function AssetLibrary({ onBack }: { onBack: () => void }) {
   const typeDef = LIBRARY_TAXONOMY.find((t) => t.type === type);
 
   return (
-    <div style={{ position: 'absolute', inset: 0, background: SHELL.bg0, color: SHELL.text, display: 'flex', flexDirection: 'column', fontFamily: SHELL.fontUi }}>
+    <div style={{ position: 'absolute', inset: 0, background: SHELL.appBg, color: SHELL.text, display: 'flex', flexDirection: 'column', fontFamily: SHELL.fontUi }}>
       {/* ── 工具栏 ── */}
       <div style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '10px 16px', borderBottom: `1px solid ${SHELL.line}`, background: 'rgba(10,14,23,0.95)', flexWrap: 'wrap' }}>
         <span style={{ fontSize: 15, fontWeight: 700, color: SHELL.violet, whiteSpace: 'nowrap' }}>🗃 资源库</span>

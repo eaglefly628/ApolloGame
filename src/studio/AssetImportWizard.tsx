@@ -352,7 +352,7 @@ export function AssetImportWizard({
     : effectiveRows.filter((r) => r.action === 'import' || r.action === 'rename').length;
 
   return (
-    <div style={{ position: 'absolute', inset: 0, background: SHELL.bg0, color: SHELL.text, display: 'flex', flexDirection: 'column', fontFamily: SHELL.fontUi }}>
+    <div style={{ position: 'absolute', inset: 0, background: SHELL.appBg, color: SHELL.text, display: 'flex', flexDirection: 'column', fontFamily: SHELL.fontUi }}>
       {/* 标题 + 步骤条 */}
       <div style={{ padding: '12px 20px', borderBottom: `1px solid ${SHELL.line}`, display: 'flex', alignItems: 'center', gap: 16, flexWrap: 'wrap' }}>
         <span style={{ fontWeight: 700, fontSize: 14, color: SHELL.violet }}>📥 导入资产</span>

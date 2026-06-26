@@ -748,7 +748,7 @@ function Launcher() {
   return (
     <div style={{
       minHeight: '100vh',
-      background: SHELL.pageBg,
+      background: SHELL.appBg, // Apollo Kit 玄铁贴图底（owner 2026-06-25·替原 pageBg 纯渐变）
       display: 'flex',
       flexDirection: 'column',
       alignItems: 'center',

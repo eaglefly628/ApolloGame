@@ -13,6 +13,11 @@ import type { CSSProperties } from 'react';
 //  规则：壳层组件一律从此取色/取样式，不再各自内联色值。
 // ═══════════════════════════════════════════════════════════════
 
+// Apollo Kit 玄铁 onyx 贴图底（owner 2026-06-25：引擎 chrome 换 Apollo Kit 脸）。程序化纹理·零资产。
+const APOLLO_APPBG  = 'radial-gradient(120% 120% at 50% -8%, #1d2d42 0%, #0f1b29 55%, #070e17 100%)'; // 径向底色
+const APOLLO_TEXTURE = 'repeating-linear-gradient(45deg, rgba(135,175,215,.05) 0 1px, transparent 1px 9px), repeating-linear-gradient(-45deg, rgba(135,175,215,.04) 0 1px, transparent 1px 9px)'; // 钢蓝斜向交叉细纹
+const APOLLO_WASH    = 'radial-gradient(120% 85% at 28% 8%, rgba(82,120,158,.22), transparent 55%), radial-gradient(100% 80% at 88% 100%, rgba(8,14,24,.5), transparent 55%)'; // 左上提亮 + 右下压暗
+
 export const SHELL = {
   // 底色（由深到浅四级）
   bg0: '#06080d',
@@ -21,6 +26,9 @@ export const SHELL = {
   bg3: '#151c2e',
   /** 页面大背景渐变 */
   pageBg: 'linear-gradient(180deg, #06080d 0%, #0b1120 100%)',
+  /** 引擎页面贴图底（Apollo Kit 玄铁 onyx 分层合成：wash , 纹理 , 径向底色）。launcher/Studio 等 React chrome 根背景用它。
+   *  刻意只做这一个合成字段、不设 SHELL.texture/wash——否则会污染 renderNode 默认主题、给所有默认数据 Screen 平添贴图（非本需求）。 */
+  appBg: `${APOLLO_WASH}, ${APOLLO_TEXTURE}, ${APOLLO_APPBG}`,
 
   // 发丝线
   line: 'rgba(154,170,196,0.10)',
