@@ -94,8 +94,8 @@ const GAMES: GameEntry[] = [
   {
     id: 'game-h',
     title: 'Game H: Climb Together',
-    subtitle: '是男人就上100层 · 双人合作',
-    description: '双人合作攀爬塔：锯齿平台往上跳，相机自动跟两人并缩放保证都在画面，两人都登顶过关。协作=踩队友头借力跳更高处（站在已着地队友身上也算着地→能起跳，零专属代码）。lockstep 联机：再开一个本游戏标签页即第 2 位玩家。世界与 HUD 全数据驱动（HUD 走 LayoutNode），方块小人精灵动画。',
+    subtitle: '你造我塔 · 双人合作攀爬',
+    description: '没人能爬自己的路——你踩住开关，对方的「青色幻影台」才实体化；于是交替二重奏：我撑开关给你搭路、你上去再回头给我搭，塔在配合中长出来。还能踩队友头借力。相机自动框住两人，两人都登顶过关。lockstep 联机：再开一个本游戏标签页即第 2 位玩家。世界 + HUD 全数据驱动（HUD 走 LayoutNode），方块小人精灵动画。（参考 Pico Park 用身体当机关 + NS-SHAFT 平台有个性）',
     color: '#0f1830',
     accentColor: '#3b82f6',
     icon: '🧗',
