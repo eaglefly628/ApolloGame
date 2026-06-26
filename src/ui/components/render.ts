@@ -319,11 +319,12 @@ function renderTable(id: string, p: TableProps, ls: string, t: UITheme): string 
 // children 顺序对齐 tabs；data-tab/data-tabpage/data-tabs 是 mountUI 切页的锚点。
 function renderTabs(id: string, p: TabsProps, children: LayoutNode[], ls: string, t: UITheme): string {
   const active = p.active ?? p.tabs[0]?.id ?? '';
-  const navBtn = (tb: { id: string; label: string }): string => {
+  const navBtn = (tb: { id: string; label: string; anchor?: string }): string => {
     const on = tb.id === active;
     const act = p.action ? ` data-action="${esc(p.action)}" data-arg="${esc(tb.id)}"` : '';
+    const anchor = tb.anchor ? ` data-anchor="${esc(tb.anchor)}"` : ''; // 新手引导锚点：spotlight 到具体页签按钮（REQ-UI-Tabs每页签锚点）
     const style = `padding:7px 14px;font-size:12px;cursor:pointer;background:none;outline:none;font-family:${t.fontUi};border:none;border-bottom:2px solid ${on ? t.gold : 'transparent'};color:${on ? t.gold : t.sub};transition:all .15s`;
-    return `<button data-tab="${esc(tb.id)}"${act} style="${style}">${esc(tb.label)}</button>`;
+    return `<button data-tab="${esc(tb.id)}"${act}${anchor} style="${style}">${esc(tb.label)}</button>`;
   };
   const nav = `<div style="display:flex;gap:4px;border-bottom:1px solid ${t.line};flex-wrap:wrap">${p.tabs.map(navBtn).join('')}</div>`;
   const pages = p.tabs.map((tb, i) => {

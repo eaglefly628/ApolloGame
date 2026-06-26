@@ -199,7 +199,7 @@ export interface TableProps { columns: TableColumn[]; rows: TableRow[]; title?: 
 //    （抗闪屏内建·下沉自 game-g 大厅 setTab 定点刷新；解决"切页重建 52 网格/跳滚动"一类 bug 一次）。 ──
 // LayoutNode.children = 各页内容（顺序对齐 tabs：tabs[i] ↔ children[i]）。
 // active = 当前页 id（缺省第一页）；action = 切页额外回调（可选·core 切换由引擎做、无需游戏处理）。
-export interface TabsProps { tabs: { id: string; label: string }[]; active?: string; action?: string }
+export interface TabsProps { tabs: { id: string; label: string; anchor?: string }[]; active?: string; action?: string } // tab.anchor=该页签 nav 按钮的新手引导锚点(→ data-anchor·spotlight 到具体页签·REQ-UI-Tabs每页签锚点)
 
 // ── ProgressBar（纯展示比例条·血/蓝/经验/进度）：区别于可拖的 Slider。value/max → 填充宽度；tone 取主题令牌。──
 // max 缺省 1（value 当 0..1 比例）；showValue=true 右上显示 百分比(max=1) 或 value/max。纯展示·无事件。

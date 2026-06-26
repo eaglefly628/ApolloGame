@@ -21,7 +21,7 @@
 >   建议：① `LayoutConstraints` grid `cols:N`（固定列数·覆盖 auto-fill）；② PlayingCard `fluid`（width:100% 充满父格 + 维持 5:7 aspect-ratio·替代固定档）。
 > PG 侧已做近似（grid minCol 122 + size lg → ~6 列大卡），但**卡填不满格子→有空隙**、且无翻面；需此 2 能力才能真·一模一样（owner 2026-06-26 点名空隙问题）。
 
-### REQ-UI-Tabs每页签锚点 · [2026-06-26] · PG 同步（UI 库域·新手指导接线撞到） · status: **open（PG→主程·小加法）** · 类型: 真能力缺口（不可重组）
+### REQ-UI-Tabs每页签锚点 · [2026-06-26] · PG 同步（UI 库域·新手指导接线撞到） · status: **✅ done（主程 2026-06-26·`tabs[i].anchor` → nav 按钮 data-anchor·`tabs-anchor.test.ts`）** · 类型: 真能力缺口（不可重组）
 
 > game-g 新手指导 coachmark 接线时撞到：Tabs 控件渲染自己的页签按钮，game 层无法给**单个页签按钮**加 `data-anchor`（layout.anchor 只能加在整个 Tabs 节点上）。导致引导步②(导航「我的牌组」)、④(牌组子页签「天罡战法」)、⑥(导航「大厅」)**能推进但无法高亮**那颗页签按钮。
 > 现状规避：这 3 步靠 action 信号推进（nav/deckTab Tabs 都带 action），引导流程完整不卡；只是缺高亮气泡。
