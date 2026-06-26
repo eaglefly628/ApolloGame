@@ -43,7 +43,7 @@ function buildEnchantDetail(view: LobbyView, idx: number): LayoutNode {
     }
     if (!any) kids.push({ type: 'Label', id: 'ench-pick-none', props: { text: '卡包里没有地支了 · 去「🛒商城」抽卡获取', size: 'xs', color: 'dim' } });
   }
-  return { type: 'Panel', id: 'ench-detail', props: { title: '附魔详情', scroll: true }, layout: { direction: 'column', gap: 6, padding: 12, width: 320 }, children: kids };
+  return { type: 'Panel', id: 'ench-detail', props: { title: '附魔详情' }, layout: { direction: 'column', gap: 6, padding: 12 }, children: kids };
 }
 
 // ── 左·地支附魔台（52 牌 ench 卡格 + 详情）──────────────────────
@@ -57,20 +57,21 @@ function enchantPanel(view: LobbyView, craftSel: string): LayoutNode {
     const sel = craftSel === String(idx);
     // 保真：用 PlayingCard 原语（真扑克牌面 + 英雄立绘 + 名将名 + favor·镶嵌数 value + 选中金边）。
     return { type: 'PlayingCard', id: `ench-c-${idx}`,
-      props: { rank, suit: su, label: hero?.name, value: n ? `${fv}·🀄${n}` : String(fv),
+      props: { rank, suit: su, label: hero?.name, value: n ? `${fv}·🀄${n}` : String(fv), fluid: true,
         art: hero ? heroPortraitUri(su as Suit, hero.era, rank, hero.rar) : undefined,
         selected: sel, action: 'craftSel', actionArg: String(idx) } };
   }));
-  const grid: LayoutNode = { type: 'Panel', id: 'ench-grid', props: { bare: true, scroll: true }, layout: { direction: 'grid', minCol: 76, gap: 6, padding: 8, flex: 1 }, children: cards };
+  // 13 列 × 4 花色行（对齐原版 .ench-grid{repeat(13,1fr)}）+ fluid 卡填满格·零空隙。卡按花色主序生成→每花色自占一行。
+  const grid: LayoutNode = { type: 'Panel', id: 'ench-grid', props: { bare: true }, layout: { direction: 'grid', cols: 13, gap: 6, padding: 8 }, children: cards };
   const detail: LayoutNode = (craftSel !== '' && deck[+craftSel] !== undefined)
     ? buildEnchantDetail(view, +craftSel)
-    : { type: 'Panel', id: 'ench-detail', props: { title: '附魔详情' }, layout: { width: 320, padding: 12 },
-        children: [{ type: 'Label', id: 'ench-detail-empty', props: { text: '← 选一张牌，给它镶地支附魔（消耗卡包·镶一张少一张·真提升 favor）', size: 'sm', color: 'dim' } }] };
+    : { type: 'Panel', id: 'ench-detail', props: { title: '附魔详情' }, layout: { padding: 12 },
+        children: [{ type: 'Label', id: 'ench-detail-empty', props: { text: '↑ 选一张牌，给它镶地支附魔（消耗卡包·镶一张少一张·真提升 favor）', size: 'sm', color: 'dim' } }] };
   return {
     type: 'Panel', id: 'craft-ench', props: { title: `🔨 地支牌 · 生肖镶嵌（附魔）· ≤${INLAY_MAX} 槽` }, layout: { direction: 'column', gap: 8, padding: 10, flex: 1 },
     children: [
       { type: 'Label', id: 'ench-note', props: { text: `铜 +${DIZHI_INLAY_FAVOR[1]} / 银 +${DIZHI_INLAY_FAVOR[2]} / 金 +${DIZHI_INLAY_FAVOR[3]} favor · 消耗品：镶一张少一张 · 真提升战力。`, size: 'xs', color: 'sub' } },
-      { type: 'Panel', id: 'ench-row', props: { bare: true }, layout: { direction: 'row', gap: 12, flex: 1 }, children: [grid, detail] },
+      { type: 'Panel', id: 'ench-row', props: { bare: true }, layout: { direction: 'column', gap: 12 }, children: [grid, detail] },
     ],
   };
 }
@@ -88,7 +89,7 @@ function tiangangShelf(view: LobbyView): LayoutNode {
   });
   return {
     type: 'Panel', id: 'craft-shelf', props: { title: '⚡ 天罡牌 · 购买（局内法术·买入后到「牌组」屏编入）', scroll: true },
-    layout: { direction: 'column', gap: 8, padding: 10, width: 360 },
+    layout: { direction: 'column', gap: 8, padding: 10 },
     children: [
       { type: 'Label', id: 'shelf-note', props: { text: '花金币买入天罡牌（解锁后入「拥有」）·关未到可花 💎 速解（跳 grind）。', size: 'xs', color: 'sub' } },
       { type: 'Panel', id: 'shelf-grid', props: { bare: true }, layout: { direction: 'grid', minCol: 160, gap: 8 }, children: cards },
@@ -98,9 +99,10 @@ function tiangangShelf(view: LobbyView): LayoutNode {
 
 /** 改造坊屏内容 → LayoutNode（纯数据）。craftSel 给附魔台选中牌（缺省 ''=未选）。 */
 export function buildCraftScreen(view: LobbyView, craftSel = ''): LayoutNode {
+  // 竖排（对齐原版改造坊）：附魔台（13×4 卡墙 + 详情）在上、天罡购买货架在下。
   return {
     type: 'Screen', id: 'craft-screen', props: { bg: GG_LOBBY_THEME.pageBg },
-    layout: { direction: 'row', padding: 16, gap: 12 },
+    layout: { direction: 'column', padding: 16, gap: 12 },
     children: [enchantPanel(view, craftSel), tiangangShelf(view)],
   };
 }

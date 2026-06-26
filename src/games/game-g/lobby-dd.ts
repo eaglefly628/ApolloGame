@@ -74,7 +74,7 @@ function tabContent(view: LobbyView, st: LobbyDDState): LayoutNode {
     case 'campaign': return buildCampaignScreen(view).children?.[0] ?? emptyTab('campaign');
     case 'decks': return { type: 'Panel', id: 'lc-decks', props: { bare: true }, layout: { direction: 'column', gap: 10, flex: 1 }, children: buildDeckScreen(view, new Set(view.pokerPicks ?? [])).children ?? [] };
     case 'coll': return buildCollectionScreen(view, st.coll).children?.[0] ?? emptyTab('coll');
-    case 'craft': return { type: 'Panel', id: 'lc-craft', props: { bare: true }, layout: { direction: 'row', gap: 12, flex: 1 }, children: buildCraftScreen(view, st.craftSel).children ?? [] };
+    case 'craft': return { type: 'Panel', id: 'lc-craft', props: { bare: true }, layout: { direction: 'column', gap: 12, flex: 1 }, children: buildCraftScreen(view, st.craftSel).children ?? [] };
     default: return { type: 'Panel', id: 'lc-home', props: { bare: true }, layout: { direction: 'row', gap: 16, flex: 1 }, children: buildHomeScreen(view).children ?? [] };
   }
 }
