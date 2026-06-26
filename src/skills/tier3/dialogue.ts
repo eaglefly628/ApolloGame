@@ -134,7 +134,16 @@ function readDialogueActions(world: IWorld): { advance: boolean; chooseIndex?: n
     for (const a of q.actions) {
       if (a.phase !== 'action') continue;
       if (a.key === DIALOGUE_ACTION_ADVANCE) advance = true;
-      else if (a.key === DIALOGUE_ACTION_CHOOSE && a.x !== undefined) chooseIndex = a.x;
+      // 选项下标：优先读 x（显式带参动作）；缺省时回退读 arg（数字串）——
+      // 因为正准的 ui/components mountUI ActionSink 经 enqueueAction(name,{arg}) 传参（arg 是字符串），
+      // 不走 x。让对话能力同时认 arg，使任何「按钮发 action+actionArg 信号」的数据 UI 开箱即用（无需游戏写 handler）。
+      else if (a.key === DIALOGUE_ACTION_CHOOSE) {
+        if (a.x !== undefined) chooseIndex = a.x;
+        else if (a.arg !== undefined && a.arg !== '') {
+          const n = Number(a.arg);
+          if (Number.isInteger(n)) chooseIndex = n;
+        }
+      }
     }
     return { advance, chooseIndex };
   }

@@ -237,6 +237,22 @@ describe('T3 dialogue — R3 InputQueue 输入接缝', () => {
     expect(w.getComponent<ResourceModify>('aff', 'ResourceModify')!.amount).toBe(5);
   });
 
+  it('choose 动作(arg=index 字符串) = DialogueChoose（mountUI ActionSink 经 arg 传下标，开箱即用）', () => {
+    const w = loadDialogue('pick');
+    withQueue(w, [{ source: 'p1', key: DIALOGUE_ACTION_CHOOSE, arg: '0', phase: 'action' }]);
+    w.tick();
+    expect(cur(w)).toBe('end');
+    expect(w.getComponent<Flag>('met', 'Flag')!.active).toBe(true);
+    expect(w.getComponent<ResourceModify>('aff', 'ResourceModify')!.amount).toBe(5);
+  });
+
+  it('choose 动作 x 优先于 arg（两者都在时取 x）', () => {
+    const w = loadDialogue('pick');
+    withQueue(w, [{ source: 'p1', key: DIALOGUE_ACTION_CHOOSE, x: 0, arg: '1', phase: 'action' }]);
+    w.tick();
+    expect(cur(w)).toBe('end'); // x=0（warm）胜出，非 arg=1（locked·且无门票本就走不了）
+  });
+
   it('非 action phase（指针 down 等）被忽略，不误触发推进', () => {
     const w = loadDialogue('start');
     withQueue(w, [{ source: 'p1', key: DIALOGUE_ACTION_ADVANCE, phase: 'down' }]);

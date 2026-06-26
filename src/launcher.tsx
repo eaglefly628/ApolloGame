@@ -101,6 +101,16 @@ const GAMES: GameEntry[] = [
     icon: '🧗',
     status: 'playable',
   },
+  {
+    id: 'game-x',
+    title: 'Game X: 残响 Living Companion',
+    subtitle: '掌上伴侣 · 时间感知 Desk Mode',
+    description: '「一个住在你桌上的人。」LovePlus 在 AI 时代的复活——基础框架：时间感知系统（她知道现在几点、星期几、你多久没来）驱动 Desk Mode，角色按真实作息在桌面生活；拿起设备进 Pocket Mode 用引擎 dialogue 能力对话，放回时把暖意写回关系记录（localStorage 跨会话真实流动）。首发两位：内敛的林七月 / 元气的宋 Mika。角色作息、缺席反应、问候全是数据；时间→活动派生纯函数可测。表现层待 designer 接入。',
+    color: '#16121f',
+    accentColor: '#d8607b',
+    icon: '🕯️',
+    status: 'playable',
+  },
 ];
 
 // ══════════════════════════════════════
@@ -647,6 +657,7 @@ function GameRunner({ gameId, onBack }: { gameId: string; onBack: () => void }) 
       'game-g': () => import('./games/game-g/game-g.js'),
       'game-i': () => import('./games/game-i/game-i.js'),
       'game-h': () => import('./games/game-h/game-h.js'),
+      'game-x': () => import('./games/game-x/game-x.js'),
     };
     const loader = loaders[gameId];
     if (!loader) return;
