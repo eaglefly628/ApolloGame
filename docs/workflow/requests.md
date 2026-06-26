@@ -15,8 +15,11 @@
 
 > game-g 收藏页对齐 Designer comp（`UI/Game G 收藏·牌谱.html`）+ 原版管线时，撞到 2 个 LayoutNode 表达不了、不可重组的缺口：
 > ① **PlayingCard 悬停翻面 / 双面 reveal**：原版 `.pcard-wrap:hover` 时 front→back scaleX 横向翻转，露出英雄列传（名/朝代/简介）。引擎 PlayingCard 仅静态 `faceUp`、无悬停翻转、无「正面=牌面 / 背面=信息子树」。Tooltip 只弹气泡不翻卡、faceUp 静态——均不可重组表达。建议：PlayingCard 加 `flipOnHover` + `back:LayoutNode`（背面渲子树·同 `Tooltip.bubble` 思路），或新 `FlipCard` 控件。
-> ② **响应式卡宽 + grid 固定列数**：原版 `hero-grid6 = repeat(6,1fr)` 6 列、卡填满 1fr 单元格。引擎 PlayingCard 固定宽(sm/md/lg)、Panel grid 只 `auto-fill(minmax)` → 既不能严格 N 列、卡也不随格宽伸缩 → 排不出「6 列填满」版式。建议：① `LayoutConstraints` grid `cols:N`（固定列数·覆盖 auto-fill）；② PlayingCard `fluid`（充满父格·替代固定档）。
-> PG 侧已做近似（grid minCol 122 + size lg → ~6 列大卡），但卡不填满、无翻面；需此 2 能力才能真·一模一样。
+> ② **响应式卡宽 + grid 固定列数**（已量原版确切 CSS）：原版收藏卡是**流式**，零固定像素——
+>   `.hero-grid6{ grid-template-columns:repeat(6,1fr); gap:14px }` · `.pcard-wrap{ flex:1; min-width:0 }` · `.pcard{ width:100%; aspect-ratio:5/7 }`。
+>   即「6 列 + 卡=100% 格宽 + 5:7 比例」。引擎 PlayingCard 是**固定宽**(sm/md/lg=52/64/82px)、Panel grid 只 `auto-fill(minmax(minCol,1fr))` → `1fr` 永远把格子拉宽过卡 → **数据层无论怎么调 minCol 都消不掉卡间空隙**。
+>   建议：① `LayoutConstraints` grid `cols:N`（固定列数·覆盖 auto-fill）；② PlayingCard `fluid`（width:100% 充满父格 + 维持 5:7 aspect-ratio·替代固定档）。
+> PG 侧已做近似（grid minCol 122 + size lg → ~6 列大卡），但**卡填不满格子→有空隙**、且无翻面；需此 2 能力才能真·一模一样（owner 2026-06-26 点名空隙问题）。
 
 ### REQ-STEAM · [2026-06-25] · 本 session 认领（平台轨·Steam 发行） · status: **in-progress（owner 指派·独立轨）** · 类型: 平台服务（非游戏数据）
 
