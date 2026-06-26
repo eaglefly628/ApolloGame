@@ -9,7 +9,7 @@ import type { LayoutNode } from '@ui/components/index.js';
 import type { DialogueNode } from '@skills/tier3/index.js';
 import { DIALOGUE_ACTION_ADVANCE, DIALOGUE_ACTION_CHOOSE } from '@skills/tier3/index.js';
 import type { Companion } from './characters.js';
-import { portraitUri } from './portraits.js';
+import { portraitUri } from './scenes.js';
 import type { ScheduleEntry } from './characters.js';
 
 export interface PocketView {

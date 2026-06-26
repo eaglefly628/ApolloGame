@@ -70,6 +70,14 @@ export interface LabelProps {
   color?: 'text' | 'sub' | 'dim' | 'jade' | 'gold' | 'ok' | 'warn' | 'danger';
   bold?: boolean;
   mono?: boolean;
+  /** 具名字体槽（复古/像素/磷光风换字体·下沉自 game-x 残响：VT323 时钟/Silkscreen 微标/DotGothic16 正文）。
+   *  ui=主字体 / mono=等宽 / pixel=像素点阵(UITheme.fontPixel) / display=数码管展示字(UITheme.fontDisplay)。
+   *  缺省按 mono 布尔回退（mono:true≈font:'mono'）。红线同 color：只收**枚举槽名**(最弱 LLM 能填)，绝不收自由 font-family 串。 */
+  font?: 'ui' | 'mono' | 'pixel' | 'display';
+  /** 磷光发光(text-shadow·琥珀时钟/霓虹标题)：true 时按当前 color 描一圈柔光。纯表现。 */
+  glow?: boolean;
+  /** 字距 px(letter-spacing·Silkscreen 全大写微标常用)。纯表现·只收数字(最弱 LLM 能填)。 */
+  tracking?: number;
   /** 世界绑定(收编 GameShell stat)：resourceId·resolveBindings 时把 Resource.current 接到 text 后（text 作前缀/标签）。 */
   bind?: string;
   /** 打字机(收编 VN DialogBox 逐字显)：每字毫秒(>0 开)。mountUI 挂载时逐字揭示·teardown 清定时器。 */
@@ -393,6 +401,10 @@ export interface UITheme {
   gold: string;
   ok: string; okWash: string; warn: string; warnWash: string; danger: string;
   fontUi: string; fontMono: string;
+  /** 像素点阵字体槽（Label font:'pixel'·如 Silkscreen/DotGothic16）。缺省回退 fontUi。 */
+  fontPixel?: string;
+  /** 数码管展示字体槽（Label font:'display'·如 VT323 七段琥珀时钟）。缺省回退 fontMono。 */
+  fontDisplay?: string;
   /** 输入框底色（缺省深色半透 rgba(0,0,0,0.35)·适配暗皮）。亮皮须填浅色，否则深底深字看不清。 */
   inputBg?: string;
   /** 背景贴图层（procedural CSS 图案 / 贴图 url·叠在 pageBg 上·renderScreen 合成）。主题作者填（可含 CSS），区别于游戏 LayoutNode 数据。缺省无 = 纯 pageBg（老主题零变化）。 */

@@ -107,10 +107,18 @@ function renderLabel(id: string, p: LabelProps, ls: string, t: UITheme): string 
   };
   const sz = sizeMap[p.size ?? 'md'] ?? 13;
   const cl = colorMap[p.color ?? 'text'] ?? t.text;
+  // 具名字体槽（缺省按 mono 布尔回退·保旧调用方不变）：pixel/display 槽缺省回退 fontUi/fontMono。
+  const fontSlot: Record<string, string> = {
+    ui: t.fontUi, mono: t.fontMono,
+    pixel: t.fontPixel ?? t.fontUi, display: t.fontDisplay ?? t.fontMono,
+  };
+  const fam = p.font ? fontSlot[p.font] : (p.mono ? t.fontMono : t.fontUi);
   const style = [
     `font-size:${sz}px`, `color:${cl}`,
     p.bold ? 'font-weight:700' : '',
-    p.mono ? `font-family:${t.fontMono}` : `font-family:${t.fontUi}`,
+    `font-family:${fam}`,
+    p.glow ? `text-shadow:0 0 8px ${cl},0 0 2px ${cl}` : '',
+    p.tracking !== undefined ? `letter-spacing:${p.tracking}px` : '',
     ls,
   ].filter(Boolean).join(';');
   // 富文本多段着色(render-only·有 spans 忽略 text)：逐段自带 color(令牌)/bold，外层保字号/字体。

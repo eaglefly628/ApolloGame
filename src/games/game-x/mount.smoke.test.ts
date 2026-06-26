@@ -1,66 +1,63 @@
 // @vitest-environment happy-dom
-// 宿主冒烟测试：mount() 在真实 DOM 里挂载 Desk Mode → 拿起进 Pocket Mode → 点选项 → 放回，全程不崩。
-// 覆盖宿主胶水层（时钟服务 / 模式切换 / mountUI / 引擎驱动 / localStorage 回写）的集成正确性。
+// 宿主冒烟：mount() 在真实 DOM 走通 大厅→开机→Desk→Pocket→放回，全程不崩。
+// 覆盖宿主胶水层（四态流转 / 时钟服务 / mountUI / 引擎驱动 / localStorage 回写）。
 import { describe, it, expect, beforeEach } from 'vitest';
 import { mount } from './game-x.js';
 
+function q(host: HTMLElement, id: string): HTMLElement | null {
+  return host.querySelector<HTMLElement>(`[id="${id}"]`);
+}
 function click(host: HTMLElement, id: string): void {
-  const el = host.querySelector<HTMLElement>(`[id="${id}"]`);
+  const el = q(host, id);
   if (!el) throw new Error(`找不到控件 #${id}`);
   el.click();
 }
 
-describe('Game X · 宿主冒烟（mount → Desk → Pocket → dock）', () => {
+describe('Game X · 宿主冒烟（大厅 → 开机 → Desk → Pocket）', () => {
   beforeEach(() => { try { globalThis.localStorage?.clear(); } catch { /* noop */ } });
 
-  it('挂载即渲染 Desk Mode（时钟 + 状态 + 拿起按钮）', () => {
-    const container = document.createElement('div');
-    document.body.appendChild(container);
-    const dispose = mount(container);
-    expect(container.querySelector('[id="gx-time"]')).toBeTruthy(); // 时钟
-    expect(container.querySelector('[id="gx-pickup"]')).toBeTruthy(); // 拿起按钮
-    expect(container.querySelector('[id="gx-temp"]')).toBeTruthy(); // 情感温度细线
-    dispose();
-    container.remove();
+  it('挂载即渲染大厅（角色选择 Marketplace）', () => {
+    const c = document.createElement('div'); document.body.appendChild(c);
+    const dispose = mount(c);
+    expect(q(c, 'gx-lobby')).toBeTruthy();
+    expect(q(c, 'gx-card-qiyue')).toBeTruthy();
+    expect(q(c, 'gx-card-mika')).toBeTruthy();
+    dispose(); c.remove();
   });
 
-  it('拿起 → Pocket Mode 对话；放回 → 回 Desk 且写入关系记录', () => {
-    const container = document.createElement('div');
-    document.body.appendChild(container);
-    const dispose = mount(container);
-
-    click(container, 'gx-pickup'); // 拿起
-    expect(container.querySelector('[id="gx-pocket"]')).toBeTruthy(); // 进入 Pocket 屏
-    // 选第 0 个选项（hub choice）→ 引擎 tick 后跳到回应行（异步 raf 驱动，这里直接断言不崩 + 控件在）。
-    expect(container.querySelector('[id="gx-c-0"]')).toBeTruthy();
-
-    // 放回底座（终结前也允许 dock：dock 按钮在终结态出现；此处直接验证 dock 路径可用——
-    // 先推进到终结：点告别选项需引擎 tick，happy-dom 无 raf 稳定驱动，故直接调 dock 信号路径）。
-    // 用 Desk 的拿起→再次存在性验证模式切换闭环：dock 按钮可能尚未出现，跳过点击，仅验证无异常 dispose。
-    dispose();
-    container.remove();
+  it('选七月 → 初次见面开机屏 → 放上底座进 Desk Mode（活时钟 + 情感线）', () => {
+    const c = document.createElement('div'); document.body.appendChild(c);
+    const dispose = mount(c);
+    click(c, 'gx-enter-qiyue');
+    expect(q(c, 'gx-boot')).toBeTruthy(); // 初次见面（localStorage 已清→新关系）
+    click(c, 'gx-boot-go');
+    expect(q(c, 'gx-desk')).toBeTruthy();
+    expect(q(c, 'gx-clock')).toBeTruthy(); // VT323 活时钟
+    expect(q(c, 'gx-temp')).toBeTruthy(); // 情感温度线
+    expect(q(c, 'gx-pickup')).toBeTruthy();
+    dispose(); c.remove();
   });
 
-  it('切换角色按钮可用（七月 ⇄ Mika）', () => {
-    const container = document.createElement('div');
-    document.body.appendChild(container);
-    const dispose = mount(container);
-    const before = container.querySelector('[id="gx-status"]')?.textContent ?? '';
-    click(container, 'gx-dev-char');
-    const after = container.querySelector('[id="gx-status"]')?.textContent ?? '';
-    expect(before).not.toBe(after); // 角色名变了
-    dispose();
-    container.remove();
+  it('Desk → 拿起进 Pocket 对话 → 回大厅', () => {
+    const c = document.createElement('div'); document.body.appendChild(c);
+    const dispose = mount(c);
+    click(c, 'gx-enter-qiyue');
+    click(c, 'gx-boot-go');
+    click(c, 'gx-pickup');
+    expect(q(c, 'gx-pocket')).toBeTruthy();
+    expect(q(c, 'gx-c-0')).toBeTruthy(); // hub 选项
+    dispose(); c.remove();
   });
 
-  it('天气切换信号不崩（雨/雪重渲）', () => {
-    const container = document.createElement('div');
-    document.body.appendChild(container);
-    const dispose = mount(container);
-    click(container, 'gx-dev-rain');
-    click(container, 'gx-dev-snow');
-    expect(container.querySelector('[id="gx-desk"]')).toBeTruthy();
-    dispose();
-    container.remove();
+  it('Desk Mode 天气/时刻/切角色信号不崩', () => {
+    const c = document.createElement('div'); document.body.appendChild(c);
+    const dispose = mount(c);
+    click(c, 'gx-enter-qiyue');
+    click(c, 'gx-boot-go');
+    click(c, 'gx-dev-rain');
+    click(c, 'gx-dev-fwd');
+    click(c, 'gx-dev-char'); // 切到 Mika
+    expect(q(c, 'gx-desk')).toBeTruthy();
+    dispose(); c.remove();
   });
 });

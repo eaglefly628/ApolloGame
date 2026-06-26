@@ -1,155 +1,160 @@
 // ════════════════════════════════════════════════════════════════════════
-//  Game X《残响》—— Desk Mode 屏幕（LayoutNode 纯数据 · GDD §五）
+//  Game X《残响》—— Desk Mode 屏（LayoutNode·完全对齐 Designer HERO frame）
 //
-//  构图严格对齐 GDD（640×480, 4:3）：
-//    · 上半 640×280：她的"房间"场景（随时间/季节/天气变化，角色在场景中活动）
-//    · 左下 160×160：时钟（琥珀磷光、等宽字体、日期/时刻/天气图标）
-//    · 右下 320×160：状态提示（她在做什么 / 上次对话摘要 / 今天特别提示）
-//    · 底部 640×8：情感温度细线（冷→暖，不是明显进度条）
-//
-//  UI 铁律：全是 ui/components 的 LayoutNode；交互只发 action 信号（无本地自由逻辑）。
+//  640×480 设备：上半场景(640×300 像素房间) / 信息带(640×172：VT323 琥珀时钟 + 状态)
+//  / 情感温度线(640×8 冷→暖渐变)。全 LayoutNode 数据 + ZANKYOU 主题字体槽（VT323/Silkscreen/DotGothic16）。
+//  场景像素图走 Image(data-URI SVG·SMIL 动蒸汽/眨眼)。交互只发 action 信号。
 // ════════════════════════════════════════════════════════════════════════
 
 import type { LayoutNode } from '@ui/components/index.js';
 import type { Companion } from './characters.js';
 import type { ClockReading, DeskView, Weather } from './companion.js';
-import { portraitUri, sceneUri } from './portraits.js';
+import { deskSceneUri } from './scenes.js';
 
-const WX_ICON: Record<Weather, string> = { sunny: '☀️', cloudy: '☁️', rainy: '🌧️', snowy: '❄️' };
+const WX_LABEL: Record<Weather, string> = { sunny: '晴', cloudy: '阴', rainy: '雨', snowy: '雪' };
 const WEEKDAY = ['周日', '周一', '周二', '周三', '周四', '周五', '周六'];
-const STAGE_LABEL = { acquaint: '初识', familiar: '熟悉', deep: '相知' } as const;
-
 const pad2 = (n: number): string => (n < 10 ? `0${n}` : `${n}`);
 
-// 情感温度 0..1 → 一条由冷到暖的颜色（HSL 文本插值·细线）。
-function tempColor(t: number): string {
-  const hue = Math.round(210 - t * 200); // 210 冷蓝 → 10 暖橙红
-  const sat = 40 + Math.round(t * 35);
-  return `hsl(${hue} ${sat}% 56%)`;
+// 情感温度 0..1 → 冷蓝→暖珊瑚 三段渐变（对齐 bundle 情感线）。
+function tempGradient(t: number): string {
+  const cold = '#3c5a78', mid = '#6b5278', warm = '#9a6a72';
+  const a = t < 0.5 ? cold : mid;
+  const b = t < 0.5 ? mid : warm;
+  const mix = Math.round((t < 0.5 ? t * 2 : (t - 0.5) * 2) * 100);
+  return `linear-gradient(90deg, ${a} 0%, ${b} ${mix}%, ${warm} 100%)`;
 }
 
-// ── 顶部场景区（背景图 + 角色立绘 + 缺席痕迹浮字）────────────────────────
-function sceneRegion(c: Companion, view: DeskView): LayoutNode {
-  const children: LayoutNode[] = [
-    {
-      type: 'Image', id: 'gx-portrait',
-      props: { src: portraitUri(c, view.entry.pose), fit: 'contain' },
-      layout: { x: 360, y: 36, width: 230, height: 210, anim: 'fadeIn', animMs: 500 },
-    },
-  ];
-  // 缺席痕迹（24/48/72h）—— 桌面上浮现的一句话。
-  if (view.absenceNote) {
-    children.push({
-      type: 'Label', id: 'gx-absence',
-      props: { text: view.absenceNote, size: 'sm', color: 'dim' },
-      layout: { x: 20, y: 244, width: 320 },
-    });
-  }
-  // 纪念日提示。
-  if (view.isAnniversary) {
-    children.push({
-      type: 'Badge', id: 'gx-anniv',
-      props: { text: '🎀 今天，是你们的纪念日', tone: 'warn' },
-      layout: { x: 20, y: 18 },
-    });
-  }
+// ── 信息带 · 时钟列（168px·VT323 琥珀磷光）──────────────────────────────
+function clockCol(c: Companion, clock: ClockReading, view: DeskView): LayoutNode {
+  const moon = clock.hour >= 18 || clock.hour < 6 ? '🌙' : '☀️';
   return {
-    type: 'Panel', id: 'gx-scene',
-    props: { bg: `center/cover no-repeat url("${sceneUri(c, view.entry, view.weather)}")` },
-    layout: { width: 640, height: 280 },
-    children,
-  };
-}
-
-// ── 左下时钟（160×160，琥珀磷光等宽）────────────────────────────────────
-function clockRegion(clock: ClockReading, view: DeskView): LayoutNode {
-  return {
-    type: 'Panel', id: 'gx-clock',
-    props: { bg: '#0b0d08' },
-    layout: { width: 160, height: 160, direction: 'column', gap: 4, padding: 14, justify: 'center' },
+    type: 'Panel', id: 'gx-clockcol',
+    props: { bg: '#0d0a14' },
+    layout: { width: 168, height: 172, direction: 'column', justify: 'center', padding: 16, gap: 6 },
     children: [
-      { type: 'Label', id: 'gx-time', props: { text: `${pad2(clock.hour)}:${pad2(clock.minute)}`, size: 'xl', bold: true, mono: true, color: 'gold' } },
-      { type: 'Label', id: 'gx-date', props: { text: `${WEEKDAY[clock.weekday]} · ${WX_ICON[view.weather]}`, size: 'sm', mono: true, color: 'gold' } },
-      { type: 'Label', id: 'gx-scenelabel', props: { text: view.sceneLabel, size: 'xs', mono: true, color: 'dim' } },
+      {
+        type: 'Panel', id: 'gx-clockrow', props: { bare: true },
+        layout: { direction: 'row', gap: 4, align: 'end' },
+        children: [
+          { type: 'Label', id: 'gx-clock', props: { text: `${pad2(clock.hour)}:${pad2(clock.minute)}`, font: 'display', color: 'gold', glow: true, size: 'xl' } },
+          { type: 'Label', id: 'gx-sec', props: { text: pad2(clock.second ?? 0), font: 'display', color: 'warn', size: 'lg' } },
+        ],
+      },
+      { type: 'Label', id: 'gx-date', props: { text: `${clock.month}月${clock.date}日 ${WEEKDAY[clock.weekday]}`, font: 'display', color: 'gold', size: 'md', tracking: 1 } },
+      { type: 'Label', id: 'gx-wx', props: { text: `${moon} ${WX_LABEL[view.weather]} · 19°`, font: 'pixel', color: 'sub', size: 'sm' } },
     ],
   };
 }
 
-// ── 右下状态（320×160：她在做什么 / 上次摘要 / 特别提示）───────────────────
-function statusRegion(c: Companion, view: DeskView, lastSummary: string): LayoutNode {
+// ── 信息带 · 状态列（NOW / LAST TALK / TODAY）─────────────────────────────
+function statusCol(view: DeskView, lastSummary: string): LayoutNode {
+  const micro = (id: string, text: string): LayoutNode =>
+    ({ type: 'Label', id, props: { text, font: 'pixel', color: 'dim', size: 'xs', tracking: 2 } });
   return {
-    type: 'Panel', id: 'gx-status',
-    props: { title: `${c.name} · ${STAGE_LABEL[view.stage]}` },
-    layout: { width: 320, height: 160, direction: 'column', gap: 8, padding: 12, justify: 'start' },
+    type: 'Panel', id: 'gx-statuscol',
+    props: { bg: '#0d0a14' },
+    layout: { width: 472, height: 172, direction: 'column', justify: 'center', padding: 20, gap: 12 },
     children: [
-      { type: 'Label', id: 'gx-doing', props: { text: view.statusText, size: 'sm', color: 'text' } },
-      { type: 'Divider', id: 'gx-div', props: {} },
-      { type: 'Label', id: 'gx-last', props: { text: lastSummary ? `上次：${lastSummary}` : '还没有和她说过话。', size: 'xs', color: 'dim' } },
       {
-        type: 'Button', id: 'gx-pickup',
-        props: { label: '拿起 RP · 和她说说话', kind: 'hero', action: 'mode.pickup' },
-        layout: { margin: 4 },
+        type: 'Panel', id: 'gx-now', props: { bare: true },
+        layout: { direction: 'column', gap: 5 },
+        children: [
+          micro('gx-now-l', 'NOW'),
+          { type: 'Label', id: 'gx-now-t', props: { text: view.statusText, color: 'text', size: 'lg' } },
+        ],
+      },
+      {
+        type: 'Panel', id: 'gx-meta', props: { bare: true },
+        layout: { direction: 'row', gap: 24 },
+        children: [
+          {
+            type: 'Panel', id: 'gx-last', props: { bare: true }, layout: { direction: 'column', gap: 4 },
+            children: [micro('gx-last-l', 'LAST TALK'), { type: 'Label', id: 'gx-last-t', props: { text: lastSummary || '— 还没说过话', color: 'sub', size: 'sm' } }],
+          },
+          {
+            type: 'Panel', id: 'gx-today', props: { bare: true }, layout: { direction: 'column', gap: 4 },
+            children: [micro('gx-today-l', 'TODAY'), { type: 'Label', id: 'gx-today-t', props: { text: view.isAnniversary ? '🎀 纪念日' : '— 平静的一天', color: view.isAnniversary ? 'gold' : 'sub', size: 'sm' } }],
+          },
+          {
+            type: 'Panel', id: 'gx-pickwrap', props: { bare: true }, layout: { direction: 'column', justify: 'center', flex: 1, align: 'end' },
+            children: [{ type: 'Button', id: 'gx-pickup', props: { label: '拿起 ▶', kind: 'primary', action: 'mode.pickup' } }],
+          },
+        ],
       },
     ],
   };
 }
 
-// ── 整屏装配 ──────────────────────────────────────────────────────────
-export function deskScreen(
-  c: Companion,
-  clock: ClockReading,
-  view: DeskView,
-  lastSummary: string,
-): LayoutNode {
+// ── 整机（设备外框 + 内屏三段）──────────────────────────────────────────
+export function deskScreen(c: Companion, clock: ClockReading, view: DeskView, lastSummary: string): LayoutNode {
+  const live = `${c.name} · ${view.sceneLabel.split('·')[0]} · 等你`;
   return {
     type: 'Screen', id: 'gx-desk',
     props: { center: true, bg: '#05060a' },
     layout: { direction: 'column', padding: 0 },
     children: [
       {
-        type: 'Panel', id: 'gx-frame',
-        props: { bare: true },
-        layout: { width: 640, height: 480, direction: 'column' },
+        type: 'Panel', id: 'gx-devwrap', props: { bare: true },
+        layout: { direction: 'column', gap: 6 },
         children: [
-          sceneRegion(c, view),
-          // 下半 640×200：左时钟 + 右状态。
+          // 顶部 LIVE 标签条
           {
-            type: 'Panel', id: 'gx-bottom',
-            props: { bare: true },
-            layout: { direction: 'row', width: 640, height: 192 },
-            children: [clockRegion(clock, view), statusRegion(c, view, lastSummary)],
+            type: 'Panel', id: 'gx-livebar', props: { bare: true },
+            layout: { direction: 'row', gap: 6, align: 'center', width: 640 },
+            children: [
+              { type: 'Label', id: 'gx-live', props: { text: live, font: 'pixel', color: 'sub', size: 'xs', tracking: 2 } },
+              { type: 'Label', id: 'gx-liveflag', props: { text: '▍LIVE', font: 'pixel', color: 'jade', size: 'xs', tracking: 1 } },
+            ],
           },
-          // 底部情感温度细线（640×8）。
+          // 设备外框
           {
-            type: 'Panel', id: 'gx-temp',
-            props: { bg: tempColor(view.emotionTemp) },
-            layout: { width: 640, height: 8 },
+            type: 'Panel', id: 'gx-device', props: { bg: '#0a0810' },
+            layout: { width: 660, height: 500, padding: 10, direction: 'column' },
+            children: [
+              {
+                type: 'Panel', id: 'gx-screen-in', props: { bg: '#15101f' },
+                layout: { width: 640, height: 480, direction: 'column' },
+                children: [
+                  // 场景 640×300
+                  {
+                    type: 'Image', id: 'gx-scene',
+                    props: { src: deskSceneUri(c, view.entry.scene, view.weather), fit: 'cover' },
+                    layout: { width: 640, height: 300 },
+                  },
+                  // 信息带 640×172
+                  {
+                    type: 'Panel', id: 'gx-band', props: { bare: true },
+                    layout: { direction: 'row', width: 640, height: 172 },
+                    children: [clockCol(c, clock, view), statusCol(view, lastSummary)],
+                  },
+                  // 情感温度线 640×8
+                  { type: 'Panel', id: 'gx-temp', props: { bg: tempGradient(view.emotionTemp) }, layout: { width: 640, height: 8 } },
+                ],
+              },
+            ],
           },
+          // 演示工具条（真实版由实时时钟/天气 API 驱动）
+          devBar(),
         ],
       },
-      // 调试/演示工具条（基础框架期：切角色 + 切天气 + 快进时刻；正式版由真实时钟/天气 API 驱动）。
-      devBar(),
     ],
   };
 }
 
-// 演示工具条：用 action 信号驱动宿主切换演示参数（仍走信号、无自由逻辑）。
 function devBar(): LayoutNode {
-  const btn = (id: string, label: string, action: string, arg?: string): LayoutNode => ({
-    type: 'Button', id, props: { label, kind: 'ghost', action, ...(arg ? { actionArg: arg } : {}) },
-  });
+  const btn = (id: string, label: string, action: string, arg?: string): LayoutNode =>
+    ({ type: 'Button', id, props: { label, kind: 'ghost', action, ...(arg ? { actionArg: arg } : {}) } });
   return {
-    type: 'Panel', id: 'gx-dev',
-    props: { bare: true },
-    layout: { direction: 'row', gap: 6, padding: 8, justify: 'center', width: 640 },
+    type: 'Panel', id: 'gx-dev', props: { bare: true },
+    layout: { direction: 'row', gap: 6, justify: 'center', width: 660, padding: 4 },
     children: [
-      btn('gx-dev-char', '切换角色', 'dev.swapChar'),
+      btn('gx-dev-char', '切角色', 'dev.swapChar'),
       btn('gx-dev-sun', '☀️', 'dev.weather', 'sunny'),
-      btn('gx-dev-cloud', '☁️', 'dev.weather', 'cloudy'),
       btn('gx-dev-rain', '🌧️', 'dev.weather', 'rainy'),
       btn('gx-dev-snow', '❄️', 'dev.weather', 'snowy'),
-      btn('gx-dev-back', '⏪ 早 1h', 'dev.hour', '-1'),
-      btn('gx-dev-fwd', '⏩ 晚 1h', 'dev.hour', '1'),
+      btn('gx-dev-back', '⏪', 'dev.hour', '-1'),
+      btn('gx-dev-fwd', '⏩', 'dev.hour', '1'),
+      btn('gx-dev-lobby', '◀ 大厅', 'mode.lobby'),
     ],
   };
 }

@@ -20,6 +20,9 @@ export type Weather = 'sunny' | 'cloudy' | 'rainy' | 'snowy';
 export interface ClockReading {
   hour: number; // 0..23
   minute: number; // 0..59
+  second?: number; // 0..59（VT323 秒位·可选）
+  month?: number; // 1..12
+  date?: number; // 1..31
   weekday: number; // 0=周日 .. 6=周六
   nowMs: number; // 绝对毫秒（算缺席/纪念日用）
 }
