@@ -31,6 +31,11 @@ function divider(id: string): LayoutNode {
   return { type: 'Divider', id, props: {} };
 }
 
+// 平铺点阵贴图（自包含 SVG data-URI）：用 fill-opacity 而非 rgba()，避开 texLayer 的 ()'" 净化；
+// encodeURIComponent 把空格/引号/尖括号全转 %XX → 过得了净化。配 bgTexture/bgScroll 即得「贴图底 + 滚动」。
+const DOT_SVG = '<svg xmlns="http://www.w3.org/2000/svg" width="26" height="26"><circle cx="13" cy="13" r="1.6" fill="#9cd2c5" fill-opacity="0.30"/></svg>';
+export const TEXTURE_URI = `data:image/svg+xml,${encodeURIComponent(DOT_SVG)}`;
+
 // ── 页 1 · 容器与布局 ────────────────────────────────────────
 const pageLayout: LayoutNode = {
   type: 'Panel',
@@ -89,6 +94,18 @@ const pageLayout: LayoutNode = {
       children: [
         { type: 'Label', id: 'acc-l1', props: { text: '折叠面板用于收纳次要内容，点标题即可展开/收起。', color: 'sub' } },
         { type: 'Label', id: 'acc-l2', props: { text: '开合由引擎 mountUI 内建处理，数据只填 title / open / action。', color: 'dim', size: 'sm' } },
+      ],
+    },
+    divider('d-l-tex'),
+    sectionTitle('t-tex', 'PANEL · 贴图底 + UV 滚动（bgTexture / bgScroll）'),
+    {
+      type: 'Panel',
+      id: 'demo-tex',
+      props: { title: '平铺点阵贴图底·无缝向上滚动', bgTexture: TEXTURE_URI, bgTextureSize: 26, bgScroll: { y: 26, ms: 2600 } },
+      layout: { direction: 'column', gap: 8, padding: 18, height: 150 },
+      children: [
+        { type: 'Label', id: 'tex-l1', props: { text: '这块面板的底是平铺的点阵贴图，并在 UV 上无缝滚动（看背景的点在动）。', color: 'sub', size: 'sm' } },
+        { type: 'Label', id: 'tex-l2', props: { text: '纯数据：props.bgTexture(贴图URL) + bgTextureSize(平铺单元) + bgScroll{y,ms}（滚动周期）。最弱 LLM 能填。', color: 'dim', size: 'xs' } },
       ],
     },
   ],
@@ -678,7 +695,8 @@ function buildSimStage(id: string, glyph: string, title: string, desc: string, c
 /** 落地页：一块块「积木」拼起来的模块入口（grid 自适应·点 Card 进各自子菜单）。 */
 function buildHub(): LayoutNode {
   return {
-    type: 'Panel', id: 'hub', props: { title: '🧩 Apollo 引擎 · 底座能力展示台' },
+    // 落地积木墙底：平铺点阵贴图 + 缓慢 UV 滚动（owner 早前想要的「积木墙点阵底纹」·现用 bgTexture/bgScroll 数据实现）。
+    type: 'Panel', id: 'hub', props: { title: '🧩 Apollo 引擎 · 底座能力展示台', bgTexture: TEXTURE_URI, bgTextureSize: 26, bgScroll: { y: 26, ms: 7000 } },
     layout: { direction: 'column', gap: 14, padding: 20 },
     children: [
       { type: 'Label', id: 'hub-sub', props: {
