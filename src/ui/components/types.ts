@@ -63,7 +63,7 @@ export interface ButtonProps {
 }
 
 export interface LabelProps {
-  text: string;
+  text?: string; // 可选：spans / tween / bind 提供内容时可省（缺省空串）
   size?: 'xs' | 'sm' | 'md' | 'lg' | 'xl';
   color?: 'text' | 'sub' | 'dim' | 'jade' | 'gold' | 'ok' | 'warn' | 'danger';
   bold?: boolean;
@@ -222,7 +222,9 @@ export interface ToastProps {
 // ── Tooltip（悬浮提示/词条浮窗）：包裹 children 作触发元素；hover/focus 显示 content 气泡。──
 // 内联样式表达不了 :hover → 显隐由 mountUI 内建（mouseover/focusin 显、移出隐）。placement 定气泡方位。
 export interface TooltipProps {
-  content: string; placement?: 'top' | 'bottom' | 'left' | 'right';
+  content?: string; placement?: 'top' | 'bottom' | 'left' | 'right';
+  /** 富气泡根（通常一个 Panel(column)·内含 标题/效果/数值行 Label+spans）：有它则气泡渲这棵 LayoutNode、忽略 content，气泡变宽可换行。地煞/天罡/装备等词条详情用。 */
+  bubble?: LayoutNode;
 }
 
 // ── Card（网格卡单元·配 Panel grid 用）：媒体字形 + 标题 + 副标 + 角标 + tone/锁态 + 可点。──

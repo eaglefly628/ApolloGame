@@ -127,7 +127,7 @@ function renderLabel(id: string, p: LabelProps, ls: string, t: UITheme): string 
     return `<span id="${esc(id)}"${tweenAttr} style="${style}">${esc(num(p.tween.from).toFixed(dec))}</span>`;
   }
   const tw = p.typewriter ? ` data-typewriter="${p.typewriter}"` : '';
-  return `<span id="${esc(id)}"${tw} style="${style}">${esc(p.text)}</span>`;
+  return `<span id="${esc(id)}"${tw} style="${style}">${esc(p.text ?? '')}</span>`;
 }
 
 function renderDropdown(id: string, p: DropdownProps, ls: string, t: UITheme): string {
@@ -376,7 +376,14 @@ function renderTooltip(id: string, p: TooltipProps, children: LayoutNode[], ls: 
     right:  'left:calc(100% + 6px);top:50%;transform:translateY(-50%)',
   };
   const pos = posMap[p.placement ?? 'top'] ?? posMap['top'];
-  const bubble = `<span data-tooltip-bubble style="display:none;position:absolute;${pos};z-index:250;padding:5px 9px;border-radius:6px;background:${t.bg3};color:${t.text};border:1px solid ${t.line};font-size:11px;font-family:${t.fontUi};white-space:nowrap;box-shadow:0 6px 18px rgba(0,0,0,0.4);pointer-events:none">${esc(p.content)}</span>`;
+  // 富气泡（bubble=LayoutNode 子树·标题/效果/数值行）：宽气泡、可换行、塞 UI 数据；否则简单单行文本气泡（向后兼容）。
+  const rich = !!p.bubble;
+  const bubbleInner = rich ? renderNode(p.bubble!, t) : esc(p.content ?? '');
+  const bubbleStyle = rich
+    ? `display:none;position:absolute;${pos};z-index:250;width:240px;max-width:86vw;padding:10px 13px;border-radius:10px;background:${t.bg3};color:${t.text};border:1px solid ${t.line};font-family:${t.fontUi};box-shadow:0 8px 24px rgba(0,0,0,0.5);pointer-events:none`
+    : `display:none;position:absolute;${pos};z-index:250;padding:5px 9px;border-radius:6px;background:${t.bg3};color:${t.text};border:1px solid ${t.line};font-size:11px;font-family:${t.fontUi};white-space:nowrap;box-shadow:0 6px 18px rgba(0,0,0,0.4);pointer-events:none`;
+  const tag = rich ? 'div' : 'span';
+  const bubble = `<${tag} data-tooltip-bubble style="${bubbleStyle}">${bubbleInner}</${tag}>`;
   return `<span id="${esc(id)}" data-tooltip tabindex="0" style="position:relative;display:inline-flex;${ls}">${inner}${bubble}</span>`;
 }
 
