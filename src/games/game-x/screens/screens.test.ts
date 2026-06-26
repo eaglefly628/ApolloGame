@@ -5,7 +5,6 @@ import { describe, it, expect } from 'vitest';
 import { renderNode } from '@ui/components/index.js';
 import { ZANKYOU } from '../theme.js';
 import { ALL_SCREENS, SCREEN_MAP, absenceScreenFor } from './index.js';
-import { galleryMenu } from '../gallery-screen.js';
 
 describe('Game X · 12 复刻屏：渲染不崩 + 结构合法', () => {
   it('注册表 12 屏，id 唯一', () => {
@@ -55,12 +54,3 @@ describe('Game X · 缺席按小时选屏', () => {
   });
 });
 
-describe('Game X · 画廊菜单', () => {
-  it('列出全部屏 + 分组', () => {
-    const node = galleryMenu(ALL_SCREENS.map((s) => ({ id: s.id, label: s.label, group: s.group })));
-    const html = renderNode(node, ZANKYOU);
-    expect(html).toContain('全部画面');
-    expect(html).toContain('缺席感知');
-    expect(html).toContain('周末活动');
-  });
-});

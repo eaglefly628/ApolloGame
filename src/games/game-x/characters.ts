@@ -41,6 +41,8 @@ export interface Companion {
   schedule: ScheduleEntry[];
   /** 缺席痕迹（由长到短匹配第一个满足的）。 */
   absence: AbsenceReaction[];
+  /** 她的生日（按设备日历触发生日事件·GDD §九）。 */
+  birthday: { month: number; day: number };
   /** Pocket Mode 拿起时的第一句话（按情境）。 */
   firstLine: {
     day: string; // 白天常规
@@ -74,6 +76,7 @@ export const QIYUE: Companion = {
     { hours: 48, deskNote: '茶杯是空的，没有再续。' },
     { hours: 24, deskNote: '书摊开放着，像一直在等。' },
   ],
+  birthday: { month: 11, day: 7 },
   firstLine: {
     day: '……来了。茶还温着，要喝吗。',
     night: '这么晚……嗯，我还没睡。',
@@ -106,6 +109,7 @@ export const MIKA: Companion = {
     { hours: 48, deskNote: '桌上多了一张你的像素涂鸦——画得歪歪的。' },
     { hours: 24, deskNote: '多了几张画稿草图，散在一边。' },
   ],
+  birthday: { month: 4, day: 20 },
   firstLine: {
     day: '啊！你来啦你来啦——今天超多事要跟你说！',
     night: '诶还没睡？正好正好，陪我一下嘛？',

@@ -47,7 +47,7 @@ function clockCol(c: Companion, clock: ClockReading, view: DeskView): LayoutNode
 }
 
 // ── 信息带 · 状态列（NOW / LAST TALK / TODAY）─────────────────────────────
-function statusCol(view: DeskView, lastSummary: string): LayoutNode {
+function statusCol(view: DeskView, lastSummary: string, extras?: DeskExtras): LayoutNode {
   const micro = (id: string, text: string): LayoutNode =>
     ({ type: 'Label', id, props: { text, font: 'pixel', color: 'dim', size: 'xs', tracking: 2 } });
   return {
@@ -76,8 +76,14 @@ function statusCol(view: DeskView, lastSummary: string): LayoutNode {
             children: [micro('gx-today-l', 'TODAY'), { type: 'Label', id: 'gx-today-t', props: { text: view.isAnniversary ? '🎀 纪念日' : '— 平静的一天', color: view.isAnniversary ? 'gold' : 'sub', size: 'sm' } }],
           },
           {
-            type: 'Panel', id: 'gx-pickwrap', props: { bare: true }, layout: { direction: 'column', justify: 'center', flex: 1, align: 'end' },
-            children: [{ type: 'Button', id: 'gx-pickup', props: { label: '拿起 ▶', kind: 'primary', action: 'mode.pickup' } }],
+            type: 'Panel', id: 'gx-pickwrap', props: { bare: true }, layout: { direction: 'column', justify: 'center', gap: 6, flex: 1, align: 'end' },
+            children: [
+              { type: 'Button', id: 'gx-pickup', props: { label: '拿起 · 和她说话 ▶', kind: 'primary', action: 'mode.pickup' } },
+              // 一起活动入口（听歌/散步/猜你一天）——周末高亮，平日也可（GDD §六）
+              { type: 'Button', id: 'gx-weekend', props: { label: extras?.weekend ? '周末活动 ▶' : '一起活动 ▶', kind: 'ghost', action: 'weekend.open' } },
+              // Mika 的日记收藏入口（GDD §三 Mika 日记插画）
+              ...(extras?.diary ? [{ type: 'Button' as const, id: 'gx-diary', props: { label: '日记收藏 ▦', kind: 'ghost' as const, action: 'diary.open' } }] : []),
+            ],
           },
         ],
       },
@@ -85,8 +91,10 @@ function statusCol(view: DeskView, lastSummary: string): LayoutNode {
   };
 }
 
+export interface DeskExtras { weekend?: boolean; diary?: boolean }
+
 // ── 整机（设备外框 + 内屏三段）──────────────────────────────────────────
-export function deskScreen(c: Companion, clock: ClockReading, view: DeskView, lastSummary: string): LayoutNode {
+export function deskScreen(c: Companion, clock: ClockReading, view: DeskView, lastSummary: string, extras?: DeskExtras): LayoutNode {
   const live = `${c.name} · ${view.sceneLabel.split('·')[0]} · 等你`;
   return {
     type: 'Screen', id: 'gx-desk',
@@ -125,7 +133,7 @@ export function deskScreen(c: Companion, clock: ClockReading, view: DeskView, la
                   {
                     type: 'Panel', id: 'gx-band', props: { bare: true },
                     layout: { direction: 'row', width: 640, height: 172 },
-                    children: [clockCol(c, clock, view), statusCol(view, lastSummary)],
+                    children: [clockCol(c, clock, view), statusCol(view, lastSummary, extras)],
                   },
                   // 情感温度线 640×8
                   { type: 'Panel', id: 'gx-temp', props: { bg: tempGradient(view.emotionTemp) }, layout: { width: 640, height: 8 } },
@@ -133,28 +141,9 @@ export function deskScreen(c: Companion, clock: ClockReading, view: DeskView, la
               },
             ],
           },
-          // 演示工具条（真实版由实时时钟/天气 API 驱动）
-          devBar(),
+          // 控制条由宿主统一附加（dev 时钟/天气/切角色/大厅）——见 game-x.ts controlBar。
         ],
       },
-    ],
-  };
-}
-
-function devBar(): LayoutNode {
-  const btn = (id: string, label: string, action: string, arg?: string): LayoutNode =>
-    ({ type: 'Button', id, props: { label, kind: 'ghost', action, ...(arg ? { actionArg: arg } : {}) } });
-  return {
-    type: 'Panel', id: 'gx-dev', props: { bare: true },
-    layout: { direction: 'row', gap: 6, justify: 'center', width: 660, padding: 4 },
-    children: [
-      btn('gx-dev-char', '切角色', 'dev.swapChar'),
-      btn('gx-dev-sun', '☀️', 'dev.weather', 'sunny'),
-      btn('gx-dev-rain', '🌧️', 'dev.weather', 'rainy'),
-      btn('gx-dev-snow', '❄️', 'dev.weather', 'snowy'),
-      btn('gx-dev-back', '⏪', 'dev.hour', '-1'),
-      btn('gx-dev-fwd', '⏩', 'dev.hour', '1'),
-      btn('gx-dev-lobby', '◀ 大厅', 'mode.lobby'),
     ],
   };
 }
