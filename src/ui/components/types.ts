@@ -27,6 +27,10 @@ export interface LayoutConstraints {
   /** 仅 direction:'grid' 生效：单元格最小列宽 px（auto-fill 自适应列数·缺省 96）。卡牌格/货架填这一个数即得自适应网格。 */
   minCol?: number;
   align?: 'start' | 'center' | 'end' | 'stretch';
+  /** 主轴分布（justify-content·与 align 交叉轴对偶）：内容沿主轴(row=横/column=竖)的排布。
+   *  between=两端对齐均分间隔·around/evenly=环绕均分·center/start/end=居中/首/尾。
+   *  用于「内容竖向铺满/居中、消除顶部堆叠 + 底部留白」（owner 2026-06-25）。grid 模式忽略。 */
+  justify?: 'start' | 'center' | 'end' | 'between' | 'around' | 'evenly';
   padding?: number;
   margin?: number;
   /** 旋转角度（度·CSS transform rotate）。扇形手牌/卡牌斜摆填这一个数即得。 */

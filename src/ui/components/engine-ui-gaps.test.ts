@@ -70,4 +70,17 @@ describe('LayoutNode 缺口补齐 · 保真原版 UI', () => {
     const html = renderNode({ type: 'PlayingCard', id: 'bk', props: { rank: 'A', suit: '♠', faceUp: false, art: '/x.svg' } });
     expect(html).not.toContain('<img'); // 背面不显立绘
   });
+
+  it('G6 layout.justify：主轴分布映射 CSS（消顶部堆叠/底部留白·竖向铺满）', () => {
+    const between = renderNode({ type: 'Panel', id: 'b', props: { bare: true }, layout: { direction: 'column', justify: 'between' }, children: [] });
+    expect(between).toContain('justify-content:space-between');
+    const center = renderNode({ type: 'Panel', id: 'c', props: { bare: true }, layout: { justify: 'center' }, children: [] });
+    expect(center).toContain('justify-content:center');
+    const around = renderNode({ type: 'Panel', id: 'a', props: { bare: true }, layout: { justify: 'around' }, children: [] });
+    expect(around).toContain('justify-content:space-around');
+  });
+  it('G6 无 justify 不受影响（不回归）', () => {
+    const plain = renderNode({ type: 'Panel', id: 'n', props: { bare: true }, children: [] });
+    expect(plain).not.toContain('justify-content');
+  });
 });

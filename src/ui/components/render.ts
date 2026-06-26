@@ -20,6 +20,11 @@ const esc = (s: string): string =>
 const num = (v: unknown, d = 0): number => { const n = Number(v); return Number.isFinite(n) ? n : d; };
 // anim 预设白名单（mountUI 注入的关键帧名）：拒绝任意字符串插入 animation。
 const ANIM_PRESETS = new Set(['fadeIn', 'slideUp', 'pop', 'shake', 'dealIn', 'flyIn']);
+// justify 主轴分布枚举 → CSS justify-content（闭集映射·拒绝任意串注入）。
+const JUSTIFY_MAP: Record<string, string> = {
+  start: 'flex-start', center: 'center', end: 'flex-end',
+  between: 'space-between', around: 'space-around', evenly: 'space-evenly',
+};
 
 function layoutStyle(c?: LayoutConstraints): string {
   if (!c) return '';
@@ -153,14 +158,15 @@ function renderPanel(id: string, p: PanelProps, c: LayoutConstraints | undefined
   const dir = c?.direction ?? 'column';
   const gap = c?.gap ?? 8;
   const align = c?.align ?? 'stretch';
+  const justify = JUSTIFY_MAP[c?.justify ?? ''] ?? '';   // 主轴分布（flex 才有意义·grid 忽略）。
   const bare = p.bare === true;          // 无框纯布局容器：不画框/底/圆角、padding 缺省 0（别千层框）。
   const pad = c?.padding ?? (bare ? 0 : 16);
   const ls = layoutStyle(c);
   const overflow = p.scroll ? 'overflow-y:auto;' : '';
-  // grid 排布模式（卡牌格/货架）：auto-fill 自适应列数（minCol 定最小列宽）；非 grid 走原 flex 行/列。
+  // grid 排布模式（卡牌格/货架）：auto-fill 自适应列数（minCol 定最小列宽）；非 grid 走原 flex 行/列（支持 justify 主轴分布）。
   const box = dir === 'grid'
     ? `display:grid;grid-template-columns:repeat(auto-fill,minmax(${c?.minCol ?? 96}px,1fr));gap:${gap}px;align-items:${align}`
-    : `display:flex;flex-direction:${dir};gap:${gap}px;align-items:${align}`;
+    : `display:flex;flex-direction:${dir};gap:${gap}px;align-items:${align}${justify ? `;justify-content:${justify}` : ''}`;
   // chrome：非 bare 才画底/边框/圆角（bg 缺省主题 bg1·与 Screen.bg 同口径·令牌如 'var(--felt)'）；bare=透明无框只做分组。
   // accent：高亮框（jade 描边 + 柔光投影）用于活动视口/强调面板；缺省细线边。bare 时不画框故忽略 accent。
   const border = p.accent ? t.jadeLine : t.line;

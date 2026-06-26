@@ -43,7 +43,7 @@ export function buildHomeScreen(view: LobbyView): LayoutNode {
   // 绿呢牌桌（felt）：bg=var(--felt) + vignette 暗角；今日卦象 + 标题 + 花色标 + 对决牌 + 对决线 + sheen 出征 CTA + 手册。
   const felt: LayoutNode = {
     type: 'Panel', id: 'home-felt', props: { bg: 'var(--felt)', vignette: true },
-    layout: { direction: 'column', align: 'center', gap: 13, padding: 24, flex: 1 },
+    layout: { direction: 'column', align: 'center', justify: 'around', gap: 10, padding: 28, flex: 1 },
     children: [
       { type: 'Button', id: 'home-fortune',
         props: { label: keptFortune != null ? `🎴 今日卦象 · ${keptFortune}` : '🎴 掷今日卦象', kind: 'ghost', action: 'lucky' } },
