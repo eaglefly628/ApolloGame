@@ -11,6 +11,13 @@
 
 ## 待处理 / 进行中
 
+### REQ-UI-G收藏卡 · [2026-06-26] · PG 同步（UI 库域·game-g 收藏页逐页对齐撞到的缺口） · status: **open（PG→主程·owner「撞到新撞点同步给我接着补」）** · 类型: 真能力缺口（尺子已过·不可重组）
+
+> game-g 收藏页对齐 Designer comp（`UI/Game G 收藏·牌谱.html`）+ 原版管线时，撞到 2 个 LayoutNode 表达不了、不可重组的缺口：
+> ① **PlayingCard 悬停翻面 / 双面 reveal**：原版 `.pcard-wrap:hover` 时 front→back scaleX 横向翻转，露出英雄列传（名/朝代/简介）。引擎 PlayingCard 仅静态 `faceUp`、无悬停翻转、无「正面=牌面 / 背面=信息子树」。Tooltip 只弹气泡不翻卡、faceUp 静态——均不可重组表达。建议：PlayingCard 加 `flipOnHover` + `back:LayoutNode`（背面渲子树·同 `Tooltip.bubble` 思路），或新 `FlipCard` 控件。
+> ② **响应式卡宽 + grid 固定列数**：原版 `hero-grid6 = repeat(6,1fr)` 6 列、卡填满 1fr 单元格。引擎 PlayingCard 固定宽(sm/md/lg)、Panel grid 只 `auto-fill(minmax)` → 既不能严格 N 列、卡也不随格宽伸缩 → 排不出「6 列填满」版式。建议：① `LayoutConstraints` grid `cols:N`（固定列数·覆盖 auto-fill）；② PlayingCard `fluid`（充满父格·替代固定档）。
+> PG 侧已做近似（grid minCol 122 + size lg → ~6 列大卡），但卡不填满、无翻面；需此 2 能力才能真·一模一样。
+
 ### REQ-STEAM · [2026-06-25] · 本 session 认领（平台轨·Steam 发行） · status: **in-progress（owner 指派·独立轨）** · 类型: 平台服务（非游戏数据）
 
 > **owner（junbai.li）2026-06-25 拍板：Steam 发行作为独立平台轨，由本 session 接管全部事项。** 工作清单见 `finish/PS-steam-finish-list.md`。

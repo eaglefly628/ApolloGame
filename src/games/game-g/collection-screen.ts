@@ -45,15 +45,18 @@ function heroesPage(st: CollectionState): LayoutNode {
   };
 
   // 保真：牌谱用 PlayingCard 原语（真扑克牌面·名将名 + 拥有数/稀有 + 选中金边/未拥暗）。
+  // 卡放大到 lg、grid minCol 调高 → 每排 ~6 张（对齐原版 hero-grid6 的 6 列大卡·非 ~10 小卡）。
+  // 诚实边界：PlayingCard 固定宽 + grid 只能 auto-fill → 卡不随 1fr 单元格伸缩、无法严格「6 列填满」；
+  //          且无悬停翻面——已同步主程(REQ·见 requests.md)。
   const cards: LayoutNode[] = filtered.map((h) => ({
     type: 'PlayingCard', id: `coll-h-${h.id}`,
-    props: { rank: h.rank, suit: h.suit, label: h.name, value: h.own > 0 ? `×${h.own}` : RAR_NAME[h.rar],
+    props: { rank: h.rank, suit: h.suit, label: h.name, value: h.own > 0 ? `×${h.own}` : RAR_NAME[h.rar], size: 'lg',
       art: heroPortraitUri(h.suit, h.era, h.rank, h.rar),
       selected: h.id === sel?.id && h.own > 0, dimmed: h.own === 0, action: 'heroPick', actionArg: h.id },
   }));
   const grid: LayoutNode = {
     type: 'Panel', id: 'coll-grid', props: { title: `英雄列传 · ${filtered.length}/${HERO_CARDS.length}`, scroll: true },
-    layout: { direction: 'grid', minCol: 78, gap: 8, padding: 10, flex: 1 }, children: cards,
+    layout: { direction: 'grid', minCol: 122, gap: 10, padding: 10, flex: 1 }, children: cards,
   };
 
   const detail: LayoutNode = sel ? buildHeroDetail(sel) : {
