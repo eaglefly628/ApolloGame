@@ -72,4 +72,20 @@ describe('lobby-dd · 全数据驱动大厅集成', () => {
     expect(onTogglePick).toHaveBeenCalled();
     lobby.destroy(); host.remove();
   });
+
+  it('新手引导 coachmark：guideStep=0 → OnboardingOverlay 高亮层渲出第①步文案（anchor=help 锚点存在）', () => {
+    const host = document.createElement('div'); document.body.appendChild(host);
+    const guideView = (): LobbyView => ({ ...VIEW(), firstLaunch: false, guideOn: true, guideStep: 0 } as unknown as LobbyView);
+    const lobby = mountLobby(host, handlers({ getView: guideView }));
+    expect(host.querySelector('[data-anchor="help"]'), '手册 pill 应有 data-anchor=help').toBeTruthy(); // 锚点已渲（layout.anchor）
+    expect(host.textContent).toContain('先翻一遍');  // GUIDE_COACH[0] 文案进了高亮气泡
+    lobby.destroy(); host.remove();
+  });
+
+  it('新手引导：guideStep=-1（已完成）→ 不显高亮（不回归）', () => {
+    const host = document.createElement('div'); document.body.appendChild(host);
+    const lobby = mountLobby(host, handlers()); // VIEW 无 guideStep → -1
+    expect(host.textContent).not.toContain('先翻一遍');
+    lobby.destroy(); host.remove();
+  });
 });

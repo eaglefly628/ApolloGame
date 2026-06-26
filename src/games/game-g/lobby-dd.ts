@@ -17,6 +17,10 @@ import { buildDeckScreen } from './deck-screen.js';
 import { buildCraftScreen } from './craft-screen.js';
 import { buildOverlay, INITIAL_OVERLAY, type OverlayState } from './overlays.js';
 import { luckyFromVal, type LobbyView, type LobbyHandlers, type GachaResult } from './lobby-screen.js';
+import { World } from '@engine/core/world.js';
+import type { Coachmark, Flag } from '@engine/protocol/components.js';
+import { mountOnboardingOverlay } from '@ui/onboarding-overlay.js';
+import { GUIDE_COACH } from './lobby-overlays.js';
 
 const TABS: { id: string; label: string }[] = [
   { id: 'home', label: '大厅' }, { id: 'campaign', label: '战役' }, { id: 'decks', label: '我的牌组' },
@@ -29,8 +33,8 @@ export const INITIAL_LOBBY_DD: LobbyDDState = { tab: 'home', coll: { ...INITIAL_
 // ── 顶栏（玩家 + 货币 + 商城/手册/设置）·纯数据 ─────────────────
 // owner 2026-06-26「证明 UI 控件能力 = 原版」：原版顶栏的 ♠ 章/等级 pill/货币 pill 早被引擎控件覆盖——
 // 章=Avatar(shape:rounded)、货币/手册/设置/战役=Tag(圆角药丸·可点)；不再用 Button 凑数。三区 justify 居中战役 pill。
-function pill(id: string, label: string, action: string, tone: 'normal' | 'accent' = 'normal', arg?: string): LayoutNode {
-  return { type: 'Tag', id, props: { label, tone, action, ...(arg ? { actionArg: arg } : {}) } };
+function pill(id: string, label: string, action: string, tone: 'normal' | 'accent' = 'normal', arg?: string, anchor?: string): LayoutNode {
+  return { type: 'Tag', id, props: { label, tone, action, ...(arg ? { actionArg: arg } : {}) }, ...(anchor ? { layout: { anchor } } : {}) };
 }
 function topbar(view: LobbyView): LayoutNode {
   const who: LayoutNode = {
@@ -54,7 +58,7 @@ function topbar(view: LobbyView): LayoutNode {
       pill('tb-dia', `💎 ${view.diamond ?? 0}`, 'recharge'),
       pill('tb-shard', `🧩 ${view.dizhiShards ?? 0}`, 'recharge'),
       pill('tb-foil', `✨ ${view.foilCount}`, 'shopFoil'),
-      pill('tb-man', '📚 手册', 'man', 'accent'),
+      pill('tb-man', '📚 手册', 'man', 'accent', undefined, 'help'),
       pill('tb-settings', '⚙', 'settings'),
     ],
   };
@@ -124,30 +128,60 @@ export function mountLobby(host: HTMLElement, h: LobbyHandlers): { update: () =>
   root.append(mainHost, overlayHost);
   host.appendChild(root);
 
+  // 新手引导 coachmark（数据驱动·复用引擎 OnboardingOverlay·套路同战斗 battle-coach）：小 world 承载 Coachmark + 驱动 Flag。
+  // 锚点用 layout.anchor 渲成 data-anchor（引擎新能力）；OnboardingOverlay 在 root 内 querySelector 锚点 → spotlight + 气泡。
+  const coachWorld = new World();
+  coachWorld.createEntity('coach-flag'); coachWorld.addComponent<Flag>('coach-flag', { type: 'Flag', id: 'lobby_coach', active: false });
+  coachWorld.createEntity('coach-mark'); coachWorld.addComponent<Coachmark>('coach-mark', { type: 'Coachmark', anchor: 'help', text: '', visibleWhen: 'lobby_coach', pad: 7, placement: 'bottom' });
+  const coach = mountOnboardingOverlay(root, coachWorld, root);
+
   const st: LobbyDDState = { tab: 'home', coll: { ...INITIAL_COLLECTION }, craftSel: '', ov: { ...INITIAL_OVERLAY }, gachaReveal: null };
   if (getView().firstLaunch) st.ov.open = 'story';
+
+  // 引导可见：非首启故事、引导开、进度在范围、无浮层 → 显当前步（写锚点/文案到 mark）；否则灭。同原版 lobby-screen updateCoach。
+  const anyOverlayOpen = (): boolean => st.ov.open !== 'none' || !!st.gachaReveal;
+  const updateCoach = (): void => {
+    const v = getView(); const gs = v.guideStep ?? -1;
+    const flag = coachWorld.getComponent<Flag>('coach-flag', 'Flag'); const mark = coachWorld.getComponent<Coachmark>('coach-mark', 'Coachmark');
+    if (flag && mark) {
+      const show = !v.firstLaunch && v.guideOn !== false && gs >= 0 && gs < GUIDE_COACH.length && !anyOverlayOpen();
+      if (show) { const spec = GUIDE_COACH[gs]!; mark.anchor = spec.anchor; mark.text = spec.text; mark.placement = spec.placement; }
+      flag.active = show;
+    }
+    coach.update();
+  };
+  // 点对推进（同原版 lobby-screen L317）：玩家动作 == 当前步 advanceAct(+可选 advanceK) → 进下一步 / 完成。
+  const advanceGuide = (act: string, k?: string): void => {
+    const gs = getView().guideStep ?? -1;
+    if (gs < 0 || gs >= GUIDE_COACH.length) return;
+    const s = GUIDE_COACH[gs]!;
+    if (act === s.advanceAct && (!s.advanceK || k === s.advanceK)) {
+      if (gs < GUIDE_COACH.length - 1) h.onGuideStep?.(gs + 1); else h.onGuideDone?.();
+    }
+  };
 
   let overlayTeardown: (() => void) | null = null;
   const showOverlay = (): void => {
     if (overlayTeardown) { overlayTeardown(); overlayTeardown = null; }
     const node = st.gachaReveal ? gachaRevealModal(st.gachaReveal) : buildOverlay(getView(), st.ov);
     if (node) overlayTeardown = mountUI(overlayHost, node, handlers, GG_LOBBY_THEME);
+    updateCoach();
   };
-  const rerenderMain = (): void => { root.dataset['skin'] = getView().skin; ui.update(buildLobby(getView(), st)); };
+  const rerenderMain = (): void => { root.dataset['skin'] = getView().skin; ui.update(buildLobby(getView(), st)); updateCoach(); };
   const refresh = (): void => { rerenderMain(); showOverlay(); };
   const openOv = (patch: Partial<OverlayState>): void => { st.ov = { ...st.ov, ...patch }; showOverlay(); };
   const rollLucky = (): void => { const v = h.onRollFortune?.(); const val = typeof v === 'number' ? v : (getView().fortune?.keptVal ?? 50); st.ov = { ...st.ov, lucky: luckyFromVal(val) }; };
 
   const handlers: HandlerMap = {
     // ── 导航 / 顶栏 ──
-    tab: (k) => { st.tab = k ?? 'home'; rerenderMain(); },
+    tab: (k) => { advanceGuide('tab', k); st.tab = k ?? 'home'; rerenderMain(); },
     openShop: () => openOv({ open: 'shop', shopTab: 'gacha' }),
     recharge: () => openOv({ open: 'shop', shopTab: 'wallet' }),
     shopFoil: () => openOv({ open: 'shop', shopTab: 'foil' }),
-    man: () => openOv({ open: 'help', helpTab: 'manual' }),
+    man: () => { advanceGuide('man'); openOv({ open: 'help', helpTab: 'manual' }); },
     settings: () => openOv({ open: 'settings' }),
     // ── 主页 / 战役 ──
-    play: () => h.onPlay(),
+    play: () => { advanceGuide('play'); h.onPlay(); },
     lucky: () => { rollLucky(); st.ov = { ...st.ov, open: 'lucky' }; showOverlay(); },
     // ── 收藏（瞬时 UI 态）──
     filterSuit: (k) => { st.coll = { ...st.coll, suit: k ?? 'all', heroId: '' }; rerenderMain(); },
@@ -157,8 +191,10 @@ export function mountLobby(host: HTMLElement, h: LobbyHandlers): { update: () =>
     // ── 牌组（持久态走 h.*）──
     pickCard: (k) => { if (k) h.onTogglePick?.(k); rerenderMain(); },
     clearPicks: () => { h.onClearPicks?.(); rerenderMain(); },
-    autoBuildDeck: () => { h.onAutoBuildDeck?.(); rerenderMain(); },
-    autoBuildTiangang: () => { h.onAutoBuildTiangang?.(); rerenderMain(); },
+    autoBuildDeck: () => { advanceGuide('autoBuildDeck'); h.onAutoBuildDeck?.(); rerenderMain(); },
+    autoBuildTiangang: () => { advanceGuide('autoBuildTiangang'); h.onAutoBuildTiangang?.(); rerenderMain(); },
+    deckTab: (k) => { advanceGuide('deckTab', k === 'tiangang' ? 'gang' : k); updateCoach(); }, // 牌组子页签切换（引擎 Tabs 内建切页）+ 引导步④推进
+
     selectDeck: (k) => { if (k) h.onSelectDeck?.(k); rerenderMain(); },
     newDeck: () => { h.onNewDeck?.(); rerenderMain(); },
     toggleTiangang: (k) => { if (k) h.onToggleTiangang?.(k); rerenderMain(); },
@@ -204,5 +240,5 @@ export function mountLobby(host: HTMLElement, h: LobbyHandlers): { update: () =>
 
   const ui = mountUI(mainHost, buildLobby(getView(), st), handlers, GG_LOBBY_THEME);
   showOverlay();
-  return { update: refresh, destroy: () => { if (overlayTeardown) overlayTeardown(); ui(); root.remove(); } };
+  return { update: refresh, destroy: () => { if (overlayTeardown) overlayTeardown(); coach.destroy(); ui(); root.remove(); } };
 }

@@ -69,7 +69,7 @@ function pokerPage(view: LobbyView, picks: Set<string>): LayoutNode {
     type: 'Panel', id: 'poker-head', props: { bare: true }, layout: { direction: 'row', gap: 8, padding: 10, align: 'center' },
     children: [
       { type: 'Label', id: 'poker-count', props: { text: `🎴 扑克牌库 ·「${view.activeDeckName ?? ''}」· 从 52 选 ${picks.size}/${max}`, size: 'md', color: picks.size === max ? 'gold' : 'sub', bold: true } },
-      { type: 'Button', id: 'poker-auto', props: { label: '✨ 一键自动构筑', kind: 'ghost', action: 'autoBuildDeck' } },
+      { type: 'Button', id: 'poker-auto', props: { label: '✨ 一键自动构筑', kind: 'ghost', action: 'autoBuildDeck' }, layout: { anchor: 'autobuild-poker' } },
       { type: 'Button', id: 'poker-clear', props: { label: '清空', kind: 'ghost', action: 'clearPicks' } },
     ],
   };
@@ -93,7 +93,7 @@ function tiangangPage(view: LobbyView): LayoutNode {
     layout: { direction: 'column', gap: 8, padding: 10 },
     children: [
       { type: 'Label', id: 'tg-note', props: { text: '当前出战这套的天罡：已入组点✕移出·空槽点添加（从已拥有里选）·或一键配置。', size: 'xs', color: 'sub' } },
-      { type: 'Button', id: 'tg-auto', props: { label: '✨ 一键配置天罡', kind: 'ghost', action: 'autoBuildTiangang' } },
+      { type: 'Button', id: 'tg-auto', props: { label: '✨ 一键配置天罡', kind: 'ghost', action: 'autoBuildTiangang' }, layout: { anchor: 'autobuild-gang' } },
       { type: 'Panel', id: 'tg-slots', props: { bare: true }, layout: { direction: 'grid', minCol: 150, gap: 8 }, children: slots },
     ],
   };
@@ -127,7 +127,7 @@ export function buildDeckScreen(view: LobbyView, picks?: Set<string>): LayoutNod
   const p = picks ?? new Set(view.pokerPicks ?? []);
   const tabs: LayoutNode = {
     type: 'Tabs', id: 'deck-tabs',
-    props: { tabs: [{ id: 'poker', label: '🎴 扑克牌库' }, { id: 'tiangang', label: '⚡ 天罡战法' }, { id: 'dizhi', label: '🀄 地支牌' }] },
+    props: { tabs: [{ id: 'poker', label: '🎴 扑克牌库' }, { id: 'tiangang', label: '⚡ 天罡战法' }, { id: 'dizhi', label: '🀄 地支牌' }], action: 'deckTab' },
     layout: { flex: 1 }, children: [pokerPage(view, p), tiangangPage(view), dizhiPage(view)],
   };
   return {
