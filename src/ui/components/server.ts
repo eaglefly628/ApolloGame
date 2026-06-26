@@ -101,7 +101,11 @@ const APOLLO_KEYFRAMES = `
 @keyframes apollo-sheen{0%{left:-60%}60%,100%{left:140%}}
 @keyframes apollo-float{0%,100%{transform:translateY(0)}50%{transform:translateY(-12px)}}
 @keyframes apollo-glow{0%,100%{box-shadow:0 0 22px rgba(232,205,130,.5)}50%{box-shadow:0 0 50px rgba(232,205,130,.95)}}
-@keyframes apollo-pulse{0%,100%{opacity:.55}50%{opacity:1}}`;
+@keyframes apollo-pulse{0%,100%{opacity:.55}50%{opacity:1}}
+[data-flipcard] [data-flip-front],[data-flipcard] [data-flip-back]{transition:transform .3s cubic-bezier(.4,0,.2,1);backface-visibility:hidden;transform-origin:50% 50%}
+[data-flipcard] [data-flip-back]{transform:scaleX(0)}
+[data-flipcard]:hover [data-flip-front]{transform:scaleX(0)}
+[data-flipcard]:hover [data-flip-back]{transform:scaleX(1)}`;
 function ensureKeyframes(): void {
   if (typeof document === 'undefined') return;
   if (document.getElementById('apollo-ui-keyframes')) return;

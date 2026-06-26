@@ -171,9 +171,10 @@ function renderPanel(id: string, p: PanelProps, c: LayoutConstraints | undefined
   const pad = c?.padding ?? (bare ? 0 : 16);
   const ls = layoutStyle(c);
   const overflow = p.scroll ? 'overflow-y:auto;' : '';
-  // grid 排布模式（卡牌格/货架）：auto-fill 自适应列数（minCol 定最小列宽）；非 grid 走原 flex 行/列（支持 justify 主轴分布）。
+  // grid 排布模式（卡牌格/货架）：cols=N 固定列数（严格等分·消空隙）；否则 auto-fill 自适应（minCol 定最小列宽）。非 grid 走 flex 行/列（支持 justify）。
+  const gridCols = c?.cols !== undefined ? `repeat(${num(c.cols)},1fr)` : `repeat(auto-fill,minmax(${c?.minCol ?? 96}px,1fr))`;
   const box = dir === 'grid'
-    ? `display:grid;grid-template-columns:repeat(auto-fill,minmax(${c?.minCol ?? 96}px,1fr));gap:${gap}px;align-items:${align}`
+    ? `display:grid;grid-template-columns:${gridCols};gap:${gap}px;align-items:${align}`
     : `display:flex;flex-direction:${dir};gap:${gap}px;align-items:${align}${justify ? `;justify-content:${justify}` : ''}`;
   // chrome：非 bare 才画底/边框/圆角（bg 缺省主题 bg1·与 Screen.bg 同口径·令牌如 'var(--felt)'）；bare=透明无框只做分组。
   // accent：高亮框（jade 描边 + 柔光投影）用于活动视口/强调面板；缺省细线边。bare 时不画框故忽略 accent。
@@ -425,6 +426,7 @@ function renderCard(id: string, p: CardProps, children: LayoutNode[], ls: string
 const PCARD_DIMS: Record<string, [number, number, number, number]> = { sm: [52, 72, 13, 26], md: [64, 90, 15, 34], lg: [82, 116, 18, 46] };
 function renderPlayingCard(id: string, p: PlayingCardProps, ls: string, t: UITheme): string {
   const [w, h, corner, big] = PCARD_DIMS[p.size ?? 'md'] ?? PCARD_DIMS['md']!;
+  const dim = p.fluid ? 'width:100%;aspect-ratio:5/7' : `width:${w}px;height:${h}px`; // fluid=充满父格(5:7)·替代固定档
   const isRed = p.suit === '♥' || p.suit === '♦';
   const light = p.face === 'light';
   // light=经典白扑克牌（红黑对比·对决卡用）；dark=暗主题卡（牌库格/收藏用·缺省）。
@@ -447,7 +449,14 @@ function renderPlayingCard(id: string, p: PlayingCardProps, ls: string, t: UIThe
   const lblColor = light ? '#5a5048' : t.sub;
   const label = p.label ? `<div style="position:absolute;bottom:3px;left:0;right:0;font-size:9px;color:${lblColor};font-family:${t.fontUi};text-align:center;${light ? '' : 'text-shadow:0 1px 2px rgba(0,0,0,.6)'}">${esc(p.label)}</div>` : '';
   const value = p.value ? `<span style="position:absolute;bottom:4px;right:6px;font-size:10px;font-weight:700;color:${t.gold};font-family:${t.fontUi}">${esc(p.value)}</span>` : '';
-  return `<div id="${esc(id)}"${action} style="position:relative;display:inline-flex;align-items:center;justify-content:center;width:${w}px;height:${h}px;border-radius:8px;background:${faceBg};border:2px solid ${selBorder};font-family:${t.fontUi};${glow}${dimmed}${cursor}${ls}">${inner}${label}${value}</div>`;
+  // 悬停翻面（REQ-UI-G收藏卡①）：front=牌面 / back=信息子树，hover 时 scaleX 翻（CSS 注入·见 APOLLO_KEYFRAMES 的 data-flipcard 规则）。
+  if (p.flipOnHover && p.backFace) {
+    const face = `position:absolute;inset:0;display:inline-flex;align-items:center;justify-content:center;border-radius:8px;border:2px solid ${selBorder};font-family:${t.fontUi};${glow}${dimmed}`;
+    const front = `<div data-flip-front style="${face};background:${faceBg}">${inner}${label}${value}</div>`;
+    const back = `<div data-flip-back style="${face};background:${t.bg2};padding:7px;overflow:hidden">${renderNode(p.backFace, t)}</div>`;
+    return `<div id="${esc(id)}"${action} data-flipcard style="position:relative;${dim};${cursor}${ls}">${front}${back}</div>`;
+  }
+  return `<div id="${esc(id)}"${action} style="position:relative;display:inline-flex;align-items:center;justify-content:center;${dim};border-radius:8px;background:${faceBg};border:2px solid ${selBorder};font-family:${t.fontUi};${glow}${dimmed}${cursor}${ls}">${inner}${label}${value}</div>`;
 }
 
 // ── CoinFlip（掷币）：3D 双面硬币·spinning 播翻转落定到 outcome·静态则直接显示结果面。──

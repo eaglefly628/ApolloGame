@@ -26,6 +26,8 @@ export interface LayoutConstraints {
   direction?: 'row' | 'column' | 'grid';
   /** 仅 direction:'grid' 生效：单元格最小列宽 px（auto-fill 自适应列数·缺省 96）。卡牌格/货架填这一个数即得自适应网格。 */
   minCol?: number;
+  /** 仅 direction:'grid' 生效：**固定列数**（覆盖 auto-fill → repeat(N,1fr)）。要「严格 N 列·格子等分父宽」时用（配 PlayingCard.fluid 让卡填满格、消卡间空隙）。 */
+  cols?: number;
   align?: 'start' | 'center' | 'end' | 'stretch';
   /** 主轴分布（justify-content·与 align 交叉轴对偶）：内容沿主轴(row=横/column=竖)的排布。
    *  between=两端对齐均分间隔·around/evenly=环绕均分·center/start/end=居中/首/尾。
@@ -251,6 +253,9 @@ export interface PlayingCardProps {
   face?: 'dark' | 'light';               // 牌面底：dark=暗主题卡(缺省) / light=经典白扑克牌（红黑对比·对决卡用）
   back?: string;                         // 牌背中央纹样字符（缺省 ♠ 暗纹）
   art?: string;                          // 立绘槽（已解析 URL/SVG）：正面时居中显名将立绘剪影、替代中央大花色（角标点数花色仍在）。游戏经 resolveAsset 把资产 key 解析后填（sim 持 key 保纯）。复用面：所有卡牌游戏。
+  fluid?: boolean;                       // 流式卡：width:100% 充满父格 + 维持 5:7 aspect-ratio（替代固定 sm/md/lg 档）。配 Panel grid cols:N → 严格 N 列、卡填满、零卡间空隙（REQ-UI-G收藏卡②）。
+  flipOnHover?: boolean;                 // 悬停翻面：配 backFace·鼠标悬停时 front→back scaleX 翻转，露出背面信息子树（CSS 注入·REQ-UI-G收藏卡①）。
+  backFace?: LayoutNode;                 // 背面内容子树（通常 Panel(column) 装 名/朝代/简介，同 Tooltip.bubble 思路）。仅 flipOnHover 时渲。
   action?: string; actionArg?: string;   // 可点 → handlers[action](actionArg)
 }
 
