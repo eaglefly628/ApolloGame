@@ -1,56 +1,71 @@
 import { World } from '@engine/core/world.js';
 import type {
   Transform, Velocity, Acceleration, Controllable, Shape, Color, Bounds,
-  Sprite, Frame, AnimState, Camera, CameraTarget, Flag, Zone,
+  Sprite, Frame, AnimState, Camera, CameraTarget, Flag, Zone, ConditionExpr,
 } from '@engine/protocol/components.js';
 import { overlapDetectCapability } from '@atom-skills/index.js';
 import { accelApplyCapability, motionApplyCapability } from '@skills/tier1/index.js';
 import {
   collisionResolveCapability, groundSenseCapability, jumpCapability, boundsClampCapability,
-  animStateCapability, cameraFollowCapability, zoneOccupancyCapability,
+  animStateCapability, cameraFollowCapability, zoneOccupancyCapability, eventWhenCapability, effectApplyCapability,
 } from '@skills/tier2/index.js';
 import { ASSET_P1_SHEET, ASSET_P2_SHEET, ANIM_CLIPS } from './assets.js';
 
 // ═══════════════════════════════════════════════════════════════
-//  是男人就上100层 · 双人合作版 —— 数据驱动的"垂直攀爬"世界（lockstep 安全）
+//  「你造我塔」· 双人合作召唤二重奏（数据驱动 · lockstep 安全 · 零新引擎能力）
 // ═══════════════════════════════════════════════════════════════
-//  纯能力组合，零新引擎能力：重力/碰撞/跳跃 + camera-follow(双人中点+自适应缩放) +
-//  anim-state(按速度切 idle/walk 精灵帧) + facing(按速度翻面) + zone-occupancy(双人都登顶→summit)。
-//  协作：踩头借力（REQ-003：站在已着地队友身上也算 Grounded → 能从队友头顶更高处起跳，够到高台）。
-//  lockstep 铁律：所有对端**完全相同的构建顺序**（系统→静态平台→相机→目标→按 playerId 序的玩家）
-//  → 相同实体迭代序 → 逐 tick 相同哈希。买路于 platformer-lockstep.ts 同款写法。
+//  想象力核心（参考 Pico Park「用身体当机关」+ NS-SHAFT「平台有个性」）：
+//   没人能爬自己的路 —— 你站定踩住开关，对方的「幻影踏脚」才实体化；于是必须交替二重奏：
+//   我撑住开关给你召唤台阶 → 你上去再回头给我召唤 → 塔在配合中长出来。落脚平台(带开关)恒实，
+//   连接台阶皆幻影(默认可穿过)，由「对方踩住对应开关」才变实（plate→flag→event-when→effect set-sensor）。
+//  协作还可踩头借力(REQ-003)。相机取双人中点自适应缩放。两人都登顶→summit 过关。
+//  lockstep：固定构建顺序(系统→恒实平台→开关→幻影台+连线→相机→目标→按 playerId 序玩家)→同哈希。
 // ═══════════════════════════════════════════════════════════════
 
 export const WORLD_W = 640;
-export const WORLD_H = 1500;
-const GROUND_TOP = 1452; // 地面顶边
-const FLOORS = 14;
-const GAP = 90; // 层间垂直距离（< 单跳高度163，跳得上）
-const OFF = 55; // 锯齿水平偏移（中心 ±55 → 相邻不水平重叠，从侧面落上不撞底面）
-
-// 升序锯齿平台（纯数据）：i 层中心 x 在 320±55 交替，y 自地面每层 -90。宽 90、不重叠。
-export interface Box { x: number; y: number; width: number; height: number }
-export const CLIMB_PLATFORMS: Box[] = Array.from({ length: FLOORS }, (_, i) => ({
-  x: 320 + (i % 2 === 0 ? -OFF : OFF),
-  y: GROUND_TOP - GAP * (i + 1),
-  width: 90,
-  height: 18,
-}));
-export const TOP_PLATFORM: Box = { x: 320, y: CLIMB_PLATFORMS[FLOORS - 1].y - 60, width: 220, height: 18 }; // 顶台（会合点）
-export const GOAL_BOX: Box = { x: 320, y: TOP_PLATFORM.y - 35, width: 220, height: 110 }; // 顶部目标区
+export const WORLD_H = 1120;
+const GROUND_TOP = 1050;
 export const SUMMIT_FLAG = 'summit';
 
+export interface Box { x: number; y: number; width: number; height: number }
 export const playerEntity = (pid: string): string => `player:${pid}`;
-const PLAYER_TINT = [0x3b82f6, 0xfb923c]; // 蓝 / 橙（精灵未加载时的退化色）
+const PLAYER_TINT = [0x3b82f6, 0xfb923c];
 const PLAYER_SHEET = [ASSET_P1_SHEET, ASSET_P2_SHEET];
-// 出生在第0层(锯齿)两侧的空地（避开其 x 跨度 → 从侧面跳上去，不会撞平台底面）。
-const SPAWN_X = [130, 510];
+const SPAWN_X = [70, 570]; // 出生在首段幻影台的侧边空地（避免正下方起跳撞底面）
 
-function staticBox(w: World, id: string, b: Box, tint: number): void {
+// 恒实平台。蓝走左→右上对角，橙走右→左上对角，两条斜梯各段都有横向缺口(从侧面落上、不撞底面)，
+// 顶台居中、两落脚台在其 x 跨度之外 → 从侧面跳上顶台。
+const NORMALS: Array<Box & { tint?: number }> = [
+  { x: 320, y: GROUND_TOP + 24, width: 620, height: 48 }, // [0] ground
+  { x: 440, y: 743, width: 150, height: 18 }, // [1] L1 蓝落脚台 [365,515] + b1
+  { x: 200, y: 743, width: 150, height: 18 }, // [2] L2 橙落脚台 [125,275]
+  { x: 320, y: 655, width: 170, height: 20, tint: 0xf5c542 }, // [3] TOP 顶台(金) [235,405]
+];
+// 压力开关：owner=哪个玩家(0蓝/1橙)踩 → 置 flag。二重奏只需两把：
+//  og(橙踩地面)→撑起蓝的台让蓝爬到 L1；b1(蓝踩 L1)→撑起橙的台让橙爬到 L2。
+const SWITCHES: Array<{ plate: Box; owner: number; flag: string }> = [
+  { plate: { x: 570, y: 1030, width: 90, height: 40 }, owner: 1, flag: 'og' }, // 地面·橙开关（撑蓝）·橙出生即在此
+  { plate: { x: 440, y: 726, width: 140, height: 36 }, owner: 0, flag: 'b1' }, // L1·蓝开关（撑橙）
+];
+// 幻影踏脚：gate=哪个 flag 为真时变实。蓝爬的台(左)由橙开关(og→A段, b? )驱动……
+//  A 段：橙踩地面 og → 蓝的 bs1/bs2 实 → 蓝爬到 L1。
+//  B 段：蓝踩 L1 b1 → 橙的 os1/os2 实 → 橙爬到 L2。
+const PHANTOMS: Array<{ box: Box; gate: string }> = [
+  { box: { x: 160, y: 955, width: 120, height: 16 }, gate: 'og' }, // ph0 蓝爬·橙撑 [120,200]（斜上→右·每跳~90）
+  { box: { x: 255, y: 883, width: 120, height: 16 }, gate: 'og' }, // ph1 [215,295]
+  { box: { x: 350, y: 811, width: 120, height: 16 }, gate: 'og' }, // ph2 [310,390] → L1
+  { box: { x: 480, y: 955, width: 120, height: 16 }, gate: 'b1' }, // ph3 橙爬·蓝撑 [440,520]（斜上→左）
+  { box: { x: 385, y: 883, width: 120, height: 16 }, gate: 'b1' }, // ph4 [345,425]
+  { box: { x: 290, y: 811, width: 120, height: 16 }, gate: 'b1' }, // ph5 [250,330] → L2
+];
+const SUMMIT_BOX: Box = { x: 320, y: 625, width: 180, height: 110 }; // 顶部目标区（站上金顶台即在内）
+
+function box(w: World, id: string, b: Box, tint: number, sensor = false): void {
   w.createEntity(id);
   w.addComponent(id, { type: 'Transform', x: b.x, y: b.y, rotation: 0, scaleX: 1, scaleY: 1 } as Transform);
   w.addComponent(id, { type: 'Shape', kind: 'box', width: b.width, height: b.height } as Shape);
-  w.addComponent(id, { type: 'Color', tint, alpha: 1 } as Color);
+  w.addComponent(id, { type: 'Color', tint, alpha: sensor ? 0.5 : 1 } as Color);
+  if (sensor) w.addComponent(id, { type: 'Sensor' } as { type: 'Sensor' });
 }
 
 export function buildClimbWorld(playerIds: string[]): World {
@@ -58,32 +73,52 @@ export function buildClimbWorld(playerIds: string[]): World {
   for (const cap of [
     accelApplyCapability, motionApplyCapability, overlapDetectCapability, groundSenseCapability,
     collisionResolveCapability, jumpCapability, boundsClampCapability,
-    animStateCapability, cameraFollowCapability, zoneOccupancyCapability,
+    animStateCapability, cameraFollowCapability, zoneOccupancyCapability, eventWhenCapability, effectApplyCapability,
   ]) {
     for (const s of cap.systems) w.addSystem(s);
   }
+  const ownerEnt = (i: number): string => (playerIds[i] ? playerEntity(playerIds[i]) : '__none__');
 
-  // 静态几何：地面 → 锯齿平台 → 顶台（固定顺序）。
-  staticBox(w, 'ground', { x: 320, y: GROUND_TOP + 24, width: 620, height: 48 }, 0x4b5563);
-  CLIMB_PLATFORMS.forEach((p, i) => staticBox(w, `floor${i}`, p, 0x6b7280));
-  staticBox(w, 'top', TOP_PLATFORM, 0x8b9099);
+  // 恒实平台。
+  NORMALS.forEach((b, i) => box(w, i === 0 ? 'ground' : `normal${i}`, b, b.tint ?? (i === 0 ? 0x4b5563 : 0x6b7280)));
+  // 开关（zone→flag；owner 专属）。
+  SWITCHES.forEach((s, i) => {
+    const p = s.plate;
+    box(w, `plate${i}`, p, s.owner === 0 ? 0x3b82f6 : 0xfb923c, true); // 视觉板（蓝/橙·Sensor 不挡路）
+    w.createEntity(`sw${i}`);
+    w.addComponent(`sw${i}`, { type: 'Flag', id: s.flag, active: false } as Flag);
+    w.addComponent(`sw${i}`, {
+      type: 'Zone', outFlag: s.flag,
+      minX: p.x - p.width / 2, minY: p.y - p.height / 2, maxX: p.x + p.width / 2, maxY: p.y + p.height / 2,
+      requiredEntities: [ownerEnt(s.owner)], count: 1,
+    } as Zone);
+  });
+  // 幻影踏脚：默认 Sensor(虚)；gate 真→set-sensor(false) 变实，gate 假→set-sensor(true) 复原。
+  PHANTOMS.forEach((ph, i) => {
+    box(w, `ph${i}`, ph.box, 0x38bdf8, true);
+    const when: ConditionExpr = { kind: 'flag', id: ph.gate, equals: true };
+    w.createEntity(`phSolid${i}`); w.addComponent(`phSolid${i}`, { type: 'EventWhen', signal: `solid:ph${i}`, when, mode: 'level', armed: false } as unknown as { type: 'EventWhen' });
+    w.createEntity(`phSoft${i}`); w.addComponent(`phSoft${i}`, { type: 'EventWhen', signal: `soft:ph${i}`, when: { kind: 'not', of: when }, mode: 'level', armed: false } as unknown as { type: 'EventWhen' });
+    w.createEntity(`phSolidFx${i}`); w.addComponent(`phSolidFx${i}`, { type: 'Effect', onSignal: `solid:ph${i}`, kind: 'set-sensor', targetEntity: `ph${i}`, value: false } as unknown as { type: 'Effect' });
+    w.createEntity(`phSoftFx${i}`); w.addComponent(`phSoftFx${i}`, { type: 'Effect', onSignal: `soft:ph${i}`, kind: 'set-sensor', targetEntity: `ph${i}`, value: true } as unknown as { type: 'Effect' });
+  });
 
-  // 相机：取所有 CameraTarget 的 AABB 中点 + 自适应缩放保证两人都在画面；Bounds=关卡矩形不露界外。
+  // 相机（跟双人中点+自适应缩放）。
   w.createEntity('camera');
   w.addComponent('camera', { type: 'Camera', zoom: 1, offsetX: 320, offsetY: GROUND_TOP, rotation: 0, viewportW: 640, viewportH: 400 } as Camera);
   w.addComponent('camera', { type: 'Bounds', minX: 0, minY: 0, maxX: WORLD_W, maxY: WORLD_H } as Bounds);
 
-  // 目标区（数据驱动通关）：两名玩家中心都进顶部矩形 → summit 旗标置真。
+  // 目标（两人都进顶部矩形→summit）。
   w.createEntity('goal');
   w.addComponent('goal', { type: 'Flag', id: SUMMIT_FLAG, active: false } as Flag);
   w.addComponent('goal', {
     type: 'Zone', outFlag: SUMMIT_FLAG,
-    minX: GOAL_BOX.x - GOAL_BOX.width / 2, minY: GOAL_BOX.y - GOAL_BOX.height / 2,
-    maxX: GOAL_BOX.x + GOAL_BOX.width / 2, maxY: GOAL_BOX.y + GOAL_BOX.height / 2,
+    minX: SUMMIT_BOX.x - SUMMIT_BOX.width / 2, minY: SUMMIT_BOX.y - SUMMIT_BOX.height / 2,
+    maxX: SUMMIT_BOX.x + SUMMIT_BOX.width / 2, maxY: SUMMIT_BOX.y + SUMMIT_BOX.height / 2,
     requiredEntities: playerIds.map(playerEntity), count: playerIds.length,
   } as Zone);
 
-  // 玩家（按 playerId 序）：动态方块 + 重力 + Controllable + 相机目标 + 精灵动画 + 翻面。
+  // 玩家（按 playerId 序：0蓝1橙）。
   playerIds.forEach((pid, i) => {
     const id = playerEntity(pid);
     const sheet = PLAYER_SHEET[i % PLAYER_SHEET.length];
@@ -103,3 +138,6 @@ export function buildClimbWorld(playerIds: string[]): World {
 
   return w;
 }
+
+// 供测试/渲染引用的关卡数据。
+export { NORMALS, SWITCHES, PHANTOMS, SUMMIT_BOX, GROUND_TOP };

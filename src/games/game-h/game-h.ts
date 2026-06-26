@@ -5,7 +5,7 @@ import type { Channel, NetMsg, Dir } from '@net/index.js';
 import { mountUI } from '@ui/components/index.js';
 import type { LayoutNode, HandlerMap } from '@ui/components/index.js';
 import type { Transform, Flag } from '@engine/protocol/components.js';
-import { buildClimbWorld, CLIMB_PLATFORMS, SUMMIT_FLAG } from './climb-world.js';
+import { buildClimbWorld, SUMMIT_FLAG, GROUND_TOP } from './climb-world.js';
 import { GAME_H_ASSETS } from './assets.js';
 
 // ═══════════════════════════════════════════════════════════════
@@ -16,31 +16,29 @@ import { GAME_H_ASSETS } from './assets.js';
 //  HUD=新 UI 库 LayoutNode（数据驱动）：层数 + 联机状态 + 操作提示 + 登顶横幅（MVU：每帧由状态重算树→ui.update）。
 // ═══════════════════════════════════════════════════════════════
 
-const FLOORS = CLIMB_PLATFORMS.length;
-
-// 由较高玩家的 y 估算"已上几层"（越高 y 越小 → 身下平台数）。
-function floorOf(world: ReturnType<LockstepClient['getWorld']>): number {
+// 由较高玩家的 y 估算攀爬高度（米）。
+function heightOf(world: ReturnType<LockstepClient['getWorld']>): number {
   let minY = Infinity;
   for (const [id] of world.query('Controllable', 'Transform')) {
     const t = world.getComponent<Transform>(id, 'Transform');
     if (t && t.y < minY) minY = t.y;
   }
   if (!isFinite(minY)) return 0;
-  return CLIMB_PLATFORMS.filter((p) => p.y > minY).length;
+  return Math.max(0, Math.round((GROUND_TOP - minY) / 10));
 }
 
-function hudTree(floor: number, peers: number, inSync: boolean, won: boolean): LayoutNode {
-  const net = peers > 1 ? (inSync ? '🟢 联机中 · 2P' : '🟠 同步中…') : '👤 单人 — 再开一个本游戏标签页即第 2 位玩家';
+function hudTree(height: number, peers: number, inSync: boolean, won: boolean): LayoutNode {
+  const net = peers > 1 ? (inSync ? '🟢 联机中 · 2P' : '🟠 同步中…') : '👤 单人 — 本游戏需双人：再开一个本游戏标签页即第 2 位玩家';
   const children: LayoutNode[] = [
     {
       type: 'Panel', id: 'gh-top', props: {},
       layout: { direction: 'row', gap: 12, padding: 8, align: 'center' },
       children: [
-        { type: 'Label', id: 'gh-floor', props: { text: `🏔 第 ${floor} / ${FLOORS} 层`, size: 'lg', bold: true, color: 'gold' } },
+        { type: 'Label', id: 'gh-h', props: { text: `🧗 高度 ${height} m`, size: 'lg', bold: true, color: 'gold' } },
         { type: 'Label', id: 'gh-net', props: { text: net, size: 'sm', color: peers > 1 ? 'ok' : 'dim' } },
       ],
     },
-    { type: 'Label', id: 'gh-help', props: { text: 'A/D 或 ←/→ 移动 · Space/W/↑ 跳 · 站到队友头上借力跳更高 · 两人都登顶即过关', size: 'sm', color: 'dim' } },
+    { type: 'Label', id: 'gh-help', props: { text: '你造我塔：踩住开关→对方的「青色幻影台」才实体化，轮流给对方搭路；踩队友头借力；两人都登顶即过关', size: 'sm', color: 'dim' } },
   ];
   if (won) {
     children.push({ type: 'Panel', id: 'gh-win', props: { title: '🎉 登顶成功 · 两人会合过关！' }, layout: { padding: 14, align: 'center' } });
@@ -104,7 +102,7 @@ export function mount(container: HTMLElement, _host?: { exit?: () => void }): ()
     if (hudTick++ % 6 === 0) { // 每 6 帧刷新 HUD（省重排）
       const v = client.view();
       const won = !!world.getComponent<Flag>('goal', 'Flag')?.active;
-      ui.update(hudTree(floorOf(world), v.peerCount, v.inSync, won));
+      ui.update(hudTree(heightOf(world), v.peerCount, v.inSync, won));
     }
     raf = requestAnimationFrame(frame);
   };
