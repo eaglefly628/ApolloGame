@@ -4,7 +4,8 @@
 > 状态：`open`（待处理）/ `in-progress`（Lead 在做）/ `done`（已实现，附 commit）/ `wontfix`（附理由）。
 > 写法见 `game-creator-role.md`。差需求（"不行"）会被打回。
 >
-> **（2026-06-15 用户清理：本池仅保留 Game F / Game G 需求；非 F/G 条目（R9 / REQ-ARPG / REQ-C-005·006·007 / REQ-010 / BUG-002 / REQ-018）已移除，完整内容与 Lead 判定见 git 历史 commit `41ace96`。）**
+> **（2026-06-15 清理：本池仅保留 Game E/F/G 需求；非 F/G 条目已移除，见 git `41ace96`。）**
+> **（2026-06-26 Token 清理：已结案条目（done/wontfix）正文压成一行摘要，完整论证/接线契约见各 commit。open/进行中条目保留全文。）**
 
 ---
 
@@ -24,63 +25,15 @@
 
 ### REQ-UI-Gemini评审 · [2026-06-26] · Lead 评审（UI 库域·外部 Gemini code review 收敛） · status: **部分 done（C2/C3 已实现）· 余回驳/记录** · 类型: 架构评审收敛
 
-> 用户把 UI 代码打包给 Gemini review，回 7 条建议。Lead 逐条以宣言尺子评判，不照单全收：
->
-> **✅ 接受并已实现（本提交）：**
-> - **C2 样式注入硬化**：`render.ts layoutStyle` 直接插 `c.x/width/anim…` 进 style 串，弱模型/外部数据运行时可能是恶意字符串 → CSS 注入。**真安全缺口**。加 `num()` 数值强制 + anim 白名单(`ANIM_PRESETS`)。配 XSS 测试。
-> - **C3 焦点丢失**：`server.ts` reconcile 用 outerHTML 重建会毁聚焦 Input 的焦点/光标/IME。**真缺口**（受控输入每次按键重建即失焦）。加 `patchFocusedInput`：焦点在内的输入元素就地覆写 value、不重建。配焦点保护测试。
->
-> **🟡 接受为后续优化（记录·暂未做·待真实用例）：**
-> - **A2 bind Fast-Path**：帧级(60fps)绑定（血条/倒计时）走完整 diff→重建有 GC 压力。建议 bind 标量变化绕过 renderNode 直接改 DOM 属性。**合理**，但现有 reconcile 已只替换变化子树（非全树）；game-i 暂无帧级绑定。待 game-f/g HUD 真用到再下沉。
->
-> **❌ 回驳（附理由）：**
-> - **A1 统一用 layout-solver 求绝对坐标、HTML 后端弃 CSS flex**：fix 方向错。CSS flex/grid/文本换行/原生滚动/无障碍是 HTML 后端的**优势**（浏览器免费干重活），改成 JS 绝对定位是巨复杂度倒退。跨平台像素级对齐**非需求**（Web 为主、小游戏为辅，目标是「同数据两端能跑」非「逐像素一致」）。YAGNI。需要局部对齐处已可用 x/y 绝对定位。
-> - **A3 引入 FSM 承载 DnD/长按/多点触控时序态**：前提误读。DnD 的时序态（dragId）已在**解释器**(mountUI 闭包)里，不在「纯函数」。纯函数约束是对**游戏数据/能力**，非引擎解释器。复杂手势若需要，按 dnd 先例**下沉为定向解释器特性**即可；通用 FSM 层无现用例，YAGNI。
-> - **C1 LayoutConstraints 拆 absolute/flex 判别联合类型**：理论更纯，但代价巨大——**所有游戏的 layout 数据**都要加判别字段迁移；且现 `layoutStyle` 对 x/y 与 flex 共存是**确定性优先级**处理(x/y→absolute 优先)，不崩。为理论纯度毁整个数据契约不值。改为**文档注明互斥与优先级**即可。
-> - **C4 actionArg 支持 Record 结构化上下文**：「传 id + handler 从 state 取完整对象」是**标准且更干净**的做法(shop/pickcards 已这么做)，非退化。JSON-in-attribute 增复杂度、收益小。回驳（manifesto §4 重组）。
->
-> **边界**：C2/C3 本提交已做（src/ui·Lead 域）；A2 记录待用例；A1/A3/C1/C4 回驳留档。
+> 外部 Gemini review 7 条，Lead 以宣言尺子收敛：✅ **C2**(样式注入硬化·`num()`+anim 白名单·XSS 测) + **C3**(焦点丢失·`patchFocusedInput` 就地覆写不重建) 已实现。🟡 **A2**(bind fast-path) 记录待用例。❌ 回驳 **A1**(弃 CSS flex 改 JS 绝对定位=倒退)、**A3**(FSM 承载手势·时序态已在解释器·YAGNI)、**C1**(拆判别联合类型·毁数据契约)、**C4**(actionArg Record·现做法更干净)。详情见 git。
 
 ### REQ-UI-数字补间 / 富文本 · [2026-06-23] · Lead 登记（UI 库域） · status: **✅ done（owner 2026-06-25「都做完不要等·早晚需求」·下沉为 Label.tween / Label.spans）** · 类型: 真能力缺口下沉（manifesto 尺子已过）
 
-> **缘起**：写 `apollo-ui-migration-guide.md` 时复核库现状，3 游戏迁移仍会撞到两项**可数据化、且复用**的缺口（其余如 3D/SVG/hex/WorldFollower 已回驳为单游戏或世界渲染·见指南 §4）。先登记，game-g 迁到此处再由 Lead 下沉，**游戏层勿硬写**。
->
-> 1. **数值补间 / 数字滚动（number tween）** ✅ —— 掷骰数字滚到命点(G)、筹码/倍率/分数跳动(E)。
->    - 下沉为 `LabelProps.tween:{from,to,ms?,decimals?}`：renderNode 出初值 + `data-tween-*`，mountUI 定时器 easeOutCubic 动画到 to（与打字机共用 `typers`·teardown 一并清）。**render-only·不进 sim hash**。decimals 支小数（倍率）。
->    - 折进 Label 而非新建 Counter 控件（manifesto：扩字段优先于加控件类型）。
-> 2. **富文本 / 多段着色（richText spans）** ✅ —— 天罡/地煞词条带高亮、说明/故事分色文本。
->    - 下沉为 `LabelProps.spans:[{text,color?,bold?}]`：renderLabel 逐段出自带 color(令牌)/bold 的子 span，有 spans 忽略 text。**纯函数·render-only**。
->    - 折进 Label 而非新建 RichText 控件（同上）。
->
-> **验收** `label-tween-spans.test.ts`（tween 到位/decimals/teardown 清 + spans 多段/XSS/不回归）。
->
-> **暂不做**：3D transform（掷骰/硬币·演出，CSS/canvas 保留）、SVGPath（斜梯·单用途）、hex 布局（仅 F）、WorldFollower（浮动血条·归 renderer）——回驳理由见迁移指南 §4。
+> `LabelProps.tween:{from,to,ms?,decimals?}`（数字滚动·easeOutCubic·render-only）+ `LabelProps.spans:[{text,color?,bold?}]`（多段着色）。折进 Label 不新建控件。验收 `label-tween-spans.test.ts`。3D/SVG/hex/WorldFollower 回驳（见迁移指南 §4）。详情见 git。
 
 ### REQ-UI-3缺口（变换/动画/拖放） · [2026-06-23] · Lead 主导（UI 库域·跨游戏重构前置） · status: **✅ done（声明式下沉·game-i 同提交）** · 类型: 真能力缺口下沉（manifesto §4 评审通过）
 
-> **缘起**：用户问「若 Game E(小丑牌)/F(自走棋)/G(翻命扑克) 用数据驱动 UI 重构，还缺什么」。Lead 派 3 个 Explore 实测三游戏 UI 现状，对照 30 控件 + resolveBindings + solveLayout 做缺口判断。
->
-> **结论（用宣言尺子量过）**：菜单/HUD/列表/弹窗已覆盖 70~85%（G 已在生产用 mountUI 跑通「返回确认框」验证）。真缺口高度收敛到 3 个，**且都能填成声明式数据（弱模型能填）→ 该下沉**：
->
-> **① 下沉（本提交已实现·`src/ui/components`）：**
-> - `LayoutConstraints.rotate / scale` → CSS transform。扇形手牌(E/G)、选中放大。`render.ts layoutStyle`。
-> - `LayoutConstraints.anim / animMs / animDelay` → 具名关键帧入场动画（fadeIn/slideUp/pop/shake/dealIn/flyIn）。发牌/部署错峰(E/G)、计分弹跳。`render.ts` + `mountUI` 注入 keyframes。
-> - `LayoutConstraints.draggable / dropZone` → HTML5 拖放，`mountUI` 内建 dragstart/dragover/drop，drop 时调 `handlers[dropZone信号](被拖节点 id)`。放牌落子(G)、棋子上阵(F)、拖牌入选(E)。`render.ts` 出标签注入 + `server.ts` 手势。
-> - 尺子判定：`rotate:8`/`anim:'dealIn'`/`draggable:true`/`dropZone:'lane0'` 都是数据字段，最弱 LLM 能填；手势/keyframes 由解释器一次做完（同 hover/accordion/modal-close 套路），非游戏专属自由代码。
-> - 验证：`dnd-transform-anim.test.ts`（5 测）+ game-i 第 5 页「选牌计分」端到端实测（rotate 扇形/scale 选中/anim 发牌/drag 入选）。
->
-> **② 回驳（不进 `@ui/components`·属游戏世界 Canvas 渲染·别让引擎被单游戏拖肿）：**
-> - 浮动血条/伤害飘字跟随单位(F)：跟世界实体坐标 → 归 renderer 的 gauge/Text（F 已用 canvas 自动追随）。
-> - 精灵逐帧动画 / 兵沿路径行军(F/G)：世界渲染，归 renderer。
-> - 六角棋盘 hex 布局(F)：仅 1 游戏需要，YAGNI，F 自己 canvas 解；不为单游戏加宽共享布局核。
-> - SVG 斜梯路径(G)：单用途，CSS 凑或归世界层。
-> - 与游戏逻辑逐帧同步的命令式计分时间轴(E `advanceSeq`)：那是自由代码，保留宿主/renderer 层，**不**强塞 LayoutNode。
->
-> **③ 假缺口（无需新能力·纯重组·已在 game-i 证伪）：**
-> - 多选≤N（E 选 5 张 / G 牌组 52 选 16）：状态 + Card tone，= game-i 第 5 页「选牌计分」做法。
-> - 牌面渲染：Image + 贴图坐标，业务数据够用。
->
-> **边界**：本条只下沉 ①；②③ 是 Lead 带理由的回驳，记录在案供后续重构引用。
+> 三游戏(E/F/G)数据驱动 UI 重构缺口收敛到 3 个声明式字段并下沉(`src/ui/components`)：`LayoutConstraints.rotate/scale`(CSS transform·扇形手牌)、`anim/animMs/animDelay`(具名入场关键帧·发牌)、`draggable/dropZone`(HTML5 拖放·放牌落子)。验证 `dnd-transform-anim.test.ts` + game-i 第5页。② 回驳归 renderer/世界层(浮动血条/逐帧精灵/hex/SVG斜梯/命令式计分时间轴)；③ 假缺口(多选≤N/牌面渲染=重组)。详情见 git。
 
 ### BUG-G-掌机黑屏 · [2026-06-22] · owner→甲（cartridge/战斗屏域·owner 直派 bug 修） · status: **🟡 已修（zoom·`c5608bbc`）· 待真机烧版验证** · 类型: 弱 GPU 渲染回归
 
@@ -92,29 +45,7 @@
 
 ### REQ-G-退役旧战斗核 · [2026-06-22] · owner→game-g 甲（combat 域 · 主程评审登记） · status: **✅ done（甲·5 步全清·单一真相·`8c6c2751`/`a0970248`/`d91221a3`）** · 类型: 技术债清理（双核/双屏并存 → 单一真相）
 
-> **缘起**：主程（Lead）全面评审 game-g 发现——doc24 大转向（实时→回合制）后，**旧实时战斗核与新回合制核长期并存**，旧战斗屏也一并留着。owner 2026-06-22 拍板：专项清债，退役旧核、收敛为单一真相，派甲处理。
->
-> **主程已核实的现状（附证据·甲可直接照查）：**
-> - **两套战斗核**：旧实时 `live-combat.ts`（`initLiveBattle/stepLiveBattle/liveActive/migrateRear`）↔ 新回合 `turn-combat.ts`（`initTurnBattle/endTurn/aiTakeTurn…`）。
-> - **两个战斗屏**：旧 `battle-screen.ts`（`mountBattle`）↔ 新 `turn-battle-screen.ts`（`mountTurnBattle`）。
-> - **两条出征路并存于 `game-g.tsx`**：旧 `showMatch()`（live + battle-screen·现 ~line 857）↔ 新回合路（turn-combat + turn-battle-screen·现 ~line 583）。出货走回合制；`showMatch` 自标「保留作参考/帧测」（~line 550）——**非出货路径，却仍编进 bundle + 拖双份维护**。
-> - **退役意图本就写在代码里**：`turn-combat.ts` 头「待新战斗屏落地再切换、退役实时核」——新屏早已落地，**退役逾期**。
->
-> **⚠️ 必须先解的纠缠（别 naive 删）**：`turn-combat.ts`（line 13）**反向依赖** `live-combat.ts` 的共享物 `cardStamina / NO_TENGANG / TengangFx / ClashEvent`。直接删旧核 → 新核编不过。**先把这些共享类型/helper 抽出**（搬进 `turn-combat.ts`，或新建一个小 `combat-types.ts`），切断 `turn-combat → live-combat` 依赖，再删旧核。
->
-> **目标终态（步骤）：**
-> 1. 抽离共享类型/helper，切断新核对旧核的 import。
-> 2. `game-g.tsx`：删旧出征路 `showMatch()` + 其 live 专属胶水（`snapLivePos / buildBattleViewLive / clashToView` + 旧 `BattleView/BattleUnit/…` 引入）。
-> 3. 删 `live-combat.ts` + `live-combat.test.ts`。
-> 4. 删旧战斗屏 `battle-screen.ts` + `battle-screen.frame.test.ts` + `battle-screen.click.test.ts`（**此步属乙域 UI 删除**：甲主導本清债，删 `battle-screen*` 与乙协同/转手乙做）。
-> 5. 保留为唯一真相：`turn-combat` + `turn-battle-screen` + `clash-resolve`（解算核·保留）。
->
-> **验收：**
-> - `live-combat` / `battle-screen` / `showMatch` 全仓零引用（含测试），只在 git 历史可见。
-> - 受影响 golden 帧（`battle-screen.frame`）随文件一并退役；其余 golden 不变。
-> - **全套门禁绿**：tsc + vitest + build；**`turnHash` 回归测仍绿**（清债不得让新核行为漂移）。
->
-> **边界**：纯删旧码 + 抽共享类型，**不改新回合核行为**（turnHash 不变）。combat 域归甲；`battle-screen*`（表现）删除与乙协同。
+> doc24 实时→回合制大转向后双核/双屏并存。甲 5 步全清：抽共享类型切断 `turn-combat→live-combat` 依赖 → 删旧出征路 `showMatch()` + live 胶水 → 删 `live-combat.ts` → 删旧 `battle-screen*`(乙协同) → 唯一真相 `turn-combat`+`turn-battle-screen`+`clash-resolve`。turnHash 不漂移·门禁全绿。详情见 git。
 
 ### REQ-ARCH-MENU-DSL · [2026-06-21] · 框架级（PG-乙 转呈 · owner 拍板「提主程评」）· status: **open（待主程评判）** · 类型: 可能的通用能力缺口（带 YAGNI 警告）
 
@@ -149,11 +80,7 @@
 
 ### BUG-G-源泉徽标 · [2026-06-21] · owner→game-g 乙（甲代登记·勿越界）· status: **done（乙回滚·见下方 commit）** · 类型: 表现回滚
 
-> owner（2026-06-21·playtest）：「战场中的那个源泉，总变成右上角一个水滴了，变回来老版本。」——要的是**旧版底部横条**（带格子的 water bar），不要现在棋盘右上角的小水滴徽标。
->
-> **定位**：是 commit `3791fcde`（"召唤源泉重做——移棋盘右上角徽标 + 源泉(水滴)图标 + 大数字"）改的 `src/games/game-g/turn-battle-screen.ts`。
-> **请乙**：revert `3791fcde` 对 `turn-battle-screen.ts` 的源泉那段——恢复旧的底部 `waterBar/waterCap/waterTube/waterCellsHTML` 横条，删掉右上角 `fontBadge` 水滴。其余两文件（若有）按需保留。
-> **边界**：战场屏(`turn-battle-screen.ts`)是 owner 授权乙动的，甲不越界自行 revert，仅代登记转交。改完记得 regen 受影响金图 + 走全套门禁。
+> owner playtest：战场源泉变成右上角水滴，要回旧版底部横条 water bar。乙 revert `3791fcde` 对 `turn-battle-screen.ts` 的源泉段(恢复 waterBar/waterCap/waterTube·删 fontBadge)。详情见 git。
 
 ---
 
@@ -212,8 +139,7 @@
 ---
 
 ### REQ-G-卦象结算加减 · [2026-06-21] · owner→甲（Game G·结算逻辑） · status: **✅ done（甲·`settleTurn` 战利品按今日卦象±·确定性·大吉+2…大凶−2·夹≥0）** · 类型: 战斗逻辑（结算期·甲域）
-> owner 2026-06-21：**卦象系统已落地**（另 session·commit `9ea8b577`）。甲在**一局最后结算时**按**全局数据**做**卦象的加减**——结算分/奖励按当前卦象做 ±调整（看全局态）。
-> **甲待办**：① 摸清卦象系统落地形（数据在哪/怎么读当前卦象/有无现成 aggregate）；② 在 `settleTurn`/结算路径接入卦象 ±；③ 确定性（进 hash·可回放）；④ 数据驱动（卦象效果走数据表·非硬编码 if）。先调研落地形再动手。
+> 一局结算按今日卦象 ±战利品(大吉+2…大凶−2·夹≥0)·确定性进 hash·`settleTurn`。详情见 git。
 ### REQ-ARCH-SAVE · [2026-06-21] · program G 乙（owner 2026-06-21 钦定 · 存档持久化 + 云存档服务）· 框架级 · status: **open** · 优先级: 中 · 类型: 真缺口（持久化/同步=易错基础设施·过弱-LLM 尺子·≥多游戏拉动）
 
 > owner 2026-06-21：「开一个 REQ 给主程——游戏的存档任务 + 云服务存储任务。」「开了本地一个 Save 目录，打完包以后也有地方可以存。」
@@ -241,186 +167,44 @@
 
 ### REQ-ARCH-COACH · [2026-06-21] · design G（owner 2026-06-21 钦定 · 引擎通用新手引导）· 框架级 · status: **done（表现层·Lead `ac64e1c1`·design G 验收 PASS 2026-06-21）** · 优先级: 中 · 类型: 真缺口（仅表现层）+ 重组（逻辑层·无需引擎）
 
-> ✅ **Lead 已落表现层最小包**（`ac64e1c1`）：`Coachmark` 组件 + `src/renderer/coachmark.ts`(纯·collect/几何/SVG·7测) + `src/ui/onboarding-overlay.ts`(`mountOnboardingOverlay`·DOM·覆盖两套UI) + GameShell `UINode.anchor`。**design G 验收 PASS**：逐条对上策划案（组件全字段/data-anchor 统一/纯表现不进hash/YAGNI）。小瑕：arrow 暂未画(后补)。**逻辑层(首次/步骤/seen/点对)=游戏侧重组**→甲乙接清单 `src/games/game-g/design/DEV-CHECKLIST-onboarding.md` 用起来。
+> 新手引导 = 数据表(步骤/锚点/文案)，引擎固定 coachmark 渲染器解释。✅ Lead 落表现层最小包(`ac64e1c1`)：`Coachmark` render-only 组件 + `renderer/coachmark.ts`(纯·7测) + `ui/onboarding-overlay.ts`(DOM·覆盖两套UI) + GameShell `UINode.anchor`(`data-anchor`)。逻辑层(首次/步骤/seen/点对)=游戏侧重组(flow+flag+save)，不提需求。完整案 `docs/design/onboarding-coachmark-capability.md` + 清单 `game-g/design/DEV-CHECKLIST-onboarding.md`。详情见 git。
 
 
-**完整策划案见 `docs/design/onboarding-coachmark-capability.md`。** 一句话：新手引导 = 数据表（步骤/锚点/文案），引擎一台固定 coachmark 渲染器解释。owner 主诉求 = **首次使用任何功能即弹教学·高亮该框·指示点哪里**，且要**引擎通用、数据驱动**（任何游戏只填数据·零手写 UI）。
+### REQ-E-023 · [2026-06-18] · PE（Game E 小丑牌 · 牌库扩展总纲）· 框架级 · status: **⑥ 仅余 open（①②③⑤ done · ④ wontfix）** · 类型: 多个真缺口（逐项独立）
 
-**🟢 逻辑层 = 重组·无需引擎（design G 已自证可拼）**：首次检测 `not(flag(seen_x))` + `save` 持久化；步骤推进 `GameFlow{coach_steps}`；"点对才推进" `Clickable{onlyFlag}`→Signal→transition；门控其它 Clickable.onlyFlag。**这层不提需求**，游戏侧数据接线即可。
-
-**🔧 表现层 = 真缺口·请主程实现（≥2 游戏 F+G 拉动·过弱-LLM 尺子）**：现有组件无 overlay/spotlight/tooltip，手写遮罩=游戏代码违宪 → 下沉**最小包**：
-- ① `Coachmark` render-only 组件（POD·不进 hash）：`{anchor, shape:'rect'|'circle', pad?, dimColor?, dimAlpha?, text, placement?, arrow?, visibleWhen?}`。
-- ② `OnboardingOverlay` 渲染器（=解释器·合宪）：读激活 Coachmark → 全屏 dim + anchor rect 处镂空 + 气泡(text+arrow) 贴 placement。DOM 优先（覆盖现有 React/手写屏）+ SVG/Canvas 出帧（headless 验收）。
-- ③ **anchor 解析**：统一 `data-anchor="<key>"` 约定，`querySelector('[data-anchor=key]')`→rect。**同时覆盖 GameShell 与 game-g 手写 DOM 两套 UI**（手写屏加属性即可·零重构）。
-- ④ GameShell `UINode` 加 `anchor?: string`（落 `data-anchor`）。
-
-**确定性**：seen flags / flow step 进 hash + 存档（看过不再弹·跨端一致）；Coachmark 高亮纯表现·不进 hash·不回灌 gameplay（同 outcome-first）。
-**体积**：小-中（1 render 组件 + 1 表现渲染器 + 1 DOM helper + GameShell 一字段）·不碰 sim 结算/多人。
-**验收**：headless 断言流程状态机（触发→跳步→set seen→存档重载不再弹·hash 一致）；表现层出帧断言（镂空落在 anchor rect·气泡在 placement 侧）。
-**回驳记录**：R-1 不另造"Tutorial 能力"（flow+flag 已覆盖）；R-3 高亮不进 hash；R-4 富文本/分支树 YAGNI。
-
-
-### REQ-E-023 · [2026-06-18] · PE（Game E 小丑牌 · 牌库扩展总纲，owner 指派陈陈飞）· 框架级 · status: **open** · 优先级: 见各子项 · 类型: 多个真缺口（整理为一份，逐项可独立落地）
-
-**目标**：可玩小丑 **31 → 趋近 150**（catalog 元数据已全 150）。下面按「能力」拆分；**每项是独立 capability，可分别落地、分别验收**，不是一个大泥球。
-**📋 主程对照用的全 150 分桶卡组清单（每能力的验收目标 + 每张效果/参数）见 `docs/game-design/game-e-joker-rollout.md`。**
-**🟢 Lead 进度（2026-06-18，主程一轮走完六项）**：① countOf **done**（按 Tag 数实体，回驳字符串枚举）· ② chance **done**（种子 PRNG 概率门）· ③ held-card-score **done**（留手牌结算 pass）· ④ 自增长 **wontfix/重组**（Resource+Effect+valueFrom 覆盖，Counter 冗余）· ⑤ HandMods **done(部分)**（four_fingers/shortcut/smeared；splash/pareidolia/flower_pot 另评）· ⑥ 跨实体 **defer(P3)**（无干净最小切片，逐族待具体卡单提）。每项详见对应子项。引擎侧全绿（tsc+vitest+build）逐项推 mainbranch。**PE 可据此把对应小丑接成可玩 + 补测试。**
-
-**判据声明（owner 2026-06-18 定）**：回驳"做成重组"的前提是——**最弱 LLM 能稳定产出那份数据**。若某组合需要一段易错的同步代码/复杂拼装（弱模型复现不了），即使理论上能重组，也**特例化下沉成干净能力/数据接口**（宣言尺子）。据此下面区分。
-
-**⚠️ 留在游戏侧（每张小丑数据平凡、只一次性接线，PE 自己做）：**
-- **更多触发时机的"改资源"类**（on_round_end 经济：Golden/Rocket/Gift Card…；on_discard：Faceless/Trading Card…；on_blind_selected）：每张数据就是 `{trigger,target,value}`，弱 LLM 可填；线性脚本发信号 + `jokerToEntities` 接这几个 trigger（一次性）。
-- **条件重触发**（Hack 重触发 2/3/4/5、Sock and Buskin 重触发人头）：`PerCardRetrigger.when` 本就支持 rankIn/suit；只差 `jokerToEntities` 把"带 retrigger 条件的小丑"映射过去（小数据-shape，弱 LLM 可填）。
-
-**↓ 真缺口，请引擎实现（陈陈飞）。每项标了体积/优先级/解锁量。**
-
-**① `valueFrom.countOf` 计数缩放（P1 · 体积 小 · 解锁 ~12 张）**【原列"重组"，owner 按弱-LLM 尺子改为下沉】
-- 解锁：Abstract(+每小丑)、Blue(+每张牌)、Joker Stencil(×每空槽)、Bootstraps(+每$5)、Swashbuckler、Stone Joker、Steel Joker…
-- 缺口：`valueFrom` 只能读"具名 Resource"（REQ-013）。"每个小丑/每张牌/每个空槽 +X"若走"游戏脚本维护计数 Resource + valueFrom 读"，需一段**每次买卖/增删都同步写对**的代码 → 弱模型写不稳、数据引用一个"靠别处维护"的 id，不自洽 → 不过尺子。
-- 建议：`valueFrom` 加可选 `countOf: 'jokers'|'deck_cards'|'empty_joker_slots'|'hand_cards'|…`（引擎结算时自己数对应集合的基数），`v = count × coeff`，沿用 `op:'add'/'mul'`。则小丑数据 = 自描述一行 `valueFrom:{countOf:'jokers',coeff:3}`，零游戏侧记账，弱 LLM 可填。集合枚举可扩展。
-- 确定性：纯计数，无浮点。
-- **Lead 落地（done，引擎侧）·【回驳"字符串集合枚举"改为「按 Tag 掩码数实体」】**：PE 的 `countOf:'jokers'|'deck_cards'|…` 字符串枚举会把 game-e 概念（jokers/deck_cards）焊进引擎=inner-platform 耦合 → 回驳。**通用原语 = `valueFrom.countOf: <Tag掩码>`**：引擎数 `Tag.flags & 掩码` 命中的实体数 × coeff（复用现成 Tag 系统，同 destroy-tagged/set-visible-tagged 寻址），游戏给自己的小丑/牌打 tag、引擎只管数。`effect-apply` 一处解析 + `countByTag` helper；纯整数计数、与遍历序无关 → 确定。测试：3 tagged→add×3=9 / mul×(2×1) / 无命中→0。全绿（tsc + 1422 vitest + build）。
-  - **给 PE 的接线契约**：小丑/牌实体打 `Tag{flags}`（自定义位）→ 计分 Effect `modify-resource{ op, valueFrom:{ countOf:<同掩码>, coeff } }`。覆盖 abstract（每小丑+3倍，tag 小丑）/ blue（每张牌，tag 牌）/ steel·stone（每钢铁·石头牌，tag 增强牌）等"每个 tagged 物 ×coeff"。
-  - **未纳入（不同 shape，各自单评，免 countOf 变杂烩）**：empty_joker_slots（容量−计数，需容量源）、bootstraps `$5`（资源整除）、swashbuckler（资源**求和**非计数）。真拉动各自最小提。
-
-**② 确定性概率 roll（P1 · 体积 小-中 · 解锁 ~20 张 + Lucky 增强）**
-- 解锁：Misprint(随机+0~23倍)、8 Ball、Business Card、Bloodstone(1/2 ♥ ×1.5)、Space Joker、Lucky 牌、Gros Michel 自毁…
-- 缺口：`effect-apply` / `card-scoring` 没有"按概率触发"。
-- 建议：Effect / PerCardRule 加可选 `chance?: { num, den }`，命中条件后再用**世界种子 PRNG**（与引擎 random 原子同源，lockstep 安全、录放一致）roll `< num/den` 才施用。一处解析改动。
-- 确定性：用确定性 PRNG（按 tick/序号取数），不碰 Math.random。
-- **Lead 落地（done，引擎侧）**：`Effect.chance?:{num,den}`（effect-apply）+ `PerCardRule.chance?:{num,den}`（card-scoring，逐张独立 roll）。共用 random 原子新 helper `chancePass(rng,num,den)`=`nextRandom(rng)<num/den`（推进世界 RandomSeed，lockstep/录放安全，绝不 Math.random）；无 RandomSeed→fail-closed 不施用。两系统声明 read+write RandomSeed（同 dialogue/match3 先例，无 cycle）。测试用 1/1(必中)/0/1(必不中)/无种子 不依赖 PRNG 值。全绿（tsc + 1428 vitest + build）。
-  - **给 PE 的接线契约**：indep 概率小丑（space_joker/gros_michel 自毁/business_card）→ 计分 Effect 加 `chance`；per-card 概率（bloodstone 每张♥ 1/2）→ PerCardRule 加 `chance`；世界须有一个 `RandomSeed` 实体。
-  - **未纳入**：misprint「随机 +0~23 倍」是**随机取值**非概率门（不同 shape），单提（小：valueFrom 随机区间 or 一个 randomValue 字段）。
-
-**③ 逐张「手牌内」结算 pass（P1 · 体积 中 · 解锁 ~10 张 + 钢铁/黄金牌）**
-- 解锁：Baron(留手 K ×1.5)、Shoot the Moon(留手 Q +13)、Mime、Raised Fist、以及 REQ-E-021 边界外的 **Steel(留手×1.5) / Gold(回合末留手 +$)** 牌增强。
-- 缺口：`card-scoring` 只遍历**出的牌**；手牌里"留着不打"的牌没有结算入口。
-- 建议：新增 `HeldCardScore` pass —— 出牌结算时另遍历**未出的手牌**，套 `Card.mods`(held 类) + PerCardRule(held 类)。与现有逐张 pass 同构、同纪律（迭代=引擎、规则=数据）。
-- **Lead 落地（done，引擎侧）**：新增 `HeldHand{cards}` 组件（PlayedHand 兄弟件，装配层填"未出的手牌"）+ card-score-pass 在出牌循环后**同 execute 内追加留手循环**（复用 lookup/rules/rng/trace，**零新系统/零新调度边**——独立系统会与 card-pile/resource-apply 经 RandomSeed/Resource RMW 成环，故并入）。`Card.mods[].held?` + `PerCardRule.held?` 标记：留手循环套 held 标记的，出牌循环跳过 held（互不双算）。复用 matchPerCardWhen/applyToResource/chancePass（held 规则也可带 ② chance，如 reserved_parking）。测试：held 规则/mod 对留手牌生效 + 出牌 pass 跳 held。全绿。
-  - **给 PE 的接线契约**：装配层每次结算填 `HeldHand.cards`=手里没出的牌；Baron=`PerCardRule{when:rankIn[13],op:mul,mult,1.5,held:true}`；Steel=`Card.mods:[{op:mul,target:mult,value:1.5,held:true}]`。
-  - **未纳入**：Mime（留手牌**重触发**）需 held 版 retrigger，单提；Gold「回合末留手 +$」属 G 组（on_round_end 触发，游戏侧）。
-
-**④ 小丑「自增长」可变状态（P2 · 体积 中-大 · 解锁 ~25 张）**
-- 解锁：Ride the Bus(连续无人头 +1/手)、Green Joker(+1/手 −1/弃)、Obelisk、Supernova、Square、Runner、Red Card、Ice Cream/Popcorn(递减)…
-- 缺口：Effect 是无状态数据；这些要一个**随触发累加、按条件重置**的 per-joker 计数。
-- 建议：per-joker `Counter{ id, value }` 组件 + 声明式更新规则 `on: signal, delta, resetWhen?`；计分时用 `valueFrom{ resourceId: 该 counter }`（已有）读出。引擎只做"按规则累加/重置 + 暴露为可读值"。
-- 确定性：纯整数累加，状态进快照/关键帧。
-- **Lead 裁决（wontfix / 重组覆盖 —— `Counter` 组件冗余，回驳）**：per-joker 自增长计数 = **一个 `Resource`（计数本体，进快照）+ `Effect{onSignal, kind:'modify-resource', op:'add', value:±delta}`（每手/每弃累加）+ `Condition→Event→Effect{op:'set', value:0}`（按条件重置）+ 计分 `valueFrom{resourceId:该计数}`（读出）** —— 全是现成能力（effect-apply modify-resource on signal、condition+event-when、REQ-013 valueFrom），`Counter{on,delta,resetWhen}` 只是它们的语法糖。
-  - **为何与 ① 区别对待（① 下沉、④ 回驳）**：① 的"每次买卖手动维护计数 Resource"是**易错同步代码**（弱模型写不稳）→ 才下沉；④ 的"每手/每弃发个信号 → 声明式 +delta"是**干净声明数据**（游戏本就为回合流程发 hand_played/discard 信号），过弱-LLM 尺子——同 Bull(REQ-013 valueFrom)、REQ-017「card-pile+State+condition+effect 全数据回合流·零新能力」的已立范式。加 `Counter` = 为糖拓宽引擎，撞防臃肿红线。
-  - **等价数据写法**：Green Joker = `Resource gj=0` + `Effect{onSignal:'hand_played',op:add,value:1}` + `Effect{onSignal:'discard',op:add,value:-1}` + `Effect{onSignal:'score',targetId:'mult',op:add,valueFrom:{resourceId:'gj'}}`；Supernova/Ice Cream 同形（起始值+每手 ±）；多个自增长小丑各给唯一计数 id。
-  - **真缺口（另评，非本项）**：个别**重置/累加条件**——Ride the Bus「含人头」、Obelisk「最常打牌型」——是 poker-eval **派生事实**缺口（同 isFlush/isStraight 族），归 ⑤ 逐个评；计数机制本身不缺。
-
-**⑤ 被动改判型规则（P2 · 体积 中 · 解锁 ~8 张）**
-- 解锁：Four Fingers(4 张成顺/同花)、Shortcut(带空顺)、Splash(每张都计分)、Pareidolia(全算人头)、Smeared(红/黑各算同花)、Oops! All 6s(概率翻倍)。
-- 缺口：`poker-eval` / `card-scoring` 判型与"哪些牌计分"是写死规则。
-- 建议：`PokerHand` 读一组可选规则修饰 Flag（fourFlush/fourStraight/allScore/facesWild/suitMerge…），由小丑置位。**只读 flag 改判定，不引入新牌型。**
-- **Lead 落地（done 部分，引擎侧）**：`evaluateHand(cards, mods?)` 加 `HandMods{fourFlush,fourStraight,gappedStraight,suitMerge}`；`isStraightRanks(ranks, need?, maxStep?)`（1 参数向后兼容，game-g 复用不破）。`PokerHand.handMods?:{fourFlushFlag,fourStraightFlag,gappedStraightFlag,suitMergeFlag}`（各=Flag.id），poker-eval 读 Flag → 构建 mods → 判型。**只读 flag 改阈值/合并，零新牌型**；缺省（无 flag）行为完全不变（57+7 测试证）。覆盖 **four_fingers / shortcut / smeared**。全绿。
-  - **给 PE 的接线契约**：被动小丑用 set-flag Effect 置 `mod_*` Flag；PokerHand 配 `handMods:{fourFlushFlag:'mod_four_fingers',...}`。
-  - **未纳入（另评）**：Splash（每张都计分）需改 `scoringCardIndices`（card-scoring 侧，非 evaluateHand），单提；Pareidolia（全算人头）改 per-card「is face」匹配（card-scoring matchPerCardWhen 侧）；Flower Pot（四种花色 ×3）= 新派生事实「花色种数」（同 rankMaxCount 族，countOf 不覆盖花色种类）；Photograph（首张人头）需「首个匹配」谓词。逐个真拉动再评。
-
-**⑥ 跨实体效果：复制 / 改牌 / 改其它小丑（P3 · 体积 大 · 解锁 ~15 张）**
-- 解锁：Blueprint(复制右侧小丑)、Brainstorm(复制最左)、Invisible Joker(2 回合后卖出复制一个随机小丑)、DNA(复制出的牌进牌库)、Vampire(吸附魔)、Midas Mask(人头→黄金)、Hologram…
-- 缺口：小丑只能改全局 Resource；不能读/写**别的实体**（其它小丑/牌库的牌）。
-- 建议：先做**只读复制**（一个小丑"引用"另一个小丑的 Effect 列表，结算时一并跑）——比"运行时改牌库"小且确定。改牌库/吸附魔留到后面单评。**体积大、确定性最难，建议最后做。**
-- **Lead 裁决（defer / 暂不下沉 —— 不整包做，待具体卡逐族单提）**：⑥ 没有"干净的最小切片"，每个最小版都拖进一类抗数据化的东西 → 整包下沉 = mini 规则引擎 = inner-platform，撞防臃肿头号红线。逐族说明：
-  - **复制相邻小丑（Blueprint/Brainstorm）**：要小丑**排序/相邻**（game-e 概念，每回合算"右邻是谁"= 代码、过不了弱-LLM 尺子）+ **effect 复制+上下文重放**。无干净通用形。
-  - **改牌库/改牌（DNA/Hiker/Midas/Marble/Certificate）**：运行时**改别的实体数据**（往牌库加牌、给某张牌永久 +mods）——确定性最难（快照/录放/定序），且"加哪张/改哪张"的寻址抗数据化。
-  - **吸附魔/毁其它小丑（Vampire/Ceremonial Dagger/Madness）**：跨实体**读取+移除**——同上，更重。
-  - **个别其实是别的能力**：baseball_card「每个 uncommon 小丑 ×1.5」是**连乘**（非 ① 的 count×coeff 加性），单独评；Invisible Joker 涉及"卖出"经济触发（G 组）。
-  - **路径**：留 `open(deferred, P3)`。真要做时**按族逐个最小 REQ**（先"只读复制"族——需先有干净的小丑排序数据接口；再"改牌库"族——需先定运行时牌库变更的快照/确定性契约），各由具体卡拉动、附弱-LLM 尺子证明，不一次性塞。其余 5 项（①done/②done/③done/④wontfix/⑤done）已闭合，⑥ 不阻塞它们。
-
-**落地节奏建议**：① countOf（最小、先解锁一批）→ ② 概率 → ③ 手牌内（顺带补全 REQ-E-021 的 steel/gold 一条线）→ ④ 自增长 → ⑤ 规则修饰 → ⑥ 跨实体。每项落一项，PE 跟着把对应小丑从 catalog 接成可玩并加测试。PE 同时并行做留在游戏侧的两项（更多触发 / 条件重触发），不等引擎。
+> 目标：可玩小丑 31 → 趋近 150（catalog 150 已全）。六能力拆分，详见 `docs/game-design/game-e-joker-rollout.md` + git 历史。
+> **进度**：① countOf（按 Tag 掩码数实体）**done** · ② 确定性概率 roll（chancePass）**done** · ③ 留手牌结算 pass（HeldHand）**done** · ④ 自增长 **wontfix/重组**（Resource+Effect+valueFrom 覆盖·Counter 冗余）· ⑤ HandMods（four_fingers/shortcut/smeared）**done 部分** · ⑥ 跨实体复制/改牌 **defer(P3)**。
+> **⑥ 仍 open（唯一未闭合）**：无干净最小切片（小丑排序/相邻、运行时改牌库 = 抗数据化），整包下沉=inner-platform，撞防臃肿红线。真要做按族逐个最小 REQ（先"只读复制"族需干净小丑排序接口；再"改牌库"族需运行时牌库变更的快照/确定性契约），各附弱-LLM 尺子证明，不一次性塞。①②③⑤已闭合不阻塞⑥。
 
 ---
 
-### REQ-E-022 · [2026-06-18] · PE（Game E 小丑牌 · 真实牌库扩充拉动）· 框架级 · status: **done（引擎侧 + 游戏侧接线 2026-06-18）** · 优先级: 中 · 类型: 真缺口（poker-eval 缺 isFlush/isStraight 派生事实）
+### REQ-E-022 · [2026-06-18] · PE（Game E 小丑牌）· status: **done（引擎+接线 2026-06-18）** · 类型: 真缺口（poker-eval 缺 isFlush/isStraight 派生事实）
 
-> **落地**：引擎侧 `PokerHand.isStraightFlag?/isFlushFlag?`（poker-eval `setFlag` 写 evald.isStraight/isFlush）。游戏侧接线：blueprint 加 `F_STRAIGHT/F_FLUSH` Flag 实体 + PokerHand 配置指向它们，`containsCondition` 补 straight/flush 分支；STARTER_JOKERS 加 Crazy/Droll/Devious/Crafty/The Order/The Tribe（可玩 25→31）。headless 测试证「打同花 → Crafty +80 筹码」端到端生效。全绿（tsc + 1418 vitest + build）。
-
-**标题**：`poker-eval` 暴露 `isFlush` / `isStraight`（含 `isStraightFlush`）派生事实 —— 与现有 `rankMaxCount`/`pairCount` 同类
-
-- **拉动（真实）**：可玩小丑只有 25 张（已 14→25）。下一批官方 common 卡在「含顺子 / 含同花」条件上打不出：
-  **Crazy(顺+12倍) / Droll(同花+10倍) / Devious(顺+100筹) / Crafty(同花+80筹) / The Order(顺×3) / The Tribe(同花×2)** —— 6 张核心 common，全因引擎读不到"这手是否含顺/含同花"而无法成数据。
-- **已经试了什么 / 卡在哪**：游戏侧 `containsCondition`（`blueprint.ts`）已能用 `rankMaxCount≥2/≥3/≥4`、`pairCount≥2` 表达"含对子/三条/四条/两对"（REQ-011 派生事实）；但 **poker-eval 不写 isFlush/isStraight**，所以 `containsCondition('straight'|'flush')` 直接 `throw`。这正是 REQ-011 当时留的口（注释明说"需补 isFlush/isStraight 等派生事实"）。
-- **建议方案（最小、与现有派生事实同构）**：`PokerHand` 配置加可选 `isFlushResource?` / `isStraightResource?`（缺省不写，零迁移）；`poker-eval` 在判型时本就算了 flush/straight（`isStraightRanks` 已导出），把布尔写成 0/1 Resource（与 `rankMaxCountResource` 同一套写法）。游戏侧 `containsCondition` 读它 → 上述 6 张变纯数据。
-  - 含同花 = flush/straight-flush/flush-house/flush-five 任一；含顺子 = straight/straight-flush。poker-eval 判型已知，直接投影。
-- **可复用性**：任何"按牌型门控"的卡牌游戏都要（与 rankMaxCount/pairCount 同级的基础派生事实），非 Game E 专属。
-- **边界**：只加这两个（可选带 isStraightFlush）派生事实；不引入新计分、不动定序。
-- **交付后游戏侧接线（PE）**：`containsCondition` 补 straight/flush 分支 → STARTER_JOKERS 加这 6 张（catalog id 已在）。可玩数 25→31。
-
-**关于"真实的牌库"（全 150）—— 路线图（Lead 按价值排期，逐个单提，不一次性塞）**：catalog 150 张元数据已全；可执行的随能力解锁。除本 REQ 外仍缺：
-- **随机/概率**（Misprint/8 Ball/Bloodstone…）：需确定性概率 roll（lockstep 安全）。
-- **计数缩放**（Joker Stencil ×空槽 / Abstract +每小丑 / Blue +每张牌…）：valueFrom 读"实体/牌库计数"。
-- **自增长**（Ride the Bus / Green Joker / Obelisk…）：跨回合可变 joker 状态 + 触发时累加。
-- **别的触发时机**（on_discard / on_round_end / on_blind_selected）：需这些信号（on_round_end 数据已有、jokerToEntities 暂跳过）。
-- **改其它实体**（Blueprint 复制右侧 / DNA 复制牌 / Brainstorm…）：joker 读写 joker / 改牌库。
-- **条件重触发**（Mime / Sock and Buskin / Hack / Dusk…）：PerCardRetrigger 按 when 条件（现仅按 index）。
-
-→ 本次只请裁决 **isFlush/isStraight**（最小、解锁 6 张、与 REQ-011 同纪律）。其余等真实拉动逐个评。
+> `PokerHand.isStraightFlag?/isFlushFlag?` 派生事实（同 rankMaxCount 族）→ 解锁 Crazy/Droll/Devious/Crafty/The Order/The Tribe（可玩 25→31）。详情见 git。
 
 ---
 
-### REQ-E-021 · [2026-06-18] · PE（Game E 小丑牌 · 卡牌附魔/buff 拉动）· 框架级 · status: **done（引擎侧，2026-06-18，Lead）** · 优先级: 中 · 类型: 真缺口（逐张计分读不到「牌自带的修正」）
+### REQ-E-021 · [2026-06-18] · PE（Game E 小丑牌）· status: **done（引擎侧 2026-06-18）** · 类型: 真缺口（逐张计分读不到「牌自带的修正」）
 
-**标题**：`card-scoring` 逐张 pass 读取「牌自带的内禀修正」（per-card 附魔/buff）—— Card 携带 mods，迭代时套用
-
-- **想实现（游戏行为）**：Balatro 的卡牌**附魔**——版式（foil +50筹码 / holo +10倍率 / poly ×1.5倍率）、增强（bonus +30c / mult +4m / glass ×2m / stone +50c）、红蜡封（该牌重触发）。本质：**一张特定的牌身上带着持久修正，在它计分时生效**——一个 per-card buff 系统。
-- **已经试了什么 / 为何回驳「不加能力」的重组**：唯一的纯游戏侧路子是出牌时按附魔牌**落在出牌序列里的下标**临时注入 `PerCardRule{when:{index,eq}}`、tick 完移除。**这是牵强的**：
-  - `PerCardRule`/`PerCardRetrigger` 的 `when` 只认 **suit/rank/index**（设计给**小丑规则**——扫描全手的外部规则，如"每张♦+3m"）；附魔是**某张牌的身份内禀**，不是位置/花色规则。
-  - 用位置规则模拟身份附魔 → 游戏层每出一手都要**重新推算"我那张 foil 落在第几位"再注入规则**，这段绑定逻辑是**代码、每次动作重跑** → 过不了"最弱 LLM 一致产出数据"的尺子。错抽象（拿规则引擎模拟属性系统）。
-- **卡在哪（引擎做不到的点）**：`Card = {suit, rank}`（`components/cardboard.ts:45`）**没有承载内禀修正的槽**；`card-scoring`（`tier3/card-scoring.ts`）的逐张循环已经**逐张拿到了 `c`**，但只累加 `baseChipsByRank[c.rank]` + 套外部 `PerCardRule`，**读不到"这张牌自带的修正"**。
-- **建议方案（最小、与现有循环同构）**：
-  1. `Card` 加可选 `mods?: Array<{ op:'add'|'mul'; target:string; value:number }>`（target=Resource id，如 chips/mult/money）。card-scoring 逐张循环里，在 baseChips 之后、按序套用 `c.mods`（与 baseChips 同一 `repeats` 重触发循环内，自然吃 retrigger），emit `appendScoreEvent(trace, 'percard-mod', …)`（UI 演出复用现有回放）。
-  2. `Card` 加可选 `retrigger?: number`（红蜡封）：并进现有 `repeats = 1 + Σ…`（与 `PerCardRetrigger` 同算），让该牌连同其上 mods/小丑一起重复。
-  - 版式/增强全是数据：foil=`{add,chips,50}`、holo=`{add,mult,10}`、poly=`{mul,mult,1.5}`、bonus=`{add,chips,30}`、mult=`{add,mult,4}`、glass=`{mul,mult,2}`、stone=`{add,chips,50}`。弱 LLM 可照填。
-- **边界（守住，不外扩）**：① 只做**计分牌的内禀 mods + 内禀 retrigger**；② **不做**手牌内（held-in-hand）触发（steel/gold/blue/purple 蜡封那类——从手牌而非出牌结算，是另一条触发线，单提）；③ 不引入伤害分型/重定向/身份版 PerCardRule 匹配。
-- **可复用性（非 Game E 专属）**：「实体携带修正、在被处理时套用」是通用 buff 原语——卡牌符文/装备词条/牌面状态跨卡牌游戏复用；与 REQ-F-061（命中那刻读目标 hp 做门）同类——都是**迭代/结算循环缺一处"读被处理对象的数据"**。
-- **交付后游戏侧接线（PE，非引擎）**：数据 `Card`（`deck.ts`）带 `enchant` 字段 → `toEngineCard` 把它映射成引擎 `Card.mods/retrigger`；附魔**来源**用塔罗牌/卡包商店项（纯游戏侧数据 + 表现），给某张牌盖章。视觉徽标（角标/描边）游戏侧做。
-- **请 Lead/主程裁决**：是否 ACCEPT 为 card-scoring 的最小扩展（同 REQ-F-061 纪律：迭代循环补"读被处理对象数据"）。
-- **Lead 评判 + 落地（2026-06-18，引擎侧 done）**：核实 PE 全部论点属实（`Card={suit,rank}` 无槽 `cardboard.ts:45`；`PerCardRule/Retrigger.when` 只认 suit/rank/index 非身份 `card-scoring.ts:29`；模拟附魔需每手重算下标注规则=代码、过不了尺子）→ **真缺口，ACCEPT**。与 REQ-F-061/F-065 同纪律（结算循环补"读被处理对象自身的数据"）。
-- **架构裁决（用户问：要不要扩成通用「Buff」抽象）→ 不扩，按窄做**：F-061/F-065/E-021 看着像一个东西，但**生效语境不同**（计分/伤害/命中各在自己循环）；统一 Buff 必逼出 trigger/context 规则引擎 = inner-platform 腐烂源、弱 LLM 更难一致产出、跨系统耦合、固化。正解：**语境=循环本身（隐式）**，各能力就地读相关数据；共性只收在小 shape `{op,target,value}`（PerCardRule/Effect 已用、Card.mods 复用）= 词汇复用非框架。真正跨语境、共享叠加/时长、≥2 游戏拉动时再议（现非）。
-- **落地**：`Card.mods?: {op:'add'|'mul',target,value}[]` + `Card.retrigger?: number`（`cardboard.ts`）；`card-scoring` 逐张循环在 baseChips 后、`PerCardRule` 前按序套 `c.mods`，`repeats += c.retrigger`（连同 mods/小丑重复），emit `percard-mod` trace（UI 回放复用）。零迁移。测试：foil 异质 + 无 mods 不变 + add 先于 mul + 红蜡封重复。全绿（tsc + 1394 vitest + build）。
-- **给 PE 的接线**：数据 `Card.enchant` → `toEngineCard` 映射成 `Card.mods/retrigger`；附魔来源(塔罗/卡包)、视觉徽标 = 游戏侧。
+> `Card.mods?:{op,target,value}[]` + `Card.retrigger?`（per-card 附魔/红蜡封）；card-scoring 逐张循环套用。架构裁决：不扩成通用 Buff 抽象（语境=循环本身·避 inner-platform）。详情见 git。
 
 ---
 
-### REQ-F-065 · [2026-06-17] · 策划 PF（装备系统 atk 生效 · owner 2026-06-17 钦定路A）· 框架级 · status: **done（引擎侧，2026-06-17，Lead）** · 优先级: 中（装备武器线唯一阻塞）
+### REQ-F-065 · [2026-06-17] · 策划 PF（装备 atk·owner 钦定路A）· status: **done（引擎侧 2026-06-17）** · 类型: 真缺口（per-unit 异质缩放）
 
-**标题**：`scaleByResource` 支持「施法者本地资源」寻址（per-caster scaling），表达逐单位异质缩放
-
-- **拉动（真实，已核代码）**：Game F 装备系统——武将拖装备（武器 +atk），**每个单位装备不同 → atk 加成异质**。现 `strike_${h.id}` 模板 `amount=finalAtk(h)` 是 build 期常量，星级靠预建模板族切换；伤害的 `scaleByResource`（hitbox.ts `findResourceById`）只查**全局**资源 → **无法逐单位缩放 atk**。HP 已能 live 生效（deploy override 写本单位 Resource），atk 不能。
-- **想实现**：让 `scaleByResource`（或新增 `scaleByCasterResource`）解析时**先查施法者/spawn 源实体的本地资源，未命中再回退全局**（一处解析改动）。则：每将一个 per-unit 资源 `eq_atk`（deploy override 连续精确写），strike 按施法者 `eq_atk` 缩放 → 装备 atk 连续生效。
-- **与 REQ-023 区别（不重复）**：REQ-023(group-effect) 被 wontfix 是因**同质**羁绊光环可走"全局 buff 资源 + 各单位读全局"重组；但它明确留口「**各单位状态异质、全局共享值表达不了**才下沉」。装备 atk 正是异质（每将不同装备不同加成），全局 buff 资源表达不了 → 命中该留口。
-- **额外收益（manifesto 论据）**：现星级用"预建模板族 `_s{star}`"模拟逐单位缩放本身是 smell；此能力一并能让星级改用 per-unit 资源缩放，**退掉模板族爆炸**，净简化引擎而非加宽。
-- **owner 决策**：2026-06-17 owner 在「路A(下沉小能力·连续精确·推荐) vs 路B(桶化模板·零引擎但量化+模板膨胀)」中**钦定路A**。
-- **确定性**：deploy 拍写 per-unit `eq_atk`（构建快照 + 镜像关键帧均捕获，同 HP override 路径，安全）；纯整数/定点，回放不破。
-- **交付后游戏侧接线（Program F，非引擎）**：deploy override 写 `eq_atk = Σ装备atk`；strike 模板 `scaleByResource: 'eq_atk'`（与全局 dmg_scale 叠乘）。
-- **Lead 评判 + 落地（2026-06-17，引擎侧 done）**：缺口属实（异质 per-unit 缩放，全局 scaleByResource 表达不了，正中 REQ-023 留口；退星级/装备模板族 = 净简化）→ **ACCEPT**。**但原提案"scaleByResource 查施法者本地"漏了前提**：spawn 出的 strike 命中那刻**没有施法者实体链**（`PrefabOrigin`/`SpawnRequest` 只带 `originHex` 格、不带 source 实体）。故先补**源 threading**，再做本地解析：
-  - `SpawnRequest.source` / `PrefabOrigin.source`（新 POD 字段）；`caster`(=`originEntity ?? 自身`) 与 `self-rule`(普攻=自身) 盖章 → `prefab` 转记到每个展开实体。
-  - `hitbox.ts` 新 `findScaleResource`：`scaleByResource` **先查施法者本地**（源实体自身 + 其**同次展开的复合兄弟**，同 `templateId+seq`——因一实体一 Resource、main 占 hp，故 eq_atk 必在兄弟子件上）→ **未命中回退全局**（dmg_scale 等行为不变、零迁移）。
-  - 测试：异质两将(eq_atk 3/5)同 amount 出不同伤 + 源自身快路 + 无 source 回退全局。全绿（tsc + 1375 vitest + build）。
-- **给 PF 的接线契约**：① `eq_atk` 作 per-unit Resource 放在**棋子复合体的某个子件**（与 strike 的 `source`=棋子 main 同 `templateId+seq`；main 已占 hp），deploy override 连续写；② strike `scaleByResource:'eq_atk'`。**注意单 `scaleByResource` 只乘一项**——要 per-unit × 全局 dmg_scale 同乘，把 dmg_scale 折进 eq_atk（写时含团队系数），或单提"多段缩放"我再评（非本次最小下沉）。
+> `scaleByResource` 先查施法者本地资源再回退全局（补 `SpawnRequest/PrefabOrigin.source` 源 threading）→ 装备 atk 逐单位异质生效、退星级模板族爆炸。详情见 git。
 
 ---
 
-### REQ-023 · [2026-06-09] · 主程4（Game F 拉动）· 框架级 · status: **wontfix（2026-06-15 结案 · 重组覆盖）** · 优先级: 低
+### REQ-023 · [2026-06-09] · 主程4（Game F）· status: **wontfix（2026-06-15·重组覆盖）** · 类型: group-effect 集合写
 
-**标题**：`group-effect` —— 把效果 fan-out 到一组实体（集合写）
-
-- **想实现**：羁绊光环——"3 战士羁绊 → 所有战士 +10 攻"。
-- **建议**：`GroupEffect{ filter, action }` 把 action 施给每个匹配实体。
-- **Lead 裁决（不 greenlit）**：多数逐单位羁绊光环可用 **group-count（数羁绊层数）→ 写一个全局 buff 资源 → 各单位 stat/hitbox 读该全局 buff** 重组绕过，不必逐单位 fan-out。只有"各单位状态异质、必须逐个写、全局共享值表达不了"的羁绊时才下沉。待真实拉动再评估。
+> 羁绊光环可用 group-count→全局 buff 资源→各单位读 重组绕过；仅"各单位异质、全局值表达不了"才下沉（→ 后由 REQ-F-065 命中该留口）。详情见 git。
 
 ---
 
-### REQ-F-061 · [2026-06-13] · 主策划（Game F 卡牌系统 D0 拉动）· 框架级 · status: **done**（2026-06-13，Lead）· 优先级: 中 · 类型: 真缺口（hitbox 缺血量条件门 + 处决）
+### REQ-F-061 · [2026-06-13] · 主策划（Game F）· status: **done（2026-06-13）** · 类型: 真缺口（hitbox 缺血量条件门+处决）
 
-**标题**：hp-条件伤害 / 处决（斩杀 / 残血加伤 / 狂暴）
-
-- **想实现**：对 hp<X% 目标加伤/处决——玩家卡牌「白衣/攻心/渡江」+ 太阁 Boss 谦信/真田/立花/半藏（`game-f-deck-spec.md` §牌组10、`game-f-taikou-roster.md` §六）。
-- **卡在哪**：`src/skills/tier2/hitbox.ts` 过滤只有 targetMask(Tag)/requireMask(Status)；伤害只有 amount+fracOfMax，**无「读目标当前 hp 比例做条件门」**。血量是连续 Resource 烘不成 Status；condition/event-when 是触发层，管不到命中那刻目标血量 → 真缺口。
-- **建议**：`Hitbox` 加只读门 `requireHpFracBelow?`/`requireHpFracAbove?`（读 target current/max），不满足跳过；处决 `executeBelow?` 命中即清 0。**只读 hp 比例做 gate，不引入伤害分型/重定向**（守草船借箭回驳边界）。倍率走 REQ-012 mul、动态值走 REQ-013 valueFrom（均 done）。
-- **Lead 评判（ACCEPT·已落地）**：真缺口核实——hitbox 结算循环只有 Tag/Status 门，命中那刻读不到目标 hp 比例；C→E→E 是触发层，够不到命中那刻目标血量。是**通用战斗原语**（处决/残血加伤跨 ARPG/自走棋复用，与 `fracOfMax`/`requireMask` 同类），数据**扁平**弱 LLM 可填——不是臃肿配置。落地：`Hitbox.requireHpFracBelow?/requireHpFracAbove?/executeBelow?`（乘法比较保确定性、缺省零迁移），`hitbox.ts` 加「②.5 血量门/处决」+ 3 守护测。关羽斩杀 = `Hitbox{ amount, targetMask:ENEMY, executeBelow:0.15 }`；残血加伤 = 第二个 `requireHpFracBelow` 门的打击区（重组）。
+> `Hitbox.requireHpFracBelow?/requireHpFracAbove?/executeBelow?`（命中那刻读目标 hp 比例做 gate/斩杀·乘法比较保确定性·零迁移）。详情见 git。
 
 ---
 
@@ -435,46 +219,19 @@
 
 ---
 
-### LEAD→PF · [2026-06-14] · Game F · status: **open** · 类型: 去腐交办（game-f 由「程序」变回「数据」；游戏侧执行）
+### LEAD→PF · [2026-06-14] · Game F · status: **⏸ 大部 done·余暂挂（game-f 暂停开发）** · 类型: 去腐交办（game-f 程序→数据）
 
-**背景（Lead review 实测，跨游戏对比）**：game-f 不是"被描述成数据的游戏"，是一段 TS 程序——非测试码 **2658 行**、生成器构造（`for/map/Math/…spread`）**56 处**、**两段脉冲标记 114 个（其余 5 游戏合计 0）**、EventWhen×39 / Effect×115 / Flag×78（对照纯数据基线：0 / 6 / 5）。过不了"最弱 LLM 一致产出"尺子。**病灶单一、是"在数据里编程"，非架构问题**——纯数据 manifest 范式已证可行。
-
-**交办（全部游戏侧；引擎已备齐，Lead 不为此加任何能力）**：
-1. **blueprint.ts → 纯数据 manifest**：照纯数据 manifest 范式（`manifest.json` + 薄 loader `parseManifest`，零工厂/闭包）把 `buildGameFBlueprint()` 的生成器（`band/visSwap/chrome/makeRoundFlow` + 循环 + 算术）展平成 JSON 实体表；算出来的值（CD_TICKS / income 档 / hp 计算）直接写定值。
-2. **采用 GameShell（已落地 `@ui/shell`）**：DOM 壳层写成一份 `GAME_F_UI: UILayout` 数据（stat/bar/button→signal/tabs），**删** 697 行手写 `game-f.tsx` 壳 + canvas 隐形按钮 + DOM 假点击桥（x=2000）。
-3. **商店两段脉冲（shop_marks→shop_marks2 等 114 个）→ 由 GameShell 数据 UI 取代**：面板不再靠多拍 destroy/重铺脉冲，改 GameShell 按 `CardPile.hand` 声明式渲染 → 脉冲标记清零。
-4. **valueFrom 经济链（10 处）保留**（合法跨游戏能力，game-e 亦用），不必动。
-
-**边界**：纯游戏侧。引擎该有的都有（manifest loader 已验、valueFrom、flow、prefab、GameShell）。**Lead 明确回驳"把 game-f 脉冲下沉成引擎能力"**——脉冲 114 vs 全员 0 = 一个游戏的特有玩法，下沉会把 game-f 的臃肿注入共享引擎 = 腐蚀架构（同 REQ-F-062 / REQ-023 纪律）。
-
-**验收**：blueprint 生成器构造 → ~0（展平为数据/JSON）；脉冲标记 → ~0；`game-f.tsx` 收敛成 ~30 行薄 mount（薄壳范式）；过"最弱 LLM 能照填吗"尺子；tsc + vitest + build 全绿。
-
-**Lead 裁决（2026-06-14 复核 PF 回报）**
-- ✅ **band/visSwap/chrome 展平：验证通过**——调用/定义 →0、片0 快照守证 **byte 等价**、引擎零污染、1160 绿。真收益，收下。
-- ⛔ **回驳"字面化 makeRoundFlow/templatesFor"（修正本交办原措辞）**：二者是**薄确定性展开器**（`makeRoundFlow`=pacing 配置；`templatesFor`=roster 数据→prefab + 阵营选择），与纯数据 manifest + 薄 loader **同类**——**"数据驱动 ≠ 零函数"**，判据是"内容扁平 + 展开器薄/固定/确定"。硬字面化会砸 36 处测试快进 + 多阵营，得不偿失。**保留为"扁平数据 + 薄展开"。** PF 这条线划对了。
-- ✅ **③ 解锁：Lead 已给 GameShell 加通用 `image` 节点**（静态 src / 绑 StringVar 动态 src；rule-of-three 远超：VN 立绘/换装/卡牌/商店；**非 game-f 脉冲下沉**）。商店=**固定 3 槽** → 3×(`image`+`stat`+`button`) 即可，**不需 `list`**（避模板化 DSL 腐烂高风险区，YAGNI 暂不加；真有干净跨游戏拉动再议）。**棋盘拖拽/点将台留 canvas（drag-place 能力），不归 GameShell。**
-- **修订验收**：band/visSwap/chrome→0 ✅已达；makeRoundFlow/templatesFor 保留（不计入"生成器构造"目标）；脉冲清零 = PF 用 GameShell（HUD/tabs/buttons 用现有节点 + 商店用新 `image`）重写壳层 + 退役假点击桥。**引擎侧到此为止（image 已加，不再为 game-f 加任何能力）。**
-
-**进度 + owner 裁决（2026-06-15，Program F 记账）**
-- ✅ **脉冲清零**：商店两段脉冲（shop_marks/shop_marks2）+ 大卡模板 + 占位框全删，114→0（商店改 GameShell `image` shop_face / 后被 owner 调整，见下）。
-- ✅ **band/visSwap/chrome 展平**（Lead 已确认）。
-- ✅ **派生去腐（顺手）**：商店卡/名牌从 ROSTER 派生，删手抄 `HEROES`/`HERO_NAMES`（「加英雄=一条 HeroSpec」，过尺子）。
-- ⛔ **②「game-f.tsx → 完整 GameShell / ~30 行 mount」= owner-overridden，标 wontfix（暂）**：owner（2026-06-15 真机复核）**明确撤掉 GameShell 与 canvas 并存**（报「棋盘下方堆出第二套点将台/主公卡」重复 bug），**钦定保留手写 DOM HUD**（主公信息卡复位左下角、右栏改盟友布阵预览）。GameShell 蓝本（`GAME_F_UI`）保留作数据壳层参考 + 测试，但**不在局内并存渲染**。
-  - → **designer-loop「去腐 T-F4 硬优先」与 owner 决定冲突 → 以 owner 为准、暂挂**。若 owner 日后要全 GameShell 化（需 GameShell 长出 modal/drag-slot/动态 list 等通用节点，属 Lead），再重启。
-- 余项（非 owner-blocked，按 Lead 裁继续）：blueprint→manifest 全量展平（大、低优先；makeRoundFlow/templatesFor 按 Lead 保留）。
+> game-f 曾是"在数据里编程"(2658 行·生成器 56 处·脉冲标记 114)。去腐进度：
+> - ✅ 脉冲清零(114→0)、band/visSwap/chrome 展平(byte 等价)、商店卡/名牌从 ROSTER 派生。
+> - ⛔ makeRoundFlow/templatesFor 字面化 **回驳**(薄确定性展开器·"数据驱动≠零函数")；脉冲下沉成引擎能力 **回驳**(单游戏臃肿勿注入共享引擎)。
+> - ⛔ ②「game-f.tsx→完整 GameShell」**owner-overridden 暂挂**(撤 GameShell/canvas 并存·保留手写 DOM HUD)；`GAME_F_UI` 蓝本留作参考。Lead 已加通用 GameShell `image` 节点(非 game-f 下沉)。
+> - 余 blueprint→manifest 全量展平(低优先)。game-f 暂停 → 整体搁置。详情见 git。
 
 ---
 
-### REQ-F-064 · [2026-06-15] · game-f（Boss 技能拉动，经用户转 Lead）· 框架级 · status: **wontfix / done-covered（2026-06-15 结案）** · 类型: 现有能力重组（非缺口）
+### REQ-F-064 · [2026-06-15] · game-f（Boss 技能）· status: **wontfix / done-covered（2026-06-15）** · 类型: 现有能力重组（非缺口）
 
-**标题**：太阁 Boss 技能（信长全军 buff / 秀吉·本愿寺援军 spawn / 真田自残血加伤 等）
-
-game-f 报「多数需新引擎能力」。Lead 实测：**三个已点名技能全部现有能力可表达 → 回驳；引擎冻结成立**。等价数据写法：
-1. **信长·全军 buff** = `group-count`/触发信号 → `Effect{modify-resource dmg_scale_boss, valueFrom}` → 全 Boss 方 `Hitbox.scaleByResource` 读它。**game-f 自己已实装同款**（`decks.ts` synergy/threshold/round-buff 写 `dmg_scale_a`，`combat.ts:27` hitbox 读），Boss 版对称。
-2. **秀吉·本愿寺援军 spawn** = Boss 技能信号 → `Caster{onSignal, template:'honganji_*', at:'self'}` → `SpawnRequest` → `prefab` 展开援军队。`caster.ts` 自陈「信号→生成桥…召唤」，示例含召唤/掉落。
-3. **真田·自残血加伤**（注意：自身 hp，**非** F-061 的目标 hp）= `Condition(自身 hp < 阈值=frac×已知 maxhp)` → `Event`→`Signal` → `Effect{modify-resource dmg_scale_sanada}` → 其 `Hitbox.scaleByResource` 读它（Condition→Event→Effect + scaleByResource 重组）。
-
-**流程纠正**：笼统「多数需新能力」不达需求模板「试了什么/卡在哪」的标准 → 一律回驳。某技能数据**确实**表达不了（如需连续反比血量、阈值+valueFrom 线性都不够）就**单提那一个**附失败重组，逐个评。
+> 信长全军 buff = group-count→dmg_scale→hitbox 读；秀吉援军 = Caster→prefab；真田自残血加伤 = Condition(自身 hp)→Effect→scaleByResource。三技能均现有能力可表达 → 回驳。详情见 git。
 
 ---
 
@@ -525,67 +282,21 @@ game-f 报「多数需新引擎能力」。Lead 实测：**三个已点名技能
 
 ---
 
-### PG-乙→甲 · [2026-06-21] · Game G · status: **✅ done（并入 `REQ-G-退役旧战斗核`·showMatch/live-combat/battle-screen/buildGameGMatch + 续命测试全删·`a0970248`/`8c6c2751`）** · 类型: 战斗段死代码清理
+### PG-乙→甲 · [2026-06-21] · Game G · status: **✅ done（并入 REQ-G-退役旧战斗核·`a0970248`/`8c6c2751`）** · 类型: 战斗段死代码清理
 
-> owner 把一份 game-g.tsx「三套战斗血脉地图」review 转给乙。涉及的全是**甲的战斗段/文件**，按 甲/乙 正交铁律乙不碰；登记于此交甲，owner 已同意由甲清。
-
-**现状真相**：`onPlay → startBattle() → showTurnMatch()`（回合制·**活**·turn-combat.ts + turn-battle-screen.ts）。两条 UI 不到达的**死路**：
-- **实时血脉**：`showMatch()`（game-g.tsx L577–810·~234 行）+ 16 个实时常量（`LIVE_STEP_MS/RENDER_MS/POINTS_MAX`… L27–51）+ helpers（`buildBattleViewLive/snapLivePos/armyToDeploys/canDrawFrom/clashToView/BattleControl/NO_CONTROL`）+ import（L1 battle-screen / L4 live-combat）。续命测试：`battle-screen.{frame,click}.test.ts`、`live-combat.test.ts`。
-- **Engine 血脉**：`buildGameGMatch()`（blueprint.ts）UI 从不 import；续命测试 `game-g.test.ts`（~1028 行 oracle）；`game-g.tsx` L12 注释"出征打一关(buildGameGMatch)"已过时。
-
-**活的·勿碰**：`showTurnMatch`(L457–574)、`showLobby/showBetween`、`settleTurn`、`aggregateTengang/tengangFxOf`、`seededShuffleArr`(L255–260)、`clashToTurnView`，及 turn-combat/turn-battle-screen/lobby-screen/level/disha 全目录。
-
-**建议**：甲确认清除时机后，整体砍实时血脉（~280 行 + 16 常量 + 3 测试文件）+ Engine 血脉占位（含 L12 注释），并给顶部 import/常量/helper **加分区注释**隔离三代实现。**乙不动**（战斗段=甲地盘）。
+> game-g.tsx 旧实时血脉（showMatch/live-combat/battle-screen）+ Engine 血脉（buildGameGMatch）已随退役旧核全删。详情见 git。
 
 ---
 
-### REQ-G-战斗结构 · [2026-06-21] · design G → 甲（引擎域） · Game G · status: **✅ 核心已实现（甲·战胜硬币 50/50 + 3D 表现 + 玩家亲掷/AI自动）；调参钩子(stayPMul/续航门)随后续天罡地煞重设计再落** · 优先级: **P0** · 类型: 真缺口（结构性·非数值）
+### REQ-G-战斗结构 · [2026-06-21] · design G → 甲 · Game G · status: **✅ 核心已实现（战胜硬币 50/50 + 3D + 玩家亲掷/AI自动）；stayPMul/续航门 随天罡地煞重设计再落** · 类型: 真缺口（结构性）
 
-> **★ owner 拍板 + design G 原型验证通过：掷命胜者「掷人头·留场续攻」。完整契约 `doc24 §4.2`。**
->
-> **甲已落地（2026-06-21·commit 战胜硬币）**：`resolveClash` 加 `winStays = nextRandom(b.rng) < 0.5`（种子化·可回放）；**人头=留场续战 / 人面=回牌库+返还半费**；`coin-flip.ts` CSS-3D 抛掷表现，**我方亲手点掷·AI 自动掷**，挂战力明细特写之后（不盖明细）。owner 当面口径=纯硬币 50/50、AI 同样。
-> **本次按 owner「后面会重新设计天罡/地煞做数值平衡」暂缓的（原 doc24 §4.2 细则）**：① `stayPMul`（天罡/地煞调留场概率·死战不退上调） ② 续航门（`staminaLeft>1` 才可留、留场 `staminaLeft−1`） ③ `CLASH_WIN_STAY_P` 可调常量。→ 并入后续「天罡/地煞重设计」批次随平衡一起标定。
->
-> **甲实现要点**：
-> 1. `turn-combat.ts` 加 `CLASH_WIN_STAY_P = 0.5`（tunable）。
-> 2. `resolveClash`（当前 L345-353「无条件回库」）→ 胜者掷确定性币：`nextRandom(b.rng) < P_eff && wf.staminaLeft > 1 ? 留场续攻(staminaLeft−1·保持前锋位·下回合继续推进) : 回库(返半费·现行奖励)`。
-> 3. `P_eff = clamp(CLASH_WIN_STAY_P × (该侧 fx.stayPMul ?? 1), 0, 1)`；`TengangFx`/`DishaFx` 加 `stayPMul`（死战不退/督战 → 上调或锁 1）；aggregate 填、天罡/地煞数据写。
-> 4. 向后兼容：`CLASH_WIN_STAY_P=0` 退化为当前"必回库"（测试可锚）。
-> 5. （可选·后续）`CLASH_STAY_P_K`：留场概率随掷命余量上调（强牌更能续推·owner「让强牌就有概率往前推」），先 k=0。
->
-> **design G 原型实测（临时 patch resolveClash·已撤·N=300·关1·新手deckBias=3+5铜地支+虎符旗手）——证明数值终于可标定**：
->
-> | 留场 P（玩家/Boss） | bossDelta 0 | bossDelta +12 | bossDelta +18 |
-> |---|---|---|---|
-> | 0 / 0（=当前模型） | 100% | 100% | 100%（**全免疫·复现 bug**） |
-> | 0.5 / 0.5 | 96.3% | 95.0% | 93.3% |
-> | 0.5 / **0.75**（owner 授权守将） | 94.7% | 92.0% | 89.0% |
-> | 0.5 / 1.0（死战不退·列奥尼达本命） | 87.7% | 82.0% | 78.3% |
->
-> → **WR 终于随 留场P + bossDelta 移动**；关1 列奥尼达=温泉关死守=守将留场 P≈1.0（死战不退地煞）+ bossDelta ~+12 → 新手 ~80% ≈ targetWR。**owner 授权守将 75% 收到**：单独 0.75 仍 ~92%（偏易），配死战不退(→1.0)+牌力才压到 80%。
->
-> **同时（§六派甲·独立）**：level loader/sim 接 **16写死 pokerDeck + ≤5 tiangang + dishaScale**（当前仍跑旧 54张+favorBias+12随机天罡）→ 否则标定的不是真 Boss·上表为旧模型·方向性。
->
-> **甲实现「人头留场续攻」+ 接 16写死模型 后 → design G 重跑 sim·扫 P+dishaScale 收敛各关 §四 targetWR·回填关卡配置。**
->
-> ---
-> **（以下为根因记录·供甲背景）** 读 `turn-combat.ts`·结构·非数字：
-> 1. `resolveClash` L345-353：掷命后胜者立即「光荣回牌库」离场（owner 6-21 改）→ 每次遭遇双方前锋都清空 → 没一方能维持推进（赢了也走）。
-> 2. `advanceColumnToBase` L368-383：空路白送 chip（某路只一方有兵 → 直接破家·不掷命）。
-> 3. 贪心玩家吞吐 > Boss AI → Boss 覆盖不全三路 → 玩家走空路破家。
-> 4. 合流 → 胜负由占路/到家先后决定·牌力几乎不参与；源泉堆 20+ → 按点数收费咬不动。**「人头留场续攻」让赢家(尤其强牌)能持续推进/反推 → Boss 终于能攒攻势 → 牌力决定胜负·数值可标定。**
+> 掷命胜者「人头=留场续攻 / 人面=回牌库+返半费」(`resolveClash` 种子化硬币·`coin-flip.ts` CSS-3D)。调参钩子(stayPMul/续航门/CLASH_WIN_STAY_P)并入后续天罡/地煞重设计批次随平衡标定。完整契约 doc24 §4.2 + boss-config-1-5.md。详情见 git。
 
 ---
 
-### REQ-G-诅咒地煞 · [2026-06-21] · design G → 甲（引擎域） · Game G · status: **⏸ 暂缓（owner 2026-06-21：「诅咒地煞·先不实现」→ 关5 改用纯数据杠杆 bossFavorBias/源泉）** · 优先级: P3（备案·非阻塞） · 类型: 真缺口（周期性 disha op·可下沉）
+### REQ-G-诅咒地煞 · [2026-06-21] · design G → 甲 · Game G · status: **⏸ 暂缓（owner：诅咒先不做·关5 改用 bossFavorBias/bonusMana 杠杆）** · 优先级: P3（备案）
 
-> **owner 2026-06-21 更新：诅咒先不做** → 关5 难度改用现有纯数据杠杆（`bossFavorBias` 地支附魔细调 + 慎用 `bonusMana` 双倍泉水）。本需求保留备案，甲**暂不实现**。
-> **owner 原提**：Boss 新被动「诅咒」——**每 N 回合（默认 3）一次，把玩家场上随机一张兵返还牌库 或 退回起点格**（周期骚扰·打断铺场推进）。
-> **评判（design G）**：现有 disha 词汇表达不了（真缺口）；但与现有 `batteryEveryTurns`（大炮兵·每N回合压一路）**同构**——周期触发机制甲已有 → 加同类新 op 即可，**不是新引擎子系统**。
-> **数据形**：`{ kind:'curse', op:'bounceUnit', everyTurns:3, mode:'toDeck'|'toStart', pick:'random' }`。
-> **派甲**：① `DishaFx` 加 `curseEveryTurns`/`curseMode`；② 推进/AI 回合按 `turn % everyTurns === 0` 触发（仿 `batteryLane`），用 `b.rng` 选牌（确定性·进 turnHash）；③ `aggregateDisha` 填；④ design G 把数据写进 disha-pack（关5 项羽/终章·**不配关3/4——它们实测已过难·见 doc27 §3.5**）。
-> **配套（已覆盖·提醒甲）**：「每 Boss 招牌地煞=被动·掷命时全屏亮『XX 发作』」= 已在 `REQ-G-战斗逻辑批次·敌用地煞全屏通知`，本需求复用之。
-> **★ 关1-5 完整数据草案**（16写死牌组 + 地煞重设值 + 每 Boss 留场P/牌力偏置/家血/目标WR）= **`src/games/game-g/design/boss-config-1-5.md`**（design G 16v16 原型实测·甲已实装留场硬币）。甲接入清单见该档 §七：① loader 读 16牌组+bossFavorBias；② 地煞改值（§六表·关2/3/4 实测过强→调弱）；③ stayPMul 每 Boss 留场覆写；④ 诅咒（本需求）。接好后 design G 重跑 simulate-balance.ts 定稿。
+> Boss 被动「诅咒」(每 N 回合 bounce 玩家随机兵)：真缺口但与 `batteryEveryTurns` 同构、可加同类新 op。备案暂不实现。数据形 `{kind:'curse',op:'bounceUnit',everyTurns,mode,pick}`；接入清单见 `boss-config-1-5.md §七`。
 
 ---
 
