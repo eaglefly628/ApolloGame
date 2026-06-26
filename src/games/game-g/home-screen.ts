@@ -34,9 +34,9 @@ export function buildHomeScreen(view: LobbyView): LayoutNode {
   const duel: LayoutNode = {
     type: 'Panel', id: 'home-duel', props: { bare: true }, layout: { direction: 'row', gap: 4, align: 'center', padding: 0 },
     children: [
-      { type: 'PlayingCard', id: 'duel-a', props: { rank: 'A', suit: '♠', face: 'light', size: 'lg' }, layout: { rotate: -9 } },
-      { type: 'Button', id: 'duel-roll', props: { label: '掷', kind: 'primary', action: 'lucky' } },
-      { type: 'PlayingCard', id: 'duel-back', props: { rank: 'A', suit: '♠', face: 'light', faceUp: false, back: '❖', size: 'lg' }, layout: { rotate: 9 } },
+      { type: 'PlayingCard', id: 'duel-a', props: { rank: 'A', suit: '♠', face: 'light', size: 'lg' }, layout: { rotate: -9, anim: 'float' } },
+      { type: 'Button', id: 'duel-roll', props: { label: '掷', kind: 'primary', action: 'lucky' }, layout: { anim: 'glow' } },
+      { type: 'PlayingCard', id: 'duel-back', props: { rank: 'A', suit: '♠', face: 'light', faceUp: false, back: '❖', size: 'lg' }, layout: { rotate: 9, anim: 'float' } },
     ],
   };
 
