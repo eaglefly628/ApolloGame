@@ -49,6 +49,19 @@ describe('Game X · 宿主冒烟（大厅 → 开机 → Desk → Pocket）', ()
     dispose(); c.remove();
   });
 
+  it('大厅 → 画廊菜单 → 查看某屏 → 返回菜单 → 回大厅', () => {
+    const c = document.createElement('div'); document.body.appendChild(c);
+    const dispose = mount(c);
+    click(c, 'gx-lob-gallery');
+    expect(q(c, 'gx-gallery')).toBeTruthy(); // 画廊菜单
+    expect(q(c, 'gx-gv-event-birthday')).toBeTruthy(); // 列出生日屏入口
+    click(c, 'gx-gv-event-birthday');
+    expect(q(c, 'gx-galview')).toBeTruthy(); // 单屏查看
+    click(c, 'gx-gal-tomenu');
+    expect(q(c, 'gx-gallery')).toBeTruthy(); // 回菜单
+    dispose(); c.remove();
+  });
+
   it('Desk Mode 天气/时刻/切角色信号不崩', () => {
     const c = document.createElement('div'); document.body.appendChild(c);
     const dispose = mount(c);

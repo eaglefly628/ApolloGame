@@ -13,6 +13,11 @@ function uri(svg: string): string {
   return `data:image/svg+xml;utf8,${encodeURIComponent(svg)}`;
 }
 
+/** 通用：把 SVG 内容 + viewBox 包成 data-URI（各屏模块自建像素图用·SMIL 动画在 <img> 内也跑）。 */
+export function svgUri(inner: string, viewBox = '0 0 320 150'): string {
+  return uri(`<svg xmlns="http://www.w3.org/2000/svg" viewBox="${viewBox}" width="100%" height="100%" preserveAspectRatio="xMidYMid meet">${inner}</svg>`);
+}
+
 // ── 七月：黄昏读书房间（HERO·完全对齐 bundle frame_01）─────────────────────
 function duskRoom(): string {
   return `

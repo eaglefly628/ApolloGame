@@ -68,7 +68,13 @@ export function lobbyScreen(owned: Record<string, boolean>): LayoutNode {
             type: 'Panel', id: 'gx-lobtitle', props: { bare: true }, layout: { direction: 'row', justify: 'between', align: 'end', width: 640 },
             children: [
               { type: 'Label', id: 'gx-lobt', props: { text: '选择住进来的人', color: 'text', size: 'lg' } },
-              { type: 'Label', id: 'gx-lobm', props: { text: 'MARKETPLACE', font: 'pixel', color: 'dim', size: 'xs', tracking: 1 } },
+              {
+                type: 'Panel', id: 'gx-lobtr', props: { bare: true }, layout: { direction: 'row', gap: 10, align: 'center' },
+                children: [
+                  { type: 'Button', id: 'gx-lob-gallery', props: { label: '画廊 ▦', kind: 'ghost', action: 'gallery.open' } },
+                  { type: 'Label', id: 'gx-lobm', props: { text: 'MARKETPLACE', font: 'pixel', color: 'dim', size: 'xs', tracking: 1 } },
+                ],
+              },
             ],
           },
           {

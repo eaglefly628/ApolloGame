@@ -23,8 +23,10 @@ import { buildPocketBlueprint, pocketGraph, R_WARMTH } from './pocket.js';
 import { optionAvailableIndices } from './choices.js';
 import { ZANKYOU } from './theme.js';
 import { ensureFonts, ensureKeyframes } from './fonts.js';
+import { ALL_SCREENS, SCREEN_MAP } from './screens/index.js';
+import { galleryMenu, galleryBackBar } from './gallery-screen.js';
 
-type Mode = 'lobby' | 'boot' | 'desk' | 'pocket';
+type Mode = 'lobby' | 'boot' | 'desk' | 'pocket' | 'gallery' | 'galleryView';
 const DEFAULT_RECORD: SessionRecord = { lastSeenMs: 0, firstMetMs: 0, emotionTemp: 0.15, interactions: 0 };
 
 function recKey(id: string): string { return `gx-rec-${id}`; }
@@ -55,6 +57,7 @@ export function mount(container: HTMLElement, _host?: { exit?: () => void }): ()
   let engineUnsub: (() => void) | null = null;
   let pickupGreeting = '';
   let lastPocketNode = '';
+  let galleryViewId = '';
 
   const theme = ZANKYOU;
 
@@ -76,9 +79,22 @@ export function mount(container: HTMLElement, _host?: { exit?: () => void }): ()
   function tree(): LayoutNode {
     if (mode === 'lobby') return lobbyScreen(owned);
     if (mode === 'boot') return bootScreen(companion);
+    if (mode === 'gallery') return galleryMenu(ALL_SCREENS.map((s) => ({ id: s.id, label: s.label, group: s.group })));
+    if (mode === 'galleryView') return galleryViewTree(galleryViewId);
     if (mode === 'pocket') return pocketTree();
     const clock = readClock();
     return deskScreen(companion, clock, deskView(companion, clock, weather, record), lastSummary());
+  }
+
+  // 画廊单屏查看：复用所选屏的设备外壳 + 顶部返回条。
+  function galleryViewTree(id: string): LayoutNode {
+    const def = SCREEN_MAP[id];
+    const screen = def ? def.build() : galleryMenu([]);
+    return {
+      type: 'Screen', id: 'gx-galview', props: { center: true, bg: '#05060a' },
+      layout: { direction: 'column', padding: 0, gap: 6 },
+      children: [galleryBackBar(), ...(screen.children ?? [])],
+    };
   }
 
   function pocketTree(): LayoutNode {
@@ -146,6 +162,9 @@ export function mount(container: HTMLElement, _host?: { exit?: () => void }): ()
       },
       'boot.dock': () => { mode = 'desk'; remount(); },
       'mode.lobby': () => { teardownEngine(); mode = 'lobby'; remount(); },
+      'gallery.open': () => { mode = 'gallery'; remount(); },
+      'gallery.menu': () => { mode = 'gallery'; remount(); },
+      'gallery.view': (arg) => { galleryViewId = arg ?? ''; mode = 'galleryView'; remount(); },
       'mode.pickup': () => enterPocket(),
       'mode.dock': () => dock(),
       'dev.swapChar': () => {
