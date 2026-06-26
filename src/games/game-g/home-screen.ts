@@ -84,7 +84,7 @@ export function buildHomeScreen(view: LobbyView): LayoutNode {
     layout: { direction: 'column', gap: 6, padding: 16, width: 256 },
     children: [
       { type: 'Label', id: 'home-boss-diff',
-        props: { text: c ? `难度 ${'★'.repeat(c.stars)} · ${c.oneLiner}` : '', size: 'sm', color: 'gold' } },
+        props: c ? { size: 'sm', color: 'sub', spans: [{ text: '难度 ' }, { text: '★'.repeat(c.stars), color: 'gold', bold: true }, { text: ` · ${c.oneLiner}`, color: 'sub' }] } : { text: '', size: 'sm', color: 'gold' } },
       { type: 'Label', id: 'home-fiend-h',
         props: { text: '🎴 地煞（明牌 · 公平可破）— Boss 招牌历史战术：', size: 'xs', color: 'sub' } },
       ...fiendNodes,
