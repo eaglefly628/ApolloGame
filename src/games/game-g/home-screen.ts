@@ -68,8 +68,8 @@ export function buildHomeScreen(view: LobbyView): LayoutNode {
     children: [{ type: 'Card', id: `home-fiend-c-${i}`, props: { title: `🎴 ${fd.name}`, sub: fd.desc, tone: 'normal' } }],
   }));
   const rail: LayoutNode = {
-    type: 'Panel', id: 'home-rail', props: { title: `⚔ 本关 Boss · ${c?.boss ?? '—'}`, scroll: true },
-    layout: { direction: 'column', gap: 8, padding: 16, width: 320 },
+    type: 'Panel', id: 'home-rail', props: { title: `⚔ 本关 Boss · ${c?.boss ?? '—'}` },
+    layout: { direction: 'column', gap: 6, padding: 16, width: 256 },
     children: [
       { type: 'Label', id: 'home-boss-diff',
         props: { text: c ? `难度 ${'★'.repeat(c.stars)} · ${c.oneLiner}` : '', size: 'sm', color: 'gold' } },

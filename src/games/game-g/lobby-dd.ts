@@ -27,31 +27,40 @@ export interface LobbyDDState { tab: string; coll: CollectionState; craftSel: st
 export const INITIAL_LOBBY_DD: LobbyDDState = { tab: 'home', coll: { ...INITIAL_COLLECTION }, craftSel: '', ov: { ...INITIAL_OVERLAY }, gachaReveal: null };
 
 // ── 顶栏（玩家 + 货币 + 商城/手册/设置）·纯数据 ─────────────────
+// owner 2026-06-26「证明 UI 控件能力 = 原版」：原版顶栏的 ♠ 章/等级 pill/货币 pill 早被引擎控件覆盖——
+// 章=Avatar(shape:rounded)、货币/手册/设置/战役=Tag(圆角药丸·可点)；不再用 Button 凑数。三区 justify 居中战役 pill。
+function pill(id: string, label: string, action: string, tone: 'normal' | 'accent' = 'normal', arg?: string): LayoutNode {
+  return { type: 'Tag', id, props: { label, tone, action, ...(arg ? { actionArg: arg } : {}) } };
+}
 function topbar(view: LobbyView): LayoutNode {
-  const coinBtn = (label: string, action: string): LayoutNode => ({ type: 'Button', id: `tb-${action}-${label.slice(0, 2)}`, props: { label, kind: 'ghost', action } });
-  return {
-    type: 'Panel', id: 'lobby-topbar', props: { bare: true }, layout: { direction: 'row', gap: 8, padding: 10, align: 'center' },
+  const who: LayoutNode = {
+    type: 'Panel', id: 'tb-who', props: { bare: true }, layout: { direction: 'column', gap: 1 },
     children: [
-      { type: 'Panel', id: 'tb-who', props: { bare: true }, layout: { direction: 'column', gap: 1, flex: 1 },
-        children: [
-          { type: 'Label', id: 'tb-name', props: { text: `♠ ${view.name}`, size: 'lg', color: 'gold', bold: true } },
-          { type: 'Label', id: 'tb-sub', props: { text: `主牌 ${view.mainCard} · ${view.rankText}`, size: 'xs', color: 'sub' } },
-        ] },
-      { type: 'Button', id: 'tb-shop', props: { label: '🛒 商城', kind: 'ghost', action: 'openShop' } },
-      coinBtn(`🪙 ${view.coin}`, 'recharge'),
-      coinBtn(`💎 ${view.diamond ?? 0}`, 'recharge'),
-      coinBtn(`🧩 ${view.dizhiShards ?? 0}`, 'recharge'),
-      coinBtn(`✨ ${view.foilCount}`, 'shopFoil'),
-      { type: 'Button', id: 'tb-man', props: { label: '📚 手册', kind: 'ghost', action: 'man' } },
-      { type: 'Button', id: 'tb-settings', props: { label: '⚙', kind: 'ghost', action: 'settings' } },
+      { type: 'Label', id: 'tb-name', props: { text: view.name, size: 'lg', color: 'gold', bold: true } },
+      { type: 'Label', id: 'tb-sub', props: { text: `主牌 ${view.mainCard} · ${view.rankText}`, size: 'xs', color: 'sub' } },
+      ...(view.archLine ? [{ type: 'Label' as const, id: 'tb-arch', props: { text: `流派 ${view.archLine}`, size: 'xs' as const, color: 'dim' as const } }] : []),
     ],
   };
-}
-
-function navBar(tab: string): LayoutNode {
+  const left: LayoutNode = {
+    type: 'Panel', id: 'tb-left', props: { bare: true }, layout: { direction: 'row', gap: 10, align: 'center', flex: 1 },
+    children: [{ type: 'Avatar', id: 'tb-seal', props: { name: '♠', shape: 'rounded', size: 42 } }, who],
+  };
+  const stage: LayoutNode = pill('tb-stage', `⚔ ${view.stageLabel}`, 'tab', 'normal', 'campaign');
+  const right: LayoutNode = {
+    type: 'Panel', id: 'tb-right', props: { bare: true }, layout: { direction: 'row', gap: 6, align: 'center', justify: 'end', flex: 1 },
+    children: [
+      pill('tb-shop', '🛒 商城', 'openShop', 'accent'),
+      pill('tb-coin', `🪙 ${view.coin}`, 'recharge'),
+      pill('tb-dia', `💎 ${view.diamond ?? 0}`, 'recharge'),
+      pill('tb-shard', `🧩 ${view.dizhiShards ?? 0}`, 'recharge'),
+      pill('tb-foil', `✨ ${view.foilCount}`, 'shopFoil'),
+      pill('tb-man', '📚 手册', 'man', 'accent'),
+      pill('tb-settings', '⚙', 'settings'),
+    ],
+  };
   return {
-    type: 'Panel', id: 'lobby-nav', props: { bare: true }, layout: { direction: 'row', gap: 8, padding: 8 },
-    children: TABS.map((t) => ({ type: 'Button', id: `nav-${t.id}`, props: { label: t.label, kind: (t.id === tab ? 'primary' : 'ghost') as 'primary' | 'ghost', action: 'tab', actionArg: t.id } })),
+    type: 'Panel', id: 'lobby-topbar', props: { bare: true }, layout: { direction: 'row', gap: 8, padding: 10, align: 'center' },
+    children: [left, stage, right],
   };
 }
 
@@ -68,10 +77,16 @@ function tabContent(view: LobbyView, st: LobbyDDState): LayoutNode {
 const emptyTab = (id: string): LayoutNode => ({ type: 'Panel', id: `lc-empty-${id}`, props: {}, layout: { padding: 16 }, children: [] });
 
 export function buildLobby(view: LobbyView, st: LobbyDDState): LayoutNode {
+  // 导航用引擎 Tabs 控件（renderTabs 自带金色下划线 active + 切页 toggle 不重建·对齐原版 .nav）——
+  // 不再手搓 Button 列。Tabs children 按序对应 TABS；仅当前页建内容、余页占位（渲只渲 active·省构建）。
+  const nav: LayoutNode = {
+    type: 'Tabs', id: 'lobby-nav', props: { tabs: TABS, active: st.tab, action: 'tab' }, layout: { flex: 1 },
+    children: TABS.map((t) => (t.id === st.tab ? tabContent(view, st) : emptyTab(t.id))),
+  };
   // 整厅外框（对齐原版 .frame）：maxWidth 1340 + 块居中——窄屏铺满、宽屏封顶居中。
   const frame: LayoutNode = {
     type: 'Panel', id: 'lobby-frame', props: {}, layout: { direction: 'column', gap: 10, padding: 14, maxWidth: 1340, flex: 1 },
-    children: [topbar(view), navBar(st.tab), { type: 'Panel', id: 'lobby-content', props: { bare: true }, layout: { direction: 'column', flex: 1 }, children: [tabContent(view, st)] }],
+    children: [topbar(view), nav],
   };
   return {
     type: 'Screen', id: 'lobby-screen-dd', props: { bg: GG_LOBBY_THEME.pageBg },
