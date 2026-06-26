@@ -30,6 +30,7 @@ GAMES: list[tuple[str, str]] = [
     ("game-e", "Game E: Balatro-like      · 小丑牌 · 卡牌构建"),
     ("game-f", "Game F: Pixel 3 Kingdoms  · 像素三分天下 · 自走棋"),
     ("game-g", "Game G: Fateflip Poker    · 翻命扑克 · 3D 掷命骨架"),
+    ("game-x", "Game X: Living Companion  · 残响 · 掌上伴侣 Desk Mode"),
 ]
 GAME_IDS = [g[0] for g in GAMES]
 
