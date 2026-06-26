@@ -30,18 +30,19 @@ export function buildHomeScreen(view: LobbyView): LayoutNode {
     ],
   };
 
-  // 漂浮对决牌（对齐 Designer comp）：外层 Panel 做垂直 float、内层 PlayingCard 做静态 rotate+scale——
-  // 嵌套组合规避「apollo-float 纯 translateY 会盖掉同层 rotate」：外浮内倾，牌持续上下浮且保持倾斜。
+  // 照原版确切像素（非 scale·scale 会破坏比例）：.dcard 116×160 → fluid 卡填进 116 宽容器（5:7→~162 高）；
+  // .duel gap 34；外层 float 垂直浮动、内层 rotate 倾斜（嵌套规避 apollo-float 盖 rotate）。
   const tiltFloat = (id: string, cardProps: Record<string, unknown>, rot: number): LayoutNode => ({
-    type: 'Panel', id: `${id}-fl`, props: { bare: true }, layout: { anim: 'float', padding: 0 },
-    children: [{ type: 'PlayingCard', id, props: cardProps as never, layout: { rotate: rot, scale: 1.15 } }],
+    type: 'Panel', id: `${id}-fl`, props: { bare: true }, layout: { anim: 'float', padding: 0, width: 116 },
+    children: [{ type: 'PlayingCard', id, props: { ...cardProps, fluid: true } as never, layout: { rotate: rot } }],
   });
   const duel: LayoutNode = {
-    type: 'Panel', id: 'home-duel', props: { bare: true }, layout: { direction: 'row', gap: 14, align: 'center', padding: 0 },
+    type: 'Panel', id: 'home-duel', props: { bare: true }, layout: { direction: 'row', gap: 34, align: 'center', padding: 0 },
     children: [
-      tiltFloat('duel-a', { rank: 'A', suit: '♠', face: 'light', size: 'lg' }, -9),
-      { type: 'Button', id: 'duel-roll', props: { label: '掷', kind: 'primary', action: 'lucky' }, layout: { anim: 'glow' } },
-      tiltFloat('duel-back', { rank: 'A', suit: '♠', face: 'light', faceUp: false, back: '❖', size: 'lg' }, 9),
+      tiltFloat('duel-a', { rank: 'A', suit: '♠', face: 'light' }, -9),
+      // 中间圆「掷」徽章：照原版 .vs 64px 金色圆币——用 CoinFlip(圆形金币·headsLabel 掷·可点掷卦)，非矩形按钮。
+      { type: 'CoinFlip', id: 'duel-roll', props: { outcome: 'heads', headsLabel: '掷', size: 64, action: 'lucky' }, layout: { anim: 'glow' } },
+      tiltFloat('duel-back', { rank: 'A', suit: '♠', face: 'light', faceUp: false, back: '❖' }, 9),
     ],
   };
 
@@ -60,7 +61,7 @@ export function buildHomeScreen(view: LobbyView): LayoutNode {
             ] },
           stags,
         ] },
-      { type: 'Panel', id: 'home-center', props: { bare: true }, layout: { direction: 'column', align: 'center', gap: 10, padding: 0 },
+      { type: 'Panel', id: 'home-center', props: { bare: true }, layout: { direction: 'column', align: 'center', gap: 20, padding: 0 },
         children: [
           { type: 'Button', id: 'home-fortune', props: { label: keptFortune != null ? `🎴 今日卦象 · ${keptFortune}` : '🎴 掷今日卦象', kind: 'ghost', action: 'lucky' } },
           duel,
