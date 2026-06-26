@@ -47,6 +47,10 @@ export interface LayoutConstraints {
   draggable?: boolean;
   /** 放置区：信号名·渲染加 data-drop；mountUI 在此 drop 时调 handlers[信号](被拖节点 id)。 */
   dropZone?: string;
+  /** 新手引导锚点键：渲染加 data-anchor → OnboardingOverlay 按它 querySelector 定位 spotlight 高亮（配世界 Coachmark{anchor}）。数据 UI 也能被引导。 */
+  anchor?: string;
+  /** 倒角切角 px（CSS clip-path 八边形·art-deco/扑克牌桌美学）：如 13 = 左上/右下各切 13px。给面板/卡/CTA 切角。 */
+  chamfer?: number;
 }
 
 export interface ButtonProps {

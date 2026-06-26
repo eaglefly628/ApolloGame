@@ -19,7 +19,8 @@ const esc = (s: string): string =>
 // （如 "0;background:url(x)"）→ 直接插进 style 串即 CSS 注入。统一过 num() 只取有限数字。
 const num = (v: unknown, d = 0): number => { const n = Number(v); return Number.isFinite(n) ? n : d; };
 // anim 预设白名单（mountUI 注入的关键帧名）：拒绝任意字符串插入 animation。
-const ANIM_PRESETS = new Set(['fadeIn', 'slideUp', 'pop', 'shake', 'dealIn', 'flyIn']);
+const ANIM_PRESETS = new Set(['fadeIn', 'slideUp', 'pop', 'shake', 'dealIn', 'flyIn']); // 一次性入场
+const LOOP_PRESETS = new Set(['float', 'glow', 'pulse']);                                // 持续循环（浮动/发光/脉冲·环境动效·infinite）
 // justify 主轴分布枚举 → CSS justify-content（闭集映射·拒绝任意串注入）。
 const JUSTIFY_MAP: Record<string, string> = {
   start: 'flex-start', center: 'center', end: 'flex-end',
@@ -47,9 +48,16 @@ function layoutStyle(c?: LayoutConstraints): string {
   if (c.rotate !== undefined) tf.push(`rotate(${num(c.rotate)}deg)`);
   if (c.scale  !== undefined) tf.push(`scale(${num(c.scale)})`);
   if (tf.length) p.push(`transform:${tf.join(' ')}`);
-  // 动画：仅允许白名单预设名（mountUI 注入 keyframes）；时长/延迟强制为数字。
+  // 倒角切角（clip-path 八边形·扑克/art-deco 美学）。切角 px 过 num 防注入。
+  if (c.chamfer !== undefined) {
+    const k = num(c.chamfer);
+    p.push(`clip-path:polygon(${k}px 0,100% 0,100% calc(100% - ${k}px),calc(100% - ${k}px) 100%,0 100%,0 ${k}px)`);
+  }
+  // 动画：一次性入场（both ease-out）或持续循环（infinite·环境动效）。仅白名单预设；时长/延迟强制数字。
   if (c.anim && ANIM_PRESETS.has(c.anim)) {
     p.push(`animation:apollo-${c.anim} ${num(c.animMs, 360)}ms ${c.animDelay ? `${num(c.animDelay)}ms ` : ''}both ease-out`);
+  } else if (c.anim && LOOP_PRESETS.has(c.anim)) {
+    p.push(`animation:apollo-${c.anim} ${num(c.animMs, 2400)}ms ${c.animDelay ? `${num(c.animDelay)}ms ` : ''}ease-in-out infinite`);
   }
   if (c.draggable) p.push('cursor:grab');
   return p.join(';');
@@ -603,10 +611,11 @@ function renderVideo(id: string, p: VideoProps, ls: string, t: UITheme): string 
 export function renderNode(node: LayoutNode, theme: UITheme = SHELL): string {
   const html = renderDispatch(node, theme);
   const c = node.layout;
-  if (c && (c.draggable || c.dropZone)) {
+  if (c && (c.draggable || c.dropZone || c.anchor)) {
     const a: string[] = [];
     if (c.draggable) a.push(`draggable="true" data-drag="${esc(node.id)}"`);
     if (c.dropZone)  a.push(`data-drop="${esc(c.dropZone)}"`);
+    if (c.anchor)    a.push(`data-anchor="${esc(c.anchor)}"`); // 新手引导 spotlight 锚点（OnboardingOverlay 定位）
     return html.replace(/^(\s*<[a-zA-Z][\w-]*)/, `$1 ${a.join(' ')}`);
   }
   return html;

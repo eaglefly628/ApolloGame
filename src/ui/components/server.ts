@@ -98,7 +98,10 @@ const APOLLO_KEYFRAMES = `
 @keyframes apollo-coin-tails{0%{transform:rotateX(60deg)}100%{transform:rotateX(1980deg)}}
 @keyframes apollo-spark{0%{transform:scale(.4);opacity:0}40%{transform:scale(1.25);opacity:1}100%{transform:scale(1);opacity:.9}}
 @keyframes apollo-clash{0%,100%{transform:translateX(0)}30%{transform:translateX(-5px)}60%{transform:translateX(5px)}}
-@keyframes apollo-sheen{0%{left:-60%}60%,100%{left:140%}}`;
+@keyframes apollo-sheen{0%{left:-60%}60%,100%{left:140%}}
+@keyframes apollo-float{0%,100%{transform:translateY(0)}50%{transform:translateY(-12px)}}
+@keyframes apollo-glow{0%,100%{box-shadow:0 0 22px rgba(232,205,130,.5)}50%{box-shadow:0 0 50px rgba(232,205,130,.95)}}
+@keyframes apollo-pulse{0%,100%{opacity:.55}50%{opacity:1}}`;
 function ensureKeyframes(): void {
   if (typeof document === 'undefined') return;
   if (document.getElementById('apollo-ui-keyframes')) return;
