@@ -57,7 +57,7 @@
 
 > doc24 实时→回合制大转向后双核/双屏并存。甲 5 步全清：抽共享类型切断 `turn-combat→live-combat` 依赖 → 删旧出征路 `showMatch()` + live 胶水 → 删 `live-combat.ts` → 删旧 `battle-screen*`(乙协同) → 唯一真相 `turn-combat`+`turn-battle-screen`+`clash-resolve`。turnHash 不漂移·门禁全绿。详情见 git。
 
-### REQ-ARCH-MENU-DSL · [2026-06-21] · 框架级（PG-乙 转呈 · owner 拍板「提主程评」）· status: **open（待主程评判）** · 类型: 可能的通用能力缺口（带 YAGNI 警告）
+### REQ-ARCH-MENU-DSL · [2026-06-21] · 框架级（PG-乙 转呈 · owner 拍板「提主程评」）· status: **✅ 主程裁决 2026-06-26：B 方案能力已就绪（LayoutNode + ActionSink 信号绑定·本 session 落地）·见下「主程裁决」** · 类型: 通用能力（已下沉·非单游戏 DSL）
 
 > **缘起**：owner review `lobby-screen.ts` 的 `onClick` —— 一条 ~60 分支的 `else if (act === 'x') { … }` 链，质疑「为什么不用一张表映射、而写条件跳转代码？以后想数据驱动改写还容易吗？真要这样应让引擎提供能力去填数据」。乙作架构评审，结论转呈主程。
 
@@ -76,7 +76,13 @@
 - (b) 若暂不上 DSL：菜单 chrome 是否就**接受为表现层胶水**（数据驱动火力集中战斗），乙是否可自行做 A（闭包分发表）只为可读性——明确它**不算**数据驱动达标？
 - owner 已选「提主程 REQ-ARCH」路径（未选「现在就重构」/「维持现状」），故乙不擅自动 onClick，等主程结论。
 
-### REQ-LAUNCHER-EXIT · [2026-06-21] · program G 乙（owner→乙·实属 launcher 域·转交主程）· status: **open** · 类型: 启动器 UX + 退出钩子
+**主程裁决（2026-06-26）**：
+- **B 方案已落地**——owner 要的「引擎提供能力去填数据」就是本 session 建成的三件套：① 菜单结构=数据(`LayoutNode` 树)；② 动作绑定=数据(`Button.action` 信号名 → `mountUI` ActionSink → `enqueueAction` → InputQueue → `keybind` → `Signal{name,arg}` → sim 能力消费)；③ 纯表现交互(切页/开关弹窗/悬浮)=`mountUI` 内建·零游戏代码。那条 ~60 分支 else-if 就此化成「数据(action 名) + sim 能力(信号消费者) + 引擎内建表现」。
+- **但不是「为单游戏大厅造菜单 DSL」**——乙的 YAGNI 警告对。落地的是**通用 UI 库 + 信号总线**，服务所有游戏（game-g/game-i 在用 + 铁律强制全游戏 → rule-of-three 已过），非 bespoke 菜单引擎。
+- **A（闭包分发表）回驳**：值是函数=仍代码、过不了尺子（乙判定正确）。别做 A，直接迁信号路。
+- **残留**=PG 把 `lobby-screen.ts` onClick 迁到 LayoutNode `action` 信号 + sim 能力（game-g 数据驱动重写·PG 域·现已解锁；game-g 当前仍传 HandlerMap，是非破坏并存的过渡，删一个 handler 即落到信号）。
+
+### REQ-LAUNCHER-EXIT · [2026-06-21] · program G 乙（owner→乙·实属 launcher 域·转交主程）· status: **✅ done（主程·launcher 部分）：返回收进齿轮菜单 `GameOverlayMenu` + `mount(el,{exit})` 退出钩子契约（game-g 经 {exit} 自接·故不为它叠返回钮）。game-g 设置菜单接退出项=乙** · 类型: 启动器 UX + 退出钩子
 
 > owner 2026-06-21（playtest game-g）：「右上角那个『返回主界面/返回卡带』——返回整个大游戏卡带界面的那个统一返回钮——不要摆在那，应该收进游戏自己的设置菜单里当『退出』。」
 >
