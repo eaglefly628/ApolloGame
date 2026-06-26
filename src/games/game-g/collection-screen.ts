@@ -45,18 +45,25 @@ function heroesPage(st: CollectionState): LayoutNode {
   };
 
   // 保真：牌谱用 PlayingCard 原语（真扑克牌面·名将名 + 拥有数/稀有 + 选中金边/未拥暗）。
-  // 卡放大到 lg、grid minCol 调高 → 每排 ~6 张（对齐原版 hero-grid6 的 6 列大卡·非 ~10 小卡）。
-  // 诚实边界：PlayingCard 固定宽 + grid 只能 auto-fill → 卡不随 1fr 单元格伸缩、无法严格「6 列填满」；
-  //          且无悬停翻面——已同步主程(REQ·见 requests.md)。
+  // 收藏卡墙（对齐原版 .hero-grid6{repeat(6,1fr)} + .pcard{width:100%;aspect-ratio:5/7;hover 翻面}）：
+  // 用主程下沉(25c0a465)的 grid cols:6 + PlayingCard fluid（卡填满 1fr 格·零卡间空隙）
+  // + flipOnHover+backFace（鼠标悬停 front→back 翻转·露英雄列传：名/稀有·朝代/称号）。
   const cards: LayoutNode[] = filtered.map((h) => ({
     type: 'PlayingCard', id: `coll-h-${h.id}`,
-    props: { rank: h.rank, suit: h.suit, label: h.name, value: h.own > 0 ? `×${h.own}` : RAR_NAME[h.rar], size: 'lg',
+    props: { rank: h.rank, suit: h.suit, label: h.name, value: h.own > 0 ? `×${h.own}` : RAR_NAME[h.rar], fluid: true,
       art: heroPortraitUri(h.suit, h.era, h.rank, h.rar),
-      selected: h.id === sel?.id && h.own > 0, dimmed: h.own === 0, action: 'heroPick', actionArg: h.id },
+      selected: h.id === sel?.id && h.own > 0, dimmed: h.own === 0, action: 'heroPick', actionArg: h.id,
+      flipOnHover: true,
+      backFace: { type: 'Panel', id: `coll-bk-${h.id}`, props: { bare: true }, layout: { direction: 'column', align: 'center', justify: 'center', gap: 2, padding: 4 },
+        children: [
+          { type: 'Label', id: `coll-bk-n-${h.id}`, props: { text: `${h.rank}${h.suit} ${h.name}`, size: 'sm', color: 'gold', bold: true } },
+          { type: 'Label', id: `coll-bk-e-${h.id}`, props: { text: `${RAR_NAME[h.rar]} · ${h.era}`, size: 'xs', color: 'sub' } },
+          { type: 'Label', id: `coll-bk-t-${h.id}`, props: { text: h.title, size: 'xs', color: 'dim' } },
+        ] } },
   }));
   const grid: LayoutNode = {
     type: 'Panel', id: 'coll-grid', props: { title: `英雄列传 · ${filtered.length}/${HERO_CARDS.length}`, scroll: true },
-    layout: { direction: 'grid', minCol: 122, gap: 10, padding: 10, flex: 1 }, children: cards,
+    layout: { direction: 'grid', cols: 6, gap: 14, padding: 10, flex: 1 }, children: cards,
   };
 
   const detail: LayoutNode = sel ? buildHeroDetail(sel) : {
