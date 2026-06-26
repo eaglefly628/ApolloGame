@@ -53,12 +53,13 @@ function pokerGrid(view: LobbyView, picks: Set<string>): LayoutNode {
       // 保真：用 PlayingCard 原语（真扑克牌面 + 英雄立绘 + 名将名 + favor 值 + 选中金边/弱牌暗）。
       return {
         type: 'PlayingCard', id: `pc-${cardId}`,
-        props: { rank, suit: su, label: hero?.name, value: cost > 0 ? `${fv}·${'💧'.repeat(cost)}` : String(fv),
+        props: { rank, suit: su, label: hero?.name, value: cost > 0 ? `${fv}·${'💧'.repeat(cost)}` : String(fv), fluid: true,
           art: hero ? heroPortraitUri(su as Suit, hero.era, rank, hero.rar) : undefined,
           selected: picked, dimmed: !picked && fv <= 50, action: 'pickCard', actionArg: cardId },
       };
     });
-    return { type: 'Panel', id: `poker-row-${si}`, props: { title: su, bare: true }, layout: { direction: 'grid', minCol: 76, gap: 6, padding: 8 }, children: cards };
+    // 每花色一行 13 列填满（对齐原版扑克构筑墙·.pbuild-grid + fluid 卡·零空隙）。
+    return { type: 'Panel', id: `poker-row-${si}`, props: { title: su, bare: true }, layout: { direction: 'grid', cols: 13, gap: 6, padding: 8 }, children: cards };
   });
   return { type: 'Panel', id: 'poker-grid', props: { bare: true, scroll: true }, layout: { direction: 'column', gap: 8, padding: 4 }, children: rows };
 }
