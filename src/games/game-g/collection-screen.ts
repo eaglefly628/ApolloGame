@@ -94,7 +94,7 @@ function buildHeroDetail(h: HeroCard): LayoutNode {
 }
 
 // ── ② 天梯·榜（沿用 live ladderSection 的 Table 数据范式）─────────────
-function ladderPage(view: LobbyView): LayoutNode {
+export function ladderPage(view: LobbyView): LayoutNode {
   const RECENTS: [string, string, string, string][] = [
     ['胜', 'win', '黑桃急袭 · 翻正 4/5', '+22'], ['胜', 'win', '红桃火攻 · 斩首奏效', '+19'],
     ['负', 'lose', '田忌阵被识破', '−16'], ['胜', 'win', '锋矢破中路', '+21'],

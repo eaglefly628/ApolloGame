@@ -12,7 +12,7 @@ import { isSfxMuted, setSfxMuted } from './sfx.js';
 import { toggleBgm } from './bgm.js';
 import { buildHomeScreen } from './home-screen.js';
 import { buildCampaignScreen } from './campaign-screen.js';
-import { buildCollectionScreen, INITIAL_COLLECTION, type CollectionState } from './collection-screen.js';
+import { buildCollectionScreen, ladderPage, INITIAL_COLLECTION, type CollectionState } from './collection-screen.js';
 import { buildDeckScreen } from './deck-screen.js';
 import { buildCraftScreen } from './craft-screen.js';
 import { buildOverlay, INITIAL_OVERLAY, type OverlayState } from './overlays.js';
@@ -24,7 +24,7 @@ import { GUIDE_COACH } from './lobby-overlays.js';
 
 const TABS: { id: string; label: string }[] = [
   { id: 'home', label: '大厅' }, { id: 'campaign', label: '战役' }, { id: 'decks', label: '我的牌组' },
-  { id: 'coll', label: '收藏' }, { id: 'craft', label: '改造坊' },
+  { id: 'coll', label: '收藏' }, { id: 'craft', label: '改造坊' }, { id: 'ladder', label: '天梯' },
 ];
 
 export interface LobbyDDState { tab: string; coll: CollectionState; craftSel: string; ov: OverlayState; gachaReveal: GachaResult[] | null }
@@ -43,7 +43,7 @@ function topbar(view: LobbyView): LayoutNode {
       { type: 'Label', id: 'tb-name', props: { text: view.name, size: 'lg', color: 'gold', bold: true } },
       // 副文本(Label.spans·主程已下沉)：主牌牌名金色高亮，对齐原版「主牌 · 黑桃A · 段位」内联着色。
       { type: 'Label', id: 'tb-sub', props: { size: 'xs', color: 'sub', spans: [{ text: '主牌 ' }, { text: view.mainCard, color: 'gold', bold: true }, { text: ` · ${view.rankText}` }] } },
-      ...(view.archLine ? [{ type: 'Label' as const, id: 'tb-arch', props: { text: `流派 ${view.archLine}`, size: 'xs' as const, color: 'dim' as const } }] : []),
+      { type: 'Label', id: 'tb-arch', props: { text: `流派 ${view.archLine || '未成型'}`, size: 'xs', color: 'dim' } },
     ],
   };
   const left: LayoutNode = {
@@ -75,6 +75,7 @@ function tabContent(view: LobbyView, st: LobbyDDState): LayoutNode {
     case 'campaign': return buildCampaignScreen(view).children?.[0] ?? emptyTab('campaign');
     case 'decks': return { type: 'Panel', id: 'lc-decks', props: { bare: true }, layout: { direction: 'column', gap: 10, flex: 1 }, children: buildDeckScreen(view, new Set(view.pokerPicks ?? [])).children ?? [] };
     case 'coll': return buildCollectionScreen(view, st.coll).children?.[0] ?? emptyTab('coll');
+    case 'ladder': return ladderPage(view);
     case 'craft': return { type: 'Panel', id: 'lc-craft', props: { bare: true }, layout: { direction: 'column', gap: 12, flex: 1 }, children: buildCraftScreen(view, st.craftSel).children ?? [] };
     default: return { type: 'Panel', id: 'lc-home', props: { bare: true }, layout: { direction: 'row', gap: 16, flex: 1 }, children: buildHomeScreen(view).children ?? [] };
   }
@@ -91,7 +92,7 @@ export function buildLobby(view: LobbyView, st: LobbyDDState): LayoutNode {
   // 整厅外框（对齐原版 .frame）：maxWidth 1340 + 块居中——窄屏铺满、宽屏封顶居中。
   const frame: LayoutNode = {
     type: 'Panel', id: 'lobby-frame', props: {}, layout: { direction: 'column', gap: 10, padding: 14, maxWidth: 1340, flex: 1 },
-    children: [topbar(view), nav],
+    children: [topbar(view), { type: 'Divider', id: 'lobby-hdr-div', props: {} }, nav],
   };
   return {
     type: 'Screen', id: 'lobby-screen-dd', props: { bg: GG_LOBBY_THEME.pageBg },

@@ -29,7 +29,7 @@ describe('lobby-dd · 全数据驱动大厅集成', () => {
     const frame = tree.children?.[0]; // 居中外框（maxWidth）
     expect(frame?.id).toBe('lobby-frame');
     expect(frame?.children?.[0]?.id).toBe('lobby-topbar');
-    expect(frame?.children?.[1]?.id).toBe('lobby-nav');
+    expect(frame?.children?.[2]?.id).toBe('lobby-nav'); // [1]=header divider
     const json = JSON.stringify(tree);
     expect(json).toContain('大厅'); expect(json).toContain('改造坊'); // 导航
     expect(json).toContain('"action":"tab"'); expect(json).toContain('"action":"openShop"');
