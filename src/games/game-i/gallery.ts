@@ -841,6 +841,9 @@ function buildPageNew(controls: ControlsState): LayoutNode {
           { type: 'Badge', id: 'jr-2', props: { text: '中', tone: 'warn' } },
           { type: 'Badge', id: 'jr-3', props: { text: '右', tone: 'dim' } },
         ] },
+      { type: 'Panel', id: 'fluid-grid', props: { title: 'cols:5 + PlayingCard.fluid（卡填满格·5:7 比例·零卡间空隙）' }, layout: { direction: 'grid', cols: 5, gap: 6, padding: 14 },
+        children: ([['A', '♠'], ['K', '♥'], ['Q', '♦'], ['J', '♣'], ['10', '♠']] as const).map(([r, s], i): LayoutNode =>
+          ({ type: 'PlayingCard', id: `fl-${i}`, props: { rank: r, suit: s, fluid: true } })) },
 
       divider('d-n11'),
       sectionTitle('t-flip', 'PLAYINGCARD · flipOnHover 悬停翻面（鼠标悬停露背面信息子树）'),
