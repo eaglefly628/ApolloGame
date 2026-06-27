@@ -1,5 +1,5 @@
 import type { IWorld } from '../core/types.js';
-import type { Camera } from './components.js';
+import type { Camera, Camera3D } from './components.js';
 
 // ═══════════════════════════════════════════════════════════════
 //  相机视图 —— 世界↔屏幕投影的**单一真相**（共享契约层）。
@@ -25,6 +25,15 @@ export function getCameraView(world: IWorld): CameraView | null {
   for (const [e] of world.query('Camera')) {
     const c = world.getComponent<Camera>(e, 'Camera');
     if (c) return { centerX: c.offsetX, centerY: c.offsetY, zoom: c.zoom };
+  }
+  return null;
+}
+
+// 取世界里的 3D 盒庭相机（第一个挂 Camera3D 的实体）。无则 null → 3D 后端退回俯视自适配（向后兼容）。
+export function getCamera3D(world: IWorld): Camera3D | null {
+  for (const [e] of world.query('Camera3D')) {
+    const c = world.getComponent<Camera3D>(e, 'Camera3D');
+    if (c) return c;
   }
   return null;
 }

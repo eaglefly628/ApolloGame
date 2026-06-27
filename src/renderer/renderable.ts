@@ -1,5 +1,5 @@
 import type { IWorld } from '@engine/core/types.js';
-import type { Transform, Shape, Color, Sprite, Text, Visibility, Frame, Mesh3D } from '@engine/protocol/components.js';
+import type { Transform, Transform3D, Shape, Color, Sprite, Text, Visibility, Frame, Mesh3D } from '@engine/protocol/components.js';
 
 // 相机视图与世界↔屏幕投影已下沉为共享契约（renderer 正向投影 + clickable 逆向命中的单一真相）。
 // 此处重导出，保持既有 `@renderer/renderable` 消费者（canvas-renderer / 测试）的 import 不变。
@@ -21,6 +21,7 @@ export interface Renderable {
   frame?: Frame; // 当前帧索引（序列帧/命名动画用；渲染器据此 resolve(textureKey, frame.index)）
   text?: Text;
   mesh3d?: Mesh3D; // 可选「3D 物件」描述：3D 后端渲成有体积/双面/可翻的 box/plane；2D 后端画其正面（per-object opt-in 3D）
+  transform3d?: Transform3D; // 可选「真三维位姿」：3D 后端据此把物体放进 XZ 地面 + Y 高度（盒庭）；2D 后端退化用 x,y 画正面
 }
 
 // 实体绘制模式选择（REQ-005）：**优先 Sprite** —— 有贴图且资产就绪即画贴图（给可碰撞实体"穿皮"，
@@ -37,13 +38,16 @@ export function chooseRenderMode(r: Renderable, spriteReady: boolean): RenderMod
 }
 
 // 从世界提取可渲染项：所有挂 Transform 且未被 Visibility 隐藏的实体，按 zOrder 排序。
+// 另收「纯 3D 实体」（只挂 Transform3D·无 2D Transform）：盒庭场景的物体不必再背一个冗余 2D Transform。
 export function collectRenderables(world: IWorld): Renderable[] {
   const out: Renderable[] = [];
+  const seen = new Set<string>();
   for (const [id] of world.query('Transform')) {
     const visibility = world.getComponent<Visibility>(id, 'Visibility');
     if (visibility && !visibility.visible) continue;
     const t = world.getComponent<Transform>(id, 'Transform')!;
     const sprite = world.getComponent<Sprite>(id, 'Sprite');
+    seen.add(id);
     out.push({
       entityId: id,
       x: t.x,
@@ -58,6 +62,26 @@ export function collectRenderables(world: IWorld): Renderable[] {
       frame: world.getComponent<Frame>(id, 'Frame'),
       text: world.getComponent<Text>(id, 'Text'),
       mesh3d: world.getComponent<Mesh3D>(id, 'Mesh3D'),
+      transform3d: world.getComponent<Transform3D>(id, 'Transform3D'),
+    });
+  }
+  // 纯 3D 实体（有 Transform3D、无 Transform）：x,y 取 3D 的 (x,y) 作 2D 后端退化位（3D 后端走 transform3d 真位姿）。
+  for (const [id] of world.query('Transform3D')) {
+    if (seen.has(id)) continue;
+    const visibility = world.getComponent<Visibility>(id, 'Visibility');
+    if (visibility && !visibility.visible) continue;
+    const t3 = world.getComponent<Transform3D>(id, 'Transform3D')!;
+    out.push({
+      entityId: id,
+      x: t3.x,
+      y: t3.y,
+      rotation: 0,
+      scaleX: t3.scale ?? 1,
+      scaleY: t3.scale ?? 1,
+      zOrder: 0,
+      color: world.getComponent<Color>(id, 'Color'),
+      mesh3d: world.getComponent<Mesh3D>(id, 'Mesh3D'),
+      transform3d: t3,
     });
   }
   out.sort((a, b) => a.zOrder - b.zOrder);

@@ -53,6 +53,38 @@ export interface Mesh3D extends Component {
   flipAxis?: 'x' | 'y'; // Transform.rotation 作为绕此轴的翻面角；缺省 'x'（前后翻）
 }
 
+// ── Transform3D（render-only，真三维位姿 · 3D 后端专用）─────────────────────────────────────
+// 给实体一份**完整三维位姿**（x 右 / y 上=高度 / z 朝镜头 · 世界单位），让盒庭/积木场景真正立体堆叠。
+// 区别于 2D Transform（x,y 在屏幕平面 + zOrder 微分层 = 2.5D billboard）：挂了本件的实体，3D 后端用它定位姿
+// （地面=XZ 平面、Y=高度），不再走 2D 投影；2D 后端退化画其 (x,y) 正面（per-object opt-in，同 Mesh3D）。
+// 「3D 盒庭 = Transform3D + Mesh3D 的纯数据」——游戏只描述，引擎解释渲染，不每游戏手写 Three.js。
+// 红线：纯表现，**绝不被 Condition 读、绝不进 sim 逻辑/hash**（已入 determinism NON_DETERMINISTIC）。
+export interface Transform3D extends Component {
+  readonly type: 'Transform3D';
+  x: number; // 右(+)
+  y: number; // 上(+)=高度（地面 y=0，物体下沿坐地）
+  z: number; // 朝镜头(+)=景深近
+  rotX?: number; // 欧拉角(弧度)·缺省 0
+  rotY?: number;
+  rotZ?: number;
+  scale?: number; // 等比缩放·缺省 1
+}
+
+// ── Camera3D（render-only，3D 盒庭轨道相机 · 单例）─────────────────────────────────────────
+// 3D 后端的取景：绕场景中心(或 pivot)的轨道相机。yaw/pitch 定观察角(弧度)，distance 定远近(缺省=自适配包围盒)。
+// 挂一个带 Camera3D 的实体即进「盒庭模式」：相机不再强制俯视，而是按角度环绕、开柔和阴影（Captain Toad 风）。
+// 无 Camera3D → 退回原俯视自适配（向后兼容 · three-lab 不受影响）。pitch 正=俯视，等距盒庭约 0.6。
+// 红线：纯表现，绝不进 hash（同 2D Camera · 已入 NON_DETERMINISTIC）。
+export interface Camera3D extends Component {
+  readonly type: 'Camera3D';
+  yaw: number; // 绕 Y 轴方位角(弧度)·0=正前、正=向右环绕
+  pitch: number; // 俯仰角(弧度)·正=俯视，等距约 0.6
+  distance?: number; // 相机到 pivot 距离(世界单位)·缺省=自适配框住包围盒
+  pivotX?: number; // 注视点·缺省=场景包围盒中心
+  pivotY?: number;
+  pivotZ?: number;
+}
+
 // ── L2 color ── 实体当前的颜色/透明度
 export interface Color extends Component {
   readonly type: 'Color';

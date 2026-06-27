@@ -11,6 +11,7 @@ import type {
   BoardCell,
   Bounds,
   Camera,
+  Camera3D,
   CameraTarget,
   Card3D,
   CardPile,
@@ -84,6 +85,7 @@ import type {
   Timer,
   TimerDone,
   Transform,
+  Transform3D,
   Tray,
   TraySeat,
   Trigger,
@@ -101,6 +103,7 @@ export interface ComponentDataMap {
   BoardCell: Omit<BoardCell, 'type'>;
   Bounds: Omit<Bounds, 'type'>;
   Camera: Omit<Camera, 'type'>;
+  Camera3D: Omit<Camera3D, 'type'>;
   CameraTarget: Omit<CameraTarget, 'type'>;
   Card3D: Omit<Card3D, 'type'>;
   CardPile: Omit<CardPile, 'type'>;
@@ -174,6 +177,7 @@ export interface ComponentDataMap {
   Timer: Omit<Timer, 'type'>;
   TimerDone: Omit<TimerDone, 'type'>;
   Transform: Omit<Transform, 'type'>;
+  Transform3D: Omit<Transform3D, 'type'>;
   Tray: Omit<Tray, 'type'>;
   TraySeat: Omit<TraySeat, 'type'>;
   Trigger: Omit<Trigger, 'type'>;

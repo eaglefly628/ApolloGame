@@ -111,6 +111,16 @@ const GAMES: GameEntry[] = [
     icon: '🕯️',
     status: 'playable',
   },
+  {
+    id: 'game-z',
+    title: 'Game Z: 盒庭 Diorama',
+    subtitle: '3D 微缩盒庭 · Captain Toad 风渲染线',
+    description: '不做玩法（先放一边）——它是引擎「3D 盒庭」渲染线的底座：草地台 + 抬升石台站着 Toad + 金阶梯 + 终点宝石 + 蘑菇，全是 Transform3D（真三维位姿·地面 XZ + Y 高度）+ Mesh3D（体块）的纯数据；一个 Camera3D 单例把场景切进盒庭模式——引擎 ThreeRenderer 按 yaw/pitch 轨道取景、柔和接触阴影、暖白主光 + 冷蓝补光、哑光材质。换一组数字即换一个盒庭，零手写 Three.js。后续长出：移轴景深 / 模型导入 / 可旋转交互 / 玩法。',
+    color: '#0b1020',
+    accentColor: '#9ccc65',
+    icon: '🧊',
+    status: 'playable',
+  },
 ];
 
 // ══════════════════════════════════════
@@ -658,6 +668,7 @@ function GameRunner({ gameId, onBack }: { gameId: string; onBack: () => void }) 
       'game-i': () => import('./games/game-i/game-i.js'),
       'game-h': () => import('./games/game-h/game-h.js'),
       'game-x': () => import('./games/game-x/game-x.js'),
+      'game-z': () => import('./games/game-z/game-z.js'),
     };
     const loader = loaders[gameId];
     if (!loader) return;

@@ -15,7 +15,7 @@ export function hashSnapshot(snap: WorldSnapshot): string {
 
 // 纯表现/可由表现层重算的组件不进哈希：它们含浮点（zoom/offset），跨端 JIT/FMA 可能 1 ULP 漂移，
 // 若纳入校验会误判 desync（Gemini Q2）。Camera 即此类——逻辑不读它，渲染期每帧由 camera-follow 重算。
-const NON_DETERMINISTIC = new Set<string>(['Camera', 'ScoreTrace']);
+const NON_DETERMINISTIC = new Set<string>(['Camera', 'Camera3D', 'Transform3D', 'ScoreTrace']);
 
 function canonical(snap: WorldSnapshot): string {
   const parts: string[] = [];
