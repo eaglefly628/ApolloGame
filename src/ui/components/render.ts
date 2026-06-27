@@ -401,7 +401,9 @@ function renderTooltip(id: string, p: TooltipProps, children: LayoutNode[], ls: 
     : `display:none;position:absolute;${pos};z-index:250;padding:5px 9px;border-radius:6px;background:${t.bg3};color:${t.text};border:1px solid ${t.line};font-size:11px;font-family:${t.fontUi};white-space:nowrap;box-shadow:0 6px 18px rgba(0,0,0,0.4);pointer-events:none`;
   const tag = rich ? 'div' : 'span';
   const bubble = `<${tag} data-tooltip-bubble style="${bubbleStyle}">${bubbleInner}</${tag}>`;
-  return `<span id="${esc(id)}" data-tooltip tabindex="0" style="position:relative;display:inline-flex;${ls}">${inner}${bubble}</span>`;
+  // block 档：触发元素 display:block + 充满 → 能作 grid/flex item 随 1fr 拉伸（包 grid 卡墙里整张牌不塌陷）。缺省 inline-flex。
+  const disp = p.block ? 'display:block;width:100%' : 'display:inline-flex';
+  return `<span id="${esc(id)}" data-tooltip tabindex="0" style="position:relative;${disp};${ls}">${inner}${bubble}</span>`;
 }
 
 // ── Modal（居中模态浮层 + 遮罩·下沉自各游戏手搭确认框/详情弹窗）─────────────────

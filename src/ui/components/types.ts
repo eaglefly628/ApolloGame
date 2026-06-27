@@ -243,6 +243,9 @@ export interface TooltipProps {
   content?: string; placement?: 'top' | 'bottom' | 'left' | 'right';
   /** 富气泡根（通常一个 Panel(column)·内含 标题/效果/数值行 Label+spans）：有它则气泡渲这棵 LayoutNode、忽略 content，气泡变宽可换行。地煞/天罡/装备等词条详情用。 */
   bubble?: LayoutNode;
+  /** 块级触发元素（缺省 inline-flex）：true→触发元素 display:block + width:100%，能作 grid/flex item 随轨道(1fr)拉伸、
+   *  不塌陷。用于「给 grid 卡墙里的整张牌/格子包 hover 浮窗」——内联 span 作 grid item 不拉伸会撑塌（PG 回执 2026-06-27）。 */
+  block?: boolean;
 }
 
 // ── Card（网格卡单元·配 Panel grid 用）：媒体字形 + 标题 + 副标 + 角标 + tone/锁态 + 可点。──

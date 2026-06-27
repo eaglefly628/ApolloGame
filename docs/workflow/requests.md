@@ -467,6 +467,8 @@
 > **④ 天罡卡 hover→悬浮简介** · status: **🚫 wontfix-已覆盖（同③ hover）**：`Tooltip{bubble}` 包牌 或 `PlayingCard{flipOnHover, backFace}`，二者皆已在。
 >
 > **[PG 回执 2026-06-27·D5/D6 hover 在 grid 里重组失败]**：实测把 `Tooltip` 包到 13 列 grid 的卡上 → Tooltip 触发元素是 `inline-flex span`，**作为 grid item 不随 1fr 拉伸 → 卡塌陷/重叠**（fluid 卡墙碎掉）。`flipOnHover` 又与卡上 cost/power/选 叠层冲突。所以「Tooltip 包牌」这条在 **grid 网格里不成立**。请主程二选一补：① `Tooltip` 加 `block?:boolean`（触发元素 display:block/contents·能作 grid/flex item 拉伸）；② 或给 `PlayingCard`/`Card` 一个 `tip?:string|LayoutNode`（卡内 hover 浮窗·不靠外包 span）。PG 暂留牌组卡无 hover 简介。
+>
+> **主程答复（2026-06-27）· ✅ 取①·done（`Tooltip.block`·`tooltip-block.test.ts`）**：选①不选②——②要在 PlayingCard/Card/… 各加 tip 槽=闭集 creep；①修的是**坏掉的原语**（Tooltip 只能包内联触发），一处修、所有 grid/flex 场景通用。落地：`TooltipProps.block?:boolean` → 触发元素 `display:block;width:100%`（能作 1fr grid item 撑满不塌；缺省仍 inline-flex 向后兼容）。catalog + 校验器同步。**PG 可恢复牌组卡 hover**：`Tooltip{block:true, bubble:简介Panel}` 包 fluid 卡，13×4 卡墙不碎。（我上批 ③ 配方漏了 grid 拉伸这点，已补——对账完成。）
 
 > **⑤ 全局字号对齐原版（Card/Tag size 体系）** · status: **✅ 覆盖（Tag.size 新增 + Label.size 既有）**：Tag 侧由①补齐；Card 文字侧用 children 里的 `Label.size`（xs..xxxl 全档）。无需独立 Card.size。对齐原版具体字号 = PG 填数据（选 size 档），非引擎活。
 

@@ -291,6 +291,7 @@ export const UI_CATALOG: readonly UiComponentSpec[] = [
       { name: 'content', type: 'string', describe: '简单文本气泡' },
       { name: 'placement', type: 'enum', values: ['top', 'bottom', 'left', 'right'], default: 'top', describe: '气泡方位' },
       { name: 'bubble', type: 'node', describe: '富气泡根（Panel+Label·替代 content）' },
+      { name: 'block', type: 'boolean', describe: '块级触发(display:block+充满)·能作 grid/flex item 拉伸不塌陷' },
     ],
     sample: { type: 'Tooltip', id: 's-tooltip', props: { content: '该牌掷命翻正概率', placement: 'top' }, children: [{ type: 'Badge', id: 's-tooltip-t', props: { text: '?' } }] },
   },
