@@ -57,7 +57,7 @@ function helpModal(st: OverlayState): LayoutNode {
 // ── 设置 Modal ─────────────────────────────────────────────────
 function settingsModal(view: LobbyView): LayoutNode {
   return {
-    type: 'Modal', id: 'settings-modal', props: { title: '⚙ 设置', size: 'md', closeAction: 'closeOverlay' },
+    type: 'Modal', id: 'settings-modal', props: { title: '⚙ 设置', size: 'lg', closeAction: 'closeOverlay' },
     children: [{
       type: 'Panel', id: 'settings-body', props: {}, layout: { direction: 'column', gap: 12, padding: 4 },
       children: [
