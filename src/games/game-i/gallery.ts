@@ -730,7 +730,84 @@ function comingSoon(id: string, label: string): LayoutNode {
   };
 }
 
-/** UI 控件模块（原 5 个 UI 子 tab：容器/展示/输入/商店/选牌）。 */
+// ── 页 6 · 主程新增控件 / 新特性（把库里新加的能力全摆出来）─────────────────────
+function buildPageNew(controls: ControlsState): LayoutNode {
+  const pcard = (id: string, p: Record<string, unknown>): LayoutNode => ({ type: 'PlayingCard', id, props: p });
+  return {
+    type: 'Panel', id: 'page-new', props: { scroll: true },
+    layout: { direction: 'column', gap: 18, padding: 20 },
+    children: [
+      sectionTitle('t-pc', 'PLAYINGCARD · 扑克牌原语（rank/suit · 正反 · selected/dimmed · 暗卡/白扑克）'),
+      { type: 'Panel', id: 'pc-row', props: {}, layout: { direction: 'row', gap: 12, padding: 14, align: 'center' },
+        children: [
+          pcard('pc-1', { rank: 'A', suit: '♠', label: '赵子龙', value: '9' }),
+          pcard('pc-2', { rank: 'K', suit: '♥', label: '关云长', value: '8', selected: true }),
+          pcard('pc-3', { rank: 'Q', suit: '♦', label: '未拥有', dimmed: true }),
+          pcard('pc-4', { rank: 'J', suit: '♣', faceUp: false }),
+          pcard('pc-5', { rank: '10', suit: '♥', face: 'light', label: '白扑克' }),
+        ] },
+
+      divider('d-n1'),
+      sectionTitle('t-versus', 'VERSUS · 对决卡（左右牌 + 胜方高亮 + 中央火花）'),
+      { type: 'Panel', id: 'vs-wrap', props: {}, layout: { direction: 'row', padding: 14, align: 'center' },
+        children: [
+          { type: 'Versus', id: 'vs-1', props: {
+            left: { rank: 'A', suit: '♠', label: '赵子龙' }, right: { rank: 'K', suit: '♥', label: '关云长' },
+            label: '76 : 24', winner: 'left' } },
+        ] },
+
+      divider('d-n2'),
+      sectionTitle('t-coin', 'COINFLIP · 抛硬币（spinning 翻转落定 / 静态结果）'),
+      { type: 'Panel', id: 'coin-row', props: {}, layout: { direction: 'row', gap: 28, padding: 14, align: 'center' },
+        children: [
+          { type: 'CoinFlip', id: 'coin-1', props: { outcome: 'heads', spinning: true, headsLabel: '胜', tailsLabel: '负' } },
+          { type: 'CoinFlip', id: 'coin-2', props: { outcome: 'tails', spinning: false, headsLabel: '胜', tailsLabel: '负' } },
+        ] },
+
+      divider('d-n3'),
+      sectionTitle('t-hero', 'BUTTON · hero 金色倒角 sheen 大 CTA（含副标）'),
+      { type: 'Panel', id: 'hero-wrap', props: {}, layout: { direction: 'row', padding: 14, align: 'center' },
+        children: [
+          { type: 'Button', id: 'btn-hero', props: { label: '出 征', kind: 'hero', sub: '挑战 曹操 · 难度 ★★★', action: 'click', actionArg: 'hero' } },
+        ] },
+
+      divider('d-n4'),
+      sectionTitle('t-lblnew', 'LABEL · 数字滚动补间 tween + 富文本多段着色 spans'),
+      { type: 'Panel', id: 'lbl-new', props: {}, layout: { direction: 'column', gap: 12, padding: 14 },
+        children: [
+          { type: 'Label', id: 'lbl-tween', props: { text: '', size: 'xl', bold: true, color: 'gold', tween: { from: 0, to: 9820, ms: 1300 } } },
+          { type: 'Label', id: 'lbl-spans', props: { text: '', spans: [
+            { text: '词条：', color: 'dim' }, { text: '青钢剑', color: 'jade', bold: true },
+            { text: ' 攻击 ', color: 'sub' }, { text: '+12', color: 'ok', bold: true },
+            { text: ' 暴击 ', color: 'sub' }, { text: '-5', color: 'danger' },
+          ] } },
+        ] },
+
+      divider('d-n5'),
+      sectionTitle('t-panelprops', 'PANEL · bare 无框 / bg 自定义底 + vignette 暗角 / maxWidth 封顶居中'),
+      { type: 'Panel', id: 'pp-bare', props: { bare: true }, layout: { direction: 'row', gap: 10 },
+        children: [
+          { type: 'Badge', id: 'pp-b1', props: { text: 'bare', tone: 'ok' } },
+          { type: 'Label', id: 'pp-bl', props: { text: 'bare 容器：无边框/底，只做 row/column 分组（不堆千层框）。', color: 'sub', size: 'sm' }, layout: { flex: 1 } },
+        ] },
+      { type: 'Panel', id: 'pp-felt', props: { title: 'bg 自定义底（felt）+ vignette 暗角', bg: 'linear-gradient(180deg,#16402c,#0e2a1c)', vignette: true },
+        layout: { direction: 'column', padding: 18, height: 84 },
+        children: [{ type: 'Label', id: 'pp-fl', props: { text: '绿呢牌桌底 + 四周渐暗暗角（纯表现）。', color: 'sub', size: 'sm' } }] },
+      { type: 'Panel', id: 'pp-maxw', props: { title: 'maxWidth 封顶居中' }, layout: { maxWidth: 360, padding: 14 },
+        children: [{ type: 'Label', id: 'pp-ml', props: { text: '窄屏铺满、宽屏封顶 360px 居中（整页 chrome 用）。', color: 'sub', size: 'sm' } }] },
+
+      divider('d-n6'),
+      sectionTitle('t-vw', 'VISIBLEWHEN · 条件显隐（数据替代 if/else 重建树）'),
+      { type: 'Panel', id: 'vw-wrap', props: {}, layout: { direction: 'column', gap: 10, padding: 14 },
+        children: [
+          { type: 'Toggle', id: 'vw-tg', props: { label: '显示下方内容（绑 demoFlag）', checked: controls.flag, action: 'setFlag' } },
+          { type: 'Label', id: 'vw-target', props: { text: '👋 我由 visibleWhen:"demoFlag" 控制——关掉开关，我就被 resolveBindings 从树里整体剔除（不靠游戏写 if/else 重建）。', color: 'jade', size: 'sm' }, visibleWhen: 'demoFlag' },
+        ] },
+    ],
+  };
+}
+
+/** UI 控件模块（6 个 UI 子 tab：容器/展示/输入/新特性/商店/选牌）。 */
 function buildUIModule(shop: ShopState, pick: PickState, activeTab: string, controls: ControlsState): LayoutNode {
   return {
     type: 'Tabs', id: 'gallery-tabs',
@@ -739,6 +816,7 @@ function buildUIModule(shop: ShopState, pick: PickState, activeTab: string, cont
         { id: 'tab-layout', label: '容器与布局' },
         { id: 'tab-display', label: '数据展示' },
         { id: 'tab-input', label: '输入与交互' },
+        { id: 'tab-new', label: '🆕 新控件/特性' },
         { id: 'tab-shop', label: '🧩 组合演示·商店' },
         { id: 'tab-pick', label: '🎴 组合演示·选牌' },
       ],
@@ -746,7 +824,7 @@ function buildUIModule(shop: ShopState, pick: PickState, activeTab: string, cont
       action: 'switchTab',
     },
     layout: { flex: 1 },
-    children: [pageLayout, pageDisplay, buildPageInput(controls), buildShop(shop), buildPickHand(pick)],
+    children: [pageLayout, pageDisplay, buildPageInput(controls), buildPageNew(controls), buildShop(shop), buildPickHand(pick)],
   };
 }
 

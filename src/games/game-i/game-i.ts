@@ -116,6 +116,7 @@ export function mount(container: HTMLElement): () => void {
   const world = { hp: { current: 70, max: 100 }, gold: { current: 1280 } };
   const dataSource: UIDataSource = {
     resource: (id) => (world as Record<string, { current: number; max?: number }>)[id],
+    flag: (id) => (id === 'demoFlag' ? controls.flag : false), // visibleWhen 条件显隐演示
   };
 
   const theme = (): UITheme => THEMES[currentTheme] ?? THEMES['onyx']!;
