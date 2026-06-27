@@ -85,6 +85,19 @@ export interface Camera3D extends Component {
   pivotZ?: number;
 }
 
+// ── Sky3D（render-only，天空盒 · 单例）──────────────────────────────────────────────────────
+// 最简天空盒：内面朝里的大球，画一张「天顶→地平线渐变 + 程序化云朵」的画布纹理裹住盒庭。
+// clouds=叠程序化云团（云色 cloudTint）；scroll=云缓慢飘动（render-only·绕 Y 微转）。无图片资产、纯程序化。
+// 红线：纯表现，绝不进 hash（已入 NON_DETERMINISTIC）。
+export interface Sky3D extends Component {
+  readonly type: 'Sky3D';
+  top: number; // 天顶色 0xRRGGBB
+  bottom: number; // 地平线色 0xRRGGBB
+  clouds?: boolean; // 叠程序化云团
+  cloudTint?: number; // 云色·缺省白
+  scroll?: number; // 云飘速度（0=不动·render-only）
+}
+
 // ── L2 color ── 实体当前的颜色/透明度
 export interface Color extends Component {
   readonly type: 'Color';

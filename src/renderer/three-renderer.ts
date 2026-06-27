@@ -1,13 +1,13 @@
 import * as THREE from 'three';
 import type { IWorld, RendererBackend } from '@engine/core/types.js';
-import type { Mesh3D } from '@engine/protocol/components.js';
+import type { Mesh3D, Sky3D } from '@engine/protocol/components.js';
 import type { AssetManager } from '@assets/index.js';
 import { isImageHandle } from '@assets/index.js';
-import { getCamera3D } from '@engine/protocol/camera-view.js';
+import { getCamera3D, getSky3D } from '@engine/protocol/camera-view.js';
 import { collectRenderables, chooseRenderMode, type Renderable } from './renderable.js';
 import {
   renderablePose, poseBounds, fitPerspective, flipEuler, mesh3dDepth, type Pose3D,
-  transform3dPose, poseBounds3D, bounds3DCenter, bounds3DExtent, fitDistance3D, orbitCamera,
+  transform3dPose, groundPose, poseBounds3D, bounds3DCenter, bounds3DExtent, fitDistance3D, orbitCamera,
 } from './three-projection.js';
 
 // ═══════════════════════════════════════════════════════════════
@@ -37,6 +37,9 @@ export class ThreeRenderer implements RendererBackend {
   private scene!: THREE.Scene;
   private camera!: THREE.PerspectiveCamera;
   private key!: THREE.DirectionalLight; // 主方向光（盒庭模式投柔和阴影 + 每帧随场景定位）
+  private sky: THREE.Mesh | null = null; // 天空盒（Sky3D 在场时建·内面大球）
+  private skySig = ''; // 天空盒参数签名（变了才重建纹理）
+  private frame = 0; // 帧计数（render-only·云飘等表现动画用·不进 hash）
   private gl!: THREE.WebGLRenderer;
   private readonly meshes = new Map<string, THREE.Mesh>();
   private readonly modeOf = new Map<string, string>(); // 当前几何模式（变了才重建几何）
@@ -83,6 +86,9 @@ export class ThreeRenderer implements RendererBackend {
   sync(world: IWorld): void {
     const seen = new Set<string>();
     const poses: Pose3D[] = [];
+    this.frame++;
+    const cam3d = getCamera3D(world); // 盒庭模式开关（在场=轨道相机 + 2D 实体落地面 + 柔和阴影）
+    this.syncSky(getSky3D(world)); // 天空盒（Sky3D 在场建、不在场拆）
 
     for (const r of collectRenderables(world)) {
       // 3D 物件（Mesh3D）：渲成有体积/双面的 box（或薄片 plane）。与 2D 同场混排。
@@ -91,8 +97,9 @@ export class ThreeRenderer implements RendererBackend {
       if (r.mesh3d) {
         const mesh = this.ensureMesh3D(r, r.mesh3d);
         let pose: Pose3D;
-        if (r.transform3d) {
-          pose = transform3dPose(r.transform3d);
+        if (r.transform3d || cam3d) {
+          // 真三维位姿（Transform3D）或盒庭模式下的 2D 实体落地面（groundPose）——都用三轴欧拉摆位。
+          pose = r.transform3d ? transform3dPose(r.transform3d) : groundPose(r, r.mesh3d.height);
           mesh.position.set(pose.x, pose.y, pose.z);
           mesh.rotation.set(pose.rx ?? 0, pose.ry ?? 0, pose.rotZ);
           mesh.scale.set(pose.sx, pose.sy, pose.sz ?? 1);
@@ -125,7 +132,6 @@ export class ThreeRenderer implements RendererBackend {
 
     // 相机：① 有 Camera3D → 盒庭轨道相机（按 yaw/pitch 环绕注视点 + 柔和阴影随场景定位）；
     //       ② 否则 → 原俯视自适配，框住 2D 包围盒（向后兼容·three-lab 不变）。
-    const cam3d = getCamera3D(world);
     if (cam3d) {
       const b = poseBounds3D(poses);
       const c = bounds3DCenter(b);
@@ -160,6 +166,7 @@ export class ThreeRenderer implements RendererBackend {
   }
 
   destroy(): void {
+    if (this.sky) { this.scene.remove(this.sky); (this.sky.material as THREE.MeshBasicMaterial).map?.dispose(); disposeMesh(this.sky); this.sky = null; }
     for (const [, m] of this.meshes) {
       this.scene.remove(m);
       disposeMesh(m);
@@ -169,6 +176,23 @@ export class ThreeRenderer implements RendererBackend {
     this.texCache.clear();
     this.gl.dispose();
     this.gl.domElement.remove();
+  }
+
+  // 天空盒（Sky3D）：内面朝里的大球裹住盒庭，纹理=天顶→地平线渐变 + 程序化云。参数变才重建纹理；scroll 时云缓慢飘。
+  private syncSky(sky: Sky3D | null): void {
+    if (!sky) {
+      if (this.sky) { this.scene.remove(this.sky); (this.sky.material as THREE.MeshBasicMaterial).map?.dispose(); disposeMesh(this.sky); this.sky = null; this.skySig = ''; }
+      return;
+    }
+    const sig = `${sky.top}|${sky.bottom}|${sky.clouds ? 1 : 0}|${sky.cloudTint ?? 0xffffff}`;
+    if (!this.sky || this.skySig !== sig) {
+      if (this.sky) { this.scene.remove(this.sky); (this.sky.material as THREE.MeshBasicMaterial).map?.dispose(); disposeMesh(this.sky); }
+      const mat = new THREE.MeshBasicMaterial({ map: buildSkyTexture(sky), side: THREE.BackSide, depthWrite: false, fog: false });
+      this.sky = new THREE.Mesh(new THREE.SphereGeometry(2000, 32, 16), mat);
+      this.scene.add(this.sky);
+      this.skySig = sig;
+    }
+    if (sky.scroll) this.sky.rotation.y = this.frame * sky.scroll * 0.0004; // 云飘（render-only）
   }
 
   // 盒庭模式：把主方向光摆到场景右上前方（暖调侧光），阴影正交相机框住整个盒庭（半径 radius）。
@@ -303,6 +327,41 @@ export class ThreeRenderer implements RendererBackend {
 
 // Mesh3D → three Mesh：box=有厚度盒（面序 px,nx,py,ny,pz=正,nz=反，四边共用一材质）；plane=双面薄片。
 // 材质先建空白，颜色每帧由 paintMesh3D 设（避免建/绘两处重复颜色逻辑）。
+// Sky3D → 画布纹理：天顶→地平线竖直渐变 + 可选程序化云团（固定位置·可复现·无图片资产）。
+function buildSkyTexture(sky: Sky3D): THREE.CanvasTexture {
+  const W = 512, H = 256;
+  const hexstr = (n: number): string => `#${(n & 0xffffff).toString(16).padStart(6, '0')}`;
+  const rgba = (n: number, a: number): string => `rgba(${(n >> 16) & 255},${(n >> 8) & 255},${n & 255},${a})`;
+  const cv = document.createElement('canvas');
+  cv.width = W; cv.height = H;
+  const g = cv.getContext('2d')!;
+  const grad = g.createLinearGradient(0, 0, 0, H);
+  grad.addColorStop(0, hexstr(sky.top));
+  grad.addColorStop(1, hexstr(sky.bottom));
+  g.fillStyle = grad;
+  g.fillRect(0, 0, W, H);
+  if (sky.clouds) {
+    const c = sky.cloudTint ?? 0xffffff;
+    // 固定云团（x,y,半径）：上半部一排柔和白团 → 半透明径向渐变堆出蓬松感。
+    const puffs: Array<[number, number, number]> = [
+      [60, 70, 38], [110, 58, 28], [150, 84, 32], [250, 64, 40], [300, 56, 26],
+      [338, 80, 32], [430, 70, 36], [474, 58, 26], [200, 104, 30], [392, 108, 28],
+    ];
+    for (const [x, y, r] of puffs) {
+      const rg = g.createRadialGradient(x, y, 0, x, y, r);
+      rg.addColorStop(0, rgba(c, 0.9));
+      rg.addColorStop(0.6, rgba(c, 0.45));
+      rg.addColorStop(1, rgba(c, 0));
+      g.fillStyle = rg;
+      g.fillRect(x - r, y - r, r * 2, r * 2);
+    }
+  }
+  const tex = new THREE.CanvasTexture(cv);
+  tex.colorSpace = THREE.SRGBColorSpace;
+  tex.wrapS = THREE.RepeatWrapping;
+  return tex;
+}
+
 function buildMesh3D(m: Mesh3D): THREE.Mesh {
   // 哑光质感（roughness 高·metalness 0）= 盒庭圆润不反光的可爱面（Captain Toad 风）。
   const matte = (): THREE.MeshStandardMaterial => new THREE.MeshStandardMaterial({ transparent: true, roughness: 0.92, metalness: 0 });

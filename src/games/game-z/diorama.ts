@@ -8,6 +8,7 @@
 // 故 top=主色、side=暗一档。盒中心 y = 高度/2 时下沿坐地（地台顶在 y=0）。
 
 import type { WorldBlueprint } from '../../assembly/demo.assembly.js';
+import { motionApplyCapability } from '@skills/tier1/index.js';
 
 type Ent = WorldBlueprint['entities'][string];
 
@@ -19,13 +20,25 @@ function block(x: number, y: number, z: number, w: number, h: number, d: number,
   };
 }
 
-/** 盒庭样例蓝图：草地台 + 抬升石台（站一个 Toad）+ 金阶梯 + 板条箱 + 终点宝石 + 蘑菇。全静态纯数据。 */
+/** 盒庭样例蓝图：草地台 + 抬升石台（站 Toad）+ 金阶梯 + 板条箱 + 终点宝石 + 蘑菇 + 天空盒 + 可控角色。 */
 export function dioramaBlueprint(): WorldBlueprint {
   return {
-    capabilities: [], // 静态盒庭：无 sim 系统，纯表现
+    // 角色靠现成 velocity→motion-apply 走动（纯数据 sim·确定性）；其余全静态。
+    capabilities: [motionApplyCapability],
     entities: {
       // 盒庭轨道相机（等距俯角环绕·注视场景中心略上方）
       cam: { Camera3D: { yaw: 0.72, pitch: 0.6, distance: 92, pivotX: 0, pivotY: 5, pivotZ: 0 } },
+
+      // 天空盒：蓝天 → 浅地平线 + 程序化白云缓慢飘动
+      sky: { Sky3D: { top: 0x4a90d9, bottom: 0xcfe9f7, clouds: true, cloudTint: 0xffffff, scroll: 1 } },
+
+      // 可控角色（WASD/方向键 → Velocity → motion-apply 走动）：用 2D Transform，盒庭模式自动落到地面。
+      // 红/白小蘑菇人。Transform.x→地面 X，Transform.y→地面 Z（景深）；起步站在草地中央。
+      hero: {
+        Transform: { x: 0, y: 0, rotation: 0, scaleX: 1, scaleY: 1 },
+        Velocity: { vx: 0, vy: 0, angular: 0 },
+        Mesh3D: { shape: 'box', width: 4.5, height: 7, depth: 4.5, frontTint: 0xff7043, backTint: 0xf4511e, edgeTint: 0xffccbc },
+      },
 
       // 草地大地台（顶在 y=0）
       ground: block(0, -2.5, 0, 70, 5, 70, 0x8bc34a, 0x5d4037),

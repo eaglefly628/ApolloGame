@@ -67,6 +67,7 @@ import type {
   Sensor,
   Shape,
   Signal,
+  Sky3D,
   Sound,
   SpatialIndex,
   SpawnRequest,
@@ -159,6 +160,7 @@ export interface ComponentDataMap {
   Sensor: Omit<Sensor, 'type'>;
   Shape: Omit<Shape, 'type'>;
   Signal: Omit<Signal, 'type'>;
+  Sky3D: Omit<Sky3D, 'type'>;
   Sound: Omit<Sound, 'type'>;
   SpatialIndex: Omit<SpatialIndex, 'type'>;
   SpawnRequest: Omit<SpawnRequest, 'type'>;

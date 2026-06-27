@@ -30,6 +30,13 @@ export function transform3dPose(t3: Transform3D): Pose3D {
   return { x: t3.x, y: t3.y, z: t3.z, rx: t3.rotX ?? 0, ry: t3.rotY ?? 0, rotZ: t3.rotZ ?? 0, sx: s, sy: s, sz: s };
 }
 
+// 盒庭模式下「把 2D sim 实体投到地面」：Transform(x,y) → 地面 XZ（x→X、2D y→Z 景深），Y=物高/2（下沿坐地 y=0）。
+// 2D rotation → 绕 Y 的朝向。→ 让用现成 input/velocity/motion 能力驱动的 2D 实体（如可控角色）在盒庭里走来走去，
+// 即「同一份 2D sim 数据，换 3D 后端当盒庭看」。纯函数（node 可测）。
+export function groundPose(r: { x: number; y: number; rotation: number; scaleX: number; scaleY: number }, height: number): Pose3D {
+  return { x: r.x, y: height / 2, z: r.y, rotZ: 0, rx: 0, ry: -r.rotation, sx: r.scaleX, sy: r.scaleY, sz: r.scaleX };
+}
+
 export interface Bounds2D {
   minX: number;
   maxX: number;

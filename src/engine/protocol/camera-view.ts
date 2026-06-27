@@ -1,5 +1,5 @@
 import type { IWorld } from '../core/types.js';
-import type { Camera, Camera3D } from './components.js';
+import type { Camera, Camera3D, Sky3D } from './components.js';
 
 // ═══════════════════════════════════════════════════════════════
 //  相机视图 —— 世界↔屏幕投影的**单一真相**（共享契约层）。
@@ -33,6 +33,15 @@ export function getCameraView(world: IWorld): CameraView | null {
 export function getCamera3D(world: IWorld): Camera3D | null {
   for (const [e] of world.query('Camera3D')) {
     const c = world.getComponent<Camera3D>(e, 'Camera3D');
+    if (c) return c;
+  }
+  return null;
+}
+
+// 取世界里的天空盒（第一个挂 Sky3D 的实体）。无则 null → 3D 后端用纯背景色（向后兼容）。
+export function getSky3D(world: IWorld): Sky3D | null {
+  for (const [e] of world.query('Sky3D')) {
+    const c = world.getComponent<Sky3D>(e, 'Sky3D');
     if (c) return c;
   }
   return null;
