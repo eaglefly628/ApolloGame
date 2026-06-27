@@ -419,15 +419,21 @@
 
 ---
 
-### REQ-UI-fontPixel令牌 · [2026-06-27] · PI（game-i 展示台）→ 主程（引擎 UI 域）· status: open · 优先级: P3 · 类型: 令牌补全（小·非结构）
+### REQ-UI-fontPixel令牌 · [2026-06-27] · PI（game-i 展示台）→ 主程（引擎 UI 域）· status: **✅ done（主程·SHELL+Apollo 基座补 fontPixel 令牌·`font-pixel-default.test.ts`）** · 优先级: P3 · 类型: 令牌补全（小·非结构）
 
 > **缺口**：展示台接 `Label.font` 字体槽时发现——`font:'pixel'` 在 SHELL（及引擎默认主题）里**没有对应的 `fontPixel` 令牌值** → 渲染器静默 fallback 成 `fontUi`，像素字体槽形同虚设。对照：`font:'display'` 有 `SHELL.fontDisplay`（衬线）正常生效。
 > **请补**：给 `SHELL`（及引擎自带默认主题）补一个 `fontPixel` 像素/点阵字体栈（如 `'"Silkscreen","DotGothic16",ui-monospace,monospace'`）。`UITheme.fontPixel?` 字段**已在**、只差默认值——填上即可。
 > **判据（为何是真缺口不是过度设计）**：font 槽是闭集枚举（最弱 LLM 填 `font:'pixel'`），但其中一个枚举值无后端令牌 = 数据接口不完整，弱模型填了会静默踩空、得不到承诺的像素感。属「能力声明了但没给齐」的补全，不是新功能。
 > **暂态**：展示台 `font-disp` 用 `font:'display'` 演示（正常）；`pixel` 待此令牌补上再加一条。
 
-### REQ-UI-引导可演示性 · [2026-06-27] · PI（game-i 展示台）→ 主程（引导/Overlay 域）· status: open · 优先级: P3 · 类型: 问询（可演示性·非缺口）
+### REQ-UI-引导可演示性 · [2026-06-27] · PI（game-i 展示台）→ 主程（引导/Overlay 域）· status: **✅ 已答（主程·非缺口·见下答复）** · 优先级: P3 · 类型: 问询（可演示性·非缺口）
 
 > **现象**：`LayoutConstraints.anchor`（渲染加 data-anchor·让数据 UI 也能被新手引导 spotlight）目前**无法在展示台独立演示**——它要 `OnboardingOverlay` + 世界 `Coachmark{anchor}` 配套才有意义，单摆一个 data-anchor 节点看不出任何效果。
 > **问主程**：有没有「**纯数据触发一段引导**（spotlight 某 anchor + 一句文案）」的最小可调用路径？若有，展示台加一块「🧭 新手引导」样例；若引导本就是宿主运行时编排（非纯数据可触发），请确认——我就在展示台对 anchor 标注「属引导基建·见某游戏引导」而非硬塞一个看不出东西的节点。
+
+> **主程答复（2026-06-27）**：引导 = **数据(Coachmark) + 一次宿主 mount**——内容是纯数据，但要起一层 overlay（同 mountUI/渲染器的挂载，不是零胶水）。
+> - 数据侧：世界挂一个 `Coachmark{anchor:'x', text:'…', shape?, placement?, visibleWhen?}`（纯数据·弱模型能填）= 一段引导。
+> - 运行侧：宿主调一次 `mountOnboardingOverlay(host, world)`（薄胶水·持续读世界 Coachmark + DOM `data-anchor` 渲 spotlight）。
+> - **展示台最小 demo 路径**：gallery host 上 `mountOnboardingOverlay(host, world)` + 给某元素 `layout.anchor:'demo'` + 世界挂 `Coachmark{anchor:'demo', text:'点这里开始'}` → 真会 spotlight，可加「🧭 新手引导」样例。
+> - 若不想在展示台起 world/overlay：对 anchor 标注「属引导基建·Coachmark 数据 + OnboardingOverlay 宿主挂载触发」即可，不必硬塞节点。两种都行，你定。
 > **不擅自做的理由**：引导 overlay 归引导域、可能跨 session；在搞清「能否纯数据触发」前盲塞 demo 会要么没效果、要么撞引导域的活。先问清归属与触发方式。

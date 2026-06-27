@@ -20,9 +20,11 @@ describe('UI Components · Label.font 具名字体槽', () => {
     const html = renderNode({ type: 'Label', id: 'lb', props: { text: 'NOW', font: 'pixel' } }, theme);
     expect(html).toContain("font-family:'Silkscreen'");
   });
-  it('pixel/display 槽缺省回退 fontUi/fontMono（旧主题无新槽不崩）', () => {
-    const html = renderNode({ type: 'Label', id: 'lb', props: { text: 'x', font: 'pixel' } }, apolloOnyx);
-    expect(html).toContain(`font-family:${apolloOnyx.fontUi}`);
+  it('pixel/display 槽缺省回退 fontUi/fontMono（主题无新槽不崩）', () => {
+    // 基座主题(SHELL/apollo)现都带 fontPixel（REQ-UI-fontPixel令牌），故用显式去槽主题验回退安全。
+    const noSlots: UITheme = { ...apolloOnyx, fontPixel: undefined, fontDisplay: undefined };
+    expect(renderNode({ type: 'Label', id: 'lb', props: { text: 'x', font: 'pixel' } }, noSlots)).toContain(`font-family:${apolloOnyx.fontUi}`);
+    expect(renderNode({ type: 'Label', id: 'lc', props: { text: 'x', font: 'display' } }, noSlots)).toContain(`font-family:${apolloOnyx.fontMono}`);
   });
   it('未填 font 时按 mono 布尔回退（旧调用方行为不变）', () => {
     const mono = renderNode({ type: 'Label', id: 'a', props: { text: 'x', mono: true } }, theme);

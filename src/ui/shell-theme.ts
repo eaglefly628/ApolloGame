@@ -66,6 +66,8 @@ export const SHELL = {
   fontUi: '-apple-system, "Segoe UI", "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", sans-serif',
   fontDisplay: '"Palatino Linotype", "Songti SC", "Noto Serif SC", Georgia, serif',
   fontMono: 'ui-monospace, "SF Mono", Menlo, Consolas, monospace',
+  // 像素点阵字体槽（Label font:'pixel'）：优先真像素字体，无则回退等宽（仍是方块感·区别于 sans-serif fontUi）。REQ-UI-fontPixel令牌。
+  fontPixel: '"Silkscreen", "DotGothic16", "Press Start 2P", ui-monospace, monospace',
 
   // 阴影
   shadow: '0 12px 40px rgba(3,6,12,0.55)',

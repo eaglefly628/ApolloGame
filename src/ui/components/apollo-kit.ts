@@ -20,6 +20,7 @@ export const apolloOnyx: UITheme = {
   ok: '#46d17a', okWash: 'rgba(70,209,122,.14)', warn: '#ffb24a', warnWash: 'rgba(255,178,74,.14)', danger: '#ff404f',
   fontUi: "'Noto Sans SC', -apple-system, 'Segoe UI', sans-serif",
   fontMono: "'Silkscreen', ui-monospace, monospace",
+  fontPixel: "'Silkscreen', 'DotGothic16', ui-monospace, monospace", // 像素槽（REQ-UI-fontPixel令牌）
 };
 
 /** 锦霞 Aurora —— 宫廷锦绣（暖白底 + 金/胭脂波点纹 + 玫瑰点睛）。亮皮。 */
@@ -36,6 +37,7 @@ export const apolloBrocade: UITheme = {
   ok: '#54ad8e', okWash: 'rgba(84,173,142,.14)', warn: '#e0a94e', warnWash: 'rgba(224,169,78,.14)', danger: '#d65668',
   fontUi: "'Noto Serif SC', Georgia, serif",
   fontMono: "'Silkscreen', ui-monospace, monospace",
+  fontPixel: "'Silkscreen', 'DotGothic16', ui-monospace, monospace", // 像素槽（REQ-UI-fontPixel令牌）
 };
 
 /** 双皮成对导出（换皮：同一份 LayoutNode 数据切 onyx/brocade 即得两套脸）。 */
