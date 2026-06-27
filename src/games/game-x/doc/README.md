@@ -28,6 +28,19 @@
 | 宿主：条件驱动整合流转 + 实时时钟 + 关系记录持久化 | `../game-x.ts` | GDD §四/五/六/九/十 |
 | Pocket 对话数据（dialogue 能力·测试用·非现行流程） | `../pocket.ts` | GDD §六（脚本对话原型） |
 
+## P1 陪伴系统（已落地·见 GAMEPLAY-DESIGN.md）
+
+| 系统 | 文件 | 玩法 |
+|---|---|---|
+| 关系记录 v2 | `../record.ts` | 羁绊/记忆/相册/礼物/每日话题/阶段/称呼·localStorage 持久 |
+| 聊天（话题分流） | `../chat.ts` + `../chat-screen.ts` | dialogue 能力：话题菜单 + 记忆 setFlag + 羁绊 effects + 阶段门 + 记忆驱动 callback + 每日消耗 |
+| Pocket 互动中枢 | `../pocket-hub.ts` | 六入口（聊天/做事/关心/靠近/回忆）按阶段解锁 |
+| 关心·送礼 | `../gifts.ts` + `../reactions.ts` | 礼物按偏好反应·问候·陪安静 |
+| 靠近（亲密） | `../pocket-hub.ts` intimacyScreen | 摸头/牵手/并肩·阶段门控 |
+| 回忆与档案 | `../pocket-hub.ts` memoriesScreen | 羁绊条 + 懂你档案(记忆库) + 共同记忆(相册) + 纪念日 + 她的人生线 |
+
+> 记忆库/阶段/callback **全用现有能力组合**（dialogue 的 flag/requires + resource）——无新下沉（manifesto：先重组）。
+
 ## 整合流转（所有画面由真实条件/菜单触发·无画廊）
 
 - **Desk Mode 活动菜单**（画面内·直接激活）：拿起·和她说话 → Pocket / 一起活动 → 听歌·散步·猜你一天 / 日记收藏（Mika）。

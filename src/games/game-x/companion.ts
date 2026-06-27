@@ -27,12 +27,27 @@ export interface ClockReading {
   nowMs: number; // 绝对毫秒（算缺席/纪念日用）
 }
 
-// 跨会话持久的关系记录（宿主用 localStorage 存：缺席感知 + 纪念日 + 情感温度都靠它）。
+// 一条共同记忆 / 里程碑（相册）。
+export interface AlbumEntry { key: string; title: string; day: string }
+
+// 跨会话持久的关系记录（宿主用 localStorage 存）。v2 字段可选 → 旧存档零迁移自动兼容。
 export interface SessionRecord {
   lastSeenMs: number; // 上次拿起的时刻
   firstMetMs: number; // 第一次互动的时刻（纪念日）
-  emotionTemp: number; // 情感温度 0..1（冷→暖），随互动升、随缺席降
+  emotionTemp: number; // 情感温度 0..1（冷→暖·= 底部温度线），随互动升、随缺席降
   interactions: number; // 累计互动次数（关系阶段派生）
+  /** 羁绊 0..100（v2 主仪表·驱动 emotionTemp 显示 + 阶段）。 */
+  bond?: number;
+  /** 记忆库 v1：学到的事实 flag id（如 'hates_rain' / 'making_game'）——聊天里 callback。 */
+  memories?: string[];
+  /** 相册：共同记忆 + 里程碑。 */
+  album?: AlbumEntry[];
+  /** 已送的礼物 id（她会记住·避免重复反应）。 */
+  gifts?: string[];
+  /** 今日已聊的话题 id（每日重置·话题当天聊过即消）。 */
+  dailyTopics?: string[];
+  /** 上次互动日期 'M-D'（跨日则重置 dailyTopics）。 */
+  lastDay?: string;
 }
 
 // 关系阶段（GDD §八：不是数值条，是行为变化）。
