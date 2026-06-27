@@ -58,6 +58,8 @@ function pokerGrid(view: LobbyView, picks: Set<string>): LayoutNode {
       ];
       if (cost > 0) overlays.push({ type: 'Label', id: `pc-cost-${cardId}`, props: { text: '💧'.repeat(cost), size: 'sm', color: 'text' }, layout: { x: 62, y: 4 } });
       if (picked) overlays.push({ type: 'Label', id: `pc-sel-${cardId}`, props: { text: '选', size: 'xl', color: 'gold', bold: true }, layout: { x: 32, y: 46 } });
+      // hover 简介(D5/D6)暂不接：grid 内 Tooltip(inline-flex span) 不随 grid 拉伸→卡塌陷重叠(实测)；
+      // flipOnHover 又与 overlays 冲突。属 Tooltip 在 grid 的真限制·已记 requests.md 给主程(需 Tooltip block 档)。
       return {
         type: 'Panel', id: `pcw-${cardId}`, props: { bare: true }, layout: {},
         children: [
