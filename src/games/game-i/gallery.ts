@@ -201,6 +201,18 @@ const pageDisplay: LayoutNode = {
         { type: 'Tag', id: 'tag-rm', props: { label: '可移除', removable: true, action: 'pickTag', actionArg: 'remove' } },
       ],
     },
+    sectionTitle('t-tagsize', 'TAG · size 缩放档（sm 紧凑筛选 / md 默认 / lg「大气药丸」货币计数·≈2x）'),
+    {
+      type: 'Panel', id: 'demo-tagsize', props: {},
+      layout: { direction: 'row', gap: 12, align: 'center', padding: 10 },
+      children: [
+        { type: 'Tag', id: 'tg-sm', props: { label: '筛选·sm', size: 'sm', tone: 'dim' } },
+        { type: 'Tag', id: 'tg-md', props: { label: '默认·md', size: 'md' } },
+        { type: 'Tag', id: 'tg-lg1', props: { label: '💎 1280', size: 'lg', tone: 'accent' } },
+        { type: 'Tag', id: 'tg-lg2', props: { label: '💰 99999', size: 'lg', tone: 'accent' } },
+        { type: 'Label', id: 'tg-hint', props: { text: '← 同 Modal/PlayingCard.size 体系：闭集尺寸档，货币/稀有度药丸放大用 lg。', color: 'dim', size: 'sm' }, layout: { flex: 1 } },
+      ],
+    },
     divider('d-d5'),
     sectionTitle('t-avatar', 'AVATAR · 头像（图片/首字母占位·circle/rounded/square·多尺寸）'),
     {
