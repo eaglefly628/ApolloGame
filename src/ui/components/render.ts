@@ -99,7 +99,7 @@ function renderButton(id: string, p: ButtonProps, ls: string, t: UITheme): strin
 }
 
 function renderLabel(id: string, p: LabelProps, ls: string, t: UITheme): string {
-  const sizeMap: Record<string, number> = { xs: 10, sm: 11, md: 13, lg: 16, xl: 22 };
+  const sizeMap: Record<string, number> = { xs: 10, sm: 11, md: 13, lg: 16, xl: 22, xxl: 28, xxxl: 34 };
   const colorMap: Record<string, string> = {
     text: t.text, sub: t.sub, dim: t.dim,
     jade: t.jade, gold: t.gold,
@@ -200,8 +200,12 @@ function renderPanel(id: string, p: PanelProps, c: LayoutConstraints | undefined
   const vignette = (p.vignette && !bare)
     ? `<div style="position:absolute;inset:0;border-radius:10px;pointer-events:none;background:radial-gradient(120% 100% at 50% 30%,transparent 55%,rgba(0,0,0,.45) 100%)"></div>`
     : '';
+  // 程序化纹理叠层（REQ-UI-G流光底纹③）：stripe 45°斜条纹 / checker 棋盘格，叠在内容下（felt 牌桌质感）。
+  const pattern = p.pattern
+    ? `<div style="position:absolute;inset:0;border-radius:${bare ? '0' : '10px'};pointer-events:none;background:${p.pattern === 'checker' ? 'repeating-conic-gradient(rgba(255,255,255,.04) 0% 25%,transparent 0% 50%) 0 0 / 16px 16px' : 'repeating-linear-gradient(45deg,rgba(255,255,255,.045) 0 2px,transparent 2px 12px)'}"></div>`
+    : '';
   const inner = children.map((ch) => renderNode(ch, t)).join('');
-  return `<div id="${esc(id)}"${bgScrollAttr(p.bgScroll)} style="${style}">${vignette}${title}${inner}</div>`;
+  return `<div id="${esc(id)}"${bgScrollAttr(p.bgScroll)} style="${style}">${vignette}${pattern}${title}${inner}</div>`;
 }
 
 // ── 新增 6 个控件 ───────────────────────────────────────────────
@@ -451,9 +455,13 @@ function renderPlayingCard(id: string, p: PlayingCardProps, ls: string, t: UIThe
   const center = (faceUp && p.art)
     ? `<img src="${esc(p.art)}" alt="" style="position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);width:78%;height:78%;object-fit:contain;pointer-events:none">`
     : `<span style="font-size:${big}px;color:${sc};opacity:.9">${esc(p.suit)}</span>`;
+  // 牌背程序化纹理（REQ-UI-G流光底纹②）：faceUp:false 时叠 checker 棋盘格 / stripe 斜条纹（原版红牌背质感）。
+  const backPat = (!faceUp && p.backPattern)
+    ? `<div style="position:absolute;inset:0;border-radius:8px;pointer-events:none;background:${p.backPattern === 'checker' ? 'repeating-conic-gradient(rgba(255,255,255,.06) 0% 25%,transparent 0% 50%) 0 0 / 12px 12px' : 'repeating-linear-gradient(45deg,rgba(255,255,255,.06) 0 2px,transparent 2px 9px)'}"></div>`
+    : '';
   const inner = faceUp
     ? `${pip('top:5px;left:6px')}${center}${pip('bottom:5px;right:6px;transform:rotate(180deg)')}`
-    : `<span style="font-size:${big}px;color:${t.jade};opacity:.5">${esc(p.back ?? '♠')}</span>`;
+    : `${backPat}<span style="font-size:${big}px;color:${t.jade};opacity:.5">${esc(p.back ?? '♠')}</span>`;
   const faceBg = faceUp ? (light ? 'linear-gradient(160deg,#fefdfb,#eceae3)' : t.bg2) : (light ? 'linear-gradient(160deg,#b34a4a,#8c3535)' : t.bg3);
   const lblColor = light ? '#5a5048' : t.sub;
   const label = p.label ? `<div style="position:absolute;bottom:3px;left:0;right:0;font-size:9px;color:${lblColor};font-family:${t.fontUi};text-align:center;${light ? '' : 'text-shadow:0 1px 2px rgba(0,0,0,.6)'}">${esc(p.label)}</div>` : '';
@@ -636,11 +644,12 @@ function renderVideo(id: string, p: VideoProps, ls: string, t: UITheme): string 
 export function renderNode(node: LayoutNode, theme: UITheme = SHELL): string {
   const html = renderDispatch(node, theme);
   const c = node.layout;
-  if (c && (c.draggable || c.dropZone || c.anchor)) {
+  if (c && (c.draggable || c.dropZone || c.anchor || c.sheen)) {
     const a: string[] = [];
     if (c.draggable) a.push(`draggable="true" data-drag="${esc(node.id)}"`);
     if (c.dropZone)  a.push(`data-drop="${esc(c.dropZone)}"`);
     if (c.anchor)    a.push(`data-anchor="${esc(c.anchor)}"`); // 新手引导 spotlight 锚点（OnboardingOverlay 定位）
+    if (c.sheen)     a.push('data-sheen'); // 流光层（CSS 注入 ::after·apollo-sheen-sweep）
     return html.replace(/^(\s*<[a-zA-Z][\w-]*)/, `$1 ${a.join(' ')}`);
   }
   return html;

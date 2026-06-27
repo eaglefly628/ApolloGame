@@ -21,7 +21,7 @@
 >   建议：① `LayoutConstraints` grid `cols:N`（固定列数·覆盖 auto-fill）；② PlayingCard `fluid`（width:100% 充满父格 + 维持 5:7 aspect-ratio·替代固定档）。
 > PG 侧已做近似（grid minCol 122 + size lg → ~6 列大卡），但**卡填不满格子→有空隙**、且无翻面；需此 2 能力才能真·一模一样（owner 2026-06-26 点名空隙问题）。
 
-### REQ-UI-G流光底纹 · [2026-06-26] · PG 同步（UI 库域·主页质感对齐撞到） · status: **open（PG→主程）** · 类型: 真能力缺口（通用质感·不可重组）
+### REQ-UI-G流光底纹 · [2026-06-26] · PG 同步（UI 库域·主页质感对齐撞到） · status: **✅ done（主程·①layout.sheen ②PlayingCard.backPattern ③Panel.pattern·`sheen-pattern-bigtext.test.ts`）** · 类型: 真能力缺口（通用质感·不可重组）
 
 > game-g 主页对齐原版「质感」时，3 个视觉能力引擎缺通用版（hero CTA 流光已有·bgScroll 滚动 UV 已有不在此列）：
 > ① **通用流光 sheen**：原版多处（按钮/字）有 `ggl-sheen`（背景位移流光）。引擎只在 `Button kind:'hero'` 内置 apollo-sheen；Button(ghost/primary)/Label/Card/PlayingCard 都无。建议：加可选 `sheen?:boolean`（或 LayoutConstraints 级）→ 元素上叠 apollo-sheen 流光层。
@@ -29,7 +29,7 @@
 > ③ **Panel.vignette 条纹叠层**：原版 `.vignette` = 径向柔光 + 45° `repeating-linear-gradient` 条纹；引擎 vignette 只画径向暗角。`bgTexture` 喂 SVG data-uri 不行（texLayer 过滤空格/括号/引号）。建议：vignette 补 45° 条纹选项，或 Panel 加 `pattern:'stripe'|'checker'` 程序化叠层。
 > 三者均「质感 flourish」·非内容·但 owner 要求一模一样。PG 侧无法重组表达，待主程下沉。
 
-### REQ-UI-Label大号字 · [2026-06-26] · PG 同步（UI 库域·主页比例对齐撞到） · status: **open（PG→主程·小加法）** · 类型: 真能力缺口（档位不足）
+### REQ-UI-Label大号字 · [2026-06-26] · PG 同步（UI 库域·主页比例对齐撞到） · status: **✅ done（主程·Label.size xxl=28/xxxl=34）** · 类型: 真能力缺口（档位不足）
 
 > game-g 主页对齐原版比例时撞到：原版 felt 大标题 `.felt-h .t{font-size:34px}`（装饰字体 fd），但引擎 `LabelProps.size` 最大档 `xl=22px`（sizeMap xs10/sm11/md13/lg16/xl22）。22 < 34 → 标题偏小、整体比例缩水，达不到原版协调度。
 > 建议（小加法）：Label.size 加 `xxl`(~28) / `display`(~34) 档（或新 `Heading` 控件带 fontDisplay）。供大厅命运牌桌标题、弹窗大标题等用。

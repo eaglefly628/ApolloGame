@@ -53,6 +53,9 @@ export interface LayoutConstraints {
   anchor?: string;
   /** 倒角切角 px（CSS clip-path 八边形·art-deco/扑克牌桌美学）：如 13 = 左上/右下各切 13px。给面板/卡/CTA 切角。 */
   chamfer?: number;
+  /** 流光 sheen（render-only·质感）：true=元素上叠一道斜向流光循环扫过（CSS 注入 ::after·apollo-sheen-sweep）。
+   *  按钮/标题/卡片的"湿润反光"质感（原 hero 键内置的 sheen 通用化·REQ-UI-G流光底纹①）。 */
+  sheen?: boolean;
 }
 
 export interface ButtonProps {
@@ -66,7 +69,7 @@ export interface ButtonProps {
 
 export interface LabelProps {
   text?: string; // 可选：spans / tween / bind 提供内容时可省（缺省空串）
-  size?: 'xs' | 'sm' | 'md' | 'lg' | 'xl';
+  size?: 'xs' | 'sm' | 'md' | 'lg' | 'xl' | 'xxl' | 'xxxl'; // xxl=28 xxxl=34（大标题·原版 felt 标题 34px·REQ-UI-Label大号字）
   color?: 'text' | 'sub' | 'dim' | 'jade' | 'gold' | 'ok' | 'warn' | 'danger';
   bold?: boolean;
   mono?: boolean;
@@ -127,6 +130,8 @@ export interface PanelProps {
   bgTextureSize?: number;
   /** UV 背景滚动（同 Screen.bgScroll·面板底纹滚动特效·render-only）。 */
   bgScroll?: { x?: number; y?: number; ms?: number };
+  /** 程序化纹理叠层（render-only·质感）：stripe=45°斜条纹 / checker=棋盘格。叠在面板内容下（如原版 felt 牌桌斜纹·REQ-UI-G流光底纹③）。 */
+  pattern?: 'stripe' | 'checker';
 }
 
 /** 单个开/关复选框。handler 收到 'true' | 'false'。 */
@@ -264,6 +269,7 @@ export interface PlayingCardProps {
   fluid?: boolean;                       // 流式卡：width:100% 充满父格 + 维持 5:7 aspect-ratio（替代固定 sm/md/lg 档）。配 Panel grid cols:N → 严格 N 列、卡填满、零卡间空隙（REQ-UI-G收藏卡②）。
   flipOnHover?: boolean;                 // 悬停翻面：配 backFace·鼠标悬停时 front→back scaleX 翻转，露出背面信息子树（CSS 注入·REQ-UI-G收藏卡①）。
   backFace?: LayoutNode;                 // 背面内容子树（通常 Panel(column) 装 名/朝代/简介，同 Tooltip.bubble 思路）。仅 flipOnHover 时渲。
+  backPattern?: 'checker' | 'stripe';    // 牌背程序化纹理（faceUp:false 时叠·原版红牌背棋盘格条纹·REQ-UI-G流光底纹②）。
   action?: string; actionArg?: string;   // 可点 → handlers[action](actionArg)
 }
 

@@ -30,7 +30,7 @@ export interface UiComponentSpec {
 
 // 共享枚举（多处复用·单一真相）。
 const COLOR = ['text', 'sub', 'dim', 'jade', 'gold', 'ok', 'warn', 'danger'] as const;
-const SIZE = ['xs', 'sm', 'md', 'lg', 'xl'] as const;
+const SIZE = ['xs', 'sm', 'md', 'lg', 'xl', 'xxl', 'xxxl'] as const;
 
 export const UI_CATALOG: readonly UiComponentSpec[] = [
   // ── 容器 / 布局 ──────────────────────────────────────────────
@@ -56,6 +56,7 @@ export const UI_CATALOG: readonly UiComponentSpec[] = [
       { name: 'vignette', type: 'boolean', describe: '四周渐暗暗角' },
       { name: 'accent', type: 'boolean', describe: 'jade 高亮框 + 柔光' },
       { name: 'bgTexture', type: 'string', describe: '平铺贴图 URL' },
+      { name: 'pattern', type: 'enum', values: ['stripe', 'checker'], describe: '程序化纹理叠层（斜条纹/棋盘格）' },
     ],
     sample: { type: 'Panel', id: 's-panel', props: { title: 'SECTION' }, layout: { direction: 'column', gap: 8, padding: 16 }, children: [{ type: 'Label', id: 's-panel-l', props: { text: '面板内容' } }] },
   },
@@ -258,6 +259,7 @@ export const UI_CATALOG: readonly UiComponentSpec[] = [
       { name: 'selected', type: 'boolean', describe: '选中金边' }, { name: 'dimmed', type: 'boolean', describe: '暗化' },
       { name: 'fluid', type: 'boolean', describe: '充满父格(5:7)·配 grid cols' },
       { name: 'flipOnHover', type: 'boolean', describe: '悬停翻面' }, { name: 'backFace', type: 'node', describe: '背面信息子树' },
+      { name: 'backPattern', type: 'enum', values: ['checker', 'stripe'], describe: '牌背纹理（faceUp:false 时）' },
       { name: 'art', type: 'string', describe: '立绘 URL' }, { name: 'label', type: 'string', describe: '牌下标签' },
       { name: 'action', type: 'string', describe: '点击信号' },
     ],

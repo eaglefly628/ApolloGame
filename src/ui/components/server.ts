@@ -105,7 +105,10 @@ const APOLLO_KEYFRAMES = `
 [data-flipcard] [data-flip-front],[data-flipcard] [data-flip-back]{transition:transform .3s cubic-bezier(.4,0,.2,1);backface-visibility:hidden;transform-origin:50% 50%}
 [data-flipcard] [data-flip-back]{transform:scaleX(0)}
 [data-flipcard]:hover [data-flip-front]{transform:scaleX(0)}
-[data-flipcard]:hover [data-flip-back]{transform:scaleX(1)}`;
+[data-flipcard]:hover [data-flip-back]{transform:scaleX(1)}
+@keyframes apollo-sheen-sweep{0%{background-position:220% 0}100%{background-position:-60% 0}}
+[data-sheen]{position:relative}
+[data-sheen]::after{content:'';position:absolute;inset:0;border-radius:inherit;pointer-events:none;background:linear-gradient(105deg,transparent 42%,rgba(255,255,255,.4) 50%,transparent 58%);background-size:250% 100%;animation:apollo-sheen-sweep 3.2s ease-in-out infinite}`;
 function ensureKeyframes(): void {
   if (typeof document === 'undefined') return;
   if (document.getElementById('apollo-ui-keyframes')) return;
