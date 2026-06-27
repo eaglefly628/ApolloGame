@@ -8,7 +8,7 @@
 import { mountUI } from '@ui/components/index.js';
 import type { LayoutNode, HandlerMap } from '@ui/components/index.js';
 import { GG_LOBBY_THEME } from './ui-theme.js';
-import { GACHA, RECHARGE_PACKS, rechargeTotal, DIAMOND_EXCHANGES, DIZHI_SHARD_PACKS, STORY_OPENING, type StoryBeat } from './blueprint.js';
+import { GACHA, RECHARGE_PACKS, rechargeTotal, DIAMOND_EXCHANGES, DIZHI_SHARD_PACKS, DIZHI_ZODIACS, STORY_OPENING, type StoryBeat } from './blueprint.js';
 import { luckyFromVal } from './lobby-overlays.js'; // 纯函数复用（卦值→吉凶档）
 import type { LuckyRoll } from './lobby-util.js';
 import type { LobbyView } from './lobby-screen.js';
@@ -93,28 +93,44 @@ function shopModal(view: LobbyView, st: OverlayState): LayoutNode {
       { type: 'Panel', id: `pool-${pool}-btns`, props: {}, layout: { direction: 'row', gap: 6 }, children: [drawBtn(pool, 1, 'gold'), drawBtn(pool, 1, 'diamond'), drawBtn(pool, 10, 'gold'), drawBtn(pool, 10, 'diamond')] },
     ],
   });
+  // 碎片定向兑换（对齐原版 抽卡 tab 4 段：2 卡池 + 天罡碎片兑换 + 地支碎片兑换·chips 走 grid 自动换行）。
+  const tgCraftable = view.tiangangs.filter((j) => !j.locked && !j.owned);
+  const tgCraftChips: LayoutNode[] = tgCraftable.length
+    ? tgCraftable.map((j) => ({ type: 'Tag', id: `shop-craft-tg-${j.id}`, props: { label: `${j.name} 🔶${GACHA.tiangang.craftShards}`, tone: 'normal', action: 'craftTiangang', actionArg: j.id } }))
+    : [{ type: 'Label', id: 'shop-craft-tg-none', props: { text: '已解锁天罡均已拥有 🎉', size: 'xs', color: 'dim' } }];
+  const dzCraftChips: LayoutNode[] = DIZHI_ZODIACS.map((z) => ({ type: 'Tag', id: `shop-craft-dz-${z.branch}`, props: { label: `${z.animal} 🧩${GACHA.dizhi.craftShards}`, tone: 'normal', action: 'craftDizhi', actionArg: z.branch } }));
+  const craftPanel = (id: string, title: string, sub: string, chips: LayoutNode[]): LayoutNode => ({
+    type: 'Panel', id, props: { title }, layout: { direction: 'column', gap: 6, padding: 10 },
+    children: [
+      { type: 'Label', id: `${id}-s`, props: { text: sub, size: 'xs', color: 'sub' } },
+      { type: 'Panel', id: `${id}-c`, props: { bare: true }, layout: { direction: 'grid', minCol: 88, gap: 6 }, children: chips },
+    ],
+  });
   const gachaPage: LayoutNode = { type: 'Panel', id: 'shop-gacha', props: {}, layout: { direction: 'column', gap: 8 },
     children: [
       poolPanel('tiangang', '🎴 天罡卡池', `抽到重复 → +${GACHA.tiangang.dupShards} 天罡碎片`),
       poolPanel('dizhi', '🀄 地支卡池', '12 生肖·重复自动升档 铜→银→金·满金转碎片'),
+      craftPanel('shop-craft-tg', '🔶 天罡碎片 · 定向兑换（保底）', `攒够碎片直接换想要的天罡·每张 ${GACHA.tiangang.craftShards} 碎片`, tgCraftChips),
+      craftPanel('shop-craft-dz', '🧩 地支碎片 · 定向兑换（升档）', `攒够地支碎片直接换/升生肖（铜→银→金）·每次 ${GACHA.dizhi.craftShards} 碎片`, dzCraftChips),
     ] };
   const foilCards: LayoutNode[] = view.foils.map((f) => ({ type: 'Card', id: `shop-foil-${f.id}`,
     props: { title: `✨ ${f.name}`, sub: f.owned ? '✓ 已拥有' : `🪙 ${f.cost}`, tone: (f.owned ? 'accent' : 'normal') as 'accent' | 'normal', action: f.owned ? undefined : 'buyFoil', actionArg: f.id } }));
   const foilPage: LayoutNode = { type: 'Panel', id: 'shop-foil', props: {}, layout: { direction: 'grid', minCol: 150, gap: 8 }, children: foilCards };
-  const packBtns: LayoutNode[] = RECHARGE_PACKS.map((p) => ({ type: 'Button', id: `shop-pack-${p.id}`,
-    props: { label: `💎${rechargeTotal(p)} · ¥${p.price}${p.tag ? ' · ' + p.tag : ''}`, kind: 'ghost', action: 'rechargeBuy', actionArg: p.id } }));
-  const exBtns: LayoutNode[] = DIAMOND_EXCHANGES.map((x) => ({ type: 'Button', id: `shop-ex-${x.id}`,
-    props: { label: `🪙${x.gold} ← 💎${x.diamond}`, kind: 'ghost', action: 'exchangeBuy', actionArg: x.id } }));
-  const shardBtns: LayoutNode[] = DIZHI_SHARD_PACKS.map((x) => ({ type: 'Button', id: `shop-shard-${x.id}`,
-    props: { label: `🧩${x.shards} ← 💎${x.diamond}${x.tag ? ' · ' + x.tag : ''}`, kind: 'ghost', action: 'shardBuy', actionArg: x.id } }));
+  // 充值/兑换包卡片化（对齐原版 .rc-pack 卡：媒体字形 + 数量 + 价格 + 角标·4 列 grid·非单行按钮）。
+  const packCards: LayoutNode[] = RECHARGE_PACKS.map((p) => ({ type: 'Card', id: `shop-pack-${p.id}`,
+    props: { media: '💎', title: String(rechargeTotal(p)), sub: `${p.bonus > 0 ? `含赠+${p.bonus} · ` : ''}¥${p.price}`, corner: p.tag, action: 'rechargeBuy', actionArg: p.id } }));
+  const exCards: LayoutNode[] = DIAMOND_EXCHANGES.map((x) => ({ type: 'Card', id: `shop-ex-${x.id}`,
+    props: { media: '🪙', title: String(x.gold), sub: `💎 ${x.diamond}`, corner: x.tag, action: 'exchangeBuy', actionArg: x.id } }));
+  const shardCards: LayoutNode[] = DIZHI_SHARD_PACKS.map((x) => ({ type: 'Card', id: `shop-shard-${x.id}`,
+    props: { media: '🧩', title: String(x.shards), sub: `💎 ${x.diamond}`, corner: x.tag, action: 'shardBuy', actionArg: x.id } }));
   const walletPage: LayoutNode = { type: 'Panel', id: 'shop-wallet', props: {}, layout: { direction: 'column', gap: 8 },
     children: [
       { type: 'Label', id: 'wallet-rc-h', props: { text: '充值 · 越充越送（Demo·点即到账）', size: 'sm', color: 'gold', bold: true } },
-      { type: 'Panel', id: 'wallet-rc', props: {}, layout: { direction: 'grid', minCol: 130, gap: 6 }, children: packBtns },
+      { type: 'Panel', id: 'wallet-rc', props: {}, layout: { direction: 'grid', cols: 4, gap: 8 }, children: packCards },
       { type: 'Label', id: 'wallet-ex-h', props: { text: '兑换金币 · 💎 → 🪙（改造坊通用材料）', size: 'sm', color: 'gold', bold: true } },
-      { type: 'Panel', id: 'wallet-ex', props: {}, layout: { direction: 'grid', minCol: 130, gap: 6 }, children: exBtns },
+      { type: 'Panel', id: 'wallet-ex', props: {}, layout: { direction: 'grid', cols: 4, gap: 8 }, children: exCards },
       { type: 'Label', id: 'wallet-shard-h', props: { text: '兑换地支碎片 · 💎 → 🧩（养地支专属材料）', size: 'sm', color: 'gold', bold: true } },
-      { type: 'Panel', id: 'wallet-shard', props: {}, layout: { direction: 'grid', minCol: 130, gap: 6 }, children: shardBtns },
+      { type: 'Panel', id: 'wallet-shard', props: {}, layout: { direction: 'grid', cols: 4, gap: 8 }, children: shardCards },
     ] };
   return {
     type: 'Modal', id: 'shop-modal', props: { title: '🛒 商城', size: 'lg', closeAction: 'closeOverlay' },
