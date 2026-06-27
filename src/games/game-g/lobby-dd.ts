@@ -85,14 +85,19 @@ const emptyTab = (id: string): LayoutNode => ({ type: 'Panel', id: `lc-empty-${i
 export function buildLobby(view: LobbyView, st: LobbyDDState): LayoutNode {
   // 导航用引擎 Tabs 控件（renderTabs 自带金色下划线 active + 切页 toggle 不重建·对齐原版 .nav）——
   // 不再手搓 Button 列。Tabs children 按序对应 TABS；仅当前页建内容、余页占位（渲只渲 active·省构建）。
+  // 导航只用 Tabs 做「金色下划线条」（空页·不托管内容）；内容单独放 flex:1 Panel——
+  // 否则 Tabs 页容器 div 是 display:block 自然高度、不撑满 → 里面 felt(flex:1) 铺不满 → 底部留空（owner 2026-06-26 点名）。
   const nav: LayoutNode = {
-    type: 'Tabs', id: 'lobby-nav', props: { tabs: TABS, active: st.tab, action: 'tab' }, layout: { flex: 1 },
-    children: TABS.map((t) => (t.id === st.tab ? tabContent(view, st) : emptyTab(t.id))),
+    type: 'Tabs', id: 'lobby-nav', props: { tabs: TABS, active: st.tab, action: 'tab' }, children: [],
+  };
+  const content: LayoutNode = {
+    type: 'Panel', id: 'lobby-content', props: { bare: true }, layout: { direction: 'column', flex: 1 },
+    children: [tabContent(view, st)],
   };
   // 整厅外框（对齐原版 .frame）：maxWidth 1340 + 块居中——窄屏铺满、宽屏封顶居中。
   const frame: LayoutNode = {
     type: 'Panel', id: 'lobby-frame', props: {}, layout: { direction: 'column', gap: 10, padding: 14, maxWidth: 1340, flex: 1 },
-    children: [topbar(view), { type: 'Divider', id: 'lobby-hdr-div', props: {} }, nav],
+    children: [topbar(view), { type: 'Divider', id: 'lobby-hdr-div', props: {} }, nav, content],
   };
   return {
     type: 'Screen', id: 'lobby-screen-dd', props: { bg: GG_LOBBY_THEME.pageBg },
