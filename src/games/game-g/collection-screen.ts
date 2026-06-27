@@ -109,21 +109,41 @@ export function ladderPage(view: LobbyView): LayoutNode {
   const recentRows = RECENTS.map(([r, k, detail, lp], i) => ({ id: `rec-${i}`, cells: { r, mode: detail, lp }, tone: (k === 'win' ? 'accent' : 'dim') as 'accent' | 'dim' }));
   const boardRows = LADDER.map(([rank, lname, mainCard, deck, wr, lp]) => ({ id: `ldr-${rank}`, cells: { rank, name: `${lname} · ${mainCard}`, deck, wr, lp },
     tone: (lname === view.name ? 'accent' : (+rank <= 3 ? 'accent' : 'normal')) as 'accent' | 'normal' }));
-  return {
-    type: 'Panel', id: 'ladder', props: {}, layout: { direction: 'row', gap: 16 },
+  // 我的段位 3 个统计盒（对齐设计稿：胜率/连胜/翻正率·大数字+小标）。
+  const statBox = (id: string, num: string, lbl: string): LayoutNode => ({
+    type: 'Panel', id, props: {}, layout: { direction: 'column', align: 'center', gap: 2, padding: 10, flex: 1 },
     children: [
-      { type: 'Panel', id: 'ldr-left', props: {}, layout: { direction: 'column', gap: 14, width: 320 },
+      { type: 'Label', id: `${id}-n`, props: { text: num, size: 'lg', color: 'gold', bold: true } },
+      { type: 'Label', id: `${id}-l`, props: { text: lbl, size: 'xs', color: 'sub' } },
+    ],
+  });
+  // 布局对齐设计稿 天梯·榜：左=我的段位(♠章+段位+LP+进度条+3统计盒)+近10局；右=全服榜(全服/好友/同段 段控 + 表)。
+  return {
+    type: 'Panel', id: 'ladder', props: { bare: true }, layout: { direction: 'row', gap: 16, flex: 1 },
+    children: [
+      { type: 'Panel', id: 'ldr-left', props: { bare: true }, layout: { direction: 'column', gap: 14, width: 320 },
         children: [
-          { type: 'Panel', id: 'ldr-rank', props: { title: '我的段位' }, layout: { gap: 6, padding: 12 },
+          { type: 'Panel', id: 'ldr-rank', props: { title: '我的段位', accent: true }, layout: { direction: 'column', gap: 10, padding: 16, align: 'center' },
             children: [
-              { type: 'Label', id: 'ldr-rank-t', props: { text: `♠ ${view.rankText}`, size: 'xl', color: 'gold', bold: true } },
-              { type: 'Label', id: 'ldr-rank-lp', props: { text: '1240 LP · 距晋级 60 LP', size: 'sm', color: 'sub' } },
-              { type: 'Label', id: 'ldr-rank-st', props: { text: '胜率 64% · 连胜 3 · 翻正率 71%', size: 'sm', color: 'dim' } },
+              { type: 'Avatar', id: 'ldr-seal', props: { name: '♠', shape: 'rounded', size: 72 } },
+              { type: 'Label', id: 'ldr-rank-t', props: { text: view.rankText, size: 'xl', color: 'gold', bold: true } },
+              { type: 'Label', id: 'ldr-rank-lp', props: { text: '1240 LP', size: 'sm', color: 'sub' } },
+              { type: 'ProgressBar', id: 'ldr-rank-pb', props: { value: 1240, max: 1300, tone: 'gold', label: '距晋级 60 LP', showValue: false } },
+              { type: 'Panel', id: 'ldr-stats', props: { bare: true }, layout: { direction: 'row', gap: 8 }, children: [statBox('ldr-s1', '64%', '胜率'), statBox('ldr-s2', '3', '连胜'), statBox('ldr-s3', '71%', '翻正率')] },
             ] },
-          { type: 'Table', id: 'ldr-recents', props: { title: '近 6 局', columns: [{ key: 'r', label: '', width: 30, align: 'center' }, { key: 'mode', label: '对局' }, { key: 'lp', label: 'LP', width: 52, align: 'right' }], rows: recentRows } },
+          { type: 'Table', id: 'ldr-recents', props: { title: '近 10 局', columns: [{ key: 'r', label: '', width: 30, align: 'center' }, { key: 'mode', label: '对局' }, { key: 'lp', label: 'LP', width: 52, align: 'right' }], rows: recentRows } },
         ] },
-      { type: 'Panel', id: 'ldr-right', props: {}, layout: { flex: 1 },
-        children: [{ type: 'Table', id: 'ldr-board', props: { title: '全服榜 · 赛季 7 · 每 5 分钟刷新', columns: [{ key: 'rank', label: '名次', width: 48, align: 'center' }, { key: 'name', label: '玩家 / 主牌' }, { key: 'deck', label: '主流派', width: 96, align: 'center' }, { key: 'wr', label: '胜率', width: 60, align: 'right' }, { key: 'lp', label: 'LP', width: 68, align: 'right' }], rows: boardRows } }] },
+      { type: 'Panel', id: 'ldr-right', props: {}, layout: { direction: 'column', gap: 10, flex: 1 },
+        children: [
+          { type: 'Panel', id: 'ldr-board-hd', props: { bare: true }, layout: { direction: 'row', align: 'center', gap: 10 },
+            children: [
+              { type: 'Label', id: 'ldr-board-t', props: { text: '全服榜', size: 'lg', color: 'gold', bold: true } },
+              { type: 'Segmented', id: 'ldr-board-seg', props: { options: [{ value: 'all', label: '全服' }, { value: 'friend', label: '好友' }, { value: 'tier', label: '同段' }], value: 'all' } },
+              { type: 'Panel', id: 'ldr-board-sp', props: { bare: true }, layout: { flex: 1 } },
+              { type: 'Label', id: 'ldr-board-meta', props: { text: '每 5 分钟刷新 · 赛季 7', size: 'xs', color: 'dim' } },
+            ] },
+          { type: 'Table', id: 'ldr-board', props: { columns: [{ key: 'rank', label: '名次', width: 48, align: 'center' }, { key: 'name', label: '玩家 / 主牌' }, { key: 'deck', label: '主流派', width: 96, align: 'center' }, { key: 'wr', label: '胜率', width: 60, align: 'right' }, { key: 'lp', label: 'LP', width: 68, align: 'right' }], rows: boardRows }, layout: { flex: 1 } },
+        ] },
     ],
   };
 }
