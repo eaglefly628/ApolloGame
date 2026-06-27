@@ -67,19 +67,20 @@ export class ThreeRenderer implements RendererBackend {
     this.camera = new THREE.PerspectiveCamera(this.fov, this.width / this.height, 0.1, 10000);
     this.camera.position.set(0, 0, 10);
     // 暖白主光 + 冷蓝补光（暖冷对比·盒庭通透感）；主光投柔和阴影（盒庭模式每帧随场景重定位）。
-    const key = new THREE.DirectionalLight(0xfff1d6, 1.25);
+    const key = new THREE.DirectionalLight(0xfff1d6, 1.5);
     key.position.set(2, 4, 6);
     key.castShadow = true;
-    key.shadow.mapSize.set(1024, 1024);
-    key.shadow.bias = -0.0005;
+    key.shadow.mapSize.set(2048, 2048);
+    key.shadow.bias = -0.0004;
     this.scene.add(key);
     this.scene.add(key.target);
     this.key = key;
-    this.scene.add(new THREE.AmbientLight(0xbfd2ff, 0.6));
+    // 环境补光压低（0.4）→ 让接触阴影看得见、对比出体积；过高会把影子洗掉。
+    this.scene.add(new THREE.AmbientLight(0xbfd2ff, 0.4));
     this.gl = new THREE.WebGLRenderer({ antialias: true });
     this.gl.setSize(this.width, this.height);
     this.gl.shadowMap.enabled = true;
-    this.gl.shadowMap.type = THREE.PCFSoftShadowMap; // 柔和接触阴影（Captain Toad 招牌软影）
+    this.gl.shadowMap.type = THREE.PCFShadowMap; // 软阴影（PCFSoft 在本 three 版已弃用→回退此档）
     container.appendChild(this.gl.domElement);
   }
 
@@ -198,14 +199,15 @@ export class ThreeRenderer implements RendererBackend {
   // 盒庭模式：把主方向光摆到场景右上前方（暖调侧光），阴影正交相机框住整个盒庭（半径 radius）。
   // 每帧据场景中心/半径重定位 → 几个到几十个物件都自动覆盖阴影，不漏不糊。
   private placeShadow(center: { x: number; y: number; z: number }, radius: number): void {
-    const d = radius * 3;
-    this.key.position.set(center.x + d * 0.55, center.y + d, center.z + d * 0.45);
+    const d = radius * 3.2;
+    // 较低仰角（~34°）的暖侧光 → 接触阴影拉长、看得见体积（太高的顶光阴影会藏在物体底下）。
+    this.key.position.set(center.x + d * 0.78, center.y + d * 0.62, center.z + d * 0.5);
     this.key.target.position.set(center.x, center.y, center.z);
     this.key.target.updateMatrixWorld();
     const cam = this.key.shadow.camera as THREE.OrthographicCamera;
-    const r = radius * 1.7;
+    const r = radius * 2.6; // 视锥放宽到覆盖拉长的影子 + 更多地台
     cam.left = -r; cam.right = r; cam.top = r; cam.bottom = -r;
-    cam.near = 0.1; cam.far = d * 3;
+    cam.near = 0.1; cam.far = d * 3.5;
     cam.updateProjectionMatrix();
   }
 
@@ -342,15 +344,17 @@ function buildSkyTexture(sky: Sky3D): THREE.CanvasTexture {
   g.fillRect(0, 0, W, H);
   if (sky.clouds) {
     const c = sky.cloudTint ?? 0xffffff;
-    // 固定云团（x,y,半径）：上半部一排柔和白团 → 半透明径向渐变堆出蓬松感。
+    // 固定云团（x,y,半径）：横跨天顶→近地平线一带（含相机俯视看得到的区段），大团叠小团堆出蓬松感。
     const puffs: Array<[number, number, number]> = [
-      [60, 70, 38], [110, 58, 28], [150, 84, 32], [250, 64, 40], [300, 56, 26],
-      [338, 80, 32], [430, 70, 36], [474, 58, 26], [200, 104, 30], [392, 108, 28],
+      [70, 96, 52], [120, 78, 40], [165, 110, 46], [40, 124, 38],
+      [250, 88, 56], [305, 72, 40], [350, 112, 48], [215, 130, 40],
+      [430, 92, 54], [486, 76, 40], [398, 120, 46], [470, 134, 36],
+      [150, 150, 34], [330, 152, 36], [60, 60, 30], [420, 56, 28],
     ];
     for (const [x, y, r] of puffs) {
       const rg = g.createRadialGradient(x, y, 0, x, y, r);
-      rg.addColorStop(0, rgba(c, 0.9));
-      rg.addColorStop(0.6, rgba(c, 0.45));
+      rg.addColorStop(0, rgba(c, 0.95));
+      rg.addColorStop(0.55, rgba(c, 0.6));
       rg.addColorStop(1, rgba(c, 0));
       g.fillStyle = rg;
       g.fillRect(x - r, y - r, r * 2, r * 2);
