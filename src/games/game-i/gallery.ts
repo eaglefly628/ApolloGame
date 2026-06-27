@@ -860,6 +860,54 @@ function buildPageNew(controls: ControlsState): LayoutNode {
           } },
           { type: 'Label', id: 'flip-hint', props: { text: '← 鼠标悬停这张牌看它翻面（front→back scaleX 翻转·CSS 内建）。', color: 'dim', size: 'sm' }, layout: { flex: 1 } },
         ] },
+
+      divider('d-n12'),
+      sectionTitle('t-bigtext', 'LABEL · 大标题档 size:xxl(28) / xxxl(34)（原版 felt 标题 34px）'),
+      { type: 'Panel', id: 'big-col', props: {}, layout: { direction: 'column', gap: 8, padding: 14 },
+        children: [
+          { type: 'Label', id: 'big-xxl', props: { text: '群英荟萃 · xxl 28px', size: 'xxl', bold: true, color: 'gold' } },
+          { type: 'Label', id: 'big-xxxl', props: { text: '三 国 杀 · xxxl 34px', size: 'xxxl', bold: true, color: 'jade', font: 'display' } },
+          { type: 'Label', id: 'big-cmp', props: { text: '对比：xl 22px 副标题（旧上限）', size: 'xl', color: 'sub' } },
+        ] },
+
+      divider('d-n13'),
+      sectionTitle('t-pattern', 'PANEL · pattern 程序化纹理叠层（stripe 斜纹 / checker 棋盘·felt 牌桌质感）'),
+      { type: 'Panel', id: 'pat-row', props: {}, layout: { direction: 'row', gap: 14, padding: 14 },
+        children: [
+          { type: 'Panel', id: 'pat-stripe', props: { title: 'stripe 45°斜纹', bg: 'linear-gradient(180deg,#16402c,#0e2a1c)', pattern: 'stripe' },
+            layout: { direction: 'column', padding: 16, height: 76, flex: 1 },
+            children: [{ type: 'Label', id: 'pat-sl', props: { text: '绿呢底叠斜条纹（纯 CSS·零贴图）。', color: 'sub', size: 'sm' } }] },
+          { type: 'Panel', id: 'pat-checker', props: { title: 'checker 棋盘格', bg: 'linear-gradient(180deg,#2a1c40,#16102a)', pattern: 'checker' },
+            layout: { direction: 'column', padding: 16, height: 76, flex: 1 },
+            children: [{ type: 'Label', id: 'pat-cl', props: { text: '紫底叠棋盘格纹理。', color: 'sub', size: 'sm' } }] },
+        ] },
+
+      divider('d-n14'),
+      sectionTitle('t-backpat', 'PLAYINGCARD · backPattern 牌背纹理（原版红牌背棋盘格/斜纹）'),
+      { type: 'Panel', id: 'backpat-row', props: {}, layout: { direction: 'row', gap: 12, padding: 14, align: 'center' },
+        children: [
+          pcard('bp-1', { rank: 'A', suit: '♠', faceUp: false, backPattern: 'checker', size: 'md' }),
+          pcard('bp-2', { rank: 'K', suit: '♥', faceUp: false, backPattern: 'stripe', size: 'md' }),
+          pcard('bp-3', { rank: 'Q', suit: '♦', faceUp: false, size: 'md' }),
+          { type: 'Label', id: 'bp-hint', props: { text: '← checker / stripe / 无纹理 三张牌背对比（faceUp:false 时叠）。', color: 'dim', size: 'sm' }, layout: { flex: 1 } },
+        ] },
+
+      divider('d-n15'),
+      sectionTitle('t-sheen', 'SHEEN · 流光扫过（layout.sheen·斜向湿润反光循环·原 hero 内建通用化）'),
+      { type: 'Panel', id: 'sheen-row', props: {}, layout: { direction: 'row', gap: 16, padding: 18, align: 'center' },
+        children: [
+          { type: 'Button', id: 'sheen-btn', props: { label: '流光按钮', kind: 'primary', action: 'click', actionArg: 'sheen' }, layout: { sheen: true } },
+          { type: 'Panel', id: 'sheen-card', props: { bg: 'linear-gradient(180deg,#1c2a44,#101826)' }, layout: { sheen: true, chamfer: 12, padding: 16 },
+            children: [{ type: 'Label', id: 'sheen-cl', props: { text: 'sheen 切角卡：一道流光斜扫而过。', color: 'sub', size: 'sm' } }] },
+        ] },
+
+      divider('d-n16'),
+      sectionTitle('t-pixel', 'LABEL · font:pixel 像素字体（REQ-UI-fontPixel令牌·已落地·不再静默回退）'),
+      { type: 'Panel', id: 'pixel-col', props: {}, layout: { direction: 'column', gap: 8, padding: 14 },
+        children: [
+          { type: 'Label', id: 'pixel-l', props: { text: 'PIXEL 8-BIT 像素标题 1942', size: 'lg', bold: true, color: 'jade', font: 'pixel' } },
+          { type: 'Label', id: 'pixel-l2', props: { text: 'font:pixel · 复古街机/像素风（SHELL fontPixel 令牌已补默认值）', size: 'sm', color: 'sub', font: 'pixel' } },
+        ] },
     ],
   };
 }
