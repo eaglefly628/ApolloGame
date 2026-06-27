@@ -21,6 +21,16 @@
 >   建议：① `LayoutConstraints` grid `cols:N`（固定列数·覆盖 auto-fill）；② PlayingCard `fluid`（width:100% 充满父格 + 维持 5:7 aspect-ratio·替代固定档）。
 > PG 侧已做近似（grid minCol 122 + size lg → ~6 列大卡），但**卡填不满格子→有空隙**、且无翻面；需此 2 能力才能真·一模一样（owner 2026-06-26 点名空隙问题）。
 
+### REQ-UI-G大厅审尺寸/卡内布局 · [2026-06-27] · PG 同步（UI 库域·owner 大厅人肉审批量） · status: **open（PG→主程）** · 类型: 真能力缺口（控件无 size 档 + PlayingCard 卡内布局/hover）
+
+> owner 大厅逐页审，撞到一批 PG 数据层做不了、需引擎补的：
+> ① **Tag 加 `size` 档**：右上货币 pill(商城/金币/钻石) 字太小不够大气·要≈2x。Tag 现 font-size 写死 11px。
+> ② **Card 加 `size` 档**：主页 Boss 地煞卡 + 天罡卡 字要大≈1.3x·行高更高。Card title/sub 现写死 12/10px。
+> ③ **全局字号对齐**：owner 要求所有字号对齐原版——根因是 Card/Tag 无 size、Label 也常偏小。建议 Card/Tag 同 Label 加 size 体系(xs..xxxl)。
+> ④ **PlayingCard 卡内布局可调**（牌组扑克）：选中→**中央"选"字**(替/加金边·更醒目)；耗费(💧)槽**右下→右上**(现挡名字)；战力槽**中下→中上**(现与名字重合)。建议 PlayingCard 加 `cost`/`power` 具名槽(固定角位) + `selectedMark` 中央标。
+> ⑤ **PlayingCard / Card `hover` 简介 tooltip**：牌组扑克 + 天罡卡 鼠标悬浮显简介(宝物介绍)。建议复用 `Tooltip.bubble` 思路·给 PlayingCard/Card 加 `tip?:LayoutNode`(hover 浮窗)。
+> PG 侧已把能数据做的做完(中英混排/多余框/3竖列/翻面乱码/字号 Label 部分/今日卦象/流派strip/去底部条)；以上 5 类待主程。
+
 ### REQ-UI-G流光底纹 · [2026-06-26] · PG 同步（UI 库域·主页质感对齐撞到） · status: **✅ done（主程·①layout.sheen ②PlayingCard.backPattern ③Panel.pattern·`sheen-pattern-bigtext.test.ts`）** · 类型: 真能力缺口（通用质感·不可重组）
 
 > game-g 主页对齐原版「质感」时，3 个视觉能力引擎缺通用版（hero CTA 流光已有·bgScroll 滚动 UV 已有不在此列）：
