@@ -9,7 +9,7 @@
 import { mountUI } from '@ui/components/index.js';
 import type { LayoutNode, HandlerMap } from '@ui/components/index.js';
 import { GG_LOBBY_THEME } from './ui-theme.js';
-import { HERO_CARDS } from './hero-codex.js';
+import { HERO_CARDS, type HeroCard } from './hero-codex.js';
 import { heroPortraitUri, type Suit } from './portraits.js';
 import { DIZHI_ZODIACS, DIZHI_TIER_NM, dizhiTopTier, dizhiTotal, deployCost, POKER_PICK_SIZE } from './blueprint.js';
 import { SUITS, RANKS, SUIT_LETTER } from './lobby-util.js';
@@ -42,6 +42,20 @@ function costCurve(picks: Set<string>): LayoutNode {
   return { type: 'Panel', id: 'poker-curve', props: { title: '放牌费用曲线（低费才铺得开场面）' }, layout: { direction: 'column', gap: 6, padding: 10 }, children: bars };
 }
 
+// 武将 hover 词条气泡（纯数据·只中文）：名（金粗）· 衔 · 战力/费用行 · 历史战绩。
+const RAR_NM: Record<HeroCard['rar'], string> = { white: '普通', green: '精良', blue: '稀有', purple: '史诗', orange: '传说' };
+function heroBubble(hero: HeroCard, fv: number, cost: number): LayoutNode {
+  return {
+    type: 'Panel', id: `pcb-${hero.id}`, props: { bare: true }, layout: { direction: 'column', gap: 4, padding: 2, width: 220 },
+    children: [
+      { type: 'Label', id: `pcb-n-${hero.id}`, props: { text: `${hero.rank}${hero.suit} ${hero.name}`, size: 'md', color: 'gold', bold: true } },
+      { type: 'Label', id: `pcb-t-${hero.id}`, props: { text: `${hero.title} · ${RAR_NM[hero.rar]}`, size: 'sm', color: 'sub' } },
+      { type: 'Label', id: `pcb-s-${hero.id}`, props: { size: 'sm', color: 'sub', spans: [{ text: '战力 ' }, { text: String(fv), color: 'gold', bold: true }, { text: `　费用 ${cost > 0 ? '💧'.repeat(cost) : '0'}` }] } },
+      { type: 'Label', id: `pcb-c-${hero.id}`, props: { text: hero.contrib, size: 'sm', color: 'text' } },
+    ],
+  };
+}
+
 function pokerGrid(view: LobbyView, picks: Set<string>): LayoutNode {
   const rows: LayoutNode[] = SUITS.map(([su], si) => {
     const cards: LayoutNode[] = RANKS.map((rank, ri) => {
@@ -58,9 +72,10 @@ function pokerGrid(view: LobbyView, picks: Set<string>): LayoutNode {
       ];
       if (cost > 0) overlays.push({ type: 'Label', id: `pc-cost-${cardId}`, props: { text: '💧'.repeat(cost), size: 'sm', color: 'text' }, layout: { x: 62, y: 4 } });
       if (picked) overlays.push({ type: 'Label', id: `pc-sel-${cardId}`, props: { text: '选', size: 'xl', color: 'gold', bold: true }, layout: { x: 32, y: 46 } });
-      // hover 简介(D5/D6)暂不接：grid 内 Tooltip(inline-flex span) 不随 grid 拉伸→卡塌陷重叠(实测)；
-      // flipOnHover 又与 overlays 冲突。属 Tooltip 在 grid 的真限制·已记 requests.md 给主程(需 Tooltip block 档)。
-      return {
+      // hover 简介(D5·owner「鼠标移上去悬浮出牌的介绍」)：主程已下沉 Tooltip.block(2026-06-27 回执对账)→
+      // 整张卡包进 Tooltip(block:true)·触发元素 display:block+width:100% 能作 13 列 grid item 撑满不塌陷。
+      // 气泡 bubble 走纯数据 Panel(column)·只中文（名/衔/战绩·略 era 英纪元规避之前混排吐槽）。
+      const card: LayoutNode = {
         type: 'Panel', id: `pcw-${cardId}`, props: { bare: true }, layout: {},
         children: [
           { type: 'PlayingCard', id: `pc-${cardId}`,
@@ -69,6 +84,11 @@ function pokerGrid(view: LobbyView, picks: Set<string>): LayoutNode {
               selected: picked, dimmed: !picked && fv <= 50, action: 'pickCard', actionArg: cardId } },
           ...overlays,
         ],
+      };
+      if (!hero) return card;
+      return {
+        type: 'Tooltip', id: `pct-${cardId}`, props: { block: true, placement: 'top', bubble: heroBubble(hero, fv, cost) },
+        children: [card],
       };
     });
     // 每花色一行 13 列填满（对齐原版扑克构筑墙·.pbuild-grid + fluid 卡·零空隙）。
@@ -93,12 +113,28 @@ function pokerPage(view: LobbyView, picks: Set<string>): LayoutNode {
   };
 }
 
+// 天罡 hover 词条气泡（纯数据·只中文）：名（金粗）· 威力星 · 局内法术效果。
+function tiangangBubble(j: { id: string; name: string; sub: string; power?: number; cost?: number }): LayoutNode {
+  return {
+    type: 'Panel', id: `tgb-${j.id}`, props: { bare: true }, layout: { direction: 'column', gap: 4, padding: 2, width: 220 },
+    children: [
+      { type: 'Label', id: `tgb-n-${j.id}`, props: { text: `⚡ ${j.name}`, size: 'md', color: 'gold', bold: true } },
+      ...(j.power ? [{ type: 'Label' as const, id: `tgb-p-${j.id}`, props: { text: `威力 ${'⭐'.repeat(Math.min(j.power, 5))}`, size: 'sm' as const, color: 'warn' as const } }] : []),
+      { type: 'Label', id: `tgb-s-${j.id}`, props: { text: j.sub, size: 'sm', color: 'text' } },
+    ],
+  };
+}
+
 // ── ② 天罡战法（≤size 天罡槽）─────────────────────────────────
 function tiangangPage(view: LobbyView): LayoutNode {
   const size = view.deckSize ?? 12;
   const inDeck = view.tiangangs.filter((j) => j.inDeck);
+  // 已入组天罡：hover 悬浮词条（owner「放上去的天罡鼠标浮上去显示介绍」)·Tooltip.block 包 Card 不塌网格。
   const slots: LayoutNode[] = inDeck.map((j) => ({
-    type: 'Card', id: `tg-${j.id}`, props: { title: `⚡ ${j.name}`, sub: j.sub, corner: j.power ? '⭐'.repeat(Math.min(j.power, 5)) : undefined, tone: 'accent', action: 'toggleTiangang', actionArg: j.id },
+    type: 'Tooltip', id: `tgt-${j.id}`, props: { block: true, placement: 'top', bubble: tiangangBubble(j) },
+    children: [{
+      type: 'Card', id: `tg-${j.id}`, props: { title: `⚡ ${j.name}`, sub: j.sub, corner: j.power ? '⭐'.repeat(Math.min(j.power, 5)) : undefined, tone: 'accent', action: 'toggleTiangang', actionArg: j.id },
+    }],
   }));
   const emptyN = Math.max(0, size - inDeck.length);
   for (let i = 0; i < emptyN; i++) slots.push({ type: 'Card', id: `tg-empty-${i}`, props: { title: '＋', sub: '空槽 · 点添加', tone: 'dim', action: 'deckAdd' } });
