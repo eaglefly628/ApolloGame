@@ -19,6 +19,8 @@ import type { LobbyView } from './lobby-screen.js';
 
 const RAR_NAME: Record<HeroRar, string> = { white: '普通', green: '精良', blue: '稀有', purple: '史诗', orange: '传说' };
 const SUIT_NAME: Record<string, string> = { '♠': '黑桃', '♥': '红桃', '♦': '方块', '♣': '梅花' };
+// 去掉描述里夹带的英文别名（owner 2026-06-27「只要中文·本地化时再加英文」）：剥连续 ASCII 字母词 + 清多余空格/空括号。
+const stripEn = (s?: string): string => (s ?? '').replace(/[A-Za-z]+/g, '').replace(/（\s*）|\(\s*\)/g, '').replace(/\s{2,}/g, ' ').trim();
 
 export interface CollectionState { suit: string; rar: string; ownedOnly: boolean; heroId: string }
 export const INITIAL_COLLECTION: CollectionState = { suit: 'all', rar: 'all', ownedOnly: false, heroId: '' };
@@ -54,11 +56,11 @@ function heroesPage(st: CollectionState): LayoutNode {
       art: heroPortraitUri(h.suit, h.era, h.rank, h.rar),
       selected: h.id === sel?.id && h.own > 0, dimmed: h.own === 0, action: 'heroPick', actionArg: h.id,
       flipOnHover: true,
-      backFace: { type: 'Panel', id: `coll-bk-${h.id}`, props: { bare: true }, layout: { direction: 'column', align: 'center', justify: 'center', gap: 2, padding: 4 },
+      backFace: { type: 'Panel', id: `coll-bk-${h.id}`, props: { bare: true }, layout: { direction: 'column', align: 'center', justify: 'center', gap: 3, padding: 4 },
         children: [
           { type: 'Label', id: `coll-bk-n-${h.id}`, props: { text: `${h.rank}${h.suit} ${h.name}`, size: 'sm', color: 'gold', bold: true } },
-          { type: 'Label', id: `coll-bk-e-${h.id}`, props: { text: `${RAR_NAME[h.rar]} · ${h.era}`, size: 'xs', color: 'sub' } },
-          { type: 'Label', id: `coll-bk-t-${h.id}`, props: { text: h.title, size: 'xs', color: 'dim' } },
+          { type: 'Label', id: `coll-bk-t-${h.id}`, props: { text: `${h.title} · ${RAR_NAME[h.rar]}`, size: 'xs', color: 'sub' } },
+          { type: 'Label', id: `coll-bk-c-${h.id}`, props: { text: stripEn(h.contrib), size: 'xs', color: 'dim' } },
         ] } },
   }));
   const grid: LayoutNode = {
@@ -177,16 +179,17 @@ function collectPage(view: LobbyView): LayoutNode {
   const ownedT = view.tiangangs.filter((j) => j.owned).length;
   const ownedF = view.foils.filter((f) => f.owned).length;
   const tCards: LayoutNode[] = view.tiangangs.map((j) => ({ type: 'Card', id: `col-t-${j.id}`,
-    props: { title: `${j.icon ?? '⚡'} ${j.name}`, sub: j.sub, tone: (j.owned ? 'normal' : 'locked') as 'normal' | 'locked' } }));
+    props: { title: `⚡ ${j.name}`, sub: stripEn(j.sub), tone: (j.owned ? 'normal' : 'locked') as 'normal' | 'locked' } }));
   const fCards: LayoutNode[] = view.foils.map((f) => ({ type: 'Card', id: `col-f-${f.id}`,
-    props: { title: `✨ ${f.name}`, sub: f.sub, tone: (f.owned ? 'accent' : 'locked') as 'accent' | 'locked' } }));
+    props: { title: `✨ ${f.name}`, sub: stripEn(f.sub), tone: (f.owned ? 'accent' : 'locked') as 'accent' | 'locked' } }));
+  // 外层 coll-collect + 内层 grid 都 bare（去掉多余框·owner「多了一个框」）；标题用 Label 不靠 Panel chrome。
   return {
-    type: 'Panel', id: 'coll-collect', props: { scroll: true }, layout: { direction: 'column', gap: 10, padding: 10 },
+    type: 'Panel', id: 'coll-collect', props: { bare: true, scroll: true }, layout: { direction: 'column', gap: 10, padding: 4 },
     children: [
       { type: 'Label', id: 'col-t-h', props: { text: `🗃 天罡牌 · 收藏 ${ownedT}/${view.tiangangs.length}（到「牌组」屏编入出战）`, size: 'sm', color: 'gold' } },
-      { type: 'Panel', id: 'col-t-grid', props: {}, layout: { direction: 'grid', minCol: 150, gap: 8 }, children: tCards },
-      { type: 'Label', id: 'col-f-h', props: { text: `✨ 闪艺 foil · ${ownedF}/${view.foils.length}（纯装饰收集）`, size: 'sm', color: 'gold' } },
-      { type: 'Panel', id: 'col-f-grid', props: {}, layout: { direction: 'grid', minCol: 150, gap: 8 }, children: fCards },
+      { type: 'Panel', id: 'col-t-grid', props: { bare: true }, layout: { direction: 'grid', minCol: 150, gap: 8 }, children: tCards },
+      { type: 'Label', id: 'col-f-h', props: { text: `✨ 闪艺 · ${ownedF}/${view.foils.length}（纯装饰收集）`, size: 'sm', color: 'gold' } },
+      { type: 'Panel', id: 'col-f-grid', props: { bare: true }, layout: { direction: 'grid', minCol: 150, gap: 8 }, children: fCards },
     ],
   };
 }

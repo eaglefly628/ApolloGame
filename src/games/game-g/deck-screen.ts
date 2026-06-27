@@ -85,7 +85,7 @@ function tiangangPage(view: LobbyView): LayoutNode {
   const size = view.deckSize ?? 12;
   const inDeck = view.tiangangs.filter((j) => j.inDeck);
   const slots: LayoutNode[] = inDeck.map((j) => ({
-    type: 'Card', id: `tg-${j.id}`, props: { title: `${j.icon ?? '⚡'} ${j.name}`, sub: j.sub, corner: j.power ? '⭐'.repeat(Math.min(j.power, 5)) : undefined, tone: 'accent', action: 'toggleTiangang', actionArg: j.id },
+    type: 'Card', id: `tg-${j.id}`, props: { title: `⚡ ${j.name}`, sub: j.sub, corner: j.power ? '⭐'.repeat(Math.min(j.power, 5)) : undefined, tone: 'accent', action: 'toggleTiangang', actionArg: j.id },
   }));
   const emptyN = Math.max(0, size - inDeck.length);
   for (let i = 0; i < emptyN; i++) slots.push({ type: 'Card', id: `tg-empty-${i}`, props: { title: '＋', sub: '空槽 · 点添加', tone: 'dim', action: 'deckAdd' } });
