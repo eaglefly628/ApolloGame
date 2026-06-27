@@ -40,23 +40,24 @@ export function buildHomeScreen(view: LobbyView): LayoutNode {
     type: 'Panel', id: 'home-duel', props: { bare: true }, layout: { direction: 'row', gap: 34, align: 'center', padding: 0 },
     children: [
       tiltFloat('duel-a', { rank: 'A', suit: '♠', face: 'light' }, -9),
-      // 中间圆「掷」徽章：照原版 .vs 64px 金色圆币——用 CoinFlip(圆形金币·headsLabel 掷·可点掷卦)，非矩形按钮。
-      { type: 'CoinFlip', id: 'duel-roll', props: { outcome: 'heads', headsLabel: '掷', size: 64, action: 'lucky' }, layout: { anim: 'glow' } },
-      tiltFloat('duel-back', { rank: 'A', suit: '♠', face: 'light', faceUp: false, back: '❖' }, 9),
+      // 中间圆「掷」徽章：照原版 .vs 64px 金色圆币——用 CoinFlip(圆形金币·headsLabel 掷·可点掷卦)，非矩形按钮 + 流光。
+      { type: 'CoinFlip', id: 'duel-roll', props: { outcome: 'heads', headsLabel: '掷', size: 64, action: 'lucky' }, layout: { anim: 'glow', sheen: true } },
+      // 红牌背 backPattern:'checker'（原版 .dback i 棋盘格条纹质感）。
+      tiltFloat('duel-back', { rank: 'A', suit: '♠', face: 'light', faceUp: false, back: '❖', backPattern: 'checker' }, 9),
     ],
   };
 
   // 绿呢牌桌（felt·对齐 Designer comp 命运牌桌）：标题左上 + 花色标右上 / 中部今日卦象+漂浮对决牌 / 底部出征 CTA+手册。
   // justify:between 三段分布（头顶/中央/底），消除原先全居中导致的标题居中偏差。
   const felt: LayoutNode = {
-    type: 'Panel', id: 'home-felt', props: { bg: 'var(--felt)', vignette: true },
+    type: 'Panel', id: 'home-felt', props: { bg: 'var(--felt)', vignette: true, pattern: 'stripe' },
     layout: { direction: 'column', align: 'stretch', justify: 'between', gap: 12, padding: 28, flex: 1 },
     children: [
       { type: 'Panel', id: 'home-header', props: { bare: true }, layout: { direction: 'row', align: 'start', gap: 10, padding: 0 },
         children: [
           { type: 'Panel', id: 'home-titlecol', props: { bare: true }, layout: { direction: 'column', gap: 2, flex: 1 },
             children: [
-              { type: 'Label', id: 'home-title', props: { text: c ? `第 ${c.stage} 关 · ${c.battle}` : '戏牌师', size: 'xl', color: 'gold', bold: true } },
+              { type: 'Label', id: 'home-title', props: { text: c ? `第 ${c.stage} 关 · ${c.battle}` : '戏牌师', size: 'xxxl', color: 'gold', bold: true, font: 'display' }, layout: { sheen: true } },
               { type: 'Label', id: 'home-sub', props: { text: c ? `执掌命运之人 · 挑战被诅咒的 ${c.boss}` : view.stageLabel, size: 'sm', color: 'sub' } },
             ] },
           stags,

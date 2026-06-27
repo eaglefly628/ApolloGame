@@ -128,7 +128,7 @@ export function buildDeckScreen(view: LobbyView, picks?: Set<string>): LayoutNod
   const p = picks ?? new Set(view.pokerPicks ?? []);
   const tabs: LayoutNode = {
     type: 'Tabs', id: 'deck-tabs',
-    props: { tabs: [{ id: 'poker', label: '🎴 扑克牌库' }, { id: 'tiangang', label: '⚡ 天罡战法' }, { id: 'dizhi', label: '🀄 地支牌' }], action: 'deckTab' },
+    props: { tabs: [{ id: 'poker', label: '🎴 扑克牌库' }, { id: 'tiangang', label: '⚡ 天罡战法', anchor: 'tab-gang' }, { id: 'dizhi', label: '🀄 地支牌' }], action: 'deckTab' },
     layout: { flex: 1 }, children: [pokerPage(view, p), tiangangPage(view), dizhiPage(view)],
   };
   return {

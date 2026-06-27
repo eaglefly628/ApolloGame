@@ -22,8 +22,8 @@ import type { Coachmark, Flag } from '@engine/protocol/components.js';
 import { mountOnboardingOverlay } from '@ui/onboarding-overlay.js';
 import { GUIDE_COACH } from './lobby-overlays.js';
 
-const TABS: { id: string; label: string }[] = [
-  { id: 'home', label: '大厅' }, { id: 'campaign', label: '战役' }, { id: 'decks', label: '我的牌组' },
+const TABS: { id: string; label: string; anchor?: string }[] = [
+  { id: 'home', label: '大厅', anchor: 'home' }, { id: 'campaign', label: '战役' }, { id: 'decks', label: '我的牌组', anchor: 'decks' },
   { id: 'coll', label: '收藏' }, { id: 'craft', label: '改造坊' }, { id: 'ladder', label: '天梯' },
 ];
 
