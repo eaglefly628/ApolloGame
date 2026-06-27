@@ -803,6 +803,60 @@ function buildPageNew(controls: ControlsState): LayoutNode {
           { type: 'Toggle', id: 'vw-tg', props: { label: '显示下方内容（绑 demoFlag）', checked: controls.flag, action: 'setFlag' } },
           { type: 'Label', id: 'vw-target', props: { text: '👋 我由 visibleWhen:"demoFlag" 控制——关掉开关，我就被 resolveBindings 从树里整体剔除（不靠游戏写 if/else 重建）。', color: 'jade', size: 'sm' }, visibleWhen: 'demoFlag' },
         ] },
+
+      divider('d-n7'),
+      sectionTitle('t-anim', 'ANIM · 循环环境动效（float 浮动 / glow 发光 / pulse 脉冲·infinite）'),
+      { type: 'Panel', id: 'anim-row', props: {}, layout: { direction: 'row', gap: 22, padding: 22, align: 'center' },
+        children: [
+          { type: 'Badge', id: 'anim-float', props: { text: 'float 浮动', tone: 'ok' }, layout: { anim: 'float' } },
+          { type: 'Badge', id: 'anim-glow', props: { text: 'glow 发光', tone: 'warn' }, layout: { anim: 'glow' } },
+          { type: 'Badge', id: 'anim-pulse', props: { text: 'pulse 脉冲', tone: 'dim' }, layout: { anim: 'pulse' } },
+        ] },
+
+      divider('d-n8'),
+      sectionTitle('t-font', 'LABEL · 字体槽 font / 磷光 glow / 字距 tracking'),
+      { type: 'Panel', id: 'font-col', props: {}, layout: { direction: 'column', gap: 10, padding: 14 },
+        children: [
+          { type: 'Label', id: 'font-disp', props: { text: '展示字体 font:display（衬线）· 千军万马避白袍', size: 'lg', bold: true, font: 'display' } },
+          { type: 'Label', id: 'font-glow', props: { text: 'GLOW 磷光发光标题', size: 'lg', bold: true, color: 'gold', glow: true } },
+          { type: 'Label', id: 'font-track', props: { text: 'T R A C K I N G · 宽字距微标', size: 'sm', color: 'jade', tracking: 3 } },
+        ] },
+
+      divider('d-n9'),
+      sectionTitle('t-chamfer', 'CHAMFER · 倒角切角（clip-path 八边形·art-deco/扑克美学）'),
+      { type: 'Panel', id: 'cham-row', props: {}, layout: { direction: 'row', gap: 16, padding: 18, align: 'center' },
+        children: [
+          { type: 'Panel', id: 'cham-1', props: { bg: 'linear-gradient(180deg,#1c2a44,#101826)' }, layout: { chamfer: 14, padding: 16 },
+            children: [{ type: 'Label', id: 'cham-l', props: { text: 'chamfer:14 切角面板', color: 'sub', size: 'sm' } }] },
+          { type: 'Button', id: 'cham-btn', props: { label: '切角 CTA', kind: 'primary', action: 'click', actionArg: 'chamfer' }, layout: { chamfer: 10 } },
+        ] },
+
+      divider('d-n10'),
+      sectionTitle('t-grid', 'PANEL · cols 固定列数 grid + justify 主轴分布'),
+      { type: 'Panel', id: 'grid-cols', props: { title: 'grid · cols:4（严格 4 列等分·消空隙）' }, layout: { direction: 'grid', cols: 4, gap: 8, padding: 14 },
+        children: [1, 2, 3, 4, 5, 6, 7, 8].map((n): LayoutNode => ({ type: 'Badge', id: `gc-${n}`, props: { text: `格 ${n}`, tone: 'dim' } })) },
+      { type: 'Panel', id: 'just-row', props: { title: 'flex row · justify:between（两端对齐均分）' }, layout: { direction: 'row', justify: 'between', padding: 14 },
+        children: [
+          { type: 'Badge', id: 'jr-1', props: { text: '左', tone: 'ok' } },
+          { type: 'Badge', id: 'jr-2', props: { text: '中', tone: 'warn' } },
+          { type: 'Badge', id: 'jr-3', props: { text: '右', tone: 'dim' } },
+        ] },
+
+      divider('d-n11'),
+      sectionTitle('t-flip', 'PLAYINGCARD · flipOnHover 悬停翻面（鼠标悬停露背面信息子树）'),
+      { type: 'Panel', id: 'flip-row', props: {}, layout: { direction: 'row', padding: 14, align: 'center' },
+        children: [
+          { type: 'PlayingCard', id: 'flip-1', props: {
+            rank: 'A', suit: '♠', label: '赵子龙', size: 'lg', flipOnHover: true,
+            backFace: { type: 'Panel', id: 'flip-back', props: { bare: true }, layout: { direction: 'column', gap: 4 },
+              children: [
+                { type: 'Label', id: 'fb-1', props: { text: '赵子龙', color: 'jade', bold: true, size: 'sm' } },
+                { type: 'Label', id: 'fb-2', props: { text: '蜀 · 五虎上将', color: 'sub', size: 'xs' } },
+                { type: 'Label', id: 'fb-3', props: { text: '长坂坡七进七出。', color: 'dim', size: 'xs' } },
+              ] },
+          } },
+          { type: 'Label', id: 'flip-hint', props: { text: '← 鼠标悬停这张牌看它翻面（front→back scaleX 翻转·CSS 内建）。', color: 'dim', size: 'sm' }, layout: { flex: 1 } },
+        ] },
     ],
   };
 }
