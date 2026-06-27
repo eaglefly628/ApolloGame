@@ -50,12 +50,23 @@ function pokerGrid(view: LobbyView, picks: Set<string>): LayoutNode {
       const hero = HERO_CARDS.find((h) => h.suit === su && h.rank === rank);
       const cost = deployCost(rank);
       const picked = picks.has(cardId);
-      // 保真：用 PlayingCard 原语（真扑克牌面 + 英雄立绘 + 名将名 + favor 值 + 选中金边/弱牌暗）。
+      // 主程回驳 PlayingCard valuePos/powerPos（creep）·给重组写法：PlayingCard(fluid 保 13×4 填满·只放牌面+名)，
+      // 战力(中上)/耗费(右上)/选中「选」(居中) 用兄弟 Label{layout:{x,y}} 绝对叠到 relative 容器（render.ts x/y→position:absolute）。
+      // 角位 px 按 1340 框下 13 列卡宽 ~93×130 调（大厅 maxWidth 1340·目标分辨率稳定）。
+      const overlays: LayoutNode[] = [
+        { type: 'Label', id: `pc-pow-${cardId}`, props: { text: String(fv), size: 'sm', color: 'gold', bold: true }, layout: { x: 34, y: 4 } },
+      ];
+      if (cost > 0) overlays.push({ type: 'Label', id: `pc-cost-${cardId}`, props: { text: '💧'.repeat(cost), size: 'sm', color: 'text' }, layout: { x: 62, y: 4 } });
+      if (picked) overlays.push({ type: 'Label', id: `pc-sel-${cardId}`, props: { text: '选', size: 'xl', color: 'gold', bold: true }, layout: { x: 32, y: 46 } });
       return {
-        type: 'PlayingCard', id: `pc-${cardId}`,
-        props: { rank, suit: su, label: hero?.name, value: cost > 0 ? `${fv}·${'💧'.repeat(cost)}` : String(fv), fluid: true,
-          art: hero ? heroPortraitUri(su as Suit, hero.era, rank, hero.rar) : undefined,
-          selected: picked, dimmed: !picked && fv <= 50, action: 'pickCard', actionArg: cardId },
+        type: 'Panel', id: `pcw-${cardId}`, props: { bare: true }, layout: {},
+        children: [
+          { type: 'PlayingCard', id: `pc-${cardId}`,
+            props: { rank, suit: su, label: hero?.name, fluid: true,
+              art: hero ? heroPortraitUri(su as Suit, hero.era, rank, hero.rar) : undefined,
+              selected: picked, dimmed: !picked && fv <= 50, action: 'pickCard', actionArg: cardId } },
+          ...overlays,
+        ],
       };
     });
     // 每花色一行 13 列填满（对齐原版扑克构筑墙·.pbuild-grid + fluid 卡·零空隙）。
