@@ -61,7 +61,7 @@ function settingsModal(view: LobbyView): LayoutNode {
     children: [{
       type: 'Panel', id: 'settings-body', props: {}, layout: { direction: 'column', gap: 12, padding: 4 },
       children: [
-        { type: 'Label', id: 'set-skin-h', props: { text: '大厅皮肤', size: 'xs', color: 'sub' } },
+        { type: 'Label', id: 'set-skin-h', props: { text: '大厅皮肤', size: 'sm', color: 'sub' } },
         { type: 'Segmented', id: 'set-skin', props: { options: [{ value: 'onyx', label: '玄铁（默认）' }, { value: 'rosy', label: '锦霞' }], value: view.skin, action: 'setSkin' } },
         { type: 'Toggle', id: 'set-sfx', props: { label: '🔊 音效', checked: true, action: 'sfxToggle' } },
         { type: 'Toggle', id: 'set-bgm', props: { label: '🎵 背景音乐', checked: false, action: 'bgmToggle' } },
@@ -89,7 +89,7 @@ function shopModal(view: LobbyView, st: OverlayState): LayoutNode {
   const poolPanel = (pool: 'tiangang' | 'dizhi', title: string, sub: string): LayoutNode => ({
     type: 'Panel', id: `pool-${pool}`, props: { title }, layout: { direction: 'column', gap: 6, padding: 10 },
     children: [
-      { type: 'Label', id: `pool-${pool}-sub`, props: { text: sub, size: 'xs', color: 'sub' } },
+      { type: 'Label', id: `pool-${pool}-sub`, props: { text: sub, size: 'sm', color: 'sub' } },
       { type: 'Panel', id: `pool-${pool}-btns`, props: {}, layout: { direction: 'row', gap: 6 }, children: [drawBtn(pool, 1, 'gold'), drawBtn(pool, 1, 'diamond'), drawBtn(pool, 10, 'gold'), drawBtn(pool, 10, 'diamond')] },
     ],
   });
@@ -97,12 +97,12 @@ function shopModal(view: LobbyView, st: OverlayState): LayoutNode {
   const tgCraftable = view.tiangangs.filter((j) => !j.locked && !j.owned);
   const tgCraftChips: LayoutNode[] = tgCraftable.length
     ? tgCraftable.map((j) => ({ type: 'Tag', id: `shop-craft-tg-${j.id}`, props: { label: `${j.name} 🔶${GACHA.tiangang.craftShards}`, tone: 'normal', action: 'craftTiangang', actionArg: j.id } }))
-    : [{ type: 'Label', id: 'shop-craft-tg-none', props: { text: '已解锁天罡均已拥有 🎉', size: 'xs', color: 'dim' } }];
+    : [{ type: 'Label', id: 'shop-craft-tg-none', props: { text: '已解锁天罡均已拥有 🎉', size: 'sm', color: 'dim' } }];
   const dzCraftChips: LayoutNode[] = DIZHI_ZODIACS.map((z) => ({ type: 'Tag', id: `shop-craft-dz-${z.branch}`, props: { label: `${z.animal} 🧩${GACHA.dizhi.craftShards}`, tone: 'normal', action: 'craftDizhi', actionArg: z.branch } }));
   const craftPanel = (id: string, title: string, sub: string, chips: LayoutNode[]): LayoutNode => ({
     type: 'Panel', id, props: { title }, layout: { direction: 'column', gap: 6, padding: 10 },
     children: [
-      { type: 'Label', id: `${id}-s`, props: { text: sub, size: 'xs', color: 'sub' } },
+      { type: 'Label', id: `${id}-s`, props: { text: sub, size: 'sm', color: 'sub' } },
       { type: 'Panel', id: `${id}-c`, props: { bare: true }, layout: { direction: 'grid', minCol: 88, gap: 6 }, children: chips },
     ],
   });
@@ -182,7 +182,7 @@ function storyModal(beats: StoryBeat[], idx: number): LayoutNode {
       children: [
         { type: 'Label', id: 'story-scene', props: { text: `〔 ${b.scene} 〕`, size: 'lg', color: 'gold', bold: true } },
         { type: 'Label', id: 'story-text', props: { text: b.text, size: 'md', color: 'text', typewriter: 24 } },
-        { type: 'Label', id: 'story-dots', props: { text: `${i + 1} / ${beats.length}`, size: 'xs', color: 'dim' } },
+        { type: 'Label', id: 'story-dots', props: { text: `${i + 1} / ${beats.length}`, size: 'sm', color: 'dim' } },
         { type: 'Panel', id: 'story-btns', props: {}, layout: { direction: 'row', gap: 10 }, children: [
           { type: 'Button', id: 'story-skip', props: { label: '跳过', kind: 'ghost', action: 'closeOverlay' } },
           { type: 'Button', id: 'story-next', props: { label: last ? '执掌命运 →' : '下一幕 →', kind: 'primary', action: last ? 'closeOverlay' : 'storyNext' } },

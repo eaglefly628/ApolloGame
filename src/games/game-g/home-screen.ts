@@ -23,10 +23,10 @@ export function buildHomeScreen(view: LobbyView): LayoutNode {
   const stags: LayoutNode = {
     type: 'Panel', id: 'home-stags', props: { bare: true }, layout: { direction: 'row', gap: 18, padding: 0, align: 'center' },
     children: [
-      { type: 'Label', id: 'st-s', props: { text: '♠ 黑桃', size: 'xs', color: 'sub' } },
-      { type: 'Label', id: 'st-h', props: { text: '♥ 红桃', size: 'xs', color: 'danger' } },
-      { type: 'Label', id: 'st-d', props: { text: '♦ 方块', size: 'xs', color: 'warn' } },
-      { type: 'Label', id: 'st-c', props: { text: '♣ 梅花', size: 'xs', color: 'ok' } },
+      { type: 'Label', id: 'st-s', props: { text: '♠ 黑桃', size: 'sm', color: 'sub' } },
+      { type: 'Label', id: 'st-h', props: { text: '♥ 红桃', size: 'sm', color: 'danger' } },
+      { type: 'Label', id: 'st-d', props: { text: '♦ 方块', size: 'sm', color: 'warn' } },
+      { type: 'Label', id: 'st-c', props: { text: '♣ 梅花', size: 'sm', color: 'ok' } },
     ],
   };
 
@@ -70,7 +70,7 @@ export function buildHomeScreen(view: LobbyView): LayoutNode {
               { type: 'Label', id: 'home-fortune-v', props: { text: keptFortune != null ? String(keptFortune) : '掷', size: 'xxxl', color: 'gold', bold: true, font: 'display' } },
             ] },
           duel,
-          { type: 'Label', id: 'home-duelline', props: { text: c ? `⚔ 对决 ${c.boss} · ${c.oneLiner}` : '掷命之牌', size: 'xs', color: 'dim' } },
+          { type: 'Label', id: 'home-duelline', props: { text: c ? `⚔ 对决 ${c.boss} · ${c.oneLiner}` : '掷命之牌', size: 'sm', color: 'dim' } },
         ] },
       { type: 'Panel', id: 'home-bottom', props: { bare: true }, layout: { direction: 'column', align: 'center', gap: 8, padding: 0 },
         children: [
@@ -92,12 +92,12 @@ export function buildHomeScreen(view: LobbyView): LayoutNode {
       { type: 'Label', id: 'home-boss-diff',
         props: c ? { size: 'sm', color: 'sub', spans: [{ text: '难度 ' }, { text: '★'.repeat(c.stars), color: 'gold', bold: true }, { text: ` · ${c.oneLiner}`, color: 'sub' }] } : { text: '', size: 'sm', color: 'gold' } },
       { type: 'Label', id: 'home-fiend-h',
-        props: { text: '🎴 地煞（明牌 · 公平可破）— Boss 招牌历史战术：', size: 'xs', color: 'sub' } },
+        props: { text: '🎴 地煞（明牌 · 公平可破）— Boss 招牌历史战术：', size: 'sm', color: 'sub' } },
       ...fiendNodes,
       { type: 'Label', id: 'home-unlock',
-        props: { text: c ? `🏆 打赢 = 破其诅咒 · 通关解锁天罡 ${c.unlock}` : '', size: 'xs', color: 'gold' } },
+        props: { text: c ? `🏆 打赢 = 破其诅咒 · 通关解锁天罡 ${c.unlock}` : '', size: 'sm', color: 'gold' } },
       { type: 'Label', id: 'home-ghost',
-        props: { text: '好友切磋 / 天梯 1v1 待接网络。当前 = 单人 52 战役 vs AI 庄家。', size: 'xs', color: 'dim' } },
+        props: { text: '好友切磋 / 天梯 1v1 待接网络。当前 = 单人 52 战役 vs AI 庄家。', size: 'sm', color: 'dim' } },
     ],
   };
 

@@ -34,7 +34,7 @@ function buildStageCard(c: StageCampaign, cur: number, maxReached: number): Layo
 
   if (locked) {
     children.push({ type: 'Label', id: `camp-${c.stage}-lock`,
-      props: { text: `通关第 ${c.stage - 1} 关后解封这一缕英雄之魂。`, size: 'xs', color: 'dim' } });
+      props: { text: `通关第 ${c.stage - 1} 关后解封这一缕英雄之魂。`, size: 'sm', color: 'dim' } });
     return { type: 'Card', id: `camp-${c.stage}`, props: { tone: 'locked' },
       layout: { direction: 'column', gap: 6, padding: 14 }, children };
   }
@@ -82,7 +82,7 @@ export function buildCampaignScreen(view: LobbyView): LayoutNode {
         props: { text: '五十二位被诅咒的名将，每一关是一位英雄的成名之战。打赢 = 破其诅咒、收魂入麾。', size: 'md', color: 'sub' } },
       ...cards,
       { type: 'Label', id: 'camp-foot',
-        props: { text: '🔮 关 6–52（孙武 · 成吉思汗 · 汉尼拔……）战役背景与 Boss 对白已入库，随章节逐步开放。', size: 'xs', color: 'dim' } },
+        props: { text: '🔮 关 6–52（孙武 · 成吉思汗 · 汉尼拔……）战役背景与 Boss 对白已入库，随章节逐步开放。', size: 'sm', color: 'dim' } },
     ],
   };
 

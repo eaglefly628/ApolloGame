@@ -26,7 +26,7 @@
 > owner 大厅逐页审，撞到一批 PG 数据层做不了、需引擎补的：
 > ① **Tag 加 `size` 档**：右上货币 pill(商城/金币/钻石) 字太小不够大气·要≈2x。Tag 现 font-size 写死 11px。
 > ② **Card 加 `size` 档**：主页 Boss 地煞卡 + 天罡卡 字要大≈1.3x·行高更高。Card title/sub 现写死 12/10px。
-> ③ **全局字号对齐**：owner 要求所有字号对齐原版——根因是 Card/Tag 无 size、Label 也常偏小。建议 Card/Tag 同 Label 加 size 体系(xs..xxxl)。
+> ③ **全局字号对齐**：owner 要求所有字号对齐原版。已扒原版 lobby-styles 字号分布：**常用 11/12/13/15/17px·几乎不用 10px**·大标题 34。对比引擎：Tag 写死 11→应 ~13；Card 副标 10/标题 12→应 ~13/14；**Tabs 导航 12→应 ~15**(原版 .nav 15px·明显偏小)。建议 Card/Tag/Tabs 同 Label 加 size 体系。PG 侧已把 Label `xs(10)` 全抬到 `sm(11)` 对齐原版下限；其余固定字号控件待主程。
 > ④ **PlayingCard 卡内布局可调**（牌组扑克）：选中→**中央"选"字**(替/加金边·更醒目)；耗费(💧)槽**右下→右上**(现挡名字)；战力槽**中下→中上**(现与名字重合)。建议 PlayingCard 加 `cost`/`power` 具名槽(固定角位) + `selectedMark` 中央标。
 > ⑤ **PlayingCard / Card `hover` 简介 tooltip**：牌组扑克 + 天罡卡 鼠标悬浮显简介(宝物介绍)。建议复用 `Tooltip.bubble` 思路·给 PlayingCard/Card 加 `tip?:LayoutNode`(hover 浮窗)。
 > PG 侧已把能数据做的做完(中英混排/多余框/3竖列/翻面乱码/字号 Label 部分/今日卦象/流派strip/去底部条)；以上 5 类待主程。

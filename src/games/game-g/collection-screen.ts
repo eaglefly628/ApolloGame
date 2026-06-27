@@ -40,8 +40,8 @@ function heroesPage(st: CollectionState): LayoutNode {
   const filterBar: LayoutNode = {
     type: 'Panel', id: 'coll-filter', props: { bare: true }, layout: { direction: 'row', gap: 8, padding: 8, align: 'center' },
     children: [
-      { type: 'Label', id: 'coll-fl-suit', props: { text: '花色', size: 'xs', color: 'sub' } }, ...suitTags,
-      { type: 'Label', id: 'coll-fl-rar', props: { text: '稀有度', size: 'xs', color: 'sub' } }, ...rarTags,
+      { type: 'Label', id: 'coll-fl-suit', props: { text: '花色', size: 'sm', color: 'sub' } }, ...suitTags,
+      { type: 'Label', id: 'coll-fl-rar', props: { text: '稀有度', size: 'sm', color: 'sub' } }, ...rarTags,
       { type: 'Toggle', id: 'coll-owned', props: { label: '仅已拥有', checked: st.ownedOnly, action: 'ownedToggle' } },
     ],
   };
@@ -59,8 +59,8 @@ function heroesPage(st: CollectionState): LayoutNode {
       backFace: { type: 'Panel', id: `coll-bk-${h.id}`, props: { bare: true }, layout: { direction: 'column', align: 'center', justify: 'center', gap: 3, padding: 4 },
         children: [
           { type: 'Label', id: `coll-bk-n-${h.id}`, props: { text: `${h.rank}${h.suit} ${h.name}`, size: 'sm', color: 'gold', bold: true } },
-          { type: 'Label', id: `coll-bk-t-${h.id}`, props: { text: `${h.title} · ${RAR_NAME[h.rar]}`, size: 'xs', color: 'sub' } },
-          { type: 'Label', id: `coll-bk-c-${h.id}`, props: { text: stripEn(h.contrib), size: 'xs', color: 'dim' } },
+          { type: 'Label', id: `coll-bk-t-${h.id}`, props: { text: `${h.title} · ${RAR_NAME[h.rar]}`, size: 'sm', color: 'sub' } },
+          { type: 'Label', id: `coll-bk-c-${h.id}`, props: { text: stripEn(h.contrib), size: 'sm', color: 'dim' } },
         ] } },
   }));
   const grid: LayoutNode = {
@@ -83,15 +83,15 @@ function buildHeroDetail(h: HeroCard): LayoutNode {
   const kids: LayoutNode[] = [
     { type: 'Label', id: 'cd-name', props: { text: `${h.rank}${h.suit} ${h.name}`, size: 'xl', color: 'gold', bold: true } },
     { type: 'Label', id: 'cd-title', props: { text: `${h.title} · ${h.era}`, size: 'sm', color: 'sub' } },
-    { type: 'Label', id: 'cd-meta', props: { text: `${RAR_NAME[h.rar]} · ${h.suit}${SUIT_NAME[h.suit] ?? ''} · 贡献度 第 ${h.contribRank} 位`, size: 'xs', color: 'dim' } },
+    { type: 'Label', id: 'cd-meta', props: { text: `${RAR_NAME[h.rar]} · ${h.suit}${SUIT_NAME[h.suit] ?? ''} · 贡献度 第 ${h.contribRank} 位`, size: 'sm', color: 'dim' } },
     { type: 'Divider', id: 'cd-div', props: {} },
-    { type: 'Label', id: 'cd-curse', props: { text: h.curseIntro ?? '此魂之诅咒序待录 · 命运待解封', size: 'xs', color: 'gold' } },
+    { type: 'Label', id: 'cd-curse', props: { text: h.curseIntro ?? '此魂之诅咒序待录 · 命运待解封', size: 'sm', color: 'gold' } },
     { type: 'Label', id: 'cd-bio', props: { text: h.bio ?? `${h.contrib}（全传逐期补录）`, size: 'sm', color: 'text' } },
   ];
-  if (h.battleName) kids.push({ type: 'Label', id: 'cd-battle', props: { text: `名战：${h.battleName} —— ${h.battleResult ?? ''}`, size: 'xs', color: 'sub' } });
+  if (h.battleName) kids.push({ type: 'Label', id: 'cd-battle', props: { text: `名战：${h.battleName} —— ${h.battleResult ?? ''}`, size: 'sm', color: 'sub' } });
   if (h.quote) kids.push({ type: 'Label', id: 'cd-quote', props: { text: `「${h.quote}」`, size: 'md', color: 'gold' } });
-  if (h.gossip) kids.push({ type: 'Label', id: 'cd-gossip', props: { text: `野史 · 八卦：${h.gossip}`, size: 'xs', color: 'sub' } });
-  if (h.legacy) kids.push({ type: 'Label', id: 'cd-legacy', props: { text: `流变 · 影响：${h.legacy}`, size: 'xs', color: 'sub' } });
+  if (h.gossip) kids.push({ type: 'Label', id: 'cd-gossip', props: { text: `野史 · 八卦：${h.gossip}`, size: 'sm', color: 'sub' } });
+  if (h.legacy) kids.push({ type: 'Label', id: 'cd-legacy', props: { text: `流变 · 影响：${h.legacy}`, size: 'sm', color: 'sub' } });
   return { type: 'Panel', id: 'coll-detail', props: { title: '列传', scroll: true }, layout: { direction: 'column', gap: 6, padding: 14, width: 320 }, children: kids };
 }
 
@@ -116,7 +116,7 @@ export function ladderPage(view: LobbyView): LayoutNode {
     type: 'Panel', id, props: {}, layout: { direction: 'column', align: 'center', gap: 2, padding: 10, flex: 1 },
     children: [
       { type: 'Label', id: `${id}-n`, props: { text: num, size: 'lg', color: 'gold', bold: true } },
-      { type: 'Label', id: `${id}-l`, props: { text: lbl, size: 'xs', color: 'sub' } },
+      { type: 'Label', id: `${id}-l`, props: { text: lbl, size: 'sm', color: 'sub' } },
     ],
   });
   // 布局对齐设计稿 天梯·榜：左=我的段位(♠章+段位+LP+进度条+3统计盒)+近10局；右=全服榜(全服/好友/同段 段控 + 表)。
@@ -142,7 +142,7 @@ export function ladderPage(view: LobbyView): LayoutNode {
               { type: 'Label', id: 'ldr-board-t', props: { text: '全服榜', size: 'lg', color: 'gold', bold: true } },
               { type: 'Segmented', id: 'ldr-board-seg', props: { options: [{ value: 'all', label: '全服' }, { value: 'friend', label: '好友' }, { value: 'tier', label: '同段' }], value: 'all' } },
               { type: 'Panel', id: 'ldr-board-sp', props: { bare: true }, layout: { flex: 1 } },
-              { type: 'Label', id: 'ldr-board-meta', props: { text: '每 5 分钟刷新 · 赛季 7', size: 'xs', color: 'dim' } },
+              { type: 'Label', id: 'ldr-board-meta', props: { text: '每 5 分钟刷新 · 赛季 7', size: 'sm', color: 'dim' } },
             ] },
           { type: 'Table', id: 'ldr-board', props: { columns: [{ key: 'rank', label: '名次', width: 48, align: 'center' }, { key: 'name', label: '玩家 / 主牌' }, { key: 'deck', label: '主流派', width: 96, align: 'center' }, { key: 'wr', label: '胜率', width: 60, align: 'right' }, { key: 'lp', label: 'LP', width: 68, align: 'right' }], rows: boardRows }, layout: { flex: 1 } },
         ] },

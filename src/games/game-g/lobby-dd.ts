@@ -44,7 +44,7 @@ function topbar(view: LobbyView): LayoutNode {
     children: [
       { type: 'Label', id: 'tb-name', props: { text: view.name, size: 'lg', color: 'gold', bold: true } },
       // 副文本(Label.spans·主程已下沉)：主牌牌名金色高亮，对齐原版「主牌 · 黑桃A · 段位」内联着色。
-      { type: 'Label', id: 'tb-sub', props: { size: 'xs', color: 'sub', spans: [{ text: '主牌 ' }, { text: view.mainCard, color: 'gold', bold: true }, { text: ` · ${view.rankText}` }] } },
+      { type: 'Label', id: 'tb-sub', props: { size: 'sm', color: 'sub', spans: [{ text: '主牌 ' }, { text: view.mainCard, color: 'gold', bold: true }, { text: ` · ${view.rankText}` }] } },
       { type: 'Label', id: 'tb-arch', props: { text: stripTags(view.archLine) || '流派 未成型', size: 'sm', color: 'dim' } },
     ],
   };
