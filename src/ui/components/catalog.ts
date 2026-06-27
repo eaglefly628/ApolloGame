@@ -1,0 +1,342 @@
+// UI 自描述目录（owner 2026-06-26：给 LayoutNode 也建「约束式数据合成」那台机器）。
+//
+// 一份数据三用：① 喂 LLM（whenToUse + 字段 schema + sample → 弱模型被告知闭 schema、照样例填空，
+// 不再靠记忆瞎猜）；② 驱动校验器 `validate.ts`（未知 type / 错枚举 / 缺必填 → 报错）；③ 当 per-控件 sample 集
+// （展示台/文档逐条渲染）。这正是 capability-catalog 那套自描述，复制到 UI 域——弱模型 hold 得住靠这台机器，不靠压小词表。
+//
+// 红线：本目录只描述**闭词表**（枚举值/类型/默认/必填），不含任何自由代码；sample 全是合法 LayoutNode 数据。
+
+import type { ComponentType, LayoutNode } from './types.js';
+
+/** 字段 schema：名 + 类型 + （枚举值/默认/必填）。type 是「数据形状」不是 TS 类型——弱模型按它填。 */
+export interface UiPropSpec {
+  name: string;
+  type: 'string' | 'number' | 'boolean' | 'enum' | 'node' | 'nodes' | 'list' | 'object';
+  values?: readonly string[]; // 仅 type:'enum'：合法取值闭集
+  default?: string | number | boolean;
+  required?: boolean;
+  describe: string;
+}
+
+/** 控件自描述：是什么 + 何时用 + 字段 schema + 是否收 children + 一个 canonical sample。 */
+export interface UiComponentSpec {
+  type: ComponentType;
+  summary: string;
+  whenToUse: string;
+  children: 'none' | 'optional' | 'required'; // 是否/必须收 children
+  props: readonly UiPropSpec[];
+  sample: LayoutNode;
+}
+
+// 共享枚举（多处复用·单一真相）。
+const COLOR = ['text', 'sub', 'dim', 'jade', 'gold', 'ok', 'warn', 'danger'] as const;
+const SIZE = ['xs', 'sm', 'md', 'lg', 'xl'] as const;
+
+export const UI_CATALOG: readonly UiComponentSpec[] = [
+  // ── 容器 / 布局 ──────────────────────────────────────────────
+  {
+    type: 'Screen', summary: '全屏根容器·页面背景层', whenToUse: '每个页面的最外层根节点；铺底色/贴图、可居中内容。', children: 'optional',
+    props: [
+      { name: 'bg', type: 'string', describe: 'CSS 颜色/渐变（缺省走主题 pageBg）' },
+      { name: 'image', type: 'string', describe: 'cover 整图背景 URL' },
+      { name: 'bgTexture', type: 'string', describe: '平铺贴图 URL（repeat·可被 bgScroll 滚）' },
+      { name: 'blur', type: 'number', describe: 'backdrop-filter 模糊 px' },
+      { name: 'center', type: 'boolean', describe: '垂直水平居中子项' },
+      { name: 'bgScroll', type: 'object', describe: 'UV 背景滚动 {x,y,ms}' },
+    ],
+    sample: { type: 'Screen', id: 's-screen', props: { center: true }, children: [{ type: 'Label', id: 's-screen-t', props: { text: 'Hello Apollo', size: 'xl', color: 'gold', bold: true } }] },
+  },
+  {
+    type: 'Panel', summary: '容器（边框/底/圆角）或无框布局组（bare）', whenToUse: '分组/卡片/侧栏/牌桌；row/column/grid 布局都靠它。只做布局分组用 bare 避免层层框。', children: 'optional',
+    props: [
+      { name: 'title', type: 'string', describe: '阔字距小标题' },
+      { name: 'scroll', type: 'boolean', describe: 'overflow-y:auto 可滚' },
+      { name: 'bare', type: 'boolean', describe: '无框纯布局容器（不画边/底/圆角）' },
+      { name: 'bg', type: 'string', describe: '自定义底（令牌串/var(--felt)）' },
+      { name: 'vignette', type: 'boolean', describe: '四周渐暗暗角' },
+      { name: 'accent', type: 'boolean', describe: 'jade 高亮框 + 柔光' },
+      { name: 'bgTexture', type: 'string', describe: '平铺贴图 URL' },
+    ],
+    sample: { type: 'Panel', id: 's-panel', props: { title: 'SECTION' }, layout: { direction: 'column', gap: 8, padding: 16 }, children: [{ type: 'Label', id: 's-panel-l', props: { text: '面板内容' } }] },
+  },
+  // ── 文本 / 媒体 ──────────────────────────────────────────────
+  {
+    type: 'Label', summary: '文本（颜色/字号/字体/绑定/打字机/数字滚动/富文本）', whenToUse: '一切静态/绑定文字。多段着色用 spans；数字滚动用 tween；绑世界值用 bind。', children: 'none',
+    props: [
+      { name: 'text', type: 'string', describe: '文本（spans/tween/bind 提供内容时可省）' },
+      { name: 'size', type: 'enum', values: SIZE, default: 'md', describe: '字号档' },
+      { name: 'color', type: 'enum', values: COLOR, default: 'text', describe: '颜色令牌' },
+      { name: 'bold', type: 'boolean', describe: '加粗' },
+      { name: 'font', type: 'enum', values: ['ui', 'mono', 'pixel', 'display'], describe: '字体槽' },
+      { name: 'bind', type: 'string', describe: '绑 Resource id（resolveBindings 接 current）' },
+      { name: 'typewriter', type: 'number', describe: '打字机每字 ms' },
+      { name: 'tween', type: 'object', describe: '数字滚动 {from,to,ms,decimals}' },
+      { name: 'spans', type: 'list', describe: '富文本多段 [{text,color,bold}]' },
+    ],
+    sample: { type: 'Label', id: 's-label', props: { text: '战功 ', spans: [{ text: '天罡 ', color: 'gold', bold: true }, { text: '破·可克', color: 'jade' }] } },
+  },
+  {
+    type: 'Image', summary: '图片/图标', whenToUse: '展示图片；动态图用 bind（StringVar id → src）。', children: 'none',
+    props: [
+      { name: 'src', type: 'string', required: true, describe: '图片 URL' },
+      { name: 'alt', type: 'string', describe: '替代文本' },
+      { name: 'fit', type: 'enum', values: ['cover', 'contain', 'fill'], describe: 'object-fit' },
+      { name: 'radius', type: 'number', describe: '圆角 px' },
+      { name: 'bind', type: 'string', describe: '绑 StringVar id 取动态 src' },
+    ],
+    sample: { type: 'Image', id: 's-image', props: { src: '/logo.png', fit: 'contain', radius: 8 } },
+  },
+  { type: 'Divider', summary: '分隔线', whenToUse: '分隔区块。', children: 'none', props: [], sample: { type: 'Divider', id: 's-divider', props: {} } },
+  {
+    type: 'Avatar', summary: '头像位（图/首字）', whenToUse: '玩家/角色头像；无图取 name 首字。', children: 'none',
+    props: [
+      { name: 'src', type: 'string', describe: '头像 URL（无则取首字）' },
+      { name: 'name', type: 'string', describe: '名（取首字作占位）' },
+      { name: 'size', type: 'number', describe: '尺寸 px' },
+      { name: 'shape', type: 'enum', values: ['circle', 'rounded', 'square'], describe: '形状' },
+    ],
+    sample: { type: 'Avatar', id: 's-avatar', props: { name: '关羽', size: 44, shape: 'circle' } },
+  },
+  {
+    type: 'Video', summary: '视频嵌入', whenToUse: '开场/转场短视频。autoplay 自动补 muted。', children: 'none',
+    props: [
+      { name: 'src', type: 'string', describe: '视频 URL' },
+      { name: 'poster', type: 'string', describe: '海报 URL' },
+      { name: 'controls', type: 'boolean', default: true, describe: '显示控件' },
+      { name: 'loop', type: 'boolean', describe: '循环' },
+      { name: 'autoplay', type: 'boolean', describe: '自动播（补 muted）' },
+    ],
+    sample: { type: 'Video', id: 's-video', props: { src: '/intro.mp4', controls: true } },
+  },
+  // ── 按钮 / 输入 ──────────────────────────────────────────────
+  {
+    type: 'Button', summary: '按钮（四种风格·点击发信号）', whenToUse: '一切点击动作。主 CTA 用 hero（金色倒角 sheen）。action=信号名，由 sim 能力消费。', children: 'none',
+    props: [
+      { name: 'label', type: 'string', required: true, describe: '按钮文字' },
+      { name: 'kind', type: 'enum', values: ['primary', 'ghost', 'quiet', 'hero'], default: 'ghost', describe: '风格' },
+      { name: 'action', type: 'string', describe: '点击发的信号名' },
+      { name: 'actionArg', type: 'string', describe: '信号参数（买哪件等）' },
+      { name: 'disabled', type: 'boolean', describe: '禁用' },
+      { name: 'sub', type: 'string', describe: 'hero 键副标' },
+    ],
+    sample: { type: 'Button', id: 's-button', props: { label: '⚔ 出征 · 第 3 关', kind: 'hero', sub: '挑战 曹操 · 难度 ★★', action: 'play' } },
+  },
+  {
+    type: 'Input', summary: '文本输入框', whenToUse: '搜索/表单输入。change 发 action(arg=值)。', children: 'none',
+    props: [
+      { name: 'placeholder', type: 'string', describe: '占位提示' },
+      { name: 'value', type: 'string', describe: '当前值' },
+      { name: 'type', type: 'enum', values: ['text', 'number'], describe: '输入类型' },
+      { name: 'action', type: 'string', describe: 'change 信号名' },
+    ],
+    sample: { type: 'Input', id: 's-input', props: { placeholder: '搜索英雄…', action: 'search' } },
+  },
+  {
+    type: 'Dropdown', summary: '原生下拉选择', whenToUse: '少量固定选项选一。change 发 action(arg=value)。', children: 'none',
+    props: [
+      { name: 'options', type: 'list', required: true, describe: '[{value,label}]' },
+      { name: 'value', type: 'string', describe: '选中 value' },
+      { name: 'placeholder', type: 'string', describe: '占位项' },
+      { name: 'action', type: 'string', describe: '选择信号名' },
+    ],
+    sample: { type: 'Dropdown', id: 's-dropdown', props: { options: [{ value: 'gx', label: '关羽' }, { value: 'zf', label: '张飞' }], value: 'gx', action: 'pickHero' } },
+  },
+  {
+    type: 'Combobox', summary: '带搜索的下拉', whenToUse: '选项多、需搜索过滤时（比 Dropdown 强）。', children: 'none',
+    props: [
+      { name: 'options', type: 'list', required: true, describe: '[{value,label}]' },
+      { name: 'value', type: 'string', describe: '选中 value' },
+      { name: 'placeholder', type: 'string', describe: '占位' },
+      { name: 'action', type: 'string', describe: '选择信号名' },
+    ],
+    sample: { type: 'Combobox', id: 's-combobox', props: { options: [{ value: 'gx', label: '关羽' }, { value: 'zf', label: '张飞' }], placeholder: '搜名将…', action: 'pickHero' } },
+  },
+  {
+    type: 'Checkbox', summary: '勾选框', whenToUse: '单个开关项。handler 收 "true"/"false"。', children: 'none',
+    props: [{ name: 'label', type: 'string', required: true, describe: '标签' }, { name: 'checked', type: 'boolean', describe: '勾选' }, { name: 'action', type: 'string', describe: '信号名' }],
+    sample: { type: 'Checkbox', id: 's-checkbox', props: { label: '音效', checked: true, action: 'toggleSfx' } },
+  },
+  {
+    type: 'Toggle', summary: '药丸开关', whenToUse: '设置项开/关（比 Checkbox 更醒目）。', children: 'none',
+    props: [{ name: 'label', type: 'string', required: true, describe: '标签' }, { name: 'checked', type: 'boolean', describe: '开' }, { name: 'action', type: 'string', describe: '信号名' }],
+    sample: { type: 'Toggle', id: 's-toggle', props: { label: '背景音乐', checked: true, action: 'toggleBgm' } },
+  },
+  {
+    type: 'RadioGroup', summary: '互斥单选组', whenToUse: '一组选一（难度/阵营）。handler 收所选 value。', children: 'none',
+    props: [
+      { name: 'name', type: 'string', required: true, describe: '分组名' },
+      { name: 'options', type: 'list', required: true, describe: '[{value,label}]' },
+      { name: 'value', type: 'string', describe: '选中' }, { name: 'action', type: 'string', describe: '信号名' },
+    ],
+    sample: { type: 'RadioGroup', id: 's-radio', props: { name: 'diff', options: [{ value: 'easy', label: '简单' }, { value: 'hard', label: '困难' }], value: 'easy', action: 'setDiff' } },
+  },
+  {
+    type: 'Segmented', summary: '紧凑分段选择', whenToUse: '少量选项横排选一（比 RadioGroup 省地方）。', children: 'none',
+    props: [{ name: 'options', type: 'list', required: true, describe: '[{value,label}]' }, { name: 'value', type: 'string', describe: '选中' }, { name: 'action', type: 'string', describe: '信号名' }],
+    sample: { type: 'Segmented', id: 's-segmented', props: { options: [{ value: 'all', label: '全部' }, { value: 'own', label: '已有' }], value: 'all', action: 'filter' } },
+  },
+  {
+    type: 'Slider', summary: '数值滑块', whenToUse: '连续数值（音量/缩放）。handler 收数值串。', children: 'none',
+    props: [{ name: 'min', type: 'number', describe: '最小' }, { name: 'max', type: 'number', describe: '最大' }, { name: 'step', type: 'number', describe: '步进' }, { name: 'value', type: 'number', describe: '当前值' }, { name: 'label', type: 'string', describe: '标签' }, { name: 'action', type: 'string', describe: '信号名' }],
+    sample: { type: 'Slider', id: 's-slider', props: { min: 0, max: 100, value: 70, label: '音量', action: 'setVol' } },
+  },
+  {
+    type: 'Stepper', summary: '数量 ± 加减', whenToUse: '小整数增减（购买数量）。到界禁用。', children: 'none',
+    props: [{ name: 'value', type: 'number', required: true, describe: '当前值' }, { name: 'min', type: 'number', describe: '下界' }, { name: 'max', type: 'number', describe: '上界' }, { name: 'step', type: 'number', describe: '步进' }, { name: 'action', type: 'string', describe: '信号名' }],
+    sample: { type: 'Stepper', id: 's-stepper', props: { value: 3, min: 0, max: 9, action: 'qty' } },
+  },
+  {
+    type: 'Rating', summary: '星级评分', whenToUse: '难度/星级展示或打分。有 action 可点设值。', children: 'none',
+    props: [{ name: 'value', type: 'number', required: true, describe: '已亮颗数' }, { name: 'max', type: 'number', default: 5, describe: '总颗' }, { name: 'action', type: 'string', describe: '可点设值信号' }],
+    sample: { type: 'Rating', id: 's-rating', props: { value: 3, max: 5 } },
+  },
+  // ── 数据展示 ────────────────────────────────────────────────
+  {
+    type: 'Badge', summary: '小徽章', whenToUse: '状态标记（OK/警告/淡）。', children: 'none',
+    props: [{ name: 'text', type: 'string', required: true, describe: '文字' }, { name: 'tone', type: 'enum', values: ['ok', 'warn', 'dim'], describe: '着色' }],
+    sample: { type: 'Badge', id: 's-badge', props: { text: '稀有', tone: 'ok' } },
+  },
+  {
+    type: 'Tag', summary: '可点过滤标签/词条', whenToUse: '筛选条/词条；可点(active 高亮)、可删。', children: 'none',
+    props: [
+      { name: 'label', type: 'string', required: true, describe: '文字' },
+      { name: 'active', type: 'boolean', describe: '高亮' },
+      { name: 'tone', type: 'enum', values: ['normal', 'accent', 'dim'], describe: '着色' },
+      { name: 'action', type: 'string', describe: '点击信号' }, { name: 'actionArg', type: 'string', describe: '参数' },
+      { name: 'removable', type: 'boolean', describe: '显 × 可删' },
+    ],
+    sample: { type: 'Tag', id: 's-tag', props: { label: '黑桃 ♠', active: true, action: 'filterSuit', actionArg: 'spade' } },
+  },
+  {
+    type: 'ProgressBar', summary: '比例条（血/蓝/经验/进度）', whenToUse: '展示比例。value/max；绑世界用 bind。', children: 'none',
+    props: [
+      { name: 'value', type: 'number', required: true, describe: '当前值' },
+      { name: 'max', type: 'number', default: 1, describe: '满值' },
+      { name: 'tone', type: 'enum', values: ['accent', 'gold', 'ok', 'warn', 'danger'], describe: '着色' },
+      { name: 'label', type: 'string', describe: '标签' }, { name: 'showValue', type: 'boolean', describe: '显数值' },
+      { name: 'bind', type: 'string', describe: '绑 Resource id' },
+    ],
+    sample: { type: 'ProgressBar', id: 's-progress', props: { value: 30, max: 120, tone: 'danger', label: '生命', showValue: true } },
+  },
+  {
+    type: 'Table', summary: '数据表/榜单', whenToUse: '行列数据（排行榜/数值表）。', children: 'none',
+    props: [
+      { name: 'columns', type: 'list', required: true, describe: '[{key,label,align,width}]' },
+      { name: 'rows', type: 'list', required: true, describe: '[{id,cells,action,tone}]' },
+      { name: 'title', type: 'string', describe: '标题' }, { name: 'empty', type: 'string', describe: '空占位文案' },
+    ],
+    sample: { type: 'Table', id: 's-table', props: { title: '天梯榜', columns: [{ key: 'rank', label: '名次', width: 50 }, { key: 'name', label: '玩家' }, { key: 'score', label: '积分', align: 'right' }], rows: [{ id: 'r1', cells: { rank: '1', name: '不翻就赢', score: '2380' }, tone: 'accent' }, { id: 'r2', cells: { rank: '2', name: '常胜将军', score: '2210' } }] } },
+  },
+  {
+    type: 'VirtualList', summary: '长列表虚拟滚动', whenToUse: '千行级列表（只渲可视窗口）。', children: 'none',
+    props: [
+      { name: 'rows', type: 'list', required: true, describe: '[{id,cells}]' },
+      { name: 'rowHeight', type: 'number', required: true, describe: '固定行高 px' },
+      { name: 'columns', type: 'list', describe: '列定义（同 Table）' },
+      { name: 'height', type: 'number', default: 320, describe: '视口高 px' }, { name: 'action', type: 'string', describe: '行点击信号' },
+    ],
+    sample: { type: 'VirtualList', id: 's-vlist', props: { rowHeight: 28, height: 140, columns: [{ key: 'name', label: '名' }], rows: [{ id: 'a', cells: { name: '第 1 行' } }, { id: 'b', cells: { name: '第 2 行' } }], action: 'pickRow' } },
+  },
+  {
+    type: 'Card', summary: '网格卡单元', whenToUse: '配 Panel grid 做卡牌格/货架。媒体+标题+副标+角标。', children: 'optional',
+    props: [
+      { name: 'title', type: 'string', describe: '标题' }, { name: 'sub', type: 'string', describe: '副标' },
+      { name: 'media', type: 'string', describe: '媒体字形/emoji' }, { name: 'corner', type: 'string', describe: '角标' },
+      { name: 'tone', type: 'enum', values: ['normal', 'accent', 'dim', 'locked'], describe: '着色/锁态' },
+      { name: 'action', type: 'string', describe: '点击信号' }, { name: 'actionArg', type: 'string', describe: '参数' },
+    ],
+    sample: { type: 'Card', id: 's-card', props: { media: '🃏', title: '同袍', sub: '🪙 16', corner: '稀有', tone: 'accent', action: 'buy', actionArg: 'comrade' } },
+  },
+  {
+    type: 'PlayingCard', summary: '扑克牌原语', whenToUse: '一切扑克/卡牌牌面。流式卡墙用 fluid+Panel grid cols；悬停翻面用 flipOnHover+backFace。', children: 'none',
+    props: [
+      { name: 'rank', type: 'string', required: true, describe: "点数 'A'/'K'/'10'…" },
+      { name: 'suit', type: 'string', required: true, describe: "花色 '♠'|'♥'|'♦'|'♣'" },
+      { name: 'faceUp', type: 'boolean', default: true, describe: 'false=牌背' },
+      { name: 'size', type: 'enum', values: ['sm', 'md', 'lg'], default: 'md', describe: '尺寸档' },
+      { name: 'face', type: 'enum', values: ['dark', 'light'], describe: '暗卡/经典白牌' },
+      { name: 'selected', type: 'boolean', describe: '选中金边' }, { name: 'dimmed', type: 'boolean', describe: '暗化' },
+      { name: 'fluid', type: 'boolean', describe: '充满父格(5:7)·配 grid cols' },
+      { name: 'flipOnHover', type: 'boolean', describe: '悬停翻面' }, { name: 'backFace', type: 'node', describe: '背面信息子树' },
+      { name: 'art', type: 'string', describe: '立绘 URL' }, { name: 'label', type: 'string', describe: '牌下标签' },
+      { name: 'action', type: 'string', describe: '点击信号' },
+    ],
+    sample: { type: 'PlayingCard', id: 's-pcard', props: { rank: 'A', suit: '♠', face: 'light', label: '关羽', selected: true } },
+  },
+  // ── 浮层 / 反馈 ──────────────────────────────────────────────
+  {
+    type: 'Modal', summary: '居中模态浮层 + 遮罩', whenToUse: '居中弹窗（确认框/详情/商城）。点遮罩本身关。children=弹窗体。', children: 'optional',
+    props: [
+      { name: 'title', type: 'string', describe: '标题' },
+      { name: 'size', type: 'enum', values: ['sm', 'md', 'lg'], describe: '宽度档' },
+      { name: 'closable', type: 'boolean', default: true, describe: '显 ×' },
+      { name: 'closeAction', type: 'string', describe: '关闭信号（点×/点遮罩）' },
+    ],
+    sample: { type: 'Modal', id: 's-modal', props: { title: '返回大厅？', size: 'sm', closeAction: 'close' }, children: [{ type: 'Label', id: 's-modal-b', props: { text: '进度将丢失。' } }] },
+  },
+  {
+    type: 'Drawer', summary: '侧滑/底部抽屉', whenToUse: '贴边抽屉（设置/背包）。机制同 Modal。', children: 'optional',
+    props: [
+      { name: 'side', type: 'enum', values: ['left', 'right', 'bottom'], describe: '贴边方位' },
+      { name: 'title', type: 'string', describe: '标题' }, { name: 'closeAction', type: 'string', describe: '关闭信号' },
+    ],
+    sample: { type: 'Drawer', id: 's-drawer', props: { side: 'right', title: '设置', closeAction: 'closeDrawer' }, children: [{ type: 'Label', id: 's-drawer-b', props: { text: '抽屉内容' } }] },
+  },
+  {
+    type: 'Tooltip', summary: '悬浮提示/词条浮窗', whenToUse: '包裹触发元素(children)，hover 显气泡。富内容用 bubble(LayoutNode)。', children: 'required',
+    props: [
+      { name: 'content', type: 'string', describe: '简单文本气泡' },
+      { name: 'placement', type: 'enum', values: ['top', 'bottom', 'left', 'right'], default: 'top', describe: '气泡方位' },
+      { name: 'bubble', type: 'node', describe: '富气泡根（Panel+Label·替代 content）' },
+    ],
+    sample: { type: 'Tooltip', id: 's-tooltip', props: { content: '该牌掷命翻正概率', placement: 'top' }, children: [{ type: 'Badge', id: 's-tooltip-t', props: { text: '?' } }] },
+  },
+  {
+    type: 'ContextMenu', summary: '右键/长按菜单', whenToUse: '包裹触发元素(children)，右键弹菜单。', children: 'required',
+    props: [{ name: 'items', type: 'list', required: true, describe: '[{id,label,action}]' }],
+    sample: { type: 'ContextMenu', id: 's-ctx', props: { items: [{ id: 'del', label: '删除', action: 'doDelete' }] }, children: [{ type: 'Label', id: 's-ctx-t', props: { text: '右键我' } }] },
+  },
+  {
+    type: 'Toast', summary: '飘字提示（非模态）', whenToUse: '操作反馈药丸（保存成功）。也可由 showToast() API 定时自消。', children: 'none',
+    props: [{ name: 'text', type: 'string', required: true, describe: '文字' }, { name: 'tone', type: 'enum', values: ['ok', 'warn', 'danger', 'accent', 'dim'], describe: '着色' }, { name: 'duration', type: 'number', default: 2600, describe: '自消 ms' }],
+    sample: { type: 'Toast', id: 's-toast', props: { text: '保存成功', tone: 'ok' } },
+  },
+  {
+    type: 'Accordion', summary: '折叠面板', whenToUse: '可折叠区块（高级设置）。点标题切开合。', children: 'optional',
+    props: [{ name: 'title', type: 'string', required: true, describe: '标题行' }, { name: 'open', type: 'boolean', describe: '初始展开' }, { name: 'action', type: 'string', describe: '可选切换信号' }],
+    sample: { type: 'Accordion', id: 's-accordion', props: { title: '高级设置' }, children: [{ type: 'Label', id: 's-accordion-b', props: { text: '折叠体内容' } }] },
+  },
+  {
+    type: 'Tabs', summary: '多页签（引擎管切换·不重建页）', whenToUse: '多页内容切换。children 顺序对齐 tabs（tabs[i]↔children[i]）。', children: 'required',
+    props: [
+      { name: 'tabs', type: 'list', required: true, describe: '[{id,label,anchor?}]（anchor=新手引导锚点）' },
+      { name: 'active', type: 'string', describe: '当前页 id' }, { name: 'action', type: 'string', describe: '切页信号' },
+    ],
+    sample: { type: 'Tabs', id: 's-tabs', props: { tabs: [{ id: 'a', label: '牌谱' }, { id: 'b', label: '榜单' }], active: 'a' }, children: [{ type: 'Label', id: 's-tabs-a', props: { text: '牌谱页' } }, { type: 'Label', id: 's-tabs-b', props: { text: '榜单页' } }] },
+  },
+  // ── 游戏原语（卡牌演出）──────────────────────────────────────
+  {
+    type: 'CoinFlip', summary: '掷币（确定性·3D 翻转）', whenToUse: '掷命/二选一演出。outcome 由游戏算好；spinning 播翻转。', children: 'none',
+    props: [
+      { name: 'outcome', type: 'enum', values: ['heads', 'tails'], required: true, describe: '结果' },
+      { name: 'spinning', type: 'boolean', describe: '播翻转动画' }, { name: 'size', type: 'number', default: 92, describe: '直径 px' },
+      { name: 'headsLabel', type: 'string', describe: '正面字' }, { name: 'tailsLabel', type: 'string', describe: '反面字' },
+    ],
+    sample: { type: 'CoinFlip', id: 's-coin', props: { outcome: 'heads', spinning: true, headsLabel: '正·活', tailsLabel: '反·亡' } },
+  },
+  {
+    type: 'Versus', summary: '对决特写（两牌 + 胜率 + 火花）', whenToUse: '卡牌对战结算特写。left/right 两张牌 + 胜方高亮。', children: 'none',
+    props: [
+      { name: 'left', type: 'object', required: true, describe: '左牌 PlayingCard props' },
+      { name: 'right', type: 'object', required: true, describe: '右牌 PlayingCard props' },
+      { name: 'label', type: 'string', describe: '中央文字（胜率 76:24）' },
+      { name: 'winner', type: 'enum', values: ['left', 'right', 'none'], describe: '胜方高亮' },
+      { name: 'spark', type: 'boolean', default: true, describe: '中央火花' },
+    ],
+    sample: { type: 'Versus', id: 's-versus', props: { left: { rank: 'A', suit: '♠' }, right: { rank: 'K', suit: '♥' }, label: '76 : 24', winner: 'left' } },
+  },
+];
+
+/** 按 type 取 spec（校验器/查询用）。 */
+const BY_TYPE = new Map<string, UiComponentSpec>(UI_CATALOG.map((s) => [s.type, s]));
+export function catalogSpec(type: string): UiComponentSpec | undefined { return BY_TYPE.get(type); }
