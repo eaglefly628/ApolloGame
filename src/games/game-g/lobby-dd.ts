@@ -36,7 +36,8 @@ export const INITIAL_LOBBY_DD: LobbyDDState = { tab: 'home', coll: { ...INITIAL_
 // archLine 数据带 HTML 标签（game-g.tsx 为原版 innerHTML 写的 <b>/<span>）→ Label 会 esc 成字面字符。显示前剥标签。
 const stripTags = (s?: string): string => (s ?? '').replace(/<[^>]*>/g, '').replace(/\s+/g, ' ').trim();
 function pill(id: string, label: string, action: string, tone: 'normal' | 'accent' = 'normal', arg?: string, anchor?: string): LayoutNode {
-  return { type: 'Tag', id, props: { label, tone, action, ...(arg ? { actionArg: arg } : {}) }, ...(anchor ? { layout: { anchor } } : {}) };
+  // size:'lg'=大气药丸（主程下沉 Tag.size·owner「货币 pill 太小·要≈2x」）。
+  return { type: 'Tag', id, props: { label, tone, action, size: 'lg', ...(arg ? { actionArg: arg } : {}) }, ...(anchor ? { layout: { anchor } } : {}) };
 }
 function topbar(view: LobbyView): LayoutNode {
   const who: LayoutNode = {

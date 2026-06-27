@@ -82,8 +82,14 @@ export function buildHomeScreen(view: LobbyView): LayoutNode {
   };
 
   // 右栏·Boss 情报 + 地煞（明牌可破）。地煞 = 满宽 Card（去掉先前的 Tooltip inline-flex 包裹·那会让卡收缩成内容宽→有长有短）。
+  // 地煞卡用 Card.children + Label.size 放大（主程回驳 Card.size·给重组写法）：名 md 金 + buff 行 sm·行距更松。
   const fiendNodes: LayoutNode[] = (c?.fiends ?? []).map((fd, i) => ({
-    type: 'Card', id: `home-fiend-${i}`, props: { title: `🎴 ${fd.name}`, sub: fd.desc, tone: 'normal' },
+    type: 'Card', id: `home-fiend-${i}`, props: { tone: 'normal' },
+    children: [{ type: 'Panel', id: `home-fiend-b-${i}`, props: { bare: true }, layout: { direction: 'column', gap: 5, padding: 0 },
+      children: [
+        { type: 'Label', id: `home-fiend-n-${i}`, props: { text: `🎴 ${fd.name}`, size: 'md', color: 'gold', bold: true } },
+        { type: 'Label', id: `home-fiend-d-${i}`, props: { text: fd.desc, size: 'sm', color: 'sub' } },
+      ] }],
   }));
   const rail: LayoutNode = {
     type: 'Panel', id: 'home-rail', props: { title: `⚔ 本关 Boss · ${c?.boss ?? '—'}` },
