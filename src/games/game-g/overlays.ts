@@ -34,21 +34,28 @@ const HELP_MANUAL: Record<'easy' | 'mid' | 'hard', string> = {
 };
 function helpModal(st: OverlayState): LayoutNode {
   const tab = (id: string, label: string): { id: string; label: string } => ({ id, label });
+  // 固定高度滚动页（对齐原版 help body `height:46vh;min-height:340px;overflow-y:auto`）：各子页统一尺寸·内部滚动·
+  // 框不随内容缩放（owner「舒适的统一大小的框·复刻」）。文字 md 对齐原版可读字号。
+  const page = (id: string, body: LayoutNode): LayoutNode => ({ type: 'Panel', id, props: { bare: true, scroll: true }, layout: { height: 360, padding: 2 }, children: [body] });
   const manualPage: LayoutNode = {
-    type: 'Panel', id: 'help-manual', props: {}, layout: { direction: 'column', gap: 8, padding: 4 },
+    type: 'Panel', id: 'help-manual', props: { bare: true }, layout: { direction: 'column', gap: 8, padding: 0 },
     children: [
       { type: 'Segmented', id: 'help-mantier', props: { options: [{ value: 'easy', label: '🟢 初级' }, { value: 'mid', label: '🟡 中级' }, { value: 'hard', label: '🔴 高级' }], value: st.manTier, action: 'manTier' } },
-      { type: 'Label', id: 'help-manbody', props: { text: HELP_MANUAL[st.manTier], size: 'sm', color: 'text' } },
+      { type: 'Label', id: 'help-manbody', props: { text: HELP_MANUAL[st.manTier], size: 'md', color: 'text' } },
     ],
   };
   return {
     type: 'Modal', id: 'help-modal', props: { title: '📖 帮助中心', size: 'lg', closeAction: 'closeOverlay' },
     children: [{
-      type: 'Tabs', id: 'help-tabs', props: { tabs: [tab('intro', '📜 游戏介绍'), tab('tut', '📖 新手指导'), tab('manual', '📚 玩法手册')], active: st.helpTab, action: 'helpTab' },
+      type: 'Panel', id: 'help-body', props: { bare: true }, layout: { direction: 'column', gap: 8, padding: 0 },
       children: [
-        { type: 'Label', id: 'help-intro', props: { text: HELP_INTRO, size: 'sm', color: 'text' } },
-        { type: 'Label', id: 'help-tut', props: { text: HELP_TUT, size: 'sm', color: 'text' } },
-        manualPage,
+        { type: 'Tabs', id: 'help-tabs', props: { tabs: [tab('intro', '📜 游戏介绍'), tab('tut', '📖 新手指导'), tab('manual', '📚 玩法手册')], active: st.helpTab, action: 'helpTab' },
+          children: [
+            page('help-intro-p', { type: 'Label', id: 'help-intro', props: { text: HELP_INTRO, size: 'md', color: 'text' } }),
+            page('help-tut-p', { type: 'Label', id: 'help-tut', props: { text: HELP_TUT, size: 'md', color: 'text' } }),
+            page('help-manual-p', manualPage),
+          ] },
+        { type: 'Button', id: 'help-done', props: { label: '明白了 →', kind: 'primary', action: 'closeOverlay' } },
       ],
     }],
   };
