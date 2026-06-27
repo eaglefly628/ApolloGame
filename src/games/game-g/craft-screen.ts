@@ -85,7 +85,7 @@ function tiangangShelf(view: LobbyView): LayoutNode {
     else if (j.locked) { sub = `🔒 通关第 ${us} 关解锁（💎${us} 速解）`; tone = 'locked'; action = 'diamondUnlock'; actionArg = j.id; }
     else { sub = `🪙 ${j.cost}`; tone = 'normal'; action = 'buyTiangang'; actionArg = j.id; }
     return { type: 'Card', id: `craft-tg-${j.id}`,
-      props: { title: `${j.icon ?? '⚡'} ${j.name}`, sub, corner: j.power ? '⭐'.repeat(Math.min(j.power, 5)) : `关${us}`, tone, action, actionArg } };
+      props: { title: `⚡ ${j.name}`, sub, corner: j.power ? '⭐'.repeat(Math.min(j.power, 5)) : `关${us}`, tone, action, actionArg } };
   });
   return {
     type: 'Panel', id: 'craft-shelf', props: { title: '⚡ 天罡牌 · 购买（局内法术·买入后到「牌组」屏编入）', scroll: true },

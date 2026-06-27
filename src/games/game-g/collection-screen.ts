@@ -166,11 +166,13 @@ function fiendsPage(view: LobbyView): LayoutNode {
     });
     const tag = st !== undefined ? `${locked ? '🔒 ' : ''}第 ${st} 关` : '🔒 后续关卡';
     return { type: 'Accordion', id: `boss-${bi}`, props: { title: `${tag} · ${b.boss}（招牌战术 ×${b.fiends.length}）`, open: !locked && bi === 0 },
-      layout: { direction: 'column', gap: 6, padding: 8 }, children: fiendCards };
+      layout: { direction: 'column', gap: 6, padding: 8 },
+      children: [{ type: 'Panel', id: `boss-${bi}-row`, props: { bare: true }, layout: { direction: 'grid', cols: 3, gap: 8 }, children: fiendCards }] };
   });
+  // 外层 bare 去多余框（owner「地煞图鉴外框不需要」）。
   return {
-    type: 'Panel', id: 'coll-fiends', props: { title: `地煞图鉴 · 共 ${EARTH_FIENDS.length} 位 Boss（明牌·公平可破）`, scroll: true },
-    layout: { direction: 'column', gap: 6, padding: 10 }, children: blocks,
+    type: 'Panel', id: 'coll-fiends', props: { title: `地煞图鉴 · 共 ${EARTH_FIENDS.length} 位 Boss（明牌·公平可破）`, bare: true, scroll: true },
+    layout: { direction: 'column', gap: 6, padding: 4 }, children: blocks,
   };
 }
 
@@ -198,9 +200,9 @@ function collectPage(view: LobbyView): LayoutNode {
 export function buildCollectionScreen(view: LobbyView, st: CollectionState = INITIAL_COLLECTION): LayoutNode {
   const tabs: LayoutNode = {
     type: 'Tabs', id: 'coll-tabs',
-    props: { tabs: [{ id: 'heroes', label: '收藏·牌谱' }, { id: 'ladder', label: '天梯·榜' }, { id: 'fiends', label: '地煞·战法' }, { id: 'collect', label: '天罡&闪艺' }] },
+    props: { tabs: [{ id: 'heroes', label: '收藏·牌谱' }, { id: 'fiends', label: '地煞·战法' }, { id: 'collect', label: '天罡&闪艺' }] },
     layout: { flex: 1 },
-    children: [heroesPage(st), ladderPage(view), fiendsPage(view), collectPage(view)],
+    children: [heroesPage(st), fiendsPage(view), collectPage(view)],
   };
   return {
     type: 'Screen', id: 'collection-screen', props: { bg: GG_LOBBY_THEME.pageBg },

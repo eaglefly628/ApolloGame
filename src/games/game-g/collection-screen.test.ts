@@ -20,15 +20,14 @@ const VIEW = (): LobbyView => ({
 } as unknown as LobbyView);
 
 describe('collection-screen pilot · 数据驱动收藏', () => {
-  it('buildCollectionScreen 产出 LayoutNode 树（Screen 根 + Tabs 四子页·纯数据）', () => {
+  it('buildCollectionScreen 产出 LayoutNode 树（Screen 根 + Tabs 三子页·纯数据·天梯榜已移到顶部导航）', () => {
     const tree = buildCollectionScreen(VIEW());
     expect(tree.type).toBe('Screen');
     const tabs = tree.children?.[0];
     expect(tabs?.type).toBe('Tabs');
-    expect((tabs?.props as { tabs: unknown[] }).tabs).toHaveLength(4);
+    expect((tabs?.props as { tabs: unknown[] }).tabs).toHaveLength(3); // 牌谱/地煞/天罡&闪艺（天梯榜移到顶部 nav·去重）
     const json = JSON.stringify(tree);
     expect(json).toContain('英雄列传');     // 牌谱页
-    expect(json).toContain('全服榜');       // 天梯页
     expect(json).toContain('地煞图鉴');     // 地煞页
     expect(json).toContain('虎符');         // 天罡&闪艺页（view.tiangangs）
     expect(json).toContain('"action":"filterSuit"'); // 花色过滤信号

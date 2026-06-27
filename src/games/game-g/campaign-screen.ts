@@ -29,7 +29,7 @@ function buildStageCard(c: StageCampaign, cur: number, maxReached: number): Layo
       props: { text: `第 ${c.stage} 关 · ${c.battle}　vs ${c.boss}`, size: 'lg', color: locked ? 'dim' : 'gold', bold: true } },
     { type: 'Badge', id: `camp-${c.stage}-badge`, props: { text: badge, tone: badgeTone } },
     { type: 'Label', id: `camp-${c.stage}-diff`,
-      props: { text: `难度 ${stars(c.stars)}　·　通关解锁天罡 ${c.unlock}`, size: 'xs', color: 'gold' } },
+      props: { text: `难度 ${stars(c.stars)}　·　通关解锁天罡 ${c.unlock}`, size: 'sm', color: 'gold' } },
   ];
 
   if (locked) {
@@ -40,22 +40,24 @@ function buildStageCard(c: StageCampaign, cur: number, maxReached: number): Layo
   }
 
   children.push({ type: 'Label', id: `camp-${c.stage}-intro`,
-    props: { text: c.intro ?? c.oneLiner, size: 'sm', color: 'text' } });
+    props: { text: c.intro ?? c.oneLiner, size: 'md', color: 'text' } });
   if (c.bossLines) {
     children.push(
-      { type: 'Label', id: `camp-${c.stage}-bl-open`, props: { text: `🗣️ 开场「${c.bossLines.open}」`, size: 'xs', color: 'sub' } },
-      { type: 'Label', id: `camp-${c.stage}-bl-mid`, props: { text: `⚔️ 劣势「${c.bossLines.mid}」`, size: 'xs', color: 'sub' } },
-      { type: 'Label', id: `camp-${c.stage}-bl-lose`, props: { text: `💀 败北「${c.bossLines.lose}」`, size: 'xs', color: 'sub' } },
+      { type: 'Label', id: `camp-${c.stage}-bl-open`, props: { text: `🗣️ 开场「${c.bossLines.open}」`, size: 'sm', color: 'sub' } },
+      { type: 'Label', id: `camp-${c.stage}-bl-mid`, props: { text: `⚔️ 劣势「${c.bossLines.mid}」`, size: 'sm', color: 'sub' } },
+      { type: 'Label', id: `camp-${c.stage}-bl-lose`, props: { text: `💀 败北「${c.bossLines.lose}」`, size: 'sm', color: 'sub' } },
     );
   }
   children.push({ type: 'Label', id: `camp-${c.stage}-fh`,
-    props: { text: '🎴 地煞（明牌 · 公平可破）', size: 'xs', color: 'sub' } });
+    props: { text: '🎴 地煞（明牌 · 公平可破）', size: 'sm', color: 'sub' } });
   const cDisha = stageDisha(c.stage);
-  c.fiends.forEach((f, i) => {
+  // 3 地煞 = Boss 3 技能：3 竖列 grid（owner「不要 3 横排·竖三列·细节写全」），非逐行堆叠。
+  const fiendCards: LayoutNode[] = c.fiends.map((f, i) => {
     const nums = dishaNumberLine(cDisha[i] ?? '');
-    children.push({ type: 'Card', id: `camp-${c.stage}-fiend-${i}`,
-      props: { title: `🎴 ${f.name}`, sub: nums ? `${f.desc} · 📊 ${nums}` : f.desc, tone: 'normal' } });
+    return { type: 'Card', id: `camp-${c.stage}-fiend-${i}`,
+      props: { title: `🎴 ${f.name}`, sub: nums ? `${f.desc} · 📊 ${nums}` : f.desc, tone: 'normal' } };
   });
+  children.push({ type: 'Panel', id: `camp-${c.stage}-fiends`, props: { bare: true }, layout: { direction: 'grid', cols: 3, gap: 8 }, children: fiendCards });
   if (isCur) {
     children.push({ type: 'Button', id: `camp-${c.stage}-play`,
       props: { label: `⚔ 出征 · 第 ${c.stage} 关`, kind: 'primary', action: 'play' } });
@@ -77,7 +79,7 @@ export function buildCampaignScreen(view: LobbyView): LayoutNode {
     layout: { direction: 'column', gap: 12, padding: 16 },
     children: [
       { type: 'Label', id: 'camp-blurb',
-        props: { text: '五十二位被诅咒的名将，每一关是一位英雄的成名之战。打赢 = 破其诅咒、收魂入麾。', size: 'sm', color: 'sub' } },
+        props: { text: '五十二位被诅咒的名将，每一关是一位英雄的成名之战。打赢 = 破其诅咒、收魂入麾。', size: 'md', color: 'sub' } },
       ...cards,
       { type: 'Label', id: 'camp-foot',
         props: { text: '🔮 关 6–52（孙武 · 成吉思汗 · 汉尼拔……）战役背景与 Boss 对白已入库，随章节逐步开放。', size: 'xs', color: 'dim' } },
