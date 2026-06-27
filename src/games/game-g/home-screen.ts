@@ -64,7 +64,11 @@ export function buildHomeScreen(view: LobbyView): LayoutNode {
         ] },
       { type: 'Panel', id: 'home-center', props: { bare: true }, layout: { direction: 'column', align: 'center', gap: 20, padding: 0 },
         children: [
-          { type: 'Button', id: 'home-fortune', props: { label: keptFortune != null ? `🎴 今日卦象 · ${keptFortune}` : '🎴 掷今日卦象', kind: 'ghost', action: 'lucky' } },
+          { type: 'Panel', id: 'home-fortune', props: {}, layout: { direction: 'row', align: 'center', gap: 8, padding: 8 },
+            children: [
+              { type: 'Label', id: 'home-fortune-t', props: { text: '🎴 今日卦象', size: 'sm', color: 'sub' } },
+              { type: 'Label', id: 'home-fortune-v', props: { text: keptFortune != null ? String(keptFortune) : '掷', size: 'xxxl', color: 'gold', bold: true, font: 'display' } },
+            ] },
           duel,
           { type: 'Label', id: 'home-duelline', props: { text: c ? `⚔ 对决 ${c.boss} · ${c.oneLiner}` : '掷命之牌', size: 'xs', color: 'dim' } },
         ] },
@@ -97,37 +101,11 @@ export function buildHomeScreen(view: LobbyView): LayoutNode {
     ],
   };
 
-  // 天罡牌组预览条（原版 felt 下方 deckPreviewPanel）：已入组天罡 chips（名 + 牌力 + P̂）+ 编辑入口。
-  const inDeck = view.tiangangs.filter((j) => j.inDeck);
-  const totalPhat = inDeck.reduce((s, j) => s + (j.phat ?? 0), 0);
-  const deckChips: LayoutNode[] = inDeck.length
-    ? inDeck.map((j) => ({ type: 'Tag', id: `home-tg-${j.id}`,
-        props: { label: `${j.icon ?? '⚡'} ${j.name}${j.power ? ' ' + '⭐'.repeat(Math.min(j.power, 5)) : ''}${j.phat != null ? ' P̂' + j.phat : ''}`, tone: 'accent' } }))
-    : [{ type: 'Label', id: 'home-tg-empty', props: { text: '战库空 · 去「改造坊/牌组」选入天罡牌（≤5）', size: 'xs', color: 'dim' } }];
-  // 底部天罡牌组条（对齐原版 deckPreviewPanel）：标题左 + 数量右（justify between）/ 内容(chips 或空提示) / 编辑键靠右。
-  const deckCount = `${inDeck.length}/${view.deckSize ?? 12} · 出战带 ${view.deckSize ?? 12} 张${inDeck.length ? ' · 整库 P̂ ' + totalPhat : ''}`;
-  const deckPreview: LayoutNode = {
-    type: 'Panel', id: 'home-deckprev', props: {}, layout: { direction: 'column', gap: 8, padding: 14 },
-    children: [
-      { type: 'Panel', id: 'home-dp-head', props: { bare: true }, layout: { direction: 'row', align: 'center', justify: 'between' }, children: [
-        { type: 'Label', id: 'home-dp-title', props: { text: `🦄 天罡牌组 · ${view.activeDeckName ?? ''}`, size: 'md', color: 'gold', bold: true } },
-        { type: 'Label', id: 'home-dp-count', props: { text: deckCount, size: 'xs', color: 'sub' } },
-      ] },
-      { type: 'Panel', id: 'home-dp-body', props: { bare: true }, layout: { direction: 'row', gap: 6, align: 'center' }, children: deckChips },
-      { type: 'Panel', id: 'home-dp-foot', props: { bare: true }, layout: { direction: 'row', justify: 'end' }, children: [
-        { type: 'Button', id: 'home-editdeck', props: { label: '✏ 编辑牌组', kind: 'ghost', action: 'tab', actionArg: 'decks' } },
-      ] },
-    ],
-  };
-  const herocol: LayoutNode = {
-    type: 'Panel', id: 'home-herocol', props: { bare: true }, layout: { direction: 'column', gap: 14, flex: 1 },
-    children: [felt, deckPreview],
-  };
-
+  // 底部天罡牌组条已去除（owner 2026-06-27「干脆不要·把温泉关拉大拉长」）→ felt(flex:1) 独占整列、纵向撑满。
   return {
     type: 'Screen', id: 'home-screen', props: { bg: GG_LOBBY_THEME.pageBg },
     layout: { direction: 'row', gap: 16, padding: 16 },
-    children: [herocol, rail],
+    children: [felt, rail],
   };
 }
 

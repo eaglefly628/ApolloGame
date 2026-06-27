@@ -33,6 +33,8 @@ export const INITIAL_LOBBY_DD: LobbyDDState = { tab: 'home', coll: { ...INITIAL_
 // ── 顶栏（玩家 + 货币 + 商城/手册/设置）·纯数据 ─────────────────
 // owner 2026-06-26「证明 UI 控件能力 = 原版」：原版顶栏的 ♠ 章/等级 pill/货币 pill 早被引擎控件覆盖——
 // 章=Avatar(shape:rounded)、货币/手册/设置/战役=Tag(圆角药丸·可点)；不再用 Button 凑数。三区 justify 居中战役 pill。
+// archLine 数据带 HTML 标签（game-g.tsx 为原版 innerHTML 写的 <b>/<span>）→ Label 会 esc 成字面字符。显示前剥标签。
+const stripTags = (s?: string): string => (s ?? '').replace(/<[^>]*>/g, '').replace(/\s+/g, ' ').trim();
 function pill(id: string, label: string, action: string, tone: 'normal' | 'accent' = 'normal', arg?: string, anchor?: string): LayoutNode {
   return { type: 'Tag', id, props: { label, tone, action, ...(arg ? { actionArg: arg } : {}) }, ...(anchor ? { layout: { anchor } } : {}) };
 }
@@ -43,7 +45,7 @@ function topbar(view: LobbyView): LayoutNode {
       { type: 'Label', id: 'tb-name', props: { text: view.name, size: 'lg', color: 'gold', bold: true } },
       // 副文本(Label.spans·主程已下沉)：主牌牌名金色高亮，对齐原版「主牌 · 黑桃A · 段位」内联着色。
       { type: 'Label', id: 'tb-sub', props: { size: 'xs', color: 'sub', spans: [{ text: '主牌 ' }, { text: view.mainCard, color: 'gold', bold: true }, { text: ` · ${view.rankText}` }] } },
-      { type: 'Label', id: 'tb-arch', props: { text: `流派 ${view.archLine || '未成型'}`, size: 'xs', color: 'dim' } },
+      { type: 'Label', id: 'tb-arch', props: { text: stripTags(view.archLine) || '流派 未成型', size: 'sm', color: 'dim' } },
     ],
   };
   const left: LayoutNode = {
