@@ -205,6 +205,7 @@ export const UI_CATALOG: readonly UiComponentSpec[] = [
       { name: 'tone', type: 'enum', values: ['normal', 'accent', 'dim'], describe: '着色' },
       { name: 'action', type: 'string', describe: '点击信号' }, { name: 'actionArg', type: 'string', describe: '参数' },
       { name: 'removable', type: 'boolean', describe: '显 × 可删' },
+      { name: 'size', type: 'enum', values: ['sm', 'md', 'lg'], default: 'md', describe: '尺寸档（lg=货币计数等大气药丸·≈2x）' },
     ],
     sample: { type: 'Tag', id: 's-tag', props: { label: '黑桃 ♠', active: true, action: 'filterSuit', actionArg: 'spade' } },
   },

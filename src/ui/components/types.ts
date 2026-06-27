@@ -220,6 +220,9 @@ export interface ProgressBarProps {
 export interface TagProps {
   label: string; active?: boolean; tone?: 'normal' | 'accent' | 'dim';
   action?: string; actionArg?: string; removable?: boolean;
+  /** 尺寸档（缺省 md=原默认·向后兼容）：sm 紧凑筛选条 / md 默认 / lg「大气药丸」(货币计数 💎/💰、稀有度等需醒目的 pill·≈2x)。
+   *  Tag 无 children 逃生、Label 无药丸 chrome——pill 缩放只能靠这一档（同 Modal/PlayingCard.size 体系）。 */
+  size?: 'sm' | 'md' | 'lg';
 }
 
 // ── Modal（居中模态浮层 + 遮罩 + 关闭语义）：children = 弹窗体。──

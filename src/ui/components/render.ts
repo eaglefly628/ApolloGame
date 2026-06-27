@@ -364,7 +364,10 @@ function renderTag(id: string, p: TagProps, ls: string, t: UITheme): string {
   const action = p.action ? ` data-action="${esc(p.action)}"${p.actionArg ? ` data-arg="${esc(p.actionArg)}"` : ''}` : '';
   const cursor = p.action ? 'cursor:pointer;' : '';
   const x = p.removable ? '<span style="margin-left:6px;opacity:.7">×</span>' : '';
-  return `<span id="${esc(id)}"${action} style="display:inline-flex;align-items:center;padding:3px 10px;font-size:11px;border-radius:12px;background:${bg};color:${fg};border:1px solid ${border};font-family:${t.fontUi};white-space:nowrap;${cursor}${ls}">${esc(p.label)}${x}</span>`;
+  // 尺寸档：md=原默认(向后兼容)；lg=大气药丸(货币计数等·≈2x 体量)；sm=紧凑。[padding, font-size, radius]。
+  const TAG_DIMS: Record<string, [string, number, number]> = { sm: ['2px 8px', 10, 10], md: ['3px 10px', 11, 12], lg: ['7px 15px', 16, 16] };
+  const [pad, fs, rad] = TAG_DIMS[p.size ?? 'md'] ?? TAG_DIMS['md']!;
+  return `<span id="${esc(id)}"${action} style="display:inline-flex;align-items:center;padding:${pad};font-size:${fs}px;border-radius:${rad}px;background:${bg};color:${fg};border:1px solid ${border};font-family:${t.fontUi};white-space:nowrap;${cursor}${ls}">${esc(p.label)}${x}</span>`;
 }
 
 // 飘字提示药丸：tone 着色（语义令牌）。挂载器 showToast() 复用它做定时自消浮层。
