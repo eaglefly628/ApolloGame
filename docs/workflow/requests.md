@@ -416,3 +416,18 @@
 >   - **🔀 状态机**（fsm-lab）：自由计时器 → event-when（timer 阈值）→ effect-apply（set-state + set-visible）idle→alert→flee→循环（reset-timer 按 targetEntity 定位）。
 > 全部「组合现成能力（蓝图 capabilities+entities）」，**零专属 system**。展示台现 10 块全亮。tsc+vitest(1758)+build 全绿。
 > **TODO**：序列帧 spritesheet 动画（需真实贴图资产·待资产接入）；视频模块（deferred·爱诗 AI/开场视频拉动再下沉）；Hub 积木异形/点阵底纹（待 owner 拍样式·必要时下沉 renderer 背景/异形布局能力）。
+
+---
+
+### REQ-UI-fontPixel令牌 · [2026-06-27] · PI（game-i 展示台）→ 主程（引擎 UI 域）· status: open · 优先级: P3 · 类型: 令牌补全（小·非结构）
+
+> **缺口**：展示台接 `Label.font` 字体槽时发现——`font:'pixel'` 在 SHELL（及引擎默认主题）里**没有对应的 `fontPixel` 令牌值** → 渲染器静默 fallback 成 `fontUi`，像素字体槽形同虚设。对照：`font:'display'` 有 `SHELL.fontDisplay`（衬线）正常生效。
+> **请补**：给 `SHELL`（及引擎自带默认主题）补一个 `fontPixel` 像素/点阵字体栈（如 `'"Silkscreen","DotGothic16",ui-monospace,monospace'`）。`UITheme.fontPixel?` 字段**已在**、只差默认值——填上即可。
+> **判据（为何是真缺口不是过度设计）**：font 槽是闭集枚举（最弱 LLM 填 `font:'pixel'`），但其中一个枚举值无后端令牌 = 数据接口不完整，弱模型填了会静默踩空、得不到承诺的像素感。属「能力声明了但没给齐」的补全，不是新功能。
+> **暂态**：展示台 `font-disp` 用 `font:'display'` 演示（正常）；`pixel` 待此令牌补上再加一条。
+
+### REQ-UI-引导可演示性 · [2026-06-27] · PI（game-i 展示台）→ 主程（引导/Overlay 域）· status: open · 优先级: P3 · 类型: 问询（可演示性·非缺口）
+
+> **现象**：`LayoutConstraints.anchor`（渲染加 data-anchor·让数据 UI 也能被新手引导 spotlight）目前**无法在展示台独立演示**——它要 `OnboardingOverlay` + 世界 `Coachmark{anchor}` 配套才有意义，单摆一个 data-anchor 节点看不出任何效果。
+> **问主程**：有没有「**纯数据触发一段引导**（spotlight 某 anchor + 一句文案）」的最小可调用路径？若有，展示台加一块「🧭 新手引导」样例；若引导本就是宿主运行时编排（非纯数据可触发），请确认——我就在展示台对 anchor 标注「属引导基建·见某游戏引导」而非硬塞一个看不出东西的节点。
+> **不擅自做的理由**：引导 overlay 归引导域、可能跨 session；在搞清「能否纯数据触发」前盲塞 demo 会要么没效果、要么撞引导域的活。先问清归属与触发方式。
