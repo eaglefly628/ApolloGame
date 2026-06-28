@@ -11,6 +11,25 @@
 
 ## 待处理 / 进行中
 
+### REQ-3D-Model导入 · [2026-06-28] · P3D（3D 渲染线）→ 主程（资产层域）· status: **open（render 半边已落 mainbranch·待主程接资产半边）** · 类型: 真能力缺口（box 原语表达不了圆润模型·owner 2026-06-28 拍板开做）
+
+> **背景**：owner（junbai.li）2026-06-28 拍板做「轻量 3D 渲染场景」——模型导入打头阵（圆润真模型，box/plane 原语表达不了，是真缺口非重组）。技术栈维持纯 Three.js（已确认零裸 WebGL），用 `three/addons` 的 `GLTFLoader`。规模上限暂不硬限（owner：先做功能）。
+>
+> **干净的边界切法（让资产层改动趋零、three 不泄进资产层）**：glTF 解析产物是 three 场景图（渲染概念）。故让**资产层只管「key → 取 `.glb` 字节」（零 three 依赖）**，`GLTFLoader.parse(bytes)` 留在我的 `ThreeRenderer`。
+>
+> **✅ 我已落地（render 半边·我的 ✅/🔶 域·全绿已推/待推）**：
+> - `Model3D` render-only 组件（`components/render.ts` 3D 块）：`modelKey`（资产 key·蓝图只持 key 不塞 URL/二进制）+ `scale?` + `tint?`。
+> - 登记三处：`assembly/component-map.ts`（import + ComponentDataMap 行）、`net/determinism.ts`（`NON_DETERMINISTIC` 加 `Model3D`·纯表现不进 hash）、`renderer/renderable.ts`（`model3d?` 字段 + 两条收集路）。
+> - `renderer/three-renderer.ts`：Model3D 解释——按 `modelKey` 从 `AssetManager.get(key).handle` 取 **ArrayBuffer** → `GLTFLoader.parse` 一次入模板缓存 → 多实例 clone（共享几何省显存·每实例 clone 材质供染色/独立释放）→ 位姿走 Transform3D/盒庭落地面/2D 投影同套路 → 投/受软影。**未就绪（资产没加载好或还在 parse）→ 本帧不画**（同 sprite 未就绪先例·向后兼容）。
+> - 测试 `renderer/three-camera3d.test.ts`：Model3D 收集 + 「不进 hash」红线。tsc + vitest + build 全绿；GLTFLoader 进 `three-renderer` code-split chunk（不连累 2D 消费者）。
+>
+> **🙏 求主程接（资产半边·`src/assets/`·🔒 主程域·我不直接动）**：
+> 1. `asset-types.ts` 加 `ModelDescriptor { kind: 'model'; key; src }`，并入 `AssetDescriptor` 联合（同 texture/atlas/sprite-sheet 先例）。
+> 2. 一个**取字节 loader**：`load(descriptor)` → `{ handle: ArrayBuffer, width:0, height:0 }`（fetch `.glb`/`.gltf` 为 ArrayBuffer）。**零 three 依赖**——three 全留我渲染线。headless/测试可给 stub（无 I/O）。
+> 3.（可选）`isModelHandle(h): h is ArrayBuffer` 导出，便于消费方判型（我渲染器现用 `h instanceof ArrayBuffer` 自检，不强依赖此导出）。
+>
+> 接好后：game-z 蓝图把方块蘑菇人换成 `Model3D{modelKey:'…'}` 真模型 + 截图回归，即端到端打通。**🔶 知会**：上面 4 个共享文件我已只动 3D 相关行（不碰 2D/sim 组件），如撞 rebase 请喊我。
+
 ### REQ-UI-G收藏卡 · [2026-06-26] · PG 同步（UI 库域·game-g 收藏页逐页对齐撞到的缺口） · status: **✅ done（主程 2026-06-26·①② 均下沉·`collection-card.test.ts`）** · 类型: 真能力缺口（尺子已过·不可重组）
 
 > game-g 收藏页对齐 Designer comp（`UI/Game G 收藏·牌谱.html`）+ 原版管线时，撞到 2 个 LayoutNode 表达不了、不可重组的缺口：

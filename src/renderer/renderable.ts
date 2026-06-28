@@ -1,5 +1,5 @@
 import type { IWorld } from '@engine/core/types.js';
-import type { Transform, Transform3D, Shape, Color, Sprite, Text, Visibility, Frame, Mesh3D } from '@engine/protocol/components.js';
+import type { Transform, Transform3D, Shape, Color, Sprite, Text, Visibility, Frame, Mesh3D, Model3D } from '@engine/protocol/components.js';
 
 // 相机视图与世界↔屏幕投影已下沉为共享契约（renderer 正向投影 + clickable 逆向命中的单一真相）。
 // 此处重导出，保持既有 `@renderer/renderable` 消费者（canvas-renderer / 测试）的 import 不变。
@@ -21,6 +21,7 @@ export interface Renderable {
   frame?: Frame; // 当前帧索引（序列帧/命名动画用；渲染器据此 resolve(textureKey, frame.index)）
   text?: Text;
   mesh3d?: Mesh3D; // 可选「3D 物件」描述：3D 后端渲成有体积/双面/可翻的 box/plane；2D 后端画其正面（per-object opt-in 3D）
+  model3d?: Model3D; // 可选「导入式 3D 模型」(glTF)：3D 后端据 modelKey 取资产解析显示；2D 后端无视（圆润模型，opt-in）
   transform3d?: Transform3D; // 可选「真三维位姿」：3D 后端据此把物体放进 XZ 地面 + Y 高度（盒庭）；2D 后端退化用 x,y 画正面
 }
 
@@ -62,6 +63,7 @@ export function collectRenderables(world: IWorld): Renderable[] {
       frame: world.getComponent<Frame>(id, 'Frame'),
       text: world.getComponent<Text>(id, 'Text'),
       mesh3d: world.getComponent<Mesh3D>(id, 'Mesh3D'),
+      model3d: world.getComponent<Model3D>(id, 'Model3D'),
       transform3d: world.getComponent<Transform3D>(id, 'Transform3D'),
     });
   }
@@ -81,6 +83,7 @@ export function collectRenderables(world: IWorld): Renderable[] {
       zOrder: 0,
       color: world.getComponent<Color>(id, 'Color'),
       mesh3d: world.getComponent<Mesh3D>(id, 'Mesh3D'),
+      model3d: world.getComponent<Model3D>(id, 'Model3D'),
       transform3d: t3,
     });
   }

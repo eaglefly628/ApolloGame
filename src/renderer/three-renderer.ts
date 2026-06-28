@@ -1,6 +1,7 @@
 import * as THREE from 'three';
+import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 import type { IWorld, RendererBackend } from '@engine/core/types.js';
-import type { Mesh3D, Sky3D } from '@engine/protocol/components.js';
+import type { Mesh3D, Model3D, Sky3D } from '@engine/protocol/components.js';
 import type { AssetManager } from '@assets/index.js';
 import { isImageHandle } from '@assets/index.js';
 import { getCamera3D, getSky3D } from '@engine/protocol/camera-view.js';
@@ -44,6 +45,13 @@ export class ThreeRenderer implements RendererBackend {
   private readonly meshes = new Map<string, THREE.Mesh>();
   private readonly modeOf = new Map<string, string>(); // 当前几何模式（变了才重建几何）
   private readonly texCache = new Map<string, THREE.Texture>();
+  // ── 导入式 3D 模型（Model3D · glTF）──
+  private gltf?: GLTFLoader; // 懒建（仅盒庭/有 Model3D 时才用）
+  private readonly models = new Map<string, THREE.Object3D>(); // 每实体已放置的模型实例（template 的 clone）
+  private readonly modelMats = new Map<string, THREE.Material[]>(); // 每实例自有材质（clone 出，供染色/独立释放·几何仍共享 template）
+  private readonly modelKeyOf = new Map<string, string>(); // 实体当前 modelKey（变了才重建实例）
+  private readonly modelCache = new Map<string, THREE.Object3D>(); // 按 modelKey 缓存的已解析模板（解析一次·多实例 clone）
+  private readonly modelState = new Map<string, 'pending' | 'failed'>(); // 解析中/失败（避免每帧重复 parse）
   private readonly textSig = new Map<string, string>(); // 文本实体上次内容签名（变了才重画纹理）
   private readonly width: number;
   private readonly height: number;
@@ -92,6 +100,35 @@ export class ThreeRenderer implements RendererBackend {
     this.syncSky(getSky3D(world)); // 天空盒（Sky3D 在场建、不在场拆）
 
     for (const r of collectRenderables(world)) {
+      // 导入式 3D 模型（Model3D · glTF）：圆润真模型，优先于 box 原语。位姿与 Mesh3D 同套路
+      // （Transform3D 真三维 / 盒庭模式 2D 实体落地面 / 否则 2D 投影）。资产经 AssetManager 解析（持 key 保纯）。
+      // 未就绪（资产没加载好或还在 parse）→ 本帧不画（同 sprite「未就绪占位」先例·向后兼容）。
+      if (r.model3d) {
+        const obj = this.ensureModel3D(r, r.model3d);
+        if (obj) {
+          const ms = r.model3d.scale ?? 1;
+          let pose: Pose3D;
+          if (r.transform3d || cam3d) {
+            // 真三维位姿；盒庭模式下纯 2D 实体落地面（height=0 → 模型自身原点坐地，建议模型原点在脚底）。
+            pose = r.transform3d ? transform3dPose(r.transform3d) : groundPose(r, 0);
+            obj.position.set(pose.x, pose.y, pose.z);
+            obj.rotation.set(pose.rx ?? 0, pose.ry ?? 0, pose.rotZ);
+            obj.scale.set(pose.sx * ms, pose.sy * ms, (pose.sz ?? 1) * ms);
+          } else {
+            pose = renderablePose(r, this.zStep);
+            obj.position.set(pose.x, pose.y, pose.z);
+            obj.rotation.set(0, 0, pose.rotZ);
+            obj.scale.set(pose.sx * ms, pose.sy * ms, ms);
+          }
+          if (r.model3d.tint !== undefined) {
+            const hex = r.model3d.tint & 0xffffff;
+            for (const mm of this.modelMats.get(r.entityId) ?? []) (mm as THREE.MeshStandardMaterial).color?.setHex(hex);
+          }
+          seen.add(r.entityId);
+          poses.push(pose);
+        }
+        continue;
+      }
       // 3D 物件（Mesh3D）：渲成有体积/双面的 box（或薄片 plane）。与 2D 同场混排。
       // 两条位姿路：① 有 Transform3D → 真三维位姿（盒庭：地面 XZ + Y 高度，三轴欧拉）；
       // ② 否则 → 2D 投影 + Transform.rotation 当翻面角（原 three-lab 路径，向后兼容）。
@@ -163,6 +200,16 @@ export class ThreeRenderer implements RendererBackend {
         this.textSig.delete(id);
       }
     }
+    // 消失的模型实例 → 移出场景 + 释放其自有材质（几何与 template 共享·不在此释放，destroy 时随模板释放）。
+    for (const [id, obj] of this.models) {
+      if (!seen.has(id)) {
+        this.scene.remove(obj);
+        for (const mm of this.modelMats.get(id) ?? []) mm.dispose();
+        this.models.delete(id);
+        this.modelMats.delete(id);
+        this.modelKeyOf.delete(id);
+      }
+    }
     this.gl.render(this.scene, this.camera);
   }
 
@@ -173,6 +220,18 @@ export class ThreeRenderer implements RendererBackend {
       disposeMesh(m);
     }
     this.meshes.clear();
+    // 模型实例：移出场景 + 释放实例自有材质。
+    for (const [id, obj] of this.models) {
+      this.scene.remove(obj);
+      for (const mm of this.modelMats.get(id) ?? []) mm.dispose();
+    }
+    this.models.clear();
+    this.modelMats.clear();
+    this.modelKeyOf.clear();
+    // 模型模板：释放共享几何 + 模板自带材质（实例材质已在上面释放）。
+    for (const [, tpl] of this.modelCache) disposeObject(tpl);
+    this.modelCache.clear();
+    this.modelState.clear();
     for (const [, t] of this.texCache) t.dispose();
     this.texCache.clear();
     this.gl.dispose();
@@ -277,6 +336,64 @@ export class ThreeRenderer implements RendererBackend {
       mat.opacity = alpha;
       mat.needsUpdate = true;
     }
+  }
+
+  // 建/复用模型实例：modelKey 不变则复用；变了（换模型）拆旧建新。模板未就绪 → 返回 null（本帧不画）。
+  // 每实例 clone 模板 + clone 材质（自有材质供染色/独立释放；几何与模板共享，省显存）。
+  private ensureModel3D(r: Renderable, m: Model3D): THREE.Object3D | null {
+    const prev = this.models.get(r.entityId);
+    if (prev && this.modelKeyOf.get(r.entityId) === m.modelKey) return prev;
+    if (prev) {
+      this.scene.remove(prev);
+      for (const mm of this.modelMats.get(r.entityId) ?? []) mm.dispose();
+      this.models.delete(r.entityId);
+      this.modelMats.delete(r.entityId);
+    }
+    const template = this.modelTemplate(m.modelKey);
+    if (!template) return null;
+    const obj = template.clone(true);
+    const mats: THREE.Material[] = [];
+    const cloneMat = (src: THREE.Material): THREE.Material => {
+      const c = src.clone();
+      mats.push(c);
+      return c;
+    };
+    obj.traverse((o) => {
+      const mesh = o as THREE.Mesh;
+      if (!mesh.isMesh) return;
+      mesh.castShadow = true;
+      mesh.receiveShadow = true; // 盒庭里模型与地台互投软影
+      const src = mesh.material;
+      mesh.material = Array.isArray(src) ? src.map(cloneMat) : cloneMat(src);
+    });
+    this.models.set(r.entityId, obj);
+    this.modelMats.set(r.entityId, mats);
+    this.modelKeyOf.set(r.entityId, m.modelKey);
+    this.scene.add(obj);
+    return obj;
+  }
+
+  // 按 modelKey 取已解析模板。首见且 AssetManager 已备好 glTF 字节(ArrayBuffer 句柄) → 异步 parse 一次（标 pending
+  // 防每帧重复）；解析成功入缓存。未就绪/解析中/失败 → null。资产层尚未加载到 ArrayBuffer 时不标 pending，下帧重试。
+  private modelTemplate(key: string): THREE.Object3D | null {
+    const ready = this.modelCache.get(key);
+    if (ready) return ready;
+    if (this.modelState.get(key)) return null; // pending / failed
+    const handle = this.assets?.get(key)?.handle;
+    if (!(handle instanceof ArrayBuffer)) return null; // 资产尚未加载成字节 → 下帧重试
+    this.modelState.set(key, 'pending');
+    (this.gltf ??= new GLTFLoader()).parse(
+      handle,
+      '',
+      (gltf) => {
+        this.modelCache.set(key, gltf.scene);
+        this.modelState.delete(key);
+      },
+      () => {
+        this.modelState.set(key, 'failed');
+      },
+    );
+    return null;
   }
 
   private spriteReady(key: string, frame?: number): boolean {
@@ -402,4 +519,15 @@ function disposeMesh(mesh: THREE.Mesh): void {
   mesh.geometry.dispose();
   const m = mesh.material;
   (Array.isArray(m) ? m : [m]).forEach((x) => x.dispose());
+}
+
+// 释放整棵模型树（模板用）：遍历所有 Mesh 释放几何 + 材质。clone 实例不走此函数（几何共享·只释放实例材质）。
+function disposeObject(obj: THREE.Object3D): void {
+  obj.traverse((o) => {
+    const mesh = o as THREE.Mesh;
+    if (!mesh.isMesh) return;
+    mesh.geometry?.dispose();
+    const m = mesh.material;
+    (Array.isArray(m) ? m : [m]).forEach((x) => x?.dispose());
+  });
 }

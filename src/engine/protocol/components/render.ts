@@ -53,6 +53,19 @@ export interface Mesh3D extends Component {
   flipAxis?: 'x' | 'y'; // Transform.rotation 作为绕此轴的翻面角；缺省 'x'（前后翻）
 }
 
+// ── Model3D（render-only，导入式 3D 模型 · glTF）──────────────────────────────────────────────
+// Mesh3D 的 box/plane 原语表达不了圆润模型（蘑菇人、道具、生物…）→ 用真模型：渲染器据 modelKey 从
+// AssetManager 取 glTF 字节、解析成 three 场景显示。位姿走同实体 Transform3D（盒庭真三维）或 2D Transform
+// （盒庭模式落地面），与 Mesh3D 同套位姿路径（per-object opt-in 3D，不是整场景 3D）。资产走 key
+// （sim 持 key 保纯·同 sprite 先例），蓝图**绝不塞 URL/二进制**（导入铁律）。
+// 红线：纯表现，**绝不被 Condition 读、绝不进 sim 逻辑/hash**（已入 determinism NON_DETERMINISTIC）。
+export interface Model3D extends Component {
+  readonly type: 'Model3D';
+  modelKey: string; // 资产 key → glTF 模型（AssetManager 解析；蓝图只持 key·不塞 URL/二进制）
+  scale?: number; // 等比缩放覆盖（缺省 1；与 Transform3D.scale 叠乘）
+  tint?: number; // 可选整体染色 0xRRGGBB（缺省用模型自带材质）
+}
+
 // ── Transform3D（render-only，真三维位姿 · 3D 后端专用）─────────────────────────────────────
 // 给实体一份**完整三维位姿**（x 右 / y 上=高度 / z 朝镜头 · 世界单位），让盒庭/积木场景真正立体堆叠。
 // 区别于 2D Transform（x,y 在屏幕平面 + zOrder 微分层 = 2.5D billboard）：挂了本件的实体，3D 后端用它定位姿

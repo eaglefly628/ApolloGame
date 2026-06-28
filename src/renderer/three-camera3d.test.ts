@@ -8,7 +8,7 @@ import {
 } from './three-projection.js';
 import { getCamera3D, getSky3D } from '@engine/protocol/camera-view.js';
 import { hashSnapshot } from '@net/index.js';
-import type { Transform3D, Camera3D, Sky3D, Mesh3D } from '@engine/protocol/components.js';
+import type { Transform3D, Camera3D, Sky3D, Mesh3D, Model3D } from '@engine/protocol/components.js';
 
 describe('Transform3D / Camera3D 纯函数（盒庭位姿 + 轨道相机）', () => {
   it('transform3dPose：等比 scale 落三轴、rot 缺省 0', () => {
@@ -55,6 +55,21 @@ describe('collectRenderables：纯 3D 实体（Transform3D·无 2D Transform）�
     expect(rs[0]!.x).toBe(3);
     expect(rs[0]!.mesh3d?.shape).toBe('box');
   });
+  it('收进 Model3D（纯 3D 实体 + 2D Transform 实体 两条路都收 modelKey）', () => {
+    const w = new World();
+    // 纯 3D 实体：Transform3D + Model3D
+    w.createEntity('hero3d');
+    w.addComponent('hero3d', { type: 'Transform3D', x: 1, y: 0, z: 2 } as Transform3D);
+    w.addComponent('hero3d', { type: 'Model3D', modelKey: 'mush-man', scale: 2, tint: 0xff0000 } as Model3D);
+    // 2D Transform 实体（盒庭落地面路径）+ Model3D
+    w.createEntity('hero2d');
+    w.addComponent('hero2d', { type: 'Transform', x: 4, y: 6, rotation: 0, scaleX: 1, scaleY: 1 } as never);
+    w.addComponent('hero2d', { type: 'Model3D', modelKey: 'toad' } as Model3D);
+    const byId = Object.fromEntries(collectRenderables(w).map((r) => [r.entityId, r]));
+    expect(byId['hero3d']!.model3d?.modelKey).toBe('mush-man');
+    expect(byId['hero3d']!.model3d?.scale).toBe(2);
+    expect(byId['hero2d']!.model3d?.modelKey).toBe('toad');
+  });
 });
 
 describe('Camera3D：单例读取 + render-only 不进确定性 hash（红线）', () => {
@@ -70,15 +85,17 @@ describe('Camera3D：单例读取 + render-only 不进确定性 hash（红线）
     w.addComponent('sky', { type: 'Sky3D', top: 0x4a90d9, bottom: 0xcfe9f7, clouds: true } as Sky3D);
     expect(getSky3D(w)?.clouds).toBe(true);
   });
-  it('Camera3D / Transform3D / Sky3D 变化不改 world hash（排除出 lockstep）', () => {
-    const mk = (yaw: number, x: number, skyTop: number): string => {
+  it('Camera3D / Transform3D / Sky3D / Model3D 变化不改 world hash（排除出 lockstep）', () => {
+    const mk = (yaw: number, x: number, skyTop: number, modelKey: string): string => {
       const w = new World();
       w.createEntity('cam'); w.addComponent('cam', { type: 'Camera3D', yaw, pitch: 0 } as Camera3D);
       w.createEntity('b'); w.addComponent('b', { type: 'Transform3D', x, y: 0, z: 0 } as Transform3D);
       w.createEntity('sky'); w.addComponent('sky', { type: 'Sky3D', top: skyTop, bottom: 0 } as Sky3D);
+      w.createEntity('m'); w.addComponent('m', { type: 'Model3D', modelKey, tint: skyTop } as Model3D);
       return hashSnapshot(w.snapshot());
     };
-    expect(mk(0, 0, 0x111111)).toBe(mk(2, 99, 0xabcdef)); // 纯表现：相机/位姿/天空盒变了 hash 不变
+    // 纯表现：相机/位姿/天空盒/模型 全变了 hash 不变。
+    expect(mk(0, 0, 0x111111, 'a')).toBe(mk(2, 99, 0xabcdef, 'zzz'));
   });
   it('对照：2D Transform 进 hash（确认排除是针对性的、非恒等）', () => {
     const mk = (tx: number): string => {

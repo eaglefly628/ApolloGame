@@ -119,9 +119,10 @@ node scripts/shoot-game.mjs game-z /tmp/game-z.png    # 任意 game id 都行
 
 > 背景：奇诺比奥队长（Captain Toad）风盒庭。预演结论=可实现、增量非重写。已落 v0（位姿/相机/阴影/光/材质/天空盒/可控角色）。往后：
 
-- **★ 待 owner 拍的叉**：① 3D 位姿——已选**独立 `Transform3D`**（不碰 sim 的 2D Transform）；② **模型导入(glTF)** 要不要现在开（新依赖面·但圆润模型离不开它）——**先问 owner**再动。
+- **✅ owner 已拍（2026-06-28）**：做「轻量 3D 渲染场景」，**模型导入打头阵**；技术栈维持**纯 Three.js**（确认零裸 WebGL·用 `three/addons` GLTFLoader）；规模上限**暂不硬限**（先做功能·预算校验以后加）。
+- **🚧 模型导入(glTF) 进行中**：render 半边已落（`Model3D` 组件 + ThreeRenderer `GLTFLoader.parse(ArrayBuffer)` 解释 + 测试·全绿）；资产半边（`src/assets` 加 `model` kind + 取字节 loader·🔒 主程域）已走 `requests.md`（REQ-3D-Model导入）待主程接。接好后 game-z 换真模型 + 截图回归即端到端打通。
 - **P-next 候选**（每条：数据组件 + 引擎解释 + 纯函数测 + 截图回归）：
-  - **模型导入** `Model3D = 资产 key → glTF`（via AssetManager·把方块蘑菇人换真模型）。
+  - ~~**模型导入** `Model3D = 资产 key → glTF`~~（render 半边已落·见上「进行中」）。
   - **移轴景深 / 后处理**（tilt-shift DOF / bloom / SSAO）——Captain Toad 招牌微缩感（EffectComposer·render-only 管线）。
   - **数据化光照** `Light3D`（sun/ambient/color/intensity·替代现写死在 init 的灯）。
   - **可旋转交互**：输入 → 转 `Camera3D.yaw/pitch`（玩家旋转盒庭·别忘 render-only/不进 hash）。
