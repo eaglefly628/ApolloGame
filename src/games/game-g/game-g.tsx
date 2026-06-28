@@ -1,15 +1,15 @@
 import { mountLobby } from './lobby-dd.js'; // 全数据驱动大厅（Step A·owner 2026-06-25 上线）·签名同旧 mountLobby
 import { luckyBattleBuff, luckyFromVal, type LobbyView, type LobbyShopItem } from './lobby-screen.js';
-import { armyFromFormation, quartermasterEnergy, LEVER_START, battleSpec, RUN_BATTLES, BETWEEN_BUFFS, applyBuff, tiangangKeyBuffs, bossFor, GAME_G_TIANGANGS, TIANGANG_BY_ID, ARCHETYPES, detectArchetype, archetypeMatchup, activeArchetype, pickAiFormation, GAME_G_PLANETS, GAME_G_FOILS, RECHARGE_PACKS, rechargeTotal, DIAMOND_EXCHANGES, DIZHI_SHARD_PACKS, RECHARGE_PASSWORD, GACHA, gachaCost, DIZHI_MAX_TIER, DIZHI_TIER_NM, DIZHI_TIER_CAP, DIZHI_INLAY_FAVOR, dizhiMerge, dizhiTotal, dizhiTopTier, DIZHI_ZODIACS, INLAY_MAX, effectiveDeckFavors, POKER_PICK_SIZE, isPoolCardId, autoBuildPokerPicks, cardFavorIndex, deployCost, isHeroOwned, heroNameOf, effectiveLives, effectiveLeverCap, effectiveLeverRegen, campaignFor, unlockStageOf, type Formation, type Intervention, type RunBuff, type ArmyCard } from './index.js';
+import { armyFromFormation, quartermasterEnergy, battleSpec, RUN_BATTLES, BETWEEN_BUFFS, applyBuff, tiangangKeyBuffs, bossFor, GAME_G_TIANGANGS, TIANGANG_BY_ID, ARCHETYPES, detectArchetype, archetypeMatchup, activeArchetype, pickAiFormation, GAME_G_PLANETS, GAME_G_FOILS, RECHARGE_PACKS, rechargeTotal, DIAMOND_EXCHANGES, DIZHI_SHARD_PACKS, RECHARGE_PASSWORD, GACHA, gachaCost, DIZHI_TIER_NM, DIZHI_TIER_CAP, DIZHI_INLAY_FAVOR, dizhiMerge, dizhiTotal, dizhiTopTier, DIZHI_ZODIACS, INLAY_MAX, effectiveDeckFavors, POKER_PICK_SIZE, isPoolCardId, autoBuildPokerPicks, cardFavorIndex, deployCost, isHeroOwned, heroNameOf, effectiveLives, effectiveLeverCap, effectiveLeverRegen, campaignFor, unlockStageOf, type Formation, type Intervention, type RunBuff, type ArmyCard } from './index.js';
 import { type ClashEvent } from './combat-types.js';
 // 抽出的纯函数模块（Phase 2 拆分·见各文件头注）：存档/出战编排/掷命特写视图。公共 API(buildPickDeck/bossHeroCard/
 // aggregateTengang/tengangFxOf/freshSave)在文件尾从这里再导出，保 deck-wiring/live-combat/turnmatch 测试 import 不变。
 import { freshSave, loadSave, persist, resetFortuneIfNewDay, FORTUNE_MAX, activeDeck, syncTiangangs, newDeckId, rollBoss, TIANGANG_DECK_SIZE, MAX_TIANGANG_DECKS } from './game-g-save.js';
-import { favorToP, cardRank, avg, myBias, describeFormation, pick3, buildPickDeck, bossHeroCard, aggregateTengang, tengangFxOf, seededShuffleArr } from './game-g-build.js';
+import { favorToP, cardRank, avg, describeFormation, pick3, buildPickDeck, bossHeroCard, aggregateTengang, seededShuffleArr } from './game-g-build.js';
 import { clashToTurnView } from './game-g-clash-view.js';
-import { initTurnBattle, drawCard, deployUnit, castTengang, discardCard, endTurn, aiTakeTurn, toggleGate, GATES, OPENING_HAND, DRAW_COST, CAST_COST, manaGain, type PokerCard, type TengangHandCard, type Card } from './turn-combat.js';
+import { initTurnBattle, drawCard, deployUnit, castTengang, discardCard, endTurn, aiTakeTurn, toggleGate, GATES, OPENING_HAND, DRAW_COST, CAST_COST, type PokerCard, type TengangHandCard, type Card } from './turn-combat.js';
 import { DISHA_NAME } from './disha.js';
-import { mountTurnBattle, buildTurnBattleView, type TurnBattleView, type TurnBattleActions, type TurnClashView, type TurnClashCardView, type TurnShaView } from './turn-battle-screen.js';
+import { mountTurnBattle, buildTurnBattleView, type TurnBattleView, type TurnBattleActions, type TurnClashView, type TurnShaView } from './turn-battle-screen.js';
 import { mountCoinFlip } from './coin-flip.js';
 import { loadLevel } from './level.js';
 import { cardPoints } from './clash-resolve.js';
@@ -34,7 +34,6 @@ export { freshSave } from './game-g-save.js';
 const DEFAULT_ROOT_CSS = 'position:absolute;inset:0;background:#0a0a14;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:14px;color:#cbd5e1;font:13px system-ui';
 const LOBBY_ROOT_CSS = 'position:absolute;inset:0;overflow:auto';
 // 敌方 favor 偏置随关卡递增（旧实时路遗留·当前回合制 spec.enemyBias 直供·保留）。
-const enemyBias = (stage: number): number => -8 + stage * 2;
 
 
 export function mount(container: HTMLElement, shell?: { exit?: () => void }): () => void {
@@ -135,7 +134,6 @@ export function mount(container: HTMLElement, shell?: { exit?: () => void }): ()
       onGacha: (pool, count, pay) => {
         const c = gachaCost(pool, count, pay);
         if (save.materials < c.gold || save.diamond < c.diamond) return null;
-        const tierName = ['', '铜', '银', '金'];
         if (pool === 'tiangang') {
           const poolCards = GAME_G_TIANGANGS.filter((t) => unlockStageOf(t.id) <= save.campaignMax);
           if (poolCards.length === 0) return null;
@@ -266,7 +264,7 @@ export function mount(container: HTMLElement, shell?: { exit?: () => void }): ()
   // ───────────────────────── 出征（一局 · doc24 回合制 · turn-combat + turn-battle-screen）─────────────────────────
   // owner 大转向：实时 CR → 回合制桌游。每回合 +1 召唤源泉 → 四选一互斥动作(抽/放[+翻门]/打天罡/弃) → 结束回合推进一格 → 相邻遭遇掷命特写。
   // 牌库由 prepareArmies 揭晓前编排(融天罡/干预/Boss·outcome-first)折成扑克兵库；先破敌 3 血大本营胜。结算复用旧养成闭环(命/材料/三选一)。
-  function showTurnMatch(formation: Formation, myName: string, interventions: Intervention[]): void {
+  function showTurnMatch(_formation: Formation, _myName: string, _interventions: Intervention[]): void {
     clear();
     const spec = battleSpec(save.stage - 1);
     const lvl = loadLevel(save.stage); // doc27 关卡加载：本关 = 命运之战的英雄(列奥尼达..项羽)·地煞/12 天罡/难度/对白 逐关入库

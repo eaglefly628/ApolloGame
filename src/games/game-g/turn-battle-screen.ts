@@ -206,29 +206,9 @@ function fortBase(view: TurnBattleView, isMine: boolean): string {
     const timer = { display: 'flex', alignItems: 'center', gap: '5px', marginTop: '4px', padding: '3px 11px', borderRadius: '99px', background: 'rgba(255,255,255,.06)', border: '1px solid var(--panel-border)', zIndex: 2 };
     return `<div style="${st(baseStyle)}">${fortInner}<div style="${st(timer)}"><span style="font-size:12px;">⏳</span><span style="font-family:var(--fn); font-size:12px; color:var(--ink-dim); white-space:nowrap;">${esc(view.timerLabel)}</span></div><div style="${st(conn)}"></div></div>`;
   }
-  // 敌方：+ 地煞牌行
-  const shaLabel = { fontSize: '9px', letterSpacing: '.1em', color: 'var(--ink-dim)', marginTop: '6px' };
-  const shaRow = { display: 'flex', gap: '5px', marginTop: '5px', zIndex: 2 };
-  const shaSlot = (s: TurnShaView): string => {
-    const rc = RAR[s.rar] || RAR.white;
-    const used = s.used ?? false;
-    const slot: Style = { position: 'relative', width: '26px', height: '34px', borderRadius: '5px', background: s.filled ? (used ? 'rgba(20,24,34,.8)' : 'linear-gradient(160deg,#2a3346,#1a2230)') : 'rgba(255,255,255,.04)', border: '1px solid ' + (s.filled ? (used ? 'rgba(255,255,255,.2)' : rc[1]) : 'rgba(255,255,255,.15)'), boxShadow: s.filled && !used ? `0 0 8px ${rc[1]}66` : 'inset 0 1px 2px rgba(0,0,0,.3)', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: '1px', opacity: used ? 0.55 : 1, cursor: 'help' };
-    if (!s.filled) {
-      const qMark: Style = { fontFamily: 'var(--fd)', fontSize: '15px', color: 'rgba(255,255,255,.2)' };
-      const tip = `<div class="gg-tip" style="width:196px"><div style="font-size:11px;color:#cdd6e2;line-height:1.55">尚未揭示的地煞牌位。</div></div>`;
-      return `<div class="gg-tipwrap tip-down tip-left" style="${st(slot)}"><span style="${st(qMark)}">？</span>${tip}</div>`;
-    }
-    const shortName = s.name.replace('地煞·', '').replace('地煞 · ', '').slice(0, 2);
-    const mark: Style = { fontFamily: 'var(--fd)', fontSize: '13px', color: used ? 'rgba(255,255,255,.38)' : rc[1], lineHeight: '1' };
-    const usedPip = used ? `<span style="font-family:var(--fb);font-size:6px;color:rgba(255,180,140,.7);line-height:1;">已用</span>` : '';
-    const tipContent = `<div style="display:flex;align-items:center;gap:5px;margin-bottom:5px;"><span style="width:7px;height:7px;border-radius:50%;flex-shrink:0;background:${rc[1]};box-shadow:0 0 5px ${rc[1]}"></span><b style="font-size:11px;color:#fff">${esc(s.name)}</b></div>${s.desc ? `<div style="font-size:10px;color:rgba(255,255,255,.75);line-height:1.4;margin-bottom:5px;">${esc(s.desc)}</div>` : ''}<div style="font-size:9px;color:${used ? '#ff9966' : '#7fcc9a'};">${used ? '● 已使用' : '○ 待发动'}</div>`;
-    return `<div class="gg-tipwrap tip-down tip-left" style="${st(slot)}"><span style="${st(mark)}">${esc(shortName)}</span>${usedPip}<div class="gg-tip" style="width:196px;">${tipContent}</div></div>`; // 196:补去 1.5× hover 放大后的可读宽（原 152×1.5≈228·内联宽覆盖基础 214）
-  };
-  // 敌方大本营可点 → 弹 Boss 名号 + 战役故事（owner 2026-06-21）。
+  // 敌方大本营可点 → 弹 Boss 名号 + 战役故事（owner 2026-06-21）。地煞行已迁敌方右栏(enemyRail·2026-06-28)·此处仅留 hover bossTip。
   const bossTipRows = forr(view.sha.filter((s) => s.filled), (s) => { const rc = RAR[s.rar] || RAR.white; const used = s.used ?? false; return `<div style="display:flex;align-items:center;gap:6px;padding:3px 0;border-top:1px solid rgba(255,255,255,.08);"><span style="width:6px;height:6px;border-radius:50%;flex-shrink:0;background:${rc[1]};"></span><span style="flex:1;font-size:10px;color:rgba(255,255,255,.85);">${esc(s.name)}</span><span style="font-size:9px;color:${used ? '#ff9966' : '#7fcc9a'};">${used ? '已用' : '备用'}</span></div>`; });
   const bossTip = `<div class="gg-tip" style="width:210px;text-align:left;"><div style="font-size:12px;font-weight:700;color:var(--gold);margin-bottom:8px;">👑 ${esc(view.bossName)}</div>${bossTipRows}<div style="margin-top:7px;padding-top:6px;border-top:1px solid rgba(255,255,255,.12);font-size:10px;color:rgba(255,255,255,.55);">牌库剩余 <b style="color:#cdeeff;">${view.deckB}</b> 张</div></div>`;
-  // 地煞已迁敌方右栏(enemyRail·owner 2026-06-28)→ 大本营不再重复挂地煞行；保留 hover bossTip(名号+地煞详情)。
-  void shaLabel; void shaRow; void shaSlot; // 旧地煞行样式/渲染保留定义(bossTip 仍用 sha 数据)·不再渲染到堡垒下
   return `<div data-act="boss-info" class="gg-tipwrap tip-side" style="${st(baseStyle)}; cursor:pointer"><div style="${st(conn)}"></div>${fortInner}${bossTip}</div>`;
 }
 
@@ -350,7 +330,6 @@ function handCard(c: TurnHandCardView, i: number, hiOn = false, edge: 'left' | '
   const affordSty = notAfford ? ';opacity:0.42;filter:grayscale(0.65)' : '';
   const selSty = (c.selected ? ';outline:3px solid var(--gold);outline-offset:2px' : '') + (hiOn ? HL : '');
   const rarDot = { position: 'absolute', top: c.kind === 'gang' ? '8px' : '-4px', left: c.kind === 'gang' ? '8px' : '50%', transform: c.kind === 'gang' ? 'none' : 'translateX(-50%)', width: c.kind === 'gang' ? '10px' : '9px', height: c.kind === 'gang' ? '10px' : '9px', borderRadius: '50%', background: rc[1], boxShadow: `0 0 7px ${rc[1]}`, border: '1px solid rgba(255,255,255,.6)' };
-  const costPill = { position: 'absolute', top: c.kind === 'gang' ? '7px' : '6px', right: c.kind === 'gang' ? '8px' : '7px', minWidth: '22px', padding: '1px 6px', borderRadius: '99px', background: 'var(--gold-grad)', color: '#2a1a08', fontFamily: 'var(--fn)', fontSize: '11px', textAlign: 'center', fontWeight: 700 };
   if (c.kind === 'gang') {
     const tint = '#a98bff';
     const card = { position: 'relative', width: '96px', height: '120px', borderRadius: '12px', background: 'var(--panel)', border: '2px solid ' + rc[1], boxShadow: '0 6px 16px rgba(0,0,0,.4), inset 0 0 0 1px var(--hairline)' };
