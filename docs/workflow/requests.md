@@ -587,3 +587,13 @@
 > - **库 B·战场/实体特效 = 已覆盖·零新系统**：粒子/爆炸/闪光 = `PrefabTemplate`(数据) + `caster`/`tween`/`lifetime`/`Timer` 现成能力组合（参照 spawn-lab/combat-lab）。游戏的「特效库」= 一组 prefab 数据（游戏层），**不下沉任何新 system**（CORE RULE：已覆盖→不加）。
 > - **正交 + 叠加**：库 A 改 UI 元素自我动画；库 B 在世界生成特效实体；同一处可叠（牌 fx shake+flash 的同时战场 caster 爆炸）。
 > **给所有 session/PG**：UI 战斗反馈一律用 `layout.fx`（从闭集 kind 选），**别再提/加 `xxx?:boolean` 特效开关**；缺 kind → 提 requests，主程评审后加**一个 kind**。
+
+
+### REQ-3D-W1高效引擎 · [2026-06-28] · owner → P3D（3D 渲染线）· status: **open（工单已开·P3D 执行·见 finish/P3D-game-z-handoff.md §9）** · 类型: 设计纲领 + 真能力（实例化绘制）
+
+> **owner 2026-06-28**：3D 引擎要**高效率、低开销**（性能写进设计、不靠后期优化补），**instanced draw 硬要求**。主程已开工单 **W1**（`docs/workflow/finish/P3D-game-z-handoff.md §9`）派 P3D：
+> - **W1-A 实例化绘制**（headline）：同几何多实体 → 1 draw call（InstancedMesh·自动按 batch key 分批·`renderer.info.render.calls` 验收）。逐面色坑给了三方案（同色批 +/单 mesh fallback）。Model3D 多 mesh 分期。
+> - **W1-B 每帧零浪费**（必做基线）：去每帧 `material.needsUpdate`、`transparent` 按 alpha、sync 复用临时对象。
+> - **W1-C 低开销基线**：静态帧跳渲（dirty 标志）+ 阴影不动不重渲 + near/far 收紧。
+> - **W1-D 快赢**：tonemap(ACES/AgX) + setPixelRatio。**W1-E**：resize / 模型自动贴地 / .glb-only 文档。
+> **数据驱动守则（贯穿）**：全是渲染器内部、**零数据/零组件改动**——游戏只摆实体数据，渲染器自动高效；**绝不往数据加 `instanced` 旗标**。光照/曝光数据化（`Light3D`）属路线图、不在 W1（YAGNI）。
