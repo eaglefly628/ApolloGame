@@ -82,6 +82,34 @@ export interface Overlap extends Component {
   depth: number;
 }
 
+// ── Collider3D（REQ-3D-Collision · P1）── 3D 逻辑碰撞体（**确定性 sim·进 hash**·非 render-only）。
+// 位置：planar 取同实体 2D `Transform`(x→X、y→Z 地面)；垂直/形状全在本组件（baseY/height/radius·进 hash·
+// 不依赖 render-only 的 Transform3D）。胶囊限定竖直(Y 轴·角色标准)。trigger=只产重叠事件不推开（触发区/感知）。
+export interface Collider3D extends Component {
+  readonly type: 'Collider3D';
+  kind: 'sphere' | 'box' | 'capsule';
+  radius?: number; // sphere / capsule
+  halfX?: number; // box 半尺寸
+  halfY?: number;
+  halfZ?: number;
+  height?: number; // capsule 总高（含两端半球·缺省 2*radius）
+  baseY?: number; // 碰撞体下沿离地高度（缺省 0=坐地）
+  offsetX?: number; // planar 相对 Transform 的偏移
+  offsetZ?: number;
+  trigger?: boolean; // true=触发区（只产 Overlap3D 事件·不参与推开）
+}
+
+// ── Overlap3D（REQ-3D-Collision）── 一对重叠的 3D 碰撞体（法线 A→B + 穿透深度）。每帧重算（同 2D Overlap 先例）。
+export interface Overlap3D extends Component {
+  readonly type: 'Overlap3D';
+  entityA: EntityId;
+  entityB: EntityId;
+  normalX: number;
+  normalY: number;
+  normalZ: number;
+  depth: number;
+}
+
 // ── ground-sense ── 实体这帧是否站在地面上（marker，存在即着地，每帧由 ground-sense 重算）
 export interface Grounded extends Component {
   readonly type: 'Grounded';

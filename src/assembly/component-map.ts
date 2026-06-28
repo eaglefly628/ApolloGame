@@ -18,6 +18,7 @@ import type {
   Caster,
   Clickable,
   Coachmark,
+  Collider3D,
   Color,
   Controllable,
   CraftRecipe,
@@ -51,6 +52,7 @@ import type {
   Mortal,
   OverTime,
   Overlap,
+  Overlap3D,
   PerCardRetrigger,
   Post3D,
   PerCardRule,
@@ -114,6 +116,7 @@ export interface ComponentDataMap {
   Caster: Omit<Caster, 'type'>;
   Clickable: Omit<Clickable, 'type'>;
   Coachmark: Omit<Coachmark, 'type'>;
+  Collider3D: Omit<Collider3D, 'type'>;
   Color: Omit<Color, 'type'>;
   Controllable: Omit<Controllable, 'type'>;
   CraftRecipe: Omit<CraftRecipe, 'type'>;
@@ -147,6 +150,7 @@ export interface ComponentDataMap {
   Mortal: Omit<Mortal, 'type'>;
   OverTime: Omit<OverTime, 'type'>;
   Overlap: Omit<Overlap, 'type'>;
+  Overlap3D: Omit<Overlap3D, 'type'>;
   PerCardRetrigger: Omit<PerCardRetrigger, 'type'>;
   Post3D: Omit<Post3D, 'type'>;
   PerCardRule: Omit<PerCardRule, 'type'>;

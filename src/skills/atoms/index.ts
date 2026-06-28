@@ -11,6 +11,7 @@ import { accelerationCapability } from './acceleration/index.js';
 import { massCapability } from './mass/index.js';
 import { shapeCapability } from './shape/index.js';
 import { overlapDetectCapability } from './overlap-detect/index.js';
+import { overlapDetect3dCapability } from './overlap-detect-3d/index.js';
 import { timerCapability } from './timer/index.js';
 import { resourceCapability } from './resource/index.js';
 import { flagCapability } from './flag/index.js';
@@ -42,6 +43,7 @@ export {
   massCapability,
   shapeCapability,
   overlapDetectCapability,
+  overlapDetect3dCapability,
   timerCapability,
   resourceCapability,
   flagCapability,
@@ -77,6 +79,7 @@ export const allAtomCapabilities: CapabilityDefinition[] = [
   massCapability,
   shapeCapability,
   overlapDetectCapability,
+  overlapDetect3dCapability,
   timerCapability,
   resourceCapability,
   flagCapability,

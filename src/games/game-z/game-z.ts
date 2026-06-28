@@ -9,7 +9,7 @@ import { ThreeRenderer, type RenderStats } from '@renderer/three-renderer.js';
 import { AssetManager, ModelAssetLoader } from '@assets/index.js';
 import { mountUI } from '@ui/components/index.js';
 import type { LayoutNode } from '@ui/components/index.js';
-import type { Velocity, Camera3D } from '@engine/protocol/components.js';
+import type { Velocity, Camera3D, Overlap3D } from '@engine/protocol/components.js';
 import { dioramaBlueprint } from './diorama.js';
 import { GAME_Z_ASSETS } from './assets.js';
 
@@ -19,11 +19,13 @@ const fmtK = (n: number): string => (n >= 1000 ? `${(n / 1000).toFixed(1)}k` : `
 
 // 角标 HUD（LayoutNode 纯数据）：标题 + 操作提示 + 可开关的性能剖析面板（像虚幻 stat·P 键开关）。
 // 剖析数据来自 renderer.readStats()（引擎暴露）；HUD 本体是数据描述（UI 铁律）。pointer-events:none 不挡盒庭。
-function hudTree(fps: number, stats: RenderStats | null, showProfiler: boolean): LayoutNode {
+function hudTree(fps: number, stats: RenderStats | null, showProfiler: boolean, inZone: boolean): LayoutNode {
   const children: LayoutNode[] = [
     { type: 'Label', id: 'gz-title', props: { text: 'GAME Z', size: 'xxl', glow: true } },
     { type: 'Label', id: 'gz-sub', props: { text: '3D 盒庭 · 数据驱动渲染线 · glTF 模型导入', size: 'sm' } },
     { type: 'Label', id: 'gz-hint', props: { text: 'WASD 控鸭 · 拖拽旋转 · 滚轮缩放 · O 正交 · F 跟随 · P 剖析', size: 'sm' } },
+    // 3D 碰撞触发区状态（读确定性 Overlap3D·纯展示）：小黄鸭进绿垫即亮。
+    { type: 'Label', id: 'gz-zone', props: { text: inZone ? '🔔 触发区：进入（Overlap3D）' : '触发区：外', size: 'sm', glow: inZone, color: inZone ? undefined : 'dim' } },
   ];
   if (showProfiler && stats) {
     children.push(
@@ -66,7 +68,12 @@ export function mount(container: HTMLElement): () => void {
   let showProfiler = true; // 性能剖析面板开关（P 键切换·默认开）
   let fps = 60; // 平滑帧率（render-only·不进 sim）
   const cam = (): Camera3D | undefined => engine.world.getComponent<Camera3D>('cam', 'Camera3D'); // 取相机组件（行为层写它）
-  const ui = mountUI(hudHost, hudTree(60, null, showProfiler));
+  // 读 3D 碰撞结果（确定性 Overlap3D·纯展示）：小黄鸭是否在触发区里。
+  const inZone = (): boolean => engine.world.query('Overlap3D').some(([id]) => {
+    const o = engine.world.getComponent<Overlap3D>(id, 'Overlap3D');
+    return !!o && (o.entityA === 'zone' || o.entityB === 'zone');
+  });
+  const ui = mountUI(hudHost, hudTree(60, null, showProfiler, false));
 
   // 键盘 → 角色 Velocity（运行时输入胶水）：归一化对角线 + 速度；motion-apply 每 tick 把它累加进 Transform。
   const held = new Set<string>();
@@ -82,7 +89,7 @@ export function mount(container: HTMLElement): () => void {
   };
   const onDown = (e: KeyboardEvent): void => {
     if (MOVE_KEYS.has(e.code)) e.preventDefault();
-    if (e.code === 'KeyP') { showProfiler = !showProfiler; ui.update(hudTree(Math.round(fps), renderer.readStats(), showProfiler)); }
+    if (e.code === 'KeyP') { showProfiler = !showProfiler; ui.update(hudTree(Math.round(fps), renderer.readStats(), showProfiler, inZone())); }
     // 相机数据驱动开关（行为层只写 Camera3D 数据·渲染器解释）：O 切正交/透视、F 切跟随小黄鸭/环绕。
     if (e.code === 'KeyO') { const c = cam(); if (c) c.projection = c.projection === 'ortho' ? 'perspective' : 'ortho'; }
     if (e.code === 'KeyF') { const c = cam(); if (c) { c.mode = c.mode === 'follow' ? 'orbit' : 'follow'; c.target = 'hero'; } }
@@ -132,7 +139,7 @@ export function mount(container: HTMLElement): () => void {
     const dt = now - lastT;
     lastT = now;
     if (dt > 0) fps = fps * 0.9 + (1000 / dt) * 0.1;
-    if (now - lastHud > 250) { lastHud = now; ui.update(hudTree(Math.round(fps), renderer.readStats(), showProfiler)); }
+    if (now - lastHud > 250) { lastHud = now; ui.update(hudTree(Math.round(fps), renderer.readStats(), showProfiler, inZone())); }
   });
 
   engine.start();

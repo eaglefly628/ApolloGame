@@ -9,6 +9,7 @@
 
 import type { WorldBlueprint } from '../../assembly/demo.assembly.js';
 import { motionApplyCapability } from '@skills/tier1/index.js';
+import { overlapDetect3dCapability } from '@skills/atoms/index.js';
 import { MODEL_DUCK } from './assets.js';
 
 type Ent = WorldBlueprint['entities'][string];
@@ -34,8 +35,8 @@ function steppingStones(): Record<string, Ent> {
 /** 盒庭样例蓝图：草地台 + 抬升石台（站 Toad）+ 金阶梯 + 板条箱 + 终点宝石 + 蘑菇 + 鹅卵石径 + 天空盒 + 可控角色。 */
 export function dioramaBlueprint(): WorldBlueprint {
   return {
-    // 角色靠现成 velocity→motion-apply 走动（纯数据 sim·确定性）；其余全静态。
-    capabilities: [motionApplyCapability],
+    // 角色 velocity→motion-apply 走动 + overlap-detect-3d 3D 逻辑碰撞（确定性 sim·进 hash）。
+    capabilities: [motionApplyCapability, overlapDetect3dCapability],
     entities: {
       // 盒庭相机（REQ-3D-Camera·语义参数全数据化）：轨道俯角环绕·fov/俯仰夹角进数据（不再写死在渲染器/胶水）。
       // 运行时：拖拽改 yaw/pitch、滚轮改 distance（行为层）；O 切正交、F 切跟随小黄鸭（game-z.ts 输入胶水）。
@@ -54,10 +55,22 @@ export function dioramaBlueprint(): WorldBlueprint {
       // 可控角色（WASD/方向键 → Velocity → motion-apply 走动）：用 2D Transform，盒庭模式自动落到地面。
       // 导入式 glTF 小黄鸭真模型（替原方块蘑菇人·展示模型导入）。Transform.x→地面 X，Transform.y→地面 Z（景深）；
       // 起步站在草地中央。模型原点在脚底 → groundPose(y=0) 坐地。scale 把鸭子放大到盒庭尺度。
+      // 角色挂 Collider3D 竖直胶囊（碰撞用·进 hash·与 Model3D 渲染分离）。
       hero: {
         Transform: { x: 0, y: 0, rotation: 0, scaleX: 1, scaleY: 1 },
         Velocity: { vx: 0, vy: 0, angular: 0 },
         Model3D: { modelKey: MODEL_DUCK, scale: 3.2 },
+        Collider3D: { kind: 'capsule', radius: 2, height: 6 },
+      },
+
+      // 触发区（REQ-3D-Collision demo）：地面半透明绿垫（Mesh3D render·Color.alpha<1 走单 mesh）+ Collider3D box trigger
+      // （sim·进 hash）。同一 2D Transform 同时驱动渲染(落地面)与碰撞(planar)。小黄鸭走进 → overlap-detect-3d 产
+      // Overlap3D → game-z 读到点亮（拖 WASD 进出试）。起步即罩住原点 → 截图见触发态。
+      zone: {
+        Transform: { x: 0, y: 4, rotation: 0, scaleX: 1, scaleY: 1 },
+        Mesh3D: { shape: 'box', width: 12, height: 0.8, depth: 12, frontTint: 0x33d17a, backTint: 0x33d17a, edgeTint: 0x2ec27e },
+        Color: { tint: 0x33d17a, alpha: 0.4 },
+        Collider3D: { kind: 'box', halfX: 6, halfY: 4, halfZ: 6, trigger: true },
       },
 
       // 静态大黄鸭（终点装饰·走 Transform3D 真三维位姿）：与可控鸭共享同一解析模板（多实例复用·省显存）。

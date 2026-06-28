@@ -5,13 +5,26 @@ import { Engine } from '../../runtime/engine.js';
 import { dioramaBlueprint } from './diorama.js';
 import { collectRenderables } from '@renderer/renderable.js';
 import { getCamera3D, getSky3D, getLights3D, getPost3D } from '@engine/protocol/camera-view.js';
-import type { Transform, Transform3D, Velocity, Mesh3D, Model3D } from '@engine/protocol/components.js';
+import type { Transform, Transform3D, Velocity, Mesh3D, Model3D, Collider3D, Overlap3D } from '@engine/protocol/components.js';
 
 describe('Game Z · 3D 盒庭蓝图（纯数据 · 仅现成 motion-apply 能力）', () => {
-  it('只用现成 motion-apply 能力（无专属 system）', () => {
+  it('只用现成能力（motion-apply + overlap-detect-3d·无专属 system）', () => {
     const caps = dioramaBlueprint().capabilities;
-    expect(caps.length).toBe(1);
-    expect(caps[0]!.describe.name).toBe('motion-apply');
+    const names = caps.map((c) => c.describe.name).sort();
+    expect(names).toEqual(['motion-apply', 'overlap-detect-3d']);
+  });
+
+  it('角色挂 Collider3D 胶囊 + 触发区 zone（Collider3D box trigger·3D 逻辑碰撞）', () => {
+    const e = new Engine();
+    e.load(dioramaBlueprint());
+    expect(e.world.getComponent<Collider3D>('hero', 'Collider3D')!.kind).toBe('capsule');
+    const zc = e.world.getComponent<Collider3D>('zone', 'Collider3D')!;
+    expect(zc.kind).toBe('box');
+    expect(zc.trigger).toBe(true);
+    // 小黄鸭起步罩在触发区里 → tick 后产 Overlap3D。
+    e.world.tick();
+    const ov = e.world.query('Overlap3D').map(([id]) => e.world.getComponent<Overlap3D>(id, 'Overlap3D')!);
+    expect(ov.some((o) => o.entityA === 'zone' || o.entityB === 'zone')).toBe(true);
   });
 
   it('每个物件 = Transform3D + Mesh3D（盒庭体块即数据）', () => {

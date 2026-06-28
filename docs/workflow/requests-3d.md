@@ -6,7 +6,19 @@
 
 ---
 
-## REQ-3D-Collision 3D 逻辑碰撞（触发/重叠·升维 2D） · [2026-06-28] · owner+P3D → 主程（sim/能力域评审） · status: **open（spec·待主程评审/授权落点）** · 类型: 真能力缺口（3D 逻辑碰撞·升维复用）
+## REQ-3D-Collision 3D 逻辑碰撞（触发/重叠·升维 2D） · [2026-06-28] · owner+P3D → 主程（sim/能力域评审） · status: **🚧 P1 已落（owner 2026-06-28 授权 P3D 跨界落·知会主程评审）；P2/P3 待** · 类型: 真能力缺口（3D 逻辑碰撞·升维复用）
+
+> **⚠️ 知会主程（owner 授权 P3D 跨界落 sim·同资产层先例）**：本 REQ 的 sim 半边落在你的域（`engine/spatial` + `skills/atoms` + sim 组件 `spatial.ts`）——**owner 2026-06-28 当面授权 P3D 实现 P1**。改动**严格镜像 2D 碰撞**（同确定性纪律：只用 +−×÷/sqrt/min/max·无 sin/cos/hypot），**进 hash·rollback 安全**，不碰 2D 碰撞代码。请评审；如与并行改动撞 rebase 喊我。
+>
+> **✅ P1 已落（P3D 2026-06-28·已推）**：
+> - **数据**：`Collider3D`（sphere/box/capsule·进 hash·`spatial.ts`）+ `Overlap3D`（重叠事件）。确定性位置模型：**planar 取 2D `Transform`(进 hash·x→X、y→Z)，垂直/形状取 `Collider3D`(进 hash)——不碰 render-only `Transform3D`**。胶囊限竖直(Y 轴·角色标准)→ 各测试退化「XZ 距离 + Y 区间」全解析。
+> - **窄相位**：`engine/spatial/contact3d.ts`（纯函数·镜像 2D `contact.ts`·确定性）——球/盒(AABB)/竖直胶囊两两接触 + 法线/深度。
+> - **能力**：`skills/atoms/overlap-detect-3d`——每帧重建（按 id 升序）+ **暴力 N² AABB 宽相位**（轻量盒庭够·升维树是 scale 路）+ 窄相位 → 产 `Overlap3D`。
+> - **demo**：game-z 加 `overlapDetect3dCapability` + hero `Collider3D` 胶囊 + 触发区 zone（半透明绿垫 Mesh3D[render] + `Collider3D` box trigger[sim]·同 2D Transform 驱动渲染+碰撞）；HUD 读 `Overlap3D` 亮「🔔 触发区」。截图验证。
+> - 测试：`contact3d.test`(7·含 **Y 分离不重叠** 真 3D + 确定性逐位) + `overlap-detect-3d.test`(3·含 **Collider3D 进 hash** 验证 + 触发进出) + diorama 碰撞。tsc+vitest(1886)+build+截图全绿。
+> - **⬜ 待续**：P2（OBB + cylinder + 凸包 GJK 有界）；3D `collision-resolve`（推开·墙阻挡·现只检测不推）；P3 物理表现轨（纯表现·Rapier·YAGNI）。
+> **架构守则（贯穿·下同）不变。**
+
 
 > **owner 2026-06-28 拍板的架构分界（最关键·两套碰撞泾渭分明）**：
 > - **逻辑碰撞（触发/重叠）= 确定性 sim**：「进区域 / 撞到 / 命中」喂玩法的事实 → 进权威主机/lockstep 状态 → **进 hash、必须确定性**。**本 REQ 只做这个。**
