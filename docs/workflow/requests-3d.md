@@ -6,6 +6,37 @@
 
 ---
 
+## REQ-3D-Collision 3D 逻辑碰撞（触发/重叠·升维 2D） · [2026-06-28] · owner+P3D → 主程（sim/能力域评审） · status: **open（spec·待主程评审/授权落点）** · 类型: 真能力缺口（3D 逻辑碰撞·升维复用）
+
+> **owner 2026-06-28 拍板的架构分界（最关键·两套碰撞泾渭分明）**：
+> - **逻辑碰撞（触发/重叠）= 确定性 sim**：「进区域 / 撞到 / 命中」喂玩法的事实 → 进权威主机/lockstep 状态 → **进 hash、必须确定性**。**本 REQ 只做这个。**
+> - **物理模拟（刚体/弹飞/堆叠/布娃娃）= 纯表现**：**绝不喂逻辑、不进 lockstep/hash**。哪天做可随便用非确定性物理库（Cannon/Rapier 当特效）——**YAGNI·不在本 REQ**。
+> 这一刀绕开 3D 物理最难的坑（跨端浮点确定性）：逻辑碰撞只做廉价解析重叠测试（**同 2D 先例·确定性边界不变**）。
+>
+> **结论：升维复用现成 2D 碰撞能力到 3D**（P3D + owner 评估·主程定夺）。2D 已有成熟确定性分层可直接镜像：
+> | 2D 现成（主程域） | 3D 升维 |
+> |---|---|
+> | `Shape`(box/circle/polygon·进 hash) | `Collider3D`(sphere/AABB/capsule·进 hash·**数据组件**) |
+> | `engine/spatial/aabb-tree.ts`(`DynamicAabbTree`·每帧重建·rollback 安全) | 升成 **3D AABB**（同结构·同确定性） |
+> | `engine/spatial/contact.ts`(`contactBetween`/`aabbOf`) | 3D 解析窄相位（sphere/AABB/capsule 重叠 + 法线/深度） |
+> | `overlap-detect`(atom·产 `Overlap`) | `overlap-detect-3d` 产 `Overlap3D`（法线+深度·或纯触发布尔） |
+> | `collision-resolve`(tier2·推开) | 3D 推开（按需·触发区只需重叠事件不需推开） |
+>
+> **空间分割裁决**：用**升维的动态 AABB 树（BVH）**——不是四叉/八叉树（轻量盒庭几十~低百物体·现成树确定性+rollback 已验证）；物体特别少时暴力 N² AABB 亦可。八叉/网格 YAGNI。
+> **碰撞体分档（封顶复杂度·owner「不能特别费」）**：A 解析图元 sphere/AABB/**OBB**/capsule/cylinder（覆盖 90%·角色 capsule + 关卡 box）；B 凸包 multi-convex（GJK·**封顶顶点/块数**）；C 任意三角网格**不做**（静态关卡拆凸块/AABB）。**先做 A 档的 sphere/AABB/capsule + 触发/重叠事件**。
+>
+> **分期**：
+> - **P1（覆盖 90%·先做）**：`Collider3D` 数据(sphere/AABB/capsule) + 3D 动态 AABB 树宽相位 + 解析窄相位 + `Overlap3D` 触发/重叠事件 + （按需）3D 推开。够角色撞墙/落地/触发区。
+> - **P2**：OBB + cylinder + 凸包(GJK·有界)。
+> - **P3（仅当真要刚体·另起「物理表现轨」）**：堆叠/推/关节 = **纯表现**层·评估 Rapier·不进 hash。
+>
+> **数据驱动尺子**：`Collider3D` 弱模型填得了 `kind:'capsule', radius:2, height:7, offset:{...}`，**填不了物理引擎不透明 body 句柄**——过尺。碰撞=确定性解释器（能力）。
+>
+> **边界 / 分工**：碰撞 sim 全在 `engine/spatial` + `skills` + sim 组件 = **🔒 主程域**（§0.1）。**请主程评审本提案并定落点**（主程实现 / 或 owner 像授权资产层那样授权 P3D 跨界落）。**P3D 天然拥有的那块**：① 碰撞体 **debug 线框可视化**（render-only·新 3D render 组件或复用 Mesh3D wireframe·我的渲染线域）；② game-z 接碰撞能力做触发区 demo（小黄鸭进区域亮灯等）。
+> **验收**：角色 capsule vs 关卡 AABB 触发/重叠事件确定性（进 hash·rollback 安全·node 单测同 2D `overlap-detect.test` 先例）；debug 线框渲出；tsc+vitest+build 全绿。
+
+---
+
 ## REQ-3D-W1高效引擎 · [2026-06-28] · owner → P3D（3D 渲染线）· status: **🚧 进行中（W1-A + W1-B + W1-C + W1-D ✅ 已落 + profiler + 模块化拆分；W1-E 健壮 ⬜ 下一增量）** · 类型: 设计纲领 + 真能力（实例化绘制）
 
 > **进度（P3D 2026-06-28·已推）**：
