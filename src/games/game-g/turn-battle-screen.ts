@@ -444,7 +444,7 @@ function topbarNode(view: TurnBattleView): LayoutNode {
   const idCol: LayoutNode = {
     type: 'Panel', id: 'ggt-tb-idcol', props: { bare: true }, layout: { direction: 'column', gap: 1 },
     children: [
-      { type: 'Label', id: 'ggt-tb-label', props: { text: view.battleLabel, size: 'lg', color: 'text', bold: true } },
+      { type: 'Label', id: 'ggt-tb-label', props: { text: view.battleLabel, size: 15, color: 'text', bold: true } }, // 裸 px 像素级对齐原版（原 15px·主程 Label.size 收裸数字）
       { type: 'Label', id: 'ggt-tb-mode', props: { text: '单机 · 回合制', size: 'xs', color: 'dim' } },
     ],
   };
@@ -455,9 +455,10 @@ function topbarNode(view: TurnBattleView): LayoutNode {
   const turnBox: LayoutNode = {
     type: 'Panel', id: 'ggt-tb-turn', props: { accent: true }, layout: { direction: 'row', gap: 9, align: 'center', padding: 7 },
     children: [
-      { type: 'Label', id: 'ggt-tb-dot', props: { text: '●', size: 'xs', color: 'warn', glow: true } },
+      // 当前回合状态灯：发光 + 呼吸（layout.fx pulse·主程特效库）——呼吸放在点上、不放整盒（pulse=透明度.55↔1·套盒会把字读糊）。
+      { type: 'Label', id: 'ggt-tb-dot', props: { text: '●', size: 'xs', color: 'warn', glow: true }, layout: { fx: [{ kind: 'pulse', ms: 1600 }] } },
       { type: 'Panel', id: 'ggt-tb-turncol', props: { bare: true }, layout: { direction: 'column', gap: 1 }, children: [
-        { type: 'Label', id: 'ggt-tb-who', props: { text: view.turnWho, size: 'md', color: 'text', bold: true } },
+        { type: 'Label', id: 'ggt-tb-who', props: { text: view.turnWho, size: 14, color: 'text', bold: true } }, // 裸 px 对齐原版（原 14px）
         { type: 'Label', id: 'ggt-tb-round', props: { text: `第 ${view.roundNo} 回合`, size: 'xs', color: 'dim' } },
       ] },
     ],
@@ -481,7 +482,7 @@ function actionMenuNode(view: TurnBattleView): LayoutNode {
   const actBtn = (a: TurnActionView): LayoutNode => ({
     type: 'Button', id: `ggt-act-${a.key}`,
     props: { label: `${a.glyph} ${a.label}`, kind: a.on ? 'primary' : a.dim ? 'quiet' : 'ghost', action: a.key },
-    layout: { anchor: `combat-${a.key}` },
+    layout: { anchor: `combat-${a.key}` }, // 注：fx:sheen 在 Button 上只出 position:relative、不出 data-fx 属性 → ::after 不命中（renderNode 仅给通用/Panel 节点挂 data-fx）·故不在动作钮加 sheen；已提 REQ-UI-fx控件叠层
   });
   const grid: LayoutNode = {
     type: 'Panel', id: 'ggt-act-grid', props: { bare: true }, layout: { direction: 'grid', cols: 2, gap: 8 },

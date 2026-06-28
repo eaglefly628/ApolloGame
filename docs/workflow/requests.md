@@ -81,6 +81,11 @@
 > - **格内兵牌**：用引擎 `PlayingCard`（LayoutNode 卡原语）渲染、game-g 生肖/水印 juice 作私货皮——本就够，**无需新「牌面层」抽象**。
 > **结论给 GA**：棋枰保持现状、不做 lossy 迁移、不阻塞、继续。(2) 已挂账「等第 2 个格盘消费者即下沉」。owner 若要统一栅格管线/即刻通用化可推翻本裁。
 
+### REQ-UI-fx控件叠层 · [2026-06-28] · GA（game-g·接 REQ-FX 给战斗 HUD 补 fx 时撞到） · status: **open（小缺口·非阻塞）** · 类型: 真能力缺口（fx 叠层未通达自渲染控件）
+
+> 接主程 `layout.fx`（赞·已用于战斗 HUD：当前回合状态灯 `pulse` 生效）时撞到两处小缺口，报给主程（GA 不擅改 ui 库）：
+> 1. **fx 的 `sheen`/`flash` 叠层（`data-fx` 属性）只挂在「通用/Panel 节点」，没挂到自渲染控件（Button/Tag/PlayingCard 等）**：`renderNode` 末段给节点加 `data-fx` 的分支只覆盖通用包装；`Button` 走 `renderButton` 自出 `<button>`，只拿到 fx 的 `style`（`position:relative`），**拿不到 `data-fx="sheen"` 属性** → `[data-fx~="sheen"]::after` 不命中 → **按钮上的 fx sheen/flash 静默失效**（pulse/float/glow 走 `animation/filter` 进 style·不受影响·正常）。GA 现状规避：动作钮不加 sheen；金色 CTA 用 `Button kind:'hero'` 自带 sheen（够用）。建议：把 `data-fx`（及 `data-sheen`/`data-anchor` 等叠层/锚点属性）也输出到自渲染控件的根元素，让 fx 叠层对 Button/Tag/PlayingCard 一致生效。
+> 2. **keyframes 仅 `mountUI` 注入（`APOLLO_KEYFRAMES` 私有未导出）**：战斗屏走 `renderNode + innerHTML`（非 mountUI·因 1340×858 `zoom` 缩放 + pointerdown 委托架构），fx/anim 的 `@keyframes` 与 `[data-fx]::after` 规则当前**靠大厅 mountUI 先跑一次注入进 document**（id 守卫幂等·实际流程 lobby 必先于 battle·故能用）。但这是**隐式依赖**。建议：导出 keyframes/fx CSS（或给个 `ensureUiKeyframes(doc)` 幂等 helper），让 renderNode-only 屏自注入、不依赖 mountUI 跑过。**非阻塞**（现流程 work）。
 
 ### REQ-3D-Model导入 · [2026-06-28] · P3D（3D 渲染线）→ 主程（资产层域）· status: **✅ done（端到端打通·owner 2026-06-28 当面授权 P3D 跨界把资产半边也落）** · 类型: 真能力缺口（box 原语表达不了圆润模型·owner 2026-06-28 拍板开做）
 
