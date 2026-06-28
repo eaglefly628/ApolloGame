@@ -7,7 +7,6 @@ import { type InlayEntry } from './blueprint.js';
 
 export interface LobbyShopItem { id: string; name: string; sub: string; cost: number; owned: boolean; buyable: boolean; level?: number; inDeck?: boolean; power?: number; phat?: number; kind?: string; icon?: string; tint?: string; unlockStage?: number; locked?: boolean }
 export interface GachaResult { kind: 'tiangang' | 'dizhi'; id: string; name: string; rarity?: string; outcome: 'new' | 'dup-shard' | 'dizhi-up' | 'dizhi-shard'; detail: string } // 抽卡结果（开包演出读）
-export type { EarthRarity } from './lobby-util.js';
 export interface LobbyView {
   skin: 'onyx' | 'rosy';
   coin: number; diamond?: number; dizhiShards?: number; tiangangShards?: number; dizhiBag?: Record<string, number[]>; inlays?: Record<string, InlayEntry[]>; rechargeNeedsPassword?: boolean; energy: number; energyMax: number; foilCount: number;
