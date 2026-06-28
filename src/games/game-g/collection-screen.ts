@@ -117,7 +117,7 @@ export function ladderPage(view: LobbyView): LayoutNode {
     type: 'Panel', id, props: {}, layout: { direction: 'column', align: 'center', gap: 2, padding: 10, flex: 1 },
     children: [
       { type: 'Label', id: `${id}-n`, props: { text: num, size: 'lg', color: 'gold', bold: true } },
-      { type: 'Label', id: `${id}-l`, props: { text: lbl, size: 'sm', color: 'sub' } },
+      { type: 'Label', id: `${id}-l`, props: { text: lbl, size: 10, color: 'sub' } },
     ],
   });
   // 布局对齐设计稿 天梯·榜：左=我的段位(♠章+段位+LP+进度条+3统计盒)+近10局；右=全服榜(全服/好友/同段 段控 + 表)。
@@ -129,7 +129,7 @@ export function ladderPage(view: LobbyView): LayoutNode {
           { type: 'Panel', id: 'ldr-rank', props: { title: '我的段位', accent: true }, layout: { direction: 'column', gap: 10, padding: 16, align: 'center' },
             children: [
               { type: 'Avatar', id: 'ldr-seal', props: { name: '♠', shape: 'rounded', size: 72 } },
-              { type: 'Label', id: 'ldr-rank-t', props: { text: view.rankText, size: 'xl', color: 'gold', bold: true } },
+              { type: 'Label', id: 'ldr-rank-t', props: { text: view.rankText, size: 26, color: 'gold', bold: true } },
               { type: 'Label', id: 'ldr-rank-lp', props: { text: '1240 LP', size: 'sm', color: 'sub' } },
               { type: 'ProgressBar', id: 'ldr-rank-pb', props: { value: 1240, max: 1300, tone: 'gold', label: '距晋级 60 LP', showValue: false } },
               { type: 'Panel', id: 'ldr-stats', props: { bare: true }, layout: { direction: 'row', gap: 8 }, children: [statBox('ldr-s1', '64%', '胜率'), statBox('ldr-s2', '3', '连胜'), statBox('ldr-s3', '71%', '翻正率')] },
