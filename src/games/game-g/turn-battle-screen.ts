@@ -186,35 +186,29 @@ function hpRowNode(blood: number, max: number, who: string): LayoutNode {
   };
 }
 
-// 紧凑堡垒大本营（设计稿 mkBase/mkFort）。isMine 决定阵营色 + 花色。
-function fortBase(view: TurnBattleView, isMine: boolean): string {
-  const col = isMine ? '#ff7a45' : '#3a86d4'; const glyph = isMine ? '♠' : '♥'; const glyphCol = isMine ? '#22303f' : '#c0392b';
-  const aura = { position: 'absolute', top: '50%', left: '50%', width: '120px', height: '120px', transform: 'translate(-50%,-50%)', borderRadius: '50%', background: `radial-gradient(circle, ${isMine ? 'rgba(255,122,69,.32)' : 'rgba(58,134,212,.3)'}, transparent 68%)`, animation: 'g-aura 3s ease-in-out infinite', pointerEvents: 'none' };
-  const fort = { position: 'relative', width: '74px', height: '88px', display: 'flex', alignItems: 'flex-end', justifyContent: 'center', paddingBottom: '12px', borderRadius: '12px 12px 10px 10px', background: 'linear-gradient(170deg,#fbf7ef,#dccaa8)', border: '3px solid ' + col, boxShadow: `0 0 24px ${col}66, 0 10px 22px rgba(0,0,0,.5), inset 0 0 0 2px rgba(255,255,255,.5)` };
-  const crown = { position: 'absolute', top: '-30px', left: '50%', transform: 'translateX(-50%)', fontSize: '26px', color: 'var(--gold)', textShadow: '0 2px 8px rgba(0,0,0,.6)', zIndex: 3 };
-  const merlons = { position: 'absolute', top: '-7px', left: '6px', right: '6px', height: '12px', display: 'flex', justifyContent: 'space-between' };
-  const merlon = { width: '11px', height: '12px', borderRadius: '3px 3px 0 0', background: 'linear-gradient(180deg,#fbf7ef,#d8c39e)', border: '2px solid ' + col, borderBottom: 'none' };
-  const shield = { width: '42px', height: '48px', borderRadius: '50% 50% 50% 50% / 38% 38% 62% 62%', background: 'linear-gradient(160deg,#fff,#ece0c6)', border: '2px solid ' + col, display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: 'inset 0 0 0 1px rgba(255,255,255,.6)' };
-  const tag = { padding: '2px 11px', borderRadius: '99px', background: 'rgba(20,16,10,.8)', color: '#fff', fontFamily: 'var(--fh)', fontWeight: 700, fontSize: '12px', whiteSpace: 'nowrap', zIndex: 2 };
-  const hpRow = { display: 'flex', gap: '5px', zIndex: 2 };
-  const conn = isMine
-    ? { position: 'absolute', top: '50%', right: '-6px', width: '14px', height: '4px', transform: 'translateY(-50%)', background: 'linear-gradient(90deg, #ff7a45, transparent)', borderRadius: '99px', boxShadow: '0 0 8px rgba(255,122,69,.6)' }
-    : { position: 'absolute', top: '50%', left: '-6px', width: '14px', height: '4px', transform: 'translateY(-50%)', background: 'linear-gradient(270deg, #3a86d4, transparent)', borderRadius: '99px', boxShadow: '0 0 8px rgba(58,134,212,.6)' };
+// 紧凑堡垒大本营（数据驱动·棋枰数据化②·owner 2026-06-28·用主程 Panel.edge/radius 阵营框+异形圆角）。
+// 城堡=Panel 组（body+城垛 merlons+盾 shield+冠 crown），阵营色走 edge:'mine'/'foe'（替 #ff7a45/#3a86d4 硬 hex），
+// 小件圆角走 layout.radius（替 Panel 恒 10），光环走 fx glow（替手写 g-aura 浮层）。血灯=hpRowNode。
+function fortBaseNode(view: TurnBattleView, isMine: boolean): LayoutNode {
+  const edge = isMine ? 'mine' : 'foe'; const who = isMine ? 'a' : 'b';
   const blood = isMine ? view.homeA : view.homeB;
-  const gems = renderNode(hpRowNode(blood, view.homeMax, isMine ? 'a' : 'b'), GG_BATTLE_THEME); // 血灯=数据驱动 LayoutNode（菱形 Label·棋枰数据化②）
-  const baseStyle = { position: 'relative', width: '92px', flex: 'none', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: '7px' };
-  const fortInner = `<div style="${st(aura)}"></div>
-    <div style="${st(fort)}"><div style="${st(crown)}">♔</div><div style="${st(merlons)}">${forr([0, 1, 2, 3], () => `<div style="${st(merlon)}"></div>`)}</div><div style="${st(shield)}"><span style="font-size:30px; color:${glyphCol};">${glyph}</span></div></div>
-    <div style="${st(tag)}">${isMine ? '我方' : '敌方'}</div>
-    <div style="${st(hpRow)}">${gems}</div>`;
-  if (isMine) {
-    const timer = { display: 'flex', alignItems: 'center', gap: '5px', marginTop: '4px', padding: '3px 11px', borderRadius: '99px', background: 'rgba(255,255,255,.06)', border: '1px solid var(--panel-border)', zIndex: 2 };
-    return `<div style="${st(baseStyle)}">${fortInner}<div style="${st(timer)}"><span style="font-size:12px;">⏳</span><span style="font-family:var(--fn); font-size:12px; color:var(--ink-dim); white-space:nowrap;">${esc(view.timerLabel)}</span></div><div style="${st(conn)}"></div></div>`;
-  }
-  // 敌方大本营可点 → 弹 Boss 名号 + 战役故事（owner 2026-06-21）。地煞行已迁敌方右栏(enemyRail·2026-06-28)·此处仅留 hover bossTip。
+  const merlon = (i: number): LayoutNode => ({ type: 'Panel', id: `fort-${who}-merlon-${i}`, props: { bg: 'linear-gradient(180deg,#fbf7ef,#d8c39e)', edge }, layout: { width: 11, height: 12, radius: 3, padding: 0 } });
+  const crown: LayoutNode = { type: 'Label', id: `fort-${who}-crown`, props: { text: '♔', size: 26, color: 'gold', glow: true }, layout: { x: 25, y: -28 } };
+  const merlons: LayoutNode = { type: 'Panel', id: `fort-${who}-merlons`, props: { bare: true }, layout: { x: 6, y: -7, width: 62, direction: 'row', justify: 'between', gap: 0 }, children: [0, 1, 2, 3].map(merlon) };
+  const shield: LayoutNode = { type: 'Panel', id: `fort-${who}-shield`, props: { bg: 'linear-gradient(160deg,#fff,#ece0c6)', edge }, layout: { width: 42, height: 48, radius: 16, align: 'center', justify: 'center', padding: 0, margin: 11 }, children: [{ type: 'Label', id: `fort-${who}-glyph`, props: { text: isMine ? '♠' : '♥', size: 30, color: isMine ? 'dim' : 'danger' } }] };
+  const body: LayoutNode = { type: 'Panel', id: `fort-${who}-body`, props: { bg: 'linear-gradient(170deg,#fbf7ef,#dccaa8)', edge }, layout: { width: 74, height: 88, radius: 12, direction: 'column', justify: 'end', align: 'center', padding: 0, fx: [{ kind: 'glow', color: isMine ? 'warn' : 'jade', ms: 3000 }] }, children: [crown, merlons, shield] };
+  const tag: LayoutNode = { type: 'Panel', id: `fort-${who}-tag`, props: { bg: 'rgba(20,16,10,.8)' }, layout: { radius: 99, padding: 5 }, children: [{ type: 'Label', id: `fort-${who}-tagtx`, props: { text: isMine ? '我方' : '敌方', size: 12, color: 'text', bold: true } }] };
+  const children: LayoutNode[] = [body, tag, hpRowNode(blood, view.homeMax, who)];
+  if (isMine) children.push({ type: 'Panel', id: 'fort-a-timer', props: {}, layout: { direction: 'row', gap: 5, align: 'center', padding: 5, radius: 99 }, children: [{ type: 'Label', id: 'fort-a-timer-ic', props: { text: '⏳', size: 12 } }, { type: 'Label', id: 'fort-a-timer-tx', props: { text: view.timerLabel, size: 12, color: 'dim', mono: true } }] });
+  return { type: 'Panel', id: `fort-${who}`, props: { bare: true }, layout: { width: 92, direction: 'column', align: 'center', gap: 7 }, children };
+}
+function fortBase(view: TurnBattleView, isMine: boolean): string {
+  const html = renderNode(fortBaseNode(view, isMine), GG_BATTLE_THEME);
+  if (isMine) return html;
+  // 敌方大本营可点 → 弹 Boss 名号 + 战役故事（owner 2026-06-21）。hover bossTip 仍 bespoke（Tooltip 富文本待后续切）。
   const bossTipRows = forr(view.sha.filter((s) => s.filled), (s) => { const rc = RAR[s.rar] || RAR.white; const used = s.used ?? false; return `<div style="display:flex;align-items:center;gap:6px;padding:3px 0;border-top:1px solid rgba(255,255,255,.08);"><span style="width:6px;height:6px;border-radius:50%;flex-shrink:0;background:${rc[1]};"></span><span style="flex:1;font-size:10px;color:rgba(255,255,255,.85);">${esc(s.name)}</span><span style="font-size:9px;color:${used ? '#ff9966' : '#7fcc9a'};">${used ? '已用' : '备用'}</span></div>`; });
   const bossTip = `<div class="gg-tip" style="width:210px;text-align:left;"><div style="font-size:12px;font-weight:700;color:var(--gold);margin-bottom:8px;">👑 ${esc(view.bossName)}</div>${bossTipRows}<div style="margin-top:7px;padding-top:6px;border-top:1px solid rgba(255,255,255,.12);font-size:10px;color:rgba(255,255,255,.55);">牌库剩余 <b style="color:#cdeeff;">${view.deckB}</b> 张</div></div>`;
-  return `<div data-act="boss-info" class="gg-tipwrap tip-side" style="${st(baseStyle)}; cursor:pointer"><div style="${st(conn)}"></div>${fortInner}${bossTip}</div>`;
+  return `<div data-act="boss-info" class="gg-tipwrap tip-side" style="position:relative;cursor:pointer">${html}${bossTip}</div>`;
 }
 
 // 一格 slot（设计稿 lanes.slots）。
