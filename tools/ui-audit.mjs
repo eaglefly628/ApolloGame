@@ -43,32 +43,36 @@ const OVERLAP_TOL = Number(opt('overlap-tol', 4)); // px² 容差
 
 // ── 1) vite 把 entry 打成 IIFE ──────────────────────────
 const tmp = join(ROOT, '.ui-audit-tmp');
-mkdirSync(tmp, { recursive: true });
 const bundleName = 'audit-bundle.js';
-await build({
-  configFile: join(ROOT, 'vite.config.ts'),
-  logLevel: 'error',
-  build: { write: true, outDir: tmp, emptyOutDir: false,
-    lib: { entry: resolve(ROOT, entry), formats: ['iife'], name: 'UIAudit', fileName: () => bundleName } },
-});
-writeFileSync(join(tmp, 'audit.html'),
-  `<!doctype html><meta charset="utf-8"><body style="margin:0;background:#06080d"><div id="${MOUNT}" style="width:${W - 20}px"></div><script src="./${bundleName}"></script></body>`);
 
-// ── 2) playwright 解析（项目内优先，回落本环境 /opt 预装）──
+// playwright 解析（项目内优先，回落本环境 /opt 预装）
 async function loadChromium() {
   for (const c of ['playwright', '/opt/node22/lib/node_modules/playwright/index.mjs']) {
     try { const m = await import(c); if (m.chromium) return m.chromium; } catch { /* next */ }
   }
   throw new Error('找不到 playwright（项目未装且 /opt 回落失败）');
 }
-const chromium = await loadChromium();
-const browser = await chromium.launch({ executablePath: process.env.UI_AUDIT_CHROMIUM || '/opt/pw-browsers/chromium' });
-const page = await browser.newPage({ viewport: { width: W, height: H }, deviceScaleFactor: 1 });
-await page.goto(`file://${join(tmp, 'audit.html')}`);
-await page.waitForTimeout(600);
 
-// ── 3) 浏览器内量包围盒 + 颜色，跑两项审计 ───────────────
-const report = await page.evaluate(({ MOUNT, OVERLAP_TOL, MIN_CONTRAST, HARD_FLOOR }) => {
+// try/finally：无论 build/launch/evaluate 哪步抛错，都关浏览器 + 清临时目录（防进程/磁盘泄漏）。
+let browser, report;
+try {
+  mkdirSync(tmp, { recursive: true });
+  await build({
+    configFile: join(ROOT, 'vite.config.ts'),
+    logLevel: 'error',
+    build: { write: true, outDir: tmp, emptyOutDir: false,
+      lib: { entry: resolve(ROOT, entry), formats: ['iife'], name: 'UIAudit', fileName: () => bundleName } },
+  });
+  writeFileSync(join(tmp, 'audit.html'),
+    `<!doctype html><meta charset="utf-8"><body style="margin:0;background:#06080d"><div id="${MOUNT}" style="width:${W - 20}px"></div><script src="./${bundleName}"></script></body>`);
+  const chromium = await loadChromium();
+  browser = await chromium.launch({ executablePath: process.env.UI_AUDIT_CHROMIUM || '/opt/pw-browsers/chromium' });
+  const page = await browser.newPage({ viewport: { width: W, height: H }, deviceScaleFactor: 1 });
+  await page.goto(`file://${join(tmp, 'audit.html')}`);
+  await page.waitForTimeout(600);
+
+  // 浏览器内量包围盒 + 颜色，跑两项审计
+  report = await page.evaluate(({ MOUNT, OVERLAP_TOL, MIN_CONTRAST, HARD_FLOOR }) => {
   const host = document.getElementById(MOUNT);
   const base = host.getBoundingClientRect();
   const rel = (r) => ({ x: Math.round(r.x - base.x), y: Math.round(r.y - base.y), w: Math.round(r.width), h: Math.round(r.height) });
@@ -119,11 +123,12 @@ const report = await page.evaluate(({ MOUNT, OVERLAP_TOL, MIN_CONTRAST, HARD_FLO
       low.push({ id: el.id || `<${el.tagName.toLowerCase()}>`, text: el.textContent.trim().slice(0, 18), ratio: Math.round(r * 100) / 100, need, hard });
     }
   }
-  return { positionedCount: positioned.length, overlaps, low };
-}, { MOUNT, OVERLAP_TOL, MIN_CONTRAST, HARD_FLOOR });
-
-await browser.close();
-rmSync(tmp, { recursive: true, force: true });
+    return { positionedCount: positioned.length, overlaps, low };
+  }, { MOUNT, OVERLAP_TOL, MIN_CONTRAST, HARD_FLOOR });
+} finally {
+  if (browser) await browser.close().catch(() => {});
+  rmSync(tmp, { recursive: true, force: true });
+}
 
 // ── 4) 打印 + 退出码 ────────────────────────────────────
 const hardLow = report.low.filter((l) => l.hard);
