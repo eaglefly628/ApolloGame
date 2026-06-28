@@ -12,6 +12,7 @@
     "preview": "vite preview",
     "test": "vitest run",
     "test:watch": "vitest",
+    "ui:audit": "node tools/ui-audit.mjs",
     "demo": "vite-node src/assembly/demo.run.ts",
     "net:demo": "vite-node src/net/lockstep.demo.ts",
     "bench": "vite-node src/bench/run-bench.ts",

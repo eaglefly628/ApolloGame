@@ -12,9 +12,13 @@
 
 ```bash
 node tools/ui-audit.mjs <entry.ts> [--mount root] [--w 1060] [--h 760] [--min-contrast 4.5] [--hard-floor 3.0]
+# 或用 npm 别名（参数加 -- 透传）：
+npm run ui:audit -- tools/audits/mmo-hud.audit.ts
 # entry.ts 须把树 mount 到 #<mount>（缺省 'root'）。现成示例：
 node tools/ui-audit.mjs tools/audits/mmo-hud.audit.ts
 ```
+
+> **手动触发·不挂自动门**（owner 2026-06-28 拍板）：改了 UI 自己跑一遍即可，**不进 pre-push/CI**——基线含一个上游 bug（Tabs 黑字·见下）未绿前，自动阻断门会狼来了。主程修 Tabs 后再议条件式门。
 
 退出码：`0`=通过（重叠 0 + 无硬性低对比）；`1`=不合格（可进 pre-push / CI 卡口）。
 
