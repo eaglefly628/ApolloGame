@@ -23,7 +23,7 @@ function hudTree(fps: number, stats: RenderStats | null, showProfiler: boolean, 
   const children: LayoutNode[] = [
     { type: 'Label', id: 'gz-title', props: { text: 'GAME Z', size: 'xxl', glow: true } },
     { type: 'Label', id: 'gz-sub', props: { text: '3D 盒庭 · 数据驱动渲染线 · glTF 模型导入', size: 'sm' } },
-    { type: 'Label', id: 'gz-hint', props: { text: 'WASD 控鸭 · 拖拽旋转 · 滚轮缩放 · O 正交 · F 跟随 · P 剖析 · C 碰撞体', size: 'sm' } },
+    { type: 'Label', id: 'gz-hint', props: { text: 'WASD 控鸭 · 拖拽旋转 · 滚轮缩放 · O 正交 · F 跟随 · P 剖析 · C 碰撞体 · N 寻路', size: 'sm' } },
     // 3D 碰撞触发区状态（读确定性 Overlap3D·纯展示）：小黄鸭进绿垫即亮。
     { type: 'Label', id: 'gz-zone', props: { text: inZone ? '🔔 触发区：进入（Overlap3D）' : '触发区：外', size: 'sm', glow: inZone, color: inZone ? undefined : 'dim' } },
   ];
@@ -80,12 +80,18 @@ export function mount(container: HTMLElement): () => void {
   menuHost.style.cssText = 'position:absolute;left:18px;bottom:14px;pointer-events:auto';
   wrapper.appendChild(menuHost);
   let showColliders = false;
-  const menuTree = (on: boolean): LayoutNode => ({
+  let showNav = false;
+  const menuTree = (col: boolean, nav: boolean): LayoutNode => ({
     type: 'Panel', id: 'gz-menu', props: { bare: true }, layout: { gap: 4 },
-    children: [{ type: 'Button', id: 'gz-dbg', props: { label: `🔻 碰撞体线框：${on ? 'ON' : 'OFF'}`, kind: on ? 'primary' : 'ghost', action: 'toggleDebug' } }],
+    children: [
+      { type: 'Button', id: 'gz-dbg', props: { label: `🔻 碰撞体线框：${col ? 'ON' : 'OFF'}`, kind: col ? 'primary' : 'ghost', action: 'toggleDebug' } },
+      { type: 'Button', id: 'gz-nav', props: { label: `🧭 导航网格：${nav ? 'ON' : 'OFF'}`, kind: nav ? 'primary' : 'ghost', action: 'toggleNav' } },
+    ],
   });
-  const setColliders = (on: boolean): void => { showColliders = on; renderer.setDebugColliders(on); menuUi.update(menuTree(on)); };
-  const menuUi = mountUI(menuHost, menuTree(false), { toggleDebug: () => setColliders(!showColliders) });
+  const refreshMenu = (): void => menuUi.update(menuTree(showColliders, showNav));
+  const setColliders = (on: boolean): void => { showColliders = on; renderer.setDebugColliders(on); refreshMenu(); };
+  const setNav = (on: boolean): void => { showNav = on; renderer.setDebugNav(on); refreshMenu(); };
+  const menuUi = mountUI(menuHost, menuTree(false, false), { toggleDebug: () => setColliders(!showColliders), toggleNav: () => setNav(!showNav) });
 
   // 键盘 → 角色 Velocity（运行时输入胶水）：归一化对角线 + 速度；motion-apply 每 tick 把它累加进 Transform。
   const held = new Set<string>();
@@ -106,6 +112,7 @@ export function mount(container: HTMLElement): () => void {
     if (e.code === 'KeyO') { const c = cam(); if (c) c.projection = c.projection === 'ortho' ? 'perspective' : 'ortho'; }
     if (e.code === 'KeyF') { const c = cam(); if (c) { c.mode = c.mode === 'follow' ? 'orbit' : 'follow'; c.target = 'hero'; } }
     if (e.code === 'KeyC') setColliders(!showColliders); // 碰撞体线框开关（同左下菜单按钮）
+    if (e.code === 'KeyN') setNav(!showNav); // 导航网格开关（同左下菜单按钮）
     held.add(e.code); setVel();
   };
   const onUp = (e: KeyboardEvent): void => { held.delete(e.code); setVel(); };

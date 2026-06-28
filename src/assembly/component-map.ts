@@ -52,6 +52,7 @@ import type {
   Mortal,
   NavAgent,
   NavGraph,
+  NavMesh,
   NavPath,
   OverTime,
   Overlap,
@@ -153,6 +154,7 @@ export interface ComponentDataMap {
   Mortal: Omit<Mortal, 'type'>;
   NavAgent: Omit<NavAgent, 'type'>;
   NavGraph: Omit<NavGraph, 'type'>;
+  NavMesh: Omit<NavMesh, 'type'>;
   NavPath: Omit<NavPath, 'type'>;
   OverTime: Omit<OverTime, 'type'>;
   Overlap: Omit<Overlap, 'type'>;

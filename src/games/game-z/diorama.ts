@@ -9,7 +9,8 @@
 
 import type { WorldBlueprint } from '../../assembly/demo.assembly.js';
 import { motionApplyCapability } from '@skills/tier1/index.js';
-import { overlapDetect3dCapability } from '@skills/atoms/index.js';
+import { overlapDetect3dCapability, navmeshBakeCapability } from '@skills/atoms/index.js';
+import { pathfindCapability } from '@skills/tier2/index.js';
 import { MODEL_DUCK } from './assets.js';
 
 type Ent = WorldBlueprint['entities'][string];
@@ -34,6 +35,17 @@ function hullBoxVerts(hx: number, hy: number, hz: number, a: number[][]): number
   return out;
 }
 
+// 实心障碍（碰撞 + 寻路双用）：2D Transform(碰撞/寻路 planar) + Transform3D(render 精确位姿) + Mesh3D + Collider3D box。
+// 下沿坐地（baseY=0·中心 y=h/2）。navmesh-bake 把它栅格化成封格，自动生成的 NavGraph 让追兵绕开它（「寻路碰撞」）。
+function obstacle(x: number, z: number, w: number, h: number, d: number, top: number, side: number): Ent {
+  return {
+    Transform: { x, y: z, rotation: 0, scaleX: 1, scaleY: 1 },
+    Transform3D: { x, y: h / 2, z },
+    Mesh3D: { shape: 'box', width: w, height: h, depth: d, frontTint: side, backTint: side, edgeTint: top },
+    Collider3D: { kind: 'box', halfX: w / 2, halfY: h / 2, halfZ: d / 2 },
+  };
+}
+
 // 鹅卵石小径：一排**完全相同**的石块（同尺寸同色 → 同视觉签名）。展示 W1-A 实例化：N 个同款盒 → 1 个
 // InstancedMesh（1 draw call）。纯数据（蓝图摆 N 个实体），渲染器自动批，零渲染旗标。
 function steppingStones(): Record<string, Ent> {
@@ -47,8 +59,9 @@ function steppingStones(): Record<string, Ent> {
 /** 盒庭样例蓝图：草地台 + 抬升石台（站 Toad）+ 金阶梯 + 板条箱 + 终点宝石 + 蘑菇 + 鹅卵石径 + 天空盒 + 可控角色。 */
 export function dioramaBlueprint(): WorldBlueprint {
   return {
-    // 角色 velocity→motion-apply 走动 + overlap-detect-3d 3D 逻辑碰撞（确定性 sim·进 hash）。
-    capabilities: [motionApplyCapability, overlapDetect3dCapability],
+    // 角色 velocity→motion-apply 走动 + overlap-detect-3d 3D 逻辑碰撞 + navmesh-bake（自动烘 NavGraph）+ 主程 pathfind
+    // （A* 沿路跟随）—— 皆确定性 sim·进 hash。寻路：自动生成（非手摆），复用主程 NavGraph/NavAgent/pathfind。
+    capabilities: [motionApplyCapability, overlapDetect3dCapability, navmeshBakeCapability, pathfindCapability],
     entities: {
       // 盒庭相机（REQ-3D-Camera·语义参数全数据化）：轨道俯角环绕·fov/俯仰夹角进数据（不再写死在渲染器/胶水）。
       // 运行时：拖拽改 yaw/pitch、滚轮改 distance（行为层）；O 切正交、F 切跟随小黄鸭（game-z.ts 输入胶水）。
@@ -115,6 +128,25 @@ export function dioramaBlueprint(): WorldBlueprint {
         Transform3D: { x: 20, y: 4, z: -4, rotY: 0.5235987755982988 }, // 3D：render 斜摆 30°（=hull 朝向）
         Mesh3D: { shape: 'box', width: 12, height: 8, depth: 3, frontTint: 0x90a4ae, backTint: 0x90a4ae, edgeTint: 0xb0bec5 },
         Collider3D: { kind: 'hull', baseY: 4, verts: hullBoxVerts(6, 4, 1.5, WALL_AXES), axes: WALL_AXES.flat() },
+      },
+
+      // ── 碰撞感知寻路（REQ-3D-Nav · owner「自动摆放」）──
+      // 寻路数据 = **自动烘焙**：摆一张 NavMesh（范围 + 格边长 + 半径）罩住草地台，navmesh-bake 每帧把
+      // Collider3D 障碍栅格化、可行走格自动织成主程 NavGraph → 主程 pathfind 用（零手摆航点）。
+      nav: { NavMesh: { minX: -34, minZ: -34, maxX: 34, maxZ: 34, cellSize: 3, agentRadius: 2.6 } },
+      // 实心石墩障碍（碰撞 + 寻路双用）：散在 seeker→hero 之间，逼追兵绕行。
+      'rock-1': obstacle(-14, -12, 6, 5, 10, 0x9e9e9e, 0x616161),
+      'rock-2': obstacle(-4, -18, 9, 5, 6, 0x9e9e9e, 0x616161),
+      'rock-3': obstacle(-16, 4, 6, 5, 8, 0x9e9e9e, 0x616161),
+      // 寻路追兵（橙盒）：主程 NavAgent + Relation(target=hero) → pathfind 沿自动生成的 NavGraph 绕障碍逼近小黄鸭，
+      // 写 Velocity → motion-apply 走动。只挂 2D Transform（不挂 Transform3D）→ render groundPose 跟随寻路移动。
+      // 开左下「导航网格」菜单：青点/线 = 自动生成的可走图（没点处=被碰撞封住）、黄线 = 追兵当前规划路径。
+      seeker: {
+        Transform: { x: -28, y: -26, rotation: 0, scaleX: 1, scaleY: 1 },
+        Velocity: { vx: 0, vy: 0, angular: 0 },
+        Mesh3D: { shape: 'box', width: 3.2, height: 3.2, depth: 3.2, frontTint: 0xff7043, backTint: 0xff7043, edgeTint: 0xffab91 },
+        NavAgent: { speed: 0.45, arriveRange: 7 },
+        Relation: { kind: 'target', targetId: 'hero' },
       },
 
       // 两朵蘑菇（茎 + 伞盖）

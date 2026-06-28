@@ -6,6 +6,24 @@
 
 ---
 
+## REQ-3D-Nav 导航网格自动烘焙（寻路数据 + 寻路碰撞·game-z 验证） · [2026-06-28] · owner → P3D（owner 授权跨界·**复用主程 pathfind**） · status: **✅ done（P3D 2026-06-28·自动生成·复用主程 NavGraph·端到端验证·已推）** · 类型: 真能力缺口（碰撞几何→可走拓扑**自动生成**）
+
+> **⚠️ 知会主程（owner 2026-06-28 拍板·关于你的 `REQ-寻路`）**：owner 要 game-z 验证「寻路数据 + 寻路碰撞」。你的 `pathfind`（航点图 NavGraph + 通用 A* + 沿路跟随 + collision-resolve 避让）很好，**我全盘复用、一行没改**。唯一分歧：owner **不接受手摆 NavGraph**（「我摆这些东西太麻烦了，也没有手摆需求……一定要像 Recast 这样自动生成」）。结论 = **不取代你的 runtime，只在它上游加一层「自动生成 NavGraph」**：
+> - **共存（owner「不能共存吗」）**：场上摆 `NavMesh`（范围+格边长+半径）→ `navmesh-bake` 自动烘 `NavGraph`；只摆手写 `NavGraph`（无 NavMesh）→ 烘焙不动、用你的手摆图。**二选一·同一下游 pathfind**。
+> - 你那段 `NavGraph`/`NavAgent`/`NavPath`/`pathfind`/`astar.ts` **保持不变**；手摆路径仍可用（你若不需要可不管）。本 REQ 不动你的代码。
+>
+> **✅ 落地（P3D 2026-06-28·已推）—— 自动生成（Recast 思路·确定性轻量版）**：
+> - **新组件** `NavMesh`（`spatial.ts`·烘焙配置·单例：范围矩形 + 格边长 + agentRadius·进 hash）。注册 `assembly/component-map.ts`。**作者零手摆航点**——只圈个范围。
+> - **纯函数核** `engine/spatial/navmesh.ts`：`gridFromBounds` + `rasterizeBlocked`（障碍 AABB→封格·「寻路碰撞」）+ `bakeNavGraph`（可行走格→**主程 NavGraph 结构**：节点=空格中心、八向边·斜边防穿角）。整数化·跨端逐位确定。
+> - **能力** `skills/atoms/navmesh-bake`：读 `NavMesh` + `Collider3D` → 写**主程的 `NavGraph`**（每帧重烘·rollback 安全）。排除 trigger / NavAgent。`runsBefore nav-follow + motion-apply`（图先就绪 + 破 Transform 环）。
+> - **下游零改**：主程 `pathfind`(`nav-follow`) 照常读 NavGraph → A* → 写 Velocity → `motion-apply` 走动。
+> - **debug 可视化（P3D 渲染线域）** `renderer/three/nav-debug.ts`（render-only）：青点=航点（没点处=被碰撞封住）+ 暗青线=连边 + 黄线=`NavPath` 规划路径。接入 `three-renderer`（`setDebugNav`）。
+> - **game-z 验证**：`NavMesh` 罩草地台 + 三石墩障碍（`obstacle()`·碰撞+寻路双用）+ 橙盒追兵（**主程 `NavAgent` + `Relation(target=hero)` + `Velocity`**）→ 自动绕障碍逼近小黄鸭。菜单加「🧭 导航网格」+ N 键。截图：青点网格自动避开所有碰撞体、追兵沿黄线绕行。
+> - **测试**：`navmesh.test`(5·栅格化/封格无节点/防穿角/确定性) + `navmesh-bake.test`(4·**端到端绕墙不穿墙**[配主程 pathfind] + **共存：无 NavMesh 不烘** + 两世界 hash 一致)。tsc+vitest+build+截图全绿（主程 `pathfind`/`astar` 测试一并跑绿·未碰你的代码）。
+> - **⬜ 待续（按需）**：静态障碍只在变更时重烘（现每帧·盒庭够）；多边形 navmesh（现栅格·真要更强壮再升）；动态体避让走主程 collision-resolve（game-z 暂无 2D resolve·靠图拓扑静态避障已够）。
+
+---
+
 ## REQ-3D-Collision 3D 逻辑碰撞（触发/重叠·升维 2D） · [2026-06-28] · owner+P3D → 主程（sim/能力域评审） · status: **🚧 P1 + debug 线框/可点击菜单 + P2(精简 hull·凸多面体 SAT) 已落（owner 2026-06-28 授权 P3D 跨界落·知会主程评审）；P3 物理表现轨待（YAGNI）** · 类型: 真能力缺口（3D 逻辑碰撞·升维复用）
 
 > **⚠️ 知会主程（owner 授权 P3D 跨界落 sim·同资产层先例）**：本 REQ 的 sim 半边落在你的域（`engine/spatial` + `skills/atoms` + sim 组件 `spatial.ts`）——**owner 2026-06-28 当面授权 P3D 实现 P1**。改动**严格镜像 2D 碰撞**（同确定性纪律：只用 +−×÷/sqrt/min/max·无 sin/cos/hypot），**进 hash·rollback 安全**，不碰 2D 碰撞代码。请评审；如与并行改动撞 rebase 喊我。

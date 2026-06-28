@@ -114,6 +114,20 @@ export interface Overlap3D extends Component {
   depth: number;
 }
 
+// ── NavMesh（REQ-3D-Nav · owner 2026-06-28 授权 P3D 跨界落·「自动摆放」）── 导航网格**自动烘焙**配置（单例）。
+// 摆这个（而非手摆 NavGraph）→ navmesh-bake 能力把范围内 `Collider3D` 障碍栅格化、把可行走格自动织成
+// **主程的 `NavGraph`** 喂 `pathfind`。手摆 NavGraph 与自动烘焙**共存**：作者二选一。确定性·NavGraph 进 hash。
+// 平面：X=Transform.x、Z=Transform.y（盒庭地面）。作者只填「范围矩形 + 格边长 + 智能体半径」——可走拓扑自动推导。
+export interface NavMesh extends Component {
+  readonly type: 'NavMesh';
+  minX: number; // 烘焙范围（世界 XZ 矩形）
+  minZ: number;
+  maxX: number;
+  maxZ: number;
+  cellSize: number; // 栅格边长（越小越精细越慢）
+  agentRadius?: number; // 障碍按此膨胀（Minkowski·把智能体当点·缺省 0）
+}
+
 // ── ground-sense ── 实体这帧是否站在地面上（marker，存在即着地，每帧由 ground-sense 重算）
 export interface Grounded extends Component {
   readonly type: 'Grounded';

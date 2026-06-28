@@ -12,6 +12,7 @@ import { massCapability } from './mass/index.js';
 import { shapeCapability } from './shape/index.js';
 import { overlapDetectCapability } from './overlap-detect/index.js';
 import { overlapDetect3dCapability } from './overlap-detect-3d/index.js';
+import { navmeshBakeCapability } from './navmesh-bake/index.js';
 import { timerCapability } from './timer/index.js';
 import { resourceCapability } from './resource/index.js';
 import { flagCapability } from './flag/index.js';
@@ -44,6 +45,7 @@ export {
   shapeCapability,
   overlapDetectCapability,
   overlapDetect3dCapability,
+  navmeshBakeCapability,
   timerCapability,
   resourceCapability,
   flagCapability,
@@ -80,6 +82,7 @@ export const allAtomCapabilities: CapabilityDefinition[] = [
   shapeCapability,
   overlapDetectCapability,
   overlapDetect3dCapability,
+  navmeshBakeCapability,
   timerCapability,
   resourceCapability,
   flagCapability,
