@@ -80,12 +80,16 @@
 > - 🩹 **补阶段①漏改的测试选择器**：掷命钮迁数据驱动后挂 `data-action`，但 `flow-walk.test.ts`/`game-g.turnmatch.test.ts` 仍查旧 `[data-act="clash-roll/ok"]` → 驱动不动掷命、对局 160 回合不收场（flow-walk 此前一直挂红·非本次引入·已确认 clean tree 也红）。改双挂 `[data-act=...],[data-action=...]` 兼容。（live 委托读 `dataset.act ?? dataset.action`·线上一直 OK·仅测试桩失配。）
 > - ⛔ **城堡 fortBase + 格子 chrome 暂保 bespoke·等 `REQ-UI-容器描边形`**：初评「Panel 组+rotate 可重组」低估了 Panel 边框是**令牌专用**（no 阵营橙/蓝描边、no 金边界格、no 虚线放牌区）+ **圆角恒 10px**（城垛/盾压不出形）。硬塞要么大量 hack `bg` 渐变（违「最弱 LLM 同数据」）要么失真。→ 拆出 `REQ-UI-容器描边形` 开给主程·到货再切城堡/格框。兵牌信息层=阶段③(PlayingCard+x/y·另算)。
 
-### REQ-UI-容器可点 · [2026-06-28] · GA（game-g 棋枰数据化重写·阶段②需） · status: **open（请主程·阻塞棋盘交互数据化）** · 类型: 真能力缺口（容器无 action）
+### REQ-UI-容器可点 · [2026-06-28] · GA（game-g 棋枰数据化重写·阶段②需） · status: **✅ done（主程 2026-06-28·接受·`Panel.action`+`actionArg`·`panel-action-fade-keyframes.test.ts`）** · 类型: 真能力缺口（容器无 action）
+
+> **主程裁决·接受**：真缺口——`Card` 有 action 但强带卡壳 chrome、`Panel` bare 无框却不可点，**「bare 可点容器」两者都给不了**。下沉 `PanelProps.action?`(+`actionArg?`) → 渲 `data-action`[+`data-arg`]+cursor:pointer（同 Button·只信号名·mountUI 委托路由·handler 不塞自由逻辑）。复用面=任何可点卡片区/格子/列表行容器。棋枰格/门可数据化了。
 
 > 棋枰数据化重写时：棋盘的**路轨/格子/门**需「点击→部署/翻门」，但这些是组合容器(`Panel`)·`PanelProps` 无 `action`（只有叶子控件 Button/Tag/Card 可点）→ 组合容器无法发信号·棋盘交互没法数据化。
 > 请主程给 **`Panel.action?`（+`actionArg?`）**：非 bare 容器可点→渲 `data-action`[+`data-arg`]（同 Button），让「带 children 的容器」可作点击目标。红线同既有：只发信号名·handler 不塞自由逻辑。复用面：任何「可点的卡片区/格子/列表行容器」。
 
-### REQ-UI-fx源泉消退 · [2026-06-28] · GA（game-g 棋枰数据化重写·阶段④需·owner 点名可做） · status: **open（请主程·非阻塞·有它更保真）** · 类型: 真能力下沉（fx 闭集补 kind）
+### REQ-UI-fx源泉消退 · [2026-06-28] · GA（game-g 棋枰数据化重写·阶段④需·owner 点名可做） · status: **✅ done（主程 2026-06-28·接受·fx kind `'fade'`·`panel-action-fade-keyframes.test.ts`）** · 类型: 真能力下沉（fx 闭集补 kind）
+
+> **主程裁决·接受**：「淡出消失」是通用 disappear 效果（消耗/移除/消亡都用），现 fx 闭集无对应（pop=入场、flash=闪色、无 opacity→0）。按 fx 治理（新效果=加一个 kind·非布尔）下沉 kind `'fade'`(opacity→0·forwards 停末态)。源泉「分段半透明消退」= 每段挂 `fx:[{kind:'fade'}]`、分段结构由游戏数据组合。
 
 > 源泉条「召唤源泉」消耗时，原 bespoke 有「刚花掉的格分段半透明消退」动效（g-drain 收退残影）。迁数据驱动后 `layout.fx` 闭集无对应 kind。**owner 2026-06-28 点名「可以让主程做·分段半透明的消失效果」**。
 > 请主程给 `fx` 加一个 kind（如 `'fade'`/`'drain'`·分段半透明淡出·once 触发）·或确认用现有 `flash`/`pulse` 近似。非阻塞（先用现有近似·有专用 kind 更保真）。
@@ -132,7 +136,11 @@
 > - **格内兵牌**：用引擎 `PlayingCard`（LayoutNode 卡原语）渲染、game-g 生肖/水印 juice 作私货皮——本就够，**无需新「牌面层」抽象**。
 > **结论给 GA**：棋枰保持现状、不做 lossy 迁移、不阻塞、继续。(2) 已挂账「等第 2 个格盘消费者即下沉」。owner 若要统一栅格管线/即刻通用化可推翻本裁。
 
-### REQ-UI-fx控件叠层 · [2026-06-28] · GA（game-g·接 REQ-FX 给战斗 HUD 补 fx 时撞到） · status: **open（小缺口·非阻塞）** · 类型: 真能力缺口（fx 叠层未通达自渲染控件）
+### REQ-UI-fx控件叠层 · [2026-06-28] · GA（game-g·接 REQ-FX 给战斗 HUD 补 fx 时撞到） · status: **✅ 已裁（主程 2026-06-28·①误诊-驳 / ②done 导出 `ensureUiKeyframes`）** · 类型: 真能力缺口（fx 叠层未通达自渲染控件）
+
+> **主程裁决**：
+> - **① data-fx 不达控件 = 误诊·驳**：实测 `renderNode({type:'Button', layout:{fx:[sheen,flash]}})` → 输出含 `data-fx="sheen flash"`（注入分支的正则 `^(\s*<[tag])` 命中 `<button>`，对自渲染控件同样生效）。data-fx **确实落到了** Button/Tag/PlayingCard 根元素。
+> - **② keyframes 隐式依赖 mountIU = 真缺口·done**：你看到的「按钮 sheen 失效」**真因是 ②**——战斗屏走 `renderNode+innerHTML`(非 mountUI)，`@keyframes`/`[data-fx]::after` 没注入 → 有属性无规则 → 静默失效。修：**导出幂等 `ensureUiKeyframes(doc?)`**（从 server.ts 抽出·index 导出）。战斗屏在 innerHTML 前调一次 `ensureUiKeyframes()` 即自注入、不再靠大厅 mountUI 先跑。修了 ② 后按钮 sheen/flash 自然生效（data-fx 本就在）。
 
 > 接主程 `layout.fx`（赞·已用于战斗 HUD：当前回合状态灯 `pulse` 生效）时撞到两处小缺口，报给主程（GA 不擅改 ui 库）：
 > 1. **fx 的 `sheen`/`flash` 叠层（`data-fx` 属性）只挂在「通用/Panel 节点」，没挂到自渲染控件（Button/Tag/PlayingCard 等）**：`renderNode` 末段给节点加 `data-fx` 的分支只覆盖通用包装；`Button` 走 `renderButton` 自出 `<button>`，只拿到 fx 的 `style`（`position:relative`），**拿不到 `data-fx="sheen"` 属性** → `[data-fx~="sheen"]::after` 不命中 → **按钮上的 fx sheen/flash 静默失效**（pulse/float/glow 走 `animation/filter` 进 style·不受影响·正常）。GA 现状规避：动作钮不加 sheen；金色 CTA 用 `Button kind:'hero'` 自带 sheen（够用）。建议：把 `data-fx`（及 `data-sheen`/`data-anchor` 等叠层/锚点属性）也输出到自渲染控件的根元素，让 fx 叠层对 Button/Tag/PlayingCard 一致生效。

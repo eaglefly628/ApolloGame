@@ -111,14 +111,22 @@ const APOLLO_KEYFRAMES = `
 [data-sheen]::after,[data-fx~="sheen"]::after{content:'';position:absolute;inset:0;border-radius:inherit;pointer-events:none;background:linear-gradient(105deg,transparent 42%,rgba(255,255,255,.4) 50%,transparent 58%);background-size:250% 100%;animation:apollo-sheen-sweep 3.2s ease-in-out infinite}
 @keyframes apollo-fx-shake{0%,100%{transform:translateX(0)}20%{transform:translateX(calc(-1 * var(--fx-amp,4px)))}60%{transform:translateX(var(--fx-amp,4px))}}
 @keyframes apollo-fx-flash{0%{opacity:0}25%{opacity:.7}100%{opacity:0}}
+@keyframes apollo-fx-fade{from{opacity:1}to{opacity:0}}
 [data-fx~="flash"]::before{content:'';position:absolute;inset:0;border-radius:inherit;pointer-events:none;background:var(--fx-flash,#d3897a);mix-blend-mode:screen;animation:apollo-fx-flash var(--fx-flash-ms,420ms) ease-out both}`;
-function ensureKeyframes(): void {
-  if (typeof document === 'undefined') return;
-  if (document.getElementById('apollo-ui-keyframes')) return;
-  const st = document.createElement('style');
+/**
+ * 幂等注入引擎 UI 关键帧 + fx 叠层 CSS（anim 预设 / sheen·flash 的 ::after·::before / flipcard）。
+ * mountUI 自动调；**renderNode-only 屏（如 game-g 战斗屏走 innerHTML·非 mountUI）须自己调一次**，
+ * 否则 fx/anim 的 @keyframes 与 [data-fx]::after 规则不存在 → 静默失效（REQ-UI-fx控件叠层②·不再隐式依赖 mountUI 跑过）。
+ * id 守卫幂等（多次调用只注入一次）。doc 缺省全局 document（SSR/无 DOM 环境安全跳过）。
+ */
+export function ensureUiKeyframes(doc?: Document): void {
+  const d = doc ?? (typeof document !== 'undefined' ? document : undefined);
+  if (!d) return;
+  if (d.getElementById('apollo-ui-keyframes')) return;
+  const st = d.createElement('style');
   st.id = 'apollo-ui-keyframes';
   st.textContent = APOLLO_KEYFRAMES;
-  (document.head ?? document.documentElement).appendChild(st);
+  (d.head ?? d.documentElement).appendChild(st);
 }
 
 export function mountUI(
@@ -128,7 +136,7 @@ export function mountUI(
   theme: UITheme = SHELL,
   input?: ActionSink, // 传它 → 无本地 handler 的 action 走信号入队（UI 只发信号·逻辑入 sim 能力层·人/AI 共用动作总线）
 ): MountHandle {
-  ensureKeyframes();
+  ensureUiKeyframes();
   host.innerHTML = renderNode(root, theme);
 
   // 当前已挂载的树与主题（update 做最小 diff 的基线·VirtualList 复绑取数据）。

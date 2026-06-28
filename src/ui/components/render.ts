@@ -59,6 +59,9 @@ function fxToCss(fx: readonly VisualEffect[], t: UITheme): { css: string; dataFx
       vars.push(`--fx-flash:${fxColor(t, e.color ?? 'danger')}`);
       if (ms) vars.push(`--fx-flash-ms:${ms}ms`);
       dataFx.push('flash');
+    } else if (e.kind === 'fade') {
+      // 半透明淡出消失（消耗/消退）：opacity→0，一次性停在末态（forwards）。
+      anim.push(`apollo-fx-fade ${ms || 600}ms ease-out forwards`);
     }
   }
   const css = [
@@ -253,7 +256,10 @@ function renderPanel(id: string, p: PanelProps, c: LayoutConstraints | undefined
     ? `<div style="position:absolute;inset:0;border-radius:${bare ? '0' : '10px'};pointer-events:none;background:${p.pattern === 'checker' ? 'repeating-conic-gradient(rgba(255,255,255,.04) 0% 25%,transparent 0% 50%) 0 0 / 16px 16px' : 'repeating-linear-gradient(45deg,rgba(255,255,255,.045) 0 2px,transparent 2px 12px)'}"></div>`
     : '';
   const inner = children.map((ch) => renderNode(ch, t)).join('');
-  return `<div id="${esc(id)}"${bgScrollAttr(p.bgScroll)} style="${style}">${vignette}${pattern}${title}${inner}</div>`;
+  // 容器可点（REQ-UI-容器可点）：整个容器发信号（同 Button·只信号名）+ 手型。
+  const action = p.action ? ` data-action="${esc(p.action)}"${p.actionArg ? ` data-arg="${esc(p.actionArg)}"` : ''}` : '';
+  const cursor = p.action ? 'cursor:pointer;' : '';
+  return `<div id="${esc(id)}"${action}${bgScrollAttr(p.bgScroll)} style="${style}${cursor}">${vignette}${pattern}${title}${inner}</div>`;
 }
 
 // ── 新增 6 个控件 ───────────────────────────────────────────────

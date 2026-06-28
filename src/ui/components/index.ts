@@ -1,5 +1,5 @@
 export { renderNode } from './render.js';
-export { mountUI, showToast } from './server.js';
+export { mountUI, showToast, ensureUiKeyframes } from './server.js';
 export type { MountHandle } from './server.js';
 export { resolveBindings, isVisible } from './bindings.js';
 export type { UIDataSource } from './bindings.js';

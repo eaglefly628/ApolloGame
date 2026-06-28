@@ -74,7 +74,8 @@ export type EffectKind =
   | 'pop'     // 弹一下（出现/数值跳/强调·一次性）
   | 'glow'    // 外发光（buff/可交互/选中·color=光色）
   | 'sheen'   // 流光斜扫（高级感/稀有/新到）
-  | 'flash';  // 整体闪色（受击冒红/暴击闪白/警告·color=闪色·常配 once）
+  | 'flash'   // 整体闪色（受击冒红/暴击闪白/警告·color=闪色·常配 once）
+  | 'fade';   // 半透明淡出消失（消耗/消退/移除·opacity→0·一次性·REQ-UI-fx源泉消退）
 export type EffectColor = 'danger' | 'gold' | 'jade' | 'warn' | 'ok' | 'white'; // 语义色 → 主题令牌（闭集·防注入）
 export interface VisualEffect {
   kind: EffectKind;
@@ -158,6 +159,11 @@ export interface PanelProps {
   bgScroll?: { x?: number; y?: number; ms?: number };
   /** 程序化纹理叠层（render-only·质感）：stripe=45°斜条纹 / checker=棋盘格。叠在面板内容下（如原版 felt 牌桌斜纹·REQ-UI-G流光底纹③）。 */
   pattern?: 'stripe' | 'checker';
+  /** 容器可点（REQ-UI-容器可点·棋枰格/门/卡片区）：有它 → 整个容器渲 `data-action`[+`data-arg`] + cursor:pointer，
+   *  点击发信号（同 Button·经 mountUI 委托路由）。让「带 children 的组合容器」也能作点击目标，不必塞个叶子按钮。
+   *  红线同既有：只发信号名·handler 不塞自由逻辑。复用面：任何可点的卡片区/格子/列表行容器。 */
+  action?: string;
+  actionArg?: string;
 }
 
 /** 单个开/关复选框。handler 收到 'true' | 'false'。 */
