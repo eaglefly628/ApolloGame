@@ -11,9 +11,12 @@
 
 ## 待处理 / 进行中
 
-### REQ-UI-G战斗手牌 · [2026-06-27] · GA（game-g·战斗 UI 数据驱动重构撞到） · status: **部分 done·余 open（✅ 效果半边=主程 REQ-FX `layout.fx` 已下沉；⬜ 余「牌面信息层」未动——cost水滴/战力角标/生肖行/主将frame）** · 类型: 真能力缺口下沉
+### REQ-UI-G战斗手牌 · [2026-06-27] · GA（game-g·战斗 UI 数据驱动重构撞到） · status: **✅ 已裁（① 效果半边=`layout.fx` 下沉·done；② 牌面信息层=主程 via REQ-UI-G棋枰 裁决回驳新抽象→格内兵牌/手牌用 PlayingCard+私货皮·随 play-field 现状豁免·保持 bespoke）** · 类型: 真能力缺口下沉（① done / ② 回驳-豁免）
 
-> **★ 对账（GA 2026-06-28·接主程 REQ-FX 后）**：本 REQ 拆两半——**① 效果/动效半边**（主将 glow·脉冲·发牌飞入等）= 主程 `REQ-FX-战斗特效抽象` 的 `layout.fx: VisualEffect[]` **已覆盖**（GA 已接 fx 基线·门禁绿）；**② 牌面「信息层」半边**（开销=N 颗水滴 / 战力=显眼角标 / 生肖×3 行 / 主将=水印「将」+ frame·非动效·是结构化信息）= **fx 表达不了·仍 open**，请主程按下文「只报需求·抽象交主程」收敛（扩 PlayingCard 信息层 or 抽「牌面信息装饰」原子·别逐效果加开关）。Tooltip 拆解走主程已落的 `Tooltip.block`（不缺）。
+> **★ 对账（GA 2026-06-28·接主程裁决后·结案）**：本 REQ 拆两半——
+> - **① 效果/动效半边**（主将 glow·脉冲·发牌飞入）= 主程 `REQ-FX-战斗特效抽象` 的 `layout.fx: VisualEffect[]` **已覆盖·done**（GA 已接 fx 基线·门禁绿）。
+> - **② 牌面「信息层」半边**（开销水滴/战力角标/生肖行/主将 frame）= 主程在 `REQ-UI-G棋枰` 裁决里一并定调：**「格内兵牌/手牌牌面用 `PlayingCard` + game-g 生肖/水印 juice 作私货皮·无需新『牌面层』抽象」→ 回驳新下沉**（rule-of-three 未过·别为单游戏臃肿引擎）。手牌牌面属同一「私货 play-field/牌面 juice」族 → **随 play-field 现状豁免·保持 bespoke `handCard()`**（同棋枰·不 lossy 迁·非破坏·不阻塞）。Tooltip 拆解走 `Tooltip.block`（不缺）。
+> - **结论**：战斗屏数据驱动范围 = HUD chrome（顶栏/动作菜单/结束回合/设置浮层·**已迁·在主线·全绿**）；手牌牌面 + 棋枰 + 掷命特写 + 源泉条 = 私货 play-field/牌面 juice·**现状豁免保持 bespoke**。本 REQ 结案。
 
 > **背景**：战斗屏 UI 重构（`turn-battle-screen.ts` → LayoutNode）进行中。顶栏 + 动作菜单 + 结束回合钮已迁 LayoutNode（全绿推送）。下一块=**手牌区**，按 UI 铁律应走 LayoutNode（兵牌=`PlayingCard`），但撞到牌面 juice `PlayingCard` 表达不了：
 > 1. **召唤源泉开销**（cost 1-3）：原版牌面顶部 N 颗水滴图标。PlayingCard 无 cost/pip。
