@@ -27,7 +27,7 @@
 - **UI 铁律（owner 2026-06-25 拍板 · 同日校正基础库为 `ui/components` LayoutNode）**：所有游戏的 **UI / HUD / 菜单 / 面板 / VN chrome 必须用引擎统一 UI 库 `ui/components` 的 `LayoutNode` 数据描述**实现（控件=闭集 `ComponentType`；显示绑定=resourceId/StringVar id；**写世界 = `action` 信号名经 enqueue 入队，handler 里绝不塞自由逻辑/自由 CSS·DOM**）。战场 / 棋盘等 play-field 走 **render 组件 + 引擎渲染器**（也是数据，非 UI 库）。**禁止**：① 游戏层手写 React 屏 / 自由 CSS·DOM；② 直用 `ui/shell`(UINode) / `ui/vn`（这两套待迁移退役）。**LayoutNode 表达不了的 → 写 `requests.md` 让主程扩 LayoutNode（下沉成通用 UI 控件），绝不手写 React 逃生。** 新游戏 + 重写游戏一律照此。进度（主程）：✅ LayoutNode 写路径收紧成信号（`mountUI` ActionSink + `Signal.arg`·2026-06-25）；⏸ **game-f 暂冻不迁、UINode/VN 退役推迟**（owner 2026-06-25 拍板「game-f 可能放弃」→ 先冻结不动，别的 session 勿删勿迁 game-f；game-e 留作 example·本就走引擎渲染器不碰废弃库；VN 已零游戏消费·可随时退）。
 - 分支 `claude/mainbranch`，**直推不开 PR**；每次提交前 `fetch → rebase → push`（多 session 并行）。**tsc + vitest + build 全绿才推**；**rebase 带进新提交后必须重跑全套再推**（陈旧基线测的绿不算绿）。
 - 提交署名 `Claude <noreply@anthropic.com>`。提交信息以 session URL 结尾。不在产物里写模型标识。
-- 需求池 `docs/workflow/requests.md`（Lead 评审→标状态）；各程序员开工清单 `docs/workflow/finish/{PA,PB,PC}-finish-list.md`。
+- 需求池 `docs/workflow/requests.md`（Lead 评审→标状态）；**3D 渲染线 + Game Z 需求/工单独立池 `docs/workflow/requests-3d.md`（owner 2026-06-28·P3D 域·新 3D 需求进这里不进 requests.md）**；各程序员开工清单 `docs/workflow/finish/{PA,PB,PC}-finish-list.md`。
 - **开发新 capability 前必查知识库**：先读 `wiki/skills/index.md` 找到对应分类，再读该分类的 `.md` 文件，了解行业最佳实践和常见陷阱，再动手实现。按需加载，不要一次性读完所有文件。
 
 ## 关键文件

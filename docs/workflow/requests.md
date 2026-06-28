@@ -87,32 +87,9 @@
 > 1. **fx 的 `sheen`/`flash` 叠层（`data-fx` 属性）只挂在「通用/Panel 节点」，没挂到自渲染控件（Button/Tag/PlayingCard 等）**：`renderNode` 末段给节点加 `data-fx` 的分支只覆盖通用包装；`Button` 走 `renderButton` 自出 `<button>`，只拿到 fx 的 `style`（`position:relative`），**拿不到 `data-fx="sheen"` 属性** → `[data-fx~="sheen"]::after` 不命中 → **按钮上的 fx sheen/flash 静默失效**（pulse/float/glow 走 `animation/filter` 进 style·不受影响·正常）。GA 现状规避：动作钮不加 sheen；金色 CTA 用 `Button kind:'hero'` 自带 sheen（够用）。建议：把 `data-fx`（及 `data-sheen`/`data-anchor` 等叠层/锚点属性）也输出到自渲染控件的根元素，让 fx 叠层对 Button/Tag/PlayingCard 一致生效。
 > 2. **keyframes 仅 `mountUI` 注入（`APOLLO_KEYFRAMES` 私有未导出）**：战斗屏走 `renderNode + innerHTML`（非 mountUI·因 1340×858 `zoom` 缩放 + pointerdown 委托架构），fx/anim 的 `@keyframes` 与 `[data-fx]::after` 规则当前**靠大厅 mountUI 先跑一次注入进 document**（id 守卫幂等·实际流程 lobby 必先于 battle·故能用）。但这是**隐式依赖**。建议：导出 keyframes/fx CSS（或给个 `ensureUiKeyframes(doc)` 幂等 helper），让 renderNode-only 屏自注入、不依赖 mountUI 跑过。**非阻塞**（现流程 work）。
 
-### REQ-3D-Model导入 · [2026-06-28] · P3D（3D 渲染线）→ 主程（资产层域）· status: **✅ done（端到端打通·owner 2026-06-28 当面授权 P3D 跨界把资产半边也落）** · 类型: 真能力缺口（box 原语表达不了圆润模型·owner 2026-06-28 拍板开做）
+### 📦 3D 渲染线需求 → 已移至 `docs/workflow/requests-3d.md`（owner 2026-06-28 立独立池）
 
-> **⚠️ 知会主程**：资产层（`src/assets/`·按契约 🔒 主程域）这次由 P3D 落了——**owner（junbai.li）2026-06-28 当面授权**「资产这块你也去，可以授权你动」。改动**极小且零 three 依赖**（见下「资产半边」），不碰任何 2D 逻辑/现有 kind 行为，全绿。如与你并行的资产改动撞 rebase 请喊我。
->
-> **背景**：owner 2026-06-28 拍板做「轻量 3D 渲染场景」——模型导入打头阵（圆润真模型，box/plane 原语表达不了，是真缺口非重组）。技术栈维持纯 Three.js（已确认零裸 WebGL），用 `three/addons` 的 `GLTFLoader`。规模上限暂不硬限（owner：先做功能）。
->
-> **干净的边界切法（资产层零 three 依赖）**：glTF 解析产物是 three 场景图（渲染概念）。故**资产层只管「key → 取 `.glb` 字节(ArrayBuffer)」（零 three 依赖）**，`GLTFLoader.parse(bytes)` 留在 `ThreeRenderer`。
->
-> **✅ 资产半边（`src/assets/`·owner 授权 P3D 落）**：
-> - `asset-types.ts` 加 `ModelDescriptor { kind:'model'; key; src }` 入 `AssetDescriptor` 联合。
-> - `model-loader.ts`（新）：`ModelAssetLoader`（fetch src → `ArrayBuffer` 句柄·零 three） + `isModelHandle` 守卫。非 model 描述符明确报错。
-> - `asset-manager.ts`：`intrinsicSize` / `resolve` 两处 exhaustive switch 补 `'model'`（尺寸 0 / 不解析成 2D 帧）。`index.ts` 导出。
-> - 测试 `model-loader.test.ts`：守卫 + stub 尺寸 + resolve undefined + 非 model 报错。
->
-> **✅ render 半边（我的 ✅/🔶 域）**：
-> - `Model3D` render-only 组件（`components/render.ts` 3D 块）：`modelKey`（资产 key·蓝图只持 key 不塞 URL/二进制）+ `scale?` + `tint?`。
-> - 登记三处：`assembly/component-map.ts`（import + ComponentDataMap 行）、`net/determinism.ts`（`NON_DETERMINISTIC` 加 `Model3D`·纯表现不进 hash）、`renderer/renderable.ts`（`model3d?` 字段 + 两条收集路）。
-> - `renderer/three-renderer.ts`：Model3D 解释——按 `modelKey` 从 `AssetManager.get(key).handle` 取 **ArrayBuffer** → `GLTFLoader.parse` 一次入模板缓存 → 多实例 clone（共享几何省显存·每实例 clone 材质供染色/独立释放）→ 位姿走 Transform3D/盒庭落地面/2D 投影同套路 → 投/受软影。**未就绪（资产没加载好或还在 parse）→ 本帧不画**（同 sprite 未就绪先例·向后兼容）。
-> - 测试 `renderer/three-camera3d.test.ts`：Model3D 收集 + 「不进 hash」红线。tsc + vitest + build 全绿；GLTFLoader 进 `three-renderer` code-split chunk（不连累 2D 消费者）。
->
-> **✅ 端到端打通（game-z 真模型 + 截图回归）**：
-> - 基础模型资产（Khronos glTF-Sample-Assets·`public/models/`·出处许可见 `CREDITS.md`）：`duck.glb`（圆润示例）+ `box.glb`（sanity）。vite 在 dev/build/preview 都从根服（无 public 目录→新建·base='/'）。
-> - game-z：`AssetManager(new ModelAssetLoader())` 注册 `GAME_Z_ASSETS` 清单 → `loadAll` → 传入 `ThreeRenderer`；蓝图把方块蘑菇人换成 `Model3D{modelKey:'duck'}`（可控·2D Transform 落地面）+ 静态 `duck-statue`（Transform3D·与可控鸭共享同一解析模板·多实例复用）。
-> - 无头截图回归（`shoot-game.mjs`·SwiftShader WebGL）确认两只鸭带自带材质/贴图 + 软影渲出。坑：glTF 节点常带内建 scale，物体真实尺寸 ≠ accessor min/max（Duck mesh-local 154 但节点缩到 ~2.2 单位）→ Model3D.scale 按**渲染后包围盒**定，别按裸 accessor。
->
-> **🔶 知会**：4 个共享文件（render.ts/component-map/determinism/renderable）只动 3D 相关行（不碰 2D/sim 组件），如撞 rebase 请喊我。
+> Mesh3D/Transform3D/Camera3D/Sky3D/Model3D/Light3D/Post3D 等 **3D 盒庭渲染线 + Game Z** 的需求 / 工单（含 `REQ-3D-W1高效引擎`·实例化绘制、`REQ-3D-Model导入`·glTF）**全部移至 [`requests-3d.md`](./requests-3d.md)**。新 3D 需求进那里、不进本文件；本文件留通用 UI 库 / 其它游戏需求。
 
 ### REQ-UI-Label字阶裸数字 · [2026-06-28] · PG 实现（**owner 当面授权 PG 直接改引擎此一处·非常规**） · status: **✅ done（PG 2026-06-28·`label-size-number.test.ts`）** · 类型: 真能力缺口（curated 字阶太粗·不可重组）
 > **背景**：owner 复刻像素稿时问「字体库难道不该所有档都有吗·从 8 到 24 甚至更大」。Label.size 原是 curated 7 档模数阶梯（xs10/sm11/md13/lg16/xl22/xxl28/xxxl34），刻意只给少数档保和谐（同 Tailwind type scale）；但原版手写 CSS 用了 ~20 种 px（8/9/10/11/12/13/14/15/17/18/19/20/21/22/24/26/30/34/50/64），缺 12/14/15/17–21 → 复刻对不齐。**真缺口**（数据层表达不了非档位 px）。
@@ -594,11 +571,4 @@
 > **给所有 session/PG**：UI 战斗反馈一律用 `layout.fx`（从闭集 kind 选），**别再提/加 `xxx?:boolean` 特效开关**；缺 kind → 提 requests，主程评审后加**一个 kind**。
 
 
-### REQ-3D-W1高效引擎 · [2026-06-28] · owner → P3D（3D 渲染线）· status: **open（工单已开·P3D 执行·见 finish/P3D-game-z-handoff.md §9）** · 类型: 设计纲领 + 真能力（实例化绘制）
-
-> **owner 2026-06-28**：3D 引擎要**高效率、低开销**（性能写进设计、不靠后期优化补），**instanced draw 硬要求**。主程已开工单 **W1**（`docs/workflow/finish/P3D-game-z-handoff.md §9`）派 P3D：
-> - **W1-A 实例化绘制**（headline）：同几何多实体 → 1 draw call（InstancedMesh·自动按 batch key 分批·`renderer.info.render.calls` 验收）。逐面色坑给了三方案（同色批 +/单 mesh fallback）。Model3D 多 mesh 分期。
-> - **W1-B 每帧零浪费**（必做基线）：去每帧 `material.needsUpdate`、`transparent` 按 alpha、sync 复用临时对象。
-> - **W1-C 低开销基线**：静态帧跳渲（dirty 标志）+ 阴影不动不重渲 + near/far 收紧。
-> - **W1-D 快赢**：tonemap(ACES/AgX) + setPixelRatio。**W1-E**：resize / 模型自动贴地 / .glb-only 文档。
-> **数据驱动守则（贯穿）**：全是渲染器内部、**零数据/零组件改动**——游戏只摆实体数据，渲染器自动高效；**绝不往数据加 `instanced` 旗标**。光照/曝光数据化（`Light3D`）属路线图、不在 W1（YAGNI）。
+_（REQ-3D-W1高效引擎 已移至 [`requests-3d.md`](./requests-3d.md)。）_
