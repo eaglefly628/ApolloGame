@@ -227,7 +227,9 @@ function fortBase(view: TurnBattleView, isMine: boolean): string {
   // 敌方大本营可点 → 弹 Boss 名号 + 战役故事（owner 2026-06-21）。
   const bossTipRows = forr(view.sha.filter((s) => s.filled), (s) => { const rc = RAR[s.rar] || RAR.white; const used = s.used ?? false; return `<div style="display:flex;align-items:center;gap:6px;padding:3px 0;border-top:1px solid rgba(255,255,255,.08);"><span style="width:6px;height:6px;border-radius:50%;flex-shrink:0;background:${rc[1]};"></span><span style="flex:1;font-size:10px;color:rgba(255,255,255,.85);">${esc(s.name)}</span><span style="font-size:9px;color:${used ? '#ff9966' : '#7fcc9a'};">${used ? '已用' : '备用'}</span></div>`; });
   const bossTip = `<div class="gg-tip" style="width:210px;text-align:left;"><div style="font-size:12px;font-weight:700;color:var(--gold);margin-bottom:8px;">👑 ${esc(view.bossName)}</div>${bossTipRows}<div style="margin-top:7px;padding-top:6px;border-top:1px solid rgba(255,255,255,.12);font-size:10px;color:rgba(255,255,255,.55);">牌库剩余 <b style="color:#cdeeff;">${view.deckB}</b> 张</div></div>`;
-  return `<div data-act="boss-info" class="gg-tipwrap tip-side" style="${st(baseStyle)}; cursor:pointer"><div style="${st(conn)}"></div>${fortInner}<div style="${st(shaLabel)}">地煞牌</div><div style="${st(shaRow)}">${forr(view.sha, shaSlot)}</div>${bossTip}</div>`;
+  // 地煞已迁敌方右栏(enemyRail·owner 2026-06-28)→ 大本营不再重复挂地煞行；保留 hover bossTip(名号+地煞详情)。
+  void shaLabel; void shaRow; void shaSlot; // 旧地煞行样式/渲染保留定义(bossTip 仍用 sha 数据)·不再渲染到堡垒下
+  return `<div data-act="boss-info" class="gg-tipwrap tip-side" style="${st(baseStyle)}; cursor:pointer"><div style="${st(conn)}"></div>${fortInner}${bossTip}</div>`;
 }
 
 // 一格 slot（设计稿 lanes.slots）。
@@ -501,7 +503,7 @@ function actionMenuNode(view: TurnBattleView): LayoutNode {
   };
   const hint: LayoutNode = { type: 'Label', id: 'ggt-act-hint', props: { text: view.actionSub, size: 'xs', color: 'dim' } };
   return {
-    type: 'Panel', id: 'ggt-actionmenu', props: {}, layout: { direction: 'column', gap: 9, width: 230, padding: 13 },
+    type: 'Panel', id: 'ggt-actionmenu', props: {}, layout: { direction: 'column', gap: 11, width: 300, padding: 16 }, // 加宽 230→300·间距加大（owner 2026-06-28「四个动作略局促·搞大点」·宽屏腾出的空间）
     children: view.drawPick ? [grid, drawPick, hint] : [grid, hint],
   };
 }
@@ -553,9 +555,10 @@ function settingsNode(view: TurnBattleView): LayoutNode {
 }
 
 export function buildTurnFrameHTML(view: TurnBattleView, drain: { from: number; count: number } = { from: 0, count: 0 }): string {
-  const frame = { position: 'relative', width: '1340px', height: '858px', borderRadius: '16px', overflow: 'hidden', background: 'var(--paper)', border: '3px solid var(--frame-edge)', boxShadow: '0 30px 80px rgba(0,0,0,.6), inset 0 0 0 1px var(--hairline)', display: 'flex', flexDirection: 'column' };
+  const frame = { position: 'relative', width: '1520px', height: '858px', borderRadius: '16px', overflow: 'hidden', background: 'var(--paper)', border: '3px solid var(--frame-edge)', boxShadow: '0 30px 80px rgba(0,0,0,.6), inset 0 0 0 1px var(--hairline)', display: 'flex', flexDirection: 'column' }; // 1520×858≈16:9：contain 缩放在宽屏near-填满·多出的宽给敌方右栏(owner 2026-06-28·不拉伸牌面)
   const topbar = { display: 'flex', alignItems: 'center', padding: '13px 22px', borderBottom: '1px solid var(--panel-border)' }; // 仅留 chrome（padding+下边线）·内容已迁 topbarNode(LayoutNode)
-  const body = { flex: 1, display: 'flex', flexDirection: 'column', minHeight: 0, overflow: 'hidden', padding: '10px 22px 6px', gap: '10px' };
+  const body = { flex: 1, display: 'flex', flexDirection: 'row', alignItems: 'stretch', minHeight: 0, overflow: 'hidden', padding: '10px 22px 6px', gap: '12px' }; // 行：棋盘列 + 敌方右栏（多出的宽给敌方信息·棋盘不拉伸·owner 2026-06-28）
+  const boardCol = { flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column', minHeight: 0, gap: '10px' }; // 棋盘 + 源泉条（竖排·占主区）
   const boardWrap = { position: 'relative', flex: 1, minHeight: 0, display: 'flex', alignItems: 'stretch', gap: '6px', padding: '12px 10px', borderRadius: '18px', background: 'var(--board)', backgroundImage: 'radial-gradient(46% 80% at 50% 50%, rgba(232,205,138,.10), transparent 70%), repeating-linear-gradient(0deg, rgba(255,255,255,.035) 0 1px, transparent 1px 34px), repeating-linear-gradient(90deg, rgba(255,255,255,.035) 0 1px, transparent 1px 34px)', border: '6px solid var(--board-edge)', boxShadow: 'inset 0 0 0 2px rgba(255,255,255,.06), inset 0 0 90px rgba(0,0,0,.5)' };
   const lanesCol = { position: 'relative', flex: 1, display: 'flex', flexDirection: 'column', gap: '10px', justifyContent: 'stretch', minHeight: 0 };
   // water bar
@@ -597,33 +600,51 @@ export function buildTurnFrameHTML(view: TurnBattleView, drain: { from: number; 
   const settingsPanel = view.settingsOpen
     ? `<div style="${st({ position: 'absolute', top: '70px', right: '22px', zIndex: 80, animation: 'g-fade .18s ease both' })}">${renderNode(settingsNode(view), GG_BATTLE_THEME)}</div>`
     : '';
+  // 敌方右栏（owner 2026-06-28·用拉宽多出的宽显示敌方信息·非拉伸牌面）：Boss + 敌源泉 + 敌牌库 + 地煞概览。
+  const railBox = { width: '208px', flex: 'none', display: 'flex', flexDirection: 'column', gap: '12px', padding: '14px 13px', borderRadius: '16px', background: 'var(--panel)', border: '1px solid var(--panel-border)', boxShadow: 'inset 0 0 0 1px var(--hairline)' };
+  const railStat = (label: string, val: string | number, col: string): string => `<div style="display:flex;align-items:center;gap:10px;padding:9px 12px;border-radius:11px;background:var(--chip);border:1px solid var(--panel-border);"><span style="flex:1;font-size:11px;letter-spacing:.06em;color:var(--ink-dim);">${esc(label)}</span><span style="font-family:var(--fn);font-size:22px;color:${col};text-shadow:0 0 8px ${col}55;">${val}</span></div>`;
+  const railSha = forr(view.sha, (s) => {
+    const rc = RAR[s.rar] || RAR.white; const used = s.used ?? false;
+    if (!s.filled) return `<div style="display:flex;align-items:center;gap:7px;padding:5px 8px;border-radius:8px;background:rgba(255,255,255,.03);border:1px dashed var(--panel-border);"><span style="font-family:var(--fd);font-size:13px;color:rgba(255,255,255,.3);">？</span><span style="font-size:10px;color:var(--ink-dim);">未揭示</span></div>`;
+    return `<div style="display:flex;align-items:center;gap:7px;padding:5px 8px;border-radius:8px;background:${used ? 'rgba(20,24,34,.6)' : 'var(--chip)'};border:1px solid ${used ? 'var(--panel-border)' : rc[1]};opacity:${used ? 0.6 : 1};"><span style="width:7px;height:7px;border-radius:50%;flex-shrink:0;background:${rc[1]};box-shadow:0 0 5px ${rc[1]}"></span><span style="flex:1;font-size:11px;color:var(--ink);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${esc(s.name.replace('地煞·', '').replace('地煞 · ', ''))}</span><span style="font-size:9px;color:${used ? '#ff9966' : '#7fcc9a'};">${used ? '已用' : '待发'}</span></div>`;
+  });
+  const enemyRail = `<div style="${st(railBox)}">
+    <div style="display:flex;align-items:center;gap:9px;padding-bottom:10px;border-bottom:1px solid var(--panel-border);">
+      <div style="width:36px;height:36px;flex:none;border-radius:9px;background:linear-gradient(150deg,#7a3340,#4a1f28);display:flex;align-items:center;justify-content:center;color:#fff;font-size:19px;border:1px solid var(--hairline);">♥</div>
+      <div style="display:flex;flex-direction:column;line-height:1.25;min-width:0;"><span style="font-family:var(--fh);font-weight:700;font-size:14px;color:var(--ink);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${esc(view.bossName || '敌方')}</span><span style="font-size:9px;letter-spacing:.14em;color:var(--ink-dim);">BOSS · 敌方</span></div>
+    </div>
+    ${railStat('💧 敌源泉', view.waterB, '#5ea0e0')}
+    ${railStat('🎴 敌牌库', view.deckB, 'var(--ink)')}
+    <div style="display:flex;flex-direction:column;gap:6px;margin-top:2px;">
+      <span style="font-size:10px;letter-spacing:.12em;text-transform:uppercase;color:var(--ink-dim);font-weight:700;">地煞牌 · ${view.sha.filter((s) => s.filled).length}/${view.sha.length}</span>
+      ${railSha}
+    </div>
+  </div>`;
   return `<div style="${st(frame)}">
     <div style="${st(topbar)}">${renderNode(topbarNode(view), GG_BATTLE_THEME)}</div>
     ${settingsPanel}
     <div style="${st(body)}">
-      <div style="${st(boardWrap)}">
-        ${narrationBanner}${noticeBanner}
-        ${fortBase(view, true)}
-        <div style="${st(lanesCol)}">${forr(view.lanes, (L, li) => laneRow(L, li, hi === 'lane:' + li))}${laddersLayer(view)}</div>
-        ${fortBase(view, false)}
-      </div>
-      <div style="${st(waterBar)}">
-        <div style="${st(waterCap)}"><span style="font-family:var(--fd); font-size:20px; color:#dff4ff;">源</span></div>
-        <span style="font-size:10px; letter-spacing:.16em; text-transform:uppercase; color:var(--ink-dim); white-space:nowrap;">召唤源泉 · SUMMON FONT</span>
-        <div style="${st(waterTube)}">${waterCellsHTML}</div>
-        <span style="font-family:var(--fn); font-size:22px; color:#cdeeff; text-shadow:0 0 10px rgba(77,182,232,.9);">${litLabel}</span>
-        <div style="width:1px;height:28px;background:var(--panel-border);flex-shrink:0;"></div>
-        <div style="display:flex;flex-direction:column;align-items:center;gap:1px;flex-shrink:0;">
-          <span style="font-size:9px;letter-spacing:.1em;color:var(--ink-dim);white-space:nowrap;">敌源泉</span>
-          <span style="font-family:var(--fn);font-size:18px;color:#5ea0e0;">${view.waterB}</span>
+      <div style="${st(boardCol)}">
+        <div style="${st(boardWrap)}">
+          ${narrationBanner}${noticeBanner}
+          ${fortBase(view, true)}
+          <div style="${st(lanesCol)}">${forr(view.lanes, (L, li) => laneRow(L, li, hi === 'lane:' + li))}${laddersLayer(view)}</div>
+          ${fortBase(view, false)}
         </div>
-        <div style="width:1px;height:28px;background:var(--panel-border);flex-shrink:0;"></div>
-        <div style="display:flex;flex-direction:column;align-items:center;gap:1px;flex-shrink:0;">
-          <span style="font-size:9px;letter-spacing:.1em;color:var(--ink-dim);white-space:nowrap;">牌库</span>
-          <span style="font-family:var(--fn);font-size:12px;color:var(--ink);">我 ${view.deckA} ｜ 敌 ${view.deckB}</span>
+        <div style="${st(waterBar)}">
+          <div style="${st(waterCap)}"><span style="font-family:var(--fd); font-size:20px; color:#dff4ff;">源</span></div>
+          <span style="font-size:10px; letter-spacing:.16em; text-transform:uppercase; color:var(--ink-dim); white-space:nowrap;">召唤源泉 · SUMMON FONT</span>
+          <div style="${st(waterTube)}">${waterCellsHTML}</div>
+          <span style="font-family:var(--fn); font-size:22px; color:#cdeeff; text-shadow:0 0 10px rgba(77,182,232,.9);">${litLabel}</span>
+          <div style="width:1px;height:28px;background:var(--panel-border);flex-shrink:0;"></div>
+          <div style="display:flex;flex-direction:column;align-items:center;gap:1px;flex-shrink:0;">
+            <span style="font-size:9px;letter-spacing:.1em;color:var(--ink-dim);white-space:nowrap;">我牌库</span>
+            <span style="font-family:var(--fn);font-size:16px;color:var(--ink);">${view.deckA}</span>
+          </div>
+          <span style="${st(waterPlus)}">本回合 +${view.waterGain}</span>
         </div>
-        <span style="${st(waterPlus)}">本回合 +${view.waterGain}</span>
       </div>
+      ${enemyRail}
     </div>
     <div style="${st(bottomBar)}">
       ${renderNode(actionMenuNode(view), GG_BATTLE_THEME)}
@@ -737,7 +758,7 @@ export function mountTurnBattle(host: HTMLElement, getView: () => TurnBattleView
   // contain 缩放（owner 2026-06-28·对齐大厅占满感·消四周留白）：取「宿主宽/1340」与「宿主高/858」较小者，
   // 棋盘整张可见、最大化、居中·只在不匹配的那一轴留对称小白边（替旧「按宽缩放 + 140vh 盖」的四面留白）。
   // 宿主须有确定宽高（game-g.tsx stage 已 100%×100% 占满 root）；无头(happy-dom)量到 0 → 回退 1（全尺寸·测只看 DOM）。
-  const scaleOf = (): number => { const w = host.clientWidth, h = host.clientHeight; return (w > 0 && h > 0) ? Math.min(w / 1340, h / 858) : (w > 0 ? w / 1340 : 1); };
+  const scaleOf = (): number => { const w = host.clientWidth, h = host.clientHeight; return (w > 0 && h > 0) ? Math.min(w / 1520, h / 858) : (w > 0 ? w / 1520 : 1); };
   const applyScale = (): void => { // ResizeObserver 走这条：只重算缩放·不整片重建 DOM（断「RO→render→改高→再触发 RO」循环·消掌机闪烁·owner 2026-06-22）
     const inner = host.querySelector('.ggt-inner') as HTMLElement | null;
     if (!inner) return; inner.style.setProperty('zoom', String(scaleOf())); // outer 现 100%×100% flex 居中·只改 inner zoom（仍 CSS zoom·不合成图层·掌机安全）
@@ -754,7 +775,7 @@ export function mountTurnBattle(host: HTMLElement, getView: () => TurnBattleView
     prevLit = litNow;
     const sc = scaleOf(); // 先量后写：缩放烤进首帧 markup（单次绘制·无未缩放帧）。
     // ⚠ 用 CSS zoom 而非 transform:scale —— zoom 是 CPU 布局缩放、不生成合成图层；掌机弱 GPU 合成「整屏 transform 缩放图层」会失败→黑屏（Mac 好 GPU 正常·owner 2026-06-22 烧版「apollo 绿字+黑屏」=此因）。zoom 即便不被支持也只是不缩放=裁切·绝不黑。
-    const innerStyle: Style = { ...(THEMES[view.theme] ?? THEMES.onyx), width: '1340px', height: '858px', zoom: sc, fontFamily: 'var(--fb)' };
+    const innerStyle: Style = { ...(THEMES[view.theme] ?? THEMES.onyx), width: '1520px', height: '858px', zoom: sc, fontFamily: 'var(--fb)' };
     host.innerHTML = `<div class="ggt-outer" style="position:relative; width:100%; height:100%; overflow:hidden; background:#0c0a08; display:flex; align-items:center; justify-content:center"><div class="ggt-inner" style="${st(innerStyle)}">${buildTurnFrameHTML(view, drain)}</div></div>`; // outer 占满 stage·flex 居中棋盘·四周对称留白(contain)
   };
   // 坞/格/牌/门 交互用 pointerdown（同 battle-screen）：rAF/重渲在按下↔抬起间整片重建 DOM，click 会落空 → 用单次离散 pointerdown。
