@@ -107,6 +107,22 @@
 > - `Panel.dashed?: boolean`（虚线边·落点/占位框用）。
 >
 > 这是「play-field 棋盘格/堡垒」一族·复用面：任何**棋盘/战棋/卡牌位**游戏（game-e/未来战棋）。**判据自检**：是现有令牌真表达不了的缺口（阵营色/异形圆角/虚线）·非能重组（`bg` 渐变硬凑违数据驱动尺子）→ 够格下沉。若主程认为该走**铁律路②「play-field→render 组件/引擎渲染器」**而非给 Panel 加这些（见本 REQ 下方原评估 C 节阻抗失配），请 owner 拍这条架构岔路：**给 UI 库补 play-field 描边原语** vs **game-g 棋盘改走引擎 render 组件**。GA 倾向前者（增量小、已落地血灯/掷命/HUD 在同一 LayoutNode 路·一致）·但听 owner。
+>
+> **★ GA 全量前瞻盘点（2026-06-28·owner「想想我们这边差什么」·把整张剩余 play-field 一次盘完·避免逐阶段才发现缺口）**：逐件对现有能力核 → **唯一真缺口 = 本 REQ（edge/radius/dashed）**；其余全可现有令牌/近似/PlayingCard 重组 → 按 CORE RULE「能重组→不开新缺口」**一律不再下沉**（防引擎臃肿）：
+> | play-field 件 | 现状能表达? | 缺什么 |
+> |---|---|---|
+> | 血灯 hpGem | ✅ 已切（Label ◆/◇） | — |
+> | 掷命特写 | ✅ 已切（Versus/CoinFlip） | — |
+> | 路轨 laneRow（点击部署） | ✅ Panel grid cols:9 + **Panel.action**（已到货） | — |
+> | 门钮 gate（◉/✕·脉冲·点击） | ✅ Panel.action + Label + **fx pulse** | — |
+> | 源泉条段 + 收退 | 🟡 段 bg ✅ + **fx fade**（已到货）✅；亮格描边 | **edge**（亮蓝段描边·本 REQ） |
+> | 城堡 fortBase | 🟡 光环/tag/计时器/连接点 ✅ | **edge**(阵营框)+**radius**(城垛/盾)（本 REQ）；盾花色 glyph 暗色→用 `dim` 近似 |
+> | 格子 slotCell chrome | 🟡 deploy 底纹 bg ✅ + 落点 fx ✅ + clash 环 accent+pulse ✅ | **edge**(金边界格/deploy 描边)+**dashed**(空格虚线圈)（本 REQ） |
+> | 兵牌信息层（阶段③） | ✅ PlayingCard + x/y 叠 Label（战力/生肖/将） | 花色→PlayingCard 内建红黑(2 色近似 4 色)·将水印→`dim` 大字近似·**无新缺口** |
+> | 斜梯 ladders | 🟡 rotate 细长 Panel + bgScroll 流动近似 SVG | 连接线原语可不开（rule-of-three 只此一处·近似够用）·**不下沉** |
+> | hover tooltips | ✅ Tooltip.block；forecast 档色→ok/warn/sub/danger 令牌语义近似 | **无新缺口** |
+>
+> 结论给 owner：**我们这边只差这一条（描边形 edge/radius/dashed）**——它一到货，城堡/格框/源泉段全可数据化；兵牌层/门钮/斜梯我**现在就能用近似推**（不卡它）。不该再开别的缺口（Label 任意色/opacity/连接线都能现有令牌或近似重组·开了反而臃肿引擎·违 CORE RULE）。
 
 > **GA 对战斗屏「棋枰 play-field」走引擎渲染器（铁律路②）的评估。结论：现有渲染器与 game-g 棋盘形态阻抗失配·照搬高成本低收益·需 Lead/owner 定形态。**
 >
