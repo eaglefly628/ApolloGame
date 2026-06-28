@@ -57,6 +57,32 @@
 
 ---
 
+## REQ-3D-Camera相机参数补全 · [2026-06-28] · owner → P3D（3D 渲染线）· status: **open（spec·P3D 执行）** · 类型: 真能力扩增（3D 线·过四条尺子）
+
+> **owner 2026-06-28**：3D 相机要像传统 3D 游戏那样有更多参数（投影 / fov / near-far / 跟随 / 约束）。这是「3D 线被证明的真缺口边」上的**正当扩增**。
+> **架构铁律（贯穿）**：**相机 = 数据（`Camera3D`）+ 固定解释器（渲染器算矩阵）**。传统引擎是「Camera 对象带 lookAt/setFov/矩阵方法、游戏调它」；我们这套**反转**——游戏**永不调相机方法、永不持矩阵**，只填 `Camera3D` 数据，渲染器去 lookAt / 算 view·projection 矩阵。三层分工：
+
+### ① 数据层（`Camera3D` 组件补字段 · render-only · 语义参数 · 弱模型能填）
+- 现有：`yaw / pitch / distance / pivotX·Y·Z`（保留）。
+- 补：`projection?: 'perspective'|'ortho'`（正交=等距微缩盒庭常用）；`fov?`（透视·从 `ThreeRendererOptions` 移到数据·per-scene）；`orthoSize?`（正交半高）；`near?` / `far?`（深度精度·配 W1-C 收紧）；`mode?: 'orbit'|'follow'`；`target?: string`（follow 时注视/环绕的实体 id）；`pitchMin?` / `pitchMax?`（俯仰夹角·game-z 现硬编码在 mount，挪成数据）。
+- **绝不放矩阵**——弱模型 litmus：它填得了 `fov:50 / mode:'follow' / target:'duck' / near:1`，**填不了一个 4×4 矩阵**。**多模式用 `mode` 枚举，别开 N 个相机组件。**
+
+### ② 解释器层（`three-projection` 纯函数 + `ThreeRenderer` · 引擎固定 · 算矩阵）
+- `projection:'ortho'` → 运行时切 `THREE.OrthographicCamera`（按 orthoSize/aspect 定 frustum）；`'perspective'` → 现 `PerspectiveCamera` 用 `fov`。
+- `fov / near / far` 从 `Camera3D` 读（不再写死在构造 option）。
+- `mode:'follow'` → 渲染器每 sync 把 `pivot` 解析成 `target` 实体的世界位（Transform3D 或 2D-Transform 落地面位）——**这是「解释」（渲染器读世界），不是新 capability、不写 sim、不进 hash**。
+- `pitchMin/Max` 夹 pitch。投影 / lookAt / ortho frustum 数学抽 `three-projection` 纯函数 + node 单测（同 `orbitCamera`/`fitDistance3D` 先例）。
+
+### ③ 行为层（运镜 · 写 `Camera3D` 随时间变 · render-only）
+- 输入运镜（拖拽转 yaw/pitch、滚轮改 distance）已是**运行时输入胶水**（game-z mount 先例）——保持；按需可抽成 render-only 小能力。
+- 震屏 / 镜头过渡 = **暂不做（YAGNI）**；要做时是 render-only 行为（写 `Camera3D` + 用 `tween`），**不塞进 `Camera3D` 字段**。
+
+> **尺子（别扩歪）**：① 矩阵留解释器、组件只存语义参数；② `mode` 枚举非 N 组件；③ 别投机搬电影机全套（景深 DOF 已是 `Post3D` 的活 / 镜头语言 YAGNI）；④ 运镜是「行为写态」不是 `Camera3D` 字段；⑤ render-only 出 hash（`Camera3D` 已在 `NON_DETERMINISTIC`）。
+> **验收**：盒庭可切正交看等距；`mode:'follow', target:'hero'` 时相机跟鸭走；pitch 夹角 / near-far 来自数据；投影 / follow-pivot 纯函数单测；tsc+vitest+build 全绿。
+> **这是「3D 线下一个正当扩增」的样板**：数据补参数、解释器算矩阵、行为写态——**三层不混**。跨出 3D 渲染线（如要动资产/核心 ECS）先报主程。
+
+---
+
 ## REQ-3D-Model导入 · [2026-06-28] · P3D（3D 渲染线）→ 主程（资产层域）· status: **✅ done（端到端打通·owner 2026-06-28 当面授权 P3D 跨界把资产半边也落）** · 类型: 真能力缺口（box 原语表达不了圆润模型）
 
 > **⚠️ 知会主程**：资产层（`src/assets/`·按契约 🔒 主程域）这次由 P3D 落了——**owner（junbai.li）2026-06-28 当面授权**「资产这块你也去，可以授权你动」。改动**极小且零 three 依赖**，不碰任何 2D 逻辑/现有 kind 行为，全绿。如与并行资产改动撞 rebase 请喊主程。
