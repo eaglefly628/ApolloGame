@@ -10,6 +10,7 @@ import { buildShop, INITIAL_SHOP, type ShopState } from './shop.js';
 import { buildPickHand, INITIAL_PICK, type PickState } from './pickcards.js';
 import { buildInputLab, INITIAL_INPUT, type InputLabState } from './input-lab.js';
 import { buildVideoLab, INITIAL_AISHE, type AisheState } from './video-lab.js';
+import { buildMmoHud } from './mmo-hud.js';
 import { SOUNDS, BGM } from './sounds.js';
 
 // 自定义画选中态的交互控件值（必须进 state·点击改值 + 局部更新才会动）。
@@ -664,6 +665,7 @@ function buildSoundPage(c: ControlsState): LayoutNode {
  */
 export const MODULES: ReadonlyArray<{ id: string; glyph: string; label: string; desc: string; tone: 'accent' | 'normal' | 'dim'; soon?: boolean }> = [
   { id: 'mod-ui', glyph: '🎛', label: 'UI 控件', desc: '30+ 数据驱动控件 · 换皮', tone: 'accent' as const },
+  { id: 'mod-mmo', glyph: '🗡', label: '组合 · MMO HUD', desc: '纯数据复现 WoW 风最复杂 HUD', tone: 'accent' as const },
   { id: 'mod-sound', glyph: '🔊', label: '声音', desc: '合成 / 混音 / 立体声 / 混响', tone: 'normal' as const },
   { id: 'mod-input', glyph: '🎮', label: '输入底座', desc: 'RawInput → KeyBinding → 信号', tone: 'normal' as const },
   { id: 'mod-anim', glyph: '✨', label: '精灵动画', desc: 'tween 驱动 · Canvas 实时绘制', tone: 'normal' as const },
@@ -985,6 +987,7 @@ function moduleBody(
 ): LayoutNode {
   switch (currentModule) {
     case 'mod-ui': return buildUIModule(shop, pick, activeTab, controls);
+    case 'mod-mmo': return buildMmoHud();
     case 'mod-sound': return buildSoundPage(controls);
     case 'mod-input': return buildInputLab(input);
     case 'mod-video': return buildVideoLab(aishe);
