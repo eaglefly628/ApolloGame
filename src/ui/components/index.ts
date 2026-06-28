@@ -14,6 +14,7 @@ export { solveLayout } from './layout-solver.js';
 export type { Rect, Size, MeasureFn } from './layout-solver.js';
 export type {
   LayoutNode, LayoutConstraints, ComponentType, ComponentProps, HandlerMap, Handler, ActionSink, UITheme,
+  VisualEffect, EffectKind, EffectColor,
   ButtonProps, LabelProps, DropdownProps, BadgeProps, InputProps, PanelProps,
   TableProps, TableColumn, TableRow, TabsProps, ProgressBarProps, TagProps, ModalProps, ToastProps, TooltipProps,
   CardProps, PlayingCardProps, StepperProps, SegmentedProps, AvatarProps, AccordionProps,

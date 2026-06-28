@@ -475,3 +475,12 @@
 > **一句话**：5 条里只有 ① 是「现成能力真表达不了」的缺口（已下沉 Tag.size）；②③④⑤ 全是现成 LayoutNode 重组即得（Card.children / x/y 叠层 / visibleWhen / Tooltip.bubble / Label.size），按 manifesto「先重组、勿加宽」回驳并附等价数据写法 + 证明测试。
 
 > **[PG 消费回执 2026-06-27·D5/D6 已复活·闭环]**：主程 `Tooltip.block` 落地后，牌组扑克 13×4 牌墙每张包 `Tooltip{block:true, bubble:武将词条Panel(名/衔/战力费用/战绩·只中文)}`、天罡槽同法包词条 → hover 悬浮简介到位，**网格保真不塌陷（截图实测 13 列填满）**。tsc+vitest(1922)+build 全绿已推。本批 ②③④⑤ 全程零引擎扩面（纯重组），① Tag.size + Tooltip.block 两处下沉到此全部消费完毕。**结案。**
+
+### REQ-FX-战斗特效抽象 · [2026-06-27] · owner → 主程（UI 库域 + 架构） · status: **✅ done（主程·两正交特效库·防开关爆炸）** · 类型: 真能力下沉 + 架构定调
+
+> **owner**：战斗要一堆特效，抽象成数据，但**别每效一个布尔开关（恶性膨胀）**——「把它变成一个正交的、可叠加的抽象效果合集」。仔细分辨：有的是 UI 通用特效，有的是游戏专属实体特效，两个都要建立、且正交可叠加。
+> **主程评审 + 落地**：分成**两个正交特效库**（详 `docs/design/effects-architecture.md`）：
+> - **库 A·UI 特效（`LayoutNode.fx: VisualEffect[]`）= 真缺口·已下沉**：一个字段一串特效，闭集 kind（pulse/float/shake/pop/glow/sheen/flash）+ 参数（color 语义色/ms/intensity/once），可叠加、render-only CSS、校验器把关闭集。**替代 sheen?/glow? 开关爆炸**（旧 bool 并入作别名）。**铁律：新特效=加一个 kind（评审过的确定性 CSS），绝不再加布尔旗标。** 实现 render.ts `fxToCss` + server.ts 关键帧 + validate.ts 闭集校验，验收 `ui-fx.test.ts`（11 测）。
+> - **库 B·战场/实体特效 = 已覆盖·零新系统**：粒子/爆炸/闪光 = `PrefabTemplate`(数据) + `caster`/`tween`/`lifetime`/`Timer` 现成能力组合（参照 spawn-lab/combat-lab）。游戏的「特效库」= 一组 prefab 数据（游戏层），**不下沉任何新 system**（CORE RULE：已覆盖→不加）。
+> - **正交 + 叠加**：库 A 改 UI 元素自我动画；库 B 在世界生成特效实体；同一处可叠（牌 fx shake+flash 的同时战场 caster 爆炸）。
+> **给所有 session/PG**：UI 战斗反馈一律用 `layout.fx`（从闭集 kind 选），**别再提/加 `xxx?:boolean` 特效开关**；缺 kind → 提 requests，主程评审后加**一个 kind**。

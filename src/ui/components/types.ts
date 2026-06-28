@@ -53,9 +53,35 @@ export interface LayoutConstraints {
   anchor?: string;
   /** 倒角切角 px（CSS clip-path 八边形·art-deco/扑克牌桌美学）：如 13 = 左上/右下各切 13px。给面板/卡/CTA 切角。 */
   chamfer?: number;
-  /** 流光 sheen（render-only·质感）：true=元素上叠一道斜向流光循环扫过（CSS 注入 ::after·apollo-sheen-sweep）。
-   *  按钮/标题/卡片的"湿润反光"质感（原 hero 键内置的 sheen 通用化·REQ-UI-G流光底纹①）。 */
+  /** 流光 sheen（render-only·质感）。**已并入 `fx`**（= `fx:[{kind:'sheen'}]`）；保留作向后兼容别名，新代码用 fx。 */
   sheen?: boolean;
+  /** 视觉特效合集（UI 特效库·render-only·闭集·可叠加）——见下 `VisualEffect`。
+   *  一个字段表达一串特效（放缩/重点/受击/暴击…），而非每效一个布尔开关（防恶性膨胀·owner 2026-06-27）。 */
+  fx?: VisualEffect[];
+}
+
+// ── 视觉特效（UI 特效库·render-only·闭集·可叠加）─────────────────────────────────────────────
+// owner 2026-06-27：把 UI 层通用特效抽象成「**一个可叠加的闭集合集**」，而非每效一个布尔旗标（防恶性膨胀）。
+// 与「战场/实体特效库」**正交**：本件 = UI 元素的**自我动画**（CSS·LayoutNode 层·通用）；战场爆炸/粒子/闪光 =
+// **世界实体**（PrefabTemplate + caster + tween + lifetime·render 组件层·游戏特效库）。二者可**叠加**：一张牌做
+// UI 的 shake/flash 的同时，战场在牌位生成一个 prefab 爆炸——两层各管各、叠出来。详见 docs/design/effects-architecture.md。
+// 闭集 kind = 受控合成（弱模型从枚举里选·绝不塞自由 CSS）；可叠加（buff 同时受击 = glow + shake）；可参数化。
+// **新特效 = 加一个 kind（评审过的确定性 CSS），绝不再加布尔旗标。** 这就是替代 sheen?/glow?/… 开关爆炸的抽象。
+export type EffectKind =
+  | 'pulse'   // 呼吸（缩放/透明·低血量警示/选中强调/待办催促）
+  | 'float'   // 上下浮动（漂浮/待命）
+  | 'shake'   // 抖动（受击/错误/拒绝·intensity=抖幅·once=单次）
+  | 'pop'     // 弹一下（出现/数值跳/强调·一次性）
+  | 'glow'    // 外发光（buff/可交互/选中·color=光色）
+  | 'sheen'   // 流光斜扫（高级感/稀有/新到）
+  | 'flash';  // 整体闪色（受击冒红/暴击闪白/警告·color=闪色·常配 once）
+export type EffectColor = 'danger' | 'gold' | 'jade' | 'warn' | 'ok' | 'white'; // 语义色 → 主题令牌（闭集·防注入）
+export interface VisualEffect {
+  kind: EffectKind;
+  color?: EffectColor; // 染色类(glow/flash)取色·缺省按 kind（glow=gold·flash=danger）
+  ms?: number;         // 单次时长 / 循环周期
+  intensity?: number;  // 强度（shake 抖幅倍率·glow 扩散倍率）·缺省 1
+  once?: boolean;      // true=播一次（受击/暴击）·缺省=循环（状态态·如低血量呼吸）
 }
 
 export interface ButtonProps {

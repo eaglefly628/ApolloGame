@@ -3,7 +3,7 @@
 
 import { SHELL } from '../shell-theme.js';
 import type {
-  LayoutNode, LayoutConstraints, UITheme,
+  LayoutNode, LayoutConstraints, UITheme, VisualEffect, EffectColor,
   ButtonProps, LabelProps, DropdownProps, BadgeProps, InputProps, PanelProps,
   CheckboxProps, ToggleProps, RadioGroupProps, ImageProps, ScreenProps, SliderProps,
   TableProps, TableColumn, TabsProps, ProgressBarProps, TagProps, ModalProps, ToastProps, TooltipProps,
@@ -27,7 +27,50 @@ const JUSTIFY_MAP: Record<string, string> = {
   between: 'space-between', around: 'space-around', evenly: 'space-evenly',
 };
 
-function layoutStyle(c?: LayoutConstraints): string {
+// 视觉特效语义色 → 主题令牌（闭集映射·防注入：绝不把 color 串直接插进 CSS）。
+function fxColor(t: UITheme, c?: EffectColor): string {
+  const m: Record<string, string> = { danger: t.danger, gold: t.gold, jade: t.jade, warn: t.warn, ok: t.ok, white: '#ffffff' };
+  return (c && m[c]) || t.gold;
+}
+// motion/opacity 类特效 → 复用已注入的关键帧 [keyframe, 缺省 ms]。
+const FX_MOTION: Record<string, [string, number]> = {
+  pulse: ['apollo-pulse', 1600], float: ['apollo-float', 2600], pop: ['apollo-pop', 360],
+};
+// VisualEffect[] → CSS（可叠加·分组合成）：motion/opacity 走 animation 列表；glow 走 filter；
+// sheen/flash 走 data-fx 叠层（::after/::before）。同组多个 transform 动画同时只末个生效（文档说明·取一个动作即可）。
+// 返回 { css: 内联样式增量, dataFx: 叠层 token 串 }。纯函数（受控合成·闭集 kind 由调用前校验器把关）。
+function fxToCss(fx: readonly VisualEffect[], t: UITheme): { css: string; dataFx: string } {
+  const anim: string[] = [], filter: string[] = [], vars: string[] = [], dataFx: string[] = [];
+  for (const e of fx) {
+    const ms = num(e.ms, 0);
+    if (e.kind === 'pulse' || e.kind === 'float' || e.kind === 'pop') {
+      const [kf, dms] = FX_MOTION[e.kind]!;
+      const iter = e.kind === 'pop' || e.once ? 'both' : 'infinite';
+      anim.push(`${kf} ${ms || dms}ms ease-in-out ${iter}`);
+    } else if (e.kind === 'shake') {
+      vars.push(`--fx-amp:${num(e.intensity, 1) * 4}px`);
+      anim.push(`apollo-fx-shake ${ms || 520}ms ease-in-out ${e.once ? 'both' : 'infinite'}`);
+    } else if (e.kind === 'glow') {
+      const col = fxColor(t, e.color); const r = num(e.intensity, 1);
+      filter.push(`drop-shadow(0 0 ${4 * r}px ${col}) drop-shadow(0 0 ${10 * r}px ${col})`);
+    } else if (e.kind === 'sheen') {
+      dataFx.push('sheen');
+    } else if (e.kind === 'flash') {
+      vars.push(`--fx-flash:${fxColor(t, e.color ?? 'danger')}`);
+      if (ms) vars.push(`--fx-flash-ms:${ms}ms`);
+      dataFx.push('flash');
+    }
+  }
+  const css = [
+    ...vars,
+    anim.length ? `animation:${anim.join(',')}` : '',
+    filter.length ? `filter:${filter.join(' ')}` : '',
+    dataFx.length ? 'position:relative' : '',
+  ].filter(Boolean).join(';');
+  return { css, dataFx: dataFx.join(' ') };
+}
+
+function layoutStyle(c?: LayoutConstraints, t?: UITheme): string {
   if (!c) return '';
   const p: string[] = [];
   if (c.x !== undefined) { p.push(`left:${num(c.x)}px`); p.push(`top:${num(c.y)}px`); p.push('position:absolute'); }
@@ -60,6 +103,8 @@ function layoutStyle(c?: LayoutConstraints): string {
     p.push(`animation:apollo-${c.anim} ${num(c.animMs, 2400)}ms ${c.animDelay ? `${num(c.animDelay)}ms ` : ''}ease-in-out infinite`);
   }
   if (c.draggable) p.push('cursor:grab');
+  // 视觉特效合集（UI 特效库）：闭集 fx → 动画/滤镜/叠层 CSS。需主题取色 → 仅 t 在场时应用。
+  if (c.fx && c.fx.length && t) { const f = fxToCss(c.fx, t); if (f.css) p.push(f.css); }
   return p.join(';');
 }
 
@@ -177,7 +222,7 @@ function renderPanel(id: string, p: PanelProps, c: LayoutConstraints | undefined
   const justify = JUSTIFY_MAP[c?.justify ?? ''] ?? '';   // 主轴分布（flex 才有意义·grid 忽略）。
   const bare = p.bare === true;          // 无框纯布局容器：不画框/底/圆角、padding 缺省 0（别千层框）。
   const pad = c?.padding ?? (bare ? 0 : 16);
-  const ls = layoutStyle(c);
+  const ls = layoutStyle(c, t);          // 传 t：让 layout.fx（视觉特效·需主题取色）在 Panel 上也生效。
   const overflow = p.scroll ? 'overflow-y:auto;' : '';
   // grid 排布模式（卡牌格/货架）：cols=N 固定列数（严格等分·消空隙）；否则 auto-fill 自适应（minCol 定最小列宽）。非 grid 走 flex 行/列（支持 justify）。
   const gridCols = c?.cols !== undefined ? `repeat(${num(c.cols)},1fr)` : `repeat(auto-fill,minmax(${c?.minCol ?? 96}px,1fr))`;
@@ -649,12 +694,14 @@ function renderVideo(id: string, p: VideoProps, ls: string, t: UITheme): string 
 export function renderNode(node: LayoutNode, theme: UITheme = SHELL): string {
   const html = renderDispatch(node, theme);
   const c = node.layout;
-  if (c && (c.draggable || c.dropZone || c.anchor || c.sheen)) {
+  const fxData = c?.fx?.length ? fxToCss(c.fx, theme).dataFx : ''; // sheen/flash 等叠层 token
+  if (c && (c.draggable || c.dropZone || c.anchor || c.sheen || fxData)) {
     const a: string[] = [];
     if (c.draggable) a.push(`draggable="true" data-drag="${esc(node.id)}"`);
     if (c.dropZone)  a.push(`data-drop="${esc(c.dropZone)}"`);
     if (c.anchor)    a.push(`data-anchor="${esc(c.anchor)}"`); // 新手引导 spotlight 锚点（OnboardingOverlay 定位）
     if (c.sheen)     a.push('data-sheen'); // 流光层（CSS 注入 ::after·apollo-sheen-sweep）
+    if (fxData)      a.push(`data-fx="${esc(fxData)}"`); // 特效叠层（sheen/flash → ::after/::before）
     return html.replace(/^(\s*<[a-zA-Z][\w-]*)/, `$1 ${a.join(' ')}`);
   }
   return html;
@@ -662,7 +709,7 @@ export function renderNode(node: LayoutNode, theme: UITheme = SHELL): string {
 
 function renderDispatch(node: LayoutNode, theme: UITheme = SHELL): string {
   const t = theme;
-  const ls = layoutStyle(node.layout);
+  const ls = layoutStyle(node.layout, t);
   switch (node.type) {
     case 'Button':     return renderButton(node.id, node.props as ButtonProps, ls, t);
     case 'Label':      return renderLabel(node.id, node.props as LabelProps, ls, t);

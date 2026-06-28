@@ -14,6 +14,10 @@ export interface UiIssue {
   detail: string;
 }
 
+// 视觉特效合集（layout.fx）闭集：kind/color 枚举·防拼错与注入（与 types.ts EffectKind/EffectColor 同源）。
+const FX_KINDS = new Set(['pulse', 'float', 'shake', 'pop', 'glow', 'sheen', 'flash']);
+const FX_COLORS = new Set(['danger', 'gold', 'jade', 'warn', 'ok', 'white']);
+
 /** 验一棵 LayoutNode 树（递归 children + node 型 props），返回全部 issue（空=合法）。 */
 export function validateLayoutNode(node: LayoutNode, path = 'root'): UiIssue[] {
   const issues: UiIssue[] = [];
@@ -39,6 +43,19 @@ export function validateLayoutNode(node: LayoutNode, path = 'root'): UiIssue[] {
     if (ps.type === 'enum' && v !== undefined && ps.values && !ps.values.includes(String(v))) {
       issues.push({ path, type: t, kind: 'bad-enum', detail: `props.${ps.name}='${String(v)}' 非法·合法值: ${ps.values.join(' | ')}` });
     }
+  }
+
+  // layout.fx 闭集校验（视觉特效合集·kind/color 枚举·受控合成防拼错/注入）
+  const fx = (node.layout as { fx?: Array<{ kind?: string; color?: string }> } | undefined)?.fx;
+  if (Array.isArray(fx)) {
+    fx.forEach((e, i) => {
+      if (!e || !FX_KINDS.has(String(e.kind))) {
+        issues.push({ path, type: t, kind: 'bad-enum', detail: `layout.fx[${i}].kind='${String(e?.kind)}' 非法·合法值: ${[...FX_KINDS].join(' | ')}` });
+      }
+      if (e?.color !== undefined && !FX_COLORS.has(String(e.color))) {
+        issues.push({ path, type: t, kind: 'bad-enum', detail: `layout.fx[${i}].color='${String(e.color)}' 非法·合法值: ${[...FX_COLORS].join(' | ')}` });
+      }
+    });
   }
 
   // children 规则

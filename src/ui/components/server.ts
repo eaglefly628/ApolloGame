@@ -108,7 +108,10 @@ const APOLLO_KEYFRAMES = `
 [data-flipcard]:hover [data-flip-back]{transform:scaleX(1)}
 @keyframes apollo-sheen-sweep{0%{background-position:220% 0}100%{background-position:-60% 0}}
 [data-sheen]{position:relative}
-[data-sheen]::after{content:'';position:absolute;inset:0;border-radius:inherit;pointer-events:none;background:linear-gradient(105deg,transparent 42%,rgba(255,255,255,.4) 50%,transparent 58%);background-size:250% 100%;animation:apollo-sheen-sweep 3.2s ease-in-out infinite}`;
+[data-sheen]::after,[data-fx~="sheen"]::after{content:'';position:absolute;inset:0;border-radius:inherit;pointer-events:none;background:linear-gradient(105deg,transparent 42%,rgba(255,255,255,.4) 50%,transparent 58%);background-size:250% 100%;animation:apollo-sheen-sweep 3.2s ease-in-out infinite}
+@keyframes apollo-fx-shake{0%,100%{transform:translateX(0)}20%{transform:translateX(calc(-1 * var(--fx-amp,4px)))}60%{transform:translateX(var(--fx-amp,4px))}}
+@keyframes apollo-fx-flash{0%{opacity:0}25%{opacity:.7}100%{opacity:0}}
+[data-fx~="flash"]::before{content:'';position:absolute;inset:0;border-radius:inherit;pointer-events:none;background:var(--fx-flash,#d3897a);mix-blend-mode:screen;animation:apollo-fx-flash var(--fx-flash-ms,420ms) ease-out both}`;
 function ensureKeyframes(): void {
   if (typeof document === 'undefined') return;
   if (document.getElementById('apollo-ui-keyframes')) return;
