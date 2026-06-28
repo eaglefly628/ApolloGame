@@ -80,18 +80,19 @@ function heroesPage(st: CollectionState): LayoutNode {
 }
 
 function buildHeroDetail(h: HeroCard): LayoutNode {
+  // 对齐原版 hero-detail-pane 确切 px（lobby-collection.ts 内联样式）：名 30·衔 13·meta 12·正文 13·名战引语 20。
   const kids: LayoutNode[] = [
-    { type: 'Label', id: 'cd-name', props: { text: `${h.rank}${h.suit} ${h.name}`, size: 'xl', color: 'gold', bold: true } },
-    { type: 'Label', id: 'cd-title', props: { text: `${h.title} · ${h.era}`, size: 'sm', color: 'sub' } },
-    { type: 'Label', id: 'cd-meta', props: { text: `${RAR_NAME[h.rar]} · ${h.suit}${SUIT_NAME[h.suit] ?? ''} · 贡献度 第 ${h.contribRank} 位`, size: 'sm', color: 'dim' } },
+    { type: 'Label', id: 'cd-name', props: { text: `${h.rank}${h.suit} ${h.name}`, size: 30, color: 'gold', bold: true } },
+    { type: 'Label', id: 'cd-title', props: { text: `${h.title} · ${h.era}`, size: 13, color: 'sub' } },
+    { type: 'Label', id: 'cd-meta', props: { text: `${RAR_NAME[h.rar]} · ${h.suit}${SUIT_NAME[h.suit] ?? ''} · 贡献度 第 ${h.contribRank} 位`, size: 12, color: 'dim' } },
     { type: 'Divider', id: 'cd-div', props: {} },
-    { type: 'Label', id: 'cd-curse', props: { text: h.curseIntro ?? '此魂之诅咒序待录 · 命运待解封', size: 'md', color: 'gold' } },
-    { type: 'Label', id: 'cd-bio', props: { text: h.bio ?? `${h.contrib}（全传逐期补录）`, size: 'md', color: 'text' } },
+    { type: 'Label', id: 'cd-curse', props: { text: h.curseIntro ?? '此魂之诅咒序待录 · 命运待解封', size: 13, color: 'gold' } },
+    { type: 'Label', id: 'cd-bio', props: { text: h.bio ?? `${h.contrib}（全传逐期补录）`, size: 13, color: 'text' } },
   ];
-  if (h.battleName) kids.push({ type: 'Label', id: 'cd-battle', props: { text: `名战：${h.battleName} —— ${h.battleResult ?? ''}`, size: 'md', color: 'sub' } });
-  if (h.quote) kids.push({ type: 'Label', id: 'cd-quote', props: { text: `「${h.quote}」`, size: 'md', color: 'gold' } });
-  if (h.gossip) kids.push({ type: 'Label', id: 'cd-gossip', props: { text: `野史 · 八卦：${h.gossip}`, size: 'md', color: 'sub' } });
-  if (h.legacy) kids.push({ type: 'Label', id: 'cd-legacy', props: { text: `流变 · 影响：${h.legacy}`, size: 'md', color: 'sub' } });
+  if (h.battleName) kids.push({ type: 'Label', id: 'cd-battle', props: { text: `名战：${h.battleName} —— ${h.battleResult ?? ''}`, size: 13, color: 'sub' } });
+  if (h.quote) kids.push({ type: 'Label', id: 'cd-quote', props: { text: `「${h.quote}」`, size: 20, color: 'gold' } });
+  if (h.gossip) kids.push({ type: 'Label', id: 'cd-gossip', props: { text: `野史 · 八卦：${h.gossip}`, size: 13, color: 'sub' } });
+  if (h.legacy) kids.push({ type: 'Label', id: 'cd-legacy', props: { text: `流变 · 影响：${h.legacy}`, size: 13, color: 'sub' } });
   return { type: 'Panel', id: 'coll-detail', props: { title: '列传', scroll: true }, layout: { direction: 'column', gap: 6, padding: 14, width: 320 }, children: kids };
 }
 
@@ -189,9 +190,9 @@ function collectPage(view: LobbyView): LayoutNode {
     type: 'Panel', id: 'coll-collect', props: { bare: true, scroll: true }, layout: { direction: 'column', gap: 10, padding: 4 },
     children: [
       { type: 'Label', id: 'col-t-h', props: { text: `🗃 天罡牌 · 收藏 ${ownedT}/${view.tiangangs.length}（到「牌组」屏编入出战）`, size: 'md', color: 'gold' } },
-      { type: 'Panel', id: 'col-t-grid', props: { bare: true }, layout: { direction: 'grid', minCol: 150, gap: 8 }, children: tCards },
+      { type: 'Panel', id: 'col-t-grid', props: { bare: true }, layout: { direction: 'grid', minCol: 180, gap: 8 }, children: tCards },
       { type: 'Label', id: 'col-f-h', props: { text: `✨ 闪艺 · ${ownedF}/${view.foils.length}（纯装饰收集）`, size: 'md', color: 'gold' } },
-      { type: 'Panel', id: 'col-f-grid', props: { bare: true }, layout: { direction: 'grid', minCol: 150, gap: 8 }, children: fCards },
+      { type: 'Panel', id: 'col-f-grid', props: { bare: true }, layout: { direction: 'grid', minCol: 180, gap: 8 }, children: fCards },
     ],
   };
 }

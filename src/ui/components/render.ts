@@ -163,6 +163,8 @@ function renderLabel(id: string, p: LabelProps, ls: string, t: UITheme): string 
     `font-size:${sz}px`, `color:${cl}`,
     p.bold ? 'font-weight:700' : '',
     `font-family:${fam}`,
+    // 仅当文本含换行符时保留换行（\n→实换行·多段说明/手册用）；无换行的单行 label 不加·HTML 字节不变（不动既有 golden）。
+    (typeof p.text === 'string' && p.text.includes('\n')) ? 'white-space:pre-line' : '',
     p.glow ? `text-shadow:0 0 8px ${cl},0 0 2px ${cl}` : '',
     p.tracking !== undefined ? `letter-spacing:${p.tracking}px` : '',
     ls,
@@ -467,7 +469,9 @@ function renderModal(id: string, p: ModalProps, children: LayoutNode[], ls: stri
     ? `<div style="font-size:15px;font-weight:700;color:${t.text};font-family:${t.fontUi};margin-bottom:12px;padding-right:26px">${esc(p.title)}</div>`
     : '';
   const body = children.map((ch) => renderNode(ch, t)).join('');
-  return `<div id="${esc(id)}"${scrimClose} style="position:fixed;inset:0;z-index:200;display:flex;align-items:center;justify-content:center;padding:24px;background:rgba(0,0,0,0.62);${ls}"><div style="position:relative;width:${w}px;max-width:100%;max-height:88vh;overflow-y:auto;background:${t.bg1};border:1px solid ${t.line};border-radius:12px;padding:22px;box-shadow:0 24px 70px rgba(0,0,0,0.55)">${xBtn}${title}${body}</div></div>`;
+  // 遮罩加深 0.62→0.82（owner 2026-06-28「弹层太透·看穿到本体」）：弹层须与背后大厅强分离。
+  // 面板底叠一层不透明 bg0 兜底（防 t.bg1 在半透明主题下透出背景·如战斗皮肤 var(--panel)）→ 内容永远实底可读。
+  return `<div id="${esc(id)}"${scrimClose} style="position:fixed;inset:0;z-index:200;display:flex;align-items:center;justify-content:center;padding:24px;background:rgba(0,0,0,0.82);${ls}"><div style="position:relative;width:${w}px;max-width:100%;max-height:88vh;overflow-y:auto;background:linear-gradient(${t.bg1},${t.bg1}),${t.bg0};border:1px solid ${t.line};border-radius:12px;padding:22px;box-shadow:0 24px 70px rgba(0,0,0,0.7)">${xBtn}${title}${body}</div></div>`;
 }
 
 // ── Card / Stepper / Segmented / Avatar / Accordion（P1·网格卡/数量/分段/头像/折叠）──────

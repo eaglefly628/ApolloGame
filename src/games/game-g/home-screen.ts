@@ -9,6 +9,8 @@
 import { mountUI } from '@ui/components/index.js';
 import type { LayoutNode, HandlerMap } from '@ui/components/index.js';
 import { GG_LOBBY_THEME } from './ui-theme.js';
+import { stageDisha } from './disha.js';
+import { dishaNumberLine } from './lobby-collection.js';
 import type { LobbyView } from './lobby-screen.js';
 
 /** 主页内容 → LayoutNode（纯数据·保真原版绿呢牌桌·owner 2026-06-25「和原版一样」）。
@@ -23,10 +25,10 @@ export function buildHomeScreen(view: LobbyView): LayoutNode {
   const stags: LayoutNode = {
     type: 'Panel', id: 'home-stags', props: { bare: true }, layout: { direction: 'row', gap: 18, padding: 0, align: 'center' },
     children: [
-      { type: 'Label', id: 'st-s', props: { text: '♠ 黑桃', size: 'sm', color: 'sub' } },
-      { type: 'Label', id: 'st-h', props: { text: '♥ 红桃', size: 'sm', color: 'danger' } },
-      { type: 'Label', id: 'st-d', props: { text: '♦ 方块', size: 'sm', color: 'warn' } },
-      { type: 'Label', id: 'st-c', props: { text: '♣ 梅花', size: 'sm', color: 'ok' } },
+      { type: 'Label', id: 'st-s', props: { text: '♠ 黑桃', size: 12, color: 'sub' } },
+      { type: 'Label', id: 'st-h', props: { text: '♥ 红桃', size: 12, color: 'danger' } },
+      { type: 'Label', id: 'st-d', props: { text: '♦ 方块', size: 12, color: 'warn' } },
+      { type: 'Label', id: 'st-c', props: { text: '♣ 梅花', size: 12, color: 'ok' } },
     ],
   };
 
@@ -58,7 +60,7 @@ export function buildHomeScreen(view: LobbyView): LayoutNode {
           { type: 'Panel', id: 'home-titlecol', props: { bare: true }, layout: { direction: 'column', gap: 2, flex: 1 },
             children: [
               { type: 'Label', id: 'home-title', props: { text: c ? `第 ${c.stage} 关 · ${c.battle}` : '戏牌师', size: 'xxxl', color: 'gold', bold: true, font: 'display' }, layout: { sheen: true } },
-              { type: 'Label', id: 'home-sub', props: { text: c ? `执掌命运之人 · 挑战被诅咒的 ${c.boss}` : view.stageLabel, size: 'md', color: 'sub' } },
+              { type: 'Label', id: 'home-sub', props: { text: c ? `执掌命运之人 · 挑战被诅咒的 ${c.boss}` : view.stageLabel, size: 12, color: 'sub' } },
             ] },
           stags,
         ] },
@@ -66,11 +68,11 @@ export function buildHomeScreen(view: LobbyView): LayoutNode {
         children: [
           { type: 'Panel', id: 'home-fortune', props: {}, layout: { direction: 'row', align: 'center', gap: 8, padding: 8 },
             children: [
-              { type: 'Label', id: 'home-fortune-t', props: { text: '🎴 今日卦象', size: 'sm', color: 'sub' } },
+              { type: 'Label', id: 'home-fortune-t', props: { text: '🎴 今日卦象', size: 13, color: 'sub' } },
               { type: 'Label', id: 'home-fortune-v', props: { text: keptFortune != null ? String(keptFortune) : '掷', size: 'xxxl', color: 'gold', bold: true, font: 'display' } },
             ] },
           duel,
-          { type: 'Label', id: 'home-duelline', props: { text: c ? `⚔ 对决 ${c.boss} · ${c.oneLiner}` : '掷命之牌', size: 'sm', color: 'dim' } },
+          { type: 'Label', id: 'home-duelline', props: { text: c ? `⚔ 对决 ${c.boss} · ${c.oneLiner}` : '掷命之牌', size: 13, color: 'dim' } },
         ] },
       { type: 'Panel', id: 'home-bottom', props: { bare: true }, layout: { direction: 'column', align: 'center', gap: 8, padding: 0 },
         children: [
@@ -81,29 +83,34 @@ export function buildHomeScreen(view: LobbyView): LayoutNode {
     ],
   };
 
-  // 右栏·Boss 情报 + 地煞（明牌可破）。地煞 = 满宽 Card（去掉先前的 Tooltip inline-flex 包裹·那会让卡收缩成内容宽→有长有短）。
-  // 地煞卡用 Card.children + Label.size 放大（主程回驳 Card.size·给重组写法）：名 md 金 + buff 行 sm·行距更松。
-  const fiendNodes: LayoutNode[] = (c?.fiends ?? []).map((fd, i) => ({
-    type: 'Card', id: `home-fiend-${i}`, props: { tone: 'normal' },
-    children: [{ type: 'Panel', id: `home-fiend-b-${i}`, props: { bare: true }, layout: { direction: 'column', gap: 5, padding: 0 },
-      children: [
-        { type: 'Label', id: `home-fiend-n-${i}`, props: { text: `🎴 ${fd.name}`, size: 'md', color: 'gold', bold: true } },
-        { type: 'Label', id: `home-fiend-d-${i}`, props: { text: fd.desc, size: 'md', color: 'sub' } },
-      ] }],
-  }));
+  // 右栏·Boss 情报 + 地煞（明牌可破）。地煞 = 满宽 Card。字号对齐原版 .fiend（名 b=12 / 描述 span=11 / 数值行 disha-num=11）。
+  // bug 修（owner 2026-06-28「描述里没显示地煞带来的真正数值变化」）：补 dishaNumberLine 数值行（与战役/收藏页同源·index 对齐 c.fiends）。
+  const cDisha = c ? stageDisha(c.stage) : [];
+  const fiendNodes: LayoutNode[] = (c?.fiends ?? []).map((fd, i) => {
+    const nums = dishaNumberLine(cDisha[i] ?? '');
+    const body: LayoutNode[] = [
+      { type: 'Label', id: `home-fiend-n-${i}`, props: { text: `🎴 ${fd.name}`, size: 12, color: 'gold', bold: true } },
+      { type: 'Label', id: `home-fiend-d-${i}`, props: { text: fd.desc, size: 11, color: 'sub' } },
+    ];
+    if (nums) body.push({ type: 'Label', id: `home-fiend-nums-${i}`, props: { text: `📊 ${nums}`, size: 11, color: 'warn' } });
+    return {
+      type: 'Card', id: `home-fiend-${i}`, props: { tone: 'normal' },
+      children: [{ type: 'Panel', id: `home-fiend-b-${i}`, props: { bare: true }, layout: { direction: 'column', gap: 5, padding: 0 }, children: body }],
+    };
+  });
   const rail: LayoutNode = {
     type: 'Panel', id: 'home-rail', props: { title: `⚔ 本关 Boss · ${c?.boss ?? '—'}` },
     layout: { direction: 'column', gap: 6, padding: 16, width: 256 },
     children: [
       { type: 'Label', id: 'home-boss-diff',
-        props: c ? { size: 'sm', color: 'sub', spans: [{ text: '难度 ' }, { text: '★'.repeat(c.stars), color: 'gold', bold: true }, { text: ` · ${c.oneLiner}`, color: 'sub' }] } : { text: '', size: 'sm', color: 'gold' } },
+        props: c ? { size: 12, color: 'sub', spans: [{ text: '难度 ' }, { text: '★'.repeat(c.stars), color: 'gold', bold: true }, { text: ` · ${c.oneLiner}`, color: 'sub' }] } : { text: '', size: 12, color: 'gold' } },
       { type: 'Label', id: 'home-fiend-h',
-        props: { text: '🎴 地煞（明牌 · 公平可破）— Boss 招牌历史战术：', size: 'md', color: 'sub' } },
+        props: { text: '🎴 地煞（明牌 · 公平可破）— Boss 招牌历史战术：', size: 11, color: 'sub' } },
       ...fiendNodes,
       { type: 'Label', id: 'home-unlock',
-        props: { text: c ? `🏆 打赢 = 破其诅咒 · 通关解锁天罡 ${c.unlock}` : '', size: 'md', color: 'gold' } },
+        props: { text: c ? `🏆 打赢 = 破其诅咒 · 通关解锁天罡 ${c.unlock}` : '', size: 11, color: 'gold' } },
       { type: 'Label', id: 'home-ghost',
-        props: { text: '好友切磋 / 天梯 1v1 待接网络。当前 = 单人 52 战役 vs AI 庄家。', size: 'sm', color: 'dim' } },
+        props: { text: '好友切磋 / 天梯 1v1 待接网络。当前 = 单人 52 战役 vs AI 庄家。', size: 11, color: 'dim' } },
     ],
   };
 

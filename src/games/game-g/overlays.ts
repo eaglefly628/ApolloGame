@@ -27,21 +27,38 @@ export const INITIAL_OVERLAY: OverlayState = {
 // ── 帮助中心 Modal（Tabs 介绍/指导/手册）─────────────────────────
 const HELP_INTRO = '翻命扑克 · Fateflip —— 你，执掌命运之人。历史上最伟大的 52 位名将，魂被诅咒封进一副扑克，每位困在他一生最关键的那场战役里。掷命，即翻命：抛下手中的牌，正面则生、反面则亡。三牌组三层天命：扑克 52 名将 · 天罡 36 兵法 · 地支 12 天命。配一副好牌，去翻天下英雄的命。';
 const HELP_TUT = '一局怎么打：赛前在「牌组/改造坊」构筑库（公平扑克 52 + 天罡 ≤12 + 地支镶嵌）。开局三路 9 格、两端大本营各 3 血，每回合 +1 召唤源泉四选一。对决核：两军碰头 → 比战力 → 胜率 → 抛牌定生死（胜率可见·永远有 3% 爆冷缝）。把对面 3 血打光，先破者胜。';
-const HELP_MANUAL: Record<'easy' | 'mid' | 'hard', string> = {
-  easy: '🟢 初级：三条横路各 9 格、大本营各 3 血。每回合 +1 源泉，选一个动作（抽/放/打天罡·三选一互斥；弃牌不互斥）。做完棋盘走一格，两军碰头掷命对决。先把对面 3 血打光 = 赢。',
-  mid: '🟡 中级：三套牌（扑克=兵·天罡=法术·地支=养成）。落子前棋盘会浮出「档位词 + 胜率%」掷命预报（含全部加成）。经营要点：源泉紧、机关门换路、田忌赛马避开大弱路、强牌送大优路集中突破。',
-  hard: '🔴 高级：胜率 = clamp(logistic(Δ/k), 3%, 97%)，Δ = 我有效战力 − 敌有效战力（点数 + 天罡 + 地支附魔 + 士气 + 干预）。种子骰可复现。地支二合/六合/三合连携质变。赛前按 Boss 明牌 3 地煞 counter-pick。',
+// 玩法手册（初/中/高）·复刻原版 lobby-overlays.ts 全文（owner 2026-06-28「内容要满·跟以前一样·字大一点」）：
+// 每档 = 标题 + 多段正文（原版 <p> 拆成段·<br> 拆成行内换行）。富文本 HTML 在数据 UI 里降级为纯文段（保信息全）。
+const HELP_MANUAL: Record<'easy' | 'mid' | 'hard', { title: string; color: 'ok' | 'warn' | 'danger'; paras: string[] }> = {
+  easy: { title: '🟢 初级 · 打赢第一场', color: 'ok', paras: [
+    '战场：三条横路（上/中/下），每路 9 格（你 4 · 中 1 · 敌 4）；两端大本营各 3 血。先把对面 3 血打光 = 赢。',
+    '回合制·每回合做一件事：回合开始 +1 召唤源泉，然后选一个动作：\n· 抽牌\n· 放牌（部署一兵到某路·可顺手开关机关门）\n· 打天罡（三选一·互斥）\n· 弃牌（不互斥·弃后还能再做一个抽/放/打天罡）。\n做完 → 棋盘走一格，两军碰头 → 掷命对决。',
+    '掷命对决（核心）：比战力 → 算胜率 → 抛牌定生死。战力高则胜率高，但永远有爆冷缝（再强 3% 翻车·再弱 3% 翻盘）。',
+  ] },
+  mid: { title: '🟡 中级 · 三牌组 + 经营', color: 'warn', paras: [
+    '三套牌：\n· 扑克 52（名将·兵）：上场部队，点数=战力、花色=阵营，双方同副（公平）。\n· 天罡 36（兵法·法术）：赛前挑带上场，局内打出持续整局（虎符全军+2 / 疾行加速 / 擒王斩敌主将崩路）。\n· 地支 12（天命·养成）：局外镶到牌上叠属性（附魔台）。',
+    '⚔ 掷命预报（落子前就看得见）：两军前锋将要相遇的那一路，棋盘上会在你前锋头顶浮出「档位词 + 具体胜率%」，让你开战前就心里有数：\n· 占优：小优 55%↑ → 优势 65%↑ → 大优 80%↑ → 碾压 90%↑\n· 吃亏：小弱 → 弱势 → 大弱 → 被碾压；中间 均势 ~50%\n（胜率含天罡/地支/士气全部加成，与真实开战同一套算法——预报即结果的概率，详见 🔴 高级）。',
+    '经营要点：召唤源泉紧（每回合 +1）→ 每个抉择都重要；机关门换路；同点数凑对子/三条加战力；看预报田忌赛马——避开「大弱/被碾压」的路、把强牌送去「大优/碾压」集中突破。',
+  ] },
+  hard: { title: '🔴 高级 · 概率算法 · 连携 · 克制', color: 'danger', paras: [
+    '⭐ 掷命对决——最终概率怎么算出来的（透明·非黑箱）：\n① 各取战力：碰头的两张牌，各算有效战力 P_eff = 点数底盘 + 天罡加成（虎符全军+2…）+ 地支附魔(镶嵌+favor) + 士气(主将活则全路涨) + 干预。\n② 算差值：取双方差 Δ = P我 − P敌。\n③ 过 S 形曲线：胜率 = logistic(Δ / k) = 1 / (1 + e^(−Δ/k))。差越大胜率越高，但平滑——不是「高 1 点就必胜」。k 是缓和系数。\n④ 夹爆冷缝：胜率 = clamp(上式, 3%, 97%)——再强也有 3% 翻车、再弱也有 3% 翻盘。\n⑤ 种子骰：用确定性随机数掷这个胜率 → 正面活·前进 / 反面亡。同一局同种子结果可复现。',
+    '调概率的牌：铁骰(占优封顶不被爆冷) · 磐石(抬你下限) · 灌铅骰(强者愈强) · 鬼手(指定一场 +25%) · 巧手(P_eff +1) · 稳手(胜率下限 +5%)。',
+    '地支连携（镶嵌质变）：\n· 二合·六合（两颗相合）：门槛低、效果轻——如 子丑合 大本营+1血、午未合 濒死免死。\n· 三合（三颗同组）：强力质变——如 水(申子辰)一局1次必重掷、火(寅午戌)赢后连推。\n（镶嵌战斗 apply 待实装。）',
+    '赛前构筑：天罡针对当关 Boss 明牌的 3 张地煞 counter-pick；集齐流派天罡解锁招牌印。Boss 库=12 随机天罡+3 专属地煞，比你猛但明牌可破。',
+  ] },
 };
 function helpModal(st: OverlayState): LayoutNode {
   const tab = (id: string, label: string): { id: string; label: string } => ({ id, label });
   // 固定高度滚动页（对齐原版 help body `height:46vh;min-height:340px;overflow-y:auto`）：各子页统一尺寸·内部滚动·
   // 框不随内容缩放（owner「舒适的统一大小的框·复刻」）。文字 md 对齐原版可读字号。
   const page = (id: string, body: LayoutNode): LayoutNode => ({ type: 'Panel', id, props: { bare: true, scroll: true }, layout: { height: 360, padding: 2 }, children: [body] });
+  const man = HELP_MANUAL[st.manTier];
   const manualPage: LayoutNode = {
-    type: 'Panel', id: 'help-manual', props: { bare: true }, layout: { direction: 'column', gap: 8, padding: 0 },
+    type: 'Panel', id: 'help-manual', props: { bare: true }, layout: { direction: 'column', gap: 10, padding: 0 },
     children: [
       { type: 'Segmented', id: 'help-mantier', props: { options: [{ value: 'easy', label: '🟢 初级' }, { value: 'mid', label: '🟡 中级' }, { value: 'hard', label: '🔴 高级' }], value: st.manTier, action: 'manTier' } },
-      { type: 'Label', id: 'help-manbody', props: { text: HELP_MANUAL[st.manTier], size: 'md', color: 'text' } },
+      { type: 'Label', id: 'help-man-h', props: { text: man.title, size: 17, color: man.color, bold: true } },
+      ...man.paras.map((para, i) => ({ type: 'Label' as const, id: `help-man-p${i}`, props: { text: para, size: 14, color: 'text' as const } })),
     ],
   };
   return {
@@ -51,8 +68,8 @@ function helpModal(st: OverlayState): LayoutNode {
       children: [
         { type: 'Tabs', id: 'help-tabs', props: { tabs: [tab('intro', '📜 游戏介绍'), tab('tut', '📖 新手指导'), tab('manual', '📚 玩法手册')], active: st.helpTab, action: 'helpTab' },
           children: [
-            page('help-intro-p', { type: 'Label', id: 'help-intro', props: { text: HELP_INTRO, size: 'md', color: 'text' } }),
-            page('help-tut-p', { type: 'Label', id: 'help-tut', props: { text: HELP_TUT, size: 'md', color: 'text' } }),
+            page('help-intro-p', { type: 'Label', id: 'help-intro', props: { text: HELP_INTRO, size: 14, color: 'text' } }),
+            page('help-tut-p', { type: 'Label', id: 'help-tut', props: { text: HELP_TUT, size: 14, color: 'text' } }),
             page('help-manual-p', manualPage),
           ] },
         { type: 'Button', id: 'help-done', props: { label: '明白了 →', kind: 'primary', action: 'closeOverlay' } },
@@ -122,7 +139,8 @@ function shopModal(view: LobbyView, st: OverlayState): LayoutNode {
     ] };
   const foilCards: LayoutNode[] = view.foils.map((f) => ({ type: 'Card', id: `shop-foil-${f.id}`,
     props: { title: `✨ ${f.name}`, sub: f.owned ? '✓ 已拥有' : `🪙 ${f.cost}`, tone: (f.owned ? 'accent' : 'normal') as 'accent' | 'normal', action: f.owned ? undefined : 'buyFoil', actionArg: f.id } }));
-  const foilPage: LayoutNode = { type: 'Panel', id: 'shop-foil', props: {}, layout: { direction: 'grid', minCol: 150, gap: 8 }, children: foilCards };
+  // 皮肤页卡片与其他两 tab（钱包 cols:4）等大·不自适应放大（owner 2026-06-28「皮肤不该 resize·跟另两 table 一样大小」）。
+  const foilPage: LayoutNode = { type: 'Panel', id: 'shop-foil', props: {}, layout: { direction: 'grid', cols: 4, gap: 8 }, children: foilCards };
   // 充值/兑换包卡片化（对齐原版 .rc-pack 卡：媒体字形 + 数量 + 价格 + 角标·4 列 grid·非单行按钮）。
   const packCards: LayoutNode[] = RECHARGE_PACKS.map((p) => ({ type: 'Card', id: `shop-pack-${p.id}`,
     props: { media: '💎', title: String(rechargeTotal(p)), sub: `${p.bonus > 0 ? `含赠+${p.bonus} · ` : ''}¥${p.price}`, corner: p.tag, action: 'rechargeBuy', actionArg: p.id } }));
