@@ -38,24 +38,15 @@
 3. **`bare` 分组、别叠框**：纯 row/column 分组用 `Panel{bare:true}`（不画边框/底）。边框只留给「真该是一个框的东西」（外框/卡/侧栏）。千层嵌套框既丑又容易算错边界。
 
 ### 1.3 自检（必跑·程序化，不靠肉眼）
-渲染后量每个区块的真实包围盒，两两算相交面积。**容差外有相交 = 不合格，回去调坐标直到归零**。可复制脚本：
+**跑常驻审计工具**——它量真实包围盒、报重叠，归零才合格：
 
-```js
-// overlap-audit.mjs —— mount 你的树到 #root，量顶层子区域包围盒，报相交。
-const rects = await page.evaluate(() => {
-  const root = document.getElementById('root'); const base = root.getBoundingClientRect(); const out = [];
-  for (const c of root.children) if (c.id) { const r = c.getBoundingClientRect();
-    out.push({ id: c.id, x: r.x-base.x, y: r.y-base.y, w: r.width, h: r.height }); }
-  return out;
-});
-const area = (a,b) => Math.max(0, Math.min(a.x+a.w,b.x+b.w)-Math.max(a.x,b.x)) *
-                      Math.max(0, Math.min(a.y+a.h,b.y+b.h)-Math.max(a.y,b.y));
-for (let i=0;i<rects.length;i++) for (let j=i+1;j<rects.length;j++)
-  if (area(rects[i],rects[j]) > 4) console.log('OVERLAP', rects[i].id, '✕', rects[j].id);
-// 0 行输出 = 合格。有 OVERLAP 且非「玩家显式要的叠层」→ 调坐标重测。
+```bash
+node tools/ui-audit.mjs tools/audits/<你的页面>.audit.ts    # 退出码 0=过 / 1=有重叠或硬性低对比
 ```
 
-> **允许的重叠**（白名单·须是设计意图）：弹窗/抽屉的遮罩盖主界面、血条上的连击点叠层、tooltip 气泡浮在元素上。这些在代码注释里写明「intentional overlay」，审计时人工排除。**其余一律视为 bug。**
+写法见 `tools/README.md`（照 `tools/audits/mmo-hud.audit.ts`：import 你的 `buildXxx()` → mount 到 `#root`）。**容差外有相交 = 不合格，回去调坐标直到归零。**
+
+> **允许的重叠**（须是设计意图）：弹窗/抽屉遮罩盖主界面、血条上叠连击点、tooltip 气泡浮在元素上。审计自动排除「无 id 装饰层（vignette/pattern/sheen）」+「祖孙嵌套」；真要叠的两个 id 框会被标出 → 人工确认是意图叠层即可（或让其中一个不带 id）。**非意图的相交一律视为 bug，归零。**
 
 ---
 
@@ -73,14 +64,12 @@ for (let i=0;i<rects.length;i++) for (let j=i+1;j<rects.length;j++)
 - 经验法则：**深底配 text/sub/亮语义色（jade/gold/ok）**；**亮底（如 daylight 主题、felt 绿呢、白扑克 light）配深字**——别在亮底上用 `dim`/浅灰。
 - **每套主题都要过一遍**：换皮后最容易出「某主题下某处文字糊掉」。daylight（亮主题）是照妖镜，做完在它下面看一眼。
 
-### 2.3 自检（渲染后量 computed 对比度）
-```js
-// contrast-check.mjs —— 量每个文字节点的前景/背景对比度，低于阈值报警。
-function lum(rgb){const a=rgb.map(v=>{v/=255;return v<=.03928?v/12.92:((v+.055)/1.055)**2.4});return .2126*a[0]+.7152*a[1]+.0722*a[2];}
-function ratio(fg,bg){const L1=lum(fg),L2=lum(bg);return (Math.max(L1,L2)+.05)/(Math.min(L1,L2)+.05);}
-// 对每个含文字的元素：取 getComputedStyle.color 与「逐层向上找到的第一个不透明 background」算 ratio；<4.5 → 报。
-// 注意：背景可能是半透明（见 §3）——要解析到实底再算，别拿透明值骗自己。
-```
+### 2.3 自检（同一个工具一起量）
+`tools/ui-audit.mjs` 在查重叠的同时量每个文字节点的 computed 对比度（前景 vs 逐层向上第一个不透明背景）：
+- **硬失败 `<3.0`**（真读不清·深底深字/字≈底）→ 阻断、必修。
+- **警告 `3.0–4.5`**（多为 `dim` 次级文字）→ 复核：若是正文就提亮，若确是次级标签可接受。
+
+**至少跑深主题 + 亮主题（daylight）两遍**——亮主题最容易暴露「亮底深字糊掉」。背景半透明时工具会解析到实底再算（别拿透明值骗自己·见 §3）。
 
 ---
 
@@ -142,11 +131,11 @@ function ratio(fg,bg){const L1=lum(fg),L2=lum(bg);return (Math.max(L1,L2)+.05)/(
 
 ## 7. sample 即标尺：game-i 已照本手册落地
 
-`src/games/game-i` 是本手册的**活参照**，做新 UI 时照它对齐：
+`src/games/game-i` 是本手册的**活参照**，做新 UI 时照它对齐。跑 `node tools/ui-audit.mjs tools/audits/mmo-hud.audit.ts` 看实测：
 - **闭集**：全程仅用 `ComponentType` 闭集控件，零手写 React（`mmo-hud.test.ts` 有「仅闭集控件」断言）。
-- **防重叠**：MMO HUD 经 overlap 审计 **0 重叠**（从初版 9 处修到 0）；`mmo-hud.ts` 注释标了定位壳绕 fx 坑、intentional 叠层。
-- **颜色/透明**：单位框/血条/聊天全走语义 tone；7 套主题（含亮主题 daylight）都验过可读。
+- **防重叠**：MMO HUD 经 overlap 审计 **0 重叠**（从初版 9 处修到 0）；`mmo-hud.ts` 注释标了定位壳绕 fx 坑。
 - **组合优先**：用现成控件拼出 WoW 级 HUD，**零新控件、零逃生**——证明闭集词汇够表达最复杂界面。
 - **缺口上报**：建库中发现的引擎缺口（`fontPixel` 令牌 / `style` 引号截断 / `fx×绝对定位`）全部写进 `requests.md` 交主程，没有一处手写绕过。
+- **审计当场抓 bug（工具的价值演示）**：当前 `ui-audit` 对 MMO HUD 报 **3 处硬失败**——聊天页签「综合/战斗/交易」黑字 ratio≈1.09。**这不是数据错，是 `renderTabs` 撞上 `style 引号截断` 引擎 bug**（color 排在 font-family 后被吞→回退黑色·已报 `requests.md`·波及所有 Tabs）。肉眼以为「页签偏暗」，工具量出「纯黑不可读」——**这正说明对比度要程序量、不能靠看**。主程修序列化后即转绿。
 
-> 一句话给 LLM：**做 UI 前读 catalog + 抄 game-i；做完跑 validate + overlap 审计 + 对比度检查；重叠和糊字是你自己的责任，不是等用户来挑。**
+> 一句话给 LLM：**做 UI 前读 catalog + 抄 game-i；做完跑 `validate` + `tools/ui-audit.mjs`；重叠和糊字是你自己的责任，靠工具量、不是等用户来挑。**

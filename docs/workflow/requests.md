@@ -685,6 +685,8 @@ _（REQ-3D-W1高效引擎 已移至 [`requests-3d.md`](./requests-3d.md)。）_
 > **影响面**：不止 Label——任何把含引号文本/主题令牌拼进 `style` 且其后还有属性的渲染路径都可能漏样式。建议顺手审一遍 render.ts 的 `style="${…}"` 拼接是否都过转义。
 >
 > **展示台侧**：`t-multiline` / `t-font`(glow/tracking) 三段 demo 的**数据是对的**（前向正确），主程修序列化后即自动点亮，无需改 demo。
+>
+> **⚠️ 升级（2026-06-28·UI 审计工具实测加料·严重度↑）**：此 bug 不止吞「锦上添花」的 glow/tracking——它在 `renderTabs` 里把**页签文字 `color` 整个吞掉**：navBtn 的 style 顺序是 `…font-family:${t.fontUi};…;color:${on?gold:sub}` → color 排在 font-family 之后 → 被引号截断 → **页签文字回退成纯黑 `rgb(0,0,0)`，落在近黑底上 ratio≈1.09、完全不可读**。`tools/ui-audit.mjs` 跑 game-i MMO HUD 一眼抓到（聊天页签「综合/战斗/交易」黑字）。**影响所有用 Tabs 的界面（含 game-g 大厅页签）——是「线上交互控件不可读」级，不是装饰缺失。** 修序列化（整个 style="" 值 HTML 转义）一次性解决 Tabs color + Label glow/tracking/pre-line 全部；会改一大批含 font-family 的 golden 字节、须主程统一重生成，故仍交主程。**建议提优先级。**
 
 ### REQ-UI-BUG-fx与绝对定位不兼容 · [2026-06-28] · PI → 主程（UI 库域·render.ts/layoutStyle） · status: **待主程** · 类型: 两 render-only 特性不组合
 
