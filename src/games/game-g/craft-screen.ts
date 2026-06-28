@@ -27,13 +27,13 @@ function buildEnchantDetail(view: LobbyView, idx: number): LayoutNode {
 
   const kids: LayoutNode[] = [
     { type: 'Label', id: 'ench-sel-card', props: { text: `${rank}${su}　${hero?.name ?? ''}　favor ${deck[idx] ?? 50}${bonus ? `（含附魔 +${bonus}）` : ''}`, size: 'md', color: 'gold', bold: true } },
-    { type: 'Label', id: 'ench-slot-h', props: { text: `镶嵌槽（${inlaid.length}/${INLAY_MAX}）· 点已镶项卸下（永久消耗·不退卡包）`, size: 'sm', color: 'sub' } },
+    { type: 'Label', id: 'ench-slot-h', props: { text: `镶嵌槽（${inlaid.length}/${INLAY_MAX}）· 点已镶项卸下（永久消耗·不退卡包）`, size: 'md', color: 'sub' } },
   ];
   if (inlaid.length) inlaid.forEach((e: InlayEntry, k) => kids.push({ type: 'Tag', id: `ench-slot-${k}`,
     props: { label: `${zodOf(e.b)?.animal ?? e.b}·${DIZHI_TIER_NM[e.t]} ✕`, tone: 'accent', action: 'removeInlay', actionArg: `${idx}:${k}` } }));
   else kids.push({ type: 'Label', id: 'ench-slot-empty', props: { text: '（空·尚未镶嵌）', size: 'sm', color: 'dim' } });
 
-  kids.push({ type: 'Label', id: 'ench-pick-h', props: { text: full ? '槽位已满' : '点卡包里的地支镶入（消耗一张）：', size: 'sm', color: full ? 'gold' : 'sub' } });
+  kids.push({ type: 'Label', id: 'ench-pick-h', props: { text: full ? '槽位已满' : '点卡包里的地支镶入（消耗一张）：', size: 'md', color: full ? 'gold' : 'sub' } });
   if (!full) {
     let any = false;
     for (const z of DIZHI_ZODIACS) for (let t = DIZHI_TIER_CAP; t >= 1; t--) {
@@ -70,7 +70,7 @@ function enchantPanel(view: LobbyView, craftSel: string): LayoutNode {
   return {
     type: 'Panel', id: 'craft-ench', props: { title: `🔨 地支牌 · 生肖镶嵌（附魔）· ≤${INLAY_MAX} 槽` }, layout: { direction: 'column', gap: 8, padding: 10, flex: 1 },
     children: [
-      { type: 'Label', id: 'ench-note', props: { text: `铜 +${DIZHI_INLAY_FAVOR[1]} / 银 +${DIZHI_INLAY_FAVOR[2]} / 金 +${DIZHI_INLAY_FAVOR[3]} favor · 消耗品：镶一张少一张 · 真提升战力。`, size: 'sm', color: 'sub' } },
+      { type: 'Label', id: 'ench-note', props: { text: `铜 +${DIZHI_INLAY_FAVOR[1]} / 银 +${DIZHI_INLAY_FAVOR[2]} / 金 +${DIZHI_INLAY_FAVOR[3]} favor · 消耗品：镶一张少一张 · 真提升战力。`, size: 'md', color: 'sub' } },
       { type: 'Panel', id: 'ench-row', props: { bare: true }, layout: { direction: 'column', gap: 12 }, children: [grid, detail] },
     ],
   };
@@ -91,7 +91,7 @@ function tiangangShelf(view: LobbyView): LayoutNode {
     type: 'Panel', id: 'craft-shelf', props: { title: '⚡ 天罡牌 · 购买（局内法术·买入后到「牌组」屏编入）', scroll: true },
     layout: { direction: 'column', gap: 8, padding: 10 },
     children: [
-      { type: 'Label', id: 'shelf-note', props: { text: '花金币买入天罡牌（解锁后入「拥有」）·关未到可花 💎 速解（跳 grind）。', size: 'sm', color: 'sub' } },
+      { type: 'Label', id: 'shelf-note', props: { text: '花金币买入天罡牌（解锁后入「拥有」）·关未到可花 💎 速解（跳 grind）。', size: 'md', color: 'sub' } },
       { type: 'Panel', id: 'shelf-grid', props: { bare: true }, layout: { direction: 'grid', minCol: 160, gap: 8 }, children: cards },
     ],
   };

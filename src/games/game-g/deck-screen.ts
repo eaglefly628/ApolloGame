@@ -142,7 +142,7 @@ function tiangangPage(view: LobbyView): LayoutNode {
     type: 'Panel', id: 'deck-tiangang', props: { title: `⚡ 天罡战法 ·「${view.activeDeckName ?? ''}」· ${inDeck.length}/${size}（局内法术）`, scroll: true },
     layout: { direction: 'column', gap: 8, padding: 10 },
     children: [
-      { type: 'Label', id: 'tg-note', props: { text: '当前出战这套的天罡：已入组点✕移出·空槽点添加（从已拥有里选）·或一键配置。', size: 'sm', color: 'sub' } },
+      { type: 'Label', id: 'tg-note', props: { text: '当前出战这套的天罡：已入组点✕移出·空槽点添加（从已拥有里选）·或一键配置。', size: 'md', color: 'sub' } },
       { type: 'Button', id: 'tg-auto', props: { label: '✨ 一键配置天罡', kind: 'ghost', action: 'autoBuildTiangang' }, layout: { anchor: 'autobuild-gang' } },
       { type: 'Panel', id: 'tg-slots', props: { bare: true }, layout: { direction: 'grid', minCol: 150, gap: 8 }, children: slots },
     ],
@@ -166,7 +166,7 @@ function dizhiPage(view: LobbyView): LayoutNode {
     type: 'Panel', id: 'deck-dizhi', props: { title: `🀄 地支牌 · 卡包 ${ownedN}/12 生肖（满 3 同档自动升档 铜→银→金）`, scroll: true },
     layout: { direction: 'column', gap: 8, padding: 10 },
     children: [
-      { type: 'Label', id: 'dz-note', props: { text: '地支=消耗牌（镶进扑克牌附魔·镶一张少一张）·抽卡获取（🛒商城）。三合/六合连携待战斗实装。', size: 'sm', color: 'sub' } },
+      { type: 'Label', id: 'dz-note', props: { text: '地支=消耗牌（镶进扑克牌附魔·镶一张少一张）·抽卡获取（🛒商城）。三合/六合连携待战斗实装。', size: 'md', color: 'sub' } },
       { type: 'Panel', id: 'dz-grid', props: { bare: true }, layout: { direction: 'grid', minCol: 200, gap: 8 }, children: cards },
     ],
   };

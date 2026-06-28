@@ -29,7 +29,7 @@ function buildStageCard(c: StageCampaign, cur: number, maxReached: number): Layo
       props: { text: `第 ${c.stage} 关 · ${c.battle}　vs ${c.boss}`, size: 'lg', color: locked ? 'dim' : 'gold', bold: true } },
     { type: 'Badge', id: `camp-${c.stage}-badge`, props: { text: badge, tone: badgeTone } },
     { type: 'Label', id: `camp-${c.stage}-diff`,
-      props: { text: `难度 ${stars(c.stars)}　·　通关解锁天罡 ${c.unlock}`, size: 'sm', color: 'gold' } },
+      props: { text: `难度 ${stars(c.stars)}　·　通关解锁天罡 ${c.unlock}`, size: 'md', color: 'gold' } },
   ];
 
   if (locked) {
@@ -43,13 +43,13 @@ function buildStageCard(c: StageCampaign, cur: number, maxReached: number): Layo
     props: { text: c.intro ?? c.oneLiner, size: 'md', color: 'text' } });
   if (c.bossLines) {
     children.push(
-      { type: 'Label', id: `camp-${c.stage}-bl-open`, props: { text: `🗣️ 开场「${c.bossLines.open}」`, size: 'sm', color: 'sub' } },
-      { type: 'Label', id: `camp-${c.stage}-bl-mid`, props: { text: `⚔️ 劣势「${c.bossLines.mid}」`, size: 'sm', color: 'sub' } },
-      { type: 'Label', id: `camp-${c.stage}-bl-lose`, props: { text: `💀 败北「${c.bossLines.lose}」`, size: 'sm', color: 'sub' } },
+      { type: 'Label', id: `camp-${c.stage}-bl-open`, props: { text: `🗣️ 开场「${c.bossLines.open}」`, size: 'md', color: 'sub' } },
+      { type: 'Label', id: `camp-${c.stage}-bl-mid`, props: { text: `⚔️ 劣势「${c.bossLines.mid}」`, size: 'md', color: 'sub' } },
+      { type: 'Label', id: `camp-${c.stage}-bl-lose`, props: { text: `💀 败北「${c.bossLines.lose}」`, size: 'md', color: 'sub' } },
     );
   }
   children.push({ type: 'Label', id: `camp-${c.stage}-fh`,
-    props: { text: '🎴 地煞（明牌 · 公平可破）', size: 'sm', color: 'sub' } });
+    props: { text: '🎴 地煞（明牌 · 公平可破）', size: 'md', color: 'sub' } });
   const cDisha = stageDisha(c.stage);
   // 3 地煞 = Boss 3 技能：3 竖列 grid（owner「不要 3 横排·竖三列·细节写全」），非逐行堆叠。
   const fiendCards: LayoutNode[] = c.fiends.map((f, i) => {

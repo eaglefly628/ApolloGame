@@ -58,7 +58,7 @@ export function buildHomeScreen(view: LobbyView): LayoutNode {
           { type: 'Panel', id: 'home-titlecol', props: { bare: true }, layout: { direction: 'column', gap: 2, flex: 1 },
             children: [
               { type: 'Label', id: 'home-title', props: { text: c ? `第 ${c.stage} 关 · ${c.battle}` : '戏牌师', size: 'xxxl', color: 'gold', bold: true, font: 'display' }, layout: { sheen: true } },
-              { type: 'Label', id: 'home-sub', props: { text: c ? `执掌命运之人 · 挑战被诅咒的 ${c.boss}` : view.stageLabel, size: 'sm', color: 'sub' } },
+              { type: 'Label', id: 'home-sub', props: { text: c ? `执掌命运之人 · 挑战被诅咒的 ${c.boss}` : view.stageLabel, size: 'md', color: 'sub' } },
             ] },
           stags,
         ] },
@@ -88,7 +88,7 @@ export function buildHomeScreen(view: LobbyView): LayoutNode {
     children: [{ type: 'Panel', id: `home-fiend-b-${i}`, props: { bare: true }, layout: { direction: 'column', gap: 5, padding: 0 },
       children: [
         { type: 'Label', id: `home-fiend-n-${i}`, props: { text: `🎴 ${fd.name}`, size: 'md', color: 'gold', bold: true } },
-        { type: 'Label', id: `home-fiend-d-${i}`, props: { text: fd.desc, size: 'sm', color: 'sub' } },
+        { type: 'Label', id: `home-fiend-d-${i}`, props: { text: fd.desc, size: 'md', color: 'sub' } },
       ] }],
   }));
   const rail: LayoutNode = {
@@ -98,10 +98,10 @@ export function buildHomeScreen(view: LobbyView): LayoutNode {
       { type: 'Label', id: 'home-boss-diff',
         props: c ? { size: 'sm', color: 'sub', spans: [{ text: '难度 ' }, { text: '★'.repeat(c.stars), color: 'gold', bold: true }, { text: ` · ${c.oneLiner}`, color: 'sub' }] } : { text: '', size: 'sm', color: 'gold' } },
       { type: 'Label', id: 'home-fiend-h',
-        props: { text: '🎴 地煞（明牌 · 公平可破）— Boss 招牌历史战术：', size: 'sm', color: 'sub' } },
+        props: { text: '🎴 地煞（明牌 · 公平可破）— Boss 招牌历史战术：', size: 'md', color: 'sub' } },
       ...fiendNodes,
       { type: 'Label', id: 'home-unlock',
-        props: { text: c ? `🏆 打赢 = 破其诅咒 · 通关解锁天罡 ${c.unlock}` : '', size: 'sm', color: 'gold' } },
+        props: { text: c ? `🏆 打赢 = 破其诅咒 · 通关解锁天罡 ${c.unlock}` : '', size: 'md', color: 'gold' } },
       { type: 'Label', id: 'home-ghost',
         props: { text: '好友切磋 / 天梯 1v1 待接网络。当前 = 单人 52 战役 vs AI 庄家。', size: 'sm', color: 'dim' } },
     ],
