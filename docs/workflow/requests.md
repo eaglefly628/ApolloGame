@@ -686,3 +686,15 @@ _（REQ-3D-W1高效引擎 已移至 [`requests-3d.md`](./requests-3d.md)。）_
 > **影响面**：不止 Label——任何把含引号文本/主题令牌拼进 `style` 且其后还有属性的渲染路径都可能漏样式。建议顺手审一遍 render.ts 的 `style="${…}"` 拼接是否都过转义。
 >
 > **展示台侧**：`t-multiline` / `t-font`(glow/tracking) 三段 demo 的**数据是对的**（前向正确），主程修序列化后即自动点亮，无需改 demo。
+
+### REQ-UI-BUG-fx与绝对定位不兼容 · [2026-06-28] · PI → 主程（UI 库域·render.ts/layoutStyle） · status: **待主程** · 类型: 两 render-only 特性不组合
+
+> **现象**：一个 LayoutNode 同时给 `layout.x/y`（绝对定位叠层）+ `layout.fx:[{kind:'sheen'}]`（流光）时，**绝对定位失效**——元素退回 `position:relative`，x/y 变成「相对正常流位置的偏移」而非「相对父原点的绝对坐标」，于是跑位（在别处堆叠）。建 MMO HUD 施法条（绝对定位 + sheen）时实测：声明 y:460、实际渲染 position:relative + 落到 y:515。
+>
+> **根因（已定位）**：`sheen`（及任何需 ::after/::before 叠层的 fx）要求宿主 `position:relative` 才能定位伪元素；layoutStyle 里这个 `position:relative` **覆盖了 x/y 本应给的 `position:absolute`**。两个 render-only 特性在同一节点上互斥。
+>
+> **证据**：`getComputedStyle(#cast)` → `{position:'relative', top:'460px', left:'395px'}`（本该 absolute）。同 HUD 里另一个「绝对定位 + sheen」的目标施法条只是**碰巧**没跑偏（它是页面里第一个 relative 元素、正常流位≈0，相对偏移≈绝对坐标）。
+>
+> **建议修法（主程定夺）**：x/y 存在时，让 `position:absolute` 赢（sheen 的 ::after 用 absolute 宿主也能定位——absolute 同样是 positioned ancestor）；即 fx 不要硬写 `position:relative`，改成「仅当无 x/y 时才补 relative」。
+>
+> **展示台侧已用合法组合绕开**（不等修复）：定位壳(x/y·无 fx) 裹 特效内卡(fx·流式填充)——`{Panel x/y bare}>{Panel fx ...}`。MMO HUD 两条施法条均已这样写、overlap 审计归零。属可接受的数据写法，但**「直接在绝对定位节点上挂 fx」是直觉写法、应能用**，故报缺口。
