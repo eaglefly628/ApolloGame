@@ -82,20 +82,20 @@ const CSS = `
 @keyframes g-drain { 0% { opacity:1; transform:scaleX(1); filter:brightness(1.85);} 65% { opacity:.7;} 100% { opacity:0; transform:scaleX(0);} }
 @keyframes g-drainspark { 0% { opacity:.95; transform:translate(-50%,0) scale(1);} 100% { opacity:0; transform:translate(-50%,-24px) scale(.35);} }
 /* 磨砂详情浮层（owner 2026-06-21·悬浮看牌：战力=点数+加成，对决再 +随机骰）：纯 CSS hover，重渲不丢 */
-.gg-tipwrap>.gg-tip{ position:absolute; left:50%; bottom:calc(100% + 9px); transform:translateX(-50%) translateY(5px) scale(1); transform-origin:50% 100%; width:194px; padding:11px 13px 9px; border-radius:13px; background:rgba(18,24,36,.58); backdrop-filter:blur(13px) saturate(1.5); -webkit-backdrop-filter:blur(13px) saturate(1.5); border:1px solid rgba(255,255,255,.2); box-shadow:0 16px 44px rgba(0,0,0,.55), inset 0 1px 0 rgba(255,255,255,.14); color:#eaf0f6; font-family:var(--fb); font-size:11px; line-height:1.5; text-align:left; opacity:0; pointer-events:none; transition:opacity .15s ease, transform .15s ease; z-index:80; }
+.gg-tipwrap>.gg-tip{ position:absolute; left:50%; bottom:calc(100% + 9px); transform:translateX(-50%) translateY(5px) scale(1); transform-origin:50% 100%; width:214px; padding:12px 14px 10px; border-radius:13px; background:rgba(18,24,36,.58); backdrop-filter:blur(13px) saturate(1.5); -webkit-backdrop-filter:blur(13px) saturate(1.5); border:1px solid rgba(255,255,255,.2); box-shadow:0 16px 44px rgba(0,0,0,.55), inset 0 1px 0 rgba(255,255,255,.14); color:#eaf0f6; font-family:var(--fb); font-size:12px; line-height:1.5; text-align:left; opacity:0; pointer-events:none; transition:opacity .15s ease, transform .15s ease; z-index:80; }
 .gg-tipwrap>.gg-tip::after{ content:''; position:absolute; left:50%; top:100%; transform:translateX(-50%); border:7px solid transparent; border-top-color:rgba(18,24,36,.58); }
-.gg-tipwrap:hover>.gg-tip{ opacity:1; transform:translateX(-50%) translateY(0) scale(1.5); } /* 悬浮放大 50%·看得清(owner 2026-06-21) */
+.gg-tipwrap:hover>.gg-tip{ opacity:1; transform:translateX(-50%) translateY(0) scale(1); } /* 淡入+滑入·不缩放：放大用更大基础尺寸(214/12px·清晰可预测)替 scale(1.5)·后者会糊+溢出被外框裁(GA 2026-06-28 修出界) */
 /* 顶排(上路)牌：浮层朝下弹，否则朝上会顶出画框被裁掉(owner 2026-06-21) */
 .gg-tipwrap.tip-down>.gg-tip{ bottom:auto; top:calc(100% + 9px); transform:translateX(-50%) translateY(-5px) scale(1); transform-origin:50% 0%; }
 .gg-tipwrap.tip-down>.gg-tip::after{ top:auto; bottom:100%; border-top-color:transparent; border-bottom-color:rgba(18,24,36,.58); }
-.gg-tipwrap.tip-down:hover>.gg-tip{ transform:translateX(-50%) translateY(0) scale(1.5); }
+.gg-tipwrap.tip-down:hover>.gg-tip{ transform:translateX(-50%) translateY(0) scale(1); }
 /* 边缘左右弹（owner 2026-06-21·别弹出屏幕外）：最左牌→向右弹，最右牌→向左弹。从该侧角缩放，放大也不溢出。 */
 .gg-tipwrap.tip-left>.gg-tip{ left:auto; right:0; transform:translateX(0) translateY(5px) scale(1); transform-origin:100% 100%; }
 .gg-tipwrap.tip-left>.gg-tip::after{ left:auto; right:16px; transform:translateX(0); }
-.gg-tipwrap.tip-left:hover>.gg-tip{ transform:translateX(0) translateY(0) scale(1.5); }
+.gg-tipwrap.tip-left:hover>.gg-tip{ transform:translateX(0) translateY(0) scale(1); }
 .gg-tipwrap.tip-right>.gg-tip{ left:0; right:auto; transform:translateX(0) translateY(5px) scale(1); transform-origin:0% 100%; }
 .gg-tipwrap.tip-right>.gg-tip::after{ left:16px; transform:translateX(0); }
-.gg-tipwrap.tip-right:hover>.gg-tip{ transform:translateX(0) translateY(0) scale(1.5); }
+.gg-tipwrap.tip-right:hover>.gg-tip{ transform:translateX(0) translateY(0) scale(1); }
 /* 顶排 + 边缘 复合：朝下且贴角 */
 .gg-tipwrap.tip-down.tip-left>.gg-tip{ bottom:auto; top:calc(100% + 9px); transform-origin:100% 0%; }
 .gg-tipwrap.tip-down.tip-right>.gg-tip{ bottom:auto; top:calc(100% + 9px); transform-origin:0% 0%; }
@@ -212,13 +212,13 @@ function fortBase(view: TurnBattleView, isMine: boolean): string {
     if (!s.filled) {
       const qMark: Style = { fontFamily: 'var(--fd)', fontSize: '15px', color: 'rgba(255,255,255,.2)' };
       const tip = `<div class="gg-tip" style="width:170px"><div style="font-size:11px;color:#cdd6e2;line-height:1.55">尚未揭示的地煞牌位。</div></div>`;
-      return `<div class="gg-tipwrap tip-down" style="${st(slot)}"><span style="${st(qMark)}">？</span>${tip}</div>`;
+      return `<div class="gg-tipwrap tip-down tip-left" style="${st(slot)}"><span style="${st(qMark)}">？</span>${tip}</div>`;
     }
     const shortName = s.name.replace('地煞·', '').replace('地煞 · ', '').slice(0, 2);
     const mark: Style = { fontFamily: 'var(--fd)', fontSize: '13px', color: used ? 'rgba(255,255,255,.38)' : rc[1], lineHeight: '1' };
     const usedPip = used ? `<span style="font-family:var(--fb);font-size:6px;color:rgba(255,180,140,.7);line-height:1;">已用</span>` : '';
     const tipContent = `<div style="display:flex;align-items:center;gap:5px;margin-bottom:5px;"><span style="width:7px;height:7px;border-radius:50%;flex-shrink:0;background:${rc[1]};box-shadow:0 0 5px ${rc[1]}"></span><b style="font-size:11px;color:#fff">${esc(s.name)}</b></div>${s.desc ? `<div style="font-size:10px;color:rgba(255,255,255,.75);line-height:1.4;margin-bottom:5px;">${esc(s.desc)}</div>` : ''}<div style="font-size:9px;color:${used ? '#ff9966' : '#7fcc9a'};">${used ? '● 已使用' : '○ 待发动'}</div>`;
-    return `<div class="gg-tipwrap tip-down" style="${st(slot)}"><span style="${st(mark)}">${esc(shortName)}</span>${usedPip}<div class="gg-tip" style="width:152px;">${tipContent}</div></div>`;
+    return `<div class="gg-tipwrap tip-down tip-left" style="${st(slot)}"><span style="${st(mark)}">${esc(shortName)}</span>${usedPip}<div class="gg-tip" style="width:152px;">${tipContent}</div></div>`;
   };
   // 敌方大本营可点 → 弹 Boss 名号 + 战役故事（owner 2026-06-21）。
   const bossTipRows = forr(view.sha.filter((s) => s.filled), (s) => { const rc = RAR[s.rar] || RAR.white; const used = s.used ?? false; return `<div style="display:flex;align-items:center;gap:6px;padding:3px 0;border-top:1px solid rgba(255,255,255,.08);"><span style="width:6px;height:6px;border-radius:50%;flex-shrink:0;background:${rc[1]};"></span><span style="flex:1;font-size:10px;color:rgba(255,255,255,.85);">${esc(s.name)}</span><span style="font-size:9px;color:${used ? '#ff9966' : '#7fcc9a'};">${used ? '已用' : '备用'}</span></div>`; });
