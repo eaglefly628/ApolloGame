@@ -31,13 +31,15 @@ function unitFrame(
   glyph: string, name: string, level: string,
   hp: number, hpMax: number, hpTone: 'ok' | 'danger',
   res: number, resTone: 'accent' | 'warn', resLabel: string,
-  avatarSize = 52, compact = false,
+  avatarSize = 52, compact = false, crit = false,
 ): LayoutNode {
   // x/y 给则绝对叠层（玩家/目标 HUD 锚位）；null 则走父容器列流式（队伍框竖排）。
   const pos = (x !== null && y !== null) ? { x, y } : {};
+  // crit（残血）：整框红色呼吸 fx:pulse —— 危急警示动态（库 A·UI 特效）。
+  const critFx = crit ? { fx: [{ kind: 'pulse' as const }] } : {};
   // compact（队伍框）：去掉血量数字行 + 资源条 label，压扁高度，三框竖排不挤聊天。
   return {
-    type: 'Panel', id, props: { accent: id === 'pf-player' }, layout: { ...pos, width: w, direction: 'row', gap: 8, padding: compact ? 6 : 8, align: 'center' },
+    type: 'Panel', id, props: { accent: id === 'pf-player' }, layout: { ...pos, ...critFx, width: w, direction: 'row', gap: 8, padding: compact ? 6 : 8, align: 'center' },
     children: [
       { type: 'Avatar', id: `${id}-av`, props: { name: glyph, size: avatarSize, shape: 'rounded' } },
       { type: 'Panel', id: `${id}-col`, props: { bare: true }, layout: { direction: 'column', gap: 3, flex: 1 },
@@ -69,9 +71,11 @@ function slot(id: string, glyph: string, key: string, opts: { cd?: string; ready
 }
 
 // ── Buff/Debuff 小图标（计时角标）──────────────────────────────────────────────
-function aura(id: string, glyph: string, time: string, tone: 'ok' | 'warn' | 'dim'): LayoutNode {
+function aura(id: string, glyph: string, time: string, tone: 'ok' | 'warn' | 'dim', urgent = false): LayoutNode {
+  // urgent（即将到期）：药丸闪色 fx:flash warn —— 催促动态（库 A·UI 特效）。
+  const fx = urgent ? { fx: [{ kind: 'flash' as const, color: 'warn' as const }] } : {};
   return {
-    type: 'Panel', id, props: { bg: '#141b27' }, layout: { width: 36, height: 36, direction: 'column', align: 'center', justify: 'center', padding: 0, chamfer: 4 },
+    type: 'Panel', id, props: { bg: '#141b27' }, layout: { width: 36, height: 36, direction: 'column', align: 'center', justify: 'center', padding: 0, chamfer: 4, ...fx },
     children: [
       lbl(`${id}-g`, glyph, { size: 'md' }),
       { type: 'Badge', id: `${id}-t`, props: { text: time, tone } },
@@ -83,7 +87,7 @@ function aura(id: string, glyph: string, time: string, tone: 'ok' | 'warn' | 'di
 export function buildMmoHud(): LayoutNode {
   return {
     type: 'Panel', id: 'mmo-hud', props: { bg: 'linear-gradient(160deg,#0b1410,#0a0f17 60%,#0d0b14)', vignette: true },
-    layout: { width: 1000, height: 624, padding: 0 },
+    layout: { width: 1024, height: 624, padding: 0 },
     children: [
       // 顶部标题胶囊
       { type: 'Panel', id: 'mmo-zone', props: { bare: true }, layout: { x: 408, y: 10, direction: 'row', gap: 8, align: 'center' },
@@ -92,31 +96,35 @@ export function buildMmoHud(): LayoutNode {
         ] },
 
       // ── 玩家单位框（左上·高亮框）+ 连击点 ──
-      unitFrame('pf-player', 18, 36, 256, '法', '阿洛狄斯', '70', 8240, 9100, 'ok', 76, 'accent', '法力'),
-      { type: 'Panel', id: 'pf-combo', props: { bare: true }, layout: { x: 22, y: 116, direction: 'row', gap: 4 },
+      unitFrame('pf-player', 19, 36, 256, '法', '阿洛狄斯', '70', 8240, 9100, 'ok', 76, 'accent', '法力'),
+      { type: 'Panel', id: 'pf-combo', props: { bare: true }, layout: { x: 23, y: 130, direction: 'row', gap: 4 },
         children: [1, 2, 3, 4, 5].map((n): LayoutNode => ({
           type: 'Panel', id: `cp-${n}`, props: { bg: n <= 3 ? 'linear-gradient(180deg,#e7c96a,#caa53f)' : '#222a38' },
           layout: { width: 14, height: 14, padding: 0, chamfer: 3, ...(n <= 3 ? { fx: [{ kind: 'glow', color: 'gold' }] } : {}) }, children: [],
         })) },
 
       // ── 目标单位框（顶部中左·红血）+ 目标 Buff/Debuff 行 + 施法条 ──
-      unitFrame('pf-target', 290, 36, 256, '兽', '腐臭的剥皮者', '72', 14200, 22000, 'danger', 60, 'warn', '怒气'),
-      { type: 'Panel', id: 'tgt-auras', props: { bare: true }, layout: { x: 290, y: 104, direction: 'row', gap: 5 },
+      unitFrame('pf-target', 301, 36, 256, '兽', '腐臭的剥皮者', '72', 14200, 22000, 'danger', 60, 'warn', '怒气'),
+      { type: 'Panel', id: 'tgt-auras', props: { bare: true }, layout: { x: 301, y: 132, direction: 'row', gap: 5 },
         children: [
           aura('au-1', '🔥', '6', 'warn'),
           aura('au-2', '☠️', '12', 'dim'),
-          aura('au-3', '🩸', '4', 'warn'),
+          aura('au-3', '🩸', '4', 'warn', true),
           aura('au-4', '🛡', '8', 'ok'),
         ] },
-      { type: 'Panel', id: 'tgt-cast', props: {}, layout: { x: 290, y: 150, width: 256, direction: 'column', gap: 4, padding: 8 },
+      // 定位壳(x/y·无 fx) 裹 特效内卡(fx·流式)：避开「fx:sheen 强制 position:relative 覆盖 x/y 绝对定位」的引擎坑（已报主程）。
+      { type: 'Panel', id: 'tgt-cast', props: { bare: true }, layout: { x: 301, y: 174, width: 256 },
         children: [
-          { type: 'Panel', id: 'tc-row', props: { bare: true }, layout: { direction: 'row', align: 'center', gap: 6 },
-            children: [lbl('tc-ic', '🌑', { size: 'md' }), lbl('tc-nm', '腐蚀术', { size: 'sm', color: 'sub' }), lbl('tc-t', '1.4s', { size: 'xs', color: 'dim' })] },
-          { type: 'ProgressBar', id: 'tc-bar', props: { value: 62, max: 100, tone: 'danger' } },
+          { type: 'Panel', id: 'tgt-cast-card', props: {}, layout: { direction: 'column', gap: 4, padding: 8, fx: [{ kind: 'sheen' }] },
+            children: [
+              { type: 'Panel', id: 'tc-row', props: { bare: true }, layout: { direction: 'row', align: 'center', gap: 6 },
+                children: [lbl('tc-ic', '🌑', { size: 'md' }), lbl('tc-nm', '腐蚀术', { size: 'sm', color: 'sub' }), lbl('tc-t', '1.4s', { size: 'xs', color: 'dim' })] },
+              { type: 'ProgressBar', id: 'tc-bar', props: { value: 62, max: 100, tone: 'danger' } },
+            ] },
         ] },
 
       // ── 小地图（右上·圆盘）+ 时钟/坐标 ──
-      { type: 'Panel', id: 'mm-wrap', props: { accent: true }, layout: { x: 812, y: 14, width: 176, direction: 'column', gap: 6, padding: 8, align: 'center' },
+      { type: 'Panel', id: 'mm-wrap', props: { accent: true }, layout: { x: 806, y: 15, width: 176, direction: 'column', gap: 6, padding: 8, align: 'center' },
         children: [
           { type: 'Image', id: 'mm-img', props: { src: MAP_URI, fit: 'cover', radius: 80 }, layout: { width: 158, height: 158 } },
           { type: 'Panel', id: 'mm-row', props: { bare: true }, layout: { direction: 'row', align: 'center', gap: 8 },
@@ -127,7 +135,7 @@ export function buildMmoHud(): LayoutNode {
         ] },
 
       // ── 玩家 Buff 条（小地图下·一排增益）──
-      { type: 'Panel', id: 'player-buffs', props: { bare: true }, layout: { x: 812, y: 196, direction: 'row', gap: 5 },
+      { type: 'Panel', id: 'player-buffs', props: { bare: true }, layout: { x: 806, y: 214, direction: 'row', gap: 5 },
         children: [
           aura('pb-1', '✨', '30m', 'ok'),
           aura('pb-2', '🛡', '12m', 'ok'),
@@ -136,7 +144,7 @@ export function buildMmoHud(): LayoutNode {
         ] },
 
       // ── 任务追踪（右侧）──
-      { type: 'Panel', id: 'quest', props: { title: '📜 任务追踪' }, layout: { x: 740, y: 246, width: 248, direction: 'column', gap: 10, padding: 12 },
+      { type: 'Panel', id: 'quest', props: { title: '📜 任务追踪' }, layout: { x: 744, y: 258, width: 248, direction: 'column', gap: 10, padding: 12 },
         children: [
           lbl('q1-t', '夜歌森林的腐化', { size: 'sm', bold: true, color: 'gold' }),
           { type: 'Panel', id: 'q1b', props: { bare: true }, layout: { direction: 'column', gap: 4 },
@@ -151,15 +159,15 @@ export function buildMmoHud(): LayoutNode {
         ] },
 
       // ── 队伍框（左侧·三名队友）──
-      { type: 'Panel', id: 'party', props: { bare: true }, layout: { x: 18, y: 146, direction: 'column', gap: 6 },
+      { type: 'Panel', id: 'party', props: { bare: true }, layout: { x: 19, y: 150, direction: 'column', gap: 6 },
         children: [
           unitFrame('pt-1', null, null, 220, '战', '索瑞森', '70', 6100, 7200, 'ok', 40, 'accent', '法力', 38, true),
           unitFrame('pt-2', null, null, 220, '猎', '艾拉娜', '69', 3200, 6800, 'ok', 88, 'warn', '能量', 38, true),
-          unitFrame('pt-3', null, null, 220, '牧', '光语者', '70', 800, 7000, 'danger', 64, 'accent', '法力', 38, true),
+          unitFrame('pt-3', null, null, 220, '牧', '光语者', '70', 800, 7000, 'danger', 64, 'accent', '法力', 38, true, true),
         ] },
 
       // ── 聊天窗（左下·页签 + 滚动消息表）──
-      { type: 'Panel', id: 'chat', props: {}, layout: { x: 18, y: 392, width: 360, height: 210, direction: 'column', padding: 6 },
+      { type: 'Panel', id: 'chat', props: {}, layout: { x: 19, y: 338, width: 360, height: 150, direction: 'column', padding: 6 },
         children: [
           { type: 'Tabs', id: 'chat-tabs', props: { tabs: [{ id: 'all', label: '综合' }, { id: 'cbt', label: '战斗' }, { id: 'trade', label: '交易' }], active: 'all' },
             layout: { flex: 1 },
@@ -184,15 +192,18 @@ export function buildMmoHud(): LayoutNode {
         ] },
 
       // ── 施法条（中央偏下·玩家正在施法）──
-      { type: 'Panel', id: 'cast', props: {}, layout: { x: 392, y: 470, width: 216, direction: 'column', gap: 4, padding: 8 },
+      { type: 'Panel', id: 'cast', props: { bare: true }, layout: { x: 395, y: 460, width: 216 },
         children: [
-          { type: 'Panel', id: 'cast-row', props: { bare: true }, layout: { direction: 'row', align: 'center', gap: 6 },
-            children: [lbl('cast-ic', '🔥', { size: 'md' }), lbl('cast-nm', '炎爆术', { size: 'sm', bold: true }), { type: 'Label', id: 'cast-t', props: { text: '2.1s', size: 'xs', color: 'dim' }, layout: { flex: 1 } }] },
-          { type: 'ProgressBar', id: 'cast-bar', props: { value: 73, max: 100, tone: 'gold' } },
+          { type: 'Panel', id: 'cast-card', props: { accent: true }, layout: { direction: 'column', gap: 4, padding: 8, fx: [{ kind: 'sheen' }, { kind: 'glow', color: 'gold' }] },
+            children: [
+              { type: 'Panel', id: 'cast-row', props: { bare: true }, layout: { direction: 'row', align: 'center', gap: 6 },
+                children: [lbl('cast-ic', '🔥', { size: 'md' }), lbl('cast-nm', '炎爆术', { size: 'sm', bold: true }), { type: 'Label', id: 'cast-t', props: { text: '2.1s', size: 'xs', color: 'dim' }, layout: { flex: 1 } }] },
+              { type: 'ProgressBar', id: 'cast-bar', props: { value: 73, max: 100, tone: 'gold' } },
+            ] },
         ] },
 
       // ── 主动作条（底部居中·12 格·就绪/冷却混排）──
-      { type: 'Panel', id: 'actionbar', props: {}, layout: { x: 250, y: 524, direction: 'row', gap: 5, padding: 7, align: 'center' },
+      { type: 'Panel', id: 'actionbar', props: {}, layout: { x: 71, y: 514, direction: 'row', gap: 5, padding: 7, align: 'center' },
         children: [
           slot('ab-1', '🔥', '1', { ready: true }),
           slot('ab-2', '❄️', '2'),
@@ -209,13 +220,13 @@ export function buildMmoHud(): LayoutNode {
         ] },
 
       // ── 微缩菜单 + 背包（右下·一排小按钮）──
-      { type: 'Panel', id: 'micro', props: { bare: true }, layout: { x: 742, y: 524, direction: 'row', gap: 4 },
+      { type: 'Panel', id: 'micro', props: { bare: true }, layout: { x: 725, y: 530, direction: 'row', gap: 4 },
         children: ['👤', '🎒', '🗺', '⚙️', '👥'].map((g, i): LayoutNode => ({
           type: 'Button', id: `mc-${i}`, props: { label: g, kind: 'quiet', action: 'mmoMicro', actionArg: g }, layout: { width: 34 },
         })) },
 
       // ── 经验条（最底·满宽·紫）──
-      { type: 'Panel', id: 'xp-wrap', props: { bare: true }, layout: { x: 18, y: 588, width: 970, direction: 'column', gap: 2 },
+      { type: 'Panel', id: 'xp-wrap', props: { bare: true }, layout: { x: 19, y: 590, width: 986, direction: 'column', gap: 2 },
         children: [
           { type: 'ProgressBar', id: 'xp-bar', props: { value: 68, max: 100, tone: 'accent', label: '经验 70 级', showValue: true } },
         ] },
