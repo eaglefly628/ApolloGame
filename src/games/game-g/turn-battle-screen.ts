@@ -38,7 +38,7 @@ export const THEMES: Record<string, Theme> = {
     '--panel': 'linear-gradient(165deg,#172636,#0f1d2a)', '--panel-border': '#33485f', '--hairline': 'rgba(232,205,138,.18)', '--chip': 'rgba(255,255,255,.05)', '--track': 'rgba(0,0,0,.5)',
     '--frame-edge': '#26384a', '--hp': '#46d17a', '--danger': '#ff5d62', '--card-face': 'linear-gradient(158deg,#fcf9f1,#e6d8bd)',
     '--chamfer': 'polygon(11px 0,100% 0,100% calc(100% - 11px),calc(100% - 11px) 100%,0 100%,0 11px)',
-    '--fd': "'Zhi Mang Xing', cursive", '--fh': "'Rajdhani', sans-serif", '--fb': "'Noto Sans SC', sans-serif", '--fn': "'Silkscreen', monospace",
+    '--fd': "'Zhi Mang Xing', cursive", '--fh': "'Rajdhani', sans-serif", '--fb': "'Noto Sans SC', sans-serif", '--fn': 'ui-monospace,"SF Mono",Menlo,Consolas,monospace',
   },
   brocade: {
     '--ink': '#5a3f44', '--ink-dim': '#9a7a7e', '--gold': '#cf9a3f', '--gold-grad': 'linear-gradient(180deg,#f3e2a4,#cf9a3f)',
@@ -50,7 +50,7 @@ export const THEMES: Record<string, Theme> = {
     '--panel': 'linear-gradient(165deg,#fffaf3,#f8e7d6)', '--panel-border': '#e0c290', '--hairline': 'rgba(207,154,63,.45)', '--chip': 'rgba(255,255,255,.55)', '--track': 'rgba(150,110,90,.18)',
     '--frame-edge': '#caa463', '--hp': '#2f8f6b', '--danger': '#d65668', '--card-face': 'linear-gradient(158deg,#fffdf8,#f1e2cf)',
     '--chamfer': 'polygon(11px 0,100% 0,100% calc(100% - 11px),calc(100% - 11px) 100%,0 100%,0 11px)',
-    '--fd': "'Ma Shan Zheng', cursive", '--fh': "'Cormorant Garamond', serif", '--fb': "'Noto Serif SC', serif", '--fn': "'Silkscreen', monospace",
+    '--fd': "'Ma Shan Zheng', cursive", '--fh': "'Cormorant Garamond', serif", '--fb': "'Noto Serif SC', serif", '--fn': 'ui-monospace,"SF Mono",Menlo,Consolas,monospace',
   },
 };
 const CSS = `
@@ -563,6 +563,27 @@ function settingsNode(view: TurnBattleView): LayoutNode {
   return { type: 'Panel', id: 'ggt-settings', props: {}, layout: { direction: 'column', gap: 9, padding: 14, width: 214 }, children };
 }
 
+// ── 教学旁白 / 临时提示横幅（数据驱动·UI 铁律·棋枰数据化②外的战斗 chrome 去 bespoke）──────
+// 教官旁白=金描边(accent)横幅；提示 toast=警示红/金提示靠 bg 染色 + 文字令牌(danger/ok)承载语义。
+// 定位/淡入仍由外层绝对定位壳承担（同 clash/settings·renderNode 不进位置壳）。
+function narrationNode(text: string): LayoutNode {
+  return {
+    type: 'Panel', id: 'ggt-narr', props: { accent: true, bg: 'linear-gradient(180deg,rgba(28,40,58,.97),rgba(14,24,38,.98))' },
+    layout: { direction: 'row', gap: 10, align: 'center', padding: 12 },
+    children: [
+      { type: 'Label', id: 'ggt-narr-ic', props: { text: '🎓', size: 22 } },
+      { type: 'Label', id: 'ggt-narr-tx', props: { text, size: 14, color: 'text' } },
+    ],
+  };
+}
+function noticeNode(text: string, warn: boolean): LayoutNode {
+  return {
+    type: 'Panel', id: 'ggt-notice', props: { bg: warn ? 'rgba(60,18,18,.96)' : 'rgba(20,34,26,.96)' },
+    layout: { direction: 'row', align: 'center', justify: 'center', padding: 9 },
+    children: [{ type: 'Label', id: 'ggt-notice-tx', props: { text, size: 14, color: warn ? 'danger' : 'ok', bold: true } }],
+  };
+}
+
 export function buildTurnFrameHTML(view: TurnBattleView, drain: { from: number; count: number } = { from: 0, count: 0 }): string {
   const frame = { position: 'relative', width: '1520px', height: '858px', borderRadius: '16px', overflow: 'hidden', background: 'var(--paper)', border: '3px solid var(--frame-edge)', boxShadow: '0 30px 80px rgba(0,0,0,.6), inset 0 0 0 1px var(--hairline)', display: 'flex', flexDirection: 'column' }; // 1520×858≈16:9：contain 缩放在宽屏near-填满·多出的宽给敌方右栏(owner 2026-06-28·不拉伸牌面)
   const topbar = { display: 'flex', alignItems: 'center', padding: '13px 22px', borderBottom: '1px solid var(--panel-border)' }; // 仅留 chrome（padding+下边线）·内容已迁 topbarNode(LayoutNode)
@@ -595,12 +616,12 @@ export function buildTurnFrameHTML(view: TurnBattleView, drain: { from: number; 
   const hi = view.tutorial?.highlight ?? ''; // 棋格/手牌教学高亮（生产态 tutorial 恒空·留作未来教学）
   // 教学旁白横幅（doc28·教官旁白·覆于棋盘上方·不挡操作）。
   const narrationBanner = view.tutorial?.narration
-    ? `<div style="${st({ position: 'absolute', top: '10px', left: '50%', transform: 'translateX(-50%)', zIndex: 56, maxWidth: '74%', padding: '10px 20px', borderRadius: '14px', background: 'linear-gradient(180deg,rgba(28,40,58,.97),rgba(14,24,38,.98))', border: '2px solid var(--gold)', boxShadow: '0 10px 30px rgba(0,0,0,.5), 0 0 30px rgba(232,205,138,.25)', color: 'var(--ink)', fontFamily: 'var(--fb)', fontSize: '14px', lineHeight: 1.5, textAlign: 'center', display: 'flex', alignItems: 'center', gap: '10px' })}"><span style="font-size:22px;">🎓</span><span>${esc(view.tutorial.narration)}</span></div>`
+    ? `<div style="${st({ position: 'absolute', top: '10px', left: '50%', transform: 'translateX(-50%)', zIndex: 56, maxWidth: '74%' })}">${renderNode(narrationNode(view.tutorial.narration), GG_BATTLE_THEME)}</div>`
     : '';
   // 临时提示 toast（放牌后可翻一道机关门 / 非时翻门无效）。✗ 开头=警示红·否则金提示。
   const isWarn = view.notice?.startsWith('✗');
   const noticeBanner = view.notice
-    ? `<div style="${st({ position: 'absolute', top: '10px', left: '50%', transform: 'translateX(-50%)', zIndex: 57, maxWidth: '78%', padding: '9px 20px', borderRadius: '99px', background: isWarn ? 'rgba(60,18,18,.96)' : 'rgba(20,34,26,.96)', border: '1.5px solid ' + (isWarn ? 'var(--danger)' : 'var(--hp)'), boxShadow: '0 8px 24px rgba(0,0,0,.5)', color: isWarn ? '#ffd2d2' : '#cdeccd', fontFamily: 'var(--fh)', fontWeight: 700, fontSize: '14px', whiteSpace: 'nowrap', animation: 'g-fade .2s ease both' })}">${esc(view.notice)}</div>`
+    ? `<div style="${st({ position: 'absolute', top: '10px', left: '50%', transform: 'translateX(-50%)', zIndex: 57, maxWidth: '78%', animation: 'g-fade .2s ease both' })}">${renderNode(noticeNode(view.notice, !!isWarn), GG_BATTLE_THEME)}</div>`
     : '';
   const handArea = { flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column', padding: '13px 16px', borderRadius: '14px', background: 'var(--panel)', border: '1px solid var(--panel-border)', boxShadow: 'inset 0 0 0 1px var(--hairline)' };
   const handCount = { padding: '3px 10px', borderRadius: '99px', background: 'var(--accent-soft)', color: 'var(--accent)', fontFamily: 'var(--fh)', fontWeight: 700, fontSize: '11px', border: '1px solid var(--accent)' };
