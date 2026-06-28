@@ -25,7 +25,7 @@ describe('Game G · 流程走查（出征→结算→继续·happy-dom）', () =
           if (c.querySelector('[data-hand="0"]')) {
             press(c.querySelector('[data-action="deploy"]'));
             press(c.querySelector('[data-hand="0"]'));
-            press(c.querySelector(`[data-lane="${turn % 3}"]`));
+            press(c.querySelector(`[data-action="lane"][data-arg="${turn % 3}"]`));
           } else {
             press(c.querySelector('[data-action="draw"]'));
             press(c.querySelector('[data-action="draw-poker"]'));

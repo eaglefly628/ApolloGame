@@ -27,7 +27,7 @@ describe('Game G · turn-battle-screen live mount 交互（doc24 回合制 · DO
     for (const sel of ['[data-action="draw"]', '[data-action="deploy"]', '[data-action="cast"]', '[data-action="discard"]', // 四选一已迁数据驱动动作菜单 → data-action
       '[data-action="end"]', '[data-action="settings-toggle"]', '[data-action="theme"][data-arg="onyx"]', '[data-action="theme"][data-arg="brocade"]', // end/settings-toggle/theme 均迁 LayoutNode（设置浮层 Segmented）→ data-action[+data-arg]
       '[data-action="go-back"]',
-      '[data-hand="0"]', '[data-hand="1"]', '[data-lane="0"]', '[data-lane="1"]', '[data-lane="2"]',
+      '[data-hand="0"]', '[data-hand="1"]', '[data-action="lane"][data-arg="0"]', '[data-action="lane"][data-arg="1"]', '[data-action="lane"][data-arg="2"]',
       '[data-gate="0"]', '[data-gate="7"]']) {
       expect(host.querySelector(sel), sel).not.toBeNull();
     }
@@ -55,8 +55,8 @@ describe('Game G · turn-battle-screen live mount 交互（doc24 回合制 · DO
 
   it('按下三路格 → playLane(0/1/2)', () => {
     const { host, actions } = setup();
-    press(host.querySelector('[data-lane="0"]'));
-    press(host.querySelector('[data-lane="2"]'));
+    press(host.querySelector('[data-action="lane"][data-arg="0"]'));
+    press(host.querySelector('[data-action="lane"][data-arg="2"]'));
     expect(actions.playLane.mock.calls.map((c) => c[0])).toEqual([0, 2]);
   });
 
@@ -103,8 +103,7 @@ describe('Game G · turn-battle-screen live mount 交互（doc24 回合制 · DO
     const html = buildTurnFrameHTML(buildTurnBattleView(b, { selMode: 'deploy', selHand: 0 })); // 选中兵牌待放 → 落点高亮+手指
     expect(html).toContain('👆'); // 指示手指
     expect(html).toContain('放这里'); // 文案
-    expect(html).toContain('g-tap'); // 手指轻点动画
-    expect(html).toContain('g-ripple'); // 点击涟漪
+    expect(html).toContain('apollo-pulse'); // 落点脉冲（迁数据驱动后走 fx pulse·替手写 g-tap/g-place/g-ripple）
   });
 
   it('召唤源泉消耗：drain 透传 → 底部横条格「往后退」收退动效（owner 2026-06-21·别 biang 剪掉·徽标已回滚）', () => {
