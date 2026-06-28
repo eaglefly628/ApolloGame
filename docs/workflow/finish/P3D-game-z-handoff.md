@@ -130,8 +130,13 @@ node scripts/shoot-game.mjs game-z /tmp/game-z.png    # 任意 game id 都行
   - ~~**数据化光照** `Light3D`~~ ✅（kind directional/ambient·color/intensity/dir/castShadow·替写死的灯·多盏池管理·无则退回默认暖冷光）。
   - ~~**可旋转交互**~~ ✅（game-z.ts 输入胶水：拖拽→`Camera3D.yaw/pitch`·滚轮→distance·render-only 不进 hash）。
   - ~~**移轴景深 / 后处理** `Post3D`~~ ✅（EffectComposer：水平+垂直 tilt-shift + UnrealBloom·Captain Toad 微缩感·无则直渲）。
+- **🔜 当前优先级 = 工单 W1（见 §9）**：高效低开销引擎 + 实例化绘制（owner 2026-06-28·主程派）。
+- **⏸ 已录档·优先级靠后**：
+  - **烘焙数据管线**（owner 2026-06-28「先录档·优先级往后排」）——设计结论见 `docs/design/3d-baking-pipeline.md`（轻量/稳定/高效尺子·推荐确定性 CPU AO 烘 + Blender 高质量逃生口·回驳自研 GPU 路径追踪）。待 W1 后 + 有大静态场景需求再启。
+  - **动态日夜 `DayNight3D`**（render-only 周期·纯氛围；要玩法再转 sim 时钟）——咨询已出·待 owner 拍 A/B 后启。
 - **P-next 候选**（每条：数据组件 + 引擎解释 + 纯函数测 + 截图回归）：
-  - **Mesh3D 逐面材质**（解决下面 §7 的 box 着色尴尬）。
+  - **Mesh3D 逐面材质**（解决下面 §7 的 box 着色尴尬·亦与 W1-A 实例化逐面色坑相关）。
+  - **IBL 环境图 `Env3D` / gltf-transform 资产压缩**（轻量管线性价比最高的两件·见 `wiki/skills/rendering.md`）。
   - **更多模型 / 角色模型**（替小黄鸭 hero·skinned/动画是更大一步）。
   - **玩法**（最后·owner 解冻后）。
 
