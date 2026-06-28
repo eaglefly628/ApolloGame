@@ -883,6 +883,14 @@ function buildPageNew(controls: ControlsState): LayoutNode {
           { type: 'Label', id: 'big-cmp', props: { text: '对比：xl 22px 副标题（旧上限）', size: 'xl', color: 'sub' } },
         ] },
 
+      sectionTitle('t-multiline', 'LABEL · 多行文本（text 含 \\n → white-space:pre-line 真换行·手册/多段说明用）'),
+      { type: 'Panel', id: 'ml-col', props: {}, layout: { direction: 'column', gap: 8, padding: 14 },
+        children: [
+          { type: 'Label', id: 'ml-1', props: {
+            text: '第一行：一份 Label 用 \\n 直接排多行。\n第二行：不再被迫拆成 N 个 Label 堆容器。\n第三行：帮助手册/物品说明/对话段落，一个字段搞定。',
+            color: 'sub', size: 'sm' } },
+        ] },
+
       divider('d-n13'),
       sectionTitle('t-pattern', 'PANEL · pattern 程序化纹理叠层（stripe 斜纹 / checker 棋盘·felt 牌桌质感）'),
       { type: 'Panel', id: 'pat-row', props: {}, layout: { direction: 'row', gap: 14, padding: 14 },
