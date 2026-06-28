@@ -211,6 +211,7 @@ export function mountLobby(host: HTMLElement, h: LobbyHandlers): { update: () =>
     deckAdd: () => { /* 空槽添加：天罡选卡弹窗待接（持久走 onToggleTiangang）·暂不弹·bug-review */ },
     // ── 改造坊 ──
     craftSel: (k) => { st.craftSel = st.craftSel === k ? '' : (k ?? ''); rerenderMain(); },
+    craftClose: () => { st.craftSel = ''; rerenderMain(); },
     inlay: (k) => { if (k) { const [idx, b, t] = k.split(':'); h.onInlay?.(idx, b, parseInt(t, 10) || 1); } rerenderMain(); },
     removeInlay: (k) => { if (k) { const [idx, slot] = k.split(':'); h.onRemoveInlay?.(idx, parseInt(slot, 10) || 0); } rerenderMain(); },
     buyTiangang: (k) => { if (k) h.onBuyTiangang?.(k); refresh(); },

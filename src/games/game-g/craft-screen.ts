@@ -15,35 +15,67 @@ import type { LobbyView } from './lobby-screen.js';
 
 const zodOf = (b: string): typeof DIZHI_ZODIACS[number] | undefined => DIZHI_ZODIACS.find((z) => z.branch === b);
 
-// ── 选中牌的附魔详情（已镶槽 + 卡包可镶项）────────────────────────
-function buildEnchantDetail(view: LobbyView, idx: number): LayoutNode {
+// ── 选中牌 → 就地弹出「附魔」子菜单 Modal（owner 2026-06-28 重设计：点牌即弹·不下沉到底部·更像游戏）──
+// 结构：选中牌大图 + 战力/附魔 → 镶嵌槽（满 INLAY_MAX 槽·实心宝石可卸/空槽占位）→ 卡包地支可镶项（点即镶·消耗一张）→ 没地支给获取入口。
+function enchantModal(view: LobbyView, idx: number): LayoutNode {
   const deck = view.deck; const inlays = view.inlays ?? {}; const bag = view.dizhiBag ?? {};
   const si = Math.floor(idx / 13), ri = idx % 13;
   const [su] = SUITS[si]; const rank = RANKS[ri];
   const hero = HERO_CARDS.find((h) => h.suit === su && h.rank === rank);
   const inlaid = inlays[String(idx)] ?? [];
   const bonus = inlayBonus(inlaid);
+  const fv = deck[idx] ?? 50;
   const full = inlaid.length >= INLAY_MAX;
 
-  const kids: LayoutNode[] = [
-    { type: 'Label', id: 'ench-sel-card', props: { text: `${rank}${su}　${hero?.name ?? ''}　favor ${deck[idx] ?? 50}${bonus ? `（含附魔 +${bonus}）` : ''}`, size: 'md', color: 'gold', bold: true } },
-    { type: 'Label', id: 'ench-slot-h', props: { text: `镶嵌槽（${inlaid.length}/${INLAY_MAX}）· 点已镶项卸下（永久消耗·不退卡包）`, size: 'md', color: 'sub' } },
-  ];
-  if (inlaid.length) inlaid.forEach((e: InlayEntry, k) => kids.push({ type: 'Tag', id: `ench-slot-${k}`,
-    props: { label: `${zodOf(e.b)?.animal ?? e.b}·${DIZHI_TIER_NM[e.t]} ✕`, tone: 'accent', action: 'removeInlay', actionArg: `${idx}:${k}` } }));
-  else kids.push({ type: 'Label', id: 'ench-slot-empty', props: { text: '（空·尚未镶嵌）', size: 'sm', color: 'dim' } });
+  // 头：选中牌大图 + 战力（含附魔加成）。
+  const header: LayoutNode = {
+    type: 'Panel', id: 'ench-head', props: { bare: true }, layout: { direction: 'row', gap: 16, align: 'center', padding: 0 },
+    children: [
+      { type: 'PlayingCard', id: 'ench-head-card', props: { rank, suit: su, label: hero?.name, size: 'md',
+        art: hero ? heroPortraitUri(su as Suit, hero.era, rank, hero.rar) : undefined } },
+      { type: 'Panel', id: 'ench-head-meta', props: { bare: true }, layout: { direction: 'column', gap: 4, flex: 1 },
+        children: [
+          { type: 'Label', id: 'ench-head-fv', props: { size: 26, color: 'gold', bold: true, font: 'display', spans: [{ text: `${fv}` }, ...(bonus ? [{ text: ` (+${bonus})`, color: 'ok' as const, bold: true }] : [])] } },
+          { type: 'Label', id: 'ench-head-l', props: { text: bonus ? '战力（底盘 + 地支附魔）' : '战力 · 镶地支可永久提升', size: 12, color: 'sub' } },
+        ] },
+    ],
+  };
 
-  kids.push({ type: 'Label', id: 'ench-pick-h', props: { text: full ? '槽位已满' : '点卡包里的地支镶入（消耗一张）：', size: 'md', color: full ? 'gold' : 'sub' } });
+  // 镶嵌槽：INLAY_MAX 格·实心=已镶宝石(点卸下)·空=占位。
+  const sockets: LayoutNode[] = [];
+  for (let k = 0; k < INLAY_MAX; k++) {
+    const e = inlaid[k] as InlayEntry | undefined;
+    sockets.push(e
+      ? { type: 'Tag', id: `ench-slot-${k}`, props: { label: `${zodOf(e.b)?.animal ?? e.b}·${DIZHI_TIER_NM[e.t]} ✕`, tone: 'accent', size: 'md', action: 'removeInlay', actionArg: `${idx}:${k}` } }
+      : { type: 'Tag', id: `ench-slot-e${k}`, props: { label: '◇ 空槽', tone: 'dim', size: 'md' } });
+  }
+
+  const kids: LayoutNode[] = [
+    header,
+    { type: 'Divider', id: 'ench-div', props: {} },
+    { type: 'Label', id: 'ench-slot-h', props: { text: `💎 镶嵌槽 ${inlaid.length}/${INLAY_MAX}　·　点已镶宝石卸下（永久消耗·不退卡包）`, size: 13, color: 'sub' } },
+    { type: 'Panel', id: 'ench-slots', props: { bare: true }, layout: { direction: 'row', gap: 8, padding: 0, align: 'center' }, children: sockets },
+  ];
+
+  // 卡包可镶地支（点即镶·消耗一张）。没有 → 给「去商城抽地支」入口（owner：要有添加地支的方法）。
+  const picks: LayoutNode[] = [];
   if (!full) {
-    let any = false;
     for (const z of DIZHI_ZODIACS) for (let t = DIZHI_TIER_CAP; t >= 1; t--) {
       const n = (bag[z.branch] ?? [])[t - 1] ?? 0;
-      if (n > 0) { any = true; kids.push({ type: 'Tag', id: `ench-pick-${z.branch}-${t}`,
-        props: { label: `${z.animal}·${DIZHI_TIER_NM[t]} ×${Math.min(n, 3)} (+${DIZHI_INLAY_FAVOR[t]})`, tone: 'normal', action: 'inlay', actionArg: `${idx}:${z.branch}:${t}` } }); }
+      if (n > 0) picks.push({ type: 'Tag', id: `ench-pick-${z.branch}-${t}`,
+        props: { label: `${z.animal}·${DIZHI_TIER_NM[t]} ×${Math.min(n, 3)} (+${DIZHI_INLAY_FAVOR[t]})`, tone: 'normal', size: 'md', action: 'inlay', actionArg: `${idx}:${z.branch}:${t}` } });
     }
-    if (!any) kids.push({ type: 'Label', id: 'ench-pick-none', props: { text: '卡包里没有地支了 · 去「🛒商城」抽卡获取', size: 'sm', color: 'dim' } });
+    kids.push({ type: 'Label', id: 'ench-pick-h', props: { text: picks.length ? '🀄 点卡包里的地支镶入（消耗一张·真提升战力）：' : '卡包里没有地支了——去商城抽取：', size: 13, color: 'gold' } });
+    if (picks.length) kids.push({ type: 'Panel', id: 'ench-picks', props: { bare: true }, layout: { direction: 'grid', minCol: 120, gap: 6, padding: 0 }, children: picks });
+    else kids.push({ type: 'Button', id: 'ench-getdizhi', props: { label: '🛒 去商城抽地支', kind: 'primary', action: 'openShop' } });
+  } else {
+    kids.push({ type: 'Label', id: 'ench-pick-h', props: { text: '✅ 镶嵌槽已满（卸下一颗才能再镶）', size: 13, color: 'gold' } });
   }
-  return { type: 'Panel', id: 'ench-detail', props: { title: '附魔详情' }, layout: { direction: 'column', gap: 6, padding: 12 }, children: kids };
+
+  return {
+    type: 'Modal', id: 'ench-modal', props: { title: `🔨 附魔 · ${rank}${su} ${hero?.name ?? ''}`, size: 'md', closeAction: 'craftClose' },
+    children: [{ type: 'Panel', id: 'ench-modal-body', props: { bare: true }, layout: { direction: 'column', gap: 12, padding: 0 }, children: kids }],
+  };
 }
 
 // ── 左·地支附魔台（52 牌 ench 卡格 + 详情）──────────────────────
@@ -62,16 +94,13 @@ function enchantPanel(view: LobbyView, craftSel: string): LayoutNode {
         selected: sel, action: 'craftSel', actionArg: String(idx) } };
   }));
   // 13 列 × 4 花色行（对齐原版 .ench-grid{repeat(13,1fr)}）+ fluid 卡填满格·零空隙。卡按花色主序生成→每花色自占一行。
+  // 选牌不再下沉详情到底部（owner 2026-06-28）——改为就地弹 enchantModal（见 buildCraftScreen）。grid 标记选中态。
   const grid: LayoutNode = { type: 'Panel', id: 'ench-grid', props: { bare: true }, layout: { direction: 'grid', cols: 13, gap: 6, padding: 8 }, children: cards };
-  const detail: LayoutNode = (craftSel !== '' && deck[+craftSel] !== undefined)
-    ? buildEnchantDetail(view, +craftSel)
-    : { type: 'Panel', id: 'ench-detail', props: { title: '附魔详情' }, layout: { padding: 12 },
-        children: [{ type: 'Label', id: 'ench-detail-empty', props: { text: '↑ 选一张牌，给它镶地支附魔（消耗卡包·镶一张少一张·真提升 favor）', size: 'sm', color: 'dim' } }] };
   return {
     type: 'Panel', id: 'craft-ench', props: { title: `🔨 地支牌 · 生肖镶嵌（附魔）· ≤${INLAY_MAX} 槽` }, layout: { direction: 'column', gap: 8, padding: 10, flex: 1 },
     children: [
-      { type: 'Label', id: 'ench-note', props: { text: `铜 +${DIZHI_INLAY_FAVOR[1]} / 银 +${DIZHI_INLAY_FAVOR[2]} / 金 +${DIZHI_INLAY_FAVOR[3]} favor · 消耗品：镶一张少一张 · 真提升战力。`, size: 'md', color: 'sub' } },
-      { type: 'Panel', id: 'ench-row', props: { bare: true }, layout: { direction: 'column', gap: 12 }, children: [grid, detail] },
+      { type: 'Label', id: 'ench-note', props: { text: `点一张牌 → 弹出附魔台镶地支（铜 +${DIZHI_INLAY_FAVOR[1]} / 银 +${DIZHI_INLAY_FAVOR[2]} / 金 +${DIZHI_INLAY_FAVOR[3]} favor·消耗品·镶一张少一张·真提升战力）。`, size: 13, color: 'sub' } },
+      grid,
     ],
   };
 }
@@ -97,13 +126,16 @@ function tiangangShelf(view: LobbyView): LayoutNode {
   };
 }
 
-/** 改造坊屏内容 → LayoutNode（纯数据）。craftSel 给附魔台选中牌（缺省 ''=未选）。 */
+/** 改造坊屏内容 → LayoutNode（纯数据）。craftSel 给附魔台选中牌（缺省 ''=未选）·选中则就地弹 enchantModal。 */
 export function buildCraftScreen(view: LobbyView, craftSel = ''): LayoutNode {
-  // 竖排（对齐原版改造坊）：附魔台（13×4 卡墙 + 详情）在上、天罡购买货架在下。
+  // 竖排（对齐原版改造坊）：附魔台（13×4 卡墙）在上、天罡购买货架在下；选中一张牌 → 弹出附魔 Modal（position:fixed 覆盖本页）。
+  const selected = craftSel !== '' && view.deck[+craftSel] !== undefined;
+  const children: LayoutNode[] = [enchantPanel(view, craftSel), tiangangShelf(view)];
+  if (selected) children.push(enchantModal(view, +craftSel));
   return {
     type: 'Screen', id: 'craft-screen', props: { bg: GG_LOBBY_THEME.pageBg },
     layout: { direction: 'column', padding: 16, gap: 12 },
-    children: [enchantPanel(view, craftSel), tiangangShelf(view)],
+    children,
   };
 }
 
@@ -113,6 +145,7 @@ export function mountCraft(host: HTMLElement, getView: () => LobbyView, extra: H
   const rebuild = (): void => ui.update(buildCraftScreen(getView(), craftSel));
   const handlers: HandlerMap = {
     craftSel: (k) => { craftSel = craftSel === k ? '' : (k ?? ''); rebuild(); },
+    craftClose: () => { craftSel = ''; rebuild(); },
     ...extra,
   };
   const ui = mountUI(host, buildCraftScreen(getView(), craftSel), handlers, GG_LOBBY_THEME);

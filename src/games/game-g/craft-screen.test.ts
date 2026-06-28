@@ -1,8 +1,8 @@
 // @vitest-environment happy-dom
 // 改造坊屏数据驱动 pilot 验收（Step B 收官·接力 home/campaign/collection/deck）：
 // ① buildCraftScreen 产出纯 LayoutNode（Screen 根 + 附魔台 + 天罡货架）；
-// ② 选牌态 craftSel 控制附魔详情（未选=提示·选中=出该牌槽位 + 卡包可镶项）；
-// ③ mountCraft 挂载 + 点一张 ench 牌 → craftSel 选中→详情出现（数据→渲染→信号→reducer 链路通）。
+// ② 选牌态 craftSel 控制附魔台：未选=只卡墙·选中=就地弹 enchantModal（该牌槽位 + 卡包可镶项·owner 2026-06-28 重设计）；
+// ③ mountCraft 挂载 + 点一张 ench 牌 → craftSel 选中→附魔 Modal 出现（数据→渲染→信号→reducer 链路通）；关闭 craftClose 收起。
 import { describe, it, expect } from 'vitest';
 import { mountCraft, buildCraftScreen } from './craft-screen.js';
 import type { LobbyView } from './lobby-screen.js';
@@ -33,22 +33,24 @@ describe('craft-screen pilot · 数据驱动改造坊', () => {
     expect(json).toContain('"action":"diamondUnlock"');  // 锁定天罡（不屈·💎速解）
   });
 
-  it('选牌态：未选=提示·选中 idx=0 → 出附魔详情（镶嵌槽 + 卡包可镶项）', () => {
+  it('选牌态：未选=无附魔 Modal·选中 idx=0 → 弹 enchantModal（镶嵌槽 + 卡包可镶项）', () => {
     const none = JSON.stringify(buildCraftScreen(VIEW(), ''));
-    expect(none).toContain('选一张牌');                   // 未选提示
+    expect(none).not.toContain('"id":"ench-modal"');     // 未选不弹
     const sel0 = JSON.stringify(buildCraftScreen(VIEW(), '0'));
-    expect(sel0).toContain('镶嵌槽');                     // 选中出槽位
+    expect(sel0).toContain('"id":"ench-modal"');         // 选中弹 Modal
+    expect(sel0).toContain('镶嵌槽');                     // Modal 内出槽位
     expect(sel0).toContain('"action":"inlay"');          // 卡包可镶项（子/午）
+    expect(sel0).toContain('"closeAction":"craftClose"'); // 可关闭
   });
 
-  it('mountCraft 挂载 + 点 ench 牌(idx 0) → craftSel 选中→附魔详情出现', () => {
+  it('mountCraft 挂载 + 点 ench 牌(idx 0) → craftSel 选中→附魔 Modal 出现·craftClose 收起', () => {
     const host = document.createElement('div'); document.body.appendChild(host);
     const h = mountCraft(host, VIEW);
-    expect(host.querySelector('#ench-detail')?.textContent).toContain('选一张牌'); // 初始提示
+    expect(host.querySelector('#ench-modal'), '初始无 Modal').toBeFalsy(); // 初始未弹
     const card0 = host.querySelector('[data-action="craftSel"][data-arg="0"]') as HTMLElement | null;
     expect(card0, 'ench 牌 0 应渲染可点').toBeTruthy();
     card0?.dispatchEvent(new MouseEvent('click', { bubbles: true }));
-    expect(host.querySelector('#ench-detail')?.textContent).toContain('镶嵌槽'); // 选中后出详情
+    expect(host.querySelector('#ench-modal')?.textContent).toContain('镶嵌槽'); // 选中后弹 Modal
     h.destroy(); host.remove();
   });
 });
