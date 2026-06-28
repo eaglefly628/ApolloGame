@@ -14,3 +14,6 @@ review-for-gemini*.txt
 # 离线渲染帧（render-frame.ts 的可再生产物，按需生成发一次，不入库）。
 game-d-frame.svg
 game-e-preview.svg
+
+# 会话临时自验产物（截图脚本/PNG·勿入库）
+scratchpad/
