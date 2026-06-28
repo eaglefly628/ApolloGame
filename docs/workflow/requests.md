@@ -11,6 +11,17 @@
 
 ## 待处理 / 进行中
 
+### REQ-STUDIO-文生图美术管线 · [2026-06-28] · PG 代 owner 提（**平台/studio 域·主程主理**）· status: **open（架构待主程评审 + owner 拍板分期）** · 类型: 真能力缺口（生成层）+ 大量可重组（导入/分类/库/映射已存在）
+> **owner 需求原话归纳**：要一个**引擎原生的文生图工具**，挂在「资源库」里/旁的按钮：打开→填关键词→（填主流图站 API key）生成一整套美术；产物**自动落进某游戏资源目录 + 自动分类**；**智能**——从项目对白/数据**自动生成提示词 + 需求 + 风格控制**；一键导出所需图；可**单张按引用微调**（指明改库里哪张、怎么改、单独重生）也可批量；配置完**导出一张与需求一一匹配的数据表**，游戏即刻套用。
+>
+> **架构评审（PG·资深视角）**：这是**内容生产 devtool**（authoring·喂数据驱动引擎），不违宪法——游戏照常「声明需要哪些美术 key」，工具去**兑现**这些 key。**关键：一大半已存在，应重组而非重写**：
+> - 已有可复用（主程现成资产线）：`src/studio/{AssetLibrary,AssetBrowser,AssetImportWizard}` + `categorize.ts`（自动分类）+ `edit-ops.ts/edit-resolve.ts`（编辑算子）+ 后端 `apollo.py /api/assets/import`（落盘 `assets/<type>/<分类>/` + `index.json` 增量）+ `src/assets/library.ts`（`manifestRecords(gameId,manifest)` 每游戏清单 + key→资产映射 + 分类法）。→ **导入 / 自动分类 / 资源库 / 映射表 这几块基本现成**。
+> - **真缺口（要新建·下沉到 studio/services）**：① **生成 provider 适配层**（统一接口 + 各家实现：OpenAI `gpt-image-1` / Stability / Replicate / Scenario.gg·都有官方 API）；② **LLM 提示词编排**（读项目数据/对白 → 出提示词 + 风格令牌·走 Claude API·我们本就 Anthropic 栈）；③ **按引用编辑**（指定库内资产 id + 修改指令 → img2img/inpaint 单/批重生·可挂到现有 edit-ops）；④ **「美术需求清单 → 兑现 → 回填映射」** 的编排（清单来自游戏数据，见下 PG 可做项）。
+> - **必须钉死的约束**：① **Midjourney 无官方 API**（别承诺·改用上面四家）；② **API key = 机密**·绝不进仓库（env / 系统钥匙串 / 后端代持·前端不存明文）；③ **成本闸**（批量前预估张数×单价·确认再跑）；④ provider 输出风格漂移 → 靠 ②的风格令牌 + 固定 seed/style-ref 收敛。
+> - **分期建议（别一次性造完·防过度设计）**：**P1** 单 provider（OpenAI）+ 手填提示词 + 复用现有 import 落盘/分类 → 跑通「生成→入库→映射」最小闭环；**P2** LLM 提示词编排 + 风格控制（从游戏数据出需求）；**P3** 按引用单/批编辑；**P4** 多 provider 适配 + 成本闸 + 需求清单全自动兑现。
+> - **PG 可立即做（游戏侧·我的 lane·不占主程）**：给 game-g 写**「美术需求清单 manifest」**——把游戏已声明的美术 key 罗列成数据表（52 名将牌面 `hero/<id>`、闪艺 `foil/<id>`、地煞、UI 底纹/牌背槽 + 每项的尺寸/比例(5:7)/风格槽/用途）。这就是工具要兑现的「需求表」、也是 P2 提示词编排的输入。**主程的工具产出按此清单回填，游戏零改即用。**
+> **请主程**：评审架构 + 认领（studio/assets/services/net/apollo.py 域）。owner 拍板分期范围后开工。
+
 ### REQ-UI-G战斗手牌 · [2026-06-27] · GA（game-g·战斗 UI 数据驱动重构撞到） · status: **✅ 已裁（① 效果半边=`layout.fx` 下沉·done；② 牌面信息层=主程 via REQ-UI-G棋枰 裁决回驳新抽象→格内兵牌/手牌用 PlayingCard+私货皮·随 play-field 现状豁免·保持 bespoke）** · 类型: 真能力缺口下沉（① done / ② 回驳-豁免）
 
 > **★ 对账（GA 2026-06-28·接主程裁决后·结案）**：本 REQ 拆两半——
