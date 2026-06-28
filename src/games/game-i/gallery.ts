@@ -672,6 +672,7 @@ export const MODULES: ReadonlyArray<{ id: string; glyph: string; label: string; 
   { id: 'mod-physics', glyph: '🟢', label: '运动与碰撞', desc: 'motion + overlap + 碰撞响应', tone: 'normal' as const },
   { id: 'mod-combat', glyph: '⚔️', label: '战斗结算', desc: '命中 → 伤害 → DoT → 死亡', tone: 'normal' as const },
   { id: 'mod-spawn', glyph: '🎆', label: '生成与寿命', desc: 'spawn → 飞 → 寿命自毁', tone: 'normal' as const },
+  { id: 'mod-fx', glyph: '💥', label: '战场特效（库B）', desc: '爆炸环 prefab · 火花叠在画面上', tone: 'normal' as const },
   { id: 'mod-fsm', glyph: '🔀', label: '状态机', desc: 'condition → signal → set-state', tone: 'normal' as const },
   { id: 'mod-video', glyph: '🎬', label: '爱诗视频', desc: 'AIGP 端口 → 竖屏短视频', tone: 'normal' as const },
 ];
@@ -920,6 +921,30 @@ function buildPageNew(controls: ControlsState): LayoutNode {
           { type: 'Label', id: 'pixel-l', props: { text: 'PIXEL 8-BIT 像素标题 1942', size: 'lg', bold: true, color: 'jade', font: 'pixel' } },
           { type: 'Label', id: 'pixel-l2', props: { text: 'font:pixel · 复古街机/像素风（SHELL fontPixel 令牌已补默认值）', size: 'sm', color: 'sub', font: 'pixel' } },
         ] },
+
+      divider('d-n17'),
+      sectionTitle('t-fx', 'FX · UI 特效库（库 A·layout.fx 闭集合集·可叠加·render-only CSS·一个字段一串特效）'),
+      { type: 'Label', id: 'fx-note', props: {
+        text: '特效架构「库 A」：UI 元素的自我动画。layout.fx:[{kind,color,ms,intensity,once}] —— 闭集 7 个 kind，绝不每效一个布尔开关。与「库 B·战场粒子特效」正交（见展台 💥 战场特效模块）。', color: 'sub', size: 'sm' } },
+      { type: 'Panel', id: 'fx-kinds', props: { title: '7 个 kind 各来一发（循环态·状态特效）' }, layout: { direction: 'row', gap: 14, align: 'center', padding: 18 },
+        children: [
+          { type: 'Badge', id: 'fx-pulse', props: { text: 'pulse 呼吸', tone: 'ok' }, layout: { fx: [{ kind: 'pulse' }] } },
+          { type: 'Badge', id: 'fx-float', props: { text: 'float 浮动', tone: 'ok' }, layout: { fx: [{ kind: 'float' }] } },
+          { type: 'Badge', id: 'fx-shake', props: { text: 'shake 抖动', tone: 'warn' }, layout: { fx: [{ kind: 'shake', intensity: 1.4 }] } },
+          { type: 'Badge', id: 'fx-pop', props: { text: 'pop 弹', tone: 'accent' }, layout: { fx: [{ kind: 'pop' }] } },
+          { type: 'Badge', id: 'fx-glow', props: { text: 'glow 发光', tone: 'warn' }, layout: { fx: [{ kind: 'glow', color: 'gold' }] } },
+          { type: 'Badge', id: 'fx-sheen', props: { text: 'sheen 流光', tone: 'dim' }, layout: { fx: [{ kind: 'sheen' }] } },
+          { type: 'Badge', id: 'fx-flash', props: { text: 'flash 闪色', tone: 'danger' }, layout: { fx: [{ kind: 'flash', color: 'danger' }] } },
+        ] },
+      { type: 'Panel', id: 'fx-stack', props: { title: '叠加（一个字段挂多效·战斗反馈）' }, layout: { direction: 'row', gap: 20, align: 'center', padding: 18 },
+        children: [
+          { type: 'PlayingCard', id: 'fx-hit', props: { rank: 'K', suit: '♥', label: '受击', size: 'md' },
+            layout: { fx: [{ kind: 'shake', intensity: 1.6 }, { kind: 'flash', color: 'danger' }] } },
+          { type: 'Label', id: 'fx-hit-l', props: { text: 'fx:[shake + flash danger] —— 受击：抖 + 冒红，同字段两效叠加。', color: 'sub', size: 'sm' } },
+          { type: 'PlayingCard', id: 'fx-buff', props: { rank: 'A', suit: '♠', label: 'BUFF', size: 'md' },
+            layout: { fx: [{ kind: 'glow', color: 'gold' }, { kind: 'pulse' }] } },
+          { type: 'Label', id: 'fx-buff-l', props: { text: 'fx:[glow gold + pulse] —— 增益：金光 + 呼吸，transform 与 filter 正交叠。', color: 'sub', size: 'sm' } },
+        ] },
     ],
   };
 }
@@ -973,6 +998,9 @@ function moduleBody(
     case 'mod-spawn': return buildSimStage('spawn', '🎆', '生成与寿命',
       '发射器 Timer→event-when→caster 周期性从 PrefabLibrary 模板生成粒子，粒子带 Velocity 飞 + Tween 淡出 + Timer 到期 → lifetime 自毁。生成与销毁全数据驱动。',
       ['caster', 'prefab', 'event-when', 'lifetime']);
+    case 'mod-fx': return buildSimStage('fx', '💥', '战场特效（库B·挂在画面上）',
+      '特效架构「库 B」：世界里生成的特效实体。定时引爆「爆炸环」prefab——caster 一次展开整圈放射火花 + 冲击核（飞 + 淡出 + Timer 到期 lifetime 自毁）。与「库 A·UI 特效（layout.fx）」正交、可叠加。新特效 = 加一份 prefab 数据，零新 system。',
+      ['caster', 'prefab', 'tween', 'lifetime']);
     case 'mod-fsm': return buildSimStage('fsm', '🔀', '状态机 / 行为',
       '自由计时器驱动 condition→signal→effect：idle→alert→flee→循环。状态转移（set-state）+ 指示块切换（set-visible）三段全是数据，非代码。',
       ['state', 'event-when', 'effect-apply']);
