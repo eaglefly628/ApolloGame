@@ -6,7 +6,7 @@
 
 ---
 
-## REQ-3D-Collision 3D 逻辑碰撞（触发/重叠·升维 2D） · [2026-06-28] · owner+P3D → 主程（sim/能力域评审） · status: **🚧 P1 已落（owner 2026-06-28 授权 P3D 跨界落·知会主程评审）；P2/P3 待** · 类型: 真能力缺口（3D 逻辑碰撞·升维复用）
+## REQ-3D-Collision 3D 逻辑碰撞（触发/重叠·升维 2D） · [2026-06-28] · owner+P3D → 主程（sim/能力域评审） · status: **🚧 P1 已落（owner 2026-06-28 授权 P3D 跨界落·知会主程评审）+ debug 线框可视化/可点击菜单已落（P3D 渲染线域）；P2/P3 待** · 类型: 真能力缺口（3D 逻辑碰撞·升维复用）
 
 > **⚠️ 知会主程（owner 授权 P3D 跨界落 sim·同资产层先例）**：本 REQ 的 sim 半边落在你的域（`engine/spatial` + `skills/atoms` + sim 组件 `spatial.ts`）——**owner 2026-06-28 当面授权 P3D 实现 P1**。改动**严格镜像 2D 碰撞**（同确定性纪律：只用 +−×÷/sqrt/min/max·无 sin/cos/hypot），**进 hash·rollback 安全**，不碰 2D 碰撞代码。请评审；如与并行改动撞 rebase 喊我。
 >
@@ -16,6 +16,7 @@
 > - **能力**：`skills/atoms/overlap-detect-3d`——每帧重建（按 id 升序）+ **暴力 N² AABB 宽相位**（轻量盒庭够·升维树是 scale 路）+ 窄相位 → 产 `Overlap3D`。
 > - **demo**：game-z 加 `overlapDetect3dCapability` + hero `Collider3D` 胶囊 + 触发区 zone（半透明绿垫 Mesh3D[render] + `Collider3D` box trigger[sim]·同 2D Transform 驱动渲染+碰撞）；HUD 读 `Overlap3D` 亮「🔔 触发区」。截图验证。
 > - 测试：`contact3d.test`(7·含 **Y 分离不重叠** 真 3D + 确定性逐位) + `overlap-detect-3d.test`(3·含 **Collider3D 进 hash** 验证 + 触发进出) + diorama 碰撞。tsc+vitest(1886)+build+截图全绿。
+> - **✅ debug 线框可视化（P3D 渲染线域·提案 §边界「P3D 天然拥有的那块 ①」已落）**：`renderer/three/collider-debug.ts`（新·`ColliderDebug` 类·render-only·池管理·只读 world 不写 sim）——读 sim `Collider3D`+2D `Transform` 画线框（box→Box·sphere→Sphere·竖直 capsule→Capsule·**位置映射严格同 `contact3d`**：planar 取 Transform、垂直取 Collider3D `baseY/height`）；trigger=绿、实心=黄；`MeshBasicMaterial wireframe`。接入 `three-renderer` `sync`（`setDebugColliders(on)` 开关 + renderSig 失效重渲）。**可点击菜单**（owner 2026-06-28 加需求）：game-z 左下 `pointer-events:auto` 独立宿主 + `LayoutNode` `Button`（action `toggleDebug` 经 mountUI handler 入队·**UI 铁律**·无自由 DOM/CSS 逻辑）+ `C` 键快捷。截图验证（hero 胶囊线框 + zone 盒线框 + 按钮 ON）。
 > - **⬜ 待续**：P2（OBB + cylinder + 凸包 GJK 有界）；3D `collision-resolve`（推开·墙阻挡·现只检测不推）；P3 物理表现轨（纯表现·Rapier·YAGNI）。
 > **架构守则（贯穿·下同）不变。**
 

@@ -16,6 +16,7 @@ import { PostPipeline } from './three/post.js';
 import { ModelPool } from './three/models.js';
 import { InstancedBatches, type InstGroups } from './three/batches.js';
 import { CameraRig } from './three/camera-rig.js';
+import { ColliderDebug } from './three/collider-debug.js';
 
 export type { RenderStats } from './three/stats.js';
 import type { RenderStats } from './three/stats.js';
@@ -52,6 +53,8 @@ export class ThreeRenderer implements RendererBackend {
   private post!: PostPipeline;
   private models!: ModelPool;
   private readonly batches = new InstancedBatches();
+  private readonly colliderDebug = new ColliderDebug(); // 碰撞体线框（debug·开关见 setDebugColliders）
+  private debugColliders = false;
   // 天空盒
   private sky: THREE.Mesh | null = null;
   private skySig = '';
@@ -178,7 +181,7 @@ export class ThreeRenderer implements RendererBackend {
     // instanceMatrix 上传 + 阴影 + render（画面不变·省 CPU/GPU/带宽）——「低开销」最大单点。
     const post = getPost3D(world);
     const ph = hashPoses(poses);
-    const renderSig = `${ph}|${camSig(cam3d)}|${this.lights.lightSig}|${postSig(post)}|${sky?.scroll ? this.frame : (sky ? `${sky.top}.${sky.bottom}` : '')}`;
+    const renderSig = `${ph}|${camSig(cam3d)}|${this.lights.lightSig}|${postSig(post)}|${sky?.scroll ? this.frame : (sky ? `${sky.top}.${sky.bottom}` : '')}|${this.debugColliders ? 'd' : ''}`;
     const shadowSig = `${ph}|${this.lights.lightSig}`; // 阴影只随投影体姿/灯变（相机/云飘/后处理不触发）
     if (renderSig === this.lastRenderSig) {
       this.rendered = false;
@@ -222,6 +225,8 @@ export class ThreeRenderer implements RendererBackend {
     }
     this.models.sweep(this.scene, seen);
 
+    this.colliderDebug.sync(this.scene, world, this.debugColliders); // 碰撞体线框（debug·开则画·关则清）
+
     // 渲染：有 Post3D → EffectComposer 管线；否则直渲（向后兼容）。用 CameraRig 当前激活相机（透视/正交）。
     const cam = this.cameras.current;
     if (post) this.post.render(this.scene, cam, post);
@@ -232,6 +237,12 @@ export class ThreeRenderer implements RendererBackend {
 
   // 性能剖析快照（profiler·游戏层读 → LayoutNode HUD·像虚幻 stat）。drawCalls/triangles 跨全 pass 累加；
   // 跳渲帧 calls=0（画面复用上帧）。
+  // 开关碰撞体调试线框（游戏层菜单调·render-only）。立即失效脏标 → 下帧重渲反映。
+  setDebugColliders(on: boolean): void {
+    this.debugColliders = on;
+    this.lastRenderSig = ''; // 强制下帧重渲（开/关线框）
+  }
+
   readStats(): RenderStats {
     const info = this.gl.info;
     return {
@@ -256,6 +267,7 @@ export class ThreeRenderer implements RendererBackend {
     for (const [, t] of this.texCache) t.dispose();
     this.texCache.clear();
     this.batches.dispose(this.scene);
+    this.colliderDebug.dispose(this.scene);
     this.models.dispose(this.scene);
     this.lights.dispose(this.scene);
     this.post.dispose();
