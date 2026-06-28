@@ -444,14 +444,17 @@ function renderTooltip(id: string, p: TooltipProps, children: LayoutNode[], ls: 
   // 富气泡（bubble=LayoutNode 子树·标题/效果/数值行）：宽气泡、可换行、塞 UI 数据；否则简单单行文本气泡（向后兼容）。
   const rich = !!p.bubble;
   const bubbleInner = rich ? renderNode(p.bubble!, t) : esc(p.content ?? '');
+  // 气泡底叠不透明 bg0 兜底（owner 2026-06-28「弹出气泡太透·下面的卡都透出来重叠」）→ 永远实底·不透出后面的牌。
+  const bubbleBg = `linear-gradient(${t.bg3},${t.bg3}),${t.bg0}`;
   const bubbleStyle = rich
-    ? `display:none;position:absolute;${pos};z-index:250;width:240px;max-width:86vw;padding:10px 13px;border-radius:10px;background:${t.bg3};color:${t.text};border:1px solid ${t.line};font-family:${t.fontUi};box-shadow:0 8px 24px rgba(0,0,0,0.5);pointer-events:none`
-    : `display:none;position:absolute;${pos};z-index:250;padding:5px 9px;border-radius:6px;background:${t.bg3};color:${t.text};border:1px solid ${t.line};font-size:11px;font-family:${t.fontUi};white-space:nowrap;box-shadow:0 6px 18px rgba(0,0,0,0.4);pointer-events:none`;
+    ? `display:none;position:absolute;${pos};z-index:250;width:240px;max-width:86vw;padding:10px 13px;border-radius:10px;background:${bubbleBg};color:${t.text};border:1px solid ${t.line};font-family:${t.fontUi};box-shadow:0 10px 30px rgba(0,0,0,0.7);pointer-events:none`
+    : `display:none;position:absolute;${pos};z-index:250;padding:5px 9px;border-radius:6px;background:${bubbleBg};color:${t.text};border:1px solid ${t.line};font-size:11px;font-family:${t.fontUi};white-space:nowrap;box-shadow:0 8px 22px rgba(0,0,0,0.6);pointer-events:none`;
   const tag = rich ? 'div' : 'span';
   const bubble = `<${tag} data-tooltip-bubble style="${bubbleStyle}">${bubbleInner}</${tag}>`;
   // block 档：触发元素 display:block + 充满 → 能作 grid/flex item 随 1fr 拉伸（包 grid 卡墙里整张牌不塌陷）。缺省 inline-flex。
   const disp = p.block ? 'display:block;width:100%' : 'display:inline-flex';
-  return `<span id="${esc(id)}" data-tooltip tabindex="0" style="position:relative;${disp};${ls}">${inner}${bubble}</span>`;
+  // data-tip-place：把首选方位带给 mountUI·hover 时按视口边界翻转/夹取定位（防首排/最左/最右卡气泡出界被裁）。
+  return `<span id="${esc(id)}" data-tooltip data-tip-place="${esc(p.placement ?? 'top')}" tabindex="0" style="position:relative;${disp};${ls}">${inner}${bubble}</span>`;
 }
 
 // ── Modal（居中模态浮层 + 遮罩·下沉自各游戏手搭确认框/详情弹窗）─────────────────

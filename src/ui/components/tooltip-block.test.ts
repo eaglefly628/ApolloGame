@@ -11,7 +11,7 @@ const tip = (block?: boolean): string => renderNode({
 
 describe('Tooltip.block（grid 卡墙里包牌不塌陷）', () => {
   // 只看触发元素（最外层 span）的 style，别被内部 fluid 卡自带的 inline-flex 干扰。
-  const wrapStyle = (h: string): string => /data-tooltip tabindex="0" style="([^"]*)"/.exec(h)![1]!;
+  const wrapStyle = (h: string): string => /data-tooltip[^>]*tabindex="0" style="([^"]*)"/.exec(h)![1]!;
   it('block:true → 触发元素 display:block + width:100%（能作 1fr grid item 撑满）', () => {
     const s = wrapStyle(tip(true));
     expect(s).toContain('display:block');

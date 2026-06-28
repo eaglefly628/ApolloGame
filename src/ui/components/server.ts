@@ -243,11 +243,38 @@ export function mountUI(
   // 用冒泡的 mouseover/mouseout（mouseenter 不冒泡）；移到同一触发元素内部(child↔气泡)不隐藏。
   const bubbleOf = (trigger: HTMLElement): HTMLElement | null =>
     trigger.querySelector<HTMLElement>(':scope > [data-tooltip-bubble]');
+  // 气泡边界感知定位（owner 2026-06-28 bug：首排/最左/最右卡气泡出界被裁/盖住）：
+  // 改 position:fixed（逃出 scroll 祖先裁剪）→ 按触发元素 rect + 视口尺寸选方位（首选放不下就翻面）→ 夹进视口。
+  const placeBubble = (trigger: HTMLElement, b: HTMLElement): void => {
+    b.style.display = 'block';
+    b.style.position = 'fixed'; b.style.transform = 'none';
+    b.style.right = 'auto'; b.style.bottom = 'auto'; b.style.margin = '0';
+    const win = trigger.ownerDocument.defaultView; if (!win) return;
+    const tr = trigger.getBoundingClientRect();
+    const bw = b.offsetWidth || 240, bh = b.offsetHeight || 60;
+    const vw = win.innerWidth, vh = win.innerHeight, M = 8, GAP = 6;
+    const place = trigger.getAttribute('data-tip-place') || 'top';
+    let top: number, left: number;
+    if (place === 'left' || place === 'right') {
+      top = tr.top + tr.height / 2 - bh / 2;
+      const lpos = tr.left - GAP - bw, rpos = tr.right + GAP;
+      left = place === 'left' ? (lpos >= M ? lpos : rpos) : (rpos + bw <= vw - M ? rpos : lpos);
+    } else {
+      left = tr.left + tr.width / 2 - bw / 2;
+      const above = tr.top - GAP - bh, below = tr.bottom + GAP;
+      top = place === 'bottom'
+        ? (below + bh <= vh - M ? below : (above >= M ? above : below))
+        : (above >= M ? above : (below + bh <= vh - M ? below : above));
+    }
+    left = Math.max(M, Math.min(left, vw - bw - M));
+    top = Math.max(M, Math.min(top, vh - bh - M));
+    b.style.left = `${left}px`; b.style.top = `${top}px`;
+  };
   const tipShow = (e: Event): void => {
     const trigger = (e.target as HTMLElement).closest('[data-tooltip]') as HTMLElement | null;
     if (!trigger) return;
     const b = bubbleOf(trigger);
-    if (b) b.style.display = 'block';
+    if (b) placeBubble(trigger, b);
   };
   const tipHide = (e: Event): void => {
     const trigger = (e.target as HTMLElement).closest('[data-tooltip]') as HTMLElement | null;
