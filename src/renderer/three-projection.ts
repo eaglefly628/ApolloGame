@@ -80,6 +80,17 @@ export function mesh3dDepth(shape: 'box' | 'plane', width: number, height: numbe
   return depth ?? Math.max(1, Math.min(width, height) * ratio);
 }
 
+// W1-A 实例化绘制：Mesh3D 的「视觉签名」——同签名的多实体可合进一个 InstancedMesh（1 draw call）。
+// 含 shape + 尺寸 + 逐面色（色烤进几何 vertexColors，故色不同=不同几何=不同批）。纯函数（node 可测）。
+export function mesh3dBatchKey(m: {
+  shape: 'box' | 'plane'; width: number; height: number; depth?: number;
+  frontTint: number; backTint?: number; edgeTint?: number;
+}): string {
+  if (m.shape === 'plane') return `plane|${m.width}|${m.height}|${m.frontTint}`;
+  const depth = mesh3dDepth('box', m.width, m.height, m.depth);
+  return `box|${m.width}|${m.height}|${depth}|${m.frontTint}|${m.backTint ?? m.frontTint}|${m.edgeTint ?? 0x1f2937}`;
+}
+
 // 翻面：Transform.rotation 作为绕 flipAxis 的角度（0=正面朝镜头、π=反面）→ 欧拉角（另一轴恒 0）。
 export function flipEuler(rotation: number, axis: 'x' | 'y' = 'x'): { x: number; y: number } {
   return axis === 'y' ? { x: 0, y: rotation } : { x: rotation, y: 0 };

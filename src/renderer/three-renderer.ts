@@ -8,13 +8,13 @@ import { OutputPass } from 'three/addons/postprocessing/OutputPass.js';
 import { HorizontalTiltShiftShader } from 'three/addons/shaders/HorizontalTiltShiftShader.js';
 import { VerticalTiltShiftShader } from 'three/addons/shaders/VerticalTiltShiftShader.js';
 import type { IWorld, RendererBackend } from '@engine/core/types.js';
-import type { Mesh3D, Model3D, Sky3D, Light3D, Post3D } from '@engine/protocol/components.js';
+import type { Mesh3D, Model3D, Sky3D, Light3D, Post3D, Camera3D } from '@engine/protocol/components.js';
 import type { AssetManager } from '@assets/index.js';
 import { isImageHandle, isModelHandle } from '@assets/index.js';
 import { getCamera3D, getSky3D, getLights3D, getPost3D } from '@engine/protocol/camera-view.js';
 import { collectRenderables, chooseRenderMode, type Renderable } from './renderable.js';
 import {
-  renderablePose, poseBounds, fitPerspective, flipEuler, mesh3dDepth, type Pose3D,
+  renderablePose, poseBounds, fitPerspective, flipEuler, mesh3dDepth, mesh3dBatchKey, type Pose3D,
   transform3dPose, groundPose, poseBounds3D, bounds3DCenter, bounds3DExtent, fitDistance3D, orbitCamera,
 } from './three-projection.js';
 
@@ -59,6 +59,9 @@ export class ThreeRenderer implements RendererBackend {
   private gl!: THREE.WebGLRenderer;
   private readonly meshes = new Map<string, THREE.Mesh>();
   private readonly modeOf = new Map<string, string>(); // 当前几何模式（变了才重建几何）
+  // ── W1-A 实例化绘制 ── 同视觉签名的 Mesh3D → 一个 InstancedMesh（1 draw call）。
+  private readonly batches = new Map<string, { mesh: THREE.InstancedMesh; cap: number }>();
+  private readonly dummy = new THREE.Object3D(); // 复用的位姿合成临时对象（W1-B：别每帧每实体 new）
   private readonly texCache = new Map<string, THREE.Texture>();
   // ── 导入式 3D 模型（Model3D · glTF）──
   private gltf?: GLTFLoader; // 懒建（仅盒庭/有 Model3D 时才用）
@@ -103,6 +106,9 @@ export class ThreeRenderer implements RendererBackend {
     this.scene.add(this.ambient);
     this.gl = new THREE.WebGLRenderer({ antialias: true });
     this.gl.setSize(this.width, this.height);
+    this.gl.setPixelRatio(Math.min(globalThis.devicePixelRatio ?? 1, 2)); // W1-D：retina 不糊·上限 2 防超采样
+    this.gl.toneMapping = THREE.ACESFilmicToneMapping; // W1-D：PBR 通透不削顶（天空盒材质设 toneMapped:false 保色）
+    this.gl.toneMappingExposure = 1.05;
     this.gl.shadowMap.enabled = true;
     this.gl.shadowMap.type = THREE.PCFShadowMap; // 软阴影（PCFSoft 在本 three 版已弃用→回退此档）
     container.appendChild(this.gl.domElement);
@@ -111,6 +117,7 @@ export class ThreeRenderer implements RendererBackend {
   sync(world: IWorld): void {
     const seen = new Set<string>();
     const poses: Pose3D[] = [];
+    const instGroups = new Map<string, Renderable[]>(); // W1-A：不透明 Mesh3D 按视觉签名分批
     this.frame++;
     const cam3d = getCamera3D(world); // 盒庭模式开关（在场=轨道相机 + 2D 实体落地面 + 柔和阴影）
     this.syncSky(getSky3D(world)); // 天空盒（Sky3D 在场建、不在场拆）
@@ -147,26 +154,21 @@ export class ThreeRenderer implements RendererBackend {
         continue;
       }
       // 3D 物件（Mesh3D）：渲成有体积/双面的 box（或薄片 plane）。与 2D 同场混排。
-      // 两条位姿路：① 有 Transform3D → 真三维位姿（盒庭：地面 XZ + Y 高度，三轴欧拉）；
-      // ② 否则 → 2D 投影 + Transform.rotation 当翻面角（原 three-lab 路径，向后兼容）。
+      // W1-A：不透明的按视觉签名归批 → 一个 InstancedMesh（位姿在批填充阶段算）；透明的(alpha<1)走单 mesh fallback
+      // （实例批共享一个材质·不便逐实例 alpha·少量走老路保正确）。
       if (r.mesh3d) {
-        const mesh = this.ensureMesh3D(r, r.mesh3d);
-        let pose: Pose3D;
-        if (r.transform3d || cam3d) {
-          // 真三维位姿（Transform3D）或盒庭模式下的 2D 实体落地面（groundPose）——都用三轴欧拉摆位。
-          pose = r.transform3d ? transform3dPose(r.transform3d) : groundPose(r, r.mesh3d.height);
-          mesh.position.set(pose.x, pose.y, pose.z);
-          mesh.rotation.set(pose.rx ?? 0, pose.ry ?? 0, pose.rotZ);
-          mesh.scale.set(pose.sx, pose.sy, pose.sz ?? 1);
-        } else {
-          pose = renderablePose(r, this.zStep);
-          mesh.position.set(pose.x, pose.y, pose.z);
-          const fe = flipEuler(r.rotation, r.mesh3d.flipAxis);
-          mesh.rotation.set(fe.x, fe.y, 0);
-          mesh.scale.set(pose.sx, pose.sy, 1);
+        if ((r.color?.alpha ?? 1) >= 1) {
+          const key = mesh3dBatchKey(r.mesh3d);
+          let g = instGroups.get(key);
+          if (!g) { g = []; instGroups.set(key, g); }
+          g.push(r);
+          continue;
         }
+        // 透明 fallback：单 mesh + 逐面材质（原路径）。两条位姿路同 instanced。
+        const mesh = this.ensureMesh3D(r, r.mesh3d);
+        const pose = this.applyMesh3dPose(mesh, r, r.mesh3d, cam3d);
         mesh.castShadow = true;
-        mesh.receiveShadow = true; // 盒庭里地台/方块互投软影
+        mesh.receiveShadow = true;
         this.paintMesh3D(mesh, r.mesh3d, r.color?.alpha ?? 1);
         seen.add(r.entityId);
         poses.push(pose);
@@ -183,6 +185,29 @@ export class ThreeRenderer implements RendererBackend {
       mesh.scale.set(pose.sx, pose.sy, 1);
       this.paint(mesh, r, mode);
       poses.push(pose);
+    }
+
+    // W1-A 实例化绘制：每个视觉签名一个 InstancedMesh（同款盒/薄片 → 1 draw call）。
+    // 每帧只写 instanceMatrix（一次 buffer 上传·非 shader 重编）；复用 this.dummy 合成矩阵（不 new）。
+    for (const [key, list] of instGroups) {
+      const batch = this.ensureBatch(key, list[0]!.mesh3d!, list.length);
+      for (let i = 0; i < list.length; i++) {
+        const pose = this.applyMesh3dPose(this.dummy, list[i]!, list[i]!.mesh3d!, cam3d);
+        this.dummy.updateMatrix();
+        batch.mesh.setMatrixAt(i, this.dummy.matrix);
+        poses.push(pose);
+      }
+      batch.mesh.count = list.length;
+      batch.mesh.instanceMatrix.needsUpdate = true;
+    }
+    // 空批（本帧无此签名实体）→ 移出场景 + 释放。
+    for (const [key, b] of this.batches) {
+      if (!instGroups.has(key)) {
+        this.scene.remove(b.mesh);
+        b.mesh.geometry.dispose();
+        (b.mesh.material as THREE.Material).dispose();
+        this.batches.delete(key);
+      }
     }
 
     // 相机：① 有 Camera3D → 盒庭轨道相机（按 yaw/pitch 环绕注视点 + 柔和阴影随场景定位）；
@@ -244,6 +269,9 @@ export class ThreeRenderer implements RendererBackend {
       disposeMesh(m);
     }
     this.meshes.clear();
+    // 实例化批：移出场景 + 释放几何/材质。
+    for (const [, b] of this.batches) { this.scene.remove(b.mesh); b.mesh.geometry.dispose(); (b.mesh.material as THREE.Material).dispose(); }
+    this.batches.clear();
     // 模型实例：移出场景 + 释放实例自有材质。
     for (const [id, obj] of this.models) {
       this.scene.remove(obj);
@@ -276,7 +304,7 @@ export class ThreeRenderer implements RendererBackend {
     const sig = `${sky.top}|${sky.bottom}|${sky.clouds ? 1 : 0}|${sky.cloudTint ?? 0xffffff}`;
     if (!this.sky || this.skySig !== sig) {
       if (this.sky) { this.scene.remove(this.sky); (this.sky.material as THREE.MeshBasicMaterial).map?.dispose(); disposeMesh(this.sky); }
-      const mat = new THREE.MeshBasicMaterial({ map: buildSkyTexture(sky), side: THREE.BackSide, depthWrite: false, fog: false });
+      const mat = new THREE.MeshBasicMaterial({ map: buildSkyTexture(sky), side: THREE.BackSide, depthWrite: false, fog: false, toneMapped: false });
       this.sky = new THREE.Mesh(new THREE.SphereGeometry(2000, 32, 16), mat);
       this.scene.add(this.sky);
       this.skySig = sig;
@@ -299,6 +327,44 @@ export class ThreeRenderer implements RendererBackend {
     cam.left = -r; cam.right = r; cam.top = r; cam.bottom = -r;
     cam.near = 0.1; cam.far = d * 3.5;
     cam.updateProjectionMatrix();
+  }
+
+  // 设 Mesh3D 实体的位姿到 target（Mesh 或实例化用的 dummy）并返回 Pose3D（供包围盒）。两条路：
+  // ① Transform3D 真三维 / 盒庭模式 2D 实体落地面（groundPose）；② 否则 2D 投影 + flip 翻面角（向后兼容）。
+  private applyMesh3dPose(target: THREE.Object3D, r: Renderable, m: Mesh3D, cam3d: Camera3D | null): Pose3D {
+    let pose: Pose3D;
+    if (r.transform3d || cam3d) {
+      pose = r.transform3d ? transform3dPose(r.transform3d) : groundPose(r, m.height);
+      target.position.set(pose.x, pose.y, pose.z);
+      target.rotation.set(pose.rx ?? 0, pose.ry ?? 0, pose.rotZ);
+      target.scale.set(pose.sx, pose.sy, pose.sz ?? 1);
+    } else {
+      pose = renderablePose(r, this.zStep);
+      const fe = flipEuler(r.rotation, m.flipAxis);
+      target.position.set(pose.x, pose.y, pose.z);
+      target.rotation.set(fe.x, fe.y, 0);
+      target.scale.set(pose.sx, pose.sy, 1);
+    }
+    return pose;
+  }
+
+  // 建/复用实例化批：签名编码了几何+逐面色（烤进 vertexColors），故同签名共享一个 InstancedMesh。
+  // 超容量则 ×2 扩容重建（摊还）。frustumCulled=false——实例散布全场，按单实例包围盒剔会误剔整批。
+  private ensureBatch(key: string, sample: Mesh3D, needed: number): { mesh: THREE.InstancedMesh; cap: number } {
+    const existing = this.batches.get(key);
+    if (existing && needed <= existing.cap) return existing;
+    if (existing) { this.scene.remove(existing.mesh); existing.mesh.geometry.dispose(); (existing.mesh.material as THREE.Material).dispose(); }
+    const cap = Math.max(needed, existing ? existing.cap * 2 : 8);
+    const mat = new THREE.MeshStandardMaterial({ vertexColors: true, roughness: 0.92, metalness: 0 }); // 不透明·哑光
+    if (sample.shape === 'plane') mat.side = THREE.DoubleSide;
+    const mesh = new THREE.InstancedMesh(buildInstancedMesh3DGeometry(sample), mat, cap);
+    mesh.castShadow = true;
+    mesh.receiveShadow = true;
+    mesh.frustumCulled = false;
+    const batch = { mesh, cap };
+    this.batches.set(key, batch);
+    this.scene.add(mesh);
+    return batch;
   }
 
   // 数据化光照：Light3D 在场 → 数据全权定义（主阴影灯 this.key + 环境 this.ambient + 池管理的额外平行光）；
@@ -402,20 +468,16 @@ export class ThreeRenderer implements RendererBackend {
   }
 
   // 上色/贴图：sprite/text → 纹理；shape/placeholder → Color.tint 纯色；alpha → 透明度。
+  // W1-B：仅当贴图引用变（有/无贴图切换会改 USE_MAP define）才 needsUpdate；颜色/alpha 是 uniform 不需重编。
   private paint(mesh: THREE.Mesh, r: Renderable, mode: string): void {
     const mat = mesh.material as THREE.MeshStandardMaterial;
     mat.opacity = r.color?.alpha ?? 1;
-    if (mode === 'sprite' && r.sprite) {
-      mat.map = this.spriteTexture(r.sprite.textureKey, r.frame?.index);
-      mat.color.setHex(0xffffff);
-    } else if (mode === 'text' && r.text) {
-      mat.map = this.textTexture(r);
-      mat.color.setHex(0xffffff);
-    } else {
-      mat.map = null;
-      mat.color.setHex((r.color?.tint ?? 0xcccccc) & 0xffffff);
-    }
-    mat.needsUpdate = true;
+    let map: THREE.Texture | null = null;
+    let color = (r.color?.tint ?? 0xcccccc) & 0xffffff;
+    if (mode === 'sprite' && r.sprite) { map = this.spriteTexture(r.sprite.textureKey, r.frame?.index); color = 0xffffff; }
+    else if (mode === 'text' && r.text) { map = this.textTexture(r); color = 0xffffff; }
+    if (mat.map !== map) { mat.map = map; mat.needsUpdate = true; }
+    mat.color.setHex(color);
   }
 
   // 建/复用 3D 物件 mesh：几何形态（box/plane）不变则复用，变了重建。与 flat 路径共用 meshes/modeOf。
@@ -434,7 +496,8 @@ export class ThreeRenderer implements RendererBackend {
     return mesh;
   }
 
-  // 上色：box → 正面(+z)/反面(-z)/四边 各自取色；plane → 单面取正面色。alpha 透传到全部材质。每帧设（tint 变即反映）。
+  // 上色：box → 正面(+z)/反面(-z)/四边 各自取色；plane → 单面取正面色。alpha 透传到全部材质。
+  // W1-B：颜色/alpha 是 uniform，每帧本就重传——**不设 needsUpdate**（那会触发 shader 重编译，纯浪费）。
   private paintMesh3D(mesh: THREE.Mesh, m: Mesh3D, alpha: number): void {
     const mats = mesh.material;
     if (Array.isArray(mats)) {
@@ -442,15 +505,11 @@ export class ThreeRenderer implements RendererBackend {
       a[4].color.setHex(m.frontTint & 0xffffff);
       a[5].color.setHex((m.backTint ?? m.frontTint) & 0xffffff);
       a[0].color.setHex((m.edgeTint ?? 0x1f2937) & 0xffffff); // 四边共用同一材质实例
-      for (const mat of a) {
-        mat.opacity = alpha;
-        mat.needsUpdate = true;
-      }
+      for (const mat of a) mat.opacity = alpha;
     } else {
       const mat = mats as THREE.MeshStandardMaterial;
       mat.color.setHex(m.frontTint & 0xffffff);
       mat.opacity = alpha;
-      mat.needsUpdate = true;
     }
   }
 
@@ -612,6 +671,39 @@ function buildMesh3D(m: Mesh3D): THREE.Mesh {
   const front = matte();
   const back = matte();
   return new THREE.Mesh(new THREE.BoxGeometry(m.width, m.height, depth), [edge, edge, edge, edge, front, back]);
+}
+
+// W1-A：实例化批的几何——逐面色烤进 `vertexColors`（实例共享一个材质，色靠几何携带）。
+// box 面序 px,nx,py,ny,pz(正),nz(反)：四边=edgeTint、正面=frontTint、反面=backTint；plane 单面=frontTint。
+// 哑光材质 + vertexColors（material.color 默认白 → 最终色=顶点色，与单 mesh 的 color.setHex 等效）。
+function buildInstancedMesh3DGeometry(m: Mesh3D): THREE.BufferGeometry {
+  if (m.shape === 'plane') {
+    const geo = new THREE.PlaneGeometry(m.width, m.height);
+    bakeFaceColors(geo, [m.frontTint]);
+    return geo;
+  }
+  const depth = mesh3dDepth('box', m.width, m.height, m.depth);
+  const edge = m.edgeTint ?? 0x1f2937;
+  const geo = new THREE.BoxGeometry(m.width, m.height, depth);
+  bakeFaceColors(geo, [edge, edge, edge, edge, m.frontTint, m.backTint ?? m.frontTint]);
+  return geo;
+}
+
+// 把每面一个色写进几何的 color 属性（每面 4 顶点·BoxGeometry 24 顶点 / PlaneGeometry 4 顶点）。
+// 用 Color.setHex（线性·与 material.color.setHex 同空间），保证实例化与单 mesh 看相一致。
+function bakeFaceColors(geo: THREE.BufferGeometry, faceTints: readonly number[]): void {
+  const count = geo.attributes['position']!.count;
+  const vertsPerFace = count / faceTints.length;
+  const colors = new Float32Array(count * 3);
+  const c = new THREE.Color();
+  for (let f = 0; f < faceTints.length; f++) {
+    c.setHex(faceTints[f]! & 0xffffff);
+    for (let v = 0; v < vertsPerFace; v++) {
+      const i = (f * vertsPerFace + v) * 3;
+      colors[i] = c.r; colors[i + 1] = c.g; colors[i + 2] = c.b;
+    }
+  }
+  geo.setAttribute('color', new THREE.BufferAttribute(colors, 3));
 }
 
 // 几何由渲染模式决定：shape→对应平面几何；sprite/text/placeholder→单位面（贴图/占位）。

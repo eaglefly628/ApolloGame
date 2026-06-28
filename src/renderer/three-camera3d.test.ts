@@ -4,7 +4,7 @@ import { describe, it, expect } from 'vitest';
 import { World } from '@engine/core/world.js';
 import { collectRenderables } from './renderable.js';
 import {
-  transform3dPose, groundPose, orbitCamera, poseBounds3D, bounds3DCenter, bounds3DExtent, fitDistance3D, type Pose3D,
+  transform3dPose, groundPose, orbitCamera, poseBounds3D, bounds3DCenter, bounds3DExtent, fitDistance3D, mesh3dBatchKey, mesh3dDepth, type Pose3D,
 } from './three-projection.js';
 import { getCamera3D, getSky3D, getLights3D, getPost3D } from '@engine/protocol/camera-view.js';
 import { hashSnapshot } from '@net/index.js';
@@ -30,6 +30,25 @@ describe('Transform3D / Camera3D 纯函数（盒庭位姿 + 轨道相机）', ()
     expect(p.z).toBe(-8);   // 2D y → 地面 Z（景深）
     expect(p.y).toBe(3);    // 物高 6 / 2 → 下沿坐地（地面 y=0）
     expect(p.ry).toBeCloseTo(-0.3); // 2D 朝向 → 绕 Y
+  });
+  it('mesh3dBatchKey：同款盒同签名（可合一批）、尺寸/色/形不同则分批', () => {
+    const box = (w: number, h: number, d: number, front: number, edge: number) =>
+      ({ shape: 'box' as const, width: w, height: h, depth: d, frontTint: front, backTint: front, edgeTint: edge });
+    // game-z 金阶梯两级：同尺寸同色 → 同签名 → 合一批（1 draw call）。
+    expect(mesh3dBatchKey(box(10, 3, 10, 0xffb300, 0xffd54f)))
+      .toBe(mesh3dBatchKey(box(10, 3, 10, 0xffb300, 0xffd54f)));
+    // 尺寸不同 → 分批。
+    expect(mesh3dBatchKey(box(10, 3, 10, 0xffb300, 0xffd54f)))
+      .not.toBe(mesh3dBatchKey(box(6, 6, 6, 0xffb300, 0xffd54f)));
+    // 颜色不同 → 分批（色烤进 vertexColors·不同色=不同几何）。
+    expect(mesh3dBatchKey(box(10, 3, 10, 0xffb300, 0xffd54f)))
+      .not.toBe(mesh3dBatchKey(box(10, 3, 10, 0xff0000, 0xffd54f)));
+    // 形不同（box vs plane）→ 分批。
+    expect(mesh3dBatchKey({ shape: 'plane', width: 10, height: 3, frontTint: 0xffb300 }))
+      .not.toBe(mesh3dBatchKey(box(10, 3, 10, 0xffb300, 0xffd54f)));
+    // depth 缺省=按短边推导：显式给推导值 与 不给 应同签名（同几何）。
+    expect(mesh3dBatchKey({ shape: 'box', width: 10, height: 3, frontTint: 1 }))
+      .toBe(mesh3dBatchKey({ shape: 'box', width: 10, height: 3, depth: mesh3dDepth('box', 10, 3), frontTint: 1 }));
   });
   it('poseBounds3D + center + extent + fitDistance', () => {
     const poses: Pose3D[] = [

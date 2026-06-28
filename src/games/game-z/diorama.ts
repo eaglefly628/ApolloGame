@@ -21,7 +21,17 @@ function block(x: number, y: number, z: number, w: number, h: number, d: number,
   };
 }
 
-/** 盒庭样例蓝图：草地台 + 抬升石台（站 Toad）+ 金阶梯 + 板条箱 + 终点宝石 + 蘑菇 + 天空盒 + 可控角色。 */
+// 鹅卵石小径：一排**完全相同**的石块（同尺寸同色 → 同视觉签名）。展示 W1-A 实例化：N 个同款盒 → 1 个
+// InstancedMesh（1 draw call）。纯数据（蓝图摆 N 个实体），渲染器自动批，零渲染旗标。
+function steppingStones(): Record<string, Ent> {
+  const out: Record<string, Ent> = {};
+  for (let i = 0; i < 8; i++) {
+    out[`stone-${i}`] = block(-22 + i * 5.2, 0.4, 22, 3, 0.8, 3, 0xbcaaa4, 0x8d6e63);
+  }
+  return out;
+}
+
+/** 盒庭样例蓝图：草地台 + 抬升石台（站 Toad）+ 金阶梯 + 板条箱 + 终点宝石 + 蘑菇 + 鹅卵石径 + 天空盒 + 可控角色。 */
 export function dioramaBlueprint(): WorldBlueprint {
   return {
     // 角色靠现成 velocity→motion-apply 走动（纯数据 sim·确定性）；其余全静态。
@@ -77,6 +87,9 @@ export function dioramaBlueprint(): WorldBlueprint {
       'mush-a-cap': block(2, 3, 14, 6, 3, 6, 0xef5350, 0xd32f2f),
       'mush-b-stem': block(-6, 1, 12, 3, 2, 3, 0xfff3e0, 0xffe0b2),
       'mush-b-cap': block(-6, 3, 12, 5, 2.5, 5, 0xab47bc, 0x8e24aa),
+
+      // 鹅卵石小径（8 个同款石 → 1 实例化批·展示 W1-A）。
+      ...steppingStones(),
     },
   };
 }

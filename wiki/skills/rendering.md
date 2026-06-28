@@ -53,6 +53,15 @@
 - **数据化光照（Light3D）**：首盏 castShadow 平行光当主阴影灯（盒庭 placeShadow 自动框场景），其余平行光池管理，
   ambient 整体补亮；无 Light3D → 退回引擎默认暖主光+冷补光。`dir` 是「光的去向」（位置方向取反）。
 - **旋转交互**：拖拽/滚轮等输入改 `Camera3D` 的 yaw/pitch/distance = 运行时输入胶水（同键盘→Velocity 先例·input 捕获是运行时职责），不进 sim/hash。
+- **实例化绘制（W1-A·高效低开销）**：同「视觉签名」（`mesh3dBatchKey`=shape+尺寸+逐面色）的多个 `Mesh3D` → 一个
+  `InstancedMesh`（1 draw call）。**全渲染器内部、零数据改动**——游戏照常摆 N 个 `Mesh3D` 实体，渲染器自动批，
+  **绝不往数据加 `instanced` 旗标**（那会把渲染关切泄进数据·违宣言）。逐面色**烤进几何 `vertexColors`**（实例共享一个材质，
+  色靠几何携带·故色不同=不同批）；透明盒(alpha<1)走单 mesh fallback。位姿合成复用一个 dummy `Object3D`（别每帧每实体 new）。
+  坑：`InstancedMesh` 默认按单实例包围盒做视锥剔除会误剔散布的整批 → `frustumCulled=false`（或维护 boundingSphere）。
+- **每帧零浪费（W1-B）**：颜色/alpha 是 uniform，每帧重传即可，**别设 `material.needsUpdate`**（会触发 shader 重编译）；
+  仅贴图引用变（USE_MAP define 翻转）才 needsUpdate。不透明物体 `transparent:false`（走 opaque 管线·early-z·不排序）。
+- **观感快赢（W1-D）**：`ACESFilmicToneMapping`+曝光（PBR 通透不削顶·天空盒材质 `toneMapped:false` 保程序化色）；
+  `setPixelRatio(min(dpr,2))`（retina 不糊·上限防超采样）。
 - **模型导入（glTF）**：蓝图只持 `modelKey`（保纯）；资产层 `ModelAssetLoader` 取 `.glb` 字节(ArrayBuffer·**零 three 依赖**)，
   `ThreeRenderer` 用 `GLTFLoader.parse(bytes)` 解析成 three 场景。**解析一次入模板缓存 → 多实例 `clone(true)`**（共享几何省显存，
   每实例 clone 材质供独立染色/释放）。导入走 asset key、loader 在引擎（同 sprite 先例），别在蓝图塞 URL/二进制。

@@ -6,7 +6,15 @@
 
 ---
 
-## REQ-3D-W1高效引擎 · [2026-06-28] · owner → P3D（3D 渲染线）· status: **open（P3D 执行中）** · 类型: 设计纲领 + 真能力（实例化绘制）
+## REQ-3D-W1高效引擎 · [2026-06-28] · owner → P3D（3D 渲染线）· status: **🚧 进行中（W1-A 实例化 + W1-B 零浪费 + W1-D 快赢 ✅ 已落；W1-C 跳渲 + W1-E 健壮 ⬜ 下一增量）** · 类型: 设计纲领 + 真能力（实例化绘制）
+
+> **进度（P3D 2026-06-28·已推）**：
+> - **W1-A 实例化** ✅：同视觉签名(`mesh3dBatchKey`=shape+尺寸+逐面色)的 Mesh3D → 一个 `InstancedMesh`（1 draw call）。逐面色**烤进 `vertexColors`**（多色盒也能批·非仅单色·材质共享色靠几何）；复用单 dummy `Object3D` 合 instanceMatrix；超容量 ×2 扩容；空批移除；整体投/受软影；`frustumCulled=false` 防散布整批误剔；透明盒(alpha<1)走单 mesh fallback。验收：game-z 20 盒实体 → **11 批**（金阶梯 2→1·蘑菇茎 2→1·新增 8 鹅卵石径 8→1·`renderer.info` 实测）。**Model3D 多 mesh 实例化 = W1-A 第二步（待）**。
+> - **W1-B 零浪费** ✅：去 `paintMesh3D`/`paint` 每帧 `needsUpdate`（颜色/alpha 是 uniform）；仅贴图引用变才 needsUpdate；实例批不透明走 opaque 管线。
+> - **W1-D 快赢** ✅：`ACESFilmicToneMapping`+曝光（天空盒 `toneMapped:false` 保程序化色）+ `setPixelRatio(min(dpr,2))`。
+> - **⬜ 待续**：W1-C 静态帧 dirty 跳渲 + 阴影 autoUpdate=false + near/far 收紧；W1-E resize/模型自动贴地/.glb-only。
+> - 测试 `mesh3dBatchKey` 纯函数单测；tsc+vitest+build+无头截图全绿。零数据改动（绝不加 instanced 旗标）。
+> - 实现文件：`renderer/three-renderer.ts`（批/实例化/tonemap）、`renderer/three-projection.ts`（`mesh3dBatchKey` 纯函数）、`games/game-z/diorama.ts`（鹅卵石径示例）。
 
 > **设计纲领（owner 2026-06-28 拍板）**：要的是**高效率、低开销**的 3D 引擎——**性能是一等设计约束、写进架构，不靠后期优化补**（owner 明言「后期不会做什么优化」）。所以下面不是「以后再说的优化」，是**现在就该达到的基线**。**instanced draw（实例化绘制）是硬要求。**
 > **数据驱动铁律不变**：W1 全是**渲染器内部**的事，**零数据 / 零组件 / 零接口改动**——游戏照旧摆 N 个 `Mesh3D`/`Model3D` 实体（纯数据），渲染器自己批。**绝不往数据里加 `instanced:true` 之类渲染旗标**（那是把渲染关切泄进数据，违 manifesto）。

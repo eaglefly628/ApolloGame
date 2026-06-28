@@ -166,4 +166,4 @@ node scripts/shoot-game.mjs game-z /tmp/game-z.png    # 任意 game id 都行
 ## 9. 工单 / 需求池 → `../requests-3d.md`
 
 > **3D 渲染线的需求 + 工单（含 W1「高效低开销 + 实例化绘制」完整规格）= 单一真相在 [`../requests-3d.md`](../requests-3d.md)**（owner 2026-06-28 立独立池·避免与通用 UI/游戏需求混淆）。
-> 本交接文档管「你是谁 / 边界 / base 清单 / 怎么跑」；**具体派单看 requests-3d.md**。当前主线：**REQ-3D-W1**（W1-A 实例化绘制 + W1-B 每帧零浪费 + W1-C 静态跳渲，按此优先级）。
+> 本交接文档管「你是谁 / 边界 / base 清单 / 怎么跑」；**具体派单看 requests-3d.md**。当前主线：**REQ-3D-W1**（✅ W1-A 实例化 + W1-B 零浪费 + W1-D 快赢 已落；⬜ W1-C 静态跳渲 + W1-E 健壮 下一增量）。
