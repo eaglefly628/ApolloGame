@@ -11,6 +11,66 @@
 
 ## 待处理 / 进行中
 
+### REQ-UI-G战斗手牌 · [2026-06-27] · GA（game-g·战斗 UI 数据驱动重构撞到） · status: **部分 done·余 open（✅ 效果半边=主程 REQ-FX `layout.fx` 已下沉；⬜ 余「牌面信息层」未动——cost水滴/战力角标/生肖行/主将frame）** · 类型: 真能力缺口下沉
+
+> **★ 对账（GA 2026-06-28·接主程 REQ-FX 后）**：本 REQ 拆两半——**① 效果/动效半边**（主将 glow·脉冲·发牌飞入等）= 主程 `REQ-FX-战斗特效抽象` 的 `layout.fx: VisualEffect[]` **已覆盖**（GA 已接 fx 基线·门禁绿）；**② 牌面「信息层」半边**（开销=N 颗水滴 / 战力=显眼角标 / 生肖×3 行 / 主将=水印「将」+ frame·非动效·是结构化信息）= **fx 表达不了·仍 open**，请主程按下文「只报需求·抽象交主程」收敛（扩 PlayingCard 信息层 or 抽「牌面信息装饰」原子·别逐效果加开关）。Tooltip 拆解走主程已落的 `Tooltip.block`（不缺）。
+
+> **背景**：战斗屏 UI 重构（`turn-battle-screen.ts` → LayoutNode）进行中。顶栏 + 动作菜单 + 结束回合钮已迁 LayoutNode（全绿推送）。下一块=**手牌区**，按 UI 铁律应走 LayoutNode（兵牌=`PlayingCard`），但撞到牌面 juice `PlayingCard` 表达不了：
+> 1. **召唤源泉开销**（cost 1-3）：原版牌面顶部 N 颗水滴图标。PlayingCard 无 cost/pip。
+> 2. **战力 badge**（power）：原版右上显眼红底数字。PlayingCard 只有 `value`(右下小字)·不够显眼、位置不对。
+> 3. **生肖行**（zod×3）：牌底 3 格生肖（已激活=亮/未激活=暗）。PlayingCard 无 tag/pip 行。
+> 4. **主将标记**（general）：水印「将」+ 顶部「⭐主将」浮标 + 金色脉冲边框。PlayingCard 无强调框/水印。
+> 5. **天罡牌**（kind:'gang'）：完全另一种版式（图标圆 + 名 + desc 持续战法），非扑克牌面——PlayingCard 不适用，更像 `Card`。
+> 6. **富 tooltip**：悬浮显战力拆解（点数+经营+地支附魔逐项来源）。可用 `Tooltip.bubble` 包 PlayingCard 表达（这条不缺·已有能力）。
+>
+> **GA 的判断（带理由·请 Lead 定夺）**：
+> - 与 **LEAD→PG `[2026-06-18]`** note 直接冲突——那条明说「game-g 的**牌面纹理 + 编排 = 私货 juice·留 game-g·不下沉**」。手牌牌面正是此类。
+> - 但 **UI 铁律** 又要求「手牌走 LayoutNode」。两者张力需 Lead 拍板，**GA 不擅自**①手写 React 逃生（破铁律）②无脑加宽 PlayingCard（破防臃肿/私货红线）。
+> - **三条路供选**：
+>   (a) **下沉**：PlayingCard 加通用卡牌字段 `cost`(pip 数+图标槽) / `stat`(角标) / `tags`(小图标行·filled/empty) / `frame`(强调框)——这些 TCG 类普遍需要、rule-of-three 可论证（E/F/G 都有带开销/战力/标记的牌）。天罡牌走 `Card`。
+>   (b) **留 bespoke**：Lead 确认牌面属"私货"·手牌区豁免铁律（play-field-card 性质·近棋枰）→ GA 保留现有手写 handCard，仅迁手牌区外壳（标题/计数）。
+>   (c) **混合**：兵牌牌面归 play-field 渲染器（路②·与棋枰格内兵牌同源·本就同款 sideFace），手牌当"待部署的 play-field 卡"一并走渲染器。
+> - GA 倾向 **(a)** 若字段确通用（E/F/G 复用），否则 **(c)**（兵牌牌面与棋枰格内兵牌是同一套·一并归渲染器最一致）。**(b)** 最省事但留一块手写违铁律。
+>
+> **不阻塞**：手牌区暂保持现有手写 handCard（与已迁的顶栏/动作菜单非破坏并存·同过渡期套路）；主程下沉效果属性后 GA 接着做第三块。
+>
+> ---
+> **★ owner steer（2026-06-27·下沉·但要抽象·问题交主程）**：owner 两点拍板——
+> 1. 这些 React 式效果应让**主程在 UI 库（解释器）里实现**、游戏层只填数据，不在游戏层手写 React/CSS（即选 (a)·下沉）。
+> 2. **但不能「有一个效果就加一个开关」**——那样 `PlayingCard` 属性会爆炸、配置面越铺越宽（owner 原话：「需要抽象一下…这样数据配置会比较多」）。**怎么抽象成通用原子（而非堆 N 个 bool/字段）= 主程域设计活·owner 把这个问题交给主程**。
+>
+> **故本 REQ 只陈述「手牌要表达什么」（原始需求·不替主程定 API）**——下面是 game-g 战斗手牌的牌面事实，**请主程收敛成通用抽象**（GA 不预设字段·避免把"开关膨胀"写进需求）：
+> - 一张「待打出的卡」需展示：**开销**（召唤源泉 1-3·原版画成 N 颗水滴）、**主数值**（战力·显眼角标）、**一组小标记**（生肖×3·已激活/未激活）、**强调态**（主将=水印「将」+脉冲金框）、**稀有度**点、**名/点数/花色**。
+> - 交互/动效：选中、买不起置灰、发牌飞入翻面、悬浮看**战力拆解**明细。
+> - 另有**非扑克版式的「持续战法」卡**（天罡·图标圆+名+desc·整场加成）。
+> - **GA 自查已有、不缺**（供主程参考·缩小缺口面）：发牌飞入/翻面 = `layout.anim:'dealIn'|'flyIn'|'pop'` + `flipOnHover/backFace`；富 tooltip = `Tooltip.bubble`；选中/置灰 = `selected/dimmed`；非扑克卡 ≈ `Card`。**真缺的只是「牌面信息层」那几样**（开销/主数值/标记组/强调态）——请主程判断是扩 `PlayingCard`、还是抽一个更通用的「牌面信息装饰」原子来承载，避免逐效果加字段。
+> - **rule-of-three 佐证通用性**：E 小丑牌（小丑带 ×mult/+chips/edition 标记）、F 自走棋（单位带星级/羁绊/费用）、G 战斗手牌（开销/战力/生肖/主将）——三游戏都要「卡牌 + 信息层装饰」，抽象划算。
+>
+> **同一抽象问题贯穿战斗屏其余 juice**（源泉条收退残影/半格/升腾火花、掷命特写翻起飞入/硬币弹出/火花脉冲）：GA 迁到那几块时同样**只报「要什么效果」、把抽象交主程**，绝不在游戏层留手写 CSS keyframes，也不要求逐效果加开关。
+
+### REQ-UI-G棋枰 · [2026-06-27] · GA（game-g·战斗 UI 重构路②评估·请 Lead/owner 裁决形态） · status: **open（架构裁决：棋盘走哪种 render 路·见 D 三选一）** · 类型: 形态裁决（引擎渲染器形态 vs game-g 回合制 DOM 盘）
+
+> **GA 对战斗屏「棋枰 play-field」走引擎渲染器（铁律路②）的评估。结论：现有渲染器与 game-g 棋盘形态阻抗失配·照搬高成本低收益·需 Lead/owner 定形态。**
+>
+> **A. 棋盘是什么（结构）**：boardWrap = 两端大本营 `fortBase`（城堡+光环脉冲+阵营 tag+**血灯 hpGem ×N**[旋转45°菱形宝石·亮/灭]+我方计时器/敌方**地煞牌行**[hover tooltip·「？」未揭示·已用态]+连接点·敌方整体可点 boss-info+hover boss 浮窗）+ 3×`laneRow`（路名竖排 tag + **9 格 slot 轨**[grid 9列]·每格：边界金高亮/放牌区底纹/虚线圆/**格内兵牌**[=手牌牌面同款 juice]/clash 红环脉冲/落点 👆 高亮/**hover 战力拆解 tooltip**/forecast 胜率徽标）+ `laddersLayer`（绝对覆盖 SVG viewBox 900×400·8 道**斜梯**[底轨+流动虚线箭头 marker+g-flow 动画]+**门钮**[◉/✕·可点 data-gate·脉冲]）。
+>
+> **B. 引擎渲染器是什么**：ECS `World` → `collectRenderables(world)` → `Renderable[]` → backend（CanvasRenderer 2D **栅格** / Three / SVG / Ascii）。原语：Transform/Shape(box/circle/polygon)/Sprite/Text/Color/Mesh3D/Gauge/Tilemap/HexBoard。范例 game-e：`buildViewEntities`→World→CanvasRenderer。
+>
+> **C. 核心阻抗失配（关键·该不该做的依据）**：
+> 1. **game-g 战斗无 ECS World**：`turn-combat` 是纯 `TurnBattle` 状态（0 处 World/Transform/Renderable·已核）。渲染器吃 World → 要走渲染器须**新建一层 ECS-World 镜像**（lanes/units/forts/gates→entity+Transform·每重渲同步），整层新架构。
+> 2. **栅格 vs DOM/CSS/SVG**：CanvasRenderer 栅格化；棋盘是重 DOM/CSS/SVG——渐变/水印字/**hover 磨砂 tooltip(战力拆解·地煞·boss)**/SVG 流动斜梯/虚线环/脉冲/forecast 徽标。栅格化后这些全要重做，**一大半渲染器原语没有**。
+> 3. **缺口成片**：直线「3路×9格」轨（Tilemap/HexBoard 是瓦片/六角·非直线格轨）/ 离散血灯（Gauge 是连续条·非 N 颗宝石）/ 斜梯+流动箭头（无连接线/路径动画/箭头原语）/ 可点门钮（canvas 命中测试要 PointerInputSource 另一层）/ hover tooltip（canvas 无 DOM hover）/ forecast·placeable·clash 浮层动画。
+>
+> **D. GA 判断 + 三选一（请 Lead/owner 裁）**：
+> - 直接照搬现有 canvas/ECS 渲染器 = ①造 World 镜像新层 ②栅格里重做全部 DOM/CSS/SVG/hover juice ③填一堆渲染器缺口 → **高成本·低收益·且 hover 拆解等很可能降级**·违「别为单游戏臃肿引擎」。但铁律确要求 play-field 走渲染器（非 LayoutNode）。**冲突根源：现有渲染器是「ECS+栅格」形态·game-g 棋盘是「回合制 DOM/CSS/SVG 盘+hover」**——属引擎域+架构裁决·GA 不单方面定。
+>   - **(1) 全量上 ECS+canvas**（守字面）：造 World 镜像+重做 juice+填缺口。成本最高·hover 拆解可能降级。**GA 不建议**（除非 owner 要统一栅格管线且接受投入/降级）。
+>   - **(2) 下沉「数据驱动 DOM 棋盘 render 原语」到引擎**（铁律精神·非字面）：承认回合制盘不塞 canvas/ECS·而该有声明式 **DOM 盘组件**（lane/slot 网格+离散血灯+连接线/斜梯+格内卡位）·引擎以 DOM 解释（同 UI 库形态·但归 render 层）。game-g 出数据·引擎出盘。复用面=所有「格盘/路盘」类。**GA 倾向此条**（属主程域设计·Lead 定划不划算/rule-of-three）。
+>   - **(3) 暂豁免·棋盘留 bespoke**：Lead 裁定 game-g 棋盘=「私货 play-field」(同牌面 juice 一类)·暂不强迁·等 (2) 通用 DOM 盘原语就绪再迁。**最务实·不阻塞**。
+> - **与手牌抽象耦合**：格内兵牌 = 手牌牌面同一套（sideFace/角标/生肖/主将水印）→ 等主程「牌面信息层」抽象出来后两者共用同一卡牌原语。棋盘骨架（格轨/血灯/斜梯/门钮）则是独立缺口。
+>
+> **E. 不阻塞**：棋盘现手写、能跑、hover 拆解/forecast/动画齐全·非破坏。建议 **(2) 通用 DOM 盘原语 + 主程牌面抽象两者就绪前·棋盘保持现状**·不做 lossy 迁移。
+
+
 ### REQ-3D-Model导入 · [2026-06-28] · P3D（3D 渲染线）→ 主程（资产层域）· status: **open（render 半边已落 mainbranch·待主程接资产半边）** · 类型: 真能力缺口（box 原语表达不了圆润模型·owner 2026-06-28 拍板开做）
 
 > **背景**：owner（junbai.li）2026-06-28 拍板做「轻量 3D 渲染场景」——模型导入打头阵（圆润真模型，box/plane 原语表达不了，是真缺口非重组）。技术栈维持纯 Three.js（已确认零裸 WebGL），用 `three/addons` 的 `GLTFLoader`。规模上限暂不硬限（owner：先做功能）。

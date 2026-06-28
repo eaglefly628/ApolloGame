@@ -24,17 +24,26 @@ function setup(opts: TurnViewOpts = {}) {
 describe('Game G · turn-battle-screen live mount 交互（doc24 回合制 · DOM · happy-dom）', () => {
   it('画框渲齐 data 钩子：四选一/结束回合/换皮/手牌/三路格/8 门钮', () => {
     const { host } = setup({ settingsOpen: true }); // 换皮(主题)按钮现归 ⚙ 设置面板（topbar 重组 bfa0fd69）→ 开面板才渲
-    for (const sel of ['[data-act="draw"]', '[data-act="deploy"]', '[data-act="cast"]', '[data-act="discard"]',
-      '[data-act="end"]', '[data-act="settings-toggle"]', '[data-act="theme"][data-k="onyx"]', '[data-act="theme"][data-k="brocade"]',
+    for (const sel of ['[data-action="draw"]', '[data-action="deploy"]', '[data-action="cast"]', '[data-action="discard"]', // 四选一已迁数据驱动动作菜单 → data-action
+      '[data-action="end"]', '[data-action="settings-toggle"]', '[data-action="theme"][data-arg="onyx"]', '[data-action="theme"][data-arg="brocade"]', // end/settings-toggle/theme 均迁 LayoutNode（设置浮层 Segmented）→ data-action[+data-arg]
+      '[data-action="go-back"]',
       '[data-hand="0"]', '[data-hand="1"]', '[data-lane="0"]', '[data-lane="1"]', '[data-lane="2"]',
       '[data-gate="0"]', '[data-gate="7"]']) {
       expect(host.querySelector(sel), sel).not.toBeNull();
     }
   });
 
+  it('按下数据驱动顶栏（LayoutNode·data-action）→ goBack / toggleSettings（统一委托接 data-action）', () => {
+    const { host, actions } = setup();
+    press(host.querySelector('[data-action="go-back"]'));
+    press(host.querySelector('[data-action="settings-toggle"]'));
+    expect(actions.goBack).toHaveBeenCalledTimes(1);
+    expect(actions.toggleSettings).toHaveBeenCalledTimes(1);
+  });
+
   it('按下四选一动作 → pickAction(类别)', () => {
     const { host, actions } = setup();
-    press(host.querySelector('[data-act="deploy"]'));
+    press(host.querySelector('[data-action="deploy"]'));
     expect(actions.pickAction).toHaveBeenCalledWith('deploy');
   });
 
@@ -59,8 +68,8 @@ describe('Game G · turn-battle-screen live mount 交互（doc24 回合制 · DO
 
   it('按下结束回合 / 换皮 → endTurn / setTheme', () => {
     const { host, actions } = setup({ settingsOpen: true }); // 主题钮在 ⚙ 设置面板内
-    press(host.querySelector('[data-act="end"]'));
-    press(host.querySelector('[data-act="theme"][data-k="brocade"]'));
+    press(host.querySelector('[data-action="end"]'));
+    press(host.querySelector('[data-action="theme"][data-arg="brocade"]'));
     expect(actions.endTurn).toHaveBeenCalledTimes(1);
     expect(actions.setTheme).toHaveBeenCalledWith('brocade');
   });
@@ -75,16 +84,17 @@ describe('Game G · turn-battle-screen live mount 交互（doc24 回合制 · DO
 
   it('抽牌模式 → 渲两库钮，按下 → drawFrom(poker/tengang)', () => {
     const { host, actions } = setup({ selMode: 'draw' });
-    press(host.querySelector('[data-act="draw-poker"]'));
-    press(host.querySelector('[data-act="draw-tengang"]'));
+    press(host.querySelector('[data-action="draw-poker"]'));
+    press(host.querySelector('[data-action="draw-tengang"]'));
     expect(actions.drawFrom.mock.calls.map((c) => c[0])).toEqual(['poker', 'tengang']);
   });
 
-  it('教学钩子（doc28·纯表现层）：tutorial 旁白横幅 + 高亮被强制元素', () => {
+  it('教学钩子（doc28·纯表现层）：tutorial 旁白横幅 + 抽牌钮可被 coachmark 锚点高亮', () => {
     const { host } = setup({ tutorial: { narration: '每回合只能选一类，先【抽牌】。', highlight: 'act:draw' } });
-    expect(host.textContent).toContain('每回合只能选一类'); // 教官旁白横幅
+    expect(host.textContent).toContain('每回合只能选一类'); // 教官旁白横幅（仍手写覆盖层·tutorial.narration）
     expect(host.innerHTML).toContain('🎓');
-    expect(host.innerHTML).toContain('g-hl'); // 金描边脉冲高亮（套在抽牌钮上）
+    // 动作钮迁 LayoutNode 后，高亮不再走内联 g-hl 描边，而由 coachmark overlay 经 data-anchor spotlight；锚点即高亮目标。
+    expect(host.querySelector('[data-anchor="combat-draw"]'), 'combat-draw 锚点').not.toBeNull();
   });
 
   it('放牌待落点：渲手指 👆 +「放这里」轻点指示（owner 2026-06-21）', () => {

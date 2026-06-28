@@ -16,21 +16,21 @@ describe('Game G · 流程走查（出征→结算→继续·happy-dom）', () =
       click(c.querySelector('[data-action="play"]'));
       const skipStory = (): void => { const s = c.querySelector('[data-act="story-skip"]'); if (s) click(s); }; // doc27 每关开局演出 → 跳过进战斗
       skipStory();
-      expect(c.querySelector('[data-act="end"]'), '进战斗屏').not.toBeNull();
+      expect(c.querySelector('[data-action="end"]'), '进战斗屏').not.toBeNull();
 
       let settled = false;
       expect(() => {
         for (let turn = 0; turn < 160 && !settled; turn++) {
           // 有手牌→放牌(轮转三路)；手空→抽牌补；再结束回合→冲特写计时（智能些·能赢→也走三选一）
           if (c.querySelector('[data-hand="0"]')) {
-            press(c.querySelector('[data-act="deploy"]'));
+            press(c.querySelector('[data-action="deploy"]'));
             press(c.querySelector('[data-hand="0"]'));
             press(c.querySelector(`[data-lane="${turn % 3}"]`));
           } else {
-            press(c.querySelector('[data-act="draw"]'));
-            press(c.querySelector('[data-act="draw-poker"]'));
+            press(c.querySelector('[data-action="draw"]'));
+            press(c.querySelector('[data-action="draw-poker"]'));
           }
-          press(c.querySelector('[data-act="end"]'));
+          press(c.querySelector('[data-action="end"]'));
           // 逐场掷命（owner 2026-06-21）：前奏→点🎲掷骰揭晓→看明白了→战胜硬币(我方点掷/敌方自动)落定→继续，推进直到无对决
           let g = 0;
           vi.runAllTimers();                                                                  // 冲掉「即将交战」前奏 → 现首个掷骰/看明白了
@@ -55,7 +55,7 @@ describe('Game G · 流程走查（出征→结算→继续·happy-dom）', () =
       const onLobby = c.querySelector('[data-action="play"]');
       const onBetween = c.textContent?.includes('三选一') || c.querySelector('[data-between]');
       const onStory = c.querySelector('[data-act="story-skip"]');
-      const onBattle = c.querySelector('[data-act="end"]');
+      const onBattle = c.querySelector('[data-action="end"]');
       expect(Boolean(onLobby) || Boolean(onBetween) || Boolean(onStory) || Boolean(onBattle), '转到合法屏').toBe(true);
 
       cleanup(); c.remove();

@@ -21,7 +21,7 @@ describe('Game G · 集成：出征进【回合制】战斗屏（doc24·happy-do
     const skip = container.querySelector('[data-act="story-skip"]');
     if (skip) click(skip);
     // 进回合制战斗屏：四选一动作 + 结束回合 + 8 门钮 + 三路格（旧实时三路屏没有这些 data 钩子）
-    for (const sel of ['[data-act="end"]', '[data-act="draw"]', '[data-act="deploy"]', '[data-gate="0"]', '[data-lane="0"]', '[data-lane="2"]']) {
+    for (const sel of ['[data-action="end"]', '[data-action="draw"]', '[data-action="deploy"]', '[data-gate="0"]', '[data-lane="0"]', '[data-lane="2"]']) {
       expect(container.querySelector(sel), sel).not.toBeNull();
     }
     cleanup();
@@ -38,11 +38,11 @@ describe('Game G · 集成：出征进【回合制】战斗屏（doc24·happy-do
       click(container.querySelector('[data-action="play"]'));
       { const skip = container.querySelector('[data-act="story-skip"]'); if (skip) click(skip); } // 跳过开局演出 → 进战斗
       expect(() => {
-        press(container.querySelector('[data-act="deploy"]'));   // 选放牌
+        press(container.querySelector('[data-action="deploy"]'));   // 选放牌
         press(container.querySelector('[data-hand="0"]'));        // 选第一张手牌
         press(container.querySelector('[data-lane="1"]'));        // 落子中路
         press(container.querySelector('[data-gate="0"]'));        // 翻一道捷径门
-        press(container.querySelector('[data-act="end"]'));       // 结束回合 → 推进 + AI
+        press(container.querySelector('[data-action="end"]'));       // 结束回合 → 推进 + AI
         let g = 0;                                                // 逐场掷命：前奏(2s)→看明白了→战胜硬币(我方点掷/敌方自动)落定→继续
         vi.runAllTimers();                                        // 冲掉「即将交战」前奏 → 现首个「看明白了」
         while (container.querySelector('[data-act="clash-ok"]') && g++ < 400) {
@@ -55,7 +55,7 @@ describe('Game G · 集成：出征进【回合制】战斗屏（doc24·happy-do
         vi.runAllTimers();
       }).not.toThrow();
       // 流程后仍在战斗(回到我方回合)或已结算(结果面板)——两者皆合法、皆不应崩
-      const stillBattle = container.querySelector('[data-act="end"]');
+      const stillBattle = container.querySelector('[data-action="end"]');
       const settled = container.querySelector('#gg-result-cont');
       expect(Boolean(stillBattle) || Boolean(settled)).toBe(true);
       cleanup();

@@ -6,6 +6,8 @@ import { cardPoints } from './clash-resolve.js';
 import { SLOTS, manaGain, GATES, A_DEPLOY_SLOT, B_DEPLOY_SLOT, DEPLOY_COST, CAST_COST, clashOdds, type TurnBattle, type TurnUnit } from './turn-combat.js';
 import { FONTS } from './fonts.js'; // 自托管字体（替代外部 Google Fonts <link>）
 import { heroNameOf } from './hero-codex.js'; // 场上牌悬浮显其对应武将名（owner 2026-06-21·数据已在 HERO_CARDS）
+import { renderNode, type LayoutNode } from '@ui/components/index.js'; // 数据驱动 UI 库：HUD chrome 由 LayoutNode 描述、renderNode 出串（UI 铁律·战斗屏 HUD 迁移）
+import { GG_BATTLE_THEME } from './ui-theme.js'; // 桥接 CSS 变量的引擎组件主题 → renderNode 片段随玄铁/锦霞皮自动换色
 
 type Style = Record<string, string | number | undefined>;
 const st = (o: Style): string => Object.entries(o).filter(([, v]) => v !== undefined).map(([k, v]) => k.replace(/[A-Z]/g, (m) => '-' + m.toLowerCase()) + ':' + v).join(';');
@@ -435,15 +437,119 @@ function clashOverlay(cv: TurnClashView): string {
 
 /** 回合制战斗屏「画框」HTML（固定 1340×858·无页 root·供 live mount 缩放嵌入）。双皮 token 由外层挂。
  *  drain：本次刚消耗的召唤源泉（from=收退起格·count=退几格）→ 源泉「往后退」收退动效（owner 2026-06-21）。静态渲染/golden 默认无。 */
+// ── 顶栏（数据驱动·UI 铁律）：章 + 战斗名 + 回合盒 + 返回/设置 ────────────────────
+// 取代手写 topbar HTML：纯 LayoutNode 数据 → renderNode（喂 GG_BATTLE_THEME 桥接 CSS 变量·随皮换色）。
+// action 信号（go-back / settings-toggle）经 renderNode 渲成 data-action → mountTurnBattle 的 pointerdown 委托统一接（同 data-act）。
+function topbarNode(view: TurnBattleView): LayoutNode {
+  const idCol: LayoutNode = {
+    type: 'Panel', id: 'ggt-tb-idcol', props: { bare: true }, layout: { direction: 'column', gap: 1 },
+    children: [
+      { type: 'Label', id: 'ggt-tb-label', props: { text: view.battleLabel, size: 'lg', color: 'text', bold: true } },
+      { type: 'Label', id: 'ggt-tb-mode', props: { text: '单机 · 回合制', size: 'xs', color: 'dim' } },
+    ],
+  };
+  const idGroup: LayoutNode = {
+    type: 'Panel', id: 'ggt-tb-id', props: { bare: true }, layout: { direction: 'row', gap: 11, align: 'center' },
+    children: [{ type: 'Avatar', id: 'ggt-tb-seal', props: { name: '♠', shape: 'rounded', size: 42 } }, idCol],
+  };
+  const turnBox: LayoutNode = {
+    type: 'Panel', id: 'ggt-tb-turn', props: { accent: true }, layout: { direction: 'row', gap: 9, align: 'center', padding: 7 },
+    children: [
+      { type: 'Label', id: 'ggt-tb-dot', props: { text: '●', size: 'xs', color: 'warn', glow: true } },
+      { type: 'Panel', id: 'ggt-tb-turncol', props: { bare: true }, layout: { direction: 'column', gap: 1 }, children: [
+        { type: 'Label', id: 'ggt-tb-who', props: { text: view.turnWho, size: 'md', color: 'text', bold: true } },
+        { type: 'Label', id: 'ggt-tb-round', props: { text: `第 ${view.roundNo} 回合`, size: 'xs', color: 'dim' } },
+      ] },
+    ],
+  };
+  return {
+    type: 'Panel', id: 'ggt-topbar', props: { bare: true }, layout: { direction: 'row', gap: 10, align: 'center' },
+    children: [
+      idGroup,
+      { type: 'Panel', id: 'ggt-tb-spacer', props: { bare: true }, layout: { flex: 1 } },
+      turnBox,
+      { type: 'Button', id: 'ggt-tb-back', props: { label: '← 返回大厅', kind: 'ghost', action: 'go-back' } },
+      { type: 'Button', id: 'ggt-tb-gear', props: { label: '⚙', kind: view.settingsOpen ? 'primary' : 'ghost', action: 'settings-toggle' } },
+    ],
+  };
+}
+
+// ── 动作菜单（数据驱动·UI 铁律）：四选一 + 摸牌二选 + 操作提示 ──────────────────────
+// 取代手写 actBtn 网格：四动作=Button（glyph 入 label·on→primary / dim→quiet / 常态→ghost·均可点·同原 dim 仍可点）。
+// 锚点（combat-draw/deploy/cast/discard·combat-draw-pick）经 layout.anchor → data-anchor，battle-coach spotlight 不变。
+function actionMenuNode(view: TurnBattleView): LayoutNode {
+  const actBtn = (a: TurnActionView): LayoutNode => ({
+    type: 'Button', id: `ggt-act-${a.key}`,
+    props: { label: `${a.glyph} ${a.label}`, kind: a.on ? 'primary' : a.dim ? 'quiet' : 'ghost', action: a.key },
+    layout: { anchor: `combat-${a.key}` },
+  });
+  const grid: LayoutNode = {
+    type: 'Panel', id: 'ggt-act-grid', props: { bare: true }, layout: { direction: 'grid', cols: 2, gap: 8 },
+    children: view.actions.map(actBtn),
+  };
+  const drawPick: LayoutNode = {
+    type: 'Panel', id: 'ggt-draw-pick', props: { bare: true }, layout: { direction: 'row', gap: 7, anchor: 'combat-draw-pick' },
+    children: [
+      { type: 'Button', id: 'ggt-draw-poker', props: { label: '🎴 摸扑克', kind: 'ghost', action: 'draw-poker' }, layout: { flex: 1 } },
+      { type: 'Button', id: 'ggt-draw-tengang', props: { label: '✦ 摸天罡', kind: 'ghost', action: 'draw-tengang' }, layout: { flex: 1 } },
+    ],
+  };
+  const hint: LayoutNode = { type: 'Label', id: 'ggt-act-hint', props: { text: view.actionSub, size: 'xs', color: 'dim' } };
+  return {
+    type: 'Panel', id: 'ggt-actionmenu', props: {}, layout: { direction: 'column', gap: 9, width: 230, padding: 13 },
+    children: view.drawPick ? [grid, drawPick, hint] : [grid, hint],
+  };
+}
+
+// ── 结束回合钮（数据驱动）：金色倒角 CTA = Button kind:'hero'（下沉自出征键的同款金色 sheen·锚点 combat-end）。
+function endTurnNode(): LayoutNode {
+  return { type: 'Button', id: 'ggt-end', props: { label: '结束回合 ▸', kind: 'hero', action: 'end' }, layout: { width: 156, anchor: 'combat-end' } };
+}
+
+// ── 设置浮层（数据驱动·UI 铁律）：音效/BGM(+曲目+音量)/新手引导 开关 + 主题分段 ──────────
+// 取代手写 settingsPanel：开关=Button(开/关)·曲目=Button(active)·音量=±Button·主题=Segmented。
+// 信号 toggle-sfx/toggle-bgm/toggle-guide / bgm-track(arg=序号) / bgm-vol(arg=up|down) / theme(arg=皮)
+// 经 renderNode → data-action[+data-arg]，统一 pointerdown 委托接（同 data-act/data-k 路）。
+function settingsNode(view: TurnBattleView): LayoutNode {
+  const tog = (id: string, label: string, on: boolean, action: string): LayoutNode => ({
+    type: 'Panel', id: `ggt-set-${id}`, props: { bare: true }, layout: { direction: 'row', gap: 8, align: 'center' },
+    children: [
+      { type: 'Label', id: `ggt-set-${id}-l`, props: { text: label, size: 'sm', color: 'text' }, layout: { flex: 1 } },
+      { type: 'Button', id: `ggt-set-${id}-b`, props: { label: on ? '开' : '关', kind: on ? 'primary' : 'ghost', action } },
+    ],
+  });
+  const children: LayoutNode[] = [
+    { type: 'Label', id: 'ggt-set-title', props: { text: '⚙ 设置', size: 'xs', color: 'dim', bold: true, tracking: 2 } },
+    tog('sfx', `${view.sfxOn ? '🔊' : '🔇'} 音效`, view.sfxOn, 'toggle-sfx'),
+    tog('bgm', '🎵 背景音乐', view.bgmOn, 'toggle-bgm'),
+  ];
+  if (view.bgmOn) {
+    children.push({
+      type: 'Panel', id: 'ggt-set-tracks', props: { bare: true }, layout: { direction: 'column', gap: 4 },
+      children: view.bgmNames.map((nm, i) => ({
+        type: 'Button', id: `ggt-set-track-${i}`,
+        props: { label: (view.bgmIdx === i ? '♪ ' : '') + nm, kind: view.bgmIdx === i ? 'primary' : 'ghost', action: 'bgm-track', actionArg: String(i) },
+      })),
+    });
+    children.push({
+      type: 'Panel', id: 'ggt-set-vol', props: { bare: true }, layout: { direction: 'row', gap: 8, align: 'center' },
+      children: [
+        { type: 'Label', id: 'ggt-set-vol-l', props: { text: '音量', size: 'xs', color: 'dim' }, layout: { flex: 1 } },
+        { type: 'Button', id: 'ggt-set-vol-d', props: { label: '−', kind: 'ghost', action: 'bgm-vol', actionArg: 'down' } },
+        { type: 'Label', id: 'ggt-set-vol-v', props: { text: `${Math.round(view.bgmVol * 100)}%`, size: 'sm', color: 'text', mono: true } },
+        { type: 'Button', id: 'ggt-set-vol-u', props: { label: '＋', kind: 'ghost', action: 'bgm-vol', actionArg: 'up' } },
+      ],
+    });
+  }
+  children.push(tog('guide', '🎓 新手引导', !!view.guideOn, 'toggle-guide'));
+  children.push({ type: 'Label', id: 'ggt-set-theme-l', props: { text: '主题', size: 'xs', color: 'dim', bold: true, tracking: 2 } });
+  children.push({ type: 'Segmented', id: 'ggt-set-theme', props: { options: [{ value: 'onyx', label: '玄铁' }, { value: 'brocade', label: '锦霞' }], value: view.theme, action: 'theme' } });
+  return { type: 'Panel', id: 'ggt-settings', props: {}, layout: { direction: 'column', gap: 9, padding: 14, width: 214 }, children };
+}
+
 export function buildTurnFrameHTML(view: TurnBattleView, drain: { from: number; count: number } = { from: 0, count: 0 }): string {
   const frame = { position: 'relative', width: '1340px', height: '858px', borderRadius: '16px', overflow: 'hidden', background: 'var(--paper)', border: '3px solid var(--frame-edge)', boxShadow: '0 30px 80px rgba(0,0,0,.6), inset 0 0 0 1px var(--hairline)', display: 'flex', flexDirection: 'column' };
-  const topbar = { display: 'flex', alignItems: 'center', gap: '10px', padding: '13px 22px', borderBottom: '1px solid var(--panel-border)' };
-  const seal = { width: '42px', height: '42px', flex: 'none', borderRadius: '11px', background: 'linear-gradient(150deg,#3a4f78,#28385a)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#fff', fontSize: '22px', border: '1px solid var(--hairline)' };
-  const turnBox = { display: 'flex', alignItems: 'center', gap: '9px', padding: '7px 14px', borderRadius: '11px', background: 'var(--accent-soft)', border: '1px solid var(--accent)' };
-  const turnDot = { width: '9px', height: '9px', borderRadius: '50%', background: 'var(--accent)', boxShadow: '0 0 8px var(--accent)' };
-  // 结束回合钮（owner 2026-06-21·从顶栏移到右下角·牌后·正方显眼位）：方形大钮·金底·收口动作流。
-  const endSquare: Style = { width: '156px', flex: 'none', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: '7px', borderRadius: '16px', clipPath: 'var(--chamfer)', cursor: 'pointer', border: 'none', background: 'var(--gold-grad)', color: '#2a1a08', fontFamily: 'var(--fh)', fontWeight: 700, fontSize: '20px', letterSpacing: '.04em', boxShadow: 'inset 0 1px 0 rgba(255,255,255,.45), 0 8px 24px rgba(232,205,138,.35)' };
-  const seg = (on: boolean): Style => ({ padding: '7px 13px', borderRadius: '9px', cursor: 'pointer', border: '1px solid ' + (on ? 'var(--gold)' : 'var(--panel-border)'), background: on ? 'var(--gold-grad)' : 'transparent', color: on ? '#2a1a08' : 'var(--ink-dim)', fontFamily: 'var(--fh)', fontWeight: 700, fontSize: '13px', whiteSpace: 'nowrap' });
+  const topbar = { display: 'flex', alignItems: 'center', padding: '13px 22px', borderBottom: '1px solid var(--panel-border)' }; // 仅留 chrome（padding+下边线）·内容已迁 topbarNode(LayoutNode)
   const body = { flex: 1, display: 'flex', flexDirection: 'column', minHeight: 0, overflow: 'hidden', padding: '10px 22px 6px', gap: '10px' };
   const boardWrap = { position: 'relative', flex: 1, minHeight: 0, display: 'flex', alignItems: 'stretch', gap: '6px', padding: '12px 10px', borderRadius: '18px', background: 'var(--board)', backgroundImage: 'radial-gradient(46% 80% at 50% 50%, rgba(232,205,138,.10), transparent 70%), repeating-linear-gradient(0deg, rgba(255,255,255,.035) 0 1px, transparent 1px 34px), repeating-linear-gradient(90deg, rgba(255,255,255,.035) 0 1px, transparent 1px 34px)', border: '6px solid var(--board-edge)', boxShadow: 'inset 0 0 0 2px rgba(255,255,255,.06), inset 0 0 90px rgba(0,0,0,.5)' };
   const lanesCol = { position: 'relative', flex: 1, display: 'flex', flexDirection: 'column', gap: '10px', justifyContent: 'stretch', minHeight: 0 };
@@ -469,13 +575,7 @@ export function buildTurnFrameHTML(view: TurnBattleView, drain: { from: number; 
   const waterPlus = { padding: '2px 9px', borderRadius: '99px', background: 'rgba(70,209,122,.18)', border: '1px solid var(--hp)', color: 'var(--hp)', fontFamily: 'var(--fh)', fontWeight: 700, fontSize: '11px', whiteSpace: 'nowrap' };
   // bottom
   const bottomBar = { position: 'relative', zIndex: 50, flex: 'none', height: '212px', display: 'flex', gap: '14px', padding: '12px 22px 16px', borderTop: '1px solid var(--panel-border)', background: 'linear-gradient(180deg,transparent,rgba(0,0,0,.18))' };
-  const actionMenu = { width: '230px', flex: 'none', padding: '13px 14px', borderRadius: '14px', background: 'var(--panel)', border: '1px solid var(--panel-border)', boxShadow: 'inset 0 0 0 1px var(--hairline)' };
-  const hi = view.tutorial?.highlight ?? '';
-  const actBtn = (a: TurnActionView): string => {
-    const s = { display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px', padding: '9px 8px', borderRadius: '10px', cursor: a.dim ? 'not-allowed' : 'pointer', border: '1px solid ' + (a.on ? 'var(--accent)' : 'var(--panel-border)'), background: a.on ? 'var(--accent-grad)' : 'var(--chip)', color: a.on ? '#fff' : 'var(--ink)', opacity: a.dim ? 0.4 : 1, boxShadow: a.on ? '0 4px 14px var(--accent-soft)' : 'none', textAlign: 'center' };
-    const icon = { width: '26px', height: '26px', flex: 'none', borderRadius: '7px', background: a.on ? 'rgba(255,255,255,.2)' : 'var(--track)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '15px' };
-    return `<button data-act="${esc(a.key)}" data-anchor="combat-${esc(a.key)}" style="${st(s)}${hi === 'act:' + a.key ? HL : ''}"><span style="${st(icon)}">${esc(a.glyph)}</span><span style="font-family:var(--fh); font-weight:700; font-size:14px;">${esc(a.label)}</span></button>`;
-  };
+  const hi = view.tutorial?.highlight ?? ''; // 棋格/手牌教学高亮（生产态 tutorial 恒空·留作未来教学）
   // 教学旁白横幅（doc28·教官旁白·覆于棋盘上方·不挡操作）。
   const narrationBanner = view.tutorial?.narration
     ? `<div style="${st({ position: 'absolute', top: '10px', left: '50%', transform: 'translateX(-50%)', zIndex: 56, maxWidth: '74%', padding: '10px 20px', borderRadius: '14px', background: 'linear-gradient(180deg,rgba(28,40,58,.97),rgba(14,24,38,.98))', border: '2px solid var(--gold)', boxShadow: '0 10px 30px rgba(0,0,0,.5), 0 0 30px rgba(232,205,138,.25)', color: 'var(--ink)', fontFamily: 'var(--fb)', fontSize: '14px', lineHeight: 1.5, textAlign: 'center', display: 'flex', alignItems: 'center', gap: '10px' })}"><span style="font-size:22px;">🎓</span><span>${esc(view.tutorial.narration)}</span></div>`
@@ -485,39 +585,15 @@ export function buildTurnFrameHTML(view: TurnBattleView, drain: { from: number; 
   const noticeBanner = view.notice
     ? `<div style="${st({ position: 'absolute', top: '10px', left: '50%', transform: 'translateX(-50%)', zIndex: 57, maxWidth: '78%', padding: '9px 20px', borderRadius: '99px', background: isWarn ? 'rgba(60,18,18,.96)' : 'rgba(20,34,26,.96)', border: '1.5px solid ' + (isWarn ? 'var(--danger)' : 'var(--hp)'), boxShadow: '0 8px 24px rgba(0,0,0,.5)', color: isWarn ? '#ffd2d2' : '#cdeccd', fontFamily: 'var(--fh)', fontWeight: 700, fontSize: '14px', whiteSpace: 'nowrap', animation: 'g-fade .2s ease both' })}">${esc(view.notice)}</div>`
     : '';
-  const actionHint = { marginTop: '9px', padding: '8px 10px', borderRadius: '9px', background: 'var(--chip)', border: '1px solid var(--panel-border)', fontSize: '11px', color: 'var(--ink-dim)', lineHeight: 1.4, textAlign: 'center' };
   const handArea = { flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column', padding: '13px 16px', borderRadius: '14px', background: 'var(--panel)', border: '1px solid var(--panel-border)', boxShadow: 'inset 0 0 0 1px var(--hairline)' };
   const handCount = { padding: '3px 10px', borderRadius: '99px', background: 'var(--accent-soft)', color: 'var(--accent)', fontFamily: 'var(--fh)', fontWeight: 700, fontSize: '11px', border: '1px solid var(--accent)' };
   const handCountGang = { padding: '3px 10px', borderRadius: '99px', background: 'rgba(140,110,255,.16)', color: '#a98bff', fontFamily: 'var(--fh)', fontWeight: 700, fontSize: '11px', border: '1px solid #a98bff' };
 
-  const drawPanel = view.drawPick
-    ? `<div data-anchor="combat-draw-pick" style="display:flex; gap:7px; margin-top:8px;"><button data-act="draw-poker" style="${st({ flex: 1, padding: '8px 6px', borderRadius: '9px', cursor: 'pointer', border: '1px solid var(--accent)', background: 'var(--chip)', color: 'var(--ink)', fontFamily: 'var(--fh)', fontWeight: 700, fontSize: '12px' })}">🎴 摸扑克</button><button data-act="draw-tengang" style="${st({ flex: 1, padding: '8px 6px', borderRadius: '9px', cursor: 'pointer', border: '1px solid #a98bff', background: 'var(--chip)', color: '#cdbcff', fontFamily: 'var(--fh)', fontWeight: 700, fontSize: '12px' })}">✦ 摸天罡</button></div>`
+  const settingsPanel = view.settingsOpen
+    ? `<div style="${st({ position: 'absolute', top: '70px', right: '22px', zIndex: 80, animation: 'g-fade .18s ease both' })}">${renderNode(settingsNode(view), GG_BATTLE_THEME)}</div>`
     : '';
-  const backBtnSty: Style = { padding: '7px 13px', borderRadius: '9px', cursor: 'pointer', border: '1px solid var(--panel-border)', background: 'transparent', color: 'var(--ink-dim)', fontFamily: 'var(--fh)', fontWeight: 700, fontSize: '12px', whiteSpace: 'nowrap' };
-  const gearSty: Style = { padding: '7px 10px', borderRadius: '9px', cursor: 'pointer', border: '1px solid ' + (view.settingsOpen ? 'var(--gold)' : 'var(--panel-border)'), background: view.settingsOpen ? 'rgba(232,205,138,.18)' : 'transparent', color: view.settingsOpen ? 'var(--gold)' : 'var(--ink-dim)', fontSize: '15px', lineHeight: 1 };
-  const togSty = (on: boolean, col = 'var(--hp)'): Style => ({ padding: '4px 11px', borderRadius: '7px', cursor: 'pointer', border: '1px solid ' + (on ? col : 'var(--panel-border)'), background: on ? 'rgba(70,209,122,.14)' : 'transparent', color: on ? col : 'var(--ink-dim)', fontFamily: 'var(--fh)', fontWeight: 700, fontSize: '12px' });
-  const sfxTogSty: Style = togSty(view.sfxOn);
-  const volBtnSty: Style = { width: '24px', height: '24px', borderRadius: '7px', cursor: 'pointer', border: '1px solid var(--panel-border)', background: 'transparent', color: 'var(--ink)', fontWeight: 700, fontSize: '14px', lineHeight: 1, fontFamily: 'var(--fh)' };
-  const trackRow = (nm: string, i: number): string => `<button data-act="bgm-track" data-k="${i}" style="${st({ display: 'block', width: '100%', textAlign: 'left', padding: '5px 9px', marginBottom: '4px', borderRadius: '7px', cursor: 'pointer', border: '1px solid ' + (view.bgmIdx === i ? 'var(--accent)' : 'var(--panel-border)'), background: view.bgmIdx === i ? 'var(--accent-soft)' : 'transparent', color: view.bgmIdx === i ? 'var(--accent)' : 'var(--ink-dim)', fontFamily: 'var(--fh)', fontWeight: 700, fontSize: '12px' })}">${view.bgmIdx === i ? '♪ ' : ''}${esc(nm)}</button>`;
-  const bgmBlock = view.bgmOn ? `<div style="margin:8px 0 2px;">${forr(view.bgmNames, (nm, i) => trackRow(nm, i))}</div>
-    <div style="display:flex;align-items:center;gap:8px;margin-bottom:6px;"><span style="flex:1;font-size:11px;color:var(--ink-dim);font-family:var(--fh);">音量</span><button data-act="bgm-vol" data-k="down" style="${st(volBtnSty)}">−</button><span style="min-width:34px;text-align:center;font-size:12px;color:var(--ink);font-family:var(--fn);">${Math.round(view.bgmVol * 100)}%</span><button data-act="bgm-vol" data-k="up" style="${st(volBtnSty)}">＋</button></div>` : '';
-  const settingsPanel = view.settingsOpen ? `<div style="${st({ position: 'absolute', top: '70px', right: '22px', zIndex: 80, padding: '14px 16px', borderRadius: '14px', background: 'var(--panel)', border: '1px solid var(--panel-border)', boxShadow: '0 8px 30px rgba(0,0,0,.6), inset 0 0 0 1px var(--hairline)', minWidth: '214px', animation: 'g-fade .18s ease both' })}">
-    <div style="font-size:10px;letter-spacing:.16em;text-transform:uppercase;color:var(--ink-dim);margin-bottom:10px;font-weight:700;">⚙ 设置</div>
-    <div style="display:flex;align-items:center;gap:8px;margin-bottom:10px;"><span style="flex:1;font-size:13px;color:var(--ink);font-family:var(--fh);">${view.sfxOn ? '🔊' : '🔇'} 音效</span><button data-act="toggle-sfx" style="${st(sfxTogSty)}">${view.sfxOn ? '开' : '关'}</button></div>
-    <div style="display:flex;align-items:center;gap:8px;margin-bottom:2px;"><span style="flex:1;font-size:13px;color:var(--ink);font-family:var(--fh);">${view.bgmOn ? '🎵' : '🎵'} 背景音乐</span><button data-act="toggle-bgm" style="${st(togSty(view.bgmOn, 'var(--accent)'))}">${view.bgmOn ? '开' : '关'}</button></div>
-    ${bgmBlock}
-    <div style="display:flex;align-items:center;gap:8px;margin:10px 0;"><span style="flex:1;font-size:13px;color:var(--ink);font-family:var(--fh);">🎓 新手引导</span><button data-act="toggle-guide" style="${st(togSty(!!view.guideOn, 'var(--accent)'))}">${view.guideOn ? '开' : '关'}</button></div>
-    <div style="font-size:10px;letter-spacing:.12em;text-transform:uppercase;color:var(--ink-dim);margin-bottom:6px;font-weight:700;">主题</div>
-    <div style="display:flex;gap:6px;"><button data-act="theme" data-k="onyx" style="${st(seg(view.theme === 'onyx'))}">玄铁</button><button data-act="theme" data-k="brocade" style="${st(seg(view.theme === 'brocade'))}">锦霞</button></div>
-  </div>` : '';
   return `<div style="${st(frame)}">
-    <div style="${st(topbar)}">
-      <div style="display:flex; align-items:center; gap:11px;"><div style="${st(seal)}">♠</div><div style="display:flex; flex-direction:column; line-height:1.2;"><span style="font-family:var(--fh); font-weight:700; font-size:15px; color:var(--ink); white-space:nowrap;">${esc(view.battleLabel)}</span><span style="font-size:10px; color:var(--ink-dim);">单机 · 回合制</span></div></div>
-      <div style="flex:1;"></div>
-      <div style="${st(turnBox)}"><span style="${st(turnDot)}"></span><div style="display:flex; flex-direction:column; line-height:1.15;"><span style="font-family:var(--fh); font-weight:700; font-size:14px; color:var(--ink);">${esc(view.turnWho)}</span><span style="font-size:10px; color:var(--ink-dim);">第 ${view.roundNo} 回合</span></div></div>
-      <button data-act="go-back" style="${st(backBtnSty)}">← 返回大厅</button>
-      <button data-act="settings-toggle" style="${st(gearSty)}">⚙</button>
-    </div>
+    <div style="${st(topbar)}">${renderNode(topbarNode(view), GG_BATTLE_THEME)}</div>
     ${settingsPanel}
     <div style="${st(body)}">
       <div style="${st(boardWrap)}">
@@ -545,16 +621,12 @@ export function buildTurnFrameHTML(view: TurnBattleView, drain: { from: number; 
       </div>
     </div>
     <div style="${st(bottomBar)}">
-      <div style="${st(actionMenu)}">
-        <div style="display:grid; grid-template-columns:1fr 1fr; gap:8px;">${forr(view.actions, actBtn)}</div>
-        ${drawPanel}
-        <div style="${st(actionHint)}">${esc(view.actionSub)}</div>
-      </div>
+      ${renderNode(actionMenuNode(view), GG_BATTLE_THEME)}
       <div style="${st(handArea)}">
         <div style="display:flex; align-items:center; gap:10px; margin-bottom:10px;"><span style="font-family:var(--fh); font-weight:700; font-size:14px; color:var(--ink); letter-spacing:.04em;">手牌</span><span style="${st(handCount)}">兵牌 ${view.handPawnCount}</span><span style="${st(handCountGang)}">天罡 ${view.handGangCount}</span><div style="flex:1;"></div><span style="font-size:11px; color:var(--ink-dim);">放牌消耗召唤源泉 · 点动作选「放牌」后落子</span></div>
         <div style="display:flex; gap:11px; align-items:flex-end;">${forr(view.hand, (c, i) => handCard(c, i, hi === 'hand:' + i, i === 0 ? 'right' : i === view.hand.length - 1 ? 'left' : ''))}</div>
       </div>
-      <button data-act="end" data-anchor="combat-end" style="${st(endSquare)}${hi === 'end' ? HL : ''}"><span style="font-size:34px;line-height:1">▸</span><span>结束回合</span></button>
+      ${renderNode(endTurnNode(), GG_BATTLE_THEME)}
     </div>
     ${view.clash ? clashOverlay(view.clash) : ''}
   </div>`;
@@ -695,9 +767,9 @@ export function mountTurnBattle(host: HTMLElement, getView: () => TurnBattleView
       }
       actions.selectHand?.(idx); render(); return;
     }
-    const act = t.closest('[data-act]') as HTMLElement | null;
+    const act = t.closest('[data-act],[data-action]') as HTMLElement | null; // data-act=手写片段；data-action=renderNode 数据驱动片段（顶栏等迁 LayoutNode·UI 铁律）·同一委托统一接
     if (act) {
-      const a = act.dataset.act, k = act.dataset.k ?? '';
+      const a = act.dataset.act ?? act.dataset.action, k = act.dataset.k ?? act.dataset.arg ?? '';
       if (a === 'end') actions.endTurn?.();
       else if (a === 'clash-ok') actions.clashConfirm?.();
       else if (a === 'clash-roll') { actions.clashRoll?.(); return; } // 自己播掷骰动效·不整片重渲(防卡牌飞入重启)
