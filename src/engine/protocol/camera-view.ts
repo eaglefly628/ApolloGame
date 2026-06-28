@@ -1,5 +1,5 @@
 import type { IWorld } from '../core/types.js';
-import type { Camera, Camera3D, Sky3D } from './components.js';
+import type { Camera, Camera3D, Sky3D, Light3D, Post3D } from './components.js';
 
 // ═══════════════════════════════════════════════════════════════
 //  相机视图 —— 世界↔屏幕投影的**单一真相**（共享契约层）。
@@ -43,6 +43,25 @@ export function getSky3D(world: IWorld): Sky3D | null {
   for (const [e] of world.query('Sky3D')) {
     const c = world.getComponent<Sky3D>(e, 'Sky3D');
     if (c) return c;
+  }
+  return null;
+}
+
+// 取世界里所有 3D 灯（带实体 id·渲染器据此池管理）。无 → null 时 3D 后端退回默认暖主光+冷补光（向后兼容）。
+export function getLights3D(world: IWorld): Array<[string, Light3D]> {
+  const out: Array<[string, Light3D]> = [];
+  for (const [e] of world.query('Light3D')) {
+    const l = world.getComponent<Light3D>(e, 'Light3D');
+    if (l) out.push([e, l]);
+  }
+  return out;
+}
+
+// 取世界里的后处理单例（第一个挂 Post3D 的实体）。无则 null → 3D 后端直接渲染（不开 EffectComposer·向后兼容）。
+export function getPost3D(world: IWorld): Post3D | null {
+  for (const [e] of world.query('Post3D')) {
+    const p = world.getComponent<Post3D>(e, 'Post3D');
+    if (p) return p;
   }
   return null;
 }

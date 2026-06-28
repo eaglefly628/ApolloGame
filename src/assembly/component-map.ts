@@ -42,6 +42,7 @@ import type {
   InputQueue,
   KeyBinding,
   Launch,
+  Light3D,
   Mass,
   MatchBoard,
   MergeRule,
@@ -51,6 +52,7 @@ import type {
   OverTime,
   Overlap,
   PerCardRetrigger,
+  Post3D,
   PerCardRule,
   PerCardScore,
   Perception,
@@ -136,6 +138,7 @@ export interface ComponentDataMap {
   InputQueue: Omit<InputQueue, 'type'>;
   KeyBinding: Omit<KeyBinding, 'type'>;
   Launch: Omit<Launch, 'type'>;
+  Light3D: Omit<Light3D, 'type'>;
   Mass: Omit<Mass, 'type'>;
   MatchBoard: Omit<MatchBoard, 'type'>;
   MergeRule: Omit<MergeRule, 'type'>;
@@ -145,6 +148,7 @@ export interface ComponentDataMap {
   OverTime: Omit<OverTime, 'type'>;
   Overlap: Omit<Overlap, 'type'>;
   PerCardRetrigger: Omit<PerCardRetrigger, 'type'>;
+  Post3D: Omit<Post3D, 'type'>;
   PerCardRule: Omit<PerCardRule, 'type'>;
   PerCardScore: Omit<PerCardScore, 'type'>;
   Perception: Omit<Perception, 'type'>;

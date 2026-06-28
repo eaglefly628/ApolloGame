@@ -4,7 +4,7 @@ import { describe, it, expect } from 'vitest';
 import { Engine } from '../../runtime/engine.js';
 import { dioramaBlueprint } from './diorama.js';
 import { collectRenderables } from '@renderer/renderable.js';
-import { getCamera3D, getSky3D } from '@engine/protocol/camera-view.js';
+import { getCamera3D, getSky3D, getLights3D, getPost3D } from '@engine/protocol/camera-view.js';
 import type { Transform, Transform3D, Velocity, Mesh3D, Model3D } from '@engine/protocol/components.js';
 
 describe('Game Z · 3D 盒庭蓝图（纯数据 · 仅现成 motion-apply 能力）', () => {
@@ -46,6 +46,15 @@ describe('Game Z · 3D 盒庭蓝图（纯数据 · 仅现成 motion-apply 能力
     const e = new Engine();
     e.load(dioramaBlueprint());
     expect(getSky3D(e.world)?.clouds).toBe(true);
+  });
+
+  it('数据化光照 + 后处理：sun(directional·投影) + fill(ambient) + post(移轴/泛光)', () => {
+    const e = new Engine();
+    e.load(dioramaBlueprint());
+    const lights = getLights3D(e.world);
+    expect(lights.map(([, l]) => l.kind).sort()).toEqual(['ambient', 'directional']);
+    expect(lights.find(([, l]) => l.kind === 'directional')?.[1].castShadow).toBe(true);
+    expect(getPost3D(e.world)?.tiltShift).toBeTruthy();
   });
 
   it('可控角色 hero：2D Transform + Velocity + Model3D 小黄鸭（无 transform3d·盒庭模式落地面）', () => {

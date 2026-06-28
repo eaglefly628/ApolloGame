@@ -1,10 +1,17 @@
 import * as THREE from 'three';
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
+import { EffectComposer } from 'three/addons/postprocessing/EffectComposer.js';
+import { RenderPass } from 'three/addons/postprocessing/RenderPass.js';
+import { ShaderPass } from 'three/addons/postprocessing/ShaderPass.js';
+import { UnrealBloomPass } from 'three/addons/postprocessing/UnrealBloomPass.js';
+import { OutputPass } from 'three/addons/postprocessing/OutputPass.js';
+import { HorizontalTiltShiftShader } from 'three/addons/shaders/HorizontalTiltShiftShader.js';
+import { VerticalTiltShiftShader } from 'three/addons/shaders/VerticalTiltShiftShader.js';
 import type { IWorld, RendererBackend } from '@engine/core/types.js';
-import type { Mesh3D, Model3D, Sky3D } from '@engine/protocol/components.js';
+import type { Mesh3D, Model3D, Sky3D, Light3D, Post3D } from '@engine/protocol/components.js';
 import type { AssetManager } from '@assets/index.js';
 import { isImageHandle, isModelHandle } from '@assets/index.js';
-import { getCamera3D, getSky3D } from '@engine/protocol/camera-view.js';
+import { getCamera3D, getSky3D, getLights3D, getPost3D } from '@engine/protocol/camera-view.js';
 import { collectRenderables, chooseRenderMode, type Renderable } from './renderable.js';
 import {
   renderablePose, poseBounds, fitPerspective, flipEuler, mesh3dDepth, type Pose3D,
@@ -38,6 +45,14 @@ export class ThreeRenderer implements RendererBackend {
   private scene!: THREE.Scene;
   private camera!: THREE.PerspectiveCamera;
   private key!: THREE.DirectionalLight; // 主方向光（盒庭模式投柔和阴影 + 每帧随场景定位）
+  private ambient!: THREE.AmbientLight; // 环境补光（Light3D 在场时由数据驱动·否则引擎默认冷蓝）
+  private readonly extraLights = new Map<string, THREE.DirectionalLight>(); // 数据驱动的额外平行光（非阴影·池管理）
+  private shadowDir?: { x: number; y: number; z: number }; // 主阴影灯朝向提示（Light3D 给·缺省盒庭暖侧光向）
+  // ── 后处理（Post3D · EffectComposer）── 懒建；无 Post3D 时直接 gl.render（向后兼容）。
+  private composer?: EffectComposer;
+  private hTilt?: ShaderPass;
+  private vTilt?: ShaderPass;
+  private bloom?: UnrealBloomPass;
   private sky: THREE.Mesh | null = null; // 天空盒（Sky3D 在场时建·内面大球）
   private skySig = ''; // 天空盒参数签名（变了才重建纹理）
   private frame = 0; // 帧计数（render-only·云飘等表现动画用·不进 hash）
@@ -83,8 +98,9 @@ export class ThreeRenderer implements RendererBackend {
     this.scene.add(key);
     this.scene.add(key.target);
     this.key = key;
-    // 环境补光压低（0.4）→ 让接触阴影看得见、对比出体积；过高会把影子洗掉。
-    this.scene.add(new THREE.AmbientLight(0xbfd2ff, 0.4));
+    // 环境补光压低（0.4）→ 让接触阴影看得见、对比出体积；过高会把影子洗掉。Light3D 在场时由数据覆盖。
+    this.ambient = new THREE.AmbientLight(0xbfd2ff, 0.4);
+    this.scene.add(this.ambient);
     this.gl = new THREE.WebGLRenderer({ antialias: true });
     this.gl.setSize(this.width, this.height);
     this.gl.shadowMap.enabled = true;
@@ -98,6 +114,7 @@ export class ThreeRenderer implements RendererBackend {
     this.frame++;
     const cam3d = getCamera3D(world); // 盒庭模式开关（在场=轨道相机 + 2D 实体落地面 + 柔和阴影）
     this.syncSky(getSky3D(world)); // 天空盒（Sky3D 在场建、不在场拆）
+    this.syncLights(getLights3D(world)); // 数据化光照（Light3D 在场则数据驱动·否则引擎默认暖冷光）
 
     for (const r of collectRenderables(world)) {
       // 导入式 3D 模型（Model3D · glTF）：圆润真模型，优先于 box 原语。位姿与 Mesh3D 同套路
@@ -183,7 +200,7 @@ export class ThreeRenderer implements RendererBackend {
       const p = orbitCamera(center, dist, cam3d.yaw, cam3d.pitch);
       this.camera.position.set(p.x, p.y, p.z);
       this.camera.lookAt(center.x, center.y, center.z);
-      this.placeShadow(center, radius);
+      this.placeShadow(center, radius, this.shadowDir);
     } else {
       const fit = fitPerspective(poseBounds(poses), this.fov, this.width / this.height);
       this.camera.position.set(fit.cx, fit.cy, fit.dist);
@@ -210,7 +227,14 @@ export class ThreeRenderer implements RendererBackend {
         this.modelKeyOf.delete(id);
       }
     }
-    this.gl.render(this.scene, this.camera);
+    // 渲染：有 Post3D → EffectComposer 后处理管线（移轴/泛光）；否则直接渲染（向后兼容）。
+    const post = getPost3D(world);
+    if (post) {
+      this.syncPost(post);
+      this.composer!.render();
+    } else {
+      this.gl.render(this.scene, this.camera);
+    }
   }
 
   destroy(): void {
@@ -234,6 +258,11 @@ export class ThreeRenderer implements RendererBackend {
     this.modelState.clear();
     for (const [, t] of this.texCache) t.dispose();
     this.texCache.clear();
+    // 数据光 + 后处理管线。
+    for (const [, l] of this.extraLights) { this.scene.remove(l); this.scene.remove(l.target); }
+    this.extraLights.clear();
+    this.composer?.dispose();
+    this.composer = undefined;
     this.gl.dispose();
     this.gl.domElement.remove();
   }
@@ -257,10 +286,12 @@ export class ThreeRenderer implements RendererBackend {
 
   // 盒庭模式：把主方向光摆到场景右上前方（暖调侧光），阴影正交相机框住整个盒庭（半径 radius）。
   // 每帧据场景中心/半径重定位 → 几个到几十个物件都自动覆盖阴影，不漏不糊。
-  private placeShadow(center: { x: number; y: number; z: number }, radius: number): void {
+  private placeShadow(center: { x: number; y: number; z: number }, radius: number, dir?: { x: number; y: number; z: number }): void {
     const d = radius * 3.2;
     // 较低仰角（~34°）的暖侧光 → 接触阴影拉长、看得见体积（太高的顶光阴影会藏在物体底下）。
-    this.key.position.set(center.x + d * 0.78, center.y + d * 0.62, center.z + d * 0.5);
+    // dir 给则按数据方向摆光（Light3D 指定·已归一化为「光的位置方向」），否则用盒庭默认暖侧光向。
+    const u = dir ?? { x: 0.78, y: 0.62, z: 0.5 };
+    this.key.position.set(center.x + d * u.x, center.y + d * u.y, center.z + d * u.z);
     this.key.target.position.set(center.x, center.y, center.z);
     this.key.target.updateMatrixWorld();
     const cam = this.key.shadow.camera as THREE.OrthographicCamera;
@@ -268,6 +299,91 @@ export class ThreeRenderer implements RendererBackend {
     cam.left = -r; cam.right = r; cam.top = r; cam.bottom = -r;
     cam.near = 0.1; cam.far = d * 3.5;
     cam.updateProjectionMatrix();
+  }
+
+  // 数据化光照：Light3D 在场 → 数据全权定义（主阴影灯 this.key + 环境 this.ambient + 池管理的额外平行光）；
+  // 不在场 → 退回引擎默认暖主光(1.5) + 冷补光(0.4)（向后兼容）。dir 是「光的去向」→ 取反作主光位置方向喂 placeShadow。
+  private syncLights(lights: ReadonlyArray<readonly [string, Light3D]>): void {
+    if (lights.length === 0) {
+      this.key.color.setHex(0xfff1d6); this.key.intensity = 1.5;
+      this.ambient.color.setHex(0xbfd2ff); this.ambient.intensity = 0.4;
+      this.shadowDir = undefined; // 用盒庭默认侧光向
+      for (const [id, l] of this.extraLights) { this.scene.remove(l); this.scene.remove(l.target); this.extraLights.delete(id); }
+      return;
+    }
+    // 数据驱动：data 全权定义。默认无环境光（除非 data 给 ambient），主光取首盏 castShadow 平行光。
+    this.ambient.intensity = 0;
+    this.shadowDir = undefined;
+    let shadowAssigned = false;
+    const live = new Set<string>();
+    for (const [id, lt] of lights) {
+      if (lt.kind === 'ambient') {
+        this.ambient.color.setHex(lt.color & 0xffffff);
+        this.ambient.intensity = lt.intensity;
+        continue;
+      }
+      // directional：光的去向（缺省盒庭暖侧光的去向 = 默认位置方向取反）。
+      const go = (lt.dirX !== undefined || lt.dirY !== undefined || lt.dirZ !== undefined)
+        ? { x: lt.dirX ?? -0.78, y: lt.dirY ?? -0.62, z: lt.dirZ ?? -0.5 }
+        : { x: -0.78, y: -0.62, z: -0.5 };
+      if (!shadowAssigned && (lt.castShadow ?? true)) {
+        this.key.color.setHex(lt.color & 0xffffff);
+        this.key.intensity = lt.intensity;
+        this.shadowDir = { x: -go.x, y: -go.y, z: -go.z }; // 位置方向 = 去向取反
+        shadowAssigned = true;
+      } else {
+        let l = this.extraLights.get(id);
+        if (!l) { l = new THREE.DirectionalLight(); this.scene.add(l); this.scene.add(l.target); this.extraLights.set(id, l); }
+        l.color.setHex(lt.color & 0xffffff);
+        l.intensity = lt.intensity;
+        l.position.set(-go.x * 100, -go.y * 100, -go.z * 100); // 沿去向反方向远置，照向原点
+        l.target.position.set(0, 0, 0); l.target.updateMatrixWorld();
+        live.add(id);
+      }
+    }
+    for (const [id, l] of this.extraLights) if (!live.has(id)) { this.scene.remove(l); this.scene.remove(l.target); this.extraLights.delete(id); }
+  }
+
+  // 后处理管线（懒建）：RenderPass → 水平+垂直移轴 ShaderPass（tilt-shift）→ UnrealBloom → OutputPass。
+  // 各 pass 的开关/参数每帧由 syncPost 据 Post3D 数据设（不重建·只改 uniform/enabled）。
+  private ensureComposer(): void {
+    if (this.composer) return;
+    const composer = new EffectComposer(this.gl);
+    composer.setSize(this.width, this.height);
+    composer.addPass(new RenderPass(this.scene, this.camera));
+    const h = new ShaderPass(HorizontalTiltShiftShader);
+    const v = new ShaderPass(VerticalTiltShiftShader);
+    composer.addPass(h);
+    composer.addPass(v);
+    const bloom = new UnrealBloomPass(new THREE.Vector2(this.width, this.height), 0.6, 0.4, 0.85);
+    composer.addPass(bloom);
+    composer.addPass(new OutputPass());
+    this.composer = composer;
+    this.hTilt = h; this.vTilt = v; this.bloom = bloom;
+  }
+
+  // 据 Post3D 数据设后处理参数：移轴（focus 清晰带位置 + intensity 模糊强度·水平+垂直双向）、泛光（强度/扩散/阈值）。
+  private syncPost(post: Post3D): void {
+    this.ensureComposer();
+    const ts = post.tiltShift;
+    const tsOn = !!ts;
+    this.hTilt!.enabled = tsOn;
+    this.vTilt!.enabled = tsOn;
+    if (ts) {
+      const focus = ts.focus ?? 0.5;
+      const intensity = ts.intensity ?? 3;
+      this.hTilt!.uniforms['r']!.value = focus;
+      this.hTilt!.uniforms['h']!.value = intensity / this.width;
+      this.vTilt!.uniforms['r']!.value = focus;
+      this.vTilt!.uniforms['v']!.value = intensity / this.height;
+    }
+    const bl = post.bloom;
+    this.bloom!.enabled = !!bl;
+    if (bl) {
+      this.bloom!.strength = bl.strength ?? 0.6;
+      this.bloom!.radius = bl.radius ?? 0.4;
+      this.bloom!.threshold = bl.threshold ?? 0.85;
+    }
   }
 
   // 建/复用 mesh：模式不变则复用；模式变了（几何形态变）重建。

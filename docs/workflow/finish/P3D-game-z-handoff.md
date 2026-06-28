@@ -58,13 +58,17 @@
 | 组件 | 作用 | 关键字段 |
 |---|---|---|
 | `Mesh3D` | 3D 体块原语（box/plane·正反/边分色） | shape, width/height/depth, frontTint/backTint/edgeTint, flipAxis |
+| `Model3D` | **导入式 glTF 模型**（圆润真模型·box 表达不了） | modelKey(资产 key), scale?, tint? |
 | `Transform3D` | **真三维位姿**（地面=XZ、Y=高度、三轴欧拉） | x,y,z, rotX/Y/Z?, scale? |
-| `Camera3D` | 盒庭**轨道相机**单例（在场=「盒庭模式」） | yaw, pitch, distance?, pivotX/Y/Z? |
+| `Camera3D` | 盒庭**轨道相机**单例（在场=「盒庭模式」·运行时可拖拽改 yaw/pitch） | yaw, pitch, distance?, pivotX/Y/Z? |
+| `Light3D` | **数据化光照**（可多盏·替写死的灯） | kind(directional/ambient), color, intensity, dirX/Y/Z?, castShadow? |
 | `Sky3D` | **天空盒**单例（程序化渐变 + 云） | top, bottom, clouds?, cloudTint?, scroll? |
+| `Post3D` | **后处理单例**（移轴景深 + 泛光·微缩感） | tiltShift?{focus,intensity}, bloom?{strength,radius,threshold} |
 | `Card3D` | game-g 专属扑克牌 3D（**别动**，是 game-g 私货） | — |
 
 - 登记三处（加新 3D 组件照做）：① 此文件加 `interface ... extends Component`；② `src/assembly/component-map.ts` 加 import + `ComponentDataMap` 一行（闭集牙·拼错组件名编译期报错）；③ 若 render-only → `src/net/determinism.ts` 的 `NON_DETERMINISTIC` 加一行。
-- 单例读取：`src/engine/protocol/camera-view.ts` 的 `getCamera3D(world)` / `getSky3D(world)`（镜像 2D `getCameraView`）。
+- 读取：`src/engine/protocol/camera-view.ts` 的 `getCamera3D` / `getSky3D` / `getLights3D` / `getPost3D`（镜像 2D `getCameraView`）。
+- 模型资产：`Model3D.modelKey` → `AssetManager`（`ModelAssetLoader` 取 `.glb` 字节）；模型文件在 `public/models/`（出处见 `CREDITS.md`）。
 
 ### 2.2 解释器（`src/renderer/`）
 - **`three-renderer.ts`**（`ThreeRenderer implements RendererBackend`）——核心。`sync(world)` 每帧：
@@ -121,12 +125,14 @@ node scripts/shoot-game.mjs game-z /tmp/game-z.png    # 任意 game id 都行
 
 - **✅ owner 已拍（2026-06-28）**：做「轻量 3D 渲染场景」，**模型导入打头阵**；技术栈维持**纯 Three.js**（确认零裸 WebGL·用 `three/addons` GLTFLoader）；规模上限**暂不硬限**（先做功能·预算校验以后加）。
 - **✅ 模型导入(glTF) 端到端打通**：`Model3D` 组件 + ThreeRenderer `GLTFLoader.parse(ArrayBuffer)`（模板缓存·多实例 clone·材质/贴图/软影） + 资产层 `model` kind + `ModelAssetLoader`（取字节·零 three·owner 2026-06-28 授权 P3D 落资产层） + game-z 换真模型（小黄鸭·`public/models/duck.glb,box.glb`）+ 截图回归。详见 `requests.md` REQ-3D-Model导入。**坑**：glTF 节点常带内建 scale，真实尺寸≠accessor min/max → Model3D.scale 按渲染后包围盒定。
+- **✅ 已落（owner 2026-06-28 点名 1+2+3）**：
+  - ~~**模型导入** `Model3D`~~ ✅ 端到端打通（glTF·小黄鸭·见上）。
+  - ~~**数据化光照** `Light3D`~~ ✅（kind directional/ambient·color/intensity/dir/castShadow·替写死的灯·多盏池管理·无则退回默认暖冷光）。
+  - ~~**可旋转交互**~~ ✅（game-z.ts 输入胶水：拖拽→`Camera3D.yaw/pitch`·滚轮→distance·render-only 不进 hash）。
+  - ~~**移轴景深 / 后处理** `Post3D`~~ ✅（EffectComposer：水平+垂直 tilt-shift + UnrealBloom·Captain Toad 微缩感·无则直渲）。
 - **P-next 候选**（每条：数据组件 + 引擎解释 + 纯函数测 + 截图回归）：
-  - ~~**模型导入** `Model3D = 资产 key → glTF`~~（render 半边已落·见上「进行中」）。
-  - **移轴景深 / 后处理**（tilt-shift DOF / bloom / SSAO）——Captain Toad 招牌微缩感（EffectComposer·render-only 管线）。
-  - **数据化光照** `Light3D`（sun/ambient/color/intensity·替代现写死在 init 的灯）。
-  - **可旋转交互**：输入 → 转 `Camera3D.yaw/pitch`（玩家旋转盒庭·别忘 render-only/不进 hash）。
   - **Mesh3D 逐面材质**（解决下面 §7 的 box 着色尴尬）。
+  - **更多模型 / 角色模型**（替小黄鸭 hero·skinned/动画是更大一步）。
   - **玩法**（最后·owner 解冻后）。
 
 ---

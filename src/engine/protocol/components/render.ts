@@ -112,6 +112,33 @@ export interface Sky3D extends Component {
 }
 
 // ── L2 color ── 实体当前的颜色/透明度
+// ── Light3D（render-only，数据化光照 · 3D 盒庭）──────────────────────────────────────────────
+// 把写死在渲染器 init 里的灯搬进数据：游戏蓝图声明灯，引擎解释。可挂多盏（sun + ambient + 补光）。
+// kind:'directional' = 平行光（太阳·dir 为光的去向）；'ambient' = 环境光（无方向·整体补亮）。
+// 第一盏带 castShadow 的平行光当主阴影灯（盒庭模式自动框场景投软影）。无任何 Light3D → 退回引擎默认
+// 暖主光 + 冷补光（向后兼容·three-lab/现有游戏不受影响）。红线：纯表现，绝不进 sim/hash（NON_DETERMINISTIC）。
+export interface Light3D extends Component {
+  readonly type: 'Light3D';
+  kind: 'directional' | 'ambient';
+  color: number; // 0xRRGGBB
+  intensity: number;
+  dirX?: number; // 平行光「去向」（渲染器归一化·缺省盒庭暖侧光向）。ambient 忽略。
+  dirY?: number;
+  dirZ?: number;
+  castShadow?: boolean; // 平行光·是否当主阴影灯（盒庭通常一盏投影·缺省取首盏平行光）
+}
+
+// ── Post3D（render-only，后处理管线 · 3D 盒庭微缩感）─────────────────────────────────────────
+// 数据化后处理：移轴景深（tilt-shift·Captain Toad 招牌「微缩模型」感·清晰带外上下渐糊）+ 泛光（bloom）。
+// 挂一个 Post3D 单例即开 EffectComposer 管线渲染；无则直接渲染（向后兼容）。纯表现·不进 hash。
+export interface Post3D extends Component {
+  readonly type: 'Post3D';
+  // 移轴景深：focus=清晰带的屏幕纵向位置(0 底~1 顶·缺省 0.5)；intensity=模糊强度(缺省 ~3)。
+  tiltShift?: { focus?: number; intensity?: number };
+  // 泛光：strength=强度·radius=扩散·threshold=亮度阈值。
+  bloom?: { strength?: number; radius?: number; threshold?: number };
+}
+
 export interface Color extends Component {
   readonly type: 'Color';
   tint: number;

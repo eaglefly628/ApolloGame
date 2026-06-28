@@ -9,7 +9,7 @@ import { ThreeRenderer } from '@renderer/three-renderer.js';
 import { AssetManager, ModelAssetLoader } from '@assets/index.js';
 import { mountUI } from '@ui/components/index.js';
 import type { LayoutNode } from '@ui/components/index.js';
-import type { Velocity } from '@engine/protocol/components.js';
+import type { Velocity, Camera3D } from '@engine/protocol/components.js';
 import { dioramaBlueprint } from './diorama.js';
 import { GAME_Z_ASSETS } from './assets.js';
 
@@ -23,7 +23,7 @@ function hudTree(fps: number): LayoutNode {
       { type: 'Label', id: 'gz-title', props: { text: 'GAME Z', size: 'xxl', glow: true } },
       { type: 'Label', id: 'gz-sub', props: { text: '3D 盒庭 · 数据驱动渲染线 · glTF 模型导入', size: 'sm' } },
       { type: 'Label', id: 'gz-fps', props: { text: `${fps} FPS`, size: 'sm', font: 'mono', glow: true } },
-      { type: 'Label', id: 'gz-hint', props: { text: 'WASD / 方向键 控制小黄鸭走动', size: 'sm' } },
+      { type: 'Label', id: 'gz-hint', props: { text: 'WASD/方向键 控鸭走动 · 拖拽旋转盒庭 · 滚轮缩放', size: 'sm' } },
     ],
   };
 }
@@ -75,6 +75,35 @@ export function mount(container: HTMLElement): () => void {
   window.addEventListener('keyup', onUp);
   window.addEventListener('blur', onBlur);
 
+  // 旋转交互（运行时输入胶水·同键盘先例）：拖拽 → 转 Camera3D yaw/pitch；滚轮 → 拉近/远 distance。
+  // Camera3D 是 render-only（不进 hash），运行时改它纯表现安全。pitch 夹在俯视区间、distance 夹在合理范围。
+  const cam = (): Camera3D | undefined => engine.world.getComponent<Camera3D>('cam', 'Camera3D');
+  let dragging = false;
+  let lastX = 0;
+  let lastY = 0;
+  const onPointerDown = (e: PointerEvent): void => { dragging = true; lastX = e.clientX; lastY = e.clientY; stage.setPointerCapture?.(e.pointerId); };
+  const onPointerMove = (e: PointerEvent): void => {
+    if (!dragging) return;
+    const c = cam();
+    if (!c) return;
+    c.yaw += (e.clientX - lastX) * 0.008; // 水平拖 → 绕 Y 环绕
+    c.pitch = Math.max(0.12, Math.min(1.45, c.pitch + (e.clientY - lastY) * 0.006)); // 垂直拖 → 俯仰（夹俯视区）
+    lastX = e.clientX; lastY = e.clientY;
+  };
+  const onPointerUp = (e: PointerEvent): void => { dragging = false; stage.releasePointerCapture?.(e.pointerId); };
+  const onWheel = (e: WheelEvent): void => {
+    e.preventDefault();
+    const c = cam();
+    if (!c) return;
+    c.distance = Math.max(40, Math.min(200, (c.distance ?? 92) + e.deltaY * 0.08)); // 滚轮缩放
+  };
+  stage.style.touchAction = 'none';
+  stage.style.cursor = 'grab';
+  stage.addEventListener('pointerdown', onPointerDown);
+  window.addEventListener('pointermove', onPointerMove);
+  window.addEventListener('pointerup', onPointerUp);
+  stage.addEventListener('wheel', onWheel, { passive: false });
+
   // 帧率：每帧测壁钟差 → 平滑 fps，~4 次/秒刷 HUD（render-only·不进 sim）。
   let lastT = performance.now();
   let fps = 60;
@@ -93,6 +122,10 @@ export function mount(container: HTMLElement): () => void {
     window.removeEventListener('keydown', onDown);
     window.removeEventListener('keyup', onUp);
     window.removeEventListener('blur', onBlur);
+    stage.removeEventListener('pointerdown', onPointerDown);
+    window.removeEventListener('pointermove', onPointerMove);
+    window.removeEventListener('pointerup', onPointerUp);
+    stage.removeEventListener('wheel', onWheel);
     unsub();
     engine.stop();
     renderer.destroy();

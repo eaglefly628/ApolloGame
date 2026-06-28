@@ -45,8 +45,14 @@
 后端 `ThreeRenderer`（`src/renderer/three-renderer.ts`），几何纯函数在 `three-projection.ts`（node 可测）。
 
 - **数据组件（render-only·不进 sim/hash）**：`Mesh3D`（box/plane 体块）、`Transform3D`（真三维位姿）、
-  `Camera3D`（轨道相机单例=盒庭模式）、`Sky3D`（程序化天空盒）、`Model3D`（导入式 glTF 模型）。
+  `Camera3D`（轨道相机单例=盒庭模式·运行时输入可改 yaw/pitch 旋转）、`Sky3D`（程序化天空盒）、
+  `Model3D`（导入式 glTF 模型）、`Light3D`（数据化光照·directional/ambient·多盏）、`Post3D`（后处理·移轴景深+泛光）。
   新增 render-only 组件必登记 `net/determinism.ts` 的 `NON_DETERMINISTIC`（相机/光/阴影/材质/位姿跨 GPU 浮点非确定）。
+- **后处理（Post3D·EffectComposer）**：水平+垂直 tilt-shift ShaderPass（移轴景深·Captain Toad 微缩感）+ UnrealBloomPass。
+  懒建管线，参数每帧从数据设 uniform/enabled；无 Post3D → 直接 `gl.render`（向后兼容）。SwiftShader 软件 GL 下也能跑（无头截图验证）。
+- **数据化光照（Light3D）**：首盏 castShadow 平行光当主阴影灯（盒庭 placeShadow 自动框场景），其余平行光池管理，
+  ambient 整体补亮；无 Light3D → 退回引擎默认暖主光+冷补光。`dir` 是「光的去向」（位置方向取反）。
+- **旋转交互**：拖拽/滚轮等输入改 `Camera3D` 的 yaw/pitch/distance = 运行时输入胶水（同键盘→Velocity 先例·input 捕获是运行时职责），不进 sim/hash。
 - **模型导入（glTF）**：蓝图只持 `modelKey`（保纯）；资产层 `ModelAssetLoader` 取 `.glb` 字节(ArrayBuffer·**零 three 依赖**)，
   `ThreeRenderer` 用 `GLTFLoader.parse(bytes)` 解析成 three 场景。**解析一次入模板缓存 → 多实例 `clone(true)`**（共享几何省显存，
   每实例 clone 材质供独立染色/释放）。导入走 asset key、loader 在引擎（同 sprite 先例），别在蓝图塞 URL/二进制。

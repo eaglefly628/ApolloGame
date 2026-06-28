@@ -27,8 +27,15 @@ export function dioramaBlueprint(): WorldBlueprint {
     // 角色靠现成 velocity→motion-apply 走动（纯数据 sim·确定性）；其余全静态。
     capabilities: [motionApplyCapability],
     entities: {
-      // 盒庭轨道相机（等距俯角环绕·注视场景中心略上方）
+      // 盒庭轨道相机（等距俯角环绕·注视场景中心略上方）。运行时可拖拽旋转（game-z.ts 输入胶水改 yaw/pitch）。
       cam: { Camera3D: { yaw: 0.72, pitch: 0.6, distance: 92, pivotX: 0, pivotY: 5, pivotZ: 0 } },
+
+      // 数据化光照（Light3D·替原写死的灯）：暖白太阳（投软影）+ 冷蓝环境补光。
+      sun: { Light3D: { kind: 'directional', color: 0xfff1d6, intensity: 1.6, castShadow: true } },
+      fill: { Light3D: { kind: 'ambient', color: 0xbfd2ff, intensity: 0.45 } },
+
+      // 后处理（Post3D）：移轴景深 → Captain Toad 微缩模型感（清晰带居中·上下渐糊）+ 轻泛光。
+      post: { Post3D: { tiltShift: { focus: 0.52, intensity: 3.4 }, bloom: { strength: 0.35, radius: 0.5, threshold: 0.8 } } },
 
       // 天空盒：蓝天 → 浅地平线 + 程序化白云缓慢飘动
       sky: { Sky3D: { top: 0x4a90d9, bottom: 0xcfe9f7, clouds: true, cloudTint: 0xffffff, scroll: 1 } },

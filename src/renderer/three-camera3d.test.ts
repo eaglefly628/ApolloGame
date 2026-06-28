@@ -6,9 +6,9 @@ import { collectRenderables } from './renderable.js';
 import {
   transform3dPose, groundPose, orbitCamera, poseBounds3D, bounds3DCenter, bounds3DExtent, fitDistance3D, type Pose3D,
 } from './three-projection.js';
-import { getCamera3D, getSky3D } from '@engine/protocol/camera-view.js';
+import { getCamera3D, getSky3D, getLights3D, getPost3D } from '@engine/protocol/camera-view.js';
 import { hashSnapshot } from '@net/index.js';
-import type { Transform3D, Camera3D, Sky3D, Mesh3D, Model3D } from '@engine/protocol/components.js';
+import type { Transform3D, Camera3D, Sky3D, Mesh3D, Model3D, Light3D, Post3D } from '@engine/protocol/components.js';
 
 describe('Transform3D / Camera3D 纯函数（盒庭位姿 + 轨道相机）', () => {
   it('transform3dPose：等比 scale 落三轴、rot 缺省 0', () => {
@@ -85,17 +85,29 @@ describe('Camera3D：单例读取 + render-only 不进确定性 hash（红线）
     w.addComponent('sky', { type: 'Sky3D', top: 0x4a90d9, bottom: 0xcfe9f7, clouds: true } as Sky3D);
     expect(getSky3D(w)?.clouds).toBe(true);
   });
-  it('Camera3D / Transform3D / Sky3D / Model3D 变化不改 world hash（排除出 lockstep）', () => {
-    const mk = (yaw: number, x: number, skyTop: number, modelKey: string): string => {
+  it('getLights3D 收齐所有灯（sun + ambient）；getPost3D 取后处理单例', () => {
+    const w = new World();
+    w.createEntity('sun'); w.addComponent('sun', { type: 'Light3D', kind: 'directional', color: 0xfff1d6, intensity: 1.6, castShadow: true } as Light3D);
+    w.createEntity('fill'); w.addComponent('fill', { type: 'Light3D', kind: 'ambient', color: 0xbfd2ff, intensity: 0.4 } as Light3D);
+    w.createEntity('post'); w.addComponent('post', { type: 'Post3D', tiltShift: { focus: 0.5, intensity: 3 } } as Post3D);
+    const lights = getLights3D(w);
+    expect(lights.length).toBe(2);
+    expect(lights.map(([, l]) => l.kind).sort()).toEqual(['ambient', 'directional']);
+    expect(getPost3D(w)?.tiltShift?.intensity).toBe(3);
+  });
+  it('Camera3D / Transform3D / Sky3D / Model3D / Light3D / Post3D 变化不改 world hash（排除出 lockstep）', () => {
+    const mk = (yaw: number, x: number, skyTop: number, modelKey: string, lum: number): string => {
       const w = new World();
       w.createEntity('cam'); w.addComponent('cam', { type: 'Camera3D', yaw, pitch: 0 } as Camera3D);
       w.createEntity('b'); w.addComponent('b', { type: 'Transform3D', x, y: 0, z: 0 } as Transform3D);
       w.createEntity('sky'); w.addComponent('sky', { type: 'Sky3D', top: skyTop, bottom: 0 } as Sky3D);
       w.createEntity('m'); w.addComponent('m', { type: 'Model3D', modelKey, tint: skyTop } as Model3D);
+      w.createEntity('sun'); w.addComponent('sun', { type: 'Light3D', kind: 'directional', color: skyTop, intensity: lum } as Light3D);
+      w.createEntity('post'); w.addComponent('post', { type: 'Post3D', tiltShift: { focus: lum, intensity: lum } } as Post3D);
       return hashSnapshot(w.snapshot());
     };
-    // 纯表现：相机/位姿/天空盒/模型 全变了 hash 不变。
-    expect(mk(0, 0, 0x111111, 'a')).toBe(mk(2, 99, 0xabcdef, 'zzz'));
+    // 纯表现：相机/位姿/天空盒/模型/灯/后处理 全变了 hash 不变。
+    expect(mk(0, 0, 0x111111, 'a', 1)).toBe(mk(2, 99, 0xabcdef, 'zzz', 9));
   });
   it('对照：2D Transform 进 hash（确认排除是针对性的、非恒等）', () => {
     const mk = (tx: number): string => {
