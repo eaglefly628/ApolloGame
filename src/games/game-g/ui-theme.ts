@@ -41,4 +41,6 @@ export const GG_LOBBY_THEME: UITheme = {
 // ③ 战斗屏内嵌皮：同 ②（桥接战斗 .ggt-inner 的 THEMES 令牌 var(--ink)/--panel/--gold…），
 //    仅覆 bg0 = 金底上的深字色（hero CTA「结束回合」文字走 t.bg0；战斗 --track 是半透明、做字色对比不足，
 //    改回原版 endSquare 的深褐 #2a1a08·两皮通用）。topbar/动作菜单不碰 bg0（用 text/gold/jade）→ 不受影响。
-export const GG_BATTLE_THEME: UITheme = { ...GG_LOBBY_THEME, bg0: '#2a1a08' };
+//    danger/ok 改桥到战斗自有的 var(--danger)/var(--hp)（GG_LOBBY_THEME 桥的 var(--heart)/var(--club) 在战斗 THEMES
+//    令牌集里未定义 → 红/绿失效；战斗 THEMES 自带 --danger(#ff5d62 血灯红)/--hp(#46d17a)，正是棋枰要的色·两皮各自有值）。
+export const GG_BATTLE_THEME: UITheme = { ...GG_LOBBY_THEME, bg0: '#2a1a08', danger: 'var(--danger)', ok: 'var(--hp)' };

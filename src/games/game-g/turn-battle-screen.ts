@@ -174,12 +174,17 @@ const laddersLayer = (view: TurnBattleView): string => {
   return `<svg viewBox="0 0 900 400" preserveAspectRatio="none" style="${st(svgStyle)}"><defs><marker id="ar-a" markerWidth="4" markerHeight="4" refX="2" refY="2" orient="auto"><path d="M0,0 L4,2 L0,4 L1.3,2 Z" fill="#6b3c20"></path></marker><marker id="ar-b" markerWidth="4" markerHeight="4" refX="2" refY="2" orient="auto"><path d="M0,0 L4,2 L0,4 L1.3,2 Z" fill="#21425f"></path></marker></defs>${paths}</svg><div style="${st(layerStyle)}">${knobs}</div>`;
 };
 
-const hpGem = (alive: boolean): string => {
-  const col = '#ff5d62';
-  const gem = { position: 'relative', width: '15px', height: '15px', transform: 'rotate(45deg)', borderRadius: '4px', background: alive ? `linear-gradient(135deg,${col},${col}aa)` : 'rgba(0,0,0,.3)', border: '1px solid ' + (alive ? 'rgba(255,255,255,.7)' : 'rgba(255,255,255,.15)'), boxShadow: alive ? `0 0 9px ${col}` : 'none' };
-  const facet = { position: 'absolute', top: '2px', left: '2px', width: '5px', height: '5px', borderRadius: '2px', background: alive ? 'rgba(255,255,255,.8)' : 'transparent' };
-  return `<div style="${st(gem)}"><div style="${st(facet)}"></div></div>`;
-};
+// 大本营血灯（数据驱动·棋枰数据化②·owner 2026-06-28）：每点士气=一颗菱形宝石 → Label '◆'(亮·danger 血红+磷光) / '◇'(暗·dim)。
+// 替手写旋转 div+facet：菱形字符天然就是斜方宝石，色走战斗 token(danger=var(--danger)=#ff5d62)·最弱 LLM 只填 ◆/◇ 与令牌。
+function hpRowNode(blood: number, max: number, who: string): LayoutNode {
+  return {
+    type: 'Panel', id: `fort-hp-${who}`, props: { bare: true }, layout: { direction: 'row', gap: 5, justify: 'center', align: 'center' },
+    children: Array.from({ length: max }, (_, i): LayoutNode => ({
+      type: 'Label', id: `fort-hp-${who}-${i}`,
+      props: { text: i < blood ? '◆' : '◇', size: 16, color: i < blood ? 'danger' : 'dim', glow: i < blood },
+    })),
+  };
+}
 
 // 紧凑堡垒大本营（设计稿 mkBase/mkFort）。isMine 决定阵营色 + 花色。
 function fortBase(view: TurnBattleView, isMine: boolean): string {
@@ -196,7 +201,7 @@ function fortBase(view: TurnBattleView, isMine: boolean): string {
     ? { position: 'absolute', top: '50%', right: '-6px', width: '14px', height: '4px', transform: 'translateY(-50%)', background: 'linear-gradient(90deg, #ff7a45, transparent)', borderRadius: '99px', boxShadow: '0 0 8px rgba(255,122,69,.6)' }
     : { position: 'absolute', top: '50%', left: '-6px', width: '14px', height: '4px', transform: 'translateY(-50%)', background: 'linear-gradient(270deg, #3a86d4, transparent)', borderRadius: '99px', boxShadow: '0 0 8px rgba(58,134,212,.6)' };
   const blood = isMine ? view.homeA : view.homeB;
-  const gems = forr(Array.from({ length: view.homeMax }, (_, i) => i < blood), (a) => hpGem(a));
+  const gems = renderNode(hpRowNode(blood, view.homeMax, isMine ? 'a' : 'b'), GG_BATTLE_THEME); // 血灯=数据驱动 LayoutNode（菱形 Label·棋枰数据化②）
   const baseStyle = { position: 'relative', width: '92px', flex: 'none', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: '7px' };
   const fortInner = `<div style="${st(aura)}"></div>
     <div style="${st(fort)}"><div style="${st(crown)}">♔</div><div style="${st(merlons)}">${forr([0, 1, 2, 3], () => `<div style="${st(merlon)}"></div>`)}</div><div style="${st(shield)}"><span style="font-size:30px; color:${glyphCol};">${glyph}</span></div></div>

@@ -72,7 +72,13 @@
 >
 > **GA 分阶段执行（每段独立全绿可回退）**：① 掷命对决特写(Versus/CoinFlip·无缺口·试点) → ② 棋盘骨架(grid+格+门·需 Panel.action) → ③ 兵牌信息层(PlayingCard+x/y 叠·纯重组) → ④ 斜梯/城堡/源泉(rotate 重组 + 源泉 drain fx)。
 >
-> **撞到/将撞到的真缺口（已拆成下列 REQ 开给主程并行）**：`REQ-UI-容器可点`(Panel.action·②需) · `REQ-UI-fx源泉消退`(④需)。其余用现有能力重组。
+> **撞到/将撞到的真缺口（已拆成下列 REQ 开给主程并行）**：`REQ-UI-容器可点`(Panel.action·②需) · `REQ-UI-fx源泉消退`(④需) · `REQ-UI-容器描边形`(Panel 边框色/圆角/虚线·②城堡+格框需·新撞)。其余用现有能力重组。
+>
+> **★ GA 阶段②执行记录（2026-06-28·部分落地 + 新撞缺口）**：
+> - ✅ **血灯 hpGem 已数据化**：旋转菱形宝石 → `Label '◆'/'◇'`（亮=`danger` 血红+磷光 / 灭=`dim`）。菱形字符天然即斜方宝石、避开 Panel「圆角恒 10px·小件压不出方钻」坑。最弱 LLM 只填 ◆/◇+令牌。两军大本营血灯均已切（`hpRowNode`）·全绿。
+> - 🩹 **顺手修潜伏色 bug**：`GG_BATTLE_THEME` 的 `danger`/`ok` 原桥到 `var(--heart)`/`var(--club)`（大厅令牌·战斗 `THEMES` 集里**未定义** → 红/绿失效）；改桥到战斗自有的 `var(--danger)`(#ff5d62 正是血灯红)/`var(--hp)`。同时修好阶段①掷命特写里 ok/danger 文字色（之前也踩这坑）。
+> - 🩹 **补阶段①漏改的测试选择器**：掷命钮迁数据驱动后挂 `data-action`，但 `flow-walk.test.ts`/`game-g.turnmatch.test.ts` 仍查旧 `[data-act="clash-roll/ok"]` → 驱动不动掷命、对局 160 回合不收场（flow-walk 此前一直挂红·非本次引入·已确认 clean tree 也红）。改双挂 `[data-act=...],[data-action=...]` 兼容。（live 委托读 `dataset.act ?? dataset.action`·线上一直 OK·仅测试桩失配。）
+> - ⛔ **城堡 fortBase + 格子 chrome 暂保 bespoke·等 `REQ-UI-容器描边形`**：初评「Panel 组+rotate 可重组」低估了 Panel 边框是**令牌专用**（no 阵营橙/蓝描边、no 金边界格、no 虚线放牌区）+ **圆角恒 10px**（城垛/盾压不出形）。硬塞要么大量 hack `bg` 渐变（违「最弱 LLM 同数据」）要么失真。→ 拆出 `REQ-UI-容器描边形` 开给主程·到货再切城堡/格框。兵牌信息层=阶段③(PlayingCard+x/y·另算)。
 
 ### REQ-UI-容器可点 · [2026-06-28] · GA（game-g 棋枰数据化重写·阶段②需） · status: **open（请主程·阻塞棋盘交互数据化）** · 类型: 真能力缺口（容器无 action）
 
@@ -83,6 +89,20 @@
 
 > 源泉条「召唤源泉」消耗时，原 bespoke 有「刚花掉的格分段半透明消退」动效（g-drain 收退残影）。迁数据驱动后 `layout.fx` 闭集无对应 kind。**owner 2026-06-28 点名「可以让主程做·分段半透明的消失效果」**。
 > 请主程给 `fx` 加一个 kind（如 `'fade'`/`'drain'`·分段半透明淡出·once 触发）·或确认用现有 `flash`/`pulse` 近似。非阻塞（先用现有近似·有专用 kind 更保真）。
+
+### REQ-UI-容器描边形 · [2026-06-28] · GA（game-g 棋枰数据化重写·阶段②城堡/格框撞） · status: **open（请主程·阻塞城堡+格框数据化·非阻塞血灯/掷命/兵牌层）** · 类型: 真能力缺口（Panel 边框表达力·闭集补字段）
+
+> 阶段②搭骨架撞到：棋盘的**大本营城堡 + 格子 chrome** 要的边框形态，现 `Panel` 表达不了（边框只有令牌色 `line`/`accent→jadeLine`·圆角恒 `10px`·无虚线）：
+> - **阵营/语义描边色**：我方城堡橙 `#ff7a45` / 敌方蓝 `#3a86d4` 框；边界格金高亮框；放牌区暖橙/冷蓝内描边。← Panel 边框令牌专用·压不出。
+> - **圆角控制**：城垛(11×12 圆角 3)/盾(异形圆角)·小件被 Panel 恒 10px 圆角压成胶囊/圆。
+> - **虚线描边**：空格的虚线落点圆圈（`2px dashed`）。← 无 dashed。
+>
+> 请主程在闭集内补 `Panel`（或 `LayoutConstraints`）少量**受控**字段，三者一族一起给（最弱 LLM 能填·绝不收自由 CSS 串）：
+> - `Panel.edge?: 'jade'|'gold'|'mine'|'foe'|'ok'|'danger'`（**语义/阵营描边色枚举**·闭集·非自由 hex；`mine`/`foe`=游戏通用「我/敌」阵营色·或主程觉得该叫 `warm`/`cool`）。
+> - `LayoutConstraints.radius?: number`（圆角 px·覆盖恒 10·小件用）。
+> - `Panel.dashed?: boolean`（虚线边·落点/占位框用）。
+>
+> 这是「play-field 棋盘格/堡垒」一族·复用面：任何**棋盘/战棋/卡牌位**游戏（game-e/未来战棋）。**判据自检**：是现有令牌真表达不了的缺口（阵营色/异形圆角/虚线）·非能重组（`bg` 渐变硬凑违数据驱动尺子）→ 够格下沉。若主程认为该走**铁律路②「play-field→render 组件/引擎渲染器」**而非给 Panel 加这些（见本 REQ 下方原评估 C 节阻抗失配），请 owner 拍这条架构岔路：**给 UI 库补 play-field 描边原语** vs **game-g 棋盘改走引擎 render 组件**。GA 倾向前者（增量小、已落地血灯/掷命/HUD 在同一 LayoutNode 路·一致）·但听 owner。
 
 > **GA 对战斗屏「棋枰 play-field」走引擎渲染器（铁律路②）的评估。结论：现有渲染器与 game-g 棋盘形态阻抗失配·照搬高成本低收益·需 Lead/owner 定形态。**
 >
