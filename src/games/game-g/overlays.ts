@@ -9,7 +9,7 @@ import { mountUI } from '@ui/components/index.js';
 import type { LayoutNode, HandlerMap } from '@ui/components/index.js';
 import { GG_LOBBY_THEME } from './ui-theme.js';
 import { GACHA, RECHARGE_PACKS, rechargeTotal, DIAMOND_EXCHANGES, DIZHI_SHARD_PACKS, DIZHI_ZODIACS, STORY_OPENING, type StoryBeat } from './blueprint.js';
-import { luckyFromVal } from './lobby-overlays.js'; // 纯函数复用（卦值→吉凶档）
+import { luckyFromVal, luckyBattleBuff } from './lobby-overlays.js'; // 纯函数复用（卦值→吉凶档 + 战场加成）
 import type { LuckyRoll } from './lobby-util.js';
 import type { LobbyView } from './lobby-screen.js';
 
@@ -176,17 +176,31 @@ function shopModal(view: LobbyView, st: OverlayState): LayoutNode {
   };
 }
 
-// ── 今日卦象 Modal ─────────────────────────────────────────────
+// ── 今日卦象 Modal（复刻原版 luckyBox：本卦战场加成 + 全档奖惩表 + 必留一卦说明）─────────────
 function luckyModal(r: LuckyRoll): LayoutNode {
+  const buff = luckyBattleBuff(r.val);
   return {
     type: 'Modal', id: 'lucky-modal', props: { title: '🎴 掷命 · 今日卦象', size: 'sm', closeAction: 'closeOverlay' },
     children: [{
-      type: 'Panel', id: 'lucky-body', props: {}, layout: { direction: 'column', gap: 8, padding: 6, align: 'center' },
+      type: 'Panel', id: 'lucky-body', props: { bare: true }, layout: { direction: 'column', gap: 6, padding: 4, align: 'center' },
       children: [
-        { type: 'Label', id: 'lucky-val', props: { text: String(r.val), size: 'xl', color: 'gold', bold: true } },
-        { type: 'Label', id: 'lucky-label', props: { text: r.label, size: 'lg', color: 'gold' } },
-        { type: 'Label', id: 'lucky-line', props: { text: r.line, size: 'md', color: 'sub' } },
-        { type: 'Panel', id: 'lucky-btns', props: {}, layout: { direction: 'row', gap: 10 }, children: [
+        { type: 'Label', id: 'lucky-val', props: { text: String(r.val), size: 50, color: 'gold', bold: true, font: 'display' } },
+        { type: 'Label', id: 'lucky-label', props: { text: r.label, size: 24, color: 'gold', font: 'display' } },
+        // 本卦的战场加成（owner：要说明参战的奖惩）。
+        { type: 'Label', id: 'lucky-buff', props: { text: buff >= 0 ? `本卦出战 · 全军 +${buff}` : `本卦出战 · 全军 ${buff}`, size: 14, color: buff >= 0 ? 'ok' : 'danger', bold: true } },
+        { type: 'Label', id: 'lucky-line', props: { text: r.line, size: 13, color: 'sub' } },
+        { type: 'Divider', id: 'lucky-div', props: {} },
+        // 全档奖惩表（owner「没有说明所有参战的奖励惩罚」）：收下卦象 → 出战全军按档加成。
+        { type: 'Label', id: 'lucky-table-h', props: { text: '收下卦象 → 出战全军按今日卦象获加成：', size: 12, color: 'sub' } },
+        { type: 'Label', id: 'lucky-table', props: { size: 13, spans: [
+          { text: '大吉 +2', color: 'gold', bold: true }, { text: '　·　' },
+          { text: '吉 +1', color: 'ok', bold: true }, { text: '　·　' },
+          { text: '中庸 ±0', color: 'sub' }, { text: '　·　' },
+          { text: '小凶 −1', color: 'warn', bold: true }, { text: '　·　' },
+          { text: '大凶 −2', color: 'danger', bold: true },
+        ] } },
+        { type: 'Label', id: 'lucky-keep-note', props: { text: '每日必须保留一卦方可受益（出战时全军生效）。', size: 11, color: 'dim' } },
+        { type: 'Panel', id: 'lucky-btns', props: { bare: true }, layout: { direction: 'row', gap: 10, padding: 0 }, children: [
           { type: 'Button', id: 'lucky-reroll', props: { label: '再掷一卦', kind: 'ghost', action: 'reroll' } },
           { type: 'Button', id: 'lucky-keep', props: { label: '收下此卦', kind: 'primary', action: 'closeOverlay' } },
         ] },

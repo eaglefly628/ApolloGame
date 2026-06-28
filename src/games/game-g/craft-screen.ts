@@ -50,31 +50,42 @@ function enchantModal(view: LobbyView, idx: number): LayoutNode {
       : { type: 'Tag', id: `ench-slot-e${k}`, props: { label: '◇ 空槽', tone: 'dim', size: 'md' } });
   }
 
-  const kids: LayoutNode[] = [
-    header,
-    { type: 'Divider', id: 'ench-div', props: {} },
-    { type: 'Label', id: 'ench-slot-h', props: { text: `💎 镶嵌槽 ${inlaid.length}/${INLAY_MAX}　·　点已镶宝石卸下（永久消耗·不退卡包）`, size: 13, color: 'sub' } },
-    { type: 'Panel', id: 'ench-slots', props: { bare: true }, layout: { direction: 'row', gap: 8, padding: 0, align: 'center' }, children: sockets },
-  ];
+  // 镶嵌槽区 = 一块实底工作台子面板（owner 2026-06-28「附地支要更不透明·专门设计背景·操作看清」）：非 bare → 自带边框 + 实底，槽位清晰。
+  const slotBox: LayoutNode = {
+    type: 'Panel', id: 'ench-slot-box', props: { title: `💎 镶嵌槽 ${inlaid.length}/${INLAY_MAX}` }, layout: { direction: 'column', gap: 8, padding: 12 },
+    children: [
+      { type: 'Panel', id: 'ench-slots', props: { bare: true }, layout: { direction: 'row', gap: 10, padding: 0, align: 'center' }, children: sockets },
+      { type: 'Label', id: 'ench-slot-h', props: { text: '点已镶宝石可卸下（永久消耗·不退卡包）', size: 12, color: 'dim' } },
+    ],
+  };
 
-  // 卡包可镶地支（点即镶·消耗一张）。没有 → 给「去商城抽地支」入口（owner：要有添加地支的方法）。
-  const picks: LayoutNode[] = [];
+  // 卡包可镶地支（点即镶·消耗一张）。没有 → 给「去商城抽地支」入口（owner：要有添加地支的方法）。另起一块实底子面板。
+  const pickKids: LayoutNode[] = [];
   if (!full) {
+    const picks: LayoutNode[] = [];
     for (const z of DIZHI_ZODIACS) for (let t = DIZHI_TIER_CAP; t >= 1; t--) {
       const n = (bag[z.branch] ?? [])[t - 1] ?? 0;
       if (n > 0) picks.push({ type: 'Tag', id: `ench-pick-${z.branch}-${t}`,
         props: { label: `${z.animal}·${DIZHI_TIER_NM[t]} ×${Math.min(n, 3)} (+${DIZHI_INLAY_FAVOR[t]})`, tone: 'normal', size: 'md', action: 'inlay', actionArg: `${idx}:${z.branch}:${t}` } });
     }
-    kids.push({ type: 'Label', id: 'ench-pick-h', props: { text: picks.length ? '🀄 点卡包里的地支镶入（消耗一张·真提升战力）：' : '卡包里没有地支了——去商城抽取：', size: 13, color: 'gold' } });
-    if (picks.length) kids.push({ type: 'Panel', id: 'ench-picks', props: { bare: true }, layout: { direction: 'grid', minCol: 120, gap: 6, padding: 0 }, children: picks });
-    else kids.push({ type: 'Button', id: 'ench-getdizhi', props: { label: '🛒 去商城抽地支', kind: 'primary', action: 'openShop' } });
+    pickKids.push({ type: 'Label', id: 'ench-pick-h', props: { text: picks.length ? '点卡包里的地支镶入（消耗一张·真提升战力）：' : '卡包里没有地支了——去商城抽取：', size: 13, color: 'sub' } });
+    if (picks.length) pickKids.push({ type: 'Panel', id: 'ench-picks', props: { bare: true }, layout: { direction: 'grid', minCol: 120, gap: 6, padding: 0 }, children: picks });
+    else pickKids.push({ type: 'Button', id: 'ench-getdizhi', props: { label: '🛒 去商城抽地支', kind: 'primary', action: 'openShop' } });
   } else {
-    kids.push({ type: 'Label', id: 'ench-pick-h', props: { text: '✅ 镶嵌槽已满（卸下一颗才能再镶）', size: 13, color: 'gold' } });
+    pickKids.push({ type: 'Label', id: 'ench-pick-h', props: { text: '✅ 镶嵌槽已满（卸下一颗才能再镶）', size: 13, color: 'gold' } });
   }
+  const pickBox: LayoutNode = {
+    type: 'Panel', id: 'ench-pick-box', props: { title: '🀄 卡包地支' }, layout: { direction: 'column', gap: 8, padding: 12 }, children: pickKids,
+  };
 
+  // body = 专门设计的实底「附魔台」工作面（深木纹渐变 + vignette·不透·操作区清楚）。
   return {
     type: 'Modal', id: 'ench-modal', props: { title: `🔨 附魔 · ${rank}${su} ${hero?.name ?? ''}`, size: 'md', closeAction: 'craftClose' },
-    children: [{ type: 'Panel', id: 'ench-modal-body', props: { bare: true }, layout: { direction: 'column', gap: 12, padding: 0 }, children: kids }],
+    children: [{
+      type: 'Panel', id: 'ench-modal-body', props: { bg: 'radial-gradient(130% 100% at 50% 0%, #2d2316 0%, #15100a 100%)', vignette: true },
+      layout: { direction: 'column', gap: 12, padding: 16 },
+      children: [header, slotBox, pickBox],
+    }],
   };
 }
 
