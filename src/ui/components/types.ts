@@ -95,7 +95,7 @@ export interface ButtonProps {
 
 export interface LabelProps {
   text?: string; // 可选：spans / tween / bind 提供内容时可省（缺省空串）
-  size?: 'xs' | 'sm' | 'md' | 'lg' | 'xl' | 'xxl' | 'xxxl'; // xxl=28 xxxl=34（大标题·原版 felt 标题 34px·REQ-UI-Label大号字）
+  size?: 'xs' | 'sm' | 'md' | 'lg' | 'xl' | 'xxl' | 'xxxl' | number; // 具名档(xs10..xxxl34) 或裸 px 数字(复刻精确档·8→任意大·REQ-UI-Label字阶裸数字)
   color?: 'text' | 'sub' | 'dim' | 'jade' | 'gold' | 'ok' | 'warn' | 'danger';
   bold?: boolean;
   mono?: boolean;

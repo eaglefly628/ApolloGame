@@ -11,8 +11,8 @@ import type { ComponentType, LayoutNode } from './types.js';
 /** 字段 schema：名 + 类型 + （枚举值/默认/必填）。type 是「数据形状」不是 TS 类型——弱模型按它填。 */
 export interface UiPropSpec {
   name: string;
-  type: 'string' | 'number' | 'boolean' | 'enum' | 'node' | 'nodes' | 'list' | 'object';
-  values?: readonly string[]; // 仅 type:'enum'：合法取值闭集
+  type: 'string' | 'number' | 'boolean' | 'enum' | 'enum-or-number' | 'node' | 'nodes' | 'list' | 'object';
+  values?: readonly string[]; // type:'enum'/'enum-or-number'：具名档合法闭集（'enum-or-number' 另允许任意数字）
   default?: string | number | boolean;
   required?: boolean;
   describe: string;
@@ -65,7 +65,7 @@ export const UI_CATALOG: readonly UiComponentSpec[] = [
     type: 'Label', summary: '文本（颜色/字号/字体/绑定/打字机/数字滚动/富文本）', whenToUse: '一切静态/绑定文字。多段着色用 spans；数字滚动用 tween；绑世界值用 bind。', children: 'none',
     props: [
       { name: 'text', type: 'string', describe: '文本（spans/tween/bind 提供内容时可省）' },
-      { name: 'size', type: 'enum', values: SIZE, default: 'md', describe: '字号档' },
+      { name: 'size', type: 'enum-or-number', values: SIZE, default: 'md', describe: '字号档（具名令牌 xs10..xxxl34·保和谐默认）或裸 px 数字（复刻像素稿精确字号·8→任意大）' },
       { name: 'color', type: 'enum', values: COLOR, default: 'text', describe: '颜色令牌' },
       { name: 'bold', type: 'boolean', describe: '加粗' },
       { name: 'font', type: 'enum', values: ['ui', 'mono', 'pixel', 'display'], describe: '字体槽' },

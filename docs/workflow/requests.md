@@ -90,6 +90,11 @@
 >
 > 接好后：game-z 蓝图把方块蘑菇人换成 `Model3D{modelKey:'…'}` 真模型 + 截图回归，即端到端打通。**🔶 知会**：上面 4 个共享文件我已只动 3D 相关行（不碰 2D/sim 组件），如撞 rebase 请喊我。
 
+### REQ-UI-Label字阶裸数字 · [2026-06-28] · PG 实现（**owner 当面授权 PG 直接改引擎此一处·非常规**） · status: **✅ done（PG 2026-06-28·`label-size-number.test.ts`）** · 类型: 真能力缺口（curated 字阶太粗·不可重组）
+> **背景**：owner 复刻像素稿时问「字体库难道不该所有档都有吗·从 8 到 24 甚至更大」。Label.size 原是 curated 7 档模数阶梯（xs10/sm11/md13/lg16/xl22/xxl28/xxxl34），刻意只给少数档保和谐（同 Tailwind type scale）；但原版手写 CSS 用了 ~20 种 px（8/9/10/11/12/13/14/15/17/18/19/20/21/22/24/26/30/34/50/64），缺 12/14/15/17–21 → 复刻对不齐。**真缺口**（数据层表达不了非档位 px）。
+> **下沉**（不枚举每档·更干净）：`Label.size` 兼收 `具名令牌 | number`。render：`typeof size==='number' ? size : sizeMap[token]`；catalog 新增字段类型 `enum-or-number`（具名档查表保和谐默认 + 裸 px 作复刻精确档·8→任意大）；validate：数字放行、令牌拼写错仍拦 bad-enum。向后兼容（旧具名档零回归）。
+> **边界声明给主程**：此改动落在 `src/ui/components/{types,render,catalog,validate}.ts`（主程域）。常规该走 REQ 由主程实现，但 **owner 2026-06-28 当面授权 PG 直接改这一处**（不想等排期）。主程如对 `enum-or-number` 命名/校验有更优写法，可径直重构——PG 不占此设计。tsc+vitest(全)+build 全绿已推。
+
 ### REQ-UI-G收藏卡 · [2026-06-26] · PG 同步（UI 库域·game-g 收藏页逐页对齐撞到的缺口） · status: **✅ done（主程 2026-06-26·①② 均下沉·`collection-card.test.ts`）** · 类型: 真能力缺口（尺子已过·不可重组）
 
 > game-g 收藏页对齐 Designer comp（`UI/Game G 收藏·牌谱.html`）+ 原版管线时，撞到 2 个 LayoutNode 表达不了、不可重组的缺口：

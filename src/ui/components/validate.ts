@@ -43,6 +43,10 @@ export function validateLayoutNode(node: LayoutNode, path = 'root'): UiIssue[] {
     if (ps.type === 'enum' && v !== undefined && ps.values && !ps.values.includes(String(v))) {
       issues.push({ path, type: t, kind: 'bad-enum', detail: `props.${ps.name}='${String(v)}' 非法·合法值: ${ps.values.join(' | ')}` });
     }
+    // enum-or-number：数字直接放行（裸 px 精确档）；非数字仍须命中具名闭集（拦令牌拼写错）。
+    if (ps.type === 'enum-or-number' && v !== undefined && typeof v !== 'number' && ps.values && !ps.values.includes(String(v))) {
+      issues.push({ path, type: t, kind: 'bad-enum', detail: `props.${ps.name}='${String(v)}' 非法·合法值: ${ps.values.join(' | ')} 或裸 px 数字` });
+    }
   }
 
   // layout.fx 闭集校验（视觉特效合集·kind/color 枚举·受控合成防拼错/注入）

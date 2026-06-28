@@ -150,7 +150,8 @@ function renderLabel(id: string, p: LabelProps, ls: string, t: UITheme): string 
     jade: t.jade, gold: t.gold,
     ok: t.ok, warn: t.warn, danger: t.danger,
   };
-  const sz = sizeMap[p.size ?? 'md'] ?? 13;
+  // size 接受具名档 或 裸 px 数字（复刻像素稿精确字号·owner 2026-06-28「字阶该全档」）：数字直用、令牌查表。
+  const sz = typeof p.size === 'number' ? p.size : (sizeMap[p.size ?? 'md'] ?? 13);
   const cl = colorMap[p.color ?? 'text'] ?? t.text;
   // 具名字体槽（缺省按 mono 布尔回退·保旧调用方不变）：pixel/display 槽缺省回退 fontUi/fontMono。
   const fontSlot: Record<string, string> = {
