@@ -5,7 +5,7 @@
 // ③ mountCraft 挂载 + 点一张 ench 牌 → craftSel 选中→附魔 Modal 出现（数据→渲染→信号→reducer 链路通）；关闭 craftClose 收起。
 import { describe, it, expect } from 'vitest';
 import { mountCraft, buildCraftScreen } from './craft-screen.js';
-import type { LobbyView } from './lobby-screen.js';
+import type { LobbyView } from './lobby-types.js';
 
 const VIEW = (): LobbyView => ({
   skin: 'onyx', coin: 100, energy: 3, energyMax: 6, foilCount: 0,

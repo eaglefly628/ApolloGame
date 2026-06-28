@@ -13,7 +13,7 @@ import { HERO_CARDS, type HeroCard } from './hero-codex.js';
 import { heroPortraitUri, type Suit } from './portraits.js';
 import { DIZHI_ZODIACS, DIZHI_TIER_NM, dizhiTopTier, dizhiTotal, deployCost, POKER_PICK_SIZE } from './blueprint.js';
 import { SUITS, RANKS, SUIT_LETTER } from './lobby-util.js';
-import type { LobbyView } from './lobby-screen.js';
+import type { LobbyView } from './lobby-types.js';
 
 // ── 顶部·出战牌组选择条 ────────────────────────────────────────
 function deckSelector(view: LobbyView): LayoutNode {

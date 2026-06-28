@@ -3,7 +3,7 @@
 // ② mountUI 挂载渲染出内容 + 点「出征」触发 play 信号（证明数据→渲染→事件链路通）。
 import { describe, it, expect, vi } from 'vitest';
 import { mountHome, buildHomeScreen } from './home-screen.js';
-import type { LobbyView } from './lobby-screen.js';
+import type { LobbyView } from './lobby-types.js';
 
 const VIEW = (): LobbyView => ({
   skin: 'onyx', coin: 100, energy: 3, energyMax: 6, foilCount: 0,

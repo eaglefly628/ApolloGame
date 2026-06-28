@@ -5,7 +5,7 @@
 // ③ mountOverlays 双宿主：点「设置」→ Modal 现于 overlayHost·点关闭→消失；点「商城」→ 居中 Modal（数据→渲染→信号链路通）。
 import { describe, it, expect } from 'vitest';
 import { mountOverlays, buildOverlayLauncher, buildOverlay, INITIAL_OVERLAY } from './overlays.js';
-import type { LobbyView } from './lobby-screen.js';
+import type { LobbyView } from './lobby-types.js';
 
 const VIEW = (): LobbyView => ({
   skin: 'onyx', coin: 8000, diamond: 12, dizhiShards: 5, energy: 3, energyMax: 6, foilCount: 1,

@@ -5,7 +5,7 @@
 // ③ mountCollection 挂载渲染 + 点花色过滤标签触发 filterSuit → 局部重渲（数据→渲染→信号→reducer 链路通）。
 import { describe, it, expect } from 'vitest';
 import { mountCollection, buildCollectionScreen } from './collection-screen.js';
-import type { LobbyView } from './lobby-screen.js';
+import type { LobbyView } from './lobby-types.js';
 
 const VIEW = (): LobbyView => ({
   skin: 'onyx', coin: 100, energy: 3, energyMax: 6, foilCount: 1,

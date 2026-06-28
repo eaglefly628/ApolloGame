@@ -4,7 +4,7 @@
 // ② mountLobby 挂载渲染（顶栏/导航/主页）+ 切 tab + 点出征→onPlay + 开商城浮层 + 选牌→onTogglePick（信号→真 handler 链路通）。
 import { describe, it, expect, vi } from 'vitest';
 import { mountLobby, buildLobby, INITIAL_LOBBY_DD } from './lobby-dd.js';
-import type { LobbyView, LobbyHandlers } from './lobby-screen.js';
+import type { LobbyView, LobbyHandlers } from './lobby-types.js';
 
 const VIEW = (): LobbyView => ({
   skin: 'onyx', coin: 8000, diamond: 12, dizhiShards: 5, energy: 3, energyMax: 6, foilCount: 1,

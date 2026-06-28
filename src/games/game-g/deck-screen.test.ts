@@ -5,7 +5,7 @@
 // ③ mountDeck 挂载 + 点一张扑克牌 → pickCard 入战库（计数 +1·≤16 上限）+ 再点出库（数据→渲染→信号→reducer 链路通）。
 import { describe, it, expect } from 'vitest';
 import { mountDeck, buildDeckScreen } from './deck-screen.js';
-import type { LobbyView } from './lobby-screen.js';
+import type { LobbyView } from './lobby-types.js';
 
 const VIEW = (): LobbyView => ({
   skin: 'onyx', coin: 100, energy: 3, energyMax: 6, foilCount: 0,

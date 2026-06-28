@@ -11,8 +11,8 @@ import type { LayoutNode, HandlerMap } from '@ui/components/index.js';
 import { GG_LOBBY_THEME } from './ui-theme.js';
 import { STAGE_CAMPAIGN, type StageCampaign } from './campaign-data.js';
 import { stageDisha } from './disha.js';
-import { dishaNumberLine } from './lobby-collection.js';
-import type { LobbyView } from './lobby-screen.js';
+import { dishaNumberLine } from './lobby-types.js';
+import type { LobbyView } from './lobby-types.js';
 
 const stars = (n: number): string => '★'.repeat(n) + '☆'.repeat(Math.max(0, 3 - n));
 

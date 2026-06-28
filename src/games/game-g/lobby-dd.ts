@@ -16,11 +16,11 @@ import { buildCollectionScreen, ladderPage, INITIAL_COLLECTION, type CollectionS
 import { buildDeckScreen } from './deck-screen.js';
 import { buildCraftScreen } from './craft-screen.js';
 import { buildOverlay, INITIAL_OVERLAY, type OverlayState } from './overlays.js';
-import { luckyFromVal, type LobbyView, type LobbyHandlers, type GachaResult } from './lobby-screen.js';
+import { luckyFromVal, type LobbyView, type LobbyHandlers, type GachaResult } from './lobby-types.js';
 import { World } from '@engine/core/world.js';
 import type { Coachmark, Flag } from '@engine/protocol/components.js';
 import { mountOnboardingOverlay } from '@ui/onboarding-overlay.js';
-import { GUIDE_COACH } from './lobby-overlays.js';
+import { GUIDE_COACH } from './lobby-types.js';
 
 const TABS: { id: string; label: string; anchor?: string }[] = [
   { id: 'home', label: '大厅', anchor: 'home' }, { id: 'campaign', label: '战役' }, { id: 'decks', label: '我的牌组', anchor: 'decks' },

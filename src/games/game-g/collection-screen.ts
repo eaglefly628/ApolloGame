@@ -14,8 +14,8 @@ import { HERO_CARDS, type HeroCard, type HeroRar } from './hero-codex.js';
 import { heroPortraitUri } from './portraits.js';
 import { EARTH_FIENDS, STAGE_CAMPAIGN } from './campaign-data.js';
 import { stageDisha } from './disha.js';
-import { dishaNumberLine } from './lobby-collection.js'; // 纯函数复用（数值人话行·与 campaign-screen 一致）
-import type { LobbyView } from './lobby-screen.js';
+import { dishaNumberLine } from './lobby-types.js'; // 纯函数复用（数值人话行·与 campaign-screen 一致）
+import type { LobbyView } from './lobby-types.js';
 
 const RAR_NAME: Record<HeroRar, string> = { white: '普通', green: '精良', blue: '稀有', purple: '史诗', orange: '传说' };
 const SUIT_NAME: Record<string, string> = { '♠': '黑桃', '♥': '红桃', '♦': '方块', '♣': '梅花' };

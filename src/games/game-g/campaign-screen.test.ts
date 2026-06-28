@@ -5,7 +5,7 @@
 // ③ mountCampaign 挂载渲染出内容 + 点当前关「出征」触发 play 信号（数据→渲染→事件链路通）。
 import { describe, it, expect, vi } from 'vitest';
 import { mountCampaign, buildCampaignScreen } from './campaign-screen.js';
-import type { LobbyView } from './lobby-screen.js';
+import type { LobbyView } from './lobby-types.js';
 
 const VIEW = (stage = 1, campaignMax = 1): LobbyView => ({
   skin: 'onyx', coin: 100, energy: 3, energyMax: 6, foilCount: 0,

@@ -9,9 +9,9 @@ import { mountUI } from '@ui/components/index.js';
 import type { LayoutNode, HandlerMap } from '@ui/components/index.js';
 import { GG_LOBBY_THEME } from './ui-theme.js';
 import { GACHA, RECHARGE_PACKS, rechargeTotal, DIAMOND_EXCHANGES, DIZHI_SHARD_PACKS, DIZHI_ZODIACS, STORY_OPENING, type StoryBeat } from './blueprint.js';
-import { luckyFromVal, luckyBattleBuff } from './lobby-overlays.js'; // 纯函数复用（卦值→吉凶档 + 战场加成）
+import { luckyFromVal, luckyBattleBuff } from './lobby-types.js'; // 纯函数复用（卦值→吉凶档 + 战场加成）
 import type { LuckyRoll } from './lobby-util.js';
-import type { LobbyView } from './lobby-screen.js';
+import type { LobbyView } from './lobby-types.js';
 
 export type OverlayKind = 'none' | 'help' | 'settings' | 'shop' | 'lucky' | 'story';
 export interface OverlayState {
