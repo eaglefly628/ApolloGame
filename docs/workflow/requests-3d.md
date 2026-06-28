@@ -59,7 +59,13 @@
 
 ---
 
-## REQ-3D-Camera相机参数补全 · [2026-06-28] · owner → P3D（3D 渲染线）· status: **open（spec·P3D 执行）** · 类型: 真能力扩增（3D 线·过四条尺子）
+## REQ-3D-Camera相机参数补全 · [2026-06-28] · owner → P3D（3D 渲染线）· status: **✅ done（P3D 2026-06-28·三层落地·正交/跟随截图验证）** · 类型: 真能力扩增（3D 线·过四条尺子）
+
+> **✅ 落地（P3D 2026-06-28·已推）**：严守三层铁律——数据补参数 / 解释器算矩阵 / 行为写态。
+> - **① 数据层**：`Camera3D` 补 `projection('perspective'|'ortho')`/`fov`/`orthoSize`/`near`/`far`/`mode('orbit'|'follow')`/`target`/`pitchMin`/`pitchMax`（全语义参数·**无矩阵**·多模式用 `mode` 枚举）。
+> - **② 解释器层**：新 `renderer/three/camera-rig.ts`（`CameraRig`·持透视+正交两台·按 `projection` 选 active·fov/ortho/near/far 全从数据读）；`mode:'follow'` 由渲染器把注视点解析成 `target` 实体位（收集期捕获位姿·不写 sim/不进 hash）；投影/正交视锥/夹角数学抽 `three-projection` 纯函数（`orthoFrustum`/`clampPitch`）+ node 单测。
+> - **③ 行为层**：game-z 拖拽/滚轮写 `Camera3D`（运行时胶水·pitch 夹角读数据）；O 键切正交、F 键切跟随小黄鸭（只写数据·渲染器解释）。
+> - 验收：截图确认**正交=等距盒庭**、**follow 相机注视小黄鸭**；fov/pitch 夹角/near-far 全从数据；`renderer.info` 无回归。`fov` 从 `ThreeRendererOptions` 迁到 `Camera3D` 数据。`camSig` 纳入全相机参数（改即重渲）。tsc+vitest+build+截图全绿。**未做（YAGNI·准则点名）**：震屏/镜头过渡（要做时是 render-only 行为写 `Camera3D`+tween·不塞字段）。
 
 > **owner 2026-06-28**：3D 相机要像传统 3D 游戏那样有更多参数（投影 / fov / near-far / 跟随 / 约束）。这是「3D 线被证明的真缺口边」上的**正当扩增**。
 > **架构铁律（贯穿）**：**相机 = 数据（`Camera3D`）+ 固定解释器（渲染器算矩阵）**。传统引擎是「Camera 对象带 lookAt/setFov/矩阵方法、游戏调它」；我们这套**反转**——游戏**永不调相机方法、永不持矩阵**，只填 `Camera3D` 数据，渲染器去 lookAt / 算 view·projection 矩阵。三层分工：

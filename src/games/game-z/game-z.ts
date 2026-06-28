@@ -23,7 +23,7 @@ function hudTree(fps: number, stats: RenderStats | null, showProfiler: boolean):
   const children: LayoutNode[] = [
     { type: 'Label', id: 'gz-title', props: { text: 'GAME Z', size: 'xxl', glow: true } },
     { type: 'Label', id: 'gz-sub', props: { text: '3D 盒庭 · 数据驱动渲染线 · glTF 模型导入', size: 'sm' } },
-    { type: 'Label', id: 'gz-hint', props: { text: 'WASD/方向键 控鸭 · 拖拽旋转 · 滚轮缩放 · P 开关剖析', size: 'sm' } },
+    { type: 'Label', id: 'gz-hint', props: { text: 'WASD 控鸭 · 拖拽旋转 · 滚轮缩放 · O 正交 · F 跟随 · P 剖析', size: 'sm' } },
   ];
   if (showProfiler && stats) {
     children.push(
@@ -56,7 +56,7 @@ export function mount(container: HTMLElement): () => void {
 
   const engine = new Engine();
   engine.load(dioramaBlueprint());
-  const renderer = new ThreeRenderer({ width: w, height: h, background: 0x0b1020, fov: 38, assets });
+  const renderer = new ThreeRenderer({ width: w, height: h, background: 0x0b1020, assets }); // fov 现由 Camera3D 数据驱动
   engine.attachRenderer(renderer, stage);
 
   // HUD 叠加层（LayoutNode 纯数据·UI 铁律）。
@@ -65,6 +65,7 @@ export function mount(container: HTMLElement): () => void {
   wrapper.appendChild(hudHost);
   let showProfiler = true; // 性能剖析面板开关（P 键切换·默认开）
   let fps = 60; // 平滑帧率（render-only·不进 sim）
+  const cam = (): Camera3D | undefined => engine.world.getComponent<Camera3D>('cam', 'Camera3D'); // 取相机组件（行为层写它）
   const ui = mountUI(hudHost, hudTree(60, null, showProfiler));
 
   // 键盘 → 角色 Velocity（运行时输入胶水）：归一化对角线 + 速度；motion-apply 每 tick 把它累加进 Transform。
@@ -82,6 +83,9 @@ export function mount(container: HTMLElement): () => void {
   const onDown = (e: KeyboardEvent): void => {
     if (MOVE_KEYS.has(e.code)) e.preventDefault();
     if (e.code === 'KeyP') { showProfiler = !showProfiler; ui.update(hudTree(Math.round(fps), renderer.readStats(), showProfiler)); }
+    // 相机数据驱动开关（行为层只写 Camera3D 数据·渲染器解释）：O 切正交/透视、F 切跟随小黄鸭/环绕。
+    if (e.code === 'KeyO') { const c = cam(); if (c) c.projection = c.projection === 'ortho' ? 'perspective' : 'ortho'; }
+    if (e.code === 'KeyF') { const c = cam(); if (c) { c.mode = c.mode === 'follow' ? 'orbit' : 'follow'; c.target = 'hero'; } }
     held.add(e.code); setVel();
   };
   const onUp = (e: KeyboardEvent): void => { held.delete(e.code); setVel(); };
@@ -92,7 +96,6 @@ export function mount(container: HTMLElement): () => void {
 
   // 旋转交互（运行时输入胶水·同键盘先例）：拖拽 → 转 Camera3D yaw/pitch；滚轮 → 拉近/远 distance。
   // Camera3D 是 render-only（不进 hash），运行时改它纯表现安全。pitch 夹在俯视区间、distance 夹在合理范围。
-  const cam = (): Camera3D | undefined => engine.world.getComponent<Camera3D>('cam', 'Camera3D');
   let dragging = false;
   let lastX = 0;
   let lastY = 0;
@@ -102,7 +105,9 @@ export function mount(container: HTMLElement): () => void {
     const c = cam();
     if (!c) return;
     c.yaw += (e.clientX - lastX) * 0.008; // 水平拖 → 绕 Y 环绕
-    c.pitch = Math.max(0.12, Math.min(1.45, c.pitch + (e.clientY - lastY) * 0.006)); // 垂直拖 → 俯仰（夹俯视区）
+    // 垂直拖 → 俯仰；夹角读 Camera3D 数据（pitchMin/Max·不再硬编码·解释器也会按此夹）。
+    const p = c.pitch + (e.clientY - lastY) * 0.006;
+    c.pitch = Math.max(c.pitchMin ?? 0.05, Math.min(c.pitchMax ?? 1.5, p));
     lastX = e.clientX; lastY = e.clientY;
   };
   const onPointerUp = (e: PointerEvent): void => { dragging = false; stage.releasePointerCapture?.(e.pointerId); };

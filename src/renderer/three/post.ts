@@ -16,6 +16,7 @@ import type { Post3D } from '@engine/protocol/components.js';
 
 export class PostPipeline {
   private composer?: EffectComposer;
+  private renderPass?: RenderPass;
   private hTilt?: ShaderPass;
   private vTilt?: ShaderPass;
   private bloom?: UnrealBloomPass;
@@ -26,9 +27,10 @@ export class PostPipeline {
     private readonly height: number,
   ) {}
 
-  // 据 Post3D 渲染一帧（懒建管线 + 设参数 + composer.render）。
+  // 据 Post3D 渲染一帧（懒建管线 + 设参数 + composer.render）。camera 可能在透视/正交间切换 → 每帧更新 RenderPass。
   render(scene: THREE.Scene, camera: THREE.Camera, post: Post3D): void {
     this.ensure(scene, camera);
+    this.renderPass!.camera = camera;
     const ts = post.tiltShift;
     const tsOn = !!ts;
     this.hTilt!.enabled = tsOn;
@@ -58,7 +60,8 @@ export class PostPipeline {
     }
     const composer = new EffectComposer(this.gl);
     composer.setSize(this.width, this.height);
-    composer.addPass(new RenderPass(scene, camera));
+    this.renderPass = new RenderPass(scene, camera);
+    composer.addPass(this.renderPass);
     const h = new ShaderPass(HorizontalTiltShiftShader);
     const v = new ShaderPass(VerticalTiltShiftShader);
     composer.addPass(h);

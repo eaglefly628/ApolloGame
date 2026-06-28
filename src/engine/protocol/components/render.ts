@@ -88,14 +88,25 @@ export interface Transform3D extends Component {
 // 挂一个带 Camera3D 的实体即进「盒庭模式」：相机不再强制俯视，而是按角度环绕、开柔和阴影（Captain Toad 风）。
 // 无 Camera3D → 退回原俯视自适配（向后兼容 · three-lab 不受影响）。pitch 正=俯视，等距盒庭约 0.6。
 // 红线：纯表现，绝不进 hash（同 2D Camera · 已入 NON_DETERMINISTIC）。
+// REQ-3D-Camera（owner 2026-06-28）：相机 = **数据(语义参数) + 固定解释器(渲染器算矩阵)**——游戏永不调相机方法、
+// 永不持矩阵，只填这些语义参数；渲染器据此 lookAt / 算正交·透视 / 跟随。多模式用 `mode` 枚举，绝不放 4×4 矩阵。
 export interface Camera3D extends Component {
   readonly type: 'Camera3D';
   yaw: number; // 绕 Y 轴方位角(弧度)·0=正前、正=向右环绕
   pitch: number; // 俯仰角(弧度)·正=俯视，等距约 0.6
   distance?: number; // 相机到 pivot 距离(世界单位)·缺省=自适配框住包围盒
-  pivotX?: number; // 注视点·缺省=场景包围盒中心
+  pivotX?: number; // 注视点·缺省=场景包围盒中心（mode:'follow' 时由 target 实体位覆盖）
   pivotY?: number;
   pivotZ?: number;
+  projection?: 'perspective' | 'ortho'; // 投影·缺省 perspective；ortho=等距微缩盒庭
+  fov?: number; // 透视视场角(度)·缺省=渲染器构造默认（per-scene 数据，不再写死在 option）
+  orthoSize?: number; // 正交半高(世界单位)·缺省=场景包围盒半径
+  near?: number; // 近裁面·缺省 1（配 W1-C 深度收紧）
+  far?: number; // 远裁面·缺省=distance+天空盒半径余量
+  mode?: 'orbit' | 'follow'; // orbit=绕 pivot 环绕(缺省)；follow=注视/环绕 target 实体（随它走）
+  target?: string; // follow 模式注视/环绕的实体 id
+  pitchMin?: number; // 俯仰夹角下/上限(弧度)·缺省不夹（行为层运镜 + 解释器都按此夹）
+  pitchMax?: number;
 }
 
 // ── Sky3D（render-only，天空盒 · 单例）──────────────────────────────────────────────────────

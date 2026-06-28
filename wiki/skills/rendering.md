@@ -53,6 +53,11 @@
 - **数据化光照（Light3D）**：首盏 castShadow 平行光当主阴影灯（盒庭 placeShadow 自动框场景），其余平行光池管理，
   ambient 整体补亮；无 Light3D → 退回引擎默认暖主光+冷补光。`dir` 是「光的去向」（位置方向取反）。
 - **旋转交互**：拖拽/滚轮等输入改 `Camera3D` 的 yaw/pitch/distance = 运行时输入胶水（同键盘→Velocity 先例·input 捕获是运行时职责），不进 sim/hash。
+- **相机=数据+解释器（REQ-3D-Camera）**：游戏**永不调相机方法/不持矩阵**，只填 `Camera3D` 语义参数
+  （`projection`/`fov`/`orthoSize`/`near`/`far`/`mode:'orbit'|'follow'`/`target`/`pitchMin/Max`）；`CameraRig`（`three/camera-rig.ts`）持
+  透视+正交两台·按 `projection` 选、据数据算矩阵；`follow` 由渲染器把注视点解析成 `target` 实体位（读世界·不写 sim）。
+  三层：**数据**(填参数)·**解释器**(算矩阵·投影/正交视锥/夹角抽 `three-projection` 纯函数)·**行为**(输入写 `Camera3D` 随时间变)。
+  铁律：多模式用 `mode` 枚举不开 N 个相机组件；矩阵留解释器；震屏/镜头过渡是行为层(写态+tween)不塞字段。
 - **实例化绘制（W1-A·高效低开销）**：同「视觉签名」（`mesh3dBatchKey`=shape+尺寸+逐面色）的多个 `Mesh3D` → 一个
   `InstancedMesh`（1 draw call）。**全渲染器内部、零数据改动**——游戏照常摆 N 个 `Mesh3D` 实体，渲染器自动批，
   **绝不往数据加 `instanced` 旗标**（那会把渲染关切泄进数据·违宣言）。逐面色**烤进几何 `vertexColors`**（实例共享一个材质，

@@ -6,8 +6,8 @@ import { isImageHandle } from '@assets/index.js';
 import { getCamera3D, getSky3D, getLights3D, getPost3D } from '@engine/protocol/camera-view.js';
 import { collectRenderables, chooseRenderMode, type Renderable } from './renderable.js';
 import {
-  renderablePose, poseBounds, fitPerspective, mesh3dBatchKey, type Pose3D,
-  transform3dPose, groundPose, poseBounds3D, bounds3DCenter, bounds3DExtent, fitDistance3D, orbitCamera,
+  renderablePose, poseBounds, mesh3dBatchKey, type Pose3D,
+  transform3dPose, groundPose, poseBounds3D, bounds3DCenter, bounds3DExtent, fitDistance3D,
 } from './three-projection.js';
 import { mesh3dPose, applyPose, buildMesh3D, buildGeometry, buildSkyTexture, disposeMesh } from './three/geometry.js';
 import { hashPoses, camSig, postSig } from './three/stats.js';
@@ -15,6 +15,7 @@ import { LightRig } from './three/lights.js';
 import { PostPipeline } from './three/post.js';
 import { ModelPool } from './three/models.js';
 import { InstancedBatches, type InstGroups } from './three/batches.js';
+import { CameraRig } from './three/camera-rig.js';
 
 export type { RenderStats } from './three/stats.js';
 import type { RenderStats } from './three/stats.js';
@@ -43,10 +44,10 @@ export interface ThreeRendererOptions {
 
 export class ThreeRenderer implements RendererBackend {
   private scene!: THREE.Scene;
-  private camera!: THREE.PerspectiveCamera;
   private gl!: THREE.WebGLRenderer;
   private frame = 0; // 帧计数（render-only·云飘等表现动画用·不进 hash）
   // 子系统
+  private cameras!: CameraRig; // 相机解释器（透视/正交·REQ-3D-Camera）
   private lights!: LightRig;
   private post!: PostPipeline;
   private models!: ModelPool;
@@ -64,8 +65,6 @@ export class ThreeRenderer implements RendererBackend {
   private rendered = false;
   private lastRenderSig = '';
   private lastShadowSig = '';
-  private camNear = 0;
-  private camFar = 0;
   private readonly width: number;
   private readonly height: number;
   private readonly background: number;
@@ -85,8 +84,7 @@ export class ThreeRenderer implements RendererBackend {
   init(container: HTMLElement): void {
     this.scene = new THREE.Scene();
     this.scene.background = new THREE.Color(this.background);
-    this.camera = new THREE.PerspectiveCamera(this.fov, this.width / this.height, 0.1, 10000);
-    this.camera.position.set(0, 0, 10);
+    this.cameras = new CameraRig(this.fov, this.width / this.height); // 透视 + 正交两台·按 Camera3D 选
     this.lights = new LightRig(this.scene); // 暖白主光（投软影）+ 冷蓝补光（Light3D 在场则数据驱动）
     this.gl = new THREE.WebGLRenderer({ antialias: true });
     this.gl.setSize(this.width, this.height);
@@ -110,6 +108,8 @@ export class ThreeRenderer implements RendererBackend {
     const instGroups: InstGroups = new Map(); // W1-A：不透明 Mesh3D 按视觉签名分批
     this.frame++;
     const cam3d = getCamera3D(world); // 盒庭模式开关（在场=轨道相机 + 2D 实体落地面 + 柔和阴影）
+    const followTarget = cam3d?.mode === 'follow' ? cam3d.target : undefined; // mode:'follow' 注视的实体
+    let followPose: Pose3D | undefined; // 收集期捕获 target 的位姿（= 相机注视点）
     const sky = getSky3D(world);
     this.syncSky(sky);
     this.lights.sync(this.scene, getLights3D(world)); // 数据化光照（维护 lightSig 供脏标）
@@ -135,6 +135,7 @@ export class ThreeRenderer implements RendererBackend {
           if (r.model3d.tint !== undefined) this.models.tint(r.entityId, r.model3d.tint);
           seen.add(r.entityId);
           poses.push(pose);
+          if (r.entityId === followTarget) followPose = pose;
         }
         continue;
       }
@@ -143,6 +144,7 @@ export class ThreeRenderer implements RendererBackend {
         const pose = mesh3dPose(r, r.mesh3d, cam3d, this.zStep);
         poses.push(pose);
         seen.add(r.entityId);
+        if (r.entityId === followTarget) followPose = pose;
         if ((r.color?.alpha ?? 1) >= 1) {
           const key = mesh3dBatchKey(r.mesh3d);
           let g = instGroups.get(key);
@@ -169,6 +171,7 @@ export class ThreeRenderer implements RendererBackend {
       mesh.scale.set(pose.sx, pose.sy, 1);
       this.paint(mesh, r, mode);
       poses.push(pose);
+      if (r.entityId === followTarget) followPose = pose;
     }
 
     // W1-C 脏标跳渲：渲染签名（投影体姿 + 相机 + 灯 + 后处理 + 天空云飘帧）。与上帧一致 → 跳过
@@ -186,22 +189,21 @@ export class ThreeRenderer implements RendererBackend {
 
     this.batches.sync(this.scene, instGroups); // W1-A：脏帧才写 instanceMatrix（一次 buffer 上传）+ 移空批
 
-    // 相机：① Camera3D → 盒庭轨道相机 + near/far 收紧（W1-C·提深度精度）；② 否则原俯视自适配（向后兼容）。
+    // 相机解释（REQ-3D-Camera）：① Camera3D → 盒庭轨道/跟随（投影/fov/ortho/near-far 全从数据·CameraRig 算矩阵）；
+    //   ② 否则原俯视自适配（向后兼容）。follow 模式注视点 = target 实体位（收集期捕获的 followPose）。
+    const aspect = this.width / this.height;
     if (cam3d) {
       const b = poseBounds3D(poses);
-      const c = bounds3DCenter(b);
-      const center = { x: cam3d.pivotX ?? c.x, y: cam3d.pivotY ?? c.y, z: cam3d.pivotZ ?? c.z };
+      const bc = bounds3DCenter(b);
+      const center = followPose
+        ? { x: followPose.x, y: followPose.y, z: followPose.z }
+        : { x: cam3d.pivotX ?? bc.x, y: cam3d.pivotY ?? bc.y, z: cam3d.pivotZ ?? bc.z };
       const radius = Math.max(bounds3DExtent(b), 1);
-      const dist = cam3d.distance ?? fitDistance3D(radius, this.fov);
-      const p = orbitCamera(center, dist, cam3d.yaw, cam3d.pitch);
-      this.camera.position.set(p.x, p.y, p.z);
-      this.camera.lookAt(center.x, center.y, center.z);
-      this.setNearFar(1, dist + SKY_RADIUS + 200); // 从 0.1–10000 收紧到 ~1–(dist+天空半径)
+      const dist = cam3d.distance ?? fitDistance3D(radius, cam3d.fov ?? this.fov);
+      this.cameras.applyOrbit(cam3d, center, dist, aspect, radius, this.fov, SKY_RADIUS);
       this.lights.placeShadow(center, radius);
     } else {
-      const fit = fitPerspective(poseBounds(poses), this.fov, this.width / this.height);
-      this.camera.position.set(fit.cx, fit.cy, fit.dist);
-      this.camera.lookAt(fit.cx, fit.cy, 0);
+      this.cameras.applyFlat(poseBounds(poses), this.fov, aspect);
     }
 
     // W1-C 阴影门：autoUpdate=false → 仅投影体/灯变才重算阴影贴图（相机/云飘不触发·大省）。
@@ -220,9 +222,10 @@ export class ThreeRenderer implements RendererBackend {
     }
     this.models.sweep(this.scene, seen);
 
-    // 渲染：有 Post3D → EffectComposer 管线；否则直渲（向后兼容）。
-    if (post) this.post.render(this.scene, this.camera, post);
-    else this.gl.render(this.scene, this.camera);
+    // 渲染：有 Post3D → EffectComposer 管线；否则直渲（向后兼容）。用 CameraRig 当前激活相机（透视/正交）。
+    const cam = this.cameras.current;
+    if (post) this.post.render(this.scene, cam, post);
+    else this.gl.render(this.scene, cam);
     this.rendered = true;
     this.cpuMs = this.cpuMs * 0.9 + (performance.now() - t0) * 0.1;
   }
@@ -275,16 +278,6 @@ export class ThreeRenderer implements RendererBackend {
       this.skySig = sig;
     }
     if (sky.scroll) this.sky.rotation.y = this.frame * sky.scroll * 0.0004; // 云飘（render-only）
-  }
-
-  // 相机 near/far（变了才 updateProjectionMatrix·省每帧矩阵重算）。
-  private setNearFar(near: number, far: number): void {
-    if (this.camNear === near && this.camFar === far) return;
-    this.camera.near = near;
-    this.camera.far = far;
-    this.camera.updateProjectionMatrix();
-    this.camNear = near;
-    this.camFar = far;
   }
 
   // ── 2D-in-3D 扁平层（sprite/text/shape + 透明 Mesh3D fallback）──────────────────────

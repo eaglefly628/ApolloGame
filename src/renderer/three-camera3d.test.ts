@@ -4,7 +4,8 @@ import { describe, it, expect } from 'vitest';
 import { World } from '@engine/core/world.js';
 import { collectRenderables } from './renderable.js';
 import {
-  transform3dPose, groundPose, orbitCamera, poseBounds3D, bounds3DCenter, bounds3DExtent, fitDistance3D, mesh3dBatchKey, mesh3dDepth, type Pose3D,
+  transform3dPose, groundPose, orbitCamera, poseBounds3D, bounds3DCenter, bounds3DExtent, fitDistance3D, mesh3dBatchKey, mesh3dDepth,
+  clampPitch, orthoFrustum, type Pose3D,
 } from './three-projection.js';
 import { hashPoses, camSig, postSig } from './three/stats.js';
 import { getCamera3D, getSky3D, getLights3D, getPost3D } from '@engine/protocol/camera-view.js';
@@ -63,6 +64,15 @@ describe('Transform3D / Camera3D 纯函数（盒庭位姿 + 轨道相机）', ()
     expect(postSig({ type: 'Post3D', tiltShift: { focus: 0.5, intensity: 3 } } as Post3D))
       .not.toBe(postSig({ type: 'Post3D', tiltShift: { focus: 0.5, intensity: 5 } } as Post3D));
     expect(postSig(null)).toBe('');
+  });
+  it('REQ-3D-Camera：clampPitch 夹俯仰 + orthoFrustum 据半高/宽高比算视锥', () => {
+    expect(clampPitch(0.05, 0.12, 1.45)).toBe(0.12); // 下限
+    expect(clampPitch(2.0, 0.12, 1.45)).toBe(1.45); // 上限
+    expect(clampPitch(0.6, 0.12, 1.45)).toBe(0.6); // 区间内不变
+    expect(clampPitch(2.0)).toBe(2.0); // 无 min/max → 不夹
+    const f = orthoFrustum(10, 2); // 半高 10·宽高比 2 → 半宽 20
+    expect(f.top).toBe(10); expect(f.bottom).toBe(-10);
+    expect(f.right).toBe(20); expect(f.left).toBe(-20);
   });
   it('poseBounds3D + center + extent + fitDistance', () => {
     const poses: Pose3D[] = [

@@ -135,6 +135,21 @@ export function fitDistance3D(radius: number, fovDeg: number, pad = 1.4): number
   return (radius / Math.max(tanV, 1e-6)) * pad + radius;
 }
 
+// REQ-3D-Camera：俯仰夹角（行为层运镜 + 解释器都用·缺省不夹）。纯函数。
+export function clampPitch(pitch: number, min?: number, max?: number): number {
+  let p = pitch;
+  if (min !== undefined) p = Math.max(min, p);
+  if (max !== undefined) p = Math.min(max, p);
+  return p;
+}
+
+// REQ-3D-Camera：正交相机视锥（按半高 + 宽高比）。纯函数（无 three）→ node 单测正交取景。
+export function orthoFrustum(orthoSize: number, aspect: number): { left: number; right: number; top: number; bottom: number } {
+  const halfH = Math.max(orthoSize, 1e-3);
+  const halfW = halfH * Math.max(aspect, 1e-6);
+  return { left: -halfW, right: halfW, top: halfH, bottom: -halfH };
+}
+
 // 轨道相机位置：绕 center 的球面坐标（y 上）。yaw=方位(绕Y)，pitch=俯仰(正=俯视)，dist=半径。
 // 纯函数（无 three）→ node 单测相机定位，three-renderer 只剩 set/lookAt 薄胶水。
 export function orbitCamera(

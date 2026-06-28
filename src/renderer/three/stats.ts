@@ -28,9 +28,14 @@ export function hashPoses(poses: readonly Pose3D[]): number {
   return h >>> 0;
 }
 
-// 相机签名（参与渲染脏标）。
+// 相机签名（参与渲染脏标·含 REQ-3D-Camera 全部语义参数 → 改投影/fov/模式即重渲）。
 export function camSig(c: Camera3D | null): string {
-  return c ? `${c.yaw.toFixed(4)},${c.pitch.toFixed(4)},${c.distance ?? -1},${c.pivotX ?? 0},${c.pivotY ?? 0},${c.pivotZ ?? 0}` : '';
+  if (!c) return '';
+  return [
+    c.yaw.toFixed(4), c.pitch.toFixed(4), c.distance ?? -1, c.pivotX ?? 0, c.pivotY ?? 0, c.pivotZ ?? 0,
+    c.projection ?? 'p', c.fov ?? -1, c.orthoSize ?? -1, c.near ?? -1, c.far ?? -1,
+    c.mode ?? 'o', c.target ?? '', c.pitchMin ?? -9, c.pitchMax ?? -9,
+  ].join(',');
 }
 
 // 后处理签名（参与渲染脏标）。

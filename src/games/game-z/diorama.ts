@@ -37,8 +37,9 @@ export function dioramaBlueprint(): WorldBlueprint {
     // 角色靠现成 velocity→motion-apply 走动（纯数据 sim·确定性）；其余全静态。
     capabilities: [motionApplyCapability],
     entities: {
-      // 盒庭轨道相机（等距俯角环绕·注视场景中心略上方）。运行时可拖拽旋转（game-z.ts 输入胶水改 yaw/pitch）。
-      cam: { Camera3D: { yaw: 0.72, pitch: 0.6, distance: 92, pivotX: 0, pivotY: 5, pivotZ: 0 } },
+      // 盒庭相机（REQ-3D-Camera·语义参数全数据化）：轨道俯角环绕·fov/俯仰夹角进数据（不再写死在渲染器/胶水）。
+      // 运行时：拖拽改 yaw/pitch、滚轮改 distance（行为层）；O 切正交、F 切跟随小黄鸭（game-z.ts 输入胶水）。
+      cam: { Camera3D: { yaw: 0.72, pitch: 0.6, distance: 92, pivotX: 0, pivotY: 5, pivotZ: 0, fov: 38, pitchMin: 0.12, pitchMax: 1.45 } },
 
       // 数据化光照（Light3D·替原写死的灯）：暖白太阳（投软影）+ 冷蓝环境补光。
       sun: { Light3D: { kind: 'directional', color: 0xfff1d6, intensity: 1.6, castShadow: true } },
