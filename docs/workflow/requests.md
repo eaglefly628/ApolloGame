@@ -62,7 +62,27 @@
 >
 > **同一抽象问题贯穿战斗屏其余 juice**（源泉条收退残影/半格/升腾火花、掷命特写翻起飞入/硬币弹出/火花脉冲）：GA 迁到那几块时同样**只报「要什么效果」、把抽象交主程**，绝不在游戏层留手写 CSS keyframes，也不要求逐效果加开关。
 
-### REQ-UI-G棋枰 · [2026-06-27] · GA（game-g·战斗 UI 重构路②评估·请 Lead/owner 裁决形态） · status: **✅ 已裁（主程·取(3)现状豁免 + (2)列为 rule-of-three 触发目标 · 驳(1)）** · 类型: 形态裁决（引擎渲染器形态 vs game-g 回合制 DOM 盘）
+### REQ-UI-G棋枰 · [2026-06-27] · GA（game-g·战斗 UI 重构路②评估·请 Lead/owner 裁决形态） · status: **🔁 owner 2026-06-28 推翻豁免·拍板「激进全量重写为数据驱动 LayoutNode·缺能力开给主程」（GA 重评：x/y 绝对定位+rotate+现有控件可重组·不需新引擎原语·见下「GA 重评 2026-06-28」）** · 类型: 形态裁决 → 转 全量数据化重写
+
+> **★ GA 重评（2026-06-28·能力长进后重新评估·owner 拍板激进重写）**：主程当初「豁免」是按「play-field→canvas/ECS 渲染器」框架（impedance mismatch）；但主程自己澄清「铁律要数据驱动·非必须栅格化」。本次重构期间 LayoutNode 长出关键能力 → **棋枰可纯数据驱动 DOM 重组，不需新引擎原语**：
+> - 解锁点：`LayoutConstraints.x/y`=**绝对定位**（render.ts L76·position:absolute）+ `rotate` + `Panel 自带 position:relative`（定位上下文）+ 控件集（`cols` 网格 / `PlayingCard` / `Versus` / `CoinFlip` / `fx` / `Tooltip.block` / `Image` / `anim`）。
+> - 逐元素：三路×9 格=Panel grid cols:9；格内兵牌=PlayingCard + x/y 绝对叠 Label(战力/生肖×3/将水印)；斜梯=x/y+rotate 细长 Panel + bgScroll 流动；门钮=Button；城堡/血灯=Panel 组+rotate:45 菱形；掷命特写=Versus+CoinFlip+Label 明细；forecast/落点/clash 环=x/y 叠+fx pulse；hover=Tooltip.block。
+> - **rule-of-three 闸不卡**：这是游戏层填数据（重组）·非加引擎能力。
+> **owner 拍板**：激进推进·全部数据化落地·缺的能力开给主程做。
+>
+> **GA 分阶段执行（每段独立全绿可回退）**：① 掷命对决特写(Versus/CoinFlip·无缺口·试点) → ② 棋盘骨架(grid+格+门·需 Panel.action) → ③ 兵牌信息层(PlayingCard+x/y 叠·纯重组) → ④ 斜梯/城堡/源泉(rotate 重组 + 源泉 drain fx)。
+>
+> **撞到/将撞到的真缺口（已拆成下列 REQ 开给主程并行）**：`REQ-UI-容器可点`(Panel.action·②需) · `REQ-UI-fx源泉消退`(④需)。其余用现有能力重组。
+
+### REQ-UI-容器可点 · [2026-06-28] · GA（game-g 棋枰数据化重写·阶段②需） · status: **open（请主程·阻塞棋盘交互数据化）** · 类型: 真能力缺口（容器无 action）
+
+> 棋枰数据化重写时：棋盘的**路轨/格子/门**需「点击→部署/翻门」，但这些是组合容器(`Panel`)·`PanelProps` 无 `action`（只有叶子控件 Button/Tag/Card 可点）→ 组合容器无法发信号·棋盘交互没法数据化。
+> 请主程给 **`Panel.action?`（+`actionArg?`）**：非 bare 容器可点→渲 `data-action`[+`data-arg`]（同 Button），让「带 children 的容器」可作点击目标。红线同既有：只发信号名·handler 不塞自由逻辑。复用面：任何「可点的卡片区/格子/列表行容器」。
+
+### REQ-UI-fx源泉消退 · [2026-06-28] · GA（game-g 棋枰数据化重写·阶段④需·owner 点名可做） · status: **open（请主程·非阻塞·有它更保真）** · 类型: 真能力下沉（fx 闭集补 kind）
+
+> 源泉条「召唤源泉」消耗时，原 bespoke 有「刚花掉的格分段半透明消退」动效（g-drain 收退残影）。迁数据驱动后 `layout.fx` 闭集无对应 kind。**owner 2026-06-28 点名「可以让主程做·分段半透明的消失效果」**。
+> 请主程给 `fx` 加一个 kind（如 `'fade'`/`'drain'`·分段半透明淡出·once 触发）·或确认用现有 `flash`/`pulse` 近似。非阻塞（先用现有近似·有专用 kind 更保真）。
 
 > **GA 对战斗屏「棋枰 play-field」走引擎渲染器（铁律路②）的评估。结论：现有渲染器与 game-g 棋盘形态阻抗失配·照搬高成本低收益·需 Lead/owner 定形态。**
 >
