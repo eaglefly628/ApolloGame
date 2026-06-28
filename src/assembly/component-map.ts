@@ -50,6 +50,9 @@ import type {
   Mesh3D,
   Model3D,
   Mortal,
+  NavAgent,
+  NavGraph,
+  NavPath,
   OverTime,
   Overlap,
   Overlap3D,
@@ -148,6 +151,9 @@ export interface ComponentDataMap {
   Mesh3D: Omit<Mesh3D, 'type'>;
   Model3D: Omit<Model3D, 'type'>;
   Mortal: Omit<Mortal, 'type'>;
+  NavAgent: Omit<NavAgent, 'type'>;
+  NavGraph: Omit<NavGraph, 'type'>;
+  NavPath: Omit<NavPath, 'type'>;
   OverTime: Omit<OverTime, 'type'>;
   Overlap: Omit<Overlap, 'type'>;
   Overlap3D: Omit<Overlap3D, 'type'>;

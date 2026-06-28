@@ -11,7 +11,11 @@
 
 ## 待处理 / 进行中
 
-### REQ-STUDIO-文生图美术管线 · [2026-06-28] · PG 代 owner 提（**平台/studio 域·主程主理**）· status: **open（架构待主程评审 + owner 拍板分期）** · 类型: 真能力缺口（生成层）+ 大量可重组（导入/分类/库/映射已存在）
+### REQ-寻路 · [2026-06-28] · owner→Lead 直派（引擎域·Lead 登记） · status: **✅ done（主程 2026-06-28·`astar.test.ts`+`pathfind.test.ts`）** · 类型: 真能力缺口下沉（连续自由空间寻路）
+
+> **owner 直派**：「2D/3D 都要寻路系统·用 pass node 表航点·NavGraph 当摆放并行数据·新建 graph + path finding」。碰撞耦合疑虑由「NavGraph=作者摆放数据(非从 3D 几何烘焙)」化解 → 不等 P3D。
+> **CORE RULE 评判**：① 碰撞已覆盖（2D overlap-detect/collision-resolve/tilemap·3D contact3d·P3D 域）→ **不重建**·寻路与之**正交组合**（nav 写 Velocity → collision-resolve 避让）；② 连续自由空间寻路=真缺口（hex A* 锁网格·steering 贪婪无全局路）→ **下沉一个通用能力**。navmesh(多边形) vs 航点图：选**航点图**（最弱 LLM 能手摆·navmesh 需烘焙器违尺子）。
+> **落地**（`t2-pathfind`）：`NavGraph{nodes,edges}`(摆放数据·单例) + `NavAgent{speed,arriveRange,…}` + 引擎写 `NavPath`(缓存路径)；通用确定性 A* 抽到 `engine/spatial/astar.ts`（图无关核·hex 后续可复用去重·暂未迁免连累 grid-move）；`nav-follow` 系统复用 `Relation(target)` 索敌 + `motion-apply` 移动 + `collision-resolve` 避让。确定性 in-hash（整数 id tie-break·sqrt 同 steering 类·逐 agent 排序）。维度无关（2D 现用·升 3D 加 z 即可）。
 > **owner 需求原话归纳**：要一个**引擎原生的文生图工具**，挂在「资源库」里/旁的按钮：打开→填关键词→（填主流图站 API key）生成一整套美术；产物**自动落进某游戏资源目录 + 自动分类**；**智能**——从项目对白/数据**自动生成提示词 + 需求 + 风格控制**；一键导出所需图；可**单张按引用微调**（指明改库里哪张、怎么改、单独重生）也可批量；配置完**导出一张与需求一一匹配的数据表**，游戏即刻套用。
 >
 > **架构评审（PG·资深视角）**：这是**内容生产 devtool**（authoring·喂数据驱动引擎），不违宪法——游戏照常「声明需要哪些美术 key」，工具去**兑现**这些 key。**关键：一大半已存在，应重组而非重写**：

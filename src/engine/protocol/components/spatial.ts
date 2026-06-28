@@ -173,3 +173,34 @@ export interface Tilemap extends Component {
   originY: number;
   layers: TileLayer[];
 }
+
+// ── pathfind（REQ-寻路·确定性 sim·进 hash）── 连续自由空间寻路：航点图 NavGraph（摆放数据）+ A*（引擎）+ 沿路跟随。
+// 与 grid-move（六格离散）对偶：此为**连续坐标自由空间**（2D 现用·维度无关·将来升 3D 加 z 即可）。
+// 「航点图 = 摆放并行数据，寻路算法 = 引擎确定性解释器」（宪法对齐·同 hex「站位=数据/A*=代码」）。
+// 静态可走性 = 作者只在可走处连边（或对接 tilemap 实心瓦片）；动态避让 = 既有 collision-resolve 在 nav 定速后
+// 推开（**正交**·nav 写 Velocity → motion-apply 积分 → overlap/collision-resolve 分离·零新碰撞代码·复用）。
+export interface NavGraph extends Component {
+  readonly type: 'NavGraph';
+  nodes: Array<{ x: number; y: number }>;                 // 航点世界坐标（下标即节点 id）。摆放数据·最弱 LLM 也能填。
+  edges: Array<{ a: number; b: number; cost?: number }>;  // 连边（节点下标·无向）；cost 缺省 = 两端 Euclidean 距离。
+}
+
+// ── NavAgent ── 沿 NavGraph 走向 Relation(target) 的移动意图（写 Velocity·被 motion-apply 积分·受碰撞介入）。
+// 复用 aggro 写的 Relation(target)（同 steering/grid-move 索敌接缝·零新目标概念）。无目标/被 CC → 停。
+export interface NavAgent extends Component {
+  readonly type: 'NavAgent';
+  speed: number;            // 移动速度（写入 Velocity 模长·单位/tick）
+  arriveRange: number;      // 到终点此距离内即停
+  waypointRange?: number;   // 到当前航点此距离内即推进下一航点（缺省 = max(speed, arriveRange)·防抖/防一拍一停）
+  repathPeriod?: number;    // 每多少 tick 强制重算路径（缺省 30）；目标显著移动（> arriveRange）也会触发重算
+  haltStatusMask?: number;  // 自身 Status 含这些位时停（冻结/眩晕 CC·同 Steering/GridMover.haltStatusMask）
+}
+
+// ── NavPath ── 引擎写的缓存路径（确定性派生·进 hash）。via=待经节点下标序；gx/gy=规划所据目标点；age=自上次重算 tick。
+export interface NavPath extends Component {
+  readonly type: 'NavPath';
+  via: number[];   // 剩余待经航点（节点下标·按序·整数进 hash）
+  gx: number;      // 规划时的目标点 x（检测目标移动 → 触发重算）
+  gy: number;      // 规划时的目标点 y
+  age: number;     // 自上次重算的 tick 数（配 repathPeriod）
+}
