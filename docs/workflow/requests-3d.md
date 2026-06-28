@@ -6,7 +6,7 @@
 
 ---
 
-## REQ-3D-Collision 3D 逻辑碰撞（触发/重叠·升维 2D） · [2026-06-28] · owner+P3D → 主程（sim/能力域评审） · status: **🚧 P1 已落（owner 2026-06-28 授权 P3D 跨界落·知会主程评审）+ debug 线框可视化/可点击菜单已落（P3D 渲染线域）；P2/P3 待** · 类型: 真能力缺口（3D 逻辑碰撞·升维复用）
+## REQ-3D-Collision 3D 逻辑碰撞（触发/重叠·升维 2D） · [2026-06-28] · owner+P3D → 主程（sim/能力域评审） · status: **🚧 P1 + debug 线框/可点击菜单 + P2(精简 hull·凸多面体 SAT) 已落（owner 2026-06-28 授权 P3D 跨界落·知会主程评审）；P3 物理表现轨待（YAGNI）** · 类型: 真能力缺口（3D 逻辑碰撞·升维复用）
 
 > **⚠️ 知会主程（owner 授权 P3D 跨界落 sim·同资产层先例）**：本 REQ 的 sim 半边落在你的域（`engine/spatial` + `skills/atoms` + sim 组件 `spatial.ts`）——**owner 2026-06-28 当面授权 P3D 实现 P1**。改动**严格镜像 2D 碰撞**（同确定性纪律：只用 +−×÷/sqrt/min/max·无 sin/cos/hypot），**进 hash·rollback 安全**，不碰 2D 碰撞代码。请评审；如与并行改动撞 rebase 喊我。
 >
@@ -17,7 +17,19 @@
 > - **demo**：game-z 加 `overlapDetect3dCapability` + hero `Collider3D` 胶囊 + 触发区 zone（半透明绿垫 Mesh3D[render] + `Collider3D` box trigger[sim]·同 2D Transform 驱动渲染+碰撞）；HUD 读 `Overlap3D` 亮「🔔 触发区」。截图验证。
 > - 测试：`contact3d.test`(7·含 **Y 分离不重叠** 真 3D + 确定性逐位) + `overlap-detect-3d.test`(3·含 **Collider3D 进 hash** 验证 + 触发进出) + diorama 碰撞。tsc+vitest(1886)+build+截图全绿。
 > - **✅ debug 线框可视化（P3D 渲染线域·提案 §边界「P3D 天然拥有的那块 ①」已落）**：`renderer/three/collider-debug.ts`（新·`ColliderDebug` 类·render-only·池管理·只读 world 不写 sim）——读 sim `Collider3D`+2D `Transform` 画线框（box→Box·sphere→Sphere·竖直 capsule→Capsule·**位置映射严格同 `contact3d`**：planar 取 Transform、垂直取 Collider3D `baseY/height`）；trigger=绿、实心=黄；`MeshBasicMaterial wireframe`。接入 `three-renderer` `sync`（`setDebugColliders(on)` 开关 + renderSig 失效重渲）。**可点击菜单**（owner 2026-06-28 加需求）：game-z 左下 `pointer-events:auto` 独立宿主 + `LayoutNode` `Button`（action `toggleDebug` 经 mountUI handler 入队·**UI 铁律**·无自由 DOM/CSS 逻辑）+ `C` 键快捷。截图验证（hero 胶囊线框 + zone 盒线框 + 按钮 ON）。
-> - **⬜ 待续**：P2（OBB + cylinder + 凸包 GJK 有界）；3D `collision-resolve`（推开·墙阻挡·现只检测不推）；P3 物理表现轨（纯表现·Rapier·YAGNI）。
+>
+> **✅ P2 已落（P3D 2026-06-28·owner 批「现在落精简 hull+3D SAT」·已推）—— 评审后大幅重定范围，回驳原 P2 三件中的两件半**：
+> - **架构评审先行（CLAUDE.md 核心规则 #2）**：读 2D `contact.ts` 发现本引擎**从不在运行时旋转碰撞体**（`contact.ts:7`「无旋转」）——2D 表达「转过的盒」是用 `polygon` + **预烘焙顶点**（world 顶点 = 局部顶点 + 平移·不乘旋转矩阵），数据层就解了 sin/cos 确定性难题。据此回驳：
+>   - **OBB（按角度）→ 回驳**：算朝向基底需 sin/cos → 破坏跨机逐位确定（2D 正为此绕开）；「转过的盒」功能上 = 凸包顶点 / 或 AABB 拆分（manifesto C-档），可重组。
+>   - **cylinder → 回驳**：角色 XZ 阻挡上圆柱≈胶囊（只差平顶/圆顶）→ 功能等价 capsule·YAGNI。
+>   - **GJK+EPA → 回驳为当前形态**：对「渲染轻引擎」过度复杂（owner：不要过度复杂·不能特别费）；SAT 对有界顶点凸包直接给穿透深度·复用 2D `satPolyPoly`/`satPolyCircle` 心智模型即可。GJK 是规模路·真撑爆顶点数再说。
+> - **落地（唯一站得住的精简形态）**：新碰撞体档 `hull` = **预烘焙局部顶点 + 面法线轴**（`Collider3D.verts`/`axes`·照搬 2D `polygon` 套路·运行时只平移不旋转·无 sin/cos）。一举吃掉「OBB」的**正确**表达（转过的盒 = 8 顶点 hull）+ 任意凸关卡块/斜坡/斜墙。
+>   - **窄相位**：`engine/spatial/sat3d.ts`（新·确定性 3D SAT）——`satPolyPoly3`（A 面法线 ∪ B 面法线 ∪ **边×边叉积轴** → 盒/OBB 精确 15 轴）+ `satPolySphere3`（面法线 ∪ 最近顶点→球心·镜像 2D `satPolyCircle`）。只用 +−×÷/sqrt + 叉积·**无三角函数**。
+>   - **接入** `contact3d.ts`：hull 介入 → SAT 路；其余保持 P1 解析（**逐位不变**）。胶囊 vs hull = 段上取离 hull 心最近 Y 的单球（轻量·保守·够角色站台/撞墙）。
+>   - **debug 线框**：`collider-debug.ts` 加 hull（`ConvexGeometry` 从顶点重建·render-only）。
+>   - **demo**：game-z 加 `angle-wall`（绕 Y 转 30° 石板·Transform3D.rotY render + hull collision·**顶点由轴+半尺寸只用 ×/+ 生成→跨机确定**）。开菜单见斜置 hull 线框（黄）——证明 SAT 按真朝向判定·非轴对齐 AABB。
+>   - **测试**：`contact3d.test` +5（轴对齐 hull·**转 45° 真旋转：球落 AABB 内但盒外→SAT 判分离**·hull-hull 15 轴·hull-胶囊·确定性）。tsc+vitest+build+截图全绿。
+> - **⬜ 待续**：3D `collision-resolve`（推开·墙阻挡·现只检测不推·按需）；P3 物理表现轨（纯表现·Rapier·YAGNI）。
 > **架构守则（贯穿·下同）不变。**
 
 

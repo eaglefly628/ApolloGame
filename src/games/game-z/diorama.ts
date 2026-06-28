@@ -22,6 +22,18 @@ function block(x: number, y: number, z: number, w: number, h: number, d: number,
   };
 }
 
+// 斜置凸块（REQ-3D-Collision·P2 demo）：绕 Y 转 30° 的盒 → 凸多面体 hull 碰撞体。
+// 面法线轴 = 预烘焙数据（三角值写死成常量·非运行时计算）；8 顶点由轴 + 半尺寸**只用 ×/+** 生成 → 跨机逐位确定。
+// render 用 Transform3D.rotY 同角度斜摆，collision 用 hull 顶点 —— 渲染与碰撞各取所需、同一朝向。
+const COS30 = 0.8660254037844387, SIN30 = 0.5;
+const WALL_AXES = [[COS30, 0, -SIN30], [0, 1, 0], [SIN30, 0, COS30]]; // 绕 +Y 转 30°（同 three rotY）
+function hullBoxVerts(hx: number, hy: number, hz: number, a: number[][]): number[] {
+  const out: number[] = [];
+  for (const sx of [-1, 1]) for (const sy of [-1, 1]) for (const sz of [-1, 1])
+    for (let k = 0; k < 3; k++) out.push(sx * hx * a[0]![k]! + sy * hy * a[1]![k]! + sz * hz * a[2]![k]!);
+  return out;
+}
+
 // 鹅卵石小径：一排**完全相同**的石块（同尺寸同色 → 同视觉签名）。展示 W1-A 实例化：N 个同款盒 → 1 个
 // InstancedMesh（1 draw call）。纯数据（蓝图摆 N 个实体），渲染器自动批，零渲染旗标。
 function steppingStones(): Record<string, Ent> {
@@ -95,6 +107,15 @@ export function dioramaBlueprint(): WorldBlueprint {
 
       // 板条箱
       crate: block(6, 3, -10, 6, 6, 6, 0xa1887f, 0x795548),
+
+      // 斜墙（P2·hull 凸多面体碰撞体 demo）：绕 Y 转 30° 的石板。render 斜摆 + hull 碰撞（小黄鸭走右侧撞它·
+      // 产 Overlap3D）。开「碰撞体线框」菜单可见其真实斜置 hull 线框（白）——证明 SAT 按真朝向判定·非轴对齐 AABB。
+      'angle-wall': {
+        Transform: { x: 20, y: -4, rotation: 0, scaleX: 1, scaleY: 1 }, // 2D：碰撞 planar（x→X、y→Z）
+        Transform3D: { x: 20, y: 4, z: -4, rotY: 0.5235987755982988 }, // 3D：render 斜摆 30°（=hull 朝向）
+        Mesh3D: { shape: 'box', width: 12, height: 8, depth: 3, frontTint: 0x90a4ae, backTint: 0x90a4ae, edgeTint: 0xb0bec5 },
+        Collider3D: { kind: 'hull', baseY: 4, verts: hullBoxVerts(6, 4, 1.5, WALL_AXES), axes: WALL_AXES.flat() },
+      },
 
       // 两朵蘑菇（茎 + 伞盖）
       'mush-a-stem': block(2, 1, 14, 3, 2, 3, 0xfff3e0, 0xffe0b2),

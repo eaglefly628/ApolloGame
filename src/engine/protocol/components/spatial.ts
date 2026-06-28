@@ -87,12 +87,16 @@ export interface Overlap extends Component {
 // 不依赖 render-only 的 Transform3D）。胶囊限定竖直(Y 轴·角色标准)。trigger=只产重叠事件不推开（触发区/感知）。
 export interface Collider3D extends Component {
   readonly type: 'Collider3D';
-  kind: 'sphere' | 'box' | 'capsule';
+  kind: 'sphere' | 'box' | 'capsule' | 'hull';
   radius?: number; // sphere / capsule
   halfX?: number; // box 半尺寸
   halfY?: number;
   halfZ?: number;
   height?: number; // capsule 总高（含两端半球·缺省 2*radius）
+  // hull（REQ-3D-Collision · P2）：凸多面体 = **预烘焙局部顶点 + 面法线轴**（同 2D `polygon` 套路·
+  // 顶点已按需朝向写死成数据·运行时只平移不旋转 → 无 sin/cos·跨机确定）。表达「转过的盒子/斜坡/斜墙」。
+  verts?: readonly number[]; // 扁平局部顶点 [x0,y0,z0, x1,y1,z1, …]（绕碰撞体原点·原点= Transform+baseY）
+  axes?: readonly number[]; // 扁平**单位**面法线候选分离轴 [nx,ny,nz, …]（盒/OBB=3 轴；运行时再补边叉积轴）
   baseY?: number; // 碰撞体下沿离地高度（缺省 0=坐地）
   offsetX?: number; // planar 相对 Transform 的偏移
   offsetZ?: number;

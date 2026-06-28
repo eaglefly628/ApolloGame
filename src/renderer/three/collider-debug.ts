@@ -1,10 +1,11 @@
 import * as THREE from 'three';
+import { ConvexGeometry } from 'three/addons/geometries/ConvexGeometry.js';
 import type { IWorld } from '@engine/core/types.js';
 import type { Transform, Collider3D } from '@engine/protocol/components.js';
 
 // ═══════════════════════════════════════════════════════════════
 //  three/ColliderDebug —— 碰撞体调试可视化（render-only·我的渲染线域）。
-//  读 sim 的 `Collider3D`(+2D `Transform`) 画线框（box/sphere/竖直胶囊）。位置映射同 contact3d：
+//  读 sim 的 `Collider3D`(+2D `Transform`) 画线框（box/sphere/竖直胶囊/凸多面体 hull）。位置映射同 contact3d：
 //  planar 取 Transform(x→X、y→Z)、垂直取 Collider3D(baseY/height)。trigger=绿、实心=黄。池管理·开关即增删。
 //  纯表现：只读 world、画线框，不写 sim、不进碰撞逻辑。
 // ═══════════════════════════════════════════════════════════════
@@ -53,16 +54,19 @@ export class ColliderDebug {
   }
 }
 
-// 碰撞体几何签名（形状/尺寸/trigger 变才重建线框）。
+// 碰撞体几何签名（形状/尺寸/trigger 变才重建线框）。hull 含顶点数 + 首末顶点（够侦测换形）。
 function colliderSig(c: Collider3D): string {
-  return `${c.kind}|${c.radius ?? 0}|${c.halfX ?? 0}|${c.halfY ?? 0}|${c.halfZ ?? 0}|${c.height ?? 0}|${c.trigger ? 1 : 0}`;
+  const vf = c.verts ?? [];
+  const hull = c.kind === 'hull' ? `|${vf.length}|${vf[0] ?? 0}|${vf[vf.length - 1] ?? 0}` : '';
+  return `${c.kind}|${c.radius ?? 0}|${c.halfX ?? 0}|${c.halfY ?? 0}|${c.halfZ ?? 0}|${c.height ?? 0}|${c.trigger ? 1 : 0}${hull}`;
 }
 
-// 碰撞体中心 Y（同 contact3d：box=baseY+halfY·sphere=baseY+radius·capsule=baseY+height/2）。
+// 碰撞体中心 Y（同 contact3d：box=baseY+halfY·sphere=baseY+radius·capsule=baseY+height/2·hull=baseY[顶点已含局部 Y]）。
 function centerY(c: Collider3D): number {
   const baseY = c.baseY ?? 0;
   if (c.kind === 'box') return baseY + (c.halfY ?? 0);
   if (c.kind === 'sphere') return baseY + (c.radius ?? 0);
+  if (c.kind === 'hull') return baseY; // hull 局部顶点已绕原点(baseY)·此处只平移原点
   return baseY + (c.height ?? 2 * (c.radius ?? 0)) / 2; // capsule
 }
 
@@ -74,6 +78,11 @@ function buildWire(c: Collider3D): THREE.Mesh {
     geo = new THREE.BoxGeometry(2 * (c.halfX ?? 0), 2 * (c.halfY ?? 0), 2 * (c.halfZ ?? 0));
   } else if (c.kind === 'sphere') {
     geo = new THREE.SphereGeometry(c.radius ?? 0, 12, 8);
+  } else if (c.kind === 'hull') {
+    const vf = c.verts ?? [];
+    const pts: THREE.Vector3[] = [];
+    for (let i = 0; i + 2 < vf.length; i += 3) pts.push(new THREE.Vector3(vf[i], vf[i + 1], vf[i + 2]));
+    geo = pts.length >= 4 ? new ConvexGeometry(pts) : new THREE.BufferGeometry(); // <4 点无体积·空几何
   } else {
     const r = c.radius ?? 0;
     const len = Math.max(0, (c.height ?? 2 * r) - 2 * r); // 圆柱段 = 总高 - 两半球帽

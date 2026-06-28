@@ -59,3 +59,59 @@ describe('contact3d · 解析 3D 接触', () => {
     expect(JSON.stringify(h1)).toBe(JSON.stringify(h2));
   });
 });
+
+// ── hull（凸多面体·P2·3D SAT）── 顶点/面法线预烘焙·运行时只平移不旋转（无 sin/cos·确定）。
+const C = 0.7071067811865476; // cos45=sin45（绕 Y 转 45°·测试数据·非引擎运行时三角）
+// 局部盒（绕原点）：3 单位轴 a0/a1/a2·半尺寸 hx/hy/hz → 8 顶点 ±hx a0 ±hy a1 ±hz a2。axes=面法线。
+const hullBox = (hx: number, hy: number, hz: number, axes: number[][], baseY = 0): Collider3D => {
+  const [a0, a1, a2] = axes as [number[], number[], number[]];
+  const verts: number[] = [];
+  for (const sx of [-1, 1]) for (const sy of [-1, 1]) for (const sz of [-1, 1]) {
+    verts.push(sx * hx * a0[0]! + sy * hy * a1[0]! + sz * hz * a2[0]!);
+    verts.push(sx * hx * a0[1]! + sy * hy * a1[1]! + sz * hz * a2[1]!);
+    verts.push(sx * hx * a0[2]! + sy * hy * a1[2]! + sz * hz * a2[2]!);
+  }
+  return { type: 'Collider3D', kind: 'hull', verts, axes: axes.flat(), baseY };
+};
+const IDENTITY = [[1, 0, 0], [0, 1, 0], [0, 0, 1]];
+const YAW45 = [[C, 0, -C], [0, 1, 0], [C, 0, C]]; // 绕 Y 转 45°：XZ 足迹成菱形
+
+describe('contact3d · hull(凸多面体·P2)', () => {
+  it('轴对齐 hull 盒 vs 球：贴面重叠、法线 hull→球 沿 +Z、深度可预测', () => {
+    const h = hullBox(3, 3, 3, IDENTITY, 0); // 世界 [-3,3]³
+    const hit = contact3d(T(0, 0), h, T(0, 4), sphere(2, -2)); // 球心(0,0,4)·面 z=3·距 1 < r=2
+    expect(hit).not.toBeNull();
+    expect(hit!.depth).toBeCloseTo(1);
+    expect(hit!.nz).toBeCloseTo(1);
+  });
+
+  it('转过 45° 的 hull（真旋转·非 AABB）：球落在世界 AABB 内但盒外 → SAT 正确判分离', () => {
+    const tilted = hullBox(4, 1, 4, YAW45, 0); // XZ 菱形·世界 AABB 半宽≈5.66·真盒面 x+z=5.66
+    // 球在 (5,5)：在 AABB 内，但 x+z=10 ≫ 5.66 → 真盒外 → 分离（朴素 AABB 会误判重叠）
+    expect(contact3d(T(0, 0), tilted, T(5, 5), sphere(1, -1))).toBeNull();
+    // 球在 (2,2)：x+z=4 < 5.66 → 盒内 → 重叠
+    expect(contact3d(T(0, 0), tilted, T(2, 2), sphere(1, -1))).not.toBeNull();
+  });
+
+  it('hull vs hull：15 轴 SAT·最小穿透轴（轴对齐两盒沿 Z 叠 → +Z 深 2）', () => {
+    const a = hullBox(3, 3, 3, IDENTITY, 0);
+    const b = hullBox(3, 3, 3, IDENTITY, 0);
+    const hit = contact3d(T(0, 0), a, T(0, 4), b); // Z 相距 4·半和 6 → 穿透 2
+    expect(hit).not.toBeNull();
+    expect(hit!.nz).toBeCloseTo(1);
+    expect(hit!.depth).toBeCloseTo(2);
+  });
+
+  it('hull vs 竖直胶囊（角色站斜台）：相交则有接触·离开则 null', () => {
+    const tilted = hullBox(5, 1, 5, YAW45, 0);
+    expect(contact3d(T(0, 0), tilted, T(1, 1), capsule(2, 7, -1))).not.toBeNull(); // 角色压在台上
+    expect(contact3d(T(0, 0), tilted, T(40, 40), capsule(2, 7, -1))).toBeNull(); // 走远
+  });
+
+  it('确定性：hull 同输入逐位同输出', () => {
+    const t = hullBox(4, 1, 4, YAW45, 0);
+    const h1 = contact3d(T(0, 0), t, T(2.3, 1.7), sphere(1.5, -1));
+    const h2 = contact3d(T(0, 0), t, T(2.3, 1.7), sphere(1.5, -1));
+    expect(JSON.stringify(h1)).toBe(JSON.stringify(h2));
+  });
+});
