@@ -578,6 +578,68 @@ function noticeNode(text: string, warn: boolean): LayoutNode {
   };
 }
 
+// ── 敌方右栏（数据驱动·棋枰数据化②）：Boss 抬头 + 敌源泉/敌牌库 stat + 地煞概览。稀有度色走 bg 圆点（任意色合法）；
+// 空格走 Panel.dashed（主程新能力）；蓝色数字 token 缺 → 用 text 近似（结构数据化为先·色微让）。
+function railStatNode(id: string, label: string, val: string | number): LayoutNode {
+  return { type: 'Panel', id: `rail-${id}`, props: { bg: 'var(--chip)' }, layout: { direction: 'row', align: 'center', gap: 10, padding: 9, radius: 11 }, children: [
+    { type: 'Label', id: `rail-${id}-l`, props: { text: label, size: 11, color: 'sub', tracking: 0.6 }, layout: { flex: 1 } },
+    { type: 'Label', id: `rail-${id}-v`, props: { text: String(val), size: 22, color: 'text', mono: true, glow: true } },
+  ] };
+}
+function shaRowNode(s: TurnShaView, i: number): LayoutNode {
+  const rc = RAR[s.rar] || RAR.white;
+  if (!s.filled) return { type: 'Panel', id: `rail-sha-${i}`, props: { dashed: true }, layout: { direction: 'row', align: 'center', gap: 7, padding: 5, radius: 8 }, children: [
+    { type: 'Label', id: `rail-sha-${i}-q`, props: { text: '？', size: 13, color: 'dim' } },
+    { type: 'Label', id: `rail-sha-${i}-u`, props: { text: '未揭示', size: 10, color: 'dim' } },
+  ] };
+  const used = s.used ?? false;
+  return { type: 'Panel', id: `rail-sha-${i}`, props: { bg: used ? 'rgba(20,24,34,.6)' : 'var(--chip)' }, layout: { direction: 'row', align: 'center', gap: 7, padding: 5, radius: 8 }, children: [
+    { type: 'Panel', id: `rail-sha-${i}-dot`, props: { bg: rc[1] }, layout: { width: 7, height: 7, radius: 99, padding: 0 } },
+    { type: 'Label', id: `rail-sha-${i}-n`, props: { text: s.name.replace('地煞·', '').replace('地煞 · ', ''), size: 11, color: used ? 'dim' : 'text' }, layout: { flex: 1 } },
+    { type: 'Label', id: `rail-sha-${i}-s`, props: { text: used ? '已用' : '待发', size: 9, color: used ? 'warn' : 'ok' } },
+  ] };
+}
+function enemyRailNode(view: TurnBattleView): LayoutNode {
+  const header: LayoutNode = { type: 'Panel', id: 'rail-hdr', props: { bare: true }, layout: { direction: 'row', align: 'center', gap: 9 }, children: [
+    { type: 'Panel', id: 'rail-hdr-ic', props: { bg: 'linear-gradient(150deg,#7a3340,#4a1f28)' }, layout: { width: 36, height: 36, radius: 9, align: 'center', justify: 'center', padding: 0 }, children: [{ type: 'Label', id: 'rail-hdr-ic-g', props: { text: '♥', size: 19, color: 'text' } }] },
+    { type: 'Panel', id: 'rail-hdr-tx', props: { bare: true }, layout: { direction: 'column', flex: 1 }, children: [
+      { type: 'Label', id: 'rail-hdr-name', props: { text: view.bossName || '敌方', size: 14, color: 'text', bold: true } },
+      { type: 'Label', id: 'rail-hdr-sub', props: { text: 'BOSS · 敌方', size: 9, color: 'sub', tracking: 1.4 } },
+    ] },
+  ] };
+  const shaCol: LayoutNode = { type: 'Panel', id: 'rail-sha-col', props: { bare: true }, layout: { direction: 'column', gap: 6 }, children: [
+    { type: 'Label', id: 'rail-sha-h', props: { text: `地煞牌 · ${view.sha.filter((s) => s.filled).length}/${view.sha.length}`, size: 10, color: 'sub', bold: true, tracking: 1.2 } },
+    ...view.sha.map(shaRowNode),
+  ] };
+  return { type: 'Panel', id: 'rail', props: {}, layout: { width: 206, direction: 'column', gap: 12, padding: 14, radius: 16 }, children: [header, { type: 'Divider', id: 'rail-div', props: {} }, railStatNode('src', '💧 敌源泉', view.waterB), railStatNode('deck', '🎴 敌牌库', view.deckB), shaCol] };
+}
+
+// ── 召唤源泉条（数据驱动·棋枰数据化②）：源帽 + 分段管 + 余量 + 我牌库 + 本回合+N。分段=Panel bg 渐变（蓝填/半填/空）；
+// 收退走 fx fade（主程新 kind·替 g-drain）。蓝色余量数字 token 缺 → text 近似。
+function waterSegNode(i: number, lit: boolean, half: boolean, draining: boolean): LayoutNode {
+  const litFill = 'linear-gradient(180deg,#8fe0ff,#2f93cf)';
+  const bg = lit ? litFill : half ? 'linear-gradient(90deg,#8fe0ff,#2f93cf 50%,rgba(255,255,255,.05) 50%)' : 'rgba(255,255,255,.05)';
+  return { type: 'Panel', id: `water-seg-${i}`, props: { bg }, layout: { flex: 1, radius: 5, padding: 0, ...(draining ? { fx: [{ kind: 'fade', ms: 520 }] } : {}) } };
+}
+function waterBarNode(view: TurnBattleView, litCells: number, halfCell: boolean, litLabel: string, drain: { from: number; count: number }): LayoutNode {
+  const segs: LayoutNode[] = Array.from({ length: view.waterMax }, (_, i) => waterSegNode(i, i < litCells, !((i < litCells)) && i === litCells && halfCell, drain.count > 0 && i >= drain.from && i < drain.from + drain.count));
+  const cap: LayoutNode = { type: 'Panel', id: 'water-cap', props: { bg: 'radial-gradient(circle at 38% 30%, #7fd8f5, #2a7fb8)' }, layout: { width: 36, height: 36, radius: 10, align: 'center', justify: 'center', padding: 0 }, children: [{ type: 'Label', id: 'water-cap-g', props: { text: '源', size: 20, color: 'text' } }] };
+  const tube: LayoutNode = { type: 'Panel', id: 'water-tube', props: { bg: 'linear-gradient(180deg, rgba(10,30,46,.9), rgba(6,16,26,.95))', edge: 'foe' }, layout: { flex: 1, height: 34, radius: 12, direction: 'row', gap: 4, padding: 4 }, children: segs };
+  const deckCol: LayoutNode = { type: 'Panel', id: 'water-deck', props: { bare: true }, layout: { direction: 'column', align: 'center', gap: 1 }, children: [
+    { type: 'Label', id: 'water-deck-l', props: { text: '我牌库', size: 9, color: 'sub', tracking: 1 } },
+    { type: 'Label', id: 'water-deck-v', props: { text: String(view.deckA), size: 16, color: 'text', mono: true } },
+  ] };
+  const plus: LayoutNode = { type: 'Panel', id: 'water-plus', props: { bg: 'rgba(70,209,122,.18)', edge: 'ok' }, layout: { radius: 99, padding: 4 }, children: [{ type: 'Label', id: 'water-plus-l', props: { text: `本回合 +${view.waterGain}`, size: 11, color: 'ok', bold: true } }] };
+  return { type: 'Panel', id: 'water-bar', props: {}, layout: { direction: 'row', align: 'center', gap: 12, padding: 9, radius: 14 }, children: [
+    cap,
+    { type: 'Label', id: 'water-title', props: { text: '召唤源泉 · SUMMON FONT', size: 10, color: 'sub', tracking: 1.6 } },
+    tube,
+    { type: 'Label', id: 'water-level', props: { text: litLabel, size: 22, color: 'text', mono: true, glow: true } },
+    deckCol,
+    plus,
+  ] };
+}
+
 export function buildTurnFrameHTML(view: TurnBattleView, drain: { from: number; count: number } = { from: 0, count: 0 }): string {
   const frame = { position: 'relative', width: '1520px', height: '858px', borderRadius: '16px', overflow: 'hidden', background: 'var(--paper)', border: '3px solid var(--frame-edge)', boxShadow: '0 30px 80px rgba(0,0,0,.6), inset 0 0 0 1px var(--hairline)', display: 'flex', flexDirection: 'column' }; // 1520×858≈16:9：contain 缩放在宽屏near-填满·多出的宽给敌方右栏(owner 2026-06-28·不拉伸牌面)
   const topbar = { display: 'flex', alignItems: 'center', padding: '13px 22px', borderBottom: '1px solid var(--panel-border)' }; // 仅留 chrome（padding+下边线）·内容已迁 topbarNode(LayoutNode)
@@ -589,22 +651,7 @@ export function buildTurnFrameHTML(view: TurnBattleView, drain: { from: number; 
   const litCells = Math.max(0, Math.min(view.waterMax, Math.floor(view.water + 1e-6)));
   const halfCell = view.water - litCells >= 0.5 - 1e-6 && litCells < view.waterMax; // 半格：源泉含 0.5（每回合 +1.5·弃牌返 0.5）
   const litLabel = Number.isInteger(view.water) ? String(view.water) : view.water.toFixed(1);
-  const waterBar = { flex: 'none', display: 'flex', alignItems: 'center', gap: '12px', padding: '9px 18px', borderRadius: '14px', background: 'var(--panel)', border: '1px solid var(--panel-border)', boxShadow: 'inset 0 0 0 1px var(--hairline)' };
-  const waterCap = { width: '36px', height: '36px', flex: 'none', borderRadius: '10px', background: 'radial-gradient(circle at 38% 30%, #7fd8f5, #2a7fb8)', border: '2px solid #bfeaff', display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: '0 0 16px rgba(77,182,232,.7), inset 0 1px 0 rgba(255,255,255,.6)' };
-  const waterTube = { position: 'relative', flex: 1, height: '34px', borderRadius: '12px', background: 'linear-gradient(180deg, rgba(10,30,46,.9), rgba(6,16,26,.95))', border: '2px solid #2f5e7e', overflow: 'hidden', display: 'flex', gap: '4px', padding: '4px', boxShadow: 'inset 0 0 14px rgba(0,0,0,.7), 0 0 0 1px rgba(191,234,255,.12)' };
-  // 收退残影：刚花掉的格里覆一层「仍亮」的鬼影，g-drain 向源头收退淡出 + 升腾火花（owner 2026-06-21·别 biang 剪掉）。
-  const drainGhost = { position: 'absolute', inset: 0, borderRadius: '5px', transformOrigin: 'left center', background: 'linear-gradient(180deg,#8fe0ff,#2f93cf)', boxShadow: '0 0 14px rgba(95,200,240,.95), inset 0 1px 0 rgba(255,255,255,.6)', animation: 'g-drain .52s ease both', pointerEvents: 'none', zIndex: 2 };
-  const drainSpark = { position: 'absolute', top: '-2px', left: '50%', width: '6px', height: '6px', borderRadius: '50%', background: 'radial-gradient(circle,#dff6ff,#7fd0f0 60%,transparent)', boxShadow: '0 0 8px rgba(150,220,255,.9)', animation: 'g-drainspark .52s ease-out both', pointerEvents: 'none', zIndex: 3 };
-  const waterCellsHTML = forr(Array.from({ length: view.waterMax }, (_, i) => i), (i) => {
-    const lit = i < litCells;
-    const half = !lit && i === litCells && halfCell; // 该格只填左半（半格源泉）
-    const draining = drain.count > 0 && i >= drain.from && i < drain.from + drain.count;
-    const litFill = 'linear-gradient(180deg,#8fe0ff,#2f93cf)';
-    const bg = lit ? litFill : half ? 'linear-gradient(90deg,#8fe0ff,#2f93cf 50%,rgba(255,255,255,.05) 50%)' : 'rgba(255,255,255,.05)';
-    const cs = { position: 'relative', flex: 1, borderRadius: '5px', zIndex: 1, background: bg, border: '1px solid ' + (lit || half ? 'rgba(190,238,255,.8)' : 'rgba(255,255,255,.08)'), boxShadow: lit || half ? '0 0 10px rgba(95,200,240,.7), inset 0 1px 0 rgba(255,255,255,.6)' : 'none' };
-    return `<div style="${st(cs)}">${draining ? `<div style="${st(drainGhost)}"></div><div style="${st(drainSpark)}"></div>` : ''}</div>`;
-  });
-  const waterPlus = { padding: '2px 9px', borderRadius: '99px', background: 'rgba(70,209,122,.18)', border: '1px solid var(--hp)', color: 'var(--hp)', fontFamily: 'var(--fh)', fontWeight: 700, fontSize: '11px', whiteSpace: 'nowrap' };
+  // 源泉条 → 数据驱动 waterBarNode（分段 Panel + fx fade 收退·见上）。litCells/halfCell/litLabel 传入。
   // bottom
   const bottomBar = { position: 'relative', zIndex: 50, flex: 'none', height: '212px', display: 'flex', gap: '14px', padding: '12px 22px 16px', borderTop: '1px solid var(--panel-border)', background: 'linear-gradient(180deg,transparent,rgba(0,0,0,.18))' };
   const hi = view.tutorial?.highlight ?? ''; // 棋格/手牌教学高亮（生产态 tutorial 恒空·留作未来教学）
@@ -624,26 +671,6 @@ export function buildTurnFrameHTML(view: TurnBattleView, drain: { from: number; 
   const settingsPanel = view.settingsOpen
     ? `<div style="${st({ position: 'absolute', top: '70px', right: '22px', zIndex: 80, animation: 'g-fade .18s ease both' })}">${renderNode(settingsNode(view), GG_BATTLE_THEME)}</div>`
     : '';
-  // 敌方右栏（owner 2026-06-28·用拉宽多出的宽显示敌方信息·非拉伸牌面）：Boss + 敌源泉 + 敌牌库 + 地煞概览。
-  const railBox = { width: '208px', flex: 'none', display: 'flex', flexDirection: 'column', gap: '12px', padding: '14px 13px', borderRadius: '16px', background: 'var(--panel)', border: '1px solid var(--panel-border)', boxShadow: 'inset 0 0 0 1px var(--hairline)' };
-  const railStat = (label: string, val: string | number, col: string): string => `<div style="display:flex;align-items:center;gap:10px;padding:9px 12px;border-radius:11px;background:var(--chip);border:1px solid var(--panel-border);"><span style="flex:1;font-size:11px;letter-spacing:.06em;color:var(--ink-dim);">${esc(label)}</span><span style="font-family:var(--fn);font-size:22px;color:${col};text-shadow:0 0 8px ${col}55;">${val}</span></div>`;
-  const railSha = forr(view.sha, (s) => {
-    const rc = RAR[s.rar] || RAR.white; const used = s.used ?? false;
-    if (!s.filled) return `<div style="display:flex;align-items:center;gap:7px;padding:5px 8px;border-radius:8px;background:rgba(255,255,255,.03);border:1px dashed var(--panel-border);"><span style="font-family:var(--fd);font-size:13px;color:rgba(255,255,255,.3);">？</span><span style="font-size:10px;color:var(--ink-dim);">未揭示</span></div>`;
-    return `<div style="display:flex;align-items:center;gap:7px;padding:5px 8px;border-radius:8px;background:${used ? 'rgba(20,24,34,.6)' : 'var(--chip)'};border:1px solid ${used ? 'var(--panel-border)' : rc[1]};opacity:${used ? 0.6 : 1};"><span style="width:7px;height:7px;border-radius:50%;flex-shrink:0;background:${rc[1]};box-shadow:0 0 5px ${rc[1]}"></span><span style="flex:1;font-size:11px;color:var(--ink);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${esc(s.name.replace('地煞·', '').replace('地煞 · ', ''))}</span><span style="font-size:9px;color:${used ? '#ff9966' : '#7fcc9a'};">${used ? '已用' : '待发'}</span></div>`;
-  });
-  const enemyRail = `<div style="${st(railBox)}">
-    <div style="display:flex;align-items:center;gap:9px;padding-bottom:10px;border-bottom:1px solid var(--panel-border);">
-      <div style="width:36px;height:36px;flex:none;border-radius:9px;background:linear-gradient(150deg,#7a3340,#4a1f28);display:flex;align-items:center;justify-content:center;color:#fff;font-size:19px;border:1px solid var(--hairline);">♥</div>
-      <div style="display:flex;flex-direction:column;line-height:1.25;min-width:0;"><span style="font-family:var(--fh);font-weight:700;font-size:14px;color:var(--ink);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${esc(view.bossName || '敌方')}</span><span style="font-size:9px;letter-spacing:.14em;color:var(--ink-dim);">BOSS · 敌方</span></div>
-    </div>
-    ${railStat('💧 敌源泉', view.waterB, '#5ea0e0')}
-    ${railStat('🎴 敌牌库', view.deckB, 'var(--ink)')}
-    <div style="display:flex;flex-direction:column;gap:6px;margin-top:2px;">
-      <span style="font-size:10px;letter-spacing:.12em;text-transform:uppercase;color:var(--ink-dim);font-weight:700;">地煞牌 · ${view.sha.filter((s) => s.filled).length}/${view.sha.length}</span>
-      ${railSha}
-    </div>
-  </div>`;
   return `<div style="${st(frame)}">
     <div style="${st(topbar)}">${renderNode(topbarNode(view), GG_BATTLE_THEME)}</div>
     ${settingsPanel}
@@ -655,20 +682,9 @@ export function buildTurnFrameHTML(view: TurnBattleView, drain: { from: number; 
           <div style="${st(lanesCol)}">${forr(view.lanes, (L, li) => laneRow(L, li, hi === 'lane:' + li))}${laddersLayer(view)}</div>
           ${fortBase(view, false)}
         </div>
-        <div style="${st(waterBar)}">
-          <div style="${st(waterCap)}"><span style="font-family:var(--fd); font-size:20px; color:#dff4ff;">源</span></div>
-          <span style="font-size:10px; letter-spacing:.16em; text-transform:uppercase; color:var(--ink-dim); white-space:nowrap;">召唤源泉 · SUMMON FONT</span>
-          <div style="${st(waterTube)}">${waterCellsHTML}</div>
-          <span style="font-family:var(--fn); font-size:22px; color:#cdeeff; text-shadow:0 0 10px rgba(77,182,232,.9);">${litLabel}</span>
-          <div style="width:1px;height:28px;background:var(--panel-border);flex-shrink:0;"></div>
-          <div style="display:flex;flex-direction:column;align-items:center;gap:1px;flex-shrink:0;">
-            <span style="font-size:9px;letter-spacing:.1em;color:var(--ink-dim);white-space:nowrap;">我牌库</span>
-            <span style="font-family:var(--fn);font-size:16px;color:var(--ink);">${view.deckA}</span>
-          </div>
-          <span style="${st(waterPlus)}">本回合 +${view.waterGain}</span>
-        </div>
+        ${renderNode(waterBarNode(view, litCells, halfCell, litLabel, drain), GG_BATTLE_THEME)}
       </div>
-      ${enemyRail}
+      ${renderNode(enemyRailNode(view), GG_BATTLE_THEME)}
     </div>
     <div style="${st(bottomBar)}">
       ${renderNode(actionMenuNode(view), GG_BATTLE_THEME)}

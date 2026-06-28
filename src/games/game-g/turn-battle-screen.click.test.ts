@@ -111,10 +111,9 @@ describe('Game G · turn-battle-screen live mount 交互（doc24 回合制 · DO
     const b = initTurnBattle({ seed: 1, a: { pokerDeck: [] } });
     b.a.mana = 2;
     const drained = buildTurnFrameHTML(buildTurnBattleView(b), { from: 2, count: 2 }); // 刚花掉 2 格
-    expect(drained).toContain('召唤源泉 · SUMMON FONT'); // 旧版底部横条（owner 要回来·挺好看）
-    expect(drained).toContain('animation:g-drain'); // 收退鬼影
-    expect(drained).toContain('animation:g-drainspark'); // 升腾火花
+    expect(drained).toContain('召唤源泉 · SUMMON FONT'); // 底部横条（数据驱动 waterBarNode）
+    expect(drained).toContain('apollo-fx-fade'); // 收退：迁数据驱动后走 fx fade（主程新 kind·替 g-drain 鬼影/火花）
     const still = buildTurnFrameHTML(buildTurnBattleView(b)); // 无消耗：不渲收退
-    expect(still).not.toContain('animation:g-drain');
+    expect(still).not.toContain('apollo-fx-fade');
   });
 });
