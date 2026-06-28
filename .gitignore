@@ -17,3 +17,6 @@ game-e-preview.svg
 
 # 会话临时自验产物（截图脚本/PNG·勿入库）
 scratchpad/
+
+# UI 审计工具临时构建产物
+.ui-audit-tmp/
