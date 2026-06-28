@@ -20,6 +20,7 @@
 | 序列化 | 存档/读档, JSON, 二进制, 版本迁移 | 实现存档/状态快照 | wiki/skills/serialization.md |
 | TypeScript | 判别联合, branded type, 泛型, 性能 | TS 类型设计/模式选择 | wiki/skills/typescript-patterns.md |
 | UI 系统 | HUD, 菜单, 对话框, React 集成 | 实现游戏界面/交互 | wiki/skills/ui-system.md |
+| **UI 实操手册** | **防重叠/颜色对比/透明度/布局卫生·建库准则** | **做任何 UI/HUD/菜单前必读·自检清单** | **docs/design/ui-playbook.md** |
 | 音频 | Web Audio, SFX, BGM, 空间音效 | 实现音效/音乐播放 | wiki/skills/audio.md |
 | 场景管理 | 场景切换, 关卡加载, 游戏状态机 | 实现多场景/关卡系统 | wiki/skills/scene-management.md |
 | 瓦片地图 | Tilemap, Tiled, 图块碰撞, 自动图块 | 实现瓦片关卡 | wiki/skills/tilemap.md |

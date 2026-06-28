@@ -1,0 +1,152 @@
+# UI 实操手册 · Apollo 数据驱动 UI 建库准则（LLM 必读）
+
+> **定位**：你（LLM·尤其是弱模型）要用 Apollo Kit（`src/ui/components` 的 `LayoutNode`）做一套 UI / HUD / 菜单 / 面板时，**按本手册做就不会出大纰漏**。强模型也照此对齐，省得各凭直觉跑偏。
+>
+> **本手册在「约束式数据合成」机器里的位置**：`catalog.ts`（喂你 schema + sample）+ `validate.ts`（挡掉非法数据）+ `sample`（game-i 给活范例）这台机器只能挡**schema 级**错误（未知组件 / 缺必填 / 错枚举）。本手册管**机器挡不住、但仍然是「坏 UI」的合理性**——**重叠、颜色/对比、透明度、布局卫生**。这些靠纪律 + 自检，不靠等用户指出。
+>
+> **最高纲领仍是** `data-driven-manifesto.md`：UI 也是数据；控件是闭集词汇；写世界靠 `action` 信号，handler 里绝不塞自由逻辑/自由 CSS/DOM。本手册是它在 UI 域的操作化。
+
+---
+
+## 0. 黄金流程（做任何一套 UI，按顺序走）
+
+1. **选控件**：只从闭集 `ComponentType` 选 → 先读 `src/ui/components/catalog.ts`（每个控件的 `whenToUse` + 字段 schema + canonical sample）。**别凭记忆瞎猜 prop**。
+2. **抄范例**：去 sample `src/games/game-i/`（展示台）找最接近的写法照抄改数据。`gallery.ts` 的「🆕 新控件/特性」tab + `mmo-hud.ts`（最复杂组合）是活模板。
+3. **组合，别逃生**：能用现成控件重组表达就重组；表达不了 → 写 `docs/workflow/requests.md` 让主程扩**一个闭集 kind/控件**。**永远不手写 React 屏 / 自由 CSS·DOM**（UI 铁律）。
+4. **过四关自检**（下面 §1–§4，这是本手册的核心）：闭集校验 → 防重叠 → 颜色/对比/透明度 → 布局卫生。
+5. **跑校验器**：`validateLayoutNode(tree)`（`validate.ts`）必须**零 issue** 才算合法数据。
+6. **渲染实测**：mountUI 渲一帧，**跑 overlap 审计**（§1 工具），人眼 + 程序双确认。绿了才交。
+
+> 复诵：**选 catalog → 抄 sample → 组合不逃生 → 四关自检 → validate 零 issue → 渲染审计**。
+
+---
+
+## 1. 准则 · 防重叠（OVERLAP）★最高优先
+
+**铁律：组件不得互相重叠——除非玩家主动要求叠层（如「血条上叠连击点」「弹窗盖住主界面」这类显式叠加）。**
+
+为什么单列第一：绝对定位（`layout.x/y`）+ 手填坐标是**最易出重叠**的写法。本仓库的 MMO HUD 初版就有 **9 处重叠**，全是「按错误的尺寸估算去摆坐标」造成的。
+
+### 1.1 重叠从哪来（三个真实坑）
+- **面板比你声明的宽/高**：`padding` 会把盒子撑大（box-sizing）。声明 `width:256` 的单位框实测 **274px**（+18 padding+border）；声明高度也一样 +14 左右。**按实测尺寸排坐标，不按脑补尺寸。**
+- **内容驱动的高度**：带 `showValue` 的 `ProgressBar` 会在条上方多一行数字；带 `label` 的多一行字。一个单位框实测 **90px** 高，不是你以为的 ~68。**先渲一次量真实高度，再摆下一个。**
+- **`fx` 与绝对定位互斥**：同一节点 `x/y` + `fx:[{kind:'sheen'}]` → sheen 的 ::after 强制 `position:relative`，**覆盖掉 x/y 的 absolute**，元素跑位（见 `requests.md · REQ-UI-BUG-fx与绝对定位不兼容`）。**绕法**：定位壳裹特效内卡 —— `{Panel x/y bare}>{Panel fx ...内容}`。
+
+### 1.2 怎么避免（优先级从高到低）
+1. **能用流式就别用绝对**：`direction:'row'|'column'|'grid'` 的正常流**天然不重叠**（盒子依次排）。HUD 这种叠层 overlay 才用 `x/y`。
+2. **绝对定位用「区块锚位」**：把界面分几个 dock（左上/右上/左下/右下/底中），每个 dock 内部用流式排，dock 之间留间距。坐标用实测尺寸算「上一块结束 + 间距」。
+3. **`bare` 分组、别叠框**：纯 row/column 分组用 `Panel{bare:true}`（不画边框/底）。边框只留给「真该是一个框的东西」（外框/卡/侧栏）。千层嵌套框既丑又容易算错边界。
+
+### 1.3 自检（必跑·程序化，不靠肉眼）
+渲染后量每个区块的真实包围盒，两两算相交面积。**容差外有相交 = 不合格，回去调坐标直到归零**。可复制脚本：
+
+```js
+// overlap-audit.mjs —— mount 你的树到 #root，量顶层子区域包围盒，报相交。
+const rects = await page.evaluate(() => {
+  const root = document.getElementById('root'); const base = root.getBoundingClientRect(); const out = [];
+  for (const c of root.children) if (c.id) { const r = c.getBoundingClientRect();
+    out.push({ id: c.id, x: r.x-base.x, y: r.y-base.y, w: r.width, h: r.height }); }
+  return out;
+});
+const area = (a,b) => Math.max(0, Math.min(a.x+a.w,b.x+b.w)-Math.max(a.x,b.x)) *
+                      Math.max(0, Math.min(a.y+a.h,b.y+b.h)-Math.max(a.y,b.y));
+for (let i=0;i<rects.length;i++) for (let j=i+1;j<rects.length;j++)
+  if (area(rects[i],rects[j]) > 4) console.log('OVERLAP', rects[i].id, '✕', rects[j].id);
+// 0 行输出 = 合格。有 OVERLAP 且非「玩家显式要的叠层」→ 调坐标重测。
+```
+
+> **允许的重叠**（白名单·须是设计意图）：弹窗/抽屉的遮罩盖主界面、血条上的连击点叠层、tooltip 气泡浮在元素上。这些在代码注释里写明「intentional overlay」，审计时人工排除。**其余一律视为 bug。**
+
+---
+
+## 2. 准则 · 颜色 / 对比度 / 可读性（自动查·别等用户说看不清）
+
+**铁律：文字必须在其背景上可读（足够对比度）；颜色走语义令牌，不写自由 hex 文字色。**
+
+### 2.1 用令牌，不用自由色
+- 文字色只用语义档：`Label.color ∈ {text, sub, dim, jade, gold, ok, warn, danger}`（→ 主题令牌·换皮自动适配）。**别给文字塞 raw hex**——换皮就废、对比无保证。
+- `Badge.tone / Tag.tone / ProgressBar.tone` 同理走闭集语义档。
+- 自定义底 `Panel.bg` 可以填渐变/令牌，但**填了深底就别再放 `dim` 灰字**（dim 是给默认深底调的，叠深底会糊）。
+
+### 2.2 对比度下限（WCAG 量级）
+- 正文文字 / 背景对比度 **≥ 4.5:1**；大字（≥18px 粗体）**≥ 3:1**。
+- 经验法则：**深底配 text/sub/亮语义色（jade/gold/ok）**；**亮底（如 daylight 主题、felt 绿呢、白扑克 light）配深字**——别在亮底上用 `dim`/浅灰。
+- **每套主题都要过一遍**：换皮后最容易出「某主题下某处文字糊掉」。daylight（亮主题）是照妖镜，做完在它下面看一眼。
+
+### 2.3 自检（渲染后量 computed 对比度）
+```js
+// contrast-check.mjs —— 量每个文字节点的前景/背景对比度，低于阈值报警。
+function lum(rgb){const a=rgb.map(v=>{v/=255;return v<=.03928?v/12.92:((v+.055)/1.055)**2.4});return .2126*a[0]+.7152*a[1]+.0722*a[2];}
+function ratio(fg,bg){const L1=lum(fg),L2=lum(bg);return (Math.max(L1,L2)+.05)/(Math.min(L1,L2)+.05);}
+// 对每个含文字的元素：取 getComputedStyle.color 与「逐层向上找到的第一个不透明 background」算 ratio；<4.5 → 报。
+// 注意：背景可能是半透明（见 §3）——要解析到实底再算，别拿透明值骗自己。
+```
+
+---
+
+## 3. 准则 · 透明度（别透穿·别用透明骗对比）
+
+**铁律：浮层 / 弹窗 / 气泡的内容区必须有不透明实底——不能让背后的东西透出来重叠干扰。**
+
+- 弹窗/抽屉/tooltip 气泡：背景叠一层不透明兜底（本仓库做法 `linear-gradient(bg,bg),bg0`），**别用半透明主题底**（如 `var(--panel)` 在战斗皮肤下可能半透）→ 否则内容糊在背景上。遮罩 scrim 够深（≥0.85）让弹层与背后强分离。
+- **透明不能用来「制造对比」**：一段灰字看着「还行」可能只是因为背后恰好是深的；换个背景就废。对比度要按**解析到的实底**算（§2.3）。
+- 纯表现的半透明叠层（vignette 暗角 / pattern 纹理 / sheen 流光）OK——它们是**装饰**不是**内容载体**，不承载需读的文字。
+
+---
+
+## 4. 准则 · 布局卫生（杂项·一眼能查）
+
+- **别千层框**：分组用 `Panel{bare:true}`；框只给该成框的东西。
+- **绝对定位先量后摆**（§1.1）：padding 撑宽、内容撑高，按实测排。
+- **`fx` 别直接挂绝对定位节点**（§1.1 第三坑）：用定位壳裹特效内卡。
+- **每个节点必须有唯一 `id`**：mountUI 的增量 diff、引导锚点都靠 id；漏 id 校验器会报。
+- **写世界只经 `action` 信号**：控件的 `action`/`actionArg` 发信号名，handler 在外面接；**handler 里绝不写自由业务逻辑**（那是把代码偷渡进数据层）。
+- **emoji 当头像/图标注意**：多码点 emoji（🧙）传给 `Avatar.name` 会被首字符截断成「?」；要么用单字（汉字/单 BMP 字符），要么用 `src`（SVG data-URI）。
+- **响应式整页 chrome 用 `maxWidth`**：窄屏铺满、宽屏封顶居中，填一个数即得。
+
+---
+
+## 5. 去哪找（WHERE-TO-LOOK 速查表）
+
+| 你要做的事 | 去哪 |
+|---|---|
+| 有哪些控件、每个 prop 怎么填、闭集枚举值 | `src/ui/components/catalog.ts`（自描述目录·含 sample）+ `types.ts`（TS 形状） |
+| 校验我的 LayoutNode 树合不合法 | `src/ui/components/validate.ts` → `validateLayoutNode(tree)` |
+| 控件长啥样、复杂组合怎么写 | sample：`src/games/game-i/`（`gallery.ts` 全控件 + `mmo-hud.ts` 最复杂 HUD） |
+| 控件渲染成什么 HTML（debug 样式/定位） | `src/ui/components/render.ts` |
+| 视觉特效（pulse/glow/sheen/flash…）怎么用、两库怎么分 | `docs/design/effects-architecture.md` + `layout.fx`（types.ts `VisualEffect`） |
+| 主题令牌有哪些、换皮怎么做 | `src/ui/components/types.ts` `UITheme` + `wiki/skills/ui-theming.md` |
+| 最高纲领 / 该不该下沉成能力 | `docs/design/data-driven-manifesto.md` |
+| UI 必须用 LayoutNode 的铁律 / 边界 | `CLAUDE.md`「UI 铁律」+ `docs/design/apollo-ui-contract.md` |
+| **防重叠 / 颜色 / 透明度 / 布局卫生准则** | **本手册** |
+
+---
+
+## 6. 反面清单（ANTI-PATTERNS·出现即回炉）
+
+| ❌ 反面 | ✅ 正解 |
+|---|---|
+| 手写 `<div>`/React 屏/自由 CSS 拼 UI | 全用 `LayoutNode` 数据；缺控件 → 提 requests |
+| 绝对定位坐标凭脑补尺寸瞎填 | 渲一次量实测包围盒，按真实尺寸排，跑 overlap 审计归零 |
+| 组件叠在一起（非玩家要的叠层） | §1 审计归零；叠层须标 intentional |
+| 文字塞 raw hex 色 | 用语义档 `color: text/sub/jade/...` |
+| 亮底上放 `dim` 浅灰字 / 深底糊深字 | 按 §2.2 配色，过 daylight 主题验对比 |
+| 弹窗半透明底、背后透出来 | 不透明实底兜底 + 深 scrim（§3） |
+| 拿「看着还行」当对比合格 | 程序量 computed 对比度 ≥4.5（§2.3） |
+| `fx:sheen` 直接挂 `x/y` 节点 | 定位壳裹特效内卡 |
+| 节点漏 `id` | 每节点唯一 id |
+| handler 里写业务逻辑 | handler 只转发 `action` 信号 |
+| 千层嵌套带边框 Panel | 分组用 `bare:true` |
+
+---
+
+## 7. sample 即标尺：game-i 已照本手册落地
+
+`src/games/game-i` 是本手册的**活参照**，做新 UI 时照它对齐：
+- **闭集**：全程仅用 `ComponentType` 闭集控件，零手写 React（`mmo-hud.test.ts` 有「仅闭集控件」断言）。
+- **防重叠**：MMO HUD 经 overlap 审计 **0 重叠**（从初版 9 处修到 0）；`mmo-hud.ts` 注释标了定位壳绕 fx 坑、intentional 叠层。
+- **颜色/透明**：单位框/血条/聊天全走语义 tone；7 套主题（含亮主题 daylight）都验过可读。
+- **组合优先**：用现成控件拼出 WoW 级 HUD，**零新控件、零逃生**——证明闭集词汇够表达最复杂界面。
+- **缺口上报**：建库中发现的引擎缺口（`fontPixel` 令牌 / `style` 引号截断 / `fx×绝对定位`）全部写进 `requests.md` 交主程，没有一处手写绕过。
+
+> 一句话给 LLM：**做 UI 前读 catalog + 抄 game-i；做完跑 validate + overlap 审计 + 对比度检查；重叠和糊字是你自己的责任，不是等用户来挑。**
