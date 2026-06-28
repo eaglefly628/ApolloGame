@@ -6,6 +6,7 @@ import { collectRenderables } from './renderable.js';
 import {
   transform3dPose, groundPose, orbitCamera, poseBounds3D, bounds3DCenter, bounds3DExtent, fitDistance3D, mesh3dBatchKey, mesh3dDepth, type Pose3D,
 } from './three-projection.js';
+import { hashPoses, camSig, postSig } from './three/stats.js';
 import { getCamera3D, getSky3D, getLights3D, getPost3D } from '@engine/protocol/camera-view.js';
 import { hashSnapshot } from '@net/index.js';
 import type { Transform3D, Camera3D, Sky3D, Mesh3D, Model3D, Light3D, Post3D } from '@engine/protocol/components.js';
@@ -49,6 +50,19 @@ describe('Transform3D / Camera3D 纯函数（盒庭位姿 + 轨道相机）', ()
     // depth 缺省=按短边推导：显式给推导值 与 不给 应同签名（同几何）。
     expect(mesh3dBatchKey({ shape: 'box', width: 10, height: 3, frontTint: 1 }))
       .toBe(mesh3dBatchKey({ shape: 'box', width: 10, height: 3, depth: mesh3dDepth('box', 10, 3), frontTint: 1 }));
+  });
+  it('W1-C 脏标：位姿/相机/后处理 变了签名变、不变则同（决定跳渲是否正确）', () => {
+    const a: Pose3D[] = [{ x: 1, y: 2, z: 3, rotZ: 0, sx: 1, sy: 1 }];
+    const b: Pose3D[] = [{ x: 1, y: 2, z: 3, rotZ: 0, sx: 1, sy: 1 }];
+    const c: Pose3D[] = [{ x: 1.5, y: 2, z: 3, rotZ: 0, sx: 1, sy: 1 }];
+    expect(hashPoses(a)).toBe(hashPoses(b)); // 同位姿 → 同 hash（跳渲）
+    expect(hashPoses(a)).not.toBe(hashPoses(c)); // 位姿变 → hash 变（重渲）
+    expect(camSig({ type: 'Camera3D', yaw: 0.5, pitch: 0.6 } as Camera3D))
+      .not.toBe(camSig({ type: 'Camera3D', yaw: 0.9, pitch: 0.6 } as Camera3D)); // 相机转 → 重渲
+    expect(camSig(null)).toBe('');
+    expect(postSig({ type: 'Post3D', tiltShift: { focus: 0.5, intensity: 3 } } as Post3D))
+      .not.toBe(postSig({ type: 'Post3D', tiltShift: { focus: 0.5, intensity: 5 } } as Post3D));
+    expect(postSig(null)).toBe('');
   });
   it('poseBounds3D + center + extent + fitDistance', () => {
     const poses: Pose3D[] = [

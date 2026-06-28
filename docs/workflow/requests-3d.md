@@ -6,15 +6,17 @@
 
 ---
 
-## REQ-3D-W1高效引擎 · [2026-06-28] · owner → P3D（3D 渲染线）· status: **🚧 进行中（W1-A 实例化 + W1-B 零浪费 + W1-D 快赢 ✅ 已落；W1-C 跳渲 + W1-E 健壮 ⬜ 下一增量）** · 类型: 设计纲领 + 真能力（实例化绘制）
+## REQ-3D-W1高效引擎 · [2026-06-28] · owner → P3D（3D 渲染线）· status: **🚧 进行中（W1-A + W1-B + W1-C + W1-D ✅ 已落 + profiler + 模块化拆分；W1-E 健壮 ⬜ 下一增量）** · 类型: 设计纲领 + 真能力（实例化绘制）
 
 > **进度（P3D 2026-06-28·已推）**：
-> - **W1-A 实例化** ✅：同视觉签名(`mesh3dBatchKey`=shape+尺寸+逐面色)的 Mesh3D → 一个 `InstancedMesh`（1 draw call）。逐面色**烤进 `vertexColors`**（多色盒也能批·非仅单色·材质共享色靠几何）；复用单 dummy `Object3D` 合 instanceMatrix；超容量 ×2 扩容；空批移除；整体投/受软影；`frustumCulled=false` 防散布整批误剔；透明盒(alpha<1)走单 mesh fallback。验收：game-z 20 盒实体 → **11 批**（金阶梯 2→1·蘑菇茎 2→1·新增 8 鹅卵石径 8→1·`renderer.info` 实测）。**Model3D 多 mesh 实例化 = W1-A 第二步（待）**。
-> - **W1-B 零浪费** ✅：去 `paintMesh3D`/`paint` 每帧 `needsUpdate`（颜色/alpha 是 uniform）；仅贴图引用变才 needsUpdate；实例批不透明走 opaque 管线。
-> - **W1-D 快赢** ✅：`ACESFilmicToneMapping`+曝光（天空盒 `toneMapped:false` 保程序化色）+ `setPixelRatio(min(dpr,2))`。
-> - **⬜ 待续**：W1-C 静态帧 dirty 跳渲 + 阴影 autoUpdate=false + near/far 收紧；W1-E resize/模型自动贴地/.glb-only。
-> - 测试 `mesh3dBatchKey` 纯函数单测；tsc+vitest+build+无头截图全绿。零数据改动（绝不加 instanced 旗标）。
-> - 实现文件：`renderer/three-renderer.ts`（批/实例化/tonemap）、`renderer/three-projection.ts`（`mesh3dBatchKey` 纯函数）、`games/game-z/diorama.ts`（鹅卵石径示例）。
+> - **W1-A 实例化** ✅：同视觉签名(`mesh3dBatchKey`=shape+尺寸+逐面色)的 Mesh3D → 一个 `InstancedMesh`（1 draw call）。逐面色**烤进 `vertexColors`**（多色盒也能批·非仅单色）；复用单 dummy `Object3D` 合 instanceMatrix；超容量 ×2 扩容；空批移除；整体投/受软影；`frustumCulled=false` 防散布整批误剔；透明盒(alpha<1)走单 mesh fallback。验收：game-z 20 盒 → **11 批**（金阶梯 2→1·蘑菇茎 2→1·8 鹅卵石 8→1）。**Model3D 多 mesh 实例化 = W1-A 第二步（待）**。
+> - **W1-B 零浪费** ✅：去每帧 `material.needsUpdate`（颜色/alpha 是 uniform）；仅贴图引用变才 needsUpdate；不透明走 opaque 管线。
+> - **W1-C 低开销基线** ✅：① 静态帧**脏标跳渲**（渲染签名=位姿hash+相机+灯+后处理+云飘帧·不变则跳 instanceMatrix 上传+阴影+render）；② **阴影按需重算**（`shadowMap.autoUpdate=false`·仅投影体/灯变才 needsUpdate·相机转/云飘不触发阴影重算）；③ near/far 从 0.1–10000 收紧到 ~1–(dist+天空半径)。
+> - **W1-D 快赢** ✅：`ACESFilmicToneMapping`+曝光（天空盒 `toneMapped:false` 保色）+ `setPixelRatio(min(dpr,2))`。
+> - **profiler（owner「做个 profile state·像虚幻」）** ✅：`renderer.readStats()` 暴露 fps/cpuMs/drawCalls/triangles/programs/geo/tex/batches/instances/models/rendered；game-z LayoutNode HUD 显示（P 键开关·UI 铁律）。
+> - **模块化拆分（owner「别全写一个文件·每文件<400 行」）** ✅：`three-renderer.ts` 832→392 行；拆 `renderer/three/{geometry,stats,lights,post,models,batches}.ts`（各 ≤146 行·按子系统分）。
+> - **⬜ 待续**：W1-E（resize/模型自动贴地/.glb-only）；W1-A 第二步（Model3D 多 mesh 实例化）。
+> - 测试：`mesh3dBatchKey` + `hashPoses/camSig/postSig`（脏标）纯函数单测；tsc+vitest+build+无头截图全绿。零数据改动（绝不加 instanced 旗标）。
 
 > **设计纲领（owner 2026-06-28 拍板）**：要的是**高效率、低开销**的 3D 引擎——**性能是一等设计约束、写进架构，不靠后期优化补**（owner 明言「后期不会做什么优化」）。所以下面不是「以后再说的优化」，是**现在就该达到的基线**。**instanced draw（实例化绘制）是硬要求。**
 > **数据驱动铁律不变**：W1 全是**渲染器内部**的事，**零数据 / 零组件 / 零接口改动**——游戏照旧摆 N 个 `Mesh3D`/`Model3D` 实体（纯数据），渲染器自己批。**绝不往数据里加 `instanced:true` 之类渲染旗标**（那是把渲染关切泄进数据，违 manifesto）。

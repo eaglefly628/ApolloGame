@@ -62,6 +62,13 @@
   仅贴图引用变（USE_MAP define 翻转）才 needsUpdate。不透明物体 `transparent:false`（走 opaque 管线·early-z·不排序）。
 - **观感快赢（W1-D）**：`ACESFilmicToneMapping`+曝光（PBR 通透不削顶·天空盒材质 `toneMapped:false` 保程序化色）；
   `setPixelRatio(min(dpr,2))`（retina 不糊·上限防超采样）。
+- **低开销基线（W1-C）**：① **脏标跳渲**——每帧算渲染签名（位姿 hash + 相机 + 灯 + 后处理 + 云飘帧），与上帧同则跳过
+  instanceMatrix 上传 + 阴影 + render（静态盒庭近 0 开销）；② **阴影按需**——`shadowMap.autoUpdate=false`，仅投影体/灯变才
+  `needsUpdate=true`（**相机转、云飘不触发阴影重算**——大省）；③ near/far 从 0.1–10000 收紧（深度精度·减 z-fighting）。
+- **profiler（像虚幻 stat）**：`info.autoReset=false` + sync 开头 `info.reset()` → draw/三角跨全 pass 累加；`renderer.readStats()`
+  暴露 fps/cpu/draws/tris/batches/instances/programs/显存，游戏层用 LayoutNode HUD 显示。
+- **模块布局**：`three-renderer.ts`=编排核心 + 2D-in-3D 扁平层；子系统拆 `renderer/three/`：`geometry`（几何/材质/位姿工厂·无状态）·
+  `stats`（profiler 类型 + 脏标签名纯函数）·`lights`(LightRig)·`post`(PostPipeline)·`models`(ModelPool·glTF)·`batches`(InstancedBatches)。每文件 <400 行。
 - **模型导入（glTF）**：蓝图只持 `modelKey`（保纯）；资产层 `ModelAssetLoader` 取 `.glb` 字节(ArrayBuffer·**零 three 依赖**)，
   `ThreeRenderer` 用 `GLTFLoader.parse(bytes)` 解析成 three 场景。**解析一次入模板缓存 → 多实例 `clone(true)`**（共享几何省显存，
   每实例 clone 材质供独立染色/释放）。导入走 asset key、loader 在引擎（同 sprite 先例），别在蓝图塞 URL/二进制。

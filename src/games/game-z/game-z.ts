@@ -5,7 +5,7 @@
 // 角色走动 = 现成 velocity→motion-apply 能力（纯数据 sim）；键盘=运行时输入胶水（input-capture 言明捕获是运行时职责）。
 // 玩法暂缓（owner 2026-06-27「先把玩法放一下·先长 3D 这条线」）。
 import { Engine } from '../../runtime/engine.js';
-import { ThreeRenderer } from '@renderer/three-renderer.js';
+import { ThreeRenderer, type RenderStats } from '@renderer/three-renderer.js';
 import { AssetManager, ModelAssetLoader } from '@assets/index.js';
 import { mountUI } from '@ui/components/index.js';
 import type { LayoutNode } from '@ui/components/index.js';
@@ -15,17 +15,26 @@ import { GAME_Z_ASSETS } from './assets.js';
 
 const MOVE_KEYS = new Set(['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight', 'KeyW', 'KeyA', 'KeyS', 'KeyD']);
 
-// 角标 HUD（LayoutNode 纯数据）：标题 + 帧率 + 操作提示。pointer-events:none 不挡盒庭。
-function hudTree(fps: number): LayoutNode {
-  return {
-    type: 'Panel', id: 'gz-hud', props: { bare: true }, layout: { x: 18, y: 14, gap: 4 },
-    children: [
-      { type: 'Label', id: 'gz-title', props: { text: 'GAME Z', size: 'xxl', glow: true } },
-      { type: 'Label', id: 'gz-sub', props: { text: '3D 盒庭 · 数据驱动渲染线 · glTF 模型导入', size: 'sm' } },
-      { type: 'Label', id: 'gz-fps', props: { text: `${fps} FPS`, size: 'sm', font: 'mono', glow: true } },
-      { type: 'Label', id: 'gz-hint', props: { text: 'WASD/方向键 控鸭走动 · 拖拽旋转盒庭 · 滚轮缩放', size: 'sm' } },
-    ],
-  };
+const fmtK = (n: number): string => (n >= 1000 ? `${(n / 1000).toFixed(1)}k` : `${n}`);
+
+// 角标 HUD（LayoutNode 纯数据）：标题 + 操作提示 + 可开关的性能剖析面板（像虚幻 stat·P 键开关）。
+// 剖析数据来自 renderer.readStats()（引擎暴露）；HUD 本体是数据描述（UI 铁律）。pointer-events:none 不挡盒庭。
+function hudTree(fps: number, stats: RenderStats | null, showProfiler: boolean): LayoutNode {
+  const children: LayoutNode[] = [
+    { type: 'Label', id: 'gz-title', props: { text: 'GAME Z', size: 'xxl', glow: true } },
+    { type: 'Label', id: 'gz-sub', props: { text: '3D 盒庭 · 数据驱动渲染线 · glTF 模型导入', size: 'sm' } },
+    { type: 'Label', id: 'gz-hint', props: { text: 'WASD/方向键 控鸭 · 拖拽旋转 · 滚轮缩放 · P 开关剖析', size: 'sm' } },
+  ];
+  if (showProfiler && stats) {
+    children.push(
+      { type: 'Label', id: 'gz-p0', props: { text: '── PROFILE ──', size: 'sm', font: 'mono', glow: true } },
+      { type: 'Label', id: 'gz-p1', props: { text: `fps ${fps}   cpu ${stats.cpuMs.toFixed(2)}ms`, size: 'sm', font: 'mono' } },
+      { type: 'Label', id: 'gz-p2', props: { text: `draws ${stats.drawCalls}  tris ${fmtK(stats.triangles)}  ${stats.rendered ? 'DRAW' : 'SKIP'}`, size: 'sm', font: 'mono' } },
+      { type: 'Label', id: 'gz-p3', props: { text: `batch ${stats.batches}  inst ${stats.instances}  mesh ${stats.fallbackMeshes}  mdl ${stats.models}`, size: 'sm', font: 'mono' } },
+      { type: 'Label', id: 'gz-p4', props: { text: `geo ${stats.geometries}  tex ${stats.textures}  prog ${stats.programs}`, size: 'sm', font: 'mono' } },
+    );
+  }
+  return { type: 'Panel', id: 'gz-hud', props: { bare: true }, layout: { x: 18, y: 14, gap: 4 }, children };
 }
 
 export function mount(container: HTMLElement): () => void {
@@ -54,7 +63,9 @@ export function mount(container: HTMLElement): () => void {
   const hudHost = document.createElement('div');
   hudHost.style.cssText = 'position:absolute;inset:0;pointer-events:none';
   wrapper.appendChild(hudHost);
-  const ui = mountUI(hudHost, hudTree(60));
+  let showProfiler = true; // 性能剖析面板开关（P 键切换·默认开）
+  let fps = 60; // 平滑帧率（render-only·不进 sim）
+  const ui = mountUI(hudHost, hudTree(60, null, showProfiler));
 
   // 键盘 → 角色 Velocity（运行时输入胶水）：归一化对角线 + 速度；motion-apply 每 tick 把它累加进 Transform。
   const held = new Set<string>();
@@ -68,7 +79,11 @@ export function mount(container: HTMLElement): () => void {
     v.vx = (dx / len) * SPEED;
     v.vy = (dy / len) * SPEED;
   };
-  const onDown = (e: KeyboardEvent): void => { if (MOVE_KEYS.has(e.code)) e.preventDefault(); held.add(e.code); setVel(); };
+  const onDown = (e: KeyboardEvent): void => {
+    if (MOVE_KEYS.has(e.code)) e.preventDefault();
+    if (e.code === 'KeyP') { showProfiler = !showProfiler; ui.update(hudTree(Math.round(fps), renderer.readStats(), showProfiler)); }
+    held.add(e.code); setVel();
+  };
   const onUp = (e: KeyboardEvent): void => { held.delete(e.code); setVel(); };
   const onBlur = (): void => { held.clear(); setVel(); };
   window.addEventListener('keydown', onDown);
@@ -104,16 +119,15 @@ export function mount(container: HTMLElement): () => void {
   window.addEventListener('pointerup', onPointerUp);
   stage.addEventListener('wheel', onWheel, { passive: false });
 
-  // 帧率：每帧测壁钟差 → 平滑 fps，~4 次/秒刷 HUD（render-only·不进 sim）。
+  // 帧率：每帧测壁钟差 → 平滑 fps，~4 次/秒刷 HUD（含 profiler·读 renderer.readStats）。
   let lastT = performance.now();
-  let fps = 60;
   let lastHud = 0;
   const unsub = engine.subscribe(() => {
     const now = performance.now();
     const dt = now - lastT;
     lastT = now;
     if (dt > 0) fps = fps * 0.9 + (1000 / dt) * 0.1;
-    if (now - lastHud > 250) { lastHud = now; ui.update(hudTree(Math.round(fps))); }
+    if (now - lastHud > 250) { lastHud = now; ui.update(hudTree(Math.round(fps), renderer.readStats(), showProfiler)); }
   });
 
   engine.start();
