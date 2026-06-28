@@ -488,7 +488,7 @@ function actionMenuNode(view: TurnBattleView): LayoutNode {
   const actBtn = (a: TurnActionView): LayoutNode => ({
     type: 'Button', id: `ggt-act-${a.key}`,
     props: { label: `${a.glyph} ${a.label}`, kind: a.on ? 'primary' : a.dim ? 'quiet' : 'ghost', action: a.key },
-    layout: { anchor: `combat-${a.key}` }, // 注：fx:sheen 在 Button 上只出 position:relative、不出 data-fx 属性 → ::after 不命中（renderNode 仅给通用/Panel 节点挂 data-fx）·故不在动作钮加 sheen；已提 REQ-UI-fx控件叠层
+    layout: { anchor: `combat-${a.key}`, chamfer: 8 }, // chamfer=倒角艺术边（owner 2026-06-28「按钮加点设计感/花纹」·复用引擎倒角原语·非手写 CSS）
   });
   const grid: LayoutNode = {
     type: 'Panel', id: 'ggt-act-grid', props: { bare: true }, layout: { direction: 'grid', cols: 2, gap: 8 },
@@ -503,7 +503,7 @@ function actionMenuNode(view: TurnBattleView): LayoutNode {
   };
   const hint: LayoutNode = { type: 'Label', id: 'ggt-act-hint', props: { text: view.actionSub, size: 'xs', color: 'dim' } };
   return {
-    type: 'Panel', id: 'ggt-actionmenu', props: {}, layout: { direction: 'column', gap: 11, width: 300, padding: 16 }, // 加宽 230→300·间距加大（owner 2026-06-28「四个动作略局促·搞大点」·宽屏腾出的空间）
+    type: 'Panel', id: 'ggt-actionmenu', props: { accent: true, pattern: 'stripe' }, layout: { direction: 'column', gap: 11, width: 300, padding: 16, chamfer: 14 }, // 装饰框：accent 金描边+柔光 / stripe 斜纹花纹 / chamfer 倒角（owner 2026-06-28「加点艺术设计感/花纹」·复用引擎装饰原语·非手写 CSS）
     children: view.drawPick ? [grid, drawPick, hint] : [grid, hint],
   };
 }
