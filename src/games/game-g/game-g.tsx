@@ -274,8 +274,11 @@ export function mount(container: HTMLElement, shell?: { exit?: () => void }): ()
     const aiForm = boss ? boss.formation : aiFormation();
     const enemyBias = boss ? boss.favorBias : spec.enemyBias;
     const aiName = lvl.heroId; // 战役 Boss = 本关英雄（52 关 = 52 命运之战·doc23 §七）
+    // 战斗屏占满整个 root（对齐大厅占满感·owner 2026-06-28）：root 先改成铺满容器（替 clear() 的 flex 居中默认屏），
+    // stage 100%×100% → mountTurnBattle 量到完整可用区做 contain 缩放（棋盘最大化居中·四周最小对称白边·不再四面大留白）。
+    root.style.cssText = 'position:absolute;inset:0;overflow:hidden;background:#0c0a08';
     const stage = document.createElement('div');
-    stage.style.cssText = 'width:min(100%, 140vh);max-width:1340px;margin:0 auto;border-radius:12px;overflow:hidden;position:relative';
+    stage.style.cssText = 'width:100%;height:100%;position:relative;overflow:hidden';
     const battleLabel = `第 ${save.stage}/${RUN_BATTLES} 战 · ${lvl.battle.name} · ⚔ ${lvl.heroId}`;
     root.append(stage); // 战斗信息/返回/设置已内化到 turn-battle-screen topbar
 

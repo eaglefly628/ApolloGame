@@ -99,6 +99,10 @@ const CSS = `
 /* 顶排 + 边缘 复合：朝下且贴角 */
 .gg-tipwrap.tip-down.tip-left>.gg-tip{ bottom:auto; top:calc(100% + 9px); transform-origin:100% 0%; }
 .gg-tipwrap.tip-down.tip-right>.gg-tip{ bottom:auto; top:calc(100% + 9px); transform-origin:0% 0%; }
+/* 侧弹（高元素如敌方大本营·浮层弹到左侧·垂直居中·不再朝上顶出画框被裁·owner 2026-06-28） */
+.gg-tipwrap.tip-side>.gg-tip{ left:auto; right:calc(100% + 11px); bottom:auto; top:50%; transform:translateY(-50%) translateX(6px) scale(1); transform-origin:100% 50%; }
+.gg-tipwrap.tip-side>.gg-tip::after{ left:auto; right:-13px; top:50%; bottom:auto; transform:translateY(-50%); border:7px solid transparent; border-top-color:transparent; border-left-color:rgba(18,24,36,.58); }
+.gg-tipwrap.tip-side:hover>.gg-tip{ transform:translateY(-50%) translateX(0) scale(1); }
 /* 悬浮的牌+浮层整体抬层（owner 2026-06-21）：手牌/棋格 position:relative 但 z 默认 auto，
    悬浮时拔高 → 浮层不再被相邻牌或棋盘(Table)盖住。 */
 .gg-tipwrap:hover{ z-index:90; }`;
@@ -223,7 +227,7 @@ function fortBase(view: TurnBattleView, isMine: boolean): string {
   // 敌方大本营可点 → 弹 Boss 名号 + 战役故事（owner 2026-06-21）。
   const bossTipRows = forr(view.sha.filter((s) => s.filled), (s) => { const rc = RAR[s.rar] || RAR.white; const used = s.used ?? false; return `<div style="display:flex;align-items:center;gap:6px;padding:3px 0;border-top:1px solid rgba(255,255,255,.08);"><span style="width:6px;height:6px;border-radius:50%;flex-shrink:0;background:${rc[1]};"></span><span style="flex:1;font-size:10px;color:rgba(255,255,255,.85);">${esc(s.name)}</span><span style="font-size:9px;color:${used ? '#ff9966' : '#7fcc9a'};">${used ? '已用' : '备用'}</span></div>`; });
   const bossTip = `<div class="gg-tip" style="width:210px;text-align:left;"><div style="font-size:12px;font-weight:700;color:var(--gold);margin-bottom:8px;">👑 ${esc(view.bossName)}</div>${bossTipRows}<div style="margin-top:7px;padding-top:6px;border-top:1px solid rgba(255,255,255,.12);font-size:10px;color:rgba(255,255,255,.55);">牌库剩余 <b style="color:#cdeeff;">${view.deckB}</b> 张</div></div>`;
-  return `<div data-act="boss-info" class="gg-tipwrap tip-left" style="${st(baseStyle)}; cursor:pointer"><div style="${st(conn)}"></div>${fortInner}<div style="${st(shaLabel)}">地煞牌</div><div style="${st(shaRow)}">${forr(view.sha, shaSlot)}</div>${bossTip}</div>`;
+  return `<div data-act="boss-info" class="gg-tipwrap tip-side" style="${st(baseStyle)}; cursor:pointer"><div style="${st(conn)}"></div>${fortInner}<div style="${st(shaLabel)}">地煞牌</div><div style="${st(shaRow)}">${forr(view.sha, shaSlot)}</div>${bossTip}</div>`;
 }
 
 // 一格 slot（设计稿 lanes.slots）。
@@ -730,10 +734,13 @@ export function mountTurnBattle(host: HTMLElement, getView: () => TurnBattleView
   // 重渲极频(选牌也重渲)：只在亮格「减少」时记一次 drain，并用计时器在动画时长后清掉——中途无关重渲不会打断/重放。
   let prevLit = -1; let drain = { from: 0, count: 0 }; let drainTimer = 0;
   let localNotice = ''; let localNoticeTimer = 0;
-  const scaleOf = (): number => { const w = host.clientWidth || 1340; return w > 0 ? w / 1340 : 1; }; // 缩放=宿主宽/1340（宿主宽由外层 CSS 定·与内容无关·量它稳定）
-  const applyScale = (): void => { // ResizeObserver 走这条：只重算缩放·不整片重建 DOM（断「RO→render→改 outer 高→再触发 RO」循环·消掌机闪烁·owner 2026-06-22）
-    const inner = host.querySelector('.ggt-inner') as HTMLElement | null; const outer = host.querySelector('.ggt-outer') as HTMLElement | null;
-    if (!inner || !outer) return; const sc = scaleOf(); inner.style.setProperty('zoom', String(sc)); outer.style.height = Math.round(858 * sc) + 'px'; // zoom=CPU 布局缩放·不合成图层（见 render 注）
+  // contain 缩放（owner 2026-06-28·对齐大厅占满感·消四周留白）：取「宿主宽/1340」与「宿主高/858」较小者，
+  // 棋盘整张可见、最大化、居中·只在不匹配的那一轴留对称小白边（替旧「按宽缩放 + 140vh 盖」的四面留白）。
+  // 宿主须有确定宽高（game-g.tsx stage 已 100%×100% 占满 root）；无头(happy-dom)量到 0 → 回退 1（全尺寸·测只看 DOM）。
+  const scaleOf = (): number => { const w = host.clientWidth, h = host.clientHeight; return (w > 0 && h > 0) ? Math.min(w / 1340, h / 858) : (w > 0 ? w / 1340 : 1); };
+  const applyScale = (): void => { // ResizeObserver 走这条：只重算缩放·不整片重建 DOM（断「RO→render→改高→再触发 RO」循环·消掌机闪烁·owner 2026-06-22）
+    const inner = host.querySelector('.ggt-inner') as HTMLElement | null;
+    if (!inner) return; inner.style.setProperty('zoom', String(scaleOf())); // outer 现 100%×100% flex 居中·只改 inner zoom（仍 CSS zoom·不合成图层·掌机安全）
   };
   const render = (): void => {
     const viewRaw = getView();
@@ -748,7 +755,7 @@ export function mountTurnBattle(host: HTMLElement, getView: () => TurnBattleView
     const sc = scaleOf(); // 先量后写：缩放烤进首帧 markup（单次绘制·无未缩放帧）。
     // ⚠ 用 CSS zoom 而非 transform:scale —— zoom 是 CPU 布局缩放、不生成合成图层；掌机弱 GPU 合成「整屏 transform 缩放图层」会失败→黑屏（Mac 好 GPU 正常·owner 2026-06-22 烧版「apollo 绿字+黑屏」=此因）。zoom 即便不被支持也只是不缩放=裁切·绝不黑。
     const innerStyle: Style = { ...(THEMES[view.theme] ?? THEMES.onyx), width: '1340px', height: '858px', zoom: sc, fontFamily: 'var(--fb)' };
-    host.innerHTML = `<div class="ggt-outer" style="position:relative; width:100%; overflow:hidden; background:#0c0a08; height:${Math.round(858 * sc)}px"><div class="ggt-inner" style="${st(innerStyle)}">${buildTurnFrameHTML(view, drain)}</div></div>`;
+    host.innerHTML = `<div class="ggt-outer" style="position:relative; width:100%; height:100%; overflow:hidden; background:#0c0a08; display:flex; align-items:center; justify-content:center"><div class="ggt-inner" style="${st(innerStyle)}">${buildTurnFrameHTML(view, drain)}</div></div>`; // outer 占满 stage·flex 居中棋盘·四周对称留白(contain)
   };
   // 坞/格/牌/门 交互用 pointerdown（同 battle-screen）：rAF/重渲在按下↔抬起间整片重建 DOM，click 会落空 → 用单次离散 pointerdown。
   const onPress = (e: MouseEvent): void => {
