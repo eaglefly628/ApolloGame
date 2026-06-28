@@ -6,7 +6,7 @@ import { cardPoints } from './clash-resolve.js';
 import { SLOTS, manaGain, GATES, A_DEPLOY_SLOT, B_DEPLOY_SLOT, DEPLOY_COST, CAST_COST, clashOdds, type TurnBattle, type TurnUnit } from './turn-combat.js';
 import { FONTS } from './fonts.js'; // 自托管字体（替代外部 Google Fonts <link>）
 import { heroNameOf } from './hero-codex.js'; // 场上牌悬浮显其对应武将名（owner 2026-06-21·数据已在 HERO_CARDS）
-import { renderNode, type LayoutNode } from '@ui/components/index.js'; // 数据驱动 UI 库：HUD chrome 由 LayoutNode 描述、renderNode 出串（UI 铁律·战斗屏 HUD 迁移）
+import { renderNode, ensureUiKeyframes, type LayoutNode } from '@ui/components/index.js'; // 数据驱动 UI 库：HUD chrome 由 LayoutNode 描述、renderNode 出串（UI 铁律·战斗屏 HUD 迁移）。ensureUiKeyframes=手动注入 fx 关键帧（战斗走 renderNode+innerHTML 不经 mountUI·主程导出·REQ-UI-fx控件叠层②）
 import { GG_BATTLE_THEME } from './ui-theme.js'; // 桥接 CSS 变量的引擎组件主题 → renderNode 片段随玄铁/锦霞皮自动换色
 
 type Style = Record<string, string | number | undefined>;
@@ -760,6 +760,8 @@ export interface TurnBattleActions {
 export function mountTurnBattle(host: HTMLElement, getView: () => TurnBattleView, actions: TurnBattleActions = {}): { update: () => void; destroy: () => void } {
   if (!document.getElementById('gg-fonts')) { const f = document.createElement('div'); f.id = 'gg-fonts'; f.style.display = 'none'; f.innerHTML = FONTS; const st = f.querySelector('style'); if (st) document.head.appendChild(st); }
   if (!document.getElementById('gg-turn-css')) { const s = document.createElement('style'); s.id = 'gg-turn-css'; s.textContent = CSS; document.head.appendChild(s); }
+  ensureUiKeyframes(document); // fx 关键帧（topbar 灯/掷命钮 pulse 等）自注入——战斗走 renderNode+innerHTML 不经 mountUI·不再靠大厅先挂(主程 2026-06-28 导出)
+
   // 召唤源泉收退动效（owner 2026-06-21）：跨重渲对比上次亮格数 → 本次刚花掉的格走 g-drain「往后退」收退。
   // 重渲极频(选牌也重渲)：只在亮格「减少」时记一次 drain，并用计时器在动画时长后清掉——中途无关重渲不会打断/重放。
   let prevLit = -1; let drain = { from: 0, count: 0 }; let drainTimer = 0;
