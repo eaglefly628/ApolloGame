@@ -11,6 +11,7 @@ import type { LayoutNode, HandlerMap } from '@ui/components/index.js';
 import { GG_LOBBY_THEME } from './ui-theme.js';
 import { stageDisha } from './disha.js';
 import { dishaNumberLine } from './lobby-collection.js';
+import { FELT_BROCADE } from './art-textures.js';
 import type { LobbyView } from './lobby-screen.js';
 
 /** 主页内容 → LayoutNode（纯数据·保真原版绿呢牌桌·owner 2026-06-25「和原版一样」）。
@@ -52,7 +53,7 @@ export function buildHomeScreen(view: LobbyView): LayoutNode {
   // 绿呢牌桌（felt·对齐 Designer comp 命运牌桌）：标题左上 + 花色标右上 / 中部今日卦象+漂浮对决牌 / 底部出征 CTA+手册。
   // justify:between 三段分布（头顶/中央/底），消除原先全居中导致的标题居中偏差。
   const felt: LayoutNode = {
-    type: 'Panel', id: 'home-felt', props: { bg: 'var(--felt)', vignette: true, pattern: 'stripe' },
+    type: 'Panel', id: 'home-felt', props: { bg: 'var(--felt)', vignette: true, bgTexture: FELT_BROCADE, bgTextureSize: 64 },
     layout: { direction: 'column', align: 'stretch', justify: 'between', gap: 12, padding: 28, flex: 1 },
     children: [
       { type: 'Panel', id: 'home-header', props: { bare: true }, layout: { direction: 'row', align: 'start', gap: 10, padding: 0 },
