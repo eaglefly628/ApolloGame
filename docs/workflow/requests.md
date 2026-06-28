@@ -662,3 +662,26 @@
 
 
 _（REQ-3D-W1高效引擎 已移至 [`requests-3d.md`](./requests-3d.md)。）_
+
+### REQ-UI-BUG-style属性引号截断 · [2026-06-28] · PI → 主程（UI 库域·render.ts 序列化） · status: **待主程** · 类型: 渲染正确性 bug（击穿已发特性）
+
+> **现象**：`Label` 的 `white-space:pre-line`（多行 `\n`·db56703a 刚发）、`glow`（text-shadow）、`tracking`（letter-spacing）**全部静默失效**——在所有主题下都不生效。建展示台 demo 时实测发现：多行 label 挤成一行、glow 不发光、tracking 无字距。
+>
+> **根因（已定位·非玄学）**：主题 `UITheme.fontUi` 的值含**未转义的双引号**，如 onyx：
+> `"-apple-system, \"Segoe UI\", \"PingFang SC\", … sans-serif"`。
+> `renderLabel` 把它拼进 `style="…;font-family:-apple-system, "Segoe UI", …;white-space:pre-line"`。
+> 浏览器 HTML 解析器在 `font-family:-apple-system, ` 后的**第一个 `"` 处就把 `style` 属性闭合了**，其后的一切（`Segoe UI"`、`pre-line`、`text-shadow`、`letter-spacing`）被当成废属性丢弃。
+> **凡是在 `renderLabel` 数组里排在 `font-family:${fam}` 之后的样式属性，全中招**（当前顺序：font-family → **pre-line / glow / tracking** → ls）。
+>
+> **证据（Chromium computed style·onyx 主题·game-i 展台 tab-new）**：
+> | 元素 | 期望 | 实测 computed |
+> |---|---|---|
+> | `ml-1`（多行）| white-space:pre-line | `normal`（→ 单行）|
+> | `font-glow` | text-shadow:0 0 8px… | `none`（→ 不发光）|
+> | `font-track` | letter-spacing:3px | `normal`（→ 无字距）|
+>
+> **建议修法（主程定夺·二选一）**：① 序列化时对整个 `style="…"` 属性值做 HTML 转义（`"`→`&quot;`）——最稳，但会改动**所有**带 font-family 的组件 golden 字节、须统一重生成快照；② 仅把 `fontUi` 里的字体名用单引号或在拼接处转义。**因为牵涉一大批 golden HTML 快照重生成、属 UI 库统一序列化策略，我（PI）不擅自改 render.ts，交主程裁决。**
+>
+> **影响面**：不止 Label——任何把含引号文本/主题令牌拼进 `style` 且其后还有属性的渲染路径都可能漏样式。建议顺手审一遍 render.ts 的 `style="${…}"` 拼接是否都过转义。
+>
+> **展示台侧**：`t-multiline` / `t-font`(glow/tracking) 三段 demo 的**数据是对的**（前向正确），主程修序列化后即自动点亮，无需改 demo。
