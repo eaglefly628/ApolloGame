@@ -71,24 +71,32 @@
 > **E. 不阻塞**：棋盘现手写、能跑、hover 拆解/forecast/动画齐全·非破坏。建议 **(2) 通用 DOM 盘原语 + 主程牌面抽象两者就绪前·棋盘保持现状**·不做 lossy 迁移。
 
 
-### REQ-3D-Model导入 · [2026-06-28] · P3D（3D 渲染线）→ 主程（资产层域）· status: **open（render 半边已落 mainbranch·待主程接资产半边）** · 类型: 真能力缺口（box 原语表达不了圆润模型·owner 2026-06-28 拍板开做）
+### REQ-3D-Model导入 · [2026-06-28] · P3D（3D 渲染线）→ 主程（资产层域）· status: **✅ done（端到端打通·owner 2026-06-28 当面授权 P3D 跨界把资产半边也落）** · 类型: 真能力缺口（box 原语表达不了圆润模型·owner 2026-06-28 拍板开做）
 
-> **背景**：owner（junbai.li）2026-06-28 拍板做「轻量 3D 渲染场景」——模型导入打头阵（圆润真模型，box/plane 原语表达不了，是真缺口非重组）。技术栈维持纯 Three.js（已确认零裸 WebGL），用 `three/addons` 的 `GLTFLoader`。规模上限暂不硬限（owner：先做功能）。
+> **⚠️ 知会主程**：资产层（`src/assets/`·按契约 🔒 主程域）这次由 P3D 落了——**owner（junbai.li）2026-06-28 当面授权**「资产这块你也去，可以授权你动」。改动**极小且零 three 依赖**（见下「资产半边」），不碰任何 2D 逻辑/现有 kind 行为，全绿。如与你并行的资产改动撞 rebase 请喊我。
 >
-> **干净的边界切法（让资产层改动趋零、three 不泄进资产层）**：glTF 解析产物是 three 场景图（渲染概念）。故让**资产层只管「key → 取 `.glb` 字节」（零 three 依赖）**，`GLTFLoader.parse(bytes)` 留在我的 `ThreeRenderer`。
+> **背景**：owner 2026-06-28 拍板做「轻量 3D 渲染场景」——模型导入打头阵（圆润真模型，box/plane 原语表达不了，是真缺口非重组）。技术栈维持纯 Three.js（已确认零裸 WebGL），用 `three/addons` 的 `GLTFLoader`。规模上限暂不硬限（owner：先做功能）。
 >
-> **✅ 我已落地（render 半边·我的 ✅/🔶 域·全绿已推/待推）**：
+> **干净的边界切法（资产层零 three 依赖）**：glTF 解析产物是 three 场景图（渲染概念）。故**资产层只管「key → 取 `.glb` 字节(ArrayBuffer)」（零 three 依赖）**，`GLTFLoader.parse(bytes)` 留在 `ThreeRenderer`。
+>
+> **✅ 资产半边（`src/assets/`·owner 授权 P3D 落）**：
+> - `asset-types.ts` 加 `ModelDescriptor { kind:'model'; key; src }` 入 `AssetDescriptor` 联合。
+> - `model-loader.ts`（新）：`ModelAssetLoader`（fetch src → `ArrayBuffer` 句柄·零 three） + `isModelHandle` 守卫。非 model 描述符明确报错。
+> - `asset-manager.ts`：`intrinsicSize` / `resolve` 两处 exhaustive switch 补 `'model'`（尺寸 0 / 不解析成 2D 帧）。`index.ts` 导出。
+> - 测试 `model-loader.test.ts`：守卫 + stub 尺寸 + resolve undefined + 非 model 报错。
+>
+> **✅ render 半边（我的 ✅/🔶 域）**：
 > - `Model3D` render-only 组件（`components/render.ts` 3D 块）：`modelKey`（资产 key·蓝图只持 key 不塞 URL/二进制）+ `scale?` + `tint?`。
 > - 登记三处：`assembly/component-map.ts`（import + ComponentDataMap 行）、`net/determinism.ts`（`NON_DETERMINISTIC` 加 `Model3D`·纯表现不进 hash）、`renderer/renderable.ts`（`model3d?` 字段 + 两条收集路）。
 > - `renderer/three-renderer.ts`：Model3D 解释——按 `modelKey` 从 `AssetManager.get(key).handle` 取 **ArrayBuffer** → `GLTFLoader.parse` 一次入模板缓存 → 多实例 clone（共享几何省显存·每实例 clone 材质供染色/独立释放）→ 位姿走 Transform3D/盒庭落地面/2D 投影同套路 → 投/受软影。**未就绪（资产没加载好或还在 parse）→ 本帧不画**（同 sprite 未就绪先例·向后兼容）。
 > - 测试 `renderer/three-camera3d.test.ts`：Model3D 收集 + 「不进 hash」红线。tsc + vitest + build 全绿；GLTFLoader 进 `three-renderer` code-split chunk（不连累 2D 消费者）。
 >
-> **🙏 求主程接（资产半边·`src/assets/`·🔒 主程域·我不直接动）**：
-> 1. `asset-types.ts` 加 `ModelDescriptor { kind: 'model'; key; src }`，并入 `AssetDescriptor` 联合（同 texture/atlas/sprite-sheet 先例）。
-> 2. 一个**取字节 loader**：`load(descriptor)` → `{ handle: ArrayBuffer, width:0, height:0 }`（fetch `.glb`/`.gltf` 为 ArrayBuffer）。**零 three 依赖**——three 全留我渲染线。headless/测试可给 stub（无 I/O）。
-> 3.（可选）`isModelHandle(h): h is ArrayBuffer` 导出，便于消费方判型（我渲染器现用 `h instanceof ArrayBuffer` 自检，不强依赖此导出）。
+> **✅ 端到端打通（game-z 真模型 + 截图回归）**：
+> - 基础模型资产（Khronos glTF-Sample-Assets·`public/models/`·出处许可见 `CREDITS.md`）：`duck.glb`（圆润示例）+ `box.glb`（sanity）。vite 在 dev/build/preview 都从根服（无 public 目录→新建·base='/'）。
+> - game-z：`AssetManager(new ModelAssetLoader())` 注册 `GAME_Z_ASSETS` 清单 → `loadAll` → 传入 `ThreeRenderer`；蓝图把方块蘑菇人换成 `Model3D{modelKey:'duck'}`（可控·2D Transform 落地面）+ 静态 `duck-statue`（Transform3D·与可控鸭共享同一解析模板·多实例复用）。
+> - 无头截图回归（`shoot-game.mjs`·SwiftShader WebGL）确认两只鸭带自带材质/贴图 + 软影渲出。坑：glTF 节点常带内建 scale，物体真实尺寸 ≠ accessor min/max（Duck mesh-local 154 但节点缩到 ~2.2 单位）→ Model3D.scale 按**渲染后包围盒**定，别按裸 accessor。
 >
-> 接好后：game-z 蓝图把方块蘑菇人换成 `Model3D{modelKey:'…'}` 真模型 + 截图回归，即端到端打通。**🔶 知会**：上面 4 个共享文件我已只动 3D 相关行（不碰 2D/sim 组件），如撞 rebase 请喊我。
+> **🔶 知会**：4 个共享文件（render.ts/component-map/determinism/renderable）只动 3D 相关行（不碰 2D/sim 组件），如撞 rebase 请喊我。
 
 ### REQ-UI-Label字阶裸数字 · [2026-06-28] · PG 实现（**owner 当面授权 PG 直接改引擎此一处·非常规**） · status: **✅ done（PG 2026-06-28·`label-size-number.test.ts`）** · 类型: 真能力缺口（curated 字阶太粗·不可重组）
 > **背景**：owner 复刻像素稿时问「字体库难道不该所有档都有吗·从 8 到 24 甚至更大」。Label.size 原是 curated 7 档模数阶梯（xs10/sm11/md13/lg16/xl22/xxl28/xxxl34），刻意只给少数档保和谐（同 Tailwind type scale）；但原版手写 CSS 用了 ~20 种 px（8/9/10/11/12/13/14/15/17/18/19/20/21/22/24/26/30/34/50/64），缺 12/14/15/17–21 → 复刻对不齐。**真缺口**（数据层表达不了非档位 px）。

@@ -120,7 +120,7 @@ node scripts/shoot-game.mjs game-z /tmp/game-z.png    # 任意 game id 都行
 > 背景：奇诺比奥队长（Captain Toad）风盒庭。预演结论=可实现、增量非重写。已落 v0（位姿/相机/阴影/光/材质/天空盒/可控角色）。往后：
 
 - **✅ owner 已拍（2026-06-28）**：做「轻量 3D 渲染场景」，**模型导入打头阵**；技术栈维持**纯 Three.js**（确认零裸 WebGL·用 `three/addons` GLTFLoader）；规模上限**暂不硬限**（先做功能·预算校验以后加）。
-- **🚧 模型导入(glTF) 进行中**：render 半边已落（`Model3D` 组件 + ThreeRenderer `GLTFLoader.parse(ArrayBuffer)` 解释 + 测试·全绿）；资产半边（`src/assets` 加 `model` kind + 取字节 loader·🔒 主程域）已走 `requests.md`（REQ-3D-Model导入）待主程接。接好后 game-z 换真模型 + 截图回归即端到端打通。
+- **✅ 模型导入(glTF) 端到端打通**：`Model3D` 组件 + ThreeRenderer `GLTFLoader.parse(ArrayBuffer)`（模板缓存·多实例 clone·材质/贴图/软影） + 资产层 `model` kind + `ModelAssetLoader`（取字节·零 three·owner 2026-06-28 授权 P3D 落资产层） + game-z 换真模型（小黄鸭·`public/models/duck.glb,box.glb`）+ 截图回归。详见 `requests.md` REQ-3D-Model导入。**坑**：glTF 节点常带内建 scale，真实尺寸≠accessor min/max → Model3D.scale 按渲染后包围盒定。
 - **P-next 候选**（每条：数据组件 + 引擎解释 + 纯函数测 + 截图回归）：
   - ~~**模型导入** `Model3D = 资产 key → glTF`~~（render 半边已落·见上「进行中」）。
   - **移轴景深 / 后处理**（tilt-shift DOF / bloom / SSAO）——Captain Toad 招牌微缩感（EffectComposer·render-only 管线）。

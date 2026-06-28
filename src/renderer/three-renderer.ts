@@ -3,7 +3,7 @@ import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 import type { IWorld, RendererBackend } from '@engine/core/types.js';
 import type { Mesh3D, Model3D, Sky3D } from '@engine/protocol/components.js';
 import type { AssetManager } from '@assets/index.js';
-import { isImageHandle } from '@assets/index.js';
+import { isImageHandle, isModelHandle } from '@assets/index.js';
 import { getCamera3D, getSky3D } from '@engine/protocol/camera-view.js';
 import { collectRenderables, chooseRenderMode, type Renderable } from './renderable.js';
 import {
@@ -380,7 +380,7 @@ export class ThreeRenderer implements RendererBackend {
     if (ready) return ready;
     if (this.modelState.get(key)) return null; // pending / failed
     const handle = this.assets?.get(key)?.handle;
-    if (!(handle instanceof ArrayBuffer)) return null; // 资产尚未加载成字节 → 下帧重试
+    if (!isModelHandle(handle)) return null; // 资产尚未加载成字节（或非模型句柄）→ 下帧重试
     this.modelState.set(key, 'pending');
     (this.gltf ??= new GLTFLoader()).parse(
       handle,

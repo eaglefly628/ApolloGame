@@ -67,11 +67,24 @@ export interface PrerenderedSequenceDescriptor {
   };
 }
 
+/**
+ * 3D 模型（glTF/glb · 一等公民「又一种 kind」）：
+ * 资产层只管「key → 取模型字节(ArrayBuffer)」，**零 three 依赖**——真正的 glTF 解析（→ three 场景图）
+ * 在渲染线（ThreeRenderer）做，three 不泄进资产层。同 sprite 先例：sim/蓝图只持 key（可哈希、可回滚），
+ * 真实模型只在此资产层。句柄形态 = `ArrayBuffer`（原始字节）。width/height 对模型无意义（取 0）。
+ */
+export interface ModelDescriptor {
+  readonly kind: 'model';
+  readonly key: string;
+  readonly src: string; // 模型文件地址（相对 baseUrl）或 data: URI
+}
+
 export type AssetDescriptor =
   | TextureDescriptor
   | AtlasDescriptor
   | SpriteSheetDescriptor
-  | PrerenderedSequenceDescriptor;
+  | PrerenderedSequenceDescriptor
+  | ModelDescriptor;
 
 /** 数据驱动清单：一组描述符。可由 JSON 提供。 */
 export type AssetManifest = readonly AssetDescriptor[];

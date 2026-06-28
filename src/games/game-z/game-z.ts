@@ -6,10 +6,12 @@
 // 玩法暂缓（owner 2026-06-27「先把玩法放一下·先长 3D 这条线」）。
 import { Engine } from '../../runtime/engine.js';
 import { ThreeRenderer } from '@renderer/three-renderer.js';
+import { AssetManager, ModelAssetLoader } from '@assets/index.js';
 import { mountUI } from '@ui/components/index.js';
 import type { LayoutNode } from '@ui/components/index.js';
 import type { Velocity } from '@engine/protocol/components.js';
 import { dioramaBlueprint } from './diorama.js';
+import { GAME_Z_ASSETS } from './assets.js';
 
 const MOVE_KEYS = new Set(['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight', 'KeyW', 'KeyA', 'KeyS', 'KeyD']);
 
@@ -19,9 +21,9 @@ function hudTree(fps: number): LayoutNode {
     type: 'Panel', id: 'gz-hud', props: { bare: true }, layout: { x: 18, y: 14, gap: 4 },
     children: [
       { type: 'Label', id: 'gz-title', props: { text: 'GAME Z', size: 'xxl', glow: true } },
-      { type: 'Label', id: 'gz-sub', props: { text: '3D 盒庭 · 数据驱动渲染线 v0', size: 'sm' } },
+      { type: 'Label', id: 'gz-sub', props: { text: '3D 盒庭 · 数据驱动渲染线 · glTF 模型导入', size: 'sm' } },
       { type: 'Label', id: 'gz-fps', props: { text: `${fps} FPS`, size: 'sm', font: 'mono', glow: true } },
-      { type: 'Label', id: 'gz-hint', props: { text: 'WASD / 方向键 控制蘑菇人走动', size: 'sm' } },
+      { type: 'Label', id: 'gz-hint', props: { text: 'WASD / 方向键 控制小黄鸭走动', size: 'sm' } },
     ],
   };
 }
@@ -37,9 +39,15 @@ export function mount(container: HTMLElement): () => void {
   const w = Math.max(320, Math.min(1100, wrapper.clientWidth || 900));
   const h = Math.max(240, Math.min(720, wrapper.clientHeight || 560));
 
+  // 3D 模型资产：注册 glTF 清单 → 异步加载（就绪前渲染器跳过该实体，就绪后自动解析显示·向后兼容）。
+  // 蓝图持 modelKey 保纯；ModelAssetLoader 取字节(ArrayBuffer)，ThreeRenderer 解析成 three 场景。
+  const assets = new AssetManager(new ModelAssetLoader());
+  assets.registerManifest(GAME_Z_ASSETS);
+  void assets.loadAll();
+
   const engine = new Engine();
   engine.load(dioramaBlueprint());
-  const renderer = new ThreeRenderer({ width: w, height: h, background: 0x0b1020, fov: 38 });
+  const renderer = new ThreeRenderer({ width: w, height: h, background: 0x0b1020, fov: 38, assets });
   engine.attachRenderer(renderer, stage);
 
   // HUD 叠加层（LayoutNode 纯数据·UI 铁律）。

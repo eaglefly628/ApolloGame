@@ -39,7 +39,34 @@
 - 不要在渲染 System 里修改 Transform — 渲染是只读操作。
 - 相机 zoom 会影响碰撞判断的视觉 — 确保碰撞在世界坐标做，不受 zoom 影响。
 
+## 3D 盒庭渲染线（Three.js · render-only 数据组件）
+
+技术栈：**纯 Three.js**（`three` + `three/addons`），全代码库零裸 WebGL——能用 ThreeJS 做的就别手写 GL。
+后端 `ThreeRenderer`（`src/renderer/three-renderer.ts`），几何纯函数在 `three-projection.ts`（node 可测）。
+
+- **数据组件（render-only·不进 sim/hash）**：`Mesh3D`（box/plane 体块）、`Transform3D`（真三维位姿）、
+  `Camera3D`（轨道相机单例=盒庭模式）、`Sky3D`（程序化天空盒）、`Model3D`（导入式 glTF 模型）。
+  新增 render-only 组件必登记 `net/determinism.ts` 的 `NON_DETERMINISTIC`（相机/光/阴影/材质/位姿跨 GPU 浮点非确定）。
+- **模型导入（glTF）**：蓝图只持 `modelKey`（保纯）；资产层 `ModelAssetLoader` 取 `.glb` 字节(ArrayBuffer·**零 three 依赖**)，
+  `ThreeRenderer` 用 `GLTFLoader.parse(bytes)` 解析成 three 场景。**解析一次入模板缓存 → 多实例 `clone(true)`**（共享几何省显存，
+  每实例 clone 材质供独立染色/释放）。导入走 asset key、loader 在引擎（同 sprite 先例），别在蓝图塞 URL/二进制。
+- **光照/阴影**：暖白主光 + 冷蓝补光 + 哑光材质；盒庭模式每帧 `placeShadow` 按场景包围盒重定位主光 + 调正交视锥
+  （PCFSoftShadowMap 在 three 0.184 已弃用 → 用 PCFShadowMap）。
+- **静态资产 + 无头截图**：模型放 `public/models/`（vite 在 dev/build/preview 都从根服·base='/'）；
+  `scripts/shoot-game.mjs`（SwiftShader 软件 WebGL）出真 3D 回归图。
+- **向后兼容铁律**：无 `Camera3D` 必退回原 2D 俯视自适配（别破坏 2D 后端 / three-lab / 现有游戏）。
+
+### 3D 常见陷阱
+- **glTF 节点内建 scale**：物体真实尺寸 ≠ accessor POSITION min/max（节点常带缩放）。Duck 的 mesh-local 高 154，
+  但节点缩到 ~2.2 单位 → 按裸 accessor 定 `Model3D.scale` 会差几十倍。**按渲染后 `Box3.setFromObject` 包围盒**定 scale。
+- **clone 共享几何/材质**：`Object3D.clone(true)` 复制节点但**共享** geometry+material。逐实例释放 clone 会误伤模板/兄弟实例
+  → 只释放实例自 clone 的材质，几何随模板在 `destroy` 释放。
+- **模型原点未必在脚底**：glTF 原点可能在中心/偏移（Duck min.y>0）→ 落地面时可能轻微悬浮，按需补 y 偏移。
+- **GLTFLoader.parse 是异步**：首帧 kick 解析、标 pending 防每帧重复；未就绪本帧不画（同 sprite 未就绪占位）。
+
 ## 参考来源
 
 - PixiJS — 数千款 HTML5 游戏验证的 2D WebGL 引擎
 - Apollo CanvasRenderer — 当前实现，升级时保持接口不变
+- Three.js（`three` + `three/addons`）— 3D 盒庭渲染线后端；GLTFLoader 走 addons
+- Khronos glTF-Sample-Assets — 基础测试模型来源（见 `public/models/CREDITS.md`）

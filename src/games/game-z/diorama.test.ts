@@ -5,7 +5,7 @@ import { Engine } from '../../runtime/engine.js';
 import { dioramaBlueprint } from './diorama.js';
 import { collectRenderables } from '@renderer/renderable.js';
 import { getCamera3D, getSky3D } from '@engine/protocol/camera-view.js';
-import type { Transform, Transform3D, Velocity, Mesh3D } from '@engine/protocol/components.js';
+import type { Transform, Transform3D, Velocity, Mesh3D, Model3D } from '@engine/protocol/components.js';
 
 describe('Game Z · 3D 盒庭蓝图（纯数据 · 仅现成 motion-apply 能力）', () => {
   it('只用现成 motion-apply 能力（无专属 system）', () => {
@@ -48,13 +48,22 @@ describe('Game Z · 3D 盒庭蓝图（纯数据 · 仅现成 motion-apply 能力
     expect(getSky3D(e.world)?.clouds).toBe(true);
   });
 
-  it('可控角色 hero：2D Transform + Velocity + Mesh3D（无 transform3d·盒庭模式落地面）', () => {
+  it('可控角色 hero：2D Transform + Velocity + Model3D 小黄鸭（无 transform3d·盒庭模式落地面）', () => {
     const e = new Engine();
     e.load(dioramaBlueprint());
     const rs = collectRenderables(e.world);
     const hero = rs.find((r) => r.entityId === 'hero')!;
-    expect(hero.mesh3d?.shape).toBe('box');
+    expect(hero.model3d?.modelKey).toBe('duck'); // 导入式 glTF 模型替原方块
     expect(hero.transform3d).toBeUndefined(); // 走 2D Transform → groundPose 落地面
+  });
+
+  it('静态黄鸭 duck-statue：Transform3D + Model3D（与可控鸭共享模板·多实例复用）', () => {
+    const e = new Engine();
+    e.load(dioramaBlueprint());
+    const m = e.world.getComponent<Model3D>('duck-statue', 'Model3D')!;
+    const t3 = e.world.getComponent<Transform3D>('duck-statue', 'Transform3D')!;
+    expect(m.modelKey).toBe('duck');
+    expect(typeof t3.z).toBe('number');
   });
 
   it('角色按 Velocity 走动（motion-apply 驱动·纯数据 sim）', () => {

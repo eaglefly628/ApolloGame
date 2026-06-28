@@ -9,6 +9,7 @@
 
 import type { WorldBlueprint } from '../../assembly/demo.assembly.js';
 import { motionApplyCapability } from '@skills/tier1/index.js';
+import { MODEL_DUCK } from './assets.js';
 
 type Ent = WorldBlueprint['entities'][string];
 
@@ -33,11 +34,18 @@ export function dioramaBlueprint(): WorldBlueprint {
       sky: { Sky3D: { top: 0x4a90d9, bottom: 0xcfe9f7, clouds: true, cloudTint: 0xffffff, scroll: 1 } },
 
       // 可控角色（WASD/方向键 → Velocity → motion-apply 走动）：用 2D Transform，盒庭模式自动落到地面。
-      // 红/白小蘑菇人。Transform.x→地面 X，Transform.y→地面 Z（景深）；起步站在草地中央。
+      // 导入式 glTF 小黄鸭真模型（替原方块蘑菇人·展示模型导入）。Transform.x→地面 X，Transform.y→地面 Z（景深）；
+      // 起步站在草地中央。模型原点在脚底 → groundPose(y=0) 坐地。scale 把鸭子放大到盒庭尺度。
       hero: {
         Transform: { x: 0, y: 0, rotation: 0, scaleX: 1, scaleY: 1 },
         Velocity: { vx: 0, vy: 0, angular: 0 },
-        Mesh3D: { shape: 'box', width: 4.5, height: 7, depth: 4.5, frontTint: 0xff7043, backTint: 0xf4511e, edgeTint: 0xffccbc },
+        Model3D: { modelKey: MODEL_DUCK, scale: 3.2 },
+      },
+
+      // 静态大黄鸭（终点装饰·走 Transform3D 真三维位姿）：与可控鸭共享同一解析模板（多实例复用·省显存）。
+      'duck-statue': {
+        Transform3D: { x: 16, y: 5.5, z: 9, rotY: -2.2, scale: 3.6 },
+        Model3D: { modelKey: MODEL_DUCK },
       },
 
       // 草地大地台（顶在 y=0）
