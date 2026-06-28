@@ -355,69 +355,94 @@ function handCard(c: TurnHandCardView, i: number, hiOn = false, edge: 'left' | '
   return `<div data-hand="${i}" class="gg-tipwrap${edgeCls}" style="${st(card)};cursor:pointer${selSty}${affordSty}${c.dealt ? ';animation:g-deal .46s cubic-bezier(.2,.85,.3,1.12) both' : genAnim}">${genFloatBadge}${genWatermark}<div style="${st(rarDot)}"></div><div style="${st(cornerTL)}">${esc(c.rank || '')}<br>${g}</div><span style="${st(big)}">${g}</span><div style="${st(nameP)}">${esc(c.name)}</div><div style="${st(badge)}">${c.power ?? ''}</div>${c.cost > 0 ? `<div style="position:absolute;top:6px;left:50%;transform:translateX(-50%);">${costDropHtml(c.cost)}</div>` : ''}<div style="${st(zodRow)}">${forr([0, 1, 2], (z) => zodCell(zod[z]))}</div>${cardTip({ name: c.name, rar: c.rar, isGang: false, mine: true, suit: c.suit, pts: c.pts, buff: c.buff, power: c.power, zod: c.zod, ench: c.ench })}</div>`;
 }
 
-function clashOverlay(cv: TurnClashView): string {
-  const backdrop = { position: 'absolute', inset: 0, zIndex: 60, display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'rgba(6,9,13,.74)', backdropFilter: 'blur(5px)', animation: 'g-fade .3s ease both' }; // z60 > 底部手牌坞(z50)：对决覆盖层盖住一切·确认钮不被遮
-  const panel = { position: 'relative', width: '760px', padding: '22px 34px 24px', borderRadius: '22px', background: 'radial-gradient(80% 70% at 50% 30%, #1c2940, #0e1828)', border: '2px solid var(--gold)', boxShadow: 'inset 0 0 0 1px var(--hairline), 0 40px 90px rgba(0,0,0,.7), 0 0 60px rgba(232,205,138,.2)' };
-  const revealed = cv.revealed !== false; // 默认揭晓（兼容旧调用/测试）；false=掷命前
-  const duelCard = (c: TurnClashCardView, isMine: boolean): string => {
-    const col = isMine ? '#dc2626' : '#111111'; const sc = SUITC[c.suit]; // 红对黑（对齐 mainbranch 配色）
-    const won = revealed && c.won, lost = revealed && !c.won; // 掷命前两张都中性·不剧透胜负
-    // 入场：从「桌面」3D 翻起飞到眼前（我方左下 / 敌方右下·flat→竖立·小→大），落到特写就位点。owner 2026-06-20。
-    const flyIn = isMine ? 'g-fly-mine .6s cubic-bezier(.16,.84,.3,1) both' : 'g-fly-foe .6s cubic-bezier(.16,.84,.3,1) both';
-    const card = { position: 'relative', width: '180px', height: '252px', borderRadius: '15px', background: sideFace(isMine), border: '4px solid ' + col, boxShadow: won ? `0 0 44px ${col}aa, 0 20px 40px rgba(0,0,0,.5)` : `0 0 0 3px ${col}66, 0 20px 40px rgba(0,0,0,.6)`, display: 'flex', alignItems: 'center', justifyContent: 'center', opacity: lost ? 0.72 : 1, filter: lost ? 'grayscale(.35) brightness(.82)' : 'none', backfaceVisibility: 'hidden', animation: flyIn };
-    const corner = { position: 'absolute', top: '9px', left: '11px', fontFamily: 'var(--fh)', fontWeight: 700, fontSize: '22px', lineHeight: '.86', color: sc, textAlign: 'center' };
-    const big = { fontSize: '96px', color: sc };
-    const zchip = { position: 'absolute', top: '10px', right: '12px', width: '32px', height: '32px', borderRadius: '8px', border: '1.5px solid ' + sc, display: 'flex', alignItems: 'center', justifyContent: 'center', fontFamily: 'var(--fd)', fontSize: '21px', color: sc };
-    const nameP = { position: 'absolute', bottom: '34px', left: '50%', transform: 'translateX(-50%)', padding: '3px 15px', borderRadius: '99px', background: 'rgba(20,16,10,.8)', color: '#fff', fontFamily: 'var(--fb)', fontWeight: 700, fontSize: '15px', whiteSpace: 'nowrap' };
-    const survived = !c.won && c.lastStand; // 败者死战不退·首负不亡：仍在场·非阵亡（显"死战不退"而非"阵亡"）
-    const verdict = { position: 'absolute', bottom: '-15px', left: '50%', transform: 'translateX(-50%)', padding: '4px 16px', borderRadius: '99px', background: c.won ? 'var(--hp)' : survived ? 'var(--gold)' : 'var(--danger)', color: c.won || survived ? '#06281a' : '#fff', fontFamily: 'var(--fh)', fontWeight: 700, fontSize: '14px', whiteSpace: 'nowrap', boxShadow: '0 4px 12px rgba(0,0,0,.4)' };
-    const glow = won && isMine ? `<div style="${st({ position: 'absolute', inset: '-20px', borderRadius: '24px', background: 'radial-gradient(circle, rgba(220,38,38,.4), transparent 70%)', pointerEvents: 'none' })}"></div>` : '';
-    const sideTag = `<div style="${st({ position: 'absolute', top: '-15px', left: '50%', transform: 'translateX(-50%)', padding: '4px 18px', borderRadius: '99px', background: col, color: '#fff', fontFamily: 'var(--fh)', fontWeight: 700, fontSize: '15px', letterSpacing: '.08em', whiteSpace: 'nowrap', boxShadow: `0 4px 14px ${col}88`, zIndex: 4 })}">${isMine ? '我方' : '敌方'}</div>`;
-    const verdictTag = revealed ? `<div style="${st(verdict)}">${c.won ? '正面 · 存活' : survived ? '🛡 死战不退 · 退守' : '反面 · 阵亡'}</div>` : ''; // 掷命前不显胜负·揭晓后败者若死战不退则显"死战不退"
-    return `<div style="${st(card)}">${glow}${sideTag}<div style="${st(corner)}">${esc(c.rank)}<br>${SUITG[c.suit]}</div><span style="${st(big)}">${SUITG[c.suit]}</span>${c.zod ? `<div style="${st(zchip)}">${esc(c.zod)}</div>` : ''}<div style="${st(nameP)}">${esc(c.name)}</div>${verdictTag}</div>`;
+
+// ── 掷命对决特写（数据驱动·阶段①·owner 2026-06-28 拍板棋枰数据化）：Versus 双牌+胜方 + 明细/掷骰/继续组合。
+// 牌面花色色由 Versus/PlayingCard 内建；标签色用语义 token(ok/warn/danger) 近似；牌库收退/逐路编排仍 game 侧驱动(re-render)。
+function clashBonusCol(rows: [string, number][], head: string, headTone: 'accent' | 'sub', total?: number): LayoutNode {
+  const valTone = headTone === 'accent' ? 'gold' : 'sub';
+  const rowNodes: LayoutNode[] = rows.map(([label, num], i) => ({
+    type: 'Panel', id: `clash-bc-${head}-${i}`, props: { bare: true }, layout: { direction: 'row', gap: 6, align: 'center' },
+    children: [
+      { type: 'Label', id: `clash-bc-${head}-${i}-l`, props: { text: label, size: label.startsWith('　') ? 'xs' : 'sm', color: 'sub' }, layout: { flex: 1 } },
+      { type: 'Label', id: `clash-bc-${head}-${i}-v`, props: { text: `${num > 0 ? '+' : ''}${num}`, size: 'sm', color: num < 0 ? 'warn' : valTone, mono: true } },
+    ],
+  }));
+  if (total != null) rowNodes.push({
+    type: 'Panel', id: `clash-bc-${head}-tot`, props: { bare: true }, layout: { direction: 'row', gap: 6, align: 'center' },
+    children: [
+      { type: 'Label', id: `clash-bc-${head}-tot-l`, props: { text: '＝ 战力', size: 'sm', color: 'text', bold: true }, layout: { flex: 1 } },
+      { type: 'Label', id: `clash-bc-${head}-tot-v`, props: { text: String(total), size: 'lg', color: headTone === 'accent' ? 'gold' : 'jade', bold: true, mono: true } },
+    ],
+  });
+  return {
+    type: 'Panel', id: `clash-bc-${head}`, props: {}, layout: { direction: 'column', gap: 2, flex: 1, padding: 12 },
+    children: [{ type: 'Label', id: `clash-bc-${head}-h`, props: { text: head, size: 'xs', color: headTone === 'accent' ? 'gold' : 'sub', bold: true, tracking: 1.5 } }, ...rowNodes],
   };
-  const spark = { width: '90px', height: '90px', borderRadius: '50%', background: 'radial-gradient(circle, rgba(255,235,160,.95), rgba(255,150,40,.4) 50%, transparent 72%)', animation: 'g-spark 1.2s ease-in-out infinite' };
-  const coin = { width: '72px', height: '72px', borderRadius: '50%', background: 'var(--gold-grad)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#2a1a08', border: '3px solid #fff', boxShadow: '0 0 26px rgba(232,205,138,.6)', marginTop: '-30px', animation: 'g-coin-pop .45s .4s cubic-bezier(.2,1.3,.4,1) both' };
+}
+function clashNode(cv: TurnClashView): LayoutNode {
+  const revealed = cv.revealed !== false;
   const foePct = 100 - cv.oddsMine;
-  const oddsTrack = { position: 'relative', height: '26px', borderRadius: '99px', background: 'rgba(0,0,0,.5)', overflow: 'hidden', display: 'flex' };
-  const bonusCol = (rows: [string, number][], head: string, headCol: string, valCol: string, total?: number): string => {
-    const col = { flex: 1, padding: '12px 14px', borderRadius: '12px', background: 'rgba(255,255,255,.05)', border: '1px solid rgba(255,255,255,.12)' };
-    const hd = { fontSize: '11px', letterSpacing: '.12em', textTransform: 'uppercase', color: headCol, marginBottom: '9px', fontWeight: 700 };
-    const rowHtml = ([label, num]: [string, number]): string => {
-      const sub = label.startsWith('　'); // 逐张溯源子行：缩进/淡化
-      return `<div style="${st({ display: 'flex', alignItems: 'center', padding: sub ? '2px 0' : '4px 0' })}"><span style="flex:1; font-size:${sub ? '11px' : '12px'}; color:rgba(255,255,255,${sub ? '.58' : '.82'});">${esc(label)}</span><span style="font-family:var(--fn); font-size:${sub ? '12px' : '14px'}; color:${num < 0 ? '#e8804a' : valCol}; opacity:${sub ? 0.82 : 1};">${num > 0 ? '+' : ''}${num}</span></div>`;
-    };
-    const totalRow = total != null ? `<div style="${st({ display: 'flex', alignItems: 'center', marginTop: '6px', paddingTop: '7px', borderTop: '1px solid rgba(255,255,255,.16)' })}"><span style="flex:1; font-size:12px; font-weight:700; color:#fff;">＝ 战力</span><span style="font-family:var(--fn); font-size:18px; font-weight:700; color:${headCol};">${total}</span></div>` : '';
-    return `<div style="${st(col)}"><div style="${st(hd)}">${esc(head)}</div>${forr(rows, rowHtml)}${totalRow}</div>`;
+  const versus: LayoutNode = {
+    type: 'Versus', id: 'clash-versus',
+    props: {
+      left: { rank: cv.mine.rank, suit: SUITG[cv.mine.suit], face: 'light' },
+      right: { rank: cv.foe.rank, suit: SUITG[cv.foe.suit], face: 'light' },
+      label: revealed ? `${cv.oddsMine} : ${foePct}` : '⚔',
+      winner: revealed ? (cv.mine.won ? 'left' : 'right') : 'none',
+    },
+    layout: { anim: 'flyIn' },
   };
-  return `<div style="${st(backdrop)}"><div style="${st(panel)}">
-    <div style="position:absolute; top:14px; left:50%; transform:translateX(-50%); display:flex; align-items:center; gap:10px; padding:6px 22px; border-radius:99px; background:rgba(232,205,138,.14); border:1px solid var(--gold);"><span style="${st({ width: '10px', height: '10px', borderRadius: '50%', background: 'var(--accent)', boxShadow: '0 0 10px var(--accent)' })}"></span><span style="font-family:var(--fh); font-weight:700; font-size:19px; color:var(--gold); letter-spacing:.08em;">⚔ ${esc(cv.laneName)} · 掷命对决</span><span style="${st({ width: '10px', height: '10px', borderRadius: '50%', background: '#3a86d4', boxShadow: '0 0 10px #3a86d4' })}"></span></div>
-    <div style="display:flex; align-items:center; justify-content:center; gap:36px; margin-top:42px; perspective:1100px;">
-      ${duelCard(cv.mine, true)}
-      ${revealed
-        ? `<div style="display:flex; flex-direction:column; align-items:center; gap:14px;"><div style="${st(spark)}"></div><div style="${st(coin)}"><span style="font-family:var(--fd); font-size:30px;">掷</span></div><div style="font-family:var(--fn); font-size:13px; color:var(--gold);">命点 ${cv.rollPct}/100</div></div>`
-        : `<div style="display:flex; flex-direction:column; align-items:center; gap:10px;">
-            <button data-act="clash-roll" data-anchor="combat-roll" style="${st({ position: 'relative', width: '84px', height: '84px', borderRadius: '18px', cursor: 'pointer', border: '3px solid #fff', background: 'var(--gold-grad)', color: '#2a1a08', boxShadow: '0 0 30px rgba(232,205,138,.7), 0 8px 22px rgba(0,0,0,.5)', display: 'flex', alignItems: 'center', justifyContent: 'center', animation: 'g-die-ready 1s ease-in-out infinite' })}"><span style="font-size:46px;line-height:1;">🎲</span></button>
-            <div style="position:absolute; transform:translate(58px,-6px); font-size:34px; animation:g-finger 1s ease-in-out infinite; pointer-events:none; filter:drop-shadow(0 2px 4px rgba(0,0,0,.6));">👆</div>
-            <div style="font-family:var(--fh); font-weight:700; font-size:15px; color:var(--gold); letter-spacing:.04em;">点击掷命</div>
-            <div style="font-family:var(--fn); font-size:12px; color:rgba(255,255,255,.62);">自动掷命 <b data-cd style="color:var(--gold);">5</b>s</div>
-          </div>`}
-      ${duelCard(cv.foe, false)}
-    </div>
-    <div style="margin-top:22px; padding:0 30px;">
-      <div style="display:flex; justify-content:space-between; align-items:flex-end; margin-bottom:8px;"><span style="font-family:var(--fn); font-size:24px; color:var(--accent);">${cv.oddsMine}%</span><span style="font-size:11px; letter-spacing:.14em; text-transform:uppercase; color:rgba(255,255,255,.6);">胜率 · 战力差→概率</span><span style="font-family:var(--fn); font-size:24px; color:#5ea0e0;">${foePct}%</span></div>
-      <div style="${st(oddsTrack)}"><div style="${st({ width: cv.oddsMine + '%', background: 'var(--accent-grad)', boxShadow: '0 0 14px var(--accent-soft)' })}"></div><div style="${st({ width: foePct + '%', background: 'linear-gradient(180deg,#5ea0e0,#2a5f9e)' })}"></div></div>
-      <div style="display:flex; gap:10px; margin-top:16px;">${bonusCol(cv.bonusMine, '我方加成明细', 'var(--accent)', 'var(--accent)', cv.pEffMine)}${bonusCol(cv.bonusFoe, '敌方加成明细', '#5ea0e0', '#5ea0e0', cv.pEffFoe)}</div>
-      ${cv.extras && cv.extras.length ? `<div style="margin-top:12px; padding:10px 14px; border-radius:12px; background:rgba(232,205,138,.08); border:1px solid rgba(232,205,138,.28);"><div style="font-size:11px; letter-spacing:.12em; text-transform:uppercase; color:var(--gold); font-weight:700; margin-bottom:6px;">额外效果</div>${forr(cv.extras, (e) => `<div style="font-size:12.5px; line-height:1.55; color:rgba(255,255,255,.86);">${esc(e)}</div>`)}</div>` : ''}
-      <div style="margin-top:11px; text-align:center; font-size:11px; line-height:1.6; color:rgba(255,255,255,.62);">战力 = 点数 + 经营 + 天罡(逐张) + 士气 + 地煞（封顶 30）　→　双方战力比差过 S 形曲线出<b style="color:var(--accent)">胜率 ${cv.oddsMine}%</b>（永留 3% 爆冷缝）　→　掷命点 <b style="color:var(--gold)">${revealed ? cv.rollPct : '？'}</b> ${revealed ? `${cv.rollPct < cv.oddsMine ? '＜' : '≥'} ${cv.oddsMine} 定${cv.mine.won ? '生' : '死'}` : `对 ${cv.oddsMine}（掷骰揭晓）`}</div>
-    </div>
-    <div style="display:flex; flex-direction:column; align-items:center; gap:10px; margin-top:16px;">
-      ${revealed
-        ? `<div style="font-family:var(--fh); font-weight:700; font-size:17px; letter-spacing:.06em; color:${cv.mine.won ? 'var(--hp)' : 'var(--danger)'};">本场 ${cv.mine.won ? '我方胜' : '敌方胜'}｜${esc(cv.laneName)}前锋对决</div>
-      <button data-act="clash-ok" style="${st({ padding: '13px 40px', borderRadius: '13px', border: 'none', cursor: 'pointer', background: 'var(--gold-grad)', color: '#2a1a08', fontFamily: 'var(--fh)', fontWeight: 700, fontSize: '17px', letterSpacing: '.04em', boxShadow: '0 10px 28px rgba(232,205,138,.4)' })}">看明白了 · 继续 ▸</button>`
-        : `<div style="font-family:var(--fh); font-weight:700; font-size:16px; letter-spacing:.06em; color:var(--gold);">⚔ 命悬一掷 · 点骰定生死</div>`}
-    </div>
-  </div></div>`;
+  // 中央掷骰/揭晓：掷命前=掷骰钮(action clash-roll)·揭晓后=命点 + CoinFlip。
+  const center: LayoutNode = revealed
+    ? { type: 'Panel', id: 'clash-center', props: { bare: true }, layout: { direction: 'column', gap: 6, align: 'center' }, children: [
+        { type: 'CoinFlip', id: 'clash-coin', props: { outcome: cv.mine.won ? 'heads' : 'tails', headsLabel: '生', tailsLabel: '死', spinning: false, size: 64 } },
+        { type: 'Label', id: 'clash-roll-pct', props: { text: `命点 ${cv.rollPct}/100`, size: 'sm', color: 'gold', mono: true } },
+      ] }
+    : { type: 'Panel', id: 'clash-center', props: { bare: true }, layout: { direction: 'column', gap: 8, align: 'center' }, children: [
+        { type: 'Button', id: 'clash-roll-btn', props: { label: '🎲 掷命', kind: 'hero', action: 'clash-roll' }, layout: { anchor: 'combat-roll', fx: [{ kind: 'pulse', ms: 1000 }] } },
+        { type: 'Label', id: 'clash-roll-hint', props: { text: '点击掷命 · 5s 自动', size: 'xs', color: 'sub' } },
+      ] };
+  const oddsBar: LayoutNode = {
+    type: 'Panel', id: 'clash-odds', props: { bare: true }, layout: { direction: 'row', gap: 8, align: 'center' }, children: [
+      { type: 'Label', id: 'clash-odds-m', props: { text: `${cv.oddsMine}%`, size: 'xl', color: 'gold', mono: true } },
+      { type: 'Label', id: 'clash-odds-mid', props: { text: '胜率 · 战力差→概率', size: 'xs', color: 'sub' }, layout: { flex: 1 } },
+      { type: 'Label', id: 'clash-odds-f', props: { text: `${foePct}%`, size: 'xl', color: 'jade', mono: true } },
+    ],
+  };
+  const breakdown: LayoutNode = {
+    type: 'Panel', id: 'clash-breakdown', props: { bare: true }, layout: { direction: 'row', gap: 10 },
+    children: [clashBonusCol(cv.bonusMine, '我方加成明细', 'accent', cv.pEffMine), clashBonusCol(cv.bonusFoe, '敌方加成明细', 'sub', cv.pEffFoe)],
+  };
+  const verdict = (c: TurnClashCardView): string => c.won ? '正面 · 存活' : c.lastStand ? '🛡 死战不退 · 退守' : '反面 · 阵亡';
+  const verdictRow: LayoutNode = {
+    type: 'Panel', id: 'clash-verdicts', props: { bare: true }, layout: { direction: 'row', gap: 40, align: 'center', justify: 'center' },
+    children: [
+      { type: 'Label', id: 'clash-vd-m', props: { text: `我方 ${verdict(cv.mine)}`, size: 'sm', color: cv.mine.won ? 'ok' : cv.mine.lastStand ? 'warn' : 'danger', bold: true } },
+      { type: 'Label', id: 'clash-vd-f', props: { text: `敌方 ${verdict(cv.foe)}`, size: 'sm', color: cv.foe.won ? 'ok' : cv.foe.lastStand ? 'warn' : 'danger', bold: true } },
+    ],
+  };
+  const children: LayoutNode[] = [
+    { type: 'Label', id: 'clash-title', props: { text: `⚔ ${cv.laneName} · 掷命对决`, size: 'lg', color: 'gold', bold: true, tracking: 2 } },
+    { type: 'Panel', id: 'clash-duel', props: { bare: true }, layout: { direction: 'row', gap: 24, align: 'center', justify: 'center' }, children: [versus, center] },
+    ...(revealed ? [verdictRow] : []),
+    oddsBar, breakdown,
+  ];
+  if (cv.extras && cv.extras.length) children.push({
+    type: 'Panel', id: 'clash-extras', props: { accent: true }, layout: { direction: 'column', gap: 3, padding: 10 },
+    children: [{ type: 'Label', id: 'clash-extras-h', props: { text: '额外效果', size: 'xs', color: 'gold', bold: true, tracking: 1.5 } },
+      ...cv.extras.map((e, i) => ({ type: 'Label' as const, id: `clash-extra-${i}`, props: { text: e, size: 'sm', color: 'text' as const } }))],
+  });
+  children.push(revealed
+    ? { type: 'Panel', id: 'clash-foot', props: { bare: true }, layout: { direction: 'column', gap: 8, align: 'center' }, children: [
+        { type: 'Label', id: 'clash-foot-r', props: { text: `本场 ${cv.mine.won ? '我方胜' : '敌方胜'}｜${cv.laneName}前锋对决`, size: 'md', color: cv.mine.won ? 'ok' : 'danger', bold: true } },
+        { type: 'Button', id: 'clash-ok', props: { label: '看明白了 · 继续 ▸', kind: 'hero', action: 'clash-ok' } },
+      ] }
+    : { type: 'Label', id: 'clash-foot-pre', props: { text: '⚔ 命悬一掷 · 点骰定生死', size: 'md', color: 'gold', bold: true } });
+  return {
+    type: 'Panel', id: 'clash-panel', props: { accent: true, bg: 'radial-gradient(80% 70% at 50% 30%, #1c2940, #0e1828)' },
+    layout: { direction: 'column', gap: 14, padding: 22, width: 760, chamfer: 16 },
+    children,
+  };
 }
 
 /** 回合制战斗屏「画框」HTML（固定 1340×858·无页 root·供 live mount 缩放嵌入）。双皮 token 由外层挂。
@@ -633,7 +658,7 @@ export function buildTurnFrameHTML(view: TurnBattleView, drain: { from: number; 
       </div>
       ${renderNode(endTurnNode(), GG_BATTLE_THEME)}
     </div>
-    ${view.clash ? clashOverlay(view.clash) : ''}
+    ${view.clash ? `<div style="${st({ position: 'absolute', inset: 0, zIndex: 60, display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'rgba(6,9,13,.74)', backdropFilter: 'blur(5px)', animation: 'g-fade .3s ease both' })}">${renderNode(clashNode(view.clash), GG_BATTLE_THEME)}</div>` : ''}
   </div>`;
 }
 
