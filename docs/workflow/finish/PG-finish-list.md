@@ -11,6 +11,13 @@ G2 战场结构（军衔/三路/将领牵动/best-of-3）核心已落、已接�
 
 ---
 
+## 📋 Lead 派单（2026-06-28）：turn-combat 数据去腐 TODO → `game-g-combat-derot-worklist.md`
+
+> owner 复评后拍板「不全数据化·但变可控逻辑」。Lead 已出**可执行 TODO**：`docs/workflow/finish/game-g-combat-derot-worklist.md`。
+> 要点：① **天罡已全数据化 + 簇2 死代码已清**（别重做）；② 真腐=**地煞 authoring（P2·先做）+ 宽结构体字段膨胀（P3·后做·逐 hook·turnHash 绿）**；③ clash-resolve/AI/主循环=对的 bespoke·**不动**；④ 效果解释器**留 game-g 本地**（已硬验不能重组引擎·无 rule-of-three）。**owner 将指派执行人**（PG 或他人）；接手先吃透 worklist §3 两层模型。
+
+---
+
 ## ⭐ Lead 派发 · 全数据驱动重写路线图（owner 定调：game-g 作上 Steam 旗舰）
 
 > **Lead（主程）注入 · 2026-06-22。** owner 拍板：**game-g 是上 Steam 的旗舰标杆**，要重写到**真正全数据驱动**。
