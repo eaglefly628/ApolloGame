@@ -94,7 +94,13 @@
 > 源泉条「召唤源泉」消耗时，原 bespoke 有「刚花掉的格分段半透明消退」动效（g-drain 收退残影）。迁数据驱动后 `layout.fx` 闭集无对应 kind。**owner 2026-06-28 点名「可以让主程做·分段半透明的消失效果」**。
 > 请主程给 `fx` 加一个 kind（如 `'fade'`/`'drain'`·分段半透明淡出·once 触发）·或确认用现有 `flash`/`pulse` 近似。非阻塞（先用现有近似·有专用 kind 更保真）。
 
-### REQ-UI-容器描边形 · [2026-06-28] · GA（game-g 棋枰数据化重写·阶段②城堡/格框撞） · status: **open（请主程·阻塞城堡+格框数据化·非阻塞血灯/掷命/兵牌层）** · 类型: 真能力缺口（Panel 边框表达力·闭集补字段）
+### REQ-UI-容器描边形 · [2026-06-28] · GA（game-g 棋枰数据化重写·阶段②城堡/格框撞） · status: **✅ done（主程 2026-06-28·owner 插播优先·三字段全接受·`panel-edge-radius-dashed.test.ts`）** · 类型: 真能力缺口（Panel 边框表达力·闭集补字段）
+
+> **主程裁决·三字段全接受（owner 2026-06-28 插播提优先级）**：真缺口——Panel 边框令牌专用（jade/line）、圆角恒 10、无虚线，`bg` 渐变硬凑违尺子；rule-of-three 过（任何棋盘/战棋/卡牌位游戏）。按闭集 + 主题解析下沉（绝不收自由 hex/CSS）：
+> - **`Panel.edge?: EdgeColor`**（`'jade'|'gold'|'ok'|'warn'|'danger'|'mine'|'foe'`）——语义/阵营描边色·复用既有语义令牌解析（同 fx 的 `fxColor` 纪律·新增 `edgeColor` 解析器）；`mine`/`foe`=通用我/敌阵营色 → **可选 UITheme 令牌** `mine?`/`foe?`（战斗主题填我橙/敌蓝·缺省回退暖 warn/冷 jadeLine·非对战主题不填零影响）。覆盖默认线 + 优先于 accent。
+> - **`LayoutConstraints.radius?: number`**——通用圆角覆盖（放 layoutStyle·末置生效·任意组件·同 rotate/scale/chamfer 一族）；Panel 的 vignette/pattern 叠层同步取此圆角（不再硬编码 10·叠层不露直角）。
+> - **`Panel.dashed?: boolean`**——`border-style:dashed`（空格落点圈/占位/拖放框·配 edge 取色 + radius 取圆）。
+> 落点：`types/render/catalog/index.ts`（catalog 收 edge 闭集 → validate 自动拦拼写错·radius 同 rotate 走 lenient）。城堡阵营框 / 城垛圆角(radius 小) / 金边界格(edge:gold) / 虚线落点圈(dashed+radius) / 源泉亮段描边(edge) 均可数据化。
 
 > 阶段②搭骨架撞到：棋盘的**大本营城堡 + 格子 chrome** 要的边框形态，现 `Panel` 表达不了（边框只有令牌色 `line`/`accent→jadeLine`·圆角恒 `10px`·无虚线）：
 > - **阵营/语义描边色**：我方城堡橙 `#ff7a45` / 敌方蓝 `#3a86d4` 框；边界格金高亮框；放牌区暖橙/冷蓝内描边。← Panel 边框令牌专用·压不出。

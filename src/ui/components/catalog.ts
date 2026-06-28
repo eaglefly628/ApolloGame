@@ -59,6 +59,8 @@ export const UI_CATALOG: readonly UiComponentSpec[] = [
       { name: 'pattern', type: 'enum', values: ['stripe', 'checker'], describe: '程序化纹理叠层（斜条纹/棋盘格）' },
       { name: 'action', type: 'string', describe: '容器可点→点击信号名（整个容器作点击目标·同 Button）' },
       { name: 'actionArg', type: 'string', describe: '点击信号参数' },
+      { name: 'edge', type: 'enum', values: ['jade', 'gold', 'ok', 'warn', 'danger', 'mine', 'foe'], describe: '描边语义/阵营色（覆盖默认线·mine/foe=我/敌阵营框·配 layout.radius 异形/虚线 dashed）' },
+      { name: 'dashed', type: 'boolean', describe: '虚线描边（落点/占位圈）' },
     ],
     sample: { type: 'Panel', id: 's-panel', props: { title: 'SECTION' }, layout: { direction: 'column', gap: 8, padding: 16 }, children: [{ type: 'Label', id: 's-panel-l', props: { text: '面板内容' } }] },
   },

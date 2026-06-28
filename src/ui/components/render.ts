@@ -3,7 +3,7 @@
 
 import { SHELL } from '../shell-theme.js';
 import type {
-  LayoutNode, LayoutConstraints, UITheme, VisualEffect, EffectColor,
+  LayoutNode, LayoutConstraints, UITheme, VisualEffect, EffectColor, EdgeColor,
   ButtonProps, LabelProps, DropdownProps, BadgeProps, InputProps, PanelProps,
   CheckboxProps, ToggleProps, RadioGroupProps, ImageProps, ScreenProps, SliderProps,
   TableProps, TableColumn, TabsProps, ProgressBarProps, TagProps, ModalProps, ToastProps, TooltipProps,
@@ -31,6 +31,19 @@ const JUSTIFY_MAP: Record<string, string> = {
 function fxColor(t: UITheme, c?: EffectColor): string {
   const m: Record<string, string> = { danger: t.danger, gold: t.gold, jade: t.jade, warn: t.warn, ok: t.ok, white: '#ffffff' };
   return (c && m[c]) || t.gold;
+}
+
+// 容器描边语义色 → 主题令牌（闭集·REQ-UI-容器描边形）。mine/foe 取主题阵营令牌·缺省回退暖(warn)/冷(jadeLine)。
+function edgeColor(t: UITheme, e: EdgeColor): string {
+  switch (e) {
+    case 'jade':   return t.jadeLine;
+    case 'gold':   return t.gold;
+    case 'ok':     return t.ok;
+    case 'warn':   return t.warn;
+    case 'danger': return t.danger;
+    case 'mine':   return t.mine ?? t.warn;
+    case 'foe':    return t.foe ?? t.jadeLine;
+  }
 }
 // motion/opacity 类特效 → 复用已注入的关键帧 [keyframe, 缺省 ms]。
 const FX_MOTION: Record<string, [string, number]> = {
@@ -99,6 +112,8 @@ function layoutStyle(c?: LayoutConstraints, t?: UITheme): string {
     const k = num(c.chamfer);
     p.push(`clip-path:polygon(${k}px 0,100% 0,100% calc(100% - ${k}px),calc(100% - ${k}px) 100%,0 100%,0 ${k}px)`);
   }
+  // 圆角半径（覆盖控件默认圆角·末置生效）。REQ-UI-容器描边形·小件异形/大圆落点圈用。
+  if (c.radius !== undefined) p.push(`border-radius:${num(c.radius)}px`);
   // 动画：一次性入场（both ease-out）或持续循环（infinite·环境动效）。仅白名单预设；时长/延迟强制数字。
   if (c.anim && ANIM_PRESETS.has(c.anim)) {
     p.push(`animation:apollo-${c.anim} ${num(c.animMs, 360)}ms ${c.animDelay ? `${num(c.animDelay)}ms ` : ''}both ease-out`);
@@ -237,23 +252,26 @@ function renderPanel(id: string, p: PanelProps, c: LayoutConstraints | undefined
     : `display:flex;flex-direction:${dir};gap:${gap}px;align-items:${align}${justify ? `;justify-content:${justify}` : ''}`;
   // chrome：非 bare 才画底/边框/圆角（bg 缺省主题 bg1·与 Screen.bg 同口径·令牌如 'var(--felt)'）；bare=透明无框只做分组。
   // accent：高亮框（jade 描边 + 柔光投影）用于活动视口/强调面板；缺省细线边。bare 时不画框故忽略 accent。
-  const border = p.accent ? t.jadeLine : t.line;
+  // edge（REQ-UI-容器描边形）：语义/阵营描边色（闭集令牌·覆盖默认线/accent 取色）；dashed：虚线边；radius：覆盖恒 10 圆角（叠层同步）。
+  const border = p.edge ? edgeColor(t, p.edge) : (p.accent ? t.jadeLine : t.line);
+  const bStyle = p.dashed ? 'dashed' : 'solid';
+  const rad = num(c?.radius ?? 10);
   const glow = (!bare && p.accent) ? `box-shadow:0 0 0 1px ${t.jadeWash},0 10px 34px rgba(0,0,0,.4);` : '';
   // 图片贴图层（平铺·叠在面板底上）。bare 但有贴图 → 只铺贴图、仍无框。
   const tex = texLayer(p.bgTexture, p.bgTextureSize);
   const chrome = bare
     ? (tex ? `background:${tex}, transparent;` : '')
-    : `background:${tex ? `${tex}, ` : ''}${p.bg ?? t.bg1};border:1px solid ${border};border-radius:10px;${glow}`;
+    : `background:${tex ? `${tex}, ` : ''}${p.bg ?? t.bg1};border:1px ${bStyle} ${border};border-radius:${rad}px;${glow}`;
   const style = `${box};padding:${pad}px;${chrome}position:relative;${overflow}${ls}`;
   const title = p.title
     ? `<div style="font-size:10px;letter-spacing:2.4px;text-transform:uppercase;color:${t.dim};font-family:${t.fontUi};margin-bottom:4px${dir === 'grid' ? ';grid-column:1/-1' : ''}">${esc(p.title)}</div>`
     : '';
   const vignette = (p.vignette && !bare)
-    ? `<div style="position:absolute;inset:0;border-radius:10px;pointer-events:none;background:radial-gradient(120% 100% at 50% 30%,transparent 55%,rgba(0,0,0,.45) 100%)"></div>`
+    ? `<div style="position:absolute;inset:0;border-radius:${rad}px;pointer-events:none;background:radial-gradient(120% 100% at 50% 30%,transparent 55%,rgba(0,0,0,.45) 100%)"></div>`
     : '';
   // 程序化纹理叠层（REQ-UI-G流光底纹③）：stripe 45°斜条纹 / checker 棋盘格，叠在内容下（felt 牌桌质感）。
   const pattern = p.pattern
-    ? `<div style="position:absolute;inset:0;border-radius:${bare ? '0' : '10px'};pointer-events:none;background:${p.pattern === 'checker' ? 'repeating-conic-gradient(rgba(255,255,255,.04) 0% 25%,transparent 0% 50%) 0 0 / 16px 16px' : 'repeating-linear-gradient(45deg,rgba(255,255,255,.045) 0 2px,transparent 2px 12px)'}"></div>`
+    ? `<div style="position:absolute;inset:0;border-radius:${bare ? '0' : `${rad}px`};pointer-events:none;background:${p.pattern === 'checker' ? 'repeating-conic-gradient(rgba(255,255,255,.04) 0% 25%,transparent 0% 50%) 0 0 / 16px 16px' : 'repeating-linear-gradient(45deg,rgba(255,255,255,.045) 0 2px,transparent 2px 12px)'}"></div>`
     : '';
   const inner = children.map((ch) => renderNode(ch, t)).join('');
   // 容器可点（REQ-UI-容器可点）：整个容器发信号（同 Button·只信号名）+ 手型。

@@ -53,6 +53,9 @@ export interface LayoutConstraints {
   anchor?: string;
   /** 倒角切角 px（CSS clip-path 八边形·art-deco/扑克牌桌美学）：如 13 = 左上/右下各切 13px。给面板/卡/CTA 切角。 */
   chamfer?: number;
+  /** 圆角半径 px（覆盖控件默认圆角·如 Panel 恒 10）。小件异形（城垛/盾/格位·radius 小）或大圆（落点圈=大 radius）用。
+   *  通用 LayoutConstraints 字段·任意组件生效（ls 末置 → 覆盖控件自带 border-radius）。REQ-UI-容器描边形。 */
+  radius?: number;
   /** 流光 sheen（render-only·质感）。**已并入 `fx`**（= `fx:[{kind:'sheen'}]`）；保留作向后兼容别名，新代码用 fx。 */
   sheen?: boolean;
   /** 视觉特效合集（UI 特效库·render-only·闭集·可叠加）——见下 `VisualEffect`。
@@ -77,6 +80,9 @@ export type EffectKind =
   | 'flash'   // 整体闪色（受击冒红/暴击闪白/警告·color=闪色·常配 once）
   | 'fade';   // 半透明淡出消失（消耗/消退/移除·opacity→0·一次性·REQ-UI-fx源泉消退）
 export type EffectColor = 'danger' | 'gold' | 'jade' | 'warn' | 'ok' | 'white'; // 语义色 → 主题令牌（闭集·防注入）
+// 容器描边语义色（闭集·主题令牌解析·REQ-UI-容器描边形）。Panel.edge 用：语义/阵营框色·绝不收自由 hex。
+// mine/foe = 通用「我方/敌方」阵营色（主题 mine/foe 令牌·缺省回退暖/冷）；其余复用既有语义令牌（jade/gold/ok/warn/danger）。
+export type EdgeColor = 'jade' | 'gold' | 'ok' | 'warn' | 'danger' | 'mine' | 'foe';
 export interface VisualEffect {
   kind: EffectKind;
   color?: EffectColor; // 染色类(glow/flash)取色·缺省按 kind（glow=gold·flash=danger）
@@ -164,6 +170,11 @@ export interface PanelProps {
    *  红线同既有：只发信号名·handler 不塞自由逻辑。复用面：任何可点的卡片区/格子/列表行容器。 */
   action?: string;
   actionArg?: string;
+  /** 描边语义色（REQ-UI-容器描边形·闭集枚举·主题解析·非自由 hex）：阵营框(mine/foe)/金边界格(gold)/
+   *  告警框(danger/warn/ok)/翠框(jade)。覆盖默认细线边·复用面：棋盘格/战棋位/卡牌位/堡垒框。 */
+  edge?: EdgeColor;
+  /** 虚线描边（空格落点圈/占位/拖放目标框）：true → border-style:dashed。配 edge 取色 + radius 取圆。 */
+  dashed?: boolean;
 }
 
 /** 单个开/关复选框。handler 收到 'true' | 'false'。 */
@@ -444,6 +455,9 @@ export interface UITheme {
   jade: string; jadeWash: string; jadeLine: string;
   gold: string;
   ok: string; okWash: string; warn: string; warnWash: string; danger: string;
+  /** 阵营描边色（可选·Panel.edge='mine'/'foe' 解析·战棋/卡牌/对战类主题填）：我方暖框 / 敌方冷框。
+   *  缺省回退既有暖(warn)/冷(jadeLine)令牌·非对战主题可不填。 */
+  mine?: string; foe?: string;
   fontUi: string; fontMono: string;
   /** 像素点阵字体槽（Label font:'pixel'·如 Silkscreen/DotGothic16）。缺省回退 fontUi。 */
   fontPixel?: string;
