@@ -108,6 +108,15 @@ export function buildHomeScreen(view: LobbyView): LayoutNode {
       { type: 'Label', id: 'home-fiend-h',
         props: { text: '🎴 地煞（明牌 · 公平可破）— Boss 招牌历史战术：', size: 11, color: 'sub' } },
       ...fiendNodes,
+      // 明牌 counter-pick 情报（boss-config「核心乐趣」）：Boss 牌组主题 + ≤5 明牌天罡 + 怎么克。
+      ...(c?.bossTiangang?.length ? [
+        { type: 'Label' as const, id: 'home-boss-tg',
+          props: { size: 11 as const, color: 'sub' as const, spans: [{ text: '⚡ 明牌天罡：' }, { text: c.bossTiangang.join(' · '), color: 'gold' as const, bold: true }] } },
+      ] : []),
+      ...(c?.counterTip ? [
+        { type: 'Label' as const, id: 'home-counter',
+          props: { size: 11 as const, color: 'ok' as const, spans: [{ text: '🎯 克制：', bold: true }, { text: c.counterTip }] } },
+      ] : []),
       { type: 'Label', id: 'home-unlock',
         props: { text: c ? `🏆 打赢 = 破其诅咒 · 通关解锁天罡 ${c.unlock}` : '', size: 11, color: 'gold' } },
       { type: 'Label', id: 'home-ghost',

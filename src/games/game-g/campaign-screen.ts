@@ -58,6 +58,13 @@ function buildStageCard(c: StageCampaign, cur: number, maxReached: number): Layo
       props: { title: `🎴 ${f.name}`, sub: nums ? `${f.desc} · 📊 ${nums}` : f.desc, tone: 'normal' } };
   });
   children.push({ type: 'Panel', id: `camp-${c.stage}-fiends`, props: { bare: true }, layout: { direction: 'grid', cols: 3, gap: 8 }, children: fiendCards });
+  // 明牌 counter-pick 情报（boss-config「核心乐趣」）：牌组主题 + ≤5 明牌天罡 + 克制提示。
+  if (c.deckTheme) children.push({ type: 'Label', id: `camp-${c.stage}-theme`,
+    props: { size: 13, color: 'sub', spans: [{ text: '🃏 Boss 牌组：' }, { text: c.deckTheme, color: 'text' }] } });
+  if (c.bossTiangang?.length) children.push({ type: 'Label', id: `camp-${c.stage}-tg`,
+    props: { size: 13, color: 'sub', spans: [{ text: '⚡ 明牌天罡（counter-pick 靶）：' }, { text: c.bossTiangang.join(' · '), color: 'gold', bold: true }] } });
+  if (c.counterTip) children.push({ type: 'Label', id: `camp-${c.stage}-counter`,
+    props: { size: 13, color: 'ok', spans: [{ text: '🎯 克制：', bold: true }, { text: c.counterTip }] } });
   if (isCur) {
     children.push({ type: 'Button', id: `camp-${c.stage}-play`,
       props: { label: `⚔ 出征 · 第 ${c.stage} 关`, kind: 'primary', action: 'play' } });
