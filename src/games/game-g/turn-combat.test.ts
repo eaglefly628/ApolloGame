@@ -4,7 +4,7 @@ import { cardPoints } from './clash-resolve.js';
 import { cardStamina } from './combat-types.js';
 import {
   initTurnBattle, drawCard, deployUnit, castTengang, discardCard, endTurn, aiTakeTurn, turnHash, turnActive,
-  toggleGate, tryGate, GATES,
+  toggleGate, tryGate, GATES, unitPowerParts,
   MANA_START, A_DEPLOY_SLOT, A_GOAL, TURN_HOME_BLOOD,
   type PokerCard, type TengangHandCard, type TurnUnit, type TurnBattle,
 } from './turn-combat.js';
@@ -126,6 +126,22 @@ describe('Game G · turn-combat（doc24 单机回合制 · A0 重构）', () => 
     // B 胜 → 战胜硬币定去留：人头留场 / 人面回牌库（owner 2026-06-21）
     if (b.lastClash?.winStays) expect(b.lanes[0].b.length).toBe(1); // 人头 → 留场
     else { expect(b.lanes[0].b.length).toBe(0); expect(b.b.pokerDeck.some((c) => c.id === 'b0')).toBe(true); } // 人面 → 回库
+  });
+
+  it('unitPowerParts(⑥ 战力来源透明)：任意兵拆解 = 点数 + 经营 + 士气，且各源恰好加到 pEff', () => {
+    const b = initTurnBattle({ seed: 1 });
+    // 同路：主将 K + 下属兵 7(+3 经营)。下属应吃主将坐镇士气 +2(MORALE_PTS)。
+    b.lanes[0].a.push(unit('gen', 'K', A_DEPLOY_SLOT, 0, true), unit('a0', '7', A_DEPLOY_SLOT + 1, 3));
+    const sub = b.lanes[0].a.find((u) => u.id === 'a0')!;
+    const parts = unitPowerParts(b, 'a', 0, sub);
+    expect(parts.points).toBe(cardPoints('7'));
+    expect(parts.buff).toBe(3);          // 经营
+    expect(parts.morale).toBe(2);        // 主将坐镇 → 士气 +2
+    expect(parts.tengang).toBe(0);       // 无天罡
+    expect(parts.pEff).toBe(cardPoints('7') + 3 + 2); // 各源之和 = 有效战力（无封顶/倍率）
+    // 主将本人不吃士气（effPower general 分支 shift 0）
+    const gen = b.lanes[0].a.find((u) => u.id === 'gen')!;
+    expect(unitPowerParts(b, 'a', 0, gen).morale).toBe(0);
   });
 
   it('判负：大本营血归 0 → 该方负', () => {

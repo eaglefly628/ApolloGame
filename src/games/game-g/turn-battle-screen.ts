@@ -3,7 +3,9 @@
 //   只读 TurnBattleView（由 buildTurnBattleView 从 turn-combat 真状态派生）→ 出 HTML 串；不进 hash、不回灌判定。
 // 静态渲染 = 设计稿"静息态"(无 hover tooltip / 无 boss 飞出)；clash 特写覆盖层按 view.clash 选渲。live mount + 交互为后续切片。
 import { cardPoints } from './clash-resolve.js';
-import { SLOTS, manaGain, GATES, A_DEPLOY_SLOT, B_DEPLOY_SLOT, DEPLOY_COST, CAST_COST, clashOdds, type TurnBattle, type TurnUnit } from './turn-combat.js';
+import { SLOTS, manaGain, GATES, A_DEPLOY_SLOT, B_DEPLOY_SLOT, DEPLOY_COST, CAST_COST, clashOdds, unitPowerParts, type TurnBattle, type TurnUnit } from './turn-combat.js';
+import { powerRows } from './game-g-clash-view.js'; // 战力逐行明细共享格式器（④ 掷命特写 + ⑥ 场上兵 hover 单一真相）
+import type { InlayEntry } from './dizhi-data.js';
 import { FONTS } from './fonts.js'; // 自托管字体（替代外部 Google Fonts <link>）
 import { heroNameOf } from './hero-codex.js'; // 场上牌悬浮显其对应武将名（owner 2026-06-21·数据已在 HERO_CARDS）
 import { renderNode, ensureUiKeyframes, type LayoutNode } from '@ui/components/index.js'; // 数据驱动 UI 库：HUD chrome 由 LayoutNode 描述、renderNode 出串（UI 铁律·战斗屏 HUD 迁移）。ensureUiKeyframes=手动注入 fx 关键帧（战斗走 renderNode+innerHTML 不经 mountUI·主程导出·REQ-UI-fx控件叠层②）
@@ -107,7 +109,7 @@ const CSS = `
 .gg-tipwrap:hover{ z-index:90; }`;
 
 // ── 视图（buildTurnBattleView 从 turn-combat 派生喂渲染器；纯数据） ──
-export interface TurnSlotView { hasUnit: boolean; mine: boolean; isBorder: boolean; isClash: boolean; rank?: string; suit?: 's' | 'h' | 'd' | 'c'; power?: number; pts?: number; buff?: number; name?: string; rar?: 'white' | 'green' | 'blue' | 'gold'; zod?: string[]; deploy?: 1 | 2; deployLabel?: boolean; placeable?: boolean; unitId?: string; justMoved?: boolean; fresh?: number; tipDown?: boolean; tipSide?: 'left' | 'right' | ''; forecast?: number; general?: boolean; ench?: [string, number][] } // placeable=选牌待放可落子(高亮)；fresh=新部署落子序号(g-drop)；tipDown=顶排牌磨砂浮层朝下弹避免被画框裁；tipSide=边缘列浮层往内弹避免溢出左右屏(owner 2026-06-21)；forecast=此前锋若开战的我方胜率0~1(掷命预报·owner 2026-06-21)
+export interface TurnSlotView { hasUnit: boolean; mine: boolean; isBorder: boolean; isClash: boolean; rank?: string; suit?: 's' | 'h' | 'd' | 'c'; power?: number; pts?: number; buff?: number; name?: string; rar?: 'white' | 'green' | 'blue' | 'gold'; zod?: string[]; deploy?: 1 | 2; deployLabel?: boolean; placeable?: boolean; unitId?: string; justMoved?: boolean; fresh?: number; tipDown?: boolean; tipSide?: 'left' | 'right' | ''; forecast?: number; general?: boolean; ench?: [string, number][]; live?: [string, number][]; livePower?: number } // live=此刻若评估的战力逐行明细(含天罡/士气/地煞·hover 透出来源·owner 2026-06-29 ⑥)；livePower=其和后的有效战力 pEff // placeable=选牌待放可落子(高亮)；fresh=新部署落子序号(g-drop)；tipDown=顶排牌磨砂浮层朝下弹避免被画框裁；tipSide=边缘列浮层往内弹避免溢出左右屏(owner 2026-06-21)；forecast=此前锋若开战的我方胜率0~1(掷命预报·owner 2026-06-21)
 export interface TurnLaneView { name: string; slots: TurnSlotView[] }
 // 捷径门箭头（占位·8 门·真视觉待 owner 参考图）。idx=GATES 下标·供 live mount data-gate 钩子。
 export interface TurnGateView { idx: number; open: boolean; side: 'a' | 'b'; fromLane: number; fromSlot: number; toLane: number; toSlot: number }
@@ -243,6 +245,30 @@ function unitNode(s: TurnSlotView): LayoutNode {
   ];
   if (isGen) children.push({ type: 'Label', id: `u-${id}-gen`, props: { text: s.mine ? '⭐主将' : '☠敌将', size: 8, color: 'gold', bold: true }, layout: { y: -12, x: 14 } });
   return { type: 'Panel', id: `u-${id}`, props: { bg: sideFace(s.mine), edge: isGen ? 'gold' : (s.mine ? 'mine' : 'foe') }, layout: { flex: 1, direction: 'column', justify: 'between', align: 'center', padding: 4, radius: 10, ...(isGen ? { fx: [{ kind: 'glow', color: 'gold', ms: 1400 }] } : {}) }, children };
+}
+// 磨砂详情浮层内容（战力拆解·场上兵 hover 气泡·owner 2026-06-29 ⑥）。
+// ⚠ 战斗屏 renderNode+innerHTML 不跑 mountUI → 不能用 LayoutNode Tooltip(气泡靠 mountUI 显隐+定位·且 tabindex 点击触发画框 scroll 缩放·GA 2987b0e2 已拆)。
+// 改由 mountTurnBattle 的 live hover 把此内容渲进 position:fixed 气泡(随光标·逃出棋盘 overflow 裁剪·无 tabindex)。仅 live 调用·不进静态帧 → golden 不变。
+// hover 透出**此刻若评估**的全部加成来源——点数/经营(逐地支源)/天罡(逐张)/士气/地煞·恰好加到＝当前战力。
+export function cardTipNode(s: TurnSlotView): LayoutNode {
+  const tone = SUIT_TONE[s.suit!] ?? 'sub';
+  const rows = s.live ?? [];
+  const live = s.livePower; // 含天罡/士气/地煞后的有效战力（与真实掷命同源）
+  const children: LayoutNode[] = [
+    { type: 'Label', id: 'tipb-n', props: { text: s.name ?? (SUITNM[s.suit!] + s.rank), size: 12, color: 'text', bold: true } },
+    { type: 'Label', id: 'tipb-f', props: { spans: [{ text: `牌面 ${SUITNM[s.suit!]} ${s.rank} ${SUITG[s.suit!]}`, color: tone }, { text: s.general ? '　⭐ 主将' : '', color: 'gold', bold: true }], size: 11, color: tone } },
+    { type: 'Label', id: 'tipb-p', props: { spans: [{ text: '当前战力 ' }, { text: String(live ?? s.power ?? ''), color: 'gold', bold: true }, { text: '　（加成来源↓）' }], size: 11, color: 'sub' } },
+  ];
+  // 逐行加成明细：缩进子行(以全角空格起头·如天罡逐张/封顶)走 dim + 略缩；主行 sub。正负染色(+绿/−红)。
+  for (let k = 0; k < rows.length; k++) {
+    const [label, num] = rows[k]; const indent = label.startsWith('　');
+    const numTone = num > 0 ? 'ok' : num < 0 ? 'danger' : 'dim';
+    children.push({ type: 'Label', id: `tipb-r${k}`, props: { size: indent ? 9 : 10, color: indent ? 'dim' : 'sub',
+      spans: [{ text: label }, { text: `  ${num > 0 ? '+' : ''}${num}`, color: numTone, bold: !indent }] } });
+  }
+  // 兜底：无 live（旧路径/无加成）→ 提示按场计入。
+  if (!rows.length) children.push({ type: 'Label', id: 'tipb-z', props: { text: '天罡/士气 对决时按场计入 · 再 +随机骰', size: 10, color: 'dim' } });
+  return { type: 'Panel', id: 'tipb', props: {}, layout: { direction: 'column', gap: 3, padding: 10, width: 210 }, children };
 }
 function slotCellNode(s: TurnSlotView, idx: number): LayoutNode {
   const cid = `cell-${idx}`;
@@ -665,10 +691,11 @@ const SUIT_KEYS: Record<string, 's' | 'h' | 'd' | 'c'> = { S: 's', H: 'h', D: 'd
 const lc = (s: string): 's' | 'h' | 'd' | 'c' => SUIT_KEYS[s] ?? 's';
 const rankOf = (r: string): 'white' | 'green' | 'blue' | 'gold' => (r === 'A' ? 'gold' : r === 'K' || r === 'Q' || r === 'J' ? 'blue' : 'white');
 
-export interface TurnViewOpts { theme?: 'onyx' | 'brocade'; tengangName?: (id: string) => string; tengangDesc?: (id: string) => string; clash?: TurnClashView | null; sha?: TurnShaView[]; bossName?: string; selMode?: string | null; selHand?: number; tutorial?: { narration: string; highlight: string } | null; gatesLive?: boolean; notice?: string | null; movedIds?: Set<string>; freshIds?: Map<string, number>; dealtId?: string; battleLabel?: string; sfxOn?: boolean; settingsOpen?: boolean; bgmOn?: boolean; bgmIdx?: number; bgmVol?: number; bgmNames?: string[]; guideOn?: boolean; enchOf?: (rank: string, suit: string) => [string, number][] }
+export interface TurnViewOpts { theme?: 'onyx' | 'brocade'; tengangName?: (id: string) => string; tengangDesc?: (id: string) => string; clash?: TurnClashView | null; sha?: TurnShaView[]; bossName?: string; selMode?: string | null; selHand?: number; tutorial?: { narration: string; highlight: string } | null; gatesLive?: boolean; notice?: string | null; movedIds?: Set<string>; freshIds?: Map<string, number>; dealtId?: string; battleLabel?: string; sfxOn?: boolean; settingsOpen?: boolean; bgmOn?: boolean; bgmIdx?: number; bgmVol?: number; bgmNames?: string[]; guideOn?: boolean; enchOf?: (rank: string, suit: string) => [string, number][]; inlays?: Record<string, InlayEntry[]> }
 /** 从 turn-combat 真状态派生战斗屏视图（玩家 = side a 视角）。纯读、不改 battle。 */
 export function buildTurnBattleView(b: TurnBattle, opts: TurnViewOpts = {}): TurnBattleView {
   const laneNames = ['上路', '中路', '下路'];
+  const tgNm = opts.tengangName ?? ((id: string) => id);
   // 选牌待放(放的是兵牌)→ 各路放牌区「下一落点」高亮（owner 2026-06-21·与 turn-combat deployUnit 同找法：贴家那格起首个空位）。
   const selDeploy = opts.selMode === 'deploy' && (opts.selHand ?? -1) >= 0 && b.a.hand[opts.selHand ?? -1]?.kind === 'poker';
   const lanes: TurnLaneView[] = b.lanes.map((L, li) => {
@@ -684,17 +711,17 @@ export function buildTurnBattleView(b: TurnBattle, opts: TurnViewOpts = {}): Tur
       const hit = bySlot.get(i);
       // isClash 标在两军真前锋格(landed bugfix·非固定中线 4) + 放牌区底纹/标签(标在贴各自城堡那格) + 待放落点高亮
       const base = { isBorder: i === 4, isClash: adj && (i === L.a[0]?.slot || i === L.b[0]?.slot), deploy: dep(i), deployLabel: i === A_DEPLOY_SLOT || i === B_DEPLOY_SLOT, placeable: !hit && i === target, forecast: i === L.a[0]?.slot && odds != null ? odds : undefined };
-      return hit
-        ? { ...base, hasUnit: true, mine: hit.mine, rank: hit.u.rank, suit: lc(hit.u.suit), power: hit.u.points + hit.u.buff, pts: hit.u.points, buff: hit.u.buff, name: heroNameOf(hit.u.rank, lc(hit.u.suit)) ?? (SUITNM[lc(hit.u.suit)] + hit.u.rank), rar: rankOf(hit.u.rank), zod: [], unitId: hit.u.id, justMoved: opts.movedIds?.has(hit.u.id) ?? false, fresh: opts.freshIds?.get(hit.u.id), tipDown: li === 0, tipSide: (i >= 7 ? 'left' : i <= 1 ? 'right' : '') as 'left' | 'right' | '', general: hit.u.general, ench: hit.mine ? opts.enchOf?.(hit.u.rank, hit.u.suit) : undefined }
-        : { ...base, hasUnit: false, mine: i < 4 };
+      if (!hit) return { ...base, hasUnit: false, mine: i < 4 };
+      // ⑥ 此刻若评估的战力拆解（含天罡/士气/地煞·与真实掷命同源 unitPowerParts）→ hover 透出全部加成来源（owner 2026-06-29）。
+      const parts = unitPowerParts(b, hit.mine ? 'a' : 'b', li, hit.u);
+      return { ...base, hasUnit: true, mine: hit.mine, rank: hit.u.rank, suit: lc(hit.u.suit), power: hit.u.points + hit.u.buff, pts: hit.u.points, buff: hit.u.buff, name: heroNameOf(hit.u.rank, lc(hit.u.suit)) ?? (SUITNM[lc(hit.u.suit)] + hit.u.rank), rar: rankOf(hit.u.rank), zod: [], unitId: hit.u.id, justMoved: opts.movedIds?.has(hit.u.id) ?? false, fresh: opts.freshIds?.get(hit.u.id), tipDown: li === 0, tipSide: (i >= 7 ? 'left' : i <= 1 ? 'right' : '') as 'left' | 'right' | '', general: hit.u.general, ench: hit.mine ? opts.enchOf?.(hit.u.rank, hit.u.suit) : undefined, live: powerRows(parts, hit.mine, tgNm, opts.inlays), livePower: parts.pEff };
     });
     return { name: laneNames[li] ?? ('路' + li), slots };
   });
-  const nameOf = opts.tengangName ?? ((id: string) => id);
   const descOf = opts.tengangDesc ?? (() => '持续战法·打出后整场生效');
   const hand: TurnHandCardView[] = b.a.hand.map((c, i) => c.kind === 'poker'
     ? { kind: 'pawn', rank: c.rank, suit: lc(c.suit), name: SUITNM[lc(c.suit)] + c.rank, power: cardPoints(c.rank) + c.buff, pts: cardPoints(c.rank), buff: c.buff, cost: c.cost ?? DEPLOY_COST, zod: [], rar: rankOf(c.rank), selected: opts.selHand === i, dealt: opts.dealtId != null && c.id === opts.dealtId, affordable: (c.cost ?? DEPLOY_COST) <= b.a.mana, general: c.general, ench: opts.enchOf?.(c.rank, c.suit) }
-    : { kind: 'gang', name: nameOf(c.id), cost: CAST_COST, rar: 'gold', desc: descOf(c.id), glyph: '✦', selected: opts.selHand === i, dealt: opts.dealtId != null && c.id === opts.dealtId, affordable: CAST_COST <= b.a.mana });
+    : { kind: 'gang', name: tgNm(c.id), cost: CAST_COST, rar: 'gold', desc: descOf(c.id), glyph: '✦', selected: opts.selHand === i, dealt: opts.dealtId != null && c.id === opts.dealtId, affordable: CAST_COST <= b.a.mana });
   const ACT: [string, string, string][] = [['draw', '🎴', '抽牌'], ['deploy', '♟', '放牌'], ['cast', '✦', '打天罡'], ['discard', '🗑', '弃牌']];
   const sel = b.actionTaken;
   const mode = opts.selMode ?? sel; // 当前高亮动作类：未提交时取 UI 选中(selMode)，已锁则取 actionTaken
@@ -820,10 +847,40 @@ export function mountTurnBattle(host: HTMLElement, getView: () => TurnBattleView
     if (lane) { actions.playLane?.(parseInt(lane.dataset.lane ?? '-1', 10)); render(); return; }
   };
   host.addEventListener('pointerdown', onPress);
+  // ── 场上兵 hover 战力拆解气泡（owner 2026-06-29 ⑥）──
+  // 战斗屏走 renderNode+innerHTML·不跑 mountUI → 不能用 LayoutNode Tooltip(气泡靠 mountUI 显隐+定位·且 tabindex 点击触发画框 scroll 缩放·GA 2987b0e2 已拆)。
+  // 自管一个 position:fixed 气泡(挂 document.body·逃出棋盘多层 overflow:hidden 裁剪·无 tabindex 不触发 scroll-into-view)，
+  // 内容 = cardTipNode(该兵 live 拆解·含天罡/士气/地煞来源)·随光标上/下弹 + clamp 视口内。
+  let tipEl: HTMLDivElement | null = null;
+  const hideTip = (): void => { if (tipEl) { tipEl.style.display = 'none'; tipEl.innerHTML = ''; } };
+  const cellOf = (t: HTMLElement | null): HTMLElement | null => { // climb 到 id 恰为 cell-<idx> 的格容器（子件 id 如 cell-3-fc 也以 cell- 起头·需精确匹配）
+    let el = t?.closest('[id^="cell-"]') as HTMLElement | null;
+    while (el && !/^cell-\d+$/.test(el.id)) el = (el.parentElement?.closest('[id^="cell-"]') as HTMLElement | null) ?? null;
+    return el;
+  };
+  const onHover = (e: MouseEvent): void => {
+    const cell = cellOf(e.target as HTMLElement);
+    const m = cell ? /^cell-(\d+)$/.exec(cell.id) : null;
+    if (!cell || !m) { hideTip(); return; }
+    const idx = parseInt(m[1], 10); const s = getView().lanes[Math.floor(idx / 9)]?.slots[idx % 9];
+    if (!s || !s.hasUnit) { hideTip(); return; }
+    if (!tipEl) { tipEl = document.createElement('div'); tipEl.style.cssText = 'position:fixed;z-index:400;pointer-events:none;display:none'; document.body.appendChild(tipEl); }
+    const th = THEMES[getView().theme] ?? THEMES.onyx; for (const k in th) tipEl.style.setProperty(k, th[k]); tipEl.style.fontFamily = 'var(--fb)'; // 气泡在 body 顶层·须自带战斗皮令牌(var(--ink)/--panel…) 否则 var() 解析失败
+    tipEl.innerHTML = renderNode(cardTipNode(s), GG_BATTLE_THEME);
+    tipEl.style.display = 'block';
+    const r = cell.getBoundingClientRect(); const bw = tipEl.offsetWidth || 220, bh = tipEl.offsetHeight || 130;
+    let left = r.left + r.width / 2 - bw / 2; let top = r.top - bh - 8; // 默认上弹
+    if (top < 6) top = r.bottom + 8; // 顶部空间不足 → 改下弹
+    tipEl.style.left = Math.max(6, Math.min(left, window.innerWidth - bw - 6)) + 'px';
+    tipEl.style.top = Math.max(6, Math.min(top, window.innerHeight - bh - 6)) + 'px';
+  };
+  host.addEventListener('mouseover', onHover);
+  host.addEventListener('mouseleave', hideTip);
+  const onPressHide = (): void => hideTip(); host.addEventListener('pointerdown', onPressHide); // 点击改状态 → 收起气泡防陈旧
   render();
   let ro: ResizeObserver | null = null;
   if (typeof ResizeObserver !== 'undefined') { ro = new ResizeObserver(() => applyScale()); ro.observe(host); } // 只重缩放·不整片重渲（断 RO 反馈循环·owner 2026-06-22 掌机闪烁修）
-  return { update: render, destroy: () => { if (ro) ro.disconnect(); if (drainTimer) clearTimeout(drainTimer); if (localNoticeTimer) clearTimeout(localNoticeTimer); host.removeEventListener('pointerdown', onPress); host.replaceChildren(); } };
+  return { update: render, destroy: () => { if (ro) ro.disconnect(); if (drainTimer) clearTimeout(drainTimer); if (localNoticeTimer) clearTimeout(localNoticeTimer); host.removeEventListener('pointerdown', onPress); host.removeEventListener('mouseover', onHover); host.removeEventListener('mouseleave', hideTip); host.removeEventListener('pointerdown', onPressHide); if (tipEl) { tipEl.remove(); tipEl = null; } host.replaceChildren(); } };
 }
 
 /** 自包含 HTML 文档（看帧/预览/无头截图；固定 1340×858·非 cqw·无需缩放注入）。 */

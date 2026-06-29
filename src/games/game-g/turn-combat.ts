@@ -10,7 +10,7 @@
 import { winrate, pEff, cardPoints, CLASH_K } from './clash-resolve.js';
 import { nextRandom } from '@atom-skills/index.js';
 import type { RandomSeed } from '@engine/protocol/components.js';
-import { cardStamina, NO_TENGANG, type TengangFx, type ClashEvent } from './combat-types.js';
+import { cardStamina, NO_TENGANG, type TengangFx, type ClashEvent, type ClashCard } from './combat-types.js';
 import { aggregateDisha, splitDisha, type DishaFx } from './disha.js';
 
 // ── 棋盘几何（doc24 §一）──
@@ -263,6 +263,20 @@ function tgContribOf(u: TurnUnit, lane: TurnLane, side: 'a' | 'b', fx: TengangFx
   if (fx.powerSameSuit && col.filter((x) => x.suit === u.suit).length >= 2) tg += fx.powerSameSuit;
   if (fx.comboPair || fx.comboTrips) { const rc = new Map<string, number>(); for (const x of col) rc.set(x.rank, (rc.get(x.rank) ?? 0) + 1); const vals = [...rc.values()]; if (fx.comboPair && vals.some((n) => n >= 2)) tg += fx.comboPair; if (fx.comboTrips && vals.some((n) => n >= 3)) tg += fx.comboTrips; }
   return tg;
+}
+
+// 任意单位「此刻若评估」的有效战力拆解（owner 2026-06-29 ⑥：鼠标悬场上兵 → 看全加成来源）。
+// **复用 effPower / tgContribOf 同款门控** → 与真实掷命逐字一致（非另起一套·杜绝预览≠实判）；非前锋亦可预览。
+// 返回 ClashCard（同 resolveClash 写 lastClash 的形状）→ 与掷命特写共用 powerRows 格式器（④/⑥ 单一真相）。
+export function unitPowerParts(b: TurnBattle, side: 'a' | 'b', li: number, u: TurnUnit): ClashCard {
+  const lane = b.lanes[li]; const sd = sideOf(b, side); const fx = sd.tengangA;
+  const champ = fx.powerMulHighest > 1 ? championId(b, side) : undefined;
+  const dB = b.dishaB;
+  const nearDef = side === 'b' && dB.nearBaseSlots > 0 && u.slot >= SLOTS - dB.nearBaseSlots ? dB.nearBasePower : 0; // 隘口守军（仅 Boss 侧·贴家固守）
+  const noRout = side === 'b' && dB.noRout;
+  const e = effPower(u, lane, side, fx, champ, noRout, nearDef);
+  const tgBreak = sd.castFx.map(({ id, fx: f }) => [id, Math.round(tgContribOf(u, lane, side, f))] as [string, number]).filter((r) => r[1] !== 0); // 逐张天罡溯源（同 resolveClash）
+  return { rank: u.rank, suit: u.suit, general: u.general, points: u.points, buff: u.buff, morale: e.shift, tengang: e.tg, pEff: e.pEff, tgBreak, nearDef: e.nearDef };
 }
 
 // ── 地煞 apply（Boss 侧·doc23 §八）：把 dishaB 各效果折成「Boss 掷命胜率 +X 百分点」(玩家 wr 相应减) ──
