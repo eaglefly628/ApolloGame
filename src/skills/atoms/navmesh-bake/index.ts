@@ -1,7 +1,7 @@
 import { defineCapability } from '@engine/core/define-capability.js';
 import { SystemPhase } from '@engine/core/types.js';
 import type { IWorld } from '@engine/core/types.js';
-import type { Transform, Collider3D, NavMesh, NavGraph, NavAgent } from '@engine/protocol/components.js';
+import type { Transform, Collider3D, NavMesh, NavGraph, NavAgent, Velocity } from '@engine/protocol/components.js';
 import { aabb3dOf } from '@engine/spatial/contact3d.js';
 import { gridFromBounds, rasterizeBlocked, bakeNavGraph, type Rect2 } from '@engine/spatial/navmesh.js';
 
@@ -13,7 +13,7 @@ export type { NavMesh };
 //  **自动织成主程的 `NavGraph`** 写回（节点=空格、边=相邻空格）。下游主程 `pathfind` 照常消费（A*+跟随+避让）。
 //  即 Recast「从几何自动生成 navmesh」的轻量确定性版。**与手摆 NavGraph 共存**：场上摆 NavMesh→自动烘焙；
 //  只摆 NavGraph（无 NavMesh）→ 本能力不动、用手摆图。每帧重烘 → rollback 安全（静态障碍可后续只在变更时重烘）。
-//  排除：trigger（感知区不挡路）、NavAgent（移动体不当障碍）。runsBefore nav-follow（图先就绪）。
+//  排除：trigger（感知区不挡路）、NavAgent / 带 Velocity 的动态体（移动角色不当静态障碍·含玩家自身）。runsBefore nav-follow（图先就绪）。
 // ═══════════════════════════════════════════════════════════════
 
 export const navmeshBakeCapability = defineCapability({
@@ -41,7 +41,7 @@ export const navmeshBakeCapability = defineCapability({
       // NavGraph 必须在 pathfind 读它之前烘好；显式排在 motion-apply 之前（覆盖「读 Transform vs 它写 Transform」
       // 的反向推断边·同 nav-follow 破环纪律）—— 否则三系统经 Transform 成环。
       runsBefore: ['nav-follow', 'motion-apply'],
-      reads: ['NavMesh', 'Collider3D', 'Transform'],
+      reads: ['NavMesh', 'Collider3D', 'Transform', 'Velocity'],
       writes: ['NavGraph'],
       consumes: [],
       execute(world: IWorld) {
@@ -56,7 +56,8 @@ export const navmeshBakeCapability = defineCapability({
         const rects: Rect2[] = [];
         for (const [id] of world.query('Transform', 'Collider3D').sort((a, b) => (a[0] < b[0] ? -1 : 1))) {
           const c = world.getComponent<Collider3D>(id, 'Collider3D')!;
-          if (c.trigger || world.getComponent<NavAgent>(id, 'NavAgent')) continue;
+          // 跳过：触发区、寻路智能体、带 Velocity 的动态体（玩家/追兵不当静态障碍·避免移动体在图上挖洞）。
+          if (c.trigger || world.getComponent<NavAgent>(id, 'NavAgent') || world.getComponent<Velocity>(id, 'Velocity')) continue;
           const bb = aabb3dOf(world.getComponent<Transform>(id, 'Transform')!, c);
           rects.push({ minX: bb.minX - r, maxX: bb.maxX + r, minZ: bb.minZ - r, maxZ: bb.maxZ + r });
         }

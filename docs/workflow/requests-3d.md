@@ -19,6 +19,7 @@
 > - **下游零改**：主程 `pathfind`(`nav-follow`) 照常读 NavGraph → A* → 写 Velocity → `motion-apply` 走动。
 > - **debug 可视化（P3D 渲染线域）** `renderer/three/nav-debug.ts`（render-only）：青点=航点（没点处=被碰撞封住）+ 暗青线=连边 + 黄线=`NavPath` 规划路径。接入 `three-renderer`（`setDebugNav`）。
 > - **game-z 验证**：`NavMesh` 罩草地台 + 三石墩障碍（`obstacle()`·碰撞+寻路双用）+ 橙盒追兵（**主程 `NavAgent` + `Relation(target=hero)` + `Velocity`**）→ 自动绕障碍逼近小黄鸭。菜单加「🧭 导航网格」+ N 键。截图：青点网格自动避开所有碰撞体、追兵沿黄线绕行。
+> - **扩充关卡 + 多 agent 蛇形迷墙（owner 2026-06-28「扩充一倍 + 加寻路碰撞展示」）**：地台 70²→**100²**（NavMesh/相机随扩）；加四角石柱 + **两道交错长墙（各留缺口）的蛇形迷墙**；**第二个追兵**（蓝盒·从 100² 远端出发·必须穿迷墙两缺口）→ 展示长程绕路 + 多 agent 同时寻路。**烘焙器改进**：排除带 `Velocity` 的动态体（玩家/追兵不当静态障碍·不在自己导航上挖洞·`runsBefore motion-apply` 已保序）。+1 测（动态体不烘进图）。
 > - **测试**：`navmesh.test`(5·栅格化/封格无节点/防穿角/确定性) + `navmesh-bake.test`(4·**端到端绕墙不穿墙**[配主程 pathfind] + **共存：无 NavMesh 不烘** + 两世界 hash 一致)。tsc+vitest+build+截图全绿（主程 `pathfind`/`astar` 测试一并跑绿·未碰你的代码）。
 > - **⬜ 待续（按需）**：静态障碍只在变更时重烘（现每帧·盒庭够）；多边形 navmesh（现栅格·真要更强壮再升）；动态体避让走主程 collision-resolve（game-z 暂无 2D resolve·靠图拓扑静态避障已够）。
 

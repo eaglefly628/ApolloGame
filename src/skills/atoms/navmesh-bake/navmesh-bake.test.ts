@@ -65,6 +65,19 @@ describe('navmesh-bake + 主程 pathfind 端到端', () => {
     expect(Math.hypot(fin.x - 16, fin.z - 0)).toBeLessThan(4); // 绕墙到达目标附近
   });
 
+  it('动态体不挡路：带 Velocity 的碰撞体不烘进图（玩家/追兵不在自己的导航上挖洞）', () => {
+    wall(world, 'static', 12, 0, 2, 2);  // 静态障碍 → 封格
+    // 动态体（有 Velocity）在 (-12,0)：不应封格。
+    world.createEntity('mover');
+    world.addComponent('mover', { type: 'Transform', x: -12, y: 0, rotation: 0, scaleX: 1, scaleY: 1 } as Transform);
+    world.addComponent('mover', { type: 'Collider3D', kind: 'box', halfX: 2, halfY: 5, halfZ: 2 } as Collider3D);
+    world.addComponent('mover', { type: 'Velocity', vx: 0, vy: 0, angular: 0 } as Velocity);
+    world.tick();
+    const ng = world.getComponent<NavGraph>('nav', 'NavGraph')!;
+    expect(ng.nodes.some((n) => Math.abs(n.x - 12) < 2 && Math.abs(n.y) < 2)).toBe(false); // 静态处无航点
+    expect(ng.nodes.some((n) => Math.abs(n.x + 12) < 2 && Math.abs(n.y) < 2)).toBe(true);  // 动态体处仍有航点
+  });
+
   it('共存：无 NavMesh → 不烘焙（用手摆 NavGraph 模式·navmesh-bake 不动）', () => {
     const w = new World();
     w.addSystem(bake);

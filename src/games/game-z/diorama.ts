@@ -65,7 +65,7 @@ export function dioramaBlueprint(): WorldBlueprint {
     entities: {
       // 盒庭相机（REQ-3D-Camera·语义参数全数据化）：轨道俯角环绕·fov/俯仰夹角进数据（不再写死在渲染器/胶水）。
       // 运行时：拖拽改 yaw/pitch、滚轮改 distance（行为层）；O 切正交、F 切跟随小黄鸭（game-z.ts 输入胶水）。
-      cam: { Camera3D: { yaw: 0.72, pitch: 0.6, distance: 92, pivotX: 0, pivotY: 5, pivotZ: 0, fov: 38, pitchMin: 0.12, pitchMax: 1.45 } },
+      cam: { Camera3D: { yaw: 0.72, pitch: 0.62, distance: 132, pivotX: 0, pivotY: 4, pivotZ: 0, fov: 38, pitchMin: 0.12, pitchMax: 1.45 } },
 
       // 数据化光照（Light3D·替原写死的灯）：暖白太阳（投软影）+ 冷蓝环境补光。
       sun: { Light3D: { kind: 'directional', color: 0xfff1d6, intensity: 1.6, castShadow: true } },
@@ -104,8 +104,8 @@ export function dioramaBlueprint(): WorldBlueprint {
         Model3D: { modelKey: MODEL_DUCK },
       },
 
-      // 草地大地台（顶在 y=0）
-      ground: block(0, -2.5, 0, 70, 5, 70, 0x8bc34a, 0x5d4037),
+      // 草地大地台（顶在 y=0）—— 关卡扩充一倍：70² → 100²（owner 2026-06-28）。
+      ground: block(0, -2.5, 0, 100, 5, 100, 0x8bc34a, 0x5d4037),
 
       // 抬升石台（顶在 y=6）
       platform: block(-12, 3, -8, 26, 6, 22, 0xb0bec5, 0x607d8b),
@@ -130,22 +130,40 @@ export function dioramaBlueprint(): WorldBlueprint {
         Collider3D: { kind: 'hull', baseY: 4, verts: hullBoxVerts(6, 4, 1.5, WALL_AXES), axes: WALL_AXES.flat() },
       },
 
-      // ── 碰撞感知寻路（REQ-3D-Nav · owner「自动摆放」）──
-      // 寻路数据 = **自动烘焙**：摆一张 NavMesh（范围 + 格边长 + 半径）罩住草地台，navmesh-bake 每帧把
-      // Collider3D 障碍栅格化、可行走格自动织成主程 NavGraph → 主程 pathfind 用（零手摆航点）。
-      nav: { NavMesh: { minX: -34, minZ: -34, maxX: 34, maxZ: 34, cellSize: 3, agentRadius: 2.6 } },
-      // 实心石墩障碍（碰撞 + 寻路双用）：散在 seeker→hero 之间，逼追兵绕行。
+      // ── 碰撞感知寻路（REQ-3D-Nav · owner「自动摆放」+ 扩充关卡）──
+      // 寻路数据 = **自动烘焙**：NavMesh 罩住扩充后的 100² 草地台，navmesh-bake 每帧把 Collider3D 障碍栅格化、
+      // 可行走格自动织成主程 NavGraph → 主程 pathfind 用（零手摆航点）。
+      nav: { NavMesh: { minX: -48, minZ: -48, maxX: 48, maxZ: 48, cellSize: 3, agentRadius: 2.6 } },
+
+      // 实心石墩障碍（碰撞 + 寻路双用）：散在中央，逼追兵绕行。
       'rock-1': obstacle(-14, -12, 6, 5, 10, 0x9e9e9e, 0x616161),
       'rock-2': obstacle(-4, -18, 9, 5, 6, 0x9e9e9e, 0x616161),
       'rock-3': obstacle(-16, 4, 6, 5, 8, 0x9e9e9e, 0x616161),
-      // 寻路追兵（橙盒）：主程 NavAgent + Relation(target=hero) → pathfind 沿自动生成的 NavGraph 绕障碍逼近小黄鸭，
-      // 写 Velocity → motion-apply 走动。只挂 2D Transform（不挂 Transform3D）→ render groundPose 跟随寻路移动。
+      // 扩充区四角石柱（更多 nav 空洞 + 视觉填充）。
+      'pillar-1': obstacle(-34, -32, 6, 7, 6, 0x8d6e63, 0x5d4037),
+      'pillar-2': obstacle(33, -30, 6, 7, 6, 0x8d6e63, 0x5d4037),
+      'pillar-3': obstacle(38, 14, 6, 7, 6, 0x8d6e63, 0x5d4037),
+      // **蛇形迷墙**（扩充区·寻路展示主角）：两道交错长墙各留一个缺口 → 远角追兵必须先绕左、再绕右才能穿到中央。
+      // 自动生成的 NavGraph 会精确避开墙体、只在缺口处连通；开「导航网格」可见黄线沿缺口蜿蜒。
+      'maze-1': obstacle(-15, 30, 56, 7, 4, 0x78909c, 0x546e7a), // x[-43,13]·缺口在右
+      'maze-2': obstacle(17, 40, 56, 7, 4, 0x78909c, 0x546e7a),  // x[-11,45]·缺口在左
+
+      // 寻路追兵①（橙盒·左下远角）：主程 NavAgent + Relation(target=hero) → pathfind 沿自动生成的 NavGraph 绕障碍
+      // 逼近小黄鸭，写 Velocity → motion-apply 走动。只挂 2D Transform → render groundPose 跟随寻路移动。
       // 开左下「导航网格」菜单：青点/线 = 自动生成的可走图（没点处=被碰撞封住）、黄线 = 追兵当前规划路径。
       seeker: {
-        Transform: { x: -28, y: -26, rotation: 0, scaleX: 1, scaleY: 1 },
+        Transform: { x: -42, y: -42, rotation: 0, scaleX: 1, scaleY: 1 },
         Velocity: { vx: 0, vy: 0, angular: 0 },
         Mesh3D: { shape: 'box', width: 3.2, height: 3.2, depth: 3.2, frontTint: 0xff7043, backTint: 0xff7043, edgeTint: 0xffab91 },
         NavAgent: { speed: 0.45, arriveRange: 7 },
+        Relation: { kind: 'target', targetId: 'hero' },
+      },
+      // 寻路追兵②（蓝盒·迷墙后远角）：从 100² 远端出发，必须穿蛇形迷墙的两个缺口才能到中央 → 展示长程绕路寻路。
+      'seeker-2': {
+        Transform: { x: 40, y: 46, rotation: 0, scaleX: 1, scaleY: 1 },
+        Velocity: { vx: 0, vy: 0, angular: 0 },
+        Mesh3D: { shape: 'box', width: 3.2, height: 3.2, depth: 3.2, frontTint: 0x42a5f5, backTint: 0x42a5f5, edgeTint: 0x90caf9 },
+        NavAgent: { speed: 0.5, arriveRange: 7 },
         Relation: { kind: 'target', targetId: 'hero' },
       },
 
