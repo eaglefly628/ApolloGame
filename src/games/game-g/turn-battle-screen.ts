@@ -244,16 +244,6 @@ function unitNode(s: TurnSlotView): LayoutNode {
   if (isGen) children.push({ type: 'Label', id: `u-${id}-gen`, props: { text: s.mine ? '⭐主将' : '☠敌将', size: 8, color: 'gold', bold: true }, layout: { y: -12, x: 14 } });
   return { type: 'Panel', id: `u-${id}`, props: { bg: sideFace(s.mine), edge: isGen ? 'gold' : (s.mine ? 'mine' : 'foe') }, layout: { flex: 1, direction: 'column', justify: 'between', align: 'center', padding: 4, radius: 10, ...(isGen ? { fx: [{ kind: 'glow', color: 'gold', ms: 1400 }] } : {}) }, children };
 }
-// 磨砂详情浮层内容（战力拆解·Tooltip.bubble 子树·替手写 cardTip 给场上兵）。
-function cardTipNode(s: TurnSlotView): LayoutNode {
-  const tone = SUIT_TONE[s.suit!] ?? 'sub'; const buff = s.buff ?? 0; const pts = s.pts ?? ((s.power ?? 0) - buff);
-  return { type: 'Panel', id: 'tipb', props: {}, layout: { direction: 'column', gap: 3, padding: 10, width: 200 }, children: [
-    { type: 'Label', id: 'tipb-n', props: { text: s.name ?? (SUITNM[s.suit!] + s.rank), size: 12, color: 'text', bold: true } },
-    { type: 'Label', id: 'tipb-f', props: { text: `牌面 ${SUITNM[s.suit!]} ${s.rank} ${SUITG[s.suit!]}`, size: 11, color: tone } },
-    { type: 'Label', id: 'tipb-p', props: { spans: [{ text: '战力 ' }, { text: String(s.power ?? ''), color: 'gold', bold: true }, { text: buff ? `  = 点数 ${pts} ${buff > 0 ? '+' : '−'} 经营 ${Math.abs(buff)}` : `  = 点数 ${pts}` }], size: 11, color: 'sub' } },
-    { type: 'Label', id: 'tipb-z', props: { text: (s.zod || []).filter(Boolean).length ? `生肖 ${(s.zod || []).filter(Boolean).map((z) => ZOD_ICON[z] || z).join(' ')}` : '天罡/士气 对决时按场计入 · 再 +随机骰', size: 10, color: 'dim' } },
-  ] };
-}
 function slotCellNode(s: TurnSlotView, idx: number): LayoutNode {
   const cid = `cell-${idx}`;
   const depBg = s.deploy === 1 ? 'rgba(255,122,69,.10)' : s.deploy === 2 ? 'rgba(58,134,212,.09)' : undefined;
@@ -270,9 +260,7 @@ function slotCellNode(s: TurnSlotView, idx: number): LayoutNode {
   );
   if (s.forecast != null) { const [lab] = oddsTier(s.forecast); const pct = Math.round(s.forecast * 100); const fc = pct >= 55 ? 'ok' : pct > 45 ? 'warn' : 'danger'; inner.push({ type: 'Panel', id: `${cid}-fc`, props: { bg: 'rgba(10,14,20,.92)', edge: fc }, layout: { y: -19, x: 0, radius: 99, padding: 2 }, children: [{ type: 'Label', id: `${cid}-fcl`, props: { text: `⚔ ${lab} ${pct}%`, size: 11, color: fc, bold: true } }] }); }
   const fx = s.isClash ? [{ kind: 'pulse' as const, ms: 1400 }] : s.placeable ? [{ kind: 'pulse' as const, color: 'gold' as const, ms: 1050 }] : undefined;
-  const cell: LayoutNode = { type: 'Panel', id: cid, props: special ? { bg: bg ?? 'transparent', edge } : { bare: true }, layout: { flex: 1, direction: 'column', align: s.hasUnit ? 'stretch' : 'center', justify: 'center', radius: 11, padding: 3, ...(fx ? { fx } : {}) }, children: inner };
-  if (s.hasUnit) { const place = s.tipDown ? 'bottom' as const : s.tipSide === 'left' ? 'left' as const : s.tipSide === 'right' ? 'right' as const : 'top' as const; return { type: 'Tooltip', id: `${cid}-tt`, props: { block: true, placement: place, bubble: cardTipNode(s) }, children: [cell] }; }
-  return cell;
+  return { type: 'Panel', id: cid, props: special ? { bg: bg ?? 'transparent', edge } : { bare: true }, layout: { flex: 1, direction: 'column', align: s.hasUnit ? 'stretch' : 'center', justify: 'center', radius: 11, padding: 3, ...(fx ? { fx } : {}) }, children: inner };
 }
 function laneRowNode(L: TurnLaneView, li: number, hiOn: boolean): LayoutNode {
   const tag: LayoutNode = { type: 'Panel', id: `lane-${li}-tag`, props: { bg: 'var(--chip)' }, layout: { width: 40, direction: 'column', align: 'center', justify: 'center', gap: 1, radius: 8 }, children: [...L.name].map((ch, i) => ({ type: 'Label', id: `lane-${li}-tag-${i}`, props: { text: ch, size: 13, color: 'text', bold: true } })) };
@@ -283,23 +271,6 @@ function laneRowNode(L: TurnLaneView, li: number, hiOn: boolean): LayoutNode {
 // 召唤源泉水滴（cost·小蓝滴排）。
 function costDropNode(n: number, idp: string): LayoutNode {
   return { type: 'Panel', id: `${idp}-cost`, props: { bare: true }, layout: { y: 4, x: 30, direction: 'row', gap: 3, justify: 'center' }, children: Array.from({ length: Math.min(n, 5) }, (_, k): LayoutNode => ({ type: 'Panel', id: `${idp}-cd${k}`, props: { bg: 'linear-gradient(180deg,#8fe0ff,#2f93cf)' }, layout: { width: 9, height: 12, radius: 4, padding: 0 } })) };
-}
-// 手牌磨砂详情浮层内容（战力拆解 / 天罡文案·Tooltip.bubble 子树）。
-function handTipNode(c: TurnHandCardView): LayoutNode {
-  const rc = RAR[c.rar] || RAR.white;
-  const rows: LayoutNode[] = [{ type: 'Label', id: 'htb-h', props: { text: `${c.name} · ${rc[0]}`, size: 12, color: 'gold', bold: true } }];
-  if (c.kind === 'gang') {
-    rows.push({ type: 'Label', id: 'htb-g', props: { spans: [{ text: '持续战法', color: 'jade', bold: true }, { text: ` · 消耗 ${c.cost} 召唤源泉` }], size: 11, color: 'sub' } });
-    if (c.desc) rows.push({ type: 'Label', id: 'htb-d', props: { text: c.desc, size: 11, color: 'text' } });
-    rows.push({ type: 'Label', id: 'htb-n', props: { text: '打出后整场为你加成', size: 10, color: 'dim' } });
-  } else {
-    const tone = SUIT_TONE[c.suit!] ?? 'sub'; const buff = c.buff ?? 0; const pts = c.pts ?? ((c.power ?? 0) - buff);
-    rows.push({ type: 'Label', id: 'htb-f', props: { text: `牌面 ${SUITNM[c.suit!]} ${c.rank} ${SUITG[c.suit!]}`, size: 11, color: tone } });
-    rows.push({ type: 'Label', id: 'htb-p', props: { spans: [{ text: '战力 ' }, { text: String(c.power ?? ''), color: 'gold', bold: true }, { text: buff ? `  = 点数 ${pts} ${buff > 0 ? '+' : '−'} 经营 ${Math.abs(buff)}` : `  = 点数 ${pts}` }], size: 11, color: 'sub' } });
-    const zods = (c.zod || []).filter(Boolean);
-    rows.push({ type: 'Label', id: 'htb-z', props: { text: zods.length ? `生肖 ${zods.map((z) => ZOD_ICON[z] || z).join(' ')}` : '天罡/士气 对决时按场计入 · 再 +随机骰', size: 10, color: 'dim' } });
-  }
-  return { type: 'Panel', id: 'htb', props: {}, layout: { direction: 'column', gap: 3, padding: 10, width: 200 }, children: rows };
 }
 // 手牌牌面（数据驱动·棋枰数据化②/③·同场上兵套路）：天罡=紫顶徽 + 名/描述；兵牌=sideFace + edge mine/将 gold + 角标/战力/大花色/生肖。
 function handCardNode(c: TurnHandCardView, i: number, hiOn: boolean): LayoutNode {
@@ -333,7 +304,7 @@ function handCardNode(c: TurnHandCardView, i: number, hiOn: boolean): LayoutNode
     if (isGen) children.push({ type: 'Label', id: `h${i}-gen`, props: { text: '⭐ 主将', size: 9, color: 'gold', bold: true }, layout: { y: -13, x: 18 } });
     card = { type: 'Panel', id: `h${i}`, props: { bg: sideFace(true), edge: isGen ? 'gold' : 'mine' }, layout: { width: 88, height: 112, radius: 12, direction: 'column', justify: 'between', align: 'center', padding: 4, ...(sel || isGen ? { fx: [{ kind: 'glow', color: 'gold', ms: 1200 }] } : {}), ...(sel ? { scale: 1.04 } : {}) }, children };
   }
-  return { type: 'Tooltip', id: `h${i}-tt`, props: { block: true, placement: 'top', bubble: handTipNode(c) }, children: [card] };
+  return card;
 }
 function handCard(c: TurnHandCardView, i: number, hiOn = false): string {
   const aff = c.affordable === false ? ';opacity:.45;filter:grayscale(.6)' : ''; // 买不起=灰显（Label 令牌无 opacity·留在 data-hand 壳上）
