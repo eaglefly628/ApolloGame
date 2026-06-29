@@ -3,6 +3,7 @@ import { EffectComposer } from 'three/addons/postprocessing/EffectComposer.js';
 import { RenderPass } from 'three/addons/postprocessing/RenderPass.js';
 import { ShaderPass } from 'three/addons/postprocessing/ShaderPass.js';
 import { UnrealBloomPass } from 'three/addons/postprocessing/UnrealBloomPass.js';
+import { GTAOPass } from 'three/addons/postprocessing/GTAOPass.js';
 import { OutputPass } from 'three/addons/postprocessing/OutputPass.js';
 import { HorizontalTiltShiftShader } from 'three/addons/shaders/HorizontalTiltShiftShader.js';
 import { VerticalTiltShiftShader } from 'three/addons/shaders/VerticalTiltShiftShader.js';
@@ -10,13 +11,14 @@ import type { Post3D } from '@engine/protocol/components.js';
 
 // ═══════════════════════════════════════════════════════════════
 //  three/PostPipeline —— 后处理子系统（EffectComposer·懒建）。
-//  RenderPass → 水平+垂直移轴 ShaderPass（tilt-shift·Captain Toad 微缩感）→ UnrealBloom → OutputPass。
+//  RenderPass → GTAO(环境光遮蔽) → 水平+垂直移轴 ShaderPass(tilt-shift) → UnrealBloom → OutputPass。
 //  各 pass 的开关/参数每帧据 Post3D 数据设（不重建·只改 uniform/enabled）。无 Post3D 时整条管线不建。
 // ═══════════════════════════════════════════════════════════════
 
 export class PostPipeline {
   private composer?: EffectComposer;
   private renderPass?: RenderPass;
+  private gtao?: GTAOPass;
   private hTilt?: ShaderPass;
   private vTilt?: ShaderPass;
   private bloom?: UnrealBloomPass;
@@ -31,6 +33,14 @@ export class PostPipeline {
   render(scene: THREE.Scene, camera: THREE.Camera, post: Post3D): void {
     this.ensure(scene, camera);
     this.renderPass!.camera = camera;
+    // 环境光遮蔽（GTAO·接触阴影/缝隙压暗）。相机可能透视/正交切换 → 每帧更新。
+    const ao = post.ao;
+    this.gtao!.enabled = !!ao;
+    if (ao) {
+      this.gtao!.camera = camera;
+      this.gtao!.blendIntensity = ao.intensity ?? 1;
+      this.gtao!.updateGtaoMaterial({ radius: ao.radius ?? 4, scale: ao.scale ?? 1 });
+    }
     const ts = post.tiltShift;
     const tsOn = !!ts;
     this.hTilt!.enabled = tsOn;
@@ -62,6 +72,10 @@ export class PostPipeline {
     composer.setSize(this.width, this.height);
     this.renderPass = new RenderPass(scene, camera);
     composer.addPass(this.renderPass);
+    // GTAO：在 beauty 之后算 AO 并叠加压暗（output=Default·blendIntensity 控强度）。
+    const gtao = new GTAOPass(scene, camera, this.width, this.height);
+    gtao.output = GTAOPass.OUTPUT.Default;
+    composer.addPass(gtao);
     const h = new ShaderPass(HorizontalTiltShiftShader);
     const v = new ShaderPass(VerticalTiltShiftShader);
     composer.addPass(h);
@@ -70,7 +84,7 @@ export class PostPipeline {
     composer.addPass(bloom);
     composer.addPass(new OutputPass());
     this.composer = composer;
-    this.hTilt = h; this.vTilt = v; this.bloom = bloom;
+    this.gtao = gtao; this.hTilt = h; this.vTilt = v; this.bloom = bloom;
   }
 
   dispose(): void {

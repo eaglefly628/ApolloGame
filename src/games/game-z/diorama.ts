@@ -74,8 +74,9 @@ export function dioramaBlueprint(): WorldBlueprint {
       // 动态局部光（TA Phase 2·预算 2 盏 point/spot）：两盏都挂在会动的方块追兵身上（见下方 seeker / seeker-2）——
       // 暖光跟橙追兵、冷光跟蓝追兵，随寻路在 140² 大地图上游走照亮（owner「两个点光源都给两个动的方块」）。
 
-      // 后处理 Post3D 暂移除（owner 2026-06-28「景深和一些东西表现得非常奇怪·先移掉」）：移轴景深(tiltShift)
-      // 是为小盒庭调的焦带，关卡扩到 100² + 相机拉远后整屏发虚；泛光叠在过曝上更糊。待调好再按数据重加。
+      // 后处理（Post3D）：仅 **AO 环境光遮蔽**（TA Phase 4·GTAO）——缝隙/接触处压暗，给箱庭「厚度+接地」的玩具感。
+      // 移轴景深/泛光仍移除（owner「景深奇怪·先移掉」），待自适配版再加。
+      post: { Post3D: { ao: { intensity: 1.1, radius: 5, scale: 1 } } },
 
       // 天空盒：蓝天 → 浅地平线 + 程序化白云缓慢飘动
       sky: { Sky3D: { top: 0x4a90d9, bottom: 0xcfe9f7, clouds: true, cloudTint: 0xffffff, scroll: 1 } },

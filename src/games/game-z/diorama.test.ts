@@ -70,7 +70,9 @@ describe('Game Z · 3D 盒庭蓝图（纯数据 · 仅现成 motion-apply 能力
     expect(sun?.castShadow).toBe(true);
     expect(sun?.intensity).toBeLessThanOrEqual(1.2); // 曝光收敛：太阳不过亮（owner「太亮·过曝」）
     expect(lights.filter(([, l]) => l.kind === 'point').length).toBeLessThanOrEqual(2); // 预算：≤2 盏动态局部光
-    expect(getPost3D(e.world)).toBeFalsy(); // 移轴景深/泛光暂移除（owner「景深表现奇怪·先移掉」）
+    const post = getPost3D(e.world);
+    expect(post?.ao).toBeTruthy(); // AO 环境光遮蔽（TA Phase 4）已开
+    expect(post?.tiltShift).toBeFalsy(); // 移轴景深仍移除（owner「景深奇怪·先移掉」）
   });
 
   it('可控角色 hero：2D Transform + Velocity + Model3D 小黄鸭（无 transform3d·盒庭模式落地面）', () => {

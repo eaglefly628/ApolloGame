@@ -156,6 +156,9 @@ export interface Post3D extends Component {
   tiltShift?: { focus?: number; intensity?: number };
   // 泛光：strength=强度·radius=扩散·threshold=亮度阈值。
   bloom?: { strength?: number; radius?: number; threshold?: number };
+  // 环境光遮蔽（AO·GTAO 地面真值·TA Phase 4）：缝隙/接触处压暗 → 箱庭玩具感的「厚度/接地」。
+  // intensity=AO 叠加强度(缺省 1)；radius=采样世界半径(缺省随场景尺度·盒庭 ~4)；scale=衰减(缺省 1)。
+  ao?: { intensity?: number; radius?: number; scale?: number };
 }
 
 // ── WorldUI3D（TA Phase 3·render-only·不进 hash）── 世界空间 UI（头顶飘字/血条/名字）。
