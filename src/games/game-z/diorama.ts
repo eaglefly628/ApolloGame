@@ -65,15 +65,14 @@ export function dioramaBlueprint(): WorldBlueprint {
     entities: {
       // 盒庭相机（REQ-3D-Camera·语义参数全数据化）：轨道俯角环绕·fov/俯仰夹角进数据（不再写死在渲染器/胶水）。
       // 运行时：拖拽改 yaw/pitch、滚轮改 distance（行为层）；O 切正交、F 切跟随小黄鸭（game-z.ts 输入胶水）。
-      cam: { Camera3D: { yaw: 0.72, pitch: 0.62, distance: 132, pivotX: 0, pivotY: 4, pivotZ: 0, fov: 38, pitchMin: 0.12, pitchMax: 1.45 } },
+      cam: { Camera3D: { yaw: 0.72, pitch: 0.64, distance: 186, pivotX: 0, pivotY: 3, pivotZ: 0, fov: 38, pitchMin: 0.12, pitchMax: 1.45 } },
 
       // 数据化光照（Light3D·替原写死的灯）：暖白太阳（投软影）+ 冷蓝环境补光。
       // 曝光收敛（owner 2026-06-28「太阳太亮·曝光过度」）：太阳 1.6→1.05、环境补光 0.45→0.55 提暗部。
       sun: { Light3D: { kind: 'directional', color: 0xfff1d6, intensity: 1.05, castShadow: true } },
       fill: { Light3D: { kind: 'ambient', color: 0xbfd2ff, intensity: 0.55 } },
-      // 动态局部光（TA Phase 2·预算 2 盏 point/spot）：① 魔法喷泉处的暖色点光（静态·把宝石/阶梯照亮·
-      // 与喷泉同处呼应）；② 见下方 seeker 身上挂的冷色点光（**移动**·随追兵寻路游走照亮路径）。
-      'light-fountain': { Light3D: { kind: 'point', color: 0xffce8a, intensity: 130, range: 34, x: 16, y: 9, z: 9 } },
+      // 动态局部光（TA Phase 2·预算 2 盏 point/spot）：两盏都挂在会动的方块追兵身上（见下方 seeker / seeker-2）——
+      // 暖光跟橙追兵、冷光跟蓝追兵，随寻路在 140² 大地图上游走照亮（owner「两个点光源都给两个动的方块」）。
 
       // 后处理 Post3D 暂移除（owner 2026-06-28「景深和一些东西表现得非常奇怪·先移掉」）：移轴景深(tiltShift)
       // 是为小盒庭调的焦带，关卡扩到 100² + 相机拉远后整屏发虚；泛光叠在过曝上更糊。待调好再按数据重加。
@@ -108,8 +107,8 @@ export function dioramaBlueprint(): WorldBlueprint {
         Model3D: { modelKey: MODEL_DUCK },
       },
 
-      // 草地大地台（顶在 y=0）—— 关卡扩充一倍：70² → 100²（owner 2026-06-28）。
-      ground: block(0, -2.5, 0, 100, 5, 100, 0x8bc34a, 0x5d4037),
+      // 草地大地台（顶在 y=0）—— 关卡再扩一倍：100² → 140²（owner 2026-06-28）。
+      ground: block(0, -2.5, 0, 140, 5, 140, 0x8bc34a, 0x5d4037),
 
       // 抬升石台（顶在 y=6）
       platform: block(-12, 3, -8, 26, 6, 22, 0xb0bec5, 0x607d8b),
@@ -137,16 +136,19 @@ export function dioramaBlueprint(): WorldBlueprint {
       // ── 碰撞感知寻路（REQ-3D-Nav · owner「自动摆放」+ 扩充关卡）──
       // 寻路数据 = **自动烘焙**：NavMesh 罩住扩充后的 100² 草地台，navmesh-bake 每帧把 Collider3D 障碍栅格化、
       // 可行走格自动织成主程 NavGraph → 主程 pathfind 用（零手摆航点）。
-      nav: { NavMesh: { minX: -48, minZ: -48, maxX: 48, maxZ: 48, cellSize: 3, agentRadius: 2.6 } },
+      nav: { NavMesh: { minX: -68, minZ: -68, maxX: 68, maxZ: 68, cellSize: 3, agentRadius: 2.6 } },
 
       // 实心石墩障碍（碰撞 + 寻路双用）：散在中央，逼追兵绕行。
       'rock-1': obstacle(-14, -12, 6, 5, 10, 0x9e9e9e, 0x616161),
       'rock-2': obstacle(-4, -18, 9, 5, 6, 0x9e9e9e, 0x616161),
       'rock-3': obstacle(-16, 4, 6, 5, 8, 0x9e9e9e, 0x616161),
-      // 扩充区四角石柱（更多 nav 空洞 + 视觉填充）。
-      'pillar-1': obstacle(-34, -32, 6, 7, 6, 0x8d6e63, 0x5d4037),
-      'pillar-2': obstacle(33, -30, 6, 7, 6, 0x8d6e63, 0x5d4037),
-      'pillar-3': obstacle(38, 14, 6, 7, 6, 0x8d6e63, 0x5d4037),
+      // 扩充区石柱（更多 nav 空洞 + 视觉填充·撒到 140² 外环）。
+      'pillar-1': obstacle(-48, -44, 7, 8, 7, 0x8d6e63, 0x5d4037),
+      'pillar-2': obstacle(46, -42, 7, 8, 7, 0x8d6e63, 0x5d4037),
+      'pillar-3': obstacle(54, 18, 7, 8, 7, 0x8d6e63, 0x5d4037),
+      'pillar-4': obstacle(-54, 28, 7, 8, 7, 0x8d6e63, 0x5d4037),
+      'pillar-5': obstacle(30, 56, 7, 8, 7, 0x8d6e63, 0x5d4037),
+      'pillar-6': obstacle(-30, 58, 7, 8, 7, 0x8d6e63, 0x5d4037),
       // **蛇形迷墙**（扩充区·寻路展示主角）：两道交错长墙各留一个缺口 → 远角追兵必须先绕左、再绕右才能穿到中央。
       // 自动生成的 NavGraph 会精确避开墙体、只在缺口处连通；开「导航网格」可见黄线沿缺口蜿蜒。
       'maze-1': obstacle(-15, 30, 56, 7, 4, 0x78909c, 0x546e7a), // x[-43,13]·缺口在右
@@ -156,21 +158,23 @@ export function dioramaBlueprint(): WorldBlueprint {
       // 逼近小黄鸭，写 Velocity → motion-apply 走动。只挂 2D Transform → render groundPose 跟随寻路移动。
       // 开左下「导航网格」菜单：青点/线 = 自动生成的可走图（没点处=被碰撞封住）、黄线 = 追兵当前规划路径。
       seeker: {
-        Transform: { x: -42, y: -42, rotation: 0, scaleX: 1, scaleY: 1 },
+        Transform: { x: -62, y: -62, rotation: 0, scaleX: 1, scaleY: 1 },
         Velocity: { vx: 0, vy: 0, angular: 0 },
         Mesh3D: { shape: 'box', width: 3.2, height: 3.2, depth: 3.2, frontTint: 0xff7043, backTint: 0xff7043, edgeTint: 0xffab91 },
-        NavAgent: { speed: 0.45, arriveRange: 7 },
-        Relation: { kind: 'target', targetId: 'hero' },
-        // 移动点光（TA Phase 2）：挂在追兵身上 → 读其 2D Transform 随寻路游走，冷色照亮脚下地面/经过的盒子。
-        Light3D: { kind: 'point', color: 0x6cc6ff, intensity: 95, range: 26, baseY: 5 },
-      },
-      // 寻路追兵②（蓝盒·迷墙后远角）：从 100² 远端出发，必须穿蛇形迷墙的两个缺口才能到中央 → 展示长程绕路寻路。
-      'seeker-2': {
-        Transform: { x: 40, y: 46, rotation: 0, scaleX: 1, scaleY: 1 },
-        Velocity: { vx: 0, vy: 0, angular: 0 },
-        Mesh3D: { shape: 'box', width: 3.2, height: 3.2, depth: 3.2, frontTint: 0x42a5f5, backTint: 0x42a5f5, edgeTint: 0x90caf9 },
         NavAgent: { speed: 0.5, arriveRange: 7 },
         Relation: { kind: 'target', targetId: 'hero' },
+        // 移动点光①（暖·跟橙追兵·随寻路在大地图游走照亮脚下地面/经过的盒子）。
+        Light3D: { kind: 'point', color: 0xffb060, intensity: 120, range: 30, baseY: 5 },
+      },
+      // 寻路追兵②（蓝盒·迷墙后远角）：从 140² 远端出发，必须穿蛇形迷墙的两个缺口才能到中央 → 展示长程绕路寻路。
+      'seeker-2': {
+        Transform: { x: 62, y: 62, rotation: 0, scaleX: 1, scaleY: 1 },
+        Velocity: { vx: 0, vy: 0, angular: 0 },
+        Mesh3D: { shape: 'box', width: 3.2, height: 3.2, depth: 3.2, frontTint: 0x42a5f5, backTint: 0x42a5f5, edgeTint: 0x90caf9 },
+        NavAgent: { speed: 0.55, arriveRange: 7 },
+        Relation: { kind: 'target', targetId: 'hero' },
+        // 移动点光②（冷·跟蓝追兵）。两盏=预算上限·都挂在会动的方块上。
+        Light3D: { kind: 'point', color: 0x6cc6ff, intensity: 110, range: 28, baseY: 5 },
       },
 
       // ── VFX（TA Phase 1·数据驱动粒子·render-only）──
