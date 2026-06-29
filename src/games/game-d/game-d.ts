@@ -25,7 +25,7 @@ function hudTree(room: number): LayoutNode {
       { type: 'Label', id: 'gd-title', props: { text: '🎲 GAME D ·《骰途》', size: 'xxl', glow: true } },
       { type: 'Label', id: 'gd-sub', props: { text: '双人骰子 Roguelike · 3D 场景骨架（战斗未接入）', size: 'sm' } },
       { type: 'Label', id: 'gd-room', props: { text: `关卡 ${room + 1}/${ROOMS.length} · ${def.name}`, size: 'lg', glow: true } },
-      { type: 'Label', id: 'gd-hint', props: { text: '→ / 空格 前进 · ← 后退 · 拖拽看不动（固定 45° 前推视角）', size: 'sm', color: 'dim' } },
+      { type: 'Label', id: 'gd-hint', props: { text: '→ / 空格 前进（往上一关）· ← 后退 · 固定近俯视视角 · 一屏一战场', size: 'sm', color: 'dim' } },
     ],
   };
 }

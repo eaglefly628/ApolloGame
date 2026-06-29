@@ -42,25 +42,35 @@ function block(x: number, y: number, z: number, w: number, h: number, d: number,
   };
 }
 
-/** 把一个房间的体素摆进记录（id 以房间 id 为前缀·跨房间唯一）。baseZ = 房间中心的 Z。 */
+/** 竞技场半尺寸（一间战场的地台 = 2*HW 宽 × 2*HD 深；近俯视下一屏框住一间·两侧留 UI）。 */
+const HW = 13; // 半宽
+const HD = 14; // 半深
+
+/**
+ * 把一个房间摆成一座**独立竞技场**（参照《弓箭传说》/《哈迪斯》·一屏一间）：低矮围墙框住地台、
+ * 前墙留中央门洞通向下一间（往上走）、中心发光焦点 + 散落的"类型色块"占位美术素材（未来换贴图）。
+ * id 以房间 id 为前缀·跨房间唯一。baseZ = 房间中心 Z。
+ */
 function buildRoom(r: RoomDef, baseZ: number): Record<string, Ent> {
   const P = r.id;
   return {
-    // 地台（顶在 y=0·26×30 的厚板）
-    [`${P}-floor`]: block(0, -2, baseZ, 26, 4, 30, r.floorTop, r.floorSide),
-    // 后排两根高柱（剪影骨架）
-    [`${P}-pillar-l`]: block(-10, 5, baseZ - 11, 3, 14, 3, r.wall, r.floorSide),
-    [`${P}-pillar-r`]: block(10, 5, baseZ - 11, 3, 14, 3, r.wall, r.floorSide),
-    // 通往下一房间的拱门（两柱 + 横梁·在 +Z 端·把走廊读成"门接门"）
-    [`${P}-arch-l`]: block(-7, 4, baseZ + 14, 2.5, 12, 2.5, r.wall, r.floorSide),
-    [`${P}-arch-r`]: block(7, 4, baseZ + 14, 2.5, 12, 2.5, r.wall, r.floorSide),
-    [`${P}-arch-top`]: block(0, 11, baseZ + 14, 19, 3, 2.5, r.accent, r.wall),
-    // 中央台座 + 斜摆发光宝物（bloom 让 accent 自发光·房间焦点）
-    [`${P}-dais`]: block(0, 0.5, baseZ, 8, 1, 8, r.wall, r.floorSide),
-    [`${P}-gem`]: block(0, 3, baseZ, 3, 3, 3, r.accent, r.accent, 0.6),
-    // 高低错落的侧边装饰（破直线·加层次）
-    [`${P}-deco-1`]: block(-9, 1, baseZ + 5, 3, 2, 3, r.wall, r.floorSide),
-    [`${P}-deco-2`]: block(9, 2, baseZ - 4, 3, 4, 3, r.wall, r.floorSide),
+    // 竞技场地台（顶在 y=0）
+    [`${P}-floor`]: block(0, -2, baseZ, HW * 2, 4, HD * 2, r.floorTop, r.floorSide),
+    // 低矮围墙框住竞技场（俯视读作"一间房"）：左 / 右 / 后（入口侧）三面
+    [`${P}-wall-l`]: block(-HW, 1.5, baseZ, 1.5, 5, HD * 2, r.wall, r.floorSide),
+    [`${P}-wall-r`]: block(HW, 1.5, baseZ, 1.5, 5, HD * 2, r.wall, r.floorSide),
+    [`${P}-wall-back`]: block(0, 1.5, baseZ - HD, HW * 2, 5, 1.5, r.wall, r.floorSide),
+    // 前墙（+Z 端）留中央门洞——通向下一间（发光门楣）
+    [`${P}-wall-fl`]: block(-8.5, 1.5, baseZ + HD, 8, 5, 1.5, r.wall, r.floorSide),
+    [`${P}-wall-fr`]: block(8.5, 1.5, baseZ + HD, 8, 5, 1.5, r.wall, r.floorSide),
+    [`${P}-door-top`]: block(0, 5.5, baseZ + HD, 9, 2, 1.5, r.accent, r.wall),
+    // 中心焦点：台座 + 斜摆发光宝物（bloom 让 accent 自发光）
+    [`${P}-dais`]: block(0, 0.5, baseZ, 7, 1, 7, r.wall, r.floorSide),
+    [`${P}-gem`]: block(0, 2.8, baseZ, 2.6, 2.6, 2.6, r.accent, r.accent, 0.6),
+    // "类型色块"占位美术素材（未来换精美贴图）：几块低矮色块散在场上，靠颜色区分类型。
+    [`${P}-t1`]: block(-7, 0.5, baseZ - 6, 2.4, 1, 2.4, r.accent, r.floorSide),
+    [`${P}-t2`]: block(7.5, 0.5, baseZ + 5, 2.4, 1, 2.4, r.wall, r.floorSide),
+    [`${P}-t3`]: block(-6, 0.5, baseZ + 7, 2, 1, 2, r.accent, r.floorSide),
   };
 }
 
@@ -70,18 +80,20 @@ export function dungeonBlueprint(): WorldBlueprint {
 
   ROOMS.forEach((r, i) => {
     Object.assign(entities, buildRoom(r, i * ROOM_SPACING));
-    // 房间之间的窄走廊（连出"一条路通到底"的连续感）
+    // 房间之间的短走廊（穿过门洞连到下一间·一屏一间时基本在画面外）
     if (i < ROOMS.length - 1) {
-      entities[`corridor-${i}`] = block(0, -2, i * ROOM_SPACING + ROOM_SPACING / 2, 8, 4, ROOM_SPACING - 30, r.floorTop, r.floorSide);
+      entities[`corridor-${i}`] = block(0, -2, i * ROOM_SPACING + ROOM_SPACING / 2, 9, 4, ROOM_SPACING - HD * 2, r.floorTop, r.floorSide);
     }
   });
 
   // showcase 模型（证明导入能力·非体素）：草庭里站一只小黄鸭。
   entities['duck'] = { Transform3D: { x: 7, y: 0.5, z: 4, rotY: -2.2, scale: 3.0 }, Model3D: { modelKey: MODEL_DUCK } };
 
-  // 相机：固定 45° 等距（ortho）·沿走廊前推（pivotZ 由 game-d.ts 平滑推进·render-only·不进 hash）。
+  // 相机：固定**近俯视**角（垂直向下偏 ~30°·pitch≈58°·yaw 正前不斜·参照弓箭传说/哈迪斯）·ortho 等距。
+  // orthoSize 17 → 一屏正好框住一间竞技场（深 28）、左右大幅留白给 UI；沿 +Z 往上推进（pivotZ 由 game-d.ts
+  // 平滑推到当前房间中心·一屏一间·render-only 不进 hash）。
   entities['cam'] = {
-    Camera3D: { yaw: 0.785, pitch: 0.62, projection: 'ortho', orthoSize: 17, distance: 150, near: 1, far: 600, pivotX: 0, pivotY: 4, pivotZ: 0 },
+    Camera3D: { yaw: Math.PI, pitch: 1.02, projection: 'ortho', orthoSize: 17, distance: 240, near: 1, far: 900, pivotX: 0, pivotY: 1.5, pivotZ: 0 },
   };
 
   // 数据化光照（暖白主光投软影 + 冷蓝环境补光）。
