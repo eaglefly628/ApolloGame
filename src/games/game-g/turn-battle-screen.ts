@@ -14,7 +14,6 @@ const st = (o: Style): string => Object.entries(o).filter(([, v]) => v !== undef
 const esc = (s: string): string => String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
 const forr = <X,>(arr: X[], fn: (x: X, i: number) => string): string => arr.map(fn).join('');
 
-const SUITC: Record<string, string> = { s: '#22303f', h: '#c0392b', d: '#c0651a', c: '#2d6a3f' };
 const SUITG: Record<string, string> = { s: '♠', h: '♥', d: '♦', c: '♣' };
 const SUITNM: Record<string, string> = { s: '黑桃', h: '红桃', d: '方块', c: '梅花' };
 const ZOD_ICON: Record<string, string> = { 鼠: '🐀', 牛: '🐂', 虎: '🐅', 兔: '🐇', 龙: '🐉', 蛇: '🐍', 马: '🐎', 羊: '🐑', 猴: '🐒', 鸡: '🐓', 狗: '🐕', 猪: '🐖' };
@@ -106,8 +105,6 @@ const CSS = `
 /* 悬浮的牌+浮层整体抬层（owner 2026-06-21）：手牌/棋格 position:relative 但 z 默认 auto，
    悬浮时拔高 → 浮层不再被相邻牌或棋盘(Table)盖住。 */
 .gg-tipwrap:hover{ z-index:90; }`;
-// 教学高亮（doc28 教学钩子·纯表现）：金描边 + 脉冲，套在被强制点击的元素上。
-const HL = ';outline:3px solid var(--gold);outline-offset:2px;animation:g-hl 1s ease-in-out infinite;position:relative;z-index:55';
 
 // ── 视图（buildTurnBattleView 从 turn-combat 派生喂渲染器；纯数据） ──
 export interface TurnSlotView { hasUnit: boolean; mine: boolean; isBorder: boolean; isClash: boolean; rank?: string; suit?: 's' | 'h' | 'd' | 'c'; power?: number; pts?: number; buff?: number; name?: string; rar?: 'white' | 'green' | 'blue' | 'gold'; zod?: string[]; deploy?: 1 | 2; deployLabel?: boolean; placeable?: boolean; unitId?: string; justMoved?: boolean; fresh?: number; tipDown?: boolean; tipSide?: 'left' | 'right' | ''; forecast?: number; general?: boolean; ench?: [string, number][] } // placeable=选牌待放可落子(高亮)；fresh=新部署落子序号(g-drop)；tipDown=顶排牌磨砂浮层朝下弹避免被画框裁；tipSide=边缘列浮层往内弹避免溢出左右屏(owner 2026-06-21)；forecast=此前锋若开战的我方胜率0~1(掷命预报·owner 2026-06-21)
@@ -283,68 +280,64 @@ function laneRowNode(L: TurnLaneView, li: number, hiOn: boolean): LayoutNode {
   return { type: 'Panel', id: `lane-${li}`, props: { bare: true }, layout: { flex: 1, direction: 'row', align: 'stretch', gap: 10 }, children: [tag, track] };
 }
 
-// 磨砂详情浮层内容（owner 2026-06-21）：战力拆解(点数+期待加成) + 对决随机骰提示 / 天罡效果文案。手牌与场上兵共用。
-function cardTip(o: { name: string; rar: string; isGang: boolean; mine: boolean; suit?: string; rank?: string; pts?: number; buff?: number; power?: number; zod?: string[]; desc?: string; cost?: number; ench?: [string, number][] }): string {
-  const rc = RAR[o.rar] || RAR.white;
-  const rows: string[] = [];
-  if (o.isGang) {
-    rows.push(`<span style="color:#a98bff;font-weight:700">持续战法</span> · 消耗 ${o.cost ?? CAST_COST} 召唤源泉`);
-    if (o.desc) rows.push(`<span style="opacity:.9">${esc(o.desc)}</span>`);
-    rows.push(`<span style="opacity:.58">打出后整场为你加成</span>`);
-  } else {
-    const sn = o.suit ? SUITNM[o.suit] : ''; const sg = o.suit ? SUITG[o.suit] : ''; const sc = o.suit ? SUITC[o.suit] : '#888';
-    const buff = o.buff ?? 0; const pts = o.pts ?? ((o.power ?? 0) - buff); const pow = o.power ?? (pts + buff);
-    const calc = buff ? `点数 ${pts} ${buff > 0 ? '+' : '−'} 经营 ${Math.abs(buff)}` : `点数 ${pts}`;
-    rows.push(`牌面 <b style="color:${sc}">${sn}${o.rank ? ' ' + esc(o.rank) : ''} ${sg}</b>`);
-    rows.push(`战力 <b style="color:#ffd27a;font-size:13px">${pow}</b> <span style="opacity:.62">= ${calc}</span>`);
-    // 经营加成来源逐项（owner 2026-06-21·这张牌的地支附魔从哪来·加多少 favor）。天罡/士气=对决时按场计入(见掷命特写)。
-    if (o.mine && o.ench && o.ench.length) rows.push(`<span style="color:#7fd0ff">改造 · 地支附魔</span>：${o.ench.map(([l, v]) => `${esc(l)} <b style="color:#9fe0ff">+${v}</b>`).join(' · ')}`);
-    rows.push(`<span style="opacity:.6">天罡/士气 对决时按场计入（见掷命特写明细）· 再 +随机骰定胜负</span>`);
-    const zods = (o.zod || []).filter(Boolean);
-    if (zods.length) rows.push(`生肖 ${zods.map((z) => ZOD_ICON[z] || z).join(' ')}`);
-  }
-  const head = `<div style="display:flex;align-items:center;gap:6px;margin-bottom:6px;"><span style="width:8px;height:8px;border-radius:50%;background:${rc[1]};box-shadow:0 0 6px ${rc[1]}"></span><b style="font-size:12px;color:#fff">${esc(o.name)}</b><span style="margin-left:auto;font-size:10px;color:${rc[1]}">${rc[0]}</span></div>`;
-  const body = rows.map((r) => `<div>${r}</div>`).join('');
-  return `<div class="gg-tip">${head}<div style="display:flex;flex-direction:column;gap:3px;">${body}</div><div style="margin-top:7px;font-size:9px;opacity:.5;letter-spacing:.05em">${o.mine ? '我方' : '敌方'}牌 · 悬浮查看</div></div>`;
+// 召唤源泉水滴（cost·小蓝滴排）。
+function costDropNode(n: number, idp: string): LayoutNode {
+  return { type: 'Panel', id: `${idp}-cost`, props: { bare: true }, layout: { y: 4, x: 30, direction: 'row', gap: 3, justify: 'center' }, children: Array.from({ length: Math.min(n, 5) }, (_, k): LayoutNode => ({ type: 'Panel', id: `${idp}-cd${k}`, props: { bg: 'linear-gradient(180deg,#8fe0ff,#2f93cf)' }, layout: { width: 9, height: 12, radius: 4, padding: 0 } })) };
 }
-
-const costDropHtml = (n: number): string => {
-  if (n <= 0) return '';
-  const drop = st({ display: 'inline-block', width: '10px', height: '13px', borderRadius: '50% 50% 50% 50% / 60% 60% 40% 40%', background: 'linear-gradient(180deg,#8fe0ff,#2f93cf)', boxShadow: '0 0 4px rgba(95,200,240,.85)', flexShrink: '0' });
-  const drops = Array.from({ length: Math.min(n, 5) }, () => `<div style="${drop}"></div>`).join('');
-  return `<div style="display:flex;gap:3px;align-items:center;">${drops}</div>`;
-};
-
-function handCard(c: TurnHandCardView, i: number, hiOn = false, edge: 'left' | 'right' | '' = ''): string {
+// 手牌磨砂详情浮层内容（战力拆解 / 天罡文案·Tooltip.bubble 子树）。
+function handTipNode(c: TurnHandCardView): LayoutNode {
   const rc = RAR[c.rar] || RAR.white;
-  const edgeCls = edge === 'left' ? ' tip-left' : edge === 'right' ? ' tip-right' : ''; // 边缘牌浮层往内弹·不溢出屏幕（owner 2026-06-21）
-  const notAfford = c.affordable === false;
-  const affordSty = notAfford ? ';opacity:0.42;filter:grayscale(0.65)' : '';
-  const selSty = (c.selected ? ';outline:3px solid var(--gold);outline-offset:2px' : '') + (hiOn ? HL : '');
-  const rarDot = { position: 'absolute', top: c.kind === 'gang' ? '8px' : '-4px', left: c.kind === 'gang' ? '8px' : '50%', transform: c.kind === 'gang' ? 'none' : 'translateX(-50%)', width: c.kind === 'gang' ? '10px' : '9px', height: c.kind === 'gang' ? '10px' : '9px', borderRadius: '50%', background: rc[1], boxShadow: `0 0 7px ${rc[1]}`, border: '1px solid rgba(255,255,255,.6)' };
+  const rows: LayoutNode[] = [{ type: 'Label', id: 'htb-h', props: { text: `${c.name} · ${rc[0]}`, size: 12, color: 'gold', bold: true } }];
   if (c.kind === 'gang') {
-    const tint = '#a98bff';
-    const card = { position: 'relative', width: '96px', height: '120px', borderRadius: '12px', background: 'var(--panel)', border: '2px solid ' + rc[1], boxShadow: '0 6px 16px rgba(0,0,0,.4), inset 0 0 0 1px var(--hairline)' };
-    const top = { height: '44px', borderRadius: '10px 10px 0 0', display: 'flex', alignItems: 'center', justifyContent: 'center', background: `linear-gradient(180deg,${tint}44,${tint}11)`, borderBottom: '1px solid ' + tint };
-    const icon = { width: '40px', height: '40px', borderRadius: '50%', background: tint, display: 'flex', alignItems: 'center', justifyContent: 'center', fontFamily: 'var(--fd)', fontSize: '24px', color: '#fff', boxShadow: `0 0 14px ${tint}` };
-    return `<div data-hand="${i}" class="gg-tipwrap${edgeCls}" style="${st(card)};cursor:pointer${selSty}${affordSty}${c.dealt ? ';animation:g-deal .46s cubic-bezier(.2,.85,.3,1.12) both' : ''}"><div style="${st(rarDot)}"></div><div style="${st(top)}"><div style="${st(icon)}">${esc(c.glyph || '✦')}</div></div><div style="padding:10px 9px;"><div style="font-family:var(--fb); font-weight:700; font-size:13px; color:var(--ink); text-align:center;">${esc(c.name)}</div><div style="font-size:10px; color:var(--ink-dim); text-align:center; line-height:1.4; margin-top:4px;">${esc(c.desc || '')}</div></div>${c.cost > 0 ? `<div style="position:absolute;top:6px;left:50%;transform:translateX(-50%);">${costDropHtml(c.cost)}</div>` : ''}${cardTip({ name: c.name, rar: c.rar, isGang: true, mine: true, desc: c.desc, cost: c.cost })}</div>`;
+    rows.push({ type: 'Label', id: 'htb-g', props: { spans: [{ text: '持续战法', color: 'jade', bold: true }, { text: ` · 消耗 ${c.cost} 召唤源泉` }], size: 11, color: 'sub' } });
+    if (c.desc) rows.push({ type: 'Label', id: 'htb-d', props: { text: c.desc, size: 11, color: 'text' } });
+    rows.push({ type: 'Label', id: 'htb-n', props: { text: '打出后整场为你加成', size: 10, color: 'dim' } });
+  } else {
+    const tone = SUIT_TONE[c.suit!] ?? 'sub'; const buff = c.buff ?? 0; const pts = c.pts ?? ((c.power ?? 0) - buff);
+    rows.push({ type: 'Label', id: 'htb-f', props: { text: `牌面 ${SUITNM[c.suit!]} ${c.rank} ${SUITG[c.suit!]}`, size: 11, color: tone } });
+    rows.push({ type: 'Label', id: 'htb-p', props: { spans: [{ text: '战力 ' }, { text: String(c.power ?? ''), color: 'gold', bold: true }, { text: buff ? `  = 点数 ${pts} ${buff > 0 ? '+' : '−'} 经营 ${Math.abs(buff)}` : `  = 点数 ${pts}` }], size: 11, color: 'sub' } });
+    const zods = (c.zod || []).filter(Boolean);
+    rows.push({ type: 'Label', id: 'htb-z', props: { text: zods.length ? `生肖 ${zods.map((z) => ZOD_ICON[z] || z).join(' ')}` : '天罡/士气 对决时按场计入 · 再 +随机骰', size: 10, color: 'dim' } });
   }
-  const sc = c.suit ? SUITC[c.suit] : '#22303f'; const zod = c.zod || [];
-  const isGen = !!c.general;
-  const genBorder = isGen ? '3px solid #dc2626' : '2px solid #dc2626';
-  const genShadow = isGen ? '0 0 22px rgba(232,205,130,.8), 0 8px 20px rgba(0,0,0,.5), inset 0 0 0 1px rgba(255,255,255,.5)' : '0 6px 16px rgba(0,0,0,.4), inset 0 0 0 1px rgba(255,255,255,.5)';
-  const genAnim = isGen ? ';animation:g-hl 1.4s ease-in-out infinite' : '';
-  const card = { position: 'relative', width: '96px', height: '120px', borderRadius: '12px', background: sideFace(true), border: genBorder, boxShadow: genShadow, display: 'flex', alignItems: 'center', justifyContent: 'center' }; // 手牌=我方·暖橙底纹
-  const cornerTL = { position: 'absolute', top: '5px', left: '7px', fontFamily: 'var(--fh)', fontWeight: 700, fontSize: '14px', lineHeight: '.86', color: sc, textAlign: 'center' };
-  const big = { fontSize: '36px', color: sc, marginTop: '-14px' };
-  const nameP = { position: 'absolute', bottom: '30px', left: '50%', transform: 'translateX(-50%)', padding: '1px 9px', borderRadius: '99px', background: 'rgba(20,16,10,.8)', color: '#fff', fontFamily: 'var(--fb)', fontWeight: 700, fontSize: '11px', whiteSpace: 'nowrap' };
-  const badge = { position: 'absolute', top: '6px', right: '7px', minWidth: '22px', padding: '1px 6px', borderRadius: '99px', background: '#dc2626', color: '#fff', fontFamily: 'var(--fn)', fontSize: '10px', textAlign: 'center', fontWeight: 700 };
-  const zodRow = { position: 'absolute', bottom: '6px', left: '50%', transform: 'translateX(-50%)', display: 'flex', gap: '3px' };
-  const zodCell = (g: string | undefined): string => { const f = !!g; return `<div style="${st({ width: '20px', height: '20px', borderRadius: '5px', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '13px', lineHeight: 1, background: f ? 'rgba(255,255,255,.92)' : 'rgba(0,0,0,.06)', border: '1px solid ' + (f ? sc : 'rgba(120,90,60,.3)'), boxShadow: f ? `0 0 5px ${sc}66` : 'inset 0 1px 2px rgba(0,0,0,.15)' })}">${f ? (ZOD_ICON[g!] || g) : ''}</div>`; };
-  const g = c.suit ? SUITG[c.suit] : '';
-  const genWatermark = isGen ? `<div style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;pointer-events:none;overflow:hidden;border-radius:10px"><span style="font-family:var(--fh);font-size:72px;font-weight:900;color:#dc2626;opacity:.5;line-height:1;user-select:none">将</span></div>` : '';
-  const genFloatBadge = isGen ? `<div style="position:absolute;top:-13px;left:50%;transform:translateX(-50%);background:linear-gradient(135deg,#c8920a,#f0d060);color:#1a0e00;font-family:var(--fb);font-weight:900;font-size:9px;padding:2px 8px;border-radius:99px;white-space:nowrap;border:1.5px solid rgba(255,255,255,.6);box-shadow:0 2px 10px rgba(232,205,130,.7);z-index:2">⭐ 主将</div>` : '';
-  return `<div data-hand="${i}" class="gg-tipwrap${edgeCls}" style="${st(card)};cursor:pointer${selSty}${affordSty}${c.dealt ? ';animation:g-deal .46s cubic-bezier(.2,.85,.3,1.12) both' : genAnim}">${genFloatBadge}${genWatermark}<div style="${st(rarDot)}"></div><div style="${st(cornerTL)}">${esc(c.rank || '')}<br>${g}</div><span style="${st(big)}">${g}</span><div style="${st(nameP)}">${esc(c.name)}</div><div style="${st(badge)}">${c.power ?? ''}</div>${c.cost > 0 ? `<div style="position:absolute;top:6px;left:50%;transform:translateX(-50%);">${costDropHtml(c.cost)}</div>` : ''}<div style="${st(zodRow)}">${forr([0, 1, 2], (z) => zodCell(zod[z]))}</div>${cardTip({ name: c.name, rar: c.rar, isGang: false, mine: true, suit: c.suit, pts: c.pts, buff: c.buff, power: c.power, zod: c.zod, ench: c.ench })}</div>`;
+  return { type: 'Panel', id: 'htb', props: {}, layout: { direction: 'column', gap: 3, padding: 10, width: 200 }, children: rows };
+}
+// 手牌牌面（数据驱动·棋枰数据化②/③·同场上兵套路）：天罡=紫顶徽 + 名/描述；兵牌=sideFace + edge mine/将 gold + 角标/战力/大花色/生肖。
+function handCardNode(c: TurnHandCardView, i: number, hiOn: boolean): LayoutNode {
+  const sel = c.selected || hiOn;
+  let card: LayoutNode;
+  if (c.kind === 'gang') {
+    card = { type: 'Panel', id: `h${i}`, props: { bg: 'var(--panel)', edge: 'gold' }, layout: { width: 88, height: 112, radius: 12, direction: 'column', gap: 0, padding: 0, ...(sel ? { scale: 1.04 } : {}) }, children: [
+      { type: 'Panel', id: `h${i}-top`, props: { bg: 'linear-gradient(180deg,#a98bff44,#a98bff11)' }, layout: { height: 42, align: 'center', justify: 'center', radius: 10 }, children: [{ type: 'Panel', id: `h${i}-ic`, props: { bg: '#a98bff' }, layout: { width: 38, height: 38, radius: 99, align: 'center', justify: 'center', padding: 0 }, children: [{ type: 'Label', id: `h${i}-icg`, props: { text: c.glyph || '✦', size: 22, color: 'text' } }] }] },
+      { type: 'Panel', id: `h${i}-bd`, props: { bare: true }, layout: { direction: 'column', align: 'center', gap: 4, padding: 8 }, children: [
+        { type: 'Label', id: `h${i}-nm`, props: { text: c.name, size: 13, color: 'text', bold: true } },
+        { type: 'Label', id: `h${i}-ds`, props: { text: c.desc || '', size: 10, color: 'sub' } },
+      ] },
+      ...(c.cost > 0 ? [costDropNode(c.cost, `h${i}`)] : []),
+    ] };
+  } else {
+    const tone = SUIT_TONE[c.suit!] ?? 'sub'; const isGen = !!c.general; const g = c.suit ? SUITG[c.suit] : '';
+    const zod = c.zod || [];
+    const zc = (z: string | undefined, k: number): LayoutNode => ({ type: 'Panel', id: `h${i}-z${k}`, props: { bg: z ? 'rgba(255,255,255,.9)' : 'rgba(0,0,0,.06)' }, layout: { width: 18, height: 18, radius: 5, align: 'center', justify: 'center', padding: 0 }, children: z ? [{ type: 'Label', id: `h${i}-zg${k}`, props: { text: ZOD_ICON[z] || z, size: 12 } }] : [] });
+    const children: LayoutNode[] = [
+      { type: 'Panel', id: `h${i}-top`, props: { bare: true }, layout: { direction: 'row', justify: 'between', align: 'start' }, children: [
+        { type: 'Label', id: `h${i}-cn`, props: { text: `${c.rank ?? ''}${g}`, size: 14, color: tone, bold: true } },
+        { type: 'Panel', id: `h${i}-bd`, props: { bg: '#dc2626' }, layout: { radius: 99, padding: 2 }, children: [{ type: 'Label', id: `h${i}-bv`, props: { text: String(c.power ?? ''), size: 10, color: 'text', mono: true, bold: true } }] },
+      ] },
+      { type: 'Panel', id: `h${i}-mid`, props: { bare: true }, layout: { direction: 'column', align: 'center', gap: 2 }, children: [
+        { type: 'Label', id: `h${i}-big`, props: { text: g, size: 32, color: tone } },
+        { type: 'Panel', id: `h${i}-nm`, props: { bg: 'rgba(20,16,10,.8)' }, layout: { radius: 99, padding: 2 }, children: [{ type: 'Label', id: `h${i}-nml`, props: { text: c.name, size: 11, color: 'text', bold: true } }] },
+      ] },
+      { type: 'Panel', id: `h${i}-zr`, props: { bare: true }, layout: { direction: 'row', gap: 3, justify: 'center' }, children: [0, 1, 2].map((k) => zc(zod[k], k)) },
+    ];
+    if (c.cost > 0) children.push(costDropNode(c.cost, `h${i}`));
+    if (isGen) children.push({ type: 'Label', id: `h${i}-gen`, props: { text: '⭐ 主将', size: 9, color: 'gold', bold: true }, layout: { y: -13, x: 18 } });
+    card = { type: 'Panel', id: `h${i}`, props: { bg: sideFace(true), edge: isGen ? 'gold' : 'mine' }, layout: { width: 88, height: 112, radius: 12, direction: 'column', justify: 'between', align: 'center', padding: 4, ...(sel || isGen ? { fx: [{ kind: 'glow', color: 'gold', ms: 1200 }] } : {}), ...(sel ? { scale: 1.04 } : {}) }, children };
+  }
+  return { type: 'Tooltip', id: `h${i}-tt`, props: { block: true, placement: 'top', bubble: handTipNode(c) }, children: [card] };
+}
+function handCard(c: TurnHandCardView, i: number, hiOn = false): string {
+  const aff = c.affordable === false ? ';opacity:.45;filter:grayscale(.6)' : ''; // 买不起=灰显（Label 令牌无 opacity·留在 data-hand 壳上）
+  return `<div data-hand="${i}" style="cursor:pointer${aff}${c.dealt ? ';animation:g-deal .46s cubic-bezier(.2,.85,.3,1.12) both' : ''}">${renderNode(handCardNode(c, i, hiOn), GG_BATTLE_THEME)}</div>`;
 }
 
 
@@ -683,7 +676,7 @@ export function buildTurnFrameHTML(view: TurnBattleView, drain: { from: number; 
       ${renderNode(actionMenuNode(view), GG_BATTLE_THEME)}
       <div style="${st(handArea)}">
         <div style="display:flex; align-items:center; gap:10px; margin-bottom:10px;"><span style="font-family:var(--fh); font-weight:700; font-size:14px; color:var(--ink); letter-spacing:.04em;">手牌</span><span style="${st(handCount)}">兵牌 ${view.handPawnCount}</span><span style="${st(handCountGang)}">天罡 ${view.handGangCount}</span><div style="flex:1;"></div><span style="font-size:11px; color:var(--ink-dim);">放牌消耗召唤源泉 · 点动作选「放牌」后落子</span></div>
-        <div style="display:flex; gap:11px; align-items:flex-end;">${forr(view.hand, (c, i) => handCard(c, i, hi === 'hand:' + i, i === 0 ? 'right' : i === view.hand.length - 1 ? 'left' : ''))}</div>
+        <div style="display:flex; gap:11px; align-items:flex-end;">${forr(view.hand, (c, i) => handCard(c, i, hi === 'hand:' + i))}</div>
       </div>
       ${renderNode(endTurnNode(), GG_BATTLE_THEME)}
     </div>
