@@ -30,7 +30,7 @@ describe('Game G · 天罡回合制接搁浅维度（morale/stamina/draw/siege·
     const b = initTurnBattle({ seed: 1 }); b.a.tengangA = { ...NO_TENGANG, relay: 2 };
     b.lanes[0].a = [unit('a0', '2', 4), unit('a1', '9', 3)]; // 弱前锋 + 后备
     b.lanes[0].b = [unit('b0', 'A', 5, 20)];                  // 碾压敌 → 我前锋必死
-    endTurn(b); endTurn(b); // 行动阶段一场遭遇
+    endTurn(b); // 顺序回合：我方放完即推进→我前锋攻 b0 必死→薪火接棒（此刻查·尚未轮到敌方反扑·owner ②）
     expect(b.lanes[0].a.some((u) => u.id === 'a0')).toBe(false);   // 前锋阵亡
     const back = b.lanes[0].a.find((u) => u.id === 'a1');
     expect(back?.staminaLeft).toBe(cardStamina('9') + 2);         // 接棒 +2

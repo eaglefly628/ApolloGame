@@ -3,7 +3,7 @@ import { describe, it, expect } from 'vitest';
 import { cardPoints } from './clash-resolve.js';
 import { cardStamina } from './combat-types.js';
 import { aggregateDisha, stageDisha, STAGE_DISHA, NO_DISHA, DISHA_PLAYABLE } from './disha.js';
-import { initTurnBattle, endTurn, aiTakeTurn, castDisha, clashOdds, type TurnUnit, type TurnBattle } from './turn-combat.js';
+import { initTurnBattle, endTurn, aiTakeTurn, castDisha, clashOdds, MANA_START, type TurnUnit, type TurnBattle } from './turn-combat.js';
 
 const u = (id: string, rank: string, slot: number, o: { buff?: number; general?: boolean } = {}): TurnUnit =>
   ({ id, rank, suit: 'S', points: cardPoints(rank), buff: o.buff ?? 0, general: o.general ?? false, stamina: cardStamina(rank), staminaLeft: cardStamina(rank), slot });
@@ -98,7 +98,7 @@ describe('Game G · 地煞（doc23 §八 关1-5 · 15 张 · 甲实装）', () =
     b.lanes[0].a.push(u('a0', 'A', 4, { buff: 24 })); // 玩家碾压
     b.lanes[0].b.push(u('b0', '3', 5, { general: true })); // Boss 弱主将
     activatePlayable(b); // 死战不退=可施放地煞·打出才生效
-    endTurn(b); endTurn(b); // 行动阶段：玩家胜 → 主将本应亡，但死战不退 → 残喘退格
+    endTurn(b); // 顺序回合：我方放完即推进→玩家胜→主将本应亡，但死战不退→残喘退格（此刻查·尚未轮到敌方反扑·owner ②）
     expect(b.bossLastStandUsed).toBe(true);
     expect(b.lanes[0].b.some((x) => x.id === 'b0')).toBe(true); // 仍在场
     expect(b.lanes[0].bGenDead).toBe(false); // 未判主将亡
@@ -110,7 +110,7 @@ describe('Game G · 地煞（doc23 §八 关1-5 · 15 张 · 甲实装）', () =
     b.lanes[0].b.push(u('b0', '3', 5, { general: true })); // Boss 弱主将(前锋·slot5)
     b.lanes[0].b.push(u('b1', '7', 6));                    // 身后紧贴一兵(slot6=主将退入格)
     activatePlayable(b); // 死战不退=可施放地煞·打出才生效（混合模型 bc1c8625）
-    endTurn(b); endTurn(b); // 玩家胜 → 主将首负不亡·退1格(撞 b1) → 整列后挤·主将仍最前
+    endTurn(b); // 顺序回合：玩家胜 → 主将首负不亡·退1格(撞 b1) → 整列后挤·主将仍最前（owner ②·我方推进即结算）
     const B = b.lanes[0].b;
     const slots = B.map((x) => x.slot);
     expect(new Set(slots).size).toBe(slots.length);            // 无两兵同 slot（不再被渲染 bySlot 覆盖吞牌）
@@ -124,9 +124,9 @@ describe('Game G · 地煞（doc23 §八 关1-5 · 15 张 · 甲实装）', () =
   it('🟢 大军压境：Boss 回合开始多 +1 召唤源泉(免费多铺)·机动调度§六调 0', () => {
     const swarm = initTurnBattle({ seed: 1, disha: ['swarm'] }); swarm.lanes[0].a.push(u('a0', '7', 4)); // 给个兵免推进即胜
     endTurn(swarm); // 切到 Boss 回合
-    expect(swarm.active).toBe('b'); expect(swarm.b.mana).toBe(2); // +1 基础 +1 大军压境
+    expect(swarm.active).toBe('b'); expect(swarm.b.mana).toBe(MANA_START + 1); // ①起步 MANA_START + 大军压境 +1（turn-1 无基础回合 +）
     const plain = initTurnBattle({ seed: 1 }); plain.lanes[0].a.push(u('a0', '7', 4)); endTurn(plain);
-    expect(plain.b.mana).toBe(1); // 仅基础 +1
+    expect(plain.b.mana).toBe(MANA_START); // 仅 ①起步·turn-1 无基础回合 +
   });
 
   it('混合·可施放地煞（owner 2026-06-21）：开局进 Boss 手牌(非被动)·打出才并入 dishaB·AI 攒够 2 源泉择机打+返回 id', () => {

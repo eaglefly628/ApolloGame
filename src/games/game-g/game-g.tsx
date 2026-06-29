@@ -474,7 +474,7 @@ export function mount(container: HTMLElement, shell?: { exit?: () => void }): ()
     };
     const commitEndTurn = (): void => {
       if (busy || tb.winner !== 'pending' || tb.active !== 'a') return;
-      busy = true; selMode = null; selHand = -1; gateChance = false; playSfx('endTurn'); coachDid('endturn'); log('我·结束放置回合（无战斗）→ 待敌方放置 → 行动阶段两线同时推进');
+      busy = true; selMode = null; selHand = -1; gateChance = false; playSfx('endTurn'); coachDid('endturn'); log('我·结束回合 → 我方推进/攻击（顺序回合·我先动我先打）→ 待敌方回合');
       const before = snapSlots();
       endTurn(tb);
       justMovedIds = diffMoved(before);

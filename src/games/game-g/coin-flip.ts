@@ -59,7 +59,7 @@ export function mountCoinFlip(host: HTMLElement, opts: CoinFlipOpts, onDone: () 
     cap.textContent = '硬币翻腾中……';
     after(1250, () => { // 落定揭晓
       sfx(opts.heads ? 'clashWin' : 'clashLose');
-      cap.innerHTML = `<span class="gg-coin-res" style="color:${opts.heads ? '#43d07f' : '#9aa7b6'}">${opts.heads ? '🪙 人面！留在场上继续作战 ⚔' : '🪙 字面！光荣回牌库 · 返还源泉'}</span>`;
+      cap.innerHTML = `<span class="gg-coin-res" style="color:${opts.heads ? '#43d07f' : '#9aa7b6'}">${opts.heads ? '🪙 人面！留在场上继续作战 ⚔' : '🪙 字面！光荣回牌库 · 全额返还源泉'}</span>`;
       btns.innerHTML = '<button class="gg-coin-btn cont">继续 →</button>';
       (btns.querySelector('.cont') as HTMLButtonElement).onclick = (): void => { sfx('confirm'); destroy(); onDone(); };
     });

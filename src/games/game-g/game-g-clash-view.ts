@@ -38,7 +38,7 @@ export function clashToTurnView(ev: ClashEvent, tgName: (id: string) => string =
   if (ev.tie) extras.push(ev.tie === 'points' ? '⚖ 战力相等 → 点数大者胜' : ev.tie === 'stamina' ? '⚖ 战力·点数皆同 → 续航高者胜' : '⚖ 三者全同 → 重掷定生死');
   // 战胜硬币只**预告**「待掷」·绝不预先公布结果（owner 2026-06-21：要仪式感·投掷后才显示去留）；人面=留场/字面=回库由 coin-flip 浮层亲掷揭晓。
   const w = ev.aWins ? ev.a : ev.b; const wn = SUITNAME[lc2(w.suit)] + w.rank;
-  extras.push(`🪙 ${wn} 战胜 → 待亲掷硬币定去留（人面 = 留场续战 / 字面 = 回牌库 + 返还半费）`);
+  extras.push(`🪙 ${wn} 战胜 → 待亲掷硬币定去留（人面 = 留场续战 / 字面 = 回牌库 + 全额返还源泉）`);
   return {
     laneName: ['上路', '中路', '下路'][ev.lane] ?? '路',
     mine: cardv(ev.a, ev.aWins), foe: cardv(ev.b, !ev.aWins, ev.lastStand), // foe(=敌主将)死战不退 → 特写改显"死战不退"而非误导的"阵亡"

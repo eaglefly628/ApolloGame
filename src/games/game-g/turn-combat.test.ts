@@ -15,10 +15,10 @@ const unit = (id: string, rank: string, slot: number, buff = 0, general = false)
   ({ id, rank, suit: 'S', points: cardPoints(rank), buff, general, stamina: cardStamina(rank), staminaLeft: cardStamina(rank), slot });
 
 describe('Game G · turn-combat（doc24 单机回合制 · A0 重构）', () => {
-  it('init：A 先手·召唤源泉起步·双方 3 血·空轨', () => {
+  it('init：A 先手·召唤源泉公平起步(双方 MANA_START·owner 2026-06-29 ①)·双方 3 血·空轨', () => {
     const b = initTurnBattle({ seed: 1 });
     expect(b.active).toBe('a'); expect(b.turn).toBe(1);
-    expect(b.a.mana).toBe(MANA_START); expect(b.b.mana).toBe(0); // 后手 b 回合开始才 +1
+    expect(b.a.mana).toBe(MANA_START); expect(b.b.mana).toBe(MANA_START); // ①公平：双方都 MANA_START 起步
     expect(b.homeA).toBe(TURN_HOME_BLOOD); expect(b.homeB).toBe(TURN_HOME_BLOOD);
     expect(b.lanes.every((l) => l.a.length === 0 && l.b.length === 0)).toBe(true);
   });
@@ -92,15 +92,15 @@ describe('Game G · turn-combat（doc24 单机回合制 · A0 重构）', () => 
     expect(c.lanes[0].a.some((u) => u.id === 'm0' && u.slot === 4)).toBe(true); // 过门抵上路 slot4
   });
 
-  it('放置回合无战斗 → 行动阶段两军同时推进（owner 2026-06-21 同步推进模型·PvP 地基）', () => {
+  it('顺序回合：我放完→我方立即推进/攻击；敌放完→敌方推进（owner 2026-06-29 ②·替同步推进）', () => {
     const b = initTurnBattle({ seed: 1 });
     b.lanes[0].a.push(unit('a0', '7', A_DEPLOY_SLOT)); // 我方兵在部署格
-    endTurn(b); // 我方结束放置 → 敌方放置回合（不推进·无战斗）
-    expect(b.active).toBe('b'); expect(b.b.mana).toBe(1); // 切敌方·后手 +1 源泉
-    expect(b.lanes[0].a[0].slot).toBe(A_DEPLOY_SLOT); // 放置回合兵未动
+    endTurn(b); // 我方结束 → 我方推进一格（不再等敌方回合·owner ②）
+    expect(b.lanes[0].a[0].slot).toBe(A_DEPLOY_SLOT + 1); // 我方放完即推进
+    expect(b.active).toBe('b'); expect(b.b.mana).toBe(MANA_START); // 切敌方·turn-1 不额外 +源泉（①公平起步）
     expect(b.turn).toBe(1); // 尚未进下一轮
-    endTurn(b); // 敌方结束放置 → 行动阶段：两军同时推进
-    expect(b.lanes[0].a[0].slot).toBe(A_DEPLOY_SLOT + 1); // 行动阶段才推进一格
+    endTurn(b); // 敌方结束 → 敌方推进（本例敌方无兵·我方兵不再动）
+    expect(b.lanes[0].a[0].slot).toBe(A_DEPLOY_SLOT + 1); // 敌方回合我方兵不动（只推敌方）
     expect(b.active).toBe('a'); expect(b.turn).toBe(2); // 回我方放置·回合数 +1
   });
 
@@ -198,7 +198,7 @@ describe('Game G · turn-combat（doc24 单机回合制 · A0 重构）', () => 
     expect(deployUnit(c, 'a', 0, 0)).toBe(false); // 无空格 → 拒
   });
 
-  it('战胜硬币定胜牌去留（owner 2026-06-21）：人头留场 / 人面回牌库+返还一半花费', () => {
+  it('战胜硬币定胜牌去留（owner 2026-06-21 → 2026-06-29 ⑤ 全额返还）：人头留场 / 人面回牌库+全额返还花费', () => {
     const run = (seed: number): { stays: boolean; onBoard: boolean; inDeck: boolean; mana: number } => {
       const b = initTurnBattle({ seed }); b.a.mana = 0;
       const w = unit('w', 'A', A_DEPLOY_SLOT); w.cost = 3; // A=14 点·费 3
@@ -211,6 +211,6 @@ describe('Game G · turn-combat（doc24 单机回合制 · A0 重构）', () => 
     const rs = Array.from({ length: 10 }, (_, i) => run(i + 1));
     const heads = rs.find((r) => r.stays)!, tails = rs.find((r) => !r.stays)!; // 种子里必有正反面各一
     expect(heads.onBoard).toBe(true); expect(heads.inDeck).toBe(false); expect(heads.mana).toBe(1);          // 人头：留场·不回库·无返还(只新一轮+1)
-    expect(tails.onBoard).toBe(false); expect(tails.inDeck).toBe(true); expect(tails.mana).toBe(3 / 2 + 1);  // 人面：回库 + 返还1.5 + 新一轮1 = 2.5
+    expect(tails.onBoard).toBe(false); expect(tails.inDeck).toBe(true); expect(tails.mana).toBe(3 + 1);  // 人面：回库 + 全额返还3 + 新一轮1 = 4（⑤）
   });
 });

@@ -21,7 +21,7 @@ export const A_GOAL = 8;         // 我兵越过此格(→9) → 敌大本营 �
 export const B_GOAL = 0;         // 敌兵越过此格(→−1) → 我大本营 −1 血
 // ── 回合经济（doc24 §四·真机调；各 cost 暂定 1）──
 export const TURN_HOME_BLOOD = 3;
-export const MANA_START = 6, MANA_PER_TURN = 1; // 起始 6 点；每回合 +1（前 10 回合）
+export const MANA_START = 3, MANA_PER_TURN = 1; // 起始 3 点（owner 2026-06-29 ①·双方公平·原 6→3）；每回合 +1（前 10 回合）
 export const MANA_PER_TURN_LATE = 2, MANA_RAMP_TURN = 10; // 第 10 回合后提速到 +2（owner 2026-06-21·后期放大节奏）
 /** 该回合开始应 +多少召唤源泉（turn>10 提速到 2·否则 1）。 */
 export const manaGain = (turn: number): number => (turn > MANA_RAMP_TURN ? MANA_PER_TURN_LATE : MANA_PER_TURN);
@@ -48,7 +48,7 @@ export const GATES: readonly Gate[] = [
 ];
 
 // 场上兵：占一格 slot；续航 staminaLeft 打光退场（同 live-combat 经济）。speed=每回合推进格数(默认1·缺省视作1·向后兼容旧字面量)。
-export interface TurnUnit { id: string; rank: string; suit: string; points: number; buff: number; general: boolean; stamina: number; staminaLeft: number; slot: number; speed?: number; cost?: number } // cost=部署所花源泉(战胜回库返还一半用)
+export interface TurnUnit { id: string; rank: string; suit: string; points: number; buff: number; general: boolean; stamina: number; staminaLeft: number; slot: number; speed?: number; cost?: number } // cost=部署所花源泉(战胜回库全额返还用·⑤)
 // 行军速度（owner 2026-06-21）：大王/小王(★/王/JOKER) 与 老K 三类高阶兵·疾行 2 格/回合；其余 1 格。纯 rank 派生·确定性。
 const FAST_RANKS = new Set(['★', '王', 'JOKER', 'K']);
 export function unitSpeed(rank: string): number { return FAST_RANKS.has(rank) ? 2 : 1; }
@@ -116,7 +116,8 @@ export function initTurnBattle(cfg: TurnInit): TurnBattle {
     homeAShieldUsed: 0, fortuneBuff: cfg.fortuneBuff ?? 0,
   };
   for (const id of playable) battle.b.hand.push({ kind: 'disha', id }); // 可施放地煞 → Boss 起手即在手·AI 攒够 2 源泉择机打
-  battle.b.mana = 0; // 后手方召唤源泉在其回合开始才 +1（每回合 +1 对称·turn-1 的 +1 已含在先手起步值里）
+  // owner 2026-06-29 ①：双方公平起步——a/b 皆 MANA_START(3) 源泉、皆摸 OPENING_HAND(caller) 手牌。
+  // 不再「先手 6 / 后手 0」。turn-1 双方都用 3 起步预算放牌；每回合 +1 从 turn-2 起对称累加（见 endTurn）。
   return battle;
 }
 
@@ -351,7 +352,7 @@ function resolveClash(b: TurnBattle, li: number): void {
   const ev = clashEval(b, li); if (!ev) return;
   const lane = b.lanes[li]; const { fa, fb, ea, eb, wr, ba, bb } = ev;
   const roll = nextRandom(b.rng);
-  const winStays = nextRandom(b.rng) < 0.5; // 战胜硬币（owner 2026-06-21·种子化·可回放）：人头(true)=胜牌留场继续 / 人面(false)=回牌库+返还一半
+  const winStays = nextRandom(b.rng) < 0.5; // 战胜硬币（owner 2026-06-21·种子化·可回放）：人头(true)=胜牌留场继续 / 人面(false)=回牌库+全额返还源泉(⑤)
   let aWins: boolean, tie: ClashEvent['tie'] = null;
   if (ea === eb) {
     if (fa.points !== fb.points) { aWins = fa.points > fb.points; tie = 'points'; }
@@ -386,14 +387,14 @@ function resolveClash(b: TurnBattle, li: number): void {
     const relay = sideOf(b, loser).tengangA.relay; // 薪火：一张阵亡 → 同路下一张接棒续航 +N
     const next = colOf(lane, loser)[0]; if (relay > 0 && next) next.staminaLeft += relay;
   }
-  // 战胜牌去留由硬币定（owner 2026-06-21）：人面(winStays=false)→光荣回牌库+返还一半花费；人头(true)→留在场上继续作战。
+  // 战胜牌去留由硬币定（owner 2026-06-21）：人面(winStays=false)→光荣回牌库+全额返还召唤源泉(owner 2026-06-29 ⑤)；人头(true)→留在场上继续作战。
   const winSide: 'a' | 'b' = aWins ? 'a' : 'b';
   const wq = colOf(lane, winSide); const wf = wq[0];
   if (wf && !winStays) {
     wq.shift(); if (aWins) lane.spentA += 1; else lane.spentB += 1; // 离场（记控路·同原退场口径）
     const wsd = sideOf(b, winSide);
     wsd.pokerDeck.push({ kind: 'poker', id: wf.id, rank: wf.rank, suit: wf.suit, general: wf.general, buff: wf.buff, cost: wf.cost }); // 回牌库
-    wsd.mana += (wf.cost ?? 0) / 2; // 返还一半花费（半整数）
+    wsd.mana += (wf.cost ?? 0); // 战胜回库 → 全额返还召唤源泉（owner 2026-06-29 ⑤·原半费→全费）
   }
   b.a.mana += b.a.tengangA.clashElixir; b.b.mana += b.b.tengangA.clashElixir; // 战潮：每遭遇返召唤源泉（喂经济）
 }
@@ -426,20 +427,20 @@ function advanceColumnToBase(b: TurnBattle, own: TurnUnit[], dir: number, side: 
     else b.homeA = Math.max(0, b.homeA - 1);
   }
 }
-// 行动阶段（owner 2026-06-21 同步推进模型·替原"只推 active 方"·PvP 地基）：①双方捷径门分流 →
-// ②三路两军兵线**同时**向对家推进·前锋相遇才掷命/无敌则抵家 chip。放置回合不调用此函数（放置无 Action）。
-function advanceBoth(b: TurnBattle): void {
-  const diverted = new Set<string>(); // ① 双方门都处理（过门兵记入·不再直进）
-  for (let gi = 0; gi < GATES.length; gi++) { const id = gateMove(b, gi); if (id) diverted.add(id); }
-  for (let li = 0; li < 3; li++) { // ② 两线同时推进；前锋相遇才掷命
-    const lane = b.lanes[li]; const A = lane.a, B = lane.b;
-    if (A.length && B.length) {
-      const bFrontPre = B[0].slot; // 用推进前的敌前锋夹我方·再用我方新前锋夹敌方（确定性·同步逼近）
-      advanceColumnVsFoe(A, 1, bFrontPre, diverted);
-      advanceColumnVsFoe(B, -1, A[0].slot, diverted);
-      if (Math.abs(A[0].slot - B[0].slot) <= 1) resolveClash(b, li); // 相邻 → 遭遇掷命
-    } else if (A.length) advanceColumnToBase(b, A, 1, 'a', diverted);
-    else if (B.length) advanceColumnToBase(b, B, -1, 'b', diverted);
+// 行动阶段（owner 2026-06-29 ②·顺序回合模型·替 2026-06-21 同步推进）：**只推刚结束回合的那一方**——
+// 我放完→我方三路向敌家推进/攻击；敌放完→敌方推进/攻击。两军不再同帧一起动（owner「一起行动看不清谁打谁」）。
+// ①只处理本方捷径门分流 → ②本方三路向对家推进·前锋相邻则掷命/无敌则抵家 chip。放置回合本身不调用（放置无推进）。
+function advanceSide(b: TurnBattle, side: 'a' | 'b'): void {
+  const dir = side === 'a' ? 1 : -1;
+  const diverted = new Set<string>(); // ① 只处理本方门（过门兵记入·不再直进）
+  for (let gi = 0; gi < GATES.length; gi++) { if (GATES[gi].side !== side) continue; const id = gateMove(b, gi); if (id) diverted.add(id); }
+  for (let li = 0; li < 3; li++) { // ② 本方兵线向对家推进；前锋相邻才掷命
+    const lane = b.lanes[li]; const own = colOf(lane, side); const foe = colOf(lane, side === 'a' ? 'b' : 'a');
+    if (!own.length) continue;
+    if (foe.length) {
+      advanceColumnVsFoe(own, dir, foe[0].slot, diverted);
+      if (Math.abs(own[0].slot - foe[0].slot) <= 1) resolveClash(b, li); // 相邻 → 遭遇掷命（本方主动进攻）
+    } else advanceColumnToBase(b, own, dir, side, diverted); // 本路无敌 → 直扑对家大本营
   }
 }
 
@@ -449,17 +450,21 @@ function checkWinner(b: TurnBattle): void {
   else if (b.homeA <= 0) b.winner = 'b';
 }
 
-// 结束当前放置回合（owner 2026-06-21 同步推进模型·PvP 地基）：**放置回合无 Action(战斗)**——
-// 我方结束→敌方放置回合(+源泉)；敌方结束→**行动阶段**(两军兵线同时推进·前锋相遇才掷命)→判负→回我方放置、回合数+1。
+// 结束当前回合（owner 2026-06-29 ②·顺序回合）：**放完牌→本方立即推进/攻击**（不再等到敌方回合末两军同动）——
+// 我方放完→advanceSide('a')（我方推进+掷命）→判负→敌方回合(+源泉)；敌方放完→advanceSide('b')（敌方推进+掷命）→判负→回我方、回合数+1。
+// 源泉（①公平）：turn-1 双方都用 MANA_START(3) 起步、不额外 +；每回合 +1 从 turn-2 起对称累加。
 export function endTurn(b: TurnBattle): void {
   if (b.winner !== 'pending') return;
   if (b.active === 'a') {
-    b.active = 'b'; // 我方放置完 → 敌方放置回合（不推进·无战斗）
-    b.b.mana += manaGain(b.turn); // 回合开始 +源泉（1.5·第10回合后 2）
+    advanceSide(b, 'a'); // 我方放置完 → 我方推进 + 相遇掷命（owner ②：我先动我先打）
+    checkWinner(b);
+    if (b.winner !== 'pending') return;
+    b.active = 'b';
+    if (b.turn > 1) b.b.mana += manaGain(b.turn); // turn-1 b 已带 MANA_START 起步（①）·turn-2 起对称 +源泉
     if (b.dishaB.bonusMana > 0) b.b.mana += b.dishaB.bonusMana; // 地煞·大军压境/机动调度：Boss 多铺(免费多动)
     b.actionTaken = null;
   } else {
-    advanceBoth(b); // 敌方放置完 → 行动阶段：两军同时推进 + 相遇掷命
+    advanceSide(b, 'b'); // 敌方放置完 → 敌方推进 + 相遇掷命
     checkWinner(b);
     if (b.winner !== 'pending') return;
     b.active = 'a'; // 下一轮回到我方放置回合
