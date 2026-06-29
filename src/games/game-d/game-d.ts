@@ -120,6 +120,34 @@ export function mount(container: HTMLElement): () => void {
   };
   window.addEventListener('keydown', onKey);
 
+  // ── 开场 Title 屏（LayoutNode 纯数据·UI 铁律·照主菜单样例 + ui-playbook：Screen{center} → bare column →
+  //    语义色令牌 + flow 布局防重叠 + 唯一 id + action 信号）。盖在场景上，点「开始攀塔」揭开进塔。
+  const titleHost = document.createElement('div');
+  titleHost.style.cssText = 'position:absolute;inset:0;pointer-events:auto;background:radial-gradient(120% 90% at 50% 22%,#1c1640 0%,#0c0a1c 58%,#070610 100%)';
+  wrapper.appendChild(titleHost);
+  const titleTree: LayoutNode = {
+    type: 'Screen', id: 'gd-title', props: { center: true },
+    children: [{
+      type: 'Panel', id: 'gd-title-box', props: { bare: true }, layout: { direction: 'column', align: 'center', gap: 16, maxWidth: 560 },
+      children: [
+        { type: 'Label', id: 'gd-logo', props: { text: '🎲', size: 'xxxl', glow: true } },
+        { type: 'Label', id: 'gd-name', props: { text: '骰　途', size: 'xxxl', color: 'gold', bold: true } },
+        { type: 'Label', id: 'gd-tsub', props: { text: '命运之塔 · TOWER OF FATE', size: 'sm', color: 'sub' } },
+        { type: 'Label', id: 'gd-ttag', props: { text: '两名掷命者结伴攀塔 · 掷骰定命 · 登顶者改写命运', size: 'xs', color: 'dim' } },
+        { type: 'Button', id: 'gd-start', props: { label: '▶ 开始攀塔', kind: 'hero', sub: '第一层 · 翠庭', action: 'start' }, layout: { sheen: true } },
+        { type: 'Panel', id: 'gd-trow', props: { bare: true }, layout: { direction: 'row', gap: 10, justify: 'center' }, children: [
+          { type: 'Button', id: 'gd-coop', props: { label: '👥 双人同攀', kind: 'ghost', action: 'coop' } },
+          { type: 'Button', id: 'gd-solo', props: { label: '👤 单人', kind: 'ghost', action: 'solo' } },
+          { type: 'Button', id: 'gd-set', props: { label: '⚙ 设置', kind: 'quiet', action: 'settings' } },
+        ] },
+        { type: 'Label', id: 'gd-ver', props: { text: 'Apollo Engine · Game D《骰途》· 场景骨架预览（战斗未接入）', size: 'xs', color: 'dim' } },
+      ],
+    }],
+  };
+  let titleUi: (() => void) | null = null;
+  const enter = (): void => { if (titleUi) { titleUi(); titleUi = null; } titleHost.remove(); };
+  titleUi = mountUI(titleHost, titleTree, { start: enter, coop: enter, solo: enter, settings: () => {} });
+
   // 每帧把 Camera3D.pivotZ 平滑推进到当前房间中心（render-only·往上 dolly 转场）。
   const unsub = engine.subscribe(() => {
     const c = cam();
@@ -138,6 +166,8 @@ export function mount(container: HTMLElement): () => void {
     renderer.destroy();
     ui();
     navUi();
+    if (titleUi) titleUi();
+    titleHost.remove();
     wrapper.remove();
   };
 }
