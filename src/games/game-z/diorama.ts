@@ -168,6 +168,26 @@ export function dioramaBlueprint(): WorldBlueprint {
         Relation: { kind: 'target', targetId: 'hero' },
       },
 
+      // ── VFX（TA Phase 1·数据驱动粒子·render-only）──
+      // 宝石上的金→青魔法喷泉（cone·additive·size/color 随寿命）：展示发射形状 + 力 + 曲线 + 渐变。
+      'vfx-gem': {
+        Vfx3D: {
+          x: 16, y: 9, z: 9, shape: 'cone', coneAngle: 0.55, rate: 130, lifetime: 1.2, lifeVar: 0.3,
+          speed: 9, speedVar: 3, gravity: 11, size: 2.6, max: 260, blend: 'add',
+          sizeCurve: { keys: [{ t: 0, v: 0.2 }, { t: 0.15, v: 1 }, { t: 1, v: 0 }], mode: 'smooth' },
+          colorGradient: { stops: [{ t: 0, color: 0xfff6c0, alpha: 1 }, { t: 0.5, color: 0x4dd0e1, alpha: 1 }, { t: 1, color: 0x26a69a, alpha: 0 }] },
+        },
+      },
+      // 石台上空缓缓上浮的花粉微尘（sphere·alpha·负重力上飘）：展示 alpha 混合 + 体积发射 + 柔生灭。
+      'vfx-motes': {
+        Vfx3D: {
+          x: -12, y: 9, z: -8, shape: 'sphere', emitRadius: 15, rate: 30, lifetime: 4.5, lifeVar: 1.5,
+          speed: 0.7, gravity: -0.4, size: 1.1, max: 160, blend: 'alpha',
+          sizeCurve: { keys: [{ t: 0, v: 0 }, { t: 0.2, v: 1 }, { t: 0.8, v: 1 }, { t: 1, v: 0 }], mode: 'smooth' },
+          colorGradient: { stops: [{ t: 0, color: 0xfff3c4, alpha: 0 }, { t: 0.5, color: 0xfff3c4, alpha: 0.75 }, { t: 1, color: 0xffffff, alpha: 0 }] },
+        },
+      },
+
       // 两朵蘑菇（茎 + 伞盖）
       'mush-a-stem': block(2, 1, 14, 3, 2, 3, 0xfff3e0, 0xffe0b2),
       'mush-a-cap': block(2, 3, 14, 6, 3, 6, 0xef5350, 0xd32f2f),

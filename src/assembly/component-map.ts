@@ -101,6 +101,7 @@ import type {
   Trigger,
   Tween,
   Velocity,
+  Vfx3D,
   Visibility,
   Zone,
 } from '@engine/protocol/components.js';
@@ -203,6 +204,7 @@ export interface ComponentDataMap {
   Trigger: Omit<Trigger, 'type'>;
   Tween: Omit<Tween, 'type'>;
   Velocity: Omit<Velocity, 'type'>;
+  Vfx3D: Omit<Vfx3D, 'type'>;
   Visibility: Omit<Visibility, 'type'>;
   Zone: Omit<Zone, 'type'>;
   DialogueScript: Omit<DialogueScript, 'type'>;

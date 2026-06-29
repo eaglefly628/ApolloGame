@@ -18,6 +18,7 @@ import { InstancedBatches, type InstGroups } from './three/batches.js';
 import { CameraRig } from './three/camera-rig.js';
 import { ColliderDebug } from './three/collider-debug.js';
 import { NavDebug } from './three/nav-debug.js';
+import { VfxSystem } from './three/vfx.js';
 
 export type { RenderStats } from './three/stats.js';
 import type { RenderStats } from './three/stats.js';
@@ -58,6 +59,7 @@ export class ThreeRenderer implements RendererBackend {
   private debugColliders = false;
   private readonly navDebug = new NavDebug(); // 导航图/路径（debug·开关见 setDebugNav）
   private debugNav = false;
+  private readonly vfx = new VfxSystem(); // 数据驱动粒子（TA Phase 1·render-only）
   // 天空盒
   private sky: THREE.Mesh | null = null;
   private skySig = '';
@@ -119,6 +121,8 @@ export class ThreeRenderer implements RendererBackend {
     const sky = getSky3D(world);
     this.syncSky(sky);
     this.lights.sync(this.scene, getLights3D(world)); // 数据化光照（维护 lightSig 供脏标）
+    // VFX 粒子（TA Phase 1·render-only）：每帧 CPU 模拟推进。存活粒子数 >0 → 折进 renderSig 强制重渲（粒子在动）。
+    const vfxLive = this.vfx.sync(this.scene, world, performance.now());
 
     for (const r of collectRenderables(world)) {
       // 导入式 glTF 模型（Model3D）：圆润真模型。位姿与 Mesh3D 同套路。未就绪本帧不画（向后兼容）。
@@ -184,7 +188,7 @@ export class ThreeRenderer implements RendererBackend {
     // instanceMatrix 上传 + 阴影 + render（画面不变·省 CPU/GPU/带宽）——「低开销」最大单点。
     const post = getPost3D(world);
     const ph = hashPoses(poses);
-    const renderSig = `${ph}|${camSig(cam3d)}|${this.lights.lightSig}|${postSig(post)}|${sky?.scroll ? this.frame : (sky ? `${sky.top}.${sky.bottom}` : '')}|${this.debugColliders ? 'd' : ''}|${this.debugNav ? 'n' : ''}`;
+    const renderSig = `${ph}|${camSig(cam3d)}|${this.lights.lightSig}|${postSig(post)}|${sky?.scroll ? this.frame : (sky ? `${sky.top}.${sky.bottom}` : '')}|${this.debugColliders ? 'd' : ''}|${this.debugNav ? 'n' : ''}|${vfxLive > 0 ? this.frame : 'v0'}`;
     const shadowSig = `${ph}|${this.lights.lightSig}`; // 阴影只随投影体姿/灯变（相机/云飘/后处理不触发）
     if (renderSig === this.lastRenderSig) {
       this.rendered = false;
@@ -279,6 +283,7 @@ export class ThreeRenderer implements RendererBackend {
     this.batches.dispose(this.scene);
     this.colliderDebug.dispose(this.scene);
     this.navDebug.dispose(this.scene);
+    this.vfx.dispose(this.scene);
     this.models.dispose(this.scene);
     this.lights.dispose(this.scene);
     this.post.dispose();

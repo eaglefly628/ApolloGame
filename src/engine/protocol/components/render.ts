@@ -150,6 +150,41 @@ export interface Post3D extends Component {
   bloom?: { strength?: number; radius?: number; threshold?: number };
 }
 
+// ── TA 地基（Phase 0）：曲线 / 渐变（render-only 值类型·随寿命/时间演化的 TA 通用原语）──────────────
+// 关键点按 t∈[0,1] 排好；曲线给标量、渐变给颜色+透明。供 VFX(size/color over life)、灯闪烁、材质 ramp 复用。
+export interface Curve { keys: Array<{ t: number; v: number }>; mode?: 'linear' | 'step' | 'smooth'; }
+export interface Gradient { stops: Array<{ t: number; color: number; alpha?: number }>; } // color=0xRRGGBB
+
+// ── Vfx3D（TA Phase 1·render-only·不进 hash）── 数据驱动粒子发射器（Niagara-lite 闭集模块）。
+// 渲染器 VfxSystem 读它 + 实体世界位（Transform3D / 2D Transform / 显式 x,y,z）→ 池化 Points 粒子 CPU 模拟。
+// render-only → 可用时间/随机自由（不碰 sim·不进 hash）。预算：每发射器 max 上限 + 渲染器全局 cap。
+export interface Vfx3D extends Component {
+  readonly type: 'Vfx3D';
+  // 发射
+  rate?: number; // 每秒持续发射数（缺省 0）
+  lifetime: number; // 粒子寿命(秒)
+  lifeVar?: number; // 寿命随机幅度(秒)
+  max?: number; // 本发射器粒子上限（缺省 256·预算）
+  // 形状（发射初速方向）：point=四散、cone=绕 +Y 锥、sphere=球内
+  shape?: 'point' | 'cone' | 'sphere';
+  coneAngle?: number; // cone 半角(弧度·缺省 0.4)
+  emitRadius?: number; // sphere 发射半径 / 初始位置抖动（缺省 0）
+  speed?: number; // 初速(单位/秒·缺省 4)
+  speedVar?: number; // 初速随机幅度
+  // 力
+  gravity?: number; // -Y 加速度(单位/秒²·缺省 0)
+  drag?: number; // 阻尼(每秒比例 0..n·缺省 0)
+  // 外观
+  size?: number; // 基础粒子尺寸(世界尺度·缺省 1)
+  sizeCurve?: Curve; // size-over-life（0..1 乘 size·缺省恒 1）
+  color?: number; // 单色(0xRRGGBB·无 gradient 时)
+  colorGradient?: Gradient; // color-over-life（覆盖 color）
+  blend?: 'add' | 'alpha'; // 混合（add=发光/魔法·alpha=烟尘·缺省 add）
+  // 发射器世界位（缺省读同实体 Transform3D，否则 2D Transform(x→X,y→Z)+baseY）
+  x?: number; y?: number; z?: number;
+  baseY?: number; // 2D Transform 情形的离地高度
+}
+
 export interface Color extends Component {
   readonly type: 'Color';
   tint: number;
