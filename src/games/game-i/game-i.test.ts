@@ -11,9 +11,10 @@ describe('Game I gallery', () => {
   it('落地展台 = 积木墙（Hub·点 Card 进模块）', () => {
     const html = renderNode(buildGallery('onyx'), onyx);
     expect(html).toContain('id="gameui-root"');     // Screen 根
-    expect(html).toContain('"hub-grid"');           // 积木 grid
-    expect(html).toContain('"hub-mod-ui"');         // UI 模块积木
-    expect(html).toContain('"hub-mod-input"');      // 输入模块积木
+    expect(html).toContain('"hub-grid-2d"');        // 2D 区积木 grid
+    expect(html).toContain('"hub-grid-3d"');        // 3D 区积木 grid
+    expect(html).toContain('"hub-mod-ui"');         // UI 模块积木（2D）
+    expect(html).toContain('"hub-mod-3d-nav"');     // 3D 寻路模块积木（3D）
     expect(html).toContain('data-action="enterModule"'); // 点积木进模块
   });
 

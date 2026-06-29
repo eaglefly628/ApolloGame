@@ -663,20 +663,27 @@ function buildSoundPage(c: ControlsState): LayoutNode {
  * 展示台模块清单——每块「积木」是一类底座能力的活样例。点一块进它自己的子菜单。
  * soon=规划中（占位·灰块不可点）。后续精灵动画/3D/视频逐块点亮。
  */
-export const MODULES: ReadonlyArray<{ id: string; glyph: string; label: string; desc: string; tone: 'accent' | 'normal' | 'dim'; soon?: boolean }> = [
-  { id: 'mod-ui', glyph: '🎛', label: 'UI 控件', desc: '30+ 数据驱动控件 · 换皮', tone: 'accent' as const },
-  { id: 'mod-mmo', glyph: '🗡', label: '组合 · MMO HUD', desc: '纯数据复现 WoW 风最复杂 HUD', tone: 'accent' as const },
-  { id: 'mod-sound', glyph: '🔊', label: '声音', desc: '合成 / 混音 / 立体声 / 混响', tone: 'normal' as const },
-  { id: 'mod-input', glyph: '🎮', label: '输入底座', desc: 'RawInput → KeyBinding → 信号', tone: 'normal' as const },
-  { id: 'mod-anim', glyph: '✨', label: '精灵动画', desc: 'tween 驱动 · Canvas 实时绘制', tone: 'normal' as const },
-  { id: 'mod-ai', glyph: '🧠', label: '游戏 AI', desc: '索敌 aggro / 寻路 grid-move', tone: 'normal' as const },
-  { id: 'mod-3d', glyph: '🧊', label: '3D 渲染', desc: 'Mesh3D · three 实时渲染', tone: 'normal' as const },
-  { id: 'mod-physics', glyph: '🟢', label: '运动与碰撞', desc: 'motion + overlap + 碰撞响应', tone: 'normal' as const },
-  { id: 'mod-combat', glyph: '⚔️', label: '战斗结算', desc: '命中 → 伤害 → DoT → 死亡', tone: 'normal' as const },
-  { id: 'mod-spawn', glyph: '🎆', label: '生成与寿命', desc: 'spawn → 飞 → 寿命自毁', tone: 'normal' as const },
-  { id: 'mod-fx', glyph: '💥', label: '战场特效（库B）', desc: '爆炸环 prefab · 火花叠在画面上', tone: 'normal' as const },
-  { id: 'mod-fsm', glyph: '🔀', label: '状态机', desc: 'condition → signal → set-state', tone: 'normal' as const },
-  { id: 'mod-video', glyph: '🎬', label: '爱诗视频', desc: 'AIGP 端口 → 竖屏短视频', tone: 'normal' as const },
+export const MODULES: ReadonlyArray<{ id: string; glyph: string; label: string; desc: string; tone: 'accent' | 'normal' | 'dim'; dim: '2d' | '3d'; soon?: boolean }> = [
+  // ── 2D 区 ──
+  { id: 'mod-ui', glyph: '🎛', label: 'UI 控件', desc: '30+ 数据驱动控件 · 换皮', tone: 'accent' as const, dim: '2d' },
+  { id: 'mod-mmo', glyph: '🗡', label: '组合 · MMO HUD', desc: '纯数据复现 WoW 风最复杂 HUD', tone: 'accent' as const, dim: '2d' },
+  { id: 'mod-sound', glyph: '🔊', label: '声音', desc: '合成 / 混音 / 立体声 / 混响', tone: 'normal' as const, dim: '2d' },
+  { id: 'mod-input', glyph: '🎮', label: '输入底座', desc: 'RawInput → KeyBinding → 信号', tone: 'normal' as const, dim: '2d' },
+  { id: 'mod-anim', glyph: '✨', label: '精灵动画', desc: 'tween 驱动 · Canvas 实时绘制', tone: 'normal' as const, dim: '2d' },
+  { id: 'mod-ai', glyph: '🧠', label: '游戏 AI', desc: '索敌 aggro / 寻路 grid-move', tone: 'normal' as const, dim: '2d' },
+  { id: 'mod-physics', glyph: '🟢', label: '运动与碰撞', desc: 'motion + overlap + 碰撞响应', tone: 'normal' as const, dim: '2d' },
+  { id: 'mod-combat', glyph: '⚔️', label: '战斗结算', desc: '命中 → 伤害 → DoT → 死亡', tone: 'normal' as const, dim: '2d' },
+  { id: 'mod-spawn', glyph: '🎆', label: '生成与寿命', desc: 'spawn → 飞 → 寿命自毁', tone: 'normal' as const, dim: '2d' },
+  { id: 'mod-fx', glyph: '💥', label: '战场特效（库B）', desc: '爆炸环 prefab · 火花叠在画面上', tone: 'normal' as const, dim: '2d' },
+  { id: 'mod-fsm', glyph: '🔀', label: '状态机', desc: 'condition → signal → set-state', tone: 'normal' as const, dim: '2d' },
+  { id: 'mod-video', glyph: '🎬', label: '爱诗视频', desc: 'AIGP 端口 → 竖屏短视频', tone: 'normal' as const, dim: '2d' },
+  // ── 3D 区（消费 P3D 3D 渲染线·ThreeRenderer）──
+  { id: 'mod-3d', glyph: '🧊', label: '3D 渲染', desc: 'Mesh3D · 翻面/翻滚 基础旋转', tone: 'accent' as const, dim: '3d' },
+  { id: 'mod-3d-light', glyph: '💡', label: '数据化光照', desc: 'Light3D 定向+环境 · 投影', tone: 'normal' as const, dim: '3d' },
+  { id: 'mod-3d-post', glyph: '🔭', label: '景深 · 泛光', desc: 'Post3D 移轴景深 + bloom', tone: 'normal' as const, dim: '3d' },
+  { id: 'mod-3d-nav', glyph: '🧭', label: '3D 寻路', desc: 'navmesh 自动烘焙 + 绕障追逐', tone: 'normal' as const, dim: '3d' },
+  { id: 'mod-3d-collide', glyph: '🎯', label: '3D 碰撞', desc: 'Collider3D / Overlap3D · 触发区', tone: 'normal' as const, dim: '3d' },
+  { id: 'mod-3d-particle', glyph: '🎇', label: '3D 粒子', desc: 'prefab → Mesh3D 火花 · 泛光', tone: 'normal' as const, dim: '3d' },
 ];
 
 /**
@@ -707,28 +714,48 @@ function buildSimStage(id: string, glyph: string, title: string, desc: string, c
   };
 }
 
-/** 落地页：一块块「积木」拼起来的模块入口（grid 自适应·点 Card 进各自子菜单）。 */
+/** 一块模块积木卡。 */
+function moduleCard(m: typeof MODULES[number]): LayoutNode {
+  return {
+    type: 'Card', id: `hub-${m.id}`,
+    props: {
+      media: m.glyph, title: m.label, sub: m.desc,
+      corner: m.soon ? '规划中' : '',
+      tone: m.soon ? 'locked' : m.tone,
+      ...(m.soon ? {} : { action: 'enterModule', actionArg: m.id }),
+    },
+  };
+}
+
+/** 一个维度分区：分区标题 + 该维度模块的自适应网格。 */
+function hubSection(id: string, title: string, sub: string, dim: '2d' | '3d'): LayoutNode {
+  return {
+    type: 'Panel', id: `hub-sec-${id}`, props: { bare: true },
+    layout: { direction: 'column', gap: 10, padding: 0 },
+    children: [
+      { type: 'Panel', id: `hub-sechd-${id}`, props: { bare: true }, layout: { direction: 'row', align: 'center', gap: 10 },
+        children: [
+          { type: 'Label', id: `hub-sect-${id}`, props: { text: title, size: 'lg', bold: true, color: 'gold' } },
+          { type: 'Label', id: `hub-secs-${id}`, props: { text: sub, size: 'xs', color: 'sub' }, layout: { flex: 1 } },
+        ] },
+      { type: 'Panel', id: `hub-grid-${id}`, props: {}, layout: { direction: 'grid', minCol: 200, gap: 14, padding: 0 },
+        children: MODULES.filter((m) => m.dim === dim).map(moduleCard) },
+    ],
+  };
+}
+
+/** 落地页：拆 2D / 3D 两区，每区一墙模块积木（点 Card 进各自子菜单）。 */
 function buildHub(): LayoutNode {
   return {
     // 落地积木墙底：平铺点阵贴图 + 缓慢 UV 滚动（owner 早前想要的「积木墙点阵底纹」·现用 bgTexture/bgScroll 数据实现）。
-    type: 'Panel', id: 'hub', props: { title: '🧩 Apollo 引擎 · 底座能力展示台', bgTexture: TEXTURE_URI, bgTextureSize: 26, bgScroll: { y: 26, ms: 7000 } },
-    layout: { direction: 'column', gap: 14, padding: 20 },
+    type: 'Panel', id: 'hub', props: { title: '🧩 Apollo 引擎 · 底座能力展示台', scroll: true, bgTexture: TEXTURE_URI, bgTextureSize: 26, bgScroll: { y: 26, ms: 7000 } },
+    layout: { direction: 'column', gap: 18, padding: 20 },
     children: [
       { type: 'Label', id: 'hub-sub', props: {
-        text: '每块积木是一类底座能力的活样例——点一块进去，看它怎么用纯数据驱动。', color: 'sub', size: 'sm' } },
-      {
-        type: 'Panel', id: 'hub-grid', props: {},
-        layout: { direction: 'grid', minCol: 200, gap: 14, padding: 0 },
-        children: MODULES.map((m) => ({
-          type: 'Card', id: `hub-${m.id}`,
-          props: {
-            media: m.glyph, title: m.label, sub: m.desc,
-            corner: m.soon ? '规划中' : '',
-            tone: m.soon ? 'locked' : m.tone,
-            ...(m.soon ? {} : { action: 'enterModule', actionArg: m.id }),
-          },
-        })),
-      },
+        text: '每块积木是一类底座能力的活样例——点一块进去，看它怎么用纯数据驱动。分 2D 与 3D 两区。', color: 'sub', size: 'sm' } },
+      hubSection('2d', '🟦 2D 能力', 'UI / 声音 / 输入 / 动画 / AI / 物理 / 战斗 / 特效 / 状态机 / 视频', '2d'),
+      { type: 'Divider', id: 'hub-div', props: {} },
+      hubSection('3d', '🧊 3D 能力', '消费 Apollo 3D 渲染线（ThreeRenderer）——光照 / 景深 / 寻路 / 碰撞 / 粒子', '3d'),
     ],
   };
 }
@@ -1000,6 +1027,21 @@ function moduleBody(
     case 'mod-3d': return buildSimStage('3d', '🧊', '3D 渲染 · Mesh3D',
       '引擎 ThreeRenderer 实时渲染：翻面卡 / 翻滚立方 / 倾转薄面，由 tween 转 Transform.rotation 当翻面角驱动。同一份 collectRenderables 换 three 后端即换维度。',
       ['Mesh3D', 'tween', 'ThreeRenderer']);
+    case 'mod-3d-light': return buildSimStage('3dlight', '💡', '数据化光照 · Light3D',
+      '光照是数据：一盏 Light3D 定向主光（castShadow 投影）+ 一盏环境补光，照亮盒阵 + 一只缓转金盒（转动时各面随光明暗）。配 Sky3D 程序天空 + Camera3D 轨道相机。全部纯组件数据，渲染器自动读。',
+      ['Light3D', 'Sky3D', 'Camera3D', 'Mesh3D']);
+    case 'mod-3d-post': return buildSimStage('3dpost', '🔭', '景深 · 泛光 · Post3D',
+      '后处理是数据：一个 Post3D 启 EffectComposer——移轴景深（中段清晰、上下虚化=微缩盒庭感）+ bloom 泛光（亮处发光）。同场景换不换 Post3D = 换不换后处理，蓝图一字不改。',
+      ['Post3D', 'tiltShift', 'bloom', 'Light3D']);
+    case 'mod-3d-nav': return buildSimStage('3dnav', '🧭', '3D 寻路 · navmesh 自动烘焙',
+      '摆一张 NavMesh 罩草地，navmesh-bake 每帧把 Collider3D 障碍栅格化、可走处自动织成 NavGraph（零手摆航点）。两个 NavAgent 追兵沿图绕障逼近左右巡逻的目标盒；相机 follow 目标（Camera3D follow 模式）。青点/线=自动导航图、黄线=当前规划路径。',
+      ['NavMesh', 'navmesh-bake', 'NavAgent', 'pathfind', 'Camera3D·follow']);
+    case 'mod-3d-collide': return buildSimStage('3dcollide', '🎯', '3D 碰撞 · Collider3D / Overlap3D',
+      '两个盒（球碰撞体 / 盒碰撞体）来回穿过中央触发区，overlap-detect-3d 每帧解析判交、产 Overlap3D 事件（触发区只报不推）。线框=碰撞体（实心黄 / 触发绿），位置每帧跟随。',
+      ['Collider3D', 'overlap-detect-3d', 'Overlap3D', 'trigger']);
+    case 'mod-3d-particle': return buildSimStage('3dpart', '🎇', '3D 粒子 · prefab → Mesh3D',
+      '2D 库B 套路搬到 3D：发射器 Timer→event-when→caster 周期引爆「爆炸环」prefab，一圈小盒火花放射（motion-apply）+ Timer 到期 lifetime 自毁，叠 Post3D bloom 发光。新特效=加一份 prefab 数据，ThreeRenderer 照渲。',
+      ['caster', 'prefab', 'Mesh3D', 'lifetime', 'Post3D·bloom']);
     case 'mod-physics': return buildSimStage('phys', '🟢', '运动与碰撞',
       'motion-apply（Velocity→Transform 运动学）+ overlap-detect（碰撞检测）+ collision-resolve（按质量推开=碰撞响应）。四物体相向运动、于中心相撞被推开。纯蓝图，无专属代码。',
       ['motion-apply', 'overlap-detect', 'collision-resolve']);

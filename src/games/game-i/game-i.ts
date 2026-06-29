@@ -33,12 +33,19 @@ import { combatBlueprint } from './combat-lab.js';
 import { spawnBlueprint } from './spawn-lab.js';
 import { fxBlueprint } from './fx-lab.js';
 import { fsmBlueprint } from './fsm-lab.js';
+import { light3dBlueprint, post3dBlueprint, nav3dBlueprint, collide3dBlueprint, particle3dBlueprint } from './three3d.js';
 
 // 渲染/仿真模块 → 蓝图 + 渲染后端（canvas/three）。进模块时宿主在 #sim-stage 上 init 引擎实时绘制。
-const SIM_MODULES: Record<string, { blueprint: () => WorldBlueprint; backend: 'canvas' | 'three' }> = {
+const SIM_MODULES: Record<string, { blueprint: () => WorldBlueprint; backend: 'canvas' | 'three'; debug?: 'nav' | 'collider' }> = {
   'mod-anim': { blueprint: animBlueprint, backend: 'canvas' },
   'mod-ai': { blueprint: aiBlueprint, backend: 'canvas' },
   'mod-3d': { blueprint: threeBlueprint, backend: 'three' },
+  // 3D 能力展台（消费 P3D 3D 渲染线·three 后端）
+  'mod-3d-light': { blueprint: light3dBlueprint, backend: 'three' },
+  'mod-3d-post': { blueprint: post3dBlueprint, backend: 'three' },
+  'mod-3d-nav': { blueprint: nav3dBlueprint, backend: 'three', debug: 'nav' },        // 开导航图/路径线框
+  'mod-3d-collide': { blueprint: collide3dBlueprint, backend: 'three', debug: 'collider' }, // 开碰撞体线框
+  'mod-3d-particle': { blueprint: particle3dBlueprint, backend: 'three' },
   'mod-physics': { blueprint: physicsBlueprint, backend: 'canvas' },
   'mod-combat': { blueprint: combatBlueprint, backend: 'canvas' },
   'mod-spawn': { blueprint: spawnBlueprint, backend: 'canvas' },
@@ -238,9 +245,15 @@ export function mount(container: HTMLElement): () => void {
     if (want && container && !stage) {
       const engine = new Engine({ tickRate: 60 });
       engine.load(want.blueprint());
-      const renderer: RendererBackend = want.backend === 'three'
-        ? new ThreeRenderer({ width: 640, height: 400, background: 0x0a0f1e })
-        : new CanvasRenderer({ width: 640, height: 400, background: '#0a0f1e' });
+      let renderer: RendererBackend;
+      if (want.backend === 'three') {
+        const tr = new ThreeRenderer({ width: 640, height: 400, background: 0x0a0f1e });
+        if (want.debug === 'nav') tr.setDebugNav(true);            // 导航图/路径线框（消费 ThreeRenderer 公开调试 API）
+        if (want.debug === 'collider') tr.setDebugColliders(true); // 碰撞体线框
+        renderer = tr;
+      } else {
+        renderer = new CanvasRenderer({ width: 640, height: 400, background: '#0a0f1e' });
+      }
       engine.attachRenderer(renderer, container);
       engine.start();
       stage = { engine, renderer, module: currentModule!, container };
