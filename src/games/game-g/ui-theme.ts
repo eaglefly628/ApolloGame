@@ -36,6 +36,10 @@ export const GG_LOBBY_THEME: UITheme = {
   danger: 'var(--heart)',
   fontUi: 'var(--fb)',
   fontMono: 'var(--fn)',
+  // 字体艺术槽（owner 2026-06-28「主页要正楷+艺术字」）：display=毛笔书法艺术字(--fd·玄铁 智芒星行书/锦霞 马善政楷书)·
+  // pixel=Silkscreen 像素体(--fn)。已自托管加载(fonts.ts)，先前未接入主题槽→Label font:'display' 误回退像素体；此处补全。
+  fontDisplay: 'var(--fd)',
+  fontPixel: 'var(--fn)',
 };
 
 // ③ 战斗屏内嵌皮：同 ②（桥接战斗 .ggt-inner 的 THEMES 令牌 var(--ink)/--panel/--gold…），
