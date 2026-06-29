@@ -103,6 +103,7 @@ import type {
   Velocity,
   Vfx3D,
   Visibility,
+  WorldUI3D,
   Zone,
 } from '@engine/protocol/components.js';
 import type { DialogueScript, DialogueAdvance, DialogueChoose } from '@skills/tier3/dialogue.js';
@@ -206,6 +207,7 @@ export interface ComponentDataMap {
   Velocity: Omit<Velocity, 'type'>;
   Vfx3D: Omit<Vfx3D, 'type'>;
   Visibility: Omit<Visibility, 'type'>;
+  WorldUI3D: Omit<WorldUI3D, 'type'>;
   Zone: Omit<Zone, 'type'>;
   DialogueScript: Omit<DialogueScript, 'type'>;
   DialogueAdvance: Omit<DialogueAdvance, 'type'>;

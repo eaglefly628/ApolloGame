@@ -158,6 +158,19 @@ export interface Post3D extends Component {
   bloom?: { strength?: number; radius?: number; threshold?: number };
 }
 
+// ── WorldUI3D（TA Phase 3·render-only·不进 hash）── 世界空间 UI（头顶飘字/血条/名字）。
+// 锚在**自身实体**上（读其 Transform3D / 2D Transform），offsetY 抬到头顶。渲染器把锚点投影到屏幕，
+// 在该处用引擎 UI 库 `mountUI` 挂一棵 **LayoutNode**（**UI 铁律**：仍是 LayoutNode·经真 UI 库渲染·不手写 DOM）。
+// v1 = 静态文字 Label（头顶飘字）；动态绑定（HP/名字变量）后续。**渲染线只做世界锚 + 投影**，控件本体归主程 UI 库。
+export interface WorldUI3D extends Component {
+  readonly type: 'WorldUI3D';
+  text: string; // 头顶文字（v1 静态）
+  offsetY?: number; // 锚点之上的高度（缺省 6）
+  size?: 'xs' | 'sm' | 'md' | 'lg'; // Label 字号（缺省 sm）
+  color?: string; // Label 颜色（UI 库语义色·缺省默认）
+  glow?: boolean; // 发光
+}
+
 // ── TA 地基（Phase 0）：曲线 / 渐变（render-only 值类型·随寿命/时间演化的 TA 通用原语）──────────────
 // 关键点按 t∈[0,1] 排好；曲线给标量、渐变给颜色+透明。供 VFX(size/color over life)、灯闪烁、材质 ramp 复用。
 export interface Curve { keys: Array<{ t: number; v: number }>; mode?: 'linear' | 'step' | 'smooth'; }

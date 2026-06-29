@@ -89,6 +89,8 @@ export function dioramaBlueprint(): WorldBlueprint {
         Velocity: { vx: 0, vy: 0, angular: 0 },
         Model3D: { modelKey: MODEL_DUCK, scale: 3.2 },
         Collider3D: { kind: 'capsule', radius: 2, height: 6 },
+        // 头顶飘字（TA Phase 3·世界 UI·走主程 LayoutNode·渲染线只做世界锚 + 投影）。
+        WorldUI3D: { text: '🦆 小黄鸭', offsetY: 9, size: 'sm', glow: true },
       },
 
       // 触发区（REQ-3D-Collision demo）：地面半透明绿垫（Mesh3D render·Color.alpha<1 走单 mesh）+ Collider3D box trigger
@@ -165,6 +167,7 @@ export function dioramaBlueprint(): WorldBlueprint {
         Relation: { kind: 'target', targetId: 'hero' },
         // 移动点光①（暖·跟橙追兵·随寻路在大地图游走照亮脚下地面/经过的盒子）。
         Light3D: { kind: 'point', color: 0xffb060, intensity: 120, range: 30, baseY: 5 },
+        WorldUI3D: { text: '追兵·橙', offsetY: 5, size: 'xs', color: 'warn' },
       },
       // 寻路追兵②（蓝盒·迷墙后远角）：从 140² 远端出发，必须穿蛇形迷墙的两个缺口才能到中央 → 展示长程绕路寻路。
       'seeker-2': {
@@ -175,6 +178,7 @@ export function dioramaBlueprint(): WorldBlueprint {
         Relation: { kind: 'target', targetId: 'hero' },
         // 移动点光②（冷·跟蓝追兵）。两盏=预算上限·都挂在会动的方块上。
         Light3D: { kind: 'point', color: 0x6cc6ff, intensity: 110, range: 28, baseY: 5 },
+        WorldUI3D: { text: '追兵·蓝', offsetY: 5, size: 'xs', color: 'jade' },
       },
 
       // ── VFX（TA Phase 1·数据驱动粒子·render-only）──

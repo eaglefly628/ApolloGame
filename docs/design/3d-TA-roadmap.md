@@ -97,6 +97,8 @@
 ## 4. 执行节奏（owner 2026-06-28）
 **一个个来。每个能力做完 → 截图给 owner 确认效果 → 确认后再起下一个。** 全绿（tsc+vitest+build+截图）才推。
 
+> **进度（P3D 2026-06-28·GameZ 试验场）**：✅ Phase 0 曲线/渐变 · ✅ Phase 1 VFX 粒子 · ✅ Phase 2 动态 point/spot 局部光（预算 2·可移动） · ✅ Phase 3 世界 UI 头顶飘字（billboard·走 LayoutNode）。另：✅ collision-resolve-3d（owner 插队·让角色真撞墙）。⬜ 下一梯队：AO/雾/调色/AA → Post Volume → 材质 ramp → 烘焙；世界 UI surface 形态/动态绑定（HP）待续。
+
 推荐顺序：**Phase 0 曲线/渐变 → Phase 1 VFX → Phase 2 动态点光 → Phase 3 世界 UI(billboard) → Phase 4 全局后处理(AO/AA/雾/调色)→Volume→自适配DoF → Phase 5 材质 ramp → Phase 6 烘焙**。小件穿插。
 
 ## 5. 与主程的边界（UI 铁律）

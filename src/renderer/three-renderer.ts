@@ -19,6 +19,7 @@ import { CameraRig } from './three/camera-rig.js';
 import { ColliderDebug } from './three/collider-debug.js';
 import { NavDebug } from './three/nav-debug.js';
 import { VfxSystem } from './three/vfx.js';
+import { WorldUiLayer } from './three/world-ui.js';
 
 export type { RenderStats } from './three/stats.js';
 import type { RenderStats } from './three/stats.js';
@@ -60,6 +61,7 @@ export class ThreeRenderer implements RendererBackend {
   private readonly navDebug = new NavDebug(); // 导航图/路径（debug·开关见 setDebugNav）
   private debugNav = false;
   private readonly vfx = new VfxSystem(); // 数据驱动粒子（TA Phase 1·render-only）
+  private readonly worldUi = new WorldUiLayer(); // 世界空间 UI 头顶飘字（TA Phase 3·render-only·走主程 UI 库）
   // 天空盒
   private sky: THREE.Mesh | null = null;
   private skySig = '';
@@ -106,6 +108,7 @@ export class ThreeRenderer implements RendererBackend {
     this.post = new PostPipeline(this.gl, this.width, this.height);
     this.models = new ModelPool(this.assets);
     container.appendChild(this.gl.domElement);
+    this.worldUi.init(container); // 世界 UI DOM 叠层（覆于 canvas 上·pointer-events:none）
   }
 
   sync(world: IWorld): void {
@@ -239,6 +242,7 @@ export class ThreeRenderer implements RendererBackend {
     const cam = this.cameras.current;
     if (post) this.post.render(this.scene, cam, post);
     else this.gl.render(this.scene, cam);
+    this.worldUi.sync(world, cam, this.width, this.height); // 头顶飘字：锚点投影 + 定位 LayoutNode 宿主（相机就绪后）
     this.rendered = true;
     this.cpuMs = this.cpuMs * 0.9 + (performance.now() - t0) * 0.1;
   }
@@ -284,6 +288,7 @@ export class ThreeRenderer implements RendererBackend {
     this.colliderDebug.dispose(this.scene);
     this.navDebug.dispose(this.scene);
     this.vfx.dispose(this.scene);
+    this.worldUi.dispose();
     this.models.dispose(this.scene);
     this.lights.dispose(this.scene);
     this.post.dispose();
