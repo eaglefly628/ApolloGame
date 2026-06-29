@@ -1,5 +1,5 @@
 import type { IWorld } from '../core/types.js';
-import type { Camera, Camera3D, Sky3D, Light3D, Post3D } from './components.js';
+import type { Camera, Camera3D, Sky3D, Light3D, Post3D, Fog3D } from './components.js';
 
 // ═══════════════════════════════════════════════════════════════
 //  相机视图 —— 世界↔屏幕投影的**单一真相**（共享契约层）。
@@ -43,6 +43,15 @@ export function getSky3D(world: IWorld): Sky3D | null {
   for (const [e] of world.query('Sky3D')) {
     const c = world.getComponent<Sky3D>(e, 'Sky3D');
     if (c) return c;
+  }
+  return null;
+}
+
+// 取世界里的距离雾单例（第一个挂 Fog3D 的实体）。无则 null → 不开雾。
+export function getFog3D(world: IWorld): Fog3D | null {
+  for (const [e] of world.query('Fog3D')) {
+    const f = world.getComponent<Fog3D>(e, 'Fog3D');
+    if (f) return f;
   }
   return null;
 }

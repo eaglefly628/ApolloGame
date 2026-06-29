@@ -29,6 +29,7 @@ import type {
   EventWhen,
   Facing,
   Flag,
+  Fog3D,
   Frame,
   GameFlow,
   Gauge,
@@ -133,6 +134,7 @@ export interface ComponentDataMap {
   EventWhen: Omit<EventWhen, 'type'>;
   Facing: Omit<Facing, 'type'>;
   Flag: Omit<Flag, 'type'>;
+  Fog3D: Omit<Fog3D, 'type'>;
   Frame: Omit<Frame, 'type'>;
   GameFlow: Omit<GameFlow, 'type'>;
   Gauge: Omit<Gauge, 'type'>;

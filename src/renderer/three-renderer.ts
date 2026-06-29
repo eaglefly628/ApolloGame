@@ -1,9 +1,9 @@
 import * as THREE from 'three';
 import type { IWorld, RendererBackend } from '@engine/core/types.js';
-import type { Mesh3D, Sky3D, Camera3D } from '@engine/protocol/components.js';
+import type { Mesh3D, Sky3D, Camera3D, Fog3D } from '@engine/protocol/components.js';
 import type { AssetManager } from '@assets/index.js';
 import { isImageHandle } from '@assets/index.js';
-import { getCamera3D, getSky3D, getLights3D, getPost3D } from '@engine/protocol/camera-view.js';
+import { getCamera3D, getSky3D, getLights3D, getPost3D, getFog3D } from '@engine/protocol/camera-view.js';
 import { collectRenderables, chooseRenderMode, type Renderable } from './renderable.js';
 import {
   renderablePose, poseBounds, mesh3dBatchKey, type Pose3D,
@@ -65,6 +65,7 @@ export class ThreeRenderer implements RendererBackend {
   // 天空盒
   private sky: THREE.Mesh | null = null;
   private skySig = '';
+  private fogSig = '';
   // 2D-in-3D 扁平层（sprite/text/shape + 透明 Mesh3D fallback）
   private readonly meshes = new Map<string, THREE.Mesh>();
   private readonly modeOf = new Map<string, string>();
@@ -123,6 +124,7 @@ export class ThreeRenderer implements RendererBackend {
     let followPose: Pose3D | undefined; // 收集期捕获 target 的位姿（= 相机注视点）
     const sky = getSky3D(world);
     this.syncSky(sky);
+    this.syncFog(getFog3D(world)); // 距离雾（scene.fog·远处柔化·TA Phase 4）
     this.lights.sync(this.scene, getLights3D(world), world); // 数据化光照（维护 lightSig 供脏标·含动态局部光位姿）
     // VFX 粒子（TA Phase 1·render-only）：每帧 CPU 模拟推进。存活粒子数 >0 → 折进 renderSig 强制重渲（粒子在动）。
     const vfxLive = this.vfx.sync(this.scene, world, performance.now());
@@ -191,7 +193,7 @@ export class ThreeRenderer implements RendererBackend {
     // instanceMatrix 上传 + 阴影 + render（画面不变·省 CPU/GPU/带宽）——「低开销」最大单点。
     const post = getPost3D(world);
     const ph = hashPoses(poses);
-    const renderSig = `${ph}|${camSig(cam3d)}|${this.lights.lightSig}|${postSig(post)}|${sky?.scroll ? this.frame : (sky ? `${sky.top}.${sky.bottom}` : '')}|${this.debugColliders ? 'd' : ''}|${this.debugNav ? 'n' : ''}|${vfxLive > 0 ? this.frame : 'v0'}`;
+    const renderSig = `${ph}|${camSig(cam3d)}|${this.lights.lightSig}|${postSig(post)}|${sky?.scroll ? this.frame : (sky ? `${sky.top}.${sky.bottom}` : '')}|${this.debugColliders ? 'd' : ''}|${this.debugNav ? 'n' : ''}|${vfxLive > 0 ? this.frame : 'v0'}|${this.fogSig}`;
     const shadowSig = `${ph}|${this.lights.lightSig}`; // 阴影只随投影体姿/灯变（相机/云飘/后处理不触发）
     if (renderSig === this.lastRenderSig) {
       this.rendered = false;
@@ -311,6 +313,16 @@ export class ThreeRenderer implements RendererBackend {
       this.skySig = sig;
     }
     if (sky.scroll) this.sky.rotation.y = this.frame * sky.scroll * 0.0004; // 云飘（render-only）
+  }
+
+  // 距离雾（scene.fog 线性·TA Phase 4）：无 Fog3D → 清雾；否则设/更新（fogSig 供脏标）。
+  private syncFog(fog: Fog3D | null): void {
+    if (!fog) { if (this.scene.fog) { this.scene.fog = null; this.fogSig = ''; } return; }
+    const sig = `${fog.color}|${fog.near}|${fog.far}`;
+    if (this.fogSig !== sig) {
+      this.scene.fog = new THREE.Fog(fog.color & 0xffffff, fog.near, fog.far);
+      this.fogSig = sig;
+    }
   }
 
   // ── 2D-in-3D 扁平层（sprite/text/shape + 透明 Mesh3D fallback）──────────────────────

@@ -72,6 +72,8 @@ describe('Game Z · 3D 盒庭蓝图（纯数据 · 仅现成 motion-apply 能力
     expect(lights.filter(([, l]) => l.kind === 'point').length).toBeLessThanOrEqual(2); // 预算：≤2 盏动态局部光
     const post = getPost3D(e.world);
     expect(post?.ao).toBeTruthy(); // AO 环境光遮蔽（TA Phase 4）已开
+    expect(post?.grade).toBeTruthy(); // 色彩分级（TA Phase 4）已开
+    expect(post?.aa).toBe(true); // SMAA 抗锯齿（TA Phase 4）已开
     expect(post?.tiltShift).toBeFalsy(); // 移轴景深仍移除（owner「景深奇怪·先移掉」）
   });
 

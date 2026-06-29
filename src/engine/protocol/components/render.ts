@@ -159,6 +159,20 @@ export interface Post3D extends Component {
   // 环境光遮蔽（AO·GTAO 地面真值·TA Phase 4）：缝隙/接触处压暗 → 箱庭玩具感的「厚度/接地」。
   // intensity=AO 叠加强度(缺省 1)；radius=采样世界半径(缺省随场景尺度·盒庭 ~4)；scale=衰减(缺省 1)。
   ao?: { intensity?: number; radius?: number; scale?: number };
+  // 色彩分级（TA Phase 4·绘本调色板）：exposure=曝光×、contrast=对比(1=原)、saturation=饱和(1=原)、
+  // brightness=亮度+、tint=整体染色 0xRRGGBB(×·缺省白不变)。
+  grade?: { exposure?: number; contrast?: number; saturation?: number; brightness?: number; tint?: number };
+  // 抗锯齿（TA Phase 4·SMAA·清 toon 硬边锯齿）。
+  aa?: boolean;
+}
+
+// ── Fog3D（render-only·TA Phase 4）── 距离雾（scene.fog 线性）：远处柔化 + 盒庭「装在玻璃盒里」的纵深。
+// color=雾色(常取天色)·near=起雾相机距离·far=全雾距离。挂一个即开；天空盒材质 fog:false 不受影响。
+export interface Fog3D extends Component {
+  readonly type: 'Fog3D';
+  color: number; // 0xRRGGBB
+  near: number;
+  far: number;
 }
 
 // ── WorldUI3D（TA Phase 3·render-only·不进 hash）── 世界空间 UI（头顶飘字/血条/名字）。
