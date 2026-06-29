@@ -68,11 +68,12 @@ export function dioramaBlueprint(): WorldBlueprint {
       cam: { Camera3D: { yaw: 0.72, pitch: 0.62, distance: 132, pivotX: 0, pivotY: 4, pivotZ: 0, fov: 38, pitchMin: 0.12, pitchMax: 1.45 } },
 
       // 数据化光照（Light3D·替原写死的灯）：暖白太阳（投软影）+ 冷蓝环境补光。
-      sun: { Light3D: { kind: 'directional', color: 0xfff1d6, intensity: 1.6, castShadow: true } },
-      fill: { Light3D: { kind: 'ambient', color: 0xbfd2ff, intensity: 0.45 } },
+      // 曝光收敛（owner 2026-06-28「太阳太亮·曝光过度」）：太阳 1.6→1.05、环境补光 0.45→0.55 提暗部。
+      sun: { Light3D: { kind: 'directional', color: 0xfff1d6, intensity: 1.05, castShadow: true } },
+      fill: { Light3D: { kind: 'ambient', color: 0xbfd2ff, intensity: 0.55 } },
 
-      // 后处理（Post3D）：移轴景深 → Captain Toad 微缩模型感（清晰带居中·上下渐糊）+ 轻泛光。
-      post: { Post3D: { tiltShift: { focus: 0.52, intensity: 3.4 }, bloom: { strength: 0.35, radius: 0.5, threshold: 0.8 } } },
+      // 后处理 Post3D 暂移除（owner 2026-06-28「景深和一些东西表现得非常奇怪·先移掉」）：移轴景深(tiltShift)
+      // 是为小盒庭调的焦带，关卡扩到 100² + 相机拉远后整屏发虚；泛光叠在过曝上更糊。待调好再按数据重加。
 
       // 天空盒：蓝天 → 浅地平线 + 程序化白云缓慢飘动
       sky: { Sky3D: { top: 0x4a90d9, bottom: 0xcfe9f7, clouds: true, cloudTint: 0xffffff, scroll: 1 } },

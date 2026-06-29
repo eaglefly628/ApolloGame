@@ -61,13 +61,15 @@ describe('Game Z · 3D 盒庭蓝图（纯数据 · 仅现成 motion-apply 能力
     expect(getSky3D(e.world)?.clouds).toBe(true);
   });
 
-  it('数据化光照 + 后处理：sun(directional·投影) + fill(ambient) + post(移轴/泛光)', () => {
+  it('数据化光照：sun(directional·投影·曝光收敛) + fill(ambient)；Post3D 暂移除（景深/过曝整改）', () => {
     const e = new Engine();
     e.load(dioramaBlueprint());
     const lights = getLights3D(e.world);
     expect(lights.map(([, l]) => l.kind).sort()).toEqual(['ambient', 'directional']);
-    expect(lights.find(([, l]) => l.kind === 'directional')?.[1].castShadow).toBe(true);
-    expect(getPost3D(e.world)?.tiltShift).toBeTruthy();
+    const sun = lights.find(([, l]) => l.kind === 'directional')?.[1];
+    expect(sun?.castShadow).toBe(true);
+    expect(sun?.intensity).toBeLessThanOrEqual(1.2); // 曝光收敛：太阳不过亮（owner「太亮·过曝」）
+    expect(getPost3D(e.world)).toBeFalsy(); // 移轴景深/泛光暂移除（owner「景深表现奇怪·先移掉」）
   });
 
   it('可控角色 hero：2D Transform + Velocity + Model3D 小黄鸭（无 transform3d·盒庭模式落地面）', () => {
