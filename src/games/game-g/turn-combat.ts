@@ -570,9 +570,10 @@ function scoreDraw(b: TurnBattle, from: 'poker' | 'tengang'): number {
   return s;
 }
 type AiCand = { kind: 'deploy' | 'cast' | 'draw' | 'disha'; handIdx: number; lane: number; from: 'poker' | 'tengang'; score: number };
-/** Boss 回合（utility AI）。aggTengang：caller(game-g) 传天罡聚合器 → Boss 施法后重算 tengangA 即时生效(避免 turn-combat ← blueprint 环依赖)。
- *  返回本回合 AI 打出的地煞 id 列表（caller 据此放「敌用地煞」全屏通知·REQ-G #6）。 */
-export function aiTakeTurn(b: TurnBattle, aggTengang?: (ids: readonly string[]) => TengangFx): string[] {
+/** Boss 决策阶段（utility AI·只放牌/施法/抽·**不结束回合不推进**）。owner 2026-06-29：拆出「敌方决策」与「敌方行动」
+ *  两阶段→ caller 可在两者间插「敌方决策」过场 + 渲染让玩家看清敌方布阵，再单独 endTurn 演「敌方行动」推进动画。
+ *  aggTengang：caller(game-g) 传天罡聚合器 → Boss 施法后重算 tengangA 即时生效。返回本回合打出的地煞 id（caller 全屏通知·REQ-G #6）。 */
+export function aiDecide(b: TurnBattle, aggTengang?: (ids: readonly string[]) => TengangFx): string[] {
   const castDishaIds: string[] = [];
   if (b.winner !== 'pending' || b.active !== 'b') return castDishaIds;
   // 大炮兵（地煞·关4）：每 N 回合压你兵最多的一路 → 该路你掷命 −winPct（应用到你下个推进的遭遇）。
@@ -604,8 +605,14 @@ export function aiTakeTurn(b: TurnBattle, aggTengang?: (ids: readonly string[]) 
     else ok = drawCard(b, 'b', pick.from);
     if (!ok) break;
   }
-  endTurn(b);
   return castDishaIds;
+}
+
+/** Boss 整回合（决策 + 行动一气呵成·仿真台/兼容旧调用用）。live 游戏改用 aiDecide + endTurn 分两阶段演出（owner 2026-06-29）。 */
+export function aiTakeTurn(b: TurnBattle, aggTengang?: (ids: readonly string[]) => TengangFx): string[] {
+  const ids = aiDecide(b, aggTengang);
+  endTurn(b);
+  return ids;
 }
 
 // 战局是否还有未决（任一路有兵 / 任一方手牌或牌库还能动）——给跑到底/仿真台用。

@@ -7,7 +7,7 @@ import { type ClashEvent } from './combat-types.js';
 import { freshSave, loadSave, persist, resetFortuneIfNewDay, FORTUNE_MAX, activeDeck, syncTiangangs, newDeckId, rollBoss, TIANGANG_DECK_SIZE, MAX_TIANGANG_DECKS } from './game-g-save.js';
 import { favorToP, cardRank, avg, describeFormation, pick3, buildPickDeck, bossHeroCard, aggregateTengang, seededShuffleArr } from './game-g-build.js';
 import { clashToTurnView } from './game-g-clash-view.js';
-import { initTurnBattle, drawCard, deployUnit, castTengang, discardCard, endTurn, aiTakeTurn, toggleGate, GATES, OPENING_HAND, DRAW_COST, CAST_COST, type PokerCard, type TengangHandCard, type Card } from './turn-combat.js';
+import { initTurnBattle, drawCard, deployUnit, castTengang, discardCard, endTurn, aiDecide, toggleGate, GATES, OPENING_HAND, DRAW_COST, CAST_COST, type PokerCard, type TengangHandCard, type Card } from './turn-combat.js';
 import { DISHA_NAME } from './disha.js';
 import { mountTurnBattle, buildTurnBattleView, type TurnBattleView, type TurnBattleActions, type TurnClashView, type TurnShaView } from './turn-battle-screen.js';
 import { mountCoinFlip } from './coin-flip.js';
@@ -445,43 +445,49 @@ export function mount(container: HTMLElement, shell?: { exit?: () => void }): ()
       });
     };
     const finishTurnSeq = (): void => { busy = false; selMode = null; selHand = -1; if (tb.winner !== 'pending') settleTurn(); else { log(`◀ T${tb.turn} 我方回合开始 · 源泉 我${tb.a.mana} / 敌${tb.b.mana}`); mounted?.update(); } syncCoach(); };
-    const runAiThenContinue = (): void => { // 玩家推进特写演完 → 敌方回合播报 → AI 思考 → AI 行动 + 掷命 → 我方回合播报 → 回到玩家
+    // 顺序回合·分阶段演出（owner 2026-06-29「我方决策→我方行动→敌方决策→敌方行动·要看到牌往前移动 + 过场说明」）。
+    // 推进一方 + 行军滑动(FLIP·turn-battle-screen render 内) + 掷命特写，演完调 next。endTurn 按 active 推进对应方。
+    const advancePerf = (next: () => void): void => {
+      const before = snapSlots();
+      endTurn(tb); // 按 active 推进：我方回合→advanceSide('a')；敌方行动(aiDecide 后 active 仍 'b')→advanceSide('b')
+      justMovedIds = diffMoved(before); // 标记行军兵 → render FLIP 从旧格滑到新格
+      drainClashes();
+      mounted?.update(); // 立刻渲染推进（滑动动画在 render 内 FLIP）
+      window.setTimeout(() => { justMovedIds = new Set(); if (!perfClash) mounted?.update(); }, 600); // 滑完清标记（掷命特写中不重渲·防飞入重启）
+      playPerf(next); // 演本方掷命特写 → next
+    };
+    const runAiAct = (): void => { // 敌方行动阶段：敌方兵线推进 + 掷命（与决策分演·owner 过场说明）
       if (tb.winner !== 'pending') { finishTurnSeq(); return; }
-      showBanner('敌方回合', 1300, () => {
+      showBanner('敌方行动', 800, () => { log(`敌·行动：兵线推进（源泉 我${tb.a.mana}/敌${tb.b.mana}）`); advancePerf(() => showBanner('我方回合 · 决策', 1000, finishTurnSeq)); });
+    };
+    const runAiDecide = (): void => { // 敌方决策阶段：AI 放牌/施法/打地煞（**不推进**）→ 玩家看清敌方布阵，再单独演行动
+      if (tb.winner !== 'pending') { finishTurnSeq(); return; }
+      showBanner('敌方决策', 1000, () => {
         startThinking(() => {
           const before = snapSlots();
           const prevCastIds = [...tb.b.castIds];
-          const usedDisha = aiTakeTurn(tb, aggregateTengang); // Boss utility AI（画像驱动·施法即重算 tengangA 生效）→ 返回本回合 AI 打出的地煞 id
-          justMovedIds = diffMoved(before);
-          // 新部署的敌兵（before 没有的 id）→ 逐张落子 g-drop 错峰 + 叭叭叭部署音（owner 2026-06-21）
-          freshIds = new Map(); let fi = 0;
-          const newFoe: string[] = [];
+          const usedDisha = aiDecide(tb, aggregateTengang); // 只决策·不结束回合（owner 2026-06-29 顺序回合·决策与行动分演）
+          justMovedIds = new Set(); // 决策阶段不推进 → 无行军滑动
+          // 新部署的敌兵（before 没有的 id）→ 逐张落子错峰 + 部署音
+          freshIds = new Map(); let fi = 0; const newFoe: string[] = [];
           for (const L of tb.lanes) for (const u of L.b) if (!before.has(u.id)) { freshIds.set(u.id, fi); const d = fi * 150; window.setTimeout(() => playSfx('deploy'), d); fi++; newFoe.push(`${u.rank}${SUITNM2[u.suit] ?? ''}→${LANE_NM[tb.lanes.indexOf(L)] ?? '?'}`); }
           const newCast = tb.b.castIds.filter((id) => !prevCastIds.includes(id)).map((id) => tgName(id));
           usedDisha.forEach((id) => log(`敌·施放地煞「${DISHA_NAME[id] ?? id}」（整场生效）`));
-          log(`敌·行动：部署[${newFoe.join('、') || '无'}]${newCast.length ? ` 施天罡[${newCast.join('、')}]` : ''} → 结束放置 → ▶行动阶段（源泉 我${tb.a.mana}/敌${tb.b.mana}）`);
-          mounted?.update();
-          window.setTimeout(() => { justMovedIds = new Set(); freshIds = new Map(); if (!perfClash) mounted?.update(); }, Math.max(550, fi * 150 + 380)); // 错峰落子播完再清标记（掷命特写中不重渲·防 3D 飞入重启）
-          // 推进掷命 + 回合交还；若 AI 打了地煞 → 先全屏通知（REQ-G #6）再演（逐张串行）。
-          const proceedPerf = (): void => { drainClashes(); playPerf(() => showBanner('我方回合', 1100, finishTurnSeq)); };
-          if (usedDisha.length) {
-            let qi = 0;
-            const nextDisha = (): void => { if (qi >= usedDisha.length) { proceedPerf(); return; } const nm = DISHA_NAME[usedDisha[qi++]] ?? '地煞'; playSfx('cast'); showBanner(`敌人使用地煞 · ${nm}`, 1500, nextDisha); };
-            nextDisha();
-          } else proceedPerf();
+          log(`敌·决策：部署[${newFoe.join('、') || '无'}]${newCast.length ? ` 施天罡[${newCast.join('、')}]` : ''}（源泉 我${tb.a.mana}/敌${tb.b.mana}）`);
+          mounted?.update(); // 敌方布阵落子
+          const afterDeploy = Math.max(700, fi * 150 + 450);
+          window.setTimeout(() => { freshIds = new Map(); if (!perfClash) mounted?.update(); }, afterDeploy);
+          // 决策演完 →（地煞全屏通知·REQ-G #6）→ 敌方行动阶段
+          const toAct = (): void => { window.setTimeout(runAiAct, afterDeploy); };
+          if (usedDisha.length) { let qi = 0; const nextDisha = (): void => { if (qi >= usedDisha.length) { toAct(); return; } const nm = DISHA_NAME[usedDisha[qi++]] ?? '地煞'; playSfx('cast'); showBanner(`敌人使用地煞 · ${nm}`, 1500, nextDisha); }; nextDisha(); }
+          else toAct();
         });
       });
     };
     const commitEndTurn = (): void => {
       if (busy || tb.winner !== 'pending' || tb.active !== 'a') return;
-      busy = true; selMode = null; selHand = -1; gateChance = false; playSfx('endTurn'); coachDid('endturn'); log('我·结束回合 → 我方推进/攻击（顺序回合·我先动我先打）→ 待敌方回合');
-      const before = snapSlots();
-      endTurn(tb);
-      justMovedIds = diffMoved(before);
-      drainClashes();
-      mounted?.update(); // 立刻渲染推进动画，然后再演掷命特写
-      window.setTimeout(() => { justMovedIds = new Set(); if (!perfClash) mounted?.update(); }, 550); // 动画播完清标记（掷命特写中不重渲·否则 3D 飞入会重启=弹两次·owner 2026-06-21）
-      playPerf(runAiThenContinue);
+      busy = true; selMode = null; selHand = -1; gateChance = false; playSfx('endTurn'); coachDid('endturn'); log('我·结束回合 → 我方行动（推进/攻击·顺序回合）');
+      showBanner('我方行动', 750, () => advancePerf(runAiDecide)); // 我方决策(放牌)毕 → 我方行动(推进+滑动+掷命) → 敌方决策
     };
     const actions: TurnBattleActions = {
       pickAction: (kind) => { if (busy || tb.active !== 'a') return; if (kind !== 'discard' && tb.actionTaken && tb.actionTaken !== kind) return; selMode = selMode === kind ? null : kind; selHand = -1; gateChance = false; playSfx('select'); mounted?.update(); syncCoach(); }, // 弃牌不互斥；进「抽」模式 → 先重渲让摸牌钮(combat-draw-pick)落 DOM，再 syncCoach 让引导高亮跟到它（owner 2026-06-21·否则高亮锚不到没渲出的钮）

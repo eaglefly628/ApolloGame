@@ -800,9 +800,31 @@ export function mountTurnBattle(host: HTMLElement, getView: () => TurnBattleView
     }
     prevLit = litNow;
     const sc = scaleOf(); // 先量后写：缩放烤进首帧 markup（单次绘制·无未缩放帧）。
+    // ── 行军滑动动画（owner 2026-06-29「要看到牌往前移动的过程」·FLIP：First-Last-Invert-Play）──
+    // 棋盘整片 innerHTML 重建·原本兵牌瞬移到新格（无过渡）。FLIP：重建前记每个兵元素旧屏幕坐标 → 重建后比新坐标 →
+    // 给兵元素先 invert 回旧位(transform)·下一帧过渡到 0 → 视觉=从旧格滑到新格（含疾行 2 格·真实位移）。
+    // 仅在「本帧有兵 justMoved」时跑（推进帧）→ 选牌/hover 等高频重渲不付 reflow 代价（掌机友好）。
+    const willMove = view.lanes.some((L) => L.slots.some((s) => s.hasUnit && s.justMoved));
+    const unitBoxes = (): Map<string, DOMRect> => { // 各兵容器(#u-<id>·每格首个 [id^=u-])的当前屏幕矩形
+      const m = new Map<string, DOMRect>();
+      host.querySelectorAll('[id^="cell-"]').forEach((cell) => { const u = cell.querySelector('[id^="u-"]') as HTMLElement | null; if (u) m.set(u.id, u.getBoundingClientRect()); });
+      return m;
+    };
+    const first = willMove ? unitBoxes() : null; // FIRST：重建前旧位
     // ⚠ 用 CSS zoom 而非 transform:scale —— zoom 是 CPU 布局缩放、不生成合成图层；掌机弱 GPU 合成「整屏 transform 缩放图层」会失败→黑屏（Mac 好 GPU 正常·owner 2026-06-22 烧版「apollo 绿字+黑屏」=此因）。zoom 即便不被支持也只是不缩放=裁切·绝不黑。
     const innerStyle: Style = { ...(THEMES[view.theme] ?? THEMES.onyx), width: '1520px', height: '858px', zoom: sc, fontFamily: 'var(--fb)' };
     host.innerHTML = `<div class="ggt-outer" style="position:relative; width:100%; height:100%; overflow:hidden; background:#0c0a08; display:flex; align-items:center; justify-content:center"><div class="ggt-inner" style="${st(innerStyle)}">${buildTurnFrameHTML(view, drain)}</div></div>`; // outer 占满 stage·flex 居中棋盘·四周对称留白(contain)
+    if (first) { // LAST + INVERT + PLAY
+      const z = sc || 1; // getBoundingClientRect 是 zoom 后屏幕坐标；transform 在元素本地空间(zoom 前) → 位移除以 zoom
+      host.querySelectorAll('[id^="cell-"]').forEach((cell) => {
+        const u = cell.querySelector('[id^="u-"]') as HTMLElement | null; if (!u) return;
+        const old = first.get(u.id); if (!old) return; // 新部署兵无旧位 → 不滑（走落子动画/直接出现）
+        const now = u.getBoundingClientRect(); const dx = (old.left - now.left) / z, dy = (old.top - now.top) / z;
+        if (Math.abs(dx) < 0.5 && Math.abs(dy) < 0.5) return; // 没动 → 跳过
+        u.style.transform = `translate(${dx}px,${dy}px)`; u.style.transition = 'none';
+        requestAnimationFrame(() => { u.style.transition = 'transform .34s cubic-bezier(.22,.7,.3,1)'; u.style.transform = 'none'; });
+      });
+    }
   };
   // 坞/格/牌/门 交互用 pointerdown（同 battle-screen）：rAF/重渲在按下↔抬起间整片重建 DOM，click 会落空 → 用单次离散 pointerdown。
   const onPress = (e: MouseEvent): void => {
