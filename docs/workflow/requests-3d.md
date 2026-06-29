@@ -48,7 +48,8 @@
 >   - **debug 线框**：`collider-debug.ts` 加 hull（`ConvexGeometry` 从顶点重建·render-only）。
 >   - **demo**：game-z 加 `angle-wall`（绕 Y 转 30° 石板·Transform3D.rotY render + hull collision·**顶点由轴+半尺寸只用 ×/+ 生成→跨机确定**）。开菜单见斜置 hull 线框（黄）——证明 SAT 按真朝向判定·非轴对齐 AABB。
 >   - **测试**：`contact3d.test` +5（轴对齐 hull·**转 45° 真旋转：球落 AABB 内但盒外→SAT 判分离**·hull-hull 15 轴·hull-胶囊·确定性）。tsc+vitest+build+截图全绿。
-> - **⬜ 待续**：3D `collision-resolve`（推开·墙阻挡·现只检测不推·按需）；P3 物理表现轨（纯表现·Rapier·YAGNI）。
+> - **✅ 3D 碰撞响应（owner 2026-06-28「鸭子穿墙·只检测没碰撞」→ 补响应）**：`skills/atoms/collision-resolve-3d`（镜像 2D `collision-resolve`·确定性 sim·进 hash·Resolve 阶段）——读 `Overlap3D` → 顺序冲量(速度) + NGS(位置)把动态体推出静态墙。**XZ 地面解算**（取接触法线水平分量·实体竖直锁 baseY·纯竖直接触跳过）；逆质量：无 Velocity=静态、有=动态；trigger 不解算（触发区可穿入）。game-z 接入 → 小黄鸭撞墙被挡、贴墙滑。测试 4（推出/速度清/trigger 跳过/两世界 hash 一致）。
+> - **⬜ 待续**：动态-动态堆叠/质量分摊已支持(同 2D 核)·更复杂刚体走 P3 物理表现轨（纯表现·Rapier·YAGNI）。
 > **架构守则（贯穿·下同）不变。**
 
 

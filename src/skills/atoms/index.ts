@@ -13,6 +13,7 @@ import { shapeCapability } from './shape/index.js';
 import { overlapDetectCapability } from './overlap-detect/index.js';
 import { overlapDetect3dCapability } from './overlap-detect-3d/index.js';
 import { navmeshBakeCapability } from './navmesh-bake/index.js';
+import { collisionResolve3dCapability } from './collision-resolve-3d/index.js';
 import { timerCapability } from './timer/index.js';
 import { resourceCapability } from './resource/index.js';
 import { flagCapability } from './flag/index.js';
@@ -46,6 +47,7 @@ export {
   overlapDetectCapability,
   overlapDetect3dCapability,
   navmeshBakeCapability,
+  collisionResolve3dCapability,
   timerCapability,
   resourceCapability,
   flagCapability,
@@ -83,6 +85,7 @@ export const allAtomCapabilities: CapabilityDefinition[] = [
   overlapDetectCapability,
   overlapDetect3dCapability,
   navmeshBakeCapability,
+  collisionResolve3dCapability,
   timerCapability,
   resourceCapability,
   flagCapability,

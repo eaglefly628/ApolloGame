@@ -11,7 +11,7 @@ describe('Game Z · 3D 盒庭蓝图（纯数据 · 仅现成 motion-apply 能力
   it('只用现成能力（motion-apply + overlap-detect-3d + navmesh-bake + 主程 pathfind·无专属 system）', () => {
     const caps = dioramaBlueprint().capabilities;
     const names = caps.map((c) => c.describe.name).sort();
-    expect(names).toEqual(['motion-apply', 'navmesh-bake', 'overlap-detect-3d', 'pathfind']);
+    expect(names).toEqual(['collision-resolve-3d', 'motion-apply', 'navmesh-bake', 'overlap-detect-3d', 'pathfind']);
   });
 
   it('角色挂 Collider3D 胶囊 + 触发区 zone（Collider3D box trigger·3D 逻辑碰撞）', () => {

@@ -9,7 +9,7 @@
 
 import type { WorldBlueprint } from '../../assembly/demo.assembly.js';
 import { motionApplyCapability } from '@skills/tier1/index.js';
-import { overlapDetect3dCapability, navmeshBakeCapability } from '@skills/atoms/index.js';
+import { overlapDetect3dCapability, navmeshBakeCapability, collisionResolve3dCapability } from '@skills/atoms/index.js';
 import { pathfindCapability } from '@skills/tier2/index.js';
 import { MODEL_DUCK } from './assets.js';
 
@@ -61,7 +61,7 @@ export function dioramaBlueprint(): WorldBlueprint {
   return {
     // 角色 velocity→motion-apply 走动 + overlap-detect-3d 3D 逻辑碰撞 + navmesh-bake（自动烘 NavGraph）+ 主程 pathfind
     // （A* 沿路跟随）—— 皆确定性 sim·进 hash。寻路：自动生成（非手摆），复用主程 NavGraph/NavAgent/pathfind。
-    capabilities: [motionApplyCapability, overlapDetect3dCapability, navmeshBakeCapability, pathfindCapability],
+    capabilities: [motionApplyCapability, overlapDetect3dCapability, collisionResolve3dCapability, navmeshBakeCapability, pathfindCapability],
     entities: {
       // 盒庭相机（REQ-3D-Camera·语义参数全数据化）：轨道俯角环绕·fov/俯仰夹角进数据（不再写死在渲染器/胶水）。
       // 运行时：拖拽改 yaw/pitch、滚轮改 distance（行为层）；O 切正交、F 切跟随小黄鸭（game-z.ts 输入胶水）。
