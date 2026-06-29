@@ -303,7 +303,7 @@ function handCardNode(c: TurnHandCardView, i: number, hiOn: boolean): LayoutNode
   const sel = c.selected || hiOn;
   let card: LayoutNode;
   if (c.kind === 'gang') {
-    card = { type: 'Panel', id: `h${i}`, props: { bg: 'var(--panel)', edge: 'gold' }, layout: { width: 88, height: 112, radius: 12, direction: 'column', gap: 0, padding: 0, ...(sel ? { scale: 1.04 } : {}) }, children: [
+    card = { type: 'Panel', id: `h${i}`, props: { bg: 'var(--panel)', edge: 'gold' }, layout: { width: 88, height: 112, radius: 12, direction: 'column', gap: 0, padding: 0, ...(sel ? { fx: [{ kind: 'glow', color: 'gold', ms: 900 }] } : {}) }, children: [
       { type: 'Panel', id: `h${i}-top`, props: { bg: 'linear-gradient(180deg,#a98bff44,#a98bff11)' }, layout: { height: 42, align: 'center', justify: 'center', radius: 10 }, children: [{ type: 'Panel', id: `h${i}-ic`, props: { bg: '#a98bff' }, layout: { width: 38, height: 38, radius: 99, align: 'center', justify: 'center', padding: 0 }, children: [{ type: 'Label', id: `h${i}-icg`, props: { text: c.glyph || '✦', size: 22, color: 'text' } }] }] },
       { type: 'Panel', id: `h${i}-bd`, props: { bare: true }, layout: { direction: 'column', align: 'center', gap: 4, padding: 8 }, children: [
         { type: 'Label', id: `h${i}-nm`, props: { text: c.name, size: 13, color: 'text', bold: true } },
@@ -328,7 +328,7 @@ function handCardNode(c: TurnHandCardView, i: number, hiOn: boolean): LayoutNode
     ];
     if (c.cost > 0) children.push(costDropNode(c.cost, `h${i}`));
     if (isGen) children.push({ type: 'Label', id: `h${i}-gen`, props: { text: '⭐ 主将', size: 9, color: 'gold', bold: true }, layout: { y: -13, x: 18 } });
-    card = { type: 'Panel', id: `h${i}`, props: { bg: sideFace(true), edge: isGen ? 'gold' : 'mine' }, layout: { width: 88, height: 112, radius: 12, direction: 'column', justify: 'between', align: 'center', padding: 4, ...(sel || isGen ? { fx: [{ kind: 'glow', color: 'gold', ms: 1200 }] } : {}), ...(sel ? { scale: 1.04 } : {}) }, children };
+    card = { type: 'Panel', id: `h${i}`, props: { bg: sideFace(true), edge: sel || isGen ? 'gold' : 'mine' }, layout: { width: 88, height: 112, radius: 12, direction: 'column', justify: 'between', align: 'center', padding: 4, ...(sel || isGen ? { fx: [{ kind: 'glow', color: 'gold', ms: 1200 }] } : {}) }, children };
   }
   return card;
 }
