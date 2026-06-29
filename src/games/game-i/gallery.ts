@@ -683,7 +683,10 @@ export const MODULES: ReadonlyArray<{ id: string; glyph: string; label: string; 
   { id: 'mod-3d-post', glyph: '🔭', label: '景深 · 泛光', desc: 'Post3D 移轴景深 + bloom', tone: 'normal' as const, dim: '3d' },
   { id: 'mod-3d-nav', glyph: '🧭', label: '3D 寻路', desc: 'navmesh 自动烘焙 + 绕障追逐', tone: 'normal' as const, dim: '3d' },
   { id: 'mod-3d-collide', glyph: '🎯', label: '3D 碰撞', desc: 'Collider3D / Overlap3D · 触发区', tone: 'normal' as const, dim: '3d' },
-  { id: 'mod-3d-particle', glyph: '🎇', label: '3D 粒子', desc: 'prefab → Mesh3D 火花 · 泛光', tone: 'normal' as const, dim: '3d' },
+  { id: 'mod-3d-particle', glyph: '🎇', label: '3D 粒子（prefab）', desc: 'prefab → Mesh3D 火花 · 泛光', tone: 'normal' as const, dim: '3d' },
+  { id: 'mod-3d-vfx', glyph: '🌟', label: '3D 粒子（Vfx3D）', desc: '数据驱动发射器 · 锥喷+重力+渐变', tone: 'normal' as const, dim: '3d' },
+  { id: 'mod-3d-text', glyph: '🔤', label: '头顶 3D 文字', desc: 'WorldUI3D · 世界空间 UI 标签', tone: 'normal' as const, dim: '3d' },
+  { id: 'mod-3d-ao', glyph: '🌑', label: '环境光遮蔽 AO', desc: 'Post3D.ao · 接触/缝隙压暗', tone: 'normal' as const, dim: '3d' },
 ];
 
 /**
@@ -1039,9 +1042,18 @@ function moduleBody(
     case 'mod-3d-collide': return buildSimStage('3dcollide', '🎯', '3D 碰撞 · Collider3D / Overlap3D',
       '两个盒（球碰撞体 / 盒碰撞体）来回穿过中央触发区，overlap-detect-3d 每帧解析判交、产 Overlap3D 事件（触发区只报不推）。线框=碰撞体（实心黄 / 触发绿），位置每帧跟随。',
       ['Collider3D', 'overlap-detect-3d', 'Overlap3D', 'trigger']);
-    case 'mod-3d-particle': return buildSimStage('3dpart', '🎇', '3D 粒子 · prefab → Mesh3D',
+    case 'mod-3d-particle': return buildSimStage('3dpart', '🎇', '3D 粒子（prefab）· prefab → Mesh3D',
       '2D 库B 套路搬到 3D：发射器 Timer→event-when→caster 周期引爆「爆炸环」prefab，一圈小盒火花放射（motion-apply）+ Timer 到期 lifetime 自毁，叠 Post3D bloom 发光。新特效=加一份 prefab 数据，ThreeRenderer 照渲。',
       ['caster', 'prefab', 'Mesh3D', 'lifetime', 'Post3D·bloom']);
+    case 'mod-3d-vfx': return buildSimStage('3dvfx', '🌟', '3D 粒子（Vfx3D）· 数据驱动发射器',
+      'TA「Niagara-lite」专门的粒子机：一个 Vfx3D 组件 = 一台发射器——锥形喷射 + 重力回落 + size/color over life 曲线/渐变 + 加色发光。三股金/玉/玫喷泉，render-only 不进 hash。比 prefab 那套更专业、参数即数据。',
+      ['Vfx3D', 'cone', 'gravity', 'colorGradient', 'Post3D·bloom']);
+    case 'mod-3d-text': return buildSimStage('3dtext', '🔤', '头顶 3D 文字 · WorldUI3D',
+      '世界空间 UI：每个盒挂一个 WorldUI3D（头顶名字/血量/状态），渲染器把实体锚点投影到屏幕、在该处用引擎 UI 库 mountUI 挂一棵 LayoutNode Label（UI 铁律·非手写 DOM）。相机转/物体动时标签跟着头顶飘。',
+      ['WorldUI3D', 'mountUI', 'LayoutNode', '世界锚+投影']);
+    case 'mod-3d-ao': return buildSimStage('3dao', '🌑', '环境光遮蔽 · Post3D.ao（GTAO）',
+      '一个 Post3D.ao 启 GTAO 地面真值环境光遮蔽：紧挨的盒堆在接触缝隙/墙根处被压暗 → 厚重「接地」的盒庭玩具感（关泛光以凸显 AO）。intensity/radius/scale 全是数据。',
+      ['Post3D.ao', 'GTAO', '接触压暗', '盒庭质感']);
     case 'mod-physics': return buildSimStage('phys', '🟢', '运动与碰撞',
       'motion-apply（Velocity→Transform 运动学）+ overlap-detect（碰撞检测）+ collision-resolve（按质量推开=碰撞响应）。四物体相向运动、于中心相撞被推开。纯蓝图，无专属代码。',
       ['motion-apply', 'overlap-detect', 'collision-resolve']);

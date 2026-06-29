@@ -152,6 +152,74 @@ export function collide3dBlueprint(): WorldBlueprint {
   };
 }
 
+// ── ⑥ 头顶 3D 文字 WorldUI3D（世界空间 UI·锚实体投影到屏幕·经 mountUI 渲 LayoutNode Label）：盒上飘名字/血量/状态。
+export function text3dBlueprint(): WorldBlueprint {
+  const titled = (x: number, z: number, h: number, front: number, edge: number, text: string, color: string, glow: boolean): Ent => ({
+    Transform: { x, y: z, rotation: 0, scaleX: 1, scaleY: 1 },
+    Transform3D: { x, y: h / 2, z },
+    Mesh3D: { shape: 'box', width: 8, height: h, depth: 8, frontTint: front, backTint: front, edgeTint: edge },
+    WorldUI3D: { text, offsetY: h / 2 + 4, size: 'sm', color, glow },
+  });
+  return {
+    capabilities: [transformCapability],
+    entities: {
+      ...sceneBase(),
+      boss: titled(0, 0, 16, 0x8e44ad, 0x6c3483, '★ 暗影领主  Lv.70', 'gold', true),
+      'ally-1': titled(-20, 6, 10, 0x2980b9, 0x1f618d, '索瑞森  HP 6100', 'jade', false),
+      'ally-2': titled(20, -6, 12, 0x27ae60, 0x1e8449, '艾拉娜  能量 88', 'ok', false),
+      'mob-1': titled(-12, -18, 7, 0xc0392b, 0x922b21, '小怪 ×3', 'danger', false),
+    },
+  };
+}
+
+// ── ⑦ 环境光遮蔽 AO（Post3D.ao·GTAO）：紧挨的盒堆，接触缝隙被压暗 → 厚重接地的盒庭玩具感。
+export function ao3dBlueprint(): WorldBlueprint {
+  return {
+    capabilities: [transformCapability],
+    entities: {
+      ...sceneBase(),
+      // 强 AO + 关泛光，凸显接触压暗（缝隙/墙根变深）。
+      post: { Post3D: { ao: { intensity: 1.4, radius: 5, scale: 1 } } },
+      // 紧挨成簇的盒堆（多接触面 = AO 最显处）。
+      'b1': box(-6, 3, -6, 10, 6, 10, 0xd7ccc8, 0xa1887f),
+      'b2': box(5, 3, -5, 9, 6, 9, 0xcfd8dc, 0x90a4ae),
+      'b3': box(-4, 3, 6, 8, 6, 8, 0xe0e0e0, 0xbdbdbd),
+      'b4': box(7, 9, 4, 7, 6, 7, 0xffe0b2, 0xffb74d),
+      'tower': box(0, 12, 0, 6, 18, 6, 0xb0bec5, 0x78909c),
+    },
+  };
+}
+
+// ── ⑧ 数据驱动 3D 粒子 Vfx3D（TA「Niagara-lite」·render-only）：锥形喷泉，重力回落、size/color over life、加色发光。
+//      区别于 ⑤(prefab→Mesh3D 那套)：Vfx3D 是专门的发射器闭集模块，一个组件就是一台粒子机。
+export function vfx3dBlueprint(): WorldBlueprint {
+  const fountain = (x: number, z: number, color: number, speed: number): Ent => ({
+    Transform3D: { x, y: 2, z },
+    Vfx3D: {
+      rate: 70, lifetime: 1.6, lifeVar: 0.4, max: 220,
+      shape: 'cone', coneAngle: 0.35, speed, speedVar: speed * 0.3,
+      gravity: 11, drag: 0.1, size: 1.4,
+      sizeCurve: { keys: [{ t: 0, v: 0.4 }, { t: 0.25, v: 1 }, { t: 1, v: 0 }] },
+      colorGradient: { stops: [{ t: 0, color: 0xffffff, alpha: 1 }, { t: 0.4, color, alpha: 1 }, { t: 1, color, alpha: 0 }] },
+      blend: 'add',
+    },
+  });
+  return {
+    capabilities: [transformCapability],
+    entities: {
+      ...sceneBase(),
+      // 暗暮天空 + 高 bloom 阈值：发光加色粒子在暗背景上才炸得出来（亮天空会被加色洗白）。
+      sky: { Sky3D: { top: 0x0a0e1f, bottom: 0x241a33, clouds: false } },
+      sun: { Light3D: { kind: 'directional', color: 0x6a7fd0, intensity: 0.5, castShadow: true } },
+      fill: { Light3D: { kind: 'ambient', color: 0x303a5a, intensity: 0.5 } },
+      post: { Post3D: { bloom: { strength: 1.1, radius: 0.6, threshold: 0.86 } } },
+      'fx-gold': fountain(-16, 0, 0xffd86b, 15),
+      'fx-jade': fountain(0, -4, 0x6cf0d0, 18),
+      'fx-rose': fountain(16, 0, 0xff7ab0, 15),
+    },
+  };
+}
+
 // ── ⑤ 3D 粒子（prefab→Mesh3D·复用 2D 库B 套路·ThreeRenderer 渲染）：定时引爆一圈小盒火花，平面放射 + 寿命自毁；叠泛光发光。
 //      说明：粒子走 2D motion-apply（planar）渲成 3D 小盒；体积运动(升空/重力)是 P3D 后续（设计取舍·非缺口）。
 export function particle3dBlueprint(): WorldBlueprint {

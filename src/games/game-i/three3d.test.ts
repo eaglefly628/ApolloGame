@@ -1,7 +1,7 @@
 // 3D 能力展台蓝图：纯数据加载 + tick 不抛；nav 蓝图真能寻路（追兵被 pathfind 写出位移）；粒子真生成。
 import { describe, it, expect } from 'vitest';
 import { Engine } from '../../runtime/engine.js';
-import { light3dBlueprint, post3dBlueprint, nav3dBlueprint, collide3dBlueprint, particle3dBlueprint } from './three3d.js';
+import { light3dBlueprint, post3dBlueprint, nav3dBlueprint, collide3dBlueprint, particle3dBlueprint, text3dBlueprint, ao3dBlueprint, vfx3dBlueprint } from './three3d.js';
 
 function run(bp: ReturnType<typeof light3dBlueprint>, ticks: number): Engine {
   const e = new Engine();
@@ -11,10 +11,20 @@ function run(bp: ReturnType<typeof light3dBlueprint>, ticks: number): Engine {
 }
 
 describe('Game I · 3D 能力展台蓝图', () => {
-  it('五个蓝图都纯数据加载 + 长跑 tick 不抛错', () => {
-    for (const bp of [light3dBlueprint, post3dBlueprint, nav3dBlueprint, collide3dBlueprint, particle3dBlueprint]) {
+  it('八个蓝图都纯数据加载 + 长跑 tick 不抛错', () => {
+    for (const bp of [light3dBlueprint, post3dBlueprint, nav3dBlueprint, collide3dBlueprint, particle3dBlueprint, text3dBlueprint, ao3dBlueprint, vfx3dBlueprint]) {
       expect(() => run(bp(), 120)).not.toThrow();
     }
+  });
+
+  it('新特性组件齐：WorldUI3D（头顶文字）/ Post3D.ao / Vfx3D 都在蓝图里', () => {
+    const t = new Engine(); t.load(text3dBlueprint());
+    expect(t.world.query('WorldUI3D').length).toBeGreaterThanOrEqual(4);
+    const a = new Engine(); a.load(ao3dBlueprint());
+    const post = a.world.getComponent('post', 'Post3D') as unknown as { ao?: unknown };
+    expect(post.ao).toBeTruthy(); // AO 数据在
+    const v = new Engine(); v.load(vfx3dBlueprint());
+    expect(v.world.query('Vfx3D').length).toBe(3); // 三股喷泉发射器
   });
 
   it('光照/景深场景含 Camera3D + Light3D + Sky3D（渲染器自动读）', () => {
