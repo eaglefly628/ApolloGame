@@ -61,14 +61,15 @@ describe('Game Z · 3D 盒庭蓝图（纯数据 · 仅现成 motion-apply 能力
     expect(getSky3D(e.world)?.clouds).toBe(true);
   });
 
-  it('数据化光照：sun(directional·投影·曝光收敛) + fill(ambient)；Post3D 暂移除（景深/过曝整改）', () => {
+  it('数据化光照：sun(directional·投影·曝光收敛) + fill(ambient) + 动态点光×2（TA Phase 2·预算内）；Post3D 暂移除', () => {
     const e = new Engine();
     e.load(dioramaBlueprint());
     const lights = getLights3D(e.world);
-    expect(lights.map(([, l]) => l.kind).sort()).toEqual(['ambient', 'directional']);
+    expect(lights.map(([, l]) => l.kind).sort()).toEqual(['ambient', 'directional', 'point', 'point']);
     const sun = lights.find(([, l]) => l.kind === 'directional')?.[1];
     expect(sun?.castShadow).toBe(true);
     expect(sun?.intensity).toBeLessThanOrEqual(1.2); // 曝光收敛：太阳不过亮（owner「太亮·过曝」）
+    expect(lights.filter(([, l]) => l.kind === 'point').length).toBeLessThanOrEqual(2); // 预算：≤2 盏动态局部光
     expect(getPost3D(e.world)).toBeFalsy(); // 移轴景深/泛光暂移除（owner「景深表现奇怪·先移掉」）
   });
 

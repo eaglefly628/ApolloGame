@@ -71,6 +71,9 @@ export function dioramaBlueprint(): WorldBlueprint {
       // 曝光收敛（owner 2026-06-28「太阳太亮·曝光过度」）：太阳 1.6→1.05、环境补光 0.45→0.55 提暗部。
       sun: { Light3D: { kind: 'directional', color: 0xfff1d6, intensity: 1.05, castShadow: true } },
       fill: { Light3D: { kind: 'ambient', color: 0xbfd2ff, intensity: 0.55 } },
+      // 动态局部光（TA Phase 2·预算 2 盏 point/spot）：① 魔法喷泉处的暖色点光（静态·把宝石/阶梯照亮·
+      // 与喷泉同处呼应）；② 见下方 seeker 身上挂的冷色点光（**移动**·随追兵寻路游走照亮路径）。
+      'light-fountain': { Light3D: { kind: 'point', color: 0xffce8a, intensity: 130, range: 34, x: 16, y: 9, z: 9 } },
 
       // 后处理 Post3D 暂移除（owner 2026-06-28「景深和一些东西表现得非常奇怪·先移掉」）：移轴景深(tiltShift)
       // 是为小盒庭调的焦带，关卡扩到 100² + 相机拉远后整屏发虚；泛光叠在过曝上更糊。待调好再按数据重加。
@@ -158,6 +161,8 @@ export function dioramaBlueprint(): WorldBlueprint {
         Mesh3D: { shape: 'box', width: 3.2, height: 3.2, depth: 3.2, frontTint: 0xff7043, backTint: 0xff7043, edgeTint: 0xffab91 },
         NavAgent: { speed: 0.45, arriveRange: 7 },
         Relation: { kind: 'target', targetId: 'hero' },
+        // 移动点光（TA Phase 2）：挂在追兵身上 → 读其 2D Transform 随寻路游走，冷色照亮脚下地面/经过的盒子。
+        Light3D: { kind: 'point', color: 0x6cc6ff, intensity: 95, range: 26, baseY: 5 },
       },
       // 寻路追兵②（蓝盒·迷墙后远角）：从 100² 远端出发，必须穿蛇形迷墙的两个缺口才能到中央 → 展示长程绕路寻路。
       'seeker-2': {

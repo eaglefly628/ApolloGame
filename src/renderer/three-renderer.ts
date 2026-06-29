@@ -120,7 +120,7 @@ export class ThreeRenderer implements RendererBackend {
     let followPose: Pose3D | undefined; // 收集期捕获 target 的位姿（= 相机注视点）
     const sky = getSky3D(world);
     this.syncSky(sky);
-    this.lights.sync(this.scene, getLights3D(world)); // 数据化光照（维护 lightSig 供脏标）
+    this.lights.sync(this.scene, getLights3D(world), world); // 数据化光照（维护 lightSig 供脏标·含动态局部光位姿）
     // VFX 粒子（TA Phase 1·render-only）：每帧 CPU 模拟推进。存活粒子数 >0 → 折进 renderSig 强制重渲（粒子在动）。
     const vfxLive = this.vfx.sync(this.scene, world, performance.now());
 

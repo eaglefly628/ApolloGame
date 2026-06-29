@@ -130,13 +130,21 @@ export interface Sky3D extends Component {
 // 暖主光 + 冷补光（向后兼容·three-lab/现有游戏不受影响）。红线：纯表现，绝不进 sim/hash（NON_DETERMINISTIC）。
 export interface Light3D extends Component {
   readonly type: 'Light3D';
-  kind: 'directional' | 'ambient';
+  kind: 'directional' | 'ambient' | 'point' | 'spot'; // point/spot = TA Phase 2 动态局部光
   color: number; // 0xRRGGBB
   intensity: number;
-  dirX?: number; // 平行光「去向」（渲染器归一化·缺省盒庭暖侧光向）。ambient 忽略。
+  dirX?: number; // directional 去向 / spot 朝向（渲染器归一化·缺省盒庭暖侧光向）。ambient/point 忽略。
   dirY?: number;
   dirZ?: number;
-  castShadow?: boolean; // 平行光·是否当主阴影灯（盒庭通常一盏投影·缺省取首盏平行光）
+  castShadow?: boolean; // directional·是否当主阴影灯（盒庭通常一盏投影·缺省取首盏平行光）。point/spot v1 不投影。
+  // ── point / spot（局部光·**可移动**：缺省读同实体 Transform3D，否则 2D Transform(x→X,y→Z)+baseY；
+  //     把 Light3D 挂在移动实体上 → 光随之走）。预算：渲染器限同时 2 盏动态 point/spot。
+  x?: number; y?: number; z?: number; // 显式世界位（优先）
+  baseY?: number; // 2D Transform 情形的离地高度
+  range?: number; // 衰减距离（0=无限·建议给值做局部光）
+  decay?: number; // 衰减指数（缺省 2·物理）
+  angle?: number; // spot 锥半角(弧度)
+  penumbra?: number; // spot 半影柔边 0..1
 }
 
 // ── Post3D（render-only，后处理管线 · 3D 盒庭微缩感）─────────────────────────────────────────
