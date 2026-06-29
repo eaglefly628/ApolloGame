@@ -9,7 +9,7 @@ import {
   TIANGANG_BY_ID, bossFor, RUN_BATTLES, deployCost, type ArmyCard,
 } from './index.js';
 import {
-  initTurnBattle, drawCard, deployUnit, castTengang, endTurn, aiTakeTurn,
+  initTurnBattle, drawCard, deployUnit, castTengang, endTurn, aiTakeTurn, bossOpeningGarrison, BOSS_GARRISON_MANA,
   OPENING_HAND, DRAW_COST, CAST_COST, type TurnBattle, type PokerCard, type TengangHandCard,
 } from './turn-combat.js';
 import { seededShuffle } from '@atom-skills/index.js'; // 洗牌收敛 atoms 单一真相（零漂移）
@@ -152,6 +152,7 @@ function runBattle(
 
   for (let i = 0; i < OPENING_HAND && tb.a.pokerDeck.length; i++) tb.a.hand.push(tb.a.pokerDeck.shift()!);
   for (let i = 0; i < OPENING_HAND && tb.b.pokerDeck.length; i++) tb.b.hand.push(tb.b.pokerDeck.shift()!);
+  bossOpeningGarrison(tb, BOSS_GARRISON_MANA, aggregateTengang); // 开局布防（owner 2026-06-29·敌方开场设防·与 live 一致）
 
   let firstClashTurn = -1, firstScoreTurn = -1, prevClash = 0, prevHA = tb.homeA, prevHB = tb.homeB;
   const MAX_TURNS = 300;

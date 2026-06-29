@@ -615,6 +615,19 @@ export function aiTakeTurn(b: TurnBattle, aggTengang?: (ids: readonly string[]) 
   return ids;
 }
 
+export const BOSS_GARRISON_MANA = 5; // 开局布防预算（owner 2026-06-29「敌方太弱·开场没兵」）
+/** 开局布防（owner 2026-06-29）：玩家首回合前 Boss 用 setupMana 一次性预算布一线防御（放牌/施法·可能顺手开地煞·**不推进不结束回合**）
+ *  → 玩家是「攻打已设防的 Boss 阵地」而非走空场；Boss 也借此有兵在场→其地煞(需 units>0)开局即可发动。预算独立于回合经济：
+ *  布完把 Boss 源泉还原到正常 turn-1 起步(MANA_START)，不挤占其后续回合 → 净效果＝Boss 免费多一条开局线（提难度）。 */
+export function bossOpeningGarrison(b: TurnBattle, setupMana: number, aggTengang?: (ids: readonly string[]) => TengangFx): string[] {
+  if (b.turn !== 1 || b.winner !== 'pending') return [];
+  const savedActive = b.active, savedAction = b.actionTaken;
+  b.active = 'b'; b.b.mana = setupMana; b.actionTaken = null;
+  const dishaIds = aiDecide(b, aggTengang); // Boss 布防（不 endTurn·不推进）
+  b.active = savedActive; b.actionTaken = savedAction; b.b.mana = MANA_START; // 还原回合态·Boss 正常 turn-1 经济（布防免费）
+  return dishaIds;
+}
+
 // 战局是否还有未决（任一路有兵 / 任一方手牌或牌库还能动）——给跑到底/仿真台用。
 export function turnActive(b: TurnBattle): boolean {
   if (b.winner !== 'pending') return false;

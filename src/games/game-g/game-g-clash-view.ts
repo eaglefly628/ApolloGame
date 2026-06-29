@@ -8,13 +8,16 @@ import { type TurnClashView, type TurnClashCardView } from './turn-battle-screen
 const SUITNAME: Record<string, string> = { s: '黑桃', h: '红桃', d: '方块', c: '梅花' };
 
 // 战力逐行明细（单一真相·owner 2026-06-21 ④ + 2026-06-29 ⑥）：掷命特写 与 场上兵 hover 共用此格式器。
-// 点数恒显；经营=改造/附魔(我方逐源标注：哪生肖·哪档·+多少 favor·读 save.inlays)；天罡总计 + 逐张溯源；士气标主将坐镇/溃散；地煞隘口固守。
-// 末行对齐 pEff（封顶 P_MAX 截断 / 擎天倍率的差额）→ 明细恰好加到＝战力（owner「为什么这么高·来源要清晰」）。
+// owner 2026-06-29 修「精英改造数值来源不明」：buff = favorToP(favor)−点数 = 这张牌**军衔品阶自带**的高于牌点的战力
+//   （强牌天生战力＞牌点·非玩家改造！），故标「品阶底力（军衔卡面自带）」消歧；若玩家**真镶过地支**才追标「+ 地支附魔(逐源)」。
+// 天罡总计 + 逐张溯源；士气标主将坐镇/溃散；地煞隘口固守。末行对齐 pEff（封顶 P_MAX 截断 / 擎天倍率差额）→ 明细恰好加到＝战力。
 export function powerRows(c: ClashCard, isMine: boolean, tgName: (id: string) => string = (id) => id, inlays?: Record<string, InlayEntry[]>): [string, number][] {
   const r: [string, number][] = [['点数 · 牌面基础', c.points]];
   if (c.buff !== 0) {
-    let label = '经营 · 改造/附魔';
-    if (isMine && inlays) { const inl = inlays[String(cardFavorIndex(c.rank + c.suit))] ?? []; if (inl.length) label += '：' + inl.map((e) => `${e.b}${DIZHI_TIER_NM[e.t]}+${DIZHI_INLAY_FAVOR[e.t]}`).join('·'); } // 这张牌的地支附魔逐源（子金+14·丑铜+4…）
+    const inl = isMine && inlays ? (inlays[String(cardFavorIndex(c.rank + c.suit))] ?? []) : []; // 这张牌真镶过的地支（没镶=空）
+    const label = inl.length
+      ? `品阶底力（军衔自带）+ 地支附魔：${inl.map((e) => `${e.b}${DIZHI_TIER_NM[e.t]}+${DIZHI_INLAY_FAVOR[e.t]}`).join('·')}` // 镶过 → 标明哪几张地支
+      : '品阶底力（军衔卡面自带·非改造）'; // 没镶 → 明示是牌本身品阶·不是你改造的
     r.push([label, c.buff]);
   }
   if (c.tengang !== 0 || (c.tgBreak?.length ?? 0) > 0) {
