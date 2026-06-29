@@ -1,9 +1,9 @@
 import React from 'react';
 import { createRoot } from 'react-dom/client';
-import { Engine } from './runtime/engine.js';
-import { QueuedInputSource } from './net/index.js';
-import { buildGameHBlueprint } from './games/game-h/blueprint.js';
-import { Blackjack3DStage } from './games/game-h/ui/Blackjack3DStage.js';
+import { Engine } from '../../runtime/engine.js';
+import { QueuedInputSource } from '../../net/index.js';
+import { buildGameHBlueprint } from './blueprint.js';
+import { Blackjack3DStage } from './ui/Blackjack3DStage.js';
 
 // Game H 卡带（launcher 槽契约：mount(container) → cleanup）。
 // 3D 俯视角 21 点游戏：用 three.js 渲染 3D 赌桌、卡牌、筹码。

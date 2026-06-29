@@ -93,12 +93,12 @@ const GAMES: GameEntry[] = [
   },
   {
     id: 'game-h',
-    title: 'Game H: Climb Together',
-    subtitle: '你造我塔 · 双人合作攀爬',
-    description: '没人能爬自己的路——你踩住开关，对方的「青色幻影台」才实体化；于是交替二重奏：我撑开关给你搭路、你上去再回头给我搭，塔在配合中长出来。还能踩队友头借力。相机自动框住两人，两人都登顶过关。lockstep 联机：再开一个本游戏标签页即第 2 位玩家。世界 + HUD 全数据驱动（HUD 走 LayoutNode），方块小人精灵动画。（参考 Pico Park 用身体当机关 + NS-SHAFT 平台有个性）',
-    color: '#0f1830',
-    accentColor: '#3b82f6',
-    icon: '🧗',
+    title: 'Game H: 3D Blackjack',
+    subtitle: '二十一点 · 3D 俯视角赌桌',
+    description: '经典 21 点纸牌游戏的 3D 版本：俯视角赌桌、3D 渲染卡牌与筹码。玩家与庄家对赌，目标手牌总和接近 21 点不超出。纯 three.js 渲染：程序生成的 3D 模型、Canvas 纹理卡牌、彩色筹码堆。庄家 AI 全自动（17 点站住）。支持分牌与多手牌对战。',
+    color: '#1a2634',
+    accentColor: '#4ade80',
+    icon: '🎰',
     status: 'playable',
   },
   {
