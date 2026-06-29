@@ -21,7 +21,8 @@
 | `src/renderer/three-renderer.ts` | ✅ 你 | 3D 后端解释器。改前提：无 `Camera3D` 必退回原 2D 行为（别破坏 three-lab/2D 后端）。 |
 | `src/renderer/three-projection.ts` | ✅ 你 | 3D 纯函数（无 three）。新几何先在这写 + 单测。 |
 | `src/renderer/three-camera3d.test.ts` | ✅ 你 | 3D 渲染测试。 |
-| `src/games/game-z/**` | ✅ 你 | 整个 Game Z（游戏层·纯数据）。 |
+| `src/games/game-z/**` | ✅ 你 | Game Z = **3D 渲染线实验台/提需求载体**（owner 2026-06-29 定·不再做玩法）。 |
+| `src/games/game-d/**` | ✅ 你 | 整个 Game D《骰途》——双人骰子 Roguelike（owner 2026-06-29 授权 P3D 用 game-d 槽位承载·D=Dice）。设计见 `docs/design/game-d-{gdd,combat-design}.md`。骰子/buff/meta 等 sim 系统落地时若需新能力走 `requests.md` 报主程。 |
 | `scripts/shoot-game.mjs` | ✅ 你 | 截图 harness（工具）。 |
 | `wiki/skills/rendering.md`（3D 章节） | ✅ 你 | 补 3D 渲染知识库（现仅 2D）。 |
 | `src/engine/protocol/components/render.ts` | 🔶 共享 | **2D+3D 组件混居**。你只加/改 **3D render-only 组件块**（Mesh3D/Transform3D/Camera3D/Sky3D/未来 Model3D/Light3D）；**绝不碰** Sprite/Camera/Text/Tween/Gauge 等 2D/sim 组件。 |
@@ -33,7 +34,8 @@
 | `src/engine/core/**`、`src/skills/**`、`src/services/**`、`src/net/**`(除上行)、`src/assembly/**`(除上行) | 🔒 主程 | 核心 ECS/能力/服务/网络/装配。**走 `requests.md`**。 |
 | `src/renderer/canvas-renderer.ts`·`ascii-renderer.ts`·`frame-svg.ts`·`index.ts` | 🔒 主程 | 2D 后端 + barrel。**走 `requests.md`**。 |
 | `src/ui/**` | 🔒 主程 | UI 库。你**消费** `LayoutNode` 搭 game-z HUD，但**不改库**；缺控件 → `requests.md`。 |
-| 其它游戏 `src/games/game-{a..i,x}/**` | 🔒 别人 | 不碰。 |
+| `src/launcher.tsx` 的 game-d 两行 | ✅ 你 | 同 game-z：只加 game-d 的 `GAMES`/`loaders` 注册两行。 |
+| 其它游戏 `src/games/game-{a..c,e..i,x}/**` | 🔒 别人 | 不碰（game-d 已划归 P3D·见上）。 |
 
 **三条总纲**：① 跨出「✅+🔶」范围的引擎改动 = 一律 `requests.md` 报主程评审，别直接动；② 改 🔶 共享文件**只动 3D 相关那部分**、且**改前知会**（多 session 并行，避免 rebase 互踩）；③ 任何改动**向后兼容**——不破坏 2D 后端 / three-lab / 现有游戏，**全绿才推**。
 

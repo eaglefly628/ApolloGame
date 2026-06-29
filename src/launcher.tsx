@@ -121,6 +121,16 @@ const GAMES: GameEntry[] = [
     icon: '🧊',
     status: 'playable',
   },
+  {
+    id: 'game-d',
+    title: 'Game D: 骰途 Dice & Dungeons',
+    subtitle: '双人骰子 Roguelike · 3D 场景骨架',
+    description: '「所有战斗都用掷骰子解决」的双人合作 Roguelike——两人各带骰池、一关一关往前闯，过关三选一拿 buff（哈迪斯式），骰子凑不够掏宝物消耗品救场，打穿一层拿局外永久解锁，全灭重开。当前=场景骨架：N 个贴色体素房间沿走廊串成「向深处推进」的地牢，固定 45° 等距相机沿 +Z 前推取景；精装管线（暖冷光 + 移轴景深 + 泛光 + 软影 + 天空盒）让美术不糙。战斗/骰子/敌人后续接入（见 game-d-combat-design.md）。',
+    color: '#140e1f',
+    accentColor: '#c084fc',
+    icon: '🎲',
+    status: 'playable',
+  },
 ];
 
 // ══════════════════════════════════════
@@ -669,6 +679,7 @@ function GameRunner({ gameId, onBack }: { gameId: string; onBack: () => void }) 
       'game-h': () => import('./games/game-h/game-h.js'),
       'game-x': () => import('./games/game-x/game-x.js'),
       'game-z': () => import('./games/game-z/game-z.js'),
+      'game-d': () => import('./games/game-d/game-d.js'),
     };
     const loader = loaders[gameId];
     if (!loader) return;
