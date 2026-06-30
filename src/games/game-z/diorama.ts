@@ -56,6 +56,22 @@ function steppingStones(): Record<string, Ent> {
   return out;
 }
 
+// 渲染压力测试：一片**完全相同**的尖塔铺在外环（中央留出玩法区）。同款 → W1-A 归一批实例化。
+// 位置用确定性公式抖动（render-only·非随机），约 320 个。
+function forest(): Record<string, Ent> {
+  const out: Record<string, Ent> = {};
+  let n = 0;
+  for (let gx = -114; gx <= 114; gx += 12) {
+    for (let gz = -114; gz <= 114; gz += 12) {
+      if (Math.abs(gx) < 52 && Math.abs(gz) < 52) continue; // 留出中央玩法区
+      const jx = ((n * 17) % 9) - 4, jz = ((n * 13) % 9) - 4; // 确定性抖动（散布更自然）
+      out[`spire-${n}`] = block(gx + jx, 2.5, gz + jz, 2.4, 5, 2.4, 0x66bb6a, 0x2e7d32);
+      n++;
+    }
+  }
+  return out;
+}
+
 /** 盒庭样例蓝图：草地台 + 抬升石台（站 Toad）+ 金阶梯 + 板条箱 + 终点宝石 + 蘑菇 + 鹅卵石径 + 天空盒 + 可控角色。 */
 export function dioramaBlueprint(): WorldBlueprint {
   return {
@@ -65,7 +81,7 @@ export function dioramaBlueprint(): WorldBlueprint {
     entities: {
       // 盒庭相机（REQ-3D-Camera·语义参数全数据化）：轨道俯角环绕·fov/俯仰夹角进数据（不再写死在渲染器/胶水）。
       // 运行时：拖拽改 yaw/pitch、滚轮改 distance（行为层）；O 切正交、F 切跟随小黄鸭（game-z.ts 输入胶水）。
-      cam: { Camera3D: { yaw: 0.72, pitch: 0.64, distance: 186, pivotX: 0, pivotY: 3, pivotZ: 0, fov: 38, pitchMin: 0.12, pitchMax: 1.45 } },
+      cam: { Camera3D: { yaw: 0.72, pitch: 0.66, distance: 312, pivotX: 0, pivotY: 2, pivotZ: 0, fov: 38, pitchMin: 0.12, pitchMax: 1.45 } },
 
       // 数据化光照（Light3D·替原写死的灯）：暖白太阳（投软影）+ 冷蓝环境补光。
       // 曝光收敛（owner 2026-06-28「太阳太亮·曝光过度」）：太阳 1.6→1.05、环境补光 0.45→0.55 提暗部。
@@ -84,7 +100,7 @@ export function dioramaBlueprint(): WorldBlueprint {
         },
       },
       // 距离雾（TA Phase 4）：远处柔化 + 盒庭纵深·雾色取天色（near/far 配 140² 大地图）。
-      fog: { Fog3D: { color: 0xcfe9f7, near: 120, far: 300 } },
+      fog: { Fog3D: { color: 0xcfe9f7, near: 190, far: 520 } },
 
       // 天空盒：蓝天 → 浅地平线 + 程序化白云缓慢飘动
       sky: { Sky3D: { top: 0x4a90d9, bottom: 0xcfe9f7, clouds: true, cloudTint: 0xffffff, scroll: 1 } },
@@ -118,8 +134,12 @@ export function dioramaBlueprint(): WorldBlueprint {
         Model3D: { modelKey: MODEL_DUCK },
       },
 
-      // 草地大地台（顶在 y=0）—— 关卡再扩一倍：100² → 140²（owner 2026-06-28）。
-      ground: block(0, -2.5, 0, 140, 5, 140, 0x8bc34a, 0x5d4037),
+      // 草地大地台（顶在 y=0）—— 渲染压力测试：再放大 → 240²（owner 2026-06-28）。
+      ground: block(0, -2.5, 0, 240, 5, 240, 0x8bc34a, 0x5d4037),
+
+      // ⚡ 渲染压力测试：~320 个**完全相同**的尖塔（同尺寸同色 → 同视觉签名 → W1-A 自动归 1 个 InstancedMesh·
+      // 1 draw call）。证明「同款物件再多·draw call 也几乎不涨」。纯 render（Mesh3D·无 Collider3D·不进碰撞/寻路）。
+      ...forest(),
 
       // 抬升石台（顶在 y=6）
       platform: block(-12, 3, -8, 26, 6, 22, 0xb0bec5, 0x607d8b),
