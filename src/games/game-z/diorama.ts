@@ -11,7 +11,7 @@ import type { WorldBlueprint } from '../../assembly/demo.assembly.js';
 import { motionApplyCapability } from '@skills/tier1/index.js';
 import { overlapDetect3dCapability, navmeshBakeCapability, collisionResolve3dCapability } from '@skills/atoms/index.js';
 import { pathfindCapability } from '@skills/tier2/index.js';
-import { MODEL_DUCK } from './assets.js';
+import { MODEL_FOX } from './assets.js';
 
 type Ent = WorldBlueprint['entities'][string];
 
@@ -121,14 +121,15 @@ export function dioramaBlueprint(): WorldBlueprint {
       // 天空盒 + IBL（env=环境光照强度·PBR 金属/玻璃靠它反射成像）。
       sky: { Sky3D: { top: 0x4a90d9, bottom: 0xcfe9f7, clouds: true, cloudTint: 0xffffff, scroll: 1, env: 0.55 } },
 
-      // 🦆 鸭子（hero）：AI 自动绕赛道跑（game-z.ts 胶水每帧把 Velocity 设成赛道切线·WASD 可接管）。
-      // 真模型 glTF·Collider3D 竖直胶囊（撞障碍被 collision-resolve 推开）·头顶飘字。起步在赛道右侧 (X=TRACK_R)。
+      // 🦊 狐狸（hero）：AI 自动绕赛道跑（game-z.ts 胶水每帧把 Velocity 设成赛道切线 + 朝向·WASD 可接管）。
+      // **骨骼动画 demo**：glTF Fox 自带 Survey/Walk/Run·这里播 'Run'（边跑边迈腿）。Collider3D 胶囊撞障碍被推开·头顶飘字。
       hero: {
         Transform: { x: TRACK_R, y: 0, rotation: 0, scaleX: 1, scaleY: 1 },
         Velocity: { vx: 0, vy: 0, angular: 0 },
-        Model3D: { modelKey: MODEL_DUCK, scale: 3.2 },
+        Model3D: { modelKey: MODEL_FOX, scale: 0.09 }, // Fox 模型尺度大(~70u)→缩到盒庭尺度
+        AnimState3D: { clip: 'Run', speed: 1.5 }, // 播奔跑动画（骨骼）
         Collider3D: { kind: 'capsule', radius: 2, height: 6 },
-        WorldUI3D: { text: '🦆 鸭子', offsetY: 9, size: 'sm', glow: true },
+        WorldUI3D: { text: '🦊 狐狸（骨骼动画·奔跑）', offsetY: 9, size: 'sm', glow: true },
       },
 
       // 中心信标（金属柱 + 魔法喷泉 VFX）：赛道圆心的焦点，鸭子绕它跑。

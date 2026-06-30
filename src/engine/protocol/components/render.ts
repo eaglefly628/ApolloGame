@@ -66,6 +66,17 @@ export interface Model3D extends Component {
   tint?: number; // 可选整体染色 0xRRGGBB（缺省用模型自带材质）
 }
 
+// ── AnimState3D（render-only，骨骼动画播放 · 3D 后端）──────────────────────────────────────
+// 让导入式 glTF 模型播它自带的动画 clip（骨骼/蒙皮）。挂在带 Model3D 的实体上：渲染器据此建 three AnimationMixer
+// 播指定 clip（按名）。换 clip 名 = 切动作（idle↔run·渲染器淡入过渡）。speed=播放倍速·loop=循环。
+// 红线：纯表现，绝不进 sim/hash（render-only·入 NON_DETERMINISTIC）。弱 LLM 只填 clip 名 + 倍速·填不了骨骼矩阵。
+export interface AnimState3D extends Component {
+  readonly type: 'AnimState3D';
+  clip: string; // 动画名（glTF clip·如 'Run'/'Walk'）
+  speed?: number; // 播放倍速·缺省 1
+  loop?: boolean; // 循环·缺省 true（false=播一遍停在末帧）
+}
+
 // ── Transform3D（render-only，真三维位姿 · 3D 后端专用）─────────────────────────────────────
 // 给实体一份**完整三维位姿**（x 右 / y 上=高度 / z 朝镜头 · 世界单位），让盒庭/积木场景真正立体堆叠。
 // 区别于 2D Transform（x,y 在屏幕平面 + zOrder 微分层 = 2.5D billboard）：挂了本件的实体，3D 后端用它定位姿

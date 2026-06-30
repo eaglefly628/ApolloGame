@@ -8,6 +8,7 @@ import type {
   Acceleration,
   Action,
   AnimState,
+  AnimState3D,
   BoardCell,
   Bounds,
   Camera,
@@ -115,6 +116,7 @@ export interface ComponentDataMap {
   Acceleration: Omit<Acceleration, 'type'>;
   Action: Omit<Action, 'type'>;
   AnimState: Omit<AnimState, 'type'>;
+  AnimState3D: Omit<AnimState3D, 'type'>;
   BoardCell: Omit<BoardCell, 'type'>;
   Bounds: Omit<Bounds, 'type'>;
   Camera: Omit<Camera, 'type'>;

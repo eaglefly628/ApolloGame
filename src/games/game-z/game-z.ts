@@ -184,6 +184,7 @@ export function mount(container: HTMLElement): () => void {
     const pull = (TRACK_R - r) * 0.04; // 拉回赛道半径
     v.vx = tx * RUN + (t.x / r) * pull;
     v.vy = tz * RUN + (t.y / r) * pull;
+    t.rotation = -Math.atan2(v.vx, v.vy) + Math.PI; // 朝向跑动方向（groundPose ry=-rotation；Fox 默认朝 −Z → +π 修正）
   };
   window.addEventListener('keydown', onDown);
   window.addEventListener('keyup', onUp);

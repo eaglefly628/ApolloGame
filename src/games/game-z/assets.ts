@@ -5,8 +5,10 @@ import type { AssetManifest } from '@assets/index.js';
 // 蓝图只持 modelKey（保纯·可哈希回滚）；真实模型字节由 ModelAssetLoader 取成 ArrayBuffer，ThreeRenderer 解析。
 export const MODEL_DUCK = 'duck';
 export const MODEL_BOX = 'box';
+export const MODEL_FOX = 'fox'; // 带骨骼动画（Survey/Walk/Run）·骨骼动画 demo 用
 
 export const GAME_Z_ASSETS: AssetManifest = [
   { kind: 'model', key: MODEL_DUCK, src: '/models/duck.glb' },
   { kind: 'model', key: MODEL_BOX, src: '/models/box.glb' },
+  { kind: 'model', key: MODEL_FOX, src: '/models/fox.glb' },
 ];

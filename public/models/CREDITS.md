@@ -8,3 +8,4 @@
 |---|---|---|---|---|
 | `duck.glb` | Duck（小黄鸭·圆润示例） | Khronos glTF-Sample-Assets · `Models/Duck` | [SCEA Shared Source License 1.0](https://spdx.org/licenses/SCEA.html) | © 2006, Sony |
 | `box.glb` | Box（最简方块·sanity） | Khronos glTF-Sample-Assets · `Models/Box` | [CC BY 4.0](https://creativecommons.org/licenses/by/4.0/) | © 2017, Cesium |
+| `fox.glb` | Fox（骨骼动画狐狸·Survey/Walk/Run·骨骼动画 demo） | Khronos glTF-Sample-Assets · `Models/Fox` | [CC0 1.0](https://creativecommons.org/publicdomain/zero/1.0/) | © PixelMannen / tomkranis (Sketchfab·CC0) |

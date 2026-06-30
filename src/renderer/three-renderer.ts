@@ -1,6 +1,6 @@
 import * as THREE from 'three';
 import type { IWorld, RendererBackend } from '@engine/core/types.js';
-import type { Mesh3D, Sky3D, Camera3D, Fog3D, Material3D } from '@engine/protocol/components.js';
+import type { Mesh3D, Sky3D, Camera3D, Fog3D, Material3D, AnimState3D } from '@engine/protocol/components.js';
 import type { AssetManager } from '@assets/index.js';
 import { isImageHandle } from '@assets/index.js';
 import { getCamera3D, getSky3D, getLights3D, getPost3D, getFog3D } from '@engine/protocol/camera-view.js';
@@ -160,6 +160,8 @@ export class ThreeRenderer implements RendererBackend {
             obj.scale.set(pose.sx * ms, pose.sy * ms, ms);
           }
           if (r.model3d.tint !== undefined) this.models.tint(r.entityId, r.model3d.tint);
+          const anim = world.getComponent<AnimState3D>(r.entityId, 'AnimState3D'); // 骨骼动画（render-only·播 glTF clip）
+          if (anim) this.models.applyAnim(r.entityId, anim);
           seen.add(r.entityId);
           poses.push(pose);
           if (r.entityId === followTarget) followPose = pose;
@@ -204,11 +206,14 @@ export class ThreeRenderer implements RendererBackend {
       if (r.entityId === followTarget) followPose = pose;
     }
 
-    // W1-C 脏标跳渲：渲染签名（投影体姿 + 相机 + 灯 + 后处理 + 天空云飘帧）。与上帧一致 → 跳过
+    // 骨骼动画推进（render-only·壁钟 delta·须在 applyAnim 后）：活跃混合器 >0 → 折进 renderSig 持续重渲 + 刷骨骼阴影。
+    const animLive = this.models.update(performance.now());
+
+    // W1-C 脏标跳渲：渲染签名（投影体姿 + 相机 + 灯 + 后处理 + 天空云飘帧 + 粒子/物理/骨骼动画活跃帧）。与上帧一致 → 跳过
     // instanceMatrix 上传 + 阴影 + render（画面不变·省 CPU/GPU/带宽）——「低开销」最大单点。
     const post = getPost3D(world);
     const ph = hashPoses(poses);
-    const renderSig = `${ph}|${camSig(cam3d)}|${this.lights.lightSig}|${postSig(post)}|${sky?.scroll ? this.frame : (sky ? `${sky.top}.${sky.bottom}` : '')}|${this.debugColliders ? 'd' : ''}|${this.debugNav ? 'n' : ''}|${vfxLive > 0 ? this.frame : 'v0'}|${physLive > 0 ? this.frame : 'p0'}|${this.fogSig}`;
+    const renderSig = `${ph}|${camSig(cam3d)}|${this.lights.lightSig}|${postSig(post)}|${sky?.scroll ? this.frame : (sky ? `${sky.top}.${sky.bottom}` : '')}|${this.debugColliders ? 'd' : ''}|${this.debugNav ? 'n' : ''}|${vfxLive > 0 ? this.frame : 'v0'}|${physLive > 0 ? this.frame : 'p0'}|${animLive > 0 ? this.frame : 'a0'}|${this.fogSig}`;
     const shadowSig = `${ph}|${this.lights.lightSig}`; // 阴影只随投影体姿/灯变（相机/云飘/后处理不触发）
     if (renderSig === this.lastRenderSig) {
       this.rendered = false;
@@ -236,8 +241,8 @@ export class ThreeRenderer implements RendererBackend {
       this.cameras.applyFlat(poseBounds(poses), this.fov, aspect);
     }
 
-    // W1-C 阴影门：autoUpdate=false → 仅投影体/灯变才重算阴影贴图（相机/云飘不触发·大省）。
-    this.gl.shadowMap.needsUpdate = shadowSig !== this.lastShadowSig;
+    // W1-C 阴影门：autoUpdate=false → 仅投影体/灯变才重算阴影贴图（相机/云飘不触发·大省）。骨骼动画在动 → 也刷（蒙皮影跟动）。
+    this.gl.shadowMap.needsUpdate = shadowSig !== this.lastShadowSig || animLive > 0;
     this.lastShadowSig = shadowSig;
 
     // 消失实体释放（2D 扁平层 + 模型实例）。

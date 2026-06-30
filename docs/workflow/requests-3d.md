@@ -6,6 +6,20 @@
 
 ---
 
+## REQ-3D-骨骼动画（glTF skeletal animation） · [2026-06-30] · owner（渲染缺口评估→选做） → P3D · status: **✅ done（P3D 2026-06-30·已推）** · 类型: 渲染能力补全（最大缺口·角色动起来）
+
+> **背景**：P3D 给 owner 做了「引擎还缺啥」评估，**骨骼动画 = 最大缺口**（导入 glTF 但不播自带动画·追逐游戏角色全程滑行）。owner 选做。
+>
+> **✅ 落地（全 render-only·P3D 渲染线域）**：
+> - **数据** `AnimState3D`（`render.ts`·render-only·入 NON_DETERMINISTIC）：`clip`(动画名) + `speed` + `loop`。弱 LLM 只填 clip 名·填不了骨骼矩阵。登记 component-map。
+> - **`ModelPool` 升级**：模板缓存 `{scene, clips}`（解析 glTF 同时存 `gltf.animations`）；实例化改 **`SkeletonUtils.clone`**（正确克隆骨架/蒙皮·每实例独立动画·共享几何）；挂 AnimState3D 的实体建 `AnimationMixer` 播指定 clip（`applyAnim` 换 clip 名=淡入淡出切动作·idle↔run 平滑）；`update(now)` 每帧推进混合器（壁钟 delta）。
+> - **接入** `three-renderer`：model 分支读 AnimState3D → applyAnim；collect 后 `models.update` 推进；活跃混合器数折进 renderSig（持续重渲）+ 刷阴影（蒙皮影跟动）。
+> - **资产**：新增 `fox.glb`（Khronos Fox·**CC0**·带 Survey/Walk/Run·登记 CREDITS）。**hero 换成奔跑的狐狸**（播 'Run'·`autoRun` 胶水设朝向跟跑动方向）——替原静态鸭，正配「跑酷主角」。
+> - 测试 `models.test`(2·AnimState3D 不进 hash + ModelPool 无模型安全 no-op)；`diorama.test` 改测 hero=fox。tsc+vitest(1978)+build 全绿。截图：狐狸奔跑姿（骨骼蒙皮·非 T-pose）+ 连帧腿姿变（混合器在推进）。
+> - **⬜ 待续**：① **动画状态机/混合树**（idle/walk/run 按速度 blend·Godot AnimationTree 思路·做成数据 = 下一步可借鉴点）；② 追兵也换骨骼模型；③ 根运动(root motion)开关（现假设原地循环）。
+
+---
+
 ## REQ-3D-程序化 normal/roughness 贴图 · [2026-06-30] · owner（选「程序化生成」） → P3D（TA Phase 5） · status: **✅ done（P3D 2026-06-30·已推）** · 类型: 渲染能力补全（PBR 表面细节·零美术文件）
 
 > **owner 选型**：normal/roughness 走**程序化生成**（非美术贴图资产）——同「天空盒按 Sky3D 数据程序化生成纹理」先例·零美术管线依赖·弱 LLM 能填参数。

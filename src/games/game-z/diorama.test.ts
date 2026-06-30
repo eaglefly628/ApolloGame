@@ -80,7 +80,7 @@ describe('Game Z · 3D 盒庭蓝图（纯数据 · 仅现成 motion-apply 能力
     e.load(dioramaBlueprint());
     const rs = collectRenderables(e.world);
     const hero = rs.find((r) => r.entityId === 'hero')!;
-    expect(hero.model3d?.modelKey).toBe('duck'); // 导入式 glTF 模型替原方块
+    expect(hero.model3d?.modelKey).toBe('fox'); // 骨骼动画狐狸（替原静态鸭·跑酷主角）
     expect(hero.transform3d).toBeUndefined(); // 走 2D Transform → groundPose 落地面
   });
 
