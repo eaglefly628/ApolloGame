@@ -8,16 +8,19 @@ import { type TurnClashView, type TurnClashCardView } from './turn-battle-screen
 const SUITNAME: Record<string, string> = { s: '黑桃', h: '红桃', d: '方块', c: '梅花' };
 
 // 战力逐行明细（单一真相·owner 2026-06-21 ④ + 2026-06-29 ⑥）：掷命特写 与 场上兵 hover 共用此格式器。
-// owner 2026-06-29 修「精英改造数值来源不明」：buff = favorToP(favor)−点数 = 这张牌**军衔品阶自带**的高于牌点的战力
-//   （强牌天生战力＞牌点·非玩家改造！），故标「品阶底力（军衔卡面自带）」消歧；若玩家**真镶过地支**才追标「+ 地支附魔(逐源)」。
+// owner 2026-06-29 修「精英改造数值来源不明·我没改造为啥每张+十几」：澄清 buff 真来源——
+//   公平骨架里 **军衔=点数**（已计入「点数·牌面基础」）；buff = favorToP(favor)−点数 = 这张牌的 **养成 favor 牌力**高于牌点的部分。
+//   每张牌都有 favor 养成等级（牌组起步就 44–62·见 freshSave）→ favor 决定的战力(≈13–19) 高过低牌点 → 低点牌天生 +十几。
+//   **非牌点、非你的地支改造**（除非真镶过）。故标「养成牌力（favor≈N）」并反推 favor 值(与改造坊显示的同口径)消歧；镶过才追标地支逐源。
 // 天罡总计 + 逐张溯源；士气标主将坐镇/溃散；地煞隘口固守。末行对齐 pEff（封顶 P_MAX 截断 / 擎天倍率差额）→ 明细恰好加到＝战力。
 export function powerRows(c: ClashCard, isMine: boolean, tgName: (id: string) => string = (id) => id, inlays?: Record<string, InlayEntry[]>): [string, number][] {
-  const r: [string, number][] = [['点数 · 牌面基础', c.points]];
+  const r: [string, number][] = [['点数 · 牌面基础（军衔=点数）', c.points]];
   if (c.buff !== 0) {
     const inl = isMine && inlays ? (inlays[String(cardFavorIndex(c.rank + c.suit))] ?? []) : []; // 这张牌真镶过的地支（没镶=空）
+    const favEst = Math.max(5, Math.min(95, Math.round((c.points + c.buff) * 3 + 5))); // 反推 favor（favorToP 线性逆·与改造坊显示同口径）
     const label = inl.length
-      ? `品阶底力（军衔自带）+ 地支附魔：${inl.map((e) => `${e.b}${DIZHI_TIER_NM[e.t]}+${DIZHI_INLAY_FAVOR[e.t]}`).join('·')}` // 镶过 → 标明哪几张地支
-      : '品阶底力（军衔卡面自带·非改造）'; // 没镶 → 明示是牌本身品阶·不是你改造的
+      ? `养成牌力（favor≈${favEst}·含你镶的地支：${inl.map((e) => `${e.b}${DIZHI_TIER_NM[e.t]}+${DIZHI_INLAY_FAVOR[e.t]}`).join('·')}）` // 镶过 → 标明哪几张地支
+      : `养成牌力（favor≈${favEst}·全队起步养成·非牌点·非你改造）`; // 没镶 → 明示来自牌的 favor 养成等级·不是你改造的
     r.push([label, c.buff]);
   }
   if (c.tengang !== 0 || (c.tgBreak?.length ?? 0) > 0) {
