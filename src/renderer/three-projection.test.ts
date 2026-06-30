@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { renderablePose, poseBounds, fitPerspective, mesh3dDepth, flipEuler, faceDown, type Pose3D } from './three-projection.js';
+import { renderablePose, poseBounds, fitPerspective, mesh3dDepth, mesh3dBatchKey, flipEuler, faceDown, type Pose3D } from './three-projection.js';
 import type { Renderable } from './renderable.js';
 
 const R = (o: Partial<Renderable>): Renderable => ({
@@ -58,6 +58,16 @@ describe('three-projection — Mesh3D（3D 物件即数据）几何/翻面纯函
     expect(mesh3dDepth('box', 60, 90)).toBeCloseTo(3); // min(60,90)*0.05
     expect(mesh3dDepth('box', 60, 90, 5)).toBe(5); // 显式优先
     expect(mesh3dDepth('box', 4, 4)).toBe(1); // 0.2 → 下限 1
+    expect(mesh3dDepth('sphere', 5, 5)).toBe(5); // 球：直径=width
+  });
+
+  it('mesh3dBatchKey：球同直径同色归一批（shape 进签名→不与盒/片混批）', () => {
+    const a = mesh3dBatchKey({ shape: 'sphere', width: 5, height: 5, frontTint: 0xffd991 });
+    const b = mesh3dBatchKey({ shape: 'sphere', width: 5, height: 9, frontTint: 0xffd991 }); // height 不影响球批
+    const c = mesh3dBatchKey({ shape: 'sphere', width: 6, height: 5, frontTint: 0xffd991 }); // 直径不同 → 不同批
+    expect(a).toBe(b);
+    expect(a).not.toBe(c);
+    expect(a).not.toBe(mesh3dBatchKey({ shape: 'box', width: 5, height: 5, frontTint: 0xffd991 })); // 与盒不混
   });
 
   it('flipEuler：缺省绕 x（前后翻）、y 轴可选，另一轴恒 0', () => {

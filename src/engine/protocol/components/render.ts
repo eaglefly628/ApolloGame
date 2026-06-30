@@ -43,10 +43,10 @@ export interface Card3D extends Component {
 // 纹理/导入/骨骼/动画不在此（那是各游戏私货 or action 方向，触发方向漂移预警）。
 export interface Mesh3D extends Component {
   readonly type: 'Mesh3D';
-  shape: 'box' | 'plane'; // box=有厚度、正反两面可分色；plane=双面薄片（单色）
-  width: number; // 物体宽（世界单位，与 Transform.x/y 同尺；相机自适配取景）
-  height: number; // 物体高
-  depth?: number; // box 厚度；缺省=短边*薄板比（下限 1）。plane 忽略
+  shape: 'box' | 'plane' | 'sphere'; // box=有厚度、正反两面可分色；plane=双面薄片（单色）；sphere=球（单色·material 球/星体）
+  width: number; // 物体宽（世界单位，与 Transform.x/y 同尺；相机自适配取景）。sphere：直径
+  height: number; // 物体高。sphere：忽略（取 width 作直径·正球）
+  depth?: number; // box 厚度；缺省=短边*薄板比（下限 1）。plane/sphere 忽略
   frontTint: number; // 正面(+z)色 0xRRGGBB
   backTint?: number; // 反面(-z)色；缺省=frontTint
   edgeTint?: number; // box 四边色；缺省深灰

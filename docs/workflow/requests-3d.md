@@ -14,7 +14,11 @@
 > - **IBL 环境光照（真能力补全）**：`Sky3D` 加 `env?: number`（IBL 强度·render-only·缺省 0=不装·向后兼容）。渲染器 `syncEnv`：`env>0` → 懒建一次中性影室 `RoomEnvironment` 烘成 PMREM → `scene.environment` + `scene.environmentIntensity`（数据驱动·变才写·destroy 释放）。金属/玻璃自此有反射成像。中性 studio 环境与 sky 色解耦·稳定可预期（材质测试要的是基准光照·非场景天色干扰）。
 > - **材质陈列台（纯数据·测试台）**：`diorama` 加 `materialBoard()`——北侧独立石台一排 11 个样品块，每块挂一种闭集预设（哑光/塑料/岩石/土/木/钢/铁/金/铜/玻璃/自发光）+ 头顶飘字标名（WorldUI3D）。样品转 45° 让两面各吃一侧反射（更显金属/粗糙度差异）。零专属代码：样品 = `Mesh3D` box + `Material3D{preset}`。game-z 默认相机可拖向北看陈列台。
 > - **验证**：临时把相机对准陈列台截图——金属（钢/铁/金/铜）IBL 下呈金属反射（金=金色、铜=铜色、钢/铁=暗金属），玻璃半透，介电（岩石/土/木）显本色；标名飘字到位。tsc+vitest(1967)+build 全绿。
-> - **⬜ 待续（按需·非本次）**：① 球体预览样品（`Mesh3D.shape` 现仅 box/plane·球更显材质·要做时加 'sphere' 基元过 geometry 管线）；② IBL 来源可选 sky 派生（现中性 studio·够用）；③ 法线/粗糙度贴图精修（现纯参数·临时反照率值）；④ 调试面板加 PBR 参数实时调。
+> - **✅ 追加（owner 2026-06-30·同日）—— 材质球 + 实测参考值 + 看材质机位**：
+>   - **`sphere` 基元（真能力补全·过 geometry 管线）**：`Mesh3D.shape` 加 `'sphere'`（box/plane→+sphere·width=直径）。接全管线：`geometry.ts`（`buildMesh3D`/`buildInstancedMesh3DGeometry` 新 `sphereGeo`·单色烤）、`three-projection`（`mesh3dDepth`/`mesh3dBatchKey` 认 sphere·同直径同色归一批）、`material.ts buildPbrMesh3D`（高段 SphereGeometry·反射顺滑）。+2 纯函数测（depth/batchKey sphere）。**球比方块显材质好得多**（高光/粗糙度/反射差异），业界材质球惯例。陈列台样品换成材质球。
+>   - **金属 base color 换 Filament 实测 sRGB 参考值**（owner「从现代引擎里找」）：`pbr-materials.ts` 金 0xFFD991(1.00,0.85,0.57)·铜 0xF7BD9E(0.97,0.74,0.62)·钢 0xC4C7C7(Filament 铁色)·铁 0x9A9DA0(铸铁暗档)；介电 albedo 取实测（橡木/花岗岩/干土）。来源注 Filament Materials guide。截图：金/铜/钢/铁四金属在 IBL 下各自正确反射、玻璃透、介电哑光。
+>   - **「看材质陈列台」机位按钮（render-only 写 Camera3D）**：调试面板加 `Button`「🔬 看材质陈列台」/「🏠 回总览」（UI 铁律·LayoutNode Button·action 经 handler 写 `Camera3D` 机位预设 `BOARD_CAM`/`HOME_CAM`·退 follow）。一键正对陈列台看清材质。截图验证 11 球清晰排开。
+> - **⬜ 待续（按需·非本次）**：① IBL 来源可选 sky 派生（现中性 studio·够用）；② 法线/粗糙度/金属度贴图精修（现纯参数）；③ 调试面板加 PBR 参数实时调；④ 更多金属预设（银/铝/铬·Filament 表已有值·按需加）。
 
 ---
 

@@ -26,6 +26,11 @@ export function applyPose(o: THREE.Object3D, p: Pose3D): void {
   o.scale.set(p.sx, p.sy, p.sz ?? 1);
 }
 
+// 球几何（material 球/星体）：width=直径 → 半径 width/2。32×16 段·圆润够用、PBR 反射/高光读得清。
+function sphereGeo(width: number): THREE.SphereGeometry {
+  return new THREE.SphereGeometry(Math.max(0.0001, width / 2), 32, 16);
+}
+
 // 单 mesh 版 Mesh3D（透明 fallback 用）：box=有厚度盒（面序 px,nx,py,ny,pz=正,nz=反，四边共用一材质）；plane=双面薄片。
 // 哑光质感（roughness 高·metalness 0）= 盒庭圆润不反光的可爱面（Captain Toad 风）。颜色每帧由 paintMesh3D 设。
 export function buildMesh3D(m: Mesh3D): THREE.Mesh {
@@ -35,6 +40,7 @@ export function buildMesh3D(m: Mesh3D): THREE.Mesh {
     mat.side = THREE.DoubleSide;
     return new THREE.Mesh(new THREE.PlaneGeometry(m.width, m.height), mat);
   }
+  if (m.shape === 'sphere') return new THREE.Mesh(sphereGeo(m.width), matte()); // 球：单材质（无面分色）
   const depth = mesh3dDepth(m.shape, m.width, m.height, m.depth);
   const edge = matte();
   const front = matte();
@@ -48,6 +54,11 @@ export function buildInstancedMesh3DGeometry(m: Mesh3D): THREE.BufferGeometry {
   if (m.shape === 'plane') {
     const geo = new THREE.PlaneGeometry(m.width, m.height);
     bakeFaceColors(geo, [m.frontTint]);
+    return geo;
+  }
+  if (m.shape === 'sphere') {
+    const geo = sphereGeo(m.width);
+    bakeFaceColors(geo, [m.frontTint]); // 球：整体单色（frontTint）
     return geo;
   }
   const depth = mesh3dDepth('box', m.width, m.height, m.depth);

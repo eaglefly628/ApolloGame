@@ -73,9 +73,9 @@ function forest(): Record<string, Ent> {
 }
 
 // ── PBR 材质陈列台（TA Phase 5·「我怎么测材质」）──────────────────────────────────────────────
-// 一排样品块，每块挂一种闭集预设 + 头顶飘字标名，摆在北侧独立石台上、单独打一盏中性补光 + IBL 环境反射，
-// 让金属能照出反射、玻璃能透光 → 一眼对比所有材质。样品轻转 45° 让两面各吃一侧反射（更显金属/粗糙度差异）。
-// 纯数据：样品 = Mesh3D box + Material3D{preset}（PBR 路径取预设色·Mesh3D tint 仅占位）；零专属代码。
+// 一排**材质球**，每球挂一种闭集预设 + 头顶飘字标名，摆在北侧独立石台上、IBL 环境反射照亮，
+// 让金属能照出反射、玻璃能透光 → 一眼对比所有材质（球比方块更显金属高光/粗糙度差异·业界材质球惯例）。
+// 纯数据：样品 = Mesh3D sphere + Material3D{preset}（PBR 路径取预设色）；零专属代码。
 const MAT_SAMPLES: { preset: string; label: string; color?: number }[] = [
   { preset: 'matte', label: '哑光', color: 0xcccccc },
   { preset: 'plastic', label: '塑料', color: 0xcc4444 },
@@ -89,20 +89,22 @@ const MAT_SAMPLES: { preset: string; label: string; color?: number }[] = [
   { preset: 'glass', label: '玻璃' },
   { preset: 'emissive', label: '自发光' },
 ];
+// 材质陈列台相机预设（看材质按钮 → 切到此机位正对陈列台·render-only 写 Camera3D）。导出给 game-z 输入胶水用。
+export const BOARD_CAM = { yaw: 0, pitch: 0.4, distance: 82, pivotX: -12, pivotY: 8, pivotZ: -40 };
 function materialBoard(): Record<string, Ent> {
   const out: Record<string, Ent> = {};
   const n = MAT_SAMPLES.length;
-  const gap = 7, z = -40, baseTop = 4, sampleH = 5;
+  const gap = 7, z = -40, baseTop = 4, dia = 5;
   const x0 = -((n - 1) * gap) / 2;
-  // 承托长石台（顶在 y=baseTop）。样品靠场景暖阳 + 冷环境光 + IBL 环境贴图照亮（金属/玻璃反射来自 IBL）。
+  // 承托长石台（顶在 y=baseTop）。材质球靠场景暖阳 + 冷环境光 + IBL 环境贴图照亮（金属/玻璃反射来自 IBL）。
   out['matboard-base'] = block(0, baseTop / 2, z, n * gap + 4, baseTop, 9, 0x455a64, 0x37474f);
   MAT_SAMPLES.forEach((s, i) => {
     const x = x0 + i * gap;
     out[`mat-${s.preset}`] = {
-      Transform3D: { x, y: baseTop + sampleH / 2, z, rotY: 0.7853981633974483 }, // 转 45°·两面各吃一侧反射
-      Mesh3D: { shape: 'box', width: sampleH, height: sampleH, depth: sampleH, frontTint: 0xffffff, backTint: 0xffffff, edgeTint: 0xffffff },
+      Transform3D: { x, y: baseTop + dia / 2, z }, // 球坐在石台上（中心 = 台顶 + 半径）
+      Mesh3D: { shape: 'sphere', width: dia, height: dia, frontTint: 0xffffff },
       Material3D: { preset: s.preset, ...(s.color !== undefined ? { color: s.color } : {}) },
-      WorldUI3D: { text: s.label, offsetY: sampleH / 2 + 3.5, size: 'xs', glow: true },
+      WorldUI3D: { text: s.label, offsetY: dia / 2 + 3.5, size: 'xs', glow: true },
     };
   });
   return out;

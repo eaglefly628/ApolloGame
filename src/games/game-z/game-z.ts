@@ -10,7 +10,7 @@ import { AssetManager, ModelAssetLoader } from '@assets/index.js';
 import { mountUI } from '@ui/components/index.js';
 import type { LayoutNode } from '@ui/components/index.js';
 import type { Velocity, Camera3D, Overlap3D, Post3D, Fog3D } from '@engine/protocol/components.js';
-import { dioramaBlueprint } from './diorama.js';
+import { dioramaBlueprint, BOARD_CAM } from './diorama.js';
 import { GAME_Z_ASSETS } from './assets.js';
 
 const MOVE_KEYS = new Set(['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight', 'KeyW', 'KeyA', 'KeyS', 'KeyD']);
@@ -68,6 +68,14 @@ export function mount(container: HTMLElement): () => void {
   let showProfiler = true; // 性能剖析面板开关（P 键切换·默认开）
   let fps = 60; // 平滑帧率（render-only·不进 sim）
   const cam = (): Camera3D | undefined => engine.world.getComponent<Camera3D>('cam', 'Camera3D'); // 取相机组件（行为层写它）
+  // 相机机位预设（render-only 写 Camera3D·瞬切视角）：HOME=开局总览（蓝图初值）；BOARD=正对材质陈列台。
+  const HOME_CAM = { yaw: 0.72, pitch: 0.66, distance: 312, pivotX: 0, pivotY: 2, pivotZ: 0 };
+  const applyCam = (p: { yaw: number; pitch: number; distance: number; pivotX: number; pivotY: number; pivotZ: number }): void => {
+    const c = cam(); if (!c) return;
+    c.yaw = p.yaw; c.pitch = p.pitch; c.distance = p.distance;
+    c.pivotX = p.pivotX; c.pivotY = p.pivotY; c.pivotZ = p.pivotZ;
+    c.mode = 'orbit'; // 切机位时退出 follow（否则注视点被 hero 覆盖看不到陈列台）
+  };
   // 读 3D 碰撞结果（确定性 Overlap3D·纯展示）：小黄鸭是否在触发区里。
   const inZone = (): boolean => engine.world.query('Overlap3D').some(([id]) => {
     const o = engine.world.getComponent<Overlap3D>(id, 'Overlap3D');
@@ -117,6 +125,10 @@ export function mount(container: HTMLElement): () => void {
       tog('gz-gr', '色彩分级', S.gradeOn, 'tGr'),
       ...(S.gradeOn ? [sld('gz-ex', '曝光', S.exp, 0.5, 1.6, 0.02, 'sEx'), sld('gz-co', '对比', S.con, 0.5, 1.6, 0.02, 'sCo'), sld('gz-sa', '饱和', S.sat, 0, 2, 0.02, 'sSa')] : []),
       tog('gz-aa', '抗锯齿 SMAA', S.aa, 'tAa'),
+      // 机位预设（render-only 写 Camera3D·瞬切视角看材质陈列台 / 回总览）。
+      { type: 'Label', id: 'gz-cam-t', props: { text: '── 机位 ──', size: 'xs', color: 'dim' } },
+      { type: 'Button', id: 'gz-cam-board', props: { label: '🔬 看材质陈列台', kind: 'ghost', action: 'camBoard' } },
+      { type: 'Button', id: 'gz-cam-home', props: { label: '🏠 回总览', kind: 'quiet', action: 'camHome' } },
     ],
   });
   // 开关 → 改态 + 应用 + 重渲面板（更新勾选 + 显隐从属滑块）。滑块 → 改态 + 应用（**不重渲面板**·免打断拖拽）。
@@ -128,6 +140,7 @@ export function mount(container: HTMLElement): () => void {
   const menuUi = mountUI(menuHost, tree(), {
     tCol: tT('col'), tNav: tT('nav'), tAo: tT('aoOn'), tFog: tT('fogOn'), tGr: tT('gradeOn'), tAa: tT('aa'),
     sAoI: sS('aoInt'), sAoR: sS('aoRad'), sFn: sS('fogNear'), sFf: sS('fogFar'), sEx: sS('exp'), sCo: sS('con'), sSa: sS('sat'),
+    camBoard: () => applyCam(BOARD_CAM), camHome: () => applyCam(HOME_CAM),
   });
   const setColliders = (on: boolean): void => { S.col = on; apply(); refresh(); };
   const setNav = (on: boolean): void => { S.nav = on; apply(); refresh(); };

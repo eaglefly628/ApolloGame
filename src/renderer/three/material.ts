@@ -28,7 +28,9 @@ export function buildPbrMesh3D(m: Mesh3D, mat: Material3D): THREE.Mesh {
   const def = resolvePbr(mat.preset, mat);
   const geo = m.shape === 'plane'
     ? new THREE.PlaneGeometry(m.width, m.height)
-    : new THREE.BoxGeometry(m.width, m.height, m.depth ?? m.width);
+    : m.shape === 'sphere'
+      ? new THREE.SphereGeometry(Math.max(0.0001, m.width / 2), 48, 24) // material 球：高段数·反射/高光顺滑
+      : new THREE.BoxGeometry(m.width, m.height, m.depth ?? m.width);
   const mesh = new THREE.Mesh(geo, buildPbrMaterial(def));
   mesh.castShadow = true;
   mesh.receiveShadow = true;
