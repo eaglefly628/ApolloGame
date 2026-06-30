@@ -329,6 +329,30 @@ export function mount(container: HTMLElement, shell?: { exit?: () => void }): ()
     let drained = 0; const perfQueue: ClashEvent[] = []; let perfClash: ClashEvent | null = null; let busy = false; let perfResume: (() => void) | null = null; let coinFx: { destroy: () => void } | null = null;
     let coachDid: (on: BattleCoachStep['on']) => void = () => {}; let syncCoach: () => void = () => {}; // 前置声明·真体在挂载后赋（战斗新手引导）
     let justMovedIds = new Set<string>(); let freshIds = new Map<string, number>(); let dealtId: string | null = null; let thinkTimer = 0; let thinkEl: HTMLElement | null = null; let settingsOpen = false;
+    // 离场动画（owner 2026-06-29「牌离场要明确·谁战败被撕裂/谁光荣离场」）：战败(撕裂)/突破即时演；光荣回库(人面)延到掷币揭晓后演(防剧透·见 clashConfirm)。
+    type GhostSpec = { html: string; left: number; top: number; w: number; h: number; zoom: number };
+    const pendingGlory = new Map<string, GhostSpec>(); // 待掷币揭晓后才演的「光荣离场」(unitId → 离场前克隆快照)
+    const captureUnit = (id: string): GhostSpec | null => {
+      const el = document.getElementById('u-' + id); if (!el) return null;
+      const rect = el.getBoundingClientRect(); if (!rect.width) return null; // 无头/隐藏 → 不演
+      const innerEl = document.querySelector('.ggt-inner') as HTMLElement | null;
+      const zoom = innerEl ? (parseFloat(innerEl.style.zoom || '1') || 1) : 1;
+      return { html: el.outerHTML, left: rect.left, top: rect.top, w: (el as HTMLElement).offsetWidth, h: (el as HTMLElement).offsetHeight, zoom };
+    };
+    const playGhost = (spec: GhostSpec | null, fate: 'tear' | 'glory' | 'charge'): void => {
+      if (!spec) return;
+      const outer = document.createElement('div');
+      outer.style.cssText = `position:fixed;left:${spec.left}px;top:${spec.top}px;width:${spec.w}px;height:${spec.h}px;transform:scale(${spec.zoom});transform-origin:0 0;z-index:240;pointer-events:none`;
+      const wrap = document.createElement('div'); wrap.innerHTML = spec.html; const clone = wrap.firstElementChild as HTMLElement | null;
+      if (clone) { clone.removeAttribute('id'); clone.style.width = spec.w + 'px'; clone.style.height = spec.h + 'px'; clone.style.flex = 'none'; clone.style.margin = '0';
+        clone.style.animation = fate === 'tear' ? 'g-tear .62s ease-in forwards' : fate === 'glory' ? 'g-glory .72s ease-out forwards' : 'g-charge .55s ease-in forwards';
+        outer.appendChild(clone); }
+      const lab = document.createElement('div'); lab.textContent = fate === 'tear' ? '⚔ 战败' : fate === 'glory' ? '★ 光荣回库' : '突破';
+      lab.style.cssText = `position:absolute;left:50%;top:-4px;transform:translateX(-50%);font:700 13px/1 "Noto Serif SC",serif;color:${fate === 'tear' ? '#ff5d62' : fate === 'glory' ? '#f1d792' : '#8fe0ff'};text-shadow:0 1px 4px #000;white-space:nowrap;animation:g-exitlabel .85s ease forwards`;
+      outer.appendChild(lab);
+      document.body.appendChild(outer); window.setTimeout(() => outer.remove(), 950);
+    };
+    const onBoardIds = (): Set<string> => { const s = new Set<string>(); for (const L of tb.lanes) { for (const u of L.a) s.add(u.id); for (const u of L.b) s.add(u.id); } return s; };
     const tgName = (id: string): string => TIANGANG_BY_ID.get(id)?.name ?? id;
     const tgDesc = (id: string): string => TIANGANG_BY_ID.get(id)?.text ?? '持续战法·打出后整场生效'; // 磨砂浮层：天罡效果文案
     // ── 战场操作日志（debug·owner 2026-06-21：出 bug 把日志贴来排查）。逐条记 玩家/AI 操作 + 掷命 + 结算。──
@@ -449,13 +473,29 @@ export function mount(container: HTMLElement, shell?: { exit?: () => void }): ()
     // 顺序回合·分阶段演出（owner 2026-06-29「我方决策→我方行动→敌方决策→敌方行动·要看到牌往前移动 + 过场说明」）。
     // 推进一方 + 行军滑动(FLIP·turn-battle-screen render 内) + 掷命特写，演完调 next。endTurn 按 active 推进对应方。
     const advancePerf = (next: () => void): void => {
-      const before = snapSlots();
+      const before = snapSlots(); const beforeIds = onBoardIds(); const clashLen0 = tb.clashLog.length;
       endTurn(tb); // 按 active 推进：我方回合→advanceSide('a')；敌方行动(aiDecide 后 active 仍 'b')→advanceSide('b')
+      // 离场归类：本次推进新增掷命 → 战败(撕裂·非死战不退) / 光荣回库(人面·胜方回库·延到掷币后演)
+      const torn = new Set<string>(); const gloryWin = new Set<string>();
+      for (const ev of tb.clashLog.slice(clashLen0)) {
+        const loserId = ev.aWins ? ev.b.id : ev.a.id; const winnerId = ev.aWins ? ev.a.id : ev.b.id;
+        if (loserId && !ev.lastStand) torn.add(loserId);
+        if (winnerId && ev.winStays === false) gloryWin.add(winnerId);
+      }
+      const afterIds = onBoardIds(); let exits = 0;
+      // 先从旧 DOM(未重渲)克隆离场兵 → 即时演撕裂/突破；光荣回库存快照·待掷币揭晓后演(防剧透)
+      for (const id of beforeIds) if (!afterIds.has(id)) {
+        if (torn.has(id)) { playGhost(captureUnit(id), 'tear'); exits++; }
+        else if (gloryWin.has(id)) { const s = captureUnit(id); if (s) pendingGlory.set(id, s); }
+        else { playGhost(captureUnit(id), 'charge'); exits++; } // 突破入敌营·退场
+      }
       justMovedIds = diffMoved(before); // 标记行军兵 → render FLIP 从旧格滑到新格
       drainClashes();
-      mounted?.update(); // 立刻渲染推进（滑动动画在 render 内 FLIP）
+      mounted?.update(); // 立刻渲染推进（滑动 FLIP + 离场 ghost 已在 body 上演）
       window.setTimeout(() => { justMovedIds = new Set(); if (!perfClash) mounted?.update(); }, 600); // 滑完清标记（掷命特写中不重渲·防飞入重启）
-      playPerf(next); // 演本方掷命特写 → next
+      // 有离场/掷命 → 略延后再演特写，让棋盘滑动 + 撕裂动画看清（owner「过程要清晰」）；否则即刻
+      if (exits > 0 || tb.clashLog.length > clashLen0) window.setTimeout(() => playPerf(next), 720);
+      else playPerf(next);
     };
     const runAiAct = (): void => { // 敌方行动阶段：敌方兵线推进 + 掷命（与决策分演·owner 过场说明）
       if (tb.winner !== 'pending') { finishTurnSeq(); return; }
@@ -524,7 +564,11 @@ export function mount(container: HTMLElement, shell?: { exit?: () => void }): ()
         if (!perfClash) { const r = perfResume; if (r) r(); return; }
         playSfx('confirm'); const e = perfClash; coinFx?.destroy();
         const wName = e.aWins ? `${SUITNM2[e.a.suit] ?? ''}${e.a.rank}` : `${SUITNM2[e.b.suit] ?? ''}${e.b.rank}`;
-        coinFx = mountCoinFlip(root, { winnerName: wName, winnerMine: e.aWins, heads: e.winStays ?? false, sfx: playSfx }, () => { coinFx = null; const r = perfResume; if (r) r(); });
+        coinFx = mountCoinFlip(root, { winnerName: wName, winnerMine: e.aWins, heads: e.winStays ?? false, sfx: playSfx }, () => {
+          coinFx = null;
+          if (e.winStays === false) { const wid = e.aWins ? e.a.id : e.b.id; if (wid && pendingGlory.has(wid)) { playGhost(pendingGlory.get(wid) ?? null, 'glory'); pendingGlory.delete(wid); } } // 掷币揭晓人面=回库 → 此刻才演「光荣离场」（防剧透）
+          const r = perfResume; if (r) r();
+        });
       },
       clashRoll: () => doClashRoll(),
       goBack: () => {

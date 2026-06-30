@@ -10,7 +10,7 @@ export function cardStamina(rank: string): number {
 
 // 对决事件（doc19 §三「胜率可读」+ 命运一掷 · 给战斗表演特写读数）：双方点数/经营加成/有效战力 P_eff、胜率、所掷点 roll、谁胜。
 // 纯记录（不进 liveHash、不改判定）：roll = clash 那一掷的 nextRandom 值，aWins = roll < winrate ——把"算出概率→掷→落在区间定生死"如实暴露。
-export interface ClashCard { rank: string; suit: string; general: boolean; points: number; buff: number; morale: number; tengang: number; pEff: number; tgBreak?: [string, number][]; nearDef?: number } // tgBreak：天罡逐张贡献 [天罡id, 加成]（owner 2026-06-21·对决明细溯源）；nearDef：地煞·隘口守军固守 +战力
+export interface ClashCard { id?: string; rank: string; suit: string; general: boolean; points: number; buff: number; morale: number; tengang: number; pEff: number; tgBreak?: [string, number][]; nearDef?: number } // id：该兵 unitId（owner 2026-06-29·离场动画按 id 定位被撕/光荣离场的兵）；tgBreak：天罡逐张贡献 [天罡id, 加成]（owner 2026-06-21·对决明细溯源）；nearDef：地煞·隘口守军固守 +战力
 // tie：50:50 平局如何裁定（owner）—— null=正常概率掷命(战力不等) / 'points'=战力相等·点数大者胜 / 'stamina'=点数也同·续航高者胜 / 'roll'=全同·这一掷定(重揉)。
 export interface ClashEvent { tick: number; lane: number; winrate: number; roll: number; aWins: boolean; tie: 'points' | 'stamina' | 'roll' | null; winStays?: boolean; lastStand?: boolean; a: ClashCard; b: ClashCard } // winStays：战胜硬币·人头=胜牌留场/人面=回库（owner 2026-06-21）；lastStand：本场触发敌主将「死战不退·首负不亡」(关1 列奥尼达地煞)→全屏通知+特写改显(owner 2026-06-21)
 // 已施天罡 → 玩家侧(a)持续战斗修正（A-JOKER · cast 后整局生效·一种牌算一次不叠）。
