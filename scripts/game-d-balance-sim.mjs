@@ -1,6 +1,6 @@
 // scripts/game-d-balance-sim.mjs —— 《骰途》平衡性蒙特卡洛模拟器（纯 node·无引擎依赖）。
 //
-// 配套 docs/design/game-d-balance-design.md。把那套五行/伤害公式/骰子/敌人/单双人数值跑成数据，
+// 配套 docs/design/game-d/balance-design.md。把那套五行/伤害公式/骰子/敌人/单双人数值跑成数据，
 // 验证难度曲线 + 平衡，回调数字。常量与设计文档 §2/§5/§6 一一对应（一处调两处同步）。
 //
 // 用法：node scripts/game-d-balance-sim.mjs [--runs=2000] [--floors=4] [--seed=1]

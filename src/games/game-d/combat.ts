@@ -2,7 +2,7 @@
 //
 // ⚠️ 原型说明：这是「先做出能玩、慢慢调数值」的原型逻辑（owner 2026-06-29）。真正上线版战斗要走
 // 数据驱动（蓝图 + 引擎 EventWhen/Effect/Resource 能力·同 game-e）——那需 M0 + 主程。本模块是验证手感
-// + 调参用的游戏层纯函数，手感定了再迁。数值与 docs/design/game-d-balance-design.md / 模拟器一一对应。
+// + 调参用的游戏层纯函数，手感定了再迁。数值与 docs/design/game-d/balance-design.md / 模拟器一一对应。
 //
 // 纯函数 + 显式 rnd 注入（无 Math.random 散落·可测）。
 
