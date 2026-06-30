@@ -715,3 +715,25 @@ _（REQ-3D-W1高效引擎 已移至 [`requests-3d.md`](./requests-3d.md)。）_
 > **建议修法（主程定夺）**：x/y 存在时，让 `position:absolute` 赢（sheen 的 ::after 用 absolute 宿主也能定位——absolute 同样是 positioned ancestor）；即 fx 不要硬写 `position:relative`，改成「仅当无 x/y 时才补 relative」。
 >
 > **展示台侧已用合法组合绕开**（不等修复）：定位壳(x/y·无 fx) 裹 特效内卡(fx·流式填充)——`{Panel x/y bare}>{Panel fx ...}`。MMO HUD 两条施法条均已这样写、overlap 审计归零。属可接受的数据写法，但**「直接在绝对定位节点上挂 fx」是直觉写法、应能用**，故报缺口。
+
+### REQ-UI-BUG-Toggle视觉点击不更新 · [2026-06-30] · P3D（game-z 调试面板实测） → 主程（UI 库域·server.ts reconcile 焦点保护） · status: **待主程** · 类型: 渲染正确性 bug（控件视觉与状态脱节）
+
+> **现象（owner 2026-06-30 报）**：点 `Toggle` 开关，**开关的视觉（轨道色 + 圆钮位置）不跟着变**——但绑定的 `action` 效果**确实生效**（AO/雾/分级被切了）。即「逻辑对、视觉死」。game-z 渲染调试面板每个 Toggle 都中招。
+>
+> **根因（已定位·非玄学）**：`Toggle` 的开/关视觉是 `renderToggle` 据 `p.checked` **算出来的内联样式**（track bg / 圆钮 left），包在一个**隐藏 `<input type=checkbox>`** 外的styled `<span>` 上。点击时 label 激活那个隐藏 checkbox → **checkbox 拿到焦点**（`document.activeElement` = `#{id}-i`，在 Toggle 的 `<span id>` 内）。随后 handler 调 `menuUi.update(tree())` 走 `reconcileNode` → `patchFocusedInput(el, newN)`（server.ts:50）：它见「焦点是个 INPUT 且在本节点内」就**无脑 `return true`（跳过 outerHTML 重建）**（server.ts:64）——本意是保护**文本 Input/Combobox** 的光标/IME，却**误伤了 Toggle/Checkbox/Radio**：这些控件的焦点落在隐藏 checkbox 上，而视觉在外层 styled span，跳过重建 → **视觉永远停在旧 `checked`**。
+>
+> **证据**：`patchFocusedInput` 仅对 `newN.type==='Input'` 做了就地同步（server.ts:57），其余（含 Toggle）一律落到 `return true` 跳重建；而 Toggle 视觉无任何「就地同步」分支 → 必停在旧值。
+>
+> **建议修法（主程定夺·二选一）**：① 焦点保护**只认文本控件**——`active.type` 为 `text/search/textarea/select`（或 Input/Combobox 类型）才跳重建；checkbox/radio（Toggle/Checkbox/Radio 的内部输入）**不在保护范围**，照常 outerHTML 重建（隐藏 checkbox 丢焦点无害·点击交互已完成）。② 给 Toggle/Checkbox/Radio 也加「就地同步 checked + 重算视觉样式」分支（类似 Input 的 value 同步）。**①更简、面更广。** 属 UI 库统一 reconcile 策略，P3D 不擅改 server.ts，交主程。
+>
+> **影响面**：不止 game-z——**任何「点 Toggle/Checkbox 后调 `update()` 刷新面板」的界面都中招**（控件视觉与真值脱节、误导用户以为没生效）。建议连带审 Checkbox/Radio 的 update 路径。
+
+### REQ-UI-BUG-Slider回调偶发undefined · [2026-06-30] · P3D（game-z 调试面板实测） → 主程（UI 库域·server.ts dispatch） · status: **待主程** · 类型: 健壮性 bug（脏值入回调）
+
+> **现象（P3D 追 AO 黑屏时连带挖出）**：拖 `Slider`（`<input type=range>`）一次交互，绑定的 `change` handler 被调**两次**——第一次给正确数值串（如 `"0.65"`），**第二次给 `undefined`**。下游 `Number(undefined)=NaN` 写进 render-only 组件 → 后处理 shader 算 NaN → **整片黑屏**（game-z AO 黑屏的直接触发源；P3D 侧已加 finite 兜底双保险挡住，但脏回调本身应在 UI 库根治）。
+>
+> **复现**：game-z 渲染调试面板拖「AO 强度」滑块 → 实测 handler 收到序列 `["aoInt=\"0.65\"", "aoInt=undefined"]`（无头 Chromium 抓到·稳定复现）。
+>
+> **疑似根因（请主程核）**：`dispatch`（server.ts:194）对 `change` 事件，`INPUT` 分支 `arg = inp.value`（range 恒为数值串、不该是 undefined）。出现 undefined 说明**有第二个 `change` 事件**其 `el`/取值路径不落在 range 的 `inp.value` 上（可能是面板重建中旧 input 被移除时浏览器补发的 `change`、或 closest 命中了无值元素）。建议：dispatch 对 range/数值类 change **只在 `inp.value` 为有效串时才派发**（或统一「数值控件回调保证 finite」），别把 undefined 透传给游戏 handler。
+>
+> **影响面**：任何用 Slider 写数值的界面都可能吃到一发 `undefined`/NaN；控件层应保证「数值控件的回调实参恒为有效数值串」，不应让每个消费方各自 `Number.isFinite` 兜底。

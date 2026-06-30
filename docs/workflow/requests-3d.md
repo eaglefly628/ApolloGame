@@ -6,6 +6,21 @@
 
 ---
 
+## REQ-3D-BUG-后处理黑屏（AO/分级脏数值） · [2026-06-30] · owner 报 → P3D（3D 渲染线·后处理域） · status: **✅ fixed（P3D 2026-06-30·根因定位 + 渲染器 finite 兜底 + 面板域修正 + 回归测试·已推）** · 类型: 渲染健壮性 bug（脏数值喂 shader → 整片黑屏）
+
+> **现象（owner 2026-06-30）**：「AO 强度的时候，屏幕动一下，屏就全黑了」「要改任何东西都会改，对比改那个也会黑屏」。即调试面板拖滑块改后处理参数后 → 3D 画面整片黑（HUD/世界飘字等 DOM 叠层仍在·只 WebGL 黑）。
+>
+> **根因（无头 Chromium 稳定复现 + 逐层 bisect 定位·非 GPU 玄学）**：链条 = **UI 库 Slider 偶发回调 `undefined`（见 `requests.md` REQ-UI-BUG-Slider回调偶发undefined）→ `Number(undefined)=NaN` 写进 `Post3D.ao.intensity` → `PostPipeline` 直传 `gtao.blendIntensity=NaN` → GTAO blend `mix(1,ao,NaN)=NaN` → 整片黑**。
+> - **次因（即便不 NaN 也危险）**：`blendIntensity` 是 AO 的**不透明度 [0,1]**（0=不施加·1=全施加），**非强度倍率**。GTAO blend = `1 − intensity·(1−ao)`，`intensity>1` 让有遮蔽处(ao<1)算出负值→钳 0→黑。原面板「AO 强度」滑块范围 0..3、默认 1.1，**本就探进危险区**。
+>
+> **✅ 修法（全在 P3D 渲染线域·`renderer/three/**` + `games/game-z/**`）**：
+> - **渲染器 finite 兜底（真·能力修·健壮性铁律）**：新 `renderer/three/num-guard.ts`（`clamp01`/`posOr`/`fin` 纯函数）——`PostPipeline.render` 喂 GPU 前，AO `intensity` 钳 [0,1]·NaN→1，`radius`/`scale` 取正·NaN→缺省；分级 `exposure/contrast/saturation/brightness` 全 finite 兜底。**渲染器绝不把 NaN/超界喂进 shader**（弱 LLM 写脏数据 / UI 抖动都不黑屏）。
+> - **面板域修正**：「AO 强度」滑块范围改 0..1（其合法域）、默认 0.85；`diorama` 初值 1.1→0.85；滑块 handler 只接受 `Number.isFinite` 值（脏回调丢弃·与渲染器兜底双保险）。
+> - **回归测试** `num-guard.test.ts`（3·NaN/undefined/超界→安全回退）。tsc+vitest(1965)+build+无头截图全绿（拖滑块至上界 + 转相机不再黑）。
+> - **连带产出**：定位过程挖出两个 UI 库（主程域）bug，已记 `requests.md`：① **Toggle 视觉点击不更新**（owner 同日另报·`reconcile` 焦点保护误伤 Toggle）；② **Slider 回调偶发 undefined**（本黑屏的上游触发源）。
+
+---
+
 ## REQ-3D-Nav 导航网格自动烘焙（寻路数据 + 寻路碰撞·game-z 验证） · [2026-06-28] · owner → P3D（owner 授权跨界·**复用主程 pathfind**） · status: **✅ done（P3D 2026-06-28·自动生成·复用主程 NavGraph·端到端验证·已推）** · 类型: 真能力缺口（碰撞几何→可走拓扑**自动生成**）
 
 > **⚠️ 知会主程（owner 2026-06-28 拍板·关于你的 `REQ-寻路`）**：owner 要 game-z 验证「寻路数据 + 寻路碰撞」。你的 `pathfind`（航点图 NavGraph + 通用 A* + 沿路跟随 + collision-resolve 避让）很好，**我全盘复用、一行没改**。唯一分歧：owner **不接受手摆 NavGraph**（「我摆这些东西太麻烦了，也没有手摆需求……一定要像 Recast 这样自动生成」）。结论 = **不取代你的 runtime，只在它上游加一层「自动生成 NavGraph」**：

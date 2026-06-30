@@ -82,7 +82,7 @@ export function mount(container: HTMLElement): () => void {
   wrapper.appendChild(menuHost);
 
   // 设置态（初值对齐蓝图 Post3D/Fog3D）。
-  const S = { col: false, nav: false, aoOn: true, aoInt: 1.1, aoRad: 5, fogOn: true, fogNear: 190, fogFar: 520, gradeOn: true, exp: 1.02, con: 1.08, sat: 1.12, aa: true };
+  const S = { col: false, nav: false, aoOn: true, aoInt: 0.85, aoRad: 5, fogOn: true, fogNear: 190, fogFar: 520, gradeOn: true, exp: 1.02, con: 1.08, sat: 1.12, aa: true };
   const post = (): Post3D | undefined => engine.world.getComponent<Post3D>('post', 'Post3D');
   const fog = (): Fog3D | undefined => engine.world.getComponent<Fog3D>('fog', 'Fog3D');
   // 把设置写进 render-only 组件 + 渲染器（实时生效·不进 hash）。
@@ -111,7 +111,7 @@ export function mount(container: HTMLElement): () => void {
       tog('gz-col', '碰撞体线框', S.col, 'tCol'),
       tog('gz-nav', '导航网格', S.nav, 'tNav'),
       tog('gz-ao', 'AO 遮蔽', S.aoOn, 'tAo'),
-      ...(S.aoOn ? [sld('gz-aoi', 'AO 强度', S.aoInt, 0, 3, 0.05, 'sAoI'), sld('gz-aor', 'AO 半径', S.aoRad, 1, 16, 0.5, 'sAoR')] : []),
+      ...(S.aoOn ? [sld('gz-aoi', 'AO 强度', S.aoInt, 0, 1, 0.05, 'sAoI'), sld('gz-aor', 'AO 半径', S.aoRad, 1, 16, 0.5, 'sAoR')] : []),
       tog('gz-fog', '距离雾', S.fogOn, 'tFog'),
       ...(S.fogOn ? [sld('gz-fn', '雾 near', S.fogNear, 40, 400, 5, 'sFn'), sld('gz-ff', '雾 far', S.fogFar, 200, 800, 10, 'sFf')] : []),
       tog('gz-gr', '色彩分级', S.gradeOn, 'tGr'),
@@ -122,7 +122,9 @@ export function mount(container: HTMLElement): () => void {
   // 开关 → 改态 + 应用 + 重渲面板（更新勾选 + 显隐从属滑块）。滑块 → 改态 + 应用（**不重渲面板**·免打断拖拽）。
   const refresh = (): void => menuUi.update(tree());
   const tT = (k: 'col' | 'nav' | 'aoOn' | 'fogOn' | 'gradeOn' | 'aa') => (v: unknown): void => { S[k] = v === 'true' || v === true; apply(); refresh(); };
-  const sS = (k: 'aoInt' | 'aoRad' | 'fogNear' | 'fogFar' | 'exp' | 'con' | 'sat') => (v: unknown): void => { S[k] = Number(v); apply(); };
+  // 滑块 → 改态 + 应用。**只接受有限数值**：Slider 偶发回调 undefined（change 抖动）→ Number()=NaN，
+  // 若写进 render-only 组件会让后处理 shader 算出 NaN → 黑屏。非有限值丢弃（渲染器也有 finite 兜底·双保险）。
+  const sS = (k: 'aoInt' | 'aoRad' | 'fogNear' | 'fogFar' | 'exp' | 'con' | 'sat') => (v: unknown): void => { const n = Number(v); if (!Number.isFinite(n)) return; S[k] = n; apply(); };
   const menuUi = mountUI(menuHost, tree(), {
     tCol: tT('col'), tNav: tT('nav'), tAo: tT('aoOn'), tFog: tT('fogOn'), tGr: tT('gradeOn'), tAa: tT('aa'),
     sAoI: sS('aoInt'), sAoR: sS('aoRad'), sFn: sS('fogNear'), sFf: sS('fogFar'), sEx: sS('exp'), sCo: sS('con'), sSa: sS('sat'),

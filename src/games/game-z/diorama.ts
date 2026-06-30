@@ -94,7 +94,7 @@ export function dioramaBlueprint(): WorldBlueprint {
       // 移轴景深/泛光仍移除（owner「景深奇怪·先移掉」），待自适配版再加。
       post: {
         Post3D: {
-          ao: { intensity: 1.1, radius: 5, scale: 1 },
+          ao: { intensity: 0.85, radius: 5, scale: 1 }, // intensity=AO 不透明度(0..1)·渲染器钳死防黑屏
           grade: { exposure: 1.02, contrast: 1.08, saturation: 1.12, brightness: 0.0, tint: 0xfff6ec }, // 暖一点·略提对比/饱和
           aa: true,
         },

@@ -9,6 +9,7 @@ import { SMAAPass } from 'three/addons/postprocessing/SMAAPass.js';
 import { HorizontalTiltShiftShader } from 'three/addons/shaders/HorizontalTiltShiftShader.js';
 import { VerticalTiltShiftShader } from 'three/addons/shaders/VerticalTiltShiftShader.js';
 import type { Post3D } from '@engine/protocol/components.js';
+import { clamp01, posOr, fin } from './num-guard.js';
 
 // 色彩分级 shader（绘本调色板·TA Phase 4）：曝光×→亮度+→对比(绕中灰)→饱和(向亮度 mix)→染色×。
 const ColorGradeShader = {
@@ -62,8 +63,13 @@ export class PostPipeline {
     this.gtao!.enabled = !!ao;
     if (ao) {
       this.gtao!.camera = camera;
-      this.gtao!.blendIntensity = ao.intensity ?? 1;
-      this.gtao!.updateGtaoMaterial({ radius: ao.radius ?? 4, scale: ao.scale ?? 1 });
+      // 健壮性铁律：AO 任何数值参数都先过 finite 钳位，**绝不让 NaN/超界进 GTAO** —— 否则黑屏。
+      //  · blendIntensity 是 AO「不透明度」(0=不施加·1=全施加)，非强度倍率：GTAO blend = mix(1, ao, intensity)
+      //    = 1 − intensity·(1−ao)，>1 让有遮蔽处(ao<1)变负 → 钳 0 → 整片黑；NaN(如上游传 undefined)更直接全黑。
+      //    故夹死 [0,1] 且 NaN→1。想要「更强 AO」调 scale（增大遮蔽量），别把 intensity 顶过 1。
+      //  · radius/scale 同样 finite 兜底（弱 LLM / UI 抖动写脏值也不崩画面）。
+      this.gtao!.blendIntensity = clamp01(ao.intensity, 1);
+      this.gtao!.updateGtaoMaterial({ radius: posOr(ao.radius, 4), scale: posOr(ao.scale, 1) });
     }
     const ts = post.tiltShift;
     const tsOn = !!ts;
@@ -89,11 +95,12 @@ export class PostPipeline {
     this.grade!.enabled = !!gr;
     if (gr) {
       const u = this.grade!.uniforms;
-      u['exposure']!.value = gr.exposure ?? 1;
-      u['contrast']!.value = gr.contrast ?? 1;
-      u['saturation']!.value = gr.saturation ?? 1;
-      u['brightness']!.value = gr.brightness ?? 0;
-      (u['tint']!.value as THREE.Color).setHex((gr.tint ?? 0xffffff) & 0xffffff);
+      // finite 兜底（同 AO：NaN 进分级 shader 会让对比/曝光算出 NaN → 全黑）。
+      u['exposure']!.value = fin(gr.exposure, 1);
+      u['contrast']!.value = fin(gr.contrast, 1);
+      u['saturation']!.value = fin(gr.saturation, 1);
+      u['brightness']!.value = fin(gr.brightness, 0);
+      (u['tint']!.value as THREE.Color).setHex((Number.isFinite(gr.tint) ? (gr.tint as number) : 0xffffff) & 0xffffff);
     }
     // 抗锯齿（SMAA·清 toon 硬边）。
     this.smaa!.enabled = !!post.aa;
