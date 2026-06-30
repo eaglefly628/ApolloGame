@@ -20,11 +20,17 @@
 
 ---
 
-## REQ-3D-TODO-真物理模拟（色子/表现物理） · [2026-06-30] · owner（提 TODO） → P3D · status: **📋 TODO（待排期·owner 言明非现在）** · 类型: render-only 表现能力（刚体物理）
+## REQ-3D-真物理模拟（色子/表现物理·cannon-es） · [2026-06-30] · owner → P3D · status: **✅ done（P3D 2026-06-30·cannon-es·已推）** · 类型: render-only 表现能力（刚体物理）
 
-> **owner 提 TODO（2026-06-30·非现在做）**：要做**色子物理模拟 / 真物理碰撞模拟**——**主要为表现**（滚色子 → 读朝上点数·或别的视觉用途），**不为同步**。owner 明确：用它时**不需要两边一致**（结果可能本就一致·只是画到色子面/别处）；若要游戏一致性就单机。
+> **owner 拍板（2026-06-30·提前到现在做·「马上要用」）**：做**色子真物理模拟**——**为表现非同步**（滚色子读朝上/画面用途·不需两边一致·要一致就单机）。**「用现成物理库·别自己开发·要简化点的」** → 选 **`cannon-es`**（纯 JS/TS·无 WASM 异步·three.js 圈轻量刚体标配·正好「简化」；Rapier 更强但 WASM 重·表现色子用不上）。
 >
-> **架构初判（P3D·待正式排期）**：这是 **render-only 表现物理**——落在「render-only 自由区」（无确定性枷锁·同 VfxSystem 可用 time/random/三角）。**不进 hash·不进 sim**。形态候选：① 轻量自写刚体积分器（盒子 + 地面 + 重力/恢复/角动量·够色子翻滚）；② 引入 `cannon-es`/`rapier`（成熟但加依赖）。数据驱动表达：render-only `RigidBody3D` 组件（质量/恢复/初速/角速）+ 渲染侧物理子系统每帧推进 → 写 Transform3D（render-only）→ 结果可读（朝上面）。**先做轻量自写**（盒庭色子够·避免重依赖）。**排期：在「关卡加载」之后**（owner 当前优先级：① 程序化贴图 ✅ → ② 关卡加载 → 后续）。
+> **✅ 落地（全 render-only·P3D 渲染线域·cannon-es 仅在 renderer/three 下 import → 进 3D chunk·2D 游戏不连带）**：
+> - **数据** `RigidBody3D`（`render.ts`·**render-only·入 NON_DETERMINISTIC·不进 sim/hash**）：shape/mass/restitution/friction/初速/初角速。体形尺寸取同实体 Mesh3D。+ `Transform3D.quat`（可选四元数·物理翻滚无万向锁）。登记 component-map。
+> - **子系统** `renderer/three/physics.ts` `PhysicsSystem`：cannon `World`(重力-42)+静态地面 Plane·每帧步进 → 把刚体位置+四元数写回 `Transform3D`（render-only）→ 渲染器照常画（`applyPose` quat 路径）。睡眠优化（停稳就睡）。活跃刚体数折进 renderSig 持续重渲。
+> - **接入** `three-renderer`：sync 顶部步进（collect 前）；`rollDice()`（按钮调·置位 → 下帧重掷=抬高+随机翻滚·render-only 随机自由）；destroy 释放。
+> - **demo**：game-z 三颗塑料色子（红/蓝/绿·中心区）掉落翻滚停稳；调试面板「🎲 掷骰子（真物理）」按钮重掷。截图：色子从空中落定（随机朝向）→ 点按钮重掷→再翻滚落定。
+> - 测试 `physics.test`(3·重力下落+落地不穿地+写 quat·无刚体返回 0·RigidBody3D/Transform3D 不进 hash)。tsc+vitest(1975)+build 全绿。**新依赖 `cannon-es@0.20.0`**（render-only·进 3D chunk）。
+> - **⬜ 待续**：① 色子点数面（pip 贴图/读朝上面 → 输出结果·按需）；② 刚体间互撞（现各自落地·要堆叠/碰撞加 broadphase 调参）；③ 若要进 sim（确定性物理）须换定点/同步方案——owner 言明暂不需要。
 
 ---
 

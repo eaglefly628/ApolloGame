@@ -122,6 +122,7 @@ export function mount(container: HTMLElement): () => void {
       { type: 'Label', id: 'gz-cam-t', props: { text: '── 机位 ──', size: 'xs', color: 'dim' } },
       { type: 'Button', id: 'gz-cam-board', props: { label: '🔬 看材质陈列台', kind: 'ghost', action: 'camBoard' } },
       { type: 'Button', id: 'gz-cam-home', props: { label: '🏠 回总览', kind: 'quiet', action: 'camHome' } },
+      { type: 'Button', id: 'gz-roll', props: { label: '🎲 掷骰子（真物理）', kind: 'ghost', action: 'roll' } },
     ],
   });
   // 开关 → 改态 + 应用 + 重渲面板（更新勾选 + 显隐从属滑块）。滑块 → 改态 + 应用（**不重渲面板**·免打断拖拽）。
@@ -140,6 +141,7 @@ export function mount(container: HTMLElement): () => void {
     tCol: tT('col'), tNav: tT('nav'), tAo: tT('aoOn'), tFog: tT('fogOn'), tGr: tT('gradeOn'), tAa: tT('aa'),
     sAoI: sS('aoInt'), sAoR: sS('aoRad'), sFn: sS('fogNear'), sFf: sS('fogFar'), sEx: sS('exp'), sCo: sS('con'), sSa: sS('sat'),
     camBoard: () => applyCam(BOARD_CAM), camHome: () => applyCam(HOME_CAM),
+    roll: () => renderer.rollDice(),
   });
   const setColliders = (on: boolean): void => { S.col = on; apply(); refresh(); };
   const setNav = (on: boolean): void => { S.nav = on; apply(); refresh(); };
