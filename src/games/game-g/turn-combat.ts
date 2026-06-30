@@ -430,18 +430,44 @@ function advanceColumnToBase(b: TurnBattle, own: TurnUnit[], dir: number, side: 
 // 行动阶段（owner 2026-06-29 ②·顺序回合模型·替 2026-06-21 同步推进）：**只推刚结束回合的那一方**——
 // 我放完→我方三路向敌家推进/攻击；敌放完→敌方推进/攻击。两军不再同帧一起动（owner「一起行动看不清谁打谁」）。
 // ①只处理本方捷径门分流 → ②本方三路向对家推进·前锋相邻则掷命/无敌则抵家 chip。放置回合本身不调用（放置无推进）。
-function advanceSide(b: TurnBattle, side: 'a' | 'b'): void {
+// 推进「移动相」（owner 2026-06-29·拆分移动↔掷命·让 UI 能「先滑到位→弹谁打谁→掷骰→才结算离场」）：
+// 只移动本方三路 + 过本方门，**不掷命**；返回前锋相邻、待掷命的路 id（caller 决定何时 resolveClashAt）。
+function advanceSideMove(b: TurnBattle, side: 'a' | 'b'): number[] {
   const dir = side === 'a' ? 1 : -1;
   const diverted = new Set<string>(); // ① 只处理本方门（过门兵记入·不再直进）
   for (let gi = 0; gi < GATES.length; gi++) { if (GATES[gi].side !== side) continue; const id = gateMove(b, gi); if (id) diverted.add(id); }
-  for (let li = 0; li < 3; li++) { // ② 本方兵线向对家推进；前锋相邻才掷命
+  const pending: number[] = [];
+  for (let li = 0; li < 3; li++) { // ② 本方兵线向对家推进；前锋相邻 → 记为待掷命路
     const lane = b.lanes[li]; const own = colOf(lane, side); const foe = colOf(lane, side === 'a' ? 'b' : 'a');
     if (!own.length) continue;
-    if (foe.length) {
-      advanceColumnVsFoe(own, dir, foe[0].slot, diverted);
-      if (Math.abs(own[0].slot - foe[0].slot) <= 1) resolveClash(b, li); // 相邻 → 遭遇掷命（本方主动进攻）
-    } else advanceColumnToBase(b, own, dir, side, diverted); // 本路无敌 → 直扑对家大本营
+    if (foe.length) { advanceColumnVsFoe(own, dir, foe[0].slot, diverted); if (Math.abs(own[0].slot - foe[0].slot) <= 1) pending.push(li); }
+    else advanceColumnToBase(b, own, dir, side, diverted); // 本路无敌 → 直扑对家大本营
   }
+  return pending;
+}
+// 行动阶段（原子·仿真台/兼容旧调用）：移动 + 逐路掷命一气呵成。live 游戏改用 advanceMovePhase + resolveClashAt 分相演出。
+function advanceSide(b: TurnBattle, side: 'a' | 'b'): void {
+  for (const li of advanceSideMove(b, side)) resolveClash(b, li);
+}
+// 当前行动方「只移动·不掷命」→ 返回待掷命路 id（owner 2026-06-29·UI 分相：移动→弹窗→掷骰→结算离场）。
+export function advanceMovePhase(b: TurnBattle): number[] {
+  if (b.winner !== 'pending') return [];
+  return advanceSideMove(b, b.active);
+}
+// 结算一路掷命（live 在「谁打谁」弹窗 + 掷骰演完后调）→ 写 lastClash/clashLog·应用胜负去留。
+export function resolveClashAt(b: TurnBattle, li: number): void { if (b.winner === 'pending') resolveClash(b, li); }
+// 推进收尾（判负 + 轮转/回合数/源泉）→ live 在本回合所有掷命演完后调。
+export function endTurnFinish(b: TurnBattle): void {
+  checkWinner(b);
+  if (b.winner !== 'pending') return;
+  if (b.active === 'a') {
+    b.active = 'b';
+    if (b.turn > 1) b.b.mana += manaGain(b.turn); // turn-1 b 已带 MANA_START 起步（①）·turn-2 起对称 +源泉
+    if (b.dishaB.bonusMana > 0) b.b.mana += b.dishaB.bonusMana; // 地煞·大军压境/机动调度
+  } else {
+    b.active = 'a'; b.turn += 1; b.a.mana += manaGain(b.turn);
+  }
+  b.actionTaken = null;
 }
 
 function checkWinner(b: TurnBattle): void {
@@ -455,23 +481,8 @@ function checkWinner(b: TurnBattle): void {
 // 源泉（①公平）：turn-1 双方都用 MANA_START(3) 起步、不额外 +；每回合 +1 从 turn-2 起对称累加。
 export function endTurn(b: TurnBattle): void {
   if (b.winner !== 'pending') return;
-  if (b.active === 'a') {
-    advanceSide(b, 'a'); // 我方放置完 → 我方推进 + 相遇掷命（owner ②：我先动我先打）
-    checkWinner(b);
-    if (b.winner !== 'pending') return;
-    b.active = 'b';
-    if (b.turn > 1) b.b.mana += manaGain(b.turn); // turn-1 b 已带 MANA_START 起步（①）·turn-2 起对称 +源泉
-    if (b.dishaB.bonusMana > 0) b.b.mana += b.dishaB.bonusMana; // 地煞·大军压境/机动调度：Boss 多铺(免费多动)
-    b.actionTaken = null;
-  } else {
-    advanceSide(b, 'b'); // 敌方放置完 → 敌方推进 + 相遇掷命
-    checkWinner(b);
-    if (b.winner !== 'pending') return;
-    b.active = 'a'; // 下一轮回到我方放置回合
-    b.turn += 1;
-    b.a.mana += manaGain(b.turn);
-    b.actionTaken = null;
-  }
+  advanceSide(b, b.active); // 移动 + 逐路掷命（原子）
+  endTurnFinish(b);         // 判负 + 轮转/回合数/源泉
 }
 
 // ── Boss 通用 utility AI（doc27 §八·甲一次写好·零 per-boss 代码·性格全在 aiProfile 数据）──

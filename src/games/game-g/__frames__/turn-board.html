@@ -28,12 +28,15 @@
 @keyframes g-drainspark { 0% { opacity:.95; transform:translate(-50%,0) scale(1);} 100% { opacity:0; transform:translate(-50%,-24px) scale(.35);} }
 /* 离场动画（owner 2026-06-29「牌离场要明确发生了什么·谁被战败撕裂/谁光荣离场」）。战败=被撕裂：抖+血红闪+下坠粉碎淡出。 */
 @keyframes g-tear { 0%{transform:none;opacity:1;filter:none} 12%{transform:translateX(-4px) rotate(-5deg);filter:brightness(1.7) saturate(2) drop-shadow(0 0 6px #ff3b30)} 24%{transform:translateX(5px) rotate(6deg)} 36%{transform:translateX(-4px) rotate(-5deg)} 100%{transform:translateY(34px) scale(.62) rotate(-16deg);opacity:0;filter:brightness(.45) saturate(.5)} }
-/* 光荣离场（人面回库）：上升 + 金光环 + 放大淡出（凯旋回营）。 */
+/* 光荣离场（胜方回库）：上升 + 金光环 + 放大淡出（凯旋回营）。 */
 @keyframes g-glory { 0%{transform:none;opacity:1;filter:drop-shadow(0 0 0 rgba(232,205,138,0))} 35%{transform:translateY(-12px) scale(1.06);filter:drop-shadow(0 0 16px rgba(232,205,138,.95)) brightness(1.25)} 100%{transform:translateY(-66px) scale(1.02);opacity:0;filter:drop-shadow(0 0 24px rgba(232,205,138,.9))} }
 /* 突破入营（无敌路推进到底·攻入敌家）：向前冲刺淡出。 */
 @keyframes g-charge { 0%{transform:none;opacity:1} 60%{opacity:1} 100%{transform:translateX(var(--chg,40px)) scale(.8);opacity:0;filter:brightness(1.4)} }
 /* 离场标签（战败/光荣回库）浮字：升起淡出。 */
 @keyframes g-exitlabel { 0%{transform:translate(-50%,0) scale(.7);opacity:0} 25%{transform:translate(-50%,-10px) scale(1);opacity:1} 80%{opacity:1} 100%{transform:translate(-50%,-30px) scale(1);opacity:0} }
+/* 钉守在场（胜方留场续战）：钉子砸下 + 金环脉冲（凯旋钉桩·card 真牌仍在场）。 */
+@keyframes g-pin { 0%{transform:translateX(-50%) translateY(-30px) scale(.6);opacity:0} 55%{transform:translateX(-50%) translateY(2px) scale(1.18);opacity:1} 75%{transform:translateX(-50%) translateY(0) scale(.94)} 100%{transform:translateX(-50%) translateY(0) scale(1);opacity:1} }
+@keyframes g-pinring { 0%{transform:scale(1.25);opacity:0} 35%{transform:scale(1);opacity:1} 100%{transform:scale(1);opacity:0} }
 /* 磨砂详情浮层（owner 2026-06-21·悬浮看牌：战力=点数+加成，对决再 +随机骰）：纯 CSS hover，重渲不丢 */
 .gg-tipwrap>.gg-tip{ position:absolute; left:50%; bottom:calc(100% + 9px); transform:translateX(-50%) translateY(5px) scale(1); transform-origin:50% 100%; width:214px; padding:12px 14px 10px; border-radius:13px; background:rgba(18,24,36,.58); backdrop-filter:blur(13px) saturate(1.5); -webkit-backdrop-filter:blur(13px) saturate(1.5); border:1px solid rgba(255,255,255,.2); box-shadow:0 16px 44px rgba(0,0,0,.55), inset 0 1px 0 rgba(255,255,255,.14); color:#eaf0f6; font-family:var(--fb); font-size:12px; line-height:1.5; text-align:left; opacity:0; pointer-events:none; transition:opacity .15s ease, transform .15s ease; z-index:80; }
 .gg-tipwrap>.gg-tip::after{ content:''; position:absolute; left:50%; top:100%; transform:translateX(-50%); border:7px solid transparent; border-top-color:rgba(18,24,36,.58); }
