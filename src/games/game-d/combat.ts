@@ -1,34 +1,19 @@
-// Game D ·《骰途》战斗模型 —— 可玩原型/调参台的纯逻辑（从 scripts/game-d-balance-sim.mjs 移植）。
+// Game D ·《骰途》战斗模型 v2 —— HP + 挑战要求 + 反制（统一模型·owner 2026-06-29 拍）。
 //
-// ⚠️ 原型说明：这是「先做出能玩、慢慢调数值」的原型逻辑（owner 2026-06-29）。真正上线版战斗要走
-// 数据驱动（蓝图 + 引擎 EventWhen/Effect/Resource 能力·同 game-e）——那需 M0 + 主程。本模块是验证手感
-// + 调参用的游戏层纯函数，手感定了再迁。数值与 docs/design/game-d/balance-design.md / 模拟器一一对应。
+// ⚠️ 原型：游戏层纯函数·上线版迁数据驱动。设计见 docs/design/game-d/combat-design.md §12。
 //
-// 纯函数 + 显式 rnd 注入（无 Math.random 散落·可测）。
+// 统一核心：敌人 = HP（血量）+ 一道**门槛挑战(conds)** + **反制**。每回合你掷骰、可重掷、提交一手：
+//   · 这手**满足门槛** → 命中、扣敌 HP = 本手点数和；HP 归零即胜。
+//   · 不满足 → 落空，吃威胁（扣队伍心）。
+// 「砸血」= 大 HP + 低门槛（靠多次砸）；「pattern」= 小 HP + 严门槛（含某点/同色对·一两手）；BOSS = 高门槛+大HP+反制。
 
 export type Elem = 'jin' | 'mu' | 'shui' | 'huo' | 'tu' | 'none' | 'wild';
 
-/** 元素展示：彩色 emoji（顺带给颜色·绕开 UI 5 色令牌限制）+ 中文名。 */
 export const ELEM_INFO: Record<Elem, { emoji: string; cn: string }> = {
   jin: { emoji: '🟡', cn: '金' }, mu: { emoji: '🟢', cn: '木' }, shui: { emoji: '🔵', cn: '水' },
   huo: { emoji: '🔴', cn: '火' }, tu: { emoji: '🟤', cn: '土' }, none: { emoji: '⚪', cn: '无' }, wild: { emoji: '🌈', cn: '百搭' },
 };
 export const FIVE: Elem[] = ['jin', 'mu', 'shui', 'huo', 'tu'];
-/** 相克五环：A 克 BEATS[A]（金→木→土→水→火→金）。 */
-export const BEATS: Record<string, Elem> = { jin: 'mu', mu: 'tu', tu: 'shui', shui: 'huo', huo: 'jin' };
-
-// ── 数值常量（= 设计文档 / 模拟器·调参在这）──────────────────────────────
-const MULT_BY_M: Record<number, number> = { 1: 1.0, 2: 1.4, 3: 1.8, 4: 2.2, 5: 2.6 };
-const COUNTER_HIT = 2.2, COUNTER_BAD = 0.3;
-const BASE_HP = 22, GROWTH = 1.18, BOSS_MULT = 1.9;
-
-export function counterMult(atk: Elem, def: Elem): number {
-  if (atk === 'none' || atk === 'wild') return 1.0;
-  if (BEATS[atk] === def) return COUNTER_HIT;
-  if (BEATS[def] === atk) return COUNTER_BAD;
-  return 1.0;
-}
-export function multByM(m: number): number { return m >= 6 ? 3.0 : (MULT_BY_M[m] ?? 1.0); }
 
 // ── 骰子 ───────────────────────────────────────────────────────────────
 export interface Face { v: number; el: Elem; }
@@ -38,45 +23,81 @@ export interface RolledDie { dieId: string; v: number; el: Elem; }
 const faces = (vals: number[], el: Elem): Face[] => vals.map((v) => ({ v, el }));
 let dieSeq = 0;
 const mkDie = (name: string, f: Face[]): Die => ({ id: `d${dieSeq++}`, name, faces: f });
-export const plainDie = () => mkDie('朴骰', faces([1, 2, 3, 4, 5, 6], 'none'));
-export const elemDie = (c: Elem) => mkDie(`${ELEM_INFO[c].cn}骰`, faces([1, 2, 3, 4, 5, 6], c));
-export const heavyDie = () => mkDie('重骰', faces([4, 5, 6, 7, 8, 9], 'none'));
-export const wildDie = () => mkDie('百搭骰', faces([1, 2, 3, 4, 5, 6], 'wild'));
+export const plainDie = (): Die => mkDie('朴骰', faces([1, 2, 3, 4, 5, 6], 'none'));
+export const elemDie = (c: Elem): Die => mkDie(`${ELEM_INFO[c].cn}骰`, faces([1, 2, 3, 4, 5, 6], c));
+export const heavyDie = (): Die => mkDie('重骰', faces([4, 5, 6, 7, 8, 9], 'none'));
+export const wildDie = (): Die => mkDie('百搭骰', faces([1, 2, 3, 4, 5, 6], 'wild'));
 
-/** 掷一池骰：每颗随机取一面（rnd ∈ [0,1)）。 */
 export function rollPool(pool: Die[], rnd: () => number): RolledDie[] {
   return pool.map((d) => { const f = d.faces[Math.floor(rnd() * d.faces.length)]!; return { dieId: d.id, v: f.v, el: f.el }; });
 }
 
-/** 给定玩家选中的一组骰 + 敌人元素，算这次攻击伤害（自动取最优主元素解读·对玩家友好）。 */
-export function damageOf(selected: RolledDie[], enemyEl: Elem): { dmg: number; mainEl: Elem; mult: number; counter: number } {
-  if (selected.length === 0) return { dmg: 0, mainEl: 'none', mult: 1, counter: 1 };
-  let best = { dmg: -1, mainEl: 'none' as Elem, mult: 1, counter: 1 };
-  // 中性解读（全算 none）
-  const sumAll = selected.reduce((s, r) => s + r.v, 0);
-  best = { dmg: sumAll, mainEl: 'none', mult: 1, counter: 1 };
-  // 各元素主解读：投入算 base，E/wild 计入 m
-  for (const E of FIVE) {
-    let base = 0, m = 0;
-    for (const r of selected) { base += r.v; if (r.el === E || r.el === 'wild') m += 1; }
-    if (m === 0) continue;
-    const mult = multByM(m), counter = counterMult(E, enemyEl);
-    const dmg = Math.round(base * mult * counter);
-    if (dmg > best.dmg) best = { dmg, mainEl: E, mult, counter };
+// ── 门槛挑战（可组合条件）─────────────────────────────────────────────────
+export type Condition =
+  | { kind: 'sum'; t: number }       // 总和 ≥ t
+  | { kind: 'contains'; v: number }  // 含一个点数 v
+  | { kind: 'pair' };                // 一对同色（两颗同色同点）
+export function condLabel(c: Condition): string {
+  if (c.kind === 'sum') return `总和≥${c.t}`;
+  if (c.kind === 'contains') return `含一个 ${c.v}`;
+  return '一对同色';
+}
+
+// ── 反制 ───────────────────────────────────────────────────────────────
+export interface Counter { kind: 'none' | 'discardHighLow'; label: string; }
+
+// ── 敌人 = HP + 门槛 + 反制 ──────────────────────────────────────────────
+export interface Foe { name: string; isBoss: boolean; el: Elem; hp: number; maxHp: number; conds: Condition[]; counter: Counter; kindLabel: string; }
+const FOE_NAMES = ['石魅', '焰怨', '苔妖', '潮灵', '砂卫'];
+
+/** 按房间生成敌人（一层 3 间：砸血杂兵 / pattern 杂兵 / 混合 BOSS）。数值随 globalRoom 升·待模拟器调。 */
+export function makeFoe(globalRoom: number, roomInAct: number): Foe {
+  const tSum = Math.round(8 + globalRoom * 3); // 门槛随层升
+  const el = FIVE[globalRoom % 5]!;
+  let conds: Condition[]; let hp: number; let counter: Counter = { kind: 'none', label: '' }; let kindLabel: string;
+  if (roomInAct === 0) {            // 砸血杂兵：低门槛·大血·多次砸
+    conds = [{ kind: 'sum', t: Math.round(tSum * 0.7) }];
+    hp = Math.round(tSum * 2.4); kindLabel = '砸血';
+  } else if (roomInAct === 1) {     // pattern 杂兵：含某点·小血·一两手
+    conds = [{ kind: 'sum', t: tSum }, { kind: 'contains', v: 6 }];
+    hp = Math.round(tSum * 1.1); kindLabel = 'pattern';
+  } else {                          // 混合 BOSS：高门槛 + 同色对 + 大血 + 反制
+    conds = [{ kind: 'sum', t: Math.round(tSum * 1.25) }, { kind: 'pair' }];
+    hp = Math.round(tSum * 2.2); counter = { kind: 'discardHighLow', label: '弃你最高+最低各一颗' }; kindLabel = 'BOSS';
   }
-  return best;
+  return { name: (roomInAct === 2 ? '守关者·' : '') + FOE_NAMES[globalRoom % 5]!, isBoss: roomInAct === 2, el, hp, maxHp: hp, conds, counter, kindLabel };
 }
 
-// ── 敌人 ───────────────────────────────────────────────────────────────
-export interface Enemy { name: string; hp: number; maxHp: number; el: Elem; isBoss: boolean; }
-const ENEMY_NAMES = ['石魅', '焰怨', '苔妖', '潮灵', '砂卫'];
-export function makeEnemy(globalRoom: number, isBoss: boolean, el: Elem, mode: 'single' | 'coop'): Enemy {
-  let hp = BASE_HP * Math.pow(GROWTH, globalRoom - 1);
-  if (isBoss) hp *= BOSS_MULT;
-  if (mode === 'coop') hp *= 1.9;
-  hp = Math.round(hp);
-  return { name: isBoss ? '守关者·' + ENEMY_NAMES[(globalRoom) % 5] : ENEMY_NAMES[globalRoom % 5]!, hp, maxHp: hp, el, isBoss };
+/** 反制 → 被禁用的 rolled 索引（弃高低 = 最高 + 最低各一颗·不可投入）。 */
+export function counterDisabled(rolled: RolledDie[], counter: Counter): Set<number> {
+  const dis = new Set<number>();
+  if (counter.kind === 'discardHighLow' && rolled.length >= 2) {
+    let hi = 0, lo = 0;
+    rolled.forEach((r, i) => { if (r.v > rolled[hi]!.v) hi = i; if (r.v < rolled[lo]!.v) lo = i; });
+    dis.add(hi); dis.add(lo);
+  }
+  return dis;
 }
 
-/** 敌人弱点（被谁克）= 对它 ×2.2 的攻击元素。 */
-export function weaknessOf(enemyEl: Elem): Elem { return (Object.keys(BEATS) as Elem[]).find((a) => BEATS[a] === enemyEl) ?? 'none'; }
+// ── 评估一手是否满足门槛 ─────────────────────────────────────────────────
+function hasPair(dice: RolledDie[]): boolean {
+  const seen = new Map<string, number>();
+  let wilds = 0;
+  for (const r of dice) {
+    if (r.el === 'wild') { wilds++; continue; }
+    const k = `${r.el}-${r.v}`; seen.set(k, (seen.get(k) ?? 0) + 1);
+    if ((seen.get(k) ?? 0) >= 2) return true;
+  }
+  if (wilds >= 1 && dice.some((r) => r.el !== 'wild')) return true; // 百搭顶任意色凑对
+  return wilds >= 2;
+}
+export function evalCond(dice: RolledDie[], c: Condition): boolean {
+  if (c.kind === 'sum') return dice.reduce((s, r) => s + r.v, 0) >= c.t;
+  if (c.kind === 'contains') return dice.some((r) => r.v === c.v);
+  return hasPair(dice);
+}
+export function handSum(dice: RolledDie[]): number { return dice.reduce((s, r) => s + r.v, 0); }
+export function evalChallenge(dice: RolledDie[], conds: Condition[]): { met: boolean; results: { label: string; ok: boolean }[]; sum: number } {
+  const results = conds.map((c) => ({ label: condLabel(c), ok: evalCond(dice, c) }));
+  return { met: results.length > 0 && results.every((r) => r.ok), results, sum: handSum(dice) };
+}
