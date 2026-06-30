@@ -28,10 +28,10 @@ export interface ActDef {
 
 /** 层主题（循环复用·index 增长即换层）。 */
 export const ACTS: ActDef[] = [
-  { name: '草庭', floorTop: 0x8bc34a, floorSide: 0x5d4037, wall: 0x9ccc65, accent: 0xffd54f },
-  { name: '石殿', floorTop: 0xb0bec5, floorSide: 0x546e7a, wall: 0x90a4ae, accent: 0x4dd0e1 },
-  { name: '熔岩窟', floorTop: 0x6d4c41, floorSide: 0x3e2723, wall: 0x8d6e63, accent: 0xff7043 },
-  { name: '水晶厅', floorTop: 0x4dd0e1, floorSide: 0x00838f, wall: 0x26c6da, accent: 0xb39ddb },
+  { name: '翠庭', floorTop: 0x8bc34a, floorSide: 0x5d4037, wall: 0x9ccc65, accent: 0xffd54f },
+  { name: '古殿', floorTop: 0xb0bec5, floorSide: 0x546e7a, wall: 0x90a4ae, accent: 0x4dd0e1 },
+  { name: '熔心', floorTop: 0x6d4c41, floorSide: 0x3e2723, wall: 0x8d6e63, accent: 0xff7043 },
+  { name: '晶顶', floorTop: 0x4dd0e1, floorSide: 0x00838f, wall: 0x26c6da, accent: 0xb39ddb },
 ];
 
 export interface RoomMeta {

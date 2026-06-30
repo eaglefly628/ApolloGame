@@ -13,7 +13,7 @@ const FIGHT_CAP = 14;            // 单场最多回合（超=磨死）
 // 敌人：tSum = 8 + g*3；砸血(0): sum≥0.7t, hp=2.4t | pattern(1): sum≥t+含6, hp=1.1t | BOSS(2): sum≥1.25t+对, hp=2.2t+弃高低
 const tSumOf = (g) => Math.round(8 + g * 3);
 
-const FIVE = ['jin', 'mu', 'shui', 'huo', 'tu'];
+const FIVE = ['huo', 'shui', 'mu', 'lei', 'feng', 'an']; // 六色元素（火水木雷风暗·复刻美术设计案）
 function mulberry32(a) { return function () { a |= 0; a = (a + 0x6D2B79F5) | 0; let t = Math.imul(a ^ (a >>> 15), 1 | a); t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t; return ((t ^ (t >>> 14)) >>> 0) / 4294967296; }; }
 const pick = (rng, a) => a[Math.floor(rng() * a.length)];
 
@@ -28,8 +28,9 @@ const roll = (pool, rng) => pool.map((d) => d.faces[Math.floor(rng() * 6)]);
 // ── 敌人 ───────────────────────────────────────────────────────────────
 function makeFoe(g, roomInAct) {
   const t = tSumOf(g);
+  const el = FIVE[g % FIVE.length];
   if (roomInAct === 0) return { conds: [{ k: 'sum', t: Math.round(t * 0.7) }], hp: Math.round(t * 4.0), counter: 'none', kind: '砸血' };
-  if (roomInAct === 1) return { conds: [{ k: 'sum', t }, { k: 'contains', v: 6 }], hp: Math.round(t * 2.2), counter: 'none', kind: 'pattern' };
+  if (roomInAct === 1) return { conds: [{ k: 'element', el, n: 2 + Math.floor(g / 6) }, { k: 'sum', t }], hp: Math.round(t * 2.2), counter: 'none', kind: '元素试炼' };
   return { conds: [{ k: 'sum', t: Math.round(t * 1.25) }, { k: 'pair' }], hp: Math.round(t * 4.2), counter: 'discardHighLow', kind: 'BOSS' };
 }
 function disabledIdx(rolled, counter) {
@@ -62,8 +63,9 @@ function patMult(dice){
 }
 const dmgOf=(dice)=>Math.round(sumOf(dice)*patMult(dice));
 
+function elemCount(dice, el) { let n = 0, w = 0; for (const r of dice) { if (r.el === 'wild') w++; else if (r.el === el) n++; } return n + w; }
 function meets(dice, conds) {
-  return conds.every((c) => c.k === 'sum' ? sumOf(dice) >= c.t : c.k === 'contains' ? dice.some((r) => r.v === c.v) : hasPair(dice));
+  return conds.every((c) => c.k === 'sum' ? sumOf(dice) >= c.t : c.k === 'element' ? elemCount(dice, c.el) >= c.n : c.k === 'contains' ? dice.some((r) => r.v === c.v) : hasPair(dice));
 }
 
 // ── 一场战斗（贪心玩家：投全部可用·重掷凑门槛）──────────────────────────
@@ -100,7 +102,10 @@ function run(mode, arch, rng, floors) {
       const g = (f - 1) * 3 + r + 1;
       const foe = makeFoe(g, r);
       if (mode === 'coop') foe.hp = Math.round(foe.hp * COOP_HP);
-      const res = fight(pool, foe, rng);
+      // 命运骰盅·选骰备战：面对元素试炼，玩家会从骰库挑对应元素骰带上场（模型化为临时补 2 颗该元素骰）。
+      const trial = foe.conds.find((c) => c.k === 'element');
+      const brought = trial ? pool.concat([elem(trial.el), elem(trial.el)]) : pool;
+      const res = fight(brought, foe, rng);
       hearts -= res.hearts_lost;
       if (!res.killed) hearts -= 2;       // 磨不死=大罚
       if (hearts <= 0) return { reached: g, top: false };
@@ -117,7 +122,7 @@ const RUNS = arg('runs', 3000), FLOORS = arg('floors', 4), SEED = arg('seed', 1)
 const ARCHES = [['mono', '纯色流'], ['flex', '混合流'], ['heavy', '重骰流'], ['wildy', '百搭流']];
 
 console.log(`\n=== 《骰途》平衡模拟 v2（HP+门槛+反制）===  runs=${RUNS} floors=${FLOORS}(${FLOORS * 3}间) seed=${SEED}`);
-console.log(`门槛 tSum=8+3g | 砸血 sum≥0.7t·hp2.4t | pattern sum≥t+含6·hp1.1t | BOSS sum≥1.25t+同色对·hp2.2t+弃高低`);
+console.log(`门槛 tSum=8+3g | 砸血 sum≥0.7t·hp4.0t | 元素试炼 元素×n+sum≥t·hp2.2t（选骰备战补元素骰）| BOSS sum≥1.25t+同色对·hp4.2t+弃高低`);
 console.log(`重掷 ${REROLLS} | 心 单${SOLO_HEARTS}/双${COOP_HEARTS} | 起手骰 单${SOLO_START}/双${COOP_START} | 双人敌HP×${COOP_HP}\n`);
 for (const mode of ['single', 'coop']) {
   console.log(`── ${mode === 'single' ? '单人' : '双人'} ──  (每层存活% = 打到该层BOSS的比例)`);
@@ -142,9 +147,11 @@ function feasTest() {
     const pool = Array.from({ length: SOLO_START + g0 }, plain).map((p, i) => i < SOLO_START ? p : elem(pick(rng, FIVE))); // 近似：起手朴 + 每关一五行骰
     const rate = [0, 1, 2].map((r) => {
       const foe = makeFoe(g0 + r + 1, r); let ok = 0; const N = 2000;
+      const trial = foe.conds.find((c) => c.k === 'element');
+      const fp = trial ? pool.concat([elem(trial.el), elem(trial.el)]) : pool; // 选骰备战：带对应元素骰
       for (let i = 0; i < N; i++) {
-        let rolled = roll(pool, rng); let dis = disabledIdx(rolled, foe.counter); let usable = rolled.filter((_, j) => !dis.has(j)); let rr = REROLLS;
-        while (!meets(usable, foe.conds) && rr > 0) { rr--; rolled = roll(pool, rng); dis = disabledIdx(rolled, foe.counter); usable = rolled.filter((_, j) => !dis.has(j)); }
+        let rolled = roll(fp, rng); let dis = disabledIdx(rolled, foe.counter); let usable = rolled.filter((_, j) => !dis.has(j)); let rr = REROLLS;
+        while (!meets(usable, foe.conds) && rr > 0) { rr--; rolled = roll(fp, rng); dis = disabledIdx(rolled, foe.counter); usable = rolled.filter((_, j) => !dis.has(j)); }
         if (meets(usable, foe.conds)) ok++;
       }
       return (ok / N * 100).toFixed(0) + '%';

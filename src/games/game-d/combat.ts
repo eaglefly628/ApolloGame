@@ -1,44 +1,26 @@
 // Game D ·《骰途》战斗模型 v2 —— HP + 挑战要求 + 反制（统一模型·owner 2026-06-29 拍）。
 //
 // ⚠️ 原型：游戏层纯函数·上线版迁数据驱动。设计见 docs/design/game-d/combat-design.md §12。
+// 元素/骰子定义见 dice.ts（复刻美术设计案六色元素 火水木雷风暗）。
 //
 // 统一核心：敌人 = HP（血量）+ 一道**门槛挑战(conds)** + **反制**。每回合你掷骰、可重掷、提交一手：
-//   · 这手**满足门槛** → 命中、扣敌 HP = 本手点数和；HP 归零即胜。
+//   · 这手**满足门槛** → 命中、扣敌 HP = 本手点数和 × 牌型倍率；HP 归零即胜。
 //   · 不满足 → 落空，吃威胁（扣队伍心）。
-// 「砸血」= 大 HP + 低门槛（靠多次砸）；「pattern」= 小 HP + 严门槛（含某点/同色对·一两手）；BOSS = 高门槛+大HP+反制。
+// 「砸血」= 大 HP + 低门槛（靠多次砸）；「元素试炼」= 中 HP + 需某元素 N 颗；BOSS = 高门槛 + 同色对 + 大 HP + 反制。
 
-export type Elem = 'jin' | 'mu' | 'shui' | 'huo' | 'tu' | 'none' | 'wild';
-
-export const ELEM_INFO: Record<Elem, { emoji: string; cn: string }> = {
-  jin: { emoji: '🟡', cn: '金' }, mu: { emoji: '🟢', cn: '木' }, shui: { emoji: '🔵', cn: '水' },
-  huo: { emoji: '🔴', cn: '火' }, tu: { emoji: '🟤', cn: '土' }, none: { emoji: '⚪', cn: '无' }, wild: { emoji: '🌈', cn: '百搭' },
-};
-export const FIVE: Elem[] = ['jin', 'mu', 'shui', 'huo', 'tu'];
-
-// ── 骰子 ───────────────────────────────────────────────────────────────
-export interface Face { v: number; el: Elem; }
-export interface Die { id: string; name: string; faces: Face[]; }
-export interface RolledDie { dieId: string; v: number; el: Elem; }
-
-const faces = (vals: number[], el: Elem): Face[] => vals.map((v) => ({ v, el }));
-let dieSeq = 0;
-const mkDie = (name: string, f: Face[]): Die => ({ id: `d${dieSeq++}`, name, faces: f });
-export const plainDie = (): Die => mkDie('朴骰', faces([1, 2, 3, 4, 5, 6], 'none'));
-export const elemDie = (c: Elem): Die => mkDie(`${ELEM_INFO[c].cn}骰`, faces([1, 2, 3, 4, 5, 6], c));
-export const heavyDie = (): Die => mkDie('重骰', faces([4, 5, 6, 7, 8, 9], 'none'));
-export const wildDie = (): Die => mkDie('百搭骰', faces([1, 2, 3, 4, 5, 6], 'wild'));
-
-export function rollPool(pool: Die[], rnd: () => number): RolledDie[] {
-  return pool.map((d) => { const f = d.faces[Math.floor(rnd() * d.faces.length)]!; return { dieId: d.id, v: f.v, el: f.el }; });
-}
+import { ELEM_INFO, ELEMS, type Elem, type RolledDie } from './dice.js';
+export { ELEM_INFO, ELEMS } from './dice.js';
+export type { Elem, RolledDie, Die, Face, DieDef } from './dice.js';
 
 // ── 门槛挑战（可组合条件）─────────────────────────────────────────────────
 export type Condition =
-  | { kind: 'sum'; t: number }       // 总和 ≥ t
-  | { kind: 'contains'; v: number }  // 含一个点数 v
-  | { kind: 'pair' };                // 一对同色（两颗同色同点）
+  | { kind: 'sum'; t: number }            // 总和 ≥ t
+  | { kind: 'element'; el: Elem; n: number } // 含至少 n 颗某元素（百搭可顶）
+  | { kind: 'contains'; v: number }       // 含一个点数 v
+  | { kind: 'pair' };                     // 一对同色（两颗同色同点）
 export function condLabel(c: Condition): string {
   if (c.kind === 'sum') return `总和≥${c.t}`;
+  if (c.kind === 'element') return `${ELEM_INFO[c.el].cn} ×${c.n}`;
   if (c.kind === 'contains') return `含一个 ${c.v}`;
   return '一对同色';
 }
@@ -47,25 +29,27 @@ export function condLabel(c: Condition): string {
 export interface Counter { kind: 'none' | 'discardHighLow'; label: string; }
 
 // ── 敌人 = HP + 门槛 + 反制 ──────────────────────────────────────────────
-export interface Foe { name: string; isBoss: boolean; el: Elem; hp: number; maxHp: number; conds: Condition[]; counter: Counter; kindLabel: string; }
-const FOE_NAMES = ['石魅', '焰怨', '苔妖', '潮灵', '砂卫'];
+export interface Foe { name: string; isBoss: boolean; el: Elem; hp: number; maxHp: number; conds: Condition[]; counter: Counter; kindLabel: string; trialEl?: Elem; trialN?: number; }
+const FOE_NAMES = ['焰怨', '潮灵', '苔妖', '雷祟', '风魅', '幽影'];
 
-/** 按房间生成敌人（一层 3 间：砸血杂兵 / pattern 杂兵 / 混合 BOSS）。数值随 globalRoom 升·待模拟器调。 */
+/** 按房间生成敌人（一层 3 间：砸血杂兵 / 元素试炼杂兵 / 守关者 BOSS）。数值随 globalRoom 升·待模拟器调。 */
 export function makeFoe(globalRoom: number, roomInAct: number): Foe {
   const tSum = Math.round(8 + globalRoom * 3); // 门槛随层升
-  const el = FIVE[globalRoom % 5]!;
+  const el = ELEMS[globalRoom % ELEMS.length]!;
   let conds: Condition[]; let hp: number; let counter: Counter = { kind: 'none', label: '' }; let kindLabel: string;
+  let trialEl: Elem | undefined; let trialN: number | undefined;
   if (roomInAct === 0) {            // 砸血杂兵：低门槛·大血·多次砸
     conds = [{ kind: 'sum', t: Math.round(tSum * 0.7) }];
     hp = Math.round(tSum * 2.4); kindLabel = '砸血';
-  } else if (roomInAct === 1) {     // pattern 杂兵：含某点·小血·一两手
-    conds = [{ kind: 'sum', t: tSum }, { kind: 'contains', v: 6 }];
-    hp = Math.round(tSum * 1.1); kindLabel = 'pattern';
-  } else {                          // 混合 BOSS：高门槛 + 同色对 + 大血 + 反制
+  } else if (roomInAct === 1) {     // 元素试炼杂兵：需某元素 N 颗 + 总和·中血
+    trialEl = el; trialN = 2 + Math.floor(globalRoom / 6);
+    conds = [{ kind: 'element', el, n: trialN }, { kind: 'sum', t: tSum }];
+    hp = Math.round(tSum * 1.4); kindLabel = '元素试炼';
+  } else {                          // 守关者 BOSS：高门槛 + 同色对 + 大血 + 反制
     conds = [{ kind: 'sum', t: Math.round(tSum * 1.25) }, { kind: 'pair' }];
     hp = Math.round(tSum * 2.2); counter = { kind: 'discardHighLow', label: '弃你最高+最低各一颗' }; kindLabel = 'BOSS';
   }
-  return { name: (roomInAct === 2 ? '守关者·' : '') + FOE_NAMES[globalRoom % 5]!, isBoss: roomInAct === 2, el, hp, maxHp: hp, conds, counter, kindLabel };
+  return { name: (roomInAct === 2 ? '守关者·' : '') + FOE_NAMES[globalRoom % FOE_NAMES.length]!, isBoss: roomInAct === 2, el, hp, maxHp: hp, conds, counter, kindLabel, trialEl, trialN };
 }
 
 /** 反制 → 被禁用的 rolled 索引（弃高低 = 最高 + 最低各一颗·不可投入）。 */
@@ -80,6 +64,11 @@ export function counterDisabled(rolled: RolledDie[], counter: Counter): Set<numb
 }
 
 // ── 评估一手是否满足门槛 ─────────────────────────────────────────────────
+function elemCount(dice: RolledDie[], el: Elem): number {
+  let n = 0, wilds = 0;
+  for (const r of dice) { if (r.el === 'wild') wilds++; else if (r.el === el) n++; }
+  return n + wilds; // 百搭顶任意色
+}
 function hasPair(dice: RolledDie[]): boolean {
   const seen = new Map<string, number>();
   let wilds = 0;
@@ -93,6 +82,7 @@ function hasPair(dice: RolledDie[]): boolean {
 }
 export function evalCond(dice: RolledDie[], c: Condition): boolean {
   if (c.kind === 'sum') return dice.reduce((s, r) => s + r.v, 0) >= c.t;
+  if (c.kind === 'element') return elemCount(dice, c.el) >= c.n;
   if (c.kind === 'contains') return dice.some((r) => r.v === c.v);
   return hasPair(dice);
 }
