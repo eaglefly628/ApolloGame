@@ -263,6 +263,9 @@ export class ThreeRenderer implements RendererBackend {
     this.lastRenderSig = '';
   }
 
+  // 失效脏标 → 强制下帧重渲（调试面板改了 render-only 组件/参数后调·确保立即反映）。
+  invalidate(): void { this.lastRenderSig = ''; }
+
   readStats(): RenderStats {
     const info = this.gl.info;
     return {

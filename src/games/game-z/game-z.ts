@@ -9,7 +9,7 @@ import { ThreeRenderer, type RenderStats } from '@renderer/three-renderer.js';
 import { AssetManager, ModelAssetLoader } from '@assets/index.js';
 import { mountUI } from '@ui/components/index.js';
 import type { LayoutNode } from '@ui/components/index.js';
-import type { Velocity, Camera3D, Overlap3D } from '@engine/protocol/components.js';
+import type { Velocity, Camera3D, Overlap3D, Post3D, Fog3D } from '@engine/protocol/components.js';
 import { dioramaBlueprint } from './diorama.js';
 import { GAME_Z_ASSETS } from './assets.js';
 
@@ -75,23 +75,60 @@ export function mount(container: HTMLElement): () => void {
   });
   const ui = mountUI(hudHost, hudTree(60, null, showProfiler, false));
 
-  // 可点击菜单（独立 pointer-events:auto 宿主·不挡盒庭拖拽）：开关碰撞体 debug 线框（render-only·UI 铁律·LayoutNode）。
+  // 渲染调试面板（独立 pointer-events:auto 宿主·全 LayoutNode·UI 铁律）：开关 + 滑块**实时调渲染参数**——
+  // 改的全是 render-only 组件（Post3D/Fog3D·不进 hash）→ 即时生效、无副作用。控件全走主程 UI 库（Toggle/Slider）。
   const menuHost = document.createElement('div');
-  menuHost.style.cssText = 'position:absolute;left:18px;bottom:14px;pointer-events:auto';
+  menuHost.style.cssText = 'position:absolute;left:14px;bottom:12px;pointer-events:auto;max-height:90%;overflow:auto;width:220px';
   wrapper.appendChild(menuHost);
-  let showColliders = false;
-  let showNav = false;
-  const menuTree = (col: boolean, nav: boolean): LayoutNode => ({
-    type: 'Panel', id: 'gz-menu', props: { bare: true }, layout: { gap: 4 },
+
+  // 设置态（初值对齐蓝图 Post3D/Fog3D）。
+  const S = { col: false, nav: false, aoOn: true, aoInt: 1.1, aoRad: 5, fogOn: true, fogNear: 190, fogFar: 520, gradeOn: true, exp: 1.02, con: 1.08, sat: 1.12, aa: true };
+  const post = (): Post3D | undefined => engine.world.getComponent<Post3D>('post', 'Post3D');
+  const fog = (): Fog3D | undefined => engine.world.getComponent<Fog3D>('fog', 'Fog3D');
+  // 把设置写进 render-only 组件 + 渲染器（实时生效·不进 hash）。
+  const apply = (): void => {
+    renderer.setDebugColliders(S.col);
+    renderer.setDebugNav(S.nav);
+    const p = post();
+    if (p) {
+      p.ao = S.aoOn ? { intensity: S.aoInt, radius: S.aoRad, scale: 1 } : undefined;
+      p.grade = S.gradeOn ? { exposure: S.exp, contrast: S.con, saturation: S.sat, brightness: 0, tint: 0xfff6ec } : undefined;
+      p.aa = S.aa;
+    }
+    if (S.fogOn) {
+      const f = fog();
+      if (f) { f.near = S.fogNear; f.far = S.fogFar; }
+      else engine.world.addComponent('fog', { type: 'Fog3D', color: 0xcfe9f7, near: S.fogNear, far: S.fogFar } as Fog3D);
+    } else if (fog()) engine.world.removeComponent('fog', 'Fog3D');
+    renderer.invalidate();
+  };
+  const tog = (id: string, label: string, on: boolean, action: string): LayoutNode => ({ type: 'Toggle', id, props: { label, checked: on, action } });
+  const sld = (id: string, label: string, value: number, min: number, max: number, step: number, action: string): LayoutNode => ({ type: 'Slider', id, props: { label, value, min, max, step, action } });
+  const tree = (): LayoutNode => ({
+    type: 'Panel', id: 'gz-set', props: { bare: true }, layout: { gap: 3 },
     children: [
-      { type: 'Button', id: 'gz-dbg', props: { label: `🔻 碰撞体线框：${col ? 'ON' : 'OFF'}`, kind: col ? 'primary' : 'ghost', action: 'toggleDebug' } },
-      { type: 'Button', id: 'gz-nav', props: { label: `🧭 导航网格：${nav ? 'ON' : 'OFF'}`, kind: nav ? 'primary' : 'ghost', action: 'toggleNav' } },
+      { type: 'Label', id: 'gz-set-t', props: { text: '⚙ 渲染调试', size: 'sm', glow: true } },
+      tog('gz-col', '碰撞体线框', S.col, 'tCol'),
+      tog('gz-nav', '导航网格', S.nav, 'tNav'),
+      tog('gz-ao', 'AO 遮蔽', S.aoOn, 'tAo'),
+      ...(S.aoOn ? [sld('gz-aoi', 'AO 强度', S.aoInt, 0, 3, 0.05, 'sAoI'), sld('gz-aor', 'AO 半径', S.aoRad, 1, 16, 0.5, 'sAoR')] : []),
+      tog('gz-fog', '距离雾', S.fogOn, 'tFog'),
+      ...(S.fogOn ? [sld('gz-fn', '雾 near', S.fogNear, 40, 400, 5, 'sFn'), sld('gz-ff', '雾 far', S.fogFar, 200, 800, 10, 'sFf')] : []),
+      tog('gz-gr', '色彩分级', S.gradeOn, 'tGr'),
+      ...(S.gradeOn ? [sld('gz-ex', '曝光', S.exp, 0.5, 1.6, 0.02, 'sEx'), sld('gz-co', '对比', S.con, 0.5, 1.6, 0.02, 'sCo'), sld('gz-sa', '饱和', S.sat, 0, 2, 0.02, 'sSa')] : []),
+      tog('gz-aa', '抗锯齿 SMAA', S.aa, 'tAa'),
     ],
   });
-  const refreshMenu = (): void => menuUi.update(menuTree(showColliders, showNav));
-  const setColliders = (on: boolean): void => { showColliders = on; renderer.setDebugColliders(on); refreshMenu(); };
-  const setNav = (on: boolean): void => { showNav = on; renderer.setDebugNav(on); refreshMenu(); };
-  const menuUi = mountUI(menuHost, menuTree(false, false), { toggleDebug: () => setColliders(!showColliders), toggleNav: () => setNav(!showNav) });
+  // 开关 → 改态 + 应用 + 重渲面板（更新勾选 + 显隐从属滑块）。滑块 → 改态 + 应用（**不重渲面板**·免打断拖拽）。
+  const refresh = (): void => menuUi.update(tree());
+  const tT = (k: 'col' | 'nav' | 'aoOn' | 'fogOn' | 'gradeOn' | 'aa') => (v: unknown): void => { S[k] = v === 'true' || v === true; apply(); refresh(); };
+  const sS = (k: 'aoInt' | 'aoRad' | 'fogNear' | 'fogFar' | 'exp' | 'con' | 'sat') => (v: unknown): void => { S[k] = Number(v); apply(); };
+  const menuUi = mountUI(menuHost, tree(), {
+    tCol: tT('col'), tNav: tT('nav'), tAo: tT('aoOn'), tFog: tT('fogOn'), tGr: tT('gradeOn'), tAa: tT('aa'),
+    sAoI: sS('aoInt'), sAoR: sS('aoRad'), sFn: sS('fogNear'), sFf: sS('fogFar'), sEx: sS('exp'), sCo: sS('con'), sSa: sS('sat'),
+  });
+  const setColliders = (on: boolean): void => { S.col = on; apply(); refresh(); };
+  const setNav = (on: boolean): void => { S.nav = on; apply(); refresh(); };
 
   // 键盘 → 角色 Velocity（运行时输入胶水）：归一化对角线 + 速度；motion-apply 每 tick 把它累加进 Transform。
   const held = new Set<string>();
@@ -111,8 +148,8 @@ export function mount(container: HTMLElement): () => void {
     // 相机数据驱动开关（行为层只写 Camera3D 数据·渲染器解释）：O 切正交/透视、F 切跟随小黄鸭/环绕。
     if (e.code === 'KeyO') { const c = cam(); if (c) c.projection = c.projection === 'ortho' ? 'perspective' : 'ortho'; }
     if (e.code === 'KeyF') { const c = cam(); if (c) { c.mode = c.mode === 'follow' ? 'orbit' : 'follow'; c.target = 'hero'; } }
-    if (e.code === 'KeyC') setColliders(!showColliders); // 碰撞体线框开关（同左下菜单按钮）
-    if (e.code === 'KeyN') setNav(!showNav); // 导航网格开关（同左下菜单按钮）
+    if (e.code === 'KeyC') setColliders(!S.col); // 碰撞体线框开关（同调试面板）
+    if (e.code === 'KeyN') setNav(!S.nav); // 导航网格开关（同调试面板）
     held.add(e.code); setVel();
   };
   const onUp = (e: KeyboardEvent): void => { held.delete(e.code); setVel(); };
