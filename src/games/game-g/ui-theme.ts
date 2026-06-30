@@ -48,4 +48,4 @@ export const GG_LOBBY_THEME: UITheme = {
 //    danger/ok 改桥到战斗自有的 var(--danger)/var(--hp)（GG_LOBBY_THEME 桥的 var(--heart)/var(--club) 在战斗 THEMES
 //    令牌集里未定义 → 红/绿失效；战斗 THEMES 自带 --danger(#ff5d62 血灯红)/--hp(#46d17a)，正是棋枰要的色·两皮各自有值）。
 // mine/foe = 阵营描边色（Panel.edge='mine'/'foe'·棋枰城堡/格/兵牌阵营框·REQ-UI-容器描边形）：我方暖橙 / 敌方冷蓝（两皮通用·逐字搬战斗原版 #ff7a45/#3a86d4）。
-export const GG_BATTLE_THEME: UITheme = { ...GG_LOBBY_THEME, bg0: '#2a1a08', danger: 'var(--danger)', ok: 'var(--hp)', mine: '#ff7a45', foe: '#3a86d4' };
+export const GG_BATTLE_THEME: UITheme = { ...GG_LOBBY_THEME, bg0: '#2a1a08', danger: 'var(--danger)', ok: 'var(--hp)', mine: '#dc2626', foe: '#1a1a1a' };

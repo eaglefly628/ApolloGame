@@ -23,8 +23,8 @@ const RAR: Record<string, [string, string]> = { white: ['普通', '#b9bec8'], gr
 
 // 敌我牌面（owner 2026-06-20：底纹要好看·斜纹太丑）：改干净暖/冷渐变 + 左上玻璃高光。我方暖橙·敌方冷蓝（色温+描边色分清）。
 const sideFace = (mine: boolean): string => mine
-  ? 'radial-gradient(120% 78% at 26% 12%, rgba(255,255,255,.5), rgba(255,255,255,0) 58%), linear-gradient(160deg,#ffe7d6 0%,#ffc29a 58%,#ff9f6a 100%)'  // 我方·加深暖橙（敌我色温拉开·owner 2026-06-29 难分辨）
-  : 'radial-gradient(120% 78% at 26% 12%, rgba(255,255,255,.5), rgba(255,255,255,0) 58%), linear-gradient(160deg,#ccddf3 0%,#9bbae0 55%,#6c95ce 100%)';  // 敌方·加深冷蓝
+  ? 'radial-gradient(120% 78% at 26% 12%, rgba(255,255,255,.55), rgba(255,255,255,0) 58%), linear-gradient(160deg,#fff5ef 0%,#ffe0cf 68%,#ffceb5 100%)'  // 我方·浅暖（配红框/红字·owner 2026-06-29 改我红敌黑）
+  : 'radial-gradient(120% 78% at 26% 12%, rgba(255,255,255,.6), rgba(255,255,255,0) 58%), linear-gradient(160deg,#f0f6fe 0%,#d6e4f8 68%,#c1d6f2 100%)';  // 敌方·浅冷（配黑框/黑字）
 
 // 双皮 token（逐字搬自设计稿 themes()）。
 type Theme = Record<string, string>;
@@ -238,11 +238,11 @@ function unitNode(s: TurnSlotView): LayoutNode {
   ] };
   const zod = s.zod || [];
   const zc = (z: string | undefined, i: number): LayoutNode => ({ type: 'Panel', id: `u-${id}-z${i}`, props: { bg: z ? 'rgba(255,255,255,.9)' : 'rgba(0,0,0,.06)' }, layout: { width: 18, height: 18, radius: 5, align: 'center', justify: 'center', padding: 0 }, children: z ? [{ type: 'Label', id: `u-${id}-zg${i}`, props: { text: ZOD_ICON[z] || z, size: 12 } }] : [] });
-  // 中央阵营大字「我/敌/将」（owner 2026-06-29「敌我难分辨·要鲜明标记」）：花色已在左上角标·中央改作阵营标识·一眼分敌我。
-  // 我=ok 绿(友)·敌=danger 红(敌)·将=gold（红绿敌我=通用惯例·配加深暖/冷底进一步强化）。旁附小花色保牌感。
-  const facCol = isGen ? 'gold' : s.mine ? 'ok' : 'danger';
-  const center: LayoutNode = { type: 'Panel', id: `u-${id}-c`, props: { bare: true }, layout: { direction: 'row', align: 'center', justify: 'center', gap: 2 }, children: [
-    { type: 'Label', id: `u-${id}-fac`, props: { text: isGen ? '将' : s.mine ? '我' : '敌', size: 30, color: facCol, bold: true } },
+  // 中央阵营标识「我/敌/将」chip（owner 2026-06-29「我方红·敌方黑」）：Label 令牌无真黑/任意色 → 用 Panel.bg 上色片
+  // （bg 任意色合法）：我=红片 / 敌=黑片 / 将=金片，浅字（text）压上。真红真黑·一眼分敌我。旁附小花色保牌感。
+  const facBg = isGen ? '#c8920a' : s.mine ? '#dc2626' : '#1a1a1a';
+  const center: LayoutNode = { type: 'Panel', id: `u-${id}-c`, props: { bare: true }, layout: { direction: 'row', align: 'center', justify: 'center', gap: 3 }, children: [
+    { type: 'Panel', id: `u-${id}-fac`, props: { bg: facBg }, layout: { radius: 6, padding: 3, align: 'center', justify: 'center' }, children: [{ type: 'Label', id: `u-${id}-facl`, props: { text: isGen ? '将' : s.mine ? '我' : '敌', size: 20, color: 'text', bold: true } }] },
     { type: 'Label', id: `u-${id}-big`, props: { text: g, size: 18, color: tone } },
   ] };
   const children: LayoutNode[] = [
