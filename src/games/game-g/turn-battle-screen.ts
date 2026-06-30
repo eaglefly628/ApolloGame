@@ -395,7 +395,7 @@ function clashNode(cv: TurnClashView): LayoutNode {
       ] }
     : { type: 'Panel', id: 'clash-center', props: { bare: true }, layout: { direction: 'column', gap: 8, align: 'center' }, children: [
         { type: 'Button', id: 'clash-roll-btn', props: { label: '🎲 掷命', kind: 'hero', action: 'clash-roll' }, layout: { anchor: 'combat-roll', fx: [{ kind: 'pulse', ms: 1000 }] } },
-        { type: 'Label', id: 'clash-roll-hint', props: { text: '点击掷命 · 5s 自动', size: 'xs', color: 'sub' } },
+        { type: 'Label', id: 'clash-roll-hint', props: { text: '看清战力来源后 · 点击掷命（不自动·慢慢看）', size: 'xs', color: 'sub' } },
       ] };
   const oddsBar: LayoutNode = {
     type: 'Panel', id: 'clash-odds', props: { bare: true }, layout: { direction: 'row', gap: 8, align: 'center' }, children: [

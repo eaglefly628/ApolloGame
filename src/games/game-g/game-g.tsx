@@ -426,12 +426,8 @@ export function mount(container: HTMLElement, shell?: { exit?: () => void }): ()
     let mounted: { update: () => void; destroy: () => void } | null = null;
 
     const drainClashes = (): void => { for (const ev of tb.clashLog.slice(drained)) perfQueue.push(ev); drained = tb.clashLog.length; };
-    // 掷命倒计时：进特写起 5s·每秒更新钮上数字（直改 DOM·不整片重渲防卡牌飞入重启）·到点自动掷。
-    const startClashCountdown = (): void => {
-      clearClashTimers(); let left = 5;
-      clashCdInterval = window.setInterval(() => { left -= 1; const el = document.querySelector('[data-cd]'); if (el) el.textContent = String(Math.max(0, left)); if (left <= 0 && clashCdInterval) { clearInterval(clashCdInterval); clashCdInterval = 0; } }, 1000);
-      clashCdTimer = window.setTimeout(() => doClashRoll(), 5000);
-    };
+    // 掷命**不自动倒计时**（owner 2026-06-29「先看清战力来源·5s 太快」）：进特写后只等玩家点骰·要看多久看多久。
+    const startClashCountdown = (): void => { clearClashTimers(); };
     // 玩家点骰（或倒计时自动）：先翻 revealed（结果即进 DOM·测试/逻辑可即取）→ 全屏掷骰蓄力 + 数字哒哒哒滚到命点 → 撤层揭晓胜负。
     const doClashRoll = (): void => {
       if (clashRolling || clashRevealed || !perfClash) return;
