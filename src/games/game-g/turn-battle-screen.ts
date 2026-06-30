@@ -249,13 +249,8 @@ function unitNode(s: TurnSlotView): LayoutNode {
   ] };
   const zod = s.zod || [];
   const zc = (z: string | undefined, i: number): LayoutNode => ({ type: 'Panel', id: `u-${id}-z${i}`, props: { bg: z ? 'rgba(255,255,255,.9)' : 'rgba(0,0,0,.06)' }, layout: { width: 18, height: 18, radius: 5, align: 'center', justify: 'center', padding: 0 }, children: z ? [{ type: 'Label', id: `u-${id}-zg${i}`, props: { text: ZOD_ICON[z] || z, size: 12 } }] : [] });
-  // 中央阵营标识「我/敌/将」chip（owner 2026-06-29「我方红·敌方黑」）：Label 令牌无真黑/任意色 → 用 Panel.bg 上色片
-  // （bg 任意色合法）：我=红片 / 敌=黑片 / 将=金片，浅字（text）压上。真红真黑·一眼分敌我。旁附小花色保牌感。
-  const facBg = isGen ? '#c8920a' : s.mine ? '#dc2626' : '#1a1a1a';
-  const center: LayoutNode = { type: 'Panel', id: `u-${id}-c`, props: { bare: true }, layout: { direction: 'row', align: 'center', justify: 'center', gap: 3 }, children: [
-    { type: 'Panel', id: `u-${id}-fac`, props: { bg: facBg }, layout: { radius: 6, padding: 3, align: 'center', justify: 'center' }, children: [{ type: 'Label', id: `u-${id}-facl`, props: { text: isGen ? '将' : s.mine ? '我' : '敌', size: 20, color: 'text', bold: true } }] },
-    { type: 'Label', id: `u-${id}-big`, props: { text: g, size: 18, color: tone } },
-  ] };
+  // 中央=大花色（owner 2026-06-29「先不显我/敌·只靠红框/黑框分辨·看够不够」）：敌我暂仅靠 edge 红/黑框 + 红/黑战力角标区分。
+  const center: LayoutNode = { type: 'Label', id: `u-${id}-big`, props: { text: g, size: 30, color: tone } };
   const children: LayoutNode[] = [
     top,
     center,
@@ -832,6 +827,10 @@ export function mountTurnBattle(host: HTMLElement, getView: () => TurnBattleView
     // ⚠ 用 CSS zoom 而非 transform:scale —— zoom 是 CPU 布局缩放、不生成合成图层；掌机弱 GPU 合成「整屏 transform 缩放图层」会失败→黑屏（Mac 好 GPU 正常·owner 2026-06-22 烧版「apollo 绿字+黑屏」=此因）。zoom 即便不被支持也只是不缩放=裁切·绝不黑。
     const innerStyle: Style = { ...(THEMES[view.theme] ?? THEMES.onyx), width: '1520px', height: '858px', zoom: sc, fontFamily: 'var(--fb)' };
     host.innerHTML = `<div class="ggt-outer" style="position:relative; width:100%; height:100%; overflow:hidden; background:#0c0a08; display:flex; align-items:center; justify-content:center"><div class="ggt-inner" style="${st(innerStyle)}">${buildTurnFrameHTML(view, drain)}</div></div>`; // outer 占满 stage·flex 居中棋盘·四周对称留白(contain)
+    // ⚠ zoom 必须经 JS setProperty 落地，不能只靠 style 属性串——浏览器解析 innerHTML 的 style 属性时会丢弃 zoom（非标准属性·
+    //   属性串里被吞），只有 setProperty('zoom',…) 才生效。此前仅 mount 时 RO→applyScale 落了一次 zoom；点击重渲后 zoom 丢失→
+    //   画框退回原始 1520×858（窗口小于此即溢出出界=「点一下放大一圈/边缘看不到」·owner 2026-06-29 反复撞）。每帧补设即根除。
+    const giz = host.querySelector('.ggt-inner') as HTMLElement | null; if (giz) giz.style.setProperty('zoom', String(sc));
     if (first) { // LAST + INVERT + PLAY
       const z = sc || 1; // getBoundingClientRect 是 zoom 后屏幕坐标；transform 在元素本地空间(zoom 前) → 位移除以 zoom
       host.querySelectorAll('[id^="cell-"]').forEach((cell) => {
