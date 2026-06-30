@@ -1,0 +1,215 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@600;700;900&family=Noto+Serif+SC:wght@600;700;900&family=Noto+Sans+SC:wght@400;500;700&display=swap" rel="stylesheet">
+<style>
+  body{margin:0;background:#f4f1ea}
+  .doc{box-sizing:border-box;max-width:8.5in;margin:0 auto;background:#fff;padding:0 clamp(24px,5vw,0.75in);box-shadow:0 10px 50px -20px rgba(40,20,60,.35)}
+  .doc-frame{width:100%;border-collapse:collapse}
+  .doc-frame td{padding:0}
+  .pad-top,.pad-bottom{display:none}
+  @page{size:letter;margin:0}
+  @media print{
+    html{-webkit-print-color-adjust:exact;print-color-adjust:exact}
+    html,body{margin:0;padding:0;background:#fff}
+    .doc{max-width:none !important;margin:0 !important;padding:0 0.7in !important;box-shadow:none !important}
+    .pad-top,.pad-bottom{display:table-cell;height:0.7in}
+    h1,h2,h3,h4{break-after:avoid}
+    figure,blockquote,tr,.keep{break-inside:avoid}
+    p,li{orphans:3;widows:3}
+    .screen-only{display:none !important}
+  }
+</style>
+</helmet>
+
+<main class="doc">
+<table class="doc-frame" role="presentation">
+<thead><tr><td class="pad-top"></td></tr></thead>
+<tbody><tr><td>
+
+  <!-- masthead -->
+  <div style="padding:46px 0 26px;border-bottom:3px solid #1b1430;font-family:'Noto Sans SC',sans-serif">
+    <div style="display:flex;align-items:baseline;gap:14px;flex-wrap:wrap">
+      <span style="font-family:'Noto Serif SC',serif;font-weight:900;font-size:46px;letter-spacing:4px;color:#1b1430">骰途</span>
+      <span style="font-family:'Cinzel',serif;font-size:15px;letter-spacing:5px;color:#a8843a">TOWER OF FATE</span>
+    </div>
+    <h1 style="margin:12px 0 0;font-family:'Noto Serif SC',serif;font-weight:700;font-size:23px;color:#3a2e58;letter-spacing:1px">视觉美术设计交付文案 · Art Design Brief</h1>
+    <p style="margin:10px 0 0;font-size:13.5px;line-height:1.6;color:#6b6480;max-width:6.4in">双人合作 · 骰子 Roguelike。本文对位<b style="color:#3a2e58">已落地的可交互 3D 原型</b>，把每块画面、每套系统的「要长成什么样」描述清楚，供美术设计师（Cloud Design）产出 mockup / key art / 色板 / 控件皮 / 骰面与元素视觉语言。<b style="color:#a8843a">骨架已就位、可运行——设计师做的是「皮」。</b></p>
+    <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:14px">
+      <span style="font-size:11px;font-weight:700;color:#fff;background:#6e4bd0;padding:4px 10px;border-radius:6px">奇幻明快</span>
+      <span style="font-size:11px;font-weight:700;color:#fff;background:#c2547e;padding:4px 10px;border-radius:6px">童话微缩盒庭</span>
+      <span style="font-size:11px;font-weight:700;color:#3a2e58;background:#f0d68a;padding:4px 10px;border-radius:6px">体素 + 精美贴图</span>
+      <span style="font-size:11px;font-weight:700;color:#3a2e58;background:#cfe3c0;padding:4px 10px;border-radius:6px">一点魔幻宿命感</span>
+    </div>
+  </div>
+
+  <!-- 0. TL;DR -->
+  <div class="keep" style="margin:26px 0 0;padding:14px 16px;border:1px solid #cdbce8;background:#f3eefb;border-radius:10px">
+    <div style="font-family:'Noto Serif SC',serif;font-weight:700;font-size:14px;color:#4a2e7a">📦 交付包内含（已打包下载）</div>
+    <ul style="margin:8px 0 0;padding-left:20px;font-size:12.5px;line-height:1.62;color:#55506a">
+      <li><b>骰途 美术设计文案</b>（本文档）— 美术命题 + 截图对位，可「保存为 PDF」。</li>
+      <li><b>骰途 视觉原型</b> — 完整可交互 3D 原型（Title / 塔内场景 / 命运骰盅 / 通关转场+战利品），双击即开、可玩。<b>这是最权威的视觉参照</b>，转场与发牌等动效请以原型实机为准。</li>
+      <li><b>screenshots/doc/</b> — 本文档用到的全部关键截图（图①–④b，均实拍自原型）。</li>
+    </ul>
+    <p style="margin:8px 0 0;font-size:12px;color:#8a7ab0">原型为<b>程序化生成</b>（贴图/色板皆由代码绘制，无外部美术资产文件）——设计师产出的贴图/图标按「顶面/侧面」「卡面/图标」交回即可替换换皮。</p>
+  </div>
+
+  <h2 style="font-family:'Noto Serif SC',serif;font-weight:700;font-size:19px;color:#1b1430;margin:30px 0 12px;letter-spacing:.5px">0 · 一页速览</h2>
+  <p style="font-size:14.5px;line-height:1.66;color:#2c2740;margin:0 0 12px">《骰途 · 命运之塔》是双人合作的<b>骰子 Roguelike</b>。两名「掷命者」结伴攀登一座会改写命运的古塔，<b>所有战斗用掷骰解决</b>，一层层往上闯，每层 2 试炼 + 1 守关者。基调是<b>奇幻明快 + 一点神秘宿命感</b>：体素方块风 + 柔光泛光的<b>童话微缩模型质感</b>——不暗黑、不写实，温暖、可爱、彩色、一点魔幻。</p>
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin:14px 0 6px">
+    <div class="keep" style="border:1px solid #e3dcc8;border-left:4px solid #6e4bd0;border-radius:10px;padding:13px 15px;background:#faf8f2">
+      <div style="font-family:'Noto Serif SC',serif;font-weight:700;font-size:14px;color:#1b1430">核心美术命题</div>
+      <p style="margin:6px 0 0;font-size:12.5px;line-height:1.55;color:#55506a">几何永远是廉价的立方体（体素），丰富度全压在<b>贴图 + 光照 + 色彩</b>上。避免高面数建模，做成「带精美贴图的体素世界」。</p>
+    </div>
+    <div class="keep" style="border:1px solid #e3dcc8;border-left:4px solid #c2547e;border-radius:10px;padding:13px 15px;background:#faf8f2">
+      <div style="font-family:'Noto Serif SC',serif;font-weight:700;font-size:14px;color:#1b1430">参照气质</div>
+      <p style="margin:6px 0 0;font-size:12.5px;line-height:1.55;color:#55506a"><b>《奇诺比奥队长》</b>的可爱微缩盒庭为主 · 《哈迪斯》的精致俯视 · 《弓箭传说》的近俯视战场 · 《Balatro》的桌面神秘骰牌质感。</p>
+    </div>
+  </div>
+  <p style="font-size:13px;line-height:1.6;color:#55506a;margin:10px 0 0">四块画面 + 一段转场：① 开场 Title 屏 · ② 塔内场景 · ③ 命运骰盅（选骰备战）· ④ 通关转场 + 3D 战利品。下文逐块给美术命题。</p>
+
+  <!-- 1. 风格 -->
+  <h2 style="font-family:'Noto Serif SC',serif;font-weight:700;font-size:19px;color:#1b1430;margin:36px 0 12px;letter-spacing:.5px">1 · 全局美术风格指南</h2>
+  <ul style="font-size:14px;line-height:1.7;color:#2c2740;margin:0;padding-left:20px">
+    <li><b>几何</b>：体素（立方体）为主 + 极少量精模（守关者 / 吉祥物）作 showcase。别做高面数复杂模型——这是省成本、可批量渲染的硬约束。</li>
+    <li><b>丰富度来源</b>：贴图 + 光照 + 色彩，不是建模。每种材质 = 一套体素贴图（<b>顶面 / 侧面</b>两张）。</li>
+    <li><b>整体调性</b>：明快、温暖、彩色、童话微缩 + 一点魔幻神秘。非写实、非暗黑。</li>
+    <li><b>光照氛围</b>：保留「微缩模型」感——柔和接触阴影 + 移轴景深（上下渐糊）+ 轻泛光（让发光物自发光）。温暖、通透。</li>
+  </ul>
+
+  <!-- 2. Title -->
+  <h2 style="font-family:'Noto Serif SC',serif;font-weight:700;font-size:19px;color:#1b1430;margin:36px 0 12px;letter-spacing:.5px">2 · 屏 ① 开场 Title 屏</h2>
+  <p style="font-size:13px;line-height:1.62;color:#6b6480;margin:0 0 12px;font-style:italic">目的：第一眼建立「神秘命运之塔 + 骰子 + 双人冒险」气质，并给出开始入口。</p>
+  <ul style="font-size:14px;line-height:1.7;color:#2c2740;margin:0;padding-left:20px">
+    <li><b>主视觉 = 一颗活的 3D 滚动骰子</b>（已落地：引擎渲一颗真 3D 骰子 + 光照 + 缓慢旋转）。立体、有体积、有光影反射，骰面带<b>颜色 = 元素</b>（六色）。设计师定造型 / 材质 / 六色面 / 旋转氛围。</li>
+    <li><b>背景</b>：骰子之后是神秘高塔的剪影 / 远景，向上消失在云雾 / 星空里（呼应「往上攀登」「命运」）。暗紫 / 靛蓝 / 墨 + 高光点缀，神秘但不压抑。</li>
+    <li><b>Logo / 标题</b>：「骰途」做成有设计感的主标（可融入骰子点数 / 塔的意象），配英文副标「TOWER OF FATE」，金色暖光质感。</li>
+    <li><b>主按钮</b>「开始攀塔」：醒目 hero 按钮（带微光呼吸感），下方小字「第一层 · 翠庭」。<b>次级入口</b>「双人同攀 / 单人 / 设置」需在浅色骰子上保证对比度（深色玻璃底 + 金边）。</li>
+    <li><b>氛围</b>：发光符文、微粒、柔光，烘托骰子。</li>
+  </ul>
+  <figure style="margin:16px 0 4px"><img src="screenshots/doc/01-title.png" alt="Title 屏截图" style="width:100%;display:block;border-radius:10px;border:1px solid #e3dcc8;box-shadow:0 8px 24px -12px rgba(40,20,60,.45)"><figcaption style="margin-top:7px;font-size:12px;color:#8a8298"><b>图① 开场 Title 屏</b>（实拍自原型）—— 中央是可运行的 3D 命运骰子，后方高塔剪影 + 星空；golden logo、呼吸感 hero 按钮、次级入口。<b>设计师要做的：</b>骰子造型/材质/六色面、塔背景 key art、logo 主标。</figcaption></figure>
+
+  <!-- 3. 塔内场景 -->
+  <h2 style="font-family:'Noto Serif SC',serif;font-weight:700;font-size:19px;color:#1b1430;margin:36px 0 12px;letter-spacing:.5px">3 · 屏 ② 塔内场景（gameplay 主画面）</h2>
+  <p style="font-size:13px;line-height:1.62;color:#6b6480;margin:0 0 12px;font-style:italic">目的：一屏一个独立战场竞技场，玩家在此掷骰战斗。近俯视、关卡往上推进、房间一间接一间。已落地为「浮空微缩盒庭」。</p>
+  <ul style="font-size:14px;line-height:1.7;color:#2c2740;margin:0 0 12px;padding-left:20px">
+    <li><b>体素贴图</b>：纯色方块升级成带精美贴图的体素——地面 / 墙体 / 门 / 装饰，每种材质一套<b>顶面 + 侧面</b>贴图（像《我的世界》方块，但更精致考究、有手绘质感）。</li>
+    <li><b>浮空盒庭</b>：竞技场坐在分层基座上像浮空模型；四角立<b>发光火盆</b>给暖光与纵向层次；外圈按主题摆装饰（翠庭灌木 / 蘑菇、古殿残柱、熔心余烬、晶顶晶簇，自动随层换色）；上方飘灯笼微粒。中心战斗区保持干净好读。</li>
+    <li><b>竞技场构成</b>：地台（清爽好读的「舞台」）· 围墙 + 朝画面上方的<b>发光出口门</b>（通向更高层，门楣 / 符文发光）· 中心焦点（战斗间放宝物 / 祭坛，守关者间放体素 BOSS 巨像）· 散落的元素物件。</li>
+    <li><b>左侧 元素法阵</b>：一列<b>魔法纹章环</b>（火 / 水 / 木 / 雷 / 风 / 暗），交错排布、双层旋转符文刻度框，盘面嵌低透明度元素暗纹（火焰丛 / 水波涟漪 / 木纹年轮 / 雷裂纹 / 风旋 / 暗渊）。施放技能时从环内射出对应颜色的 3D 光弹冲进场中（表演成分）。设计师定环的纹样与施放特效。</li>
+    <li><b>右侧 队友 + Buff</b>：队友状态卡（头像、协战状态、生命 / 护盾条、等级）+ 当前 Buff 列表（图标 + 名称 + 层数 / 回合）。</li>
+    <li><b>HUD 皮</b>：当前层 / 房间 / 类型、货币、进度，与场景气质统一的一套 HUD 风格。</li>
+  </ul>
+  <figure style="margin:16px 0 4px"><img src="screenshots/doc/02-arena.png" alt="塔内场景截图" style="width:100%;display:block;border-radius:10px;border:1px solid #e3dcc8;box-shadow:0 8px 24px -12px rgba(40,20,60,.45)"><figcaption style="margin-top:7px;font-size:12px;color:#8a8298"><b>图② 塔内场景</b>（实拍自原型）—— 浮空微缩盒庭：四角火盆、出口门、中心祭坛。左侧一列<b>元素法阵环</b>（火水木雷风暗，点击施放），右侧<b>队友 + Buff</b> 面板，底部是命运骰盅入口（剩 14 颗）。<b>设计师要做的：</b>体素贴图（顶/侧）、装饰、法阵纹样 + 施放特效、HUD 皮。</figcaption></figure>
+
+  <!-- 4. 命运骰盅 -->
+  <h2 style="font-family:'Noto Serif SC',serif;font-weight:700;font-size:19px;color:#1b1430;margin:36px 0 12px;letter-spacing:.5px">4 · 屏 ③ 命运骰盅 · 选骰备战</h2>
+  <p style="font-size:13px;line-height:1.62;color:#6b6480;margin:0 0 12px;font-style:italic">目的：一个「背包浏览器」。从骰库里选出本轮要投掷的骰子，凑出满足本关试炼的元素组合。核心目标——<b>用越少的骰子通过这一关</b>；骰子用尽仍未通关则败北（或看广告补骰）。</p>
+  <ul style="font-size:14px;line-height:1.7;color:#2c2740;margin:0 0 12px;padding-left:20px">
+    <li><b>本关需求横幅</b>：试炼目标 + 限投掷次数 + 所需元素 / 数量（实时对照「够不够」）。</li>
+    <li><b>骰库（分 Tab）</b>：元素骰 / 功能骰 / <b>附魔消耗品</b>。骰子分品种、大小（小 / 中 / 大型、六面 / 八面）、稀有度星级、功能标签（百搭 / 增幅 / 转化 / 连锁 / 双子 / 守护…）。<b>消耗品</b>是用一次即焚的附魔材料：染元素 / 加点数 / 重铸骰面 / 镶嵌万能。</li>
+    <li><b>详情子页</b>：大骰预览 + 逐面骰面展示 + 特性说明 + flavor 文案 + 装入 / 移出。</li>
+    <li><b>出战骰组（动态尺寸，上限 5）</b>：选得越少，骰子显示得越大、越带金光——视觉奖励「精简」。配<b>骰型评估</b>（扑克牌型式：元素对子 / 三元和鸣 / 福满堂 / 五行连珠 / 五星同辉…）作为本轮加成。</li>
+    <li><b>骰子视觉语言</b>：3D 骰子会掷进场景翻滚，骰面带<b>颜色 = 元素</b>。需要设计师给骰子材质 + 六色元素的视觉语言（颜色 + 质感 + 可选小符号）。</li>
+  </ul>
+  <figure style="margin:16px 0 4px"><img src="screenshots/doc/03-dish.png" alt="命运骰盅截图" style="width:100%;display:block;border-radius:10px;border:1px solid #e3dcc8;box-shadow:0 8px 24px -12px rgba(40,20,60,.45)"><figcaption style="margin-top:7px;font-size:12px;color:#8a8298"><b>图③ 命运骰盅 · 选骰备战</b>（实拍自原型）—— 背包浏览器：右上<b>本关需求</b>横幅，左侧骰库（全部/元素骰/功能骰 Tab、品种/大小/星级/标签），右侧详情子页（逐面骰面 + 特性 + flavor）。<b>设计师要做的：</b>Tab/卡片/详情/按钮的一套控件皮。</figcaption></figure>
+  <figure style="margin:14px 0 4px"><img src="screenshots/doc/04-loadout.png" alt="出战骰组与骰型截图" style="width:100%;display:block;border-radius:10px;border:1px solid #e3dcc8;box-shadow:0 8px 24px -12px rgba(40,20,60,.45)"><figcaption style="margin-top:7px;font-size:12px;color:#8a8298"><b>图③b 出战骰组（动态尺寸）+ 骰型</b>（实拍自原型）—— 选得越少骰子显示越大越带金光（奍励精简）；底部扑克牌型式的<b>骰型评估</b>（图中“元素对子”）+ 本轮对照试炼需求 + 确认投掷。骰库还有连锁骰/熔岩重骰/双子风骰/守护骰/棱晶骰等品种。</figcaption></figure>
+
+  <!-- 5. 通关转场 -->
+  <h2 style="font-family:'Noto Serif SC',serif;font-weight:700;font-size:19px;color:#1b1430;margin:36px 0 12px;letter-spacing:.5px">5 · 屏 ④ 通关转场 + 3D 战利品</h2>
+  <p style="font-size:13px;line-height:1.62;color:#6b6480;margin:0 0 12px;font-style:italic">目的：过关时的炫酷转场 + 战利品三选一。已落地为连续 3D 动画。</p>
+  <ol style="font-size:14px;line-height:1.7;color:#2c2740;margin:0 0 12px;padding-left:20px">
+    <li><b>骰壳转场</b>：整个战场被一颗巨型命运骰外壳包住 → 旧战场缩小钻进骰子里 → 骰子高速多轴旋转、螺旋升走 → 中段切换下一层（整套贴图 / 光色换皮）→ 新骰子旋入落定 → 后半程新战场从骰子内部随骰壳展开弹出。设计师可定骰壳材质、光爆 / 粒子拖尾。</li>
+    <li><b>3D 战利品卡</b>：紧接着从场地升起、<b>扇形展开</b>浮在竞技场上方，是真正的 3D 卡牌 Mesh（带卡背、立体厚度），各自轻轻旋转摆动。卡面 = 元素骰点母题 / 能力符号 + 名称 + 星级 + 效果。点击任意一张 → 选中的旋转两圈飞到镜头前放大停稳，另两张飞离消散（弓箭传说式几选几，由策划配置）。</li>
+  </ol>
+  <figure style="margin:16px 0 4px"><img src="screenshots/doc/05-transition.png" alt="通关骰壳转场截图" style="width:100%;display:block;border-radius:10px;border:1px solid #e3dcc8;box-shadow:0 8px 24px -12px rgba(40,20,60,.45)"><figcaption style="margin-top:7px;font-size:12px;color:#8a8298"><b>图④ 通关骰壳转场</b>（实拍自原型·连续 3D 动画中的一帧）—— 整个战场被一颗巨型命运骰外壳包住，旧战场缩进骰子里 → 高速旋转螺旋升走 → 下一颗骰子旋入展开新场景。</figcaption></figure>
+  <figure style="margin:14px 0 4px"><img src="screenshots/doc/06-loot.png" alt="3D 战利品卡截图" style="width:100%;display:block;border-radius:10px;border:1px solid #e3dcc8;box-shadow:0 8px 24px -12px rgba(40,20,60,.45)"><figcaption style="margin-top:7px;font-size:12px;color:#8a8298"><b>图④b 3D 战利品卡（三选一）</b>（实拍自原型）—— 三张旋转的 3D 卡牌 Mesh 扇形浮在地图上方。<b>设计师要做的：</b>骰壳材质/光爆粒子、卡面版式。</figcaption></figure>
+
+  <!-- 6. 色板 -->
+  <h2 style="font-family:'Noto Serif SC',serif;font-weight:700;font-size:19px;color:#1b1430;margin:36px 0 14px;letter-spacing:.5px">6 · 每层主题色板（幻境）</h2>
+  <div style="display:flex;flex-direction:column;gap:10px">
+    <div class="keep" style="display:flex;align-items:center;gap:14px;border:1px solid #e3dcc8;border-radius:10px;padding:12px 15px;background:#faf8f2">
+      <div style="display:flex;gap:6px;flex:none">
+        <span style="width:30px;height:30px;border-radius:7px;background:#6fae4a"></span>
+        <span style="width:30px;height:30px;border-radius:7px;background:#8a5a32"></span>
+        <span style="width:30px;height:30px;border-radius:7px;background:#ffd24a"></span>
+      </div>
+      <div><b style="font-family:'Noto Serif SC',serif;color:#1b1430">第 1 层 · 翠庭</b><span style="font-size:12.5px;color:#6b6480"> — 草绿 + 暖土 + 金色高光</span></div>
+    </div>
+    <div class="keep" style="display:flex;align-items:center;gap:14px;border:1px solid #e3dcc8;border-radius:10px;padding:12px 15px;background:#faf8f2">
+      <div style="display:flex;gap:6px;flex:none">
+        <span style="width:30px;height:30px;border-radius:7px;background:#8b93a4"></span>
+        <span style="width:30px;height:30px;border-radius:7px;background:#565d6e"></span>
+        <span style="width:30px;height:30px;border-radius:7px;background:#5fd6e6"></span>
+      </div>
+      <div><b style="font-family:'Noto Serif SC',serif;color:#1b1430">第 2 层 · 古殿</b><span style="font-size:12.5px;color:#6b6480"> — 石蓝灰 + 青色高光</span></div>
+    </div>
+    <div class="keep" style="display:flex;align-items:center;gap:14px;border:1px solid #e3dcc8;border-radius:10px;padding:12px 15px;background:#faf8f2">
+      <div style="display:flex;gap:6px;flex:none">
+        <span style="width:30px;height:30px;border-radius:7px;background:#4a3a34"></span>
+        <span style="width:30px;height:30px;border-radius:7px;background:#33251f"></span>
+        <span style="width:30px;height:30px;border-radius:7px;background:#ff7a2c"></span>
+      </div>
+      <div><b style="font-family:'Noto Serif SC',serif;color:#1b1430">第 3 层 · 熔心</b><span style="font-size:12.5px;color:#6b6480"> — 暗褐 + 炽橙红高光（熔岩自发光）</span></div>
+    </div>
+    <div class="keep" style="display:flex;align-items:center;gap:14px;border:1px solid #e3dcc8;border-radius:10px;padding:12px 15px;background:#faf8f2">
+      <div style="display:flex;gap:6px;flex:none">
+        <span style="width:30px;height:30px;border-radius:7px;background:#4a6f8a"></span>
+        <span style="width:30px;height:30px;border-radius:7px;background:#3a5070"></span>
+        <span style="width:30px;height:30px;border-radius:7px;background:#b58bff"></span>
+      </div>
+      <div><b style="font-family:'Noto Serif SC',serif;color:#1b1430">第 4 层 · 晶顶</b><span style="font-size:12.5px;color:#6b6480"> — 青蓝 + 紫色水晶高光</span></div>
+    </div>
+  </div>
+
+  <!-- 7. 六色元素 -->
+  <h2 style="font-family:'Noto Serif SC',serif;font-weight:700;font-size:19px;color:#1b1430;margin:36px 0 14px;letter-spacing:.5px">7 · 六色元素视觉语言（骰子 / 战斗）</h2>
+  <p style="font-size:13px;line-height:1.6;color:#55506a;margin:0 0 14px">给每色一套视觉语言：颜色 + 质感 + 可选符号（已为法阵环定下暗纹母题，可沿用强化）。</p>
+  <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:11px">
+    <div class="keep" style="border:1px solid #e3dcc8;border-radius:10px;padding:13px;background:#faf8f2;text-align:center"><span style="display:inline-block;width:34px;height:34px;border-radius:50%;background:#ff5b4d;margin-bottom:7px"></span><div style="font-family:'Noto Serif SC',serif;font-weight:700;color:#1b1430">火</div><div style="font-size:11.5px;color:#6b6480">火焰纹</div></div>
+    <div class="keep" style="border:1px solid #e3dcc8;border-radius:10px;padding:13px;background:#faf8f2;text-align:center"><span style="display:inline-block;width:34px;height:34px;border-radius:50%;background:#3ba0ff;margin-bottom:7px"></span><div style="font-family:'Noto Serif SC',serif;font-weight:700;color:#1b1430">水</div><div style="font-size:11.5px;color:#6b6480">水波纹</div></div>
+    <div class="keep" style="border:1px solid #e3dcc8;border-radius:10px;padding:13px;background:#faf8f2;text-align:center"><span style="display:inline-block;width:34px;height:34px;border-radius:50%;background:#46c66a;margin-bottom:7px"></span><div style="font-family:'Noto Serif SC',serif;font-weight:700;color:#1b1430">木</div><div style="font-size:11.5px;color:#6b6480">木纹年轮</div></div>
+    <div class="keep" style="border:1px solid #e3dcc8;border-radius:10px;padding:13px;background:#faf8f2;text-align:center"><span style="display:inline-block;width:34px;height:34px;border-radius:50%;background:#ffcf3f;margin-bottom:7px"></span><div style="font-family:'Noto Serif SC',serif;font-weight:700;color:#1b1430">雷</div><div style="font-size:11.5px;color:#6b6480">闪电裂纹</div></div>
+    <div class="keep" style="border:1px solid #e3dcc8;border-radius:10px;padding:13px;background:#faf8f2;text-align:center"><span style="display:inline-block;width:34px;height:34px;border-radius:50%;background:#e8edf3;border:1px solid #d2d8e0;margin-bottom:7px"></span><div style="font-family:'Noto Serif SC',serif;font-weight:700;color:#1b1430">风</div><div style="font-size:11.5px;color:#6b6480">风旋纹</div></div>
+    <div class="keep" style="border:1px solid #e3dcc8;border-radius:10px;padding:13px;background:#faf8f2;text-align:center"><span style="display:inline-block;width:34px;height:34px;border-radius:50%;background:#9b6cff;margin-bottom:7px"></span><div style="font-family:'Noto Serif SC',serif;font-weight:700;color:#1b1430">暗</div><div style="font-size:11.5px;color:#6b6480">暗渊星点</div></div>
+  </div>
+
+  <!-- 8. 交付物 -->
+  <h2 style="font-family:'Noto Serif SC',serif;font-weight:700;font-size:19px;color:#1b1430;margin:36px 0 12px;letter-spacing:.5px">8 · 期望交付物</h2>
+  <ol style="font-size:14px;line-height:1.7;color:#2c2740;margin:0;padding-left:20px">
+    <li>开场 Title 屏完整 mockup（背景 + logo + 按钮皮 + 氛围 + 3D 骰子造型）。</li>
+    <li>塔内场景美术示意：至少 1–2 层的体素材质（地 / 墙 / 门 / 装饰的顶 + 侧贴图）+ 一张完整竞技场 key art + 火盆 / 外圈装饰 / 元素法阵环。</li>
+    <li>命运骰盅 UI 皮：Tab / 卡片 / 详情子页 / 出战骰组 / 本关需求 / 骰型——一套控件视觉风格。</li>
+    <li>通关转场 + 3D 战利品卡的美术风格（骰壳材质、卡面版式、光爆粒子）。</li>
+    <li>骰子 + 六色元素视觉语言；附魔消耗品图标集。</li>
+    <li>色板 + 字体 + logo 规范。</li>
+    <li>（可选）守关者 BOSS / 吉祥物造型。</li>
+  </ol>
+
+  <!-- 9. 技术约束 -->
+  <h2 style="font-family:'Noto Serif SC',serif;font-weight:700;font-size:19px;color:#1b1430;margin:36px 0 12px;letter-spacing:.5px">9 · 技术落地约束（设计需可实现）</h2>
+  <ul style="font-size:14px;line-height:1.7;color:#2c2740;margin:0 0 14px;padding-left:20px">
+    <li><b>2D UI（Title / HUD / 菜单 / 骰盅 / 过场）走引擎统一 UI 库</b>：闭集控件（Panel / Label / Button / Screen / ProgressBar / Tabs / Badge / Image…）+ 语义色令牌 + flow 布局。设计可以美，但最终要能映射到这套组件，不是任意自由切图。背景大图 / logo / 图标作 Image 资产引入。</li>
+    <li><b>3D 场景走体素渲染器</b>：物件是立方体 Mesh + 贴图 + 少量 glTF 精模。贴图按「顶面 / 侧面」给（体素盒贴图模型）。</li>
+    <li><b>氛围</b>：光照 / 移轴景深 / 泛光 / 天空盒都是引擎现成数据化能力，设计师定参数风格即可。</li>
+  </ul>
+  <blockquote style="margin:8px 0 0;padding:14px 18px;border-left:4px solid #a8843a;background:#fbf3dd;border-radius:0 10px 10px 0;font-size:14px;line-height:1.6;color:#4a3a16">一句话：<b>几何省（体素），美术堆在贴图和光色上；UI 走组件化不走自由切图。</b> 这样设计能 1:1 落地、且可批量扩到无限房间。</blockquote>
+
+  <p style="margin:30px 0 8px;font-size:11.5px;color:#9a93a8;text-align:center;border-top:1px solid #e3dcc8;padding-top:16px">骰途 · 命运之塔 — 视觉美术设计交付文案 · 对位可交互 3D 原型（v0.3）</p>
+
+</td></tr></tbody>
+<tfoot><tr><td class="pad-bottom"></td></tr></tfoot>
+</table>
+</main>
+</x-dc>
+</body>
+</html>
