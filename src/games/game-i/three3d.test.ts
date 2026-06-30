@@ -1,7 +1,7 @@
 // 3D 能力展台蓝图：纯数据加载 + tick 不抛；nav 蓝图真能寻路（追兵被 pathfind 写出位移）；粒子真生成。
 import { describe, it, expect } from 'vitest';
 import { Engine } from '../../runtime/engine.js';
-import { light3dBlueprint, post3dBlueprint, nav3dBlueprint, collide3dBlueprint, particle3dBlueprint, text3dBlueprint, ao3dBlueprint, vfx3dBlueprint, material3dBlueprint, fog3dBlueprint, pointlight3dBlueprint, surface3dBlueprint } from './three3d.js';
+import { light3dBlueprint, post3dBlueprint, nav3dBlueprint, collide3dBlueprint, particle3dBlueprint, text3dBlueprint, ao3dBlueprint, vfx3dBlueprint, material3dBlueprint, fog3dBlueprint, pointlight3dBlueprint, surface3dBlueprint, model3dBlueprint } from './three3d.js';
 
 function run(bp: ReturnType<typeof light3dBlueprint>, ticks: number): Engine {
   const e = new Engine();
@@ -11,10 +11,17 @@ function run(bp: ReturnType<typeof light3dBlueprint>, ticks: number): Engine {
 }
 
 describe('Game I · 3D 能力展台蓝图', () => {
-  it('十二个蓝图都纯数据加载 + 长跑 tick 不抛错', () => {
-    for (const bp of [light3dBlueprint, post3dBlueprint, nav3dBlueprint, collide3dBlueprint, particle3dBlueprint, text3dBlueprint, ao3dBlueprint, vfx3dBlueprint, material3dBlueprint, fog3dBlueprint, pointlight3dBlueprint, surface3dBlueprint]) {
+  it('十三个蓝图都纯数据加载 + 长跑 tick 不抛错', () => {
+    for (const bp of [light3dBlueprint, post3dBlueprint, nav3dBlueprint, collide3dBlueprint, particle3dBlueprint, text3dBlueprint, ao3dBlueprint, vfx3dBlueprint, material3dBlueprint, fog3dBlueprint, pointlight3dBlueprint, surface3dBlueprint, model3dBlueprint]) {
       expect(() => run(bp(), 120)).not.toThrow();
     }
+  });
+
+  it('glTF 模型场景含 Model3D（蓝图只持 modelKey·保纯）', () => {
+    const e = new Engine(); e.load(model3dBlueprint());
+    expect(e.world.query('Model3D').length).toBe(4); // 3 鸭 + 1 盒
+    const m = e.world.getComponent('duck-main', 'Model3D') as unknown as { modelKey?: string };
+    expect(typeof m.modelKey).toBe('string'); // 持 key 不持 URL/字节
   });
 
   it('IBL 已开（材质场景 Sky3D.env>0）+ 表面细节含 surface', () => {

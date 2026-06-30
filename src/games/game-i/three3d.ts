@@ -14,6 +14,7 @@ import { tweenCapability, motionApplyCapability, lifetimeCapability } from '@ski
 import { eventWhenCapability, pathfindCapability } from '@skills/tier2/index.js';
 import { casterCapability, prefabCapability } from '@skills/tier3/index.js';
 import { overlapDetect3dCapability, navmeshBakeCapability } from '@skills/atoms/index.js';
+import { MODEL_DUCK, MODEL_BOX } from './assets3d.js';
 
 type Ent = WorldBlueprint['entities'][string];
 const TWO_PI = 6.28318;
@@ -217,6 +218,30 @@ export function vfx3dBlueprint(): WorldBlueprint {
       'fx-gold': fountain(-16, 0, 0xffd86b, 16),
       'fx-jade': fountain(0, -4, 0x6cf0d0, 19),
       'fx-rose': fountain(16, 0, 0xff7ab0, 16),
+    },
+  };
+}
+
+// ── ⑬ 导入式 glTF 模型 Model3D（P3D·box 原语表达不了圆润模型→真模型）：几只小黄鸭（不同缩放/染色）+ 盒模型，
+//      自带材质 + 软影。蓝图只持 modelKey（保纯），ModelAssetLoader 取字节、ThreeRenderer 解析。需给渲染器接 AssetManager。
+export function model3dBlueprint(): WorldBlueprint {
+  return {
+    capabilities: [transformCapability, tweenCapability],
+    entities: {
+      ...sceneBase(),
+      cam: { Camera3D: { yaw: 0.7, pitch: 0.5, distance: 78, pivotY: 6, fov: 40, pitchMin: 0.12, pitchMax: 1.45 } },
+      // 居中主鸭（缓转·看各角度自带材质）。
+      'duck-main': {
+        Transform: { x: 0, y: 0, rotation: 0, scaleX: 1, scaleY: 1 },
+        Transform3D: { x: 0, y: 0, z: 0, rotY: 0 },
+        Model3D: { modelKey: MODEL_DUCK, scale: 3.4 },
+        Tween: { target: 'Transform3D.rotY', from: 0, to: TWO_PI, elapsed: 0, duration: 260, easing: 'linear', done: false, loop: 'restart' },
+      },
+      // 染色鸭 ×2（同模板多实例·共享几何·各自染色）。
+      'duck-jade': { Transform3D: { x: -22, y: 0, z: 4, rotY: 0.8 }, Model3D: { modelKey: MODEL_DUCK, scale: 2.4, tint: 0x6cc6a0 } },
+      'duck-rose': { Transform3D: { x: 22, y: 0, z: 4, rotY: -0.8 }, Model3D: { modelKey: MODEL_DUCK, scale: 2.4, tint: 0xe88fa8 } },
+      // 盒模型（另一个 glTF·验证多模板）。
+      'box-model': { Transform3D: { x: 0, y: 2, z: -18, rotY: 0.6 }, Model3D: { modelKey: MODEL_BOX, scale: 8 } },
     },
   };
 }
