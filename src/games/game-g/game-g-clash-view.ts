@@ -26,6 +26,7 @@ export function powerRows(c: ClashCard, isMine: boolean, tgName: (id: string) =>
   }
   if (c.morale !== 0) r.push([c.morale > 0 ? '士气 · 主将坐镇' : '士气 · 主将亡·溃散', c.morale]);
   if (c.nearDef) r.push(['地煞 · 隘口固守', c.nearDef]); // 温泉关守军贴家 +战力（owner 2026-06-21）
+  if (c.fatigue) r.push([`战损 · 疲劳（连胜耗损）`, -c.fatigue]); // v2：胜者每胜累减战力（owner 2026-06-29）
   const sum = r.reduce((s, [label, n]) => s + (label.startsWith('　') ? 0 : n), 0);
   if (c.pEff !== sum) r.push(c.pEff < sum ? [`　战力上限 · 封顶 ${P_MAX}（超出截断）`, c.pEff - sum] : ['　擎天 · 主将战力倍率', c.pEff - sum]);
   return r;
@@ -39,9 +40,12 @@ export function clashToTurnView(ev: ClashEvent, tgName: (id: string) => string =
   // 额外效果（owner 2026-06-21「还有额外的效果」）：非数值、却左右这场胜负的特殊裁定——平局如何裁定 + 战胜硬币（只预告·不剧透）。
   const extras: string[] = [];
   if (ev.tie) extras.push(ev.tie === 'points' ? '⚖ 战力相等 → 点数大者胜' : ev.tie === 'stamina' ? '⚖ 战力·点数皆同 → 续航高者胜' : '⚖ 三者全同 → 重掷定生死');
-  // 战胜硬币只**预告**「待掷」·绝不预先公布结果（owner 2026-06-21：要仪式感·投掷后才显示去留）；人面=留场/字面=回库由 coin-flip 浮层亲掷揭晓。
+  // v2（owner 2026-06-29）：胜者留场续战 + 每胜疲劳战损（累减战力·弱兵车轮能磨强兵）；连胜满则光荣回库 + 全额返还泉水。
   const w = ev.aWins ? ev.a : ev.b; const wn = SUITNAME[lc2(w.suit)] + w.rank;
-  extras.push(`🪙 ${wn} 战胜 → 待亲掷硬币定去留（人面 = 留场续战 / 字面 = 回牌库 + 全额返还源泉）`);
+  if (ev.warLoss != null && ev.warLoss > 0) {
+    const left = ev.winStays === false ? '连胜满 · 光荣回库 + 全额返还泉水' : `留场续战（连胜 ${ev.winStreak ?? 1}）`;
+    extras.push(`⚔ ${wn} 战胜 → 疲劳战损 −${Math.round(ev.warLoss * 100)}% · ${left}`);
+  }
   return {
     laneName: ['上路', '中路', '下路'][ev.lane] ?? '路',
     mine: cardv(ev.a, ev.aWins), foe: cardv(ev.b, !ev.aWins, ev.lastStand), // foe(=敌主将)死战不退 → 特写改显"死战不退"而非误导的"阵亡"

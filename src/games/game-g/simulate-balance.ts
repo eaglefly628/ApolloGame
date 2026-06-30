@@ -134,7 +134,9 @@ function runBattle(
 
   // owner 2026-06-29「按基础牌」：玩家 base favor 归到牌点等价(favorToP=牌点 → buff≈0·与真机 save.deck 基线同口径)，
   // 养成强弱只来自下方地支附魔(inlayFavor)；deckBias 仅再作 inlay 量分档(新手/进阶/老手·见 PlayerCfg)。
-  const aBase = a.map((c) => ({ ...c, favor: Math.max(5, Math.min(95, cardPoints(cardRank(c)) * 3 + 5)) }));
+  // 真机每侧只 1 主将（玩家 deck 1 个 general·Boss 1 个 hero）；armyFromFormation 每路 1 个=3 个 → 收成 1 个最强（否则 Boss 3 主将原地死守=三路全堵·远比真机难）。
+  const oneGeneral = (army: ArmyCard[]): ArmyCard[] => { let gi = 0; for (let i = 1; i < army.length; i++) if (army[i].favor > army[gi].favor) gi = i; return army.map((c, i) => ({ ...c, general: i === gi })); };
+  const aBase = oneGeneral(a.map((c) => ({ ...c, favor: Math.max(5, Math.min(95, cardPoints(cardRank(c)) * 3 + 5)) })));
   // 地支附魔：把玩家整体养成的 inlayFavor 摊到最值得镶的核心英雄上（owner 要求 sim 计入地支加成）。
   const aInlaid = applyInlayFavor(aBase, pcfg.inlayFavor);
 
@@ -147,7 +149,7 @@ function runBattle(
     aiProfile: lvl.boss.aiProfile,
     aiTier: lvl.boss.aiTier,
     a: { pokerDeck: seededShuffle(aInlaid.map(toPoker), seed ^ 0x9e37), tengangDeck: aTengang },
-    b: { pokerDeck: seededShuffle(b.map(toPoker), seed ^ 0x51ed), tengangDeck: bTengang },
+    b: { pokerDeck: seededShuffle(oneGeneral(b).map(toPoker), seed ^ 0x51ed), tengangDeck: bTengang },
   });
 
   for (let i = 0; i < OPENING_HAND && tb.a.pokerDeck.length; i++) tb.a.hand.push(tb.a.pokerDeck.shift()!);

@@ -28,12 +28,13 @@ const AI_PROFILES: Record<number, AiProfile> = {
 
 // 难度档（doc27 §四）：大本营血 / loadoutCap / AI 智能档。**按 stage 索引**（design G 2026-06-20 修 bug：原按 c.stars 索引·STAGE_CAMPAIGN stars 仅 1-3 → 4/5 档死表·项羽实拿 tier2）。
 // 当前 5 战 run = 关1-5 难度阶梯 ★→★★★★★（项羽=run 终 boss·最难）。52 关批量铺开时按 doc27 §四 阶段区间重定（design G「按批出关」）。
-const DIFFICULTY: Record<number, { homeHp: number; loadoutCap: number; aiTier: number }> = {
-  1: { homeHp: 3, loadoutCap: 2, aiTier: 3 }, // ★（AI 智能档 1→3：owner 2026-06-23 要关1 也全知预判玩家抽牌·foeIntel 在 tier≥3 触发·嫌难再调回 1）
-  2: { homeHp: 3, loadoutCap: 3, aiTier: 3 }, // ★★（AI 智能档 2→3：同上·开全知预判；家血/loadout 不动=只让 AI 变聪明·非整关变难）
-  3: { homeHp: 4, loadoutCap: 3, aiTier: 3 }, // ★★★
-  4: { homeHp: 4, loadoutCap: 4, aiTier: 4 }, // ★★★★
-  5: { homeHp: 5, loadoutCap: 5, aiTier: 5 }, // ★★★★★ 终章
+// bossTg（owner 2026-06-29）：Boss 出战天罡数·逐关递增（关1 仅 2·序战轻松）——v2「按基础牌」后 12 天罡过强·须按关收。
+const DIFFICULTY: Record<number, { homeHp: number; loadoutCap: number; aiTier: number; bossTg: number }> = {
+  1: { homeHp: 3, loadoutCap: 2, aiTier: 1, bossTg: 2 }, // ★ 序战（v2 按基础牌后·AI 3→1：关1 回轻松·不全知预判·会犯错·owner 2026-06-29 目标 ~80%）
+  2: { homeHp: 3, loadoutCap: 3, aiTier: 3, bossTg: 4 }, // ★★（AI 智能档 2→3：同上·开全知预判；家血/loadout 不动=只让 AI 变聪明·非整关变难）
+  3: { homeHp: 4, loadoutCap: 3, aiTier: 3, bossTg: 6 }, // ★★★
+  4: { homeHp: 4, loadoutCap: 4, aiTier: 4, bossTg: 9 }, // ★★★★
+  5: { homeHp: 5, loadoutCap: 5, aiTier: 5, bossTg: 12 }, // ★★★★★ 终章
 };
 
 // 关1-5 Boss「16 牌组」（design/boss-config-1-5.md §一-五·design G 2026-06-21 标定·rank+suit·与玩家 16 张对称）。
@@ -93,7 +94,7 @@ export function loadLevel(stage: number): LevelDef {
     battle: { name: c.battle, oneLine: c.oneLiner },
     intro: lore.intro,
     bossLines: { open: lore.open, mid: lore.mid, lose: lore.lose },
-    boss: { homeHp: diff.homeHp, disha: stageDisha(stage), tiangang: bossTiangang(stage), aiTier: diff.aiTier, aiProfile: AI_PROFILES[stage] ?? NEUTRAL_AI,
+    boss: { homeHp: diff.homeHp, disha: stageDisha(stage), tiangang: bossTiangang(stage, diff.bossTg), aiTier: diff.aiTier, aiProfile: AI_PROFILES[stage] ?? NEUTRAL_AI,
       deck: (BOSS_DECK_1_5[stage] ?? []).map(parseCardCode).filter((c): c is { rank: string; suit: string } => c != null), favorBias: BOSS_FAVOR_BIAS[stage] ?? 0, stayP: BOSS_STAY_P[stage] ?? 0.5 },
     reward: { unlock, gold: 20 + stage * 10 },
     loadoutCap: diff.loadoutCap,

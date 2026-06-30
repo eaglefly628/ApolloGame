@@ -4,7 +4,7 @@ import { cardPoints } from './clash-resolve.js';
 import { cardStamina } from './combat-types.js';
 import {
   initTurnBattle, drawCard, deployUnit, castTengang, discardCard, endTurn, aiTakeTurn, turnHash, turnActive,
-  toggleGate, tryGate, GATES, unitPowerParts,
+  toggleGate, tryGate, GATES, unitPowerParts, WIN_CAP,
   MANA_START, A_DEPLOY_SLOT, A_GOAL, TURN_HOME_BLOOD,
   type PokerCard, type TengangHandCard, type TurnUnit, type TurnBattle,
 } from './turn-combat.js';
@@ -198,19 +198,29 @@ describe('Game G · turn-combat（doc24 单机回合制 · A0 重构）', () => 
     expect(deployUnit(c, 'a', 0, 0)).toBe(false); // 无空格 → 拒
   });
 
-  it('战胜硬币定胜牌去留（owner 2026-06-21 → 2026-06-29 ⑤ 全额返还）：人头留场 / 人面回牌库+全额返还花费', () => {
-    const run = (seed: number): { stays: boolean; onBoard: boolean; inDeck: boolean; mana: number } => {
-      const b = initTurnBattle({ seed }); b.a.mana = 0;
-      const w = unit('w', 'A', A_DEPLOY_SLOT); w.cost = 3; // A=14 点·费 3
-      b.lanes[0].a.push(w);
-      b.lanes[0].b.push(unit('lz', '2', A_DEPLOY_SLOT + 1, 12)); // 2+12=pEff14 → 点数 A(14)>2 → A 必胜(确定)
-      endTurn(b); endTurn(b);
-      expect(b.lastClash?.aWins).toBe(true);
-      return { stays: !!b.lastClash?.winStays, onBoard: b.lanes[0].a.some((c) => c.id === 'w'), inDeck: b.a.pokerDeck.some((c) => c.id === 'w'), mana: b.a.mana };
-    };
-    const rs = Array.from({ length: 10 }, (_, i) => run(i + 1));
-    const heads = rs.find((r) => r.stays)!, tails = rs.find((r) => !r.stays)!; // 种子里必有正反面各一
-    expect(heads.onBoard).toBe(true); expect(heads.inDeck).toBe(false); expect(heads.mana).toBe(1);          // 人头：留场·不回库·无返还(只新一轮+1)
-    expect(tails.onBoard).toBe(false); expect(tails.inDeck).toBe(true); expect(tails.mana).toBe(3 + 1);  // 人面：回库 + 全额返还3 + 新一轮1 = 4（⑤）
+  it('v2 胜者留场 + 每胜战损疲劳（owner 2026-06-29·替战胜硬币·胜者不回库继续作战）', () => {
+    const b = initTurnBattle({ seed: 1 }); b.a.mana = 0;
+    const w = unit('w', 'A', A_DEPLOY_SLOT); w.cost = 3; // A=14 点
+    b.lanes[0].a.push(w);
+    b.lanes[0].b.push(unit('lz', '2', A_DEPLOY_SLOT + 1, 12)); // 2+12=pEff14 → 点数 A(14)>2 → A 必胜(确定)
+    endTurn(b); // 我方推进 → 掷命 → w 胜
+    expect(b.lastClash?.aWins).toBe(true);
+    expect(b.lanes[0].a.some((c) => c.id === 'w')).toBe(true);   // 胜者留场（不回库·战场不空）
+    expect(w.fatigue ?? 0).toBeGreaterThan(0);                   // 每胜累加战损疲劳
+    expect(w.wins).toBe(1);
+    expect(b.lastClash?.winStays).toBe(true);                    // 未满连胜上限 → 留场
+  });
+
+  it('v2 连胜满 WIN_CAP → 光荣回库 + 全额返还泉水（owner 2026-06-29·防强兵无限霸场）', () => {
+    const b = initTurnBattle({ seed: 1 }); b.a.mana = 0;
+    const w = unit('w', 'A', A_DEPLOY_SLOT); w.cost = 3; w.wins = WIN_CAP - 1; // 已差一场满上限·本场达成
+    b.lanes[0].a.push(w);
+    b.lanes[0].b.push(unit('lz', '2', A_DEPLOY_SLOT + 1, 12));
+    endTurn(b);
+    expect(b.lastClash?.aWins).toBe(true);
+    expect(b.lanes[0].a.some((c) => c.id === 'w')).toBe(false);  // 满 WIN_CAP → 离场
+    expect(b.a.pokerDeck.some((c) => c.id === 'w')).toBe(true);  // 回牌库
+    expect(b.a.mana).toBe(3);                                    // 全额返还 cost 3（turn 仍 1·我方本轮无新增）
+    expect(b.lastClash?.winStays).toBe(false);                   // 离场 → UI 演光荣回库
   });
 });
