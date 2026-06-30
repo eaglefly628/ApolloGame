@@ -1,7 +1,7 @@
 // 3D 能力展台蓝图：纯数据加载 + tick 不抛；nav 蓝图真能寻路（追兵被 pathfind 写出位移）；粒子真生成。
 import { describe, it, expect } from 'vitest';
 import { Engine } from '../../runtime/engine.js';
-import { light3dBlueprint, post3dBlueprint, nav3dBlueprint, collide3dBlueprint, particle3dBlueprint, text3dBlueprint, ao3dBlueprint, vfx3dBlueprint, material3dBlueprint, fog3dBlueprint, pointlight3dBlueprint } from './three3d.js';
+import { light3dBlueprint, post3dBlueprint, nav3dBlueprint, collide3dBlueprint, particle3dBlueprint, text3dBlueprint, ao3dBlueprint, vfx3dBlueprint, material3dBlueprint, fog3dBlueprint, pointlight3dBlueprint, surface3dBlueprint } from './three3d.js';
 
 function run(bp: ReturnType<typeof light3dBlueprint>, ticks: number): Engine {
   const e = new Engine();
@@ -11,10 +11,19 @@ function run(bp: ReturnType<typeof light3dBlueprint>, ticks: number): Engine {
 }
 
 describe('Game I · 3D 能力展台蓝图', () => {
-  it('十一个蓝图都纯数据加载 + 长跑 tick 不抛错', () => {
-    for (const bp of [light3dBlueprint, post3dBlueprint, nav3dBlueprint, collide3dBlueprint, particle3dBlueprint, text3dBlueprint, ao3dBlueprint, vfx3dBlueprint, material3dBlueprint, fog3dBlueprint, pointlight3dBlueprint]) {
+  it('十二个蓝图都纯数据加载 + 长跑 tick 不抛错', () => {
+    for (const bp of [light3dBlueprint, post3dBlueprint, nav3dBlueprint, collide3dBlueprint, particle3dBlueprint, text3dBlueprint, ao3dBlueprint, vfx3dBlueprint, material3dBlueprint, fog3dBlueprint, pointlight3dBlueprint, surface3dBlueprint]) {
       expect(() => run(bp(), 120)).not.toThrow();
     }
+  });
+
+  it('IBL 已开（材质场景 Sky3D.env>0）+ 表面细节含 surface', () => {
+    const m = new Engine(); m.load(material3dBlueprint());
+    const sky = m.world.getComponent('sky', 'Sky3D') as unknown as { env?: number };
+    expect(sky.env).toBeGreaterThan(0);
+    const s = new Engine(); s.load(surface3dBlueprint());
+    const mat = s.world.getComponent('s-bumps', 'Material3D') as unknown as { surface?: unknown };
+    expect(mat.surface).toBeTruthy();
   });
 
   it('点光源/聚光灯蓝图含 2 盏动态局部光（point + spot·预算内）', () => {

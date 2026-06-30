@@ -32,7 +32,8 @@ function sceneBase(): Record<string, Ent> {
     cam: { Camera3D: { yaw: 0.72, pitch: 0.62, distance: 96, pivotX: 0, pivotY: 4, pivotZ: 0, fov: 40, pitchMin: 0.12, pitchMax: 1.45 } },
     sun: { Light3D: { kind: 'directional', color: 0xfff1d6, intensity: 1.55, castShadow: true } },
     fill: { Light3D: { kind: 'ambient', color: 0xbfd2ff, intensity: 0.42 } },
-    sky: { Sky3D: { top: 0x4a90d9, bottom: 0xcfe9f7, clouds: true, cloudTint: 0xffffff, scroll: 0.6 } },
+    // env:1 开 IBL（中性影室环境贴图）→ PBR 金属/玻璃有反射可照（P3D TA Phase5·REQ-3D-PBR-IBL 已交付）。
+    sky: { Sky3D: { top: 0x4a90d9, bottom: 0xcfe9f7, clouds: true, cloudTint: 0xffffff, scroll: 0.6, env: 1 } },
     // 草地台：Mesh3D 的 edgeTint=「边+顶」色 → 顶面草绿、front=四周泥土侧（盒庭草坡观感）。
     ground: box(0, -2.5, 0, 78, 5, 78, 0x6d4c41, 0x7cb342),
   };
@@ -234,18 +235,36 @@ export function material3dBlueprint(): WorldBlueprint {
       ...sceneBase(),
       cam: { Camera3D: { yaw: 0.62, pitch: 0.34, distance: 110, pivotY: 6, fov: 38, pitchMin: 0.1, pitchMax: 1.4 } },
       post: { Post3D: { grade: { exposure: 1.05, contrast: 1.08, saturation: 1.15, tint: 0xffe7c2 }, aa: true } },
-      // 两盏点光（暖/冷）贴近金属给镜面高光——纯金属无环境贴图会发暗，靠局部光打出金属光泽。
-      'pt-warm': { Light3D: { kind: 'point', color: 0xfff0d0, intensity: 90, range: 120, x: -20, y: 22, z: 26 } },
-      'pt-cool': { Light3D: { kind: 'point', color: 0xbfd6ff, intensity: 80, range: 120, x: 24, y: 20, z: 26 } },
-      // 金属用 metalness 覆盖压到 ~0.6：纯 metalness:1 无环境贴图(IBL)会发黑（渲染器缺口·已报 requests-3d）；
-      // 压一点让金属色显出来、展台可读。P3D 补 IBL 后可回纯预设。
-      'm-gold': slab(-40, 'gold', 0xffc64a, { metalness: 0.4, roughness: 0.3 }),
-      'm-steel': slab(-27, 'steel', 0xc2c6cc, { metalness: 0.45, roughness: 0.32 }),
-      'm-copper': slab(-14, 'copper', 0xc87f47, { metalness: 0.4, roughness: 0.34 }),
+      // IBL 已开（sceneBase env:1）→ 纯金属预设直接反射环境、显真金属光泽，无需 metalness 绕法。
+      'm-gold': slab(-40, 'gold', 0xffc64a),
+      'm-steel': slab(-27, 'steel', 0x8a8d92),
+      'm-copper': slab(-14, 'copper', 0xb87333),
       'm-glass': slab(-1, 'glass', 0x8fe9f0, { color: 0x8fe9f0 }),
       'm-wood': slab(12, 'wood', 0x9c6b3f),
       'm-rock': slab(25, 'rock', 0x8d8f92),
       'm-emit': slab(38, 'emissive', 0x222222, { emissive: 0xffd86b, emissiveIntensity: 1.8 }),
+    },
+  };
+}
+
+// ── ⑫ 程序化表面细节 Material3D.surface（TA Phase 5·零美术文件）：渲染器按数据生成 normal/roughness 贴图——
+//      凸点/噪声/划痕图案 + 平铺/法线强度/粗糙起伏/频率，给盒面真实凹凸质感（同天空盒程序化纹理先例）。
+export function surface3dBlueprint(): WorldBlueprint {
+  const tile = (x: number, preset: string, color: number, surface?: Record<string, unknown>): Ent => ({
+    Transform3D: { x, y: 6, z: 0 },
+    Mesh3D: { shape: 'box', width: 11, height: 12, depth: 11, frontTint: color, backTint: color, edgeTint: color },
+    Material3D: { preset, ...(surface ? { surface } : {}) },
+  });
+  return {
+    capabilities: [transformCapability],
+    entities: {
+      ...sceneBase(),
+      cam: { Camera3D: { yaw: 0.6, pitch: 0.36, distance: 96, pivotY: 6, fov: 38, pitchMin: 0.1, pitchMax: 1.4 } },
+      post: { Post3D: { grade: { exposure: 1.05, saturation: 1.08 }, aa: true } },
+      's-smooth': tile(-30, 'plastic', 0xb86b4a), // 对照：无 surface（光面）
+      's-bumps': tile(-12, 'plastic', 0xb86b4a, { pattern: 'bumps', tiles: 5, normal: 1.4, rough: 0.5 }),
+      's-noise': tile(6, 'rock', 0x9a9d9f, { pattern: 'noise', tiles: 4, normal: 1.2, rough: 0.6, scale: 1.4 }),
+      's-scratch': tile(24, 'steel', 0xb9bdc4, { pattern: 'scratches', tiles: 6, normal: 1.0, rough: 0.4 }),
     },
   };
 }

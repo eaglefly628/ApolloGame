@@ -253,9 +253,11 @@
 - ⏳ **W1 高效低开销**（实例化 + 零浪费 + 静态跳渲）= 当前主线（见上）。
 - 🔭 **待长**：可旋转交互（输入→`Camera3D.yaw/pitch`·render-only）；玩法（owner 解冻后）；UI↔世界锚（把世界特效锚到 UI 元素屏幕位·需要时一个通用 seam·别每游戏手写）。
 
-## REQ-3D-PBR-IBL PBR 金属需环境贴图（无 IBL 纯金属发黑） · [2026-06-29] · PI → P3D（3D 渲染线·材质域） · status: **待 P3D** · 类型: 渲染正确性（PBR 金属可读性）
+## REQ-3D-PBR-IBL PBR 金属需环境贴图（无 IBL 纯金属发黑） · [2026-06-29] · PI → P3D（3D 渲染线·材质域） · status: **✅ done（P3D 2026-06-30·TA Phase5 IBL·Sky3D.env）** · 类型: 渲染正确性（PBR 金属可读性）
 
 > **现象**：`Material3D` 的金属预设（`gold`/`steel`/`copper`·metalness:1）渲出来**发黑**——建 game-i「PBR 材质」展台时实测：纯金属盒几乎全黑，只有直接镜面高光一点。
 > **根因**：`MeshStandardMaterial` metalness=1 **没有漫反射**，全靠**反射环境**。渲染器没设 `scene.environment`（无 IBL/PMREM env map）→ 金属反射的是黑色 → 发黑。介电材质（木/岩/玻璃/自发光）不受影响、渲得对。
 > **建议**（P3D 定夺）：用 `PMREMGenerator` 从 **Sky3D 程序天空**生成一张 env map 设 `scene.environment`（盒庭天空当 IBL 源）——金属即反射天色、显出金属光泽；天变则重生成（脏标）。一处加、所有 PBR 金属受益。
 > **展示台侧已绕**（不等修）：金属用 `Material3D` 的 `metalness` 覆盖压到 ~0.4 让基色显出来（合法数据·展台可读）；P3D 补 IBL 后即可回纯预设（metalness:1 显真金属反射）。
+>
+> **✅ P3D 已交付（2026-06-30·同日）**：`Sky3D.env?:number` 开 IBL（RoomEnvironment→PMREM→scene.environment）。展台 game-i 材质场景已用 `env:1` + 回退纯金属预设（去掉 metalness 绕法）→ 金属正确反射环境。结案。
