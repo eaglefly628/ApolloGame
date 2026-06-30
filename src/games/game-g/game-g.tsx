@@ -8,7 +8,7 @@ import { freshSave, loadSave, persist, resetFortuneIfNewDay, FORTUNE_MAX, active
 import { favorToP, cardRank, avg, describeFormation, pick3, buildPickDeck, bossHeroCard, aggregateTengang, seededShuffleArr } from './game-g-build.js';
 import { clashToTurnView } from './game-g-clash-view.js';
 import { initTurnBattle, drawCard, deployUnit, castTengang, discardCard, advanceMovePhase, resolveClashAt, endTurnFinish, aiDecide, bossOpeningGarrison, BOSS_GARRISON_MANA, toggleGate, GATES, OPENING_HAND, DRAW_COST, CAST_COST, type PokerCard, type TengangHandCard, type Card } from './turn-combat.js';
-import { DISHA_NAME } from './disha.js';
+import { DISHA_NAME, stageDisha } from './disha.js';
 import { mountTurnBattle, buildTurnBattleView, type TurnBattleView, type TurnBattleActions, type TurnClashView, type TurnShaView } from './turn-battle-screen.js';
 import { mountCoinFlip } from './coin-flip.js';
 import { loadLevel } from './level.js';
@@ -318,7 +318,13 @@ export function mount(container: HTMLElement, shell?: { exit?: () => void }): ()
     for (let i = 0; i < OPENING_HAND && tb.a.pokerDeck.length; i++) tb.a.hand.push(tb.a.pokerDeck.shift()!); // 起手摸
     for (let i = 0; i < OPENING_HAND && tb.b.pokerDeck.length; i++) tb.b.hand.push(tb.b.pokerDeck.shift()!);
     bossOpeningGarrison(tb, BOSS_GARRISON_MANA, aggregateTengang); // 开局布防（owner 2026-06-29·敌方开场即设防一线·不再走空场·其地煞借此开局即可发动）
-    const shaView: TurnShaView[] = campaignFor(save.stage).fiends.map((f, i) => ({ filled: true, name: f.name, rar: (['gold', 'blue', 'green'] as const)[i] ?? 'white', desc: f.desc })); // 敌堡垒 3 地煞明牌
+    // 敌堡垒 3 地煞明牌（动态·owner 2026-06-29 修「敌人发动斯巴达方阵但右下仍显待发动」）：
+    // used 每帧据 tb 重算 → 被动地煞(开局生效·dishaBaseIds) / 可施放地煞已打出(dishaCastIds) → 显「已发动」；可施放未打 → 「待发动」。
+    const shaLive = (): TurnShaView[] => campaignFor(save.stage).fiends.map((f, i) => {
+      const id = stageDisha(save.stage)[i] ?? '';
+      const used = tb.dishaBaseIds.includes(id) || tb.dishaCastIds.includes(id); // 被动恒生效 / 可施放已打出 → 已发动
+      return { filled: true, name: f.name, rar: (['gold', 'blue', 'green'] as const)[i] ?? 'white', desc: f.desc, used };
+    });
 
     // ── 运行态（UI 选中 + 掷命特写队列）──
     let theme: 'onyx' | 'brocade' = 'onyx';
@@ -416,7 +422,7 @@ export function mount(container: HTMLElement, shell?: { exit?: () => void }): ()
     let clashRevealed = false; let clashCdTimer = 0; let clashCdInterval = 0; let clashRolling = false;
     const clearClashTimers = (): void => { if (clashCdTimer) { clearTimeout(clashCdTimer); clashCdTimer = 0; } if (clashCdInterval) { clearInterval(clashCdInterval); clashCdInterval = 0; } };
     const buildClashView = (): TurnClashView | null => { if (!perfClash) return null; const cv = clashToTurnView(perfClash, tgName, save.inlays); cv.revealed = clashRevealed; return cv; };
-    const view = (): TurnBattleView => buildTurnBattleView(tb, { theme, tengangName: tgName, tengangDesc: tgDesc, selMode, selHand, clash: buildClashView(), bossName: aiName, sha: shaView, gatesLive: gateChance, notice, movedIds: justMovedIds, freshIds, dealtId: dealtId ?? undefined, battleLabel, sfxOn: isSfxOn(), settingsOpen, bgmOn: isBgmOn(), bgmIdx: bgmTrackIdx(), bgmVol: bgmVolume(), bgmNames: BGM_TRACKS.map((t) => t.name), guideOn: !save.skipGuide, inlays: save.inlays, enchOf: (rank, suit) => (save.inlays[String(cardFavorIndex(rank + suit))] ?? []).map((e) => [`${e.b}${DIZHI_TIER_NM[e.t]}`, DIZHI_INLAY_FAVOR[e.t]] as [string, number]) });
+    const view = (): TurnBattleView => buildTurnBattleView(tb, { theme, tengangName: tgName, tengangDesc: tgDesc, selMode, selHand, clash: buildClashView(), bossName: aiName, sha: shaLive(), gatesLive: gateChance, notice, movedIds: justMovedIds, freshIds, dealtId: dealtId ?? undefined, battleLabel, sfxOn: isSfxOn(), settingsOpen, bgmOn: isBgmOn(), bgmIdx: bgmTrackIdx(), bgmVol: bgmVolume(), bgmNames: BGM_TRACKS.map((t) => t.name), guideOn: !save.skipGuide, inlays: save.inlays, enchOf: (rank, suit) => (save.inlays[String(cardFavorIndex(rank + suit))] ?? []).map((e) => [`${e.b}${DIZHI_TIER_NM[e.t]}`, DIZHI_INLAY_FAVOR[e.t]] as [string, number]) });
     let mounted: { update: () => void; destroy: () => void } | null = null;
 
     const drainClashes = (): void => { for (const ev of tb.clashLog.slice(drained)) perfQueue.push(ev); drained = tb.clashLog.length; };

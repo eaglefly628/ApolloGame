@@ -727,7 +727,8 @@ export function buildTurnBattleView(b: TurnBattle, opts: TurnViewOpts = {}): Tur
       if (!hit) return { ...base, hasUnit: false, mine: i < 4 };
       // ⑥ 此刻若评估的战力拆解（含天罡/士气/地煞·与真实掷命同源 unitPowerParts）→ hover 透出全部加成来源（owner 2026-06-29）。
       const parts = unitPowerParts(b, hit.mine ? 'a' : 'b', li, hit.u);
-      return { ...base, hasUnit: true, mine: hit.mine, rank: hit.u.rank, suit: lc(hit.u.suit), power: hit.u.points + hit.u.buff, pts: hit.u.points, buff: hit.u.buff, name: heroNameOf(hit.u.rank, lc(hit.u.suit)) ?? (SUITNM[lc(hit.u.suit)] + hit.u.rank), rar: rankOf(hit.u.rank), zod: [], unitId: hit.u.id, justMoved: opts.movedIds?.has(hit.u.id) ?? false, fresh: opts.freshIds?.get(hit.u.id), tipDown: li === 0, tipSide: (i >= 7 ? 'left' : i <= 1 ? 'right' : '') as 'left' | 'right' | '', general: hit.u.general, ench: hit.mine ? opts.enchOf?.(hit.u.rank, hit.u.suit) : undefined, live: powerRows(parts, hit.mine, tgNm, opts.inlays), livePower: parts.pEff };
+      // 角标=**当前有效战力 pEff**（含天罡/士气/地煞·与掷命预报/实判同源·owner 2026-06-29「两边都19却碾压」＝旧角标只显静态点数+养成·没把加成算进去）。
+      return { ...base, hasUnit: true, mine: hit.mine, rank: hit.u.rank, suit: lc(hit.u.suit), power: parts.pEff, pts: hit.u.points, buff: hit.u.buff, name: heroNameOf(hit.u.rank, lc(hit.u.suit)) ?? (SUITNM[lc(hit.u.suit)] + hit.u.rank), rar: rankOf(hit.u.rank), zod: [], unitId: hit.u.id, justMoved: opts.movedIds?.has(hit.u.id) ?? false, fresh: opts.freshIds?.get(hit.u.id), tipDown: li === 0, tipSide: (i >= 7 ? 'left' : i <= 1 ? 'right' : '') as 'left' | 'right' | '', general: hit.u.general, ench: hit.mine ? opts.enchOf?.(hit.u.rank, hit.u.suit) : undefined, live: powerRows(parts, hit.mine, tgNm, opts.inlays), livePower: parts.pEff };
     });
     return { name: laneNames[li] ?? ('路' + li), slots };
   });
