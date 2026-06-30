@@ -23,8 +23,8 @@ const RAR: Record<string, [string, string]> = { white: ['普通', '#b9bec8'], gr
 
 // 敌我牌面（owner 2026-06-20：底纹要好看·斜纹太丑）：改干净暖/冷渐变 + 左上玻璃高光。我方暖橙·敌方冷蓝（色温+描边色分清）。
 const sideFace = (mine: boolean): string => mine
-  ? 'radial-gradient(120% 78% at 26% 12%, rgba(255,255,255,.55), rgba(255,255,255,0) 58%), linear-gradient(160deg,#fff5ef 0%,#ffe0cf 68%,#ffceb5 100%)'  // 我方·浅暖（配红框/红字·owner 2026-06-29 改我红敌黑）
-  : 'radial-gradient(120% 78% at 26% 12%, rgba(255,255,255,.6), rgba(255,255,255,0) 58%), linear-gradient(160deg,#f0f6fe 0%,#d6e4f8 68%,#c1d6f2 100%)';  // 敌方·浅冷（配黑框/黑字）
+  ? 'radial-gradient(120% 78% at 26% 12%, rgba(255,255,255,.5), rgba(255,255,255,0) 56%), linear-gradient(160deg,#ffdcae 0%,#ffb277 56%,#ff8f4d 100%)'  // 我方·浓暖橙（owner 2026-06-29「白底太多·要反差大」→ 深暖 vs 深冷·非白底）
+  : 'radial-gradient(120% 78% at 26% 12%, rgba(255,255,255,.5), rgba(255,255,255,0) 56%), linear-gradient(160deg,#b9d2ef 0%,#7ea7d8 56%,#4f82c4 100%)';  // 敌方·浓冷蓝
 
 // 双皮 token（逐字搬自设计稿 themes()）。
 type Theme = Record<string, string>;
@@ -727,7 +727,8 @@ export function buildTurnBattleView(b: TurnBattle, opts: TurnViewOpts = {}): Tur
       if (!hit) return { ...base, hasUnit: false, mine: i < 4 };
       // ⑥ 此刻若评估的战力拆解（含天罡/士气/地煞·与真实掷命同源 unitPowerParts）→ hover 透出全部加成来源（owner 2026-06-29）。
       const parts = unitPowerParts(b, hit.mine ? 'a' : 'b', li, hit.u);
-      return { ...base, hasUnit: true, mine: hit.mine, rank: hit.u.rank, suit: lc(hit.u.suit), power: hit.u.points + hit.u.buff, pts: hit.u.points, buff: hit.u.buff, name: heroNameOf(hit.u.rank, lc(hit.u.suit)) ?? (SUITNM[lc(hit.u.suit)] + hit.u.rank), rar: rankOf(hit.u.rank), zod: [], unitId: hit.u.id, justMoved: opts.movedIds?.has(hit.u.id) ?? false, fresh: opts.freshIds?.get(hit.u.id), tipDown: li === 0, tipSide: (i >= 7 ? 'left' : i <= 1 ? 'right' : '') as 'left' | 'right' | '', general: hit.u.general, ench: hit.mine ? opts.enchOf?.(hit.u.rank, hit.u.suit) : undefined, live: powerRows(parts, hit.mine, tgNm, opts.inlays), livePower: parts.pEff };
+      // 角标=**当前有效战力 pEff**（含天罡/士气/地煞·与掷命预报/实判同源·owner 2026-06-29「两边都19却碾压」＝旧角标只显静态点数+养成·没把加成算进去）。
+      return { ...base, hasUnit: true, mine: hit.mine, rank: hit.u.rank, suit: lc(hit.u.suit), power: parts.pEff, pts: hit.u.points, buff: hit.u.buff, name: heroNameOf(hit.u.rank, lc(hit.u.suit)) ?? (SUITNM[lc(hit.u.suit)] + hit.u.rank), rar: rankOf(hit.u.rank), zod: [], unitId: hit.u.id, justMoved: opts.movedIds?.has(hit.u.id) ?? false, fresh: opts.freshIds?.get(hit.u.id), tipDown: li === 0, tipSide: (i >= 7 ? 'left' : i <= 1 ? 'right' : '') as 'left' | 'right' | '', general: hit.u.general, ench: hit.mine ? opts.enchOf?.(hit.u.rank, hit.u.suit) : undefined, live: powerRows(parts, hit.mine, tgNm, opts.inlays), livePower: parts.pEff };
     });
     return { name: laneNames[li] ?? ('路' + li), slots };
   });
