@@ -6,6 +6,22 @@
 
 ---
 
+## REQ-3D-关卡重构「永远追逐」+ 杂项（去腐/大字/Toggle 绕过） · [2026-06-30] · owner → P3D（Game Z 域） · status: **✅ v1 done（P3D 2026-06-30·已推）** · 类型: 关卡数据重构 + 体验修
+
+> **owner 拍板（2026-06-30·多条合并）**：把 game-z 关卡重设成「**永远追逐**」——鸭子 AI 在前面自动跑、追兵在后追逐、一切动态；缩小场景、去掉低画质绿尖塔林、材质陈列台字号放大；并复诉「所有开关型 UI 视觉点击不变」的 bug。
+>
+> **✅ v1 落地（纯数据 + 运行时胶水·零专属 system）**：
+> - **永远追逐玩法**：鸭子(hero) **AI 绕环形赛道自动跑**（game-z.ts `autoRun` 胶水·每帧把 Velocity 设成赛道切线 + 拉回半径 TRACK_R=30·**同 WASD 输入胶水先例**·WASD 可接管）；**三只追兵**(`NavAgent` + `Relation target=hero`)循自动烘焙 NavGraph 一路追（速度略低 → 永远追不太上）；**相机跟随鸭子**(`mode:'follow'`)。截图验证：鸭子 t3→t8 绕跑移位、追兵尾随。
+> - **关卡去腐 + 缩小**（owner「缩小一半 + 去绿尖塔林·画质 low」）：删 `forest()`(~320 尖塔)/蘑菇/鹅卵石径/Toad/静态鸭/平台/迷墙/斜墙等纯装饰；地台 240²→**160²**；保留**有碰撞体**的障碍（内圈三石墩 + 外圈四石柱·部分 PBR 钢/铜）+ 中心金属信标(gold)+魔法喷泉 VFX。
+> - **材质陈列台**：保留（北侧·材质球·IBL 反射）；**标名字号 xs→md**（owner「字太小」）；「🔬 看材质陈列台」机位按钮照旧。
+> - **⚠️ Toggle 视觉点击不更新——game-z 侧绕过**（根因是主程 UI 库 bug·已记 `requests.md` REQ-UI-BUG-Toggle视觉点击不更新）：点 Toggle 后其隐藏 checkbox 抢焦点 → UI 库 reconcile「焦点保护」误跳过重建。**绕过 = 改态后先 `document.activeElement.blur()` 再 `menuUi.update()`**（解焦 → 面板正常重建反映新 checked）。截图验证：点「AO 遮蔽」开关绿→灰、从属滑块随之显隐。**根治仍待主程改 server.ts。**
+> - 测试：`diorama.test` 改测追逐关卡（鸭子胶囊 + 追兵 NavAgent/Relation + 障碍 box 碰撞 + 三追兵 target=hero + 信标 gold）。tsc+vitest(1968)+build 全绿。
+> - **⬜ 待续**：① **关卡流式加载（streaming·往右动态加载）= owner 要的下一大块·真能力缺口·需设计**（见下「流式加载提案」）；② 程序化 normal/roughness 贴图（owner 已选「程序化生成」·排队中）；③ 鸭子自动跑现为运行时胶水（含 trig·单机测试台 OK·若上多人 lockstep 需下沉成确定性 capability）。
+
+> **🔭 流式加载（streaming）提案（待 owner 确认再做）**：owner 以为「three 已有 streaming 能力」——**澄清：引擎暂无关卡流式能力，是真缺口**。按数据驱动宪法评判=**该做但需设计**（关卡块=数据·加载器=固定解释器）。关键设计点（**determinism**）：关卡块若带碰撞体/寻路体（sim·进 hash），流式增删实体必须**逐 tick 跨端一致**（否则 lockstep desync）——故触发条件须取**确定性 sim 量**（如鸭子前进距离），不能取 render-only 相机。建议形态：`StreamChunk` 数据（块蓝图 + 沿 +X 的区间）+ `chunk-stream` capability（按鸭子 X 距离确定性地 spawn 前方块 / despawn 后方块·对象池复用）。**先确认要不要做 + 单机够不够（单机可放宽 determinism）再开工。**
+
+---
+
 ## REQ-3D-材质测试台（IBL 环境光 + 材质陈列板·「我怎么测材质」） · [2026-06-30] · owner → P3D（3D 渲染线·TA Phase 5） · status: **✅ done（P3D 2026-06-30·IBL + 11 预设陈列台·截图验证·已推）** · 类型: 渲染能力补全（金属反射缺 IBL）+ 测试台数据
 
 > **背景**：owner 问「我怎么测这个材质？」。PBR 金属/玻璃**没有环境贴图就乌黑死板**（金属本色=反射环境·无环境可反射→近黑）——这是材质看不出效果的根因，不是预设数值问题。

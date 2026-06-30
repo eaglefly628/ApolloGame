@@ -5,7 +5,7 @@ import { Engine } from '../../runtime/engine.js';
 import { dioramaBlueprint } from './diorama.js';
 import { collectRenderables } from '@renderer/renderable.js';
 import { getCamera3D, getSky3D, getLights3D, getPost3D } from '@engine/protocol/camera-view.js';
-import type { Transform, Transform3D, Velocity, Mesh3D, Model3D, Collider3D, Overlap3D } from '@engine/protocol/components.js';
+import type { Transform, Transform3D, Velocity, Mesh3D, Collider3D, Material3D } from '@engine/protocol/components.js';
 
 describe('Game Z · 3D 盒庭蓝图（纯数据 · 仅现成 motion-apply 能力）', () => {
   it('只用现成能力（motion-apply + overlap-detect-3d + navmesh-bake + 主程 pathfind·无专属 system）', () => {
@@ -14,17 +14,15 @@ describe('Game Z · 3D 盒庭蓝图（纯数据 · 仅现成 motion-apply 能力
     expect(names).toEqual(['collision-resolve-3d', 'motion-apply', 'navmesh-bake', 'overlap-detect-3d', 'pathfind']);
   });
 
-  it('角色挂 Collider3D 胶囊 + 触发区 zone（Collider3D box trigger·3D 逻辑碰撞）', () => {
+  it('追逐关卡：鸭子胶囊碰撞体 + 追兵(NavAgent·target=hero) + 障碍 box 碰撞体', () => {
     const e = new Engine();
     e.load(dioramaBlueprint());
     expect(e.world.getComponent<Collider3D>('hero', 'Collider3D')!.kind).toBe('capsule');
-    const zc = e.world.getComponent<Collider3D>('zone', 'Collider3D')!;
-    expect(zc.kind).toBe('box');
-    expect(zc.trigger).toBe(true);
-    // 小黄鸭起步罩在触发区里 → tick 后产 Overlap3D。
-    e.world.tick();
-    const ov = e.world.query('Overlap3D').map(([id]) => e.world.getComponent<Overlap3D>(id, 'Overlap3D')!);
-    expect(ov.some((o) => o.entityA === 'zone' || o.entityB === 'zone')).toBe(true);
+    // 追兵循寻路追鸭子：NavAgent + Relation(target=hero)。
+    expect(e.world.getComponent('seeker', 'NavAgent')).toBeTruthy();
+    expect((e.world.getComponent('seeker', 'Relation') as { targetId?: string } | undefined)?.targetId).toBe('hero');
+    // 障碍 box 碰撞体（碰撞 + 寻路双用·navmesh-bake 栅格化）。
+    expect(e.world.getComponent<Collider3D>('rock-1', 'Collider3D')!.kind).toBe('box');
   });
 
   it('每个物件 = Transform3D + Mesh3D（盒庭体块即数据）', () => {
@@ -86,13 +84,13 @@ describe('Game Z · 3D 盒庭蓝图（纯数据 · 仅现成 motion-apply 能力
     expect(hero.transform3d).toBeUndefined(); // 走 2D Transform → groundPose 落地面
   });
 
-  it('静态黄鸭 duck-statue：Transform3D + Model3D（与可控鸭共享模板·多实例复用）', () => {
+  it('追逐关卡：三只追兵都 target=hero + 中心信标金属材质（gold PBR）', () => {
     const e = new Engine();
     e.load(dioramaBlueprint());
-    const m = e.world.getComponent<Model3D>('duck-statue', 'Model3D')!;
-    const t3 = e.world.getComponent<Transform3D>('duck-statue', 'Transform3D')!;
-    expect(m.modelKey).toBe('duck');
-    expect(typeof t3.z).toBe('number');
+    for (const id of ['seeker', 'seeker-2', 'seeker-3']) {
+      expect((e.world.getComponent(id, 'Relation') as { targetId?: string } | undefined)?.targetId).toBe('hero');
+    }
+    expect(e.world.getComponent<Material3D>('beacon', 'Material3D')!.preset).toBe('gold');
   });
 
   it('角色按 Velocity 走动（motion-apply 驱动·纯数据 sim）', () => {

@@ -9,8 +9,8 @@ import { ThreeRenderer, type RenderStats } from '@renderer/three-renderer.js';
 import { AssetManager, ModelAssetLoader } from '@assets/index.js';
 import { mountUI } from '@ui/components/index.js';
 import type { LayoutNode } from '@ui/components/index.js';
-import type { Velocity, Camera3D, Overlap3D, Post3D, Fog3D } from '@engine/protocol/components.js';
-import { dioramaBlueprint, BOARD_CAM } from './diorama.js';
+import type { Velocity, Camera3D, Post3D, Fog3D, Transform } from '@engine/protocol/components.js';
+import { dioramaBlueprint, BOARD_CAM, HOME_CAM, TRACK_R } from './diorama.js';
 import { GAME_Z_ASSETS } from './assets.js';
 
 const MOVE_KEYS = new Set(['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight', 'KeyW', 'KeyA', 'KeyS', 'KeyD']);
@@ -19,13 +19,12 @@ const fmtK = (n: number): string => (n >= 1000 ? `${(n / 1000).toFixed(1)}k` : `
 
 // 角标 HUD（LayoutNode 纯数据）：标题 + 操作提示 + 可开关的性能剖析面板（像虚幻 stat·P 键开关）。
 // 剖析数据来自 renderer.readStats()（引擎暴露）；HUD 本体是数据描述（UI 铁律）。pointer-events:none 不挡盒庭。
-function hudTree(fps: number, stats: RenderStats | null, showProfiler: boolean, inZone: boolean): LayoutNode {
+function hudTree(fps: number, stats: RenderStats | null, showProfiler: boolean): LayoutNode {
   const children: LayoutNode[] = [
-    { type: 'Label', id: 'gz-title', props: { text: 'GAME Z', size: 'xxl', glow: true } },
-    { type: 'Label', id: 'gz-sub', props: { text: '3D 盒庭 · 数据驱动渲染线 · glTF 模型导入', size: 'sm' } },
-    { type: 'Label', id: 'gz-hint', props: { text: 'WASD 控鸭 · 拖拽旋转 · 滚轮缩放 · O 正交 · F 跟随 · P 剖析 · C 碰撞体 · N 寻路', size: 'sm' } },
-    // 3D 碰撞触发区状态（读确定性 Overlap3D·纯展示）：小黄鸭进绿垫即亮。
-    { type: 'Label', id: 'gz-zone', props: { text: inZone ? '🔔 触发区：进入（Overlap3D）' : '触发区：外', size: 'sm', glow: inZone, color: inZone ? undefined : 'dim' } },
+    { type: 'Label', id: 'gz-title', props: { text: 'GAME Z · 永远追逐', size: 'xxl', glow: true } },
+    { type: 'Label', id: 'gz-sub', props: { text: '鸭子 AI 绕赛道自动跑 · 三只追兵循寻路追逐 · 一切皆动', size: 'sm' } },
+    { type: 'Label', id: 'gz-hint', props: { text: 'WASD 接管控鸭 · 拖拽旋转 · 滚轮缩放 · O 正交 · F 跟随/环绕 · P 剖析 · C 碰撞体 · N 寻路', size: 'sm' } },
+    { type: 'Label', id: 'gz-zone', props: { text: '🔴 追逐中', size: 'sm', glow: true, color: 'warn' } },
   ];
   if (showProfiler && stats) {
     children.push(
@@ -68,20 +67,14 @@ export function mount(container: HTMLElement): () => void {
   let showProfiler = true; // 性能剖析面板开关（P 键切换·默认开）
   let fps = 60; // 平滑帧率（render-only·不进 sim）
   const cam = (): Camera3D | undefined => engine.world.getComponent<Camera3D>('cam', 'Camera3D'); // 取相机组件（行为层写它）
-  // 相机机位预设（render-only 写 Camera3D·瞬切视角）：HOME=开局总览（蓝图初值）；BOARD=正对材质陈列台。
-  const HOME_CAM = { yaw: 0.72, pitch: 0.66, distance: 312, pivotX: 0, pivotY: 2, pivotZ: 0 };
+  // 相机机位预设（render-only 写 Camera3D·瞬切视角）：HOME=赛道总览·BOARD=正对材质陈列台（皆从 diorama 导出）。
   const applyCam = (p: { yaw: number; pitch: number; distance: number; pivotX: number; pivotY: number; pivotZ: number }): void => {
     const c = cam(); if (!c) return;
     c.yaw = p.yaw; c.pitch = p.pitch; c.distance = p.distance;
     c.pivotX = p.pivotX; c.pivotY = p.pivotY; c.pivotZ = p.pivotZ;
     c.mode = 'orbit'; // 切机位时退出 follow（否则注视点被 hero 覆盖看不到陈列台）
   };
-  // 读 3D 碰撞结果（确定性 Overlap3D·纯展示）：小黄鸭是否在触发区里。
-  const inZone = (): boolean => engine.world.query('Overlap3D').some(([id]) => {
-    const o = engine.world.getComponent<Overlap3D>(id, 'Overlap3D');
-    return !!o && (o.entityA === 'zone' || o.entityB === 'zone');
-  });
-  const ui = mountUI(hudHost, hudTree(60, null, showProfiler, false));
+  const ui = mountUI(hudHost, hudTree(60, null, showProfiler));
 
   // 渲染调试面板（独立 pointer-events:auto 宿主·全 LayoutNode·UI 铁律）：开关 + 滑块**实时调渲染参数**——
   // 改的全是 render-only 组件（Post3D/Fog3D·不进 hash）→ 即时生效、无副作用。控件全走主程 UI 库（Toggle/Slider）。
@@ -133,7 +126,13 @@ export function mount(container: HTMLElement): () => void {
   });
   // 开关 → 改态 + 应用 + 重渲面板（更新勾选 + 显隐从属滑块）。滑块 → 改态 + 应用（**不重渲面板**·免打断拖拽）。
   const refresh = (): void => menuUi.update(tree());
-  const tT = (k: 'col' | 'nav' | 'aoOn' | 'fogOn' | 'gradeOn' | 'aa') => (v: unknown): void => { S[k] = v === 'true' || v === true; apply(); refresh(); };
+  // ⚠️ Toggle 视觉点击不更新的绕过（主程 UI 库 bug·已记 requests.md）：点 Toggle 后其隐藏 checkbox 抢焦点，
+  //   UI 库 reconcile 的「焦点保护」误把 Toggle 子树当输入框跳过重建 → 视觉停在旧 checked。先 blur 焦点再重渲即可重建。
+  const tT = (k: 'col' | 'nav' | 'aoOn' | 'fogOn' | 'gradeOn' | 'aa') => (v: unknown): void => {
+    S[k] = v === 'true' || v === true; apply();
+    (document.activeElement as HTMLElement | null)?.blur(); // 解焦 → 让面板重建反映新 checked
+    refresh();
+  };
   // 滑块 → 改态 + 应用。**只接受有限数值**：Slider 偶发回调 undefined（change 抖动）→ Number()=NaN，
   // 若写进 render-only 组件会让后处理 shader 算出 NaN → 黑屏。非有限值丢弃（渲染器也有 finite 兜底·双保险）。
   const sS = (k: 'aoInt' | 'aoRad' | 'fogNear' | 'fogFar' | 'exp' | 'con' | 'sat') => (v: unknown): void => { const n = Number(v); if (!Number.isFinite(n)) return; S[k] = n; apply(); };
@@ -159,7 +158,7 @@ export function mount(container: HTMLElement): () => void {
   };
   const onDown = (e: KeyboardEvent): void => {
     if (MOVE_KEYS.has(e.code)) e.preventDefault();
-    if (e.code === 'KeyP') { showProfiler = !showProfiler; ui.update(hudTree(Math.round(fps), renderer.readStats(), showProfiler, inZone())); }
+    if (e.code === 'KeyP') { showProfiler = !showProfiler; ui.update(hudTree(Math.round(fps), renderer.readStats(), showProfiler)); }
     // 相机数据驱动开关（行为层只写 Camera3D 数据·渲染器解释）：O 切正交/透视、F 切跟随小黄鸭/环绕。
     if (e.code === 'KeyO') { const c = cam(); if (c) c.projection = c.projection === 'ortho' ? 'perspective' : 'ortho'; }
     if (e.code === 'KeyF') { const c = cam(); if (c) { c.mode = c.mode === 'follow' ? 'orbit' : 'follow'; c.target = 'hero'; } }
@@ -169,6 +168,21 @@ export function mount(container: HTMLElement): () => void {
   };
   const onUp = (e: KeyboardEvent): void => { held.delete(e.code); setVel(); };
   const onBlur = (): void => { held.clear(); setVel(); };
+  // 鸭子 AI 自动绕赛道跑（运行时输入胶水·同 WASD 写 Velocity）：无按键时每帧把 Velocity 设成赛道切线方向，
+  // 并轻拉回半径 TRACK_R 保持在环上 → 鸭子绕中心信标永远逆时针跑、追兵在后追。按 WASD 即接管手动。
+  const RUN = 0.58;
+  const autoRun = (): void => {
+    if (held.size > 0) return; // 手动优先
+    const t = engine.world.getComponent<Transform>('hero', 'Transform');
+    const v = engine.world.getComponent<Velocity>('hero', 'Velocity');
+    if (!t || !v) return;
+    const r = Math.hypot(t.x, t.y) || 1; // 2D Transform：x→世界 X、y→世界 Z
+    const ang = Math.atan2(t.y, t.x);
+    const tx = -Math.sin(ang), tz = Math.cos(ang); // 逆时针切线
+    const pull = (TRACK_R - r) * 0.04; // 拉回赛道半径
+    v.vx = tx * RUN + (t.x / r) * pull;
+    v.vy = tz * RUN + (t.y / r) * pull;
+  };
   window.addEventListener('keydown', onDown);
   window.addEventListener('keyup', onUp);
   window.addEventListener('blur', onBlur);
@@ -210,8 +224,9 @@ export function mount(container: HTMLElement): () => void {
     const now = performance.now();
     const dt = now - lastT;
     lastT = now;
+    autoRun(); // 鸭子每帧自动绕赛道跑（无 WASD 时）
     if (dt > 0) fps = fps * 0.9 + (1000 / dt) * 0.1;
-    if (now - lastHud > 250) { lastHud = now; ui.update(hudTree(Math.round(fps), renderer.readStats(), showProfiler, inZone())); }
+    if (now - lastHud > 250) { lastHud = now; ui.update(hudTree(Math.round(fps), renderer.readStats(), showProfiler)); }
   });
 
   engine.start();

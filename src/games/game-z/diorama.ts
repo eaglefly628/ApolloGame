@@ -1,11 +1,11 @@
-// Game Z · 3D 盒庭（Captain Toad 风渲染线 v0）
+// Game Z · 3D 盒庭 —— 「永远追逐」关卡（endless chase）。
 //
-// 纯蓝图数据，零专属 system：每个物件 = Transform3D（地面 XZ + Y 高度的真三维位姿）+ Mesh3D（体块）。
-// 一个 Camera3D 单例把场景切进「盒庭模式」——引擎 ThreeRenderer 据它按 yaw/pitch 环绕取景、开柔和阴影、
-// 暖白主光 + 冷蓝补光、哑光材质。换一组数字即换一个盒庭，零手写 Three.js。
+// 玩法：鸭子(hero) AI 绕环形赛道自动跑（运行时输入胶水写 Velocity·同 WASD 先例·见 game-z.ts），
+// 追兵(NavAgent target=hero) 循自动烘焙的 NavGraph 一路追逐，相机跟随鸭子。一切都在动。
+// 纯数据蓝图 + 引擎能力（motion-apply / overlap-detect-3d / navmesh-bake / pathfind / collision-resolve-3d），零专属 system。
+// 旁置：北侧 PBR 材质陈列台（材质球·IBL 反射·调试面板「🔬 看材质」一键看）。
 //
-// 盒面着色约定（Mesh3D box）：顶面 + 侧面取 edgeTint（俯视盒庭最显眼），朝镜头那面取 frontTint（做二色阴面）。
-// 故 top=主色、side=暗一档。盒中心 y = 高度/2 时下沿坐地（地台顶在 y=0）。
+// 盒面着色约定（Mesh3D box）：top=主色（顶/侧·俯视最显眼）、front=暗一档阴面。盒中心 y=h/2 时下沿坐地（地台顶在 y=0）。
 
 import type { WorldBlueprint } from '../../assembly/demo.assembly.js';
 import { motionApplyCapability } from '@skills/tier1/index.js';
@@ -15,7 +15,10 @@ import { MODEL_DUCK } from './assets.js';
 
 type Ent = WorldBlueprint['entities'][string];
 
-// 一个体块：位姿(中心 x,y,z) + 尺寸(w,h,d) + 顶/侧色。rotY 可选（如让宝石斜摆）。
+// 赛道半径（鸭子绕跑·game-z.ts 自动跑胶水按此把 Velocity 设成切线方向）。
+export const TRACK_R = 30;
+
+// 一个体块：位姿(中心 x,y,z) + 尺寸(w,h,d) + 顶/侧色。rotY 可选。
 function block(x: number, y: number, z: number, w: number, h: number, d: number, top: number, side: number, rotY?: number): Ent {
   return {
     Transform3D: { x, y, z, ...(rotY !== undefined ? { rotY } : {}) },
@@ -23,20 +26,8 @@ function block(x: number, y: number, z: number, w: number, h: number, d: number,
   };
 }
 
-// 斜置凸块（REQ-3D-Collision·P2 demo）：绕 Y 转 30° 的盒 → 凸多面体 hull 碰撞体。
-// 面法线轴 = 预烘焙数据（三角值写死成常量·非运行时计算）；8 顶点由轴 + 半尺寸**只用 ×/+** 生成 → 跨机逐位确定。
-// render 用 Transform3D.rotY 同角度斜摆，collision 用 hull 顶点 —— 渲染与碰撞各取所需、同一朝向。
-const COS30 = 0.8660254037844387, SIN30 = 0.5;
-const WALL_AXES = [[COS30, 0, -SIN30], [0, 1, 0], [SIN30, 0, COS30]]; // 绕 +Y 转 30°（同 three rotY）
-function hullBoxVerts(hx: number, hy: number, hz: number, a: number[][]): number[] {
-  const out: number[] = [];
-  for (const sx of [-1, 1]) for (const sy of [-1, 1]) for (const sz of [-1, 1])
-    for (let k = 0; k < 3; k++) out.push(sx * hx * a[0]![k]! + sy * hy * a[1]![k]! + sz * hz * a[2]![k]!);
-  return out;
-}
-
-// 实心障碍（碰撞 + 寻路双用）：2D Transform(碰撞/寻路 planar) + Transform3D(render 精确位姿) + Mesh3D + Collider3D box。
-// 下沿坐地（baseY=0·中心 y=h/2）。navmesh-bake 把它栅格化成封格，自动生成的 NavGraph 让追兵绕开它（「寻路碰撞」）。
+// 实心障碍（碰撞 + 寻路双用）：2D Transform(碰撞/寻路 planar·x→X、y→Z) + Transform3D(render 精确位姿) + Mesh3D + Collider3D box。
+// 下沿坐地（baseY=0·中心 y=h/2）。navmesh-bake 把它栅格化成封格 → 自动生成的 NavGraph 让追兵绕开它（「寻路碰撞」）。
 function obstacle(x: number, z: number, w: number, h: number, d: number, top: number, side: number): Ent {
   return {
     Transform: { x, y: z, rotation: 0, scaleX: 1, scaleY: 1 },
@@ -46,36 +37,9 @@ function obstacle(x: number, z: number, w: number, h: number, d: number, top: nu
   };
 }
 
-// 鹅卵石小径：一排**完全相同**的石块（同尺寸同色 → 同视觉签名）。展示 W1-A 实例化：N 个同款盒 → 1 个
-// InstancedMesh（1 draw call）。纯数据（蓝图摆 N 个实体），渲染器自动批，零渲染旗标。
-function steppingStones(): Record<string, Ent> {
-  const out: Record<string, Ent> = {};
-  for (let i = 0; i < 8; i++) {
-    out[`stone-${i}`] = block(-22 + i * 5.2, 0.4, 22, 3, 0.8, 3, 0xbcaaa4, 0x8d6e63);
-  }
-  return out;
-}
-
-// 渲染压力测试：一片**完全相同**的尖塔铺在外环（中央留出玩法区）。同款 → W1-A 归一批实例化。
-// 位置用确定性公式抖动（render-only·非随机），约 320 个。
-function forest(): Record<string, Ent> {
-  const out: Record<string, Ent> = {};
-  let n = 0;
-  for (let gx = -114; gx <= 114; gx += 12) {
-    for (let gz = -114; gz <= 114; gz += 12) {
-      if (Math.abs(gx) < 52 && Math.abs(gz) < 52) continue; // 留出中央玩法区
-      const jx = ((n * 17) % 9) - 4, jz = ((n * 13) % 9) - 4; // 确定性抖动（散布更自然）
-      out[`spire-${n}`] = block(gx + jx, 2.5, gz + jz, 2.4, 5, 2.4, 0x66bb6a, 0x2e7d32);
-      n++;
-    }
-  }
-  return out;
-}
-
 // ── PBR 材质陈列台（TA Phase 5·「我怎么测材质」）──────────────────────────────────────────────
-// 一排**材质球**，每球挂一种闭集预设 + 头顶飘字标名，摆在北侧独立石台上、IBL 环境反射照亮，
-// 让金属能照出反射、玻璃能透光 → 一眼对比所有材质（球比方块更显金属高光/粗糙度差异·业界材质球惯例）。
-// 纯数据：样品 = Mesh3D sphere + Material3D{preset}（PBR 路径取预设色）；零专属代码。
+// 一排**材质球**，每球挂一种闭集预设 + 头顶飘字标名（放大字号），摆在北侧独立石台上、IBL 环境反射照亮，
+// 让金属能照出反射、玻璃能透光 → 一眼对比所有材质。纯数据：样品 = Mesh3D sphere + Material3D{preset}。
 const MAT_SAMPLES: { preset: string; label: string; color?: number }[] = [
   { preset: 'matte', label: '哑光', color: 0xcccccc },
   { preset: 'plastic', label: '塑料', color: 0xcc4444 },
@@ -89,14 +53,12 @@ const MAT_SAMPLES: { preset: string; label: string; color?: number }[] = [
   { preset: 'glass', label: '玻璃' },
   { preset: 'emissive', label: '自发光' },
 ];
-// 材质陈列台相机预设（看材质按钮 → 切到此机位正对陈列台·render-only 写 Camera3D）。导出给 game-z 输入胶水用。
-export const BOARD_CAM = { yaw: 0, pitch: 0.4, distance: 82, pivotX: -12, pivotY: 8, pivotZ: -40 };
+const BOARD_Z = -58; // 陈列台 Z（赛道外·北侧）
 function materialBoard(): Record<string, Ent> {
   const out: Record<string, Ent> = {};
   const n = MAT_SAMPLES.length;
-  const gap = 7, z = -40, baseTop = 4, dia = 5;
+  const gap = 7, z = BOARD_Z, baseTop = 4, dia = 5;
   const x0 = -((n - 1) * gap) / 2;
-  // 承托长石台（顶在 y=baseTop）。材质球靠场景暖阳 + 冷环境光 + IBL 环境贴图照亮（金属/玻璃反射来自 IBL）。
   out['matboard-base'] = block(0, baseTop / 2, z, n * gap + 4, baseTop, 9, 0x455a64, 0x37474f);
   MAT_SAMPLES.forEach((s, i) => {
     const x = x0 + i * gap;
@@ -104,181 +66,91 @@ function materialBoard(): Record<string, Ent> {
       Transform3D: { x, y: baseTop + dia / 2, z }, // 球坐在石台上（中心 = 台顶 + 半径）
       Mesh3D: { shape: 'sphere', width: dia, height: dia, frontTint: 0xffffff },
       Material3D: { preset: s.preset, ...(s.color !== undefined ? { color: s.color } : {}) },
-      WorldUI3D: { text: s.label, offsetY: dia / 2 + 3.5, size: 'xs', glow: true },
+      WorldUI3D: { text: s.label, offsetY: dia / 2 + 4, size: 'md', glow: true }, // 字号放大 xs→md（owner「字太小」）
     };
   });
   return out;
 }
+// 看材质机位（调试面板「🔬 看材质陈列台」按钮 → 切到此机位正对陈列台·render-only 写 Camera3D）。
+export const BOARD_CAM = { yaw: 0, pitch: 0.4, distance: 82, pivotX: -12, pivotY: 8, pivotZ: BOARD_Z };
+// 总览机位（「🏠 回总览」按钮）：俯瞰整个赛道竞技场。
+export const HOME_CAM = { yaw: 0.7, pitch: 0.82, distance: 168, pivotX: 0, pivotY: 2, pivotZ: 0 };
 
-/** 盒庭样例蓝图：草地台 + 抬升石台（站 Toad）+ 金阶梯 + 板条箱 + 终点宝石 + 蘑菇 + 鹅卵石径 + 天空盒 + 可控角色。 */
+// 一只追兵（NavAgent + Relation(target=hero) → pathfind 沿自动 NavGraph 追鸭子）。light 给前两只（动态光预算 2 盏）。
+function pursuer(x: number, z: number, body: number, edge: number, label: string, color: string, light?: { color: number; intensity: number; range: number }): Ent {
+  return {
+    Transform: { x, y: z, rotation: 0, scaleX: 1, scaleY: 1 },
+    Velocity: { vx: 0, vy: 0, angular: 0 },
+    Mesh3D: { shape: 'box', width: 3.4, height: 3.4, depth: 3.4, frontTint: body, backTint: body, edgeTint: edge },
+    NavAgent: { speed: 0.5, arriveRange: 5 }, // 略慢于鸭子自动跑速（0.58）→ 永远在后面追（追不太上）
+    Relation: { kind: 'target', targetId: 'hero' },
+    ...(light ? { Light3D: { kind: 'point' as const, color: light.color, intensity: light.intensity, range: light.range, baseY: 5 } } : {}),
+    WorldUI3D: { text: label, offsetY: 5, size: 'sm', color },
+  };
+}
+
+/** 「永远追逐」蓝图：环形赛道 + AI 自动跑的鸭子 + 三只追兵 + 中心信标喷泉 + 障碍 + 北侧材质陈列台 + 天空盒。 */
 export function dioramaBlueprint(): WorldBlueprint {
   return {
-    // 角色 velocity→motion-apply 走动 + overlap-detect-3d 3D 逻辑碰撞 + navmesh-bake（自动烘 NavGraph）+ 主程 pathfind
-    // （A* 沿路跟随）—— 皆确定性 sim·进 hash。寻路：自动生成（非手摆），复用主程 NavGraph/NavAgent/pathfind。
     capabilities: [motionApplyCapability, overlapDetect3dCapability, collisionResolve3dCapability, navmeshBakeCapability, pathfindCapability],
     entities: {
-      // 盒庭相机（REQ-3D-Camera·语义参数全数据化）：轨道俯角环绕·fov/俯仰夹角进数据（不再写死在渲染器/胶水）。
-      // 运行时：拖拽改 yaw/pitch、滚轮改 distance（行为层）；O 切正交、F 切跟随小黄鸭（game-z.ts 输入胶水）。
-      cam: { Camera3D: { yaw: 0.72, pitch: 0.66, distance: 312, pivotX: 0, pivotY: 2, pivotZ: 0, fov: 38, pitchMin: 0.12, pitchMax: 1.45 } },
+      // 相机：**跟随鸭子**（mode:'follow'·跑酷视角）。F 切环绕、O 切正交、按钮切总览/看材质。
+      cam: { Camera3D: { yaw: 0.7, pitch: 0.72, distance: 98, pivotX: 0, pivotY: 3, pivotZ: 0, fov: 44, mode: 'follow', target: 'hero', pitchMin: 0.12, pitchMax: 1.45 } },
 
-      // 数据化光照（Light3D·替原写死的灯）：暖白太阳（投软影）+ 冷蓝环境补光。
-      // 曝光收敛（owner 2026-06-28「太阳太亮·曝光过度」）：太阳 1.6→1.05、环境补光 0.45→0.55 提暗部。
+      // 数据化光照：暖白太阳（投软影）+ 冷蓝环境补光。
       sun: { Light3D: { kind: 'directional', color: 0xfff1d6, intensity: 1.05, castShadow: true } },
       fill: { Light3D: { kind: 'ambient', color: 0xbfd2ff, intensity: 0.55 } },
-      // 动态局部光（TA Phase 2·预算 2 盏 point/spot）：两盏都挂在会动的方块追兵身上（见下方 seeker / seeker-2）——
-      // 暖光跟橙追兵、冷光跟蓝追兵，随寻路在 140² 大地图上游走照亮（owner「两个点光源都给两个动的方块」）。
 
-      // 后处理（Post3D·TA Phase 4 第一梯队画质）：AO 环境光遮蔽 + 色彩分级（绘本调色板）+ SMAA 抗锯齿。
-      // 移轴景深/泛光仍移除（owner「景深奇怪·先移掉」），待自适配版再加。
-      post: {
-        Post3D: {
-          ao: { intensity: 0.85, radius: 5, scale: 1 }, // intensity=AO 不透明度(0..1)·渲染器钳死防黑屏
-          grade: { exposure: 1.02, contrast: 1.08, saturation: 1.12, brightness: 0.0, tint: 0xfff6ec }, // 暖一点·略提对比/饱和
-          aa: true,
-        },
-      },
-      // 距离雾（TA Phase 4）：远处柔化 + 盒庭纵深·雾色取天色（near/far 配 140² 大地图）。
-      fog: { Fog3D: { color: 0xcfe9f7, near: 190, far: 520 } },
-
-      // 天空盒：蓝天 → 浅地平线 + 程序化白云缓慢飘动。env=IBL 强度（装中性影室环境贴图 → PBR 金属/玻璃才有反射成像）。
+      // 后处理：AO + 色彩分级 + SMAA（intensity=AO 不透明度 0..1·渲染器钳死防黑屏）。
+      post: { Post3D: { ao: { intensity: 0.85, radius: 5, scale: 1 }, grade: { exposure: 1.02, contrast: 1.08, saturation: 1.12, brightness: 0, tint: 0xfff6ec }, aa: true } },
+      // 距离雾（远处柔化·配缩小后的竞技场）。
+      fog: { Fog3D: { color: 0xcfe9f7, near: 130, far: 420 } },
+      // 天空盒 + IBL（env=环境光照强度·PBR 金属/玻璃靠它反射成像）。
       sky: { Sky3D: { top: 0x4a90d9, bottom: 0xcfe9f7, clouds: true, cloudTint: 0xffffff, scroll: 1, env: 0.55 } },
 
-      // 可控角色（WASD/方向键 → Velocity → motion-apply 走动）：用 2D Transform，盒庭模式自动落到地面。
-      // 导入式 glTF 小黄鸭真模型（替原方块蘑菇人·展示模型导入）。Transform.x→地面 X，Transform.y→地面 Z（景深）；
-      // 起步站在草地中央。模型原点在脚底 → groundPose(y=0) 坐地。scale 把鸭子放大到盒庭尺度。
-      // 角色挂 Collider3D 竖直胶囊（碰撞用·进 hash·与 Model3D 渲染分离）。
+      // 🦆 鸭子（hero）：AI 自动绕赛道跑（game-z.ts 胶水每帧把 Velocity 设成赛道切线·WASD 可接管）。
+      // 真模型 glTF·Collider3D 竖直胶囊（撞障碍被 collision-resolve 推开）·头顶飘字。起步在赛道右侧 (X=TRACK_R)。
       hero: {
-        Transform: { x: 0, y: 0, rotation: 0, scaleX: 1, scaleY: 1 },
+        Transform: { x: TRACK_R, y: 0, rotation: 0, scaleX: 1, scaleY: 1 },
         Velocity: { vx: 0, vy: 0, angular: 0 },
         Model3D: { modelKey: MODEL_DUCK, scale: 3.2 },
         Collider3D: { kind: 'capsule', radius: 2, height: 6 },
-        // 头顶飘字（TA Phase 3·世界 UI·走主程 LayoutNode·渲染线只做世界锚 + 投影）。
-        WorldUI3D: { text: '🦆 小黄鸭', offsetY: 9, size: 'sm', glow: true },
+        WorldUI3D: { text: '🦆 鸭子', offsetY: 9, size: 'sm', glow: true },
       },
 
-      // 触发区（REQ-3D-Collision demo）：地面半透明绿垫（Mesh3D render·Color.alpha<1 走单 mesh）+ Collider3D box trigger
-      // （sim·进 hash）。同一 2D Transform 同时驱动渲染(落地面)与碰撞(planar)。小黄鸭走进 → overlap-detect-3d 产
-      // Overlap3D → game-z 读到点亮（拖 WASD 进出试）。起步即罩住原点 → 截图见触发态。
-      zone: {
-        Transform: { x: 0, y: 4, rotation: 0, scaleX: 1, scaleY: 1 },
-        Mesh3D: { shape: 'box', width: 12, height: 0.8, depth: 12, frontTint: 0x33d17a, backTint: 0x33d17a, edgeTint: 0x2ec27e },
-        Color: { tint: 0x33d17a, alpha: 0.4 },
-        Collider3D: { kind: 'box', halfX: 6, halfY: 4, halfZ: 6, trigger: true },
-      },
-
-      // 静态大黄鸭（终点装饰·走 Transform3D 真三维位姿）：与可控鸭共享同一解析模板（多实例复用·省显存）。
-      'duck-statue': {
-        Transform3D: { x: 16, y: 5.5, z: 9, rotY: -2.2, scale: 3.6 },
-        Model3D: { modelKey: MODEL_DUCK },
-      },
-
-      // 草地大地台（顶在 y=0）—— 渲染压力测试：再放大 → 240²（owner 2026-06-28）。
-      ground: block(0, -2.5, 0, 240, 5, 240, 0x8bc34a, 0x5d4037),
-
-      // ⚡ 渲染压力测试：~320 个**完全相同**的尖塔（同尺寸同色 → 同视觉签名 → W1-A 自动归 1 个 InstancedMesh·
-      // 1 draw call）。证明「同款物件再多·draw call 也几乎不涨」。纯 render（Mesh3D·无 Collider3D·不进碰撞/寻路）。
-      ...forest(),
-
-      // 抬升石台（顶在 y=6）
-      platform: block(-12, 3, -8, 26, 6, 22, 0xb0bec5, 0x607d8b),
-      // 石台上的「Toad」：白身 + 红蘑菇帽
-      'toad-body': block(-12, 8.5, -8, 5, 5, 5, 0xfafafa, 0xe0e0e0),
-      'toad-cap': block(-12, 12.5, -8, 7, 3, 7, 0xe53935, 0xc62828),
-
-      // 金阶梯（两级上行·PBR gold 金属）+ 顶上的终点宝石（glass 玻璃·TA Phase 5 材质示范）
-      'step-1': { ...block(8, 1.5, 6, 10, 3, 10, 0xffd54f, 0xffb300), Material3D: { preset: 'gold' } },
-      'step-2': { ...block(15, 3.5, 9, 10, 3, 10, 0xffd54f, 0xffb300), Material3D: { preset: 'gold' } },
-      gem: { ...block(16, 7.5, 9, 4, 4, 4, 0x4dd0e1, 0x26a69a, 0.6), Material3D: { preset: 'glass', color: 0x8fe9f0 } },
-
-      // 板条箱（PBR wood 木）
-      crate: { ...block(6, 3, -10, 6, 6, 6, 0xa1887f, 0x795548), Material3D: { preset: 'wood' } },
-
-      // PBR 材质陈列台（北侧·「我怎么测材质」）：一排样品挂全部闭集预设 + 头顶标名，IBL 下对比金属/玻璃/介电。
-      ...materialBoard(),
-
-      // 斜墙（P2·hull 凸多面体碰撞体 demo）：绕 Y 转 30° 的石板。render 斜摆 + hull 碰撞（小黄鸭走右侧撞它·
-      // 产 Overlap3D）。开「碰撞体线框」菜单可见其真实斜置 hull 线框（白）——证明 SAT 按真朝向判定·非轴对齐 AABB。
-      'angle-wall': {
-        Transform: { x: 20, y: -4, rotation: 0, scaleX: 1, scaleY: 1 }, // 2D：碰撞 planar（x→X、y→Z）
-        Transform3D: { x: 20, y: 4, z: -4, rotY: 0.5235987755982988 }, // 3D：render 斜摆 30°（=hull 朝向）
-        Mesh3D: { shape: 'box', width: 12, height: 8, depth: 3, frontTint: 0x90a4ae, backTint: 0x90a4ae, edgeTint: 0xb0bec5 },
-        Collider3D: { kind: 'hull', baseY: 4, verts: hullBoxVerts(6, 4, 1.5, WALL_AXES), axes: WALL_AXES.flat() },
-      },
-
-      // ── 碰撞感知寻路（REQ-3D-Nav · owner「自动摆放」+ 扩充关卡）──
-      // 寻路数据 = **自动烘焙**：NavMesh 罩住扩充后的 100² 草地台，navmesh-bake 每帧把 Collider3D 障碍栅格化、
-      // 可行走格自动织成主程 NavGraph → 主程 pathfind 用（零手摆航点）。
-      nav: { NavMesh: { minX: -68, minZ: -68, maxX: 68, maxZ: 68, cellSize: 3, agentRadius: 2.6 } },
-
-      // 实心石墩障碍（碰撞 + 寻路双用）：散在中央，逼追兵绕行。
-      'rock-1': obstacle(-14, -12, 6, 5, 10, 0x9e9e9e, 0x616161),
-      'rock-2': obstacle(-4, -18, 9, 5, 6, 0x9e9e9e, 0x616161),
-      'rock-3': obstacle(-16, 4, 6, 5, 8, 0x9e9e9e, 0x616161),
-      // 扩充区石柱（更多 nav 空洞 + 视觉填充·撒到 140² 外环）。
-      'pillar-1': { ...obstacle(-48, -44, 7, 8, 7, 0x8d6e63, 0x5d4037), Material3D: { preset: 'steel' } }, // PBR 钢
-      'pillar-2': { ...obstacle(46, -42, 7, 8, 7, 0x8d6e63, 0x5d4037), Material3D: { preset: 'copper' } }, // PBR 铜
-      'pillar-3': obstacle(54, 18, 7, 8, 7, 0x8d6e63, 0x5d4037),
-      'pillar-4': obstacle(-54, 28, 7, 8, 7, 0x8d6e63, 0x5d4037),
-      'pillar-5': obstacle(30, 56, 7, 8, 7, 0x8d6e63, 0x5d4037),
-      'pillar-6': obstacle(-30, 58, 7, 8, 7, 0x8d6e63, 0x5d4037),
-      // **蛇形迷墙**（扩充区·寻路展示主角）：两道交错长墙各留一个缺口 → 远角追兵必须先绕左、再绕右才能穿到中央。
-      // 自动生成的 NavGraph 会精确避开墙体、只在缺口处连通；开「导航网格」可见黄线沿缺口蜿蜒。
-      'maze-1': obstacle(-15, 30, 56, 7, 4, 0x78909c, 0x546e7a), // x[-43,13]·缺口在右
-      'maze-2': obstacle(17, 40, 56, 7, 4, 0x78909c, 0x546e7a),  // x[-11,45]·缺口在左
-
-      // 寻路追兵①（橙盒·左下远角）：主程 NavAgent + Relation(target=hero) → pathfind 沿自动生成的 NavGraph 绕障碍
-      // 逼近小黄鸭，写 Velocity → motion-apply 走动。只挂 2D Transform → render groundPose 跟随寻路移动。
-      // 开左下「导航网格」菜单：青点/线 = 自动生成的可走图（没点处=被碰撞封住）、黄线 = 追兵当前规划路径。
-      seeker: {
-        Transform: { x: -62, y: -62, rotation: 0, scaleX: 1, scaleY: 1 },
-        Velocity: { vx: 0, vy: 0, angular: 0 },
-        Mesh3D: { shape: 'box', width: 3.2, height: 3.2, depth: 3.2, frontTint: 0xff7043, backTint: 0xff7043, edgeTint: 0xffab91 },
-        NavAgent: { speed: 0.5, arriveRange: 7 },
-        Relation: { kind: 'target', targetId: 'hero' },
-        // 移动点光①（暖·跟橙追兵·随寻路在大地图游走照亮脚下地面/经过的盒子）。
-        Light3D: { kind: 'point', color: 0xffb060, intensity: 120, range: 30, baseY: 5 },
-        WorldUI3D: { text: '追兵·橙', offsetY: 5, size: 'xs', color: 'warn' },
-      },
-      // 寻路追兵②（蓝盒·迷墙后远角）：从 140² 远端出发，必须穿蛇形迷墙的两个缺口才能到中央 → 展示长程绕路寻路。
-      'seeker-2': {
-        Transform: { x: 62, y: 62, rotation: 0, scaleX: 1, scaleY: 1 },
-        Velocity: { vx: 0, vy: 0, angular: 0 },
-        Mesh3D: { shape: 'box', width: 3.2, height: 3.2, depth: 3.2, frontTint: 0x42a5f5, backTint: 0x42a5f5, edgeTint: 0x90caf9 },
-        NavAgent: { speed: 0.55, arriveRange: 7 },
-        Relation: { kind: 'target', targetId: 'hero' },
-        // 移动点光②（冷·跟蓝追兵）。两盏=预算上限·都挂在会动的方块上。
-        Light3D: { kind: 'point', color: 0x6cc6ff, intensity: 110, range: 28, baseY: 5 },
-        WorldUI3D: { text: '追兵·蓝', offsetY: 5, size: 'xs', color: 'jade' },
-      },
-
-      // ── VFX（TA Phase 1·数据驱动粒子·render-only）──
-      // 宝石上的金→青魔法喷泉（cone·additive·size/color 随寿命）：展示发射形状 + 力 + 曲线 + 渐变。
-      'vfx-gem': {
+      // 中心信标（金属柱 + 魔法喷泉 VFX）：赛道圆心的焦点，鸭子绕它跑。
+      beacon: { ...block(0, 4, 0, 4, 8, 4, 0xffd54f, 0xffb300), Material3D: { preset: 'gold' } },
+      'vfx-beacon': {
         Vfx3D: {
-          x: 16, y: 9, z: 9, shape: 'cone', coneAngle: 0.55, rate: 130, lifetime: 1.2, lifeVar: 0.3,
-          speed: 9, speedVar: 3, gravity: 11, size: 2.6, max: 260, blend: 'add',
+          x: 0, y: 9, z: 0, shape: 'cone', coneAngle: 0.5, rate: 120, lifetime: 1.3, lifeVar: 0.3,
+          speed: 9, speedVar: 3, gravity: 11, size: 2.4, max: 240, blend: 'add',
           sizeCurve: { keys: [{ t: 0, v: 0.2 }, { t: 0.15, v: 1 }, { t: 1, v: 0 }], mode: 'smooth' },
           colorGradient: { stops: [{ t: 0, color: 0xfff6c0, alpha: 1 }, { t: 0.5, color: 0x4dd0e1, alpha: 1 }, { t: 1, color: 0x26a69a, alpha: 0 }] },
         },
       },
-      // 石台上空缓缓上浮的花粉微尘（sphere·alpha·负重力上飘）：展示 alpha 混合 + 体积发射 + 柔生灭。
-      'vfx-motes': {
-        Vfx3D: {
-          x: -12, y: 9, z: -8, shape: 'sphere', emitRadius: 15, rate: 30, lifetime: 4.5, lifeVar: 1.5,
-          speed: 0.7, gravity: -0.4, size: 1.1, max: 160, blend: 'alpha',
-          sizeCurve: { keys: [{ t: 0, v: 0 }, { t: 0.2, v: 1 }, { t: 0.8, v: 1 }, { t: 1, v: 0 }], mode: 'smooth' },
-          colorGradient: { stops: [{ t: 0, color: 0xfff3c4, alpha: 0 }, { t: 0.5, color: 0xfff3c4, alpha: 0.75 }, { t: 1, color: 0xffffff, alpha: 0 }] },
-        },
-      },
 
-      // 两朵蘑菇（茎 + 伞盖）
-      'mush-a-stem': block(2, 1, 14, 3, 2, 3, 0xfff3e0, 0xffe0b2),
-      'mush-a-cap': block(2, 3, 14, 6, 3, 6, 0xef5350, 0xd32f2f),
-      'mush-b-stem': block(-6, 1, 12, 3, 2, 3, 0xfff3e0, 0xffe0b2),
-      'mush-b-cap': block(-6, 3, 12, 5, 2.5, 5, 0xab47bc, 0x8e24aa),
+      // 三只追兵（从鸭子后方出发·鸭子起步在 (30,0) 向 +Z 跑 → 后方=−Z 侧·循 NavGraph 追逐）。前两只带动态点光。
+      seeker: pursuer(30, -16, 0xff7043, 0xffab91, '追兵·橙', 'warn', { color: 0xffb060, intensity: 120, range: 30 }),
+      'seeker-2': pursuer(38, -26, 0x42a5f5, 0x90caf9, '追兵·蓝', 'jade', { color: 0x6cc6ff, intensity: 110, range: 28 }),
+      'seeker-3': pursuer(22, -28, 0xab47bc, 0xce93d8, '追兵·紫', 'danger'),
 
-      // 鹅卵石小径（8 个同款石 → 1 实例化批·展示 W1-A）。
-      ...steppingStones(),
+      // 导航网格（罩住竞技场·自动烘焙 NavGraph 给 pathfind·零手摆航点）。
+      nav: { NavMesh: { minX: -72, minZ: -72, maxX: 72, maxZ: 72, cellSize: 3, agentRadius: 2.6 } },
+
+      // 障碍（碰撞 + 寻路双用·避开鸭子赛道环 R=30）：内圈三石墩（逼追兵绕行）+ 外圈四石柱（部分 PBR 金属·视觉边界）。
+      'rock-1': obstacle(15, 2, 6, 5, 6, 0x9e9e9e, 0x616161),
+      'rock-2': obstacle(-9, 15, 6, 5, 6, 0x9e9e9e, 0x616161),
+      'rock-3': obstacle(-13, -11, 6, 5, 6, 0x9e9e9e, 0x616161),
+      'pillar-1': { ...obstacle(52, 30, 7, 9, 7, 0x8d6e63, 0x5d4037), Material3D: { preset: 'steel' } }, // PBR 钢
+      'pillar-2': { ...obstacle(-50, 34, 7, 9, 7, 0x8d6e63, 0x5d4037), Material3D: { preset: 'copper' } }, // PBR 铜
+      'pillar-3': obstacle(46, -50, 7, 9, 7, 0x8d6e63, 0x5d4037),
+      'pillar-4': obstacle(-48, -46, 7, 9, 7, 0x8d6e63, 0x5d4037),
+
+      // 草地竞技场（顶在 y=0·缩小到 160²·owner「缩小一半 + 去掉低画质小树」）。
+      ground: block(0, -2.5, 0, 160, 5, 160, 0x8bc34a, 0x5d4037),
+
+      // 北侧 PBR 材质陈列台（材质球·大字标名·调试面板「🔬 看材质」一键看）。
+      ...materialBoard(),
     },
   };
 }
