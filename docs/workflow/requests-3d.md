@@ -6,6 +6,17 @@
 
 ---
 
+## REQ-3D-卡通描边（toon outline）·暂缓 + Godot 调研文 · [2026-06-30] · owner → P3D · status: **⏸ outline 暂缓（深度边缘不可靠·待法线缓冲版）；Godot 对比文 ✅ 已出** · 类型: 渲染能力（NPR）+ 调研
+
+> **owner 要「描边的卡通着色」**。P3D 试了**全屏深度边缘描边**（Post3D.outline·读深度纹理做二阶差分 Laplacian）：
+> - **暂缓原因（诚实记录）**：深度-only 边缘在**透视斜面**上二阶差分非零（斜地面被误判成边）→ 整片压暗；调阈值压不住，且 SwiftShader 无头环境深度纹理采样行为不稳（疑 NaN→边=1 全黑）。**已全部回退**（无残留·树净）。
+> - **正确做法（待做）**：要稳的卡通描边需**法线缓冲 + 深度**双判（法线折缝 + 深度轮廓），或逐物件反向壳（inverted hull·骨骼体麻烦）。需专门一轮 + 真 GPU 验证（非 SwiftShader）。**故暂缓·不硬推黑屏货。**
+> - **toon ramp（MeshToonMaterial）** 单独可做但**与刚夸的 PBR/IBL 冲突**（toon 去掉金属反射）——需设计「全局 toon vs 保 PBR + 仅描边」取舍，一并待定。
+>
+> **✅ Godot 对比调研文（owner 授权调研·开 agent 调研）**：`docs/design/godot-vs-apollo.md`。结论：Godot 是好**设计参考**但代码/运行时与我们两条铁律（数据驱动 + lockstep）不同源 → 借**概念**非搬码。**最该借鉴**：① AnimationTree/状态机/BlendSpace 做成数据（接刚落地的骨骼动画·下一步）；② prefab 蓝图子树（接关卡加载线）；③ 资产 import 管线样板（接真实贴图）。**别借**：Godot 联机（权威+复制·非 lockstep）、非确定性物理、GDScript 运行时。owner 裁决。
+
+---
+
 ## REQ-3D-骨骼动画（glTF skeletal animation） · [2026-06-30] · owner（渲染缺口评估→选做） → P3D · status: **✅ done（P3D 2026-06-30·已推）** · 类型: 渲染能力补全（最大缺口·角色动起来）
 
 > **背景**：P3D 给 owner 做了「引擎还缺啥」评估，**骨骼动画 = 最大缺口**（导入 glTF 但不播自带动画·追逐游戏角色全程滑行）。owner 选做。
