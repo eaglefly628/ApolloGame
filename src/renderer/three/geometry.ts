@@ -19,10 +19,11 @@ export function mesh3dPose(r: Renderable, m: Mesh3D, cam3d: Camera3D | null, zSt
   return { x: p.x, y: p.y, z: p.z, rx: fe.x, ry: fe.y, rotZ: 0, sx: p.sx, sy: p.sy, sz: 1 };
 }
 
-// 把 Pose3D 施加到一个 Object3D（fallback mesh 或实例化 dummy）。
+// 把 Pose3D 施加到一个 Object3D（fallback mesh 或实例化 dummy）。quat 在场（物理翻滚）→ 用四元数（无万向锁）。
 export function applyPose(o: THREE.Object3D, p: Pose3D): void {
   o.position.set(p.x, p.y, p.z);
-  o.rotation.set(p.rx ?? 0, p.ry ?? 0, p.rotZ);
+  if (p.quat) o.quaternion.set(p.quat[0], p.quat[1], p.quat[2], p.quat[3]);
+  else o.rotation.set(p.rx ?? 0, p.ry ?? 0, p.rotZ);
   o.scale.set(p.sx, p.sy, p.sz ?? 1);
 }
 

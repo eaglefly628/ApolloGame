@@ -18,6 +18,7 @@ export interface Pose3D {
   rx?: number; // 绕 X 欧拉角（仅 Transform3D 真三维路径用；2D 投影路径缺省 0）
   ry?: number; // 绕 Y 欧拉角（同上）
   sz?: number; // Z 轴缩放（同上；2D 路径缺省 1）
+  quat?: readonly [number, number, number, number]; // 四元数(x,y,z,w)·在场则覆盖欧拉角（物理翻滚·applyPose 用）
 }
 
 export function renderablePose(r: Renderable, zStep = 0.01): Pose3D {
@@ -27,7 +28,7 @@ export function renderablePose(r: Renderable, zStep = 0.01): Pose3D {
 // 真三维位姿（盒庭）：Transform3D → 完整 3D 位姿（地面=XZ、Y=高度）。等比 scale 落到三轴。纯函数（node 可测）。
 export function transform3dPose(t3: Transform3D): Pose3D {
   const s = t3.scale ?? 1;
-  return { x: t3.x, y: t3.y, z: t3.z, rx: t3.rotX ?? 0, ry: t3.rotY ?? 0, rotZ: t3.rotZ ?? 0, sx: s, sy: s, sz: s };
+  return { x: t3.x, y: t3.y, z: t3.z, rx: t3.rotX ?? 0, ry: t3.rotY ?? 0, rotZ: t3.rotZ ?? 0, sx: s, sy: s, sz: s, ...(t3.quat ? { quat: t3.quat } : {}) };
 }
 
 // 盒庭模式下「把 2D sim 实体投到地面」：Transform(x,y) → 地面 XZ（x→X、2D y→Z 景深），Y=物高/2（下沿坐地 y=0）。

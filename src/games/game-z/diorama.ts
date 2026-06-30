@@ -91,7 +91,18 @@ function pursuer(x: number, z: number, body: number, edge: number, label: string
   };
 }
 
-/** 「永远追逐」蓝图：环形赛道 + AI 自动跑的鸭子 + 三只追兵 + 中心信标喷泉 + 障碍 + 北侧材质陈列台 + 天空盒。 */
+// 一颗色子（真物理刚体·render-only 表现·cannon-es 驱动）：起步抬高 → 落地翻滚 → 静稳。塑料材质 + 初角速度翻滚。
+// Material3D 路径走单 mesh → applyPose 用物理写回的 quat（无万向锁翻滚）。RigidBody3D 是 render-only·不进 hash。
+function die(x: number, z: number, color: number): Ent {
+  return {
+    Transform3D: { x, y: 14, z },
+    Mesh3D: { shape: 'box', width: 4, height: 4, depth: 4, frontTint: 0xffffff, backTint: 0xffffff, edgeTint: 0xffffff },
+    Material3D: { preset: 'plastic', color },
+    RigidBody3D: { shape: 'box', mass: 1, restitution: 0.45, avx: 7, avy: 5, avz: 6 },
+  };
+}
+
+/** 「永远追逐」蓝图：环形赛道 + AI 自动跑的鸭子 + 三只追兵 + 中心信标喷泉 + 障碍 + 物理色子 + 北侧材质陈列台 + 天空盒。 */
 export function dioramaBlueprint(): WorldBlueprint {
   return {
     capabilities: [motionApplyCapability, overlapDetect3dCapability, collisionResolve3dCapability, navmeshBakeCapability, pathfindCapability],
@@ -147,6 +158,11 @@ export function dioramaBlueprint(): WorldBlueprint {
       'pillar-2': { ...obstacle(-50, 34, 7, 9, 7, 0x8d6e63, 0x5d4037), Material3D: { preset: 'copper' } }, // PBR 铜
       'pillar-3': obstacle(46, -50, 7, 9, 7, 0x8d6e63, 0x5d4037),
       'pillar-4': obstacle(-48, -46, 7, 9, 7, 0x8d6e63, 0x5d4037),
+
+      // 真物理色子（cannon-es·render-only 表现·掉落翻滚·「🎲 掷骰子」按钮重掷）：落在赛道中心区。
+      'die-1': die(6, 10, 0xe53935),
+      'die-2': die(11, 6, 0x1e88e5),
+      'die-3': die(3, 13, 0x43a047),
 
       // 草地竞技场（顶在 y=0·缩小到 160²·owner「缩小一半 + 去掉低画质小树」）。
       ground: block(0, -2.5, 0, 160, 5, 160, 0x8bc34a, 0x5d4037),

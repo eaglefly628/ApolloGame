@@ -33,10 +33,12 @@ import { combatBlueprint } from './combat-lab.js';
 import { spawnBlueprint } from './spawn-lab.js';
 import { fxBlueprint } from './fx-lab.js';
 import { fsmBlueprint } from './fsm-lab.js';
-import { light3dBlueprint, post3dBlueprint, nav3dBlueprint, collide3dBlueprint, particle3dBlueprint, text3dBlueprint, ao3dBlueprint, vfx3dBlueprint, material3dBlueprint, fog3dBlueprint, pointlight3dBlueprint } from './three3d.js';
+import { light3dBlueprint, post3dBlueprint, nav3dBlueprint, collide3dBlueprint, particle3dBlueprint, text3dBlueprint, ao3dBlueprint, vfx3dBlueprint, material3dBlueprint, fog3dBlueprint, pointlight3dBlueprint, surface3dBlueprint, model3dBlueprint } from './three3d.js';
+import { AssetManager, ModelAssetLoader } from '@assets/index.js';
+import { GAME_I_ASSETS } from './assets3d.js';
 
 // 渲染/仿真模块 → 蓝图 + 渲染后端（canvas/three）。进模块时宿主在 #sim-stage 上 init 引擎实时绘制。
-const SIM_MODULES: Record<string, { blueprint: () => WorldBlueprint; backend: 'canvas' | 'three'; debug?: 'nav' | 'collider' }> = {
+const SIM_MODULES: Record<string, { blueprint: () => WorldBlueprint; backend: 'canvas' | 'three'; debug?: 'nav' | 'collider'; assets?: boolean }> = {
   'mod-anim': { blueprint: animBlueprint, backend: 'canvas' },
   'mod-ai': { blueprint: aiBlueprint, backend: 'canvas' },
   'mod-3d': { blueprint: threeBlueprint, backend: 'three' },
@@ -52,6 +54,8 @@ const SIM_MODULES: Record<string, { blueprint: () => WorldBlueprint; backend: 'c
   'mod-3d-material': { blueprint: material3dBlueprint, backend: 'three' }, // PBR 材质预设 Material3D
   'mod-3d-fog': { blueprint: fog3dBlueprint, backend: 'three' },           // 距离雾 Fog3D
   'mod-3d-pointlight': { blueprint: pointlight3dBlueprint, backend: 'three' }, // 点光源/聚光灯 Light3D point·spot
+  'mod-3d-surface': { blueprint: surface3dBlueprint, backend: 'three' },       // 程序化表面细节 Material3D.surface
+  'mod-3d-model': { blueprint: model3dBlueprint, backend: 'three', assets: true }, // glTF 模型导入 Model3D（需 AssetManager）
   'mod-physics': { blueprint: physicsBlueprint, backend: 'canvas' },
   'mod-combat': { blueprint: combatBlueprint, backend: 'canvas' },
   'mod-spawn': { blueprint: spawnBlueprint, backend: 'canvas' },
@@ -253,7 +257,14 @@ export function mount(container: HTMLElement): () => void {
       engine.load(want.blueprint());
       let renderer: RendererBackend;
       if (want.backend === 'three') {
-        const tr = new ThreeRenderer({ width: 640, height: 400, background: 0x0a0f1e });
+        // glTF 模型模块需接 AssetManager：取 .glb 字节供 ThreeRenderer 解析（未就绪本帧不画·就绪后自动现）。
+        let assets: AssetManager | undefined;
+        if (want.assets) {
+          assets = new AssetManager(new ModelAssetLoader());
+          assets.registerManifest(GAME_I_ASSETS);
+          void assets.loadAll();
+        }
+        const tr = new ThreeRenderer({ width: 640, height: 400, background: 0x0a0f1e, assets });
         if (want.debug === 'nav') tr.setDebugNav(true);            // 导航图/路径线框（消费 ThreeRenderer 公开调试 API）
         if (want.debug === 'collider') tr.setDebugColliders(true); // 碰撞体线框
         renderer = tr;

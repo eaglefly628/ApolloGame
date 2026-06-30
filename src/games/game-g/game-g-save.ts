@@ -1,9 +1,15 @@
 // Game G · 本地存档（纯数据 + 迁移）—— 从 game-g.tsx 抽出的存档层：类型 Save/TiangangDeck + 读写迁移 + 出战牌组派生。
 // 全是纯函数（除 localStorage 读写），不依赖 mount() 运行态；驱动层(game-g.tsx)与各模块共享 Save 类型从这里取。
-import { LEVER_START, RUN_LIVES, RUN_BATTLES, BOSS_ROSTER, GAME_G_TIANGANGS, TIANGANG_BY_ID, unlockStageOf, isPoolCardId, POKER_PICK_SIZE, effectiveLives, type InlayEntry } from './index.js';
+import { LEVER_START, RUN_LIVES, RUN_BATTLES, BOSS_ROSTER, GAME_G_TIANGANGS, TIANGANG_BY_ID, unlockStageOf, isPoolCardId, POKER_PICK_SIZE, effectiveLives, POOL_CARD_IDS, rankOfCardId, type InlayEntry } from './index.js';
+import { cardPoints } from './clash-resolve.js'; // 牌点（军衔=点数·公平骨架）→ 基线 favor 用
 import { ggCloudSave } from './platform-hooks.js'; // 存档镜像上（真/假）Steam 云
 
 const DECK_SIZE = 52;
+// 基线 favor（owner 2026-06-29「按基础牌·加成都要清晰」）：令 favorToP(favor)=牌点 → 不养成时战斗 buff≈0，
+// 战力＝牌点本身；地支附魔/养成才把 favor 抬到牌点之上＝清晰的 +X。（去除旧「全队起步 44–62→凭空 +十几」的隐藏底力。）
+// favorToP 线性：power=(favor−5)/3 → favor=power*3+5。power 取牌点 → favor=牌点*3+5（钳 [5,95]）。
+const baselineFavor = (i: number): number => { const id = POOL_CARD_IDS[i]; const pip = id ? cardPoints(rankOfCardId(id)) : 8; return Math.max(5, Math.min(95, pip * 3 + 5)); };
+const oldDefaultFavor = (i: number): number => 44 + (i % 10) * 2; // 旧起步默认（迁移：只把仍是此默认值=玩家没动过的牌归一化到基线·不动真养成过的）
 export const SAVE_KEY = 'gameG-save-v1';
 // 天罡牌组（owner 2026-06-20）：每场带 12 张天罡出战；玩家可建多套具名牌组、选一套出战、预览。数字可变 → 改这一处。
 export const TIANGANG_DECK_SIZE = 12;
@@ -51,7 +57,7 @@ export const newDeckId = (): string => `deck_${Date.now().toString(36)}_${Math.f
 
 export const rollBoss = (): number => Math.floor(Math.random() * BOSS_ROSTER.length);
 export function freshSave(): Save {
-  return { materials: 120, diamond: 6, dizhiShards: 30, rechargeCount: 0, seenIntro: false, guideStep: 0, skipGuide: false, seen: {}, tiangangShards: 0, dizhiBag: { 子: [2, 0, 0], 丑: [1, 0, 0], 寅: [1, 0, 0], 卯: [1, 0, 0] }, inlays: {}, campaignMax: 1, stage: 1, deck: Array.from({ length: DECK_SIZE }, (_, i) => 44 + (i % 10) * 2), lastOfficers: [10, 10, 10], leverEnergy: LEVER_START, lives: RUN_LIVES, bossIdx: rollBoss(), ownedTiangangs: GAME_G_TIANGANGS.filter((t) => unlockStageOf(t.id) <= 1).map((t) => t.id), tiangangDecks: [{ id: 'deck1', name: '牌组 1', cards: [], pokerPicks: [] }, { id: 'deck2', name: '牌组 2', cards: [], pokerPicks: [] }, { id: 'deck3', name: '牌组 3', cards: [], pokerPicks: [] }, { id: 'deck4', name: '牌组 4', cards: [], pokerPicks: [] }], activeDeckId: 'deck1', tiangangs: [], planets: {}, foils: [], fortune: { date: '', rolls: 0, keptVal: null } }; // 44..62 起步；金币 120；钻石送 6（首充免密）；开局默认给 4 个天罡牌组让玩家去组（owner 2026-06-21）；pokerPicks 空=自动构筑一副；新存档播开场故事+引导
+  return { materials: 120, diamond: 6, dizhiShards: 30, rechargeCount: 0, seenIntro: false, guideStep: 0, skipGuide: false, seen: {}, tiangangShards: 0, dizhiBag: { 子: [2, 0, 0], 丑: [1, 0, 0], 寅: [1, 0, 0], 卯: [1, 0, 0] }, inlays: {}, campaignMax: 1, stage: 1, deck: Array.from({ length: DECK_SIZE }, (_, i) => baselineFavor(i)), lastOfficers: [10, 10, 10], leverEnergy: LEVER_START, lives: RUN_LIVES, bossIdx: rollBoss(), ownedTiangangs: GAME_G_TIANGANGS.filter((t) => unlockStageOf(t.id) <= 1).map((t) => t.id), tiangangDecks: [{ id: 'deck1', name: '牌组 1', cards: [], pokerPicks: [] }, { id: 'deck2', name: '牌组 2', cards: [], pokerPicks: [] }, { id: 'deck3', name: '牌组 3', cards: [], pokerPicks: [] }, { id: 'deck4', name: '牌组 4', cards: [], pokerPicks: [] }], activeDeckId: 'deck1', tiangangs: [], planets: {}, foils: [], fortune: { date: '', rolls: 0, keptVal: null } }; // 44..62 起步；金币 120；钻石送 6（首充免密）；开局默认给 4 个天罡牌组让玩家去组（owner 2026-06-21）；pokerPicks 空=自动构筑一副；新存档播开场故事+引导
 }
 export function loadSave(): Save {
   try {
@@ -104,6 +110,9 @@ export function loadSave(): Save {
         if (typeof s.fortune !== 'object' || s.fortune === null) s.fortune = { date: '', rolls: 0, keptVal: null }; // 今日卦象迁移
         if (typeof s.lives !== 'number') s.lives = effectiveLives(s.planets);
         if (s.stage < 1 || s.stage > RUN_BATTLES) s.stage = 1;
+        // 基线 favor 迁移（owner 2026-06-29「按基础牌」）：把仍是旧起步默认(44+i%10*2)=玩家没养成过的牌，归一化到牌点基线(buff≈0)。
+        // 只动「恰等于旧默认」的牌→不误伤玩家真养成过/附魔过的（地支附魔记在 inlays·不在 deck 数组·安全）。
+        for (let i = 0; i < s.deck.length; i++) if (s.deck[i] === oldDefaultFavor(i)) s.deck[i] = baselineFavor(i);
         return s;
       }
     }

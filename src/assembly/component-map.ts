@@ -73,6 +73,7 @@ import type {
   Relation,
   Resource,
   ResourceModify,
+  RigidBody3D,
   ScoreTrace,
   SelfRule,
   Sensor,
@@ -179,6 +180,7 @@ export interface ComponentDataMap {
   Relation: Omit<Relation, 'type'>;
   Resource: Omit<Resource, 'type'>;
   ResourceModify: Omit<ResourceModify, 'type'>;
+  RigidBody3D: Omit<RigidBody3D, 'type'>;
   ScoreTrace: Omit<ScoreTrace, 'type'>;
   SelfRule: Omit<SelfRule, 'type'>;
   Sensor: Omit<Sensor, 'type'>;

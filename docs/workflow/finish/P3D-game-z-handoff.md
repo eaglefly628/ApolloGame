@@ -22,7 +22,7 @@
 | `src/renderer/three-projection.ts` | ✅ 你 | 3D 纯函数（无 three）。新几何先在这写 + 单测。 |
 | `src/renderer/three-camera3d.test.ts` | ✅ 你 | 3D 渲染测试。 |
 | `src/games/game-z/**` | ✅ 你 | Game Z = **3D 渲染线实验台/提需求载体**（owner 2026-06-29 定·不再做玩法）。 |
-| `src/games/game-d/**` | ✅ 你 | 整个 Game D《骰途》——双人骰子 Roguelike（owner 2026-06-29 授权 P3D 用 game-d 槽位承载·D=Dice）。设计见 `docs/design/game-d-{gdd,combat-design}.md`。骰子/buff/meta 等 sim 系统落地时若需新能力走 `requests.md` 报主程。 |
+| `src/games/game-d/**` | ✅ 你 | 整个 Game D《骰途》——双人骰子 Roguelike（owner 2026-06-29 授权 P3D 用 game-d 槽位承载·D=Dice）。设计见 `docs/design/game-d/{gdd,combat-design}.md`。骰子/buff/meta 等 sim 系统落地时若需新能力走 `requests.md` 报主程。 |
 | `scripts/shoot-game.mjs` | ✅ 你 | 截图 harness（工具）。 |
 | `wiki/skills/rendering.md`（3D 章节） | ✅ 你 | 补 3D 渲染知识库（现仅 2D）。 |
 | `src/engine/protocol/components/render.ts` | 🔶 共享 | **2D+3D 组件混居**。你只加/改 **3D render-only 组件块**（Mesh3D/Transform3D/Camera3D/Sky3D/未来 Model3D/Light3D）；**绝不碰** Sprite/Camera/Text/Tween/Gauge 等 2D/sim 组件。 |

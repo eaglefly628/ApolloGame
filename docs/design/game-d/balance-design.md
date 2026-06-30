@@ -2,7 +2,7 @@
 
 > **用途**：把《骰途》的**可玩内容 + 数值平衡**设定出来，并配一个**模拟程序**（`scripts/game-d-balance-sim.mjs`）跑数据验证。owner 2026-06-29「这是个大策划案，好好想」。
 > **方法论**（同 combat-design）：**结构锁、数值靠模拟+实玩调**。本文的数字是**模拟器的初始输入**，跑出来再回调。
-> **配套**：玩法 `game-d-gdd.md`；战斗机制 `game-d-combat-design.md`；视觉 `game-d-ui-brief.md`。
+> **配套**：玩法 `gdd.md`；战斗机制 `combat-design.md`；视觉 `ui-brief.md`。
 
 ---
 

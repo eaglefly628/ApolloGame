@@ -690,6 +690,8 @@ export const MODULES: ReadonlyArray<{ id: string; glyph: string; label: string; 
   { id: 'mod-3d-material', glyph: '🧱', label: 'PBR 材质', desc: 'Material3D 金/钢/玻璃 + 调色', tone: 'normal' as const, dim: '3d' },
   { id: 'mod-3d-fog', glyph: '🌫', label: '距离雾', desc: 'Fog3D · 远处渐隐纵深', tone: 'normal' as const, dim: '3d' },
   { id: 'mod-3d-pointlight', glyph: '🔦', label: '点光源 / 聚光灯', desc: 'Light3D point·spot · 动态局部光', tone: 'normal' as const, dim: '3d' },
+  { id: 'mod-3d-surface', glyph: '🪨', label: '程序化表面细节', desc: 'Material3D.surface · 凹凸/划痕贴图', tone: 'normal' as const, dim: '3d' },
+  { id: 'mod-3d-model', glyph: '🦆', label: 'glTF 模型导入', desc: 'Model3D · 真模型 + 自带材质/软影', tone: 'normal' as const, dim: '3d' },
 ];
 
 /**
@@ -1057,9 +1059,15 @@ function moduleBody(
     case 'mod-3d-ao': return buildSimStage('3dao', '🌑', '环境光遮蔽 · Post3D.ao（GTAO）',
       '一个 Post3D.ao 启 GTAO 地面真值环境光遮蔽：紧挨的盒堆在接触缝隙/墙根处被压暗 → 厚重「接地」的盒庭玩具感（关泛光以凸显 AO）。intensity/radius/scale 全是数据。',
       ['Post3D.ao', 'GTAO', '接触压暗', '盒庭质感']);
-    case 'mod-3d-material': return buildSimStage('3dmat', '🧱', 'PBR 材质预设 · Material3D',
-      '材质是数据：一排盒各挂一个 Material3D 预设——金/钢/铜（金属反光）、玻璃（透射折射）、木/岩（哑光）、自发光。再叠 Post3D 色彩分级（暖电影感·曝光/对比/饱和/色调）+ 抗锯齿。物件只选预设、引擎建物理材质。',
-      ['Material3D', 'PBR', 'grade 调色', 'aa']);
+    case 'mod-3d-material': return buildSimStage('3dmat', '🧱', 'PBR 材质预设 · Material3D + IBL',
+      '材质是数据：一排盒各挂一个 Material3D 预设——金/钢/铜（IBL 环境反射出真金属光泽）、玻璃（透射折射）、木/岩（哑光）、自发光。Sky3D.env 开 IBL（中性影室环境贴图）金属才有反射可照。叠 Post3D 调色 + 抗锯齿。',
+      ['Material3D', 'PBR', 'IBL·Sky3D.env', 'grade', 'aa']);
+    case 'mod-3d-surface': return buildSimStage('3dsurf', '🪨', '程序化表面细节 · Material3D.surface',
+      '零美术文件的表面质感：渲染器按数据生成 normal/roughness 贴图——凸点 bumps / 噪声 noise / 划痕 scratches 三种程序化图案 + 平铺/法线强度/粗糙起伏。最左是光面对照，右三块依次凹凸/磨砂/拉丝。同天空盒程序化纹理先例。',
+      ['Material3D.surface', '程序化 normal/rough', 'bumps/noise/scratches']);
+    case 'mod-3d-model': return buildSimStage('3dmodel', '🦆', 'glTF 模型导入 · Model3D',
+      'box/plane 原语表达不了圆润模型 → 导入真 glTF：居中主鸭缓转 + 左右两只染色鸭（同模板多实例·共享几何各自染色）+ 一个盒模型。模型自带材质 + 受软影。蓝图只持 modelKey（保纯·可哈希），ModelAssetLoader 取字节、ThreeRenderer 解析、未就绪本帧不画。',
+      ['Model3D', 'glTF 导入', 'AssetManager', '多实例 clone']);
     case 'mod-3d-fog': return buildSimStage('3dfog', '🌫', '距离雾 · Fog3D',
       '一个 Fog3D（雾色取天际·near 清晰 far 全雾）：两列尖塔夹道向远处退去、渐隐入雾——盒庭「装在玻璃盒里」的纵深感。天空盒不受雾影响。color/near/far 三个数。',
       ['Fog3D', '距离雾', '纵深', 'scene.fog']);

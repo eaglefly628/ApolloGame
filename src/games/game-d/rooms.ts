@@ -5,7 +5,7 @@
 //（genRoom）——分层（ACTS 循环）、每层 2 战斗 + 1 BOSS。房间**全 render-only**（Transform3D/Mesh3D·出 hash），
 // 故可由 game-d.ts 在运行时按需 createEntity/destroyEntity 做**流式生成/卸载**（只保留当前房间附近窗口），
 // 无需任何 sim/装配层改动。美术先用"类型颜色"占位（贴图能力后续做），靠现成精装管线（光/景深/泛光/天空）出质感。
-// 战斗/骰子/敌人 = 后续接入（见 docs/design/game-d-combat-design.md）。
+// 战斗/骰子/敌人 = 后续接入（见 docs/design/game-d/combat-design.md）。
 
 import type { WorldBlueprint } from '../../assembly/demo.assembly.js';
 import { MODEL_DUCK } from './assets.js';

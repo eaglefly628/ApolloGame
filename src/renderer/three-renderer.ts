@@ -21,6 +21,7 @@ import { ColliderDebug } from './three/collider-debug.js';
 import { NavDebug } from './three/nav-debug.js';
 import { VfxSystem } from './three/vfx.js';
 import { WorldUiLayer } from './three/world-ui.js';
+import { PhysicsSystem } from './three/physics.js';
 import { RoomEnvironment } from 'three/addons/environments/RoomEnvironment.js';
 
 export type { RenderStats } from './three/stats.js';
@@ -64,6 +65,8 @@ export class ThreeRenderer implements RendererBackend {
   private debugNav = false;
   private readonly vfx = new VfxSystem(); // 数据驱动粒子（TA Phase 1·render-only）
   private readonly worldUi = new WorldUiLayer(); // 世界空间 UI 头顶飘字（TA Phase 3·render-only·走主程 UI 库）
+  private readonly physics = new PhysicsSystem(); // 真物理刚体（cannon-es·render-only·表现非同步·滚色子）
+  private rollPending = false; // 掷骰子请求（game 调 rollDice 置位·下帧 sync 里执行重掷）
   // 天空盒
   private sky: THREE.Mesh | null = null;
   private skySig = '';
@@ -132,6 +135,9 @@ export class ThreeRenderer implements RendererBackend {
     this.syncEnv(sky); // 环境光照(IBL)：Sky3D.env>0 → 中性影室环境贴图（金属/玻璃反射·TA Phase 5）
     this.syncFog(getFog3D(world)); // 距离雾（scene.fog·远处柔化·TA Phase 4）
     this.lights.sync(this.scene, getLights3D(world), world); // 数据化光照（维护 lightSig 供脏标·含动态局部光位姿）
+    // 真物理刚体（cannon-es·render-only·表现非同步）：先按需重掷 → 步进 → 把位置/四元数写回 Transform3D（须在 collect 前）。
+    if (this.rollPending) { this.physics.roll(world); this.rollPending = false; }
+    const physLive = this.physics.sync(world, performance.now());
     // VFX 粒子（TA Phase 1·render-only）：每帧 CPU 模拟推进。存活粒子数 >0 → 折进 renderSig 强制重渲（粒子在动）。
     const vfxLive = this.vfx.sync(this.scene, world, performance.now());
 
@@ -202,7 +208,7 @@ export class ThreeRenderer implements RendererBackend {
     // instanceMatrix 上传 + 阴影 + render（画面不变·省 CPU/GPU/带宽）——「低开销」最大单点。
     const post = getPost3D(world);
     const ph = hashPoses(poses);
-    const renderSig = `${ph}|${camSig(cam3d)}|${this.lights.lightSig}|${postSig(post)}|${sky?.scroll ? this.frame : (sky ? `${sky.top}.${sky.bottom}` : '')}|${this.debugColliders ? 'd' : ''}|${this.debugNav ? 'n' : ''}|${vfxLive > 0 ? this.frame : 'v0'}|${this.fogSig}`;
+    const renderSig = `${ph}|${camSig(cam3d)}|${this.lights.lightSig}|${postSig(post)}|${sky?.scroll ? this.frame : (sky ? `${sky.top}.${sky.bottom}` : '')}|${this.debugColliders ? 'd' : ''}|${this.debugNav ? 'n' : ''}|${vfxLive > 0 ? this.frame : 'v0'}|${physLive > 0 ? this.frame : 'p0'}|${this.fogSig}`;
     const shadowSig = `${ph}|${this.lights.lightSig}`; // 阴影只随投影体姿/灯变（相机/云飘/后处理不触发）
     if (renderSig === this.lastRenderSig) {
       this.rendered = false;
@@ -275,6 +281,9 @@ export class ThreeRenderer implements RendererBackend {
   // 失效脏标 → 强制下帧重渲（调试面板改了 render-only 组件/参数后调·确保立即反映）。
   invalidate(): void { this.lastRenderSig = ''; }
 
+  // 掷骰子（游戏层调·render-only 表现物理）：置位 → 下帧 sync 里把所有刚体抬高 + 随机翻滚重掷。
+  rollDice(): void { this.rollPending = true; this.invalidate(); }
+
   readStats(): RenderStats {
     const info = this.gl.info;
     return {
@@ -302,6 +311,7 @@ export class ThreeRenderer implements RendererBackend {
     this.colliderDebug.dispose(this.scene);
     this.navDebug.dispose(this.scene);
     this.vfx.dispose(this.scene);
+    this.physics.dispose();
     this.worldUi.dispose();
     this.models.dispose(this.scene);
     this.lights.dispose(this.scene);

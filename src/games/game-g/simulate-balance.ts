@@ -121,13 +121,10 @@ function runBattle(
   let enemyBias: number;
   let enemyForm = pickAiFormation(stage, 0, [], false);
 
-  if (spec.boss) {
-    const boss = bossFor(0); // fixed boss index 0 for reproducibility
-    enemyBias = boss.favorBias + bossDelta;
-    enemyForm = boss.formation;
-  } else {
-    enemyBias = spec.enemyBias + bossDelta;
-  }
+  // owner 2026-06-29「敌人和我都按基础牌」：敌方 base 偏置归零（与玩家 pip 基线对齐）→ Boss 强弱只来自天罡/地煞/布防/主将(明牌)。
+  // bossDelta = 标定旋钮（扫不同敌方偏置档·找合适难度）。
+  if (spec.boss) { enemyForm = bossFor(0).formation; enemyBias = bossDelta; }
+  else enemyBias = bossDelta;
 
   // 裸军队生成器（旧 build-时 effect-apply 路 prepareArmies 已退役）：
   //   玩家侧均衡布阵 + deckBias；Boss 侧用 boss/spec 的 enemyForm + enemyBias。
@@ -135,8 +132,11 @@ function runBattle(
   const a = armyFromFormation('a', pcfg.deckBias, FORMATION_PRESETS['均衡']);
   const b = armyFromFormation('b', enemyBias, enemyForm);
 
+  // owner 2026-06-29「按基础牌」：玩家 base favor 归到牌点等价(favorToP=牌点 → buff≈0·与真机 save.deck 基线同口径)，
+  // 养成强弱只来自下方地支附魔(inlayFavor)；deckBias 仅再作 inlay 量分档(新手/进阶/老手·见 PlayerCfg)。
+  const aBase = a.map((c) => ({ ...c, favor: Math.max(5, Math.min(95, cardPoints(cardRank(c)) * 3 + 5)) }));
   // 地支附魔：把玩家整体养成的 inlayFavor 摊到最值得镶的核心英雄上（owner 要求 sim 计入地支加成）。
-  const aInlaid = applyInlayFavor(a, pcfg.inlayFavor);
+  const aInlaid = applyInlayFavor(aBase, pcfg.inlayFavor);
 
   const aTengang: TengangHandCard[] = pcfg.tiangang.map((id) => ({ kind: 'tengang', id }));
   const bTengang: TengangHandCard[] = lvl.boss.tiangang.map((id) => ({ kind: 'tengang', id }));

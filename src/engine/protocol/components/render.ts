@@ -81,6 +81,21 @@ export interface Transform3D extends Component {
   rotY?: number;
   rotZ?: number;
   scale?: number; // 等比缩放·缺省 1
+  quat?: readonly [number, number, number, number]; // 可选四元数(x,y,z,w)·在场则覆盖欧拉角（物理翻滚等需无万向锁的旋转·render-only）
+}
+
+// ── RigidBody3D（render-only，表现物理 · TA）──────────────────────────────────────────────
+// 真物理刚体（cannon-es 驱动·**纯表现**：滚色子/掉落/翻滚·**不进 sim/hash·不为联机同步**·owner 2026-06-30「为表现非同步」）。
+// 渲染侧物理子系统每帧步进 → 把结果(位置+四元数)写回同实体 Transform3D（render-only）→ 渲染器照常画。
+// 体形/尺寸默认取同实体 Mesh3D（box→半尺寸·sphere→半径）；mass=0=静态。红线：render-only 自由区，可用随机/时间。
+export interface RigidBody3D extends Component {
+  readonly type: 'RigidBody3D';
+  shape?: 'box' | 'sphere'; // 缺省取 Mesh3D.shape（box/sphere）
+  mass?: number; // 质量·缺省 1（0=静态不动）
+  restitution?: number; // 弹性 0..1·缺省 0.3
+  friction?: number; // 摩擦·缺省 0.4
+  vx?: number; vy?: number; vz?: number; // 初速度
+  avx?: number; avy?: number; avz?: number; // 初角速度（翻滚）
 }
 
 // ── Camera3D（render-only，3D 盒庭轨道相机 · 单例）─────────────────────────────────────────
