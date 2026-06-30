@@ -21,6 +21,7 @@ import { ColliderDebug } from './three/collider-debug.js';
 import { NavDebug } from './three/nav-debug.js';
 import { VfxSystem } from './three/vfx.js';
 import { WorldUiLayer } from './three/world-ui.js';
+import { RoomEnvironment } from 'three/addons/environments/RoomEnvironment.js';
 
 export type { RenderStats } from './three/stats.js';
 import type { RenderStats } from './three/stats.js';
@@ -67,6 +68,9 @@ export class ThreeRenderer implements RendererBackend {
   private sky: THREE.Mesh | null = null;
   private skySig = '';
   private fogSig = '';
+  // 环境光照（IBL·PMREM 中性影室·懒建一次）：金属/玻璃反射用。强度由 Sky3D.env 数据驱动。
+  private envTex: THREE.Texture | null = null;
+  private envIntensity = -1; // 当前已设强度（脏标·变才写 scene.environmentIntensity）
   // 2D-in-3D 扁平层（sprite/text/shape + 透明 Mesh3D fallback）
   private readonly meshes = new Map<string, THREE.Mesh>();
   private readonly modeOf = new Map<string, string>();
@@ -125,6 +129,7 @@ export class ThreeRenderer implements RendererBackend {
     let followPose: Pose3D | undefined; // 收集期捕获 target 的位姿（= 相机注视点）
     const sky = getSky3D(world);
     this.syncSky(sky);
+    this.syncEnv(sky); // 环境光照(IBL)：Sky3D.env>0 → 中性影室环境贴图（金属/玻璃反射·TA Phase 5）
     this.syncFog(getFog3D(world)); // 距离雾（scene.fog·远处柔化·TA Phase 4）
     this.lights.sync(this.scene, getLights3D(world), world); // 数据化光照（维护 lightSig 供脏标·含动态局部光位姿）
     // VFX 粒子（TA Phase 1·render-only）：每帧 CPU 模拟推进。存活粒子数 >0 → 折进 renderSig 强制重渲（粒子在动）。
@@ -300,6 +305,7 @@ export class ThreeRenderer implements RendererBackend {
     this.worldUi.dispose();
     this.models.dispose(this.scene);
     this.lights.dispose(this.scene);
+    if (this.envTex) { this.envTex.dispose(); this.envTex = null; this.scene.environment = null; }
     this.post.dispose();
     this.gl.dispose();
     this.gl.domElement.remove();
@@ -320,6 +326,25 @@ export class ThreeRenderer implements RendererBackend {
       this.skySig = sig;
     }
     if (sky.scroll) this.sky.rotation.y = this.frame * sky.scroll * 0.0004; // 云飘（render-only）
+  }
+
+  // 环境光照（IBL·TA Phase 5）：Sky3D.env>0 时装中性影室 PMREM 环境贴图（金属/玻璃靠它反射成像·否则乌黑死板）。
+  // 贴图懒建一次（RoomEnvironment 烘成 PMREM·中性studio·与 sky 色彩解耦·稳定可预期）；强度由数据驱动、变才写。
+  private syncEnv(sky: Sky3D | null): void {
+    const intensity = sky?.env ?? 0;
+    if (intensity <= 0) {
+      if (this.scene.environment) { this.scene.environment = null; this.envIntensity = -1; }
+      return;
+    }
+    if (!this.envTex) {
+      const pmrem = new THREE.PMREMGenerator(this.gl);
+      const room = new RoomEnvironment();
+      this.envTex = pmrem.fromScene(room, 0.04).texture; // 0.04=轻微模糊·柔反射
+      room.dispose();
+      pmrem.dispose();
+    }
+    if (this.scene.environment !== this.envTex) this.scene.environment = this.envTex;
+    if (this.envIntensity !== intensity) { this.scene.environmentIntensity = intensity; this.envIntensity = intensity; }
   }
 
   // 距离雾（scene.fog 线性·TA Phase 4）：无 Fog3D → 清雾；否则设/更新（fogSig 供脏标）。

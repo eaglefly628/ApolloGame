@@ -72,6 +72,42 @@ function forest(): Record<string, Ent> {
   return out;
 }
 
+// ── PBR 材质陈列台（TA Phase 5·「我怎么测材质」）──────────────────────────────────────────────
+// 一排样品块，每块挂一种闭集预设 + 头顶飘字标名，摆在北侧独立石台上、单独打一盏中性补光 + IBL 环境反射，
+// 让金属能照出反射、玻璃能透光 → 一眼对比所有材质。样品轻转 45° 让两面各吃一侧反射（更显金属/粗糙度差异）。
+// 纯数据：样品 = Mesh3D box + Material3D{preset}（PBR 路径取预设色·Mesh3D tint 仅占位）；零专属代码。
+const MAT_SAMPLES: { preset: string; label: string; color?: number }[] = [
+  { preset: 'matte', label: '哑光', color: 0xcccccc },
+  { preset: 'plastic', label: '塑料', color: 0xcc4444 },
+  { preset: 'rock', label: '岩石' },
+  { preset: 'dirt', label: '土' },
+  { preset: 'wood', label: '木' },
+  { preset: 'steel', label: '钢' },
+  { preset: 'iron', label: '铁' },
+  { preset: 'gold', label: '金' },
+  { preset: 'copper', label: '铜' },
+  { preset: 'glass', label: '玻璃' },
+  { preset: 'emissive', label: '自发光' },
+];
+function materialBoard(): Record<string, Ent> {
+  const out: Record<string, Ent> = {};
+  const n = MAT_SAMPLES.length;
+  const gap = 7, z = -40, baseTop = 4, sampleH = 5;
+  const x0 = -((n - 1) * gap) / 2;
+  // 承托长石台（顶在 y=baseTop）。样品靠场景暖阳 + 冷环境光 + IBL 环境贴图照亮（金属/玻璃反射来自 IBL）。
+  out['matboard-base'] = block(0, baseTop / 2, z, n * gap + 4, baseTop, 9, 0x455a64, 0x37474f);
+  MAT_SAMPLES.forEach((s, i) => {
+    const x = x0 + i * gap;
+    out[`mat-${s.preset}`] = {
+      Transform3D: { x, y: baseTop + sampleH / 2, z, rotY: 0.7853981633974483 }, // 转 45°·两面各吃一侧反射
+      Mesh3D: { shape: 'box', width: sampleH, height: sampleH, depth: sampleH, frontTint: 0xffffff, backTint: 0xffffff, edgeTint: 0xffffff },
+      Material3D: { preset: s.preset, ...(s.color !== undefined ? { color: s.color } : {}) },
+      WorldUI3D: { text: s.label, offsetY: sampleH / 2 + 3.5, size: 'xs', glow: true },
+    };
+  });
+  return out;
+}
+
 /** 盒庭样例蓝图：草地台 + 抬升石台（站 Toad）+ 金阶梯 + 板条箱 + 终点宝石 + 蘑菇 + 鹅卵石径 + 天空盒 + 可控角色。 */
 export function dioramaBlueprint(): WorldBlueprint {
   return {
@@ -102,8 +138,8 @@ export function dioramaBlueprint(): WorldBlueprint {
       // 距离雾（TA Phase 4）：远处柔化 + 盒庭纵深·雾色取天色（near/far 配 140² 大地图）。
       fog: { Fog3D: { color: 0xcfe9f7, near: 190, far: 520 } },
 
-      // 天空盒：蓝天 → 浅地平线 + 程序化白云缓慢飘动
-      sky: { Sky3D: { top: 0x4a90d9, bottom: 0xcfe9f7, clouds: true, cloudTint: 0xffffff, scroll: 1 } },
+      // 天空盒：蓝天 → 浅地平线 + 程序化白云缓慢飘动。env=IBL 强度（装中性影室环境贴图 → PBR 金属/玻璃才有反射成像）。
+      sky: { Sky3D: { top: 0x4a90d9, bottom: 0xcfe9f7, clouds: true, cloudTint: 0xffffff, scroll: 1, env: 0.55 } },
 
       // 可控角色（WASD/方向键 → Velocity → motion-apply 走动）：用 2D Transform，盒庭模式自动落到地面。
       // 导入式 glTF 小黄鸭真模型（替原方块蘑菇人·展示模型导入）。Transform.x→地面 X，Transform.y→地面 Z（景深）；
@@ -154,6 +190,9 @@ export function dioramaBlueprint(): WorldBlueprint {
 
       // 板条箱（PBR wood 木）
       crate: { ...block(6, 3, -10, 6, 6, 6, 0xa1887f, 0x795548), Material3D: { preset: 'wood' } },
+
+      // PBR 材质陈列台（北侧·「我怎么测材质」）：一排样品挂全部闭集预设 + 头顶标名，IBL 下对比金属/玻璃/介电。
+      ...materialBoard(),
 
       // 斜墙（P2·hull 凸多面体碰撞体 demo）：绕 Y 转 30° 的石板。render 斜摆 + hull 碰撞（小黄鸭走右侧撞它·
       // 产 Overlap3D）。开「碰撞体线框」菜单可见其真实斜置 hull 线框（白）——证明 SAT 按真朝向判定·非轴对齐 AABB。
