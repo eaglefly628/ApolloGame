@@ -28,9 +28,9 @@ const roll = (pool, rng) => pool.map((d) => d.faces[Math.floor(rng() * 6)]);
 // ── 敌人 ───────────────────────────────────────────────────────────────
 function makeFoe(g, roomInAct) {
   const t = tSumOf(g);
-  if (roomInAct === 0) return { conds: [{ k: 'sum', t: Math.round(t * 0.7) }], hp: Math.round(t * 2.4), counter: 'none', kind: '砸血' };
-  if (roomInAct === 1) return { conds: [{ k: 'sum', t }, { k: 'contains', v: 6 }], hp: Math.round(t * 1.1), counter: 'none', kind: 'pattern' };
-  return { conds: [{ k: 'sum', t: Math.round(t * 1.25) }, { k: 'pair' }], hp: Math.round(t * 2.2), counter: 'discardHighLow', kind: 'BOSS' };
+  if (roomInAct === 0) return { conds: [{ k: 'sum', t: Math.round(t * 0.7) }], hp: Math.round(t * 4.0), counter: 'none', kind: '砸血' };
+  if (roomInAct === 1) return { conds: [{ k: 'sum', t }, { k: 'contains', v: 6 }], hp: Math.round(t * 2.2), counter: 'none', kind: 'pattern' };
+  return { conds: [{ k: 'sum', t: Math.round(t * 1.25) }, { k: 'pair' }], hp: Math.round(t * 4.2), counter: 'discardHighLow', kind: 'BOSS' };
 }
 function disabledIdx(rolled, counter) {
   const dis = new Set();
@@ -48,6 +48,20 @@ function hasPair(dice) {
   return wilds >= 2;
 }
 const sumOf = (d) => d.reduce((s, r) => s + r.v, 0);
+const PATM = { baozi:4.0, four:3.5, full:3.0, straight:2.5, three:2.5, flush:2.0, twopair:2.0, pair:1.5, high:1.0 };
+function patMult(dice){
+  if(!dice.length) return 1.0;
+  const vc=new Map(), cc=new Map(); let w=0;
+  for(const r of dice){ if(r.el==='wild')w++; vc.set(r.v,(vc.get(r.v)||0)+1); if(r.el!=='wild')cc.set(r.el,(cc.get(r.el)||0)+1); }
+  const counts=[...vc.values()].sort((a,b)=>b-a); const maxSame=(counts[0]||0)+w; const pairs=counts.filter(c=>c>=2).length;
+  const maxColor=Math.max(0,...[...cc.values()])+w;
+  const uniq=[...new Set(dice.map(r=>r.v))].sort((a,b)=>a-b); let run=1,best=1; for(let i=1;i<uniq.length;i++){ if(uniq[i]===uniq[i-1]+1){run++;best=Math.max(best,run);} else run=1; }
+  if(maxSame>=5)return PATM.baozi; if(maxSame>=4)return PATM.four; if((counts[0]||0)>=3&&pairs>=2)return PATM.full;
+  if(best>=4)return PATM.straight; if(maxSame>=3)return PATM.three; if(maxColor>=4)return PATM.flush;
+  if(pairs>=2)return PATM.twopair; if(maxSame>=2)return PATM.pair; return PATM.high;
+}
+const dmgOf=(dice)=>Math.round(sumOf(dice)*patMult(dice));
+
 function meets(dice, conds) {
   return conds.every((c) => c.k === 'sum' ? sumOf(dice) >= c.t : c.k === 'contains' ? dice.some((r) => r.v === c.v) : hasPair(dice));
 }
@@ -63,7 +77,7 @@ function fight(pool, foe, rng) {
     while (!meets(usable, foe.conds) && rr > 0) {
       rr--; rolled = roll(pool, rng); const dis = disabledIdx(rolled, foe.counter); usable = rolled.filter((_, i) => !dis.has(i));
     }
-    if (meets(usable, foe.conds)) hp -= sumOf(usable);
+    if (meets(usable, foe.conds)) hp -= dmgOf(usable);
     else hearts_lost++;
   }
   return { killed: hp <= 0, hearts_lost, rounds };

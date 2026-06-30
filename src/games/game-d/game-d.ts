@@ -13,8 +13,8 @@ import type { Component } from '@engine/core/types.js';
 import { baseBlueprint, genRoom, roomMeta, ROOM_SPACING } from './rooms.js';
 import { GAME_D_ASSETS } from './assets.js';
 import {
-  ELEM_INFO, FIVE, plainDie, elemDie, heavyDie, wildDie, rollPool, makeFoe, counterDisabled, evalChallenge, handSum,
-  type Die, type RolledDie, type Foe, type Elem,
+  ELEM_INFO, FIVE, plainDie, elemDie, heavyDie, wildDie, rollPool, makeFoe, counterDisabled, evalChallenge, damageOf,
+  type Die, type RolledDie, type Foe,
 } from './combat.js';
 
 const SOLO_HEARTS = 6;
@@ -104,7 +104,8 @@ export function mount(container: HTMLElement): () => void {
       });
       const sel = [...S.selected].map((i) => S.rolled[i]!);
       const ev = evalChallenge(sel, S.foe.conds);
-      out.push({ type: 'Label', id: 'cb-prev', props: { text: sel.length ? `当前一手：总和 ${ev.sum}　${ev.met ? '✅ 满足 → 命中扣 ' + ev.sum + ' HP' : '⬜ 未满足门槛'}` : '点选骰子组一手（🚫=被反制禁用）', size: 'sm', color: ev.met ? 'ok' : (sel.length ? 'warn' : 'dim') } });
+      const d = damageOf(sel);
+      out.push({ type: 'Label', id: 'cb-prev', props: { text: sel.length ? `总和 ${d.sum} · 牌型 ${d.pat.name} ×${d.pat.mult}${ev.met ? ` → 命中扣 ${d.dmg} HP ✅` : ' · ⬜未达门槛'}` : '点选骰子组一手（🚫=被反制禁用·凑牌型翻倍伤害）', size: 'sm', color: ev.met ? 'ok' : (sel.length ? 'warn' : 'dim') } });
       out.push({
         type: 'Panel', id: 'cb-ctrl', props: { bare: true }, layout: { direction: 'row', gap: 8, justify: 'center' },
         children: [
@@ -161,12 +162,13 @@ export function mount(container: HTMLElement): () => void {
     const sel = [...S.selected].map((i) => S.rolled[i]!);
     const ev = evalChallenge(sel, S.foe.conds);
     if (ev.met) {
-      S.foe.hp -= ev.sum;
+      const d = damageOf(sel);
+      S.foe.hp -= d.dmg;
       if (S.foe.hp <= 0) {
         if (S.foe.isBoss) S.hearts = Math.min(SOLO_HEARTS, S.hearts + 1);
         S.reward = rewardChoices(); S.phase = 'reward'; render(); return;
       }
-      S.msg = `命中！扣 ${ev.sum}，敌 HP 剩 ${S.foe.hp}。再来一手`;
+      S.msg = `命中！${d.pat.name}×${d.pat.mult} 扣 ${d.dmg}，敌 HP 剩 ${S.foe.hp}。再来一手`;
       S.phase = 'roll'; S.rolled = []; S.selected.clear(); S.disabled.clear(); S.rerolls = REROLLS; render(); return;
     }
     // 未满足门槛 → 威胁

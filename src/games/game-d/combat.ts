@@ -101,3 +101,41 @@ export function evalChallenge(dice: RolledDie[], conds: Condition[]): { met: boo
   const results = conds.map((c) => ({ label: condLabel(c), ok: evalCond(dice, c) }));
   return { met: results.length > 0 && results.every((r) => r.ok), results, sum: handSum(dice) };
 }
+
+// ── 牌型乘子（player 的"乘法"·伤害 = 点数和 × 牌型倍率·creative-ideas #5）──
+export interface Pattern { name: string; mult: number; }
+const PAT: Record<string, Pattern> = {
+  baozi: { name: '豹子', mult: 4.0 }, four: { name: '四条', mult: 3.5 }, full: { name: '葫芦', mult: 3.0 },
+  straight: { name: '顺子', mult: 2.5 }, three: { name: '三条', mult: 2.5 }, flush: { name: '同色', mult: 2.0 },
+  twopair: { name: '两对', mult: 2.0 }, pair: { name: '一对', mult: 1.5 }, high: { name: '高牌', mult: 1.0 },
+};
+/** 检测一手的最高牌型（点数同点=对/三/四/豹·颜色同色=同色·连续=顺子·百搭顶色/顶点）。 */
+export function detectPattern(dice: RolledDie[]): Pattern {
+  if (dice.length === 0) return PAT.high!;
+  const valCount = new Map<number, number>(); const colCount = new Map<Elem, number>(); let wilds = 0;
+  for (const r of dice) {
+    if (r.el === 'wild') wilds++;
+    valCount.set(r.v, (valCount.get(r.v) ?? 0) + 1);
+    if (r.el !== 'wild') colCount.set(r.el, (colCount.get(r.el) ?? 0) + 1);
+  }
+  const counts = [...valCount.values()].sort((a, b) => b - a);
+  const maxSame = (counts[0] ?? 0) + wilds;                 // 百搭顶点凑同点
+  const pairs = counts.filter((c) => c >= 2).length;
+  const maxColor = Math.max(0, ...[...colCount.values()]) + wilds; // 百搭顶色凑同色
+  const uniq = [...new Set(dice.map((r) => r.v))].sort((a, b) => a - b);
+  let run = 1, bestRun = 1; for (let i = 1; i < uniq.length; i++) { if (uniq[i] === uniq[i - 1]! + 1) { run++; bestRun = Math.max(bestRun, run); } else run = 1; }
+  if (maxSame >= 5) return PAT.baozi!;
+  if (maxSame >= 4) return PAT.four!;
+  if (counts[0]! >= 3 && pairs >= 2) return PAT.full!;
+  if (bestRun >= 4) return PAT.straight!;
+  if (maxSame >= 3) return PAT.three!;
+  if (maxColor >= 4) return PAT.flush!;
+  if (pairs >= 2) return PAT.twopair!;
+  if (maxSame >= 2) return PAT.pair!;
+  return PAT.high!;
+}
+/** 一手伤害 = 点数和 × 牌型倍率。 */
+export function damageOf(dice: RolledDie[]): { dmg: number; pat: Pattern; sum: number } {
+  const sum = handSum(dice); const pat = detectPattern(dice);
+  return { dmg: Math.round(sum * pat.mult), pat, sum };
+}
