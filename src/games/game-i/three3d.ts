@@ -196,11 +196,11 @@ export function vfx3dBlueprint(): WorldBlueprint {
   const fountain = (x: number, z: number, color: number, speed: number): Ent => ({
     Transform3D: { x, y: 2, z },
     Vfx3D: {
-      rate: 70, lifetime: 1.6, lifeVar: 0.4, max: 220,
-      shape: 'cone', coneAngle: 0.35, speed, speedVar: speed * 0.3,
-      gravity: 11, drag: 0.1, size: 1.4,
-      sizeCurve: { keys: [{ t: 0, v: 0.4 }, { t: 0.25, v: 1 }, { t: 1, v: 0 }] },
-      colorGradient: { stops: [{ t: 0, color: 0xffffff, alpha: 1 }, { t: 0.4, color, alpha: 1 }, { t: 1, color, alpha: 0 }] },
+      rate: 55, lifetime: 1.5, lifeVar: 0.3, max: 180,
+      shape: 'cone', coneAngle: 0.28, speed, speedVar: speed * 0.25,
+      gravity: 12, drag: 0.08, size: 2.6, // 大粒子=清晰可辨（之前 1.4 太小、被 bloom 糊成雾）
+      sizeCurve: { keys: [{ t: 0, v: 0.5 }, { t: 0.2, v: 1 }, { t: 1, v: 0 }] },
+      colorGradient: { stops: [{ t: 0, color: 0xffffff, alpha: 1 }, { t: 0.35, color, alpha: 1 }, { t: 1, color, alpha: 0 }] },
       blend: 'add',
     },
   });
@@ -208,16 +208,93 @@ export function vfx3dBlueprint(): WorldBlueprint {
     capabilities: [transformCapability],
     entities: {
       ...sceneBase(),
-      // 暗暮天空 + 高 bloom 阈值：发光加色粒子在暗背景上才炸得出来（亮天空会被加色洗白）。
+      // 暗暮天空衬发光粒子；bloom 收紧（radius 0.3·strength 0.7·高阈值）→ 是「亮点」不是「雾」。
       sky: { Sky3D: { top: 0x0a0e1f, bottom: 0x241a33, clouds: false } },
-      sun: { Light3D: { kind: 'directional', color: 0x6a7fd0, intensity: 0.5, castShadow: true } },
-      fill: { Light3D: { kind: 'ambient', color: 0x303a5a, intensity: 0.5 } },
-      post: { Post3D: { bloom: { strength: 1.1, radius: 0.6, threshold: 0.86 } } },
-      'fx-gold': fountain(-16, 0, 0xffd86b, 15),
-      'fx-jade': fountain(0, -4, 0x6cf0d0, 18),
-      'fx-rose': fountain(16, 0, 0xff7ab0, 15),
+      sun: { Light3D: { kind: 'directional', color: 0x6a7fd0, intensity: 0.6, castShadow: true } },
+      fill: { Light3D: { kind: 'ambient', color: 0x2a3350, intensity: 0.55 } },
+      post: { Post3D: { bloom: { strength: 0.7, radius: 0.3, threshold: 0.82 }, aa: true } },
+      'fx-gold': fountain(-16, 0, 0xffd86b, 16),
+      'fx-jade': fountain(0, -4, 0x6cf0d0, 19),
+      'fx-rose': fountain(16, 0, 0xff7ab0, 16),
     },
   };
+}
+
+// ── ⑨ PBR 材质预设 Material3D（TA Phase 5）：一排盒各挂一个 PBR 预设（金/钢/铜/玻璃/木/岩/自发光）——
+//      金属反光、玻璃透射、哑光，全是数据选预设。叠 Post3D 调色(暖电影感) + 抗锯齿。
+export function material3dBlueprint(): WorldBlueprint {
+  const slab = (x: number, preset: string, color: number, extra: Record<string, unknown> = {}): Ent => ({
+    Transform3D: { x, y: 6, z: 0 },
+    Mesh3D: { shape: 'box', width: 9, height: 12, depth: 9, frontTint: color, backTint: color, edgeTint: color },
+    Material3D: { preset, ...extra },
+  });
+  return {
+    capabilities: [transformCapability],
+    entities: {
+      ...sceneBase(),
+      cam: { Camera3D: { yaw: 0.62, pitch: 0.34, distance: 110, pivotY: 6, fov: 38, pitchMin: 0.1, pitchMax: 1.4 } },
+      post: { Post3D: { grade: { exposure: 1.05, contrast: 1.08, saturation: 1.15, tint: 0xffe7c2 }, aa: true } },
+      // 两盏点光（暖/冷）贴近金属给镜面高光——纯金属无环境贴图会发暗，靠局部光打出金属光泽。
+      'pt-warm': { Light3D: { kind: 'point', color: 0xfff0d0, intensity: 90, range: 120, x: -20, y: 22, z: 26 } },
+      'pt-cool': { Light3D: { kind: 'point', color: 0xbfd6ff, intensity: 80, range: 120, x: 24, y: 20, z: 26 } },
+      // 金属用 metalness 覆盖压到 ~0.6：纯 metalness:1 无环境贴图(IBL)会发黑（渲染器缺口·已报 requests-3d）；
+      // 压一点让金属色显出来、展台可读。P3D 补 IBL 后可回纯预设。
+      'm-gold': slab(-40, 'gold', 0xffc64a, { metalness: 0.4, roughness: 0.3 }),
+      'm-steel': slab(-27, 'steel', 0xc2c6cc, { metalness: 0.45, roughness: 0.32 }),
+      'm-copper': slab(-14, 'copper', 0xc87f47, { metalness: 0.4, roughness: 0.34 }),
+      'm-glass': slab(-1, 'glass', 0x8fe9f0, { color: 0x8fe9f0 }),
+      'm-wood': slab(12, 'wood', 0x9c6b3f),
+      'm-rock': slab(25, 'rock', 0x8d8f92),
+      'm-emit': slab(38, 'emissive', 0x222222, { emissive: 0xffd86b, emissiveIntensity: 1.8 }),
+    },
+  };
+}
+
+// ── ⑪ 点光源 / 聚光灯 Light3D point·spot（TA Phase 2·动态局部光·可移动）：暗场里一盏移动暖点光 + 一盏冷聚光锥，
+//      把白盒打出彩色明暗。点光随实体 Transform3D 走（tween 扫动）；聚光有锥角/半影。叠 bloom 让光源发光。
+export function pointlight3dBlueprint(): WorldBlueprint {
+  const pad = (x: number, z: number, h: number): Ent => box(x, h / 2 - 2.5, z, 9, h, 9, 0xe8eaed, 0xf0f2f5);
+  return {
+    capabilities: [transformCapability, tweenCapability],
+    entities: {
+      ...sceneBase(),
+      sky: { Sky3D: { top: 0x080a14, bottom: 0x161a2a, clouds: false } },
+      sun: { Light3D: { kind: 'directional', color: 0x3a4364, intensity: 0.25, castShadow: true } }, // 极弱主光·让点光主导
+      fill: { Light3D: { kind: 'ambient', color: 0x141a2c, intensity: 0.5 } },
+      post: { Post3D: { bloom: { strength: 0.6, radius: 0.34, threshold: 0.8 }, aa: true } },
+      // 白盒阵（白底好显彩色光）。
+      'q1': pad(-16, -4, 12), 'q2': pad(0, 6, 16), 'q3': pad(16, -4, 10), 'q4': pad(0, -16, 8),
+      // 移动暖点光（挂 Transform3D·tween 横扫）。
+      'lamp-warm': {
+        Transform3D: { x: -22, y: 14, z: 6 },
+        Light3D: { kind: 'point', color: 0xff9a4a, intensity: 130, range: 95, decay: 2 },
+        Tween: { target: 'Transform3D.x', from: -22, to: 22, elapsed: 0, duration: 150, easing: 'easeInOut', done: false, loop: 'pingpong' },
+      },
+      // 冷聚光锥（高处朝下·有锥角半影）。
+      'lamp-spot': {
+        Transform3D: { x: 6, y: 34, z: -2 },
+        Light3D: { kind: 'spot', color: 0x5fc6ff, intensity: 160, range: 120, angle: 0.5, penumbra: 0.45, dirX: 0, dirY: -1, dirZ: 0.15 },
+      },
+    },
+  };
+}
+
+// ── ⑩ 距离雾 Fog3D（TA Phase 4）：一长列尖塔向远处退去、渐隐入雾——盒庭「装在玻璃盒里」的纵深。
+export function fog3dBlueprint(): WorldBlueprint {
+  const ent: Record<string, Ent> = {
+    ...sceneBase(),
+    cam: { Camera3D: { yaw: 0.0, pitch: 0.28, distance: 130, pivotX: 0, pivotY: 6, pivotZ: -40, fov: 46, pitchMin: 0.08, pitchMax: 1.3 } },
+    fog: { Fog3D: { color: 0xcfe9f7, near: 40, far: 210 } }, // 雾色取天际·近清晰远全雾
+    ground: box(0, -2.5, -60, 64, 5, 260, 0x6d4c41, 0x7cb342),
+  };
+  // 两列尖塔夹道向远处延伸（z 越负越远 → 渐隐入雾）。
+  for (let i = 0; i < 9; i++) {
+    const z = 10 - i * 26;
+    const h = 16 + (i % 3) * 6;
+    ent[`pl-L${i}`] = box(-22, h / 2 - 2.5, z, 8, h, 8, 0x9c6b3f, 0x6d4c41);
+    ent[`pl-R${i}`] = box(22, h / 2 - 2.5, z, 8, h, 8, 0x8d6e63, 0x5d4037);
+  }
+  return { capabilities: [transformCapability], entities: ent };
 }
 
 // ── ⑤ 3D 粒子（prefab→Mesh3D·复用 2D 库B 套路·ThreeRenderer 渲染）：定时引爆一圈小盒火花，平面放射 + 寿命自毁；叠泛光发光。

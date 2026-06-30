@@ -33,7 +33,7 @@ import { combatBlueprint } from './combat-lab.js';
 import { spawnBlueprint } from './spawn-lab.js';
 import { fxBlueprint } from './fx-lab.js';
 import { fsmBlueprint } from './fsm-lab.js';
-import { light3dBlueprint, post3dBlueprint, nav3dBlueprint, collide3dBlueprint, particle3dBlueprint, text3dBlueprint, ao3dBlueprint, vfx3dBlueprint } from './three3d.js';
+import { light3dBlueprint, post3dBlueprint, nav3dBlueprint, collide3dBlueprint, particle3dBlueprint, text3dBlueprint, ao3dBlueprint, vfx3dBlueprint, material3dBlueprint, fog3dBlueprint, pointlight3dBlueprint } from './three3d.js';
 
 // 渲染/仿真模块 → 蓝图 + 渲染后端（canvas/three）。进模块时宿主在 #sim-stage 上 init 引擎实时绘制。
 const SIM_MODULES: Record<string, { blueprint: () => WorldBlueprint; backend: 'canvas' | 'three'; debug?: 'nav' | 'collider' }> = {
@@ -49,6 +49,9 @@ const SIM_MODULES: Record<string, { blueprint: () => WorldBlueprint; backend: 'c
   'mod-3d-text': { blueprint: text3dBlueprint, backend: 'three' },        // 头顶 3D 文字 WorldUI3D
   'mod-3d-ao': { blueprint: ao3dBlueprint, backend: 'three' },            // 环境光遮蔽 Post3D.ao
   'mod-3d-vfx': { blueprint: vfx3dBlueprint, backend: 'three' },          // 数据驱动 3D 粒子 Vfx3D
+  'mod-3d-material': { blueprint: material3dBlueprint, backend: 'three' }, // PBR 材质预设 Material3D
+  'mod-3d-fog': { blueprint: fog3dBlueprint, backend: 'three' },           // 距离雾 Fog3D
+  'mod-3d-pointlight': { blueprint: pointlight3dBlueprint, backend: 'three' }, // 点光源/聚光灯 Light3D point·spot
   'mod-physics': { blueprint: physicsBlueprint, backend: 'canvas' },
   'mod-combat': { blueprint: combatBlueprint, backend: 'canvas' },
   'mod-spawn': { blueprint: spawnBlueprint, backend: 'canvas' },

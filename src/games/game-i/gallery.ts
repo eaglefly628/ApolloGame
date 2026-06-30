@@ -687,6 +687,9 @@ export const MODULES: ReadonlyArray<{ id: string; glyph: string; label: string; 
   { id: 'mod-3d-vfx', glyph: '🌟', label: '3D 粒子（Vfx3D）', desc: '数据驱动发射器 · 锥喷+重力+渐变', tone: 'normal' as const, dim: '3d' },
   { id: 'mod-3d-text', glyph: '🔤', label: '头顶 3D 文字', desc: 'WorldUI3D · 世界空间 UI 标签', tone: 'normal' as const, dim: '3d' },
   { id: 'mod-3d-ao', glyph: '🌑', label: '环境光遮蔽 AO', desc: 'Post3D.ao · 接触/缝隙压暗', tone: 'normal' as const, dim: '3d' },
+  { id: 'mod-3d-material', glyph: '🧱', label: 'PBR 材质', desc: 'Material3D 金/钢/玻璃 + 调色', tone: 'normal' as const, dim: '3d' },
+  { id: 'mod-3d-fog', glyph: '🌫', label: '距离雾', desc: 'Fog3D · 远处渐隐纵深', tone: 'normal' as const, dim: '3d' },
+  { id: 'mod-3d-pointlight', glyph: '🔦', label: '点光源 / 聚光灯', desc: 'Light3D point·spot · 动态局部光', tone: 'normal' as const, dim: '3d' },
 ];
 
 /**
@@ -1054,6 +1057,15 @@ function moduleBody(
     case 'mod-3d-ao': return buildSimStage('3dao', '🌑', '环境光遮蔽 · Post3D.ao（GTAO）',
       '一个 Post3D.ao 启 GTAO 地面真值环境光遮蔽：紧挨的盒堆在接触缝隙/墙根处被压暗 → 厚重「接地」的盒庭玩具感（关泛光以凸显 AO）。intensity/radius/scale 全是数据。',
       ['Post3D.ao', 'GTAO', '接触压暗', '盒庭质感']);
+    case 'mod-3d-material': return buildSimStage('3dmat', '🧱', 'PBR 材质预设 · Material3D',
+      '材质是数据：一排盒各挂一个 Material3D 预设——金/钢/铜（金属反光）、玻璃（透射折射）、木/岩（哑光）、自发光。再叠 Post3D 色彩分级（暖电影感·曝光/对比/饱和/色调）+ 抗锯齿。物件只选预设、引擎建物理材质。',
+      ['Material3D', 'PBR', 'grade 调色', 'aa']);
+    case 'mod-3d-fog': return buildSimStage('3dfog', '🌫', '距离雾 · Fog3D',
+      '一个 Fog3D（雾色取天际·near 清晰 far 全雾）：两列尖塔夹道向远处退去、渐隐入雾——盒庭「装在玻璃盒里」的纵深感。天空盒不受雾影响。color/near/far 三个数。',
+      ['Fog3D', '距离雾', '纵深', 'scene.fog']);
+    case 'mod-3d-pointlight': return buildSimStage('3dpl', '🔦', '点光源 / 聚光灯 · Light3D point·spot',
+      'TA Phase 2 动态局部光：暗场里一盏移动暖点光（挂 Transform3D·tween 横扫白盒阵）+ 一盏冷聚光锥（从高处朝下·有锥角/半影）。点光随实体走、按 range/decay 衰减；叠 bloom 让光源发光。',
+      ['Light3D·point', 'Light3D·spot', 'range/decay', '可移动']);
     case 'mod-physics': return buildSimStage('phys', '🟢', '运动与碰撞',
       'motion-apply（Velocity→Transform 运动学）+ overlap-detect（碰撞检测）+ collision-resolve（按质量推开=碰撞响应）。四物体相向运动、于中心相撞被推开。纯蓝图，无专属代码。',
       ['motion-apply', 'overlap-detect', 'collision-resolve']);

@@ -1,7 +1,7 @@
 // 3D 能力展台蓝图：纯数据加载 + tick 不抛；nav 蓝图真能寻路（追兵被 pathfind 写出位移）；粒子真生成。
 import { describe, it, expect } from 'vitest';
 import { Engine } from '../../runtime/engine.js';
-import { light3dBlueprint, post3dBlueprint, nav3dBlueprint, collide3dBlueprint, particle3dBlueprint, text3dBlueprint, ao3dBlueprint, vfx3dBlueprint } from './three3d.js';
+import { light3dBlueprint, post3dBlueprint, nav3dBlueprint, collide3dBlueprint, particle3dBlueprint, text3dBlueprint, ao3dBlueprint, vfx3dBlueprint, material3dBlueprint, fog3dBlueprint, pointlight3dBlueprint } from './three3d.js';
 
 function run(bp: ReturnType<typeof light3dBlueprint>, ticks: number): Engine {
   const e = new Engine();
@@ -11,10 +11,25 @@ function run(bp: ReturnType<typeof light3dBlueprint>, ticks: number): Engine {
 }
 
 describe('Game I · 3D 能力展台蓝图', () => {
-  it('八个蓝图都纯数据加载 + 长跑 tick 不抛错', () => {
-    for (const bp of [light3dBlueprint, post3dBlueprint, nav3dBlueprint, collide3dBlueprint, particle3dBlueprint, text3dBlueprint, ao3dBlueprint, vfx3dBlueprint]) {
+  it('十一个蓝图都纯数据加载 + 长跑 tick 不抛错', () => {
+    for (const bp of [light3dBlueprint, post3dBlueprint, nav3dBlueprint, collide3dBlueprint, particle3dBlueprint, text3dBlueprint, ao3dBlueprint, vfx3dBlueprint, material3dBlueprint, fog3dBlueprint, pointlight3dBlueprint]) {
       expect(() => run(bp(), 120)).not.toThrow();
     }
+  });
+
+  it('点光源/聚光灯蓝图含 2 盏动态局部光（point + spot·预算内）', () => {
+    const e = new Engine(); e.load(pointlight3dBlueprint());
+    const locals = e.world.query('Light3D')
+      .map(([id]) => e.world.getComponent(id, 'Light3D') as unknown as { kind: string })
+      .filter((l) => l.kind === 'point' || l.kind === 'spot');
+    expect(locals.length).toBe(2);
+  });
+
+  it('PBR 材质 / 距离雾组件在蓝图里', () => {
+    const m = new Engine(); m.load(material3dBlueprint());
+    expect(m.world.query('Material3D').length).toBe(7); // 7 个预设
+    const f = new Engine(); f.load(fog3dBlueprint());
+    expect(f.world.query('Fog3D').length).toBe(1);
   });
 
   it('新特性组件齐：WorldUI3D（头顶文字）/ Post3D.ao / Vfx3D 都在蓝图里', () => {
