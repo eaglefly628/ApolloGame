@@ -147,13 +147,13 @@ export function dioramaBlueprint(): WorldBlueprint {
       'toad-body': block(-12, 8.5, -8, 5, 5, 5, 0xfafafa, 0xe0e0e0),
       'toad-cap': block(-12, 12.5, -8, 7, 3, 7, 0xe53935, 0xc62828),
 
-      // 金阶梯（两级上行）+ 顶上的终点宝石（斜摆）
-      'step-1': block(8, 1.5, 6, 10, 3, 10, 0xffd54f, 0xffb300),
-      'step-2': block(15, 3.5, 9, 10, 3, 10, 0xffd54f, 0xffb300),
-      gem: block(16, 7.5, 9, 4, 4, 4, 0x4dd0e1, 0x26a69a, 0.6),
+      // 金阶梯（两级上行·PBR gold 金属）+ 顶上的终点宝石（glass 玻璃·TA Phase 5 材质示范）
+      'step-1': { ...block(8, 1.5, 6, 10, 3, 10, 0xffd54f, 0xffb300), Material3D: { preset: 'gold' } },
+      'step-2': { ...block(15, 3.5, 9, 10, 3, 10, 0xffd54f, 0xffb300), Material3D: { preset: 'gold' } },
+      gem: { ...block(16, 7.5, 9, 4, 4, 4, 0x4dd0e1, 0x26a69a, 0.6), Material3D: { preset: 'glass', color: 0x8fe9f0 } },
 
-      // 板条箱
-      crate: block(6, 3, -10, 6, 6, 6, 0xa1887f, 0x795548),
+      // 板条箱（PBR wood 木）
+      crate: { ...block(6, 3, -10, 6, 6, 6, 0xa1887f, 0x795548), Material3D: { preset: 'wood' } },
 
       // 斜墙（P2·hull 凸多面体碰撞体 demo）：绕 Y 转 30° 的石板。render 斜摆 + hull 碰撞（小黄鸭走右侧撞它·
       // 产 Overlap3D）。开「碰撞体线框」菜单可见其真实斜置 hull 线框（白）——证明 SAT 按真朝向判定·非轴对齐 AABB。
@@ -174,8 +174,8 @@ export function dioramaBlueprint(): WorldBlueprint {
       'rock-2': obstacle(-4, -18, 9, 5, 6, 0x9e9e9e, 0x616161),
       'rock-3': obstacle(-16, 4, 6, 5, 8, 0x9e9e9e, 0x616161),
       // 扩充区石柱（更多 nav 空洞 + 视觉填充·撒到 140² 外环）。
-      'pillar-1': obstacle(-48, -44, 7, 8, 7, 0x8d6e63, 0x5d4037),
-      'pillar-2': obstacle(46, -42, 7, 8, 7, 0x8d6e63, 0x5d4037),
+      'pillar-1': { ...obstacle(-48, -44, 7, 8, 7, 0x8d6e63, 0x5d4037), Material3D: { preset: 'steel' } }, // PBR 钢
+      'pillar-2': { ...obstacle(46, -42, 7, 8, 7, 0x8d6e63, 0x5d4037), Material3D: { preset: 'copper' } }, // PBR 铜
       'pillar-3': obstacle(54, 18, 7, 8, 7, 0x8d6e63, 0x5d4037),
       'pillar-4': obstacle(-54, 28, 7, 8, 7, 0x8d6e63, 0x5d4037),
       'pillar-5': obstacle(30, 56, 7, 8, 7, 0x8d6e63, 0x5d4037),

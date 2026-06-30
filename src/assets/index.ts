@@ -20,6 +20,7 @@ export { AssetManager, StubAssetLoader } from './asset-manager.js';
 export { ftpFrames, ftpToAtlasEntry, mergeAtlasIntoIndex, normalizeFrameName, type FtpAtlasJson } from './pack-atlas.js';
 export { ImageAssetLoader, isImageHandle, type ImageAssetHandle } from './image-loader.js';
 export { ModelAssetLoader, isModelHandle } from './model-loader.js';
+export { PBR_MATERIALS, resolvePbr, type PbrMaterialDef, type PbrPreset, type PbrOverrides } from './pbr-materials.js';
 export {
   parseAssetIndex,
   pendingAssets,

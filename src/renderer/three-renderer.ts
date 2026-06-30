@@ -1,6 +1,6 @@
 import * as THREE from 'three';
 import type { IWorld, RendererBackend } from '@engine/core/types.js';
-import type { Mesh3D, Sky3D, Camera3D, Fog3D } from '@engine/protocol/components.js';
+import type { Mesh3D, Sky3D, Camera3D, Fog3D, Material3D } from '@engine/protocol/components.js';
 import type { AssetManager } from '@assets/index.js';
 import { isImageHandle } from '@assets/index.js';
 import { getCamera3D, getSky3D, getLights3D, getPost3D, getFog3D } from '@engine/protocol/camera-view.js';
@@ -10,6 +10,7 @@ import {
   transform3dPose, groundPose, poseBounds3D, bounds3DCenter, bounds3DExtent, fitDistance3D,
 } from './three-projection.js';
 import { mesh3dPose, applyPose, buildMesh3D, buildGeometry, buildSkyTexture, disposeMesh } from './three/geometry.js';
+import { buildPbrMesh3D, pbrSig } from './three/material.js';
 import { hashPoses, camSig, postSig } from './three/stats.js';
 import { LightRig } from './three/lights.js';
 import { PostPipeline } from './three/post.js';
@@ -154,13 +155,16 @@ export class ThreeRenderer implements RendererBackend {
         }
         continue;
       }
-      // 3D 物件（Mesh3D）：不透明按视觉签名归批（W1-A 实例化）；透明(alpha<1)走单 mesh fallback。
+      // 3D 物件（Mesh3D）：有 Material3D → PBR 单 mesh（特征物件）；否则不透明归批实例化、透明走 fallback。
       if (r.mesh3d) {
         const pose = mesh3dPose(r, r.mesh3d, cam3d, this.zStep);
         poses.push(pose);
         seen.add(r.entityId);
         if (r.entityId === followTarget) followPose = pose;
-        if ((r.color?.alpha ?? 1) >= 1) {
+        if (r.material3d) {
+          const mesh = this.ensurePbrMesh(r, r.mesh3d, r.material3d);
+          applyPose(mesh, pose);
+        } else if ((r.color?.alpha ?? 1) >= 1) {
           const key = mesh3dBatchKey(r.mesh3d);
           let g = instGroups.get(key);
           if (!g) { g = []; instGroups.set(key, g); }
@@ -362,6 +366,19 @@ export class ThreeRenderer implements RendererBackend {
     if (prev && this.modeOf.get(r.entityId) === mode) return prev;
     if (prev) { this.scene.remove(prev); disposeMesh(prev); }
     const mesh = buildMesh3D(m);
+    this.meshes.set(r.entityId, mesh);
+    this.modeOf.set(r.entityId, mode);
+    this.scene.add(mesh);
+    return mesh;
+  }
+
+  // PBR 单 mesh（Material3D·TA Phase 5）：按材质签名池管理（preset/覆盖/形状变才重建）。与哑光 fallback 共用 meshes 池。
+  private ensurePbrMesh(r: Renderable, m: Mesh3D, mat: Material3D): THREE.Mesh {
+    const mode = pbrSig(m, mat);
+    const prev = this.meshes.get(r.entityId);
+    if (prev && this.modeOf.get(r.entityId) === mode) return prev;
+    if (prev) { this.scene.remove(prev); disposeMesh(prev); }
+    const mesh = buildPbrMesh3D(m, mat);
     this.meshes.set(r.entityId, mesh);
     this.modeOf.set(r.entityId, mode);
     this.scene.add(mesh);

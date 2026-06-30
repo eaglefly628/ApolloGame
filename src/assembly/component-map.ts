@@ -47,6 +47,7 @@ import type {
   Light3D,
   Mass,
   MatchBoard,
+  Material3D,
   MergeRule,
   Mesh3D,
   Model3D,
@@ -152,6 +153,7 @@ export interface ComponentDataMap {
   Light3D: Omit<Light3D, 'type'>;
   Mass: Omit<Mass, 'type'>;
   MatchBoard: Omit<MatchBoard, 'type'>;
+  Material3D: Omit<Material3D, 'type'>;
   MergeRule: Omit<MergeRule, 'type'>;
   Mesh3D: Omit<Mesh3D, 'type'>;
   Model3D: Omit<Model3D, 'type'>;

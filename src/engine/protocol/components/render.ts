@@ -166,6 +166,20 @@ export interface Post3D extends Component {
   aa?: boolean;
 }
 
+// ── Material3D（render-only·TA Phase 5）── 物件 PBR 材质：从**封闭预设集**（assets/pbr-materials）选一种 + 微调。
+// preset=预设名（matte/steel/gold/glass/rock/dirt/wood…·闭集·拼错回退 matte）；可覆盖 color/roughness/metalness/emissive。
+// 挂在 Mesh3D 实体上 → 渲染器用物理材质渲（金属反光/玻璃透射/岩石哑光…）。不进 hash。带 Material3D 的物件走单 mesh
+// （不进哑光实例化批）：特征物件用·量大同款仍用默认哑光实例化。
+export interface Material3D extends Component {
+  readonly type: 'Material3D';
+  preset: string; // PBR 预设名（闭集·见 assets/pbr-materials）
+  color?: number; // 覆盖基色 0xRRGGBB
+  roughness?: number;
+  metalness?: number;
+  emissive?: number;
+  emissiveIntensity?: number;
+}
+
 // ── Fog3D（render-only·TA Phase 4）── 距离雾（scene.fog 线性）：远处柔化 + 盒庭「装在玻璃盒里」的纵深。
 // color=雾色(常取天色)·near=起雾相机距离·far=全雾距离。挂一个即开；天空盒材质 fog:false 不受影响。
 export interface Fog3D extends Component {
