@@ -138,11 +138,15 @@ export function buildSkyTexture(sky: Sky3D): THREE.CanvasTexture {
   return tex;
 }
 
-// 释放单 mesh 的几何 + 材质。
+// 释放单 mesh 的几何 + 材质（含程序化 normal/roughness 贴图·这些是逐 mesh 生成·非共享缓存）。
 export function disposeMesh(mesh: THREE.Mesh): void {
   mesh.geometry.dispose();
   const m = mesh.material;
-  (Array.isArray(m) ? m : [m]).forEach((x) => x.dispose());
+  (Array.isArray(m) ? m : [m]).forEach((x) => {
+    const sm = x as THREE.MeshStandardMaterial;
+    sm.normalMap?.dispose(); sm.roughnessMap?.dispose(); // 程序化表面贴图（surface-tex 生成·随 mesh 释放）
+    x.dispose();
+  });
 }
 
 // 释放整棵模型树（模板用）：遍历所有 Mesh 释放几何 + 材质。clone 实例不走此函数（几何共享·只释放实例材质）。

@@ -6,6 +6,28 @@
 
 ---
 
+## REQ-3D-程序化 normal/roughness 贴图 · [2026-06-30] · owner（选「程序化生成」） → P3D（TA Phase 5） · status: **✅ done（P3D 2026-06-30·已推）** · 类型: 渲染能力补全（PBR 表面细节·零美术文件）
+
+> **owner 选型**：normal/roughness 走**程序化生成**（非美术贴图资产）——同「天空盒按 Sky3D 数据程序化生成纹理」先例·零美术管线依赖·弱 LLM 能填参数。
+>
+> **✅ 落地（全 render-only·P3D 渲染线域）**：
+> - **数据** `Material3D.surface?: SurfaceDetail`（`render.ts`·render-only·不进 hash）：闭集 `pattern`('bumps'|'noise'|'scratches') + `tiles`/`normal`/`rough`/`scale` 标量。
+> - **生成器** `renderer/three/surface-tex.ts`：`buildSurfaceMaps` 据参数**确定性**生成 normal + roughness `DataTexture`（128²·value-noise/fbm/sin·无随机 → 同参数同图·稳定不闪）。法线由高度场环绕中央差分求（平铺无缝）；roughness 凸光凹哑×材质 base。线性数据贴图（非 sRGB）。
+> - **接入** `material.ts`：`buildPbrMaterial(def, surface?)` 挂 `normalMap`/`normalScale`(=surface.normal·运行时可调不重生)/`roughnessMap`；`pbrSig` 纳入 surface；`disposeMesh` 释放生成贴图。
+> - **demo**：陈列台给岩石(noise 凹凸)/土/木(scratches 木纹)/钢(拉丝)/金(bumps 锤打) 挂 surface → 截图明显浮雕，无 surface 的(哑光/塑料/铁/铜/玻璃)仍光滑。
+> - 测试 `surface-tex.test`(4·尺寸/wrap/repeat·法线 Z 朝外·确定性逐字节·bumps 有浮雕)。tsc+vitest(1972)+build 全绿。
+> - **⬜ 待续**：法线强度 `normal` 现走 normalScale（运行时调）；要更多图案（grid/voronoi 砖纹）或真实贴图按 key 加载（标准 PBR 工作流）按需再加。
+
+---
+
+## REQ-3D-TODO-真物理模拟（色子/表现物理） · [2026-06-30] · owner（提 TODO） → P3D · status: **📋 TODO（待排期·owner 言明非现在）** · 类型: render-only 表现能力（刚体物理）
+
+> **owner 提 TODO（2026-06-30·非现在做）**：要做**色子物理模拟 / 真物理碰撞模拟**——**主要为表现**（滚色子 → 读朝上点数·或别的视觉用途），**不为同步**。owner 明确：用它时**不需要两边一致**（结果可能本就一致·只是画到色子面/别处）；若要游戏一致性就单机。
+>
+> **架构初判（P3D·待正式排期）**：这是 **render-only 表现物理**——落在「render-only 自由区」（无确定性枷锁·同 VfxSystem 可用 time/random/三角）。**不进 hash·不进 sim**。形态候选：① 轻量自写刚体积分器（盒子 + 地面 + 重力/恢复/角动量·够色子翻滚）；② 引入 `cannon-es`/`rapier`（成熟但加依赖）。数据驱动表达：render-only `RigidBody3D` 组件（质量/恢复/初速/角速）+ 渲染侧物理子系统每帧推进 → 写 Transform3D（render-only）→ 结果可读（朝上面）。**先做轻量自写**（盒庭色子够·避免重依赖）。**排期：在「关卡加载」之后**（owner 当前优先级：① 程序化贴图 ✅ → ② 关卡加载 → 后续）。
+
+---
+
 ## REQ-3D-关卡重构「永远追逐」+ 杂项（去腐/大字/Toggle 绕过） · [2026-06-30] · owner → P3D（Game Z 域） · status: **✅ v1 done（P3D 2026-06-30·已推）** · 类型: 关卡数据重构 + 体验修
 
 > **owner 拍板（2026-06-30·多条合并）**：把 game-z 关卡重设成「**永远追逐**」——鸭子 AI 在前面自动跑、追兵在后追逐、一切动态；缩小场景、去掉低画质绿尖塔林、材质陈列台字号放大；并复诉「所有开关型 UI 视觉点击不变」的 bug。

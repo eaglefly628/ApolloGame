@@ -179,6 +179,17 @@ export interface Material3D extends Component {
   metalness?: number;
   emissive?: number;
   emissiveIntensity?: number;
+  surface?: SurfaceDetail; // 程序化表面细节（normal/roughness 贴图·渲染器据参数生成·见下）
+}
+
+// 程序化表面细节（render-only·TA Phase 5）：渲染器据参数生成 normal + roughness 贴图（DataTexture）—— **不需美术贴图文件**，
+// 闭集 pattern + 几个标量（弱 LLM 能填）。同「天空盒按 Sky3D 数据程序化生成纹理」先例。red 线：render-only·不进 hash。
+export interface SurfaceDetail {
+  pattern: 'bumps' | 'noise' | 'scratches'; // 凸点/噪声/划痕（闭集程序化图案）
+  tiles?: number; // UV 重复次数（缺省 3·越大纹理越密）
+  normal?: number; // 法线强度（→ material.normalScale·缺省 1·0=平）
+  rough?: number; // 粗糙度起伏幅度 0..1（凸处更光/凹处更哑·缺省 0.3）
+  scale?: number; // 特征频率（缺省 1·越大颗粒越细）
 }
 
 // ── Fog3D（render-only·TA Phase 4）── 距离雾（scene.fog 线性）：远处柔化 + 盒庭「装在玻璃盒里」的纵深。

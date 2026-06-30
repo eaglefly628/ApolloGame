@@ -40,15 +40,17 @@ function obstacle(x: number, z: number, w: number, h: number, d: number, top: nu
 // ── PBR 材质陈列台（TA Phase 5·「我怎么测材质」）──────────────────────────────────────────────
 // 一排**材质球**，每球挂一种闭集预设 + 头顶飘字标名（放大字号），摆在北侧独立石台上、IBL 环境反射照亮，
 // 让金属能照出反射、玻璃能透光 → 一眼对比所有材质。纯数据：样品 = Mesh3D sphere + Material3D{preset}。
-const MAT_SAMPLES: { preset: string; label: string; color?: number }[] = [
+// surface=程序化 normal/roughness 贴图（渲染器据参数生成·零美术文件）：给岩石/钢/金/木挂表面起伏，一眼看出法线/粗糙图效果。
+type SD = { pattern: 'bumps' | 'noise' | 'scratches'; tiles?: number; normal?: number; rough?: number; scale?: number };
+const MAT_SAMPLES: { preset: string; label: string; color?: number; surface?: SD }[] = [
   { preset: 'matte', label: '哑光', color: 0xcccccc },
   { preset: 'plastic', label: '塑料', color: 0xcc4444 },
-  { preset: 'rock', label: '岩石' },
-  { preset: 'dirt', label: '土' },
-  { preset: 'wood', label: '木' },
-  { preset: 'steel', label: '钢' },
+  { preset: 'rock', label: '岩石', surface: { pattern: 'noise', tiles: 2, normal: 1.3, rough: 0.5, scale: 1.3 } }, // 凹凸石面
+  { preset: 'dirt', label: '土', surface: { pattern: 'noise', tiles: 3, normal: 0.9, rough: 0.4 } },
+  { preset: 'wood', label: '木', surface: { pattern: 'scratches', tiles: 2, normal: 0.7, rough: 0.4, scale: 1.2 } }, // 木纹
+  { preset: 'steel', label: '钢', surface: { pattern: 'scratches', tiles: 3, normal: 0.5, rough: 0.6 } }, // 拉丝金属
   { preset: 'iron', label: '铁' },
-  { preset: 'gold', label: '金' },
+  { preset: 'gold', label: '金', surface: { pattern: 'bumps', tiles: 5, normal: 0.5, rough: 0.3 } }, // 锤打金面
   { preset: 'copper', label: '铜' },
   { preset: 'glass', label: '玻璃' },
   { preset: 'emissive', label: '自发光' },
@@ -65,7 +67,7 @@ function materialBoard(): Record<string, Ent> {
     out[`mat-${s.preset}`] = {
       Transform3D: { x, y: baseTop + dia / 2, z }, // 球坐在石台上（中心 = 台顶 + 半径）
       Mesh3D: { shape: 'sphere', width: dia, height: dia, frontTint: 0xffffff },
-      Material3D: { preset: s.preset, ...(s.color !== undefined ? { color: s.color } : {}) },
+      Material3D: { preset: s.preset, ...(s.color !== undefined ? { color: s.color } : {}), ...(s.surface ? { surface: s.surface } : {}) },
       WorldUI3D: { text: s.label, offsetY: dia / 2 + 4, size: 'md', glow: true }, // 字号放大 xs→md（owner「字太小」）
     };
   });
