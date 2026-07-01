@@ -62,6 +62,20 @@ function block(x: number, y: number, z: number, w: number, h: number, d: number,
  * 低矮围墙框住地台、前墙（+Z 端）留中央门洞通向上一间、中心焦点 + 散落"类型色块"占位美术。
  * BOSS 间更大、中心立一座发光巨块。index 0 额外放一只 showcase 小黄鸭（证明模型导入能力）。
  */
+/** 四角火盆（立柱 + 亮暖火盆·bloom 自发光）——微缩盒庭的暖光与纵向层次。 */
+function cornerBraziers(P: string, baseZ: number, hw: number, hd: number, pillar: number, pillarSide: number, hot: number, hotSide: number): Record<string, Ent> {
+  const out: Record<string, Ent> = {};
+  const xs = [-(hw + 1.5), hw + 1.5], zs = [-(hd + 1.5), hd + 1.5];
+  let n = 0;
+  for (const x of xs) for (const z of zs) {
+    const k = `${P}-bra${n++}`;
+    out[`${k}-pil`] = block(x, 2.2, baseZ + z, 1, 4.4, 1, pillar, pillarSide);
+    out[`${k}-bowl`] = block(x, 4.7, baseZ + z, 1.5, 0.9, 1.5, hot, hotSide);
+    out[`${k}-orb`] = block(x, 5.4, baseZ + z, 1.05, 1.05, 1.05, hot, hot);
+  }
+  return out;
+}
+
 export function genRoom(index: number): Record<string, Ent> {
   const m = roomMeta(index);
   const t = m.theme;
@@ -73,22 +87,40 @@ export function genRoom(index: number): Record<string, Ent> {
   const segW = hw - 4.5; // 前墙门洞两侧段宽（中央留 9 宽门）
   const segCx = (hw + 4.5) / 2;
 
+  const darken = (c: number, k: number): number => {
+    const r = Math.max(0, Math.round(((c >> 16) & 0xff) * (1 - k)));
+    const g = Math.max(0, Math.round(((c >> 8) & 0xff) * (1 - k)));
+    const b = Math.max(0, Math.round((c & 0xff) * (1 - k)));
+    return (r << 16) | (g << 8) | b;
+  };
+  const BRAZIER = 0xffc79a, BRAZIER_HOT = 0xff8a3c, LANTERN = 0xffe2b0; // 亮暖色·经 bloom 自发光
+
   const out: Record<string, Ent> = {
+    // ── 浮空微缩盒庭：分层基座（往下收窄的两级台，像漂浮模型）──
+    [`${P}-plinth1`]: block(0, -4.6, baseZ, hw * 2 + 6, 3, hd * 2 + 6, darken(t.floorSide, 0.18), darken(t.floorSide, 0.34)),
+    [`${P}-plinth2`]: block(0, -8, baseZ, hw * 2 + 1.5, 3.5, hd * 2 + 1.5, darken(t.floorSide, 0.42), darken(t.floorSide, 0.56)),
     // 竞技场地台（顶在 y=0）
     [`${P}-floor`]: block(0, -2, baseZ, hw * 2, 4, hd * 2, t.floorTop, t.floorSide),
     // 三面围墙（左/右/后=入口侧）
     [`${P}-wall-l`]: block(-hw, 1.5, baseZ, 1.5, 5, hd * 2, t.wall, t.floorSide),
     [`${P}-wall-r`]: block(hw, 1.5, baseZ, 1.5, 5, hd * 2, t.wall, t.floorSide),
     [`${P}-wall-back`]: block(0, 1.5, baseZ - hd, hw * 2, 5, 1.5, t.wall, t.floorSide),
-    // 前墙留中央门洞（+Z 端·通向上一间·发光门楣）
+    // 前墙留中央门洞（+Z 端·通向上一间·发光门楣 + 门内符文光幕）
     [`${P}-wall-fl`]: block(-segCx, 1.5, baseZ + hd, segW, 5, 1.5, t.wall, t.floorSide),
     [`${P}-wall-fr`]: block(segCx, 1.5, baseZ + hd, segW, 5, 1.5, t.wall, t.floorSide),
     [`${P}-door-top`]: block(0, 5.5, baseZ + hd, 9, 2, 1.5, t.accent, t.wall),
+    [`${P}-portal`]: block(0, 2.6, baseZ + hd - 0.2, 8, 5, 0.5, t.accent, t.accent),
     // 通向上一间的短走廊（穿过门洞·暗示"还有更上面"）
     [`${P}-corridor`]: block(0, -2, baseZ + ROOM_SPACING / 2, 9, 4, ROOM_SPACING - hd - HD, t.floorTop, t.floorSide),
-    // 散落"类型色块"占位美术素材（未来换贴图·先靠颜色区分类型）
-    [`${P}-t1`]: block(-7, 0.5, baseZ - 6, 2.4, 1, 2.4, t.accent, t.floorSide),
-    [`${P}-t2`]: block(7.5, 0.5, baseZ + 5, 2.4, 1, 2.4, t.wall, t.floorSide),
+    // ── 四角发光火盆（暖光 + 纵向层次·微缩盒庭标志）──
+    ...cornerBraziers(P, baseZ, hw, hd, t.wall, t.floorSide, BRAZIER, BRAZIER_HOT),
+    // ── 上方漂浮灯笼（bloom 自发光小点）──
+    [`${P}-lan1`]: block(-8, 10.5, baseZ - 6, 1, 1, 1, LANTERN, LANTERN),
+    [`${P}-lan2`]: block(9, 11, baseZ + 3, 1, 1, 1, LANTERN, LANTERN),
+    [`${P}-lan3`]: block(0, 12, baseZ - 9, 1, 1, 1, LANTERN, LANTERN),
+    // 散落元素色块（占位美术·靠颜色区分类型）
+    [`${P}-t1`]: block(-7, 0.9, baseZ - 6, 1.4, 1.4, 1.4, t.accent, t.floorSide, 0.6),
+    [`${P}-t2`]: block(7.5, 0.9, baseZ + 5, 1.4, 1.4, 1.4, t.wall, t.floorSide, 0.6),
   };
 
   if (boss) {
@@ -116,11 +148,16 @@ export function baseBlueprint(): WorldBlueprint {
   return {
     capabilities: [],
     entities: {
-      cam: { Camera3D: { yaw: Math.PI, pitch: 1.02, projection: 'ortho', orthoSize: 17, distance: 240, near: 1, far: 900, pivotX: 0, pivotY: 1.5, pivotZ: 0 } },
-      sun: { Light3D: { kind: 'directional', color: 0xfff1d6, intensity: 1.7, dirX: -0.5, dirY: -1, dirZ: -0.35, castShadow: true } },
-      fill: { Light3D: { kind: 'ambient', color: 0xbcd2ff, intensity: 0.5 } },
-      post: { Post3D: { tiltShift: { focus: 0.56, intensity: 2.6 }, bloom: { strength: 0.5, radius: 0.6, threshold: 0.75 } } },
-      sky: { Sky3D: { top: 0x22305e, bottom: 0x6f83b4, clouds: true, cloudTint: 0xc7d4f0, scroll: 0.6 } },
+      // 近俯视 ortho·框紧一间（复刻原型 cam pos(0,12,7.8) lookAt 原点·fr≈7）。orthoSize 收到 13 让盒庭填满中段。
+      cam: { Camera3D: { yaw: Math.PI, pitch: 0.98, projection: 'ortho', orthoSize: 13, distance: 240, near: 1, far: 900, pivotX: 0, pivotY: 1.5, pivotZ: 0 } },
+      // 暖主光（key·带影）+ 冷补光 + 柔和环境——复刻原型 ACES 通透暖调、不暗黑。
+      sun: { Light3D: { kind: 'directional', color: 0xfff0d8, intensity: 1.55, dirX: -0.5, dirY: -1, dirZ: -0.4, castShadow: true } },
+      fillDir: { Light3D: { kind: 'directional', color: 0x8f9cff, intensity: 0.45, dirX: 0.5, dirY: -0.4, dirZ: 0.4 } },
+      amb: { Light3D: { kind: 'ambient', color: 0xf2ece0, intensity: 0.62 } },
+      // 移轴景深（上下渐糊·微缩模型感）+ 轻泛光（发光物自发光）——设计案核心氛围。
+      post: { Post3D: { tiltShift: { focus: 0.54, intensity: 1.7 }, bloom: { strength: 0.72, radius: 0.72, threshold: 0.6 } } },
+      // 明快浅暖天穹（微缩盒庭漂在光里·非暗黑）。
+      sky: { Sky3D: { top: 0xd7dbe4, bottom: 0xece7de, clouds: false, cloudTint: 0xe8ecf4, scroll: 0.3 } },
     },
   };
 }

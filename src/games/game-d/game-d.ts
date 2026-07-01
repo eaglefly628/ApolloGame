@@ -90,7 +90,8 @@ function loadoutPattern(defs: DieDef[]): { name: string; pips: string; note: str
 
 export function mount(container: HTMLElement): () => void {
   const wrapper = document.createElement('div');
-  wrapper.style.cssText = 'position:relative;width:100%;height:100%;display:flex;align-items:center;justify-content:center;background:#0a0716;overflow:hidden';
+  // 微缩盒庭 = 明快通透（复刻美术案：不暗黑·温暖泛光）——底衬做成柔和浅暖灰，让浮空盒庭「漂在光里」。
+  wrapper.style.cssText = 'position:relative;width:100%;height:100%;display:flex;align-items:center;justify-content:center;background:radial-gradient(120% 100% at 50% 38%,#eceae4 0%,#dcd9d4 60%,#c8c4c0 100%);overflow:hidden';
   const stage = document.createElement('div');
   stage.style.cssText = 'position:relative;line-height:0';
   wrapper.appendChild(stage);
@@ -104,7 +105,7 @@ export function mount(container: HTMLElement): () => void {
 
   const engine = new Engine();
   engine.load(baseBlueprint());
-  const renderer = new ThreeRenderer({ width: w, height: h, background: 0x0a0716, assets });
+  const renderer = new ThreeRenderer({ width: w, height: h, background: 0xe7e3dc, assets });
   engine.attachRenderer(renderer, stage);
 
   // 3D 房间背景：流式 + 相机往上 dolly

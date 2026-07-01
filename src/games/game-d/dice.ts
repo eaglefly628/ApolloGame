@@ -43,22 +43,22 @@ export const sizeCn = (s: DieSize): string => SIZE_CN[s];
 
 // ── 骰库 catalog（复刻屏③/③b 出现的全部品种）─────────────────────────────────
 export const DICE_CATALOG: DieDef[] = [
-  // 元素骰：六色，朴实 [1..6]
-  { defId: 'lieyan', name: '烈焰骰', el: 'huo', size: 'mid', sides: 6, rarity: 2, tags: [], group: 'element', faces: faces([1, 2, 3, 4, 5, 6], 'huo'), ability: '六面皆火 · 凑火元素与火焰牌型的基石。', flavor: '「焰心未冷，途未尽。」' },
-  { defId: 'hanquan', name: '寒泉骰', el: 'shui', size: 'mid', sides: 6, rarity: 2, tags: [], group: 'element', faces: faces([1, 2, 3, 4, 5, 6], 'shui'), ability: '六面皆水 · 稳健的水元素来源。', flavor: '「静水流深，命数自渡。」' },
-  { defId: 'tengman', name: '藤蔓骰', el: 'mu', size: 'mid', sides: 6, rarity: 2, tags: [], group: 'element', faces: faces([1, 2, 3, 4, 5, 6], 'mu'), ability: '六面皆木 · 唤醒藤蔓之力的关键。', flavor: '「根脉缠绕，向光而生。」' },
-  { defId: 'jinglei', name: '惊雷骰', el: 'lei', size: 'mid', sides: 6, rarity: 3, tags: [], group: 'element', faces: faces([1, 2, 3, 4, 5, 6], 'lei'), ability: '六面皆雷 · 雷元素的高点输出。', flavor: '「一瞬裂空，命运改写。」' },
-  { defId: 'qingfeng', name: '轻风骰', el: 'feng', size: 'small', sides: 6, rarity: 1, tags: [], group: 'element', faces: faces([1, 2, 3, 4, 5, 6], 'feng'), ability: '小巧的风元素骰 · 占位少、好携带。', flavor: '「风过无痕，却已改向。」' },
-  { defId: 'youming', name: '幽冥骰', el: 'an', size: 'mid', sides: 6, rarity: 3, tags: [], group: 'element', faces: faces([1, 2, 3, 4, 5, 6], 'an'), ability: '六面皆暗 · 暗渊之力的来源。', flavor: '「凝视深渊，深渊掷回。」' },
+  // 元素骰：六色，朴实 [1..6]（ability/flavor 复刻原型 DICE 表原文）
+  { defId: 'lieyan', name: '烈焰骰', el: 'huo', size: 'mid', sides: 6, rarity: 2, tags: [], group: 'element', faces: faces([1, 2, 3, 4, 5, 6], 'huo'), ability: '最朴素的火元素骰', flavor: '塔底铁匠铺最常见的货色。' },
+  { defId: 'hanquan', name: '寒泉骰', el: 'shui', size: 'mid', sides: 6, rarity: 2, tags: [], group: 'element', faces: faces([1, 2, 3, 4, 5, 6], 'shui'), ability: '稳定的水元素来源', flavor: '触手生凉，掷地有回声。' },
+  { defId: 'tengman', name: '藤蔓骰', el: 'mu', size: 'mid', sides: 6, rarity: 2, tags: [], group: 'element', faces: faces([1, 2, 3, 4, 5, 6], 'mu'), ability: '稳定的木元素来源', flavor: '骰身缠着会生长的活藤。' },
+  { defId: 'jinglei', name: '惊雷骰', el: 'lei', size: 'mid', sides: 6, rarity: 3, tags: [], group: 'element', faces: faces([1, 2, 3, 4, 5, 6], 'lei'), ability: '雷元素 · 偏高点数', flavor: '掷出时噼啪作响。' },
+  { defId: 'qingfeng', name: '轻风骰', el: 'feng', size: 'small', sides: 6, rarity: 1, tags: ['小型'], group: 'element', faces: faces([1, 2, 3, 4, 5, 6], 'feng'), ability: '小型 · 消耗低、好凑数', flavor: '轻得几乎吹得走。' },
+  { defId: 'youming', name: '幽冥骰', el: 'an', size: 'mid', sides: 6, rarity: 3, tags: [], group: 'element', faces: faces([1, 2, 3, 4, 5, 6], 'an'), ability: '暗元素 · 克制光辉守关者', flavor: '盯久了会盯回来。' },
   // 功能骰
-  { defId: 'baida', name: '百搭骰', el: 'wild', size: 'mid', sides: 6, rarity: 5, tags: ['万能'], group: 'function', faces: faces([1, 2, 3, 4, 5, 6], 'wild'), ability: '⚡ 可充当任意一种元素。', flavor: '「命运不挑食，凑色万金油。」' },
-  { defId: 'zengfu', name: '增幅骰', el: 'wild', size: 'large', sides: 6, rarity: 4, tags: ['增幅', '大型'], group: 'function', faces: faces([3, 4, 5, 6, 7, 8], 'wild'), ability: '大型万能骰 · 点数全面偏高，放大点数和。', flavor: '「贪多者，命亦厚。」' },
-  { defId: 'zhuanhua', name: '转化骰', el: 'wild', size: 'mid', sides: 6, rarity: 4, tags: ['转化'], group: 'function', faces: faces([1, 2, 3, 4, 5, 6], 'wild'), ability: '万能骰 · 灵活转化所缺元素。', flavor: '「形随心转，色随愿生。」' },
-  { defId: 'liansuo', name: '连锁骰', el: 'lei', size: 'mid', sides: 8, rarity: 4, tags: ['连锁', '八面'], group: 'function', faces: faces([1, 2, 3, 4, 5, 6, 7, 8], 'lei'), ability: '八面雷骰 · 更宽的点数域，利于凑顺子。', flavor: '「一环扣一环，雷雷不息。」' },
-  { defId: 'rongyan', name: '熔岩重骰', el: 'huo', size: 'large', sides: 6, rarity: 4, tags: ['大型'], group: 'function', faces: faces([4, 5, 6, 7, 8, 9], 'huo'), ability: '大型火骰 · 面值 4~9，砸血关的重锤。', flavor: '「熔心未熄，重若千钧。」' },
-  { defId: 'shuangzi', name: '双子风骰', el: 'feng', size: 'small', sides: 6, rarity: 3, tags: ['双子'], group: 'function', faces: faces([1, 1, 2, 2, 3, 3], 'feng'), ability: '小型风骰 · 面值成对，天生易凑对子。', flavor: '「双生同途，命数相依。」' },
-  { defId: 'shouhu', name: '守护骰', el: 'shui', size: 'mid', sides: 6, rarity: 3, tags: ['守护'], group: 'function', faces: faces([2, 3, 3, 4, 4, 5], 'shui'), ability: '水骰 · 面值居中稳定，少出极端点。', flavor: '「以水为盾，护途同行。」' },
-  { defId: 'lengjing', name: '棱晶骰', el: 'an', size: 'mid', sides: 6, rarity: 5, tags: [], group: 'function', faces: faces([2, 3, 4, 5, 6, 6], 'an'), ability: '暗系棱晶骰 · 高星稀有，偏高点数的暗元素。', flavor: '「棱面折光，命途生辉。」' },
+  { defId: 'baida', name: '百搭骰', el: 'wild', size: 'mid', sides: 6, rarity: 5, tags: ['万能'], group: 'function', faces: faces([1, 2, 3, 4, 5, 6], 'wild'), ability: '可充当任意一种元素', flavor: '命运不挑食。凑色万金油。' },
+  { defId: 'zengfu', name: '增幅骰', el: 'wild', size: 'large', sides: 6, rarity: 4, tags: ['增幅', '大型'], group: 'function', faces: faces([3, 4, 5, 6, 7, 8], 'wild'), ability: '本轮同色伤害 ×2', flavor: '越赌越大。' },
+  { defId: 'zhuanhua', name: '转化骰', el: 'wild', size: 'mid', sides: 6, rarity: 4, tags: ['转化'], group: 'function', faces: faces([1, 2, 3, 4, 5, 6], 'wild'), ability: '掷出后改写一颗骰的元素', flavor: '把坏运气拧成好运气。' },
+  { defId: 'liansuo', name: '连锁骰', el: 'lei', size: 'mid', sides: 8, rarity: 4, tags: ['连锁', '八面'], group: 'function', faces: faces([1, 2, 3, 4, 5, 6, 7, 8], 'lei'), ability: '命中后连锁相邻同色', flavor: '一发入魂，魂魂相连。' },
+  { defId: 'rongyan', name: '熔岩重骰', el: 'huo', size: 'large', sides: 6, rarity: 4, tags: ['火', '大型'], group: 'function', faces: faces([4, 5, 6, 7, 8, 9], 'huo'), ability: '大型 · 点数翻倍，但占两格', flavor: '沉得能砸穿地台。' },
+  { defId: 'shuangzi', name: '双子风骰', el: 'feng', size: 'small', sides: 6, rarity: 3, tags: ['双子'], group: 'function', faces: faces([1, 1, 2, 2, 3, 3], 'feng'), ability: '一次投出两颗', flavor: '形影不离的一对。' },
+  { defId: 'shouhu', name: '守护骰', el: 'shui', size: 'mid', sides: 6, rarity: 3, tags: ['守护'], group: 'function', faces: faces([2, 3, 3, 4, 4, 5], 'shui'), ability: '掷出护盾，抵挡一次反击', flavor: '最好的进攻是不被打。' },
+  { defId: 'lengjing', name: '棱晶骰', el: 'an', size: 'mid', sides: 8, rarity: 5, tags: ['暗', '八面'], group: 'function', faces: faces([1, 2, 3, 4, 5, 6, 7, 8], 'an'), ability: '八面 · 上限更高', flavor: '晶顶的馈赠，棱角分明。' },
 ];
 
 export const DEF_BY_ID = new Map(DICE_CATALOG.map((d) => [d.defId, d]));
