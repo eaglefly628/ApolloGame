@@ -772,6 +772,12 @@ _（REQ-3D-W1高效引擎 已移至 [`requests-3d.md`](./requests-3d.md)。）_
 > 钉死这两点 → ① 完全前向兼容·零返工 → **P3D 现在就做 ①**。
 >
 > **★ owner 2026-07-01 授权 P3D 跨界落 ②③（照先例）→ Lead 交流/契约文档已发**：`docs/workflow/finish/P3D-asset-layer-handoff.md`（含 `spec` 闭集 schema + 全类型桥接设计 + Material3D 消费端 + 代码边界 + 分期验收 + Lead review 检查点）。P3D 照此实现：① 独立做、②③ 跨界实现合并前 Lead review。
+>
+> **★★ owner 2026-07-01 架构细化（拍板·压过契约 §2.2「搬进共享 index」原话）——游戏本地库 vendoring 模型**：
+> - **共享库不被游戏直接引用**：外层 `assets/index.json`（3 万项 devicon/立绘货架）是**被引用/被 copy 的源**，不是游戏运行时直接引用对象。
+> - **游戏只引自己的本地美术库/本地索引**（hermetic·目录安全干净）。游戏要用共享库资源 → **copy 进自己的本地美术目录**（vendoring），本地索引再引这份拷贝。
+> - **② 的「收编 manifest」= 每游戏自持一份 `AssetIndex` 数据**（game-z 已如此·owner 认可我 §4.6 的偏离为正解），**不并入共享 index**。game-z 当前资产（程序化自产贴图 + 直接登记的 CC 模型）本就零依赖共享库 → 已满足此架构。
+> - **⑤（新·real gap·接受·待消费者）vendoring skill**：把资源从共享库 copy → 游戏本地美术目录 + 补本地索引条目（携 usage/colorSpace/license/provenance）。**归属**：创作/构建期**工具**（`scripts/`·确定性·弱 LLM 可跑），**非 `src/skills` 运行时能力**（别误沉引擎）。**Lead 判定 YAGNI 不现在做**：当前零游戏消费共享货架，为无消费者的工具先造 = 过度设计。第一个"游戏要用共享库某资产"的真场景出现时再落。engine-core 域（跨共享库 + 各游戏本地库）→ 主程/Lead 把关（或照先例授权 P3D）。
 
 > **owner 2026-06-30 拍板要 review + 提需求**：把「3D 美术资产（模型 / 材质 / 材质贴图）」**走和 2D 贴图完全同一条资产管理路线 —— 即 Resource 路线**：建**统一的资源目录结构 + 引用方法 + 消费端 + 共用数据端**。owner 原话：**「我们的引擎底端需要一个以 Resource 的控制」**。要 P3D 把需求扔出来给主程看。
 > **详尽 review + 分期提案见** `docs/design/asset-pipeline-review.md`（P3D 2026-06-30 汇编·含现状逐类型对照 + 借鉴 Godot 的点）。

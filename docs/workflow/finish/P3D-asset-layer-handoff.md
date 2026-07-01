@@ -122,6 +122,8 @@ interface MaterialSpec {           // 材质 = 引 texture key 的数据资产�
 > 2. **架构分层**：游戏专属资产 ≠ 共享美术货架（那 3 万项是 devicon/立绘等项目库）；混入会污染检索/体积。game-z 自持索引**仍走同一套 `registerAssetIndex` 桥接路径**（契约的真实意图——统一 Asset 路线——已达成），只是数据分文件持有。
 > 若你坚持要物理并入共享 index，我再改（需先把 glb 挪进 `public/assets/models/` 或让 registerAssetIndex 支持每条目 baseUrl override）——但我判断分文件更干净。**等你拍。**
 >
+> **✅ owner 2026-07-01 拍板：我的偏离即正解**——共享库不被游戏直接引用，游戏只引自己的本地库；要用共享库资源就 copy 进本地目录（vendoring·hermetic）。故「收编 manifest」= 每游戏自持 `AssetIndex`，不并入共享 index。另立 **REQ-Resource ⑤ vendoring skill**（共享库→游戏本地 copy 工具·`scripts/`·非 `src/skills`）为 real gap·**Lead 判 YAGNI 待消费者再做**（当前零游戏消费共享货架）。详见 `requests.md` REQ-Resource ★★。
+>
 > **测试**：`asset-index.test` +9 例（deriveColorSpace/textureSpecOf/非法 usage·colorSpace·wrap·genCollision 抛错/旧条目兼容/mesh 桥接/texture colorSpace 派生）。
 
 ## 5. 检查点（回 Lead）
