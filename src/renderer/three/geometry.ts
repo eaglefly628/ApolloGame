@@ -139,17 +139,21 @@ export function buildDieMesh3D(m: Mesh3D): THREE.Mesh {
   const size = m.width;
   const faces = m.dieFaces ?? [];
   const mats = Array.from({ length: 6 }, (_, i) => {
-    const f = faces.length ? (faces[i] ?? faces[i % faces.length]!) : { color: 0xffffff, pip: 1 };
-    const mat = new THREE.MeshStandardMaterial({ map: buildDieFaceTexture(f.color, f.pip), roughness: 0.42, metalness: 0.18 });
+    const f = faces.length ? (faces[i] ?? faces[i % faces.length]!) : { color: 0xffffff, pip: 1, src: undefined };
+    // 手绘面贴图(src) 优先，否则程序化 pip 贴图。
+    let map: THREE.Texture;
+    if (f.src) { map = new THREE.TextureLoader().load(f.src); map.colorSpace = THREE.SRGBColorSpace; map.anisotropy = 4; }
+    else map = buildDieFaceTexture(f.color, f.pip);
+    const mat = new THREE.MeshStandardMaterial({ map, roughness: 0.42, metalness: 0.18 });
     mat.emissive.setHex((f.emissive ?? f.color) & 0xffffff);
-    mat.emissiveIntensity = f.emissive !== undefined ? 0.22 : 0.16;
+    mat.emissiveIntensity = f.emissive !== undefined ? 0.22 : (f.src ? 0.1 : 0.16);
     return mat;
   });
   return new THREE.Mesh(new THREE.BoxGeometry(size, size, size), mats);
 }
 /** 骰子 mesh 缓存签名（面色/点数/尺寸变才重建）。 */
 export function dieMode(m: Mesh3D): string {
-  return `die|${m.width}|${(m.dieFaces ?? []).map((f) => `${f.color}:${f.pip}:${f.emissive ?? ''}`).join(',')}`;
+  return `die|${m.width}|${(m.dieFaces ?? []).map((f) => `${f.color}:${f.pip}:${f.emissive ?? ''}:${f.src ?? ''}`).join(',')}`;
 }
 
 // ── 体素表面程序化贴图（复刻美术设计案原型 topTex/sideTex/wallTex·「带精美贴图的体素」）─────────────

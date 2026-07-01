@@ -138,6 +138,15 @@ export class ThreeRenderer implements RendererBackend {
     if (this.scene) this.scene.background = new THREE.Color(hex);
   }
 
+  /** 运行时设场景背景为**图片**（手绘天空渐变图·Cloud Design 素材）。null=回退纯色。 */
+  setBackgroundTexture(url: string | null): void {
+    if (!this.scene) return;
+    if (!url) { this.scene.background = new THREE.Color(this.background); return; }
+    const tex = new THREE.TextureLoader().load(url);
+    tex.colorSpace = THREE.SRGBColorSpace;
+    this.scene.background = tex;
+  }
+
   sync(world: IWorld): void {
     const t0 = performance.now();
     this.gl.info.reset(); // 手动重置 → calls/triangles 跨 scene+post 全 pass 累加（真·每帧 draw 数）

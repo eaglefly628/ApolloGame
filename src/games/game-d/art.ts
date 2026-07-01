@@ -8,8 +8,12 @@ const LAYER_KEY = ['cuiting', 'gudian', 'rongxin', 'jinding']; // 翠庭/古殿/
 
 /** 元素徽章（法阵环 · 圆形符文）。 */
 export const elementBadge = (el: Elem): string => `/art/game-d/elements/${ELEM_KEY[el]}.png`;
-/** 骰面图（元素色 + 点数 pip·256²·骰库/骰组/3D 骰面共用）。 */
-export const diceFaceArt = (el: Elem, pip: number): string => `/art/game-d/dice/${ELEM_KEY[el]}_${Math.max(1, Math.min(6, Math.round(pip)))}.png`;
+/** 骰面图（元素色 + 点数 pip·256²·骰库/骰组/3D 骰面共用）。wild→百搭面。 */
+export const diceFaceArt = (el: Elem, pip: number): string => el === 'wild' ? '/art/game-d/dice/wild.png' : `/art/game-d/dice/${ELEM_KEY[el]}_${Math.max(1, Math.min(6, Math.round(pip)))}.png`;
+/** 天空背景图（层主题 × 暖/暗调·512×256 柔和渐变·作场景清屏底）。 */
+export const skyArt = (act: number, tone: 'warm' | 'dark' = 'warm'): string => `/art/game-d/sky/${LAYER_KEY[act % 4]}_${tone}.png`;
+/** 加性辉光贴图（柔光·替代程序化径向渐变）。 */
+export const GLOW_TEX = '/art/game-d/fx/glow.png';
 /** 体素贴图（层主题 × 顶面/侧面/墙体·256² 无缝）。 */
 export const tileArt = (act: number, face: 'top' | 'side' | 'wall'): string => `/art/game-d/tiles/${LAYER_KEY[act % 4]}_${face}.png`;
 /** 战利品卡面（420×588·仅特制骰/能力有图）。 */

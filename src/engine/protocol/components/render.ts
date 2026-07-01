@@ -42,7 +42,7 @@ export interface Card3D extends Component {
 // （0=正面朝镜头、π=反面）。红线：表现层组件，**绝不被 Condition 读、绝不进 sim 逻辑/hash**。
 // 纹理/导入/骨骼/动画不在此（那是各游戏私货 or action 方向，触发方向漂移预警）。
 // 骰面（render-only·程序化 pip 贴图）：一面的元素色底 + 点数。复刻美术设计案 3D 命运骰（原型 dieFaceTex）。
-export interface DieFace { color: number; pip: number; emissive?: number } // color/emissive=0xRRGGBB；pip=1..6 点数
+export interface DieFace { color: number; pip: number; emissive?: number; src?: string } // color/emissive=0xRRGGBB；pip=1..6；src=手绘面贴图 URL(在场则替代程序化 pip 贴图)
 
 // 体素表面程序化贴图（render-only·复刻美术设计案「带精美贴图的体素」·原型 topTex/sideTex/wallTex）。
 // 在场 → 渲染器给 box 的顶面刷 topTex（格纹 + 颗粒 + 勾缝）、四周刷 sideTex；wall:true → 全面用侧墙纹。

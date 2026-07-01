@@ -22,7 +22,7 @@ import {
   type Die, type RolledDie, type DieDef, type Elem,
 } from './dice.js';
 import { makeFoe, counterDisabled, evalChallenge, damageOf, condLabel, type Foe } from './combat.js';
-import { elementBadge, diceFaceArt, lootCardArt, CARDED_DEFIDS } from './art.js';
+import { elementBadge, diceFaceArt, lootCardArt, skyArt, CARDED_DEFIDS } from './art.js';
 
 const SOLO_HEARTS = 6;
 const FLOORS = 4;
@@ -136,8 +136,9 @@ export function mount(container: HTMLElement): () => void {
   const setMood = (dark: boolean): void => {
     const s = engine.world.getComponent<{ type: 'Sky3D'; top: number; bottom: number; clouds?: boolean }>('sky', 'Sky3D');
     if (s) { s.top = dark ? 0x1a1440 : 0xd7dbe4; s.bottom = dark ? 0x0d0920 : 0xece7de; s.clouds = false; }
-    // 相机在天空盒球外 → 清屏底色即背景：Title 暗塔紫黑 / 盒庭浅暖。
-    renderer.setBackground(dark ? 0x0d0920 : 0xe7e3dc);
+    // 场景背景用 Cloud Design 手绘天空图（层主题 × 暖/暗）：Title 暗调 / 盒庭暖调。
+    const act = Math.floor((S.globalRoom - 1) / 3);
+    renderer.setBackgroundTexture(skyArt(dark ? 0 : act, dark ? 'dark' : 'warm'));
     // Title 用弱泛光/浅景深（单颗大骰不被糊成白团）；盒庭用强移轴+泛光（微缩模型质感）。
     const p = engine.world.getComponent<{ type: 'Post3D'; tiltShift?: object; bloom?: object }>('post', 'Post3D');
     if (p) {
@@ -149,21 +150,21 @@ export function mount(container: HTMLElement): () => void {
     if (titleDieUp) return;
     engine.world.createEntity(TITLE_DIE);
     engine.world.addComponent(TITLE_DIE, { type: 'Transform3D', x: 0, y: 3.4, z: 0, rotY: 0.6, scale: 1 } as unknown as Component);
-    // 六色 pip 命运骰（6 面各一元素色 + 点数·复刻原型 dieMesh：pips=[1,6,2,5,3,4]）
+    // 六色命运骰（6 面各一元素·**手绘骰面图**·复刻原型 dieMesh 面序 pips=[1,6,2,5,3,4]）
     const PIP = [1, 6, 2, 5, 3, 4];
-    engine.world.addComponent(TITLE_DIE, { type: 'Mesh3D', shape: 'box', width: 10, height: 10, depth: 10, frontTint: hexNum('huo'), dieFaces: ELEMS.map((el, i) => ({ color: hexNum(el), pip: PIP[i]! })) } as unknown as Component);
+    engine.world.addComponent(TITLE_DIE, { type: 'Mesh3D', shape: 'box', width: 10, height: 10, depth: 10, frontTint: hexNum('huo'), dieFaces: ELEMS.map((el, i) => ({ color: hexNum(el), pip: PIP[i]!, src: diceFaceArt(el, PIP[i]!) })) } as unknown as Component);
     titleDieUp = true;
   };
   const hideTitleDie = (): void => { if (!titleDieUp) return; try { engine.world.destroyEntity(TITLE_DIE); } catch { /* noop */ } titleDieUp = false; };
-
-  // 开局停在 Title：暗氛围 + 大骰（不流式房间；「开始攀塔」再进盒庭）
-  setMood(true); showTitleDie();
 
   const S: S = {
     phase: 'title', library: startLibrary(), loadout: [], detail: 'baida', dishTab: 'all',
     hearts: SOLO_HEARTS, gold: 128, gem: 7, globalRoom: 1, foe: newFoe(1), thrown: false,
     rolled: [], disabled: new Set(), selected: new Set(), rerolls: REROLLS, reward: [], msg: '',
   };
+
+  // 开局停在 Title：暗氛围 + 大骰（不流式房间；「开始攀塔」再进盒庭）——须在 S 声明后（setMood 读 S）。
+  setMood(true); showTitleDie();
 
   // ════════ 通用小件 ════════
   const bareRow = (id: string, children: LayoutNode[], extra: Record<string, unknown> = {}): LayoutNode =>
@@ -518,6 +519,7 @@ export function mount(container: HTMLElement): () => void {
   const beginRoom = (): void => {
     S.foe = newFoe(S.globalRoom); S.thrown = false; S.rolled = []; S.selected.clear(); S.disabled.clear(); S.rerolls = REROLLS;
     bgRoom = S.globalRoom - 1; streamTo(bgRoom);
+    renderer.setBackgroundTexture(skyArt(Math.floor((S.globalRoom - 1) / 3), 'warm')); // 换层换天空图
   };
   const rewardChoices = (): string[] => {
     // 只发有手绘卡面的特制骰（基础元素骰不进战利品池）·三张不重复。
