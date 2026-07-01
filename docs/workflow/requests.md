@@ -797,3 +797,25 @@ _（REQ-3D-W1高效引擎 已移至 [`requests-3d.md`](./requests-3d.md)。）_
 > **红线（守住·评审时校）**：① 资产是 render-only 表现层（sim 只持 key·不进 hash）；② 导入选项/材质/贴图用途**全是数据**（弱 LLM 尺子·别开自由代码口子）；③ 增量·向后兼容（现有 2D texture 路径不动）。
 >
 > **请主程/Lead 裁**：整套 Resource 层的引擎核心半边（②③④·动 `src/assets` 跨 2D/3D）该主程做，还是**授权 P3D 跨界落**（同 model-loader / 3D 碰撞先例）？消费端① owner 已授权 P3D 先做。
+
+---
+
+### REQ-UI-骰途逐像素 · LayoutNode 补 3 项通用能力（毛玻璃 / 衬线字体槽 / Image 透明度）· [2026-07-01] · P3D（game-d）→ 主程 · status: **open** · 类型: UI 库闭集扩容（下沉成通用控件能力）
+
+> **背景**：owner 要 game-d《骰途》2D UI（命运骰盅 / HUD / Title chrome）**逐像素复刻** Cloud Design 概念图，并拍板走 **A（扩 LayoutNode·不破 UI 铁律）**。我（P3D）对着原型逐项核对，**先自我回驳能重组的**，只把**闭集控件真表达不了的**提上来。三项都是**跨游戏通用**能力（非 game-d 私货）：
+>
+> **1. Panel 毛玻璃（frosted glass·backdrop-blur）**
+> - 需求：HUD/骰盅面板浮在 3D 场景上时是**磨砂玻璃**（原型 `backdrop-filter:blur(8px)` + 半透底 + 细边）。现 `Panel` 只有实底/`bg`/`accent`，**表达不了 backdrop-blur**（`Screen.blur` 是整屏模糊·不同）。
+> - 建议：`PanelProps.glass?: boolean`（或 `blur?: number`）→ 渲染加 `backdrop-filter:blur` + 半透底。**复用面**：所有「HUD/面板浮在 3D/大图之上」的游戏（game-d/i/z…）。
+>
+> **2. Label 衬线字体槽 + 主题 fontSerif 令牌**
+> - 需求：标题/骰名用 **Noto Serif SC**（骰途 logo / 命运骰盅 / 骰名），正文仍 sans。现 `Label.font` = `ui|mono|pixel|display`，**无 serif**；把 `theme.fontUi` 设成 serif 会让**全部**文字变衬线。
+> - 建议：`Label.font` 增 `'serif'` 槽 + `UITheme.fontSerif?` 令牌（缺省回退 fontUi）。同 pixel/display 先例。**复用面**：任何要「衬线标题 + 无衬线正文」混排的游戏。
+>
+> **3. Image 透明度（+ 可选 tint）**
+> - 需求：塔剪影/装饰/暗态元素要**半透**叠加（原型 tower silhouette opacity .92、faded 元素）。现 `ImageProps` 无 opacity。
+> - 建议：`ImageProps.opacity?: number`（0..1）。**复用面**：所有需要淡入装饰/水印/剪影的 UI。
+>
+> **我已自我回驳（不提·能重组）**：① 任意渐变底——`Panel.bg` 已收 CSS 串（我已用 `linear-gradient`）；② 折角布片——用「负 x/y + rotate 的定位 Panel」可拼；③ 倒角——已有 `chamfer`。
+>
+> **红线守住**：都是**闭集枚举/数字字段**（最弱 LLM 能填 `glass:true` / `font:'serif'` / `opacity:.9`），不开自由 CSS 口子。落地前 game-d 的 2D UI 维持「神似」，这 3 项下沉后即逐像素收口。
