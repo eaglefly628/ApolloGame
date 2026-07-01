@@ -116,7 +116,7 @@ const DIE_PIPS: Record<number, [number, number][]> = {
 };
 /** 一面骰面贴图：元素色圆角底 + 白点 pip（复刻原型 dieFaceTex）。 */
 export function buildDieFaceTexture(color: number, pip: number): THREE.CanvasTexture {
-  const s = 128;
+  const s = 256; // 复刻原型 makeDieFaceTexture：256²
   const cv = document.createElement('canvas'); cv.width = cv.height = s;
   const x = cv.getContext('2d')!;
   const rr = (a: number, b: number, w: number, h: number, r: number): void => { x.beginPath(); x.moveTo(a + r, b); x.arcTo(a + w, b, a + w, b + h, r); x.arcTo(a + w, b + h, a, b + h, r); x.arcTo(a, b + h, a, b, r); x.arcTo(a, b, a + w, b, r); x.closePath(); };
@@ -129,7 +129,8 @@ export function buildDieFaceTexture(color: number, pip: number): THREE.CanvasTex
     const cx = px * s, cy = py * s;
     const rg = x.createRadialGradient(cx - pr * .3, cy - pr * .3, pr * .1, cx, cy, pr);
     rg.addColorStop(0, '#ffffff'); rg.addColorStop(1, '#dde4ec');
-    x.fillStyle = rg; x.beginPath(); x.arc(cx, cy, pr, 0, 7); x.fill();
+    x.fillStyle = rg; x.shadowColor = 'rgba(0,0,0,.35)'; x.shadowBlur = s * .04; x.shadowOffsetY = s * .012; // 点数径向高光 + 柔影（复刻原型）
+    x.beginPath(); x.arc(cx, cy, pr, 0, 7); x.fill(); x.shadowColor = 'transparent';
   });
   const tex = new THREE.CanvasTexture(cv); tex.colorSpace = THREE.SRGBColorSpace; tex.anisotropy = 4;
   return tex;

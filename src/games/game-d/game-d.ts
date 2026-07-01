@@ -141,35 +141,56 @@ export function mount(container: HTMLElement): () => void {
     // 背景色**取样自概念图**（逐像素）：Title 蓝灰 #5d6d83（概念 #5d6d83~#7c90af）；盒庭 浅灰绿 #d6ddd6（概念 #cdd2d2~#d7e3d0·非暖非暗）。
     renderer.setBackgroundTexture(null);
     renderer.setBackground(dark ? 0x5d6d83 : 0xd6ddd6);
-    // Title 用弱泛光/浅景深（单颗大骰不被糊成白团）；盒庭用强移轴+泛光（微缩模型质感）。
+    // Title 关闭泛光/移轴（参考原型是纯 ACES 渲染·无 composer·骰子靠 emissive .16 自发光）；盒庭用强移轴+泛光。
     const p = engine.world.getComponent<{ type: 'Post3D'; tiltShift?: object; bloom?: object }>('post', 'Post3D');
     if (p) {
-      p.tiltShift = { focus: 0.54, intensity: dark ? 0.5 : 1.7 };
-      p.bloom = { strength: dark ? 0.18 : 0.72, radius: 0.7, threshold: dark ? 0.82 : 0.6 };
+      p.tiltShift = { focus: 0.54, intensity: dark ? 0 : 1.7 };
+      p.bloom = { strength: dark ? 0 : 0.72, radius: 0.7, threshold: dark ? 0.9 : 0.6 };
     }
-    // 相机：Title=**正面透视**（复刻原型 initTitle fov38·正对大骰）；盒庭=近俯视 ortho。
+    // 三点补光（复刻参考）：Title 把基础灯改成 Ambient 白 .5 + Key 平行光 #fff0d8 int1.1（去向 -3,-4,-5），
+    // 关掉盒庭的蓝色平行补光（fillDir）——Rim/Fill 由 showTitleDie 的两盏点光顶上。盒庭恢复原值。
+    const amb = engine.world.getComponent<{ type: 'Light3D'; color: number; intensity: number }>('amb', 'Light3D');
+    if (amb) { amb.color = 0xffffff; amb.intensity = dark ? 0.5 : 0.6; }
+    const sun = engine.world.getComponent<{ type: 'Light3D'; color: number; intensity: number; dirX: number; dirY: number; dirZ: number; castShadow: boolean }>('sun', 'Light3D');
+    if (sun) { sun.color = 0xfff0d8; sun.intensity = dark ? 1.1 : 1.05; sun.dirX = dark ? -3 : -6; sun.dirY = dark ? -4 : -11; sun.dirZ = -5; sun.castShadow = true; }
+    const fillDir = engine.world.getComponent<{ type: 'Light3D'; color: number; intensity: number; dirX: number; dirY: number; dirZ: number }>('fillDir', 'Light3D');
+    if (fillDir) { fillDir.color = 0x6f7cff; fillDir.intensity = dark ? 0 : 0.35; fillDir.dirX = 5; fillDir.dirY = -4; fillDir.dirZ = 4; }
+    // 相机：Title=**参考原型正面透视**（fov 38·pos (0,0.2,6.3)·lookAt 原点 → yaw 0 / pitch 0.032 / dist 6.3）；盒庭=近俯视 ortho。
     const c = engine.world.getComponent<Camera3D>('cam', 'Camera3D');
     if (c) {
-      // 相机**微微仰视**（往上看·概念图高级感·非俯视）：pitch 负=看上。正对大骰。
-      if (dark) { c.projection = 'perspective'; c.fov = 36; c.yaw = Math.PI; c.pitch = -0.08; c.distance = 42; c.orthoSize = 13; c.pivotX = 0; c.pivotY = 2.6; c.pivotZ = 0; }
+      if (dark) { c.projection = 'perspective'; c.fov = 38; c.yaw = 0; c.pitch = 0.032; c.distance = 6.3; c.pivotX = 0; c.pivotY = 0; c.pivotZ = 0; }
       else { c.projection = 'ortho'; c.yaw = Math.PI; c.pitch = 0.98; c.orthoSize = 13; c.distance = 240; c.pivotX = 0; c.pivotY = 1.5; c.pivotZ = 0; }
     }
   };
   const showTitleDie = (): void => {
     if (titleDieUp) return;
+    // 命运骰（严格 1:1 复刻参考·owner 2026-07-01 上传 TS）：六面各一元素色 MeshStandard
+    // （emissive=元素色·ei .16 / rough .42 / metal .18 / CanvasTexture）。初始姿态 rot(0.5,0.7,0)，固定匀速翻滚（见 tick）。
+    // 面序 = BoxGeometry [右+X,左-X,顶+Y,底-Y,前+Z,后-Z]，点数 [1,6,2,5,3,4]，颜色六元素 火/水/木/雷/风/暗。
+    const ELEM_FACES = [
+      { color: 0xff5b4d, pip: 1 }, // 火（右 +X）
+      { color: 0x3ba0ff, pip: 6 }, // 水（左 -X）
+      { color: 0x46c66a, pip: 2 }, // 木（顶 +Y）
+      { color: 0xffcf3f, pip: 5 }, // 雷（底 -Y）
+      { color: 0xe8edf3, pip: 3 }, // 风（前 +Z）
+      { color: 0x9b6cff, pip: 4 }, // 暗（后 -Z）
+    ];
+    // 骰子（原型原尺寸 1.95·die.y -0.45）。相机/光/背光晕由 setMood + 下方三点补光按参考装配。
     engine.world.createEntity(TITLE_DIE);
-    // 近乎正面、微微侧转（复刻概念图：大骰正对镜头作柔和背景·非 3/4 主角）
-    engine.world.addComponent(TITLE_DIE, { type: 'Transform3D', x: 0, y: 1.6, z: 0, rotX: 0.06, rotY: 0.14, scale: 1 } as unknown as Component);
-    // **白/极浅色**命运骰（概念图是白骰·非彩色）——程序化白骰面 + 淡蓝点·无自发光·柔和。面序 pips=[1,6,2,5,3,4]。
-    const PIP = [1, 6, 2, 5, 3, 4];
-    engine.world.addComponent(TITLE_DIE, { type: 'Mesh3D', shape: 'box', width: 8.5, height: 8.5, depth: 8.5, frontTint: 0xeef2f8, dieFaces: PIP.map((pip) => ({ color: 0xeef2f8, pip })) } as unknown as Component);
-    // 背后柔光晕（柔和·别糊满屏）
+    engine.world.addComponent(TITLE_DIE, { type: 'Transform3D', x: 0, y: -0.45, z: 0, rotX: 0.5, rotY: 0.7, scale: 1 } as unknown as Component);
+    engine.world.addComponent(TITLE_DIE, { type: 'Mesh3D', shape: 'box', width: 1.95, height: 1.95, depth: 1.95, frontTint: 0xeef4ff, dieFaces: ELEM_FACES } as unknown as Component);
+    // 三点补光的两盏点光（复刻参考·Rim 紫 + Fill 蓝·range 30）。Ambient + Key 平行光由 setMood 改基础灯。
+    engine.world.createEntity('gd-title-rim');
+    engine.world.addComponent('gd-title-rim', { type: 'Light3D', kind: 'point', color: 0x9b6cff, intensity: 1.2, x: -4, y: 1, z: -3, range: 30, decay: 2 } as unknown as Component);
+    engine.world.createEntity('gd-title-fill');
+    engine.world.addComponent('gd-title-fill', { type: 'Light3D', kind: 'point', color: 0x3ba0ff, intensity: 0.7, x: 4, y: -2, z: 2, range: 30, decay: 2 } as unknown as Component);
+    // 背光柔光晕（复刻参考 sprite·tint #ffe5a8·scale 6.4·pos (0,-.45,-1.4)）
     engine.world.createEntity('gd-title-glow');
-    engine.world.addComponent('gd-title-glow', { type: 'Transform3D', x: 0, y: 1.6, z: -5 } as unknown as Component);
-    engine.world.addComponent('gd-title-glow', { type: 'Glow3D', color: 0xdfe8f5, scale: 15, opacity: 0.16 } as unknown as Component);
+    engine.world.addComponent('gd-title-glow', { type: 'Transform3D', x: 0, y: -0.45, z: -1.4 } as unknown as Component);
+    engine.world.addComponent('gd-title-glow', { type: 'Glow3D', color: 0xffe5a8, scale: 6.4, opacity: 0.85 } as unknown as Component);
     titleDieUp = true;
   };
-  const hideTitleDie = (): void => { if (!titleDieUp) return; try { engine.world.destroyEntity(TITLE_DIE); engine.world.destroyEntity('gd-title-glow'); } catch { /* noop */ } titleDieUp = false; };
+  const hideTitleDie = (): void => { if (!titleDieUp) return; try { engine.world.destroyEntity(TITLE_DIE); engine.world.destroyEntity('gd-title-rim'); engine.world.destroyEntity('gd-title-fill'); engine.world.destroyEntity('gd-title-glow'); } catch { /* noop */ } titleDieUp = false; };
 
   const S: S = {
     phase: 'title', library: startLibrary(), loadout: [], detail: 'baida', dishTab: 'all',
@@ -621,7 +642,8 @@ export function mount(container: HTMLElement): () => void {
   render();
 
   const unsub = engine.subscribe(() => {
-    if (titleDieUp) { const td = engine.world.getComponent<{ type: 'Transform3D'; rotY?: number }>(TITLE_DIE, 'Transform3D'); if (td) td.rotY = (td.rotY ?? 0) + 0.008; }
+    // 固定轴向匀速翻滚（复刻参考 tumble·@60fps 每帧 rot.x+=.004 / rot.y+=.006·X 慢 Y 快·同为正·无随机）。
+    if (titleDieUp) { const td = engine.world.getComponent<{ type: 'Transform3D'; rotX?: number; rotY?: number }>(TITLE_DIE, 'Transform3D'); if (td) { td.rotX = (td.rotX ?? 0) + 0.004; td.rotY = (td.rotY ?? 0) + 0.006; } }
     const c = cam(); if (!c) return; const t = bgRoom * ROOM_SPACING; const cur = c.pivotZ ?? 0; c.pivotZ = Math.abs(t - cur) < 0.05 ? t : cur + (t - cur) * 0.12;
   });
   engine.start();
