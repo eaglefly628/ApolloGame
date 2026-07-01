@@ -752,7 +752,24 @@ _（REQ-3D-W1高效引擎 已移至 [`requests-3d.md`](./requests-3d.md)。）_
 >
 > **影响面**：任何用 Slider 写数值的界面都可能吃到一发 `undefined`/NaN；控件层应保证「数值控件的回调实参恒为有效数值串」，不应让每个消费方各自 `Number.isFinite` 兜底。
 
-### REQ-Resource · 引擎底层统一资源(Resource)层：3D 资产走 2D 贴图同款资产管理路线 · [2026-06-30] · owner → 主程/Lead（引擎核心资产层域·跨 2D/3D） · status: **待主程/Lead 评审拍板** · 类型: 引擎底层架构（资产管理统一）
+### REQ-Resource · 引擎底层统一资源(Resource)层：3D 资产走 2D 贴图同款资产管理路线 · [2026-06-30] · owner → 主程/Lead（引擎核心资产层域·跨 2D/3D） · status: **✅ Lead 评审通过（接受·扩现有 Asset 层非新建·归属 hybrid·A/B 定 B + 钉死共享契约消返工·2026-07-01）** · 类型: 引擎底层架构（资产管理统一）
+
+> **★ 主程/Lead 裁决（2026-07-01·已逐条硬验 P3D 断言属实：`registerAssetIndex` 确 `type!=='texture'` 即 skip·`AssetType` 已列全 7 型 + freeform `spec`·`Material3D` 有 preset/程序化 surface 无 map 字段·mesh 走 `registerManifest(GAME_Z_ASSETS)` 绕索引）**：
+> **接受。** 尺子过：真缺口（运行时桥只 texture·材质贴图缺失·mesh 绕索引），但**索引 schema 已含全类型 + `spec` 字段 = 好底子** → 是「**扩现有 `AssetIndex`/bridge**」非「新建系统」（P3D「不推倒重来」判断对）。三红线守得住（① 资产 render-only·sim 只持 key 不进 hash；② import options/材质/贴图用途全数据·弱 LLM 尺子；③ 增量向后兼容）。
+>
+> **校正 1（命名·避撞名）**：**别引入新的 `Resource` 类型**——引擎已有 sim `Resource` 组件（hp/mana·logic.ts），撞名必乱。owner「以 Resource 控制」= 现有 **Asset 层（`AssetIndex` 单一真相 + key 引用）扩成全类型**，沿用 `Asset*` 命名，不新造 Resource。
+> **校正 2（YAGNI）**：只给**有消费者的类型**定 `spec` 闭集（texture/mesh/material）；sound/font/video 占位不急（Phase 4 按需）·别为没消费者的类型先造 schema。
+> **核心契约（engine-core·跨 2D/3D·Lead 定/把关）**：`AssetIndexEntry.spec` 从 freeform 收成**按 type 判别的闭集**（texture:`{usage,colorSpace,wrap?,tiling?}` / mesh:`{scale?,genCollision?}` / material:`{...引 texture key}`）+ 注册期校验。这是弱 LLM 尺子落点，必须闭集。
+>
+> **归属（hybrid）**：
+> - **① 材质贴图消费端**（`Material3D.map` + 渲染器按 colorSpace 取图）= **P3D 域·owner 已授权·现在就做**。
+> - **②③**（`registerAssetIndex` 桥全类型 + 收编 manifest + `spec` 闭集 schema）= engine-core：**契约（spec schema）Lead 定/把关；实现授权 P3D 跨界落**（同 NavMesh / model-loader / 3D 碰撞先例）——Lead 出 schema，P3D 照填实现 + Lead review。**此跨界授权待 owner 点头**（技术上我推荐照先例授权）。
+> - **④** 材质成索引资产 / sound·font = 按需·后置。
+>
+> **A/B → 定 B（现在就落①）·且预先 bless 两个共享契约点彻底消返工**：① 骑的是**已成熟稳定的 texture-key 路径**（texture 早已端到端桥接），**不依赖 ②③ 的统一设计**。P3D 担心的返工来自「key 引用方案将来变」——但 **texture key 引用不会变**（是成熟路径）。为零返工，现钉死 ① 需要的两个契约点：
+> 1. **texture `spec.usage`** = `'albedo'|'normal'|'roughness'|'metalness'|'orm'|'sprite'` + **`spec.colorSpace`** = `'srgb'|'linear'`（闭集·P3D 现按此给 game-z 贴图填数据·渲染器按 colorSpace 取图：法线/粗糙=linear·albedo=srgb）。
+> 2. **`Material3D` 加 `map?/normalMap?/roughnessMap?/aoMap?`**（= texture key·render-only·字段名照 THREE 标准钉死）。
+> 钉死这两点 → ① 完全前向兼容·零返工 → **P3D 现在就做 ①**。需要 Lead 先出 ②③ 的 `spec` 闭集 schema 草案，我随时可给。
 
 > **owner 2026-06-30 拍板要 review + 提需求**：把「3D 美术资产（模型 / 材质 / 材质贴图）」**走和 2D 贴图完全同一条资产管理路线 —— 即 Resource 路线**：建**统一的资源目录结构 + 引用方法 + 消费端 + 共用数据端**。owner 原话：**「我们的引擎底端需要一个以 Resource 的控制」**。要 P3D 把需求扔出来给主程看。
 > **详尽 review + 分期提案见** `docs/design/asset-pipeline-review.md`（P3D 2026-06-30 汇编·含现状逐类型对照 + 借鉴 Godot 的点）。
