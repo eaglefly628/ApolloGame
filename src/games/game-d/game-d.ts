@@ -72,6 +72,9 @@ const roomKindCn = (g: number): string => { const r = (g - 1) % 3; return r === 
 
 // 一颗骰子的"招牌面"图标（元素色字形）。
 const dieGlyph = (el: Elem): string => ELEM_INFO[el].glyph;
+// 骰库/骰组卡片的骰面图标（Unicode 骰面 ⚀-⚅·代表面点数·复刻原型的 pip 骰图标）。
+const DIE_FACE_CHARS = '⚀⚁⚂⚃⚄⚅';
+const dieFaceChar = (def: DieDef): string => DIE_FACE_CHARS[Math.max(0, Math.min(5, (def.faces[2]?.v ?? 4) - 1))]!;
 const elemTone = (el: Elem): 'ok' | 'danger' | 'warn' | 'accent' | 'dim' =>
   el === 'mu' ? 'ok' : el === 'huo' ? 'danger' : el === 'lei' || el === 'feng' ? 'warn' : 'accent';
 
@@ -339,7 +342,7 @@ export function mount(container: HTMLElement): () => void {
       layout: { direction: 'column', gap: 5, padding: 10 },
       children: [
         bareRow(`dc-hd-${def.defId}`, [
-          { type: 'Panel', id: `dc-ic-${def.defId}`, props: { bg: ELEM_INFO[def.el].hex }, layout: { width: 40, height: 40, radius: 9, align: 'center', justify: 'center', padding: 0 }, children: [lbl(`dc-icg-${def.defId}`, dieGlyph(def.el), { size: 'md' })] },
+          { type: 'Panel', id: `dc-ic-${def.defId}`, props: { bg: ELEM_INFO[def.el].hex }, layout: { width: 42, height: 42, radius: 10, align: 'center', justify: 'center', padding: 0 }, children: [lbl(`dc-icg-${def.defId}`, dieFaceChar(def), { size: 'xl', color: 'text' })] },
           ...(inLoad ? [lbl(`dc-ck-${def.defId}`, '✓', { size: 'md', color: 'gold', bold: true })] : []),
         ], { justify: 'between', align: 'center' }),
         lbl(`dc-nm-${def.defId}`, def.name, { size: 'sm', bold: true }),
@@ -403,11 +406,17 @@ export function mount(container: HTMLElement): () => void {
           lbl('dl-cnt', `${S.loadout.length} / ${LOADOUT_CAP}`, { size: 'sm', color: S.loadout.length > LOADOUT_CAP ? 'danger' : 'sub' }),
         ], { justify: 'between', align: 'center' }),
         lbl('dl-sub', '阵容偏大 · 谨慎取舍（越省越好）', { size: 'xs', color: 'dim' }),
-        bareRow('dl-slots', Array.from({ length: LOADOUT_CAP }, (_, i): LayoutNode => {
-          const id = S.loadout[i];
-          if (id) { const def = dieDef(S.library.find((d) => d.id === id)!); return { type: 'Panel', id: `dl-s${i}`, props: { bg: ELEM_INFO[def.el].hex, action: 'dishRemove', actionArg: id }, layout: { width: 42, height: 42, radius: 9, align: 'center', justify: 'center', padding: 0 }, children: [lbl(`dl-sg${i}`, dieGlyph(def.el), { size: 'md' })] }; }
-          return { type: 'Panel', id: `dl-s${i}`, props: { dashed: true, edge: 'gold' }, layout: { width: 42, height: 42, radius: 9, padding: 0 }, children: [] };
-        }), { gap: 6, justify: 'center' }),
+        // 动态尺寸：选得越少 → 骰子越大越金（奖励精简·复刻原型 loSize/loGlow）。
+        (() => {
+          const n = S.loadout.length;
+          const sz = n <= 2 ? 60 : n === 3 ? 52 : n === 4 ? 46 : 40;
+          const lean = n > 0 && n <= 3; // 精简阵 → 金光
+          return bareRow('dl-slots', Array.from({ length: Math.max(LOADOUT_CAP, n) }, (_, i): LayoutNode => {
+            const id = S.loadout[i];
+            if (id) { const def = dieDef(S.library.find((d) => d.id === id)!); return { type: 'Panel', id: `dl-s${i}`, props: { bg: ELEM_INFO[def.el].hex, action: 'dishRemove', actionArg: id, ...(lean ? { edge: 'gold' as const } : {}) }, layout: { width: sz, height: sz, radius: Math.round(sz * 0.22), align: 'center', justify: 'center', padding: 0, ...(lean ? { fx: [{ kind: 'glow' as const, color: 'gold' as const }] } : {}) }, children: [lbl(`dl-sg${i}`, DIE_FACE_CHARS[Math.min(5, i + 1)]!, { size: n <= 3 ? 'xl' : 'lg', color: 'text' })] }; }
+            return { type: 'Panel', id: `dl-s${i}`, props: { dashed: true, edge: 'gold' }, layout: { width: 40, height: 40, radius: 9, padding: 0 }, children: [] };
+          }), { gap: 8, justify: 'center', align: 'center' });
+        })(),
         { type: 'Divider', id: 'dl-div', props: {} },
         bareRow('dl-pat', [
           bareCol('dl-patl', [lbl('dl-pat-l', '骰型', { size: 'xs', color: 'sub' }), lbl('dl-pat-n', pat.name, { size: 'sm', bold: true, color: 'gold' })], { gap: 1 }),
@@ -428,12 +437,14 @@ export function mount(container: HTMLElement): () => void {
     return {
       type: 'Screen', id: 'gd-dish', props: {},
       children: [{
-        type: 'Panel', id: 'dish-root', props: { bare: true }, layout: { direction: 'column', gap: 10, padding: 16, maxWidth: 1140 },
+        // 「命运骰盅」紫布面板（渐变 + 斜纹织物·复刻原型 165deg 紫布 + woven texture）+ 金边。
+        type: 'Panel', id: 'dish-root', props: { bg: 'linear-gradient(165deg,#2a1430 0%,#1d1024 55%,#160c1c 100%)', pattern: 'stripe', edge: 'gold' }, layout: { direction: 'column', gap: 10, padding: 18, maxWidth: 1140, radius: 18 },
         children: [
           // header
           bareRow('dish-hdr', [
             bareRow('dish-hdl', [
-              lbl('dish-cup', '🎲', { size: 'xxl' }),
+              // 酒红骰盅图标（顶一颗金球·复刻原型 dice-cup glyph）
+              { type: 'Panel', id: 'dish-cup', props: { bg: 'radial-gradient(120% 120% at 30% 20%,#a8506a,#6e2d44)' }, layout: { width: 50, height: 50, radius: 14, align: 'center', justify: 'start', padding: 0 }, children: [{ type: 'Panel', id: 'dish-cup-ball', props: { bg: 'radial-gradient(circle at 35% 30%,#ffd98a,#e0a328)' }, layout: { width: 17, height: 17, radius: 9, y: -5, x: 16, padding: 0 }, children: [] }] },
               bareCol('dish-hdt', [
                 lbl('dish-title', '命运骰盅', { size: 'xxl', bold: true, color: 'gold', glow: true }),
                 lbl('dish-sub', `第${Math.floor((S.globalRoom - 1) / 3) + 1}层 · ${layerName(S.globalRoom)} · 选出本轮要投掷的骰子，越省越好`, { size: 'sm', color: 'sub' }),
