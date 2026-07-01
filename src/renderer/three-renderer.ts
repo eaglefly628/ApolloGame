@@ -1,7 +1,7 @@
 import * as THREE from 'three';
 import type { IWorld, RendererBackend } from '@engine/core/types.js';
 import type { Mesh3D, Sky3D, Camera3D, Fog3D, Material3D, AnimState3D, Glow3D, Transform3D } from '@engine/protocol/components.js';
-import type { AssetManager } from '@assets/index.js';
+import type { AssetManager, MaterialSpec } from '@assets/index.js';
 import { isImageHandle } from '@assets/index.js';
 import { getCamera3D, getSky3D, getLights3D, getPost3D, getFog3D } from '@engine/protocol/camera-view.js';
 import { collectRenderables, chooseRenderMode, type Renderable } from './renderable.js';
@@ -10,7 +10,7 @@ import {
   transform3dPose, groundPose, poseBounds3D, bounds3DCenter, bounds3DExtent, fitDistance3D,
 } from './three-projection.js';
 import { mesh3dPose, applyPose, buildMesh3D, buildDieMesh3D, dieMode, buildVoxelMesh3D, voxelMode, buildGlowTexture, buildGeometry, buildSkyTexture, disposeMesh } from './three/geometry.js';
-import { buildPbrMesh3D, pbrSig, type PbrMaps } from './three/material.js';
+import { buildPbrMesh3D, pbrSig, applyMaterialRef, type PbrMaps } from './three/material.js';
 import { hashPoses, camSig, postSig } from './three/stats.js';
 import { LightRig } from './three/lights.js';
 import { PostPipeline } from './three/post.js';
@@ -47,6 +47,7 @@ export interface ThreeRendererOptions {
   fov?: number;
   zStep?: number; // zOrder → z 深度步长
   assets?: AssetManager; // 提供则 sprite 画真实贴图，否则占位
+  materials?: ReadonlyMap<string, MaterialSpec>; // 材质资源目录（REQ-Resource ④·buildMaterialCatalog）：Material3D.materialRef 查此表
 }
 
 export class ThreeRenderer implements RendererBackend {
@@ -93,6 +94,7 @@ export class ThreeRenderer implements RendererBackend {
   private readonly fov: number;
   private readonly zStep: number;
   private readonly assets?: AssetManager;
+  private readonly materials?: ReadonlyMap<string, MaterialSpec>; // 材质资源目录（REQ-Resource ④）
 
   constructor(opts: ThreeRendererOptions = {}) {
     this.width = opts.width ?? 640;
@@ -101,6 +103,7 @@ export class ThreeRenderer implements RendererBackend {
     this.fov = opts.fov ?? 50;
     this.zStep = opts.zStep ?? 0.01;
     this.assets = opts.assets;
+    this.materials = opts.materials;
   }
 
   init(container: HTMLElement): void {
@@ -505,13 +508,15 @@ export class ThreeRenderer implements RendererBackend {
 
   // PBR 单 mesh（Material3D·TA Phase 5）：按材质签名池管理（preset/覆盖/形状/**真实贴图**变才重建）。与哑光 fallback 共用池。
   private ensurePbrMesh(r: Renderable, m: Mesh3D, mat: Material3D): THREE.Mesh {
-    const maps = this.resolvePbrMaps(mat); // REQ-Resource ①：按 key 取真实贴图（色彩空间按用途设）
+    // REQ-Resource ④：materialRef 在场 → 从材质目录查 MaterialSpec 作基底合成有效材质（inline 字段覆盖）；否则原样。
+    const eff = mat.materialRef ? applyMaterialRef(mat, this.materials?.get(mat.materialRef)) : mat;
+    const maps = this.resolvePbrMaps(eff); // REQ-Resource ①：按 key 取真实贴图（色彩空间按用途设）
     // 贴图就绪态并入 mode：异步贴图从未就绪→就绪时 mode 变 → 重建 mesh 挂上图（同 sprite 异步先例）。
-    const mode = `${pbrSig(m, mat)}|${maps.map ? 'M' : ''}${maps.normalMap ? 'N' : ''}${maps.roughnessMap ? 'R' : ''}${maps.aoMap ? 'A' : ''}`;
+    const mode = `${pbrSig(m, eff)}|${maps.map ? 'M' : ''}${maps.normalMap ? 'N' : ''}${maps.roughnessMap ? 'R' : ''}${maps.aoMap ? 'A' : ''}`;
     const prev = this.meshes.get(r.entityId);
     if (prev && this.modeOf.get(r.entityId) === mode) return prev;
     if (prev) { this.scene.remove(prev); disposeMesh(prev); }
-    const mesh = buildPbrMesh3D(m, mat, maps);
+    const mesh = buildPbrMesh3D(m, eff, maps);
     this.meshes.set(r.entityId, mesh);
     this.modeOf.set(r.entityId, mode);
     this.scene.add(mesh);

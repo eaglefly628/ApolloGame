@@ -1,8 +1,8 @@
 // PBR 材质消费端（REQ-Resource ①·真实贴图走 texture-key 路线）：map 签名 + 贴图挂载 + 色彩空间/基色处理。
 import { describe, it, expect } from 'vitest';
 import * as THREE from 'three';
-import { buildPbrMaterial, pbrSig, type PbrMaps } from './material.js';
-import { resolvePbr } from '@assets/index.js';
+import { buildPbrMaterial, pbrSig, applyMaterialRef, type PbrMaps } from './material.js';
+import { resolvePbr, type MaterialSpec } from '@assets/index.js';
 import type { Mesh3D, Material3D } from '@engine/protocol/components.js';
 
 const mesh = (): Mesh3D => ({ type: 'Mesh3D', shape: 'box', width: 8, height: 8, depth: 8, frontTint: 0xffffff });
@@ -41,5 +41,33 @@ describe('REQ-Resource ① 材质贴图消费端', () => {
     const m = buildPbrMaterial(resolvePbr('gold'));
     expect(m.map).toBeNull();
     expect(m.metalness).toBe(1);
+  });
+});
+
+describe('REQ-Resource ④ 材质数据资产（applyMaterialRef）', () => {
+  const spec: MaterialSpec = { preset: 'wood', map: 'tex/alb', normalMap: 'tex/nrm', roughness: 0.7 };
+
+  it('materialRef 目录命中 → spec 作基底（preset/贴图 key 来自材质资源）', () => {
+    const mat: Material3D = { type: 'Material3D', preset: 'matte', materialRef: 'mat/wood' };
+    const eff = applyMaterialRef(mat, spec);
+    expect(eff.preset).toBe('wood'); // 材质资源 preset 权威（压过 inline 'matte'）
+    expect(eff.map).toBe('tex/alb');
+    expect(eff.normalMap).toBe('tex/nrm');
+    expect(eff.roughness).toBe(0.7);
+    // 有效材质喂 pbrSig → 反映材质资源（与裸 matte 不同）
+    expect(pbrSig(mesh(), eff)).not.toBe(pbrSig(mesh(), mat));
+  });
+
+  it('inline 字段覆盖材质资源（局部微调）', () => {
+    const mat: Material3D = { type: 'Material3D', preset: 'matte', materialRef: 'mat/wood', roughness: 0.2, color: 0xff0000 };
+    const eff = applyMaterialRef(mat, spec);
+    expect(eff.roughness).toBe(0.2); // inline 覆盖 spec.roughness=0.7
+    expect(eff.color).toBe(0xff0000); // spec 无 color → 用 inline
+    expect(eff.map).toBe('tex/alb'); // 未 inline 覆盖 → 用 spec
+  });
+
+  it('目录查无（spec undefined）→ 原样返回（向后兼容）', () => {
+    const mat: Material3D = { type: 'Material3D', preset: 'steel', materialRef: 'mat/missing' };
+    expect(applyMaterialRef(mat, undefined)).toBe(mat);
   });
 });

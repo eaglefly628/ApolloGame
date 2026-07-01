@@ -1,6 +1,6 @@
 import * as THREE from 'three';
 import type { Mesh3D, Material3D, SurfaceDetail } from '@engine/protocol/components.js';
-import { resolvePbr, type PbrMaterialDef } from '@assets/index.js';
+import { resolvePbr, type PbrMaterialDef, type MaterialSpec } from '@assets/index.js';
 import { buildSurfaceMaps } from './surface-tex.js';
 
 // ═══════════════════════════════════════════════════════════════
@@ -15,6 +15,28 @@ export interface PbrMaps {
   normalMap?: THREE.Texture; // 线性
   roughnessMap?: THREE.Texture; // 线性
   aoMap?: THREE.Texture; // 线性
+}
+
+// REQ-Resource ④：材质数据资产（MaterialSpec）→ 合成有效 Material3D。
+// `spec` 作基底（材质资源权威·尤其 preset + 引的 texture key）；inline `mat` 已定义的字段覆盖之（局部微调）。
+// spec 缺省（materialRef 未设 / 目录查无）→ 原样返回 mat（向后兼容·纯 inline 路径）。render-only·纯数据合成。
+export function applyMaterialRef(mat: Material3D, spec: MaterialSpec | undefined): Material3D {
+  if (!spec) return mat;
+  return {
+    type: 'Material3D',
+    preset: spec.preset ?? mat.preset, // 材质资源的 preset 权威；无则用 inline 后备
+    color: mat.color ?? spec.color,
+    roughness: mat.roughness ?? spec.roughness,
+    metalness: mat.metalness ?? spec.metalness,
+    emissive: mat.emissive ?? spec.emissive,
+    emissiveIntensity: mat.emissiveIntensity,
+    surface: mat.surface,
+    map: mat.map ?? spec.map,
+    normalMap: mat.normalMap ?? spec.normalMap,
+    roughnessMap: mat.roughnessMap ?? spec.roughnessMap,
+    aoMap: mat.aoMap ?? spec.aoMap,
+    materialRef: mat.materialRef,
+  };
 }
 
 // 预设 → three 材质。surface 在场 → 程序化生成 normal/roughness 挂上；**显式 maps 覆盖同通道**（真实贴图优先·render-only）。

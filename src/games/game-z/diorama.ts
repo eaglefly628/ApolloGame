@@ -11,7 +11,7 @@ import type { WorldBlueprint } from '../../assembly/demo.assembly.js';
 import { motionApplyCapability } from '@skills/tier1/index.js';
 import { overlapDetect3dCapability, navmeshBakeCapability, collisionResolve3dCapability } from '@skills/atoms/index.js';
 import { pathfindCapability } from '@skills/tier2/index.js';
-import { MODEL_FOX, TEX_PLANK_ALBEDO, TEX_PLANK_NORMAL } from './assets.js';
+import { MODEL_FOX, MAT_PLANK_WOOD } from './assets.js';
 
 type Ent = WorldBlueprint['entities'][string];
 
@@ -135,11 +135,12 @@ export function dioramaBlueprint(): WorldBlueprint {
       // 中心信标（金属柱 + 魔法喷泉 VFX）：赛道圆心的焦点，鸭子绕它跑。
       beacon: { ...block(0, 4, 0, 4, 8, 4, 0xffd54f, 0xffb300), Material3D: { preset: 'gold' } },
 
-      // 🖼 真实贴图木箱（REQ-Resource ①·验收）：Material3D 引 texture key 的 albedo + 法线贴图（自产程序化木板图）。
-      // 渲染器按 key 从 AssetManager 取图·**法线走线性色彩空间**（不偏色）。证明「真实贴图走资产 key 路线」端到端通。
+      // 🖼 真实贴图木箱（REQ-Resource ①①④·验收）：物件只引**材质数据资产** materialRef=MAT_PLANK_WOOD
+      // （该材质在索引里 = wood 预设 + 木板 albedo/法线 texture key）。渲染器据 materialRef 查材质目录合成 → 取图挂上。
+      // 证明「材质=引 texture key 的数据资产·物件按 key 引材质」端到端通（非物件内联硬编码 preset+贴图）。
       'plank-crate': {
         ...block(11, 4, 6, 8, 8, 8, 0x9c6b3f, 0x9c6b3f),
-        Material3D: { preset: 'wood', map: TEX_PLANK_ALBEDO, normalMap: TEX_PLANK_NORMAL },
+        Material3D: { preset: 'matte', materialRef: MAT_PLANK_WOOD },
       },
       'vfx-beacon': {
         Vfx3D: {

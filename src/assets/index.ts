@@ -26,6 +26,7 @@ export {
   pendingAssets,
   filledAssets,
   registerAssetIndex,
+  buildMaterialCatalog,
   ASSET_TYPES,
   deriveColorSpace,
   textureSpecOf,

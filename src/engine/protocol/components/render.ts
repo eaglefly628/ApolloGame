@@ -234,7 +234,11 @@ export interface Post3D extends Component {
 // （不进哑光实例化批）：特征物件用·量大同款仍用默认哑光实例化。
 export interface Material3D extends Component {
   readonly type: 'Material3D';
-  preset: string; // PBR 预设名（闭集·见 assets/pbr-materials）
+  preset: string; // PBR 预设名（闭集·见 assets/pbr-materials）；materialRef 在场时作后备（材质资源无 preset 才用它）
+  // 材质数据资产引用（REQ-Resource ④·render-only·= 索引 type:'material' 条目 id）：渲染器据它从材质目录
+  // （buildMaterialCatalog）查 MaterialSpec 作基底，下面的 inline 字段（已定义者）覆盖之 → 合成有效材质。
+  // 缺省或查无 → 纯用 inline preset/参数（向后兼容）。材质 = 引 texture key 的数据·非硬编码预设。
+  materialRef?: string;
   color?: number; // 覆盖基色 0xRRGGBB
   roughness?: number;
   metalness?: number;

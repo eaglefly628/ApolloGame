@@ -75,7 +75,8 @@ export function parseAssetIndex(raw: unknown): AssetIndex {
     if (typeof e.description !== 'string') fail(`assets[${i}] "${e.id}".description 必须是字符串`);
     if (e.status !== 'tbf' && e.status !== 'filled')
       fail(`assets[${i}] "${e.id}".status 必须是 tbf|filled`);
-    if (e.status === 'filled' && (typeof e.path !== 'string' || e.path.length === 0))
+    // material 是**数据型资产**（无文件·数据全在 spec·REQ-Resource ④）→ 免 path；其余 filled 必带 path。
+    if (e.status === 'filled' && e.type !== 'material' && (typeof e.path !== 'string' || e.path.length === 0))
       fail(`assets[${i}] "${e.id}" 已 filled 但缺 path`);
     if (e.spec !== undefined && (typeof e.spec !== 'object' || e.spec === null))
       fail(`assets[${i}] "${e.id}".spec 必须是对象`);
@@ -264,6 +265,31 @@ export function registerAssetIndex(manager: AssetManager, index: AssetIndex, bas
     } else if (e.type === 'mesh') {
       manager.register({ kind: 'model', key: e.id, src });
     }
-    // material/sound/… 暂不桥接（登记在索引·消费端后续增量）。
+    // material（数据型·无文件）不进 AssetManager 加载路径 → 走 buildMaterialCatalog；sound/… 后续增量。
   }
+}
+
+/**
+ * 材质资源目录（REQ-Resource ④）：从索引提取 `type:'material'` 数据型资产 → `id → MaterialSpec`。
+ * 材质 = **引 texture key 的数据资产**（预设降级为「内置材质资源」）；渲染器据 `Material3D.materialRef` 查此表
+ * 合成有效材质（见 renderer/three/material.applyMaterialRef）。无文件·不走 AssetManager 加载。
+ */
+export function buildMaterialCatalog(index: AssetIndex): Map<string, MaterialSpec> {
+  const cat = new Map<string, MaterialSpec>();
+  for (const e of index.assets) {
+    if (e.type !== 'material' || e.status !== 'filled') continue;
+    const s = e.spec ?? {};
+    cat.set(e.id, {
+      preset: typeof s.preset === 'string' ? s.preset : undefined,
+      color: numOrUndef(s.color),
+      roughness: numOrUndef(s.roughness),
+      metalness: numOrUndef(s.metalness),
+      emissive: numOrUndef(s.emissive),
+      map: typeof s.map === 'string' ? s.map : undefined,
+      normalMap: typeof s.normalMap === 'string' ? s.normalMap : undefined,
+      roughnessMap: typeof s.roughnessMap === 'string' ? s.roughnessMap : undefined,
+      aoMap: typeof s.aoMap === 'string' ? s.aoMap : undefined,
+    });
+  }
+  return cat;
 }

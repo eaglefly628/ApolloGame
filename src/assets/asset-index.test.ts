@@ -8,6 +8,7 @@ import {
   ASSET_TYPES,
   deriveColorSpace,
   textureSpecOf,
+  buildMaterialCatalog,
 } from './asset-index.js';
 import { AssetManager, StubAssetLoader } from './asset-manager.js';
 
@@ -214,6 +215,35 @@ describe('asset-index — 桥接 mesh + texture colorSpace（REQ-Resource ②）
     const nrm = await m.load('nrm');
     expect(alb.descriptor).toMatchObject({ kind: 'texture', colorSpace: 'srgb' });
     expect(nrm.descriptor).toMatchObject({ kind: 'texture', colorSpace: 'linear' });
+  });
+});
+
+describe('asset-index — 材质数据资产（REQ-Resource ④）', () => {
+  it('material 免 path（数据型·filled 无文件）·buildMaterialCatalog 提取 spec', () => {
+    const idx = parseAssetIndex({
+      version: 1,
+      assets: [
+        { id: 'mat/wood', type: 'material', description: '木材质', status: 'filled', spec: { preset: 'wood', map: 'tex/alb', normalMap: 'tex/nrm' } },
+        { id: 'mat/tbf', type: 'material', description: '未定', status: 'tbf' },
+      ],
+    });
+    const cat = buildMaterialCatalog(idx);
+    expect(cat.has('mat/wood')).toBe(true);
+    expect(cat.has('mat/tbf')).toBe(false); // 未 filled 不入目录
+    expect(cat.get('mat/wood')).toMatchObject({ preset: 'wood', map: 'tex/alb', normalMap: 'tex/nrm' });
+  });
+
+  it('material 的非法 spec 类型（preset 非字符串）构建期抛错', () => {
+    expect(() =>
+      parseAssetIndex({ version: 1, assets: [{ id: 'm', type: 'material', description: 'a', status: 'filled', spec: { preset: 123 } }] }),
+    ).toThrow(/preset 必须是字符串/);
+  });
+
+  it('registerAssetIndex 不把 material 注册进 AssetManager（数据型·不走加载）', () => {
+    const idx = parseAssetIndex({ version: 1, assets: [{ id: 'mat/x', type: 'material', description: 'a', status: 'filled', spec: { preset: 'steel' } }] });
+    const m = new AssetManager(new StubAssetLoader());
+    registerAssetIndex(m, idx);
+    expect(m.has('mat/x')).toBe(false); // 材质走 buildMaterialCatalog·不进 AssetManager
   });
 });
 

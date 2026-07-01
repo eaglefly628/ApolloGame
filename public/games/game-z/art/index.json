@@ -1,0 +1,36 @@
+{
+  "version": 1,
+  "assets": [
+    {
+      "id": "tex/vendor-demo",
+      "type": "texture",
+      "description": "aarch64 original · devicon",
+      "status": "filled",
+      "path": "/games/game-z/art/devicon/aarch64-original.svg",
+      "spec": {
+        "format": "svg",
+        "width": 128,
+        "height": 128,
+        "transparent": true
+      },
+      "category": "icon.ui",
+      "tags": [
+        "aarch64",
+        "original",
+        "devicon",
+        "brand",
+        "logo",
+        "dev",
+        "tech"
+      ],
+      "style": "cartoon.flat",
+      "license": "MIT",
+      "source": "devicon",
+      "provenance": {
+        "repo": "devicons/devicon",
+        "ref": "master",
+        "vendoredFrom": "devicon/aarch64-original"
+      }
+    }
+  ]
+}

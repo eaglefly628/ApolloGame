@@ -126,6 +126,36 @@ interface MaterialSpec {           // 材质 = 引 texture key 的数据资产�
 >
 > **测试**：`asset-index.test` +9 例（deriveColorSpace/textureSpecOf/非法 usage·colorSpace·wrap·genCollision 抛错/旧条目兼容/mesh 桥接/texture colorSpace 派生）。
 
+## 4.7 ④⑤ + 资源管理 Skill 完成回执（P3D 2026-07-01·**跨界·请 Lead review 再合并**）
+
+> owner 2026-07-01「④⑤ 可以做·做完落档成资源管理 Agent 的一个 Skill」→ 已实现·全绿。跨界改动仍集中在
+> `src/assets/{asset-index,asset-types}.ts`（🔓 授权）+ 渲染/game-z（✅ 独占）+ 新 `scripts/` 工具 + `.claude/skills`。
+>
+> **④ 材质成数据资产**（材质 = 引 texture key 的数据·非硬编码预设）：
+> - `parseAssetIndex`：`material` 是**数据型资产**（无文件）→ 免 path 校验。
+> - `buildMaterialCatalog(index)`：`type:'material'` 条目 → `id → MaterialSpec` 目录。
+> - `Material3D.materialRef?`（🔶 render-only 组件字段·知会 Lead）：引材质资源 id。
+> - `renderer/three/material.applyMaterialRef(mat, spec)`：材质资源作基底 + inline 字段覆盖 → 合成有效材质；
+>   `ThreeRenderer{materials}` 选项持目录，`ensurePbrMesh` 用 `applyMaterialRef` 合成后再取图/签名/建 mesh。
+> - demo：game-z `plank-crate` 从内联 `{preset:'wood',map,normalMap}` 改为 `{preset:'matte',materialRef:'mat/plank-wood'}`，
+>   材质资源 `mat/plank-wood` 在 `GAME_Z_INDEX` 里定义（wood + 两张木板 texture key）。渲染等价·数据更干净。
+>
+> **⑤ vendoring 工具**（共享库 → 游戏本地美术目录）：
+> - `scripts/vendor-asset.mjs`：`node scripts/vendor-asset.mjs <shared-id> <game> [--as <local-id>]`——从
+>   `assets/index.json` copy 文件进 `public/games/<game>/art/<镜像子路径>` + upsert 本地 `AssetIndex`
+>   （`public/games/<game>/art/index.json`·携 spec/license/provenance + `vendoredFrom` 溯源）。确定性·幂等·零网络。
+> - demo：已 vendor `devicon/aarch64-original` → `game-z` 本地 `tex/vendor-demo`（证明端到端）。
+> - 自检 `src/games/game-z/vendor.test.ts`：本地索引 `parseAssetIndex + registerAssetIndex` 可消费·src 指向本地拷贝。
+>
+> **资源管理 Agent Skill**：`.claude/skills/resource-manager/SKILL.md`——把「vendor 共享库资源 / 加材质数据资产 /
+> 填 spec 闭集元数据」封装成 agent 可调用技能（含 vendoring 架构、闭集 schema、边界纪律、实现锚点）。
+>
+> **测试**：`asset-index.test`(+3·material 免 path/buildMaterialCatalog/material 不进 AssetManager) +
+> `material.test`(+3·applyMaterialRef 基底/inline 覆盖/查无原样) + `vendor.test`(+1)。tsc+vitest+build 全绿。
+>
+> **归属提醒**：④⑤ 动 `src/assets`（engine-core·跨 2D/3D）→ **请 Lead review 再并主干**。`Material3D.materialRef`
+> 是 render.ts 的 render-only 3D 字段（🔶 知会你）。sound/font 仍后置（无消费者·音频另有 web-audio 路线）。
+
 ## 5. 检查点（回 Lead）
 - 动 §2.1/§2.2（核心索引）前：贴 schema 差异/疑问回 Lead（若与 3D 现实不合就改契约）。
 - ②③ 实现完：Lead review 再合并主干。

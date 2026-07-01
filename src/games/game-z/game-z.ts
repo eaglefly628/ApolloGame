@@ -11,7 +11,7 @@ import { mountUI } from '@ui/components/index.js';
 import type { LayoutNode } from '@ui/components/index.js';
 import type { Velocity, Camera3D, Post3D, Fog3D, Transform } from '@engine/protocol/components.js';
 import { dioramaBlueprint, BOARD_CAM, HOME_CAM, TRACK_R } from './diorama.js';
-import { GAME_Z_INDEX, DioramaLoader } from './assets.js';
+import { GAME_Z_INDEX, GAME_Z_MATERIALS, DioramaLoader } from './assets.js';
 
 const MOVE_KEYS = new Set(['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight', 'KeyW', 'KeyA', 'KeyS', 'KeyD']);
 
@@ -57,7 +57,7 @@ export function mount(container: HTMLElement): () => void {
 
   const engine = new Engine();
   engine.load(dioramaBlueprint());
-  const renderer = new ThreeRenderer({ width: w, height: h, background: 0x0b1020, assets }); // fov 现由 Camera3D 数据驱动
+  const renderer = new ThreeRenderer({ width: w, height: h, background: 0x0b1020, assets, materials: GAME_Z_MATERIALS }); // fov 现由 Camera3D 数据驱动·materials=材质资源目录（REQ-Resource ④）
   engine.attachRenderer(renderer, stage);
 
   // HUD 叠加层（LayoutNode 纯数据·UI 铁律）。
