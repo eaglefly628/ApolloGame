@@ -10,6 +10,7 @@
 import type { WorldBlueprint } from '../../assembly/demo.assembly.js';
 import type { VoxelTex } from '@engine/protocol/components.js';
 import { MODEL_DUCK } from './assets.js';
+import { tileArt } from './art.js';
 
 type Ent = WorldBlueprint['entities'][string];
 
@@ -62,8 +63,8 @@ function block(x: number, y: number, z: number, w: number, h: number, d: number,
 }
 const PAT_BY_ACT: Array<VoxelTex['pattern']> = ['grass', 'stone', 'plain', 'crystal'];
 /** 由层主题派生地台/墙的体素贴图。 */
-const floorTex = (t: ActDef, act: number): VoxelTex => ({ top: t.floorTop, top2: t.top2, side: t.floorSide, side2: t.side2, trim: t.trim, pattern: PAT_BY_ACT[act % 4], tile: 2 });
-const wallTex = (t: ActDef): VoxelTex => ({ top: t.wall, side: t.wall, side2: t.side2, trim: t.trim, wall: true, tile: 2 });
+const floorTex = (t: ActDef, act: number): VoxelTex => ({ top: t.floorTop, top2: t.top2, side: t.floorSide, side2: t.side2, trim: t.trim, pattern: PAT_BY_ACT[act % 4], tile: 3, topSrc: tileArt(act, 'top'), sideSrc: tileArt(act, 'side') });
+const wallTex = (t: ActDef, act: number): VoxelTex => ({ top: t.wall, side: t.wall, side2: t.side2, trim: t.trim, wall: true, tile: 3, sideSrc: tileArt(act, 'wall') });
 
 /**
  * 即时生成第 index 间竞技场的全部实体（id 以 `r{index}-` 前缀·跨房间唯一·便于流式卸载）。
@@ -115,12 +116,12 @@ export function genRoom(index: number): Record<string, Ent> {
     // 竞技场地台（顶在 y=0）——顶面程序化地砖网格（复刻「带精美贴图的体素」）
     [`${P}-floor`]: block(0, -2, baseZ, hw * 2, 4, hd * 2, t.floorTop, t.floorSide, undefined, floorTex(t, m.act)),
     // 三面围墙（左/右/后=入口侧）——墙纹 + 顶饰条
-    [`${P}-wall-l`]: block(-hw, 1.5, baseZ, 1.5, 5, hd * 2, t.wall, t.floorSide, undefined, wallTex(t)),
-    [`${P}-wall-r`]: block(hw, 1.5, baseZ, 1.5, 5, hd * 2, t.wall, t.floorSide, undefined, wallTex(t)),
-    [`${P}-wall-back`]: block(0, 1.5, baseZ - hd, hw * 2, 5, 1.5, t.wall, t.floorSide, undefined, wallTex(t)),
+    [`${P}-wall-l`]: block(-hw, 1.5, baseZ, 1.5, 5, hd * 2, t.wall, t.floorSide, undefined, wallTex(t, m.act)),
+    [`${P}-wall-r`]: block(hw, 1.5, baseZ, 1.5, 5, hd * 2, t.wall, t.floorSide, undefined, wallTex(t, m.act)),
+    [`${P}-wall-back`]: block(0, 1.5, baseZ - hd, hw * 2, 5, 1.5, t.wall, t.floorSide, undefined, wallTex(t, m.act)),
     // 前墙留中央门洞（+Z 端·通向上一间·发光门楣 + 门内符文光幕）
-    [`${P}-wall-fl`]: block(-segCx, 1.5, baseZ + hd, segW, 5, 1.5, t.wall, t.floorSide, undefined, wallTex(t)),
-    [`${P}-wall-fr`]: block(segCx, 1.5, baseZ + hd, segW, 5, 1.5, t.wall, t.floorSide, undefined, wallTex(t)),
+    [`${P}-wall-fl`]: block(-segCx, 1.5, baseZ + hd, segW, 5, 1.5, t.wall, t.floorSide, undefined, wallTex(t, m.act)),
+    [`${P}-wall-fr`]: block(segCx, 1.5, baseZ + hd, segW, 5, 1.5, t.wall, t.floorSide, undefined, wallTex(t, m.act)),
     [`${P}-door-top`]: block(0, 5.5, baseZ + hd, 9, 2, 1.5, t.accent, t.wall),
     [`${P}-portal`]: block(0, 2.6, baseZ + hd - 0.2, 8, 5, 0.5, t.accent, t.accent),
     [`${P}-door-glow`]: glow(0, 4.4, baseZ + hd - 1, t.accent, 9, 0.6), // 门符文光晕（复刻原型 door glowSprite）

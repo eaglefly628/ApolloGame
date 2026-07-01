@@ -56,6 +56,8 @@ export interface VoxelTex {
   pattern?: 'grass' | 'stone' | 'crystal' | 'plain'; // 顶面纹样母题（草叶/石纹/晶裂/纯颗粒）
   wall?: boolean;           // true=墙体（六面同侧墙纹 + 顶饰条），false=地台（顶面网格 + 侧面）
   tile?: number;            // 一格世界尺寸（缺省 2·据物体尺寸算重复次数出网格）
+  topSrc?: string;          // 顶面**手绘贴图 URL**（在场则替代程序化 topTex·Cloud Design 素材）
+  sideSrc?: string;         // 侧面/墙体手绘贴图 URL（在场则替代程序化 sideTex）
 }
 
 export interface Mesh3D extends Component {

@@ -177,14 +177,23 @@ export function buildVoxelSideTexture(v: VoxelTex): THREE.CanvasTexture {
   x.strokeStyle = 'rgba(0,0,0,.25)'; x.lineWidth = 3; x.strokeRect(1, 1, s - 2, s - 2);
   const t = new THREE.CanvasTexture(cv); t.colorSpace = THREE.SRGBColorSpace; t.wrapS = t.wrapT = THREE.RepeatWrapping; t.anisotropy = 4; return t;
 }
-/** 体素贴图 box：地台=顶面网格纹 + 四周侧纹；wall=六面侧墙纹。纹理按尺寸重复出网格。 */
+/** 手绘贴图 URL → 平铺纹理（wrapRepeat·sRGB）。 */
+function loadTiledTexture(src: string, rx: number, ry: number): THREE.Texture {
+  const t = new THREE.TextureLoader().load(src);
+  t.colorSpace = THREE.SRGBColorSpace; t.wrapS = t.wrapT = THREE.RepeatWrapping; t.anisotropy = 4; t.repeat.set(rx, ry);
+  return t;
+}
+/** 体素贴图 box：地台=顶面网格纹 + 四周侧纹；wall=六面侧墙纹。手绘 URL(topSrc/sideSrc) 优先，否则程序化。纹理按尺寸重复出网格。 */
 export function buildVoxelMesh3D(m: Mesh3D): THREE.Mesh {
   const v = m.voxelTex!;
   const depth = mesh3dDepth(m.shape, m.width, m.height, m.depth);
   const tile = v.tile ?? 2;
-  const topT = buildVoxelTopTexture(v), sideT = buildVoxelSideTexture(v);
-  topT.repeat.set(Math.max(1, Math.round(m.width / tile)), Math.max(1, Math.round(depth / tile)));
-  sideT.repeat.set(Math.max(1, Math.round(m.width / tile)), Math.max(1, Math.round(m.height / tile)));
+  const rxTop = Math.max(1, Math.round(m.width / tile)), ryTop = Math.max(1, Math.round(depth / tile));
+  const rxSide = Math.max(1, Math.round(m.width / tile)), rySide = Math.max(1, Math.round(m.height / tile));
+  const topT = v.topSrc ? loadTiledTexture(v.topSrc, rxTop, ryTop) : buildVoxelTopTexture(v);
+  const sideT = v.sideSrc ? loadTiledTexture(v.sideSrc, rxSide, rySide) : buildVoxelSideTexture(v);
+  if (!v.topSrc) topT.repeat.set(rxTop, ryTop);
+  if (!v.sideSrc) sideT.repeat.set(rxSide, rySide);
   const topMat = new THREE.MeshStandardMaterial({ map: topT, roughness: .85 });
   const sideMat = new THREE.MeshStandardMaterial({ map: sideT, roughness: .9 });
   // 面序 [px,nx,py,ny,pz,nz] = [右,左,顶,底,前,后]。地台：顶面用 topMat；wall：全用 sideMat。
@@ -193,7 +202,7 @@ export function buildVoxelMesh3D(m: Mesh3D): THREE.Mesh {
 }
 export function voxelMode(m: Mesh3D): string {
   const v = m.voxelTex!;
-  return `vox|${m.width}|${m.height}|${m.depth ?? ''}|${v.top}|${v.side}|${v.top2 ?? ''}|${v.trim ?? ''}|${v.pattern ?? ''}|${v.wall ? 1 : 0}|${v.tile ?? ''}`;
+  return `vox|${m.width}|${m.height}|${m.depth ?? ''}|${v.top}|${v.side}|${v.top2 ?? ''}|${v.trim ?? ''}|${v.pattern ?? ''}|${v.wall ? 1 : 0}|${v.tile ?? ''}|${v.topSrc ?? ''}|${v.sideSrc ?? ''}`;
 }
 
 /** 加性辉光精灵的共享径向渐变贴图（白心→透明·复刻原型 glowSprite·全场共用一张、颜色由 SpriteMaterial.color 定）。 */
