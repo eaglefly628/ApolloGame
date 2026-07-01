@@ -103,6 +103,55 @@ export function buildGeometry(r: Renderable, mode: string): THREE.BufferGeometry
 }
 
 // Sky3D → 画布纹理：天顶→地平线竖直渐变 + 可选程序化云团（固定位置·可复现·无图片资产）。
+// ── 3D 命运骰（render-only·复刻美术设计案原型 dieFaceTex/dieMesh）─────────────────────────────
+const dieShade = (n: number, k: number): string => {
+  const r = (n >> 16) & 255, g = (n >> 8) & 255, b = n & 255;
+  const f = (v: number): number => Math.round(k < 0 ? v * (1 + k) : v + (255 - v) * k);
+  return `rgb(${f(r)},${f(g)},${f(b)})`;
+};
+const DIE_PIPS: Record<number, [number, number][]> = {
+  1: [[.5, .5]], 2: [[.28, .28], [.72, .72]], 3: [[.28, .28], [.5, .5], [.72, .72]],
+  4: [[.28, .28], [.72, .28], [.28, .72], [.72, .72]], 5: [[.28, .28], [.72, .28], [.5, .5], [.28, .72], [.72, .72]],
+  6: [[.28, .28], [.28, .5], [.28, .72], [.72, .28], [.72, .5], [.72, .72]],
+};
+/** 一面骰面贴图：元素色圆角底 + 白点 pip（复刻原型 dieFaceTex）。 */
+export function buildDieFaceTexture(color: number, pip: number): THREE.CanvasTexture {
+  const s = 128;
+  const cv = document.createElement('canvas'); cv.width = cv.height = s;
+  const x = cv.getContext('2d')!;
+  const rr = (a: number, b: number, w: number, h: number, r: number): void => { x.beginPath(); x.moveTo(a + r, b); x.arcTo(a + w, b, a + w, b + h, r); x.arcTo(a + w, b + h, a, b + h, r); x.arcTo(a, b + h, a, b, r); x.arcTo(a, b, a + w, b, r); x.closePath(); };
+  x.fillStyle = dieShade(color, -0.04); rr(s * .04, s * .04, s * .92, s * .92, s * .18); x.fill();
+  const g = x.createLinearGradient(0, 0, s, s); g.addColorStop(0, dieShade(color, .22)); g.addColorStop(1, dieShade(color, -.1));
+  x.fillStyle = g; rr(s * .08, s * .08, s * .84, s * .84, s * .14); x.fill();
+  x.strokeStyle = 'rgba(255,255,255,.28)'; x.lineWidth = s * .03; rr(s * .1, s * .1, s * .8, s * .8, s * .12); x.stroke();
+  const pr = s * .075;
+  (DIE_PIPS[Math.max(1, Math.min(6, Math.round(pip)))] ?? DIE_PIPS[1]!).forEach(([px, py]) => {
+    const cx = px * s, cy = py * s;
+    const rg = x.createRadialGradient(cx - pr * .3, cy - pr * .3, pr * .1, cx, cy, pr);
+    rg.addColorStop(0, '#ffffff'); rg.addColorStop(1, '#dde4ec');
+    x.fillStyle = rg; x.beginPath(); x.arc(cx, cy, pr, 0, 7); x.fill();
+  });
+  const tex = new THREE.CanvasTexture(cv); tex.colorSpace = THREE.SRGBColorSpace; tex.anisotropy = 4;
+  return tex;
+}
+/** 六面 pip 材质骰子（复刻原型 dieMesh）。面序 = BoxGeometry [右,左,顶,底,前,后]；size 取 width。 */
+export function buildDieMesh3D(m: Mesh3D): THREE.Mesh {
+  const size = m.width;
+  const faces = m.dieFaces ?? [];
+  const mats = Array.from({ length: 6 }, (_, i) => {
+    const f = faces.length ? (faces[i] ?? faces[i % faces.length]!) : { color: 0xffffff, pip: 1 };
+    const mat = new THREE.MeshStandardMaterial({ map: buildDieFaceTexture(f.color, f.pip), roughness: 0.42, metalness: 0.18 });
+    mat.emissive.setHex((f.emissive ?? f.color) & 0xffffff);
+    mat.emissiveIntensity = f.emissive !== undefined ? 0.22 : 0.16;
+    return mat;
+  });
+  return new THREE.Mesh(new THREE.BoxGeometry(size, size, size), mats);
+}
+/** 骰子 mesh 缓存签名（面色/点数/尺寸变才重建）。 */
+export function dieMode(m: Mesh3D): string {
+  return `die|${m.width}|${(m.dieFaces ?? []).map((f) => `${f.color}:${f.pip}:${f.emissive ?? ''}`).join(',')}`;
+}
+
 export function buildSkyTexture(sky: Sky3D): THREE.CanvasTexture {
   const W = 512, H = 256;
   const hexstr = (n: number): string => `#${(n & 0xffffff).toString(16).padStart(6, '0')}`;

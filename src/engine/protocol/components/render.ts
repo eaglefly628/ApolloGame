@@ -41,6 +41,9 @@ export interface Card3D extends Component {
 // 不再每游戏手写 Three.js。3D 位姿取同实体 Transform：x,y→位置；rotation→绕 flipAxis 的**翻面角**
 // （0=正面朝镜头、π=反面）。红线：表现层组件，**绝不被 Condition 读、绝不进 sim 逻辑/hash**。
 // 纹理/导入/骨骼/动画不在此（那是各游戏私货 or action 方向，触发方向漂移预警）。
+// 骰面（render-only·程序化 pip 贴图）：一面的元素色底 + 点数。复刻美术设计案 3D 命运骰（原型 dieFaceTex）。
+export interface DieFace { color: number; pip: number; emissive?: number } // color/emissive=0xRRGGBB；pip=1..6 点数
+
 export interface Mesh3D extends Component {
   readonly type: 'Mesh3D';
   shape: 'box' | 'plane' | 'sphere'; // box=有厚度、正反两面可分色；plane=双面薄片（单色）；sphere=球（单色·material 球/星体）
@@ -51,6 +54,9 @@ export interface Mesh3D extends Component {
   backTint?: number; // 反面(-z)色；缺省=frontTint
   edgeTint?: number; // box 四边色；缺省深灰
   flipAxis?: 'x' | 'y'; // Transform.rotation 作为绕此轴的翻面角；缺省 'x'（前后翻）
+  /** 六面 pip 骰子（render-only·程序化贴图·复刻美术设计案 3D 命运骰）。在场 → box 建成 6 面元素色 + 白点材质，
+   *  替代 frontTint/backTint 纯色（size 取 width）。面序 = BoxGeometry [右,左,顶,底,前,后]。骰盅/掷骰/战利品/Title 共用。 */
+  dieFaces?: DieFace[];
 }
 
 // ── Model3D（render-only，导入式 3D 模型 · glTF）──────────────────────────────────────────────

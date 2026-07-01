@@ -145,8 +145,9 @@ export function mount(container: HTMLElement): () => void {
     if (titleDieUp) return;
     engine.world.createEntity(TITLE_DIE);
     engine.world.addComponent(TITLE_DIE, { type: 'Transform3D', x: 0, y: 3.4, z: 0, rotY: 0.6, scale: 1 } as unknown as Component);
-    // 六色命运骰（frontTint/backTint/edgeTint 各取一色·近俯视露 3 面即见多色）
-    engine.world.addComponent(TITLE_DIE, { type: 'Mesh3D', shape: 'box', width: 10, height: 10, depth: 10, edgeTint: hexNum('huo'), frontTint: hexNum('shui'), backTint: hexNum('mu') } as unknown as Component);
+    // 六色 pip 命运骰（6 面各一元素色 + 点数·复刻原型 dieMesh：pips=[1,6,2,5,3,4]）
+    const PIP = [1, 6, 2, 5, 3, 4];
+    engine.world.addComponent(TITLE_DIE, { type: 'Mesh3D', shape: 'box', width: 10, height: 10, depth: 10, frontTint: hexNum('huo'), dieFaces: ELEMS.map((el, i) => ({ color: hexNum(el), pip: PIP[i]! })) } as unknown as Component);
     titleDieUp = true;
   };
   const hideTitleDie = (): void => { if (!titleDieUp) return; try { engine.world.destroyEntity(TITLE_DIE); } catch { /* noop */ } titleDieUp = false; };
