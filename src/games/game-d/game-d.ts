@@ -453,10 +453,11 @@ export function mount(container: HTMLElement): () => void {
     const f = S.foe;
     const trialCond = f.conds.find((c) => c.kind === 'element');
     return {
-      type: 'Screen', id: 'gd-dish', props: {},
+      type: 'Screen', id: 'gd-dish', props: { bg: 'transparent' }, // 透明 → 骰盅玻璃面板浮在（模糊的）盒庭之上
       children: [{
         // 「命运骰盅」紫布面板（渐变 + 斜纹织物·复刻原型 165deg 紫布 + woven texture）+ 金边。
-        type: 'Panel', id: 'dish-root', props: { bg: 'linear-gradient(165deg,#2a1430 0%,#1d1024 55%,#160c1c 100%)', pattern: 'stripe', edge: 'gold' }, layout: { direction: 'column', gap: 10, padding: 18, maxWidth: 1140, radius: 18 },
+        // 磨砂玻璃骰盅（半透深紫玻璃 + backdrop-blur·概念图取样底 #241828→半透）：盒庭从后透出模糊
+        type: 'Panel', id: 'dish-root', props: { glass: true, bg: 'linear-gradient(165deg,rgba(42,22,50,0.78) 0%,rgba(29,16,38,0.84) 55%,rgba(20,12,26,0.88) 100%)', pattern: 'stripe', edge: 'gold' }, layout: { direction: 'column', gap: 10, padding: 18, maxWidth: 1140, radius: 18 },
         children: [
           // header
           bareRow('dish-hdr', [
