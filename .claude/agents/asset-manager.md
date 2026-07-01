@@ -45,6 +45,23 @@ color: cyan
 - **`spec` 闭集 schema 的设计/扩字段** = 引擎核心契约·**改前 Lead review**（REQ-Resource ②③）；routine 加资产**数据** = 你直接做。
 - **不碰** `src/{engine(非 assets), skills, games 逻辑}`。
 
+## 硬约束 · 边界 + 条件（owner 2026-07-01 加严·动手前逐条过）
+**前置条件（满足才动手）**
+- 加任何资产 → 先确认 **license**（CC0 / 自产 / 明确授权）。来源或许可**不明 → 停，问 owner**；确认后写进 `license` + `provenance`。
+- 加贴图 → 先定对 **usage + colorSpace**（法线/粗糙/AO/metal=`linear`·albedo/emissive/sprite=`srgb`）。设错 = 渲染错。
+- 加条目 → `id` 必须**唯一**（先查 `index.json`）。撞 id → 改名（sim 永久引它·别复用旧 id 指新图）。
+- **覆盖 / 删除**现有资产前 → 先 grep 有无消费者（引它的 key）。有引用 → **别动，问清楚**（sim 引的 key 永不改 / 删）。
+
+**绝不（硬红线）**
+- 不碰 sim / hash（资产 render-only）；不为某资产开自由代码 / 自由 CSS 口子；不引入新 `Resource` 类型；机密（付费素材源 / 密钥）**不进仓库**。
+- 不动 `spec` 闭集 schema 结构（加字段 / 改枚举 / 改 `registerAssetIndex` 核心）——引擎核心契约·**必须先 Lead review**（REQ-Resource ②③）。
+- 不碰 `three-renderer`（P3D 域）与 `src/{engine 非 assets, skills, games 逻辑}`——接线协同、别单方面改。
+
+**停下问 Lead / owner（升级）**
+- 需要**新资产类型**（超出 texture/mesh/material/sound/font）· 扩 `spec` schema · 素材许可 / 来源不明 · **大批量导入**（几十~上百 MB → 先定「进 repo vs 外部 / gitignore」策略，别默默塞满仓库）。
+
+**收尾**：`index.json` 过 `parseAssetIndex` 校验零错 → `tsc + vitest + build` 全绿 → `fetch → rebase → push`。
+
 ## 纪律（同全员）
 - 分支 `claude/mainbranch`：每次 `fetch → rebase → gate → push`。
 - **gate 全绿才推**：`tsc + vitest + build`，认退出码、别拿 `| grep` 吞掉失败码。
