@@ -6,6 +6,8 @@ import {
   filledAssets,
   registerAssetIndex,
   ASSET_TYPES,
+  deriveColorSpace,
+  textureSpecOf,
 } from './asset-index.js';
 import { AssetManager, StubAssetLoader } from './asset-manager.js';
 
@@ -132,6 +134,86 @@ describe('asset-index — v2 字段（资源库）', () => {
     expect(a.descriptor).toMatchObject({ kind: 'sprite-sheet', frameWidth: 48, frameHeight: 64, columns: 16, count: 32 });
     const frame = m.resolve('hero.sheet', 17); // 第 17 帧 → 第二行第 2 列
     expect(frame).toMatchObject({ sx: 48, sy: 64, sw: 48, sh: 64 });
+  });
+});
+
+describe('asset-index — spec 闭集 schema（REQ-Resource ③）', () => {
+  it('deriveColorSpace：颜色类→srgb·数据类→linear', () => {
+    expect(deriveColorSpace('albedo')).toBe('srgb');
+    expect(deriveColorSpace('emissive')).toBe('srgb');
+    expect(deriveColorSpace('sprite')).toBe('srgb');
+    expect(deriveColorSpace(undefined)).toBe('srgb'); // 缺省 sprite→srgb（向后兼容）
+    expect(deriveColorSpace('normal')).toBe('linear');
+    expect(deriveColorSpace('roughness')).toBe('linear');
+    expect(deriveColorSpace('metalness')).toBe('linear');
+    expect(deriveColorSpace('ao')).toBe('linear');
+    expect(deriveColorSpace('orm')).toBe('linear');
+  });
+
+  it('textureSpecOf：colorSpace 缺省按 usage 推·显式 colorSpace 覆盖', () => {
+    expect(textureSpecOf({ usage: 'normal' }).colorSpace).toBe('linear');
+    expect(textureSpecOf({ usage: 'albedo' }).colorSpace).toBe('srgb');
+    expect(textureSpecOf({ usage: 'normal', colorSpace: 'srgb' }).colorSpace).toBe('srgb'); // 显式覆盖
+    expect(textureSpecOf(undefined).colorSpace).toBe('srgb');
+  });
+
+  it('非法 usage / colorSpace / wrap 构建期抛错', () => {
+    expect(() =>
+      parseAssetIndex({ version: 1, assets: [{ id: 'x', type: 'texture', description: 'a', status: 'tbf', spec: { usage: 'bogus' } }] }),
+    ).toThrow(/usage 非法/);
+    expect(() =>
+      parseAssetIndex({ version: 1, assets: [{ id: 'x', type: 'texture', description: 'a', status: 'tbf', spec: { colorSpace: 'gamma' } }] }),
+    ).toThrow(/colorSpace 非法/);
+    expect(() =>
+      parseAssetIndex({ version: 1, assets: [{ id: 'x', type: 'texture', description: 'a', status: 'tbf', spec: { wrap: 'mirror' } }] }),
+    ).toThrow(/wrap 非法/);
+  });
+
+  it('非法 mesh.genCollision 抛错·合法 mesh spec 通过', () => {
+    expect(() =>
+      parseAssetIndex({ version: 1, assets: [{ id: 'm', type: 'mesh', description: 'a', status: 'tbf', spec: { genCollision: 'sphere' } }] }),
+    ).toThrow(/genCollision 非法/);
+    const idx = parseAssetIndex({ version: 1, assets: [{ id: 'm', type: 'mesh', description: 'a', status: 'tbf', spec: { scale: 2, genCollision: 'box' } }] });
+    expect(idx.assets[0].type).toBe('mesh');
+  });
+
+  it('旧 texture 条目（无 usage/colorSpace·带 freeform format）照常通过（向后兼容）', () => {
+    const idx = parseAssetIndex({ version: 1, assets: [{ id: 'x', type: 'texture', description: 'a', status: 'tbf', spec: { format: 'png', width: 64, transparent: true } }] });
+    expect(idx.assets).toHaveLength(1);
+  });
+});
+
+describe('asset-index — 桥接 mesh + texture colorSpace（REQ-Resource ②）', () => {
+  it('filled mesh → ModelDescriptor 注册（渲染线取字节）', async () => {
+    const idx = parseAssetIndex({
+      version: 1,
+      assets: [
+        { id: 'duck', type: 'mesh', description: '鸭子', status: 'filled', path: '/models/duck.glb' },
+        { id: 'wip', type: 'mesh', description: '未填', status: 'tbf' },
+      ],
+    });
+    const m = new AssetManager(new StubAssetLoader());
+    registerAssetIndex(m, idx); // path 已绝对 → baseUrl ''
+    expect(m.has('duck')).toBe(true);
+    expect(m.has('wip')).toBe(false); // tbf 不注册
+    const a = await m.load('duck');
+    expect(a.descriptor).toMatchObject({ kind: 'model', key: 'duck', src: '/models/duck.glb' });
+  });
+
+  it('texture 带 usage → 描述符 colorSpace 按用途派生（albedo=srgb·normal=linear）', async () => {
+    const idx = parseAssetIndex({
+      version: 1,
+      assets: [
+        { id: 'alb', type: 'texture', description: 'albedo', status: 'filled', path: '/t/a.png', spec: { usage: 'albedo', width: 256, height: 256 } },
+        { id: 'nrm', type: 'texture', description: 'normal', status: 'filled', path: '/t/n.png', spec: { usage: 'normal', width: 256, height: 256 } },
+      ],
+    });
+    const m = new AssetManager(new StubAssetLoader());
+    registerAssetIndex(m, idx);
+    const alb = await m.load('alb');
+    const nrm = await m.load('nrm');
+    expect(alb.descriptor).toMatchObject({ kind: 'texture', colorSpace: 'srgb' });
+    expect(nrm.descriptor).toMatchObject({ kind: 'texture', colorSpace: 'linear' });
   });
 });
 

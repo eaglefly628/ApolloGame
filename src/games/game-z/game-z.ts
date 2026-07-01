@@ -6,12 +6,12 @@
 // 玩法暂缓（owner 2026-06-27「先把玩法放一下·先长 3D 这条线」）。
 import { Engine } from '../../runtime/engine.js';
 import { ThreeRenderer, type RenderStats } from '@renderer/three-renderer.js';
-import { AssetManager } from '@assets/index.js';
+import { AssetManager, registerAssetIndex } from '@assets/index.js';
 import { mountUI } from '@ui/components/index.js';
 import type { LayoutNode } from '@ui/components/index.js';
 import type { Velocity, Camera3D, Post3D, Fog3D, Transform } from '@engine/protocol/components.js';
 import { dioramaBlueprint, BOARD_CAM, HOME_CAM, TRACK_R } from './diorama.js';
-import { GAME_Z_ASSETS, DioramaLoader } from './assets.js';
+import { GAME_Z_INDEX, DioramaLoader } from './assets.js';
 
 const MOVE_KEYS = new Set(['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight', 'KeyW', 'KeyA', 'KeyS', 'KeyD']);
 
@@ -52,7 +52,7 @@ export function mount(container: HTMLElement): () => void {
   // 3D 资产：模型 + 真实贴图清单 → 异步加载（就绪前渲染器跳过/回退，就绪后自动挂上·向后兼容）。
   // 蓝图持 key 保纯；DioramaLoader 分发（模型取字节 / 贴图取图），ThreeRenderer 解析。
   const assets = new AssetManager(new DioramaLoader());
-  assets.registerManifest(GAME_Z_ASSETS);
+  registerAssetIndex(assets, GAME_Z_INDEX); // REQ-Resource ②：模型 + 贴图走统一 AssetIndex 桥接（path 已是站点绝对路径→ baseUrl ''）
   void assets.loadAll();
 
   const engine = new Engine();

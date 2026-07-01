@@ -24,6 +24,13 @@ export interface TextureDescriptor {
   /** 可选：声明内在尺寸，便于无真实 I/O(headless/测试)时也能解析整图帧。 */
   readonly width?: number;
   readonly height?: number;
+  /**
+   * 色彩空间（REQ-Resource ③）：'srgb'（颜色/反照率贴图）| 'linear'（法线/粗糙/AO 等数据贴图）。
+   * 由索引 `spec.usage/colorSpace` 派生（见 asset-index.deriveColorSpace）。渲染线据此设 three 色彩空间——
+   * PBR 材质贴图消费端（three-renderer.pbrMapTexture）用它**覆盖槽位默认**，防「法线图误设 sRGB」偏色。
+   * 2D 精灵路径忽略（恒 sRGB）。缺省视为 sRGB（向后兼容）。
+   */
+  readonly colorSpace?: 'srgb' | 'linear';
 }
 
 /** 图集：一张图 + 命名子矩形。Game B 的表情差分(neutral/smile/angry/...)即一张图多帧。 */

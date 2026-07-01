@@ -520,9 +520,13 @@ export class ThreeRenderer implements RendererBackend {
   }
 
   // 材质整图贴图（区别 spriteTexture 的 atlas 子矩形）：整张图 + RepeatWrapping + 色彩空间。按 key+cs 缓存·未就绪 null。
-  private pbrMapTexture(key: string, srgb: boolean): THREE.Texture | null {
+  // 色彩空间（REQ-Resource ③）：索引 `spec.colorSpace`（→ TextureDescriptor.colorSpace）优先于槽位默认 `srgbDefault`
+  // ——供作者对特殊贴图（如线性反照率、sRGB 数据图）显式覆盖；缺省仍按槽位（albedo=sRGB·法线/粗糙/AO=线性）。
+  private pbrMapTexture(key: string, srgbDefault: boolean): THREE.Texture | null {
     const res = this.assets?.get(key);
     if (!res || !isImageHandle(res.handle)) return null;
+    const decl = (res.descriptor as { colorSpace?: 'srgb' | 'linear' }).colorSpace;
+    const srgb = decl ? decl === 'srgb' : srgbDefault;
     const ck = `pm:${key}:${srgb ? 's' : 'l'}`;
     const hit = this.texCache.get(ck);
     if (hit) return hit;

@@ -1,6 +1,6 @@
-import { ImageAssetLoader, ModelAssetLoader, type AssetManifest, type AssetLoader, type AssetDescriptor, type AssetHandle } from '@assets/index.js';
+import { ImageAssetLoader, ModelAssetLoader, parseAssetIndex, type AssetIndex, type AssetLoader, type AssetDescriptor, type AssetHandle } from '@assets/index.js';
 
-// Game Z 基础 3D 资产（glTF/glb 模型 + 真实贴图）。文件在 public/{models,textures}/——vite 从根服·src 用根绝对路径。
+// Game Z 基础 3D 资产（glTF/glb 模型 + 真实贴图）。文件在 public/{models,textures}/——vite 从根服·path 用站点绝对路径故 baseUrl=''。
 // 出处与许可见 public/models/CREDITS.md。蓝图只持 key（保纯·可哈希回滚）；真实字节由对应 loader 取，ThreeRenderer 解析。
 export const MODEL_DUCK = 'duck';
 export const MODEL_BOX = 'box';
@@ -9,13 +9,21 @@ export const MODEL_FOX = 'fox'; // 带骨骼动画（Survey/Walk/Run）·骨骼�
 export const TEX_PLANK_ALBEDO = 'tex/plank-albedo';
 export const TEX_PLANK_NORMAL = 'tex/plank-normal';
 
-export const GAME_Z_ASSETS: AssetManifest = [
-  { kind: 'model', key: MODEL_DUCK, src: '/models/duck.glb' },
-  { kind: 'model', key: MODEL_BOX, src: '/models/box.glb' },
-  { kind: 'model', key: MODEL_FOX, src: '/models/fox.glb' },
-  { kind: 'texture', key: TEX_PLANK_ALBEDO, src: '/textures/plank_albedo.png', width: 256, height: 256 },
-  { kind: 'texture', key: TEX_PLANK_NORMAL, src: '/textures/plank_normal.png', width: 256, height: 256 },
-];
+// REQ-Resource ②：模型 + 贴图统一走 **AssetIndex 路线**（registerAssetIndex 桥接·不再散调 registerManifest）。
+// 条目带 type/status/spec.usage → 桥接时 mesh→ModelDescriptor·texture→TextureDescriptor（colorSpace 按 usage 派生：
+// albedo→sRGB·normal→linear）。溯源/许可入条目（统一检索）。path 是站点绝对路径（public/ 下）→ baseUrl ''。
+// 注：游戏专属 3D 资产在此自持一份索引数据（非并入 ~3 万项的共享 assets/index.json——游戏资产 ≠ 共享货架·
+// 且模型物理在 /models 非 /assets 树）；走的仍是同一套统一 registerAssetIndex 桥接路径。
+export const GAME_Z_INDEX: AssetIndex = parseAssetIndex({
+  version: 1,
+  assets: [
+    { id: MODEL_DUCK, type: 'mesh', status: 'filled', path: '/models/duck.glb', description: '鸭子模型', source: 'public/models/CREDITS.md' },
+    { id: MODEL_BOX, type: 'mesh', status: 'filled', path: '/models/box.glb', description: '箱子模型', source: 'public/models/CREDITS.md' },
+    { id: MODEL_FOX, type: 'mesh', status: 'filled', path: '/models/fox.glb', description: '狐狸模型（骨骼动画 Survey/Walk/Run）', source: 'public/models/CREDITS.md' },
+    { id: TEX_PLANK_ALBEDO, type: 'texture', status: 'filled', path: '/textures/plank_albedo.png', description: '木板反照率贴图（程序化自产）', spec: { usage: 'albedo', width: 256, height: 256 }, source: 'scripts/gen-textures.mjs' },
+    { id: TEX_PLANK_NORMAL, type: 'texture', status: 'filled', path: '/textures/plank_normal.png', description: '木板法线贴图（程序化自产）', spec: { usage: 'normal', width: 256, height: 256 }, source: 'scripts/gen-textures.mjs' },
+  ],
+});
 
 // 分发型 loader（ModelAssetLoader 只吃 model·其注释预告的「混合游戏组合分发 loader」）：
 // kind:'model' → 取字节(ArrayBuffer)；其余(texture/atlas…) → ImageAssetLoader 取图。game-z 同时要模型 + 贴图故需此。

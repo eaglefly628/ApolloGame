@@ -79,6 +79,7 @@ export function parseAssetIndex(raw: unknown): AssetIndex {
       fail(`assets[${i}] "${e.id}" 已 filled 但缺 path`);
     if (e.spec !== undefined && (typeof e.spec !== 'object' || e.spec === null))
       fail(`assets[${i}] "${e.id}".spec 必须是对象`);
+    validateSpec(e.type as AssetType, e.spec as Record<string, unknown> | undefined, i, e.id);
     for (const f of ['category', 'source', 'license', 'style'] as const)
       if (e[f] !== undefined && typeof e[f] !== 'string') fail(`assets[${i}] "${e.id}".${f} 必须是字符串`);
     if (e.tags !== undefined && (!Array.isArray(e.tags) || e.tags.some((t) => typeof t !== 'string')))
@@ -126,6 +127,100 @@ export interface SheetSpec {
   readonly count: number;
 }
 
+// ── spec 闭集 schema（REQ-Resource ③·按 type 判别·注册期校验）─────────────────────────
+// 数据驱动尺子：贴图/网格的语义元数据是**闭集枚举**（弱 LLM 只能在枚举里选，不能开自由代码口子）。
+// 兼容红线：只校验下列**已定义语义字段**的值；旧 freeform 键（format/transparent/frames/sheet/width/height…）
+// 一律容忍不校验 → 现有 ~3 万条 texture 条目照跑。缺 usage/colorSpace 的旧条目视作 sprite/srgb（现行为不变）。
+
+export const TEXTURE_USAGES = ['albedo', 'normal', 'roughness', 'metalness', 'ao', 'orm', 'emissive', 'sprite'] as const;
+export type TextureUsage = (typeof TEXTURE_USAGES)[number];
+export const COLOR_SPACES = ['srgb', 'linear'] as const;
+export type ColorSpace = (typeof COLOR_SPACES)[number];
+export const TEXTURE_WRAPS = ['clamp', 'repeat'] as const;
+export type TextureWrap = (typeof TEXTURE_WRAPS)[number];
+export const MESH_COLLISIONS = ['none', 'box', 'hull'] as const;
+export type MeshCollision = (typeof MESH_COLLISIONS)[number];
+
+/** texture 语义 spec：usage/colorSpace 是真实贴图关键元数据；wrap/tiling 供材质平铺（后期渲染消费）。 */
+export interface TextureSpec {
+  usage?: TextureUsage; // 缺省 'sprite'
+  colorSpace?: ColorSpace; // 缺省按 usage 推（deriveColorSpace）
+  wrap?: TextureWrap; // 缺省：sprite=clamp·材质贴图=repeat（渲染线消费·当前 PBR 恒 repeat）
+  tiling?: number; // UV 重复次数（材质平铺·渲染线后期消费）
+}
+/** mesh 语义 spec：scale/genCollision（genCollision 接 Collider3D·后期）。 */
+export interface MeshSpec {
+  scale?: number;
+  genCollision?: MeshCollision;
+}
+/** material 语义 spec（材质成索引资产·Phase 4·当前仅校验形状）：预设 + 覆盖参数 + 引 texture key。 */
+export interface MaterialSpec {
+  preset?: string;
+  color?: number;
+  roughness?: number;
+  metalness?: number;
+  emissive?: number;
+  map?: string;
+  normalMap?: string;
+  roughnessMap?: string;
+  aoMap?: string;
+}
+
+/** usage → 缺省色彩空间（防「法线/粗糙图误设 sRGB 渲染偏色」经典坑）：颜色类=sRGB·数据类=linear。 */
+export function deriveColorSpace(usage: TextureUsage | undefined): ColorSpace {
+  switch (usage) {
+    case 'normal':
+    case 'roughness':
+    case 'metalness':
+    case 'ao':
+    case 'orm':
+      return 'linear';
+    default: // albedo / emissive / sprite / undefined
+      return 'srgb';
+  }
+}
+
+/** 读 texture 的语义 spec（colorSpace 缺省按 usage 推·供 registerAssetIndex 派生 TextureDescriptor.colorSpace）。 */
+export function textureSpecOf(spec: Readonly<Record<string, unknown>> | undefined): {
+  usage: TextureUsage | undefined;
+  colorSpace: ColorSpace;
+  wrap: TextureWrap | undefined;
+  tiling: number | undefined;
+} {
+  const usage = spec?.usage as TextureUsage | undefined;
+  const colorSpace = (spec?.colorSpace as ColorSpace | undefined) ?? deriveColorSpace(usage);
+  return { usage, colorSpace, wrap: spec?.wrap as TextureWrap | undefined, tiling: numOrUndef(spec?.tiling) };
+}
+
+function inSet(set: readonly string[], v: unknown): boolean {
+  return typeof v === 'string' && set.includes(v);
+}
+
+/** 按 type 校验语义 spec 字段（闭集枚举 → 构建期早失败）。未定义语义字段的键容忍不校验（向后兼容）。 */
+function validateSpec(type: AssetType, spec: Record<string, unknown> | undefined, i: number, id: string): void {
+  if (!spec) return;
+  const badEnum = (f: string, allowed: readonly string[]): never =>
+    fail(`assets[${i}] "${id}".spec.${f} 非法：${String(spec[f])}（合法：${allowed.join('|')}）`);
+  const mustNum = (f: string): void => {
+    if (spec[f] !== undefined && typeof spec[f] !== 'number') fail(`assets[${i}] "${id}".spec.${f} 必须是数字`);
+  };
+  const mustStr = (f: string): void => {
+    if (spec[f] !== undefined && typeof spec[f] !== 'string') fail(`assets[${i}] "${id}".spec.${f} 必须是字符串`);
+  };
+  if (type === 'texture') {
+    if (spec.usage !== undefined && !inSet(TEXTURE_USAGES, spec.usage)) badEnum('usage', TEXTURE_USAGES);
+    if (spec.colorSpace !== undefined && !inSet(COLOR_SPACES, spec.colorSpace)) badEnum('colorSpace', COLOR_SPACES);
+    if (spec.wrap !== undefined && !inSet(TEXTURE_WRAPS, spec.wrap)) badEnum('wrap', TEXTURE_WRAPS);
+    mustNum('tiling');
+  } else if (type === 'mesh') {
+    mustNum('scale');
+    if (spec.genCollision !== undefined && !inSet(MESH_COLLISIONS, spec.genCollision)) badEnum('genCollision', MESH_COLLISIONS);
+  } else if (type === 'material') {
+    for (const f of ['preset', 'map', 'normalMap', 'roughnessMap', 'aoMap']) mustStr(f);
+    for (const f of ['color', 'roughness', 'metalness', 'emissive']) mustNum(f);
+  }
+}
+
 function sheetSpecOf(spec: Readonly<Record<string, unknown>> | undefined): SheetSpec | undefined {
   const s = spec?.sheet as Partial<SheetSpec> | undefined;
   if (!s || typeof s !== 'object') return undefined;
@@ -140,27 +235,35 @@ function sheetSpecOf(spec: Readonly<Record<string, unknown>> | undefined): Sheet
 }
 
 /**
- * 把已 `filled` 的 `texture` 条目注册进 AssetManager（运行时即可按 id 绘制）。
- * 其它类型（mesh/sound/…）当前仅在索引中登记，运行时消费端后续增量接入。
- * `baseUrl` 一般为资产根（如 `/assets/`），拼到条目 path 前。
- * 形态判定：spec.frames → atlas（命名子矩形）；spec.sheet → sprite-sheet（等分网格）；否则整图 texture。
+ * 把已 `filled` 的条目桥接进 AssetManager（运行时即可按 id 消费）。
+ * - `texture` → texture/atlas/sprite-sheet 描述符（形态：spec.frames→atlas·spec.sheet→sprite-sheet·否则整图；
+ *   整图 texture 带 `colorSpace`——由 spec.usage/colorSpace 派生·渲染 PBR 消费端据此设色彩空间）。
+ * - `mesh`（REQ-Resource ②·新）→ ModelDescriptor（渲染线取字节自解析 glTF）。收编各游戏手写 model manifest 进统一索引。
+ * - 其它类型（material/sound/…）当前仅在索引中登记，运行时消费端后续增量接入。
+ * `baseUrl` 一般为资产根（如 `/assets/`），拼到条目 path 前；path 已是站点绝对路径时用空 baseUrl。
  */
 export function registerAssetIndex(manager: AssetManager, index: AssetIndex, baseUrl = ''): void {
   // 防御性拼接：baseUrl 非空且不以 '/' 结尾时补一个，避免 "assets/tex" + "hero.png" = "assets/texhero.png"（Gemini code review）。
   const sep = baseUrl && !baseUrl.endsWith('/') ? '/' : '';
   for (const e of index.assets) {
-    if (e.status !== 'filled' || e.type !== 'texture' || !e.path) continue;
+    if (e.status !== 'filled' || !e.path) continue;
     const src = baseUrl + sep + e.path;
-    const frames = e.spec?.frames as Record<string, Rect> | undefined;
-    const sheet = sheetSpecOf(e.spec);
-    let descriptor: TextureDescriptor | AtlasDescriptor | SpriteSheetDescriptor;
-    if (frames && typeof frames === 'object') {
-      descriptor = { kind: 'atlas', key: e.id, src, frames };
-    } else if (sheet) {
-      descriptor = { kind: 'sprite-sheet', key: e.id, src, ...sheet };
-    } else {
-      descriptor = { kind: 'texture', key: e.id, src, width: numOrUndef(e.spec?.width), height: numOrUndef(e.spec?.height) };
+    if (e.type === 'texture') {
+      const frames = e.spec?.frames as Record<string, Rect> | undefined;
+      const sheet = sheetSpecOf(e.spec);
+      let descriptor: TextureDescriptor | AtlasDescriptor | SpriteSheetDescriptor;
+      if (frames && typeof frames === 'object') {
+        descriptor = { kind: 'atlas', key: e.id, src, frames };
+      } else if (sheet) {
+        descriptor = { kind: 'sprite-sheet', key: e.id, src, ...sheet };
+      } else {
+        const { colorSpace } = textureSpecOf(e.spec);
+        descriptor = { kind: 'texture', key: e.id, src, width: numOrUndef(e.spec?.width), height: numOrUndef(e.spec?.height), colorSpace };
+      }
+      manager.register(descriptor);
+    } else if (e.type === 'mesh') {
+      manager.register({ kind: 'model', key: e.id, src });
     }
-    manager.register(descriptor);
+    // material/sound/… 暂不桥接（登记在索引·消费端后续增量）。
   }
 }

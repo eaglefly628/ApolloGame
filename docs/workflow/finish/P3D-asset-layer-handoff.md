@@ -100,6 +100,30 @@ interface MaterialSpec {           // 材质 = 引 texture key 的数据资产�
 > - **schema 反馈（§5 要的）**：契约无坑·照做即通。**唯一提醒**：①的 colorSpace 靠**材质槽位**推（map=sRGB·normalMap=线性）·自足正确；②③ 落 `spec.colorSpace` 后应让「index 显式 colorSpace」优先于槽位默认（供特殊情况覆盖）。
 > - **下一步**：②③（收编 mesh 进索引 + spec 闭集 schema）动核心索引·我按契约实现完 **回 Lead review** 再合并。要我接着做 ②③ 吗？
 
+## 4.6 ②③ 完成回执（P3D 2026-07-01·**跨界·请 Lead review 再合并**）
+
+> **②③ 已实现·全绿**（tsc 0 / vitest 1991·276 files / build OK）。改动集中在 `src/assets/{asset-index,asset-types}.ts`（🔓 授权跨界）+ 渲染/game-z（✅ 独占）。
+>
+> **③ spec 闭集 schema + 校验**（`asset-index.ts`）：
+> - 新增闭集常量 + 类型：`TEXTURE_USAGES/COLOR_SPACES/TEXTURE_WRAPS/MESH_COLLISIONS` + `TextureSpec/MeshSpec/MaterialSpec`。
+> - `validateSpec(type, spec, …)` 挂进 `parseAssetIndex`：按 type 校验 `usage/colorSpace/wrap/genCollision` 闭集枚举 + `tiling/scale/color…` 类型 → **非法值构建期抛错**（同现有 sheet 校验套路）。
+> - `deriveColorSpace(usage)` + `textureSpecOf(spec)`：colorSpace 缺省按 usage 推（albedo/emissive/sprite→srgb·normal/roughness/metalness/ao/orm→linear）；显式 `spec.colorSpace` 覆盖。
+> - **向后兼容**（红线③）：只校验**已定义语义字段**的值；旧 freeform 键（format/transparent/frames/sheet/width/height…）一律容忍 → 真实 `assets/index.json`（~3 万项）自检测试仍通过。
+>
+> **② registerAssetIndex 桥接 mesh + texture colorSpace**（`asset-index.ts` + `asset-types.ts`）：
+> - `TextureDescriptor` 加 `colorSpace?`（由 spec 派生）；整图 texture 分支写入。**渲染消费端**（`three-renderer.pbrMapTexture`）改为 **index 显式 colorSpace 优先于槽位默认**——闭合 §4.5 我提的那个 loop（特殊贴图可数据覆盖）。
+> - 新增 `mesh` 分支：`filled mesh` → `ModelDescriptor{kind:'model'}` 注册（渲染线取字节自解析 glTF）。
+> - **material/sound/… 暂不桥接**（登记在索引·后续增量·Phase 4）。
+>
+> **收编 game-z manifest**（`game-z/assets.ts` + `game-z.ts`）：`GAME_Z_ASSETS`(裸 manifest 数组) → `GAME_Z_INDEX`(经 `parseAssetIndex` 的 `AssetIndex` 数据·带 type/status/spec.usage/溯源/许可)；`registerManifest` → `registerAssetIndex`。模型 + 贴图统一走桥接路径·colorSpace 自动派生（albedo→sRGB·normal→linear）。
+>
+> **⚠️ 一处对契约的偏离·请 Lead 裁**（§5「与 3D 现实不合先回你」）：契约 §2.2 原话是「模型条目**搬进 `index.json`**（共享）」。我**没并入**那份 ~3 万项的共享 `assets/index.json`，而是让 **game-z 自持一份 `AssetIndex` 数据**，理由两条：
+> 1. **物理路径**：game-z 模型/贴图在 `public/{models,textures}/`（站点根），共享 `assets/index.json` 服务于 `/assets/` 树、其 baseUrl=`/assets/` 与绝对 path 拼不出正确 src（`/assets//models/duck.glb`）。
+> 2. **架构分层**：游戏专属资产 ≠ 共享美术货架（那 3 万项是 devicon/立绘等项目库）；混入会污染检索/体积。game-z 自持索引**仍走同一套 `registerAssetIndex` 桥接路径**（契约的真实意图——统一 Asset 路线——已达成），只是数据分文件持有。
+> 若你坚持要物理并入共享 index，我再改（需先把 glb 挪进 `public/assets/models/` 或让 registerAssetIndex 支持每条目 baseUrl override）——但我判断分文件更干净。**等你拍。**
+>
+> **测试**：`asset-index.test` +9 例（deriveColorSpace/textureSpecOf/非法 usage·colorSpace·wrap·genCollision 抛错/旧条目兼容/mesh 桥接/texture colorSpace 派生）。
+
 ## 5. 检查点（回 Lead）
 - 动 §2.1/§2.2（核心索引）前：贴 schema 差异/疑问回 Lead（若与 3D 现实不合就改契约）。
 - ②③ 实现完：Lead review 再合并主干。
