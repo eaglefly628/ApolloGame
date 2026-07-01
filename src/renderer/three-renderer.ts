@@ -21,7 +21,7 @@ import { ColliderDebug } from './three/collider-debug.js';
 import { NavDebug } from './three/nav-debug.js';
 import { VfxSystem } from './three/vfx.js';
 import { WorldUiLayer } from './three/world-ui.js';
-import { PhysicsSystem } from './three/physics.js';
+import type { PhysicsSystem } from './three/physics.js'; // 运行时**懒加载**（见 ensurePhysics）：physics.ts 依赖 cannon-es 重包·仅在有 RigidBody3D 时才进图，无刚体的游戏(如 game-d)不连带解析 cannon-es（修 vite dev「Failed to resolve cannon-es」）
 import { RoomEnvironment } from 'three/addons/environments/RoomEnvironment.js';
 
 export type { RenderStats } from './three/stats.js';
@@ -65,7 +65,8 @@ export class ThreeRenderer implements RendererBackend {
   private debugNav = false;
   private readonly vfx = new VfxSystem(); // 数据驱动粒子（TA Phase 1·render-only）
   private readonly worldUi = new WorldUiLayer(); // 世界空间 UI 头顶飘字（TA Phase 3·render-only·走主程 UI 库）
-  private readonly physics = new PhysicsSystem(); // 真物理刚体（cannon-es·render-only·表现非同步·滚色子）
+  private physics: PhysicsSystem | null = null; // 真物理刚体（cannon-es·render-only·**懒加载**·仅有 RigidBody3D 时）
+  private physicsLoading = false;
   private rollPending = false; // 掷骰子请求（game 调 rollDice 置位·下帧 sync 里执行重掷）
   // 天空盒
   private sky: THREE.Mesh | null = null;
@@ -122,6 +123,15 @@ export class ThreeRenderer implements RendererBackend {
     this.worldUi.init(container); // 世界 UI DOM 叠层（覆于 canvas 上·pointer-events:none）
   }
 
+  // 懒加载物理子系统：仅当场上出现 RigidBody3D 才 `import('./three/physics.js')`（连带 cannon-es 进独立 chunk）。
+  // 无刚体的游戏（如 game-d）永不触发 → physics.ts/cannon-es 根本不进模块图，vite dev 也不会因缺包报错。
+  private ensurePhysics(world: IWorld): void {
+    if (this.physics || this.physicsLoading) return;
+    if (world.query('RigidBody3D').length === 0) return;
+    this.physicsLoading = true;
+    void import('./three/physics.js').then((m) => { this.physics = new m.PhysicsSystem(); }).catch((e) => { console.warn('[renderer] 物理子系统加载失败 → 跳过刚体（纯表现·不影响玩法）', e); });
+  }
+
   /** 运行时改场景清屏底色（相机在天空盒球外时·清屏色即背景）。游戏按屏切换暗/亮氛围用。 */
   setBackground(hex: number): void {
     this.background = hex;
@@ -145,8 +155,9 @@ export class ThreeRenderer implements RendererBackend {
     this.syncGlow3D(world); // 加性辉光精灵（Glow3D·火盆/灯笼/门光晕·复刻原型 glowSprite）
     this.lights.sync(this.scene, getLights3D(world), world); // 数据化光照（维护 lightSig 供脏标·含动态局部光位姿）
     // 真物理刚体（cannon-es·render-only·表现非同步）：先按需重掷 → 步进 → 把位置/四元数写回 Transform3D（须在 collect 前）。
-    if (this.rollPending) { this.physics.roll(world); this.rollPending = false; }
-    const physLive = this.physics.sync(world, performance.now());
+    this.ensurePhysics(world); // 有 RigidBody3D 才懒加载 physics.ts（连带 cannon-es）——无刚体的游戏永不触发
+    if (this.rollPending && this.physics) { this.physics.roll(world); this.rollPending = false; }
+    const physLive = this.physics ? this.physics.sync(world, performance.now()) : 0;
     // VFX 粒子（TA Phase 1·render-only）：每帧 CPU 模拟推进。存活粒子数 >0 → 折进 renderSig 强制重渲（粒子在动）。
     const vfxLive = this.vfx.sync(this.scene, world, performance.now());
 
@@ -334,7 +345,7 @@ export class ThreeRenderer implements RendererBackend {
     this.colliderDebug.dispose(this.scene);
     this.navDebug.dispose(this.scene);
     this.vfx.dispose(this.scene);
-    this.physics.dispose();
+    this.physics?.dispose();
     this.worldUi.dispose();
     this.models.dispose(this.scene);
     this.lights.dispose(this.scene);
