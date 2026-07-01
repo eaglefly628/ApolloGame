@@ -134,36 +134,38 @@ export function mount(container: HTMLElement): () => void {
   const TITLE_DIE = 'gd-title-die';
   let titleDieUp = false;
   const setMood = (dark: boolean): void => {
+    // Title=**柔和蓝灰天穹**（复刻概念图高级感·非暗黑）；盒庭=浅暖。相机在天空盒球内 → 用 Sky3D 渐变穹顶。
     const s = engine.world.getComponent<{ type: 'Sky3D'; top: number; bottom: number; clouds?: boolean }>('sky', 'Sky3D');
-    if (s) { s.top = dark ? 0x1a1440 : 0xd7dbe4; s.bottom = dark ? 0x0d0920 : 0xece7de; s.clouds = false; }
-    // 场景背景用 Cloud Design 手绘天空图（层主题 × 暖/暗）：Title 暗调 / 盒庭暖调。
+    if (s) { s.top = dark ? 0x27344f : 0xd7dbe4; s.bottom = dark ? 0x566585 : 0xece7de; s.clouds = false; }
     const act = Math.floor((S.globalRoom - 1) / 3);
-    renderer.setBackgroundTexture(skyArt(dark ? 0 : act, dark ? 'dark' : 'warm'));
+    // Title 用**蓝灰渐变天空图**（古殿=石蓝灰·复刻概念图高级感底）；盒庭用当层暖天空图。（Sky3D 穹顶在相机 far 外·故走背景图）
+    renderer.setBackgroundTexture(dark ? skyArt(1, 'dark') : skyArt(act, 'warm'));
     // Title 用弱泛光/浅景深（单颗大骰不被糊成白团）；盒庭用强移轴+泛光（微缩模型质感）。
     const p = engine.world.getComponent<{ type: 'Post3D'; tiltShift?: object; bloom?: object }>('post', 'Post3D');
     if (p) {
       p.tiltShift = { focus: 0.54, intensity: dark ? 0.5 : 1.7 };
-      p.bloom = { strength: dark ? 0.34 : 0.72, radius: 0.7, threshold: dark ? 0.82 : 0.6 };
+      p.bloom = { strength: dark ? 0.18 : 0.72, radius: 0.7, threshold: dark ? 0.82 : 0.6 };
     }
     // 相机：Title=**正面透视**（复刻原型 initTitle fov38·正对大骰）；盒庭=近俯视 ortho。
     const c = engine.world.getComponent<Camera3D>('cam', 'Camera3D');
     if (c) {
-      if (dark) { c.projection = 'perspective'; c.fov = 38; c.yaw = Math.PI; c.pitch = 0.42; c.distance = 30; c.orthoSize = 13; c.pivotX = 0; c.pivotY = 1.6; c.pivotZ = 0; }
+      // 相机**微微仰视**（往上看·概念图高级感·非俯视）：pitch 负=看上。正对大骰。
+      if (dark) { c.projection = 'perspective'; c.fov = 36; c.yaw = Math.PI; c.pitch = -0.08; c.distance = 42; c.orthoSize = 13; c.pivotX = 0; c.pivotY = 2.6; c.pivotZ = 0; }
       else { c.projection = 'ortho'; c.yaw = Math.PI; c.pitch = 0.98; c.orthoSize = 13; c.distance = 240; c.pivotX = 0; c.pivotY = 1.5; c.pivotZ = 0; }
     }
   };
   const showTitleDie = (): void => {
     if (titleDieUp) return;
     engine.world.createEntity(TITLE_DIE);
-    // 直立、绕 Y 转 45° 让棱角朝镜头（配俯视相机 → 露顶+左前+右前，复刻概念图）
-    engine.world.addComponent(TITLE_DIE, { type: 'Transform3D', x: 0, y: 1.3, z: 0, rotY: 0.78, scale: 1 } as unknown as Component);
-    // 六色命运骰（6 面各一元素·**手绘骰面图**·复刻原型 dieMesh 面序 pips=[1,6,2,5,3,4]）。emissive=元素色让手绘面在暗塔下自发亮（不发暗）。
+    // 近乎正面、微微侧转（复刻概念图：大骰正对镜头作柔和背景·非 3/4 主角）
+    engine.world.addComponent(TITLE_DIE, { type: 'Transform3D', x: 0, y: 1.6, z: 0, rotX: 0.06, rotY: 0.14, scale: 1 } as unknown as Component);
+    // **白/极浅色**命运骰（概念图是白骰·非彩色）——程序化白骰面 + 淡蓝点·无自发光·柔和。面序 pips=[1,6,2,5,3,4]。
     const PIP = [1, 6, 2, 5, 3, 4];
-    engine.world.addComponent(TITLE_DIE, { type: 'Mesh3D', shape: 'box', width: 10, height: 10, depth: 10, frontTint: hexNum('huo'), dieFaces: ELEMS.map((el, i) => ({ color: hexNum(el), pip: PIP[i]!, src: diceFaceArt(el, PIP[i]!), emissive: hexNum(el) })) } as unknown as Component);
-    // 背后柔光晕（复刻原型 glowSprite('#ffe5a8',6.4)·暖金光烘托大骰·小而聚·别糊满屏）
+    engine.world.addComponent(TITLE_DIE, { type: 'Mesh3D', shape: 'box', width: 8.5, height: 8.5, depth: 8.5, frontTint: 0xeef2f8, dieFaces: PIP.map((pip) => ({ color: 0xeef2f8, pip })) } as unknown as Component);
+    // 背后柔光晕（柔和·别糊满屏）
     engine.world.createEntity('gd-title-glow');
-    engine.world.addComponent('gd-title-glow', { type: 'Transform3D', x: 0, y: 1.3, z: -4 } as unknown as Component);
-    engine.world.addComponent('gd-title-glow', { type: 'Glow3D', color: 0xffe5a8, scale: 15, opacity: 0.38 } as unknown as Component);
+    engine.world.addComponent('gd-title-glow', { type: 'Transform3D', x: 0, y: 1.6, z: -5 } as unknown as Component);
+    engine.world.addComponent('gd-title-glow', { type: 'Glow3D', color: 0xdfe8f5, scale: 15, opacity: 0.16 } as unknown as Component);
     titleDieUp = true;
   };
   const hideTitleDie = (): void => { if (!titleDieUp) return; try { engine.world.destroyEntity(TITLE_DIE); engine.world.destroyEntity('gd-title-glow'); } catch { /* noop */ } titleDieUp = false; };
