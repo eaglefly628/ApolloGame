@@ -120,7 +120,7 @@ const CSS = `
 .gg-tipwrap:hover{ z-index:90; }`;
 
 // ── 视图（buildTurnBattleView 从 turn-combat 派生喂渲染器；纯数据） ──
-export interface TurnSlotView { hasUnit: boolean; mine: boolean; isBorder: boolean; isClash: boolean; rank?: string; suit?: 's' | 'h' | 'd' | 'c'; power?: number; pts?: number; buff?: number; name?: string; rar?: 'white' | 'green' | 'blue' | 'gold'; zod?: string[]; deploy?: 1 | 2; deployLabel?: boolean; placeable?: boolean; unitId?: string; justMoved?: boolean; fresh?: number; tipDown?: boolean; tipSide?: 'left' | 'right' | ''; forecast?: number; general?: boolean; ench?: [string, number][]; live?: [string, number][]; livePower?: number } // live=此刻若评估的战力逐行明细(含天罡/士气/地煞·hover 透出来源·owner 2026-06-29 ⑥)；livePower=其和后的有效战力 pEff // placeable=选牌待放可落子(高亮)；fresh=新部署落子序号(g-drop)；tipDown=顶排牌磨砂浮层朝下弹避免被画框裁；tipSide=边缘列浮层往内弹避免溢出左右屏(owner 2026-06-21)；forecast=此前锋若开战的我方胜率0~1(掷命预报·owner 2026-06-21)
+export interface TurnSlotView { hasUnit: boolean; mine: boolean; isBorder: boolean; isClash: boolean; rank?: string; suit?: 's' | 'h' | 'd' | 'c'; power?: number; pts?: number; buff?: number; name?: string; rar?: 'white' | 'green' | 'blue' | 'gold'; zod?: string[]; deploy?: 1 | 2; deployLabel?: boolean; placeable?: boolean; unitId?: string; justMoved?: boolean; fresh?: number; tipDown?: boolean; tipSide?: 'left' | 'right' | ''; forecast?: number; general?: boolean; ench?: [string, number][]; live?: [string, number][]; livePower?: number; winStreak?: number } // winStreak=连胜场数(owner 2026-07-01·每胜战力对折·场上持续显🔥N 让玩家看清哪张已疲劳)；live=此刻若评估的战力逐行明细(含天罡/士气/地煞·hover 透出来源·owner 2026-06-29 ⑥)；livePower=其和后的有效战力 pEff // placeable=选牌待放可落子(高亮)；fresh=新部署落子序号(g-drop)；tipDown=顶排牌磨砂浮层朝下弹避免被画框裁；tipSide=边缘列浮层往内弹避免溢出左右屏(owner 2026-06-21)；forecast=此前锋若开战的我方胜率0~1(掷命预报·owner 2026-06-21)
 export interface TurnLaneView { name: string; slots: TurnSlotView[] }
 // 捷径门箭头（占位·8 门·真视觉待 owner 参考图）。idx=GATES 下标·供 live mount data-gate 钩子。
 export interface TurnGateView { idx: number; open: boolean; side: 'a' | 'b'; fromLane: number; fromSlot: number; toLane: number; toSlot: number }
@@ -257,6 +257,7 @@ function unitNode(s: TurnSlotView): LayoutNode {
     { type: 'Panel', id: `u-${id}-zr`, props: { bare: true }, layout: { direction: 'row', gap: 3, justify: 'center' }, children: [0, 1, 2].map((i) => zc(zod[i], i)) },
   ];
   if (isGen) children.push({ type: 'Label', id: `u-${id}-gen`, props: { text: s.mine ? '⭐主将' : '☠敌将', size: 8, color: 'gold', bold: true }, layout: { y: -12, x: 14 } });
+  if (s.winStreak) children.push({ type: 'Label', id: `u-${id}-ws`, props: { text: `🔥${s.winStreak}`, size: 8, color: 'warn', bold: true }, layout: { y: -12, x: -14 } }); // 连胜疲劳徽（owner 2026-07-01·战力已对折·让玩家看清是哪张）
   return { type: 'Panel', id: `u-${id}`, props: { bg: sideFace(s.mine), edge: isGen ? 'gold' : (s.mine ? 'mine' : 'foe') }, layout: { flex: 1, direction: 'column', justify: 'between', align: 'center', padding: 4, radius: 10, ...(isGen ? { fx: [{ kind: 'glow', color: 'gold', ms: 1400 }] } : {}) }, children };
 }
 // 磨砂详情浮层内容（战力拆解·场上兵 hover 气泡·owner 2026-06-29 ⑥）。
@@ -383,33 +384,28 @@ function clashNode(cv: TurnClashView): LayoutNode {
     props: {
       left: { rank: cv.mine.rank, suit: SUITG[cv.mine.suit], face: 'light' },
       right: { rank: cv.foe.rank, suit: SUITG[cv.foe.suit], face: 'light' },
-      label: revealed ? `${cv.oddsMine} : ${foePct}` : '⚔',
+      label: revealed ? `${cv.pEffMine ?? cv.oddsMine} ⚔ ${cv.pEffFoe ?? foePct}` : '⚔', // 确定制：显双方战力对比(非胜率)·战力高者胜
       winner: revealed ? (cv.mine.won ? 'left' : 'right') : 'none',
     },
     layout: { anim: 'flyIn' },
   };
-  // 中央掷骰/揭晓：掷命前=掷骰钮(action clash-roll)·揭晓后=命点 + CoinFlip。
-  const center: LayoutNode = revealed
-    ? { type: 'Panel', id: 'clash-center', props: { bare: true }, layout: { direction: 'column', gap: 6, align: 'center' }, children: [
-        { type: 'CoinFlip', id: 'clash-coin', props: { outcome: cv.mine.won ? 'heads' : 'tails', headsLabel: '生', tailsLabel: '死', spinning: false, size: 64 } },
-        { type: 'Label', id: 'clash-roll-pct', props: { text: `命点 ${cv.rollPct}/100`, size: 'sm', color: 'gold', mono: true } },
-      ] }
-    : { type: 'Panel', id: 'clash-center', props: { bare: true }, layout: { direction: 'column', gap: 8, align: 'center' }, children: [
-        { type: 'Button', id: 'clash-roll-btn', props: { label: '🎲 掷命', kind: 'hero', action: 'clash-roll' }, layout: { anchor: 'combat-roll', fx: [{ kind: 'pulse', ms: 1000 }] } },
-        { type: 'Label', id: 'clash-roll-hint', props: { text: '看清战力来源后 · 点击掷命（不自动·慢慢看）', size: 'xs', color: 'sub' } },
-      ] };
+  // 中央裁定（owner 2026-07-01 确定制·去掷骰/掷币）：直接标「战力高者胜」+ 胜方，无随机、玩家可确定预测。
+  const center: LayoutNode = { type: 'Panel', id: 'clash-center', props: { bare: true }, layout: { direction: 'column', gap: 6, align: 'center' }, children: [
+    { type: 'Label', id: 'clash-rule', props: { text: '战力高者胜', size: 'xs', color: 'sub', tracking: 1 } },
+    { type: 'Label', id: 'clash-winner', props: { text: revealed ? (cv.mine.won ? '◀ 我方胜' : '敌方胜 ▶') : '？', size: 'lg', color: revealed ? (cv.mine.won ? 'mine' : 'foe') : 'sub', bold: true } },
+  ] };
   const oddsBar: LayoutNode = {
     type: 'Panel', id: 'clash-odds', props: { bare: true }, layout: { direction: 'row', gap: 8, align: 'center' }, children: [
-      { type: 'Label', id: 'clash-odds-m', props: { text: `${cv.oddsMine}%`, size: 'xl', color: 'gold', mono: true } },
-      { type: 'Label', id: 'clash-odds-mid', props: { text: '胜率 · 战力差→概率', size: 'xs', color: 'sub' }, layout: { flex: 1 } },
-      { type: 'Label', id: 'clash-odds-f', props: { text: `${foePct}%`, size: 'xl', color: 'jade', mono: true } },
+      { type: 'Label', id: 'clash-odds-m', props: { text: `战力 ${cv.pEffMine ?? cv.oddsMine}`, size: 'xl', color: 'mine', mono: true } },
+      { type: 'Label', id: 'clash-odds-mid', props: { text: '确定 · 战力高者胜', size: 'xs', color: 'sub' }, layout: { flex: 1 } },
+      { type: 'Label', id: 'clash-odds-f', props: { text: `战力 ${cv.pEffFoe ?? foePct}`, size: 'xl', color: 'foe', mono: true } },
     ],
   };
   const breakdown: LayoutNode = {
     type: 'Panel', id: 'clash-breakdown', props: { bare: true }, layout: { direction: 'row', gap: 10 },
     children: [clashBonusCol(cv.bonusMine, '我方加成明细', 'accent', cv.pEffMine), clashBonusCol(cv.bonusFoe, '敌方加成明细', 'sub', cv.pEffFoe)],
   };
-  const verdict = (c: TurnClashCardView): string => c.won ? '正面 · 存活' : c.lastStand ? '🛡 死战不退 · 退守' : '反面 · 阵亡';
+  const verdict = (c: TurnClashCardView): string => c.won ? '⚔ 胜 · 留场续战' : c.lastStand ? '🛡 死战不退 · 退守' : '阵亡 · 离场';
   const verdictRow: LayoutNode = {
     type: 'Panel', id: 'clash-verdicts', props: { bare: true }, layout: { direction: 'row', gap: 40, align: 'center', justify: 'center' },
     children: [
@@ -427,7 +423,7 @@ function clashNode(cv: TurnClashView): LayoutNode {
     ],
   };
   const children: LayoutNode[] = [
-    { type: 'Label', id: 'clash-title', props: { text: `⚔ ${cv.laneName} · 掷命对决`, size: 'lg', color: 'gold', bold: true, tracking: 2 } },
+    { type: 'Label', id: 'clash-title', props: { text: `⚔ ${cv.laneName} · 绝命对决`, size: 'lg', color: 'gold', bold: true, tracking: 2 } },
     sideLabels,
     { type: 'Panel', id: 'clash-duel', props: { bare: true }, layout: { direction: 'row', gap: 24, align: 'center', justify: 'center' }, children: [versus, center] },
     ...(revealed ? [verdictRow] : []),
@@ -441,9 +437,9 @@ function clashNode(cv: TurnClashView): LayoutNode {
   children.push(revealed
     ? { type: 'Panel', id: 'clash-foot', props: { bare: true }, layout: { direction: 'column', gap: 8, align: 'center' }, children: [
         { type: 'Label', id: 'clash-foot-r', props: { text: `本场 ${cv.mine.won ? '我方胜' : '敌方胜'}｜${cv.laneName}前锋对决`, size: 'md', color: cv.mine.won ? 'ok' : 'danger', bold: true } },
-        { type: 'Button', id: 'clash-ok', props: { label: '看明白了 · 继续 ▸', kind: 'hero', action: 'clash-ok' } },
+        { type: 'Button', id: 'clash-ok', props: { label: '看明白了 · 继续 ▸', kind: 'hero', action: 'clash-ok' }, layout: { anchor: 'combat-roll' } },
       ] }
-    : { type: 'Label', id: 'clash-foot-pre', props: { text: '⚔ 命悬一掷 · 点骰定生死', size: 'md', color: 'gold', bold: true } });
+    : { type: 'Label', id: 'clash-foot-pre', props: { text: '⚔ 绝命对峙 · 战力高者胜', size: 'md', color: 'gold', bold: true } });
   return {
     type: 'Panel', id: 'clash-panel', props: { accent: true, bg: 'radial-gradient(80% 70% at 50% 30%, #1c2940, #0e1828)' },
     layout: { direction: 'column', gap: 14, padding: 22, width: 760, chamfer: 16 },
@@ -748,7 +744,7 @@ export function buildTurnBattleView(b: TurnBattle, opts: TurnViewOpts = {}): Tur
       // ⑥ 此刻若评估的战力拆解（含天罡/士气/地煞·与真实掷命同源 unitPowerParts）→ hover 透出全部加成来源（owner 2026-06-29）。
       const parts = unitPowerParts(b, hit.mine ? 'a' : 'b', li, hit.u);
       // 角标=**当前有效战力 pEff**（含天罡/士气/地煞·与掷命预报/实判同源·owner 2026-06-29「两边都19却碾压」＝旧角标只显静态点数+养成·没把加成算进去）。
-      return { ...base, hasUnit: true, mine: hit.mine, rank: hit.u.rank, suit: lc(hit.u.suit), power: parts.pEff, pts: hit.u.points, buff: hit.u.buff, name: heroNameOf(hit.u.rank, lc(hit.u.suit)) ?? (SUITNM[lc(hit.u.suit)] + hit.u.rank), rar: rankOf(hit.u.rank), zod: [], unitId: hit.u.id, justMoved: opts.movedIds?.has(hit.u.id) ?? false, fresh: opts.freshIds?.get(hit.u.id), tipDown: li === 0, tipSide: (i >= 7 ? 'left' : i <= 1 ? 'right' : '') as 'left' | 'right' | '', general: hit.u.general, ench: hit.mine ? opts.enchOf?.(hit.u.rank, hit.u.suit) : undefined, live: powerRows(parts, hit.mine, tgNm, opts.inlays), livePower: parts.pEff };
+      return { ...base, hasUnit: true, mine: hit.mine, rank: hit.u.rank, suit: lc(hit.u.suit), power: parts.pEff, pts: hit.u.points, buff: hit.u.buff, name: heroNameOf(hit.u.rank, lc(hit.u.suit)) ?? (SUITNM[lc(hit.u.suit)] + hit.u.rank), rar: rankOf(hit.u.rank), zod: [], unitId: hit.u.id, justMoved: opts.movedIds?.has(hit.u.id) ?? false, fresh: opts.freshIds?.get(hit.u.id), tipDown: li === 0, tipSide: (i >= 7 ? 'left' : i <= 1 ? 'right' : '') as 'left' | 'right' | '', general: hit.u.general, ench: hit.mine ? opts.enchOf?.(hit.u.rank, hit.u.suit) : undefined, live: powerRows(parts, hit.mine, tgNm, opts.inlays), livePower: parts.pEff, winStreak: hit.u.wins };
     });
     return { name: laneNames[li] ?? ('路' + li), slots };
   });

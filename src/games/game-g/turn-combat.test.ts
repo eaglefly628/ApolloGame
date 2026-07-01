@@ -198,24 +198,26 @@ describe('Game G · turn-combat（doc24 单机回合制 · A0 重构）', () => 
     expect(deployUnit(c, 'a', 0, 0)).toBe(false); // 无空格 → 拒
   });
 
-  it('v2 胜者留场 + 每胜战损疲劳（owner 2026-06-29·替战胜硬币·胜者不回库继续作战）', () => {
+  it('确定制胜者留场 + 每胜战力对折（owner 2026-07-01·替战胜硬币/掷骰·胜者不回库继续作战·越打越弱）', () => {
     const b = initTurnBattle({ seed: 1 }); b.a.mana = 0;
     const w = unit('w', 'A', A_DEPLOY_SLOT); w.cost = 3; // A=14 点
     b.lanes[0].a.push(w);
-    b.lanes[0].b.push(unit('lz', '2', A_DEPLOY_SLOT + 1, 12)); // 2+12=pEff14 → 点数 A(14)>2 → A 必胜(确定)
-    endTurn(b); // 我方推进 → 掷命 → w 胜
+    b.lanes[0].b.push(unit('lz', '2', A_DEPLOY_SLOT + 1, 12)); // 2+12=pEff14 → 战力平·点数 A(14)>2 → A 必胜(确定)
+    const before = unitPowerParts(b, 'a', 0, w).pEff;           // 对折前有效战力 = 14
+    endTurn(b); // 我方推进 → 确定制对决 → w 胜
     expect(b.lastClash?.aWins).toBe(true);
     expect(b.lanes[0].a.some((c) => c.id === 'w')).toBe(true);   // 胜者留场（不回库·战场不空）
-    expect(w.fatigue ?? 0).toBeGreaterThan(0);                   // 每胜累加战损疲劳
-    expect(w.wins).toBe(1);
+    expect(w.wins).toBe(1);                                      // 连胜 +1
+    expect(unitPowerParts(b, 'a', 0, w).pEff).toBe(Math.floor(before * 0.5)); // 每胜战力对折（14→7）
+    expect(b.lastClash?.warLoss).toBe(0.5);                      // 本场战损档 = 对折 50%
     expect(b.lastClash?.winStays).toBe(true);                    // 未满连胜上限 → 留场
   });
 
   it('v2 连胜满 WIN_CAP → 光荣回库 + 全额返还泉水（owner 2026-06-29·防强兵无限霸场）', () => {
     const b = initTurnBattle({ seed: 1 }); b.a.mana = 0;
-    const w = unit('w', 'A', A_DEPLOY_SLOT); w.cost = 3; w.wins = WIN_CAP - 1; // 已差一场满上限·本场达成
+    const w = unit('w', 'A', A_DEPLOY_SLOT); w.cost = 3; w.wins = WIN_CAP - 1; // 已差一场满上限·本场达成（已连胜 2 场 → 战力对折两次 14→3）
     b.lanes[0].a.push(w);
-    b.lanes[0].b.push(unit('lz', '2', A_DEPLOY_SLOT + 1, 12));
+    b.lanes[0].b.push(unit('lz', '2', A_DEPLOY_SLOT + 1)); // pEff 2 < 对折后的 w(3) → w 仍胜 → 达成第 3 连胜
     endTurn(b);
     expect(b.lastClash?.aWins).toBe(true);
     expect(b.lanes[0].a.some((c) => c.id === 'w')).toBe(false);  // 满 WIN_CAP → 离场
