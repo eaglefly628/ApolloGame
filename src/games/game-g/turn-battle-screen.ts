@@ -840,7 +840,7 @@ export function mountTurnBattle(host: HTMLElement, getView: () => TurnBattleView
         const now = u.getBoundingClientRect(); const dx = (old.left - now.left) / z, dy = (old.top - now.top) / z;
         if (Math.abs(dx) < 0.5 && Math.abs(dy) < 0.5) return; // 没动 → 跳过
         u.style.transform = `translate(${dx}px,${dy}px)`; u.style.transition = 'none';
-        requestAnimationFrame(() => { u.style.transition = 'transform .34s cubic-bezier(.22,.7,.3,1)'; u.style.transform = 'none'; });
+        requestAnimationFrame(() => { u.style.transition = 'transform .68s cubic-bezier(.22,.7,.3,1)'; u.style.transform = 'none'; }); // owner 2026-06-29「行军慢一半」：.34s→.68s
       });
     }
   };

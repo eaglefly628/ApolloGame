@@ -488,7 +488,7 @@ export function mount(container: HTMLElement, shell?: { exit?: () => void }): ()
       const lanes = advanceMovePhase(tb); // 只移动·不掷命 → 前锋滑到相邻·都还在场
       justMovedIds = diffMoved(before);
       mounted?.update(); // 渲染滑动到位（FLIP·owner「看到前进路线」）
-      window.setTimeout(() => { justMovedIds = new Set(); if (!perfClash) mounted?.update(); }, 600);
+      window.setTimeout(() => { justMovedIds = new Set(); if (!perfClash) mounted?.update(); }, 760); // 行军滑动 .68s → 清标记窗口 600→760·让慢速滑动播完再重渲（owner 2026-06-29 慢一半）
       exitCaps.clear();
       for (const li of lanes) { const fa = tb.lanes[li].a[0], fb = tb.lanes[li].b[0]; if (fa) { const s = captureUnit(fa.id); if (s) exitCaps.set(fa.id, s); } if (fb) { const s = captureUnit(fb.id); if (s) exitCaps.set(fb.id, s); } } // 相邻位快照(供离场动画)
       for (const li of lanes) resolveClashAt(tb, li); // 结算(数据)→ clashLog
