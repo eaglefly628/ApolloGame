@@ -819,3 +819,5 @@ _（REQ-3D-W1高效引擎 已移至 [`requests-3d.md`](./requests-3d.md)。）_
 > **我已自我回驳（不提·能重组）**：① 任意渐变底——`Panel.bg` 已收 CSS 串（我已用 `linear-gradient`）；② 折角布片——用「负 x/y + rotate 的定位 Panel」可拼；③ 倒角——已有 `chamfer`。
 >
 > **红线守住**：都是**闭集枚举/数字字段**（最弱 LLM 能填 `glass:true` / `font:'serif'` / `opacity:.9`），不开自由 CSS 口子。落地前 game-d 的 2D UI 维持「神似」，这 3 项下沉后即逐像素收口。
+
+> **补充（2026-07-01·owner 反馈按钮颜色不一致）**：**4. Button 自定义配色**——原型 hero 键是确切 `linear-gradient(180deg,#ffd982,#f0a93a)` + 文字 `#3a2406`；现 `Button kind:'hero'` 是引擎固定金色样式（受 `theme.gold` 驱动·渐变/文字色写死）。要逐像素得让 `ButtonProps` 收可选 `bg`/`fg`（闭集：令牌或 hex 串，同 Panel.bg 先例）。暂用 `theme.gold` 调暖逼近。

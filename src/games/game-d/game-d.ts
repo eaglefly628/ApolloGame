@@ -38,7 +38,7 @@ const GAME_D_THEME: UITheme = {
   line: 'rgba(180,160,235,0.16)',
   text: '#efeafb', sub: '#b8acd8', dim: '#807594',
   jade: '#c3a8ff', jadeWash: 'rgba(150,110,235,0.18)', jadeLine: 'rgba(175,135,245,0.5)',
-  gold: '#f0d68a',
+  gold: '#f3c257', // 复刻设计案更饱的暖金（logo #f7c252 / hero 键 #ffd982→#f0a93a 一系）
   ok: '#7fd49a', okWash: 'rgba(110,205,140,0.16)',
   warn: '#f0b756', warnWash: 'rgba(240,183,86,0.16)', danger: '#ff7d7d',
   mine: '#f0d68a', foe: '#ff8a8a',
@@ -148,7 +148,7 @@ export function mount(container: HTMLElement): () => void {
     // 相机：Title=**正面透视**（复刻原型 initTitle fov38·正对大骰）；盒庭=近俯视 ortho。
     const c = engine.world.getComponent<Camera3D>('cam', 'Camera3D');
     if (c) {
-      if (dark) { c.projection = 'perspective'; c.fov = 38; c.yaw = Math.PI; c.pitch = 0.42; c.distance = 30; c.orthoSize = 13; c.pivotX = 0; c.pivotY = 3.0; c.pivotZ = 0; }
+      if (dark) { c.projection = 'perspective'; c.fov = 38; c.yaw = Math.PI; c.pitch = 0.42; c.distance = 30; c.orthoSize = 13; c.pivotX = 0; c.pivotY = 1.6; c.pivotZ = 0; }
       else { c.projection = 'ortho'; c.yaw = Math.PI; c.pitch = 0.98; c.orthoSize = 13; c.distance = 240; c.pivotX = 0; c.pivotY = 1.5; c.pivotZ = 0; }
     }
   };
@@ -156,13 +156,17 @@ export function mount(container: HTMLElement): () => void {
     if (titleDieUp) return;
     engine.world.createEntity(TITLE_DIE);
     // 直立、绕 Y 转 45° 让棱角朝镜头（配俯视相机 → 露顶+左前+右前，复刻概念图）
-    engine.world.addComponent(TITLE_DIE, { type: 'Transform3D', x: 0, y: 3.4, z: 0, rotY: 0.78, scale: 1 } as unknown as Component);
-    // 六色命运骰（6 面各一元素·**手绘骰面图**·复刻原型 dieMesh 面序 pips=[1,6,2,5,3,4]）
+    engine.world.addComponent(TITLE_DIE, { type: 'Transform3D', x: 0, y: 1.3, z: 0, rotY: 0.78, scale: 1 } as unknown as Component);
+    // 六色命运骰（6 面各一元素·**手绘骰面图**·复刻原型 dieMesh 面序 pips=[1,6,2,5,3,4]）。emissive=元素色让手绘面在暗塔下自发亮（不发暗）。
     const PIP = [1, 6, 2, 5, 3, 4];
-    engine.world.addComponent(TITLE_DIE, { type: 'Mesh3D', shape: 'box', width: 10, height: 10, depth: 10, frontTint: hexNum('huo'), dieFaces: ELEMS.map((el, i) => ({ color: hexNum(el), pip: PIP[i]!, src: diceFaceArt(el, PIP[i]!) })) } as unknown as Component);
+    engine.world.addComponent(TITLE_DIE, { type: 'Mesh3D', shape: 'box', width: 10, height: 10, depth: 10, frontTint: hexNum('huo'), dieFaces: ELEMS.map((el, i) => ({ color: hexNum(el), pip: PIP[i]!, src: diceFaceArt(el, PIP[i]!), emissive: hexNum(el) })) } as unknown as Component);
+    // 背后柔光晕（复刻原型 glowSprite('#ffe5a8',6.4)·暖金光烘托大骰·小而聚·别糊满屏）
+    engine.world.createEntity('gd-title-glow');
+    engine.world.addComponent('gd-title-glow', { type: 'Transform3D', x: 0, y: 1.3, z: -4 } as unknown as Component);
+    engine.world.addComponent('gd-title-glow', { type: 'Glow3D', color: 0xffe5a8, scale: 15, opacity: 0.38 } as unknown as Component);
     titleDieUp = true;
   };
-  const hideTitleDie = (): void => { if (!titleDieUp) return; try { engine.world.destroyEntity(TITLE_DIE); } catch { /* noop */ } titleDieUp = false; };
+  const hideTitleDie = (): void => { if (!titleDieUp) return; try { engine.world.destroyEntity(TITLE_DIE); engine.world.destroyEntity('gd-title-glow'); } catch { /* noop */ } titleDieUp = false; };
 
   const S: S = {
     phase: 'title', library: startLibrary(), loadout: [], detail: 'baida', dishTab: 'all',
@@ -191,9 +195,10 @@ export function mount(container: HTMLElement): () => void {
       ...STARS.map(([sx, sy], i): LayoutNode => ({ type: 'Label', id: `gd-star${i}`, props: { text: '✦', size: 'xs', color: 'text' }, layout: { x: Math.round(sx * w), y: Math.round(sy * h), fx: [{ kind: 'pulse', ms: 2800 + i * 300 }] } })),
       { type: 'Panel', id: 'gd-logo-box', props: { bare: true }, layout: { x: w / 2 - 220, y: Math.round(h * 0.05), width: 440, direction: 'column', align: 'center', gap: 7 },
         children: [
-          lbl('gd-name', '骰　途', { size: 'xxxl', color: 'gold', bold: true, glow: true, tracking: 10 }),
-          bareRow('gd-subrow', [lbl('gd-sl', '—', { size: 'sm', color: 'dim' }), lbl('gd-sub', 'TOWER OF FATE', { size: 'sm', color: 'sub', tracking: 6 }), lbl('gd-sr', '—', { size: 'sm', color: 'dim' })], { justify: 'center', gap: 10 }),
-          lbl('gd-tag', '两名掷命者，一座会改写命运的古塔', { size: 'sm', color: 'sub' }),
+          // 确切复刻原型：logo 76px letter-spacing6 · 副标 15px sp6 · tagline 13px（LayoutNode 用裸 px 数字）
+          lbl('gd-name', '骰　途', { size: 64, color: 'gold', bold: true, glow: true, tracking: 6 }),
+          bareRow('gd-subrow', [lbl('gd-sl', '—', { size: 14, color: 'dim' }), lbl('gd-sub', 'TOWER OF FATE', { size: 14, color: 'sub', tracking: 6 }), lbl('gd-sr', '—', { size: 14, color: 'dim' })], { justify: 'center', gap: 10 }),
+          lbl('gd-tag', '两名掷命者，一座会改写命运的古塔', { size: 13, color: 'sub' }),
         ],
       },
       { type: 'Panel', id: 'gd-btns', props: { bare: true }, layout: { x: w / 2 - 170, y: h - 156, width: 340, direction: 'column', align: 'center', gap: 12 },
