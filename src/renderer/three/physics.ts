@@ -1,4 +1,4 @@
-import * as CANNON from 'cannon-es';
+import type * as CANNON from 'cannon-es';
 import type { IWorld } from '@engine/core/types.js';
 import type { RigidBody3D, Mesh3D, Transform3D } from '@engine/protocol/components.js';
 
@@ -7,10 +7,22 @@ import type { RigidBody3D, Mesh3D, Transform3D } from '@engine/protocol/componen
 //  owner 2026-06-30「为表现非同步」：滚色子/掉落/翻滚 —— **不进 sim/hash·不为联机一致**（RigidBody3D 已入 NON_DETERMINISTIC）。
 //  render-only 自由区：可用随机/壁钟。每帧步进 cannon 世界 → 把每个刚体的位置+四元数写回同实体 Transform3D（render-only）
 //  → 渲染器照常据 Transform3D 画（含 quat·无万向锁）。体形/尺寸取同实体 Mesh3D（box→半尺寸·sphere→半径）。
-//  cannon-es 仅在此（renderer/three 下）import → 进 3D code-split chunk，2D 游戏不连带打包。
+//  cannon-es **懒加载**（首个 RigidBody3D 出现才 `import('cannon-es')`）：① 进 3D code-split chunk，2D 游戏不连带打包；
+//  ② **可选重依赖**——未安装/解析失败时仅跳过刚体物理、不拖垮整个 app（vite dev 也不会因缺包而白屏）。
 // ═══════════════════════════════════════════════════════════════
 
 const STEP = 1 / 60; // 固定物理步长
+
+// 懒加载的 cannon-es 运行时句柄（`import type` 只留类型·运行时靠 dynamic import 取模块）。
+let C: typeof import('cannon-es') | null = null;
+let loading = false;
+function ensureCannon(): void {
+  if (C || loading) return;
+  loading = true;
+  void import('cannon-es').then((m) => { C = m; }).catch((e) => { console.warn('[physics] cannon-es 未安装/解析失败 → 跳过刚体物理（纯表现·不影响玩法）', e); });
+}
+/** 预加载 cannon-es（返回 Promise）——测试/需要首帧即步进物理时 `await` 它，绕过懒加载首帧跳过。 */
+export async function preloadPhysics(): Promise<void> { if (!C) C = await import('cannon-es'); }
 
 export class PhysicsSystem {
   private world: CANNON.World | null = null;
@@ -21,6 +33,7 @@ export class PhysicsSystem {
   sync(world: IWorld, nowMs: number): number {
     const ents = world.query('RigidBody3D');
     if (ents.length === 0) { if (this.world) this.disposeWorld(); return 0; }
+    if (!C) { ensureCannon(); return 0; } // cannon-es 懒加载中/缺失 → 本帧跳过刚体物理
     if (!this.world) this.initWorld();
     const cw = this.world!;
     const seen = new Set<string>();
@@ -54,10 +67,10 @@ export class PhysicsSystem {
   }
 
   private initWorld(): void {
-    const cw = new CANNON.World({ gravity: new CANNON.Vec3(0, -42, 0) }); // 世界单位较大 → 重力调大·色子下落干脆
+    const cw = new C!.World({ gravity: new C!.Vec3(0, -42, 0) }); // 世界单位较大 → 重力调大·色子下落干脆
     cw.defaultContactMaterial.restitution = 0.4; // 弹一点
     cw.defaultContactMaterial.friction = 0.35;
-    const ground = new CANNON.Body({ mass: 0, shape: new CANNON.Plane() }); // 地面：静态·法线朝上·y=0
+    const ground = new C!.Body({ mass: 0, shape: new C!.Plane() }); // 地面：静态·法线朝上·y=0
     ground.quaternion.setFromEuler(-Math.PI / 2, 0, 0);
     cw.addBody(ground);
     this.world = cw;
@@ -71,9 +84,9 @@ export class PhysicsSystem {
     const shape = rb.shape ?? (m?.shape === 'sphere' ? 'sphere' : 'box');
     const w = m?.width ?? 4, h = m?.height ?? 4;
     const cshape: CANNON.Shape = shape === 'sphere'
-      ? new CANNON.Sphere(Math.max(0.1, w / 2))
-      : new CANNON.Box(new CANNON.Vec3(w / 2, h / 2, (m?.depth ?? w) / 2)); // 体素与渲染盒一致（PBR 路径 depth=m.depth??width）
-    const body = new CANNON.Body({ mass: rb.mass ?? 1, shape: cshape });
+      ? new C!.Sphere(Math.max(0.1, w / 2))
+      : new C!.Box(new C!.Vec3(w / 2, h / 2, (m?.depth ?? w) / 2)); // 体素与渲染盒一致（PBR 路径 depth=m.depth??width）
+    const body = new C!.Body({ mass: rb.mass ?? 1, shape: cshape });
     body.position.set(t?.x ?? 0, t?.y ?? 10, t?.z ?? 0);
     if (rb.vx || rb.vy || rb.vz) body.velocity.set(rb.vx ?? 0, rb.vy ?? 0, rb.vz ?? 0);
     if (rb.avx || rb.avy || rb.avz) body.angularVelocity.set(rb.avx ?? 0, rb.avy ?? 0, rb.avz ?? 0);

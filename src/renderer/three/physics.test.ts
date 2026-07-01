@@ -1,11 +1,12 @@
 // 真物理刚体（cannon-es·render-only 表现·非同步）：重力下落 + 落地不穿地 + render-only 不进 hash。
-import { describe, it, expect } from 'vitest';
-import { PhysicsSystem } from './physics.js';
+import { describe, it, expect, beforeAll } from 'vitest';
+import { PhysicsSystem, preloadPhysics } from './physics.js';
 import { World } from '@engine/core/world.js';
 import { hashSnapshot } from '@net/index.js';
 import type { RigidBody3D, Transform3D, Mesh3D } from '@engine/protocol/components.js';
 
 describe('PhysicsSystem：真物理刚体（cannon-es·render-only 表现）', () => {
+  beforeAll(async () => { await preloadPhysics(); }); // cannon-es 懒加载 → 测试先预载，首帧即可步进
   it('刚体在重力下下落 → 落地停在地面之上（不穿地）+ 写四元数', () => {
     const w = new World();
     w.createEntity('d');
