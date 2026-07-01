@@ -11,7 +11,7 @@ import type { WorldBlueprint } from '../../assembly/demo.assembly.js';
 import { motionApplyCapability } from '@skills/tier1/index.js';
 import { overlapDetect3dCapability, navmeshBakeCapability, collisionResolve3dCapability } from '@skills/atoms/index.js';
 import { pathfindCapability } from '@skills/tier2/index.js';
-import { MODEL_FOX, MAT_PLANK_WOOD } from './assets.js';
+import { MODEL_FOX, MAT_PLANK_WOOD, MAT_STONE } from './assets.js';
 
 type Ent = WorldBlueprint['entities'][string];
 
@@ -86,6 +86,8 @@ function pursuer(x: number, z: number, body: number, edge: number, label: string
     Mesh3D: { shape: 'box', width: 3.4, height: 3.4, depth: 3.4, frontTint: body, backTint: body, edgeTint: edge },
     NavAgent: { speed: 0.5, arriveRange: 5 }, // 略慢于鸭子自动跑速（0.58）→ 永远在后面追（追不太上）
     Relation: { kind: 'target', targetId: 'hero' },
+    // 材质铺陈：光面塑料 + 细微凸点浮雕（保留各自体色·比原扁平实例盒有质感·追逐焦点）。
+    Material3D: { preset: 'plastic', color: body, surface: { pattern: 'bumps', tiles: 4, normal: 0.4, rough: 0.3 } },
     ...(light ? { Light3D: { kind: 'point' as const, color: light.color, intensity: light.intensity, range: light.range, baseY: 5 } } : {}),
     WorldUI3D: { text: label, offsetY: 5, size: 'sm', color },
   };
@@ -132,8 +134,8 @@ export function dioramaBlueprint(): WorldBlueprint {
         WorldUI3D: { text: '🦊 狐狸（骨骼动画·奔跑）', offsetY: 9, size: 'sm', glow: true },
       },
 
-      // 中心信标（金属柱 + 魔法喷泉 VFX）：赛道圆心的焦点，鸭子绕它跑。
-      beacon: { ...block(0, 4, 0, 4, 8, 4, 0xffd54f, 0xffb300), Material3D: { preset: 'gold' } },
+      // 中心信标（金属柱 + 魔法喷泉 VFX）：赛道圆心的焦点，鸭子绕它跑。锤打金面（bumps 浮雕·反射更活）。
+      beacon: { ...block(0, 4, 0, 4, 8, 4, 0xffd54f, 0xffb300), Material3D: { preset: 'gold', surface: { pattern: 'bumps', tiles: 5, normal: 0.5, rough: 0.3 } } },
 
       // 🖼 真实贴图木箱（REQ-Resource ①①④·验收）：物件只引**材质数据资产** materialRef=MAT_PLANK_WOOD
       // （该材质在索引里 = wood 预设 + 木板 albedo/法线 texture key）。渲染器据 materialRef 查材质目录合成 → 取图挂上。
@@ -159,14 +161,15 @@ export function dioramaBlueprint(): WorldBlueprint {
       // 导航网格（罩住竞技场·自动烘焙 NavGraph 给 pathfind·零手摆航点）。
       nav: { NavMesh: { minX: -72, minZ: -72, maxX: 72, maxZ: 72, cellSize: 3, agentRadius: 2.6 } },
 
-      // 障碍（碰撞 + 寻路双用·避开鸭子赛道环 R=30）：内圈三石墩（逼追兵绕行）+ 外圈四石柱（部分 PBR 金属·视觉边界）。
-      'rock-1': obstacle(15, 2, 6, 5, 6, 0x9e9e9e, 0x616161),
-      'rock-2': obstacle(-9, 15, 6, 5, 6, 0x9e9e9e, 0x616161),
-      'rock-3': obstacle(-13, -11, 6, 5, 6, 0x9e9e9e, 0x616161),
-      'pillar-1': { ...obstacle(52, 30, 7, 9, 7, 0x8d6e63, 0x5d4037), Material3D: { preset: 'steel' } }, // PBR 钢
-      'pillar-2': { ...obstacle(-50, 34, 7, 9, 7, 0x8d6e63, 0x5d4037), Material3D: { preset: 'copper' } }, // PBR 铜
-      'pillar-3': obstacle(46, -50, 7, 9, 7, 0x8d6e63, 0x5d4037),
-      'pillar-4': obstacle(-48, -46, 7, 9, 7, 0x8d6e63, 0x5d4037),
+      // 障碍（碰撞 + 寻路双用·避开鸭子赛道环 R=30）：内圈三石墩（逼追兵绕行）+ 外圈四石柱（金属 + 素石·视觉边界）。
+      // 材质铺陈：石墩/素石柱引复用材质数据资产 MAT_STONE（一处改色·全生效）+ 各自程序化浮雕（凹凸石面/风化）。
+      'rock-1': { ...obstacle(15, 2, 6, 5, 6, 0x9e9e9e, 0x616161), Material3D: { preset: 'rock', materialRef: MAT_STONE, surface: { pattern: 'bumps', tiles: 3, normal: 1.2, rough: 0.5, scale: 1.2 } } },
+      'rock-2': { ...obstacle(-9, 15, 6, 5, 6, 0x9e9e9e, 0x616161), Material3D: { preset: 'rock', materialRef: MAT_STONE, surface: { pattern: 'bumps', tiles: 3, normal: 1.2, rough: 0.5, scale: 1.4 } } },
+      'rock-3': { ...obstacle(-13, -11, 6, 5, 6, 0x9e9e9e, 0x616161), Material3D: { preset: 'rock', materialRef: MAT_STONE, surface: { pattern: 'noise', tiles: 2, normal: 1.3, rough: 0.5, scale: 1.1 } } },
+      'pillar-1': { ...obstacle(52, 30, 7, 9, 7, 0x8d6e63, 0x5d4037), Material3D: { preset: 'steel', surface: { pattern: 'scratches', tiles: 3, normal: 0.5, rough: 0.6 } } }, // PBR 钢·拉丝
+      'pillar-2': { ...obstacle(-50, 34, 7, 9, 7, 0x8d6e63, 0x5d4037), Material3D: { preset: 'copper', surface: { pattern: 'bumps', tiles: 5, normal: 0.5, rough: 0.35 } } }, // PBR 铜·锤打
+      'pillar-3': { ...obstacle(46, -50, 7, 9, 7, 0x8d6e63, 0x5d4037), Material3D: { preset: 'rock', materialRef: MAT_STONE, surface: { pattern: 'noise', tiles: 3, normal: 1.0, rough: 0.6 } } }, // 素石柱·风化
+      'pillar-4': { ...obstacle(-48, -46, 7, 9, 7, 0x8d6e63, 0x5d4037), Material3D: { preset: 'rock', materialRef: MAT_STONE, surface: { pattern: 'noise', tiles: 3, normal: 1.0, rough: 0.6, scale: 1.2 } } },
 
       // 真物理色子（cannon-es·render-only 表现·掉落翻滚·「🎲 掷骰子」按钮重掷）：落在赛道中心区。
       'die-1': die(6, 10, 0xe53935),
@@ -174,7 +177,8 @@ export function dioramaBlueprint(): WorldBlueprint {
       'die-3': die(3, 13, 0x43a047),
 
       // 草地竞技场（顶在 y=0·缩小到 160²·owner「缩小一半 + 去掉低画质小树」）。
-      ground: block(0, -2.5, 0, 160, 5, 160, 0x8bc34a, 0x5d4037),
+      // 材质铺陈：草地色 matte + 程序化起伏浮雕（noise·大 tiles 铺满大地面）→ 掠光下有草皮质感·不再纯平板。
+      ground: { ...block(0, -2.5, 0, 160, 5, 160, 0x7cb342, 0x5d4037), Material3D: { preset: 'matte', color: 0x7cb342, surface: { pattern: 'noise', tiles: 16, normal: 0.7, rough: 0.55, scale: 1.5 } } },
 
       // 北侧 PBR 材质陈列台（材质球·大字标名·调试面板「🔬 看材质」一键看）。
       ...materialBoard(),

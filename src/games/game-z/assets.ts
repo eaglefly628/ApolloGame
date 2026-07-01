@@ -10,6 +10,8 @@ export const TEX_PLANK_ALBEDO = 'tex/plank-albedo';
 export const TEX_PLANK_NORMAL = 'tex/plank-normal';
 // 材质数据资产（REQ-Resource ④·type:'material'·引上面两张 texture key·物件用 materialRef 引它·非硬编码预设）。
 export const MAT_PLANK_WOOD = 'mat/plank-wood';
+// 石材质（花岗岩灰·rock 预设）：场景多处复用（石墩 + 素石柱）→ 一处改色·全场景生效（材质数据资产复用示范）。
+export const MAT_STONE = 'mat/stone';
 
 // REQ-Resource ②：模型 + 贴图统一走 **AssetIndex 路线**（registerAssetIndex 桥接·不再散调 registerManifest）。
 // 条目带 type/status/spec.usage → 桥接时 mesh→ModelDescriptor·texture→TextureDescriptor（colorSpace 按 usage 派生：
@@ -26,6 +28,7 @@ export const GAME_Z_INDEX: AssetIndex = parseAssetIndex({
     { id: TEX_PLANK_NORMAL, type: 'texture', status: 'filled', path: '/textures/plank_normal.png', description: '木板法线贴图（程序化自产）', spec: { usage: 'normal', width: 256, height: 256 }, source: 'scripts/gen-textures.mjs' },
     // 材质数据资产（REQ-Resource ④）：无文件·数据全在 spec·引上面两张 texture key。物件 Material3D{materialRef} 引它。
     { id: MAT_PLANK_WOOD, type: 'material', status: 'filled', description: '木板材质（wood 预设 + 木板 albedo/法线贴图）', spec: { preset: 'wood', map: TEX_PLANK_ALBEDO, normalMap: TEX_PLANK_NORMAL } },
+    { id: MAT_STONE, type: 'material', status: 'filled', description: '石材质（花岗岩灰·rock 预设·场景复用）', spec: { preset: 'rock', color: 0x8b8178 } },
   ],
 });
 
