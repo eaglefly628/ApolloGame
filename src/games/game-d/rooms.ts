@@ -21,18 +21,21 @@ const HD = 14;
 
 export interface ActDef {
   name: string;
-  floorTop: number; // 地台顶面色
-  floorSide: number; // 地台侧/暗面色
+  floorTop: number; // 地台顶面主色
+  top2: number; // 地台顶面点缀色
+  floorSide: number; // 地台侧/暗面主色
+  side2: number; // 地台侧面点缀色
   wall: number; // 围墙/装饰主色
-  accent: number; // 焦点/门楣高光色（亮色·被 bloom 自发光）
+  trim: number; // 墙顶饰条 / 纹样色
+  accent: number; // 焦点/门楣高光色（亮·发光物）
 }
 
-/** 层主题（循环复用·index 增长即换层）。 */
+/** 层主题（**确切复刻原型 `get themes()` 的 hex**·非近似）。index 增长即换层。 */
 export const ACTS: ActDef[] = [
-  { name: '翠庭', floorTop: 0x8bc34a, floorSide: 0x5d4037, wall: 0x9ccc65, accent: 0xffd54f },
-  { name: '古殿', floorTop: 0xb0bec5, floorSide: 0x546e7a, wall: 0x90a4ae, accent: 0x4dd0e1 },
-  { name: '熔心', floorTop: 0x6d4c41, floorSide: 0x3e2723, wall: 0x8d6e63, accent: 0xff7043 },
-  { name: '晶顶', floorTop: 0x4dd0e1, floorSide: 0x00838f, wall: 0x26c6da, accent: 0xb39ddb },
+  { name: '翠庭', floorTop: 0x6fae4a, top2: 0x5a9a3a, floorSide: 0x8a5a32, side2: 0x5d3a20, wall: 0x9aa86a, trim: 0xf2d066, accent: 0xffd24a },
+  { name: '古殿', floorTop: 0x8b93a4, top2: 0x737c8f, floorSide: 0x565d6e, side2: 0x3c4250, wall: 0x9aa1b4, trim: 0x67d6e0, accent: 0x5fd6e6 },
+  { name: '熔心', floorTop: 0x4a3a34, top2: 0x372b27, floorSide: 0x33251f, side2: 0x241a16, wall: 0x5a463c, trim: 0xff7a3c, accent: 0xff7a2c },
+  { name: '晶顶', floorTop: 0x4a6f8a, top2: 0x3c5d78, floorSide: 0x3a5070, side2: 0x2a3a58, wall: 0x5a7fa6, trim: 0xc08aff, accent: 0xb58bff },
 ];
 
 export interface RoomMeta {
@@ -59,8 +62,8 @@ function block(x: number, y: number, z: number, w: number, h: number, d: number,
 }
 const PAT_BY_ACT: Array<VoxelTex['pattern']> = ['grass', 'stone', 'plain', 'crystal'];
 /** 由层主题派生地台/墙的体素贴图。 */
-const floorTex = (t: ActDef, act: number): VoxelTex => ({ top: t.floorTop, side: t.floorSide, top2: t.wall, trim: t.accent, pattern: PAT_BY_ACT[act % 4], tile: 2 });
-const wallTex = (t: ActDef): VoxelTex => ({ top: t.wall, side: t.floorSide, side2: t.wall, trim: t.accent, wall: true, tile: 2 });
+const floorTex = (t: ActDef, act: number): VoxelTex => ({ top: t.floorTop, top2: t.top2, side: t.floorSide, side2: t.side2, trim: t.trim, pattern: PAT_BY_ACT[act % 4], tile: 2 });
+const wallTex = (t: ActDef): VoxelTex => ({ top: t.wall, side: t.wall, side2: t.side2, trim: t.trim, wall: true, tile: 2 });
 
 /**
  * 即时生成第 index 间竞技场的全部实体（id 以 `r{index}-` 前缀·跨房间唯一·便于流式卸载）。
@@ -155,10 +158,10 @@ export function baseBlueprint(): WorldBlueprint {
     entities: {
       // 近俯视 ortho·框紧一间（复刻原型 cam pos(0,12,7.8) lookAt 原点·fr≈7）。orthoSize 收到 13 让盒庭填满中段。
       cam: { Camera3D: { yaw: Math.PI, pitch: 0.98, projection: 'ortho', orthoSize: 13, distance: 240, near: 1, far: 900, pivotX: 0, pivotY: 1.5, pivotZ: 0 } },
-      // 暖主光（key·带影）+ 冷补光 + 柔和环境——复刻原型 ACES 通透暖调、不暗黑。
-      sun: { Light3D: { kind: 'directional', color: 0xfff0d8, intensity: 1.55, dirX: -0.5, dirY: -1, dirZ: -0.4, castShadow: true } },
-      fillDir: { Light3D: { kind: 'directional', color: 0x8f9cff, intensity: 0.45, dirX: 0.5, dirY: -0.4, dirZ: 0.4 } },
-      amb: { Light3D: { kind: 'ambient', color: 0xf2ece0, intensity: 0.62 } },
+      // 光照**确切复刻原型 initGame**：key 0xfff0d8 at(6,11,5)→dir(-6,-11,-5)·fill 0x6f7cff at(-5,4,-4)→dir(5,-4,4)·amb 0xffffff。
+      sun: { Light3D: { kind: 'directional', color: 0xfff0d8, intensity: 1.05, dirX: -6, dirY: -11, dirZ: -5, castShadow: true } },
+      fillDir: { Light3D: { kind: 'directional', color: 0x6f7cff, intensity: 0.35, dirX: 5, dirY: -4, dirZ: 4 } },
+      amb: { Light3D: { kind: 'ambient', color: 0xffffff, intensity: 0.6 } },
       // 移轴景深（上下渐糊·微缩模型感）+ 轻泛光（发光物自发光）——设计案核心氛围。
       post: { Post3D: { tiltShift: { focus: 0.54, intensity: 1.7 }, bloom: { strength: 0.72, radius: 0.72, threshold: 0.6 } } },
       // 明快浅暖天穹（微缩盒庭漂在光里·非暗黑）。
