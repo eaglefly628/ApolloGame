@@ -56,6 +56,9 @@ export interface LayoutConstraints {
   /** 圆角半径 px（覆盖控件默认圆角·如 Panel 恒 10）。小件异形（城垛/盾/格位·radius 小）或大圆（落点圈=大 radius）用。
    *  通用 LayoutConstraints 字段·任意组件生效（ls 末置 → 覆盖控件自带 border-radius）。REQ-UI-容器描边形。 */
   radius?: number;
+  /** 不透明度 0..1（render-only·装饰淡入/水印/剪影/暗态叠加）。通用 LayoutConstraints·任意节点生效。
+   *  ⚠️ 别用在正文文字上（半透文字破对比·见 ui-playbook）——给 Image/装饰用。REQ-UI-骰途逐像素③。 */
+  opacity?: number;
   /** 流光 sheen（render-only·质感）。**已并入 `fx`**（= `fx:[{kind:'sheen'}]`）；保留作向后兼容别名，新代码用 fx。 */
   sheen?: boolean;
   /** 视觉特效合集（UI 特效库·render-only·闭集·可叠加）——见下 `VisualEffect`。
@@ -109,7 +112,7 @@ export interface LabelProps {
   /** 具名字体槽（复古/像素/磷光风换字体·下沉自 game-x 残响：VT323 时钟/Silkscreen 微标/DotGothic16 正文）。
    *  ui=主字体 / mono=等宽 / pixel=像素点阵(UITheme.fontPixel) / display=数码管展示字(UITheme.fontDisplay)。
    *  缺省按 mono 布尔回退（mono:true≈font:'mono'）。红线同 color：只收**枚举槽名**(最弱 LLM 能填)，绝不收自由 font-family 串。 */
-  font?: 'ui' | 'mono' | 'pixel' | 'display';
+  font?: 'ui' | 'mono' | 'pixel' | 'display' | 'serif'; // serif=衬线槽(UITheme.fontSerif·标题/logo 衬线、正文仍 sans·REQ-UI-骰途逐像素②)
   /** 磷光发光(text-shadow·琥珀时钟/霓虹标题)：true 时按当前 color 描一圈柔光。纯表现。 */
   glow?: boolean;
   /** 字距 px(letter-spacing·Silkscreen 全大写微标常用)。纯表现·只收数字(最弱 LLM 能填)。 */
@@ -154,6 +157,9 @@ export interface PanelProps {
   vignette?: boolean;
   /** 高亮框（强调态/活动视口）：true 时用 jade 描边 + 柔光投影，替代默认细线边·纯表现。 */
   accent?: boolean;
+  /** 磨砂玻璃（REQ-UI-骰途逐像素①·HUD/面板浮在 3D 或大图之上）：true → `backdrop-filter:blur` + 半透底 + 细边。
+   *  与整屏 `Screen.blur` 不同（这是 per-Panel）。半透底默认深玻璃；要别的色调用 `bg` 传半透 rgba 覆盖。 */
+  glass?: boolean;
   /** 无框纯布局容器（owner 2026-06-25「别千层框」）：true=不画边框/底/圆角、padding 缺省 0——只做 row/column/grid 分组。
    *  边框只留给「真该成一个框的东西」（外框/牌桌/侧栏/卡片）；行列分组一律 bare，避免嵌套出层层框。 */
   bare?: boolean;
@@ -463,6 +469,8 @@ export interface UITheme {
   fontPixel?: string;
   /** 数码管展示字体槽（Label font:'display'·如 VT323 七段琥珀时钟）。缺省回退 fontMono。 */
   fontDisplay?: string;
+  /** 衬线字体槽（Label font:'serif'·如 Noto Serif SC·标题/logo 衬线、正文仍 sans）。缺省回退 fontUi。 */
+  fontSerif?: string;
   /** 输入框底色（缺省深色半透 rgba(0,0,0,0.35)·适配暗皮）。亮皮须填浅色，否则深底深字看不清。 */
   inputBg?: string;
   /** 背景贴图层（procedural CSS 图案 / 贴图 url·叠在 pageBg 上·renderScreen 合成）。主题作者填（可含 CSS），区别于游戏 LayoutNode 数据。缺省无 = 纯 pageBg（老主题零变化）。 */

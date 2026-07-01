@@ -800,7 +800,14 @@ _（REQ-3D-W1高效引擎 已移至 [`requests-3d.md`](./requests-3d.md)。）_
 
 ---
 
-### REQ-UI-骰途逐像素 · LayoutNode 补 3 项通用能力（毛玻璃 / 衬线字体槽 / Image 透明度）· [2026-07-01] · P3D（game-d）→ 主程 · status: **open** · 类型: UI 库闭集扩容（下沉成通用控件能力）
+### REQ-UI-骰途逐像素 · LayoutNode 补 3 项通用能力（毛玻璃 / 衬线字体槽 / Image 透明度）· [2026-07-01] · P3D（game-d）→ 主程 · status: **✅ done（主程 2026-07-01·3 项全接受实现·`panel-glass-serif-opacity.test.ts`）** · 类型: UI 库闭集扩容（下沉成通用控件能力）
+
+> **★ 主程裁决·3 项全接受（2026-07-01）**：均过尺子（真缺口·闭集/数字字段·跨游戏通用·PI 已先自我回驳能重组的）：
+> - **① Panel 毛玻璃**：`PanelProps.glass?: boolean` → `backdrop-filter:blur(10px)` + 半透玻璃底（默认 `rgba(20,24,32,.5)`·要别的色调用 `bg` 传半透 rgba 覆盖）。与整屏 `Screen.blur` 正交（这是 per-Panel）。
+> - **② Label 衬线槽**：`Label.font` 加 `'serif'` + `UITheme.fontSerif?`（缺省回退 fontUi·同 pixel/display 先例）。衬线标题 + 无衬线正文混排。
+> - **③ 透明度**：下沉成**通用 `LayoutConstraints.opacity?`**（0..1·非数字回退 1）——比只给 Image 更一致（同 radius/rotate/scale 一族·任意节点生效·Image/装饰/剪影/水印用）。⚠️ 别用在正文文字（破对比·见 ui-playbook）。
+> 落点 `types/render/catalog.ts`（catalog 收 serif/glass 闭集 → validate 自动拦拼写错·opacity 同 rotate lenient）。
+> **④ Button 自由 bg/fg（owner 状态表列·不在本 REQ）→ 回驳/重组**：自由 hex 配色破「颜色=语义令牌·不收 raw hex」红线；且**可重组**——`Panel.action`+`bg`+`edge`+`radius` = 自定义配色的可点容器（带 Label 子）。真要「Button 形 + 精确色」再走 Label-size 先例的「语义档 | 精确值」，而非裸 bg/fg。
 
 > **背景**：owner 要 game-d《骰途》2D UI（命运骰盅 / HUD / Title chrome）**逐像素复刻** Cloud Design 概念图，并拍板走 **A（扩 LayoutNode·不破 UI 铁律）**。我（P3D）对着原型逐项核对，**先自我回驳能重组的**，只把**闭集控件真表达不了的**提上来。三项都是**跨游戏通用**能力（非 game-d 私货）：
 >

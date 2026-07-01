@@ -114,6 +114,8 @@ function layoutStyle(c?: LayoutConstraints, t?: UITheme): string {
   }
   // 圆角半径（覆盖控件默认圆角·末置生效）。REQ-UI-容器描边形·小件异形/大圆落点圈用。
   if (c.radius !== undefined) p.push(`border-radius:${num(c.radius)}px`);
+  // 不透明度（0..1·装饰淡入/水印/剪影）。非数字回退 1（不透明·安全）。REQ-UI-骰途逐像素③。
+  if (c.opacity !== undefined) p.push(`opacity:${num(c.opacity, 1)}`);
   // 动画：一次性入场（both ease-out）或持续循环（infinite·环境动效）。仅白名单预设；时长/延迟强制数字。
   if (c.anim && ANIM_PRESETS.has(c.anim)) {
     p.push(`animation:apollo-${c.anim} ${num(c.animMs, 360)}ms ${c.animDelay ? `${num(c.animDelay)}ms ` : ''}both ease-out`);
@@ -175,7 +177,7 @@ function renderLabel(id: string, p: LabelProps, ls: string, t: UITheme): string 
   // 具名字体槽（缺省按 mono 布尔回退·保旧调用方不变）：pixel/display 槽缺省回退 fontUi/fontMono。
   const fontSlot: Record<string, string> = {
     ui: t.fontUi, mono: t.fontMono,
-    pixel: t.fontPixel ?? t.fontUi, display: t.fontDisplay ?? t.fontMono,
+    pixel: t.fontPixel ?? t.fontUi, display: t.fontDisplay ?? t.fontMono, serif: t.fontSerif ?? t.fontUi,
   };
   const fam = p.font ? fontSlot[p.font] : (p.mono ? t.fontMono : t.fontUi);
   const style = [
@@ -262,7 +264,7 @@ function renderPanel(id: string, p: PanelProps, c: LayoutConstraints | undefined
   const tex = texLayer(p.bgTexture, p.bgTextureSize);
   const chrome = bare
     ? (tex ? `background:${tex}, transparent;` : '')
-    : `background:${tex ? `${tex}, ` : ''}${p.bg ?? t.bg1};border:1px ${bStyle} ${border};border-radius:${rad}px;${glow}`;
+    : `background:${tex ? `${tex}, ` : ''}${p.bg ?? (p.glass ? 'rgba(20,24,32,0.5)' : t.bg1)};border:1px ${bStyle} ${border};border-radius:${rad}px;${glow}${p.glass ? 'backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);' : ''}`;
   const style = `${box};padding:${pad}px;${chrome}position:relative;${overflow}${ls}`;
   const title = p.title
     ? `<div style="font-size:10px;letter-spacing:2.4px;text-transform:uppercase;color:${t.dim};font-family:${t.fontUi};margin-bottom:4px${dir === 'grid' ? ';grid-column:1/-1' : ''}">${esc(p.title)}</div>`
