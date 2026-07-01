@@ -416,8 +416,18 @@ function clashNode(cv: TurnClashView): LayoutNode {
       { type: 'Label', id: 'clash-vd-f', props: { text: `敌方 ${verdict(cv.foe)}`, size: 'sm', color: cv.foe.won ? 'ok' : cv.foe.lastStand ? 'warn' : 'danger', bold: true } },
     ],
   };
+  // 对峙双方阵营标（owner 2026-06-29「对峙时忘了哪张是我方」）：Versus 左=我方(暖橙) / 右=敌方(冷蓝)·恒显带牌名。
+  const sideLabels: LayoutNode = {
+    type: 'Panel', id: 'clash-sides', props: { bare: true }, layout: { direction: 'row', gap: 20, align: 'center', justify: 'center' },
+    children: [
+      { type: 'Label', id: 'clash-side-m', props: { text: `🟠 我方 · ${cv.mine.name}${cv.pEffMine != null ? ` · 战力 ${cv.pEffMine}` : ''}`, size: 'md', color: 'mine', bold: true } },
+      { type: 'Label', id: 'clash-side-vs', props: { text: 'VS', size: 'sm', color: 'dim', bold: true } },
+      { type: 'Label', id: 'clash-side-f', props: { text: `敌方 · ${cv.foe.name}${cv.pEffFoe != null ? ` · 战力 ${cv.pEffFoe}` : ''} 🔵`, size: 'md', color: 'foe', bold: true } },
+    ],
+  };
   const children: LayoutNode[] = [
     { type: 'Label', id: 'clash-title', props: { text: `⚔ ${cv.laneName} · 掷命对决`, size: 'lg', color: 'gold', bold: true, tracking: 2 } },
+    sideLabels,
     { type: 'Panel', id: 'clash-duel', props: { bare: true }, layout: { direction: 'row', gap: 24, align: 'center', justify: 'center' }, children: [versus, center] },
     ...(revealed ? [verdictRow] : []),
     oddsBar, breakdown,

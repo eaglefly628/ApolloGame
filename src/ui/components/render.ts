@@ -167,6 +167,7 @@ function renderLabel(id: string, p: LabelProps, ls: string, t: UITheme): string 
     text: t.text, sub: t.sub, dim: t.dim,
     jade: t.jade, gold: t.gold,
     ok: t.ok, warn: t.warn, danger: t.danger,
+    mine: t.mine ?? t.warn, foe: t.foe ?? t.jade, // 阵营字色（我方暖/敌方冷·同 edge 令牌·缺省回退）
   };
   // size 接受具名档 或 裸 px 数字（复刻像素稿精确字号·owner 2026-06-28「字阶该全档」）：数字直用、令牌查表。
   const sz = typeof p.size === 'number' ? p.size : (sizeMap[p.size ?? 'md'] ?? 13);

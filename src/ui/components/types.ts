@@ -103,7 +103,7 @@ export interface ButtonProps {
 export interface LabelProps {
   text?: string; // 可选：spans / tween / bind 提供内容时可省（缺省空串）
   size?: 'xs' | 'sm' | 'md' | 'lg' | 'xl' | 'xxl' | 'xxxl' | number; // 具名档(xs10..xxxl34) 或裸 px 数字(复刻精确档·8→任意大·REQ-UI-Label字阶裸数字)
-  color?: 'text' | 'sub' | 'dim' | 'jade' | 'gold' | 'ok' | 'warn' | 'danger';
+  color?: 'text' | 'sub' | 'dim' | 'jade' | 'gold' | 'ok' | 'warn' | 'danger' | 'mine' | 'foe';
   bold?: boolean;
   mono?: boolean;
   /** 具名字体槽（复古/像素/磷光风换字体·下沉自 game-x 残响：VT323 时钟/Silkscreen 微标/DotGothic16 正文）。
