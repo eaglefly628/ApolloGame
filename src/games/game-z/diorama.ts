@@ -11,7 +11,7 @@ import type { WorldBlueprint } from '../../assembly/demo.assembly.js';
 import { motionApplyCapability } from '@skills/tier1/index.js';
 import { overlapDetect3dCapability, navmeshBakeCapability, collisionResolve3dCapability } from '@skills/atoms/index.js';
 import { pathfindCapability } from '@skills/tier2/index.js';
-import { MODEL_FOX } from './assets.js';
+import { MODEL_FOX, TEX_PLANK_ALBEDO, TEX_PLANK_NORMAL } from './assets.js';
 
 type Ent = WorldBlueprint['entities'][string];
 
@@ -134,6 +134,13 @@ export function dioramaBlueprint(): WorldBlueprint {
 
       // 中心信标（金属柱 + 魔法喷泉 VFX）：赛道圆心的焦点，鸭子绕它跑。
       beacon: { ...block(0, 4, 0, 4, 8, 4, 0xffd54f, 0xffb300), Material3D: { preset: 'gold' } },
+
+      // 🖼 真实贴图木箱（REQ-Resource ①·验收）：Material3D 引 texture key 的 albedo + 法线贴图（自产程序化木板图）。
+      // 渲染器按 key 从 AssetManager 取图·**法线走线性色彩空间**（不偏色）。证明「真实贴图走资产 key 路线」端到端通。
+      'plank-crate': {
+        ...block(11, 4, 6, 8, 8, 8, 0x9c6b3f, 0x9c6b3f),
+        Material3D: { preset: 'wood', map: TEX_PLANK_ALBEDO, normalMap: TEX_PLANK_NORMAL },
+      },
       'vfx-beacon': {
         Vfx3D: {
           x: 0, y: 9, z: 0, shape: 'cone', coneAngle: 0.5, rate: 120, lifetime: 1.3, lifeVar: 0.3,

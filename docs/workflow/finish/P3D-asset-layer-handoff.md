@@ -88,6 +88,18 @@ interface MaterialSpec {           // 材质 = 引 texture key 的数据资产�
 1. **texture `spec.usage`**=`'albedo'|'normal'|'roughness'|'metalness'|'ao'|'orm'|'emissive'|'sprite'` + **`spec.colorSpace`**=`'srgb'|'linear'`（缺省按 usage 推）。
 2. **`Material3D.map/normalMap/roughnessMap/aoMap`**（=texture 资产 id·字段名照 THREE 标准）。
 
+## 4.5 ① 完成回执（P3D 2026-07-01·知会 Lead）
+
+> **① 材质贴图消费端已落**（照 §2.3/§4 契约·全绿）：
+> - `Material3D` 加 `map/normalMap/roughnessMap/aoMap`(=texture 资产 id·THREE 标准名)。
+> - `buildPbrMaterial(def, surface?, maps?)` + `PbrMaps` 类型：挂真实贴图·**显式贴图覆盖程序化 surface**·有 albedo 图 → 基色置白(免二次染色·PBR 惯例)·真实法线 normalScale=1。`pbrSig` 纳入 4 map key。
+> - 渲染器 `resolvePbrMaps`/`pbrMapTexture`：按 key 从 AssetManager 取整图 THREE.Texture·**色彩空间按材质槽位定**（map→sRGB·normal/roughness/ao→NoColorSpace 线性）·RepeatWrapping·缓存·就绪态并入 mesh mode（异步贴图就绪后自动重建挂上）。
+> - **demo**：`game-z` 加 `DioramaLoader`（分发 loader·model→字节 / 贴图→图·补 ModelAssetLoader 只吃 model 的缺）+ 自产程序化木板贴图 `public/textures/plank_{albedo,normal}.png`（`scripts/gen-textures.mjs`·确定性·无许可/网络依赖）+ `plank-crate`（`Material3D{map,normalMap}`）。截图见木板纹理上盒（tex 计数 +2·纹理已挂）。
+> - 测试 `material.test`(4·pbrSig 含 map key·贴图挂载 + 白基·显式覆盖程序化·无图不变)。tsc+vitest(1984)+build 全绿。
+> - **①用的两个契约点(texture 色彩空间按槽位·Material3D map 字段名)与契约一致·零返工。** ①经 manifest 走成熟 texture-key 路径·不依赖 ②③。
+> - **schema 反馈（§5 要的）**：契约无坑·照做即通。**唯一提醒**：①的 colorSpace 靠**材质槽位**推（map=sRGB·normalMap=线性）·自足正确；②③ 落 `spec.colorSpace` 后应让「index 显式 colorSpace」优先于槽位默认（供特殊情况覆盖）。
+> - **下一步**：②③（收编 mesh 进索引 + spec 闭集 schema）动核心索引·我按契约实现完 **回 Lead review** 再合并。要我接着做 ②③ 吗？
+
 ## 5. 检查点（回 Lead）
 - 动 §2.1/§2.2（核心索引）前：贴 schema 差异/疑问回 Lead（若与 3D 现实不合就改契约）。
 - ②③ 实现完：Lead review 再合并主干。
