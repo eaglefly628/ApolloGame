@@ -86,7 +86,7 @@ export class ThreeRenderer implements RendererBackend {
   private lastShadowSig = '';
   private readonly width: number;
   private readonly height: number;
-  private readonly background: number;
+  private background: number;
   private readonly fov: number;
   private readonly zStep: number;
   private readonly assets?: AssetManager;
@@ -118,6 +118,12 @@ export class ThreeRenderer implements RendererBackend {
     this.models = new ModelPool(this.assets);
     container.appendChild(this.gl.domElement);
     this.worldUi.init(container); // 世界 UI DOM 叠层（覆于 canvas 上·pointer-events:none）
+  }
+
+  /** 运行时改场景清屏底色（相机在天空盒球外时·清屏色即背景）。游戏按屏切换暗/亮氛围用。 */
+  setBackground(hex: number): void {
+    this.background = hex;
+    if (this.scene) this.scene.background = new THREE.Color(hex);
   }
 
   sync(world: IWorld): void {

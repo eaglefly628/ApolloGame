@@ -124,7 +124,35 @@ export function mount(container: HTMLElement): () => void {
   const streamTo = (c: number): void => { for (const i of [...loaded.keys()]) if (i < c - WINDOW || i > c + WINDOW) unloadRoom(i); for (let i = c - WINDOW; i <= c + WINDOW; i++) loadRoom(i); };
   let bgRoom = 0;
   const cam = (): Camera3D | undefined => engine.world.getComponent<Camera3D>('cam', 'Camera3D');
-  streamTo(0);
+
+  // ── Title 大骰子（复刻原型 initTitle：单颗大命运骰缓转 + 暗塔氛围）──
+  const hexNum = (el: Elem): number => parseInt(ELEM_INFO[el].hex.slice(1), 16);
+  const TITLE_DIE = 'gd-title-die';
+  let titleDieUp = false;
+  const setMood = (dark: boolean): void => {
+    const s = engine.world.getComponent<{ type: 'Sky3D'; top: number; bottom: number; clouds?: boolean }>('sky', 'Sky3D');
+    if (s) { s.top = dark ? 0x1a1440 : 0xd7dbe4; s.bottom = dark ? 0x0d0920 : 0xece7de; s.clouds = false; }
+    // 相机在天空盒球外 → 清屏底色即背景：Title 暗塔紫黑 / 盒庭浅暖。
+    renderer.setBackground(dark ? 0x0d0920 : 0xe7e3dc);
+    // Title 用弱泛光/浅景深（单颗大骰不被糊成白团）；盒庭用强移轴+泛光（微缩模型质感）。
+    const p = engine.world.getComponent<{ type: 'Post3D'; tiltShift?: object; bloom?: object }>('post', 'Post3D');
+    if (p) {
+      p.tiltShift = { focus: 0.54, intensity: dark ? 0.5 : 1.7 };
+      p.bloom = { strength: dark ? 0.34 : 0.72, radius: 0.7, threshold: dark ? 0.82 : 0.6 };
+    }
+  };
+  const showTitleDie = (): void => {
+    if (titleDieUp) return;
+    engine.world.createEntity(TITLE_DIE);
+    engine.world.addComponent(TITLE_DIE, { type: 'Transform3D', x: 0, y: 3.4, z: 0, rotY: 0.6, scale: 1 } as unknown as Component);
+    // 六色命运骰（frontTint/backTint/edgeTint 各取一色·近俯视露 3 面即见多色）
+    engine.world.addComponent(TITLE_DIE, { type: 'Mesh3D', shape: 'box', width: 10, height: 10, depth: 10, edgeTint: hexNum('huo'), frontTint: hexNum('shui'), backTint: hexNum('mu') } as unknown as Component);
+    titleDieUp = true;
+  };
+  const hideTitleDie = (): void => { if (!titleDieUp) return; try { engine.world.destroyEntity(TITLE_DIE); } catch { /* noop */ } titleDieUp = false; };
+
+  // 开局停在 Title：暗氛围 + 大骰（不流式房间；「开始攀塔」再进盒庭）
+  setMood(true); showTitleDie();
 
   const S: S = {
     phase: 'title', library: startLibrary(), loadout: [], detail: 'baida', dishTab: 'all',
@@ -141,23 +169,32 @@ export function mount(container: HTMLElement): () => void {
     ({ type: 'Label', id, props: { text, ...p } });
 
   // ════════ 屏① Title ════════
+  // 星点（暗塔星空·复刻原型 twinkle）——散布小亮点，纯装饰。
+  const STARS: [number, number][] = [[0.14, 0.16], [0.78, 0.13], [0.6, 0.24], [0.3, 0.1], [0.88, 0.28], [0.46, 0.19], [0.2, 0.3], [0.7, 0.34]];
   const titleTree = (): LayoutNode => ({
-    type: 'Screen', id: 'gd-title', props: { bg: 'radial-gradient(120% 95% at 50% 30%, rgba(20,12,40,0.62) 0%, rgba(10,7,22,0.86) 62%, rgba(8,5,16,0.95) 100%)', center: true },
-    children: [{
-      type: 'Panel', id: 'gd-title-box', props: { bare: true }, layout: { direction: 'column', align: 'center', gap: 12, maxWidth: 540, padding: 20 },
-      children: [
-        lbl('gd-name', '骰　途', { size: 'xxxl', color: 'gold', bold: true, glow: true, tracking: 6 }),
-        lbl('gd-sub', '— TOWER OF FATE —', { size: 'sm', color: 'sub', tracking: 5 }),
-        lbl('gd-tag', '两名掷命者，一座会改写命运的古塔', { size: 'sm', color: 'sub' }),
-        { type: 'Button', id: 'gd-start', props: { label: '开 始 攀 塔', kind: 'hero', sub: '第一层 · 翠庭', action: 'start' }, layout: { fx: [{ kind: 'pulse', ms: 2600 }], width: 300 } },
-        bareRow('gd-modes', [
-          { type: 'Button', id: 'gd-coop', props: { label: '双人同攀', kind: 'ghost', action: 'start' } },
-          { type: 'Button', id: 'gd-solo', props: { label: '单人', kind: 'ghost', action: 'start' } },
-          { type: 'Button', id: 'gd-set', props: { label: '设置', kind: 'ghost', action: 'noop' } },
-        ], { justify: 'center' }),
-        lbl('gd-ver', 'v0.3 · 命运之塔 · Apollo Engine', { size: 'xs', color: 'dim' }),
-      ],
-    }],
+    // 透明底 → 让暗天穹 + 3D 大骰显出；顶=金标题·底=呼吸 hero + 模式键，中间留给大骰。
+    type: 'Screen', id: 'gd-title', props: { bg: 'transparent' },
+    children: [
+      ...STARS.map(([sx, sy], i): LayoutNode => ({ type: 'Label', id: `gd-star${i}`, props: { text: '✦', size: 'xs', color: 'text' }, layout: { x: Math.round(sx * w), y: Math.round(sy * h), fx: [{ kind: 'pulse', ms: 2800 + i * 300 }] } })),
+      { type: 'Panel', id: 'gd-logo-box', props: { bare: true }, layout: { x: w / 2 - 220, y: Math.round(h * 0.05), width: 440, direction: 'column', align: 'center', gap: 7 },
+        children: [
+          lbl('gd-name', '骰　途', { size: 'xxxl', color: 'gold', bold: true, glow: true, tracking: 10 }),
+          bareRow('gd-subrow', [lbl('gd-sl', '—', { size: 'sm', color: 'dim' }), lbl('gd-sub', 'TOWER OF FATE', { size: 'sm', color: 'sub', tracking: 6 }), lbl('gd-sr', '—', { size: 'sm', color: 'dim' })], { justify: 'center', gap: 10 }),
+          lbl('gd-tag', '两名掷命者，一座会改写命运的古塔', { size: 'sm', color: 'sub' }),
+        ],
+      },
+      { type: 'Panel', id: 'gd-btns', props: { bare: true }, layout: { x: w / 2 - 170, y: h - 156, width: 340, direction: 'column', align: 'center', gap: 12 },
+        children: [
+          { type: 'Button', id: 'gd-start', props: { label: '开 始 攀 塔', kind: 'hero', sub: `第一层 · ${layerName(1)}`, action: 'start' }, layout: { fx: [{ kind: 'pulse', ms: 2600 }], width: 280 } },
+          bareRow('gd-modes', [
+            { type: 'Button', id: 'gd-coop', props: { label: '双人同攀', kind: 'ghost', action: 'start' } },
+            { type: 'Button', id: 'gd-solo', props: { label: '单人', kind: 'ghost', action: 'start' } },
+            { type: 'Button', id: 'gd-set', props: { label: '设置', kind: 'ghost', action: 'noop' } },
+          ], { justify: 'center' }),
+          lbl('gd-ver', 'v0.3 · 命运之塔 · Apollo Engine', { size: 'xs', color: 'dim' }),
+        ],
+      },
+    ],
   });
 
   // ════════ 屏② 塔内场景 HUD ════════
@@ -518,7 +555,7 @@ export function mount(container: HTMLElement): () => void {
 
   const handlers = (): Record<string, (arg?: string) => void> => ({
     noop: () => {},
-    start: () => { S.phase = 'arena'; beginRoom(); S.msg = '点「选骰备战」打开命运骰盅'; render(); },
+    start: () => { hideTitleDie(); setMood(false); S.phase = 'arena'; beginRoom(); S.msg = '点「选骰备战」打开命运骰盅'; render(); },
     openDish: () => { S.phase = 'dish'; render(); },
     closeDish: () => { S.phase = 'arena'; render(); },
     dishTab: (arg) => { S.dishTab = (arg as S['dishTab']) ?? 'all'; render(); },
@@ -557,7 +594,10 @@ export function mount(container: HTMLElement): () => void {
   function render(): void { if (ui) ui(); ui = mountUI(uiHost, tree(), handlers(), GAME_D_THEME); }
   render();
 
-  const unsub = engine.subscribe(() => { const c = cam(); if (!c) return; const t = bgRoom * ROOM_SPACING; const cur = c.pivotZ ?? 0; c.pivotZ = Math.abs(t - cur) < 0.05 ? t : cur + (t - cur) * 0.12; });
+  const unsub = engine.subscribe(() => {
+    if (titleDieUp) { const td = engine.world.getComponent<{ type: 'Transform3D'; rotY?: number }>(TITLE_DIE, 'Transform3D'); if (td) td.rotY = (td.rotY ?? 0) + 0.008; }
+    const c = cam(); if (!c) return; const t = bgRoom * ROOM_SPACING; const cur = c.pivotZ ?? 0; c.pivotZ = Math.abs(t - cur) < 0.05 ? t : cur + (t - cur) * 0.12;
+  });
   engine.start();
 
   return () => { unsub(); engine.stop(); renderer.destroy(); if (ui) ui(); uiHost.remove(); wrapper.remove(); };
