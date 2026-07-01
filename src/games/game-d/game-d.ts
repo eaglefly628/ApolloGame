@@ -137,10 +137,11 @@ export function mount(container: HTMLElement): () => void {
   const setMood = (dark: boolean): void => {
     // Title=**柔和蓝灰天穹**（复刻概念图高级感·非暗黑）；盒庭=浅暖。相机在天空盒球内 → 用 Sky3D 渐变穹顶。
     const s = engine.world.getComponent<{ type: 'Sky3D'; top: number; bottom: number; clouds?: boolean }>('sky', 'Sky3D');
-    if (s) { s.top = dark ? 0x27344f : 0xd7dbe4; s.bottom = dark ? 0x566585 : 0xece7de; s.clouds = false; }
-    // 背景色**取样自概念图**（逐像素）：Title 蓝灰 #5d6d83（概念 #5d6d83~#7c90af）；盒庭 浅灰绿 #d6ddd6（概念 #cdd2d2~#d7e3d0·非暖非暗）。
+    if (s) { s.top = dark ? 0x181231 : 0xd7dbe4; s.bottom = dark ? 0x0b0817 : 0xece7de; s.clouds = false; }
+    // Title=**暗紫夜穹**（复刻原型 title：alpha 画布浮于深色页 + 暗角 vignette → 元素色发光骰 + 金 logo 高对比高级感·非浅蓝灰）；
+    // 盒庭=浅暖灰绿（概念取样 #d6ddd6）。
     renderer.setBackgroundTexture(null);
-    renderer.setBackground(dark ? 0x5d6d83 : 0xd6ddd6);
+    renderer.setBackground(dark ? 0x0c0a18 : 0xd6ddd6);
     // Title 关闭泛光/移轴（参考原型是纯 ACES 渲染·无 composer·骰子靠 emissive .16 自发光）；盒庭用强移轴+泛光。
     const p = engine.world.getComponent<{ type: 'Post3D'; tiltShift?: object; bloom?: object }>('post', 'Post3D');
     if (p) {
@@ -210,32 +211,38 @@ export function mount(container: HTMLElement): () => void {
     ({ type: 'Label', id, props: { text, ...p } });
 
   // ════════ 屏① Title ════════
-  // 星点（暗塔星空·复刻原型 twinkle）——散布小亮点，纯装饰。
-  const STARS: [number, number][] = [[0.14, 0.16], [0.78, 0.13], [0.6, 0.24], [0.3, 0.1], [0.88, 0.28], [0.46, 0.19], [0.2, 0.3], [0.7, 0.34]];
+  // 漂浮光尘（复刻原型 4 颗彩色 mote·float 动画·纯装饰）：火黄/暗紫/水蓝/木绿。
+  const MOTES: [number, number, number, string, number][] = [
+    [0.22, 0.62, 7, '#ffe5a8', 5000], [0.74, 0.54, 6, '#9b6cff', 6400], [0.62, 0.70, 8, '#3ba0ff', 5600], [0.34, 0.48, 6, '#46c66a', 7000],
+  ];
   const titleTree = (): LayoutNode => ({
-    // 透明底 → 让暗天穹 + 3D 大骰显出；顶=金标题·底=呼吸 hero + 模式键，中间留给大骰。
-    type: 'Screen', id: 'gd-title', props: { bg: 'transparent' },
+    // 暗角 vignette（复刻原型 radial 80%70%@50%42% 透明→暗·中亮边暗的「眩晕色」）→ 让 3D 大骰居中透出、边缘压暗出高级感。
+    type: 'Screen', id: 'gd-title', props: { bg: 'radial-gradient(78% 66% at 50% 44%, rgba(20,14,34,0) 52%, rgba(8,5,20,0.62) 100%)' },
     children: [
-      ...STARS.map(([sx, sy], i): LayoutNode => ({ type: 'Label', id: `gd-star${i}`, props: { text: '✦', size: 'xs', color: 'text' }, layout: { x: Math.round(sx * w), y: Math.round(sy * h), fx: [{ kind: 'pulse', ms: 2800 + i * 300 }] } })),
-      { type: 'Panel', id: 'gd-logo-box', props: { bare: true }, layout: { x: w / 2 - 220, y: Math.round(h * 0.05), width: 440, direction: 'column', align: 'center', gap: 7 },
+      ...MOTES.map(([sx, sy, d, c, ms], i): LayoutNode => ({ type: 'Panel', id: `gd-mote${i}`, props: { bg: `radial-gradient(circle, ${c} 30%, transparent 72%)` }, layout: { x: Math.round(sx * w), y: Math.round(sy * h), width: d + 6, height: d + 6, radius: d + 6, padding: 0, opacity: 0.9, fx: [{ kind: 'float', ms }] }, children: [] })),
+      { type: 'Panel', id: 'gd-logo-box', props: { bare: true }, layout: { x: w / 2 - 240, y: Math.round(h * 0.07), width: 480, direction: 'column', align: 'center', gap: 9 },
         children: [
-          // 确切复刻原型：logo 76px 衬线 letter-spacing6 · 副标 15px sp6 · tagline 13px
-          lbl('gd-name', '骰　途', { size: 64, color: 'gold', bold: true, glow: true, tracking: 6, font: 'serif' }),
-          bareRow('gd-subrow', [lbl('gd-sl', '—', { size: 14, color: 'dim' }), lbl('gd-sub', 'TOWER OF FATE', { size: 14, color: 'sub', tracking: 6, font: 'serif' }), lbl('gd-sr', '—', { size: 14, color: 'dim' })], { justify: 'center', gap: 10 }),
-          lbl('gd-tag', '两名掷命者，一座会改写命运的古塔', { size: 13, color: 'sub' }),
+          // 确切复刻原型：logo 76px 衬线 letter-spacing6·副标 Cinzel 15px sp6 两侧细线·tagline 13px
+          lbl('gd-name', '骰途', { size: 76, color: 'gold', bold: true, glow: true, tracking: 6, font: 'serif' }),
+          bareRow('gd-subrow', [
+            { type: 'Panel', id: 'gd-sl', props: { bg: 'linear-gradient(90deg,transparent,#cdbfe8)' }, layout: { width: 34, height: 1, padding: 0 }, children: [] },
+            lbl('gd-sub', 'TOWER OF FATE', { size: 15, color: 'sub', tracking: 6, font: 'serif' }),
+            { type: 'Panel', id: 'gd-sr', props: { bg: 'linear-gradient(90deg,#cdbfe8,transparent)' }, layout: { width: 34, height: 1, padding: 0 }, children: [] },
+          ], { justify: 'center', align: 'center', gap: 12 }),
+          lbl('gd-tag', '两名掷命者，一座会改写命运的古塔', { size: 13, color: 'sub', tracking: 1 }),
         ],
       },
-      { type: 'Panel', id: 'gd-btns', props: { bare: true }, layout: { x: w / 2 - 170, y: h - 156, width: 340, direction: 'column', align: 'center', gap: 12 },
+      { type: 'Panel', id: 'gd-btns', props: { bare: true }, layout: { x: w / 2 - 170, y: h - 150, width: 340, direction: 'column', align: 'center', gap: 13 },
         children: [
           // 金渐变 hero 键（复刻原型 #ffd982→#f0a93a·主程回驳 Button 自定义色 → 用 Panel.action+bg 拼）
-          { type: 'Panel', id: 'gd-start', props: { action: 'start', bg: 'linear-gradient(180deg,#ffd982,#f0a93a)' }, layout: { width: 280, radius: 13, padding: 13, align: 'center', direction: 'column', gap: 2, fx: [{ kind: 'pulse', ms: 2600 }] },
-            children: [lbl('gd-start-t', '开 始 攀 塔', { size: 19, color: 'text', bold: true, font: 'serif', tracking: 4 }), lbl('gd-start-s', `第一层 · ${layerName(1)}`, { size: 11, color: 'sub' })] },
+          { type: 'Panel', id: 'gd-start', props: { action: 'start', bg: 'linear-gradient(180deg,#ffd982,#f0a93a)', edge: 'gold' }, layout: { width: 236, radius: 13, padding: 14, align: 'center', direction: 'column', gap: 3, fx: [{ kind: 'pulse', ms: 3400 }] },
+            children: [lbl('gd-start-t', '开 始 攀 塔', { size: 19, color: 'text', bold: true, font: 'serif', tracking: 4 })] }, // TODO(REQ-UI-ink)：原型深色字 #3a2406 on gold·待主程加 Label 'ink' 深色令牌后改
+          lbl('gd-start-s', `第一层 · ${layerName(1)}`, { size: 'sm', color: 'sub', tracking: 2 }),
           bareRow('gd-modes', [
             { type: 'Button', id: 'gd-coop', props: { label: '双人同攀', kind: 'ghost', action: 'start' } },
             { type: 'Button', id: 'gd-solo', props: { label: '单人', kind: 'ghost', action: 'start' } },
             { type: 'Button', id: 'gd-set', props: { label: '设置', kind: 'ghost', action: 'noop' } },
-          ], { justify: 'center' }),
-          lbl('gd-ver', 'v0.3 · 命运之塔 · Apollo Engine', { size: 'xs', color: 'dim' }),
+          ], { justify: 'center', gap: 10 }),
         ],
       },
     ],

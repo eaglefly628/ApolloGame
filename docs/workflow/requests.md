@@ -828,3 +828,11 @@ _（REQ-3D-W1高效引擎 已移至 [`requests-3d.md`](./requests-3d.md)。）_
 > **红线守住**：都是**闭集枚举/数字字段**（最弱 LLM 能填 `glass:true` / `font:'serif'` / `opacity:.9`），不开自由 CSS 口子。落地前 game-d 的 2D UI 维持「神似」，这 3 项下沉后即逐像素收口。
 
 > **补充（2026-07-01·owner 反馈按钮颜色不一致）**：**4. Button 自定义配色**——原型 hero 键是确切 `linear-gradient(180deg,#ffd982,#f0a93a)` + 文字 `#3a2406`；现 `Button kind:'hero'` 是引擎固定金色样式（受 `theme.gold` 驱动·渐变/文字色写死）。要逐像素得让 `ButtonProps` 收可选 `bg`/`fg`（闭集：令牌或 hex 串，同 Panel.bg 先例）。暂用 `theme.gold` 调暖逼近。
+
+### REQ-UI-Label深色令牌(ink) · Label.color 补一个「深墨」语义令牌（金/亮底上的深字）· [2026-07-01] · P3D（game-d Title hero 键）→ 主程 · status: **待主程** · 类型: UI 库闭集扩容（语义令牌·非 raw hex·合 manifesto）
+>
+> **场景**：`Panel.action + bg:'linear-gradient(#ffd982,#f0a93a)'` 拼的金色 hero 键（「开 始 攀 塔」），原型文字是**深墨色 #3a2406**（金底上深字=高对比高级感）。现 `Label.color` 闭集 `text|sub|dim|jade|gold|ok|warn|danger|mine|foe` **全是亮/彩色，没有深色**——金底上只能放亮字，对比弱、发糊，逐像素还原不了。
+>
+> **回驳过自己（不走 raw hex）**：不是要 `color:'#3a2406'`（破「颜色=语义令牌」红线）。要的是**一个语义令牌** `'ink'`（深墨·= `theme.ink`，缺省回退很深的 `bg0` 或专设 `#2a1c0a` 级）→ 加进 `Label.color`（及 `spans.color`）union + `UITheme.ink?`。同 pixel/serif/mine/foe 先例（闭集加档·弱 LLM 只在闭集里选）。
+>
+> **复用面**：任何「深字压在金/亮/暖底」的 CTA / 徽标 / 高亮块（不止 game-d）。**当前 game-d 用 `color:'text'` 亮字临时顶（见 `gd-start-t` 的 `TODO(REQ-UI-ink)`），令牌到位即切 `'ink'`。**
