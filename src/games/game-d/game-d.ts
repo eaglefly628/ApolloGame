@@ -22,6 +22,7 @@ import {
   type Die, type RolledDie, type DieDef, type Elem,
 } from './dice.js';
 import { makeFoe, counterDisabled, evalChallenge, damageOf, condLabel, type Foe } from './combat.js';
+import { elementBadge, diceFaceArt, lootCardArt, CARDED_DEFIDS } from './art.js';
 
 const SOLO_HEARTS = 6;
 const FLOORS = 4;
@@ -204,12 +205,11 @@ export function mount(container: HTMLElement): () => void {
   // ════════ 屏② 塔内场景 HUD ════════
   // 左：六色元素法阵环（竖列）
   const elemRing = (el: Elem, i: number): LayoutNode => {
-    const info = ELEM_INFO[el];
     const dim = S.foe.trialEl && S.foe.trialEl !== el && el !== 'feng';
     return {
-      type: 'Panel', id: `hud-ring-${el}`, props: { action: 'castElem', actionArg: el, edge: S.foe.trialEl === el ? 'gold' : undefined, accent: S.foe.trialEl === el },
-      layout: { width: 56, height: 56, radius: 28, align: 'center', justify: 'center', padding: 0, ...(dim ? { fx: [{ kind: 'fade' }] } : {}) },
-      children: [lbl(`hud-ring-g-${el}`, info.glyph, { size: 'lg' })],
+      type: 'Panel', id: `hud-ring-${el}`, props: { bare: true, action: 'castElem', actionArg: el },
+      layout: { width: 58, height: 58, radius: 29, align: 'center', justify: 'center', padding: 0, ...(S.foe.trialEl === el ? { fx: [{ kind: 'glow' as const, color: 'gold' as const }] } : dim ? { fx: [{ kind: 'fade' as const }] } : {}) },
+      children: [{ type: 'Image', id: `hud-ring-i-${el}`, props: { src: elementBadge(el), fit: 'contain' }, layout: { width: 58, height: 58 } }],
     };
   };
   const elemColumn = (): LayoutNode => ({
@@ -342,7 +342,7 @@ export function mount(container: HTMLElement): () => void {
       layout: { direction: 'column', gap: 5, padding: 10 },
       children: [
         bareRow(`dc-hd-${def.defId}`, [
-          { type: 'Panel', id: `dc-ic-${def.defId}`, props: { bg: ELEM_INFO[def.el].hex }, layout: { width: 42, height: 42, radius: 10, align: 'center', justify: 'center', padding: 0 }, children: [lbl(`dc-icg-${def.defId}`, dieFaceChar(def), { size: 'xl', color: 'text' })] },
+          { type: 'Image', id: `dc-ic-${def.defId}`, props: { src: diceFaceArt(def.el, def.faces[2]?.v ?? 4), fit: 'contain' }, layout: { width: 46, height: 46 } },
           ...(inLoad ? [lbl(`dc-ck-${def.defId}`, '✓', { size: 'md', color: 'gold', bold: true })] : []),
         ], { justify: 'between', align: 'center' }),
         lbl(`dc-nm-${def.defId}`, def.name, { size: 'sm', bold: true }),
@@ -479,19 +479,12 @@ export function mount(container: HTMLElement): () => void {
       children: [
         lbl('rw-t', '⭐ 通关 · 命运抉择', { size: 'xl', color: 'gold', bold: true, glow: true }),
         lbl('rw-s', '三选一 · 一张命运骰收入骰库', { size: 'sm', color: 'sub' }),
-        bareRow('rw-cards', S.reward.map((defId, i): LayoutNode => {
-          const def = DICE_CATALOG.find((d) => d.defId === defId)!;
-          return {
-            type: 'Panel', id: `rw-c${i}`, props: { action: 'reward', actionArg: String(i), edge: 'gold' },
-            layout: { direction: 'column', align: 'center', gap: 6, padding: 14, width: 150, fx: [{ kind: 'float', ms: 3000 }], rotate: i === 0 ? -5 : i === 2 ? 5 : 0 },
-            children: [
-              { type: 'Panel', id: `rw-ic${i}`, props: { bg: ELEM_INFO[def.el].hex }, layout: { width: 60, height: 60, radius: 12, align: 'center', justify: 'center', padding: 0 }, children: [lbl(`rw-icg${i}`, dieGlyph(def.el), { size: 'xl' })] },
-              lbl(`rw-nm${i}`, def.name, { size: 'md', bold: true, color: 'gold' }),
-              { type: 'Rating', id: `rw-ra${i}`, props: { value: def.rarity, max: 5 } },
-              lbl(`rw-ab${i}`, def.ability, { size: 'xs', color: 'sub' }),
-            ],
-          };
-        }), { gap: 16, justify: 'center' }),
+        // 3D 战利品卡（手绘卡面·扇形浮动·点选·复刻屏④b）
+        bareRow('rw-cards', S.reward.map((defId, i): LayoutNode => ({
+          type: 'Panel', id: `rw-c${i}`, props: { bare: true, action: 'reward', actionArg: String(i) },
+          layout: { padding: 0, fx: [{ kind: 'float', ms: 3000 }], rotate: i === 0 ? -6 : i === 2 ? 6 : 0, ...(i === 1 ? { scale: 1.06 } : {}) },
+          children: [{ type: 'Image', id: `rw-img${i}`, props: { src: lootCardArt(defId), fit: 'contain' }, layout: { width: 172, height: 240, radius: 14 } }],
+        })), { gap: 18, justify: 'center', align: 'center' }),
       ],
     }],
   });
@@ -527,9 +520,10 @@ export function mount(container: HTMLElement): () => void {
     bgRoom = S.globalRoom - 1; streamTo(bgRoom);
   };
   const rewardChoices = (): string[] => {
-    const pool = DICE_CATALOG.map((d) => d.defId);
+    // 只发有手绘卡面的特制骰（基础元素骰不进战利品池）·三张不重复。
+    const pool = [...CARDED_DEFIDS];
     const out: string[] = [];
-    while (out.length < 3) { const p = pool[Math.floor(rnd() * pool.length)]!; out.push(p); }
+    while (out.length < 3 && pool.length) { const j = Math.floor(rnd() * pool.length); out.push(pool.splice(j, 1)[0]!); }
     return out;
   };
   const throwLoadout = (): void => {
