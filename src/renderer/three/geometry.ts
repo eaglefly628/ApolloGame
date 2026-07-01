@@ -1,5 +1,5 @@
 import * as THREE from 'three';
-import type { Mesh3D, Sky3D, Camera3D } from '@engine/protocol/components.js';
+import type { Mesh3D, Sky3D, Camera3D, VoxelTex } from '@engine/protocol/components.js';
 import type { Renderable } from '../renderable.js';
 import {
   renderablePose, flipEuler, mesh3dDepth, transform3dPose, groundPose, type Pose3D,
@@ -150,6 +150,50 @@ export function buildDieMesh3D(m: Mesh3D): THREE.Mesh {
 /** 骰子 mesh 缓存签名（面色/点数/尺寸变才重建）。 */
 export function dieMode(m: Mesh3D): string {
   return `die|${m.width}|${(m.dieFaces ?? []).map((f) => `${f.color}:${f.pip}:${f.emissive ?? ''}`).join(',')}`;
+}
+
+// ── 体素表面程序化贴图（复刻美术设计案原型 topTex/sideTex/wallTex·「带精美贴图的体素」）─────────────
+const rand = (a: number, b: number): number => a + Math.random() * (b - a);
+/** 顶面贴图：主色渐变 + 颗粒噪点 + 纹样母题（草/石/晶）+ 深色勾缝（重复平铺 → 网格）。 */
+export function buildVoxelTopTexture(v: VoxelTex): THREE.CanvasTexture {
+  const s = 128, cv = document.createElement('canvas'); cv.width = cv.height = s;
+  const x = cv.getContext('2d')!;
+  const g = x.createLinearGradient(0, 0, s, s); g.addColorStop(0, dieShade(v.top, .06)); g.addColorStop(1, dieShade(v.top, -.08));
+  x.fillStyle = g; x.fillRect(0, 0, s, s);
+  for (let i = 0; i < 150; i++) { x.fillStyle = Math.random() < .5 && v.top2 !== undefined ? dieShade(v.top2, rand(-.06, .1)) : dieShade(v.top, rand(-.12, .16)); const w = rand(2, 6); x.fillRect(rand(0, s), rand(0, s), w, w * (v.pattern === 'grass' ? 2.2 : 1)); }
+  if (v.pattern === 'crystal') { x.strokeStyle = dieShade(v.trim ?? v.top, .1); x.globalAlpha = .5; x.lineWidth = 1.5; for (let i = 0; i < 5; i++) { x.beginPath(); x.moveTo(rand(0, s), rand(0, s)); x.lineTo(rand(0, s), rand(0, s)); x.stroke(); } x.globalAlpha = 1; }
+  if (v.pattern === 'stone') { x.strokeStyle = dieShade(v.side, -.1); x.globalAlpha = .4; x.lineWidth = 2; for (let i = 0; i < 4; i++) { x.beginPath(); x.moveTo(rand(0, s), 0); x.lineTo(rand(0, s), s); x.stroke(); } x.globalAlpha = 1; }
+  x.strokeStyle = 'rgba(0,0,0,.22)'; x.lineWidth = 4; x.strokeRect(2, 2, s - 4, s - 4); // 勾缝
+  const t = new THREE.CanvasTexture(cv); t.colorSpace = THREE.SRGBColorSpace; t.wrapS = t.wrapT = THREE.RepeatWrapping; t.anisotropy = 4; return t;
+}
+/** 侧面贴图：竖向渐变 + 颗粒 + 深色边（重复平铺）。 */
+export function buildVoxelSideTexture(v: VoxelTex): THREE.CanvasTexture {
+  const s = 128, cv = document.createElement('canvas'); cv.width = cv.height = s;
+  const x = cv.getContext('2d')!;
+  const g = x.createLinearGradient(0, 0, 0, s); g.addColorStop(0, dieShade(v.side, .08)); g.addColorStop(1, dieShade(v.side, -.14));
+  x.fillStyle = g; x.fillRect(0, 0, s, s);
+  for (let i = 0; i < 60; i++) { x.fillStyle = dieShade(v.side2 ?? v.side, rand(-.06, .12)); x.fillRect(rand(0, s), rand(0, s), rand(3, 9), rand(2, 4)); }
+  if (v.wall && v.trim !== undefined) { x.fillStyle = dieShade(v.trim, 0); x.globalAlpha = .85; x.fillRect(0, 0, s, 10); x.globalAlpha = 1; } // 墙顶饰条
+  x.strokeStyle = 'rgba(0,0,0,.25)'; x.lineWidth = 3; x.strokeRect(1, 1, s - 2, s - 2);
+  const t = new THREE.CanvasTexture(cv); t.colorSpace = THREE.SRGBColorSpace; t.wrapS = t.wrapT = THREE.RepeatWrapping; t.anisotropy = 4; return t;
+}
+/** 体素贴图 box：地台=顶面网格纹 + 四周侧纹；wall=六面侧墙纹。纹理按尺寸重复出网格。 */
+export function buildVoxelMesh3D(m: Mesh3D): THREE.Mesh {
+  const v = m.voxelTex!;
+  const depth = mesh3dDepth(m.shape, m.width, m.height, m.depth);
+  const tile = v.tile ?? 2;
+  const topT = buildVoxelTopTexture(v), sideT = buildVoxelSideTexture(v);
+  topT.repeat.set(Math.max(1, Math.round(m.width / tile)), Math.max(1, Math.round(depth / tile)));
+  sideT.repeat.set(Math.max(1, Math.round(m.width / tile)), Math.max(1, Math.round(m.height / tile)));
+  const topMat = new THREE.MeshStandardMaterial({ map: topT, roughness: .85 });
+  const sideMat = new THREE.MeshStandardMaterial({ map: sideT, roughness: .9 });
+  // 面序 [px,nx,py,ny,pz,nz] = [右,左,顶,底,前,后]。地台：顶面用 topMat；wall：全用 sideMat。
+  const mats = v.wall ? [sideMat, sideMat, sideMat, sideMat, sideMat, sideMat] : [sideMat, sideMat, topMat, sideMat, sideMat, sideMat];
+  return new THREE.Mesh(new THREE.BoxGeometry(m.width, m.height, depth), mats);
+}
+export function voxelMode(m: Mesh3D): string {
+  const v = m.voxelTex!;
+  return `vox|${m.width}|${m.height}|${m.depth ?? ''}|${v.top}|${v.side}|${v.top2 ?? ''}|${v.trim ?? ''}|${v.pattern ?? ''}|${v.wall ? 1 : 0}|${v.tile ?? ''}`;
 }
 
 export function buildSkyTexture(sky: Sky3D): THREE.CanvasTexture {

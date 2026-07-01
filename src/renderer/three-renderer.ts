@@ -9,7 +9,7 @@ import {
   renderablePose, poseBounds, mesh3dBatchKey, type Pose3D,
   transform3dPose, groundPose, poseBounds3D, bounds3DCenter, bounds3DExtent, fitDistance3D,
 } from './three-projection.js';
-import { mesh3dPose, applyPose, buildMesh3D, buildDieMesh3D, dieMode, buildGeometry, buildSkyTexture, disposeMesh } from './three/geometry.js';
+import { mesh3dPose, applyPose, buildMesh3D, buildDieMesh3D, dieMode, buildVoxelMesh3D, voxelMode, buildGeometry, buildSkyTexture, disposeMesh } from './three/geometry.js';
 import { buildPbrMesh3D, pbrSig } from './three/material.js';
 import { hashPoses, camSig, postSig } from './three/stats.js';
 import { LightRig } from './three/lights.js';
@@ -182,6 +182,9 @@ export class ThreeRenderer implements RendererBackend {
         if (r.entityId === followTarget) followPose = pose;
         if (r.mesh3d.dieFaces) {
           const mesh = this.ensureDieMesh3D(r, r.mesh3d);
+          applyPose(mesh, pose);
+        } else if (r.mesh3d.voxelTex) {
+          const mesh = this.ensureVoxelMesh3D(r, r.mesh3d);
           applyPose(mesh, pose);
         } else if (r.material3d) {
           const mesh = this.ensurePbrMesh(r, r.mesh3d, r.material3d);
@@ -428,6 +431,20 @@ export class ThreeRenderer implements RendererBackend {
     if (prev && this.modeOf.get(r.entityId) === mode) return prev;
     if (prev) { this.scene.remove(prev); disposeMesh(prev); }
     const mesh = buildDieMesh3D(m);
+    mesh.castShadow = true; mesh.receiveShadow = true;
+    this.meshes.set(r.entityId, mesh);
+    this.modeOf.set(r.entityId, mode);
+    this.scene.add(mesh);
+    return mesh;
+  }
+
+  // 体素表面贴图 mesh（Mesh3D.voxelTex·render-only·顶/侧程序化贴图）：按贴图签名池管理，与哑光/骰/PBR 共用 meshes 池。
+  private ensureVoxelMesh3D(r: Renderable, m: Mesh3D): THREE.Mesh {
+    const mode = voxelMode(m);
+    const prev = this.meshes.get(r.entityId);
+    if (prev && this.modeOf.get(r.entityId) === mode) return prev;
+    if (prev) { this.scene.remove(prev); disposeMesh(prev); }
+    const mesh = buildVoxelMesh3D(m);
     mesh.castShadow = true; mesh.receiveShadow = true;
     this.meshes.set(r.entityId, mesh);
     this.modeOf.set(r.entityId, mode);

@@ -8,6 +8,7 @@
 // 战斗/骰子/敌人 = 后续接入（见 docs/design/game-d/combat-design.md）。
 
 import type { WorldBlueprint } from '../../assembly/demo.assembly.js';
+import type { VoxelTex } from '@engine/protocol/components.js';
 import { MODEL_DUCK } from './assets.js';
 
 type Ent = WorldBlueprint['entities'][string];
@@ -49,13 +50,17 @@ export function roomMeta(index: number): RoomMeta {
   return { index, act, roomInAct, type: roomInAct === 2 ? 'boss' : 'normal', theme: ACTS[act % ACTS.length]! };
 }
 
-/** 一个体块：中心位姿 + 尺寸 + 顶/侧色。rotY 可选。盒中心 y=高度/2 时下沿坐地（地台顶在 y=0）。 */
-function block(x: number, y: number, z: number, w: number, h: number, d: number, top: number, side: number, rotY?: number): Ent {
+/** 一个体块：中心位姿 + 尺寸 + 顶/侧色。rotY 可选；vox=体素程序化贴图（地砖/墙纹·复刻「带精美贴图的体素」）。 */
+function block(x: number, y: number, z: number, w: number, h: number, d: number, top: number, side: number, rotY?: number, vox?: VoxelTex): Ent {
   return {
     Transform3D: { x, y, z, ...(rotY !== undefined ? { rotY } : {}) },
-    Mesh3D: { shape: 'box', width: w, height: h, depth: d, frontTint: side, backTint: side, edgeTint: top },
+    Mesh3D: { shape: 'box', width: w, height: h, depth: d, frontTint: side, backTint: side, edgeTint: top, ...(vox ? { voxelTex: vox } : {}) },
   };
 }
+const PAT_BY_ACT: Array<VoxelTex['pattern']> = ['grass', 'stone', 'plain', 'crystal'];
+/** 由层主题派生地台/墙的体素贴图。 */
+const floorTex = (t: ActDef, act: number): VoxelTex => ({ top: t.floorTop, side: t.floorSide, top2: t.wall, trim: t.accent, pattern: PAT_BY_ACT[act % 4], tile: 2 });
+const wallTex = (t: ActDef): VoxelTex => ({ top: t.wall, side: t.floorSide, side2: t.wall, trim: t.accent, wall: true, tile: 2 });
 
 /**
  * 即时生成第 index 间竞技场的全部实体（id 以 `r{index}-` 前缀·跨房间唯一·便于流式卸载）。
@@ -99,15 +104,15 @@ export function genRoom(index: number): Record<string, Ent> {
     // ── 浮空微缩盒庭：分层基座（往下收窄的两级台，像漂浮模型）──
     [`${P}-plinth1`]: block(0, -4.6, baseZ, hw * 2 + 6, 3, hd * 2 + 6, darken(t.floorSide, 0.18), darken(t.floorSide, 0.34)),
     [`${P}-plinth2`]: block(0, -8, baseZ, hw * 2 + 1.5, 3.5, hd * 2 + 1.5, darken(t.floorSide, 0.42), darken(t.floorSide, 0.56)),
-    // 竞技场地台（顶在 y=0）
-    [`${P}-floor`]: block(0, -2, baseZ, hw * 2, 4, hd * 2, t.floorTop, t.floorSide),
-    // 三面围墙（左/右/后=入口侧）
-    [`${P}-wall-l`]: block(-hw, 1.5, baseZ, 1.5, 5, hd * 2, t.wall, t.floorSide),
-    [`${P}-wall-r`]: block(hw, 1.5, baseZ, 1.5, 5, hd * 2, t.wall, t.floorSide),
-    [`${P}-wall-back`]: block(0, 1.5, baseZ - hd, hw * 2, 5, 1.5, t.wall, t.floorSide),
+    // 竞技场地台（顶在 y=0）——顶面程序化地砖网格（复刻「带精美贴图的体素」）
+    [`${P}-floor`]: block(0, -2, baseZ, hw * 2, 4, hd * 2, t.floorTop, t.floorSide, undefined, floorTex(t, m.act)),
+    // 三面围墙（左/右/后=入口侧）——墙纹 + 顶饰条
+    [`${P}-wall-l`]: block(-hw, 1.5, baseZ, 1.5, 5, hd * 2, t.wall, t.floorSide, undefined, wallTex(t)),
+    [`${P}-wall-r`]: block(hw, 1.5, baseZ, 1.5, 5, hd * 2, t.wall, t.floorSide, undefined, wallTex(t)),
+    [`${P}-wall-back`]: block(0, 1.5, baseZ - hd, hw * 2, 5, 1.5, t.wall, t.floorSide, undefined, wallTex(t)),
     // 前墙留中央门洞（+Z 端·通向上一间·发光门楣 + 门内符文光幕）
-    [`${P}-wall-fl`]: block(-segCx, 1.5, baseZ + hd, segW, 5, 1.5, t.wall, t.floorSide),
-    [`${P}-wall-fr`]: block(segCx, 1.5, baseZ + hd, segW, 5, 1.5, t.wall, t.floorSide),
+    [`${P}-wall-fl`]: block(-segCx, 1.5, baseZ + hd, segW, 5, 1.5, t.wall, t.floorSide, undefined, wallTex(t)),
+    [`${P}-wall-fr`]: block(segCx, 1.5, baseZ + hd, segW, 5, 1.5, t.wall, t.floorSide, undefined, wallTex(t)),
     [`${P}-door-top`]: block(0, 5.5, baseZ + hd, 9, 2, 1.5, t.accent, t.wall),
     [`${P}-portal`]: block(0, 2.6, baseZ + hd - 0.2, 8, 5, 0.5, t.accent, t.accent),
     // 通向上一间的短走廊（穿过门洞·暗示"还有更上面"）

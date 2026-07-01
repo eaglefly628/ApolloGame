@@ -44,6 +44,20 @@ export interface Card3D extends Component {
 // 骰面（render-only·程序化 pip 贴图）：一面的元素色底 + 点数。复刻美术设计案 3D 命运骰（原型 dieFaceTex）。
 export interface DieFace { color: number; pip: number; emissive?: number } // color/emissive=0xRRGGBB；pip=1..6 点数
 
+// 体素表面程序化贴图（render-only·复刻美术设计案「带精美贴图的体素」·原型 topTex/sideTex/wallTex）。
+// 在场 → 渲染器给 box 的顶面刷 topTex（格纹 + 颗粒 + 勾缝）、四周刷 sideTex；wall:true → 全面用侧墙纹。
+// 纯色 tint 表达不了这层网格质感 → 这是体素世界的通用美术能力（下沉到 3D 基座·全体素物件共用）。
+export interface VoxelTex {
+  top: number;              // 顶面主色 0xRRGGBB
+  side: number;             // 侧面主色 0xRRGGBB
+  top2?: number;            // 顶面点缀色（缺省=top 微调）
+  side2?: number;           // 侧面点缀色（缺省=side 微调）
+  trim?: number;            // 墙顶饰条色（wall 用）
+  pattern?: 'grass' | 'stone' | 'crystal' | 'plain'; // 顶面纹样母题（草叶/石纹/晶裂/纯颗粒）
+  wall?: boolean;           // true=墙体（六面同侧墙纹 + 顶饰条），false=地台（顶面网格 + 侧面）
+  tile?: number;            // 一格世界尺寸（缺省 2·据物体尺寸算重复次数出网格）
+}
+
 export interface Mesh3D extends Component {
   readonly type: 'Mesh3D';
   shape: 'box' | 'plane' | 'sphere'; // box=有厚度、正反两面可分色；plane=双面薄片（单色）；sphere=球（单色·material 球/星体）
@@ -57,6 +71,8 @@ export interface Mesh3D extends Component {
   /** 六面 pip 骰子（render-only·程序化贴图·复刻美术设计案 3D 命运骰）。在场 → box 建成 6 面元素色 + 白点材质，
    *  替代 frontTint/backTint 纯色（size 取 width）。面序 = BoxGeometry [右,左,顶,底,前,后]。骰盅/掷骰/战利品/Title 共用。 */
   dieFaces?: DieFace[];
+  /** 体素表面程序化贴图（render-only·复刻「带精美贴图的体素」）。在场 → 顶面网格纹 + 侧面纹，替代纯色 tint。地台/墙/基座共用。 */
+  voxelTex?: VoxelTex;
 }
 
 // ── Model3D（render-only，导入式 3D 模型 · glTF）──────────────────────────────────────────────
