@@ -292,7 +292,8 @@ function slotCellNode(s: TurnSlotView, idx: number): LayoutNode {
   const inner: LayoutNode[] = [];
   if (s.deployLabel) inner.push({ type: 'Label', id: `${cid}-dl`, props: { text: '放牌区', size: 9, color: s.deploy === 1 ? 'warn' : 'sub', bold: true, tracking: 1 }, layout: { y: 4, x: 0 } });
   if (s.hasUnit && s.rank && s.suit) inner.push(unitNode(s));
-  else inner.push({ type: 'Panel', id: `${cid}-dot`, props: { bg: 'transparent', dashed: true, edge: s.isBorder ? 'gold' : (s.mine ? 'mine' : 'foe') }, layout: { width: 38, height: 38, radius: 99, padding: 0 } });
+  // 空格虚线落点圈：色改用暗底可见令牌（阵营 mine/foe=红/黑·黑在暗棋盘上看不清·owner 2026-06-29）→ 我方红、敌方金、边界格金。
+  else inner.push({ type: 'Panel', id: `${cid}-dot`, props: { bg: 'transparent', dashed: true, edge: s.isBorder ? 'gold' : (s.mine ? 'danger' : 'jade') }, layout: { width: 38, height: 38, radius: 99, padding: 0 } });
   if (s.placeable) inner.push(
     { type: 'Label', id: `${cid}-tap`, props: { text: '👆', size: 25 } },
     { type: 'Label', id: `${cid}-ph`, props: { text: '放这里', size: 10, color: 'gold', bold: true }, layout: { y: 56, x: 0 } },
