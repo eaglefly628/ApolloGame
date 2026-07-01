@@ -524,8 +524,8 @@ function foeIntel(b: TurnBattle): {
   const nextMaxPts = peek.reduce((m, c) => Math.max(m, cardPoints(c.rank)), 0);
   const laneWinProb = [0, 1, 2].map((li) => {
     const myFront = b.lanes[li].b[0]; const foeFront = b.lanes[li].a[0];
-    const myPts = myFront ? myFront.points + myFront.buff : 0;
-    const foePts = foeFront ? foeFront.points + foeFront.buff : 0;
+    const myPts = myFront ? myFront.points + myFront.buff - (myFront.fatigue ?? 0) : 0; // v2：双方都扣疲劳=真有效战力对比
+    const foePts = foeFront ? foeFront.points + foeFront.buff - (foeFront.fatigue ?? 0) : 0;
     return myPts - foePts; // 正数=我占优
   }) as [number, number, number];
   return { handMaxPts, handHasGeneral, nextIsGeneral, nextMaxPts, laneWinProb };
@@ -534,12 +534,17 @@ function foeIntel(b: TurnBattle): {
 // 放兵到某路的效用：路偏好(铺/专) + 攻击性×目标偏好(弱/强/将) + 攻防情势响应(回防空/劣势·趁势压优势路) + 节奏(疾行驰援) + 方阵扎堆 + 兵牌强度。
 function scoreDeploy(b: TurnBattle, card: PokerCard, lane: number): number {
   const p = b.aiProfile; const own = b.lanes[lane].b; const foe = b.lanes[lane].a; const foeFront = foe[0];
+  // v2 战损感知（owner 2026-06-29·tier≥2 才开·关1 tier1 保序战傻）：看穿玩家前锋**疲劳**→有效战力，挑软柿子车轮消耗。
+  const v2 = b.aiTier >= 2;
+  const foeEff = foeFront ? Math.max(0, v2 ? foeFront.points + foeFront.buff - (foeFront.fatigue ?? 0) : foeFront.points) : 0; // 玩家前锋战力：v2(tier≥2)看有效战力(含养成−疲劳)·否则同旧(仅点数·不扰 tier1 序战画像)
   let s = 10 + cardPoints(card.rank) * 0.4; // 基础 + 强牌更值
   s += (p.lanePref >= 5 ? -own.length : own.length) * (Math.abs(p.lanePref - 5) / 5) * 5; // 铺(少己兵处)↔专(扎堆)
   const ag = wt(p.aggression);
-  if (p.targetPref === 'weak') s += (foe.length === 0 ? 7 : -(foeFront ? foeFront.points : 0) * 0.4) * ag; // 避实击虚
-  else if (p.targetPref === 'strong') s += (foeFront ? foeFront.points : 0) * 0.4 * ag; // 硬碰强
+  if (p.targetPref === 'weak') s += (foe.length === 0 ? 7 : -foeEff * 0.4) * ag; // 避实击虚（v2：疲劳前锋=软柿子·更想打）
+  else if (p.targetPref === 'strong') s += foeEff * 0.4 * ag; // 硬碰强
   else s += (foe.some((u) => u.general) ? 9 : 0) * ag; // 取主将路(斩首)
+  // v2：玩家前锋已疲劳(战损累积) → 这路是「趁虚补刀/车轮消耗」良机·加权（连胜快满 WIN_CAP-1 的强兵尤其值得逼它退场）。
+  if (v2 && foeFront && (foeFront.fatigue ?? 0) > 0) s += Math.min(7, (foeFront.fatigue ?? 0) * 0.6 + ((foeFront.wins ?? 0) >= WIN_CAP - 1 ? 2 : 0)) * (0.5 + ag);
   // 防守威胁响应（owner 2026-06-23·修 sim 实锤「玩家走空路直捣 Boss 家」requests#491）：
   // 玩家(foe)在这路推进、Boss(own)这路空虚 → 通往大本营的高速路·急回防堵漏。仅玩家真有兵才触发
   // （空板=0·不动 ai.test 画像断言）；守性(低 aggression)更看重回防·敌越深(slot→A_GOAL=8)越急。
@@ -556,7 +561,7 @@ function scoreDeploy(b: TurnBattle, card: PokerCard, lane: number): number {
   if (b.aiTier >= 3) {
     const intel = foeIntel(b);
     const myPts = cardPoints(card.rank) + (card.buff ?? 0);
-    const foePts = foeFront ? foeFront.points + foeFront.buff : 0;
+    const foePts = foeEff; // v2：按玩家前锋**扣疲劳后**的有效战力判占优/劣势（疲劳软柿子=可压）
     if (myPts > foePts + 3) s += 4;   // 这路我方明显占优 → 力压
     if (myPts < foePts - 3) s -= 3;   // 这路我方明显劣势 → 避开
     if (intel.nextIsGeneral && foe.length === 0) s += 5; // 玩家即将入手主将 → 抢占空路
