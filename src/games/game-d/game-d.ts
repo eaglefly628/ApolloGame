@@ -138,9 +138,9 @@ export function mount(container: HTMLElement): () => void {
     // Title=**柔和蓝灰天穹**（复刻概念图高级感·非暗黑）；盒庭=浅暖。相机在天空盒球内 → 用 Sky3D 渐变穹顶。
     const s = engine.world.getComponent<{ type: 'Sky3D'; top: number; bottom: number; clouds?: boolean }>('sky', 'Sky3D');
     if (s) { s.top = dark ? 0x27344f : 0xd7dbe4; s.bottom = dark ? 0x566585 : 0xece7de; s.clouds = false; }
-    const act = Math.floor((S.globalRoom - 1) / 3);
-    // Title 用**蓝灰渐变天空图**（古殿=石蓝灰·复刻概念图高级感底）；盒庭用当层暖天空图。（Sky3D 穹顶在相机 far 外·故走背景图）
-    renderer.setBackgroundTexture(dark ? skyArt(1, 'dark') : skyArt(act, 'warm'));
+    // 背景色**取样自概念图**（逐像素）：Title 蓝灰 #5d6d83（概念 #5d6d83~#7c90af）；盒庭 浅灰绿 #d6ddd6（概念 #cdd2d2~#d7e3d0·非暖非暗）。
+    renderer.setBackgroundTexture(null);
+    renderer.setBackground(dark ? 0x5d6d83 : 0xd6ddd6);
     // Title 用弱泛光/浅景深（单颗大骰不被糊成白团）；盒庭用强移轴+泛光（微缩模型质感）。
     const p = engine.world.getComponent<{ type: 'Post3D'; tiltShift?: object; bloom?: object }>('post', 'Post3D');
     if (p) {
