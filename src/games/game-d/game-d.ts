@@ -145,11 +145,18 @@ export function mount(container: HTMLElement): () => void {
       p.tiltShift = { focus: 0.54, intensity: dark ? 0.5 : 1.7 };
       p.bloom = { strength: dark ? 0.34 : 0.72, radius: 0.7, threshold: dark ? 0.82 : 0.6 };
     }
+    // 相机：Title=**正面透视**（复刻原型 initTitle fov38·正对大骰）；盒庭=近俯视 ortho。
+    const c = engine.world.getComponent<Camera3D>('cam', 'Camera3D');
+    if (c) {
+      if (dark) { c.projection = 'perspective'; c.fov = 38; c.yaw = Math.PI; c.pitch = 0.42; c.distance = 30; c.orthoSize = 13; c.pivotX = 0; c.pivotY = 3.0; c.pivotZ = 0; }
+      else { c.projection = 'ortho'; c.yaw = Math.PI; c.pitch = 0.98; c.orthoSize = 13; c.distance = 240; c.pivotX = 0; c.pivotY = 1.5; c.pivotZ = 0; }
+    }
   };
   const showTitleDie = (): void => {
     if (titleDieUp) return;
     engine.world.createEntity(TITLE_DIE);
-    engine.world.addComponent(TITLE_DIE, { type: 'Transform3D', x: 0, y: 3.4, z: 0, rotY: 0.6, scale: 1 } as unknown as Component);
+    // 直立、绕 Y 转 45° 让棱角朝镜头（配俯视相机 → 露顶+左前+右前，复刻概念图）
+    engine.world.addComponent(TITLE_DIE, { type: 'Transform3D', x: 0, y: 3.4, z: 0, rotY: 0.78, scale: 1 } as unknown as Component);
     // 六色命运骰（6 面各一元素·**手绘骰面图**·复刻原型 dieMesh 面序 pips=[1,6,2,5,3,4]）
     const PIP = [1, 6, 2, 5, 3, 4];
     engine.world.addComponent(TITLE_DIE, { type: 'Mesh3D', shape: 'box', width: 10, height: 10, depth: 10, frontTint: hexNum('huo'), dieFaces: ELEMS.map((el, i) => ({ color: hexNum(el), pip: PIP[i]!, src: diceFaceArt(el, PIP[i]!) })) } as unknown as Component);
