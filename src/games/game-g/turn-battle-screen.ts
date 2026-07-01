@@ -606,6 +606,15 @@ function shaRowNode(s: TurnShaView, i: number): LayoutNode {
     { type: 'Label', id: `rail-sha-${i}-s`, props: { text: used ? '已用' : '待发', size: 9, color: used ? 'warn' : 'ok' } },
   ] };
 }
+// 敌方地煞 hover 气泡内容（owner 2026-06-29「鼠标移上去看具体作用」）：名 + 稀有 + 作用说明 + 发动态。
+function shaTipNode(s: TurnShaView): LayoutNode {
+  const used = s.used ?? false; const rc = RAR[s.rar] || RAR.white;
+  return { type: 'Panel', id: 'shatip', props: {}, layout: { direction: 'column', gap: 4, padding: 11, width: 224 }, children: [
+    { type: 'Label', id: 'shatip-n', props: { text: `👹 ${s.name} · ${rc[0]}`, size: 12, color: 'gold', bold: true } },
+    { type: 'Label', id: 'shatip-d', props: { text: s.desc || '（此地煞暂无说明）', size: 11, color: 'text' } },
+    { type: 'Label', id: 'shatip-s', props: { text: used ? '⚑ 已发动' : '⏳ 待发动 · 战斗中择机触发', size: 10, color: used ? 'warn' : 'ok' } },
+  ] };
+}
 function enemyRailNode(view: TurnBattleView): LayoutNode {
   const header: LayoutNode = { type: 'Panel', id: 'rail-hdr', props: { bare: true }, layout: { direction: 'row', align: 'center', gap: 9 }, children: [
     { type: 'Panel', id: 'rail-hdr-ic', props: { bg: 'linear-gradient(150deg,#7a3340,#4a1f28)' }, layout: { width: 36, height: 36, radius: 9, align: 'center', justify: 'center', padding: 0 }, children: [{ type: 'Label', id: 'rail-hdr-ic-g', props: { text: '♥', size: 19, color: 'text' } }] },
@@ -904,26 +913,29 @@ export function mountTurnBattle(host: HTMLElement, getView: () => TurnBattleView
   // 内容 = cardTipNode(该兵 live 拆解·含天罡/士气/地煞来源)·随光标上/下弹 + clamp 视口内。
   let tipEl: HTMLDivElement | null = null;
   const hideTip = (): void => { if (tipEl) { tipEl.style.display = 'none'; tipEl.innerHTML = ''; } };
-  const cellOf = (t: HTMLElement | null): HTMLElement | null => { // climb 到 id 恰为 cell-<idx> 的格容器（子件 id 如 cell-3-fc 也以 cell- 起头·需精确匹配）
-    let el = t?.closest('[id^="cell-"]') as HTMLElement | null;
-    while (el && !/^cell-\d+$/.test(el.id)) el = (el.parentElement?.closest('[id^="cell-"]') as HTMLElement | null) ?? null;
-    return el;
-  };
-  const onHover = (e: MouseEvent): void => {
-    const cell = cellOf(e.target as HTMLElement);
-    const m = cell ? /^cell-(\d+)$/.exec(cell.id) : null;
-    if (!cell || !m) { hideTip(); return; }
-    const idx = parseInt(m[1], 10); const s = getView().lanes[Math.floor(idx / 9)]?.slots[idx % 9];
-    if (!s || !s.hasUnit) { hideTip(); return; }
+  // climb 到 id 精确匹配的容器（子件 id 以同前缀起头·需精确正则匹配·如 cell-3 而非 cell-3-fc）。
+  const climbId = (t: HTMLElement | null, re: RegExp, pre: string): HTMLElement | null => { let el = t?.closest(`[id^="${pre}"]`) as HTMLElement | null; while (el && !re.test(el.id)) el = (el.parentElement?.closest(`[id^="${pre}"]`) as HTMLElement | null) ?? null; return el; };
+  const showTip = (node: LayoutNode, anchor: HTMLElement): void => { // 通用气泡：内容子树 + 锚点 → 顶层 fixed 气泡·上/下弹 clamp 视口
     if (!tipEl) { tipEl = document.createElement('div'); tipEl.style.cssText = 'position:fixed;z-index:400;pointer-events:none;display:none'; document.body.appendChild(tipEl); }
     const th = THEMES[getView().theme] ?? THEMES.onyx; for (const k in th) tipEl.style.setProperty(k, th[k]); tipEl.style.fontFamily = 'var(--fb)'; // 气泡在 body 顶层·须自带战斗皮令牌(var(--ink)/--panel…) 否则 var() 解析失败
-    tipEl.innerHTML = renderNode(cardTipNode(s), GG_BATTLE_THEME);
+    tipEl.innerHTML = renderNode(node, GG_BATTLE_THEME);
     tipEl.style.display = 'block';
-    const r = cell.getBoundingClientRect(); const bw = tipEl.offsetWidth || 220, bh = tipEl.offsetHeight || 130;
+    const r = anchor.getBoundingClientRect(); const bw = tipEl.offsetWidth || 220, bh = tipEl.offsetHeight || 130;
     let left = r.left + r.width / 2 - bw / 2; let top = r.top - bh - 8; // 默认上弹
     if (top < 6) top = r.bottom + 8; // 顶部空间不足 → 改下弹
     tipEl.style.left = Math.max(6, Math.min(left, window.innerWidth - bw - 6)) + 'px';
     tipEl.style.top = Math.max(6, Math.min(top, window.innerHeight - bh - 6)) + 'px';
+  };
+  const onHover = (e: MouseEvent): void => {
+    const t = e.target as HTMLElement;
+    const sha = climbId(t, /^rail-sha-\d+$/, 'rail-sha-'); // 敌方地煞 hover → 弹作用说明（owner 2026-06-29）
+    if (sha) { const mi = /^rail-sha-(\d+)$/.exec(sha.id); const ss = mi ? getView().sha[parseInt(mi[1], 10)] : null; if (ss?.filled) { showTip(shaTipNode(ss), sha); return; } hideTip(); return; }
+    const cell = climbId(t, /^cell-\d+$/, 'cell-'); // 场上兵 hover → 战力拆解
+    const m = cell ? /^cell-(\d+)$/.exec(cell.id) : null;
+    if (!cell || !m) { hideTip(); return; }
+    const idx = parseInt(m[1], 10); const s = getView().lanes[Math.floor(idx / 9)]?.slots[idx % 9];
+    if (!s || !s.hasUnit) { hideTip(); return; }
+    showTip(cardTipNode(s), cell);
   };
   host.addEventListener('mouseover', onHover);
   host.addEventListener('mouseleave', hideTip);
