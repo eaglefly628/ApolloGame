@@ -751,3 +751,24 @@ _（REQ-3D-W1高效引擎 已移至 [`requests-3d.md`](./requests-3d.md)。）_
 > **疑似根因（请主程核）**：`dispatch`（server.ts:194）对 `change` 事件，`INPUT` 分支 `arg = inp.value`（range 恒为数值串、不该是 undefined）。出现 undefined 说明**有第二个 `change` 事件**其 `el`/取值路径不落在 range 的 `inp.value` 上（可能是面板重建中旧 input 被移除时浏览器补发的 `change`、或 closest 命中了无值元素）。建议：dispatch 对 range/数值类 change **只在 `inp.value` 为有效串时才派发**（或统一「数值控件回调保证 finite」），别把 undefined 透传给游戏 handler。
 >
 > **影响面**：任何用 Slider 写数值的界面都可能吃到一发 `undefined`/NaN；控件层应保证「数值控件的回调实参恒为有效数值串」，不应让每个消费方各自 `Number.isFinite` 兜底。
+
+### REQ-Resource · 引擎底层统一资源(Resource)层：3D 资产走 2D 贴图同款资产管理路线 · [2026-06-30] · owner → 主程/Lead（引擎核心资产层域·跨 2D/3D） · status: **待主程/Lead 评审拍板** · 类型: 引擎底层架构（资产管理统一）
+
+> **owner 2026-06-30 拍板要 review + 提需求**：把「3D 美术资产（模型 / 材质 / 材质贴图）」**走和 2D 贴图完全同一条资产管理路线 —— 即 Resource 路线**：建**统一的资源目录结构 + 引用方法 + 消费端 + 共用数据端**。owner 原话：**「我们的引擎底端需要一个以 Resource 的控制」**。要 P3D 把需求扔出来给主程看。
+> **详尽 review + 分期提案见** `docs/design/asset-pipeline-review.md`（P3D 2026-06-30 汇编·含现状逐类型对照 + 借鉴 Godot 的点）。
+>
+> **现状缺口（review 结论·摘要）**：
+> - **2D 贴图**端到端已成熟（sniff→去重→归一化 `assets/index.json`→`registerAssetIndex` 桥接·带溯源）——**好底子·不推倒**。
+> - **但运行时 `registerAssetIndex` 只桥 `texture`**（`asset-index.ts:152`）；`mesh` 走各游戏**手写 manifest 绕过索引**（`registerManifest(GAME_*_ASSETS)`）；`material` **写死在 `pbr-materials.ts`**；**材质贴图(albedo/normal/roughness)完全没管线**（owner 卡的「真实贴图」）。→ 只有 texture 一种数据端到端打通。
+>
+> **需求 = 建统一 Resource 层（借鉴 Godot「资产=Resource·每资产带导入描述·统一索引桥所有类型」·但作数据非搬编辑器/C++）**：
+> 1. **共用数据端**：`assets/index.json` 成为**所有类型**的单一真相（texture/mesh/material/sound/font…）；`AssetIndexEntry.spec` 规范化**类型专属 import options（作数据·弱 LLM 可填）**——尤其**贴图 `usage`(albedo/normal/roughness/orm)+`colorSpace`(srgb/linear)**（法线图必须线性·设错渲染错）。
+> 2. **目录结构**：`assets/{texture,mesh,material,sound,font}/<category>/<id>.<ext>`（导入器已按 `assets/<type>/<category>/` 归一化·把 mesh/material 纳入同结构·**收编各游戏手写 manifest 进索引**·模型也进统一溯源/许可/检索，现 fox.glb 只在 CREDITS）。
+> 3. **引用方法**：sim/蓝图/组件**只持 key**（可哈希·render-only 消费）；`registerAssetIndex` 桥接**所有**类型（mesh→ModelPool·material→Material3D 数据·texture-map→材质贴图）；材质成**引 texture key 的资产**（取代硬编码预设 / 预设降为「内置材质 Resource」）。
+> 4. **消费端（材质贴图·P3D 域·可先落）**：`Material3D.map/normalMap/roughnessMap`(=texture key) + 渲染器按 key + `colorSpace` 取 THREE.Texture 挂材质·与现程序化 `surface` 并存。**owner 授权 P3D 先做这半边**（同资产层跨界授权先例·纯 3D 渲染线 + 美术库数据·不动引擎核心索引）。
+>
+> **分期**（详见 review 文 §5）：① 材质贴图消费端(P3D 可独立) → ② `registerAssetIndex` 桥 mesh/material·收编 manifest(主程) → ③ spec 类型专属 options 定闭集 schema + 导入器扩 `.glb`/贴图 usage 自动猜(主程) → ④ 材质成索引资产 / sound·font 接入(按需)。
+>
+> **红线（守住·评审时校）**：① 资产是 render-only 表现层（sim 只持 key·不进 hash）；② 导入选项/材质/贴图用途**全是数据**（弱 LLM 尺子·别开自由代码口子）；③ 增量·向后兼容（现有 2D texture 路径不动）。
+>
+> **请主程/Lead 裁**：整套 Resource 层的引擎核心半边（②③④·动 `src/assets` 跨 2D/3D）该主程做，还是**授权 P3D 跨界落**（同 model-loader / 3D 碰撞先例）？消费端① owner 已授权 P3D 先做。
