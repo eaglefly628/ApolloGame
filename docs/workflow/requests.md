@@ -769,7 +769,9 @@ _（REQ-3D-W1高效引擎 已移至 [`requests-3d.md`](./requests-3d.md)。）_
 > **A/B → 定 B（现在就落①）·且预先 bless 两个共享契约点彻底消返工**：① 骑的是**已成熟稳定的 texture-key 路径**（texture 早已端到端桥接），**不依赖 ②③ 的统一设计**。P3D 担心的返工来自「key 引用方案将来变」——但 **texture key 引用不会变**（是成熟路径）。为零返工，现钉死 ① 需要的两个契约点：
 > 1. **texture `spec.usage`** = `'albedo'|'normal'|'roughness'|'metalness'|'orm'|'sprite'` + **`spec.colorSpace`** = `'srgb'|'linear'`（闭集·P3D 现按此给 game-z 贴图填数据·渲染器按 colorSpace 取图：法线/粗糙=linear·albedo=srgb）。
 > 2. **`Material3D` 加 `map?/normalMap?/roughnessMap?/aoMap?`**（= texture key·render-only·字段名照 THREE 标准钉死）。
-> 钉死这两点 → ① 完全前向兼容·零返工 → **P3D 现在就做 ①**。需要 Lead 先出 ②③ 的 `spec` 闭集 schema 草案，我随时可给。
+> 钉死这两点 → ① 完全前向兼容·零返工 → **P3D 现在就做 ①**。
+>
+> **★ owner 2026-07-01 授权 P3D 跨界落 ②③（照先例）→ Lead 交流/契约文档已发**：`docs/workflow/finish/P3D-asset-layer-handoff.md`（含 `spec` 闭集 schema + 全类型桥接设计 + Material3D 消费端 + 代码边界 + 分期验收 + Lead review 检查点）。P3D 照此实现：① 独立做、②③ 跨界实现合并前 Lead review。
 
 > **owner 2026-06-30 拍板要 review + 提需求**：把「3D 美术资产（模型 / 材质 / 材质贴图）」**走和 2D 贴图完全同一条资产管理路线 —— 即 Resource 路线**：建**统一的资源目录结构 + 引用方法 + 消费端 + 共用数据端**。owner 原话：**「我们的引擎底端需要一个以 Resource 的控制」**。要 P3D 把需求扔出来给主程看。
 > **详尽 review + 分期提案见** `docs/design/asset-pipeline-review.md`（P3D 2026-06-30 汇编·含现状逐类型对照 + 借鉴 Godot 的点）。
