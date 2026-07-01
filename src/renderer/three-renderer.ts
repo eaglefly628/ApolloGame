@@ -10,7 +10,7 @@ import {
   transform3dPose, groundPose, poseBounds3D, bounds3DCenter, bounds3DExtent, fitDistance3D,
 } from './three-projection.js';
 import { mesh3dPose, applyPose, buildMesh3D, buildDieMesh3D, dieMode, buildVoxelMesh3D, voxelMode, buildGlowTexture, buildGeometry, buildSkyTexture, disposeMesh } from './three/geometry.js';
-import { buildPbrMesh3D, pbrSig } from './three/material.js';
+import { buildPbrMesh3D, pbrSig, type PbrMaps } from './three/material.js';
 import { hashPoses, camSig, postSig } from './three/stats.js';
 import { LightRig } from './three/lights.js';
 import { PostPipeline } from './three/post.js';
@@ -483,17 +483,44 @@ export class ThreeRenderer implements RendererBackend {
     return mesh;
   }
 
-  // PBR 单 mesh（Material3D·TA Phase 5）：按材质签名池管理（preset/覆盖/形状变才重建）。与哑光 fallback 共用 meshes 池。
+  // PBR 单 mesh（Material3D·TA Phase 5）：按材质签名池管理（preset/覆盖/形状/**真实贴图**变才重建）。与哑光 fallback 共用池。
   private ensurePbrMesh(r: Renderable, m: Mesh3D, mat: Material3D): THREE.Mesh {
-    const mode = pbrSig(m, mat);
+    const maps = this.resolvePbrMaps(mat); // REQ-Resource ①：按 key 取真实贴图（色彩空间按用途设）
+    // 贴图就绪态并入 mode：异步贴图从未就绪→就绪时 mode 变 → 重建 mesh 挂上图（同 sprite 异步先例）。
+    const mode = `${pbrSig(m, mat)}|${maps.map ? 'M' : ''}${maps.normalMap ? 'N' : ''}${maps.roughnessMap ? 'R' : ''}${maps.aoMap ? 'A' : ''}`;
     const prev = this.meshes.get(r.entityId);
     if (prev && this.modeOf.get(r.entityId) === mode) return prev;
     if (prev) { this.scene.remove(prev); disposeMesh(prev); }
-    const mesh = buildPbrMesh3D(m, mat);
+    const mesh = buildPbrMesh3D(m, mat, maps);
     this.meshes.set(r.entityId, mesh);
     this.modeOf.set(r.entityId, mode);
     this.scene.add(mesh);
     return mesh;
+  }
+
+  // 解析 Material3D 的真实贴图 key → THREE.Texture（**色彩空间按材质槽位定**：map=albedo→sRGB·normal/roughness/ao→线性）。
+  private resolvePbrMaps(mat: Material3D): PbrMaps {
+    const maps: PbrMaps = {};
+    if (mat.map) { const t = this.pbrMapTexture(mat.map, true); if (t) maps.map = t; }
+    if (mat.normalMap) { const t = this.pbrMapTexture(mat.normalMap, false); if (t) maps.normalMap = t; }
+    if (mat.roughnessMap) { const t = this.pbrMapTexture(mat.roughnessMap, false); if (t) maps.roughnessMap = t; }
+    if (mat.aoMap) { const t = this.pbrMapTexture(mat.aoMap, false); if (t) maps.aoMap = t; }
+    return maps;
+  }
+
+  // 材质整图贴图（区别 spriteTexture 的 atlas 子矩形）：整张图 + RepeatWrapping + 色彩空间。按 key+cs 缓存·未就绪 null。
+  private pbrMapTexture(key: string, srgb: boolean): THREE.Texture | null {
+    const res = this.assets?.get(key);
+    if (!res || !isImageHandle(res.handle)) return null;
+    const ck = `pm:${key}:${srgb ? 's' : 'l'}`;
+    const hit = this.texCache.get(ck);
+    if (hit) return hit;
+    const tex = new THREE.Texture(res.handle.image as TexImageSource);
+    tex.colorSpace = srgb ? THREE.SRGBColorSpace : THREE.NoColorSpace; // 法线/粗糙必须线性·反照率 sRGB
+    tex.wrapS = tex.wrapT = THREE.RepeatWrapping;
+    tex.needsUpdate = true;
+    this.texCache.set(ck, tex);
+    return tex;
   }
 
   // 上色：box → 正/反/四边 各自取色；plane → 单面取正面色。W1-B：颜色/alpha 是 uniform·**不设 needsUpdate**。

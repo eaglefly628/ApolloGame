@@ -239,6 +239,13 @@ export interface Material3D extends Component {
   emissive?: number;
   emissiveIntensity?: number;
   surface?: SurfaceDetail; // 程序化表面细节（normal/roughness 贴图·渲染器据参数生成·见下）
+  // 真实贴图（REQ-Resource ①·render-only·= texture 资产 id·字段名照 THREE 标准）：渲染器据 key 从 AssetManager 取
+  // THREE.Texture 挂材质，**按用途设色彩空间**（map=albedo→sRGB·normal/roughness/ao→线性·法线误设 sRGB 会渲染错）。
+  // 显式 map 覆盖同通道的程序化 surface；缺省回退 surface/纯色（共存·向后兼容）。
+  map?: string; // 反照率贴图（albedo·sRGB）
+  normalMap?: string; // 法线贴图（线性）
+  roughnessMap?: string; // 粗糙度贴图（线性）
+  aoMap?: string; // 环境光遮蔽贴图（线性）
 }
 
 // 程序化表面细节（render-only·TA Phase 5）：渲染器据参数生成 normal + roughness 贴图（DataTexture）—— **不需美术贴图文件**，

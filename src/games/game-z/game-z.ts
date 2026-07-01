@@ -6,12 +6,12 @@
 // 玩法暂缓（owner 2026-06-27「先把玩法放一下·先长 3D 这条线」）。
 import { Engine } from '../../runtime/engine.js';
 import { ThreeRenderer, type RenderStats } from '@renderer/three-renderer.js';
-import { AssetManager, ModelAssetLoader } from '@assets/index.js';
+import { AssetManager } from '@assets/index.js';
 import { mountUI } from '@ui/components/index.js';
 import type { LayoutNode } from '@ui/components/index.js';
 import type { Velocity, Camera3D, Post3D, Fog3D, Transform } from '@engine/protocol/components.js';
 import { dioramaBlueprint, BOARD_CAM, HOME_CAM, TRACK_R } from './diorama.js';
-import { GAME_Z_ASSETS } from './assets.js';
+import { GAME_Z_ASSETS, DioramaLoader } from './assets.js';
 
 const MOVE_KEYS = new Set(['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight', 'KeyW', 'KeyA', 'KeyS', 'KeyD']);
 
@@ -49,9 +49,9 @@ export function mount(container: HTMLElement): () => void {
   const w = Math.max(320, Math.min(1100, wrapper.clientWidth || 900));
   const h = Math.max(240, Math.min(720, wrapper.clientHeight || 560));
 
-  // 3D 模型资产：注册 glTF 清单 → 异步加载（就绪前渲染器跳过该实体，就绪后自动解析显示·向后兼容）。
-  // 蓝图持 modelKey 保纯；ModelAssetLoader 取字节(ArrayBuffer)，ThreeRenderer 解析成 three 场景。
-  const assets = new AssetManager(new ModelAssetLoader());
+  // 3D 资产：模型 + 真实贴图清单 → 异步加载（就绪前渲染器跳过/回退，就绪后自动挂上·向后兼容）。
+  // 蓝图持 key 保纯；DioramaLoader 分发（模型取字节 / 贴图取图），ThreeRenderer 解析。
+  const assets = new AssetManager(new DioramaLoader());
   assets.registerManifest(GAME_Z_ASSETS);
   void assets.loadAll();
 
