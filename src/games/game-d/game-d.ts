@@ -42,7 +42,8 @@ const GAME_D_THEME: UITheme = {
   ok: '#7fd49a', okWash: 'rgba(110,205,140,0.16)',
   warn: '#f0b756', warnWash: 'rgba(240,183,86,0.16)', danger: '#ff7d7d',
   mine: '#f0d68a', foe: '#ff8a8a',
-  fontUi: '"Noto Serif SC", "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", serif',
+  fontUi: '"PingFang SC", "Hiragino Sans GB", "Noto Sans SC", "Microsoft YaHei", sans-serif', // 正文无衬线
+  fontSerif: '"Noto Serif SC", Georgia, serif', // 标题/logo/骰名衬线（Label font:'serif'）
   fontMono: 'ui-monospace, "SF Mono", Menlo, Consolas, monospace',
   inputBg: 'rgba(0,0,0,0.32)',
 };
@@ -197,15 +198,17 @@ export function mount(container: HTMLElement): () => void {
       ...STARS.map(([sx, sy], i): LayoutNode => ({ type: 'Label', id: `gd-star${i}`, props: { text: '✦', size: 'xs', color: 'text' }, layout: { x: Math.round(sx * w), y: Math.round(sy * h), fx: [{ kind: 'pulse', ms: 2800 + i * 300 }] } })),
       { type: 'Panel', id: 'gd-logo-box', props: { bare: true }, layout: { x: w / 2 - 220, y: Math.round(h * 0.05), width: 440, direction: 'column', align: 'center', gap: 7 },
         children: [
-          // 确切复刻原型：logo 76px letter-spacing6 · 副标 15px sp6 · tagline 13px（LayoutNode 用裸 px 数字）
-          lbl('gd-name', '骰　途', { size: 64, color: 'gold', bold: true, glow: true, tracking: 6 }),
-          bareRow('gd-subrow', [lbl('gd-sl', '—', { size: 14, color: 'dim' }), lbl('gd-sub', 'TOWER OF FATE', { size: 14, color: 'sub', tracking: 6 }), lbl('gd-sr', '—', { size: 14, color: 'dim' })], { justify: 'center', gap: 10 }),
+          // 确切复刻原型：logo 76px 衬线 letter-spacing6 · 副标 15px sp6 · tagline 13px
+          lbl('gd-name', '骰　途', { size: 64, color: 'gold', bold: true, glow: true, tracking: 6, font: 'serif' }),
+          bareRow('gd-subrow', [lbl('gd-sl', '—', { size: 14, color: 'dim' }), lbl('gd-sub', 'TOWER OF FATE', { size: 14, color: 'sub', tracking: 6, font: 'serif' }), lbl('gd-sr', '—', { size: 14, color: 'dim' })], { justify: 'center', gap: 10 }),
           lbl('gd-tag', '两名掷命者，一座会改写命运的古塔', { size: 13, color: 'sub' }),
         ],
       },
       { type: 'Panel', id: 'gd-btns', props: { bare: true }, layout: { x: w / 2 - 170, y: h - 156, width: 340, direction: 'column', align: 'center', gap: 12 },
         children: [
-          { type: 'Button', id: 'gd-start', props: { label: '开 始 攀 塔', kind: 'hero', sub: `第一层 · ${layerName(1)}`, action: 'start' }, layout: { fx: [{ kind: 'pulse', ms: 2600 }], width: 280 } },
+          // 金渐变 hero 键（复刻原型 #ffd982→#f0a93a·主程回驳 Button 自定义色 → 用 Panel.action+bg 拼）
+          { type: 'Panel', id: 'gd-start', props: { action: 'start', bg: 'linear-gradient(180deg,#ffd982,#f0a93a)' }, layout: { width: 280, radius: 13, padding: 13, align: 'center', direction: 'column', gap: 2, fx: [{ kind: 'pulse', ms: 2600 }] },
+            children: [lbl('gd-start-t', '开 始 攀 塔', { size: 19, color: 'text', bold: true, font: 'serif', tracking: 4 }), lbl('gd-start-s', `第一层 · ${layerName(1)}`, { size: 11, color: 'sub' })] },
           bareRow('gd-modes', [
             { type: 'Button', id: 'gd-coop', props: { label: '双人同攀', kind: 'ghost', action: 'start' } },
             { type: 'Button', id: 'gd-solo', props: { label: '单人', kind: 'ghost', action: 'start' } },
@@ -233,7 +236,7 @@ export function mount(container: HTMLElement): () => void {
   });
   // 顶左：层间 chip
   const layerChip = (): LayoutNode => ({
-    type: 'Panel', id: 'hud-layer', props: {}, layout: { x: 14, y: 12, direction: 'row', gap: 10, align: 'center', padding: 8 },
+    type: 'Panel', id: 'hud-layer', props: { glass: true }, layout: { x: 14, y: 12, direction: 'row', gap: 10, align: 'center', padding: 8 },
     children: [
       { type: 'Panel', id: 'hud-layer-n', props: { edge: 'gold' }, layout: { width: 34, height: 34, radius: 8, align: 'center', justify: 'center', padding: 0 }, children: [lbl('hud-layer-nn', String(Math.floor((S.globalRoom - 1) / 3) + 1), { size: 'lg', color: 'gold', bold: true })] },
       bareCol('hud-layer-t', [
@@ -255,7 +258,7 @@ export function mount(container: HTMLElement): () => void {
     type: 'Panel', id: 'hud-ally', props: { bare: true }, layout: { x: w - 234, y: 58, direction: 'column', gap: 8, width: 220 },
     children: [
       {
-        type: 'Panel', id: 'hud-ally-card', props: {}, layout: { direction: 'column', gap: 6, padding: 10 },
+        type: 'Panel', id: 'hud-ally-card', props: { glass: true }, layout: { direction: 'column', gap: 6, padding: 10 },
         children: [
           bareRow('hud-ally-hd', [
             { type: 'Avatar', id: 'hud-ally-av', props: { name: '乙', size: 34, shape: 'rounded' } },
@@ -269,7 +272,7 @@ export function mount(container: HTMLElement): () => void {
         ],
       },
       {
-        type: 'Panel', id: 'hud-buffs', props: { title: '当前 BUFF' }, layout: { direction: 'column', gap: 5, padding: 10 },
+        type: 'Panel', id: 'hud-buffs', props: { title: '当前 BUFF', glass: true }, layout: { direction: 'column', gap: 5, padding: 10 },
         children: ALLY_BUFFS.map((b, i): LayoutNode => ({
           type: 'Panel', id: `hud-buff-${i}`, props: { bare: true }, layout: { direction: 'row', gap: 6, justify: 'between', align: 'center' },
           children: [
@@ -286,7 +289,7 @@ export function mount(container: HTMLElement): () => void {
     const sel = [...S.selected].map((i) => S.rolled[i]!);
     const ev = evalChallenge(sel, f.conds);
     return {
-      type: 'Panel', id: 'hud-foe', props: {}, layout: { x: w / 2 - 170, y: 14, width: 340, direction: 'column', gap: 5, padding: 12, align: 'center' },
+      type: 'Panel', id: 'hud-foe', props: { glass: true }, layout: { x: w / 2 - 170, y: 14, width: 340, direction: 'column', gap: 5, padding: 12, align: 'center' },
       children: [
         lbl('hud-foe-nm', `${f.isBoss ? '👑 守关者' : '⚔'} ${ELEM_INFO[f.el].emoji} ${f.name}`, { size: 'md', bold: true, glow: true }),
         { type: 'ProgressBar', id: 'hud-foe-hp', props: { value: Math.max(0, f.hp), max: f.maxHp, tone: 'danger', showValue: true, label: 'HP' } },
@@ -302,7 +305,7 @@ export function mount(container: HTMLElement): () => void {
       // 备战：去骰盅 / 直接掷出
       const preview = loadDefs.slice(0, 8).map((d, i): LayoutNode => ({ type: 'Tag', id: `bb-pv${i}`, props: { label: dieGlyph(d.el), tone: elemTone(d.el), size: 'md' } }));
       return {
-        type: 'Panel', id: 'hud-bottom', props: {}, layout: { x: w / 2 - 290, y: h - 84, width: 580, direction: 'row', gap: 12, align: 'center', justify: 'between', padding: 10 },
+        type: 'Panel', id: 'hud-bottom', props: { glass: true }, layout: { x: w / 2 - 290, y: h - 84, width: 580, direction: 'row', gap: 12, align: 'center', justify: 'between', padding: 10 },
         children: [
           bareRow('bb-dish', [
             lbl('bb-cup', '🎲', { size: 'xl' }),
@@ -324,7 +327,7 @@ export function mount(container: HTMLElement): () => void {
     const ev = evalChallenge(sel, S.foe.conds);
     const d = damageOf(sel);
     return {
-      type: 'Panel', id: 'hud-bottom', props: {}, layout: { x: w / 2 - 300, y: h - 134, width: 600, direction: 'column', gap: 6, align: 'center', padding: 10 },
+      type: 'Panel', id: 'hud-bottom', props: { glass: true }, layout: { x: w / 2 - 300, y: h - 134, width: 600, direction: 'column', gap: 6, align: 'center', padding: 10 },
       children: [
         bareRow('bb-dice', S.rolled.map((r, i): LayoutNode => S.disabled.has(i)
           ? { type: 'Button', id: `bb-d${i}`, props: { label: `🚫${ELEM_INFO[r.el].emoji}${r.v}`, kind: 'quiet', action: 'noop' } }
@@ -385,7 +388,7 @@ export function mount(container: HTMLElement): () => void {
     const def = DICE_CATALOG.find((d) => d.defId === S.detail) ?? DICE_CATALOG[0]!;
     const inLoad = S.loadout.some((id) => dieDef(S.library.find((d) => d.id === id)!).defId === def.defId);
     return {
-      type: 'Panel', id: 'dish-detail', props: {}, layout: { direction: 'column', gap: 8, padding: 14, width: 250 },
+      type: 'Panel', id: 'dish-detail', props: { glass: true }, layout: { direction: 'column', gap: 8, padding: 14, width: 250 },
       children: [
         bareRow('dd-hd', [
           { type: 'Panel', id: 'dd-ic', props: { bg: ELEM_INFO[def.el].hex }, layout: { width: 56, height: 56, radius: 12, align: 'center', justify: 'center', padding: 0 }, children: [lbl('dd-icg', dieGlyph(def.el), { size: 'xl' })] },
@@ -414,7 +417,7 @@ export function mount(container: HTMLElement): () => void {
     const have = trialCond && trialCond.kind === 'element' ? loadDefs.filter((d) => d.el === trialCond.el || d.el === 'wild').length : 0;
     const need = trialCond && trialCond.kind === 'element' ? trialCond.n : 0;
     return {
-      type: 'Panel', id: 'dish-load', props: { accent: true }, layout: { direction: 'column', gap: 8, padding: 12, width: 250 },
+      type: 'Panel', id: 'dish-load', props: { accent: true, glass: true }, layout: { direction: 'column', gap: 8, padding: 12, width: 250 },
       children: [
         bareRow('dl-hd', [
           lbl('dl-t', '出战骰组', { size: 'md', bold: true, color: 'gold' }),
@@ -466,7 +469,7 @@ export function mount(container: HTMLElement): () => void {
               ], { gap: 2 }),
             ], { align: 'center', gap: 12 }),
             {
-              type: 'Panel', id: 'dish-req', props: { edge: 'gold' }, layout: { direction: 'column', gap: 4, padding: 12, width: 280 },
+              type: 'Panel', id: 'dish-req', props: { edge: 'gold', glass: true }, layout: { direction: 'column', gap: 4, padding: 12, width: 280 },
               children: [
                 lbl('dish-req-t', `本关需求 · ${layerName(S.globalRoom)} · 试炼之庭`, { size: 'xs', color: 'gold', bold: true }),
                 bareRow('dish-req-c', f.conds.map((c, i): LayoutNode => ({ type: 'Tag', id: `dish-req-c${i}`, props: { label: condLabel(c), tone: 'accent', size: 'md' } })), { gap: 6 }),
