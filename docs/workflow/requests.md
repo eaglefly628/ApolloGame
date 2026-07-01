@@ -616,3 +616,16 @@ game-f 报「多数需新引擎能力」。Lead 实测：**三个已点名技能
 > 4. **赢了守原位**：守军赢掷命后**不走留场前推·继续守原位不追击**（死守语义）。
 > **实现建议**：给 `TurnUnit` 加 `hold?: boolean`（startFormation 守军置 true）→ advance/advanceColumnToBase/留场前推三处都 `if (u.hold) continue/skip`。**YAGNI**：当前只需 hold（守势）；将来若有攻势 boss 要"前压排阵兵"再加 advance 模式·现在不做。
 > **「看得见≠会动」**（owner 点的细节）：守军是玩家"打/绕"的**情报**·不是逼近威胁。这正是守势难度的公平来源——你看得见、可避，但想破它家就得啃过这堵墙。
+
+---
+
+### REQ-G-地煞原生战力重构 · [2026-07-01] · design G → 甲（引擎域·disha） · Game G · status: open · 优先级: **P1（承接新掷战力骰核）** · 类型: 重构（win%→原生确定战力/规则）· 规格: `design/disha-native-power-redesign.md`
+
+> **背景**：owner 2026-07-01 把对决核改成**各自掷战力骰**（`[1,战力]` 比大小·vision doc §7）。现 15 张地煞仍是 win% 经 `dishaEdge=edge/5` 折算的**临时 hack**——在掷战力骰下 **+1战力 边际胜率 ≈ 1/(2P)·非常数**，edge/5 只在 P≈10 对·别处失真。owner：「所有地煞需重新设计成数值正确的行为。」
+> **design G 已出 effect 设计**（规格逐张 review 15 张）：一律弃 win%·改三种原生落点——**A. +战力**（抬掷骰范围·大多数）/ **B. 改掷算子**（mul/add·爆发型·待改掷层）/ **C. 规则**（firstStrike/noRout/多命/homeHp/周期/开局排阵·已是规则）。
+> **派甲重构 `disha.ts` DishaFx**：
+> 1. **删** `allWinPct/generalWinPct/phalanx*Pct/eliteMidWinPct/flankYouWinPct/firstStrikeWinPct/winStreakPer(%)/batteryWinPct` 等 **win% 字段** → 换 **`*Power`（+战力）** 或规则字段（见规格 §二逐张映射）。
+> 2. **退役** `dishaEdge = bossEdge/EDGE_TO_POWER` 折算路 → 直接 `bb.pEff += Σ地煞战力`（进战力拆解·明牌·不暗改）。
+> 3. **两处公平清理**：`swarm`(大军压境)/`maneuver`(机动调度) 现是 `bonusMana`（偷源泉·owner 已禁）→ swarm 换 `startFormation` 明牌人海、maneuver 换 疾行(speed2)/改掷（见规格 §三）。
+> **数值**：规格给的是**方向性起始值**·design G 待「思考型玩家仿真台 + loader + 两 AI」落地后重扫定稿（现贪心玩家 + edge/5 旧值全作废）。**先落原生行为骨架·数值后标。**
+> **与掷战力骰的交互**：`winstreak`（每胜+战力）对冲疲劳对折（项羽越战越勇）；`firstStrike`（平局判胜）在低战力场景比 +战力更值。
