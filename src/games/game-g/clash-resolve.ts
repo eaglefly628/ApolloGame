@@ -31,6 +31,7 @@ export function cardPoints(rank: string): number {
 export function pEff(base: number, buffSum: number, mul = 1): number { return clamp(mul === 1 ? base + buffSum : Math.floor((base + buffSum) * mul), P_MIN, P_MAX); }
 
 // A 对 B 的胜率：clamp( logistic((Pa−Pb)/k), 爆冷缝 )。点数差大 → 趋碾压但永不 0/100%。
+// ⚠ 已退役（owner 2026-07-01「各自掷战力骰」）：对决改为各自掷 [1,战力] 比大小 → rollWinProb。留存供参考/回归。
 export function winrate(pa: number, pb: number, k: number = CLASH_K): number {
   return clamp(logistic((pa - pb) / k), WR_MIN, WR_MAX);
 }
@@ -38,4 +39,20 @@ export function winrate(pa: number, pb: number, k: number = CLASH_K): number {
 // 对决解算：种子骰 < winrate(A) → A 胜(true)，否则 B 胜(false)。消费 rng 一次（确定性、可回放）。
 export function clashResolve(pa: number, pb: number, rng: RandomSeed): boolean {
   return nextRandom(rng) < winrate(pa, pb);
+}
+
+// ── 各自掷战力骰（owner 2026-07-01·爽感核）：双方各在 [1, 自己战力] 内掷一个整数，比大小、大者胜。 ──
+// 战力越高 → 掷出高值的期望/地板越高，但弱者仍有翻盘缝（真悬念）。掷不出 0（owner「1~17·1~9」）→ 下界恒 1。
+// 单掷：`[1, max(1,power)]`（种子化·消费 rng 一次·lockstep 安全）。
+export function rollDie(power: number, rng: RandomSeed): number {
+  const P = Math.max(1, Math.round(power));
+  return 1 + Math.floor(nextRandom(rng) * P);
+}
+// 两独立均匀掷的胜负概率（离散精确·供 UI「掷命预报」显真实胜率·非 100/0）：
+//   a~U{1..A}, b~U{1..B} → pGreater=P(a>b)、pEqual=P(a==b)。A/B≤P_MAX 小 → 直接枚举求和（确定·可回放）。
+export function rollWinProb(A: number, B: number): { pGreater: number; pEqual: number } {
+  const a = Math.max(1, Math.round(A)), b = Math.max(1, Math.round(B));
+  let g = 0; for (let x = 1; x <= a; x++) g += Math.min(x - 1, b); // 对每个 a=x：b∈[1,min(x-1,b)] 时 a 赢
+  const e = Math.min(a, b); // a==b 的组合数（每个公共值一对）
+  return { pGreater: g / (a * b), pEqual: e / (a * b) };
 }

@@ -423,17 +423,44 @@ export function mount(container: HTMLElement, shell?: { exit?: () => void }): ()
       thinkTimer = window.setTimeout(() => { if (thinkEl) { thinkEl.remove(); thinkEl = null; } onDone(); }, ms);
     };
     const flash = (msg: string): void => { notice = msg; mounted?.update(); if (noticeTimer) clearTimeout(noticeTimer); noticeTimer = window.setTimeout(() => { notice = null; if (!perfClash) mounted?.update(); }, 1700); }; // 清提示时若正演掷命特写则不重渲（防飞入重启）
-    // 确定制对决（owner 2026-07-01）：进特写即揭晓（战力高者胜·无掷骰/掷币）→ 玩家看明细后点「继续」→ 一步步演结算。
-    let clashRevealed = false; let clashCdTimer = 0; let clashCdInterval = 0;
+    // 各自掷战力骰对决（owner 2026-07-01）：进特写先藏掷值 → 玩家点「掷命」→ 两骰同屏各掷自己战力范围 → 揭晓胜负 → 点「继续」→ 一步步演结算。
+    let clashRevealed = false; let clashCdTimer = 0; let clashCdInterval = 0; let clashRolling = false;
     const clearClashTimers = (): void => { if (clashCdTimer) { clearTimeout(clashCdTimer); clashCdTimer = 0; } if (clashCdInterval) { clearInterval(clashCdInterval); clashCdInterval = 0; } };
     const buildClashView = (): TurnClashView | null => { if (!perfClash) return null; const cv = clashToTurnView(perfClash, tgName, save.inlays); cv.revealed = clashRevealed; return cv; };
     const view = (): TurnBattleView => buildTurnBattleView(tb, { theme, tengangName: tgName, tengangDesc: tgDesc, selMode, selHand, clash: buildClashView(), bossName: aiName, sha: shaLive(), gatesLive: gateChance, notice, movedIds: justMovedIds, freshIds, dealtId: dealtId ?? undefined, battleLabel, sfxOn: isSfxOn(), settingsOpen, bgmOn: isBgmOn(), bgmIdx: bgmTrackIdx(), bgmVol: bgmVolume(), bgmNames: BGM_TRACKS.map((t) => t.name), guideOn: !save.skipGuide, inlays: save.inlays, enchOf: (rank, suit) => (save.inlays[String(cardFavorIndex(rank + suit))] ?? []).map((e) => [`${e.b}${DIZHI_TIER_NM[e.t]}`, DIZHI_INLAY_FAVOR[e.t]] as [string, number]) });
     let mounted: { update: () => void; destroy: () => void } | null = null;
 
     const drainClashes = (): void => { for (const ev of tb.clashLog.slice(drained)) perfQueue.push(ev); drained = tb.clashLog.length; };
-    // 掷骰（🎲 全屏掷命·按胜率掷点定生死）已随「确定制」退役（owner 2026-07-01「掷骰子没意义·太繁琐」）：
-    //   现为「战力高者胜」的确定判定，进特写即揭晓、玩家看明细后点「继续」→ 一步步演结算（见 clashConfirm）。
-    //   掷骰动画代码不再保留（与掷硬币不同·硬币模块 coin-flip.ts 留存）；未来「各自掷战力骰」见设计文档，届时另起新掷动画。
+    // 各自掷战力骰（owner 2026-07-01「两个人同时在对决画面各掷自己战力范围内的骰」）：
+    //   两颗骰同屏·我橙敌蓝·各自哒哒哒滚到自己 [1,战力] 的掷值 → 撤层揭晓（rollA/rollB 已在数据里·大者胜）。
+    //   （旧「单颗按胜率掷点」+ 掷硬币退役：硬币模块 coin-flip.ts 留存为死代码·此处只两骰同屏。）
+    const doClashRoll = (): void => {
+      if (clashRolling || clashRevealed || !perfClash) return;
+      clashRolling = true; clearClashTimers();
+      const e = perfClash; const tgtA = e.rollA ?? 0, tgtB = e.rollB ?? 0; // 各自掷值（数据已定·动画只是滚到它）
+      clashRevealed = true; coachDid('roll'); mounted?.update(); syncCoach(); // 结果落 DOM（被掷骰浮层盖住·撤层即见）+ 掷骰引导毕业
+      playSfx('select');
+      const ov = document.createElement('div'); ov.style.cssText = 'position:fixed;inset:0;z-index:320;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:22px;pointer-events:none;background:radial-gradient(circle at center,rgba(8,10,15,.55),rgba(6,8,12,.82))';
+      ov.innerHTML = `<div style="font:800 22px/1 'Rajdhani',sans-serif;color:#e8cd82;letter-spacing:.18em;text-shadow:0 0 24px rgba(232,205,138,.8)">各自掷战力骰</div>
+        <div style="display:flex;align-items:center;gap:48px;">
+          <div style="display:flex;flex-direction:column;align-items:center;gap:8px;"><div style="font-size:84px;animation:g-die-shake .5s ease-in-out infinite;filter:drop-shadow(0 6px 16px rgba(255,122,69,.5))">🎲</div><div data-roll-m style="font-family:'Silkscreen',monospace;font-size:60px;font-weight:700;color:#ff7a45;text-shadow:0 0 28px rgba(255,122,69,.9),0 4px 14px rgba(0,0,0,.9)">0</div><div style="font:700 13px/1 'Noto Serif SC',serif;color:#ff7a45">我方 1~${e.a.pEff}</div></div>
+          <div style="font:800 40px/1 'Rajdhani',sans-serif;color:#fff;text-shadow:0 0 30px rgba(255,80,40,.8)">VS</div>
+          <div style="display:flex;flex-direction:column;align-items:center;gap:8px;"><div style="font-size:84px;animation:g-die-shake .5s ease-in-out infinite .12s;filter:drop-shadow(0 6px 16px rgba(58,134,212,.5))">🎲</div><div data-roll-f style="font-family:'Silkscreen',monospace;font-size:60px;font-weight:700;color:#5aa0e6;text-shadow:0 0 28px rgba(58,134,212,.9),0 4px 14px rgba(0,0,0,.9)">0</div><div style="font:700 13px/1 'Noto Serif SC',serif;color:#5aa0e6">敌方 1~${e.b.pEff}</div></div>
+        </div>`;
+      document.body.appendChild(ov);
+      const mEl = ov.querySelector('[data-roll-m]') as HTMLElement | null; const fEl = ov.querySelector('[data-roll-f]') as HTMLElement | null;
+      const finish = (): void => { if (!ov.isConnected) return; ov.remove(); clashRolling = false; if (mEl) mEl.textContent = String(tgtA); if (fEl) fEl.textContent = String(tgtB); playSfx('clashReveal'); playSfx(e.aWins ? 'clashWin' : 'clashLose'); if (e.lastStand) { log(`🛡 死战不退发作：敌主将【${aiName}】首负不亡·残喘退守 1 格`); showBanner('🛡 死战不退 · 敌主将首负不亡', 1700); } mounted?.update(); };
+      if (typeof requestAnimationFrame !== 'function') { finish(); return; } // 无头环境：直接揭晓
+      const STEPS = 40; let step = 0; // 帧计数驱动（不依赖 wall-clock·有界·测试不挂）·两骰各自 ease-out 滚到掷值
+      const tick = (): void => {
+        step += 1; const t = Math.min(1, step / STEPS); const k = 1 - Math.pow(1 - t, 3);
+        if (mEl) mEl.textContent = String(Math.max(tgtA > 0 ? 1 : 0, Math.round(k * tgtA)));
+        if (fEl) fEl.textContent = String(Math.max(tgtB > 0 ? 1 : 0, Math.round(k * tgtB)));
+        if (step % 3 === 0) playSfx('select');
+        if (t < 1) requestAnimationFrame(tick); else window.setTimeout(finish, 360);
+      };
+      requestAnimationFrame(tick);
+    };
     // 逐场掷命特写：3D 飞入 → 停留 → **玩家点「看明白了」才演下一场/收场**（owner 2026-06-20：不能自动关·要看清为什么胜败）。
     const playPerf = (onDone: () => void): void => {
       if (perfQueue.length === 0) { perfClash = null; perfResume = null; mounted?.update(); syncCoach(); onDone(); return; }
@@ -452,11 +479,11 @@ export function mount(container: HTMLElement, shell?: { exit?: () => void }): ()
         if (s.nearDef) parts.push(`固守+${s.nearDef}`);
         return parts.length > 1 ? `${parts.join(' ')} = ${s.pEff}` : `${s.pEff}`;
       };
-      log(`⚔对决[${LANE_NM[e.lane] ?? e.lane}] 我 ${e.a.rank}${SUITNM2[e.a.suit] ?? ''}(战力 ${pBreak(e.a)}) vs 敌 ${e.b.rank}${SUITNM2[e.b.suit] ?? ''}(战力 ${pBreak(e.b)}) ｜战力 ${e.a.pEff}:${e.b.pEff}（高者胜）→ ${e.aWins ? '我胜' : '敌胜'}`);
+      log(`⚔对决[${LANE_NM[e.lane] ?? e.lane}] 我 ${e.a.rank}${SUITNM2[e.a.suit] ?? ''}(战力 ${pBreak(e.a)}) vs 敌 ${e.b.rank}${SUITNM2[e.b.suit] ?? ''}(战力 ${pBreak(e.b)}) ｜各掷战力骰 我[1~${e.a.pEff}]→${e.rollA} vs 敌[1~${e.b.pEff}]→${e.rollB}（大者胜·预报${Math.round(e.winrate * 100)}%）→ ${e.aWins ? '我胜' : '敌胜'}`);
       // 先演 ~2s「哪两张牌即将交战」前奏 → 再切对决特写（owner 2026-06-21）
       showClashCue(e, () => {
         perfClash = e;
-        clashRevealed = true; // owner 2026-07-01 确定制：无掷骰→进特写即揭晓（战力高者胜·可预测）·玩家看明细后点「继续」
+        clashRevealed = false; clashRolling = false; // owner 2026-07-01「各自掷战力骰」：进特写先藏掷值·等玩家点「掷命」→ 两骰同屏各掷自己战力范围 → 揭晓
         perfResume = () => { perfResume = null; clearClashTimers(); playPerf(onDone); }; mounted?.update(); syncCoach(); // 引导：特写中隐
       });
     };
@@ -539,8 +566,9 @@ export function mount(container: HTMLElement, shell?: { exit?: () => void }): ()
       },
       endTurn: commitEndTurn,
       setTheme: (t) => { theme = t; },
-      clashConfirm: () => { // owner 2026-07-01 确定制：看清战力明细后点「继续」→ 一步步演结算（先谁死·再幸存者头顶「战力对折 −N」）→ perfResume
-        clearClashTimers(); coachDid('roll'); // 看明白确定制对决 → 毕业最后一步引导
+      clashConfirm: () => { // owner 2026-07-01：未掷→先掷两骰(各掷自己战力范围)；已揭晓→点「继续」一步步演结算（先谁死·再幸存者头顶「战力对折 −N」）→ perfResume
+        if (perfClash && !clashRevealed) { doClashRoll(); return; } // 各自掷战力骰（owner 2026-07-01·两骰同屏）
+        clearClashTimers();
         if (!perfClash) { const r = perfResume; if (r) r(); return; }
         playSfx('confirm'); const e = perfClash;
         // 一步步清晰（owner 2026-07-01「结算表现要一步步·先表现出谁死·再把幸存者减多少战力写在头上」）：
@@ -558,7 +586,7 @@ export function mount(container: HTMLElement, shell?: { exit?: () => void }): ()
         }, 520);
         window.setTimeout(() => { const r = perfResume; if (r) r(); }, 1180); // 给「谁死→再对折」两拍演出窗口，再续下一场
       },
-      clashRoll: () => { const r = perfResume; if (r) r(); }, // 掷骰已退役（owner 2026-07-01）→ 兜底当「继续」处理
+      clashRoll: () => doClashRoll(), // 各自掷战力骰（owner 2026-07-01·两骰同屏各掷自己战力范围）
       goBack: () => {
         if (tb.winner !== 'pending') { showLobby(); return; }
         // 数据驱动 UI 采纳试点（用引擎 components/LayoutNode 替手写 innerHTML）：确认框 = LayoutNode 数据树，mountUI 是固定解释器。

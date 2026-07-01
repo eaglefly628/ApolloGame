@@ -18,7 +18,7 @@ export const BATTLE_COACH: readonly BattleCoachStep[] = [
   { flag: 'seen_combat_end2', anchor: 'combat-end', text: '👉 再点【结束回合】，进入下一轮。', on: 'endturn' },
   { flag: 'seen_combat_deploy', anchor: 'combat-deploy', text: '👉 【放牌】：先点一张兵牌、再点一路（上/中/下）部署。按点数花源泉——先放点数小的兵（2~4 免费、5~7 收 1 费）。', on: 'deploy' },
   { flag: 'seen_combat_end3', anchor: 'combat-end', text: '👉 再点【结束回合】：兵沿路前进，前锋相遇（碰撞）就触发【绝命对决】。', on: 'endturn' },
-  { flag: 'seen_combat_roll', anchor: 'combat-roll', text: '👉 前锋相遇进入【绝命对决】：战力高者胜（确定·可预测）。胜者留场续战、每胜战力对折；看明白就点【继续】——毕业啦！', on: 'roll' },
+  { flag: 'seen_combat_roll', anchor: 'combat-roll', text: '👉 前锋相遇进入【绝命对决】：点【🎲掷命】——双方各掷自己战力范围内的骰（战力越高掷得越高），大者胜。胜者留场续战、每胜战力对折；看明白就毕业啦！', on: 'roll' },
 ];
 
 // 第一条未看过的引导步（全看过 → null）。needsTengang 步仅当手里真有天罡可打时才出（无 → 跳过·不卡死）。

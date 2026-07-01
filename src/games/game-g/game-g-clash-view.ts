@@ -44,7 +44,7 @@ export function clashToTurnView(ev: ClashEvent, tgName: (id: string) => string =
   const rows = (c: ClashEvent['a'], isMine: boolean): [string, number][] => powerRows(c, isMine, tgName, inlays);
   // 额外效果（owner 2026-06-21「还有额外的效果」）：非数值、却左右这场胜负的特殊裁定——平局如何裁定 + 战胜硬币（只预告·不剧透）。
   const extras: string[] = [];
-  if (ev.tie) extras.push(ev.tie === 'points' ? '⚖ 战力相等 → 点数大者胜' : ev.tie === 'stamina' ? '⚖ 战力·点数皆同 → 续航高者胜' : '⚖ 三者全同 → 重掷定生死');
+  if (ev.tie) extras.push(ev.tie === 'power' ? '⚖ 掷平 → 战力高者胜' : ev.tie === 'points' ? '⚖ 掷平·战力相等 → 点数大者胜' : ev.tie === 'stamina' ? '⚖ 掷平·战力点数皆同 → 续航高者胜' : '⚖ 掷平·三者全同 → 先手判 Boss');
   // v2（owner 2026-06-29）：胜者留场续战 + 每胜疲劳战损（累减战力·弱兵车轮能磨强兵）；连胜满则光荣回库 + 全额返还泉水。
   const w = ev.aWins ? ev.a : ev.b; const wn = SUITNAME[lc2(w.suit)] + w.rank;
   if (ev.warLoss != null && ev.warLoss > 0) {
@@ -56,6 +56,7 @@ export function clashToTurnView(ev: ClashEvent, tgName: (id: string) => string =
     laneName: ['上路', '中路', '下路'][ev.lane] ?? '路',
     mine: cardv(ev.a, ev.aWins), foe: cardv(ev.b, !ev.aWins, ev.lastStand), // foe(=敌主将)死战不退 → 特写改显"死战不退"而非误导的"阵亡"
     oddsMine: Math.round(ev.winrate * 100), rollPct: Math.round(ev.roll * 100),
+    rollMine: ev.rollA, rollFoe: ev.rollB, // 各自掷战力骰的掷值（owner 2026-07-01·特写两骰同屏揭晓）
     bonusMine: rows(ev.a, true), bonusFoe: rows(ev.b, false),
     pEffMine: ev.a.pEff, pEffFoe: ev.b.pEff, extras,
   };

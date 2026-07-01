@@ -7,7 +7,7 @@
 // 确定性：单一 seeded PRNG（同 live-combat·掷命点同序消费）；同输入流 → 同 turnHash、可回放、可喂仿真台。纯 game-side、零引擎。
 //
 // 战斗屏：回合制走 turn-battle-screen.ts（live）。旧实时核（showMatch + battle-screen.ts 渲染器）已**退役删除**（2026-06-21）；本模块仍从 live-combat.ts 复用 cardStamina/掷命核/TengangFx 等纯件。
-import { pEff, cardPoints, P_MIN, P_MAX } from './clash-resolve.js';
+import { pEff, cardPoints, P_MIN, P_MAX, rollDie, rollWinProb } from './clash-resolve.js';
 import { nextRandom } from '@atom-skills/index.js';
 import type { RandomSeed } from '@engine/protocol/components.js';
 import { cardStamina, NO_TENGANG, type TengangFx, type ClashEvent, type ClashCard } from './combat-types.js';
@@ -345,28 +345,36 @@ function clashEval(b: TurnBattle, li: number): ClashEval | null {
   return { fa, fb, ea, eb, dishaEdge, ba, bb };
 }
 
-// 确定制裁定（owner 2026-07-01）：有效战力高者胜；全平走阶梯（点数→续航→先手[地煞]判 Boss/否则玩家胜）。纯确定·无 RNG。
-function decideClash(b: TurnBattle, ev: ClashEval): { aWins: boolean; tie: ClashEvent['tie'] } {
+// 掷平裁定（owner 2026-07-01·两边掷出同数时才用）：战力高者胜 → 点数 → 续航 → 先手(地煞·长枪方阵)判 Boss / 否则玩家。纯确定。
+function decideTie(b: TurnBattle, ev: ClashEval): { aWins: boolean; tie: ClashEvent['tie'] } {
   const { fa, fb, ea, eb } = ev;
-  if (ea !== eb) return { aWins: ea > eb, tie: null };
+  if (ea !== eb) return { aWins: ea > eb, tie: 'power' };
   if (fa.points !== fb.points) return { aWins: fa.points > fb.points, tie: 'points' };
   if (fa.staminaLeft !== fb.staminaLeft) return { aWins: fa.staminaLeft > fb.staminaLeft, tie: 'stamina' };
-  return { aWins: !b.dishaB.firstStrike, tie: 'roll' }; // 三者全同 → 先手(地煞·长枪方阵)判 Boss 胜·否则玩家胜（确定·无 RNG）
+  return { aWins: !b.dishaB.firstStrike, tie: 'roll' };
 }
 
-// 玩家(a)视角·当前若开战是否必胜（确定制·1=必胜 0=必负）·纯读；无前锋相遇→null。供 UI「掷命预报」。
+// 玩家(a)视角·当前若开战的胜率(0~1)·纯读不掷骰（owner 2026-07-01「各自掷战力骰」）：
+//   双方各掷 [1,战力] 比大小 → P(玩家掷值 > 敌掷值) + 掷平时按 decideTie 归给胜方。无前锋相遇→null。供 UI「掷命预报」。
 export function clashOdds(b: TurnBattle, li: number): number | null {
   const ev = clashEval(b, li); if (!ev) return null;
-  return decideClash(b, ev).aWins ? 1 : 0;
+  const { pGreater, pEqual } = rollWinProb(ev.ea, ev.eb);
+  return pGreater + (decideTie(b, ev).aWins ? pEqual : 0); // 掷平归属方吃下 pEqual
 }
 
-// 一路前锋相遇 → 确定制对决（owner 2026-07-01·战力高者胜·无掷骰/掷币；胜者留场·每胜战力对折；连胜满 WIN_CAP 光荣回库）。
+// 一路前锋相遇 → 各自掷战力骰对决（owner 2026-07-01）：双方各掷 [1,有效战力]（含天罡/士气/地煞/连胜对折）比大小·大者胜；
+//   掷平走 decideTie（战力→点数→续航→先手）。胜者留场·每胜战力对折；连胜满 WIN_CAP 光荣回库。掷硬币已退役为死代码。
+//   TODO（owner 2026-07-01「还可以有额外 Action/Buff 干涉掷骰」）：改掷牌(方片×2·意大利×1.2…)在此处 rollA/rollB 后 applyRollMods —— 见 game-g-clash-fate-roll-vision.md（防数据爆炸护栏）。
 function resolveClash(b: TurnBattle, li: number): void {
   const ev = clashEval(b, li); if (!ev) return;
   const lane = b.lanes[li]; const { fa, fb, ea, eb, dishaEdge, ba, bb } = ev;
-  const { aWins, tie } = decideClash(b, ev);
+  const rollA = rollDie(ea, b.rng), rollB = rollDie(eb, b.rng); // 各自掷各自的：我掷 [1,ea]·敌掷 [1,eb]（消费 rng 两次·顺序固定→hash 稳）
+  let aWins: boolean, tie: ClashEvent['tie'] = null;
+  if (rollA !== rollB) aWins = rollA > rollB; // 大者胜
+  else { const d = decideTie(b, ev); aWins = d.aWins; tie = d.tie; } // 掷平 → 阶梯裁定
+  const wr = clashOdds(b, li) ?? (aWins ? 1 : 0); // 预报胜率(留档·特写显)
   const tgBreakOf = (sd: TurnSide, u: TurnUnit, sk: 'a' | 'b'): [string, number][] => sd.castFx.map(({ id, fx }) => [id, Math.round(tgContribOf(u, lane, sk, fx))] as [string, number]).filter((r) => r[1] !== 0); // 逐张天罡溯源
-  b.lastClash = { tick: b.turn, lane: li, winrate: aWins ? 1 : 0, roll: 0, aWins, tie, winStays: true, warLoss: 0, winStreak: 0, a: { id: fa.id, rank: fa.rank, suit: fa.suit, general: fa.general, points: fa.points, buff: fa.buff, morale: ba.shift, tengang: ba.tg, pEff: ea, tgBreak: tgBreakOf(b.a, fa, 'a'), nearDef: ba.nearDef, wins: fa.wins }, b: { id: fb.id, rank: fb.rank, suit: fb.suit, general: fb.general, points: fb.points, buff: fb.buff, morale: bb.shift, tengang: bb.tg, pEff: eb, tgBreak: tgBreakOf(b.b, fb, 'b'), nearDef: bb.nearDef, dishaEdge, wins: fb.wins } }; // winrate 确定 1/0·roll=0(掷骰退役)；winStays 恒 true(胜者留场)；warLoss/winStreak 下方填
+  b.lastClash = { tick: b.turn, lane: li, winrate: wr, roll: 0, rollA, rollB, aWins, tie, winStays: true, warLoss: 0, winStreak: 0, a: { id: fa.id, rank: fa.rank, suit: fa.suit, general: fa.general, points: fa.points, buff: fa.buff, morale: ba.shift, tengang: ba.tg, pEff: ea, tgBreak: tgBreakOf(b.a, fa, 'a'), nearDef: ba.nearDef, wins: fa.wins }, b: { id: fb.id, rank: fb.rank, suit: fb.suit, general: fb.general, points: fb.points, buff: fb.buff, morale: bb.shift, tengang: bb.tg, pEff: eb, tgBreak: tgBreakOf(b.b, fb, 'b'), nearDef: bb.nearDef, dishaEdge, wins: fb.wins } }; // rollA/rollB=双方掷值·winrate=预报胜率·winStays 恒 true(胜者留场)
   b.clashLog.push(b.lastClash); // 流水（驱动层逐场抽特写）
   b.clashSeq += 1;
   if (!aWins) b.bossWinStreak += 1; // 九战九捷：Boss 胜累积

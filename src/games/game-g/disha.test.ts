@@ -22,8 +22,9 @@ const clashWr = (disha: string[], place: (b: TurnBattle) => void = (b) => { b.la
   place(b); activatePlayable(b); endTurn(b); endTurn(b); // 双方放置完(可施放地煞先打出) → 行动阶段两军逼近 → 相邻掷命，wr 已含地煞调整
   return b.lastClash?.winrate ?? -1;
 };
-// 确定制（owner 2026-07-01·替 logistic 胜率骰）：地煞胜率 edge 折成 Boss 确定战力(dishaEdge)、nearBase 折 nearDef、先手破平判 Boss。
-// 验收改为「同战力对峙(平局默认玩家胜) → 加了地煞 → Boss 反超取胜」+ dishaEdge 拆解可见。
+// 各自掷战力骰（owner 2026-07-01）：地煞胜率 edge 折成 Boss 确定战力(dishaEdge)/nearDef → 抬 Boss 战力 → 抬 Boss 掷骰范围 → 压低玩家预报胜率。
+// 掷骰随机 → 单场 aWins 与种子相关（不可断言）；改断言**确定的预报胜率 clashOdds**（地煞越狠·玩家胜率越低）+ 折的战力拆解 dishaEdge/nearDef。
+const oddsWith = (disha: string[], place: (b: TurnBattle) => void): number => { const b = initTurnBattle({ seed: 5, disha }); place(b); activatePlayable(b); return clashOdds(b, 0) ?? -1; };
 const clashLC = (disha: string[], place: (b: TurnBattle) => void) => { const b = initTurnBattle({ seed: 5, disha }); place(b); activatePlayable(b); endTurn(b); endTurn(b); return b.lastClash!; };
 const tie9 = (x: TurnBattle): void => { x.lanes[0].a.push(u('a0', '9', 4)); x.lanes[0].b.push(u('b0', '9', 5)); }; // 9v9 同战力对峙
 
@@ -41,23 +42,22 @@ describe('Game G · 地煞（doc23 §八 关1-5 · 15 张 · 甲实装）', () =
   it('🟢 温泉关死守：Boss 大本营 2 血 + 隘口(贴家 2 格)守军 +1 战力（§六重设：2→1）', () => {
     const b = initTurnBattle({ seed: 1, disha: ['thermopylae'] });
     expect(b.homeB).toBe(2); expect(b.homeA).toBe(3); // 薄血死守(2<普通3)·靠隘口+1战力固守
-    // 确定制：Boss 兵在自家隘口(slot 7,8) → 守军 +1 战力进拆解(nearDef) → 同点(9v9)对峙下 Boss 反超取胜；同位无地煞则平局判玩家胜。
-    const inGap = clashLC(['thermopylae'], (x) => { x.lanes[0].a.push(u('a0', '9', 7)); x.lanes[0].b.push(u('b0', '9', 8)); });
-    const noGap = clashLC([], (x) => { x.lanes[0].a.push(u('a0', '9', 7)); x.lanes[0].b.push(u('b0', '9', 8)); });
-    expect(inGap.b.nearDef).toBe(1);   // 守军 +1 战力进 Boss 战力拆解
-    expect(inGap.aWins).toBe(false);   // Boss 10 > 玩家 9 → Boss 胜
-    expect(noGap.aWins).toBe(true);    // 无隘口·平局 → 玩家胜(默认)
+    // Boss 兵在自家隘口(slot 7,8) → 守军 +1 战力进拆解(nearDef) → 抬 Boss 掷骰范围 → 压低玩家预报胜率；同位无地煞作对比。
+    const gapPlace = (x: TurnBattle): void => { x.lanes[0].a.push(u('a0', 'K', 7)); x.lanes[0].b.push(u('b0', '9', 8)); };
+    expect(clashLC(['thermopylae'], gapPlace).b.nearDef).toBe(1); // 守军 +1 战力进 Boss 战力拆解
+    expect(oddsWith(['thermopylae'], gapPlace)).toBeLessThan(oddsWith([], gapPlace)); // 隘口守军 → 玩家胜率被压低
   });
 
-  it('🟢 挟天子/破釜沉舟/霸王之勇：全军/主将 +胜率 → 折成 Boss 确定战力(dishaEdge)·反超玩家', () => {
-    // 确定制：同战力(9v9)对峙·平局默认玩家胜；加全军 +胜率地煞 → 折成 dishaEdge 战力 → Boss 反超。
-    expect(clashLC([], tie9).aWins).toBe(true);            // 无地煞·平局 → 玩家胜
-    expect(clashLC(['mandate'], tie9).aWins).toBe(false);  // 挟天子 +5% → dishaEdge ≥1 → Boss 反超
-    expect(clashLC(['burnboats'], tie9).aWins).toBe(false);// 破釜沉舟 +20%
-    expect(clashLC(['burnboats'], tie9).b.dishaEdge!).toBeGreaterThan(clashLC(['mandate'], tie9).b.dishaEdge!); // +20% 折的战力 > +5%
+  it('🟢 挟天子/破釜沉舟/霸王之勇：全军/主将 +胜率 → 折成 Boss 确定战力(dishaEdge)·压低玩家掷骰胜率', () => {
+    // 全军 +胜率地煞 → 折成 dishaEdge 战力 → 抬 Boss 掷骰范围 → 玩家预报胜率被压低；折的战力越多压得越狠。
+    expect(oddsWith(['mandate'], tie9)).toBeLessThan(oddsWith([], tie9));       // 挟天子 +5%
+    expect(oddsWith(['burnboats'], tie9)).toBeLessThan(oddsWith([], tie9));     // 破釜沉舟 +20%
+    expect(oddsWith(['burnboats'], tie9)).toBeLessThan(oddsWith(['mandate'], tie9)); // +20% 比 +5% 更狠
+    expect(clashLC(['burnboats'], tie9).b.dishaEdge!).toBeGreaterThan(clashLC(['mandate'], tie9).b.dishaEdge!); // 折的战力 +20% > +5%
     // 霸王之勇 +40% 仅对主将 → 需 Boss 主将
     const gen = (x: TurnBattle): void => { x.lanes[0].a.push(u('a0', '9', 4)); x.lanes[0].b.push(u('b0', '9', 5, { general: true })); };
-    expect(clashLC(['overlord'], gen).b.dishaEdge!).toBeGreaterThan(0); // 主将享 +40% → dishaEdge>0
+    expect(oddsWith(['overlord'], gen)).toBeLessThan(oddsWith([], gen));  // 主将享 +40%
+    expect(clashLC(['overlord'], gen).b.dishaEdge!).toBeGreaterThan(0);   // 折成 dishaEdge>0
   });
 
   it('🟡 斯巴达方阵：Boss 兵 8 邻越多·掷命加成越高（封顶 +12%·§六 24→12）', () => {
@@ -66,14 +66,14 @@ describe('Game G · 地煞（doc23 §八 关1-5 · 15 张 · 甲实装）', () =
     expect(clashWr(['phalanx'], packed)).toBeLessThan(clashWr(['phalanx'], lone)); // 有邻更强
   });
 
-  it('🟡 九战九捷：Boss 连胜累积 +4%/胜（封顶 +20%·§六 5/30→4/20）→ streak 越高折的战力越多', () => {
-    const at = (streak: number) => { const b = initTurnBattle({ seed: 5, disha: ['winstreak'] }); tie9(b); activatePlayable(b); b.bossWinStreak = streak; endTurn(b); endTurn(b); return b.lastClash!; };
-    expect(at(4).aWins).toBe(false); // streak 高 → dishaEdge 战力 → Boss 反超同战力玩家
-    expect(at(0).aWins).toBe(true);  // 无连胜·平局 → 玩家胜
-    expect(at(4).b.dishaEdge!).toBeGreaterThan(at(0).b.dishaEdge ?? 0);
-    // Boss 胜一场 → streak +1
-    const b = initTurnBattle({ seed: 9 }); b.lanes[0].a.push(u('a0', '2', 4)); b.lanes[0].b.push(u('b0', 'A', 5, { buff: 20 })); // Boss 碾压必胜
-    endTurn(b); endTurn(b); expect(b.lastClash!.aWins).toBe(false); expect(b.bossWinStreak).toBe(1);
+  it('🟡 九战九捷：Boss 连胜累积 +4%/胜（封顶 +20%·§六 5/30→4/20）→ streak 越高折的战力越多·玩家越难', () => {
+    const oddsAt = (streak: number): number => { const b = initTurnBattle({ seed: 5, disha: ['winstreak'] }); tie9(b); activatePlayable(b); b.bossWinStreak = streak; return clashOdds(b, 0) ?? -1; };
+    expect(oddsAt(4)).toBeLessThan(oddsAt(0)); // streak 高 → dishaEdge 战力 → 压低玩家预报胜率
+    const edgeAt = (streak: number): number => { const b = initTurnBattle({ seed: 5, disha: ['winstreak'] }); tie9(b); activatePlayable(b); b.bossWinStreak = streak; endTurn(b); endTurn(b); return b.lastClash!.b.dishaEdge ?? 0; };
+    expect(edgeAt(4)).toBeGreaterThan(edgeAt(0));
+    // Boss 胜一场 → streak +1（掷骰有随机 → 断言与本场结果一致：Boss 赢则 +1·输则 0）
+    const b = initTurnBattle({ seed: 9 }); b.lanes[0].a.push(u('a0', '2', 4)); b.lanes[0].b.push(u('b0', 'A', 5, { buff: 20 })); // Boss 战力碾压(掷高概率极大)
+    endTurn(b); endTurn(b); expect(b.bossWinStreak).toBe(b.lastClash!.aWins ? 0 : 1);
   });
 
   it('🟡 锤砧：你前锋被 Boss 兵左右(slot±1)夹住 → 你掷命 −6%（§六 15→6）', () => {
@@ -94,12 +94,13 @@ describe('Game G · 地煞（doc23 §八 关1-5 · 15 张 · 甲实装）', () =
     expect(b2.batteryLane).toBe(-1); // 非 4 倍数回合不压
   });
 
-  it('🟡 长枪方阵·先手：全平局判 Boss 胜（他先手·确定制无掷骰）', () => {
-    const b = initTurnBattle({ seed: 5 });
-    b.dishaB = { ...NO_DISHA, firstStrike: true }; // 仅先手·无胜率 edge → 纯测「全平局判 Boss」这一支
-    b.lanes[0].a.push(u('a0', '9', 4)); b.lanes[0].b.push(u('b0', '9', 5)); // 同点同续航 → 全平
-    endTurn(b); endTurn(b);
-    expect(b.lastClash!.tie).toBe('roll'); expect(b.lastClash!.aWins).toBe(false); // 全平 + 先手 → Boss 胜（确定·无 RNG）
+  it('🟡 长枪方阵·先手：掷平判 Boss 胜（他先手）→ 玩家少吃掷平那份胜率', () => {
+    // 各自掷战力骰下·先手体现在「掷平如何归属」：无先手 → 掷平归玩家(默认)；有先手 → 掷平归 Boss。
+    // 同战力(9v9) → 存在掷平概率 pEqual → 先手把这份胜率从玩家挪给 Boss → 玩家预报胜率严格更低（确定·可断言）。
+    const eq = (x: TurnBattle): void => { x.lanes[0].a.push(u('a0', '9', 4)); x.lanes[0].b.push(u('b0', '9', 5)); };
+    const bF = initTurnBattle({ seed: 5 }); bF.dishaB = { ...NO_DISHA, firstStrike: true }; eq(bF); // 仅先手·无胜率 edge
+    const bN = initTurnBattle({ seed: 5 }); eq(bN);
+    expect(clashOdds(bF, 0)!).toBeLessThan(clashOdds(bN, 0)!); // 先手 → 掷平判 Boss → 玩家胜率低一截(=pEqual)
   });
 
   it('🟡 死战不退：Boss 主将首负不亡·残喘退 1 格·二次才真死（关1 仅主将）', () => {

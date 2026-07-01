@@ -35,24 +35,25 @@ describe('Game G · turn-battle-screen（doc24 回合制战斗屏 · 忠实端�
     await expect(html).toMatchFileSnapshot('./__frames__/turn-board.html');
   });
 
-  it('绝命对决特写帧（确定制·战力高者胜 + 我方/敌方战力对比 + 点数/经营/天罡/士气 明细 + 战损对折）匹配 golden', async () => {
+  it('绝命对决特写帧（各自掷战力骰·两骰掷值对比 + 我方/敌方战力明细 + 战损对折）匹配 golden', async () => {
     const clash: TurnClashView = {
       laneName: '中路',
       mine: { rank: 'A', suit: 's', name: '黑桃A', zod: '虎', won: true },
       foe: { rank: '9', suit: 'h', name: '红桃9', zod: '蛇', won: false },
-      oddsMine: 100, rollPct: 0,
+      oddsMine: 62, rollPct: 0, rollMine: 22, rollFoe: 9, // 各自掷战力骰：我掷 22(范围[1,30]) > 敌掷 9(范围[1,25]) → 我胜
       bonusMine: [['点数(基础)', 14], ['经营(养成)', 22], ['天罡(法术)', 18], ['士气(主将)', 30], ['　战力上限 · 封顶 30（超出截断）', -54]],
       bonusFoe: [['点数(基础)', 9], ['经营(养成)', 10], ['天罡(法术)', 6], ['士气(主将)', 0]],
       pEffMine: 30, pEffFoe: 25,
-      extras: ['⚖ 战力相等 → 点数大者胜', '⚔ 黑桃A 战胜（第 1 连胜）→ 疲劳战损：战力对折 −15（−50%）· 留场续战·越打越弱'],
+      extras: ['⚖ 掷平 → 战力高者胜', '⚔ 黑桃A 战胜（第 1 连胜）→ 疲劳战损：战力对折 −15（−50%）· 留场续战·越打越弱'],
     };
     const html = renderTurnBattleDoc(buildTurnBattleView(setup(), { theme: 'onyx', tengangName: nm, clash }));
-    expect(html).toContain('绝命对决'); expect(html).not.toContain('掷命对决'); // 确定制：去掷骰/掷币命名（owner 2026-07-01）
+    expect(html).toContain('绝命对决'); expect(html).not.toContain('掷命对决'); // 命名：绝命对决（非旧掷命对决）
     expect(html).toContain('我方加成明细'); expect(html).toContain('敌方加成明细');
     expect(html).toContain('额外效果'); expect(html).toContain('封顶 30'); // 来源清晰：额外效果区 + 封顶对齐行（owner 2026-06-21）
-    expect(html).toContain('战力高者胜'); expect(html).not.toContain('CoinFlip'); expect(html).not.toContain('掷命'); // 无掷骰/掷币（owner 2026-07-01 确定制）
+    expect(html).toContain('掷命预报'); expect(html).not.toContain('CoinFlip'); // 各自掷战力骰·揭晓无掷币（owner 2026-07-01）
+    expect(html).toContain('🎲 22'); expect(html).toContain('掷高'); // 两骰掷值对比 + 掷高者胜（owner 2026-07-01）
     expect(html).toContain('战力对折'); // 战损：写清对折削减（owner 2026-07-01）
-    expect(html).toContain('留场续战'); expect(html).toContain('阵亡 · 离场'); // 胜者留场 / 败者离场（替原正反面硬币措辞）
+    expect(html).toContain('留场续战'); expect(html).toContain('阵亡 · 离场'); // 胜者留场 / 败者离场
     await expect(html).toMatchFileSnapshot('./__frames__/turn-clash.html');
   });
 

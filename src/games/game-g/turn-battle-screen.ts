@@ -127,7 +127,7 @@ export interface TurnGateView { idx: number; open: boolean; side: 'a' | 'b'; fro
 export interface TurnHandCardView { kind: 'pawn' | 'gang'; rank?: string; suit?: 's' | 'h' | 'd' | 'c'; name: string; power?: number; pts?: number; buff?: number; cost: number; zod?: string[]; rar: 'white' | 'green' | 'blue' | 'gold'; desc?: string; glyph?: string; selected?: boolean; dealt?: boolean; affordable?: boolean; general?: boolean; ench?: [string, number][] } // dealt=刚抽到的牌·飞入翻面入场动画(owner 2026-06-21)
 export interface TurnActionView { key: string; glyph: string; label: string; on: boolean; dim: boolean }
 export interface TurnClashCardView { rank: string; suit: 's' | 'h' | 'd' | 'c'; name: string; zod?: string; won: boolean; lastStand?: boolean } // lastStand：败者触发「死战不退·首负不亡」→ 显"死战不退"而非"阵亡"(owner 2026-06-21)
-export interface TurnClashView { laneName: string; mine: TurnClashCardView; foe: TurnClashCardView; oddsMine: number; rollPct: number; bonusMine: [string, number][]; bonusFoe: [string, number][]; pEffMine?: number; pEffFoe?: number; extras?: string[]; revealed?: boolean } // revealed=false：掷命前·藏命点/胜负·等玩家点骰（owner 2026-06-21）
+export interface TurnClashView { laneName: string; mine: TurnClashCardView; foe: TurnClashCardView; oddsMine: number; rollPct: number; rollMine?: number; rollFoe?: number; bonusMine: [string, number][]; bonusFoe: [string, number][]; pEffMine?: number; pEffFoe?: number; extras?: string[]; revealed?: boolean } // revealed=false：掷骰前·藏掷值/胜负·等玩家点骰（owner 2026-06-21）；rollMine/rollFoe=各自掷战力骰的掷值(owner 2026-07-01·两骰同屏·各掷 [1,自己战力])
 export interface TurnShaView { filled: boolean; name: string; rar: 'white' | 'green' | 'blue' | 'gold'; desc: string; used?: boolean }
 export interface TurnBattleView {
   theme: 'onyx' | 'brocade';
@@ -384,21 +384,31 @@ function clashNode(cv: TurnClashView): LayoutNode {
     props: {
       left: { rank: cv.mine.rank, suit: SUITG[cv.mine.suit], face: 'light' },
       right: { rank: cv.foe.rank, suit: SUITG[cv.foe.suit], face: 'light' },
-      label: revealed ? `${cv.pEffMine ?? cv.oddsMine} ⚔ ${cv.pEffFoe ?? foePct}` : '⚔', // 确定制：显双方战力对比(非胜率)·战力高者胜
+      label: revealed ? `${cv.rollMine ?? '?'} ⚔ ${cv.rollFoe ?? '?'}` : '⚔', // 各自掷战力骰：揭晓后显双方掷值对比（owner 2026-07-01）
       winner: revealed ? (cv.mine.won ? 'left' : 'right') : 'none',
     },
     layout: { anim: 'flyIn' },
   };
-  // 中央裁定（owner 2026-07-01 确定制·去掷骰/掷币）：直接标「战力高者胜」+ 胜方，无随机、玩家可确定预测。
-  const center: LayoutNode = { type: 'Panel', id: 'clash-center', props: { bare: true }, layout: { direction: 'column', gap: 6, align: 'center' }, children: [
-    { type: 'Label', id: 'clash-rule', props: { text: '战力高者胜', size: 'xs', color: 'sub', tracking: 1 } },
-    { type: 'Label', id: 'clash-winner', props: { text: revealed ? (cv.mine.won ? '◀ 我方胜' : '敌方胜 ▶') : '？', size: 'lg', color: revealed ? (cv.mine.won ? 'mine' : 'foe') : 'sub', bold: true } },
-  ] };
+  // 中央「各自掷战力骰」（owner 2026-07-01·各掷 [1,自己战力] 比大小）：掷前=范围 + 掷命钮；揭晓=两骰掷值对比 + 胜方。
+  const center: LayoutNode = revealed
+    ? { type: 'Panel', id: 'clash-center', props: { bare: true }, layout: { direction: 'column', gap: 6, align: 'center' }, children: [
+        { type: 'Panel', id: 'clash-dice', props: { bare: true }, layout: { direction: 'row', gap: 14, align: 'center', justify: 'center' }, children: [
+          { type: 'Label', id: 'clash-die-m', props: { text: `🎲 ${cv.rollMine ?? '?'}`, size: 'xxl', color: 'mine', bold: true, mono: true } },
+          { type: 'Label', id: 'clash-die-vs', props: { text: 'vs', size: 'sm', color: 'dim' } },
+          { type: 'Label', id: 'clash-die-f', props: { text: `${cv.rollFoe ?? '?'} 🎲`, size: 'xxl', color: 'foe', bold: true, mono: true } },
+        ] },
+        { type: 'Label', id: 'clash-winner', props: { text: cv.mine.won ? '◀ 我方掷高 · 胜' : '敌方掷高 · 胜 ▶', size: 'md', color: cv.mine.won ? 'mine' : 'foe', bold: true } },
+      ] }
+    : { type: 'Panel', id: 'clash-center', props: { bare: true }, layout: { direction: 'column', gap: 8, align: 'center' }, children: [
+        { type: 'Label', id: 'clash-range', props: { text: `各掷战力骰　我 1~${cv.pEffMine ?? '?'}　·　敌 1~${cv.pEffFoe ?? '?'}`, size: 'sm', color: 'sub' } },
+        { type: 'Button', id: 'clash-roll-btn', props: { label: '🎲 掷命', kind: 'hero', action: 'clash-roll' }, layout: { anchor: 'combat-roll', fx: [{ kind: 'pulse', ms: 1000 }] } },
+        { type: 'Label', id: 'clash-roll-hint', props: { text: '各自掷各自战力范围内的骰 · 点击掷命（不自动·慢慢看）', size: 'xs', color: 'sub' } },
+      ] };
   const oddsBar: LayoutNode = {
     type: 'Panel', id: 'clash-odds', props: { bare: true }, layout: { direction: 'row', gap: 8, align: 'center' }, children: [
-      { type: 'Label', id: 'clash-odds-m', props: { text: `战力 ${cv.pEffMine ?? cv.oddsMine}`, size: 'xl', color: 'mine', mono: true } },
-      { type: 'Label', id: 'clash-odds-mid', props: { text: '确定 · 战力高者胜', size: 'xs', color: 'sub' }, layout: { flex: 1 } },
-      { type: 'Label', id: 'clash-odds-f', props: { text: `战力 ${cv.pEffFoe ?? foePct}`, size: 'xl', color: 'foe', mono: true } },
+      { type: 'Label', id: 'clash-odds-m', props: { text: `${cv.oddsMine}%`, size: 'xl', color: 'mine', mono: true } },
+      { type: 'Label', id: 'clash-odds-mid', props: { text: '掷命预报 · 战力越高掷得越高', size: 'xs', color: 'sub' }, layout: { flex: 1 } },
+      { type: 'Label', id: 'clash-odds-f', props: { text: `${foePct}%`, size: 'xl', color: 'foe', mono: true } },
     ],
   };
   const breakdown: LayoutNode = {
@@ -439,7 +449,7 @@ function clashNode(cv: TurnClashView): LayoutNode {
         { type: 'Label', id: 'clash-foot-r', props: { text: `本场 ${cv.mine.won ? '我方胜' : '敌方胜'}｜${cv.laneName}前锋对决`, size: 'md', color: cv.mine.won ? 'ok' : 'danger', bold: true } },
         { type: 'Button', id: 'clash-ok', props: { label: '看明白了 · 继续 ▸', kind: 'hero', action: 'clash-ok' }, layout: { anchor: 'combat-roll' } },
       ] }
-    : { type: 'Label', id: 'clash-foot-pre', props: { text: '⚔ 绝命对峙 · 战力高者胜', size: 'md', color: 'gold', bold: true } });
+    : { type: 'Label', id: 'clash-foot-pre', props: { text: '⚔ 绝命对峙 · 各自掷战力骰定生死', size: 'md', color: 'gold', bold: true } });
   return {
     type: 'Panel', id: 'clash-panel', props: { accent: true, bg: 'radial-gradient(80% 70% at 50% 30%, #1c2940, #0e1828)' },
     layout: { direction: 'column', gap: 14, padding: 22, width: 760, chamfer: 16 },

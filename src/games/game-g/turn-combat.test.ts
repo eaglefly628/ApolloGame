@@ -113,19 +113,18 @@ describe('Game G · turn-combat（doc24 单机回合制 · A0 重构）', () => 
     expect(b.lanes[0].a.length).toBe(0); // 抵家后退场
   });
 
-  it('相邻遭遇 → 掷命对决（复用 clash-resolve）；战力相等按点数大者胜(确定性)', () => {
+  it('相邻遭遇 → 各自掷战力骰对决；掷平(战力都为1·必同掷) → 战力相等按点数大者胜(确定裁定)', () => {
     const b = initTurnBattle({ seed: 1 });
-    // A: 5 点 +9 buff = pEff 14；B: K(13) +1 buff = pEff 14 → 平 → 点数大者(K 13 > 5)胜 → A 阵亡。
-    b.lanes[0].a.push(unit('a0', '5', A_DEPLOY_SLOT, 9));
-    b.lanes[0].b.push(unit('b0', 'K', A_DEPLOY_SLOT + 2, 1)); // 敌前锋 2 格外
-    endTurn(b); endTurn(b); // 行动阶段：两军逼近 → 相邻 → 掷命
+    // 双方 pEff 都压到 1（掷骰恒 1→必掷平）→ 走掷平阶梯：战力相等 → 点数大者(K 13 > 5)胜 → A 阵亡。
+    b.lanes[0].a.push(unit('a0', '5', A_DEPLOY_SLOT, -4));      // 5−4 = pEff 1
+    b.lanes[0].b.push(unit('b0', 'K', A_DEPLOY_SLOT + 2, -12)); // K(13)−12 = pEff 1·敌前锋 2 格外
+    endTurn(b); endTurn(b); // 行动阶段：两军逼近 → 相邻 → 各自掷战力骰（都掷 1 → 平）
     expect(b.clashSeq).toBe(1);
-    expect(b.lastClash?.tie).toBe('points');
+    expect(b.lastClash?.tie).toBe('points'); // 掷平 → 战力相等 → 点数裁定
     expect(b.lastClash?.aWins).toBe(false);
     expect(b.lanes[0].a.length).toBe(0); // A 输 → 阵亡
-    // B 胜 → 战胜硬币定去留：人头留场 / 人面回牌库（owner 2026-06-21）
-    if (b.lastClash?.winStays) expect(b.lanes[0].b.length).toBe(1); // 人头 → 留场
-    else { expect(b.lanes[0].b.length).toBe(0); expect(b.b.pokerDeck.some((c) => c.id === 'b0')).toBe(true); } // 人面 → 回库
+    expect(b.lanes[0].b.length).toBe(1); // B 胜 → 留场续战（连胜 1 < WIN_CAP·winStays true）
+    expect(b.lastClash?.winStays).toBe(true);
   });
 
   it('unitPowerParts(⑥ 战力来源透明)：任意兵拆解 = 点数 + 经营 + 士气，且各源恰好加到 pEff', () => {
@@ -202,9 +201,9 @@ describe('Game G · turn-combat（doc24 单机回合制 · A0 重构）', () => 
     const b = initTurnBattle({ seed: 1 }); b.a.mana = 0;
     const w = unit('w', 'A', A_DEPLOY_SLOT); w.cost = 3; // A=14 点
     b.lanes[0].a.push(w);
-    b.lanes[0].b.push(unit('lz', '2', A_DEPLOY_SLOT + 1, 12)); // 2+12=pEff14 → 战力平·点数 A(14)>2 → A 必胜(确定)
+    b.lanes[0].b.push(unit('lz', '2', A_DEPLOY_SLOT + 1, -1)); // 2−1=pEff1 → 敌恒掷 1；w=A(14)掷[1,14]≥1·掷平也按战力 14>1 判 w → w 必胜(确定)
     const before = unitPowerParts(b, 'a', 0, w).pEff;           // 对折前有效战力 = 14
-    endTurn(b); // 我方推进 → 确定制对决 → w 胜
+    endTurn(b); // 我方推进 → 各自掷战力骰 → w 胜
     expect(b.lastClash?.aWins).toBe(true);
     expect(b.lanes[0].a.some((c) => c.id === 'w')).toBe(true);   // 胜者留场（不回库·战场不空）
     expect(w.wins).toBe(1);                                      // 连胜 +1
@@ -213,11 +212,11 @@ describe('Game G · turn-combat（doc24 单机回合制 · A0 重构）', () => 
     expect(b.lastClash?.winStays).toBe(true);                    // 未满连胜上限 → 留场
   });
 
-  it('v2 连胜满 WIN_CAP → 光荣回库 + 全额返还泉水（owner 2026-06-29·防强兵无限霸场）', () => {
+  it('连胜满 WIN_CAP → 光荣回库 + 全额返还泉水（owner 2026-06-29·防强兵无限霸场）', () => {
     const b = initTurnBattle({ seed: 1 }); b.a.mana = 0;
     const w = unit('w', 'A', A_DEPLOY_SLOT); w.cost = 3; w.wins = WIN_CAP - 1; // 已差一场满上限·本场达成（已连胜 2 场 → 战力对折两次 14→3）
     b.lanes[0].a.push(w);
-    b.lanes[0].b.push(unit('lz', '2', A_DEPLOY_SLOT + 1)); // pEff 2 < 对折后的 w(3) → w 仍胜 → 达成第 3 连胜
+    b.lanes[0].b.push(unit('lz', '2', A_DEPLOY_SLOT + 1, -1)); // 2−1=pEff1 → 敌恒掷 1；w=3 掷[1,3]≥1·掷平按战力 3>1 判 w → w 必胜 → 达成第 3 连胜
     endTurn(b);
     expect(b.lastClash?.aWins).toBe(true);
     expect(b.lanes[0].a.some((c) => c.id === 'w')).toBe(false);  // 满 WIN_CAP → 离场
