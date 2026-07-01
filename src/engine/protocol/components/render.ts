@@ -75,6 +75,17 @@ export interface Mesh3D extends Component {
   voxelTex?: VoxelTex;
 }
 
+// ── Glow3D（render-only·加性辉光精灵·复刻美术设计案原型 glowSprite）──────────────────────────────
+// 一个始终朝镜头的**径向渐变加性光晕**，挂在实体的 Transform3D 位置上（火盆/灯笼/门/宝石/元素物的暖光）。
+// 纯表现（NON_DETERMINISTIC）：颜色 + 尺寸 + 透明度。渲染器建 THREE.Sprite（AdditiveBlending·depthWrite:false）。
+// 体素世界靠它出「自发光暖光晕」——纯色 emissive + bloom 表达不了这种柔光扩散，是通用氛围能力（全 3D 场景共用）。
+export interface Glow3D extends Component {
+  readonly type: 'Glow3D';
+  color: number;    // 光晕色 0xRRGGBB
+  scale: number;    // 直径（世界单位）
+  opacity?: number; // 基础不透明度（缺省 0.6·可被脉动改·此处静态基值）
+}
+
 // ── Model3D（render-only，导入式 3D 模型 · glTF）──────────────────────────────────────────────
 // Mesh3D 的 box/plane 原语表达不了圆润模型（蘑菇人、道具、生物…）→ 用真模型：渲染器据 modelKey 从
 // AssetManager 取 glTF 字节、解析成 three 场景显示。位姿走同实体 Transform3D（盒庭真三维）或 2D Transform

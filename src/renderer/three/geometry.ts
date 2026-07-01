@@ -196,6 +196,16 @@ export function voxelMode(m: Mesh3D): string {
   return `vox|${m.width}|${m.height}|${m.depth ?? ''}|${v.top}|${v.side}|${v.top2 ?? ''}|${v.trim ?? ''}|${v.pattern ?? ''}|${v.wall ? 1 : 0}|${v.tile ?? ''}`;
 }
 
+/** 加性辉光精灵的共享径向渐变贴图（白心→透明·复刻原型 glowSprite·全场共用一张、颜色由 SpriteMaterial.color 定）。 */
+export function buildGlowTexture(): THREE.CanvasTexture {
+  const s = 128, cv = document.createElement('canvas'); cv.width = cv.height = s;
+  const x = cv.getContext('2d')!;
+  const g = x.createRadialGradient(s / 2, s / 2, 0, s / 2, s / 2, s / 2);
+  g.addColorStop(0, 'rgba(255,255,255,.9)'); g.addColorStop(.4, 'rgba(255,255,255,.35)'); g.addColorStop(1, 'rgba(255,255,255,0)');
+  x.fillStyle = g; x.fillRect(0, 0, s, s);
+  const t = new THREE.CanvasTexture(cv); t.colorSpace = THREE.SRGBColorSpace; return t;
+}
+
 export function buildSkyTexture(sky: Sky3D): THREE.CanvasTexture {
   const W = 512, H = 256;
   const hexstr = (n: number): string => `#${(n & 0xffffff).toString(16).padStart(6, '0')}`;

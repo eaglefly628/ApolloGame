@@ -1,6 +1,6 @@
 import * as THREE from 'three';
 import type { IWorld, RendererBackend } from '@engine/core/types.js';
-import type { Mesh3D, Sky3D, Camera3D, Fog3D, Material3D, AnimState3D } from '@engine/protocol/components.js';
+import type { Mesh3D, Sky3D, Camera3D, Fog3D, Material3D, AnimState3D, Glow3D, Transform3D } from '@engine/protocol/components.js';
 import type { AssetManager } from '@assets/index.js';
 import { isImageHandle } from '@assets/index.js';
 import { getCamera3D, getSky3D, getLights3D, getPost3D, getFog3D } from '@engine/protocol/camera-view.js';
@@ -9,7 +9,7 @@ import {
   renderablePose, poseBounds, mesh3dBatchKey, type Pose3D,
   transform3dPose, groundPose, poseBounds3D, bounds3DCenter, bounds3DExtent, fitDistance3D,
 } from './three-projection.js';
-import { mesh3dPose, applyPose, buildMesh3D, buildDieMesh3D, dieMode, buildVoxelMesh3D, voxelMode, buildGeometry, buildSkyTexture, disposeMesh } from './three/geometry.js';
+import { mesh3dPose, applyPose, buildMesh3D, buildDieMesh3D, dieMode, buildVoxelMesh3D, voxelMode, buildGlowTexture, buildGeometry, buildSkyTexture, disposeMesh } from './three/geometry.js';
 import { buildPbrMesh3D, pbrSig } from './three/material.js';
 import { hashPoses, camSig, postSig } from './three/stats.js';
 import { LightRig } from './three/lights.js';
@@ -76,6 +76,8 @@ export class ThreeRenderer implements RendererBackend {
   private envIntensity = -1; // 当前已设强度（脏标·变才写 scene.environmentIntensity）
   // 2D-in-3D 扁平层（sprite/text/shape + 透明 Mesh3D fallback）
   private readonly meshes = new Map<string, THREE.Mesh>();
+  private readonly glows = new Map<string, THREE.Sprite>(); // Glow3D 加性辉光精灵池
+  private glowTex: THREE.Texture | null = null; // 共享径向渐变贴图（懒建一次）
   private readonly modeOf = new Map<string, string>();
   private readonly texCache = new Map<string, THREE.Texture>();
   private readonly textSig = new Map<string, string>();
@@ -140,6 +142,7 @@ export class ThreeRenderer implements RendererBackend {
     this.syncSky(sky);
     this.syncEnv(sky); // 环境光照(IBL)：Sky3D.env>0 → 中性影室环境贴图（金属/玻璃反射·TA Phase 5）
     this.syncFog(getFog3D(world)); // 距离雾（scene.fog·远处柔化·TA Phase 4）
+    this.syncGlow3D(world); // 加性辉光精灵（Glow3D·火盆/灯笼/门光晕·复刻原型 glowSprite）
     this.lights.sync(this.scene, getLights3D(world), world); // 数据化光照（维护 lightSig 供脏标·含动态局部光位姿）
     // 真物理刚体（cannon-es·render-only·表现非同步）：先按需重掷 → 步进 → 把位置/四元数写回 Transform3D（须在 collect 前）。
     if (this.rollPending) { this.physics.roll(world); this.rollPending = false; }
@@ -322,6 +325,9 @@ export class ThreeRenderer implements RendererBackend {
     if (this.sky) { this.scene.remove(this.sky); (this.sky.material as THREE.MeshBasicMaterial).map?.dispose(); disposeMesh(this.sky); this.sky = null; }
     for (const [, m] of this.meshes) { this.scene.remove(m); disposeMesh(m); }
     this.meshes.clear();
+    for (const [, sp] of this.glows) { this.scene.remove(sp); (sp.material as THREE.SpriteMaterial).dispose(); }
+    this.glows.clear();
+    if (this.glowTex) { this.glowTex.dispose(); this.glowTex = null; }
     for (const [, t] of this.texCache) t.dispose();
     this.texCache.clear();
     this.batches.dispose(this.scene);
@@ -436,6 +442,31 @@ export class ThreeRenderer implements RendererBackend {
     this.modeOf.set(r.entityId, mode);
     this.scene.add(mesh);
     return mesh;
+  }
+
+  // 加性辉光精灵（Glow3D·render-only·复刻原型 glowSprite）：查 Glow3D 实体 → 建/更朝镜头的加性光晕于其 Transform3D 处。
+  private syncGlow3D(world: IWorld): void {
+    const seen = new Set<string>();
+    for (const [id] of world.query('Glow3D')) {
+      const g = world.getComponent<Glow3D>(id, 'Glow3D');
+      const t = world.getComponent<Transform3D>(id, 'Transform3D');
+      if (!g || !t) continue;
+      seen.add(id);
+      let sp = this.glows.get(id);
+      if (!sp) {
+        if (!this.glowTex) this.glowTex = buildGlowTexture();
+        const mat = new THREE.SpriteMaterial({ map: this.glowTex, transparent: true, blending: THREE.AdditiveBlending, depthWrite: false });
+        sp = new THREE.Sprite(mat);
+        this.scene.add(sp);
+        this.glows.set(id, sp);
+      }
+      const mat = sp.material as THREE.SpriteMaterial;
+      mat.color.setHex(g.color & 0xffffff);
+      mat.opacity = g.opacity ?? 0.6;
+      sp.scale.set(g.scale, g.scale, 1);
+      sp.position.set(t.x ?? 0, t.y ?? 0, t.z ?? 0);
+    }
+    for (const [id, sp] of this.glows) if (!seen.has(id)) { this.scene.remove(sp); (sp.material as THREE.SpriteMaterial).dispose(); this.glows.delete(id); }
   }
 
   // 体素表面贴图 mesh（Mesh3D.voxelTex·render-only·顶/侧程序化贴图）：按贴图签名池管理，与哑光/骰/PBR 共用 meshes 池。

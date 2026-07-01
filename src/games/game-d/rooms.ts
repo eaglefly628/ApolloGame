@@ -70,7 +70,11 @@ const wallTex = (t: ActDef): VoxelTex => ({ top: t.wall, side: t.wall, side2: t.
  * 低矮围墙框住地台、前墙（+Z 端）留中央门洞通向上一间、中心焦点 + 散落"类型色块"占位美术。
  * BOSS 间更大、中心立一座发光巨块。index 0 额外放一只 showcase 小黄鸭（证明模型导入能力）。
  */
-/** 四角火盆（立柱 + 亮暖火盆·bloom 自发光）——微缩盒庭的暖光与纵向层次。 */
+/** 加性辉光实体（Glow3D + Transform3D·复刻原型 glowSprite）。 */
+const glow = (x: number, y: number, z: number, color: number, scale: number, opacity = 0.7): Ent =>
+  ({ Transform3D: { x, y, z }, Glow3D: { color, scale, opacity } });
+
+/** 四角火盆（立柱 + 亮暖火盆 + **加性暖光晕**·复刻原型 brazier glowSprite('#ffb05a',2.2)）——微缩盒庭的暖光与纵向层次。 */
 function cornerBraziers(P: string, baseZ: number, hw: number, hd: number, pillar: number, pillarSide: number, hot: number, hotSide: number): Record<string, Ent> {
   const out: Record<string, Ent> = {};
   const xs = [-(hw + 1.5), hw + 1.5], zs = [-(hd + 1.5), hd + 1.5];
@@ -80,6 +84,7 @@ function cornerBraziers(P: string, baseZ: number, hw: number, hd: number, pillar
     out[`${k}-pil`] = block(x, 2.2, baseZ + z, 1, 4.4, 1, pillar, pillarSide);
     out[`${k}-bowl`] = block(x, 4.7, baseZ + z, 1.5, 0.9, 1.5, hot, hotSide);
     out[`${k}-orb`] = block(x, 5.4, baseZ + z, 1.05, 1.05, 1.05, hot, hot);
+    out[`${k}-glow`] = glow(x, 5.7, baseZ + z, 0xffb05a, 8, 0.8); // 火盆暖光晕
   }
   return out;
 }
@@ -118,14 +123,15 @@ export function genRoom(index: number): Record<string, Ent> {
     [`${P}-wall-fr`]: block(segCx, 1.5, baseZ + hd, segW, 5, 1.5, t.wall, t.floorSide, undefined, wallTex(t)),
     [`${P}-door-top`]: block(0, 5.5, baseZ + hd, 9, 2, 1.5, t.accent, t.wall),
     [`${P}-portal`]: block(0, 2.6, baseZ + hd - 0.2, 8, 5, 0.5, t.accent, t.accent),
+    [`${P}-door-glow`]: glow(0, 4.4, baseZ + hd - 1, t.accent, 9, 0.6), // 门符文光晕（复刻原型 door glowSprite）
     // 通向上一间的短走廊（穿过门洞·暗示"还有更上面"）
     [`${P}-corridor`]: block(0, -2, baseZ + ROOM_SPACING / 2, 9, 4, ROOM_SPACING - hd - HD, t.floorTop, t.floorSide),
-    // ── 四角发光火盆（暖光 + 纵向层次·微缩盒庭标志）──
+    // ── 四角发光火盆（暖光晕 + 纵向层次·微缩盒庭标志）──
     ...cornerBraziers(P, baseZ, hw, hd, t.wall, t.floorSide, BRAZIER, BRAZIER_HOT),
-    // ── 上方漂浮灯笼（bloom 自发光小点）──
-    [`${P}-lan1`]: block(-8, 10.5, baseZ - 6, 1, 1, 1, LANTERN, LANTERN),
-    [`${P}-lan2`]: block(9, 11, baseZ + 3, 1, 1, 1, LANTERN, LANTERN),
-    [`${P}-lan3`]: block(0, 12, baseZ - 9, 1, 1, 1, LANTERN, LANTERN),
+    // ── 上方漂浮灯笼（加性暖光晕·复刻原型 lantern glowSprite('#ffcf8a',1.6)）──
+    [`${P}-lan1`]: glow(-8, 10.5, baseZ - 6, LANTERN, 6, 0.5),
+    [`${P}-lan2`]: glow(9, 11, baseZ + 3, LANTERN, 6, 0.5),
+    [`${P}-lan3`]: glow(0, 12, baseZ - 9, LANTERN, 6, 0.5),
     // 散落元素色块（占位美术·靠颜色区分类型）
     [`${P}-t1`]: block(-7, 0.9, baseZ - 6, 1.4, 1.4, 1.4, t.accent, t.floorSide, 0.6),
     [`${P}-t2`]: block(7.5, 0.9, baseZ + 5, 1.4, 1.4, 1.4, t.wall, t.floorSide, 0.6),
@@ -134,10 +140,12 @@ export function genRoom(index: number): Record<string, Ent> {
   if (boss) {
     // BOSS 间：中心一座发光巨块（占位"Boss"）
     out[`${P}-boss`] = block(0, 4, baseZ, 7, 8, 7, t.accent, t.wall, 0.4);
+    out[`${P}-boss-glow`] = glow(0, 5, baseZ, t.accent, 12, 0.5);
   } else {
-    // 战斗间：中心台座 + 斜摆发光宝物
+    // 战斗间：中心台座 + 斜摆发光宝物 + 宝物光晕（复刻原型 altar gem glowSprite(accent,2)）
     out[`${P}-dais`] = block(0, 0.5, baseZ, 7, 1, 7, t.wall, t.floorSide);
     out[`${P}-gem`] = block(0, 2.8, baseZ, 2.6, 2.6, 2.6, t.accent, t.accent, 0.6);
+    out[`${P}-gem-glow`] = glow(0, 2.8, baseZ, t.accent, 7, 0.6);
   }
 
   // 起手间放 showcase 小黄鸭（证明 glTF 模型导入·非体素）

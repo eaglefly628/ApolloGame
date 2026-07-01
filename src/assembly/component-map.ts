@@ -34,6 +34,7 @@ import type {
   Frame,
   GameFlow,
   Gauge,
+  Glow3D,
   GridMover,
   Grounded,
   GroupCount,
@@ -142,6 +143,7 @@ export interface ComponentDataMap {
   Frame: Omit<Frame, 'type'>;
   GameFlow: Omit<GameFlow, 'type'>;
   Gauge: Omit<Gauge, 'type'>;
+  Glow3D: Omit<Glow3D, 'type'>;
   GridMover: Omit<GridMover, 'type'>;
   Grounded: Omit<Grounded, 'type'>;
   GroupCount: Omit<GroupCount, 'type'>;
