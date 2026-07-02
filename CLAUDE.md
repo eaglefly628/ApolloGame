@@ -30,6 +30,7 @@
 - 提交署名 `Claude <noreply@anthropic.com>`。提交信息以 session URL 结尾。不在产物里写模型标识。
 - 需求池 `docs/workflow/requests.md`（Lead 评审→标状态）；**3D 渲染线 + Game Z 需求/工单独立池 `docs/workflow/requests-3d.md`（owner 2026-06-28·P3D 域·新 3D 需求进这里不进 requests.md）**；各程序员开工清单 `docs/workflow/finish/{PA,PB,PC}-finish-list.md`。
 - **开发新 capability 前必查知识库**：先读 `wiki/skills/index.md` 找到对应分类，再读该分类的 `.md` 文件，了解行业最佳实践和常见陷阱，再动手实现。按需加载，不要一次性读完所有文件。
+- **游戏能力总览铁律（owner 2026-07-02 拍板·防 game-d 式绕引擎）**：任何新游戏 / 新玩法系统**开工前**必须先交「能力总览 capability-plan」（模板 `docs/design/capability-plan-template.md` → 存 `docs/design/<game>/capability-plan.md`），内容=①消费哪些引擎 capability（对照 registry 实名）②哪些规则摆成数据表+由哪个现有能力解释（**禁"数据表+游戏层自写解释器"**——那是虚胖数据）③逐条申请游戏层代码例外（附"为何现有能力表达不了"，Lead 裁决，记债）。**plan 未过审不得写游戏层系统代码。**实现与 plan 的偏差用 `node scripts/game-skill-audit.mjs [game]` 体检；红旗硬红线=**游戏层禁裸 Math.random（必须用引擎种子 PRNG）**、禁 innerHTML/createElement 手写 DOM（走 LayoutNode）、禁零能力接入、禁零测试。存量游戏欠账见 `docs/design/engine-llm-readiness-review-2026-07-02.md`。
 - **effort 档位默认判断（owner 2026-07-02 拍板·控 token 开销）**：主 session 保持默认档（xhigh），只干判断类的活（架构评审、capability 设计、难 bug 根因、跨模块改动）；**能下放的活派子代理并按性质定档，不必每次问 owner**：
   - `low`——机械/确定性活：全库搜索定位、批量重命名/格式化/替换、跑测试收集输出、资产登记、链接/清单核对；
   - `medium`——有明确 spec 的小活：单文件小修、按 spec 写纯数据（manifest/LayoutNode/关卡配置）、补简单测试；
