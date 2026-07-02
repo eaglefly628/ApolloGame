@@ -123,9 +123,11 @@ export function mount(container: HTMLElement): () => void {
   engine.attachRenderer(renderer, stage);
 
   // 种子化随机（引擎 RandomSeed·nextRandom 就地推进 → 可回放/双人 lockstep 同步·绝不 Math.random）。
-  // 固定种子 = 确定性；联机/回放时把 run-seed 注入此组件即整局可复现。所有掷骰/抽奖走 rnd()。
+  // **run-seed 开局生成**（每局不同·可出货）：单人从时钟取熵一次性播种，之后整局由种子确定（可回放）。
+  // TODO(存档)：接存档后随档持久化此 run-seed；联机由 host 生成后广播给对端，双方同种子即 lockstep 一致。
+  const runSeed = (Date.now() >>> 0) || 1;
   engine.world.createEntity('gd-rng');
-  engine.world.addComponent('gd-rng', { type: 'RandomSeed', seed: 20260702, sequence: 0 } as unknown as Component);
+  engine.world.addComponent('gd-rng', { type: 'RandomSeed', seed: runSeed, sequence: 0 } as unknown as Component);
   const rnd = (): number => { const rs = engine.world.getComponent<RandomSeed>('gd-rng', 'RandomSeed'); return rs ? nextRandom(rs) : 0.5; };
 
   // 3D 房间背景：流式 + 相机往上 dolly

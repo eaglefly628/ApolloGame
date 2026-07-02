@@ -841,7 +841,7 @@ _（REQ-3D-W1高效引擎 已移至 [`requests-3d.md`](./requests-3d.md)。）_
 >
 > 体检核实属实：game-d 战斗/状态全手写 `S` 对象 + 纯函数，`capabilities:[]`、`Math.random()` 绕种子随机、手写 `loadoutPattern` 重造 poker-hand、双人假、0 测试。目标：照 game-e/game-f 迁成 blueprint（components + capabilities + signals + keybinds）+ 薄 session 编排。~80% 复用现有能力（poker-hand/card-scoring/effect-apply/event-when/mortal/flow/keybind/random）。
 >
-> **我方已自办（无新引擎工作·门禁绿 + 测试·本 session）**：① 种子化随机（`RandomSeed`+`nextRandom` 替 `Math.random`·可回放/lockstep）；② `loadoutPattern` 复用 `poker-hand`(`evaluateHand`/`rankMaxCount`)；③ 补 `game-d-sim.test.ts`(10 例)。
+> **我方已自办（无新引擎工作·门禁绿 + 测试·本 session）**：① 种子化随机 + **run-seed 开局生成**（`RandomSeed`+`nextRandom` 替 `Math.random`·每局不同可出货·待接存档持久化）；② **仅展示函数** `loadoutPattern` 复用 `poker-hand`——**⚠️ 真轮子是战斗路径 `combat.ts detectPattern`（含百搭顶点/顶色·evaluateHand 无通配），此债未还**，待 §2 wild capability 后真替；先给 `detectPattern` 上全牌型行为测试作护栏；③ `game-d-sim.test.ts`(21 例)。
 >
 > **真缺口 → 请主程下沉成 capability（细节见设计文档 §真缺口）**：
 > 1. **`dice-roll` capability（主缺口·最优先）**：读 `DicePool` + `RandomSeed`(+`LockMask` 只重掷未锁)·`Update` 相位写 `RolledDice`（早于 poker-eval）。现无「掷一个声明的骰池」的能力；poker-hand 只消费已填好的 `PlayedHand`。

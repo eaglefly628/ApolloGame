@@ -3,7 +3,8 @@
 //   ② 骰型判定复用 poker-hand 计数内核（evaluateHand.rankCounts + rankMaxCount），不再手写元素直方图。
 import { describe, it, expect } from 'vitest';
 import { loadoutPattern } from './game-d.js';
-import { makeDie, rollPool, type DieDef } from './dice.js';
+import { makeDie, rollPool, type DieDef, type RolledDie } from './dice.js';
+import { detectPattern } from './combat.js';
 import { nextRandom } from '@skills/atoms/random/index.js';
 import type { RandomSeed } from '@engine/protocol/components.js';
 
@@ -45,4 +46,23 @@ describe('game-d · 骰型判定复用 poker-hand 计数内核', () => {
     expect(loadoutPattern(['huo', 'huo', 'wild'].map(def)).name).toBe('元素对子'));
   it('各一色（<4 种）→ 杂色阵', () =>
     expect(loadoutPattern(['huo', 'shui', 'mu'].map(def)).name).toBe('杂色阵'));
+});
+
+// detectPattern 是**战斗路径的真牌型轮子**（damageOf 调它算伤害），体检点名的就是它——手写、含百搭顶点/顶色，
+// evaluateHand 目前无通配（wild 缺口·见 REQ-GAMED），故暂不能真替 poker-hand → 先锁行为测试。真替待 wild capability。
+describe('game-d · detectPattern（战斗牌型·锁行为·待 wild 能力后真替 poker-hand）', () => {
+  const d = (v: number, el: string): RolledDie => ({ dieId: `x${v}${el}`, v, el } as RolledDie);
+  const name = (dice: RolledDie[]): string => detectPattern(dice).name;
+  it('空手 → 高牌', () => expect(name([])).toBe('高牌'));
+  it('五同点 → 豹子', () => expect(name([d(3, 'huo'), d(3, 'shui'), d(3, 'mu'), d(3, 'lei'), d(3, 'feng')])).toBe('豹子'));
+  it('四同点 → 四条', () => expect(name([d(3, 'huo'), d(3, 'shui'), d(3, 'mu'), d(3, 'lei'), d(1, 'feng')])).toBe('四条'));
+  it('三 + 一对 → 葫芦', () => expect(name([d(3, 'huo'), d(3, 'shui'), d(3, 'mu'), d(2, 'lei'), d(2, 'feng')])).toBe('葫芦'));
+  it('四连 → 顺子', () => expect(name([d(1, 'huo'), d(2, 'shui'), d(3, 'mu'), d(4, 'lei')])).toBe('顺子'));
+  it('三同点（非葫芦/顺）→ 三条', () => expect(name([d(3, 'huo'), d(3, 'shui'), d(3, 'mu'), d(1, 'lei'), d(6, 'feng')])).toBe('三条'));
+  it('四同色（非同点/顺）→ 同色', () => expect(name([d(1, 'huo'), d(3, 'huo'), d(5, 'huo'), d(2, 'huo')])).toBe('同色'));
+  it('两对 → 两对', () => expect(name([d(3, 'huo'), d(3, 'shui'), d(2, 'mu'), d(2, 'lei'), d(1, 'feng')])).toBe('两对'));
+  it('一对 → 一对', () => expect(name([d(3, 'huo'), d(3, 'shui'), d(1, 'mu'), d(6, 'lei')])).toBe('一对'));
+  it('散牌 → 高牌', () => expect(name([d(1, 'huo'), d(2, 'shui'), d(4, 'mu'), d(6, 'lei')])).toBe('高牌'));
+  it('百搭顶点：两 3 + wild(6) → 三条（maxSame 2+1）', () =>
+    expect(name([d(3, 'huo'), d(3, 'shui'), d(6, 'wild')])).toBe('三条'));
 });

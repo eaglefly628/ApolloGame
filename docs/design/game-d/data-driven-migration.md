@@ -33,9 +33,9 @@
 6. **双人 co-op（netcode 缺口）**：真双人 = lockstep 联机（种子已同步就绪，但缺 netcode/房间/角色）。当前双人按钮不该假装单机=双人。
 
 ## 已完成（本 session·我方域·无新引擎工作·门禁绿 + 测试）
-- ✅ **种子化随机**：挂 `RandomSeed`（entity `gd-rng`），`rnd()` 走 `nextRandom` → 掷骰/抽奖全确定性可回放。**删 `Math.random()`。**
-- ✅ **复用 poker-hand**：`loadoutPattern` 改用 `evaluateHand().rankCounts` + `rankMaxCount`，删手写元素直方图。
-- ✅ **测试**：`game-d-sim.test.ts`（10 例·种子确定性 + 牌型判定）。此前 0 测试。
+- ✅ **种子化随机 + run-seed 开局生成**：挂 `RandomSeed`（entity `gd-rng`·种子开局从时钟播种·每局不同可出货），`rnd()` 走 `nextRandom` → 掷骰/抽奖确定性可回放。**删 `Math.random()`。** TODO：接存档持久化 run-seed / 联机 host 广播。
+- ⚠️ **poker-hand 复用只到「影子」，本体未还债**：改的是**展示函数** `loadoutPattern`（骰盅 UI 显示牌型名）→ 复用 `evaluateHand().rankCounts`+`rankMaxCount`。**体检点名的真轮子是战斗路径的 `combat.ts detectPattern`（`damageOf` 调它算伤害），它含百搭顶点/顶色，`evaluateHand` 无通配 → 现在不能真替**（待 wild capability·REQ-GAMED §2）。**债未还清。**
+- ✅ **测试**：`game-d-sim.test.ts`（21 例）——种子确定性 + `loadoutPattern` + **`detectPattern` 全牌型行为锁定**（真替 poker-hand 前的护栏）。此前 0 测试。
 
 ## 待办（等主程填 dice-roll 等缺口后·我方接线）
 - 把 `S` 状态迁成 Resource/Flag/StringVar/GameFlow 组件；战斗规则迁成上表能力 + 数据。
