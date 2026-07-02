@@ -11,7 +11,7 @@
 
 ## 待处理 / 进行中
 
-### REQ-UI-web字体加载（数据化）+ 第3字体槽 + Label ink 令牌 · [2026-07-02] · P3D（game-d 对齐 Cloud Design 撞到·全 app 受益） → 主程（UI 库域） · status: **open** · 类型: 真能力缺口（3 项·尺子已过·不可重组）
+### REQ-UI-web字体加载（数据化）+ 第3字体槽 + Label ink 令牌 · [2026-07-02] · P3D（game-d 对齐 Cloud Design 撞到·全 app 受益） → 主程（UI 库域） · status: **✅ done（主程 2026-07-02·①机制下沉 + ③令牌落地·②已存→回驳；剩 vendor woff2 数据活）** · 类型: 真能力缺口（3 项·尺子已过·不可重组）
 
 > **背景（owner 2026-07-02「用色/字体必须跟 Cloud Design 对齐」）**：对齐 game-d《骰途》到 Cloud Design 设计案时定位到——**字体走样不是能力问题、是全 app 从不加载 web 字体**。三项缺口都属 UI 库域（`src/ui/**`·主程），game-d 侧无法数据化解决：
 >
@@ -20,6 +20,12 @@
 > 3. **Label `ink` 深色令牌**：金按钮上的深墨字（原型 `#3a2406` on gold）无对应语义色——`Label.color` 语义档全是亮色（text/sub/gold/ok…），深色墨字表达不了。game-d.ts 已挂 TODO（`gd-start-t`）。**建议**：`Label.color` 闭集加 `'ink'`（映射 `UITheme.ink?`·深色）。**（体量最小·可先做）**
 >
 > **影响面**：①修一处全 app 字体归位；②③ game-d Title 屏 1:1 需要。均 render-only/表现层·不碰 sim/hash。P3D 侧已把 game-d 色令牌逐色取样对齐（本 session·commit 见 game-d），字体待此三项落地后接。
+>
+> **主程评审 + 落地回执（2026-07-02·CORE RULE 已过·render-only 无关 sim/hash）**：
+> - **① web 字体加载 → ✅ 接（真缺口·下沉一处全 app 受益）**：核实属实——运行时 `index.html` 只声明 `'Inter'` 却从不加载任何 web 字体，全主题静默回退系统字体（`game-g/doc/*.html` 的 Google Fonts `<link>` 只在设计稿·非运行时）。**把 `game-g/fonts.ts` 已跑通的自托管 @font-face 打法通用化进 UI 库**：`UITheme.webfonts?: WebFont[]`（`{family,url,weight?,style?}`·纯数据）+ `ensureWebfonts()`（去重·全局单 `<style id=apollo-webfonts>`；`mountUI` 自动调、renderNode-only 屏自调一次）。尺子过：弱 LLM 只填「要哪款 + 打包后 woff2 URL」，引擎生成 @font-face·不手写 CSS。`src/ui/components/req-webfont-ink.test.ts`。
+> - **② 第 3 字体槽 → 🔁 回驳（已覆盖·done-covered）**：`UITheme` 早已有 `fontUi/fontMono/fontPixel/fontDisplay/fontSerif` **5 槽**、`Label.font` 已收 `'ui'|'mono'|'pixel'|'display'|'serif'`（REQ-UI-骰途逐像素② + REQ-UI-fontPixel令牌 落的）。game-d **直接填数据**即可：正文 `fontUi:'Noto Sans SC'`、中文标题 `fontSerif:'Noto Serif SC'`(Label `font:'serif'`)、英文副标 `fontDisplay:'Cinzel'`(Label `font:'display'`)。无需新增槽——当年"只有 3 槽"的判断已过期。
+> - **③ Label `ink` 深墨字 → ✅ 接（小·令牌补全）**：`Label.color` 闭集 +`'ink'`、`UITheme.ink?`（缺省回退 `bg0`）、SHELL 补默认 `#2a1f12`、catalog `COLOR` 同步（顺带补回早前漏登的 `mine/foe`）。game-d 的 `gd-start-t` TODO 可拆。
+> - **剩余=数据活（非机制·不阻塞·派 asset-manager / 有网环境）**：要真「高级感」，各主题需各自 **vendor 子集化 woff2** 再在 `theme.webfonts` 声明。① 已把机制铺好：**game-g 可即刻把 `fonts.ts` 的 12 个 woff2 URL 挪进自己 theme 的 `webfonts` 走通用路径、删掉自写注入**；SHELL 基座 premium 字体集同理待 vendor（本沙箱无网抓不了字体，故只落机制、不擅塞字体文件）。
 
 ### REQ-G-即时法术/功能牌（对场上牌使用·补策略深度） · [2026-06-29] · owner 试玩后设计反思 → 战斗/design G 域 · status: **open（大方向·owner 说「先记录·暂不实现」）** · 类型: 核心玩法扩展（新通用能力·非重组）
 > **owner 观察**：现在**没有一张牌是「针对场上局面、主动打出去影响某个目标」**的——天罡全是「打出后整场被动加成」，地煞是 Boss 专属被动。缺「即时·指定目标·改变战场」的牌。owner 直觉：**「功能牌 > 战斗牌」**才是好玩的深度来源（纯拼战力天花板低）。owner「先暂时这样吧」→ **只记录·暂不实现**。

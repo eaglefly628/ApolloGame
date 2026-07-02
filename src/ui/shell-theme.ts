@@ -62,6 +62,9 @@ export const SHELL = {
   danger: '#d99090',
   dangerWash: 'rgba(217,144,144,0.12)',
 
+  // 深墨字（Label color:'ink'·金按钮/浅底上的深色文字）
+  ink: '#2a1f12',
+
   // 字体栈
   fontUi: "-apple-system, 'Segoe UI', 'PingFang SC', 'Hiragino Sans GB', 'Microsoft YaHei', sans-serif",
   fontDisplay: "'Palatino Linotype', 'Songti SC', 'Noto Serif SC', Georgia, serif",

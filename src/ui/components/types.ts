@@ -106,7 +106,7 @@ export interface ButtonProps {
 export interface LabelProps {
   text?: string; // 可选：spans / tween / bind 提供内容时可省（缺省空串）
   size?: 'xs' | 'sm' | 'md' | 'lg' | 'xl' | 'xxl' | 'xxxl' | number; // 具名档(xs10..xxxl34) 或裸 px 数字(复刻精确档·8→任意大·REQ-UI-Label字阶裸数字)
-  color?: 'text' | 'sub' | 'dim' | 'jade' | 'gold' | 'ok' | 'warn' | 'danger' | 'mine' | 'foe';
+  color?: 'text' | 'sub' | 'dim' | 'jade' | 'gold' | 'ok' | 'warn' | 'danger' | 'mine' | 'foe' | 'ink';
   bold?: boolean;
   mono?: boolean;
   /** 具名字体槽（复古/像素/磷光风换字体·下沉自 game-x 残响：VT323 时钟/Silkscreen 微标/DotGothic16 正文）。
@@ -454,6 +454,19 @@ export interface ActionSink {
  * 游戏可传自己的一份 → 同一份 LayoutNode 数据换皮（数据驱动·零改解释器）。缺省 = 引擎 SHELL 脸。
  * 红线不变：游戏只填**令牌值**（颜色/字体字符串，最弱 LLM 能填），不写 CSS/DOM。
  */
+/** Web 字体面（数据化·render-only·REQ-UI-web字体加载）：声明「要哪款字体 + 字重 + woff2 URL」，引擎据此
+ *  生成并注入 @font-face（`mountUI`/`ensureWebfonts` 去重·全局一次）。**弱 LLM 只填这几个字段（数据），绝不手写
+ *  @font-face/`<link>`**（尺子过关）。`url` 应为**打包进产物的本地 woff2**（Vite `import x from './x.woff2'` 的结果）——
+ *  离线可用、不依赖 Google Fonts CDN（Steam/卡带/Electron 都能跑）；`family` 须与字体栈里引用的名字一致才命中。 */
+export interface WebFont {
+  family: string;
+  url: string;
+  /** '400' | '700' | 可变字重 '400 900'；缺省 '400'。 */
+  weight?: string;
+  /** 'normal' | 'italic'；缺省 'normal'。 */
+  style?: string;
+}
+
 export interface UITheme {
   bg0: string; bg1: string; bg2: string; bg3: string; pageBg: string;
   line: string;
@@ -464,6 +477,8 @@ export interface UITheme {
   /** 阵营描边色（可选·Panel.edge='mine'/'foe' 解析·战棋/卡牌/对战类主题填）：我方暖框 / 敌方冷框。
    *  缺省回退既有暖(warn)/冷(jadeLine)令牌·非对战主题可不填。 */
   mine?: string; foe?: string;
+  /** 深墨字色（可选·Label color:'ink'·金按钮/浅底上的深色文字·如 #3a2406 on gold）。缺省回退 bg0。REQ-UI-Label ink 令牌。 */
+  ink?: string;
   fontUi: string; fontMono: string;
   /** 像素点阵字体槽（Label font:'pixel'·如 Silkscreen/DotGothic16）。缺省回退 fontUi。 */
   fontPixel?: string;
@@ -471,6 +486,9 @@ export interface UITheme {
   fontDisplay?: string;
   /** 衬线字体槽（Label font:'serif'·如 Noto Serif SC·标题/logo 衬线、正文仍 sans）。缺省回退 fontUi。 */
   fontSerif?: string;
+  /** 要加载的 Web 字体（数据化·REQ-UI-web字体加载）：`mountUI`/`ensureWebfonts` 首挂时注入一次 @font-face（去重·全局）。
+   *  没有它 → 上面 fontUi/fontSerif/… 字体栈里写的 'Noto Sans SC'/'Cinzel' 等 web 字体不会被加载、浏览器静默回退系统字体。 */
+  webfonts?: WebFont[];
   /** 输入框底色（缺省深色半透 rgba(0,0,0,0.35)·适配暗皮）。亮皮须填浅色，否则深底深字看不清。 */
   inputBg?: string;
   /** 背景贴图层（procedural CSS 图案 / 贴图 url·叠在 pageBg 上·renderScreen 合成）。主题作者填（可含 CSS），区别于游戏 LayoutNode 数据。缺省无 = 纯 pageBg（老主题零变化）。 */

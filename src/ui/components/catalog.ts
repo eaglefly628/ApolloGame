@@ -28,8 +28,8 @@ export interface UiComponentSpec {
   sample: LayoutNode;
 }
 
-// 共享枚举（多处复用·单一真相）。
-const COLOR = ['text', 'sub', 'dim', 'jade', 'gold', 'ok', 'warn', 'danger'] as const;
+// Label 颜色令牌闭集（与 LabelProps.color 类型对齐·单一真相）：基础语义 + 阵营 mine/foe + 深墨 ink。
+const COLOR = ['text', 'sub', 'dim', 'jade', 'gold', 'ok', 'warn', 'danger', 'mine', 'foe', 'ink'] as const;
 const SIZE = ['xs', 'sm', 'md', 'lg', 'xl', 'xxl', 'xxxl'] as const;
 
 export const UI_CATALOG: readonly UiComponentSpec[] = [

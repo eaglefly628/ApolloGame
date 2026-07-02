@@ -6,7 +6,7 @@
 
 import { renderNode, renderVListWindow } from './render.js';
 import { SHELL } from '../shell-theme.js';
-import type { LayoutNode, HandlerMap, ActionSink, UITheme, ToastProps, VirtualListProps } from './types.js';
+import type { LayoutNode, HandlerMap, ActionSink, UITheme, ToastProps, VirtualListProps, WebFont } from './types.js';
 
 /** mountUI 句柄：调用即 teardown（向后兼容）；`.update(newTree, theme?)` 做局部更新（最小 diff）。 */
 export type MountHandle = (() => void) & { update: (root: LayoutNode, theme?: UITheme) => void };
@@ -135,6 +135,36 @@ export function ensureUiKeyframes(doc?: Document): void {
   (d.head ?? d.documentElement).appendChild(st);
 }
 
+/**
+ * 幂等注入主题声明的 Web 字体 @font-face（REQ-UI-web字体加载·数据化）。`mountUI` 自动调（传 `theme.webfonts`）；
+ * **renderNode-only 屏（走 innerHTML·非 mountUI）须自己调一次**，否则主题字体栈里引用的 web 字体不加载、静默回退系统字体。
+ * 单个全局 `<style id="apollo-webfonts">`，按 family/weight/style **去重**（多次调用 / 多主题共存只注入一次同一面）。
+ * `url` 应为打包后的本地 woff2（离线可用·不依赖 Google Fonts CDN）。doc 缺省全局 document（无 DOM 环境安全跳过）。
+ */
+export function ensureWebfonts(fonts?: readonly WebFont[], doc?: Document): void {
+  if (!fonts || fonts.length === 0) return;
+  const d = doc ?? (typeof document !== 'undefined' ? document : undefined);
+  if (!d) return;
+  let st = d.getElementById('apollo-webfonts') as HTMLStyleElement | null;
+  if (!st) {
+    st = d.createElement('style');
+    st.id = 'apollo-webfonts';
+    (d.head ?? d.documentElement).appendChild(st);
+  }
+  const have = new Set(st.dataset['faces'] ? st.dataset['faces']!.split('|') : []);
+  let css = st.textContent ?? '';
+  for (const f of fonts) {
+    const weight = f.weight ?? '400';
+    const style = f.style ?? 'normal';
+    const key = `${f.family}/${weight}/${style}`;
+    if (have.has(key)) continue; // 已注入同一面 → 跳过（去重）
+    have.add(key);
+    css += `@font-face{font-family:'${f.family}';font-style:${style};font-weight:${weight};font-display:swap;src:url(${f.url}) format('woff2')}`;
+  }
+  st.textContent = css;
+  st.dataset['faces'] = [...have].join('|');
+}
+
 export function mountUI(
   host: HTMLElement,
   root: LayoutNode,
@@ -143,6 +173,7 @@ export function mountUI(
   input?: ActionSink, // 传它 → 无本地 handler 的 action 走信号入队（UI 只发信号·逻辑入 sim 能力层·人/AI 共用动作总线）
 ): MountHandle {
   ensureUiKeyframes();
+  ensureWebfonts(theme.webfonts);
   host.innerHTML = renderNode(root, theme);
 
   // 当前已挂载的树与主题（update 做最小 diff 的基线·VirtualList 复绑取数据）。
