@@ -30,6 +30,12 @@ try {
   await page.goto(`http://localhost:${PORT}/?game=${gameId}`, { waitUntil: 'load', timeout: 30000 });
   await page.waitForSelector('canvas', { timeout: 20000 });
   await page.waitForTimeout(3000); // 等 WebGL 初始化 + 几帧（云/角色/阴影渲出）
+  // 可选点击穿透（arg 4·逗号分隔按钮文案，依次点·每次等 1.6s）：深链只能到首屏，要截后续屏（如 game-d 战场/骰盅）→ 点按钮进屏。
+  const clicks = (process.argv[4] || '').split(',').map((s) => s.trim()).filter(Boolean);
+  for (const label of clicks) {
+    try { await page.getByText(label, { exact: false }).first().click({ timeout: 6000 }); await page.waitForTimeout(1600); }
+    catch (e) { console.log('[click miss]', label, e.message); }
+  }
   await page.screenshot({ path: out });
   console.log('shot →', out);
   await browser.close();

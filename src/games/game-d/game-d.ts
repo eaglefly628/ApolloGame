@@ -179,7 +179,7 @@ export function mount(container: HTMLElement): () => void {
     const c = engine.world.getComponent<Camera3D>('cam', 'Camera3D');
     if (c) {
       if (dark) { c.projection = 'perspective'; c.fov = 38; c.yaw = 0; c.pitch = 0.032; c.distance = 6.3; c.pivotX = 0; c.pivotY = 0; c.pivotZ = 0; }
-      else { c.projection = 'ortho'; c.yaw = Math.PI; c.pitch = 0.98; c.orthoSize = 13; c.distance = 240; c.pivotX = 0; c.pivotY = 1.5; c.pivotZ = 0; }
+      else { c.projection = 'ortho'; c.yaw = Math.PI; c.pitch = 0.99; c.orthoSize = 7; c.distance = 200; c.pivotX = 0; c.pivotY = 0.35; c.pivotZ = 0; } // §B: ortho fr7·pos(0,12,7.8) lookAt 原点
     }
   };
   const showTitleDie = (): void => {

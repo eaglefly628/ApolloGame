@@ -1,6 +1,8 @@
 // Game D ·《骰途》场景骨架 —— 无限程序化房间流（弓箭传说/哈迪斯式·一屏一间·往上推进）。
 //
 // owner 2026-06-29「先搭场景骨架·战斗先别管·一关一关往前流程·近俯视·一屏一战场·把 Streaming 做扎实」。
+// **比例 = Cloud Design `docs/design/game-d/3d-motion-spec.md` §B 确切值**（owner 2026-07-02「各种数据对齐」）：
+// 竞技场 7×7 地格(格 1×1×0.45)·墙高 0.85·门洞 gap 1.5·基座 y −1.0/−2.3·四角火盆 @±4.3·相机 ortho fr7 pos(0,12,7.8)。
 // 每个房间 = 一座独立竞技场（贴色体素 Mesh3D box·四面围墙 + 前墙留门洞通向上一间）。按 index 即时生成
 //（genRoom）——分层（ACTS 循环）、每层 2 战斗 + 1 BOSS。房间**全 render-only**（Transform3D/Mesh3D·出 hash），
 // 故可由 game-d.ts 在运行时按需 createEntity/destroyEntity 做**流式生成/卸载**（只保留当前房间附近窗口），
@@ -14,11 +16,17 @@ import { tileArt } from './art.js';
 
 type Ent = WorldBlueprint['entities'][string];
 
-/** 房间沿 +Z 的间距。 */
-export const ROOM_SPACING = 36;
-/** 普通竞技场半尺寸（BOSS 间更大）。 */
-const HW = 13;
-const HD = 14;
+/** 房间沿 +Z 的间距（§B 尺度下·7 深房 + 走廊）。 */
+export const ROOM_SPACING = 12;
+/** 普通竞技场半尺寸 = 7×7 地格的一半（§B）；BOSS 间略大。 */
+const HW = 3.5;
+const HD = 3.5;
+/** 墙高 / 墙厚 / 地台厚（§B：墙 h0.85·地格 0.45 薄板）。 */
+const WALL_H = 0.85;
+const WALL_T = 0.35;
+const FLOOR_H = 0.45;
+/** 门洞宽（§B gap 1.5）。 */
+const DOOR = 1.5;
 
 export interface ActDef {
   name: string;
@@ -62,9 +70,9 @@ function block(x: number, y: number, z: number, w: number, h: number, d: number,
   };
 }
 const PAT_BY_ACT: Array<VoxelTex['pattern']> = ['grass', 'stone', 'plain', 'crystal'];
-/** 由层主题派生地台/墙的体素贴图。 */
-const floorTex = (t: ActDef, act: number): VoxelTex => ({ top: t.floorTop, top2: t.top2, side: t.floorSide, side2: t.side2, trim: t.trim, pattern: PAT_BY_ACT[act % 4], tile: 3, topSrc: tileArt(act, 'top'), sideSrc: tileArt(act, 'side') });
-const wallTex = (t: ActDef, act: number): VoxelTex => ({ top: t.wall, side: t.wall, side2: t.side2, trim: t.trim, wall: true, tile: 3, sideSrc: tileArt(act, 'wall') });
+/** 由层主题派生地台/墙的体素贴图（tile=每边格数·§B 7×7 → tile 7）。 */
+const floorTex = (t: ActDef, act: number): VoxelTex => ({ top: t.floorTop, top2: t.top2, side: t.floorSide, side2: t.side2, trim: t.trim, pattern: PAT_BY_ACT[act % 4], tile: 7, topSrc: tileArt(act, 'top'), sideSrc: tileArt(act, 'side') });
+const wallTex = (t: ActDef, act: number): VoxelTex => ({ top: t.wall, side: t.wall, side2: t.side2, trim: t.trim, wall: true, tile: 7, sideSrc: tileArt(act, 'wall') });
 
 /**
  * 即时生成第 index 间竞技场的全部实体（id 以 `r{index}-` 前缀·跨房间唯一·便于流式卸载）。
@@ -75,17 +83,17 @@ const wallTex = (t: ActDef, act: number): VoxelTex => ({ top: t.wall, side: t.wa
 const glow = (x: number, y: number, z: number, color: number, scale: number, opacity = 0.7): Ent =>
   ({ Transform3D: { x, y, z }, Glow3D: { color, scale, opacity } });
 
-/** 四角火盆（立柱 + 亮暖火盆 + **加性暖光晕**·复刻原型 brazier glowSprite('#ffb05a',2.2)）——微缩盒庭的暖光与纵向层次。 */
+/** 四角火盆（立柱 + 亮暖火盆 + **加性暖光晕**·复刻原型 brazier·§B @±4.3）——微缩盒庭的暖光与纵向层次。 */
 function cornerBraziers(P: string, baseZ: number, hw: number, hd: number, pillar: number, pillarSide: number, hot: number, hotSide: number): Record<string, Ent> {
   const out: Record<string, Ent> = {};
-  const xs = [-(hw + 1.5), hw + 1.5], zs = [-(hd + 1.5), hd + 1.5];
+  const xs = [-(hw + 0.8), hw + 0.8], zs = [-(hd + 0.8), hd + 0.8]; // ±4.3
   let n = 0;
   for (const x of xs) for (const z of zs) {
     const k = `${P}-bra${n++}`;
-    out[`${k}-pil`] = block(x, 2.2, baseZ + z, 1, 4.4, 1, pillar, pillarSide);
-    out[`${k}-bowl`] = block(x, 4.7, baseZ + z, 1.5, 0.9, 1.5, hot, hotSide);
-    out[`${k}-orb`] = block(x, 5.4, baseZ + z, 1.05, 1.05, 1.05, hot, hot);
-    out[`${k}-glow`] = glow(x, 5.7, baseZ + z, 0xffb05a, 8, 0.8); // 火盆暖光晕
+    out[`${k}-pil`] = block(x, 0.55, baseZ + z, 0.28, 1.1, 0.28, pillar, pillarSide);
+    out[`${k}-bowl`] = block(x, 1.22, baseZ + z, 0.42, 0.24, 0.42, hot, hotSide);
+    out[`${k}-orb`] = block(x, 1.5, baseZ + z, 0.28, 0.28, 0.28, hot, hot);
+    out[`${k}-glow`] = glow(x, 1.62, baseZ + z, 0xffb05a, 2.2, 0.8); // 火盆暖光晕
   }
   return out;
 }
@@ -94,12 +102,12 @@ export function genRoom(index: number): Record<string, Ent> {
   const m = roomMeta(index);
   const t = m.theme;
   const boss = m.type === 'boss';
-  const hw = boss ? 16 : HW;
-  const hd = boss ? 16 : HD;
+  const hw = boss ? 4.5 : HW;
+  const hd = boss ? 4.5 : HD;
   const baseZ = index * ROOM_SPACING;
   const P = `r${index}`;
-  const segW = hw - 4.5; // 前墙门洞两侧段宽（中央留 9 宽门）
-  const segCx = (hw + 4.5) / 2;
+  const segW = hw - DOOR / 2; // 前墙门洞两侧段宽（中央留 DOOR 宽门）
+  const segCx = (hw + DOOR / 2) / 2;
 
   const darken = (c: number, k: number): number => {
     const r = Math.max(0, Math.round(((c >> 16) & 0xff) * (1 - k)));
@@ -108,50 +116,51 @@ export function genRoom(index: number): Record<string, Ent> {
     return (r << 16) | (g << 8) | b;
   };
   const BRAZIER = 0xffc79a, BRAZIER_HOT = 0xff8a3c, LANTERN = 0xffe2b0; // 亮暖色·经 bloom 自发光
+  const wcy = WALL_H / 2; // 墙中心 y（下沿坐地 y0）
 
   const out: Record<string, Ent> = {
-    // ── 浮空微缩盒庭：分层基座（往下收窄的两级台，像漂浮模型）──
-    [`${P}-plinth1`]: block(0, -4.6, baseZ, hw * 2 + 6, 3, hd * 2 + 6, darken(t.floorSide, 0.18), darken(t.floorSide, 0.34)),
-    [`${P}-plinth2`]: block(0, -8, baseZ, hw * 2 + 1.5, 3.5, hd * 2 + 1.5, darken(t.floorSide, 0.42), darken(t.floorSide, 0.56)),
-    // 竞技场地台（顶在 y=0）——顶面程序化地砖网格（复刻「带精美贴图的体素」）
-    [`${P}-floor`]: block(0, -2, baseZ, hw * 2, 4, hd * 2, t.floorTop, t.floorSide, undefined, floorTex(t, m.act)),
-    // 三面围墙（左/右/后=入口侧）——墙纹 + 顶饰条
-    [`${P}-wall-l`]: block(-hw, 1.5, baseZ, 1.5, 5, hd * 2, t.wall, t.floorSide, undefined, wallTex(t, m.act)),
-    [`${P}-wall-r`]: block(hw, 1.5, baseZ, 1.5, 5, hd * 2, t.wall, t.floorSide, undefined, wallTex(t, m.act)),
-    [`${P}-wall-back`]: block(0, 1.5, baseZ - hd, hw * 2, 5, 1.5, t.wall, t.floorSide, undefined, wallTex(t, m.act)),
+    // ── 浮空微缩盒庭：分层基座（往下收窄的两级台·§B 基座 y −1.0 / −2.3）──
+    [`${P}-plinth1`]: block(0, -1.0, baseZ, hw * 2 + 1.0, 0.6, hd * 2 + 1.0, darken(t.floorSide, 0.18), darken(t.floorSide, 0.34)),
+    [`${P}-plinth2`]: block(0, -2.3, baseZ, hw * 2 + 0.3, 0.7, hd * 2 + 0.3, darken(t.floorSide, 0.42), darken(t.floorSide, 0.56)),
+    // 竞技场地台（顶在 y=0·§B 薄地格 0.45）——顶面程序化地砖网格（复刻「带精美贴图的体素」·tile 7）
+    [`${P}-floor`]: block(0, -FLOOR_H / 2, baseZ, hw * 2, FLOOR_H, hd * 2, t.floorTop, t.floorSide, undefined, floorTex(t, m.act)),
+    // 三面围墙（左/右/后=入口侧·§B 墙高 0.85）——墙纹 + 顶饰条
+    [`${P}-wall-l`]: block(-hw, wcy, baseZ, WALL_T, WALL_H, hd * 2, t.wall, t.floorSide, undefined, wallTex(t, m.act)),
+    [`${P}-wall-r`]: block(hw, wcy, baseZ, WALL_T, WALL_H, hd * 2, t.wall, t.floorSide, undefined, wallTex(t, m.act)),
+    [`${P}-wall-back`]: block(0, wcy, baseZ - hd, hw * 2, WALL_H, WALL_T, t.wall, t.floorSide, undefined, wallTex(t, m.act)),
     // 前墙留中央门洞（+Z 端·通向上一间·发光门楣 + 门内符文光幕）
-    [`${P}-wall-fl`]: block(-segCx, 1.5, baseZ + hd, segW, 5, 1.5, t.wall, t.floorSide, undefined, wallTex(t, m.act)),
-    [`${P}-wall-fr`]: block(segCx, 1.5, baseZ + hd, segW, 5, 1.5, t.wall, t.floorSide, undefined, wallTex(t, m.act)),
-    [`${P}-door-top`]: block(0, 5.5, baseZ + hd, 9, 2, 1.5, t.accent, t.wall),
-    [`${P}-portal`]: block(0, 2.6, baseZ + hd - 0.2, 8, 5, 0.5, t.accent, t.accent),
-    [`${P}-door-glow`]: glow(0, 4.4, baseZ + hd - 1, t.accent, 9, 0.6), // 门符文光晕（复刻原型 door glowSprite）
+    [`${P}-wall-fl`]: block(-segCx, wcy, baseZ + hd, segW, WALL_H, WALL_T, t.wall, t.floorSide, undefined, wallTex(t, m.act)),
+    [`${P}-wall-fr`]: block(segCx, wcy, baseZ + hd, segW, WALL_H, WALL_T, t.wall, t.floorSide, undefined, wallTex(t, m.act)),
+    [`${P}-door-top`]: block(0, WALL_H + 0.16, baseZ + hd, DOOR, 0.32, WALL_T, t.accent, t.wall),
+    [`${P}-portal`]: block(0, 0.5, baseZ + hd - 0.04, DOOR - 0.15, WALL_H + 0.15, 0.08, t.accent, t.accent),
+    [`${P}-door-glow`]: glow(0, 0.75, baseZ + hd - 0.2, t.accent, 2.4, 0.6), // 门符文光晕
     // 通向上一间的短走廊（穿过门洞·暗示"还有更上面"）
-    [`${P}-corridor`]: block(0, -2, baseZ + ROOM_SPACING / 2, 9, 4, ROOM_SPACING - hd - HD, t.floorTop, t.floorSide),
-    // ── 四角发光火盆（暖光晕 + 纵向层次·微缩盒庭标志）──
+    [`${P}-corridor`]: block(0, -FLOOR_H / 2, baseZ + ROOM_SPACING / 2, DOOR, FLOOR_H, ROOM_SPACING - hd - HD, t.floorTop, t.floorSide),
+    // ── 四角发光火盆（暖光晕 + 纵向层次·微缩盒庭标志·§B @±4.3）──
     ...cornerBraziers(P, baseZ, hw, hd, t.wall, t.floorSide, BRAZIER, BRAZIER_HOT),
-    // ── 上方漂浮灯笼（加性暖光晕·复刻原型 lantern glowSprite('#ffcf8a',1.6)）──
-    [`${P}-lan1`]: glow(-8, 10.5, baseZ - 6, LANTERN, 6, 0.5),
-    [`${P}-lan2`]: glow(9, 11, baseZ + 3, LANTERN, 6, 0.5),
-    [`${P}-lan3`]: glow(0, 12, baseZ - 9, LANTERN, 6, 0.5),
+    // ── 上方漂浮灯笼（加性暖光晕·复刻原型 lantern glowSprite）──
+    [`${P}-lan1`]: glow(-2.1, 2.9, baseZ - 1.6, LANTERN, 1.6, 0.5),
+    [`${P}-lan2`]: glow(2.4, 3.1, baseZ + 0.8, LANTERN, 1.6, 0.5),
+    [`${P}-lan3`]: glow(0, 3.3, baseZ - 2.4, LANTERN, 1.6, 0.5),
     // 散落元素色块（占位美术·靠颜色区分类型）
-    [`${P}-t1`]: block(-7, 0.9, baseZ - 6, 1.4, 1.4, 1.4, t.accent, t.floorSide, 0.6),
-    [`${P}-t2`]: block(7.5, 0.9, baseZ + 5, 1.4, 1.4, 1.4, t.wall, t.floorSide, 0.6),
+    [`${P}-t1`]: block(-1.9, 0.24, baseZ - 1.6, 0.38, 0.38, 0.38, t.accent, t.floorSide, 0.6),
+    [`${P}-t2`]: block(2.0, 0.24, baseZ + 1.3, 0.38, 0.38, 0.38, t.wall, t.floorSide, 0.6),
   };
 
   if (boss) {
     // BOSS 间：中心一座发光巨块（占位"Boss"）
-    out[`${P}-boss`] = block(0, 4, baseZ, 7, 8, 7, t.accent, t.wall, 0.4);
-    out[`${P}-boss-glow`] = glow(0, 5, baseZ, t.accent, 12, 0.5);
+    out[`${P}-boss`] = block(0, 1.0, baseZ, 1.9, 2.0, 1.9, t.accent, t.wall, 0.4);
+    out[`${P}-boss-glow`] = glow(0, 1.3, baseZ, t.accent, 3.2, 0.5);
   } else {
-    // 战斗间：中心台座 + 斜摆发光宝物 + 宝物光晕（复刻原型 altar gem glowSprite(accent,2)）
-    out[`${P}-dais`] = block(0, 0.5, baseZ, 7, 1, 7, t.wall, t.floorSide);
-    out[`${P}-gem`] = block(0, 2.8, baseZ, 2.6, 2.6, 2.6, t.accent, t.accent, 0.6);
-    out[`${P}-gem-glow`] = glow(0, 2.8, baseZ, t.accent, 7, 0.6);
+    // 战斗间：中心台座 + 斜摆发光宝物 + 宝物光晕（复刻原型 altar gem glowSprite）
+    out[`${P}-dais`] = block(0, 0.18, baseZ, 1.9, 0.36, 1.9, t.wall, t.floorSide);
+    out[`${P}-gem`] = block(0, 0.78, baseZ, 0.7, 0.7, 0.7, t.accent, t.accent, 0.6);
+    out[`${P}-gem-glow`] = glow(0, 0.78, baseZ, t.accent, 1.9, 0.6);
   }
 
   // 起手间放 showcase 小黄鸭（证明 glTF 模型导入·非体素）
   if (index === 0) {
-    out['duck'] = { Transform3D: { x: 7, y: 0.5, z: 4, rotY: -2.2, scale: 3.0 }, Model3D: { modelKey: MODEL_DUCK } };
+    out['duck'] = { Transform3D: { x: 1.9, y: 0.12, z: 1.1, rotY: -2.2, scale: 0.85 }, Model3D: { modelKey: MODEL_DUCK } };
   }
 
   return out;
@@ -159,18 +168,19 @@ export function genRoom(index: number): Record<string, Ent> {
 
 /**
  * 场景**静态单例**蓝图（相机 + 光 + 后处理 + 天空盒）——房间不在这里，由 game-d.ts 运行时流式生成。
- * 相机：近俯视（垂直向下偏 ~30°·pitch≈58°·yaw=π 让出口门/上一间在屏幕上方·前进往上推）·ortho 一屏框一间·两侧留 UI。
+ * 相机 = **§B 确切值**：Orthographic fr=7·pos(0,12,7.8)·lookAt(0,0,0)（→ yaw π 让出口门在屏上方·pitch atan2(12,7.8)≈0.99·前进往上推）。
+ * 光 = §B 暖态（t≈1）：Key #fff0d8 int1.2 pos(6,11,5) 投影·Fill #6f7cff int0.20 pos(-5,4,-4)·Ambient int0.66。
  */
 export function baseBlueprint(): WorldBlueprint {
   return {
     capabilities: [],
     entities: {
-      // 近俯视 ortho·框紧一间（复刻原型 cam pos(0,12,7.8) lookAt 原点·fr≈7）。orthoSize 收到 13 让盒庭填满中段。
-      cam: { Camera3D: { yaw: Math.PI, pitch: 0.98, projection: 'ortho', orthoSize: 13, distance: 240, near: 1, far: 900, pivotX: 0, pivotY: 1.5, pivotZ: 0 } },
-      // 光照**确切复刻原型 initGame**：key 0xfff0d8 at(6,11,5)→dir(-6,-11,-5)·fill 0x6f7cff at(-5,4,-4)→dir(5,-4,4)·amb 0xffffff。
-      sun: { Light3D: { kind: 'directional', color: 0xfff0d8, intensity: 1.05, dirX: -6, dirY: -11, dirZ: -5, castShadow: true } },
-      fillDir: { Light3D: { kind: 'directional', color: 0x6f7cff, intensity: 0.35, dirX: 5, dirY: -4, dirZ: 4 } },
-      amb: { Light3D: { kind: 'ambient', color: 0xffffff, intensity: 0.6 } },
+      // §B：ortho fr7·pos(0,12,7.8) lookAt 原点 → yaw π·pitch 0.99·orthoSize 7·pivot 抬到盒庭中段(y0.35)。
+      cam: { Camera3D: { yaw: Math.PI, pitch: 0.99, projection: 'ortho', orthoSize: 7, distance: 200, near: 1, far: 900, pivotX: 0, pivotY: 0.35, pivotZ: 0 } },
+      // 光照 §B 暖态：key 0xfff0d8 at(6,11,5)→dir(-6,-11,-5) int1.2·fill 0x6f7cff at(-5,4,-4)→dir(5,-4,4) int0.20·amb 0.66。
+      sun: { Light3D: { kind: 'directional', color: 0xfff0d8, intensity: 1.2, dirX: -6, dirY: -11, dirZ: -5, castShadow: true } },
+      fillDir: { Light3D: { kind: 'directional', color: 0x6f7cff, intensity: 0.2, dirX: 5, dirY: -4, dirZ: 4 } },
+      amb: { Light3D: { kind: 'ambient', color: 0xffffff, intensity: 0.66 } },
       // 移轴景深（上下渐糊·微缩模型感）+ 轻泛光（发光物自发光）——设计案核心氛围。
       post: { Post3D: { tiltShift: { focus: 0.54, intensity: 1.7 }, bloom: { strength: 0.72, radius: 0.72, threshold: 0.6 } } },
       // 明快浅暖天穹（微缩盒庭漂在光里·非暗黑）。
