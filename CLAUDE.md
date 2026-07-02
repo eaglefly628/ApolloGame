@@ -30,6 +30,13 @@
 - 提交署名 `Claude <noreply@anthropic.com>`。提交信息以 session URL 结尾。不在产物里写模型标识。
 - 需求池 `docs/workflow/requests.md`（Lead 评审→标状态）；**3D 渲染线 + Game Z 需求/工单独立池 `docs/workflow/requests-3d.md`（owner 2026-06-28·P3D 域·新 3D 需求进这里不进 requests.md）**；各程序员开工清单 `docs/workflow/finish/{PA,PB,PC}-finish-list.md`。
 - **开发新 capability 前必查知识库**：先读 `wiki/skills/index.md` 找到对应分类，再读该分类的 `.md` 文件，了解行业最佳实践和常见陷阱，再动手实现。按需加载，不要一次性读完所有文件。
+- **effort 档位默认判断（owner 2026-07-02 拍板·控 token 开销）**：主 session 保持默认档（xhigh），只干判断类的活（架构评审、capability 设计、难 bug 根因、跨模块改动）；**能下放的活派子代理并按性质定档，不必每次问 owner**：
+  - `low`——机械/确定性活：全库搜索定位、批量重命名/格式化/替换、跑测试收集输出、资产登记、链接/清单核对；
+  - `medium`——有明确 spec 的小活：单文件小修、按 spec 写纯数据（manifest/LayoutNode/关卡配置）、补简单测试；
+  - `high`——需要理解上下文的活：多文件功能实现、常规 bug 修、UI 自检复查、常规 code review；
+  - `xhigh`——正确性关键的活：引擎 capability 下沉、难 bug 根因、架构级评审、对抗性验证（verify/判官）；
+  - `max`——默认不用，仅 owner 明示「不计成本要最对」才开。
+  - 附则：owner 说「省着点 / 这活不重要」→ 整体降一档执行；**正确性关键路径（引擎核、战斗核、确定性/回放、lockstep）不因省钱降档**。
 
 ## 关键文件
 - 宪法：`docs/design/data-driven-manifesto.md`
