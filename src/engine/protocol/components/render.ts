@@ -115,6 +115,20 @@ export interface AnimState3D extends Component {
   loop?: boolean; // 循环·缺省 true（false=播一遍停在末帧）
 }
 
+// ── Anim3D（render-only，程序化位姿动画驱动 · 3D 后端）────────────────────────────────────────
+// 让实体的 Transform3D 分量按**数据描述的运动通道**随壁钟自动演化——把「title 骰匀速自转 / 物件上下浮 / 宝石自转」
+// 这类循环动画从游戏层 `engine.subscribe` 手写逐帧改分量（绕过引擎）**下沉成纯数据**（Cloud Design 3d-motion-spec §A/§C）。
+// 闭集两种通道：`spin`(匀速自转·rad/秒) · `bob`(正弦浮动·绕初值摆)。渲染器 Anim3DSystem 每帧据初值 + 壁钟经过秒算目标分量写回。
+// 红线：**纯表现**——绝不进 sim/hash（render-only·入 NON_DETERMINISTIC）。弱 LLM 只填 field/rate/amp/freq 标量·填不了插值代码。
+export type Anim3DField = 'x' | 'y' | 'z' | 'rotX' | 'rotY' | 'rotZ' | 'scale';
+export type Anim3DChannel =
+  | { kind: 'spin'; field: 'rotX' | 'rotY' | 'rotZ'; rate: number } // field = 初值 + rate(rad/秒)·t —— 匀速自转
+  | { kind: 'bob'; field: Anim3DField; amp: number; freq: number; phase?: number }; // field = 初值 + amp·sin(t·freq + phase) —— 正弦浮动/呼吸
+export interface Anim3D extends Component {
+  readonly type: 'Anim3D';
+  channels: Anim3DChannel[]; // 多通道叠加（如骰子 rotX + rotY 双 spin·物件 y-bob + rotY-spin）
+}
+
 // ── Transform3D（render-only，真三维位姿 · 3D 后端专用）─────────────────────────────────────
 // 给实体一份**完整三维位姿**（x 右 / y 上=高度 / z 朝镜头 · 世界单位），让盒庭/积木场景真正立体堆叠。
 // 区别于 2D Transform（x,y 在屏幕平面 + zOrder 微分层 = 2.5D billboard）：挂了本件的实体，3D 后端用它定位姿

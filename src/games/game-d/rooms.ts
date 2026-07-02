@@ -154,7 +154,10 @@ export function genRoom(index: number): Record<string, Ent> {
   } else {
     // 战斗间：中心台座 + 斜摆发光宝物 + 宝物光晕（复刻原型 altar gem glowSprite）
     out[`${P}-dais`] = block(0, 0.18, baseZ, 1.9, 0.36, 1.9, t.wall, t.floorSide);
-    out[`${P}-gem`] = block(0, 0.78, baseZ, 0.7, 0.7, 0.7, t.accent, t.accent, 0.6);
+    // 祭坛宝物：自转 + 上下浮（§C 宝石 rot.y+=.02/帧≈1.2rad/s·y bob sin(tt*1.8)*.13）——render-only Anim3D 数据（非手写）。
+    out[`${P}-gem`] = { ...block(0, 0.78, baseZ, 0.7, 0.7, 0.7, t.accent, t.accent, 0.6), Anim3D: { channels: [
+      { kind: 'spin', field: 'rotY', rate: 1.2 }, { kind: 'bob', field: 'y', amp: 0.13, freq: 1.8 },
+    ] } };
     out[`${P}-gem-glow`] = glow(0, 0.78, baseZ, t.accent, 1.9, 0.6);
   }
 

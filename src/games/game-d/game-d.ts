@@ -199,6 +199,11 @@ export function mount(container: HTMLElement): () => void {
     engine.world.createEntity(TITLE_DIE);
     engine.world.addComponent(TITLE_DIE, { type: 'Transform3D', x: 0, y: -0.45, z: 0, rotX: 0.5, rotY: 0.7, scale: 1 } as unknown as Component);
     engine.world.addComponent(TITLE_DIE, { type: 'Mesh3D', shape: 'box', width: 1.95, height: 1.95, depth: 1.95, frontTint: 0xeef4ff, dieGlass: true, dieFaces: ELEM_FACES } as unknown as Component);
+    // 匀速翻滚 = **数据化 Anim3D**（复刻 §A @60fps rot.x+=.004 / rot.y+=.006 → rad/秒 .24 / .36·X 慢 Y 快·同为正）。
+    // 从前是 engine.subscribe 里逐帧手改 Transform3D（绕过引擎）→ 现下沉成 render-only 数据（第一原则）。
+    engine.world.addComponent(TITLE_DIE, { type: 'Anim3D', channels: [
+      { kind: 'spin', field: 'rotX', rate: 0.24 }, { kind: 'spin', field: 'rotY', rate: 0.36 },
+    ] } as unknown as Component);
     // 三点补光的两盏点光（复刻参考·Rim 紫 + Fill 蓝·range 30）。Ambient + Key 平行光由 setMood 改基础灯。
     engine.world.createEntity('gd-title-rim');
     engine.world.addComponent('gd-title-rim', { type: 'Light3D', kind: 'point', color: 0x9b6cff, intensity: 1.2, x: -4, y: 1, z: -3, range: 30, decay: 2 } as unknown as Component);
@@ -707,8 +712,7 @@ export function mount(container: HTMLElement): () => void {
   render();
 
   const unsub = engine.subscribe(() => {
-    // 固定轴向匀速翻滚（复刻参考 tumble·@60fps 每帧 rot.x+=.004 / rot.y+=.006·X 慢 Y 快·同为正·无随机）。
-    if (titleDieUp) { const td = engine.world.getComponent<{ type: 'Transform3D'; rotX?: number; rotY?: number }>(TITLE_DIE, 'Transform3D'); if (td) { td.rotX = (td.rotX ?? 0) + 0.004; td.rotY = (td.rotY ?? 0) + 0.006; } }
+    // title 骰匀速翻滚已下沉成 render-only `Anim3D` 数据（见 showTitleDie）——不再游戏层手改 Transform3D（第一原则·停止绕过）。
     stepTransition();
     const c = cam(); if (!c) return; const t = bgRoom * ROOM_SPACING; const cur = c.pivotZ ?? 0; c.pivotZ = Math.abs(t - cur) < 0.05 ? t : cur + (t - cur) * 0.12;
   });

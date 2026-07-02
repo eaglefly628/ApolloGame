@@ -168,3 +168,16 @@ export function orbitCamera(
     z: center.z + horiz * Math.cos(yaw),
   };
 }
+
+// ── Anim3D 通道求值（纯函数·render-only·壁钟驱动）──────────────────────────────────────────
+// spin：field = 初值 + rate(rad/秒)·t（匀速自转·帧率无关·不累积漂移）。
+// bob ：field = 初值 + amp·sin(t·freq + phase)（绕初值正弦浮动/呼吸）。
+// base = 该分量的**作者初值**（系统首见实体时从 Transform3D 捕获）；t = 壁钟经过秒。
+export function anim3dField(
+  ch: { kind: 'spin'; rate: number } | { kind: 'bob'; amp: number; freq: number; phase?: number },
+  tSec: number,
+  base: number,
+): number {
+  if (ch.kind === 'spin') return base + ch.rate * tSec;
+  return base + ch.amp * Math.sin(tSec * ch.freq + (ch.phase ?? 0));
+}

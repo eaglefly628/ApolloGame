@@ -20,6 +20,7 @@ import { CameraRig } from './three/camera-rig.js';
 import { ColliderDebug } from './three/collider-debug.js';
 import { NavDebug } from './three/nav-debug.js';
 import { VfxSystem } from './three/vfx.js';
+import { Anim3DSystem } from './three/anim3d.js';
 import { WorldUiLayer } from './three/world-ui.js';
 import type { PhysicsSystem } from './three/physics.js'; // 运行时**懒加载**（见 ensurePhysics）：physics.ts 依赖 cannon-es 重包·仅在有 RigidBody3D 时才进图，无刚体的游戏(如 game-d)不连带解析 cannon-es（修 vite dev「Failed to resolve cannon-es」）
 import { RoomEnvironment } from 'three/addons/environments/RoomEnvironment.js';
@@ -65,6 +66,7 @@ export class ThreeRenderer implements RendererBackend {
   private readonly navDebug = new NavDebug(); // 导航图/路径（debug·开关见 setDebugNav）
   private debugNav = false;
   private readonly vfx = new VfxSystem(); // 数据驱动粒子（TA Phase 1·render-only）
+  private readonly anim3d = new Anim3DSystem(); // 程序化位姿动画（Anim3D·spin/bob·render-only·把 title 骰自转等从游戏层手写下沉成数据）
   private readonly worldUi = new WorldUiLayer(); // 世界空间 UI 头顶飘字（TA Phase 3·render-only·走主程 UI 库）
   private physics: PhysicsSystem | null = null; // 真物理刚体（cannon-es·render-only·**懒加载**·仅有 RigidBody3D 时）
   private physicsLoading = false;
@@ -172,6 +174,8 @@ export class ThreeRenderer implements RendererBackend {
     const physLive = this.physics ? this.physics.sync(world, performance.now()) : 0;
     // VFX 粒子（TA Phase 1·render-only）：每帧 CPU 模拟推进。存活粒子数 >0 → 折进 renderSig 强制重渲（粒子在动）。
     const vfxLive = this.vfx.sync(this.scene, world, performance.now());
+    // 程序化位姿动画（Anim3D·render-only）：据壁钟改 Transform3D 分量（spin/bob）——须在 collect 前（渲染读更新后的位姿）。
+    const animPoseLive = this.anim3d.sync(world, performance.now());
 
     for (const r of collectRenderables(world)) {
       // 导入式 glTF 模型（Model3D）：圆润真模型。位姿与 Mesh3D 同套路。未就绪本帧不画（向后兼容）。
@@ -251,7 +255,7 @@ export class ThreeRenderer implements RendererBackend {
     // instanceMatrix 上传 + 阴影 + render（画面不变·省 CPU/GPU/带宽）——「低开销」最大单点。
     const post = getPost3D(world);
     const ph = hashPoses(poses);
-    const renderSig = `${ph}|${camSig(cam3d)}|${this.lights.lightSig}|${postSig(post)}|${sky?.scroll ? this.frame : (sky ? `${sky.top}.${sky.bottom}` : '')}|${this.debugColliders ? 'd' : ''}|${this.debugNav ? 'n' : ''}|${vfxLive > 0 ? this.frame : 'v0'}|${physLive > 0 ? this.frame : 'p0'}|${animLive > 0 ? this.frame : 'a0'}|${this.fogSig}`;
+    const renderSig = `${ph}|${camSig(cam3d)}|${this.lights.lightSig}|${postSig(post)}|${sky?.scroll ? this.frame : (sky ? `${sky.top}.${sky.bottom}` : '')}|${this.debugColliders ? 'd' : ''}|${this.debugNav ? 'n' : ''}|${vfxLive > 0 ? this.frame : 'v0'}|${physLive > 0 ? this.frame : 'p0'}|${animLive > 0 ? this.frame : 'a0'}|${animPoseLive > 0 ? this.frame : 'ap0'}|${this.fogSig}`;
     const shadowSig = `${ph}|${this.lights.lightSig}`; // 阴影只随投影体姿/灯变（相机/云飘/后处理不触发）
     if (renderSig === this.lastRenderSig) {
       this.rendered = false;
@@ -357,6 +361,7 @@ export class ThreeRenderer implements RendererBackend {
     this.colliderDebug.dispose(this.scene);
     this.navDebug.dispose(this.scene);
     this.vfx.dispose(this.scene);
+    this.anim3d.dispose();
     this.physics?.dispose();
     this.worldUi.dispose();
     this.models.dispose(this.scene);
