@@ -256,7 +256,8 @@ export function mount(container: HTMLElement): () => void {
             children: [lbl('gd-start-t', '开 始 攀 塔', { size: 19, color: 'text', bold: true, font: 'serif', tracking: 4 })] }, // TODO(REQ-UI-ink)：原型深色字 #3a2406 on gold·待主程加 Label 'ink' 深色令牌后改
           lbl('gd-start-s', `第一层 · ${layerName(1)}`, { size: 'sm', color: 'sub', tracking: 2 }),
           bareRow('gd-modes', [
-            { type: 'Button', id: 'gd-coop', props: { label: '双人同攀', kind: 'ghost', action: 'start' } },
+            // 双人=lockstep 联机（netcode 未落地·REQ-GAMED §6 另立 net 基建线）→ 诚实标注·不假装单机=双人（Lead 过渡要求）。
+            { type: 'Button', id: 'gd-coop', props: { label: '双人同攀 · 敬请期待', kind: 'ghost', action: 'noop' } },
             { type: 'Button', id: 'gd-solo', props: { label: '单人', kind: 'ghost', action: 'start' } },
             { type: 'Button', id: 'gd-set', props: { label: '设置', kind: 'ghost', action: 'noop' } },
           ], { justify: 'center', gap: 10 }),
