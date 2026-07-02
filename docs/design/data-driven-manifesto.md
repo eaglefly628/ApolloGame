@@ -57,7 +57,7 @@
 
 **"一个游戏里，数据 vs 代码的占比。"** 目标渐进逼近 **100% 数据**。每存在一个游戏专属代码文件（自定义系统 / 手写 React / 对话运行器…），这个数字就掉一点 —— 它是对本原则的**负债**，要么删（变数据），要么下沉（进引擎）。
 
-## 8. 当前诚实状态（2026-06-04）
+## 8. 当前诚实状态（2026-06-04 定格；**2026-07-02 增补**：原子 29 核心+1 扩展、capability 共 79——机读真相=`capability-registry.ts`；三游戏体检/债务见 `docs/design/engine-llm-readiness-review-2026-07-02.md`；LLM 接入唯一入口 `docs/llm-onboarding.md`）
 
 - ✅ 已有：数据驱动的 substrate（26 原子 + Tier1-4 涌现 capability + 蓝图 + Condition→Event→Effect + TBF 资产）。
 - ❌ 仍是代码债：游戏层手写系统、手写 React UI、`*.ts` 蓝图（应变纯数据 manifest）。

@@ -1,7 +1,7 @@
 import { defineCapability } from '@engine/core/define-capability.js';
 import type { StringVar, StringSet } from '@engine/protocol/components.js';
 
-// string-variable —— 命名字符串容器原子（周期表 X3）。核心 26 原子只有数值(Resource)/布尔(Flag)容器，
+// string-variable —— 命名字符串容器原子（周期表 X3）。核心原子只有数值(Resource)/布尔(Flag)容器，
 // 叙事/换装/结局标识缺一个 string 容器。仿 Resource+ResourceModify+resource-apply 三件套：
 //   StringVar{id,value}（持久）+ StringSet{id,value}（一次性写事件）+ string-apply（应用并消费）。
 // StringSet 全局按 id 路由（同实体优先，否则全局），与 R11 一致——游戏层"设 story-node=scene_2"不必知道它住哪。

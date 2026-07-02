@@ -1,5 +1,7 @@
 # Apollo Engine — 原子 Skill 清单 v6 (游戏元素周期表)
 
+> ⚠ **历史文档（口径已过期）**：原子数/能力数/游戏清单/测试数以机读真相为准（`docs/llm-onboarding.md` §0）。本文仅存考古价值，新 session/新 LLM 勿以此为教材。
+
 > **判定标准：能用其他原子的组合描述 → 不是原子。每个原子回答一个且仅一个问题。**
 >
 > v6 变更：四引擎交叉验证（Bevy / Unity DOTS / Godot / Phaser）。

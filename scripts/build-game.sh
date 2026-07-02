@@ -3,15 +3,16 @@
 set -euo pipefail
 cd "$(dirname "$0")/.."
 
-GAME_IDS=(game-a game-b game-c game-d game-e game-f game-g)
+GAME_IDS=(game-d game-e game-f game-g game-h game-i game-x game-z)
 GAME_NAMES=(
-  "Game A: Co-op Adventure   · 双人协作冒险"
-  "Game B: Otome VN          · 乙游视觉小说"
-  "Game C: Stitch & Style    · 缝纫物语 · 换装三消"
-  "Game D: Diablo-like ARPG  · 暗黑类 ARPG 切片"
+  "Game D: Dice & Dungeons   · 骰途 · 骰子roguelike"
   "Game E: Balatro-like      · 小丑牌 · 卡牌构建"
   "Game F: Pixel 3 Kingdoms  · 像素三分天下 · 自走棋"
-  "Game G: Fateflip Poker    · 翻命扑克 · 3D 掷命骨架"
+  "Game G: Fateflip Poker    · 翻命扑克"
+  "Game H: 3D Blackjack      · 3D 21点"
+  "Game I: UI Gallery        · 控件测试场"
+  "Game X: Living Companion  · 残响"
+  "Game Z: Diorama           · 盒庭 · 3D渲染线"
 )
 
 # ── Menu ──────────────────────────────────────────────────────────────────────

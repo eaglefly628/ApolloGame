@@ -6,7 +6,7 @@
 
 ## 0. 给 Gemini：背景 + 请评审什么
 
-Apollo Engine = **游戏即数据**：ECS 引擎是固定的确定性解释器；一局游戏 = 一份 **Manifest**（`{ capabilities:[能力id], entities:{ 实体id:{ 组件名:数据 } } }`），导出/导入对称（`exportManifest`/`parseManifest`）。26 原子组件 + Tier1/2/3 能力 + 逻辑链 Condition→Event→Effect。
+Apollo Engine = **游戏即数据**：ECS 引擎是固定的确定性解释器；一局游戏 = 一份 **Manifest**（`{ capabilities:[能力id], entities:{ 实体id:{ 组件名:数据 } } }`），导出/导入对称（`exportManifest`/`parseManifest`）。原子组件（29 核心+1 扩展）+ Tier1/2/3 能力 + 逻辑链 Condition→Event→Effect。
 
 现在要在其上做一个**商业级编辑器**，目标两条：(a) 对人类友好（传统可视化编辑）；(b) **对任意强弱大语言模型都鲁棒**——我们刻意要支持多模型，弱到 7B 本地模型也要能稳定产出可用编辑，不赌单一强模型。
 

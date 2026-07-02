@@ -1,4 +1,11 @@
 # Session 交接 / 项目现状（2026-06-22 · Game G playtest）
+
+> ⚠ **2026-07-02 增补横幅（主程）**：本文件主体定格 2026-06-22、已落后主干 60+ 提交。读"现状"以下列为准：
+> ① 游戏清单/治理态见 `docs/llm-onboarding.md` §4——**game-d 已由 ARPG 推倒重写为骰途**、a/b/c 已删、**D+G=唯二出口游戏**（owner 拍板）；
+> ② §0 末的 `kind-gates-xtajic`「大规模重构」条目**作废**——查实该分支从未有重构提交（只是 6-22 主线快照，10 天零活动）；
+> ③ §0a game-f「下一步=多人」已被冻结令覆盖（CLAUDE.md：owner 2026-06-25 拍板暂冻）；
+> ④ 引擎能力现况（79 capability·骰能力族/wild 已下沉）见 `docs/workflow/requests.md` REQ-GAMED 条目与 llm-onboarding §0 机读真相。
+
 > 纲领：`data-driven-manifesto.md`｜规范：`CLAUDE.md`｜需求池：`requests.md`
 > **分工**：主程只动引擎+文档；游戏层任务走 `docs/workflow/programmer/inbox.md` 派 PE；PE 不得直改引擎。
 

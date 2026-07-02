@@ -514,7 +514,7 @@ function StatusBar({ status }: { status: ProjectStatus | null }) {
       padding: '8px 0',
     }}>
       <span>Branch: <b style={{ color: '#94a3b8' }}>{status.branch}</b></span>
-      <span>Atoms: <b style={{ color: '#38bdf8' }}>{status.atoms}/26</b></span>
+      <span>Atoms: <b style={{ color: '#38bdf8' }}>{status.atoms}</b></span>
       <span>Tests: <b style={{ color: '#94a3b8' }}>{status.testFiles}</b></span>
       <span>Skills: <b style={{ color: '#94a3b8' }}>{status.skillModules}</b></span>
       <span>Themes: <b style={{ color: '#a78bfa' }}>{status.themes?.length ?? 0}</b></span>

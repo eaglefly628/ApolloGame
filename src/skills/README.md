@@ -4,7 +4,7 @@
 
 ```
 src/skills/
-├── atoms/   核心 26 原子（不可变基础真理；本身不算 tier）
+├── atoms/   核心原子 29 个（不可变基础真理；本身不算 tier；唯一真相=atoms/index.ts）
 │            空间/运动/形状/碰撞/时间/数值/标识/控制/输入/状态/生命周期/感知/世界级
 ├── tier1/   直接结算 (Kinematic)        — accel-apply / motion-apply / lifetime /
 │            （读组件→直接写组件，无跨实体）  rotation-apply / animation / hierarchy-resolve

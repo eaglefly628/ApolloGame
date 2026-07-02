@@ -166,7 +166,7 @@ def run_command(cmd: list[str], timeout: int = 120) -> dict:
 
 GAME_GEN_SYSTEM_PROMPT = """You are Apollo Engine's game generator. You create playable 2D games by outputting Assembly blueprints (JSON).
 
-## Available Atom Components (26 total)
+## Available Atom Components (30 registered: 29 core + string-variable; source of truth = src/skills/atoms/index.ts)
 
 Position: Transform { x, y, rotation, scaleX, scaleY }
 Motion: Velocity { vx, vy, angular }, Acceleration { ax, ay }, Mass { value }
@@ -894,7 +894,7 @@ def cmd_status():
     s = get_project_status()
     print(c("  Branch:", 'w'), s['branch'])
     print(c("  Last commit:", 'w'), s['lastCommit'])
-    print(c("  Atoms:", 'c'), f"{s['atoms']}/26")
+    print(c("  Atoms:", 'c'), f"{s['atoms']}")
     print(c("  Test files:", 'c'), s['testFiles'])
     print(c("  Skill modules:", 'c'), s['skillModules'])
     print(c("  UI themes:", 'c'), f"{len(s['themes'])} ({', '.join(s['themes'])})")

@@ -1,5 +1,5 @@
 // ═══════════════════════════════════════════════════════════════
-//  Atom Skills — 26 核心原子统一导出
+//  Atom Skills — 核心原子统一导出（29 核心 + 1 扩展；唯一真相=本文件导出表）
 //  参见 wiki/atom-skill-periodic-table.md
 // ═══════════════════════════════════════════════════════════════
 import type { CapabilityDefinition } from '@engine/core/define-capability.js';
@@ -34,7 +34,7 @@ import { textCapability } from './text/index.js';
 import { randomCapability } from './random/index.js';
 import { spatialQueryCapability } from './spatial-query/index.js';
 
-// 扩展原子（周期表 Extension，非核心 26）
+// 扩展原子（周期表 Extension，非核心原子）
 import { stringVariableCapability } from './string-variable/index.js';
 
 export {
@@ -74,7 +74,7 @@ export {
 export { nextRandom, randomInt, chancePass, mulberry32, seededShuffle } from './random/index.js';
 export { queryRange, queryNearest } from './spatial-query/index.js';
 
-// 全部 26 个核心原子（用于注册到 World 或 assembly 蓝图）
+// 全部核心原子（29 个；用于注册到 World 或 assembly 蓝图）
 export const allAtomCapabilities: CapabilityDefinition[] = [
   transformCapability,
   hierarchyCapability,
@@ -107,5 +107,5 @@ export const allAtomCapabilities: CapabilityDefinition[] = [
   spatialQueryCapability,
 ];
 
-// 扩展原子（按需引入，不计入核心 26）。
+// 扩展原子（按需引入，不计入核心原子）。
 export const extensionAtomCapabilities: CapabilityDefinition[] = [stringVariableCapability];
