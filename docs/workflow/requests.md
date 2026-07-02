@@ -895,3 +895,13 @@ _（REQ-3D-W1高效引擎 已移至 [`requests-3d.md`](./requests-3d.md)。）_
 > ③ 新建 `scripts/manifest-check.mjs`：node CLI，stdin 读 manifest JSON → 跑引擎 `parseManifest`（TS 执行方式施工者裁量：查 devDeps 现成 runner，vite 必在可用 vite-node；或其它零新依赖方案）→ error>0 则 exit 1 并打印错误清单（供回喂 LLM）。
 > ④ 测试：manifest-check 配 vitest 用例（合法/非法 manifest）；apollo.py 端点写 python 冒烟脚本（起服务打请求，含 `../` 路径穿越必须 4xx 的用例）。
 > ⑤ 门禁 tsc+vitest+build 全绿 + apollo.py ast 过，直推 mainbranch；**不碰 launcher.tsx / src 引擎域**；完工本条标 ✅。
+
+### REQ-STUDIO-M1-卡带架接库 · 创作台 v1 前端：玩家模式 + 数据卡带运行器 · [2026-07-02] · 主程 → **指派：Opus** · status: **施工中（2026-07-02 开工）** · 类型: 产品化·前端（不碰引擎）
+> 前置：M0 ✅（library 七端点·校验落盘·git 版本化）。本条=首页方案（owner 已过目 mockup）的 M1 落地。
+> **实现 spec（Lead 已定）**：
+> ① **玩家模式**：URL `?mode=player`。玩家模式下内置 GAMES 与 DevTools 隐藏，卡带架数据源=`GET /api/library`；空库态=欢迎语「你的游戏架还是空的」+ 虚线呼吸「新建游戏」空卡位（点击→打开现有 GameCreator 面板，M2 再升级向导）+「装入官方示例卡带」次按钮（`POST /api/library/install-sample` 后刷新）。dev 模式（无参）一切照旧 + library 卡带追加显示。
+> ② **library 卡带**：meta.json → GameEntry 映射（name/subtitle/color/accentColor/icon），**复用现有 Cartridge 组件不改视觉**。
+> ③ **DataCartridgeRunner**：选中 library 卡带出操作条「▶ 开始游戏 / ✎ 继续创作（打开 GameCreator）/ ⟲ 版本历史 / ⤓ 导出（禁用占位）」。▶ = GET manifest → resolveArtRefs（照 openInStudio 流程 launcher.tsx:746-759）→ parseManifest → **全屏纯运行**（无检查器 chrome，左上「← 返回架上」）。⟲ = 浮层列 `GET history`，逐行「回滚」调 rollback 后刷新。
+> ④ **顶栏 API 状态灯**：读 `/api/generate/providers`——有 key→绿「已连接·<provider>」，无→琥珀「未配置 API Key」（点击占位，M3 设置页）。
+> ⑤ 约束：只动 `src/launcher.tsx` + 新建同层组件；**不碰 src/{engine,skills,assembly,renderer,ui,games}**（只读 import 允许）；视觉照 mockup。
+> ⑥ 测试：happy-dom 无头用例——空库态渲染含「新建游戏」；meta→GameEntry 映射单测；DataCartridgeRunner 以最小合法 manifest 无头挂载不抛错。门禁 tsc+vitest+build 全绿直推；完工标 ✅。
