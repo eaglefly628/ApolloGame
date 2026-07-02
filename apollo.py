@@ -254,7 +254,22 @@ LLM_PROVIDERS = {
     },
 }
 
+# ── Mock provider（测试基建·仅 env 开启时可见）─────────────────────────
+# APOLLO_MOCK_LLM=1 → providers 多一个恒 available 的 'mock'：generate 回内置合法 manifest、
+# revise 对传入 manifest 做一处确定性小改（改首个实体 Color.tint）、回显完整 JSON。供冒烟/e2e
+# 无 API key 可跑全链路。APOLLO_MOCK_BAD_N=<n> → 前 n 次响应回坏 JSON（测服务端 autofix 重试）。
+# mock 绝不进默认 providers 列表（无 env 时对生产完全不可见）。
+def _mock_enabled() -> bool:
+    return os.environ.get('APOLLO_MOCK_LLM', '') in ('1', 'true', 'yes')
+
+# 剩余「坏 JSON」次数（进程级可变状态；autofix 回路每消费一次自减）。
+_MOCK_BAD_REMAINING = int(os.environ.get('APOLLO_MOCK_BAD_N') or 0)
+# mock 修订用的确定性染色目标（与常见预设色不同 → 测试可断言「确实改了」）。
+_MOCK_REVISE_TINT = 0xff0000
+
 def get_api_key(provider: str) -> str | None:
+    if provider == 'mock':
+        return 'mock' if _mock_enabled() else None
     info = LLM_PROVIDERS.get(provider, {})
     env_key = info.get('env_key', '')
     if not env_key:
@@ -278,36 +293,9 @@ def get_available_providers() -> list[dict]:
             'models': info['models'],
             'available': has_key,
         })
+    if _mock_enabled():
+        result.append({'id': 'mock', 'name': 'Mock (test)', 'models': ['mock'], 'available': True})
     return result
-
-def call_llm(prompt: str, provider: str = 'anthropic', model: str | None = None, catalog: str | None = None) -> dict:
-    """Call LLM API to generate game blueprint. Supports multiple providers.
-
-    catalog: 前端从引擎 ALL_CAPABILITIES 自动派生的能力目录（buildCapabilityCatalog）。注入 System
-    Prompt 的 {CAPABILITY_CATALOG} 占位符 → 任何能力一登记即对 AI 可见，零 prompt 维护、不漂移。"""
-    api_key = get_api_key(provider)
-    if not api_key:
-        env_key = LLM_PROVIDERS.get(provider, {}).get('env_key', '?')
-        return {
-            'success': False,
-            'error': f'No API key for {provider}. Set {env_key} in .env file.',
-            'blueprint': None,
-        }
-
-    dispatch = {
-        'anthropic': _call_anthropic,
-        'qwen': _call_qwen,
-        'openai': _call_openai_compatible,
-        'deepseek': _call_deepseek,
-        'local': _call_ollama,
-    }
-    fn = dispatch.get(provider)
-    if not fn:
-        return {'success': False, 'error': f'Unknown provider: {provider}', 'blueprint': None}
-
-    default_model = LLM_PROVIDERS[provider]['models'][0]
-    system = GAME_GEN_SYSTEM_PROMPT.replace('{CAPABILITY_CATALOG}', catalog or _FALLBACK_CATALOG)
-    return fn(prompt, api_key, model or default_model, system)
 
 def _extract_json(text: str) -> str:
     if '```json' in text:
@@ -316,92 +304,188 @@ def _extract_json(text: str) -> str:
         text = text.split('```')[1].split('```')[0]
     return text.strip()
 
-def _call_anthropic(prompt: str, api_key: str, model: str, system: str) -> dict:
-    url = 'https://api.anthropic.com/v1/messages'
-    headers = {
-        'Content-Type': 'application/json',
-        'x-api-key': api_key,
-        'anthropic-version': '2023-06-01',
-    }
-    body = json.dumps({
-        'model': model,
-        'max_tokens': 4096,
-        'system': system,
-        'messages': [{'role': 'user', 'content': prompt}],
-    }).encode()
-    return _do_llm_request(url, headers, body)
+# ── 统一 LLM 传输层（system + messages[{role,content}] → 原始文本）──────────
+# generate（单轮）与 autofix（多轮回喂错误）共用一条传输。mock provider 在此短路。
+# 各 provider 的 chat 格式差异只在这里消化：anthropic 走独立 system 字段，其余（OpenAI 兼容 /
+# Ollama）把 system 折成首条 system message。返回 {success, text} 或 {success:False, error}。
+_OPENAI_COMPAT_URLS = {
+    'qwen': 'https://dashscope.aliyuncs.com/compatible-mode/v1/chat/completions',
+    'deepseek': 'https://api.deepseek.com/chat/completions',
+}
 
-def _call_qwen(prompt: str, api_key: str, model: str, system: str) -> dict:
-    url = 'https://dashscope.aliyuncs.com/compatible-mode/v1/chat/completions'
-    headers = {
-        'Content-Type': 'application/json',
-        'Authorization': f'Bearer {api_key}',
-    }
-    body = json.dumps({
-        'model': model,
-        'max_tokens': 4096,
-        'messages': [
-            {'role': 'system', 'content': system},
-            {'role': 'user', 'content': prompt},
-        ],
-    }).encode()
-    return _do_llm_request(url, headers, body, openai_format=True)
-
-def _call_openai_compatible(prompt: str, api_key: str, model: str, system: str) -> dict:
-    base_url = os.environ.get('OPENAI_BASE_URL', 'https://api.openai.com/v1')
-    url = f'{base_url}/chat/completions'
-    headers = {
-        'Content-Type': 'application/json',
-        'Authorization': f'Bearer {api_key}',
-    }
-    body = json.dumps({
-        'model': model,
-        'max_tokens': 4096,
-        'messages': [
-            {'role': 'system', 'content': system},
-            {'role': 'user', 'content': prompt},
-        ],
-    }).encode()
-    return _do_llm_request(url, headers, body, openai_format=True)
-
-def _call_deepseek(prompt: str, api_key: str, model: str, system: str) -> dict:
-    url = 'https://api.deepseek.com/chat/completions'
-    headers = {
-        'Content-Type': 'application/json',
-        'Authorization': f'Bearer {api_key}',
-    }
-    body = json.dumps({
-        'model': model,
-        'max_tokens': 4096,
-        'messages': [
-            {'role': 'system', 'content': system},
-            {'role': 'user', 'content': prompt},
-        ],
-    }).encode()
-    return _do_llm_request(url, headers, body, openai_format=True)
-
-def _call_ollama(prompt: str, _key: str, model: str, system: str) -> dict:
-    url = os.environ.get('OLLAMA_URL', 'http://localhost:11434') + '/api/chat'
-    headers = {'Content-Type': 'application/json'}
-    body = json.dumps({
-        'model': model,
-        'stream': False,
-        'messages': [
-            {'role': 'system', 'content': system},
-            {'role': 'user', 'content': prompt},
-        ],
-    }).encode()
+def _provider_request(provider: str, api_key: str, model: str, system: str, messages: list) -> dict:
+    if provider == 'mock':
+        return _mock_response(messages)
     try:
+        if provider == 'anthropic':
+            url = 'https://api.anthropic.com/v1/messages'
+            headers = {'Content-Type': 'application/json', 'x-api-key': api_key, 'anthropic-version': '2023-06-01'}
+            body = json.dumps({'model': model, 'max_tokens': 4096, 'system': system, 'messages': messages}).encode()
+            fmt, timeout = 'anthropic', 60
+        elif provider == 'local':
+            url = os.environ.get('OLLAMA_URL', 'http://localhost:11434') + '/api/chat'
+            headers = {'Content-Type': 'application/json'}
+            body = json.dumps({'model': model, 'stream': False,
+                               'messages': [{'role': 'system', 'content': system}, *messages]}).encode()
+            fmt, timeout = 'ollama', 120
+        else:  # OpenAI 兼容：qwen / deepseek / openai(+兼容端)
+            url = _OPENAI_COMPAT_URLS.get(provider) or (
+                os.environ.get('OPENAI_BASE_URL', 'https://api.openai.com/v1') + '/chat/completions')
+            headers = {'Content-Type': 'application/json', 'Authorization': f'Bearer {api_key}'}
+            body = json.dumps({'model': model, 'max_tokens': 4096,
+                               'messages': [{'role': 'system', 'content': system}, *messages]}).encode()
+            fmt, timeout = 'openai', 60
         req = urllib.request.Request(url, data=body, headers=headers, method='POST')
-        with urllib.request.urlopen(req, timeout=120) as resp:
+        with urllib.request.urlopen(req, timeout=timeout) as resp:
             data = json.loads(resp.read().decode())
+        if fmt == 'anthropic':
+            text = data.get('content', [{}])[0].get('text', '')
+        elif fmt == 'ollama':
             text = data.get('message', {}).get('content', '')
-            text = _extract_json(text)
-            blueprint = json.loads(text)
-            warnings = _validate_blueprint(blueprint)
-            return {'success': True, 'error': None, 'blueprint': blueprint, 'warnings': warnings}
+        else:
+            text = data.get('choices', [{}])[0].get('message', {}).get('content', '')
+        return {'success': True, 'text': text}
+    except urllib.error.HTTPError as e:
+        err_body = e.read().decode() if hasattr(e, 'read') else str(e)
+        return {'success': False, 'error': f'API error {e.code}: {err_body[:500]}'}
     except Exception as e:
-        return {'success': False, 'error': str(e), 'blueprint': None}
+        return {'success': False, 'error': str(e)}
+
+# ── Mock 响应（无 key 测试用）──────────────────────────────────────────
+def _mock_manifest() -> dict:
+    """内置合法 manifest = platformer 预设的规范形态（含 name/description·深拷贝防污染）。"""
+    p = PRESET_BLUEPRINTS['platformer']
+    return {
+        'name': p['name'], 'description': p.get('description', ''),
+        'capabilities': list(p['capabilities']),
+        'entities': json.loads(json.dumps(p['entities'])),
+    }
+
+def _mock_revise(current: dict) -> dict:
+    """对传入 manifest 做一处**确定性**小改：优先取首个（按 key 排序）已有 Color 的实体、否则首个实体，
+    把其 Color.tint 改成 _MOCK_REVISE_TINT（无 Color 则补一个并确保 l2-color 在 capabilities）。
+    回完整 manifest。测试据此断言「确实改了」。"""
+    m = json.loads(json.dumps(current)) if isinstance(current, dict) else {'capabilities': [], 'entities': {}}
+    entities = m.get('entities')
+    if not isinstance(entities, dict) or not entities:
+        return _mock_manifest()
+    keys = sorted(entities.keys())
+    # 优先染一个「可见」（已有 Color）的实体，视觉上更像真的改动，退而求其次取首个。
+    target = next((k for k in keys if isinstance(entities[k], dict) and isinstance(entities[k].get('Color'), dict)), keys[0])
+    ent = entities[target]
+    if isinstance(ent, dict):
+        color = ent.get('Color')
+        if isinstance(color, dict):
+            color['tint'] = _MOCK_REVISE_TINT
+        else:
+            ent['Color'] = {'tint': _MOCK_REVISE_TINT, 'alpha': 1}
+            caps = m.get('capabilities')
+            if isinstance(caps, list) and 'l2-color' not in caps:
+                caps.append('l2-color')
+    return m
+
+def _mock_response(messages: list) -> dict:
+    """generate → 内置 manifest；revise（某条 user 消息带「## Current game manifest」）→ 确定性改一处。
+    _MOCK_BAD_REMAINING>0 时先回坏 JSON（每次自减），驱动服务端 autofix 回路。"""
+    global _MOCK_BAD_REMAINING
+    if _MOCK_BAD_REMAINING > 0:
+        _MOCK_BAD_REMAINING -= 1
+        return {'success': True, 'text': '{ "name": "broken", oops not valid json '}
+    marker = '## Current game manifest'
+    revise_src = next((str(m.get('content', '')) for m in messages
+                       if m.get('role') == 'user' and marker in str(m.get('content', ''))), None)
+    if revise_src is not None:
+        try:
+            block = revise_src.split(marker, 1)[1].split('## User instruction', 1)[0].strip()
+            current = json.loads(_extract_json(block))
+        except Exception:
+            current = _mock_manifest()
+        return {'success': True, 'text': json.dumps(_mock_revise(current), ensure_ascii=False)}
+    return {'success': True, 'text': json.dumps(_mock_manifest(), ensure_ascii=False)}
+
+# ── 生成管线：单轮生成 + 服务端 autofix 重试（落地 ai-dev-pipeline §7-5）─────
+def _generate_with_autofix(provider: str, api_key: str, model: str, system: str,
+                           user_msg: str, autofix: bool, max_attempts: int = 3) -> dict:
+    """messages 起于一条 user_msg。每轮：调 LLM → JSON parse →（autofix 时）manifest-check 校验。
+    失败把错误文本回喂当作下一轮 user 消息重问，≤max_attempts。传输/网络错误直接返回（不重试网络层）。
+    autofix=False：只跑一轮 + 软告警（_validate_blueprint），保持旧 GameCreator 行为不变。"""
+    messages = [{'role': 'user', 'content': user_msg}]
+    attempts = 0
+    fixed_errors: list[str] = []
+    limit = max_attempts if autofix else 1
+    while attempts < limit:
+        attempts += 1
+        r = _provider_request(provider, api_key, model, system, messages)
+        if not r.get('success'):
+            return {'success': False, 'error': r.get('error', 'LLM 请求失败'),
+                    'blueprint': None, 'attempts': attempts, 'fixed_errors': fixed_errors}
+        text = r['text']
+        try:
+            manifest = json.loads(_extract_json(text))
+        except Exception as e:
+            if not autofix:
+                return {'success': False, 'error': f'Invalid JSON from LLM: {e}',
+                        'blueprint': None, 'attempts': attempts, 'fixed_errors': fixed_errors}
+            fixed_errors.append(f'输出不是合法 JSON：{e}')
+            messages += [{'role': 'assistant', 'content': text},
+                         {'role': 'user', 'content': f'你上次的输出不是合法 JSON（{e}）。只输出完整的 manifest 纯 JSON，不要 markdown 围栏、不要任何解释。'}]
+            continue
+        if not autofix:
+            warnings = _validate_blueprint(manifest)
+            return {'success': True, 'error': None, 'blueprint': manifest, 'manifest': manifest,
+                    'warnings': warnings, 'attempts': attempts, 'fixed_errors': fixed_errors}
+        ok, msg = _run_manifest_check(manifest)
+        if ok:
+            warnings = _validate_blueprint(manifest)
+            return {'success': True, 'error': None, 'blueprint': manifest, 'manifest': manifest,
+                    'warnings': warnings, 'attempts': attempts, 'fixed_errors': fixed_errors}
+        fixed_errors.append(msg)
+        messages += [{'role': 'assistant', 'content': text},
+                     {'role': 'user', 'content': f'该 manifest 未通过引擎校验，错误如下：\n{msg}\n请修正并只输出完整的修正后 manifest 纯 JSON。'}]
+    return {'success': False, 'error': f'自动修正 {attempts} 次后仍未通过校验，换个说法再试试。',
+            'blueprint': None, 'attempts': attempts, 'fixed_errors': fixed_errors,
+            'raw_error': fixed_errors[-1] if fixed_errors else None}
+
+def handle_generate(body: dict) -> dict:
+    """POST /api/generate 的处理核。mode='create'（默认）从 prompt 生成；mode='revise' 从
+    current_manifest + instruction 生成完整修订版。autofix=True 开服务端校验重试回路。"""
+    provider = body.get('provider', 'anthropic')
+    catalog = body.get('catalog', None)
+    mode = body.get('mode', 'create')
+    autofix = bool(body.get('autofix', False))
+    system = GAME_GEN_SYSTEM_PROMPT.replace('{CAPABILITY_CATALOG}', catalog or _FALLBACK_CATALOG)
+
+    if provider != 'mock' and provider not in LLM_PROVIDERS:
+        return {'success': False, 'error': f'Unknown provider: {provider}', 'blueprint': None}
+
+    api_key = get_api_key(provider)
+    if not api_key:
+        env_key = LLM_PROVIDERS.get(provider, {}).get('env_key', '?')
+        hint = 'mock provider 未启用（需 APOLLO_MOCK_LLM=1）' if provider == 'mock' else f'Set {env_key} in .env file.'
+        return {'success': False, 'error': f'No API key for {provider}. {hint}', 'blueprint': None}
+
+    if mode == 'revise':
+        current = body.get('current_manifest')
+        instruction = str(body.get('instruction') or '').strip()
+        if not isinstance(current, dict):
+            return {'success': False, 'error': 'revise 需要 current_manifest（对象）', 'blueprint': None}
+        if not instruction:
+            return {'success': False, 'error': 'revise 需要 instruction（非空修改指令）', 'blueprint': None}
+        user_msg = (
+            '## Current game manifest\n'
+            + json.dumps(current, ensure_ascii=False, indent=2)
+            + '\n\n## User instruction\n' + instruction
+            + '\n\nOutput the COMPLETE revised manifest as pure JSON.'
+        )
+    else:
+        prompt = str(body.get('prompt') or '').strip()
+        if not prompt:
+            return {'success': False, 'error': 'No prompt provided', 'blueprint': None}
+        user_msg = prompt
+
+    models = LLM_PROVIDERS.get(provider, {}).get('models') or ['mock']
+    model = body.get('model') or models[0]
+    return _generate_with_autofix(provider, api_key, model, system, user_msg, autofix)
 
 VALID_COMPONENT_TYPES = {
     'Transform', 'Velocity', 'Acceleration', 'Mass', 'Shape', 'Overlap',
@@ -438,32 +522,6 @@ def _validate_blueprint(bp: dict) -> list[str]:
     if not has_camera:
         warnings.append('No Camera entity found — rendering may fail')
     return warnings
-
-def _do_llm_request(url: str, headers: dict, body: bytes, openai_format: bool = False) -> dict:
-    req = urllib.request.Request(url, data=body, headers=headers, method='POST')
-    try:
-        with urllib.request.urlopen(req, timeout=60) as resp:
-            data = json.loads(resp.read().decode())
-            if openai_format:
-                text = data.get('choices', [{}])[0].get('message', {}).get('content', '')
-            else:
-                text = data.get('content', [{}])[0].get('text', '')
-            text = _extract_json(text)
-            blueprint = json.loads(text)
-            warnings = _validate_blueprint(blueprint)
-            return {
-                'success': True,
-                'error': None,
-                'blueprint': blueprint,
-                'warnings': warnings,
-            }
-    except urllib.error.HTTPError as e:
-        err_body = e.read().decode() if hasattr(e, 'read') else str(e)
-        return {'success': False, 'error': f'API error {e.code}: {err_body[:500]}', 'blueprint': None}
-    except json.JSONDecodeError as e:
-        return {'success': False, 'error': f'Invalid JSON from LLM: {e}', 'blueprint': None}
-    except Exception as e:
-        return {'success': False, 'error': str(e), 'blueprint': None}
 
 # 物理/球类预设共用的能力 id 集（相机居中静态 → 世界↔屏幕 1:1，实体可见）。
 _PHYSICS_CAPS = ['a1-transform', 'b1-velocity', 'b2-acceleration', 'c1-shape', 'l2-color',
@@ -1055,19 +1113,19 @@ class APIHandler(BaseHTTPRequestHandler):
             return
 
         if path == '/api/generate':
-            prompt = body.get('prompt', '')
             provider = body.get('provider', 'anthropic')
-            model = body.get('model', None)
-            catalog = body.get('catalog', None)  # 前端从引擎 ALL_CAPABILITIES 自动派生的能力目录
-            if not prompt:
-                data = {'success': False, 'error': 'No prompt provided', 'blueprint': None}
+            mode = body.get('mode', 'create')
+            label = (body.get('instruction') if mode == 'revise' else body.get('prompt')) or ''
+            print(c("  [GENERATE]", 'm'), f"[{provider}·{mode}] {str(label)[:60]}...")
+            try:
+                data = handle_generate(body)
+            except Exception as e:  # 防御：单次生成失败不拖死 API 进程
+                data = {'success': False, 'error': f'生成异常: {e}', 'blueprint': None}
+            if data.get('success'):
+                print(c("  [GENERATE]", 'g'),
+                      f"OK: {(data.get('blueprint') or {}).get('name', '?')} (attempts={data.get('attempts')})")
             else:
-                print(c("  [GENERATE]", 'm'), f"[{provider}] {prompt[:60]}...")
-                data = call_llm(prompt, provider, model, catalog)
-                if data['success']:
-                    print(c("  [GENERATE]", 'g'), f"Generated: {data['blueprint'].get('name', '?')}")
-                else:
-                    print(c("  [GENERATE]", 'r'), f"Failed: {data.get('error', '?')[:80]}")
+                print(c("  [GENERATE]", 'r'), f"Failed: {str(data.get('error', '?'))[:80]}")
         elif path == '/api/assets/import':
             try:
                 data = handle_asset_import(body)

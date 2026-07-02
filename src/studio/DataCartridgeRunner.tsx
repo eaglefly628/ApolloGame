@@ -248,7 +248,7 @@ export function VersionHistoryOverlay({ api, slug, onClose, onRolledBack }: {
 // ── 纯运行：build 引擎 + CanvasRenderer 跑 WorldBlueprint（无检查器面板）──
 const RUN_VP = { w: 960, h: 600 };
 
-function RunOnly({ blueprint }: { blueprint: WorldBlueprint }) {
+function RunOnly({ blueprint, vp = RUN_VP }: { blueprint: WorldBlueprint; vp?: { w: number; h: number } }) {
   const ref = useRef<HTMLDivElement>(null);
   useEffect(() => {
     const div = ref.current;
@@ -256,7 +256,7 @@ function RunOnly({ blueprint }: { blueprint: WorldBlueprint }) {
     div.innerHTML = '';
     const engine = new Engine({ tickRate: 60 });
     engine.load(blueprint);
-    const renderer = new CanvasRenderer({ width: RUN_VP.w, height: RUN_VP.h });
+    const renderer = new CanvasRenderer({ width: vp.w, height: vp.h });
     engine.attachRenderer(renderer, div);
     engine.start();
     return () => {
@@ -264,8 +264,37 @@ function RunOnly({ blueprint }: { blueprint: WorldBlueprint }) {
       renderer.destroy();
       div.innerHTML = '';
     };
-  }, [blueprint]);
-  return <div ref={ref} style={{ width: RUN_VP.w, height: RUN_VP.h, maxWidth: '100%' }} />;
+  }, [blueprint, vp.w, vp.h]);
+  return <div ref={ref} style={{ width: vp.w, height: vp.h, maxWidth: '100%' }} />;
+}
+
+// ── 预览运行核（喂 manifest 而非拉 slug）：创作向导的「预览试玩」复用同一 RunOnly。
+//    raw manifest → resolveArt（art: 选材，可选）→ parseManifest → RunOnly；解析失败出错误态不白屏。
+export function ManifestPreview({ manifest, resolveArt, vp = { w: 640, h: 400 } }: {
+  manifest: unknown;
+  resolveArt?: (raw: unknown) => unknown;
+  vp?: { w: number; h: number };
+}) {
+  const parsed = React.useMemo((): { ok: true; bp: WorldBlueprint } | { ok: false; message: string } => {
+    try {
+      const bp = parseManifest(resolveArt ? resolveArt(manifest) : manifest);
+      return { ok: true, bp };
+    } catch (e: unknown) {
+      return { ok: false, message: e instanceof Error ? e.message : String(e) };
+    }
+  }, [manifest, resolveArt]);
+  if (!parsed.ok) {
+    return (
+      <div style={{ padding: 24, textAlign: 'center', color: SHELL.danger, fontSize: 13, lineHeight: 1.6 }}>
+        预览无法加载：{parsed.message}
+      </div>
+    );
+  }
+  return (
+    <div style={{ display: 'flex', justifyContent: 'center' }}>
+      <RunOnly blueprint={parsed.bp} vp={vp} />
+    </div>
+  );
 }
 
 type RunState =

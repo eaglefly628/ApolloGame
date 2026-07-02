@@ -12,12 +12,13 @@ import { buildCapabilityCatalog } from './assembly/capability-catalog.js';
 import { ALL_CAPABILITIES } from './assembly/capability-registry.js';
 import type { WorldBlueprint } from './assembly/demo.assembly.js';
 import {
-  metaToGameEntry, libSlug, providerStatus,
+  metaToGameEntry, libSlug, providerStatus, LIB_ID_PREFIX,
   type GameEntry, type LibraryEntry, type ProviderInfo,
 } from './studio/library-model.js';
 import {
   DataCartridgeRunner, LibraryShelf, LibActionBar, VersionHistoryOverlay, StatusLight,
 } from './studio/DataCartridgeRunner.js';
+import { CreationWizard, type WizardMode } from './studio/CreationWizard.js';
 
 const API = 'http://localhost:4000';
 
@@ -255,11 +256,15 @@ function Cartridge({ game, isSelected }: { game: GameEntry; isSelected: boolean 
   );
 }
 
-function CartridgeCarousel({ onLaunch, games = GAMES, renderLaunchArea }: {
+function CartridgeCarousel({ onLaunch, games = GAMES, renderLaunchArea, selectId, onSelected }: {
   onLaunch: (id: string) => void;
   games?: GameEntry[];
   /** 选中卡带的启动区自定义（library 卡带 → 四键操作条）；返回 null → 默认单个 LAUNCH 大按钮。 */
   renderLaunchArea?: (selected: GameEntry) => React.ReactNode | null;
+  /** 保存新卡带后请求选中该 id（`lib:<slug>`）；出现在列表里即跳到它。 */
+  selectId?: string;
+  /** 跳转完成回调（供上层把 selectId 清成一次性，避免之后每次刷架都重新跳）。 */
+  onSelected?: () => void;
 }) {
   const [rawIndex, setActiveIndex] = useState(0);
   const [arrowHover, setArrowHover] = useState<'left' | 'right' | null>(null);
@@ -273,6 +278,13 @@ function CartridgeCarousel({ onLaunch, games = GAMES, renderLaunchArea }: {
 
   const goLeft = useCallback(() => setActiveIndex((i: number) => (i - 1 + n) % n), [n]);
   const goRight = useCallback(() => setActiveIndex((i: number) => (i + 1) % n), [n]);
+
+  // 保存新卡带后跳到它（onSaved → 刷库 → 新条目进 games → 这里选中·一次性）。
+  useEffect(() => {
+    if (!selectId) return;
+    const idx = games.findIndex((g) => g.id === selectId);
+    if (idx >= 0) { setActiveIndex(idx); onSelected?.(); }
+  }, [selectId, games, onSelected]);
 
   useEffect(() => {
     const handler = (e: KeyboardEvent) => {
@@ -752,8 +764,14 @@ export function Launcher() {
   const [installing, setInstalling] = useState(false);
   // 顶栏 API 状态灯：读现有 providers 端点，任一**云** provider 配了 key → 绿，否则琥珀（local 不计·见 providerStatus）。
   const [providers, setProviders] = useState<ProviderInfo[] | null>(null);
-  // 「新建游戏 / 继续创作」→ 打开 GameCreator 并预置游戏名。nonce 变更触发 GameCreator 展开+填词。
+  // 「新建游戏 / 继续创作」→ 打开 GameCreator 并预置游戏名（dev 模式沿用旧面板）。nonce 变更触发展开+填词。
   const [creatorSeed, setCreatorSeed] = useState<{ prompt: string; nonce: number } | null>(null);
+  // M2 创作向导（玩家模式）：create=新建 / revise=继续创作某盘卡带。
+  const [wizard, setWizard] = useState<{ mode: WizardMode; slug?: string; name?: string } | null>(null);
+  // 保存新卡带后请求轮播选中它（`lib:<slug>`）。
+  const [selectSlug, setSelectSlug] = useState<string | null>(null);
+  // 能力目录（从引擎 ALL_CAPABILITIES 自动派生）：向导生成请求随之送出，注入系统词。派生一次即可。
+  const catalog = React.useMemo(() => buildCapabilityCatalog(ALL_CAPABILITIES), []);
 
   useEffect(() => {
     apiCall('/api/generate/providers')
@@ -812,11 +830,22 @@ export function Launcher() {
     setStudio(true);
   }, [resolveArt]);
 
-  // 「继续创作」：打开 GameCreator 面板并预置游戏名。
-  const continueCreate = useCallback((name: string) => {
+  // 「继续创作」：玩家模式 → 开创作向导 revise 态（对话式迭代）；dev 模式 → 沿用旧 GameCreator 面板。
+  const continueCreate = useCallback((entry: GameEntry) => {
     setLibRunner(null);
-    setCreatorSeed({ prompt: name, nonce: Date.now() });
+    const slug = libSlug(entry.id);
+    if (playerMode && slug) setWizard({ mode: 'revise', slug, name: entry.title });
+    else setCreatorSeed({ prompt: entry.title, nonce: Date.now() });
+  }, [playerMode]);
+
+  // 向导保存成功 → 关向导、刷卡带架、请求选中新卡带。
+  const onWizardSaved = useCallback((slug: string) => {
+    setWizard(null);
+    setSelectSlug(`${LIB_ID_PREFIX}${slug}`);
+    setLibRefresh((k) => k + 1);
   }, []);
+  // 轮播跳转完成 → 清 selectSlug（一次性，之后刷架不再强跳）。
+  const clearSelect = useCallback(() => setSelectSlug(null), []);
 
   // 库条目 → 卡带 GameEntry（玩家模式独占轮播；dev 模式追加在内置之后）。
   const libGameEntries = React.useMemo(() => (libEntries ?? []).map(metaToGameEntry), [libEntries]);
@@ -842,7 +871,7 @@ export function Launcher() {
       <LibActionBar
         entry={selected}
         onStart={() => openLibCartridge(selected)}
-        onContinue={() => continueCreate(selected.title)}
+        onContinue={() => continueCreate(selected)}
         onHistory={() => setLibHistory({ slug })}
       />
     );
@@ -963,14 +992,32 @@ export function Launcher() {
         <LibraryShelf
           entries={libEntries}
           installing={installing}
-          onNewGame={() => setCreatorSeed({ prompt: '', nonce: Date.now() })}
+          onNewGame={() => setWizard({ mode: 'create' })}
           onInstallSample={installSample}
           renderCarousel={() => (
-            <CartridgeCarousel games={libGameEntries} onLaunch={onLaunchCartridge} renderLaunchArea={renderLaunchArea} />
+            <CartridgeCarousel games={libGameEntries} onLaunch={onLaunchCartridge} renderLaunchArea={renderLaunchArea} selectId={selectSlug ?? undefined} onSelected={clearSelect} />
           )}
         />
       ) : (
-        <CartridgeCarousel games={[...GAMES, ...libGameEntries]} onLaunch={onLaunchCartridge} renderLaunchArea={renderLaunchArea} />
+        <CartridgeCarousel games={[...GAMES, ...libGameEntries]} onLaunch={onLaunchCartridge} renderLaunchArea={renderLaunchArea} selectId={selectSlug ?? undefined} onSelected={clearSelect} />
+      )}
+
+      {/* 玩家模式·非空架：显式「＋ 新建游戏」入口（空架时 EmptyShelf 已有大卡位·此处不重复） */}
+      {playerMode && libEntries && libEntries.length > 0 && (
+        <div style={{ textAlign: 'center', marginTop: 22 }}>
+          <button
+            onClick={() => setWizard({ mode: 'create' })}
+            style={{
+              padding: '10px 24px', borderRadius: 9,
+              background: SHELL.jadeWash, color: SHELL.jade,
+              border: `1px solid ${SHELL.jadeLine}`,
+              fontSize: 14, fontWeight: 600, letterSpacing: 0.5,
+              cursor: 'pointer', outline: 'none', fontFamily: SHELL.fontUi,
+            }}
+          >
+            ＋ 新建游戏
+          </button>
+        </div>
       )}
 
       {/* 版本历史浮层（架上操作条 ⟲ 打开；回滚成功 → 刷新库列表） */}
@@ -983,10 +1030,27 @@ export function Launcher() {
         />
       )}
 
-      {/* Game Creator (AI Generate) */}
-      <div style={{ width: '100%', maxWidth: 880, marginBottom: 12, marginTop: playerMode ? 20 : 0 }}>
-        <GameCreator onOpenInStudio={openInStudio} seed={creatorSeed} />
-      </div>
+      {/* M2 创作向导（右滑面板·玩家模式）：新建 create / 继续创作 revise。保存 → 刷架 + 选中新卡带。 */}
+      {wizard && (
+        <CreationWizard
+          api={API}
+          mode={wizard.mode}
+          slug={wizard.slug}
+          initialName={wizard.name}
+          providers={providers ?? []}
+          catalog={catalog}
+          resolveArt={resolveArt}
+          onClose={() => setWizard(null)}
+          onSaved={onWizardSaved}
+        />
+      )}
+
+      {/* Game Creator (AI Generate) —— dev 模式沿用旧面板；玩家模式走上方创作向导（不显示此条） */}
+      {!playerMode && (
+        <div style={{ width: '100%', maxWidth: 880, marginBottom: 12 }}>
+          <GameCreator onOpenInStudio={openInStudio} seed={creatorSeed} />
+        </div>
+      )}
 
       {/* Dev Tools —— 玩家模式隐藏 */}
       {!playerMode && (
