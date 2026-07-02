@@ -65,7 +65,7 @@ describe('libSlug · lib id 分流', () => {
 describe('providerStatus · 顶栏状态灯判定', () => {
   const P = (id: string, name: string, available: boolean): ProviderInfo => ({ id, name, available });
 
-  it('任一 provider 有 key → 绿·已连接·名字取第一个可用的', () => {
+  it('任一云 provider 有 key → 绿·已连接·名字取第一个可用的', () => {
     const s = providerStatus([P('anthropic', 'Claude (Anthropic)', false), P('openai', 'OpenAI', true)]);
     expect(s.connected).toBe(true);
     expect(s.tone).toBe('ok');
@@ -78,6 +78,25 @@ describe('providerStatus · 顶栏状态灯判定', () => {
     expect(s.connected).toBe(false);
     expect(s.tone).toBe('warn');
     expect(s.label).toBe('未配置 API Key');
+  });
+
+  it('仅 local(Ollama) available → 仍琥珀（本地不需要 key ≠ 真在跑·Lead 验收缺陷 #3）', () => {
+    const s = providerStatus([
+      P('local', 'Local (Ollama)', true),
+      P('anthropic', 'Claude (Anthropic)', false),
+    ]);
+    expect(s.connected).toBe(false);
+    expect(s.tone).toBe('warn');
+    expect(s.label).toBe('未配置 API Key');
+  });
+
+  it('local available + 云 provider 有 key → 绿·名字取云的（跳过 local）', () => {
+    const s = providerStatus([
+      P('local', 'Local (Ollama)', true),
+      P('deepseek', 'DeepSeek', true),
+    ]);
+    expect(s.connected).toBe(true);
+    expect(s.label).toContain('DeepSeek');
   });
 
   it('空列表 → 琥珀·未配置', () => {

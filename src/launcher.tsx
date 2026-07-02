@@ -15,7 +15,9 @@ import {
   metaToGameEntry, libSlug, providerStatus,
   type GameEntry, type LibraryEntry, type ProviderInfo,
 } from './studio/library-model.js';
-import { DataCartridgeRunner, LibraryShelf, StatusLight } from './studio/DataCartridgeRunner.js';
+import {
+  DataCartridgeRunner, LibraryShelf, LibActionBar, VersionHistoryOverlay, StatusLight,
+} from './studio/DataCartridgeRunner.js';
 
 const API = 'http://localhost:4000';
 
@@ -253,7 +255,12 @@ function Cartridge({ game, isSelected }: { game: GameEntry; isSelected: boolean 
   );
 }
 
-function CartridgeCarousel({ onLaunch, games = GAMES }: { onLaunch: (id: string) => void; games?: GameEntry[] }) {
+function CartridgeCarousel({ onLaunch, games = GAMES, renderLaunchArea }: {
+  onLaunch: (id: string) => void;
+  games?: GameEntry[];
+  /** 选中卡带的启动区自定义（library 卡带 → 四键操作条）；返回 null → 默认单个 LAUNCH 大按钮。 */
+  renderLaunchArea?: (selected: GameEntry) => React.ReactNode | null;
+}) {
   const [rawIndex, setActiveIndex] = useState(0);
   const [arrowHover, setArrowHover] = useState<'left' | 'right' | null>(null);
   const n = games.length;
@@ -281,6 +288,7 @@ function CartridgeCarousel({ onLaunch, games = GAMES }: { onLaunch: (id: string)
   }, [activeIndex, goLeft, goRight, onLaunch, games]);
 
   const selected = games[activeIndex];
+  if (!selected) return null; // 空列表（玩家模式空库由 LibraryShelf 呈现，不进轮播）
 
   const cardStyle = (i: number): React.CSSProperties => {
     const isCenter   = i === activeIndex;
@@ -389,7 +397,8 @@ function CartridgeCarousel({ onLaunch, games = GAMES }: { onLaunch: (id: string)
         </div>
       </div>
 
-      {/* Launch */}
+      {/* Launch —— library 卡带换成四键操作条（spec ③），内置卡带保持单个 LAUNCH 大按钮 */}
+      {renderLaunchArea?.(selected) ?? (
       <div style={{ textAlign: 'center', marginTop: 14 }}>
         <button
           onClick={() => selected.status === 'playable' && onLaunch(selected.id)}
@@ -417,6 +426,7 @@ function CartridgeCarousel({ onLaunch, games = GAMES }: { onLaunch: (id: string)
           {selected.status === 'playable' ? '▶  LAUNCH' : 'COMING SOON'}
         </button>
       </div>
+      )}
     </div>
   );
 }
@@ -707,7 +717,7 @@ function GameRunner({ gameId, onBack }: { gameId: string; onBack: () => void }) 
 //  Main Launcher
 // ══════════════════════════════════════
 
-function Launcher() {
+export function Launcher() {
   useKeyframes();
   // 「正在玩哪个游戏」进 URL（?game=id）：游戏选择若只是 React 状态，任何全页 reload
   // （HMR 失联恢复 / 依赖再优化 / 手动刷新）都会把人弹回主页——这正是「点游戏几秒后跳回主页」
@@ -731,13 +741,18 @@ function Launcher() {
   const playerMode = React.useMemo(
     () => new URLSearchParams(window.location.search).get('mode') === 'player', []);
 
-  // 用户游戏库（library）：dev 模式把库卡带追加在内置之后，玩家模式独占卡带架。refreshKey 变更即重拉。
-  const [libEntries, setLibEntries] = useState<LibraryEntry[]>([]);
+  // 用户游戏库（library）：**launcher 统一拉取的单一数据源**（返修 Lead 缺陷 #1：此前玩家模式
+  // 由 LibraryShelf 自拉、launcher 另存一份永远为空的 libEntries → LAUNCH 查不到条目静默无反应；
+  // 收成一份状态后玩家/开发两模式同源）。null=加载中；libRefresh 变更即重拉（装样例/回滚后刷新）。
+  const [libEntries, setLibEntries] = useState<LibraryEntry[] | null>(null);
   const [libRefresh, setLibRefresh] = useState(0);
   const [libRunner, setLibRunner] = useState<{ slug: string; entry: GameEntry } | null>(null);
-  // 顶栏 API 状态灯：读现有 providers 端点，任一配了 key → 绿，全无 → 琥珀。
+  // 版本历史浮层（从架上操作条打开·spec ③ ⟲）。
+  const [libHistory, setLibHistory] = useState<{ slug: string } | null>(null);
+  const [installing, setInstalling] = useState(false);
+  // 顶栏 API 状态灯：读现有 providers 端点，任一**云** provider 配了 key → 绿，否则琥珀（local 不计·见 providerStatus）。
   const [providers, setProviders] = useState<ProviderInfo[] | null>(null);
-  // 「继续创作」→ 打开 GameCreator 并预置游戏名。nonce 变更触发 GameCreator 展开+填词。
+  // 「新建游戏 / 继续创作」→ 打开 GameCreator 并预置游戏名。nonce 变更触发 GameCreator 展开+填词。
   const [creatorSeed, setCreatorSeed] = useState<{ prompt: string; nonce: number } | null>(null);
 
   useEffect(() => {
@@ -746,13 +761,26 @@ function Launcher() {
       .catch(() => setProviders([]));
   }, []);
 
-  // dev 模式：拉库列表用于追加卡带（玩家模式由 LibraryShelf 自拉，此处不重复）。
+  // 库列表：两模式统一在此拉（玩家模式喂 LibraryShelf，dev 模式追加在内置卡带之后）。
   useEffect(() => {
-    if (playerMode) return;
     apiCall('/api/library')
       .then((list) => setLibEntries(Array.isArray(list) ? list : []))
       .catch(() => setLibEntries([]));
-  }, [playerMode, libRefresh]);
+  }, [libRefresh]);
+
+  // 空库态「装入官方示例卡带」：POST 后刷新列表。
+  const installSample = useCallback(async () => {
+    setInstalling(true);
+    try {
+      await fetch(`${API}/api/library/install-sample`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({}),
+      });
+    } catch { /* API 离线：静默，刷新后仍空态 */ }
+    setInstalling(false);
+    setLibRefresh((k) => k + 1);
+  }, []);
 
   // 素材库记录（AI 选材解析用）：启动时拉一次索引，失败不阻塞（art: 引用原样留 → 渲染占位）。
   const artRecordsRef = React.useRef<LibraryRecord[] | null>(null);
@@ -790,19 +818,35 @@ function Launcher() {
     setCreatorSeed({ prompt: name, nonce: Date.now() });
   }, []);
 
-  // 内置游戏映射：GAMES（内置）+ dev 模式追加的库卡带（玩家模式只用库卡带，见渲染分支）。
-  const libGameEntries = React.useMemo(() => libEntries.map(metaToGameEntry), [libEntries]);
+  // 库条目 → 卡带 GameEntry（玩家模式独占轮播；dev 模式追加在内置之后）。
+  const libGameEntries = React.useMemo(() => (libEntries ?? []).map(metaToGameEntry), [libEntries]);
 
-  // 卡带点击分流：库卡带（lib:<slug>）→ 数据卡带运行器；内置 game-* → 直接运行。
+  // 打开某盘库卡带（直接携带 entry，不再查另一份状态——缺陷 #1 的修法）。
+  const openLibCartridge = useCallback((entry: GameEntry) => {
+    const slug = libSlug(entry.id);
+    if (slug) setLibRunner({ slug, entry });
+  }, []);
+
+  // 卡带启动分流（默认 LAUNCH 按钮 / 键盘 Enter 走这里）：库卡带 → 运行器；内置 game-* → GameRunner。
   const onLaunchCartridge = useCallback((id: string) => {
-    const slug = libSlug(id);
-    if (slug) {
-      const entry = libGameEntries.find((g) => g.id === id);
-      if (entry) setLibRunner({ slug, entry });
-      return;
-    }
+    const libEntry = libGameEntries.find((g) => g.id === id);
+    if (libEntry) { openLibCartridge(libEntry); return; }
     setLaunched(id);
-  }, [libGameEntries, setLaunched]);
+  }, [libGameEntries, openLibCartridge, setLaunched]);
+
+  // 选中 library 卡带 → 四键操作条（spec ③）；内置卡带 → null（默认 LAUNCH 大按钮）。
+  const renderLaunchArea = useCallback((selected: GameEntry): React.ReactNode | null => {
+    const slug = libSlug(selected.id);
+    if (!slug) return null;
+    return (
+      <LibActionBar
+        entry={selected}
+        onStart={() => openLibCartridge(selected)}
+        onContinue={() => continueCreate(selected.title)}
+        onHistory={() => setLibHistory({ slug })}
+      />
+    );
+  }, [openLibCartridge, continueCreate]);
 
   const statusLight = providerStatus(providers ?? []);
 
@@ -834,8 +878,6 @@ function Launcher() {
         api={API}
         resolveArt={resolveArt}
         onBack={() => setLibRunner(null)}
-        onContinueCreate={continueCreate}
-        onRefresh={() => setLibRefresh((n) => n + 1)}
       />
     );
   }
@@ -919,15 +961,26 @@ function Launcher() {
       {/* Game Carousel —— 玩家模式：库卡带架（空态=欢迎+新建）；dev 模式：内置 + 库卡带追加 */}
       {playerMode ? (
         <LibraryShelf
-          api={API}
-          refreshKey={libRefresh}
+          entries={libEntries}
+          installing={installing}
           onNewGame={() => setCreatorSeed({ prompt: '', nonce: Date.now() })}
-          renderCarousel={(entries) => (
-            <CartridgeCarousel games={entries.map(metaToGameEntry)} onLaunch={onLaunchCartridge} />
+          onInstallSample={installSample}
+          renderCarousel={() => (
+            <CartridgeCarousel games={libGameEntries} onLaunch={onLaunchCartridge} renderLaunchArea={renderLaunchArea} />
           )}
         />
       ) : (
-        <CartridgeCarousel games={[...GAMES, ...libGameEntries]} onLaunch={onLaunchCartridge} />
+        <CartridgeCarousel games={[...GAMES, ...libGameEntries]} onLaunch={onLaunchCartridge} renderLaunchArea={renderLaunchArea} />
+      )}
+
+      {/* 版本历史浮层（架上操作条 ⟲ 打开；回滚成功 → 刷新库列表） */}
+      {libHistory && (
+        <VersionHistoryOverlay
+          api={API}
+          slug={libHistory.slug}
+          onClose={() => setLibHistory(null)}
+          onRolledBack={() => setLibRefresh((k) => k + 1)}
+        />
       )}
 
       {/* Game Creator (AI Generate) */}
@@ -951,7 +1004,8 @@ function Launcher() {
         fontSize: 11,
         letterSpacing: 2,
       }}>
-        Apollo Engine v0.6 · 26 Atoms · Tier 1-2 · Deterministic Lockstep
+        {/* 口径铁律：页脚不手抄数字/版本号（机读真相见 docs/llm-onboarding.md §0） */}
+        Apollo Engine · 数据驱动 · Deterministic Lockstep
       </div>
     </div>
   );
@@ -1286,5 +1340,7 @@ function GameCreator({ onOpenInStudio, seed }: {
 //  Mount
 // ══════════════════════════════════════
 
-const root = createRoot(document.getElementById('app')!);
-root.render(<Launcher />);
+// #app 存在才挂载（index.html 恒有）；无 #app（如无头集成测试 import 本模块）→ 零副作用，
+// 让测试能渲染导出的 <Launcher /> 走真实接线（返修 Lead 要求的 launcher 层集成测试的前提）。
+const appEl = document.getElementById('app');
+if (appEl) createRoot(appEl).render(<Launcher />);

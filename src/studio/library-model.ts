@@ -68,15 +68,20 @@ export interface ProviderInfo {
   available: boolean;
 }
 
-/** 顶栏 API 状态灯：任一 provider 配了 key → 绿「已连接·<name>」；全无 → 琥珀「未配置 API Key」。 */
+/** 顶栏 API 状态灯：任一**云** provider 配了 key → 绿「已连接·<name>」；全无 → 琥珀「未配置 API Key」。 */
 export interface ApiStatusLight {
   connected: boolean;
   label: string;
   tone: 'ok' | 'warn';
 }
 
+// 本地 provider（Ollama）后端不需要 key 恒报 available=true（apollo.py get_api_key：env_key 空
+// → 恒返 'local'），但本机未必真跑着服务——仅凭「不需要 key」不能算已连接（Lead 验收缺陷 #3）。
+// 判定只计配了 key 的云 provider；本地探活（localhost:11434/api/version）留 M3 设置页。
+export const LOCAL_PROVIDER_IDS: ReadonlySet<string> = new Set(['local', 'ollama']);
+
 export function providerStatus(providers: ProviderInfo[]): ApiStatusLight {
-  const avail = providers.find((p) => p.available);
-  if (avail) return { connected: true, label: `已连接 · ${avail.name}`, tone: 'ok' };
+  const cloud = providers.find((p) => p.available && !LOCAL_PROVIDER_IDS.has(p.id));
+  if (cloud) return { connected: true, label: `已连接 · ${cloud.name}`, tone: 'ok' };
   return { connected: false, label: '未配置 API Key', tone: 'warn' };
 }
