@@ -459,21 +459,26 @@ export function mount(container: HTMLElement, shell?: { exit?: () => void }): ()
     const playPerf = (onDone: () => void): void => {
       if (perfQueue.length === 0) { perfClash = null; perfResume = null; mounted?.update(); syncCoach(); onDone(); return; }
       const e = perfQueue.shift()!;
+      // 战力逐项拆解（owner 2026-07-02「掷骰时把两方的东西都列出来·万一算得不对可回查」）：底点+养成+天罡(逐张)+士气+地煞(固守/气势)+连胜对折 = 有效战力。
       const pBreak = (s: ClashEvent['a']): string => {
         const parts: string[] = [`底${s.points}`];
-        if (s.buff) parts.push(`经营${s.buff > 0 ? '+' : ''}${s.buff}`);
+        if (s.buff) parts.push(`养成${s.buff > 0 ? '+' : ''}${s.buff}`);
         if (s.tengang) {
           const detail = s.tgBreak?.filter(([, d]) => d !== 0).map(([id, d]) => `${tgName(id)}${d > 0 ? '+' : ''}${d}`).join('/') ?? '';
           parts.push(`天罡${s.tengang > 0 ? '+' : ''}${s.tengang}${detail ? `(${detail})` : ''}`);
         }
-        if (s.morale) {
-          const src = s.morale > 0 ? (s.morale > 2 ? '主将在场+令旗' : '主将在场') : '主将阵亡';
-          parts.push(`士气${s.morale > 0 ? '+' : ''}${s.morale}(${src})`);
-        }
-        if (s.nearDef) parts.push(`固守+${s.nearDef}`);
-        return parts.length > 1 ? `${parts.join(' ')} = ${s.pEff}` : `${s.pEff}`;
+        if (s.morale) parts.push(`士气${s.morale > 0 ? '+' : ''}${s.morale}(${s.morale > 0 ? (s.morale > 2 ? '主将在场+令旗' : '主将在场') : '主将阵亡'})`);
+        if (s.nearDef) parts.push(`地煞·固守+${s.nearDef}`);
+        if (s.dishaEdge) parts.push(`地煞·气势+${s.dishaEdge}`);
+        if (s.wins) parts.push(`连胜${s.wins}·战力已对折`);
+        return `${parts.join(' ')} = ${s.pEff}`;
       };
-      log(`⚔对决[${LANE_NM[e.lane] ?? e.lane}] 我 ${e.a.rank}${SUITNM2[e.a.suit] ?? ''}(战力 ${pBreak(e.a)}) vs 敌 ${e.b.rank}${SUITNM2[e.b.suit] ?? ''}(战力 ${pBreak(e.b)}) ｜各掷战力骰 我[1~${e.a.pEff}]→${e.rollA} vs 敌[1~${e.b.pEff}]→${e.rollB}（大者胜·预报${Math.round(e.winrate * 100)}%）→ ${e.aWins ? '我胜' : '敌胜'}`);
+      const nm = (s: ClashEvent['a']): string => `${SUITNM2[s.suit] ?? ''}${s.rank}${s.general ? '(将)' : ''}`;
+      // 逐场对决全量日志（可回查算法）：两方战力拆解各一行 + 掷骰范围/掷值 + 预报胜率 + 掷平裁定 + 胜负 + 战损。
+      log(`⚔对决[${LANE_NM[e.lane] ?? e.lane}] ${nm(e.a)}(我) vs ${nm(e.b)}(敌)`);
+      log(`  · 我方战力 = ${pBreak(e.a)}　→ 掷战力骰 [1~${e.a.pEff}] = ${e.rollA}`);
+      log(`  · 敌方战力 = ${pBreak(e.b)}　→ 掷战力骰 [1~${e.b.pEff}] = ${e.rollB}`);
+      log(`  · 预报我方胜率 ${Math.round(e.winrate * 100)}%${e.tie ? `　掷平裁定:${e.tie}` : ''}　→ ${e.aWins ? '★我胜' : '☠敌胜'}${e.warLoss ? `（胜方连胜${e.winStreak}·战力对折${e.winStays === false ? '·满则光荣回库' : ''}）` : ''}${e.lastStand ? '（敌主将死战不退·首负不亡）' : ''}`);
       // 先演 ~2s「哪两张牌即将交战」前奏 → 再切对决特写（owner 2026-06-21）
       showClashCue(e, () => {
         perfClash = e;
