@@ -145,11 +145,16 @@ export function buildDieMesh3D(m: Mesh3D): THREE.Mesh {
     let map: THREE.Texture;
     if (f.src) { map = new THREE.TextureLoader().load(f.src); map.colorSpace = THREE.SRGBColorSpace; map.anisotropy = 4; }
     else map = buildDieFaceTexture(f.color, f.pip);
-    // 玻璃骰（透明玻璃 + pip 贴花）：透射物理材质·honor 贴图 alpha → 圆角贴花外的四角/棱透见背景（高级透玻璃感）。
-    // 保留元素色自发光微光 ei .16（参考关键项）。否则原哑光标准材质（不透明）。
+    // 玻璃骰（透明骰·圆角贴花浮于通透玻璃·可透见**背面其余骰面**·半透半光）：
+    //   ⚠️ 修 bug（owner 2026-07-02「透过去别的面是黑的·且有的黑转过来又透明」）：原用 MeshPhysical `transmission`——
+    //   three 的 transmission 只把**不透明**物体采进透射缓冲、**排除透明物体**（骰子其余面本身也是玻璃），且本场景无
+    //   env 可采样 → 骰面贴图圆角外的透明角透过去采到黑、且随转动透射缓冲内容变 →「有的黑、转过来又透明」。
+    //   改用**经典 alpha 混合**：transparent + 贴图 alpha（圆角外透明角=alpha0）+ opacity + DoubleSide + depthWrite:false
+    //   → 透明角**直接透见背面骰面色块**（真正"看到别的面"·恒定不随角度黑）；实色区 opacity 半透；emissive 给"半光"辉。
+    //   env 反射（Title 设 Sky3D.env）另添高级感（scene.environment 在场即自动上）。
     if (m.dieGlass) {
-      const gm = new THREE.MeshPhysicalMaterial({ map, transparent: true, transmission: 0.6, ior: 1.45, thickness: 1.4, roughness: 0.16, metalness: 0.08, side: THREE.DoubleSide });
-      gm.emissive.setHex((f.emissive ?? f.color) & 0xffffff); gm.emissiveIntensity = 0.16;
+      const gm = new THREE.MeshPhysicalMaterial({ map, transparent: true, opacity: 0.46, roughness: 0.14, metalness: 0.0, side: THREE.DoubleSide, depthWrite: false });
+      gm.emissive.setHex((f.emissive ?? f.color) & 0xffffff); gm.emissiveIntensity = 0.3;
       return gm;
     }
     const mat = new THREE.MeshStandardMaterial({ map, roughness: 0.42, metalness: 0.18 });

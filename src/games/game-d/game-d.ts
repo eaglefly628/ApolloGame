@@ -156,8 +156,9 @@ export function mount(container: HTMLElement): () => void {
   let titleDieUp = false;
   const setMood = (dark: boolean): void => {
     // Title=**柔和蓝灰天穹**（复刻概念图高级感·非暗黑）；盒庭=浅暖。相机在天空盒球内 → 用 Sky3D 渐变穹顶。
-    const s = engine.world.getComponent<{ type: 'Sky3D'; top: number; bottom: number; clouds?: boolean }>('sky', 'Sky3D');
-    if (s) { s.top = dark ? 0x181231 : 0xd7dbe4; s.bottom = dark ? 0x0b0817 : 0xece7de; s.clouds = false; }
+    const s = engine.world.getComponent<{ type: 'Sky3D'; top: number; bottom: number; clouds?: boolean; env?: number }>('sky', 'Sky3D');
+    // Title 开 env（中性 studio IBL·scene.environment）→ 给玻璃命运骰玻璃反射高级感；盒庭不开（env0·不改 arena 观感）。
+    if (s) { s.top = dark ? 0x181231 : 0xd7dbe4; s.bottom = dark ? 0x0b0817 : 0xece7de; s.clouds = false; s.env = dark ? 0.25 : 0; }
     // Title=**暗紫夜穹**（复刻原型 title：alpha 画布浮于深色页 + 暗角 vignette → 元素色发光骰 + 金 logo 高对比高级感·非浅蓝灰）；
     // 盒庭=浅暖灰绿（概念取样 #d6ddd6）。
     renderer.setBackgroundTexture(null);
