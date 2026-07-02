@@ -885,3 +885,12 @@ _（REQ-3D-W1高效引擎 已移至 [`requests-3d.md`](./requests-3d.md)。）_
 > 改动摘要（2026-07-02）：删 `GAME_GEN_SYSTEM_PROMPT` 手写「## Available Atom Components」整节（漂移源）+ 冗余 platformer 能力清单；词汇一律靠 `{CAPABILITY_CATALOG}` 注入。保留结构性指导（manifest 形状/最小可跑示例/art:约定/640x400 画布/纯 JSON），Rules 内组件名收敛到少量已核实真名（Camera/Mass/Bounds/Color）。`_FALLBACK_CATALOG` 12 条对照 registry 核实无漂移，加「部分应急词汇表·完整目录由前端注入」注释+prompt 文案。顺修 game-a 过期注释。tsc/vitest/build/ast 全绿。
 > 病灶（2026-07-02 归档盘点核实）：`GAME_GEN_SYSTEM_PROMPT` 手写组件清单漂移——漏 Hierarchy/StringVariable/全部 3D 原子，却把非原子的 Controllable/Grounded/Bounds 列在 "Atom Components" 标题下；手写清单与 registry 必然持续漂移（capability-catalog.ts 头注早已声明此规律）。
 > **实现 spec（Lead 已定）**：① 删 prompt 内手写组件/原子清单，词汇一律依赖 `{CAPABILITY_CATALOG}` 注入（buildCapabilityCatalog 自动派生·零 prompt 维护）；② 保留且仅保留结构性指导——manifest 形状、最小可跑 JSON 示例、`art:<关键词>` 资产约定、640x400 2D 画布约定；③ `_FALLBACK_CATALOG` 保留应急，但注释+prompt 文案标明"部分词汇，完整目录由前端注入"；④ 顺修 apollo.py:474 一带 game-a 过期注释；⑤ 验证 = `python3 ast.parse` 语法 + tsc/vitest/build 三门禁全绿（防连带），直推 mainbranch，完工回本条标 ✅。
+
+### REQ-STUDIO-M0-库地基 · 创作台 v1（本地网页版）用户游戏库后端 · [2026-07-02] · 主程 → **指派：Opus** · status: **施工中（2026-07-02 开工）** · 类型: 产品化·新增（不碰引擎核）
+> 背景：owner 拍板把引擎包装成 To-C 创作产品（外部用户带自己 LLM key 产纯数据游戏、引擎只读封锁）。v1 形态=本地网页版（apollo.py 服务+浏览器）；本条=M0 库地基（后端），M1 卡带架/M2 向导另派。首页方案与里程碑全景见 owner 会话记录。
+> **实现 spec（Lead 已定）**：
+> ① `library/` 目录约定：`library/<slug>/manifest.json`（游戏唯一真相·纯数据）+ `meta.json`（name/subtitle/color/accentColor/icon/createdAt/updatedAt/provider）+ 版本化（git 可用→`git init`+每次保存 commit；不可用→`snapshots/<ts>.json` 降级）。**`library/` 加入 .gitignore**（用户数据不入引擎仓）。
+> ② apollo.py 新端点（路径穿越防护照 `handle_asset_import` 模式，一切写操作严格限定 library/ 子树）：`GET /api/library`（列表：slug+meta+valid）；`POST /api/library/create {name, template?}`（slug 化去重+脚手架+git init 首 commit；template=preset 名则从 PRESET_BLUEPRINTS 拷）；`GET /api/library/<slug>/manifest`；`PUT /api/library/<slug>/manifest {manifest, note?}`（**先校验后落盘**：调 ③ 的 CLI 退出码 0 才写+commit，-m 取 note）；`POST /api/library/install-sample`（装官方示例卡带）；`GET /api/library/<slug>/history`（git log 或快照列表）；`POST /api/library/<slug>/rollback {rev}`。
+> ③ 新建 `scripts/manifest-check.mjs`：node CLI，stdin 读 manifest JSON → 跑引擎 `parseManifest`（TS 执行方式施工者裁量：查 devDeps 现成 runner，vite 必在可用 vite-node；或其它零新依赖方案）→ error>0 则 exit 1 并打印错误清单（供回喂 LLM）。
+> ④ 测试：manifest-check 配 vitest 用例（合法/非法 manifest）；apollo.py 端点写 python 冒烟脚本（起服务打请求，含 `../` 路径穿越必须 4xx 的用例）。
+> ⑤ 门禁 tsc+vitest+build 全绿 + apollo.py ast 过，直推 mainbranch；**不碰 launcher.tsx / src 引擎域**；完工本条标 ✅。
