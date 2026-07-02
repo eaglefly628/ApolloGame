@@ -16,9 +16,10 @@ import {
   type GameEntry, type LibraryEntry, type ProviderInfo,
 } from './studio/library-model.js';
 import {
-  DataCartridgeRunner, LibraryShelf, LibActionBar, VersionHistoryOverlay, StatusLight,
+  DataCartridgeRunner, LibraryShelf, LibActionBar, VersionHistoryOverlay, StatusLight, BenchOverlay,
 } from './studio/DataCartridgeRunner.js';
 import { CreationWizard, type WizardMode } from './studio/CreationWizard.js';
+import { SettingsPanel } from './studio/SettingsPanel.js';
 
 const API = 'http://localhost:4000';
 
@@ -761,9 +762,16 @@ export function Launcher() {
   const [libRunner, setLibRunner] = useState<{ slug: string; entry: GameEntry } | null>(null);
   // 版本历史浮层（从架上操作条打开·spec ③ ⟲）。
   const [libHistory, setLibHistory] = useState<{ slug: string } | null>(null);
+  // 体检浮层（M4·架上操作条 🩺 打开）：五轴分 + 总分 + 及格线。
+  const [libBench, setLibBench] = useState<{ slug: string; title: string } | null>(null);
+  // 设置面板（M3·状态灯点开）：BYO key + 测试连接。
+  const [settingsOpen, setSettingsOpen] = useState(false);
   const [installing, setInstalling] = useState(false);
   // 顶栏 API 状态灯：读现有 providers 端点，任一**云** provider 配了 key → 绿，否则琥珀（local 不计·见 providerStatus）。
+  //   config 里配了云 key 也算已连接——get_available_providers/get_api_key 已把 config 计入（优先级 config>env>.env），
+  //   故设置页保存后 bump providersRefresh 重拉即更新状态灯（M3 增强，无需前端另判 config）。
   const [providers, setProviders] = useState<ProviderInfo[] | null>(null);
+  const [providersRefresh, setProvidersRefresh] = useState(0);
   // 「新建游戏 / 继续创作」→ 打开 GameCreator 并预置游戏名（dev 模式沿用旧面板）。nonce 变更触发展开+填词。
   const [creatorSeed, setCreatorSeed] = useState<{ prompt: string; nonce: number } | null>(null);
   // M2 创作向导（玩家模式）：create=新建 / revise=继续创作某盘卡带。
@@ -777,7 +785,7 @@ export function Launcher() {
     apiCall('/api/generate/providers')
       .then((d) => setProviders(Array.isArray(d) ? d : []))
       .catch(() => setProviders([]));
-  }, []);
+  }, [providersRefresh]);
 
   // 库列表：两模式统一在此拉（玩家模式喂 LibraryShelf，dev 模式追加在内置卡带之后）。
   useEffect(() => {
@@ -873,6 +881,7 @@ export function Launcher() {
         onStart={() => openLibCartridge(selected)}
         onContinue={() => continueCreate(selected)}
         onHistory={() => setLibHistory({ slug })}
+        onBench={() => setLibBench({ slug, title: selected.title })}
       />
     );
   }, [openLibCartridge, continueCreate]);
@@ -921,9 +930,9 @@ export function Launcher() {
       padding: '36px 20px',
       fontFamily: SHELL.fontUi,
     }}>
-      {/* 顶栏 API 状态灯（纯显示·右上角）——读 providers 端点：有 key 绿、无 key 琥珀。 */}
+      {/* 顶栏 API 状态灯（右上角·M3 可点击→设置面板）——读 providers 端点：有 key 绿、无 key 琥珀。 */}
       <div style={{ position: 'absolute', top: 18, right: 20 }}>
-        <StatusLight tone={statusLight.tone} label={statusLight.label} />
+        <StatusLight tone={statusLight.tone} label={statusLight.label} onClick={() => setSettingsOpen(true)} />
       </div>
 
       {/* Header —— 壳层统一基调（清幽·高雅·秩序）：阔字距铭牌 + 青瓷×黛紫渐变字 + 发丝线分隔 */}
@@ -1027,6 +1036,25 @@ export function Launcher() {
           slug={libHistory.slug}
           onClose={() => setLibHistory(null)}
           onRolledBack={() => setLibRefresh((k) => k + 1)}
+        />
+      )}
+
+      {/* 体检浮层（M4·架上操作条 🩺 打开）：五轴分 + 总分 + 及格线 70。 */}
+      {libBench && (
+        <BenchOverlay
+          api={API}
+          slug={libBench.slug}
+          title={libBench.title}
+          onClose={() => setLibBench(null)}
+        />
+      )}
+
+      {/* 设置面板（M3·状态灯点开）：BYO key + model + 测试连接。保存后重拉 providers 更新状态灯。 */}
+      {settingsOpen && (
+        <SettingsPanel
+          api={API}
+          onClose={() => setSettingsOpen(false)}
+          onSaved={() => setProvidersRefresh((k) => k + 1)}
         />
       )}
 

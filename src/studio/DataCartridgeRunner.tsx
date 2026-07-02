@@ -43,25 +43,29 @@ function ensureShelfKeyframes(): void {
   document.head.appendChild(s);
 }
 
-// ── 顶栏 API 状态灯（纯显示；点击行为留 M3 设置页）──
-export function StatusLight({ tone, label }: { tone: 'ok' | 'warn'; label: string }) {
+// ── 顶栏 API 状态灯（M3：可点击 → 打开设置面板）──
+export function StatusLight({ tone, label, onClick }: { tone: 'ok' | 'warn'; label: string; onClick?: () => void }) {
   const color = tone === 'ok' ? SHELL.ok : SHELL.warn;
   const wash = tone === 'ok' ? SHELL.okWash : SHELL.warnWash;
-  return (
-    <span
-      title={label}
-      style={{
-        display: 'inline-flex', alignItems: 'center', gap: 7,
-        padding: '4px 12px', borderRadius: 999,
-        background: wash, border: `1px solid ${color}55`,
-        color, fontSize: 12, fontWeight: 600, letterSpacing: 0.4,
-        userSelect: 'none',
-      }}
-    >
+  const style: React.CSSProperties = {
+    display: 'inline-flex', alignItems: 'center', gap: 7,
+    padding: '4px 12px', borderRadius: 999,
+    background: wash, border: `1px solid ${color}55`,
+    color, fontSize: 12, fontWeight: 600, letterSpacing: 0.4,
+    userSelect: 'none', fontFamily: SHELL.fontUi,
+    cursor: onClick ? 'pointer' : 'default', outline: 'none',
+  };
+  const inner = (
+    <>
       <span style={{ width: 8, height: 8, borderRadius: '50%', background: color, boxShadow: `0 0 8px ${color}` }} />
       {label}
-    </span>
+      {onClick && <span style={{ marginLeft: 3, opacity: 0.7 }}>⚙</span>}
+    </>
   );
+  if (onClick) {
+    return <button type="button" title={`${label}（点击设置 AI）`} onClick={onClick} style={style}>{inner}</button>;
+  }
+  return <span title={label} style={style}>{inner}</span>;
 }
 
 // ── 空库欢迎态 ──
@@ -144,11 +148,12 @@ export function LibraryShelf({ entries, installing, onNewGame, onInstallSample, 
 }
 
 // ── 选中 library 卡带的操作条（spec ③·替代内置卡带的单个 LAUNCH 大按钮区域）──
-export function LibActionBar({ entry, onStart, onContinue, onHistory }: {
+export function LibActionBar({ entry, onStart, onContinue, onHistory, onBench }: {
   entry: GameEntry;
   onStart: () => void;
   onContinue: () => void;
   onHistory: () => void;
+  onBench?: () => void;
 }) {
   const playable = entry.status === 'playable';
   return (
@@ -163,7 +168,123 @@ export function LibActionBar({ entry, onStart, onContinue, onHistory }: {
       </button>
       <button onClick={onContinue} style={opBtn(false)}>✎ 继续创作</button>
       <button onClick={onHistory} style={opBtn(false)}>⟲ 版本历史</button>
+      {onBench && (
+        <button
+          onClick={() => playable && onBench()}
+          disabled={!playable}
+          title={playable ? '跑引擎五轴体检（是否可玩·确定性·数值健康…）' : 'manifest 损坏，先修复'}
+          style={{ ...opBtn(false), opacity: playable ? 1 : 0.4, cursor: playable ? 'pointer' : 'default' }}
+        >
+          🩺 体检
+        </button>
+      )}
       <button disabled title="即将支持" style={{ ...opBtn(false), opacity: 0.4, cursor: 'default' }}>⤓ 导出</button>
+    </div>
+  );
+}
+
+// ── 体检浮层（M4）：POST /api/library/<slug>/bench → 五轴分 + 总分 + 及格线 70。──
+interface BenchAxisView { name: string; score: number; max: number; notes?: string[] }
+interface BenchResult { success?: boolean; error?: string; score?: number; pass?: boolean; threshold?: number; axes?: BenchAxisView[] }
+
+// 轴名中文注解（数据级"看得见"体检的直白解释；仅展示用，评分逻辑全在引擎 apollo-bench）。
+const AXIS_ZH: Record<string, string> = {
+  Structure: '结构 · 装配意图',
+  Load: '装载 · 能否成世界',
+  Determinism: '确定性 · 两跑一致',
+  Numeric: '数值 · 无 NaN/∞',
+  Visual: '可见 · 渲染代理',
+};
+
+export function BenchOverlay({ api, slug, title, onClose }: {
+  api: string;
+  slug: string;
+  title: string;
+  onClose: () => void;
+}) {
+  const [state, setState] = useState<{ k: 'loading' } | { k: 'done'; r: BenchResult } | { k: 'error'; message: string }>({ k: 'loading' });
+
+  useEffect(() => {
+    let dead = false;
+    fetch(`${api}/api/library/${slug}/bench`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: '{}' })
+      .then((r) => r.json())
+      .then((d: BenchResult) => {
+        if (dead) return;
+        if (d && d.success && typeof d.score === 'number') setState({ k: 'done', r: d });
+        else setState({ k: 'error', message: d?.error ?? '体检失败' });
+      })
+      .catch((e) => { if (!dead) setState({ k: 'error', message: e instanceof Error ? e.message : String(e) }); });
+    return () => { dead = true; };
+  }, [api, slug]);
+
+  const threshold = (state.k === 'done' && state.r.threshold) || 70;
+  const passed = state.k === 'done' && !!state.r.pass;
+  const tone = passed ? SHELL.ok : SHELL.warn;
+
+  return (
+    <div
+      onClick={onClose}
+      style={{ position: 'fixed', inset: 0, background: 'rgba(3,6,12,0.72)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 220 }}
+    >
+      <div onClick={(e) => e.stopPropagation()} className="apollo-bench-overlay" style={{
+        width: 460, maxWidth: '92%', maxHeight: '84%', overflow: 'auto',
+        background: SHELL.bg1, border: `1px solid ${SHELL.lineStrong}`, borderRadius: 12, padding: 20,
+        fontFamily: SHELL.fontUi,
+      }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
+          <span style={{ fontSize: 15, fontWeight: 700, color: SHELL.text }}>🩺 卡带体检 · {title}</span>
+          <button onClick={onClose} aria-label="关闭" style={{ background: 'none', border: 'none', color: SHELL.dim, cursor: 'pointer', fontSize: 20 }}>×</button>
+        </div>
+
+        {state.k === 'loading' && <div style={{ color: SHELL.dim, fontSize: 13, padding: '20px 0' }}>正在跑引擎体检（约几秒）…</div>}
+        {state.k === 'error' && (
+          <div style={{ padding: '10px 12px', background: SHELL.dangerWash, border: `1px solid ${SHELL.danger}44`, borderRadius: 8 }}>
+            <div style={{ color: SHELL.danger, fontSize: 13, fontWeight: 600, marginBottom: 4 }}>体检没跑成 😕</div>
+            <div style={{ color: SHELL.sub, fontSize: 12, lineHeight: 1.6, whiteSpace: 'pre-wrap' }}>{state.message}</div>
+          </div>
+        )}
+        {state.k === 'done' && (
+          <>
+            {/* 总分 + 及格线 */}
+            <div style={{
+              display: 'flex', alignItems: 'baseline', gap: 10, marginBottom: 14,
+              padding: '12px 14px', borderRadius: 10,
+              background: passed ? SHELL.okWash : SHELL.warnWash, border: `1px solid ${tone}44`,
+            }}>
+              <span style={{ fontSize: 34, fontWeight: 800, color: tone, lineHeight: 1 }}>{state.r.score}</span>
+              <span style={{ fontSize: 14, color: SHELL.sub }}>/ 100</span>
+              <span style={{ flex: 1 }} />
+              <span style={{ fontSize: 13, fontWeight: 700, color: tone }}>
+                {passed ? '✓ 通过' : '✕ 未及格'}
+              </span>
+              <span style={{ fontSize: 12, color: SHELL.dim }}>及格线 {threshold}</span>
+            </div>
+
+            {/* 五轴分条 */}
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 9 }}>
+              {(state.r.axes ?? []).map((a) => {
+                const pct = a.max > 0 ? Math.round((a.score / a.max) * 100) : 0;
+                const full = a.score >= a.max;
+                const barColor = full ? SHELL.ok : (a.score === 0 ? SHELL.danger : SHELL.warn);
+                return (
+                  <div key={a.name}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 12, marginBottom: 4 }}>
+                      <span style={{ color: SHELL.text }}>{AXIS_ZH[a.name] ?? a.name}</span>
+                      <span style={{ color: SHELL.sub, fontFamily: SHELL.fontMono }}>{a.score}/{a.max}</span>
+                    </div>
+                    <div style={{ height: 7, borderRadius: 999, background: 'rgba(255,255,255,0.06)', overflow: 'hidden' }}>
+                      <div style={{ width: `${pct}%`, height: '100%', background: barColor, borderRadius: 999 }} />
+                    </div>
+                    {a.notes && a.notes.length > 0 && (
+                      <div style={{ fontSize: 11, color: SHELL.dim, marginTop: 3, lineHeight: 1.4 }}>{a.notes.join('；')}</div>
+                    )}
+                  </div>
+                );
+              })}
+            </div>
+          </>
+        )}
+      </div>
     </div>
   );
 }

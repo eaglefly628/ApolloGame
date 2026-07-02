@@ -267,9 +267,48 @@ _MOCK_BAD_REMAINING = int(os.environ.get('APOLLO_MOCK_BAD_N') or 0)
 # mock 修订用的确定性染色目标（与常见预设色不同 → 测试可断言「确实改了」）。
 _MOCK_REVISE_TINT = 0xff0000
 
+# ── BYO-key 配置存储（.apollo-config.json·仓库根·已 gitignore）─────────────
+# 结构：{ "providers": { "<id>": { "apiKey"?: str, "model"?: str } }, "default"?: "<id>" }
+# key 解析优先级：config > env > .env（get_api_key 据此）。进程内缓存·_save_config 后失效重读。
+# 明文存 key 于本地文件——仅本机创作台自用，绝不入引擎仓（.gitignore），GET 回前端一律打码。
+CONFIG_PATH = ROOT / '.apollo-config.json'
+_CONFIG_CACHE = None  # None=未读；dict=已读缓存。
+
+def _load_config() -> dict:
+    global _CONFIG_CACHE
+    if _CONFIG_CACHE is None:
+        try:
+            data = json.loads(CONFIG_PATH.read_text(encoding='utf-8'))
+            _CONFIG_CACHE = data if isinstance(data, dict) else {}
+        except Exception:
+            _CONFIG_CACHE = {}
+    return _CONFIG_CACHE
+
+def _save_config(cfg: dict) -> None:
+    CONFIG_PATH.write_text(json.dumps(cfg, ensure_ascii=False, indent=2) + '\n', encoding='utf-8')
+    global _CONFIG_CACHE
+    _CONFIG_CACHE = None  # 失效缓存，下次读重新加载（PUT 后即时生效）
+
+def _config_provider(pid: str) -> dict:
+    p = _load_config().get('providers')
+    v = p.get(pid) if isinstance(p, dict) else None
+    return v if isinstance(v, dict) else {}
+
+def _config_api_key(pid: str):
+    k = _config_provider(pid).get('apiKey')
+    return k.strip() if isinstance(k, str) and k.strip() else None
+
+def _config_model(pid: str):
+    m = _config_provider(pid).get('model')
+    return m if isinstance(m, str) and m.strip() else None
+
 def get_api_key(provider: str) -> str | None:
     if provider == 'mock':
         return 'mock' if _mock_enabled() else None
+    # 优先级：config(.apollo-config.json) > env > .env。
+    cfg_key = _config_api_key(provider)
+    if cfg_key:
+        return cfg_key
     info = LLM_PROVIDERS.get(provider, {})
     env_key = info.get('env_key', '')
     if not env_key:
@@ -313,14 +352,15 @@ _OPENAI_COMPAT_URLS = {
     'deepseek': 'https://api.deepseek.com/chat/completions',
 }
 
-def _provider_request(provider: str, api_key: str, model: str, system: str, messages: list) -> dict:
+def _provider_request(provider: str, api_key: str, model: str, system: str, messages: list,
+                      max_tokens: int = 4096) -> dict:
     if provider == 'mock':
         return _mock_response(messages)
     try:
         if provider == 'anthropic':
             url = 'https://api.anthropic.com/v1/messages'
             headers = {'Content-Type': 'application/json', 'x-api-key': api_key, 'anthropic-version': '2023-06-01'}
-            body = json.dumps({'model': model, 'max_tokens': 4096, 'system': system, 'messages': messages}).encode()
+            body = json.dumps({'model': model, 'max_tokens': max_tokens, 'system': system, 'messages': messages}).encode()
             fmt, timeout = 'anthropic', 60
         elif provider == 'local':
             url = os.environ.get('OLLAMA_URL', 'http://localhost:11434') + '/api/chat'
@@ -332,7 +372,7 @@ def _provider_request(provider: str, api_key: str, model: str, system: str, mess
             url = _OPENAI_COMPAT_URLS.get(provider) or (
                 os.environ.get('OPENAI_BASE_URL', 'https://api.openai.com/v1') + '/chat/completions')
             headers = {'Content-Type': 'application/json', 'Authorization': f'Bearer {api_key}'}
-            body = json.dumps({'model': model, 'max_tokens': 4096,
+            body = json.dumps({'model': model, 'max_tokens': max_tokens,
                                'messages': [{'role': 'system', 'content': system}, *messages]}).encode()
             fmt, timeout = 'openai', 60
         req = urllib.request.Request(url, data=body, headers=headers, method='POST')
@@ -484,8 +524,106 @@ def handle_generate(body: dict) -> dict:
         user_msg = prompt
 
     models = LLM_PROVIDERS.get(provider, {}).get('models') or ['mock']
-    model = body.get('model') or models[0]
+    # model 优先级：请求显式 > 设置里存的 model > provider 默认首个（让设置页选的模型真正生效）。
+    model = body.get('model') or _config_model(provider) or models[0]
     return _generate_with_autofix(provider, api_key, model, system, user_msg, autofix)
+
+# ── 设置端点（BYO key 面板 · M3）────────────────────────────────────────
+# 面板 provider 顺序：千问第一，anthropic/deepseek/openai 兼容随后，ollama（本地·免 key）末位；
+# mock 仅 env 开启时追加。GET 打码回显（绝不回传原文），PUT 写 .apollo-config.json（gitignore）。
+SETTINGS_PROVIDER_ORDER = ['qwen', 'anthropic', 'deepseek', 'openai', 'local']
+
+def _mask_key(key: str) -> str:
+    """打码：前3位***尾4位；短 key（<8）整体星号。绝不回传原文。"""
+    if not key:
+        return ''
+    if len(key) < 8:
+        return '*' * len(key)
+    return f'{key[:3]}***{key[-4:]}'
+
+def _settings_view() -> dict:
+    """当前设置的**打码**视图：每 provider 的 name/models/model/isLocal/apiKeyMasked/keyAvailable。"""
+    cfg = _load_config()
+    order = list(SETTINGS_PROVIDER_ORDER)
+    if _mock_enabled():
+        order.append('mock')
+    providers = []
+    for pid in order:
+        if pid == 'mock':
+            info = {'name': 'Mock (测试)', 'models': ['mock'], 'env_key': ''}
+        else:
+            info = LLM_PROVIDERS.get(pid, {})
+        models = list(info.get('models') or [])
+        cfg_key = _config_api_key(pid)
+        providers.append({
+            'id': pid,
+            'name': info.get('name', pid),
+            'models': models,
+            'model': _config_model(pid) or (models[0] if models else None),
+            'isLocal': pid == 'local',
+            'envKey': info.get('env_key', ''),
+            'apiKeyMasked': _mask_key(cfg_key) if cfg_key else '',
+            'hasConfigKey': cfg_key is not None,
+            'keyAvailable': get_api_key(pid) is not None,
+        })
+    return {'providers': providers, 'default': cfg.get('default')}
+
+def handle_settings_get() -> dict:
+    return _settings_view()
+
+def handle_settings_put(body: dict) -> dict:
+    """合并写入 config。apiKey 仅在前端明确送该字段（用户改动过）时才覆盖；空串=清除；未送=保持原值。"""
+    cfg = json.loads(json.dumps(_load_config()))  # 深拷贝当前，防误改缓存
+    if not isinstance(cfg.get('providers'), dict):
+        cfg['providers'] = {}
+    incoming = body.get('providers')
+    if isinstance(incoming, dict):
+        for pid, patch in incoming.items():
+            if not isinstance(patch, dict):
+                continue
+            cur = cfg['providers'].get(pid)
+            cur = dict(cur) if isinstance(cur, dict) else {}
+            if 'apiKey' in patch:  # 前端只在用户改动该项时才送 apiKey
+                ak = patch.get('apiKey')
+                if isinstance(ak, str) and ak.strip():
+                    cur['apiKey'] = ak.strip()
+                else:
+                    cur.pop('apiKey', None)  # 空=清除
+            if 'model' in patch and isinstance(patch.get('model'), str) and patch['model'].strip():
+                cur['model'] = patch['model'].strip()
+            cfg['providers'][pid] = cur
+    if 'default' in body:
+        d = body.get('default')
+        if isinstance(d, str) and d:
+            cfg['default'] = d
+        else:
+            cfg.pop('default', None)
+    _save_config(cfg)
+    return {'success': True, **_settings_view()}  # 回打码视图
+
+def handle_settings_test(body: dict) -> dict:
+    """POST /api/settings/test {provider}：用当前生效配置对该 provider 发最小探活请求 → {ok, error?}。
+    mock 直接成功；local 探 Ollama /api/version（2s 超时）；云 provider 发 max_tokens=8 的 ping。"""
+    provider = str(body.get('provider') or '').strip()
+    if provider == 'mock':
+        return {'ok': True} if _mock_enabled() else {'ok': False, 'error': 'mock provider 未启用（需 APOLLO_MOCK_LLM=1）'}
+    if provider not in LLM_PROVIDERS:
+        return {'ok': False, 'error': f'未知 provider: {provider}'}
+    if provider == 'local':  # 本地 Ollama：探版本端点，2s 超时（未跑服务即快速失败）。
+        base = os.environ.get('OLLAMA_URL', 'http://localhost:11434')
+        try:
+            with urllib.request.urlopen(urllib.request.Request(base + '/api/version'), timeout=2) as resp:
+                resp.read()
+            return {'ok': True}
+        except Exception as e:
+            return {'ok': False, 'error': f'本地 Ollama 未响应（{base}）：{e}'}
+    api_key = get_api_key(provider)
+    if not api_key:
+        return {'ok': False, 'error': '未配置 API Key（先在上方填写并保存）'}
+    model = _config_model(provider) or (LLM_PROVIDERS[provider].get('models') or ['?'])[0]
+    r = _provider_request(provider, api_key, model,
+                          'You are a connectivity probe.', [{'role': 'user', 'content': 'ping'}], max_tokens=8)
+    return {'ok': True} if r.get('success') else {'ok': False, 'error': r.get('error', '连接失败')}
 
 VALID_COMPONENT_TYPES = {
     'Transform', 'Velocity', 'Acceleration', 'Mass', 'Shape', 'Overlap',
@@ -1021,6 +1159,35 @@ def library_rollback(slug: str, body: dict) -> tuple:
     _snapshot(game_dir, manifest)
     return (200, {'success': True, 'slug': slug, 'rev': rev, 'mode': 'snapshot'})
 
+def _run_bench(manifest: dict) -> tuple:
+    """跑 scripts/bench-manifest.mjs 子进程（vite-node·引擎真 ApolloBench 五轴）。返回 (ok, data|error)。"""
+    proc = subprocess.run(
+        **_spawn(['npx', 'vite-node', 'scripts/bench-manifest.mjs']),
+        cwd=ROOT, input=json.dumps(manifest, ensure_ascii=False),
+        capture_output=True, encoding='utf-8', errors='replace', timeout=60,
+    )
+    if proc.returncode != 0:
+        return False, (proc.stderr or proc.stdout or '体检失败（无输出）').strip()
+    try:
+        # CLI 只在末行输出机读 JSON（stdout 干净）。
+        return True, json.loads((proc.stdout or '').strip().splitlines()[-1])
+    except Exception as e:
+        return False, f'体检输出解析失败: {e}（{(proc.stdout or "")[:200]}）'
+
+def library_bench(slug: str) -> tuple:
+    """POST /api/library/<slug>/bench：读该卡带 manifest → CLI 五轴体检 → 透传 {score, pass, axes, ...}。"""
+    game_dir = _game_dir(slug)
+    if not game_dir.is_dir():
+        return (404, {'success': False, 'error': f'游戏不存在: {slug}'})
+    try:
+        manifest = json.loads((game_dir / 'manifest.json').read_text(encoding='utf-8'))
+    except Exception as e:
+        return (400, {'success': False, 'error': f'manifest 读取失败: {e}'})
+    ok, data = _run_bench(manifest)
+    if not ok:
+        return (400, {'success': False, 'error': data})
+    return (200, {'success': True, **data})
+
 # ── API 服务器 ──
 
 def _lib_dispatch(fn) -> tuple:
@@ -1081,6 +1248,8 @@ class APIHandler(BaseHTTPRequestHandler):
                 data = {'success': False, 'error': f'Unknown preset: {preset_name}'}
         elif path == '/api/generate/providers':
             data = get_available_providers()
+        elif path == '/api/settings':
+            data = handle_settings_get()
         else:
             data = {'error': 'Unknown endpoint'}
 
@@ -1110,6 +1279,13 @@ class APIHandler(BaseHTTPRequestHandler):
         if path.startswith('/api/library/') and path.endswith('/rollback'):
             slug, _ = _lib_parts(path)
             self._send_json(*_lib_dispatch(lambda: library_rollback(slug, body)))
+            return
+        if path.startswith('/api/library/') and path.endswith('/bench'):
+            slug, _ = _lib_parts(path)
+            self._send_json(*_lib_dispatch(lambda: library_bench(slug)))
+            return
+        if path == '/api/settings/test':
+            self._send_json(200, handle_settings_test(body))
             return
 
         if path == '/api/generate':
@@ -1147,6 +1323,9 @@ class APIHandler(BaseHTTPRequestHandler):
             body = self._read_json_body()
         except Exception:
             self._send_json(400, {'success': False, 'error': 'body 不是合法 JSON'})
+            return
+        if path == '/api/settings':
+            self._send_json(200, handle_settings_put(body))
             return
         slug, action = _lib_parts(path)
         if path.startswith('/api/library/') and action == 'manifest' and slug:
