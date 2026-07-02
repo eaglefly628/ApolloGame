@@ -10,6 +10,7 @@
 //   屏④ 通关 + 3D 战利品三选一
 import { Engine } from '../../runtime/engine.js';
 import { ThreeRenderer } from '@renderer/three-renderer.js';
+import { easeOutBack } from '@renderer/three-projection.js'; // 缓动纯函数（无 three·骰钟转场 eOutBack 回弹）
 import { AssetManager, ModelAssetLoader } from '@assets/index.js';
 import { mountUI } from '@ui/components/index.js';
 import type { LayoutNode, UITheme } from '@ui/components/index.js';
@@ -217,39 +218,71 @@ export function mount(container: HTMLElement): () => void {
   };
   const hideTitleDie = (): void => { if (!titleDieUp) return; try { engine.world.destroyEntity(TITLE_DIE); engine.world.destroyEntity('gd-title-rim'); engine.world.destroyEntity('gd-title-fill'); engine.world.destroyEntity('gd-title-glow'); } catch { /* noop */ } titleDieUp = false; };
 
-  // ── 过场预览（复刻参考 03「骰壳转场」的**骰壳编排部分**·render-only·P3D 域）──
-  // 巨骰壳 grow-in → 自旋+抛物升起 → collapse 收起 + 包裹柔光；eOutBack 回弹·总时长 2.5s。
-  // ⚠️「整场 arena 裹进 pivot 一起螺旋」需 render-only Pivot3D 父合成能力（未建·不硬编码绕过）→ 本按钮先预览骰壳编排/节奏。
-  const SHELL = 'gd-shell', SHELL_GLOW = 'gd-shell-glow';
+  // ── 骰钟转场（复刻参考 03 §F「骰壳转场」·render-only·P3D 域）──
+  // **整场当一个单元螺旋** = 引擎新 `Pivot3D` 父合成能力（骰壳 + 微缩场簇全挂 pivot 子实体·合成到 pivot 变换下）。
+  // 时间线（游戏层一次性 juice·grow-in → 螺旋升走 → 旋入落定·总 2.5s）由本 glue 写 pivot 的 Transform3D（同 title 骰/相机拖拽先例）；
+  // 「把整组当一个单元」这件硬事已下沉成 Pivot3D（不再"骰壳能力缺·只好单壳预览"）。缓动=引擎 easeOutBack。
+  const SHELL = 'gd-shell', SHELL_GLOW = 'gd-shell-glow', PIVOT = 'gd-pivot';
+  const DEMO: string[] = ['gd-tx0', 'gd-tx1', 'gd-tx2', 'gd-tx3', 'gd-tx4']; // 微缩场簇（演示"整场"被裹螺旋·title 视图内可见）
   const TRANS_DUR = 2.5;
   let transT: number | null = null;
-  const eOutBack = (p: number): number => { const c = 1.70158, c3 = c + 1; return 1 + c3 * Math.pow(p - 1, 3) + c * Math.pow(p - 1, 2); };
+  const eOutBack = (p: number): number => easeOutBack(p);
+  const tblock = (id: string, x: number, y: number, z: number, s: number, top: number, side: number): void => {
+    engine.world.createEntity(id);
+    engine.world.addComponent(id, { type: 'Transform3D', x, y, z, scale: 1 } as unknown as Component);
+    engine.world.addComponent(id, { type: 'Mesh3D', shape: 'box', width: s, height: s, depth: s, frontTint: side, backTint: side, edgeTint: top } as unknown as Component);
+  };
   const playTransition = (): void => {
     if (transT !== null) return;
     transT = 0;
+    // 微缩场簇（一小片"盒庭"：地台 + 四角块）——放原点·title 透视相机内可见·被骰壳裹住随 pivot 螺旋。
+    tblock(DEMO[0]!, 0, -0.5, 0, 2.0, 0x6fae4a, 0x8a5a32); // 地台
+    tblock(DEMO[1]!, -0.7, 0.1, -0.7, 0.5, 0xffd24a, 0x9aa86a);
+    tblock(DEMO[2]!, 0.7, 0.1, -0.7, 0.5, 0x67d6e0, 0x9aa1b4);
+    tblock(DEMO[3]!, -0.7, 0.1, 0.7, 0.5, 0xff7a3c, 0x5a463c);
+    tblock(DEMO[4]!, 0.7, 0.1, 0.7, 0.5, 0xc08aff, 0x5a7fa6);
+    // 巨骰壳（§F Box·裹住整场·local scale 0 起 grow-in）。
     engine.world.createEntity(SHELL);
-    engine.world.addComponent(SHELL, { type: 'Transform3D', x: 0, y: -0.2, z: 0, rotX: 0.5, rotY: 0.7, scale: 0.001 } as unknown as Component);
-    engine.world.addComponent(SHELL, { type: 'Mesh3D', shape: 'box', width: 3.2, height: 3.2, depth: 3.2, frontTint: 0xeef4ff, dieFaces: [
+    engine.world.addComponent(SHELL, { type: 'Transform3D', x: 0, y: 0, z: 0, rotX: 0.5, rotY: 0.7, scale: 0.001 } as unknown as Component);
+    engine.world.addComponent(SHELL, { type: 'Mesh3D', shape: 'box', width: 3.4, height: 3.4, depth: 3.4, frontTint: 0xeef4ff, dieFaces: [
       { color: 0xff5b4d, pip: 1 }, { color: 0x3ba0ff, pip: 6 }, { color: 0x46c66a, pip: 2 }, { color: 0xffcf3f, pip: 5 }, { color: 0xe8edf3, pip: 3 }, { color: 0x9b6cff, pip: 4 },
     ] } as unknown as Component);
     engine.world.createEntity(SHELL_GLOW);
-    engine.world.addComponent(SHELL_GLOW, { type: 'Transform3D', x: 0, y: -0.2, z: -1 } as unknown as Component);
-    engine.world.addComponent(SHELL_GLOW, { type: 'Glow3D', color: 0xfff0cf, scale: 5.5, opacity: 0 } as unknown as Component);
+    engine.world.addComponent(SHELL_GLOW, { type: 'Transform3D', x: 0, y: 0, z: -1 } as unknown as Component);
+    engine.world.addComponent(SHELL_GLOW, { type: 'Glow3D', color: 0xfff0cf, scale: 6, opacity: 0 } as unknown as Component);
+    // Pivot3D：骰壳 + 整片场簇全挂 pivot 子实体 → 一起转/缩/移（绕原点=场中心）。pivot 自身 Transform3D 由 stepTransition 驱动。
+    engine.world.createEntity(PIVOT);
+    engine.world.addComponent(PIVOT, { type: 'Transform3D', x: 0, y: 0, z: 0, rotX: 0, rotY: 0, rotZ: 0, scale: 1 } as unknown as Component);
+    engine.world.addComponent(PIVOT, { type: 'Pivot3D', children: [...DEMO, SHELL], centerX: 0, centerY: 0, centerZ: 0 } as unknown as Component);
   };
   const stepTransition = (): void => {
     if (transT === null) return;
     transT += 1 / 60;
     const p = Math.min(1, transT / TRANS_DUR);
-    const sh = engine.world.getComponent<{ type: 'Transform3D'; rotX?: number; rotY?: number; y?: number; scale?: number }>(SHELL, 'Transform3D');
+    const sh = engine.world.getComponent<{ type: 'Transform3D'; scale?: number }>(SHELL, 'Transform3D');
+    const pv = engine.world.getComponent<{ type: 'Transform3D'; rotX?: number; rotY?: number; y?: number; scale?: number }>(PIVOT, 'Transform3D');
     const g = engine.world.getComponent<{ type: 'Glow3D'; opacity?: number }>(SHELL_GLOW, 'Glow3D');
-    if (sh) {
-      sh.rotY = (sh.rotY ?? 0) + (p < 0.2 ? 0.02 : p < 0.74 ? 0.14 : 0.03);
-      sh.rotX = (sh.rotX ?? 0) + (p < 0.2 ? 0.006 : p < 0.74 ? 0.11 : 0.006);
-      if (p < 0.2) { const k = eOutBack(p / 0.2); sh.scale = Math.max(0.001, k); if (g) g.opacity = k * 0.6; }        // 包住
-      else if (p < 0.74) { const k = (p - 0.2) / 0.54; sh.y = -0.2 + Math.sin(k * Math.PI) * 2.4; sh.scale = 1 - 0.35 * Math.sin(k * Math.PI); if (g) g.opacity = 0.6; } // 螺旋升起
-      else { const k = (p - 0.74) / 0.26; sh.scale = Math.max(0.001, 1 - eOutBack(Math.min(1, k * 1.25))); if (g) g.opacity = 0.6 * (1 - k); } // 收起
+    if (p < 0.2) {
+      // 骰壳 grow-in 裹住整场（骰壳 local scale·eOutBack 回弹）；pivot 恒等。
+      const k = eOutBack(p / 0.2);
+      if (sh) sh.scale = Math.max(0.001, k);
+      if (g) g.opacity = k * 0.55;
+    } else if (p < 0.74) {
+      // **整组（场簇+骰壳）绕场中心螺旋升走**：pivot 自转 + 缩小 + 升起（Pivot3D 合成到每个子实体）。
+      const k = (p - 0.2) / 0.54;
+      if (pv) { pv.rotY = k * Math.PI * 4; pv.rotX = k * Math.PI * 3; pv.scale = 1 - 0.55 * Math.sin(k * Math.PI); pv.y = Math.sin(k * Math.PI) * 2.4; }
+      if (g) g.opacity = 0.55;
+    } else {
+      // 旋入落定：pivot 归位（自转停在整数圈=恒等朝向）；骰壳收起（eOutBack）显露场簇；柔光淡出。
+      const k = (p - 0.74) / 0.26;
+      if (pv) { pv.rotY = Math.PI * 4; pv.rotX = Math.PI * 3; pv.scale = 1; pv.y = 0; }
+      if (sh) sh.scale = Math.max(0.001, 1 - eOutBack(Math.min(1, k * 1.25)));
+      if (g) g.opacity = 0.55 * (1 - k);
     }
-    if (p >= 1) { transT = null; try { engine.world.destroyEntity(SHELL); engine.world.destroyEntity(SHELL_GLOW); } catch { /* noop */ } }
+    if (p >= 1) {
+      transT = null;
+      try { for (const id of [...DEMO, SHELL, SHELL_GLOW, PIVOT]) engine.world.destroyEntity(id); } catch { /* noop */ }
+    }
   };
 
   const S: S = {

@@ -181,3 +181,8 @@ export function anim3dField(
   if (ch.kind === 'spin') return base + ch.rate * tSec;
   return base + ch.amp * Math.sin(tSec * ch.freq + (ch.phase ?? 0));
 }
+
+// ── 缓动（纯函数·Cloud Design 3d-motion-spec 只用这两个）──────────────────────────────────────
+// cubic-out：`1-(1-p)³`（落场/减速·§E 掷骰弧）。eOutBack：带回弹过冲（§F 骰壳 grow-in / 新场展开）。
+export function easeCubicOut(p: number): number { const q = 1 - p; return 1 - q * q * q; }
+export function easeOutBack(p: number): number { const c = 1.70158, c3 = c + 1; return 1 + c3 * Math.pow(p - 1, 3) + c * Math.pow(p - 1, 2); }

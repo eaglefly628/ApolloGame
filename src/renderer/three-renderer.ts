@@ -1,6 +1,6 @@
 import * as THREE from 'three';
 import type { IWorld, RendererBackend } from '@engine/core/types.js';
-import type { Mesh3D, Sky3D, Camera3D, Fog3D, Material3D, AnimState3D, Glow3D, Transform3D } from '@engine/protocol/components.js';
+import type { Mesh3D, Sky3D, Camera3D, Fog3D, Material3D, AnimState3D, Glow3D, Transform3D, Pivot3D } from '@engine/protocol/components.js';
 import type { AssetManager, MaterialSpec } from '@assets/index.js';
 import { isImageHandle } from '@assets/index.js';
 import { getCamera3D, getSky3D, getLights3D, getPost3D, getFog3D } from '@engine/protocol/camera-view.js';
@@ -21,6 +21,7 @@ import { ColliderDebug } from './three/collider-debug.js';
 import { NavDebug } from './three/nav-debug.js';
 import { VfxSystem } from './three/vfx.js';
 import { Anim3DSystem } from './three/anim3d.js';
+import { pivotMatrix, applyPivot } from './three/pivot.js';
 import { WorldUiLayer } from './three/world-ui.js';
 import type { PhysicsSystem } from './three/physics.js'; // 运行时**懒加载**（见 ensurePhysics）：physics.ts 依赖 cannon-es 重包·仅在有 RigidBody3D 时才进图，无刚体的游戏(如 game-d)不连带解析 cannon-es（修 vite dev「Failed to resolve cannon-es」）
 import { RoomEnvironment } from 'three/addons/environments/RoomEnvironment.js';
@@ -176,6 +177,17 @@ export class ThreeRenderer implements RendererBackend {
     const vfxLive = this.vfx.sync(this.scene, world, performance.now());
     // 程序化位姿动画（Anim3D·render-only）：据壁钟改 Transform3D 分量（spin/bob）——须在 collect 前（渲染读更新后的位姿）。
     const animPoseLive = this.anim3d.sync(world, performance.now());
+    // Pivot3D 父合成（render-only）：把整组子实体位姿合成到 pivot 变换下 → 整场当一个单元转/缩/移（骰钟转场 §F）。
+    // 无 Pivot3D → 空 map·pivotPose 恒等返回·零开销（向后兼容）。
+    const pivotMap = new Map<string, THREE.Matrix4>();
+    for (const [pid] of world.query('Pivot3D')) {
+      const pv = world.getComponent<Pivot3D>(pid, 'Pivot3D');
+      const pt = world.getComponent<Transform3D>(pid, 'Transform3D');
+      if (!pv || !pt || pv.children.length === 0) continue;
+      const M = pivotMatrix({ x: pt.x, y: pt.y, z: pt.z, rotX: pt.rotX ?? 0, rotY: pt.rotY ?? 0, rotZ: pt.rotZ ?? 0, scale: pt.scale ?? 1 }, pv.centerX ?? 0, pv.centerY ?? 0, pv.centerZ ?? 0);
+      for (const c of pv.children) pivotMap.set(c, M);
+    }
+    const pivotPose = (id: string, pose: Pose3D): Pose3D => { const M = pivotMap.get(id); return M ? applyPivot(M, pose) : pose; };
 
     for (const r of collectRenderables(world)) {
       // 导入式 glTF 模型（Model3D）：圆润真模型。位姿与 Mesh3D 同套路。未就绪本帧不画（向后兼容）。
@@ -183,18 +195,14 @@ export class ThreeRenderer implements RendererBackend {
         const obj = this.models.ensure(this.scene, r.entityId, r.model3d);
         if (obj) {
           const ms = r.model3d.scale ?? 1;
-          let pose: Pose3D;
-          if (r.transform3d || cam3d) {
-            pose = r.transform3d ? transform3dPose(r.transform3d) : groundPose(r, 0);
-            obj.position.set(pose.x, pose.y, pose.z);
-            obj.rotation.set(pose.rx ?? 0, pose.ry ?? 0, pose.rotZ);
-            obj.scale.set(pose.sx * ms, pose.sy * ms, (pose.sz ?? 1) * ms);
-          } else {
-            pose = renderablePose(r, this.zStep);
-            obj.position.set(pose.x, pose.y, pose.z);
-            obj.rotation.set(0, 0, pose.rotZ);
-            obj.scale.set(pose.sx * ms, pose.sy * ms, ms);
-          }
+          const rawPose: Pose3D = (r.transform3d || cam3d)
+            ? (r.transform3d ? transform3dPose(r.transform3d) : groundPose(r, 0))
+            : renderablePose(r, this.zStep);
+          const pose = pivotPose(r.entityId, rawPose); // Pivot3D 父合成（无 pivot 则恒等）
+          obj.position.set(pose.x, pose.y, pose.z);
+          if (pose.quat) obj.quaternion.set(pose.quat[0], pose.quat[1], pose.quat[2], pose.quat[3]);
+          else obj.rotation.set(pose.rx ?? 0, pose.ry ?? 0, pose.rotZ);
+          obj.scale.set(pose.sx * ms, pose.sy * ms, (pose.sz ?? 1) * ms);
           if (r.model3d.tint !== undefined) this.models.tint(r.entityId, r.model3d.tint);
           const anim = world.getComponent<AnimState3D>(r.entityId, 'AnimState3D'); // 骨骼动画（render-only·播 glTF clip）
           if (anim) this.models.applyAnim(r.entityId, anim);
@@ -206,7 +214,7 @@ export class ThreeRenderer implements RendererBackend {
       }
       // 3D 物件（Mesh3D）：有 Material3D → PBR 单 mesh（特征物件）；否则不透明归批实例化、透明走 fallback。
       if (r.mesh3d) {
-        const pose = mesh3dPose(r, r.mesh3d, cam3d, this.zStep);
+        const pose = pivotPose(r.entityId, mesh3dPose(r, r.mesh3d, cam3d, this.zStep));
         poses.push(pose);
         seen.add(r.entityId);
         if (r.entityId === followTarget) followPose = pose;
@@ -255,7 +263,7 @@ export class ThreeRenderer implements RendererBackend {
     // instanceMatrix 上传 + 阴影 + render（画面不变·省 CPU/GPU/带宽）——「低开销」最大单点。
     const post = getPost3D(world);
     const ph = hashPoses(poses);
-    const renderSig = `${ph}|${camSig(cam3d)}|${this.lights.lightSig}|${postSig(post)}|${sky?.scroll ? this.frame : (sky ? `${sky.top}.${sky.bottom}` : '')}|${this.debugColliders ? 'd' : ''}|${this.debugNav ? 'n' : ''}|${vfxLive > 0 ? this.frame : 'v0'}|${physLive > 0 ? this.frame : 'p0'}|${animLive > 0 ? this.frame : 'a0'}|${animPoseLive > 0 ? this.frame : 'ap0'}|${this.fogSig}`;
+    const renderSig = `${ph}|${camSig(cam3d)}|${this.lights.lightSig}|${postSig(post)}|${sky?.scroll ? this.frame : (sky ? `${sky.top}.${sky.bottom}` : '')}|${this.debugColliders ? 'd' : ''}|${this.debugNav ? 'n' : ''}|${vfxLive > 0 ? this.frame : 'v0'}|${physLive > 0 ? this.frame : 'p0'}|${animLive > 0 ? this.frame : 'a0'}|${animPoseLive > 0 ? this.frame : 'ap0'}|${pivotMap.size > 0 ? this.frame : 'pv0'}|${this.fogSig}`;
     const shadowSig = `${ph}|${this.lights.lightSig}`; // 阴影只随投影体姿/灯变（相机/云飘/后处理不触发）
     if (renderSig === this.lastRenderSig) {
       this.rendered = false;

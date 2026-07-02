@@ -129,6 +129,22 @@ export interface Anim3D extends Component {
   channels: Anim3DChannel[]; // 多通道叠加（如骰子 rotX + rotY 双 spin·物件 y-bob + rotY-spin）
 }
 
+// ── Pivot3D（render-only，3D 父合成/层级）──────────────────────────────────────────────────────
+// 让一组子实体的 Transform3D 位姿在渲染前**合成到本实体（pivot）的变换下**——即把「整座竞技场 + 骰壳 + 柔光」
+// 当作**一个单元**一起转/缩/移（Cloud Design 骰钟转场 §F：旧场裹进骰壳、整体螺旋升走换层）。
+// 我方 Transform3D 是逐实体世界位姿·无 3D 父子层级（Hierarchy 是 2D 的）→ 这是那个真缺口的下沉。
+// 合成：childWorld = T(pivot 平移)·T(center)·R(pivot 欧拉)·S(pivot scale)·T(-center)·childLocal
+//   （绕 center 转/缩·再叠 pivot 自身平移；pivot 无变换时 = 恒等·子实体位姿不变·向后兼容）。
+// pivot 自身的变换 = 本实体的 Transform3D（可被 Anim3D 或运行时胶水驱动）。渲染器 collect 后据此改子实体最终位姿。
+// 红线：**纯表现**——绝不进 sim/hash（render-only·入 NON_DETERMINISTIC）。弱 LLM 只填 children 列表 + center 标量。
+export interface Pivot3D extends Component {
+  readonly type: 'Pivot3D';
+  children: string[]; // 受本 pivot 变换合成的子实体 id（它们的 Transform3D 视为 pivot 局部坐标）
+  centerX?: number; // 旋转/缩放的中心（世界坐标·缺省 0）——竞技场螺旋应设成场中心
+  centerY?: number;
+  centerZ?: number;
+}
+
 // ── Transform3D（render-only，真三维位姿 · 3D 后端专用）─────────────────────────────────────
 // 给实体一份**完整三维位姿**（x 右 / y 上=高度 / z 朝镜头 · 世界单位），让盒庭/积木场景真正立体堆叠。
 // 区别于 2D Transform（x,y 在屏幕平面 + zOrder 微分层 = 2.5D billboard）：挂了本件的实体，3D 后端用它定位姿
