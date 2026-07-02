@@ -107,10 +107,17 @@ def check_env():
         print(c("  [ERROR]", 'r'), "npm/node not found.")
         sys.exit(1)
     missing = _missing_deps()
-    if missing:
-        why = "node_modules 缺失" if missing == ['<all>'] else f"缺依赖 {', '.join(missing)}（package.json 更新后未重装？）"
-        print(c("  [SETUP]", 'y'), f"Installing dependencies…（{why}）")
+    if missing == ['<all>']:
+        # 全新 clone：node_modules 整个没有 → 装一次（装完就有，天然不会每次重复）。
+        print(c("  [SETUP]", 'y'), "Installing dependencies…（首次 clone）")
         subprocess.call(**_spawn(['npm', 'install']), cwd=ROOT)
+    elif missing:
+        # node_modules 在、只缺个别依赖（多半 git pull 新增依赖后没重装）。**只告警、绝不自动装**：
+        # 每次启动都自动 npm install 有两宗罪——① 装不动的机器（受限网络/离线）上会退化成"每次启动空跑
+        # 一遍 npm install"、每次多等好几秒；② 就算装得动，npm install 会动 node_modules/lockfile →
+        # Vite 判定依赖变了 → 每次启动都把 three/react 重新预打包一遍（再 +1~2s）。这正是"每次启动时间
+        # +1"的根。留一行清楚指引、让用户手动补一次即可，之后启动全走 Vite 暖缓存、飞快。
+        print(c("  [WARN]", 'y'), f"缺少依赖 {', '.join(missing)} —— 请手动运行 npm install 补齐（package.json 更新后一次即可）")
 
 # ── 项目信息收集 ──
 
