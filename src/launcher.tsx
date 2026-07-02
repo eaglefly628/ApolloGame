@@ -11,23 +11,17 @@ import { deriveAssetIndex } from './assembly/derive-asset-index.js';
 import { buildCapabilityCatalog } from './assembly/capability-catalog.js';
 import { ALL_CAPABILITIES } from './assembly/capability-registry.js';
 import type { WorldBlueprint } from './assembly/demo.assembly.js';
+import {
+  metaToGameEntry, libSlug, providerStatus,
+  type GameEntry, type LibraryEntry, type ProviderInfo,
+} from './studio/library-model.js';
+import { DataCartridgeRunner, LibraryShelf, StatusLight } from './studio/DataCartridgeRunner.js';
 
 const API = 'http://localhost:4000';
 
 // ══════════════════════════════════════
 //  Types
 // ══════════════════════════════════════
-
-interface GameEntry {
-  id: string;
-  title: string;
-  subtitle: string;
-  description: string;
-  color: string;
-  accentColor: string;
-  icon: string;
-  status: 'playable' | 'coming-soon';
-}
 
 interface ProjectStatus {
   branch: string;
@@ -259,10 +253,12 @@ function Cartridge({ game, isSelected }: { game: GameEntry; isSelected: boolean 
   );
 }
 
-function CartridgeCarousel({ onLaunch }: { onLaunch: (id: string) => void }) {
-  const [activeIndex, setActiveIndex] = useState(0);
+function CartridgeCarousel({ onLaunch, games = GAMES }: { onLaunch: (id: string) => void; games?: GameEntry[] }) {
+  const [rawIndex, setActiveIndex] = useState(0);
   const [arrowHover, setArrowHover] = useState<'left' | 'right' | null>(null);
-  const n = GAMES.length;
+  const n = games.length;
+  // 列表可能变短（切玩家/开发模式、库刷新）→ 夹取，避免越界。
+  const activeIndex = n > 0 ? rawIndex % n : 0;
   const prevIdx  = (activeIndex - 1 + n) % n;
   const nextIdx  = (activeIndex + 1) % n;
   const prevPrev = (activeIndex - 2 + n) % n;
@@ -276,15 +272,15 @@ function CartridgeCarousel({ onLaunch }: { onLaunch: (id: string) => void }) {
       if (e.key === 'ArrowLeft') goLeft();
       else if (e.key === 'ArrowRight') goRight();
       else if (e.key === 'Enter') {
-        const g = GAMES[activeIndex];
-        if (g.status === 'playable') onLaunch(g.id);
+        const g = games[activeIndex];
+        if (g && g.status === 'playable') onLaunch(g.id);
       }
     };
     window.addEventListener('keydown', handler);
     return () => window.removeEventListener('keydown', handler);
-  }, [activeIndex, goLeft, goRight, onLaunch]);
+  }, [activeIndex, goLeft, goRight, onLaunch, games]);
 
-  const selected = GAMES[activeIndex];
+  const selected = games[activeIndex];
 
   const cardStyle = (i: number): React.CSSProperties => {
     const isCenter   = i === activeIndex;
@@ -352,7 +348,7 @@ function CartridgeCarousel({ onLaunch }: { onLaunch: (id: string) => void }) {
           borderRadius: '50%',
         }} />
 
-        {GAMES.map((game, i) => (
+        {games.map((game, i) => (
           <div
             key={game.id}
             style={cardStyle(i)}
@@ -369,7 +365,7 @@ function CartridgeCarousel({ onLaunch }: { onLaunch: (id: string) => void }) {
 
       {/* Dot indicators */}
       <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', gap: 7, padding: '10px 0 2px' }}>
-        {GAMES.map((g, i) => (
+        {games.map((g, i) => (
           <div
             key={g.id}
             onClick={() => setActiveIndex(i)}
@@ -731,6 +727,33 @@ function Launcher() {
   const [artlib, setArtlib] = useState(false);
   const [studioExtra, setStudioExtra] = useState<{ id: string; title: string; build: () => WorldBlueprint } | null>(null);
 
+  // 玩家模式（?mode=player）：面向 To-C 用户——隐藏内置 GAMES 与 DevTools，卡带架数据源=用户游戏库。
+  const playerMode = React.useMemo(
+    () => new URLSearchParams(window.location.search).get('mode') === 'player', []);
+
+  // 用户游戏库（library）：dev 模式把库卡带追加在内置之后，玩家模式独占卡带架。refreshKey 变更即重拉。
+  const [libEntries, setLibEntries] = useState<LibraryEntry[]>([]);
+  const [libRefresh, setLibRefresh] = useState(0);
+  const [libRunner, setLibRunner] = useState<{ slug: string; entry: GameEntry } | null>(null);
+  // 顶栏 API 状态灯：读现有 providers 端点，任一配了 key → 绿，全无 → 琥珀。
+  const [providers, setProviders] = useState<ProviderInfo[] | null>(null);
+  // 「继续创作」→ 打开 GameCreator 并预置游戏名。nonce 变更触发 GameCreator 展开+填词。
+  const [creatorSeed, setCreatorSeed] = useState<{ prompt: string; nonce: number } | null>(null);
+
+  useEffect(() => {
+    apiCall('/api/generate/providers')
+      .then((d) => setProviders(Array.isArray(d) ? d : []))
+      .catch(() => setProviders([]));
+  }, []);
+
+  // dev 模式：拉库列表用于追加卡带（玩家模式由 LibraryShelf 自拉，此处不重复）。
+  useEffect(() => {
+    if (playerMode) return;
+    apiCall('/api/library')
+      .then((list) => setLibEntries(Array.isArray(list) ? list : []))
+      .catch(() => setLibEntries([]));
+  }, [playerMode, libRefresh]);
+
   // 素材库记录（AI 选材解析用）：启动时拉一次索引，失败不阻塞（art: 引用原样留 → 渲染占位）。
   const artRecordsRef = React.useRef<LibraryRecord[] | null>(null);
   useEffect(() => {
@@ -740,23 +763,48 @@ function Launcher() {
       .catch(() => { artRecordsRef.current = null; });
   }, []);
 
+  // manifest 原始 JSON → 过 art: 选材解析（确定性 rankRecords top-1，留痕 console 供审计）。
+  // openInStudio 与数据卡带运行共用同一段（复用现成 artRecords 加载逻辑）。
+  const resolveArt = useCallback((raw: unknown): unknown => {
+    const records = artRecordsRef.current;
+    if (!records) return raw;
+    const { manifest: resolved, resolutions } = resolveArtRefs(raw, records);
+    if (resolutions.length > 0) {
+      console.info('[art-resolve] AI 选材解析（query → id；同 query 永远同结果）：',
+        resolutions.map((r) => `${r.entity}.${r.component}.${r.field}: "${r.query}" → ${r.id ?? '∅ 无命中(原样保留)'}${r.candidates.length > 1 ? `（候选: ${r.candidates.join(', ')}）` : ''}`));
+    }
+    return resolved;
+  }, []);
+
   // 「在透视器里打开」：把生成的 manifest(原始 JSON)接进透视器。build 每次重新 parseManifest
   // (而非 clone——蓝图含 capability 函数对象，structuredClone/JSON 都会坏)，重置/重跑安全。
-  // 进透视器前先过 art: 选材解析（确定性 rankRecords top-1，留痕 console 供审计）。
   const openInStudio = useCallback((name: string, raw: unknown) => {
-    let manifest = raw;
-    const records = artRecordsRef.current;
-    if (records) {
-      const { manifest: resolved, resolutions } = resolveArtRefs(raw, records);
-      manifest = resolved;
-      if (resolutions.length > 0) {
-        console.info('[art-resolve] AI 选材解析（query → id；同 query 永远同结果）：',
-          resolutions.map((r) => `${r.entity}.${r.component}.${r.field}: "${r.query}" → ${r.id ?? '∅ 无命中(原样保留)'}${r.candidates.length > 1 ? `（候选: ${r.candidates.join(', ')}）` : ''}`));
-      }
-    }
+    const manifest = resolveArt(raw);
     setStudioExtra({ id: 'generated', title: `生成 · ${name}`, build: () => parseManifest(manifest) });
     setStudio(true);
+  }, [resolveArt]);
+
+  // 「继续创作」：打开 GameCreator 面板并预置游戏名。
+  const continueCreate = useCallback((name: string) => {
+    setLibRunner(null);
+    setCreatorSeed({ prompt: name, nonce: Date.now() });
   }, []);
+
+  // 内置游戏映射：GAMES（内置）+ dev 模式追加的库卡带（玩家模式只用库卡带，见渲染分支）。
+  const libGameEntries = React.useMemo(() => libEntries.map(metaToGameEntry), [libEntries]);
+
+  // 卡带点击分流：库卡带（lib:<slug>）→ 数据卡带运行器；内置 game-* → 直接运行。
+  const onLaunchCartridge = useCallback((id: string) => {
+    const slug = libSlug(id);
+    if (slug) {
+      const entry = libGameEntries.find((g) => g.id === id);
+      if (entry) setLibRunner({ slug, entry });
+      return;
+    }
+    setLaunched(id);
+  }, [libGameEntries, setLaunched]);
+
+  const statusLight = providerStatus(providers ?? []);
 
   if (studio) {
     return (
@@ -778,6 +826,20 @@ function Launcher() {
     return <GameRunner gameId={launched} onBack={() => setLaunched(null)} />;
   }
 
+  if (libRunner) {
+    return (
+      <DataCartridgeRunner
+        slug={libRunner.slug}
+        entry={libRunner.entry}
+        api={API}
+        resolveArt={resolveArt}
+        onBack={() => setLibRunner(null)}
+        onContinueCreate={continueCreate}
+        onRefresh={() => setLibRefresh((n) => n + 1)}
+      />
+    );
+  }
+
   return (
     <div style={{
       minHeight: '100vh',
@@ -788,6 +850,11 @@ function Launcher() {
       padding: '36px 20px',
       fontFamily: SHELL.fontUi,
     }}>
+      {/* 顶栏 API 状态灯（纯显示·右上角）——读 providers 端点：有 key 绿、无 key 琥珀。 */}
+      <div style={{ position: 'absolute', top: 18, right: 20 }}>
+        <StatusLight tone={statusLight.tone} label={statusLight.label} />
+      </div>
+
       {/* Header —— 壳层统一基调（清幽·高雅·秩序）：阔字距铭牌 + 青瓷×黛紫渐变字 + 发丝线分隔 */}
       <div style={{ textAlign: 'center', marginBottom: 26 }}>
         <div style={{ fontSize: 11, letterSpacing: 6, color: SHELL.faint, marginBottom: 8 }}>
@@ -802,60 +869,78 @@ function Launcher() {
           WebkitTextFillColor: 'transparent',
           margin: 0,
         }}>
-          Game Library
+          {playerMode ? '我的游戏架' : 'Game Library'}
         </h1>
         <div style={{ width: 180, height: 1, background: `linear-gradient(90deg, transparent, ${SHELL.lineStrong}, transparent)`, margin: '14px auto 0' }} />
-        <button
-          onClick={() => setStudio(true)}
-          style={{
-            marginTop: 14,
-            padding: '7px 18px',
-            background: SHELL.violetWash,
-            color: SHELL.violet,
-            border: `1px solid ${SHELL.violetLine}`,
-            borderRadius: 8,
-            fontSize: 12,
-            fontWeight: 600,
-            letterSpacing: 1,
-            cursor: 'pointer',
-            outline: 'none',
-          }}
-        >
-          🔬 数据透视器
-        </button>
-        <button
-          onClick={() => setArtlib(true)}
-          style={{
-            marginTop: 14,
-            marginLeft: 10,
-            padding: '7px 18px',
-            background: SHELL.jadeWash,
-            color: SHELL.jade,
-            border: `1px solid ${SHELL.jadeLine}`,
-            borderRadius: 8,
-            fontSize: 12,
-            fontWeight: 600,
-            letterSpacing: 1,
-            cursor: 'pointer',
-            outline: 'none',
-          }}
-        >
-          🗃 资源库
-        </button>
+        {/* dev 工具入口仅开发模式显示（玩家模式=纯净创作台） */}
+        {!playerMode && (
+          <>
+            <button
+              onClick={() => setStudio(true)}
+              style={{
+                marginTop: 14,
+                padding: '7px 18px',
+                background: SHELL.violetWash,
+                color: SHELL.violet,
+                border: `1px solid ${SHELL.violetLine}`,
+                borderRadius: 8,
+                fontSize: 12,
+                fontWeight: 600,
+                letterSpacing: 1,
+                cursor: 'pointer',
+                outline: 'none',
+              }}
+            >
+              🔬 数据透视器
+            </button>
+            <button
+              onClick={() => setArtlib(true)}
+              style={{
+                marginTop: 14,
+                marginLeft: 10,
+                padding: '7px 18px',
+                background: SHELL.jadeWash,
+                color: SHELL.jade,
+                border: `1px solid ${SHELL.jadeLine}`,
+                borderRadius: 8,
+                fontSize: 12,
+                fontWeight: 600,
+                letterSpacing: 1,
+                cursor: 'pointer',
+                outline: 'none',
+              }}
+            >
+              🗃 资源库
+            </button>
+          </>
+        )}
       </div>
 
-      {/* Game Carousel */}
-      <CartridgeCarousel onLaunch={setLaunched} />
+      {/* Game Carousel —— 玩家模式：库卡带架（空态=欢迎+新建）；dev 模式：内置 + 库卡带追加 */}
+      {playerMode ? (
+        <LibraryShelf
+          api={API}
+          refreshKey={libRefresh}
+          onNewGame={() => setCreatorSeed({ prompt: '', nonce: Date.now() })}
+          renderCarousel={(entries) => (
+            <CartridgeCarousel games={entries.map(metaToGameEntry)} onLaunch={onLaunchCartridge} />
+          )}
+        />
+      ) : (
+        <CartridgeCarousel games={[...GAMES, ...libGameEntries]} onLaunch={onLaunchCartridge} />
+      )}
 
       {/* Game Creator (AI Generate) */}
-      <div style={{ width: '100%', maxWidth: 880, marginBottom: 12 }}>
-        <GameCreator onOpenInStudio={openInStudio} />
+      <div style={{ width: '100%', maxWidth: 880, marginBottom: 12, marginTop: playerMode ? 20 : 0 }}>
+        <GameCreator onOpenInStudio={openInStudio} seed={creatorSeed} />
       </div>
 
-      {/* Dev Tools */}
+      {/* Dev Tools —— 玩家模式隐藏 */}
+      {!playerMode && (
       <div style={{ width: '100%', maxWidth: 880 }}>
         <DevTools />
       </div>
+      )}
 
       {/* Footer */}
       <div style={{
@@ -883,7 +968,11 @@ interface LLMProvider {
   available: boolean;
 }
 
-function GameCreator({ onOpenInStudio }: { onOpenInStudio: (name: string, raw: unknown) => void }) {
+function GameCreator({ onOpenInStudio, seed }: {
+  onOpenInStudio: (name: string, raw: unknown) => void;
+  /** 「新建游戏」/「继续创作」触发：nonce 变更 → 展开面板并预置 prompt。 */
+  seed?: { prompt: string; nonce: number } | null;
+}) {
   const [expanded, setExpanded] = useState(false);
   const [prompt, setPrompt] = useState('');
   const [generating, setGenerating] = useState(false);
@@ -899,6 +988,13 @@ function GameCreator({ onOpenInStudio }: { onOpenInStudio: (name: string, raw: u
       apiCall('/api/generate/presets').then(d => setPresets(d)).catch(() => {}),
     ]);
   }, []);
+
+  // 外部（新建/继续创作）驱动：展开面板 + 预置游戏名。
+  useEffect(() => {
+    if (!seed) return;
+    setExpanded(true);
+    setPrompt(seed.prompt);
+  }, [seed?.nonce]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const generate = useCallback(async () => {
     if (!prompt.trim()) return;

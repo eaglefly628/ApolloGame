@@ -896,7 +896,8 @@ _（REQ-3D-W1高效引擎 已移至 [`requests-3d.md`](./requests-3d.md)。）_
 > ④ 测试：manifest-check 配 vitest 用例（合法/非法 manifest）；apollo.py 端点写 python 冒烟脚本（起服务打请求，含 `../` 路径穿越必须 4xx 的用例）。
 > ⑤ 门禁 tsc+vitest+build 全绿 + apollo.py ast 过，直推 mainbranch；**不碰 launcher.tsx / src 引擎域**；完工本条标 ✅。
 
-### REQ-STUDIO-M1-卡带架接库 · 创作台 v1 前端：玩家模式 + 数据卡带运行器 · [2026-07-02] · 主程 → **指派：Opus** · status: **施工中（2026-07-02 开工）** · 类型: 产品化·前端（不碰引擎）
+### REQ-STUDIO-M1-卡带架接库 · 创作台 v1 前端：玩家模式 + 数据卡带运行器 · [2026-07-02] · 主程 → **指派：Opus** · status: ✅ **done（2026-07-02·Opus）** · 类型: 产品化·前端（不碰引擎）
+> ✅ 完工摘要（2026-07-02·Opus）：玩家模式 `?mode=player`（隐藏内置 GAMES/DevTools/透视器/资源库入口，卡带架源=`GET /api/library`；空库=欢迎语「你的游戏架还是空的」+ 呼吸虚线「＋ 新建游戏」空卡位[160×240·prefers-reduced-motion 降级]+「⤓ 装入官方示例卡带」）；dev 模式现状不变 + 库卡带追加在内置之后。新建 `src/studio/library-model.ts`（纯：`metaToGameEntry` 缺省色兜底 #1e3a5f/#38bdf8·`libSlug` 分流·`providerStatus` 状态灯）+ `src/studio/DataCartridgeRunner.tsx`（`EmptyShelf`/`StatusLight`/`LibraryShelf`/`DataCartridgeRunner`——操作条「▶开始游戏[GET manifest→resolveArt→parseManifest→抽 StudioInspector 引擎生命周期全屏纯运行·左上返回架上] / ✎继续创作[开 GameCreator 预置游戏名] / ⟲版本历史[浮层列 history·逐行回滚] / ⤓导出 disabled」）。`launcher.tsx`：`CartridgeCarousel` 加 `games` prop（复用现有 `Cartridge` 视觉不改）、顶栏 API 状态灯（读 `/api/generate/providers`：任一 available→绿「已连接·<name>」/全无→琥珀「未配置 API Key」·纯显示）、`GameCreator` 加 `seed` prop。测试 3 组（happy-dom·`vi.stubGlobal` fetch）：meta→GameEntry 纯函数 9 例 + 空库欢迎态渲染「新建游戏」+ 数据卡带最小 manifest 无头挂载引擎 canvas 就位不抛错。门禁 tsc+vitest(2112)+build 全绿。**未碰 src/{engine,skills,assembly,renderer,ui,games}**（只读 import）。
 > 前置：M0 ✅（library 七端点·校验落盘·git 版本化）。本条=首页方案（owner 已过目 mockup）的 M1 落地。
 > **实现 spec（Lead 已定）**：
 > ① **玩家模式**：URL `?mode=player`。玩家模式下内置 GAMES 与 DevTools 隐藏，卡带架数据源=`GET /api/library`；空库态=欢迎语「你的游戏架还是空的」+ 虚线呼吸「新建游戏」空卡位（点击→打开现有 GameCreator 面板，M2 再升级向导）+「装入官方示例卡带」次按钮（`POST /api/library/install-sample` 后刷新）。dev 模式（无参）一切照旧 + library 卡带追加显示。
