@@ -56,6 +56,13 @@ export interface HandMods {
   suitMerge?: boolean; // smeared：♥♦ 同色 / ♠♣ 同色 合并后算同花
 }
 
+// 牌型优先级（低→高，= HandType 全集判定顺序）。wild 枚举比较用；下标越大牌型越强。
+const HAND_TYPE_ORDER: readonly HandType[] = [
+  'high-card', 'pair', 'two-pair', 'three-of-a-kind', 'straight', 'flush',
+  'full-house', 'four-of-a-kind', 'straight-flush', 'five-of-a-kind', 'flush-house', 'flush-five',
+];
+const handTypeRank = (t: HandType): number => HAND_TYPE_ORDER.indexOf(t);
+
 // ── 纯算法 helper（导出供单测；无副作用，确定性）────────────────────────────
 
 // 按字段计数（点数/花色）。返回普通 Map（值=张数）；调用方若需遍历请自行按 key 排序保证确定性。
@@ -81,7 +88,16 @@ export function isStraightRanks(distinctRanks: readonly number[], need = 5, maxS
 }
 
 // 牌型判定（纯函数：有序卡集 → 稳定结果）。priority 从高到低短路，所以"并列取高"（如葫芦不会被判成对子）。
+// ── wild 分派入口（REQ-GAMED #2）── 无 wild 牌 → 直接判具体牌型（逐字节等价旧行为，不枚举）；
+// 含 wild → 小规模确定性枚举每张 wild 的具体(suit,rank)取值，取**最优牌型**（并列取枚举序最先解，tie-break 固定）。
 export function evaluateHand(cards: readonly Card[], mods: HandMods = {}): HandEval {
+  const hasWild = cards.some((c) => c.wild);
+  if (!hasWild) return evaluateHandConcrete(cards, mods);
+  return evaluateHandWithWild(cards, mods);
+}
+
+// 具体牌型判定（无 wild 的原始实现；wild 枚举对每个"已代入具体值"的候选手调用它）。
+function evaluateHandConcrete(cards: readonly Card[], mods: HandMods = {}): HandEval {
   const rankCounts = countBy(cards, (c) => c.rank);
   const suitCounts = countBy(cards, (c) => c.suit);
 
@@ -117,6 +133,63 @@ export function evaluateHand(cards: readonly Card[], mods: HandMods = {}): HandE
   else type = 'high-card';
 
   return { type, rankCounts, suitCounts, isFlush, isStraight };
+}
+
+// ── wild 枚举（REQ-GAMED #2）─────────────────────────────────────────────────
+// wild 牌可当任意 suit+rank，求最优牌型。空间控制（wild≤5，枚举可控）：
+//   ① 候选取值收敛为**紧集**——花色只取牌里已出现的（补同花只需并入现有花色；全 wild 时取 {0}）；
+//      点数取「已出现点数 ∪ 每个已出现点数 need 窗口内的补顺点数」（clamp [2..14]，A=14 内部自带轮子）。
+//   ② wild 之间无序 → 用「可重复组合」枚举（组合数 C(候选+wild-1, wild)，远小于 候选^wild）。
+//   ③ 并列取高：按枚举序（候选 (suit,rank) 升序、组合字典序）**最先**达到最高牌型的解（tie-break 固定、可测）。
+// 返回该最优代入手的具体 HandEval（rankCounts/suitCounts/isFlush/isStraight 均反映最优代入 → 语义一致）。
+function evaluateHandWithWild(cards: readonly Card[], mods: HandMods): HandEval {
+  const nonWild = cards.filter((c) => !c.wild);
+  const wildCount = cards.length - nonWild.length;
+  // 全 wild：全部代入同一 (suit,rank) 即同时最大化「同点张数 + 同花」→ 达到该张数下的最高牌型（5 张=同花五）。
+  if (nonWild.length === 0) {
+    return evaluateHandConcrete(Array.from({ length: wildCount }, () => ({ suit: 0, rank: 2 })), mods);
+  }
+  const cands = wildCandidates(nonWild, mods);
+  let best: HandEval | undefined;
+  let bestRank = -1;
+  for (const combo of combosWithRep(cands.length, wildCount)) {
+    const resolved = nonWild.concat(combo.map((ci) => cands[ci]));
+    const evald = evaluateHandConcrete(resolved, mods);
+    const r = handTypeRank(evald.type);
+    if (r > bestRank) { bestRank = r; best = evald; } // 严格大于 → 保留枚举序最先的最优解（tie-break）
+  }
+  return best!; // wildCount≥1 且候选非空（nonWild 非空 → 至少 1 花色×1 点数）→ 必有解
+}
+
+// wild 候选具体牌（紧集，见 evaluateHandWithWild 注释）。花色升序×点数升序 → 枚举序确定。
+function wildCandidates(nonWild: readonly Card[], mods: HandMods): Card[] {
+  const suits = [...new Set(nonWild.map((c) => c.suit))].sort((a, b) => a - b);
+  const candSuits = suits.length ? suits : [0];
+  const ranks = new Set<number>(nonWild.map((c) => c.rank));
+  const need = mods.fourStraight ? 4 : 5;
+  const step = mods.gappedStraight ? 2 : 1;
+  const reach = (need - 1) * step; // 一条顺子跨度内 wild 可补的点数离某已存在点数最远这么多
+  for (const e of [...ranks]) {
+    for (let r = e - reach; r <= e + reach; r++) if (r >= 2 && r <= 14) ranks.add(r); // A(14) 自带 A 低轮子，不需 rank 1
+  }
+  const candRanks = [...ranks].sort((a, b) => a - b);
+  const out: Card[] = [];
+  for (const s of candSuits) for (const r of candRanks) out.push({ suit: s, rank: r });
+  return out;
+}
+
+// 可重复组合（多重集组合）：从 n 个候选里取 k 个（无序、可重复），非降序下标元组、字典序。确定性枚举。
+function* combosWithRep(n: number, k: number): Generator<number[]> {
+  if (k <= 0 || n <= 0) { if (k <= 0) yield []; return; }
+  const idx = new Array(k).fill(0);
+  for (;;) {
+    yield idx.slice();
+    let i = k - 1;
+    while (i >= 0 && idx[i] === n - 1) i--;
+    if (i < 0) break;
+    const v = idx[i] + 1;
+    for (let j = i; j < k; j++) idx[j] = v;
+  }
 }
 
 // 「计分牌」集合（Balatro：只有构成牌型的牌计分，垫牌 kicker 不计分；BUG-001 修复）。
@@ -200,6 +273,7 @@ export const pokerHandCapability = defineCapability({
       'Balatro 牌桌：PokerHand{ rankingTable:{ "pair":{chips:10,mult:2}, "flush":{chips:35,mult:4}, "straight-flush":{chips:100,mult:8} }, chipsResource:"chips", multResource:"mult" } + PlayedHand{cards:[...]}',
       '出同花顺：PlayedHand{ cards:[{suit:0,rank:10},{suit:0,rank:11},{suit:0,rank:12},{suit:0,rank:13},{suit:0,rank:14}] } → 牌型 straight-flush → set chips=100,mult=8',
       '打出同花 → 触发某小丑：PokerHand.handTypeVar:"lastHand" → poker-eval 写 StringVar(lastHand="flush") → condition{string,eq,"flush"} 读到 → 小丑 effect 生效',
+      '百搭（REQ-GAMED #2）：某张 Card{wild:true} 可当任意 suit+rank 求最优牌型（小规模确定性枚举）。PlayedHand{cards:[{suit:0,rank:10},{suit:0,rank:11},{suit:0,rank:12},{suit:0,rank:13},{wild:true}]} → 补 ♠A 成 straight-flush。game-d 百搭骰 / game-e 通配小丑各把某张 wild 即用',
     ],
   },
 
@@ -209,7 +283,7 @@ export const pokerHandCapability = defineCapability({
         category: 'event',
         describe: '本次出的牌（有序，供逐张迭代/按花色·点数计数）。由选牌交互装配填充；空=本帧不评估。',
         fields: {
-          cards: { type: 'string', describe: '出的牌数组 Card[]，每张 {suit:0..3, rank:2..14(A=14,J/Q/K=11/12/13)}；有序' },
+          cards: { type: 'string', describe: '出的牌数组 Card[]，每张 {suit:任意int(♠♥♦♣=0..3；六色元素=0..5，无枚举约束), rank:2..14(A=14,J/Q/K=11/12/13), wild?:boolean}；有序。wild:true=百搭牌，判型时枚举成最优 suit+rank（REQ-GAMED #2）' },
         },
       },
       PokerHand: {

@@ -24,6 +24,7 @@ import type {
   Controllable,
   CraftRecipe,
   DestroyRequest,
+  DicePool,
   Draggable,
   DropZone,
   Effect,
@@ -76,6 +77,7 @@ import type {
   Resource,
   ResourceModify,
   RigidBody3D,
+  RolledDice,
   ScoreTrace,
   SelfRule,
   Sensor,
@@ -133,6 +135,7 @@ export interface ComponentDataMap {
   Controllable: Omit<Controllable, 'type'>;
   CraftRecipe: Omit<CraftRecipe, 'type'>;
   DestroyRequest: Omit<DestroyRequest, 'type'>;
+  DicePool: Omit<DicePool, 'type'>;
   Draggable: Omit<Draggable, 'type'>;
   DropZone: Omit<DropZone, 'type'>;
   Effect: Omit<Effect, 'type'>;
@@ -185,6 +188,7 @@ export interface ComponentDataMap {
   Resource: Omit<Resource, 'type'>;
   ResourceModify: Omit<ResourceModify, 'type'>;
   RigidBody3D: Omit<RigidBody3D, 'type'>;
+  RolledDice: Omit<RolledDice, 'type'>;
   ScoreTrace: Omit<ScoreTrace, 'type'>;
   SelfRule: Omit<SelfRule, 'type'>;
   Sensor: Omit<Sensor, 'type'>;

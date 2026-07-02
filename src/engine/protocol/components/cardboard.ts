@@ -53,6 +53,10 @@ export interface Card {
   mods?: Array<{ op: 'add' | 'mul'; target: string; value: number; held?: boolean }>;
   // ── REQ-E-021 牌的内禀重触发（红蜡封）── 并进逐张计分的 repeats（该牌连同其上 mods/小丑一起重复结算）。
   retrigger?: number;
+  // ── REQ-GAMED #2 百搭/通配（wild）── true=这张可当任意 suit+rank，evaluateHand 小规模确定性枚举求**最优牌型**。
+  // 内禀于牌（随 PlayedHand.cards 流经 poker-eval，零新配置）：game-d 百搭骰、game-e 通配类小丑各把某张 wild:true 即可。
+  // 缺省/false=普通牌，判型逐字节等价旧行为（无 wild 不枚举）。
+  wild?: boolean;
 }
 
 // ── poker-hand 出牌（REQ-011）── 本次"出"的一手牌（有序，供逐张迭代 / 按花色·点数计数）。
@@ -197,4 +201,51 @@ export interface CardPile extends Component {
   // （有限袋语义保真：卖出的将回袋可再抽）。码由卖出链写入（每将 banded sell Effect set 该资源，纯数据）。
   returnOnSignal?: string;
   returnCodeResource?: string;
+}
+
+// ── dice-roll（REQ-GAMED #1）── 骰能力族：声明骰池 → 种子化掷骰 → 结果（供 poker-hand/dice 对掷消费）。
+// 「掷一份声明好的骰池」此前无能力（poker-hand 只消费已填好的 PlayedHand，random 原子只给 [0,1)/整数）——
+// game-d《骰途》正卡在这缺口（手写 sim + 裸 Math.random）。本组件族补上：骰面/骰池=纯数据（最弱 LLM 可产），
+// 掷骰/锁定重掷/结算前禁骰=引擎确定性系统（dice-roll，消费 RandomSeed 整数 PRNG，lockstep/录放安全）。
+// 与 poker-hand 同族：RolledDice 结果按 element(→suit)/value(→rank) 映射即可喂 poker-eval 判"骰型"（六色同花等）。
+
+// 一个骰面 = {点数, 可选元素}。element 是无约束 int（六色元素/百搭都是数据编码，非枚举）——与 Card.suit 同哲学。
+export interface DiceFace {
+  value: number; // 该面点数（任意 int；六面骰=6 项、八面骰=8 项，面数任意）
+  element?: number; // 可选：该面元素/花色编码（如六色 0..5；映射到 Card.suit 判同花）。缺省=无元素
+}
+// 一颗骰的声明 = 它的面集（有序，faceIndex 即此数组下标）。
+export interface DieSpec {
+  faces: DiceFace[]; // 骰面数组；掷骰=在 [0, faces.length) 内确定性取一个下标
+}
+// 一颗骰的掷出结果（由 dice-roll 系统写；faceIndex=命中的面下标，可回放校验）。
+export interface RolledDie {
+  value: number; // 命中面的点数
+  element?: number; // 命中面的元素（面无 element 则缺省）
+  faceIndex: number; // 命中的面在 DieSpec.faces 中的下标（确定性审计/重放）
+  // 结算前过滤（DicePool.ban）标记：true=本颗被禁（highest/lowest N）。**保留在 results 中不移出**——
+  // 保持与 dice/locked 的下标对齐（重掷锁定掩码按下标寻址，移出会错位）；消费方（映射成 PlayedHand 时）自行剔除 banned。
+  banned?: boolean;
+}
+
+// ── DicePool（config）── 声明一份骰池 + 触发/锁定/禁骰规则。挂"骰盅"实体，配 RandomSeed（世界单例 PRNG）。
+export interface DicePool extends Component {
+  readonly type: 'DicePool';
+  dice: DieSpec[]; // 骰池：每颗骰声明自己的面集（面数任意）
+  // 触发：收到名为 rollOnSignal 的 Signal 当拍掷骰（惯例同 caster.onSignal / card-pile.*OnSignal）。
+  // 缺省/无此信号 → 本拍不掷（数据驱动、确定性；绝不每帧自动掷）。
+  rollOnSignal?: string;
+  // 重掷锁定掩码：这些下标的骰**不重掷**，保留上一次 RolledDice 对应下标的结果（首掷时无前值 → 照常掷）。
+  // 「只重掷未锁骰」= 掷骰爽感核（骰子游戏保留好骰、重掷坏骰）。
+  locked?: number[];
+  // 结算前禁骰（REQ-GAMED #4 并入本能力）：掷完后按 kind 标记 n 颗为 banned（不移出 results，保下标对齐）。
+  //   'banHighest'=禁最高的 n 颗、'banLowest'=禁最低的 n 颗（按 value；同值按下标升序，确定性）。
+  //   n≥骰数 → 全禁；n≤0 → 不禁。敌"反制禁骰"由 foe 数据驱动这两字段（非游戏层代码）。
+  ban?: { kind: 'banHighest' | 'banLowest'; n: number };
+}
+// ── RolledDice（event）── 骰池的掷出结果（有序，下标与 DicePool.dice 一一对齐）。由 dice-roll 系统写，
+// 早于任何消费（poker-eval / 对掷判定）。空=本拍未掷。
+export interface RolledDice extends Component {
+  readonly type: 'RolledDice';
+  results: RolledDie[];
 }

@@ -350,3 +350,70 @@ describe('poker scoringCardIndices — 计分牌（垫牌 kicker 不计分）', 
   });
   it('空手牌 → 空', () => expect(scoringCardIndices([])).toEqual([]));
 });
+
+// ── wild 百搭（REQ-GAMED #2）── wild:true 的牌可当任意 suit+rank，求最优牌型（小规模确定性枚举）──
+const wc = (): Card => ({ suit: 0, rank: 2, wild: true }); // wild 牌（suit/rank 占位，判型时被枚举覆盖）
+describe('poker evaluateHand — wild 百搭求最优牌型', () => {
+  it('无 wild → 逐字节等价旧行为（不枚举）：这手仍是高牌', () => {
+    expect(evaluateHand([c(0, 2), c(1, 5), c(2, 7), c(3, 9), c(0, K)]).type).toBe('high-card');
+  });
+  it('suit-wild 补同花：4♠ + wild → flush', () => {
+    expect(evaluateHand([c(0, 2), c(0, 5), c(0, 7), c(0, 9), wc()]).type).toBe('flush');
+  });
+  it('rank-wild 补顺子：5-6-7-8(混花色) + wild → straight', () => {
+    expect(evaluateHand([c(0, 5), c(1, 6), c(2, 7), c(3, 8), wc()]).type).toBe('straight');
+  });
+  it('rank-wild 补对子：单张 + wild → pair', () => {
+    expect(evaluateHand([c(0, 5), wc()]).type).toBe('pair');
+  });
+  it('rank-wild 补三条：一对 + wild → three-of-a-kind', () => {
+    expect(evaluateHand([c(0, 5), c(1, 5), wc()]).type).toBe('three-of-a-kind');
+  });
+  it('多 wild：一对 + 2 wild → four-of-a-kind', () => {
+    expect(evaluateHand([c(0, 5), c(1, 5), wc(), wc()]).type).toBe('four-of-a-kind');
+  });
+  it('全 wild：5 张 wild → flush-five（同时最大化同点+同花）', () => {
+    expect(evaluateHand([wc(), wc(), wc(), wc(), wc()]).type).toBe('flush-five');
+  });
+  it('全 wild：2 张 wild → pair', () => {
+    expect(evaluateHand([wc(), wc()]).type).toBe('pair');
+  });
+  it('最优联合（suit+rank 同时代入）：♠10-J-Q-K + wild → straight-flush（皇家）', () => {
+    const e = evaluateHand([c(0, 10), c(0, J), c(0, Q), c(0, K), wc()]);
+    expect(e.type).toBe('straight-flush');
+    expect(e.isFlush).toBe(true);
+    expect(e.isStraight).toBe(true);
+  });
+  it('wild + suitMerge 交互：♥♥♥♦ + wild，开 smeared → 5 红 → flush；关则仅 pair', () => {
+    const hand = [c(1, 2), c(1, 5), c(1, 7), c(2, 9), wc()]; // ♥♥♥♦ + wild
+    expect(evaluateHand(hand, { suitMerge: true }).type).toBe('flush'); // wild 取红 → 5 红同花
+    expect(evaluateHand(hand).type).toBe('pair'); // 无合并：最多 4 红 <5 → wild 只能凑对子
+  });
+  it('返回的 rankCounts/isFlush 反映最优代入（语义一致）', () => {
+    const e = evaluateHand([c(0, 2), c(0, 5), c(0, 7), c(0, 9), wc()]); // 补同花
+    expect(e.isFlush).toBe(true);
+  });
+});
+
+// ── 6-suit flush 契约（REQ-GAMED #5）── Card.suit 是无约束 int，flush 按任意 suit 计数（六色元素可直接跑）──
+describe('poker evaluateHand — 6-suit flush 契约（suit 为任意 int）', () => {
+  it('5 张同 suit=5（六色）→ flush 命中', () => {
+    const e = evaluateHand([c(5, 2), c(5, 7), c(5, 9), c(5, J), c(5, K)]);
+    expect(e.isFlush).toBe(true);
+    expect(e.type).toBe('flush');
+  });
+  it('六色混（suit 0..4 各一 + 5）→ 非 flush', () => {
+    expect(evaluateHand([c(0, 2), c(1, 7), c(2, 9), c(3, J), c(4, K)]).isFlush).toBe(false);
+  });
+  it('suit=4 四张 + suit=5 一张（不同色）→ 非 flush', () => {
+    expect(evaluateHand([c(4, 2), c(4, 7), c(4, 9), c(4, J), c(5, K)]).isFlush).toBe(false);
+  });
+  // 契约钉死：suitMerge（smeared）红=1,2 / 黑=0,3 硬编码，只对 **4 花色** 有语义；6-suit 下**不得开启**。
+  // 证明：suit≥4 会被 suitMerge 归入"黑"组（s===1||s===2→红(0)，其余→黑(1)），与真实 ♠(0)♣(3) 混并 → 误判。
+  // 故 6-suit 同花必须走裸 suit 计数（不传 suitMerge）；本用例锁死这一"为何不能用"的现状。
+  it('suitMerge 仅 4 花色有效：6-suit 开启会误并（故契约要求 6-suit 禁用 suitMerge）', () => {
+    const mixed = [c(5, 2), c(0, 7), c(5, 9), c(3, J), c(5, K)]; // suit: 5,0,5,3,5（三色）
+    expect(evaluateHand(mixed, { suitMerge: true }).isFlush).toBe(true); // 5/0/3 全归"黑"组 → 误判同花（勿用！）
+    expect(evaluateHand(mixed).isFlush).toBe(false); // 裸计数：仅 3 张 suit=5 → 正确非同花
+  });
+});
