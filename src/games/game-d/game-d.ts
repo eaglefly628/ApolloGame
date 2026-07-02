@@ -48,6 +48,9 @@ const GAME_D_THEME: UITheme = {
   inputBg: 'rgba(0,0,0,0.32)',
 };
 
+// 盒庭 HUD 面板底：深靛半透（复刻原型 rgba(14,11,26,.72)）——浮在明亮微缩盒庭上仍高对比可读（配 glass 磨砂）。
+const HUD_BG = 'rgba(14,11,26,0.72)';
+
 // ── 静态展示数据（队友 + Buff·复刻屏②右侧面板·单人原型作演出·co-op 后接 sim）──────────
 const ALLY_BUFFS: { el: Elem; name: string; tail: string }[] = [
   { el: 'mu', name: '再生', tail: '2 回合' },
@@ -264,7 +267,7 @@ export function mount(container: HTMLElement): () => void {
   });
   // 顶左：层间 chip
   const layerChip = (): LayoutNode => ({
-    type: 'Panel', id: 'hud-layer', props: { glass: true }, layout: { x: 14, y: 12, direction: 'row', gap: 10, align: 'center', padding: 8 },
+    type: 'Panel', id: 'hud-layer', props: { glass: true, bg: HUD_BG }, layout: { x: 14, y: 12, direction: 'row', gap: 10, align: 'center', padding: 8 },
     children: [
       { type: 'Panel', id: 'hud-layer-n', props: { edge: 'gold' }, layout: { width: 34, height: 34, radius: 8, align: 'center', justify: 'center', padding: 0 }, children: [lbl('hud-layer-nn', String(Math.floor((S.globalRoom - 1) / 3) + 1), { size: 'lg', color: 'gold', bold: true })] },
       bareCol('hud-layer-t', [
@@ -286,7 +289,7 @@ export function mount(container: HTMLElement): () => void {
     type: 'Panel', id: 'hud-ally', props: { bare: true }, layout: { x: w - 234, y: 58, direction: 'column', gap: 8, width: 220 },
     children: [
       {
-        type: 'Panel', id: 'hud-ally-card', props: { glass: true }, layout: { direction: 'column', gap: 6, padding: 10 },
+        type: 'Panel', id: 'hud-ally-card', props: { glass: true, bg: HUD_BG }, layout: { direction: 'column', gap: 6, padding: 10 },
         children: [
           bareRow('hud-ally-hd', [
             { type: 'Avatar', id: 'hud-ally-av', props: { name: '乙', size: 34, shape: 'rounded' } },
@@ -300,7 +303,7 @@ export function mount(container: HTMLElement): () => void {
         ],
       },
       {
-        type: 'Panel', id: 'hud-buffs', props: { title: '当前 BUFF', glass: true }, layout: { direction: 'column', gap: 5, padding: 10 },
+        type: 'Panel', id: 'hud-buffs', props: { title: '当前 BUFF', glass: true, bg: HUD_BG }, layout: { direction: 'column', gap: 5, padding: 10 },
         children: ALLY_BUFFS.map((b, i): LayoutNode => ({
           type: 'Panel', id: `hud-buff-${i}`, props: { bare: true }, layout: { direction: 'row', gap: 6, justify: 'between', align: 'center' },
           children: [
@@ -317,7 +320,7 @@ export function mount(container: HTMLElement): () => void {
     const sel = [...S.selected].map((i) => S.rolled[i]!);
     const ev = evalChallenge(sel, f.conds);
     return {
-      type: 'Panel', id: 'hud-foe', props: { glass: true }, layout: { x: w / 2 - 170, y: 14, width: 340, direction: 'column', gap: 5, padding: 12, align: 'center' },
+      type: 'Panel', id: 'hud-foe', props: { glass: true, bg: HUD_BG }, layout: { x: w / 2 - 170, y: 14, width: 340, direction: 'column', gap: 5, padding: 12, align: 'center' },
       children: [
         lbl('hud-foe-nm', `${f.isBoss ? '👑 守关者' : '⚔'} ${ELEM_INFO[f.el].emoji} ${f.name}`, { size: 'md', bold: true, glow: true }),
         { type: 'ProgressBar', id: 'hud-foe-hp', props: { value: Math.max(0, f.hp), max: f.maxHp, tone: 'danger', showValue: true, label: 'HP' } },
@@ -333,7 +336,7 @@ export function mount(container: HTMLElement): () => void {
       // 备战：去骰盅 / 直接掷出
       const preview = loadDefs.slice(0, 8).map((d, i): LayoutNode => ({ type: 'Tag', id: `bb-pv${i}`, props: { label: dieGlyph(d.el), tone: elemTone(d.el), size: 'md' } }));
       return {
-        type: 'Panel', id: 'hud-bottom', props: { glass: true }, layout: { x: w / 2 - 290, y: h - 84, width: 580, direction: 'row', gap: 12, align: 'center', justify: 'between', padding: 10 },
+        type: 'Panel', id: 'hud-bottom', props: { glass: true, bg: HUD_BG }, layout: { x: w / 2 - 290, y: h - 84, width: 580, direction: 'row', gap: 12, align: 'center', justify: 'between', padding: 10 },
         children: [
           bareRow('bb-dish', [
             lbl('bb-cup', '🎲', { size: 'xl' }),
@@ -355,7 +358,7 @@ export function mount(container: HTMLElement): () => void {
     const ev = evalChallenge(sel, S.foe.conds);
     const d = damageOf(sel);
     return {
-      type: 'Panel', id: 'hud-bottom', props: { glass: true }, layout: { x: w / 2 - 300, y: h - 134, width: 600, direction: 'column', gap: 6, align: 'center', padding: 10 },
+      type: 'Panel', id: 'hud-bottom', props: { glass: true, bg: HUD_BG }, layout: { x: w / 2 - 300, y: h - 134, width: 600, direction: 'column', gap: 6, align: 'center', padding: 10 },
       children: [
         bareRow('bb-dice', S.rolled.map((r, i): LayoutNode => S.disabled.has(i)
           ? { type: 'Button', id: `bb-d${i}`, props: { label: `🚫${ELEM_INFO[r.el].emoji}${r.v}`, kind: 'quiet', action: 'noop' } }
