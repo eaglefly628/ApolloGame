@@ -918,3 +918,13 @@ _（REQ-3D-W1高效引擎 已移至 [`requests-3d.md`](./requests-3d.md)。）_
 > ④ **测试基建（关键裁量已定）**：apollo.py 加 `mock` provider（env `APOLLO_MOCK_LLM=1` 时可用）：generate 返回固定合法 manifest、revise 返回按指令做一处确定性修改的 manifest、可配置前 N 次返回坏 JSON 以测 autofix 回路——供冒烟与 e2e 全流程无 key 可测。
 > ⑤ UI 全中文化（旧英文 Create Game 条替换为向导入口）；约束：只动 apollo.py + launcher.tsx/src/studio 组件 + index.html（如需）；**不碰 src/{engine,skills,assembly,renderer,ui,games}**。
 > ⑥ 验收标准：冒烟脚本（mock provider 全链路含 autofix 触发）+ happy-dom 集成测试 + **playwright-core 真浏览器完整旅程必跑并贴结果**（新建→生成→预览→保存→上架→继续创作→修改→版本历史出现两条→回滚）。门禁 tsc+vitest+build 全绿 + apollo.py ast；直推；完工标 ✅。
+
+### REQ-STUDIO-M3M4-设置页与体检 · 创作台 v1 收尾：BYO key 设置 + 卡带体检 · [2026-07-02] · 主程 → **指派：Opus** · status: **施工中（2026-07-02 开工）** · 类型: 产品化（apollo.py+前端，不碰引擎）
+> 前置：M0-M2 全部 ✅（真浏览器验收）。本条两小件合并施工，完成即 v1 功能完整。
+> **M3 设置页（BYO key）spec**：
+> ① 顶栏状态灯改可点击 → 设置面板：provider 列表（**千问排第一**·anthropic/deepseek/openai 兼容随后·ollama 标「本地·免 key」），每项可填 API key + 选 model；「测试连接」按钮 → 新端点 `POST /api/settings/test {provider}`（用当前配置发最小探活请求；mock/ollama 特判）。
+> ② key 存储：新端点 `GET/PUT /api/settings` → 写仓库根 `.apollo-config.json`（**必须进 .gitignore**；结构 `{providers:{qwen:{apiKey,model}}, default:'qwen'}`）；`get_api_key` 优先级改 **config > env > .env**；GET 返回 key 一律打码（前缀+尾 4 位），前端永不回显完整 key。
+> **M4 体检按钮 spec**：
+> ③ 操作条加「🩺 体检」→ 新端点 `POST /api/library/<slug>/bench`：薄 node CLI（照 manifest-check.mjs 模式，vite-node 跑）把 manifest → parseManifest → 喂 `src/bench/apollo-bench.ts`（先读其真实入口签名）→ 返回 `{score, axes, pass}`（及格线 70）；前端浮层展示五轴分。
+> ④ 测试：settings 冒烟（写→读打码→优先级 config>env→测试连接 mock）+ bench 冒烟（sample manifest 出分）+ **playwright 真浏览器旅程贴结果**（点状态灯→设置面板→填 mock key→测试连接→体检→五轴显示）。门禁 tsc+vitest+build+ast 全绿；直推；完工标 ✅。
+> 约束：apollo.py + src/studio/** + launcher.tsx + .gitignore；**不碰 src/{engine,skills,assembly,renderer,ui,games}**（bench CLI 只读 import 现有模块）。
