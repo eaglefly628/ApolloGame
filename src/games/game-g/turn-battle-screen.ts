@@ -70,7 +70,6 @@ const CSS = `
 @keyframes g-die-ready { 0%,100% { transform: scale(1) rotate(-4deg); box-shadow:0 0 22px rgba(232,205,138,.55), 0 8px 22px rgba(0,0,0,.5); } 50% { transform: scale(1.1) rotate(4deg); box-shadow:0 0 40px rgba(232,205,138,.95), 0 8px 22px rgba(0,0,0,.5); } }
 @keyframes g-finger { 0%,100% { transform: translate(58px,-6px); } 50% { transform: translate(50px,-14px); } }
 @keyframes g-die-shake { 0%,100%{transform:translate(-50%,-50%) rotate(-12deg) scale(1.05);} 25%{transform:translate(-50%,-50%) rotate(10deg) scale(.95);} 50%{transform:translate(-50%,-50%) rotate(-8deg) scale(1.08);} 75%{transform:translate(-50%,-50%) rotate(12deg) scale(.97);} }
-@keyframes g-die-roll { 0%,100%{transform:rotate(-12deg) scale(1.05);} 25%{transform:rotate(10deg) scale(.95);} 50%{transform:rotate(-8deg) scale(1.08);} 75%{transform:rotate(12deg) scale(.97);} } /* 各自掷战力骰·两骰同屏(flex 定位·无 translate·owner 2026-07-01) */
 @keyframes g-hl { 0%,100% { box-shadow:0 0 0 0 var(--gold), 0 0 10px var(--gold); } 50% { box-shadow:0 0 0 5px rgba(232,205,138,.5), 0 0 18px var(--gold); } }
 @keyframes g-adv-a { 0%{transform:translateX(-38px) scale(.88);opacity:0} 65%{transform:translateX(3px)} 100%{transform:none;opacity:1} }
 @keyframes g-adv-b { 0%{transform:translateX(38px) scale(.88);opacity:0} 65%{transform:translateX(-3px)} 100%{transform:none;opacity:1} }
@@ -390,21 +389,29 @@ function clashNode(cv: TurnClashView): LayoutNode {
     },
     layout: { anim: 'flyIn' },
   };
-  // 中央「各自掷战力骰」（owner 2026-07-01·各掷 [1,自己战力] 比大小）：掷前=范围 + 掷命钮；揭晓=两骰掷值对比 + 胜方。
-  const center: LayoutNode = revealed
-    ? { type: 'Panel', id: 'clash-center', props: { bare: true }, layout: { direction: 'column', gap: 6, align: 'center' }, children: [
-        { type: 'Panel', id: 'clash-dice', props: { bare: true }, layout: { direction: 'row', gap: 14, align: 'center', justify: 'center' }, children: [
-          { type: 'Label', id: 'clash-die-m', props: { text: `🎲 ${cv.rollMine ?? '?'}`, size: 'xxl', color: 'mine', bold: true, mono: true } },
-          { type: 'Label', id: 'clash-die-vs', props: { text: 'vs', size: 'sm', color: 'dim' } },
-          { type: 'Label', id: 'clash-die-f', props: { text: `${cv.rollFoe ?? '?'} 🎲`, size: 'xxl', color: 'foe', bold: true, mono: true } },
-        ] },
-        { type: 'Label', id: 'clash-winner', props: { text: cv.mine.won ? '◀ 我方掷高 · 胜' : '敌方掷高 · 胜 ▶', size: 'md', color: cv.mine.won ? 'mine' : 'foe', bold: true } },
-      ] }
-    : { type: 'Panel', id: 'clash-center', props: { bare: true }, layout: { direction: 'column', gap: 8, align: 'center' }, children: [
-        { type: 'Label', id: 'clash-range', props: { text: `各掷战力骰　我 1~${cv.pEffMine ?? '?'}　·　敌 1~${cv.pEffFoe ?? '?'}`, size: 'sm', color: 'sub' } },
-        { type: 'Button', id: 'clash-roll-btn', props: { label: '🎲 掷命', kind: 'hero', action: 'clash-roll' }, layout: { anchor: 'combat-roll', fx: [{ kind: 'pulse', ms: 1000 }] } },
-        { type: 'Label', id: 'clash-roll-hint', props: { text: '各自掷各自战力范围内的骰 · 点击掷命（不自动·慢慢看）', size: 'xs', color: 'sub' } },
-      ] };
+  // 各自掷战力骰（owner 2026-07-01·各掷 [1,自己战力] 比大小·**摆在两张牌正下方**）：掷前=范围 + 掷命钮；揭晓=两骰掷值 + 胜方。
+  //   clash-die3d-m/f 的 🎲 = 3D 骰挂载锚点（P3D 将替成 3D 模型在此旋转·见 requests-3d.md）；clash-die-m/f = 掷值(驱动层就地哒哒哒滚)。
+  const dieCol = (mine: boolean): LayoutNode => {
+    const roll = mine ? cv.rollMine : cv.rollFoe; const range = (mine ? cv.pEffMine : cv.pEffFoe) ?? '?'; const tone = mine ? 'mine' as const : 'foe' as const;
+    const won = revealed && (mine ? cv.mine.won : cv.foe.won);
+    return { type: 'Panel', id: `clash-diecol-${mine ? 'm' : 'f'}`, props: won ? { accent: true } : { bare: true }, layout: { direction: 'column', gap: 3, align: 'center', padding: 8, radius: 12 }, children: [
+      { type: 'Label', id: `clash-die3d-${mine ? 'm' : 'f'}`, props: { text: '🎲', size: 'xxxl' }, layout: revealed ? {} : { fx: [{ kind: 'pulse', color: 'gold', ms: 900 }] } }, // 3D 骰挂载锚点（P3D 替 3D 模型·见 requests-3d.md）
+      { type: 'Label', id: `clash-die-${mine ? 'm' : 'f'}`, props: { text: revealed ? String(roll ?? '?') : '?', size: 'xxl', color: tone, bold: true, mono: true } },
+      { type: 'Label', id: `clash-dier-${mine ? 'm' : 'f'}`, props: { text: `${mine ? '我方' : '敌方'} 1~${range}`, size: 'xs', color: tone } },
+    ] };
+  };
+  const diceRow: LayoutNode = {
+    type: 'Panel', id: 'clash-dicewrap', props: { accent: true, bg: 'rgba(10,14,22,.5)' }, layout: { direction: 'column', gap: 8, align: 'center', padding: 14, radius: 14, chamfer: 10 }, children: [
+      { type: 'Label', id: 'clash-dice-h', props: { text: '各自掷战力骰 · 各掷自己战力范围内的点', size: 'xs', color: 'sub', tracking: 1 } },
+      { type: 'Panel', id: 'clash-dice', props: { bare: true }, layout: { direction: 'row', gap: 30, align: 'center', justify: 'center' }, children: [dieCol(true), { type: 'Label', id: 'clash-die-vs', props: { text: 'VS', size: 'lg', color: 'dim', bold: true } }, dieCol(false)] },
+      revealed
+        ? { type: 'Label', id: 'clash-winner', props: { text: cv.mine.won ? '◀ 我方掷高 · 胜' : '敌方掷高 · 胜 ▶', size: 'md', color: cv.mine.won ? 'mine' : 'foe', bold: true } }
+        : { type: 'Panel', id: 'clash-rollbox', props: { bare: true }, layout: { direction: 'column', gap: 6, align: 'center' }, children: [
+            { type: 'Button', id: 'clash-roll-btn', props: { label: '🎲 掷命', kind: 'hero', action: 'clash-roll' }, layout: { anchor: 'combat-roll', fx: [{ kind: 'pulse', ms: 1000 }] } },
+            { type: 'Label', id: 'clash-roll-hint', props: { text: '点掷命 · 两骰各掷自己战力范围（不自动·慢慢看）', size: 'xs', color: 'sub' } },
+          ] },
+    ],
+  };
   const oddsBar: LayoutNode = {
     type: 'Panel', id: 'clash-odds', props: { bare: true }, layout: { direction: 'row', gap: 8, align: 'center' }, children: [
       { type: 'Label', id: 'clash-odds-m', props: { text: `${cv.oddsMine}%`, size: 'xl', color: 'mine', mono: true } },
@@ -436,7 +443,8 @@ function clashNode(cv: TurnClashView): LayoutNode {
   const children: LayoutNode[] = [
     { type: 'Label', id: 'clash-title', props: { text: `⚔ ${cv.laneName} · 绝命对决`, size: 'lg', color: 'gold', bold: true, tracking: 2 } },
     sideLabels,
-    { type: 'Panel', id: 'clash-duel', props: { bare: true }, layout: { direction: 'row', gap: 24, align: 'center', justify: 'center' }, children: [versus, center] },
+    { type: 'Panel', id: 'clash-duel', props: { bare: true }, layout: { direction: 'row', gap: 24, align: 'center', justify: 'center' }, children: [versus] }, // 两张牌
+    diceRow, // 骰子摆在两张牌正下方（owner 2026-07-01）
     ...(revealed ? [verdictRow] : []),
     oddsBar, breakdown,
   ];

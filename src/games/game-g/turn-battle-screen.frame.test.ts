@@ -51,7 +51,8 @@ describe('Game G · turn-battle-screen（doc24 回合制战斗屏 · 忠实端�
     expect(html).toContain('我方加成明细'); expect(html).toContain('敌方加成明细');
     expect(html).toContain('额外效果'); expect(html).toContain('封顶 30'); // 来源清晰：额外效果区 + 封顶对齐行（owner 2026-06-21）
     expect(html).toContain('掷命预报'); expect(html).not.toContain('CoinFlip'); // 各自掷战力骰·揭晓无掷币（owner 2026-07-01）
-    expect(html).toContain('🎲 22'); expect(html).toContain('掷高'); // 两骰掷值对比 + 掷高者胜（owner 2026-07-01）
+    expect(html).toContain('各自掷战力骰'); expect(html).toContain('🎲'); expect(html).toContain('掷高'); // 两骰摆牌下 + 掷高者胜（owner 2026-07-02）
+    expect(html).toContain('>22<'); expect(html).toContain('>9<'); // 两骰掷值（我 22 / 敌 9·各在独立骰位）
     expect(html).toContain('战力对折'); // 战损：写清对折削减（owner 2026-07-01）
     expect(html).toContain('留场续战'); expect(html).toContain('阵亡 · 离场'); // 胜者留场 / 败者离场
     await expect(html).toMatchFileSnapshot('./__frames__/turn-clash.html');

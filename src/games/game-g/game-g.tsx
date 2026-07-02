@@ -431,35 +431,28 @@ export function mount(container: HTMLElement, shell?: { exit?: () => void }): ()
     let mounted: { update: () => void; destroy: () => void } | null = null;
 
     const drainClashes = (): void => { for (const ev of tb.clashLog.slice(drained)) perfQueue.push(ev); drained = tb.clashLog.length; };
-    // 各自掷战力骰（owner 2026-07-01「两个人同时在对决画面各掷自己战力范围内的骰」）：
-    //   两颗骰同屏·我橙敌蓝·各自哒哒哒滚到自己 [1,战力] 的掷值 → 撤层揭晓（rollA/rollB 已在数据里·大者胜）。
-    //   （旧「单颗按胜率掷点」+ 掷硬币退役：硬币模块 coin-flip.ts 留存为死代码·此处只两骰同屏。）
+    // 各自掷战力骰（owner 2026-07-01「两骰摆两张牌正下方·各掷自己战力范围」）：
+    //   就地在特写「牌正下方」的两个骰位(#clash-die-m/f)哒哒哒滚到各自掷值(rollA/rollB)→ 揭晓大者胜。不再全屏浮层。
+    //   3D 化（owner「做成 3D 模型在那里旋转」）属 3D 渲染线 → 已转 requests-3d.md 给 P3D；此为 2D 过渡版 + 3D 挂载锚点(#clash-die3d-m/f)。
+    //   （旧「单颗按胜率掷点」+ 掷硬币退役：硬币模块 coin-flip.ts 留存为死代码。）
     const doClashRoll = (): void => {
       if (clashRolling || clashRevealed || !perfClash) return;
       clashRolling = true; clearClashTimers();
       const e = perfClash; const tgtA = e.rollA ?? 0, tgtB = e.rollB ?? 0; // 各自掷值（数据已定·动画只是滚到它）
-      clashRevealed = true; coachDid('roll'); mounted?.update(); syncCoach(); // 结果落 DOM（被掷骰浮层盖住·撤层即见）+ 掷骰引导毕业
       playSfx('select');
-      const ov = document.createElement('div'); ov.style.cssText = 'position:fixed;inset:0;z-index:320;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:22px;pointer-events:none;background:radial-gradient(circle at center,rgba(8,10,15,.55),rgba(6,8,12,.82))';
-      ov.innerHTML = `<div style="font:800 22px/1 'Rajdhani',sans-serif;color:#e8cd82;letter-spacing:.18em;text-shadow:0 0 24px rgba(232,205,138,.8)">各自掷战力骰</div>
-        <div style="display:flex;align-items:center;gap:48px;">
-          <div style="display:flex;flex-direction:column;align-items:center;gap:8px;"><div style="font-size:84px;animation:g-die-roll .5s ease-in-out infinite;filter:drop-shadow(0 6px 16px rgba(255,122,69,.5))">🎲</div><div data-roll-m style="font-family:'Silkscreen',monospace;font-size:60px;font-weight:700;color:#ff7a45;text-shadow:0 0 28px rgba(255,122,69,.9),0 4px 14px rgba(0,0,0,.9)">0</div><div style="font:700 13px/1 'Noto Serif SC',serif;color:#ff7a45">我方 1~${e.a.pEff}</div></div>
-          <div style="font:800 40px/1 'Rajdhani',sans-serif;color:#fff;text-shadow:0 0 30px rgba(255,80,40,.8)">VS</div>
-          <div style="display:flex;flex-direction:column;align-items:center;gap:8px;"><div style="font-size:84px;animation:g-die-roll .5s ease-in-out infinite .12s;filter:drop-shadow(0 6px 16px rgba(58,134,212,.5))">🎲</div><div data-roll-f style="font-family:'Silkscreen',monospace;font-size:60px;font-weight:700;color:#5aa0e6;text-shadow:0 0 28px rgba(58,134,212,.9),0 4px 14px rgba(0,0,0,.9)">0</div><div style="font:700 13px/1 'Noto Serif SC',serif;color:#5aa0e6">敌方 1~${e.b.pEff}</div></div>
-        </div>`;
-      document.body.appendChild(ov);
-      const mEl = ov.querySelector('[data-roll-m]') as HTMLElement | null; const fEl = ov.querySelector('[data-roll-f]') as HTMLElement | null;
-      const finish = (): void => { if (!ov.isConnected) return; ov.remove(); clashRolling = false; if (mEl) mEl.textContent = String(tgtA); if (fEl) fEl.textContent = String(tgtB); playSfx('clashReveal'); playSfx(e.aWins ? 'clashWin' : 'clashLose'); if (e.lastStand) { log(`🛡 死战不退发作：敌主将【${aiName}】首负不亡·残喘退守 1 格`); showBanner('🛡 死战不退 · 敌主将首负不亡', 1700); } mounted?.update(); };
-      if (typeof requestAnimationFrame !== 'function') { finish(); return; } // 无头环境：直接揭晓
-      const STEPS = 40; let step = 0; // 帧计数驱动（不依赖 wall-clock·有界·测试不挂）·两骰各自 ease-out 滚到掷值
+      const mEl = document.getElementById('clash-die-m'); const fEl = document.getElementById('clash-die-f');
+      const reveal = (): void => { clashCdTimer = 0; clashRolling = false; clashRevealed = true; coachDid('roll'); playSfx('clashReveal'); playSfx(e.aWins ? 'clashWin' : 'clashLose'); if (e.lastStand) { log(`🛡 死战不退发作：敌主将【${aiName}】首负不亡·残喘退守 1 格`); showBanner('🛡 死战不退 · 敌主将首负不亡', 1700); } mounted?.update(); syncCoach(); }; // 揭晓：重渲染显最终掷值 + 胜方高亮
+      if (!mEl || !fEl) { reveal(); return; } // 无骰位（无头/未渲）→ 直接揭晓
+      // setTimeout 驱动（而非 rAF）→ 假计时器 vi.runAllTimers 能冲完·flow-walk 不卡；存 clashCdTimer 便于离场清理。
+      const STEPS = 46; let step = 0; // 两骰各自 ease-out 滚到掷值（滚久一点·更有蓄力·owner「第二种」）
       const tick = (): void => {
         step += 1; const t = Math.min(1, step / STEPS); const k = 1 - Math.pow(1 - t, 3);
-        if (mEl) mEl.textContent = String(Math.max(tgtA > 0 ? 1 : 0, Math.round(k * tgtA)));
-        if (fEl) fEl.textContent = String(Math.max(tgtB > 0 ? 1 : 0, Math.round(k * tgtB)));
+        mEl.textContent = String(Math.max(tgtA > 0 ? 1 : 0, Math.round(k * tgtA)));
+        fEl.textContent = String(Math.max(tgtB > 0 ? 1 : 0, Math.round(k * tgtB)));
         if (step % 3 === 0) playSfx('select');
-        if (t < 1) requestAnimationFrame(tick); else window.setTimeout(finish, 360);
+        clashCdTimer = window.setTimeout(t < 1 ? tick : reveal, t < 1 ? 22 : 300);
       };
-      requestAnimationFrame(tick);
+      clashCdTimer = window.setTimeout(tick, 22);
     };
     // 逐场掷命特写：3D 飞入 → 停留 → **玩家点「看明白了」才演下一场/收场**（owner 2026-06-20：不能自动关·要看清为什么胜败）。
     const playPerf = (onDone: () => void): void => {

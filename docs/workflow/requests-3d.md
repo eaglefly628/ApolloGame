@@ -292,3 +292,23 @@
 > **展示台侧已绕**（不等修）：金属用 `Material3D` 的 `metalness` 覆盖压到 ~0.4 让基色显出来（合法数据·展台可读）；P3D 补 IBL 后即可回纯预设（metalness:1 显真金属反射）。
 >
 > **✅ P3D 已交付（2026-06-30·同日）**：`Sky3D.env?:number` 开 IBL（RoomEnvironment→PMREM→scene.environment）。展台 game-i 材质场景已用 `env:1` + 回退纯金属预设（去掉 metalness 绕法）→ 金属正确反射环境。结案。
+
+---
+
+## REQ-3D-骰盅 · 对决 3D 骰子（各自掷战力骰·两骰在牌下旋转） · [2026-07-02] · game-g（主程/Lead session）→ P3D（3D 渲染线） · status: **待评审** · 类型: 表现增强（owner 点名要 3D）
+
+> **owner 2026-07-02 原话**：「能不能做成 3D？因为我们 3D 引擎也有了嘛，你把这两个色子做成 3D 模型在那里旋转。」——game-g 对决「各自掷战力骰」的两颗骰子，希望做成 **3D 模型在对决画面旋转**。
+> **边界**：3D 渲染（three-renderer / Mesh3D·Model3D / 3D 场景集成）是 P3D 独占域，game-g session 不擅入 → 按 §0.1 转工单给你评审/落地。sim/数据侧（掷值 rollA/rollB、战力范围）已是纯数据、现成可读。
+>
+> **现状（game-g 已铺好的 2D 过渡版 + 挂载锚点）**：
+> - 对决特写（`turn-battle-screen.ts` `clashNode`）已把两颗骰子摆在**两张牌正下方**的 `clash-dicewrap` 面板里；每颗骰一列 `clash-diecol-m/f`：
+>   - `clash-die3d-m` / `clash-die3d-f` = 🎲 **emoji 占位·即 3D 骰挂载锚点**（你把 3D 骰塞这两个屏幕位）。
+>   - `clash-die-m` / `clash-die-f` = 掷值数字（驱动层 `game-g.tsx doClashRoll` 就地哒哒哒滚到掷值）。
+> - 掷值数据：`ClashEvent.rollA`（我方掷值）/`rollB`（敌方掷值）、范围 = `a.pEff`/`b.pEff`（即 `[1,战力]` 上限）。我方=暖橙 `mine`、敌方=冷蓝 `foe`。
+>
+> **诉求（P3D 定夺实现）**：
+> 1. 两颗 3D 骰（`Mesh3D` box 六面点数贴图 / 或导入 `Model3D` 骰模型），在 `clash-die3d-m/f` 两个屏幕位各自旋转。
+> 2. 「掷」时旋转翻滚 → 落定停在**该骰掷出的点数面**（掷值来自 rollA/rollB；>6 的战力骰如何映射到 6 面骰的视觉——是显数字面还是多骰/自定义面，请你定，或回驳建议改表现）。
+> 3. 我方橙 / 敌方蓝 区分；纯表现、**不进 hash**（determinism 红线：新 render-only 组件登记 `NON_DETERMINISTIC`）。
+> **集成难点（需你评估）**：game-g 战斗屏走 `renderNode + innerHTML`（2D·不跑 mountUI、无 3D 画布）。把一个 three 画布锚到 UI 元素屏幕位＝路线图里记的「UI↔世界锚」seam（你 §路线图「待长」有列）。若这个通用 seam 值得先做，这单可当它的第一个消费者。
+> **可回驳**：若「6 面骰表达 [1,30] 掷值」不成立 / 集成成本过高 → 请回驳并给替代（如 2D 骰面贴图升级、或战力骰改「转盘/进度条」表现）。owner 要的是「掷骰的爽感表现」，3D 是他提的实现手段、非硬指标。
