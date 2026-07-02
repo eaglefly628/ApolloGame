@@ -145,6 +145,13 @@ export function buildDieMesh3D(m: Mesh3D): THREE.Mesh {
     let map: THREE.Texture;
     if (f.src) { map = new THREE.TextureLoader().load(f.src); map.colorSpace = THREE.SRGBColorSpace; map.anisotropy = 4; }
     else map = buildDieFaceTexture(f.color, f.pip);
+    // 玻璃骰（透明玻璃 + pip 贴花）：透射物理材质·honor 贴图 alpha → 圆角贴花外的四角/棱透见背景（高级透玻璃感）。
+    // 保留元素色自发光微光 ei .16（参考关键项）。否则原哑光标准材质（不透明）。
+    if (m.dieGlass) {
+      const gm = new THREE.MeshPhysicalMaterial({ map, transparent: true, transmission: 0.6, ior: 1.45, thickness: 1.4, roughness: 0.16, metalness: 0.08, side: THREE.DoubleSide });
+      gm.emissive.setHex((f.emissive ?? f.color) & 0xffffff); gm.emissiveIntensity = 0.16;
+      return gm;
+    }
     const mat = new THREE.MeshStandardMaterial({ map, roughness: 0.42, metalness: 0.18 });
     mat.emissive.setHex((f.emissive ?? f.color) & 0xffffff);
     mat.emissiveIntensity = f.emissive !== undefined ? 0.22 : (f.src ? 0.1 : 0.16);
@@ -152,9 +159,9 @@ export function buildDieMesh3D(m: Mesh3D): THREE.Mesh {
   });
   return new THREE.Mesh(new THREE.BoxGeometry(size, size, size), mats);
 }
-/** 骰子 mesh 缓存签名（面色/点数/尺寸变才重建）。 */
+/** 骰子 mesh 缓存签名（面色/点数/尺寸/玻璃变才重建）。 */
 export function dieMode(m: Mesh3D): string {
-  return `die|${m.width}|${(m.dieFaces ?? []).map((f) => `${f.color}:${f.pip}:${f.emissive ?? ''}:${f.src ?? ''}`).join(',')}`;
+  return `die|${m.width}|${m.dieGlass ? 'g' : ''}|${(m.dieFaces ?? []).map((f) => `${f.color}:${f.pip}:${f.emissive ?? ''}:${f.src ?? ''}`).join(',')}`;
 }
 
 // ── 体素表面程序化贴图（复刻美术设计案原型 topTex/sideTex/wallTex·「带精美贴图的体素」）─────────────

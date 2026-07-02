@@ -179,7 +179,7 @@ export function mount(container: HTMLElement): () => void {
     // 骰子（原型原尺寸 1.95·die.y -0.45）。相机/光/背光晕由 setMood + 下方三点补光按参考装配。
     engine.world.createEntity(TITLE_DIE);
     engine.world.addComponent(TITLE_DIE, { type: 'Transform3D', x: 0, y: -0.45, z: 0, rotX: 0.5, rotY: 0.7, scale: 1 } as unknown as Component);
-    engine.world.addComponent(TITLE_DIE, { type: 'Mesh3D', shape: 'box', width: 1.95, height: 1.95, depth: 1.95, frontTint: 0xeef4ff, dieFaces: ELEM_FACES } as unknown as Component);
+    engine.world.addComponent(TITLE_DIE, { type: 'Mesh3D', shape: 'box', width: 1.95, height: 1.95, depth: 1.95, frontTint: 0xeef4ff, dieGlass: true, dieFaces: ELEM_FACES } as unknown as Component);
     // 三点补光的两盏点光（复刻参考·Rim 紫 + Fill 蓝·range 30）。Ambient + Key 平行光由 setMood 改基础灯。
     engine.world.createEntity('gd-title-rim');
     engine.world.addComponent('gd-title-rim', { type: 'Light3D', kind: 'point', color: 0x9b6cff, intensity: 1.2, x: -4, y: 1, z: -3, range: 30, decay: 2 } as unknown as Component);

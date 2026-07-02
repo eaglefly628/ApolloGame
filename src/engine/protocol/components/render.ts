@@ -73,6 +73,9 @@ export interface Mesh3D extends Component {
   /** 六面 pip 骰子（render-only·程序化贴图·复刻美术设计案 3D 命运骰）。在场 → box 建成 6 面元素色 + 白点材质，
    *  替代 frontTint/backTint 纯色（size 取 width）。面序 = BoxGeometry [右,左,顶,底,前,后]。骰盅/掷骰/战利品/Title 共用。 */
   dieFaces?: DieFace[];
+  /** 玻璃骰（render-only·配合 dieFaces·owner 2026-07-01 近观概念定）：六面改用**透明玻璃材质**（MeshPhysical·transmission），
+   *  骰面圆角 pip 贴图作**贴花**浮于其上——贴花外的四角 + 立方体棱(楞)是**通透玻璃**（可透见背景/背面），呈高级透玻璃感。 */
+  dieGlass?: boolean;
   /** 体素表面程序化贴图（render-only·复刻「带精美贴图的体素」）。在场 → 顶面网格纹 + 侧面纹，替代纯色 tint。地台/墙/基座共用。 */
   voxelTex?: VoxelTex;
 }
