@@ -124,7 +124,16 @@ function layoutStyle(c?: LayoutConstraints, t?: UITheme): string {
   }
   if (c.draggable) p.push('cursor:grab');
   // 视觉特效合集（UI 特效库）：闭集 fx → 动画/滤镜/叠层 CSS。需主题取色 → 仅 t 在场时应用。
-  if (c.fx && c.fx.length && t) { const f = fxToCss(c.fx, t); if (f.css) p.push(f.css); }
+  if (c.fx && c.fx.length && t) {
+    const f = fxToCss(c.fx, t);
+    if (f.css) {
+      // REQ-UI-BUG-fx与绝对定位不兼容：x/y 已给 position:absolute（本身即定位祖先·fx 的 ::after 照样定位）→
+      // 别让 fx 的 position:relative 覆盖它（否则绝对定位失效、元素跑位）。仅无 x/y 时才需 fx 补 relative。
+      const hasAbs = c.x !== undefined || c.y !== undefined;
+      const css = hasAbs ? f.css.split(';').filter((s) => s !== 'position:relative').join(';') : f.css;
+      if (css) p.push(css);
+    }
+  }
   return p.join(';');
 }
 

@@ -718,7 +718,7 @@ _（REQ-3D-W1高效引擎 已移至 [`requests-3d.md`](./requests-3d.md)。）_
 >
 > **⚠️ 升级（2026-06-28·UI 审计工具实测加料·严重度↑）**：此 bug 不止吞「锦上添花」的 glow/tracking——它在 `renderTabs` 里把**页签文字 `color` 整个吞掉**：navBtn 的 style 顺序是 `…font-family:${t.fontUi};…;color:${on?gold:sub}` → color 排在 font-family 之后 → 被引号截断 → **页签文字回退成纯黑 `rgb(0,0,0)`，落在近黑底上 ratio≈1.09、完全不可读**。`tools/ui-audit.mjs` 跑 game-i MMO HUD 一眼抓到（聊天页签「综合/战斗/交易」黑字）。**影响所有用 Tabs 的界面（含 game-g 大厅页签）——是「线上交互控件不可读」级，不是装饰缺失。** 修序列化（整个 style="" 值 HTML 转义）一次性解决 Tabs color + Label glow/tracking/pre-line 全部；会改一大批含 font-family 的 golden 字节、须主程统一重生成，故仍交主程。**建议提优先级。**
 
-### REQ-UI-BUG-fx与绝对定位不兼容 · [2026-06-28] · PI → 主程（UI 库域·render.ts/layoutStyle） · status: **待主程** · 类型: 两 render-only 特性不组合
+### REQ-UI-BUG-fx与绝对定位不兼容 · [2026-06-28] · PI → 主程（UI 库域·render.ts/layoutStyle） · status: **✅ done（主程 2026-07-01·x/y 在场时剥掉 fx 的 position:relative·absolute 赢·`ui-bugfix-fx-toggle-slider.test.ts`）** · 类型: 两 render-only 特性不组合
 
 > **现象**：一个 LayoutNode 同时给 `layout.x/y`（绝对定位叠层）+ `layout.fx:[{kind:'sheen'}]`（流光）时，**绝对定位失效**——元素退回 `position:relative`，x/y 变成「相对正常流位置的偏移」而非「相对父原点的绝对坐标」，于是跑位（在别处堆叠）。建 MMO HUD 施法条（绝对定位 + sheen）时实测：声明 y:460、实际渲染 position:relative + 落到 y:515。
 >
@@ -730,7 +730,7 @@ _（REQ-3D-W1高效引擎 已移至 [`requests-3d.md`](./requests-3d.md)。）_
 >
 > **展示台侧已用合法组合绕开**（不等修复）：定位壳(x/y·无 fx) 裹 特效内卡(fx·流式填充)——`{Panel x/y bare}>{Panel fx ...}`。MMO HUD 两条施法条均已这样写、overlap 审计归零。属可接受的数据写法，但**「直接在绝对定位节点上挂 fx」是直觉写法、应能用**，故报缺口。
 
-### REQ-UI-BUG-Toggle视觉点击不更新 · [2026-06-30] · P3D（game-z 调试面板实测） → 主程（UI 库域·server.ts reconcile 焦点保护） · status: **待主程** · 类型: 渲染正确性 bug（控件视觉与状态脱节）
+### REQ-UI-BUG-Toggle视觉点击不更新 · [2026-06-30] · P3D（game-z 调试面板实测） → 主程（UI 库域·server.ts reconcile 焦点保护） · status: **✅ done（主程 2026-07-01·焦点保护只认文本控件·checkbox/radio 放行重建·`ui-bugfix-fx-toggle-slider.test.ts`）** · 类型: 渲染正确性 bug（控件视觉与状态脱节）
 
 > **现象（owner 2026-06-30 报）**：点 `Toggle` 开关，**开关的视觉（轨道色 + 圆钮位置）不跟着变**——但绑定的 `action` 效果**确实生效**（AO/雾/分级被切了）。即「逻辑对、视觉死」。game-z 渲染调试面板每个 Toggle 都中招。
 >
@@ -742,7 +742,7 @@ _（REQ-3D-W1高效引擎 已移至 [`requests-3d.md`](./requests-3d.md)。）_
 >
 > **影响面**：不止 game-z——**任何「点 Toggle/Checkbox 后调 `update()` 刷新面板」的界面都中招**（控件视觉与真值脱节、误导用户以为没生效）。建议连带审 Checkbox/Radio 的 update 路径。
 
-### REQ-UI-BUG-Slider回调偶发undefined · [2026-06-30] · P3D（game-z 调试面板实测） → 主程（UI 库域·server.ts dispatch） · status: **待主程** · 类型: 健壮性 bug（脏值入回调）
+### REQ-UI-BUG-Slider回调偶发undefined · [2026-06-30] · P3D（game-z 调试面板实测） → 主程（UI 库域·server.ts dispatch） · status: **✅ done（主程 2026-07-01·根因=dispatch 同绑 click+change·值控件非 change 事件不派发·`ui-bugfix-fx-toggle-slider.test.ts`）** · 类型: 健壮性 bug（脏值入回调）
 
 > **现象（P3D 追 AO 黑屏时连带挖出）**：拖 `Slider`（`<input type=range>`）一次交互，绑定的 `change` handler 被调**两次**——第一次给正确数值串（如 `"0.65"`），**第二次给 `undefined`**。下游 `Number(undefined)=NaN` 写进 render-only 组件 → 后处理 shader 算 NaN → **整片黑屏**（game-z AO 黑屏的直接触发源；P3D 侧已加 finite 兜底双保险挡住，但脏回调本身应在 UI 库根治）。
 >

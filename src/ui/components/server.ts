@@ -60,7 +60,13 @@ function patchFocusedInput(el: HTMLElement, newN: LayoutNode): boolean {
     if (p.placeholder !== undefined) inp.placeholder = String(p.placeholder);
     return true;
   }
-  // Combobox 等：焦点在内部 input → 保守跳过本帧重建（避免毁焦点），下次失焦再整体对齐。
+  // REQ-UI-BUG-Toggle视觉点击不更新：焦点落在 checkbox/radio（Toggle/Checkbox/Radio 的隐藏输入）→ 非文本控件·
+  // 无光标/IME 要保 → 放行 outerHTML 重建（否则控件 styled 视觉停在旧 checked·逻辑对视觉死）。点击交互已完成、隐藏框丢焦点无害。
+  if (active.tagName === 'INPUT') {
+    const at = (active as HTMLInputElement).type;
+    if (at === 'checkbox' || at === 'radio') return false;
+  }
+  // 文本类（text/search/number/Combobox 内部 input）：焦点在内部 input → 保守跳过本帧重建（保光标/IME）。
   return true;
 }
 
@@ -206,6 +212,10 @@ export function mountUI(
         arg = inp.type === 'checkbox' ? String(inp.checked) : inp.value;
       } else return; // change 只认 select/input
     } else {
+      // REQ-UI-BUG-Slider回调偶发undefined（根因）：dispatch 同时绑 click + change。值控件（Slider range / Toggle /
+      // Checkbox / Dropdown 的 input/select）的 action **只应在 change 取值派发**；click 也冒泡到这里会按 data-arg 派发——
+      // range 无 data-arg → 透传 undefined → Number(undefined)=NaN 击穿后处理 shader（game-z AO 黑屏源）。故值控件的非 change 事件不派发。
+      if (el.tagName === 'INPUT' || el.tagName === 'SELECT') return;
       arg = el.dataset['arg'];
     }
 
