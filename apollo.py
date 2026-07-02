@@ -42,6 +42,18 @@ def _spawn(cmd: list[str]) -> dict:
         return {'args': subprocess.list2cmdline(cmd), 'shell': True}
     return {'args': cmd, 'shell': False}
 
+def _git(args: list[str]) -> str:
+    """跑 git 并**强制 UTF-8 解码**。Windows 上 subprocess.getoutput / text=True 默认按系统
+    ANSI 码页（中文系统=GBK）解码——但 git 输出的中文提交信息是 UTF-8，遇 0x80 之类字节即
+    UnicodeDecodeError，曾击穿 /status 的 API 线程。这里显式 utf-8 + errors='replace' 单点根治。
+    git 是真 .exe（非 .cmd），无需走 shell。"""
+    try:
+        r = subprocess.run(['git', *args], cwd=ROOT, capture_output=True,
+                           encoding='utf-8', errors='replace', timeout=10)
+        return r.stdout.strip()
+    except Exception:
+        return ''
+
 # ── 颜色输出 ──
 
 def c(text, color):
@@ -75,19 +87,36 @@ signal.signal(signal.SIGTERM, _cleanup)
 
 # ── 环境检查 ──
 
+def _missing_deps() -> list[str]:
+    """node_modules 里缺哪些 package.json 声明的 dependencies（含 scoped 如 @types/three）。
+    check_env 原来只看 node_modules 在不在——但 git pull 新增依赖（如 three/cannon-es）后，旧的
+    node_modules 仍在→不重装→Vite 一堵 'could not be resolved' 墙。这里逐个核对，且**读
+    package.json 而非硬编码依赖名**，未来加依赖自动覆盖。返回 ['<all>'] 表示 node_modules 整个缺。"""
+    nm = ROOT / 'node_modules'
+    if not nm.exists():
+        return ['<all>']
+    try:
+        pkg = json.loads((ROOT / 'package.json').read_text(encoding='utf-8'))
+    except Exception:
+        return []
+    deps = list(pkg.get('dependencies', {}).keys())
+    return [d for d in deps if not (nm / Path(d)).exists()]
+
 def check_env():
     if not shutil.which('npm') or not shutil.which('node'):
         print(c("  [ERROR]", 'r'), "npm/node not found.")
         sys.exit(1)
-    if not (ROOT / 'node_modules').exists():
-        print(c("  [SETUP]", 'y'), "Installing dependencies...")
+    missing = _missing_deps()
+    if missing:
+        why = "node_modules 缺失" if missing == ['<all>'] else f"缺依赖 {', '.join(missing)}（package.json 更新后未重装？）"
+        print(c("  [SETUP]", 'y'), f"Installing dependencies…（{why}）")
         subprocess.call(**_spawn(['npm', 'install']), cwd=ROOT)
 
 # ── 项目信息收集 ──
 
 def get_project_status() -> dict:
-    branch = subprocess.getoutput('git branch --show-current')
-    last_commit = subprocess.getoutput('git log --oneline -1')
+    branch = _git(['branch', '--show-current'])
+    last_commit = _git(['log', '--oneline', '-1'])
     # 跨平台数测试文件（原 find|wc 是 unix-ism，在 Windows 上失效 → 计数恒 0）。
     src_dir = ROOT / 'src'
     test_count = (
@@ -120,7 +149,8 @@ def get_project_status() -> dict:
 
 def run_command(cmd: list[str], timeout: int = 120) -> dict:
     try:
-        result = subprocess.run(**_spawn(cmd), cwd=ROOT, capture_output=True, text=True, timeout=timeout)
+        result = subprocess.run(**_spawn(cmd), cwd=ROOT, capture_output=True,
+                                encoding='utf-8', errors='replace', timeout=timeout)
         return {
             'success': result.returncode == 0,
             'stdout': result.stdout[-4000:] if len(result.stdout) > 4000 else result.stdout,
