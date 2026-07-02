@@ -42,9 +42,9 @@ const GAME_D_THEME: UITheme = {
   ok: '#7fd49a', okWash: 'rgba(110,205,140,0.16)',
   warn: '#f0b756', warnWash: 'rgba(240,183,86,0.16)', danger: '#ff7d7d',
   mine: '#f0d68a', foe: '#ff8a8a',
-  fontUi: '"PingFang SC", "Hiragino Sans GB", "Noto Sans SC", "Microsoft YaHei", sans-serif', // 正文无衬线
-  fontSerif: '"Noto Serif SC", Georgia, serif', // 标题/logo/骰名衬线（Label font:'serif'）
-  fontMono: 'ui-monospace, "SF Mono", Menlo, Consolas, monospace',
+  fontUi: "'PingFang SC', 'Hiragino Sans GB', 'Noto Sans SC', 'Microsoft YaHei', sans-serif", // 正文无衬线
+  fontSerif: "'Noto Serif SC', Georgia, serif", // 标题/logo/骰名衬线（Label font:'serif'）
+  fontMono: "ui-monospace, 'SF Mono', Menlo, Consolas, monospace",
   inputBg: 'rgba(0,0,0,0.32)',
 };
 

@@ -16,8 +16,8 @@ export const GG_THEME_ONYX: UITheme = {
   ok: '#94c08a', okWash: 'rgba(148,192,138,0.14)',
   warn: '#dcbb79', warnWash: 'rgba(220,187,121,0.14)',
   danger: '#d3897a',
-  fontUi: '"Noto Serif SC","Songti SC","Source Han Serif SC",serif',
-  fontMono: 'ui-monospace,"SF Mono",Menlo,Consolas,monospace',
+  fontUi: "'Noto Serif SC','Songti SC','Source Han Serif SC',serif",
+  fontMono: "ui-monospace,'SF Mono',Menlo,Consolas,monospace",
 };
 
 // ② 大厅内嵌皮（桥接 CSS 变量）：用于**嵌在大厅 .ggl-root 内**的引擎组件(天梯榜/榜单/数值表…)。

@@ -693,7 +693,7 @@
 
 _（REQ-3D-W1高效引擎 已移至 [`requests-3d.md`](./requests-3d.md)。）_
 
-### REQ-UI-BUG-style属性引号截断 · [2026-06-28] · PI → 主程（UI 库域·render.ts 序列化） · status: **待主程** · 类型: 渲染正确性 bug（击穿已发特性）
+### REQ-UI-BUG-style属性引号截断 · [2026-06-28] · PI → 主程（UI 库域·render.ts 序列化） · status: **✅ done（主程 2026-07-01·根因=主题字体名双引号在 style="" 提前闭合属性→字体名一律单引号·修 9 处字体栈·`theme-font-quote-safe.test.ts`）** · 类型: 渲染正确性 bug（击穿已发特性）
 
 > **现象**：`Label` 的 `white-space:pre-line`（多行 `\n`·db56703a 刚发）、`glow`（text-shadow）、`tracking`（letter-spacing）**全部静默失效**——在所有主题下都不生效。建展示台 demo 时实测发现：多行 label 挤成一行、glow 不发光、tracking 无字距。
 >
