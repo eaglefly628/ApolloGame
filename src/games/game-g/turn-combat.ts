@@ -536,12 +536,16 @@ function foeIntel(b: TurnBattle): {
 }
 
 // 放兵到某路的效用：路偏好(铺/专) + 攻击性×目标偏好(弱/强/将) + 攻防情势响应(回防空/劣势·趁势压优势路) + 节奏(疾行驰援) + 方阵扎堆 + 兵牌强度。
-function scoreDeploy(b: TurnBattle, card: PokerCard, lane: number): number {
+// garrison（owner 2026-07-02·修「开局布防全挤一路·另两路真空被玩家直捣家」）：布防阶段**强制分散铺满三路**——
+//   一条无兵的路 = 通往自家大本营的免费高速路，任何画像的 boss 开局都不该留。故布防时空路重奖、扎堆重罚 → 三路各留一守；
+//   **仅布防阶段生效**，常规回合 scoreDeploy 不变（列奥尼达"专一路"画像 + ai.test 断言照旧）。
+function scoreDeploy(b: TurnBattle, card: PokerCard, lane: number, garrison = false): number {
   const p = b.aiProfile; const own = b.lanes[lane].b; const foe = b.lanes[lane].a; const foeFront = foe[0];
   // v2 战损感知（owner 2026-06-29·tier≥2 才开·关1 tier1 保序战傻）：看穿玩家前锋**疲劳**→有效战力，挑软柿子车轮消耗。
   const v2 = b.aiTier >= 2;
   const foeEff = foeFront ? Math.max(0, v2 ? halvedEff(foeFront) : foeFront.points) : 0; // 玩家前锋战力：v2(tier≥2)看有效战力(含养成·连胜对折)·否则同旧(仅点数·不扰 tier1 序战画像)
   let s = 10 + cardPoints(card.rank) * 0.4; // 基础 + 强牌更值
+  if (garrison) s += own.length === 0 ? 12 : -own.length * 8; // 布防：空路重奖(每路先留一守·别留高速路) / 已有兵重罚(别堆) → 铺满三路
   s += (p.lanePref >= 5 ? -own.length : own.length) * (Math.abs(p.lanePref - 5) / 5) * 5; // 铺(少己兵处)↔专(扎堆)
   const ag = wt(p.aggression);
   if (p.targetPref === 'weak') s += (foe.length === 0 ? 7 : -foeEff * 0.4) * ag; // 避实击虚（v2：疲劳前锋=软柿子·更想打）
@@ -610,7 +614,7 @@ type AiCand = { kind: 'deploy' | 'cast' | 'draw' | 'disha'; handIdx: number; lan
 /** Boss 决策阶段（utility AI·只放牌/施法/抽·**不结束回合不推进**）。owner 2026-06-29：拆出「敌方决策」与「敌方行动」
  *  两阶段→ caller 可在两者间插「敌方决策」过场 + 渲染让玩家看清敌方布阵，再单独 endTurn 演「敌方行动」推进动画。
  *  aggTengang：caller(game-g) 传天罡聚合器 → Boss 施法后重算 tengangA 即时生效。返回本回合打出的地煞 id（caller 全屏通知·REQ-G #6）。 */
-export function aiDecide(b: TurnBattle, aggTengang?: (ids: readonly string[]) => TengangFx, dbg?: (m: string) => void): string[] {
+export function aiDecide(b: TurnBattle, aggTengang?: (ids: readonly string[]) => TengangFx, dbg?: (m: string) => void, garrison = false): string[] {
   const castDishaIds: string[] = [];
   if (b.winner !== 'pending' || b.active !== 'b') return castDishaIds;
   // 大炮兵（地煞·关4）：每 N 回合压你兵最多的一路 → 该路你掷命 −winPct（应用到你下个推进的遭遇）。
@@ -625,7 +629,7 @@ export function aiDecide(b: TurnBattle, aggTengang?: (ids: readonly string[]) =>
   while (guard++ < 40) {
     const locked = b.actionTaken; const cands: AiCand[] = [];
     if (locked === null || locked === 'deploy') {
-      sd.hand.forEach((c, i) => { if (c.kind === 'poker' && (c.cost ?? DEPLOY_COST) <= sd.mana) for (const lane of [0, 1, 2]) cands.push({ kind: 'deploy', handIdx: i, lane, from: 'poker', score: scoreDeploy(b, c, lane) }); }); // 只考虑买得起的兵
+      sd.hand.forEach((c, i) => { if (c.kind === 'poker' && (c.cost ?? DEPLOY_COST) <= sd.mana) for (const lane of [0, 1, 2]) cands.push({ kind: 'deploy', handIdx: i, lane, from: 'poker', score: scoreDeploy(b, c, lane, garrison) }); }); // 只考虑买得起的兵·布防阶段强制铺满三路
     }
     if ((locked === null || locked === 'cast') && sd.mana >= CAST_COST) {
       sd.hand.forEach((c, i) => { if (c.kind === 'tengang') cands.push({ kind: 'cast', handIdx: i, lane: 0, from: 'poker', score: scoreCast(b) }); });
@@ -676,8 +680,8 @@ export function bossOpeningGarrison(b: TurnBattle, setupMana: number, aggTengang
   if (b.turn !== 1 || b.winner !== 'pending') return [];
   const savedActive = b.active, savedAction = b.actionTaken;
   b.active = 'b'; b.b.mana = setupMana; b.actionTaken = null;
-  dbg?.(`敌AI·开局布防（预算${setupMana}源泉·免费额外线）`);
-  const dishaIds = aiDecide(b, aggTengang, dbg); // Boss 布防（不 endTurn·不推进）
+  dbg?.(`敌AI·开局布防（预算${setupMana}源泉·免费额外线·强制铺满三路防高速路）`);
+  const dishaIds = aiDecide(b, aggTengang, dbg, true); // Boss 布防（garrison=true·分散铺三路·不 endTurn·不推进）
   b.active = savedActive; b.actionTaken = savedAction; b.b.mana = MANA_START; // 还原回合态·Boss 正常 turn-1 经济（布防免费）
   return dishaIds;
 }
