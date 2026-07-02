@@ -19,6 +19,8 @@ import json
 import shutil
 import base64
 import tempfile
+import re
+import unicodedata
 from pathlib import Path
 from http.server import HTTPServer, BaseHTTPRequestHandler
 import threading
@@ -687,16 +689,313 @@ def handle_asset_autotag(body: dict) -> dict:
         idx_path.write_text(json.dumps(index, ensure_ascii=False, indent=2) + '\n', encoding='utf-8')
     return {'success': True, 'tagged': tagged, 'results': results}
 
+# ── 用户游戏库（创作台 v1 地基）──────────────────────────────
+# library/<slug>/manifest.json（游戏唯一真相·纯数据）+ meta.json（展示元数据）+ 版本化。
+# 版本化：探测到 git 二进制 → 每游戏目录自成一个独立 git 仓（git init + 每次保存 commit）；
+#         无 git → snapshots/<ts>.json 降级。library/ 整目录在 .gitignore 里（用户数据不入引擎仓）。
+# 安全：一切路径先经 _game_dir 归一化 + 断言在 library/ 子树内（照 handle_asset_import 的防穿越模式，
+#       且 slug 白名单 [a-z0-9-] 从根上堵掉 ../ 与斜杠）。所有写操作严格限定 library/ 之下。
+
+LIBRARY_DIR = ROOT / 'library'
+_SLUG_RE = re.compile(r'^[a-z0-9][a-z0-9-]*$')
+# 提交署名走本地 -c（不依赖机器有无全局 git 身份，避免 commit 因缺 user.email 失败）。
+_GIT_AUTHOR = ['-c', 'user.name=Apollo Studio', '-c', 'user.email=studio@apollo.local']
+_GIT_OK = None  # 缓存 git 可用性（写盘前探测一次）。
+
+def _git_ok() -> bool:
+    global _GIT_OK
+    if _GIT_OK is None:
+        _GIT_OK = shutil.which('git') is not None
+    return _GIT_OK
+
+def _valid_slug(slug) -> bool:
+    return isinstance(slug, str) and 0 < len(slug) <= 64 and '..' not in slug and _SLUG_RE.match(slug) is not None
+
+def _slugify(name: str) -> str:
+    """名称 → slug：ascii 化 + 小写 + 非字母数字折成 '-' + 去首尾/合并连字符。空则 'game'。"""
+    s = unicodedata.normalize('NFKD', str(name)).encode('ascii', 'ignore').decode('ascii').lower()
+    s = re.sub(r'[^a-z0-9]+', '-', s).strip('-')
+    return s or 'game'
+
+def _dedup_slug(base: str) -> str:
+    """已存在则加 -2/-3… 后缀直到不冲突。"""
+    if not (LIBRARY_DIR / base).exists():
+        return base
+    i = 2
+    while (LIBRARY_DIR / f'{base}-{i}').exists():
+        i += 1
+    return f'{base}-{i}'
+
+def _game_dir(slug: str) -> Path:
+    """resolve library/<slug> 并断言仍在 library/ 子树内；非法 slug / 越界 → ValueError。"""
+    if not _valid_slug(slug):
+        raise ValueError(f'非法 slug: {slug!r}')
+    lib = LIBRARY_DIR.resolve()
+    d = (LIBRARY_DIR / slug).resolve()
+    if d != lib and lib not in d.parents:
+        raise ValueError(f'路径越界（必须在 library/ 下）: {slug!r}')
+    return d
+
+def _lib_parts(path: str):
+    """'/api/library[/<slug>[/<action>]]' → (slug|None, action|None)。"""
+    segs = [s for s in path.split('/') if s]  # ['api','library',...]
+    rest = segs[2:]
+    if not rest:
+        return (None, None)
+    if len(rest) == 1:
+        return (rest[0], None)
+    return (rest[0], rest[1])
+
+def _git_game(game_dir: Path, args: list[str], timeout: int = 15):
+    return subprocess.run(['git', *args], cwd=str(game_dir), capture_output=True,
+                          encoding='utf-8', errors='replace', timeout=timeout)
+
+def _git_commit_all(game_dir: Path, message: str) -> bool:
+    """有 git → init（首次）+ add -A + commit，返回 True；无 git → False（调用方走快照降级）。
+    空提交（内容没变）返回非零码但无害，照旧返回 True。"""
+    if not _git_ok():
+        return False
+    if not (game_dir / '.git').exists():
+        _git_game(game_dir, ['init', '-q'])
+    _git_game(game_dir, ['add', '-A'])
+    _git_game(game_dir, [*_GIT_AUTHOR, 'commit', '-q', '-m', message])
+    return True
+
+def _snapshot(game_dir: Path, manifest: dict) -> str:
+    """快照降级：把当前 manifest 落 snapshots/<ts>.json，返回 rev（文件名 stem）。"""
+    snap_dir = game_dir / 'snapshots'
+    snap_dir.mkdir(exist_ok=True)
+    ts = time.strftime('%Y%m%dT%H%M%S')
+    p = snap_dir / f'{ts}.json'
+    n = 1
+    while p.exists():
+        p = snap_dir / f'{ts}-{n}.json'
+        n += 1
+    p.write_text(json.dumps(manifest, ensure_ascii=False, indent=2) + '\n', encoding='utf-8')
+    return p.stem
+
+def _version_save(game_dir: Path, manifest: dict, message: str) -> str:
+    """存一版：git 提交或快照降级，返回 'git' / 'snapshot'。"""
+    if _git_commit_all(game_dir, message):
+        return 'git'
+    _snapshot(game_dir, manifest)
+    return 'snapshot'
+
+def _write_json(path: Path, data: dict) -> None:
+    path.write_text(json.dumps(data, ensure_ascii=False, indent=2) + '\n', encoding='utf-8')
+
+def _now_iso() -> str:
+    return time.strftime('%Y-%m-%dT%H:%M:%S')
+
+def _write_meta(game_dir: Path, name: str, provider: str, overrides: dict | None) -> dict:
+    now = _now_iso()
+    meta = {
+        'name': name,
+        'subtitle': '',
+        'color': '#1e293b',
+        'accentColor': '#38bdf8',
+        'icon': '🎮',
+        'createdAt': now,
+        'updatedAt': now,
+        'provider': provider,
+    }
+    if isinstance(overrides, dict):
+        meta.update({k: v for k, v in overrides.items() if k in meta and k not in ('createdAt',)})
+    _write_json(game_dir / 'meta.json', meta)
+    return meta
+
+def _touch_meta(game_dir: Path) -> None:
+    p = game_dir / 'meta.json'
+    try:
+        meta = json.loads(p.read_text(encoding='utf-8'))
+    except Exception:
+        return
+    meta['updatedAt'] = _now_iso()
+    _write_json(p, meta)
+
+def _preset_manifest(preset: dict) -> dict:
+    """PRESET_BLUEPRINTS 条目 → 纯规范 manifest（只留 capabilities + entities，name/描述归 meta）。"""
+    return {'capabilities': list(preset.get('capabilities', [])), 'entities': preset.get('entities', {})}
+
+def _scaffold(slug: str, name: str, manifest: dict, provider: str, meta_overrides: dict | None,
+              commit_msg: str) -> tuple:
+    """新建游戏目录：写 manifest + meta，落首个版本。返回 (game_dir, meta, versioned)。"""
+    game_dir = _game_dir(slug)
+    game_dir.mkdir(parents=True, exist_ok=False)
+    _write_json(game_dir / 'manifest.json', manifest)
+    meta = _write_meta(game_dir, name, provider, meta_overrides)
+    versioned = _version_save(game_dir, manifest, commit_msg)
+    return game_dir, meta, versioned
+
+def _run_manifest_check(manifest: dict) -> tuple:
+    """跑引擎真校验（scripts/manifest-check.mjs 子进程）。返回 (ok, message)。"""
+    proc = subprocess.run(
+        **_spawn(['npx', 'vite-node', 'scripts/manifest-check.mjs']),
+        cwd=ROOT, input=json.dumps(manifest, ensure_ascii=False),
+        capture_output=True, encoding='utf-8', errors='replace', timeout=120,
+    )
+    if proc.returncode == 0:
+        return True, (proc.stderr or '').strip()
+    return False, (proc.stderr or proc.stdout or '校验失败（无输出）').strip()
+
+def _list_library() -> list:
+    out = []
+    if not LIBRARY_DIR.exists():
+        return out
+    for d in sorted(LIBRARY_DIR.iterdir()):
+        if not d.is_dir() or not _valid_slug(d.name):
+            continue
+        try:
+            meta = json.loads((d / 'meta.json').read_text(encoding='utf-8'))
+        except Exception:
+            meta = {}
+        try:
+            json.loads((d / 'manifest.json').read_text(encoding='utf-8'))
+            valid = True
+        except Exception:
+            valid = False
+        out.append({'slug': d.name, 'meta': meta, 'valid': valid})
+    return out
+
+def _history(game_dir: Path) -> dict:
+    if _git_ok() and (game_dir / '.git').exists():
+        r = _git_game(game_dir, ['log', '--format=%H%x1f%s%x1f%cI', '-50'])
+        entries = []
+        for line in (r.stdout or '').splitlines():
+            parts = line.split('\x1f')
+            if len(parts) == 3:
+                entries.append({'rev': parts[0], 'subject': parts[1], 'date': parts[2]})
+        return {'mode': 'git', 'entries': entries}
+    entries = []
+    snap_dir = game_dir / 'snapshots'
+    if snap_dir.exists():
+        for p in sorted(snap_dir.glob('*.json'), reverse=True):
+            entries.append({'rev': p.stem, 'subject': 'snapshot', 'date': p.stem})
+    return {'mode': 'snapshot', 'entries': entries}
+
+# ── 库端点（返回 (status, data) 元组，供 APIHandler 分派）──
+
+def library_get(path: str) -> tuple:
+    slug, action = _lib_parts(path)
+    if slug is None:
+        return (200, _list_library())
+    game_dir = _game_dir(slug)  # 校验 slug / 防越界（非法 → ValueError → 400）
+    if not game_dir.is_dir():
+        return (404, {'error': f'游戏不存在: {slug}'})
+    if action == 'manifest':
+        try:
+            return (200, json.loads((game_dir / 'manifest.json').read_text(encoding='utf-8')))
+        except FileNotFoundError:
+            return (404, {'error': 'manifest 不存在'})
+        except Exception as e:
+            return (400, {'error': f'manifest 解析失败: {e}'})
+    if action == 'history':
+        return (200, _history(game_dir))
+    return (404, {'error': f'未知库端点: {path}'})
+
+def library_create(body: dict) -> tuple:
+    name = str(body.get('name') or '').strip()
+    if not name:
+        return (400, {'success': False, 'error': 'name 必填'})
+    template = body.get('template')
+    if template and template in PRESET_BLUEPRINTS:
+        manifest = _preset_manifest(PRESET_BLUEPRINTS[template])
+    else:
+        manifest = {'capabilities': [], 'entities': {}}
+    slug = _dedup_slug(_slugify(name))
+    _, meta, versioned = _scaffold(slug, name, manifest, str(body.get('provider') or 'user'),
+                                   body.get('meta'), 'create')
+    return (200, {'success': True, 'slug': slug, 'meta': meta, 'versioned': versioned})
+
+def library_install_sample(body: dict) -> tuple:
+    preset_name = str(body.get('preset') or 'platformer')
+    if preset_name not in PRESET_BLUEPRINTS:
+        return (400, {'success': False, 'error': f'未知 preset: {preset_name}（可选: {", ".join(PRESET_BLUEPRINTS)}）'})
+    preset = PRESET_BLUEPRINTS[preset_name]
+    slug = _dedup_slug(_slugify(f'sample-{preset_name}'))
+    _, meta, versioned = _scaffold(slug, preset.get('name', preset_name), _preset_manifest(preset),
+                                   'sample', None, f'install sample {preset_name}')
+    return (200, {'success': True, 'slug': slug, 'meta': meta, 'versioned': versioned})
+
+def library_put_manifest(slug: str, body: dict) -> tuple:
+    game_dir = _game_dir(slug)
+    if not game_dir.is_dir():
+        return (404, {'success': False, 'error': f'游戏不存在: {slug}'})
+    manifest = body.get('manifest')
+    if not isinstance(manifest, dict):
+        return (400, {'success': False, 'error': 'manifest 必须是对象 { capabilities, entities }'})
+    ok, msg = _run_manifest_check(manifest)  # 先校验
+    if not ok:
+        return (400, {'success': False, 'error': msg})  # 校验错误文本（供回喂 LLM 修）
+    _write_json(game_dir / 'manifest.json', manifest)  # 后落盘
+    _touch_meta(game_dir)
+    versioned = _version_save(game_dir, manifest, str(body.get('note') or 'update'))
+    return (200, {'success': True, 'slug': slug, 'versioned': versioned, 'warnings': msg})
+
+def library_rollback(slug: str, body: dict) -> tuple:
+    game_dir = _game_dir(slug)
+    if not game_dir.is_dir():
+        return (404, {'success': False, 'error': f'游戏不存在: {slug}'})
+    rev = str(body.get('rev') or '').strip()
+    if not rev:
+        return (400, {'success': False, 'error': 'rev 必填'})
+    if _git_ok() and (game_dir / '.git').exists():
+        if not re.match(r'^[0-9a-fA-F]{7,40}$', rev):
+            return (400, {'success': False, 'error': f'非法 git rev: {rev!r}'})
+        r = _git_game(game_dir, ['checkout', rev, '--', 'manifest.json'])
+        if r.returncode != 0:
+            return (400, {'success': False, 'error': f'git checkout 失败: {(r.stderr or "").strip()[:300]}'})
+        _touch_meta(game_dir)
+        _git_commit_all(game_dir, f'rollback to {rev}')
+        return (200, {'success': True, 'slug': slug, 'rev': rev, 'mode': 'git'})
+    # 快照降级：从 snapshots/<rev>.json 恢复。
+    if not re.match(r'^[0-9A-Za-z\-T]+$', rev):
+        return (400, {'success': False, 'error': f'非法快照 rev: {rev!r}'})
+    snap = game_dir / 'snapshots' / f'{rev}.json'
+    if not snap.is_file():
+        return (404, {'success': False, 'error': f'快照不存在: {rev}'})
+    try:
+        manifest = json.loads(snap.read_text(encoding='utf-8'))
+    except Exception as e:
+        return (400, {'success': False, 'error': f'快照解析失败: {e}'})
+    _write_json(game_dir / 'manifest.json', manifest)
+    _touch_meta(game_dir)
+    _snapshot(game_dir, manifest)
+    return (200, {'success': True, 'slug': slug, 'rev': rev, 'mode': 'snapshot'})
+
 # ── API 服务器 ──
 
+def _lib_dispatch(fn) -> tuple:
+    """跑一个返回 (status, data) 的库端点，把 ValueError（非法 slug/越界）折成 400、其它异常折成 500。"""
+    try:
+        return fn()
+    except ValueError as e:
+        return (400, {'success': False, 'error': str(e)})
+    except Exception as e:
+        return (500, {'success': False, 'error': str(e)})
+
 class APIHandler(BaseHTTPRequestHandler):
-    def do_GET(self):
-        self.send_response(200)
+    def _send_json(self, status: int, data) -> None:
+        payload = json.dumps(data, ensure_ascii=False).encode()
+        self.send_response(status)
         self.send_header('Content-Type', 'application/json')
         self.send_header('Access-Control-Allow-Origin', '*')
         self.end_headers()
+        self.wfile.write(payload)
 
+    def do_GET(self):
         path = self.path.split('?')[0]
+
+        # 库端点（可变状态码：400 越界 / 404 缺失）——先于遗留 200 端点分派。
+        if path == '/api/library' or path.startswith('/api/library/'):
+            try:
+                status, data = library_get(path)
+            except ValueError as e:
+                status, data = 400, {'error': str(e)}
+            except Exception as e:
+                status, data = 500, {'error': str(e)}
+            self._send_json(status, data)
+            return
 
         if path == '/api/status':
             data = get_project_status()
@@ -727,18 +1026,33 @@ class APIHandler(BaseHTTPRequestHandler):
         else:
             data = {'error': 'Unknown endpoint'}
 
-        self.wfile.write(json.dumps(data, ensure_ascii=False).encode())
+        self._send_json(200, data)
+
+    def _read_json_body(self):
+        content_len = int(self.headers.get('Content-Length', 0))
+        if not content_len:
+            return {}
+        return json.loads(self.rfile.read(content_len).decode())
 
     def do_POST(self):
-        content_len = int(self.headers.get('Content-Length', 0))
-        body = json.loads(self.rfile.read(content_len).decode()) if content_len else {}
-
-        self.send_response(200)
-        self.send_header('Content-Type', 'application/json')
-        self.send_header('Access-Control-Allow-Origin', '*')
-        self.end_headers()
-
         path = self.path.split('?')[0]
+        try:
+            body = self._read_json_body()
+        except Exception:
+            self._send_json(400, {'success': False, 'error': 'body 不是合法 JSON'})
+            return
+
+        # 库写端点（可变状态码）——先分派。
+        if path == '/api/library/create':
+            self._send_json(*_lib_dispatch(lambda: library_create(body)))
+            return
+        if path == '/api/library/install-sample':
+            self._send_json(*_lib_dispatch(lambda: library_install_sample(body)))
+            return
+        if path.startswith('/api/library/') and path.endswith('/rollback'):
+            slug, _ = _lib_parts(path)
+            self._send_json(*_lib_dispatch(lambda: library_rollback(slug, body)))
+            return
 
         if path == '/api/generate':
             prompt = body.get('prompt', '')
@@ -767,12 +1081,25 @@ class APIHandler(BaseHTTPRequestHandler):
         else:
             data = {'error': 'Unknown POST endpoint'}
 
-        self.wfile.write(json.dumps(data, ensure_ascii=False).encode())
+        self._send_json(200, data)
+
+    def do_PUT(self):
+        path = self.path.split('?')[0]
+        try:
+            body = self._read_json_body()
+        except Exception:
+            self._send_json(400, {'success': False, 'error': 'body 不是合法 JSON'})
+            return
+        slug, action = _lib_parts(path)
+        if path.startswith('/api/library/') and action == 'manifest' and slug:
+            self._send_json(*_lib_dispatch(lambda: library_put_manifest(slug, body)))
+            return
+        self._send_json(404, {'error': 'Unknown PUT endpoint'})
 
     def do_OPTIONS(self):
         self.send_response(200)
         self.send_header('Access-Control-Allow-Origin', '*')
-        self.send_header('Access-Control-Allow-Methods', 'GET, POST, OPTIONS')
+        self.send_header('Access-Control-Allow-Methods', 'GET, POST, PUT, OPTIONS')
         self.send_header('Access-Control-Allow-Headers', 'Content-Type')
         self.end_headers()
 

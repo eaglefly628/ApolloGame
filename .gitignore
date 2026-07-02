@@ -20,3 +20,6 @@ scratchpad/
 
 # UI 审计工具临时构建产物
 .ui-audit-tmp/
+
+# 创作台 v1 用户游戏库（用户数据·每游戏自成独立 git 仓/快照，不入引擎仓）
+library/
