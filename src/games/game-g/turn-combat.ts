@@ -610,13 +610,17 @@ type AiCand = { kind: 'deploy' | 'cast' | 'draw' | 'disha'; handIdx: number; lan
 /** Boss 决策阶段（utility AI·只放牌/施法/抽·**不结束回合不推进**）。owner 2026-06-29：拆出「敌方决策」与「敌方行动」
  *  两阶段→ caller 可在两者间插「敌方决策」过场 + 渲染让玩家看清敌方布阵，再单独 endTurn 演「敌方行动」推进动画。
  *  aggTengang：caller(game-g) 传天罡聚合器 → Boss 施法后重算 tengangA 即时生效。返回本回合打出的地煞 id（caller 全屏通知·REQ-G #6）。 */
-export function aiDecide(b: TurnBattle, aggTengang?: (ids: readonly string[]) => TengangFx): string[] {
+export function aiDecide(b: TurnBattle, aggTengang?: (ids: readonly string[]) => TengangFx, dbg?: (m: string) => void): string[] {
   const castDishaIds: string[] = [];
   if (b.winner !== 'pending' || b.active !== 'b') return castDishaIds;
   // 大炮兵（地煞·关4）：每 N 回合压你兵最多的一路 → 该路你掷命 −winPct（应用到你下个推进的遭遇）。
   b.batteryLane = (b.dishaB.batteryEveryTurns > 0 && b.turn % b.dishaB.batteryEveryTurns === 0)
     ? [0, 1, 2].reduce((m, li) => (b.lanes[li].a.length > b.lanes[m].a.length ? li : m), 0) : -1;
   const sd = b.b; const mistakeChance = Math.max(0, 0.5 - b.aiTier * 0.12); // 低档会犯错·高档总最优
+  // AI 决策日志（owner 2026-07-02「要更多日志·看敌人 AI 决定」）：dbg 传入才记·纯诊断·不进 hash。
+  const say = dbg ?? ((): void => {});
+  const LN = ['上', '中', '下']; const handStr = (): string => sd.hand.map((c) => c.kind === 'poker' ? `${c.rank}${c.suit}(费${c.cost ?? DEPLOY_COST})` : c.kind === 'tengang' ? `罡:${c.id}` : `煞:${c.id}`).join('、') || '空';
+  say(`敌AI·决策开始：源泉${sd.mana} · 手牌[${handStr()}] · 库(扑${sd.pokerDeck.length}/罡${sd.tengangDeck.length}) · 场上兵${b.lanes.reduce((n, L) => n + L.b.length, 0)}`);
   let guard = 0;
   while (guard++ < 40) {
     const locked = b.actionTaken; const cands: AiCand[] = [];
@@ -633,13 +637,25 @@ export function aiDecide(b: TurnBattle, aggTengang?: (ids: readonly string[]) =>
       if (sd.pokerDeck.length) cands.push({ kind: 'draw', handIdx: -1, lane: 0, from: 'poker', score: scoreDraw(b, 'poker') });
       if (sd.tengangDeck.length) cands.push({ kind: 'draw', handIdx: -1, lane: 0, from: 'tengang', score: scoreDraw(b, 'tengang') });
     }
-    if (cands.length === 0) break;
-    const pick = nextRandom(b.rng) < mistakeChance ? cands[Math.floor(nextRandom(b.rng) * cands.length)] : cands.reduce((bst, c) => (c.score > bst.score ? c : bst), cands[0]);
+    if (cands.length === 0) {
+      const pokerInHand = sd.hand.filter((c) => c.kind === 'poker').length;
+      const why = sd.hand.length === 0 ? '手牌空' : pokerInHand > 0 ? `有${pokerInHand}张兵但源泉${sd.mana}买不起（放牌费=牌点·2~4免费）` : '手无兵牌（只剩罡/煞）'; // 为什么不部署：把原因写清（owner「敌人为啥不放兵」）
+      say(`敌AI·决策结束：无更多可行动 —— ${why}；抽牌？${sd.mana >= DRAW_COST ? (sd.pokerDeck.length ? '可但没选' : '库空') : `源泉<${DRAW_COST}`}`);
+      break;
+    }
+    const rnd = nextRandom(b.rng); const mistake = rnd < mistakeChance;
+    const pick = mistake ? cands[Math.floor(nextRandom(b.rng) * cands.length)] : cands.reduce((bst, c) => (c.score > bst.score ? c : bst), cands[0]);
+    const manaBefore = sd.mana; const card = pick.handIdx >= 0 ? sd.hand[pick.handIdx] : undefined;
     let ok = false;
     if (pick.kind === 'deploy') ok = deployUnit(b, 'b', pick.handIdx, pick.lane);
     else if (pick.kind === 'cast') { ok = castTengang(b, 'b', pick.handIdx); if (ok && aggTengang) { sd.tengangA = aggTengang(sd.castIds); sd.castFx = sd.castIds.map((id) => ({ id, fx: aggTengang([id]) })); } } // 施法即重算·当回合推进生效（+逐张 castFx 供溯源）
     else if (pick.kind === 'disha') { const dc = sd.hand[pick.handIdx]; ok = castDisha(b, 'b', pick.handIdx); if (ok && dc?.kind === 'disha') castDishaIds.push(dc.id); } // 打地煞 → 记 id 供 caller 全屏通知
     else ok = drawCard(b, 'b', pick.from);
+    const desc = pick.kind === 'deploy' ? `部署 ${card && card.kind === 'poker' ? card.rank + card.suit : '?'}→${LN[pick.lane]}路`
+      : pick.kind === 'cast' ? `施天罡 ${card && card.kind === 'tengang' ? card.id : ''}`
+      : pick.kind === 'disha' ? `打地煞 ${card && card.kind === 'disha' ? card.id : ''}`
+      : `抽${pick.from === 'poker' ? '扑克' : '天罡'}`;
+    say(`敌AI·${ok ? desc : '×' + desc + '(失败)'}（源泉${manaBefore}→${sd.mana}·评分${pick.score.toFixed(1)}${mistake ? '·随机误选' : ''}）`);
     if (!ok) break;
   }
   return castDishaIds;
@@ -656,11 +672,12 @@ export const BOSS_GARRISON_MANA = 3; // 开局布防预算（owner 2026-06-29「
 /** 开局布防（owner 2026-06-29）：玩家首回合前 Boss 用 setupMana 一次性预算布一线防御（放牌/施法·可能顺手开地煞·**不推进不结束回合**）
  *  → 玩家是「攻打已设防的 Boss 阵地」而非走空场；Boss 也借此有兵在场→其地煞(需 units>0)开局即可发动。预算独立于回合经济：
  *  布完把 Boss 源泉还原到正常 turn-1 起步(MANA_START)，不挤占其后续回合 → 净效果＝Boss 免费多一条开局线（提难度）。 */
-export function bossOpeningGarrison(b: TurnBattle, setupMana: number, aggTengang?: (ids: readonly string[]) => TengangFx): string[] {
+export function bossOpeningGarrison(b: TurnBattle, setupMana: number, aggTengang?: (ids: readonly string[]) => TengangFx, dbg?: (m: string) => void): string[] {
   if (b.turn !== 1 || b.winner !== 'pending') return [];
   const savedActive = b.active, savedAction = b.actionTaken;
   b.active = 'b'; b.b.mana = setupMana; b.actionTaken = null;
-  const dishaIds = aiDecide(b, aggTengang); // Boss 布防（不 endTurn·不推进）
+  dbg?.(`敌AI·开局布防（预算${setupMana}源泉·免费额外线）`);
+  const dishaIds = aiDecide(b, aggTengang, dbg); // Boss 布防（不 endTurn·不推进）
   b.active = savedActive; b.actionTaken = savedAction; b.b.mana = MANA_START; // 还原回合态·Boss 正常 turn-1 经济（布防免费）
   return dishaIds;
 }

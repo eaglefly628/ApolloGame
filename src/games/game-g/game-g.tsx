@@ -318,7 +318,10 @@ export function mount(container: HTMLElement, shell?: { exit?: () => void }): ()
     const tb = initTurnBattle({ seed, disha: lvl.boss.disha, aiProfile: lvl.boss.aiProfile, aiTier: lvl.boss.aiTier, fortuneBuff, a: { pokerDeck: shuffledMyDeck, tengangDeck: aTengang }, b: { pokerDeck: bossDeck, tengangDeck: bTengang } });
     for (let i = 0; i < OPENING_HAND && tb.a.pokerDeck.length; i++) tb.a.hand.push(tb.a.pokerDeck.shift()!); // 起手摸
     for (let i = 0; i < OPENING_HAND && tb.b.pokerDeck.length; i++) tb.b.hand.push(tb.b.pokerDeck.shift()!);
-    bossOpeningGarrison(tb, BOSS_GARRISON_MANA, aggregateTengang); // 开局布防（owner 2026-06-29·敌方开场即设防一线·不再走空场·其地煞借此开局即可发动）
+    // 战场操作日志（debug·owner 2026-06-21「出 bug 把日志贴来排查」）：提前声明→开局布防即可入日志。逐条记 玩家/AI 操作 + 掷命 + 结算。
+    const dbg: string[] = [];
+    const log = (s: string): void => { if (dbg.length > 1200) dbg.shift(); dbg.push(`[T${tb.turn}|源泉 我${tb.a.mana}/敌${tb.b.mana}] ${s}`); };
+    bossOpeningGarrison(tb, BOSS_GARRISON_MANA, aggregateTengang, log); // 开局布防（owner 2026-06-29·敌方开场即设防一线）·记 AI 布防决策日志（owner 2026-07-02）
     // 敌堡垒 3 地煞明牌（动态·owner 2026-06-29 修「敌人发动斯巴达方阵但右下仍显待发动」）：
     // used 每帧据 tb 重算 → 被动地煞(开局生效·dishaBaseIds) / 可施放地煞已打出(dishaCastIds) → 显「已发动」；可施放未打 → 「待发动」。
     const shaLive = (): TurnShaView[] => campaignFor(save.stage).fiends.map((f, i) => {
@@ -372,9 +375,7 @@ export function mount(container: HTMLElement, shell?: { exit?: () => void }): ()
     };
     const tgName = (id: string): string => TIANGANG_BY_ID.get(id)?.name ?? id;
     const tgDesc = (id: string): string => TIANGANG_BY_ID.get(id)?.text ?? '持续战法·打出后整场生效'; // 磨砂浮层：天罡效果文案
-    // ── 战场操作日志（debug·owner 2026-06-21：出 bug 把日志贴来排查）。逐条记 玩家/AI 操作 + 掷命 + 结算。──
-    const dbg: string[] = []; const SUITNM2: Record<string, string> = { S: '黑桃', H: '红桃', D: '方块', C: '梅花', s: '黑桃', h: '红桃', d: '方块', c: '梅花' };
-    const log = (s: string): void => { if (dbg.length > 1200) dbg.shift(); dbg.push(`[T${tb.turn}|源泉 我${tb.a.mana}/敌${tb.b.mana}] ${s}`); };
+    const SUITNM2: Record<string, string> = { S: '黑桃', H: '红桃', D: '方块', C: '梅花', s: '黑桃', h: '红桃', d: '方块', c: '梅花' };
     const cardLabel = (c: Card): string => (c.kind === 'poker' ? (SUITNM2[c.suit] ?? '') + c.rank : c.kind === 'tengang' ? '天罡·' + tgName(c.id) : '地煞·' + (DISHA_NAME[c.id] ?? c.id));
     const LANE_NM = ['上路', '中路', '下路'];
     // 捕捉所有上场单位的位置（lane*9+slot 编码）
@@ -480,7 +481,10 @@ export function mount(container: HTMLElement, shell?: { exit?: () => void }): ()
         perfResume = () => { perfResume = null; clearClashTimers(); playPerf(onDone); }; mounted?.update(); syncCoach(); // 引导：特写中隐
       });
     };
-    const finishTurnSeq = (): void => { busy = false; selMode = null; selHand = -1; if (tb.winner !== 'pending') settleTurn(); else { log(`◀ T${tb.turn} 我方回合开始 · 源泉 我${tb.a.mana} / 敌${tb.b.mana}`); mounted?.update(); } syncCoach(); };
+    // 我方回合开始日志（owner 2026-07-02「记我的操作等·找 bug」）：附我方手牌 + 三路兵力(我/敌) → 一眼看清局面。
+    const boardSummary = (): string => tb.lanes.map((L, i) => `${['上', '中', '下'][i]}${L.a.length}v${L.b.length}`).join(' ');
+    const myHandStr = (): string => tb.a.hand.map((c) => c.kind === 'poker' ? `${(SUITNM2[c.suit] ?? '') + c.rank}(费${c.cost ?? 0})` : c.kind === 'tengang' ? '罡·' + tgName(c.id) : '煞').join('、') || '空';
+    const finishTurnSeq = (): void => { busy = false; selMode = null; selHand = -1; if (tb.winner !== 'pending') settleTurn(); else { log(`◀ T${tb.turn} 我方回合开始 · 源泉 我${tb.a.mana}/敌${tb.b.mana} · 我手牌[${myHandStr()}] · 兵力[${boardSummary()}]`); mounted?.update(); } syncCoach(); };
     // 顺序回合·分相演出（owner 2026-06-29「顺序要对：移动→弹谁打谁→掷骰→才结算离场」）：
     //   ① advanceMovePhase 只移动(不掷命) → 渲染 FLIP 滑到位·两军前锋相邻·都还在场。
     //   ② 捕捉待掷命路前锋相邻位快照(exitCaps) → 供掷骰结算后的离场/钉桩动画(正确时序·不剧透)。
@@ -508,7 +512,7 @@ export function mount(container: HTMLElement, shell?: { exit?: () => void }): ()
         startThinking(() => {
           const before = snapSlots();
           const prevCastIds = [...tb.b.castIds];
-          const usedDisha = aiDecide(tb, aggregateTengang); // 只决策·不结束回合（owner 2026-06-29 顺序回合·决策与行动分演）
+          const usedDisha = aiDecide(tb, aggregateTengang, log); // 只决策·不结束回合（owner 2026-06-29 顺序回合）·记 AI 每步决策日志（owner 2026-07-02「要看敌人 AI 决定」）
           justMovedIds = new Set(); // 决策阶段不推进 → 无行军滑动
           // 新部署的敌兵（before 没有的 id）→ 逐张落子错峰 + 部署音
           freshIds = new Map(); let fi = 0; const newFoe: string[] = [];
