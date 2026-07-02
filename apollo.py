@@ -173,26 +173,6 @@ def run_command(cmd: list[str], timeout: int = 120) -> dict:
 
 GAME_GEN_SYSTEM_PROMPT = """You are Apollo Engine's game generator. You create playable 2D games by outputting Assembly blueprints (JSON).
 
-## Available Atom Components (30 registered: 29 core + string-variable; source of truth = src/skills/atoms/index.ts)
-
-Position: Transform { x, y, rotation, scaleX, scaleY }
-Motion: Velocity { vx, vy, angular }, Acceleration { ax, ay }, Mass { value }
-Geometry: Shape { kind: 'box'|'circle', width?, height?, radius? }
-Collision: Overlap { entityA, entityB, normalX, normalY, depth }
-Time: Timer { id, elapsed, duration, loop }
-Values: Resource { id, current, min, max }, Flag { id, active }
-Tags: Tag { flags (bitmask) }, Relation { kind, targetId }
-Visibility: Visibility { visible, active }
-Input: RawInput { source, key?, x?, y? }, Action { name, value }, Controllable { playerId, speed }
-State: State { fsmId, current, previous }
-Lifecycle: SpawnRequest { templateId, x, y }, DestroyRequest { entityId }
-Render: Sprite { textureKey, anchorX, anchorY, zOrder }, Color { tint (hex number), alpha }
-  Frame { index, total }, Sound { clipId, volume, loop }
-  Camera { zoom, offsetX, offsetY, rotation, viewportW, viewportH }
-  Text { content, fontSize, fontFamily, anchor, lineSpacing }
-World: RandomSeed { seed, sequence }, SpatialIndex { cellSize, kind }
-Physics: Grounded (marker), Bounds { minX, minY, maxX, maxY }
-
 ## Output format — a canonical Manifest (JSON ONLY, no markdown, no explanation)
 
 {
@@ -210,30 +190,35 @@ Physics: Grounded (marker), Bounds { minX, minY, maxX, maxY }
 KEY: `entities` is an OBJECT keyed by entity id; each entity is an OBJECT keyed by component
 type (NO "type" field inside the component). `capabilities` lists the engine capability ids to enable.
 
-## Capability ids (enable ONLY ids from this catalog; component fields + examples included)
+## Capability catalog — the authoritative vocabulary (ids, component fields, examples)
+Enable ONLY ids from this catalog, and use ONLY the components/fields it lists. Each line gives a
+capability id, the components it provides (with field signatures), when to use it, and example data
+shapes. This catalog is the single source of truth for the vocabulary — do not invent components or
+fields, and unknown capability ids are rejected on load.
 {CAPABILITY_CATALOG}
-For a platformer/physics game enable exactly:
-["a1-transform","b1-velocity","b2-acceleration","c1-shape","l2-color","d1-overlap-detect","t1-accel-apply","t1-motion-apply","t2-collision-resolve","t2-bounds-clamp"]
 
 ## Art assets (optional — use for richer visuals)
-- Any Sprite.textureKey may be written as "art:<english keywords>", e.g. Sprite{ "textureKey": "art:skeleton warrior" }.
+- Any Sprite.textureKey may be written as "art:<english keywords>", e.g. "art:skeleton warrior".
 - The engine deterministically resolves it against a CC0 32x32 sprite library (4800+ tagged assets); the same query always picks the same sprite. Unresolvable queries fall back to a placeholder, never crash.
 - Useful keywords — monsters: undead/skeleton/zombie/demon/dragon/animal/wolf/spider/boss/flying/fire/ice/poison; terrain: floor/wall/grass/lava/water/door/altar/trap; items: sword/axe/bow/armor/shield/potion/book/gold; fx: arrow/bolt/cloud.
-- Entities with Sprite still need Transform (and Shape if they collide). If no art fits the theme, use Shape+Color instead.
+- Entities with a Sprite still need a Transform (and a Shape if they collide). If no art fits the theme, use a shape + color instead.
 
 ## Rules
-- Canvas 640x400, origin top-left. Include a "camera" entity with Camera centered: offsetX:320, offsetY:200 (so world coords map 1:1 to screen and entities are visible).
-- Color { tint: 0xRRGGBB number, alpha:1 }. Ground/walls Mass{value:0}. Players Controllable{playerId,speed}. Bounds keeps entities on-screen.
-- Gravity = constant Acceleration.ay per tick (0.3-0.8). Keep all entities within 0..640 x 0..400.
-- Unknown capability ids are rejected on load, so only use ids from the list above.
+- Canvas is 640x400, origin top-left. Include one camera entity centered on the canvas (offsetX 320, offsetY 200) so world coordinates map 1:1 to the screen and entities are visible.
+- Keep every entity within 0..640 (x) and 0..400 (y) so it stays on-screen.
+- For gravity, apply a small constant downward acceleration per tick (about 0.3-0.8); static bodies such as ground and walls should have zero mass.
+- Tint colors are packed as a 0xRRGGBB integer (e.g. red 0xFF0000 == 16711680).
 
 ## Minimal Example (bouncing ball + ground)
 {"name":"bounce","description":"a ball bounces on the ground","capabilities":["a1-transform","b1-velocity","b2-acceleration","c1-shape","l2-color","d1-overlap-detect","t1-accel-apply","t1-motion-apply","t2-collision-resolve","t2-bounds-clamp"],"entities":{"camera":{"Camera":{"zoom":1,"offsetX":320,"offsetY":200,"rotation":0,"viewportW":640,"viewportH":400}},"ball":{"Transform":{"x":320,"y":60,"rotation":0,"scaleX":1,"scaleY":1},"Velocity":{"vx":2,"vy":0,"angular":0},"Acceleration":{"ax":0,"ay":0.5},"Shape":{"kind":"circle","radius":12},"Color":{"tint":4886754,"alpha":1},"Mass":{"value":1},"Bounds":{"minX":0,"minY":0,"maxX":640,"maxY":400}},"ground":{"Transform":{"x":320,"y":380,"rotation":0,"scaleX":1,"scaleY":1},"Shape":{"kind":"box","width":640,"height":40},"Color":{"tint":3553598,"alpha":1},"Mass":{"value":0}}}}
 """
 
-# 回退能力目录（前端未送 catalog 时用；正常路径由 TS 的 buildCapabilityCatalog 自动派生送来，
-# 含全部能力 + 组件字段 + 示例，故 hitbox/prefab/dialogue 等都在）。
+# 回退能力目录 = **部分应急词汇表**，仅在前端未送 catalog 时兜底；正常路径由 TS 的
+# buildCapabilityCatalog 自动派生送来（含全部能力 + 组件字段 + 示例，故 hitbox/prefab/dialogue 等都在）。
+# 这 12 条 id 已对照 capability registry 核实存在；不求完整，只保证兜底时也能产出可跑的最小物理游戏。
 _FALLBACK_CATALOG = (
+    "(Partial fallback vocabulary — the full capability catalog is normally injected by the frontend; "
+    "this short list is only a safety net when no catalog was provided.)\n"
     "a1-transform(Transform) · b1-velocity(Velocity) · b2-acceleration(Acceleration) · c1-shape(Shape) · "
     "l2-color(Color) · d1-overlap-detect · t1-accel-apply · t1-motion-apply · t2-collision-resolve · "
     "t2-bounds-clamp(Bounds) · t2-jump · t2-ground-sense"
@@ -478,7 +463,7 @@ def _do_llm_request(url: str, headers: dict, body: bytes, openai_format: bool = 
     except Exception as e:
         return {'success': False, 'error': str(e), 'blueprint': None}
 
-# 物理/球类预设共用的能力 id 集（与 game-a 同源；相机居中静态 → 世界↔屏幕 1:1，实体可见）。
+# 物理/球类预设共用的能力 id 集（相机居中静态 → 世界↔屏幕 1:1，实体可见）。
 _PHYSICS_CAPS = ['a1-transform', 'b1-velocity', 'b2-acceleration', 'c1-shape', 'l2-color',
                  'd1-overlap-detect', 't1-accel-apply', 't1-motion-apply', 't2-collision-resolve', 't2-bounds-clamp']
 _PONG_CAPS = ['a1-transform', 'b1-velocity', 'c1-shape', 'l2-color', 'd1-overlap-detect',
