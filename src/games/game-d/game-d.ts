@@ -34,16 +34,18 @@ const LOADOUT_CAP = 5;
 // 元素 → 点数 rank（复用 poker-hand 计数内核：把元素直方图当点数直方图）。wild 不计入（百搭）。
 const ELEM_RANK: Record<Elem, number> = { huo: 2, shui: 3, mu: 4, lei: 5, feng: 6, an: 7, none: 8, wild: 0 };
 
-// ── 骰途主题（复刻设计案：暗紫靛蓝 + 金 + 六色·UI 铁律：只填令牌·不写 CSS）─────────────
+// ── 骰途主题 ─── 全部令牌 = **视觉原型逐色取样确切值**（非目测近似·owner 2026-07-02「用色必须跟 Cloud Design 对齐」）。
+// 取样源 `doc/骰途 视觉原型.dc.html`：金 #f5c969 / 正文 #f2ecff / 次文 #9a8fb0 / 暗 #7d769c / 强调紫 #caa6ff /
+// ok #7ee0a0 / 深底 #0b0a12（页底 radial #1a1730→#0b0a12）。元素六色见 dice.ts（已对齐）。UI 铁律：只填令牌·不写 CSS。
 const GAME_D_THEME: UITheme = {
-  bg0: '#120c22', bg1: 'rgba(30,22,52,0.92)', bg2: 'rgba(44,32,70,0.92)', bg3: 'rgba(60,46,92,0.9)',
-  pageBg: 'radial-gradient(125% 95% at 50% 16%, #2a1f4d 0%, #160f2c 58%, #0a0716 100%)',
+  bg0: '#0b0a12', bg1: 'rgba(30,22,52,0.92)', bg2: 'rgba(44,32,70,0.92)', bg3: 'rgba(60,46,92,0.9)',
+  pageBg: 'radial-gradient(90% 90% at 50% -10%, #1a1730 0%, #0b0a12 60%)',
   line: 'rgba(180,160,235,0.16)',
-  text: '#efeafb', sub: '#b8acd8', dim: '#807594',
-  jade: '#c3a8ff', jadeWash: 'rgba(150,110,235,0.18)', jadeLine: 'rgba(175,135,245,0.5)',
-  gold: '#f3c257', // 复刻设计案更饱的暖金（logo #f7c252 / hero 键 #ffd982→#f0a93a 一系）
-  ok: '#7fd49a', okWash: 'rgba(110,205,140,0.16)',
-  warn: '#f0b756', warnWash: 'rgba(240,183,86,0.16)', danger: '#ff7d7d',
+  text: '#f2ecff', sub: '#9a8fb0', dim: '#7d769c',
+  jade: '#caa6ff', jadeWash: 'rgba(150,110,235,0.18)', jadeLine: 'rgba(175,135,245,0.5)',
+  gold: '#f5c969', // 视觉原型确切金（border/gradient #f5c969·hero 键 #ffd982→#f0a93a 一系·glow #ffe5a8）
+  ok: '#7ee0a0', okWash: 'rgba(110,205,140,0.16)',
+  warn: '#f0b756', warnWash: 'rgba(240,183,86,0.16)', danger: '#ff9d8f',
   mine: '#f0d68a', foe: '#ff8a8a',
   fontUi: "'PingFang SC', 'Hiragino Sans GB', 'Noto Sans SC', 'Microsoft YaHei', sans-serif", // 正文无衬线
   fontSerif: "'Noto Serif SC', Georgia, serif", // 标题/logo/骰名衬线（Label font:'serif'）

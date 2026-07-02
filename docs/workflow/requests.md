@@ -11,6 +11,16 @@
 
 ## 待处理 / 进行中
 
+### REQ-UI-web字体加载（数据化）+ 第3字体槽 + Label ink 令牌 · [2026-07-02] · P3D（game-d 对齐 Cloud Design 撞到·全 app 受益） → 主程（UI 库域） · status: **open** · 类型: 真能力缺口（3 项·尺子已过·不可重组）
+
+> **背景（owner 2026-07-02「用色/字体必须跟 Cloud Design 对齐」）**：对齐 game-d《骰途》到 Cloud Design 设计案时定位到——**字体走样不是能力问题、是全 app 从不加载 web 字体**。三项缺口都属 UI 库域（`src/ui/**`·主程），game-d 侧无法数据化解决：
+>
+> 1. **web 字体加载（主缺口·全 app 受益）**：全仓多主题（game-d/game-g/sanguo/ink-wash/fantasy-medieval…）在 `UITheme.fontUi/fontSerif` 里引用 `'Noto Sans SC'`/`'Noto Serif SC'`/`'Cinzel'` 等，**但运行时 `index.html` 从不加载这些 Google Fonts**（只 `game-g/doc/*.html` 设计稿里有 `<link>`）→ 浏览器全部静默回退系统字体，跟设计天差地别。**尺子**：弱 LLM 只该填「要哪几款字体」（数据），不该手写 `<link>`/`@font-face`。**建议**：`UITheme` 加 `webfonts?: Array<{family,weights?,url?}>`（或复用资产系统 `font` kind），`mountUI` 首次挂载时确保注入一次（去重·全局）。确定无关（纯表现）。
+> 2. **第 3 字体槽（display/装饰衬线）**：`UITheme` 现只有 `fontUi`(正文)/`fontSerif`(标题)/`fontMono` 三槽；设计案却要 **3 种文字字体**——正文 `Noto Sans SC`、中文标题「骰途」`Noto Serif SC`、英文副标「TOWER OF FATE」`Cinzel`（辨识度极高的装饰衬线）。现无第 3 槽 → 副标只能退回 serif（错）。**建议**：加 `fontDisplay?` 槽 + `Label` 支持 `font:'display'`。
+> 3. **Label `ink` 深色令牌**：金按钮上的深墨字（原型 `#3a2406` on gold）无对应语义色——`Label.color` 语义档全是亮色（text/sub/gold/ok…），深色墨字表达不了。game-d.ts 已挂 TODO（`gd-start-t`）。**建议**：`Label.color` 闭集加 `'ink'`（映射 `UITheme.ink?`·深色）。**（体量最小·可先做）**
+>
+> **影响面**：①修一处全 app 字体归位；②③ game-d Title 屏 1:1 需要。均 render-only/表现层·不碰 sim/hash。P3D 侧已把 game-d 色令牌逐色取样对齐（本 session·commit 见 game-d），字体待此三项落地后接。
+
 ### REQ-G-即时法术/功能牌（对场上牌使用·补策略深度） · [2026-06-29] · owner 试玩后设计反思 → 战斗/design G 域 · status: **open（大方向·owner 说「先记录·暂不实现」）** · 类型: 核心玩法扩展（新通用能力·非重组）
 > **owner 观察**：现在**没有一张牌是「针对场上局面、主动打出去影响某个目标」**的——天罡全是「打出后整场被动加成」，地煞是 Boss 专属被动。缺「即时·指定目标·改变战场」的牌。owner 直觉：**「功能牌 > 战斗牌」**才是好玩的深度来源（纯拼战力天花板低）。owner「先暂时这样吧」→ **只记录·暂不实现**。
 >
