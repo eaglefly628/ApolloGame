@@ -210,6 +210,41 @@ export function mount(container: HTMLElement): () => void {
   };
   const hideTitleDie = (): void => { if (!titleDieUp) return; try { engine.world.destroyEntity(TITLE_DIE); engine.world.destroyEntity('gd-title-rim'); engine.world.destroyEntity('gd-title-fill'); engine.world.destroyEntity('gd-title-glow'); } catch { /* noop */ } titleDieUp = false; };
 
+  // ── 过场预览（复刻参考 03「骰壳转场」的**骰壳编排部分**·render-only·P3D 域）──
+  // 巨骰壳 grow-in → 自旋+抛物升起 → collapse 收起 + 包裹柔光；eOutBack 回弹·总时长 2.5s。
+  // ⚠️「整场 arena 裹进 pivot 一起螺旋」需 render-only Pivot3D 父合成能力（未建·不硬编码绕过）→ 本按钮先预览骰壳编排/节奏。
+  const SHELL = 'gd-shell', SHELL_GLOW = 'gd-shell-glow';
+  const TRANS_DUR = 2.5;
+  let transT: number | null = null;
+  const eOutBack = (p: number): number => { const c = 1.70158, c3 = c + 1; return 1 + c3 * Math.pow(p - 1, 3) + c * Math.pow(p - 1, 2); };
+  const playTransition = (): void => {
+    if (transT !== null) return;
+    transT = 0;
+    engine.world.createEntity(SHELL);
+    engine.world.addComponent(SHELL, { type: 'Transform3D', x: 0, y: -0.2, z: 0, rotX: 0.5, rotY: 0.7, scale: 0.001 } as unknown as Component);
+    engine.world.addComponent(SHELL, { type: 'Mesh3D', shape: 'box', width: 3.2, height: 3.2, depth: 3.2, frontTint: 0xeef4ff, dieFaces: [
+      { color: 0xff5b4d, pip: 1 }, { color: 0x3ba0ff, pip: 6 }, { color: 0x46c66a, pip: 2 }, { color: 0xffcf3f, pip: 5 }, { color: 0xe8edf3, pip: 3 }, { color: 0x9b6cff, pip: 4 },
+    ] } as unknown as Component);
+    engine.world.createEntity(SHELL_GLOW);
+    engine.world.addComponent(SHELL_GLOW, { type: 'Transform3D', x: 0, y: -0.2, z: -1 } as unknown as Component);
+    engine.world.addComponent(SHELL_GLOW, { type: 'Glow3D', color: 0xfff0cf, scale: 5.5, opacity: 0 } as unknown as Component);
+  };
+  const stepTransition = (): void => {
+    if (transT === null) return;
+    transT += 1 / 60;
+    const p = Math.min(1, transT / TRANS_DUR);
+    const sh = engine.world.getComponent<{ type: 'Transform3D'; rotX?: number; rotY?: number; y?: number; scale?: number }>(SHELL, 'Transform3D');
+    const g = engine.world.getComponent<{ type: 'Glow3D'; opacity?: number }>(SHELL_GLOW, 'Glow3D');
+    if (sh) {
+      sh.rotY = (sh.rotY ?? 0) + (p < 0.2 ? 0.02 : p < 0.74 ? 0.14 : 0.03);
+      sh.rotX = (sh.rotX ?? 0) + (p < 0.2 ? 0.006 : p < 0.74 ? 0.11 : 0.006);
+      if (p < 0.2) { const k = eOutBack(p / 0.2); sh.scale = Math.max(0.001, k); if (g) g.opacity = k * 0.6; }        // 包住
+      else if (p < 0.74) { const k = (p - 0.2) / 0.54; sh.y = -0.2 + Math.sin(k * Math.PI) * 2.4; sh.scale = 1 - 0.35 * Math.sin(k * Math.PI); if (g) g.opacity = 0.6; } // 螺旋升起
+      else { const k = (p - 0.74) / 0.26; sh.scale = Math.max(0.001, 1 - eOutBack(Math.min(1, k * 1.25))); if (g) g.opacity = 0.6 * (1 - k); } // 收起
+    }
+    if (p >= 1) { transT = null; try { engine.world.destroyEntity(SHELL); engine.world.destroyEntity(SHELL_GLOW); } catch { /* noop */ } }
+  };
+
   const S: S = {
     phase: 'title', library: startLibrary(), loadout: [], detail: 'baida', dishTab: 'all',
     hearts: SOLO_HEARTS, gold: 128, gem: 7, globalRoom: 1, foe: newFoe(1), thrown: false,
@@ -236,6 +271,8 @@ export function mount(container: HTMLElement): () => void {
     // 暗角 vignette（复刻原型 radial 80%70%@50%42% 透明→暗·中亮边暗的「眩晕色」）→ 让 3D 大骰居中透出、边缘压暗出高级感。
     type: 'Screen', id: 'gd-title', props: { bg: 'radial-gradient(78% 66% at 50% 44%, rgba(20,14,34,0) 52%, rgba(8,5,20,0.62) 100%)' },
     children: [
+      // 过场测试按钮（预览骰壳转场编排·render-only·整场 arena 螺旋待 Pivot3D 能力）。
+      { type: 'Button', id: 'gd-test-trans', props: { label: '▶ 测试过场', kind: 'ghost', action: 'testTransition' }, layout: { x: 16, y: 16 } },
       ...MOTES.map(([sx, sy, d, c, ms], i): LayoutNode => ({ type: 'Panel', id: `gd-mote${i}`, props: { bg: `radial-gradient(circle, ${c} 30%, transparent 72%)` }, layout: { x: Math.round(sx * w), y: Math.round(sy * h), width: d + 6, height: d + 6, radius: d + 6, padding: 0, opacity: 0.9, fx: [{ kind: 'float', ms }] }, children: [] })),
       { type: 'Panel', id: 'gd-logo-box', props: { bare: true }, layout: { x: w / 2 - 240, y: Math.round(h * 0.07), width: 480, direction: 'column', align: 'center', gap: 9 },
         children: [
@@ -627,6 +664,7 @@ export function mount(container: HTMLElement): () => void {
 
   const handlers = (): Record<string, (arg?: string) => void> => ({
     noop: () => {},
+    testTransition: () => { playTransition(); },
     start: () => { hideTitleDie(); setMood(false); S.phase = 'arena'; beginRoom(); S.msg = '点「选骰备战」打开命运骰盅'; render(); },
     openDish: () => { S.phase = 'dish'; render(); },
     closeDish: () => { S.phase = 'arena'; render(); },
@@ -669,6 +707,7 @@ export function mount(container: HTMLElement): () => void {
   const unsub = engine.subscribe(() => {
     // 固定轴向匀速翻滚（复刻参考 tumble·@60fps 每帧 rot.x+=.004 / rot.y+=.006·X 慢 Y 快·同为正·无随机）。
     if (titleDieUp) { const td = engine.world.getComponent<{ type: 'Transform3D'; rotX?: number; rotY?: number }>(TITLE_DIE, 'Transform3D'); if (td) { td.rotX = (td.rotX ?? 0) + 0.004; td.rotY = (td.rotY ?? 0) + 0.006; } }
+    stepTransition();
     const c = cam(); if (!c) return; const t = bgRoom * ROOM_SPACING; const cur = c.pivotZ ?? 0; c.pivotZ = Math.abs(t - cur) < 0.05 ? t : cur + (t - cur) * 0.12;
   });
   engine.start();
