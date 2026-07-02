@@ -13,8 +13,10 @@ import { ThreeRenderer } from '@renderer/three-renderer.js';
 import { AssetManager, ModelAssetLoader } from '@assets/index.js';
 import { mountUI } from '@ui/components/index.js';
 import type { LayoutNode, UITheme } from '@ui/components/index.js';
-import type { Camera3D } from '@engine/protocol/components.js';
+import type { Camera3D, RandomSeed, Card } from '@engine/protocol/components.js';
 import type { Component } from '@engine/core/types.js';
+import { nextRandom } from '@skills/atoms/random/index.js';
+import { evaluateHand, rankMaxCount } from '@skills/tier3/poker-hand.js';
 import { baseBlueprint, genRoom, roomMeta, ROOM_SPACING, ACTS } from './rooms.js';
 import { GAME_D_ASSETS } from './assets.js';
 import {
@@ -29,7 +31,8 @@ const FLOORS = 4;
 const REROLLS = 2;
 const WINDOW = 1;
 const LOADOUT_CAP = 5;
-const rnd = (): number => Math.random();
+// 元素 → 点数 rank（复用 poker-hand 计数内核：把元素直方图当点数直方图）。wild 不计入（百搭）。
+const ELEM_RANK: Record<Elem, number> = { huo: 2, shui: 3, mu: 4, lei: 5, feng: 6, an: 7, none: 8, wild: 0 };
 
 // ── 骰途主题（复刻设计案：暗紫靛蓝 + 金 + 六色·UI 铁律：只填令牌·不写 CSS）─────────────
 const GAME_D_THEME: UITheme = {
@@ -84,11 +87,14 @@ const elemTone = (el: Elem): 'ok' | 'danger' | 'warn' | 'accent' | 'dim' =>
   el === 'mu' ? 'ok' : el === 'huo' ? 'danger' : el === 'lei' || el === 'feng' ? 'warn' : 'accent';
 
 // ── 出战骰组「骰型」评估（复刻屏③b·扑克牌型式·loadout 构成加成·展示为主）──────────────
-function loadoutPattern(defs: DieDef[]): { name: string; pips: string; note: string } {
+// 复用引擎 poker-hand 计数内核（`evaluateHand().rankCounts` + `rankMaxCount`），不再手写元素直方图——
+// 元素→rank 后：maxSame=最大同元素数、distinct=不同元素数。阈值（游戏专属牌型名/档）留在游戏层作数据判定。
+export function loadoutPattern(defs: DieDef[]): { name: string; pips: string; note: string } {
   if (defs.length === 0) return { name: '空骰组', pips: '◇◇◇◇◇', note: '从骰库点选装入' };
-  const cnt = new Map<Elem, number>();
-  for (const d of defs) { if (d.el === 'wild') continue; cnt.set(d.el, (cnt.get(d.el) ?? 0) + 1); }
-  const distinct = cnt.size; const maxSame = Math.max(0, ...cnt.values());
+  const cards: Card[] = defs.filter((d) => d.el !== 'wild').map((d) => ({ suit: 0, rank: ELEM_RANK[d.el] }));
+  const rankCounts = evaluateHand(cards).rankCounts;
+  const distinct = rankCounts.size;
+  const maxSame = rankMaxCount(rankCounts);
   if (defs.length >= 5 && distinct >= 5) return { name: '五星同辉', pips: '◆◆◆◆◆', note: '满阵加成' };
   if (maxSame >= 3) return { name: '三元和鸣', pips: '◆◆◆◇◇', note: '中幅强化' };
   if (distinct >= 4) return { name: '四方汇聚', pips: '◆◆◆◇◇', note: '中幅强化' };
@@ -115,6 +121,12 @@ export function mount(container: HTMLElement): () => void {
   engine.load(baseBlueprint());
   const renderer = new ThreeRenderer({ width: w, height: h, background: 0xe7e3dc, assets });
   engine.attachRenderer(renderer, stage);
+
+  // 种子化随机（引擎 RandomSeed·nextRandom 就地推进 → 可回放/双人 lockstep 同步·绝不 Math.random）。
+  // 固定种子 = 确定性；联机/回放时把 run-seed 注入此组件即整局可复现。所有掷骰/抽奖走 rnd()。
+  engine.world.createEntity('gd-rng');
+  engine.world.addComponent('gd-rng', { type: 'RandomSeed', seed: 20260702, sequence: 0 } as unknown as Component);
+  const rnd = (): number => { const rs = engine.world.getComponent<RandomSeed>('gd-rng', 'RandomSeed'); return rs ? nextRandom(rs) : 0.5; };
 
   // 3D 房间背景：流式 + 相机往上 dolly
   const loaded = new Map<number, string[]>();

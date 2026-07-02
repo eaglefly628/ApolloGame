@@ -836,3 +836,19 @@ _（REQ-3D-W1高效引擎 已移至 [`requests-3d.md`](./requests-3d.md)。）_
 > **回驳过自己（不走 raw hex）**：不是要 `color:'#3a2406'`（破「颜色=语义令牌」红线）。要的是**一个语义令牌** `'ink'`（深墨·= `theme.ink`，缺省回退很深的 `bg0` 或专设 `#2a1c0a` 级）→ 加进 `Label.color`（及 `spans.color`）union + `UITheme.ink?`。同 pixel/serif/mine/foe 先例（闭集加档·弱 LLM 只在闭集里选）。
 >
 > **复用面**：任何「深字压在金/亮/暖底」的 CTA / 徽标 / 高亮块（不止 game-d）。**当前 game-d 用 `color:'text'` 亮字临时顶（见 `gd-start-t` 的 `TODO(REQ-UI-ink)`），令牌到位即切 `'ink'`。**
+
+### REQ-GAMED-数据驱动迁移 · game-d《骰途》从手写 sim 迁成能力驱动（体检整改）· [2026-07-02] · P3D（game-d owner）→ 主程（引擎能力域） · status: **部分自办 + 缺口待主程** · 类型: 架构整改（数据驱动收口）· 设计 `docs/design/game-d/data-driven-migration.md`
+>
+> 体检核实属实：game-d 战斗/状态全手写 `S` 对象 + 纯函数，`capabilities:[]`、`Math.random()` 绕种子随机、手写 `loadoutPattern` 重造 poker-hand、双人假、0 测试。目标：照 game-e/game-f 迁成 blueprint（components + capabilities + signals + keybinds）+ 薄 session 编排。~80% 复用现有能力（poker-hand/card-scoring/effect-apply/event-when/mortal/flow/keybind/random）。
+>
+> **我方已自办（无新引擎工作·门禁绿 + 测试·本 session）**：① 种子化随机（`RandomSeed`+`nextRandom` 替 `Math.random`·可回放/lockstep）；② `loadoutPattern` 复用 `poker-hand`(`evaluateHand`/`rankMaxCount`)；③ 补 `game-d-sim.test.ts`(10 例)。
+>
+> **真缺口 → 请主程下沉成 capability（细节见设计文档 §真缺口）**：
+> 1. **`dice-roll` capability（主缺口·最优先）**：读 `DicePool` + `RandomSeed`(+`LockMask` 只重掷未锁)·`Update` 相位写 `RolledDice`（早于 poker-eval）。现无「掷一个声明的骰池」的能力；poker-hand 只消费已填好的 `PlayedHand`。
+> 2. **wild/百搭**：`evaluateHand` 无通配 → 扩 poker-hand wild 参数，或 dice-roll 归一化 wild。
+> 3. **元素敏感对子**：敌「对子」=同元素+同值联合，poker-hand 按值 或 按花色单计 → 加 pairCount 变体或小 `dice-pattern`。
+> 4. **敌反制禁骰**：`discardHighLow`（结算前禁 N 颗）无能力 → 数据化「结算前骰过滤」`DiceCounter{kind}`。
+> 5. **6 色同花确认**：poker-hand flush 对 suit int 泛用（6 元素可跑），但 HandType/handMods 是扑克花色形 → 请主程确认复用 `isFlushFlag` 表 6 色同花是否在契约内，否则 `dice-pattern`。
+> 6. **双人 co-op（netcode 缺口）**：真双人=lockstep 联机（种子已就绪，缺 netcode/房间/角色）。落地前双人按钮不该假装单机=双人。
+>
+> **主程填 1–5 后**：我把 `S` 迁成组件、规则迁成能力+数据、UI handlers 改信号、房间推进改 `flow`。6（netcode）另立框架级需求。
