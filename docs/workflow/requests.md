@@ -852,3 +852,13 @@ _（REQ-3D-W1高效引擎 已移至 [`requests-3d.md`](./requests-3d.md)。）_
 > 6. **双人 co-op（netcode 缺口）**：真双人=lockstep 联机（种子已就绪，缺 netcode/房间/角色）。落地前双人按钮不该假装单机=双人。
 >
 > **主程填 1–5 后**：我把 `S` 迁成组件、规则迁成能力+数据、UI handlers 改信号、房间推进改 `flow`。6（netcode）另立框架级需求。
+>
+> **Lead 裁决（2026-07-02·主程·逐条核过引擎源码）** · status 更新: **裁决完毕——2 准 / 1 并入 / 1 回驳 / 1 确认在契约内 / 1 另立**：
+> 1. **dice-roll capability：✅ 准（P0）**。真缺口核实（registry 78 项无任何骰 sim）。范围收窄 = 读 `DicePool`+`RandomSeed`(+`LockMask` 重掷未锁) → `Update` 相位写 `RolledDice`（早于 poker-eval）；**#4 并入本能力**做数据化 post-roll 过滤参数（`{kind:'banHighest'|'banLowest',n}`，由 foe 数据驱动）。设计约束：确定性、组件进闭集 component-map、**与 game-g 战力骰/对掷+平局阶梯一并规划成同一个骰能力族**（评审报告 §五 P0 项），防止两次下沉出两套不协调的骰能力。
+> 2. **poker-hand wild：✅ 准**——核实 `poker-hand.ts` 确无通配。做成 `HandMods` 参数扩展（**非新能力**）；wild 求最优=小规模确定性枚举。**回驳"在 dice-roll 里归一化 wild"路线**：归一化即求解器，放错层——wild 的最优语义属于牌型评估。受益方还有 game-e（82 张未实装小丑含 wild 类），一次扩两家用。
+> 3. **元素敏感对子：❌ 回驳（重组可表达）**——`pairCount` 已存在（`poker-hand.ts:182`），无需"加变体"。「同元素+同值」联合对子 = **复合 rank 编码**（`rank = element*16 + value`）后 `rankCounts`/`pairCount` 直接就是联合计数；同一手要再判顺子/纯值对子，就按原 value 编码**再跑一次 evaluateHand**——两次调用是数据重组，不是引擎缺口。等价写法已给，照此接线。
+> 4. **敌反制禁骰：🔶 并入 #1**，不单立能力（防碎能力化）。
+> 5. **6 色同花：✅ 确认在契约内**——`Card.suit` 是无约束 int（`cardboard.ts:46`），flush 按任意 suit 计数（`poker-hand.ts:86-100`），6 元素直接跑；schema describe 里的 "suit:0..3" 是文档不是枚举约束。**注意勿与 `suitMerge` 混用**（其红黑归并硬编码 4 花色，`poker-hand.ts:96`）。条件：主程会补一条 6-suit flush 契约测试进 poker-hand.test 钉死此契约。
+> 6. **co-op netcode：⏫ 另立框架级需求**——与 game-f 多人（传输 REQ-018 + N 端 lockstep）**合并成一条 net 基建线**，一次建、两个游戏用；排期 owner 拍板。过渡要求照准且限期：**双人按钮先诚实标注（P3D 自己域内，立即可做）**。
+>
+> **附·整改复审打回三条（Lead 复核 188fbbf1，owner 已知情）**：① 种子写死 `20260702` 且无 run-seed 注入路径 → 每局骰运相同，**出货级 bug**：改为开局生成 run-seed、随存档保存；② "复用 poker-hand" 只替了展示用 `loadoutPattern`，**战斗路径 `detectPattern`（combat.ts:103）原封未动**且零测试——要么真替、要么先补测试，禁止两套并存长期化；③ 提交信息勿超售实际完成范围（会误导后续 session 的债务判断）。
