@@ -145,10 +145,8 @@ function evaluateHandConcrete(cards: readonly Card[], mods: HandMods = {}): Hand
 function evaluateHandWithWild(cards: readonly Card[], mods: HandMods): HandEval {
   const nonWild = cards.filter((c) => !c.wild);
   const wildCount = cards.length - nonWild.length;
-  // 全 wild：全部代入同一 (suit,rank) 即同时最大化「同点张数 + 同花」→ 达到该张数下的最高牌型（5 张=同花五）。
-  if (nonWild.length === 0) {
-    return evaluateHandConcrete(Array.from({ length: wildCount }, () => ({ suit: 0, rank: 2 })), mods);
-  }
+  // 全 wild 不走「全代同值」捷径：four_fingers(4 张同花/连) 下 2-3-4-5 同花顺 > 四条，捷径会判低（Lead 验收修）。
+  // 统一走枚举——wildCandidates 对空 nonWild 以 (suit 0, rank 2) 种子展开顺子窗口，候选极小（≤C(9,5) 级）。
   const cands = wildCandidates(nonWild, mods);
   let best: HandEval | undefined;
   let bestRank = -1;
@@ -158,7 +156,7 @@ function evaluateHandWithWild(cards: readonly Card[], mods: HandMods): HandEval 
     const r = handTypeRank(evald.type);
     if (r > bestRank) { bestRank = r; best = evald; } // 严格大于 → 保留枚举序最先的最优解（tie-break）
   }
-  return best!; // wildCount≥1 且候选非空（nonWild 非空 → 至少 1 花色×1 点数）→ 必有解
+  return best!; // wildCount≥1 且候选必非空（nonWild 空时 wildCandidates 以 (0,2) 种子）→ 必有解
 }
 
 // wild 候选具体牌（紧集，见 evaluateHandWithWild 注释）。花色升序×点数升序 → 枚举序确定。
@@ -166,6 +164,7 @@ function wildCandidates(nonWild: readonly Card[], mods: HandMods): Card[] {
   const suits = [...new Set(nonWild.map((c) => c.suit))].sort((a, b) => a - b);
   const candSuits = suits.length ? suits : [0];
   const ranks = new Set<number>(nonWild.map((c) => c.rank));
+  if (ranks.size === 0) ranks.add(2); // 全 wild：种子最低点数，窗口展开后同时覆盖「n 同点」与「顺/同花顺」两族最优
   const need = mods.fourStraight ? 4 : 5;
   const step = mods.gappedStraight ? 2 : 1;
   const reach = (need - 1) * step; // 一条顺子跨度内 wild 可补的点数离某已存在点数最远这么多

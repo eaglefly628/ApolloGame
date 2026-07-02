@@ -378,6 +378,12 @@ describe('poker evaluateHand — wild 百搭求最优牌型', () => {
   it('全 wild：2 张 wild → pair', () => {
     expect(evaluateHand([wc(), wc()]).type).toBe('pair');
   });
+  it('全 wild + four_fingers 双 mod：4 张 wild → straight-flush（2345 同花 > 四条；验收修的角落）', () => {
+    expect(evaluateHand([wc(), wc(), wc(), wc()], { fourFlush: true, fourStraight: true }).type).toBe('straight-flush');
+  });
+  it('全 wild 无 mod：4 张 wild → four-of-a-kind（同花/顺仍需 5 张，四同点最优）', () => {
+    expect(evaluateHand([wc(), wc(), wc(), wc()]).type).toBe('four-of-a-kind');
+  });
   it('最优联合（suit+rank 同时代入）：♠10-J-Q-K + wild → straight-flush（皇家）', () => {
     const e = evaluateHand([c(0, 10), c(0, J), c(0, Q), c(0, K), wc()]);
     expect(e.type).toBe('straight-flush');
