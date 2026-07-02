@@ -907,3 +907,13 @@ _（REQ-3D-W1高效引擎 已移至 [`requests-3d.md`](./requests-3d.md)。）_
 > ④ **顶栏 API 状态灯**：读 `/api/generate/providers`——有 key→绿「已连接·<provider>」，无→琥珀「未配置 API Key」（点击占位，M3 设置页）。
 > ⑤ 约束：只动 `src/launcher.tsx` + 新建同层组件；**不碰 src/{engine,skills,assembly,renderer,ui,games}**（只读 import 允许）；视觉照 mockup。
 > ⑥ 测试：happy-dom 无头用例——空库态渲染含「新建游戏」；meta→GameEntry 映射单测；DataCartridgeRunner 以最小合法 manifest 无头挂载不抛错。门禁 tsc+vitest+build 全绿直推；完工标 ✅。
+
+### REQ-STUDIO-M2-创作向导与迭代回路 · 创作台 v1 灵魂件：说一句创意→卡带 + 对话式修改 · [2026-07-02] · 主程 → **指派：Opus** · status: **施工中（2026-07-02 开工）** · 类型: 产品化（apollo.py+前端，不碰引擎）
+> 前置：M0 ✅（library 端点）+ M1 ✅返修后（玩家模式/操作条/DataCartridgeRunner，真浏览器 9/9 验收）。
+> **实现 spec（Lead 已定）**：
+> ① **创作向导（右滑面板，照首页方案屏②）**：玩家模式点「＋新建游戏」→ 右滑面板：游戏名 + 一句话创意 + 当前 provider 显示 + 「开始生成」。生成走现有 `POST /api/generate`（前端带 catalog，现 GameCreator 同款）→ 得 manifest → **预览试玩**（复用 DataCartridgeRunner 运行态，带「保存入库 / 弃掉重来」）→ 保存 = `POST /api/library/create {name}` + `PUT manifest {note:'初版生成'}` → 刷新卡带架并选中新卡带。
+> ② **对话式迭代**：「✎ 继续创作」→ 面板迭代态：显示游戏名+当前版本，输入修改指令（如「金币掉落改两倍」）→ apollo.py 扩展 `POST /api/generate` 支持 `{mode:'revise', current_manifest, instruction, catalog}`（prompt=系统词+当前 manifest JSON+指令，要求输出**完整**修改后 manifest 而非 diff）→ 校验 → 预览 → 保存 = `PUT {note:<指令摘要≤50字>}`（自动成为 git commit message，人话版本历史由此而来）。
+> ③ **失败自动重试回路（落地 ai-dev-pipeline §7-5）**：重试在 **apollo.py 服务端**做——`/api/generate` 加 `{autofix:true}`：LLM 输出 → JSON parse + `manifest-check.mjs` 校验 → 失败把错误文本回喂 LLM 重问，≤3 次；返回 `{manifest, attempts, fixed_errors}`。前端显示「生成中…第 N 次自动修正」。重试耗尽 → 人话提示换个说法 + 可折叠查看原始错误。
+> ④ **测试基建（关键裁量已定）**：apollo.py 加 `mock` provider（env `APOLLO_MOCK_LLM=1` 时可用）：generate 返回固定合法 manifest、revise 返回按指令做一处确定性修改的 manifest、可配置前 N 次返回坏 JSON 以测 autofix 回路——供冒烟与 e2e 全流程无 key 可测。
+> ⑤ UI 全中文化（旧英文 Create Game 条替换为向导入口）；约束：只动 apollo.py + launcher.tsx/src/studio 组件 + index.html（如需）；**不碰 src/{engine,skills,assembly,renderer,ui,games}**。
+> ⑥ 验收标准：冒烟脚本（mock provider 全链路含 autofix 触发）+ happy-dom 集成测试 + **playwright-core 真浏览器完整旅程必跑并贴结果**（新建→生成→预览→保存→上架→继续创作→修改→版本历史出现两条→回滚）。门禁 tsc+vitest+build 全绿 + apollo.py ast；直推；完工标 ✅。
