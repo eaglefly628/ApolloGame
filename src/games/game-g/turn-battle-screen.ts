@@ -396,7 +396,6 @@ function clashCalcCol(rows: [string, number][], head: string, team: 'mine' | 'fo
 }
 function clashNode(cv: TurnClashView): LayoutNode {
   const revealed = cv.revealed !== false;
-  const foePct = 100 - cv.oddsMine;
   const minePow = cv.pEffMine ?? 0, foePow = cv.pEffFoe ?? 0;
 
   // ── 标题：路 chip + 「⚔ 绝命对决」──
@@ -420,17 +419,7 @@ function clashNode(cv: TurnClashView): LayoutNode {
     ],
   };
 
-  // ── 中栏：双牌 + VS 徽 ──
-  const cardsRow: LayoutNode = {
-    type: 'Panel', id: 'clash-cards', props: { bare: true }, layout: { direction: 'row', gap: 12, align: 'center', justify: 'center' },
-    children: [
-      { type: 'PlayingCard', id: 'clash-card-m', props: { rank: cv.mine.rank, suit: SUITG[cv.mine.suit], face: 'light', size: 'md', label: cv.mine.name, selected: revealed && cv.mine.won }, layout: { rotate: -4 } },
-      clashChip('clash-vs-pill', revealed ? '掷' : '⚔', 'gold', 'md'),
-      { type: 'PlayingCard', id: 'clash-card-f', props: { rank: cv.foe.rank, suit: SUITG[cv.foe.suit], face: 'light', size: 'md', label: cv.foe.name, selected: revealed && cv.foe.won, dimmed: revealed && !cv.foe.won && !cv.foe.lastStand }, layout: { rotate: 4 } },
-    ],
-  };
-
-  // ── 3D 战力骰竞技场（各自掷战力骰）──
+  // ── 战力骰列：每颗骰摆在各自牌正下方（owner 2026-07-03「点到我这个牌下面有个掷骰子」）──
   //   clash-die3d-m/f = 3D 骰挂载锚点（引擎 ThreeRenderer 覆此·mountTurnBattle.syncDice3D）；🎲=无 WebGL 回退占位。
   //   clash-die-m/f = 掷值文本（驱动层 game-g.tsx doClashRoll 就地哒哒哒滚·两相皆在场·勿改 id）。
   const dieCol = (mine: boolean): LayoutNode => {
@@ -447,21 +436,28 @@ function clashNode(cv: TurnClashView): LayoutNode {
             { type: 'Label', id: `clash-die-${s}`, props: { text: '?', size: 'xs', color: tone, bold: true, mono: true } }, // 驱动就地滚的掷值（掷前藏于骰面·勿删 id）
           ] };
     return {
-      type: 'Panel', id: `clash-diecol-${s}`, props: won ? { edge: tone } : { bare: true }, layout: { direction: 'column', gap: 5, align: 'center', padding: 8, radius: 12 },
-      children: [dieSlot, clashChip(`clash-dier-${s}`, `${mine ? '我方' : '敌方'} 1~${range}`, tone, 'xs')],
+      type: 'Panel', id: `clash-diecol-${s}`, props: { bare: true }, layout: { direction: 'column', gap: 5, align: 'center', padding: 4 },
+      children: [dieSlot, clashChip(`clash-dier-${s}`, `1~${range}`, tone, 'xs')],
     };
   };
-  const arenaChildren: LayoutNode[] = [
-    { type: 'Label', id: 'clash-dice-h', props: { text: '各自掷战力骰 · 大者胜', size: 'xs', color: 'gold', bold: true, tracking: 1.6 } },
-    { type: 'Panel', id: 'clash-dice', props: { bare: true }, layout: { direction: 'row', gap: 18, align: 'center', justify: 'center' },
-      children: [dieCol(true), { type: 'Label', id: 'clash-die-vs', props: { text: revealed ? (cv.mine.won ? '＞' : '＜') : 'VS', size: 'lg', color: 'dim', bold: true } }, dieCol(false)] },
-    revealed
-      ? clashChip('clash-winner', cv.mine.won ? '◀ 我方掷高 · 胜' : '敌方掷高 · 胜 ▶', cv.mine.won ? 'mine' : 'foe', 'sm')
-      : { type: 'Label', id: 'clash-dice-hint', props: { text: '🎲 骰盅翻滚中 · 点掷战力骰定生死', size: 'xs', color: 'sub' } },
-  ];
+  // 每侧竖栈 = 牌 + 其正下方战力骰；两侧夹 VS 徽（owner「摆在两张扑克牌正下方·各自牌下」）。
+  const sideStack = (mine: boolean): LayoutNode => ({
+    type: 'Panel', id: `clash-side-${mine ? 'm' : 'f'}`, props: { bare: true }, layout: { direction: 'column', gap: 9, align: 'center' },
+    children: [
+      { type: 'PlayingCard', id: `clash-card-${mine ? 'm' : 'f'}`, props: { rank: (mine ? cv.mine : cv.foe).rank, suit: SUITG[(mine ? cv.mine : cv.foe).suit], face: 'light', size: 'md', label: (mine ? cv.mine : cv.foe).name, selected: revealed && (mine ? cv.mine.won : cv.foe.won), dimmed: !mine && revealed && !cv.foe.won && !cv.foe.lastStand }, layout: { rotate: mine ? -4 : 4 } },
+      dieCol(mine),
+    ],
+  });
   const diceArena: LayoutNode = {
-    type: 'Panel', id: 'clash-dicewrap', props: { bg: 'rgba(10,14,22,.5)', edge: 'gold' }, layout: { direction: 'column', gap: 7, align: 'center', padding: 12, radius: 15, chamfer: 10 },
-    children: arenaChildren,
+    type: 'Panel', id: 'clash-dicewrap', props: { bg: 'rgba(10,14,22,.5)', edge: 'gold' }, layout: { direction: 'column', gap: 8, align: 'center', padding: 14, radius: 15, chamfer: 10 },
+    children: [
+      { type: 'Label', id: 'clash-dice-h', props: { text: '各自掷战力骰 · 各掷自己战力范围 · 大者胜', size: 'xs', color: 'gold', bold: true, tracking: 1.2 } },
+      { type: 'Panel', id: 'clash-duel', props: { bare: true }, layout: { direction: 'row', gap: 18, align: 'center', justify: 'center' },
+        children: [sideStack(true), clashChip('clash-vs-pill', revealed ? '掷' : '⚔', 'gold', 'md'), sideStack(false)] },
+      revealed
+        ? clashChip('clash-winner', cv.mine.won ? '◀ 我方掷高 · 胜' : '敌方掷高 · 胜 ▶', cv.mine.won ? 'mine' : 'foe', 'sm')
+        : { type: 'Label', id: 'clash-dice-hint', props: { text: '🎲 骰盅翻滚中 · 点掷战力骰定生死', size: 'xs', color: 'sub' } },
+    ],
   };
 
   // ── 判定 chip（揭晓）──
@@ -476,7 +472,7 @@ function clashNode(cv: TurnClashView): LayoutNode {
 
   const centerCol: LayoutNode = {
     type: 'Panel', id: 'clash-center', props: { bare: true }, layout: { direction: 'column', gap: 9, align: 'center', flex: 1 },
-    children: [cardsRow, diceArena, ...(verdictRow ? [verdictRow] : [])],
+    children: [diceArena, ...(verdictRow ? [verdictRow] : [])],
   };
 
   // ── 三栏主区 ──
@@ -485,21 +481,8 @@ function clashNode(cv: TurnClashView): LayoutNode {
     children: [clashCalcCol(cv.bonusMine, '我方 · 加成明细', 'mine', cv.pEffMine), centerCol, clashCalcCol(cv.bonusFoe, '敌方 · 加成明细', 'foe', cv.pEffFoe)],
   };
 
-  // ── 胜率条（掷命预报·战力差→概率）──
-  const oddsBar: LayoutNode = {
-    type: 'Panel', id: 'clash-odds', props: { bare: true }, layout: { direction: 'row', gap: 10, align: 'center' },
-    children: [
-      { type: 'Label', id: 'clash-odds-m', props: { text: `${cv.oddsMine}%`, size: 'lg', color: clashTextTone('mine'), bold: true, mono: true } },
-      { type: 'ProgressBar', id: 'clash-odds-bar', props: { value: cv.oddsMine, max: 100, tone: 'accent' }, layout: { flex: 1 } },
-      { type: 'Label', id: 'clash-odds-f', props: { text: `${foePct}%`, size: 'lg', color: clashTextTone('foe'), bold: true, mono: true } },
-    ],
-  };
-  const oddsWrap: LayoutNode = {
-    type: 'Panel', id: 'clash-oddswrap', props: { bare: true }, layout: { direction: 'column', gap: 3 },
-    children: [{ type: 'Label', id: 'clash-odds-lbl', props: { text: '掷命预报 · 战力越高掷得越高，但保留翻盘缝', size: 'xs', color: 'sub' }, layout: { align: 'center' } }, oddsBar],
-  };
-
-  const children: LayoutNode[] = [titleBlock, facStrip, mainBand, oddsWrap];
+  // 胜率预测百分比条：owner 2026-07-03「预测概率那个百分比不要了·移除」→ 已删（胜负由掷骰定·不再前置剧透概率）。
+  const children: LayoutNode[] = [titleBlock, facStrip, mainBand];
 
   // ── 额外效果金框（平局裁定 + 连胜战损）──
   if (cv.extras && cv.extras.length) children.push({

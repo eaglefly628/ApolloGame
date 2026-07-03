@@ -51,7 +51,8 @@ describe('Game G · turn-battle-screen（doc24 回合制战斗屏 · 忠实端�
     expect(html).toContain('绝命对决'); expect(html).not.toContain('掷命对决'); // 命名：绝命对决（非旧掷命对决）
     expect(html).toContain('我方 · 加成明细'); expect(html).toContain('敌方 · 加成明细'); // 三栏侧栏 head（新稿）
     expect(html).toContain('额外效果'); expect(html).toContain('封顶 30'); // 来源清晰：额外效果区 + 封顶对齐行（owner 2026-06-21）
-    expect(html).toContain('掷命预报'); expect(html).not.toContain('CoinFlip'); // 各自掷战力骰·揭晓无掷币（owner 2026-07-01）
+    expect(html).not.toContain('CoinFlip'); // 各自掷战力骰·揭晓无掷币（owner 2026-07-01）
+    expect(html).not.toContain('掷命预报'); expect(html).not.toContain('clash-odds-bar'); // owner 2026-07-03「预测概率百分比不要了·移除」
     expect(html).toContain('各自掷战力骰'); expect(html).toContain('掷高'); // 骰竞技场标头 + 掷高者胜（owner 2026-07-02）
     expect(html).toContain('id="clash-dieface-m"'); expect(html).toContain('id="clash-dieface-f"'); // 揭晓=奶白平面骰显真实掷值（3D 骰只在掷前相·owner 2026-07-03）
     expect(html).toContain('>22<'); expect(html).toContain('>9<'); // 两骰掷值文本（我 22 / 敌 9·驱动层就地滚·id clash-die-m/f）
@@ -67,8 +68,8 @@ describe('Game G · turn-battle-screen（doc24 回合制战斗屏 · 忠实端�
       revealed: false, // 掷前：藏掷值·等玩家点骰
     };
     const html = renderTurnBattleDoc(buildTurnBattleView(setup(), { theme: 'onyx', tengangName: nm, clash }));
-    expect(html).toContain('id="clash-die3d-m"'); expect(html).toContain('id="clash-die3d-f"'); // mountTurnBattle 量此 rect·把 ThreeRenderer canvas 覆上（3D 战力骰）
-    expect(html).toContain('我方 1~30'); expect(html).toContain('敌方 1~25'); // 战力段 chip
+    expect(html).toContain('id="clash-die3d-m"'); expect(html).toContain('id="clash-die3d-f"'); // mountTurnBattle 量此 rect·把 ThreeRenderer canvas 覆上（3D 战力骰·各在牌下）
+    expect(html).toContain('1~30'); expect(html).toContain('1~25'); // 战力段 chip（骰摆牌下·省"我方/敌方"前缀）
     expect(html).toContain('data-action="clash-roll"'); // 掷命钮信号（保持·flow-walk 测依赖）
     expect(html).not.toContain('id="clash-dieface-m"'); // 掷前不显平面骰（那是揭晓相）
   });
