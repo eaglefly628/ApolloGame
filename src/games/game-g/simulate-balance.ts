@@ -9,8 +9,8 @@ import {
   TIANGANG_BY_ID, bossFor, RUN_BATTLES, deployCost, type ArmyCard,
 } from './index.js';
 import {
-  initTurnBattle, drawCard, deployUnit, castTengang, endTurn, aiTakeTurn, bossOpeningGarrison, BOSS_GARRISON_MANA,
-  OPENING_HAND, DRAW_COST, CAST_COST, type TurnBattle, type PokerCard, type TengangHandCard,
+  initTurnBattle, drawCard, deployUnit, castTengang, swapCard, endTurn, aiTakeTurn, bossOpeningGarrison, BOSS_GARRISON_MANA,
+  OPENING_HAND, DRAW_COST, CAST_COST, SWAP_PER_TURN, type TurnBattle, type PokerCard, type TengangHandCard,
 } from './turn-combat.js';
 import { playerTakeTurnAI } from './player-ai.js'; // 终极版 Player-AI（前向推演搜索·owner 2026-07-03「推演敌人未来」）
 import { seededShuffle } from '@atom-skills/index.js'; // 洗牌收敛 atoms 单一真相（零漂移）
@@ -52,15 +52,15 @@ function applyInlayFavor(cards: ArmyCard[], inlayFavorTotal: number, perCardCap 
 // seededShuffle / tengangFxOf / aggregateTengang 已收敛——洗牌→atoms、天罡聚合→game-g-build（删本地过期复制·见上方 import）。
 // 注：game-g-build.aggregateTengang 内部走 TIANGANG_BY_ID（与原 sim 同源）→ 行为一致。
 
-// ── Player greedy agent ──
-// Strategy: deploy all poker cards first (free); draw when hand is empty; always end turn.
+// ── Player greedy agent（skill1 对照·owner 2026-07-03 更新到三行为自由模型）──
+// 新模型：抽/打/换互不互斥·只被源泉限制 → 贪心一回合内自由混：施天罡 + 换掉废牌(1/回合) + 按 cost 铺兵 + 手空补抽，全在一个回合里穿插。
 // Lane selection: prioritize lane most threatened by enemy (highest enemy count − own count).
 
 function playerTakeTurn(b: TurnBattle): void {
   if (b.winner !== 'pending' || b.active !== 'a') return;
   const sd = b.a;
-  // ① 优先施天罡（开局铺 buff·持续整局·互斥 → 整回合只施法）。手有天罡 + 买得起 → 这回合就施。
-  if ((b.actionTaken === null || b.actionTaken === 'cast') && sd.mana >= CAST_COST) {
+  // ① 施天罡（有就施·买得起·铺 buff）——现可与放牌自由混(不再互斥·打完接着放)。
+  {
     let guard = 0;
     while (guard++ < 6) {
       const tIdx = sd.hand.findIndex((c) => c.kind === 'tengang');
@@ -69,27 +69,33 @@ function playerTakeTurn(b: TurnBattle): void {
       sd.tengangA = aggregateTengang(sd.castIds);
       sd.castFx = sd.castIds.map((id) => ({ id, fx: aggregateTengang([id]) }));
     }
-    if (b.actionTaken === 'cast') { endTurn(b); return; }
   }
-  // ② 放牌（按 cost·优先最便宜买得起的兵铺场 → 凑曲线/连携）；手空或放不动则抽。
+  // ② 换牌（1/回合·免费·把最废的一张兵换成随机新牌·仅当明显低于手均才动用唯一换牌）。
+  if (sd.swapsUsed < SWAP_PER_TURN && sd.pokerDeck.length) {
+    const pokers = sd.hand.map((c, i) => ({ c: c as PokerCard, i })).filter((x) => x.c.kind === 'poker');
+    if (pokers.length >= 2) {
+      let worst = pokers[0]; for (const x of pokers) if (cardPoints(x.c.rank) < cardPoints(worst.c.rank)) worst = x;
+      const avg = pokers.reduce((s, x) => s + cardPoints(x.c.rank), 0) / pokers.length;
+      if (cardPoints(worst.c.rank) < avg - 1) swapCard(b, 'a', worst.i, 'poker');
+    }
+  }
+  // ③ 放牌（按 cost·优先最便宜买得起的兵铺场 → 凑曲线/连携）+ 手里没兵可放则抽（自由混·抽完继续放）。
   let guard = 0;
   while (guard++ < 60) {
-    if (b.actionTaken === null || b.actionTaken === 'deploy') {
-      const affordable = sd.hand
-        .map((c, i) => ({ c, i }))
-        .filter((x) => x.c.kind === 'poker' && ((x.c as PokerCard).cost ?? 0) <= sd.mana)
-        .sort((x, y) => ((x.c as PokerCard).cost ?? 0) - ((y.c as PokerCard).cost ?? 0));
-      if (affordable.length) {
-        const bestLane = [0, 1, 2].reduce((best, li) => {
-          const score = b.lanes[li].b.length * 2 - b.lanes[li].a.length;
-          const bscore = b.lanes[best].b.length * 2 - b.lanes[best].a.length;
-          return score > bscore ? li : best;
-        }, 0);
-        if (deployUnit(b, 'a', affordable[0].i, bestLane)) continue;
-      }
+    const affordable = sd.hand
+      .map((c, i) => ({ c, i }))
+      .filter((x) => x.c.kind === 'poker' && ((x.c as PokerCard).cost ?? 0) <= sd.mana)
+      .sort((x, y) => ((x.c as PokerCard).cost ?? 0) - ((y.c as PokerCard).cost ?? 0));
+    if (affordable.length) {
+      const bestLane = [0, 1, 2].reduce((best, li) => {
+        const score = b.lanes[li].b.length * 2 - b.lanes[li].a.length;
+        const bscore = b.lanes[best].b.length * 2 - b.lanes[best].a.length;
+        return score > bscore ? li : best;
+      }, 0);
+      if (deployUnit(b, 'a', affordable[0].i, bestLane)) continue;
     }
-    if (b.actionTaken === null && sd.mana >= DRAW_COST && sd.pokerDeck.length > 0) {
-      if (drawCard(b, 'a', 'poker')) continue;
+    if (sd.mana >= DRAW_COST && sd.pokerDeck.length > 0 && !sd.hand.some((c) => c.kind === 'poker')) {
+      if (drawCard(b, 'a', 'poker')) continue; // 手里已无兵可放 → 抽一张(自由混)·抽完接着放
     }
     break;
   }

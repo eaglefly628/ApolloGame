@@ -9,7 +9,7 @@
 //   ① cloneBattle：深拷 TurnBattle（含 rng {type,seed,sequence}）→ 推演绝不碰真局。
 //   ② 确定性 EV·不掷骰：克隆局遭遇走 endTurnEV → resolveClashEV(rollWinProb 精确胜率坍缩)·零 rng。
 //   ③ 敌方模型=复用现成 Boss AI：对手回合调 aiDecide + endTurnEV 在克隆局跑 → 预测 Boss 应对（"推演敌人未来"）。
-//   ④ 候选枚举 + beam 剪枝：枚举整回合计划(cast/deploy×路/draw/pass)·按 evalState 留 top-K 递归。
+//   ④ 候选枚举 + beam 剪枝（owner 2026-07-03·三行为自由）：枢纽决策(deploy×路 / draw抢节奏 / swap换废牌 / fill / pass) + greedyTurnFill 自由混补完(打天罡+部署穿插)·按 evalState 留 top-K 递归。
 //   ⑤ 叶子评估 evalState（§三 七特征·破家进度权重压倒一切·三路力量差非线性集中奖励）。
 //   ⑥ 目标=argmax E[P(赢)]（非血量）。
 //   ⑦ 深度按档：skill1=贪心退化(不走本模块) · skill3=N=1 · skill5=终极(N≥2 + beam + Boss AI 推演)。
@@ -18,8 +18,8 @@
 //   → turnHash/回放不裂（见 player-ai.test.ts 复现测）。
 // 数据驱动豁免：Player-AI 是引擎侧确定性决策器（同 turn-combat 掷命解算核），owner 明确拍板单独开发·不下沉成数据（spec §六）。
 import {
-  deployUnit, castTengang, drawCard, discardCard, endTurn, endTurnEV, aiDecide,
-  HAND_MAX, CAST_COST, DRAW_COST, DEPLOY_COST, SLOTS, A_GOAL, clashOdds,
+  deployUnit, castTengang, drawCard, swapCard, discardCard, endTurn, endTurnEV, aiDecide,
+  HAND_MAX, CAST_COST, DRAW_COST, DEPLOY_COST, SWAP_PER_TURN, SLOTS, A_GOAL, clashOdds,
   type TurnBattle, type TurnLane, type TurnUnit, type TurnSide, type PokerCard, type Card,
 } from './turn-combat.js';
 import { cardPoints } from './clash-resolve.js';
@@ -36,6 +36,7 @@ const cloneSide = (s: TurnSide): TurnSide => ({
   mana: s.mana, hand: s.hand.map(cloneCard), pokerDeck: s.pokerDeck.map(cloneCard) as PokerCard[],
   tengangDeck: s.tengangDeck.map(cloneCard) as { kind: 'tengang'; id: string }[], castIds: [...s.castIds],
   tengangA: cloneFx(s.tengangA), castFx: s.castFx.map(({ id, fx }) => ({ id, fx: cloneFx(fx) })),
+  swapsUsed: s.swapsUsed,
 });
 export function cloneBattle(b: TurnBattle): TurnBattle {
   return {
@@ -103,14 +104,18 @@ export function evalState(b: TurnBattle): number {
   return s;
 }
 
-// ══════════════════════════ ④ 候选枚举：整回合计划 TurnPlan ══════════════════════════
-// 一个回合只能选一类互斥动作（cast / deploy / draw；弃牌免费不锁·v1 暂不用）。计划粒度=整回合（含回合内多次同类动作），
-// deploy 计划的「开局一张→哪路」枚举给搜索决定关键落子，其余空位由 greedyDeployFill 确定性补满（田忌赛马式选路·无 rng）。
+// ══════════════════════════ ④ 候选枚举：整回合计划 TurnPlan（owner 2026-07-03·三行为自由）══════════════════════════
+// 动作模型改自由后一回合的合法空间变大：抽/打/换在源泉预算内**任意穿插**（不再"选一类"）。为让前向搜索真正会用这份自由、
+// 又不让分支爆炸拖垮 sim，计划=「一个**枢纽决策** + 确定性自由混补完(greedyTurnFill)」：
+//   · 枢纽 = 搜索真正拿捏的那步（开哪路 / 是否为抢节奏先抽 / 是否动用唯一换牌修手牌 / 空过）；
+//   · greedyTurnFill = 把剩余源泉在 **打天罡 + 部署** 间自由混着花完（这就是"自由混"落地·非单一类）+ 抢节奏补抽。
+// 换牌纳入搜索：swap 枢纽让 AI 判断"这张废牌值不值得花唯一的 1 次换"（弃1+随机补1·EV 上修手牌质量）。
 type TurnPlan =
-  | { kind: 'cast' }                              // 施掉手里所有买得起的天罡
-  | { kind: 'deploy'; openId: string; lane: number } // 先把 openId 部署到 lane·再贪心补满
-  | { kind: 'draw' }                              // 抽到没源泉/手满/库空
-  | { kind: 'pass' };                             // 空过（本回合不动·直接结束）
+  | { kind: 'pass' }                                   // 空过（攒源泉留后手）
+  | { kind: 'fill' }                                   // 不指定枢纽·直接自由混补完(打天罡+部署)
+  | { kind: 'deploy'; openId: string; lane: number }   // 先把 openId 部署到 lane(关键落子) → 再自由混补完
+  | { kind: 'draw' }                                   // 先抢节奏抽牌 → 再自由混部署/施法（抽打同回合·新自由）
+  | { kind: 'swap'; handId: string; from: 'poker' | 'tengang' }; // 先换掉一张废牌(随机补) → 再自由混补完
 
 // 补位选路启发（§四·1 田忌赛马/集中突破·§四·3 费用曲线）：无阻推进路 press 到底、敌无阻入侵路必回防、占优接触路增援集中、劣势路少填。
 function fillLaneScore(b: TurnBattle, lane: number): number {
@@ -120,52 +125,62 @@ function fillLaneScore(b: TurnBattle, lane: number): number {
   if (fb && fa) { const wp = clashOdds(b, lane) ?? 0.5; return wp > 0.5 ? 40 + (wp - 0.5) * 80 : 8; } // 占优路增援(集中)·劣势路少填(拖延/让位)
   return 22;                                                     // 空路：开一条新战线(中庸)
 }
-// 贪心补满剩余源泉（确定性·无 rng）：反复取「最便宜(平手取高战力)」买得起的兵 → 放 fillLaneScore 最高的路。
-function greedyDeployFill(b: TurnBattle): void {
+// 施掉手里最值得的一张天罡（有兵在场才施·空场施 buff 无受益对象=浪费源泉）。施法即重算持续修正（同真机 caller）。返回是否施了。
+function castOneTengang(b: TurnBattle): boolean {
+  const sd = b.a;
+  const i = sd.hand.findIndex((c) => c.kind === 'tengang');
+  if (i < 0 || sd.mana < CAST_COST) return false;
+  if (!castTengang(b, 'a', i)) return false;
+  sd.tengangA = aggregateTengang(sd.castIds);
+  sd.castFx = sd.castIds.map((id) => ({ id, fx: aggregateTengang([id]) }));
+  return true;
+}
+// ⭐ 自由混补完剩余源泉（确定性·无 rng）：每步在「部署最便宜买得起的兵 → fillLaneScore 最高路」与「施一张天罡(场上有兵时)」间
+//   按价值取高者花——这就是三行为自由里"抽/打自由混"的确定性落地（部署与打天罡同回合穿插·不再互斥）。抽牌不进 fill（由 draw 枢纽显式抢节奏·防抽-放空转死循环）。
+function greedyTurnFill(b: TurnBattle): void {
   let guard = 0;
   while (guard++ < 30) {
     const sd = b.a;
-    const cands = sd.hand.map((c, i) => ({ c, i })).filter((x) => x.c.kind === 'poker' && ((x.c as PokerCard).cost ?? DEPLOY_COST) <= sd.mana);
-    if (!cands.length) break;
-    cands.sort((x, y) => (((x.c as PokerCard).cost ?? DEPLOY_COST) - ((y.c as PokerCard).cost ?? DEPLOY_COST)) || (cardPoints((y.c as PokerCard).rank) - cardPoints((x.c as PokerCard).rank)));
-    const card = cands[0].c as PokerCard;
-    let bestLane = 0, bestSc = -Infinity;
-    for (let lane = 0; lane < 3; lane++) { const sc = fillLaneScore(b, lane); if (sc > bestSc) { bestSc = sc; bestLane = lane; } }
-    const idx = sd.hand.findIndex((h) => h.id === card.id);
-    if (idx < 0 || !deployUnit(b, 'a', idx, bestLane)) break;
+    const units = b.lanes.reduce((n, L) => n + L.a.length, 0);
+    // 部署候选：最便宜(平手取高战力)买得起的兵 → 最高分路。
+    const dep = sd.hand.map((c, i) => ({ c, i })).filter((x) => x.c.kind === 'poker' && ((x.c as PokerCard).cost ?? DEPLOY_COST) <= sd.mana);
+    dep.sort((x, y) => (((x.c as PokerCard).cost ?? DEPLOY_COST) - ((y.c as PokerCard).cost ?? DEPLOY_COST)) || (cardPoints((y.c as PokerCard).rank) - cardPoints((x.c as PokerCard).rank)));
+    let bestLane = 0, depScore = -Infinity;
+    if (dep.length) for (let lane = 0; lane < 3; lane++) { const sc = fillLaneScore(b, lane); if (sc > depScore) { depScore = sc; bestLane = lane; } }
+    // 施法候选：场上有兵才值得（buff 有受益对象）→ 与部署同档竞争（自由混）。
+    const canCast = sd.hand.some((c) => c.kind === 'tengang') && sd.mana >= CAST_COST;
+    const castScore = canCast ? (units > 0 ? 45 : 5) : -Infinity;
+    if (depScore <= -Infinity && castScore <= -Infinity) break;
+    if (castScore > depScore) { if (!castOneTengang(b)) break; continue; } // 打天罡（自由混·不结束回合）
+    const idx = sd.hand.findIndex((h) => h.id === (dep[0].c as PokerCard).id);
+    if (idx < 0 || !deployUnit(b, 'a', idx, bestLane)) break;               // 部署（自由混）
   }
 }
 
-// 执行一个整回合计划的**玩家动作**（不含 endTurn）——在传入局(可真可克隆)上就地施展。玩家动作零 rng 消费。
+// 执行一个整回合计划的**玩家动作**（不含 endTurn）——在传入局(可真可克隆)上就地施展。玩家动作零 rng 消费·**换牌消费 rng**（随机补牌）。
 function execPlayerPlan(b: TurnBattle, plan: TurnPlan): void {
   const sd = b.a;
-  if (plan.kind === 'cast') {
-    let guard = 0;
-    while (guard++ < 8) {
-      const i = sd.hand.findIndex((c) => c.kind === 'tengang');
-      if (i < 0 || sd.mana < CAST_COST) break;
-      if (!castTengang(b, 'a', i)) break;
-      sd.tengangA = aggregateTengang(sd.castIds);                                  // 施法即重算持续修正（同真机 caller）
-      sd.castFx = sd.castIds.map((id) => ({ id, fx: aggregateTengang([id]) }));
-    }
-  } else if (plan.kind === 'deploy') {
+  if (plan.kind === 'deploy') {
     const i = sd.hand.findIndex((c) => c.id === plan.openId);
     if (i >= 0) deployUnit(b, 'a', i, plan.lane);                                  // 关键落子（搜索指定）
-    greedyDeployFill(b);                                                           // 其余空位确定性补满
   } else if (plan.kind === 'draw') {
-    let guard = 0;
+    let guard = 0;                                                                 // 抢节奏抽（抽完接着自由混部署/施法·抽打同回合）
     while (guard++ < 8) {
       if (sd.mana < DRAW_COST || !sd.pokerDeck.length) break;
       if (sd.hand.length >= HAND_MAX + sd.tengangA.handMaxAdd) break;
       if (!drawCard(b, 'a', 'poker')) break;
     }
-  } // pass：空过
+  } else if (plan.kind === 'swap') {
+    const i = sd.hand.findIndex((c) => c.id === plan.handId);
+    if (i >= 0) swapCard(b, 'a', i, plan.from);                                    // 换掉废牌(弃1+随机补1·消费克隆局 rng)
+  } // pass：空过（fill 也会走下方补完，pass 例外）
+  if (plan.kind !== 'pass') greedyTurnFill(b);                                     // 枢纽后自由混补完剩余源泉（打天罡+部署穿插）
 }
 
-// 枚举本回合合法计划（cast / 每张买得起的兵×每路 / draw / pass）。
+// 枚举本回合合法计划（三行为自由）：pass / fill / 每张买得起的兵×每路(deploy 枢纽) / draw(抢节奏) / swap(换废牌)。
+// 分支控制：deploy 同 rank+cost 只留一代表×3 路；swap 只提议「最废的一张兵牌」×{扑克库, 天罡库}（唯一换牌不该乱花）。
 function legalTurnPlans(b: TurnBattle): TurnPlan[] {
-  const sd = b.a; const plans: TurnPlan[] = [];
-  if (sd.mana >= CAST_COST && sd.hand.some((c) => c.kind === 'tengang')) plans.push({ kind: 'cast' });
+  const sd = b.a; const plans: TurnPlan[] = [{ kind: 'pass' }, { kind: 'fill' }];
   const affordable = sd.hand.filter((c) => c.kind === 'poker' && ((c as PokerCard).cost ?? DEPLOY_COST) <= sd.mana) as PokerCard[];
   const seenOpen = new Set<string>(); // 同 rank+cost 的开局兵只枚举一张代表·×3 路（去重·控分支）
   for (const c of affordable) {
@@ -174,7 +189,18 @@ function legalTurnPlans(b: TurnBattle): TurnPlan[] {
     for (let lane = 0; lane < 3; lane++) plans.push({ kind: 'deploy', openId: c.id, lane });
   }
   if (sd.mana >= DRAW_COST && sd.pokerDeck.length && sd.hand.length < HAND_MAX + sd.tengangA.handMaxAdd) plans.push({ kind: 'draw' });
-  plans.push({ kind: 'pass' });
+  // 换牌枢纽（1/回合·免费）：手里≥2 张兵 + 存在明显低于手均的废牌 + 库非空 → 提议换它。扑克库(修身体)必提·天罡库(钓法术)有库才提。
+  if (sd.swapsUsed < SWAP_PER_TURN) {
+    const pokers = sd.hand.map((c, i) => ({ c: c as PokerCard, i })).filter((x) => x.c.kind === 'poker');
+    if (pokers.length >= 2) {
+      let worst = pokers[0]; for (const x of pokers) if (cardPoints(x.c.rank) < cardPoints(worst.c.rank)) worst = x;
+      const avg = pokers.reduce((s, x) => s + cardPoints(x.c.rank), 0) / pokers.length;
+      if (cardPoints(worst.c.rank) < avg - 1) {
+        if (sd.pokerDeck.length) plans.push({ kind: 'swap', handId: worst.c.id, from: 'poker' });
+        if (sd.tengangDeck.length) plans.push({ kind: 'swap', handId: worst.c.id, from: 'tengang' });
+      }
+    }
+  }
   return plans;
 }
 

@@ -26,7 +26,8 @@ export const MANA_PER_TURN_LATE = 2, MANA_RAMP_TURN = 10; // 第 10 回合后提
 /** 该回合开始应 +多少召唤源泉（turn>10 提速到 2·否则 1）。 */
 export const manaGain = (turn: number): number => (turn > MANA_RAMP_TURN ? MANA_PER_TURN_LATE : MANA_PER_TURN);
 export const DRAW_COST = 1, DEPLOY_COST = 0, CAST_COST = 1, DISHA_COST = 2; // 抽/打天罡 花召唤源泉；放牌按 rank 收费(契约B·写在卡 cost 上)；地煞牌固定 2
-export const DISCARD_REFUND = 0.5; // 弃牌返还 0.5 召唤源泉（owner 2026-06-21·源泉自此为半整数粒度）
+export const DISCARD_REFUND = 0.5; // 弃牌返还 0.5 召唤源泉（owner 2026-06-21·源泉自此为半整数粒度）——旧「免费纯弃牌」·已被换牌(swapCard)取代退役（owner 2026-07-03·弃了不补=没用）
+export const SWAP_PER_TURN = 1, SWAP_COST = 0; // 换牌（owner 2026-07-03·三行为自由）：选中手牌 1 张 → 弃 + 从指定库随机补 1 张；每回合硬帽 1 次(破无限churn死循环)·免费。未来 Boss 地煞可按关加税/上锁(swapTax/swapLock·明牌杠杆)。
 export const OPENING_HAND = 3; // 起手摸 N（doc24 §六/七 待定）
 export const HAND_MAX = 8; // 手牌上限（天罡·广纳 handMaxAdd 抬高）
 const MORALE_PTS = 2, ROUT_PTS = 4; // 同 live-combat/doc06：主将在→下属 +战力 / 主将亡→溃散 −战力
@@ -66,7 +67,7 @@ export interface TengangHandCard { kind: 'tengang'; id: string }
 export interface DishaHandCard { kind: 'disha'; id: string } // 地煞牌(owner 2026-06-21·混合)：Boss 手牌·cost2 打出 → 该地煞 fx 整场生效
 export type Card = PokerCard | TengangHandCard | DishaHandCard;
 // 一方运行态：召唤源泉 / 手牌 / 两库 / 已施天罡集 + 其聚合修正。
-export interface TurnSide { mana: number; hand: Card[]; pokerDeck: PokerCard[]; tengangDeck: TengangHandCard[]; castIds: string[]; tengangA: TengangFx; castFx: { id: string; fx: TengangFx }[] } // castFx：逐张已打天罡的单卡修正(caller 经 aggregateTengang([id]) 填)·供对决明细逐张溯源
+export interface TurnSide { mana: number; hand: Card[]; pokerDeck: PokerCard[]; tengangDeck: TengangHandCard[]; castIds: string[]; tengangA: TengangFx; castFx: { id: string; fx: TengangFx }[]; swapsUsed: number } // castFx：逐张已打天罡的单卡修正(caller 经 aggregateTengang([id]) 填)·供对决明细逐张溯源；swapsUsed=本回合已换牌次数(每回合重置·硬帽 SWAP_PER_TURN)
 export type ActionKind = 'draw' | 'deploy' | 'cast' | 'discard';
 // Boss 策略画像（doc27 §八·性格即数据·最弱 LLM 也能填权重）：通用 utility AI 读它打分→选动作。0-10。
 export interface AiProfile {
@@ -97,7 +98,7 @@ export interface TurnBattle {
 
 const mkLane = (): TurnLane => ({ a: [], b: [], aGenDead: false, bGenDead: false, spentA: 0, spentB: 0 });
 const mkSide = (pokerDeck: PokerCard[] = [], tengangDeck: TengangHandCard[] = []): TurnSide =>
-  ({ mana: MANA_START, hand: [], pokerDeck: [...pokerDeck], tengangDeck: [...tengangDeck], castIds: [], tengangA: NO_TENGANG, castFx: [] });
+  ({ mana: MANA_START, hand: [], pokerDeck: [...pokerDeck], tengangDeck: [...tengangDeck], castIds: [], tengangA: NO_TENGANG, castFx: [], swapsUsed: 0 });
 
 export interface TurnInit { seed: number; homeMax?: number; disha?: readonly string[]; aiProfile?: AiProfile; aiTier?: number; fortuneBuff?: number; a?: { pokerDeck?: PokerCard[]; tengangDeck?: TengangHandCard[] }; b?: { pokerDeck?: PokerCard[]; tengangDeck?: TengangHandCard[] }; startFormation?: readonly { rank: string; suit: string; lane: number; slot: number; buff?: number }[] } // startFormation=Boss 开局排阵守军(REQ-G-开局排阵·明牌摆兵·不花源泉·静守 hold)
 /** 开战 init（doc24 §七）：三路 ×9 空轨；双方大本营 3 hp；召唤源泉=起步；A 先手。牌库由 caller（game-g/save）喂；起手摸由 caller 调 drawCard。
@@ -138,16 +139,17 @@ const sideOf = (b: TurnBattle, s: 'a' | 'b'): TurnSide => (s === 'a' ? b.a : b.b
 const colOf = (lane: TurnLane, s: 'a' | 'b'): TurnUnit[] => (s === 'a' ? lane.a : lane.b);
 const isFaceRank = (r: string): boolean => r === 'A' || r === 'K' || r === 'Q' || r === 'J';
 
-// 能否选这类动作：未锁(null)随便选；已锁则只能同类（弃牌免费·不消耗 mana）。
-function canAct(b: TurnBattle, side: 'a' | 'b', kind: ActionKind, cost: number): boolean {
+// 能否做这个动作（owner 2026-07-03·三行为自由·源泉唯一门）：只被「轮到本方 + 未分胜负 + 源泉≥cost」限制。
+// **大类互斥已退役**——抽/打(天罡/部署扑克)一回合内任意混（源泉稀缺本就是天然的闸·不再叠动作互斥）。
+// actionTaken 仅留作「本回合最后一次动作类别」的记录(供 UI 高亮/回归断言)·不再据它拒动作。
+function canAct(b: TurnBattle, side: 'a' | 'b', cost: number): boolean {
   if (b.winner !== 'pending' || b.active !== side) return false;
-  if (b.actionTaken !== null && b.actionTaken !== kind) return false; // 互斥：本回合只能一类
   return sideOf(b, side).mana >= cost;
 }
 
 // ① 抽牌：从 poker / tengang 库顶摸一张进手牌，花召唤源泉（互斥·同类无限）。返回是否成功。
 export function drawCard(b: TurnBattle, side: 'a' | 'b', from: 'poker' | 'tengang'): boolean {
-  if (!canAct(b, side, 'draw', DRAW_COST)) return false;
+  if (!canAct(b, side, DRAW_COST)) return false;
   const sd = sideOf(b, side);
   if (sd.hand.length >= HAND_MAX + sd.tengangA.handMaxAdd) return false; // 手牌上限（广纳 +2）
   const card: Card | undefined = from === 'poker' ? sd.pokerDeck.shift() : sd.tengangDeck.shift();
@@ -166,7 +168,7 @@ export function deployUnit(b: TurnBattle, side: 'a' | 'b', handIdx: number, lane
   const sd = sideOf(b, side); const card = sd.hand[handIdx];
   if (!card || card.kind !== 'poker' || lane < 0 || lane > 2) return false;
   const cost = card.cost ?? DEPLOY_COST; // 放牌按牌点数收费（契约B·建库时已写在卡上·2-4免费/5-7=1/8-10=2/JQKA=3）
-  if (!canAct(b, side, 'deploy', cost)) return false;
+  if (!canAct(b, side, cost)) return false;
   const L = b.lanes[lane]; const col = colOf(L, side); const foeCol = colOf(L, side === 'a' ? 'b' : 'a');
   // 放牌区=贴自家大本营 3 格(home→中线)：新兵落最靠家的空格(owner 2026-06-20)。**不可落在已占格——敌我皆不可**(owner 2026-06-21)。
   const occ = new Set([...col, ...foeCol].map((u) => u.slot));
@@ -186,7 +188,7 @@ export function deployUnit(b: TurnBattle, side: 'a' | 'b', handIdx: number, lane
 
 // ③ 打天罡：施手牌第 handIdx 张天罡 → 进 castIds（持续修正由 caller 经 aggregateTengang 重算喂 tengangA）。花召唤源泉（互斥·同类无限）。
 export function castTengang(b: TurnBattle, side: 'a' | 'b', handIdx: number): boolean {
-  if (!canAct(b, side, 'cast', CAST_COST)) return false;
+  if (!canAct(b, side, CAST_COST)) return false;
   const sd = sideOf(b, side); const card = sd.hand[handIdx];
   if (!card || card.kind !== 'tengang') return false;
   sd.hand.splice(handIdx, 1); sd.mana -= CAST_COST; sd.castIds.push(card.id); b.actionTaken = 'cast';
@@ -196,7 +198,7 @@ export function castTengang(b: TurnBattle, side: 'a' | 'b', handIdx: number): bo
 
 // ③' 打地煞（owner 2026-06-21·混合）：施手牌第 handIdx 张地煞 → 该 fx 并入 dishaB 整场生效。花 DISHA_COST(2)·与天罡共用 cast 互斥锁。
 export function castDisha(b: TurnBattle, side: 'a' | 'b', handIdx: number): boolean {
-  if (!canAct(b, side, 'cast', DISHA_COST)) return false;
+  if (!canAct(b, side, DISHA_COST)) return false;
   const sd = sideOf(b, side); const card = sd.hand[handIdx];
   if (!card || card.kind !== 'disha') return false;
   sd.hand.splice(handIdx, 1); sd.mana -= DISHA_COST; b.actionTaken = 'cast';
@@ -205,12 +207,30 @@ export function castDisha(b: TurnBattle, side: 'a' | 'b', handIdx: number): bool
   return true;
 }
 
-// ④ 弃牌（owner 2026-06-21）：**不互斥**——不锁 actionTaken，弃完还能放牌/抽/打天罡；每弃 1 张**返还 0.5 源泉**。
+// ④ 换牌（owner 2026-07-03·三行为·取代旧「免费纯弃牌」）：选中手牌第 handIdx 张 → **弃掉它 + 从指定库(poker/tengang·caller/AI 选)随机补 1 张**。
+//   `SWAP_PER_TURN=1`（每回合硬帽·破「选牌→弃→随机补→还是废牌→再换」的无限 churn 死循环）· `SWAP_COST=0`（免费）· 补的是随机牌(非搜牌/tutor·不能定向挖组合)。
+//   补牌**消费 b.rng**（随机下标·顺序固定 → turnHash 稳）。库空则无从补 → 换失败(手牌不动)。返回是否成功。
+export function swapCard(b: TurnBattle, side: 'a' | 'b', handIdx: number, from: 'poker' | 'tengang'): boolean {
+  if (b.winner !== 'pending' || b.active !== side) return false;
+  const sd = sideOf(b, side);
+  if (sd.swapsUsed >= SWAP_PER_TURN) return false;                 // 每回合硬帽 1 次
+  if (handIdx < 0 || handIdx >= sd.hand.length) return false;
+  if (sd.mana < SWAP_COST) return false;                          // 免费(cost=0)·留 hook 供未来 swapTax
+  const deck: Card[] = from === 'poker' ? sd.pokerDeck : sd.tengangDeck;
+  if (deck.length === 0) return false;                            // 指定库空 → 无牌可补·换不了(手牌不动)
+  sd.hand.splice(handIdx, 1);                                     // 弃掉选中的那张
+  const idx = Math.floor(nextRandom(b.rng) * deck.length);        // 从库随机补 1 张(消费 rng·顺序固定)
+  const [drawn] = deck.splice(idx, 1);
+  sd.hand.push(drawn);
+  sd.swapsUsed += 1; sd.mana -= SWAP_COST;                        // 记账(免费·不动 actionTaken → 换牌非大类互斥动作)
+  return true;
+}
+// ④' 旧「免费纯弃牌」（owner 2026-06-21）已**退役**（owner 2026-07-03·被换牌取代·弃了不补没用）——保留导出供 UI 迁移期兼容(程序B 会把弃牌钮改成换牌)。新逻辑/AI/sim 一律走 swapCard。
 export function discardCard(b: TurnBattle, side: 'a' | 'b', handIdx: number): boolean {
   if (b.winner !== 'pending' || b.active !== side) return false;
   const sd = sideOf(b, side);
   if (handIdx < 0 || handIdx >= sd.hand.length) return false;
-  sd.hand.splice(handIdx, 1); sd.mana += DISCARD_REFUND; // 返 0.5·不动 actionTaken(不互斥)
+  sd.hand.splice(handIdx, 1); sd.mana += DISCARD_REFUND;
   return true;
 }
 
@@ -557,11 +577,11 @@ export function endTurnFinish(b: TurnBattle): void {
   checkWinner(b);
   if (b.winner !== 'pending') return;
   if (b.active === 'a') {
-    b.active = 'b';
+    b.active = 'b'; b.b.swapsUsed = 0; // 换牌硬帽·新回合方重置(owner 2026-07-03)
     if (b.turn > 1) b.b.mana += manaGain(b.turn); // turn-1 b 已带 MANA_START 起步（①）·turn-2 起对称 +源泉
     if (b.dishaB.bonusMana > 0) b.b.mana += b.dishaB.bonusMana; // 地煞·大军压境/机动调度
   } else {
-    b.active = 'a'; b.turn += 1; b.a.mana += manaGain(b.turn);
+    b.active = 'a'; b.turn += 1; b.a.mana += manaGain(b.turn); b.a.swapsUsed = 0; // 换牌硬帽·新回合方重置
   }
   b.actionTaken = null;
 }
@@ -685,7 +705,20 @@ function scoreDraw(b: TurnBattle, from: 'poker' | 'tengang'): number {
   }
   return s;
 }
-type AiCand = { kind: 'deploy' | 'cast' | 'draw' | 'disha'; handIdx: number; lane: number; from: 'poker' | 'tengang'; score: number };
+type AiCand = { kind: 'deploy' | 'cast' | 'draw' | 'disha' | 'swap'; handIdx: number; lane: number; from: 'poker' | 'tengang'; score: number };
+// 换牌候选（owner 2026-07-03·Boss 也用三行为自由）：手里最废的一张兵牌 → 明显低于手均才提议换（从扑克库随机补·修手牌质量）。
+// 仅当有库可补 + 手里≥2 张兵(别把仅剩的牌换掉) + 存在「明显废牌」时才返回·避免浪费唯一换牌。
+function worstSwap(b: TurnBattle): { handIdx: number; from: 'poker' | 'tengang'; score: number } | null {
+  const sd = b.b;
+  if (sd.pokerDeck.length === 0) return null;
+  const pokers = sd.hand.map((c, i) => ({ c, i })).filter((x) => x.c.kind === 'poker') as { c: PokerCard; i: number }[];
+  if (pokers.length < 2) return null;
+  let worst = pokers[0]; for (const x of pokers) if (cardPoints(x.c.rank) < cardPoints(worst.c.rank)) worst = x;
+  const avg = pokers.reduce((s, x) => s + cardPoints(x.c.rank), 0) / pokers.length;
+  const worstPts = cardPoints(worst.c.rank);
+  if (worstPts >= avg - 1) return null; // 无明显废牌 → 留着唯一换牌
+  return { handIdx: worst.i, from: 'poker', score: 6 + (avg - worstPts) * 0.8 }; // ≈抽牌/低分部署同档·不压过关键部署
+}
 /** Boss 决策阶段（utility AI·只放牌/施法/抽·**不结束回合不推进**）。owner 2026-06-29：拆出「敌方决策」与「敌方行动」
  *  两阶段→ caller 可在两者间插「敌方决策」过场 + 渲染让玩家看清敌方布阵，再单独 endTurn 演「敌方行动」推进动画。
  *  aggTengang：caller(game-g) 传天罡聚合器 → Boss 施法后重算 tengangA 即时生效。返回本回合打出的地煞 id（caller 全屏通知·REQ-G #6）。 */
@@ -702,10 +735,13 @@ export function aiDecide(b: TurnBattle, aggTengang?: (ids: readonly string[]) =>
   say(`敌AI·决策开始：源泉${sd.mana} · 手牌[${handStr()}] · 库(扑${sd.pokerDeck.length}/罡${sd.tengangDeck.length}) · 场上兵${b.lanes.reduce((n, L) => n + L.b.length, 0)}`);
   let guard = 0;
   while (guard++ < 40) {
+    // owner 2026-07-03·三行为自由：RULE 层的大类互斥已在 canAct 退役（抽/打自由混）——但 **Boss utility AI 的出牌策略保持「每回合单大类」**
+    // 作为**稳定难度基线**（读 actionTaken 自锁·非规则强制）：这样本次改动只让「玩家」拿到自由（贪心+终极 AI 用它变强·符合 owner「胜率上移」预期），
+    // Boss 强弱仍由 aiTier/aiProfile/bossDelta/地煞 明牌调，基线不被动漂移。**「让 Boss 也 free-mix」是一把很猛的未来难度杠杆**
+    // （实测：Boss 也自由混 → 玩家终极胜率 51%→14%·关1 全 0% 通关）→ 留 design G 择时作为高难档旋钮开（见交付报告"拿不准项"）。
+    // 换牌(swap)是新的**非互斥**自由动作（不设 actionTaken 锁）→ 下方 swap 枚举不受 locked 限制·Boss 亦可 1/回合修手牌。
     const locked = b.actionTaken; const cands: AiCand[] = [];
-    if (locked === null || locked === 'deploy') {
-      sd.hand.forEach((c, i) => { if (c.kind === 'poker' && (c.cost ?? DEPLOY_COST) <= sd.mana) for (const lane of [0, 1, 2]) cands.push({ kind: 'deploy', handIdx: i, lane, from: 'poker', score: scoreDeploy(b, c, lane, garrison) }); }); // 只考虑买得起的兵·布防阶段强制铺满三路
-    }
+    if (locked === null || locked === 'deploy') sd.hand.forEach((c, i) => { if (c.kind === 'poker' && (c.cost ?? DEPLOY_COST) <= sd.mana) for (const lane of [0, 1, 2]) cands.push({ kind: 'deploy', handIdx: i, lane, from: 'poker', score: scoreDeploy(b, c, lane, garrison) }); });
     if ((locked === null || locked === 'cast') && sd.mana >= CAST_COST) {
       sd.hand.forEach((c, i) => { if (c.kind === 'tengang') cands.push({ kind: 'cast', handIdx: i, lane: 0, from: 'poker', score: scoreCast(b) }); });
     }
@@ -715,6 +751,10 @@ export function aiDecide(b: TurnBattle, aggTengang?: (ids: readonly string[]) =>
     if (locked === null && sd.mana >= DRAW_COST) {
       if (sd.pokerDeck.length) cands.push({ kind: 'draw', handIdx: -1, lane: 0, from: 'poker', score: scoreDraw(b, 'poker') });
       if (sd.tengangDeck.length) cands.push({ kind: 'draw', handIdx: -1, lane: 0, from: 'tengang', score: scoreDraw(b, 'tengang') });
+    }
+    if (sd.swapsUsed < SWAP_PER_TURN) { // 换牌(1/回合·免费)：把最废的一张兵牌换成随机新牌·仅当废牌明显低于手均时才值得
+      const sw = worstSwap(b);
+      if (sw) cands.push({ kind: 'swap', handIdx: sw.handIdx, lane: 0, from: sw.from, score: sw.score });
     }
     if (cands.length === 0) {
       const pokerInHand = sd.hand.filter((c) => c.kind === 'poker').length;
@@ -729,10 +769,12 @@ export function aiDecide(b: TurnBattle, aggTengang?: (ids: readonly string[]) =>
     if (pick.kind === 'deploy') ok = deployUnit(b, 'b', pick.handIdx, pick.lane);
     else if (pick.kind === 'cast') { ok = castTengang(b, 'b', pick.handIdx); if (ok && aggTengang) { sd.tengangA = aggTengang(sd.castIds); sd.castFx = sd.castIds.map((id) => ({ id, fx: aggTengang([id]) })); } } // 施法即重算·当回合推进生效（+逐张 castFx 供溯源）
     else if (pick.kind === 'disha') { const dc = sd.hand[pick.handIdx]; ok = castDisha(b, 'b', pick.handIdx); if (ok && dc?.kind === 'disha') castDishaIds.push(dc.id); } // 打地煞 → 记 id 供 caller 全屏通知
+    else if (pick.kind === 'swap') ok = swapCard(b, 'b', pick.handIdx, pick.from); // 换牌（1/回合·免费·随机补）
     else ok = drawCard(b, 'b', pick.from);
     const desc = pick.kind === 'deploy' ? `部署 ${card && card.kind === 'poker' ? card.rank + card.suit : '?'}→${LN[pick.lane]}路`
       : pick.kind === 'cast' ? `施天罡 ${card && card.kind === 'tengang' ? card.id : ''}`
       : pick.kind === 'disha' ? `打地煞 ${card && card.kind === 'disha' ? card.id : ''}`
+      : pick.kind === 'swap' ? `换牌 ${card && card.kind === 'poker' ? card.rank + card.suit : '?'}(→随机补)`
       : `抽${pick.from === 'poker' ? '扑克' : '天罡'}`;
     say(`敌AI·${ok ? desc : '×' + desc + '(失败)'}（源泉${manaBefore}→${sd.mana}·评分${pick.score.toFixed(1)}${mistake ? '·随机误选' : ''}）`);
     if (!ok) break;

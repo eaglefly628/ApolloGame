@@ -3,8 +3,8 @@ import { describe, it, expect } from 'vitest';
 import { cardPoints } from './clash-resolve.js';
 import { cardStamina } from './combat-types.js';
 import {
-  initTurnBattle, drawCard, deployUnit, castTengang, discardCard, endTurn, aiTakeTurn, turnHash, turnActive,
-  toggleGate, tryGate, GATES, unitPowerParts, WIN_CAP,
+  initTurnBattle, drawCard, deployUnit, castTengang, swapCard, endTurn, aiTakeTurn, turnHash, turnActive,
+  toggleGate, tryGate, GATES, unitPowerParts, WIN_CAP, SWAP_PER_TURN,
   MANA_START, A_DEPLOY_SLOT, A_GOAL, TURN_HOME_BLOOD,
   type PokerCard, type TengangHandCard, type TurnUnit, type TurnBattle,
 } from './turn-combat.js';
@@ -32,17 +32,39 @@ describe('Game G · turn-combat（doc24 单机回合制 · A0 重构）', () => 
     expect(b.a.hand.length).toBe(1);
   });
 
-  it('互斥：抽/放/打天罡 三类互斥（抽后不能放）；弃牌不互斥 + 返 0.5 源泉（owner 2026-06-21）', () => {
+  it('三行为自由（owner 2026-07-03）：抽/放/打天罡 一回合内任意混·只被源泉限制（大类互斥退役）', () => {
     const b = initTurnBattle({ seed: 1, a: { pokerDeck: [poker('p0', '7')] } });
     b.a.mana = 5; b.a.hand.push(poker('h0', 'K'));
-    expect(drawCard(b, 'a', 'poker')).toBe(true);   // 选了"抽"
-    expect(deployUnit(b, 'a', 1, 0)).toBe(false);   // 同回合不能再"放"(互斥)
-    // 弃牌：不互斥·返 0.5 源泉·弃完还能抽
-    const c = initTurnBattle({ seed: 1, a: { pokerDeck: [poker('p1', '8')] } }); c.a.hand.push(poker('h0', 'K'), poker('h1', '3')); c.a.mana = 1;
-    expect(discardCard(c, 'a', 0)).toBe(true);
-    expect(c.a.mana).toBe(1.5);                     // 返 0.5 源泉
-    expect(c.a.hand.length).toBe(1); expect(c.actionTaken).toBe(null); // 不锁动作(不互斥)
-    expect(drawCard(c, 'a', 'poker')).toBe(true);   // 弃完还能抽(不互斥)
+    expect(drawCard(b, 'a', 'poker')).toBe(true);   // 抽（mana 5→4·actionTaken=draw）
+    expect(b.a.mana).toBe(4);
+    // ★ 新模型：抽完同回合还能放（旧模型此处 false·大类互斥锁死）——只要 mana≥cost。
+    expect(deployUnit(b, 'a', 0, 0)).toBe(true);     // 放（测试用 poker 无 cost→免费·mana 不减）
+    expect(b.lanes[0].a.length).toBe(1);
+    // 放完还能接着施天罡（第三类·继续混）。
+    b.a.hand.push(tg('hufu'));
+    expect(castTengang(b, 'a', b.a.hand.length - 1)).toBe(true);
+    expect(b.a.castIds).toContain('hufu');
+    expect(b.a.mana).toBe(3);                        // 抽1 + 放0 + 施1 = 5−2 → 3（一回合混了三类）
+  });
+
+  it('换牌（owner 2026-07-03·SWAP_PER_TURN=1·免费·随机补·取代旧纯弃牌）', () => {
+    const b = initTurnBattle({ seed: 1, a: { pokerDeck: [poker('deckA', '9'), poker('deckB', '10')] } });
+    b.a.hand.push(poker('h0', '3'), poker('h1', 'K')); b.a.mana = 4;
+    expect(b.a.swapsUsed).toBe(0);
+    const handBefore = b.a.hand.length; const deckBefore = b.a.pokerDeck.length;
+    expect(swapCard(b, 'a', 0, 'poker')).toBe(true);   // 换掉手里第0张(3) → 从库随机补1
+    expect(b.a.hand.length).toBe(handBefore);          // 弃1补1·手牌数不变
+    expect(b.a.pokerDeck.length).toBe(deckBefore - 1); // 库少1
+    expect(b.a.hand.some((c) => c.id === 'h0')).toBe(false); // 原牌已弃
+    expect(b.a.mana).toBe(4);                          // 免费(SWAP_COST=0)
+    expect(b.a.swapsUsed).toBe(SWAP_PER_TURN);
+    expect(swapCard(b, 'a', 0, 'poker')).toBe(false);  // 硬帽·本回合不能再换
+    // 换牌不锁其它动作（非互斥）：换完还能放牌（费0·买得起）。
+    expect(deployUnit(b, 'a', 0, 0)).toBe(true);
+    // 回合切换后 swapsUsed 重置：a 结束 → b 回合 → b 结束回 a。
+    endTurn(b);                                         // a 推进 → 轮到 b
+    if (b.winner === 'pending') aiTakeTurn(b);          // b 决策+推进 → 回 a·turn+1·重置 a.swapsUsed
+    if (b.winner === 'pending' && b.active === 'a') expect(b.a.swapsUsed).toBe(0);
   });
 
   it('放牌：扑克兵上场到放牌区(贴家)·免费·有牌可一直放；放牌可顺手翻门(闭↔开)', () => {
