@@ -91,8 +91,9 @@ export class ThreeRenderer implements RendererBackend {
   private rendered = false;
   private lastRenderSig = '';
   private lastShadowSig = '';
-  private readonly width: number;
-  private readonly height: number;
+  private width: number; // 可变（resize·视窗/容器缩放）
+  private height: number;
+  private resizeObserver?: ResizeObserver; // 容器尺寸观察者（init 挂·destroy 断）
   private background: number;
   private readonly fov: number;
   private readonly zStep: number;
@@ -127,6 +128,32 @@ export class ThreeRenderer implements RendererBackend {
     this.models = new ModelPool(this.assets);
     container.appendChild(this.gl.domElement);
     this.worldUi.init(container); // 世界 UI DOM 叠层（覆于 canvas 上·pointer-events:none）
+    // 视窗自适应（render-only·碰所有 3D 游戏）：观察容器盒·尺寸变即 resize。headless/无 ResizeObserver 环境跳过。
+    // 容器紧贴画布（如 game-z stage·line-height:0）→ 观测值=当前画布尺寸 → resize 判定未变即空转（无害·保留原固定尺寸+居中）；
+    // 容器由布局撑满（width/height:100%）→ 画布自动随视窗缩放（响应式）。
+    if (typeof ResizeObserver !== 'undefined') {
+      this.resizeObserver = new ResizeObserver(() => {
+        const w = container.clientWidth, h = container.clientHeight;
+        if (w > 0 && h > 0) this.resize(w, h);
+      });
+      this.resizeObserver.observe(container);
+    }
+  }
+
+  /**
+   * 改渲染尺寸（视窗/容器缩放·render-only·**碰所有 3D 游戏**）：更新 gl 画布 + 后处理渲染目标 + 尺寸字段。
+   * 相机 aspect 每帧从 width/height 重算（见 sync）故自动跟；无需碰相机。尺寸未变即跳（防 observer 抖动/反馈环）。
+   * init() 挂的 ResizeObserver 自动调它；游戏也可手动调（如自管布局的场景）。
+   */
+  resize(width: number, height: number): void {
+    const w = Math.max(1, Math.round(width)), h = Math.max(1, Math.round(height));
+    if (!this.gl || (w === this.width && h === this.height)) { this.width = w; this.height = h; return; }
+    this.width = w;
+    this.height = h;
+    this.gl.setSize(w, h);
+    this.gl.setPixelRatio(Math.min(globalThis.devicePixelRatio ?? 1, 2)); // retina 上限 2·同 init
+    this.post.resize(w, h);
+    this.lastRenderSig = ''; // 尺寸变但场景签名可能没变 → 强制下帧重渲·别被脏标跳渲留旧缓冲（拉伸/错位）
   }
 
   // 懒加载物理子系统：仅当场上出现 RigidBody3D 才 `import('./three/physics.js')`（连带 cannon-es 进独立 chunk）。
@@ -357,6 +384,7 @@ export class ThreeRenderer implements RendererBackend {
   }
 
   destroy(): void {
+    this.resizeObserver?.disconnect(); this.resizeObserver = undefined; // 断开容器观察者·防泄漏
     if (this.sky) { this.scene.remove(this.sky); (this.sky.material as THREE.MeshBasicMaterial).map?.dispose(); disposeMesh(this.sky); this.sky = null; }
     for (const [, m] of this.meshes) { this.scene.remove(m); disposeMesh(m); }
     this.meshes.clear();

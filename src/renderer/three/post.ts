@@ -50,9 +50,16 @@ export class PostPipeline {
 
   constructor(
     private readonly gl: THREE.WebGLRenderer,
-    private readonly width: number,
-    private readonly height: number,
+    private width: number,
+    private height: number,
   ) {}
+
+  /** 改后处理尺寸（配合 ThreeRenderer.resize）：更新 composer 及各 pass 的渲染目标；tilt 移轴 uniform 每帧按 width/height 重算故自动跟。 */
+  resize(width: number, height: number): void {
+    this.width = width;
+    this.height = height;
+    this.composer?.setSize(width, height); // EffectComposer.setSize 级联到 GTAO/bloom/SMAA 等有 setSize 的 pass
+  }
 
   // 据 Post3D 渲染一帧（懒建管线 + 设参数 + composer.render）。camera 可能在透视/正交间切换 → 每帧更新 RenderPass。
   render(scene: THREE.Scene, camera: THREE.Camera, post: Post3D): void {
