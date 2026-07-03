@@ -34,6 +34,9 @@
 @keyframes g-charge { 0%{transform:none;opacity:1} 60%{opacity:1} 100%{transform:translateX(var(--chg,40px)) scale(.8);opacity:0;filter:brightness(1.4)} }
 /* 离场标签（战败/光荣回库）浮字：升起淡出。 */
 @keyframes g-exitlabel { 0%{transform:translate(-50%,0) scale(.7);opacity:0} 25%{transform:translate(-50%,-10px) scale(1);opacity:1} 80%{opacity:1} 100%{transform:translate(-50%,-30px) scale(1);opacity:0} }
+/* 行军「浮起→悬停→落下」（owner 2026-07-03「移动要有 3D 感·慢一点看清怎么动」）：从旧格位(--dx/--dy)插值到新格·中途抬起 + 放大 + 落影渐深 → 像牌浮离棋面再落定。
+   纯 translate/scale（无 perspective/rotateX → 不触战斗 zoom 画框放大 bug）。真 Card3D mesh 版待 Timeline 底座落地（REQ-3D-移动浮起）。 */
+@keyframes g-march { 0% { transform: translate(var(--dx), var(--dy)) scale(1); filter: drop-shadow(0 2px 3px rgba(0,0,0,.5)); z-index: 30; } 45% { transform: translate(calc(var(--dx) * .5), calc(var(--dy) * .5 - 46px)) scale(1.16); filter: drop-shadow(0 26px 18px rgba(0,0,0,.55)); z-index: 30; } 100% { transform: translate(0,0) scale(1); filter: drop-shadow(0 2px 3px rgba(0,0,0,.5)); z-index: 30; } }
 /* 钉守在场（胜方留场续战）：钉子砸下 + 金环脉冲（凯旋钉桩·card 真牌仍在场）。 */
 @keyframes g-pin { 0%{transform:translateX(-50%) translateY(-30px) scale(.6);opacity:0} 55%{transform:translateX(-50%) translateY(2px) scale(1.18);opacity:1} 75%{transform:translateX(-50%) translateY(0) scale(.94)} 100%{transform:translateX(-50%) translateY(0) scale(1);opacity:1} }
 @keyframes g-pinring { 0%{transform:scale(1.25);opacity:0} 35%{transform:scale(1);opacity:1} 100%{transform:scale(1);opacity:0} }

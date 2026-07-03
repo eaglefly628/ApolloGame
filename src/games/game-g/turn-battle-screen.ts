@@ -91,6 +91,9 @@ const CSS = `
 @keyframes g-charge { 0%{transform:none;opacity:1} 60%{opacity:1} 100%{transform:translateX(var(--chg,40px)) scale(.8);opacity:0;filter:brightness(1.4)} }
 /* 离场标签（战败/光荣回库）浮字：升起淡出。 */
 @keyframes g-exitlabel { 0%{transform:translate(-50%,0) scale(.7);opacity:0} 25%{transform:translate(-50%,-10px) scale(1);opacity:1} 80%{opacity:1} 100%{transform:translate(-50%,-30px) scale(1);opacity:0} }
+/* 行军「浮起→悬停→落下」（owner 2026-07-03「移动要有 3D 感·慢一点看清怎么动」）：从旧格位(--dx/--dy)插值到新格·中途抬起 + 放大 + 落影渐深 → 像牌浮离棋面再落定。
+   纯 translate/scale（无 perspective/rotateX → 不触战斗 zoom 画框放大 bug）。真 Card3D mesh 版待 Timeline 底座落地（REQ-3D-移动浮起）。 */
+@keyframes g-march { 0% { transform: translate(var(--dx), var(--dy)) scale(1); filter: drop-shadow(0 2px 3px rgba(0,0,0,.5)); z-index: 30; } 45% { transform: translate(calc(var(--dx) * .5), calc(var(--dy) * .5 - 46px)) scale(1.16); filter: drop-shadow(0 26px 18px rgba(0,0,0,.55)); z-index: 30; } 100% { transform: translate(0,0) scale(1); filter: drop-shadow(0 2px 3px rgba(0,0,0,.5)); z-index: 30; } }
 /* 钉守在场（胜方留场续战）：钉子砸下 + 金环脉冲（凯旋钉桩·card 真牌仍在场）。 */
 @keyframes g-pin { 0%{transform:translateX(-50%) translateY(-30px) scale(.6);opacity:0} 55%{transform:translateX(-50%) translateY(2px) scale(1.18);opacity:1} 75%{transform:translateX(-50%) translateY(0) scale(.94)} 100%{transform:translateX(-50%) translateY(0) scale(1);opacity:1} }
 @keyframes g-pinring { 0%{transform:scale(1.25);opacity:0} 35%{transform:scale(1);opacity:1} 100%{transform:scale(1);opacity:0} }
@@ -954,8 +957,11 @@ export function mountTurnBattle(host: HTMLElement, getView: () => TurnBattleView
         const old = first.get(u.id); if (!old) return; // 新部署兵无旧位 → 不滑（走落子动画/直接出现）
         const now = u.getBoundingClientRect(); const dx = (old.left - now.left) / z, dy = (old.top - now.top) / z;
         if (Math.abs(dx) < 0.5 && Math.abs(dy) < 0.5) return; // 没动 → 跳过
-        u.style.transform = `translate(${dx}px,${dy}px)`; u.style.transition = 'none';
-        requestAnimationFrame(() => { u.style.transition = 'transform .68s cubic-bezier(.22,.7,.3,1)'; u.style.transform = 'none'; }); // owner 2026-06-29「行军慢一半」：.34s→.68s
+        // 行军「浮起→悬停→落下」（owner 2026-07-03「有 3D 感·慢一点看清」）：--dx/--dy 喂 g-march 关键帧·从旧格位浮到新格·中途抬起放大。
+        u.style.setProperty('--dx', `${dx}px`); u.style.setProperty('--dy', `${dy}px`);
+        u.style.transform = `translate(${dx}px,${dy}px)`; u.style.transition = 'none'; // 起帧钉在旧位（避免 keyframe 排期前一帧闪现新位）
+        requestAnimationFrame(() => { u.style.transition = 'none'; u.style.transform = ''; u.style.animation = 'g-march 1.25s cubic-bezier(.34,.7,.3,1) forwards'; }); // owner 2026-07-03「慢一点」：.68s→1.25s + 抬起弧线
+        u.addEventListener('animationend', () => { u.style.animation = ''; u.style.transform = ''; }, { once: true }); // 收尾清动画·还原
       });
     }
     syncDice3D(); // 3D 战力骰覆层随重渲贴合/撤除（clash 在场挂·撤 clash 撤）
