@@ -318,3 +318,22 @@
 > 3. 我方橙 / 敌方蓝 区分；纯表现、**不进 hash**（determinism 红线：新 render-only 组件登记 `NON_DETERMINISTIC`）。
 > **集成难点（需你评估）**：game-g 战斗屏走 `renderNode + innerHTML`（2D·不跑 mountUI、无 3D 画布）。把一个 three 画布锚到 UI 元素屏幕位＝路线图里记的「UI↔世界锚」seam（你 §路线图「待长」有列）。若这个通用 seam 值得先做，这单可当它的第一个消费者。
 > **可回驳**：若「6 面骰表达 [1,30] 掷值」不成立 / 集成成本过高 → 请回驳并给替代（如 2D 骰面贴图升级、或战力骰改「转盘/进度条」表现）。owner 要的是「掷骰的爽感表现」，3D 是他提的实现手段、非硬指标。
+
+---
+
+## REQ-3D-Vfx3D 点吸引力场（粒子跟随鼠标聚集·加减速自然） · [2026-07-03] · game-d（我·P3D 转呈）→ P3D（3D 渲染线·粒子域） · status: **待 P3D 评审/落地** · 类型: render-only 粒子能力补全（点吸引子）
+
+> **owner 原话（2026-07-03）**：Title 那片氛围粒子——「**鼠标在哪，粒子就往鼠标那里去聚集、follow 我这个鼠标**；但要有个**加速度、减速度的过程，不要太夸张**」。owner 明示这条按 3D 引擎需求提给 3D 引擎（不进 `requests.md`）。
+>
+> **我（game-d）已先做架构评判（CORE RULE·不照单转呈）——判定=真缺口·建议接受下沉**：
+> - **能用现有 `Vfx3D` 字段重组表达吗？** 不能。现有 `Vfx3D` 有 `shape`/`gravity`/`drag`/`sizeCurve`/`colorGradient`/`blend`——`gravity` 是**全局常向量**、不是指向某动点的**点力**；`drag` 只给全局阻尼、没有把粒子拉向目标点的力。「向一个移动的点聚拢」现有字段表达不了。
+> - **已被覆盖/功能等价？** 否，无任何点吸引子/磁吸语义。
+> - **真缺口 → 下沉成通用能力**：`Vfx3D.attractor?: { x:number; y:number; z:number; strength:number }`（世界坐标点 + 力强）。每帧对每颗粒子施 `a += strength * normalize(target - pos)`（或按距离衰减的弹簧力 `strength * (target - pos)`）；**加减速天然来自「弹簧力 + 现有 `drag` 阻尼」**——趋近时力小、`drag` 拖尾 → 自动缓入缓出，正是 owner 要的「不夸张」的加速/减速，**零新缓动参数**。`strength=0`/`attractor` 缺省 = 现行为（向后兼容）。
+> - **弱 LLM 尺子**：接受——只填 4 个数（x/y/z/strength）·填不了自由力场代码。**render-only**：`attractor` 是表现字段，`Vfx3D` 本就 render-only；须确保**不进 sim/hash**（determinism 红线·`Vfx3D` 应已在 `NON_DETERMINISTIC`·加字段不改归属）。
+>
+> **诉求（P3D 定夺实现）**：
+> 1. `Vfx3D` 加可选 `attractor{x,y,z,strength}`，粒子积分里加点力项（弹簧力 + 复用现有 `drag` 阻尼 = 自然加减速）。登记/文档同步。
+> 2. **鼠标屏坐标 → 世界坐标的接线（screen→world unproject）**：game-d 每帧把光标 unproject 到粒子所在平面、写进 `attractor.x/y/z`。这段是**运行时胶水**（同 game-z `autoRun`/WASD 胶水、game-g `syncDice3D` 先例·game 层可自理）。**但**：这与你路线图「待长」里记的「UI↔世界锚 seam」是**互逆的一对**（那条是 world→screen，这条是 screen→world 输入）——**请你定夺**：(a) 输入 unproject 就让 game-d 用现成相机 API 自己接；或 (b) 值得沉一个 P3D 域通用「屏↔世界」输入 seam（game-d 当第一个消费者）。
+> 3. 纯表现、加减速由物理（弹簧+阻尼）自然给出，**不加夸张的吸附/弹射**（owner「不要太夸张」）。
+>
+> **可回驳**：若你认为点吸引子该并进未来更通用的「力场（force field·点/线/风场）」一起设计、或 unproject 该走别的 seam → 请回驳并给替代。owner 要的是「粒子温柔地跟手聚拢」，`attractor` 是我判的最小充分手段、非硬指标。
