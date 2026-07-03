@@ -1135,7 +1135,9 @@ _（REQ-3D-W1高效引擎 已移至 [`requests-3d.md`](./requests-3d.md)。）_
 ### REQ-CAP-三件下沉 · modifier-stack / timeline / save-port（owner 2026-07-03 全批）· 主程出图 → **指派：Opus** · status: **施工中** · 类型: 引擎 capability 下沉（正确性关键）
 > 出处：底座终审 §二🔴。三件按序施工、各自独立提交、**每件落地同提交回填对应 playbook**（手册铁律）。开工前按 CLAUDE.md 查 wiki/skills 对应篇（serialization/animation/scene-management/math-utils 按需）。
 >
-> **件① `t2-modifier-stack` 修正聚合栈（最难，先做）**
+> **件① `t2-modifier-stack` 修正聚合栈（最难，先做）** — ✅ **done（2026-07-03·Opus）**
+> - 完工：`src/skills/tier2/modifier-stack.ts`（纯函数核 `aggregateModifiers` + Update 系统 + `modifierCtx` 复用 condition.ts 求值器）；组件 `ModifierSource`/`ModifierTotals` 入 logic.ts + component-map 闭集；registry 注册 + t2-stats 注记「待迁·记债」。测试 `modifier-stack.test.ts`（14 例·含三套表达力夹具 + 缺口钉死）。回填 combat.md。门禁 tsc+vitest(2156)+build 退出码全 0。
+> - **表达力验收结论**：地煞 DishaFx（sum/max/or）**完全可表达**；天罡 TengangFx（add 累加 + powerMulHighest 取大）**完全可表达**；小丑计分：静态 add/mul + hand_contains 门控（→gate）+ valueFrom（Banner/Bull）+ countTag（→group-count 物化）**可表达**。**表达不了（v2 输入·已测钉死差异）**：① 顺序交织（×mult 先于 +mult）——相位聚合 add 全先于 mul，≠ effect-apply 逐条顺序结算（留在 effect-apply/card-scoring）；② 概率门（Bloodstone 1/2 ×1.5）——gate 只吃确定性 ConditionExpr、无 num/den 掷（留在 effect-apply.chance）；③ 非线性 econ（interest=floor(money/5)×v）——valueFrom 只有线性 ×scale、无整除。
 > - 裁决：不扩 t2-stats（实体属性向，表达不了字段表+合并策略+门控），新建通用件；t2-stats 原样不动、registry 注记「待迁 modifier-stack」记债。
 > - 组件（进闭集）：`ModifierSource`（数据行数组：`{id, target:string(字段id), op:'add'|'mul'|'max'|'min'|'or'|'floor', value?:number, valueFrom?:{resourceId,scale?}, gate?:ConditionExpr(复用 tier2/condition.ts), order?:number}`）+ `ModifierTotals`（系统写：`{totals:{[target]:number|boolean}}`）。
 > - 双形态（照 dice.ts 先例）：纯函数核 `aggregateModifiers(rows, ctx)`（确定性：order→id 排序；应用序固定 add→mul→max/min→or→floor→clamp，对齐 clash-resolve 已文档化的 pEff 序；ctx 提供 resource/flag 读取器供 valueFrom/gate）+ Update 相位系统（收集实体上全部 ModifierSource→写 ModifierTotals）。

@@ -54,6 +54,8 @@ import type {
   Material3D,
   MergeRule,
   Mesh3D,
+  ModifierSource,
+  ModifierTotals,
   Model3D,
   Mortal,
   NavAgent,
@@ -166,6 +168,8 @@ export interface ComponentDataMap {
   Material3D: Omit<Material3D, 'type'>;
   MergeRule: Omit<MergeRule, 'type'>;
   Mesh3D: Omit<Mesh3D, 'type'>;
+  ModifierSource: Omit<ModifierSource, 'type'>;
+  ModifierTotals: Omit<ModifierTotals, 'type'>;
   Model3D: Omit<Model3D, 'type'>;
   Mortal: Omit<Mortal, 'type'>;
   NavAgent: Omit<NavAgent, 'type'>;

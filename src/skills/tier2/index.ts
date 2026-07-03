@@ -51,3 +51,7 @@ export { textBindingCapability } from './text-binding.js';
 export { dragPlaceCapability } from './drag-place.js';
 export { trayCapability } from './tray.js';
 export { hexCellToPoint, hexPointToCell } from './grid-move.js';
+// modifier-stack（REQ-CAP 下沉）：修正聚合栈——全场 ModifierSource（字段表+合并策略+门控）→ ModifierTotals。
+// stats 的超集（逐字段混合 add/mul/max/min/or/floor + ConditionExpr 门控）；下沉小丑计分/天罡/地煞三处同构聚合。
+export { modifierStackCapability, aggregateModifiers, modifierCtx } from './modifier-stack.js';
+export type { ModifierRow, ModifierCtx } from './modifier-stack.js';

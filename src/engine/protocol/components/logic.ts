@@ -238,3 +238,30 @@ export interface GroupCount extends Component {
   // 专字段而非通用 with/withoutComponent——动态组件名读无法静态申报，同 F-049 申报纪律。
   onBoard?: boolean;
 }
+
+// ── modifier-stack（REQ-CAP 下沉）── 修正聚合栈：一张「字段表 + 每字段合并策略 + 条件门控」的通用聚合器。
+// t2-stats 是它的**实体属性特例**（只做 (base+Σadd)×Πmul、无门控、无 max/or/floor 字段策略）；
+// 修正栈把 game-e 小丑计分（add/mul chips/mult/money + countTag + 门控）、game-g 天罡 TengangFx（add/max）、
+// game-g 地煞 DishaFx（sum/max/or 逐字段策略）这类「一堆声明式贡献 → 一张聚合总表」统一为纯数据。
+//
+// ModifierSource = **一条**修正行（一实体一条；系统收集全场所有 ModifierSource 聚合成一张 ModifierTotals）。
+// gate 复用 ConditionExpr（读 Resource/Flag/State…全局值）；valueFrom 让贡献量取自某 Resource（× scale）。
+// 应用序铁律（对齐 clash-resolve pEff：base+Σadd → ×Πmul → floor → clamp）：**add → mul → max → min → or → floor**，
+// 组内先 order 升序、再 id 升序（乘性非交换 → 必须定序）→ 确定/录放安全。
+export type ModifierOp = 'add' | 'mul' | 'max' | 'min' | 'or' | 'floor';
+export interface ModifierSource extends Component {
+  readonly type: 'ModifierSource';
+  id: string; // 该修正行的稳定标识（同 order 时 id 升序 tie-break → 确定聚合序）
+  target: string; // 作用的字段 id（如 'mult' / 'powerAll' / 'homeHp'）；聚合结果按 target 归入 ModifierTotals.totals
+  op: ModifierOp; // 合并算子：add 累加 / mul 累乘 / max 取大 / min 取小 / or 布尔或 / floor 末端下限钳
+  value?: number; // 静态贡献量（缺省 0；op:'or' 缺省视作 true，value=0 视作 false）
+  valueFrom?: { resourceId: string; scale?: number }; // 动态量：value = Resource(resourceId).current × (scale ?? 1)（如「每 $1 +2 筹」）
+  gate?: ConditionExpr; // 门控：条件不成立则本行不参与聚合（复用 condition 求值器，读全局 Resource/Flag/State…）
+  order?: number; // 聚合序（缺省 0；同 op 相位内按 order 升序、再 id 升序）
+}
+// ── modifier-stack 产出 ── 聚合总表（系统每 tick 从全场 ModifierSource 重算写入）。
+// 数值字段起点 = base（消费方可注入，缺省 0；纯 mul 场景由消费方 seed base 后 ×）；纯 or 字段起点 false。
+export interface ModifierTotals extends Component {
+  readonly type: 'ModifierTotals';
+  totals: Record<string, number | boolean>; // target → 聚合值（消费方读取后与自身 base 结合）
+}

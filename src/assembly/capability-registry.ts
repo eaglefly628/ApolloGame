@@ -44,6 +44,7 @@ import {
   textBindingCapability,
   dragPlaceCapability,
   trayCapability,
+  modifierStackCapability,
 } from '@skills/tier2/index.js';
 import { dialogueCapability, match3BoardCapability, prefabCapability, casterCapability, aggroCapability, pokerHandCapability, cardScoringCapability, flowCapability, mergeRuleCapability } from '@skills/tier3/index.js';
 
@@ -102,6 +103,10 @@ export const ALL_CAPABILITIES: readonly CapabilityDefinition[] = [
   textBindingCapability,
   dragPlaceCapability,
   trayCapability,
+  // t2-stats（上）= modifier-stack 的**实体属性特例**（只做 (base+Σadd)×Πmul、无字段表策略/无门控）；
+  // 债记（REQ-CAP 下沉裁决）：stats 原样不动，「字段表 + max/min/or/floor 混合策略 + ConditionExpr 门控」的
+  // 通用聚合走下方 t2-modifier-stack；stats 消费方若需门控/逐字段策略，后续另立 REQ 迁移到 modifier-stack。
+  modifierStackCapability,
   // tier3
   dialogueCapability,
   match3BoardCapability,

@@ -9,7 +9,8 @@
 |---|---|---|
 | 伤害结算（命中扣血） | `t2-hitbox` | 伤害区挂 `Hitbox`+`Shape`+`Sensor`+`Tag(ZONE_FLAG)`；目标挂 `Tag(阵营)`+`Resource(hp)` |
 | 死亡移除 | `t2-mortal` | 挂 `Mortal{resource:"hp",atOrBelow:0}` + destroy 原子执行移除 |
-| 装备/buff 改攻防速 | `t2-stats` | 挂 `Stats{base,mods,effective}`；装备往 mods push，卸下按 source 滤 |
+| 装备/buff 改攻防速（实体属性） | `t2-stats` | 挂 `Stats{base,mods,effective}`；装备往 mods push，卸下按 source 滤（只做 (base+Σadd)×Πmul） |
+| 修正总表（字段表+混合策略+门控） | `t2-modifier-stack` | 挂多条 `ModifierSource{target,op,value/valueFrom,gate}`（op=add/mul/max/min/or/floor）+ 一个 `ModifierTotals` 单例；消费方读 `totals`。计分修正/逐字段 sum·max·or/buff 汇总 |
 | DoT / regen / 定时状态 | `t2-over-time` | 挂 `OverTime{effects:[{resource,amountPerTick,period,duration}]}`（可多个并行） |
 | 自动索敌锁最近目标 | `t3-aggro` | 挂 `Perception{targetTag,sightRadius}`；下游读 `Relation(target)`（steering 追、caster at:target） |
 | 按数据放技能/召唤 | `t3-caster` | 技能=`PrefabTemplate`，按键/点击→`Signal`→`Caster` 释放（配 `t3-prefab`） |
@@ -27,6 +28,7 @@
 - 伤害/死亡/属性**全用能力 + 组件数据**，游戏层不写战斗系统代码（`capability-plan` 未过审不得写）。
 - 掷骰/概率一律种子化（randomness.md），**禁裸 `Math.random`**。
 - 数据表必须有现成能力消费——填了 buff 文案却无解释器 = 虚胖数据（比没有更糟）。
+- 修正/加成聚合**禁游戏层自写聚合器**（各写一套 add/max/or 循环）：逐字段单策略走 `t2-modifier-stack`，实体属性走 `t2-stats`。应用序固定 add→mul→max→min→or→floor（乘性非交换 → 靠 order/id 定序，禁墙钟/Math.random）。
 
 ## ④ 正样例 / 反面教材
 
