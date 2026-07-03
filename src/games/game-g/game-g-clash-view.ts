@@ -26,6 +26,7 @@ export function powerRows(c: ClashCard, isMine: boolean, tgName: (id: string) =>
   }
   if (c.morale !== 0) r.push([c.morale > 0 ? '士气 · 主将坐镇' : '士气 · 主将亡·溃散', c.morale]);
   if (c.nearDef) r.push(['地煞 · 隘口固守', c.nearDef]); // 温泉关守军贴家 +战力（owner 2026-06-21）
+  if (c.phalanx) r.push(['地煞 · 斯巴达方阵（结阵）', c.phalanx]); // 每兵按自身相邻友兵数 +战力（owner 2026-07-03·改逻辑为真·每兵加战力·点谁都看得到）
   if (c.dishaEdge) r.push(['地煞 · 招牌气势', c.dishaEdge]); // owner 2026-07-01 确定制：Boss 招牌战术折成确定战力（明牌·进拆解·不暗改）
   if (c.wins) { // 连胜对折（owner 2026-07-01）：每胜战力 ×0.5 → 把削减的战力值写清楚（幸存者头顶同款）
     const preHalve = r.reduce((s, [label, n]) => s + (label.startsWith('　') ? 0 : n), 0);

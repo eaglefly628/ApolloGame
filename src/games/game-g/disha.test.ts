@@ -3,7 +3,7 @@ import { describe, it, expect } from 'vitest';
 import { cardPoints } from './clash-resolve.js';
 import { cardStamina } from './combat-types.js';
 import { aggregateDisha, stageDisha, STAGE_DISHA, NO_DISHA, DISHA_PLAYABLE } from './disha.js';
-import { initTurnBattle, endTurn, aiTakeTurn, castDisha, clashOdds, MANA_START, type TurnUnit, type TurnBattle } from './turn-combat.js';
+import { initTurnBattle, endTurn, aiTakeTurn, castDisha, clashOdds, MANA_START, unitPowerParts, type TurnUnit, type TurnBattle } from './turn-combat.js';
 
 const u = (id: string, rank: string, slot: number, o: { buff?: number; general?: boolean } = {}): TurnUnit =>
   ({ id, rank, suit: 'S', points: cardPoints(rank), buff: o.buff ?? 0, general: o.general ?? false, stamina: cardStamina(rank), staminaLeft: cardStamina(rank), slot });
@@ -64,6 +64,20 @@ describe('Game G · 地煞（doc23 §八 关1-5 · 15 张 · 甲实装）', () =
     const lone = (x: TurnBattle): void => { x.lanes[0].a.push(u('a0', 'K', 4)); x.lanes[0].b.push(u('b0', '9', 5)); };
     const packed = (x: TurnBattle): void => { x.lanes[0].a.push(u('a0', 'K', 4)); x.lanes[0].b.push(u('b0', '9', 5), u('b1', '8', 6)); x.lanes[1].b.push(u('b2', '7', 5)); };
     expect(clashWr(['phalanx'], packed)).toBeLessThan(clashWr(['phalanx'], lone)); // 有邻更强
+  });
+
+  it('🟡 斯巴达方阵·改逻辑为真每兵+战力（owner 2026-07-03·点到周边兵也看得到）：结阵 Boss 兵 unitPowerParts.phalanx > 0，孤兵 = 0', () => {
+    const b = initTurnBattle({ seed: 5, disha: ['phalanx'] });
+    // 敌方结阵：b0(中路 slot5) 周围塞相邻友兵（同路 slot6 + 邻路 slot5）→ b0 应吃方阵加成
+    b.lanes[1].b.push(u('b0', '9', 5), u('b1', '8', 6)); b.lanes[0].b.push(u('b2', '7', 5)); b.lanes[2].b.push(u('b3', '7', 5));
+    b.lanes[1].a.push(u('a9', '2', 8)); // 孤立的敌兵作对照（远离结阵·slot8 无相邻）
+    b.lanes[0].b.push(u('bLone', '9', 0)); // 孤兵（上路 slot0·无相邻友兵）
+    activatePlayable(b); // 打出方阵地煞 → dishaB 生效
+    const packed = unitPowerParts(b, 'b', 1, b.lanes[1].b[0]); // 结阵前锋 b0
+    const lone = unitPowerParts(b, 'b', 0, b.lanes[0].b.find((x) => x.id === 'bLone')!); // 孤兵
+    expect(packed.phalanx).toBeGreaterThan(0); // 结阵兵吃方阵 +战力（点它看得到）
+    expect(packed.pEff).toBeGreaterThan(packed.points + packed.buff); // +战力真进有效战力
+    expect(lone.phalanx ?? 0).toBe(0); // 孤兵无相邻 → 0
   });
 
   it('🟡 九战九捷：Boss 连胜累积 +4%/胜（封顶 +20%·§六 5/30→4/20）→ streak 越高折的战力越多·玩家越难', () => {

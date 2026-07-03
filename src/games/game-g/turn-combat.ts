@@ -248,7 +248,7 @@ function championId(b: TurnBattle, side: 'a' | 'b'): string | undefined {
 
 // 有效战力 P_eff（doc19 §三 · 复用 live-combat 同款：base + 经营 buff + 天罡(双方己侧·Boss 施法亦生效) + 士气；apply add→mul→floor→clamp）。
 // noRout（地煞·破釜沉舟/死战不退）：Boss 主将亡不溃散（shift 不取 −ROUT）。fx=该侧 tengangA（NO_TENGANG → 零修正·行为同前）。
-function effPower(u: TurnUnit, lane: TurnLane, side: 'a' | 'b', fx: TengangFx, champId?: string, noRout = false, nearDef = 0): { pEff: number; shift: number; tg: number; nearDef: number } {
+function effPower(u: TurnUnit, lane: TurnLane, side: 'a' | 'b', fx: TengangFx, champId?: string, noRout = false, nearDef = 0, phalanx = 0): { pEff: number; shift: number; tg: number; nearDef: number; phalanx: number } {
   const col = colOf(lane, side);
   let tg = fx.powerAll + fx.pEffAdd;
   if (fx.powerFront && col.length && u.id === col[0].id) tg += fx.powerFront; // 锋矢：前锋
@@ -257,7 +257,7 @@ function effPower(u: TurnUnit, lane: TurnLane, side: 'a' | 'b', fx: TengangFx, c
   if (fx.comboPair || fx.comboTrips) { const rc = new Map<string, number>(); for (const x of col) rc.set(x.rank, (rc.get(x.rank) ?? 0) + 1); const vals = [...rc.values()]; if (fx.comboPair && vals.some((n) => n >= 2)) tg += fx.comboPair; if (fx.comboTrips && vals.some((n) => n >= 3)) tg += fx.comboTrips; } // 对子诀/鼎立
   const champMul = fx.powerMulHighest > 1 && u.id === champId ? fx.powerMulHighest : 1; // 擎天
   const mul = champMul * Math.pow(WAR_LOSS_PER_WIN, u.wins ?? 0); // 战损疲劳：每胜战力对折（owner 2026-07-01·替原加法 fatigue）→ 折进倍率(add→mul→floor→clamp)
-  if (u.general) return { pEff: pEff(u.points, u.buff + tg + nearDef, mul), shift: 0, tg, nearDef };
+  if (u.general) return { pEff: pEff(u.points, u.buff + tg + nearDef + phalanx, mul), shift: 0, tg, nearDef, phalanx };
   const genDead = side === 'a' ? lane.aGenDead : lane.bGenDead;
   const genHere = col.some((x) => x.general);
   const moraleBonus = genHere ? fx.moraleLeader : 0; // 令旗(旗手)
@@ -266,7 +266,15 @@ function effPower(u: TurnUnit, lane: TurnLane, side: 'a' | 'b', fx: TengangFx, c
     : fx.revenge > 0 ? fx.revenge // 哀兵：主将亡 → 余部暴怒 +N
     : noRoutEff ? 0               // 督战：主将亡不溃散
     : -ROUT_PTS;                  // 默认：主将亡 → 溃散
-  return { pEff: pEff(u.points, u.buff + tg + shift + nearDef, mul), shift, tg, nearDef };
+  return { pEff: pEff(u.points, u.buff + tg + shift + nearDef + phalanx, mul), shift, tg, nearDef, phalanx };
+}
+// 斯巴达方阵（owner 2026-07-03 改逻辑为真·每兵加战力）：Boss 侧每兵按**自身**相邻友兵数 → +确定战力
+// （min(封顶, 相邻数×每邻) 折成战力·同 dishaEdge 用 EDGE_TO_POWER 换算·保原量级 + 每兵独立 + 进拆解可见）。
+function phalanxPower(b: TurnBattle, li: number, u: TurnUnit): number {
+  const d = b.dishaB;
+  if (d.phalanxPerAdj <= 0) return 0;
+  const adj = dishaAllies(b, li, u, d.phalanxAdj8);
+  return Math.round(Math.min(d.phalanxCap, adj * d.phalanxPerAdj) / EDGE_TO_POWER);
 }
 
 // AI 画像用·近似有效战力（点数+养成后按连胜对折·不含 lane 天罡/士气·够 AI 挑软柿子/占优判断）。
@@ -291,10 +299,11 @@ export function unitPowerParts(b: TurnBattle, side: 'a' | 'b', li: number, u: Tu
   const champ = fx.powerMulHighest > 1 ? championId(b, side) : undefined;
   const dB = b.dishaB;
   const nearDef = side === 'b' && dB.nearBaseSlots > 0 && u.slot >= SLOTS - dB.nearBaseSlots ? dB.nearBasePower : 0; // 隘口守军（仅 Boss 侧·贴家固守）
+  const phalanx = side === 'b' ? phalanxPower(b, li, u) : 0; // 斯巴达方阵：每兵按自身相邻友兵数 +战力（owner 2026-07-03·仅 Boss 侧）
   const noRout = side === 'b' && dB.noRout;
-  const e = effPower(u, lane, side, fx, champ, noRout, nearDef);
+  const e = effPower(u, lane, side, fx, champ, noRout, nearDef, phalanx);
   const tgBreak = sd.castFx.map(({ id, fx: f }) => [id, Math.round(tgContribOf(u, lane, side, f))] as [string, number]).filter((r) => r[1] !== 0); // 逐张天罡溯源（同 resolveClash）
-  return { rank: u.rank, suit: u.suit, general: u.general, points: u.points, buff: u.buff, morale: e.shift, tengang: e.tg, pEff: e.pEff, tgBreak, nearDef: e.nearDef, wins: u.wins };
+  return { rank: u.rank, suit: u.suit, general: u.general, points: u.points, buff: u.buff, morale: e.shift, tengang: e.tg, pEff: e.pEff, tgBreak, nearDef: e.nearDef, phalanx: e.phalanx, wins: u.wins };
 }
 
 // ── 地煞 apply（Boss 侧·doc23 §八）：把 dishaB 各效果折成「Boss 掷命胜率 +X 百分点」(玩家 wr 相应减) ──
@@ -317,7 +326,7 @@ function bossEdge(b: TurnBattle, li: number, pf: TurnUnit, bf: TurnUnit): number
   const d = b.dishaB;
   let e = d.allWinPct; // 挟天子/破釜沉舟：全军
   if (bf.general) e += d.generalWinPct; // 霸王之勇/伙伴骑兵(简化)
-  if (d.phalanxPerAdj > 0) e += Math.min(d.phalanxCap, dishaAllies(b, li, bf, d.phalanxAdj8) * d.phalanxPerAdj); // 方阵/连环船
+  // 斯巴达方阵/连环船已从「Boss 胜率 edge」改为「每兵按自身相邻 +确定战力」（phalanxPower·进各兵 pEff + 拆解可见·owner 2026-07-03）→ 不再计入 bossEdge（防重复）。
   if (d.nearBaseSlots > 0 && bf.slot >= SLOTS - d.nearBaseSlots) e += d.nearBaseWinPct; // 温泉关·隘口(贴 Boss 家)
   if (d.eliteMidWinPct > 0 && li === 1) e += d.eliteMidWinPct; // 近卫军(简化·中路前锋)
   if (d.winStreakPer > 0) e += Math.min(d.winStreakCap, b.bossWinStreak * d.winStreakPer); // 九战九捷
@@ -346,7 +355,8 @@ function clashEval(b: TurnBattle, li: number): ClashEval | null {
   const champB = b.b.tengangA.powerMulHighest > 1 ? championId(b, 'b') : undefined;
   const dB = b.dishaB;
   const nearDefB = dB.nearBaseSlots > 0 && fb.slot >= SLOTS - dB.nearBaseSlots ? dB.nearBasePower : 0; // 温泉关·隘口守军固守 +战力（贴 Boss 家·进战力拆解）
-  const ba = effPower(fa, lane, 'a', b.a.tengangA, champA), bb = effPower(fb, lane, 'b', b.b.tengangA, champB, dB.noRout, nearDefB);
+  const phalanxB = phalanxPower(b, li, fb); // 斯巴达方阵：前锋按自身相邻友兵数 +战力（owner 2026-07-03·改逻辑为真·每兵加战力·已从 bossEdge 移出防重复计）
+  const ba = effPower(fa, lane, 'a', b.a.tengangA, champA), bb = effPower(fb, lane, 'b', b.b.tengangA, champB, dB.noRout, nearDefB, phalanxB);
   const dishaEdge = Math.round(bossEdge(b, li, fa, fb) / EDGE_TO_POWER); // 地煞·招牌气势 → Boss 确定战力加成
   const ea = ba.pEff, eb = clampP(bb.pEff + dishaEdge); // Boss 有效战力含地煞气势（夹 P_MAX）
   return { fa, fb, ea, eb, dishaEdge, ba, bb };
@@ -400,7 +410,7 @@ function applyClashOutcome(b: TurnBattle, li: number, ev: ClashEval, aWins: bool
   const lane = b.lanes[li]; const { fa, fb, ea, eb, dishaEdge, ba, bb } = ev;
   const wr = clashOdds(b, li) ?? (aWins ? 1 : 0); // 预报胜率(留档·特写显)
   const tgBreakOf = (sd: TurnSide, u: TurnUnit, sk: 'a' | 'b'): [string, number][] => sd.castFx.map(({ id, fx }) => [id, Math.round(tgContribOf(u, lane, sk, fx))] as [string, number]).filter((r) => r[1] !== 0); // 逐张天罡溯源
-  b.lastClash = { tick: b.turn, lane: li, winrate: wr, roll: 0, rollA, rollB, aWins, tie, winStays: true, warLoss: 0, winStreak: 0, a: { id: fa.id, rank: fa.rank, suit: fa.suit, general: fa.general, points: fa.points, buff: fa.buff, morale: ba.shift, tengang: ba.tg, pEff: ea, tgBreak: tgBreakOf(b.a, fa, 'a'), nearDef: ba.nearDef, wins: fa.wins }, b: { id: fb.id, rank: fb.rank, suit: fb.suit, general: fb.general, points: fb.points, buff: fb.buff, morale: bb.shift, tengang: bb.tg, pEff: eb, tgBreak: tgBreakOf(b.b, fb, 'b'), nearDef: bb.nearDef, dishaEdge, wins: fb.wins } }; // rollA/rollB=双方掷值·winrate=预报胜率·winStays 恒 true(胜者留场)
+  b.lastClash = { tick: b.turn, lane: li, winrate: wr, roll: 0, rollA, rollB, aWins, tie, winStays: true, warLoss: 0, winStreak: 0, a: { id: fa.id, rank: fa.rank, suit: fa.suit, general: fa.general, points: fa.points, buff: fa.buff, morale: ba.shift, tengang: ba.tg, pEff: ea, tgBreak: tgBreakOf(b.a, fa, 'a'), nearDef: ba.nearDef, wins: fa.wins }, b: { id: fb.id, rank: fb.rank, suit: fb.suit, general: fb.general, points: fb.points, buff: fb.buff, morale: bb.shift, tengang: bb.tg, pEff: eb, tgBreak: tgBreakOf(b.b, fb, 'b'), nearDef: bb.nearDef, dishaEdge, phalanx: bb.phalanx, wins: fb.wins } }; // rollA/rollB=双方掷值·winrate=预报胜率·winStays 恒 true(胜者留场)
   b.clashLog.push(b.lastClash); // 流水（驱动层逐场抽特写）
   b.clashSeq += 1;
   if (!aWins) b.bossWinStreak += 1; // 九战九捷：Boss 胜累积
