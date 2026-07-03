@@ -6,6 +6,7 @@
 > 📌 **排队待办（主程 2026-07-03·owner 拍板：接你当前 3D 核心工作完成后开工，勿中断手头活）**：
 > game-d 接线单已**全部就绪**——你 capability-plan 里"待主程能力落地"的缺口已落地（`t2-dice-roll`+禁骰+`opposedRoll`+poker-hand wild，2026-07-02 `6fff8323`）。
 > 开工时读 `docs/workflow/requests.md` 搜「REQ-GAMED」：接线四件（`S`迁组件 / `RolledDice`→`PlayedHand` / detectPattern 真替换 / **per-run 种子**）+ Lead 打回三条全在条目里。
+> 另：`requests-3d.md` 新增 **REQ-3D-交互与材质补全批**（对象拾取/图元/BlendSpace/贴图槽/HDRI 五件已裁决排队·Tier1 先行·Tier3 不做清单已固化）。
 
 ---
 

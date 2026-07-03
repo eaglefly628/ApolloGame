@@ -347,3 +347,18 @@
 > 3. 纯表现、加减速由物理（弹簧+阻尼）自然给出，**不加夸张的吸附/弹射**（owner「不要太夸张」）。
 >
 > **可回驳**：若你认为点吸引子该并进未来更通用的「力场（force field·点/线/风场）」一起设计、或 unproject 该走别的 seam → 请回驳并给替代。owner 要的是「粒子温柔地跟手聚拢」，`attractor` 是我判的最小充分手段、非硬指标。
+
+## REQ-3D-交互与材质补全批 · 对象拾取/图元/BlendSpace/贴图槽/HDRI 五件 + Tier3 不做清单固化 · [2026-07-03] · owner 提需 → 主程逐条裁决 → P3D · status: **排队中（接现核心工作完成后·Tier1 先行）** · 类型: 3D 线能力补全（Lead 图纸）
+
+> owner 2026-07-03 提三档清单，主程逐条裁决如下（查重已做：接池内既有 seam/裁决，不重造）。
+>
+> **Tier1-① 对象拾取 Pickable3D（P0·最优先）**：✅ 接受。
+> - 架构裁决：**照 2D `t2-clickable` 先例做 3D 对等件**——拾取属**输入层**（与鼠标点击同类外源输入，本地 raycast 合法，不碰 sim 确定性）；命中结果走既有 Signal 机制（`pickSignal`/`hoverSignal` 带实体 id arg）入队，sim 逻辑照常消费信号。
+> - 实现：**扩展既有 seam `ThreeRenderer.screenToWorld`**（本池 UI↔世界锚条目已建 Raycaster 平面版）→ 对象级：射线对全部 `Pickable3D` 实体的 Mesh3D 求交，**最近命中优先**（遮挡序确定）。新组件 `Pickable3D{enabled?, layer?, pickSignal?, hoverSignal?}` 入闭集 component-map；describe/examples 达 registry 水准。hover 节流（每帧一次求交，命中变化才发信号）。
+> **Tier1-② 渲染图元补全（P0·小活）**：✅ 接受。`Mesh3D.shape` 枚举加 cylinder/cone/capsule/torus（three 内建 Geometry 直映射，`geometry.ts` 加档；参数可选字段+合理默认）。**边界注意**：这是 render-only 视觉图元；**碰撞体维持池内既有裁决**（A 档 sphere/AABB/capsule·cylinder 碰撞≈capsule 等价已回驳），勿为新图元开碰撞档。
+> **Tier2-③ 动画状态机/BlendSpace（P1）**：✅ 接受=**路线图"待续①"转正**（Godot AnimationTree 思路做成数据）。`AnimState3D{states:{名:{clip,speed?}}, blendParam:'speed'等, transitions}`——纯数据，混合权重由参数驱动。**开工时机：有真角色步态需求拉动时**（game-z 角色/追兵骨骼线成熟后），排 Tier1 之后。
+> **Tier2-④ 材质贴图槽补齐（P1）**：✅ 接受。`Material3D` 加 `metalnessMap/emissiveMap(+emissiveIntensity)/ormMap`（ORM 打包图一图三通道 R=AO/G=Roughness/B=Metalness，three 三槽共享同图）+ `tiling{repeat,offset}`。资产侧配合：ORM/法线类 colorSpace=linear（asset-index spec 元数据字段已有，asset-manager 线知会）。
+> **Tier2-⑤ 真环境贴图导入（P1·小活）**：✅ 接受=**REQ-3D-PBR-IBL（已✅）的资产入口扩展**：`Sky3D.env` 接受 assetKey（equirect .hdr/.exr 经 RGBELoader+PMREM）；资产导入线支持 .hdr（**包体预算：≤2k 分辨率提示**，掌机 cartridge 顾虑）；程序化天空盒保留为无资产 fallback。
+> **Tier3 不做清单（owner 2026-07-03 YAGNI 判决·固化防自作主张）**：⛔ 视锥/遮挡剔除+LOD（场景规模未到·W1-E 域）、point/spot 阴影、真 DoF/vignette/SSR、NPR 描边（本池已有 ⏸ 条目·待法线缓冲版）。需求变化时 owner 重开，任何 session 勿擅启。
+>
+> 通用要求：逐件独立提交全绿（tsc+vitest+build）；新组件入闭集+registry describe；**每件落地同提交回填 `docs/playbooks/3d.md`**（手册铁律）；拾取件加无头测试（ray 求交纯函数部分）+ 真浏览器点选自证。完工逐件标 ✅。
