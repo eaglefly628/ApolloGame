@@ -219,70 +219,81 @@ export function mount(container: HTMLElement): () => void {
   };
   const hideTitleDie = (): void => { if (!titleDieUp) return; try { engine.world.destroyEntity(TITLE_DIE); engine.world.destroyEntity('gd-title-rim'); engine.world.destroyEntity('gd-title-fill'); engine.world.destroyEntity('gd-title-glow'); } catch { /* noop */ } titleDieUp = false; };
 
-  // ── 骰钟转场（复刻参考 03 §F「骰壳转场」·render-only·P3D 域）──
-  // **整场当一个单元螺旋** = 引擎新 `Pivot3D` 父合成能力（骰壳 + 微缩场簇全挂 pivot 子实体·合成到 pivot 变换下）。
-  // 时间线（游戏层一次性 juice·grow-in → 螺旋升走 → 旋入落定·总 2.5s）由本 glue 写 pivot 的 Transform3D（同 title 骰/相机拖拽先例）；
-  // 「把整组当一个单元」这件硬事已下沉成 Pivot3D（不再"骰壳能力缺·只好单壳预览"）。缓动=引擎 easeOutBack。
-  const SHELL = 'gd-shell', SHELL_GLOW = 'gd-shell-glow', PIVOT = 'gd-pivot';
-  const DEMO: string[] = ['gd-tx0', 'gd-tx1', 'gd-tx2', 'gd-tx3', 'gd-tx4']; // 微缩场簇（演示"整场"被裹螺旋·title 视图内可见）
-  const TRANS_DUR = 2.5;
-  let transT: number | null = null;
+  // ── 骰 ↔ 关卡 无缝变形转场（owner 2026-07-02·render-only·P3D 域）──
+  // 同一中心点收放·用当前**玻璃命运骰**（非另造骰壳）：
+  //   'in'（点开始攀塔）：玻璃骰回旋 + 放缩到一个点 → 关卡从那个点回旋展开。
+  //   'out'（过关）：关卡回旋 + 放缩到一个点 → 从点长出玻璃骰。
+  // 「关卡整场当一个单元收放」= `Pivot3D`（把当前房全部实体挂 pivot·绕场中心缩放/自转）；骰=现成 title 玻璃骰（缩它的 scale）。
+  // 中点 swap（骰→关卡 / 关卡→骰）：此刻双方都缩成一个点、相机投影/内容切换不可见 → **无缝**。缓动=引擎 eOutBack。
+  const PIVOT = 'gd-pivot';
+  const TRANS_DUR = 1.7; // 秒（**壁钟**·与 tick 率无关·无头 SwiftShader tick 慢也准时）
   const eOutBack = (p: number): number => easeOutBack(p);
-  const tblock = (id: string, x: number, y: number, z: number, s: number, top: number, side: number): void => {
-    engine.world.createEntity(id);
-    engine.world.addComponent(id, { type: 'Transform3D', x, y, z, scale: 1 } as unknown as Component);
-    engine.world.addComponent(id, { type: 'Mesh3D', shape: 'box', width: s, height: s, depth: s, frontTint: side, backTint: side, edgeTint: top } as unknown as Component);
-  };
-  const playTransition = (): void => {
-    if (transT !== null) return;
-    transT = 0;
-    // 微缩场簇（一小片"盒庭"：地台 + 四角块）——放原点·title 透视相机内可见·被骰壳裹住随 pivot 螺旋。
-    tblock(DEMO[0]!, 0, -0.5, 0, 2.0, 0x6fae4a, 0x8a5a32); // 地台
-    tblock(DEMO[1]!, -0.7, 0.1, -0.7, 0.5, 0xffd24a, 0x9aa86a);
-    tblock(DEMO[2]!, 0.7, 0.1, -0.7, 0.5, 0x67d6e0, 0x9aa1b4);
-    tblock(DEMO[3]!, -0.7, 0.1, 0.7, 0.5, 0xff7a3c, 0x5a463c);
-    tblock(DEMO[4]!, 0.7, 0.1, 0.7, 0.5, 0xc08aff, 0x5a7fa6);
-    // 巨骰壳（§F Box·裹住整场·local scale 0 起 grow-in）。
-    engine.world.createEntity(SHELL);
-    engine.world.addComponent(SHELL, { type: 'Transform3D', x: 0, y: 0, z: 0, rotX: 0.5, rotY: 0.7, scale: 0.001 } as unknown as Component);
-    engine.world.addComponent(SHELL, { type: 'Mesh3D', shape: 'box', width: 3.4, height: 3.4, depth: 3.4, frontTint: 0xeef4ff, dieFaces: [
-      { color: 0xff5b4d, pip: 1 }, { color: 0x3ba0ff, pip: 6 }, { color: 0x46c66a, pip: 2 }, { color: 0xffcf3f, pip: 5 }, { color: 0xe8edf3, pip: 3 }, { color: 0x9b6cff, pip: 4 },
-    ] } as unknown as Component);
-    engine.world.createEntity(SHELL_GLOW);
-    engine.world.addComponent(SHELL_GLOW, { type: 'Transform3D', x: 0, y: 0, z: -1 } as unknown as Component);
-    engine.world.addComponent(SHELL_GLOW, { type: 'Glow3D', color: 0xfff0cf, scale: 6, opacity: 0 } as unknown as Component);
-    // Pivot3D：骰壳 + 整片场簇全挂 pivot 子实体 → 一起转/缩/移（绕原点=场中心）。pivot 自身 Transform3D 由 stepTransition 驱动。
+  let transStart: number | null = null; // 壁钟起点 ms（null=无转场）
+  let transDir: 'in' | 'out' = 'in';
+  let transSwapped = false;
+  let onTransDone: (() => void) | null = null;
+  // 把当前房间所有实体挂进 Pivot3D（绕场中心=当前房 Z·初始恒等 scale1）。pivot 自身 Transform3D 由 stepTransition 驱动。
+  const wrapRoomInPivot = (): void => {
+    const ids = loaded.get(bgRoom) ?? [];
     engine.world.createEntity(PIVOT);
     engine.world.addComponent(PIVOT, { type: 'Transform3D', x: 0, y: 0, z: 0, rotX: 0, rotY: 0, rotZ: 0, scale: 1 } as unknown as Component);
-    engine.world.addComponent(PIVOT, { type: 'Pivot3D', children: [...DEMO, SHELL], centerX: 0, centerY: 0, centerZ: 0 } as unknown as Component);
+    engine.world.addComponent(PIVOT, { type: 'Pivot3D', children: ids, centerX: 0, centerY: 0.35, centerZ: bgRoom * ROOM_SPACING } as unknown as Component);
+  };
+  const removePivot = (): void => { try { engine.world.destroyEntity(PIVOT); } catch { /* noop */ } };
+  const titleScale = (s: number): void => { const td = engine.world.getComponent<{ type: 'Transform3D'; scale?: number }>(TITLE_DIE, 'Transform3D'); if (td) td.scale = s; };
+  const pivotSet = (scale: number, rotY: number, rotX: number): void => {
+    const pv = engine.world.getComponent<{ type: 'Transform3D'; scale?: number; rotY?: number; rotX?: number }>(PIVOT, 'Transform3D');
+    if (pv) { pv.scale = scale; pv.rotY = rotY; pv.rotX = rotX; }
+  };
+  /** 触发转场（dir·done 在落定后调）。'in' 需 title 玻璃骰在场；'out' 需关卡在场。转场期间 UI 走空屏（tree 里 guard）。 */
+  const startTransition = (dir: 'in' | 'out', done: () => void): void => {
+    if (transStart !== null) return;
+    transStart = performance.now(); transDir = dir; transSwapped = false; onTransDone = done;
+    if (dir === 'out') wrapRoomInPivot(); // 反向：关卡在场·挂 pivot 待缩小
+    render(); // 切空屏（盖住 title/HUD·让 3D 变形独占画面）
   };
   const stepTransition = (): void => {
-    if (transT === null) return;
-    transT += 1 / 60;
-    const p = Math.min(1, transT / TRANS_DUR);
-    const sh = engine.world.getComponent<{ type: 'Transform3D'; scale?: number }>(SHELL, 'Transform3D');
-    const pv = engine.world.getComponent<{ type: 'Transform3D'; rotX?: number; rotY?: number; y?: number; scale?: number }>(PIVOT, 'Transform3D');
-    const g = engine.world.getComponent<{ type: 'Glow3D'; opacity?: number }>(SHELL_GLOW, 'Glow3D');
-    if (p < 0.2) {
-      // 骰壳 grow-in 裹住整场（骰壳 local scale·eOutBack 回弹）；pivot 恒等。
-      const k = eOutBack(p / 0.2);
-      if (sh) sh.scale = Math.max(0.001, k);
-      if (g) g.opacity = k * 0.55;
-    } else if (p < 0.74) {
-      // **整组（场簇+骰壳）绕场中心螺旋升走**：pivot 自转 + 缩小 + 升起（Pivot3D 合成到每个子实体）。
-      const k = (p - 0.2) / 0.54;
-      if (pv) { pv.rotY = k * Math.PI * 4; pv.rotX = k * Math.PI * 3; pv.scale = 1 - 0.55 * Math.sin(k * Math.PI); pv.y = Math.sin(k * Math.PI) * 2.4; }
-      if (g) g.opacity = 0.55;
+    if (transStart === null) return;
+    const p = Math.min(1, (performance.now() - transStart) / (TRANS_DUR * 1000)); // 壁钟进度（帧率无关）
+    if (transDir === 'in') {
+      if (p < 0.45) {
+        // Phase A：玻璃骰回旋（spin 由 Anim3D）+ 放缩到点（scale 1→~0·eOutBack 收）。
+        titleScale(Math.max(0.02, 1 - eOutBack(Math.min(1, p / 0.45)) * 0.98));
+      } else {
+        if (!transSwapped) {
+          transSwapped = true;
+          hideTitleDie();        // 骰=点·撤走
+          setMood(false);        // 相机 → arena ortho（此刻点·投影切换不可见）
+          beginRoom();           // 加载关卡（streamTo·不碰 UI）
+          wrapRoomInPivot();     // 关卡挂 pivot·下面从点长大
+        }
+        // Phase B：关卡从点回旋展开（pivot scale ~0→1 eOutBack·spin 随 k 衰减到 0）。
+        const k = (p - 0.45) / 0.55;
+        pivotSet(Math.max(0.02, eOutBack(Math.min(1, k * 1.08))), (1 - k) * Math.PI * 3, (1 - k) * Math.PI * 2);
+      }
     } else {
-      // 旋入落定：pivot 归位（自转停在整数圈=恒等朝向）；骰壳收起（eOutBack）显露场簇；柔光淡出。
-      const k = (p - 0.74) / 0.26;
-      if (pv) { pv.rotY = Math.PI * 4; pv.rotX = Math.PI * 3; pv.scale = 1; pv.y = 0; }
-      if (sh) sh.scale = Math.max(0.001, 1 - eOutBack(Math.min(1, k * 1.25)));
-      if (g) g.opacity = 0.55 * (1 - k);
+      if (p < 0.5) {
+        // Phase A：关卡回旋 + 放缩到点（pivot scale 1→~0·spin 加速）。
+        const k = p / 0.5;
+        pivotSet(Math.max(0.02, 1 - k), k * Math.PI * 3, k * Math.PI * 2);
+      } else {
+        if (!transSwapped) {
+          transSwapped = true;
+          removePivot();
+          for (const i of [...loaded.keys()]) unloadRoom(i); // 关卡=点·撤走
+          setMood(true);         // 相机 → title 透视暗氛围
+          showTitleDie(); titleScale(0.02); // 从点长出玻璃骰
+        }
+        // Phase B：玻璃骰从点回旋长大（scale ~0→1 eOutBack·spin 由 Anim3D）。
+        titleScale(eOutBack(Math.min(1, ((p - 0.5) / 0.5) * 1.08)));
+      }
     }
     if (p >= 1) {
-      transT = null;
-      try { for (const id of [...DEMO, SHELL, SHELL_GLOW, PIVOT]) engine.world.destroyEntity(id); } catch { /* noop */ }
+      transStart = null;
+      if (transDir === 'in') { pivotSet(1, 0, 0); removePivot(); } // 关卡满格恒等 → 撤 pivot 无缝（子实体位姿本就=满格）
+      else titleScale(1);
+      const done = onTransDone; onTransDone = null;
+      if (done) done();
     }
   };
 
@@ -657,6 +668,8 @@ export function mount(container: HTMLElement): () => void {
 
   // ════════ 渲染分发 ════════
   const tree = (): LayoutNode => {
+    // 转场进行中：空透明屏（盖住 title/HUD·让骰↔关卡 3D 变形独占画面·落定回调再渲真 UI）。
+    if (transStart !== null) return { type: 'Screen', id: 'gd-trans', props: { bg: 'transparent' }, children: [] };
     switch (S.phase) {
       case 'title': return titleTree();
       case 'dish': return dishTree();
@@ -697,7 +710,9 @@ export function mount(container: HTMLElement): () => void {
       S.foe.hp -= d.dmg; S.gold += 6;
       if (S.foe.hp <= 0) {
         if (S.foe.isBoss) { S.hearts = Math.min(SOLO_HEARTS, S.hearts + 1); S.gem += 1; }
-        S.reward = rewardChoices(); S.phase = 'reward'; S.msg = ''; render(); return;
+        // 过关：'out' 变形（关卡回旋放缩到点 → 长出玻璃骰）→ 落定进战利品三选一。
+        startTransition('out', () => { S.reward = rewardChoices(); S.phase = 'reward'; S.msg = ''; render(); });
+        return;
       }
       S.msg = `命中！${d.pat.name}×${d.pat.mult} 扣 ${d.dmg}，敌 HP 剩 ${S.foe.hp}`;
       S.thrown = false; S.rolled = []; S.selected.clear(); S.disabled.clear(); render(); return;
@@ -715,8 +730,9 @@ export function mount(container: HTMLElement): () => void {
 
   const handlers = (): Record<string, (arg?: string) => void> => ({
     noop: () => {},
-    testTransition: () => { playTransition(); },
-    start: () => { hideTitleDie(); setMood(false); S.phase = 'arena'; beginRoom(); S.msg = '点「选骰备战」打开命运骰盅'; render(); },
+    // 开始攀塔 / 测试过场：'in' 变形（玻璃骰回旋放缩到点 → 关卡从点展开）。落定进战场·提示选骰。
+    testTransition: () => { startTransition('in', () => { S.phase = 'arena'; S.msg = '点「选骰备战」打开命运骰盅'; render(); }); },
+    start: () => { startTransition('in', () => { S.phase = 'arena'; S.msg = '点「选骰备战」打开命运骰盅'; render(); }); },
     openDish: () => { S.phase = 'dish'; render(); },
     closeDish: () => { S.phase = 'arena'; render(); },
     dishTab: (arg) => { S.dishTab = (arg as S['dishTab']) ?? 'all'; render(); },

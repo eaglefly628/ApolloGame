@@ -34,7 +34,7 @@ try {
   // 可选点击穿透（arg 4·逗号分隔按钮文案，依次点·每次等 1.6s）：深链只能到首屏，要截后续屏（如 game-d 战场/骰盅）→ 点按钮进屏。
   const clicks = (process.argv[4] || '').split(',').map((s) => s.trim()).filter(Boolean);
   for (const label of clicks) {
-    try { await page.getByText(label, { exact: false }).first().click({ timeout: 6000 }); await page.waitForTimeout(1600); }
+    try { await page.getByText(label, { exact: false }).first().click({ timeout: 6000 }); await page.waitForTimeout(Number(process.env.SHOOT_WAIT) || 1600); }
     catch (e) { console.log('[click miss]', label, e.message); }
   }
   await page.screenshot({ path: out });
