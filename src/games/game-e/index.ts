@@ -14,5 +14,4 @@ export * from './enchants.js';
 export * from './assets.js';
 export * from './blueprint.js';
 export * from './cards-atlas.js';
-export * from './view.js';
 export * from './session.js';

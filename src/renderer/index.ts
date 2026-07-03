@@ -17,4 +17,3 @@ export type { FrameSvgOptions } from './frame-svg.js';
 // 纯投影助手（无 three 依赖、node 可测）照常导出：
 export { renderablePose, poseBounds, fitPerspective } from './three-projection.js';
 export type { Pose3D, Bounds2D } from './three-projection.js';
-// 注：game-g 的卡牌渲染器（Card3D + 牌面纹理 + 抛飞编排）是**游戏专属**表现，仍在 src/games/game-g/，与本通用后端并存。

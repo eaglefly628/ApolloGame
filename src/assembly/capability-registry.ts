@@ -43,6 +43,7 @@ import {
   gaugeCapability,
   textBindingCapability,
   dragPlaceCapability,
+  trayCapability,
 } from '@skills/tier2/index.js';
 import { dialogueCapability, match3BoardCapability, prefabCapability, casterCapability, aggroCapability, pokerHandCapability, cardScoringCapability, flowCapability, mergeRuleCapability } from '@skills/tier3/index.js';
 
@@ -100,6 +101,7 @@ export const ALL_CAPABILITIES: readonly CapabilityDefinition[] = [
   gaugeCapability,
   textBindingCapability,
   dragPlaceCapability,
+  trayCapability,
   // tier3
   dialogueCapability,
   match3BoardCapability,

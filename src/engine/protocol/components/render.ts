@@ -19,23 +19,8 @@ export interface Sprite extends Component {
   zOrder: number;
 }
 
-// ── 3D 卡牌（render-only，Three.js 后端解释）── 一张正反两面的薄牌；3D 位姿取自同实体 Transform：
-// x,y → 3D 位置，rotation → 绕 X 轴翻面角（0=正面朝镜头、π=反面）。胜负已定 → tween Transform.rotation
-// 到目标面，渲染器只把它画成 3D 翻转。红线：表现层组件，绝不被 Condition 读、绝不进 sim 逻辑/hash。
-export interface Card3D extends Component {
-  readonly type: 'Card3D';
-  frontTint: number; // 正面色 0xRRGGBB
-  backTint: number; // 反面色 0xRRGGBB
-  width: number; // 牌宽（像素，渲染器按比例缩到 3D 单位）
-  height: number; // 牌高
-  side?: string; // 'a'|'b'：对阵一方（render-only，供 3D 抛飞相撞编排配对）
-  pairKey?: number; // 配对键：同 pairKey 的 a/b 互为对手，跃向同一相撞点（render-only）
-  rank?: string; // 牌面点数 A/2..10/J/Q/K（render-only，渲染器画牌面用；缺省纯色）
-  suit?: string; // 花色 S/H/D/C（♠♥♦♣）（render-only）
-}
-
 // ── Mesh3D（render-only，通用「3D 物件即数据」原语）── 一个有体积/双面、可翻面的 3D 物体（牌/骰/棋子）。
-// 区别于 game-g 专属 Card3D（扑克牌面纹理 + 抛飞相撞编排是它的私货）：本件是**引擎通用原语**——任意实体挂上
+// 本件是**引擎通用「3D 物件」原语**（非某游戏私货的手写 Three.js）——任意实体挂上
 // 即被 3D 后端渲成一个 box/plane，与 2D Renderable **同场混排**（per-object opt-in 3D，不是整场景 3D）。
 // 「3D JSON」= 这些 Mesh3D 的数据描述（类比 UILayout 之于 2D UI），游戏只**描述**、引擎**解释**渲染，
 // 不再每游戏手写 Three.js。3D 位姿取同实体 Transform：x,y→位置；rotation→绕 flipAxis 的**翻面角**
