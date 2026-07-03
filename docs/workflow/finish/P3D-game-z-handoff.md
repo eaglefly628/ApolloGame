@@ -118,6 +118,7 @@ node scripts/shoot-game.mjs game-z /tmp/game-z.png    # 任意 game id 都行
 4. **向后兼容**：改 ThreeRenderer 别破坏 2D 后端 / `three-lab` / 现有游戏（无 `Camera3D` 必须退回原行为）。
 5. **纯函数优先**：几何先进 `three-projection` 写 node 可测纯函数，再在 renderer 接 WebGL。
 6. **UI=LayoutNode**：HUD 别手写 DOM。
+7. **先查手册 + 改动回填手册**：动手任何 3D 生产任务前先读 **`docs/playbooks/3d.md`**（本线接线图·查得到必用基座件·查不到去 `requests-3d.md` 提缺口·**绝不绕基座手写 three/自由 system**）；**每次 3D 改动（新 render 组件 / 新能力 / 新约定 / 新工具）在同一提交里回填 `docs/playbooks/3d.md` 对应一行**——手册与代码同步是本线活的一部分（遵 `docs/playbooks/index.md` 维护铁律）。手册答不上、requests-3d 里同类问题出现 ≥2 次 → 该册记 bug 待重写。
 
 ---
 
