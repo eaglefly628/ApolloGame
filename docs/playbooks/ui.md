@@ -14,10 +14,11 @@
 | 校验树合法 | `validateLayoutNode` | `src/ui/components/validate.ts`——交付前零 issue |
 | 新手引导件 | `Coachmark`（组件）+ overlay | `src/renderer/coachmark.ts` + `src/ui/onboarding-overlay.ts`（spotlight 高亮·纯表现不进 hash） |
 | 主题令牌 | `UITheme` | `src/ui/components/types.ts`——语义色/字体槽，换皮 |
+| 字体（含艺术字） | `Label.font`（闭集槽·非自由 font-family） | 基础 ui/mono/pixel/display/serif；**艺术字 10 款**：impact(Bebas Neue)/heavy(Anton)/epic(Cinzel)/fantasy(MedievalSharp)/elegant(Playfair)/script(Pacifico)/hand(Caveat)/scifi(Orbitron)/terminal(VT323)/comic(Bangers)——Google Fonts·OFL 开源·base64 内嵌 `art-fonts.ts`·离线自带·中文自动回退。`mountUI` 自动注入(`ensureArtFonts`)。缺字体→提 requests 让主程加**一个槽**，绝不塞自由 font-family/扒付费字 |
 
 ## ② 样例指针
 
-- **活范例**：`src/games/game-i/gallery.ts`（全控件）+ `mmo-hud.ts`（最复杂 HUD）。
+- **活范例**：`src/games/game-i/gallery.ts`（全控件 + 艺术字体墙 + 特效/纹理/大标题等新 prop 全覆盖）+ `mmo-hud.ts`（最复杂 HUD·纯数据复现 WoW）。
 - **达标大厅**：`src/games/game-g/lobby-dd.ts` + 六屏 `home/campaign/collection/craft/deck/turn-battle-screen.ts`（LayoutNode 纯数据）。
 - 控件目录/形状：`src/ui/components/catalog.ts` + `types.ts`；渲染 debug：`render.ts`。
 
