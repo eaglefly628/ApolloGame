@@ -1128,3 +1128,27 @@ _（REQ-3D-W1高效引擎 已移至 [`requests-3d.md`](./requests-3d.md)。）_
 > 出处：底座终审 `docs/design/base-capability-review-2026-07-03.md` §二⚙️。
 > spec：① **t2-tray 补注册**：`src/skills/tier2/`（tray 相关 capability 对象）加入 `capability-registry.ts` ALL_CAPABILITIES（对照现有条目风格）；**加守护测试**：扫 `src/skills/**` 全部 `defineCapability` 导出，断言每个都在 ALL_CAPABILITIES（防再漏，放 assembly 层测试）。② **Card3D 清遗**：从 `component-map.ts`/`components` 闭集移除已退役的 Card3D（先全库 grep 证零消费再删；renderer/index.ts 里的过期注释一并清）。③ **game-e view.ts 死码删**：`src/games/game-e/view.ts`（buildGameEViewBlueprint 全库零调用，评审两度点名）删除 + 其 import 清理；若有引用它的测试一并删。
 > 门禁 tsc+vitest+build 全绿直推；此活涉引擎域（registry/component-map），属主程授权的引擎卫生，照 spec 严格执行不越范围；完工标 ✅。
+
+### REQ-CAP-三件下沉 · modifier-stack / timeline / save-port（owner 2026-07-03 全批）· 主程出图 → **指派：Opus** · status: **施工中** · 类型: 引擎 capability 下沉（正确性关键）
+> 出处：底座终审 §二🔴。三件按序施工、各自独立提交、**每件落地同提交回填对应 playbook**（手册铁律）。开工前按 CLAUDE.md 查 wiki/skills 对应篇（serialization/animation/scene-management/math-utils 按需）。
+>
+> **件① `t2-modifier-stack` 修正聚合栈（最难，先做）**
+> - 裁决：不扩 t2-stats（实体属性向，表达不了字段表+合并策略+门控），新建通用件；t2-stats 原样不动、registry 注记「待迁 modifier-stack」记债。
+> - 组件（进闭集）：`ModifierSource`（数据行数组：`{id, target:string(字段id), op:'add'|'mul'|'max'|'min'|'or'|'floor', value?:number, valueFrom?:{resourceId,scale?}, gate?:ConditionExpr(复用 tier2/condition.ts), order?:number}`）+ `ModifierTotals`（系统写：`{totals:{[target]:number|boolean}}`）。
+> - 双形态（照 dice.ts 先例）：纯函数核 `aggregateModifiers(rows, ctx)`（确定性：order→id 排序；应用序固定 add→mul→max/min→or→floor→clamp，对齐 clash-resolve 已文档化的 pEff 序；ctx 提供 resource/flag 读取器供 valueFrom/gate）+ Update 相位系统（收集实体上全部 ModifierSource→写 ModifierTotals）。
+> - **表达力验收（硬门槛）**：测试夹具用三套真实词汇各抽 ≥6 条改写——game-e 小丑行（jokers.ts:90-170 的 add/mul×chips/mult/money+countTag+门控）、game-g TengangFx op（game-g-build.ts TENGANG_OPS 已实装 18 op 抽样）、game-g DishaFx+DISHA_MERGE（sum/max/or 策略）——逐条断言聚合结果与原实现语义一致；**表达不了的如实列在报告里**（那是 v2 输入，不许硬凑）。
+> - 回填 `docs/playbooks/combat.md`。**不碰 src/games/**（e/g 的迁移由各域 owner 另立 REQ）。
+>
+> **件② `t3-timeline` 演出时间线**
+> - 裁决：sim 侧确定性调度器，**tick 制绝不走墙钟**（lockstep 红线）；cue 的效果=发 Signal（带 arg）/写 Flag/写 Resource/发 SpawnRequest 四种闭集动作，表现层（UI/渲染）订阅信号自行演——timeline 管"何时"，tween 管"怎么动"，互不越权。
+> - 组件：`Timeline`（`{cues:[{at:number(tick), do:{kind:'signal'|'flag'|'resource'|'spawn', ...}}], playOnSignal:string, speed?:number, loop?:boolean}`）+ 运行态 `TimelinePlayback`（系统写：`{t, playing}`）；播完发 `timeline:done:<id>` 信号。支持 `skipOnSignal`（确定性快进：一次 tick 内按序补发全部剩余 cue，回放安全）。
+> - 参照需求（只读参考勿改）：game-g 演出编排 game-g.tsx:433-533（banner→cue→掷骰→结算时序）、game-d 骰壳转场（refcode 03 评估）。examples 至少给「回合开场三连 cue」+「转场」两个可抄 manifest 片段。
+> - 回填 `docs/playbooks/events-logic.md`（加"演出时序"节）。
+>
+> **件③ SAVE-PORT 存档端口（本地+网络）**
+> - 裁决：**服务+端口形态**（照 services/audio SynthAudioPort、services/platform 先例），非重能力：`src/services/save/`——`SavePort` 接口 `{list(), read(slot), write(slot, envelope), remove(slot)}`；三后端：`LocalStoragePort`（web）、`FilePort`（electron/掌机，经现有平台桥）、`CloudPort`（挂 services/platform 的 Steam 云存档既有钩子）。
+> - **版本化信封（引擎强制）**：`{schema:number, gameId, savedAt:tick或外注时间戳, checksum, data:unknown}`；读到旧 schema 走游戏注册的 `migrate(from,to,data)` 链（照 game-g-save.ts 既有迁移写法归纳成通用签名）；checksum 不符→报坏档不静默。
+> - 能力层薄件 `t2-save-trigger`（可选做，若做：`SaveSlot` 组件+收 `save:<slot>`/`load:<slot>` 信号→经 port 存读声明的 Resource/Flag 集）；确定性注意：savedAt 时间戳由宿主注入不由 sim 取墙钟。
+> - 参照（只读）：game-g-save.ts（迁移先例）、game-f account.ts（META 形状）、platform-hooks.ts（云钩子）。回填 `docs/playbooks/save-platform.md`。
+>
+> 每件：registry 注册（守护测试会强制）+ describe 达标（summary/whenToUse/≥2 examples）+ 测试对齐 skills 1:1 文化 + 门禁全绿分件直推。
