@@ -1086,3 +1086,12 @@ _（REQ-3D-W1高效引擎 已移至 [`requests-3d.md`](./requests-3d.md)。）_
 > **Phase 1（先做·owner 试玩找感觉）= 原始满仪式心流**：① 战斗常量对齐（起手源泉4·关1 homeHp3）② 主将命数参数化（关1=3命）③ 破家善后=回库 ④ **⭐满仪式掷骰演出**（两骰同屏·亲手掷·掷时零操作·执命仪式）⑤(可选)开局排阵静守。**验收=owner 玩关1 判"决策前置+掷骰执命有仪式感+节奏对"。**
 > Phase 2 招牌层（地煞原生重构+startFormation）· Phase 3 专属牌/改掷层 · Phase 4 数值对齐（design G+Player-AI）。
 > **本 REQ 统辖已拆的子 REQ**（起手源泉/主将命数/破家善后/开局排阵/地煞原生/专属牌+改掷层/掷骰缩放）——按策划案 Phase 顺序做。**先节奏后对齐·先 Phase 1。**
+### REQ-STUDIO-DESIGN-设计先行创作流 · 创作台主工作流升级：讨论→分解→对齐→定稿→原型 · [2026-07-03] · 主程 → **指派：Opus** · status: **施工中（2026-07-03 开工）** · 类型: 产品化（apollo.py+前端，不碰引擎）
+> owner 拍板：主创作流从「一句话生成」改为**设计先行**——输入是游戏策划案（或从讨论窗开始构想对齐），AI 分解成 game design 目录，反复对齐细节玩法，定稿后才生成原型。一句话生成降级保留为「⚡ 快速模式」。渊源=ai-dev-pipeline 六段 [1]Brief[2]Spec 的产品化 + capability-plan 闸门进 To-C 流程。
+> **实现 spec（Lead 已定）**：
+> ① **design 目录**：`library/<slug>/design/{pitch.md, systems/<系统名>.md, content.md, capability-plan.md}`——与游戏同库同 git（设计文档版本化免费）。新端点 `GET /api/library/<slug>/design`（树+内容）、`PUT /api/library/<slug>/design/<path>`（仅 .md·路径防护照 manifest 模式·写后 commit）。
+> ② **/api/generate 四个新模式**（复用 autofix 骨架，校验器各异）：`design-chat`（{messages[]} 多轮构想讨论；system=引导四问：类型与参照物/核心循环/胜负与进程/内容规模；够料主动建议「可以分解了」）；`design-breakdown`（讨论纪要或策划案 → JSON {files:{path:content}} 生成 design 目录；**capability-plan.md 须对照注入 catalog 标注 ✅现有能力/⏳缺口**）；`design-revise`（{file_path, current_content, instruction} → 修订全文）；`prototype`（{design_files} → manifest，走既有 autofix 校验回路，生成主输入=GDD 全文）。
+> ③ **前端双模式**：创作入口选「🗣 设计一个游戏（推荐）」/「⚡ 快速生成」。设计模式=讨论窗（聊天 UI）→「分解成设计稿」→ design 目录浏览器（左树右文·逐篇「改这里：」输入=design-revise·每轮 commit）→「设计定稿→生成原型」→ 接 M2 既有预览/保存/迭代。原型后小改走 M2 revise，大改引导回设计层。
+> ④ **mock provider 扩展**：design-chat 脚本化两轮后建议分解；design-breakdown 输出固定小 GDD（≥1 系统+capability-plan 标 2 现有 1 缺口）；prototype 输出合法 manifest——全流程无 key 可 e2e。
+> ⑤ 验收：冒烟（design 端点+路径防护+四模式 mock）+ **playwright 完整旅程贴逐步结果**（讨论两轮→分解→目录 4 文件→对齐改一处→定稿→原型 canvas→保存入库→history 含设计 commit）；门禁 tsc+vitest+build+ast 全绿；直推；完工标 ✅。
+> 约束：apollo.py + src/studio/** + launcher.tsx；**不碰 src/{engine,skills,assembly,renderer,ui,games}**。
