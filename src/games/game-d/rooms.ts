@@ -11,7 +11,6 @@
 
 import type { WorldBlueprint } from '../../assembly/demo.assembly.js';
 import type { VoxelTex } from '@engine/protocol/components.js';
-import { MODEL_DUCK } from './assets.js';
 import { tileArt } from './art.js';
 
 type Ent = WorldBlueprint['entities'][string];
@@ -161,11 +160,7 @@ export function genRoom(index: number): Record<string, Ent> {
     out[`${P}-gem-glow`] = glow(0, 0.78, baseZ, t.accent, 1.9, 0.6);
   }
 
-  // 起手间放 showcase 小黄鸭（证明 glTF 模型导入·非体素）
-  if (index === 0) {
-    out['duck'] = { Transform3D: { x: 1.9, y: 0.12, z: 1.1, rotY: -2.2, scale: 0.85 }, Model3D: { modelKey: MODEL_DUCK } };
-  }
-
+  // （去掉 showcase 小黄鸭——owner 2026-07-02「中间一只鸭子干什么·没这设计」；骰途战场不放它。）
   return out;
 }
 
@@ -180,14 +175,14 @@ export function baseBlueprint(): WorldBlueprint {
     entities: {
       // §B：ortho fr7·pos(0,12,7.8) lookAt 原点 → yaw π·pitch 0.99·orthoSize 7·pivot 抬到盒庭中段(y0.35)。
       cam: { Camera3D: { yaw: Math.PI, pitch: 0.99, projection: 'ortho', orthoSize: 7, distance: 200, near: 1, far: 900, pivotX: 0, pivotY: 0.35, pivotZ: 0 } },
-      // 光照 §B 暖态：key 0xfff0d8 at(6,11,5)→dir(-6,-11,-5) int1.2·fill 0x6f7cff at(-5,4,-4)→dir(5,-4,4) int0.20·amb 0.66。
-      sun: { Light3D: { kind: 'directional', color: 0xfff0d8, intensity: 1.2, dirX: -6, dirY: -11, dirZ: -5, castShadow: true } },
-      fillDir: { Light3D: { kind: 'directional', color: 0x6f7cff, intensity: 0.2, dirX: 5, dirY: -4, dirZ: 4 } },
-      amb: { Light3D: { kind: 'ambient', color: 0xffffff, intensity: 0.66 } },
-      // 移轴景深（上下渐糊·微缩模型感）+ 轻泛光（发光物自发光）——设计案核心氛围。
-      post: { Post3D: { tiltShift: { focus: 0.54, intensity: 1.7 }, bloom: { strength: 0.72, radius: 0.72, threshold: 0.6 } } },
-      // 明快浅暖天穹（微缩盒庭漂在光里·非暗黑）。
-      sky: { Sky3D: { top: 0xd7dbe4, bottom: 0xece7de, clouds: false, cloudTint: 0xe8ecf4, scroll: 0.3 } },
+      // 光照 = **暖调**（对齐设计稿 02-arena 暖房间·与 setMood(false) 一致）：key 暖白·fill 弱冷蓝·amb 暖白降强度加对比。
+      sun: { Light3D: { kind: 'directional', color: 0xfff0d8, intensity: 1.05, dirX: -6, dirY: -11, dirZ: -5, castShadow: true } },
+      fillDir: { Light3D: { kind: 'directional', color: 0x6f7cff, intensity: 0.18, dirX: 5, dirY: -4, dirZ: 4 } },
+      amb: { Light3D: { kind: 'ambient', color: 0xfff1de, intensity: 0.48 } },
+      // 移轴景深（收敛·别糊成雾）+ 轻泛光（阈值高·只发光物晕·不洗白全场）——owner「太白·曝光过度」整改。
+      post: { Post3D: { tiltShift: { focus: 0.54, intensity: 0.85 }, bloom: { strength: 0.32, radius: 0.72, threshold: 0.78 } } },
+      // 暖调奶油天穹（对齐设计稿暖房·非近白）。
+      sky: { Sky3D: { top: 0xe9dcc2, bottom: 0xd6c2a0, clouds: false, cloudTint: 0xf0e6d0, scroll: 0.3 } },
     },
   };
 }

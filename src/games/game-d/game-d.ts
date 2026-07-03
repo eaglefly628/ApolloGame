@@ -158,23 +158,25 @@ export function mount(container: HTMLElement): () => void {
     // Title=**清新冷调蓝灰天穹**（照原型参考图 01-title：雾霭黎明·浅蓝灰渐变·非暗紫非暖黄·owner 2026-07-02「太黄·要清新」）；
     // 盒庭=浅暖。相机在天空盒球内 → 用 Sky3D 渐变穹顶。Title 开 env（中性 studio IBL）给玻璃骰反射高级感；盒庭不开。
     const s = engine.world.getComponent<{ type: 'Sky3D'; top: number; bottom: number; clouds?: boolean; env?: number }>('sky', 'Sky3D');
-    if (s) { s.top = dark ? 0x93a3b7 : 0xd7dbe4; s.bottom = dark ? 0x646f82 : 0xece7de; s.clouds = false; s.env = dark ? 0.28 : 0; }
+    // 盒庭天穹/背景 = **暖调奶油**（照设计稿 02-arena 暖色房间·owner「太白·要更暖更清爽暖色」·非近白）。
+    if (s) { s.top = dark ? 0x93a3b7 : 0xe9dcc2; s.bottom = dark ? 0x646f82 : 0xd6c2a0; s.clouds = false; s.env = dark ? 0.28 : 0; }
     renderer.setBackgroundTexture(null);
-    renderer.setBackground(dark ? 0x7c8699 : 0xd6ddd6);
+    renderer.setBackground(dark ? 0x7c8699 : 0xddcdb0);
     // Title 关闭泛光/移轴（参考原型是纯 ACES 渲染·无 composer·骰子靠 emissive .16 自发光）；盒庭用强移轴+泛光。
     const p = engine.world.getComponent<{ type: 'Post3D'; tiltShift?: object; bloom?: object }>('post', 'Post3D');
     if (p) {
-      p.tiltShift = { focus: 0.54, intensity: dark ? 0 : 1.7 };
-      p.bloom = { strength: dark ? 0 : 0.72, radius: 0.7, threshold: dark ? 0.9 : 0.6 };
+      // 盒庭：**收敛移轴 + 泛光**（owner「太白·曝光过度」→ tiltShift 1.7→0.85 别糊成雾·bloom 0.72/阈0.6→0.32/阈0.78 只让发光物晕、不洗白全场）。
+      p.tiltShift = { focus: 0.54, intensity: dark ? 0 : 0.85 };
+      p.bloom = { strength: dark ? 0 : 0.32, radius: 0.7, threshold: dark ? 0.9 : 0.78 };
     }
     // 三点补光（复刻参考）：Title 把基础灯改成 Ambient 白 .5 + Key 平行光 #fff0d8 int1.1（去向 -3,-4,-5），
     // 关掉盒庭的蓝色平行补光（fillDir）——Rim/Fill 由 showTitleDie 的两盏点光顶上。盒庭恢复原值。
     const amb = engine.world.getComponent<{ type: 'Light3D'; color: number; intensity: number }>('amb', 'Light3D');
-    if (amb) { amb.color = dark ? 0xe3ebf6 : 0xffffff; amb.intensity = dark ? 0.62 : 0.6; } // Title 冷白环境（去暖）
+    if (amb) { amb.color = dark ? 0xe3ebf6 : 0xfff1de; amb.intensity = dark ? 0.62 : 0.48; } // Title 冷白·盒庭暖白环境（降强度加对比·去平白）
     const sun = engine.world.getComponent<{ type: 'Light3D'; color: number; intensity: number; dirX: number; dirY: number; dirZ: number; castShadow: boolean }>('sun', 'Light3D');
     if (sun) { sun.color = dark ? 0xf5f8ff : 0xfff0d8; sun.intensity = dark ? 1.0 : 1.05; sun.dirX = dark ? -3 : -6; sun.dirY = dark ? -4 : -11; sun.dirZ = -5; sun.castShadow = true; } // Title 冷白主光（原型清新·非暖黄）
     const fillDir = engine.world.getComponent<{ type: 'Light3D'; color: number; intensity: number; dirX: number; dirY: number; dirZ: number }>('fillDir', 'Light3D');
-    if (fillDir) { fillDir.color = 0x6f7cff; fillDir.intensity = dark ? 0 : 0.35; fillDir.dirX = 5; fillDir.dirY = -4; fillDir.dirZ = 4; }
+    if (fillDir) { fillDir.color = 0x6f7cff; fillDir.intensity = dark ? 0 : 0.18; fillDir.dirX = 5; fillDir.dirY = -4; fillDir.dirZ = 4; } // 盒庭降冷蓝补光（暖调·别把暖场压冷）
     // 相机：Title=**参考原型正面透视**（fov 38·pos (0,0.2,6.3)·lookAt 原点 → yaw 0 / pitch 0.032 / dist 6.3）；盒庭=近俯视 ortho。
     const c = engine.world.getComponent<Camera3D>('cam', 'Camera3D');
     if (c) {
