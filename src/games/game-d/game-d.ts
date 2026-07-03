@@ -155,14 +155,12 @@ export function mount(container: HTMLElement): () => void {
   const TITLE_DIE = 'gd-title-die';
   let titleDieUp = false;
   const setMood = (dark: boolean): void => {
-    // Title=**柔和蓝灰天穹**（复刻概念图高级感·非暗黑）；盒庭=浅暖。相机在天空盒球内 → 用 Sky3D 渐变穹顶。
+    // Title=**清新冷调蓝灰天穹**（照原型参考图 01-title：雾霭黎明·浅蓝灰渐变·非暗紫非暖黄·owner 2026-07-02「太黄·要清新」）；
+    // 盒庭=浅暖。相机在天空盒球内 → 用 Sky3D 渐变穹顶。Title 开 env（中性 studio IBL）给玻璃骰反射高级感；盒庭不开。
     const s = engine.world.getComponent<{ type: 'Sky3D'; top: number; bottom: number; clouds?: boolean; env?: number }>('sky', 'Sky3D');
-    // Title 开 env（中性 studio IBL·scene.environment）→ 给玻璃命运骰玻璃反射高级感；盒庭不开（env0·不改 arena 观感）。
-    if (s) { s.top = dark ? 0x181231 : 0xd7dbe4; s.bottom = dark ? 0x0b0817 : 0xece7de; s.clouds = false; s.env = dark ? 0.25 : 0; }
-    // Title=**暗紫夜穹**（复刻原型 title：alpha 画布浮于深色页 + 暗角 vignette → 元素色发光骰 + 金 logo 高对比高级感·非浅蓝灰）；
-    // 盒庭=浅暖灰绿（概念取样 #d6ddd6）。
+    if (s) { s.top = dark ? 0x93a3b7 : 0xd7dbe4; s.bottom = dark ? 0x646f82 : 0xece7de; s.clouds = false; s.env = dark ? 0.28 : 0; }
     renderer.setBackgroundTexture(null);
-    renderer.setBackground(dark ? 0x0c0a18 : 0xd6ddd6);
+    renderer.setBackground(dark ? 0x7c8699 : 0xd6ddd6);
     // Title 关闭泛光/移轴（参考原型是纯 ACES 渲染·无 composer·骰子靠 emissive .16 自发光）；盒庭用强移轴+泛光。
     const p = engine.world.getComponent<{ type: 'Post3D'; tiltShift?: object; bloom?: object }>('post', 'Post3D');
     if (p) {
@@ -172,9 +170,9 @@ export function mount(container: HTMLElement): () => void {
     // 三点补光（复刻参考）：Title 把基础灯改成 Ambient 白 .5 + Key 平行光 #fff0d8 int1.1（去向 -3,-4,-5），
     // 关掉盒庭的蓝色平行补光（fillDir）——Rim/Fill 由 showTitleDie 的两盏点光顶上。盒庭恢复原值。
     const amb = engine.world.getComponent<{ type: 'Light3D'; color: number; intensity: number }>('amb', 'Light3D');
-    if (amb) { amb.color = 0xffffff; amb.intensity = dark ? 0.5 : 0.6; }
+    if (amb) { amb.color = dark ? 0xe3ebf6 : 0xffffff; amb.intensity = dark ? 0.62 : 0.6; } // Title 冷白环境（去暖）
     const sun = engine.world.getComponent<{ type: 'Light3D'; color: number; intensity: number; dirX: number; dirY: number; dirZ: number; castShadow: boolean }>('sun', 'Light3D');
-    if (sun) { sun.color = 0xfff0d8; sun.intensity = dark ? 1.1 : 1.05; sun.dirX = dark ? -3 : -6; sun.dirY = dark ? -4 : -11; sun.dirZ = -5; sun.castShadow = true; }
+    if (sun) { sun.color = dark ? 0xf5f8ff : 0xfff0d8; sun.intensity = dark ? 1.0 : 1.05; sun.dirX = dark ? -3 : -6; sun.dirY = dark ? -4 : -11; sun.dirZ = -5; sun.castShadow = true; } // Title 冷白主光（原型清新·非暖黄）
     const fillDir = engine.world.getComponent<{ type: 'Light3D'; color: number; intensity: number; dirX: number; dirY: number; dirZ: number }>('fillDir', 'Light3D');
     if (fillDir) { fillDir.color = 0x6f7cff; fillDir.intensity = dark ? 0 : 0.35; fillDir.dirX = 5; fillDir.dirY = -4; fillDir.dirZ = 4; }
     // 相机：Title=**参考原型正面透视**（fov 38·pos (0,0.2,6.3)·lookAt 原点 → yaw 0 / pitch 0.032 / dist 6.3）；盒庭=近俯视 ortho。
@@ -211,10 +209,10 @@ export function mount(container: HTMLElement): () => void {
     engine.world.addComponent('gd-title-rim', { type: 'Light3D', kind: 'point', color: 0x9b6cff, intensity: 1.2, x: -4, y: 1, z: -3, range: 30, decay: 2 } as unknown as Component);
     engine.world.createEntity('gd-title-fill');
     engine.world.addComponent('gd-title-fill', { type: 'Light3D', kind: 'point', color: 0x3ba0ff, intensity: 0.7, x: 4, y: -2, z: 2, range: 30, decay: 2 } as unknown as Component);
-    // 背光柔光晕（复刻参考 sprite·tint #ffe5a8·scale 6.4·pos (0,-.45,-1.4)）
+    // 背光柔光晕：改**冷调小柔光**（owner「太黄·要清新」→ 从暖金 #ffe5a8/6.4/0.85 大晕换冷白蓝 #dfeaf7/4.0/0.3 小晕·不洗黄）。
     engine.world.createEntity('gd-title-glow');
     engine.world.addComponent('gd-title-glow', { type: 'Transform3D', x: 0, y: -0.45, z: -1.4 } as unknown as Component);
-    engine.world.addComponent('gd-title-glow', { type: 'Glow3D', color: 0xffe5a8, scale: 6.4, opacity: 0.85 } as unknown as Component);
+    engine.world.addComponent('gd-title-glow', { type: 'Glow3D', color: 0xdfeaf7, scale: 4.0, opacity: 0.3 } as unknown as Component);
     titleDieUp = true;
   };
   const hideTitleDie = (): void => { if (!titleDieUp) return; try { engine.world.destroyEntity(TITLE_DIE); engine.world.destroyEntity('gd-title-rim'); engine.world.destroyEntity('gd-title-fill'); engine.world.destroyEntity('gd-title-glow'); } catch { /* noop */ } titleDieUp = false; };
@@ -324,8 +322,8 @@ export function mount(container: HTMLElement): () => void {
   // `justify:'between' + align:'center'` → **logo 顶居中、按钮组底居中**，随浏览器尺寸自动缩放（不依赖挂载时的画布 w/h）。
   // 复用 UI 库现成能力（justify 是 owner 2026-06-25 为「竖向铺满/居中」加的·非新造）。绝对定位只留左上角开发钮 + 装饰光尘。
   const titleTree = (): LayoutNode => ({
-    // 暗角 vignette（复刻原型 radial·中亮边暗）→ 让 3D 大骰居中透出、边缘压暗出高级感。
-    type: 'Screen', id: 'gd-title', props: { bg: 'radial-gradient(78% 66% at 50% 44%, rgba(20,14,34,0) 52%, rgba(8,5,20,0.62) 100%)' },
+    // 暗角 vignette（清新版·冷淡蓝灰·轻压边缘·非暗紫·owner「太黄·要清新」）→ 中亮边微暗、让 3D 骰居中透出。
+    type: 'Screen', id: 'gd-title', props: { bg: 'radial-gradient(88% 78% at 50% 42%, rgba(84,98,120,0) 56%, rgba(50,62,82,0.32) 100%)' },
     children: [
       // 过场测试按钮（左上角锚·非 w 依赖·保留绝对叠层）。
       { type: 'Button', id: 'gd-test-trans', props: { label: '▶ 测试过场', kind: 'ghost', action: 'testTransition' }, layout: { x: 16, y: 16 } },
