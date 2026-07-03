@@ -1115,9 +1115,19 @@ _（REQ-3D-W1高效引擎 已移至 [`requests-3d.md`](./requests-3d.md)。）_
 > **铁律**：走引擎 3D/UI 基座（别绕手写 CSS 3D）；动手前查 `docs/playbooks/index.md`；碰 LayoutNode 交付前跑 `check-ui`；演出层不动 rng/turnHash。
 > **不含**：悬殊跳过提示（`REQ-G-掷骰仪式按赌注缩放`·延后 TODO）。
 > **验收**：owner 玩关1 → "决策回合内做完·**亲手掷骰有执命仪式感**·掷前看清范围/赢面·节拍连贯"。
+<<<<<<< Updated upstream
 
 ### REQ-BASE-卫生三件 · tray 补注册+守护测试 / Card3D 清遗 / view.ts 死码删 · [2026-07-03] · 主程 → **指派：Opus** · status: ✅ **done（2026-07-03·Opus）** · 类型: 引擎卫生（零风险）
 > ✅ 完工摘要（2026-07-03·Opus）：**① t2-tray 补注册**：`trayCapability` 入 `capability-registry.ts`（tier2 分组·drag-place 之后）→ 自动进 `buildCapabilityCatalog` 词汇表（describe 质量达标·无需补）。新增守护测试 `src/assembly/registry-guard.test.ts`：`import.meta.glob(['../skills/**/*.ts','!*.test.ts'])` 扫全部 skill 模块 + 鸭子判定 CapabilityDefinition（id/version/describe/components/systems），断言每个 id 都在 ALL_CAPABILITIES；带「glob 非空跑」下限（>70·防路径写错=假绿）。**自证**：临时从数组撤掉 tray → 测试红、点名 `t2-tray`（tier2/index.ts + tray.ts 两处），恢复即绿。**② Card3D 清遗**：全库 grep 证零消费（仅 component-map 闭集 + render.ts 接口自身+注释；game-g 三渲已删 `three-renderer.ts` 不存在）→ 删 `render.ts` 的 `Card3D` interface + `component-map.ts` 的 import/闭集条目 + `renderer/index.ts` 过期注释；顺带清 `render.ts` Mesh3D 注释里对 Card3D 的悬挂引用。（game-g/blueprint.ts:11「均删见 git 史」是 PG 私档历史注记·不越界动。）**③ game-e view.ts 死码删**：`buildGameEView` 全库仅 `view.test.ts` 自引用 → 删 `view.ts`+`view.test.ts`+ barrel `export * from './view.js'`。删后 game-e 引擎触点收敛为纯计分链（cardScoring/pokerHand/effectApply/eventWhen/flag/resource/stringVariable）——视图带来的 transform/sprite/**frame(l3-frame)**/text 视觉原子不再被 game-e 消费（如实化评审所指）。门禁 tsc+vitest(293 文件/2134 例)+build 退出码全 0·直推。
 > 出处：底座终审 `docs/design/base-capability-review-2026-07-03.md` §二⚙️。
 > spec：① **t2-tray 补注册**：`src/skills/tier2/`（tray 相关 capability 对象）加入 `capability-registry.ts` ALL_CAPABILITIES（对照现有条目风格）；**加守护测试**：扫 `src/skills/**` 全部 `defineCapability` 导出，断言每个都在 ALL_CAPABILITIES（防再漏，放 assembly 层测试）。② **Card3D 清遗**：从 `component-map.ts`/`components` 闭集移除已退役的 Card3D（先全库 grep 证零消费再删；renderer/index.ts 里的过期注释一并清）。③ **game-e view.ts 死码删**：`src/games/game-e/view.ts`（buildGameEViewBlueprint 全库零调用，评审两度点名）删除 + 其 import 清理；若有引用它的测试一并删。
 > 门禁 tsc+vitest+build 全绿直推；此活涉引擎域（registry/component-map），属主程授权的引擎卫生，照 spec 严格执行不越范围；完工标 ✅。
+=======
+>
+> **★ owner 2026-07-03 追加·战场阵亡/胜利 VFX（关键·别在结算框播·"我看不清楚"）**：阵亡/胜利演出**全在真实场上兵位**（锚 `u-<id>`）播——**不在特写/结算框里**（被盖住看不清）。三拍：
+> 1. **败者**：战场原地被**一刀斩击特效切成两半**消失（要"被切成两半"的一刀·非淡出/小撕裂）。
+> 2. **胜者**：战场**原地翻一圈**（翻命主题·翻完落回原位）+ **头顶戴一个特效/冠** → **留在场上**。
+> 3. **战损/耐力对折**：从胜者**头顶飘字移出**（如「战力 −N · 对折」/「耐力减半」·上飘淡出）。
+> **现状可复用**：`game-g.tsx` 已有 `playGhost`(tear/glory/fatigue·锚 `u-<id>`·`g-tear/g-glory/g-pin/g-exitlabel` 关键帧) 雏形 → **升级**：tear→"一刀两断"斩击（可加斩线特效 + 上下两半分离）· 新增胜者 spin+冠 · 飘字上飘。确保**3D 骰/特写收场后**才演或**与场上兵同屏不被盖**。
+> **A/B 数据（程序A 已出·无需程序A 新增）**：`loser/winner id`、`aWins`、`warLoss`、`wins/winStreak`、`lastStand`、`winStays` 全在 `lastClash`。程序B 只读播。
+>>>>>>> Stashed changes
