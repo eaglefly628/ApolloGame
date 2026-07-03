@@ -25,6 +25,7 @@ from pathlib import Path
 from http.server import HTTPServer, BaseHTTPRequestHandler
 import threading
 import urllib.request
+import urllib.parse
 import socket
 
 ROOT = Path(__file__).resolve().parent
@@ -355,7 +356,7 @@ _OPENAI_COMPAT_URLS = {
 def _provider_request(provider: str, api_key: str, model: str, system: str, messages: list,
                       max_tokens: int = 4096) -> dict:
     if provider == 'mock':
-        return _mock_response(messages)
+        return _mock_response(system, messages)
     try:
         if provider == 'anthropic':
             url = 'https://api.anthropic.com/v1/messages'
@@ -424,13 +425,26 @@ def _mock_revise(current: dict) -> dict:
                 caps.append('l2-color')
     return m
 
-def _mock_response(messages: list) -> dict:
-    """generate → 内置 manifest；revise（某条 user 消息带「## Current game manifest」）→ 确定性改一处。
-    _MOCK_BAD_REMAINING>0 时先回坏 JSON（每次自减），驱动服务端 autofix 回路。"""
+def _mock_response(system: str, messages: list) -> dict:
+    """按 system 词分流 mock 响应（设计先行流四模式 + 既有 create/revise）：
+      · design-chat（system==DESIGN_CHAT_SYSTEM）→ 脚本化对话，第二轮 user 起带 [READY_TO_BREAKDOWN]。
+      · design-revise（system==DESIGN_REVISE_SYSTEM）→ 回改过的全文（永远产文本，不受 bad-N 影响）。
+      · design-breakdown（system 以 breakdown 头起）→ 固定小 GDD 的 JSON（受 bad-N 影响，测重问）。
+      · manifest（create / revise / prototype）→ 内置 manifest；revise 走确定性染色（受 bad-N 影响）。
+    _MOCK_BAD_REMAINING>0 时**仅对产 JSON 的模式**先回坏 JSON（每次自减），驱动服务端 autofix / breakdown 重问。"""
     global _MOCK_BAD_REMAINING
+    s = system or ''
+    # 产文本的两模式：从不注坏 JSON（对它们无意义）。
+    if s == DESIGN_CHAT_SYSTEM:
+        return {'success': True, 'text': _mock_design_chat(messages)}
+    if s == DESIGN_REVISE_SYSTEM:
+        return {'success': True, 'text': _mock_design_revise(messages)}
+    # 以下皆为产 JSON 的模式：honor bad-N。
     if _MOCK_BAD_REMAINING > 0:
         _MOCK_BAD_REMAINING -= 1
         return {'success': True, 'text': '{ "name": "broken", oops not valid json '}
+    if s.startswith(_DESIGN_BREAKDOWN_HEAD):
+        return {'success': True, 'text': _mock_breakdown_json()}
     marker = '## Current game manifest'
     revise_src = next((str(m.get('content', '')) for m in messages
                        if m.get('role') == 'user' and marker in str(m.get('content', ''))), None)
@@ -442,6 +456,58 @@ def _mock_response(messages: list) -> dict:
             current = _mock_manifest()
         return {'success': True, 'text': json.dumps(_mock_revise(current), ensure_ascii=False)}
     return {'success': True, 'text': json.dumps(_mock_manifest(), ensure_ascii=False)}
+
+# ── Mock 设计先行流响应（design-chat / design-breakdown / design-revise）────────
+def _mock_design_chat(messages: list) -> str:
+    """脚本化策划对话：第二轮 user 消息起，末行带 [READY_TO_BREAKDOWN]（前端据此亮「分解」按钮）。"""
+    user_turns = sum(1 for m in messages if isinstance(m, dict) and m.get('role') == 'user')
+    if user_turns >= 2:
+        return ('好，类型与参照物、核心循环、胜负进程、内容规模都聊清楚了——'
+                '我会把它分解成 pitch / 系统 / 内容 / 能力总览四份设计稿。\n'
+                '[READY_TO_BREAKDOWN]')
+    return ('明白了。先锁定核心循环：玩家反复做的那个动作是什么？'
+            '（顺带聊聊参照哪些游戏、怎么算赢、大概多少内容量）')
+
+def _mock_breakdown_json() -> str:
+    """固定小 GDD（一个「投骰子比大小」系统）：capability-plan 标 2 现有 ✅ + 1 虚构缺口 ⏳。"""
+    files = {
+        'pitch.md': (
+            '# 投骰子比大小\n\n'
+            '两名玩家各投一颗骰子，点数大者赢下本回合。先赢 2 回合者获胜。\n\n'
+            '参照：吹牛骰 / 大话骰的比点内核，去掉喊注、只留最纯的比大小。\n'),
+        'systems/dice-duel.md': (
+            '# 系统 · 投骰子比大小\n\n'
+            '- 每回合双方各投一颗 1–6 的骰子。\n'
+            '- 点数大的一方本回合得 1 分；平局则本回合重投。\n'
+            '- 先到 2 分者获胜，回到标题。\n'),
+        'content.md': (
+            '# 内容规模\n\n'
+            '- 1 个对局场景（玩家 vs 简单 AI）。\n'
+            '- 目标分数：2。\n'
+            '- 无关卡树、无解锁——一局定胜负的最小可玩体。\n'),
+        'capability-plan.md': (
+            '# 能力总览 capability-plan\n\n'
+            '| 系统/规则 | 能力接入 | 状态 |\n'
+            '|---|---|---|\n'
+            '| 投骰的随机数 | `w1-random`（引擎种子 PRNG，禁裸 Math.random） | ✅ 现有 |\n'
+            '| 骰子点数结算 | `t2-dice-roll` | ✅ 现有 |\n'
+            '| 三局两胜赛制编排 | `t9-best-of-series`（假想 id） | ⏳ 缺口（现有能力表达不了，待下沉）|\n'),
+    }
+    return json.dumps({'files': files}, ensure_ascii=False)
+
+def _mock_design_revise(messages: list) -> str:
+    """回改过的全文：抽出当前文档正文 + 指令，末尾追加一行确定性「修订」标记（测试据此断言内容变了）。"""
+    src = next((str(m.get('content', '')) for m in messages
+                if isinstance(m, dict) and m.get('role') == 'user'), '')
+    cur, instr = '', ''
+    if '## Current document' in src:
+        after = src.split('## Current document', 1)[1]
+        after = after.split('\n', 1)[1] if '\n' in after else after  # 跳过「(path)」行
+        cur = after.split('## Revision instruction', 1)[0].strip()
+    if '## Revision instruction' in src:
+        instr = src.split('## Revision instruction', 1)[1].split('\n\nOutput', 1)[0].strip()
+    body = cur or '# 设计稿'
+    return f'{body}\n\n> 修订：{instr or "（细化）"}'
 
 # ── 生成管线：单轮生成 + 服务端 autofix 重试（落地 ai-dev-pipeline §7-5）─────
 def _generate_with_autofix(provider: str, api_key: str, model: str, system: str,
@@ -486,9 +552,177 @@ def _generate_with_autofix(provider: str, api_key: str, model: str, system: str,
             'blueprint': None, 'attempts': attempts, 'fixed_errors': fixed_errors,
             'raw_error': fixed_errors[-1] if fixed_errors else None}
 
+# ── 设计先行创作流 · 四模式的引导词（讨论 → 分解 → 对齐 → 原型）─────────────
+# 主创作流升级：输入是策划案（或从讨论窗构想对齐）→ AI 分解成 design 目录 → 反复对齐 → 定稿生成原型。
+# 渊源=ai-dev-pipeline 六段 [1]Brief[2]Spec 的产品化 + capability-plan 闸门进 To-C 流程。
+
+DESIGN_CHAT_SYSTEM = """You are an experienced game design facilitator. Help a creator turn a rough idea into a concrete, buildable game design through a short conversation. Reply in the creator's language (default 中文). Keep every reply short and concrete.
+
+Guide the discussion to cover FOUR essentials, one focus at a time, asking one sharp follow-up per turn:
+1. 类型与参照物 (genre & reference games)
+2. 核心循环 (the core loop the player repeats)
+3. 胜负与进程 (win/lose conditions & progression)
+4. 内容规模 (content scope: how many levels / enemies / cards …)
+
+Do NOT write the design document itself — that is a later step. Only converse to pin down the essentials.
+When the four essentials are sufficiently covered, give a one-line summary of what you will break down, then output on a FINAL separate line exactly this marker (nothing after it):
+[READY_TO_BREAKDOWN]
+Never emit that marker before the essentials are genuinely covered."""
+
+# breakdown 头（mock 据此识别；也是 DESIGN_BREAKDOWN_SYSTEM 的真实开头，务必一致）。
+_DESIGN_BREAKDOWN_HEAD = "You are Apollo Engine's game design breakdown generator"
+DESIGN_BREAKDOWN_SYSTEM = _DESIGN_BREAKDOWN_HEAD + """. You turn a design discussion (or a pitch) into a small Game Design Document (GDD) as a set of markdown files.
+
+## Output format — STRICT JSON ONLY (no markdown fences, no prose)
+{"files": {
+  "pitch.md": "<one-paragraph pitch + reference games>",
+  "systems/<system-name>.md": "<one file per core system: rules, numbers, states>",
+  "content.md": "<content scope: levels / enemies / items counts>",
+  "capability-plan.md": "<capability plan, see below>"
+}}
+Keys MUST be .md filenames; extra systems go under the systems/ subdirectory. Values are the file contents as strings. Always include at least pitch.md and capability-plan.md.
+
+## capability-plan.md — the engine-readiness gate (REQUIRED)
+For EACH system/rule in the design, name the engine capability that expresses it, taken ONLY from the capability catalog below, and mark it ✅ 现有 (real id) or ⏳ 缺口 (no existing capability expresses it — a gap to sink into the engine). Use a markdown table. Do NOT invent capabilities as ✅; unknown ones are ⏳ gaps.
+
+## Capability catalog (authoritative capability ids)
+{CAPABILITY_CATALOG}
+"""
+
+DESIGN_REVISE_SYSTEM = """You are a game design document editor. You are given one markdown design file and a revision instruction. Apply the instruction and output the COMPLETE revised file as markdown. Reply in the file's language. Do NOT wrap the output in code fences and do NOT add any explanation — output only the revised markdown document."""
+
+PROTOTYPE_TASK = """Below is the full Game Design Document (GDD). Read all of it, then output a single Apollo Engine manifest (pure JSON) that is a PLAYABLE FIRST PROTOTYPE of the core loop. It does not need every system — focus on making the core loop visible and runnable. Follow the manifest format and capability catalog rules from the system prompt exactly."""
+
+
+def _handle_design_chat(provider: str, api_key: str, model: str, body: dict) -> dict:
+    """多轮构想讨论（无状态·前端带全 messages）。回复末尾若含 [READY_TO_BREAKDOWN] → ready=True（并从展示文本剥掉标记）。"""
+    messages = body.get('messages')
+    if not isinstance(messages, list) or not messages:
+        return {'success': False, 'error': 'design-chat 需要 messages[]（非空）'}
+    msgs = [{'role': m.get('role'), 'content': str(m.get('content', ''))}
+            for m in messages if isinstance(m, dict) and m.get('role') in ('user', 'assistant')]
+    if not msgs:
+        return {'success': False, 'error': 'messages 里没有有效对话轮次'}
+    r = _provider_request(provider, api_key, model, DESIGN_CHAT_SYSTEM, msgs)
+    if not r.get('success'):
+        return {'success': False, 'error': r.get('error', 'LLM 请求失败')}
+    text = r['text']
+    ready = '[READY_TO_BREAKDOWN]' in text
+    reply = text.replace('[READY_TO_BREAKDOWN]', '').strip()
+    return {'success': True, 'reply': reply, 'ready': ready}
+
+
+def _parse_design_files(text: str):
+    """校验 breakdown 输出：严格 JSON {files:{path:content}} + 文件名白名单（.md·systems/ 子目录）。
+    返回 (True, {rel:content}) 或 (False, 错误文本·供回喂重问)。"""
+    try:
+        obj = json.loads(_extract_json(text))
+    except Exception as e:
+        return False, f'输出不是合法 JSON：{e}'
+    files = obj.get('files') if isinstance(obj, dict) else None
+    if not isinstance(files, dict) or not files:
+        return False, '缺少 files 对象（应为 {"files": {"pitch.md": "...", ...}}）'
+    clean = {}
+    for rel, content in files.items():
+        if not _valid_design_relpath(rel):
+            return False, f'非法文件名（仅 .md，且只能是顶层或 systems/ 子目录）：{rel!r}'
+        if not isinstance(content, str) or not content.strip():
+            return False, f'文件内容必须是非空字符串：{rel}'
+        clean[rel] = content
+    if 'pitch.md' not in clean or 'capability-plan.md' not in clean:
+        return False, '至少要包含 pitch.md 与 capability-plan.md'
+    return True, clean
+
+
+def _handle_design_breakdown(provider: str, api_key: str, model: str, body: dict, catalog: str) -> dict:
+    """讨论纪要/策划案 → design 目录（一次落盘 + 单个 commit 'design breakdown'）。
+    校验（JSON 形状 + 文件名白名单）失败走 autofix 式回喂重问 ≤3 次。前端传 slug（游戏须已建）。"""
+    slug = str(body.get('slug') or '').strip()
+    if not _valid_slug(slug):
+        return {'success': False, 'error': 'design-breakdown 需要合法 slug（先建游戏）'}
+    game_dir = _game_dir(slug)
+    if not game_dir.is_dir():
+        return {'success': False, 'error': f'游戏不存在: {slug}'}
+    messages = body.get('messages')
+    if not isinstance(messages, list) or not messages:
+        return {'success': False, 'error': 'design-breakdown 需要 messages[]（讨论纪要）'}
+    transcript = '\n'.join(f'{m.get("role")}: {str(m.get("content", ""))}'
+                           for m in messages if isinstance(m, dict) and m.get('role') in ('user', 'assistant'))
+    system = DESIGN_BREAKDOWN_SYSTEM.replace('{CAPABILITY_CATALOG}', catalog or _FALLBACK_CATALOG)
+    user_msg = '## Design discussion transcript\n' + transcript + '\n\nBreak this down into the GDD files now (STRICT JSON only).'
+    msgs = [{'role': 'user', 'content': user_msg}]
+    attempts, errors = 0, []
+    while attempts < 3:
+        attempts += 1
+        r = _provider_request(provider, api_key, model, system, msgs)
+        if not r.get('success'):
+            return {'success': False, 'error': r.get('error', 'LLM 请求失败'), 'attempts': attempts, 'fixed_errors': errors}
+        text = r['text']
+        ok, res = _parse_design_files(text)
+        if ok:
+            for rel, content in res.items():
+                _write_design_file(game_dir, rel, content)
+            _touch_meta(game_dir)
+            versioned = _version_save_all(game_dir, 'design breakdown')
+            return {'success': True, 'slug': slug, 'files': res, 'attempts': attempts,
+                    'fixed_errors': errors, 'versioned': versioned}
+        errors.append(res)
+        msgs += [{'role': 'assistant', 'content': text},
+                 {'role': 'user', 'content': f'你上次的输出有问题：{res}\n只输出严格 JSON：{{"files": {{"pitch.md": "...", "systems/xxx.md": "...", "content.md": "...", "capability-plan.md": "..."}}}}，不要 markdown 围栏、不要解释。'}]
+    return {'success': False, 'error': f'分解 {attempts} 次后仍未通过校验，换个说法再试试。',
+            'attempts': attempts, 'fixed_errors': errors, 'raw_error': errors[-1] if errors else None}
+
+
+def _handle_design_revise(provider: str, api_key: str, model: str, body: dict) -> dict:
+    """单篇 design 文档修订：{file_path, current_content, instruction} → 修订全文（不落盘，前端拿到再 PUT）。"""
+    file_path = str(body.get('file_path') or '').strip()
+    current = body.get('current_content')
+    instruction = str(body.get('instruction') or '').strip()
+    if not _valid_design_relpath(file_path):
+        return {'success': False, 'error': f'非法 design 文件名: {file_path!r}'}
+    if not isinstance(current, str):
+        return {'success': False, 'error': 'design-revise 需要 current_content（字符串）'}
+    if not instruction:
+        return {'success': False, 'error': 'design-revise 需要 instruction（非空）'}
+    user_msg = (f'## Current document ({file_path})\n{current}\n\n'
+                f'## Revision instruction\n{instruction}\n\n'
+                'Output the COMPLETE revised document as markdown (no code fences, no explanation).')
+    r = _provider_request(provider, api_key, model, DESIGN_REVISE_SYSTEM, [{'role': 'user', 'content': user_msg}])
+    if not r.get('success'):
+        return {'success': False, 'error': r.get('error', 'LLM 请求失败')}
+    return {'success': True, 'file_path': file_path, 'content': _strip_fence(r['text'])}
+
+
+def _handle_prototype(provider: str, api_key: str, model: str, body: dict, system: str) -> dict:
+    """design 全文（服务端从磁盘读该 slug 的 design/）→ manifest，走既有 _generate_with_autofix 硬校验回路。"""
+    slug = str(body.get('slug') or '').strip()
+    if not _valid_slug(slug):
+        return {'success': False, 'error': 'prototype 需要合法 slug'}
+    game_dir = _game_dir(slug)
+    if not game_dir.is_dir():
+        return {'success': False, 'error': f'游戏不存在: {slug}'}
+    files = _read_design(game_dir)
+    if not files:
+        return {'success': False, 'error': '该游戏还没有 design 文档，先分解设计稿再生成原型'}
+    gdd = '\n\n'.join(f'### {rel}\n{content}' for rel, content in files.items())
+    user_msg = PROTOTYPE_TASK + '\n\n## Game Design Document\n' + gdd
+    return _generate_with_autofix(provider, api_key, model, system, user_msg, autofix=True)
+
+
+def _strip_fence(text: str) -> str:
+    """剥掉整体被 ``` 围栏包住的 markdown（design-revise 防御：LLM 有时手滑加围栏）。"""
+    t = (text or '').strip()
+    if t.startswith('```'):
+        t = t.split('\n', 1)[1] if '\n' in t else ''
+        if t.rstrip().endswith('```'):
+            t = t.rstrip()[:-3]
+    return t.strip()
+
+
 def handle_generate(body: dict) -> dict:
     """POST /api/generate 的处理核。mode='create'（默认）从 prompt 生成；mode='revise' 从
-    current_manifest + instruction 生成完整修订版。autofix=True 开服务端校验重试回路。"""
+    current_manifest + instruction 生成完整修订版；设计先行流四模式 design-chat/design-breakdown/
+    design-revise/prototype 见各 _handle_* 。autofix=True 开服务端校验重试回路。"""
     provider = body.get('provider', 'anthropic')
     catalog = body.get('catalog', None)
     mode = body.get('mode', 'create')
@@ -503,6 +737,19 @@ def handle_generate(body: dict) -> dict:
         env_key = LLM_PROVIDERS.get(provider, {}).get('env_key', '?')
         hint = 'mock provider 未启用（需 APOLLO_MOCK_LLM=1）' if provider == 'mock' else f'Set {env_key} in .env file.'
         return {'success': False, 'error': f'No API key for {provider}. {hint}', 'blueprint': None}
+
+    models = LLM_PROVIDERS.get(provider, {}).get('models') or ['mock']
+    model = body.get('model') or _config_model(provider) or models[0]
+
+    # 设计先行流四模式分派（各自的校验器 / 系统词；prototype 复用 manifest 系统词 + autofix）。
+    if mode == 'design-chat':
+        return _handle_design_chat(provider, api_key, model, body)
+    if mode == 'design-breakdown':
+        return _handle_design_breakdown(provider, api_key, model, body, catalog)
+    if mode == 'design-revise':
+        return _handle_design_revise(provider, api_key, model, body)
+    if mode == 'prototype':
+        return _handle_prototype(provider, api_key, model, body, system)
 
     if mode == 'revise':
         current = body.get('current_manifest')
@@ -523,9 +770,6 @@ def handle_generate(body: dict) -> dict:
             return {'success': False, 'error': 'No prompt provided', 'blueprint': None}
         user_msg = prompt
 
-    models = LLM_PROVIDERS.get(provider, {}).get('models') or ['mock']
-    # model 优先级：请求显式 > 设置里存的 model > provider 默认首个（让设置页选的模型真正生效）。
-    model = body.get('model') or _config_model(provider) or models[0]
     return _generate_with_autofix(provider, api_key, model, system, user_msg, autofix)
 
 # ── 设置端点（BYO key 面板 · M3）────────────────────────────────────────
@@ -977,6 +1221,76 @@ def _version_save(game_dir: Path, manifest: dict, message: str) -> str:
     _snapshot(game_dir, manifest)
     return 'snapshot'
 
+def _version_save_all(game_dir: Path, message: str) -> str:
+    """存一版（不指定 manifest，用于 design 文档改动）：git 提交整目录；无 git → 快照当前 manifest 作版本标记。"""
+    if _git_commit_all(game_dir, message):
+        return 'git'
+    try:
+        manifest = json.loads((game_dir / 'manifest.json').read_text(encoding='utf-8'))
+    except Exception:
+        manifest = {}
+    _snapshot(game_dir, manifest)
+    return 'snapshot'
+
+# ── design 目录（设计先行流：pitch/systems/content/capability-plan，与游戏同库同 git 版本化）──
+# 路径防护：design/ 子树只许 .md；每个路径段字符白名单 [A-Za-z0-9._-]（堵掉 ../ 与斜杠花招）；
+# 形状白名单：顶层 <name>.md 或 systems/<name>.md（深度 ≤2，第二层只能在 systems/ 下）。
+_DESIGN_SEG_RE = re.compile(r'^[A-Za-z0-9._-]+$')
+
+def _valid_design_relpath(rel) -> bool:
+    if not isinstance(rel, str) or not rel or rel != rel.strip():
+        return False
+    norm = rel.replace('\\', '/')
+    if norm.startswith('/') or norm.endswith('/'):
+        return False
+    segs = norm.split('/')
+    if any(s in ('', '.', '..') or not _DESIGN_SEG_RE.match(s) for s in segs):
+        return False
+    if not norm.endswith('.md'):
+        return False
+    if len(segs) == 1:
+        return True
+    if len(segs) == 2:
+        return segs[0] == 'systems'
+    return False
+
+def _design_parts(path: str):
+    """'/api/library/<slug>/design/<rel...>' → (slug, rel) 或 (None, None)。"""
+    segs = [s for s in path.split('/') if s]  # ['api','library',slug,'design',...rel]
+    if len(segs) >= 5 and segs[0] == 'api' and segs[1] == 'library' and segs[3] == 'design':
+        return segs[2], '/'.join(segs[4:])
+    return None, None
+
+def _read_design(game_dir: Path) -> dict:
+    """design/ 下所有合法 .md → {相对路径: 内容}（按路径排序·稳定）。"""
+    ddir = game_dir / 'design'
+    out = {}
+    if not ddir.is_dir():
+        return out
+    for p in sorted(ddir.rglob('*.md')):
+        try:
+            rel = p.relative_to(ddir).as_posix()
+        except Exception:
+            continue
+        if not _valid_design_relpath(rel):
+            continue
+        try:
+            out[rel] = p.read_text(encoding='utf-8')
+        except Exception:
+            pass
+    return out
+
+def _write_design_file(game_dir: Path, rel: str, content: str) -> None:
+    """写单篇 design .md（rel 须已过 _valid_design_relpath）。再断言归一化后仍在 design/ 子树内（纵深防护）。"""
+    ddir = (game_dir / 'design').resolve()
+    target = (game_dir / 'design' / rel)
+    resolved = target.resolve()
+    if resolved != ddir and ddir not in resolved.parents:
+        raise ValueError(f'design 路径越界: {rel!r}')
+    target.parent.mkdir(parents=True, exist_ok=True)
+    text = content if content.endswith('\n') else content + '\n'
+    target.write_text(text, encoding='utf-8')
+
 def _write_json(path: Path, data: dict) -> None:
     path.write_text(json.dumps(data, ensure_ascii=False, indent=2) + '\n', encoding='utf-8')
 
@@ -1050,7 +1364,9 @@ def _list_library() -> list:
             valid = True
         except Exception:
             valid = False
-        out.append({'slug': d.name, 'meta': meta, 'valid': valid})
+        ddir = d / 'design'
+        has_design = ddir.is_dir() and any(ddir.rglob('*.md'))
+        out.append({'slug': d.name, 'meta': meta, 'valid': valid, 'hasDesign': has_design})
     return out
 
 def _history(game_dir: Path) -> dict:
@@ -1087,7 +1403,24 @@ def library_get(path: str) -> tuple:
             return (400, {'error': f'manifest 解析失败: {e}'})
     if action == 'history':
         return (200, _history(game_dir))
+    if action == 'design':
+        return (200, {'files': _read_design(game_dir)})
     return (404, {'error': f'未知库端点: {path}'})
+
+def library_design_put(slug: str, rel: str, body: dict) -> tuple:
+    """PUT /api/library/<slug>/design/<rel>：写单篇 design .md + commit（note 可选）。仅 .md·路径防护。"""
+    game_dir = _game_dir(slug)
+    if not game_dir.is_dir():
+        return (404, {'success': False, 'error': f'游戏不存在: {slug}'})
+    if not _valid_design_relpath(rel):
+        return (400, {'success': False, 'error': f'非法 design 路径（仅 .md·顶层或 systems/ 子目录）: {rel!r}'})
+    content = body.get('content')
+    if not isinstance(content, str):
+        return (400, {'success': False, 'error': 'content 必须是字符串'})
+    _write_design_file(game_dir, rel, content)
+    _touch_meta(game_dir)
+    versioned = _version_save_all(game_dir, str(body.get('note') or f'design: {rel}'))
+    return (200, {'success': True, 'slug': slug, 'path': rel, 'versioned': versioned})
 
 def library_create(body: dict) -> tuple:
     name = str(body.get('name') or '').strip()
@@ -1327,6 +1660,13 @@ class APIHandler(BaseHTTPRequestHandler):
         if path == '/api/settings':
             self._send_json(200, handle_settings_put(body))
             return
+        # design 单篇写（/api/library/<slug>/design/<rel...>·rel 可含 systems/ 子路径）——先于 manifest 分派。
+        if path.startswith('/api/library/') and '/design/' in path:
+            d_slug, rel = _design_parts(path)
+            rel = urllib.parse.unquote(rel) if rel else rel
+            if d_slug:
+                self._send_json(*_lib_dispatch(lambda: library_design_put(d_slug, rel, body)))
+                return
         slug, action = _lib_parts(path)
         if path.startswith('/api/library/') and action == 'manifest' and slug:
             self._send_json(*_lib_dispatch(lambda: library_put_manifest(slug, body)))
