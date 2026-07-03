@@ -26,6 +26,7 @@ import {
 } from './dice.js';
 import { makeFoe, counterDisabled, evalChallenge, damageOf, condLabel, type Foe } from './combat.js';
 import { elementBadge, diceFaceArt, lootCardArt, skyArt, CARDED_DEFIDS } from './art.js';
+import mashanFont from './assets/fonts/mashanzheng.woff2'; // 自托管中文毛笔艺术字（Ma Shan Zheng·OFL·仅子集·离线·标题 logo 用·见 assets/fonts/CREDITS.md）
 
 const SOLO_HEARTS = 6;
 const FLOORS = 4;
@@ -51,6 +52,9 @@ const GAME_D_THEME: UITheme = {
   mine: '#f0d68a', foe: '#ff8a8a',
   fontUi: "'PingFang SC', 'Hiragino Sans GB', 'Noto Sans SC', 'Microsoft YaHei', sans-serif", // 正文无衬线
   fontSerif: "'Noto Serif SC', Georgia, serif", // 标题/logo/骰名衬线（Label font:'serif'）
+  // 中文毛笔艺术字槽（Label font:'display'）：logo「骰途」用（大字最出艺术感）。艺术字接进 fontDisplay 而非 serif → 不牵连「开始攀塔」按钮（owner 说它已清楚·保持衬线）。
+  fontDisplay: "'Ma Shan Zheng', 'Noto Serif SC', serif",
+  webfonts: [{ family: 'Ma Shan Zheng', url: mashanFont, weight: '400' }], // 数据化声明 → 引擎 ensureWebfonts 注一次 @font-face（不手写 CSS·REQ-UI-web字体加载）
   fontMono: "ui-monospace, 'SF Mono', Menlo, Consolas, monospace",
   inputBg: 'rgba(0,0,0,0.32)',
 };
@@ -396,7 +400,7 @@ export function mount(container: HTMLElement): () => void {
           { type: 'Panel', id: 'gd-logo-box', props: { bare: true }, layout: { maxWidth: 480, direction: 'column', align: 'center', gap: 9 },
             children: [
               // 确切复刻原型：logo 76px 衬线 letter-spacing6·副标 Cinzel 15px sp6 两侧细线·tagline 13px
-              lbl('gd-name', '骰途', { size: 76, color: 'gold', bold: true, glow: true, tracking: 6, font: 'serif' }),
+              lbl('gd-name', '骰途', { size: 76, color: 'gold', bold: true, glow: true, tracking: 6, font: 'display' }), // 中文毛笔艺术字（Ma Shan Zheng·fontDisplay 槽·大字艺术感）
               bareRow('gd-subrow', [
                 { type: 'Panel', id: 'gd-sl', props: { bg: 'linear-gradient(90deg,transparent,#9a7c46)' }, layout: { width: 34, height: 1, padding: 0 }, children: [] },
                 lbl('gd-sub', 'TOWER OF FATE', { size: 15, color: 'ink', tracking: 6, font: 'epic' }), // Cinzel 史诗衬线（原型副标确指·主程 2026-07-03 内嵌艺术字库落地后接入·拉丁字形专用）
