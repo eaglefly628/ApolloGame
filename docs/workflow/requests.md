@@ -1095,3 +1095,20 @@ _（REQ-3D-W1高效引擎 已移至 [`requests-3d.md`](./requests-3d.md)。）_
 > ④ **mock provider 扩展**：design-chat 脚本化两轮后建议分解；design-breakdown 输出固定小 GDD（≥1 系统+capability-plan 标 2 现有 1 缺口）；prototype 输出合法 manifest——全流程无 key 可 e2e。
 > ⑤ 验收：冒烟（design 端点+路径防护+四模式 mock）+ **playwright 完整旅程贴逐步结果**（讨论两轮→分解→目录 4 文件→对齐改一处→定稿→原型 canvas→保存入库→history 含设计 commit）；门禁 tsc+vitest+build+ast 全绿；直推；完工标 ✅。
 > 约束：apollo.py + src/studio/** + launcher.tsx；**不碰 src/{engine,skills,assembly,renderer,ui,games}**。
+
+---
+
+### REQ-G-满仪式掷骰演出（掷骰执命·心流核心） · [2026-07-03] · design G → 程序B（表现/演出·程序A 供数据） · Game G · status: open · 优先级: **P0（Phase 1 里程碑·让 owner 感受心流）** · 规格: `design/theory-numbers-and-flow.md §4.1` + `IMPL-PLAN-combat-flow.md P1.4b`
+
+> **owner 2026-07-03 派**（Phase 1 表现半边·逻辑半边程序A 在做）。目标：把对决那一下做成**「掷骰执命」满仪式**——owner 玩关1 时"决策全前置 → 亲手掷骰 → 看命运翻"的心流成立。
+> **设计支柱（`theory §4`·别违）**：**操作全前置·掷骰纯仪式·掷时零操作**。掷骰=结算仪式（诚实·非技巧检定）；亲手掷给**节奏能动（何时揭晓）+ 归属感 + 翻命主题**·不给结果控制。
+> **⚠ 先审后补（别重做已完成的）**：✅ `clash-dice-3d.ts`+`syncDice3D`（`4daf7280`·引擎 ThreeRenderer 3D 双骰旋转+粒子·当前装饰旋转不落真实面）；✅ 一步步阵亡/对折演出（`f6e88a2e`）；✅ 掷值文本+预报%（vision impl）。
+> **要补齐的"满仪式"缺口（对照 `theory §4.1` 审·缺则补）**：
+> 1. **亲手掷的节奏能动**：进特写 → **玩家点「掷命」钮才揭晓**（非自动滚完）——掌控"何时面对命运"。
+> 2. **掷前信息**：显双方 `[1,P]` 战力范围 + `clashOdds` 真实预报%（非 100/0）。
+> 3. **3D 骰落真实面（打磨）**：双骰停在各自 `rollA/rollB` 那一面 → 揭晓大者胜。
+> 4. **节拍连贯**：掷前(范围+预报)→亲手掷→双骰落值揭晓→一步步阵亡/对折→收场。**全程掷时零操作**。
+> **A/B 接口**（程序A 在 `lastClash`/`clashLog` 出）：`ea/eb`(=[1,P]上界)、`clashOdds`、`rollA/rollB`、`aWins`、阵亡、疲劳 `wins`。**程序B 只读播演出·不改结果**。
+> **铁律**：走引擎 3D/UI 基座（别绕手写 CSS 3D）；动手前查 `docs/playbooks/index.md`；碰 LayoutNode 交付前跑 `check-ui`；演出层不动 rng/turnHash。
+> **不含**：悬殊跳过提示（`REQ-G-掷骰仪式按赌注缩放`·延后 TODO）。
+> **验收**：owner 玩关1 → "决策回合内做完·**亲手掷骰有执命仪式感**·掷前看清范围/赢面·节拍连贯"。
