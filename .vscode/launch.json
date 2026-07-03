@@ -2,6 +2,17 @@
   "version": "0.2.0",
   "configurations": [
     {
+      "name": "Apollo 创作台 (player mode)",
+      "type": "debugpy",
+      "request": "launch",
+      "program": "${workspaceFolder}/apollo.py",
+      "args": [
+        "player"
+      ],
+      "console": "integratedTerminal",
+      "cwd": "${workspaceFolder}"
+    },
+    {
       "name": "Build Cartridge (menu)",
       "type": "debugpy",
       "request": "launch",
@@ -14,7 +25,9 @@
       "type": "debugpy",
       "request": "launch",
       "program": "${workspaceFolder}/scripts/build_game.py",
-      "args": ["game-f"],
+      "args": [
+        "game-f"
+      ],
       "console": "integratedTerminal",
       "cwd": "${workspaceFolder}"
     },
@@ -23,7 +36,9 @@
       "type": "debugpy",
       "request": "launch",
       "program": "${workspaceFolder}/scripts/build_game.py",
-      "args": ["all"],
+      "args": [
+        "all"
+      ],
       "console": "integratedTerminal",
       "cwd": "${workspaceFolder}"
     },
@@ -39,7 +54,10 @@
   "compounds": [
     {
       "name": "Build + Preview: game-f",
-      "configurations": ["Build Cartridge: game-f", "Preview Cartridge"],
+      "configurations": [
+        "Build Cartridge: game-f",
+        "Preview Cartridge"
+      ],
       "stopAll": true
     }
   ]

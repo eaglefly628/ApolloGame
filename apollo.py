@@ -1397,17 +1397,19 @@ def _open_browser_when_ready(open_url: str, probe_url: str) -> None:
 
 # ── 命令 ──
 
-def cmd_launcher():
+def cmd_launcher(player: bool = False):
     check_env()
 
-    url = f"http://localhost:{VITE_PORT}"
+    # player=True → 创作台玩家模式（空卡带架 + 创作向导；隐藏内置游戏与 DevTools）
+    url = f"http://localhost:{VITE_PORT}" + ("/?mode=player" if player else "")
 
     # 防止二次启动重复开浏览器：若 Vite 端口已占用，说明实例已在运行。
     # 第二个进程的 start_vite() 会因端口冲突立即退出，但 wait_for_server 仍返回 True
-    # 再调 webbrowser.open → 弹出多余新标签。在这里提前退出即可避免。
+    # 再调 webbrowser.open → 弹出多余新标签。已在运行时直接开目标页即可（不重启服务）。
     if is_port_in_use(VITE_PORT):
-        print(c("  [INFO]", 'y'), f"Apollo 已在运行 → {c(url, 'c')}")
-        print(c("  [INFO]", 'dim'), "如需重启，请先在原终端按 Ctrl+C 停止服务")
+        print(c("  [INFO]", 'y'), f"Apollo 已在运行 → 直接打开 {c(url, 'c')}")
+        print(c("  [INFO]", 'dim'), "如需重启服务，请先在原终端按 Ctrl+C 停止")
+        webbrowser.open(url)
         return
 
     api = start_api_server()
@@ -1427,6 +1429,10 @@ def cmd_launcher():
         vite.wait()
     except KeyboardInterrupt:
         _cleanup()
+
+def cmd_player():
+    # 创作台玩家模式一键入口：python apollo.py player
+    cmd_launcher(player=True)
 
 def cmd_test():
     check_env()
@@ -1461,6 +1467,7 @@ def cmd_help():
     banner()
     print(c("  Commands:", 'w'))
     print(f"    {c('(default)', 'c').ljust(30)} Launch Game Library + Dev Tools")
+    print(f"    {c('player', 'c').ljust(30)} 创作台玩家模式（空卡带架+创作向导·To-C）")
     print(f"    {c('test', 'c').ljust(30)} Run all tests")
     print(f"    {c('typecheck', 'c').ljust(30)} TypeScript type check")
     print(f"    {c('build', 'c').ljust(30)} Production build")
@@ -1477,7 +1484,7 @@ def main():
         return
 
     dispatch = {
-        'launcher': cmd_launcher, 'test': cmd_test, 'typecheck': cmd_typecheck,
+        'launcher': cmd_launcher, 'player': cmd_player, 'test': cmd_test, 'typecheck': cmd_typecheck,
         'build': cmd_build, 'bench': cmd_bench, 'status': cmd_status, 'help': cmd_help, '-h': cmd_help,
     }
     cmd = args[0]
