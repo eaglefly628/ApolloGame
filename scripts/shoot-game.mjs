@@ -24,7 +24,8 @@ try {
     headless: true,
     args: ['--use-gl=angle', '--use-angle=swiftshader', '--enable-unsafe-swiftshader', '--ignore-gpu-blocklist', '--enable-webgl'],
   });
-  const page = await browser.newPage({ viewport: { width: 1000, height: 640 } });
+  const [vpW, vpH] = (process.env.SHOOT_VP || '1000x640').split('x').map(Number); // 可选视窗尺寸（env SHOOT_VP=1400x720·验响应式）
+  const page = await browser.newPage({ viewport: { width: vpW || 1000, height: vpH || 640 } });
   page.on('console', (m) => console.log('[page]', m.type(), m.text()));
   page.on('pageerror', (e) => console.log('[pageerror]', e.message));
   await page.goto(`http://localhost:${PORT}/?game=${gameId}`, { waitUntil: 'load', timeout: 30000 });

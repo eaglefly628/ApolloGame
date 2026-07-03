@@ -308,37 +308,47 @@ export function mount(container: HTMLElement): () => void {
   const MOTES: [number, number, number, string, number][] = [
     [0.22, 0.62, 7, '#ffe5a8', 5000], [0.74, 0.54, 6, '#9b6cff', 6400], [0.62, 0.70, 8, '#3ba0ff', 5600], [0.34, 0.48, 6, '#46c66a', 7000],
   ];
+  // Title 布局 = **响应式弹性锚点**（owner 2026-07-02「UI 要随视窗动态缩放居中·不要 x:w/2 伪居中」）：
+  // Screen 本就满视窗（width:100%·min-height:100vh·flex column·render.ts）→ 内放一个 flex:1 满高列，
+  // `justify:'between' + align:'center'` → **logo 顶居中、按钮组底居中**，随浏览器尺寸自动缩放（不依赖挂载时的画布 w/h）。
+  // 复用 UI 库现成能力（justify 是 owner 2026-06-25 为「竖向铺满/居中」加的·非新造）。绝对定位只留左上角开发钮 + 装饰光尘。
   const titleTree = (): LayoutNode => ({
-    // 暗角 vignette（复刻原型 radial 80%70%@50%42% 透明→暗·中亮边暗的「眩晕色」）→ 让 3D 大骰居中透出、边缘压暗出高级感。
+    // 暗角 vignette（复刻原型 radial·中亮边暗）→ 让 3D 大骰居中透出、边缘压暗出高级感。
     type: 'Screen', id: 'gd-title', props: { bg: 'radial-gradient(78% 66% at 50% 44%, rgba(20,14,34,0) 52%, rgba(8,5,20,0.62) 100%)' },
     children: [
-      // 过场测试按钮（预览骰壳转场编排·render-only·整场 arena 螺旋待 Pivot3D 能力）。
+      // 过场测试按钮（左上角锚·非 w 依赖·保留绝对叠层）。
       { type: 'Button', id: 'gd-test-trans', props: { label: '▶ 测试过场', kind: 'ghost', action: 'testTransition' }, layout: { x: 16, y: 16 } },
+      // 漂浮光尘（纯装饰·绝对叠层）。
       ...MOTES.map(([sx, sy, d, c, ms], i): LayoutNode => ({ type: 'Panel', id: `gd-mote${i}`, props: { bg: `radial-gradient(circle, ${c} 30%, transparent 72%)` }, layout: { x: Math.round(sx * w), y: Math.round(sy * h), width: d + 6, height: d + 6, radius: d + 6, padding: 0, opacity: 0.9, fx: [{ kind: 'float', ms }] }, children: [] })),
-      { type: 'Panel', id: 'gd-logo-box', props: { bare: true }, layout: { x: w / 2 - 240, y: Math.round(h * 0.07), width: 480, direction: 'column', align: 'center', gap: 9 },
+      // 主内容：满高弹性列·上下两端对齐·横向居中 → 随视窗自适缩放居中。
+      { type: 'Panel', id: 'gd-title-col', props: { bare: true }, layout: { flex: 1, direction: 'column', justify: 'between', align: 'center', padding: 46 },
         children: [
-          // 确切复刻原型：logo 76px 衬线 letter-spacing6·副标 Cinzel 15px sp6 两侧细线·tagline 13px
-          lbl('gd-name', '骰途', { size: 76, color: 'gold', bold: true, glow: true, tracking: 6, font: 'serif' }),
-          bareRow('gd-subrow', [
-            { type: 'Panel', id: 'gd-sl', props: { bg: 'linear-gradient(90deg,transparent,#cdbfe8)' }, layout: { width: 34, height: 1, padding: 0 }, children: [] },
-            lbl('gd-sub', 'TOWER OF FATE', { size: 15, color: 'sub', tracking: 6, font: 'serif' }),
-            { type: 'Panel', id: 'gd-sr', props: { bg: 'linear-gradient(90deg,#cdbfe8,transparent)' }, layout: { width: 34, height: 1, padding: 0 }, children: [] },
-          ], { justify: 'center', align: 'center', gap: 12 }),
-          lbl('gd-tag', '两名掷命者，一座会改写命运的古塔', { size: 13, color: 'sub', tracking: 1 }),
-        ],
-      },
-      { type: 'Panel', id: 'gd-btns', props: { bare: true }, layout: { x: w / 2 - 170, y: h - 150, width: 340, direction: 'column', align: 'center', gap: 13 },
-        children: [
-          // 金渐变 hero 键（复刻原型 #ffd982→#f0a93a·主程回驳 Button 自定义色 → 用 Panel.action+bg 拼）
-          { type: 'Panel', id: 'gd-start', props: { action: 'start', bg: 'linear-gradient(180deg,#ffd982,#f0a93a)', edge: 'gold' }, layout: { width: 236, radius: 13, padding: 14, align: 'center', direction: 'column', gap: 3, fx: [{ kind: 'pulse', ms: 3400 }] },
-            children: [lbl('gd-start-t', '开 始 攀 塔', { size: 19, color: 'text', bold: true, font: 'serif', tracking: 4 })] }, // TODO(REQ-UI-ink)：原型深色字 #3a2406 on gold·待主程加 Label 'ink' 深色令牌后改
-          lbl('gd-start-s', `第一层 · ${layerName(1)}`, { size: 'sm', color: 'sub', tracking: 2 }),
-          bareRow('gd-modes', [
-            // 双人=lockstep 联机（netcode 未落地·REQ-GAMED §6 另立 net 基建线）→ 诚实标注·不假装单机=双人（Lead 过渡要求）。
-            { type: 'Button', id: 'gd-coop', props: { label: '双人同攀 · 敬请期待', kind: 'ghost', action: 'noop' } },
-            { type: 'Button', id: 'gd-solo', props: { label: '单人', kind: 'ghost', action: 'start' } },
-            { type: 'Button', id: 'gd-set', props: { label: '设置', kind: 'ghost', action: 'noop' } },
-          ], { justify: 'center', gap: 10 }),
+          { type: 'Panel', id: 'gd-logo-box', props: { bare: true }, layout: { maxWidth: 480, direction: 'column', align: 'center', gap: 9 },
+            children: [
+              // 确切复刻原型：logo 76px 衬线 letter-spacing6·副标 Cinzel 15px sp6 两侧细线·tagline 13px
+              lbl('gd-name', '骰途', { size: 76, color: 'gold', bold: true, glow: true, tracking: 6, font: 'serif' }),
+              bareRow('gd-subrow', [
+                { type: 'Panel', id: 'gd-sl', props: { bg: 'linear-gradient(90deg,transparent,#cdbfe8)' }, layout: { width: 34, height: 1, padding: 0 }, children: [] },
+                lbl('gd-sub', 'TOWER OF FATE', { size: 15, color: 'sub', tracking: 6, font: 'serif' }),
+                { type: 'Panel', id: 'gd-sr', props: { bg: 'linear-gradient(90deg,#cdbfe8,transparent)' }, layout: { width: 34, height: 1, padding: 0 }, children: [] },
+              ], { justify: 'center', align: 'center', gap: 12 }),
+              lbl('gd-tag', '两名掷命者，一座会改写命运的古塔', { size: 13, color: 'sub', tracking: 1 }),
+            ],
+          },
+          { type: 'Panel', id: 'gd-btns', props: { bare: true }, layout: { maxWidth: 340, direction: 'column', align: 'center', gap: 13 },
+            children: [
+              // 金渐变 hero 键（复刻原型 #ffd982→#f0a93a·主程回驳 Button 自定义色 → 用 Panel.action+bg 拼）
+              { type: 'Panel', id: 'gd-start', props: { action: 'start', bg: 'linear-gradient(180deg,#ffd982,#f0a93a)', edge: 'gold' }, layout: { width: 236, radius: 13, padding: 14, align: 'center', direction: 'column', gap: 3, fx: [{ kind: 'pulse', ms: 3400 }] },
+                children: [lbl('gd-start-t', '开 始 攀 塔', { size: 19, color: 'text', bold: true, font: 'serif', tracking: 4 })] }, // TODO(REQ-UI-ink)：原型深色字 #3a2406 on gold·待主程加 Label 'ink' 深色令牌后改
+              lbl('gd-start-s', `第一层 · ${layerName(1)}`, { size: 'sm', color: 'sub', tracking: 2 }),
+              bareRow('gd-modes', [
+                // 双人=lockstep 联机（netcode 未落地·REQ-GAMED §6 另立 net 基建线）→ 诚实标注·不假装单机=双人（Lead 过渡要求）。
+                { type: 'Button', id: 'gd-coop', props: { label: '双人同攀 · 敬请期待', kind: 'ghost', action: 'noop' } },
+                { type: 'Button', id: 'gd-solo', props: { label: '单人', kind: 'ghost', action: 'start' } },
+                { type: 'Button', id: 'gd-set', props: { label: '设置', kind: 'ghost', action: 'noop' } },
+              ], { justify: 'center', gap: 10 }),
+            ],
+          },
         ],
       },
     ],
