@@ -392,13 +392,18 @@ export function mount(container: HTMLElement): () => void {
       children: [{ type: 'Image', id: `hud-ring-i-${el}`, props: { src: elementBadge(el), fit: 'contain' }, layout: { width: 58, height: 58 } }],
     };
   };
+  // 交错（锯齿）排列：偶数元素靠左、奇数靠右（对齐设计稿 zigzag）——每环包一个定宽 row·justify 交替。
   const elemColumn = (): LayoutNode => ({
-    type: 'Panel', id: 'hud-elems', props: { bare: true }, layout: { x: 14, y: 70, direction: 'column', gap: 10 },
-    children: ELEMS.map((el, i) => elemRing(el, i)),
+    type: 'Panel', id: 'hud-elems', props: { bare: true }, layout: { direction: 'column', gap: 6 },
+    children: ELEMS.map((el, i): LayoutNode => ({
+      type: 'Panel', id: `hud-ring-row-${el}`, props: { bare: true },
+      layout: { direction: 'row', width: 98, justify: i % 2 === 0 ? 'start' : 'end', padding: 0 },
+      children: [elemRing(el, i)],
+    })),
   });
   // 顶左：层间 chip
   const layerChip = (): LayoutNode => ({
-    type: 'Panel', id: 'hud-layer', props: { glass: true, bg: HUD_BG }, layout: { x: 14, y: 12, direction: 'row', gap: 10, align: 'center', padding: 8 },
+    type: 'Panel', id: 'hud-layer', props: { glass: true, bg: HUD_BG }, layout: { direction: 'row', gap: 10, align: 'center', padding: 8 },
     children: [
       { type: 'Panel', id: 'hud-layer-n', props: { edge: 'gold' }, layout: { width: 34, height: 34, radius: 8, align: 'center', justify: 'center', padding: 0 }, children: [lbl('hud-layer-nn', String(Math.floor((S.globalRoom - 1) / 3) + 1), { size: 'lg', color: 'gold', bold: true })] },
       bareCol('hud-layer-t', [
@@ -409,7 +414,7 @@ export function mount(container: HTMLElement): () => void {
   });
   // 顶右：货币
   const currency = (): LayoutNode => ({
-    type: 'Panel', id: 'hud-cur', props: { bare: true }, layout: { x: w - 248, y: 14, direction: 'row', gap: 8 },
+    type: 'Panel', id: 'hud-cur', props: { bare: true }, layout: { direction: 'row', gap: 8 },
     children: [
       { type: 'Tag', id: 'hud-gold', props: { label: `🪙 ${S.gold}`, tone: 'accent', size: 'lg' } },
       { type: 'Tag', id: 'hud-gem', props: { label: `💎 ${S.gem}`, tone: 'normal', size: 'lg' } },
@@ -417,7 +422,7 @@ export function mount(container: HTMLElement): () => void {
   });
   // 右：队友 + Buff
   const allyPanel = (): LayoutNode => ({
-    type: 'Panel', id: 'hud-ally', props: { bare: true }, layout: { x: w - 234, y: 58, direction: 'column', gap: 8, width: 220 },
+    type: 'Panel', id: 'hud-ally', props: { bare: true }, layout: { direction: 'column', gap: 8, width: 220 },
     children: [
       {
         type: 'Panel', id: 'hud-ally-card', props: { glass: true, bg: HUD_BG }, layout: { direction: 'column', gap: 6, padding: 10 },
@@ -451,7 +456,7 @@ export function mount(container: HTMLElement): () => void {
     const sel = [...S.selected].map((i) => S.rolled[i]!);
     const ev = evalChallenge(sel, f.conds);
     return {
-      type: 'Panel', id: 'hud-foe', props: { glass: true, bg: HUD_BG }, layout: { x: w / 2 - 170, y: 14, width: 340, direction: 'column', gap: 5, padding: 12, align: 'center' },
+      type: 'Panel', id: 'hud-foe', props: { glass: true, bg: HUD_BG }, layout: { width: 340, direction: 'column', gap: 5, padding: 12, align: 'center' },
       children: [
         lbl('hud-foe-nm', `${f.isBoss ? '👑 守关者' : '⚔'} ${ELEM_INFO[f.el].emoji} ${f.name}`, { size: 'md', bold: true, glow: true }),
         { type: 'ProgressBar', id: 'hud-foe-hp', props: { value: Math.max(0, f.hp), max: f.maxHp, tone: 'danger', showValue: true, label: 'HP' } },
@@ -467,7 +472,7 @@ export function mount(container: HTMLElement): () => void {
       // 备战：去骰盅 / 直接掷出
       const preview = loadDefs.slice(0, 8).map((d, i): LayoutNode => ({ type: 'Tag', id: `bb-pv${i}`, props: { label: dieGlyph(d.el), tone: elemTone(d.el), size: 'md' } }));
       return {
-        type: 'Panel', id: 'hud-bottom', props: { glass: true, bg: HUD_BG }, layout: { x: w / 2 - 290, y: h - 84, width: 580, direction: 'row', gap: 12, align: 'center', justify: 'between', padding: 10 },
+        type: 'Panel', id: 'hud-bottom', props: { glass: true, bg: HUD_BG }, layout: { width: 580, direction: 'row', gap: 12, align: 'center', justify: 'between', padding: 10 },
         children: [
           bareRow('bb-dish', [
             lbl('bb-cup', '🎲', { size: 'xl' }),
@@ -489,7 +494,7 @@ export function mount(container: HTMLElement): () => void {
     const ev = evalChallenge(sel, S.foe.conds);
     const d = damageOf(sel);
     return {
-      type: 'Panel', id: 'hud-bottom', props: { glass: true, bg: HUD_BG }, layout: { x: w / 2 - 300, y: h - 134, width: 600, direction: 'column', gap: 6, align: 'center', padding: 10 },
+      type: 'Panel', id: 'hud-bottom', props: { glass: true, bg: HUD_BG }, layout: { width: 600, direction: 'column', gap: 6, align: 'center', padding: 10 },
       children: [
         bareRow('bb-dice', S.rolled.map((r, i): LayoutNode => S.disabled.has(i)
           ? { type: 'Button', id: `bb-d${i}`, props: { label: `🚫${ELEM_INFO[r.el].emoji}${r.v}`, kind: 'quiet', action: 'noop' } }
@@ -507,11 +512,23 @@ export function mount(container: HTMLElement): () => void {
       ],
     };
   };
+  // 战场 HUD = **响应式弹性框架**（owner 2026-07-02「战场 UI 也要锚点对齐·任意分辨率·同主页」）：
+  // Screen 满视窗 flex column → 内一个 flex:1 满高框架·justify between 三区：
+  //   顶栏 row justify-between = 层chip(左) / 敌人(中) / 货币(右)；中栏 row justify-between align-center flex:1 = 元素法阵环(左·交错) / 队友面板(右)；
+  //   底栏 column align-center = 提示 + 命运骰盅栏(居中)。全 flex 锚点·不再绝对 x/y·随视窗自适缩放。
   const arenaTree = (): LayoutNode => ({
     type: 'Screen', id: 'gd-arena', props: { bg: 'transparent' },
-    children: [layerChip(), currency(), elemColumn(), allyPanel(), foeCenter(), bottomBar(),
-      ...(S.msg ? [{ type: 'Panel', id: 'gd-msg', props: {}, layout: { x: w / 2 - 170, y: h - (S.thrown ? 168 : 122), width: 340, padding: 7, align: 'center' }, children: [lbl('gd-msg-t', S.msg, { size: 'xs', color: 'gold' })] } as LayoutNode] : []),
-    ],
+    children: [{
+      type: 'Panel', id: 'arena-frame', props: { bare: true }, layout: { flex: 1, direction: 'column', justify: 'between', padding: 14 },
+      children: [
+        { type: 'Panel', id: 'arena-top', props: { bare: true }, layout: { direction: 'row', justify: 'between', align: 'start', gap: 12 }, children: [layerChip(), foeCenter(), currency()] },
+        { type: 'Panel', id: 'arena-mid', props: { bare: true }, layout: { flex: 1, direction: 'row', justify: 'between', align: 'center', gap: 12 }, children: [elemColumn(), allyPanel()] },
+        { type: 'Panel', id: 'arena-bot', props: { bare: true }, layout: { direction: 'column', align: 'center', gap: 6 }, children: [
+          ...(S.msg ? [{ type: 'Panel', id: 'gd-msg', props: {}, layout: { width: 340, padding: 7, align: 'center' }, children: [lbl('gd-msg-t', S.msg, { size: 'xs', color: 'gold' })] } as LayoutNode] : []),
+          bottomBar(),
+        ] },
+      ],
+    }],
   });
 
   // ════════ 屏③ 命运骰盅 · 选骰备战 ════════
