@@ -19,6 +19,7 @@ import {
   DataCartridgeRunner, LibraryShelf, LibActionBar, VersionHistoryOverlay, StatusLight, BenchOverlay,
 } from './studio/DataCartridgeRunner.js';
 import { CreationWizard, type WizardMode } from './studio/CreationWizard.js';
+import { DesignStudio, EntryChoice, ContinueChoice } from './studio/DesignStudio.js';
 import { SettingsPanel } from './studio/SettingsPanel.js';
 
 const API = 'http://localhost:4000';
@@ -774,8 +775,12 @@ export function Launcher() {
   const [providersRefresh, setProvidersRefresh] = useState(0);
   // 「新建游戏 / 继续创作」→ 打开 GameCreator 并预置游戏名（dev 模式沿用旧面板）。nonce 变更触发展开+填词。
   const [creatorSeed, setCreatorSeed] = useState<{ prompt: string; nonce: number } | null>(null);
-  // M2 创作向导（玩家模式）：create=新建 / revise=继续创作某盘卡带。
+  // M2 创作向导（玩家模式·⚡ 快速模式）：create=新建 / revise=继续创作某盘卡带。
   const [wizard, setWizard] = useState<{ mode: WizardMode; slug?: string; name?: string } | null>(null);
+  // 设计先行流：新建入口双选卡（🗣 设计 / ⚡ 快速）+ 设计工作台 + 继续创作双选（改设计 / 快改数值）。
+  const [entryChoice, setEntryChoice] = useState(false);
+  const [designStudio, setDesignStudio] = useState<{ slug?: string; name?: string } | null>(null);
+  const [continueChoice, setContinueChoice] = useState<{ slug: string; name: string } | null>(null);
   // 保存新卡带后请求轮播选中它（`lib:<slug>`）。
   const [selectSlug, setSelectSlug] = useState<string | null>(null);
   // 能力目录（从引擎 ALL_CAPABILITIES 自动派生）：向导生成请求随之送出，注入系统词。派生一次即可。
@@ -838,17 +843,21 @@ export function Launcher() {
     setStudio(true);
   }, [resolveArt]);
 
-  // 「继续创作」：玩家模式 → 开创作向导 revise 态（对话式迭代）；dev 模式 → 沿用旧 GameCreator 面板。
+  // 「继续创作」：玩家模式下——有设计稿 → 双选（改设计 / 快改数值）；无设计稿 → 直接 M2 revise。
+  // dev 模式 → 沿用旧 GameCreator 面板。
   const continueCreate = useCallback((entry: GameEntry) => {
     setLibRunner(null);
     const slug = libSlug(entry.id);
-    if (playerMode && slug) setWizard({ mode: 'revise', slug, name: entry.title });
-    else setCreatorSeed({ prompt: entry.title, nonce: Date.now() });
+    if (playerMode && slug) {
+      if (entry.hasDesign) setContinueChoice({ slug, name: entry.title });
+      else setWizard({ mode: 'revise', slug, name: entry.title });
+    } else setCreatorSeed({ prompt: entry.title, nonce: Date.now() });
   }, [playerMode]);
 
-  // 向导保存成功 → 关向导、刷卡带架、请求选中新卡带。
+  // 向导 / 设计工作台保存成功 → 关面板、刷卡带架、请求选中新卡带。
   const onWizardSaved = useCallback((slug: string) => {
     setWizard(null);
+    setDesignStudio(null);
     setSelectSlug(`${LIB_ID_PREFIX}${slug}`);
     setLibRefresh((k) => k + 1);
   }, []);
@@ -1001,7 +1010,7 @@ export function Launcher() {
         <LibraryShelf
           entries={libEntries}
           installing={installing}
-          onNewGame={() => setWizard({ mode: 'create' })}
+          onNewGame={() => setEntryChoice(true)}
           onInstallSample={installSample}
           renderCarousel={() => (
             <CartridgeCarousel games={libGameEntries} onLaunch={onLaunchCartridge} renderLaunchArea={renderLaunchArea} selectId={selectSlug ?? undefined} onSelected={clearSelect} />
@@ -1015,7 +1024,7 @@ export function Launcher() {
       {playerMode && libEntries && libEntries.length > 0 && (
         <div style={{ textAlign: 'center', marginTop: 22 }}>
           <button
-            onClick={() => setWizard({ mode: 'create' })}
+            onClick={() => setEntryChoice(true)}
             style={{
               padding: '10px 24px', borderRadius: 9,
               background: SHELL.jadeWash, color: SHELL.jade,
@@ -1058,7 +1067,41 @@ export function Launcher() {
         />
       )}
 
-      {/* M2 创作向导（右滑面板·玩家模式）：新建 create / 继续创作 revise。保存 → 刷架 + 选中新卡带。 */}
+      {/* 新建入口双选卡（🗣 设计一个游戏 推荐 / ⚡ 快速生成）。 */}
+      {entryChoice && (
+        <EntryChoice
+          onDesign={() => { setEntryChoice(false); setDesignStudio({}); }}
+          onQuick={() => { setEntryChoice(false); setWizard({ mode: 'create' }); }}
+          onClose={() => setEntryChoice(false)}
+        />
+      )}
+
+      {/* 继续创作双选（已有 design 的卡带）：改设计 / 快改数值(M2 revise)。 */}
+      {continueChoice && (
+        <ContinueChoice
+          name={continueChoice.name}
+          onEditDesign={() => { const c = continueChoice; setContinueChoice(null); setDesignStudio({ slug: c.slug, name: c.name }); }}
+          onQuickRevise={() => { const c = continueChoice; setContinueChoice(null); setWizard({ mode: 'revise', slug: c.slug, name: c.name }); }}
+          onClose={() => setContinueChoice(null)}
+        />
+      )}
+
+      {/* 设计工作台（设计先行流主件·全屏）：讨论 → 分解 → 对齐 → 定稿 → 原型。保存 → 刷架 + 选中新卡带。 */}
+      {designStudio && (
+        <DesignStudio
+          api={API}
+          providers={providers ?? []}
+          catalog={catalog}
+          resolveArt={resolveArt}
+          initialSlug={designStudio.slug}
+          initialName={designStudio.name}
+          onClose={() => setDesignStudio(null)}
+          onSaved={onWizardSaved}
+          onDirty={() => setLibRefresh((k) => k + 1)}
+        />
+      )}
+
+      {/* M2 创作向导（右滑面板·玩家模式·⚡ 快速模式）：新建 create / 继续创作 revise。保存 → 刷架 + 选中新卡带。 */}
       {wizard && (
         <CreationWizard
           api={API}

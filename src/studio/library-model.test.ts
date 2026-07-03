@@ -16,6 +16,7 @@ describe('metaToGameEntry · meta.json → 卡带 GameEntry', () => {
         accentColor: '#abcdef', icon: '🎲', provider: 'anthropic',
       },
       valid: true,
+      hasDesign: true,
     };
     expect(metaToGameEntry(entry)).toEqual({
       id: 'lib:my-game',
@@ -26,7 +27,13 @@ describe('metaToGameEntry · meta.json → 卡带 GameEntry', () => {
       accentColor: '#abcdef',
       icon: '🎲',
       status: 'playable',
+      hasDesign: true,
     });
+  });
+
+  it('hasDesign 缺省 → false（无设计稿的老卡带）', () => {
+    const entry: LibraryEntry = { slug: 'x', meta: {}, valid: true };
+    expect(metaToGameEntry(entry).hasDesign).toBe(false);
   });
 
   it('缺省 meta：色/图标兜底为暗蓝 + 默认卡带图标，title 回退 slug', () => {

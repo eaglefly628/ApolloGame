@@ -12,6 +12,8 @@ export interface GameEntry {
   accentColor: string;
   icon: string;
   status: 'playable' | 'coming-soon';
+  /** 该卡带是否已有 design/ 设计稿（设计先行流：决定「继续创作」给「改设计/快改数值」双选还是直接 M2 revise）。 */
+  hasDesign?: boolean;
 }
 
 /** library/<slug>/meta.json 的形状（apollo.py `_write_meta` 落盘字段；description 可选·后端暂不写）。 */
@@ -32,6 +34,8 @@ export interface LibraryEntry {
   slug: string;
   meta: LibraryMeta;
   valid: boolean;
+  /** design/ 子树是否已有 .md 设计稿（apollo.py `_list_library`）。 */
+  hasDesign?: boolean;
 }
 
 // library 卡带缺省配色（meta 未填色时兜底）：暗蓝主色 + 青强调，贴合壳层基调。
@@ -52,6 +56,7 @@ export function metaToGameEntry(entry: LibraryEntry): GameEntry {
     accentColor: m.accentColor || LIB_DEFAULT_ACCENT,
     icon: m.icon || '🎴',
     status: entry.valid ? 'playable' : 'coming-soon',
+    hasDesign: entry.hasDesign === true,
   };
 }
 
