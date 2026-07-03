@@ -225,6 +225,19 @@ describe('Game G · turn-combat（doc24 单机回合制 · A0 重构）', () => 
     expect(b.lastClash?.winStays).toBe(false);                   // 离场 → UI 演光荣回库
   });
 
+  it('碰撞才战斗 + 胜者推进占据敌腾出格(owner 2026-07-03)：落点空只走位·踩到敌才打·赢了前进', () => {
+    const b = initTurnBattle({ seed: 1, startFormation: [{ rank: '2', suit: 'S', lane: 0, slot: 6, buff: -1 }] }); // 敌守军 2@6·pEff1(恒掷1·必负)
+    b.lanes[0].a.push(unit('p', 'A', 3)); // 玩家 A@3·pEff14·speed1·必胜
+    b.active = 'a'; endTurn(b); // 3→落点4(空) → 不打·只走位
+    expect(b.clashSeq).toBe(0); expect(b.lanes[0].a[0].slot).toBe(4);
+    b.active = 'a'; endTurn(b); // 4→落点5(空) → 不打
+    expect(b.clashSeq).toBe(0); expect(b.lanes[0].a[0].slot).toBe(5);
+    b.active = 'a'; endTurn(b); // 5→落点6(敌!) → 碰撞才战 → A 必胜 → 守军亡 → A 推进占 6
+    expect(b.clashSeq).toBe(1); expect(b.lastClash?.aWins).toBe(true);
+    expect(b.lanes[0].b.length).toBe(0);   // 守军阵亡
+    expect(b.lanes[0].a[0].slot).toBe(6);  // 胜者推进占据腾出格
+  });
+
   it('开局排阵守军(REQ-G-开局排阵)：明牌摆兵 + 静守（不前压/不冲家/接触才战）', () => {
     const b = initTurnBattle({ seed: 1, startFormation: [{ rank: '8', suit: 'S', lane: 0, slot: 8 }, { rank: '9', suit: 'H', lane: 2, slot: 7 }] });
     expect(b.lanes[0].b.some((u) => u.slot === 8 && u.hold)).toBe(true); // 上路 slot8 守军·hold

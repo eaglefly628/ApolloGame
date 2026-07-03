@@ -414,6 +414,7 @@ function applyClashOutcome(b: TurnBattle, li: number, ev: ClashEval, aWins: bool
   b.clashLog.push(b.lastClash); // 流水（驱动层逐场抽特写）
   b.clashSeq += 1;
   if (!aWins) b.bossWinStreak += 1; // 九战九捷：Boss 胜累积
+  let loserVacatedSlot: number | undefined; // 败者前锋腾出的格 → 胜者留场后推进占据（owner 2026-07-03·碰撞胜后前进）
   // 死战不退（地煞·关1 仅 Boss 主将）：命数 N（laststand=3）→ 前 N-1 次战败不亡·残喘退 1 格(向 Boss 家 slot+1)·第 N 次才真死。
   const genLives = b.dishaB.lastStandGeneral; // 主将命数 N（0=无死战不退）
   if (aWins && fb.general && genLives > 0 && b.bossGenDefeats < genLives - 1) {
@@ -431,6 +432,7 @@ function applyClashOutcome(b: TurnBattle, li: number, ev: ClashEval, aWins: bool
     }
   } else {
     const loser = aWins ? 'b' : 'a';
+    loserVacatedSlot = colOf(lane, loser)[0]?.slot; // 敌前锋腾出的格（供胜者碰撞胜后推进占据·owner 2026-07-03）
     killFront(lane, loser); // 输家阵亡
     const relay = sideOf(b, loser).tengangA.relay; // 薪火：一张阵亡 → 同路下一张接棒续航 +N
     const next = colOf(lane, loser)[0]; if (relay > 0 && next) next.staminaLeft += relay;
@@ -449,6 +451,8 @@ function applyClashOutcome(b: TurnBattle, li: number, ev: ClashEval, aWins: bool
       wsd.pokerDeck.push({ kind: 'poker', id: wf.id, rank: wf.rank, suit: wf.suit, general: wf.general, buff: wf.buff, cost: wf.cost }); // 回牌库（重抽出场即满血·疲劳清零）
       wsd.mana += (wf.cost ?? 0); // 全额返还召唤源泉
       b.lastClash.winStays = false; // 满 3 离场 → UI 演「光荣回库」（达成 3 连胜的应得退场）
+    } else if (loserVacatedSlot != null && !wf.hold) { // 胜者留场 → 推进占据敌人腾出的格（owner 2026-07-03·碰撞胜后前进·表演层滑入）；守军「赢守原位」不追击
+      wf.slot = loserVacatedSlot;
     }
   }
   b.a.mana += b.a.tengangA.clashElixir; b.b.mana += b.b.tengangA.clashElixir; // 战潮：每遭遇返召唤源泉（喂经济）
@@ -504,7 +508,15 @@ function advanceSideMove(b: TurnBattle, side: 'a' | 'b'): number[] {
   for (let li = 0; li < 3; li++) { // ② 本方兵线向对家推进；前锋相邻 → 记为待掷命路
     const lane = b.lanes[li]; const own = colOf(lane, side); const foe = colOf(lane, side === 'a' ? 'b' : 'a');
     if (!own.length) continue;
-    if (foe.length) { advanceColumnVsFoe(own, dir, foe[0].slot, diverted, side === 'b'); if (Math.abs(own[0].slot - foe[0].slot) <= 1) pending.push(li); }
+    if (foe.length) {
+      // 碰撞才战（owner 2026-07-03·替「相邻 gap≤1 即战」）：前锋这一步的**落点**踩到/越过敌前锋才触发掷命；落点是空格只走位、不打。
+      const front = own[0];
+      const mobile = !front.hold && !diverted.has(front.id) && !(side === 'b' && front.general); // 会移动的前锋才可能撞（守军/主将/已过门 不撞）
+      const natural = front.slot + dir * (front.speed ?? 1); // 不封顶的自然落点
+      const collides = mobile && (dir > 0 ? natural >= foe[0].slot : natural <= foe[0].slot); // 落点会踩到/越过敌前锋 = 碰撞
+      advanceColumnVsFoe(own, dir, foe[0].slot, diverted, side === 'b'); // 实际移动仍封顶在敌前一格（停一格·胜后再推进占据）
+      if (collides) pending.push(li);
+    }
     else advanceColumnToBase(b, own, dir, side, diverted); // 本路无敌 → 直扑对家大本营
   }
   return pending;
