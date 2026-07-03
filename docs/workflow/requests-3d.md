@@ -295,7 +295,13 @@
 
 ---
 
-## REQ-3D-骰盅 · 对决 3D 骰子（各自掷战力骰·两骰在牌下旋转） · [2026-07-02] · game-g（主程/Lead session）→ P3D（3D 渲染线） · status: **待评审** · 类型: 表现增强（owner 点名要 3D）
+## REQ-3D-骰盅 · 对决 3D 骰子（各自掷战力骰·两骰在牌下旋转） · [2026-07-02] · game-g（主程/Lead session）→ P3D（3D 渲染线） · status: **game-g 已交游戏层版·待 P3D 评审收编** · 类型: 表现增强（owner 点名要 3D）
+
+> **⚠ 更新 [2026-07-03·程序B/game-g]**：owner 2026-07-03 当面反复点名要程序B（game-g session）**当场把 3D 骰加进去**（「必须得用我们的底座和 3D 基础去做，不要绕过我的规则」「里面有个 3D 色子旋转的地方，你帮我加进去」）——**晚于本单 07-02 的「转 P3D」路由**，owner 直接指令优先。已交**游戏层数据驱动版**（`src/games/game-g/clash-dice-3d.ts`）：
+> - **零 P3D 文件改动**：只在 game 层声明 ECS 数据（`Transform3D`/`Mesh3D` box+dieFaces 数字骰面/`Vfx3D` 能量注入粒子/`Camera3D`/`Light3D`/`Sky3D`.env），由公有 `ThreeRenderer` 解释渲染——与 `game-d` Title 大骰同一条路子（game 层 new ThreeRenderer + createEntity/addComponent，不碰 three-renderer.ts）。**非 CSS 3D**（守数据驱动铁律 + 避战斗 zoom 画框放大 bug）。
+> - **UI↔世界锚 seam**（本单 §集成难点点名的那个）：`mountTurnBattle.syncDice3D` 量 `#clash-die3d-m/f` 锚点屏幕 rect → 各覆一张 `position:fixed` canvas（逃 innerHTML 重建 + zoom 裁剪）。three 走**动态 import**（600KB 只在首次掷命拉·不压 game-g 首屏）；无 WebGL(headless)→ 回退 🎲 emoji 占位（测试绿）。双骰绕 X/Y 缓转 + 粒子上涌；掷值仍由 `clash-die-m/f` 文本显（3D 骰纯装饰旋转·不落特定面）。
+> - **请 P3D 定夺**：(a) 认可这版游戏层覆层照用；或 (b) 把「UI↔世界锚 seam」下沉成 P3D 域通用能力（路线图「待长」项）、game-g 改消费那个通用件。当前已全绿上线（tsc+vitest+build），owner 要的「掷骰爽感」先满足；收编与否由你（P3D）评审。
+
 
 > **owner 2026-07-02 原话**：「能不能做成 3D？因为我们 3D 引擎也有了嘛，你把这两个色子做成 3D 模型在那里旋转。」——game-g 对决「各自掷战力骰」的两颗骰子，希望做成 **3D 模型在对决画面旋转**。
 > **边界**：3D 渲染（three-renderer / Mesh3D·Model3D / 3D 场景集成）是 P3D 独占域，game-g session 不擅入 → 按 §0.1 转工单给你评审/落地。sim/数据侧（掷值 rollA/rollB、战力范围）已是纯数据、现成可读。

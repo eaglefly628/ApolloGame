@@ -10,6 +10,7 @@ import { FONTS } from './fonts.js'; // 自托管字体（替代外部 Google Fon
 import { heroNameOf } from './hero-codex.js'; // 场上牌悬浮显其对应武将名（owner 2026-06-21·数据已在 HERO_CARDS）
 import { renderNode, ensureUiKeyframes, type LayoutNode } from '@ui/components/index.js'; // 数据驱动 UI 库：HUD chrome 由 LayoutNode 描述、renderNode 出串（UI 铁律·战斗屏 HUD 迁移）。ensureUiKeyframes=手动注入 fx 关键帧（战斗走 renderNode+innerHTML 不经 mountUI·主程导出·REQ-UI-fx控件叠层②）
 import { GG_BATTLE_THEME } from './ui-theme.js'; // 桥接 CSS 变量的引擎组件主题 → renderNode 片段随玄铁/锦霞皮自动换色
+import type { ClashDie3DHandle } from './clash-dice-3d.js'; // 掷命 3D 战力骰（引擎 ThreeRenderer + Transform3D/Mesh3D/Vfx3D 数据驱动·非 CSS 3D·owner 2026-07-03·REQ-3D-骰盅）·**动态 import**（three 600KB 只在首次掷命时才拉·不压 game-g 首屏）
 
 type Style = Record<string, string | number | undefined>;
 const st = (o: Style): string => Object.entries(o).filter(([, v]) => v !== undefined).map(([k, v]) => k.replace(/[A-Z]/g, (m) => '-' + m.toLowerCase()) + ':' + v).join(';');
@@ -837,6 +838,40 @@ export function mountTurnBattle(host: HTMLElement, getView: () => TurnBattleView
   const applyScale = (): void => { // ResizeObserver 走这条：只重算缩放·不整片重建 DOM（断「RO→render→改高→再触发 RO」循环·消掌机闪烁·owner 2026-06-22）
     const inner = host.querySelector('.ggt-inner') as HTMLElement | null;
     if (!inner) return; inner.style.setProperty('zoom', String(scaleOf())); // outer 现 100%×100% flex 居中·只改 inner zoom（仍 CSS zoom·不合成图层·掌机安全）
+    syncDice3D(); // 3D 骰 canvas 随缩放重新贴合锚点（不重建·只挪位）
+  };
+  // ── 掷命对决 3D 战力骰（owner 2026-07-03「必须用 3D 基础·别绕规则」·REQ-3D-骰盅）──
+  // 战斗屏走 renderNode+innerHTML（整片重建·canvas 不能内嵌）→ 3D 骰做**独立 fixed 覆层**（挂 document.body·逃出重建 + zoom 裁剪·
+  // 同 tip 气泡路子），各覆于 clashNode 的两个 🎲 锚点 `#clash-die3d-m`/`#clash-die3d-f` 屏幕 rect 上。clash 在场即挂（双骰翻滚 + Vfx 粒子）·撤 clash 即撤。
+  // three 走**动态 import**（600KB 只在首次掷命才拉）。无 WebGL（happy-dom 测试）→ mount 返 null·🎲 emoji 占位照显（数据驱动回退·测试不炸）。
+  interface Die3DSlot { handle: ClashDie3DHandle | null; host: HTMLDivElement | null; sig: string }
+  const die3d: Record<'m' | 'f', Die3DSlot> = { m: { handle: null, host: null, sig: '' }, f: { handle: null, host: null, sig: '' } };
+  let dice3dMod: typeof import('./clash-dice-3d.js') | null = null; let dice3dLoading = false;
+  const killDie3DSlot = (s: Die3DSlot): void => { if (s.handle) { s.handle.destroy(); s.handle = null; } if (s.host) { s.host.remove(); s.host = null; } s.sig = ''; };
+  const killDice3D = (): void => { killDie3DSlot(die3d.m); killDie3DSlot(die3d.f); };
+  const syncDice3D = (): void => {
+    const cv = getView().clash;
+    if (!cv) { killDice3D(); return; }
+    if (!dice3dMod) { // three 后端动态 import（首次掷命拉·模块到位前 🎲 占位）
+      if (!dice3dLoading) { dice3dLoading = true; import('./clash-dice-3d.js').then((m) => { dice3dMod = m; dice3dLoading = false; syncDice3D(); }).catch(() => { dice3dLoading = false; }); }
+      return;
+    }
+    const dark = (getView().theme ?? 'onyx') !== 'brocade';
+    (['m', 'f'] as const).forEach((side) => {
+      const s = die3d[side];
+      const anchor = host.querySelector(`#clash-die3d-${side}`) as HTMLElement | null;
+      const r = anchor?.getBoundingClientRect();
+      if (!anchor || !r || r.width < 2 || r.height < 2) { killDie3DSlot(s); return; } // 无锚点/无头量到 0 → 撤（走 🎲 占位）
+      if (!s.host) { s.host = document.createElement('div'); s.host.style.cssText = 'position:fixed;z-index:80;pointer-events:none;border-radius:12px;overflow:hidden'; document.body.appendChild(s.host); }
+      s.host.style.left = `${r.left}px`; s.host.style.top = `${r.top}px`; s.host.style.width = `${r.width}px`; s.host.style.height = `${r.height}px`;
+      const mine = side === 'm'; const power = (mine ? cv.pEffMine : cv.pEffFoe) ?? 1;
+      const sig = `${dark ? 'd' : 'l'}|${power}`; // 皮/战力变才重建（免每帧重造 WebGL 上下文）
+      if (sig !== s.sig) {
+        if (s.handle) { s.handle.destroy(); s.handle = null; }
+        s.handle = dice3dMod!.mountClashDie3D(s.host, r.width, r.height, { power, mine, dark });
+        s.sig = s.handle ? sig : ''; // 建失败(无 WebGL)→ 不记签名（headless 恒失败·🎲 占位兜底）
+      }
+    });
   };
   const render = (): void => {
     const viewRaw = getView();
@@ -878,6 +913,7 @@ export function mountTurnBattle(host: HTMLElement, getView: () => TurnBattleView
         requestAnimationFrame(() => { u.style.transition = 'transform .68s cubic-bezier(.22,.7,.3,1)'; u.style.transform = 'none'; }); // owner 2026-06-29「行军慢一半」：.34s→.68s
       });
     }
+    syncDice3D(); // 3D 战力骰覆层随重渲贴合/撤除（clash 在场挂·撤 clash 撤）
   };
   // 坞/格/牌/门 交互用 pointerdown（同 battle-screen）：rAF/重渲在按下↔抬起间整片重建 DOM，click 会落空 → 用单次离散 pointerdown。
   const onPress = (e: MouseEvent): void => {
@@ -958,7 +994,7 @@ export function mountTurnBattle(host: HTMLElement, getView: () => TurnBattleView
   render();
   let ro: ResizeObserver | null = null;
   if (typeof ResizeObserver !== 'undefined') { ro = new ResizeObserver(() => applyScale()); ro.observe(host); } // 只重缩放·不整片重渲（断 RO 反馈循环·owner 2026-06-22 掌机闪烁修）
-  return { update: render, destroy: () => { if (ro) ro.disconnect(); if (drainTimer) clearTimeout(drainTimer); if (localNoticeTimer) clearTimeout(localNoticeTimer); host.removeEventListener('pointerdown', onPress); host.removeEventListener('mouseover', onHover); host.removeEventListener('mouseleave', hideTip); host.removeEventListener('pointerdown', onPressHide); if (tipEl) { tipEl.remove(); tipEl = null; } host.replaceChildren(); } };
+  return { update: render, destroy: () => { if (ro) ro.disconnect(); if (drainTimer) clearTimeout(drainTimer); if (localNoticeTimer) clearTimeout(localNoticeTimer); killDice3D(); host.removeEventListener('pointerdown', onPress); host.removeEventListener('mouseover', onHover); host.removeEventListener('mouseleave', hideTip); host.removeEventListener('pointerdown', onPressHide); if (tipEl) { tipEl.remove(); tipEl = null; } host.replaceChildren(); } };
 }
 
 /** 自包含 HTML 文档（看帧/预览/无头截图；固定 1340×858·非 cqw·无需缩放注入）。 */
