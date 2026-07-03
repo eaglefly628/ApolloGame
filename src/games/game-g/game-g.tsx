@@ -428,9 +428,10 @@ export function mount(container: HTMLElement, shell?: { exit?: () => void }): ()
     const flash = (msg: string): void => { notice = msg; mounted?.update(); if (noticeTimer) clearTimeout(noticeTimer); noticeTimer = window.setTimeout(() => { notice = null; if (!perfClash) mounted?.update(); }, 1700); }; // 清提示时若正演掷命特写则不重渲（防飞入重启）
     // 各自掷战力骰对决（owner 2026-07-01）：进特写先藏掷值 → 玩家点「掷命」→ 两骰同屏各掷自己战力范围 → 揭晓胜负 → 点「继续」→ 一步步演结算。
     let clashRevealed = false; let clashCdTimer = 0; let clashCdInterval = 0; let clashRolling = false;
+    let aiManaDisplay: number | null = null; // 敌方决策时源泉「随落牌错峰递减」的展示覆盖值（owner 2026-07-03「别直接跳 0·要看它啪啪啪扣」）·null=显真值
     const clearClashTimers = (): void => { if (clashCdTimer) { clearTimeout(clashCdTimer); clashCdTimer = 0; } if (clashCdInterval) { clearInterval(clashCdInterval); clashCdInterval = 0; } };
     const buildClashView = (): TurnClashView | null => { if (!perfClash) return null; const cv = clashToTurnView(perfClash, tgName, save.inlays); cv.revealed = clashRevealed; return cv; };
-    const view = (): TurnBattleView => buildTurnBattleView(tb, { theme, tengangName: tgName, tengangDesc: tgDesc, selMode, selHand, clash: buildClashView(), bossName: aiName, sha: shaLive(), gatesLive: gateChance, notice, movedIds: justMovedIds, freshIds, dealtId: dealtId ?? undefined, battleLabel, sfxOn: isSfxOn(), settingsOpen, bgmOn: isBgmOn(), bgmIdx: bgmTrackIdx(), bgmVol: bgmVolume(), bgmNames: BGM_TRACKS.map((t) => t.name), guideOn: !save.skipGuide, inlays: save.inlays, enchOf: (rank, suit) => (save.inlays[String(cardFavorIndex(rank + suit))] ?? []).map((e) => [`${e.b}${DIZHI_TIER_NM[e.t]}`, DIZHI_INLAY_FAVOR[e.t]] as [string, number]) });
+    const view = (): TurnBattleView => buildTurnBattleView(tb, { theme, tengangName: tgName, tengangDesc: tgDesc, selMode, selHand, clash: buildClashView(), bossName: aiName, sha: shaLive(), gatesLive: gateChance, notice, movedIds: justMovedIds, freshIds, dealtId: dealtId ?? undefined, battleLabel, sfxOn: isSfxOn(), settingsOpen, bgmOn: isBgmOn(), bgmIdx: bgmTrackIdx(), bgmVol: bgmVolume(), bgmNames: BGM_TRACKS.map((t) => t.name), guideOn: !save.skipGuide, inlays: save.inlays, waterBDisplay: aiManaDisplay ?? undefined, enchOf: (rank, suit) => (save.inlays[String(cardFavorIndex(rank + suit))] ?? []).map((e) => [`${e.b}${DIZHI_TIER_NM[e.t]}`, DIZHI_INLAY_FAVOR[e.t]] as [string, number]) });
     let mounted: { update: () => void; destroy: () => void } | null = null;
 
     const drainClashes = (): void => { for (const ev of tb.clashLog.slice(drained)) perfQueue.push(ev); drained = tb.clashLog.length; };
@@ -519,11 +520,19 @@ export function mount(container: HTMLElement, shell?: { exit?: () => void }): ()
         startThinking(() => {
           const before = snapSlots();
           const prevCastIds = [...tb.b.castIds];
+          const manaBefore = tb.b.mana; // 决策前敌方源泉（aiDecide 会一次性扣到最终值·下面随落牌错峰把展示值从这里递减过去）
           const usedDisha = aiDecide(tb, aggregateTengang, log); // 只决策·不结束回合（owner 2026-06-29 顺序回合）·记 AI 每步决策日志（owner 2026-07-02「要看敌人 AI 决定」）
           justMovedIds = new Set(); // 决策阶段不推进 → 无行军滑动
           // 新部署的敌兵（before 没有的 id）→ 逐张落子错峰 + 部署音
           freshIds = new Map(); let fi = 0; const newFoe: string[] = [];
           for (const L of tb.lanes) for (const u of L.b) if (!before.has(u.id)) { freshIds.set(u.id, fi); const d = fi * 150; window.setTimeout(() => playSfx('deploy'), d); fi++; newFoe.push(`${u.rank}${SUITNM2[u.suit] ?? ''}→${LANE_NM[tb.lanes.indexOf(L)] ?? '?'}`); }
+          // 敌源泉「随落牌啪啪啪递减」（owner 2026-07-03「别直接跳 0」）：展示值从 manaBefore 随每张落牌错峰减到真值 tb.b.mana。
+          const manaAfter = tb.b.mana;
+          if (fi > 0 && manaBefore > manaAfter + 0.01) {
+            aiManaDisplay = manaBefore;
+            for (let k = 1; k <= fi; k++) window.setTimeout(() => { aiManaDisplay = Math.max(manaAfter, Math.round((manaBefore - (manaBefore - manaAfter) * k / fi) * 2) / 2); mounted?.update(); }, k * 150);
+            window.setTimeout(() => { aiManaDisplay = null; mounted?.update(); }, fi * 150 + 220); // 收尾归真值（显 tb.b.mana）
+          } else { aiManaDisplay = null; }
           const newCast = tb.b.castIds.filter((id) => !prevCastIds.includes(id)).map((id) => tgName(id));
           usedDisha.forEach((id) => log(`敌·施放地煞「${DISHA_NAME[id] ?? id}」（整场生效）`));
           log(`敌·决策：部署[${newFoe.join('、') || '无'}]${newCast.length ? ` 施天罡[${newCast.join('、')}]` : ''}（源泉 我${tb.a.mana}/敌${tb.b.mana}）`);

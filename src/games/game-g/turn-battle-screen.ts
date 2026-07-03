@@ -785,7 +785,7 @@ const SUIT_KEYS: Record<string, 's' | 'h' | 'd' | 'c'> = { S: 's', H: 'h', D: 'd
 const lc = (s: string): 's' | 'h' | 'd' | 'c' => SUIT_KEYS[s] ?? 's';
 const rankOf = (r: string): 'white' | 'green' | 'blue' | 'gold' => (r === 'A' ? 'gold' : r === 'K' || r === 'Q' || r === 'J' ? 'blue' : 'white');
 
-export interface TurnViewOpts { theme?: 'onyx' | 'brocade'; tengangName?: (id: string) => string; tengangDesc?: (id: string) => string; clash?: TurnClashView | null; sha?: TurnShaView[]; bossName?: string; selMode?: string | null; selHand?: number; tutorial?: { narration: string; highlight: string } | null; gatesLive?: boolean; notice?: string | null; movedIds?: Set<string>; freshIds?: Map<string, number>; dealtId?: string; battleLabel?: string; sfxOn?: boolean; settingsOpen?: boolean; bgmOn?: boolean; bgmIdx?: number; bgmVol?: number; bgmNames?: string[]; guideOn?: boolean; enchOf?: (rank: string, suit: string) => [string, number][]; inlays?: Record<string, InlayEntry[]> }
+export interface TurnViewOpts { theme?: 'onyx' | 'brocade'; tengangName?: (id: string) => string; tengangDesc?: (id: string) => string; clash?: TurnClashView | null; sha?: TurnShaView[]; bossName?: string; selMode?: string | null; selHand?: number; tutorial?: { narration: string; highlight: string } | null; gatesLive?: boolean; notice?: string | null; movedIds?: Set<string>; freshIds?: Map<string, number>; dealtId?: string; battleLabel?: string; sfxOn?: boolean; settingsOpen?: boolean; bgmOn?: boolean; bgmIdx?: number; bgmVol?: number; bgmNames?: string[]; guideOn?: boolean; enchOf?: (rank: string, suit: string) => [string, number][]; inlays?: Record<string, InlayEntry[]>; waterBDisplay?: number }
 /** 从 turn-combat 真状态派生战斗屏视图（玩家 = side a 视角）。纯读、不改 battle。 */
 export function buildTurnBattleView(b: TurnBattle, opts: TurnViewOpts = {}): TurnBattleView {
   const laneNames = ['上路', '中路', '下路'];
@@ -825,7 +825,7 @@ export function buildTurnBattleView(b: TurnBattle, opts: TurnViewOpts = {}): Tur
   return {
     theme: opts.theme ?? 'onyx',
     turnWho: b.active === 'a' ? '我方回合' : '敌方回合', roundNo: b.turn, timerLabel: '∞ 无限时',
-    water: b.a.mana, waterMax: 10, waterB: b.b.mana, waterGain: manaGain(b.turn),
+    water: b.a.mana, waterMax: 10, waterB: opts.waterBDisplay ?? b.b.mana, waterGain: manaGain(b.turn),
     deckA: b.a.pokerDeck.length + b.a.tengangDeck.length,
     deckB: b.b.pokerDeck.length + b.b.tengangDeck.length,
     homeA: b.homeA, homeB: b.homeB, homeMax: b.homeMax,
