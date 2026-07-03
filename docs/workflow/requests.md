@@ -929,3 +929,8 @@ _（REQ-3D-W1高效引擎 已移至 [`requests-3d.md`](./requests-3d.md)。）_
 > ③ 操作条加「🩺 体检」→ 新端点 `POST /api/library/<slug>/bench`：薄 node CLI（照 manifest-check.mjs 模式，vite-node 跑）把 manifest → parseManifest → 喂 `src/bench/apollo-bench.ts`（先读其真实入口签名）→ 返回 `{score, axes, pass}`（及格线 70）；前端浮层展示五轴分。
 > ④ 测试：settings 冒烟（写→读打码→优先级 config>env→测试连接 mock）+ bench 冒烟（sample manifest 出分）+ **playwright 真浏览器旅程贴结果**（点状态灯→设置面板→填 mock key→测试连接→体检→五轴显示）。门禁 tsc+vitest+build+ast 全绿；直推；完工标 ✅。
 > 约束：apollo.py + src/studio/** + launcher.tsx + .gitignore；**不碰 src/{engine,skills,assembly,renderer,ui,games}**（bench CLI 只读 import 现有模块）。
+
+### REQ-PLAYBOOKS-十线手册 · 按 playbooks/index.md 起草各生产线接线图手册 · [2026-07-03] · 主程 → **指派：Opus** · status: **施工中（2026-07-03 开工）** · 类型: 文档（工作流基建）
+> 背景：owner 拍板建立「先查手册后动手」工作流（防 game-d Title/HUD 式绕基座）。立柱已就位（`docs/playbooks/index.md` 总目录+铁律+角色名录，CLAUDE.md 已设开工必读铁律）。本条=起草 10 本线手册。
+> **spec（Lead 已定）**：按 index.md 表格逐本写 `docs/playbooks/{ui,rendering-fx,3d,movement-pathfinding,events-logic,combat,cards,randomness,assets,audio,save-platform}.md`（11 个文件，ui.md 做薄壳指向 ui-playbook+补引擎接线：mountUI/ActionSink/Signal/coachmark）。每本铁规：①≤80 行；②索引式五段结构=「做 X→能力**实名**（对照 capability-registry 逐个 grep 核实存在）→样例指针（registry examples / 正样例游戏文件路径，须真实存在）→本线红线→查不到怎么办(requests.md)」；③**不手抄字段表/数字**（指向机读真相）；④正样例引用：game-e 计分核（cards）、game-g lobby 六屏+sfx（ui/audio）、game-i（ui）、game-g clash/dice 族（combat/randomness）、M0-M2 创作台（save 线可引 library 版本化）；⑤红线必含：randomness=裸 Math.random 禁令、ui=手写 DOM 禁令、3d=P3D 域边界（引 P3D-game-z-handoff §0.1）。
+> 验收自证：写个一次性核对脚本（或命令序列）证明——手册里出现的每个能力 id 都能在 capability-registry.ts grep 到、每个文件路径都存在；报告贴核对输出。docs-only 提交，tsc 抽查即可；直推 mainbranch；完工标 ✅。
