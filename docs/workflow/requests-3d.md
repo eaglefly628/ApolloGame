@@ -321,7 +321,13 @@
 
 ---
 
-## REQ-3D-Vfx3D 点吸引力场（粒子跟随鼠标聚集·加减速自然） · [2026-07-03] · game-d（我·P3D 转呈）→ P3D（3D 渲染线·粒子域） · status: **待 P3D 评审/落地** · 类型: render-only 粒子能力补全（点吸引子）
+## REQ-3D-Vfx3D 点吸引力场（粒子跟随鼠标聚集·加减速自然） · [2026-07-03] · game-d（我·P3D 转呈）→ P3D（3D 渲染线·粒子域） · status: **✅ done（2026-07-03·已推）** · 类型: render-only 粒子能力补全（点吸引子）
+
+> **✅ 落地（全 render-only·P3D 渲染线域）**：
+> - **能力** `Vfx3D.attractor?: {x,y,z,strength}`（`render.ts`·render-only·Vfx3D 本就在 NON_DETERMINISTIC）：`VfxSystem` 每帧对每颗粒子施弹簧力 `F=strength·(target−pos)`，配**现成 `drag` 阻尼** = 阻尼弹簧 = **先加速后减速**的自然收拢（零新缓动参·合 owner「不夸张」）。力积分抽成纯函数 `integrateParticle`（半隐式 Euler·稳定不炸）便于确定性单测。
+> - **输入 seam** `ThreeRenderer.screenToWorld(clientX,clientY,worldZ)`（通用 screen→world·Raycaster+Plane·透视/正交都对）：与 WorldUI3D 的世界→屏互逆（路线图「UI↔世界锚」的输入向落地）。游戏层输入胶水/世界拾取共用。
+> - **消费** game-d Title：`uiHost` mousemove → `screenToWorld` unproject 到尘埃平面 → 写各 dust 发射器的 `attractor`（离场撤力）。render-only 胶水（同 autoRun/WASD 先例）。截图 before/after 验：尘埃随光标聚拢（软聚非硬吸）。
+> - 测试 `vfx.test`(4·弹簧收拢到目标 / 先加速后减速 / 无 attractor 向后兼容 / attractor 不进 hash)。tsc+vitest(2196)+build 全绿。
 
 > **owner 原话（2026-07-03）**：Title 那片氛围粒子——「**鼠标在哪，粒子就往鼠标那里去聚集、follow 我这个鼠标**；但要有个**加速度、减速度的过程，不要太夸张**」。owner 明示这条按 3D 引擎需求提给 3D 引擎（不进 `requests.md`）。
 >

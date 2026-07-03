@@ -328,6 +328,8 @@ export interface Vfx3D extends Component {
   // 力
   gravity?: number; // -Y 加速度(单位/秒²·缺省 0)
   drag?: number; // 阻尼(每秒比例 0..n·缺省 0)
+  attractor?: { x: number; y: number; z: number; strength: number }; // 点吸引力场：对每颗粒子施弹簧力 F=strength·(target−pos)。
+  // 配 drag 阻尼 = 阻尼弹簧 = 缓入缓出（趋近时力变小·自然加减速·不夸张）。典型用法：粒子跟随鼠标聚集（游戏每帧把光标 unproject 的世界点写进 x/y/z）。缺省无 = 不施力。
   // 外观
   size?: number; // 基础粒子尺寸(世界尺度·缺省 1)
   sizeCurve?: Curve; // size-over-life（0..1 乘 size·缺省恒 1）

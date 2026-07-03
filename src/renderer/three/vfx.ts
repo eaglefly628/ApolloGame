@@ -14,6 +14,20 @@ const GLOBAL_CAP = 6000; // 全场总粒子预算（兜底·防失控）
 const DEFAULT_MAX = 256;
 
 interface Particle { x: number; y: number; z: number; vx: number; vy: number; vz: number; age: number; life: number; }
+
+/** 对一颗粒子施力并**半隐式 Euler** 积分一步（render-only·纯函数·便于确定性单测）。
+ *  力：gravity(-Y) + 可选点吸引弹簧 `F=strength·(target−pos)`（距离越远拉力越大·趋近自减）+ drag 阻尼（每秒比例）。
+ *  半隐式（位置用**更新后**速度积分）+ 弹簧配 drag = 阻尼弹簧 = **先加速后减速**的自然收拢（不炸不夸张）。 */
+export function integrateParticle(
+  p: { x: number; y: number; z: number; vx: number; vy: number; vz: number },
+  dt: number, gravity: number, drag: number,
+  at?: { x: number; y: number; z: number; strength: number },
+): void {
+  if (gravity) p.vy -= gravity * dt;
+  if (at && at.strength) { const k = at.strength * dt; p.vx += (at.x - p.x) * k; p.vy += (at.y - p.y) * k; p.vz += (at.z - p.z) * k; }
+  if (drag > 0) { const f = Math.max(0, 1 - drag * dt); p.vx *= f; p.vy *= f; p.vz *= f; }
+  p.x += p.vx * dt; p.y += p.vy * dt; p.z += p.vz * dt;
+}
 interface Emitter {
   points: THREE.Points;
   geo: THREE.BufferGeometry;
@@ -73,15 +87,13 @@ export class VfxSystem {
   }
 
   private step(e: Emitter, vfx: Vfx3D, origin: { x: number; y: number; z: number }, dt: number, totalBefore: number): void {
-    // 1) 老化 + 积分（render-only·自由用随机）。
-    const g = vfx.gravity ?? 0, drag = vfx.drag ?? 0;
+    // 1) 老化 + 积分（render-only·自由用随机）。半隐式 Euler（位置用更新后的速度积分）→ 弹簧力配 drag 稳定不炸。
+    const g = vfx.gravity ?? 0, drag = vfx.drag ?? 0, at = vfx.attractor;
     for (let i = e.parts.length - 1; i >= 0; i--) {
       const p = e.parts[i]!;
       p.age += dt;
       if (p.age >= p.life) { e.parts[i] = e.parts[e.parts.length - 1]!; e.parts.pop(); continue; }
-      p.vy -= g * dt;
-      if (drag > 0) { const f = Math.max(0, 1 - drag * dt); p.vx *= f; p.vy *= f; p.vz *= f; }
-      p.x += p.vx * dt; p.y += p.vy * dt; p.z += p.vz * dt;
+      integrateParticle(p, dt, g, drag, at);
     }
     // 2) 发射（rate·dt 累积；受本发射器 max + 全局 cap 限）。
     if (dt > 0 && (vfx.rate ?? 0) > 0) {

@@ -851,6 +851,20 @@ export function mount(container: HTMLElement): () => void {
   function render(): void { if (ui) ui(); ui = mountUI(uiHost, tree(), handlers(), GAME_D_THEME); }
   render();
 
+  // ── Title 尘埃跟随鼠标聚集（owner 2026-07-03·render-only 输入胶水·同 game-z autoRun/WASD 先例）──
+  //   光标经引擎 `renderer.screenToWorld` unproject 到尘埃平面 → 写进各 dust 发射器的 `Vfx3D.attractor`（引擎侧弹簧力 +
+  //   现成 drag 阻尼 = 自然加减速·不夸张·owner「不要太夸张」）。能力（attractor）+ 反投影（screenToWorld）皆在引擎/渲染线，
+  //   游戏层只做「光标→世界点→写数据」这一层胶水。仅 Title 有 dust 实体 → 非 Title 时 getComponent 为空自动 no-op。
+  const DUST_IDS = ['gd-title-dust1', 'gd-title-dust2', 'gd-title-dust3'];
+  const DUST_PLANE_Z = 2.2, DUST_PULL = 3.5; // 尘埃所在景深 z / 弹簧力强度（温柔聚拢·非吸附）
+  const setDustAttractor = (a: { x: number; y: number; z: number; strength: number } | undefined): void => {
+    for (const id of DUST_IDS) { const v = engine.world.getComponent<{ type: 'Vfx3D'; attractor?: typeof a }>(id, 'Vfx3D'); if (v) v.attractor = a; }
+  };
+  const onDustMove = (ev: MouseEvent): void => { const p = renderer.screenToWorld(ev.clientX, ev.clientY, DUST_PLANE_Z); if (p) setDustAttractor({ ...p, strength: DUST_PULL }); };
+  const onDustLeave = (): void => setDustAttractor(undefined); // 离场 → 撤力·尘埃恢复自然浮沉
+  uiHost.addEventListener('mousemove', onDustMove);
+  uiHost.addEventListener('mouseleave', onDustLeave);
+
   const unsub = engine.subscribe(() => {
     // title 骰匀速翻滚已下沉成 render-only `Anim3D` 数据（见 showTitleDie）——不再游戏层手改 Transform3D（第一原则·停止绕过）。
     stepTransition();
@@ -858,5 +872,5 @@ export function mount(container: HTMLElement): () => void {
   });
   engine.start();
 
-  return () => { unsub(); engine.stop(); renderer.destroy(); if (ui) ui(); uiHost.remove(); wrapper.remove(); };
+  return () => { unsub(); engine.stop(); uiHost.removeEventListener('mousemove', onDustMove); uiHost.removeEventListener('mouseleave', onDustLeave); renderer.destroy(); if (ui) ui(); uiHost.remove(); wrapper.remove(); };
 }
