@@ -1113,3 +1113,8 @@ _（REQ-3D-W1高效引擎 已移至 [`requests-3d.md`](./requests-3d.md)。）_
 > **铁律**：走引擎 3D/UI 基座（别绕手写 CSS 3D）；动手前查 `docs/playbooks/index.md`；碰 LayoutNode 交付前跑 `check-ui`；演出层不动 rng/turnHash。
 > **不含**：悬殊跳过提示（`REQ-G-掷骰仪式按赌注缩放`·延后 TODO）。
 > **验收**：owner 玩关1 → "决策回合内做完·**亲手掷骰有执命仪式感**·掷前看清范围/赢面·节拍连贯"。
+
+### REQ-BASE-卫生三件 · tray 补注册+守护测试 / Card3D 清遗 / view.ts 死码删 · [2026-07-03] · 主程 → **指派：Opus** · status: **施工中（2026-07-03 开工）** · 类型: 引擎卫生（零风险）
+> 出处：底座终审 `docs/design/base-capability-review-2026-07-03.md` §二⚙️。
+> spec：① **t2-tray 补注册**：`src/skills/tier2/`（tray 相关 capability 对象）加入 `capability-registry.ts` ALL_CAPABILITIES（对照现有条目风格）；**加守护测试**：扫 `src/skills/**` 全部 `defineCapability` 导出，断言每个都在 ALL_CAPABILITIES（防再漏，放 assembly 层测试）。② **Card3D 清遗**：从 `component-map.ts`/`components` 闭集移除已退役的 Card3D（先全库 grep 证零消费再删；renderer/index.ts 里的过期注释一并清）。③ **game-e view.ts 死码删**：`src/games/game-e/view.ts`（buildGameEViewBlueprint 全库零调用，评审两度点名）删除 + 其 import 清理；若有引用它的测试一并删。
+> 门禁 tsc+vitest+build 全绿直推；此活涉引擎域（registry/component-map），属主程授权的引擎卫生，照 spec 严格执行不越范围；完工标 ✅。
