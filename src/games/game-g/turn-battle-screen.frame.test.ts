@@ -47,15 +47,30 @@ describe('Game G · turn-battle-screen（doc24 回合制战斗屏 · 忠实端�
       extras: ['⚖ 掷平 → 战力高者胜', '⚔ 黑桃A 战胜（第 1 连胜）→ 疲劳战损：战力对折 −15（−50%）· 留场续战·越打越弱'],
     };
     const html = renderTurnBattleDoc(buildTurnBattleView(setup(), { theme: 'onyx', tengangName: nm, clash }));
+    // owner 2026-07-03 上传 Cloud Design 新稿重排布局（design/UI/Game G 绝命对决.dc.html）：三栏·各自掷战力骰·3D 骰竞技场。
     expect(html).toContain('绝命对决'); expect(html).not.toContain('掷命对决'); // 命名：绝命对决（非旧掷命对决）
-    expect(html).toContain('我方加成明细'); expect(html).toContain('敌方加成明细');
+    expect(html).toContain('我方 · 加成明细'); expect(html).toContain('敌方 · 加成明细'); // 三栏侧栏 head（新稿）
     expect(html).toContain('额外效果'); expect(html).toContain('封顶 30'); // 来源清晰：额外效果区 + 封顶对齐行（owner 2026-06-21）
     expect(html).toContain('掷命预报'); expect(html).not.toContain('CoinFlip'); // 各自掷战力骰·揭晓无掷币（owner 2026-07-01）
-    expect(html).toContain('各自掷战力骰'); expect(html).toContain('🎲'); expect(html).toContain('掷高'); // 两骰摆牌下 + 掷高者胜（owner 2026-07-02）
-    expect(html).toContain('>22<'); expect(html).toContain('>9<'); // 两骰掷值（我 22 / 敌 9·各在独立骰位）
+    expect(html).toContain('各自掷战力骰'); expect(html).toContain('掷高'); // 骰竞技场标头 + 掷高者胜（owner 2026-07-02）
+    expect(html).toContain('id="clash-dieface-m"'); expect(html).toContain('id="clash-dieface-f"'); // 揭晓=奶白平面骰显真实掷值（3D 骰只在掷前相·owner 2026-07-03）
+    expect(html).toContain('>22<'); expect(html).toContain('>9<'); // 两骰掷值文本（我 22 / 敌 9·驱动层就地滚·id clash-die-m/f）
     expect(html).toContain('战力对折'); // 战损：写清对折削减（owner 2026-07-01）
-    expect(html).toContain('留场续战'); expect(html).toContain('阵亡 · 离场'); // 胜者留场 / 败者离场
+    expect(html).toContain('留场续战'); expect(html).toContain('阵亡 · 离场'); // 判定 chip（胜者留场 / 败者离场）
     await expect(html).toMatchFileSnapshot('./__frames__/turn-clash.html');
+  });
+
+  it('掷命特写「掷前」相位：3D 骰承载井锚点 + 战力段 + 掷命钮（3D canvas 覆此 well·owner 2026-07-03）', () => {
+    const clash: TurnClashView = {
+      laneName: '中路', mine: { rank: 'A', suit: 's', name: '黑桃A', zod: '虎', won: true }, foe: { rank: '9', suit: 'h', name: '红桃9', zod: '蛇', won: false },
+      oddsMine: 76, rollPct: 0, bonusMine: [['点数(基础)', 14]], bonusFoe: [['点数(基础)', 9]], pEffMine: 30, pEffFoe: 25, extras: [],
+      revealed: false, // 掷前：藏掷值·等玩家点骰
+    };
+    const html = renderTurnBattleDoc(buildTurnBattleView(setup(), { theme: 'onyx', tengangName: nm, clash }));
+    expect(html).toContain('id="clash-die3d-m"'); expect(html).toContain('id="clash-die3d-f"'); // mountTurnBattle 量此 rect·把 ThreeRenderer canvas 覆上（3D 战力骰）
+    expect(html).toContain('我方 1~30'); expect(html).toContain('敌方 1~25'); // 战力段 chip
+    expect(html).toContain('data-action="clash-roll"'); // 掷命钮信号（保持·flow-walk 测依赖）
+    expect(html).not.toContain('id="clash-dieface-m"'); // 掷前不显平面骰（那是揭晓相）
   });
 
   it('锦霞皮帧匹配 golden', async () => {

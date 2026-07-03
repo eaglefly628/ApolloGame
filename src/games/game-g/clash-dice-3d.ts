@@ -77,31 +77,29 @@ export function mountClashDie3D(host: HTMLElement, w: number, h: number, opts: C
   add('cd-sky', { type: 'Sky3D', top: dark ? 0x1a2740 : 0xf7e6dc, bottom: dark ? 0x0a121f : 0xe6bcbb, env: 0.8 });
   add('cd-sun', { type: 'Light3D', kind: 'directional', color: 0xfff0dc, intensity: 1.6, dirX: -0.4, dirY: -1, dirZ: -0.6 });
   add('cd-amb', { type: 'Light3D', kind: 'ambient', color: dark ? 0x5a6a88 : 0xfff2e6, intensity: dark ? 1.0 : 1.3 });
-  // 骰体：位姿 + box 六面数字骰面
+  // 骰体：位姿 + box 六面数字骰面 + **Anim3D 数据驱动翻滚**（rotX+rotY 双 spin + y-bob·渲染器 Anim3DSystem 每帧算·
+  //   零游戏层逐帧手写——遵「把逐帧手写下沉成数据」的 3D 基座铁律·owner「必须 follow 底座·不能自己创造」）。
   const SZ = 3.0;
+  const rx = mine ? 1.4 : 1.15, ry = mine ? 1.9 : -1.65; // rad/秒·两骰异速（错开视觉·非同步）
   add('cd-die',
     { type: 'Transform3D', x: 0, y: 0.1, z: 0, rotX: -0.3, rotY: 0.4, scale: 1 },
     { type: 'Mesh3D', shape: 'box', width: SZ, height: SZ, depth: SZ, frontTint: 0xffffff, dieFaces: dieFaces(opts.power, dark, mine) },
+    { type: 'Anim3D', channels: [
+      { kind: 'spin', field: 'rotX', rate: rx },
+      { kind: 'spin', field: 'rotY', rate: ry },
+      { kind: 'bob', field: 'y', amp: 0.16, freq: 3.1, phase: mine ? 0 : 1.6 },
+    ] },
   );
   // 能量注入粒子（Vfx3D·真 3D 粒子·替设计稿 CSS gd-inject div）：骰底上涌 + 渐隐·阵营色·加性发光
   add('cd-vfx',
     { type: 'Transform3D', x: 0, y: -2.0, z: 0 },
     { type: 'Vfx3D', rate: 22, lifetime: 0.85, lifeVar: 0.3, max: 48, shape: 'cone', coneAngle: 0.5, emitRadius: 1.0, speed: 3.2, speedVar: 1, gravity: -1.3, drag: 0.4, size: 0.3, color: mine ? 0xff965a : 0x5aaaff, blend: 'add' },
   );
-
-  // 每帧翻滚（render-only·纯表现·可用时间）：绕 X/Y 缓转 + 轻微上下浮（对齐设计稿 gd-tumble + gd-bob）。
-  let t = 0;
-  const rx = mine ? 0.045 : 0.038, ry = mine ? 0.06 : -0.052, ph = mine ? 0 : 1.6;
-  const unsub = engine.subscribe(() => {
-    t += 1;
-    const d = engine.world.getComponent<{ type: 'Transform3D'; rotX?: number; rotY?: number; y?: number }>('cd-die', 'Transform3D');
-    if (d) { d.rotX = (d.rotX ?? 0) + rx; d.rotY = (d.rotY ?? 0) + ry; d.y = 0.1 + Math.sin(t * 0.05 + ph) * 0.16; }
-  });
-  engine.start();
+  engine.start(); // rAF 循环 → renderer.sync 每帧跑 Anim3DSystem/VfxSystem（翻滚 + 粒子皆数据驱动）
 
   return {
     destroy: (): void => {
-      try { unsub(); engine.stop(); renderer.destroy(); } catch { /* noop */ }
+      try { engine.stop(); renderer.destroy(); } catch { /* noop */ }
       host.replaceChildren();
     },
   };
