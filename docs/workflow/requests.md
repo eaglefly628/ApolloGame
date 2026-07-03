@@ -1144,7 +1144,10 @@ _（REQ-3D-W1高效引擎 已移至 [`requests-3d.md`](./requests-3d.md)。）_
 > - **表达力验收（硬门槛）**：测试夹具用三套真实词汇各抽 ≥6 条改写——game-e 小丑行（jokers.ts:90-170 的 add/mul×chips/mult/money+countTag+门控）、game-g TengangFx op（game-g-build.ts TENGANG_OPS 已实装 18 op 抽样）、game-g DishaFx+DISHA_MERGE（sum/max/or 策略）——逐条断言聚合结果与原实现语义一致；**表达不了的如实列在报告里**（那是 v2 输入，不许硬凑）。
 > - 回填 `docs/playbooks/combat.md`。**不碰 src/games/**（e/g 的迁移由各域 owner 另立 REQ）。
 >
-> **件② `t3-timeline` 演出时间线**
+> **件② `t3-timeline` 演出时间线** — ✅ **done（2026-07-03·Opus）**
+> - 完工：`src/skills/tier3/timeline.ts`（确定性 tick 调度器·runsAfter event-when/keybind/clickable）；组件 `Timeline`/`TimelinePlayback` + `TimelineCue`/`TimelineCueDo` 入 logic.ts + component-map 闭集；tier3 index + registry 注册。测试 `timeline.test.ts`（7 例）。回填 events-logic.md（加「演出时序」节 + flow vs timeline）。门禁 tsc+vitest(2165)+build 退出码全 0。
+> - cue 四闭集 do：signal（发 Signal 带 arg·新建瞬时实体）/ flag（写 Flag 按 id）/ resource（写 Resource·op add/set·钳）/ spawn（发 SpawnRequest·prefab 展开）。瞬时实体单调 seq id、下一 tick 本系统开头回收（无泄漏）。**绝不走墙钟**（游标按 tick）。
+> - **skipOnSignal 终态一致性测试结果**：钉死通过——「起播后逐 tick 播到底」vs「起播后 skip 一 tick 补发剩余」vs「同拍起播+skip」三路终态**完全一致**（r=10, f=true, g=true）。快进按 at 升序补发 → 直写 cue 终态全在持久 Flag/Resource、可比、相等。
 > - 裁决：sim 侧确定性调度器，**tick 制绝不走墙钟**（lockstep 红线）；cue 的效果=发 Signal（带 arg）/写 Flag/写 Resource/发 SpawnRequest 四种闭集动作，表现层（UI/渲染）订阅信号自行演——timeline 管"何时"，tween 管"怎么动"，互不越权。
 > - 组件：`Timeline`（`{cues:[{at:number(tick), do:{kind:'signal'|'flag'|'resource'|'spawn', ...}}], playOnSignal:string, speed?:number, loop?:boolean}`）+ 运行态 `TimelinePlayback`（系统写：`{t, playing}`）；播完发 `timeline:done:<id>` 信号。支持 `skipOnSignal`（确定性快进：一次 tick 内按序补发全部剩余 cue，回放安全）。
 > - 参照需求（只读参考勿改）：game-g 演出编排 game-g.tsx:433-533（banner→cue→掷骰→结算时序）、game-d 骰壳转场（refcode 03 评估）。examples 至少给「回合开场三连 cue」+「转场」两个可抄 manifest 片段。

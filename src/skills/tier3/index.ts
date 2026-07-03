@@ -48,3 +48,6 @@ export { cardScoringCapability, matchPerCardWhen } from './card-scoring.js';
 export { flowCapability } from './flow.js';
 // merge-rule（REQ-F-046）：「N 换 1」声明式合成——升星/合成/进化通用（PrefabOrigin 计数+按入场序原子替换）。
 export { mergeRuleCapability } from './merge-rule.js';
+// timeline（REQ-CAP 下沉）：演出时间线——确定性 tick 调度器。Timeline{cues:[{at,do}],playOnSignal,skipOnSignal?}
+// 编排「第 N tick 发什么」，cue 只发 signal/写 flag/写 resource/发 spawn 四闭集动作；表现层订阅信号自行演。
+export { timelineCapability } from './timeline.js';

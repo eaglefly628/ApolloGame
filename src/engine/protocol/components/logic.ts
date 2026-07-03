@@ -265,3 +265,38 @@ export interface ModifierTotals extends Component {
   readonly type: 'ModifierTotals';
   totals: Record<string, number | boolean>; // target → 聚合值（消费方读取后与自身 base 结合）
 }
+
+// ── timeline（REQ-CAP 下沉）── 演出时间线：sim 侧**确定性 tick 调度器**（绝不走墙钟 → lockstep 红线）。
+// 「何时发生什么」= 一份 cue 数据（at:tick + do:闭集动作）；表现层（UI/渲染）订阅 cue 发的信号自行演。
+// 分工铁律：**timeline 管「何时」、tween 管「怎么动」**，互不越权——cue 只发信号/写 Flag/写 Resource/发
+// SpawnRequest 四种闭集动作，绝不在 handler 里塞自由演出逻辑（信号铁律）。
+// cue 的四种 do（闭集）：
+//   signal → 发 Signal{name,arg?}（表现层/caster/effect-apply 订阅）· flag → 写 Flag(按 id 全局路由)
+//   resource → 写 Resource(op:add/set·钳 [min,max]) · spawn → 发 SpawnRequest{templateId,x,y}（prefab 展开）
+export type TimelineCueDo =
+  | { readonly kind: 'signal'; readonly signal: string; readonly arg?: string }
+  | { readonly kind: 'flag'; readonly flagId: string; readonly value: boolean }
+  | { readonly kind: 'resource'; readonly resourceId: string; readonly amount: number; readonly op?: 'add' | 'set' }
+  | { readonly kind: 'spawn'; readonly templateId: string; readonly x: number; readonly y: number };
+export interface TimelineCue {
+  readonly at: number; // 触发 tick（相对播放起点；系统内按 at 升序、同 at 按书写序 tie-break → 确定）
+  readonly do: TimelineCueDo;
+}
+export interface Timeline extends Component {
+  readonly type: 'Timeline';
+  id: string; // 时间线标识（播完发 `timeline:done:<id>` 信号）
+  cues: TimelineCue[]; // 演出编排（数据）
+  playOnSignal: string; // 收到此名 Signal → 从头播放（t=0）
+  skipOnSignal?: string; // 收到此名 Signal → 确定性快进：一次 tick 内按序补发全部剩余 cue（回放安全·终态与逐 tick 一致）
+  speed?: number; // 每 tick 游标推进量（缺省 1；>1 一 tick 内可跨多个 cue）
+  loop?: boolean; // 播完是否回到 t=0 重播（缺省 false）
+}
+// ── timeline 运行态 ── 系统写；随 snapshot 走 → lockstep/录放确定。
+export interface TimelinePlayback extends Component {
+  readonly type: 'TimelinePlayback';
+  t: number; // 播放游标（tick）
+  playing: boolean; // 是否在播
+  cursor: number; // 下一个待发 cue 的（排序后）下标
+  seq: number; // 瞬时发射实体唯一 id 计数器（单调；避免 id 复用冲突）
+  emitted: string[]; // 上一 tick 发射的瞬时实体 id（signal/spawn）；下一 tick 开头销毁 → 无泄漏
+}

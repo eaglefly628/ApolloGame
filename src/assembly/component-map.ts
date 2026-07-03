@@ -102,6 +102,8 @@ import type {
   Text,
   TextBinding,
   Tilemap,
+  Timeline,
+  TimelinePlayback,
   Timer,
   TimerDone,
   Transform,
@@ -216,6 +218,8 @@ export interface ComponentDataMap {
   Text: Omit<Text, 'type'>;
   TextBinding: Omit<TextBinding, 'type'>;
   Tilemap: Omit<Tilemap, 'type'>;
+  Timeline: Omit<Timeline, 'type'>;
+  TimelinePlayback: Omit<TimelinePlayback, 'type'>;
   Timer: Omit<Timer, 'type'>;
   TimerDone: Omit<TimerDone, 'type'>;
   Transform: Omit<Transform, 'type'>;

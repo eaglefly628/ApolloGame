@@ -18,12 +18,19 @@
 | 实体各自读条件施自身效 | `t2-self-rule` | 挂 `SelfRule{when,do,once?}`（自走棋/弹幕群自治） |
 | 胜负/占据/到达判定 | `t2-zone-occupancy` | 挂 `Zone{outFlag,矩形,requiredTag,count}`；下游读 outFlag |
 | 组数量作为可读数值 | `t2-group-count` | 挂 `GroupCount{countResource,requiredTag}`；阈值配 event-when |
+| 演出时序（第 N tick 发什么） | `t3-timeline` | 挂 `Timeline{id,cues:[{at,do}],playOnSignal,skipOnSignal?}`；do=signal/flag/resource/spawn 四闭集；播完发 `timeline:done:<id>` |
 
 ## ② 样例指针
 
-- registry：`t2-event-when`/`t2-effect-apply`/`t3-flow` 的 `describe.examples`。
+- registry：`t2-event-when`/`t2-effect-apply`/`t3-flow`/`t3-timeline` 的 `describe.examples`。
 - 真实用法：`src/games/game-g/flow-walk.test.ts`（流程机）、`src/games/game-i/fsm-lab.ts`（状态机台）。
 - UI 侧信号入队见 ui.md（`mountUI` 的 `ActionSink`）。
+
+### 演出时序（timeline·管「何时」）
+
+- **flow vs timeline**：flow=状态机（分支/门控/流程），timeline=固定节拍编排（第 N tick 发什么）。转场/开场三连 cue/演出节拍用 timeline；胜负流程/回合状态用 flow。
+- **timeline 管「何时」、tween 管「怎么动」**：cue 只发 `Signal`/写 `Flag`/写 `Resource`/发 `SpawnRequest`（四闭集），表现层订阅信号、tween 演动画——handler 里绝不塞自由演出逻辑。
+- **快进**：`skipOnSignal` 一 tick 内按序补发全部剩余 cue，**终态与逐 tick 播放完全一致**（回放安全）。**绝不走墙钟**：游标 t 按 tick 推进。
 
 ## ③ 本线红线
 
