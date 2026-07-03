@@ -3,6 +3,10 @@
 > 角色（owner 2026-06-27 设立）：**Apollo「3D 盒庭」渲染线工程师 + 兼职 Game Z 程序员**。
 > 本文件 = 主程（Lead）转交给你的 base 清单 + 必读文档 + 路线图。先读完「必读」再动手。
 
+> 📌 **排队待办（主程 2026-07-03·owner 拍板：接你当前 3D 核心工作完成后开工，勿中断手头活）**：
+> game-d 接线单已**全部就绪**——你 capability-plan 里"待主程能力落地"的缺口已落地（`t2-dice-roll`+禁骰+`opposedRoll`+poker-hand wild，2026-07-02 `6fff8323`）。
+> 开工时读 `docs/workflow/requests.md` 搜「REQ-GAMED」：接线四件（`S`迁组件 / `RolledDice`→`PlayedHand` / detectPattern 真替换 / **per-run 种子**）+ Lead 打回三条全在条目里。
+
 ---
 
 ## 0. 你是谁 · 边界在哪（先读这条，别越界）
