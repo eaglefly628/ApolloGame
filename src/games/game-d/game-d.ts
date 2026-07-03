@@ -182,6 +182,16 @@ export function mount(container: HTMLElement): () => void {
       else { c.projection = 'ortho'; c.yaw = Math.PI; c.pitch = 0.99; c.orthoSize = 7; c.distance = 200; c.pivotX = 0; c.pivotY = 0.35; c.pivotZ = 0; } // §B: ortho fr7·pos(0,12,7.8) lookAt 原点
     }
   };
+  // 一簇淡色浮沉尘埃（Vfx3D·render-only）：sphere 随机方向低速 + 微重力 + 阻尼 = 缓慢浮沉；size=稍粗；
+  // colorGradient alpha 0→峰→0 = 淡入淡出（不可捉摸）；不同 x/y/z + emitRadius + rate = 密度高低（追逐感）。淡色低 alpha 不浮夸。
+  const dust = (id: string, x: number, y: number, z: number, radius: number, rate: number, size: number, color: number): void => {
+    engine.world.createEntity(id);
+    engine.world.addComponent(id, { type: 'Vfx3D', x, y, z, shape: 'sphere', emitRadius: radius, rate, lifetime: 6.5, lifeVar: 2.2,
+      speed: 0.5, speedVar: 0.4, gravity: 0.22, drag: 0.5, size, max: 150, blend: 'alpha', // alpha：中性蓝灰底上「带色相的淡色」才显（add 淡色近白=看不见）
+      sizeCurve: { keys: [{ t: 0, v: 0 }, { t: 0.18, v: 1 }, { t: 0.82, v: 1 }, { t: 1, v: 0 }], mode: 'smooth' },
+      colorGradient: { stops: [{ t: 0, color, alpha: 0 }, { t: 0.45, color, alpha: 0.62 }, { t: 1, color, alpha: 0 }] },
+    } as unknown as Component);
+  };
   const showTitleDie = (): void => {
     if (titleDieUp) return;
     // 命运骰（严格 1:1 复刻参考·owner 2026-07-01 上传 TS）：六面各一元素色 MeshStandard
@@ -213,9 +223,18 @@ export function mount(container: HTMLElement): () => void {
     engine.world.createEntity('gd-title-glow');
     engine.world.addComponent('gd-title-glow', { type: 'Transform3D', x: 0, y: -0.45, z: -1.4 } as unknown as Component);
     engine.world.addComponent('gd-title-glow', { type: 'Glow3D', color: 0xdfeaf7, scale: 4.0, opacity: 0.3 } as unknown as Component);
+    // ── 背景粒子浮沉（Vfx3D·render-only·owner 2026-07-02「粒子浮沉·稍粗·不可捉摸·追逐感·密度高低有扰动·淡色不浮夸」）──
+    //   三簇不同位置/密度/色调的**淡色尘埃**缓慢漂浮：sphere 随机方向初速 + 微重力 + 阻尼 = 浮沉；colorGradient
+    //   alpha 淡入淡出 = 不可捉摸；三簇密度不同（稀疏铺满 + 两处密团）= 密度高低/追逐感。颜色取当前冷调 palette 的
+    //   **淡版**（蓝灰 / 淡紫 / 淡青）·blend add 低 alpha 不浮夸。全 Vfx3D 数据（现成基座件·非自造）。
+    // 发射器摆在**骰子前方空气里**（z 2+·骰在 z0 半径~0.97·太靠后会被大骰挡）→ 尘埃浮在骰与镜头之间。
+    // 稍粗颗粒（size 0.35~0.5）+ 淡色略带色相（在中性蓝灰底上才显·又不浮夸）。三簇密度不同=追逐感/密度高低。
+    dust('gd-title-dust1', 0, -0.2, 2.3, 3.2, 22, 0.38, 0xa99ad8);  // 淡紫·稀疏铺满全场
+    dust('gd-title-dust2', 1.7, 0.6, 2.0, 1.3, 16, 0.52, 0x9ec2dc); // 淡蓝·右上密团（最粗）
+    dust('gd-title-dust3', -1.7, -0.3, 2.2, 1.2, 15, 0.44, 0x9fcbb6); // 淡薄荷·左侧密团
     titleDieUp = true;
   };
-  const hideTitleDie = (): void => { if (!titleDieUp) return; try { engine.world.destroyEntity(TITLE_DIE); engine.world.destroyEntity('gd-title-rim'); engine.world.destroyEntity('gd-title-fill'); engine.world.destroyEntity('gd-title-glow'); } catch { /* noop */ } titleDieUp = false; };
+  const hideTitleDie = (): void => { if (!titleDieUp) return; try { for (const id of [TITLE_DIE, 'gd-title-rim', 'gd-title-fill', 'gd-title-glow', 'gd-title-dust1', 'gd-title-dust2', 'gd-title-dust3']) engine.world.destroyEntity(id); } catch { /* noop */ } titleDieUp = false; };
 
   // ── 骰 ↔ 关卡 无缝变形转场（owner 2026-07-02·render-only·P3D 域）──
   // 同一中心点收放·用当前**玻璃命运骰**（非另造骰壳）：
