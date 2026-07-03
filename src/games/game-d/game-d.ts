@@ -399,7 +399,7 @@ export function mount(container: HTMLElement): () => void {
               lbl('gd-name', '骰途', { size: 76, color: 'gold', bold: true, glow: true, tracking: 6, font: 'serif' }),
               bareRow('gd-subrow', [
                 { type: 'Panel', id: 'gd-sl', props: { bg: 'linear-gradient(90deg,transparent,#9a7c46)' }, layout: { width: 34, height: 1, padding: 0 }, children: [] },
-                lbl('gd-sub', 'TOWER OF FATE', { size: 15, color: 'ink', tracking: 6, font: 'serif' }),
+                lbl('gd-sub', 'TOWER OF FATE', { size: 15, color: 'ink', tracking: 6, font: 'epic' }), // Cinzel 史诗衬线（原型副标确指·主程 2026-07-03 内嵌艺术字库落地后接入·拉丁字形专用）
                 { type: 'Panel', id: 'gd-sr', props: { bg: 'linear-gradient(90deg,#9a7c46,transparent)' }, layout: { width: 34, height: 1, padding: 0 }, children: [] },
               ], { justify: 'center', align: 'center', gap: 12 }),
               lbl('gd-tag', '两名掷命者，一座会改写命运的古塔', { size: 13, color: 'ink', tracking: 1 }),
