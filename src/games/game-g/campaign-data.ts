@@ -77,7 +77,7 @@ export const TIANGANG_UNLOCK: { stage: number; ids: string[] }[] = [
   { stage: 3, ids: ['fewtroops', 'grieve', 'deathwatch', 'flow'] },
   { stage: 4, ids: ['arrowhead', 'tripod', 'relay', 'ram'] },
   { stage: 5, ids: ['atlas', 'irondice', 'leaddice', 'swiftmarch'] },
-  { stage: 6, ids: ['mire', 'beachhead', 'rush', 'gateorder'] },
+  { stage: 6, ids: ['mire', 'beachhead', 'rush'] }, // 城门令(gateorder)随机关门退役·本关 3 张（owner 2026-07-03·REQ-G-退役机关门）
   { stage: 7, ids: ['ghosthand', 'ironchain', 'discard2', 'lurefoe'] },
   { stage: 8, ids: ['capturektg', 'tidewave', 'markdecap', 'markmorale'] },
   { stage: 9, ids: ['markswarm', 'marktianji', 'marksamerank', 'markodds'] },

@@ -3,7 +3,7 @@
 //   只读 TurnBattleView（由 buildTurnBattleView 从 turn-combat 真状态派生）→ 出 HTML 串；不进 hash、不回灌判定。
 // 静态渲染 = 设计稿"静息态"(无 hover tooltip / 无 boss 飞出)；clash 特写覆盖层按 view.clash 选渲。live mount + 交互为后续切片。
 import { cardPoints } from './clash-resolve.js';
-import { SLOTS, manaGain, GATES, A_DEPLOY_SLOT, B_DEPLOY_SLOT, DEPLOY_COST, CAST_COST, clashOdds, unitPowerParts, type TurnBattle, type TurnUnit } from './turn-combat.js';
+import { SLOTS, manaGain, A_DEPLOY_SLOT, B_DEPLOY_SLOT, DEPLOY_COST, CAST_COST, clashOdds, unitPowerParts, type TurnBattle, type TurnUnit } from './turn-combat.js';
 import { powerRows } from './game-g-clash-view.js'; // 战力逐行明细共享格式器（④ 掷命特写 + ⑥ 场上兵 hover 单一真相）
 import type { InlayEntry } from './dizhi-data.js';
 import { FONTS } from './fonts.js'; // 自托管字体（替代外部 Google Fonts <link>）
@@ -57,13 +57,10 @@ export const THEMES: Record<string, Theme> = {
 };
 const CSS = `
 @keyframes g-spark { 0%,100% { opacity:.6; transform:translate(-50%,-50%) scale(1);} 50% { opacity:1; transform:translate(-50%,-50%) scale(1.12);} }
-@keyframes g-gate { 0%,100% { opacity:.5;} 50% { opacity:1;} }
 @keyframes g-emblem { 0% { transform:translate(-50%,-50%) scale(.6); opacity:0;} 60% { transform:translate(-50%,-50%) scale(1.12); opacity:1;} 100% { transform:translate(-50%,-50%) scale(1); opacity:1;} }
 @keyframes g-pulse { 0%,100% { box-shadow:0 0 0 0 var(--accent-soft);} 50% { box-shadow:0 0 0 6px transparent;} }
 @keyframes g-water { 0% { background-position:0 0;} 100% { background-position:0 -28px;} }
 @keyframes g-aura { 0%,100% { opacity:.5; transform:scale(1);} 50% { opacity:.95; transform:scale(1.04);} }
-@keyframes g-flow { to { stroke-dashoffset: -32; } }
-@keyframes g-knob { 0%,100% { box-shadow:0 0 6px var(--kc), inset 0 1px 1px rgba(255,255,255,.3);} 50% { box-shadow:0 0 16px var(--kc), 0 0 24px var(--kc), inset 0 1px 1px rgba(255,255,255,.3);} }
 @keyframes g-fade { from { opacity:0; } to { opacity:1; } }
 @keyframes g-fly-mine { 0% { transform: translate(-90px,140px) scale(.16) rotateX(76deg) rotateY(-30deg); } 100% { transform: none; } }
 @keyframes g-fly-foe  { 0% { transform: translate(90px,140px) scale(.16) rotateX(76deg) rotateY(30deg); } 100% { transform: none; } }
@@ -126,8 +123,6 @@ const CSS = `
 // ── 视图（buildTurnBattleView 从 turn-combat 派生喂渲染器；纯数据） ──
 export interface TurnSlotView { hasUnit: boolean; mine: boolean; isBorder: boolean; isClash: boolean; rank?: string; suit?: 's' | 'h' | 'd' | 'c'; power?: number; pts?: number; buff?: number; name?: string; rar?: 'white' | 'green' | 'blue' | 'gold'; zod?: string[]; deploy?: 1 | 2; deployLabel?: boolean; placeable?: boolean; unitId?: string; justMoved?: boolean; fresh?: number; tipDown?: boolean; tipSide?: 'left' | 'right' | ''; forecast?: number; general?: boolean; ench?: [string, number][]; live?: [string, number][]; livePower?: number; winStreak?: number } // winStreak=连胜场数(owner 2026-07-01·每胜战力对折·场上持续显🔥N 让玩家看清哪张已疲劳)；live=此刻若评估的战力逐行明细(含天罡/士气/地煞·hover 透出来源·owner 2026-06-29 ⑥)；livePower=其和后的有效战力 pEff // placeable=选牌待放可落子(高亮)；fresh=新部署落子序号(g-drop)；tipDown=顶排牌磨砂浮层朝下弹避免被画框裁；tipSide=边缘列浮层往内弹避免溢出左右屏(owner 2026-06-21)；forecast=此前锋若开战的我方胜率0~1(掷命预报·owner 2026-06-21)
 export interface TurnLaneView { name: string; slots: TurnSlotView[] }
-// 捷径门箭头（占位·8 门·真视觉待 owner 参考图）。idx=GATES 下标·供 live mount data-gate 钩子。
-export interface TurnGateView { idx: number; open: boolean; side: 'a' | 'b'; fromLane: number; fromSlot: number; toLane: number; toSlot: number }
 export interface TurnHandCardView { kind: 'pawn' | 'gang'; rank?: string; suit?: 's' | 'h' | 'd' | 'c'; name: string; power?: number; pts?: number; buff?: number; cost: number; zod?: string[]; rar: 'white' | 'green' | 'blue' | 'gold'; desc?: string; glyph?: string; selected?: boolean; dealt?: boolean; affordable?: boolean; general?: boolean; ench?: [string, number][] } // dealt=刚抽到的牌·飞入翻面入场动画(owner 2026-06-21)
 export interface TurnActionView { key: string; glyph: string; label: string; on: boolean; dim: boolean }
 export interface TurnClashCardView { rank: string; suit: 's' | 'h' | 'd' | 'c'; name: string; zod?: string; won: boolean; lastStand?: boolean } // lastStand：败者触发「死战不退·首负不亡」→ 显"死战不退"而非"阵亡"(owner 2026-06-21)
@@ -138,7 +133,7 @@ export interface TurnBattleView {
   turnWho: string; roundNo: number; timerLabel: string;
   water: number; waterMax: number; waterB: number; waterGain: number; deckA: number; deckB: number;
   homeA: number; homeB: number; homeMax: number;
-  lanes: TurnLaneView[]; gates: TurnGateView[]; gatesLive: boolean;
+  lanes: TurnLaneView[];
   hand: TurnHandCardView[]; handPawnCount: number; handGangCount: number;
   actions: TurnActionView[]; actionSub: string; drawPick: boolean;
   sha: TurnShaView[]; bossName: string;
@@ -149,44 +144,6 @@ export interface TurnBattleView {
   bgmOn: boolean; bgmIdx: number; bgmVol: number; bgmNames: string[];
   guideOn?: boolean; // 新手引导开/关（owner 2026-06-21·卡住保险阀·默认关）
 }
-
-// ── 上下通路梯子（owner 2026-06-20 Cloud Design 参考图·忠实端口 LAD 像素坐标·900×400 viewBox）──
-// 8 道：我方(a) 上1→中2 · 下1→中2 · 中3→上4 · 中3→下4；敌方(b·镜像)。index 同 turn-combat GATES。
-const GATE_LAD: ['a' | 'b', number, number, number, number][] = [
-  ['a', 205, 110, 295, 156], ['a', 205, 290, 295, 244], ['a', 385, 156, 475, 110], ['a', 385, 244, 475, 290],
-  ['b', 745, 110, 655, 156], ['b', 745, 290, 655, 244], ['b', 565, 156, 475, 110], ['b', 565, 244, 475, 290],
-];
-// 斜梯路径 d（取中段 44% 显形）。
-const ladderPath = ([, x1, y1, x2, y2]: ['a' | 'b', number, number, number, number]): string => {
-  const cx = (x1 + x2) / 2, cy = (y1 + y2) / 2, f = 0.44;
-  return `M${(cx + (x1 - cx) * f).toFixed(0)},${(cy + (y1 - cy) * f).toFixed(0)} L${(cx + (x2 - cx) * f).toFixed(0)},${(cy + (y2 - cy) * f).toFixed(0)}`;
-};
-// 一道梯子的双 path（底轨 + 流动虚线箭头）。live = 放牌中(本方梯子高亮)。
-const ladderSvg = (lad: ['a' | 'b', number, number, number, number], open: boolean, live: boolean): string => {
-  const mine = lad[0] === 'a';
-  const d = ladderPath(lad);
-  const baseStroke = mine ? '#3c2010' : '#12283e', flowStroke = mine ? '#6b3c20' : '#21425f';
-  const baseOpacity = open ? (live ? 0.5 : 0.32) : 0.16;
-  const marker = open ? (mine ? 'url(#ar-a)' : 'url(#ar-b)') : '';
-  const flowStyle: Style = { opacity: open ? (live ? 0.62 : 0.38) : 0, animation: open ? 'g-flow .9s linear infinite' : 'none' };
-  return `<path d="${d}" fill="none" stroke="${baseStroke}" stroke-width="17" stroke-linecap="round" opacity="${baseOpacity}"></path><path d="${d}" fill="none" stroke="${flowStroke}" stroke-width="11" stroke-linecap="butt" stroke-dasharray="10 11" marker-end="${marker}" style="${st(flowStyle)}"></path>`;
-};
-// 梯子中点门钮（◉ 通路 / ✕ 闭）·data-gate 供 live mount 翻门。
-const gateKnob = (lad: ['a' | 'b', number, number, number, number], idx: number, open: boolean): string => {
-  const [team, x1, y1, x2, y2] = lad; const mine = team === 'a';
-  const cx = (x1 + x2) / 2, cy = (y1 + y2) / 2; const col = mine ? '#c46a38' : '#3a6e9e';
-  const wrap: Style = { position: 'absolute', left: (cx / 900 * 100) + '%', top: (cy / 400 * 100) + '%', transform: 'translate(-50%,-50%)', width: '22px', height: '22px', borderRadius: '50%', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', background: open ? `radial-gradient(circle at 38% 32%, ${col}, #1a1208)` : 'radial-gradient(circle at 38% 32%, #4a4640, #15130f)', border: '1.5px solid ' + (open ? col : '#6a4a3a'), boxShadow: open ? `0 0 8px ${col}88, inset 0 1px 1px rgba(255,255,255,.3)` : 'inset 0 1px 2px rgba(0,0,0,.6)', '--kc': col + '99', animation: open ? 'g-knob 1.6s ease-in-out infinite' : 'none', pointerEvents: 'auto', zIndex: 7 };
-  const mark: Style = { fontSize: open ? '9px' : '12px', fontWeight: 700, lineHeight: 1, color: open ? 'rgba(255,255,255,.85)' : '#d8504e', fontFamily: 'var(--fh)' };
-  return `<div data-gate="${idx}" style="${st(wrap)}"><span style="${st(mark)}">${open ? '◉' : '✕'}</span></div>`;
-};
-// 梯层（SVG 斜梯 + 门钮）·覆盖三路区。
-const laddersLayer = (view: TurnBattleView): string => {
-  const svgStyle: Style = { position: 'absolute', inset: 0, width: '100%', height: '100%', pointerEvents: 'none', zIndex: 4, overflow: 'visible' };
-  const layerStyle: Style = { position: 'absolute', inset: 0, pointerEvents: 'none', zIndex: 6 };
-  const paths = forr(GATE_LAD, (lad, i) => ladderSvg(lad, view.gates[i]?.open ?? false, lad[0] === 'a' && view.gatesLive));
-  const knobs = forr(GATE_LAD, (lad, i) => gateKnob(lad, i, view.gates[i]?.open ?? false));
-  return `<svg viewBox="0 0 900 400" preserveAspectRatio="none" style="${st(svgStyle)}"><defs><marker id="ar-a" markerWidth="4" markerHeight="4" refX="2" refY="2" orient="auto"><path d="M0,0 L4,2 L0,4 L1.3,2 Z" fill="#6b3c20"></path></marker><marker id="ar-b" markerWidth="4" markerHeight="4" refX="2" refY="2" orient="auto"><path d="M0,0 L4,2 L0,4 L1.3,2 Z" fill="#21425f"></path></marker></defs>${paths}</svg><div style="${st(layerStyle)}">${knobs}</div>`;
-};
 
 // 大本营血灯（数据驱动·棋枰数据化②·owner 2026-06-28）：每点士气=一颗菱形宝石 → Label '◆'(亮·danger 血红+磷光) / '◇'(暗·dim)。
 // 替手写旋转 div+facet：菱形字符天然就是斜方宝石，色走战斗 token(danger=var(--danger)=#ff5d62)·最弱 LLM 只填 ◆/◇ 与令牌。
@@ -759,7 +716,7 @@ export function buildTurnFrameHTML(view: TurnBattleView, drain: { from: number; 
         <div style="${st(boardWrap)}">
           ${narrationBanner}${noticeBanner}
           ${fortBase(view, true)}
-          <div style="${st(lanesCol)}">${forr(view.lanes, (L, li) => renderNode(laneRowNode(L, li, hi === 'lane:' + li), GG_BATTLE_THEME))}${laddersLayer(view)}</div>
+          <div style="${st(lanesCol)}">${forr(view.lanes, (L, li) => renderNode(laneRowNode(L, li, hi === 'lane:' + li), GG_BATTLE_THEME))}</div>
           ${fortBase(view, false)}
         </div>
         ${renderNode(waterBarNode(view, litCells, halfCell, litLabel, drain), GG_BATTLE_THEME)}
@@ -788,7 +745,7 @@ const SUIT_KEYS: Record<string, 's' | 'h' | 'd' | 'c'> = { S: 's', H: 'h', D: 'd
 const lc = (s: string): 's' | 'h' | 'd' | 'c' => SUIT_KEYS[s] ?? 's';
 const rankOf = (r: string): 'white' | 'green' | 'blue' | 'gold' => (r === 'A' ? 'gold' : r === 'K' || r === 'Q' || r === 'J' ? 'blue' : 'white');
 
-export interface TurnViewOpts { theme?: 'onyx' | 'brocade'; tengangName?: (id: string) => string; tengangDesc?: (id: string) => string; clash?: TurnClashView | null; sha?: TurnShaView[]; bossName?: string; selMode?: string | null; selHand?: number; tutorial?: { narration: string; highlight: string } | null; gatesLive?: boolean; notice?: string | null; movedIds?: Set<string>; freshIds?: Map<string, number>; dealtId?: string; battleLabel?: string; sfxOn?: boolean; settingsOpen?: boolean; bgmOn?: boolean; bgmIdx?: number; bgmVol?: number; bgmNames?: string[]; guideOn?: boolean; enchOf?: (rank: string, suit: string) => [string, number][]; inlays?: Record<string, InlayEntry[]>; waterBDisplay?: number }
+export interface TurnViewOpts { theme?: 'onyx' | 'brocade'; tengangName?: (id: string) => string; tengangDesc?: (id: string) => string; clash?: TurnClashView | null; sha?: TurnShaView[]; bossName?: string; selMode?: string | null; selHand?: number; tutorial?: { narration: string; highlight: string } | null; notice?: string | null; movedIds?: Set<string>; freshIds?: Map<string, number>; dealtId?: string; battleLabel?: string; sfxOn?: boolean; settingsOpen?: boolean; bgmOn?: boolean; bgmIdx?: number; bgmVol?: number; bgmNames?: string[]; guideOn?: boolean; enchOf?: (rank: string, suit: string) => [string, number][]; inlays?: Record<string, InlayEntry[]>; waterBDisplay?: number }
 /** 从 turn-combat 真状态派生战斗屏视图（玩家 = side a 视角）。纯读、不改 battle。 */
 export function buildTurnBattleView(b: TurnBattle, opts: TurnViewOpts = {}): TurnBattleView {
   const laneNames = ['上路', '中路', '下路'];
@@ -832,7 +789,7 @@ export function buildTurnBattleView(b: TurnBattle, opts: TurnViewOpts = {}): Tur
     deckA: b.a.pokerDeck.length + b.a.tengangDeck.length,
     deckB: b.b.pokerDeck.length + b.b.tengangDeck.length,
     homeA: b.homeA, homeB: b.homeB, homeMax: b.homeMax,
-    lanes, gates: GATES.map((g, i) => ({ idx: i, open: b.gatesOpen[i], side: g.side, fromLane: g.fromLane, fromSlot: g.fromSlot, toLane: g.toLane, toSlot: g.toSlot })), gatesLive: opts.gatesLive ?? (mode === 'deploy'),
+    lanes,
     hand, handPawnCount: hand.filter((c) => c.kind === 'pawn').length, handGangCount: hand.filter((c) => c.kind === 'gang').length,
     actions, actionSub: SUB[mode ?? ''] ?? SUB[''], drawPick: mode === 'draw',
     sha: opts.sha ?? [{ filled: true, name: '地煞·破军', rar: 'gold', desc: '' }, { filled: true, name: '地煞·贪狼', rar: 'blue', desc: '' }, { filled: false, name: '未知', rar: 'white', desc: '' }],
@@ -853,7 +810,6 @@ export interface TurnBattleActions {
   drawFrom?: (from: 'poker' | 'tengang') => void;
   selectHand?: (i: number) => void;
   playLane?: (lane: number) => void;
-  toggleGate?: (idx: number) => void;
   endTurn?: () => void;
   setTheme?: (theme: 'onyx' | 'brocade') => void;
   clashConfirm?: () => void;
@@ -966,12 +922,10 @@ export function mountTurnBattle(host: HTMLElement, getView: () => TurnBattleView
     }
     syncDice3D(); // 3D 战力骰覆层随重渲贴合/撤除（clash 在场挂·撤 clash 撤）
   };
-  // 坞/格/牌/门 交互用 pointerdown（同 battle-screen）：rAF/重渲在按下↔抬起间整片重建 DOM，click 会落空 → 用单次离散 pointerdown。
+  // 坞/格/牌 交互用 pointerdown（同 battle-screen）：rAF/重渲在按下↔抬起间整片重建 DOM，click 会落空 → 用单次离散 pointerdown。
   const onPress = (e: MouseEvent): void => {
     if (e.button > 0) return;
     const t = e.target as HTMLElement;
-    const gate = t.closest('[data-gate]') as HTMLElement | null;
-    if (gate) { actions.toggleGate?.(parseInt(gate.dataset.gate ?? '-1', 10)); render(); return; }
     const hand = t.closest('[data-hand]') as HTMLElement | null;
     if (hand) {
       const idx = parseInt(hand.dataset.hand ?? '-1', 10);

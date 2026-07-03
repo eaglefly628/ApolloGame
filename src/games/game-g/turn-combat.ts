@@ -38,21 +38,9 @@ const MORALE_PTS = 2, ROUT_PTS = 4; // 同 live-combat/doc06：主将在→下�
 export const WAR_LOSS_PER_WIN = 0.5; // 每胜战力对折（owner 2026-07-01）
 export const WIN_CAP = 3; // 连胜上限（owner 2026-06-29）：一张兵最多打 3 场 → 满 3 必须光荣离场（回牌库 + 全额返还泉水）·防强兵无限霸场
 
-// ── 捷径门（owner 2026-06-20 定向·doc21/24 跨路调度·8 门：我方 4 + 敌方对称镜像 4）──
-// 门开 → 源格(fromLane,fromSlot)的己兵可过门到目标格(toLane,toSlot)·增援/堵敌。第N格 = slot index N-1。
-// 我方(side a)：上[1]→中[2] · 下[1]→中[2] · 中[3]→上[4] · 中[3]→下[4]
-// 敌方(side b·镜像 8-s)：上[7]→中[6] · 下[7]→中[6] · 中[5]→上[4] · 中[5]→下[4]
-export interface Gate { side: 'a' | 'b'; fromLane: number; fromSlot: number; toLane: number; toSlot: number }
-export const GATES: readonly Gate[] = [
-  { side: 'a', fromLane: 0, fromSlot: 1, toLane: 1, toSlot: 2 },
-  { side: 'a', fromLane: 2, fromSlot: 1, toLane: 1, toSlot: 2 },
-  { side: 'a', fromLane: 1, fromSlot: 3, toLane: 0, toSlot: 4 },
-  { side: 'a', fromLane: 1, fromSlot: 3, toLane: 2, toSlot: 4 },
-  { side: 'b', fromLane: 0, fromSlot: 7, toLane: 1, toSlot: 6 },
-  { side: 'b', fromLane: 2, fromSlot: 7, toLane: 1, toSlot: 6 },
-  { side: 'b', fromLane: 1, fromSlot: 5, toLane: 0, toSlot: 4 },
-  { side: 'b', fromLane: 1, fromSlot: 5, toLane: 2, toSlot: 4 },
-];
+// ── 捷径门/换路整套已退役（owner 2026-07-03·REQ-G-退役机关门）：不给乐趣·高复杂度低价值·旧实时 CR 遗留概念。
+//    Gate/GATES/gatesOpen/gateMove/toggleGate/tryGate + advanceBoth 分流 + deployUnit gateToggle + turnHash g段 + 天罡「城门令」全数删除。
+//    兵天生想直走推底破家·中途换路是跟核心目标对着干；真策略深度在部署那一刻选哪条路（田忌赛马）·不在中途改路。
 
 // 场上兵：占一格 slot；续航 staminaLeft 打光退场（同 live-combat 经济）。speed=每回合推进格数(默认1·缺省视作1·向后兼容旧字面量)。
 export interface TurnUnit { id: string; rank: string; suit: string; points: number; buff: number; general: boolean; stamina: number; staminaLeft: number; slot: number; speed?: number; cost?: number; wins?: number; hold?: boolean } // wins=连胜场数(owner 2026-07-01·每胜战力对折 0.5^wins→弱兵车轮磨死强兵·满 WIN_CAP 光荣回库)；cost=部署所花源泉；hold=开局排阵守军·静态死守(REQ-G-开局排阵·不前压/不冲家/接触才战/赢守原位)
@@ -83,7 +71,6 @@ export const NEUTRAL_AI: AiProfile = { aggression: 5, lanePref: 5, spellEager: 5
 export interface TurnBattle {
   turn: number; active: 'a' | 'b';
   lanes: [TurnLane, TurnLane, TurnLane];
-  gatesOpen: boolean[]; // 8 道捷径门开/关（index 同 GATES）
   homeA: number; homeB: number; homeMax: number;
   a: TurnSide; b: TurnSide;
   rng: RandomSeed; winner: 'a' | 'b' | 'draw' | 'pending';
@@ -111,7 +98,6 @@ export function initTurnBattle(cfg: TurnInit): TurnBattle {
   const battle: TurnBattle = {
     turn: 1, active: 'a',
     lanes: [mkLane(), mkLane(), mkLane()],
-    gatesOpen: GATES.map(() => false), // 默认全闭 ✕(owner 2026-06-20 拍板)：放牌时点门钮翻成 ◉ 通路 / AI 亦可翻；开门才在推进时分流
     homeA: homeMax, homeB: dishaB.homeHp > 0 ? dishaB.homeHp : homeMax, homeMax, // 地煞·温泉关死守 → Boss 大本营更厚
     a: mkSide(cfg.a?.pokerDeck, cfg.a?.tengangDeck),
     b: mkSide(cfg.b?.pokerDeck, cfg.b?.tengangDeck),
@@ -163,8 +149,8 @@ function onPlayDraw(sd: TurnSide): void {
   for (let i = 0; i < sd.tengangA.onPlay && sd.pokerDeck.length && sd.hand.length < HAND_MAX + sd.tengangA.handMaxAdd; i++) sd.hand.push(sd.pokerDeck.shift()!);
 }
 
-// ② 放牌：把手牌第 handIdx 张扑克兵部署到 lane（入我方/敌方部署格·队尾排队）+ 可选改机关（开/关门）。花召唤源泉（互斥·同类无限）。
-export function deployUnit(b: TurnBattle, side: 'a' | 'b', handIdx: number, lane: number, gateToggle = -1): boolean {
+// ② 放牌：把手牌第 handIdx 张扑克兵部署到 lane（入我方/敌方部署格·队尾排队）。花召唤源泉（自由混·源泉唯一门）。
+export function deployUnit(b: TurnBattle, side: 'a' | 'b', handIdx: number, lane: number): boolean {
   const sd = sideOf(b, side); const card = sd.hand[handIdx];
   if (!card || card.kind !== 'poker' || lane < 0 || lane > 2) return false;
   const cost = card.cost ?? DEPLOY_COST; // 放牌按牌点数收费（契约B·建库时已写在卡上·2-4免费/5-7=1/8-10=2/JQKA=3）
@@ -181,7 +167,6 @@ export function deployUnit(b: TurnBattle, side: 'a' | 'b', handIdx: number, lane
   const extraBuff = side === 'a' ? b.fortuneBuff : 0; // 今日卦象：玩家部署兵追加卦象 buff
   col.push({ id: card.id, rank: card.rank, suit: card.suit, points: cardPoints(card.rank), buff: (card.buff ?? 0) + extraBuff, general: card.general, stamina: stam, staminaLeft: stam, slot, speed: unitSpeed(card.rank), cost: card.cost });
   col.sort((x, y) => (side === 'a' ? y.slot - x.slot : x.slot - y.slot)); // 维持 [0]=前锋(贴敌·最高/最低 slot)
-  if (gateToggle >= 0 && gateToggle < GATES.length) b.gatesOpen[gateToggle] = !b.gatesOpen[gateToggle]; // 放牌附赠：开/关一道捷径门（doc24 §三·可不用）
   onPlayDraw(sd); // 川流：放牌后免费补抽
   return true;
 }
@@ -232,31 +217,6 @@ export function discardCard(b: TurnBattle, side: 'a' | 'b', handIdx: number): bo
   if (handIdx < 0 || handIdx >= sd.hand.length) return false;
   sd.hand.splice(handIdx, 1); sd.mana += DISCARD_REFUND;
   return true;
-}
-
-// ── 捷径门(上下通路梯子) 操作（owner 2026-06-20 Cloud Design 参考图）──
-// 门钮单击(放牌时)或 AI 触发 → 翻 通路(◉,开) ↔ ✕(闭)。开门 = 下一步(推进阶段)该格己兵按门向过门(替直进)；目标格已有牌(任一方)→ 失败留原地。
-// toggleGate：翻一道门开/关。gateMove(内部)：门开 + 源格有己兵 + 目标格空 → 搬过去，返回过门兵 id；否则 null。tryGate：单次手动过门(占位/测试)。
-export function toggleGate(b: TurnBattle, gateIdx: number): boolean {
-  if (b.winner !== 'pending' || gateIdx < 0 || gateIdx >= GATES.length) return false;
-  b.gatesOpen[gateIdx] = !b.gatesOpen[gateIdx];
-  return true;
-}
-function gateMove(b: TurnBattle, gateIdx: number): string | null {
-  if (!b.gatesOpen[gateIdx]) return null;
-  const g = GATES[gateIdx];
-  const from = colOf(b.lanes[g.fromLane], g.side); const to = colOf(b.lanes[g.toLane], g.side);
-  const foeTo = colOf(b.lanes[g.toLane], g.side === 'a' ? 'b' : 'a');
-  const idx = from.findIndex((u) => u.slot === g.fromSlot);
-  if (idx < 0 || to.some((u) => u.slot === g.toSlot) || foeTo.some((u) => u.slot === g.toSlot)) return null; // 源格无兵 / 目标格已有牌(任一方) → 失败
-  const [u] = from.splice(idx, 1);
-  u.slot = g.toSlot; to.push(u);
-  to.sort((x, y) => (g.side === 'a' ? y.slot - x.slot : x.slot - y.slot)); // 维持 [0]=前锋(贴敌)序
-  return u.id;
-}
-export function tryGate(b: TurnBattle, gateIdx: number): boolean {
-  if (b.winner !== 'pending' || gateIdx < 0 || gateIdx >= GATES.length) return false;
-  return gateMove(b, gateIdx) !== null;
 }
 
 // 擎天「最强单张」：某方全军(跨三路) base 点数最高一张 id（防 buff 循环·ties 队首确定性）。
@@ -478,11 +438,10 @@ function applyClashOutcome(b: TurnBattle, li: number, ev: ClashEval, aWins: bool
   b.a.mana += b.a.tengangA.clashElixir; b.b.mana += b.b.tengangA.clashElixir; // 战潮：每遭遇返召唤源泉（喂经济）
 }
 
-// 单列向敌推进（有敌前锋）：各兵 +dir×speed(疾行2格)·保 slot 间距 1·前锋停在敌前锋相邻格(不重叠)；已过门兵留原地。
+// 单列向敌推进（有敌前锋）：各兵 +dir×speed(疾行2格)·保 slot 间距 1·前锋停在敌前锋相邻格(不重叠)。
 // pinGeneral（owner 2026-06-29·Boss 主将关前死守）：主将不前移·原地守家（其在队尾贴家·跳过它不影响前方兵推进）。
-function advanceColumnVsFoe(own: TurnUnit[], dir: number, foeFrontSlot: number, diverted: Set<string>, pinGeneral = false): void {
+function advanceColumnVsFoe(own: TurnUnit[], dir: number, foeFrontSlot: number, pinGeneral = false): void {
   for (let i = 0; i < own.length; i++) {
-    if (diverted.has(own[i].id)) continue; // 本回合已过门 → 不再直进
     if (own[i].hold) continue; // 开局排阵守军·静守不前压（REQ-G-开局排阵 #1）
     if (pinGeneral && own[i].general) continue; // Boss 主将死守原地·不前移
     let t = own[i].slot + dir * (own[i].speed ?? 1);
@@ -492,9 +451,8 @@ function advanceColumnVsFoe(own: TurnUnit[], dir: number, foeFrontSlot: number, 
   }
 }
 // 单列向敌家推进（本路无敌）：越过敌区末格 → 敌大本营 −1(攻城锤多 chip)·该兵退场（死守可吸我家首破）。
-function advanceColumnToBase(b: TurnBattle, own: TurnUnit[], dir: number, side: 'a' | 'b', diverted: Set<string>): void {
+function advanceColumnToBase(b: TurnBattle, own: TurnUnit[], dir: number, side: 'a' | 'b'): void {
   for (let i = 0; i < own.length; i++) {
-    if (diverted.has(own[i].id)) continue;
     if (own[i].hold) continue; // 开局排阵守军·不自动冲家（REQ-G-开局排阵 #2·守军绝不主动冲锋）
     if (side === 'b' && own[i].general) continue; // Boss 主将死守原地·不直扑我家（owner 2026-06-29）
     let t = own[i].slot + dir * (own[i].speed ?? 1);
@@ -523,27 +481,25 @@ function advanceColumnToBase(b: TurnBattle, own: TurnUnit[], dir: number, side: 
 function advanceSideMove(b: TurnBattle, side: 'a' | 'b', dbg?: (m: string) => void): number[] {
   const dir = side === 'a' ? 1 : -1;
   const say = dbg ?? ((): void => {}); const LN = ['上', '中', '下']; const sideNm = side === 'a' ? '我' : '敌'; // 行走日志（owner 2026-07-03「看每张牌走向哪·为啥没触发战斗」）
-  const diverted = new Set<string>(); // ① 只处理本方门（过门兵记入·不再直进）
-  for (let gi = 0; gi < GATES.length; gi++) { if (GATES[gi].side !== side) continue; const id = gateMove(b, gi); if (id) { diverted.add(id); say(`[${sideNm}·行军] 过机关门#${gi} → 分流`); } }
   const pending: number[] = [];
-  for (let li = 0; li < 3; li++) { // ② 本方兵线向对家推进；前锋相邻 → 记为待掷命路
+  for (let li = 0; li < 3; li++) { // 本方兵线向对家推进；前锋相邻 → 记为待掷命路
     const lane = b.lanes[li]; const own = colOf(lane, side); const foe = colOf(lane, side === 'a' ? 'b' : 'a');
     if (!own.length) continue;
     const beforeMap = new Map(own.map((u) => [u.id, u.slot])); // 移动前各兵位（供逐兵行走日志）
     if (foe.length) {
       // 碰撞才战（owner 2026-07-03·替「相邻 gap≤1 即战」）：前锋这一步的**落点**踩到/越过敌前锋才触发掷命；落点是空格只走位、不打。
       const front = own[0];
-      const mobile = !front.hold && !diverted.has(front.id) && !(side === 'b' && front.general); // 会移动的前锋才可能撞（守军/主将/已过门 不撞）
+      const mobile = !front.hold && !(side === 'b' && front.general); // 会移动的前锋才可能撞（守军/主将 不撞）
       const natural = front.slot + dir * (front.speed ?? 1); // 不封顶的自然落点
       const collides = mobile && (dir > 0 ? natural >= foe[0].slot : natural <= foe[0].slot); // 落点会踩到/越过敌前锋 = 碰撞
       const foeFrontBefore = foe[0].slot;
-      advanceColumnVsFoe(own, dir, foe[0].slot, diverted, side === 'b'); // 实际移动仍封顶在敌前一格（停一格·胜后再推进占据）
+      advanceColumnVsFoe(own, dir, foe[0].slot, side === 'b'); // 实际移动仍封顶在敌前一格（停一格·胜后再推进占据）
       if (collides) pending.push(li);
       const moves = own.filter((u) => beforeMap.get(u.id) !== u.slot).map((u) => `${u.rank}${u.suit}:${beforeMap.get(u.id)}→${u.slot}`).join('、') || '无移动';
-      const why = collides ? '★碰撞→掷命' : !mobile ? (front.hold ? '守军静守·不撞' : (side === 'b' && front.general) ? '主将死守·不撞' : '已过门·不撞') : `走位不打（前锋落点${natural} 未踩到敌前锋@${foeFrontBefore}）`;
+      const why = collides ? '★碰撞→掷命' : !mobile ? (front.hold ? '守军静守·不撞' : '主将死守·不撞') : `走位不打（前锋落点${natural} 未踩到敌前锋@${foeFrontBefore}）`;
       say(`[${sideNm}·${LN[li]}路] 前锋 ${front.rank}${front.suit}@${beforeMap.get(front.id)} · 敌前锋@${foeFrontBefore} → ${why}｜移动:[${moves}]`);
     } else {
-      advanceColumnToBase(b, own, dir, side, diverted); // 本路无敌 → 直扑对家大本营
+      advanceColumnToBase(b, own, dir, side); // 本路无敌 → 直扑对家大本营
       const moves = own.filter((u) => beforeMap.get(u.id) !== u.slot).map((u) => `${u.rank}${u.suit}:${beforeMap.get(u.id)}→${u.slot}`).join('、');
       say(`[${sideNm}·${LN[li]}路] 无敌·向对家推进${moves ? `｜移动:[${moves}]` : ''}${own.length < beforeMap.size ? `（有兵破家·剩${own.length}）` : ''}`);
     }
@@ -705,20 +661,7 @@ function scoreDraw(b: TurnBattle, from: 'poker' | 'tengang'): number {
   }
   return s;
 }
-type AiCand = { kind: 'deploy' | 'cast' | 'draw' | 'disha' | 'swap'; handIdx: number; lane: number; from: 'poker' | 'tengang'; score: number };
-// 换牌候选（owner 2026-07-03·Boss 也用三行为自由）：手里最废的一张兵牌 → 明显低于手均才提议换（从扑克库随机补·修手牌质量）。
-// 仅当有库可补 + 手里≥2 张兵(别把仅剩的牌换掉) + 存在「明显废牌」时才返回·避免浪费唯一换牌。
-function worstSwap(b: TurnBattle): { handIdx: number; from: 'poker' | 'tengang'; score: number } | null {
-  const sd = b.b;
-  if (sd.pokerDeck.length === 0) return null;
-  const pokers = sd.hand.map((c, i) => ({ c, i })).filter((x) => x.c.kind === 'poker') as { c: PokerCard; i: number }[];
-  if (pokers.length < 2) return null;
-  let worst = pokers[0]; for (const x of pokers) if (cardPoints(x.c.rank) < cardPoints(worst.c.rank)) worst = x;
-  const avg = pokers.reduce((s, x) => s + cardPoints(x.c.rank), 0) / pokers.length;
-  const worstPts = cardPoints(worst.c.rank);
-  if (worstPts >= avg - 1) return null; // 无明显废牌 → 留着唯一换牌
-  return { handIdx: worst.i, from: 'poker', score: 6 + (avg - worstPts) * 0.8 }; // ≈抽牌/低分部署同档·不压过关键部署
-}
+type AiCand = { kind: 'deploy' | 'cast' | 'draw' | 'disha'; handIdx: number; lane: number; from: 'poker' | 'tengang'; score: number };
 /** Boss 决策阶段（utility AI·只放牌/施法/抽·**不结束回合不推进**）。owner 2026-06-29：拆出「敌方决策」与「敌方行动」
  *  两阶段→ caller 可在两者间插「敌方决策」过场 + 渲染让玩家看清敌方布阵，再单独 endTurn 演「敌方行动」推进动画。
  *  aggTengang：caller(game-g) 传天罡聚合器 → Boss 施法后重算 tengangA 即时生效。返回本回合打出的地煞 id（caller 全屏通知·REQ-G #6）。 */
@@ -735,26 +678,20 @@ export function aiDecide(b: TurnBattle, aggTengang?: (ids: readonly string[]) =>
   say(`敌AI·决策开始：源泉${sd.mana} · 手牌[${handStr()}] · 库(扑${sd.pokerDeck.length}/罡${sd.tengangDeck.length}) · 场上兵${b.lanes.reduce((n, L) => n + L.b.length, 0)}`);
   let guard = 0;
   while (guard++ < 40) {
-    // owner 2026-07-03·三行为自由：RULE 层的大类互斥已在 canAct 退役（抽/打自由混）——但 **Boss utility AI 的出牌策略保持「每回合单大类」**
-    // 作为**稳定难度基线**（读 actionTaken 自锁·非规则强制）：这样本次改动只让「玩家」拿到自由（贪心+终极 AI 用它变强·符合 owner「胜率上移」预期），
-    // Boss 强弱仍由 aiTier/aiProfile/bossDelta/地煞 明牌调，基线不被动漂移。**「让 Boss 也 free-mix」是一把很猛的未来难度杠杆**
-    // （实测：Boss 也自由混 → 玩家终极胜率 51%→14%·关1 全 0% 通关）→ 留 design G 择时作为高难档旋钮开（见交付报告"拿不准项"）。
-    // 换牌(swap)是新的**非互斥**自由动作（不设 actionTaken 锁）→ 下方 swap 枚举不受 locked 限制·Boss 亦可 1/回合修手牌。
-    const locked = b.actionTaken; const cands: AiCand[] = [];
-    if (locked === null || locked === 'deploy') sd.hand.forEach((c, i) => { if (c.kind === 'poker' && (c.cost ?? DEPLOY_COST) <= sd.mana) for (const lane of [0, 1, 2]) cands.push({ kind: 'deploy', handIdx: i, lane, from: 'poker', score: scoreDeploy(b, c, lane, garrison) }); });
-    if ((locked === null || locked === 'cast') && sd.mana >= CAST_COST) {
+    // owner 2026-07-03·对称同规则（REQ-G-退役机关门 + Boss自由混·balance §五）：**Boss 与玩家同一套动作规则·一回合内自由混 抽/打**——
+    // 大类互斥基线（旧 `locked = actionTaken` 自锁）已删：每步枚举所有买得起的动作·只被 `mana≥cost` 限制。难度只来自 Boss 明牌 kit（地煞/布防/牌力）·不靠降/升规则。
+    // **Boss 无换牌**：swapCard 是玩家专属 QoL（偏向玩家的小不对称·对玩家无损=公平）·Boss 不枚举 swap。
+    const cands: AiCand[] = [];
+    sd.hand.forEach((c, i) => { if (c.kind === 'poker' && (c.cost ?? DEPLOY_COST) <= sd.mana) for (const lane of [0, 1, 2]) cands.push({ kind: 'deploy', handIdx: i, lane, from: 'poker', score: scoreDeploy(b, c, lane, garrison) }); });
+    if (sd.mana >= CAST_COST) {
       sd.hand.forEach((c, i) => { if (c.kind === 'tengang') cands.push({ kind: 'cast', handIdx: i, lane: 0, from: 'poker', score: scoreCast(b) }); });
     }
-    if ((locked === null || locked === 'cast') && sd.mana >= DISHA_COST) {
+    if (sd.mana >= DISHA_COST) {
       sd.hand.forEach((c, i) => { if (c.kind === 'disha') cands.push({ kind: 'disha', handIdx: i, lane: 0, from: 'poker', score: scoreDisha(b) }); });
     }
-    if (locked === null && sd.mana >= DRAW_COST) {
+    if (sd.mana >= DRAW_COST) {
       if (sd.pokerDeck.length) cands.push({ kind: 'draw', handIdx: -1, lane: 0, from: 'poker', score: scoreDraw(b, 'poker') });
       if (sd.tengangDeck.length) cands.push({ kind: 'draw', handIdx: -1, lane: 0, from: 'tengang', score: scoreDraw(b, 'tengang') });
-    }
-    if (sd.swapsUsed < SWAP_PER_TURN) { // 换牌(1/回合·免费)：把最废的一张兵牌换成随机新牌·仅当废牌明显低于手均时才值得
-      const sw = worstSwap(b);
-      if (sw) cands.push({ kind: 'swap', handIdx: sw.handIdx, lane: 0, from: sw.from, score: sw.score });
     }
     if (cands.length === 0) {
       const pokerInHand = sd.hand.filter((c) => c.kind === 'poker').length;
@@ -769,12 +706,10 @@ export function aiDecide(b: TurnBattle, aggTengang?: (ids: readonly string[]) =>
     if (pick.kind === 'deploy') ok = deployUnit(b, 'b', pick.handIdx, pick.lane);
     else if (pick.kind === 'cast') { ok = castTengang(b, 'b', pick.handIdx); if (ok && aggTengang) { sd.tengangA = aggTengang(sd.castIds); sd.castFx = sd.castIds.map((id) => ({ id, fx: aggTengang([id]) })); } } // 施法即重算·当回合推进生效（+逐张 castFx 供溯源）
     else if (pick.kind === 'disha') { const dc = sd.hand[pick.handIdx]; ok = castDisha(b, 'b', pick.handIdx); if (ok && dc?.kind === 'disha') castDishaIds.push(dc.id); } // 打地煞 → 记 id 供 caller 全屏通知
-    else if (pick.kind === 'swap') ok = swapCard(b, 'b', pick.handIdx, pick.from); // 换牌（1/回合·免费·随机补）
     else ok = drawCard(b, 'b', pick.from);
     const desc = pick.kind === 'deploy' ? `部署 ${card && card.kind === 'poker' ? card.rank + card.suit : '?'}→${LN[pick.lane]}路`
       : pick.kind === 'cast' ? `施天罡 ${card && card.kind === 'tengang' ? card.id : ''}`
       : pick.kind === 'disha' ? `打地煞 ${card && card.kind === 'disha' ? card.id : ''}`
-      : pick.kind === 'swap' ? `换牌 ${card && card.kind === 'poker' ? card.rank + card.suit : '?'}(→随机补)`
       : `抽${pick.from === 'poker' ? '扑克' : '天罡'}`;
     say(`敌AI·${ok ? desc : '×' + desc + '(失败)'}（源泉${manaBefore}→${sd.mana}·评分${pick.score.toFixed(1)}${mistake ? '·随机误选' : ''}）`);
     if (!ok) break;
@@ -813,5 +748,5 @@ export function turnActive(b: TurnBattle): boolean {
 // 确定性状态指纹（逐回合对比·回归 + 仿真台）：回合/谁/召唤源泉/手牌数/各路前锋 slot+队长/大本营/rng 序。
 export function turnHash(b: TurnBattle): string {
   const lane = (l: TurnLane): string => `${l.a.length}@${l.a[0]?.slot ?? '_'},${l.b.length}@${l.b[0]?.slot ?? '_'},${l.aGenDead ? 1 : 0}${l.bGenDead ? 1 : 0},${l.spentA},${l.spentB}`;
-  return `T${b.turn}|${b.active}|mA${b.a.mana}|mB${b.b.mana}|hA${b.a.hand.length}|hB${b.b.hand.length}|HA${b.homeA}|HB${b.homeB}|w${b.winner}|s${b.rng.sequence}|g${b.gatesOpen.map((o) => (o ? 1 : 0)).join('')}|${b.lanes.map(lane).join('|')}`;
+  return `T${b.turn}|${b.active}|mA${b.a.mana}|mB${b.b.mana}|hA${b.a.hand.length}|hB${b.b.hand.length}|HA${b.homeA}|HB${b.homeB}|w${b.winner}|s${b.rng.sequence}|${b.lanes.map(lane).join('|')}`;
 }

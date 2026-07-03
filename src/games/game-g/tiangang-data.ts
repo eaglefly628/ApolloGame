@@ -52,8 +52,7 @@ export const GAME_G_TIANGANGS: TiangangCard[] = [
   { id: 'widehand', name: '广纳', kind: 'draw', rarity: 'common', cost: 12, archetype: 'general', power: 1, params: { op: 'handMax', value: 2 }, icon: 'faithtoken/card-pick', tint: '#06b6d4', text: '手牌上限 +2' },
   { id: 'flow', name: '川流', kind: 'draw', rarity: 'rare', cost: 16, archetype: 'general', power: 2, params: { op: 'onPlay', value: 1 }, icon: 'faithtoken/card-draw', tint: '#06b6d4', text: '出牌后立即补抽 1 张（手不空）' },
   { id: 'tidewave', name: '战潮', kind: 'draw', rarity: 'epic', cost: 22, archetype: 'wide', power: 3, params: { op: 'clashElixir', value: 1 }, icon: 'delapouite/two-coins', tint: '#06b6d4', text: '遭遇对决 → 返召唤源泉（经济·心流回点）' },
-  // H 三路系 lane
-  { id: 'gateorder', name: '城门令', kind: 'lane', rarity: 'rare', cost: 16, archetype: 'tianji', power: 2, params: { op: 'gate', mode: 'toggle' }, icon: 'delapouite/gate', tint: '#94a3b8', text: '开/关一道捷径门（增援 / 堵敌）' },
+  // H 三路系 lane（城门令/gateorder 已随机关门整套退役·owner 2026-07-03·REQ-G-退役机关门 → 天罡池 36→35）
   { id: 'rush', name: '驰援', kind: 'lane', rarity: 'rare', cost: 16, archetype: 'wide', power: 2, params: { op: 'reinforce', value: 2 }, icon: 'lorc/backup', tint: '#94a3b8', text: '指定一路 +2 张兵' },
   { id: 'discard2', name: '舍车', kind: 'lane', rarity: 'epic', cost: 22, archetype: 'tianji', power: 3, params: { op: 'sacrifice', value: 10 }, icon: 'lorc/trade', tint: '#94a3b8', text: '弃一路 → 另两路各 +10' },
   { id: 'lurefoe', name: '调虎', kind: 'lane', rarity: 'epic', cost: 22, archetype: 'decap', power: 3, params: { op: 'forceMigrate' }, icon: 'delapouite/fishing-lure', tint: '#94a3b8', text: '强制敌一路一张迁去别路（调虎离山）' },

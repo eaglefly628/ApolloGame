@@ -20,8 +20,8 @@ describe('Game G · 集成：出征进【回合制】战斗屏（doc24·happy-do
     // 出征先放每关开局演出（doc27）→ 跳过进战斗
     const skip = container.querySelector('[data-act="story-skip"]');
     if (skip) click(skip);
-    // 进回合制战斗屏：四选一动作 + 结束回合 + 8 门钮 + 三路格（旧实时三路屏没有这些 data 钩子）
-    for (const sel of ['[data-action="end"]', '[data-action="draw"]', '[data-action="deploy"]', '[data-gate="0"]', '[data-action="lane"][data-arg="0"]', '[data-action="lane"][data-arg="2"]']) {
+    // 进回合制战斗屏：动作按钮 + 结束回合 + 三路格（旧实时三路屏没有这些 data 钩子）。机关门钮已退役（owner 2026-07-03）。
+    for (const sel of ['[data-action="end"]', '[data-action="draw"]', '[data-action="deploy"]', '[data-action="lane"][data-arg="0"]', '[data-action="lane"][data-arg="2"]']) {
       expect(container.querySelector(sel), sel).not.toBeNull();
     }
     cleanup();
@@ -29,7 +29,7 @@ describe('Game G · 集成：出征进【回合制】战斗屏（doc24·happy-do
   });
 
 
-  it('冒烟一回合：放牌(选牌→落子) + 翻门 + 结束回合(AI+特写) 全流程不抛错', () => {
+  it('冒烟一回合：放牌(选牌→落子) + 结束回合(AI+特写) 全流程不抛错', () => {
     vi.useFakeTimers();
     try {
       localStorage.clear();
@@ -41,7 +41,6 @@ describe('Game G · 集成：出征进【回合制】战斗屏（doc24·happy-do
         press(container.querySelector('[data-action="deploy"]'));   // 选放牌
         press(container.querySelector('[data-hand="0"]'));        // 选第一张手牌
         press(container.querySelector('[data-action="lane"][data-arg="1"]'));        // 落子中路
-        press(container.querySelector('[data-gate="0"]'));        // 翻一道捷径门
         press(container.querySelector('[data-action="end"]'));       // 结束回合 → 推进 + AI
         let g = 0;                                                // 逐场掷命：前奏(2s)→看明白了→战胜硬币(我方点掷/敌方自动)落定→继续
         vi.runAllTimers();                                        // 冲掉「即将交战」前奏 → 现首个「看明白了」

@@ -7,7 +7,7 @@ import { type ClashEvent } from './combat-types.js';
 import { freshSave, loadSave, persist, resetFortuneIfNewDay, FORTUNE_MAX, activeDeck, syncTiangangs, newDeckId, rollBoss, TIANGANG_DECK_SIZE, MAX_TIANGANG_DECKS } from './game-g-save.js';
 import { favorToP, cardRank, avg, describeFormation, pick3, buildPickDeck, bossHeroCard, aggregateTengang, seededShuffleArr } from './game-g-build.js';
 import { clashToTurnView } from './game-g-clash-view.js';
-import { initTurnBattle, drawCard, deployUnit, castTengang, discardCard, advanceMovePhase, resolveClashAt, endTurnFinish, aiDecide, bossOpeningGarrison, BOSS_GARRISON_MANA, toggleGate, GATES, OPENING_HAND, DRAW_COST, CAST_COST, type PokerCard, type TengangHandCard, type Card } from './turn-combat.js';
+import { initTurnBattle, drawCard, deployUnit, castTengang, discardCard, advanceMovePhase, resolveClashAt, endTurnFinish, aiDecide, bossOpeningGarrison, BOSS_GARRISON_MANA, OPENING_HAND, DRAW_COST, CAST_COST, type PokerCard, type TengangHandCard, type Card } from './turn-combat.js';
 import { DISHA_NAME, stageDisha } from './disha.js';
 import { mountTurnBattle, buildTurnBattleView, type TurnBattleView, type TurnBattleActions, type TurnClashView, type TurnShaView } from './turn-battle-screen.js';
 // 掷硬币（战胜硬币）已随「确定制」退役为死代码（owner 2026-07-01「掷硬币这环节没意义·太繁琐·先放死代码等以后可能用」）：
@@ -336,7 +336,6 @@ export function mount(container: HTMLElement, shell?: { exit?: () => void }): ()
     let theme: 'onyx' | 'brocade' = 'onyx';
     let selMode: string | null = null; // 当前选中的动作类（draw/deploy/cast/discard·UI 先选后做）
     let selHand = -1;                  // 放牌/施法/弃牌 选中的手牌
-    let gateChance = false;            // 放牌附赠：放完一张牌 → 可翻一道机关门(一次)·用掉/换动作即失效(doc24 §三·owner 2026-06-20)
     let notice: string | null = null; let noticeTimer = 0; // 临时提示 toast
     let drained = 0; const perfQueue: ClashEvent[] = []; let perfClash: ClashEvent | null = null; let busy = false; let perfResume: (() => void) | null = null;
     let coachDid: (on: BattleCoachStep['on']) => void = () => {}; let syncCoach: () => void = () => {}; // 前置声明·真体在挂载后赋（战斗新手引导）
@@ -431,7 +430,7 @@ export function mount(container: HTMLElement, shell?: { exit?: () => void }): ()
     let aiManaDisplay: number | null = null; // 敌方决策时源泉「随落牌错峰递减」的展示覆盖值（owner 2026-07-03「别直接跳 0·要看它啪啪啪扣」）·null=显真值
     const clearClashTimers = (): void => { if (clashCdTimer) { clearTimeout(clashCdTimer); clashCdTimer = 0; } if (clashCdInterval) { clearInterval(clashCdInterval); clashCdInterval = 0; } };
     const buildClashView = (): TurnClashView | null => { if (!perfClash) return null; const cv = clashToTurnView(perfClash, tgName, save.inlays); cv.revealed = clashRevealed; return cv; };
-    const view = (): TurnBattleView => buildTurnBattleView(tb, { theme, tengangName: tgName, tengangDesc: tgDesc, selMode, selHand, clash: buildClashView(), bossName: aiName, sha: shaLive(), gatesLive: gateChance, notice, movedIds: justMovedIds, freshIds, dealtId: dealtId ?? undefined, battleLabel, sfxOn: isSfxOn(), settingsOpen, bgmOn: isBgmOn(), bgmIdx: bgmTrackIdx(), bgmVol: bgmVolume(), bgmNames: BGM_TRACKS.map((t) => t.name), guideOn: !save.skipGuide, inlays: save.inlays, waterBDisplay: aiManaDisplay ?? undefined, enchOf: (rank, suit) => (save.inlays[String(cardFavorIndex(rank + suit))] ?? []).map((e) => [`${e.b}${DIZHI_TIER_NM[e.t]}`, DIZHI_INLAY_FAVOR[e.t]] as [string, number]) });
+    const view = (): TurnBattleView => buildTurnBattleView(tb, { theme, tengangName: tgName, tengangDesc: tgDesc, selMode, selHand, clash: buildClashView(), bossName: aiName, sha: shaLive(), notice, movedIds: justMovedIds, freshIds, dealtId: dealtId ?? undefined, battleLabel, sfxOn: isSfxOn(), settingsOpen, bgmOn: isBgmOn(), bgmIdx: bgmTrackIdx(), bgmVol: bgmVolume(), bgmNames: BGM_TRACKS.map((t) => t.name), guideOn: !save.skipGuide, inlays: save.inlays, waterBDisplay: aiManaDisplay ?? undefined, enchOf: (rank, suit) => (save.inlays[String(cardFavorIndex(rank + suit))] ?? []).map((e) => [`${e.b}${DIZHI_TIER_NM[e.t]}`, DIZHI_INLAY_FAVOR[e.t]] as [string, number]) });
     let mounted: { update: () => void; destroy: () => void } | null = null;
 
     const drainClashes = (): void => { for (const ev of tb.clashLog.slice(drained)) perfQueue.push(ev); drained = tb.clashLog.length; };
@@ -548,11 +547,11 @@ export function mount(container: HTMLElement, shell?: { exit?: () => void }): ()
     };
     const commitEndTurn = (): void => {
       if (busy || tb.winner !== 'pending' || tb.active !== 'a') return;
-      busy = true; selMode = null; selHand = -1; gateChance = false; playSfx('endTurn'); coachDid('endturn'); log('我·结束回合 → 我方行动（推进/攻击·顺序回合）');
+      busy = true; selMode = null; selHand = -1; playSfx('endTurn'); coachDid('endturn'); log('我·结束回合 → 我方行动（推进/攻击·顺序回合）');
       showBanner('我方行动', 750, () => advancePerf(runAiDecide)); // 我方决策(放牌)毕 → 我方行动(推进+滑动+掷命) → 敌方决策
     };
     const actions: TurnBattleActions = {
-      pickAction: (kind) => { if (busy || tb.active !== 'a') return; if (kind !== 'discard' && tb.actionTaken && tb.actionTaken !== kind) return; selMode = selMode === kind ? null : kind; selHand = -1; gateChance = false; playSfx('select'); mounted?.update(); syncCoach(); }, // 弃牌不互斥；进「抽」模式 → 先重渲让摸牌钮(combat-draw-pick)落 DOM，再 syncCoach 让引导高亮跟到它（owner 2026-06-21·否则高亮锚不到没渲出的钮）
+      pickAction: (kind) => { if (busy || tb.active !== 'a') return; if (kind !== 'discard' && tb.actionTaken && tb.actionTaken !== kind) return; selMode = selMode === kind ? null : kind; selHand = -1; playSfx('select'); mounted?.update(); syncCoach(); }, // 弃牌不互斥；进「抽」模式 → 先重渲让摸牌钮(combat-draw-pick)落 DOM，再 syncCoach 让引导高亮跟到它（owner 2026-06-21·否则高亮锚不到没渲出的钮）
       drawFrom: (from) => {
         if (busy || selMode !== 'draw') return;
         if (drawCard(tb, 'a', from)) { playSfx('draw'); coachDid(from === 'poker' ? 'draw-poker' : 'draw-tengang'); const nc = tb.a.hand[tb.a.hand.length - 1]; log(`我·抽牌(${from === 'poker' ? '扑克' : '天罡'}) -${DRAW_COST}源泉 → ${nc ? cardLabel(nc) : '?'} [剩${tb.a.mana}源泉]`); dealtId = tb.a.hand[tb.a.hand.length - 1]?.id ?? null; const did = dealtId; window.setTimeout(() => { if (dealtId === did) { dealtId = null; if (!perfClash) mounted?.update(); } }, 560); } // 抽到的牌飞入翻面入场·~560ms 后清标记
@@ -570,13 +569,7 @@ export function mount(container: HTMLElement, shell?: { exit?: () => void }): ()
         else if (selMode === 'discard') { const dc = tb.a.hand[i]; if (discardCard(tb, 'a', i)) { playSfx('discard'); log(`我·弃牌 ${dc ? cardLabel(dc) : '?'}（返0.5源泉·不互斥）`); } selHand = -1; }
         else if (selMode === 'deploy' || tb.actionTaken === null || tb.actionTaken === 'deploy') { selMode = 'deploy'; selHand = selHand === i ? -1 : i; playSfx('select'); } // 默认进放牌·选牌→点路落子
       },
-      playLane: (lane) => { if (busy || selMode !== 'deploy' || selHand < 0) return; const pc = tb.a.hand[selHand]; const pCost = pc?.kind === 'poker' ? (pc.cost ?? 0) : 0; if (deployUnit(tb, 'a', selHand, lane)) { selHand = -1; gateChance = true; playSfx('deploy'); coachDid('deploy'); log(`我·放牌 ${pc ? cardLabel(pc) : '?'} → ${LANE_NM[lane] ?? lane}${pCost ? ` -${pCost}源泉` : '（免费）'} [剩${tb.a.mana}源泉]`); flash('✓ 放牌成功——可翻一道机关门(箭头·一次)，或继续放牌'); } }, // 放牌附赠：一次翻门机会
-      toggleGate: (idx) => { // 仅放牌后(gateChance)可翻一道本方门·一次；平时翻门无效（doc24 §三·owner 2026-06-20）
-        if (busy || tb.active !== 'a') return;
-        if (GATES[idx]?.side !== 'a') { playSfx('invalid'); flash('✗ 只能改自己的机关门'); return; }
-        if (!gateChance) { playSfx('invalid'); flash('✗ 放完牌后才能翻一道机关门（一次）'); return; }
-        toggleGate(tb, idx); gateChance = false; playSfx(tb.gatesOpen[idx] ? 'gateOpen' : 'gateClose'); log(`我·翻门#${idx} ${tb.gatesOpen[idx] ? '开◉' : '闭✕'}`); flash(tb.gatesOpen[idx] ? '机关门已开 ◉（下一步该格兵按门向过门）' : '机关门已闭 ✕');
-      },
+      playLane: (lane) => { if (busy || selMode !== 'deploy' || selHand < 0) return; const pc = tb.a.hand[selHand]; const pCost = pc?.kind === 'poker' ? (pc.cost ?? 0) : 0; if (deployUnit(tb, 'a', selHand, lane)) { selHand = -1; playSfx('deploy'); coachDid('deploy'); log(`我·放牌 ${pc ? cardLabel(pc) : '?'} → ${LANE_NM[lane] ?? lane}${pCost ? ` -${pCost}源泉` : '（免费）'} [剩${tb.a.mana}源泉]`); flash('✓ 放牌成功——可继续放牌'); } },
       endTurn: commitEndTurn,
       setTheme: (t) => { theme = t; },
       clashConfirm: () => { // owner 2026-07-01：未掷→先掷两骰(各掷自己战力范围)；已揭晓→点「继续」一步步演结算（先谁死·再幸存者头顶「战力对折 −N」）→ perfResume

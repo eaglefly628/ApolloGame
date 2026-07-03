@@ -3,8 +3,8 @@ import { describe, it, expect } from 'vitest';
 import { quartermasterEnergy, pickAiFormation, tiangangKeyBuffs, GAME_G_TIANGANGS, TIANGANG_BY_ID, ARCHETYPES, detectArchetype, archetypeMatchup, activeArchetype, GAME_G_PLANETS, GAME_G_FOILS, effectiveLives, effectiveLeverCap, effectiveLeverRegen, RUN_LIVES, applyBuff, BOSS_ROSTER, LEVER_CAP, LEVER_REGEN, FORMATION_PRESETS, PRESET_NAMES, type BuffTarget } from './blueprint.js';
 
 describe('Game G · T-G6 天罡牌（融牌面 · build 时 favor 变换 · 持久牌组身份）', () => {
-  it('天罡目录(三十六天罡定稿)，kind 合法、cost>0、有 text、有 icon；TIANGANG_BY_ID 覆盖全', () => {
-    expect(GAME_G_TIANGANGS.length).toBe(36);
+  it('天罡目录(定稿·城门令退役后 35 张)，kind 合法、cost>0、有 text、有 icon；TIANGANG_BY_ID 覆盖全', () => {
+    expect(GAME_G_TIANGANGS.length).toBe(35); // 36→35：城门令(gateorder)随机关门整套退役（owner 2026-07-03·REQ-G-退役机关门）
     const kinds = new Set(['suit-synergy', 'polarize', 'lane-pref', 'diehard', 'morale', 'link', 'economy', 'revenge',
       'odds', 'power', 'combo', 'tempo', 'stamina', 'draw', 'lane', 'siege', 'arcane']);
     for (const j of GAME_G_TIANGANGS) {

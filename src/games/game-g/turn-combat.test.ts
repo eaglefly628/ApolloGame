@@ -4,7 +4,7 @@ import { cardPoints } from './clash-resolve.js';
 import { cardStamina } from './combat-types.js';
 import {
   initTurnBattle, drawCard, deployUnit, castTengang, swapCard, endTurn, aiTakeTurn, turnHash, turnActive,
-  toggleGate, tryGate, GATES, unitPowerParts, WIN_CAP, SWAP_PER_TURN,
+  unitPowerParts, WIN_CAP, SWAP_PER_TURN,
   MANA_START, A_DEPLOY_SLOT, A_GOAL, TURN_HOME_BLOOD,
   type PokerCard, type TengangHandCard, type TurnUnit, type TurnBattle,
 } from './turn-combat.js';
@@ -67,13 +67,11 @@ describe('Game G · turn-combat（doc24 单机回合制 · A0 重构）', () => 
     if (b.winner === 'pending' && b.active === 'a') expect(b.a.swapsUsed).toBe(0);
   });
 
-  it('放牌：扑克兵上场到放牌区(贴家)·免费·有牌可一直放；放牌可顺手翻门(闭↔开)', () => {
+  it('放牌：扑克兵上场到放牌区(贴家)·免费·有牌可一直放（机关门已退役·owner 2026-07-03）', () => {
     const b = initTurnBattle({ seed: 1 }); b.a.mana = 2; b.a.hand.push(poker('h0', 'Q'), poker('h1', 'K'), poker('h2', '7'));
-    expect(b.gatesOpen[0]).toBe(false);              // 默认闭 ✕
-    expect(deployUnit(b, 'a', 0, 1, 0)).toBe(true);  // gateToggle=0 → 顺手翻 0 号捷径门
+    expect(deployUnit(b, 'a', 0, 1)).toBe(true);
     expect(b.lanes[1].a.length).toBe(1);
     expect(b.lanes[1].a[0].slot).toBe(A_DEPLOY_SLOT); // 队首在放牌区前沿(贴家3格之首)
-    expect(b.gatesOpen[0]).toBe(true);               // 翻成 ◉(通路)
     expect(b.a.mana).toBe(2);                        // 放牌免费·召唤源泉不减(owner 2026-06-20)
     expect(deployUnit(b, 'a', 0, 1)).toBe(true);     // 第二张照样放（同回合·无数张·只要有牌）
     expect(deployUnit(b, 'a', 0, 1)).toBe(true);     // 第三张
@@ -82,36 +80,10 @@ describe('Game G · turn-combat（doc24 单机回合制 · A0 重构）', () => 
     expect(turnActive(b)).toBe(true);                // 场上有兵 → 未决
   });
 
-  it('捷径门：8 门定向·默认全闭(✕)；toggleGate ✕↔通路；门开+源格有兵+目标空 → tryGate 过门跨路；目标占→失败', () => {
-    expect(GATES.length).toBe(8); // 我方 4 + 敌方镜像 4
+  it('机关门整套退役（owner 2026-07-03）：turnHash 不含 g 段·deployUnit 无 gateToggle', () => {
     const b = initTurnBattle({ seed: 1 });
-    expect(b.gatesOpen.every((o) => o === false)).toBe(true); // 默认全闭(owner 拍板)
-    expect(turnHash(b)).toContain('|g00000000|');    // 门态进 hash（确定性回放）
-    // GATES[0]：side a · 上路(0) slot1 → 中路(1) slot2
-    expect(tryGate(b, 0)).toBe(false);               // 闭 → 不可过
-    expect(toggleGate(b, 0)).toBe(true); expect(b.gatesOpen[0]).toBe(true); // 翻通路 ◉
-    expect(tryGate(b, 0)).toBe(false);               // 门开但源格无兵 → 不可过
-    b.lanes[0].a.push(unit('a0', '7', 1));           // 源格(上路 slot1)放一兵
-    expect(tryGate(b, 0)).toBe(true);                // 过门
-    expect(b.lanes[0].a.length).toBe(0);             // 离开上路
-    expect(b.lanes[1].a.some((u) => u.slot === 2 && u.id === 'a0')).toBe(true); // 抵中路 slot2
-    b.lanes[0].a.push(unit('a1', '8', 1));           // 再来一兵
-    expect(tryGate(b, 0)).toBe(false);               // 目标格已被 a0 占 → 失败
-    expect(b.lanes[0].a.length).toBe(1);             // a1 留原地
-  });
-
-  it('开关门·下一步移动：开门后推进阶段把源格己兵按门向过门到目标格(目标占则失败)', () => {
-    const b = initTurnBattle({ seed: 1 }); // 默认全闭
-    // GATES[2]：中路(1) slot3 → 上路(0) slot4。源格放一兵 + 开门 → endTurn 推进时过门。
-    b.lanes[1].a.push(unit('m0', '7', 3));
-    endTurn(b); endTurn(b); // 走完放置 → 行动阶段；门闭 → 不过门，正常直进
-    expect(b.lanes[1].a.some((u) => u.id === 'm0')).toBe(true); // 还在中路
-    const c = initTurnBattle({ seed: 1 });
-    c.lanes[1].a.push(unit('m0', '7', 3));
-    expect(toggleGate(c, 2)).toBe(true);             // 开 GATES[2]
-    endTurn(c); endTurn(c);                          // 行动阶段过门
-    expect(c.lanes[1].a.length).toBe(0);             // 离开中路
-    expect(c.lanes[0].a.some((u) => u.id === 'm0' && u.slot === 4)).toBe(true); // 过门抵上路 slot4
+    expect(turnHash(b)).not.toContain('|g');         // 门态已从 hash 删除
+    expect('gatesOpen' in b).toBe(false);            // TurnBattle 不再有 gatesOpen 状态
   });
 
   it('顺序回合：我放完→我方立即推进/攻击；敌放完→敌方推进（owner 2026-06-29 ②·替同步推进）', () => {

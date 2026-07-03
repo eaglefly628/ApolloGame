@@ -42,7 +42,6 @@ export function cloneBattle(b: TurnBattle): TurnBattle {
   return {
     turn: b.turn, active: b.active,
     lanes: [cloneLane(b.lanes[0]), cloneLane(b.lanes[1]), cloneLane(b.lanes[2])],
-    gatesOpen: [...b.gatesOpen],
     homeA: b.homeA, homeB: b.homeB, homeMax: b.homeMax,
     a: cloneSide(b.a), b: cloneSide(b.b),
     rng: { type: b.rng.type, seed: b.rng.seed, sequence: b.rng.sequence }, // ★ 深拷 rng·推演在副本 rng 上·真局序不动

@@ -8,7 +8,7 @@ import { mountTurnBattle, buildTurnBattleView, buildTurnFrameHTML, type TurnBatt
 const press = (el: Element | null, button = 0): void => { if (!el) throw new Error('press target null'); el.dispatchEvent(new MouseEvent('pointerdown', { bubbles: true, button })); };
 
 const makeActions = (): { [K in keyof TurnBattleActions]-?: ReturnType<typeof vi.fn> } => ({
-  pickAction: vi.fn(), drawFrom: vi.fn(), selectHand: vi.fn(), playLane: vi.fn(), toggleGate: vi.fn(), endTurn: vi.fn(), setTheme: vi.fn(), clashConfirm: vi.fn(), clashRoll: vi.fn(),
+  pickAction: vi.fn(), drawFrom: vi.fn(), selectHand: vi.fn(), playLane: vi.fn(), endTurn: vi.fn(), setTheme: vi.fn(), clashConfirm: vi.fn(), clashRoll: vi.fn(),
   goBack: vi.fn(), bossInfo: vi.fn(), toggleSfx: vi.fn(), toggleSettings: vi.fn(), toggleBgm: vi.fn(), toggleGuide: vi.fn(), selectBgm: vi.fn(), setBgmVol: vi.fn(),
 });
 
@@ -22,15 +22,15 @@ function setup(opts: TurnViewOpts = {}) {
 }
 
 describe('Game G · turn-battle-screen live mount 交互（doc24 回合制 · DOM · happy-dom）', () => {
-  it('画框渲齐 data 钩子：四选一/结束回合/换皮/手牌/三路格/8 门钮', () => {
+  it('画框渲齐 data 钩子：四选一/结束回合/换皮/手牌/三路格（机关门钮已退役·owner 2026-07-03）', () => {
     const { host } = setup({ settingsOpen: true }); // 换皮(主题)按钮现归 ⚙ 设置面板（topbar 重组 bfa0fd69）→ 开面板才渲
     for (const sel of ['[data-action="draw"]', '[data-action="deploy"]', '[data-action="cast"]', '[data-action="discard"]', // 四选一已迁数据驱动动作菜单 → data-action
       '[data-action="end"]', '[data-action="settings-toggle"]', '[data-action="theme"][data-arg="onyx"]', '[data-action="theme"][data-arg="brocade"]', // end/settings-toggle/theme 均迁 LayoutNode（设置浮层 Segmented）→ data-action[+data-arg]
       '[data-action="go-back"]',
-      '[data-hand="0"]', '[data-hand="1"]', '[data-action="lane"][data-arg="0"]', '[data-action="lane"][data-arg="1"]', '[data-action="lane"][data-arg="2"]',
-      '[data-gate="0"]', '[data-gate="7"]']) {
+      '[data-hand="0"]', '[data-hand="1"]', '[data-action="lane"][data-arg="0"]', '[data-action="lane"][data-arg="1"]', '[data-action="lane"][data-arg="2"]']) {
       expect(host.querySelector(sel), sel).not.toBeNull();
     }
+    expect(host.querySelector('[data-gate="0"]'), '机关门钮应已退役').toBeNull();
   });
 
   it('按下数据驱动顶栏（LayoutNode·data-action）→ goBack / toggleSettings（统一委托接 data-action）', () => {
@@ -58,12 +58,6 @@ describe('Game G · turn-battle-screen live mount 交互（doc24 回合制 · DO
     press(host.querySelector('[data-action="lane"][data-arg="0"]'));
     press(host.querySelector('[data-action="lane"][data-arg="2"]'));
     expect(actions.playLane.mock.calls.map((c) => c[0])).toEqual([0, 2]);
-  });
-
-  it('按下捷径门钮 → toggleGate(门号)', () => {
-    const { host, actions } = setup();
-    press(host.querySelector('[data-gate="0"]'));
-    expect(actions.toggleGate).toHaveBeenCalledWith(0);
   });
 
   it('按下结束回合 / 换皮 → endTurn / setTheme', () => {
