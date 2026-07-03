@@ -245,7 +245,8 @@ export function mount(container: HTMLElement): () => void {
   // 「关卡整场当一个单元收放」= `Pivot3D`（把当前房全部实体挂 pivot·绕场中心缩放/自转）；骰=现成 title 玻璃骰（缩它的 scale）。
   // 中点 swap（骰→关卡 / 关卡→骰）：此刻双方都缩成一个点、相机投影/内容切换不可见 → **无缝**。缓动=引擎 eOutBack。
   const PIVOT = 'gd-pivot';
-  const TRANS_DUR = 1.7; // 秒（**壁钟**·与 tick 率无关·无头 SwiftShader tick 慢也准时）
+  const BURST = 'gd-burst'; // 换场点光爆闪（Glow3D·盖住底色硬切=无缝·兼"放出"能量感）
+  const TRANS_DUR = 2.0; // 秒（**壁钟**·与 tick 率无关·无头 SwiftShader tick 慢也准时）
   const eOutBack = (p: number): number => easeOutBack(p);
   let transStart: number | null = null; // 壁钟起点 ms（null=无转场）
   let transDir: 'in' | 'out' = 'in';
@@ -260,10 +261,20 @@ export function mount(container: HTMLElement): () => void {
   };
   const removePivot = (): void => { try { engine.world.destroyEntity(PIVOT); } catch { /* noop */ } };
   const titleScale = (s: number): void => { const td = engine.world.getComponent<{ type: 'Transform3D'; scale?: number }>(TITLE_DIE, 'Transform3D'); if (td) td.scale = s; };
+  // 背光柔光随骰缩放同步淡缩（骰缩小时 glow 不该独大·保持"就是那颗 title 骰"的一致感）。
+  const titleGlow = (scale: number, opacity: number): void => { const g = engine.world.getComponent<{ type: 'Glow3D'; scale?: number; opacity?: number }>('gd-title-glow', 'Glow3D'); if (g) { g.scale = scale; g.opacity = opacity; } };
   const pivotSet = (scale: number, rotY: number, rotX: number): void => {
     const pv = engine.world.getComponent<{ type: 'Transform3D'; scale?: number; rotY?: number; rotX?: number }>(PIVOT, 'Transform3D');
     if (pv) { pv.scale = scale; pv.rotY = rotY; pv.rotX = rotX; }
   };
+  // 换场点的光爆闪（Glow3D 放大 + 淡出·盖住 title↔arena 底色硬切=无缝·兼"放出"能量）。cz=场中心 Z（arena=房Z·title=0）。
+  const spawnBurst = (cz: number): void => {
+    engine.world.createEntity(BURST);
+    engine.world.addComponent(BURST, { type: 'Transform3D', x: 0, y: 0.35, z: cz } as unknown as Component);
+    engine.world.addComponent(BURST, { type: 'Glow3D', color: 0xffe9c6, scale: 1, opacity: 0 } as unknown as Component);
+  };
+  const setBurst = (scale: number, opacity: number): void => { const g = engine.world.getComponent<{ type: 'Glow3D'; scale?: number; opacity?: number }>(BURST, 'Glow3D'); if (g) { g.scale = scale; g.opacity = opacity; } };
+  const removeBurst = (): void => { try { engine.world.destroyEntity(BURST); } catch { /* noop */ } };
   /** 触发转场（dir·done 在落定后调）。'in' 需 title 玻璃骰在场；'out' 需关卡在场。转场期间 UI 走空屏（tree 里 guard）。 */
   const startTransition = (dir: 'in' | 'out', done: () => void): void => {
     if (transStart !== null) return;
@@ -276,41 +287,48 @@ export function mount(container: HTMLElement): () => void {
     const p = Math.min(1, (performance.now() - transStart) / (TRANS_DUR * 1000)); // 壁钟进度（帧率无关）
     if (transDir === 'in') {
       if (p < 0.45) {
-        // Phase A：玻璃骰回旋（spin 由 Anim3D）+ 放缩到点（scale 1→~0·eOutBack 收）。
-        titleScale(Math.max(0.02, 1 - eOutBack(Math.min(1, p / 0.45)) * 0.98));
+        // Phase A：玻璃骰回旋（spin 由 Anim3D·就是那颗 title 骰·材质/透明度一致）+ **平滑**放缩到点（1-k²·匀加速缩·非 eOutBack 秒缩）；背光随骰同缩淡。
+        const k = p / 0.45, s = Math.max(0.02, 1 - k * k);
+        titleScale(s); titleGlow(Math.max(0.1, 4.0 * s), 0.3 * (1 - k));
       } else {
         if (!transSwapped) {
           transSwapped = true;
           hideTitleDie();        // 骰=点·撤走
-          setMood(false);        // 相机 → arena ortho（此刻点·投影切换不可见）
+          setMood(false);        // 相机 → arena ortho + 暖调（此刻点·被光爆盖住不可见）
           beginRoom();           // 加载关卡（streamTo·不碰 UI）
           wrapRoomInPivot();     // 关卡挂 pivot·下面从点长大
+          spawnBurst(bgRoom * ROOM_SPACING); // 换场点光爆（盖住 title↔arena 底色硬切=无缝·兼"放出"）
         }
-        // Phase B：关卡从点回旋展开（pivot scale ~0→1 eOutBack·spin 随 k 衰减到 0）。
+        // Phase B：关卡从点回旋展开（pivot scale ~0→1 eOutBack pop·spin 衰减）；光爆放大淡出（前段亮盖切→随关卡长大淡去）。
         const k = (p - 0.45) / 0.55;
         pivotSet(Math.max(0.02, eOutBack(Math.min(1, k * 1.08))), (1 - k) * Math.PI * 3, (1 - k) * Math.PI * 2);
+        setBurst(7 + k * 8, Math.max(0, 0.95 * (1 - k * 1.9)));
       }
     } else {
       if (p < 0.5) {
-        // Phase A：关卡回旋 + 放缩到点（pivot scale 1→~0·spin 加速）。
+        // Phase A：关卡回旋 + **平滑**放缩到点（1-k²·spin 加速）。
         const k = p / 0.5;
-        pivotSet(Math.max(0.02, 1 - k), k * Math.PI * 3, k * Math.PI * 2);
+        pivotSet(Math.max(0.02, 1 - k * k), k * Math.PI * 3, k * Math.PI * 2);
       } else {
         if (!transSwapped) {
           transSwapped = true;
           removePivot();
           for (const i of [...loaded.keys()]) unloadRoom(i); // 关卡=点·撤走
-          setMood(true);         // 相机 → title 透视暗氛围
-          showTitleDie(); titleScale(0.02); // 从点长出玻璃骰
+          setMood(true);         // 相机 → title 透视清新氛围
+          showTitleDie(); titleScale(0.02); titleGlow(0.1, 0); // 从点长出玻璃骰
+          spawnBurst(0);         // title 中心光爆（盖切·放出骰）
         }
-        // Phase B：玻璃骰从点回旋长大（scale ~0→1 eOutBack·spin 由 Anim3D）。
-        titleScale(eOutBack(Math.min(1, ((p - 0.5) / 0.5) * 1.08)));
+        // Phase B：玻璃骰从点回旋长大（scale ~0→1 eOutBack·spin 由 Anim3D）；背光随骰长回；光爆淡出。
+        const k = (p - 0.5) / 0.5, g = Math.min(1, k * 1.5);
+        titleScale(eOutBack(Math.min(1, k * 1.08))); titleGlow(Math.max(0.1, 4.0 * g), 0.3 * g);
+        setBurst(7 + k * 8, Math.max(0, 0.95 * (1 - k * 1.9)));
       }
     }
     if (p >= 1) {
       transStart = null;
+      removeBurst();
       if (transDir === 'in') { pivotSet(1, 0, 0); removePivot(); } // 关卡满格恒等 → 撤 pivot 无缝（子实体位姿本就=满格）
-      else titleScale(1);
+      else { titleScale(1); titleGlow(4.0, 0.3); } // 骰归位 + 背光恢复
       const done = onTransDone; onTransDone = null;
       if (done) done();
     }
