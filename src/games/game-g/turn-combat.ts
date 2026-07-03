@@ -500,24 +500,33 @@ function advanceColumnToBase(b: TurnBattle, own: TurnUnit[], dir: number, side: 
 // ①只处理本方捷径门分流 → ②本方三路向对家推进·前锋相邻则掷命/无敌则抵家 chip。放置回合本身不调用（放置无推进）。
 // 推进「移动相」（owner 2026-06-29·拆分移动↔掷命·让 UI 能「先滑到位→弹谁打谁→掷骰→才结算离场」）：
 // 只移动本方三路 + 过本方门，**不掷命**；返回前锋相邻、待掷命的路 id（caller 决定何时 resolveClashAt）。
-function advanceSideMove(b: TurnBattle, side: 'a' | 'b'): number[] {
+function advanceSideMove(b: TurnBattle, side: 'a' | 'b', dbg?: (m: string) => void): number[] {
   const dir = side === 'a' ? 1 : -1;
+  const say = dbg ?? ((): void => {}); const LN = ['上', '中', '下']; const sideNm = side === 'a' ? '我' : '敌'; // 行走日志（owner 2026-07-03「看每张牌走向哪·为啥没触发战斗」）
   const diverted = new Set<string>(); // ① 只处理本方门（过门兵记入·不再直进）
-  for (let gi = 0; gi < GATES.length; gi++) { if (GATES[gi].side !== side) continue; const id = gateMove(b, gi); if (id) diverted.add(id); }
+  for (let gi = 0; gi < GATES.length; gi++) { if (GATES[gi].side !== side) continue; const id = gateMove(b, gi); if (id) { diverted.add(id); say(`[${sideNm}·行军] 过机关门#${gi} → 分流`); } }
   const pending: number[] = [];
   for (let li = 0; li < 3; li++) { // ② 本方兵线向对家推进；前锋相邻 → 记为待掷命路
     const lane = b.lanes[li]; const own = colOf(lane, side); const foe = colOf(lane, side === 'a' ? 'b' : 'a');
     if (!own.length) continue;
+    const beforeMap = new Map(own.map((u) => [u.id, u.slot])); // 移动前各兵位（供逐兵行走日志）
     if (foe.length) {
       // 碰撞才战（owner 2026-07-03·替「相邻 gap≤1 即战」）：前锋这一步的**落点**踩到/越过敌前锋才触发掷命；落点是空格只走位、不打。
       const front = own[0];
       const mobile = !front.hold && !diverted.has(front.id) && !(side === 'b' && front.general); // 会移动的前锋才可能撞（守军/主将/已过门 不撞）
       const natural = front.slot + dir * (front.speed ?? 1); // 不封顶的自然落点
       const collides = mobile && (dir > 0 ? natural >= foe[0].slot : natural <= foe[0].slot); // 落点会踩到/越过敌前锋 = 碰撞
+      const foeFrontBefore = foe[0].slot;
       advanceColumnVsFoe(own, dir, foe[0].slot, diverted, side === 'b'); // 实际移动仍封顶在敌前一格（停一格·胜后再推进占据）
       if (collides) pending.push(li);
+      const moves = own.filter((u) => beforeMap.get(u.id) !== u.slot).map((u) => `${u.rank}${u.suit}:${beforeMap.get(u.id)}→${u.slot}`).join('、') || '无移动';
+      const why = collides ? '★碰撞→掷命' : !mobile ? (front.hold ? '守军静守·不撞' : (side === 'b' && front.general) ? '主将死守·不撞' : '已过门·不撞') : `走位不打（前锋落点${natural} 未踩到敌前锋@${foeFrontBefore}）`;
+      say(`[${sideNm}·${LN[li]}路] 前锋 ${front.rank}${front.suit}@${beforeMap.get(front.id)} · 敌前锋@${foeFrontBefore} → ${why}｜移动:[${moves}]`);
+    } else {
+      advanceColumnToBase(b, own, dir, side, diverted); // 本路无敌 → 直扑对家大本营
+      const moves = own.filter((u) => beforeMap.get(u.id) !== u.slot).map((u) => `${u.rank}${u.suit}:${beforeMap.get(u.id)}→${u.slot}`).join('、');
+      say(`[${sideNm}·${LN[li]}路] 无敌·向对家推进${moves ? `｜移动:[${moves}]` : ''}${own.length < beforeMap.size ? `（有兵破家·剩${own.length}）` : ''}`);
     }
-    else advanceColumnToBase(b, own, dir, side, diverted); // 本路无敌 → 直扑对家大本营
   }
   return pending;
 }
@@ -537,9 +546,9 @@ export function endTurnEV(b: TurnBattle): void {
   endTurnFinish(b);           // 判负 + 轮转/回合数/源泉（与真局同·无 rng）
 }
 // 当前行动方「只移动·不掷命」→ 返回待掷命路 id（owner 2026-06-29·UI 分相：移动→弹窗→掷骰→结算离场）。
-export function advanceMovePhase(b: TurnBattle): number[] {
+export function advanceMovePhase(b: TurnBattle, dbg?: (m: string) => void): number[] {
   if (b.winner !== 'pending') return [];
-  return advanceSideMove(b, b.active);
+  return advanceSideMove(b, b.active, dbg);
 }
 // 结算一路掷命（live 在「谁打谁」弹窗 + 掷骰演完后调）→ 写 lastClash/clashLog·应用胜负去留。
 export function resolveClashAt(b: TurnBattle, li: number): void { if (b.winner === 'pending') resolveClash(b, li); }

@@ -500,7 +500,7 @@ export function mount(container: HTMLElement, shell?: { exit?: () => void }): ()
     //      离场动画在每场掷币收场后才演(见 clashConfirm 回调)。④ 全部演完 endTurnFinish 收尾(判负/轮转/源泉)。
     const advancePerf = (next: () => void): void => {
       const before = snapSlots();
-      const lanes = advanceMovePhase(tb); // 只移动·不掷命 → 前锋滑到相邻·都还在场
+      const lanes = advanceMovePhase(tb, log); // 只移动·不掷命 → 前锋滑到相邻·都还在场；记逐兵行走 + 碰撞判定日志（owner 2026-07-03「看牌走向哪·为啥没触发战斗」）
       justMovedIds = diffMoved(before);
       mounted?.update(); // 渲染滑动到位（FLIP·owner「看到前进路线」）
       window.setTimeout(() => { justMovedIds = new Set(); if (!perfClash) mounted?.update(); }, 760); // 行军滑动 .68s → 清标记窗口 600→760·让慢速滑动播完再重渲（owner 2026-06-29 慢一半）
