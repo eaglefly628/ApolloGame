@@ -20,7 +20,7 @@ export interface DishaFx {
   winStreakPer: number;     // 九战九捷：Boss 每胜一场 +X%
   winStreakCap: number;     // 连胜封顶
   noRout: boolean;          // 破釜沉舟/死战不退：Boss 主将亡不溃散
-  lastStandGeneral: boolean;// 死战不退：Boss 主将 2 命（首负残喘退 1 格·不亡）
+  lastStandGeneral: number;// 死战不退：Boss 主将命数 N（0=无·n=战败 n 次才退场·每负一次残喘退 1 格·不亡；老 true 语义=2）
   bonusMana: number;        // 大军压境(免费多铺)+机动调度(额外动作) 简化：Boss 回合开始多 N 召唤源泉
   batteryEveryTurns: number;// 大炮兵：每 N 回合压你一路
   batteryWinPct: number;    // 被压一路 −X%
@@ -31,7 +31,7 @@ export const NO_DISHA: DishaFx = {
   allWinPct: 0, generalWinPct: 0, phalanxPerAdj: 0, phalanxCap: 0, phalanxAdj8: false,
   nearBaseSlots: 0, nearBaseWinPct: 0, nearBasePower: 0, eliteMidWinPct: 0, flankYouWinPct: 0,
   firstStrike: false, firstStrikeWinPct: 0, winStreakPer: 0, winStreakCap: 0,
-  noRout: false, lastStandGeneral: false, bonusMana: 0, batteryEveryTurns: 0, batteryWinPct: 0, homeHp: 0,
+  noRout: false, lastStandGeneral: 0, bonusMana: 0, batteryEveryTurns: 0, batteryWinPct: 0, homeHp: 0,
 };
 
 // 关 1-5 共 15 张地煞精确数值（doc23 §八·★ 弱版起·sim 真机调）。每张 = Partial<DishaFx> 贡献。
@@ -41,7 +41,7 @@ export const DISHA_SPECS: Record<string, Partial<DishaFx>> = {
   // 关 1 · 列奥尼达 · 温泉关（目标 98%）
   thermopylae: { homeHp: 2, nearBaseSlots: 2, nearBasePower: 1 }, // 温泉关死守：家 2 血 + 隘口(后2格)守军 +1 战力（§六：2→1）
   phalanx: { phalanxPerAdj: 4, phalanxCap: 12, phalanxAdj8: true }, // 斯巴达方阵：8 邻每邻 +4%·封顶 +12%（§六：6/24→4/12）
-  laststand: { lastStandGeneral: true },                            // 死战不退：主将 2 命（仅主将·关1）
+  laststand: { lastStandGeneral: 3 },                               // 死战不退：主将 3 命（关1 列奥尼达·战败 3 次才退·REQ-G-主将命数参数化）
   // 关 2 · 亚历山大 · 高加米拉（目标 87%）
   companion: { generalWinPct: 10 },                                 // 伙伴骑兵(简化)：主将 +10%（§六：20→10）
   hammeranvil: { flankYouWinPct: 6 },                              // 锤砧：你被左右夹 −6%（§六：15→6）
@@ -101,7 +101,7 @@ const DISHA_MERGE: Record<keyof DishaFx, DishaMerge> = {
   allWinPct: 'sum', generalWinPct: 'sum', phalanxPerAdj: 'sum', phalanxCap: 'sum', phalanxAdj8: 'or',
   nearBaseSlots: 'max', nearBaseWinPct: 'sum', nearBasePower: 'sum', eliteMidWinPct: 'sum', flankYouWinPct: 'sum',
   firstStrike: 'or', firstStrikeWinPct: 'sum', winStreakPer: 'sum', winStreakCap: 'sum',
-  noRout: 'or', lastStandGeneral: 'or', bonusMana: 'sum', batteryEveryTurns: 'max', batteryWinPct: 'sum', homeHp: 'max',
+  noRout: 'or', lastStandGeneral: 'max', bonusMana: 'sum', batteryEveryTurns: 'max', batteryWinPct: 'sum', homeHp: 'max', // lastStandGeneral 布尔→命数(int)后取 max（取最厚命数·同结构型开局字段）
 };
 
 /** 聚合一组地煞 id → DishaFx（按 DISHA_MERGE 策略：数值累加 / 取最大 / 布尔取或）。纯函数·确定性。 */

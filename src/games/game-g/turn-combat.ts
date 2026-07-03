@@ -21,7 +21,7 @@ export const A_GOAL = 8;         // 我兵越过此格(→9) → 敌大本营 �
 export const B_GOAL = 0;         // 敌兵越过此格(→−1) → 我大本营 −1 血
 // ── 回合经济（doc24 §四·真机调；各 cost 暂定 1）──
 export const TURN_HOME_BLOOD = 3;
-export const MANA_START = 3, MANA_PER_TURN = 1; // 起始 3 点（owner 2026-06-29 ①·双方公平·原 6→3）；每回合 +1（前 10 回合）
+export const MANA_START = 4, MANA_PER_TURN = 1; // 起手源泉 4（owner 2026-06-23 REQ-G-起手源泉·双方对称·6→3→4·4vs3 未最终拍板·先按 4·一行常量）；每回合 +1（前 10 回合）
 export const MANA_PER_TURN_LATE = 2, MANA_RAMP_TURN = 10; // 第 10 回合后提速到 +2（owner 2026-06-21·后期放大节奏）
 /** 该回合开始应 +多少召唤源泉（turn>10 提速到 2·否则 1）。 */
 export const manaGain = (turn: number): number => (turn > MANA_RAMP_TURN ? MANA_PER_TURN_LATE : MANA_PER_TURN);
@@ -88,7 +88,7 @@ export interface TurnBattle {
   rng: RandomSeed; winner: 'a' | 'b' | 'draw' | 'pending';
   actionTaken: ActionKind | null;
   lastClash: ClashEvent | null; clashLog: ClashEvent[]; clashSeq: number; // clashLog：逐场掷命流水（驱动层抽特写·不进 hash）
-  dishaB: DishaFx; bossWinStreak: number; batteryLane: number; bossLastStandUsed: boolean; // 地煞(Boss 招牌战术·doc23 §八)运行态
+  dishaB: DishaFx; bossWinStreak: number; batteryLane: number; bossGenDefeats: number; // 地煞(Boss 招牌战术·doc23 §八)运行态；bossGenDefeats=主将已消耗命数(战败次数·死战不退计数·<N 才残喘退·=N-1 那次真退)
   dishaBaseIds: string[]; dishaCastIds: string[]; // 地煞被动基线 ids(开局聚合) + 已打出的可施放地煞 ids(打一张并进 dishaB 重算)
   aiProfile: AiProfile; aiTier: number; // Boss 通用 utility AI（doc27 §八）：画像 + 难度档(高=更优·低=会犯错)
   homeAShieldUsed: number; // 死守(天罡 siegeDefend)：我大本营已吸收次数
@@ -116,7 +116,7 @@ export function initTurnBattle(cfg: TurnInit): TurnBattle {
     b: mkSide(cfg.b?.pokerDeck, cfg.b?.tengangDeck),
     rng: { type: 'RandomSeed', seed: cfg.seed, sequence: 0 },
     winner: 'pending', actionTaken: null, lastClash: null, clashLog: [], clashSeq: 0,
-    dishaB, bossWinStreak: 0, batteryLane: -1, bossLastStandUsed: false,
+    dishaB, bossWinStreak: 0, batteryLane: -1, bossGenDefeats: 0,
     dishaBaseIds: passive, dishaCastIds: [],
     aiProfile: cfg.aiProfile ?? NEUTRAL_AI, aiTier: cfg.aiTier ?? 2,
     homeAShieldUsed: 0, fortuneBuff: cfg.fortuneBuff ?? 0,
@@ -378,9 +378,10 @@ function resolveClash(b: TurnBattle, li: number): void {
   b.clashLog.push(b.lastClash); // 流水（驱动层逐场抽特写）
   b.clashSeq += 1;
   if (!aWins) b.bossWinStreak += 1; // 九战九捷：Boss 胜累积
-  // 死战不退（地煞·关1 仅 Boss 主将）：首负不亡 → 残喘退 1 格(向 Boss 家 slot+1)·二次才真死。
-  if (aWins && fb.general && b.dishaB.lastStandGeneral && !b.bossLastStandUsed) {
-    b.bossLastStandUsed = true; const q = lane.b; const u = q.shift();
+  // 死战不退（地煞·关1 仅 Boss 主将）：命数 N（laststand=3）→ 前 N-1 次战败不亡·残喘退 1 格(向 Boss 家 slot+1)·第 N 次才真死。
+  const genLives = b.dishaB.lastStandGeneral; // 主将命数 N（0=无死战不退）
+  if (aWins && fb.general && genLives > 0 && b.bossGenDefeats < genLives - 1) {
+    b.bossGenDefeats += 1; const q = lane.b; const u = q.shift();
     if (u) {
       // BUG#7：退 1 格·主将仍居本列最前（整列后挤填空·不与身后兵换位 → 不会"看着退了两格"）·保一格一兵·确定无 RNG。
       const target = u.slot + 1;
@@ -442,10 +443,14 @@ function advanceColumnToBase(b: TurnBattle, own: TurnUnit[], dir: number, side: 
   for (let i = own.length - 1; i >= 0; i--) {
     const past = dir > 0 ? own[i].slot > goal : own[i].slot < goal;
     if (!past) continue;
-    own.splice(i, 1);
+    const [u] = own.splice(i, 1); // 攻进对家的兵（破家立功）·取出待善后
     if (side === 'a') b.homeB = Math.max(0, b.homeB - (1 + b.a.tengangA.siegeChip)); // 攻城锤：破敌家多 chip
     else if (b.homeAShieldUsed < b.a.tengangA.siegeDefend) b.homeAShieldUsed += 1; // 死守：我家首破免疫(吸收·不掉血)
     else b.homeA = Math.max(0, b.homeA - 1);
+    // 破家善后（REQ-G-破家善后·doc24 §4.2.6）：不凭空消失·不留场——走掷命「人面·回库」同款：回牌库 + 返半费（可再抽再冲→持续攻城·非一兵砸穿）。
+    const wsd = sideOf(b, side);
+    wsd.pokerDeck.push({ kind: 'poker', id: u.id, rank: u.rank, suit: u.suit, general: u.general, buff: u.buff, cost: u.cost });
+    wsd.mana += (u.cost ?? 0) / 2; // 返半费（sim 显攻城经济过快可单独清零·先按半费）
   }
 }
 // 行动阶段（owner 2026-06-29 ②·顺序回合模型·替 2026-06-21 同步推进）：**只推刚结束回合的那一方**——

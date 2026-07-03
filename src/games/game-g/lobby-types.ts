@@ -103,7 +103,7 @@ export function dishaNumberLine(dishaId: string): string {
   if (s.flankYouWinPct) p.push(`你被左右夹 −${s.flankYouWinPct}%`);
   if (s.firstStrike) p.push(`先手出击${s.firstStrikeWinPct ? ` +${s.firstStrikeWinPct}%` : ''}`);
   if (s.winStreakPer) p.push(`每连胜 +${s.winStreakPer}%${s.winStreakCap ? ` · 封顶 +${s.winStreakCap}%` : ''}`);
-  if (s.lastStandGeneral) p.push('主将 2 命（首负不亡·退一格）');
+  if (s.lastStandGeneral) p.push(`主将 ${s.lastStandGeneral} 命（战败 ${s.lastStandGeneral} 次才退·每负残喘退一格）`);
   if (s.noRout) p.push('主将亡不溃散');
   if (s.bonusMana) p.push(`每回合多 +${s.bonusMana} 召唤源泉`);
   if (s.batteryEveryTurns) p.push(`每 ${s.batteryEveryTurns} 回合压一路 −${s.batteryWinPct}%`);

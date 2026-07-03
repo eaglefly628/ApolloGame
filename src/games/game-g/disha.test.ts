@@ -35,7 +35,7 @@ describe('Game G · 地煞（doc23 §八 关1-5 · 15 张 · 甲实装）', () =
     expect(stageDisha(1)).toEqual(['thermopylae', 'phalanx', 'laststand']);
     expect(stageDisha(99)).toEqual(STAGE_DISHA[4]); // 越界取末关
     const d = aggregateDisha(stageDisha(1));
-    expect(d.homeHp).toBe(2); expect(d.nearBasePower).toBe(1); expect(d.phalanxPerAdj).toBe(4); expect(d.phalanxCap).toBe(12); expect(d.lastStandGeneral).toBe(true); // §六：nearBasePower 2→1·phalanx 6/24→4/12
+    expect(d.homeHp).toBe(2); expect(d.nearBasePower).toBe(1); expect(d.phalanxPerAdj).toBe(4); expect(d.phalanxCap).toBe(12); expect(d.lastStandGeneral).toBe(3); // §六：nearBasePower 2→1·phalanx 6/24→4/12·主将 3 命(REQ-G-主将命数参数化)
     expect(aggregateDisha([])).toEqual(NO_DISHA);
   });
 
@@ -103,13 +103,13 @@ describe('Game G · 地煞（doc23 §八 关1-5 · 15 张 · 甲实装）', () =
     expect(clashOdds(bF, 0)!).toBeLessThan(clashOdds(bN, 0)!); // 先手 → 掷平判 Boss → 玩家胜率低一截(=pEqual)
   });
 
-  it('🟡 死战不退：Boss 主将首负不亡·残喘退 1 格·二次才真死（关1 仅主将）', () => {
+  it('🟡 死战不退：Boss 主将首负不亡·残喘退 1 格·战败 3 次才真死（关1 列奥尼达 3 命）', () => {
     const b = initTurnBattle({ seed: 2, disha: ['laststand'] });
     b.lanes[0].a.push(u('a0', 'A', 4, { buff: 24 })); // 玩家碾压
     b.lanes[0].b.push(u('b0', '3', 5, { general: true })); // Boss 弱主将
     activatePlayable(b); // 死战不退=可施放地煞·打出才生效
     endTurn(b); // 顺序回合：我方放完即推进→玩家胜→主将本应亡，但死战不退→残喘退格（此刻查·尚未轮到敌方反扑·owner ②）
-    expect(b.bossLastStandUsed).toBe(true);
+    expect(b.bossGenDefeats).toBe(1); // 消耗第 1 命（3 命·首负不亡）
     expect(b.lanes[0].b.some((x) => x.id === 'b0')).toBe(true); // 仍在场
     expect(b.lanes[0].bGenDead).toBe(false); // 未判主将亡
   });
