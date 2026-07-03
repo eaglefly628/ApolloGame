@@ -1132,7 +1132,7 @@ _（REQ-3D-W1高效引擎 已移至 [`requests-3d.md`](./requests-3d.md)。）_
 > spec：① **t2-tray 补注册**：`src/skills/tier2/`（tray 相关 capability 对象）加入 `capability-registry.ts` ALL_CAPABILITIES（对照现有条目风格）；**加守护测试**：扫 `src/skills/**` 全部 `defineCapability` 导出，断言每个都在 ALL_CAPABILITIES（防再漏，放 assembly 层测试）。② **Card3D 清遗**：从 `component-map.ts`/`components` 闭集移除已退役的 Card3D（先全库 grep 证零消费再删；renderer/index.ts 里的过期注释一并清）。③ **game-e view.ts 死码删**：`src/games/game-e/view.ts`（buildGameEViewBlueprint 全库零调用，评审两度点名）删除 + 其 import 清理；若有引用它的测试一并删。
 > 门禁 tsc+vitest+build 全绿直推；此活涉引擎域（registry/component-map），属主程授权的引擎卫生，照 spec 严格执行不越范围；完工标 ✅。
 
-### REQ-CAP-三件下沉 · modifier-stack / timeline / save-port（owner 2026-07-03 全批）· 主程出图 → **指派：Opus** · status: **施工中** · 类型: 引擎 capability 下沉（正确性关键）
+### REQ-CAP-三件下沉 · modifier-stack / timeline / save-port（owner 2026-07-03 全批）· 主程出图 → **指派：Opus** · status: ✅ **done（2026-07-03·Opus·三件各自提交全绿直推）** · 类型: 引擎 capability 下沉（正确性关键）
 > 出处：底座终审 §二🔴。三件按序施工、各自独立提交、**每件落地同提交回填对应 playbook**（手册铁律）。开工前按 CLAUDE.md 查 wiki/skills 对应篇（serialization/animation/scene-management/math-utils 按需）。
 >
 > **件① `t2-modifier-stack` 修正聚合栈（最难，先做）** — ✅ **done（2026-07-03·Opus）**
@@ -1153,7 +1153,10 @@ _（REQ-3D-W1高效引擎 已移至 [`requests-3d.md`](./requests-3d.md)。）_
 > - 参照需求（只读参考勿改）：game-g 演出编排 game-g.tsx:433-533（banner→cue→掷骰→结算时序）、game-d 骰壳转场（refcode 03 评估）。examples 至少给「回合开场三连 cue」+「转场」两个可抄 manifest 片段。
 > - 回填 `docs/playbooks/events-logic.md`（加"演出时序"节）。
 >
-> **件③ SAVE-PORT 存档端口（本地+网络）**
+> **件③ SAVE-PORT 存档端口（本地+网络）** — ✅ **done（2026-07-03·Opus）**
+> - 完工：`src/services/save/`——`save-port.ts`（SavePort 接口 + SaveEnvelope/SaveMeta/SaveCodec/SaveMigration 类型）、`envelope.ts`（sealEnvelope/openEnvelope/computeChecksum/CorruptSaveError·信封核心）、`memory-save-port.ts`、`local-save-port.ts`、`bridge-save-port.ts`（BridgeSavePort + FileSavePort/CloudSavePort + SaveFileBridge + createMemoryFileBridge）、`index.ts`。测试 `envelope.test.ts`(11) + `save-port.test.ts`(16·happy-dom·四后端同契约)。回填 save-platform.md。门禁 tsc+vitest(2192)+build 退出码全 0。
+> - **信封/迁移/坏档测试结果（真实现真测·全绿）**：① round-trip：seal→open 还原 data 原样；② checksum 损坏报错不静默——篡改 data/checksum/savedAt/schema 任一 → `CorruptSaveError`；③ schema 迁移链 v1→v2→v3（每版差异=一个 SaveMigration 步·归纳 game-g-save 内联迁移）→ 旧档链式升级；缺步→报「迁移链断裂」；env.schema 高于当前→拒绝降级；gameId 串档→报错；④ checksum 确定性（规范化·字段序无关）。
+> - **裁量决定**：(a) 四后端共用 `BridgeSavePort`（File/Cloud 只换桥），去重。(b) **FilePort 真桥留 TODO**（electron preload contextBridge 暴露 fs·无头不可测）→ 用 `createMemoryFileBridge` 测契约（已绿）；文件头注明真桥接线路径。(c) **CloudPort 复用 services/storage 既有 `SteamCloudBridge`**（含 `createMockSteamCloudBridge` 假后端·无真账号全链路可测·已绿），非空实现。(d) **未做可选件 `t2-save-trigger`**（YAGNI：当前无消费方·无 SaveSlot 需求；信封+端口已是完整下沉·薄能力件待真需求拉动再立，避免过度设计）。
 > - 裁决：**服务+端口形态**（照 services/audio SynthAudioPort、services/platform 先例），非重能力：`src/services/save/`——`SavePort` 接口 `{list(), read(slot), write(slot, envelope), remove(slot)}`；三后端：`LocalStoragePort`（web）、`FilePort`（electron/掌机，经现有平台桥）、`CloudPort`（挂 services/platform 的 Steam 云存档既有钩子）。
 > - **版本化信封（引擎强制）**：`{schema:number, gameId, savedAt:tick或外注时间戳, checksum, data:unknown}`；读到旧 schema 走游戏注册的 `migrate(from,to,data)` 链（照 game-g-save.ts 既有迁移写法归纳成通用签名）；checksum 不符→报坏档不静默。
 > - 能力层薄件 `t2-save-trigger`（可选做，若做：`SaveSlot` 组件+收 `save:<slot>`/`load:<slot>` 信号→经 port 存读声明的 Resource/Flag 集）；确定性注意：savedAt 时间戳由宿主注入不由 sim 取墙钟。

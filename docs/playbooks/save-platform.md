@@ -2,15 +2,17 @@
 
 > 存档 = 纯数据 + 迁移；平台服务（成就/云存档/排行/富状态）走 `PlatformPort` 适配器（sim 只持纯数据，端口把它变成真实调用）。
 > **发布**（打包/Steam 上架/平台接线）用 `game-publisher` agent。
-> 机读真相：`src/services/storage/index.ts`（`StoragePort`/`SaveSystem`/`SaveGame`）、`src/services/platform/index.ts`（`PlatformPort`）。
+> 机读真相：`src/services/storage/index.ts`（`StoragePort`/`SaveSystem`/`SaveGame`）、`src/services/save/index.ts`（`SavePort`/信封）、`src/services/platform/index.ts`（`PlatformPort`）。
 
 ## ① 做 X → 用什么
 
 | 任务 | 能力实名 | 怎么接（一句） |
 |---|---|---|
-| 读写存档 | `StoragePort` + `SaveSystem` | `createStoragePort()` 选实现；`SaveSystem` 读写 `SaveGame`（web=Local、原生壳=SteamCloud） |
-| 本地/内存/云实现 | `LocalStorageStoragePort`/`MemoryStoragePort`/`SteamCloudStoragePort` | 同契约，`createStoragePort` 按环境选；测试用 Memory |
-| 存档结构演进 | 版本键 + 迁移函数 | 存档带版本键（如 `gameG-save-v1`），旧版进来跑一次性迁移（纯函数） |
+| 引擎快照存档（WorldSnapshot） | `StoragePort` + `SaveSystem` | `createStoragePort()` 选实现；`SaveSystem` 读写 `SaveGame`（web=Local、原生壳=SteamCloud） |
+| 游戏自有数据 blob 存档（带 schema/迁移/校验） | `SavePort` + 信封 | `sealEnvelope(data,codec,savedAt)`→`port.write(slot,env)`；读 `port.read`→`openEnvelope(env,codec)`（自动校验+迁移） |
+| 存档后端（内存/web/文件/云） | `MemorySavePort`/`LocalStorageSavePort`/`FileSavePort`/`CloudSavePort` | 同 `SavePort` 契约；File 经文件桥（真桥 electron preload·测试 `createMemoryFileBridge`），Cloud 经 `SteamCloudBridge` |
+| 存档结构演进（数据 blob） | `SaveCodec.migrations` 链 | codec 声明 `schema` + `migrations[v]`（v→v+1 纯函数）；旧档 `openEnvelope` 自动链式升级，缺步/坏档报 `CorruptSaveError` |
+| 引擎快照结构演进 | 版本键 + 迁移函数 | 快照存档带版本键（如 `gameG-save-v1`），旧版进来跑一次性迁移（纯函数） |
 | 解锁成就/统计/排行 | `PlatformPort` | `unlockAchievement`/`setStat`/`uploadLeaderboard`（幂等·fire-and-forget） |
 | 富状态（好友列表显示） | `PlatformPort.setRichPresence` | sim 产纯数据 → 端口投递 |
 | 无原生壳降级 | `NullPlatformPort` | `isAvailable()=false`，游戏据此静默降级不报错 |
@@ -27,7 +29,8 @@
 ## ③ 本线红线
 
 - sim **只持纯数据**（Flag/Resource/State），成就/统计由端口从数据派生，不在 sim 里直连平台 SDK。
-- 存档演进**必带版本键 + 迁移**，不破坏老玩家档。
+- 存档演进**必带版本键 + 迁移**，不破坏老玩家档；`SavePort` 走 `schema`+`migrations` 链，`checksum` 不符**报错不静默**（`CorruptSaveError`）。
+- `savedAt` 时间戳**由宿主注入**（app 层 Date.now），**绝不由 sim 取墙钟**（确定性红线）。
 - 平台不可用一律**静默降级**（游戏代码无环境分支）。
 
 ## ④ 正样例 / 反面教材
