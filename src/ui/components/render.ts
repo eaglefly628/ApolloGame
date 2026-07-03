@@ -2,6 +2,7 @@
 // 样式来自传入的 UITheme（缺省 = 引擎 SHELL 脸）。游戏传自己那份主题即「换皮」，不接受内联色值。
 
 import { SHELL } from '../shell-theme.js';
+import { ART_FONT_FAMILY } from './art-fonts.js';
 import type {
   LayoutNode, LayoutConstraints, UITheme, VisualEffect, EffectColor, EdgeColor,
   ButtonProps, LabelProps, DropdownProps, BadgeProps, InputProps, PanelProps,
@@ -189,7 +190,11 @@ function renderLabel(id: string, p: LabelProps, ls: string, t: UITheme): string 
     ui: t.fontUi, mono: t.fontMono,
     pixel: t.fontPixel ?? t.fontUi, display: t.fontDisplay ?? t.fontMono, serif: t.fontSerif ?? t.fontUi,
   };
-  const fam = p.font ? fontSlot[p.font] : (p.mono ? t.fontMono : t.fontUi);
+  // 艺术字槽（内嵌 @font-face·slug→family）：CJK 兜底用**单引号**族名——不用 t.fontUi（含双引号会撞 style 属性引号截断 bug·
+  // 已报 REQ-UI-BUG-style属性引号截断）。单引号在双引号 style 里安全，art 字体覆拉丁、中文回退 CJK。
+  const artFam = p.font ? ART_FONT_FAMILY[p.font] : undefined;
+  const fam = artFam ? `${artFam}, 'PingFang SC', 'Hiragino Sans GB', 'Microsoft YaHei', sans-serif`
+    : (p.font ? fontSlot[p.font] : (p.mono ? t.fontMono : t.fontUi));
   const style = [
     `font-size:${sz}px`, `color:${cl}`,
     p.bold ? 'font-weight:700' : '',

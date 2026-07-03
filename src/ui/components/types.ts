@@ -109,10 +109,15 @@ export interface LabelProps {
   color?: 'text' | 'sub' | 'dim' | 'jade' | 'gold' | 'ok' | 'warn' | 'danger' | 'mine' | 'foe' | 'ink';
   bold?: boolean;
   mono?: boolean;
-  /** 具名字体槽（复古/像素/磷光风换字体·下沉自 game-x 残响：VT323 时钟/Silkscreen 微标/DotGothic16 正文）。
-   *  ui=主字体 / mono=等宽 / pixel=像素点阵(UITheme.fontPixel) / display=数码管展示字(UITheme.fontDisplay)。
-   *  缺省按 mono 布尔回退（mono:true≈font:'mono'）。红线同 color：只收**枚举槽名**(最弱 LLM 能填)，绝不收自由 font-family 串。 */
-  font?: 'ui' | 'mono' | 'pixel' | 'display' | 'serif'; // serif=衬线槽(UITheme.fontSerif·标题/logo 衬线、正文仍 sans·REQ-UI-骰途逐像素②)
+  /** 具名字体槽（闭集·换艺术字体）。基础槽：ui=主字体 / mono=等宽 / pixel=像素点阵 / display=数码管展示字 /
+   *  serif=衬线槽(UITheme.fontSerif·标题/logo 衬线、正文仍 sans)。
+   *  艺术字槽（内嵌 Google Fonts·OFL/Apache·拉丁字形·中文仍走主字体）：
+   *    impact(Bebas Neue 冲击) / heavy(Anton 厚重) / epic(Cinzel 史诗衬线) / fantasy(MedievalSharp 奇幻) /
+   *    elegant(Playfair Display 优雅) / script(Pacifico 花体) / hand(Caveat 手写) / scifi(Orbitron 科幻) /
+   *    terminal(VT323 终端) / comic(Bangers 漫画)。
+   *  缺省按 mono 布尔回退。红线同 color：只收**枚举槽名**(最弱 LLM 能填)，绝不收自由 font-family 串。 */
+  font?: 'ui' | 'mono' | 'pixel' | 'display' | 'serif'
+    | 'impact' | 'heavy' | 'epic' | 'fantasy' | 'elegant' | 'script' | 'hand' | 'scifi' | 'terminal' | 'comic';
   /** 磷光发光(text-shadow·琥珀时钟/霓虹标题)：true 时按当前 color 描一圈柔光。纯表现。 */
   glow?: boolean;
   /** 字距 px(letter-spacing·Silkscreen 全大写微标常用)。纯表现·只收数字(最弱 LLM 能填)。 */

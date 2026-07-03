@@ -967,6 +967,25 @@ function buildPageNew(controls: ControlsState): LayoutNode {
           { type: 'Label', id: 'pixel-l2', props: { text: 'font:pixel · 复古街机/像素风（SHELL fontPixel 令牌已补默认值）', size: 'sm', color: 'sub', font: 'pixel' } },
         ] },
 
+      divider('d-fontwall'),
+      sectionTitle('t-artfont', 'LABEL · 艺术字体墙（内嵌 Google Fonts·OFL 开源·11 款闭集艺术字·真渲染不回退）'),
+      { type: 'Label', id: 'artfont-note', props: {
+        text: '之前 font 槽只是字体名栈、靠系统装字（多数机器回退成单调系统字）。现在 11 款艺术字 woff2 已 base64 内嵌 @font-face——真渲染、离线自带。中文/缺字自动回退主字体。', color: 'sub', size: 'sm' } },
+      { type: 'Panel', id: 'artfont-wall', props: {}, layout: { direction: 'column', gap: 6, padding: 16 },
+        children: ([
+          ['impact', 'IMPACT · Bebas Neue 冲击标题', 'gold'],
+          ['heavy', 'HEAVY · Anton 厚重海报字', 'text'],
+          ['epic', 'EPIC · Cinzel 史诗罗马衬线', 'gold'],
+          ['fantasy', 'FANTASY · MedievalSharp 奇幻 RPG', 'jade'],
+          ['elegant', 'Elegant · Playfair Display 优雅高衬线', 'text'],
+          ['script', 'Script · Pacifico 花体手写', 'jade'],
+          ['hand', 'Hand · Caveat 随性手写便签', 'sub'],
+          ['scifi', 'SCIFI · Orbitron 科幻界面 2026', 'ok'],
+          ['terminal', 'TERMINAL · VT323 复古终端 > run', 'ok'],
+          ['comic', 'COMIC · Bangers 漫画拟声 BOOM!', 'warn'],
+        ] as const).map(([f, txt, color]): LayoutNode =>
+          ({ type: 'Label', id: `af-${f}`, props: { text: txt, size: 'xl', font: f, color } })) },
+
       divider('d-n17'),
       sectionTitle('t-fx', 'FX · UI 特效库（库 A·layout.fx 闭集合集·可叠加·render-only CSS·一个字段一串特效）'),
       { type: 'Label', id: 'fx-note', props: {

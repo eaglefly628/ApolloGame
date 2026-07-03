@@ -5,6 +5,7 @@
 // 游戏层只提供 LayoutNode（数据）+ HandlerMap（回调），无需写 DOM 代码。
 
 import { renderNode, renderVListWindow } from './render.js';
+import { ART_FONT_CSS } from './art-fonts.js';
 import { SHELL } from '../shell-theme.js';
 import type { LayoutNode, HandlerMap, ActionSink, UITheme, ToastProps, VirtualListProps, WebFont } from './types.js';
 
@@ -165,6 +166,18 @@ export function ensureWebfonts(fonts?: readonly WebFont[], doc?: Document): void
   st.dataset['faces'] = [...have].join('|');
 }
 
+/** 注入内嵌艺术字体 @font-face（base64·一次）：Label.font 的艺术字槽（impact/epic/fantasy/…）与 pixel(Press Start 2P) 自此真渲染。
+ *  区别于 ensureWebfonts（主题声明的 URL 字体）：本件是引擎自带的策展艺术字库（11 款·base64 内嵌·零依赖）。id 守卫幂等。 */
+export function ensureArtFonts(doc?: Document): void {
+  const d = doc ?? (typeof document !== 'undefined' ? document : undefined);
+  if (!d) return;
+  if (d.getElementById('apollo-art-fonts')) return;
+  const st = d.createElement('style');
+  st.id = 'apollo-art-fonts';
+  st.textContent = ART_FONT_CSS;
+  (d.head ?? d.documentElement).appendChild(st);
+}
+
 export function mountUI(
   host: HTMLElement,
   root: LayoutNode,
@@ -174,6 +187,7 @@ export function mountUI(
 ): MountHandle {
   ensureUiKeyframes();
   ensureWebfonts(theme.webfonts);
+  ensureArtFonts();
   host.innerHTML = renderNode(root, theme);
 
   // 当前已挂载的树与主题（update 做最小 diff 的基线·VirtualList 复绑取数据）。
