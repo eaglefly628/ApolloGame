@@ -45,6 +45,7 @@ const GAME_D_THEME: UITheme = {
   text: '#f2ecff', sub: '#9a8fb0', dim: '#7d769c',
   jade: '#caa6ff', jadeWash: 'rgba(150,110,235,0.18)', jadeLine: 'rgba(175,135,245,0.5)',
   gold: '#f5c969', // 视觉原型确切金（border/gradient #f5c969·hero 键 #ffd982→#f0a93a 一系·glow #ffe5a8）
+  ink: '#3a2a12', // 深墨古铜（Label color:'ink'·= 金的暗端·浅/中底上的深色文字·Title 副标/菜单在明亮盒庭底上读得清·与金 hero 同系搭配·owner 2026-07-03）
   ok: '#7ee0a0', okWash: 'rgba(110,205,140,0.16)',
   warn: '#f0b756', warnWash: 'rgba(240,183,86,0.16)', danger: '#ff9d8f',
   mine: '#f0d68a', foe: '#ff8a8a',
@@ -154,6 +155,11 @@ export function mount(container: HTMLElement): () => void {
   const hexNum = (el: Elem): number => parseInt(ELEM_INFO[el].hex.slice(1), 16);
   const TITLE_DIE = 'gd-title-die';
   let titleDieUp = false;
+  // 两侧小命运骰表 [id, x, y, z, 基础scale, 初始rotX, 初始rotY, 自转rateX, 自转rateY]（owner「两边各一·小·不同向转·上下错位不对称」）。
+  const SIDE_DICE: [string, number, number, number, number, number, number, number, number][] = [
+    ['gd-side-die-l', -2.58, 0.02, 0.2, 0.42, 1.05, 0.4, 0.30, -0.24], // 左·偏高·X 顺 Y 逆
+    ['gd-side-die-r', 2.82, -1.0, 0.15, 0.42, 0.35, 2.1, -0.19, 0.35], // 右·偏低（上下错位）·X 逆 Y 顺（与左相反 → 绝不同向）·同大小（owner「同样的小的」）
+  ];
   const setMood = (dark: boolean): void => {
     // Title=**清新冷调蓝灰天穹**（照原型参考图 01-title：雾霭黎明·浅蓝灰渐变·非暗紫非暖黄·owner 2026-07-02「太黄·要清新」）；
     // 盒庭=浅暖。相机在天空盒球内 → 用 Sky3D 渐变穹顶。Title 开 env（中性 studio IBL）给玻璃骰反射高级感；盒庭不开。
@@ -234,9 +240,18 @@ export function mount(container: HTMLElement): () => void {
     dust('gd-title-dust1', 0, -0.2, 2.3, 3.2, 22, 0.38, 0xa99ad8);  // 淡紫·稀疏铺满全场
     dust('gd-title-dust2', 1.7, 0.6, 2.0, 1.3, 16, 0.52, 0x9ec2dc); // 淡蓝·右上密团（最粗）
     dust('gd-title-dust3', -1.7, -0.3, 2.2, 1.2, 15, 0.44, 0x9fcbb6); // 淡薄荷·左侧密团
+    // ── 两侧小命运骰（owner 2026-07-03「两边空·各放一个同样的小旋转骰·不同随机值·别都一个方向转·上下错位不对称」）──
+    //   与主骰同款玻璃骰（dieGlass + 同 ELEM_FACES）只是缩小；填两侧空档。摆位在相机可视半宽内（fov38/dist6.3·z0 半宽~3.4）
+    //   左高右低=上下错位，x 距/scale 略不同=不对称。**自转各异**：Anim3D spin 两轴 rate 不同且**符号相反**（一顺一逆）+ 初始 rot 不同相位 → 绝不同向同步转（owner 硬点）。全 render-only（Anim3D/Transform3D/Mesh3D·非确定性）。
+    for (const [id, x, y, z, sc, ir, iy, rx, ry] of SIDE_DICE) {
+      engine.world.createEntity(id);
+      engine.world.addComponent(id, { type: 'Transform3D', x, y, z, rotX: ir, rotY: iy, scale: sc } as unknown as Component);
+      engine.world.addComponent(id, { type: 'Mesh3D', shape: 'box', width: 1.95, height: 1.95, depth: 1.95, frontTint: 0xeef4ff, dieGlass: true, dieFaces: ELEM_FACES } as unknown as Component);
+      engine.world.addComponent(id, { type: 'Anim3D', channels: [{ kind: 'spin', field: 'rotX', rate: rx }, { kind: 'spin', field: 'rotY', rate: ry }] } as unknown as Component);
+    }
     titleDieUp = true;
   };
-  const hideTitleDie = (): void => { if (!titleDieUp) return; try { for (const id of [TITLE_DIE, 'gd-title-rim', 'gd-title-fill', 'gd-title-glow', 'gd-title-dust1', 'gd-title-dust2', 'gd-title-dust3']) engine.world.destroyEntity(id); } catch { /* noop */ } titleDieUp = false; };
+  const hideTitleDie = (): void => { if (!titleDieUp) return; try { for (const id of [TITLE_DIE, 'gd-title-rim', 'gd-title-fill', 'gd-title-glow', 'gd-title-dust1', 'gd-title-dust2', 'gd-title-dust3', ...SIDE_DICE.map((d) => d[0])]) engine.world.destroyEntity(id); } catch { /* noop */ } titleDieUp = false; };
 
   // ── 骰 ↔ 关卡 无缝变形转场（owner 2026-07-02·render-only·P3D 域）──
   // 同一中心点收放·用当前**玻璃命运骰**（非另造骰壳）：
@@ -263,6 +278,8 @@ export function mount(container: HTMLElement): () => void {
   const titleScale = (s: number): void => { const td = engine.world.getComponent<{ type: 'Transform3D'; scale?: number }>(TITLE_DIE, 'Transform3D'); if (td) td.scale = s; };
   // 背光柔光随骰缩放同步淡缩（骰缩小时 glow 不该独大·保持"就是那颗 title 骰"的一致感）。
   const titleGlow = (scale: number, opacity: number): void => { const g = engine.world.getComponent<{ type: 'Glow3D'; scale?: number; opacity?: number }>('gd-title-glow', 'Glow3D'); if (g) { g.scale = scale; g.opacity = opacity; } };
+  // 两侧小骰随主骰同步收放（m=0..1 乘各自基础 scale）→ 转场时一起缩成点 / 一起长回·不各自突现。
+  const sideScale = (m: number): void => { for (const d of SIDE_DICE) { const t = engine.world.getComponent<{ type: 'Transform3D'; scale?: number }>(d[0], 'Transform3D'); if (t) t.scale = Math.max(0.001, d[4] * m); } };
   const pivotSet = (scale: number, rotY: number, rotX: number): void => {
     const pv = engine.world.getComponent<{ type: 'Transform3D'; scale?: number; rotY?: number; rotX?: number }>(PIVOT, 'Transform3D');
     if (pv) { pv.scale = scale; pv.rotY = rotY; pv.rotX = rotX; }
@@ -289,7 +306,7 @@ export function mount(container: HTMLElement): () => void {
       if (p < 0.45) {
         // Phase A：玻璃骰回旋（spin 由 Anim3D·就是那颗 title 骰·材质/透明度一致）+ **平滑**放缩到点（1-k²·匀加速缩·非 eOutBack 秒缩）；背光随骰同缩淡。
         const k = p / 0.45, s = Math.max(0.02, 1 - k * k);
-        titleScale(s); titleGlow(Math.max(0.1, 4.0 * s), 0.3 * (1 - k));
+        titleScale(s); sideScale(s); titleGlow(Math.max(0.1, 4.0 * s), 0.3 * (1 - k));
       } else {
         if (!transSwapped) {
           transSwapped = true;
@@ -315,12 +332,12 @@ export function mount(container: HTMLElement): () => void {
           removePivot();
           for (const i of [...loaded.keys()]) unloadRoom(i); // 关卡=点·撤走
           setMood(true);         // 相机 → title 透视清新氛围
-          showTitleDie(); titleScale(0.02); titleGlow(0.1, 0); // 从点长出玻璃骰
+          showTitleDie(); titleScale(0.02); sideScale(0.02); titleGlow(0.1, 0); // 从点长出玻璃骰（含两侧小骰·同从点长回）
           spawnBurst(0);         // title 中心光爆（盖切·放出骰）
         }
         // Phase B：玻璃骰从点回旋长大（scale ~0→1 eOutBack·spin 由 Anim3D）；背光随骰长回；光爆淡出。
-        const k = (p - 0.5) / 0.5, g = Math.min(1, k * 1.5);
-        titleScale(eOutBack(Math.min(1, k * 1.08))); titleGlow(Math.max(0.1, 4.0 * g), 0.3 * g);
+        const k = (p - 0.5) / 0.5, g = Math.min(1, k * 1.5), gs = eOutBack(Math.min(1, k * 1.08));
+        titleScale(gs); sideScale(gs); titleGlow(Math.max(0.1, 4.0 * g), 0.3 * g);
         setBurst(7 + k * 8, Math.max(0, 0.95 * (1 - k * 1.9)));
       }
     }
@@ -328,7 +345,7 @@ export function mount(container: HTMLElement): () => void {
       transStart = null;
       removeBurst();
       if (transDir === 'in') { pivotSet(1, 0, 0); removePivot(); } // 关卡满格恒等 → 撤 pivot 无缝（子实体位姿本就=满格）
-      else { titleScale(1); titleGlow(4.0, 0.3); } // 骰归位 + 背光恢复
+      else { titleScale(1); sideScale(1); titleGlow(4.0, 0.3); } // 骰归位（含两侧小骰）+ 背光恢复
       const done = onTransDone; onTransDone = null;
       if (done) done();
     }
@@ -350,6 +367,11 @@ export function mount(container: HTMLElement): () => void {
     ({ type: 'Panel', id, props: { bare: true }, layout: { direction: 'column', gap: 6, ...extra }, children });
   const lbl = (id: string, text: string, p: Record<string, unknown> = {}): LayoutNode =>
     ({ type: 'Label', id, props: { text, ...p } });
+  // Title 次级菜单键：金字 + 淡墨药丸底 + 细金边（金 = 跟 hero「开始攀塔」同系搭配色；药丸底保证在明亮盒庭/玻璃骰底上也高对比读得清·owner
+  // 2026-07-03「其他几个选一个跟它搭配的色」）。Button 无自定义色字段 → 照本屏 hero 先例用 Panel.action+Label 拼（主程回驳 Button 自定义色）。
+  //   药丸底取**足够不透明**（0.82）：金字对比按「解析到的实底」算·底再亮（玻璃骰在后）也不靠半透穿骗对比（ui-playbook 透明度关）——最坏白底上金仍 ≥4.5:1。
+  const modeBtn = (id: string, label: string, action: string): LayoutNode =>
+    ({ type: 'Panel', id, props: { action, bg: 'rgba(20,16,32,0.82)', edge: 'gold' }, layout: { radius: 9, padding: 9, align: 'center', justify: 'center' }, children: [lbl(`${id}-t`, label, { size: 'sm', color: 'gold', tracking: 1 })] });
 
   // ════════ 屏① Title ════════
   // 漂浮光尘（复刻原型 4 颗彩色 mote·float 动画·纯装饰）：火黄/暗紫/水蓝/木绿。
@@ -376,11 +398,11 @@ export function mount(container: HTMLElement): () => void {
               // 确切复刻原型：logo 76px 衬线 letter-spacing6·副标 Cinzel 15px sp6 两侧细线·tagline 13px
               lbl('gd-name', '骰途', { size: 76, color: 'gold', bold: true, glow: true, tracking: 6, font: 'serif' }),
               bareRow('gd-subrow', [
-                { type: 'Panel', id: 'gd-sl', props: { bg: 'linear-gradient(90deg,transparent,#cdbfe8)' }, layout: { width: 34, height: 1, padding: 0 }, children: [] },
-                lbl('gd-sub', 'TOWER OF FATE', { size: 15, color: 'sub', tracking: 6, font: 'serif' }),
-                { type: 'Panel', id: 'gd-sr', props: { bg: 'linear-gradient(90deg,#cdbfe8,transparent)' }, layout: { width: 34, height: 1, padding: 0 }, children: [] },
+                { type: 'Panel', id: 'gd-sl', props: { bg: 'linear-gradient(90deg,transparent,#9a7c46)' }, layout: { width: 34, height: 1, padding: 0 }, children: [] },
+                lbl('gd-sub', 'TOWER OF FATE', { size: 15, color: 'ink', tracking: 6, font: 'serif' }),
+                { type: 'Panel', id: 'gd-sr', props: { bg: 'linear-gradient(90deg,#9a7c46,transparent)' }, layout: { width: 34, height: 1, padding: 0 }, children: [] },
               ], { justify: 'center', align: 'center', gap: 12 }),
-              lbl('gd-tag', '两名掷命者，一座会改写命运的古塔', { size: 13, color: 'sub', tracking: 1 }),
+              lbl('gd-tag', '两名掷命者，一座会改写命运的古塔', { size: 13, color: 'ink', tracking: 1 }),
             ],
           },
           { type: 'Panel', id: 'gd-btns', props: { bare: true }, layout: { maxWidth: 340, direction: 'column', align: 'center', gap: 13 },
@@ -391,9 +413,9 @@ export function mount(container: HTMLElement): () => void {
               lbl('gd-start-s', `第一层 · ${layerName(1)}`, { size: 'sm', color: 'sub', tracking: 2 }),
               bareRow('gd-modes', [
                 // 双人=lockstep 联机（netcode 未落地·REQ-GAMED §6 另立 net 基建线）→ 诚实标注·不假装单机=双人（Lead 过渡要求）。
-                { type: 'Button', id: 'gd-coop', props: { label: '双人同攀 · 敬请期待', kind: 'ghost', action: 'noop' } },
-                { type: 'Button', id: 'gd-solo', props: { label: '单人', kind: 'ghost', action: 'start' } },
-                { type: 'Button', id: 'gd-set', props: { label: '设置', kind: 'ghost', action: 'noop' } },
+                modeBtn('gd-coop', '双人同攀 · 敬请期待', 'noop'),
+                modeBtn('gd-solo', '单人', 'start'),
+                modeBtn('gd-set', '设置', 'noop'),
               ], { justify: 'center', gap: 10 }),
             ],
           },
