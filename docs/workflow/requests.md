@@ -1182,3 +1182,16 @@ _（REQ-3D-W1高效引擎 已移至 [`requests-3d.md`](./requests-3d.md)。）_
 > **spec（Lead 图纸）**：① 演出时序改 `Timeline` 数据（cue 闭集：signal/flag/resource/spawn），advancePerf/playPerf 手写状态机退役；表现层（浮层/动画）订阅 timeline 发的信号自行演。② 跳过演出（玩家加速）走 `skipOnSignal`（确定性快进，勿自写跳帧）。③ 战斗心流 Phase 新增的演出节拍直接用 Timeline 表达，别再扩手写编排。④ 参照 registry 条目 examples 与 `docs/playbooks/events-logic.md` 演出时序节。门禁全绿直推。
 
 > 【衔接备忘 2026-07-03】P3D 的 game-d 接线单（REQ-GAMED：dice-roll 接入/detectPattern 真替换/per-run 种子/打回三条）同样为**排队态**——接现 3D 渲染线核心工作完成后开工，优先级由 owner 调度。
+---
+
+### REQ-G-动作模型-三行为自由 · [2026-07-03] · design G → 程序A(逻辑+AI)+程序B(UI) · Game G · status: open · 优先级: **P0（owner 拍板·核心回合模型改·压 sim/标定）** · 规格: `design/24-turn-based-combat-model.md §二`
+
+> **owner 2026-07-03**：四选一 + 「放牌⊥打天罡」互斥限制太多、策略性一般 → 改 **三行为（抽/打/换）· 互不互斥 · 源泉唯一门**（源泉本就稀缺=天然闸·不必再叠动作互斥）。
+> **程序A（逻辑）**：
+> 1. **去掉动作大类互斥**：`canAct`/`actionTaken` 退役"本回合只能一类"锁——`抽(天罡/扑克)`、`打(天罡/部署扑克)` 一回合内**任意混、只要 `mana≥cost`**；攒源泉留后手照旧。
+> 2. **换牌 = 新动作**：选中手牌 1 张 → 弃 + 从选定牌库(天罡/扑克)**随机补 1 张** → **`SWAP_PER_TURN=1`（硬帽·破无限churn死循环）· `SWAP_COST=0`（免费）**。旧"免费纯弃牌"退役（被换取代）。
+> 3. **更新终极 Player-AI 动作枚举**（`player-ai.ts`）：候选动作集 = 抽/打自由混 + 换(1/回合) → 前向搜索按新合法动作枚举（这直接改变 sim 胜率·见下）。
+> 4. 确定性：turnHash 回归照绿（换牌消费 rng 抽替换牌·顺序固定）。
+> **程序B（表现/UI·走引擎 UI 基座·别手写）**：动作菜单从 4 键 → **抽 / 打 / 换 三区**：点抽/打 → 右侧子菜单高亮（抽天罡·抽扑克 / 打天罡·部署扑克）**各显源泉开销**；换牌 = 选中一张手牌触发（1/回合·免费·用完置灰）。查 `docs/playbooks/index.md` UI 线 + 交付前 `check-ui`。
+> **未来（不现做·记池）**：换牌成本可由 Boss 地煞按关加税/上锁（`swapTax`/`swapLock`·明牌杠杆·见 `disha-native-power-redesign §三·五`）。
+> ⚠ **design G 重算连带**：动作模型变 → 现关1 调参曲线（贪心11%→终极51%·~70%@bossDelta−8）**作废**；程序A 更新 AI 枚举后 **design G 用终极 AI 重扫关1 标定**。玩家自由度↑ → 大概率更强 → 关1 胜率上移。
