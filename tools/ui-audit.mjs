@@ -108,10 +108,15 @@ try {
     }
     return [6, 8, 13]; // 兜底页面深底
   };
-  const hasOwnText = (el) => [...el.childNodes].some((n) => n.nodeType === 3 && n.textContent.trim().length);
+  const ownText = (el) => [...el.childNodes].filter((n) => n.nodeType === 3).map((n) => n.textContent).join('').trim();
+  // emoji/符号：自带彩色字形，不吃 CSS color → 对比检查对它无意义。去掉 emoji + 变体选择符后无「真字符」的元素跳过。
+  const EMOJI = /[\u{1F000}-\u{1FAFF}\u{2600}-\u{27BF}\u{2190}-\u{21FF}\u{2B00}-\u{2BFF}\u{FE00}-\u{FE0F}\u{2000}-\u{206F}\u{2300}-\u{23FF}\u{25A0}-\u{25FF}\u{2660}-\u{2667}]/gu;
+  const isGlyphOnly = (s) => !s.replace(EMOJI, '').replace(/[\s·:：>/|]/g, '').trim();
   const low = [];
   for (const el of host.querySelectorAll('*')) {
-    if (!hasOwnText(el)) continue;
+    const txt = ownText(el);
+    if (!txt) continue;
+    if (isGlyphOnly(txt)) continue; // 纯 emoji/符号 → 跳过（不吃 text-color·量它是噪音）
     const cs = getComputedStyle(el);
     if (cs.visibility === 'hidden' || cs.display === 'none' || Number(cs.opacity) < 0.5) continue;
     const fg = parse(cs.color); if (!fg) continue;
