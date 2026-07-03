@@ -374,11 +374,30 @@ export function clashOdds(b: TurnBattle, li: number): number | null {
 //   TODO（owner 2026-07-01「还可以有额外 Action/Buff 干涉掷骰」）：改掷牌(方片×2·意大利×1.2…)在此处 rollA/rollB 后 applyRollMods —— 见 game-g-clash-fate-roll-vision.md（防数据爆炸护栏）。
 function resolveClash(b: TurnBattle, li: number): void {
   const ev = clashEval(b, li); if (!ev) return;
-  const lane = b.lanes[li]; const { fa, fb, ea, eb, dishaEdge, ba, bb } = ev;
+  const { ea, eb } = ev;
   const rollA = rollDie(ea, b.rng), rollB = rollDie(eb, b.rng); // 各自掷各自的：我掷 [1,ea]·敌掷 [1,eb]（消费 rng 两次·顺序固定→hash 稳）
   let aWins: boolean, tie: ClashEvent['tie'] = null;
   if (rollA !== rollB) aWins = rollA > rollB; // 大者胜
   else { const d = decideTie(b, ev); aWins = d.aWins; tie = d.tie; } // 掷平 → 阶梯裁定
+  applyClashOutcome(b, li, ev, aWins, tie, rollA, rollB);
+}
+
+// 确定性 EV 结算（Player-AI 前向推演专用·**不消费 rng**·owner 2026-07-03「推演敌人未来」）：
+//   遭遇不掷骰——用 rollWinProb(ea,eb) 精确胜率坍缩到「更可能一方」判胜（含平局归属），再走与 resolveClash 逐字相同的善后
+//   （applyClashOutcome：死战不退/阵亡/薪火/连胜对折/满 WIN_CAP 回库/战潮）。仅在克隆局上跑·真局不受影响→turnHash 稳。
+export function resolveClashEV(b: TurnBattle, li: number): void {
+  const ev = clashEval(b, li); if (!ev) return;
+  const { pGreater, pEqual } = rollWinProb(ev.ea, ev.eb);
+  const tieToA = decideTie(b, ev).aWins;          // 掷平归谁（战力→点数→续航→先手·确定）
+  const aWins = pGreater + (tieToA ? pEqual : 0) >= 0.5; // 坍缩：胜率 ≥50% 判玩家胜（expectimax chance 节点取最可能支）
+  const tie: ClashEvent['tie'] = ev.ea === ev.eb ? 'power' : null;
+  applyClashOutcome(b, li, ev, aWins, tie, 0, 0);
+}
+
+// 掷命善后（resolveClash / resolveClashEV 共用·owner 2026-07-03 抽出防漂移）：给定胜负 aWins → 写 lastClash/流水 +
+//   死战不退（Boss 主将残喘退守）/ 阵亡+薪火 / 胜者连胜对折 / 满 WIN_CAP 光荣回库 / 战潮返泉。**纯状态机·不掷骰**（rng 由 caller 消费）。
+function applyClashOutcome(b: TurnBattle, li: number, ev: ClashEval, aWins: boolean, tie: ClashEvent['tie'], rollA: number, rollB: number): void {
+  const lane = b.lanes[li]; const { fa, fb, ea, eb, dishaEdge, ba, bb } = ev;
   const wr = clashOdds(b, li) ?? (aWins ? 1 : 0); // 预报胜率(留档·特写显)
   const tgBreakOf = (sd: TurnSide, u: TurnUnit, sk: 'a' | 'b'): [string, number][] => sd.castFx.map(({ id, fx }) => [id, Math.round(tgContribOf(u, lane, sk, fx))] as [string, number]).filter((r) => r[1] !== 0); // 逐张天罡溯源
   b.lastClash = { tick: b.turn, lane: li, winrate: wr, roll: 0, rollA, rollB, aWins, tie, winStays: true, warLoss: 0, winStreak: 0, a: { id: fa.id, rank: fa.rank, suit: fa.suit, general: fa.general, points: fa.points, buff: fa.buff, morale: ba.shift, tengang: ba.tg, pEff: ea, tgBreak: tgBreakOf(b.a, fa, 'a'), nearDef: ba.nearDef, wins: fa.wins }, b: { id: fb.id, rank: fb.rank, suit: fb.suit, general: fb.general, points: fb.points, buff: fb.buff, morale: bb.shift, tengang: bb.tg, pEff: eb, tgBreak: tgBreakOf(b.b, fb, 'b'), nearDef: bb.nearDef, dishaEdge, wins: fb.wins } }; // rollA/rollB=双方掷值·winrate=预报胜率·winStays 恒 true(胜者留场)
@@ -483,6 +502,17 @@ function advanceSideMove(b: TurnBattle, side: 'a' | 'b'): number[] {
 // 行动阶段（原子·仿真台/兼容旧调用）：移动 + 逐路掷命一气呵成。live 游戏改用 advanceMovePhase + resolveClashAt 分相演出。
 function advanceSide(b: TurnBattle, side: 'a' | 'b'): void {
   for (const li of advanceSideMove(b, side)) resolveClash(b, li);
+}
+// 行动阶段·确定性 EV 版（Player-AI 推演专用·**不消费 rng**）：移动同真局(advanceSideMove 无 rng) + 逐路 resolveClashEV。
+function advanceSideEV(b: TurnBattle, side: 'a' | 'b'): void {
+  for (const li of advanceSideMove(b, side)) resolveClashEV(b, li);
+}
+/** 结束当前回合·确定性 EV 版（Player-AI 前向推演专用·owner 2026-07-03）：与 endTurn 同结构但遭遇走 EV(不掷骰不消费 rng)
+ *  → 克隆局上推演一整回合而不触真 rng·真局 turnHash 不受影响。真局落子仍用 endTurn(真掷骰)。 */
+export function endTurnEV(b: TurnBattle): void {
+  if (b.winner !== 'pending') return;
+  advanceSideEV(b, b.active); // 移动 + 逐路 EV 掷命（确定坍缩·无 rng）
+  endTurnFinish(b);           // 判负 + 轮转/回合数/源泉（与真局同·无 rng）
 }
 // 当前行动方「只移动·不掷命」→ 返回待掷命路 id（owner 2026-06-29·UI 分相：移动→弹窗→掷骰→结算离场）。
 export function advanceMovePhase(b: TurnBattle): number[] {

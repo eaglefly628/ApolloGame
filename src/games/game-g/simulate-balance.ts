@@ -12,6 +12,7 @@ import {
   initTurnBattle, drawCard, deployUnit, castTengang, endTurn, aiTakeTurn, bossOpeningGarrison, BOSS_GARRISON_MANA,
   OPENING_HAND, DRAW_COST, CAST_COST, type TurnBattle, type PokerCard, type TengangHandCard,
 } from './turn-combat.js';
+import { playerTakeTurnAI } from './player-ai.js'; // 终极版 Player-AI（前向推演搜索·owner 2026-07-03「推演敌人未来」）
 import { seededShuffle } from '@atom-skills/index.js'; // 洗牌收敛 atoms 单一真相（零漂移）
 import { tengangFxOf, aggregateTengang } from './game-g-build.js'; // 天罡聚合改用 game-g-build 注册表版（删 sim 过期 if-else 复制·零漂移·Phase1 已证注册表==if-else）
 import { cardPoints, P_MAX } from './clash-resolve.js';
@@ -114,6 +115,7 @@ function runBattle(
   pcfg: PlayerCfg,
   seed: number,
   bossDelta = 0, // Boss/敌方 favorBias 调校量（标定 Boss 牌力的旋钮·design G 扫）
+  skill = 1, // 玩家决策档（owner 2026-07-03）：1=贪心脚本(对照) · 3=中级搜索(N=1) · 5=终极前向推演(N≥2+beam+Boss推演)
 ): BattleResult {
   const lvl = loadLevel(stage);
   const spec = battleSpec(battleIdx);
@@ -159,7 +161,7 @@ function runBattle(
   let firstClashTurn = -1, firstScoreTurn = -1, prevClash = 0, prevHA = tb.homeA, prevHB = tb.homeB;
   const MAX_TURNS = 300;
   while (tb.winner === 'pending' && tb.turn <= MAX_TURNS) {
-    if (tb.active === 'a') playerTakeTurn(tb);
+    if (tb.active === 'a') { if (skill >= 3) playerTakeTurnAI(tb, skill); else playerTakeTurn(tb); } // 贪心(1) vs 终极搜索(≥3)
     else aiTakeTurn(tb, aggregateTengang);
     if (firstClashTurn === -1 && tb.clashSeq > prevClash) firstClashTurn = tb.turn;
     if (firstScoreTurn === -1 && (tb.homeA < prevHA || tb.homeB < prevHB)) firstScoreTurn = tb.turn;
@@ -178,9 +180,9 @@ function runBattle(
 
 interface RunResult { cleared: boolean; defeatedAt: number }
 
-function runOnce(stage: number, pcfg: PlayerCfg, baseSeed: number, bossDelta = 0): RunResult {
+function runOnce(stage: number, pcfg: PlayerCfg, baseSeed: number, bossDelta = 0, skill = 1): RunResult {
   for (let bi = 0; bi < RUN_BATTLES; bi++) {
-    const r = runBattle(stage, bi, pcfg, baseSeed + bi * 1337, bossDelta);
+    const r = runBattle(stage, bi, pcfg, baseSeed + bi * 1337, bossDelta, skill);
     if (r.winner !== 'a') return { cleared: false, defeatedAt: bi };
   }
   return { cleared: true, defeatedAt: -1 };
@@ -188,11 +190,11 @@ function runOnce(stage: number, pcfg: PlayerCfg, baseSeed: number, bossDelta = 0
 
 // ── Report printer ──
 
-function runBattleSim(stage: number, battleIdx: number, pcfg: PlayerCfg, runs: number, label: string, bossDelta = 0): void {
+function runBattleSim(stage: number, battleIdx: number, pcfg: PlayerCfg, runs: number, label: string, bossDelta = 0, skill = 1): void {
   let wins = 0, losses = 0, timeouts = 0, totalTurns = 0, totalClashes = 0, totalFC = 0, totalFS = 0;
   const t0 = Date.now();
   for (let i = 0; i < runs; i++) {
-    const r = runBattle(stage, battleIdx, pcfg, 100 + i * 7919, bossDelta);
+    const r = runBattle(stage, battleIdx, pcfg, 100 + i * 7919, bossDelta, skill);
     if (r.winner === 'a') wins++;
     else if (r.winner === 'timeout') timeouts++;
     else losses++;
@@ -208,17 +210,17 @@ function runBattleSim(stage: number, battleIdx: number, pcfg: PlayerCfg, runs: n
   console.log(`  ${label.padEnd(28)} 胜率 ${wr.padStart(5)}%  轮数 ${rounds.padStart(5)}轮  [首遭遇${fc}轮 首失血${fs}轮 遭遇${cl}次]  ${ms}ms`);
 }
 
-function clearRate(stage: number, pcfg: PlayerCfg, runs: number, bossDelta = 0): number {
+function clearRate(stage: number, pcfg: PlayerCfg, runs: number, bossDelta = 0, skill = 1): number {
   let cleared = 0;
-  for (let i = 0; i < runs; i++) if (runOnce(stage, pcfg, 100 + i * 7919, bossDelta).cleared) cleared++;
+  for (let i = 0; i < runs; i++) if (runOnce(stage, pcfg, 100 + i * 7919, bossDelta, skill).cleared) cleared++;
   return cleared / runs;
 }
 
-function runStageSim(stage: number, pcfg: PlayerCfg, runs: number, label: string, bossDelta = 0): void {
+function runStageSim(stage: number, pcfg: PlayerCfg, runs: number, label: string, bossDelta = 0, skill = 1): void {
   let cleared = 0; const defeatedAt: number[] = [0, 0, 0, 0, 0];
   const t0 = Date.now();
   for (let i = 0; i < runs; i++) {
-    const r = runOnce(stage, pcfg, 100 + i * 7919, bossDelta);
+    const r = runOnce(stage, pcfg, 100 + i * 7919, bossDelta, skill);
     if (r.cleared) cleared++;
     else if (r.defeatedAt >= 0) defeatedAt[r.defeatedAt]++;
   }
@@ -256,6 +258,20 @@ console.log('\n【完整一关通关率 · 5战全胜 · bossDelta=0】');
 runStageSim(STAGE, NEWBIE, RUNS, 'deckBias=3 (新手·5铜地支·虎符旗手)');
 runStageSim(STAGE, MID, RUNS, 'deckBias=6 (进阶)');
 runStageSim(STAGE, VET, RUNS, 'deckBias=9 (老手·深养成)');
+
+// ── owner 2026-07-03：贪心(skill1) vs 终极前向推演(skill5) 对比 —— 让 sim 说人话（现贪心公平配置下关1Boss ~9%·终极应显著更高）──
+// 终极档搜索每回合前向推演 → 慢·用较小 N 保时长（几分钟内出数）。用同一 NEWBIE 装备/同 bossDelta=0，只换玩家决策器。
+const AI_RUNS = 200;          // 终极档场数（搜索开销大·压到 200 保时长；贪心对照亦用 200 同口径）
+const BOSS_BATTLE = RUN_BATTLES - 1; // 关1 第5战=Boss 战（列奥尼达·spec.boss）
+console.log('\n╔══════════════════════════════════════════════════════════╗');
+console.log('║  贪心 skill1  vs  终极前向推演 skill5  ·  关1（N=' + AI_RUNS + '）    ║');
+console.log('╚══════════════════════════════════════════════════════════╝');
+console.log(`\n【关1 Boss 单场胜率（第${BOSS_BATTLE + 1}战·列奥尼达）· 新手装备 · bossDelta=0】`);
+runBattleSim(STAGE, BOSS_BATTLE, NEWBIE, AI_RUNS, '贪心 skill1（对照）', 0, 1);
+runBattleSim(STAGE, BOSS_BATTLE, NEWBIE, AI_RUNS, '终极 skill5（前向推演）', 0, 5);
+console.log('\n【关1 完整通关率（5战全胜）· 新手装备 · bossDelta=0】');
+runStageSim(STAGE, NEWBIE, AI_RUNS, '贪心 skill1（对照）', 0, 1);
+runStageSim(STAGE, NEWBIE, AI_RUNS, '终极 skill5（前向推演）', 0, 5);
 
 console.log('\n【地支/天罡 消融实验 · 新手 deckBias=3 · 通关率】');
 runStageSim(STAGE, { deckBias: 3, tiangang: [], inlayFavor: 0 }, RUNS, '裸装(无天罡·无地支)');
