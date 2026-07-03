@@ -12,7 +12,8 @@ export interface LevelDef {
   intro: string;                                  // 开场战役背景旁白
   bossLines: { open: string; mid: string; lose: string }; // Boss 对白（开场/劣势/败北）
   boss: { homeHp: number; disha: string[]; tiangang: string[]; aiTier: number; aiProfile: AiProfile;
-    deck: { rank: string; suit: string }[]; favorBias: number; stayP: number }; // 16 牌组(关1-5·空=回退泛化army) + 牌力偏置(写卡buff) + 留场P + 地煞 3 + 随机 12 天罡 + AI 档 + 策略画像
+    deck: { rank: string; suit: string }[]; favorBias: number; stayP: number;
+    startFormation: { rank: string; suit: string; lane: number; slot: number }[] }; // 16 牌组(关1-5·空=回退泛化army) + 牌力偏置(写卡buff) + 留场P + 地煞 3 + 随机 12 天罡 + AI 档 + 策略画像 + 开局排阵守军(REQ-G-开局排阵)
   reward: { unlock: string[]; gold: number };
   loadoutCap: number;                             // 玩家本关天罡 loadout 上限（新手区 2→3）
 }
@@ -50,6 +51,11 @@ const BOSS_DECK_1_5: Record<number, string[]> = {
 // Boss 牌力偏置（写卡 buff·design/boss-config-1-5.md）：教学关弱(−2)→终章强(+4)。留场P：关3-5 守将乘胜 0.75（base 0.5）。
 const BOSS_FAVOR_BIAS: Record<number, number> = { 1: -2, 2: -2, 3: 0, 4: 2, 5: 4 };
 const BOSS_STAY_P: Record<number, number> = { 1: 0.5, 2: 0.5, 3: 0.75, 4: 0.75, 5: 0.75 };
+// 开局排阵守军（REQ-G-开局排阵·明牌摆兵·静守 hold）：关1 列奥尼达 2 张守军排隘口(贴 Boss 家 slot 8/7·上/下路)→ 玩家开局撞现成的墙·得绕/啃。
+// 张数/摆哪路 = design G 用 sim 标（关1 教学取 2·后续关爬 3-4）；lane 暂上/下分置（中路留主将+驻军）·待 design G 定稿。
+const BOSS_START_FORMATION: Record<number, { rank: string; suit: string; lane: number; slot: number }[]> = {
+  1: [{ rank: '8', suit: 'S', lane: 0, slot: 8 }, { rank: '9', suit: 'H', lane: 2, slot: 7 }],
+};
 const CODE_RE = /^(10|[2-9]|[AKQJ])([SHDC])$/;
 /** 解析 '10S'/'AS'/'5H' → {rank,suit}（suit 用字母·与 bossHeroCard/SUITNAME·lc2 一致）。非法码丢弃。 */
 function parseCardCode(code: string): { rank: string; suit: string } | null {
@@ -95,7 +101,8 @@ export function loadLevel(stage: number): LevelDef {
     intro: lore.intro,
     bossLines: { open: lore.open, mid: lore.mid, lose: lore.lose },
     boss: { homeHp: diff.homeHp, disha: stageDisha(stage), tiangang: bossTiangang(stage, diff.bossTg), aiTier: diff.aiTier, aiProfile: AI_PROFILES[stage] ?? NEUTRAL_AI,
-      deck: (BOSS_DECK_1_5[stage] ?? []).map(parseCardCode).filter((c): c is { rank: string; suit: string } => c != null), favorBias: BOSS_FAVOR_BIAS[stage] ?? 0, stayP: BOSS_STAY_P[stage] ?? 0.5 },
+      deck: (BOSS_DECK_1_5[stage] ?? []).map(parseCardCode).filter((c): c is { rank: string; suit: string } => c != null), favorBias: BOSS_FAVOR_BIAS[stage] ?? 0, stayP: BOSS_STAY_P[stage] ?? 0.5,
+      startFormation: BOSS_START_FORMATION[stage] ?? [] },
     reward: { unlock, gold: 20 + stage * 10 },
     loadoutCap: diff.loadoutCap,
   };

@@ -54,7 +54,7 @@ export const GATES: readonly Gate[] = [
 ];
 
 // 场上兵：占一格 slot；续航 staminaLeft 打光退场（同 live-combat 经济）。speed=每回合推进格数(默认1·缺省视作1·向后兼容旧字面量)。
-export interface TurnUnit { id: string; rank: string; suit: string; points: number; buff: number; general: boolean; stamina: number; staminaLeft: number; slot: number; speed?: number; cost?: number; wins?: number } // wins=连胜场数(owner 2026-07-01·每胜战力对折 0.5^wins→弱兵车轮磨死强兵·满 WIN_CAP 光荣回库)；cost=部署所花源泉
+export interface TurnUnit { id: string; rank: string; suit: string; points: number; buff: number; general: boolean; stamina: number; staminaLeft: number; slot: number; speed?: number; cost?: number; wins?: number; hold?: boolean } // wins=连胜场数(owner 2026-07-01·每胜战力对折 0.5^wins→弱兵车轮磨死强兵·满 WIN_CAP 光荣回库)；cost=部署所花源泉；hold=开局排阵守军·静态死守(REQ-G-开局排阵·不前压/不冲家/接触才战/赢守原位)
 // 行军速度（owner 2026-06-21）：大王/小王(★/王/JOKER) 与 老K 三类高阶兵·疾行 2 格/回合；其余 1 格。纯 rank 派生·确定性。
 const FAST_RANKS = new Set(['★', '王', 'JOKER', 'K']);
 export function unitSpeed(rank: string): number { return FAST_RANKS.has(rank) ? 2 : 1; }
@@ -99,7 +99,7 @@ const mkLane = (): TurnLane => ({ a: [], b: [], aGenDead: false, bGenDead: false
 const mkSide = (pokerDeck: PokerCard[] = [], tengangDeck: TengangHandCard[] = []): TurnSide =>
   ({ mana: MANA_START, hand: [], pokerDeck: [...pokerDeck], tengangDeck: [...tengangDeck], castIds: [], tengangA: NO_TENGANG, castFx: [] });
 
-export interface TurnInit { seed: number; homeMax?: number; disha?: readonly string[]; aiProfile?: AiProfile; aiTier?: number; fortuneBuff?: number; a?: { pokerDeck?: PokerCard[]; tengangDeck?: TengangHandCard[] }; b?: { pokerDeck?: PokerCard[]; tengangDeck?: TengangHandCard[] } }
+export interface TurnInit { seed: number; homeMax?: number; disha?: readonly string[]; aiProfile?: AiProfile; aiTier?: number; fortuneBuff?: number; a?: { pokerDeck?: PokerCard[]; tengangDeck?: TengangHandCard[] }; b?: { pokerDeck?: PokerCard[]; tengangDeck?: TengangHandCard[] }; startFormation?: readonly { rank: string; suit: string; lane: number; slot: number; buff?: number }[] } // startFormation=Boss 开局排阵守军(REQ-G-开局排阵·明牌摆兵·不花源泉·静守 hold)
 /** 开战 init（doc24 §七）：三路 ×9 空轨；双方大本营 3 hp；召唤源泉=起步；A 先手。牌库由 caller（game-g/save）喂；起手摸由 caller 调 drawCard。
  *  cfg.disha：Boss 关卡地煞 id 集（doc23 §八）→ 聚合成 dishaB 在 Boss 侧 apply；温泉关死守覆写 Boss 大本营血。 */
 export function initTurnBattle(cfg: TurnInit): TurnBattle {
@@ -122,8 +122,15 @@ export function initTurnBattle(cfg: TurnInit): TurnBattle {
     homeAShieldUsed: 0, fortuneBuff: cfg.fortuneBuff ?? 0,
   };
   for (const id of playable) battle.b.hand.push({ kind: 'disha', id }); // 可施放地煞 → Boss 起手即在手·AI 攒够 2 源泉择机打
-  // owner 2026-06-29 ①：双方公平起步——a/b 皆 MANA_START(3) 源泉、皆摸 OPENING_HAND(caller) 手牌。
-  // 不再「先手 6 / 后手 0」。turn-1 双方都用 3 起步预算放牌；每回合 +1 从 turn-2 起对称累加（见 endTurn）。
+  // 开局排阵守军（REQ-G-开局排阵·design G）：Boss 明牌摆兵在场·不花源泉·静守 hold（不前压/不冲家/接触才战/赢守原位）。
+  for (const f of cfg.startFormation ?? []) {
+    const lane = battle.lanes[f.lane]; if (!lane) continue;
+    const stam = cardStamina(f.rank);
+    lane.b.push({ id: `sf-${f.lane}-${f.slot}-${f.rank}${f.suit}`, rank: f.rank, suit: f.suit, points: cardPoints(f.rank), buff: f.buff ?? 0, general: false, stamina: stam, staminaLeft: stam, slot: f.slot, speed: unitSpeed(f.rank), hold: true });
+    lane.b.sort((x, y) => x.slot - y.slot); // 保 slot 升序（前锋=最小 slot·同渲染/推进契约）
+  }
+  // owner 2026-06-29 ①：双方公平起步——a/b 皆 MANA_START 源泉、皆摸 OPENING_HAND(caller) 手牌。
+  // 不再「先手 6 / 后手 0」。turn-1 双方都用起步预算放牌；每回合 +1 从 turn-2 起对称累加（见 endTurn）。
   return battle;
 }
 
@@ -423,6 +430,7 @@ function resolveClash(b: TurnBattle, li: number): void {
 function advanceColumnVsFoe(own: TurnUnit[], dir: number, foeFrontSlot: number, diverted: Set<string>, pinGeneral = false): void {
   for (let i = 0; i < own.length; i++) {
     if (diverted.has(own[i].id)) continue; // 本回合已过门 → 不再直进
+    if (own[i].hold) continue; // 开局排阵守军·静守不前压（REQ-G-开局排阵 #1）
     if (pinGeneral && own[i].general) continue; // Boss 主将死守原地·不前移
     let t = own[i].slot + dir * (own[i].speed ?? 1);
     if (i > 0) { const ahead = own[i - 1].slot; t = dir > 0 ? Math.min(t, ahead - 1) : Math.max(t, ahead + 1); }
@@ -434,6 +442,7 @@ function advanceColumnVsFoe(own: TurnUnit[], dir: number, foeFrontSlot: number, 
 function advanceColumnToBase(b: TurnBattle, own: TurnUnit[], dir: number, side: 'a' | 'b', diverted: Set<string>): void {
   for (let i = 0; i < own.length; i++) {
     if (diverted.has(own[i].id)) continue;
+    if (own[i].hold) continue; // 开局排阵守军·不自动冲家（REQ-G-开局排阵 #2·守军绝不主动冲锋）
     if (side === 'b' && own[i].general) continue; // Boss 主将死守原地·不直扑我家（owner 2026-06-29）
     let t = own[i].slot + dir * (own[i].speed ?? 1);
     if (i > 0) { const ahead = own[i - 1].slot; t = dir > 0 ? Math.min(t, ahead - 1) : Math.max(t, ahead + 1); }

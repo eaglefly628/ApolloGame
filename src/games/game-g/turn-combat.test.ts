@@ -224,4 +224,21 @@ describe('Game G · turn-combat（doc24 单机回合制 · A0 重构）', () => 
     expect(b.a.mana).toBe(3);                                    // 全额返还 cost 3（turn 仍 1·我方本轮无新增）
     expect(b.lastClash?.winStays).toBe(false);                   // 离场 → UI 演光荣回库
   });
+
+  it('开局排阵守军(REQ-G-开局排阵)：明牌摆兵 + 静守（不前压/不冲家/接触才战）', () => {
+    const b = initTurnBattle({ seed: 1, startFormation: [{ rank: '8', suit: 'S', lane: 0, slot: 8 }, { rank: '9', suit: 'H', lane: 2, slot: 7 }] });
+    expect(b.lanes[0].b.some((u) => u.slot === 8 && u.hold)).toBe(true); // 上路 slot8 守军·hold
+    expect(b.lanes[2].b.some((u) => u.slot === 7 && u.hold)).toBe(true); // 下路 slot7 守军·hold
+    expect(b.lanes[1].b.length).toBe(0);                                 // 中路无守军
+    // 敌方行动：守军静守 → 不前压(原 slot 不变) + 不自动冲家(我家不掉血)
+    const held = b.lanes[0].b.find((u) => u.hold)!; const before = held.slot; const homeA0 = b.homeA;
+    b.active = 'b'; endTurn(b);
+    expect(b.lanes[0].b.find((u) => u.hold)?.slot).toBe(before); // 不前压·原地守
+    expect(b.homeA).toBe(homeA0);                                // 不自动冲家·我家没掉血
+    // 接触才战：玩家兵推到守军 → 正常掷命
+    const c = initTurnBattle({ seed: 2, startFormation: [{ rank: '8', suit: 'S', lane: 0, slot: 8 }] });
+    c.lanes[0].a.push(unit('p', '9', A_DEPLOY_SLOT));
+    for (let k = 0; k < 8 && c.clashSeq === 0 && c.winner === 'pending'; k++) { c.active = 'a'; endTurn(c); }
+    expect(c.clashSeq).toBeGreaterThan(0); // 玩家推到守军相邻 → 接触才战
+  });
 });

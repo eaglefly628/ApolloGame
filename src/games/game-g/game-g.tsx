@@ -315,7 +315,9 @@ export function mount(container: HTMLElement, shell?: { exit?: () => void }): ()
     const shuffledMyDeck = seededShuffleArr(myDeck, seed ^ 0x9e37);
     const genIdx = shuffledMyDeck.findIndex((c) => c.general);
     if (genIdx > 0) { const [gen] = shuffledMyDeck.splice(genIdx, 1); shuffledMyDeck.unshift(gen); }
-    const tb = initTurnBattle({ seed, disha: lvl.boss.disha, aiProfile: lvl.boss.aiProfile, aiTier: lvl.boss.aiTier, fortuneBuff, a: { pokerDeck: shuffledMyDeck, tengangDeck: aTengang }, b: { pokerDeck: bossDeck, tengangDeck: bTengang } });
+    // 开局排阵守军（REQ-G-开局排阵）：Boss 明牌摆兵·带同款牌力偏置 buff（与 bossDeck 一致）·静守 hold。
+    const startFormation = lvl.boss.startFormation.map((f) => ({ ...f, buff: bossBias }));
+    const tb = initTurnBattle({ seed, disha: lvl.boss.disha, aiProfile: lvl.boss.aiProfile, aiTier: lvl.boss.aiTier, fortuneBuff, startFormation, a: { pokerDeck: shuffledMyDeck, tengangDeck: aTengang }, b: { pokerDeck: bossDeck, tengangDeck: bTengang } });
     for (let i = 0; i < OPENING_HAND && tb.a.pokerDeck.length; i++) tb.a.hand.push(tb.a.pokerDeck.shift()!); // 起手摸
     for (let i = 0; i < OPENING_HAND && tb.b.pokerDeck.length; i++) tb.b.hand.push(tb.b.pokerDeck.shift()!);
     // 战场操作日志（debug·owner 2026-06-21「出 bug 把日志贴来排查」）：提前声明→开局布防即可入日志。逐条记 玩家/AI 操作 + 掷命 + 结算。
