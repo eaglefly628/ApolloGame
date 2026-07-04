@@ -41,12 +41,28 @@ try {
       const o = (y * N + x) * 4; idN.data[o] = (-dx / len * 0.5 + 0.5) * 255; idN.data[o + 1] = (-dy / len * 0.5 + 0.5) * 255; idN.data[o + 2] = (1 / len * 0.5 + 0.5) * 255; idN.data[o + 3] = 255;
     }
     n.putImageData(idN, 0, 0);
-    return { albedo: cvA.toDataURL('image/png'), normal: cvN.toDataURL('image/png') };
+    // emissive：暗底 + 发光符文网格（sRGB·REQ-3D ④ emissiveMap 展示·确定性 hash 图案）。
+    const cvE = document.createElement('canvas'); cvE.width = cvE.height = N; const e = cvE.getContext('2d');
+    const idE = e.createImageData(N, N); const CELL = 32;
+    for (let y = 0; y < N; y++) for (let x = 0; x < N; x++) {
+      const cx = (x % CELL) - CELL / 2, cy = (y % CELL) - CELL / 2;
+      const gx = Math.floor(x / CELL), gy = Math.floor(y / CELL);
+      const on = hash(gx, gy) > 0.45; // 约半数格发光（确定性）
+      const d = Math.hypot(cx, cy) / (CELL / 2);
+      const glow = on ? Math.max(0, 1 - d * d) : 0; // 径向发光衰减
+      const line = (Math.abs(cx) < 1.5 || Math.abs(cy) < 1.5) ? 0.12 : 0; // 暗网格线
+      const v = Math.min(1, glow + line);
+      const o = (y * N + x) * 4;
+      idE.data[o] = Math.min(255, v * 90); idE.data[o + 1] = Math.min(255, v * 230); idE.data[o + 2] = Math.min(255, v * 255); idE.data[o + 3] = 255; // 青蓝发光
+    }
+    e.putImageData(idE, 0, 0);
+    return { albedo: cvA.toDataURL('image/png'), normal: cvN.toDataURL('image/png'), emissive: cvE.toDataURL('image/png') };
   });
   mkdirSync('public/textures', { recursive: true });
   writeFileSync('public/textures/plank_albedo.png', Buffer.from(out.albedo.split(',')[1], 'base64'));
   writeFileSync('public/textures/plank_normal.png', Buffer.from(out.normal.split(',')[1], 'base64'));
-  console.log('wrote public/textures/plank_albedo.png + plank_normal.png');
+  writeFileSync('public/textures/rune_emissive.png', Buffer.from(out.emissive.split(',')[1], 'base64'));
+  console.log('wrote public/textures/plank_albedo.png + plank_normal.png + rune_emissive.png');
   await browser.close();
 } finally { cleanup(); }
 process.exit(0);

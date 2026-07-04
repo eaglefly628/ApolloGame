@@ -23,7 +23,8 @@ function hudTree(fps: number, stats: RenderStats | null, showProfiler: boolean, 
   const children: LayoutNode[] = [
     { type: 'Label', id: 'gz-title', props: { text: 'GAME Z · 永远追逐', size: 'xxl', glow: true } },
     { type: 'Label', id: 'gz-sub', props: { text: '鸭子 AI 绕赛道自动跑 · 三只追兵循寻路追逐 · 一切皆动', size: 'sm' } },
-    { type: 'Label', id: 'gz-hint', props: { text: 'WASD 接管控鸭 · 拖拽旋转 · 滚轮缩放 · O 正交 · F 跟随/环绕 · P 剖析 · C 碰撞体 · N 寻路 · 点物件拾取', size: 'sm' } },
+    { type: 'Label', id: 'gz-hint', props: { text: 'WASD 控鸭 · 拖拽旋转 · 滚轮缩放 · O 正交 · F 跟随 · P 剖析 · C 碰撞 · N 寻路 · 点物件拾取', size: 'sm' } },
+    { type: 'Label', id: 'gz-show', props: { text: '🧱 南侧展台：新图元(柱/锥/胶囊/环) × PBR 材质 × Anim3D 自转浮动 × 点选拾取', size: 'sm', color: 'jade' } },
     { type: 'Label', id: 'gz-zone', props: { text: '🔴 追逐中', size: 'sm', glow: true, color: 'warn' } },
   ];
   if (picked) children.push({ type: 'Label', id: 'gz-pick', props: { text: `🎯 拾取：${picked}`, size: 'sm', glow: true, color: 'jade' } }); // Pickable3D 拾取自证

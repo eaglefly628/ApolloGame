@@ -8,10 +8,14 @@ export const MODEL_FOX = 'fox'; // 带骨骼动画（Survey/Walk/Run）·骨骼�
 // 真实贴图（REQ-Resource ①·自产程序化生成的木板 albedo + 法线·见 scripts/gen-textures.mjs）。
 export const TEX_PLANK_ALBEDO = 'tex/plank-albedo';
 export const TEX_PLANK_NORMAL = 'tex/plank-normal';
-// 材质数据资产（REQ-Resource ④·type:'material'·引上面两张 texture key·物件用 materialRef 引它·非硬编码预设）。
+// 符文自发光贴图（REQ-3D ④ emissiveMap 展示·程序化自产·见 scripts/gen-textures.mjs）。
+export const TEX_RUNE_EMISSIVE = 'tex/rune-emissive';
+// 材质数据资产（REQ-Resource ④·type:'material'·引上面 texture key·物件用 materialRef 引它·非硬编码预设）。
 export const MAT_PLANK_WOOD = 'mat/plank-wood';
 // 石材质（花岗岩灰·rock 预设）：场景多处复用（石墩 + 素石柱）→ 一处改色·全场景生效（材质数据资产复用示范）。
 export const MAT_STONE = 'mat/stone';
+// 符文发光材质（REQ-3D ④·暗底 matte + emissiveMap→符文处发光）。
+export const MAT_RUNE = 'mat/rune';
 
 // REQ-Resource ②：模型 + 贴图统一走 **AssetIndex 路线**（registerAssetIndex 桥接·不再散调 registerManifest）。
 // 条目带 type/status/spec.usage → 桥接时 mesh→ModelDescriptor·texture→TextureDescriptor（colorSpace 按 usage 派生：
@@ -26,9 +30,11 @@ export const GAME_Z_INDEX: AssetIndex = parseAssetIndex({
     { id: MODEL_FOX, type: 'mesh', status: 'filled', path: '/models/fox.glb', description: '狐狸模型（骨骼动画 Survey/Walk/Run）', source: 'public/models/CREDITS.md' },
     { id: TEX_PLANK_ALBEDO, type: 'texture', status: 'filled', path: '/textures/plank_albedo.png', description: '木板反照率贴图（程序化自产）', spec: { usage: 'albedo', width: 256, height: 256 }, source: 'scripts/gen-textures.mjs' },
     { id: TEX_PLANK_NORMAL, type: 'texture', status: 'filled', path: '/textures/plank_normal.png', description: '木板法线贴图（程序化自产）', spec: { usage: 'normal', width: 256, height: 256 }, source: 'scripts/gen-textures.mjs' },
-    // 材质数据资产（REQ-Resource ④）：无文件·数据全在 spec·引上面两张 texture key。物件 Material3D{materialRef} 引它。
+    { id: TEX_RUNE_EMISSIVE, type: 'texture', status: 'filled', path: '/textures/rune_emissive.png', description: '符文自发光贴图（程序化自产）', spec: { usage: 'emissive', width: 256, height: 256 }, source: 'scripts/gen-textures.mjs' },
+    // 材质数据资产（REQ-Resource ④）：无文件·数据全在 spec·引上面 texture key。物件 Material3D{materialRef} 引它。
     { id: MAT_PLANK_WOOD, type: 'material', status: 'filled', description: '木板材质（wood 预设 + 木板 albedo/法线贴图）', spec: { preset: 'wood', map: TEX_PLANK_ALBEDO, normalMap: TEX_PLANK_NORMAL } },
     { id: MAT_STONE, type: 'material', status: 'filled', description: '石材质（花岗岩灰·rock 预设·场景复用）', spec: { preset: 'rock', color: 0x8b8178 } },
+    { id: MAT_RUNE, type: 'material', status: 'filled', description: '符文发光材质（暗底 + emissiveMap·REQ-3D ④ 展示）', spec: { preset: 'matte', color: 0x0e1419, emissiveMap: TEX_RUNE_EMISSIVE } },
   ],
 });
 
