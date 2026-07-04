@@ -135,7 +135,8 @@ export function dioramaBlueprint(): WorldBlueprint {
       },
 
       // 中心信标（金属柱 + 魔法喷泉 VFX）：赛道圆心的焦点，鸭子绕它跑。锤打金面（bumps 浮雕·反射更活）。
-      beacon: { ...block(0, 4, 0, 4, 8, 4, 0xffd54f, 0xffb300), Material3D: { preset: 'gold', surface: { pattern: 'bumps', tiles: 5, normal: 0.5, rough: 0.3 } } },
+      // Pickable3D：点它 → 拾取（渲染器 pick 射线命中包围盒 → 发信号 'poke'·arg=实体 id·自证 3D 对象拾取）。
+      beacon: { ...block(0, 4, 0, 4, 8, 4, 0xffd54f, 0xffb300), Material3D: { preset: 'gold', surface: { pattern: 'bumps', tiles: 5, normal: 0.5, rough: 0.3 } }, Pickable3D: { signal: 'poke' } },
 
       // 🖼 真实贴图木箱（REQ-Resource ①①④·验收）：物件只引**材质数据资产** materialRef=MAT_PLANK_WOOD
       // （该材质在索引里 = wood 预设 + 木板 albedo/法线 texture key）。渲染器据 materialRef 查材质目录合成 → 取图挂上。
@@ -143,6 +144,7 @@ export function dioramaBlueprint(): WorldBlueprint {
       'plank-crate': {
         ...block(11, 4, 6, 8, 8, 8, 0x9c6b3f, 0x9c6b3f),
         Material3D: { preset: 'matte', materialRef: MAT_PLANK_WOOD },
+        Pickable3D: { signal: 'poke' }, // 可拾取（点选自证）
       },
       'vfx-beacon': {
         Vfx3D: {

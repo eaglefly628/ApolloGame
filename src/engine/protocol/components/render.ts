@@ -148,6 +148,17 @@ export interface Transform3D extends Component {
   quat?: readonly [number, number, number, number]; // 可选四元数(x,y,z,w)·在场则覆盖欧拉角（物理翻滚等需无万向锁的旋转·render-only）
 }
 
+// ── Pickable3D（render-only，3D 对象拾取标记 · 输入层）──────────────────────────────────────────
+// 标记一个实体「可被指针拾取」。渲染器 `pick(clientX,clientY)` 对所有 Pickable3D 实体的**世界包围盒**做射线求交，
+// 命中最近者返回其实体 id + 信号名。命中结果由游戏输入胶水经 `ActionSink.enqueueAction(signal,{arg:entityId})` 入队
+// → keybind 产 `Signal{name:signal,arg:entityId}` → sim 能力按名消费（照 2D `t2-clickable` 先例；但 3D raycast 在
+// **输入层**做——与鼠标点击同类外源输入·本地合法·**不碰 sim 确定性**）。红线：纯表现标记，**绝不被 Condition 读、绝不进 hash**。
+export interface Pickable3D extends Component {
+  readonly type: 'Pickable3D';
+  signal: string; // 指针拾取(click)命中时游戏应发的信号名（arg=命中实体 id）
+  hover?: string; // 可选·指针悬停命中时的信号名（游戏在 pointermove 调 pick 时用）
+}
+
 // ── RigidBody3D（render-only，表现物理 · TA）──────────────────────────────────────────────
 // 真物理刚体（cannon-es 驱动·**纯表现**：滚色子/掉落/翻滚·**不进 sim/hash·不为联机同步**·owner 2026-06-30「为表现非同步」）。
 // 渲染侧物理子系统每帧步进 → 把结果(位置+四元数)写回同实体 Transform3D（render-only）→ 渲染器照常画。

@@ -1,13 +1,13 @@
 import * as THREE from 'three';
 import type { IWorld, RendererBackend } from '@engine/core/types.js';
-import type { Mesh3D, Sky3D, Camera3D, Fog3D, Material3D, AnimState3D, Glow3D, Transform3D, Pivot3D } from '@engine/protocol/components.js';
+import type { Mesh3D, Sky3D, Camera3D, Fog3D, Material3D, AnimState3D, Glow3D, Transform3D, Pivot3D, Pickable3D } from '@engine/protocol/components.js';
 import type { AssetManager, MaterialSpec } from '@assets/index.js';
 import { isImageHandle } from '@assets/index.js';
 import { getCamera3D, getSky3D, getLights3D, getPost3D, getFog3D } from '@engine/protocol/camera-view.js';
 import { collectRenderables, chooseRenderMode, type Renderable } from './renderable.js';
 import {
   renderablePose, poseBounds, mesh3dBatchKey, type Pose3D,
-  transform3dPose, groundPose, poseBounds3D, bounds3DCenter, bounds3DExtent, fitDistance3D,
+  transform3dPose, groundPose, poseBounds3D, bounds3DCenter, bounds3DExtent, fitDistance3D, rayAabbT,
 } from './three-projection.js';
 import { mesh3dPose, applyPose, buildMesh3D, buildDieMesh3D, dieMode, buildVoxelMesh3D, voxelMode, buildGlowTexture, buildGeometry, buildSkyTexture, disposeMesh } from './three/geometry.js';
 import { buildPbrMesh3D, pbrSig, applyMaterialRef, type PbrMaps } from './three/material.js';
@@ -86,6 +86,8 @@ export class ThreeRenderer implements RendererBackend {
   private readonly modeOf = new Map<string, string>();
   private readonly texCache = new Map<string, THREE.Texture>();
   private readonly textSig = new Map<string, string>();
+  // 拾取包围盒（Pickable3D·render-only 输入层）：每帧 sync 捕获·pick() 射线求交。entityId → 世界 AABB + 信号名。
+  private readonly pickables = new Map<string, { cx: number; cy: number; cz: number; hx: number; hy: number; hz: number; signal: string }>();
   // W1-C 脏标跳渲 + profiler
   private cpuMs = 0;
   private rendered = false;
@@ -216,6 +218,11 @@ export class ThreeRenderer implements RendererBackend {
     }
     const pivotPose = (id: string, pose: Pose3D): Pose3D => { const M = pivotMap.get(id); return M ? applyPivot(M, pose) : pose; };
 
+    // 拾取标记（Pickable3D·render-only 输入层）：预收集本帧可拾取实体 → 下面在其位姿算出后捕获世界 AABB（pick() 用）。
+    const pickSet = new Map<string, Pickable3D>();
+    for (const [pid] of world.query('Pickable3D')) { const pk = world.getComponent<Pickable3D>(pid, 'Pickable3D'); if (pk) pickSet.set(pid, pk); }
+    this.pickables.clear();
+
     for (const r of collectRenderables(world)) {
       // 导入式 glTF 模型（Model3D）：圆润真模型。位姿与 Mesh3D 同套路。未就绪本帧不画（向后兼容）。
       if (r.model3d) {
@@ -245,6 +252,17 @@ export class ThreeRenderer implements RendererBackend {
         poses.push(pose);
         seen.add(r.entityId);
         if (r.entityId === followTarget) followPose = pose;
+        const pk = pickSet.get(r.entityId); // 可拾取 → 捕获世界 AABB（半尺寸取 Mesh3D·球=直径的一半）
+        if (pk) {
+          const m = r.mesh3d, half = m.width / 2;
+          this.pickables.set(r.entityId, {
+            cx: pose.x, cy: pose.y, cz: pose.z,
+            hx: half * Math.abs(pose.sx),
+            hy: (m.shape === 'sphere' ? half : m.height / 2) * Math.abs(pose.sy),
+            hz: (m.shape === 'sphere' ? half : (m.depth ?? m.width) / 2) * Math.abs(pose.sz ?? 1),
+            signal: pk.signal,
+          });
+        }
         if (r.mesh3d.dieFaces) {
           const mesh = this.ensureDieMesh3D(r, r.mesh3d);
           applyPose(mesh, pose);
@@ -379,6 +397,29 @@ export class ThreeRenderer implements RendererBackend {
     ray.setFromCamera(new THREE.Vector2(ndcX, ndcY), this.cameras.current);
     const hit = new THREE.Vector3();
     return ray.ray.intersectPlane(new THREE.Plane(new THREE.Vector3(0, 0, 1), -worldZ), hit) ? { x: hit.x, y: hit.y, z: hit.z } : null;
+  }
+
+  /**
+   * 3D 对象拾取（Pickable3D·render-only 输入层·**照 2D t2-clickable 先例·raycast 在输入层做**）：把屏坐标经当前相机
+   * 投成射线，对本帧所有 Pickable3D 实体的世界 AABB 求交，返回**最近命中**的实体 id + 信号名（arg=实体 id）。
+   * 游戏输入胶水据此 `ActionSink.enqueueAction(signal,{arg})` 入队 → Signal → sim 消费。无命中 / 无 canvas → null。
+   * 本地 raycast 与鼠标点击同类外源输入，**不进 sim/hash**（确定性不受影响）。
+   */
+  pick(clientX: number, clientY: number): { entityId: string; signal: string; arg: string } | null {
+    if (!this.gl || this.pickables.size === 0) return null;
+    const rect = this.gl.domElement.getBoundingClientRect();
+    if (rect.width <= 0 || rect.height <= 0) return null;
+    const ndcX = ((clientX - rect.left) / rect.width) * 2 - 1;
+    const ndcY = -(((clientY - rect.top) / rect.height) * 2 - 1);
+    const ray = new THREE.Raycaster();
+    ray.setFromCamera(new THREE.Vector2(ndcX, ndcY), this.cameras.current);
+    const o = ray.ray.origin, d = ray.ray.direction;
+    let bestT = Infinity, bestId = '', bestSig = '';
+    for (const [eid, b] of this.pickables) {
+      const t = rayAabbT(o.x, o.y, o.z, d.x, d.y, d.z, b.cx, b.cy, b.cz, b.hx, b.hy, b.hz);
+      if (t !== null && t < bestT) { bestT = t; bestId = eid; bestSig = b.signal; }
+    }
+    return bestId ? { entityId: bestId, signal: bestSig, arg: bestId } : null;
   }
 
   readStats(): RenderStats {

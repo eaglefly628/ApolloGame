@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { renderablePose, poseBounds, fitPerspective, mesh3dDepth, mesh3dBatchKey, flipEuler, faceDown, type Pose3D } from './three-projection.js';
+import { renderablePose, poseBounds, fitPerspective, mesh3dDepth, mesh3dBatchKey, flipEuler, faceDown, rayAabbT, type Pose3D } from './three-projection.js';
 import type { Renderable } from './renderable.js';
 
 const R = (o: Partial<Renderable>): Renderable => ({
@@ -82,5 +82,33 @@ describe('three-projection — Mesh3D（3D 物件即数据）几何/翻面纯函
     expect(faceDown(Math.PI * 2)).toBe(false);
     expect(faceDown(-Math.PI)).toBe(true); // 归一到 π
     expect(faceDown(0.3)).toBe(false);
+  });
+});
+
+describe('rayAabbT — 射线-AABB 求交（对象拾取 Pickable3D）', () => {
+  // 单位盒在原点 (h=1)。相机在 -Z 沿 +Z 看进去。
+  it('正对盒心 → 命中·t=入口距离', () => {
+    const t = rayAabbT(0, 0, -5, 0, 0, 1, 0, 0, 0, 1, 1, 1);
+    expect(t).toBeCloseTo(4); // -5 → 盒近面 z=-1，距离 4
+  });
+  it('偏出盒外 → 未命中 null', () => {
+    expect(rayAabbT(3, 0, -5, 0, 0, 1, 0, 0, 0, 1, 1, 1)).toBeNull(); // x=3 错过 h=1 的盒
+  });
+  it('盒在射线反向（相机后）→ null', () => {
+    expect(rayAabbT(0, 0, 5, 0, 0, 1, 0, 0, 0, 1, 1, 1)).toBeNull(); // 原点在 +Z、朝 +Z 看，盒在后
+  });
+  it('原点在盒内 → 贴脸命中 t=0', () => {
+    expect(rayAabbT(0, 0, 0, 0, 0, 1, 0, 0, 0, 1, 1, 1)).toBe(0);
+  });
+  it('取最近盒：两盒都命中时 t 更小者更近', () => {
+    const near = rayAabbT(0, 0, -5, 0, 0, 1, 0, 0, -2, 1, 1, 1); // 盒心 z=-2
+    const far = rayAabbT(0, 0, -5, 0, 0, 1, 0, 0, 3, 1, 1, 1); // 盒心 z=3
+    expect(near).not.toBeNull();
+    expect(far).not.toBeNull();
+    expect(near!).toBeLessThan(far!); // 近盒 t 更小 → 拾取选它
+  });
+  it('斜射线命中偏置盒', () => {
+    const t = rayAabbT(0, 0, -5, 0.3, 0, 1, 1.5, 0, 0, 1, 1, 1); // 朝 +x 微偏 → 命中 x∈[0.5,2.5] 的盒
+    expect(t).not.toBeNull();
   });
 });

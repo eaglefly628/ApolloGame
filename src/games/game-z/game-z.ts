@@ -19,13 +19,14 @@ const fmtK = (n: number): string => (n >= 1000 ? `${(n / 1000).toFixed(1)}k` : `
 
 // 角标 HUD（LayoutNode 纯数据）：标题 + 操作提示 + 可开关的性能剖析面板（像虚幻 stat·P 键开关）。
 // 剖析数据来自 renderer.readStats()（引擎暴露）；HUD 本体是数据描述（UI 铁律）。pointer-events:none 不挡盒庭。
-function hudTree(fps: number, stats: RenderStats | null, showProfiler: boolean): LayoutNode {
+function hudTree(fps: number, stats: RenderStats | null, showProfiler: boolean, picked?: string | null): LayoutNode {
   const children: LayoutNode[] = [
     { type: 'Label', id: 'gz-title', props: { text: 'GAME Z · 永远追逐', size: 'xxl', glow: true } },
     { type: 'Label', id: 'gz-sub', props: { text: '鸭子 AI 绕赛道自动跑 · 三只追兵循寻路追逐 · 一切皆动', size: 'sm' } },
-    { type: 'Label', id: 'gz-hint', props: { text: 'WASD 接管控鸭 · 拖拽旋转 · 滚轮缩放 · O 正交 · F 跟随/环绕 · P 剖析 · C 碰撞体 · N 寻路', size: 'sm' } },
+    { type: 'Label', id: 'gz-hint', props: { text: 'WASD 接管控鸭 · 拖拽旋转 · 滚轮缩放 · O 正交 · F 跟随/环绕 · P 剖析 · C 碰撞体 · N 寻路 · 点物件拾取', size: 'sm' } },
     { type: 'Label', id: 'gz-zone', props: { text: '🔴 追逐中', size: 'sm', glow: true, color: 'warn' } },
   ];
+  if (picked) children.push({ type: 'Label', id: 'gz-pick', props: { text: `🎯 拾取：${picked}`, size: 'sm', glow: true, color: 'jade' } }); // Pickable3D 拾取自证
   if (showProfiler && stats) {
     children.push(
       { type: 'Label', id: 'gz-p0', props: { text: '── PROFILE ──', size: 'sm', font: 'mono', glow: true } },
@@ -160,7 +161,7 @@ export function mount(container: HTMLElement): () => void {
   };
   const onDown = (e: KeyboardEvent): void => {
     if (MOVE_KEYS.has(e.code)) e.preventDefault();
-    if (e.code === 'KeyP') { showProfiler = !showProfiler; ui.update(hudTree(Math.round(fps), renderer.readStats(), showProfiler)); }
+    if (e.code === 'KeyP') { showProfiler = !showProfiler; ui.update(hudTree(Math.round(fps), renderer.readStats(), showProfiler, lastPicked)); }
     // 相机数据驱动开关（行为层只写 Camera3D 数据·渲染器解释）：O 切正交/透视、F 切跟随小黄鸭/环绕。
     if (e.code === 'KeyO') { const c = cam(); if (c) c.projection = c.projection === 'ortho' ? 'perspective' : 'ortho'; }
     if (e.code === 'KeyF') { const c = cam(); if (c) { c.mode = c.mode === 'follow' ? 'orbit' : 'follow'; c.target = 'hero'; } }
@@ -195,7 +196,9 @@ export function mount(container: HTMLElement): () => void {
   let dragging = false;
   let lastX = 0;
   let lastY = 0;
-  const onPointerDown = (e: PointerEvent): void => { dragging = true; lastX = e.clientX; lastY = e.clientY; stage.setPointerCapture?.(e.pointerId); };
+  let downX = 0, downY = 0; // 按下点（判 click vs drag：位移小=点选拾取，大=旋转相机）
+  let lastPicked: string | null = null; // 最近拾取到的实体 id（Pickable3D 自证·显 HUD）
+  const onPointerDown = (e: PointerEvent): void => { dragging = true; lastX = e.clientX; lastY = e.clientY; downX = e.clientX; downY = e.clientY; stage.setPointerCapture?.(e.pointerId); };
   const onPointerMove = (e: PointerEvent): void => {
     if (!dragging) return;
     const c = cam();
@@ -206,7 +209,15 @@ export function mount(container: HTMLElement): () => void {
     c.pitch = Math.max(c.pitchMin ?? 0.05, Math.min(c.pitchMax ?? 1.5, p));
     lastX = e.clientX; lastY = e.clientY;
   };
-  const onPointerUp = (e: PointerEvent): void => { dragging = false; stage.releasePointerCapture?.(e.pointerId); };
+  const onPointerUp = (e: PointerEvent): void => {
+    dragging = false;
+    stage.releasePointerCapture?.(e.pointerId);
+    // 位移小 = 点选（非旋转拖拽）→ 3D 对象拾取（Pickable3D）。命中 → 显 HUD（真游戏则 enqueueAction(hit.signal,{arg:hit.arg})→Signal→sim）。
+    if (Math.abs(e.clientX - downX) < 5 && Math.abs(e.clientY - downY) < 5) {
+      const hit = renderer.pick(e.clientX, e.clientY);
+      if (hit) { lastPicked = `${hit.entityId}（signal:${hit.signal}）`; ui.update(hudTree(Math.round(fps), showProfiler ? renderer.readStats() : null, showProfiler, lastPicked)); }
+    }
+  };
   const onWheel = (e: WheelEvent): void => {
     e.preventDefault();
     const c = cam();
@@ -229,7 +240,7 @@ export function mount(container: HTMLElement): () => void {
     lastT = now;
     autoRun(); // 鸭子每帧自动绕赛道跑（无 WASD 时）
     if (dt > 0) fps = fps * 0.9 + (1000 / dt) * 0.1;
-    if (now - lastHud > 250) { lastHud = now; ui.update(hudTree(Math.round(fps), renderer.readStats(), showProfiler)); }
+    if (now - lastHud > 250) { lastHud = now; ui.update(hudTree(Math.round(fps), renderer.readStats(), showProfiler, lastPicked)); }
   });
 
   engine.start();

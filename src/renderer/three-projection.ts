@@ -186,3 +186,29 @@ export function anim3dField(
 // cubic-out：`1-(1-p)³`（落场/减速·§E 掷骰弧）。eOutBack：带回弹过冲（§F 骰壳 grow-in / 新场展开）。
 export function easeCubicOut(p: number): number { const q = 1 - p; return 1 - q * q * q; }
 export function easeOutBack(p: number): number { const c = 1.70158, c3 = c + 1; return 1 + c3 * Math.pow(p - 1, 3) + c * Math.pow(p - 1, 2); }
+
+// ── 射线-AABB 求交（纯函数·slab 法·3D 对象拾取 Pickable3D 用）──────────────────────────────────
+// 射线：原点 o(ox,oy,oz) + 方向 d(dx,dy,dz·无需归一)；轴对齐盒：中心 c + 各轴半尺寸 h。
+// 返回**最近命中距离 t**（≥0·沿 d 的参数·越小越近相机）；未命中 / 盒整体在射线反向 → null。
+// 原点在盒外 → 返回入口距离 tmin；原点已在盒内 → 返回 0（贴脸命中）。纯函数 → node 可测（拾取自证的可测部分）。
+export function rayAabbT(
+  ox: number, oy: number, oz: number,
+  dx: number, dy: number, dz: number,
+  cx: number, cy: number, cz: number,
+  hx: number, hy: number, hz: number,
+): number | null {
+  let tmin = -Infinity;
+  let tmax = Infinity;
+  const axes: Array<[number, number, number, number]> = [[ox, dx, cx, hx], [oy, dy, cy, hy], [oz, dz, cz, hz]];
+  for (const [o, d, c, h] of axes) {
+    const lo = c - h, hi = c + h;
+    if (Math.abs(d) < 1e-9) { if (o < lo || o > hi) return null; continue; } // 平行该轴：原点须在板内否则不可能命中
+    let t1 = (lo - o) / d, t2 = (hi - o) / d;
+    if (t1 > t2) { const tmp = t1; t1 = t2; t2 = tmp; }
+    if (t1 > tmin) tmin = t1;
+    if (t2 < tmax) tmax = t2;
+    if (tmin > tmax) return null;
+  }
+  if (tmax < 0) return null; // 盒整体在射线反向（相机后）
+  return tmin >= 0 ? tmin : 0; // 盒外→入口距离；盒内→贴脸(0)
+}
