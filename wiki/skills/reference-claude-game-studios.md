@@ -217,4 +217,16 @@ Tier 3 — 专员（Sonnet/Haiku）
 
 ---
 
-*首轮分析: 2026-06-05 · 清单对照与测试框架裁决: 2026-07-04 · 供主程参考*
+## 八、深读沉淀去向（2026-07-04·三线深读 ~40 份 spec）
+
+owner 指示对测试准则与游戏生产规则做深度研究后，蒸馏已落地，不在本文重复：
+
+| 沉淀物 | 去向 |
+|---|---|
+| 行业测试准则（四类目录法/五标准/覆盖映射/flakiness/证据分级/bug 流程） | `wiki/skills/testing.md`（新建） |
+| Apollo 测试接线 + 红线 + 验收纪律（偏差三分法/判词闭集/seed+tick 复现） | `docs/playbooks/testing.md`（新建·入 playbooks 索引） |
+| 发行双清单（内门/外门/delta 落档/hotfix 不豁免技术门） | `docs/roles/whitepapers/ps-whitepaper.md` |
+| 工具强化三件（audit 分层判词 / bench p99+delta / 测试代码体检） | requests.md「REQ-QA-测试审计强化三件」（排队·Opus） |
+| 文档指针守护（skill 自测思想首件落地） | requests.md「REQ-DOCS-指针守护脚本」（排队·Opus） |
+
+*首轮分析: 2026-06-05 · 清单对照与测试框架裁决: 2026-07-04 · 深读沉淀: 2026-07-04 · 供主程参考*

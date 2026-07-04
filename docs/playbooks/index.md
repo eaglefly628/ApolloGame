@@ -26,6 +26,7 @@
 | 资产 | `playbooks/assets.md` | art:检索/AssetManifest/asset-index | **asset-manager agent** / resource-manager 技能 |
 | 音频 | `playbooks/audio.md` | SynthAudioPort/SfxSpec（声音=数据） | 各游戏 PE；正样例=game-g |
 | 存档与平台 | `playbooks/save-platform.md` | storage/platform-hooks（云存档/成就） | 各游戏 PE；发布=**game-publisher agent** |
+| **测试与验收** | `playbooks/testing.md` | vitest·registry-guard·ApolloBench·数值 sim·e2e·smoke·game-skill-audit | **全员（交付前必过）**；验收纪律=Lead |
 
 > 上表「基座核心」只是路标——**能力实名与数据样例一律以 `capability-registry` 的 describe/examples 为准**（机读真相，`buildCapabilityCatalog()` 可导出），手册不手抄字段表。
 

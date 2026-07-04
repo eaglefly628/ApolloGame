@@ -1,0 +1,38 @@
+# 测试与验收线手册（接线图）
+
+> 行业知识见 `wiki/skills/testing.md`（建测试体系/定准则才读）；本手册只回答「在 Apollo 测 X 用哪个基座件」。全员适用，交付前必过。
+
+## 做 X → 用什么
+
+| 要测什么 | 基座件 | 判定 |
+|---|---|---|
+| 纯逻辑 / capability 语义 | vitest（`src/**/*.test.ts`） | 退出码 0 |
+| capability 注册完整性 | `src/assembly/registry-guard.test.ts`（漏注册即红·计数下限防空 glob 假绿） | vitest 内 |
+| 确定性 / 回放 / 性能 | ApolloBench（`src/bench/`·双跑同 hash）·单 manifest 走 `scripts/bench-manifest.mjs` | hash 一致 |
+| 数值平衡 | `scripts/game-d-balance-sim.mjs` · `src/games/game-g/simulate-balance.ts`（N=500 胜率扫描） | 胜率∈目标带 |
+| UI 卫生 | `/check-ui` 技能 + validateLayoutNode | issue 归零 |
+| 真浏览器旅程 | playwright-core e2e（`scripts/studio-*-e2e.mjs` 模式·chromium=/opt/pw-browsers） | 脚本退出码 |
+| 产品线冒烟 | `scripts/*-smoke.py`（library / studio 各线） | 退出码 |
+| 游戏体检 | `node scripts/game-skill-audit.mjs <game>` | 零红旗 |
+| 3D 截图对拍 | `scripts/shoot-game.mjs`（P3D harness） | 人审 |
+
+## 红线（一体适用）
+
+- **门禁=退出码**：`tsc + vitest + build` 全 0 才推；rebase 带进新提交必须重跑；禁 `vitest | grep` 吞失败码。
+- **测试代码三禁**：真实时间等待（墙钟 sleep/setTimeout）、外部 IO 直连、无种子随机——FAIL 级，用信号/mock/种子 PRNG 替代（fake timers 合法）。
+- **复现=seed+tick**：bug 复现优先给种子 + tick 序列/replay 文件（确定性引擎的强项）；文字步骤是降级方案。
+- **缺基线判黄不判绿**：sim 缺目标带、bench 缺 prior、AC 不可测 → CONCERNS / MANUAL CHECK 交 owner；绝不默认过、绝不编造目标值。
+- **存档/回放改动必测边界**：旧版本档载入（save-port migrate 链）+ 损坏档优雅拒绝（`CorruptSaveError` 基座已给）。
+- **冒烟脚本 fail-fast**：前置缺失（无 build/无 manifest）立即非零退出 + 指出补救命令，禁静默跳过造假绿。
+
+## 验收纪律（Lead / 判官侧）
+
+- 代理自报全绿不算数：**独立复跑 + 对抗性 diff 复核**；UI 里程碑必须真浏览器旅程。
+- **偏差三分法**：diff 偏离 spec → INTENTIONAL（记录准许）/ ERROR（打回）/ OUT OF SCOPE（回改 spec/手册），分类写进工单——不许默默接受"实现替代了图纸"。
+- 靶向回归先行：改 capability 先跑受影响游戏的 smoke+sim 子集定位，全量留给推前门禁。
+- 判词用闭集 token（PASS / CONCERNS / FAIL；工单态 BLOCKED=等外部动作 / NEEDS WORK=可自补），理由带 `file:line` 与实数，禁套话。
+- 新语义无点名测试不关单：工单关账前核对「本条新语义有无点名断言」，缺口列测试名不笼统"补测试"。
+
+## 查不到怎么办
+
+- 新测试形态（soak 长跑、视觉回归、多跑 flakiness 统计等）本手册没有 → `docs/workflow/requests.md` 提缺口等裁决，**绝不自造 harness**。

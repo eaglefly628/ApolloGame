@@ -28,6 +28,7 @@
 | 数学工具 | 向量, lerp, easing, 角度, PRNG | 数学运算/插值/缓动 | wiki/skills/math-utils.md |
 | 性能优化 | GC 回避, 批处理, DoD, 剖析 | 性能瓶颈/帧预算优化 | wiki/skills/performance.md |
 | 资源加载 | 图集, 预加载, 异步加载, 缓存 | 实现资源管理/加载流程 | wiki/skills/asset-loading.md |
+| 测试 | 四类目录法, 代码质量五标准, 覆盖映射, flakiness, 证据分级, bug/试玩流程 | 建测试体系/写测试/审测试 | wiki/skills/testing.md |
 | 粒子系统 | 发射器, 粒子池, 视觉特效 | 实现爆炸/烟雾/拖尾等特效 | wiki/skills/particles.md |
 | UI 主题化 | CSS tokens, 多风格套装, AI 生成主题 | 设计/切换 UI 视觉风格 | wiki/skills/ui-theming.md |
 

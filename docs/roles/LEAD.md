@@ -30,3 +30,4 @@
 
 - 裁决/验收/派工：`docs/workflow/requests.md`（回驳标 wontfix + 理由；派工标「指派：Opus」）。
 - 对抗性验收=惯例：真浏览器 e2e（`/verify`、`scripts/shoot-game.mjs`、`scripts/studio-*-e2e.mjs`）+ 对抗性 diff 复核；门禁 `tsc + vitest + build` 全绿才推。
+- 验收纪律细则（偏差三分法 INTENTIONAL/ERROR/OUT-OF-SCOPE·判词闭集 token·靶向回归·不可机验项标 MANUAL CHECK 交 owner）：`docs/playbooks/testing.md §验收纪律`。
