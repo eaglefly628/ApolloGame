@@ -214,6 +214,7 @@ Tier 3 — 专员（Sonnet/Haiku）
 - ✅ **思想采纳——"工作流零件也要可测"与我们已有实践同构**：capability 层已有 `registry-guard.test.ts`（漏注册即红）；手册层已有「手册对产出负全责·绕基座=手册缺陷」问责闭环。
 - 🔶 **轻量落地（排队·low 档活）**：给三层工作流件配"指针有效性守护"——角色卡/手册/白皮书里引用的**路径、脚本名、agent 名**用脚本核一遍（本次角色卡验收已人肉核过 58 处，该固化成 `scripts/docs-ref-guard.mjs` 进 vitest）。防的正是我们最大的病：口径漂移。
 - ❌ **不采全套**：为 2 个 .claude/skill + 2 个 agent 建 catalog.yaml + 行为 spec 体系=杀鸡用牛刀；我们的 skill 面小、且真相已机读（registry/roles/playbooks 三张索引就是 catalog）。等 skill 数量上两位数再议。
+- **修正（owner 2026-07-04 拍板「可直接 copy 的直接操作」）**：spec 模板骨架已移植（Apollo 化·`docs/qa/`），现有 4 零件（check-ui/resource-manager/asset-manager/game-publisher）各起一份行为 spec；**catalog 仍不建**（文件列表即清单）。
 
 ---
 
