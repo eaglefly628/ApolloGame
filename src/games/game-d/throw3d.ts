@@ -8,15 +8,13 @@
 // ⚠ 结果由物理定 = 非确定性（cannon-es「为表现非同步」）→ 暂放弃 game-d 的 seed/lockstep 可回放（owner「先做效果」·原型阶段）。
 import type { Engine } from '../../runtime/engine.js';
 import type { Component } from '@engine/core/types.js';
-import type { RandomSeed } from '@engine/protocol/components.js';
-import { nextRandom } from '@skills/atoms/random/index.js';
 import { upFaceIndex } from '@renderer/three/dice.js';
 import { ELEM_INFO, type Die, type RolledDie, type Elem } from './dice.js';
 
 const hex = (el: Elem): number => parseInt(ELEM_INFO[el].hex.slice(1), 16);
 // 6 面点数排布（对面和为 7·同 Title 骰）·面序 [+X,-X,+Y,-Y,+Z,-Z]（= dieFaces 与 upFaceIndex 面序）。
 const PIPS = [1, 6, 2, 5, 3, 4] as const;
-const DIE = 1.15; // 骰边长（世界单位·ortho 竞技场 orthoSize 7 里 5 颗清晰可读）
+const DIE = 0.82; // 骰边长（世界单位·owner「色子太大·场景不够大」→ 缩小·5 颗在地台里更宽松）
 
 export class Throw3D {
   private ids: string[] = [];        // 骰实体（读朝上面 / 挂点数）
@@ -32,17 +30,16 @@ export class Throw3D {
 
   get rolling(): boolean { return this.active; }
 
-  /** 掷：为每颗 loadout 骰生成带初始翻滚的物理骰。roomZ=当前房中心 Z。done 在落定读数后回调。 */
-  throw(dice: Die[], roomZ: number, nowMs: number, done: (r: RolledDie[]) => void): void {
+  /** 掷：为每颗 loadout 骰生成带初始翻滚的物理骰。roomZ=当前房中心 Z。
+   *  rand=**游戏确定性种子**（引擎 rnd/RandomSeed·owner 2026-07-03「用确定的种子数据喂物理→物理由确定输入决定→天然支持
+   *  lockstep/回放」）：初始翻滚参数全从 rand 取 → 同种子 → 同落定面 → 可回放/双端一致（cannon 同 build 一致）。done 落定读数后回调。 */
+  throw(dice: Die[], roomZ: number, nowMs: number, rand: () => number, done: (r: RolledDie[]) => void): void {
     this.clear();
     this.dice = dice; this.done = done; this.active = true;
     this.startMs = nowMs; this.lastMoveMs = nowMs; this.prevQuat = [];
-    // 专属 PRNG：从壁钟播种（render-only 表现·每次掷不同）·经引擎 nextRandom（非 Math.random·不动游戏主 seed）。
-    const seed: RandomSeed = { type: 'RandomSeed', seed: (Math.floor(nowMs) >>> 0) || 1, sequence: 0 };
-    const rand = (): number => nextRandom(seed);
     // 隐形围栏（4 面静态物理墙·收住骰子不飞出地台）：RigidBody3D 无 Mesh3D → 物理有效但**不渲染**·默认 4³ 静态盒。
-    // 中心离场心 4.8 → 内壁 ~±2.8 的托盘；骰从 y3 落入（墙高 y±2·骰从上方落进围栏）。
-    const WALL = 4.8;
+    // 中心离场心 4.4 → 内壁 ~±2.4 的托盘；骰从 y3 落入（墙高 y±2·骰从上方落进围栏）。
+    const WALL = 4.4;
     ([[WALL, 0], [-WALL, 0], [0, WALL], [0, -WALL]] as const).forEach(([dx, dz], k) => {
       const wid = `gd-pdie-wall-${k}`;
       this.wallIds.push(wid);
@@ -56,10 +53,11 @@ export class Throw3D {
       this.ids.push(id);
       const el = d.faces[0]!.el; // 元素骰六面同元素 → 取骰元素色
       const faces = PIPS.map((pip) => ({ color: hex(el), pip, emissive: hex(el) }));
-      const x = (i - (n - 1) / 2) * 1.1; // 横向铺开·居中（收窄·别滚出地台）
+      const x = (i - (n - 1) / 2) * 1.05; // 横向铺开·居中（收在托盘内）
       this.engine.world.createEntity(id);
       this.engine.world.addComponent(id, { type: 'Transform3D', x, y: 3 + i * 0.3, z: roomZ + (rand() - 0.5) * 0.6, scale: 1 } as unknown as Component);
-      this.engine.world.addComponent(id, { type: 'Mesh3D', shape: 'box', width: DIE, height: DIE, depth: DIE, frontTint: 0xffffff, dieFaces: faces } as unknown as Component);
+      // dieGlass=玻璃骰（同 Title 骰·owner「四角别黑·要通透半透明·度别太高」）：六面元素色 pip 贴花浮于半透玻璃·棱角通透。
+      this.engine.world.addComponent(id, { type: 'Mesh3D', shape: 'box', width: DIE, height: DIE, depth: DIE, frontTint: 0xeef4ff, dieFaces: faces, dieGlass: true } as unknown as Component);
       // 强翻滚角速度（落定面随机）+ **很轻**线速度 + 几乎不弹、高摩擦（落定在地台内·不飞散·owner「5 骰掷到场景中」要收得住）。
       this.engine.world.addComponent(id, {
         type: 'RigidBody3D', shape: 'box', mass: 1, restitution: 0.08, friction: 0.82,

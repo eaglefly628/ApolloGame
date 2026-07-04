@@ -55,7 +55,7 @@
 > - **接入** `three-renderer`：sync 顶部步进（collect 前）；`rollDice()`（按钮调·置位 → 下帧重掷=抬高+随机翻滚·render-only 随机自由）；destroy 释放。
 > - **demo**：game-z 三颗塑料色子（红/蓝/绿·中心区）掉落翻滚停稳；调试面板「🎲 掷骰子（真物理）」按钮重掷。截图：色子从空中落定（随机朝向）→ 点按钮重掷→再翻滚落定。
 > - 测试 `physics.test`(3·重力下落+落地不穿地+写 quat·无刚体返回 0·RigidBody3D/Transform3D 不进 hash)。tsc+vitest(1975)+build 全绿。**新依赖 `cannon-es@0.20.0`**（render-only·进 3D chunk）。
-> - **✅ 追加（2026-07-03·owner「掷骰物理落地→给我确定点数」）**：读朝上面 = 确定点数落地。新 `three/dice.ts` `upFaceIndex(quat)`（纯函数·据朝向四元数算哪面朝上·面序 [+X,-X,+Y,-Y,+Z,-Z]·`dice.test` 5 例）；`ThreeRenderer.screenToWorld` 已有。消费 = game-d `throw3d.ts`（编排：每 loadout 骰生成带初始翻滚的 RigidBody3D·隐形围栏收住·落定 quat 静止后读朝上面 → RolledDie·头顶挂 `WorldUI3D` 大号点数）。**结果由物理定=非确定性**（owner「先做效果」原型阶段·放弃该处 lockstep）。
+> - **✅ 追加（2026-07-03·owner「掷骰物理落地→给我确定点数」）**：读朝上面 = 确定点数落地。新 `three/dice.ts` `upFaceIndex(quat)`（纯函数·据朝向四元数算哪面朝上·面序 [+X,-X,+Y,-Y,+Z,-Z]·`dice.test` 5 例）；`ThreeRenderer.screenToWorld` 已有。消费 = game-d `throw3d.ts`（编排：每 loadout 骰生成带初始翻滚的 RigidBody3D·隐形围栏收住·落定 quat 静止后读朝上面 → RolledDie·头顶挂 `WorldUI3D` 大号点数·骰=玻璃 dieGlass 通透）。**初始翻滚参数全从游戏确定性种子 rnd 取**（owner 2026-07-03「用确定种子数据喂物理→物理由确定输入决定→天然支持 lockstep/回放」）→ 同种子同落定面·可回放/双端一致（cannon 同 build 一致；真跨平台定点需另换定点物理·此处不做）。
 > - **⬜ 待续**：① 刚体间互撞堆叠调参（现围栏收住·可再调）；② reroll 也接物理（现 reroll 仍走 2D rollPool）；③ 若要进 sim（确定性物理）须换定点/同步方案——owner 言明暂不需要。
 
 ---

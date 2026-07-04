@@ -784,7 +784,7 @@ export function mount(container: HTMLElement): () => void {
     // 物理掷骰：5 骰真物理落地（owner 2026-07-03）→ 落定读朝上面 = 确定点数。掷骰中 UI 走等待态。
     S.thrown = false; S.rolled = []; S.selected.clear(); S.disabled.clear(); S.phase = 'arena';
     S.msg = '掷骰中…骰子落地即见点数'; render();
-    throw3d.throw(dice, bgRoom * ROOM_SPACING, performance.now(), (results) => {
+    throw3d.throw(dice, bgRoom * ROOM_SPACING, performance.now(), rnd, (results) => {
       S.rolled = results;
       S.disabled = counterDisabled(S.rolled, S.foe.counter);
       S.selected.clear(); S.rerolls = REROLLS; S.thrown = true;
