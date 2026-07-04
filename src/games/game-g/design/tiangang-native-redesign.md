@@ -1,0 +1,88 @@
+# 天罡原生重设计（35 张全 review · GD 2026-07-04）
+
+> owner 2026-07-04：「重新设计天罡吧，都失效了。」——战斗核大改（掷战力骰 + 原生战力 + 三行为自由混 + 机关门退役）后，旧天罡大面积失效：
+> - **odds 概率系 4 张**：全部锚在**已退役的 logistic 胜率模型**（winFloor/kHard/noUpset），掷战力骰下无意义。
+> - **~14 张零效果**（op 不在 `TENGANG_OPS` 注册表·施法零效=空头卡）：擒王/疾行/泥沼/抢滩/铁索/驰援/舍车/调虎 + 6 张传说印记。
+> - **存活（原生战力·keep）**：power/combo/morale部分/stamina/draw/siege。
+> 本档 = 35 张逐张 review + 原生重设计（同 `disha-native-power-redesign` 原则）。**GD 出数据设计·程序A 落地 `TENGANG_OPS`/`TengangFx`（见 §四派单）。**
+
+## 一、原则（同地煞·掷战力骰下天罡怎么表达）
+- **弃 win%**（胜率下限/logistic k/免爆冷 全是死机制）→ 改**四落点**：**A.+战力(加法)** / **B.×战力(乘法%)** / **C.改掷算子**（临掷 mul/add/掷下界/掷两次取高·**掷骰主题最贴天罡**）/ **D.规则**（先手/擒王/督战/死守…）。
+- **折入新机制**：① **AOE 天罡新类**（owner「连携的对立面」·对一路/一片 −战力·§三）；② 自由混下"打天罡"随时可穿插·天罡即时性更强。
+- **概率系→掷骰系**：旧 odds 系锚 logistic·**重命名/重设为"改自己的战力骰"**——反而比旧的更贴"掷命/翻命"身份（骰子牌改骰子）。
+
+## 二、逐张 review（35 张 · keep/redesign/retire + 原生效果）
+
+### A 概率系 → ⭐掷骰系（4·全重设·logistic 死）
+| id | 名 | 旧(死) | **原生新设计（掷战力骰）** |
+|---|---|---|---|
+| `ghosthand` 鬼手 | odds:add+1 | 掷命+1(logistic) | **改掷 +2**（临掷加·这一掷稳稳偏你）→ 落点C |
+| `bedrock` 磐石 | winFloor+5% | 胜率下限(死) | **掷骰下界 +2**（你掷 `[3,P]` 而非 `[1,P]`·收窄下风·最差也不空手）→ 落点C·优雅原生 |
+| `leaddice` 灌铅骰 | kHard(死) | logistic 变硬 | **灌铅骰=掷两次取高**（loaded die·偏高端·强者愈强·名副其实）→ 落点C |
+| `irondice` 铁骰 | noUpset(死) | 免爆冷(死) | **占优必胜**：我前锋战力 ≥ 敌 → **免掷直接胜**（epic·占优稳拿·去悬念）→ 落点D规则 |
+
+### B 点数系 power（4·原生·KEEP·仅修 bug）
+| id | 名 | 现 | 处置 |
+|---|---|---|---|
+| `tigertally` 虎符 | 全军+2战力 | ✅ KEEP |
+| `arrowhead` 锋矢 | 每路最前+4 | ✅ KEEP·**修 bug**（现 filter:'front' 落到 else=全军+4·应只前锋·程序A 改 `powerFront`） |
+| `atlas` 擎天 | 最强×1.5 | ✅ KEEP（乘法·emergent） |
+| `fewtroops` 寡兵 | 本路≤3张各+6 | ✅ KEEP |
+
+### C 成组系 combo（2·连携·KEEP）
+`twinblade` 双锋(对子+6)·`tripod` 鼎立(三条+12) → ✅ KEEP（连携存活）。
+
+### D 将领系 morale（4）
+| id | 名 | 现 | 处置 |
+|---|---|---|---|
+| `bannerman` 旗手 | 主将光环 | ✅ KEEP |
+| `capturektg` 擒王 | killGeneralRout | 🔧 **零效果→实装规则**（斩敌主将→该路敌全溃·擒贼擒王·规则型) |
+| `grieve` 哀兵 | 主将斩→余部+14 | ✅ KEEP |
+| `deathwatch` 督战 | noRout | ✅ KEEP |
+
+### E 行军系 tempo（4·全零效果·实装或退役）
+| id | 名 | 现 | 处置 |
+|---|---|---|---|
+| `swiftmarch` 疾行 | advance+1 | 🔧 **实装**（该路兵 speed+1·抢攻·speed 机制已在） |
+| `mire` 泥沼 | slow 敌一路 | 🔧 **实装**（敌该路隔回合推进·拖节奏·明牌·公平） |
+| `ironchain` 铁索 | slow 敌全军 | 🔧 **实装**（同上·全军版·epic） |
+| `beachhead` 抢滩 | jumpToMid | 🔶 **审**：新兵直上中线=抢线·与"部署入家边格"冲突小·可实装；若嫌破坏铺场节奏→退役。GD 倾向**实装**（tempo 深度） |
+
+### F 续航系 stamina（3·KEEP）
+`veteran` 老兵·`unyield` 不屈·`relay` 薪火 → ✅ KEEP（续航存活）。
+
+### G 抽牌系 draw（3·KEEP·顺查自由混交互）
+`widehand` 广纳(手牌+2)·`flow` 川流(出牌补抽)·`tidewave` 战潮(遭遇返源泉) → ✅ KEEP。注：自由混 + 换牌下 `flow` 川流的"出牌补抽"更强（可连抽连打）·实装时留意别循环·GD sim 复核。
+
+### H 三路系 lane（3·零效果）
+| id | 名 | 现 | 处置 |
+|---|---|---|---|
+| `rush` 驰援 | reinforce+2兵 | 🔧 **实装**（指定路凭空+2兵·rule） |
+| `discard2` 舍车 | sacrifice→另两路+10 | 🔧 **实装**（弃一路·另两路各+10战力·田忌·rule） |
+| `lurefoe` 调虎 | forceMigrate | ⛔ **退役**：强制敌迁路 = 换路概念·而**换路已随机关门整套退役**(owner 2026-07-03)·此牌同源不合时宜。空出的传说槽给 AOE 新牌(§三)。 |
+
+### I 攻守系 siege（2·KEEP）
+`laststand` 死守(我家首破免疫)·`ram` 攻城锤(破家多chip) → ✅ KEEP（规则·homeHp 存活）。
+
+### J 流派印记 arcane（6·传说·零效果·🔶暂缓重构）
+6 张「集齐某流派→质变」(斩首/将领/铺场/田忌/同rank/odds印) 全零效果（用 `mark` 未接解释器）。**问题**：依赖"流派集齐"检测 + 各流派语义·而 odds 流派已重设为掷骰系、其余流派定义也随核心变。
+- **GD 裁断**：**暂缓·不在本批**。传说印记是"流派 build 的顶点奖励"·得先把**流派系统本身**定死（哪几个流派 × 各自集齐条件 × 质变效果）才谈得上·否则又是空头卡。**列入后续**（待流派体系定稿）·现从出货池**标未解锁/摘除**（防玩家买空头传说）。
+
+## 三、新增 · AOE 天罡类（owner「连携的对立面」· GD 提案）
+> 我们有"抱团=强"(连携)却缺"抱团=有风险"·加 AOE 补齐（详 `24 §…AOE 讨论`）。首批 2-3 张：
+| 拟 id | 拟名 | 效果（落点=范围−战力/规则） | 说明 |
+|---|---|---|---|
+| `firestorm` | 火攻 | 对**敌一路所有兵** −X 战力（范围削·克抱团） | AOE 核心·rare/epic |
+| `volley` | 齐射 | 对**敌一路最前 2 格** −X 战力 | 轻 AOE·rare |
+| （可选）`quagmire` | 塌方 | 敌一路全体 −战力 + 该路隔回合推进 | AOE+tempo·epic |
+> 数据形状：`{op:'aoePower', target:'enemy-lane', value:−X, span?:N}`——**新"多目标"瞄准形状**（程序A 加·同地煞未来 op 池思路）。数值 GD 待 sim 标。
+
+## 四、派单（程序A · TENGANG_OPS/TengangFx）+ 落地顺序
+1. **杀死机制**：删 `odds:winFloor`/`odds:kHard`/`odds:noUpset` + `TengangFx.winFloor/kHard/noUpset` 字段（logistic 残留）。
+2. **掷骰系新落点**（改掷层·配合 vision §2.2）：`鬼手`改掷+2 / `磐石`掷下界+2 / `灌铅骰`掷两次取高 / `铁骰`占优必胜——这几个要**改掷/掷解算钩子**（resolveClash 的 rollDie 侧）。
+3. **实装零效果 op**：`killGeneralRout`(擒王) / `advance`(疾行) / `slow`(泥沼·铁索) / `jumpToMid`(抢滩) / `reinforce`(驰援) / `sacrifice`(舍车) → 加进 `TENGANG_OPS`。
+4. **修 bug**：`arrowhead` 锋矢 front-only（现落全军）。
+5. **退役**：`lurefoe` 调虎（换路概念·随机关门退役）；6 张 arcane 印记标未解锁/摘出货池（待流派体系）。
+6. **新增 AOE 类**：`aoePower` 多目标 op + 首批 2-3 张（§三·数值待 GD sim 标）。
+> **GD 提缺口·程序A 施工**：本档 = 数据设计·代码归程序A（`REQ-G-天罡原生重构`）。落地后 GD 用 balance-sim 复核各天罡强度（尤其掷骰系 + AOE + 川流自由混交互）。
+> **顺序**：先 ①②③④⑤（修活现有 35→存活+实装+退役）· AOE(⑥) 与"连携对立面"一批做 · 流派印记(J) 待流派体系定稿另开。

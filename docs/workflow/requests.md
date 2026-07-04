@@ -597,3 +597,20 @@
 > **决策（owner OK）**：战场HUD不显·收藏界面可看；先单里程碑108(阶梯后续可选)；仅玩家收藏牌累计(Boss每关新16牌不累)。
 > **平衡**：慢(108杀≈25-35场/牌)+小(+1战力)=温和creep·sim当一档养成favor建模·真奖励是荣誉/收藏故事。
 > **排队**：与战斗核正交·排核心(动作模型/AOE/经济/玩家AI)拍死后开工·别往正动的地基加零件。
+
+---
+
+### REQ-G-天罡原生重构 · [2026-07-04] · design G → 程序A(TENGANG_OPS/改掷层)·程序B(AOE演出) · Game G · status: open · 优先级: **P1（核心大改后天罡大面积失效·出货前空头卡清零）** · 规格: `design/tiangang-native-redesign.md`
+
+> **owner 2026-07-04**：「重新设计天罡吧，都失效了。」——战斗核大改（掷战力骰 + 原生战力 + 三行为自由混 + 机关门退役）后，35 张天罡大面积失效：odds 概率系 4 张锚已退役 logistic 胜率模型、~14 张零效果（op 不在 `TENGANG_OPS`）、含 6 张流派印记空头卡。本档 = 逐张 review + 原生重设计（同 `disha-native-power-redesign` 原则·GD 出数据·程序A 落地）。
+> **与 REQ-G-修正栈迁移并虚胖清算 的关系**：那单是「把已实装 op 迁 t2-modifier-stack + 空头卡实装」的**通用清算**；本单是**天罡专项的原生语义重设计**（改掷层是新落点·超出纯 modifier 栈）——两单同域·建议**合批做**（先按本档定语义，再照修正栈迁移单落 ModifierSource + 改掷钩子）。
+> **程序A（逻辑）**：
+> 1. **杀死机制**：删 `odds:winFloor/kHard/noUpset` + `TengangFx` 对应字段（logistic 残留·掷战力骰下无意义）。
+> 2. **掷骰系新落点**（改掷层·resolveClash 的 rollDie 侧钩子）：`鬼手`改掷+2 / `磐石`掷下界+2（掷 `[3,P]` 非 `[1,P]`）/ `灌铅骰`掷两次取高 / `铁骰`占优必胜（我前锋战力≥敌→免掷直接胜）。
+> 3. **实装零效果 op** 进 `TENGANG_OPS`：`killGeneralRout`(擒王·斩敌主将→该路敌全溃) / `advance`(疾行·speed+1) / `slow`(泥沼·铁索) / `jumpToMid`(抢滩) / `reinforce`(驰援) / `sacrifice`(舍车·弃一路→另两路各+10)。
+> 4. **修 bug**：`arrowhead` 锋矢 front-only——现 `filter:'front'` 落到 else=全军+4，应只前锋（程序A 加 `powerFront` 或修 scope 判断）。
+> 5. **退役**：`lurefoe` 调虎（强制敌迁路=换路概念·随机关门整套退役同源不合时宜）；6 张 arcane 流派印记标未解锁/摘出货池（待流派体系定稿另开·防玩家买空头传说）。
+> **程序B（表现·可选·随 AOE 批）**：AOE 天罡范围削的场上演出（一路/一片红边）走 `t3-timeline`。
+> **新增 AOE 天罡类**（owner「连携的对立面」）：`aoePower` 多目标 op（`{op:'aoePower',target:'enemy-lane',value:-X,span?:N}`）+ 首批 2-3 张（火攻`firestorm`/齐射`volley`/塌方`quagmire`·数值 GD 待 sim 标）——**与地煞未来 op 池同思路的新"多目标瞄准形状"**。
+> **GD 回环**：程序A 落地后 GD 用 balance-sim 复核各天罡强度（尤其掷骰系边际 + AOE 数值 + `flow`川流在自由混+换牌下的连抽连打交互）。
+> **顺序**：先 ①②③④⑤（修活现有 35→存活+实装+退役）· AOE(⑥) 与「连携对立面」一批做 · 流派印记(J) 待流派体系定稿另开。
