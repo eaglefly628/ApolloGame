@@ -553,9 +553,17 @@
 > **spec（Lead 图纸）**：① 天罡 TENGANG_OPS 18 已实装 op + 地煞 DISHA_SPECS/DISHA_MERGE 迁移为 `ModifierSource` 行数据 + `aggregateModifiers` 纯函数核消费（夹具已证全覆盖，见 `src/skills/tier2/modifier-stack.test.ts`）；删 game-g-build.ts/disha.ts 两套自写解释器（tengangFxOf/aggregateDisha）。② 未实装的 18 张天罡（tempo/lane/arcane/擒王）与地煞文案：**能用 ModifierSource+现有字段表达的实装之，表达不了的从卡池摘除或标注未解锁**——出货前空头卡清零是硬标准。③ 概率门/顺序交织类效果按聚合栈边界文档留在原路径（modifier-stack.ts 头注）。④ 迁移前后战斗结算数值必须逐用例一致（现有 28 个测试文件全绿 + 天罡/地煞逐张对照测试）；`node scripts/game-skill-audit.mjs game-g` 能力接入面应 +1。门禁全绿直推。
 > 两个小瑕疵顺手带掉：modifier-stack describe 里 floor=下限钳语义写明白；同字段混用 or+数值算子的静默忽略加一行 warning 或文档。
 
-### REQ-G-演出迁时间线 · game-g 演出编排迁 t3-timeline · [2026-07-03] · 主程 → **指派：程序A · 排队：接战斗心流 Phase 工作完成后（与其自然衔接）** · status: **排队中**
+### REQ-G-演出迁时间线 · game-g 演出编排迁 t3-timeline · [2026-07-03] · 主程 → **指派：程序A** · status: **部分落地（程序B 已迁演出拍·owner 2026-07-03 应急派 B 先做）/ 余骨架退役待 A**
 > `t3-timeline` 已下沉（tick 制确定性 cue 调度器·skip 终态一致已测钉死），正是为 game-g.tsx:433-533 那 ~300 行手写演出编排（banner→cue→掷骰→结算时序）而生。
 > **spec（Lead 图纸）**：① 演出时序改 `Timeline` 数据（cue 闭集：signal/flag/resource/spawn），advancePerf/playPerf 手写状态机退役；表现层（浮层/动画）订阅 timeline 发的信号自行演。② 跳过演出（玩家加速）走 `skipOnSignal`（确定性快进，勿自写跳帧）。③ 战斗心流 Phase 新增的演出节拍直接用 Timeline 表达，别再扩手写编排。④ 参照 registry 条目 examples 与 `docs/playbooks/events-logic.md` 演出时序节。门禁全绿直推。
+>
+> **【交接·程序B 已代做部分 · 2026-07-03 · owner 应急派 B 当场先做·请转记 A 账/A 接手余下】**
+> owner 要"看清战斗 + 用 timeline 不手写"，当场派程序B 先落地（本 REQ 原指派 A）。**程序B 已交（全绿·已推 main·commit 见 git log game-g）**：
+> - **宿主底座**：`src/games/game-g/battle-timeline.ts` —— game-g 侧 t3-timeline 宿主（起只跑 timeline capability 的 World·逐帧 pump·把 cue 信号交表现层订阅自演）。支持并发多条 timeline + `delay(ticks,cb)`（单 cue timeline·替 setTimeout）。含并发/清理/复用测试（`battle-timeline.test.ts`）。
+> - **已迁上 timeline 的演出拍**：① 战后生死（clash:slay 斩→survivor 对折→resume 续场）；② 行军慢放清标记（move:settle·连带修 760ms 打断 1.25s 动画的 bug）；③ 演出横幅 `showBanner` + 战前锚场 cue `showClashCue` 的延时 → `battleTl.delay`。表现层订阅信号自演（playGhost/浮层），回调不塞自由时序。
+> - **UI 延时是否提新引擎能力**：程序B 评判**回驳**——manifesto §4「延时 N→回调」已被 `t3-timeline` 单 cue / `Timer` 原子覆盖，不新增；消费现成的（记此账避免 A 重提）。
+> **A 接手余下（结构级·B 未动）**：`perfQueue/playPerf/advancePerf` **整套回合骨架退役** → 一整回合编排成主 `Timeline`（玩家门控点用点击桥接/skipOnSignal），advancePerf/playPerf 手写状态机删除。B 侧订阅模式已铺好（战后段即样板）可复用。**故意留 setTimeout 的三处**（非演出拍·别硬迁）：`flash` 提示条(需即时取消)、`startThinking`(有意随机时长)、`doClashRoll` 数字滚(多帧 tick·宜 Label.tween 另议)。
+> **另·战斗核越界记账**：斯巴达方阵「改真·每兵+战力」（`turn-combat.ts` phalanxPower·本属 A 战斗域）owner 当场明授权 B 改·已交全绿——请 A 知悉该 sim 改动（每兵吃方阵总加成略增·owner 已拍板）。
 
 > 【衔接备忘 2026-07-03】P3D 的 game-d 接线单（REQ-GAMED：dice-roll 接入/detectPattern 真替换/per-run 种子/打回三条）同样为**排队态**——接现 3D 渲染线核心工作完成后开工，优先级由 owner 调度。
 ---
