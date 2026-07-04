@@ -365,8 +365,17 @@ export function mount(container: HTMLElement, shell?: { exit?: () => void }): ()
       } else {
         const wrap = document.createElement('div'); wrap.innerHTML = spec.html; const clone = wrap.firstElementChild as HTMLElement | null;
         if (clone) { clone.removeAttribute('id'); clone.style.width = spec.w + 'px'; clone.style.height = spec.h + 'px'; clone.style.flex = 'none'; clone.style.margin = '0';
-          clone.style.animation = fate === 'tear' ? 'g-tear .62s ease-in forwards' : fate === 'glory' ? 'g-glory .72s ease-out forwards' : 'g-charge .55s ease-in forwards';
-          outer.appendChild(clone); }
+          if (fate === 'tear') { // 一刀两断（owner 2026-07-03·REQ-G 满仪式§VFX「被切成两半的一刀」）：牌沿斜线裂上下两半分离 + 白热斩线闪。
+            const half = (top: boolean): HTMLElement => { const h = clone.cloneNode(true) as HTMLElement; h.style.cssText = `position:absolute;inset:0;width:${spec.w}px;height:${spec.h}px;margin:0;flex:none;clip-path:${top ? 'polygon(0 0,100% 0,100% 46%,0 54%)' : 'polygon(0 54%,100% 46%,100% 100%,0 100%)'};animation:g-slice-${top ? 't' : 'b'} .7s cubic-bezier(.3,.55,.35,1) forwards`; return h; };
+            const box = document.createElement('div'); box.style.cssText = `position:absolute;inset:0;width:${spec.w}px;height:${spec.h}px`; box.appendChild(half(true)); box.appendChild(half(false));
+            const slash = document.createElement('div'); slash.style.cssText = 'position:absolute;left:-14%;top:50%;width:128%;height:5px;background:linear-gradient(90deg,transparent,#fff 45%,#fff 55%,transparent);box-shadow:0 0 14px #fff,0 0 34px #ff3b30;animation:g-slash .5s ease-out forwards';
+            outer.appendChild(box); outer.appendChild(slash);
+          } else {
+            clone.style.animation = fate === 'glory' ? 'g-glory .72s ease-out forwards' : 'g-charge .55s ease-in forwards';
+            outer.appendChild(clone);
+            if (fate === 'glory') { const crown = document.createElement('div'); crown.textContent = '♔'; crown.style.cssText = 'position:absolute;left:50%;top:-30px;transform:translateX(-50%);font-size:38px;color:#ffe9a8;text-shadow:0 0 18px #f1d792,0 2px 6px #000;animation:g-crown .8s ease-out forwards'; outer.appendChild(crown); } // 胜者戴冠
+          }
+        }
       }
       const txt = note ?? (fate === 'tear' ? '⚔ 阵亡' : fate === 'glory' ? '★ 光荣回库' : fate === 'pin' ? '★ 钉守在场' : fate === 'fatigue' ? '战力对折' : '突破');
       const col = fate === 'tear' ? '#ff5d62' : fate === 'glory' ? '#f1d792' : fate === 'pin' ? '#f1d792' : fate === 'fatigue' ? '#ff8a4c' : '#8fe0ff';

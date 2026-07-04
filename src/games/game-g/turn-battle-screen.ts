@@ -86,6 +86,12 @@ const CSS = `
 @keyframes g-glory { 0%{transform:none;opacity:1;filter:drop-shadow(0 0 0 rgba(232,205,138,0))} 35%{transform:translateY(-12px) scale(1.06);filter:drop-shadow(0 0 16px rgba(232,205,138,.95)) brightness(1.25)} 100%{transform:translateY(-66px) scale(1.02);opacity:0;filter:drop-shadow(0 0 24px rgba(232,205,138,.9))} }
 /* 突破入营（无敌路推进到底·攻入敌家）：向前冲刺淡出。 */
 @keyframes g-charge { 0%{transform:none;opacity:1} 60%{opacity:1} 100%{transform:translateX(var(--chg,40px)) scale(.8);opacity:0;filter:brightness(1.4)} }
+/* 一刀两断（owner 2026-07-03·败者被切成两半的一刀·非淡出）：牌沿斜线裂成上下两半分离坠落 + 白热斩线扫过。 */
+@keyframes g-slice-t { 0%{transform:none;opacity:1;filter:none} 10%{transform:translate(-2px,-1px) rotate(-2deg);filter:brightness(1.7) drop-shadow(0 0 6px #ff3b30)} 100%{transform:translate(-30px,-42px) rotate(-17deg);opacity:0;filter:brightness(.5)} }
+@keyframes g-slice-b { 0%{transform:none;opacity:1;filter:none} 10%{transform:translate(2px,1px) rotate(2deg);filter:brightness(1.7) drop-shadow(0 0 6px #ff3b30)} 100%{transform:translate(28px,48px) rotate(15deg);opacity:0;filter:brightness(.4)} }
+@keyframes g-slash { 0%{opacity:0;transform:translateY(-50%) rotate(-9deg) scaleX(.15)} 26%{opacity:1;transform:translateY(-50%) rotate(-9deg) scaleX(1)} 100%{opacity:0;transform:translateY(-50%) rotate(-9deg) scaleX(1.12)} }
+/* 胜者戴冠（留场/光荣）：金冠自上砸落回弹 + 微光。 */
+@keyframes g-crown { 0%{transform:translateX(-50%) translateY(-26px) scale(.5);opacity:0} 55%{transform:translateX(-50%) translateY(2px) scale(1.22);opacity:1} 76%{transform:translateX(-50%) translateY(-2px) scale(.94)} 100%{transform:translateX(-50%) translateY(-6px) scale(1);opacity:1} }
 /* 离场标签（战败/光荣回库）浮字：升起淡出。 */
 @keyframes g-exitlabel { 0%{transform:translate(-50%,0) scale(.7);opacity:0} 25%{transform:translate(-50%,-10px) scale(1);opacity:1} 80%{opacity:1} 100%{transform:translate(-50%,-30px) scale(1);opacity:0} }
 /* 行军「浮起→悬停→落下」（owner 2026-07-03「移动要有 3D 感·慢一点看清怎么动」）：从旧格位(--dx/--dy)插值到新格·中途抬起 + 放大 + 落影渐深 → 像牌浮离棋面再落定。
