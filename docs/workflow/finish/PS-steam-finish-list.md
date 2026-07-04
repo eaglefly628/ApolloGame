@@ -47,6 +47,15 @@
 - **🟠 AppID split-brain → 修**：旧 `steam.cjs` 只读 `env/480`、无视发布工具写进 `steam_appid.txt` 的真 AppID → 打包后 `init(480)` 连 SpaceWar。改为 `resolveAppId()` 以同目录 `steam_appid.txt` 为单一真相（env 覆盖 > 文件 > 480 兜底），`status().appIdSource` 自检暴露来源。**打包路径需真机烧版核对**（`resourcesPath/../steam_appid.txt`）。
 - 🟡 待办（未改，behavior-changing/低优先，留真机 bring-up）：`restartAppIfNecessary` 最佳实践、`delete()` 索引回滚对称性。
 
+## 2026-07-04 · 创作台一键发布·PS 侧地基（REQ-PUBLISH·owner 指派）
+
+> owner 拍板：创作台 player 模式内做「打包→上传 Steam」一键流水线（承载面=studio 网页·深度=尽量一路到上传）。跨 PS↔PST 域，工单 `requests.md#REQ-PUBLISH-创作台一键发布` 待 Lead 裁域切分+派工。**PS 先起不依赖 UI 形态的管线地基**：
+
+- **稳定编排契约 `plan_pipeline(cfg)`**（`steam-publisher/serve.py`）：单一入口固化 build→生成 VDF→上传 的顺序与命令构造，dry-run 返回三步（不实际 build/upload），缺前置（未填 builder/depot）记 `blocked`+原因不抛（预览友好）。additive `POST /api/plan` 暴露。studio 接入时无论走「直连本地端口/apollo.py 转发/内嵌」都复用此纯函数。
+- **无真账号冒烟 `scripts/steam-publish-smoke.py`**（480·退出码门禁·同 `scripts/*-smoke.py` 约定）：20 断言验 VDF 格式(SteamPipe)/build·publish 命令/错误守卫/`plan_pipeline` 整条 dry-run；副作用重定向 temp 不脏化仓库。自证：破坏 VDF 格式→真红。已登记 `playbooks/testing.md`。
+- **Lead 裁决（2026-07-04）**：接入形态=**经 apollo.py 转发**（薄代理 `/api/publish/*` → serve.py·只透传不塞逻辑），非直连/非内嵌；PS 先行硬化契约（本地基）+ 后续补 `package→genVDF→upload` 三段 + 判词 token 收口；PST 随后接向导页 UI。
+- ⏳ 余：① apollo.py 加 `/api/publish/*` 薄代理（PST/服务面域）；② PST 接 player 模式「发布」向导页（选游戏/平台·填 AppID/DepotID/builder·进度日志·**三步不能自动做成显式向导页**）；③ PS 把 serve.py 契约补全到 Lead 点名的三段命名 + 判词 token。真上传三步（账号+$100 / steamcmd 登录 / 后台 Set Live）向导显式引导。
+
 ## 依赖 / 待 owner 提供
 
 - **Steam 合作伙伴账号 + 真 appid**（$100 一次性入门费）。拿到前用 480 测试 appid 跑通 P0–P3。

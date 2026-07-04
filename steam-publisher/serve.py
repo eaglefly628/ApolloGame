@@ -179,6 +179,26 @@ def login_argv(cfg):
         raise ValueError('未填 Steam builder 账号')
     return [cfg['steamcmd'] or 'steamcmd', '+login', cfg['builder'], '+quit']
 
+# ── 稳定编排契约（供 studio 接入 / 冒烟 dry-run 预览整条流水线）───────────────────
+def plan_pipeline(cfg):
+    """返回将依次执行的流水线步骤（build → 生成 VDF → 上传），**不实际 build/upload**。
+    单一入口固化编排顺序与命令构造，供 studio 接入前 dry-run 校验或 GUI 预览；无真账号用
+    480 即可验编排正确。副作用同「生成配置」按钮：真写 out/*.vdf + 仓库根 steam_appid.txt
+    （幂等），只是不触发 electron-builder / steamcmd。真跑仍走 /api/run（build / gen-and-publish）。
+    某步缺前置（如未填 builder / 无 depot）→ 该步记 blocked+原因，不抛（预览友好）。"""
+    steps = []
+
+    def add(step, produce):
+        try:
+            steps.append({'step': step, **produce()})
+        except ValueError as e:
+            steps.append({'step': step, 'blocked': str(e)})
+
+    add('build',   lambda: {'cwd': 'REPO', 'argv': build_argv(cfg)})
+    add('gen-vdf', lambda: {'out': OUT, 'files': sorted(gen_vdf(cfg).keys())})
+    add('publish', lambda: {'cwd': 'OUT', 'argv': publish_argv(cfg)})
+    return steps
+
 # ── HTTP ─────────────────────────────────────────────────────────────
 class Handler(http.server.BaseHTTPRequestHandler):
     def log_message(self, *a):
@@ -237,6 +257,10 @@ class Handler(http.server.BaseHTTPRequestHandler):
                 cfg = save_config(body.get('config', load_config()))
                 files = gen_vdf(cfg)
                 return self._json({'ok': True, 'files': files, 'dir': OUT})
+            if path == '/api/plan':
+                # dry-run 预览整条流水线（不 build/upload）；供 studio 接入 / GUI 预览。
+                cfg = save_config(body.get('config', load_config()))
+                return self._json({'ok': True, 'steps': plan_pipeline(cfg)})
             if path == '/api/run':
                 cfg = save_config(body.get('config', load_config()))
                 action = body.get('action', '')

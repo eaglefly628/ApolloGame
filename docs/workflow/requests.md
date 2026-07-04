@@ -28,12 +28,14 @@
 >
 > **必须显式标给用户的「不能自动」三步（architect 诚实·Valve 无 API）**：① 用户自己的 $100 合作伙伴账号 + 真 AppID/DepotID；② 本机装 steamcmd + 首次缓存登录（Steam Guard 令牌需终端手输一次）；③ 上传后后台 **Set Live**（防误推线上·故意手动）。故「一路到 Steam」= 自动到 upload 为止 + 向导显式引导这三步，非黑箱全自动（细节 `steam-publisher/RELEASE-PROCESS.md`）。
 >
-> **请 Lead 裁**：a) 域切分是否如上（PST 接 UI / PS 供管线 API）；b) 接入形态——studio 直连 steam-publisher 本地端口 vs 经 apollo.py 转发 vs 内嵌重写；c) 派工。**PS 可先起步**：把 `serve.py` 编排 API 硬化成稳定契约 + 补冒烟测（无真账号用 480 + mock 跑通编排），等 PST 接 UI。
+> **请 Lead 裁**：a) 域切分是否如上（PST 接 UI / PS 供管线 API）；b) 接入形态——studio 直连 steam-publisher 本地端口 vs 经 apollo.py 转发 vs 内嵌重写；c) 派工。
 >
 > **Lead 裁决（2026-07-04）**：
 > a) **域切分照准**——与角色卡边界严丝合缝（PST=studio 前端+apollo.py 服务面；PS=steam-publisher 管线），无需调整。
 > b) **接入形态=经 apollo.py 转发**（薄代理 `/api/publish/*` → steam-publisher serve.py）。理由：①studio 前端现在只认一个后端缝（`/api/*` 相对路径），M5 Electron 打包正靠这条缝换传输层——直连第二个本地端口会破缝+引 CORS+双服务生命周期；②发布是危险面操作，收进 apollo.py 统一走已有的路径防护/审计口；③内嵌重写=造第二套管线，回驳。转发层**只透传不塞逻辑**（进度/日志流原样代理）。
 > c) **派工**：PS 先行（自请照准）——serve.py 编排 API 硬化成稳定契约（`package→genVDF→upload` 三段 + 进度/日志 + 判词 token 收口）+ mock/480 冒烟；PST 随后接 player 模式发布区 UI（**「三步不能自动」必须做成显式向导页**，不许藏在文档里）；两段各自门禁绿，联调验收=Lead。P2 维持（各自接在当前核心工作之后）。status 更新 → **裁决完毕·PS 可先行**。
+>
+> **PS 地基已落（2026-07-04·owner「可以先做」+ Lead 裁准 PS 先行）**：`serve.py` 加稳定编排契约 `plan_pipeline(cfg)`（build→VDF→上传 dry-run·缺前置记 blocked 不抛）+ additive `POST /api/plan`（照 Lead b) 由 apollo.py 薄代理 `/api/publish/*` 透传即用）；无真账号冒烟 `scripts/steam-publish-smoke.py`（480·20 断言·退出码门禁·自证可红·登记 testing 手册）。此即 Lead 要的「serve.py 硬化成稳定契约」起步。**待 apollo.py 加 `/api/publish/*` 薄代理 + PST 接向导页 UI**。详见 `finish/PS-steam-finish-list.md`。
 
 ### REQ-QA-发行测试假信心修 · mock-steam 排序 / achievements 幂等 断言补全 · [2026-07-04] · 主程（测试意义性复核撞到）→ **发行工程师（PS）域** · status: **✅ done（PS 2026-07-04·两处断言补全 + 自证红·门禁全绿）** · 优先级: P2（小·非阻塞·但属「假信心」测试=比没测更糟） · 类型: 测试正确性修（断言没验测试名声称的行为）
 > **✅ 完工（PS 2026-07-04）**：① `mock-steam.test.ts` 排行榜——给 `leaderboard` 事件补 `board` 快照（经既有 `onEvent` 通道观测·不碰 SteamBridge 契约/不耦合 LS key），断言乱序上传 30/90/60 后榜单 `[90,60,30]` 降序 + 严格非递增。② `achievements.test.ts` 幂等——改为 toast 计数：同端口再解锁 + 跨持久化二次端口解锁，均断言仍恰 1 个 toast（旧断言只验 `isAvailable` 常量）。**验收自证**：临时去 mock 排序 → ① 红（`[30,90,60]≠[90,60,30]`）；临时去幂等守卫 → ② 红（`expected 2 to be 1`）；恢复后 tsc + vitest(2245) + build 全绿。边界内（仅两 `*.test.ts` + mock 事件补 `board` 字段）。
