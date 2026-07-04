@@ -17,6 +17,7 @@ import { cardPoints } from './clash-resolve.js';
 import { playSfx, isSfxOn, toggleSfx } from './sound.js';
 import { startBgm, stopBgm, toggleBgm as toggleBgmState, selectBgm as selectBgmState, setBgmVolume, isBgmOn, bgmTrackIdx, bgmVolume, BGM_TRACKS } from './bgm.js';
 import { makeCoachWorld, nextCoachStep, type BattleCoachStep } from './battle-coach.js';
+import { mountBattleTimeline } from './battle-timeline.js'; // 战斗演出走引擎 t3-timeline（owner 2026-07-03「用 timeline·不手写排程」）
 import { mountOnboardingOverlay } from '@ui/onboarding-overlay.js';
 import { mountUI } from '@ui/components/index.js'; // 引擎数据驱动 UI 解释器（采纳·替手写 DOM）
 import type { LayoutNode, ButtonProps, LabelProps, PanelProps, ScreenProps } from '@ui/components/types.js';
@@ -429,6 +430,19 @@ export function mount(container: HTMLElement, shell?: { exit?: () => void }): ()
     let clashRevealed = false; let clashCdTimer = 0; let clashCdInterval = 0; let clashRolling = false;
     let aiManaDisplay: number | null = null; // 敌方决策时源泉「随落牌错峰递减」的展示覆盖值（owner 2026-07-03「别直接跳 0·要看它啪啪啪扣」）·null=显真值
     const clearClashTimers = (): void => { if (clashCdTimer) { clearTimeout(clashCdTimer); clashCdTimer = 0; } if (clashCdInterval) { clearInterval(clashCdInterval); clashCdInterval = 0; } };
+    // ── 战后生死演出走引擎 t3-timeline（owner 2026-07-03「用 timeline·不手写排程」）──
+    // timeline 管「何时」发拍（clash:slay 败者阵亡 → clash:survivor 幸存者去留 → clash:resume 续下一场），本订阅管「怎么演」（playGhost·锚真实棋盘 u-id）。
+    // 拍点 tick≈帧（60fps）：0 / 31(≈520ms) / 71(≈1180ms)——逐字对齐旧 setTimeout 两拍窗口，只是时序改由 timeline 数据出。
+    let postClashCtx: { e: ClashEvent; loserId: string | undefined; winnerId: string | undefined; cut: number; streak: number } | null = null;
+    const battleTl = mountBattleTimeline((sig) => {
+      const ctx = postClashCtx; if (!ctx) return; const e = ctx.e;
+      if (sig.name === 'clash:slay') { // ① 败者阵亡（先死·清楚）
+        if (ctx.loserId && !e.lastStand) { playSfx('clashLose'); playGhost(exitCaps.get(ctx.loserId) ?? null, 'tear'); }
+        else if (e.lastStand) { log(`🛡 死战不退：敌主将【${aiName}】首负不亡·残喘退守 1 格`); showBanner('🛡 死战不退 · 敌主将首负不亡', 1500); }
+      } else if (sig.name === 'clash:survivor') { // ③ 幸存者去留：连胜满→光荣回库 / 否则头顶「战力对折 −N」
+        if (ctx.winnerId && !e.lastStand) { playSfx('clashWin'); if (e.winStays === false) playGhost(exitCaps.get(ctx.winnerId) ?? null, 'glory'); else playGhost(exitCaps.get(ctx.winnerId) ?? null, 'fatigue', `连胜${ctx.streak}场 · 战力−${ctx.cut}（对折）`); }
+      } else if (sig.name === 'clash:resume') { postClashCtx = null; const r = perfResume; if (r) r(); } // ④ 收场续下一场
+    });
     const buildClashView = (): TurnClashView | null => { if (!perfClash) return null; const cv = clashToTurnView(perfClash, tgName, save.inlays); cv.revealed = clashRevealed; return cv; };
     const view = (): TurnBattleView => buildTurnBattleView(tb, { theme, tengangName: tgName, tengangDesc: tgDesc, selMode, selHand, clash: buildClashView(), bossName: aiName, sha: shaLive(), notice, movedIds: justMovedIds, freshIds, dealtId: dealtId ?? undefined, battleLabel, sfxOn: isSfxOn(), settingsOpen, bgmOn: isBgmOn(), bgmIdx: bgmTrackIdx(), bgmVol: bgmVolume(), bgmNames: BGM_TRACKS.map((t) => t.name), guideOn: !save.skipGuide, inlays: save.inlays, waterBDisplay: aiManaDisplay ?? undefined, enchOf: (rank, suit) => (save.inlays[String(cardFavorIndex(rank + suit))] ?? []).map((e) => [`${e.b}${DIZHI_TIER_NM[e.t]}`, DIZHI_INLAY_FAVOR[e.t]] as [string, number]) });
     let mounted: { update: () => void; destroy: () => void } | null = null;
@@ -577,20 +591,16 @@ export function mount(container: HTMLElement, shell?: { exit?: () => void }): ()
         clearClashTimers();
         if (!perfClash) { const r = perfResume; if (r) r(); return; }
         playSfx('confirm'); const e = perfClash;
-        // 一步步清晰（owner 2026-07-01「结算表现要一步步·先表现出谁死·再把幸存者减多少战力写在头上」）：
-        //   ① 先演败者阵亡（谁死一目了然）→ ② 停顿 → ③ 幸存者头顶「战力对折 −N」（或连胜满→光荣回库）→ ④ 收场续下一场。
+        // 一步步清晰（owner 2026-07-01「先表现谁死·再把幸存者减多少战力写头上」）：演出时序改由**引擎 t3-timeline** 出（owner 2026-07-03「用 timeline·不手写排程」）——
+        //   ① clash:slay 败者阵亡 → ③ clash:survivor 幸存者去留（战力对折/光荣回库）→ ④ clash:resume 续下一场。表演在上面的 battleTl 订阅里（playGhost·锚 u-id）。
         const loserId = e.aWins ? e.b.id : e.a.id; const winnerId = e.aWins ? e.a.id : e.b.id;
         const w = e.aWins ? e.a : e.b; const cut = w.pEff - Math.floor(w.pEff / 2); const streak = e.winStreak ?? 1; // 本场胜者：连胜场数 + 战力对折削减量（owner「写清连胜多少场·扣了多少」）
-        if (loserId && !e.lastStand) { playSfx('clashLose'); playGhost(exitCaps.get(loserId) ?? null, 'tear'); } // ① 败者阵亡（先死·清楚）
-        else if (e.lastStand) { log(`🛡 死战不退：敌主将【${aiName}】首负不亡·残喘退守 1 格`); showBanner('🛡 死战不退 · 敌主将首负不亡', 1500); }
-        window.setTimeout(() => { // ③ 幸存者去留：连胜满→光荣回库 / 否则头顶「战力对折 −N」
-          if (winnerId && !e.lastStand) {
-            playSfx('clashWin');
-            if (e.winStays === false) playGhost(exitCaps.get(winnerId) ?? null, 'glory'); // 连胜满 → 光荣回库 + 返泉
-            else playGhost(exitCaps.get(winnerId) ?? null, 'fatigue', `连胜${streak}场 · 战力−${cut}（对折）`); // 留场续战·写清「连胜几场·扣了多少战力」（owner 2026-07-01）
-          }
-        }, 520);
-        window.setTimeout(() => { const r = perfResume; if (r) r(); }, 1180); // 给「谁死→再对折」两拍演出窗口，再续下一场
+        postClashCtx = { e, loserId, winnerId, cut, streak };
+        battleTl.play({ id: 'clash-settle', cues: [
+          { at: 0, do: { kind: 'signal', signal: 'clash:slay' } },     // ① 败者阵亡（先死·清楚）
+          { at: 31, do: { kind: 'signal', signal: 'clash:survivor' } }, // ③ ≈520ms 后幸存者去留
+          { at: 71, do: { kind: 'signal', signal: 'clash:resume' } },   // ④ ≈1180ms 后收场续下一场（给「谁死→再对折」两拍窗口）
+        ] });
       },
       clashRoll: () => doClashRoll(), // 各自掷战力骰（owner 2026-07-01·两骰同屏各掷自己战力范围）
       goBack: () => {
@@ -697,7 +707,7 @@ export function mount(container: HTMLElement, shell?: { exit?: () => void }): ()
     };
     root.appendChild(dbgBtn); // 挂 root(非 stage·避免 mountTurnBattle 重渲抹掉)·左下角
 
-    stopLoop = () => { perfResume = null; clearClashTimers(); if (noticeTimer) { clearTimeout(noticeTimer); noticeTimer = 0; } if (thinkTimer) { clearTimeout(thinkTimer); thinkTimer = 0; } if (thinkEl) { thinkEl.remove(); thinkEl = null; } if (coach) { window.removeEventListener('resize', onCoachResize); coach.destroy(); } }; // 离场：弃未决特写续演 + 清硬币浮层/倒计时 + 清提示计时 + 清思考蒙层 + 卸引导
+    stopLoop = () => { perfResume = null; postClashCtx = null; battleTl.destroy(); clearClashTimers(); if (noticeTimer) { clearTimeout(noticeTimer); noticeTimer = 0; } if (thinkTimer) { clearTimeout(thinkTimer); thinkTimer = 0; } if (thinkEl) { thinkEl.remove(); thinkEl = null; } if (coach) { window.removeEventListener('resize', onCoachResize); coach.destroy(); } }; // 离场：弃未决特写续演 + 停战斗演出 timeline + 清硬币浮层/倒计时 + 清提示计时 + 清思考蒙层 + 卸引导
 
     function settleTurn(): void {
       const survA = tb.lanes.reduce((s, L) => s + L.a.length + L.spentA, 0);

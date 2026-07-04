@@ -51,19 +51,23 @@ export function createBattleTimeline(): {
   return { world, play, pump };
 }
 
-// live 宿主：rAF 逐帧 pump·把信号交表现层。onSignal 收 timeline 每条 cue 信号（含播完 `timeline:done:<id>`）。
-// 返回 { play(一次性 timeline), destroy() }。空闲（无在播 timeline）自动停 rAF·省电；再 play 自动续。
+// live 宿主：逐帧 pump·把信号交表现层。onSignal 收 timeline 每条 cue 信号（含播完 `timeline:done:<id>`）。
+// 返回 { play(一次性 timeline), destroy() }。空闲（收到 done）自动停·省电；再 play 自动续。
+// ⚠ 用 `setTimeout(16)` 而非 requestAnimationFrame——① 假计时器(vi.runAllTimers)能推进（战斗流程测试靠它快进演出·rAF 不受控会挂死 OOM）；
+//   ② 每帧仅在**未收到 done 前**重排（收到 done 即停·非自增死循环·runAllTimers 有限步收敛）；真机 setTimeout(16)≈60fps 够演出粗粒度。
 export function mountBattleTimeline(onSignal: (sig: EmittedSignal) => void): { play: (spec: TimelineSpec) => void; destroy: () => void } {
   const core = createBattleTimeline();
-  let raf = 0; let live = 0; // live=还需泵几帧（收到 done 前持续）
+  let timer = 0; let live = 0; // live=还需泵几帧（收到 done 前持续）·>0 才重排
+  const FRAME = 16;
   const loop = (): void => {
+    timer = 0;
     const sigs = core.pump();
-    for (const s of sigs) { onSignal(s); if (s.name.startsWith('timeline:done:')) live = Math.min(live, 6); }
+    for (const s of sigs) { onSignal(s); if (s.name.startsWith('timeline:done:')) live = Math.min(live, 3); }
     live -= 1;
-    if (live > 0) raf = requestAnimationFrame(loop); else raf = 0;
+    if (live > 0) timer = window.setTimeout(loop, FRAME); // 收到 done→live 收敛到 0→停排（非无限自增·假计时器可收敛）
   };
   return {
-    play: (spec) => { core.play(spec); live = 6000; if (!raf) raf = requestAnimationFrame(loop); }, // 起播·上限 100s 兜底防泄漏（正常收到 done 即停）
-    destroy: () => { if (raf) cancelAnimationFrame(raf); raf = 0; live = 0; },
+    play: (spec) => { core.play(spec); live = 900; if (!timer) timer = window.setTimeout(loop, FRAME); }, // 起播·上限兜底防泄漏（正常收到 done 即停）
+    destroy: () => { if (timer) clearTimeout(timer); timer = 0; live = 0; },
   };
 }
