@@ -228,7 +228,8 @@
 
 ---
 
-### REQ-026 · [2026-06-26] · PA · game-h 你造我塔/是男人就X层 · status: open · 优先级: P1(rope/spring) P2(conveyor/respawn) · 类型: 真缺口（想象力机关 = effect 写不了 Velocity/Transform、无双体约束）
+### REQ-026 · [2026-06-26] · PA · game-h 你造我塔/是男人就X层 · status: **⏸ 暂缓/搁置（owner 2026-07-04 拍板先移出活跃池·暂不下沉评估）** · 优先级: P1(rope/spring) P2(conveyor/respawn) · 类型: 真缺口（想象力机关 = effect 写不了 Velocity/Transform、无双体约束）
+> 【Lead 注 2026-07-04】owner 指示先搁置本条（暂不做弹簧/绳索/传送带/重生的引擎下沉评估）。记录与下方分析全保留；要重启时按现有拆解（P1 rope+spring 先做）直接接续，无需重提。game-h 现「召唤二重奏版」可玩可测，本条不阻塞。
 
 **标题**：缺"会动的平台个性"与"双体绳索"——参考 NS-SHAFT(平台有个性) + Pico Park(身体当机关) 的灵魂机关当前组合不出
 
