@@ -11,9 +11,10 @@
 
 ## 2. 开工必读（按序·T0 不重复）
 
+0. **`docs/workflow/finish/PA-asset-handoff.md`**（P3D→PA 移交实况：现状 + 待办 backlog + 边界 + 锚点·**先读这个**）
 1. **`.claude/agents/asset-manager.md`**（agent 定义=本角色主体职责与工作法）
 2. `docs/playbooks/assets.md`（资产线手册）
-3. `docs/design/asset-pipeline-review.md`（资产管线现状/评审）
+3. `docs/design/asset-pipeline-review.md`（资产管线现状/评审）+ `docs/workflow/finish/P3D-asset-layer-handoff.md`（统一 Asset 层设计真相/契约）
 
 ## 3. 技能与工具
 
