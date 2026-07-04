@@ -122,6 +122,9 @@ function runBattle(
   seed: number,
   bossDelta = 0, // Boss/敌方 favorBias 调校量（标定 Boss 牌力的旋钮·design G 扫）
   skill = 1, // 玩家决策档（owner 2026-07-03）：1=贪心脚本(对照) · 3=中级搜索(N=1) · 5=终极前向推演(N≥2+beam+Boss推演)
+  mirror = false, // ★裸镜像诊断（程序A 2026-07-04·design G 验收「双方同牌·公平底层」）：Boss 牌也 base-override(同玩家口径)
+                  //   + 无地煞 + 无开局布防 → 真·同牌同规则，只留「玩家 AI vs Boss AI」的纯算法对决(+玩家地支+先手)。
+                  //   用途：证明两套 AI 旗鼓相当。**非真机关卡口径**——真机 Boss 强弱由牌力/地煞/布防叠(见下方常规 runBattle 支)。
 ): BattleResult {
   const lvl = loadLevel(stage);
   const spec = battleSpec(battleIdx);
@@ -144,25 +147,30 @@ function runBattle(
   // 养成强弱只来自下方地支附魔(inlayFavor)；deckBias 仅再作 inlay 量分档(新手/进阶/老手·见 PlayerCfg)。
   // 真机每侧只 1 主将（玩家 deck 1 个 general·Boss 1 个 hero）；armyFromFormation 每路 1 个=3 个 → 收成 1 个最强（否则 Boss 3 主将原地死守=三路全堵·远比真机难）。
   const oneGeneral = (army: ArmyCard[]): ArmyCard[] => { let gi = 0; for (let i = 1; i < army.length; i++) if (army[i].favor > army[gi].favor) gi = i; return army.map((c, i) => ({ ...c, general: i === gi })); };
-  const aBase = oneGeneral(a.map((c) => ({ ...c, favor: Math.max(5, Math.min(95, cardPoints(cardRank(c)) * 3 + 5)) })));
+  const baseFavor = (c: ArmyCard): ArmyCard => ({ ...c, favor: Math.max(5, Math.min(95, cardPoints(cardRank(c)) * 3 + 5)) });
+  const aBase = oneGeneral(a.map(baseFavor));
   // 地支附魔：把玩家整体养成的 inlayFavor 摊到最值得镶的核心英雄上（owner 要求 sim 计入地支加成）。
   const aInlaid = applyInlayFavor(aBase, pcfg.inlayFavor);
+  // ★镜像模式：Boss 牌也 base-override(同玩家口径·真·同牌)。常规模式沿旧口径(Boss 保 rankFavor·牌力偏置=真机难度的一部分)。
+  //   注(程序A 2026-07-04)：常规支里 Boss **未** base-override → Boss 每张兵有效战力比玩家 base 高 ~8-12（见 _mirror 诊断）；
+  //   这是「Boss 牌力」难度旋钮的既成事实(line 132 注释的『都按基础牌』意图与代码有出入)·非玩家 AI 弱·balance/economy 线裁决(design G)。
+  const bDeck = oneGeneral(mirror ? b.map(baseFavor) : b);
 
   const aTengang: TengangHandCard[] = pcfg.tiangang.map((id) => ({ kind: 'tengang', id }));
   const bTengang: TengangHandCard[] = lvl.boss.tiangang.map((id) => ({ kind: 'tengang', id }));
 
   const tb = initTurnBattle({
     seed,
-    disha: lvl.boss.disha,
+    disha: mirror ? [] : lvl.boss.disha, // 镜像：无地煞(玩家无地煞·对称)
     aiProfile: lvl.boss.aiProfile,
     aiTier: lvl.boss.aiTier,
     a: { pokerDeck: seededShuffle(aInlaid.map(toPoker), seed ^ 0x9e37), tengangDeck: aTengang },
-    b: { pokerDeck: seededShuffle(oneGeneral(b).map(toPoker), seed ^ 0x51ed), tengangDeck: bTengang },
+    b: { pokerDeck: seededShuffle(bDeck.map(toPoker), seed ^ 0x51ed), tengangDeck: bTengang },
   });
 
   for (let i = 0; i < OPENING_HAND && tb.a.pokerDeck.length; i++) tb.a.hand.push(tb.a.pokerDeck.shift()!);
   for (let i = 0; i < OPENING_HAND && tb.b.pokerDeck.length; i++) tb.b.hand.push(tb.b.pokerDeck.shift()!);
-  bossOpeningGarrison(tb, BOSS_GARRISON_MANA, aggregateTengang); // 开局布防（owner 2026-06-29·敌方开场设防·与 live 一致）
+  if (!mirror) bossOpeningGarrison(tb, BOSS_GARRISON_MANA, aggregateTengang); // 开局布防（owner 2026-06-29·敌方开场设防·与 live 一致）；镜像：无布防(对称)
 
   let firstClashTurn = -1, firstScoreTurn = -1, prevClash = 0, prevHA = tb.homeA, prevHB = tb.homeB;
   const MAX_TURNS = 300;
@@ -196,11 +204,11 @@ function runOnce(stage: number, pcfg: PlayerCfg, baseSeed: number, bossDelta = 0
 
 // ── Report printer ──
 
-function runBattleSim(stage: number, battleIdx: number, pcfg: PlayerCfg, runs: number, label: string, bossDelta = 0, skill = 1): void {
+function runBattleSim(stage: number, battleIdx: number, pcfg: PlayerCfg, runs: number, label: string, bossDelta = 0, skill = 1, mirror = false): void {
   let wins = 0, losses = 0, timeouts = 0, totalTurns = 0, totalClashes = 0, totalFC = 0, totalFS = 0;
   const t0 = Date.now();
   for (let i = 0; i < runs; i++) {
-    const r = runBattle(stage, battleIdx, pcfg, 100 + i * 7919, bossDelta, skill);
+    const r = runBattle(stage, battleIdx, pcfg, 100 + i * 7919, bossDelta, skill, mirror);
     if (r.winner === 'a') wins++;
     else if (r.winner === 'timeout') timeouts++;
     else losses++;
@@ -278,6 +286,26 @@ runBattleSim(STAGE, BOSS_BATTLE, NEWBIE, AI_RUNS, '终极 skill5（前向推演�
 console.log('\n【关1 完整通关率（5战全胜）· 新手装备 · bossDelta=0】');
 runStageSim(STAGE, NEWBIE, AI_RUNS, '贪心 skill1（对照）', 0, 1);
 runStageSim(STAGE, NEWBIE, AI_RUNS, '终极 skill5（前向推演）', 0, 5);
+
+// ── ★裸镜像诊断（程序A 2026-07-04·design G 验收「两套 AI 旗鼓相当·公平底层成立」）──────────────────────
+// 背景：design G 观察到「关1 Boss 战」skill5 仅 ~17% → 疑玩家 AI 弱。**诊断结论：不是玩家 AI 弱**。
+//   关1 Boss 战**不是镜像**——常规 runBattle 里 Boss 牌保 rankFavor(K=80/Q=66/…)、玩家牌被压到 base(cardPoints×3+5)，
+//   Boss 每张兵有效战力高玩家 ~8-12（clash 掷 [1,战力] 比大小 → 玩家系统性吃牌力亏·非算法亏）。
+// 下面用**真·镜像**(mirror=true：Boss 牌也 base-override + 无地煞 + 无布防·玩家仍带地支+先手) 隔离出「纯 AI vs AI」：
+//   若玩家 AI 真弱→镜像也会 <50%；实测 skill5 ~80% ≫ 50%、且 skill1<skill3<skill5 单调 → **玩家 AI 已足够强**。
+//   真机难度该由 Boss 牌力/地煞/布防(明牌)承担 → 交 design G/balance 线定夺(见报告 push-back)。
+const MIRROR_RUNS = 150;
+console.log('\n╔══════════════════════════════════════════════════════════╗');
+console.log('║  ★裸镜像诊断 · 双方同牌同规则 · 玩家+地支+先手 · N=' + MIRROR_RUNS + '     ║');
+console.log('╚══════════════════════════════════════════════════════════╝');
+console.log('（Boss 牌 base-override=与玩家同口径·无地煞·无布防 → 只留 玩家AI vs BossAI 的纯算法对决）');
+console.log('\n【关1 裸镜像·分档单调（skill1<3<5 = 高档更会打）· 新手装备】');
+runBattleSim(STAGE, BOSS_BATTLE, NEWBIE, MIRROR_RUNS, '贪心 skill1（地板对照）', 0, 1, true);
+runBattleSim(STAGE, BOSS_BATTLE, NEWBIE, MIRROR_RUNS, '中级 skill3（N=1 评估）', 0, 3, true);
+runBattleSim(STAGE, BOSS_BATTLE, NEWBIE, MIRROR_RUNS, '终极 skill5（前向推演）', 0, 5, true);
+console.log('对照·同装备但常规口径(Boss 保 rankFavor 强牌·满地煞布防=真机关1 Boss 战)：');
+runBattleSim(STAGE, BOSS_BATTLE, NEWBIE, MIRROR_RUNS, '终极 skill5（常规·非镜像）', 0, 5, false);
+console.log('→ 裸镜像 skill5 ≫ 50% 证明「玩家 AI 已够强」；常规口径低=Boss 牌力/地煞难度旋钮所致·非 AI 弱。');
 
 console.log('\n【地支/天罡 消融实验 · 新手 deckBias=3 · 通关率】');
 runStageSim(STAGE, { deckBias: 3, tiangang: [], inlayFavor: 0 }, RUNS, '裸装(无天罡·无地支)');
