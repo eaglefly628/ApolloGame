@@ -21,7 +21,7 @@ function oldTengangFxOf(cards: Iterable<TgCard>): TengangFx {
       case 'odds:winFloor': fx.winFloor += v / 100; break;
       case 'odds:kHard': fx.kHard += v; break;
       case 'odds:noUpset': fx.noUpset += 1; break;
-      case 'power:mul': if (p.scope === 'highestRank') fx.powerMulHighest = Math.max(fx.powerMulHighest, v); break;
+      case 'power:mul': if (p.filter === 'highest' || p.scope === 'highestRank') fx.powerMulHighest = Math.max(fx.powerMulHighest, v); break; // 空头卡修（片3）：擎天 filter:'highest' 现生效
       case 'power:add':
         if (p.filter === 'countLE3') fx.powerLE3 += v;
         else if (p.filter === 'sameSuit') fx.powerSameSuit += v;
@@ -58,6 +58,12 @@ describe('Game G · 天罡聚合迁移守护（tengangFxOf 走 aggregateModifier
     }
     expect(tengangFxOf(ALL)).toEqual(oldTengangFxOf(ALL));
     expect(tengangFxOf([])).toEqual(NO_TENGANG);
+  });
+
+  it('空头卡修·擎天 atlas：filter:"highest" 现生效 → powerMulHighest=1.5（曾 no-op·REQ-G 片3）', () => {
+    const atlas = TIANGANG_BY_ID.get('atlas')! as unknown as TgCard;
+    expect(atlas.params).toMatchObject({ op: 'mul', value: 1.5, filter: 'highest' });
+    expect(tengangFxOf([atlas]).powerMulHighest).toBe(1.5); // 修前=0（空头）·修后=1.5
   });
 
   it('aggregateTengang(ids) === tengangFxOf(查表卡)（id→卡→行 链路一致）', () => {
