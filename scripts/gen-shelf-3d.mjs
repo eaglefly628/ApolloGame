@@ -6,9 +6,10 @@
 //
 // 边界：只写共享货架 assets/index.json（+ assets/{meshes,textures,env}/ 文件）。渲染消费端(P3D)不动。
 
-import { readFileSync, writeFileSync, mkdirSync } from 'node:fs';
+import { readFileSync, writeFileSync, mkdirSync, copyFileSync, existsSync } from 'node:fs';
 import { join, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { deflateSync } from 'node:zlib';
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
 const INDEX = join(ROOT, 'assets', 'index.json');
@@ -152,11 +153,84 @@ function meshEntries() {
   });
 }
 
+// ── 纯 Node PNG 编码（RGB·无依赖·确定性）──
+const CRC_TABLE = (() => {
+  const t = new Uint32Array(256);
+  for (let n = 0; n < 256; n++) { let c = n; for (let k = 0; k < 8; k++) c = c & 1 ? 0xedb88320 ^ (c >>> 1) : c >>> 1; t[n] = c >>> 0; }
+  return t;
+})();
+function crc32(buf) { let c = 0xffffffff; for (let i = 0; i < buf.length; i++) c = CRC_TABLE[(c ^ buf[i]) & 0xff] ^ (c >>> 8); return (c ^ 0xffffffff) >>> 0; }
+function pngChunk(type, data) {
+  const len = Buffer.alloc(4); len.writeUInt32BE(data.length, 0);
+  const td = Buffer.concat([Buffer.from(type, 'latin1'), data]);
+  const crc = Buffer.alloc(4); crc.writeUInt32BE(crc32(td), 0);
+  return Buffer.concat([len, td, crc]);
+}
+function encodePng(w, h, rgb) { // rgb = Buffer(w*h*3)
+  const sig = Buffer.from([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a]);
+  const ihdr = Buffer.alloc(13);
+  ihdr.writeUInt32BE(w, 0); ihdr.writeUInt32BE(h, 4); ihdr[8] = 8; ihdr[9] = 2; // 8-bit RGB
+  const raw = Buffer.alloc(h * (1 + w * 3));
+  for (let y = 0; y < h; y++) { raw[y * (1 + w * 3)] = 0; rgb.copy(raw, y * (1 + w * 3) + 1, y * w * 3, (y + 1) * w * 3); }
+  return Buffer.concat([sig, pngChunk('IHDR', ihdr), pngChunk('IDAT', deflateSync(raw)), pngChunk('IEND', Buffer.alloc(0))]);
+}
+
+// ── 程序化贴图货架（④a：产进货架·不再散落 public/textures/）──
+// 现有 gen-textures.mjs 的浏览器产物（plank/rune）已在 public/textures/·确定性 → copy 进货架并登记。
+const PROC_TEX = [
+  ['plank_albedo', 256, 256, 'albedo', '木板 albedo（程序化·确定性）'],
+  ['plank_normal', 256, 256, 'normal', '木板法线图（线性·法线用途）'],
+  ['rune_emissive', 256, 256, 'emissive', '符文自发光图（emissiveMap 展示）'],
+];
+function textureEntries() {
+  mkdirSync(join(ROOT, 'assets', 'textures'), { recursive: true });
+  const out = [];
+  for (const [name, w, h, usage, desc] of PROC_TEX) {
+    const srcPub = join(ROOT, 'public', 'textures', `${name}.png`);
+    if (!existsSync(srcPub)) { console.warn(`  跳过 ${name}（public/textures 无·先跑 gen-textures.mjs）`); continue; }
+    copyFileSync(srcPub, join(ROOT, 'assets', 'textures', `${name}.png`));
+    out.push({
+      id: `tex/${name}`, type: 'texture', description: `${desc} · 公用贴图`, status: 'filled',
+      path: `textures/${name}.png`, category: 'texture', tags: ['texture', 'procedural', 'shared-3d', usage],
+      license: 'CC0-1.0', source: 'apollo-shelf',
+      spec: { format: 'png', width: w, height: h, usage }, // colorSpace 由 usage 自动推（normal→linear·其余→srgb）
+    });
+  }
+  return out;
+}
+
+// ── 天空盒货架（等距柱 equirect 渐变天空·纯 Node 产·CC0）──
+function skyGradient(w = 512, h = 256) {
+  const rgb = Buffer.alloc(w * h * 3);
+  const top = [58, 110, 190], horizon = [206, 224, 244]; // 天顶蓝 → 地平线浅
+  for (let y = 0; y < h; y++) {
+    const t = y / (h - 1); // 0 顶 .. 1 底
+    const r = Math.round(top[0] + (horizon[0] - top[0]) * t);
+    const g = Math.round(top[1] + (horizon[1] - top[1]) * t);
+    const b = Math.round(top[2] + (horizon[2] - top[2]) * t);
+    for (let x = 0; x < w; x++) { const o = (y * w + x) * 3; rgb[o] = r; rgb[o + 1] = g; rgb[o + 2] = b; }
+  }
+  return { w, h, png: encodePng(w, h, rgb) };
+}
+function envEntries() {
+  mkdirSync(join(ROOT, 'assets', 'env'), { recursive: true });
+  const { w, h, png } = skyGradient();
+  writeFileSync(join(ROOT, 'assets', 'env', 'sky_gradient.png'), png);
+  return [{
+    id: 'env/sky-gradient', type: 'texture', description: '渐变天空盒（equirect·天顶蓝→地平线浅）· 公用环境', status: 'filled',
+    path: 'env/sky_gradient.png', category: 'skybox', tags: ['skybox', 'env', 'sky', 'equirect', 'shared-3d'],
+    license: 'CC0-1.0', source: 'apollo-shelf',
+    spec: { format: 'png', width: w, height: h, usage: 'sprite', wrap: 'repeat' },
+  }];
+}
+
 // ── 汇总各类 → 一份 upsert 计划 ──
 function buildPlan(which) {
   const plan = [];
   if (which === 'materials' || which === 'all') plan.push(...materialEntries());
   if (which === 'meshes' || which === 'all') plan.push(...meshEntries());
+  if (which === 'textures' || which === 'all') plan.push(...textureEntries());
+  if (which === 'env' || which === 'all') plan.push(...envEntries());
   return plan;
 }
 

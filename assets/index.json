@@ -66234,6 +66234,30 @@
       }
     },
     {
+      "id": "env/sky-gradient",
+      "type": "texture",
+      "description": "渐变天空盒（equirect·天顶蓝→地平线浅）· 公用环境",
+      "status": "filled",
+      "path": "env/sky_gradient.png",
+      "category": "skybox",
+      "tags": [
+        "skybox",
+        "env",
+        "sky",
+        "equirect",
+        "shared-3d"
+      ],
+      "license": "CC0-1.0",
+      "source": "apollo-shelf",
+      "spec": {
+        "format": "png",
+        "width": 512,
+        "height": 256,
+        "usage": "sprite",
+        "wrap": "repeat"
+      }
+    },
+    {
       "id": "flag/ad",
       "type": "texture",
       "description": "ad · flag-icons",
@@ -878171,6 +878195,72 @@
       "provenance": {
         "repo": "tabler/tabler-icons",
         "ref": "main"
+      }
+    },
+    {
+      "id": "tex/plank_albedo",
+      "type": "texture",
+      "description": "木板 albedo（程序化·确定性） · 公用贴图",
+      "status": "filled",
+      "path": "textures/plank_albedo.png",
+      "category": "texture",
+      "tags": [
+        "texture",
+        "procedural",
+        "shared-3d",
+        "albedo"
+      ],
+      "license": "CC0-1.0",
+      "source": "apollo-shelf",
+      "spec": {
+        "format": "png",
+        "width": 256,
+        "height": 256,
+        "usage": "albedo"
+      }
+    },
+    {
+      "id": "tex/plank_normal",
+      "type": "texture",
+      "description": "木板法线图（线性·法线用途） · 公用贴图",
+      "status": "filled",
+      "path": "textures/plank_normal.png",
+      "category": "texture",
+      "tags": [
+        "texture",
+        "procedural",
+        "shared-3d",
+        "normal"
+      ],
+      "license": "CC0-1.0",
+      "source": "apollo-shelf",
+      "spec": {
+        "format": "png",
+        "width": 256,
+        "height": 256,
+        "usage": "normal"
+      }
+    },
+    {
+      "id": "tex/rune_emissive",
+      "type": "texture",
+      "description": "符文自发光图（emissiveMap 展示） · 公用贴图",
+      "status": "filled",
+      "path": "textures/rune_emissive.png",
+      "category": "texture",
+      "tags": [
+        "texture",
+        "procedural",
+        "shared-3d",
+        "emissive"
+      ],
+      "license": "CC0-1.0",
+      "source": "apollo-shelf",
+      "spec": {
+        "format": "png",
+        "width": 256,
+        "height": 256,
+        "usage": "emissive"
       }
     },
     {
