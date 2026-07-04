@@ -148,13 +148,16 @@ function runBattle(
   // 真机每侧只 1 主将（玩家 deck 1 个 general·Boss 1 个 hero）；armyFromFormation 每路 1 个=3 个 → 收成 1 个最强（否则 Boss 3 主将原地死守=三路全堵·远比真机难）。
   const oneGeneral = (army: ArmyCard[]): ArmyCard[] => { let gi = 0; for (let i = 1; i < army.length; i++) if (army[i].favor > army[gi].favor) gi = i; return army.map((c, i) => ({ ...c, general: i === gi })); };
   const baseFavor = (c: ArmyCard): ArmyCard => ({ ...c, favor: Math.max(5, Math.min(95, cardPoints(cardRank(c)) * 3 + 5)) });
+  // ⭐ Boss 牌力口径修正（design G 2026-07-04·owner 公平铁律「难度只来自明牌」）：Boss 牌**也 base-override**（=玩家 base 同口径），
+  //   `bossDelta` = **明牌牌力偏置**叠在 base 上（base + bossDelta·可见可破的教学弱/高难强旋钮）。
+  //   修掉旧 bug：旧常规支 Boss 保 rankFavor(K=80…)→ 每张比玩家 base 高 ~8-12=暗箱强牌(违公平铁律·line 132「都按基础牌」意图与代码曾出入·此处对齐)。
+  //   实证(2026-07-04·满kit·bossDelta0)：新手 skill1 **74.7%** ≈ 目标70%·高手 skill5 96% → 关1 数值本就对·之前 17% 全是本 bug。
+  const baseFavorBoss = (c: ArmyCard): ArmyCard => ({ ...c, favor: Math.max(5, Math.min(95, cardPoints(cardRank(c)) * 3 + 5 + bossDelta)) });
   const aBase = oneGeneral(a.map(baseFavor));
   // 地支附魔：把玩家整体养成的 inlayFavor 摊到最值得镶的核心英雄上（owner 要求 sim 计入地支加成）。
   const aInlaid = applyInlayFavor(aBase, pcfg.inlayFavor);
-  // ★镜像模式：Boss 牌也 base-override(同玩家口径·真·同牌)。常规模式沿旧口径(Boss 保 rankFavor·牌力偏置=真机难度的一部分)。
-  //   注(程序A 2026-07-04)：常规支里 Boss **未** base-override → Boss 每张兵有效战力比玩家 base 高 ~8-12（见 _mirror 诊断）；
-  //   这是「Boss 牌力」难度旋钮的既成事实(line 132 注释的『都按基础牌』意图与代码有出入)·非玩家 AI 弱·balance/economy 线裁决(design G)。
-  const bDeck = oneGeneral(mirror ? b.map(baseFavor) : b);
+  // 镜像=纯 base(bossDelta 不叠·验算法对等)；常规=base + bossDelta(明牌牌力偏置)。Boss 难度自此只来自 明牌(牌力偏置 + 地煞 + 布防 + 天罡)·零暗箱强牌。
+  const bDeck = oneGeneral(mirror ? b.map(baseFavor) : b.map(baseFavorBoss));
 
   const aTengang: TengangHandCard[] = pcfg.tiangang.map((id) => ({ kind: 'tengang', id }));
   const bTengang: TengangHandCard[] = lvl.boss.tiangang.map((id) => ({ kind: 'tengang', id }));

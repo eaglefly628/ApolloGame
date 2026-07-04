@@ -135,7 +135,8 @@ export function dioramaBlueprint(): WorldBlueprint {
       },
 
       // 中心信标（金属柱 + 魔法喷泉 VFX）：赛道圆心的焦点，鸭子绕它跑。锤打金面（bumps 浮雕·反射更活）。
-      beacon: { ...block(0, 4, 0, 4, 8, 4, 0xffd54f, 0xffb300), Material3D: { preset: 'gold', surface: { pattern: 'bumps', tiles: 5, normal: 0.5, rough: 0.3 } } },
+      // Pickable3D：点它 → 拾取（渲染器 pick 射线命中包围盒 → 发信号 'poke'·arg=实体 id·自证 3D 对象拾取）。
+      beacon: { ...block(0, 4, 0, 4, 8, 4, 0xffd54f, 0xffb300), Material3D: { preset: 'gold', surface: { pattern: 'bumps', tiles: 5, normal: 0.5, rough: 0.3 } }, Pickable3D: { signal: 'poke' } },
 
       // 🖼 真实贴图木箱（REQ-Resource ①①④·验收）：物件只引**材质数据资产** materialRef=MAT_PLANK_WOOD
       // （该材质在索引里 = wood 预设 + 木板 albedo/法线 texture key）。渲染器据 materialRef 查材质目录合成 → 取图挂上。
@@ -143,6 +144,7 @@ export function dioramaBlueprint(): WorldBlueprint {
       'plank-crate': {
         ...block(11, 4, 6, 8, 8, 8, 0x9c6b3f, 0x9c6b3f),
         Material3D: { preset: 'matte', materialRef: MAT_PLANK_WOOD },
+        Pickable3D: { signal: 'poke' }, // 可拾取（点选自证）
       },
       'vfx-beacon': {
         Vfx3D: {
@@ -179,6 +181,13 @@ export function dioramaBlueprint(): WorldBlueprint {
       // 草地竞技场（顶在 y=0·缩小到 160²·owner「缩小一半 + 去掉低画质小树」）。
       // 材质铺陈：草地色 matte + 程序化起伏浮雕（noise·大 tiles 铺满大地面）→ 掠光下有草皮质感·不再纯平板。
       ground: { ...block(0, -2.5, 0, 160, 5, 160, 0x7cb342, 0x5d4037), Material3D: { preset: 'matte', color: 0x7cb342, surface: { pattern: 'noise', tiles: 16, normal: 0.7, rough: 0.55, scale: 1.5 } } },
+
+      // 🧱 图元展示（REQ-3D 图元补全 ②）：cylinder/cone/capsule/torus 四种 three 内建圆润图元（render-only·单材质）。
+      // 摆南侧一排·各挂 Material3D 上色·证明新 shape 端到端渲染（几何/实例化/PBR 三路共用 roundGeo）。
+      'prim-cylinder': { Transform3D: { x: -22, y: 4, z: 46 }, Mesh3D: { shape: 'cylinder', width: 6, height: 8, frontTint: 0x66bb6a }, Material3D: { preset: 'plastic', color: 0x66bb6a } },
+      'prim-cone': { Transform3D: { x: -8, y: 4.5, z: 46 }, Mesh3D: { shape: 'cone', width: 7, height: 9, frontTint: 0xffa726 }, Material3D: { preset: 'plastic', color: 0xffa726 } },
+      'prim-capsule': { Transform3D: { x: 6, y: 5.5, z: 46 }, Mesh3D: { shape: 'capsule', width: 5, height: 11, frontTint: 0x42a5f5 }, Material3D: { preset: 'plastic', color: 0x42a5f5 } },
+      'prim-torus': { Transform3D: { x: 20, y: 5, z: 46, rotX: 1.2 }, Mesh3D: { shape: 'torus', width: 9, height: 9, frontTint: 0xffd54f, tube: 0.35 }, Material3D: { preset: 'gold' } },
 
       // 北侧 PBR 材质陈列台（材质球·大字标名·调试面板「🔬 看材质」一键看）。
       ...materialBoard(),

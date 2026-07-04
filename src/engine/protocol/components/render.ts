@@ -47,10 +47,12 @@ export interface VoxelTex {
 
 export interface Mesh3D extends Component {
   readonly type: 'Mesh3D';
-  shape: 'box' | 'plane' | 'sphere'; // box=有厚度、正反两面可分色；plane=双面薄片（单色）；sphere=球（单色·material 球/星体）
-  width: number; // 物体宽（世界单位，与 Transform.x/y 同尺；相机自适配取景）。sphere：直径
-  height: number; // 物体高。sphere：忽略（取 width 作直径·正球）
-  depth?: number; // box 厚度；缺省=短边*薄板比（下限 1）。plane/sphere 忽略
+  // box=有厚度·正反两面可分色；plane=双面薄片（单色）；sphere/cylinder/cone/capsule/torus=圆润单材质图元（three 内建·单色）。
+  shape: 'box' | 'plane' | 'sphere' | 'cylinder' | 'cone' | 'capsule' | 'torus';
+  width: number; // 物体宽（世界单位，与 Transform.x/y 同尺；相机自适配取景）。sphere/cylinder/cone/capsule/torus：直径
+  height: number; // 物体高。sphere：忽略（取 width 作直径·正球）；cylinder/cone/capsule：柱/锥高；torus：忽略
+  depth?: number; // box 厚度；缺省=短边*薄板比（下限 1）。plane/圆润图元忽略
+  tube?: number; // torus 专用·管半径占主半径的比例（缺省 0.35）；其它图元忽略
   frontTint: number; // 正面(+z)色 0xRRGGBB
   backTint?: number; // 反面(-z)色；缺省=frontTint
   edgeTint?: number; // box 四边色；缺省深灰
@@ -146,6 +148,17 @@ export interface Transform3D extends Component {
   rotZ?: number;
   scale?: number; // 等比缩放·缺省 1
   quat?: readonly [number, number, number, number]; // 可选四元数(x,y,z,w)·在场则覆盖欧拉角（物理翻滚等需无万向锁的旋转·render-only）
+}
+
+// ── Pickable3D（render-only，3D 对象拾取标记 · 输入层）──────────────────────────────────────────
+// 标记一个实体「可被指针拾取」。渲染器 `pick(clientX,clientY)` 对所有 Pickable3D 实体的**世界包围盒**做射线求交，
+// 命中最近者返回其实体 id + 信号名。命中结果由游戏输入胶水经 `ActionSink.enqueueAction(signal,{arg:entityId})` 入队
+// → keybind 产 `Signal{name:signal,arg:entityId}` → sim 能力按名消费（照 2D `t2-clickable` 先例；但 3D raycast 在
+// **输入层**做——与鼠标点击同类外源输入·本地合法·**不碰 sim 确定性**）。红线：纯表现标记，**绝不被 Condition 读、绝不进 hash**。
+export interface Pickable3D extends Component {
+  readonly type: 'Pickable3D';
+  signal: string; // 指针拾取(click)命中时游戏应发的信号名（arg=命中实体 id）
+  hover?: string; // 可选·指针悬停命中时的信号名（游戏在 pointermove 调 pick 时用）
 }
 
 // ── RigidBody3D（render-only，表现物理 · TA）──────────────────────────────────────────────

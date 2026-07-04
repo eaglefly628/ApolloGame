@@ -66,6 +66,7 @@ import type {
   Overlap,
   Overlap3D,
   PerCardRetrigger,
+  Pickable3D,
   Post3D,
   PerCardRule,
   PerCardScore,
@@ -183,6 +184,7 @@ export interface ComponentDataMap {
   Overlap3D: Omit<Overlap3D, 'type'>;
   PerCardRetrigger: Omit<PerCardRetrigger, 'type'>;
   Post3D: Omit<Post3D, 'type'>;
+  Pickable3D: Omit<Pickable3D, 'type'>;
   PerCardRule: Omit<PerCardRule, 'type'>;
   PerCardScore: Omit<PerCardScore, 'type'>;
   Perception: Omit<Perception, 'type'>;

@@ -27,9 +27,20 @@ export function applyPose(o: THREE.Object3D, p: Pose3D): void {
   o.scale.set(p.sx, p.sy, p.sz ?? 1);
 }
 
-// 球几何（material 球/星体）：width=直径 → 半径 width/2。32×16 段·圆润够用、PBR 反射/高光读得清。
-function sphereGeo(width: number): THREE.SphereGeometry {
-  return new THREE.SphereGeometry(Math.max(0.0001, width / 2), 32, 16);
+// 圆润单材质图元几何（render-only·three 内建直映射·可选参数+合理默认）：sphere/cylinder/cone/capsule/torus。
+// 都不分面着色（单色/单材质·同 sphere 先例）。width=直径→半径 r；height=柱/锥高。box/plane 返 null（各自专路）。
+// 三处几何工厂（fallback / 实例化 / PBR）共用它 → 加一种图元只改这一处。
+export function roundGeo(m: Mesh3D): THREE.BufferGeometry | null {
+  const r = Math.max(0.0001, m.width / 2);
+  const h = Math.max(0.0001, m.height);
+  switch (m.shape) {
+    case 'sphere': return new THREE.SphereGeometry(r, 40, 20);
+    case 'cylinder': return new THREE.CylinderGeometry(r, r, h, 28);
+    case 'cone': return new THREE.ConeGeometry(r, h, 28);
+    case 'capsule': return new THREE.CapsuleGeometry(r, Math.max(0.0001, h - m.width), 8, 20); // 柱段长=height−直径（两端半球）
+    case 'torus': return new THREE.TorusGeometry(r, r * (m.tube ?? 0.35), 16, 36); // 管半径=主半径×tube（默认 0.35）
+    default: return null; // box / plane
+  }
 }
 
 // 单 mesh 版 Mesh3D（透明 fallback 用）：box=有厚度盒（面序 px,nx,py,ny,pz=正,nz=反，四边共用一材质）；plane=双面薄片。
@@ -41,7 +52,8 @@ export function buildMesh3D(m: Mesh3D): THREE.Mesh {
     mat.side = THREE.DoubleSide;
     return new THREE.Mesh(new THREE.PlaneGeometry(m.width, m.height), mat);
   }
-  if (m.shape === 'sphere') return new THREE.Mesh(sphereGeo(m.width), matte()); // 球：单材质（无面分色）
+  const rg = roundGeo(m); // 圆润单材质图元（sphere/cylinder/cone/capsule/torus）
+  if (rg) return new THREE.Mesh(rg, matte());
   const depth = mesh3dDepth(m.shape, m.width, m.height, m.depth);
   const edge = matte();
   const front = matte();
@@ -57,10 +69,10 @@ export function buildInstancedMesh3DGeometry(m: Mesh3D): THREE.BufferGeometry {
     bakeFaceColors(geo, [m.frontTint]);
     return geo;
   }
-  if (m.shape === 'sphere') {
-    const geo = sphereGeo(m.width);
-    bakeFaceColors(geo, [m.frontTint]); // 球：整体单色（frontTint）
-    return geo;
+  const rg = roundGeo(m); // 圆润单色图元（sphere/cylinder/cone/capsule/torus）→ 整体单色
+  if (rg) {
+    bakeFaceColors(rg, [m.frontTint]);
+    return rg;
   }
   const depth = mesh3dDepth('box', m.width, m.height, m.depth);
   const edge = m.edgeTint ?? 0x1f2937;

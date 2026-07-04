@@ -94,6 +94,11 @@ export interface VisualEffect {
   once?: boolean;      // true=播一次（受击/暴击）·缺省=循环（状态态·如低血量呼吸）
 }
 
+/** 异形按钮/面板轮廓（闭集·引擎预置 clip-path·弱 LLM 只能选枚举·绝不收自由 clip-path 坐标）。
+ *  缺省不填=矩形（既有 border-radius 行为不变）。pill=全圆胶囊；其余为 clip-path 多边形轮廓。
+ *  owner 2026-07-04「异形 UI」需求下沉——见 docs/playbooks/ui.md「异形」行。 */
+export type ShapeToken = 'pill' | 'hexagon' | 'diamond' | 'shield' | 'ribbon' | 'chevron' | 'tag' | 'cut';
+
 export interface ButtonProps {
   label: string;
   kind?: 'primary' | 'ghost' | 'quiet' | 'hero'; // hero=金色倒角 sheen 大 CTA（下沉自 game-g 出征键·owner 2026-06-25）
@@ -101,6 +106,8 @@ export interface ButtonProps {
   action?: string;
   actionArg?: string;
   sub?: string; // hero 键副标（小字第二行·如「挑战 曹操 · 难度 ★★」）
+  /** 异形轮廓（闭集 ShapeToken·如 hexagon/diamond/shield）。缺省=矩形。命中区=元素包围盒（透明角不可点是二期）。 */
+  shape?: ShapeToken;
 }
 
 export interface LabelProps {

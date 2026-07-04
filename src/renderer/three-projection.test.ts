@@ -1,5 +1,6 @@
 import { describe, it, expect } from 'vitest';
-import { renderablePose, poseBounds, fitPerspective, mesh3dDepth, mesh3dBatchKey, flipEuler, faceDown, type Pose3D } from './three-projection.js';
+import { renderablePose, poseBounds, fitPerspective, mesh3dDepth, mesh3dBatchKey, flipEuler, faceDown, rayAabbT, type Pose3D } from './three-projection.js';
+// 注：新图元几何本身（cylinder/cone/capsule/torus）走 three 内建，需 WebGL 无法 headless 测；此处测其纯函数派生（批签名/包围深度）。
 import type { Renderable } from './renderable.js';
 
 const R = (o: Partial<Renderable>): Renderable => ({
@@ -82,5 +83,48 @@ describe('three-projection — Mesh3D（3D 物件即数据）几何/翻面纯函
     expect(faceDown(Math.PI * 2)).toBe(false);
     expect(faceDown(-Math.PI)).toBe(true); // 归一到 π
     expect(faceDown(0.3)).toBe(false);
+  });
+});
+
+describe('圆润图元（cylinder/cone/capsule/torus）批签名 + 包围深度', () => {
+  const K = (shape: 'cylinder' | 'cone' | 'capsule' | 'torus') => mesh3dBatchKey({ shape, width: 6, height: 8, frontTint: 0x66bb6a });
+  it('各图元批签名含 shape+尺寸+色（同款同批·异款分批）', () => {
+    expect(K('cylinder')).toBe('cylinder|6|8|6732650');
+    expect(K('cone')).toBe('cone|6|8|6732650');
+    expect(K('cylinder')).not.toBe(K('cone')); // 形不同 → 分批
+    expect(K('capsule')).not.toBe(K('torus'));
+    // 同款同尺寸同色 → 同批（可实例化 1 draw call）
+    expect(mesh3dBatchKey({ shape: 'cone', width: 6, height: 8, frontTint: 0x66bb6a })).toBe(K('cone'));
+  });
+  it('包围深度以直径(width)计（相机取景/包围用）', () => {
+    for (const s of ['cylinder', 'cone', 'capsule', 'torus'] as const) expect(mesh3dDepth(s, 6, 8)).toBe(6);
+  });
+});
+
+describe('rayAabbT — 射线-AABB 求交（对象拾取 Pickable3D）', () => {
+  // 单位盒在原点 (h=1)。相机在 -Z 沿 +Z 看进去。
+  it('正对盒心 → 命中·t=入口距离', () => {
+    const t = rayAabbT(0, 0, -5, 0, 0, 1, 0, 0, 0, 1, 1, 1);
+    expect(t).toBeCloseTo(4); // -5 → 盒近面 z=-1，距离 4
+  });
+  it('偏出盒外 → 未命中 null', () => {
+    expect(rayAabbT(3, 0, -5, 0, 0, 1, 0, 0, 0, 1, 1, 1)).toBeNull(); // x=3 错过 h=1 的盒
+  });
+  it('盒在射线反向（相机后）→ null', () => {
+    expect(rayAabbT(0, 0, 5, 0, 0, 1, 0, 0, 0, 1, 1, 1)).toBeNull(); // 原点在 +Z、朝 +Z 看，盒在后
+  });
+  it('原点在盒内 → 贴脸命中 t=0', () => {
+    expect(rayAabbT(0, 0, 0, 0, 0, 1, 0, 0, 0, 1, 1, 1)).toBe(0);
+  });
+  it('取最近盒：两盒都命中时 t 更小者更近', () => {
+    const near = rayAabbT(0, 0, -5, 0, 0, 1, 0, 0, -2, 1, 1, 1); // 盒心 z=-2
+    const far = rayAabbT(0, 0, -5, 0, 0, 1, 0, 0, 3, 1, 1, 1); // 盒心 z=3
+    expect(near).not.toBeNull();
+    expect(far).not.toBeNull();
+    expect(near!).toBeLessThan(far!); // 近盒 t 更小 → 拾取选它
+  });
+  it('斜射线命中偏置盒', () => {
+    const t = rayAabbT(0, 0, -5, 0.3, 0, 1, 1.5, 0, 0, 1, 1, 1); // 朝 +x 微偏 → 命中 x∈[0.5,2.5] 的盒
+    expect(t).not.toBeNull();
   });
 });

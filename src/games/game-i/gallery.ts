@@ -881,6 +881,20 @@ function buildPageNew(controls: ControlsState): LayoutNode {
           { type: 'Button', id: 'cham-btn', props: { label: '切角 CTA', kind: 'primary', action: 'click', actionArg: 'chamfer' }, layout: { chamfer: 10 } },
         ] },
 
+      divider('d-shape'),
+      sectionTitle('t-shape', 'BUTTON.shape · 异形按钮（闭集 ShapeToken·引擎预置 clip-path·弱 LLM 只选名·非自由坐标）'),
+      { type: 'Panel', id: 'shape-row', props: {}, layout: { direction: 'grid', cols: 4, gap: 14, padding: 18 },
+        children: ([
+          ['pill', '胶囊', 'primary'], ['hexagon', '六边', 'hero'], ['diamond', '菱形', 'primary'],
+          ['shield', '盾徽', 'hero'], ['ribbon', '绶带', 'primary'], ['chevron', '前进 ▶', 'ghost'],
+          ['tag', '标签', 'ghost'], ['cut', '切角', 'primary'],
+        ] as const).map(([shape, label, kind]): LayoutNode => ({
+          type: 'Button', id: `shape-${shape}`,
+          props: { label, kind, shape, action: 'click', actionArg: shape },
+          // 异形须给足宽高避免裁掉文字（六边/菱形尤其）——见 catalog shape describe。
+          layout: { width: 108, height: 54 },
+        })) },
+
       divider('d-n10'),
       sectionTitle('t-grid', 'PANEL · cols 固定列数 grid + justify 主轴分布'),
       { type: 'Panel', id: 'grid-cols', props: { title: 'grid · cols:4（严格 4 列等分·消空隙）' }, layout: { direction: 'grid', cols: 4, gap: 8, padding: 14 },

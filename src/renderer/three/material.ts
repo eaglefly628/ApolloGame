@@ -2,6 +2,7 @@ import * as THREE from 'three';
 import type { Mesh3D, Material3D, SurfaceDetail } from '@engine/protocol/components.js';
 import { resolvePbr, type PbrMaterialDef, type MaterialSpec } from '@assets/index.js';
 import { buildSurfaceMaps } from './surface-tex.js';
+import { roundGeo } from './geometry.js';
 
 // ═══════════════════════════════════════════════════════════════
 //  three/material —— PBR 材质（TA Phase 5·render-only）。据 `Material3D` 预设 + 覆盖建物理材质。
@@ -71,11 +72,10 @@ export function buildPbrMaterial(def: PbrMaterialDef, surface?: SurfaceDetail, m
 // Material3D + Mesh3D → 单 mesh（特征物件·不进哑光实例化批）。maps=渲染器已解析的真实贴图（色彩空间已设）。
 export function buildPbrMesh3D(m: Mesh3D, mat: Material3D, maps?: PbrMaps): THREE.Mesh {
   const def = resolvePbr(mat.preset, mat);
-  const geo = m.shape === 'plane'
+  const rg = roundGeo(m); // 圆润单材质图元（sphere/cylinder/cone/capsule/torus）·三处几何工厂共用
+  const geo = rg ?? (m.shape === 'plane'
     ? new THREE.PlaneGeometry(m.width, m.height)
-    : m.shape === 'sphere'
-      ? new THREE.SphereGeometry(Math.max(0.0001, m.width / 2), 48, 24) // material 球：高段数·反射/高光顺滑
-      : new THREE.BoxGeometry(m.width, m.height, m.depth ?? m.width);
+    : new THREE.BoxGeometry(m.width, m.height, m.depth ?? m.width));
   if (maps?.aoMap && geo.attributes['uv'] && !geo.attributes['uv2']) {
     geo.setAttribute('uv2', geo.attributes['uv']!); // aoMap 走第二套 UV·盒/球无 uv2 → 复用 uv
   }
