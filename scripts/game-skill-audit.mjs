@@ -1,8 +1,18 @@
 #!/usr/bin/env node
 // 游戏能力接入审计（owner 2026-07-02 立项：防 game-d 式绕引擎）
 // 用法：node scripts/game-skill-audit.mjs [game-d game-g ...]（缺省=全部游戏）
-// 体检不是闸门（v1 报告版）：输出每个游戏的引擎能力接入面 + 红旗（裸随机/手写DOM/零能力）。
-// 红旗定义与 CLAUDE.md「游戏能力总览铁律」对应；后续可加 --strict 进门禁。
+// 体检输出每个游戏的引擎能力接入面 + 分层旗标，末行判词 token + 退出码可接门禁。
+//
+// 分层（REQ-QA-测试审计强化三件 · 主程 spec 2026-07-04）：
+//   🔴 红 = 已破不变量（游戏层红线，CLAUDE.md「游戏能力总览铁律」）：
+//        裸 Math.random（须用引擎种子 PRNG）· innerHTML · document.createElement（手写 DOM，须走 LayoutNode）。
+//   🟡 黄 = 缺失防线（未破线但少了护栏）：零能力接入（绕开 capabilities 体系）· 零测试。
+//   ⚠ 建议 = 非红线的迁移提示（bg 裸色串→色库）：只提示、不进判词、不改退出码。
+//   判词：任一红 → FAIL（退出码 1）；无红有黄 → WARNINGS（退出码 0）；全清 → PASS（退出码 0）。
+//
+// 「自写解释器 / 虚胖数据」（数据表 + 游戏层自写解释器）也属红类，但**无法可靠 regex 检测**
+//   （合法的小枚举 switch 与真·绕引擎解释器难以机械区分，见 game-e/jokers.ts 的经济结算 switch）——
+//   它是 capability-plan 评审的人审项（CORE RULE §2），本工具不臆造，故不列入自动红旗以免误报。
 
 import { readdirSync, readFileSync, statSync } from 'node:fs';
 import { join } from 'node:path';
@@ -77,47 +87,103 @@ const games = readdirSync(GAMES_DIR).filter((g) => {
 
 const rows = games.map(audit);
 
+// ── 分层：每行按红/黄/建议归类 ──
+/** 红旗（已破不变量·进判词）文字列表 */
+function redBits(r) {
+  const bits = [];
+  if (r.flags.mathRandom.length) bits.push(`裸Math.random×${r.flags.mathRandom.length}`);
+  if (r.flags.innerHTML.length) bits.push(`innerHTML×${r.flags.innerHTML.length}`);
+  if (r.flags.createElement.length) bits.push(`createElement×${r.flags.createElement.length}`);
+  return bits;
+}
+/** 黄旗（缺失防线·进判词）文字列表 */
+function yellowBits(r) {
+  const bits = [];
+  if (r.flags.zeroCap) bits.push('零能力接入');
+  if (r.tests === 0) bits.push('零测试');
+  return bits;
+}
+/** ⚠ 建议（非红线·不进判词）文字列表 */
+function adviceBits(r) {
+  const bits = [];
+  if (r.flags.nakedFill.length) bits.push(`裸bg色×${r.flags.nakedFill.length}`);
+  return bits;
+}
+const anyRed = rows.some((r) => redBits(r).length);
+const anyYellow = rows.some((r) => yellowBits(r).length);
+
 // ── 汇总表 ──
 const pad = (s, n) => String(s).padEnd(n);
 console.log('\n══ 游戏能力接入审计 ══\n');
 console.log(
-  pad('game', 10) + pad('代码行', 8) + pad('测试文件', 9) + pad('能力导入源', 11) + pad('World/manifest', 15) + '红旗'
+  pad('game', 10) + pad('代码行', 8) + pad('测试文件', 9) + pad('能力导入源', 11) + pad('World/manifest', 15) + '旗标'
 );
 for (const r of rows) {
-  const flagBits = [];
-  if (r.flags.zeroCap) flagBits.push('零能力接入');
-  if (r.flags.mathRandom.length) flagBits.push(`裸Math.random×${r.flags.mathRandom.length}`);
-  if (r.flags.innerHTML.length) flagBits.push(`innerHTML×${r.flags.innerHTML.length}`);
-  if (r.flags.createElement.length) flagBits.push(`createElement×${r.flags.createElement.length}`);
-  if (r.tests === 0) flagBits.push('零测试');
-  if (r.flags.nakedFill.length) flagBits.push(`⚠裸bg色×${r.flags.nakedFill.length}`);
+  const red = redBits(r);
+  const yellow = yellowBits(r);
+  const advice = adviceBits(r);
+  const cells = [];
+  if (red.length) cells.push('🔴 ' + red.join('·'));
+  if (yellow.length) cells.push('🟡 ' + yellow.join('·'));
+  if (advice.length) cells.push('⚠ ' + advice.join('·'));
   console.log(
     pad(r.game, 10) +
       pad(r.loc, 8) +
       pad(r.tests, 9) +
       pad(r.capImports.size, 11) +
       pad(r.usesWorldOrManifest, 15) +
-      (flagBits.length ? '🚩 ' + flagBits.join('·') : '—')
+      (cells.length ? cells.join('  ') : '—')
   );
 }
 
-// ── 明细（仅有红旗的游戏） ──
+// ── 明细（有任一旗标的游戏） ──
 for (const r of rows) {
   const { mathRandom, innerHTML, createElement, nakedFill } = r.flags;
-  const details = [
-    ['裸 Math.random（应用引擎种子 PRNG）', mathRandom],
-    ['innerHTML（应走 LayoutNode/mountUI）', innerHTML],
-    ['document.createElement', createElement],
+  const redDetails = [
+    ['🔴 裸 Math.random（应用引擎种子 PRNG）', mathRandom],
+    ['🔴 innerHTML（应走 LayoutNode/mountUI）', innerHTML],
+    ['🔴 document.createElement（手写 DOM，应走 LayoutNode）', createElement],
+  ].filter(([, v]) => v.length);
+  const adviceDetails = [
     ['⚠ bg 裸色串（建议迁 SurfaceToken/FillPreset/{custom}·非红线）', nakedFill],
   ].filter(([, v]) => v.length);
-  if (!details.length && !r.flags.zeroCap) continue;
+  if (!redDetails.length && !adviceDetails.length && !yellowBits(r).length) continue;
   console.log(`\n── ${r.game} 明细 ──`);
-  if (r.flags.zeroCap) console.log('  · 零引擎能力接入（capabilities 体系被完全绕过）');
-  for (const [label, hits] of details) {
+  for (const [label, hits] of redDetails) {
+    console.log(`  · ${label}:`);
+    for (const h of hits.slice(0, 8)) console.log(`      ${h}`);
+    if (hits.length > 8) console.log(`      …共 ${hits.length} 处`);
+  }
+  if (r.flags.zeroCap) console.log('  · 🟡 零引擎能力接入（capabilities 体系被完全绕过）');
+  if (r.tests === 0) console.log('  · 🟡 零测试（该游戏无 *.test.ts 防线）');
+  for (const [label, hits] of adviceDetails) {
     console.log(`  · ${label}:`);
     for (const h of hits.slice(0, 8)) console.log(`      ${h}`);
     if (hits.length > 8) console.log(`      …共 ${hits.length} 处`);
   }
   if (r.capImports.size) console.log('  · 能力导入源: ' + [...r.capImports].slice(0, 10).join(', '));
 }
-console.log();
+
+// ── 分层收口 ──
+console.log('\n── 分层汇总 ──');
+const redGames = rows.filter((r) => redBits(r).length);
+const yellowGames = rows.filter((r) => !redBits(r).length && yellowBits(r).length);
+if (redGames.length) {
+  console.log('  🔴 已破不变量: ' + redGames.map((r) => `${r.game}(${redBits(r).join(',')})`).join('  '));
+} else {
+  console.log('  🔴 已破不变量: 无');
+}
+if (yellowGames.length) {
+  console.log('  🟡 缺失防线: ' + yellowGames.map((r) => `${r.game}(${yellowBits(r).join(',')})`).join('  '));
+} else {
+  console.log('  🟡 缺失防线: 无');
+}
+const adviceGames = rows.filter((r) => adviceBits(r).length);
+if (adviceGames.length) {
+  console.log('  ⚠ 建议(非判词): ' + adviceGames.map((r) => `${r.game}(${adviceBits(r).join(',')})`).join('  '));
+}
+
+// ── 判词 token + 退出码（⚠ 建议不参与） ──
+const verdict = anyRed ? 'FAIL' : anyYellow ? 'WARNINGS' : 'PASS';
+console.log(`\nAUDIT: ${verdict}`);
+process.exit(anyRed ? 1 : 0);

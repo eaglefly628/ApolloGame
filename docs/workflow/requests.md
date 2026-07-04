@@ -75,8 +75,14 @@
 > - REQ-G-Boss-AI · [2026-06-21] · design G → 甲 · status: **✅ 实装+sim验证（2026-06-23）·结案归档 2026-07-04（活尾由 Player-AI 单 + design G 标定线接管）** · 类型: 真缺口（已闭合）
 > - REQ-BASE-引擎卫生三件（tray 补注册+守护测试 / Card3D 清遗 / view.ts 死码删）· [2026-07-03] · 主程 → 指派：Opus · status: **✅ done（2026-07-03·Opus）** · 归档 2026-07-04（自粘连行拆出）
 
-### REQ-QA-测试审计强化三件 · audit 分层判词 / bench p99+delta / 测试代码体检 · [2026-07-04] · 主程（CCGS 深读采纳·见 reference §八） · status: **施工中（指派：Opus·owner 2026-07-04「直接操作」提前）** · 类型: 质量工具强化
+### REQ-QA-测试审计强化三件 · audit 分层判词 / bench p99+delta / 测试代码体检 · [2026-07-04] · 主程（CCGS 深读采纳·见 reference §八） · status: **✅ done（Opus 2026-07-04·门禁全绿 tsc/vitest 303f-2231t/build 均 0）** · 类型: 质量工具强化
 > **spec（Lead 图纸）**：① `scripts/game-skill-audit.mjs` 输出分层：**红=已破不变量**（裸 Math.random/innerHTML/自写解释器）·**黄=缺失防线**（零测试/零能力接入/未登记），末行判词 token `AUDIT: PASS|WARNINGS|FAIL` + 对应退出码（0/0/1）。② ApolloBench 帧时轴补 **p99/max 判定**（均值绿尖峰红=CONCERNS·超标帧按帧号点名）+ 同场景 **prior 结果留档做 delta 回归行**（改善也记录）。③ 新脚本 `scripts/test-hygiene-check.mjs`：扫全部 `*.test.ts` 的真时间等待（墙钟 setTimeout/sleep/Date.now）、外部 IO（真 fetch/http）、裸 Math.random；**白名单放行有意用例**（fake timers/mock 合法）；判词 token+退出码。准则出处 `docs/playbooks/testing.md` 红线节。门禁全绿直推；涉 `src/bench`（主程域）按本 spec 施工不越范围。
+>
+> **✅ 完工摘要（Opus 2026-07-04）**：
+> - **① `scripts/game-skill-audit.mjs`**：三层分类——🔴红（裸 Math.random/innerHTML/createElement 手写 DOM，进判词）· 🟡黄（零能力接入/零测试，进判词）· ⚠建议（既有 nakedFill 裸 bg 色，非红线·不进判词·不改退出码，予以保留）。末行 `AUDIT: PASS|WARNINGS|FAIL`；退出码 红→1、黄/绿→0。判词=任一红→FAIL / 无红有黄→WARNINGS / 全清→PASS。**「自写解释器」为人审项（capability-plan 评审）——合法小枚举 switch 与真绕引擎解释器无法可靠 regex 分辨（见 game-e/jokers.ts 经济结算 switch），不列自动红旗以免误报，已在脚本头注明。** 当前全库判词=FAIL（8 款游戏均有 createElement 等既有欠账·符合 engine-llm-readiness-review 记录，工具如实点名）。
+> - **② ApolloBench 帧时轴**（`src/bench/apollo-bench.ts` 加纯函数 `computeFrameStats/measureFrameTime/frameTimeDelta` + `run-bench.ts` 接线）：墙钟测量每 tick，报 mean/p99/max，**均值绿而 p99/max 尖峰超预算（默认 1000/60ms）→ CONCERNS 并按帧号点名**；prior 留档 `bench-results/frame-times.json`（**gitignore**·墙钟按机器波动不入库），次跑出 **Δmean/Δp99/Δmax 回归行**（↑退化/↓改善/≈持平·改善也记录）。**确定性 hash 逻辑与五轴打分完全未动**（帧时独立墙钟维度·不进 total/退出码）。判词样例：`PASS game-f — mean 0.41ms · p99 1.77ms · max 2.20ms`；`Δp99 ↓改善 2.75ms → 1.77ms (-35.8%)`。
+> - **③ 新 `scripts/test-hygiene-check.mjs`**：扫全部 `src/**/*.test.ts` 三禁（真时间等待/外部 IO/裸随机），白名单顶部数组注理由；自动豁免 fake timers·mock fetch。末行 `HYGIENE: PASS|WARNINGS|FAIL`+退出码（硬违规→1）。**存量违规清单**：仅 2 处裸 Math.random——(a) `src/skills/tier3/roster-round.integration.test.ts:258` 只作唯一实体 id、非测随机 → **顺手改确定性单调计数器 `reqSeq++`**（已修）；(b) `src/debug/debug.test.ts:70` 故意非确定的 test-flaky capability（被测对象就是 Math.random 制造的非确定，用于验 Recorder 抓非确定回放）→ **白名单放行**（换种子=去掉被测特性）。无真时间等待/外部 IO 违规。首跑收口=WARNINGS（仅 1 白名单例外）。
+> - **点名测试**：`src/bench/apollo-bench.frame.test.ts`（7 例·合成数组测 p99/max 判定·尖峰点名·delta 三向·空输入·真引擎 measure）；roster 修改由既有 12 例覆盖仍绿。三工具均自证运行输出见上。
 
 ### REQ-DOCS-指针守护脚本 · 角色卡/手册/白皮书引用的路径·脚本名·agent 名自动核真 · [2026-07-04] · 主程（CCGS 参考 §七 裁决） · status: **✅ done（2026-07-04·Opus 施工·全套门禁绿）** · 类型: 防口径漂移基建
 > 源起：CCGS skill 测试框架思想采纳（`wiki/skills/reference-claude-game-studios.md §七`）——工作流零件也要可测。capability 层已有 `registry-guard.test.ts`，文档层缺同款。

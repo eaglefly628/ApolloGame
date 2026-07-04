@@ -255,7 +255,9 @@ describe('REQ-F-046 · merge-rule N 换 1 升星', () => {
     w.addComponent('mr', { type: 'MergeRule', template: 'g1', need: 3, into: 'g2' } as MergeRule);
     return w;
   };
-  const buy = (w: World, n: number) => { for (let i = 0; i < n; i++) { const c = `req${Math.random()}`; w.createEntity(c); w.addComponent(c, { type: 'SpawnRequest', templateId: 'g1', x: i * 10, y: 0 } as SpawnRequest); } };
+  // 唯一 id 用确定性单调计数器（原为 Math.random，仅作唯一键·非测随机 → 换固定序号防测试代码裸随机，见 test-hygiene-check）。
+  let reqSeq = 0;
+  const buy = (w: World, n: number) => { for (let i = 0; i < n; i++) { const c = `req${reqSeq++}`; w.createEntity(c); w.addComponent(c, { type: 'SpawnRequest', templateId: 'g1', x: i * 10, y: 0 } as SpawnRequest); } };
   const countT = (w: World, t: string) => w.getAllEntities().filter((e) => w.getComponent<PrefabOrigin>(e, 'PrefabOrigin')?.templateId === t).length;
 
   it('凑 3 → 最老 3 个原子替换为 g2（锚在最老位置）；第 4 个不动；封顶无规则即止', () => {

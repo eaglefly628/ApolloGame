@@ -224,3 +224,114 @@ export function benchBlueprint(game: string, build: () => WorldBlueprint): Bench
 }
 
 export const BENCH_PASS_THRESHOLD = PASS;
+
+// ═══════════════════════════════════════════════════════════════
+//  帧时轴（REQ-QA-测试审计强化三件 · 主程 spec 2026-07-04）
+//
+//  确定性 hash / 五轴打分是**逻辑正确性**；帧时是**性能墙钟**——两者分开：
+//  benchBlueprint 保持纯确定（total 可复现），帧时走独立墙钟测量，只在 run-bench CLI 报告，
+//  绝不进 total/hash（避免把非确定墙钟污染进确定分）。
+//
+//  判定：均值绿但 p99/max 尖峰超预算 = CONCERNS，超标帧按帧号点名（抓「平均没事、偶发卡顿」）。
+//  预算默认 = 1000/60ms（一个 60Hz 帧）：headless 数据级跑每 tick 是微秒级，正常 PASS；
+//  某 tick 真炸到 >16.67ms（O(n²)/GC 停顿）→ CONCERNS 并点名该帧。永不 FAIL（性能是告警非硬闸）。
+// ═══════════════════════════════════════════════════════════════
+
+/** 一个 60Hz 帧的墙钟预算（ms）。 */
+export const FRAME_BUDGET_MS = 1000 / 60;
+
+export interface FrameTimeStats {
+  game: string;
+  ticks: number;
+  meanMs: number;
+  p99Ms: number;
+  maxMs: number;
+  budgetMs: number;
+  /** 超预算的帧（按帧号点名，含耗时）。 */
+  spikeFrames: Array<{ frame: number; ms: number }>;
+  verdict: 'PASS' | 'CONCERNS';
+}
+
+/** 从每帧耗时数组算统计 + 判定（纯函数，测试喂合成数组即可复现）。 */
+export function computeFrameStats(
+  game: string,
+  times: number[],
+  budgetMs = FRAME_BUDGET_MS,
+): FrameTimeStats {
+  const n = times.length;
+  if (n === 0) {
+    return { game, ticks: 0, meanMs: 0, p99Ms: 0, maxMs: 0, budgetMs, spikeFrames: [], verdict: 'PASS' };
+  }
+  const sorted = [...times].sort((a, b) => a - b);
+  const mean = times.reduce((s, x) => s + x, 0) / n;
+  // 最近秩百分位：p99 取排序后第 ceil(0.99·n) 个（1-based），越界收口。
+  const p99 = sorted[Math.min(n - 1, Math.max(0, Math.ceil(0.99 * n) - 1))];
+  const max = sorted[n - 1];
+  const spikeFrames = times
+    .map((ms, frame) => ({ frame, ms }))
+    .filter((f) => f.ms > budgetMs);
+  // 均值/尖峰任一超预算 → CONCERNS（尤指「均值绿、尖峰红」）。
+  const verdict: FrameTimeStats['verdict'] =
+    mean > budgetMs || p99 > budgetMs || max > budgetMs ? 'CONCERNS' : 'PASS';
+  return { game, ticks: n, meanMs: mean, p99Ms: p99, maxMs: max, budgetMs, spikeFrames, verdict };
+}
+
+/** 墙钟测量：加载一份蓝图，逐 tick 计时（可选 warmup 甩掉冷启动噪声），返回帧时统计。 */
+export function measureFrameTime(
+  game: string,
+  build: () => WorldBlueprint,
+  opts: { ticks?: number; budgetMs?: number; warmup?: number } = {},
+): FrameTimeStats {
+  const ticks = opts.ticks ?? TICKS;
+  const budgetMs = opts.budgetMs ?? FRAME_BUDGET_MS;
+  const warmup = opts.warmup ?? 0;
+  const e = new Engine({ tickRate: 60 });
+  e.load(build());
+  for (let i = 0; i < warmup; i++) e.world.tick(); // 甩冷启动（JIT/首次分配），不计入统计
+  const times: number[] = new Array(ticks);
+  for (let i = 0; i < ticks; i++) {
+    const t0 = performance.now();
+    e.world.tick();
+    times[i] = performance.now() - t0;
+  }
+  return computeFrameStats(game, times, budgetMs);
+}
+
+export interface FrameTimeDelta {
+  metric: 'mean' | 'p99' | 'max';
+  priorMs: number;
+  currentMs: number;
+  deltaMs: number;
+  deltaPct: number; // 相对 prior 的百分比（+ 变慢/退化，- 变快/改善）
+  direction: 'improved' | 'regressed' | 'stable';
+}
+
+/** prior 存档（同场景上次帧时），落 bench-results/frame-times.json（gitignore）。 */
+export interface FrameTimePrior {
+  meanMs: number;
+  p99Ms: number;
+  maxMs: number;
+  ticks: number;
+  budgetMs: number;
+  ts: string;
+}
+
+/** 当前帧时 vs prior 存档的回归行（改善/退化/持平；tolPct 内算持平吸噪声）。纯函数。 */
+export function frameTimeDelta(
+  prior: FrameTimePrior,
+  current: FrameTimeStats,
+  tolPct = 0.05,
+): FrameTimeDelta[] {
+  const pairs: Array<[FrameTimeDelta['metric'], number, number]> = [
+    ['mean', prior.meanMs, current.meanMs],
+    ['p99', prior.p99Ms, current.p99Ms],
+    ['max', prior.maxMs, current.maxMs],
+  ];
+  return pairs.map(([metric, priorMs, currentMs]) => {
+    const deltaMs = currentMs - priorMs;
+    const deltaPct = priorMs > 0 ? deltaMs / priorMs : currentMs > 0 ? 1 : 0;
+    const direction: FrameTimeDelta['direction'] =
+      Math.abs(deltaPct) <= tolPct ? 'stable' : deltaMs > 0 ? 'regressed' : 'improved';
+    return { metric, priorMs, currentMs, deltaMs, deltaPct, direction };
+  });
+}
