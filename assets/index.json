@@ -584273,6 +584273,66 @@
       }
     },
     {
+      "id": "mesh/cube",
+      "type": "mesh",
+      "description": "单位立方（占位/箱体） · 公用基础几何",
+      "status": "filled",
+      "path": "meshes/cube.glb",
+      "category": "mesh",
+      "tags": [
+        "mesh",
+        "primitive",
+        "shared-3d",
+        "cube"
+      ],
+      "license": "CC0-1.0",
+      "source": "apollo-shelf",
+      "spec": {
+        "scale": 1,
+        "genCollision": "box"
+      }
+    },
+    {
+      "id": "mesh/plane",
+      "type": "mesh",
+      "description": "1×1 平面（地块/地面） · 公用基础几何",
+      "status": "filled",
+      "path": "meshes/plane.glb",
+      "category": "mesh",
+      "tags": [
+        "mesh",
+        "primitive",
+        "shared-3d",
+        "plane"
+      ],
+      "license": "CC0-1.0",
+      "source": "apollo-shelf",
+      "spec": {
+        "scale": 1,
+        "genCollision": "none"
+      }
+    },
+    {
+      "id": "mesh/sphere",
+      "type": "mesh",
+      "description": "单位球（占位/星体） · 公用基础几何",
+      "status": "filled",
+      "path": "meshes/sphere.glb",
+      "category": "mesh",
+      "tags": [
+        "mesh",
+        "primitive",
+        "shared-3d",
+        "sphere"
+      ],
+      "license": "CC0-1.0",
+      "source": "apollo-shelf",
+      "spec": {
+        "scale": 1,
+        "genCollision": "hull"
+      }
+    },
+    {
       "id": "phosphor/acorn",
       "type": "texture",
       "description": "acorn · phosphor",

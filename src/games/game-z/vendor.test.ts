@@ -34,4 +34,21 @@ describe('REQ-Resource ⑤ vendoring 本地索引消费', () => {
     const catalog = buildMaterialCatalog(idx);
     expect(catalog.get('mat/demo-wood')).toMatchObject({ preset: 'wood' });
   });
+
+  it('mesh（glb 文件资产）也能 vendor：文件进本地 art/·registerAssetIndex 桥成 model·spec 携带（REQ-PA-3D公用货架 ①②）', async () => {
+    const raw = JSON.parse(readFileSync('public/games/game-z/art/index.json', 'utf8'));
+    const idx = parseAssetIndex(raw);
+    const mesh = idx.assets.find((a) => a.id === 'mesh/demo-cube');
+    expect(mesh).toBeDefined();
+    expect(mesh?.type).toBe('mesh');
+    expect(mesh?.path).toBe('/games/game-z/art/meshes/cube.glb'); // 本地拷贝·站点绝对路径
+    expect(mesh?.spec).toMatchObject({ scale: 1, genCollision: 'box' }); // spec 闭集一并搬
+    expect(mesh?.provenance).toMatchObject({ vendoredFrom: 'mesh/cube' });
+
+    const m = new AssetManager(new StubAssetLoader());
+    registerAssetIndex(m, idx); // mesh → {kind:'model'} 桥接
+    expect(m.has('mesh/demo-cube')).toBe(true);
+    const a = await m.load('mesh/demo-cube');
+    expect(a.descriptor).toMatchObject({ kind: 'model', key: 'mesh/demo-cube', src: '/games/game-z/art/meshes/cube.glb' });
+  });
 });

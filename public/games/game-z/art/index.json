@@ -23,6 +23,29 @@
       }
     },
     {
+      "id": "mesh/demo-cube",
+      "type": "mesh",
+      "description": "单位立方（占位/箱体） · 公用基础几何",
+      "status": "filled",
+      "path": "/games/game-z/art/meshes/cube.glb",
+      "spec": {
+        "scale": 1,
+        "genCollision": "box"
+      },
+      "category": "mesh",
+      "tags": [
+        "mesh",
+        "primitive",
+        "shared-3d",
+        "cube"
+      ],
+      "license": "CC0-1.0",
+      "source": "apollo-shelf",
+      "provenance": {
+        "vendoredFrom": "mesh/cube"
+      }
+    },
+    {
       "id": "tex/vendor-demo",
       "type": "texture",
       "description": "aarch64 original · devicon",
