@@ -67,6 +67,13 @@
 > - REQ-F-065 · [2026-06-17] · 策划 PF · status: **done（引擎侧 2026-06-17）** · 归档 2026-07-03（scaleByResource per-unit 异质缩放）
 > - REQ-F-061 · [2026-06-13] · 主策划 · status: **done（2026-06-13）** · 归档 2026-07-03（Hitbox hp 条件门+处决）
 > - REQ-UI-G牌组保真批（5 条）· [2026-06-27] · PG · status: **已评审·结案（1 接受 4 回驳·Tag.size+Tooltip.block）** · 归档 2026-07-03
+> - REQ-UI-Gemini评审 · [2026-06-26] · Lead 评审 · status: **结案（C2/C3 done·余回驳/备案）** · 归档 2026-07-04（清池复核）
+> - REQ-025 · [2026-06-25] · PA · 双人合作平台跳跃 · **作废（主程清池复核 2026-07-04）**：无立项消费方·新游戏先过 capability-plan 重提
+> - REQ-G-诅咒地煞 · [2026-06-21] · design G → 甲 · **作废（主程清池复核 2026-07-04）**：被 REQ-G-地煞新op #4 同族参数化吸收（owner 暂缓原判保留）
+> - REQ-G-说明同步 · [2026-06-21] · design G → 乙 · **作废重开（主程清池复核 2026-07-04）**：战斗模型大改中·doc26 将重写·收口后按新版重开一次做对
+> - REQ-UI-Label深色令牌(ink) · [2026-07-01] · P3D → 主程 · status: **✅ done（随 web字体批 2026-07-02 落地·2026-07-04 结案归档；game-d 切换活并入 REQ-GAMED）** · 类型: UI 库闭集扩容
+> - REQ-G-Boss-AI · [2026-06-21] · design G → 甲 · status: **✅ 实装+sim验证（2026-06-23）·结案归档 2026-07-04（活尾由 Player-AI 单 + design G 标定线接管）** · 类型: 真缺口（已闭合）
+> - REQ-BASE-引擎卫生三件（tray 补注册+守护测试 / Card3D 清遗 / view.ts 死码删）· [2026-07-03] · 主程 → 指派：Opus · status: **✅ done（2026-07-03·Opus）** · 归档 2026-07-04（自粘连行拆出）
 ### REQ-G-即时法术/功能牌（对场上牌使用·补策略深度） · [2026-06-29] · owner 试玩后设计反思 → 战斗/design G 域 · status: **open（大方向·owner 说「先记录·暂不实现」）** · 类型: 核心玩法扩展（新通用能力·非重组）
 > **owner 观察**：现在**没有一张牌是「针对场上局面、主动打出去影响某个目标」**的——天罡全是「打出后整场被动加成」，地煞是 Boss 专属被动。缺「即时·指定目标·改变战场」的牌。owner 直觉：**「功能牌 > 战斗牌」**才是好玩的深度来源（纯拼战力天花板低）。owner「先暂时这样吧」→ **只记录·暂不实现**。
 >
@@ -135,10 +142,6 @@
 >
 > **阶段**：P0 依赖+init 自检 → P1 成就/统计 → P2 云存档 → P3 富状态/排行榜 → P4 depot/上传管线。联机(Steam Networking)依赖 REQ-010 浮点→定点，殿后。
 
-### REQ-UI-Gemini评审 · [2026-06-26] · Lead 评审（UI 库域·外部 Gemini code review 收敛） · status: **部分 done（C2/C3 已实现）· 余回驳/记录** · 类型: 架构评审收敛
-
-> 外部 Gemini review 7 条，Lead 以宣言尺子收敛：✅ **C2**(样式注入硬化·`num()`+anim 白名单·XSS 测) + **C3**(焦点丢失·`patchFocusedInput` 就地覆写不重建) 已实现。🟡 **A2**(bind fast-path) 记录待用例。❌ 回驳 **A1**(弃 CSS flex 改 JS 绝对定位=倒退)、**A3**(FSM 承载手势·时序态已在解释器·YAGNI)、**C1**(拆判别联合类型·毁数据契约)、**C4**(actionArg Record·现做法更干净)。详情见 git。
-
 ### BUG-G-掌机黑屏 · [2026-06-22] · owner→甲（cartridge/战斗屏域·owner 直派 bug 修） · status: **🟡 已修（zoom·`c5608bbc`）· 待真机烧版验证** · 类型: 弱 GPU 渲染回归
 
 > owner 报新烧 cartridge 包「APOLLO OS 绿字开机条 + 黑屏」、同代码 Mac 正常。掌机 = `build:cartridge`（`dist-cartridge`·base `./`·直挂 game-g 无 launcher）·弱 GPU webview。
@@ -150,6 +153,7 @@
 ---
 
 ### REQ-G-战场UI批次 · [2026-06-21] · owner→game-g 乙（甲代登记·战场屏 owner 授权乙动）· status: **open ⚠️ owner 二次催办（2026-06-21 playtest：1/3/6/9 仍看不到·请乙优先）** · 类型: 表现层一批（playtest 连发）
+> 【Lead 注 2026-07-04】战斗屏正被心流重构重塑（IMPL-PLAN-combat-flow·三行为/碰撞才战斗/满仪式）——乙开工前先与该线核对，已被吸收的项勿重复做；owner 催办的 1/3/6/9 仍优先。
 
 > ⚠️ **owner 2026-06-21 二次反馈**：这版仍**看不到敌方源泉数(1)、双方牌库剩余(3)、Boss 3 张地煞+悬停说明(6)**；开销角标(2)是个 `★N` 数字**挡住了牌面字**、且没画成水滴；买不起的牌没暗掉也没提示(9)。owner 明确**仍归乙**做（甲问过是否接手·owner 选乙）。**数据全就绪**，请乙优先收这几条。
 >
@@ -203,18 +207,6 @@
 
 ---
 
-### REQ-025 · [2026-06-25] · PA · 双人合作平台跳跃（上100层/冲100米）· status: open · 优先级: P1 · 类型: 真缺口（effect 无法改碰撞体 Shape + 命令模型无蹲下输入）
-
-**标题**：缺"蹲下钻缝"能力 —— `effect` 写不了 `Shape`、命令模型没有蹲下输入
-
-- **想实现的游戏行为**：双人闯关里角色**蹲下**缩小碰撞体，钻过低矮缝隙/在低天花板下通行（合作解谜常用：A 蹲下当矮台阶 / B 蹲身钻过 A 撑开的缝）。这是用户点名要的技能之一。
-- **已经试了什么**：① 动画/姿势用 `set-state`→`AnimState` clip="crouch" 可做（纯表现，OK）。② 但要真正"钻低缝"必须**缩小碰撞箱高度**。全库只有 `gauge` 在运行时写 `Shape.width`（血条专用、按 Resource 比例、每帧覆写，不能复用）；`effect-apply` 的 `writes` 是 Flag/Resource/State/Sensor/Visibility/Destroy/Timer/RandomSeed —— **没有 `Shape`**；`Effect.kind` 也无写 Shape 的项。`Transform.scaleY` 能改但碰撞读 `Shape.height` 不读缩放（facing 正是靠这点：scaleX 不影响碰撞）→ 缩 sprite 不缩碰撞箱。③ 命令模型 `Command.move{dx,dy}+jump`（commands.ts）**没有蹲下输入**，KeyMap 也无。
-- **卡在哪 / 缺什么**：没有"信号/状态 → 改某实体 `Shape.height`"的数据通路；也没有蹲下这个输入意图。
-- **建议方案**：① `effect-apply` 增 `Effect.kind:'set-shape'`（写 `targetEntity` 的 `Shape.height/width/radius`，把 `Shape` 加进 effect-apply 的 writes）——与 `set-sensor` 同类、整数字段、确定性安全。蹲下即纯数据：蹲键→condition→ 两个 Effect（`set-state "crouch"` 给动画 + `set-shape height:15` 缩碰撞）；松开复原 height:30。② 命令模型/KeyMap 加"蹲下"意图（或约定 `dy:1`=蹲下，让数据逻辑读）。**一个注意点**：低天花板下松开蹲下会把人顶穿——只在头顶净空时才复原（用 sensor/overlap 条件判，纯数据可表达，非第二个引擎特性）。
-- **优先级 P1**：上100层/冲100米的"蹲下"技能前置。**不阻塞主体**（爬塔用 boost 当协作核心；蹲下能力到位后再接）。按"落地不口头"back up 入池。
-
----
-
 ### REQ-026 · [2026-06-26] · PA · game-h 你造我塔/是男人就X层 · status: open · 优先级: P1(rope/spring) P2(conveyor/respawn) · 类型: 真缺口（想象力机关 = effect 写不了 Velocity/Transform、无双体约束）
 
 **标题**：缺"会动的平台个性"与"双体绳索"——参考 NS-SHAFT(平台有个性) + Pico Park(身体当机关) 的灵魂机关当前组合不出
@@ -245,29 +237,12 @@
 
 ---
 
-### REQ-G-诅咒地煞 · [2026-06-21] · design G → 甲 · Game G · status: **⏸ 暂缓（owner：诅咒先不做·关5 改用 bossFavorBias/bonusMana 杠杆）** · 优先级: P3（备案）
-
-> Boss 被动「诅咒」(每 N 回合 bounce 玩家随机兵)：真缺口但与 `batteryEveryTurns` 同构、可加同类新 op。备案暂不实现。数据形 `{kind:'curse',op:'bounceUnit',everyTurns,mode,pick}`；接入清单见 `boss-config-1-5.md §七`。
-
----
-
 ### REQ-G-Boss牌面板 · [2026-06-21] · design G → 甲（战斗屏域） · Game G · status: open · 优先级: P2（明牌可破核心体验·非阻塞战斗逻辑） · 类型: 表现层（数据已在·纯渲染）
 
 > **owner 2026-06-21**：「Boss 5 张天罡也要这样去抽和摸；我们应该能看到他的手牌和天罡牌，但现在没地方看。」+「在他地煞牌下面放一个微小的牌组，手点上去就放大看具体哪几张·是缩小 scale 过的小牌。」
 > **评判（design G）**：纯**表现层**——数据全在（`TurnBattle.b`：`pokerDeck/tengangDeck/hand/castIds` + 关卡 16牌组+5天罡明牌）；**无引擎/数据缺口**，只差战斗屏渲染（甲地盘）。机制侧已对：Boss 天罡同玩家从 `tengangDeck` **抽/摸再打**（`drawCard('b','tengang')`→`castTengang`·花源泉·非免费）→ 面板只"看牌"不改机制。
 > **派甲（doc24 §九 已补规范）**：① 顶部 Boss 牌面板：3 地煞（明牌·在途）**之下**放 scale 过的 **mini-deck**（16扑克+5天罡 loadout·明牌 counter-pick 靶）；② 点/悬停 **放大**成可读网格看清具体哪几张（小尺寸=设计·放大解决可读）；③ Boss **手牌+已打天罡可见**（数量+内容·明牌哲学）。乙不碰（战斗屏=甲）。
 > **🌫 暗牌/迷雾态（owner 2026-06-21 追加·未来）**：面板留一个**隐藏态**——Boss 带 `fog`（迷雾）地煞时 mini-deck/手牌翻背面·不可放大（玩家看不清·AI 本有全信息）。**`fog` 已在 disha-pack 设计（关17+）**·不是新能力。**关1-5 全明牌不加 fog**（明牌可破=核心）；fog 留后期/Ascension。
-
----
-
-### REQ-G-说明同步 · [2026-06-21] · design G → 乙（菜单/帮助屏域） · Game G · status: open · 优先级: P2（玩家可见·信息已过期） · 类型: 表现层（文案同步·数据已在 doc26）
-
-> **owner 2026-06-21「更新下游戏说明」**。design G 已更新设计源 `doc26 玩法手册`；**但游戏内帮助中心文案是 `lobby-overlays.ts · helpBox` 写死的（乙域）·已过期** → 派乙照 doc26 同步：
-> 1. **掷命对决**（helpBox 中级 L31）补 **🪙 战胜硬币（留场续攻）**：赢一场后抛币——**人面=留场乘胜追击 / 字面=回牌库+返半费**（你按钮亲掷·敌方自动·投掷后才揭晓）。
-> 2. **❗事实错误（helpBox 高级 L48）**：「Boss 库=**12 随机天罡**+3 地煞」→ 改 **「16 扑克 + 5 天罡 + 3 地煞」（写死·与你 16+5 对称）**。
-> 3. 补 **👁 Boss 牌面板**：战场顶部能看 Boss 的 3 地煞 + **5 天罡明牌 + 缩略牌组（点开放大看 16 兵牌）+ 手牌**（明牌可破=counter-pick 核心）；后期「迷雾」地煞会盖暗。
-> 4. **放牌按点数收费**（中级 L30）可补一句：2-4 免费 / 5-7=1 / 8-10=2 / JQKA=3。
-> **乙只改 helpBox 文案**（菜单屏域）；战斗屏面板本身=甲（`REQ-G-Boss牌面板`）。doc26 为准。
 
 ---
 
@@ -317,14 +292,6 @@
 
 ---
 
-### REQ-UI-Label深色令牌(ink) · Label.color 补一个「深墨」语义令牌（金/亮底上的深字）· [2026-07-01] · P3D（game-d Title hero 键）→ 主程 · status: **待主程** · 类型: UI 库闭集扩容（语义令牌·非 raw hex·合 manifesto）
->
-> **场景**：`Panel.action + bg:'linear-gradient(#ffd982,#f0a93a)'` 拼的金色 hero 键（「开 始 攀 塔」），原型文字是**深墨色 #3a2406**（金底上深字=高对比高级感）。现 `Label.color` 闭集 `text|sub|dim|jade|gold|ok|warn|danger|mine|foe` **全是亮/彩色，没有深色**——金底上只能放亮字，对比弱、发糊，逐像素还原不了。
->
-> **回驳过自己（不走 raw hex）**：不是要 `color:'#3a2406'`（破「颜色=语义令牌」红线）。要的是**一个语义令牌** `'ink'`（深墨·= `theme.ink`，缺省回退很深的 `bg0` 或专设 `#2a1c0a` 级）→ 加进 `Label.color`（及 `spans.color`）union + `UITheme.ink?`。同 pixel/serif/mine/foe 先例（闭集加档·弱 LLM 只在闭集里选）。
->
-> **复用面**：任何「深字压在金/亮/暖底」的 CTA / 徽标 / 高亮块（不止 game-d）。**当前 game-d 用 `color:'text'` 亮字临时顶（见 `gd-start-t` 的 `TODO(REQ-UI-ink)`），令牌到位即切 `'ink'`。**
-
 ### REQ-GAMED-数据驱动迁移 · game-d《骰途》从手写 sim 迁成能力驱动（体检整改）· [2026-07-02] · P3D（game-d owner）→ 主程（引擎能力域） · status: **部分自办 + 缺口待主程** · 类型: 架构整改（数据驱动收口）· 设计 `docs/design/game-d/data-driven-migration.md`
 >
 > 体检核实属实：game-d 战斗/状态全手写 `S` 对象 + 纯函数，`capabilities:[]`、`Math.random()` 绕种子随机、手写 `loadoutPattern` 重造 poker-hand、双人假、0 测试。目标：照 game-e/game-f 迁成 blueprint（components + capabilities + signals + keybinds）+ 薄 session 编排。~80% 复用现有能力（poker-hand/card-scoring/effect-apply/event-when/mortal/flow/keybind/random）。
@@ -352,6 +319,7 @@
 > **附·整改复审打回三条（Lead 复核 188fbbf1，owner 已知情）**：① 种子写死 `20260702` 且无 run-seed 注入路径 → 每局骰运相同，**出货级 bug**：改为开局生成 run-seed、随存档保存；② "复用 poker-hand" 只替了展示用 `loadoutPattern`，**战斗路径 `detectPattern`（combat.ts:103）原封未动**且零测试——要么真替、要么先补测试，禁止两套并存长期化；③ 提交信息勿超售实际完成范围（会误导后续 session 的债务判断）。
 >
 > **主程下沉完成（2026-07-02·引擎域·门禁 tsc+vitest+build 三绿）**：**#1 ✅** `dice-roll` capability（`t2-dice-roll`）—— `DicePool`+`RandomSeed`(+`locked` 只重掷未锁) → Update 相位写 `RolledDice`；**#4 ✅ 已并入**（`DicePool.ban:{kind:'banHighest'|'banLowest',n}`，掷后标 `banned` 不移出、保下标对齐）；骰能力族纯函数 `opposedRoll(rng,pA,pB,tiePolicy)`（对掷平局阶梯 rollerWins/defenderWins/reroll）+ `rollDicePool`/`applyBanFilter` 下沉 `src/skills/tier2/dice.ts`（非 capability，先例 hex.ts）。**#2 ✅** poker-hand wild —— `Card.wild?:boolean`（内禀于牌、经 PlayedHand 自动流经 poker-eval，无新配置；裁量：不用 `HandMods.wildIndices`，因 poker-eval 无逐牌 flag 源、wild 是出牌内禀属性），`evaluateHand` 小规模确定性枚举求最优牌型（紧候选集+可重复组合，无 wild 逐字节等价旧行为）。**#5 ✅ 测试钉死** —— 6-suit flush 契约 + `suitMerge` 仅 4 花色语义（6-suit 禁用）契约用例进 `poker-hand.test.ts`。新增测试 24 例（dice 16 + dice-roll 8）+ poker 12 例。**#3/#6 不在本次范围**（元素对子=重组、netcode=另立）。**→ P3D 可开始接线**（game-d 把 `S` 迁组件、`RolledDice`→`PlayedHand` 映射、禁骰/wild 走数据；勿改 `src/skills`/`src/assembly` 引擎域）。
+> 【Lead 追加 2026-07-04】顺手带一行活：`game-d.ts` `gd-start-t` 的 TODO(REQ-UI-ink) 切 `color:'ink'`（ink 令牌已落地·原单已结案归档 2026-07-04）。
 
 ### REQ-G-地煞新op-v3 · [2026-06-21] · design G → 甲（引擎域） · Game G · status: open · 优先级: P2（关11-52 特色·非阻塞·有降级兜底） · 类型: 真缺口（通用 op·下沉）
 
@@ -363,20 +331,6 @@
 > 5. 🥉 `offense.breakthrough`/`jumpAdvance`（胜后连推/跳格）+ 已设计 deepDecay。
 > 6. 🥉 v2 四件（extraAction/freeze/intimidate/withdrawRefundMul·见 REQ-G-地煞新op）。
 > 长尾(mirage/minefield/volleyRelay…)先用降级映射上线。实装后 design G 用真地煞重跑 sim 定稿。
-
----
-
-### REQ-G-Boss-AI · [2026-06-21] · design G → 甲（引擎域·AI） · Game G · status: **✅ 实装+sim验证（2026-06-23·甲 commit 4c8b9d6e+aa8728c1）·待接真 loader 重标** · 优先级: **P0（解锁整个公平难度模型）** · 类型: 真缺口（Boss AI 太弱）
-
-> **✅ design G 2026-06-23 验收**：甲改进后重扫 `simulate-balance.ts`（N=500）——**两层都忠实实装**：① 公平·公开盘面反应式启发（防漏路回防/趁势压优势路/疾行驰援·全档生效·零 per-boss 代码）；② 信息不对称 `foeIntel`（读玩家手牌+牌库顶3张预读·**仅 aiTier≥3 启用**·关3-5）·正合 `boss-ai-spec.md` 难度阶梯。
-> **效果**：关1（aiTier=1·仅靠①层·不读手牌）WR 从坏态 ~96-100% → **新手 76%**；**难度旋钮复活**（bossDelta 0→76%·+6→54%·+12→37%·旧坏态对旋钮免疫）→ 整个公平难度模型解锁。
-> **剩余**：(a) 待 `REQ-G-Player-AI` 强玩家落地后 sim 才完全可信（现玩家仍贪心）；(b) 待接真 loader（我更新的 boss-config：favorBias0/源泉4/主将3命/破家回库/16写死牌组）后 design G 重扫定稿 98%→60% 曲线。**核心 AI 缺口已闭合。**
-
-> **owner 公平性原则 + design G sim 实证**（详 `design/balance-philosophy-fairness.md`）：难度只能来自明牌地煞·禁止偷源泉/暗数值。但 sim 镜像测试发现根因——**Boss AI 太菜**：
-> - 纯镜像（双方同牌组+天罡+地支·都贪心）→ 玩家 **52.8% ≈ 50%**（战斗公平 ✓）。
-> - 同配置但 Boss 用现 utility-AI(aiTier5) → 玩家 **82.5%**（AI 同牌也输 82.5%）。
-> **派甲（P0）**：强化 `aiTakeTurn` utility-AI 到 ~玩家水平：① 不被"贪心铺最便宜兵+推进"白嫖压制（学会铺场/卡位/集中突破）；② 守势 boss 也要会抓机会反推、威胁玩家家（现在守势 boss 永远威胁不到玩家·只能拖）。**修好前**所有关卡只能靠偷资源造假难度（owner 已禁）→ 这是平衡模型的总开关。
-> 修好后 design G 用**纯明牌地煞**重标 98%→60%(前10关) 难度曲线·全公平。
 
 ---
 
@@ -519,11 +473,7 @@
 ### REQ-G-碰撞才战斗（clash 触发改「落点踩敌」）+ 胜者推进占据 · [2026-07-03] · owner → 程序A(逻辑·已做)+程序B(表现) · Game G · status: **逻辑 done（程序A）/ 表演 open（程序B）** · 优先级: P1 · 类型: 战斗核触发规则修正
 > **owner 2026-07-03**：clash 触发从「前锋相邻 gap≤1 即战」改成**碰撞才战**——牌移动时**这一步的落点格里有敌人才打**；落点是空格只走位不打（→ 玩家可**确定预测**「这步会不会撞」）。胜后（owner 选 A）：停敌前一格·**赢了推进占据敌人腾出的格**。
 > **程序A 已实装（logic·done·本 session）**：① `advanceSideMove`——前锋自然落点(`slot+dir*speed`)踩到/越过敌前锋才 `pending` 掷命（守军 hold/主将 pin/过门兵不撞）；实际移动仍封顶在敌前一格。② `resolveClash`——胜者留场则 `wf.slot = 敌腾出格`（守军「赢守原位」`!hold` 除外·满连胜光荣回库除外）。测试锁定（落点空走位·踩敌才战·赢了前进）。tsc+vitest+build 全绿。
-> **程序B 待做（表演·owner「一个单独的表演过程」）**：碰撞掷命毕的**生死+前进演出**——① 败者场上阵亡（斩两半·见上条 VFX）；② **胜者从「敌前一格」滑入「敌腾出的格」的前进动画**（逻辑瞬时改 `slot`→程序B 补插值滑动；旧位=敌前一格·新位=`lastClash` 后的场上兵 slot）。与掷骰特写收场衔接·全在真实场上兵位(锚 `u-<id>`)。 · tray 补注册+守护测试 / Card3D 清遗 / view.ts 死码删 · [2026-07-03] · 主程 → **指派：Opus** · status: ✅ **done（2026-07-03·Opus）** · 类型: 引擎卫生（零风险）
-> ✅ 完工摘要（2026-07-03·Opus）：**① t2-tray 补注册**：`trayCapability` 入 `capability-registry.ts`（tier2 分组·drag-place 之后）→ 自动进 `buildCapabilityCatalog` 词汇表（describe 质量达标·无需补）。新增守护测试 `src/assembly/registry-guard.test.ts`：`import.meta.glob(['../skills/**/*.ts','!*.test.ts'])` 扫全部 skill 模块 + 鸭子判定 CapabilityDefinition（id/version/describe/components/systems），断言每个 id 都在 ALL_CAPABILITIES；带「glob 非空跑」下限（>70·防路径写错=假绿）。**自证**：临时从数组撤掉 tray → 测试红、点名 `t2-tray`（tier2/index.ts + tray.ts 两处），恢复即绿。**② Card3D 清遗**：全库 grep 证零消费（仅 component-map 闭集 + render.ts 接口自身+注释；game-g 三渲已删 `three-renderer.ts` 不存在）→ 删 `render.ts` 的 `Card3D` interface + `component-map.ts` 的 import/闭集条目 + `renderer/index.ts` 过期注释；顺带清 `render.ts` Mesh3D 注释里对 Card3D 的悬挂引用。（game-g/blueprint.ts:11「均删见 git 史」是 PG 私档历史注记·不越界动。）**③ game-e view.ts 死码删**：`buildGameEView` 全库仅 `view.test.ts` 自引用 → 删 `view.ts`+`view.test.ts`+ barrel `export * from './view.js'`。删后 game-e 引擎触点收敛为纯计分链（cardScoring/pokerHand/effectApply/eventWhen/flag/resource/stringVariable）——视图带来的 transform/sprite/**frame(l3-frame)**/text 视觉原子不再被 game-e 消费（如实化评审所指）。门禁 tsc+vitest(293 文件/2134 例)+build 退出码全 0·直推。
-> 出处：底座终审 `docs/design/base-capability-review-2026-07-03.md` §二⚙️。
-> spec：① **t2-tray 补注册**：`src/skills/tier2/`（tray 相关 capability 对象）加入 `capability-registry.ts` ALL_CAPABILITIES（对照现有条目风格）；**加守护测试**：扫 `src/skills/**` 全部 `defineCapability` 导出，断言每个都在 ALL_CAPABILITIES（防再漏，放 assembly 层测试）。② **Card3D 清遗**：从 `component-map.ts`/`components` 闭集移除已退役的 Card3D（先全库 grep 证零消费再删；renderer/index.ts 里的过期注释一并清）。③ **game-e view.ts 死码删**：`src/games/game-e/view.ts`（buildGameEViewBlueprint 全库零调用，评审两度点名）删除 + 其 import 清理；若有引用它的测试一并删。
-> 门禁 tsc+vitest+build 全绿直推；此活涉引擎域（registry/component-map），属主程授权的引擎卫生，照 spec 严格执行不越范围；完工标 ✅。
+> **程序B 待做（表演·owner「一个单独的表演过程」）**：碰撞掷命毕的**生死+前进演出**——① 败者场上阵亡（斩两半·见上条 VFX）；② **胜者从「敌前一格」滑入「敌腾出的格」的前进动画**（逻辑瞬时改 `slot`→程序B 补插值滑动；旧位=敌前一格·新位=`lastClash` 后的场上兵 slot）。与掷骰特写收场衔接·全在真实场上兵位(锚 `u-<id>`)。
 
 ### REQ-G-谁打谁·战前锚场 + 战后场上标结果（对决可读性）· [2026-07-03] · owner → 程序B（表现·程序A 供数据·已足） · Game G · status: open · 优先级: P1 · 类型: 演出可读性（非新数值）
 > **owner 2026-07-03**：「现在看不清楚谁要打谁就开始了」+「结算完以后，把击退/结果标在牌型展示上·我知道谁打了谁」。现状 `showClashCue`（game-g.tsx:395）是**全屏 VS 弹窗**闪 ~2s——脱离真实棋盘、看不出是场上**哪两枚**在打；结算结果也只进特写框（owner 反复说「结算框看不清」）。
