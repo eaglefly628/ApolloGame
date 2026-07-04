@@ -348,7 +348,7 @@
 >
 > **可回驳**：若你认为点吸引子该并进未来更通用的「力场（force field·点/线/风场）」一起设计、或 unproject 该走别的 seam → 请回驳并给替代。owner 要的是「粒子温柔地跟手聚拢」，`attractor` 是我判的最小充分手段、非硬指标。
 
-## REQ-3D-交互与材质补全批 · 对象拾取/图元/BlendSpace/贴图槽/HDRI 五件 + Tier3 不做清单固化 · [2026-07-03] · owner 提需 → 主程逐条裁决 → P3D · status: **①✅②✅④✅⑤✅ 已实现已推（P3D 2026-07-04·各同提交回填手册·全绿·待 Lead review·见下回执/偏离）；③ 待拉动（角色步态成熟时开工）** · 类型: 3D 线能力补全（Lead 图纸）
+## REQ-3D-交互与材质补全批 · 对象拾取/图元/BlendSpace/贴图槽/HDRI 五件 + Tier3 不做清单固化 · [2026-07-03] · owner 提需 → 主程逐条裁决 → P3D · status: **①②④⑤ ✅ Lead 验收通过（2026-07-04·判决见下·偏离全裁）；③ 待拉动（角色步态成熟时开工）** · 类型: 3D 线能力补全（Lead 图纸）
 
 > **P3D 完工回执（2026-07-04·请 Lead review）**——逐件全绿（tsc+vitest+build）、同提交回填 `docs/playbooks/3d.md`：
 > - **①拾取**（`d33ad0b4`）：`Pickable3D` + `ThreeRenderer.pick(x,y)` + 纯函数 `rayAabbT`（6 无头测试）+ game-z 点选 HUD 自证。**两处偏离图纸请裁**：(a) 组件字段用 `signal`/`hover`（非图纸 `pickSignal`/`hoverSignal`·也未加 `enabled?`/`layer?`——无消费者·YAGNI）；(b) 射线对**世界 AABB 包围盒**求交（非逐三角 Mesh3D 几何）——换来**纯函数可无头测**且不依赖网格几何/WebGL，遮挡取最近盒。要精确到网格或改字段名我照办。hover 字段留了、发射待游戏在 pointermove 调 pick（demo 只做 click）。真浏览器点选自证待截图环境恢复。
@@ -356,6 +356,14 @@
 > - **④贴图槽**（`1c70a299`）：`Material3D`+`MaterialSpec` 加 `metalnessMap/emissiveMap/ormMap`+`tiling{repeat,offset}`；ORM 挂三槽·emissiveMap 置白基·tiling 进纹理+缓存键·pbrSig 纳入·跨界 asset-index（请一并 review）·game-z plank tiling 自证。**metal/emissive/orm 真图 demo 待 ORM 贴图资产**（槽已通·sig/catalog 已测）。
 > - **⑤HDRI**（`fc2b56f4`）：`Sky3D.envMap`（图纸说「env 接 assetKey」→ 我判 env 保持强度语义·**新加 envMap 字段**接 .hdr key·更兼容·请认可）；HDRLoader.parse→PMREM→environment·缺省/未就绪/失败回退程序化影室·容错不崩。**渲染 WebGL 无法无头测**·真 HDRI 视觉 demo 待 ≤2k .hdr 资产（导入线 .hdr 识别=asset-manager 侧后续）。
 > - **③BlendSpace**：按裁决「有真角色步态需求拉动时」开工·当前未拉动 → 未做（game-z 角色/追兵骨骼线成熟后接）。
+
+> **Lead review 判决（2026-07-04·对抗性复核 4 个 diff + 独立复跑门禁全绿·偏差按三分法裁）**：**REVIEW: PASS**
+> - **①(a) 字段名 signal/hover·省 enabled/layer** → INTENTIONAL·**接受**（组件命名空间内短名更干净；enabled/layer 无消费者=YAGNI，闭集加档随真需求）。
+> - **①(b) AABB 求交（非逐三角）** → INTENTIONAL·**接受**（纯函数无头可测 > 精确度·盒庭图元场景够用）。边界记录：旋转体的世界 AABB 过覆盖（可点中「空角」）；精确网格拾取=将来真需求再开单。
+> - **① determinism.ts 登记行** → 合规（handoff §0.1:37/76 明文授权 NON_DETERMINISTIC 加行·非越域）。
+> - **④ asset-index 跨界** → **接受**（闭集 schema 扩展照图纸三槽·跟 roughnessMap/aoMap 先例同款·有测试·自曝请审姿势正确）。
+> - **⑤ envMap 新字段（非复用 env）** → **图纸错误·P3D 修正正确**（`env` 既有语义=IBL 强度数字，图纸「env 接 assetKey」会砸兼容——记 spec 方失误，OUT-OF-SCOPE 类偏差回改图纸认定）。
+> - **残项（不阻塞·MANUAL CHECK 池）**：ⅰ 真浏览器点选自证（P3D 待截图环境）；ⅱ hover 发射待 pointermove 消费者；ⅲ 真 ORM/emissive/HDRI 视觉 demo 待资产（asset-manager 线·.hdr 导入识别一并）；ⅳ pick→`enqueueAction`→sim 全链路尚无游戏 exercise（手册铁路径已写死·首个消费游戏接线时验）。
 
 > owner 2026-07-03 提三档清单，主程逐条裁决如下（查重已做：接池内既有 seam/裁决，不重造）。
 >
