@@ -180,6 +180,9 @@
 >
 > **边界 / 分工**：碰撞 sim 全在 `engine/spatial` + `skills` + sim 组件 = **🔒 主程域**（§0.1）。**请主程评审本提案并定落点**（主程实现 / 或 owner 像授权资产层那样授权 P3D 跨界落）。**P3D 天然拥有的那块**：① 碰撞体 **debug 线框可视化**（render-only·新 3D render 组件或复用 Mesh3D wireframe·我的渲染线域）；② game-z 接碰撞能力做触发区 demo（小黄鸭进区域亮灯等）。
 > **验收**：角色 capsule vs 关卡 AABB 触发/重叠事件确定性（进 hash·rollback 安全·node 单测同 2D `overlap-detect.test` 先例）；debug 线框渲出；tsc+vitest+build 全绿。
+>
+> **Lead 裁决（2026-07-04）：✅ 准 P1 范围**——提案质量高：数据组件过尺（弱模型填得了 Collider3D、填不了物理句柄）、镜像 2D 确定性分层（DynamicAabbTree 先例）、YAGNI 刀干净（八叉树不做/三角网格不做/刚体=表现轨另议均照准）。**落点**：碰撞 sim（engine/spatial+skills+组件）=主程域不外放——**Lead 已收编提案 P1 节为 spec → 指派：Opus（xhigh·正确性关键）施工引擎半**；**P3D 并行做自己那半**（debug 线框 render-only + game-z 触发区 demo），组件契约（`Collider3D{kind:'sphere'|'aabb'|'capsule',...}` / `Overlap3D`）以引擎半落地时的 component-map 为准、字段名先按提案冻结。开工时点=owner 排期（说一声即发工）。P2（OBB/cylinder/凸包）待 P1 消费方真出现再议。
+> **Lead 顺手注（2026-07-04）**：上文 game-z「Toggle 绕过」注记已过期——根治已落 `src/ui/components/server.ts:64-68`（焦点保护只认文本控件·checkbox/radio 放行重建·2026-07-01），P3D 可撤 `blur()` 绕过并删该注。
 
 ---
 

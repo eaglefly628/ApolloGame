@@ -17,7 +17,7 @@
 > **四步**：① 共享 3D 货架——登记公用数据资产进 `assets/index.json`(+spec)：基础 mesh(cube/sphere/plane glb)、材质(pbr 预设降为 `type:'material'` 数据条目)、程序化贴图(gen-textures 产物登记)、天空盒(1–2 CC0 HDRI ≤2k)。② 扩 `scripts/vendor-asset.mjs` 支持 copy mesh/material/hdr 进本地并携 spec(scale/colorSpace/genCollision)+补测(现仅测过 2D)。③ 本地目录标准 `public/games/<game>/art/{textures,models,materials,env}/` 写进 `playbooks/assets.md`(PA handoff backlog #4 收口)。④a gen-textures 产物改「产进货架」而非散落。④b（P3D 域·转 `requests-3d.md`）game-z/game-d 停直引 `public/textures/` → 改从本地 `art/` vendor。
 > **边界**：`MaterialSpec/MeshSpec` 已存在(不新增 schema)；渲染消费端已就绪(P3D render 半定稿)。PA 分步推、门禁全绿；碰渲染/游戏代码先知会 P3D。
 
-### REQ-PUBLISH-创作台一键发布 · player 模式内「打包→上传 Steam」一键流水线 · [2026-07-04] · owner 口头指派 → PS 转呈（跨 PS↔PST 域） · status: **open（待 Lead 裁域切分 + 派工）** · 优先级: P2（产品体验·非阻塞） · 类型: 产品化·发行管线接入创作台（后端多已存在·主要是接线）
+### REQ-PUBLISH-创作台一键发布 · player 模式内「打包→上传 Steam」一键流水线 · [2026-07-04] · owner 口头指派 → PS 转呈（跨 PS↔PST 域） · status: **裁决完毕（Lead 2026-07-04·见文末）·PS 先行硬化契约·PST 排队接 UI** · 优先级: P2（产品体验·非阻塞） · 类型: 产品化·发行管线接入创作台（后端多已存在·主要是接线）
 > **源起**：owner 2026-07-04：创作台 **player 模式**下把发布按钮/路口接好——一键打包、填自己的 Steam ID/AppID，让用户「一条流水线产出游戏」。**范围裁决（owner 当面答 PS 二选）**：① 承载面 = **创作台 player 模式（网页）**；② 深度 = **尽量一路到 Steam 上传**（能自动的自动到 steamcmd upload 为止）。
 >
 > **后端多已存在（接线，非造轮子）**：`steam-publisher/serve.py`（HTTP API：配置→build 裸目录→生成 VDF→steamcmd 上传·含实时日志轮询）、`scripts/dist.py`（打包菜单）、`electron-builder.yml`、平台接线（成就/云/富状态）均就绪。缺的是①把它接进 studio player 模式 UI ②一条 studio 能稳定调的发布 API。
@@ -29,6 +29,11 @@
 > **必须显式标给用户的「不能自动」三步（architect 诚实·Valve 无 API）**：① 用户自己的 $100 合作伙伴账号 + 真 AppID/DepotID；② 本机装 steamcmd + 首次缓存登录（Steam Guard 令牌需终端手输一次）；③ 上传后后台 **Set Live**（防误推线上·故意手动）。故「一路到 Steam」= 自动到 upload 为止 + 向导显式引导这三步，非黑箱全自动（细节 `steam-publisher/RELEASE-PROCESS.md`）。
 >
 > **请 Lead 裁**：a) 域切分是否如上（PST 接 UI / PS 供管线 API）；b) 接入形态——studio 直连 steam-publisher 本地端口 vs 经 apollo.py 转发 vs 内嵌重写；c) 派工。**PS 可先起步**：把 `serve.py` 编排 API 硬化成稳定契约 + 补冒烟测（无真账号用 480 + mock 跑通编排），等 PST 接 UI。
+>
+> **Lead 裁决（2026-07-04）**：
+> a) **域切分照准**——与角色卡边界严丝合缝（PST=studio 前端+apollo.py 服务面；PS=steam-publisher 管线），无需调整。
+> b) **接入形态=经 apollo.py 转发**（薄代理 `/api/publish/*` → steam-publisher serve.py）。理由：①studio 前端现在只认一个后端缝（`/api/*` 相对路径），M5 Electron 打包正靠这条缝换传输层——直连第二个本地端口会破缝+引 CORS+双服务生命周期；②发布是危险面操作，收进 apollo.py 统一走已有的路径防护/审计口；③内嵌重写=造第二套管线，回驳。转发层**只透传不塞逻辑**（进度/日志流原样代理）。
+> c) **派工**：PS 先行（自请照准）——serve.py 编排 API 硬化成稳定契约（`package→genVDF→upload` 三段 + 进度/日志 + 判词 token 收口）+ mock/480 冒烟；PST 随后接 player 模式发布区 UI（**「三步不能自动」必须做成显式向导页**，不许藏在文档里）；两段各自门禁绿，联调验收=Lead。P2 维持（各自接在当前核心工作之后）。status 更新 → **裁决完毕·PS 可先行**。
 
 ### REQ-QA-发行测试假信心修 · mock-steam 排序 / achievements 幂等 断言补全 · [2026-07-04] · 主程（测试意义性复核撞到）→ **发行工程师（PS）域** · status: **✅ done（PS 2026-07-04·两处断言补全 + 自证红·门禁全绿）** · 优先级: P2（小·非阻塞·但属「假信心」测试=比没测更糟） · 类型: 测试正确性修（断言没验测试名声称的行为）
 > **✅ 完工（PS 2026-07-04）**：① `mock-steam.test.ts` 排行榜——给 `leaderboard` 事件补 `board` 快照（经既有 `onEvent` 通道观测·不碰 SteamBridge 契约/不耦合 LS key），断言乱序上传 30/90/60 后榜单 `[90,60,30]` 降序 + 严格非递增。② `achievements.test.ts` 幂等——改为 toast 计数：同端口再解锁 + 跨持久化二次端口解锁，均断言仍恰 1 个 toast（旧断言只验 `isAvailable` 常量）。**验收自证**：临时去 mock 排序 → ① 红（`[30,90,60]≠[90,60,30]`）；临时去幂等守卫 → ② 红（`expected 2 to be 1`）；恢复后 tsc + vitest(2245) + build 全绿。边界内（仅两 `*.test.ts` + mock 事件补 `board` 字段）。
@@ -105,6 +110,9 @@
 > - REQ-UI-Label深色令牌(ink) · [2026-07-01] · P3D → 主程 · status: **✅ done（随 web字体批 2026-07-02 落地·2026-07-04 结案归档；game-d 切换活并入 REQ-GAMED）** · 类型: UI 库闭集扩容
 > - REQ-G-Boss-AI · [2026-06-21] · design G → 甲 · status: **✅ 实装+sim验证（2026-06-23）·结案归档 2026-07-04（活尾由 Player-AI 单 + design G 标定线接管）** · 类型: 真缺口（已闭合）
 > - REQ-BASE-引擎卫生三件（tray 补注册+守护测试 / Card3D 清遗 / view.ts 死码删）· [2026-07-03] · 主程 → 指派：Opus · status: **✅ done（2026-07-03·Opus）** · 归档 2026-07-04（自粘连行拆出）
+
+### REQ-CAP-改掷RollMod下沉 · 引擎 dice 核补掷骰修饰闭集（天罡②/game-d/英雄牌共用） · [2026-07-04] · 主程（天罡原生重构 ② 架构裁决派生） · status: **排队（指派：Opus·xhigh·程序A 开工天罡② 前完成）** · 类型: 引擎 capability 扩展（正确性关键·确定性）
+> **spec（Lead 图纸）**：`src/skills/tier2/dice.ts` 族加 **`RollMod` 闭集**（数据行，非钩子函数）：`{kind:'bonus',value}`（掷后加值）/ `{kind:'floor',min}`（掷值下界钳）/ `{kind:'advantage'}`（掷两次取高）/ `{kind:'autoWinIfStronger'}`（我方战力≥敌免掷直接胜·仅 opposedRoll 语境）。约束：①纯函数核（`applyRollMods(roll, mods, rng)` + opposedRoll 接 `mods` 参数）·确定性（advantage 的第二掷从同一 RNG 流序取·顺序固定）；②闭集进 registry describe/examples；③逐 kind 点名测试 + 组合序测试（bonus+floor 先 bonus 后 floor·文档钉死）；④不改 DicePool/RolledDice 既有语义（向后兼容）。消费方：game-g 天罡②（鬼手/磐石/灌铅骰/铁骰）· game-d 骰途改掷类 · 英雄专属牌改掷层（未来扩）。门禁全绿直推。
 
 ### REQ-PA-文档一致性五件 · PA 自查清单 Lead 裁决 · [2026-07-04] · PA 提报 → 主程裁决 → 指派：PA · status: **✅ done（PA `de8e1827`·Lead 验收 REVIEW: PASS 2026-07-04）** · 类型: 防漂移整改（PA 自查·全收）
 > **Lead 验收（2026-07-04·复核 diff + 独立复跑 guard/门禁全绿）**：①② 快照标注+机读指针完全照裁决修法（未追手抄精确数·「现约 4.9k / 约 3 万」量级词不会漂）；④ assets.md 批量入库行落位·脚本名核真·「加一个包=加一条 PACKS 配置」措辞还顺手强化了数据驱动口径；⑤ 头注改准（curl 出口面与工具层发现面分开说清）。**零偏差**。唯一瑕疵=忘翻工单状态，本行由 Lead 代关。
@@ -354,7 +362,7 @@
 
 ---
 
-### REQ-GAMED-数据驱动迁移 · game-d《骰途》从手写 sim 迁成能力驱动（体检整改）· [2026-07-02] · P3D（game-d owner）→ 主程（引擎能力域） · status: **部分自办 + 缺口待主程** · 类型: 架构整改（数据驱动收口）· 设计 `docs/design/game-d/data-driven-migration.md`
+### REQ-GAMED-数据驱动迁移 · game-d《骰途》从手写 sim 迁成能力驱动（体检整改）· [2026-07-02] · P3D（game-d owner）→ 主程（引擎能力域） · status: **裁决完毕+能力已下沉（dice-roll/wild 已落·6-suit flush 契约测试已钉 `poker-hand.test.ts:404`）·game-d 接线=P3D 排队中** · 类型: 架构整改（数据驱动收口）· 设计 `docs/design/game-d/data-driven-migration.md`
 >
 > 体检核实属实：game-d 战斗/状态全手写 `S` 对象 + 纯函数，`capabilities:[]`、`Math.random()` 绕种子随机、手写 `loadoutPattern` 重造 poker-hand、双人假、0 测试。目标：照 game-e/game-f 迁成 blueprint（components + capabilities + signals + keybinds）+ 薄 session 编排。~80% 复用现有能力（poker-hand/card-scoring/effect-apply/event-when/mortal/flow/keybind/random）。
 >
@@ -630,3 +638,4 @@
 > **新增 AOE 天罡类**（owner「连携的对立面」）：`aoePower` 多目标 op（`{op:'aoePower',target:'enemy-lane',value:-X,span?:N}`）+ 首批 2-3 张（火攻`firestorm`/齐射`volley`/塌方`quagmire`·数值 GD 待 sim 标）——**与地煞未来 op 池同思路的新"多目标瞄准形状"**。
 > **GD 回环**：程序A 落地后 GD 用 balance-sim 复核各天罡强度（尤其掷骰系边际 + AOE 数值 + `flow`川流在自由混+换牌下的连抽连打交互）。
 > **顺序**：先 ①②③④⑤（修活现有 35→存活+实装+退役）· AOE(⑥) 与「连携对立面」一批做 · 流派印记(J) 待流派体系定稿另开。
+> **Lead 架构注（2026-07-04·防「修正栈三套」重演）**：② 掷骰系四语义（改掷+2 / 掷下界钳 / 优势取高 / 占优免掷）是**通用 RollMod 原型**，不是天罡私有——game-d 骰途、英雄专属牌改掷层都会要同一族。**裁：先下沉引擎 dice 核（REQ-CAP-改掷RollMod·见新单），程序A 在 game-g 只写数据行消费；禁止在 resolveClash 里写四个 if。**这批也是未来改掷解释器的第一批真实用例——最小核先立，英雄牌 spec 定稿后再扩。①③④⑤ 照单开工不受阻。
