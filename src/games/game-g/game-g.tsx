@@ -398,7 +398,7 @@ export function mount(container: HTMLElement, shell?: { exit?: () => void }): ()
       if (!document.getElementById('gg-bnr-css')) { const s = document.createElement('style'); s.id = 'gg-bnr-css'; s.textContent = '@keyframes gg-bnr{0%{opacity:0;transform:scale(.8)}15%{opacity:1;transform:scale(1)}78%{opacity:1;transform:scale(1)}100%{opacity:0;transform:scale(1.06)}}'; document.head.appendChild(s); }
       const ov = document.createElement('div'); ov.style.cssText = `position:fixed;inset:0;z-index:300;display:flex;align-items:center;justify-content:center;pointer-events:none;animation:gg-bnr ${durationMs}ms ease both`;
       ov.innerHTML = `<span style="font-size:clamp(36px,6vw,72px);font-weight:900;color:#e8cd82;text-shadow:0 0 60px rgba(232,205,138,.9),0 4px 24px rgba(0,0,0,.95);letter-spacing:.25em;font-family:'Rajdhani',sans-serif;">${text}</span>`;
-      document.body.appendChild(ov); setTimeout(() => { ov.remove(); onDone?.(); }, durationMs);
+      document.body.appendChild(ov); battleTl.delay(durationMs / 16, () => { ov.remove(); onDone?.(); }); // 时序=数据（单 cue timeline·替手写 setTimeout·owner「一切数据驱动·不手写排程」）
     };
     // 掷命前奏：先把「哪两张牌即将交战」摆到屏幕前 ~2s（武将名+牌面+战力·我橙敌蓝 VS），再切对决特写（owner 2026-06-21：看不清是谁打谁）。
     // 战前「谁打谁」（owner 2026-07-03「战前要看清是场上哪两枚在打」·REQ-G-谁打谁·战前锚场）：不再飘半空全屏 VS 弹窗——
@@ -413,7 +413,7 @@ export function mount(container: HTMLElement, shell?: { exit?: () => void }): ()
       if (!ea || !eb) { // 回退：兵不在场（无头/未渲）→ 居中小 VS + 路名
         ov.style.cssText += ';display:flex;align-items:center;justify-content:center';
         ov.innerHTML = `<div style="animation:gg-cue ${DUR}ms ease both;font-size:24px;font-weight:900;color:#e8cd82;letter-spacing:.2em;text-shadow:0 0 24px rgba(232,205,138,.8);font-family:'Rajdhani',sans-serif;">⚔ ${LANE_NM[e.lane] ?? ''} · 即将交战</div>`;
-        document.body.appendChild(ov); window.setTimeout(() => { ov.remove(); onDone(); }, DUR); return;
+        document.body.appendChild(ov); battleTl.delay(DUR / 16, () => { ov.remove(); onDone(); }); return;
       }
       const ra = ea.getBoundingClientRect(); const rb = eb.getBoundingClientRect();
       const ring = (r: DOMRect, mine: boolean): string => { const c = mine ? '#ff7a45' : '#3a86d4'; return `<div style="--rc:${c};position:absolute;left:${r.left - 5}px;top:${r.top - 5}px;width:${r.width + 10}px;height:${r.height + 10}px;border-radius:13px;border:3px solid ${c};animation:gg-cue-ring ${DUR}ms ease both"><div style="position:absolute;left:50%;bottom:-19px;transform:translateX(-50%);white-space:nowrap;font-size:11px;font-weight:800;color:${c};text-shadow:0 1px 4px rgba(0,0,0,.9);font-family:'Rajdhani',sans-serif;">${mine ? '我方前锋' : '敌方前锋'}</div></div>`; };
@@ -424,7 +424,7 @@ export function mount(container: HTMLElement, shell?: { exit?: () => void }): ()
       const lane = `<div style="position:absolute;left:${(cax + cbx) / 2}px;top:${Math.min(cay, cby) - 34}px;transform:translateX(-50%);white-space:nowrap;font-size:15px;font-weight:900;color:#e8cd82;letter-spacing:.12em;text-shadow:0 0 16px rgba(232,205,138,.9),0 2px 6px rgba(0,0,0,.9);font-family:'Rajdhani',sans-serif;animation:gg-cue ${DUR}ms ease both">⚔ ${LANE_NM[e.lane] ?? ''} · 即将交战</div>`;
       ov.innerHTML = ring(ra, true) + ring(rb, false) + line + vs + lane;
       document.body.appendChild(ov);
-      window.setTimeout(() => { ov.remove(); onDone(); }, DUR);
+      battleTl.delay(DUR / 16, () => { ov.remove(); onDone(); }); // 时序=数据（单 cue timeline·替手写 setTimeout）
     };
     // 敌方思考中蒙层（owner 2026-06-21：平均缩 2 秒 → 1-3 秒随机，均值 2s）
     const startThinking = (onDone: () => void): void => {

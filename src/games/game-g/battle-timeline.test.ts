@@ -30,4 +30,16 @@ describe('Game G · battle-timeline（引擎 t3-timeline 宿主·确定性演出
     expect(first).toContain('go');
     expect(first.some((n) => n.startsWith('play:'))).toBe(false); // 宿主注入的起播信号不外泄
   });
+
+  it('并发多条 timeline 各自独立发拍（单发延时靠它并发·不互相顶掉）+ activeCount/destroyTimeline 清理', () => {
+    const tl = createBattleTimeline();
+    tl.play({ id: 'a', cues: [{ at: 1, do: { kind: 'signal', signal: 'a-done' } }] });
+    tl.play({ id: 'b', cues: [{ at: 2, do: { kind: 'signal', signal: 'b-done' } }] });
+    expect(tl.activeCount()).toBe(2);
+    expect(names(tl.pump())).toEqual([]);                 // t=0：a@1/b@2 皆未到
+    expect(names(tl.pump())).toContain('a-done');         // t=1：a 发拍（b 不受影响·不被顶掉）
+    tl.destroyTimeline('a'); expect(tl.activeCount()).toBe(1); // 播完销 a
+    expect(names(tl.pump())).toContain('b-done');         // t=2：b 独立发拍
+    tl.destroyTimeline('b'); expect(tl.activeCount()).toBe(0); // 全清理·无泄漏
+  });
 });
