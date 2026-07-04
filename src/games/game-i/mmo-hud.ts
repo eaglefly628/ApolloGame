@@ -60,7 +60,7 @@ function unitFrame(
 function slot(id: string, glyph: string, key: string, opts: { cd?: string; ready?: boolean } = {}): LayoutNode {
   const fx = opts.ready ? [{ kind: 'glow' as const, color: 'gold' as const }] : undefined;
   return {
-    type: 'Panel', id, props: { accent: !!opts.ready, bg: opts.cd ? '#11151f' : 'linear-gradient(180deg,#1c2433,#10141d)' },
+    type: 'Panel', id, props: { accent: !!opts.ready, bg: opts.cd ? 'sunken' : 'steel' }, // 色库化：冷却=sunken 令牌(换皮自适应)·就绪=steel 预设配色
     layout: { width: 46, height: 46, direction: 'column', align: 'center', justify: 'center', padding: 0, chamfer: 6, ...(fx ? { fx } : {}) },
     children: [
       lbl(`${id}-g`, opts.cd ? '' : glyph, { size: 'lg' }),
@@ -75,7 +75,7 @@ function aura(id: string, glyph: string, time: string, tone: 'ok' | 'warn' | 'di
   // urgent（即将到期）：药丸闪色 fx:flash warn —— 催促动态（库 A·UI 特效）。
   const fx = urgent ? { fx: [{ kind: 'flash' as const, color: 'warn' as const }] } : {};
   return {
-    type: 'Panel', id, props: { bg: '#141b27' }, layout: { width: 36, height: 36, direction: 'column', align: 'center', justify: 'center', padding: 0, chamfer: 4, ...fx },
+    type: 'Panel', id, props: { bg: 'ink-deep' }, layout: { width: 36, height: 36, direction: 'column', align: 'center', justify: 'center', padding: 0, chamfer: 4, ...fx }, // 色库化：ink-deep 预设配色
     children: [
       lbl(`${id}-g`, glyph, { size: 'md' }),
       { type: 'Badge', id: `${id}-t`, props: { text: time, tone } },
@@ -86,7 +86,7 @@ function aura(id: string, glyph: string, time: string, tone: 'ok' | 'warn' | 'di
 /** 复现一套 WoW 风 MMO HUD（纯 LayoutNode·绝对定位叠层·零手写 React/CSS）。 */
 export function buildMmoHud(): LayoutNode {
   return {
-    type: 'Panel', id: 'mmo-hud', props: { bg: 'linear-gradient(160deg,#0b1410,#0a0f17 60%,#0d0b14)', vignette: true },
+    type: 'Panel', id: 'mmo-hud', props: { bg: { custom: 'linear-gradient(160deg,#0b1410,#0a0f17 60%,#0d0b14)' }, vignette: true }, // 色库化：招牌 HUD 底=创作者特别指定色 → {custom} 显式逃生
     layout: { width: 1024, height: 624, padding: 0 },
     children: [
       // 顶部标题胶囊
@@ -99,7 +99,7 @@ export function buildMmoHud(): LayoutNode {
       unitFrame('pf-player', 19, 36, 256, '法', '阿洛狄斯', '70', 8240, 9100, 'ok', 76, 'accent', '法力'),
       { type: 'Panel', id: 'pf-combo', props: { bare: true }, layout: { x: 23, y: 130, direction: 'row', gap: 4 },
         children: [1, 2, 3, 4, 5].map((n): LayoutNode => ({
-          type: 'Panel', id: `cp-${n}`, props: { bg: n <= 3 ? 'linear-gradient(180deg,#e7c96a,#caa53f)' : '#222a38' },
+          type: 'Panel', id: `cp-${n}`, props: { bg: n <= 3 ? 'gold-sheen' : 'steel' }, // 色库化：亮连击点=gold-sheen 预设·暗点=steel 预设
           layout: { width: 14, height: 14, padding: 0, chamfer: 3, ...(n <= 3 ? { fx: [{ kind: 'glow', color: 'gold' }] } : {}) }, children: [],
         })) },
 

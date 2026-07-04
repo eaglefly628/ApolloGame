@@ -895,6 +895,29 @@ function buildPageNew(controls: ControlsState): LayoutNode {
           layout: { width: 108, height: 54 },
         })) },
 
+      divider('d-fill'),
+      sectionTitle('t-fill-preset', 'PANEL.bg · 预设配色（FillPreset·8 组主动配色·引擎内建·固定观感·owner 2026-07-04 拍板）'),
+      { type: 'Panel', id: 'fill-preset-row', props: {}, layout: { direction: 'grid', cols: 4, gap: 12, padding: 16 },
+        children: ([
+          ['jade-sheen', '青玉'], ['gold-sheen', '金铜'], ['ink-deep', '深墨'], ['steel', '冷钢'],
+          ['blood', '暗红'], ['frost', '冰蓝'], ['ember', '橙炭'], ['void', '幽紫'],
+        ] as const).map(([preset, label]): LayoutNode => ({
+          type: 'Panel', id: `fp-${preset}`, props: { bg: preset }, layout: { height: 56, padding: 12, align: 'center', justify: 'center' },
+          children: [{ type: 'Label', id: `fp-${preset}-l`, props: { text: `${label} · ${preset}`, size: 'sm', bold: true, color: 'text' } }],
+        })) },
+      sectionTitle('t-fill-token', 'PANEL.bg · 语义令牌（SurfaceToken·映射主题·换皮自适应）＋ {custom} 显式逃生'),
+      { type: 'Panel', id: 'fill-token-row', props: {}, layout: { direction: 'grid', cols: 5, gap: 12, padding: 16 },
+        children: ([
+          ['panel', '面'], ['raised', '凸起'], ['sunken', '凹陷'], ['jade', '青玉washed'], ['gold', '金'],
+        ] as const).map(([tok, label]): LayoutNode => ({
+          type: 'Panel', id: `ft-${tok}`, props: { bg: tok }, layout: { height: 48, padding: 10, align: 'center', justify: 'center' },
+          children: [{ type: 'Label', id: `ft-${tok}-l`, props: { text: `${label}·${tok}`, size: 'xs', color: 'sub' } }],
+        })).concat([{
+          type: 'Panel', id: 'ft-custom', props: { bg: { custom: 'repeating-linear-gradient(45deg,#3a2a5a 0 8px,#2a1a4a 8px 16px)' } },
+          layout: { height: 48, padding: 10, align: 'center', justify: 'center' },
+          children: [{ type: 'Label', id: 'ft-custom-l', props: { text: '{custom}·特别指定', size: 'xs', color: 'text' } }],
+        }]) },
+
       divider('d-n10'),
       sectionTitle('t-grid', 'PANEL · cols 固定列数 grid + justify 主轴分布'),
       { type: 'Panel', id: 'grid-cols', props: { title: 'grid · cols:4（严格 4 列等分·消空隙）' }, layout: { direction: 'grid', cols: 4, gap: 8, padding: 14 },

@@ -165,6 +165,32 @@ const SHAPE_CSS: Record<string, string> = {
 };
 const shapeCss = (shape?: string): string => (shape && SHAPE_CSS[shape]) ? `;${SHAPE_CSS[shape]}` : '';
 
+// 面填充三态解析（owner 2026-07-04 色库化）：语义令牌(换皮自适应) / 预设配色(固定观感) / {custom}(显式逃生) / 遗留裸串。
+// 令牌→UITheme（随主题变）；preset→引擎内建渐变（色库·固定）；对象→custom 自由串；其余字符串→原样透传(back-compat)。
+const SURFACE_TOKEN: Record<string, (t: UITheme) => string> = {
+  panel: (t) => t.bg1, raised: (t) => t.bg2, sunken: (t) => t.bg0,
+  jade: (t) => t.jadeWash, gold: (t) => t.gold, ok: (t) => t.okWash,
+  warn: (t) => t.warnWash, danger: (t) => t.danger, ink: (t) => t.ink ?? t.bg0,
+};
+const PRESET_FILL: Record<string, string> = {
+  'jade-sheen': 'linear-gradient(180deg,#1f4a3a,#123528)',
+  'gold-sheen': 'linear-gradient(180deg,#caa53f,#8a6a20)',
+  'ink-deep':   'linear-gradient(160deg,#0f1626,#0a0f1a)',
+  'steel':      'linear-gradient(180deg,#2a3340,#1a2029)',
+  'blood':      'linear-gradient(180deg,#4a1414,#2a0c0c)',
+  'frost':      'linear-gradient(180deg,#1f3a4a,#122a35)',
+  'ember':      'linear-gradient(180deg,#4a2c14,#2a180c)',
+  'void':       'linear-gradient(160deg,#2a1a3a,#170f28)',
+};
+function resolveFill(bg: unknown, t: UITheme): string | undefined {
+  if (bg === undefined || bg === null) return undefined;
+  if (typeof bg === 'object') return (bg as { custom?: string }).custom; // 显式逃生（创作者特别指定色）
+  const s = String(bg);
+  const tok = SURFACE_TOKEN[s]; if (tok) return tok(t); // 语义令牌·换皮自适应
+  if (PRESET_FILL[s]) return PRESET_FILL[s];            // 预设配色·固定观感
+  return s; // 遗留裸串（back-compat·audit 标记建议迁令牌/preset/custom）
+}
+
 // ── 原有 7 个控件 ───────────────────────────────────────────────
 
 function renderButton(id: string, p: ButtonProps, ls: string, t: UITheme): string {
@@ -293,7 +319,7 @@ function renderPanel(id: string, p: PanelProps, c: LayoutConstraints | undefined
   const tex = texLayer(p.bgTexture, p.bgTextureSize);
   const chrome = bare
     ? (tex ? `background:${tex}, transparent;` : '')
-    : `background:${tex ? `${tex}, ` : ''}${p.bg ?? (p.glass ? 'rgba(20,24,32,0.5)' : t.bg1)};border:1px ${bStyle} ${border};border-radius:${rad}px;${glow}${p.glass ? 'backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);' : ''}`;
+    : `background:${tex ? `${tex}, ` : ''}${resolveFill(p.bg, t) ?? (p.glass ? 'rgba(20,24,32,0.5)' : t.bg1)};border:1px ${bStyle} ${border};border-radius:${rad}px;${glow}${p.glass ? 'backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);' : ''}`;
   const style = `${box};padding:${pad}px;${chrome}position:relative;${overflow}${ls}`;
   const title = p.title
     ? `<div style="font-size:10px;letter-spacing:2.4px;text-transform:uppercase;color:${t.dim};font-family:${t.fontUi};margin-bottom:4px${dir === 'grid' ? ';grid-column:1/-1' : ''}">${esc(p.title)}</div>`
@@ -373,7 +399,7 @@ function renderImage(id: string, p: ImageProps, ls: string): string {
 }
 
 function renderScreen(id: string, p: ScreenProps, children: LayoutNode[], t: UITheme): string {
-  const baseBg = p.bg ?? t.pageBg;
+  const baseBg = resolveFill(p.bg, t) ?? t.pageBg;
   // 分层底（上→下）：wash(晕染) , 图片贴图(bgTexture·平铺) , 程序化纹理(theme.texture) , 底色。任意层缺省即跳过。
   // 三路贴图并存：程序化(theme.texture) / cover 整图(下方 bgImg) / 平铺图片(bgTexture)。
   const bg     = [t.wash, texLayer(p.bgTexture, p.bgTextureSize), t.texture, baseBg].filter(Boolean).join(', ');

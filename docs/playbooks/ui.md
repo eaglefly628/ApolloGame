@@ -15,6 +15,7 @@
 | 新手引导件 | `Coachmark`（组件）+ overlay | `src/renderer/coachmark.ts` + `src/ui/onboarding-overlay.ts`（spotlight 高亮·纯表现不进 hash） |
 | 主题令牌 | `UITheme` | `src/ui/components/types.ts`——语义色/字体槽，换皮 |
 | 字体（含艺术字） | `Label.font`（闭集槽·非自由 font-family） | 基础 ui/mono/pixel/display/serif；**艺术字 10 款**：impact(Bebas Neue)/heavy(Anton)/epic(Cinzel)/fantasy(MedievalSharp)/elegant(Playfair)/script(Pacifico)/hand(Caveat)/scifi(Orbitron)/terminal(VT323)/comic(Bangers)——Google Fonts·OFL 开源·base64 内嵌 `art-fonts.ts`·离线自带·中文自动回退。`mountUI` 自动注入(`ensureArtFonts`)。缺字体→提 requests 让主程加**一个槽**，绝不塞自由 font-family/扒付费字 |
+| 面颜色（底/背景） | `Panel.bg` / `Screen.bg`（三态 `PanelFill`·**色库优先·非裸 hex**） | ①语义令牌 `SurfaceToken`：panel/raised/sunken/jade/gold/ok/warn/danger/ink（映射 UITheme·**换皮自适应**）②预设配色 `FillPreset`：jade-sheen/gold-sheen/ink-deep/steel/blood/frost/ember/void（引擎内建渐变·**固定观感**·`render.ts PRESET_FILL`）③`{custom:'#hex'}`（**创作者特别指定才用**·显式逃生）。**默认从色库选，别裸写 hex**——裸 hex/gradient 串仍收(back-compat)但 `game-skill-audit` ⚠ 标记建议迁。文字色早已闭集（`Label.color` 11 令牌）。缺色→提 requests 让主程扩令牌/加预设，绝不裸写。样例=game-i `t-fill-preset`/`t-fill-token` 段·mmo-hud（token+preset+custom 混用范例） |
 | 异形按钮 | `Button.shape`（闭集 `ShapeToken`·非自由 clip-path） | **8 款**：pill(胶囊)/hexagon(六边)/diamond(菱形)/shield(盾徽)/ribbon(绶带)/chevron(箭头)/tag(标签)/cut(八边切角)——引擎预置 clip-path·`render.ts SHAPE_CSS`。缺省不填=矩形。**异形须给足 width/height**（六边/菱形尤其）避免裁掉文字。命中区=元素包围盒（透明角不可点是二期）。缺形状→提 requests 让主程加**一个枚举**，绝不塞自由 clip-path 坐标。矩形切角另有 `layout.chamfer`（八边形单值）。样例=game-i `t-shape` 段 |
 
 ## ② 样例指针

@@ -40,7 +40,7 @@ function audit(game) {
 
   let loc = 0;
   const capImports = new Set(); // 引擎能力/原子导入源
-  const flags = { mathRandom: [], innerHTML: [], createElement: [], zeroCap: false };
+  const flags = { mathRandom: [], innerHTML: [], createElement: [], nakedFill: [], zeroCap: false };
   let usesWorldOrManifest = 0;
 
   for (const f of src) {
@@ -58,6 +58,8 @@ function audit(game) {
       if (/\bMath\.random\s*\(/.test(ln)) flags.mathRandom.push(`${f}:${i + 1}`);
       if (/\binnerHTML\b/.test(ln)) flags.innerHTML.push(`${f}:${i + 1}`);
       if (/document\.createElement/.test(ln)) flags.createElement.push(`${f}:${i + 1}`);
+      // ⚠ 色库化建议（非红线·phase-1）：bg 裸 hex/gradient/url 串 → 应迁 SurfaceToken/FillPreset/{custom}（owner 2026-07-04）
+      if (/\bbg:\s*['"](#[0-9a-fA-F]|linear-gradient|radial-gradient|url\()/.test(ln)) flags.nakedFill.push(`${f}:${i + 1}`);
     }
   }
   flags.zeroCap = capImports.size === 0;
@@ -88,6 +90,7 @@ for (const r of rows) {
   if (r.flags.innerHTML.length) flagBits.push(`innerHTML×${r.flags.innerHTML.length}`);
   if (r.flags.createElement.length) flagBits.push(`createElement×${r.flags.createElement.length}`);
   if (r.tests === 0) flagBits.push('零测试');
+  if (r.flags.nakedFill.length) flagBits.push(`⚠裸bg色×${r.flags.nakedFill.length}`);
   console.log(
     pad(r.game, 10) +
       pad(r.loc, 8) +
@@ -100,11 +103,12 @@ for (const r of rows) {
 
 // ── 明细（仅有红旗的游戏） ──
 for (const r of rows) {
-  const { mathRandom, innerHTML, createElement } = r.flags;
+  const { mathRandom, innerHTML, createElement, nakedFill } = r.flags;
   const details = [
     ['裸 Math.random（应用引擎种子 PRNG）', mathRandom],
     ['innerHTML（应走 LayoutNode/mountUI）', innerHTML],
     ['document.createElement', createElement],
+    ['⚠ bg 裸色串（建议迁 SurfaceToken/FillPreset/{custom}·非红线）', nakedFill],
   ].filter(([, v]) => v.length);
   if (!details.length && !r.flags.zeroCap) continue;
   console.log(`\n── ${r.game} 明细 ──`);

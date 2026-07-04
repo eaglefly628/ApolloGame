@@ -37,7 +37,7 @@ export const UI_CATALOG: readonly UiComponentSpec[] = [
   {
     type: 'Screen', summary: '全屏根容器·页面背景层', whenToUse: '每个页面的最外层根节点；铺底色/贴图、可居中内容。', children: 'optional',
     props: [
-      { name: 'bg', type: 'string', describe: 'CSS 颜色/渐变（缺省走主题 pageBg）' },
+      { name: 'bg', type: 'string', describe: '面填充三态·色库优先：语义令牌 panel/raised/sunken/jade/gold/ok/warn/danger/ink(换皮自适应) | 预设配色 jade-sheen/gold-sheen/ink-deep/steel/blood/frost/ember/void(固定观感) | {custom:"#hex"}(创作者特别指定才用)。缺省=主题 pageBg。裸 hex 串仍收但 audit 会标' },
       { name: 'image', type: 'string', describe: 'cover 整图背景 URL' },
       { name: 'bgTexture', type: 'string', describe: '平铺贴图 URL（repeat·可被 bgScroll 滚）' },
       { name: 'blur', type: 'number', describe: 'backdrop-filter 模糊 px' },
@@ -52,7 +52,7 @@ export const UI_CATALOG: readonly UiComponentSpec[] = [
       { name: 'title', type: 'string', describe: '阔字距小标题' },
       { name: 'scroll', type: 'boolean', describe: 'overflow-y:auto 可滚' },
       { name: 'bare', type: 'boolean', describe: '无框纯布局容器（不画边/底/圆角）' },
-      { name: 'bg', type: 'string', describe: '自定义底（令牌串/var(--felt)）' },
+      { name: 'bg', type: 'string', describe: '面填充三态·色库优先：语义令牌 panel/raised/sunken/jade/gold/ok/warn/danger/ink(换皮自适应) | 预设配色 jade-sheen/gold-sheen/ink-deep/steel/blood/frost/ember/void(固定观感) | {custom:"#hex"}(特别指定才用)。缺省=主题 bg1。裸串仍收但 audit 会标' },
       { name: 'vignette', type: 'boolean', describe: '四周渐暗暗角' },
       { name: 'accent', type: 'boolean', describe: 'jade 高亮框 + 柔光' },
       { name: 'glass', type: 'boolean', describe: '磨砂玻璃（backdrop-blur + 半透底·HUD 浮 3D/大图上）' },

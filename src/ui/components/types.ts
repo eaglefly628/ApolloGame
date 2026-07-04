@@ -99,6 +99,17 @@ export interface VisualEffect {
  *  owner 2026-07-04「异形 UI」需求下沉——见 docs/playbooks/ui.md「异形」行。 */
 export type ShapeToken = 'pill' | 'hexagon' | 'diamond' | 'shield' | 'ribbon' | 'chevron' | 'tag' | 'cut';
 
+/** 面色语义令牌（闭集·映射 UITheme·**随主题换皮自适应**·弱 LLM 选名不填 hex）。owner 2026-07-04 色库化需求下沉。 */
+export type SurfaceToken = 'panel' | 'raised' | 'sunken' | 'jade' | 'gold' | 'ok' | 'warn' | 'danger' | 'ink';
+/** 预设配色（闭集·引擎内建渐变·8 组主动配色·owner 2026-07-04 拍板·**固定观感·不随主题变**）。 */
+export type FillPreset = 'jade-sheen' | 'gold-sheen' | 'ink-deep' | 'steel' | 'blood' | 'frost' | 'ember' | 'void';
+/** 面填充（三态·色库优先·custom 显式逃生）：
+ *  ① 语义令牌 `SurfaceToken`（'raised' 等·映射主题·**换皮自适应**）
+ *  ② 预设配色 `FillPreset`（'jade-sheen' 等·固定观感）
+ *  ③ `{ custom }`（**显式标记**才允许自由 hex/gradient·owner「创作者特别指定才自定义」）。
+ *  `(string & {})` = 遗留裸串 back-compat（不破坏存量·裸串由 game-skill-audit 标记建议迁 token/preset/custom·**phase-1 非硬拦**）。 */
+export type PanelFill = SurfaceToken | FillPreset | { custom: string } | (string & {});
+
 export interface ButtonProps {
   label: string;
   kind?: 'primary' | 'ghost' | 'quiet' | 'hero'; // hero=金色倒角 sheen 大 CTA（下沉自 game-g 出征键·owner 2026-06-25）
@@ -163,8 +174,9 @@ export interface InputProps {
 export interface PanelProps {
   title?: string;
   scroll?: boolean;
-  /** 自定义底（令牌串·如 'var(--felt)'）：表达绿呢牌桌等特殊表面（下沉自 game-g·owner 2026-06-25）。缺省=主题 bg1。 */
-  bg?: string;
+  /** 面填充（三态·色库优先）：`SurfaceToken` 语义令牌(换皮自适应·如 'raised') / `FillPreset` 预设配色(如 'jade-sheen') /
+   *  `{custom}` 显式自定义色(创作者特别指定才用)。缺省=主题 bg1。裸 hex 串仍收(back-compat)但 audit 会标建议迁令牌。 */
+  bg?: PanelFill;
   /** 暗角叠加（felt 牌桌四周渐暗 vignette）：true 时叠一层径向暗角·纯表现。 */
   vignette?: boolean;
   /** 高亮框（强调态/活动视口）：true 时用 jade 描边 + 柔光投影，替代默认细线边·纯表现。 */
@@ -232,7 +244,8 @@ export interface ImageProps {
  * bg：CSS 颜色或渐变；image：背景图 URL；center：垂直水平居中子项。
  */
 export interface ScreenProps {
-  bg?: string;
+  /** 页面背景填充（三态·同 Panel.bg）：`SurfaceToken` / `FillPreset` / `{custom}`。缺省=主题 pageBg。裸串仍收(back-compat)。 */
+  bg?: PanelFill;
   image?: string;
   /** 图片贴图层（平铺·区别于 image 的 cover 整图 & 主题 texture 的程序化纹理）：贴图 URL → 渲成 repeat 平铺、叠在底色上、可被 bgScroll 滚动。游戏填**已解析 URL**（资产 key 自行经 resolveAsset 解析·sim 持 key 保纯）。三路并存：程序化(主题 texture) / cover 整图(image) / 平铺图片(bgTexture)。 */
   bgTexture?: string;
