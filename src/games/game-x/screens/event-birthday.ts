@@ -87,7 +87,7 @@ function polaroidPhotoSvg(): string {
 // ── 拍立得卡（奶油相纸·rotate -3deg·照片 + 手写小标）────────────────────────
 function polaroidCard(): LayoutNode {
   return {
-    type: 'Panel', id: 'gx-bday-polaroid', props: { bg: '#e8dcc8' },
+    type: 'Panel', id: 'gx-bday-polaroid', props: { bg: { custom: '#e8dcc8' } },
     layout: { width: 96, height: 100, direction: 'column', align: 'center', gap: 4, padding: 5, rotate: -3 },
     children: [
       {
@@ -129,11 +129,11 @@ export function eventBirthdayScreen(): LayoutNode {
       },
       // 消息带 640×172（bg #120e1a · 上沿珊瑚细线 + 拍立得 + 文案）
       {
-        type: 'Panel', id: 'gx-bday-band', props: { bg: '#120e1a' },
+        type: 'Panel', id: 'gx-bday-band', props: { bg: { custom: '#120e1a' } },
         layout: { width: 640, height: 172, direction: 'column' },
         children: [
           // 上沿珊瑚细线（对齐设计稿 border-top #2a2038 偏暖一点取珊瑚弱化）
-          { type: 'Panel', id: 'gx-bday-bandline', props: { bg: '#2a2038' }, layout: { width: 640, height: 1 } },
+          { type: 'Panel', id: 'gx-bday-bandline', props: { bg: { custom: '#2a2038' } }, layout: { width: 640, height: 1 } },
           {
             type: 'Panel', id: 'gx-bday-bandbody', props: { bare: true },
             layout: { direction: 'row', align: 'center', gap: 16, padding: 22, flex: 1 },
@@ -144,7 +144,7 @@ export function eventBirthdayScreen(): LayoutNode {
       // 底部情感线 640×8（珊瑚→琥珀→珊瑚 暖色渐变）
       {
         type: 'Panel', id: 'gx-bday-temp',
-        props: { bg: 'linear-gradient(90deg, #ff9b6b, #ffd27f 50%, #ff9b6b)' },
+        props: { bg: { custom: 'linear-gradient(90deg, #ff9b6b, #ffd27f 50%, #ff9b6b)' } },
         layout: { width: 640, height: 8 },
       },
     ],

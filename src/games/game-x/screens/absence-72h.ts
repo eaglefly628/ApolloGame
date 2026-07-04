@@ -47,7 +47,7 @@ function darkRoomScene(): string {
 // ── 信息带 · 时钟列（168px·余烬色 VT323·感情温度已凉，时钟亦失了磷光·不 glow）──────
 function clockCol(): LayoutNode {
   return {
-    type: 'Panel', id: 'gx-abs72-clockcol', props: { bg: '#08060c' },
+    type: 'Panel', id: 'gx-abs72-clockcol', props: { bg: { custom: '#08060c' } },
     layout: { width: 168, height: 172, direction: 'column', justify: 'center', padding: 16, gap: 8 },
     children: [
       {
@@ -106,7 +106,7 @@ export function absence72Screen(): LayoutNode {
     interior: [
       // 上场景区 640×300（黑屋 + 显示器冷光）+ 右上 AWAY 药丸（绝对定位）
       {
-        type: 'Panel', id: 'gx-abs72-stage', props: { bg: '#0a0810' },
+        type: 'Panel', id: 'gx-abs72-stage', props: { bg: { custom: '#0a0810' } },
         layout: { width: 640, height: 300, direction: 'column' },
         children: [
           {
@@ -116,7 +116,7 @@ export function absence72Screen(): LayoutNode {
           },
           // 右上状态药丸「○ AWAY 72H」（设计稿 right:12 top:12·Silkscreen 暗字暗框）
           {
-            type: 'Panel', id: 'gx-abs72-away', props: { bg: 'rgba(10,8,16,.7)' },
+            type: 'Panel', id: 'gx-abs72-away', props: { bg: { custom: 'rgba(10,8,16,.7)' } },
             layout: { x: 504, y: 12, direction: 'row', align: 'center', padding: 6 },
             children: [
               { type: 'Label', id: 'gx-abs72-away-t', props: { text: '○ AWAY 72H', font: 'pixel', color: 'dim', size: 'xs', tracking: 1 } },
@@ -126,14 +126,14 @@ export function absence72Screen(): LayoutNode {
       },
       // 信息带 640×172（顶部一条 #15101e 分隔线 + 两列）
       {
-        type: 'Panel', id: 'gx-abs72-band', props: { bg: '#08060c' },
+        type: 'Panel', id: 'gx-abs72-band', props: { bg: { custom: '#08060c' } },
         layout: { width: 640, height: 172, direction: 'row' },
         children: [clockCol(), statusCol()],
       },
       // 最底情感温度线 640×8（冷蓝渐变·温度跌到底·设计稿精确 hex）
       {
         type: 'Panel', id: 'gx-abs72-temp',
-        props: { bg: 'linear-gradient(90deg,#2a4258 0%,#33405a 70%,#3a3a54 100%)' },
+        props: { bg: { custom: 'linear-gradient(90deg,#2a4258 0%,#33405a 70%,#3a3a54 100%)' } },
         layout: { width: 640, height: 8 },
       },
     ],

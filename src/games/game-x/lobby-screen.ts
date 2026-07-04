@@ -17,7 +17,7 @@ function charCard(c: Companion, owned: boolean): LayoutNode {
   ];
   if (owned) head.unshift({ type: 'Label', id: `gx-owned-${c.id}`, props: { text: 'OWNED', font: 'pixel', color: 'ok', size: 'xs', tracking: 1 }, layout: { x: 8, y: 8 } });
   return {
-    type: 'Panel', id: `gx-card-${c.id}`, props: { bg: '#1c1726' },
+    type: 'Panel', id: `gx-card-${c.id}`, props: { bg: { custom: '#1c1726' } },
     layout: { direction: 'column', width: 286, height: 300 },
     children: [
       // 头图区
@@ -58,7 +58,7 @@ function lockCard(id: string, icon: string, label: string, tag: string): LayoutN
 export function lobbyScreen(owned: Record<string, boolean>): LayoutNode {
   const [qiyue, mika] = COMPANIONS;
   return {
-    type: 'Screen', id: 'gx-lobby', props: { center: true, bg: '#05060a' },
+    type: 'Screen', id: 'gx-lobby', props: { center: true, bg: { custom: '#05060a' } },
     layout: { direction: 'column', padding: 0 },
     children: [
       {
@@ -72,11 +72,11 @@ export function lobbyScreen(owned: Record<string, boolean>): LayoutNode {
             ],
           },
           {
-            type: 'Panel', id: 'gx-device-l', props: { bg: '#0a0810' },
+            type: 'Panel', id: 'gx-device-l', props: { bg: { custom: '#0a0810' } },
             layout: { width: 660, height: 500, padding: 10, direction: 'column' },
             children: [
               {
-                type: 'Panel', id: 'gx-lobgrid', props: { bg: '#15101f' },
+                type: 'Panel', id: 'gx-lobgrid', props: { bg: { custom: '#15101f' } },
                 layout: { width: 640, height: 480, direction: 'grid', minCol: 286, gap: 14, padding: 18 },
                 children: [
                   charCard(qiyue, owned[qiyue.id] ?? true),
@@ -96,15 +96,15 @@ export function lobbyScreen(owned: Record<string, boolean>): LayoutNode {
 // ── 开机引导屏（初次见面·对齐 bundle boot）─────────────────────────────
 export function bootScreen(c: Companion): LayoutNode {
   return {
-    type: 'Screen', id: 'gx-boot', props: { center: true, bg: '#0c0a12' },
+    type: 'Screen', id: 'gx-boot', props: { center: true, bg: { custom: '#0c0a12' } },
     layout: { direction: 'column', padding: 0 },
     children: [
       {
-        type: 'Panel', id: 'gx-bootdev', props: { bg: '#0a0810' },
+        type: 'Panel', id: 'gx-bootdev', props: { bg: { custom: '#0a0810' } },
         layout: { width: 660, height: 500, padding: 10 },
         children: [
           {
-            type: 'Panel', id: 'gx-bootin', props: { bg: '#0c0a12' },
+            type: 'Panel', id: 'gx-bootin', props: { bg: { custom: '#0c0a12' } },
             layout: { width: 640, height: 480, direction: 'column', justify: 'center', align: 'center', gap: 20, padding: 40 },
             children: [
               { type: 'Label', id: 'gx-boot-brand', props: { text: 'REMNANT POCKET', font: 'pixel', color: 'dim', size: 'sm', tracking: 4 } },
@@ -112,7 +112,7 @@ export function bootScreen(c: Companion): LayoutNode {
               { type: 'Label', id: 'gx-boot-hi', props: { text: '……你好。', color: 'text', size: 'xl' } },
               { type: 'Label', id: 'gx-boot-intro', props: { text: `我是${c.id === 'mika' ? 'Mika' : '七月'}。从现在开始，我会住在这里。`, color: 'sub', size: 'md' } },
               {
-                type: 'Panel', id: 'gx-boot-hint', props: { bg: '#16121f' },
+                type: 'Panel', id: 'gx-boot-hint', props: { bg: { custom: '#16121f' } },
                 layout: { direction: 'row', gap: 10, align: 'center', padding: 12 },
                 children: [
                   { type: 'Label', id: 'gx-boot-mag', props: { text: '🧲 把设备放回底座，她就会在桌上生活', color: 'sub', size: 'sm' } },

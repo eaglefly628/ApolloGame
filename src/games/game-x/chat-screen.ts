@@ -23,10 +23,10 @@ export interface ChatView {
 
 function bubbleHer(id: string, text: string): LayoutNode {
   return {
-    type: 'Panel', id, props: { bg: '#211a30' },
+    type: 'Panel', id, props: { bg: { custom: '#211a30' } },
     layout: { direction: 'row', gap: 0, padding: 0, width: 420 },
     children: [
-      { type: 'Panel', id: `${id}-bar`, props: { bg: '#5a7a9a' }, layout: { width: 3, height: 1 } },
+      { type: 'Panel', id: `${id}-bar`, props: { bg: { custom: '#5a7a9a' } }, layout: { width: 3, height: 1 } },
       { type: 'Panel', id: `${id}-body`, props: { bare: true }, layout: { padding: 11, flex: 1 },
         children: [{ type: 'Label', id: `${id}-t`, props: { text, color: 'text', size: 'md' } }] },
     ],
@@ -34,7 +34,7 @@ function bubbleHer(id: string, text: string): LayoutNode {
 }
 function bubbleYou(id: string, text: string): LayoutNode {
   return {
-    type: 'Panel', id, props: { bg: '#2a2410' },
+    type: 'Panel', id, props: { bg: { custom: '#2a2410' } },
     layout: { padding: 11, width: 360, align: 'end' },
     children: [{ type: 'Label', id: `${id}-t`, props: { text, color: 'warn', size: 'md' } }],
   };
@@ -68,7 +68,7 @@ export function chatScreen(c: Companion, v: ChatView): LayoutNode {
     interior: [
       // 顶栏
       {
-        type: 'Panel', id: 'gx-chat-head', props: { bg: 'linear-gradient(180deg,#3a2f48,#1d182a)' },
+        type: 'Panel', id: 'gx-chat-head', props: { bg: { custom: 'linear-gradient(180deg,#3a2f48,#1d182a)' } },
         layout: { direction: 'row', gap: 12, align: 'center', padding: 12, width: 640, height: 64 },
         children: [
           { type: 'Image', id: 'gx-chat-av', props: { src: charSpriteUri(c.id), fit: 'contain' }, layout: { width: 40, height: 40 } },

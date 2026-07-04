@@ -46,7 +46,7 @@ function absenceRoom(): string {
 // ── 角落 AWAY 标签（○ AWAY 48H·Silkscreen·暗半透底）──────────────────────────
 function awayBadge(): LayoutNode {
   return {
-    type: 'Panel', id: 'gx-abs-badge', props: { bg: 'rgba(10,8,16,.7)' },
+    type: 'Panel', id: 'gx-abs-badge', props: { bg: { custom: 'rgba(10,8,16,.7)' } },
     layout: { x: 480, y: 12, padding: 4, direction: 'row', align: 'center' },
     children: [
       { type: 'Label', id: 'gx-abs-badge-t', props: { text: '○ AWAY 48H', font: 'pixel', color: 'sub', size: 'xs', tracking: 1 } },
@@ -57,7 +57,7 @@ function awayBadge(): LayoutNode {
 // ── 信息带 · 时钟列（168px·VT323 琥珀磷光·border-right 用 bg 块隔开）──────────────
 function clockCol(): LayoutNode {
   return {
-    type: 'Panel', id: 'gx-abs-clockcol', props: { bg: '#0a070f' },
+    type: 'Panel', id: 'gx-abs-clockcol', props: { bg: { custom: '#0a070f' } },
     layout: { width: 168, height: 172, direction: 'column', justify: 'center', padding: 16, gap: 8 },
     children: [
       {
@@ -86,7 +86,7 @@ function statusCol(): LayoutNode {
   const micro = (id: string, text: string): LayoutNode =>
     ({ type: 'Label', id, props: { text, font: 'pixel', color: 'dim', size: 'xs', tracking: 2 } });
   return {
-    type: 'Panel', id: 'gx-abs-statuscol', props: { bg: '#0a070f' },
+    type: 'Panel', id: 'gx-abs-statuscol', props: { bg: { custom: '#0a070f' } },
     layout: { width: 472, height: 172, direction: 'column', justify: 'center', padding: 20, gap: 12 },
     children: [
       {
@@ -136,7 +136,7 @@ export function absence48Screen(): LayoutNode {
       },
       // 信息带 640×172（border-top #1b1626 用细线块表达）
       {
-        type: 'Panel', id: 'gx-abs-bandtop', props: { bg: '#1b1626' },
+        type: 'Panel', id: 'gx-abs-bandtop', props: { bg: { custom: '#1b1626' } },
         layout: { width: 640, height: 2 },
       },
       {
@@ -145,14 +145,14 @@ export function absence48Screen(): LayoutNode {
         children: [
           clockCol(),
           // 列分隔细线（border-right #1b1626）
-          { type: 'Panel', id: 'gx-abs-banddiv', props: { bg: '#1b1626' }, layout: { width: 1, height: 170 } },
+          { type: 'Panel', id: 'gx-abs-banddiv', props: { bg: { custom: '#1b1626' } }, layout: { width: 1, height: 170 } },
           statusCol(),
         ],
       },
       // 情感温度线 640×8（冷蓝渐变·48H 退回冷端）
       {
         type: 'Panel', id: 'gx-abs-temp',
-        props: { bg: 'linear-gradient(90deg,#34506e 0%,#3e4860 70%,#454060 100%)' },
+        props: { bg: { custom: 'linear-gradient(90deg,#34506e 0%,#3e4860 70%,#454060 100%)' } },
         layout: { width: 640, height: 8 },
       },
     ],

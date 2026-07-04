@@ -163,12 +163,12 @@ function hpRowNode(blood: number, max: number, who: string): LayoutNode {
 function fortBaseNode(view: TurnBattleView, isMine: boolean): LayoutNode {
   const edge = isMine ? 'mine' : 'foe'; const who = isMine ? 'a' : 'b';
   const blood = isMine ? view.homeA : view.homeB;
-  const merlon = (i: number): LayoutNode => ({ type: 'Panel', id: `fort-${who}-merlon-${i}`, props: { bg: 'linear-gradient(180deg,#fbf7ef,#d8c39e)', edge }, layout: { width: 11, height: 12, radius: 3, padding: 0 } });
+  const merlon = (i: number): LayoutNode => ({ type: 'Panel', id: `fort-${who}-merlon-${i}`, props: { bg: { custom: 'linear-gradient(180deg,#fbf7ef,#d8c39e)' }, edge }, layout: { width: 11, height: 12, radius: 3, padding: 0 } });
   const crown: LayoutNode = { type: 'Label', id: `fort-${who}-crown`, props: { text: '♔', size: 26, color: 'gold', glow: true }, layout: { x: 25, y: -28 } };
   const merlons: LayoutNode = { type: 'Panel', id: `fort-${who}-merlons`, props: { bare: true }, layout: { x: 6, y: -7, width: 62, direction: 'row', justify: 'between', gap: 0 }, children: [0, 1, 2, 3].map(merlon) };
-  const shield: LayoutNode = { type: 'Panel', id: `fort-${who}-shield`, props: { bg: 'linear-gradient(160deg,#fff,#ece0c6)', edge }, layout: { width: 42, height: 48, radius: 16, align: 'center', justify: 'center', padding: 0, margin: 11 }, children: [{ type: 'Label', id: `fort-${who}-glyph`, props: { text: isMine ? '♠' : '♥', size: 30, color: isMine ? 'dim' : 'danger' } }] };
-  const body: LayoutNode = { type: 'Panel', id: `fort-${who}-body`, props: { bg: 'linear-gradient(170deg,#fbf7ef,#dccaa8)', edge }, layout: { width: 74, height: 88, radius: 12, direction: 'column', justify: 'end', align: 'center', padding: 0, fx: [{ kind: 'glow', color: isMine ? 'warn' : 'jade', ms: 3000 }] }, children: [crown, merlons, shield] };
-  const tag: LayoutNode = { type: 'Panel', id: `fort-${who}-tag`, props: { bg: 'rgba(20,16,10,.8)' }, layout: { radius: 99, padding: 5 }, children: [{ type: 'Label', id: `fort-${who}-tagtx`, props: { text: isMine ? '我方' : '敌方', size: 12, color: 'text', bold: true } }] };
+  const shield: LayoutNode = { type: 'Panel', id: `fort-${who}-shield`, props: { bg: { custom: 'linear-gradient(160deg,#fff,#ece0c6)' }, edge }, layout: { width: 42, height: 48, radius: 16, align: 'center', justify: 'center', padding: 0, margin: 11 }, children: [{ type: 'Label', id: `fort-${who}-glyph`, props: { text: isMine ? '♠' : '♥', size: 30, color: isMine ? 'dim' : 'danger' } }] };
+  const body: LayoutNode = { type: 'Panel', id: `fort-${who}-body`, props: { bg: { custom: 'linear-gradient(170deg,#fbf7ef,#dccaa8)' }, edge }, layout: { width: 74, height: 88, radius: 12, direction: 'column', justify: 'end', align: 'center', padding: 0, fx: [{ kind: 'glow', color: isMine ? 'warn' : 'jade', ms: 3000 }] }, children: [crown, merlons, shield] };
+  const tag: LayoutNode = { type: 'Panel', id: `fort-${who}-tag`, props: { bg: { custom: 'rgba(20,16,10,.8)' } }, layout: { radius: 99, padding: 5 }, children: [{ type: 'Label', id: `fort-${who}-tagtx`, props: { text: isMine ? '我方' : '敌方', size: 12, color: 'text', bold: true } }] };
   const children: LayoutNode[] = [body, tag, hpRowNode(blood, view.homeMax, who)];
   if (isMine) children.push({ type: 'Panel', id: 'fort-a-timer', props: {}, layout: { direction: 'row', gap: 5, align: 'center', padding: 5, radius: 99 }, children: [{ type: 'Label', id: 'fort-a-timer-ic', props: { text: '⏳', size: 12 } }, { type: 'Label', id: 'fort-a-timer-tx', props: { text: view.timerLabel, size: 12, color: 'dim', mono: true } }] });
   return { type: 'Panel', id: `fort-${who}`, props: { bare: true }, layout: { width: 92, direction: 'column', align: 'center', gap: 7 }, children };
@@ -206,10 +206,10 @@ function unitNode(s: TurnSlotView): LayoutNode {
   const id = s.unitId ?? `${s.rank}${s.suit}`; const isGen = !!s.general; const tone = SUIT_TONE[s.suit!] ?? 'sub'; const g = SUITG[s.suit!];
   const top: LayoutNode = { type: 'Panel', id: `u-${id}-top`, props: { bare: true }, layout: { direction: 'row', justify: 'between', align: 'start', gap: 2 }, children: [
     { type: 'Label', id: `u-${id}-cn`, props: { text: `${s.rank}${g}`, size: 14, color: tone, bold: true } },
-    { type: 'Panel', id: `u-${id}-bd`, props: { bg: s.mine ? '#dc2626' : '#111111' }, layout: { radius: 99, padding: 2 }, children: [{ type: 'Label', id: `u-${id}-bv`, props: { text: String(s.power ?? ''), size: 11, color: 'text', mono: true, bold: true } }] },
+    { type: 'Panel', id: `u-${id}-bd`, props: { bg: s.mine ? { custom: '#dc2626' } : { custom: '#111111' } }, layout: { radius: 99, padding: 2 }, children: [{ type: 'Label', id: `u-${id}-bv`, props: { text: String(s.power ?? ''), size: 11, color: 'text', mono: true, bold: true } }] },
   ] };
   const zod = s.zod || [];
-  const zc = (z: string | undefined, i: number): LayoutNode => ({ type: 'Panel', id: `u-${id}-z${i}`, props: { bg: z ? 'rgba(255,255,255,.9)' : 'rgba(0,0,0,.06)' }, layout: { width: 18, height: 18, radius: 5, align: 'center', justify: 'center', padding: 0 }, children: z ? [{ type: 'Label', id: `u-${id}-zg${i}`, props: { text: ZOD_ICON[z] || z, size: 12 } }] : [] });
+  const zc = (z: string | undefined, i: number): LayoutNode => ({ type: 'Panel', id: `u-${id}-z${i}`, props: { bg: z ? { custom: 'rgba(255,255,255,.9)' } : { custom: 'rgba(0,0,0,.06)' } }, layout: { width: 18, height: 18, radius: 5, align: 'center', justify: 'center', padding: 0 }, children: z ? [{ type: 'Label', id: `u-${id}-zg${i}`, props: { text: ZOD_ICON[z] || z, size: 12 } }] : [] });
   // 中央=大花色（owner 2026-06-29「先不显我/敌·只靠红框/黑框分辨·看够不够」）：敌我暂仅靠 edge 红/黑框 + 红/黑战力角标区分。
   const center: LayoutNode = { type: 'Label', id: `u-${id}-big`, props: { text: g, size: 30, color: tone } };
   const children: LayoutNode[] = [
@@ -260,7 +260,7 @@ function slotCellNode(s: TurnSlotView, idx: number): LayoutNode {
     { type: 'Label', id: `${cid}-tap`, props: { text: '👆', size: 25 } },
     { type: 'Label', id: `${cid}-ph`, props: { text: '放这里', size: 10, color: 'gold', bold: true }, layout: { y: 56, x: 0 } },
   );
-  if (s.forecast != null) { const [lab] = oddsTier(s.forecast); const pct = Math.round(s.forecast * 100); const fc = pct >= 55 ? 'ok' : pct > 45 ? 'warn' : 'danger'; inner.push({ type: 'Panel', id: `${cid}-fc`, props: { bg: 'rgba(10,14,20,.92)', edge: fc }, layout: { y: -19, x: 0, radius: 99, padding: 2 }, children: [{ type: 'Label', id: `${cid}-fcl`, props: { text: `⚔ ${lab} ${pct}%`, size: 11, color: fc, bold: true } }] }); }
+  if (s.forecast != null) { const [lab] = oddsTier(s.forecast); const pct = Math.round(s.forecast * 100); const fc = pct >= 55 ? 'ok' : pct > 45 ? 'warn' : 'danger'; inner.push({ type: 'Panel', id: `${cid}-fc`, props: { bg: { custom: 'rgba(10,14,20,.92)' }, edge: fc }, layout: { y: -19, x: 0, radius: 99, padding: 2 }, children: [{ type: 'Label', id: `${cid}-fcl`, props: { text: `⚔ ${lab} ${pct}%`, size: 11, color: fc, bold: true } }] }); }
   const fx = s.isClash ? [{ kind: 'pulse' as const, ms: 1400 }] : s.placeable ? [{ kind: 'pulse' as const, color: 'gold' as const, ms: 1050 }] : undefined;
   return { type: 'Panel', id: cid, props: special ? { bg: bg ?? 'transparent', edge } : { bare: true }, layout: { flex: 1, direction: 'column', align: s.hasUnit ? 'stretch' : 'center', justify: 'center', radius: 11, padding: 3, ...(fx ? { fx } : {}) }, children: inner };
 }
@@ -272,7 +272,7 @@ function laneRowNode(L: TurnLaneView, li: number, hiOn: boolean): LayoutNode {
 
 // 召唤源泉水滴（cost·小蓝滴排）。
 function costDropNode(n: number, idp: string): LayoutNode {
-  return { type: 'Panel', id: `${idp}-cost`, props: { bare: true }, layout: { y: 4, x: 30, direction: 'row', gap: 3, justify: 'center' }, children: Array.from({ length: Math.min(n, 5) }, (_, k): LayoutNode => ({ type: 'Panel', id: `${idp}-cd${k}`, props: { bg: 'linear-gradient(180deg,#8fe0ff,#2f93cf)' }, layout: { width: 9, height: 12, radius: 4, padding: 0 } })) };
+  return { type: 'Panel', id: `${idp}-cost`, props: { bare: true }, layout: { y: 4, x: 30, direction: 'row', gap: 3, justify: 'center' }, children: Array.from({ length: Math.min(n, 5) }, (_, k): LayoutNode => ({ type: 'Panel', id: `${idp}-cd${k}`, props: { bg: { custom: 'linear-gradient(180deg,#8fe0ff,#2f93cf)' } }, layout: { width: 9, height: 12, radius: 4, padding: 0 } })) };
 }
 // 手牌牌面（数据驱动·棋枰数据化②/③·同场上兵套路）：天罡=紫顶徽 + 名/描述；兵牌=sideFace + edge mine/将 gold + 角标/战力/大花色/生肖。
 function handCardNode(c: TurnHandCardView, i: number, hiOn: boolean): LayoutNode {
@@ -280,7 +280,7 @@ function handCardNode(c: TurnHandCardView, i: number, hiOn: boolean): LayoutNode
   let card: LayoutNode;
   if (c.kind === 'gang') {
     card = { type: 'Panel', id: `h${i}`, props: { bg: 'var(--panel)', edge: 'gold' }, layout: { width: 88, height: 112, radius: 12, direction: 'column', gap: 0, padding: 0, ...(sel ? { fx: [{ kind: 'glow', color: 'gold', ms: 900 }] } : {}) }, children: [
-      { type: 'Panel', id: `h${i}-top`, props: { bg: 'linear-gradient(180deg,#a98bff44,#a98bff11)' }, layout: { height: 42, align: 'center', justify: 'center', radius: 10 }, children: [{ type: 'Panel', id: `h${i}-ic`, props: { bg: '#a98bff' }, layout: { width: 38, height: 38, radius: 99, align: 'center', justify: 'center', padding: 0 }, children: [{ type: 'Label', id: `h${i}-icg`, props: { text: c.glyph || '✦', size: 22, color: 'text' } }] }] },
+      { type: 'Panel', id: `h${i}-top`, props: { bg: { custom: 'linear-gradient(180deg,#a98bff44,#a98bff11)' } }, layout: { height: 42, align: 'center', justify: 'center', radius: 10 }, children: [{ type: 'Panel', id: `h${i}-ic`, props: { bg: { custom: '#a98bff' } }, layout: { width: 38, height: 38, radius: 99, align: 'center', justify: 'center', padding: 0 }, children: [{ type: 'Label', id: `h${i}-icg`, props: { text: c.glyph || '✦', size: 22, color: 'text' } }] }] },
       { type: 'Panel', id: `h${i}-bd`, props: { bare: true }, layout: { direction: 'column', align: 'center', gap: 4, padding: 8 }, children: [
         { type: 'Label', id: `h${i}-nm`, props: { text: c.name, size: 13, color: 'text', bold: true } },
         { type: 'Label', id: `h${i}-ds`, props: { text: c.desc || '', size: 10, color: 'sub' } },
@@ -290,15 +290,15 @@ function handCardNode(c: TurnHandCardView, i: number, hiOn: boolean): LayoutNode
   } else {
     const tone = SUIT_TONE[c.suit!] ?? 'sub'; const isGen = !!c.general; const g = c.suit ? SUITG[c.suit] : '';
     const zod = c.zod || [];
-    const zc = (z: string | undefined, k: number): LayoutNode => ({ type: 'Panel', id: `h${i}-z${k}`, props: { bg: z ? 'rgba(255,255,255,.9)' : 'rgba(0,0,0,.06)' }, layout: { width: 18, height: 18, radius: 5, align: 'center', justify: 'center', padding: 0 }, children: z ? [{ type: 'Label', id: `h${i}-zg${k}`, props: { text: ZOD_ICON[z] || z, size: 12 } }] : [] });
+    const zc = (z: string | undefined, k: number): LayoutNode => ({ type: 'Panel', id: `h${i}-z${k}`, props: { bg: z ? { custom: 'rgba(255,255,255,.9)' } : { custom: 'rgba(0,0,0,.06)' } }, layout: { width: 18, height: 18, radius: 5, align: 'center', justify: 'center', padding: 0 }, children: z ? [{ type: 'Label', id: `h${i}-zg${k}`, props: { text: ZOD_ICON[z] || z, size: 12 } }] : [] });
     const children: LayoutNode[] = [
       { type: 'Panel', id: `h${i}-top`, props: { bare: true }, layout: { direction: 'row', justify: 'between', align: 'start' }, children: [
         { type: 'Label', id: `h${i}-cn`, props: { text: `${c.rank ?? ''}${g}`, size: 14, color: tone, bold: true } },
-        { type: 'Panel', id: `h${i}-bd`, props: { bg: '#dc2626' }, layout: { radius: 99, padding: 2 }, children: [{ type: 'Label', id: `h${i}-bv`, props: { text: String(c.power ?? ''), size: 10, color: 'text', mono: true, bold: true } }] },
+        { type: 'Panel', id: `h${i}-bd`, props: { bg: { custom: '#dc2626' } }, layout: { radius: 99, padding: 2 }, children: [{ type: 'Label', id: `h${i}-bv`, props: { text: String(c.power ?? ''), size: 10, color: 'text', mono: true, bold: true } }] },
       ] },
       { type: 'Panel', id: `h${i}-mid`, props: { bare: true }, layout: { direction: 'column', align: 'center', gap: 2 }, children: [
         { type: 'Label', id: `h${i}-big`, props: { text: g, size: 32, color: tone } },
-        { type: 'Panel', id: `h${i}-nm`, props: { bg: 'rgba(20,16,10,.8)' }, layout: { radius: 99, padding: 2 }, children: [{ type: 'Label', id: `h${i}-nml`, props: { text: c.name, size: 11, color: 'text', bold: true } }] },
+        { type: 'Panel', id: `h${i}-nm`, props: { bg: { custom: 'rgba(20,16,10,.8)' } }, layout: { radius: 99, padding: 2 }, children: [{ type: 'Label', id: `h${i}-nml`, props: { text: c.name, size: 11, color: 'text', bold: true } }] },
       ] },
       { type: 'Panel', id: `h${i}-zr`, props: { bare: true }, layout: { direction: 'row', gap: 3, justify: 'center' }, children: [0, 1, 2].map((k) => zc(zod[k], k)) },
     ];
@@ -388,9 +388,9 @@ function clashNode(cv: TurnClashView): LayoutNode {
     // 掷前=3D 骰竞技（clash-die3d 锚点·引擎 ThreeRenderer 覆此翻滚·🎲 兜底）+ 掷值文本(clash-die·驱动就地滚·藏于骰上方无妨)；
     // 揭晓=奶白平面骰显**真实掷值**(clash-die·非随机骰面·免与胜负矛盾·忠实设计稿 reveal 相)。两相皆保 clash-die id（驱动依赖）。
     const dieSlot: LayoutNode = revealed
-      ? { type: 'Panel', id: `clash-dieface-${s}`, props: { bg: 'linear-gradient(150deg,#fffaf0,#e6d3ad)', edge: won ? tone : 'gold' }, layout: { width: 66, height: 66, radius: 14, align: 'center', justify: 'center', direction: 'row', fx: won ? [{ kind: 'glow', ms: 1200 }] : undefined },
+      ? { type: 'Panel', id: `clash-dieface-${s}`, props: { bg: { custom: 'linear-gradient(150deg,#fffaf0,#e6d3ad)' }, edge: won ? tone : 'gold' }, layout: { width: 66, height: 66, radius: 14, align: 'center', justify: 'center', direction: 'row', fx: won ? [{ kind: 'glow', ms: 1200 }] : undefined },
           children: [{ type: 'Label', id: `clash-die-${s}`, props: { text: String(roll ?? '?'), size: 30, color: tone, bold: true, mono: true } }] }
-      : { type: 'Panel', id: `clash-die3d-${s}`, props: { bg: 'linear-gradient(150deg,#fffaf0,#e6d3ad)', edge: 'gold' }, layout: { width: 66, height: 66, radius: 14, align: 'center', justify: 'center', direction: 'column', gap: 0, fx: [{ kind: 'pulse', color: 'gold', ms: 900 }] },
+      : { type: 'Panel', id: `clash-die3d-${s}`, props: { bg: { custom: 'linear-gradient(150deg,#fffaf0,#e6d3ad)' }, edge: 'gold' }, layout: { width: 66, height: 66, radius: 14, align: 'center', justify: 'center', direction: 'column', gap: 0, fx: [{ kind: 'pulse', color: 'gold', ms: 900 }] },
           children: [
             { type: 'Label', id: `clash-die3d-ph-${s}`, props: { text: '🎲', size: 30, color: 'text' } }, // 无 WebGL 兜底（有 WebGL 时 3D 骰覆盖）
             { type: 'Label', id: `clash-die-${s}`, props: { text: '?', size: 'xs', color: tone, bold: true, mono: true } }, // 驱动就地滚的掷值（掷前藏于骰面·勿删 id）
@@ -409,7 +409,7 @@ function clashNode(cv: TurnClashView): LayoutNode {
     ],
   });
   const diceArena: LayoutNode = {
-    type: 'Panel', id: 'clash-dicewrap', props: { bg: 'rgba(10,14,22,.5)', edge: 'gold' }, layout: { direction: 'column', gap: 8, align: 'center', padding: 14, radius: 15, chamfer: 10 },
+    type: 'Panel', id: 'clash-dicewrap', props: { bg: { custom: 'rgba(10,14,22,.5)' }, edge: 'gold' }, layout: { direction: 'column', gap: 8, align: 'center', padding: 14, radius: 15, chamfer: 10 },
     children: [
       { type: 'Label', id: 'clash-dice-h', props: { text: '各自掷战力骰 · 各掷自己战力范围 · 大者胜', size: 'xs', color: 'gold', bold: true, tracking: 1.2 } },
       { type: 'Panel', id: 'clash-duel', props: { bare: true }, layout: { direction: 'row', gap: 18, align: 'center', justify: 'center' },
@@ -466,7 +466,7 @@ function clashNode(cv: TurnClashView): LayoutNode {
   });
 
   return {
-    type: 'Panel', id: 'clash-panel', props: { accent: true, bg: 'radial-gradient(80% 100% at 50% 0%, #1b2638 0%, #0e1622 56%, #080d15 100%)' },
+    type: 'Panel', id: 'clash-panel', props: { accent: true, bg: { custom: 'radial-gradient(80% 100% at 50% 0%, #1b2638 0%, #0e1622 56%, #080d15 100%)' } },
     layout: { direction: 'column', gap: 12, padding: 22, width: 968, chamfer: 20 },
     children,
   };
@@ -590,7 +590,7 @@ function settingsNode(view: TurnBattleView): LayoutNode {
 // 定位/淡入仍由外层绝对定位壳承担（同 clash/settings·renderNode 不进位置壳）。
 function narrationNode(text: string): LayoutNode {
   return {
-    type: 'Panel', id: 'ggt-narr', props: { accent: true, bg: 'linear-gradient(180deg,rgba(28,40,58,.97),rgba(14,24,38,.98))' },
+    type: 'Panel', id: 'ggt-narr', props: { accent: true, bg: { custom: 'linear-gradient(180deg,rgba(28,40,58,.97),rgba(14,24,38,.98))' } },
     layout: { direction: 'row', gap: 10, align: 'center', padding: 12 },
     children: [
       { type: 'Label', id: 'ggt-narr-ic', props: { text: '🎓', size: 22 } },
@@ -600,7 +600,7 @@ function narrationNode(text: string): LayoutNode {
 }
 function noticeNode(text: string, warn: boolean): LayoutNode {
   return {
-    type: 'Panel', id: 'ggt-notice', props: { bg: warn ? 'rgba(60,18,18,.96)' : 'rgba(20,34,26,.96)' },
+    type: 'Panel', id: 'ggt-notice', props: { bg: warn ? { custom: 'rgba(60,18,18,.96)' } : { custom: 'rgba(20,34,26,.96)' } },
     layout: { direction: 'row', align: 'center', justify: 'center', padding: 9 },
     children: [{ type: 'Label', id: 'ggt-notice-tx', props: { text, size: 14, color: warn ? 'danger' : 'ok', bold: true } }],
   };
@@ -621,7 +621,7 @@ function shaRowNode(s: TurnShaView, i: number): LayoutNode {
     { type: 'Label', id: `rail-sha-${i}-u`, props: { text: '未揭示', size: 10, color: 'dim' } },
   ] };
   const used = s.used ?? false;
-  return { type: 'Panel', id: `rail-sha-${i}`, props: { bg: used ? 'rgba(20,24,34,.6)' : 'var(--chip)' }, layout: { direction: 'row', align: 'center', gap: 7, padding: 5, radius: 8 }, children: [
+  return { type: 'Panel', id: `rail-sha-${i}`, props: { bg: used ? { custom: 'rgba(20,24,34,.6)' } : 'var(--chip)' }, layout: { direction: 'row', align: 'center', gap: 7, padding: 5, radius: 8 }, children: [
     { type: 'Panel', id: `rail-sha-${i}-dot`, props: { bg: rc[1] }, layout: { width: 7, height: 7, radius: 99, padding: 0 } },
     { type: 'Label', id: `rail-sha-${i}-n`, props: { text: s.name.replace('地煞·', '').replace('地煞 · ', ''), size: 11, color: used ? 'dim' : 'text' }, layout: { flex: 1 } },
     { type: 'Label', id: `rail-sha-${i}-s`, props: { text: used ? '已用' : '待发', size: 9, color: used ? 'warn' : 'ok' } },
@@ -638,7 +638,7 @@ function shaTipNode(s: TurnShaView): LayoutNode {
 }
 function enemyRailNode(view: TurnBattleView): LayoutNode {
   const header: LayoutNode = { type: 'Panel', id: 'rail-hdr', props: { bare: true }, layout: { direction: 'row', align: 'center', gap: 9 }, children: [
-    { type: 'Panel', id: 'rail-hdr-ic', props: { bg: 'linear-gradient(150deg,#7a3340,#4a1f28)' }, layout: { width: 36, height: 36, radius: 9, align: 'center', justify: 'center', padding: 0 }, children: [{ type: 'Label', id: 'rail-hdr-ic-g', props: { text: '♥', size: 19, color: 'text' } }] },
+    { type: 'Panel', id: 'rail-hdr-ic', props: { bg: { custom: 'linear-gradient(150deg,#7a3340,#4a1f28)' } }, layout: { width: 36, height: 36, radius: 9, align: 'center', justify: 'center', padding: 0 }, children: [{ type: 'Label', id: 'rail-hdr-ic-g', props: { text: '♥', size: 19, color: 'text' } }] },
     { type: 'Panel', id: 'rail-hdr-tx', props: { bare: true }, layout: { direction: 'column', flex: 1 }, children: [
       { type: 'Label', id: 'rail-hdr-name', props: { text: view.bossName || '敌方', size: 14, color: 'text', bold: true } },
       { type: 'Label', id: 'rail-hdr-sub', props: { text: 'BOSS · 敌方', size: 9, color: 'sub', tracking: 1.4 } },
@@ -660,13 +660,13 @@ function waterSegNode(i: number, lit: boolean, half: boolean, draining: boolean)
 }
 function waterBarNode(view: TurnBattleView, litCells: number, halfCell: boolean, litLabel: string, drain: { from: number; count: number }): LayoutNode {
   const segs: LayoutNode[] = Array.from({ length: view.waterMax }, (_, i) => waterSegNode(i, i < litCells, !((i < litCells)) && i === litCells && halfCell, drain.count > 0 && i >= drain.from && i < drain.from + drain.count));
-  const cap: LayoutNode = { type: 'Panel', id: 'water-cap', props: { bg: 'radial-gradient(circle at 38% 30%, #7fd8f5, #2a7fb8)' }, layout: { width: 36, height: 36, radius: 10, align: 'center', justify: 'center', padding: 0 }, children: [{ type: 'Label', id: 'water-cap-g', props: { text: '源', size: 20, color: 'text' } }] };
-  const tube: LayoutNode = { type: 'Panel', id: 'water-tube', props: { bg: 'linear-gradient(180deg, rgba(10,30,46,.9), rgba(6,16,26,.95))', edge: 'foe' }, layout: { flex: 1, height: 34, radius: 12, direction: 'row', gap: 4, padding: 4 }, children: segs };
+  const cap: LayoutNode = { type: 'Panel', id: 'water-cap', props: { bg: { custom: 'radial-gradient(circle at 38% 30%, #7fd8f5, #2a7fb8)' } }, layout: { width: 36, height: 36, radius: 10, align: 'center', justify: 'center', padding: 0 }, children: [{ type: 'Label', id: 'water-cap-g', props: { text: '源', size: 20, color: 'text' } }] };
+  const tube: LayoutNode = { type: 'Panel', id: 'water-tube', props: { bg: { custom: 'linear-gradient(180deg, rgba(10,30,46,.9), rgba(6,16,26,.95))' }, edge: 'foe' }, layout: { flex: 1, height: 34, radius: 12, direction: 'row', gap: 4, padding: 4 }, children: segs };
   const deckCol: LayoutNode = { type: 'Panel', id: 'water-deck', props: { bare: true }, layout: { direction: 'column', align: 'center', gap: 1 }, children: [
     { type: 'Label', id: 'water-deck-l', props: { text: '我牌库', size: 9, color: 'sub', tracking: 1 } },
     { type: 'Label', id: 'water-deck-v', props: { text: String(view.deckA), size: 16, color: 'text', mono: true } },
   ] };
-  const plus: LayoutNode = { type: 'Panel', id: 'water-plus', props: { bg: 'rgba(70,209,122,.18)', edge: 'ok' }, layout: { radius: 99, padding: 4 }, children: [{ type: 'Label', id: 'water-plus-l', props: { text: `本回合 +${view.waterGain}`, size: 11, color: 'ok', bold: true } }] };
+  const plus: LayoutNode = { type: 'Panel', id: 'water-plus', props: { bg: { custom: 'rgba(70,209,122,.18)' }, edge: 'ok' }, layout: { radius: 99, padding: 4 }, children: [{ type: 'Label', id: 'water-plus-l', props: { text: `本回合 +${view.waterGain}`, size: 11, color: 'ok', bold: true } }] };
   return { type: 'Panel', id: 'water-bar', props: {}, layout: { direction: 'row', align: 'center', gap: 12, padding: 9, radius: 14 }, children: [
     cap,
     { type: 'Label', id: 'water-title', props: { text: '召唤源泉 · SUMMON FONT', size: 10, color: 'sub', tracking: 1.6 } },

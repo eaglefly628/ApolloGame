@@ -33,7 +33,7 @@ function avatarUri(): string {
 function header(): LayoutNode {
   return {
     type: 'Panel', id: 'gx-pmem-header',
-    props: { bg: 'linear-gradient(180deg,#3a2f48,#1d182a)' },
+    props: { bg: { custom: 'linear-gradient(180deg,#3a2f48,#1d182a)' } },
     layout: { width: 640, height: 64, direction: 'row', align: 'center', gap: 12, padding: 18 },
     children: [
       {
@@ -63,9 +63,9 @@ function herBubble(id: string, lines: string[]): LayoutNode {
     type: 'Panel', id, props: { bare: true },
     layout: { direction: 'row', width: 460 },
     children: [
-      { type: 'Panel', id: `${id}-bar`, props: { bg: '#5a7a9a' }, layout: { width: 2 } },
+      { type: 'Panel', id: `${id}-bar`, props: { bg: { custom: '#5a7a9a' } }, layout: { width: 2 } },
       {
-        type: 'Panel', id: `${id}-body`, props: { bg: '#211a30' },
+        type: 'Panel', id: `${id}-body`, props: { bg: { custom: '#211a30' } },
         layout: { direction: 'column', gap: 2, padding: 10, flex: 1 },
         children: lines.map((t, i) => ({
           type: 'Label' as const, id: `${id}-l${i}`,
@@ -82,7 +82,7 @@ function yourBubble(id: string, text: string): LayoutNode {
     layout: { direction: 'row', width: 604, justify: 'end' },
     children: [
       {
-        type: 'Panel', id: `${id}-body`, props: { bg: '#2a2410' },
+        type: 'Panel', id: `${id}-body`, props: { bg: { custom: '#2a2410' } },
         layout: { direction: 'column', padding: 10 },
         children: [
           { type: 'Label', id: `${id}-l`, props: { text, color: 'warn', size: 'sm' } },
@@ -111,21 +111,21 @@ function chat(): LayoutNode {
 function inputBar(): LayoutNode {
   return {
     type: 'Panel', id: 'gx-pmem-inputbar',
-    props: { bg: '#100d18' },
+    props: { bg: { custom: '#100d18' } },
     layout: { width: 640, height: 56, direction: 'row', align: 'center', gap: 10, padding: 14 },
     children: [
       {
-        type: 'Panel', id: 'gx-pmem-field', props: { bg: '#1c1726' },
+        type: 'Panel', id: 'gx-pmem-field', props: { bg: { custom: '#1c1726' } },
         layout: { height: 36, direction: 'row', align: 'center', gap: 2, padding: 14, flex: 1 },
         children: [
           { type: 'Label', id: 'gx-pmem-draft', props: { text: '谢谢', color: 'text', size: 'sm' } },
           // 静态琥珀光标（设计稿的 rp-caret 闪烁渲成静态 2×16 竖条）
-          { type: 'Panel', id: 'gx-pmem-caret', props: { bg: '#ffb000' }, layout: { width: 2, height: 16 } },
+          { type: 'Panel', id: 'gx-pmem-caret', props: { bg: { custom: '#ffb000' } }, layout: { width: 2, height: 16 } },
         ],
       },
       // 圆形琥珀发送键 ▶（深色字标在亮底·用 dim 近似 #15101f 内屏底色字）
       {
-        type: 'Panel', id: 'gx-pmem-send', props: { bg: '#ffb000' },
+        type: 'Panel', id: 'gx-pmem-send', props: { bg: { custom: '#ffb000' } },
         layout: { width: 36, height: 36, direction: 'row', justify: 'center', align: 'center' },
         children: [
           { type: 'Label', id: 'gx-pmem-send-i', props: { text: '▶', color: 'dim', size: 'sm' } },

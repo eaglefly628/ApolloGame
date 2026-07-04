@@ -32,7 +32,7 @@ function guessRow(id: string, text: string): LayoutNode {
     children: [{ type: 'Label', id: `${cid}-g`, props: { text: glyph, color, size: 'md' } }],
   });
   return {
-    type: 'Panel', id, props: { bg: '#1e1828' },
+    type: 'Panel', id, props: { bg: { custom: '#1e1828' } },
     layout: { direction: 'row', gap: 12, align: 'center', padding: 13 },
     children: [
       { type: 'Label', id: `${id}-q`, props: { text, color: 'text', size: 'sm' }, layout: { flex: 1 } },
@@ -45,7 +45,7 @@ function guessRow(id: string, text: string): LayoutNode {
 // ── 猜测条 · 温柔句型（异色暖框 + 右侧 ？）──────────────────────────────────
 function tenderRow(id: string, text: string): LayoutNode {
   return {
-    type: 'Panel', id, props: { bg: '#221b2e' },
+    type: 'Panel', id, props: { bg: { custom: '#221b2e' } },
     layout: { direction: 'row', gap: 12, align: 'center', padding: 13 },
     children: [
       { type: 'Label', id: `${id}-q`, props: { text, color: 'text', size: 'sm' }, layout: { flex: 1 } },
@@ -57,7 +57,7 @@ function tenderRow(id: string, text: string): LayoutNode {
 // ── 底部进度条（圆点 + 计数）────────────────────────────────────────────────
 function footer(): LayoutNode {
   const dot = (id: string, on: boolean): LayoutNode =>
-    ({ type: 'Panel', id, props: { bg: on ? '#ff9b6b' : '#3a2f48' }, layout: { width: 8, height: 8 } });
+    ({ type: 'Panel', id, props: { bg: on ? { custom: '#ff9b6b' } : { custom: '#3a2f48' } }, layout: { width: 8, height: 8 } });
   return {
     type: 'Panel', id: 'gx-wg-footer', props: { bare: true },
     layout: { direction: 'row', gap: 6, align: 'center', width: 640, padding: 14 },

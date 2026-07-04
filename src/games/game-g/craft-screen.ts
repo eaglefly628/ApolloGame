@@ -82,7 +82,7 @@ function enchantModal(view: LobbyView, idx: number): LayoutNode {
   return {
     type: 'Modal', id: 'ench-modal', props: { title: `🔨 附魔 · ${rank}${su} ${hero?.name ?? ''}`, size: 'md', closeAction: 'craftClose' },
     children: [{
-      type: 'Panel', id: 'ench-modal-body', props: { bg: 'radial-gradient(130% 100% at 50% 0%, #2d2316 0%, #15100a 100%)', vignette: true },
+      type: 'Panel', id: 'ench-modal-body', props: { bg: { custom: 'radial-gradient(130% 100% at 50% 0%, #2d2316 0%, #15100a 100%)' }, vignette: true },
       layout: { direction: 'column', gap: 12, padding: 16 },
       children: [header, slotBox, pickBox],
     }],

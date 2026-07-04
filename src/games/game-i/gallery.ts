@@ -37,6 +37,11 @@ function divider(id: string): LayoutNode {
 const DOT_SVG = '<svg xmlns="http://www.w3.org/2000/svg" width="26" height="26"><circle cx="13" cy="13" r="1.6" fill="#9cd2c5" fill-opacity="0.30"/></svg>';
 export const TEXTURE_URI = `data:image/svg+xml,${encodeURIComponent(DOT_SVG)}`;
 
+// 贴图按钮皮（自包含 SVG data-URI·**无 ()、无单引号**→过得了 skinCss 的净化；同 TEXTURE_URI 套路）。
+// 金属铆钉板 / 木纹板——演示 Button.skin（真实项目里换成 resolveAsset 解析出的资产 URL）。
+const SKIN_METAL = 'data:image/svg+xml,' + encodeURIComponent('<svg xmlns="http://www.w3.org/2000/svg" width="200" height="80"><rect width="200" height="80" fill="#4a5262"/><rect width="200" height="26" fill="#5a6474"/><rect x="3" y="3" width="194" height="74" fill="none" stroke="#aab4c6" stroke-width="2"/><circle cx="14" cy="14" r="4" fill="#cdd6e4"/><circle cx="186" cy="14" r="4" fill="#cdd6e4"/><circle cx="14" cy="66" r="4" fill="#cdd6e4"/><circle cx="186" cy="66" r="4" fill="#cdd6e4"/></svg>');
+const SKIN_WOOD = 'data:image/svg+xml,' + encodeURIComponent('<svg xmlns="http://www.w3.org/2000/svg" width="200" height="80"><rect width="200" height="80" fill="#5a3a1e"/><rect y="10" width="200" height="4" fill="#7a5230"/><rect y="34" width="200" height="3" fill="#8a6038"/><rect y="60" width="200" height="4" fill="#3e2712"/></svg>');
+
 // ── 页 1 · 容器与布局 ────────────────────────────────────────
 const pageLayout: LayoutNode = {
   type: 'Panel',
@@ -711,7 +716,7 @@ function buildSimStage(id: string, glyph: string, title: string, desc: string, c
         ] },
       { type: 'Label', id: `${id}-desc`, props: { text: desc, color: 'sub', size: 'sm' } },
       // #sim-stage：高亮框住的活动视口（宿主在此 init 引擎渲染器·canvas 实时绘制·非 DOM）。
-      { type: 'Panel', id: 'sim-stage', props: { accent: true, bg: '#0a0f1e' }, layout: { width: 656, height: 416, padding: 8, align: 'center' } },
+      { type: 'Panel', id: 'sim-stage', props: { accent: true, bg: { custom: '#0a0f1e' } }, layout: { width: 656, height: 416, padding: 8, align: 'center' } },
       // 「组合能力」标签条：本样例由哪些现成 capability 拼出来（信息 + 装饰·强化数据驱动叙事）。
       { type: 'Panel', id: `${id}-caps`, props: {}, layout: { direction: 'row', align: 'center', gap: 6, padding: 10 },
         children: [
@@ -840,7 +845,7 @@ function buildPageNew(controls: ControlsState): LayoutNode {
           { type: 'Badge', id: 'pp-b1', props: { text: 'bare', tone: 'ok' } },
           { type: 'Label', id: 'pp-bl', props: { text: 'bare 容器：无边框/底，只做 row/column 分组（不堆千层框）。', color: 'sub', size: 'sm' }, layout: { flex: 1 } },
         ] },
-      { type: 'Panel', id: 'pp-felt', props: { title: 'bg 自定义底（felt）+ vignette 暗角', bg: 'linear-gradient(180deg,#16402c,#0e2a1c)', vignette: true },
+      { type: 'Panel', id: 'pp-felt', props: { title: 'bg 自定义底（felt）+ vignette 暗角', bg: { custom: 'linear-gradient(180deg,#16402c,#0e2a1c)' }, vignette: true },
         layout: { direction: 'column', padding: 18, height: 84 },
         children: [{ type: 'Label', id: 'pp-fl', props: { text: '绿呢牌桌底 + 四周渐暗暗角（纯表现）。', color: 'sub', size: 'sm' } }] },
       { type: 'Panel', id: 'pp-maxw', props: { title: 'maxWidth 封顶居中' }, layout: { maxWidth: 360, padding: 14 },
@@ -876,7 +881,7 @@ function buildPageNew(controls: ControlsState): LayoutNode {
       sectionTitle('t-chamfer', 'CHAMFER · 倒角切角（clip-path 八边形·art-deco/扑克美学）'),
       { type: 'Panel', id: 'cham-row', props: {}, layout: { direction: 'row', gap: 16, padding: 18, align: 'center' },
         children: [
-          { type: 'Panel', id: 'cham-1', props: { bg: 'linear-gradient(180deg,#1c2a44,#101826)' }, layout: { chamfer: 14, padding: 16 },
+          { type: 'Panel', id: 'cham-1', props: { bg: { custom: 'linear-gradient(180deg,#1c2a44,#101826)' } }, layout: { chamfer: 14, padding: 16 },
             children: [{ type: 'Label', id: 'cham-l', props: { text: 'chamfer:14 切角面板', color: 'sub', size: 'sm' } }] },
           { type: 'Button', id: 'cham-btn', props: { label: '切角 CTA', kind: 'primary', action: 'click', actionArg: 'chamfer' }, layout: { chamfer: 10 } },
         ] },
@@ -893,6 +898,19 @@ function buildPageNew(controls: ControlsState): LayoutNode {
           props: { label, kind, shape, action: 'click', actionArg: shape },
           // 异形须给足宽高避免裁掉文字（六边/菱形尤其）——见 catalog shape describe。
           layout: { width: 108, height: 54 },
+        })) },
+
+      divider('d-skin'),
+      sectionTitle('t-skin', 'BUTTON.skin · 贴图按钮（已解析图 URL·同 Image.src 约定·配 shape=异形贴图键）'),
+      { type: 'Panel', id: 'skin-row', props: {}, layout: { direction: 'grid', cols: 3, gap: 14, padding: 18 },
+        children: ([
+          ['sk-metal', '金属板', SKIN_METAL, undefined], ['sk-wood-rib', '木纹绶带', SKIN_WOOD, 'ribbon'],
+          ['sk-metal-sh', '金属盾', SKIN_METAL, 'shield'], ['sk-wood-hex', '木纹六边', SKIN_WOOD, 'hexagon'],
+          ['sk-metal-cut', '金属切角', SKIN_METAL, 'cut'], ['sk-wood-tag', '木纹标签', SKIN_WOOD, 'tag'],
+        ] as const).map(([id, label, skin, shape]): LayoutNode => ({
+          type: 'Button', id,
+          props: { label, skin, ...(shape ? { shape } : {}), action: 'click', actionArg: id },
+          layout: { width: 150, height: 60 },
         })) },
 
       divider('d-fill'),
@@ -969,10 +987,10 @@ function buildPageNew(controls: ControlsState): LayoutNode {
       sectionTitle('t-pattern', 'PANEL · pattern 程序化纹理叠层（stripe 斜纹 / checker 棋盘·felt 牌桌质感）'),
       { type: 'Panel', id: 'pat-row', props: {}, layout: { direction: 'row', gap: 14, padding: 14 },
         children: [
-          { type: 'Panel', id: 'pat-stripe', props: { title: 'stripe 45°斜纹', bg: 'linear-gradient(180deg,#16402c,#0e2a1c)', pattern: 'stripe' },
+          { type: 'Panel', id: 'pat-stripe', props: { title: 'stripe 45°斜纹', bg: { custom: 'linear-gradient(180deg,#16402c,#0e2a1c)' }, pattern: 'stripe' },
             layout: { direction: 'column', padding: 16, height: 76, flex: 1 },
             children: [{ type: 'Label', id: 'pat-sl', props: { text: '绿呢底叠斜条纹（纯 CSS·零贴图）。', color: 'sub', size: 'sm' } }] },
-          { type: 'Panel', id: 'pat-checker', props: { title: 'checker 棋盘格', bg: 'linear-gradient(180deg,#2a1c40,#16102a)', pattern: 'checker' },
+          { type: 'Panel', id: 'pat-checker', props: { title: 'checker 棋盘格', bg: { custom: 'linear-gradient(180deg,#2a1c40,#16102a)' }, pattern: 'checker' },
             layout: { direction: 'column', padding: 16, height: 76, flex: 1 },
             children: [{ type: 'Label', id: 'pat-cl', props: { text: '紫底叠棋盘格纹理。', color: 'sub', size: 'sm' } }] },
         ] },
@@ -992,7 +1010,7 @@ function buildPageNew(controls: ControlsState): LayoutNode {
       { type: 'Panel', id: 'sheen-row', props: {}, layout: { direction: 'row', gap: 16, padding: 18, align: 'center' },
         children: [
           { type: 'Button', id: 'sheen-btn', props: { label: '流光按钮', kind: 'primary', action: 'click', actionArg: 'sheen' }, layout: { sheen: true } },
-          { type: 'Panel', id: 'sheen-card', props: { bg: 'linear-gradient(180deg,#1c2a44,#101826)' }, layout: { sheen: true, chamfer: 12, padding: 16 },
+          { type: 'Panel', id: 'sheen-card', props: { bg: { custom: 'linear-gradient(180deg,#1c2a44,#101826)' } }, layout: { sheen: true, chamfer: 12, padding: 16 },
             children: [{ type: 'Label', id: 'sheen-cl', props: { text: 'sheen 切角卡：一道流光斜扫而过。', color: 'sub', size: 'sm' } }] },
         ] },
 

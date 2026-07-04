@@ -115,13 +115,13 @@ export function mount(container: HTMLElement, _host?: { exit?: () => void }): ()
     return { type: 'Panel', id: 'gx-ctrl', props: { bare: true }, layout: { direction: 'row', gap: 6, justify: 'center', width: 660, padding: 4 }, children: [...ctx, ...dev].map(mk) };
   }
   function shell(screen: LayoutNode, ctx: BtnSpec[]): LayoutNode {
-    return { type: 'Screen', id: `${screen.id}-host`, props: { center: true, bg: '#05060a' }, layout: { direction: 'column', padding: 0, gap: 6 }, children: [...(screen.children ?? []), controlBar(ctx)] };
+    return { type: 'Screen', id: `${screen.id}-host`, props: { center: true, bg: { custom: '#05060a' } }, layout: { direction: 'column', padding: 0, gap: 6 }, children: [...(screen.children ?? []), controlBar(ctx)] };
   }
 
   // ── 活动选择屏 ──
   function weekendChooser(): LayoutNode {
     const opt = (id: string, label: string, sub: string): LayoutNode => ({
-      type: 'Panel', id: `gx-wk-${id}`, props: { bg: '#1c1726' }, layout: { direction: 'column', gap: 4, padding: 16, width: 580 },
+      type: 'Panel', id: `gx-wk-${id}`, props: { bg: { custom: '#1c1726' } }, layout: { direction: 'column', gap: 4, padding: 16, width: 580 },
       children: [
         { type: 'Button', id: `gx-wk-pick-${id}`, props: { label, kind: 'primary', action: 'weekend.pick', actionArg: id } },
         { type: 'Label', id: `gx-wk-sub-${id}`, props: { text: sub, color: 'sub', size: 'sm' } },

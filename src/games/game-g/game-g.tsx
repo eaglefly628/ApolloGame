@@ -600,7 +600,7 @@ export function mount(container: HTMLElement, shell?: { exit?: () => void }): ()
         ov.style.cssText = 'position:fixed;inset:0;z-index:200';
         document.body.appendChild(ov);
         const tree: LayoutNode = {
-          type: 'Screen', id: 'gg-back-screen', props: { bg: 'rgba(0,0,0,.72)', center: true } as ScreenProps,
+          type: 'Screen', id: 'gg-back-screen', props: { bg: { custom: 'rgba(0,0,0,.72)' }, center: true } as ScreenProps,
           children: [{
             type: 'Panel', id: 'gg-back-panel', props: {} as PanelProps,
             layout: { gap: 12, padding: 26, width: 300, align: 'stretch' },

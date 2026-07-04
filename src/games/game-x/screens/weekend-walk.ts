@@ -51,7 +51,7 @@ function choice(id: string, text: string, action: string): LayoutNode {
   return {
     type: 'Panel',
     id,
-    props: { bg: '#1c1726' },
+    props: { bg: { custom: '#1c1726' } },
     layout: { flex: 1, padding: 11, direction: 'row', justify: 'center', align: 'center' },
     children: [
       { type: 'Label', id: `${id}-t`, props: { text, color: 'text' as const, size: 'sm' as const } },
@@ -89,7 +89,7 @@ export function weekendWalkScreen(): LayoutNode {
           {
             type: 'Panel',
             id: 'gx-ww-bubble',
-            props: { bg: '#211a30' },
+            props: { bg: { custom: '#211a30' } },
             layout: { direction: 'column', padding: 12, gap: 4 },
             children: [
               { type: 'Label', id: 'gx-ww-bub-1', props: { text: '这棵树……你不觉得它长得有点固执吗。', color: 'text' as const, size: 'md' as const } },

@@ -53,7 +53,7 @@ function absenceSceneUri(): string {
 // ── 信息带 · 时钟列（168px·VT323 琥珀磷光 21:30 + 秒 11 + 日期 + 天气）────────
 function clockCol(): LayoutNode {
   return {
-    type: 'Panel', id: 'gx-abs24-clockcol', props: { bg: '#0c0913' },
+    type: 'Panel', id: 'gx-abs24-clockcol', props: { bg: { custom: '#0c0913' } },
     layout: { width: 168, height: 172, direction: 'column', justify: 'center', padding: 16, gap: 6 },
     children: [
       {
@@ -75,7 +75,7 @@ function statusCol(): LayoutNode {
   const micro = (id: string, text: string): LayoutNode =>
     ({ type: 'Label', id, props: { text, font: 'pixel', color: 'dim', size: 'xs', tracking: 2 } });
   return {
-    type: 'Panel', id: 'gx-abs24-statuscol', props: { bg: '#0c0913' },
+    type: 'Panel', id: 'gx-abs24-statuscol', props: { bg: { custom: '#0c0913' } },
     layout: { width: 472, height: 172, direction: 'column', justify: 'center', padding: 20, gap: 12 },
     children: [
       {
@@ -117,7 +117,7 @@ export function absence24Screen(): LayoutNode {
             layout: { width: 640, height: 300 },
           },
           {
-            type: 'Panel', id: 'gx-abs24-away', props: { bg: 'rgba(10,8,16,.7)' },
+            type: 'Panel', id: 'gx-abs24-away', props: { bg: { custom: 'rgba(10,8,16,.7)' } },
             layout: { x: 538, y: 12, direction: 'row', align: 'center', padding: 4 },
             children: [
               { type: 'Label', id: 'gx-abs24-away-t', props: { text: '○ AWAY 24H', font: 'pixel', color: 'sub', size: 'xs', tracking: 1 } },
@@ -127,14 +127,14 @@ export function absence24Screen(): LayoutNode {
       },
       // 信息带 640×172
       {
-        type: 'Panel', id: 'gx-abs24-band', props: { bg: '#0c0913' },
+        type: 'Panel', id: 'gx-abs24-band', props: { bg: { custom: '#0c0913' } },
         layout: { direction: 'row', width: 640, height: 172 },
         children: [clockCol(), statusCol()],
       },
       // 情感温度线 640×8（冷蓝·她不在身边）
       {
         type: 'Panel', id: 'gx-abs24-temp',
-        props: { bg: 'linear-gradient(90deg,#3c5a78 0%,#4a5670 70%,#5a5070 100%)' },
+        props: { bg: { custom: 'linear-gradient(90deg,#3c5a78 0%,#4a5670 70%,#5a5070 100%)' } },
         layout: { width: 640, height: 8 },
       },
     ],

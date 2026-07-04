@@ -375,7 +375,7 @@ export function mount(container: HTMLElement): () => void {
   // 2026-07-03「其他几个选一个跟它搭配的色」）。Button 无自定义色字段 → 照本屏 hero 先例用 Panel.action+Label 拼（主程回驳 Button 自定义色）。
   //   药丸底取**足够不透明**（0.82）：金字对比按「解析到的实底」算·底再亮（玻璃骰在后）也不靠半透穿骗对比（ui-playbook 透明度关）——最坏白底上金仍 ≥4.5:1。
   const modeBtn = (id: string, label: string, action: string): LayoutNode =>
-    ({ type: 'Panel', id, props: { action, bg: 'rgba(20,16,32,0.82)', edge: 'gold' }, layout: { radius: 9, padding: 9, align: 'center', justify: 'center' }, children: [lbl(`${id}-t`, label, { size: 'sm', color: 'gold', tracking: 1 })] });
+    ({ type: 'Panel', id, props: { action, bg: { custom: 'rgba(20,16,32,0.82)' }, edge: 'gold' }, layout: { radius: 9, padding: 9, align: 'center', justify: 'center' }, children: [lbl(`${id}-t`, label, { size: 'sm', color: 'gold', tracking: 1 })] });
 
   // ════════ 屏① Title ════════
   // 漂浮光尘（复刻原型 4 颗彩色 mote·float 动画·纯装饰）：火黄/暗紫/水蓝/木绿。
@@ -388,12 +388,12 @@ export function mount(container: HTMLElement): () => void {
   // 复用 UI 库现成能力（justify 是 owner 2026-06-25 为「竖向铺满/居中」加的·非新造）。绝对定位只留左上角开发钮 + 装饰光尘。
   const titleTree = (): LayoutNode => ({
     // 暗角 vignette（清新版·冷淡蓝灰·轻压边缘·非暗紫·owner「太黄·要清新」）→ 中亮边微暗、让 3D 骰居中透出。
-    type: 'Screen', id: 'gd-title', props: { bg: 'radial-gradient(88% 78% at 50% 42%, rgba(84,98,120,0) 56%, rgba(50,62,82,0.32) 100%)' },
+    type: 'Screen', id: 'gd-title', props: { bg: { custom: 'radial-gradient(88% 78% at 50% 42%, rgba(84,98,120,0) 56%, rgba(50,62,82,0.32) 100%)' } },
     children: [
       // 过场测试按钮（左上角锚·非 w 依赖·保留绝对叠层）。
       { type: 'Button', id: 'gd-test-trans', props: { label: '▶ 测试过场', kind: 'ghost', action: 'testTransition' }, layout: { x: 16, y: 16 } },
       // 漂浮光尘（纯装饰·绝对叠层）。
-      ...MOTES.map(([sx, sy, d, c, ms], i): LayoutNode => ({ type: 'Panel', id: `gd-mote${i}`, props: { bg: `radial-gradient(circle, ${c} 30%, transparent 72%)` }, layout: { x: Math.round(sx * w), y: Math.round(sy * h), width: d + 6, height: d + 6, radius: d + 6, padding: 0, opacity: 0.9, fx: [{ kind: 'float', ms }] }, children: [] })),
+      ...MOTES.map(([sx, sy, d, c, ms], i): LayoutNode => ({ type: 'Panel', id: `gd-mote${i}`, props: { bg: { custom: `radial-gradient(circle, ${c} 30%, transparent 72%)` } }, layout: { x: Math.round(sx * w), y: Math.round(sy * h), width: d + 6, height: d + 6, radius: d + 6, padding: 0, opacity: 0.9, fx: [{ kind: 'float', ms }] }, children: [] })),
       // 主内容：满高弹性列·上下两端对齐·横向居中 → 随视窗自适缩放居中。
       { type: 'Panel', id: 'gd-title-col', props: { bare: true }, layout: { flex: 1, direction: 'column', justify: 'between', align: 'center', padding: 46 },
         children: [
@@ -402,9 +402,9 @@ export function mount(container: HTMLElement): () => void {
               // 确切复刻原型：logo 76px 衬线 letter-spacing6·副标 Cinzel 15px sp6 两侧细线·tagline 13px
               lbl('gd-name', '骰途', { size: 76, color: 'gold', bold: true, glow: true, tracking: 6, font: 'display' }), // 中文毛笔艺术字（Ma Shan Zheng·fontDisplay 槽·大字艺术感）
               bareRow('gd-subrow', [
-                { type: 'Panel', id: 'gd-sl', props: { bg: 'linear-gradient(90deg,transparent,#9a7c46)' }, layout: { width: 34, height: 1, padding: 0 }, children: [] },
+                { type: 'Panel', id: 'gd-sl', props: { bg: { custom: 'linear-gradient(90deg,transparent,#9a7c46)' } }, layout: { width: 34, height: 1, padding: 0 }, children: [] },
                 lbl('gd-sub', 'TOWER OF FATE', { size: 15, color: 'ink', tracking: 6, font: 'epic' }), // Cinzel 史诗衬线（原型副标确指·主程 2026-07-03 内嵌艺术字库落地后接入·拉丁字形专用）
-                { type: 'Panel', id: 'gd-sr', props: { bg: 'linear-gradient(90deg,#9a7c46,transparent)' }, layout: { width: 34, height: 1, padding: 0 }, children: [] },
+                { type: 'Panel', id: 'gd-sr', props: { bg: { custom: 'linear-gradient(90deg,#9a7c46,transparent)' } }, layout: { width: 34, height: 1, padding: 0 }, children: [] },
               ], { justify: 'center', align: 'center', gap: 12 }),
               lbl('gd-tag', '两名掷命者，一座会改写命运的古塔', { size: 13, color: 'ink', tracking: 1 }),
             ],
@@ -412,7 +412,7 @@ export function mount(container: HTMLElement): () => void {
           { type: 'Panel', id: 'gd-btns', props: { bare: true }, layout: { maxWidth: 340, direction: 'column', align: 'center', gap: 13 },
             children: [
               // 金渐变 hero 键（复刻原型 #ffd982→#f0a93a·主程回驳 Button 自定义色 → 用 Panel.action+bg 拼）
-              { type: 'Panel', id: 'gd-start', props: { action: 'start', bg: 'linear-gradient(180deg,#ffd982,#f0a93a)', edge: 'gold' }, layout: { width: 236, radius: 13, padding: 14, align: 'center', direction: 'column', gap: 3, fx: [{ kind: 'pulse', ms: 3400 }] },
+              { type: 'Panel', id: 'gd-start', props: { action: 'start', bg: { custom: 'linear-gradient(180deg,#ffd982,#f0a93a)' }, edge: 'gold' }, layout: { width: 236, radius: 13, padding: 14, align: 'center', direction: 'column', gap: 3, fx: [{ kind: 'pulse', ms: 3400 }] },
                 children: [lbl('gd-start-t', '开 始 攀 塔', { size: 19, color: 'text', bold: true, font: 'serif', tracking: 4 })] }, // TODO(REQ-UI-ink)：原型深色字 #3a2406 on gold·待主程加 Label 'ink' 深色令牌后改
               lbl('gd-start-s', `第一层 · ${layerName(1)}`, { size: 'sm', color: 'sub', tracking: 2 }),
               bareRow('gd-modes', [
@@ -626,7 +626,7 @@ export function mount(container: HTMLElement): () => void {
             { type: 'Rating', id: 'dd-ra', props: { value: def.rarity, max: 5 } },
           ], { gap: 4 }),
         ], { align: 'center', gap: 10 }),
-        { type: 'Panel', id: 'dd-ab', props: { bg: 'rgba(0,0,0,0.25)' }, layout: { padding: 10, radius: 8 }, children: [lbl('dd-abt', def.ability, { size: 'sm', color: 'text' })] },
+        { type: 'Panel', id: 'dd-ab', props: { bg: { custom: 'rgba(0,0,0,0.25)' } }, layout: { padding: 10, radius: 8 }, children: [lbl('dd-abt', def.ability, { size: 'sm', color: 'text' })] },
         lbl('dd-faces-t', `骰面 · ${def.sides} 面`, { size: 'xs', color: 'sub' }),
         bareRow('dd-faces', def.faces.map((f, i): LayoutNode => ({ type: 'Panel', id: `dd-f${i}`, props: { edge: 'gold' }, layout: { width: 30, height: 30, radius: 6, align: 'center', justify: 'center', padding: 0 }, children: [lbl(`dd-fv${i}`, `${ELEM_INFO[f.el].emoji}${f.v}`, { size: 'xs' })] })), { gap: 5 }),
         lbl('dd-flavor', def.flavor, { size: 'xs', color: 'dim' }),
@@ -682,13 +682,13 @@ export function mount(container: HTMLElement): () => void {
       children: [{
         // 「命运骰盅」紫布面板（渐变 + 斜纹织物·复刻原型 165deg 紫布 + woven texture）+ 金边。
         // 磨砂玻璃骰盅（半透深紫玻璃 + backdrop-blur·概念图取样底 #241828→半透）：盒庭从后透出模糊
-        type: 'Panel', id: 'dish-root', props: { glass: true, bg: 'linear-gradient(165deg,rgba(42,22,50,0.78) 0%,rgba(29,16,38,0.84) 55%,rgba(20,12,26,0.88) 100%)', pattern: 'stripe', edge: 'gold' }, layout: { direction: 'column', gap: 10, padding: 18, maxWidth: 1140, radius: 18 },
+        type: 'Panel', id: 'dish-root', props: { glass: true, bg: { custom: 'linear-gradient(165deg,rgba(42,22,50,0.78) 0%,rgba(29,16,38,0.84) 55%,rgba(20,12,26,0.88) 100%)' }, pattern: 'stripe', edge: 'gold' }, layout: { direction: 'column', gap: 10, padding: 18, maxWidth: 1140, radius: 18 },
         children: [
           // header
           bareRow('dish-hdr', [
             bareRow('dish-hdl', [
               // 酒红骰盅图标（顶一颗金球·复刻原型 dice-cup glyph）
-              { type: 'Panel', id: 'dish-cup', props: { bg: 'radial-gradient(120% 120% at 30% 20%,#a8506a,#6e2d44)' }, layout: { width: 50, height: 50, radius: 14, align: 'center', justify: 'start', padding: 0 }, children: [{ type: 'Panel', id: 'dish-cup-ball', props: { bg: 'radial-gradient(circle at 35% 30%,#ffd98a,#e0a328)' }, layout: { width: 17, height: 17, radius: 9, y: -5, x: 16, padding: 0 }, children: [] }] },
+              { type: 'Panel', id: 'dish-cup', props: { bg: { custom: 'radial-gradient(120% 120% at 30% 20%,#a8506a,#6e2d44)' } }, layout: { width: 50, height: 50, radius: 14, align: 'center', justify: 'start', padding: 0 }, children: [{ type: 'Panel', id: 'dish-cup-ball', props: { bg: { custom: 'radial-gradient(circle at 35% 30%,#ffd98a,#e0a328)' } }, layout: { width: 17, height: 17, radius: 9, y: -5, x: 16, padding: 0 }, children: [] }] },
               bareCol('dish-hdt', [
                 lbl('dish-title', '命运骰盅', { size: 'xxl', bold: true, color: 'gold', glow: true }),
                 lbl('dish-sub', `第${Math.floor((S.globalRoom - 1) / 3) + 1}层 · ${layerName(S.globalRoom)} · 选出本轮要投掷的骰子，越省越好`, { size: 'sm', color: 'sub' }),

@@ -29,7 +29,7 @@ function clockCol(c: Companion, clock: ClockReading, view: DeskView): LayoutNode
   const moon = clock.hour >= 18 || clock.hour < 6 ? '🌙' : '☀️';
   return {
     type: 'Panel', id: 'gx-clockcol',
-    props: { bg: '#0d0a14' },
+    props: { bg: { custom: '#0d0a14' } },
     layout: { width: 168, height: 172, direction: 'column', justify: 'center', padding: 16, gap: 6 },
     children: [
       {
@@ -52,7 +52,7 @@ function statusCol(view: DeskView, lastSummary: string, extras?: DeskExtras): La
     ({ type: 'Label', id, props: { text, font: 'pixel', color: 'dim', size: 'xs', tracking: 2 } });
   return {
     type: 'Panel', id: 'gx-statuscol',
-    props: { bg: '#0d0a14' },
+    props: { bg: { custom: '#0d0a14' } },
     layout: { width: 472, height: 172, direction: 'column', justify: 'center', padding: 20, gap: 12 },
     children: [
       {
@@ -98,7 +98,7 @@ export function deskScreen(c: Companion, clock: ClockReading, view: DeskView, la
   const live = `${c.name} · ${view.sceneLabel.split('·')[0]} · 等你`;
   return {
     type: 'Screen', id: 'gx-desk',
-    props: { center: true, bg: '#05060a' },
+    props: { center: true, bg: { custom: '#05060a' } },
     layout: { direction: 'column', padding: 0 },
     children: [
       {
@@ -116,11 +116,11 @@ export function deskScreen(c: Companion, clock: ClockReading, view: DeskView, la
           },
           // 设备外框
           {
-            type: 'Panel', id: 'gx-device', props: { bg: '#0a0810' },
+            type: 'Panel', id: 'gx-device', props: { bg: { custom: '#0a0810' } },
             layout: { width: 660, height: 500, padding: 10, direction: 'column' },
             children: [
               {
-                type: 'Panel', id: 'gx-screen-in', props: { bg: '#15101f' },
+                type: 'Panel', id: 'gx-screen-in', props: { bg: { custom: '#15101f' } },
                 layout: { width: 640, height: 480, direction: 'column' },
                 children: [
                   // 场景 640×300

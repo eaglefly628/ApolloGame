@@ -17,7 +17,7 @@ export interface HubCtx { mood: string; address: string; stage: RelationStage; b
 
 function header(c: Companion, ctx: HubCtx): LayoutNode {
   return {
-    type: 'Panel', id: 'gx-hub-head', props: { bg: 'linear-gradient(180deg,#3a2f48,#1d182a)' },
+    type: 'Panel', id: 'gx-hub-head', props: { bg: { custom: 'linear-gradient(180deg,#3a2f48,#1d182a)' } },
     layout: { direction: 'row', gap: 12, align: 'center', padding: 12, width: 640, height: 64 },
     children: [
       { type: 'Image', id: 'gx-hub-av', props: { src: charSpriteUri(c.id), fit: 'contain' }, layout: { width: 40, height: 40 } },
@@ -35,7 +35,7 @@ function header(c: Companion, ctx: HubCtx): LayoutNode {
 
 function entry(id: string, icon: string, label: string, sub: string, action: string): LayoutNode {
   return {
-    type: 'Panel', id: `gx-hub-e-${id}`, props: { bg: '#1c1726' },
+    type: 'Panel', id: `gx-hub-e-${id}`, props: { bg: { custom: '#1c1726' } },
     layout: { direction: 'row', gap: 12, align: 'center', padding: 14, width: 600 },
     children: [
       { type: 'Label', id: `gx-hub-ei-${id}`, props: { text: icon, size: 'xl' } },
@@ -110,7 +110,7 @@ export function giftScreen(c: Companion, given: string[]): LayoutNode {
         type: 'Panel', id: 'gx-gift-grid', props: { bare: true },
         layout: { direction: 'grid', minCol: 180, gap: 12, padding: 16, width: 640, flex: 1 },
         children: GIFTS.map((g) => ({
-          type: 'Panel' as const, id: `gx-gift-${g.id}`, props: { bg: '#1c1726' },
+          type: 'Panel' as const, id: `gx-gift-${g.id}`, props: { bg: { custom: '#1c1726' } },
           layout: { direction: 'column', gap: 6, padding: 14, align: 'center' },
           children: [
             { type: 'Label' as const, id: `gx-gift-i-${g.id}`, props: { text: g.icon, size: 'xl' as const } },
@@ -151,7 +151,7 @@ export function memoriesScreen(c: Companion, rec: SessionRecord, ctx: HubCtx, da
   const mems = memoriesOf(rec).map((m) => MEMORY_DEX[m]).filter(Boolean);
   const album = albumOf(rec);
   const section = (id: string, title: string, body: LayoutNode[]): LayoutNode => ({
-    type: 'Panel', id: `gx-mem-s-${id}`, props: { bg: '#1c1726' },
+    type: 'Panel', id: `gx-mem-s-${id}`, props: { bg: { custom: '#1c1726' } },
     layout: { direction: 'column', gap: 6, padding: 14, width: 600 },
     children: [{ type: 'Label', id: `gx-mem-st-${id}`, props: { text: title, font: 'pixel', color: 'dim', size: 'xs', tracking: 2 } }, ...body],
   });
@@ -189,7 +189,7 @@ export function reactionScreen(c: Companion, text: string, backAction: string): 
       children: [
         { type: 'Image', id: 'gx-react-av', props: { src: charSpriteUri(c.id), fit: 'contain' }, layout: { width: 110, height: 130 } },
         {
-          type: 'Panel', id: 'gx-react-bub', props: { bg: '#211a30' },
+          type: 'Panel', id: 'gx-react-bub', props: { bg: { custom: '#211a30' } },
           layout: { padding: 16, width: 460 },
           children: [{ type: 'Label', id: 'gx-react-t', props: { text, color: 'text', size: 'md', typewriter: 24 } }],
         },

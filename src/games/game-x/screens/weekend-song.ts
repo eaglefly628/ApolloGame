@@ -54,7 +54,7 @@ export function weekendSongScreen(): LayoutNode {
     },
     // 封面框 150×150（#1c1726 卡片底·内 120×120 像素唱片）
     {
-      type: 'Panel', id: 'gx-ws-cover', props: { bg: '#1c1726' },
+      type: 'Panel', id: 'gx-ws-cover', props: { bg: { custom: '#1c1726' } },
       layout: { width: 150, height: 150, direction: 'row', justify: 'center', align: 'center', margin: 22 },
       children: [
         {
@@ -79,18 +79,18 @@ export function weekendSongScreen(): LayoutNode {
     equalizer(),
     // 进度条 380×4（#2a2036 槽·42% 琥珀填充）
     {
-      type: 'Panel', id: 'gx-ws-track', props: { bg: '#2a2036' },
+      type: 'Panel', id: 'gx-ws-track', props: { bg: { custom: '#2a2036' } },
       layout: { width: 380, height: 4, direction: 'row', margin: 20 },
       children: [
         {
-          type: 'Panel', id: 'gx-ws-fill', props: { bg: '#ffb000' },
+          type: 'Panel', id: 'gx-ws-fill', props: { bg: { custom: '#ffb000' } },
           layout: { width: 160, height: 4 },
         },
       ],
     },
     // 她的评论气泡（左侧蓝边·#211a30 底·430 宽）
     {
-      type: 'Panel', id: 'gx-ws-bubble', props: { bg: '#211a30' },
+      type: 'Panel', id: 'gx-ws-bubble', props: { bg: { custom: '#211a30' } },
       layout: { width: 430, padding: 13, margin: 24, direction: 'column' },
       children: [
         {

@@ -119,6 +119,9 @@ export interface ButtonProps {
   sub?: string; // hero 键副标（小字第二行·如「挑战 曹操 · 难度 ★★」）
   /** 异形轮廓（闭集 ShapeToken·如 hexagon/diamond/shield）。缺省=矩形。命中区=元素包围盒（透明角不可点是二期）。 */
   shape?: ShapeToken;
+  /** 自定义贴图皮（**已解析图 URL**·同 Image.src 约定：sim 持资产 key·游戏经 resolveAsset 解析后填·key 不进画面）。
+   *  设了则按钮底=该图 cover·文字叠白字投影保可读；配 shape 可做透明 PNG 异形贴图键。命中区=包围盒。owner 2026-07-04 异形/贴图按钮需求。 */
+  skin?: string;
 }
 
 export interface LabelProps {

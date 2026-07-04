@@ -37,11 +37,11 @@ export function deviceShell(o: ShellOpts): LayoutNode {
     });
   }
   wrapChildren.push({
-    type: 'Panel', id: `${o.id}-device`, props: { bg: '#0a0810' },
+    type: 'Panel', id: `${o.id}-device`, props: { bg: { custom: '#0a0810' } },
     layout: { width: 660, height: 500, padding: 10, direction: 'column' },
     children: [
       {
-        type: 'Panel', id: `${o.id}-interior`, props: { bg: o.interiorBg ?? '#15101f' },
+        type: 'Panel', id: `${o.id}-interior`, props: { bg: o.interiorBg ?? { custom: '#15101f' } },
         layout: { width: 640, height: 480, direction: o.direction ?? 'column' },
         children: o.interior,
       },
@@ -49,7 +49,7 @@ export function deviceShell(o: ShellOpts): LayoutNode {
   });
   if (o.footer) wrapChildren.push(o.footer);
   return {
-    type: 'Screen', id: o.id, props: { center: true, bg: '#05060a' },
+    type: 'Screen', id: o.id, props: { center: true, bg: { custom: '#05060a' } },
     layout: { direction: 'column', padding: 0 },
     children: [
       { type: 'Panel', id: `${o.id}-wrap`, props: { bare: true }, layout: { direction: 'column', gap: 6 }, children: wrapChildren },

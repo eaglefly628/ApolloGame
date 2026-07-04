@@ -63,7 +63,7 @@ const TILES: DiaryTile[] = [
 // ── 单张奶油拍立得格（bg #e8dcc8·插画填满 + 居中日期小字）──────────────────────
 function diaryCard(t: DiaryTile): LayoutNode {
   return {
-    type: 'Panel', id: `gx-diary-card-${t.id}`, props: { bg: '#e8dcc8' },
+    type: 'Panel', id: `gx-diary-card-${t.id}`, props: { bg: { custom: '#e8dcc8' } },
     layout: { direction: 'column', gap: 3, padding: 4, align: 'stretch' },
     children: [
       {
@@ -83,7 +83,7 @@ function diaryCard(t: DiaryTile): LayoutNode {
 // ── 末格：虚线占位「… 更多」(bg #1c1726·dim 字)──────────────────────────────
 function moreCard(): LayoutNode {
   return {
-    type: 'Panel', id: 'gx-diary-more', props: { bg: '#1c1726' },
+    type: 'Panel', id: 'gx-diary-more', props: { bg: { custom: '#1c1726' } },
     layout: { direction: 'column', justify: 'center', align: 'center', gap: 4 },
     children: [
       { type: 'Label', id: 'gx-diary-more-dots', props: { text: '…', color: 'dim', size: 'lg' } },

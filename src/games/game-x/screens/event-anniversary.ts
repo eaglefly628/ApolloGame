@@ -31,7 +31,7 @@ function photoFrame(): LayoutNode {
     layout: { direction: 'column', align: 'center', gap: 6 },
     children: [
       {
-        type: 'Panel', id: 'gx-anniv-frame', props: { bg: '#e8dcc8' },
+        type: 'Panel', id: 'gx-anniv-frame', props: { bg: { custom: '#e8dcc8' } },
         layout: { width: 292, height: 199, padding: 6, align: 'center', justify: 'center' },
         children: [
           {
@@ -61,12 +61,12 @@ function messageBubble(): LayoutNode {
     layout: { direction: 'row', width: 640, justify: 'center' },
     children: [
       {
-        type: 'Panel', id: 'gx-anniv-bubble', props: { bg: '#211a30' },
+        type: 'Panel', id: 'gx-anniv-bubble', props: { bg: { custom: '#211a30' } },
         layout: { width: 460, direction: 'column', gap: 4, padding: 14 },
         children: [
           // 蓝左边框（设计稿 border-left:2px #5a7a9a）
           {
-            type: 'Panel', id: 'gx-anniv-bubble-accent', props: { bg: '#5a7a9a' },
+            type: 'Panel', id: 'gx-anniv-bubble-accent', props: { bg: { custom: '#5a7a9a' } },
             layout: { x: 0, y: 0, width: 2, height: 96 },
           },
           line('gx-anniv-l1', '一年前的今天，你第一句话问我"在吗"。'),

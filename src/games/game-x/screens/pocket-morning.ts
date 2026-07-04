@@ -33,7 +33,7 @@ function avatarUri(): string {
 function header(): LayoutNode {
   return {
     type: 'Panel', id: 'gx-pm-header',
-    props: { bg: 'linear-gradient(180deg,#3a2f48,#1d182a)' },
+    props: { bg: { custom: 'linear-gradient(180deg,#3a2f48,#1d182a)' } },
     layout: { width: 640, height: 64, direction: 'row', align: 'center', gap: 12, padding: 18 },
     children: [
       {
@@ -57,7 +57,7 @@ function header(): LayoutNode {
 // ── 她的气泡（左·蓝左边框 #5a7a9a·底 #211a30·奶油字）────────────────────────
 function herBubble(id: string, lines: string[]): LayoutNode {
   return {
-    type: 'Panel', id, props: { bg: '#211a30' },
+    type: 'Panel', id, props: { bg: { custom: '#211a30' } },
     layout: { direction: 'column', gap: 2, padding: 10, maxWidth: 470 },
     children: lines.map((t, i): LayoutNode => ({
       type: 'Label', id: `${id}-l${i}`, props: { text: t, color: 'text', size: 'sm' },
@@ -72,7 +72,7 @@ function yourBubble(id: string, text: string): LayoutNode {
     layout: { direction: 'row', justify: 'end', width: 604 },
     children: [
       {
-        type: 'Panel', id, props: { bg: '#2a2410' },
+        type: 'Panel', id, props: { bg: { custom: '#2a2410' } },
         layout: { direction: 'column', padding: 10, maxWidth: 470 },
         children: [
           { type: 'Label', id: `${id}-t`, props: { text, color: 'warn', size: 'sm' } },
@@ -86,19 +86,19 @@ function yourBubble(id: string, text: string): LayoutNode {
 function inputBar(): LayoutNode {
   return {
     type: 'Panel', id: 'gx-pm-input',
-    props: { bg: '#100d18' },
+    props: { bg: { custom: '#100d18' } },
     layout: { width: 640, height: 56, direction: 'row', align: 'center', gap: 10, padding: 14 },
     children: [
       {
-        type: 'Panel', id: 'gx-pm-field', props: { bg: '#1c1726' },
+        type: 'Panel', id: 'gx-pm-field', props: { bg: { custom: '#1c1726' } },
         layout: { direction: 'row', align: 'center', flex: 1, height: 36, padding: 14, gap: 2 },
         children: [
           { type: 'Label', id: 'gx-pm-ph', props: { text: '说点什么…', color: 'dim', size: 'sm' } },
-          { type: 'Panel', id: 'gx-pm-caret', props: { bg: '#ffb000' }, layout: { width: 2, height: 16 } },
+          { type: 'Panel', id: 'gx-pm-caret', props: { bg: { custom: '#ffb000' } }, layout: { width: 2, height: 16 } },
         ],
       },
       {
-        type: 'Panel', id: 'gx-pm-send', props: { bg: '#ffb000' },
+        type: 'Panel', id: 'gx-pm-send', props: { bg: { custom: '#ffb000' } },
         layout: { width: 36, height: 36, direction: 'row', justify: 'center', align: 'center' },
         children: [
           { type: 'Label', id: 'gx-pm-send-i', props: { text: '▶', color: 'dim', size: 'sm' } },

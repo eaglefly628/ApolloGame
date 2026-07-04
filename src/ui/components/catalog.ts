@@ -125,6 +125,7 @@ export const UI_CATALOG: readonly UiComponentSpec[] = [
       { name: 'disabled', type: 'boolean', describe: '禁用' },
       { name: 'sub', type: 'string', describe: 'hero 键副标' },
       { name: 'shape', type: 'enum', values: ['pill', 'hexagon', 'diamond', 'shield', 'ribbon', 'chevron', 'tag', 'cut'], describe: '异形轮廓（闭集·引擎预置 clip-path·缺省=矩形）。异形需给足宽高避免裁掉文字' },
+      { name: 'skin', type: 'string', describe: '贴图皮=已解析图 URL（同 Image.src·sim 持 key·游戏经 resolveAsset 解析后填）。设了则按钮底=该图 cover+白字投影；配 shape 可做透明 PNG 异形贴图键。命中区=包围盒' },
     ],
     sample: { type: 'Button', id: 's-button', props: { label: '⚔ 出征 · 第 3 关', kind: 'hero', sub: '挑战 曹操 · 难度 ★★', action: 'play' } },
   },
