@@ -165,6 +165,9 @@ export interface MaterialSpec {
   normalMap?: string;
   roughnessMap?: string;
   aoMap?: string;
+  metalnessMap?: string; // REQ-3D ④·金属度贴图 key（线性）
+  emissiveMap?: string; // 自发光贴图 key（sRGB）
+  ormMap?: string; // ORM 打包图 key（R=AO/G=Rough/B=Metal·线性）
 }
 
 /** usage → 缺省色彩空间（防「法线/粗糙图误设 sRGB 渲染偏色」经典坑）：颜色类=sRGB·数据类=linear。 */
@@ -217,7 +220,7 @@ function validateSpec(type: AssetType, spec: Record<string, unknown> | undefined
     mustNum('scale');
     if (spec.genCollision !== undefined && !inSet(MESH_COLLISIONS, spec.genCollision)) badEnum('genCollision', MESH_COLLISIONS);
   } else if (type === 'material') {
-    for (const f of ['preset', 'map', 'normalMap', 'roughnessMap', 'aoMap']) mustStr(f);
+    for (const f of ['preset', 'map', 'normalMap', 'roughnessMap', 'aoMap', 'metalnessMap', 'emissiveMap', 'ormMap']) mustStr(f);
     for (const f of ['color', 'roughness', 'metalness', 'emissive']) mustNum(f);
   }
 }
@@ -289,6 +292,9 @@ export function buildMaterialCatalog(index: AssetIndex): Map<string, MaterialSpe
       normalMap: typeof s.normalMap === 'string' ? s.normalMap : undefined,
       roughnessMap: typeof s.roughnessMap === 'string' ? s.roughnessMap : undefined,
       aoMap: typeof s.aoMap === 'string' ? s.aoMap : undefined,
+      metalnessMap: typeof s.metalnessMap === 'string' ? s.metalnessMap : undefined,
+      emissiveMap: typeof s.emissiveMap === 'string' ? s.emissiveMap : undefined,
+      ormMap: typeof s.ormMap === 'string' ? s.ormMap : undefined,
     });
   }
   return cat;

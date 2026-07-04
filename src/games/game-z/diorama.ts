@@ -143,7 +143,7 @@ export function dioramaBlueprint(): WorldBlueprint {
       // 证明「材质=引 texture key 的数据资产·物件按 key 引材质」端到端通（非物件内联硬编码 preset+贴图）。
       'plank-crate': {
         ...block(11, 4, 6, 8, 8, 8, 0x9c6b3f, 0x9c6b3f),
-        Material3D: { preset: 'matte', materialRef: MAT_PLANK_WOOD },
+        Material3D: { preset: 'matte', materialRef: MAT_PLANK_WOOD, tiling: { repeat: 2 } }, // tiling ②：木板纹平铺 2×2（贴图槽补齐）
         Pickable3D: { signal: 'poke' }, // 可拾取（点选自证）
       },
       'vfx-beacon': {

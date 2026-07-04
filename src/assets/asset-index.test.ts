@@ -233,6 +233,13 @@ describe('asset-index — 材质数据资产（REQ-Resource ④）', () => {
     expect(cat.get('mat/wood')).toMatchObject({ preset: 'wood', map: 'tex/alb', normalMap: 'tex/nrm' });
   });
 
+  it('buildMaterialCatalog 携新贴图槽 metalnessMap/emissiveMap/ormMap（REQ-3D ④）', () => {
+    const idx = parseAssetIndex({ version: 1, assets: [
+      { id: 'mat/metal', type: 'material', description: '金属', status: 'filled', spec: { preset: 'steel', metalnessMap: 'tex/m', emissiveMap: 'tex/e', ormMap: 'tex/orm' } },
+    ] });
+    expect(buildMaterialCatalog(idx).get('mat/metal')).toMatchObject({ metalnessMap: 'tex/m', emissiveMap: 'tex/e', ormMap: 'tex/orm' });
+  });
+
   it('material 的非法 spec 类型（preset 非字符串）构建期抛错', () => {
     expect(() =>
       parseAssetIndex({ version: 1, assets: [{ id: 'm', type: 'material', description: 'a', status: 'filled', spec: { preset: 123 } }] }),
