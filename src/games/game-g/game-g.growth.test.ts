@@ -6,7 +6,7 @@ describe('Game G · T-G6 天罡牌（融牌面 · build 时 favor 变换 · 持�
   it('天罡目录(定稿·城门令退役后 35 张)，kind 合法、cost>0、有 text、有 icon；TIANGANG_BY_ID 覆盖全', () => {
     expect(GAME_G_TIANGANGS.length).toBe(35); // 36→35：城门令(gateorder)随机关门整套退役（owner 2026-07-03·REQ-G-退役机关门）
     const kinds = new Set(['suit-synergy', 'polarize', 'lane-pref', 'diehard', 'morale', 'link', 'economy', 'revenge',
-      'odds', 'power', 'combo', 'tempo', 'stamina', 'draw', 'lane', 'siege', 'arcane']);
+      'odds', 'roll', 'power', 'combo', 'tempo', 'stamina', 'draw', 'lane', 'siege', 'arcane']); // roll=掷骰系（§四.2·原 odds 重设）
     for (const j of GAME_G_TIANGANGS) {
       expect(kinds.has(j.kind)).toBe(true);
       expect(j.cost).toBeGreaterThan(0);

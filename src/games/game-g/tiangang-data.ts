@@ -4,7 +4,7 @@
 export type TiangangRarity = 'common' | 'rare' | 'epic' | 'legendary';
 // 旧 build-时 favor 变换 kinds + 新 contract③ 10 维度 kinds（甲写解释器）
 export type TiangangKind = 'suit-synergy' | 'polarize' | 'lane-pref' | 'diehard' | 'morale' | 'link' | 'economy' | 'revenge'
-  | 'odds' | 'power' | 'combo' | 'tempo' | 'stamina' | 'draw' | 'lane' | 'siege' | 'arcane';
+  | 'odds' | 'roll' | 'power' | 'combo' | 'tempo' | 'stamina' | 'draw' | 'lane' | 'siege' | 'arcane'; // roll=掷骰系（REQ-G-天罡原生重构 §四.2·原 odds 概率系重设）
 export type Archetype = 'decap' | 'cardtype' | 'general' | 'wide' | 'probability' | 'tianji'; // 6 流派 id（design/12 §四）
 export interface TiangangCard {
   id: string; name: string; kind: TiangangKind; cost: number; archetype: Archetype; text: string;
@@ -21,11 +21,11 @@ export interface TiangangCard {
 }
 export const GAME_G_TIANGANGS: TiangangCard[] = [
   // 三十六天罡（doc20 §二 定稿 · owner 2026-06-20「用新的」· 主动施法·确定生效·功能优先·名字临时 · icon 配表 §二尾）
-  // A 概率系 odds
-  { id: 'ghosthand', name: '鬼手', kind: 'odds', rarity: 'common', cost: 12, archetype: 'probability', power: 1, params: { op: 'add', value: 1 }, icon: 'skoll/d10', tint: '#a78bfa', text: '对决掷命 +1（稳稳偏向你）' },
-  { id: 'bedrock', name: '磐石', kind: 'odds', rarity: 'rare', cost: 16, archetype: 'probability', power: 2, params: { op: 'winFloor', value: 5 }, icon: 'delapouite/stone-wall', tint: '#a78bfa', text: '胜率下限 +5%（少翻车·收窄下风）' },
-  { id: 'leaddice', name: '灌铅骰', kind: 'odds', rarity: 'rare', cost: 16, archetype: 'probability', power: 2, params: { op: 'kHard', value: 1 }, icon: 'delapouite/rolling-dices', tint: '#a78bfa', text: '点数差更硬·强者愈强（logistic k−1）' },
-  { id: 'irondice', name: '铁骰', kind: 'odds', rarity: 'epic', cost: 22, archetype: 'probability', power: 3, params: { op: 'noUpset' }, icon: 'delapouite/dice-shield', tint: '#a78bfa', text: '你方免疫爆冷（占优就稳拿）' },
+  // A ⭐掷骰系 roll（REQ-G-天罡原生重构 §四.2·原概率系锚死 logistic → 重设为「改自己的战力骰」·更贴掷命/翻命身份）
+  { id: 'ghosthand', name: '鬼手', kind: 'roll', rarity: 'common', cost: 12, archetype: 'probability', power: 1, params: { op: 'bonus', value: 2 }, icon: 'skoll/d10', tint: '#a78bfa', text: '改掷 +2（这一掷稳稳偏向你）' },
+  { id: 'bedrock', name: '磐石', kind: 'roll', rarity: 'rare', cost: 16, archetype: 'probability', power: 2, params: { op: 'floor', value: 2 }, icon: 'delapouite/stone-wall', tint: '#a78bfa', text: '掷下界 +2（你掷 [3,战力]·最差也不空手·收窄下风）' },
+  { id: 'leaddice', name: '灌铅骰', kind: 'roll', rarity: 'rare', cost: 16, archetype: 'probability', power: 2, params: { op: 'twice', value: 1 }, icon: 'delapouite/rolling-dices', tint: '#a78bfa', text: '灌铅骰·掷两次取高（偏高端·强者愈强）' },
+  { id: 'irondice', name: '铁骰', kind: 'roll', rarity: 'epic', cost: 22, archetype: 'probability', power: 3, params: { op: 'autoWinGE' }, icon: 'delapouite/dice-shield', tint: '#a78bfa', text: '占优必胜·前锋战力 ≥ 敌 → 免掷直接胜' },
   // B 点数系 power
   { id: 'tigertally', name: '虎符', kind: 'power', rarity: 'common', cost: 12, archetype: 'general', power: 1, params: { op: 'add', value: 2 }, icon: 'delapouite/tiger-head', tint: '#ef4444', text: '全军 +2 点数' },
   { id: 'arrowhead', name: '锋矢', kind: 'power', rarity: 'rare', cost: 16, archetype: 'wide', power: 2, params: { op: 'add', value: 4, filter: 'front' }, icon: 'lorc/arrowhead', tint: '#ef4444', text: '每路最前一张 +4（前锋破阵）' },

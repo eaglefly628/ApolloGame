@@ -7,7 +7,7 @@
 // 确定性：单一 seeded PRNG（同 live-combat·掷命点同序消费）；同输入流 → 同 turnHash、可回放、可喂仿真台。纯 game-side、零引擎。
 //
 // 战斗屏：回合制走 turn-battle-screen.ts（live）。旧实时核（showMatch + battle-screen.ts 渲染器）已**退役删除**（2026-06-21）；本模块仍从 live-combat.ts 复用 cardStamina/掷命核/TengangFx 等纯件。
-import { pEff, cardPoints, P_MIN, P_MAX, rollDie, rollWinProb } from './clash-resolve.js';
+import { pEff, cardPoints, P_MIN, P_MAX, rollWithMods, rollWinProbMods, type RollMods } from './clash-resolve.js';
 import { nextRandom } from '@atom-skills/index.js';
 import type { RandomSeed } from '@engine/protocol/components.js';
 import { cardStamina, NO_TENGANG, type TengangFx, type ClashEvent, type ClashCard } from './combat-types.js';
@@ -351,11 +351,20 @@ function decideTie(b: TurnBattle, ev: ClashEval): { aWins: boolean; tie: ClashEv
   return { aWins: !b.dishaB.firstStrike, tie: 'roll' };
 }
 
-// 玩家(a)视角·当前若开战的胜率(0~1)·纯读不掷骰（owner 2026-07-01「各自掷战力骰」）：
-//   双方各掷 [1,战力] 比大小 → P(玩家掷值 > 敌掷值) + 掷平时按 decideTie 归给胜方。无前锋相遇→null。供 UI「掷命预报」。
+// 掷骰系改掷（REQ-G-天罡原生重构 §四.2）：从持方 tengangA 取改掷参数（鬼手 bonus/磐石 floor/灌铅骰 twice）。
+const clashMods = (fx: { rollBonus: number; rollFloor: number; rollTwice: number }): RollMods => ({ bonus: fx.rollBonus, floor: fx.rollFloor, twice: fx.rollTwice });
+// 铁骰·占优必胜：持方 autoWinGE>0 且 前锋有效战力 ≥ 敌 → 免掷直接判该方胜。返回 'a'/'b'/null（a 优先）。
+function autoWinner(b: TurnBattle, ev: ClashEval): 'a' | 'b' | null {
+  if (b.a.tengangA.autoWinGE > 0 && ev.ea >= ev.eb) return 'a';
+  if (b.b.tengangA.autoWinGE > 0 && ev.eb >= ev.ea) return 'b';
+  return null;
+}
+// 玩家(a)视角·当前若开战的胜率(0~1)·纯读不掷骰（owner 2026-07-01「各自掷战力骰」+ §四.2 改掷/占优必胜）：
+//   双方各掷（含改掷）[1,战力] 比大小 → P(玩家掷值 > 敌掷值) + 掷平时按 decideTie 归给胜方。无前锋相遇→null。供 UI「掷命预报」。
 export function clashOdds(b: TurnBattle, li: number): number | null {
   const ev = clashEval(b, li); if (!ev) return null;
-  const { pGreater, pEqual } = rollWinProb(ev.ea, ev.eb);
+  const auto = autoWinner(b, ev); if (auto) return auto === 'a' ? 1 : 0; // 铁骰·占优必胜 → 预报 100/0
+  const { pGreater, pEqual } = rollWinProbMods(ev.ea, ev.eb, clashMods(b.a.tengangA), clashMods(b.b.tengangA));
   return pGreater + (decideTie(b, ev).aWins ? pEqual : 0); // 掷平归属方吃下 pEqual
 }
 
@@ -365,7 +374,9 @@ export function clashOdds(b: TurnBattle, li: number): number | null {
 function resolveClash(b: TurnBattle, li: number): void {
   const ev = clashEval(b, li); if (!ev) return;
   const { ea, eb } = ev;
-  const rollA = rollDie(ea, b.rng), rollB = rollDie(eb, b.rng); // 各自掷各自的：我掷 [1,ea]·敌掷 [1,eb]（消费 rng 两次·顺序固定→hash 稳）
+  const auto = autoWinner(b, ev); // 铁骰·占优必胜 → 免掷（不消费 rng·确定判胜）
+  if (auto) { applyClashOutcome(b, li, ev, auto === 'a', 'power', 0, 0); return; }
+  const rollA = rollWithMods(ea, b.rng, clashMods(b.a.tengangA)), rollB = rollWithMods(eb, b.rng, clashMods(b.b.tengangA)); // 各自掷各自的（含改掷·消费 rng：a 先 b 后·每方 1+twice 次·顺序固定→hash 稳）
   let aWins: boolean, tie: ClashEvent['tie'] = null;
   if (rollA !== rollB) aWins = rollA > rollB; // 大者胜
   else { const d = decideTie(b, ev); aWins = d.aWins; tie = d.tie; } // 掷平 → 阶梯裁定
@@ -373,11 +384,13 @@ function resolveClash(b: TurnBattle, li: number): void {
 }
 
 // 确定性 EV 结算（Player-AI 前向推演专用·**不消费 rng**·owner 2026-07-03「推演敌人未来」）：
-//   遭遇不掷骰——用 rollWinProb(ea,eb) 精确胜率坍缩到「更可能一方」判胜（含平局归属），再走与 resolveClash 逐字相同的善后
+//   遭遇不掷骰——用 rollWinProbMods(ea,eb,改掷) 精确胜率坍缩到「更可能一方」判胜（含平局归属+占优必胜），再走与 resolveClash 逐字相同的善后
 //   （applyClashOutcome：死战不退/阵亡/薪火/连胜对折/满 WIN_CAP 回库/战潮）。仅在克隆局上跑·真局不受影响→turnHash 稳。
 export function resolveClashEV(b: TurnBattle, li: number): void {
   const ev = clashEval(b, li); if (!ev) return;
-  const { pGreater, pEqual } = rollWinProb(ev.ea, ev.eb);
+  const auto = autoWinner(b, ev); // 铁骰·占优必胜（EV 侧同判·确定）
+  if (auto) { applyClashOutcome(b, li, ev, auto === 'a', 'power', 0, 0); return; }
+  const { pGreater, pEqual } = rollWinProbMods(ev.ea, ev.eb, clashMods(b.a.tengangA), clashMods(b.b.tengangA)); // 含改掷分布
   const tieToA = decideTie(b, ev).aWins;          // 掷平归谁（战力→点数→续航→先手·确定）
   const aWins = pGreater + (tieToA ? pEqual : 0) >= 0.5; // 坍缩：胜率 ≥50% 判玩家胜（expectimax chance 节点取最可能支）
   const tie: ClashEvent['tie'] = ev.ea === ev.eb ? 'power' : null;

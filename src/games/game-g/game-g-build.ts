@@ -67,10 +67,12 @@ export function aggregateTengang(castIds: readonly string[]): TengangFx {
 type TgRow = { target: keyof TengangFx; op: ModifierRow['op']; value: number };
 type TgDesc = (v: number, bonus: number, p: Record<string, unknown>) => TgRow | null;
 const TENGANG_ROWS: Record<string, TgDesc> = {
-  'odds:add': (v) => ({ target: 'pEffAdd', op: 'add', value: v }),                    // 鬼手：掷命 +v
-  'odds:winFloor': (v) => ({ target: 'winFloor', op: 'add', value: v / 100 }),        // 磐石：胜率下限 +v%
-  'odds:kHard': (v) => ({ target: 'kHard', op: 'add', value: v }),                    // 灌铅骰：logistic 变硬
-  'odds:noUpset': () => ({ target: 'noUpset', op: 'add', value: 1 }),                 // 铁骰：占优免爆冷（计数）
+  'odds:add': (v) => ({ target: 'pEffAdd', op: 'add', value: v }),                    // (遗留·战力加·现无卡用·保留兜底)
+  // ⭐掷骰系（REQ-G-天罡原生重构 §四.2·替死 logistic winFloor/kHard/noUpset）：改掷落点·作用持方战力骰。
+  'roll:bonus': (v) => ({ target: 'rollBonus', op: 'add', value: v }),                // 鬼手：改掷 +v（掷后加）
+  'roll:floor': (v) => ({ target: 'rollFloor', op: 'add', value: v }),                // 磐石：掷下界抬 +v（掷 [1+v,P]·收窄下风）
+  'roll:twice': (v) => ({ target: 'rollTwice', op: 'add', value: v || 1 }),           // 灌铅骰：多掷 v 次取高（缺省 1=掷两次取高）
+  'roll:autoWinGE': () => ({ target: 'autoWinGE', op: 'max', value: 1 }),             // 铁骰：占优必胜（前锋战力≥敌→免掷直接胜·max 幂等）
   'power:mul': (v, _b, p) => (p.filter === 'highest' || p.scope === 'highestRank' ? { target: 'powerMulHighest', op: 'max', value: v } : null), // 擎天：最强单张 ×v（取最大·非叠加）。空头卡修（owner 2026-07-04·REQ-G 片3）：数据用 filter:'highest'，旧 handler 只认 scope:'highestRank' → 擎天曾 no-op；两种键都认。
   'power:add': (v, _b, p) => ({ target: p.filter === 'countLE3' ? 'powerLE3' : p.filter === 'sameSuit' ? 'powerSameSuit' : p.filter === 'front' || p.scope === 'front' ? 'powerFront' : 'powerAll', op: 'add', value: v }), // 寡兵/同花魁/锋矢/虎符(全军)。空头卡修（REQ-G-天罡原生重构 §四.4）：锋矢 arrowhead 数据 filter:'front'，旧描述子只认 scope:'front' → 落 else 变全军+4；filter:'front' 也认 → 只前锋。
   'combo:pair': (_v, bonus) => ({ target: 'comboPair', op: 'add', value: bonus }),    // 对子诀

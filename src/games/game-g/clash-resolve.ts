@@ -56,3 +56,44 @@ export function rollWinProb(A: number, B: number): { pGreater: number; pEqual: n
   const e = Math.min(a, b); // a==b 的组合数（每个公共值一对）
   return { pGreater: g / (a * b), pEqual: e / (a * b) };
 }
+
+// ── 改掷层（REQ-G-天罡原生重构 §四.2·掷骰系天罡）：临掷修饰持方的战力骰。确定性·消费 rng 次数固定于 mods → lockstep 安全。 ──
+//   bonus=改掷+N（掷后加·鬼手）· floor=掷下界抬 N（掷 [1+N,P] 而非 [1,P]·磐石·收窄下风）· twice=多掷 N 次取最高（灌铅骰=1·偏高端）。
+//   占优必胜（铁骰 autoWinGE·前锋战力≥敌→免掷直接胜）不在此层：由 resolveClash 短路（不掷·省 rng）。
+export interface RollMods { bonus: number; floor: number; twice: number }
+export const NO_ROLL_MODS: RollMods = { bonus: 0, floor: 0, twice: 0 };
+
+// 改掷实掷（消费 rng：1+twice 次·顺序固定→lockstep 安全）：掷 [lo,P] 的 (1+twice) 次取最高 + bonus。
+export function rollWithMods(power: number, rng: RandomSeed, m: RollMods): number {
+  const P = Math.max(1, Math.round(power));
+  const lo = Math.min(P, 1 + Math.max(0, m.floor)); // 下界抬升（不越过 P·退化则恒 P）
+  const n = P - lo + 1;
+  const draws = 1 + Math.max(0, m.twice);
+  let best = 0;
+  for (let i = 0; i < draws; i++) { const r = lo + Math.floor(nextRandom(rng) * n); if (r > best) best = r; } // 取最高
+  return best + Math.max(0, m.bonus);
+}
+
+// 改掷后掷值的精确概率分布（key=掷值·value=概率）：[lo,P] 上 (1+twice) 次取最高 → 平移 bonus。供预报/AI EV 精算。
+export function rollDist(power: number, m: RollMods): Map<number, number> {
+  const P = Math.max(1, Math.round(power));
+  const lo = Math.min(P, 1 + Math.max(0, m.floor));
+  const n = P - lo + 1;
+  const draws = 1 + Math.max(0, m.twice);
+  const bonus = Math.max(0, m.bonus);
+  const dist = new Map<number, number>();
+  for (let v = lo; v <= P; v++) {
+    const k = v - lo + 1;
+    const p = (Math.pow(k, draws) - Math.pow(k - 1, draws)) / Math.pow(n, draws); // P(max of `draws` uniforms on [lo,P] = v)
+    dist.set(v + bonus, (dist.get(v + bonus) ?? 0) + p);
+  }
+  return dist;
+}
+
+// 两方改掷分布 → P(a>b)/P(a==b)（离散精确·供预报/EV·非 100/0）。mods 全零时逐字等于 rollWinProb。
+export function rollWinProbMods(A: number, B: number, mA: RollMods, mB: RollMods): { pGreater: number; pEqual: number } {
+  const dA = rollDist(A, mA), dB = rollDist(B, mB);
+  let g = 0, e = 0;
+  for (const [av, pa] of dA) for (const [bv, pb] of dB) { if (av > bv) g += pa * pb; else if (av === bv) e += pa * pb; }
+  return { pGreater: g, pEqual: e };
+}

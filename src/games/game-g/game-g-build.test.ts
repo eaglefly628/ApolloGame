@@ -18,9 +18,10 @@ function oldTengangFxOf(cards: Iterable<TgCard>): TengangFx {
     const bonus = typeof p.bonus === 'number' ? p.bonus : 0;
     switch (`${j.kind}:${String(p.op)}`) {
       case 'odds:add': fx.pEffAdd += v; break;
-      case 'odds:winFloor': fx.winFloor += v / 100; break;
-      case 'odds:kHard': fx.kHard += v; break;
-      case 'odds:noUpset': fx.noUpset += 1; break;
+      case 'roll:bonus': fx.rollBonus += v; break;                          // 鬼手改掷（§四.2）
+      case 'roll:floor': fx.rollFloor += v; break;                         // 磐石掷下界
+      case 'roll:twice': fx.rollTwice += (v || 1); break;                  // 灌铅骰掷两次取高
+      case 'roll:autoWinGE': fx.autoWinGE = Math.max(fx.autoWinGE, 1); break; // 铁骰占优必胜
       case 'power:mul': if (p.filter === 'highest' || p.scope === 'highestRank') fx.powerMulHighest = Math.max(fx.powerMulHighest, v); break; // 空头卡修（片3）：擎天 filter:'highest' 现生效
       case 'power:add':
         if (p.filter === 'countLE3') fx.powerLE3 += v;

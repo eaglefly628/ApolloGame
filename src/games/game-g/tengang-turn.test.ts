@@ -3,7 +3,7 @@
 import { describe, it, expect } from 'vitest';
 import { cardPoints } from './clash-resolve.js';
 import { cardStamina, NO_TENGANG } from './combat-types.js';
-import { initTurnBattle, deployUnit, drawCard, endTurn, HAND_MAX, A_GOAL, B_GOAL, type TurnUnit, type PokerCard } from './turn-combat.js';
+import { initTurnBattle, deployUnit, drawCard, endTurn, clashOdds, HAND_MAX, A_GOAL, B_GOAL, type TurnUnit, type PokerCard } from './turn-combat.js';
 
 const unit = (id: string, rank: string, slot: number, buff = 0, general = false): TurnUnit =>
   ({ id, rank, suit: 'S', points: cardPoints(rank), buff, general, stamina: cardStamina(rank), staminaLeft: cardStamina(rank), slot });
@@ -74,5 +74,34 @@ describe('Game G · 天罡回合制接搁浅维度（morale/stamina/draw/siege·
     b.lanes[0].a = [unit('a0', '7', A_GOAL)]; // 我兵已抵敌家末格
     endTurn(b); endTurn(b); // 行动阶段：越线破敌家 → −2
     expect(b.homeB).toBe(b.homeMax - 2);
+  });
+});
+
+// ── 掷骰系天罡·集成（REQ-G-天罡原生重构 §四.2·改掷经 clashOdds 预报生效）──
+describe('Game G · 掷骰系天罡集成（铁骰占优必胜 / 改掷抬预报）', () => {
+  const place = (b: ReturnType<typeof initTurnBattle>, ra: string, rb: string): void => {
+    b.lanes[0].a = [unit('a0', ra, 4)]; b.lanes[0].b = [unit('b0', rb, 5)];
+  };
+  it('铁骰(autoWinGE)：我前锋战力 ≥ 敌 → 预报 100%（免掷直接胜）', () => {
+    const b = initTurnBattle({ seed: 5 }); place(b, 'K', '9'); // ea(13) ≥ eb(9)
+    expect(clashOdds(b, 0)).toBeLessThan(1);                    // 无铁骰：非必胜
+    b.a.tengangA = { ...NO_TENGANG, autoWinGE: 1 };
+    expect(clashOdds(b, 0)).toBe(1);                            // 铁骰：占优必胜 → 100%
+  });
+  it('铁骰：我前锋战力 < 敌 → 不触发（仍按掷骰预报）', () => {
+    const b = initTurnBattle({ seed: 5 }); place(b, '9', 'K');  // ea(9) < eb(13)
+    b.a.tengangA = { ...NO_TENGANG, autoWinGE: 1 };
+    expect(clashOdds(b, 0)).toBeLessThan(1);                    // 不占优 → 铁骰不生效
+  });
+  it('鬼手(rollBonus)/磐石(rollFloor)/灌铅骰(rollTwice)：改掷 → 预报升（我为下风也抬）', () => {
+    const mk = (fx: Partial<typeof NO_TENGANG>): number => {
+      const b = initTurnBattle({ seed: 5 }); place(b, '9', 'K'); // 我下风(9 vs 13)
+      b.a.tengangA = { ...NO_TENGANG, ...fx };
+      return clashOdds(b, 0)!;
+    };
+    const base = mk({});
+    expect(mk({ rollBonus: 2 })).toBeGreaterThan(base);  // 鬼手改掷+2
+    expect(mk({ rollFloor: 2 })).toBeGreaterThan(base);  // 磐石掷下界+2
+    expect(mk({ rollTwice: 1 })).toBeGreaterThan(base);  // 灌铅骰掷两次取高
   });
 });
