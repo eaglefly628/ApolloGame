@@ -445,6 +445,7 @@ export function mount(container: HTMLElement, shell?: { exit?: () => void }): ()
     // 拍点 tick≈帧（60fps）：0 / 31(≈520ms) / 71(≈1180ms)——逐字对齐旧 setTimeout 两拍窗口，只是时序改由 timeline 数据出。
     let postClashCtx: { e: ClashEvent; loserId: string | undefined; winnerId: string | undefined; cut: number; streak: number } | null = null;
     const battleTl = mountBattleTimeline((sig) => {
+      if (sig.name === 'move:settle') { justMovedIds = new Set(); if (!perfClash) mounted?.update(); return; } // 行军慢放整段播完 → 清标记重渲（时序由 timeline 出·不再手写 setTimeout）
       const ctx = postClashCtx; if (!ctx) return; const e = ctx.e;
       if (sig.name === 'clash:slay') { // ① 败者阵亡（先死·清楚）
         if (ctx.loserId && !e.lastStand) { playSfx('clashLose'); playGhost(exitCaps.get(ctx.loserId) ?? null, 'tear'); }
@@ -526,7 +527,7 @@ export function mount(container: HTMLElement, shell?: { exit?: () => void }): ()
       const lanes = advanceMovePhase(tb, log); // 只移动·不掷命 → 前锋滑到相邻·都还在场；记逐兵行走 + 碰撞判定日志（owner 2026-07-03「看牌走向哪·为啥没触发战斗」）
       justMovedIds = diffMoved(before);
       mounted?.update(); // 渲染滑动到位（FLIP·owner「看到前进路线」）
-      window.setTimeout(() => { justMovedIds = new Set(); if (!perfClash) mounted?.update(); }, 760); // 行军滑动 .68s → 清标记窗口 600→760·让慢速滑动播完再重渲（owner 2026-06-29 慢一半）
+      battleTl.play({ id: 'move', cues: [{ at: 80, do: { kind: 'signal', signal: 'move:settle' } }] }); // 行军慢放整段(g-march 1.25s≈80 tick@16ms)后清标记——时序改由 t3-timeline 出（owner「用 timeline·不手写排程」·替旧 setTimeout(1350)）·此刻无 clash 特写在场·host 空闲不冲突
       exitCaps.clear();
       for (const li of lanes) { const fa = tb.lanes[li].a[0], fb = tb.lanes[li].b[0]; if (fa) { const s = captureUnit(fa.id); if (s) exitCaps.set(fa.id, s); } if (fb) { const s = captureUnit(fb.id); if (s) exitCaps.set(fb.id, s); } } // 相邻位快照(供离场动画)
       for (const li of lanes) resolveClashAt(tb, li); // 结算(数据)→ clashLog
