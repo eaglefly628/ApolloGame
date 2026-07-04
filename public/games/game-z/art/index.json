@@ -2,6 +2,27 @@
   "version": 1,
   "assets": [
     {
+      "id": "mat/demo-wood",
+      "type": "material",
+      "description": "木（橡木） · 公用材质",
+      "status": "filled",
+      "spec": {
+        "preset": "wood"
+      },
+      "category": "material",
+      "tags": [
+        "material",
+        "pbr",
+        "shared-3d",
+        "wood"
+      ],
+      "license": "CC0-1.0",
+      "source": "apollo-shelf",
+      "provenance": {
+        "vendoredFrom": "mat/wood"
+      }
+    },
+    {
       "id": "tex/vendor-demo",
       "type": "texture",
       "description": "aarch64 original · devicon",

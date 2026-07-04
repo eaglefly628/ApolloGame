@@ -33,21 +33,28 @@ if (!existsSync(SHARED_INDEX)) die(`找不到共享库索引 ${SHARED_INDEX}`);
 const shared = JSON.parse(readFileSync(SHARED_INDEX, 'utf8'));
 const src = shared.assets.find((a) => a.id === assetId);
 if (!src) die(`共享库无资产 id "${assetId}"`);
-if (src.status !== 'filled' || !src.path) die(`资产 "${assetId}" 未 filled 或缺 path（无文件可 copy）`);
-
-const srcFile = join(ROOT, 'assets', src.path);
-if (!existsSync(srcFile)) die(`源文件不存在：${srcFile}`);
+if (src.status !== 'filled') die(`资产 "${assetId}" 未 filled（无可 vendor 内容）`);
+// material 是数据型资产（无文件·数据全在 spec）→ 免 path、免 copy，只搬索引条目；其余（texture/mesh/hdr…）copy 文件。
+const dataOnly = src.type === 'material';
+if (!dataOnly && !src.path) die(`资产 "${assetId}" 缺 path（无文件可 copy）`);
 
 // —— 目标：游戏本地美术目录 + 本地索引 ——
 const id = localId ?? src.id;
 const artDir = join(ROOT, 'public', 'games', game, 'art');
-const destRel = src.path; // 镜像共享库子路径（devicon/x.svg → art/devicon/x.svg）
-const destFile = join(artDir, destRel);
-const servedPath = `/games/${game}/art/${destRel.split('\\').join('/')}`; // 站点绝对路径
 const localIndexFile = join(artDir, 'index.json');
 
-mkdirSync(dirname(destFile), { recursive: true });
-copyFileSync(srcFile, destFile);
+let servedPath; // 数据型资产无文件 → 无 path
+if (dataOnly) {
+  mkdirSync(artDir, { recursive: true });
+} else {
+  const srcFile = join(ROOT, 'assets', src.path);
+  if (!existsSync(srcFile)) die(`源文件不存在：${srcFile}`);
+  const destRel = src.path; // 镜像共享库子路径（devicon/x.svg → art/devicon/x.svg；mesh glb / env hdr 同法）
+  const destFile = join(artDir, destRel);
+  servedPath = `/games/${game}/art/${destRel.split('\\').join('/')}`; // 站点绝对路径
+  mkdirSync(dirname(destFile), { recursive: true });
+  copyFileSync(srcFile, destFile);
+}
 
 // 本地索引 upsert（按 id·幂等）。
 const local = existsSync(localIndexFile)
@@ -59,8 +66,8 @@ const entry = {
   type: src.type,
   description: src.description,
   status: 'filled',
-  path: servedPath,
-  ...(src.spec !== undefined ? { spec: src.spec } : {}), // usage/colorSpace/尺寸等一并搬（法线线性等元数据不丢）
+  ...(servedPath !== undefined ? { path: servedPath } : {}), // material 无 path
+  ...(src.spec !== undefined ? { spec: src.spec } : {}), // usage/colorSpace/preset 等一并搬（法线线性等元数据不丢）
   ...(src.category !== undefined ? { category: src.category } : {}),
   ...(src.tags !== undefined ? { tags: src.tags } : {}),
   ...(src.style !== undefined ? { style: src.style } : {}),
@@ -76,7 +83,6 @@ local.assets.sort((a, b) => (a.id < b.id ? -1 : a.id > b.id ? 1 : 0)); // 稳定
 
 writeFileSync(localIndexFile, JSON.stringify(local, null, 2) + '\n');
 
-console.log(`vendored "${assetId}" → ${servedPath}`);
-console.log(`  文件: ${destFile}`);
+console.log(`vendored "${assetId}" → ${dataOnly ? '(数据型·无文件)' : servedPath}`);
 console.log(`  本地索引: ${localIndexFile}（${local.assets.length} 条）`);
 console.log(`  游戏侧消费：registerAssetIndex(parseAssetIndex(<该 index.json>), assets)  // baseUrl ''`);

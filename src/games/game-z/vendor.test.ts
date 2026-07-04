@@ -3,7 +3,7 @@
 // （parseAssetIndex 校验通过 + registerAssetIndex 桥接成可加载资产·站点绝对路径 baseUrl ''）。
 import { describe, it, expect } from 'vitest';
 import { readFileSync } from 'node:fs';
-import { parseAssetIndex, registerAssetIndex, AssetManager, StubAssetLoader } from '@assets/index.js';
+import { parseAssetIndex, registerAssetIndex, buildMaterialCatalog, AssetManager, StubAssetLoader } from '@assets/index.js';
 
 describe('REQ-Resource ⑤ vendoring 本地索引消费', () => {
   it('game-z 本地美术索引合法·可 registerAssetIndex 消费·携 vendoredFrom 溯源', async () => {
@@ -20,5 +20,18 @@ describe('REQ-Resource ⑤ vendoring 本地索引消费', () => {
 
     const a = await m.load('tex/vendor-demo');
     expect(a.descriptor.src).toBe('/games/game-z/art/devicon/aarch64-original.svg'); // 指向本地拷贝·非共享库
+  });
+
+  it('材质（数据型·无文件）也能 vendor：本地条目无 path·进 buildMaterialCatalog（REQ-PA-3D公用货架 ①②）', () => {
+    const raw = JSON.parse(readFileSync('public/games/game-z/art/index.json', 'utf8'));
+    const idx = parseAssetIndex(raw);
+    const mat = idx.assets.find((a) => a.id === 'mat/demo-wood');
+    expect(mat).toBeDefined();
+    expect(mat?.type).toBe('material');
+    expect(mat?.path).toBeUndefined(); // 数据型·无文件
+    expect(mat?.provenance).toMatchObject({ vendoredFrom: 'mat/wood' }); // 从共享货架 vendor 来
+    // 材质走 buildMaterialCatalog（非 AssetManager 加载路径）→ 渲染器据 materialRef 查此表
+    const catalog = buildMaterialCatalog(idx);
+    expect(catalog.get('mat/demo-wood')).toMatchObject({ preset: 'wood' });
   });
 });
