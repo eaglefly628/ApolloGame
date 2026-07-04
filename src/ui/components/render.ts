@@ -151,6 +151,20 @@ function texLayer(url?: string, size?: number): string {
   return `url('${safe}') 0 0${size !== undefined ? ` / ${num(size)}px` : ''} repeat`;
 }
 
+// 异形轮廓（闭集 ShapeToken → 引擎预置 clip-path/border-radius·弱 LLM 只选名·不收自由坐标）。
+// pill=全圆胶囊；其余=固定多边形 clip-path（命中区仍是元素包围盒）。附加在 base 之后→后写覆盖既有圆角/切角。
+const SHAPE_CSS: Record<string, string> = {
+  pill:     'border-radius:999px',
+  hexagon:  'clip-path:polygon(25% 0,75% 0,100% 50%,75% 100%,25% 100%,0 50%)',
+  diamond:  'clip-path:polygon(50% 0,100% 50%,50% 100%,0 50%)',
+  shield:   'clip-path:polygon(0 0,100% 0,100% 62%,50% 100%,0 62%)',
+  ribbon:   'clip-path:polygon(0 0,100% 0,92% 50%,100% 100%,0 100%,8% 50%)',
+  chevron:  'clip-path:polygon(0 0,88% 0,100% 50%,88% 100%,0 100%)',
+  tag:      'clip-path:polygon(12% 0,100% 0,100% 100%,12% 100%,0 50%)',
+  cut:      'clip-path:polygon(10px 0,100% 0,100% calc(100% - 10px),calc(100% - 10px) 100%,0 100%,0 10px)',
+};
+const shapeCss = (shape?: string): string => (shape && SHAPE_CSS[shape]) ? `;${SHAPE_CSS[shape]}` : '';
+
 // ── 原有 7 个控件 ───────────────────────────────────────────────
 
 function renderButton(id: string, p: ButtonProps, ls: string, t: UITheme): string {
@@ -167,10 +181,10 @@ function renderButton(id: string, p: ButtonProps, ls: string, t: UITheme): strin
     const sheen = `<span style="position:absolute;top:0;bottom:0;left:-60%;width:45%;background:linear-gradient(105deg,transparent,rgba(255,255,255,.55),transparent);transform:skewX(-18deg);animation:apollo-sheen 2.6s ease-in-out infinite;pointer-events:none"></span>`;
     const big = `<span style="display:block;font-size:17px;line-height:1.15">${esc(p.label)}</span>`;
     const sub = p.sub ? `<span style="display:block;font-size:11px;font-weight:600;opacity:.8;margin-top:2px">${esc(p.sub)}</span>` : '';
-    return `<button id="${esc(id)}"${action}${p.disabled ? ' disabled' : ''} style="${hbase};${ls}">${sheen}${big}${sub}</button>`;
+    return `<button id="${esc(id)}"${action}${p.disabled ? ' disabled' : ''} style="${hbase};${ls}${shapeCss(p.shape)}">${sheen}${big}${sub}</button>`;
   }
   const base = `padding:6px 14px;border-radius:7px;font-size:12px;cursor:${p.disabled ? 'not-allowed' : 'pointer'};font-family:${t.fontUi};outline:none;transition:all .15s;opacity:${p.disabled ? 0.4 : 1}`;
-  return `<button id="${esc(id)}"${action}${p.disabled ? ' disabled' : ''} style="${base};${kindStyle[kind]};${ls}">${esc(p.label)}</button>`;
+  return `<button id="${esc(id)}"${action}${p.disabled ? ' disabled' : ''} style="${base};${kindStyle[kind]};${ls}${shapeCss(p.shape)}">${esc(p.label)}</button>`;
 }
 
 function renderLabel(id: string, p: LabelProps, ls: string, t: UITheme): string {

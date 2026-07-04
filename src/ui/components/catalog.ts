@@ -124,6 +124,7 @@ export const UI_CATALOG: readonly UiComponentSpec[] = [
       { name: 'actionArg', type: 'string', describe: '信号参数（买哪件等）' },
       { name: 'disabled', type: 'boolean', describe: '禁用' },
       { name: 'sub', type: 'string', describe: 'hero 键副标' },
+      { name: 'shape', type: 'enum', values: ['pill', 'hexagon', 'diamond', 'shield', 'ribbon', 'chevron', 'tag', 'cut'], describe: '异形轮廓（闭集·引擎预置 clip-path·缺省=矩形）。异形需给足宽高避免裁掉文字' },
     ],
     sample: { type: 'Button', id: 's-button', props: { label: '⚔ 出征 · 第 3 关', kind: 'hero', sub: '挑战 曹操 · 难度 ★★', action: 'play' } },
   },
