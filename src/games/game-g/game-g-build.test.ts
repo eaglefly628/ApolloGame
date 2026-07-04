@@ -25,7 +25,7 @@ function oldTengangFxOf(cards: Iterable<TgCard>): TengangFx {
       case 'power:add':
         if (p.filter === 'countLE3') fx.powerLE3 += v;
         else if (p.filter === 'sameSuit') fx.powerSameSuit += v;
-        else if (p.scope === 'front') fx.powerFront += v;
+        else if (p.filter === 'front' || p.scope === 'front') fx.powerFront += v; // 空头卡修（§四.4）：锋矢 filter:'front' 现只前锋
         else fx.powerAll += v; break;
       case 'combo:pair': fx.comboPair += bonus; break;
       case 'combo:trips': fx.comboTrips += bonus; break;
@@ -64,6 +64,14 @@ describe('Game G · 天罡聚合迁移守护（tengangFxOf 走 aggregateModifier
     const atlas = TIANGANG_BY_ID.get('atlas')! as unknown as TgCard;
     expect(atlas.params).toMatchObject({ op: 'mul', value: 1.5, filter: 'highest' });
     expect(tengangFxOf([atlas]).powerMulHighest).toBe(1.5); // 修前=0（空头）·修后=1.5
+  });
+
+  it('空头卡修·锋矢 arrowhead：filter:"front" → powerFront（曾误落全军 powerAll·§四.4）', () => {
+    const arrow = TIANGANG_BY_ID.get('arrowhead')! as unknown as TgCard;
+    expect(arrow.params).toMatchObject({ op: 'add', value: 4, filter: 'front' });
+    const fx = tengangFxOf([arrow]);
+    expect(fx.powerFront).toBe(4); // 只前锋 +4
+    expect(fx.powerAll).toBe(0);   // 修前=4(全军)·修后=0
   });
 
   it('aggregateTengang(ids) === tengangFxOf(查表卡)（id→卡→行 链路一致）', () => {

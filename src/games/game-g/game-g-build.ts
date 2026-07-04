@@ -72,7 +72,7 @@ const TENGANG_ROWS: Record<string, TgDesc> = {
   'odds:kHard': (v) => ({ target: 'kHard', op: 'add', value: v }),                    // 灌铅骰：logistic 变硬
   'odds:noUpset': () => ({ target: 'noUpset', op: 'add', value: 1 }),                 // 铁骰：占优免爆冷（计数）
   'power:mul': (v, _b, p) => (p.filter === 'highest' || p.scope === 'highestRank' ? { target: 'powerMulHighest', op: 'max', value: v } : null), // 擎天：最强单张 ×v（取最大·非叠加）。空头卡修（owner 2026-07-04·REQ-G 片3）：数据用 filter:'highest'，旧 handler 只认 scope:'highestRank' → 擎天曾 no-op；两种键都认。
-  'power:add': (v, _b, p) => ({ target: p.filter === 'countLE3' ? 'powerLE3' : p.filter === 'sameSuit' ? 'powerSameSuit' : p.scope === 'front' ? 'powerFront' : 'powerAll', op: 'add', value: v }), // 寡兵/同花魁/锋矢/虎符(全军)
+  'power:add': (v, _b, p) => ({ target: p.filter === 'countLE3' ? 'powerLE3' : p.filter === 'sameSuit' ? 'powerSameSuit' : p.filter === 'front' || p.scope === 'front' ? 'powerFront' : 'powerAll', op: 'add', value: v }), // 寡兵/同花魁/锋矢/虎符(全军)。空头卡修（REQ-G-天罡原生重构 §四.4）：锋矢 arrowhead 数据 filter:'front'，旧描述子只认 scope:'front' → 落 else 变全军+4；filter:'front' 也认 → 只前锋。
   'combo:pair': (_v, bonus) => ({ target: 'comboPair', op: 'add', value: bonus }),    // 对子诀
   'combo:trips': (_v, bonus) => ({ target: 'comboTrips', op: 'add', value: bonus }),  // 鼎立
   'morale:leaderBuff': (v) => ({ target: 'moraleLeader', op: 'add', value: v }),      // 旗手
