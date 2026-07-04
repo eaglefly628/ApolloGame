@@ -17,6 +17,8 @@
 ## 教训（必读一行，细节点开源文档）
 
 - **掌机弱 GPU 黑屏**：`docs/workflow/archive/session-handoff-2026-06-22-full.md §0`——cartridge 烧进掌机弱 GPU webview 时，`transform:scale` 首帧烤成单合成图层→合成失败黑屏（无头测不出，Mac 正常）；修法=改 **CSS zoom**（CPU 布局缩放·不生成合成图层·消闪烁·fail-safe 只裁切不黑）。发行前真机烧版验证，别信无头绿。
+- **防御式 `safe()` 会把「API 形态不符」吞成静默 no-op = 真机调试盲区**（2026-07-04 复核）：`steam.cjs` 对 steamworks.js 各方法用 `try/catch + &&` 猜形态，好处是不崩壳，坏处是**猜错时真机上「什么都没发生」却零日志**。实测踩到两处：①`steamworks.js` 根本无 `leaderboard` 命名空间（排行榜标了 ✅ 实则永不工作）；②`cloud.listFiles()` 返回 `FileInfo{name}` 对象而非 `string[]`（真机索引重建 `f.startsWith` 抛）。**教训**：a) 接真平台 SDK 先读它的 `.d.ts` 核实命名空间/返回类型，别凭记忆猜；b) `available===true` 但底层 API 缺失时**必须告警一次**（`warnMissing`），不要让 `safe()` 静默吞；c) 「mock 同契约」只有在**真桥真的对齐契约**时才成立——真桥返回类型和 mock 对不上时，mock 全绿是假绿。
+- **AppID 单一真相 = 同目录 `steam_appid.txt`**（2026-07-04）：`steam.cjs` 别硬编码/只读 env，否则会和发布工具写进 `steam_appid.txt` 的真 AppID 打架，打包后 `init(480)` 连成 SpaceWar。以 `steam_appid.txt` 为准（env 覆盖 > 文件 > 480 兜底），`status().appIdSource` 暴露来源自检。
 
 ## 发行双清单（CCGS 参考采纳·2026-07-04·主程沉淀）
 

@@ -4,7 +4,7 @@ import {
   SteamCloudStoragePort, createStoragePort, createMockSteamCloudBridge,
   resetMockSteamCloud, MemoryStoragePort, LocalStorageStoragePort,
 } from './index.js';
-import type { SaveGame } from './index.js';
+import type { SaveGame, SteamCloudBridge } from './index.js';
 
 const game = (slot: string, tick: number, ts: number): SaveGame => ({
   meta: { slot, tick, hash: 'h' + tick, timestamp: ts, label: 'L' + tick },
@@ -32,6 +32,21 @@ describe('storage · SteamCloudStoragePort（经假云桥·与契约一致）', 
     await port.save('x', game('x', 5, 500));
     await cloud.deleteFile('save/__index__.json'); // 模拟索引丢失
     expect((await port.list()).map((m) => m.slot)).toEqual(['x']); // 重建兜底
+  });
+
+  it('索引缺失 + 真桥式 listFiles（返回 FileInfo{name} 对象）→ 仍能重建（防真/假桥形态漂移）', async () => {
+    // 真 Steam 的 client.cloud.listFiles() 返回 {name,size} 对象数组，假桥返回字符串数组。
+    // 若消费端把对象当字符串用（f.startsWith）会在真机上抛。此测试用真桥形态坐实归一化容错。
+    const mock = createMockSteamCloudBridge({ persist: false });
+    const realish: SteamCloudBridge = {
+      ...mock,
+      listFiles: async () =>
+        (await mock.listFiles()).map((n) => ({ name: n, size: 0 })) as unknown as string[],
+    };
+    const port = new SteamCloudStoragePort(realish);
+    await port.save('y', game('y', 7, 700));
+    await realish.deleteFile('save/__index__.json'); // 索引丢失 → 走重建，listFiles 返回对象
+    expect((await port.list()).map((m) => m.slot)).toEqual(['y']);
   });
 
   it('持久化：新端口（读同一假云态）能读回上一端口存的档', async () => {

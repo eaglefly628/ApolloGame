@@ -11,7 +11,8 @@
 ## 阶段 1 · App 基础设置（后台·人工）
 4. 在 App Admin 里建 **Depot**（每平台一个：win/mac/linux），记下 **DepotID**。
 5. 设 **Package / 定价**（区域定价表 Valve 给建议值，可调）。
-6. 🛠 **登记成就 / 排行榜 / Cloud**：把代码里的成就 id（`GG_FIRST_BOOT / GG_FIRST_WIN / GG_FLAWLESS`，见 `src/services/platform/achievements.ts`）、排行榜 `campaign_progress`、Steam Cloud 配额在后台**登记同名**才真生效。
+6. 🛠 **登记成就 / Cloud**：把代码里的成就 id（`GG_FIRST_BOOT / GG_FIRST_WIN / GG_FLAWLESS`，见 `src/services/platform/achievements.ts`）、Steam Cloud 配额在后台**登记同名**才真生效。
+   - ⚠️ **排行榜暂未实现**（`campaign_progress` 只在代码里预留）：当前 SDK `steamworks.js` 无 leaderboard API，上传是可观测 no-op。要真上排行榜须另接 Steamworks Web API，届时再回来登记（见 `docs/workflow/finish/PS-steam-finish-list.md`「2026-07-04 复核修订」）。
 
 ## 阶段 2 · 商店页（后台·人工 + Valve 审）
 7. 填商店页：**名称 / 简介 / 标签 / 分类 / 截图 / 预告片 / 胶囊图(capsule)** 等美术素材（有尺寸规范）。
