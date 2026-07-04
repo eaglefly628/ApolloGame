@@ -19,14 +19,20 @@ describe('platform · MockSteamBridge（本地假 Steam·同真桥契约）', ()
     expect(evt.filter((e) => e.kind === 'unlock')).toEqual([{ kind: 'unlock', id: 'ACH_A' }]);
   });
 
-  it('统计读写 + 排行榜高分在前', () => {
-    const b = createMockSteamBridge({ toast: false, log: false });
+  it('统计读写 + 排行榜高分在前（真验降序·去掉 mock 排序即红）', () => {
+    const evt: MockSteamEvent[] = [];
+    const b = createMockSteamBridge({ toast: false, log: false, onEvent: (e) => evt.push(e) });
     b.setStat!('wins', 5);
     expect(b.getStat!('wins')).toBe(5);
     expect(b.getStat!('missing')).toBe(0);
     b.uploadLeaderboard!('lb', 30); b.uploadLeaderboard!('lb', 90); b.uploadLeaderboard!('lb', 60);
-    // 间接验证：再造一个桥（读同一持久化态），分数应按高→低
-    b.store!();
+    // 经 onEvent 观测最新榜单快照：三个乱序分数上传后必须按高→低排列（被测行为=降序）。
+    const boards = evt.filter((e): e is Extract<MockSteamEvent, { kind: 'leaderboard' }> => e.kind === 'leaderboard');
+    const board = boards.at(-1)!.board;
+    expect(board).toEqual([90, 60, 30]);                          // 高分在前
+    for (let i = 1; i < board.length; i++) {                      // 且严格非递增（冗余保险）
+      expect(board[i]).toBeLessThanOrEqual(board[i - 1]);
+    }
   });
 
   it('localStorage 持久化：新桥能读回上一桥解锁的成就', () => {

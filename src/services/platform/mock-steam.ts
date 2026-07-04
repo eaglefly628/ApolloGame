@@ -9,7 +9,7 @@ export type MockSteamEvent =
   | { kind: 'unlock'; id: string }
   | { kind: 'clear'; id: string }
   | { kind: 'stat'; id: string; value: number }
-  | { kind: 'leaderboard'; boardId: string; score: number }
+  | { kind: 'leaderboard'; boardId: string; score: number; board: number[] }
   | { kind: 'richPresence'; key: string; value: string }
   | { kind: 'store' };
 
@@ -106,7 +106,8 @@ export function createMockSteamBridge(opts: MockSteamOptions = {}): SteamBridge 
       (s.leaderboards[boardId] ??= []).push(score);
       s.leaderboards[boardId].sort((a, b) => b - a);            // 高分在前
       saveState(persist, s);
-      emit({ kind: 'leaderboard', boardId, score });
+      // board 快照随事件外发 → 消费端（UI/测试）可经 onEvent 观测榜单顺序，无需读私有态。
+      emit({ kind: 'leaderboard', boardId, score, board: [...s.leaderboards[boardId]] });
     },
     setRichPresence(key: string, value: string) {
       s.richPresence[key] = value; saveState(persist, s);
