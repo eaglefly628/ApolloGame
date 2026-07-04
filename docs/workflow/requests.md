@@ -11,7 +11,8 @@
 
 ## 待处理 / 进行中
 
-### REQ-PA-3D公用货架 · Free Library 增公用 3D 基础素材 + 3D vendoring + 本地目录标准 · [2026-07-04] · owner 拍板 → **指派：PA（资产侧 ①②③④a）· P3D（游戏侧切换 ④b）** · status: **open（PA 领·分步施工中）** · 类型: 架构补全（vendoring 模型的 3D 半边·真缺口）
+### REQ-PA-3D公用货架 · Free Library 增公用 3D 基础素材 + 3D vendoring + 本地目录标准 · [2026-07-04] · owner 拍板 → **指派：PA（资产侧 ①②③④a）· P3D（游戏侧切换 ④b）** · status: **PA 侧 ✅ done（①②③④a·分步全绿推）；④b 转 `requests-3d.md`「REQ-3D-货架接入」待 P3D** · 类型: 架构补全（vendoring 模型的 3D 半边·真缺口）
+> **PA 施工回执（2026-07-04·分步全绿推）**：① 货架备料工具 `scripts/gen-shelf-3d.mjs`——11 材质(数据型 `mat/*`)+3 基础 mesh(程序化 glb `mesh/plane|cube|sphere`·three GLTFLoader 实测可解析)+3 程序化贴图(`tex/plank_*`·usage 闭集)+1 渐变天空盒(`env/sky-gradient`·纯 Node PNG)。② `vendor-asset.mjs` 支持数据型(material 无 path·免 copy)+文件型(mesh glb/贴图)——`game-z` vendor 了 mat/mesh fixture，`vendor.test` 覆盖两路。③ 本地目录标准 `public/games/<game>/art/{textures,models,materials,env}/` 已写进 `playbooks/assets.md ⑥`。④a 程序化贴图产进货架。守护测 `src/assets/shelf-3d.test.ts`。
 > **owner 愿景**：Free Library = 统一货架（2D + 公用 3D 基础素材）；每游戏开工按需 vendor 到本地美术目录，一律不直引货架。
 > **现状核对（PA 2026-07-04）**：2D ✅（`vendor-asset.mjs` + 游戏本地 `art/index.json` 已通）；3D ❌——共享 `assets/index.json` 全 2D（type 仅 texture+1 sound·零 mesh/material/hdr）；程序化贴图散落 `public/textures/` 被游戏直引（=反 vendoring 例）；3D 素材各游戏自持、无公用货架。
 > **四步**：① 共享 3D 货架——登记公用数据资产进 `assets/index.json`(+spec)：基础 mesh(cube/sphere/plane glb)、材质(pbr 预设降为 `type:'material'` 数据条目)、程序化贴图(gen-textures 产物登记)、天空盒(1–2 CC0 HDRI ≤2k)。② 扩 `scripts/vendor-asset.mjs` 支持 copy mesh/material/hdr 进本地并携 spec(scale/colorSpace/genCollision)+补测(现仅测过 2D)。③ 本地目录标准 `public/games/<game>/art/{textures,models,materials,env}/` 写进 `playbooks/assets.md`(PA handoff backlog #4 收口)。④a gen-textures 产物改「产进货架」而非散落。④b（P3D 域·转 `requests-3d.md`）game-z/game-d 停直引 `public/textures/` → 改从本地 `art/` vendor。

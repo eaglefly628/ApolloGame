@@ -32,7 +32,7 @@
 1. **接手 Lead review 收口**：②③④ + REQ-3D④ 的 `src/assets` 跨界改动仍挂「待 Lead review」——**往后这些归你域**，review 意见的资产侧落地由你做（渲染侧 map 字段由 P3D 配合）。
 2. **模型导入标准**（真缺口·`3d-asset-pipeline-standard.md §3①`）：`scripts/import-model.mjs`——读 glb→建议 scale + 列骨骼 clip 名 + 写/更新游戏本地 mesh 条目 + 记许可。把「scale 肉眼试」变「跑脚本得标准条目」。对标 2D 的 sniff→normalize。
 3. **`.hdr` 导入线识别**（接 REQ-3D-⑤ HDRI）：资产线支持 `.hdr` 作字节资产（≤2k 分辨率提示·掌机 cartridge）；现渲染消费端已就绪（`Sky3D.envMap`→HDRLoader+PMREM），缺的是资产侧把 `.hdr` 登记成可加载字节。
-4. **游戏本地 3D 美术目录标准**：定 `public/games/<game>/art/{models,textures}/` 为约定；vendor + import-model 都往这落；写进 `playbooks/assets.md`。
+4. **✅ done（2026-07-04·REQ-PA-3D公用货架 ③）游戏本地 3D 美术目录标准**：`public/games/<game>/art/{textures,models,materials,env}/` 已定 + 写进 `playbooks/assets.md ⑥`。同单还落了：公用 3D 货架（`gen-shelf-3d.mjs`：材质/基础 mesh/程序化贴图/天空盒）+ `vendor-asset.mjs` 支持 3D（数据型 material 免 path·glb/贴图文件）+ 守护测 `shelf-3d.test.ts`。剩 ④b（game-z/game-d 停直引 `public/textures/`）已转 `requests-3d.md`「REQ-3D-货架接入」给 P3D。
 5. **`metalnessMap/ormMap` 美术**：渲染槽已通（REQ-3D④·sig/catalog 已测），但缺 ORM/金属打包图；有需求时你产（`emissiveMap` 已有程序化 demo：`gen-textures.mjs` 产 `rune_emissive.png`）。
 6. **后置·无消费者**：sound/font 桥接、material Phase 4 深化——按需，别 YAGNI 先造。
 

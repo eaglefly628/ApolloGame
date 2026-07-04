@@ -6,6 +6,12 @@
 
 ---
 
+## REQ-3D-货架接入 · game-z/game-d 3D 素材改从公用货架 vendor（停直引全局散落）· [2026-07-04] · PA → P3D · status: **open（PA 已备好货架+vendor 工具·待 P3D 游戏侧切换）** · 类型: vendoring 收口（REQ-PA-3D公用货架 ④b）
+
+> **背景**：PA 已把公用 3D 基础素材（材质 `mat/*`、基础 mesh `mesh/plane|cube|sphere`、程序化贴图 `tex/plank_*`、天空盒 `env/sky-gradient`）备进共享货架 `assets/index.json`，并让 `scripts/vendor-asset.mjs` 支持 3D（数据型材质 + glb/贴图文件）。本地目录标准见 `docs/playbooks/assets.md ⑥`。
+> **P3D 侧待办（🔒 game-z/game-d 域·PA 不越界）**：现 `game-z` diorama 等**直引全局散落目录 `public/textures/`**（plank/rune 贴图）——改为从货架 vendor 进 `public/games/game-z/art/{textures,materials,models,env}/` 再引本地索引（例：`node scripts/vendor-asset.mjs tex/plank_albedo game-z`）。切换后可删 `public/textures/` 直引 + 让 `gen-textures.mjs` 退役或改产进货架。**验收**：game-z 只引本地 `art/index.json`、无全局散落直引；渲染观感不变；门禁全绿。
+> **不阻塞**：货架+工具已就绪，P3D 按 3D 线核心工作节奏排入即可。
+
 ## REQ-3D-卡通描边（toon outline）·暂缓 + Godot 调研文 · [2026-06-30] · owner → P3D · status: **⏸ outline 暂缓（深度边缘不可靠·待法线缓冲版）；Godot 对比文 ✅ 已出** · 类型: 渲染能力（NPR）+ 调研
 
 > **owner 要「描边的卡通着色」**。P3D 试了**全屏深度边缘描边**（Post3D.outline·读深度纹理做二阶差分 Laplacian）：

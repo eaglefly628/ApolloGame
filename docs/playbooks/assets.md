@@ -43,5 +43,14 @@
 Free Library（共享 `assets/index.json` + `FreeArtLib/`）= **货架·只被 copy**；游戏运行时**只引自己的本地索引**，要用共享资源就 vendor 进本地、**不直引货架、也不直引全局散落目录**。
 - 本地根：`public/games/<game>/art/`；本地索引：`public/games/<game>/art/index.json`（站点绝对路径 `/games/<game>/art/...` + `baseUrl ''`，游戏侧 `registerAssetIndex(parseAssetIndex(local))` 直接消费）。
 - 分类子目录（约定）：`textures/`（贴图）· `models/`（mesh glb）· `materials/`（`type:'material'` 数据资产·无文件可省目录）· `env/`（天空盒 hdr）。3D 别混进 2D 平铺目录。
-- 工具：`node scripts/vendor-asset.mjs <shared-id> <game> [--as <local-id>]`（2D/3D 同一条·携 spec/license/`provenance.vendoredFrom`·幂等）。
+- 工具：`node scripts/vendor-asset.mjs <shared-id> <game> [--as <local-id>]`（2D/3D 同一条·携 spec/license/`provenance.vendoredFrom`·幂等；材质等数据型无文件也支持）。
 - 🚫 反例：游戏直引 `public/textures/` 等全局散落目录（绕过货架+本地索引）——正被 `REQ-PA-3D公用货架` ④b 消解。
+
+## ⑦ 公用 3D 基础素材货架（可 vendor·`scripts/gen-shelf-3d.mjs` 备料）
+
+共享货架已备公用 3D 基础素材，游戏按需 `vendor-asset` 进本地再引（**别直引货架、别自造重复**）：
+- **材质**（数据型·无文件·引 pbr 预设）：`mat/matte|plastic|steel|iron|gold|copper|glass|rock|dirt|wood|emissive`。vendor 后 `Material3D.materialRef` 引它。
+- **基础 mesh**（程序化 glb）：`mesh/plane`（地块）·`mesh/cube`（箱体）·`mesh/sphere`（星体/占位），spec `scale/genCollision`。
+- **程序化贴图**：`tex/plank_albedo`·`tex/plank_normal`（线性）·`tex/rune_emissive`。
+- **天空盒**：`env/sky-gradient`（equirect 渐变）。
+- 备料/扩充：`node scripts/gen-shelf-3d.mjs [materials|meshes|textures|env|all]`（确定性·幂等·零网络·CC0 自产）。缺某类基础素材 → 扩这个脚本，不在游戏层自造。
