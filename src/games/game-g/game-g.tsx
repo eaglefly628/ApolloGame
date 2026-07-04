@@ -240,27 +240,48 @@ export function mount(container: HTMLElement, shell?: { exit?: () => void }): ()
   // ───────────────────────── 场间整备 · 三选一增益（roguelike 养成核 · 胜后短窗）─────────────────────────
   // 胜一场后进军前的短窗：三随机里选一项 → 选择即流派。池=资源增益 + **流派钥匙(白嫖未拥有天罡)**，
   // 后者把场间选择做成 StS/Balatro 式构筑分叉（design reply#10），不只 +stat。改后落存档、回大厅看下一战。
+  // 数据驱动 UI（owner 2026-07-04「主城改动为主」·手写 DOM → LayoutNode，同 goBack 确认框的 mountUI 试点一脉）：
+  // 三选一 = 纯数据树，mountUI 是固定解释器；点卡=applyBuff→存档→回大厅（行为与旧手写版逐项一致）。pick3 只调一次，卡与增益一一对应。
   function showBetween(nextLabel: string): void {
     clear();
-    const title = el('div', 'font:600 18px system-ui;color:#22c55e', '🎉 战间整备 · 三选一');
-    const sub = el('div', 'max-width:520px;text-align:center;opacity:.82;line-height:1.6',
-      `胜一场！<b>${nextLabel}</b>前选<b>一项</b>——资源增益，或<b style="color:#c4b5fd">🃏流派钥匙</b>(白嫖天罡牌、定你的构筑分叉)。`);
+    const host = document.createElement('div'); // mountUI 挂载宿主（数据 UI 需一个容器·非手写内容）
+    host.style.cssText = 'position:absolute;inset:0';
+    root.appendChild(host);
     const pool: RunBuff[] = [...BETWEEN_BUFFS, ...tiangangKeyBuffs(save.tiangangs)]; // 资源增益 + 未拥有天罡钥匙
-    const cardsBox = el('div', 'display:flex;gap:12px;justify-content:center;flex-wrap:wrap');
-    cardsBox.replaceChildren(...pick3(pool).map((bf: RunBuff) => {
+    const picks = pick3(pool);
+    let teardown = (): void => {};
+    const choose = (bf: RunBuff): void => { applyBuff(save, bf); persist(save); teardown(); showLobby(); };
+    const card = (bf: RunBuff, i: number): LayoutNode => {
       const isKey = bf.kind === 'tiangang';
-      const accent = isKey ? '#a78bfa' : '#22c55e';
-      const card = el('div', `width:158px;padding:14px 10px;border:1px solid ${isKey ? '#4c1d95' : '#334155'};border-radius:10px;text-align:center;cursor:pointer;line-height:1.55;background:${isKey ? '#160f24' : '#10161f'}`,
-        `<div style="font:600 15px system-ui;color:${isKey ? '#c4b5fd' : '#eab308'}">${bf.name}</div><div style="opacity:.85;font-size:12px;margin-top:6px">${bf.desc}</div>`);
-      card.onmouseenter = () => { card.style.borderColor = accent; };
-      card.onmouseleave = () => { card.style.borderColor = isKey ? '#4c1d95' : '#334155'; };
-      card.onclick = () => { applyBuff(save, bf); persist(save); showLobby(); };
-      return card;
-    }));
-    const skip = mkBtn('跳过，直接回大厅');
-    skip.style.cssText += ';opacity:.6;font-size:11px';
-    skip.onclick = showLobby;
-    root.append(title, sub, cardsBox, skip);
+      return {
+        type: 'Panel', id: `gg-btw-card-${i}`,
+        props: { bg: isKey ? 'void' : 'ink-deep', action: `pick-${i}` } as PanelProps, // 色库预设：钥匙=幽紫 void / 资源=深墨（替旧硬编码紫绿）
+        layout: { width: 158, padding: 14, gap: 6, align: 'center' },
+        children: [
+          { type: 'Label', id: `gg-btw-name-${i}`, props: { text: bf.name, size: 'md', bold: true, color: isKey ? 'gold' : 'ok' } as LabelProps },
+          { type: 'Label', id: `gg-btw-desc-${i}`, props: { text: bf.desc, size: 'sm', color: 'sub' } as LabelProps },
+        ],
+      };
+    };
+    const tree: LayoutNode = {
+      type: 'Screen', id: 'gg-btw-screen', props: { center: true } as ScreenProps,
+      children: [{
+        type: 'Panel', id: 'gg-btw-panel', props: {} as PanelProps,
+        layout: { direction: 'column', gap: 14, padding: 24, align: 'center' },
+        children: [
+          { type: 'Label', id: 'gg-btw-title', props: { text: '🎉 战间整备 · 三选一', size: 'lg', bold: true, color: 'ok' } as LabelProps },
+          { type: 'Label', id: 'gg-btw-sub', props: { spans: [
+            { text: '胜一场！' }, { text: nextLabel, bold: true }, { text: '前选' }, { text: '一项', bold: true },
+            { text: '——资源增益，或' }, { text: '🃏流派钥匙', bold: true, color: 'gold' }, { text: '(白嫖天罡牌、定你的构筑分叉)。' },
+          ] } as LabelProps },
+          { type: 'Panel', id: 'gg-btw-cards', props: { bare: true } as PanelProps, layout: { direction: 'row', gap: 12, justify: 'center' }, children: picks.map(card) },
+          { type: 'Button', id: 'gg-btw-skip', props: { label: '跳过，直接回大厅', kind: 'quiet', action: 'skip' } as ButtonProps },
+        ],
+      }],
+    };
+    const handlers: Record<string, () => void> = { skip: () => { teardown(); showLobby(); } };
+    picks.forEach((bf, i) => { handlers[`pick-${i}`] = () => choose(bf); });
+    teardown = mountUI(host, tree, handlers, GG_THEME_ONYX); // 喂 game-g 古风主题 → 同份数据渲成古风皮
   }
 
   // ───────────────────────── 出征（一局 · doc24 回合制 · turn-combat + turn-battle-screen）─────────────────────────
@@ -783,10 +804,4 @@ function el(tag: string, css: string, html = ''): HTMLElement {
   e.style.cssText = css;
   e.innerHTML = html;
   return e;
-}
-function mkBtn(text: string): HTMLButtonElement {
-  const b = document.createElement('button');
-  b.textContent = text;
-  b.style.cssText = 'padding:8px 13px;border-radius:8px;border:1px solid #334155;background:#15202b;color:#e2e8f0;cursor:pointer;font:12px system-ui';
-  return b;
 }
