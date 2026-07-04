@@ -285,7 +285,7 @@ export function mount(container: HTMLElement, shell?: { exit?: () => void }): ()
   }
 
   // ───────────────────────── 出征（一局 · doc24 回合制 · turn-combat + turn-battle-screen）─────────────────────────
-  // owner 大转向：实时 CR → 回合制桌游。每回合 +1 召唤源泉 → 四选一互斥动作(抽/放[+翻门]/打天罡/弃) → 结束回合推进一格 → 相邻遭遇掷命特写。
+  // owner 大转向：实时 CR → 回合制桌游。每回合 +1 召唤源泉 → 三行为自由混(抽/打/换·源泉唯一门·机关门整套已退役) → 结束回合推进一格 → 相邻遭遇掷命特写。
   // 牌库由 prepareArmies 揭晓前编排(融天罡/干预/Boss·outcome-first)折成扑克兵库；先破敌 3 血大本营胜。结算复用旧养成闭环(命/材料/三选一)。
   function showTurnMatch(_formation: Formation, _myName: string, _interventions: Intervention[]): void {
     clear();

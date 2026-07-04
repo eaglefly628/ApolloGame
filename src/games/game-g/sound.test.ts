@@ -6,8 +6,8 @@ import { isSfxMuted, setSfxMuted } from './sfx.js';
 describe('Game G · 战斗音效（程序化合成 · 数据表 · 静默安全 · 全局静音同步）', () => {
   beforeEach(() => { try { localStorage.clear(); } catch { /* noop */ } });
 
-  it('战斗事件声音表齐备（放牌/抽牌/施法/翻门/对决/胜负…）', () => {
-    for (const ev of ['select', 'deploy', 'draw', 'cast', 'discard', 'gateOpen', 'gateClose', 'invalid', 'clashReveal', 'clashWin', 'clashLose', 'confirm', 'endTurn', 'victory', 'defeat'] as const) {
+  it('战斗事件声音表齐备（放牌/抽牌/施法/对决/胜负…）', () => {
+    for (const ev of ['select', 'deploy', 'draw', 'cast', 'discard', 'invalid', 'clashReveal', 'clashWin', 'clashLose', 'confirm', 'endTurn', 'victory', 'defeat'] as const) {
       expect(G_SFX[ev], ev).toBeDefined();
       expect(G_SFX[ev].partials.length, ev).toBeGreaterThan(0);
     }

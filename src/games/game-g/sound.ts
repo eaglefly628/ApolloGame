@@ -11,8 +11,6 @@ export const G_SFX = {
   draw: { partials: [{ noise: true, dur: 0.1, gain: 0.09 }, { wave: 'sine', freq: 430, freqTo: 770, dur: 0.12, gain: 0.12 }] }, // 抽牌·纸面掠起
   cast: { partials: [{ wave: 'triangle', freq: 523, dur: 0.18, gain: 0.13 }, { wave: 'triangle', freq: 659, at: 0.05, dur: 0.18, gain: 0.12 }, { wave: 'triangle', freq: 784, at: 0.1, dur: 0.2, gain: 0.12 }] }, // 施天罡·上行琶音
   discard: { partials: [{ noise: true, dur: 0.12, gain: 0.09 }, { wave: 'sine', freq: 400, freqTo: 200, dur: 0.14, gain: 0.11 }] }, // 弃牌·下沉
-  gateOpen: { partials: [{ noise: true, dur: 0.04, gain: 0.12 }, { wave: 'square', freq: 300, freqTo: 540, dur: 0.13, gain: 0.15 }] }, // 机关门开·机括上扬
-  gateClose: { partials: [{ noise: true, dur: 0.04, gain: 0.12 }, { wave: 'square', freq: 540, freqTo: 300, dur: 0.13, gain: 0.15 }] }, // 机关门闭·机括下落
   invalid: { partials: [{ wave: 'square', freq: 140, dur: 0.16, gain: 0.16 }, { wave: 'square', freq: 148, dur: 0.16, gain: 0.12 }] }, // 无效·低嗡
   clashReveal: { partials: [{ noise: true, dur: 0.09, gain: 0.22 }, { wave: 'triangle', freq: 95, freqTo: 70, dur: 0.16, gain: 0.2 }, { wave: 'square', freq: 220, freqTo: 140, dur: 0.1, gain: 0.08 }, { wave: 'sine', freq: 60, dur: 0.18, gain: 0.12 }] }, // 掷命揭晓·撞击(加金属泛音+低频冲击)
   clashWin: { partials: [{ wave: 'sine', freq: 880, dur: 0.13, gain: 0.17 }, { wave: 'sine', freq: 1320, at: 0.05, dur: 0.13, gain: 0.14 }, { wave: 'sine', freq: 1760, at: 0.1, dur: 0.14, gain: 0.1 }, { wave: 'triangle', freq: 660, dur: 0.08, gain: 0.06 }] }, // 本场我胜·亮叮(三和泛音·更亮)
