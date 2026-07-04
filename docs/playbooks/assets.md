@@ -37,3 +37,11 @@
 ## ⑤ 查不到怎么办
 
 共享库没有需要的素材 / spec 闭集缺字段 → `docs/workflow/requests.md` 提缺口，或让 `asset-manager` agent 评估导入。**不在游戏层绕开 index.json 自管资产。**
+
+## ⑥ 本地美术目录标准 · vendoring 落点（owner 2026-07-04）
+
+Free Library（共享 `assets/index.json` + `FreeArtLib/`）= **货架·只被 copy**；游戏运行时**只引自己的本地索引**，要用共享资源就 vendor 进本地、**不直引货架、也不直引全局散落目录**。
+- 本地根：`public/games/<game>/art/`；本地索引：`public/games/<game>/art/index.json`（站点绝对路径 `/games/<game>/art/...` + `baseUrl ''`，游戏侧 `registerAssetIndex(parseAssetIndex(local))` 直接消费）。
+- 分类子目录（约定）：`textures/`（贴图）· `models/`（mesh glb）· `materials/`（`type:'material'` 数据资产·无文件可省目录）· `env/`（天空盒 hdr）。3D 别混进 2D 平铺目录。
+- 工具：`node scripts/vendor-asset.mjs <shared-id> <game> [--as <local-id>]`（2D/3D 同一条·携 spec/license/`provenance.vendoredFrom`·幂等）。
+- 🚫 反例：游戏直引 `public/textures/` 等全局散落目录（绕过货架+本地索引）——正被 `REQ-PA-3D公用货架` ④b 消解。
