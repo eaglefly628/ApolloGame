@@ -1,5 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import { renderablePose, poseBounds, fitPerspective, mesh3dDepth, mesh3dBatchKey, flipEuler, faceDown, rayAabbT, type Pose3D } from './three-projection.js';
+// 注：新图元几何本身（cylinder/cone/capsule/torus）走 three 内建，需 WebGL 无法 headless 测；此处测其纯函数派生（批签名/包围深度）。
 import type { Renderable } from './renderable.js';
 
 const R = (o: Partial<Renderable>): Renderable => ({
@@ -82,6 +83,21 @@ describe('three-projection — Mesh3D（3D 物件即数据）几何/翻面纯函
     expect(faceDown(Math.PI * 2)).toBe(false);
     expect(faceDown(-Math.PI)).toBe(true); // 归一到 π
     expect(faceDown(0.3)).toBe(false);
+  });
+});
+
+describe('圆润图元（cylinder/cone/capsule/torus）批签名 + 包围深度', () => {
+  const K = (shape: 'cylinder' | 'cone' | 'capsule' | 'torus') => mesh3dBatchKey({ shape, width: 6, height: 8, frontTint: 0x66bb6a });
+  it('各图元批签名含 shape+尺寸+色（同款同批·异款分批）', () => {
+    expect(K('cylinder')).toBe('cylinder|6|8|6732650');
+    expect(K('cone')).toBe('cone|6|8|6732650');
+    expect(K('cylinder')).not.toBe(K('cone')); // 形不同 → 分批
+    expect(K('capsule')).not.toBe(K('torus'));
+    // 同款同尺寸同色 → 同批（可实例化 1 draw call）
+    expect(mesh3dBatchKey({ shape: 'cone', width: 6, height: 8, frontTint: 0x66bb6a })).toBe(K('cone'));
+  });
+  it('包围深度以直径(width)计（相机取景/包围用）', () => {
+    for (const s of ['cylinder', 'cone', 'capsule', 'torus'] as const) expect(mesh3dDepth(s, 6, 8)).toBe(6);
   });
 });
 

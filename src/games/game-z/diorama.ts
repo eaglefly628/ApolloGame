@@ -182,6 +182,13 @@ export function dioramaBlueprint(): WorldBlueprint {
       // 材质铺陈：草地色 matte + 程序化起伏浮雕（noise·大 tiles 铺满大地面）→ 掠光下有草皮质感·不再纯平板。
       ground: { ...block(0, -2.5, 0, 160, 5, 160, 0x7cb342, 0x5d4037), Material3D: { preset: 'matte', color: 0x7cb342, surface: { pattern: 'noise', tiles: 16, normal: 0.7, rough: 0.55, scale: 1.5 } } },
 
+      // 🧱 图元展示（REQ-3D 图元补全 ②）：cylinder/cone/capsule/torus 四种 three 内建圆润图元（render-only·单材质）。
+      // 摆南侧一排·各挂 Material3D 上色·证明新 shape 端到端渲染（几何/实例化/PBR 三路共用 roundGeo）。
+      'prim-cylinder': { Transform3D: { x: -22, y: 4, z: 46 }, Mesh3D: { shape: 'cylinder', width: 6, height: 8, frontTint: 0x66bb6a }, Material3D: { preset: 'plastic', color: 0x66bb6a } },
+      'prim-cone': { Transform3D: { x: -8, y: 4.5, z: 46 }, Mesh3D: { shape: 'cone', width: 7, height: 9, frontTint: 0xffa726 }, Material3D: { preset: 'plastic', color: 0xffa726 } },
+      'prim-capsule': { Transform3D: { x: 6, y: 5.5, z: 46 }, Mesh3D: { shape: 'capsule', width: 5, height: 11, frontTint: 0x42a5f5 }, Material3D: { preset: 'plastic', color: 0x42a5f5 } },
+      'prim-torus': { Transform3D: { x: 20, y: 5, z: 46, rotX: 1.2 }, Mesh3D: { shape: 'torus', width: 9, height: 9, frontTint: 0xffd54f, tube: 0.35 }, Material3D: { preset: 'gold' } },
+
       // 北侧 PBR 材质陈列台（材质球·大字标名·调试面板「🔬 看材质」一键看）。
       ...materialBoard(),
     },

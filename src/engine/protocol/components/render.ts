@@ -47,10 +47,12 @@ export interface VoxelTex {
 
 export interface Mesh3D extends Component {
   readonly type: 'Mesh3D';
-  shape: 'box' | 'plane' | 'sphere'; // box=有厚度、正反两面可分色；plane=双面薄片（单色）；sphere=球（单色·material 球/星体）
-  width: number; // 物体宽（世界单位，与 Transform.x/y 同尺；相机自适配取景）。sphere：直径
-  height: number; // 物体高。sphere：忽略（取 width 作直径·正球）
-  depth?: number; // box 厚度；缺省=短边*薄板比（下限 1）。plane/sphere 忽略
+  // box=有厚度·正反两面可分色；plane=双面薄片（单色）；sphere/cylinder/cone/capsule/torus=圆润单材质图元（three 内建·单色）。
+  shape: 'box' | 'plane' | 'sphere' | 'cylinder' | 'cone' | 'capsule' | 'torus';
+  width: number; // 物体宽（世界单位，与 Transform.x/y 同尺；相机自适配取景）。sphere/cylinder/cone/capsule/torus：直径
+  height: number; // 物体高。sphere：忽略（取 width 作直径·正球）；cylinder/cone/capsule：柱/锥高；torus：忽略
+  depth?: number; // box 厚度；缺省=短边*薄板比（下限 1）。plane/圆润图元忽略
+  tube?: number; // torus 专用·管半径占主半径的比例（缺省 0.35）；其它图元忽略
   frontTint: number; // 正面(+z)色 0xRRGGBB
   backTint?: number; // 反面(-z)色；缺省=frontTint
   edgeTint?: number; // box 四边色；缺省深灰

@@ -76,20 +76,24 @@ export function fitPerspective(b: Bounds2D, fovDeg: number, aspect: number, pad 
 // ── Mesh3D（3D 物件即数据）几何/翻面的纯推导（无 three / 无 WebGL → node 可测）──────────────
 
 // box 厚度：plane 无厚度(0)；box 缺省=短边*ratio 的薄板（下限 1），显式 depth 则透传。
-export function mesh3dDepth(shape: 'box' | 'plane' | 'sphere', width: number, height: number, depth?: number, ratio = 0.05): number {
+type MeshShape = 'box' | 'plane' | 'sphere' | 'cylinder' | 'cone' | 'capsule' | 'torus';
+const ROUND_SHAPES: ReadonlySet<string> = new Set(['sphere', 'cylinder', 'cone', 'capsule', 'torus']); // 圆润单材质图元
+
+export function mesh3dDepth(shape: MeshShape, width: number, height: number, depth?: number, ratio = 0.05): number {
   if (shape === 'plane') return 0;
-  if (shape === 'sphere') return width; // 球：直径（批签名/包围用·非真厚度）
+  if (ROUND_SHAPES.has(shape)) return width; // 圆润图元：以直径作包围深度（批签名/相机取景用·非真厚度）
   return depth ?? Math.max(1, Math.min(width, height) * ratio);
 }
 
 // W1-A 实例化绘制：Mesh3D 的「视觉签名」——同签名的多实体可合进一个 InstancedMesh（1 draw call）。
 // 含 shape + 尺寸 + 逐面色（色烤进几何 vertexColors，故色不同=不同几何=不同批）。纯函数（node 可测）。
 export function mesh3dBatchKey(m: {
-  shape: 'box' | 'plane' | 'sphere'; width: number; height: number; depth?: number;
+  shape: MeshShape; width: number; height: number; depth?: number;
   frontTint: number; backTint?: number; edgeTint?: number;
 }): string {
   if (m.shape === 'plane') return `plane|${m.width}|${m.height}|${m.frontTint}`;
-  if (m.shape === 'sphere') return `sphere|${m.width}|${m.frontTint}`; // 同直径同色 → 一批
+  if (m.shape === 'sphere') return `sphere|${m.width}|${m.frontTint}`; // 球：直径决定（height 忽略）→ 同直径同色一批
+  if (ROUND_SHAPES.has(m.shape)) return `${m.shape}|${m.width}|${m.height}|${m.frontTint}`; // 柱/锥/胶囊/环：形+直径+高+色 → 一批
   const depth = mesh3dDepth('box', m.width, m.height, m.depth);
   return `box|${m.width}|${m.height}|${depth}|${m.frontTint}|${m.backTint ?? m.frontTint}|${m.edgeTint ?? 0x1f2937}`;
 }
