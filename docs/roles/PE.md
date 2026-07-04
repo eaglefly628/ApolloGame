@@ -15,7 +15,7 @@
 2. 本游戏 handoff / finish-list（下方实名）
 3. 本游戏 GDD + capability-plan（`docs/design/<game>/**`）
 
-**现有游戏清单（`docs/workflow/finish/`）**：`PF-derot-plan.md`（game-f 去腐）·`PG-SESSION-HANDOFF.md`·`PG-finish-list.md`·`PG-game-g-ui-handoff.md`·`game-g-combat-derot-worklist.md`。另 `docs/workflow/HANDOFF-game-g-ui-port.md`。
+**现有游戏清单（`docs/workflow/finish/`）**：`PF-derot-plan.md`（game-f 去腐）·`PG-SESSION-HANDOFF.md`·`PG-finish-list.md`·`PG-game-g-ui-handoff.md`·`game-g-combat-derot-worklist.md`。
 
 ## 3. 技能与工具
 
