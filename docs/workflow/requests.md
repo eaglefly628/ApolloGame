@@ -74,6 +74,11 @@
 > - REQ-UI-Label深色令牌(ink) · [2026-07-01] · P3D → 主程 · status: **✅ done（随 web字体批 2026-07-02 落地·2026-07-04 结案归档；game-d 切换活并入 REQ-GAMED）** · 类型: UI 库闭集扩容
 > - REQ-G-Boss-AI · [2026-06-21] · design G → 甲 · status: **✅ 实装+sim验证（2026-06-23）·结案归档 2026-07-04（活尾由 Player-AI 单 + design G 标定线接管）** · 类型: 真缺口（已闭合）
 > - REQ-BASE-引擎卫生三件（tray 补注册+守护测试 / Card3D 清遗 / view.ts 死码删）· [2026-07-03] · 主程 → 指派：Opus · status: **✅ done（2026-07-03·Opus）** · 归档 2026-07-04（自粘连行拆出）
+
+### REQ-DOCS-指针守护脚本 · 角色卡/手册/白皮书引用的路径·脚本名·agent 名自动核真 · [2026-07-04] · 主程（CCGS 参考 §七 裁决） · status: **排队（指派：Opus·low 档·非紧急）** · 类型: 防口径漂移基建
+> 源起：CCGS skill 测试框架思想采纳（`wiki/skills/reference-claude-game-studios.md §七`）——工作流零件也要可测。capability 层已有 `registry-guard.test.ts`，文档层缺同款。
+> **spec（Lead 图纸）**：`scripts/docs-ref-guard.mjs` 进 vitest：扫 `docs/roles/**` + `docs/playbooks/**` 里的 ①反引号包裹的 `docs/`/`src/`/`scripts/` 路径（存在性）②`scripts/*.mjs|py|sh` 脚本名（存在性）③agent 名（对照 `.claude/agents/*.md`）。白名单机制放行有意的示例路径（如模板占位符）。红=指哪个文件哪一行断了。本次角色卡验收人肉核了 58 处，固化成机器活。
+
 ### REQ-G-即时法术/功能牌（对场上牌使用·补策略深度） · [2026-06-29] · owner 试玩后设计反思 → 战斗/design G 域 · status: **open（大方向·owner 说「先记录·暂不实现」）** · 类型: 核心玩法扩展（新通用能力·非重组）
 > **owner 观察**：现在**没有一张牌是「针对场上局面、主动打出去影响某个目标」**的——天罡全是「打出后整场被动加成」，地煞是 Boss 专属被动。缺「即时·指定目标·改变战场」的牌。owner 直觉：**「功能牌 > 战斗牌」**才是好玩的深度来源（纯拼战力天花板低）。owner「先暂时这样吧」→ **只记录·暂不实现**。
 >

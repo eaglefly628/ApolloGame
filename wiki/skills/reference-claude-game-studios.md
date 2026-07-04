@@ -1,7 +1,9 @@
 # 技术参考：Claude Code Game Studios 模式分析
 
 > **来源**: https://github.com/Donchitos/Claude-Code-Game-Studios
+> **源料入库**: `docs/ref/CCGS Skill Testing Framework/`（owner 2026-07-04 投放·自包含·勿入任何 onboarding 阅读路径）
 > **用途**: 作为 Apollo Engine 开发流程的技术参考，取其精华
+> **§一~五**=2026-06-05 首轮分析（行动项现状注记见 §五头）；**§六~七**=2026-07-04 全量清单对照 + 测试框架裁决。
 
 ---
 
@@ -152,6 +154,8 @@ Tier 3 — 专员（Sonnet/Haiku）
 
 ## 五、建议的 Apollo 行动项
 
+> **现状注记（2026-07-04·主程）**：本节多数已兑现——hook 已配（UserPromptSubmit 复诵规则+手册铁律）、门禁=铁律（tsc/vitest/build 退出码）、session 模板=角色启动协议（`docs/roles/index.md`）、路径规则=CLAUDE.md 域边界、code-review=Lead 对抗性验收流。未做且不打算做：statusline（低价值）。
+
 按优先级排序：
 
 ### P0 — 立即可做
@@ -168,4 +172,49 @@ Tier 3 — 专员（Sonnet/Haiku）
 
 ---
 
-*分析时间: 2026-06-05 · 供主程参考*
+## 六、CCGS 全量 Skill/Agent 清单 × Apollo 对照（游戏工作室常用能力谱系）
+
+> 源料 `docs/ref/CCGS Skill Testing Framework/catalog.yaml`（机读登记表·72 skill + 49 agent）。
+> 裁决口径：✅=Apollo 已覆盖（形态可以不同）· 🔶=真缺口/值得排队 · ❌=不适用（多因「他们的游戏是代码、我们的游戏是数据」）。
+
+### Skills 72 个（9 类）
+
+| CCGS 类 | 成员 | Apollo 对应物 | 裁决 |
+|---|---|---|---|
+| **gate** (1) | gate-check | 门禁铁律（tsc/vitest/build 退出码）+ UserPromptSubmit hook + `game-skill-audit` 红旗 | ✅ hook+铁律形态 |
+| **review** (3) | design-review · architecture-review · review-all-gdds | Lead 亲审 + requests.md 裁决流（回驳/下沉）+ capability-plan 过审门 | ✅ Lead=人形 review |
+| **readiness** (2) | story-readiness · story-done | capability-plan 未过审不动工 + 工单完成标 ✅ + 对抗性验收 | ✅ 按工单不按 story |
+| **pipeline** (6) | create-epics · create-stories · dev-story · create-control-manifest · propagate-design-change · map-systems | requests.md 派单+spec 图纸；map-systems≈`buildCapabilityCatalog()`；propagate-design-change≈机读真相铁律（指针优先·不手抄数字→变更无需"传播"） | ✅ 防漂移从根上消掉传播问题 |
+| **authoring** (7) | design-system · quick-design · architecture-decision · ux-design · ux-review · art-bible · create-architecture | GDD/capability-plan 模板；ux≈`ui-playbook`+`/check-ui`；architecture-decision≈评审报告存档 | 🔶 **art-bible（美术圣经）无**——资产风格一致性现靠 asset-index 元数据；PA 线资产量上来后补（排队·不急） |
+| **analysis** (12) | consistency-check · code-review · balance-check · asset-audit · content-audit · tech-debt · scope-check · estimate · perf-profile · security-audit · test-evidence-review · test-flakiness | balance-check≈`game-d-balance-sim.mjs`+`game-g/simulate-balance.ts`；perf-profile≈ApolloBench 五轴；consistency-check≈机读真相；tech-debt≈底座评审报告；asset-audit≈asset-index 单一真相；test-flakiness→确定性引擎天然免疫 | ✅ 核心已覆盖；scope-check/estimate=owner 直管不套仪式 |
+| **sprint** (6) | sprint-plan · sprint-status · milestone-review · retrospective · changelog · patch-notes | 无 sprint 仪式（owner 直驱 + requests.md 池）；复盘=问责定性（只问手册哪没接住） | ❌ 团队形态不同；**changelog/patch-notes 留给 PS 发行期**（白皮书补全时收编） |
+| **team** (9) | team-combat · team-narrative · team-audio · team-level · team-ui · team-qa · team-release · team-polish · team-live-ops | ≈我们的 8 角色名录（combat→甲 · ui→PE+主程UI库 · level→GD · release→PS）；audio/narrative/qa/polish/live-ops 未设专职 | ✅ 角色体系对应；空缺角色到需求出现再立（YAGNI） |
+| **utility** (26) | skill-test · skill-improve · start · help · brainstorm · project-stage-detect · setup-engine · reverse-document · bug-report · hotfix · prototype · playtest-report · onboard · localize · launch-checklist · release-checklist · adopt · smoke-check · soak-test · test-setup · test-helpers · regression-suite · qa-plan · bug-triage · asset-spec · day-one-patch | onboard≈`llm-onboarding.md`；prototype≈创作台设计先行流；bug-report/triage≈requests.md BUG-单；smoke-check≈各 smoke/e2e 脚本；regression-suite≈vitest 全量；asset-spec≈asset-index spec 元数据 | ✅ 大半覆盖；🔶 **skill-test/skill-improve 见 §七**；launch/release-checklist 留 PS 白皮书；localize 未到阶段 |
+
+### Agents 49 个（7 层）
+
+| CCGS 层 | 成员概要 | Apollo 对照 | 裁决 |
+|---|---|---|---|
+| director (4) | creative/technical/art-director · producer | owner（创意+制作人）+ LEAD（技术） | ✅ 人少即扁平 |
+| lead (7) | lead-programmer · qa-lead · narrative/audio-director · game/systems/level-designer | 角色名录 8 员（LEAD/GD/PE/P3D/PS/PA/PST/OPS） | ✅ `docs/roles/index.md` |
+| specialist (13) | gameplay/ai/network-programmer · technical-artist · ux-designer · prototyper · writer… | 按需派 Opus 子代理（requests.md「指派：Opus」+ spec 图纸），不养常驻专员 | ✅ 派单制更省 |
+| engine (15) | godot×5 · unity×5 · unreal×5 | **不适用**——自研引擎；这 15 员是「游戏=代码」路线的适配成本，正是我们数据驱动省掉的 | ❌ 反面印证宪法 |
+| qa (3) | security-engineer · accessibility-specialist · qa-tester | 无专职；确定性+全量测试兜底 | ❌ 现阶段 YAGNI；无障碍留 PS 上架清单 |
+| operations (7) | devops · release-manager · live-ops-designer · community-manager · analytics-engineer · economy-designer · localization-lead | release≈PS+game-publisher agent；economy-designer≈GD 数值案+sim | ✅/❌ 发行相关归 PS，运营类未到阶段 |
+
+**一句话结论**：CCGS 的 121 员编制里，Apollo 用「8 角色 + 派单制子代理 + 铁律/hook」覆盖了所有当前需要的位置；他们最大的成本项（15 个引擎适配专员 + sprint 仪式层）恰是数据驱动宪法从根上砍掉的。真缺口只有两个半：**art-bible（排队）**、**skill 自测框架（§七·采思想不采全套）**、changelog/patch-notes（半个·PS 发行期收编）。
+
+---
+
+## 七、CCGS Skill 测试框架（2026-07-04 新料）· 采纳裁决
+
+**他们做了什么**：给 73 个 skill、49 个 agent **本身**写行为 spec（`catalog.yaml` 主登记 + 每员一份 spec：静态结构断言 + 5 个测试用例 + 协议合规检查 + 分类质量 rubric），用 `/skill-test static|category|spec` 三档跑——**测的是工作流零件，不是游戏**。
+
+**裁决（主程 2026-07-04）**：
+- ✅ **思想采纳——"工作流零件也要可测"与我们已有实践同构**：capability 层已有 `registry-guard.test.ts`（漏注册即红）；手册层已有「手册对产出负全责·绕基座=手册缺陷」问责闭环。
+- 🔶 **轻量落地（排队·low 档活）**：给三层工作流件配"指针有效性守护"——角色卡/手册/白皮书里引用的**路径、脚本名、agent 名**用脚本核一遍（本次角色卡验收已人肉核过 58 处，该固化成 `scripts/docs-ref-guard.mjs` 进 vitest）。防的正是我们最大的病：口径漂移。
+- ❌ **不采全套**：为 2 个 .claude/skill + 2 个 agent 建 catalog.yaml + 行为 spec 体系=杀鸡用牛刀；我们的 skill 面小、且真相已机读（registry/roles/playbooks 三张索引就是 catalog）。等 skill 数量上两位数再议。
+
+---
+
+*首轮分析: 2026-06-05 · 清单对照与测试框架裁决: 2026-07-04 · 供主程参考*

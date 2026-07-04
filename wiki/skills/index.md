@@ -35,7 +35,7 @@
 
 | 参考 | 内容 | 触发场景 | 路径 |
 |------|------|---------|------|
-| Claude Game Studios | Hook/Rules/Agent/Skill 工作流模式 | 改进开发流程/加 hook/加 slash command | wiki/skills/reference-claude-game-studios.md |
+| Claude Game Studios | Hook/Rules/Agent/Skill 工作流模式 + **72 skill/49 agent 全量对照清单（§六）+ skill 自测框架裁决（§七）** | 改进开发流程/立新角色/加 skill 前先查有无先例 | wiki/skills/reference-claude-game-studios.md（源料 `docs/ref/`） |
 
 ## 使用规则
 
