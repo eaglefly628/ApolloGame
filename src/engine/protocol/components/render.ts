@@ -283,6 +283,12 @@ export interface Material3D extends Component {
   normalMap?: string; // 法线贴图（线性）
   roughnessMap?: string; // 粗糙度贴图（线性）
   aoMap?: string; // 环境光遮蔽贴图（线性）
+  // REQ-3D 贴图槽补齐 ④（render-only·= texture 资产 id）：
+  metalnessMap?: string; // 金属度贴图（线性）
+  emissiveMap?: string; // 自发光贴图（sRGB·= texture 资产 id·配 emissive 色 + emissiveIntensity）
+  ormMap?: string; // ORM 打包图（一图三通道 R=AO/G=Roughness/B=Metalness·线性）→ 同图挂 ao/rough/metal 三槽（three 惯例）；显式单图覆盖对应通道
+  // UV 平铺（render-only）：repeat=各轴重复次数（缺省 1）；offset=[x,y] UV 偏移。作用于本材质所有贴图槽。
+  tiling?: { repeat?: number; offset?: readonly [number, number] };
 }
 
 // 程序化表面细节（render-only·TA Phase 5）：渲染器据参数生成 normal + roughness 贴图（DataTexture）—— **不需美术贴图文件**，

@@ -70,4 +70,27 @@ describe('REQ-Resource ④ 材质数据资产（applyMaterialRef）', () => {
     const mat: Material3D = { type: 'Material3D', preset: 'steel', materialRef: 'mat/missing' };
     expect(applyMaterialRef(mat, undefined)).toBe(mat);
   });
+
+  it('新贴图槽（metalness/emissive/orm）经 spec 合成', () => {
+    const s: MaterialSpec = { preset: 'steel', metalnessMap: 'tex/m', emissiveMap: 'tex/e', ormMap: 'tex/orm' };
+    const eff = applyMaterialRef({ type: 'Material3D', preset: 'matte', materialRef: 'mat/x' }, s);
+    expect(eff.metalnessMap).toBe('tex/m');
+    expect(eff.emissiveMap).toBe('tex/e');
+    expect(eff.ormMap).toBe('tex/orm');
+  });
+});
+
+describe('REQ-3D ④ 贴图槽补齐 pbrSig（新槽 + tiling 进签名）', () => {
+  const base: Material3D = { type: 'Material3D', preset: 'steel' };
+  it('metalness/emissive/orm map key 变 → 签名变（重建）', () => {
+    expect(pbrSig(mesh(), base)).not.toBe(pbrSig(mesh(), { ...base, metalnessMap: 'tex/m' }));
+    expect(pbrSig(mesh(), base)).not.toBe(pbrSig(mesh(), { ...base, emissiveMap: 'tex/e' }));
+    expect(pbrSig(mesh(), base)).not.toBe(pbrSig(mesh(), { ...base, ormMap: 'tex/orm' }));
+  });
+  it('tiling 变 → 签名变（同图不同平铺 → 各自重建）', () => {
+    const t1: Material3D = { ...base, map: 'tex/a', tiling: { repeat: 2 } };
+    const t2: Material3D = { ...base, map: 'tex/a', tiling: { repeat: 4 } };
+    expect(pbrSig(mesh(), t1)).not.toBe(pbrSig(mesh(), t2));
+    expect(pbrSig(mesh(), t1)).not.toBe(pbrSig(mesh(), { ...base, map: 'tex/a' })); // 有无 tiling 也不同
+  });
 });

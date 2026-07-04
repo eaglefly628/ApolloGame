@@ -609,7 +609,7 @@ export class ThreeRenderer implements RendererBackend {
     const eff = mat.materialRef ? applyMaterialRef(mat, this.materials?.get(mat.materialRef)) : mat;
     const maps = this.resolvePbrMaps(eff); // REQ-Resource ①：按 key 取真实贴图（色彩空间按用途设）
     // 贴图就绪态并入 mode：异步贴图从未就绪→就绪时 mode 变 → 重建 mesh 挂上图（同 sprite 异步先例）。
-    const mode = `${pbrSig(m, eff)}|${maps.map ? 'M' : ''}${maps.normalMap ? 'N' : ''}${maps.roughnessMap ? 'R' : ''}${maps.aoMap ? 'A' : ''}`;
+    const mode = `${pbrSig(m, eff)}|${maps.map ? 'M' : ''}${maps.normalMap ? 'N' : ''}${maps.roughnessMap ? 'R' : ''}${maps.aoMap ? 'A' : ''}${maps.metalnessMap ? 'E' : ''}${maps.emissiveMap ? 'G' : ''}${maps.ormMap ? 'O' : ''}`;
     const prev = this.meshes.get(r.entityId);
     if (prev && this.modeOf.get(r.entityId) === mode) return prev;
     if (prev) { this.scene.remove(prev); disposeMesh(prev); }
@@ -623,27 +623,34 @@ export class ThreeRenderer implements RendererBackend {
   // 解析 Material3D 的真实贴图 key → THREE.Texture（**色彩空间按材质槽位定**：map=albedo→sRGB·normal/roughness/ao→线性）。
   private resolvePbrMaps(mat: Material3D): PbrMaps {
     const maps: PbrMaps = {};
-    if (mat.map) { const t = this.pbrMapTexture(mat.map, true); if (t) maps.map = t; }
-    if (mat.normalMap) { const t = this.pbrMapTexture(mat.normalMap, false); if (t) maps.normalMap = t; }
-    if (mat.roughnessMap) { const t = this.pbrMapTexture(mat.roughnessMap, false); if (t) maps.roughnessMap = t; }
-    if (mat.aoMap) { const t = this.pbrMapTexture(mat.aoMap, false); if (t) maps.aoMap = t; }
+    const tl = mat.tiling; // 平铺作用于本材质所有贴图槽
+    if (mat.map) { const t = this.pbrMapTexture(mat.map, true, tl); if (t) maps.map = t; }
+    if (mat.normalMap) { const t = this.pbrMapTexture(mat.normalMap, false, tl); if (t) maps.normalMap = t; }
+    if (mat.roughnessMap) { const t = this.pbrMapTexture(mat.roughnessMap, false, tl); if (t) maps.roughnessMap = t; }
+    if (mat.aoMap) { const t = this.pbrMapTexture(mat.aoMap, false, tl); if (t) maps.aoMap = t; }
+    if (mat.metalnessMap) { const t = this.pbrMapTexture(mat.metalnessMap, false, tl); if (t) maps.metalnessMap = t; } // 金属度·线性
+    if (mat.emissiveMap) { const t = this.pbrMapTexture(mat.emissiveMap, true, tl); if (t) maps.emissiveMap = t; } // 自发光·sRGB（颜色）
+    if (mat.ormMap) { const t = this.pbrMapTexture(mat.ormMap, false, tl); if (t) maps.ormMap = t; } // ORM 打包·线性
     return maps;
   }
 
   // 材质整图贴图（区别 spriteTexture 的 atlas 子矩形）：整张图 + RepeatWrapping + 色彩空间。按 key+cs 缓存·未就绪 null。
   // 色彩空间（REQ-Resource ③）：索引 `spec.colorSpace`（→ TextureDescriptor.colorSpace）优先于槽位默认 `srgbDefault`
   // ——供作者对特殊贴图（如线性反照率、sRGB 数据图）显式覆盖；缺省仍按槽位（albedo=sRGB·法线/粗糙/AO=线性）。
-  private pbrMapTexture(key: string, srgbDefault: boolean): THREE.Texture | null {
+  private pbrMapTexture(key: string, srgbDefault: boolean, tiling?: Material3D['tiling']): THREE.Texture | null {
     const res = this.assets?.get(key);
     if (!res || !isImageHandle(res.handle)) return null;
     const decl = (res.descriptor as { colorSpace?: 'srgb' | 'linear' }).colorSpace;
     const srgb = decl ? decl === 'srgb' : srgbDefault;
-    const ck = `pm:${key}:${srgb ? 's' : 'l'}`;
+    const rep = tiling?.repeat ?? 1, ox = tiling?.offset?.[0] ?? 0, oy = tiling?.offset?.[1] ?? 0;
+    const ck = `pm:${key}:${srgb ? 's' : 'l'}:${rep}:${ox}:${oy}`; // tiling 进缓存键（同图不同平铺 → 各自实例·避免共享 repeat 冲突）
     const hit = this.texCache.get(ck);
     if (hit) return hit;
     const tex = new THREE.Texture(res.handle.image as TexImageSource);
-    tex.colorSpace = srgb ? THREE.SRGBColorSpace : THREE.NoColorSpace; // 法线/粗糙必须线性·反照率 sRGB
+    tex.colorSpace = srgb ? THREE.SRGBColorSpace : THREE.NoColorSpace; // 法线/粗糙/金属/ORM 线性·反照率/自发光 sRGB
     tex.wrapS = tex.wrapT = THREE.RepeatWrapping;
+    tex.repeat.set(rep, rep);
+    tex.offset.set(ox, oy);
     tex.needsUpdate = true;
     this.texCache.set(ck, tex);
     return tex;

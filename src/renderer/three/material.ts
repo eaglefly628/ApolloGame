@@ -16,6 +16,9 @@ export interface PbrMaps {
   normalMap?: THREE.Texture; // 线性
   roughnessMap?: THREE.Texture; // 线性
   aoMap?: THREE.Texture; // 线性
+  metalnessMap?: THREE.Texture; // 线性（REQ-3D ④）
+  emissiveMap?: THREE.Texture; // sRGB（REQ-3D ④）
+  ormMap?: THREE.Texture; // 打包图·线性（REQ-3D ④·同图挂 ao/rough/metal 三槽）
 }
 
 // REQ-Resource ④：材质数据资产（MaterialSpec）→ 合成有效 Material3D。
@@ -36,6 +39,10 @@ export function applyMaterialRef(mat: Material3D, spec: MaterialSpec | undefined
     normalMap: mat.normalMap ?? spec.normalMap,
     roughnessMap: mat.roughnessMap ?? spec.roughnessMap,
     aoMap: mat.aoMap ?? spec.aoMap,
+    metalnessMap: mat.metalnessMap ?? spec.metalnessMap,
+    emissiveMap: mat.emissiveMap ?? spec.emissiveMap,
+    ormMap: mat.ormMap ?? spec.ormMap,
+    tiling: mat.tiling,
     materialRef: mat.materialRef,
   };
 }
@@ -62,8 +69,11 @@ export function buildPbrMaterial(def: PbrMaterialDef, surface?: SurfaceDetail, m
   if (maps) { // 真实贴图覆盖程序化（显式优先）
     if (maps.map) { m.map = maps.map; m.color.setHex(0xffffff); } // albedo 图供色 → 基色置白·免二次染色（PBR 惯例）
     if (maps.normalMap) { m.normalMap = maps.normalMap; m.normalScale = new THREE.Vector2(1, 1); }
-    if (maps.roughnessMap) m.roughnessMap = maps.roughnessMap;
+    if (maps.ormMap) { m.aoMap = maps.ormMap; m.roughnessMap = maps.ormMap; m.metalnessMap = maps.ormMap; m.roughness = 1; m.metalness = 1; } // 打包图先挂三槽（three 读 R/G/B）·系数置 1 让贴图主导
+    if (maps.roughnessMap) m.roughnessMap = maps.roughnessMap; // 显式单图覆盖 ORM 对应通道
+    if (maps.metalnessMap) { m.metalnessMap = maps.metalnessMap; m.metalness = 1; }
     if (maps.aoMap) m.aoMap = maps.aoMap;
+    if (maps.emissiveMap) { m.emissiveMap = maps.emissiveMap; m.emissive.setHex(0xffffff); m.emissiveIntensity = def.emissiveIntensity ?? 1; } // 自发光贴图需基色非黑才显 → 置白·贴图供色
     m.needsUpdate = true;
   }
   return m;
@@ -76,8 +86,8 @@ export function buildPbrMesh3D(m: Mesh3D, mat: Material3D, maps?: PbrMaps): THRE
   const geo = rg ?? (m.shape === 'plane'
     ? new THREE.PlaneGeometry(m.width, m.height)
     : new THREE.BoxGeometry(m.width, m.height, m.depth ?? m.width));
-  if (maps?.aoMap && geo.attributes['uv'] && !geo.attributes['uv2']) {
-    geo.setAttribute('uv2', geo.attributes['uv']!); // aoMap 走第二套 UV·盒/球无 uv2 → 复用 uv
+  if ((maps?.aoMap || maps?.ormMap) && geo.attributes['uv'] && !geo.attributes['uv2']) {
+    geo.setAttribute('uv2', geo.attributes['uv']!); // aoMap/ORM 的 AO 通道走第二套 UV·盒/球无 uv2 → 复用 uv
   }
   const mesh = new THREE.Mesh(geo, buildPbrMaterial(def, mat.surface, maps));
   mesh.castShadow = true;
@@ -89,6 +99,7 @@ export function buildPbrMesh3D(m: Mesh3D, mat: Material3D, maps?: PbrMaps): THRE
 export function pbrSig(m: Mesh3D, mat: Material3D): string {
   const s = mat.surface;
   const ss = s ? `${s.pattern}.${s.tiles ?? ''}.${s.normal ?? ''}.${s.rough ?? ''}.${s.scale ?? ''}` : '';
-  const mk = `${mat.map ?? ''}.${mat.normalMap ?? ''}.${mat.roughnessMap ?? ''}.${mat.aoMap ?? ''}`;
-  return `pbr|${mat.preset}|${mat.color ?? ''}|${mat.roughness ?? ''}|${mat.metalness ?? ''}|${mat.emissive ?? ''}|${m.shape}|${m.width}|${m.height}|${m.depth ?? ''}|${ss}|${mk}`;
+  const mk = `${mat.map ?? ''}.${mat.normalMap ?? ''}.${mat.roughnessMap ?? ''}.${mat.aoMap ?? ''}.${mat.metalnessMap ?? ''}.${mat.emissiveMap ?? ''}.${mat.ormMap ?? ''}`;
+  const tl = mat.tiling ? `${mat.tiling.repeat ?? ''}.${mat.tiling.offset?.[0] ?? ''}.${mat.tiling.offset?.[1] ?? ''}` : '';
+  return `pbr|${mat.preset}|${mat.color ?? ''}|${mat.roughness ?? ''}|${mat.metalness ?? ''}|${mat.emissive ?? ''}|${m.shape}|${m.width}|${m.height}|${m.depth ?? ''}|${ss}|${mk}|${tl}`;
 }
