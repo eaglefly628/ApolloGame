@@ -11,6 +11,19 @@
 
 ## 待处理 / 进行中
 
+### REQ-PUBLISH-创作台一键发布 · player 模式内「打包→上传 Steam」一键流水线 · [2026-07-04] · owner 口头指派 → PS 转呈（跨 PS↔PST 域） · status: **open（待 Lead 裁域切分 + 派工）** · 优先级: P2（产品体验·非阻塞） · 类型: 产品化·发行管线接入创作台（后端多已存在·主要是接线）
+> **源起**：owner 2026-07-04：创作台 **player 模式**下把发布按钮/路口接好——一键打包、填自己的 Steam ID/AppID，让用户「一条流水线产出游戏」。**范围裁决（owner 当面答 PS 二选）**：① 承载面 = **创作台 player 模式（网页）**；② 深度 = **尽量一路到 Steam 上传**（能自动的自动到 steamcmd upload 为止）。
+>
+> **后端多已存在（接线，非造轮子）**：`steam-publisher/serve.py`（HTTP API：配置→build 裸目录→生成 VDF→steamcmd 上传·含实时日志轮询）、`scripts/dist.py`（打包菜单）、`electron-builder.yml`、平台接线（成就/云/富状态）均就绪。缺的是①把它接进 studio player 模式 UI ②一条 studio 能稳定调的发布 API。
+>
+> **PS 提议域切分（请 Lead 裁）**：
+> - **PST 域（UI）**：player 模式内「发布」区——选游戏/平台、填 AppID/DepotID/builder 账号（=用户 Steam ID）、进度与日志展示。走 studio 现有 React 产品面（非游戏 UI 铁律范畴）。
+> - **PS 域（管线契约）**：提供 studio 可调的稳定发布 API/CLI：`package(game,platforms)`→`genVDF(appId,depots)`→`upload(builder)`，带进度/日志流。由现有 `steam-publisher/serve.py` 端点收敛/硬化而来（apollo.py 转发 或 studio 直连本地端口）。= PS 施工物。
+>
+> **必须显式标给用户的「不能自动」三步（architect 诚实·Valve 无 API）**：① 用户自己的 $100 合作伙伴账号 + 真 AppID/DepotID；② 本机装 steamcmd + 首次缓存登录（Steam Guard 令牌需终端手输一次）；③ 上传后后台 **Set Live**（防误推线上·故意手动）。故「一路到 Steam」= 自动到 upload 为止 + 向导显式引导这三步，非黑箱全自动（细节 `steam-publisher/RELEASE-PROCESS.md`）。
+>
+> **请 Lead 裁**：a) 域切分是否如上（PST 接 UI / PS 供管线 API）；b) 接入形态——studio 直连 steam-publisher 本地端口 vs 经 apollo.py 转发 vs 内嵌重写；c) 派工。**PS 可先起步**：把 `serve.py` 编排 API 硬化成稳定契约 + 补冒烟测（无真账号用 480 + mock 跑通编排），等 PST 接 UI。
+
 ### REQ-QA-发行测试假信心修 · mock-steam 排序 / achievements 幂等 断言补全 · [2026-07-04] · 主程（测试意义性复核撞到）→ **发行工程师（PS）域** · status: **✅ done（PS 2026-07-04·两处断言补全 + 自证红·门禁全绿）** · 优先级: P2（小·非阻塞·但属「假信心」测试=比没测更糟） · 类型: 测试正确性修（断言没验测试名声称的行为）
 > **✅ 完工（PS 2026-07-04）**：① `mock-steam.test.ts` 排行榜——给 `leaderboard` 事件补 `board` 快照（经既有 `onEvent` 通道观测·不碰 SteamBridge 契约/不耦合 LS key），断言乱序上传 30/90/60 后榜单 `[90,60,30]` 降序 + 严格非递增。② `achievements.test.ts` 幂等——改为 toast 计数：同端口再解锁 + 跨持久化二次端口解锁，均断言仍恰 1 个 toast（旧断言只验 `isAvailable` 常量）。**验收自证**：临时去 mock 排序 → ① 红（`[30,90,60]≠[90,60,30]`）；临时去幂等守卫 → ② 红（`expected 2 to be 1`）；恢复后 tsc + vitest(2245) + build 全绿。边界内（仅两 `*.test.ts` + mock 事件补 `board` 字段）。
 > **源起**：主程 2026-07-04 全库测试意义性复核（4 子代理分片精查）发现两条**「假信心」测试**——测试名声称测了某行为，但断言根本没验它，被测逻辑改错也照绿。均在 `src/services/platform`（PS 域），故派 PS 修（Lead 出诊断 spec，PS 施工）。
