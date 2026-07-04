@@ -2,6 +2,8 @@
 
 > `assets/FreeArtLib/` = **Dungeon Crawl Stone Soup（DCSS）32×32 tiles**，**CC0（公共领域，可商用，署名从优）**。6029 张 PNG → **4761 个逻辑资产**（同 subject 的变体合一），全 32×32。供**所有游戏 ref/copy**。
 > 索引：`assets/FreeArtLib/index.json`（`scripts/build-artlib-index.mjs` 生成）；助手：`src/assets/artlib.ts`。
+>
+> **数字为建库快照（2026-06）——实时资产数以 `assets/FreeArtLib/index.json`（`.assets.length`，现约 4.9k）为准；本文下方分类占比同为快照，不逐次追平（机读真相铁律：手抄会动的数必漂）。**
 
 ## 1. Tag 标准 = 5 个结构维度（其余标签由它们派生，不冗存）
 | 维度 | 含义 | 取值 |

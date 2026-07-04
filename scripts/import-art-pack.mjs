@@ -3,7 +3,8 @@
 // 用法: node scripts/import-art-pack.mjs <pack> [limit]
 //   例: node scripts/import-art-pack.mjs game-icons 80
 //
-// 为什么走 GitHub：本环境出口网络策略挡了大多数素材站(403)，仅 GitHub(raw/codeload)可达(实测)。
+// 为什么走 GitHub：本环境 curl 出口仅 GitHub(raw/codeload)可达，素材站(kenney/OGA/itch)直连 403——故整包走 codeload。
+//   （发现新仓库可用工具层 WebFetch/WebSearch，它们走另一后端能上更广的网；但下载入库仍由本脚本 curl codeload。）
 // 授权：每条记 license/source/style/provenance（CC-BY 需署名——provenance.author 留痕，不设硬门）。
 // 确定性：文件排序 + 取前 limit + 稳定 id；同一包+同一 limit → 同一份并入计划，可复放、可审计。
 // 零外部依赖：curl 下包、tar 解压（环境自带）；SVG 尺寸从 viewBox 现解（同 src/assets/import/sniff.ts）。

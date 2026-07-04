@@ -4,7 +4,7 @@
 
 ## 1. 库现状（按来源 / 风格 / 许可）
 
-**项目索引 `assets/index.json`：共 29818 项**（另有 DCSS 货架 `assets/FreeArtLib/index.json` ~4892 项，CC0 像素，预先存在）。
+**项目索引 `assets/index.json`：约 3 万项**（2026-06-20 快照 30588；**实时数以 `assets/index.json` 的 `.assets.length` 为准，本文不逐次追平**——机读真相铁律，手抄会动的数必漂）。另有 DCSS 货架 `assets/FreeArtLib/index.json` ~4.9k 项，CC0 像素，预先存在。
 
 > 2026-06-19 更新：tabler/phosphor/mdi 三套已由采样 1000 → **拉全**。
 > 2026-06-20 更新：agent 搜罗后并入第一波（4 套平铺 SVG 图标）+ 第二波（undraw/fluentui/devicon），见下表 + §8。
