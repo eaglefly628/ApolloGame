@@ -538,8 +538,18 @@
 > ② **战后·结果标在牌上**：掷命结算毕，胜者牌上钉「胜·推进/戴冠」、败者「斩/败」标（与 REQ-G-满仪式 §战场阵亡/胜利 VFX 同族·同一批做）；被击退/推进用场上滑动位移表达（见上条 REQ-G-碰撞才战斗 §程序B②）。标记短暂驻留可回看，不塞进结算框。
 > **A/B 接口**：全在 `pending`(战前路 id) + `lastClash`/`clashLog`(战后 a/b/id/aWins/winStays/slot)。程序B 不需程序A 改逻辑。
 
-### REQ-G-修正栈迁移并虚胖清算 · 天罡/地煞迁 t2-modifier-stack + 空头卡实装 · [2026-07-03] · 主程 → **指派：甲（game-g 战斗域）· 排队：接战斗心流 Phase 工作完成后开工** · status: **排队中**
+### REQ-G-修正栈迁移并虚胖清算 · 天罡/地煞迁 t2-modifier-stack + 空头卡实装 · [2026-07-03] · 主程 → **指派：甲（game-g 战斗域）** · status: **① 迁移 done（程序A 2026-07-04）／ ② 空头卡清零 → 转策划全审（owner 2026-07-04「让策划都看一遍」）**
 > owner 2026-07-03 拍板：不打断当前核心工作，完成后照本单施工。**一单双得**：P0 产品 bug（18/36 天罡零效果、141/156 地煞纯文案=玩家买到空头卡，评审 §六.1）+ 新能力首战 dogfood。
+>
+> **✅ part① 迁移 done（程序A 2026-07-04·3 提交）**：地煞 `aggregateDisha`（disha.ts）+ 天罡 `tengangFxOf`（game-g-build.ts）两套自写逐字段聚合循环**全删**，改走引擎 `t2-modifier-stack` 的 `aggregateModifiers`（保函数名+DishaFx/TengangFx 结构→调用方全不动）。行编码：地煞 `dishaRows`（DISHA_SPECS×DISHA_MERGE→行）、天罡 `TENGANG_ROWS` 描述子（op 词汇仍闭集一处）。**逐卡对照守护测试**：独立 oracle(旧循环语义) 跨全单卡/两两对/全集/各关阵容逐字段一致→零漂移。门禁 tsc+vitest(2251)+build 全绿。**空头卡·擎天 atlas 已修**（数据 filter:'highest' 旧 handler 只认 scope:'highestRank'→长期 no-op→现复活 powerMulHighest=1.5）。
+>
+> **② 空头卡清零 → 转策划全审（owner 2026-07-04·程序A 供诊断）**：诊断实测 **35 张天罡里 15 张零效果·且改造坊真在卖**。擎天已修（1）。剩 **14 张现有 TengangFx 字段表达不了 + 参数全游戏无处消费**——请策划逐卡定「gate 未解锁 / 下沉新能力实装 / 摘除」：
+>   - **擒王** capturektg（`morale:killGeneralRout` 斩敌主将→溃散·无字段）
+>   - **tempo 4**：疾行 swiftmarch(`advance`) / 泥沼 mire(`slow enemy`) / 抢滩 beachhead(`jumpToMid`) / 铁索 ironchain(`slow all`)（移动调度类·无字段）
+>   - **lane 3**：驰援 rush(`reinforce`) / 舍车 discard2(`sacrifice`) / 调虎 lurefoe(`forceMigrate`)（换路/牺牲类·无字段）
+>   - **arcane 印记 6**：斩首印 markdecap / 将魂印 markmorale / 铺场印 markswarm / 田忌印 marktianji / 双锋印 marksamerank / 铁律印 markodds（流派印记`mark`·另一套系统·现无消费）
+>   - **★擎天平衡**：atlas 此前静默失效、design G 是在其失效前提下调的关卡数值→复活后「最强一张+50%」生效→请 design G 用 sim 回扫受影响关卡重标。
+>   - 出处诊断：`tengangFxOf([card])===NO_TENGANG` 即空头；params 无消费点经全库 grep 证（campaign-data 的 `kind:'tempo'/'lane'` 仅 boss 招式文案·非这些天罡）。**注：spec 原写「18/36」，实测天罡池 35 张(城门令退役后)、空头 15 张。**
 > **spec（Lead 图纸）**：① 天罡 TENGANG_OPS 18 已实装 op + 地煞 DISHA_SPECS/DISHA_MERGE 迁移为 `ModifierSource` 行数据 + `aggregateModifiers` 纯函数核消费（夹具已证全覆盖，见 `src/skills/tier2/modifier-stack.test.ts`）；删 game-g-build.ts/disha.ts 两套自写解释器（tengangFxOf/aggregateDisha）。② 未实装的 18 张天罡（tempo/lane/arcane/擒王）与地煞文案：**能用 ModifierSource+现有字段表达的实装之，表达不了的从卡池摘除或标注未解锁**——出货前空头卡清零是硬标准。③ 概率门/顺序交织类效果按聚合栈边界文档留在原路径（modifier-stack.ts 头注）。④ 迁移前后战斗结算数值必须逐用例一致（现有 28 个测试文件全绿 + 天罡/地煞逐张对照测试）；`node scripts/game-skill-audit.mjs game-g` 能力接入面应 +1。门禁全绿直推。
 > 两个小瑕疵顺手带掉：modifier-stack describe 里 floor=下限钳语义写明白；同字段混用 or+数值算子的静默忽略加一行 warning 或文档。
 
