@@ -5,6 +5,7 @@ import { FORMATION_PRESETS, PRESET_NAMES, TIANGANG_BY_ID, cardFavorIndex, rankOf
 import { cardPoints, P_MAX } from './clash-resolve.js';
 import { NO_TENGANG, type TengangFx } from './combat-types.js';
 import { type PokerCard } from './turn-combat.js';
+import { aggregateModifiers, type ModifierRow, type ModifierCtx } from '@skills/tier2/modifier-stack.js';
 
 export const clampFavor = (f: number): number => Math.max(5, Math.min(95, Math.round(f)));
 export const avg = (xs: number[]): number => Math.round(xs.reduce((a, b) => a + b, 0) / xs.length);
@@ -59,41 +60,58 @@ export function aggregateTengang(castIds: readonly string[]): TengangFx {
   return tengangFxOf(cards);
 }
 // 天罡 op 注册表（doc20 §二·op→IR 单一真相）：DSL 的「op 词汇」枚举在此一处。
-// 新增一个 op = 加一行 handler（不再改 tengangFxOf 主体·不再加 if 分支）。key=`${kind}:${op}`；
-// handler 把该 op 折进 TengangFx IR（apply 侧逐字段消费见 turn-combat effPower/clashEval/advance）。
-// v=params.value · bonus=params.bonus · p=原始 params（取 filter/scope）。
-type TgOp = (fx: TengangFx, v: number, bonus: number, p: Record<string, unknown>) => void;
-const TENGANG_OPS: Record<string, TgOp> = {
-  'odds:add': (fx, v) => { fx.pEffAdd += v; },                               // 鬼手：掷命 +v
-  'odds:winFloor': (fx, v) => { fx.winFloor += v / 100; },                  // 磐石：胜率下限 +v%
-  'odds:kHard': (fx, v) => { fx.kHard += v; },                              // 灌铅骰：logistic 变硬
-  'odds:noUpset': (fx) => { fx.noUpset += 1; },                             // 铁骰：占优免爆冷
-  'power:mul': (fx, v, _b, p) => { if (p.scope === 'highestRank') fx.powerMulHighest = Math.max(fx.powerMulHighest, v); }, // 擎天：最强单张 ×v（取最大·非叠加）
-  'power:add': (fx, v, _b, p) => { if (p.filter === 'countLE3') fx.powerLE3 += v; else if (p.filter === 'sameSuit') fx.powerSameSuit += v; else if (p.scope === 'front') fx.powerFront += v; else fx.powerAll += v; }, // 寡兵/同花魁/锋矢/虎符(全军)
-  'combo:pair': (fx, _v, bonus) => { fx.comboPair += bonus; },              // 对子诀
-  'combo:trips': (fx, _v, bonus) => { fx.comboTrips += bonus; },            // 鼎立
-  'morale:leaderBuff': (fx, v) => { fx.moraleLeader += v; },                // 旗手
-  'morale:revenge': (fx, v) => { fx.revenge += v; },                       // 哀兵
-  'morale:noRout': (fx) => { fx.noRout = 1; },                              // 督战
-  'stamina:stamPlus': (fx, v, _b, p) => { if (p.filter === 'faces') fx.stamFaces += v; else fx.stamPlus += v; }, // 老兵(faces)/不屈(全军)
-  'stamina:relay': (fx, v) => { fx.relay += v; },                          // 薪火
-  'draw:handMax': (fx, v) => { fx.handMaxAdd += v; },                       // 广纳
-  'draw:onPlay': (fx, v) => { fx.onPlay += v; },                           // 川流
-  'draw:clashElixir': (fx, v) => { fx.clashElixir += v; },                 // 战潮
-  'siege:defend': (fx, v) => { fx.siegeDefend += v; },                     // 死守
-  'siege:chipMore': (fx, v) => { fx.siegeChip += v; },                     // 攻城锤
+// 聚合内芯已迁引擎能力 `t2-modifier-stack`（REQ-G-修正栈迁移·owner 2026-07-04）：删本地自写累加循环 → 走 aggregateModifiers。
+// 注册表由「改 fx 的 handler」改成「返回 ModifierSource 行(target 字段/op 算子/value 值)」的描述子——**op 词汇仍闭集在此一处**·未知 op 返 null(空头卡=零效果·与旧 if-else 落空一致)。
+// 新增一个 op = 加一行描述子。key=`${kind}:${op}`；v=params.value · bonus=params.bonus · p=原始 params(取 filter/scope)。
+// 语义映射（对齐旧 handler + modifier-stack.test 夹具②）：`+=` → add · 擎天 powerMulHighest 取最强 → max · 督战 noRout「=1」→ max value 1。
+type TgRow = { target: keyof TengangFx; op: ModifierRow['op']; value: number };
+type TgDesc = (v: number, bonus: number, p: Record<string, unknown>) => TgRow | null;
+const TENGANG_ROWS: Record<string, TgDesc> = {
+  'odds:add': (v) => ({ target: 'pEffAdd', op: 'add', value: v }),                    // 鬼手：掷命 +v
+  'odds:winFloor': (v) => ({ target: 'winFloor', op: 'add', value: v / 100 }),        // 磐石：胜率下限 +v%
+  'odds:kHard': (v) => ({ target: 'kHard', op: 'add', value: v }),                    // 灌铅骰：logistic 变硬
+  'odds:noUpset': () => ({ target: 'noUpset', op: 'add', value: 1 }),                 // 铁骰：占优免爆冷（计数）
+  'power:mul': (v, _b, p) => (p.scope === 'highestRank' ? { target: 'powerMulHighest', op: 'max', value: v } : null), // 擎天：最强单张 ×v（取最大·非叠加）
+  'power:add': (v, _b, p) => ({ target: p.filter === 'countLE3' ? 'powerLE3' : p.filter === 'sameSuit' ? 'powerSameSuit' : p.scope === 'front' ? 'powerFront' : 'powerAll', op: 'add', value: v }), // 寡兵/同花魁/锋矢/虎符(全军)
+  'combo:pair': (_v, bonus) => ({ target: 'comboPair', op: 'add', value: bonus }),    // 对子诀
+  'combo:trips': (_v, bonus) => ({ target: 'comboTrips', op: 'add', value: bonus }),  // 鼎立
+  'morale:leaderBuff': (v) => ({ target: 'moraleLeader', op: 'add', value: v }),      // 旗手
+  'morale:revenge': (v) => ({ target: 'revenge', op: 'add', value: v }),             // 哀兵
+  'morale:noRout': () => ({ target: 'noRout', op: 'max', value: 1 }),                 // 督战（=1·取 max 幂等）
+  'stamina:stamPlus': (v, _b, p) => ({ target: p.filter === 'faces' ? 'stamFaces' : 'stamPlus', op: 'add', value: v }), // 老兵(faces)/不屈(全军)
+  'stamina:relay': (v) => ({ target: 'relay', op: 'add', value: v }),                // 薪火
+  'draw:handMax': (v) => ({ target: 'handMaxAdd', op: 'add', value: v }),             // 广纳
+  'draw:onPlay': (v) => ({ target: 'onPlay', op: 'add', value: v }),                  // 川流
+  'draw:clashElixir': (v) => ({ target: 'clashElixir', op: 'add', value: v }),        // 战潮
+  'siege:defend': (v) => ({ target: 'siegeDefend', op: 'add', value: v }),            // 死守
+  'siege:chipMore': (v) => ({ target: 'siegeChip', op: 'add', value: v }),            // 攻城锤
 };
+const NO_CTX: ModifierCtx = { resource: () => undefined, gate: () => true }; // 天罡无 valueFrom/无门控 → 空 ctx
 
-// 纯映射（注入卡集·不依赖 blueprint 数据 → 可用合成卡单测新 op，先于乙上架数据）。
-// op 词汇 = TENGANG_OPS 注册表（单一真相·上方）；未知 op 静默跳过（与旧 if-else 落空一致）。
-export function tengangFxOf(cards: Iterable<{ kind: string; params?: Record<string, unknown> }>): TengangFx {
-  const fx: TengangFx = { ...NO_TENGANG };
+// 已施天罡卡集 → ModifierSource 行（每张按描述子映一行·未知 op 无行=零效果）。供 aggregateModifiers 消费。
+export function tengangRows(cards: Iterable<{ kind: string; params?: Record<string, unknown> }>): ModifierRow[] {
+  const rows: ModifierRow[] = []; let n = 0;
   for (const j of cards) {
     const p = j.params; if (!p) continue;
     const v = typeof p.value === 'number' ? p.value : 0; const bonus = typeof p.bonus === 'number' ? p.bonus : 0;
-    TENGANG_OPS[`${j.kind}:${String(p.op)}`]?.(fx, v, bonus, p);
+    const key = `${j.kind}:${String(p.op)}`;
+    const row = TENGANG_ROWS[key]?.(v, bonus, p);
+    if (row) rows.push({ id: `${key}:${n++}`, target: row.target, op: row.op, value: row.value }); // id 唯一即可(add/max 交换·序无关)
   }
+  return rows;
+}
+// totals(字段→数) → TengangFx（全数值字段·缺字段回落 NO_TENGANG）。
+function tengangFxFromTotals(t: Record<string, number | boolean>): TengangFx {
+  const fx: TengangFx = { ...NO_TENGANG };
+  const f = fx as unknown as Record<string, number>;
+  for (const k of Object.keys(NO_TENGANG) as (keyof TengangFx)[]) if (k in t) f[k] = Number(t[k]);
   return fx;
+}
+
+// 纯映射（注入卡集·不依赖 blueprint 数据 → 可用合成卡单测新 op，先于乙上架数据）。
+// op 词汇 = TENGANG_ROWS 注册表（单一真相·上方）；聚合走引擎 aggregateModifiers（确定性·add/max 固定序）。
+export function tengangFxOf(cards: Iterable<{ kind: string; params?: Record<string, unknown> }>): TengangFx {
+  return tengangFxFromTotals(aggregateModifiers(tengangRows(cards), NO_CTX));
 }
 
 // 确定性洗牌已收敛到 atoms 单一真相（mulberry32·零漂移·见 atoms/random/seeded-shuffle.test）。保留同名 export 不破现有 import。
