@@ -592,7 +592,7 @@
 
 ---
 
-### REQ-G-退役机关门 + Boss自由混 · [2026-07-03] · design G → 程序A(逻辑+AI)·程序B(删门UI) · Game G · status: **逻辑 done（程序A 2026-07-04 核实：门整套已删·turnHash 无 g 段·城门令出池 36→35·aiDecide 已同规则自由混无门决策·Boss 无换牌·player-ai 无门枚举·turn-combat/turnmatch 20 测绿）／ 程序B 删门UI open ／ design G 关1重标 open** · 优先级: **P0（owner 拍板·地基清理·解锁关1对称标定）** · 规格: `design/24-turn-based-combat-model.md §三` + `balance-philosophy-fairness.md §五`
+### REQ-G-退役机关门 + Boss自由混 · [2026-07-03] · design G → 程序A(逻辑+AI)·程序B(删门UI) · Game G · status: **逻辑 done（程序A 2026-07-04 核实：门整套已删·turnHash 无 g 段·城门令出池 36→35·aiDecide 已同规则自由混无门决策·Boss 无换牌·player-ai 无门枚举·turn-combat/turnmatch 20 测绿）／ 程序B 删门UI open ／ **design G 关1重标 ✅ done（2026-07-04·核变后 bossDelta=0 稳在 73.5% 通关/95.5% 单场·对称改没偏心公平点·见 boss-config §一末「✅✅ 核心大改后重标」）·终扫待 loader 接 16写死牌组** · 优先级: **P0（owner 拍板·地基清理·解锁关1对称标定）** · 规格: `design/24-turn-based-combat-model.md §三` + `balance-philosophy-fairness.md §五`
 > **程序B 待清（门 UI 死引用·2026-07-04 程序A 巡出）**：`turn-battle-screen.ts:705`（放牌后翻门 toast）+ `:789`（deploy sub-label「放完可点机关门翻门调度」）· `overlays.ts:35/41`（帮助文案「可顺手开关机关门 / 机关门换路」）· `sound.ts:14-15`（`gateOpen`/`gateClose` 死音效定义）· `campaign-data.ts:80` 注释（无害）。逻辑侧已无门·这些仅残留表现文案/死音效·程序B 一并清。
 
 > **owner 2026-07-03 两条**：① **机关门/换路整套退役**（不给乐趣·高复杂度低价值·旧实时CR遗留）；② **Boss 也一开始就自由混**（对称同规则·Boss 无换牌·难度只来自明牌 kit·不靠给 Boss 降规则）。
@@ -602,6 +602,7 @@
 > 3. **确定性**：turnHash 回归照绿（删门段是有意改变·更新断言）。
 > **程序B**：删战斗屏的机关门 UI（门钮/门态渲染）。
 > ⚠ **design G 连带**：Boss 自由混后关1 公平配置从 54%→~14%（Boss kit 值 ~36 分）→ **design G 用"双方自由混"重跑·把关1 Boss kit（布防 4→2静守 + 地煞 + 牌力偏置）减弱到玩家 ~70%**（教学关本就该弱·见 `balance-philosophy-fairness §五`）。**程序A 改完 → design G 标定。**
+> **✅ design G 标定回填（2026-07-04）**：实测**对称核变没把公平点推离 70%**——`bossDelta=0` 时终极 AI 通关 **73.5%**（≈70% 目标）·无需减弱 Boss kit。原估「Boss 自由混→14%」是**旧口径误判**（那 14% 是 sim 的 Boss暗箱强牌 bug 所致·已由 `f9727ae5` 修·非 Boss 自由混本身）。**遗留待 owner 拍**：贪心真新手通关仅 24%（5战全胜复利·单场 78%）→ 关1 是否该 5 战 / 目标是否改按单场量（详 boss-config §一）。
 
 ---
 
