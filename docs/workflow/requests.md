@@ -499,8 +499,9 @@
 > 【衔接备忘 2026-07-03】P3D 的 game-d 接线单（REQ-GAMED：dice-roll 接入/detectPattern 真替换/per-run 种子/打回三条）同样为**排队态**——接现 3D 渲染线核心工作完成后开工，优先级由 owner 调度。
 ---
 
-### REQ-G-动作模型-三行为自由 · [2026-07-03] · design G → 程序A(逻辑+AI)+程序B(UI) · Game G · status: **逻辑+AI done（程序A 2026-07-04 核实：大类互斥退役·canAct 仅看费用·turn-combat.ts:129-131；swapCard 换牌硬帽1次+免费已实装+测试覆盖 turn-combat.test.ts:50-66；player-ai.ts 已枚举 swap 枢纽 line 117/172-179）／ 程序B 四选一→三行为自由混 UI open** · 优先级: **P0（owner 拍板·核心回合模型改·压 sim/标定）** · 规格: `design/24-turn-based-combat-model.md §二`
+### REQ-G-动作模型-三行为自由 · [2026-07-03] · design G → 程序A(逻辑+AI)+程序B(UI) · Game G · status: **逻辑+AI done ／ 程序B 三行为 UI done（2026-07-04）** · 优先级: **P0（owner 拍板·核心回合模型改·压 sim/标定）** · 规格: `design/24-turn-based-combat-model.md §二`
 > **注（2026-07-04 程序A）**：`discardCard`(弃牌返0.5源泉) 仍在（game-g.tsx:594 玩家UI + player-ai 标 `void`未进搜索）——这**不是**本单要退役的"免费纯弃牌"(那个已被 swap 取代)，是另一条 0.5 返费续航微操，是否保留/进 AI 搜索归 design G 裁决。
+> **程序B done（2026-07-04·三行为 UI）**：动作菜单 4 键 → **抽/打/换 三区**（顶钮 grid cols=3·互不互斥·不再据 actionTaken 置灰）；点开哪个 → 右侧子菜单二选一各显源泉开销（抽扑克/抽天罡 各 💧1 · 部署扑克 💧按点/打天罡 💧1 · 补扑克/补天罡 免费）。换牌=选补牌库→点手里1张→弃并随机补1张(免费·1/回合·用尽后顶钮/子钮置灰·再点提示已用尽)。走 LayoutNode 底座(Button 闭集·label 内嵌开销文案·零手写 CSS/DOM)；battle-coach 文案/锚点同步(打天罡=combat-cast·部署扑克=combat-deploy·未点开回退顶钮)；旧四选一互斥+纯弃牌 UI 退役。tsc+vitest(183)+build 全绿·playwright 四态截图验收。`discardCard` 玩家 UI 入口本次由「换」取代移除(逻辑导出留存待 design G 裁 AI 侧)。
 
 > **owner 2026-07-03**：四选一 + 「放牌⊥打天罡」互斥限制太多、策略性一般 → 改 **三行为（抽/打/换）· 互不互斥 · 源泉唯一门**（源泉本就稀缺=天然闸·不必再叠动作互斥）。
 > **程序A（逻辑）**：

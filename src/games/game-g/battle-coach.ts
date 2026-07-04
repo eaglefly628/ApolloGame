@@ -11,12 +11,12 @@ export interface BattleCoachStep { flag: string; anchor: string; text: string; o
 //   动作**同回合互斥**（一回合只选一类·同类无限）：抽天罡+抽扑克同属「抽」可连做；打天罡/放牌各自一回合 → 之间都隔【结束回合】。
 //   掷骰步在掷命对决特写里出（高亮🎲钮）——驱动按 perfClash 在场+未揭晓时才显。
 export const BATTLE_COACH: readonly BattleCoachStep[] = [
-  { flag: 'seen_combat_draw_tg', anchor: 'combat-draw', text: '👉 第一步【抽牌】：点【抽牌】，再点【✦摸天罡】——先摸一张天罡战法（持续加成牌）。每回合只能选一类动作，同类可连做；源泉每回合 +1。', on: 'draw-tengang' },
-  { flag: 'seen_combat_draw_pk', anchor: 'combat-draw', text: '👉 再点【🎴摸扑克】——摸一张扑克兵牌（上场打仗用）。抽牌同类可连摸，攒齐再行动。', on: 'draw-poker' },
-  { flag: 'seen_combat_end1', anchor: 'combat-end', text: '👉 点【结束回合】：源泉 +1、双方兵线一起推进一格。下回合换别的动作。', on: 'endturn' },
-  { flag: 'seen_combat_cast', anchor: 'combat-cast', text: '👉 这一轮【打天罡】：施放刚摸到的天罡战法，整局为你加成。', on: 'cast', needsTengang: true },
+  { flag: 'seen_combat_draw_tg', anchor: 'combat-draw', text: '👉 第一步【抽】：点【抽】，再点【✦抽天罡】——先摸一张天罡战法（持续加成牌）。抽/打/换 互不互斥、只花源泉；源泉每回合 +1。', on: 'draw-tengang' },
+  { flag: 'seen_combat_draw_pk', anchor: 'combat-draw', text: '👉 再点【🎴抽扑克】——摸一张扑克兵牌（上场打仗用）。有源泉就能接着抽，攒齐再行动。', on: 'draw-poker' },
+  { flag: 'seen_combat_end1', anchor: 'combat-end', text: '👉 点【结束回合】：源泉 +1、双方兵线一起推进一格。', on: 'endturn' },
+  { flag: 'seen_combat_cast', anchor: 'combat-cast', text: '👉 这一轮【打】→【✦打天罡】：施放刚摸到的天罡战法，整局为你加成。', on: 'cast', needsTengang: true },
   { flag: 'seen_combat_end2', anchor: 'combat-end', text: '👉 再点【结束回合】，进入下一轮。', on: 'endturn' },
-  { flag: 'seen_combat_deploy', anchor: 'combat-deploy', text: '👉 【放牌】：先点一张兵牌、再点一路（上/中/下）部署。按点数花源泉——先放点数小的兵（2~4 免费、5~7 收 1 费）。', on: 'deploy' },
+  { flag: 'seen_combat_deploy', anchor: 'combat-deploy', text: '👉 【打】→【♟部署扑克】：先点一张兵牌、再点一路（上/中/下）落子。按点数花源泉——先放点数小的兵（2~4 免费、5~7 收 1 费）。', on: 'deploy' },
   { flag: 'seen_combat_end3', anchor: 'combat-end', text: '👉 再点【结束回合】：兵沿路前进，前锋相遇（碰撞）就触发【绝命对决】。', on: 'endturn' },
   { flag: 'seen_combat_roll', anchor: 'combat-roll', text: '👉 前锋相遇进入【绝命对决】：点【🎲掷命】——双方各掷自己战力范围内的骰（战力越高掷得越高），大者胜。胜者留场续战、每胜战力对折；看明白就毕业啦！', on: 'roll' },
 ];

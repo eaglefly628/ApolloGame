@@ -25,9 +25,9 @@ describe('Game G · 战斗新手引导（coachmark 能力接入·甲）', () => 
     setStep(BATTLE_COACH[0], true);
     const active = collectActiveCoachmarks(world);
     expect(active).toHaveLength(1);
-    expect(active[0].anchor).toBe('combat-draw'); // 首步=抽牌（doc28 §三）
-    expect(active[0].text).toContain('抽牌');
-    // 切到第二步(抽扑克·仍指抽牌钮)
+    expect(active[0].anchor).toBe('combat-draw'); // 首步=抽（三行为·doc28 §三）
+    expect(active[0].text).toContain('抽天罡');
+    // 切到第二步(抽扑克·仍指抽钮)
     setStep(BATTLE_COACH[1], true);
     expect(collectActiveCoachmarks(world)[0].anchor).toBe('combat-draw');
     // 不可见(特写/忙) → 灭

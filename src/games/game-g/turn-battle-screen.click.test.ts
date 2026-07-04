@@ -8,7 +8,7 @@ import { mountTurnBattle, buildTurnBattleView, buildTurnFrameHTML, type TurnBatt
 const press = (el: Element | null, button = 0): void => { if (!el) throw new Error('press target null'); el.dispatchEvent(new MouseEvent('pointerdown', { bubbles: true, button })); };
 
 const makeActions = (): { [K in keyof TurnBattleActions]-?: ReturnType<typeof vi.fn> } => ({
-  pickAction: vi.fn(), drawFrom: vi.fn(), selectHand: vi.fn(), playLane: vi.fn(), endTurn: vi.fn(), setTheme: vi.fn(), clashConfirm: vi.fn(), clashRoll: vi.fn(),
+  pickAction: vi.fn(), drawFrom: vi.fn(), playPick: vi.fn(), swapPick: vi.fn(), selectHand: vi.fn(), playLane: vi.fn(), endTurn: vi.fn(), setTheme: vi.fn(), clashConfirm: vi.fn(), clashRoll: vi.fn(),
   goBack: vi.fn(), bossInfo: vi.fn(), toggleSfx: vi.fn(), toggleSettings: vi.fn(), toggleBgm: vi.fn(), toggleGuide: vi.fn(), selectBgm: vi.fn(), setBgmVol: vi.fn(),
 });
 
@@ -22,15 +22,18 @@ function setup(opts: TurnViewOpts = {}) {
 }
 
 describe('Game G · turn-battle-screen live mount 交互（doc24 回合制 · DOM · happy-dom）', () => {
-  it('画框渲齐 data 钩子：四选一/结束回合/换皮/手牌/三路格（机关门钮已退役·owner 2026-07-03）', () => {
+  it('画框渲齐 data 钩子：三行为(抽/打/换)/结束回合/换皮/手牌/三路格（四选一互斥+机关门钮已退役·owner 2026-07-03）', () => {
     const { host } = setup({ settingsOpen: true }); // 换皮(主题)按钮现归 ⚙ 设置面板（topbar 重组 bfa0fd69）→ 开面板才渲
-    for (const sel of ['[data-action="draw"]', '[data-action="deploy"]', '[data-action="cast"]', '[data-action="discard"]', // 四选一已迁数据驱动动作菜单 → data-action
+    for (const sel of ['[data-action="draw"]', '[data-action="play"]', '[data-action="swap"]', // 三行为顶钮（owner 2026-07-03·抽/打/换·互不互斥）
       '[data-action="end"]', '[data-action="settings-toggle"]', '[data-action="theme"][data-arg="onyx"]', '[data-action="theme"][data-arg="brocade"]', // end/settings-toggle/theme 均迁 LayoutNode（设置浮层 Segmented）→ data-action[+data-arg]
       '[data-action="go-back"]',
       '[data-hand="0"]', '[data-hand="1"]', '[data-action="lane"][data-arg="0"]', '[data-action="lane"][data-arg="1"]', '[data-action="lane"][data-arg="2"]']) {
       expect(host.querySelector(sel), sel).not.toBeNull();
     }
-    expect(host.querySelector('[data-gate="0"]'), '机关门钮应已退役').toBeNull();
+    // 旧四选一(deploy/cast/discard)顶钮 + 机关门钮均退役
+    for (const gone of ['[data-action="deploy"]', '[data-action="cast"]', '[data-action="discard"]', '[data-gate="0"]']) {
+      expect(host.querySelector(gone), `${gone} 应已退役`).toBeNull();
+    }
   });
 
   it('按下数据驱动顶栏（LayoutNode·data-action）→ goBack / toggleSettings（统一委托接 data-action）', () => {
@@ -41,10 +44,25 @@ describe('Game G · turn-battle-screen live mount 交互（doc24 回合制 · DO
     expect(actions.toggleSettings).toHaveBeenCalledTimes(1);
   });
 
-  it('按下四选一动作 → pickAction(类别)', () => {
+  it('按下三行为顶钮 → pickAction(行为)', () => {
     const { host, actions } = setup();
-    press(host.querySelector('[data-action="deploy"]'));
-    expect(actions.pickAction).toHaveBeenCalledWith('deploy');
+    press(host.querySelector('[data-action="play"]'));
+    press(host.querySelector('[data-action="swap"]'));
+    expect(actions.pickAction.mock.calls.map((c) => c[0])).toEqual(['play', 'swap']);
+  });
+
+  it('打模式 → 子菜单渲部署扑克/打天罡，按下 → playPick(deploy/cast)', () => {
+    const { host, actions } = setup({ selMode: 'play' });
+    press(host.querySelector('[data-action="play-poker"]'));
+    press(host.querySelector('[data-action="play-tengang"]'));
+    expect(actions.playPick.mock.calls.map((c) => c[0])).toEqual(['deploy', 'cast']);
+  });
+
+  it('换模式 → 子菜单渲补扑克/补天罡，按下 → swapPick(poker/tengang)', () => {
+    const { host, actions } = setup({ selMode: 'swap' });
+    press(host.querySelector('[data-action="swap-poker"]'));
+    press(host.querySelector('[data-action="swap-tengang"]'));
+    expect(actions.swapPick.mock.calls.map((c) => c[0])).toEqual(['poker', 'tengang']);
   });
 
   it('按下手牌 → selectHand(序号)', () => {
@@ -76,7 +94,7 @@ describe('Game G · turn-battle-screen live mount 交互（doc24 回合制 · DO
     expect(actions.bossInfo).toHaveBeenCalledTimes(1);
   });
 
-  it('抽牌模式 → 渲两库钮，按下 → drawFrom(poker/tengang)', () => {
+  it('抽模式 → 子菜单渲抽扑克/抽天罡，按下 → drawFrom(poker/tengang)', () => {
     const { host, actions } = setup({ selMode: 'draw' });
     press(host.querySelector('[data-action="draw-poker"]'));
     press(host.querySelector('[data-action="draw-tengang"]'));
@@ -94,7 +112,7 @@ describe('Game G · turn-battle-screen live mount 交互（doc24 回合制 · DO
   it('放牌待落点：渲手指 👆 +「放这里」轻点指示（owner 2026-06-21）', () => {
     const b = initTurnBattle({ seed: 1, a: { pokerDeck: [] } });
     b.a.mana = 4; b.a.hand.push({ kind: 'poker', id: 'h0', rank: 'K', suit: 'S', general: false, buff: 0 });
-    const html = buildTurnFrameHTML(buildTurnBattleView(b, { selMode: 'deploy', selHand: 0 })); // 选中兵牌待放 → 落点高亮+手指
+    const html = buildTurnFrameHTML(buildTurnBattleView(b, { selMode: 'play', selHand: 0 })); // 选中兵牌待放 → 落点高亮+手指
     expect(html).toContain('👆'); // 指示手指
     expect(html).toContain('放这里'); // 文案
     expect(html).toContain('apollo-pulse'); // 落点脉冲（迁数据驱动后走 fx pulse·替手写 g-tap/g-place/g-ripple）

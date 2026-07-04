@@ -7,7 +7,7 @@ import { type ClashEvent } from './combat-types.js';
 import { freshSave, loadSave, persist, resetFortuneIfNewDay, FORTUNE_MAX, activeDeck, syncTiangangs, newDeckId, rollBoss, TIANGANG_DECK_SIZE, MAX_TIANGANG_DECKS } from './game-g-save.js';
 import { favorToP, cardRank, avg, describeFormation, pick3, buildPickDeck, bossHeroCard, aggregateTengang, seededShuffleArr } from './game-g-build.js';
 import { clashToTurnView } from './game-g-clash-view.js';
-import { initTurnBattle, drawCard, deployUnit, castTengang, discardCard, advanceMovePhase, resolveClashAt, endTurnFinish, aiDecide, bossOpeningGarrison, BOSS_GARRISON_MANA, OPENING_HAND, DRAW_COST, CAST_COST, type PokerCard, type TengangHandCard, type Card } from './turn-combat.js';
+import { initTurnBattle, drawCard, deployUnit, castTengang, swapCard, advanceMovePhase, resolveClashAt, endTurnFinish, aiDecide, bossOpeningGarrison, BOSS_GARRISON_MANA, OPENING_HAND, DRAW_COST, CAST_COST, SWAP_PER_TURN, type PokerCard, type TengangHandCard, type Card } from './turn-combat.js';
 import { DISHA_NAME, stageDisha } from './disha.js';
 import { mountTurnBattle, buildTurnBattleView, type TurnBattleView, type TurnBattleActions, type TurnClashView, type TurnShaView } from './turn-battle-screen.js';
 // 掷硬币（战胜硬币）已随「确定制」退役为死代码（owner 2026-07-01「掷硬币这环节没意义·太繁琐·先放死代码等以后可能用」）：
@@ -356,8 +356,10 @@ export function mount(container: HTMLElement, shell?: { exit?: () => void }): ()
 
     // ── 运行态（UI 选中 + 掷命特写队列）──
     let theme: 'onyx' | 'brocade' = 'onyx';
-    let selMode: string | null = null; // 当前选中的动作类（draw/deploy/cast/discard·UI 先选后做）
-    let selHand = -1;                  // 放牌/施法/弃牌 选中的手牌
+    let selMode: string | null = null; // 当前点开的行为（三行为 owner 2026-07-03·draw/play/swap·UI 先选后做·互不互斥）
+    let playKind: 'deploy' | 'cast' = 'deploy'; // 打·子模式：部署扑克 / 打天罡（子菜单高亮·selectHand 亦按手牌真类型派发）
+    let swapFrom: 'poker' | 'tengang' = 'poker'; // 换·补牌库：从扑克/天罡库随机补 1 张
+    let selHand = -1;                  // 放牌/施法/换牌 选中的手牌
     let notice: string | null = null; let noticeTimer = 0; // 临时提示 toast
     let drained = 0; const perfQueue: ClashEvent[] = []; let perfClash: ClashEvent | null = null; let busy = false; let perfResume: (() => void) | null = null;
     let coachDid: (on: BattleCoachStep['on']) => void = () => {}; let syncCoach: () => void = () => {}; // 前置声明·真体在挂载后赋（战斗新手引导）
@@ -476,7 +478,7 @@ export function mount(container: HTMLElement, shell?: { exit?: () => void }): ()
       } else if (sig.name === 'clash:resume') { postClashCtx = null; const r = perfResume; if (r) r(); } // ④ 收场续下一场
     });
     const buildClashView = (): TurnClashView | null => { if (!perfClash) return null; const cv = clashToTurnView(perfClash, tgName, save.inlays); cv.revealed = clashRevealed; return cv; };
-    const view = (): TurnBattleView => buildTurnBattleView(tb, { theme, tengangName: tgName, tengangDesc: tgDesc, selMode, selHand, clash: buildClashView(), bossName: aiName, sha: shaLive(), notice, movedIds: justMovedIds, freshIds, dealtId: dealtId ?? undefined, battleLabel, sfxOn: isSfxOn(), settingsOpen, bgmOn: isBgmOn(), bgmIdx: bgmTrackIdx(), bgmVol: bgmVolume(), bgmNames: BGM_TRACKS.map((t) => t.name), guideOn: !save.skipGuide, inlays: save.inlays, waterBDisplay: aiManaDisplay ?? undefined, enchOf: (rank, suit) => (save.inlays[String(cardFavorIndex(rank + suit))] ?? []).map((e) => [`${e.b}${DIZHI_TIER_NM[e.t]}`, DIZHI_INLAY_FAVOR[e.t]] as [string, number]) });
+    const view = (): TurnBattleView => buildTurnBattleView(tb, { theme, tengangName: tgName, tengangDesc: tgDesc, selMode, selHand, playKind, swapFrom, clash: buildClashView(), bossName: aiName, sha: shaLive(), notice, movedIds: justMovedIds, freshIds, dealtId: dealtId ?? undefined, battleLabel, sfxOn: isSfxOn(), settingsOpen, bgmOn: isBgmOn(), bgmIdx: bgmTrackIdx(), bgmVol: bgmVolume(), bgmNames: BGM_TRACKS.map((t) => t.name), guideOn: !save.skipGuide, inlays: save.inlays, waterBDisplay: aiManaDisplay ?? undefined, enchOf: (rank, suit) => (save.inlays[String(cardFavorIndex(rank + suit))] ?? []).map((e) => [`${e.b}${DIZHI_TIER_NM[e.t]}`, DIZHI_INLAY_FAVOR[e.t]] as [string, number]) });
     let mounted: { update: () => void; destroy: () => void } | null = null;
 
     const drainClashes = (): void => { for (const ev of tb.clashLog.slice(drained)) perfQueue.push(ev); drained = tb.clashLog.length; };
@@ -597,7 +599,9 @@ export function mount(container: HTMLElement, shell?: { exit?: () => void }): ()
       showBanner('我方行动', 750, () => advancePerf(runAiDecide)); // 我方决策(放牌)毕 → 我方行动(推进+滑动+掷命) → 敌方决策
     };
     const actions: TurnBattleActions = {
-      pickAction: (kind) => { if (busy || tb.active !== 'a') return; if (kind !== 'discard' && tb.actionTaken && tb.actionTaken !== kind) return; selMode = selMode === kind ? null : kind; selHand = -1; playSfx('select'); mounted?.update(); syncCoach(); }, // 弃牌不互斥；进「抽」模式 → 先重渲让摸牌钮(combat-draw-pick)落 DOM，再 syncCoach 让引导高亮跟到它（owner 2026-06-21·否则高亮锚不到没渲出的钮）
+      pickAction: (kind) => { if (busy || tb.active !== 'a') return; if (kind === 'swap' && tb.a.swapsUsed >= SWAP_PER_TURN) { playSfx('invalid'); flash('✗ 换牌本回合已用尽（1/回合）'); return; } selMode = selMode === kind ? null : kind; selHand = -1; playSfx('select'); mounted?.update(); syncCoach(); }, // 三行为自由·互不互斥（owner 2026-07-03·源泉唯一门·去掉大类互斥）；开子菜单先重渲落 DOM 再 syncCoach 让引导高亮跟到子钮
+      playPick: (kind) => { if (busy || selMode !== 'play') return; playKind = kind; selHand = -1; playSfx('select'); mounted?.update(); syncCoach(); }, // 打·切子模式（部署扑克/打天罡）
+      swapPick: (from) => { if (busy || selMode !== 'swap') return; if (tb.a.swapsUsed >= SWAP_PER_TURN) { playSfx('invalid'); return; } swapFrom = from; selHand = -1; playSfx('select'); mounted?.update(); }, // 换·选补牌库（天罡/扑克）
       drawFrom: (from) => {
         if (busy || selMode !== 'draw') return;
         if (drawCard(tb, 'a', from)) { playSfx('draw'); coachDid(from === 'poker' ? 'draw-poker' : 'draw-tengang'); const nc = tb.a.hand[tb.a.hand.length - 1]; log(`我·抽牌(${from === 'poker' ? '扑克' : '天罡'}) -${DRAW_COST}源泉 → ${nc ? cardLabel(nc) : '?'} [剩${tb.a.mana}源泉]`); dealtId = tb.a.hand[tb.a.hand.length - 1]?.id ?? null; const did = dealtId; window.setTimeout(() => { if (dealtId === did) { dealtId = null; if (!perfClash) mounted?.update(); } }, 560); } // 抽到的牌飞入翻面入场·~560ms 后清标记
@@ -611,11 +615,19 @@ export function mount(container: HTMLElement, shell?: { exit?: () => void }): ()
       },
       selectHand: (i) => {
         if (busy || tb.active !== 'a') return;
-        if (selMode === 'cast') { const tc = tb.a.hand[i]; if (castTengang(tb, 'a', i)) { tb.a.tengangA = aggregateTengang(tb.a.castIds); tb.a.castFx = tb.a.castIds.map((id) => ({ id, fx: aggregateTengang([id]) })); playSfx('cast'); coachDid('cast'); log(`我·施天罡 ${tc ? cardLabel(tc) : '?'} -${CAST_COST}源泉 [剩${tb.a.mana}源泉]`); } selHand = -1; } // 施法 → 持续修正重算（+逐张 castFx 供对决溯源）
-        else if (selMode === 'discard') { const dc = tb.a.hand[i]; if (discardCard(tb, 'a', i)) { playSfx('discard'); log(`我·弃牌 ${dc ? cardLabel(dc) : '?'}（返0.5源泉·不互斥）`); } selHand = -1; }
-        else if (selMode === 'deploy' || tb.actionTaken === null || tb.actionTaken === 'deploy') { selMode = 'deploy'; selHand = selHand === i ? -1 : i; playSfx('select'); } // 默认进放牌·选牌→点路落子
+        const card = tb.a.hand[i];
+        if (selMode === 'swap') { // 换牌：选牌库→点手里1张 → 弃并从该库随机补1张（1/回合·免费）
+          if (tb.a.swapsUsed >= SWAP_PER_TURN) { playSfx('invalid'); flash('✗ 换牌本回合已用尽（1/回合）'); return; }
+          const sc = card; if (swapCard(tb, 'a', i, swapFrom)) { playSfx('draw'); const nc = tb.a.hand[tb.a.hand.length - 1]; log(`我·换牌 ${sc ? cardLabel(sc) : '?'} → 补${swapFrom === 'poker' ? '扑克' : '天罡'} ${nc ? cardLabel(nc) : '?'}（免费·1/回合·已用尽）`); flash('✓ 换牌成功——补入 1 张（本回合换牌用尽）'); dealtId = nc?.id ?? null; }
+          else { playSfx('invalid'); flash(`✗ ${swapFrom === 'poker' ? '扑克' : '天罡'}牌库空了，换不了`); }
+          selHand = -1; selMode = null; // 换牌用尽 → 收起子菜单
+        }
+        // 打·天罡：选中一张天罡牌 → 立即施放（施法即时·无需点路）
+        else if (selMode === 'play' && card?.kind === 'tengang') { const tc = card; if (castTengang(tb, 'a', i)) { playKind = 'cast'; tb.a.tengangA = aggregateTengang(tb.a.castIds); tb.a.castFx = tb.a.castIds.map((id) => ({ id, fx: aggregateTengang([id]) })); playSfx('cast'); coachDid('cast'); log(`我·打天罡 ${tc ? cardLabel(tc) : '?'} -${CAST_COST}源泉 [剩${tb.a.mana}源泉]`); } else { playSfx('invalid'); flash('✗ 源泉不足，打不了天罡'); } selHand = -1; }
+        // 打·扑克：选中一张兵牌 → 高亮待放·再点一路落子（默认也进打·部署）
+        else { selMode = 'play'; playKind = 'deploy'; selHand = selHand === i ? -1 : i; playSfx('select'); }
       },
-      playLane: (lane) => { if (busy || selMode !== 'deploy' || selHand < 0) return; const pc = tb.a.hand[selHand]; const pCost = pc?.kind === 'poker' ? (pc.cost ?? 0) : 0; if (deployUnit(tb, 'a', selHand, lane)) { selHand = -1; playSfx('deploy'); coachDid('deploy'); log(`我·放牌 ${pc ? cardLabel(pc) : '?'} → ${LANE_NM[lane] ?? lane}${pCost ? ` -${pCost}源泉` : '（免费）'} [剩${tb.a.mana}源泉]`); flash('✓ 放牌成功——可继续放牌'); } },
+      playLane: (lane) => { if (busy || selMode !== 'play' || selHand < 0) return; const pc = tb.a.hand[selHand]; const pCost = pc?.kind === 'poker' ? (pc.cost ?? 0) : 0; if (deployUnit(tb, 'a', selHand, lane)) { selHand = -1; playSfx('deploy'); coachDid('deploy'); log(`我·部署 ${pc ? cardLabel(pc) : '?'} → ${LANE_NM[lane] ?? lane}${pCost ? ` -${pCost}源泉` : '（免费）'} [剩${tb.a.mana}源泉]`); flash('✓ 部署成功——可继续打牌'); } },
       endTurn: commitEndTurn,
       setTheme: (t) => { theme = t; },
       clashConfirm: () => { // owner 2026-07-01：未掷→先掷两骰(各掷自己战力范围)；已揭晓→点「继续」一步步演结算（先谁死·再幸存者头顶「战力对折 −N」）→ perfResume
@@ -698,10 +710,12 @@ export function mount(container: HTMLElement, shell?: { exit?: () => void }): ()
     let coachStep: BattleCoachStep | null = save.skipGuide ? null : nextCoachStep(save.seen, { hasTengang: hasTengangNow() }); // 跳过引导 → 不启动战斗 coach
     const { world: coachWorld, setStep: setCoachStep } = makeCoachWorld();
     const coach = mountOnboardingOverlay(document.body, coachWorld, stage); // 总是挂（挂 body·避战场缩放偏移）；可见性由 coachStep/syncCoach 控（菜单可实时开关·owner 2026-06-21）
-    // 抽牌步进入「抽」模式后高亮底部两个摸牌钮（combat-draw-pick）·否则高亮【抽牌】动作钮（combat-draw）。
+    // 三行为高亮回退（owner 2026-07-03）：抽/打的子步在对应行为未点开时先高亮顶钮（抽=combat-draw / 打=combat-play）·点开后再落到子钮（抽走 combat-draw-pick 容器；部署/打天罡子钮各带 combat-deploy/combat-cast）。
     const effectiveStep = (): BattleCoachStep | null => {
       if (!coachStep) return null;
-      if ((coachStep.on === 'draw-poker' || coachStep.on === 'draw-tengang') && selMode === 'draw') return { ...coachStep, anchor: 'combat-draw-pick' };
+      const on = coachStep.on;
+      if ((on === 'draw-poker' || on === 'draw-tengang')) return { ...coachStep, anchor: selMode === 'draw' ? 'combat-draw-pick' : 'combat-draw' };
+      if ((on === 'deploy' || on === 'cast')) return { ...coachStep, anchor: selMode === 'play' ? (on === 'deploy' ? 'combat-deploy' : 'combat-cast') : 'combat-play' };
       return coachStep;
     };
     syncCoach = (): void => {

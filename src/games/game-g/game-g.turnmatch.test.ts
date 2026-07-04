@@ -9,7 +9,7 @@ const click = (el: Element | null): void => { if (!el) throw new Error('click ta
 const press = (el: Element | null): void => { if (!el) throw new Error('press target null'); el.dispatchEvent(new MouseEvent('pointerdown', { bubbles: true, button: 0 })); };
 
 describe('Game G · 集成：出征进【回合制】战斗屏（doc24·happy-dom）', () => {
-  it('点出征 → 挂回合制战斗屏（四选一/结束回合/三路9格/8 捷径门钮 齐），非旧实时三路', () => {
+  it('点出征 → 挂回合制战斗屏（三行为抽/打/换·结束回合·三路9格 齐），非旧实时三路', () => {
     localStorage.clear();
     const container = document.createElement('div'); document.body.appendChild(container);
     const cleanup = mount(container);
@@ -20,8 +20,8 @@ describe('Game G · 集成：出征进【回合制】战斗屏（doc24·happy-do
     // 出征先放每关开局演出（doc27）→ 跳过进战斗
     const skip = container.querySelector('[data-act="story-skip"]');
     if (skip) click(skip);
-    // 进回合制战斗屏：动作按钮 + 结束回合 + 三路格（旧实时三路屏没有这些 data 钩子）。机关门钮已退役（owner 2026-07-03）。
-    for (const sel of ['[data-action="end"]', '[data-action="draw"]', '[data-action="deploy"]', '[data-action="lane"][data-arg="0"]', '[data-action="lane"][data-arg="2"]']) {
+    // 进回合制战斗屏：三行为顶钮(抽/打/换) + 结束回合 + 三路格（旧实时三路屏没有这些 data 钩子）。四选一互斥+机关门钮已退役（owner 2026-07-03）。
+    for (const sel of ['[data-action="end"]', '[data-action="draw"]', '[data-action="play"]', '[data-action="swap"]', '[data-action="lane"][data-arg="0"]', '[data-action="lane"][data-arg="2"]']) {
       expect(container.querySelector(sel), sel).not.toBeNull();
     }
     cleanup();
@@ -38,8 +38,7 @@ describe('Game G · 集成：出征进【回合制】战斗屏（doc24·happy-do
       click(container.querySelector('[data-action="play"]'));
       { const skip = container.querySelector('[data-act="story-skip"]'); if (skip) click(skip); } // 跳过开局演出 → 进战斗
       expect(() => {
-        press(container.querySelector('[data-action="deploy"]'));   // 选放牌
-        press(container.querySelector('[data-hand="0"]'));        // 选第一张手牌
+        press(container.querySelector('[data-hand="0"]'));        // 选第一张手牌 → 进「打·部署」选中态（三行为·选牌即入打）
         press(container.querySelector('[data-action="lane"][data-arg="1"]'));        // 落子中路
         press(container.querySelector('[data-action="end"]'));       // 结束回合 → 推进 + AI
         let g = 0;                                                // 逐场掷命：前奏(2s)→看明白了→战胜硬币(我方点掷/敌方自动)落定→继续

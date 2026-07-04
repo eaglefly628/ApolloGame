@@ -3,7 +3,7 @@
 //   只读 TurnBattleView（由 buildTurnBattleView 从 turn-combat 真状态派生）→ 出 HTML 串；不进 hash、不回灌判定。
 // 静态渲染 = 设计稿"静息态"(无 hover tooltip / 无 boss 飞出)；clash 特写覆盖层按 view.clash 选渲。live mount + 交互为后续切片。
 import { cardPoints } from './clash-resolve.js';
-import { SLOTS, manaGain, A_DEPLOY_SLOT, B_DEPLOY_SLOT, DEPLOY_COST, CAST_COST, clashOdds, unitPowerParts, type TurnBattle, type TurnUnit } from './turn-combat.js';
+import { SLOTS, manaGain, A_DEPLOY_SLOT, B_DEPLOY_SLOT, DEPLOY_COST, DRAW_COST, CAST_COST, SWAP_PER_TURN, clashOdds, unitPowerParts, type TurnBattle, type TurnUnit } from './turn-combat.js';
 import { powerRows } from './game-g-clash-view.js'; // 战力逐行明细共享格式器（④ 掷命特写 + ⑥ 场上兵 hover 单一真相）
 import type { InlayEntry } from './dizhi-data.js';
 import { FONTS } from './fonts.js'; // 自托管字体（替代外部 Google Fonts <link>）
@@ -131,6 +131,8 @@ export interface TurnSlotView { hasUnit: boolean; mine: boolean; isBorder: boole
 export interface TurnLaneView { name: string; slots: TurnSlotView[] }
 export interface TurnHandCardView { kind: 'pawn' | 'gang'; rank?: string; suit?: 's' | 'h' | 'd' | 'c'; name: string; power?: number; pts?: number; buff?: number; cost: number; zod?: string[]; rar: 'white' | 'green' | 'blue' | 'gold'; desc?: string; glyph?: string; selected?: boolean; dealt?: boolean; affordable?: boolean; general?: boolean; ench?: [string, number][] } // dealt=刚抽到的牌·飞入翻面入场动画(owner 2026-06-21)
 export interface TurnActionView { key: string; glyph: string; label: string; on: boolean; dim: boolean }
+// 子菜单钮（三行为 owner 2026-07-03·点开顶层「抽/打/换」→ 右侧子菜单二选一·各显源泉开销）：id=action 信号；cost=开销文案；active=当前子选中；disabled=买不起/换已用尽置灰。
+export interface TurnSubBtnView { id: string; glyph: string; label: string; cost: string; active: boolean; disabled: boolean; anchor?: string }
 export interface TurnClashCardView { rank: string; suit: 's' | 'h' | 'd' | 'c'; name: string; zod?: string; won: boolean; lastStand?: boolean } // lastStand：败者触发「死战不退·首负不亡」→ 显"死战不退"而非"阵亡"(owner 2026-06-21)
 export interface TurnClashView { laneName: string; mine: TurnClashCardView; foe: TurnClashCardView; oddsMine: number; rollPct: number; rollMine?: number; rollFoe?: number; bonusMine: [string, number][]; bonusFoe: [string, number][]; pEffMine?: number; pEffFoe?: number; extras?: string[]; revealed?: boolean } // revealed=false：掷骰前·藏掷值/胜负·等玩家点骰（owner 2026-06-21）；rollMine/rollFoe=各自掷战力骰的掷值(owner 2026-07-01·两骰同屏·各掷 [1,自己战力])
 export interface TurnShaView { filled: boolean; name: string; rar: 'white' | 'green' | 'blue' | 'gold'; desc: string; used?: boolean }
@@ -141,7 +143,7 @@ export interface TurnBattleView {
   homeA: number; homeB: number; homeMax: number;
   lanes: TurnLaneView[];
   hand: TurnHandCardView[]; handPawnCount: number; handGangCount: number;
-  actions: TurnActionView[]; actionSub: string; drawPick: boolean;
+  actions: TurnActionView[]; actionSub: string; sub: TurnSubBtnView[];
   sha: TurnShaView[]; bossName: string;
   clash: TurnClashView | null;
   tutorial: { narration: string; highlight: string } | null;
@@ -518,9 +520,9 @@ function topbarNode(view: TurnBattleView): LayoutNode {
   };
 }
 
-// ── 动作菜单（数据驱动·UI 铁律）：四选一 + 摸牌二选 + 操作提示 ──────────────────────
-// 取代手写 actBtn 网格：四动作=Button（glyph 入 label·on→primary / dim→quiet / 常态→ghost·均可点·同原 dim 仍可点）。
-// 锚点（combat-draw/deploy/cast/discard·combat-draw-pick）经 layout.anchor → data-anchor，battle-coach spotlight 不变。
+// ── 动作菜单（数据驱动·UI 铁律）：三行为「抽/打/换」+ 子菜单二选（各显开销）+ 操作提示 ────
+// owner 2026-07-03 三行为自由：顶层三钮（抽/打/换·互不互斥·源泉唯一门）→ 点开哪个 → 右侧子菜单二选一亮出各自源泉开销。
+// 顶钮锚点 combat-draw/play/swap；子钮各带自己锚点（部署扑克=combat-deploy / 打天罡=combat-cast / 抽走 combat-draw-pick 容器）供 battle-coach 高亮。
 function actionMenuNode(view: TurnBattleView): LayoutNode {
   const actBtn = (a: TurnActionView): LayoutNode => ({
     type: 'Button', id: `ggt-act-${a.key}`,
@@ -528,20 +530,23 @@ function actionMenuNode(view: TurnBattleView): LayoutNode {
     layout: { anchor: `combat-${a.key}`, chamfer: 8 }, // chamfer=倒角艺术边（owner 2026-06-28「按钮加点设计感/花纹」·复用引擎倒角原语·非手写 CSS）
   });
   const grid: LayoutNode = {
-    type: 'Panel', id: 'ggt-act-grid', props: { bare: true }, layout: { direction: 'grid', cols: 2, gap: 8 },
+    type: 'Panel', id: 'ggt-act-grid', props: { bare: true }, layout: { direction: 'grid', cols: 3, gap: 8 },
     children: view.actions.map(actBtn),
   };
-  const drawPick: LayoutNode = {
-    type: 'Panel', id: 'ggt-draw-pick', props: { bare: true }, layout: { direction: 'row', gap: 7, anchor: 'combat-draw-pick' },
-    children: [
-      { type: 'Button', id: 'ggt-draw-poker', props: { label: '🎴 摸扑克', kind: 'ghost', action: 'draw-poker' }, layout: { flex: 1 } },
-      { type: 'Button', id: 'ggt-draw-tengang', props: { label: '✦ 摸天罡', kind: 'ghost', action: 'draw-tengang' }, layout: { flex: 1 } },
-    ],
+  const subBtn = (s: TurnSubBtnView): LayoutNode => ({
+    type: 'Button', id: `ggt-${s.id}`,
+    // 子钮 label 内嵌开销文案（「部署扑克 · 💧按点」）：控件闭集里 Button 一行文本足够·各显开销即写进 label（不手写额外 CSS）。
+    props: { label: `${s.glyph} ${s.label} · ${s.cost}`, kind: s.disabled ? 'quiet' : s.active ? 'primary' : 'ghost', action: s.id },
+    layout: { flex: 1, ...(s.anchor ? { anchor: s.anchor } : {}) },
+  });
+  const subRow: LayoutNode = {
+    type: 'Panel', id: 'ggt-sub', props: { bare: true }, layout: { direction: 'row', gap: 7, anchor: 'combat-draw-pick' },
+    children: view.sub.map(subBtn),
   };
   const hint: LayoutNode = { type: 'Label', id: 'ggt-act-hint', props: { text: view.actionSub, size: 'xs', color: 'dim' } };
   return {
     type: 'Panel', id: 'ggt-actionmenu', props: { accent: true, pattern: 'stripe' }, layout: { direction: 'column', gap: 11, width: 300, padding: 16, chamfer: 14 }, // 装饰框：accent 金描边+柔光 / stripe 斜纹花纹 / chamfer 倒角（owner 2026-06-28「加点艺术设计感/花纹」·复用引擎装饰原语·非手写 CSS）
-    children: view.drawPick ? [grid, drawPick, hint] : [grid, hint],
+    children: view.sub.length ? [grid, subRow, hint] : [grid, hint],
   };
 }
 
@@ -751,13 +756,13 @@ const SUIT_KEYS: Record<string, 's' | 'h' | 'd' | 'c'> = { S: 's', H: 'h', D: 'd
 const lc = (s: string): 's' | 'h' | 'd' | 'c' => SUIT_KEYS[s] ?? 's';
 const rankOf = (r: string): 'white' | 'green' | 'blue' | 'gold' => (r === 'A' ? 'gold' : r === 'K' || r === 'Q' || r === 'J' ? 'blue' : 'white');
 
-export interface TurnViewOpts { theme?: 'onyx' | 'brocade'; tengangName?: (id: string) => string; tengangDesc?: (id: string) => string; clash?: TurnClashView | null; sha?: TurnShaView[]; bossName?: string; selMode?: string | null; selHand?: number; tutorial?: { narration: string; highlight: string } | null; notice?: string | null; movedIds?: Set<string>; freshIds?: Map<string, number>; dealtId?: string; battleLabel?: string; sfxOn?: boolean; settingsOpen?: boolean; bgmOn?: boolean; bgmIdx?: number; bgmVol?: number; bgmNames?: string[]; guideOn?: boolean; enchOf?: (rank: string, suit: string) => [string, number][]; inlays?: Record<string, InlayEntry[]>; waterBDisplay?: number }
+export interface TurnViewOpts { theme?: 'onyx' | 'brocade'; tengangName?: (id: string) => string; tengangDesc?: (id: string) => string; clash?: TurnClashView | null; sha?: TurnShaView[]; bossName?: string; selMode?: string | null; selHand?: number; playKind?: 'deploy' | 'cast'; swapFrom?: 'poker' | 'tengang'; tutorial?: { narration: string; highlight: string } | null; notice?: string | null; movedIds?: Set<string>; freshIds?: Map<string, number>; dealtId?: string; battleLabel?: string; sfxOn?: boolean; settingsOpen?: boolean; bgmOn?: boolean; bgmIdx?: number; bgmVol?: number; bgmNames?: string[]; guideOn?: boolean; enchOf?: (rank: string, suit: string) => [string, number][]; inlays?: Record<string, InlayEntry[]>; waterBDisplay?: number }
 /** 从 turn-combat 真状态派生战斗屏视图（玩家 = side a 视角）。纯读、不改 battle。 */
 export function buildTurnBattleView(b: TurnBattle, opts: TurnViewOpts = {}): TurnBattleView {
   const laneNames = ['上路', '中路', '下路'];
   const tgNm = opts.tengangName ?? ((id: string) => id);
   // 选牌待放(放的是兵牌)→ 各路放牌区「下一落点」高亮（owner 2026-06-21·与 turn-combat deployUnit 同找法：贴家那格起首个空位）。
-  const selDeploy = opts.selMode === 'deploy' && (opts.selHand ?? -1) >= 0 && b.a.hand[opts.selHand ?? -1]?.kind === 'poker';
+  const selDeploy = opts.selMode === 'play' && (opts.selHand ?? -1) >= 0 && b.a.hand[opts.selHand ?? -1]?.kind === 'poker';
   const lanes: TurnLaneView[] = b.lanes.map((L, li) => {
     const bySlot = new Map<number, { u: TurnUnit; mine: boolean }>();
     for (const u of L.a) bySlot.set(u.slot, { u, mine: true });
@@ -783,11 +788,36 @@ export function buildTurnBattleView(b: TurnBattle, opts: TurnViewOpts = {}): Tur
   const hand: TurnHandCardView[] = b.a.hand.map((c, i) => c.kind === 'poker'
     ? { kind: 'pawn', rank: c.rank, suit: lc(c.suit), name: SUITNM[lc(c.suit)] + c.rank, power: cardPoints(c.rank) + c.buff, pts: cardPoints(c.rank), buff: c.buff, cost: c.cost ?? DEPLOY_COST, zod: [], rar: rankOf(c.rank), selected: opts.selHand === i, dealt: opts.dealtId != null && c.id === opts.dealtId, affordable: (c.cost ?? DEPLOY_COST) <= b.a.mana, general: c.general, ench: opts.enchOf?.(c.rank, c.suit) }
     : { kind: 'gang', name: tgNm(c.id), cost: CAST_COST, rar: 'gold', desc: descOf(c.id), glyph: '✦', selected: opts.selHand === i, dealt: opts.dealtId != null && c.id === opts.dealtId, affordable: CAST_COST <= b.a.mana });
-  const ACT: [string, string, string][] = [['draw', '🎴', '抽牌'], ['deploy', '♟', '放牌'], ['cast', '✦', '打天罡'], ['discard', '🗑', '弃牌']];
-  const sel = b.actionTaken;
-  const mode = opts.selMode ?? sel; // 当前高亮动作类：未提交时取 UI 选中(selMode)，已锁则取 actionTaken
-  const SUB: Record<string, string> = { draw: '抽牌:天罡/扑克二选一', deploy: '放牌:免费·有牌就一直放(放牌区=贴家3格)·或结束回合', cast: '打天罡:选一张法术牌施放', discard: '弃牌:不互斥·弃后可再选一类动作(抽/放/打天罡)', '': '选一类动作·其余本回合锁定（弃牌例外：弃后可追加）' };
-  const actions: TurnActionView[] = ACT.map(([key, glyph, label]) => ({ key, glyph, label, on: mode === key, dim: !!sel && sel !== key }));
+  // 三行为自由（owner 2026-07-03·四选一互斥 → 抽/打/换·源泉唯一门）：顶层三钮·互不互斥（不再据 actionTaken 置灰），只「换」在本回合用尽后置灰。
+  const ACT: [string, string, string][] = [['draw', '🎴', '抽'], ['play', '♟', '打'], ['swap', '♺', '换']];
+  const mode = opts.selMode ?? undefined; // 当前点开的行为（UI 选中态·不再回落 actionTaken：无互斥）
+  const swapUsed = b.a.swapsUsed >= SWAP_PER_TURN; // 换牌硬帽用尽 → 换钮/子钮置灰（owner 2026-07-03「用完置灰」）
+  const mana = b.a.mana;
+  const drawAfford = mana >= DRAW_COST;
+  const SUB_HINT: Record<string, string> = {
+    draw: `抽牌:天罡/扑克二选一 · 各花 💧${DRAW_COST} 源泉`,
+    play: '打牌:部署扑克(按点数)/打天罡(💧1)·天罡+扑克可混·有源泉就打',
+    swap: swapUsed ? '换牌:本回合已用尽(1/回合)·下回合再换' : '换牌:选牌库→点手里1张 → 弃并随机补1张(免费·1/回合)',
+    '': '自由做 抽/打/换 · 互不互斥 · 只被召唤源泉限制（换免费·1/回合）',
+  };
+  // 各行为子菜单二选（各显源泉开销）：抽=直接抽库；打=选部署扑克/打天罡子模式(playKind)；换=选补牌库(swapFrom·置灰当已用尽)。
+  const playKind = opts.playKind ?? 'deploy';
+  const swapFrom = opts.swapFrom ?? 'poker';
+  const SUBS: Record<string, TurnSubBtnView[]> = {
+    draw: [
+      { id: 'draw-poker', glyph: '🎴', label: '抽扑克', cost: `💧${DRAW_COST}`, active: false, disabled: !drawAfford, anchor: 'combat-draw-pick' },
+      { id: 'draw-tengang', glyph: '✦', label: '抽天罡', cost: `💧${DRAW_COST}`, active: false, disabled: !drawAfford },
+    ],
+    play: [
+      { id: 'play-poker', glyph: '♟', label: '部署扑克', cost: '💧按点', active: playKind === 'deploy', disabled: false, anchor: 'combat-deploy' },
+      { id: 'play-tengang', glyph: '✦', label: '打天罡', cost: `💧${CAST_COST}`, active: playKind === 'cast', disabled: false, anchor: 'combat-cast' },
+    ],
+    swap: [
+      { id: 'swap-poker', glyph: '🎴', label: '补扑克', cost: '免费', active: swapFrom === 'poker', disabled: swapUsed },
+      { id: 'swap-tengang', glyph: '✦', label: '补天罡', cost: '免费', active: swapFrom === 'tengang', disabled: swapUsed },
+    ],
+  };
+  const actions: TurnActionView[] = ACT.map(([key, glyph, label]) => ({ key, glyph, label, on: mode === key, dim: key === 'swap' && swapUsed }));
   return {
     theme: opts.theme ?? 'onyx',
     turnWho: b.active === 'a' ? '我方回合' : '敌方回合', roundNo: b.turn, timerLabel: '∞ 无限时',
@@ -797,7 +827,7 @@ export function buildTurnBattleView(b: TurnBattle, opts: TurnViewOpts = {}): Tur
     homeA: b.homeA, homeB: b.homeB, homeMax: b.homeMax,
     lanes,
     hand, handPawnCount: hand.filter((c) => c.kind === 'pawn').length, handGangCount: hand.filter((c) => c.kind === 'gang').length,
-    actions, actionSub: SUB[mode ?? ''] ?? SUB[''], drawPick: mode === 'draw',
+    actions, actionSub: SUB_HINT[mode ?? ''] ?? SUB_HINT[''], sub: SUBS[mode ?? ''] ?? [],
     sha: opts.sha ?? [{ filled: true, name: '地煞·破军', rar: 'gold', desc: '' }, { filled: true, name: '地煞·贪狼', rar: 'blue', desc: '' }, { filled: false, name: '未知', rar: 'white', desc: '' }],
     bossName: opts.bossName ?? '楚霸王 · 项羽',
     clash: opts.clash ?? null,
@@ -814,6 +844,8 @@ export function buildTurnBattleView(b: TurnBattle, opts: TurnViewOpts = {}): Tur
 export interface TurnBattleActions {
   pickAction?: (kind: string) => void;
   drawFrom?: (from: 'poker' | 'tengang') => void;
+  playPick?: (kind: 'deploy' | 'cast') => void;  // 打·子菜单：切部署扑克/打天罡子模式
+  swapPick?: (from: 'poker' | 'tengang') => void; // 换·子菜单：选补牌库(天罡/扑克)
   selectHand?: (i: number) => void;
   playLane?: (lane: number) => void;
   endTurn?: () => void;
@@ -935,8 +967,9 @@ export function mountTurnBattle(host: HTMLElement, getView: () => TurnBattleView
     const hand = t.closest('[data-hand]') as HTMLElement | null;
     if (hand) {
       const idx = parseInt(hand.dataset.hand ?? '-1', 10);
-      const hc = getView().hand[idx];
-      if (hc && hc.affordable === false) {
+      const vw = getView(); const hc = vw.hand[idx];
+      const swapping = vw.actions.find((a) => a.key === 'swap')?.on === true; // 换牌免费 → 不受 affordable(部署费) 限制·任何手牌都能换
+      if (hc && hc.affordable === false && !swapping) {
         localNotice = '✗ 源泉不足';
         if (localNoticeTimer) clearTimeout(localNoticeTimer);
         localNoticeTimer = window.setTimeout(() => { localNotice = ''; render(); }, 1600);
@@ -961,8 +994,12 @@ export function mountTurnBattle(host: HTMLElement, getView: () => TurnBattleView
       else if (a === 'theme') actions.setTheme?.(k === 'brocade' ? 'brocade' : 'onyx');
       else if (a === 'draw-poker') actions.drawFrom?.('poker');
       else if (a === 'draw-tengang') actions.drawFrom?.('tengang');
+      else if (a === 'play-poker') actions.playPick?.('deploy');
+      else if (a === 'play-tengang') actions.playPick?.('cast');
+      else if (a === 'swap-poker') actions.swapPick?.('poker');
+      else if (a === 'swap-tengang') actions.swapPick?.('tengang');
       else if (a === 'lane') { actions.playLane?.(parseInt(k, 10)); render(); return; } // 棋枰数据化②：路轨迁 Panel.action='lane'（替 data-lane）·点该路落子
-      else if (a === 'draw' || a === 'deploy' || a === 'cast' || a === 'discard') actions.pickAction?.(a);
+      else if (a === 'draw' || a === 'play' || a === 'swap') actions.pickAction?.(a); // 三行为顶钮（owner 2026-07-03·抽/打/换）
       render(); return;
     }
     const lane = t.closest('[data-lane]') as HTMLElement | null;
