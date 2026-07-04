@@ -348,7 +348,14 @@
 >
 > **可回驳**：若你认为点吸引子该并进未来更通用的「力场（force field·点/线/风场）」一起设计、或 unproject 该走别的 seam → 请回驳并给替代。owner 要的是「粒子温柔地跟手聚拢」，`attractor` 是我判的最小充分手段、非硬指标。
 
-## REQ-3D-交互与材质补全批 · 对象拾取/图元/BlendSpace/贴图槽/HDRI 五件 + Tier3 不做清单固化 · [2026-07-03] · owner 提需 → 主程逐条裁决 → P3D · status: **排队中（接现核心工作完成后·Tier1 先行）** · 类型: 3D 线能力补全（Lead 图纸）
+## REQ-3D-交互与材质补全批 · 对象拾取/图元/BlendSpace/贴图槽/HDRI 五件 + Tier3 不做清单固化 · [2026-07-03] · owner 提需 → 主程逐条裁决 → P3D · status: **①✅②✅④✅⑤✅ 已实现已推（P3D 2026-07-04·各同提交回填手册·全绿·待 Lead review·见下回执/偏离）；③ 待拉动（角色步态成熟时开工）** · 类型: 3D 线能力补全（Lead 图纸）
+
+> **P3D 完工回执（2026-07-04·请 Lead review）**——逐件全绿（tsc+vitest+build）、同提交回填 `docs/playbooks/3d.md`：
+> - **①拾取**（`d33ad0b4`）：`Pickable3D` + `ThreeRenderer.pick(x,y)` + 纯函数 `rayAabbT`（6 无头测试）+ game-z 点选 HUD 自证。**两处偏离图纸请裁**：(a) 组件字段用 `signal`/`hover`（非图纸 `pickSignal`/`hoverSignal`·也未加 `enabled?`/`layer?`——无消费者·YAGNI）；(b) 射线对**世界 AABB 包围盒**求交（非逐三角 Mesh3D 几何）——换来**纯函数可无头测**且不依赖网格几何/WebGL，遮挡取最近盒。要精确到网格或改字段名我照办。hover 字段留了、发射待游戏在 pointermove 调 pick（demo 只做 click）。真浏览器点选自证待截图环境恢复。
+> - **②图元**（`c77bbc08`）：`Mesh3D.shape` +cylinder/cone/capsule/torus（+torus `tube`）·单一 `roundGeo()` 工厂三路共用·批签名/深度扩档（球保持 height 无关）·碰撞体未动（遵裁决）·game-z 南侧四图元展示·纯函数测。
+> - **④贴图槽**（`1c70a299`）：`Material3D`+`MaterialSpec` 加 `metalnessMap/emissiveMap/ormMap`+`tiling{repeat,offset}`；ORM 挂三槽·emissiveMap 置白基·tiling 进纹理+缓存键·pbrSig 纳入·跨界 asset-index（请一并 review）·game-z plank tiling 自证。**metal/emissive/orm 真图 demo 待 ORM 贴图资产**（槽已通·sig/catalog 已测）。
+> - **⑤HDRI**（`fc2b56f4`）：`Sky3D.envMap`（图纸说「env 接 assetKey」→ 我判 env 保持强度语义·**新加 envMap 字段**接 .hdr key·更兼容·请认可）；HDRLoader.parse→PMREM→environment·缺省/未就绪/失败回退程序化影室·容错不崩。**渲染 WebGL 无法无头测**·真 HDRI 视觉 demo 待 ≤2k .hdr 资产（导入线 .hdr 识别=asset-manager 侧后续）。
+> - **③BlendSpace**：按裁决「有真角色步态需求拉动时」开工·当前未拉动 → 未做（game-z 角色/追兵骨骼线成熟后接）。
 
 > owner 2026-07-03 提三档清单，主程逐条裁决如下（查重已做：接池内既有 seam/裁决，不重造）。
 >
