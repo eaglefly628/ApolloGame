@@ -27,6 +27,8 @@ import {
 import { makeFoe, counterDisabled, evalChallenge, damageOf, condLabel, type Foe } from './combat.js';
 import { elementBadge, diceFaceArt, lootCardArt, skyArt, CARDED_DEFIDS } from './art.js';
 import mashanFont from './assets/fonts/mashanzheng.woff2'; // 自托管中文毛笔艺术字（Ma Shan Zheng·OFL·仅子集·离线·标题 logo 用·见 assets/fonts/CREDITS.md）
+import { Throw3D } from './throw3d.js'; // 战场 3D 物理掷骰（物理落地→读朝上面=确定点数·owner 2026-07-03）
+import { preloadPhysics } from '@renderer/three/physics.js'; // 预热 cannon-es（首掷即步进·不等懒加载）
 
 const SOLO_HEARTS = 6;
 const FLOORS = 4;
@@ -129,6 +131,8 @@ export function mount(container: HTMLElement): () => void {
   engine.load(baseBlueprint());
   const renderer = new ThreeRenderer({ width: w, height: h, background: 0xe7e3dc, assets });
   engine.attachRenderer(renderer, stage);
+  void preloadPhysics(); // 预热 cannon-es（首次掷骰即步进·免懒加载首帧跳过）
+  const throw3d = new Throw3D(engine); // 战场物理掷骰编排器（tick 见 engine.subscribe·clear 见 beginRoom/teardown）
 
   // 种子化随机（引擎 RandomSeed·nextRandom 就地推进 → 可回放/双人 lockstep 同步·绝不 Math.random）。
   // **run-seed 开局生成**（每局不同·可出货）：单人从时钟取熵一次性播种，之后整局由种子确定（可回放）。
@@ -763,6 +767,7 @@ export function mount(container: HTMLElement): () => void {
   // ════════ 逻辑 ════════
   const beginRoom = (): void => {
     S.foe = newFoe(S.globalRoom); S.thrown = false; S.rolled = []; S.selected.clear(); S.disabled.clear(); S.rerolls = REROLLS;
+    throw3d.clear(); // 撤走上一房残留的物理骰
     bgRoom = S.globalRoom - 1; streamTo(bgRoom);
     renderer.setBackgroundTexture(skyArt(Math.floor((S.globalRoom - 1) / 3), 'warm')); // 换层换天空图
   };
@@ -774,13 +779,18 @@ export function mount(container: HTMLElement): () => void {
     return out;
   };
   const throwLoadout = (): void => {
-    if (S.loadout.length === 0) return;
+    if (S.loadout.length === 0 || throw3d.rolling) return;
     const dice = S.loadout.map((id) => S.library.find((d) => d.id === id)!);
-    S.rolled = rollPool(dice, rnd);
-    S.disabled = counterDisabled(S.rolled, S.foe.counter);
-    S.selected.clear(); S.rerolls = REROLLS; S.thrown = true; S.phase = 'arena';
-    S.msg = S.disabled.size ? '反制禁用了你最高+最低（🚫）·从其余里凑一手' : '点选骰子凑一手满足门槛';
-    render();
+    // 物理掷骰：5 骰真物理落地（owner 2026-07-03）→ 落定读朝上面 = 确定点数。掷骰中 UI 走等待态。
+    S.thrown = false; S.rolled = []; S.selected.clear(); S.disabled.clear(); S.phase = 'arena';
+    S.msg = '掷骰中…骰子落地即见点数'; render();
+    throw3d.throw(dice, bgRoom * ROOM_SPACING, performance.now(), (results) => {
+      S.rolled = results;
+      S.disabled = counterDisabled(S.rolled, S.foe.counter);
+      S.selected.clear(); S.rerolls = REROLLS; S.thrown = true;
+      S.msg = S.disabled.size ? '反制禁用了你最高+最低（🚫）·从其余里凑一手' : '点选骰子凑一手满足门槛';
+      render();
+    });
   };
   const doSubmit = (): void => {
     const sel = [...S.selected].map((i) => S.rolled[i]!);
@@ -868,9 +878,10 @@ export function mount(container: HTMLElement): () => void {
   const unsub = engine.subscribe(() => {
     // title 骰匀速翻滚已下沉成 render-only `Anim3D` 数据（见 showTitleDie）——不再游戏层手改 Transform3D（第一原则·停止绕过）。
     stepTransition();
+    throw3d.tick(performance.now()); // 战场物理掷骰：等 spawn→抬起翻滚→监测落定→读朝上面（壁钟驱动）
     const c = cam(); if (!c) return; const t = bgRoom * ROOM_SPACING; const cur = c.pivotZ ?? 0; c.pivotZ = Math.abs(t - cur) < 0.05 ? t : cur + (t - cur) * 0.12;
   });
   engine.start();
 
-  return () => { unsub(); engine.stop(); uiHost.removeEventListener('mousemove', onDustMove); uiHost.removeEventListener('mouseleave', onDustLeave); renderer.destroy(); if (ui) ui(); uiHost.remove(); wrapper.remove(); };
+  return () => { unsub(); engine.stop(); throw3d.clear(); uiHost.removeEventListener('mousemove', onDustMove); uiHost.removeEventListener('mouseleave', onDustLeave); renderer.destroy(); if (ui) ui(); uiHost.remove(); wrapper.remove(); };
 }
