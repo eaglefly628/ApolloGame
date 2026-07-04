@@ -25,6 +25,8 @@ import { pivotMatrix, applyPivot } from './three/pivot.js';
 import { WorldUiLayer } from './three/world-ui.js';
 import type { PhysicsSystem } from './three/physics.js'; // 运行时**懒加载**（见 ensurePhysics）：physics.ts 依赖 cannon-es 重包·仅在有 RigidBody3D 时才进图，无刚体的游戏(如 game-d)不连带解析 cannon-es（修 vite dev「Failed to resolve cannon-es」）
 import { RoomEnvironment } from 'three/addons/environments/RoomEnvironment.js';
+import { HDRLoader } from 'three/addons/loaders/HDRLoader.js';
+import { isModelHandle } from '@assets/index.js';
 
 export type { RenderStats } from './three/stats.js';
 import type { RenderStats } from './three/stats.js';
@@ -79,6 +81,8 @@ export class ThreeRenderer implements RendererBackend {
   // 环境光照（IBL·PMREM 中性影室·懒建一次）：金属/玻璃反射用。强度由 Sky3D.env 数据驱动。
   private envTex: THREE.Texture | null = null;
   private envIntensity = -1; // 当前已设强度（脏标·变才写 scene.environmentIntensity）
+  private hdriTex: THREE.Texture | null = null; // 真 HDRI PMREM 环境贴图（REQ-3D ⑤·区别中性影室 envTex）
+  private hdriKey = ''; // 当前已装 HDRI 资产 key（脏标·变/就绪才重建）
   // 2D-in-3D 扁平层（sprite/text/shape + 透明 Mesh3D fallback）
   private readonly meshes = new Map<string, THREE.Mesh>();
   private readonly glows = new Map<string, THREE.Sprite>(); // Glow3D 加性辉光精灵池
@@ -459,6 +463,7 @@ export class ThreeRenderer implements RendererBackend {
     this.models.dispose(this.scene);
     this.lights.dispose(this.scene);
     if (this.envTex) { this.envTex.dispose(); this.envTex = null; this.scene.environment = null; }
+    if (this.hdriTex) { this.hdriTex.dispose(); this.hdriTex = null; this.hdriKey = ''; }
     this.post.dispose();
     this.gl.dispose();
     this.gl.domElement.remove();
@@ -489,6 +494,14 @@ export class ThreeRenderer implements RendererBackend {
       if (this.scene.environment) { this.scene.environment = null; this.envIntensity = -1; }
       return;
     }
+    // 真 HDRI 资产在场且就绪 → 用它；否则回退程序化中性影室（就绪后自动切·向后兼容）。
+    const envTex = (sky?.envMap ? this.hdriEnv(sky.envMap) : null) ?? this.roomEnv();
+    if (this.scene.environment !== envTex) this.scene.environment = envTex;
+    if (this.envIntensity !== intensity) { this.scene.environmentIntensity = intensity; this.envIntensity = intensity; }
+  }
+
+  // 程序化中性影室 PMREM 环境贴图（懒建一次·RoomEnvironment·与 sky 色彩解耦·稳定可预期）。HDRI 缺省/未就绪的 fallback。
+  private roomEnv(): THREE.Texture {
     if (!this.envTex) {
       const pmrem = new THREE.PMREMGenerator(this.gl);
       const room = new RoomEnvironment();
@@ -496,8 +509,33 @@ export class ThreeRenderer implements RendererBackend {
       room.dispose();
       pmrem.dispose();
     }
-    if (this.scene.environment !== this.envTex) this.scene.environment = this.envTex;
-    if (this.envIntensity !== intensity) { this.scene.environmentIntensity = intensity; this.envIntensity = intensity; }
+    return this.envTex;
+  }
+
+  // 真 HDRI 环境贴图（REQ-3D ⑤）：从 AssetManager 取 .hdr 字节（equirect）→ RGBELoader.parse → PMREM → 环境贴图。
+  // 字节未就绪 → null（本帧回退程序化·就绪后自动切）。解析失败容错回退（不崩画面）。按 key 缓存·变才重建。
+  private hdriEnv(key: string): THREE.Texture | null {
+    if (this.hdriKey === key && this.hdriTex) return this.hdriTex;
+    const res = this.assets?.get(key);
+    if (!res || !isModelHandle(res.handle)) return null; // .hdr 以字节资产(ArrayBuffer)登记·未就绪则回退
+    try {
+      const hdr = new HDRLoader().parse(res.handle as ArrayBuffer); // equirect HDR → { data,width,height,type }
+      const eq = new THREE.DataTexture(hdr.data, hdr.width, hdr.height, THREE.RGBAFormat, hdr.type);
+      eq.needsUpdate = true;
+      const pmrem = new THREE.PMREMGenerator(this.gl);
+      const tex = pmrem.fromEquirectangular(eq).texture;
+      eq.dispose();
+      pmrem.dispose();
+      if (this.hdriTex) this.hdriTex.dispose();
+      this.hdriTex = tex;
+      this.hdriKey = key;
+      return tex;
+    } catch (e) {
+      console.warn('[renderer] HDRI 环境贴图解析失败 → 回退程序化影室（纯表现·不影响玩法）', e);
+      this.hdriKey = key; // 记下·别每帧重试同一坏图
+      this.hdriTex = null;
+      return null;
+    }
   }
 
   // 距离雾（scene.fog 线性·TA Phase 4）：无 Fog3D → 清雾；否则设/更新（fogSig 供脏标）。

@@ -212,7 +212,10 @@ export interface Sky3D extends Component {
   clouds?: boolean; // 叠程序化云团
   cloudTint?: number; // 云色·缺省白
   scroll?: number; // 云飘速度（0=不动·render-only）
-  env?: number; // 环境光照(IBL)强度·>0 时渲染器装中性影室环境贴图 → PBR 金属/玻璃才有反射可照（缺省 0=不装·向后兼容）
+  env?: number; // 环境光照(IBL)强度·>0 时渲染器装环境贴图 → PBR 金属/玻璃才有反射可照（缺省 0=不装·向后兼容）
+  // 真环境贴图（REQ-3D ⑤·= texture/HDRI 资产 key·equirect .hdr 字节）：在场且就绪 → RGBELoader+PMREM 真反射；
+  // 缺省 / 未就绪 → 回退程序化中性影室（RoomEnvironment）。env(强度) 仍生效。包体预算：建议 ≤2k 分辨率（掌机 cartridge）。
+  envMap?: string;
 }
 
 // ── L2 color ── 实体当前的颜色/透明度
