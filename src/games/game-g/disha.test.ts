@@ -2,7 +2,7 @@
 import { describe, it, expect } from 'vitest';
 import { cardPoints } from './clash-resolve.js';
 import { cardStamina } from './combat-types.js';
-import { aggregateDisha, stageDisha, STAGE_DISHA, NO_DISHA, DISHA_PLAYABLE } from './disha.js';
+import { aggregateDisha, stageDisha, STAGE_DISHA, NO_DISHA, DISHA_PLAYABLE, DISHA_SPECS, type DishaFx } from './disha.js';
 import { initTurnBattle, endTurn, aiTakeTurn, castDisha, clashOdds, MANA_START, unitPowerParts, type TurnUnit, type TurnBattle } from './turn-combat.js';
 
 const u = (id: string, rank: string, slot: number, o: { buff?: number; general?: boolean } = {}): TurnUnit =>
@@ -37,6 +37,31 @@ describe('Game G · 地煞（doc23 §八 关1-5 · 15 张 · 甲实装）', () =
     const d = aggregateDisha(stageDisha(1));
     expect(d.homeHp).toBe(2); expect(d.nearBasePower).toBe(1); expect(d.phalanxPerAdj).toBe(4); expect(d.phalanxCap).toBe(12); expect(d.lastStandGeneral).toBe(3); // §六：nearBasePower 2→1·phalanx 6/24→4/12·主将 3 命(REQ-G-主将命数参数化)
     expect(aggregateDisha([])).toEqual(NO_DISHA);
+  });
+
+  // 迁移守护（REQ-G-修正栈迁移·owner 2026-07-04）：aggregateDisha 内芯已迁引擎 t2-modifier-stack 的 aggregateModifiers。
+  // 独立 oracle = 旧自写逐字段循环语义（or=布尔取或 / max字段=取最大 / 其余=数值累加）；跨全 15 单卡 + 各关阵容 + 全池，
+  // 断言新路径逐字段一致 → 证战斗结算数值零漂移（turnHash 稳）。
+  it('迁移对照：aggregateDisha(新·走 aggregateModifiers) 逐字段 === 旧循环 oracle（全组合）', () => {
+    const BOOL = new Set(['phalanxAdj8', 'firstStrike', 'noRout']);
+    const MAX = new Set(['nearBaseSlots', 'lastStandGeneral', 'batteryEveryTurns', 'homeHp']);
+    const oldAgg = (ids: readonly string[]): DishaFx => {
+      const fx = { ...NO_DISHA } as unknown as Record<string, number | boolean>;
+      for (const id of ids) {
+        const s = DISHA_SPECS[id]; if (!s) continue;
+        for (const [k, sv] of Object.entries(s)) {
+          if (sv === undefined) continue;
+          if (BOOL.has(k)) fx[k] = (fx[k] as boolean) || (sv as boolean);
+          else if (MAX.has(k)) fx[k] = Math.max(fx[k] as number, sv as number);
+          else fx[k] = (fx[k] as number) + (sv as number);
+        }
+      }
+      return fx as unknown as DishaFx;
+    };
+    const ALL = Object.keys(DISHA_SPECS);
+    const combos: string[][] = [[], ...ALL.map((id) => [id]), ...STAGE_DISHA, ALL]; // 空·全 15 单卡·关1-5 阵容·全池
+    for (let i = 0; i < ALL.length; i++) for (let j = i + 1; j < ALL.length; j++) combos.push([ALL[i], ALL[j]]); // 全两两对
+    for (const c of combos) expect(aggregateDisha(c), `combo=${c.join(',')}`).toEqual(oldAgg(c));
   });
 
   it('🟢 温泉关死守：Boss 大本营 2 血 + 隘口(贴家 2 格)守军 +1 战力（§六重设：2→1）', () => {

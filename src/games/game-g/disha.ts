@@ -2,6 +2,8 @@
 // 纯数据「固定解释器」入参：每张地煞 = {kind 借天罡词汇 + 数值}，按关聚合成 DishaFx 喂 turn-combat 在 Boss(side b) 侧 apply。
 // 难易 triage（design G）：🟢易=复用现成胜率/buff · 🟡中=新 hook game-side · 🔴难=给简化兜底（伙伴骑兵/连环船/机动调度）。
 // 与 live-combat TengangFx 同构：disha.ts 只定义数据 + 纯聚合，turn-combat import 类型 + 在掷命/推进/大本营 apply（无环依赖）。
+// 聚合内芯已迁引擎能力 `t2-modifier-stack`（REQ-G-修正栈迁移·owner 2026-07-04）：删本地自写逐字段聚合循环 → 走 `aggregateModifiers`（字段表+每字段合并策略的唯一确定性核）。disha.ts 只留数据 + 行编码 + totals→DishaFx 映射；输出结构体 DishaFx 与调用方全不变。
+import { aggregateModifiers, type ModifierRow, type ModifierCtx } from '@skills/tier2/modifier-stack.js';
 
 // Boss 侧战斗修正聚合（一关 3 张地煞 → 一个 DishaFx）。winPct 字段 = 加到 Boss 掷命胜率的百分点（玩家视角 wr 相应下调）。
 export interface DishaFx {
@@ -94,8 +96,8 @@ export function splitDisha(ids: readonly string[]): { passive: string[]; playabl
   return { passive, playable };
 }
 
-// 地煞字段合并策略（聚合一关多张时·单一真相）：新增一个 DishaFx 字段 = 加一行·不改 aggregateDisha 主体。
-//   sum=数值累加 ｜ max=取最大（开局/结构型：隘口格数·炮兵周期·家血） ｜ or=布尔取或（先手/不溃/2命/8邻）
+// 地煞字段合并策略（单一真相）：新增一个 DishaFx 字段 = 加一行。sum/max/or 是**域可读别名**，行编码时映射成 modifier-stack 的 ModifierOp（add/max/or）。
+//   sum=数值累加 ｜ max=取最大（开局/结构型：隘口格数·炮兵周期·家血） ｜ or=布尔取或（先手/不溃/命数·8邻）
 type DishaMerge = 'sum' | 'max' | 'or';
 const DISHA_MERGE: Record<keyof DishaFx, DishaMerge> = {
   allWinPct: 'sum', generalWinPct: 'sum', phalanxPerAdj: 'sum', phalanxCap: 'sum', phalanxAdj8: 'or',
@@ -103,20 +105,34 @@ const DISHA_MERGE: Record<keyof DishaFx, DishaMerge> = {
   firstStrike: 'or', firstStrikeWinPct: 'sum', winStreakPer: 'sum', winStreakCap: 'sum',
   noRout: 'or', lastStandGeneral: 'max', bonusMana: 'sum', batteryEveryTurns: 'max', batteryWinPct: 'sum', homeHp: 'max', // lastStandGeneral 布尔→命数(int)后取 max（取最厚命数·同结构型开局字段）
 };
+const MERGE_TO_OP = { sum: 'add', max: 'max', or: 'or' } as const; // 域别名 → modifier-stack ModifierOp
+const DISHA_BOOL_FIELDS = new Set<keyof DishaFx>(['phalanxAdj8', 'firstStrike', 'noRout']); // DishaFx 里的布尔字段（totals→Fx 时按布尔取回）
+const NO_CTX: ModifierCtx = { resource: () => undefined, gate: () => true }; // 地煞无 valueFrom/无门控 → 空 ctx
 
-/** 聚合一组地煞 id → DishaFx（按 DISHA_MERGE 策略：数值累加 / 取最大 / 布尔取或）。纯函数·确定性。 */
-export function aggregateDisha(ids: readonly string[]): DishaFx {
-  const fx: DishaFx = { ...NO_DISHA };
-  const f = fx as Record<keyof DishaFx, number | boolean>;
+// 一组地煞 id → ModifierSource 行（每张每个非空字段一行·target=字段名·op=该字段合并策略）。供 aggregateModifiers 消费。
+export function dishaRows(ids: readonly string[]): ModifierRow[] {
+  const rows: ModifierRow[] = [];
   for (const id of ids) {
     const s = DISHA_SPECS[id]; if (!s) continue;
     for (const key of Object.keys(DISHA_MERGE) as (keyof DishaFx)[]) {
       const sv = s[key]; if (sv === undefined) continue;
-      const pol = DISHA_MERGE[key];
-      if (pol === 'or') f[key] = (f[key] as boolean) || (sv as boolean);
-      else if (pol === 'max') f[key] = Math.max(f[key] as number, sv as number);
-      else f[key] = (f[key] as number) + (sv as number);
+      rows.push({ id: `${id}:${key}`, target: key, op: MERGE_TO_OP[DISHA_MERGE[key]], value: typeof sv === 'boolean' ? (sv ? 1 : 0) : sv });
     }
   }
+  return rows;
+}
+// totals(字段→数/布尔) → DishaFx（缺字段回落 NO_DISHA·布尔字段按布尔取回）。
+function dishaFxFromTotals(t: Record<string, number | boolean>): DishaFx {
+  const fx: DishaFx = { ...NO_DISHA };
+  const f = fx as unknown as Record<string, number | boolean>;
+  for (const key of Object.keys(DISHA_MERGE) as (keyof DishaFx)[]) {
+    if (!(key in t)) continue;
+    f[key] = DISHA_BOOL_FIELDS.has(key) ? Boolean(t[key]) : Number(t[key]);
+  }
   return fx;
+}
+
+/** 聚合一组地煞 id → DishaFx。内芯走引擎 `t2-modifier-stack` 的 `aggregateModifiers`（确定性·add/max/or 固定序）。纯函数。 */
+export function aggregateDisha(ids: readonly string[]): DishaFx {
+  return dishaFxFromTotals(aggregateModifiers(dishaRows(ids), NO_CTX));
 }
