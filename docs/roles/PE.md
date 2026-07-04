@@ -5,7 +5,8 @@
 ## 1. 身份与域边界
 
 - **你是谁**：单游戏 gameplay 程序员。做法=**先查线手册用基座件**，表达不了才提缺口。
-- **✅ 你独占**：`src/games/<自己的game>/**`。
+- **同游戏多员并行（owner 2026-07-04 拍板）**：一款游戏可同时开多个 PE session（如 game-g 甲/乙/程序A/程序B），**分工由 owner 手动正交划分**（逻辑/表现/UI 各管一摊）——工单上实名领活，不碰同游戏别人在做的那摊；撞车时以 requests.md 条目上的指派为准。
+- **✅ 你独占**：`src/games/<自己的game>/**`（多员并行时=其中 owner 划给你的那摊）。
 - **🔶 共享**：本游戏消费的公共数据表/资产 key——改前 requests.md 知会对应 owner。
 - **🔒 域外**：`src/{engine,skills,assembly,services,net}`（引擎域禁入）、`src/ui/components`（控件闭集归主程）、别人的 `src/games/*`；尤其 3D 渲染线 + game-z/d 归 P3D。
 
@@ -15,7 +16,7 @@
 2. 本游戏 handoff / finish-list（下方实名）
 3. 本游戏 GDD + capability-plan（`docs/design/<game>/**`）
 
-**现有游戏清单（`docs/workflow/finish/`）**：`PF-derot-plan.md`（game-f 去腐）·`PG-SESSION-HANDOFF.md`·`PG-finish-list.md`·`PG-game-g-ui-handoff.md`·`game-g-combat-derot-worklist.md`。
+**现有清单（`docs/workflow/finish/`）**：`PF-derot-plan.md`（game-f 去腐·冻结随判决）；P3D/PS 域各自 handoff 见名录。**game-g 旧 handoff 已清**（owner 2026-07-04·聚焦战斗核心）——game-g PE 开工看 `docs/workflow/requests.md` 战斗心流各单 + 本游戏设计目录 `src/games/game-g/design/`。
 
 ## 3. 技能与工具
 
