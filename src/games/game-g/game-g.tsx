@@ -407,6 +407,18 @@ export function mount(container: HTMLElement, shell?: { exit?: () => void }): ()
       outer.appendChild(lab);
       document.body.appendChild(outer); window.setTimeout(() => outer.remove(), 1000);
     };
+    // 战后·结果标在牌上·短暂驻留可回看（owner 2026-07-03「结算完把结果标在牌型展示上·我知道谁打了谁·别塞结算框」·REQ-G-谁打谁 §②）。
+    // 纯表现层 DOM 徽标：锚在真实场上兵位(#u-<id>·读实时屏幕矩形)·飘现后驻留 ~3s 再淡出 → owner 收场后仍看得清哪枚是本场胜者(留场推进)。不动 tb/rng/turnHash。
+    const stampBoard = (unitId: string, text: string, col: string): void => {
+      const el = document.getElementById('u-' + unitId); if (!el) return;
+      const rect = el.getBoundingClientRect(); if (!rect.width) return; // 无头/隐藏 → 不标
+      const b = document.createElement('div'); b.textContent = text;
+      b.style.cssText = `position:fixed;left:${rect.left + rect.width / 2}px;top:${rect.top - 6}px;transform:translate(-50%,-100%);z-index:238;pointer-events:none;font:700 12px/1 "Noto Serif SC",serif;color:#1a1208;background:linear-gradient(180deg,${col},${col}cc);border:1px solid rgba(0,0,0,.4);border-radius:7px;padding:4px 9px;white-space:nowrap;box-shadow:0 3px 10px rgba(0,0,0,.5);opacity:0;transition:opacity .3s ease,transform .3s cubic-bezier(.3,1.5,.5,1)`;
+      document.body.appendChild(b);
+      requestAnimationFrame(() => { b.style.opacity = '1'; b.style.transform = 'translate(-50%,-118%)'; }); // 弹现
+      window.setTimeout(() => { b.style.transition = 'opacity .5s ease'; b.style.opacity = '0'; }, 3000); // 驻留 3s 后淡出
+      window.setTimeout(() => b.remove(), 3600);
+    };
     const tgName = (id: string): string => TIANGANG_BY_ID.get(id)?.name ?? id;
     const tgDesc = (id: string): string => TIANGANG_BY_ID.get(id)?.text ?? '持续战法·打出后整场生效'; // 磨砂浮层：天罡效果文案
     const SUITNM2: Record<string, string> = { S: '黑桃', H: '红桃', D: '方块', C: '梅花', s: '黑桃', h: '红桃', d: '方块', c: '梅花' };
@@ -474,7 +486,7 @@ export function mount(container: HTMLElement, shell?: { exit?: () => void }): ()
         if (ctx.loserId && !e.lastStand) { playSfx('clashLose'); playGhost(exitCaps.get(ctx.loserId) ?? null, 'tear'); }
         else if (e.lastStand) { log(`🛡 死战不退：敌主将【${aiName}】首负不亡·残喘退守 1 格`); showBanner('🛡 死战不退 · 敌主将首负不亡', 1500); }
       } else if (sig.name === 'clash:survivor') { // ③ 幸存者去留：连胜满→光荣回库 / 否则头顶「战力对折 −N」
-        if (ctx.winnerId && !e.lastStand) { playSfx('clashWin'); if (e.winStays === false) playGhost(exitCaps.get(ctx.winnerId) ?? null, 'glory'); else playGhost(exitCaps.get(ctx.winnerId) ?? null, 'fatigue', `连胜${ctx.streak}场 · 战力−${ctx.cut}（对折）`); }
+        if (ctx.winnerId && !e.lastStand) { playSfx('clashWin'); if (e.winStays === false) playGhost(exitCaps.get(ctx.winnerId) ?? null, 'glory'); else { playGhost(exitCaps.get(ctx.winnerId) ?? null, 'fatigue', `连胜${ctx.streak}场 · 战力−${ctx.cut}（对折）`); stampBoard(ctx.winnerId, `⚔ 胜 · 连胜${ctx.streak}`, '#e8cd8a'); } } // 留场胜者：瞬时对折飘字(1s) + 驻留「⚔胜」徽标(3s·可回看谁赢了留场·owner 2026-07-03)
       } else if (sig.name === 'clash:resume') { postClashCtx = null; const r = perfResume; if (r) r(); } // ④ 收场续下一场
     });
     const buildClashView = (): TurnClashView | null => { if (!perfClash) return null; const cv = clashToTurnView(perfClash, tgName, save.inlays); cv.revealed = clashRevealed; return cv; };
