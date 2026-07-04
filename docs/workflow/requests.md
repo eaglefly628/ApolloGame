@@ -50,101 +50,13 @@
 > **验收门槛**：改完两处断言在「故意打断被测行为」时**真会红**（PS 自证：临时把 mock 排序去掉 / 幂等去掉 → 测试应红）；tsc+vitest+build 全绿直推 mainbranch。**边界**：只动这两个 `*.test.ts`（必要时连带补 mock 的真实排序/幂等实现·仍在 PS 平台域内），不外溢。
 
 
-## 已归档条目索引（2026-07-03 归档手术 · 全文见 `requests-archive.md`）
+## 已结案条目 → 全文见 `requests-archive.md`
 
-> - REQ-UI-web字体加载（数据化）+ 第3字体槽 + Label ink 令牌 · [2026-07-02] · P3D（game-d 对齐 Cloud Design 撞到·全 app 受益） → 主程（UI 库域） · status: **✅ done（主程 2026-07-02·①机制下沉 + ③令牌落地·②已存→回驳；剩 vendor woff2 数据活）** · 类型: 真能力缺口（3 项·尺子已过·不可重组）
-> - REQ-寻路 · [2026-06-28] · owner→Lead 直派（引擎域·Lead 登记） · status: **✅ done（主程 2026-06-28·`astar.test.ts`+`pathfind.test.ts`）** · 类型: 真能力缺口下沉（连续自由空间寻路）
-> - REQ-UI-G战斗手牌 · [2026-06-27] · GA（game-g·战斗 UI 数据驱动重构撞到） · status: **✅ 已裁（① 效果半边=`layout.fx` 下沉·done；② 牌面信息层=主程 via REQ-UI-G棋枰 裁决回驳新抽象→格内兵牌/手牌用 PlayingCard+私货皮·随 play-field 现状豁免·保持 bespoke）** · 类型: 真能力缺口下沉（① done / ② 回驳-豁免）
-> - REQ-UI-容器可点 · [2026-06-28] · GA（game-g 棋枰数据化重写·阶段②需） · status: **✅ done（主程 2026-06-28·接受·`Panel.action`+`actionArg`·`panel-action-fade-keyframes.test.ts`）** · 类型: 真能力缺口（容器无 action）
-> - REQ-UI-fx源泉消退 · [2026-06-28] · GA（game-g 棋枰数据化重写·阶段④需·owner 点名可做） · status: **✅ done（主程 2026-06-28·接受·fx kind `'fade'`·`panel-action-fade-keyframes.test.ts`）** · 类型: 真能力下沉（fx 闭集补 kind）
-> - REQ-UI-容器描边形 · [2026-06-28] · GA（game-g 棋枰数据化重写·阶段②城堡/格框撞） · status: **✅ done（主程 2026-06-28·owner 插播优先·三字段全接受·`panel-edge-radius-dashed.test.ts`）** · 类型: 真能力缺口（Panel 边框表达力·闭集补字段）
-> - REQ-UI-fx控件叠层 · [2026-06-28] · GA（game-g·接 REQ-FX 给战斗 HUD 补 fx 时撞到） · status: **✅ 已裁（主程 2026-06-28·①误诊-驳 / ②done 导出 `ensureUiKeyframes`）** · 类型: 真能力缺口（fx 叠层未通达自渲染控件）
-> - REQ-UI-Label字阶裸数字 · [2026-06-28] · PG 实现（**owner 当面授权 PG 直接改引擎此一处·非常规**） · status: **✅ done（PG 2026-06-28·`label-size-number.test.ts`）** · 类型: 真能力缺口（curated 字阶太粗·不可重组）
-> - REQ-UI-G收藏卡 · [2026-06-26] · PG 同步（UI 库域·game-g 收藏页逐页对齐撞到的缺口） · status: **✅ done（主程 2026-06-26·①② 均下沉·`collection-card.test.ts`）** · 类型: 真能力缺口（尺子已过·不可重组）
-> - REQ-UI-G大厅审尺寸/卡内布局 · [2026-06-27] · PG 同步（UI 库域·owner 大厅人肉审批量） · status: **✅ 已评审（主程·①接受 ②③④⑤回驳-已覆盖·裁决见末尾「REQ-UI-G牌组保真批」+ `tag-size-card-overlay.test.ts`）** · 类型: 混合（1 真缺口 + 4 已覆盖）
-> - REQ-UI-G流光底纹 · [2026-06-26] · PG 同步（UI 库域·主页质感对齐撞到） · status: **✅ done（主程·①layout.sheen ②PlayingCard.backPattern ③Panel.pattern·`sheen-pattern-bigtext.test.ts`）** · 类型: 真能力缺口（通用质感·不可重组）
-> - REQ-UI-Label大号字 · [2026-06-26] · PG 同步（UI 库域·主页比例对齐撞到） · status: **✅ done（主程·Label.size xxl=28/xxxl=34）** · 类型: 真能力缺口（档位不足）
-> - REQ-UI-Tabs每页签锚点 · [2026-06-26] · PG 同步（UI 库域·新手指导接线撞到） · status: **✅ done（主程 2026-06-26·`tabs[i].anchor` → nav 按钮 data-anchor·`tabs-anchor.test.ts`）** · 类型: 真能力缺口（不可重组）
-> - REQ-UI-数字补间 / 富文本 · [2026-06-23] · Lead 登记（UI 库域） · status: **✅ done（owner 2026-06-25「都做完不要等·早晚需求」·下沉为 Label.tween / Label.spans）** · 类型: 真能力缺口下沉（manifesto 尺子已过）
-> - REQ-UI-3缺口（变换/动画/拖放） · [2026-06-23] · Lead 主导（UI 库域·跨游戏重构前置） · status: **✅ done（声明式下沉·game-i 同提交）** · 类型: 真能力缺口下沉（manifesto §4 评审通过）
-> - REQ-G-退役旧战斗核 · [2026-06-22] · owner→game-g 甲（combat 域 · 主程评审登记） · status: **✅ done（甲·5 步全清·单一真相·`8c6c2751`/`a0970248`/`d91221a3`）** · 类型: 技术债清理（双核/双屏并存 → 单一真相）
-> - REQ-ARCH-MENU-DSL · [2026-06-21] · 框架级（PG-乙 转呈 · owner 拍板「提主程评」）· status: **✅ 主程裁决 2026-06-26：B 方案能力已就绪（LayoutNode + ActionSink 信号绑定·本 session 落地）·见下「主程裁决」** · 类型: 通用能力（已下沉·非单游戏 DSL）
-> - REQ-LAUNCHER-EXIT · [2026-06-21] · program G 乙（owner→乙·实属 launcher 域·转交主程）· status: **✅ done（主程·launcher 部分）：返回收进齿轮菜单 `GameOverlayMenu` + `mount(el,{exit})` 退出钩子契约（game-g 经 {exit} 自接·故不为它叠返回钮）。game-g 设置菜单接退出项=乙** · 类型: 启动器 UX + 退出钩子
-> - REQ-G-卦象结算加减 · [2026-06-21] · owner→甲（Game G·结算逻辑） · status: **✅ done（甲·`settleTurn` 战利品按今日卦象±·确定性·大吉+2…大凶−2·夹≥0）** · 类型: 战斗逻辑（结算期·甲域）
-> - REQ-E-023 · [2026-06-18] · PE（Game E 小丑牌 · 牌库扩展总纲）· 框架级 · status: **⑥ 仅余 open（①②③⑤ done · ④ wontfix）** · 类型: 多个真缺口（逐项独立）
-> - REQ-023 · [2026-06-09] · 主程4（Game F）· status: **wontfix（2026-06-15·重组覆盖）** · 类型: group-effect 集合写
-> - REQ-F-064 · [2026-06-15] · game-f（Boss 技能）· status: **wontfix / done-covered（2026-06-15）** · 类型: 现有能力重组（非缺口）
-> - PG-乙→甲 · [2026-06-21] · Game G · status: **✅ done（并入 REQ-G-退役旧战斗核·`a0970248`/`8c6c2751`）** · 类型: 战斗段死代码清理
-> - REQ-G-战斗结构 · [2026-06-21] · design G → 甲 · Game G · status: **✅ 核心已实现（战胜硬币 50/50 + 3D + 玩家亲掷/AI自动）；stayPMul/续航门 随天罡地煞重设计再落** · 类型: 真缺口（结构性）
-> - REQ-UI-fontPixel令牌 · [2026-06-27] · PI（game-i 展示台）→ 主程（引擎 UI 域）· status: **✅ done（主程·SHELL+Apollo 基座补 fontPixel 令牌·`font-pixel-default.test.ts`）** · 优先级: P3 · 类型: 令牌补全（小·非结构）
-> - REQ-UI-引导可演示性 · [2026-06-27] · PI（game-i 展示台）→ 主程（引导/Overlay 域）· status: **✅ 已答（主程·非缺口·见下答复）** · 优先级: P3 · 类型: 问询（可演示性·非缺口）
-> - REQ-FX-战斗特效抽象 · [2026-06-27] · owner → 主程（UI 库域 + 架构） · status: **✅ done（主程·两正交特效库·防开关爆炸）** · 类型: 真能力下沉 + 架构定调
-> - REQ-UI-BUG-style属性引号截断 · [2026-06-28] · PI → 主程（UI 库域·render.ts 序列化） · status: **✅ done（主程 2026-07-01·根因=主题字体名双引号在 style="" 提前闭合属性→字体名一律单引号·修 9 处字体栈·`theme-font-quote-safe.test.ts`）** · 类型: 渲染正确性 bug（击穿已发特性）
-> - REQ-UI-BUG-fx与绝对定位不兼容 · [2026-06-28] · PI → 主程（UI 库域·render.ts/layoutStyle） · status: **✅ done（主程 2026-07-01·x/y 在场时剥掉 fx 的 position:relative·absolute 赢·`ui-bugfix-fx-toggle-slider.test.ts`）** · 类型: 两 render-only 特性不组合
-> - REQ-UI-BUG-Toggle视觉点击不更新 · [2026-06-30] · P3D（game-z 调试面板实测） → 主程（UI 库域·server.ts reconcile 焦点保护） · status: **✅ done（主程 2026-07-01·焦点保护只认文本控件·checkbox/radio 放行重建·`ui-bugfix-fx-toggle-slider.test.ts`）** · 类型: 渲染正确性 bug（控件视觉与状态脱节）
-> - REQ-UI-BUG-Slider回调偶发undefined · [2026-06-30] · P3D（game-z 调试面板实测） → 主程（UI 库域·server.ts dispatch） · status: **✅ done（主程 2026-07-01·根因=dispatch 同绑 click+change·值控件非 change 事件不派发·`ui-bugfix-fx-toggle-slider.test.ts`）** · 类型: 健壮性 bug（脏值入回调）
-> - REQ-Resource · 引擎底层统一资源(Resource)层：3D 资产走 2D 贴图同款资产管理路线 · [2026-06-30] · owner → 主程/Lead（引擎核心资产层域·跨 2D/3D） · status: **✅ Lead 评审通过（接受·扩现有 Asset 层非新建·归属 hybrid·A/B 定 B + 钉死共享契约消返工·2026-07-01）** · 类型: 引擎底层架构（资产管理统一）
-> - REQ-UI-骰途逐像素 · LayoutNode 补 3 项通用能力（毛玻璃 / 衬线字体槽 / Image 透明度）· [2026-07-01] · P3D（game-d）→ 主程 · status: **✅ done（主程 2026-07-01·3 项全接受实现·`panel-glass-serif-opacity.test.ts`）** · 类型: UI 库闭集扩容（下沉成通用控件能力）
-> - REQ-APOLLO-PROMPT-去手抄词汇表 · apollo.py 生成 prompt 改为全依赖自动 catalog · [2026-07-02] · 主程 → **指派：Opus** · status: **✅ 完成（2026-07-02）** · 类型: 防漂移收口
-> - REQ-STUDIO-M0-库地基 · 创作台 v1（本地网页版）用户游戏库后端 · [2026-07-02] · 主程 → **指派：Opus** · status: ✅ **done（2026-07-02）** · 类型: 产品化·新增（不碰引擎核）
-> - REQ-STUDIO-M1-卡带架接库 · 创作台 v1 前端：玩家模式 + 数据卡带运行器 · [2026-07-02] · 主程 → **指派：Opus** · status: ✅ **done（2026-07-02·Opus·返修后）** · 类型: 产品化·前端（不碰引擎）
-> - REQ-STUDIO-M2-创作向导与迭代回路 · 创作台 v1 灵魂件：说一句创意→卡带 + 对话式修改 · [2026-07-02] · 主程 → **指派：Opus** · status: ✅ **done（2026-07-02·Opus）** · 类型: 产品化（apollo.py+前端，不碰引擎）
-> - REQ-STUDIO-M3M4-设置页与体检 · 创作台 v1 收尾：BYO key 设置 + 卡带体检 · [2026-07-02] · 主程 → **指派：Opus** · status: ✅ **done（2026-07-02·Opus）** · 类型: 产品化（apollo.py+前端，不碰引擎）
-> - REQ-PLAYBOOKS-十线手册 · 按 playbooks/index.md 起草各生产线接线图手册 · [2026-07-03] · 主程 → **指派：Opus** · status: **✅ done（Opus 2026-07-03）** · 类型: 文档（工作流基建）
-> - REQ-STUDIO-DESIGN-设计先行创作流 · 创作台主工作流升级：讨论→分解→对齐→定稿→原型 · [2026-07-03] · 主程 → **指派：Opus** · status: ✅ **done（2026-07-03·Opus）** · 类型: 产品化（apollo.py+前端，不碰引擎）
-> - REQ-CAP-三件下沉 · modifier-stack / timeline / save-port（owner 2026-07-03 全批）· 主程出图 → **指派：Opus** · status: ✅ **done（2026-07-03·Opus·三件各自提交全绿直推）** · 类型: 引擎 capability 下沉（正确性关键）
-> - REQ-ARCH-SAVE · [2026-06-21] · program G 乙 · **作废（主程清池 2026-07-03）**：已被 save 端口下沉取代（302b196f·2026-07-03）
-> - LEAD→PG · [2026-06-18] · Game G（Mesh3D 可选迁移）· **作废（主程清池 2026-07-03）**：超两周无认领·owner 清池令（可选迁移·game-g 自决·无动静）
-> - REQ-024 · [2026-06-21] · PA · Game A · **作废（主程清池 2026-07-03）**：消费方游戏已删除（game-a）
-> - REQ-F-062 · [2026-06-13] · 主策划（Game F）· **冻结（主程清池 2026-07-03）**：随 game-f 判决重开（owner 2026-06-25 冻结令）
-> - LEAD→PF · [2026-06-14] · Game F · **冻结（主程清池 2026-07-03）**：随 game-f 判决重开（owner 2026-06-25 冻结令）
-> - BUG-G-源泉徽标 · [2026-06-21] · owner→game-g 乙 · status: **done（乙回滚）** · 归档 2026-07-03（表现回滚·已结）
-> - REQ-ARCH-COACH · [2026-06-21] · design G · status: **done（表现层·Lead `ac64e1c1`·验收 PASS）** · 归档 2026-07-03
-> - REQ-E-022 · [2026-06-18] · PE · status: **done（引擎+接线 2026-06-18）** · 归档 2026-07-03（poker-eval isFlush/isStraight 派生事实）
-> - REQ-E-021 · [2026-06-18] · PE · status: **done（引擎侧 2026-06-18）** · 归档 2026-07-03（Card.mods/retrigger per-card 附魔）
-> - REQ-F-065 · [2026-06-17] · 策划 PF · status: **done（引擎侧 2026-06-17）** · 归档 2026-07-03（scaleByResource per-unit 异质缩放）
-> - REQ-F-061 · [2026-06-13] · 主策划 · status: **done（2026-06-13）** · 归档 2026-07-03（Hitbox hp 条件门+处决）
-> - REQ-UI-G牌组保真批（5 条）· [2026-06-27] · PG · status: **已评审·结案（1 接受 4 回驳·Tag.size+Tooltip.block）** · 归档 2026-07-03
-> - REQ-UI-Gemini评审 · [2026-06-26] · Lead 评审 · status: **结案（C2/C3 done·余回驳/备案）** · 归档 2026-07-04（清池复核）
-> - REQ-025 · [2026-06-25] · PA · 双人合作平台跳跃 · **作废（主程清池复核 2026-07-04）**：无立项消费方·新游戏先过 capability-plan 重提
-> - REQ-G-诅咒地煞 · [2026-06-21] · design G → 甲 · **作废（主程清池复核 2026-07-04）**：被 REQ-G-地煞新op #4 同族参数化吸收（owner 暂缓原判保留）
-> - REQ-G-说明同步 · [2026-06-21] · design G → 乙 · **作废重开（主程清池复核 2026-07-04）**：战斗模型大改中·doc26 将重写·收口后按新版重开一次做对
-> - REQ-UI-Label深色令牌(ink) · [2026-07-01] · P3D → 主程 · status: **✅ done（随 web字体批 2026-07-02 落地·2026-07-04 结案归档；game-d 切换活并入 REQ-GAMED）** · 类型: UI 库闭集扩容
-> - REQ-G-Boss-AI · [2026-06-21] · design G → 甲 · status: **✅ 实装+sim验证（2026-06-23）·结案归档 2026-07-04（活尾由 Player-AI 单 + design G 标定线接管）** · 类型: 真缺口（已闭合）
-> - REQ-BASE-引擎卫生三件（tray 补注册+守护测试 / Card3D 清遗 / view.ts 死码删）· [2026-07-03] · 主程 → 指派：Opus · status: **✅ done（2026-07-03·Opus）** · 归档 2026-07-04（自粘连行拆出）
+> 所有 done/wontfix/作废 条目（含裁决理由与完工摘要）已归档到 `requests-archive.md`；查旧单先 grep 它。本池只留活跃 open/in-progress/排队 条目（防每读付历史 token·owner 2026-07-04 token 底盘优化）。
 
 ### REQ-CAP-改掷RollMod下沉 · 引擎 dice 核收编 game-g RollMods 先例（天罡②/game-d/英雄牌共用） · [2026-07-04] · 主程（天罡原生重构 ② 架构裁决派生） · status: **排队（指派：Opus·xhigh·战斗核稳后随虚胖清算一波做·不阻塞战斗迭代）** · 类型: 引擎 capability 扩展（正确性关键·确定性）
 > **裁决更新（2026-07-04·与 `e780156a` 空中相遇）**：程序A 已在 game-g 落了掷骰系（`clash-resolve.ts` 的 `RollMods{bonus,floor,twice}` 纯函数核+确定性测试）——**形状合格·不打回**（数据行+纯函数，正是易迁形）。本单由"新建"改**"收编先例"**：引擎 `t2-dice` 吸收 RollMods 闭集（字段名对齐先例·补 `autoWinIfStronger`/铁骰语义入 opposedRoll）→ game-g 切换消费引擎核、删本地副本 → game-d/英雄牌复用。这也是宪法「游戏先证明、引擎再收编」的标准路径，撞车成本≈0。
 > **spec（Lead 图纸）**：`src/skills/tier2/dice.ts` 族加 **`RollMod` 闭集**（数据行，非钩子函数）：`{kind:'bonus',value}`（掷后加值）/ `{kind:'floor',min}`（掷值下界钳）/ `{kind:'advantage'}`（掷两次取高）/ `{kind:'autoWinIfStronger'}`（我方战力≥敌免掷直接胜·仅 opposedRoll 语境）。约束：①纯函数核（`applyRollMods(roll, mods, rng)` + opposedRoll 接 `mods` 参数）·确定性（advantage 的第二掷从同一 RNG 流序取·顺序固定）；②闭集进 registry describe/examples；③逐 kind 点名测试 + 组合序测试（bonus+floor 先 bonus 后 floor·文档钉死）；④不改 DicePool/RolledDice 既有语义（向后兼容）。消费方：game-g 天罡②（鬼手/磐石/灌铅骰/铁骰）· game-d 骰途改掷类 · 英雄专属牌改掷层（未来扩）。门禁全绿直推。
-
-### REQ-PA-文档一致性五件 · PA 自查清单 Lead 裁决 · [2026-07-04] · PA 提报 → 主程裁决 → 指派：PA · status: **✅ done（PA `de8e1827`·Lead 验收 REVIEW: PASS 2026-07-04）** · 类型: 防漂移整改（PA 自查·全收）
-> **Lead 验收（2026-07-04·复核 diff + 独立复跑 guard/门禁全绿）**：①② 快照标注+机读指针完全照裁决修法（未追手抄精确数·「现约 4.9k / 约 3 万」量级词不会漂）；④ assets.md 批量入库行落位·脚本名核真·「加一个包=加一条 PACKS 配置」措辞还顺手强化了数据驱动口径；⑤ 头注改准（curl 出口面与工具层发现面分开说清）。**零偏差**。唯一瑕疵=忘翻工单状态，本行由 Lead 代关。
-> **Lead 裁决（2026-07-04·五条全收·PA 报告质量嘉奖——含自曝，正是要的审计文化）**：
-> ① `docs/design/art-library-tags.md` 数字陈旧（4761 vs 实际 4892）· ② `art-library-handoff.md` 顶部总数自漂（29818 vs 30588）——**病根=手抄会动的数字**（机读真相铁律）。修法不是改数字：**改为「快照 YYYY-MM-DD」标注 + 一句「实时数以 `FreeArtLib/index.json` 为准」**；分类占比等分析性数字保留但一律挂快照日期。
-> ③ 「PA」双义（asset-flow 的 PA=游戏创作者 vs 名录 PA=资产管理员）——**Lead 已亲改三处**：requests.md 池头术语注、asset-flow.md 标题与导语、CLAUDE.md 核心规则 2 措辞；历史条目不追改（池头注兜底）。
-> ④ `docs/playbooks/assets.md` 缺批量入库线——**接受回填**（手册铁律：手册对产出负全责）：加一行「批量灌入共享货架 → `scripts/import-art-pack.mjs` / `import-emoji.mjs` → 登记 FreeArtLib index」+ 指向 PA handoff 细节。
-> ⑤ `import-art-pack.mjs` 头注「仅 GitHub 可达」过时——PA 域脚本注释，顺手改（属 PA 例行维护，非「写代码」红线范畴）。
-> 附思考：①② 这类数字漂移 docs-ref-guard 管不了（它只核路径）；**先用「快照标注」约定治本**，若再犯 ≥2 次，再议给 art 文档加核数脚本（数字 vs index.json 计数），现在不建（YAGNI）。
-
-### REQ-QA-测试审计强化三件 · audit 分层判词 / bench p99+delta / 测试代码体检 · [2026-07-04] · 主程（CCGS 深读采纳·见 reference §八） · status: **✅ done（Opus 2026-07-04·门禁全绿 tsc/vitest 303f-2231t/build 均 0）** · 类型: 质量工具强化
-> **spec（Lead 图纸）**：① `scripts/game-skill-audit.mjs` 输出分层：**红=已破不变量**（裸 Math.random/innerHTML/自写解释器）·**黄=缺失防线**（零测试/零能力接入/未登记），末行判词 token `AUDIT: PASS|WARNINGS|FAIL` + 对应退出码（0/0/1）。② ApolloBench 帧时轴补 **p99/max 判定**（均值绿尖峰红=CONCERNS·超标帧按帧号点名）+ 同场景 **prior 结果留档做 delta 回归行**（改善也记录）。③ 新脚本 `scripts/test-hygiene-check.mjs`：扫全部 `*.test.ts` 的真时间等待（墙钟 setTimeout/sleep/Date.now）、外部 IO（真 fetch/http）、裸 Math.random；**白名单放行有意用例**（fake timers/mock 合法）；判词 token+退出码。准则出处 `docs/playbooks/testing.md` 红线节。门禁全绿直推；涉 `src/bench`（主程域）按本 spec 施工不越范围。
->
-> **✅ 完工摘要（Opus 2026-07-04）**：
-> - **① `scripts/game-skill-audit.mjs`**：三层分类——🔴红（裸 Math.random/innerHTML/createElement 手写 DOM，进判词）· 🟡黄（零能力接入/零测试，进判词）· ⚠建议（既有 nakedFill 裸 bg 色，非红线·不进判词·不改退出码，予以保留）。末行 `AUDIT: PASS|WARNINGS|FAIL`；退出码 红→1、黄/绿→0。判词=任一红→FAIL / 无红有黄→WARNINGS / 全清→PASS。**「自写解释器」为人审项（capability-plan 评审）——合法小枚举 switch 与真绕引擎解释器无法可靠 regex 分辨（见 game-e/jokers.ts 经济结算 switch），不列自动红旗以免误报，已在脚本头注明。** 当前全库判词=FAIL（8 款游戏均有 createElement 等既有欠账·符合 engine-llm-readiness-review 记录，工具如实点名）。
-> - **② ApolloBench 帧时轴**（`src/bench/apollo-bench.ts` 加纯函数 `computeFrameStats/measureFrameTime/frameTimeDelta` + `run-bench.ts` 接线）：墙钟测量每 tick，报 mean/p99/max，**均值绿而 p99/max 尖峰超预算（默认 1000/60ms）→ CONCERNS 并按帧号点名**；prior 留档 `bench-results/frame-times.json`（**gitignore**·墙钟按机器波动不入库），次跑出 **Δmean/Δp99/Δmax 回归行**（↑退化/↓改善/≈持平·改善也记录）。**确定性 hash 逻辑与五轴打分完全未动**（帧时独立墙钟维度·不进 total/退出码）。判词样例：`PASS game-f — mean 0.41ms · p99 1.77ms · max 2.20ms`；`Δp99 ↓改善 2.75ms → 1.77ms (-35.8%)`。
-> - **③ 新 `scripts/test-hygiene-check.mjs`**：扫全部 `src/**/*.test.ts` 三禁（真时间等待/外部 IO/裸随机），白名单顶部数组注理由；自动豁免 fake timers·mock fetch。末行 `HYGIENE: PASS|WARNINGS|FAIL`+退出码（硬违规→1）。**存量违规清单**：仅 2 处裸 Math.random——(a) `src/skills/tier3/roster-round.integration.test.ts:258` 只作唯一实体 id、非测随机 → **顺手改确定性单调计数器 `reqSeq++`**（已修）；(b) `src/debug/debug.test.ts:70` 故意非确定的 test-flaky capability（被测对象就是 Math.random 制造的非确定，用于验 Recorder 抓非确定回放）→ **白名单放行**（换种子=去掉被测特性）。无真时间等待/外部 IO 违规。首跑收口=WARNINGS（仅 1 白名单例外）。
-> - **点名测试**：`src/bench/apollo-bench.frame.test.ts`（7 例·合成数组测 p99/max 判定·尖峰点名·delta 三向·空输入·真引擎 measure）；roster 修改由既有 12 例覆盖仍绿。三工具均自证运行输出见上。
-
-### REQ-DOCS-指针守护脚本 · 角色卡/手册/白皮书引用的路径·脚本名·agent 名自动核真 · [2026-07-04] · 主程（CCGS 参考 §七 裁决） · status: **✅ done（2026-07-04·Opus 施工·全套门禁绿）** · 类型: 防口径漂移基建
-> 源起：CCGS skill 测试框架思想采纳（`wiki/skills/reference-claude-game-studios.md §七`）——工作流零件也要可测。capability 层已有 `registry-guard.test.ts`，文档层缺同款。
-> **spec（Lead 图纸）**：`scripts/docs-ref-guard.mjs` 进 vitest：扫 `docs/roles/**` + `docs/playbooks/**` 里的 ①反引号包裹的 `docs/`/`src/`/`scripts/` 路径（存在性）②`scripts/*.mjs|py|sh` 脚本名（存在性）③agent 名（对照 `.claude/agents/*.md`）。白名单机制放行有意的示例路径（如模板占位符）。红=指哪个文件哪一行断了。本次角色卡验收人肉核了 58 处，固化成机器活。
->
-> **✅ 完工（Opus 2026-07-04）**：
-> - **落点**：`scripts/docs-ref-guard.mjs`（守护脚本·纯 node/fs·`node scripts/docs-ref-guard.mjs` 直跑）+ `scripts/docs-ref-guard.test.mjs`（4 例行为契约·含失败路径·随 `npx vitest run` 跑）。判词 `DOCS-REF: PASS|FAIL` + 退出码；红行格式 `<file>:<line>  \`<ref>\`  → <原因>`。
-> - **扫描面（比 spec 略扩）**：`docs/roles/** + docs/playbooks/** + docs/qa/**`（qa 层 2026-07-04 新立·同属工作流零件文档，一并纳入）。检 ①路径引用前缀 `docs/`·`src/`·`scripts/`·`wiki/`·`.claude/`（存在性，含 `.claude/agents|skills` 路径=agent/技能存在性兜底）②agent/技能裸名近似拼写（对照 `.claude/agents/*.md` 去 .md + `.claude/skills/*/` 目录名，编辑距离=1 报错字/改名残留，精确命中放行）。修饰剥离：`path:line`、空格分隔的 `§x`/`L76`、`path/**`·`foo-*.mjs` glob、`src/{a,b}` 花括号展开、`a·b` 中点连写。
-> - **白名单**：**0 条**。占位符（含 `<` `>` `YYYY` `xxx` `[category]`）走自动规则放行；显式白名单数组（顶部·带理由字段）当前为空——现 3 树内全部真路径引用都实指存在文件，无「规范外的有意示例路径」需登记。
-> - **断链发现清单（本单主要价值）**：**0 处真断链**——264 路径引用全部命中真文件、agent/技能名近似检测 0 命中。首跑唯一红点 `src/{engine 非 assets,skills,games 逻辑}`（`docs/qa/specs/asset-manager.md:8`）经核**非断链**：是散文里花括号未闭合的口语化标注、非真路径 → 修的是**检测器**（未闭合花括号 fragment 略过），未动文档。另修正初版误判：`scripts/dist.py`·`scripts/*-smoke.py`·`scripts/studio-*` 等一度被当「CCGS 侧示例·Apollo 无此文件」入白名单，实测这些 `.py` 脚本**真实存在**（早前 `ls *.mjs` 过滤漏看）→ 已移出白名单、由存在性检查自然放行。**留给 Lead 裁的项：无**。
-> - **门禁**：`tsc --noEmit` 0 · `vitest run` 0（302 files / 2228 tests）· `npm run build` 0。
 
 ### REQ-G-即时法术/功能牌（对场上牌使用·补策略深度） · [2026-06-29] · owner 试玩后设计反思 → 战斗/design G 域 · status: **open（大方向·owner 说「先记录·暂不实现」）** · 类型: 核心玩法扩展（新通用能力·非重组）
 > **owner 观察**：现在**没有一张牌是「针对场上局面、主动打出去影响某个目标」**的——天罡全是「打出后整场被动加成」，地煞是 Boss 专属被动。缺「即时·指定目标·改变战场」的牌。owner 直觉：**「功能牌 > 战斗牌」**才是好玩的深度来源（纯拼战力天花板低）。owner「先暂时这样吧」→ **只记录·暂不实现**。

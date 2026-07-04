@@ -764,3 +764,32 @@ _（REQ-3D-W1高效引擎 已移至 [`requests-3d.md`](./requests-3d.md)。）_
 > 门禁 tsc+vitest+build 全绿直推；此活涉引擎域（registry/component-map），属主程授权的引擎卫生，照 spec 严格执行不越范围；完工标 ✅。
 
 ---
+
+### REQ-PA-文档一致性五件 · PA 自查清单 Lead 裁决 · [2026-07-04] · PA 提报 → 主程裁决 → 指派：PA · status: **✅ done（PA `de8e1827`·Lead 验收 REVIEW: PASS 2026-07-04）** · 类型: 防漂移整改（PA 自查·全收）
+> **Lead 验收（2026-07-04·复核 diff + 独立复跑 guard/门禁全绿）**：①② 快照标注+机读指针完全照裁决修法（未追手抄精确数·「现约 4.9k / 约 3 万」量级词不会漂）；④ assets.md 批量入库行落位·脚本名核真·「加一个包=加一条 PACKS 配置」措辞还顺手强化了数据驱动口径；⑤ 头注改准（curl 出口面与工具层发现面分开说清）。**零偏差**。唯一瑕疵=忘翻工单状态，本行由 Lead 代关。
+> **Lead 裁决（2026-07-04·五条全收·PA 报告质量嘉奖——含自曝，正是要的审计文化）**：
+> ① `docs/design/art-library-tags.md` 数字陈旧（4761 vs 实际 4892）· ② `art-library-handoff.md` 顶部总数自漂（29818 vs 30588）——**病根=手抄会动的数字**（机读真相铁律）。修法不是改数字：**改为「快照 YYYY-MM-DD」标注 + 一句「实时数以 `FreeArtLib/index.json` 为准」**；分类占比等分析性数字保留但一律挂快照日期。
+> ③ 「PA」双义（asset-flow 的 PA=游戏创作者 vs 名录 PA=资产管理员）——**Lead 已亲改三处**：requests.md 池头术语注、asset-flow.md 标题与导语、CLAUDE.md 核心规则 2 措辞；历史条目不追改（池头注兜底）。
+> ④ `docs/playbooks/assets.md` 缺批量入库线——**接受回填**（手册铁律：手册对产出负全责）：加一行「批量灌入共享货架 → `scripts/import-art-pack.mjs` / `import-emoji.mjs` → 登记 FreeArtLib index」+ 指向 PA handoff 细节。
+> ⑤ `import-art-pack.mjs` 头注「仅 GitHub 可达」过时——PA 域脚本注释，顺手改（属 PA 例行维护，非「写代码」红线范畴）。
+> 附思考：①② 这类数字漂移 docs-ref-guard 管不了（它只核路径）；**先用「快照标注」约定治本**，若再犯 ≥2 次，再议给 art 文档加核数脚本（数字 vs index.json 计数），现在不建（YAGNI）。
+
+### REQ-QA-测试审计强化三件 · audit 分层判词 / bench p99+delta / 测试代码体检 · [2026-07-04] · 主程（CCGS 深读采纳·见 reference §八） · status: **✅ done（Opus 2026-07-04·门禁全绿 tsc/vitest 303f-2231t/build 均 0）** · 类型: 质量工具强化
+> **spec（Lead 图纸）**：① `scripts/game-skill-audit.mjs` 输出分层：**红=已破不变量**（裸 Math.random/innerHTML/自写解释器）·**黄=缺失防线**（零测试/零能力接入/未登记），末行判词 token `AUDIT: PASS|WARNINGS|FAIL` + 对应退出码（0/0/1）。② ApolloBench 帧时轴补 **p99/max 判定**（均值绿尖峰红=CONCERNS·超标帧按帧号点名）+ 同场景 **prior 结果留档做 delta 回归行**（改善也记录）。③ 新脚本 `scripts/test-hygiene-check.mjs`：扫全部 `*.test.ts` 的真时间等待（墙钟 setTimeout/sleep/Date.now）、外部 IO（真 fetch/http）、裸 Math.random；**白名单放行有意用例**（fake timers/mock 合法）；判词 token+退出码。准则出处 `docs/playbooks/testing.md` 红线节。门禁全绿直推；涉 `src/bench`（主程域）按本 spec 施工不越范围。
+>
+> **✅ 完工摘要（Opus 2026-07-04）**：
+> - **① `scripts/game-skill-audit.mjs`**：三层分类——🔴红（裸 Math.random/innerHTML/createElement 手写 DOM，进判词）· 🟡黄（零能力接入/零测试，进判词）· ⚠建议（既有 nakedFill 裸 bg 色，非红线·不进判词·不改退出码，予以保留）。末行 `AUDIT: PASS|WARNINGS|FAIL`；退出码 红→1、黄/绿→0。判词=任一红→FAIL / 无红有黄→WARNINGS / 全清→PASS。**「自写解释器」为人审项（capability-plan 评审）——合法小枚举 switch 与真绕引擎解释器无法可靠 regex 分辨（见 game-e/jokers.ts 经济结算 switch），不列自动红旗以免误报，已在脚本头注明。** 当前全库判词=FAIL（8 款游戏均有 createElement 等既有欠账·符合 engine-llm-readiness-review 记录，工具如实点名）。
+> - **② ApolloBench 帧时轴**（`src/bench/apollo-bench.ts` 加纯函数 `computeFrameStats/measureFrameTime/frameTimeDelta` + `run-bench.ts` 接线）：墙钟测量每 tick，报 mean/p99/max，**均值绿而 p99/max 尖峰超预算（默认 1000/60ms）→ CONCERNS 并按帧号点名**；prior 留档 `bench-results/frame-times.json`（**gitignore**·墙钟按机器波动不入库），次跑出 **Δmean/Δp99/Δmax 回归行**（↑退化/↓改善/≈持平·改善也记录）。**确定性 hash 逻辑与五轴打分完全未动**（帧时独立墙钟维度·不进 total/退出码）。判词样例：`PASS game-f — mean 0.41ms · p99 1.77ms · max 2.20ms`；`Δp99 ↓改善 2.75ms → 1.77ms (-35.8%)`。
+> - **③ 新 `scripts/test-hygiene-check.mjs`**：扫全部 `src/**/*.test.ts` 三禁（真时间等待/外部 IO/裸随机），白名单顶部数组注理由；自动豁免 fake timers·mock fetch。末行 `HYGIENE: PASS|WARNINGS|FAIL`+退出码（硬违规→1）。**存量违规清单**：仅 2 处裸 Math.random——(a) `src/skills/tier3/roster-round.integration.test.ts:258` 只作唯一实体 id、非测随机 → **顺手改确定性单调计数器 `reqSeq++`**（已修）；(b) `src/debug/debug.test.ts:70` 故意非确定的 test-flaky capability（被测对象就是 Math.random 制造的非确定，用于验 Recorder 抓非确定回放）→ **白名单放行**（换种子=去掉被测特性）。无真时间等待/外部 IO 违规。首跑收口=WARNINGS（仅 1 白名单例外）。
+> - **点名测试**：`src/bench/apollo-bench.frame.test.ts`（7 例·合成数组测 p99/max 判定·尖峰点名·delta 三向·空输入·真引擎 measure）；roster 修改由既有 12 例覆盖仍绿。三工具均自证运行输出见上。
+
+### REQ-DOCS-指针守护脚本 · 角色卡/手册/白皮书引用的路径·脚本名·agent 名自动核真 · [2026-07-04] · 主程（CCGS 参考 §七 裁决） · status: **✅ done（2026-07-04·Opus 施工·全套门禁绿）** · 类型: 防口径漂移基建
+> 源起：CCGS skill 测试框架思想采纳（`wiki/skills/reference-claude-game-studios.md §七`）——工作流零件也要可测。capability 层已有 `registry-guard.test.ts`，文档层缺同款。
+> **spec（Lead 图纸）**：`scripts/docs-ref-guard.mjs` 进 vitest：扫 `docs/roles/**` + `docs/playbooks/**` 里的 ①反引号包裹的 `docs/`/`src/`/`scripts/` 路径（存在性）②`scripts/*.mjs|py|sh` 脚本名（存在性）③agent 名（对照 `.claude/agents/*.md`）。白名单机制放行有意的示例路径（如模板占位符）。红=指哪个文件哪一行断了。本次角色卡验收人肉核了 58 处，固化成机器活。
+>
+> **✅ 完工（Opus 2026-07-04）**：
+> - **落点**：`scripts/docs-ref-guard.mjs`（守护脚本·纯 node/fs·`node scripts/docs-ref-guard.mjs` 直跑）+ `scripts/docs-ref-guard.test.mjs`（4 例行为契约·含失败路径·随 `npx vitest run` 跑）。判词 `DOCS-REF: PASS|FAIL` + 退出码；红行格式 `<file>:<line>  \`<ref>\`  → <原因>`。
+> - **扫描面（比 spec 略扩）**：`docs/roles/** + docs/playbooks/** + docs/qa/**`（qa 层 2026-07-04 新立·同属工作流零件文档，一并纳入）。检 ①路径引用前缀 `docs/`·`src/`·`scripts/`·`wiki/`·`.claude/`（存在性，含 `.claude/agents|skills` 路径=agent/技能存在性兜底）②agent/技能裸名近似拼写（对照 `.claude/agents/*.md` 去 .md + `.claude/skills/*/` 目录名，编辑距离=1 报错字/改名残留，精确命中放行）。修饰剥离：`path:line`、空格分隔的 `§x`/`L76`、`path/**`·`foo-*.mjs` glob、`src/{a,b}` 花括号展开、`a·b` 中点连写。
+> - **白名单**：**0 条**。占位符（含 `<` `>` `YYYY` `xxx` `[category]`）走自动规则放行；显式白名单数组（顶部·带理由字段）当前为空——现 3 树内全部真路径引用都实指存在文件，无「规范外的有意示例路径」需登记。
+> - **断链发现清单（本单主要价值）**：**0 处真断链**——264 路径引用全部命中真文件、agent/技能名近似检测 0 命中。首跑唯一红点 `src/{engine 非 assets,skills,games 逻辑}`（`docs/qa/specs/asset-manager.md:8`）经核**非断链**：是散文里花括号未闭合的口语化标注、非真路径 → 修的是**检测器**（未闭合花括号 fragment 略过），未动文档。另修正初版误判：`scripts/dist.py`·`scripts/*-smoke.py`·`scripts/studio-*` 等一度被当「CCGS 侧示例·Apollo 无此文件」入白名单，实测这些 `.py` 脚本**真实存在**（早前 `ls *.mjs` 过滤漏看）→ 已移出白名单、由存在性检查自然放行。**留给 Lead 裁的项：无**。
+> - **门禁**：`tsc --noEmit` 0 · `vitest run` 0（302 files / 2228 tests）· `npm run build` 0。
