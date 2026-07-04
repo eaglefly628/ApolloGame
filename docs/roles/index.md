@@ -9,7 +9,7 @@
 | 角色 ID | 名称 | 一句话职责 | 域（写权限） | 角色卡 |
 |---|---|---|---|---|
 | **LEAD** | 主程 / 架构 | 引擎唯一守门人：评审/裁决/下沉/派工/对抗性验收；出图纸不施工（施工派 Opus） | `src/{engine,skills,assembly,services,net}` + 规则文档 | `roles/LEAD.md` |
-| **GD** | 资深策划 | 跨游戏设计：GDD/capability-plan/数值/内容表；**只产数据与文档，零代码** | `docs/design/<game>/**` + 游戏内容数据表（经 PE 落地） | `roles/GD.md` + 策划白皮书 |
+| **GD-\<game\>** | 游戏策划 | 单游戏设计（实例：GD-D/GD-G·owner 2026-07-04 拍板每游戏一个 GD）：GDD/capability-plan/数值/内容表；**只产数据与文档，零代码** | **只限本游戏** `docs/design/<自己的game>/**`；共用设计目录（`docs/design/` 根的宪法/评审/模板）与别的游戏目录**不许写**——跨游戏共性走 requests.md 提 LEAD | `roles/GD.md`（通用卡）+ 策划白皮书 |
 | **PE-\<game\>** | 游戏程序员 | 单游戏 gameplay（实例：PE-G 甲乙/程序A、PF 等）；先查线手册用基座件 | `src/games/<自己的game>/**` | `roles/PE.md`（通用卡）+ 各游戏 handoff |
 | **P3D** | 3D 引擎程序员 | 3D 盒庭渲染线 + game-z/d；render-only 红线 | 见其 handoff §0.1 三档表 | `docs/workflow/finish/P3D-game-z-handoff.md`（既有卡·即角色卡） |
 | **PS** | 发行工程师 | 打包/Steam 上架/平台接线（成就/云存档/富状态） | `steam-publisher/**`·`electron/**`·`scripts/dist*` | `roles/PS.md` + 发行白皮书 |
@@ -22,7 +22,7 @@
 | 角色 | 开工必读（按序） | 主要工具/技能 | 派工与汇报通道 |
 |---|---|---|---|
 | LEAD | 全部规则文档 + 底座/评审报告 | 全部；Workflow/Agent 派工 | requests.md 裁决与验收 |
-| GD | 策划白皮书 → capability-plan 模板 → llm-onboarding §4 治理态 → 目标游戏 gdd | 设计先行流（创作台）·balance-sim 脚本 | 设计文档 PR + requests.md 提能力缺口 |
+| GD-* | 策划白皮书 → capability-plan 模板 → llm-onboarding §4 治理态 → **本游戏** gdd | 设计先行流（创作台）·本游戏 balance-sim 脚本 | 设计文档 PR + requests.md 提能力缺口/跨游戏共性 |
 | PE-* | playbooks/index → 本线手册 → 本游戏 handoff/finish-list | game-skill-audit·/check-ui·vitest | requests.md 领单/提缺口·完成标✅ |
 | P3D | 其 handoff（§0.1 边界为纲）→ playbooks/3d.md | shoot-game.mjs 截图 harness | **requests-3d.md**（独立池） |
 | PS | 发行白皮书 → PS-steam-finish-list → steam-publisher/README | **game-publisher agent**·electron-builder·steamcmd | requests.md（发行类工单） |
