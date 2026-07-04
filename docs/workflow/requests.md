@@ -111,7 +111,8 @@
 > - REQ-G-Boss-AI · [2026-06-21] · design G → 甲 · status: **✅ 实装+sim验证（2026-06-23）·结案归档 2026-07-04（活尾由 Player-AI 单 + design G 标定线接管）** · 类型: 真缺口（已闭合）
 > - REQ-BASE-引擎卫生三件（tray 补注册+守护测试 / Card3D 清遗 / view.ts 死码删）· [2026-07-03] · 主程 → 指派：Opus · status: **✅ done（2026-07-03·Opus）** · 归档 2026-07-04（自粘连行拆出）
 
-### REQ-CAP-改掷RollMod下沉 · 引擎 dice 核补掷骰修饰闭集（天罡②/game-d/英雄牌共用） · [2026-07-04] · 主程（天罡原生重构 ② 架构裁决派生） · status: **排队（指派：Opus·xhigh·程序A 开工天罡② 前完成）** · 类型: 引擎 capability 扩展（正确性关键·确定性）
+### REQ-CAP-改掷RollMod下沉 · 引擎 dice 核收编 game-g RollMods 先例（天罡②/game-d/英雄牌共用） · [2026-07-04] · 主程（天罡原生重构 ② 架构裁决派生） · status: **排队（指派：Opus·xhigh·战斗核稳后随虚胖清算一波做·不阻塞战斗迭代）** · 类型: 引擎 capability 扩展（正确性关键·确定性）
+> **裁决更新（2026-07-04·与 `e780156a` 空中相遇）**：程序A 已在 game-g 落了掷骰系（`clash-resolve.ts` 的 `RollMods{bonus,floor,twice}` 纯函数核+确定性测试）——**形状合格·不打回**（数据行+纯函数，正是易迁形）。本单由"新建"改**"收编先例"**：引擎 `t2-dice` 吸收 RollMods 闭集（字段名对齐先例·补 `autoWinIfStronger`/铁骰语义入 opposedRoll）→ game-g 切换消费引擎核、删本地副本 → game-d/英雄牌复用。这也是宪法「游戏先证明、引擎再收编」的标准路径，撞车成本≈0。
 > **spec（Lead 图纸）**：`src/skills/tier2/dice.ts` 族加 **`RollMod` 闭集**（数据行，非钩子函数）：`{kind:'bonus',value}`（掷后加值）/ `{kind:'floor',min}`（掷值下界钳）/ `{kind:'advantage'}`（掷两次取高）/ `{kind:'autoWinIfStronger'}`（我方战力≥敌免掷直接胜·仅 opposedRoll 语境）。约束：①纯函数核（`applyRollMods(roll, mods, rng)` + opposedRoll 接 `mods` 参数）·确定性（advantage 的第二掷从同一 RNG 流序取·顺序固定）；②闭集进 registry describe/examples；③逐 kind 点名测试 + 组合序测试（bonus+floor 先 bonus 后 floor·文档钉死）；④不改 DicePool/RolledDice 既有语义（向后兼容）。消费方：game-g 天罡②（鬼手/磐石/灌铅骰/铁骰）· game-d 骰途改掷类 · 英雄专属牌改掷层（未来扩）。门禁全绿直推。
 
 ### REQ-PA-文档一致性五件 · PA 自查清单 Lead 裁决 · [2026-07-04] · PA 提报 → 主程裁决 → 指派：PA · status: **✅ done（PA `de8e1827`·Lead 验收 REVIEW: PASS 2026-07-04）** · 类型: 防漂移整改（PA 自查·全收）
@@ -639,3 +640,4 @@
 > **GD 回环**：程序A 落地后 GD 用 balance-sim 复核各天罡强度（尤其掷骰系边际 + AOE 数值 + `flow`川流在自由混+换牌下的连抽连打交互）。
 > **顺序**：先 ①②③④⑤（修活现有 35→存活+实装+退役）· AOE(⑥) 与「连携对立面」一批做 · 流派印记(J) 待流派体系定稿另开。
 > **Lead 架构注（2026-07-04·防「修正栈三套」重演）**：② 掷骰系四语义（改掷+2 / 掷下界钳 / 优势取高 / 占优免掷）是**通用 RollMod 原型**，不是天罡私有——game-d 骰途、英雄专属牌改掷层都会要同一族。**裁：先下沉引擎 dice 核（REQ-CAP-改掷RollMod·见新单），程序A 在 game-g 只写数据行消费；禁止在 resolveClash 里写四个 if。**这批也是未来改掷解释器的第一批真实用例——最小核先立，英雄牌 spec 定稿后再扩。①③④⑤ 照单开工不受阻。
+> **注（与 `e780156a` 空中相遇）**：程序A 已按纯函数+数据行落了 game-g 版（形状合格·Lead 验过不打回）；收编时序见 REQ-CAP-改掷RollMod 更新。
