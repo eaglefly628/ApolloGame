@@ -94,9 +94,16 @@ const CSS = `
 @keyframes g-crown { 0%{transform:translateX(-50%) translateY(-26px) scale(.5);opacity:0} 55%{transform:translateX(-50%) translateY(2px) scale(1.22);opacity:1} 76%{transform:translateX(-50%) translateY(-2px) scale(.94)} 100%{transform:translateX(-50%) translateY(-6px) scale(1);opacity:1} }
 /* 离场标签（战败/光荣回库）浮字：升起淡出。 */
 @keyframes g-exitlabel { 0%{transform:translate(-50%,0) scale(.7);opacity:0} 25%{transform:translate(-50%,-10px) scale(1);opacity:1} 80%{opacity:1} 100%{transform:translate(-50%,-30px) scale(1);opacity:0} }
-/* 行军「浮起→悬停→落下」（owner 2026-07-03「移动要有 3D 感·慢一点看清怎么动」）：从旧格位(--dx/--dy)插值到新格·中途抬起 + 放大 + 落影渐深 → 像牌浮离棋面再落定。
+/* 行军「浮起→移动→落下→滴答」（owner 2026-07-04「慢一点·浮起来·移动·落下·滴答」·四相分明）：原地抬到空中(16%)→空中平移到新格上方(60%)→落下略过冲(84%)→回弹落定(92→100%)。
    纯 translate/scale（无 perspective/rotateX → 不触战斗 zoom 画框放大 bug）。真 Card3D mesh 版待 Timeline 底座落地（REQ-3D-移动浮起）。 */
-@keyframes g-march { 0% { transform: translate(var(--dx), var(--dy)) scale(1); filter: drop-shadow(0 2px 3px rgba(0,0,0,.5)); z-index: 30; } 45% { transform: translate(calc(var(--dx) * .5), calc(var(--dy) * .5 - 46px)) scale(1.16); filter: drop-shadow(0 26px 18px rgba(0,0,0,.55)); z-index: 30; } 100% { transform: translate(0,0) scale(1); filter: drop-shadow(0 2px 3px rgba(0,0,0,.5)); z-index: 30; } }
+@keyframes g-march {
+  0%   { transform: translate(var(--dx), var(--dy)) scale(1);                       filter: drop-shadow(0 2px 3px rgba(0,0,0,.5));  z-index: 30; }
+  16%  { transform: translate(var(--dx), calc(var(--dy) - 54px)) scale(1.15);       filter: drop-shadow(0 30px 20px rgba(0,0,0,.55)); z-index: 30; }
+  60%  { transform: translate(0, -54px) scale(1.15);                                filter: drop-shadow(0 30px 20px rgba(0,0,0,.5));  z-index: 30; }
+  84%  { transform: translate(0, 5px) scale(1.02);                                  filter: drop-shadow(0 3px 4px rgba(0,0,0,.5));  z-index: 30; }
+  92%  { transform: translate(0, -3px) scale(1);                                    filter: drop-shadow(0 7px 8px rgba(0,0,0,.5));  z-index: 30; }
+  100% { transform: translate(0, 0) scale(1);                                       filter: drop-shadow(0 2px 3px rgba(0,0,0,.5));  z-index: 30; }
+}
 /* 钉守在场（胜方留场续战）：钉子砸下 + 金环脉冲（凯旋钉桩·card 真牌仍在场）。 */
 @keyframes g-pin { 0%{transform:translateX(-50%) translateY(-30px) scale(.6);opacity:0} 55%{transform:translateX(-50%) translateY(2px) scale(1.18);opacity:1} 75%{transform:translateX(-50%) translateY(0) scale(.94)} 100%{transform:translateX(-50%) translateY(0) scale(1);opacity:1} }
 @keyframes g-pinring { 0%{transform:scale(1.25);opacity:0} 35%{transform:scale(1);opacity:1} 100%{transform:scale(1);opacity:0} }
@@ -127,7 +134,7 @@ const CSS = `
 .gg-tipwrap:hover{ z-index:90; }`;
 
 // ── 视图（buildTurnBattleView 从 turn-combat 派生喂渲染器；纯数据） ──
-export interface TurnSlotView { hasUnit: boolean; mine: boolean; isBorder: boolean; isClash: boolean; rank?: string; suit?: 's' | 'h' | 'd' | 'c'; power?: number; pts?: number; buff?: number; name?: string; rar?: 'white' | 'green' | 'blue' | 'gold'; zod?: string[]; deploy?: 1 | 2; deployLabel?: boolean; placeable?: boolean; unitId?: string; justMoved?: boolean; fresh?: number; tipDown?: boolean; tipSide?: 'left' | 'right' | ''; forecast?: number; general?: boolean; ench?: [string, number][]; live?: [string, number][]; livePower?: number; winStreak?: number } // winStreak=连胜场数(owner 2026-07-01·每胜战力对折·场上持续显🔥N 让玩家看清哪张已疲劳)；live=此刻若评估的战力逐行明细(含天罡/士气/地煞·hover 透出来源·owner 2026-06-29 ⑥)；livePower=其和后的有效战力 pEff // placeable=选牌待放可落子(高亮)；fresh=新部署落子序号(g-drop)；tipDown=顶排牌磨砂浮层朝下弹避免被画框裁；tipSide=边缘列浮层往内弹避免溢出左右屏(owner 2026-06-21)；forecast=此前锋若开战的我方胜率0~1(掷命预报·owner 2026-06-21)
+export interface TurnSlotView { hasUnit: boolean; mine: boolean; isBorder: boolean; isClash: boolean; rank?: string; suit?: 's' | 'h' | 'd' | 'c'; power?: number; pts?: number; buff?: number; name?: string; rar?: 'white' | 'green' | 'blue' | 'gold'; zod?: string[]; deploy?: 1 | 2; deployLabel?: boolean; placeable?: boolean; unitId?: string; justMoved?: boolean; fresh?: number; tipDown?: boolean; tipSide?: 'left' | 'right' | ''; forecast?: number; general?: boolean; ench?: [string, number][]; live?: [string, number][]; livePower?: number; winStreak?: number; held?: boolean } // winStreak=连胜场数(owner 2026-07-01·每胜战力对折·场上持续显🔥N 让玩家看清哪张已疲劳)；live=此刻若评估的战力逐行明细(含天罡/士气/地煞·hover 透出来源·owner 2026-06-29 ⑥)；livePower=其和后的有效战力 pEff // placeable=选牌待放可落子(高亮)；fresh=新部署落子序号(g-drop)；tipDown=顶排牌磨砂浮层朝下弹避免被画框裁；tipSide=边缘列浮层往内弹避免溢出左右屏(owner 2026-06-21)；forecast=此前锋若开战的我方胜率0~1(掷命预报·owner 2026-06-21)
 export interface TurnLaneView { name: string; slots: TurnSlotView[] }
 export interface TurnHandCardView { kind: 'pawn' | 'gang'; rank?: string; suit?: 's' | 'h' | 'd' | 'c'; name: string; power?: number; pts?: number; buff?: number; cost: number; zod?: string[]; rar: 'white' | 'green' | 'blue' | 'gold'; desc?: string; glyph?: string; selected?: boolean; dealt?: boolean; affordable?: boolean; general?: boolean; ench?: [string, number][] } // dealt=刚抽到的牌·飞入翻面入场动画(owner 2026-06-21)
 export interface TurnActionView { key: string; glyph: string; label: string; on: boolean; dim: boolean }
@@ -227,6 +234,7 @@ function unitNode(s: TurnSlotView): LayoutNode {
   ];
   if (isGen) children.push({ type: 'Label', id: `u-${id}-gen`, props: { text: s.mine ? '⭐主将' : '☠敌将', size: 8, color: 'gold', bold: true }, layout: { y: -12, x: 14 } });
   if (s.winStreak) children.push({ type: 'Label', id: `u-${id}-ws`, props: { text: `🔥${s.winStreak}`, size: 8, color: 'warn', bold: true }, layout: { y: -12, x: -14 } }); // 连胜疲劳徽（owner 2026-07-01·战力已对折·让玩家看清是哪张）
+  if (s.held) children.push({ type: 'Label', id: `u-${id}-hold`, props: { text: '🛡', size: 15, glow: true, color: 'jade' }, layout: { y: 30, x: -9 } }); // 坚守徽（owner 2026-07-04·本轮没走的牌·斯巴达/坚守/被挡=原地固守 → 亮盾）
   return { type: 'Panel', id: `u-${id}`, props: { bg: sideFace(s.mine), edge: isGen ? 'gold' : (s.mine ? 'mine' : 'foe') }, layout: { flex: 1, direction: 'column', justify: 'between', align: 'center', padding: 4, radius: 10, ...(isGen ? { fx: [{ kind: 'glow', color: 'gold', ms: 1400 }] } : {}) }, children };
 }
 // 磨砂详情浮层内容（战力拆解·场上兵 hover 气泡·owner 2026-06-29 ⑥）。
@@ -769,7 +777,7 @@ const SUIT_KEYS: Record<string, 's' | 'h' | 'd' | 'c'> = { S: 's', H: 'h', D: 'd
 const lc = (s: string): 's' | 'h' | 'd' | 'c' => SUIT_KEYS[s] ?? 's';
 const rankOf = (r: string): 'white' | 'green' | 'blue' | 'gold' => (r === 'A' ? 'gold' : r === 'K' || r === 'Q' || r === 'J' ? 'blue' : 'white');
 
-export interface TurnViewOpts { theme?: 'onyx' | 'brocade'; tengangName?: (id: string) => string; tengangDesc?: (id: string) => string; clash?: TurnClashView | null; sha?: TurnShaView[]; bossName?: string; selMode?: string | null; selHand?: number; playKind?: 'deploy' | 'cast'; swapFrom?: 'poker' | 'tengang'; tutorial?: { narration: string; highlight: string } | null; notice?: string | null; movedIds?: Set<string>; freshIds?: Map<string, number>; dealtId?: string; battleLabel?: string; sfxOn?: boolean; settingsOpen?: boolean; bgmOn?: boolean; bgmIdx?: number; bgmVol?: number; bgmNames?: string[]; guideOn?: boolean; enchOf?: (rank: string, suit: string) => [string, number][]; inlays?: Record<string, InlayEntry[]>; waterBDisplay?: number }
+export interface TurnViewOpts { theme?: 'onyx' | 'brocade'; tengangName?: (id: string) => string; tengangDesc?: (id: string) => string; clash?: TurnClashView | null; sha?: TurnShaView[]; bossName?: string; selMode?: string | null; selHand?: number; playKind?: 'deploy' | 'cast'; swapFrom?: 'poker' | 'tengang'; tutorial?: { narration: string; highlight: string } | null; notice?: string | null; movedIds?: Set<string>; freshIds?: Map<string, number>; dealtId?: string; battleLabel?: string; sfxOn?: boolean; settingsOpen?: boolean; bgmOn?: boolean; bgmIdx?: number; bgmVol?: number; bgmNames?: string[]; guideOn?: boolean; enchOf?: (rank: string, suit: string) => [string, number][]; inlays?: Record<string, InlayEntry[]>; waterBDisplay?: number; heldIds?: Set<string> }
 /** 从 turn-combat 真状态派生战斗屏视图（玩家 = side a 视角）。纯读、不改 battle。 */
 export function buildTurnBattleView(b: TurnBattle, opts: TurnViewOpts = {}): TurnBattleView {
   const laneNames = ['上路', '中路', '下路'];
@@ -793,7 +801,7 @@ export function buildTurnBattleView(b: TurnBattle, opts: TurnViewOpts = {}): Tur
       // ⑥ 此刻若评估的战力拆解（含天罡/士气/地煞·与真实掷命同源 unitPowerParts）→ hover 透出全部加成来源（owner 2026-06-29）。
       const parts = unitPowerParts(b, hit.mine ? 'a' : 'b', li, hit.u);
       // 角标=**当前有效战力 pEff**（含天罡/士气/地煞·与掷命预报/实判同源·owner 2026-06-29「两边都19却碾压」＝旧角标只显静态点数+养成·没把加成算进去）。
-      return { ...base, hasUnit: true, mine: hit.mine, rank: hit.u.rank, suit: lc(hit.u.suit), power: parts.pEff, pts: hit.u.points, buff: hit.u.buff, name: heroNameOf(hit.u.rank, lc(hit.u.suit)) ?? (SUITNM[lc(hit.u.suit)] + hit.u.rank), rar: rankOf(hit.u.rank), zod: [], unitId: hit.u.id, justMoved: opts.movedIds?.has(hit.u.id) ?? false, fresh: opts.freshIds?.get(hit.u.id), tipDown: li === 0, tipSide: (i >= 7 ? 'left' : i <= 1 ? 'right' : '') as 'left' | 'right' | '', general: hit.u.general, ench: hit.mine ? opts.enchOf?.(hit.u.rank, hit.u.suit) : undefined, live: powerRows(parts, hit.mine, tgNm, opts.inlays), livePower: parts.pEff, winStreak: hit.u.wins };
+      return { ...base, hasUnit: true, mine: hit.mine, rank: hit.u.rank, suit: lc(hit.u.suit), power: parts.pEff, pts: hit.u.points, buff: hit.u.buff, name: heroNameOf(hit.u.rank, lc(hit.u.suit)) ?? (SUITNM[lc(hit.u.suit)] + hit.u.rank), rar: rankOf(hit.u.rank), zod: [], unitId: hit.u.id, justMoved: opts.movedIds?.has(hit.u.id) ?? false, held: !!hit.u.hold || (opts.heldIds?.has(hit.u.id) ?? false), fresh: opts.freshIds?.get(hit.u.id), tipDown: li === 0, tipSide: (i >= 7 ? 'left' : i <= 1 ? 'right' : '') as 'left' | 'right' | '', general: hit.u.general, ench: hit.mine ? opts.enchOf?.(hit.u.rank, hit.u.suit) : undefined, live: powerRows(parts, hit.mine, tgNm, opts.inlays), livePower: parts.pEff, winStreak: hit.u.wins };
     });
     return { name: laneNames[li] ?? ('路' + li), slots };
   });
@@ -967,7 +975,7 @@ export function mountTurnBattle(host: HTMLElement, getView: () => TurnBattleView
         // 行军「浮起→悬停→落下」（owner 2026-07-03「有 3D 感·慢一点看清」）：--dx/--dy 喂 g-march 关键帧·从旧格位浮到新格·中途抬起放大。
         u.style.setProperty('--dx', `${dx}px`); u.style.setProperty('--dy', `${dy}px`);
         u.style.transform = `translate(${dx}px,${dy}px)`; u.style.transition = 'none'; // 起帧钉在旧位（避免 keyframe 排期前一帧闪现新位）
-        requestAnimationFrame(() => { u.style.transition = 'none'; u.style.transform = ''; u.style.animation = 'g-march 1.25s cubic-bezier(.34,.7,.3,1) forwards'; }); // owner 2026-07-03「慢一点」：.68s→1.25s + 抬起弧线
+        requestAnimationFrame(() => { u.style.transition = 'none'; u.style.transform = ''; u.style.animation = 'g-march 1.5s cubic-bezier(.4,.05,.3,1) forwards'; }); // owner 2026-07-04「慢一点·四相分明」：1.25s→1.5s·浮起/移动/落下/滴答
         u.addEventListener('animationend', () => { u.style.animation = ''; u.style.transform = ''; }, { once: true }); // 收尾清动画·还原
       });
     }

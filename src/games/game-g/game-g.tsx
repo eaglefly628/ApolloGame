@@ -366,7 +366,7 @@ export function mount(container: HTMLElement, shell?: { exit?: () => void }): ()
     let drained = 0; const perfQueue: ClashEvent[] = []; let perfClash: ClashEvent | null = null; let busy = false; let perfResume: (() => void) | null = null;
     let perfPending = false; // 有待掷命的对决排队/在演中：此时压掉 move:settle 那次板面重渲——让棋盘「两兵贴身对峙」保持到掷骰特写盖上(否则 ≈1.3s 板面会闪跳到已结算态·败者凭空消失/胜者跳格·owner 2026-07-04 撞见)。
     let coachDid: (on: BattleCoachStep['on']) => void = () => {}; let syncCoach: () => void = () => {}; // 前置声明·真体在挂载后赋（战斗新手引导）
-    let justMovedIds = new Set<string>(); let freshIds = new Map<string, number>(garrisonIds.map((id, k) => [id, k])); let dealtId: string | null = null; let thinkTimer = 0; let thinkEl: HTMLElement | null = null; let settingsOpen = false; // freshIds 预置布防兵 → 首帧就 g-drop 逐张落下（非静态预置）·开场演出随后补部署音 + 横幅
+    let justMovedIds = new Set<string>(); let heldIds = new Set<string>(); let freshIds = new Map<string, number>(garrisonIds.map((id, k) => [id, k])); let dealtId: string | null = null; let thinkTimer = 0; let thinkEl: HTMLElement | null = null; let settingsOpen = false; // freshIds 预置布防兵 → 首帧就 g-drop 逐张落下（非静态预置）·开场演出随后补部署音 + 横幅
     // 离场/留场动画（owner 2026-06-29「过程要清晰·谁战败撕裂·谁掷骰留下钉桩/光荣离场」）。
     // 正确时序：移动相滑到位 → 捕捉两军前锋相邻位快照(exitCaps) → 弹「谁打谁」→ 掷骰 → 掷币定去留 → 收场后按结果演离场/钉桩。
     type GhostSpec = { html: string; left: number; top: number; w: number; h: number; zoom: number };
@@ -466,7 +466,7 @@ export function mount(container: HTMLElement, shell?: { exit?: () => void }): ()
     // 一眼看清是场上哪一对，再切掷骰特写。兵不在场（无头/未渲）→ 回退居中小 VS。
     const showClashCue = (e: ClashEvent, onDone: () => void): void => {
       if (!document.getElementById('gg-cue-css')) { const s = document.createElement('style'); s.id = 'gg-cue-css'; s.textContent = '@keyframes gg-cue{0%{opacity:0}12%{opacity:1}82%{opacity:1}100%{opacity:0}}@keyframes gg-cue-vs{0%,25%{transform:translate(-50%,-50%) scale(0)}42%{transform:translate(-50%,-50%) scale(1.35)}55%,100%{transform:translate(-50%,-50%) scale(1)}}@keyframes gg-cue-ring{0%{opacity:0;box-shadow:0 0 0 0 var(--rc)}18%{opacity:1}50%{box-shadow:0 0 26px 5px var(--rc),inset 0 0 16px var(--rc)}82%{opacity:1}100%{opacity:0}}'; document.head.appendChild(s); }
-      const DUR = 1500;
+      const DUR = 2200; // 「谁打谁」前奏时长（owner 2026-07-04「太短·给2秒」·1500→2200·可见窗 ~1.5s）
       const ea = document.getElementById('u-' + e.a.id); const eb = document.getElementById('u-' + e.b.id);
       const ov = document.createElement('div'); ov.style.cssText = 'position:fixed;inset:0;z-index:280;pointer-events:none';
       playSfx('select');
@@ -517,7 +517,7 @@ export function mount(container: HTMLElement, shell?: { exit?: () => void }): ()
       } else if (sig.name === 'clash:resume') { postClashCtx = null; const r = perfResume; if (r) r(); } // ④ 收场续下一场
     });
     const buildClashView = (): TurnClashView | null => { if (!perfClash) return null; const cv = clashToTurnView(perfClash, tgName, save.inlays); cv.revealed = clashRevealed; return cv; };
-    const view = (): TurnBattleView => buildTurnBattleView(tb, { theme, tengangName: tgName, tengangDesc: tgDesc, selMode, selHand, playKind, swapFrom, clash: buildClashView(), bossName: aiName, sha: shaLive(), notice, movedIds: justMovedIds, freshIds, dealtId: dealtId ?? undefined, battleLabel, sfxOn: isSfxOn(), settingsOpen, bgmOn: isBgmOn(), bgmIdx: bgmTrackIdx(), bgmVol: bgmVolume(), bgmNames: BGM_TRACKS.map((t) => t.name), guideOn: !save.skipGuide, inlays: save.inlays, waterBDisplay: aiManaDisplay ?? undefined, enchOf: (rank, suit) => (save.inlays[String(cardFavorIndex(rank + suit))] ?? []).map((e) => [`${e.b}${DIZHI_TIER_NM[e.t]}`, DIZHI_INLAY_FAVOR[e.t]] as [string, number]) });
+    const view = (): TurnBattleView => buildTurnBattleView(tb, { theme, tengangName: tgName, tengangDesc: tgDesc, selMode, selHand, playKind, swapFrom, clash: buildClashView(), bossName: aiName, sha: shaLive(), notice, movedIds: justMovedIds, heldIds, freshIds, dealtId: dealtId ?? undefined, battleLabel, sfxOn: isSfxOn(), settingsOpen, bgmOn: isBgmOn(), bgmIdx: bgmTrackIdx(), bgmVol: bgmVolume(), bgmNames: BGM_TRACKS.map((t) => t.name), guideOn: !save.skipGuide, inlays: save.inlays, waterBDisplay: aiManaDisplay ?? undefined, enchOf: (rank, suit) => (save.inlays[String(cardFavorIndex(rank + suit))] ?? []).map((e) => [`${e.b}${DIZHI_TIER_NM[e.t]}`, DIZHI_INLAY_FAVOR[e.t]] as [string, number]) });
     let mounted: { update: () => void; destroy: () => void } | null = null;
 
     // 调试全局（owner 2026-07-04·dev 专用·控制台即用·非玩法·不进 hash）：正规「调试菜单」UI 归程序B（已提 requests）。
@@ -541,16 +541,26 @@ export function mount(container: HTMLElement, shell?: { exit?: () => void }): ()
       const mEl = document.getElementById('clash-die-m'); const fEl = document.getElementById('clash-die-f');
       const reveal = (): void => { clashCdTimer = 0; clashRolling = false; clashRevealed = true; coachDid('roll'); playSfx('clashReveal'); playSfx(e.aWins ? 'clashWin' : 'clashLose'); if (e.lastStand) { log(`🛡 死战不退发作：敌主将【${aiName}】首负不亡·残喘退守 1 格`); showBanner('🛡 死战不退 · 敌主将首负不亡', 1700); } mounted?.update(); syncCoach(); }; // 揭晓：重渲染显最终掷值 + 胜方高亮
       if (!mEl || !fEl) { reveal(); return; } // 无骰位（无头/未渲）→ 直接揭晓
-      // setTimeout 驱动（而非 rAF）→ 假计时器 vi.runAllTimers 能冲完·flow-walk 不卡；存 clashCdTimer 便于离场清理。
-      const STEPS = 46; let step = 0; // 两骰各自 ease-out 滚到掷值（滚久一点·更有蓄力·owner「第二种」）
+      // 掷骰仪式（owner 2026-07-04「骰子要疯狂旋转再停在数字上·别直接出结果」）：掷前那个掷值是骰面上藏着的小 '?'——
+      // 掷命时把它顶到 3D 骰画布之上(z>80)·放大狂跳(伪随机·不消费 b.rng)→减速收敛→停在真值+弹一下。setTimeout 驱动(假计时器可冲完)。
+      const maxA = Math.max(1, e.a.pEff || tgtA), maxB = Math.max(1, e.b.pEff || tgtB); // 掷战力骰范围 [1,pEff]
+      const dress = (el: HTMLElement): void => { const p = el.parentElement; if (p) { p.style.position = 'relative'; p.style.zIndex = '90'; } el.style.fontSize = '38px'; el.style.fontWeight = '900'; el.style.color = '#e8cd8a'; el.style.textShadow = '0 0 12px rgba(232,205,138,.9),0 2px 5px #000'; el.style.transition = 'transform .08s ease'; };
+      dress(mEl); dress(fEl);
+      const prnd = (seed: number): number => { const x = Math.sin((step + 1) * 12.9898 + seed * 78.233) * 43758.5453; return x - Math.floor(x); }; // 确定性伪随机·纯显示抖动(不动 rng/turnHash)
+      const TOTAL = 42; let step = 0; // 前 ~70% 狂跳随机值·后 ~30% 减速收敛到真值
       const tick = (): void => {
-        step += 1; const t = Math.min(1, step / STEPS); const k = 1 - Math.pow(1 - t, 3);
-        mEl.textContent = String(Math.max(tgtA > 0 ? 1 : 0, Math.round(k * tgtA)));
-        fEl.textContent = String(Math.max(tgtB > 0 ? 1 : 0, Math.round(k * tgtB)));
-        if (step % 3 === 0) playSfx('select');
-        clashCdTimer = window.setTimeout(t < 1 ? tick : reveal, t < 1 ? 22 : 300);
+        step += 1; const t = step / TOTAL; const settling = t > 0.7;
+        if (!settling) { mEl.textContent = String(1 + Math.floor(prnd(1) * maxA)); fEl.textContent = String(1 + Math.floor(prnd(2) * maxB)); } // 狂跳
+        else { const c = (t - 0.7) / 0.3; const near = (tgt: number, max: number, seed: number): number => Math.max(1, Math.round(tgt + (1 - c) * (1 + Math.floor(prnd(seed) * max) - tgt))); mEl.textContent = String(near(tgtA, maxA, 1)); fEl.textContent = String(near(tgtB, maxB, 2)); } // 收敛
+        const shake = (settling ? 1 - (t - 0.7) / 0.3 : 1) * 7; // 抖动幅度·收敛期渐停
+        mEl.style.transform = `scale(${1 + shake * 0.012}) rotate(${(prnd(3) - 0.5) * shake}deg)`;
+        fEl.style.transform = `scale(${1 + shake * 0.012}) rotate(${(prnd(4) - 0.5) * shake}deg)`;
+        if (step % 2 === 0) playSfx('select');
+        const iv = settling ? 42 + Math.pow((t - 0.7) / 0.3, 2) * 165 : 42; // 减速：收敛期间隔拉长
+        clashCdTimer = window.setTimeout(t < 1 ? tick : land, iv);
       };
-      clashCdTimer = window.setTimeout(tick, 22);
+      const land = (): void => { mEl.textContent = String(Math.max(tgtA > 0 ? 1 : 0, tgtA)); fEl.textContent = String(Math.max(tgtB > 0 ? 1 : 0, tgtB)); mEl.style.transform = 'scale(1.32)'; fEl.style.transform = 'scale(1.32)'; playSfx('clashReveal'); clashCdTimer = window.setTimeout(reveal, 320); }; // 停真值 + 弹
+      clashCdTimer = window.setTimeout(tick, 30);
     };
     // 逐场掷命特写：3D 飞入 → 停留 → **玩家点「看明白了」才演下一场/收场**（owner 2026-06-20：不能自动关·要看清为什么胜败）。
     const playPerf = (onDone: () => void): void => {
@@ -576,6 +586,10 @@ export function mount(container: HTMLElement, shell?: { exit?: () => void }): ()
       log(`  · 我方战力 = ${pBreak(e.a)}　→ 掷战力骰 [1~${e.a.pEff}] = ${e.rollA}`);
       log(`  · 敌方战力 = ${pBreak(e.b)}　→ 掷战力骰 [1~${e.b.pEff}] = ${e.rollB}`);
       log(`  · 预报我方胜率 ${Math.round(e.winrate * 100)}%${e.tie ? `　掷平裁定:${e.tie}` : ''}　→ ${e.aWins ? '★我胜' : '☠敌胜'}${e.warLoss ? `（胜方连胜${e.winStreak}·战力对折${e.winStays === false ? '·满则光荣回库' : ''}）` : ''}${e.lastStand ? '（敌主将死战不退·首负不亡）' : ''}`);
+      // 一行明确战果（owner 2026-07-04「日志要有：掷了几·大于几·谁死了」）：掷值比较 + 胜方 + 阵亡方 + 胜方去留。
+      { const rA = e.rollA ?? 0, rB = e.rollB ?? 0; const cmp = rA > rB ? '>' : rA < rB ? '<' : '=（掷平）'; const win = e.aWins ? `我方 ${nm(e.a)}` : `敌方 ${nm(e.b)}`; const lose = e.aWins ? `敌方 ${nm(e.b)}` : `我方 ${nm(e.a)}`;
+        const fate = e.lastStand ? '敌主将残喘退守·未亡' : `${lose} 阵亡`; const stay = e.winStays === false ? '胜方满连胜·光荣回库' : `${win} 前进占腾出格`;
+        log(`  ▶战果：掷 ${rA} ${cmp} ${rB} → ${win} 胜；${fate}；${stay}`); }
       // 先演 ~2s「哪两张牌即将交战」前奏 → 再切对决特写（owner 2026-06-21）
       showClashCue(e, () => {
         perfClash = e;
@@ -596,8 +610,9 @@ export function mount(container: HTMLElement, shell?: { exit?: () => void }): ()
       const before = snapSlots();
       const lanes = advanceMovePhase(tb, log); // 只移动·不掷命 → 前锋滑到相邻·都还在场；记逐兵行走 + 碰撞判定日志（owner 2026-07-03「看牌走向哪·为啥没触发战斗」）
       justMovedIds = diffMoved(before);
+      heldIds = new Set<string>(); for (const L of tb.lanes) for (const u of [...L.a, ...L.b]) if (before.has(u.id) && !justMovedIds.has(u.id)) heldIds.add(u.id); // 本轮没走的兵（原地固守/被挡）→ 亮盾（owner 2026-07-04）·hold 静守兵另由 u.hold 恒亮
       mounted?.update(); // 渲染滑动到位（FLIP·owner「看到前进路线」）
-      battleTl.play({ id: 'move', cues: [{ at: 80, do: { kind: 'signal', signal: 'move:settle' } }] }); // 行军慢放整段(g-march 1.25s≈80 tick@16ms)后清标记——时序改由 t3-timeline 出（owner「用 timeline·不手写排程」·替旧 setTimeout(1350)）·此刻无 clash 特写在场·host 空闲不冲突
+      battleTl.play({ id: 'move', cues: [{ at: 96, do: { kind: 'signal', signal: 'move:settle' } }] }); // 行军慢放整段(g-march 1.5s≈96 tick@16ms)后清标记——时序由 t3-timeline 出（owner「用 timeline·不手写排程」）·此刻无 clash 特写在场·host 空闲不冲突
       exitCaps.clear();
       for (const li of lanes) { const fa = tb.lanes[li].a[0], fb = tb.lanes[li].b[0]; if (fa) { const s = captureUnit(fa.id); if (s) exitCaps.set(fa.id, s); } if (fb) { const s = captureUnit(fb.id); if (s) exitCaps.set(fb.id, s); } } // 相邻位快照(供离场动画)
       for (const li of lanes) resolveClashAt(tb, li); // 结算(数据)→ clashLog
