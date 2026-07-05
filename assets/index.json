@@ -364660,6 +364660,75 @@
       }
     },
     {
+      "id": "mat/brick",
+      "type": "material",
+      "description": "红砖 + 灰浆缝 · 程序化 PBR 材质",
+      "status": "filled",
+      "category": "material",
+      "tags": [
+        "material",
+        "pbr",
+        "textured",
+        "shared-3d",
+        "brick"
+      ],
+      "license": "CC0-1.0",
+      "source": "apollo-shelf",
+      "spec": {
+        "preset": "matte",
+        "map": "tex/pbr/brick_albedo",
+        "normalMap": "tex/pbr/brick_normal",
+        "roughnessMap": "tex/pbr/brick_rough",
+        "metalness": 0
+      }
+    },
+    {
+      "id": "mat/cobblestone",
+      "type": "material",
+      "description": "鹅卵石 · 程序化 PBR 材质",
+      "status": "filled",
+      "category": "material",
+      "tags": [
+        "material",
+        "pbr",
+        "textured",
+        "shared-3d",
+        "cobblestone"
+      ],
+      "license": "CC0-1.0",
+      "source": "apollo-shelf",
+      "spec": {
+        "preset": "matte",
+        "map": "tex/pbr/cobblestone_albedo",
+        "normalMap": "tex/pbr/cobblestone_normal",
+        "roughnessMap": "tex/pbr/cobblestone_rough",
+        "metalness": 0
+      }
+    },
+    {
+      "id": "mat/concrete",
+      "type": "material",
+      "description": "混凝土 · 程序化 PBR 材质",
+      "status": "filled",
+      "category": "material",
+      "tags": [
+        "material",
+        "pbr",
+        "textured",
+        "shared-3d",
+        "concrete"
+      ],
+      "license": "CC0-1.0",
+      "source": "apollo-shelf",
+      "spec": {
+        "preset": "matte",
+        "map": "tex/pbr/concrete_albedo",
+        "normalMap": "tex/pbr/concrete_normal",
+        "roughnessMap": "tex/pbr/concrete_rough",
+        "metalness": 0
+      }
+    },
+    {
       "id": "mat/copper",
       "type": "material",
       "description": "铜 · 公用材质",
@@ -364714,6 +364783,29 @@
       }
     },
     {
+      "id": "mat/fabric",
+      "type": "material",
+      "description": "织物 · 程序化 PBR 材质",
+      "status": "filled",
+      "category": "material",
+      "tags": [
+        "material",
+        "pbr",
+        "textured",
+        "shared-3d",
+        "fabric"
+      ],
+      "license": "CC0-1.0",
+      "source": "apollo-shelf",
+      "spec": {
+        "preset": "matte",
+        "map": "tex/pbr/fabric_albedo",
+        "normalMap": "tex/pbr/fabric_normal",
+        "roughnessMap": "tex/pbr/fabric_rough",
+        "metalness": 0
+      }
+    },
+    {
       "id": "mat/glass",
       "type": "material",
       "description": "玻璃（透射） · 公用材质",
@@ -364747,6 +364839,52 @@
       "source": "apollo-shelf",
       "spec": {
         "preset": "gold"
+      }
+    },
+    {
+      "id": "mat/grass",
+      "type": "material",
+      "description": "草地 · 程序化 PBR 材质",
+      "status": "filled",
+      "category": "material",
+      "tags": [
+        "material",
+        "pbr",
+        "textured",
+        "shared-3d",
+        "grass"
+      ],
+      "license": "CC0-1.0",
+      "source": "apollo-shelf",
+      "spec": {
+        "preset": "matte",
+        "map": "tex/pbr/grass_albedo",
+        "normalMap": "tex/pbr/grass_normal",
+        "roughnessMap": "tex/pbr/grass_rough",
+        "metalness": 0
+      }
+    },
+    {
+      "id": "mat/gravel",
+      "type": "material",
+      "description": "碎石 · 程序化 PBR 材质",
+      "status": "filled",
+      "category": "material",
+      "tags": [
+        "material",
+        "pbr",
+        "textured",
+        "shared-3d",
+        "gravel"
+      ],
+      "license": "CC0-1.0",
+      "source": "apollo-shelf",
+      "spec": {
+        "preset": "matte",
+        "map": "tex/pbr/gravel_albedo",
+        "normalMap": "tex/pbr/gravel_normal",
+        "roughnessMap": "tex/pbr/gravel_rough",
+        "metalness": 0
       }
     },
     {
@@ -364786,6 +364924,29 @@
       }
     },
     {
+      "id": "mat/metal",
+      "type": "material",
+      "description": "拉丝金属 · 程序化 PBR 材质",
+      "status": "filled",
+      "category": "material",
+      "tags": [
+        "material",
+        "pbr",
+        "textured",
+        "shared-3d",
+        "metal"
+      ],
+      "license": "CC0-1.0",
+      "source": "apollo-shelf",
+      "spec": {
+        "preset": "steel",
+        "map": "tex/pbr/metal_albedo",
+        "normalMap": "tex/pbr/metal_normal",
+        "roughnessMap": "tex/pbr/metal_rough",
+        "metalness": 1
+      }
+    },
+    {
       "id": "mat/plastic",
       "type": "material",
       "description": "光面塑料（介电） · 公用材质",
@@ -364822,6 +364983,29 @@
       }
     },
     {
+      "id": "mat/sand",
+      "type": "material",
+      "description": "沙地 · 程序化 PBR 材质",
+      "status": "filled",
+      "category": "material",
+      "tags": [
+        "material",
+        "pbr",
+        "textured",
+        "shared-3d",
+        "sand"
+      ],
+      "license": "CC0-1.0",
+      "source": "apollo-shelf",
+      "spec": {
+        "preset": "matte",
+        "map": "tex/pbr/sand_albedo",
+        "normalMap": "tex/pbr/sand_normal",
+        "roughnessMap": "tex/pbr/sand_rough",
+        "metalness": 0
+      }
+    },
+    {
       "id": "mat/steel",
       "type": "material",
       "description": "钢（抛光·低粗糙） · 公用材质",
@@ -364837,6 +365021,29 @@
       "source": "apollo-shelf",
       "spec": {
         "preset": "steel"
+      }
+    },
+    {
+      "id": "mat/tile",
+      "type": "material",
+      "description": "瓷砖 · 程序化 PBR 材质",
+      "status": "filled",
+      "category": "material",
+      "tags": [
+        "material",
+        "pbr",
+        "textured",
+        "shared-3d",
+        "tile"
+      ],
+      "license": "CC0-1.0",
+      "source": "apollo-shelf",
+      "spec": {
+        "preset": "matte",
+        "map": "tex/pbr/tile_albedo",
+        "normalMap": "tex/pbr/tile_normal",
+        "roughnessMap": "tex/pbr/tile_rough",
+        "metalness": 0
       }
     },
     {
@@ -878195,6 +878402,681 @@
       "provenance": {
         "repo": "tabler/tabler-icons",
         "ref": "main"
+      }
+    },
+    {
+      "id": "tex/pbr/brick_albedo",
+      "type": "texture",
+      "description": "红砖 + 灰浆缝 albedo · 程序化 PBR",
+      "status": "filled",
+      "path": "textures/pbr/brick_albedo.png",
+      "category": "texture",
+      "tags": [
+        "texture",
+        "procedural",
+        "pbr",
+        "shared-3d",
+        "brick",
+        "albedo"
+      ],
+      "license": "CC0-1.0",
+      "source": "apollo-shelf",
+      "spec": {
+        "format": "png",
+        "width": 256,
+        "height": 256,
+        "usage": "albedo",
+        "wrap": "repeat"
+      }
+    },
+    {
+      "id": "tex/pbr/brick_normal",
+      "type": "texture",
+      "description": "红砖 + 灰浆缝 normal · 程序化 PBR",
+      "status": "filled",
+      "path": "textures/pbr/brick_normal.png",
+      "category": "texture",
+      "tags": [
+        "texture",
+        "procedural",
+        "pbr",
+        "shared-3d",
+        "brick",
+        "normal"
+      ],
+      "license": "CC0-1.0",
+      "source": "apollo-shelf",
+      "spec": {
+        "format": "png",
+        "width": 256,
+        "height": 256,
+        "usage": "normal",
+        "wrap": "repeat"
+      }
+    },
+    {
+      "id": "tex/pbr/brick_rough",
+      "type": "texture",
+      "description": "红砖 + 灰浆缝 roughness · 程序化 PBR",
+      "status": "filled",
+      "path": "textures/pbr/brick_rough.png",
+      "category": "texture",
+      "tags": [
+        "texture",
+        "procedural",
+        "pbr",
+        "shared-3d",
+        "brick",
+        "roughness"
+      ],
+      "license": "CC0-1.0",
+      "source": "apollo-shelf",
+      "spec": {
+        "format": "png",
+        "width": 256,
+        "height": 256,
+        "usage": "roughness",
+        "wrap": "repeat"
+      }
+    },
+    {
+      "id": "tex/pbr/cobblestone_albedo",
+      "type": "texture",
+      "description": "鹅卵石 albedo · 程序化 PBR",
+      "status": "filled",
+      "path": "textures/pbr/cobblestone_albedo.png",
+      "category": "texture",
+      "tags": [
+        "texture",
+        "procedural",
+        "pbr",
+        "shared-3d",
+        "cobblestone",
+        "albedo"
+      ],
+      "license": "CC0-1.0",
+      "source": "apollo-shelf",
+      "spec": {
+        "format": "png",
+        "width": 256,
+        "height": 256,
+        "usage": "albedo",
+        "wrap": "repeat"
+      }
+    },
+    {
+      "id": "tex/pbr/cobblestone_normal",
+      "type": "texture",
+      "description": "鹅卵石 normal · 程序化 PBR",
+      "status": "filled",
+      "path": "textures/pbr/cobblestone_normal.png",
+      "category": "texture",
+      "tags": [
+        "texture",
+        "procedural",
+        "pbr",
+        "shared-3d",
+        "cobblestone",
+        "normal"
+      ],
+      "license": "CC0-1.0",
+      "source": "apollo-shelf",
+      "spec": {
+        "format": "png",
+        "width": 256,
+        "height": 256,
+        "usage": "normal",
+        "wrap": "repeat"
+      }
+    },
+    {
+      "id": "tex/pbr/cobblestone_rough",
+      "type": "texture",
+      "description": "鹅卵石 roughness · 程序化 PBR",
+      "status": "filled",
+      "path": "textures/pbr/cobblestone_rough.png",
+      "category": "texture",
+      "tags": [
+        "texture",
+        "procedural",
+        "pbr",
+        "shared-3d",
+        "cobblestone",
+        "roughness"
+      ],
+      "license": "CC0-1.0",
+      "source": "apollo-shelf",
+      "spec": {
+        "format": "png",
+        "width": 256,
+        "height": 256,
+        "usage": "roughness",
+        "wrap": "repeat"
+      }
+    },
+    {
+      "id": "tex/pbr/concrete_albedo",
+      "type": "texture",
+      "description": "混凝土 albedo · 程序化 PBR",
+      "status": "filled",
+      "path": "textures/pbr/concrete_albedo.png",
+      "category": "texture",
+      "tags": [
+        "texture",
+        "procedural",
+        "pbr",
+        "shared-3d",
+        "concrete",
+        "albedo"
+      ],
+      "license": "CC0-1.0",
+      "source": "apollo-shelf",
+      "spec": {
+        "format": "png",
+        "width": 256,
+        "height": 256,
+        "usage": "albedo",
+        "wrap": "repeat"
+      }
+    },
+    {
+      "id": "tex/pbr/concrete_normal",
+      "type": "texture",
+      "description": "混凝土 normal · 程序化 PBR",
+      "status": "filled",
+      "path": "textures/pbr/concrete_normal.png",
+      "category": "texture",
+      "tags": [
+        "texture",
+        "procedural",
+        "pbr",
+        "shared-3d",
+        "concrete",
+        "normal"
+      ],
+      "license": "CC0-1.0",
+      "source": "apollo-shelf",
+      "spec": {
+        "format": "png",
+        "width": 256,
+        "height": 256,
+        "usage": "normal",
+        "wrap": "repeat"
+      }
+    },
+    {
+      "id": "tex/pbr/concrete_rough",
+      "type": "texture",
+      "description": "混凝土 roughness · 程序化 PBR",
+      "status": "filled",
+      "path": "textures/pbr/concrete_rough.png",
+      "category": "texture",
+      "tags": [
+        "texture",
+        "procedural",
+        "pbr",
+        "shared-3d",
+        "concrete",
+        "roughness"
+      ],
+      "license": "CC0-1.0",
+      "source": "apollo-shelf",
+      "spec": {
+        "format": "png",
+        "width": 256,
+        "height": 256,
+        "usage": "roughness",
+        "wrap": "repeat"
+      }
+    },
+    {
+      "id": "tex/pbr/fabric_albedo",
+      "type": "texture",
+      "description": "织物 albedo · 程序化 PBR",
+      "status": "filled",
+      "path": "textures/pbr/fabric_albedo.png",
+      "category": "texture",
+      "tags": [
+        "texture",
+        "procedural",
+        "pbr",
+        "shared-3d",
+        "fabric",
+        "albedo"
+      ],
+      "license": "CC0-1.0",
+      "source": "apollo-shelf",
+      "spec": {
+        "format": "png",
+        "width": 256,
+        "height": 256,
+        "usage": "albedo",
+        "wrap": "repeat"
+      }
+    },
+    {
+      "id": "tex/pbr/fabric_normal",
+      "type": "texture",
+      "description": "织物 normal · 程序化 PBR",
+      "status": "filled",
+      "path": "textures/pbr/fabric_normal.png",
+      "category": "texture",
+      "tags": [
+        "texture",
+        "procedural",
+        "pbr",
+        "shared-3d",
+        "fabric",
+        "normal"
+      ],
+      "license": "CC0-1.0",
+      "source": "apollo-shelf",
+      "spec": {
+        "format": "png",
+        "width": 256,
+        "height": 256,
+        "usage": "normal",
+        "wrap": "repeat"
+      }
+    },
+    {
+      "id": "tex/pbr/fabric_rough",
+      "type": "texture",
+      "description": "织物 roughness · 程序化 PBR",
+      "status": "filled",
+      "path": "textures/pbr/fabric_rough.png",
+      "category": "texture",
+      "tags": [
+        "texture",
+        "procedural",
+        "pbr",
+        "shared-3d",
+        "fabric",
+        "roughness"
+      ],
+      "license": "CC0-1.0",
+      "source": "apollo-shelf",
+      "spec": {
+        "format": "png",
+        "width": 256,
+        "height": 256,
+        "usage": "roughness",
+        "wrap": "repeat"
+      }
+    },
+    {
+      "id": "tex/pbr/grass_albedo",
+      "type": "texture",
+      "description": "草地 albedo · 程序化 PBR",
+      "status": "filled",
+      "path": "textures/pbr/grass_albedo.png",
+      "category": "texture",
+      "tags": [
+        "texture",
+        "procedural",
+        "pbr",
+        "shared-3d",
+        "grass",
+        "albedo"
+      ],
+      "license": "CC0-1.0",
+      "source": "apollo-shelf",
+      "spec": {
+        "format": "png",
+        "width": 256,
+        "height": 256,
+        "usage": "albedo",
+        "wrap": "repeat"
+      }
+    },
+    {
+      "id": "tex/pbr/grass_normal",
+      "type": "texture",
+      "description": "草地 normal · 程序化 PBR",
+      "status": "filled",
+      "path": "textures/pbr/grass_normal.png",
+      "category": "texture",
+      "tags": [
+        "texture",
+        "procedural",
+        "pbr",
+        "shared-3d",
+        "grass",
+        "normal"
+      ],
+      "license": "CC0-1.0",
+      "source": "apollo-shelf",
+      "spec": {
+        "format": "png",
+        "width": 256,
+        "height": 256,
+        "usage": "normal",
+        "wrap": "repeat"
+      }
+    },
+    {
+      "id": "tex/pbr/grass_rough",
+      "type": "texture",
+      "description": "草地 roughness · 程序化 PBR",
+      "status": "filled",
+      "path": "textures/pbr/grass_rough.png",
+      "category": "texture",
+      "tags": [
+        "texture",
+        "procedural",
+        "pbr",
+        "shared-3d",
+        "grass",
+        "roughness"
+      ],
+      "license": "CC0-1.0",
+      "source": "apollo-shelf",
+      "spec": {
+        "format": "png",
+        "width": 256,
+        "height": 256,
+        "usage": "roughness",
+        "wrap": "repeat"
+      }
+    },
+    {
+      "id": "tex/pbr/gravel_albedo",
+      "type": "texture",
+      "description": "碎石 albedo · 程序化 PBR",
+      "status": "filled",
+      "path": "textures/pbr/gravel_albedo.png",
+      "category": "texture",
+      "tags": [
+        "texture",
+        "procedural",
+        "pbr",
+        "shared-3d",
+        "gravel",
+        "albedo"
+      ],
+      "license": "CC0-1.0",
+      "source": "apollo-shelf",
+      "spec": {
+        "format": "png",
+        "width": 256,
+        "height": 256,
+        "usage": "albedo",
+        "wrap": "repeat"
+      }
+    },
+    {
+      "id": "tex/pbr/gravel_normal",
+      "type": "texture",
+      "description": "碎石 normal · 程序化 PBR",
+      "status": "filled",
+      "path": "textures/pbr/gravel_normal.png",
+      "category": "texture",
+      "tags": [
+        "texture",
+        "procedural",
+        "pbr",
+        "shared-3d",
+        "gravel",
+        "normal"
+      ],
+      "license": "CC0-1.0",
+      "source": "apollo-shelf",
+      "spec": {
+        "format": "png",
+        "width": 256,
+        "height": 256,
+        "usage": "normal",
+        "wrap": "repeat"
+      }
+    },
+    {
+      "id": "tex/pbr/gravel_rough",
+      "type": "texture",
+      "description": "碎石 roughness · 程序化 PBR",
+      "status": "filled",
+      "path": "textures/pbr/gravel_rough.png",
+      "category": "texture",
+      "tags": [
+        "texture",
+        "procedural",
+        "pbr",
+        "shared-3d",
+        "gravel",
+        "roughness"
+      ],
+      "license": "CC0-1.0",
+      "source": "apollo-shelf",
+      "spec": {
+        "format": "png",
+        "width": 256,
+        "height": 256,
+        "usage": "roughness",
+        "wrap": "repeat"
+      }
+    },
+    {
+      "id": "tex/pbr/metal_albedo",
+      "type": "texture",
+      "description": "拉丝金属 albedo · 程序化 PBR",
+      "status": "filled",
+      "path": "textures/pbr/metal_albedo.png",
+      "category": "texture",
+      "tags": [
+        "texture",
+        "procedural",
+        "pbr",
+        "shared-3d",
+        "metal",
+        "albedo"
+      ],
+      "license": "CC0-1.0",
+      "source": "apollo-shelf",
+      "spec": {
+        "format": "png",
+        "width": 256,
+        "height": 256,
+        "usage": "albedo",
+        "wrap": "repeat"
+      }
+    },
+    {
+      "id": "tex/pbr/metal_normal",
+      "type": "texture",
+      "description": "拉丝金属 normal · 程序化 PBR",
+      "status": "filled",
+      "path": "textures/pbr/metal_normal.png",
+      "category": "texture",
+      "tags": [
+        "texture",
+        "procedural",
+        "pbr",
+        "shared-3d",
+        "metal",
+        "normal"
+      ],
+      "license": "CC0-1.0",
+      "source": "apollo-shelf",
+      "spec": {
+        "format": "png",
+        "width": 256,
+        "height": 256,
+        "usage": "normal",
+        "wrap": "repeat"
+      }
+    },
+    {
+      "id": "tex/pbr/metal_rough",
+      "type": "texture",
+      "description": "拉丝金属 roughness · 程序化 PBR",
+      "status": "filled",
+      "path": "textures/pbr/metal_rough.png",
+      "category": "texture",
+      "tags": [
+        "texture",
+        "procedural",
+        "pbr",
+        "shared-3d",
+        "metal",
+        "roughness"
+      ],
+      "license": "CC0-1.0",
+      "source": "apollo-shelf",
+      "spec": {
+        "format": "png",
+        "width": 256,
+        "height": 256,
+        "usage": "roughness",
+        "wrap": "repeat"
+      }
+    },
+    {
+      "id": "tex/pbr/sand_albedo",
+      "type": "texture",
+      "description": "沙地 albedo · 程序化 PBR",
+      "status": "filled",
+      "path": "textures/pbr/sand_albedo.png",
+      "category": "texture",
+      "tags": [
+        "texture",
+        "procedural",
+        "pbr",
+        "shared-3d",
+        "sand",
+        "albedo"
+      ],
+      "license": "CC0-1.0",
+      "source": "apollo-shelf",
+      "spec": {
+        "format": "png",
+        "width": 256,
+        "height": 256,
+        "usage": "albedo",
+        "wrap": "repeat"
+      }
+    },
+    {
+      "id": "tex/pbr/sand_normal",
+      "type": "texture",
+      "description": "沙地 normal · 程序化 PBR",
+      "status": "filled",
+      "path": "textures/pbr/sand_normal.png",
+      "category": "texture",
+      "tags": [
+        "texture",
+        "procedural",
+        "pbr",
+        "shared-3d",
+        "sand",
+        "normal"
+      ],
+      "license": "CC0-1.0",
+      "source": "apollo-shelf",
+      "spec": {
+        "format": "png",
+        "width": 256,
+        "height": 256,
+        "usage": "normal",
+        "wrap": "repeat"
+      }
+    },
+    {
+      "id": "tex/pbr/sand_rough",
+      "type": "texture",
+      "description": "沙地 roughness · 程序化 PBR",
+      "status": "filled",
+      "path": "textures/pbr/sand_rough.png",
+      "category": "texture",
+      "tags": [
+        "texture",
+        "procedural",
+        "pbr",
+        "shared-3d",
+        "sand",
+        "roughness"
+      ],
+      "license": "CC0-1.0",
+      "source": "apollo-shelf",
+      "spec": {
+        "format": "png",
+        "width": 256,
+        "height": 256,
+        "usage": "roughness",
+        "wrap": "repeat"
+      }
+    },
+    {
+      "id": "tex/pbr/tile_albedo",
+      "type": "texture",
+      "description": "瓷砖 albedo · 程序化 PBR",
+      "status": "filled",
+      "path": "textures/pbr/tile_albedo.png",
+      "category": "texture",
+      "tags": [
+        "texture",
+        "procedural",
+        "pbr",
+        "shared-3d",
+        "tile",
+        "albedo"
+      ],
+      "license": "CC0-1.0",
+      "source": "apollo-shelf",
+      "spec": {
+        "format": "png",
+        "width": 256,
+        "height": 256,
+        "usage": "albedo",
+        "wrap": "repeat"
+      }
+    },
+    {
+      "id": "tex/pbr/tile_normal",
+      "type": "texture",
+      "description": "瓷砖 normal · 程序化 PBR",
+      "status": "filled",
+      "path": "textures/pbr/tile_normal.png",
+      "category": "texture",
+      "tags": [
+        "texture",
+        "procedural",
+        "pbr",
+        "shared-3d",
+        "tile",
+        "normal"
+      ],
+      "license": "CC0-1.0",
+      "source": "apollo-shelf",
+      "spec": {
+        "format": "png",
+        "width": 256,
+        "height": 256,
+        "usage": "normal",
+        "wrap": "repeat"
+      }
+    },
+    {
+      "id": "tex/pbr/tile_rough",
+      "type": "texture",
+      "description": "瓷砖 roughness · 程序化 PBR",
+      "status": "filled",
+      "path": "textures/pbr/tile_rough.png",
+      "category": "texture",
+      "tags": [
+        "texture",
+        "procedural",
+        "pbr",
+        "shared-3d",
+        "tile",
+        "roughness"
+      ],
+      "license": "CC0-1.0",
+      "source": "apollo-shelf",
+      "spec": {
+        "format": "png",
+        "width": 256,
+        "height": 256,
+        "usage": "roughness",
+        "wrap": "repeat"
       }
     },
     {

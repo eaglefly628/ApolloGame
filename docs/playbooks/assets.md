@@ -53,4 +53,5 @@ Free Library（共享 `assets/index.json` + `FreeArtLib/`）= **货架·只被 c
 - **基础 mesh**（程序化 glb）：`mesh/plane`（地块）·`mesh/cube`（箱体）·`mesh/sphere`（星体/占位），spec `scale/genCollision`。
 - **程序化贴图**：`tex/plank_albedo`·`tex/plank_normal`（线性）·`tex/rune_emissive`。
 - **天空盒**：`env/sky-gradient`（equirect 渐变）。
-- 备料/扩充：`node scripts/gen-shelf-3d.mjs [materials|meshes|textures|env|all]`（确定性·幂等·零网络·CC0 自产）。缺某类基础素材 → 扩这个脚本，不在游戏层自造。
+- **程序化 PBR 材质库**（成套·各品类·每套 albedo+normal+roughness 贴图 + 引它们的材质 `mat/<品类>`）：`brick`·`cobblestone`·`grass`·`sand`·`concrete`·`metal`(金属度1·拉丝)·`fabric`·`tile`·`gravel`。贴图在 `tex/pbr/<品类>_{albedo,normal,rough}`。vendor 材质会连带其贴图 key（游戏侧一并 vendor 那几张贴图）。
+- 备料/扩充：`node scripts/gen-shelf-3d.mjs [materials|meshes|textures|env|pbr|all]`（确定性·幂等·零网络·CC0 自产）。缺某类基础素材/品类 → 扩这个脚本（加一条 `CATS` 品类），不在游戏层自造。

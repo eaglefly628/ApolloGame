@@ -34,4 +34,18 @@ describe('REQ-PA-3D公用货架 · 共享货架公用 3D 素材', () => {
     expect(byId.get('env/sky-gradient')?.type).toBe('texture');
     expect(byId.get('env/sky-gradient')?.category).toBe('skybox');
   });
+
+  it('程序化 PBR 材质库：各品类材质引 albedo/normal/roughness 贴图 key（catalog 传递）', () => {
+    const catalog = buildMaterialCatalog(idx);
+    for (const cat of ['brick', 'cobblestone', 'grass', 'sand', 'concrete', 'metal', 'fabric', 'tile', 'gravel']) {
+      const m = catalog.get(`mat/${cat}`);
+      expect(m?.map).toBe(`tex/pbr/${cat}_albedo`);
+      expect(m?.normalMap).toBe(`tex/pbr/${cat}_normal`);
+      expect(m?.roughnessMap).toBe(`tex/pbr/${cat}_rough`);
+      // 每张引用的贴图都真在册（无悬空 key）
+      for (const suffix of ['albedo', 'normal', 'rough']) expect(byId.has(`tex/pbr/${cat}_${suffix}`)).toBe(true);
+    }
+    expect(catalog.get('mat/metal')?.metalness).toBe(1); // 金属类金属度=1
+    expect(byId.get('tex/pbr/grass_normal')?.spec).toMatchObject({ usage: 'normal' }); // 法线线性
+  });
 });

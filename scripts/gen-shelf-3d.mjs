@@ -224,6 +224,117 @@ function envEntries() {
   }];
 }
 
+// ── 程序化 PBR 材质库（各品类·每套 albedo+normal+roughness 贴图 + 一个引这些贴图的材质）──
+// 确定性噪声（hash 值噪声 + fbm + worley 胞元）；纯数学产图·无外部素材·CC0。
+const nz2 = (x, y) => { let h = ((x * 374761393) ^ (y * 668265263)) >>> 0; h = ((h ^ (h >>> 13)) * 1274126177) >>> 0; return ((h ^ (h >>> 16)) >>> 0) / 4294967296; };
+const vnoise = (x, y) => {
+  const xi = Math.floor(x), yi = Math.floor(y), fx = x - xi, fy = y - yi;
+  const u = fx * fx * (3 - 2 * fx), v = fy * fy * (3 - 2 * fy);
+  const a = nz2(xi, yi), b = nz2(xi + 1, yi), c = nz2(xi, yi + 1), d = nz2(xi + 1, yi + 1);
+  return a + (b - a) * u + (c - a + (a - b - c + d) * u) * v;
+};
+const fbm = (x, y, oct = 4) => { let s = 0, amp = 0.5, f = 1; for (let i = 0; i < oct; i++) { s += vnoise(x * f, y * f) * amp; f *= 2; amp *= 0.5; } return s; };
+const worley = (x, y, cell) => { // F1 距离(归一) + 最近胞元 id
+  const cx = Math.floor(x / cell), cy = Math.floor(y / cell); let m = 1e9, id = 0;
+  for (let j = -1; j <= 1; j++) for (let i = -1; i <= 1; i++) {
+    const gx = cx + i, gy = cy + j, px = (gx + nz2(gx, gy)) * cell, py = (gy + nz2(gy + 7, gx - 3)) * cell;
+    const dd = (x - px) ** 2 + (y - py) ** 2; if (dd < m) { m = dd; id = nz2(gx * 3 + 1, gy * 3 - 2); }
+  }
+  return { d: Math.sqrt(m) / cell, id };
+};
+
+// 品类采样器 (x,y) → { alb:[r,g,b] 0..255, h:高度 0..1, rough:粗糙 0..1 }；metal 标于 CATS。
+const CATS = {
+  brick: { desc: '红砖 + 灰浆缝', s(x, y) {
+    const bw = 64, bh = 28, mo = 5, row = Math.floor(y / bh), xo = x + (row % 2 ? bw / 2 : 0);
+    const iy = y - row * bh, col = Math.floor(xo / bw), ix = xo - col * bw;
+    if (ix < mo || ix > bw - mo || iy < mo || iy > bh - mo) { const g = 108 + fbm(x / 6, y / 6) * 22; return { alb: [g, g, g * 0.95], h: 0.25, rough: 0.92 }; }
+    const t = nz2(col, row), n = fbm(x / 5, y / 5) * 0.5 + fbm(x / 2, y / 2) * 0.2, br = 0.8 + n * 0.4;
+    return { alb: [(150 + t * 40) * br, (70 + t * 30) * br, (55 + t * 20) * br], h: 0.7 + n * 0.2, rough: 0.82 };
+  } },
+  cobblestone: { desc: '鹅卵石', s(x, y) {
+    const { d, id } = worley(x, y, 26);
+    if (d > 0.72) { const g = 55 + fbm(x / 4, y / 4) * 20; return { alb: [g, g, g], h: 0.15, rough: 0.95 }; }
+    const dome = Math.cos(Math.min(d / 0.72, 1) * Math.PI / 2), g = 105 + id * 85, n = fbm(x / 3, y / 3) * 0.3;
+    return { alb: [g * (0.85 + n), g * 0.98 * (0.85 + n), g * 0.92 * (0.85 + n)], h: 0.3 + dome * 0.6, rough: 0.88 };
+  } },
+  grass: { desc: '草地', s(x, y) {
+    const n = fbm(x / 8, y / 8), bl = fbm(x / 2, y / 1.2), g = 88 + n * 70 + bl * 40;
+    return { alb: [40 + n * 30, g, 35 + n * 20], h: 0.4 + bl * 0.3, rough: 0.9 };
+  } },
+  sand: { desc: '沙地', s(x, y) {
+    const du = fbm(x / 40, y / 40), fi = fbm(x / 3, y / 3), b = 190 + du * 30 + fi * 20;
+    return { alb: [b, b * 0.9, b * 0.68], h: 0.4 + du * 0.4 + fi * 0.1, rough: 0.85 };
+  } },
+  concrete: { desc: '混凝土', s(x, y) {
+    const n = fbm(x / 10, y / 10) * 0.6 + fbm(x / 3, y / 3) * 0.3, g = 138 + n * 62;
+    return { alb: [g, g, g * 1.02], h: 0.5 + n * 0.15, rough: 0.9 };
+  } },
+  metal: { desc: '拉丝金属', metal: 1, s(x, y) {
+    const st = vnoise(x * 0.03, y * 0.5) * 0.6 + vnoise(x * 0.01, y * 1.1) * 0.3, g = 165 + st * 55;
+    return { alb: [g, g, g * 1.02], h: 0.5 + st * 0.04, rough: 0.3 + st * 0.14 };
+  } },
+  fabric: { desc: '织物', s(x, y) {
+    const T = 6, wx = Math.floor(x / T), wy = Math.floor(y / T), over = (wx + wy) % 2 === 0;
+    const bump = over ? Math.sin((y % T) / T * Math.PI) : Math.sin((x % T) / T * Math.PI), n = fbm(x / 20, y / 20) * 0.2, br = 0.7 + bump * 0.4;
+    return { alb: [(120 + n * 40) * br, (90 + n * 30) * br, (150 + n * 40) * br], h: 0.4 + bump * 0.4, rough: 0.85 };
+  } },
+  tile: { desc: '瓷砖', s(x, y) {
+    const T = 48, gr = 4, cx = Math.floor(x / T), cy = Math.floor(y / T), ix = x - cx * T, iy = y - cy * T;
+    if (ix < gr || iy < gr || ix > T - gr || iy > T - gr) return { alb: [90, 88, 85], h: 0.2, rough: 0.9 };
+    const c = (cx + cy) % 2 === 0 ? 235 : 210, n = fbm(x / 6, y / 6) * 10;
+    return { alb: [c + n, c + n, c - 6 + n], h: 0.75, rough: 0.18 };
+  } },
+  gravel: { desc: '碎石', s(x, y) {
+    const { d, id } = worley(x, y, 10), dome = Math.max(0, 1 - d / 0.8), g = 90 + id * 90, n = fbm(x / 2, y / 2) * 0.3;
+    return { alb: [g * (0.8 + n), g * (0.78 + n), g * (0.72 + n)], h: 0.2 + dome * 0.6, rough: 0.9 };
+  } },
+};
+
+const clamp255 = (v) => Math.max(0, Math.min(255, Math.round(v)));
+function genPbrMaps(cat, N = 256) {
+  const sample = CATS[cat].s;
+  const alb = Buffer.alloc(N * N * 3), H = new Float32Array(N * N), rough = Buffer.alloc(N * N * 3);
+  for (let y = 0; y < N; y++) for (let x = 0; x < N; x++) {
+    const r = sample(x, y), i = y * N + x;
+    alb[i * 3] = clamp255(r.alb[0]); alb[i * 3 + 1] = clamp255(r.alb[1]); alb[i * 3 + 2] = clamp255(r.alb[2]);
+    H[i] = r.h; const rg = clamp255(r.rough * 255); rough[i * 3] = rough[i * 3 + 1] = rough[i * 3 + 2] = rg;
+  }
+  const nrm = Buffer.alloc(N * N * 3), S = 3;
+  for (let y = 0; y < N; y++) for (let x = 0; x < N; x++) {
+    const l = H[y * N + (x + N - 1) % N], r = H[y * N + (x + 1) % N], u = H[((y + N - 1) % N) * N + x], dn = H[((y + 1) % N) * N + x];
+    const dx = (r - l) * S, dy = (dn - u) * S, len = Math.hypot(dx, dy, 1), o = (y * N + x) * 3;
+    nrm[o] = clamp255((-dx / len * 0.5 + 0.5) * 255); nrm[o + 1] = clamp255((-dy / len * 0.5 + 0.5) * 255); nrm[o + 2] = clamp255((1 / len * 0.5 + 0.5) * 255);
+  }
+  return { N, alb, nrm, rough };
+}
+function pbrEntries() {
+  mkdirSync(join(ROOT, 'assets', 'textures', 'pbr'), { recursive: true });
+  const out = [];
+  for (const [cat, def] of Object.entries(CATS)) {
+    const { N, alb, nrm, rough } = genPbrMaps(cat);
+    const maps = [['albedo', alb, 'albedo'], ['normal', nrm, 'normal'], ['rough', rough, 'roughness']];
+    for (const [suffix, buf, usage] of maps) {
+      writeFileSync(join(ROOT, 'assets', 'textures', 'pbr', `${cat}_${suffix}.png`), encodePng(N, N, buf));
+      out.push({
+        id: `tex/pbr/${cat}_${suffix}`, type: 'texture', description: `${def.desc} ${usage} · 程序化 PBR`, status: 'filled',
+        path: `textures/pbr/${cat}_${suffix}.png`, category: 'texture', tags: ['texture', 'procedural', 'pbr', 'shared-3d', cat, usage],
+        license: 'CC0-1.0', source: 'apollo-shelf', spec: { format: 'png', width: N, height: N, usage, wrap: 'repeat' },
+      });
+    }
+    out.push({
+      id: `mat/${cat}`, type: 'material', description: `${def.desc} · 程序化 PBR 材质`, status: 'filled',
+      category: 'material', tags: ['material', 'pbr', 'textured', 'shared-3d', cat], license: 'CC0-1.0', source: 'apollo-shelf',
+      spec: {
+        preset: def.metal ? 'steel' : 'matte',
+        map: `tex/pbr/${cat}_albedo`, normalMap: `tex/pbr/${cat}_normal`, roughnessMap: `tex/pbr/${cat}_rough`,
+        metalness: def.metal ? 1 : 0,
+      },
+    });
+  }
+  return out;
+}
+
 // ── 汇总各类 → 一份 upsert 计划 ──
 function buildPlan(which) {
   const plan = [];
@@ -231,6 +342,7 @@ function buildPlan(which) {
   if (which === 'meshes' || which === 'all') plan.push(...meshEntries());
   if (which === 'textures' || which === 'all') plan.push(...textureEntries());
   if (which === 'env' || which === 'all') plan.push(...envEntries());
+  if (which === 'pbr' || which === 'all') plan.push(...pbrEntries());
   return plan;
 }
 
