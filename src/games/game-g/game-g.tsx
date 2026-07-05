@@ -366,7 +366,7 @@ export function mount(container: HTMLElement, shell?: { exit?: () => void }): ()
     let drained = 0; const perfQueue: ClashEvent[] = []; let perfClash: ClashEvent | null = null; let busy = false; let perfResume: (() => void) | null = null;
     let perfPending = false; // 有待掷命的对决排队/在演中：此时压掉 move:settle 那次板面重渲——让棋盘「两兵贴身对峙」保持到掷骰特写盖上(否则 ≈1.3s 板面会闪跳到已结算态·败者凭空消失/胜者跳格·owner 2026-07-04 撞见)。
     let coachDid: (on: BattleCoachStep['on']) => void = () => {}; let syncCoach: () => void = () => {}; // 前置声明·真体在挂载后赋（战斗新手引导）
-    let justMovedIds = new Set<string>(); let heldIds = new Set<string>(); let freshIds = new Map<string, number>(garrisonIds.map((id, k) => [id, k])); let dealtId: string | null = null; let thinkTimer = 0; let thinkEl: HTMLElement | null = null; let settingsOpen = false; // freshIds 预置布防兵 → 首帧就 g-drop 逐张落下（非静态预置）·开场演出随后补部署音 + 横幅
+    let justMovedIds = new Set<string>(); let heldIds = new Set<string>(); let moveOrder = new Map<string, number>(); let freshIds = new Map<string, number>(garrisonIds.map((id, k) => [id, k])); let dealtId: string | null = null; let thinkTimer = 0; let thinkEl: HTMLElement | null = null; let settingsOpen = false; // freshIds 预置布防兵 → 首帧就 g-drop 逐张落下（非静态预置）·开场演出随后补部署音 + 横幅
     // 离场/留场动画（owner 2026-06-29「过程要清晰·谁战败撕裂·谁掷骰留下钉桩/光荣离场」）。
     // 正确时序：移动相滑到位 → 捕捉两军前锋相邻位快照(exitCaps) → 弹「谁打谁」→ 掷骰 → 掷币定去留 → 收场后按结果演离场/钉桩。
     type GhostSpec = { html: string; left: number; top: number; w: number; h: number; zoom: number };
@@ -517,7 +517,7 @@ export function mount(container: HTMLElement, shell?: { exit?: () => void }): ()
       } else if (sig.name === 'clash:resume') { postClashCtx = null; const r = perfResume; if (r) r(); } // ④ 收场续下一场
     });
     const buildClashView = (): TurnClashView | null => { if (!perfClash) return null; const cv = clashToTurnView(perfClash, tgName, save.inlays); cv.revealed = clashRevealed; return cv; };
-    const view = (): TurnBattleView => buildTurnBattleView(tb, { theme, tengangName: tgName, tengangDesc: tgDesc, selMode, selHand, playKind, swapFrom, clash: buildClashView(), bossName: aiName, sha: shaLive(), notice, movedIds: justMovedIds, heldIds, freshIds, dealtId: dealtId ?? undefined, battleLabel, sfxOn: isSfxOn(), settingsOpen, bgmOn: isBgmOn(), bgmIdx: bgmTrackIdx(), bgmVol: bgmVolume(), bgmNames: BGM_TRACKS.map((t) => t.name), guideOn: !save.skipGuide, inlays: save.inlays, waterBDisplay: aiManaDisplay ?? undefined, enchOf: (rank, suit) => (save.inlays[String(cardFavorIndex(rank + suit))] ?? []).map((e) => [`${e.b}${DIZHI_TIER_NM[e.t]}`, DIZHI_INLAY_FAVOR[e.t]] as [string, number]) });
+    const view = (): TurnBattleView => buildTurnBattleView(tb, { theme, tengangName: tgName, tengangDesc: tgDesc, selMode, selHand, playKind, swapFrom, clash: buildClashView(), bossName: aiName, sha: shaLive(), notice, movedIds: justMovedIds, heldIds, moveOrder, freshIds, dealtId: dealtId ?? undefined, battleLabel, sfxOn: isSfxOn(), settingsOpen, bgmOn: isBgmOn(), bgmIdx: bgmTrackIdx(), bgmVol: bgmVolume(), bgmNames: BGM_TRACKS.map((t) => t.name), guideOn: !save.skipGuide, inlays: save.inlays, waterBDisplay: aiManaDisplay ?? undefined, enchOf: (rank, suit) => (save.inlays[String(cardFavorIndex(rank + suit))] ?? []).map((e) => [`${e.b}${DIZHI_TIER_NM[e.t]}`, DIZHI_INLAY_FAVOR[e.t]] as [string, number]) });
     let mounted: { update: () => void; destroy: () => void } | null = null;
 
     // 调试全局（owner 2026-07-04·dev 专用·控制台即用·非玩法·不进 hash）：正规「调试菜单」UI 归程序B（已提 requests）。
@@ -613,14 +613,24 @@ export function mount(container: HTMLElement, shell?: { exit?: () => void }): ()
       const lanes = advanceMovePhase(tb, log); // 只移动·不掷命 → 前锋滑到相邻·都还在场；记逐兵行走 + 碰撞判定日志（owner 2026-07-03「看牌走向哪·为啥没触发战斗」）
       justMovedIds = diffMoved(before);
       heldIds = new Set<string>(); for (const L of tb.lanes) for (const u of [...L.a, ...L.b]) if (before.has(u.id) && !justMovedIds.has(u.id)) heldIds.add(u.id); // 本轮没走的兵（原地固守/被挡）→ 亮盾（owner 2026-07-04）·hold 静守兵另由 u.hold 恒亮
-      mounted?.update(); // 渲染滑动到位（FLIP·owner「看到前进路线」）
-      battleTl.play({ id: 'move', cues: [{ at: 96, do: { kind: 'signal', signal: 'move:settle' } }] }); // 行军慢放整段(g-march 1.5s≈96 tick@16ms)后清标记——时序由 t3-timeline 出（owner「用 timeline·不手写排程」）·此刻无 clash 特写在场·host 空闲不冲突
+      // 逐兵错峰行军（owner 2026-07-04「一步一步走·前面先走后面后走·你一步他一步」）：每条路内前锋(离交战线近)先启动·后队后启动；两军交替(我一步→敌一步)。
+      //   给每兵一个错峰序 moveOrder → FLIP 按 order×STAGGER 逐个 animation-delay 起步（前=order 小·先动）。
+      const moved: { id: string; side: 'a' | 'b'; front: number }[] = [];
+      for (const L of tb.lanes) { for (const u of L.a) if (justMovedIds.has(u.id)) moved.push({ id: u.id, side: 'a', front: u.slot }); for (const u of L.b) if (justMovedIds.has(u.id)) moved.push({ id: u.id, side: 'b', front: -u.slot }); } // 我方前=slot 大 / 敌方前=slot 小（front 大=更前）
+      const myO = moved.filter((m) => m.side === 'a').sort((x, y) => y.front - x.front); // 前→后
+      const foeO = moved.filter((m) => m.side === 'b').sort((x, y) => y.front - x.front);
+      moveOrder = new Map<string, number>(); { let k = 0; const n = Math.max(myO.length, foeO.length); for (let i = 0; i < n; i++) { if (myO[i]) moveOrder.set(myO[i].id, k++); if (foeO[i]) moveOrder.set(foeO[i].id, k++); } } // 交替：我i→敌i→我i+1…
+      const maxOrder = moveOrder.size ? Math.max(...moveOrder.values()) : 0;
+      const STAGGER_TICKS = 9, WALK_TICKS = 128; // ~150ms/兵 错峰 + g-march 2s(128 tick@16ms·owner 2026-07-04「起身落地 2 秒」)
+      const walkTicks = maxOrder * STAGGER_TICKS + WALK_TICKS; // 末兵启动 + 走完
+      mounted?.update(); // 渲染滑动到位（FLIP 逐兵错峰起步·owner「看到一步步前进路线」）
       exitCaps.clear();
       for (const li of lanes) { const fa = tb.lanes[li].a[0], fb = tb.lanes[li].b[0]; if (fa) { const s = captureUnit(fa.id); if (s) exitCaps.set(fa.id, s); } if (fb) { const s = captureUnit(fb.id); if (s) exitCaps.set(fb.id, s); } } // 相邻位快照(供离场动画)
       for (const li of lanes) resolveClashAt(tb, li); // 结算(数据)→ clashLog
       drainClashes();
-      perfPending = perfQueue.length > 0; // 有对决排队 → 压住 move:settle 板面重渲（棋盘保持贴身对峙到掷骰特写盖上）
-      playPerf(() => { endTurnFinish(tb); justMovedIds = new Set(); mounted?.update(); next(); }); // 特写全演完 → 收尾 + 续流程
+      perfPending = perfQueue.length > 0; // 有对决排队 → 保持棋盘贴身对峙到掷骰特写盖上（下面 walk 末的重渲也据它跳过）
+      // 行军全走完 → 清标记（+无对决时同步板面）→ 才演对决（谁打谁→掷骰）：owner「一步步走完·再打」——不再走一半就弹提示。
+      battleTl.delay(walkTicks, () => { justMovedIds = new Set(); moveOrder = new Map(); if (!perfClash && !perfPending) mounted?.update(); playPerf(() => { endTurnFinish(tb); justMovedIds = new Set(); mounted?.update(); next(); }); });
     };
     const runAiAct = (): void => { // 敌方行动阶段：敌方兵线推进 + 掷命（与决策分演·owner 过场说明）
       if (tb.winner !== 'pending') { finishTurnSeq(); return; }
