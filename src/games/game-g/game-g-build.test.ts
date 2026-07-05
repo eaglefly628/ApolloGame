@@ -33,6 +33,7 @@ function oldTengangFxOf(cards: Iterable<TgCard>): TengangFx {
       case 'morale:leaderBuff': fx.moraleLeader += v; break;
       case 'morale:revenge': fx.revenge += v; break;
       case 'morale:noRout': fx.noRout = 1; break;
+      case 'morale:killGeneralRout': fx.killGeneralRout = Math.max(fx.killGeneralRout, 1); break; // 擒王（§四.3）
       case 'stamina:stamPlus': if (p.filter === 'faces') fx.stamFaces += v; else fx.stamPlus += v; break;
       case 'stamina:relay': fx.relay += v; break;
       case 'draw:handMax': fx.handMaxAdd += v; break;

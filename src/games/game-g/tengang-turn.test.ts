@@ -93,6 +93,15 @@ describe('Game G · 掷骰系天罡集成（铁骰占优必胜 / 改掷抬预报
     b.a.tengangA = { ...NO_TENGANG, autoWinGE: 1 };
     expect(clashOdds(b, 0)).toBeLessThan(1);                    // 不占优 → 铁骰不生效
   });
+  it('擒王(killGeneralRout)：斩敌主将 → 该路敌全溃（余部清空）', () => {
+    const b = initTurnBattle({ seed: 5 });
+    b.a.tengangA = { ...NO_TENGANG, autoWinGE: 1, killGeneralRout: 1 }; // 占优必胜确保斩将 + 擒王触发
+    b.lanes[0].a = [unit('a0', 'K', 4)];
+    b.lanes[0].b = [unit('b0', '2', 5, 0, true), unit('b1', '3', 6)]; // 敌主将 b0 前锋 + 余部 b1
+    endTurn(b); // 我方行动：碰撞 → 占优必胜斩主将 → 擒王 → 该路余部全溃
+    expect(b.lanes[0].b.length).toBe(0); // 全溃·清空
+    expect(b.lanes[0].bGenDead).toBe(true);
+  });
   it('鬼手(rollBonus)/磐石(rollFloor)/灌铅骰(rollTwice)：改掷 → 预报升（我为下风也抬）', () => {
     const mk = (fx: Partial<typeof NO_TENGANG>): number => {
       const b = initTurnBattle({ seed: 5 }); place(b, '9', 'K'); // 我下风(9 vs 13)

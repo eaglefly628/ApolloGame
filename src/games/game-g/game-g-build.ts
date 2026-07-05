@@ -80,6 +80,7 @@ const TENGANG_ROWS: Record<string, TgDesc> = {
   'morale:leaderBuff': (v) => ({ target: 'moraleLeader', op: 'add', value: v }),      // 旗手
   'morale:revenge': (v) => ({ target: 'revenge', op: 'add', value: v }),             // 哀兵
   'morale:noRout': () => ({ target: 'noRout', op: 'max', value: 1 }),                 // 督战（=1·取 max 幂等）
+  'morale:killGeneralRout': () => ({ target: 'killGeneralRout', op: 'max', value: 1 }), // 擒王：斩敌主将→该路敌全溃（§四.3·max 幂等）
   'stamina:stamPlus': (v, _b, p) => ({ target: p.filter === 'faces' ? 'stamFaces' : 'stamPlus', op: 'add', value: v }), // 老兵(faces)/不屈(全军)
   'stamina:relay': (v) => ({ target: 'relay', op: 'add', value: v }),                // 薪火
   'draw:handMax': (v) => ({ target: 'handMaxAdd', op: 'add', value: v }),             // 广纳

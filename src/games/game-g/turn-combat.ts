@@ -435,8 +435,15 @@ function applyClashOutcome(b: TurnBattle, li: number, ev: ClashEval, aWins: bool
     }
   } else {
     const loser = aWins ? 'b' : 'a';
-    loserVacatedSlot = colOf(lane, loser)[0]?.slot; // 敌前锋腾出的格（供胜者碰撞胜后推进占据·owner 2026-07-03）
+    const loserFront = colOf(lane, loser)[0];
+    loserVacatedSlot = loserFront?.slot; // 敌前锋腾出的格（供胜者碰撞胜后推进占据·owner 2026-07-03）
+    const winnerKillsGeneral = !!loserFront?.general; // 本场斩掉的是敌主将？
     killFront(lane, loser); // 输家阵亡
+    // 擒王（REQ-G-天罡原生重构 §四.3）：胜方持擒王 + 本场斩掉败方主将 → 败方该路余部全溃（主将已由 killFront 斩·余部清空该列）。
+    if (winnerKillsGeneral && sideOf(b, aWins ? 'a' : 'b').tengangA.killGeneralRout > 0) {
+      if (loser === 'a') lane.aGenDead = true; else lane.bGenDead = true; // 主将亡标记（若前锋即主将·killFront 已置；防御性重置）
+      colOf(lane, loser).length = 0; // 该路败方余部全溃·清空
+    }
     const relay = sideOf(b, loser).tengangA.relay; // 薪火：一张阵亡 → 同路下一张接棒续航 +N
     const next = colOf(lane, loser)[0]; if (relay > 0 && next) next.staminaLeft += relay;
   }
