@@ -40,10 +40,10 @@ export const GAME_G_TIANGANGS: TiangangCard[] = [
   { id: 'grieve', name: '哀兵', kind: 'morale', rarity: 'rare', cost: 16, archetype: 'general', power: 2, params: { op: 'revenge', value: 14 }, icon: 'delapouite/enrage', tint: '#fcd34d', text: '我主将被斩 → 该路余部 +14' },
   { id: 'deathwatch', name: '督战', kind: 'morale', rarity: 'epic', cost: 22, archetype: 'general', power: 3, params: { op: 'noRout' }, icon: 'delapouite/drum', tint: '#fcd34d', text: '主将阵亡不溃散' },
   // E 行军系 tempo
-  { id: 'swiftmarch', name: '疾行', kind: 'tempo', rarity: 'rare', cost: 16, archetype: 'wide', power: 2, params: { op: 'advance', value: 1, target: 'self' }, icon: 'lorc/sprint', tint: '#22c55e', text: '指定我一路，该路兵每回合多推进 1 格（抢攻）' },
-  { id: 'mire', name: '泥沼', kind: 'tempo', rarity: 'rare', cost: 16, archetype: 'decap', power: 2, params: { op: 'slow', target: 'enemy' }, icon: 'delapouite/swamp', tint: '#22c55e', text: '指定敌一路，该路敌兵隔回合才推进（拖住）' },
+  { id: 'swiftmarch', name: '疾行', kind: 'tempo', rarity: 'rare', cost: 16, archetype: 'wide', power: 2, params: { op: 'advance', value: 1, target: 'self' }, icon: 'lorc/sprint', tint: '#22c55e', text: '指定我一路 → 该路整列即时前进 1 格（抢攻）' },
+  { id: 'mire', name: '泥沼', kind: 'tempo', rarity: 'rare', cost: 16, archetype: 'decap', power: 2, params: { op: 'slow', target: 'enemy' }, icon: 'delapouite/swamp', tint: '#22c55e', text: '指定敌一路 → 该路敌兵本回合不推进（陷泥）' },
   { id: 'beachhead', name: '抢滩', kind: 'tempo', rarity: 'epic', cost: 22, archetype: 'wide', power: 3, params: { op: 'jumpToMid' }, icon: 'delapouite/jump-across', tint: '#22c55e', text: '指定一路，该路新部署兵直接到中线格（抢线）' },
-  { id: 'ironchain', name: '铁索', kind: 'tempo', rarity: 'epic', cost: 22, archetype: 'decap', power: 3, params: { op: 'slow', target: 'enemy', scope: 'all' }, icon: 'lorc/linked-rings', tint: '#22c55e', text: '敌全军隔回合才推进（连环锁脚）' },
+  { id: 'ironchain', name: '铁索', kind: 'tempo', rarity: 'epic', cost: 22, archetype: 'decap', power: 3, params: { op: 'slow', target: 'enemy', scope: 'all' }, icon: 'lorc/linked-rings', tint: '#22c55e', text: '敌全军 speed−1 持续 2 回合（连环锁脚）' },
   // F 续航系 stamina
   { id: 'veteran', name: '老兵', kind: 'stamina', rarity: 'common', cost: 12, archetype: 'wide', power: 1, params: { op: 'stamPlus', value: 1, filter: 'faces' }, icon: 'delapouite/sergeant', tint: '#38bdf8', text: '人头牌(JQKA) 续航 +1' },
   { id: 'unyield', name: '不屈', kind: 'stamina', rarity: 'rare', cost: 16, archetype: 'wide', power: 2, params: { op: 'stamPlus', value: 1 }, icon: 'lorc/mailed-fist', tint: '#38bdf8', text: '全军续航 +1' },
@@ -53,8 +53,8 @@ export const GAME_G_TIANGANGS: TiangangCard[] = [
   { id: 'flow', name: '川流', kind: 'draw', rarity: 'rare', cost: 16, archetype: 'general', power: 2, params: { op: 'onPlay', value: 1 }, icon: 'faithtoken/card-draw', tint: '#06b6d4', text: '出牌后立即补抽 1 张（手不空）' },
   { id: 'tidewave', name: '战潮', kind: 'draw', rarity: 'epic', cost: 22, archetype: 'wide', power: 3, params: { op: 'clashElixir', value: 1 }, icon: 'delapouite/two-coins', tint: '#06b6d4', text: '遭遇对决 → 返召唤源泉（经济·心流回点）' },
   // H 三路系 lane（城门令/gateorder 已随机关门整套退役·owner 2026-07-03·REQ-G-退役机关门 → 天罡池 36→35）
-  { id: 'rush', name: '驰援', kind: 'lane', rarity: 'rare', cost: 16, archetype: 'wide', power: 2, params: { op: 'reinforce', value: 2 }, icon: 'lorc/backup', tint: '#94a3b8', text: '指定一路 +2 张兵' },
-  { id: 'discard2', name: '舍车', kind: 'lane', rarity: 'epic', cost: 22, archetype: 'tianji', power: 3, params: { op: 'sacrifice', value: 10 }, icon: 'lorc/trade', tint: '#94a3b8', text: '弃一路 → 另两路各 +10' },
+  { id: 'rush', name: '驰援', kind: 'lane', rarity: 'rare', cost: 16, archetype: 'wide', power: 2, params: { op: 'reinforce', value: 2 }, icon: 'lorc/backup', tint: '#94a3b8', text: '指定一路 → 凭空 +2 援兵（战力3·郡兵）' },
+  { id: 'discard2', name: '舍车', kind: 'lane', rarity: 'epic', cost: 22, archetype: 'tianji', power: 3, params: { op: 'sacrifice', value: 8 }, icon: 'lorc/trade', tint: '#94a3b8', text: '弃一路（回库）→ 另两路当前兵各 +8 战力（田忌）' },
   { id: 'lurefoe', name: '调虎', kind: 'lane', rarity: 'epic', cost: 22, archetype: 'decap', power: 3, params: { op: 'forceMigrate' }, icon: 'delapouite/fishing-lure', tint: '#94a3b8', text: '强制敌一路一张迁去别路（调虎离山）' },
   // I 攻守系 siege
   { id: 'laststand', name: '死守', kind: 'siege', rarity: 'rare', cost: 16, archetype: 'general', power: 2, params: { op: 'defend', value: 1 }, icon: 'badges/shield', tint: '#a8a29e', text: '我老家首次被破免疫' },

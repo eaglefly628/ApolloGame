@@ -3,7 +3,7 @@
 import { describe, it, expect } from 'vitest';
 import { cardPoints } from './clash-resolve.js';
 import { cardStamina, NO_TENGANG } from './combat-types.js';
-import { initTurnBattle, deployUnit, drawCard, endTurn, clashOdds, HAND_MAX, A_GOAL, B_GOAL, type TurnUnit, type PokerCard } from './turn-combat.js';
+import { initTurnBattle, deployUnit, drawCard, endTurn, clashOdds, castTengang, castTengangAt, tengangTargetKind, SACRIFICE_BUFF, HAND_MAX, A_GOAL, B_GOAL, type TurnUnit, type PokerCard } from './turn-combat.js';
 
 const unit = (id: string, rank: string, slot: number, buff = 0, general = false): TurnUnit =>
   ({ id, rank, suit: 'S', points: cardPoints(rank), buff, general, stamina: cardStamina(rank), staminaLeft: cardStamina(rank), slot });
@@ -112,5 +112,58 @@ describe('Game G · 掷骰系天罡集成（铁骰占优必胜 / 改掷抬预报
     expect(mk({ rollBonus: 2 })).toBeGreaterThan(base);  // 鬼手改掷+2
     expect(mk({ rollFloor: 2 })).toBeGreaterThan(base);  // 磐石掷下界+2
     expect(mk({ rollTwice: 1 })).toBeGreaterThan(base);  // 灌铅骰掷两次取高
+  });
+});
+
+// ── 选路 op 天罡（片C·castTengangAt·REQ-G-天罡原生重构 §四.3·策划定案 0bde67dc）──
+describe('Game G · 选路 op 天罡（castTengangAt·即时一次性）', () => {
+  const tg = (id: string): { kind: 'tengang'; id: string } => ({ kind: 'tengang', id });
+  it('tengangTargetKind：疾行/驰援/舍车=own-lane · 泥沼=enemy-lane · 铁索=global · 虎符=null', () => {
+    expect(tengangTargetKind('swiftmarch')).toBe('own-lane');
+    expect(tengangTargetKind('rush')).toBe('own-lane');
+    expect(tengangTargetKind('discard2')).toBe('own-lane');
+    expect(tengangTargetKind('mire')).toBe('enemy-lane');
+    expect(tengangTargetKind('ironchain')).toBe('global');
+    expect(tengangTargetKind('tigertally')).toBe(null);
+  });
+  it('castTengang 拒绝选路天罡（须走 castTengangAt·手牌不动）', () => {
+    const b = initTurnBattle({ seed: 5 }); b.a.hand = [tg('swiftmarch')];
+    expect(castTengang(b, 'a', 0)).toBe(false);
+    expect(b.a.hand.length).toBe(1);
+  });
+  it('疾行 swiftmarch：我该路整列即时 +1 格推进', () => {
+    const b = initTurnBattle({ seed: 5 }); b.lanes[1].a = [unit('a0', '5', 2)]; b.a.hand = [tg('swiftmarch')];
+    expect(castTengangAt(b, 'a', 0, 1)).toBe(true);
+    expect(b.lanes[1].a[0].slot).toBe(3); // 2→3
+    expect(b.a.hand.length).toBe(0);      // 消耗
+  });
+  it('泥沼 mire：敌该路本回合不推进（跳过一次 advance·用后清）', () => {
+    const b = initTurnBattle({ seed: 5 }); b.lanes[1].b = [unit('b0', '5', 6)]; b.a.hand = [tg('mire')];
+    expect(castTengangAt(b, 'a', 0, 1)).toBe(true);
+    expect(b.lanes[1].bSkipAdvance).toBe(true);
+    endTurn(b); const before = b.lanes[1].b[0].slot; endTurn(b); // a 空推 → b 行动·该路跳过
+    expect(b.lanes[1].b[0].slot).toBe(before); // 未推进
+    expect(b.lanes[1].bSkipAdvance).toBe(false); // 用后清
+  });
+  it('铁索 ironchain：敌全军减速 2 回合（global·lane 忽略）', () => {
+    const b = initTurnBattle({ seed: 5 }); b.a.hand = [tg('ironchain')];
+    expect(castTengangAt(b, 'a', 0, -1)).toBe(true);
+    expect(b.slowB).toBe(2);
+  });
+  it('驰援 rush：指定路凭空 +2 援兵（战力3·无将·无 buff）', () => {
+    const b = initTurnBattle({ seed: 5 }); b.a.hand = [tg('rush')];
+    expect(castTengangAt(b, 'a', 0, 0)).toBe(true);
+    expect(b.lanes[0].a.length).toBe(2);
+    expect(b.lanes[0].a.every((u) => u.points === 3 && u.buff === 0 && !u.general)).toBe(true);
+  });
+  it('舍车 discard2：弃该路回库 + 另两路当前兵各 +8 战力', () => {
+    const b = initTurnBattle({ seed: 5 });
+    b.lanes[0].a = [unit('a0', '5', 1)]; b.lanes[1].a = [unit('a1', '6', 1)]; b.lanes[2].a = [unit('a2', '7', 1)];
+    const deckBefore = b.a.pokerDeck.length; b.a.hand = [tg('discard2')];
+    expect(castTengangAt(b, 'a', 0, 0)).toBe(true); // 弃上路
+    expect(b.lanes[0].a.length).toBe(0);            // 上路清空
+    expect(b.a.pokerDeck.length).toBe(deckBefore + 1); // 回库(非销毁)
+    expect(b.lanes[1].a[0].buff).toBe(SACRIFICE_BUFF); // 中路 +8
+    expect(b.lanes[2].a[0].buff).toBe(SACRIFICE_BUFF); // 下路 +8
   });
 });

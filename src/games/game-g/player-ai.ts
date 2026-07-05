@@ -31,7 +31,7 @@ import type { TengangFx } from './combat-types.js';
 const cloneUnit = (u: TurnUnit): TurnUnit => ({ ...u });
 const cloneCard = (c: Card): Card => ({ ...c });
 const cloneFx = (f: TengangFx): TengangFx => ({ ...f });
-const cloneLane = (l: TurnLane): TurnLane => ({ a: l.a.map(cloneUnit), b: l.b.map(cloneUnit), aGenDead: l.aGenDead, bGenDead: l.bGenDead, spentA: l.spentA, spentB: l.spentB });
+const cloneLane = (l: TurnLane): TurnLane => ({ a: l.a.map(cloneUnit), b: l.b.map(cloneUnit), aGenDead: l.aGenDead, bGenDead: l.bGenDead, spentA: l.spentA, spentB: l.spentB, aSkipAdvance: l.aSkipAdvance, bSkipAdvance: l.bSkipAdvance });
 const cloneSide = (s: TurnSide): TurnSide => ({
   mana: s.mana, hand: s.hand.map(cloneCard), pokerDeck: s.pokerDeck.map(cloneCard) as PokerCard[],
   tengangDeck: s.tengangDeck.map(cloneCard) as { kind: 'tengang'; id: string }[], castIds: [...s.castIds],
@@ -51,6 +51,7 @@ export function cloneBattle(b: TurnBattle): TurnBattle {
     dishaBaseIds: [...b.dishaBaseIds], dishaCastIds: [...b.dishaCastIds],
     aiProfile: { ...b.aiProfile }, aiTier: b.aiTier,
     homeAShieldUsed: b.homeAShieldUsed, fortuneBuff: b.fortuneBuff,
+    slowA: b.slowA, slowB: b.slowB,
   };
 }
 

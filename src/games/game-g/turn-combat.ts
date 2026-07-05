@@ -12,6 +12,7 @@ import { nextRandom } from '@atom-skills/index.js';
 import type { RandomSeed } from '@engine/protocol/components.js';
 import { cardStamina, NO_TENGANG, type TengangFx, type ClashEvent, type ClashCard } from './combat-types.js';
 import { aggregateDisha, splitDisha, type DishaFx } from './disha.js';
+import { TIANGANG_BY_ID } from './tiangang-data.js'; // 纯数据·无 import → 无环依赖（读天罡 op 参数供选路 op 施法）
 
 // ── 棋盘几何（doc24 §一）──
 export const SLOTS = 9;          // 每路格数：我方 0..3 / 中线 4 / 敌方 5..8
@@ -26,6 +27,10 @@ export const MANA_PER_TURN_LATE = 2, MANA_RAMP_TURN = 10; // 第 10 回合后提
 /** 该回合开始应 +多少召唤源泉（turn>10 提速到 2·否则 1）。 */
 export const manaGain = (turn: number): number => (turn > MANA_RAMP_TURN ? MANA_PER_TURN_LATE : MANA_PER_TURN);
 export const DRAW_COST = 1, DEPLOY_COST = 0, CAST_COST = 1, DISHA_COST = 2; // 抽/打天罡 花召唤源泉；放牌按 rank 收费(契约B·写在卡 cost 上)；地煞牌固定 2
+// 选路 op 数值（REQ-G-天罡原生重构 §四.3·策划定案 0bde67dc·部分待 sim 标）：
+export const RUSH_UNITS = 2, RUSH_POWER = 3;      // 驰援：+2 固定援兵·战力3(rank '3'·无 buff·无将)
+export const SACRIFICE_BUFF = 8;                  // 舍车：另两路当前兵各 +8 战力（快照·起标 8·待 sim）
+export const IRONCHAIN_TURNS = 2;                 // 铁索：敌全军 speed−1 持续 2 回合
 export const DISCARD_REFUND = 0.5; // 弃牌返还 0.5 召唤源泉（owner 2026-06-21·源泉自此为半整数粒度）——旧「免费纯弃牌」·已被换牌(swapCard)取代退役（owner 2026-07-03·弃了不补=没用）
 export const SWAP_PER_TURN = 1, SWAP_COST = 0; // 换牌（owner 2026-07-03·三行为自由）：选中手牌 1 张 → 弃 + 从指定库随机补 1 张；每回合硬帽 1 次(破无限churn死循环)·免费。未来 Boss 地煞可按关加税/上锁(swapTax/swapLock·明牌杠杆)。
 export const OPENING_HAND = 3; // 起手摸 N（doc24 §六/七 待定）
@@ -48,7 +53,7 @@ export interface TurnUnit { id: string; rank: string; suit: string; points: numb
 const FAST_RANKS = new Set(['★', '王', 'JOKER', 'K']);
 export function unitSpeed(rank: string): number { return FAST_RANKS.has(rank) ? 2 : 1; }
 // 一路：双方兵列（own[0] = 前锋·最贴敌）+ 捷径门开关 + 主将阵亡/续航退场记账。
-export interface TurnLane { a: TurnUnit[]; b: TurnUnit[]; aGenDead: boolean; bGenDead: boolean; spentA: number; spentB: number }
+export interface TurnLane { a: TurnUnit[]; b: TurnUnit[]; aGenDead: boolean; bGenDead: boolean; spentA: number; spentB: number; aSkipAdvance?: boolean; bSkipAdvance?: boolean } // aSkipAdvance/bSkipAdvance=泥沼(REQ-G-天罡原生重构 §四.3)：该侧本路下次推进跳过一次(即时·用后清)
 // 手牌/牌库卡：扑克兵(上场) / 天罡(施法·id)。
 export interface PokerCard { kind: 'poker'; id: string; rank: string; suit: string; general: boolean; buff: number; cost?: number } // cost=放牌召唤源泉费(契约B·deployCost·建库时按 rank 写在卡上·缺省=DEPLOY_COST·避免 turn-combat←blueprint 环依赖)
 export interface TengangHandCard { kind: 'tengang'; id: string }
@@ -81,6 +86,7 @@ export interface TurnBattle {
   aiProfile: AiProfile; aiTier: number; // Boss 通用 utility AI（doc27 §八）：画像 + 难度档(高=更优·低=会犯错)
   homeAShieldUsed: number; // 死守(天罡 siegeDefend)：我大本营已吸收次数
   fortuneBuff: number; // 今日卦象加成（owner 2026-06-21）：大吉+2 / 吉+1 / 中庸0 / 小凶−1 / 大凶−2 → 玩家部署每张兵追加此 buff
+  slowA: number; slowB: number; // 铁索(REQ-G-天罡原生重构 §四.3)：该侧全军 speed−1(下限1) 剩余回合数(0=无·敌施铁索时设 N=2·每轮该侧行动后 −1)
 }
 
 const mkLane = (): TurnLane => ({ a: [], b: [], aGenDead: false, bGenDead: false, spentA: 0, spentB: 0 });
@@ -107,6 +113,7 @@ export function initTurnBattle(cfg: TurnInit): TurnBattle {
     dishaBaseIds: passive, dishaCastIds: [],
     aiProfile: cfg.aiProfile ?? NEUTRAL_AI, aiTier: cfg.aiTier ?? 2,
     homeAShieldUsed: 0, fortuneBuff: cfg.fortuneBuff ?? 0,
+    slowA: 0, slowB: 0,
   };
   for (const id of playable) battle.b.hand.push({ kind: 'disha', id }); // 可施放地煞 → Boss 起手即在手·AI 攒够 2 源泉择机打
   // 开局排阵守军（REQ-G-开局排阵·design G）：Boss 明牌摆兵在场·不花源泉·静守 hold（不前压/不冲家/接触才战/赢守原位）。
@@ -176,6 +183,7 @@ export function castTengang(b: TurnBattle, side: 'a' | 'b', handIdx: number): bo
   if (!canAct(b, side, CAST_COST)) return false;
   const sd = sideOf(b, side); const card = sd.hand[handIdx];
   if (!card || card.kind !== 'tengang') return false;
+  if (tengangTargetKind(card.id)) return false; // 选路 op 天罡(疾行/泥沼/驰援/舍车/铁索)须走 castTengangAt·此处拒绝(防无目标空施)
   sd.hand.splice(handIdx, 1); sd.mana -= CAST_COST; sd.castIds.push(card.id); b.actionTaken = 'cast';
   onPlayDraw(sd); // 川流：施法后免费补抽（用本次之前已生效的 onPlay）
   return true; // tengangA 重算：caller 做 sd.tengangA = aggregateTengang(sd.castIds)（避免 turn-combat ← blueprint 环依赖）
@@ -189,6 +197,70 @@ export function castDisha(b: TurnBattle, side: 'a' | 'b', handIdx: number): bool
   sd.hand.splice(handIdx, 1); sd.mana -= DISHA_COST; b.actionTaken = 'cast';
   if (side === 'b') { b.dishaCastIds.push(card.id); b.dishaB = aggregateDisha([...b.dishaBaseIds, ...b.dishaCastIds]); } // 并入并重算 dishaB（玩家侧无地煞·仅 Boss 生效）
   onPlayDraw(sd);
+  return true;
+}
+
+// ③'' 选路 op 天罡（REQ-G-天罡原生重构 §四.3·策划定案·即时一次性·不进 castIds/tengangA）：疾行/泥沼/驰援/舍车/铁索。
+// tengangTargetKind：施法前 UI 判该天罡要不要选路 + 选哪侧路。'own-lane'=选我方路 / 'enemy-lane'=选敌方路 / 'global'=无需选(铁索) / null=非选路(走 castTengang 的 fx 卡)。
+export function tengangTargetKind(id: string): 'own-lane' | 'enemy-lane' | 'global' | null {
+  const p = TIANGANG_BY_ID.get(id)?.params as Record<string, unknown> | undefined; if (!p) return null;
+  const op = String(p.op);
+  if (op === 'advance' || op === 'reinforce' || op === 'sacrifice') return 'own-lane';
+  if (op === 'slow') return p.scope === 'all' ? 'global' : 'enemy-lane'; // 铁索(scope all)=全局 · 泥沼=敌该路
+  return null;
+}
+// 疾行：我该路整列即时前进 1 格（镜像 advanceColumnVsFoe·step=1·前锋停敌前一格·守军不动·不触发掷命）。
+function advanceLaneOneStep(lane: TurnLane, side: 'a' | 'b'): void {
+  const dir = side === 'a' ? 1 : -1;
+  const own = colOf(lane, side); const foe = colOf(lane, side === 'a' ? 'b' : 'a'); const foeFront = foe[0]?.slot;
+  for (let i = 0; i < own.length; i++) {
+    if (own[i].hold) continue;
+    let t = own[i].slot + dir;
+    if (i > 0) { const ahead = own[i - 1].slot; t = dir > 0 ? Math.min(t, ahead - 1) : Math.max(t, ahead + 1); }
+    else if (foeFront != null) { const limit = foeFront - dir; t = dir > 0 ? Math.min(t, limit) : Math.max(t, limit); } // 前锋停敌前一格
+    own[i].slot = Math.max(0, Math.min(SLOTS - 1, t));
+  }
+}
+// 驰援：该路凭空 +1 固定援兵（战力 RUSH_POWER·无 buff·无将·落部署区空格）。部署区满 → 放不下(返 false)。
+function deployReinforcement(b: TurnBattle, side: 'a' | 'b', lane: number): boolean {
+  const L = b.lanes[lane]; const col = colOf(L, side); const foeCol = colOf(L, side === 'a' ? 'b' : 'a');
+  const occ = new Set([...col, ...foeCol].map((u) => u.slot));
+  const zone = side === 'a' ? [A_DEPLOY_SLOT, A_DEPLOY_SLOT + 1, A_DEPLOY_SLOT + 2] : [B_DEPLOY_SLOT, B_DEPLOY_SLOT - 1, B_DEPLOY_SLOT - 2];
+  const slot = zone.find((s) => !occ.has(s)); if (slot === undefined) return false;
+  const rank = String(RUSH_POWER); const stam = cardStamina(rank);
+  col.push({ id: `rush-${lane}-${slot}-${b.turn}-${col.length}`, rank, suit: 'S', points: cardPoints(rank), buff: 0, general: false, stamina: stam, staminaLeft: stam, slot, speed: unitSpeed(rank) });
+  col.sort((x, y) => (side === 'a' ? y.slot - x.slot : x.slot - y.slot)); // 维持 [0]=前锋
+  return true;
+}
+// 舍车：弃该路我方兵（回牌库·非销毁·复用人面回库形状）+ 另两路当前兵各 +x 战力（施放瞬间快照·烙 buff·永久随兵）。
+function sacrificeLane(b: TurnBattle, side: 'a' | 'b', lane: number, x: number): void {
+  const sd = sideOf(b, side); const col = colOf(b.lanes[lane], side);
+  for (const u of col) sd.pokerDeck.push({ kind: 'poker', id: u.id, rank: u.rank, suit: u.suit, general: u.general, buff: u.buff, cost: u.cost }); // 回库
+  col.length = 0; // 弃该路（清空）
+  for (let li = 0; li < 3; li++) if (li !== lane) for (const u of colOf(b.lanes[li], side)) u.buff += x; // 另两路当前兵 +x 战力（快照烙兵身）
+}
+// 应用选路 op 的即时效果（castTengangAt / 铁索全局 共用）。
+function applyTargetedTengang(b: TurnBattle, side: 'a' | 'b', id: string, lane: number): void {
+  const p = (TIANGANG_BY_ID.get(id)?.params ?? {}) as Record<string, unknown>;
+  const op = String(p.op); const v = typeof p.value === 'number' ? p.value : 0; const foe: 'a' | 'b' = side === 'a' ? 'b' : 'a';
+  if (op === 'advance') { for (let s = 0; s < (v || 1); s++) advanceLaneOneStep(b.lanes[lane], side); } // 疾行：+value 格(默认1)
+  else if (op === 'slow') {
+    if (p.scope === 'all') { const N = v || IRONCHAIN_TURNS; if (foe === 'a') b.slowA = Math.max(b.slowA, N); else b.slowB = Math.max(b.slowB, N); } // 铁索：敌全军减速 N 回合(刷新不叠深)
+    else { if (foe === 'a') b.lanes[lane].aSkipAdvance = true; else b.lanes[lane].bSkipAdvance = true; } // 泥沼：敌该路本回合不推进
+  } else if (op === 'reinforce') { for (let k = 0; k < (v || RUSH_UNITS); k++) deployReinforcement(b, side, lane); } // 驰援：+N 援兵
+  else if (op === 'sacrifice') { sacrificeLane(b, side, lane, v || SACRIFICE_BUFF); } // 舍车：弃该路 + 另两路 +v
+}
+// ③''' 施选路天罡：选中手牌第 handIdx 张选路天罡 → 立即对目标 lane 结算（不进 castIds/tengangA·即时一次性）。花 CAST_COST·占 cast 动作。
+//   lane 语义：own-lane/enemy-lane → 该 lane 索引；global(铁索) → lane 忽略。非选路天罡返 false（应走 castTengang）。
+export function castTengangAt(b: TurnBattle, side: 'a' | 'b', handIdx: number, lane: number): boolean {
+  if (!canAct(b, side, CAST_COST)) return false;
+  const sd = sideOf(b, side); const card = sd.hand[handIdx];
+  if (!card || card.kind !== 'tengang') return false;
+  const kind = tengangTargetKind(card.id); if (!kind) return false; // 非选路天罡·拒绝(走 castTengang)
+  if (kind !== 'global' && (lane < 0 || lane > 2)) return false;    // 选路类须给合法 lane
+  sd.hand.splice(handIdx, 1); sd.mana -= CAST_COST; b.actionTaken = 'cast';
+  applyTargetedTengang(b, side, card.id, lane);
+  onPlayDraw(sd); // 川流：施法后免费补抽（与 castTengang 一致）
   return true;
 }
 
@@ -470,22 +542,22 @@ function applyClashOutcome(b: TurnBattle, li: number, ev: ClashEval, aWins: bool
 
 // 单列向敌推进（有敌前锋）：各兵 +dir×speed(疾行2格)·保 slot 间距 1·前锋停在敌前锋相邻格(不重叠)。
 // pinGeneral（owner 2026-06-29·Boss 主将关前死守）：主将不前移·原地守家（其在队尾贴家·跳过它不影响前方兵推进）。
-function advanceColumnVsFoe(own: TurnUnit[], dir: number, foeFrontSlot: number, pinGeneral = false): void {
+function advanceColumnVsFoe(own: TurnUnit[], dir: number, foeFrontSlot: number, pinGeneral = false, speedPen = 0): void {
   for (let i = 0; i < own.length; i++) {
     if (own[i].hold) continue; // 开局排阵守军·静守不前压（REQ-G-开局排阵 #1）
     if (pinGeneral && own[i].general) continue; // Boss 主将死守原地·不前移
-    let t = own[i].slot + dir * (own[i].speed ?? 1);
+    let t = own[i].slot + dir * Math.max(1, (own[i].speed ?? 1) - speedPen); // 铁索：speedPen 减速(下限1格)
     if (i > 0) { const ahead = own[i - 1].slot; t = dir > 0 ? Math.min(t, ahead - 1) : Math.max(t, ahead + 1); }
     else { const limit = foeFrontSlot - dir; t = dir > 0 ? Math.min(t, limit) : Math.max(t, limit); } // 停在敌前锋前一格
     own[i].slot = t;
   }
 }
 // 单列向敌家推进（本路无敌）：越过敌区末格 → 敌大本营 −1(攻城锤多 chip)·该兵退场（死守可吸我家首破）。
-function advanceColumnToBase(b: TurnBattle, own: TurnUnit[], dir: number, side: 'a' | 'b'): void {
+function advanceColumnToBase(b: TurnBattle, own: TurnUnit[], dir: number, side: 'a' | 'b', speedPen = 0): void {
   for (let i = 0; i < own.length; i++) {
     if (own[i].hold) continue; // 开局排阵守军·不自动冲家（REQ-G-开局排阵 #2·守军绝不主动冲锋）
     if (side === 'b' && own[i].general) continue; // Boss 主将死守原地·不直扑我家（owner 2026-06-29）
-    let t = own[i].slot + dir * (own[i].speed ?? 1);
+    let t = own[i].slot + dir * Math.max(1, (own[i].speed ?? 1) - speedPen); // 铁索：speedPen 减速(下限1格)
     if (i > 0) { const ahead = own[i - 1].slot; t = dir > 0 ? Math.min(t, ahead - 1) : Math.max(t, ahead + 1); }
     own[i].slot = t;
   }
@@ -511,29 +583,33 @@ function advanceColumnToBase(b: TurnBattle, own: TurnUnit[], dir: number, side: 
 function advanceSideMove(b: TurnBattle, side: 'a' | 'b', dbg?: (m: string) => void): number[] {
   const dir = side === 'a' ? 1 : -1;
   const say = dbg ?? ((): void => {}); const LN = ['上', '中', '下']; const sideNm = side === 'a' ? '我' : '敌'; // 行走日志（owner 2026-07-03「看每张牌走向哪·为啥没触发战斗」）
+  const slowPen = (side === 'a' ? b.slowA : b.slowB) > 0 ? 1 : 0; // 铁索：本方被敌铁索锁 → 本轮全军 speed−1（下限1）
   const pending: number[] = [];
   for (let li = 0; li < 3; li++) { // 本方兵线向对家推进；前锋相邻 → 记为待掷命路
     const lane = b.lanes[li]; const own = colOf(lane, side); const foe = colOf(lane, side === 'a' ? 'b' : 'a');
     if (!own.length) continue;
+    const skip = side === 'a' ? lane.aSkipAdvance : lane.bSkipAdvance; // 泥沼：本方本路本回合不推进（跳一次·用后清）
+    if (skip) { if (side === 'a') lane.aSkipAdvance = false; else lane.bSkipAdvance = false; say(`[${sideNm}·${LN[li]}路] 陷泥沼·本回合不推进（跳过）`); continue; }
     const beforeMap = new Map(own.map((u) => [u.id, u.slot])); // 移动前各兵位（供逐兵行走日志）
     if (foe.length) {
       // 碰撞才战（owner 2026-07-03·替「相邻 gap≤1 即战」）：前锋这一步的**落点**踩到/越过敌前锋才触发掷命；落点是空格只走位、不打。
       const front = own[0];
       const mobile = !front.hold && !(side === 'b' && front.general); // 会移动的前锋才可能撞（守军/主将 不撞）
-      const natural = front.slot + dir * (front.speed ?? 1); // 不封顶的自然落点
+      const natural = front.slot + dir * Math.max(1, (front.speed ?? 1) - slowPen); // 不封顶的自然落点（含铁索减速）
       const collides = mobile && (dir > 0 ? natural >= foe[0].slot : natural <= foe[0].slot); // 落点会踩到/越过敌前锋 = 碰撞
       const foeFrontBefore = foe[0].slot;
-      advanceColumnVsFoe(own, dir, foe[0].slot, side === 'b'); // 实际移动仍封顶在敌前一格（停一格·胜后再推进占据）
+      advanceColumnVsFoe(own, dir, foe[0].slot, side === 'b', slowPen); // 实际移动仍封顶在敌前一格（停一格·胜后再推进占据）
       if (collides) pending.push(li);
       const moves = own.filter((u) => beforeMap.get(u.id) !== u.slot).map((u) => `${u.rank}${u.suit}:${beforeMap.get(u.id)}→${u.slot}`).join('、') || '无移动';
       const why = collides ? '★碰撞→掷命' : !mobile ? (front.hold ? '守军静守·不撞' : '主将死守·不撞') : `走位不打（前锋落点${natural} 未踩到敌前锋@${foeFrontBefore}）`;
       say(`[${sideNm}·${LN[li]}路] 前锋 ${front.rank}${front.suit}@${beforeMap.get(front.id)} · 敌前锋@${foeFrontBefore} → ${why}｜移动:[${moves}]`);
     } else {
-      advanceColumnToBase(b, own, dir, side); // 本路无敌 → 直扑对家大本营
+      advanceColumnToBase(b, own, dir, side, slowPen); // 本路无敌 → 直扑对家大本营
       const moves = own.filter((u) => beforeMap.get(u.id) !== u.slot).map((u) => `${u.rank}${u.suit}:${beforeMap.get(u.id)}→${u.slot}`).join('、');
       say(`[${sideNm}·${LN[li]}路] 无敌·向对家推进${moves ? `｜移动:[${moves}]` : ''}${own.length < beforeMap.size ? `（有兵破家·剩${own.length}）` : ''}`);
     }
   }
+  if (slowPen) { if (side === 'a') b.slowA -= 1; else b.slowB -= 1; } // 铁索倒计时：本方被减速的这一轮走完 → 剩余回合 −1
   return pending;
 }
 // 行动阶段（原子·仿真台/兼容旧调用）：移动 + 逐路掷命一气呵成。live 游戏改用 advanceMovePhase + resolveClashAt 分相演出。

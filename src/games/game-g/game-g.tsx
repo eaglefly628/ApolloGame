@@ -7,7 +7,7 @@ import { type ClashEvent } from './combat-types.js';
 import { freshSave, loadSave, persist, resetFortuneIfNewDay, FORTUNE_MAX, activeDeck, syncTiangangs, newDeckId, rollBoss, TIANGANG_DECK_SIZE, MAX_TIANGANG_DECKS, DEFAULT_STARTER_TIANGANGS } from './game-g-save.js';
 import { favorToP, cardRank, avg, describeFormation, pick3, buildPickDeck, bossHeroCard, aggregateTengang, seededShuffleArr } from './game-g-build.js';
 import { clashToTurnView } from './game-g-clash-view.js';
-import { initTurnBattle, drawCard, deployUnit, castTengang, swapCard, advanceMovePhase, resolveClashAt, endTurnFinish, aiDecide, bossOpeningGarrison, debugGrantTengang, debugAddMana, BOSS_GARRISON_MANA, OPENING_HAND, DRAW_COST, CAST_COST, SWAP_PER_TURN, type PokerCard, type TengangHandCard, type Card } from './turn-combat.js';
+import { initTurnBattle, drawCard, deployUnit, castTengang, castTengangAt, swapCard, advanceMovePhase, resolveClashAt, endTurnFinish, aiDecide, bossOpeningGarrison, debugGrantTengang, debugAddMana, BOSS_GARRISON_MANA, OPENING_HAND, DRAW_COST, CAST_COST, SWAP_PER_TURN, type PokerCard, type TengangHandCard, type Card } from './turn-combat.js';
 import { DISHA_NAME, stageDisha } from './disha.js';
 import { mountTurnBattle, buildTurnBattleView, type TurnBattleView, type TurnBattleActions, type TurnClashView, type TurnShaView } from './turn-battle-screen.js';
 // 掷硬币（战胜硬币）已随「确定制」退役为死代码（owner 2026-07-01「掷硬币这环节没意义·太繁琐·先放死代码等以后可能用」）：
@@ -521,11 +521,13 @@ export function mount(container: HTMLElement, shell?: { exit?: () => void }): ()
     let mounted: { update: () => void; destroy: () => void } | null = null;
 
     // 调试全局（owner 2026-07-04·dev 专用·控制台即用·非玩法·不进 hash）：正规「调试菜单」UI 归程序B（已提 requests）。
-    //   用法：__ggDebug.grant('firestorm') 授召天罡到手牌 · __ggDebug.mana(10) 加源泉 · __ggDebug.list() 列全部天罡 id。
+    //   用法：__ggDebug.grant('tigertally') 授召天罡到手牌 · __ggDebug.mana(10) 加源泉 · __ggDebug.list() 列全部天罡 id。
+    //   __ggDebug.castAt('swiftmarch', 1) 施选路天罡到目标路（片C·免 B 的点路 UI 也能测：疾行/驰援/舍车选我路·泥沼选敌路·铁索路忽略）。
     (window as unknown as { __ggDebug?: unknown }).__ggDebug = {
       grant: (id: string): string => { debugGrantTengang(tb, 'a', id); mounted?.update(); return `授召 ${id} → 手牌`; },
       mana: (n = 10): string => { debugAddMana(tb, 'a', n); mounted?.update(); return `源泉 +${n} → ${tb.a.mana}`; },
       list: (): { id: string; name: string }[] => GAME_G_TIANGANGS.map((t) => ({ id: t.id, name: t.name })),
+      castAt: (id: string, lane = 0): string => { debugAddMana(tb, 'a', 1); debugGrantTengang(tb, 'a', id); const ok = castTengangAt(tb, 'a', tb.a.hand.length - 1, lane); mounted?.update(); return ok ? `施放 ${id} → 路${lane}` : `${id} 非选路天罡/施放失败（选路天罡用此·fx 卡用 grant）`; },
     };
 
     const drainClashes = (): void => { for (const ev of tb.clashLog.slice(drained)) perfQueue.push(ev); drained = tb.clashLog.length; };
