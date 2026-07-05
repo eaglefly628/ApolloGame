@@ -47,6 +47,19 @@
   92%  { transform: translate(0, -3px) scale(1);                                    filter: drop-shadow(0 7px 8px rgba(0,0,0,.5));  z-index: 30; }
   100% { transform: translate(0, 0) scale(1);                                       filter: drop-shadow(0 2px 3px rgba(0,0,0,.5));  z-index: 30; }
 }
+/* 两格移动=两跳（owner 2026-07-04「一步一步·每步起身落地·别把多格塞进一次看着飞快」）：旧位→中点(一跳·起身落地滴答)→新位(二跳)。恒速≈每格 2s。快兵(疾行/FAST_RANKS speed=2)走此。 */
+@keyframes g-march2 {
+  0%   { transform: translate(var(--dx), var(--dy)) scale(1);                                 filter: drop-shadow(0 2px 3px rgba(0,0,0,.5));  z-index: 30; }
+  8%   { transform: translate(var(--dx), calc(var(--dy) - 54px)) scale(1.15);                 filter: drop-shadow(0 30px 20px rgba(0,0,0,.55)); z-index: 30; }
+  30%  { transform: translate(calc(var(--dx) * .5), calc(var(--dy) * .5 - 54px)) scale(1.15); filter: drop-shadow(0 30px 20px rgba(0,0,0,.5));  z-index: 30; }
+  42%  { transform: translate(calc(var(--dx) * .5), calc(var(--dy) * .5 + 5px)) scale(1.02);  filter: drop-shadow(0 3px 4px rgba(0,0,0,.5));  z-index: 30; }
+  46%  { transform: translate(calc(var(--dx) * .5), calc(var(--dy) * .5)) scale(1);           filter: drop-shadow(0 6px 7px rgba(0,0,0,.5));  z-index: 30; }
+  54%  { transform: translate(calc(var(--dx) * .5), calc(var(--dy) * .5 - 54px)) scale(1.15); filter: drop-shadow(0 30px 20px rgba(0,0,0,.55)); z-index: 30; }
+  76%  { transform: translate(0, -54px) scale(1.15);                                          filter: drop-shadow(0 30px 20px rgba(0,0,0,.5));  z-index: 30; }
+  88%  { transform: translate(0, 5px) scale(1.02);                                            filter: drop-shadow(0 3px 4px rgba(0,0,0,.5));  z-index: 30; }
+  92%  { transform: translate(0, -3px) scale(1);                                              filter: drop-shadow(0 7px 8px rgba(0,0,0,.5));  z-index: 30; }
+  100% { transform: translate(0, 0) scale(1);                                                 filter: drop-shadow(0 2px 3px rgba(0,0,0,.5));  z-index: 30; }
+}
 /* 钉守在场（胜方留场续战）：钉子砸下 + 金环脉冲（凯旋钉桩·card 真牌仍在场）。 */
 @keyframes g-pin { 0%{transform:translateX(-50%) translateY(-30px) scale(.6);opacity:0} 55%{transform:translateX(-50%) translateY(2px) scale(1.18);opacity:1} 75%{transform:translateX(-50%) translateY(0) scale(.94)} 100%{transform:translateX(-50%) translateY(0) scale(1);opacity:1} }
 @keyframes g-pinring { 0%{transform:scale(1.25);opacity:0} 35%{transform:scale(1);opacity:1} 100%{transform:scale(1);opacity:0} }
