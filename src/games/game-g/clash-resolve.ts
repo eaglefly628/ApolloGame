@@ -11,7 +11,7 @@ import { nextRandom } from '@atom-skills/index.js';
 
 // ── 三个平衡旋钮（doc 19 §三.4；初值，仿真台 §十 扫 + 入 14）──
 export const CLASH_K = 5;            // 点数差软硬度：小=点数为王 / 大=buff 为王
-export const P_MIN = 0, P_MAX = 30;  // P_eff 夹界（防膨胀）
+export const P_MIN = 1, P_MAX = 30;  // P_eff 夹界（防膨胀）·下限 1（owner/GD 2026-07-04·对折+溃散可把战力压到 0 → 掷骰区间退化非法 [1~0]；钳 ≥1 保区间合法·至少能掷 [1~1]）
 export const WR_MIN = 0.03, WR_MAX = 0.97; // 爆冷缝：胜率永不 0/100% → 留博弈悬念、防死局
 
 const clamp = (x: number, lo: number, hi: number): number => (x < lo ? lo : x > hi ? hi : x);
