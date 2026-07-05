@@ -989,7 +989,7 @@ export function mountTurnBattle(host: HTMLElement, getView: () => TurnBattleView
     if (first) { // LAST + INVERT + PLAY
       const z = sc || 1; // getBoundingClientRect 是 zoom 后屏幕坐标；transform 在元素本地空间(zoom 前) → 位移除以 zoom
       // 逐兵错峰行军（owner 2026-07-04「一步一步走·前面先走后面后走·你一步他一步」）：每兵按 moveOrder×STAGGER 延迟起步 → 前锋先动、后队后动、两军交替。
-      const STAGGER_MS = 150, PER_SLOT_MS = 2000; const orderOf = new Map<string, number>(); const distOf = new Map<string, number>();
+      const STAGGER_MS = 150, PER_SLOT_MS = 1000; const orderOf = new Map<string, number>(); const distOf = new Map<string, number>();
       view.lanes.forEach((L) => L.slots.forEach((s) => { if (s.hasUnit && s.unitId != null) { if (s.moveOrder != null) orderOf.set('u-' + s.unitId, s.moveOrder); if (s.moveDist != null) distOf.set('u-' + s.unitId, s.moveDist); } }));
       host.querySelectorAll('[id^="cell-"]').forEach((cell) => {
         const u = cell.querySelector('[id^="u-"]') as HTMLElement | null; if (!u) return;

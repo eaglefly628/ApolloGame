@@ -465,11 +465,11 @@ export function mount(container: HTMLElement, shell?: { exit?: () => void }): ()
     // **直接把将交战的两枚场上兵原地高亮（我橙敌蓝环）+ 中间连线挂 VS**（锚真实棋盘 u-<id>·getBoundingClientRect 屏幕位），
     // 一眼看清是场上哪一对，再切掷骰特写。兵不在场（无头/未渲）→ 回退居中小 VS。
     const showClashCue = (e: ClashEvent, onDone: () => void): void => {
-      if (!document.getElementById('gg-cue-css')) { const s = document.createElement('style'); s.id = 'gg-cue-css'; s.textContent = '@keyframes gg-cue{0%{opacity:0}12%{opacity:1}82%{opacity:1}100%{opacity:0}}@keyframes gg-cue-vs{0%,25%{transform:translate(-50%,-50%) scale(0)}42%{transform:translate(-50%,-50%) scale(1.35)}55%,100%{transform:translate(-50%,-50%) scale(1)}}@keyframes gg-cue-ring{0%{opacity:0;box-shadow:0 0 0 0 var(--rc)}18%{opacity:1}50%{box-shadow:0 0 26px 5px var(--rc),inset 0 0 16px var(--rc)}82%{opacity:1}100%{opacity:0}}'; document.head.appendChild(s); }
-      const DUR = 2200; // 「谁打谁」前奏时长（owner 2026-07-04「太短·给2秒」·1500→2200·可见窗 ~1.5s）
+      if (!document.getElementById('gg-cue-css')) { const s = document.createElement('style'); s.id = 'gg-cue-css'; s.textContent = '@keyframes gg-cue{0%{opacity:0}9%{opacity:1}88%{opacity:1}100%{opacity:0}}@keyframes gg-cue-vs{0%,20%{transform:translate(-50%,-50%) scale(0)}36%{transform:translate(-50%,-50%) scale(1.35)}48%,100%{transform:translate(-50%,-50%) scale(1)}}@keyframes gg-cue-ring{0%{opacity:0;box-shadow:0 0 0 0 var(--rc)}14%{opacity:1}50%{box-shadow:0 0 26px 5px var(--rc),inset 0 0 16px var(--rc)}88%{opacity:1}100%{opacity:0}}@keyframes gg-cue-spark{0%{opacity:0;transform:translate(-50%,-50%) scale(.2)}22%{opacity:1}100%{opacity:0;transform:translate(calc(-50% + var(--sx)),calc(-50% + var(--sy))) scale(1)}}'; document.head.appendChild(s); }
+      const DUR = 2600; // 「谁打谁」前奏时长（owner 2026-07-04「延长·2 秒更清楚哪里交战」·可见窗加宽 ~2.1s）
       const ea = document.getElementById('u-' + e.a.id); const eb = document.getElementById('u-' + e.b.id);
       const ov = document.createElement('div'); ov.style.cssText = 'position:fixed;inset:0;z-index:280;pointer-events:none';
-      playSfx('select');
+      playSfx('cast'); window.setTimeout(() => playSfx('deploy'), 90); // 醒目声（owner「让我重点知道有个声音」）：上行示警 + 一记落桌撞点
       if (!ea || !eb) { // 回退：兵不在场（无头/未渲）→ 居中小 VS + 路名
         ov.style.cssText += ';display:flex;align-items:center;justify-content:center';
         ov.innerHTML = `<div style="animation:gg-cue ${DUR}ms ease both;font-size:24px;font-weight:900;color:#e8cd82;letter-spacing:.2em;text-shadow:0 0 24px rgba(232,205,138,.8);font-family:'Rajdhani',sans-serif;">⚔ ${LANE_NM[e.lane] ?? ''} · 即将交战</div>`;
@@ -482,7 +482,10 @@ export function mount(container: HTMLElement, shell?: { exit?: () => void }): ()
       const line = `<div style="position:absolute;left:${cax}px;top:${cay}px;width:${len}px;height:3px;transform-origin:0 50%;transform:rotate(${ang}deg);background:linear-gradient(90deg,#ff7a45,#e8cd82,#3a86d4);box-shadow:0 0 12px rgba(232,205,138,.85);animation:gg-cue ${DUR}ms ease both"></div>`;
       const vs = `<div style="position:absolute;left:${(cax + cbx) / 2}px;top:${(cay + cby) / 2}px;transform:translate(-50%,-50%);width:44px;height:44px;border-radius:50%;background:linear-gradient(180deg,#ffe9a8,#c89a42);border:3px solid #fff;box-shadow:0 0 22px rgba(232,205,138,.85);display:flex;align-items:center;justify-content:center;font-size:19px;font-weight:900;color:#2a1a08;font-family:'Rajdhani',sans-serif;animation:gg-cue-vs ${DUR}ms ease both">VS</div>`;
       const lane = `<div style="position:absolute;left:${(cax + cbx) / 2}px;top:${Math.min(cay, cby) - 34}px;transform:translateX(-50%);white-space:nowrap;font-size:15px;font-weight:900;color:#e8cd82;letter-spacing:.12em;text-shadow:0 0 16px rgba(232,205,138,.9),0 2px 6px rgba(0,0,0,.9);font-family:'Rajdhani',sans-serif;animation:gg-cue ${DUR}ms ease both">⚔ ${LANE_NM[e.lane] ?? ''} · 即将交战</div>`;
-      ov.innerHTML = ring(ra, true) + ring(rb, false) + line + vs + lane;
+      // 交战点粒子迸发（owner 2026-07-04「在交战的地方放个粒子·重点知道哪里」）：中点循环喷 10 束火星（DUR 内反复迸发）。
+      const mx = (cax + cbx) / 2, my = (cay + cby) / 2, R = 48;
+      const sparks = Array.from({ length: 10 }, (_, i) => { const a = (i / 10) * Math.PI * 2; return `<div style="position:absolute;left:${mx}px;top:${my}px;--sx:${Math.round(Math.cos(a) * R)}px;--sy:${Math.round(Math.sin(a) * R)}px;width:7px;height:7px;border-radius:50%;background:radial-gradient(circle,#fff,#e8cd82 60%,transparent);box-shadow:0 0 8px #e8cd82;animation:gg-cue-spark .95s ease-out ${(i % 5) * 0.12}s infinite"></div>`; }).join('');
+      ov.innerHTML = ring(ra, true) + ring(rb, false) + line + vs + lane + sparks;
       document.body.appendChild(ov);
       battleTl.delay(DUR / 16, () => { ov.remove(); onDone(); }); // 时序=数据（单 cue timeline·替手写 setTimeout）
     };
@@ -622,7 +625,7 @@ export function mount(container: HTMLElement, shell?: { exit?: () => void }): ()
       const myO = moved.filter((m) => m.side === 'a').sort((x, y) => y.front - x.front); // 前→后
       const foeO = moved.filter((m) => m.side === 'b').sort((x, y) => y.front - x.front);
       moveOrder = new Map<string, number>(); { let k = 0; const n = Math.max(myO.length, foeO.length); for (let i = 0; i < n; i++) { if (myO[i]) moveOrder.set(myO[i].id, k++); if (foeO[i]) moveOrder.set(foeO[i].id, k++); } } // 交替：我i→敌i→我i+1…
-      const STAGGER_TICKS = 9, PER_SLOT_TICKS = 128; // ~150ms/兵 错峰 + 每格 2s(128 tick@16ms·owner「起身落地 2 秒」)·恒速逐跳
+      const STAGGER_TICKS = 9, PER_SLOT_TICKS = 64; // ~150ms/兵 错峰 + 每格 1s(64 tick@16ms·owner 2026-07-04「快一点·1 秒/步」·可再调)·恒速逐跳
       let walkTicks = 4; moved.forEach((m) => { walkTicks = Math.max(walkTicks, (moveOrder.get(m.id) ?? 0) * STAGGER_TICKS + (moveDist.get(m.id) ?? 1) * PER_SLOT_TICKS + 4); }); // 末兵启动 + 逐跳全走完
       mounted?.update(); // 渲染滑动到位（FLIP 逐兵错峰起步·owner「看到一步步前进路线」）
       exitCaps.clear();
