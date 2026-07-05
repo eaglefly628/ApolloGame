@@ -560,10 +560,14 @@
 > **✅ 片A（§四.4·程序A 2026-07-04）**：锋矢 arrowhead `filter:'front'` 旧描述子没认→误落全军+4·修成只前锋。**✅ 片B（§四.1+2·程序A 2026-07-04）**：掷骰系改掷层——鬼手改掷+2/磐石掷下界+2/灌铅骰掷两次取高/铁骰占优必胜；clash-resolve 加 `rollWithMods`+`rollDist`+`rollWinProbMods`(mods 全零逐字等于旧 rollWinProb)；删 logistic 死字段 winFloor/kHard/noUpset·加 rollBonus/rollFloor/rollTwice/autoWinGE；接进 resolveClash(实掷+占优必胜短路)/clashOdds(预报)/resolveClashEV(AI EV)→预报与 AI 都反映改掷；tiangang-data kind 'odds'→'roll'。测试全绿(2261)。
 > **⚠️ 片C 目标机制（owner 2026-07-04 裁：走玩家选路·否决自动目标）**：§四.3 的 6 个 op 里 **4 个需玩家「选哪一路」**——疾行(该路 speed+1)/泥沼(敌该路减速)/驰援(指定路+2兵)/舍车(弃一路补两路)。**owner 拍板：不能自动选·必须玩家选路。** → 需**选路机制**：程序A 出 `castTengangAt(b,side,handIdx,lane)` + 每路效果应用（即时型驰援/舍车 + 持久每路型疾行/泥沼→需 per-lane 状态）；程序B 出**点路 UI**（选中目标类天罡→高亮可选路→玩家点路→施放）。**A+B 协同·另立选路子任务。**
 > **✅ 擒王 done（程序A 2026-07-04·f0832bcd·无目标 op）**：斩敌主将→该路敌全溃（clash 钩子·TengangFx killGeneralRout·测试绿）。**⬜ 铁索（敌全军减速·无目标·需 slow 机制）+ 4 个目标 op（待选路机制）待续。**
-> **⬜ 待 GD 补细节（选路 op 的机制数值）**：驰援「凭空+2兵」= 什么兵(点数/花色)？舍车「弃一路」= 该路兵回库还是销毁？疾行/泥沼「减速/加速」= speed±1 还是隔回合推进？程序A 施工前需 GD 把这几个钉死（否则又是模糊数据）。
+> **✅ GD 补细节完毕（owner 对齐 2026-07-04·见 `REQ-G-天罡目标op机制对齐` 答复 + tiangang-native-redesign §四·补）**：时长=混合（疾行/泥沼/驰援/舍车即时·仅铁索持久N=2回合→**程序A 不必全建 laneFx·只铁索一个全局倒计时**）；疾行=我该路即时+1格；泥沼=敌该路本回合不推进；铁索=敌全军speed−1(下限1)持续2回合；驰援=+2固定援兵(战力3无将·落部署格·不掏牌库)；舍车=弃一路回库+另两路当前兵各+X战力(快照烙兵身·+X起标8待sim)。**片C 解锁·程序A 可开工。**
 > **调试功能（owner 2026-07-04·顺带）**：程序A 已交逻辑钩子 `debugGrantTengang`/`debugAddMana` + dev 控制台全局 `__ggDebug`（.grant(id)/.mana(n)/.list()·战斗屏控制台即用·测新天罡/无限操作）。**正规「调试菜单」可视 UI 归程序B**（见 REQ-G-调试菜单）。
 
-### REQ-G-天罡目标op机制对齐（程序A → design G·施工前必答）· [2026-07-04] · 程序A → design G · Game G · status: **待 design G 答（owner 会到策划处对齐）** · 优先级: **P1（阻塞天罡原生重构 片C 的 5 个 op）** · 规格补充: `design/tiangang-native-redesign.md §四.3`
+### REQ-G-天罡目标op机制对齐（程序A → design G·施工前必答）· [2026-07-04] · 程序A → design G · Game G · status: **✅ 已答（design G + owner 对齐 2026-07-04·定案入 `design/tiangang-native-redesign.md §四·补`）** · 优先级: **P1（阻塞天罡原生重构 片C 的 5 个 op）** · 规格补充: `design/tiangang-native-redesign.md §四.3 + §四·补`
+> **✅ design G 答复（owner 对齐 2026-07-04·5 op 机制/数值全钉死·详见 tiangang-native-redesign §四·补）**：
+> - **时长模型 = 混合**（owner 拍板）：**疾行/泥沼/驰援/舍车 = 即时一次性**（无持久状态·契合"操作前置·掷骰执命"哲学·消掉 laneFx 状态机·更确定性防雪球）；**仅铁索 = 持久**（epic 全军减速墙·带 N 回合全局倒计时·单值非每路状态）。**叠加**：即时类天然叠加棋盘封顶·无需 cap；铁索刷新时长不叠深。
+> - **① 疾行**：我该路兵即时 +1格推进（epic 可 +2）。**② 泥沼**：敌该路本回合不推进（跳过 advance·单路即时）。**③ 铁索**：敌全军 speed−1（下限1）持续 N=2回合（param·epic）。**④ 驰援**：指定路 +2 固定援兵（战力3·无将·无buff·落部署格·只花天罡cost·不掏牌库·不额外源泉；兵数/战力 param）。**⑤ 舍车**：弃一路→**回牌库**（复用人面/破家回库·非销毁）+ 另两路当前兵各 +X战力（施放瞬间快照·烙兵身·永久随兵·不需 laneFx）；**+X 起标 +8·待 GD sim**。
+> - **程序A 可开工片C**：`castTengangAt(b,side,handIdx,lane)` 即时类立即应用 + 铁索全局倒计时 fx；点路 UI 归程序B。数值（舍车+X/驰援体量/铁索N）落地后 GD sim 复核。
 > **背景**：天罡原生重构 §四.3 的 5 个 op 设计意图是高层文案，**机制/数值未钉死 → 程序A 无法确定性实装**（否则=模糊数据/我替策划拍脑袋）。owner 2026-07-04 已定「目标类走玩家选路·不自动」。请 design G 逐条拍板（每条给了工程建议·选一个或改）：
 >
 > **通用问题（先定·影响状态设计）**：
