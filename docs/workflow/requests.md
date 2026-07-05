@@ -55,6 +55,20 @@
 
 > 所有 done/wontfix/作废 条目（含裁决理由与完工摘要）已归档到 `requests-archive.md`；查旧单先 grep 它。本池只留活跃 open/in-progress/排队 条目（防每读付历史 token·owner 2026-07-04 token 底盘优化）。
 
+### REQ-UI-锚定与绑定层 · UI 声明化二期（REQ-ARCH-ANCHOR 历史欠账收账） · [2026-07-04] · owner 亲派 → **指派：UI 程序员（owner 直辖·UI 库域授权施工·Lead 图纸+验收）** · status: **open（①锚定立即施工·②绑定设计稿先行）** · 优先级: **P1（弱 LLM 产完整游戏的最大单一杠杆·底座终审 🔴#3）** · 类型: 引擎 UI 库能力（render-only）
+> **owner 2026-07-04**：「UI 锚定点加绑定层，派给 UI 程序员做，我让 UI 程序员查。」出处：底座终审 `docs/design/base-capability-review-2026-07-03.md §二🔴#3 + §四.3`（锚定与绑定**分两步**·锚定先行）。
+> **要消灭的病（现状证据）**：game-g 战场徽标/VS 连线/胜负挂牌全靠手写 `getElementById('u-'+id)` + `getBoundingClientRect` + `createElement`（`game-g.tsx:372/411-413/440`）——正是 audit 红旗 createElement×27 的一大来源；每个游戏都会再犯，因为**引擎没给「把浮层钉在活动目标上」的数据说法**。
+>
+> **① 锚定（立即施工·范围收窄）——spec（Lead 图纸）**：
+> 1. **锚源契约**：渲染层给每个实体 DOM 节点盖统一锚标（如 `data-entity-anchor="<entityId>"`·引擎渲染器出，非游戏自造 `u-<id>`）；LayoutNode 控件沿用既有 `anchor` 键位（引导锚与浮层锚同一注册表，语义不混：引导=spotlight，浮层=定位基准）。
+> 2. **浮层控件（闭集新成员）**：`Float{ anchorTo:{kind:'entity'|'node', id, at?:'center'|'top'|'bottom'|'left'|'right', offset?:{x,y}}, children, ttlTicks? }`——引擎渲染循环每帧读目标 live rect 定位（纯表现·不进 sim/hash）；目标消失→浮层随之隐藏（不悬空、不报错）。
+> 3. **连线控件**：`Connector{ from:anchorRef, to:anchorRef, style:令牌闭集(实线/虚线/箭头), label? }`——「谁打谁」连线的数据说法。
+> 4. **红线**：render-only（sim/Condition 绝不读浮层位置）；定位计算不进 lockstep hash；样式走令牌不收 raw hex；控件进 component 闭集 + catalog + 校验器同步。
+> 5. **测试与消费自证**：控件级点名测试（锚定/偏移/目标消失回收）+ `/check-ui` 过 + **game-i 展示台加一个锚定 demo 页**（活范例铁律）；game-g 战场替换由甲/程序B 随战斗 UI 批消费（不在本单强做，但本单落地后其红旗 DOM 有了退路）。
+>
+> **② 绑定层（设计稿先行·不许直接开写）**：目标=LayoutNode 属性可声明绑定世界状态（如 `text:{bind:'resource:gold', format:'金 {v}'}`·闭集表达式：resource/flag/stringVariable+格式化，**不是**自由表达式语言），让弱 LLM 不写 TS builder 也能交付活 UI。**约束**：必须与创作台 UI 生成（PST）共审设计——绑定词汇会直接进生成 prompt 词汇表；先交 ≤2 页设计稿（绑定语法闭集+更新时机+与现有 visibleWhen/tween 的关系）给 Lead 审，过审才施工。
+> 门禁全绿直推；①②各自独立提交；完工标 ✅ 待 Lead 对抗性验收（真浏览器 demo 必查）。
+
 ### REQ-CAP-改掷RollMod下沉 · 引擎 dice 核收编 game-g RollMods 先例（天罡②/game-d/英雄牌共用） · [2026-07-04] · 主程（天罡原生重构 ② 架构裁决派生） · status: **排队（指派：Opus·xhigh·战斗核稳后随虚胖清算一波做·不阻塞战斗迭代）** · 类型: 引擎 capability 扩展（正确性关键·确定性）
 > **裁决更新（2026-07-04·与 `e780156a` 空中相遇）**：程序A 已在 game-g 落了掷骰系（`clash-resolve.ts` 的 `RollMods{bonus,floor,twice}` 纯函数核+确定性测试）——**形状合格·不打回**（数据行+纯函数，正是易迁形）。本单由"新建"改**"收编先例"**：引擎 `t2-dice` 吸收 RollMods 闭集（字段名对齐先例·补 `autoWinIfStronger`/铁骰语义入 opposedRoll）→ game-g 切换消费引擎核、删本地副本 → game-d/英雄牌复用。这也是宪法「游戏先证明、引擎再收编」的标准路径，撞车成本≈0。
 > **spec（Lead 图纸）**：`src/skills/tier2/dice.ts` 族加 **`RollMod` 闭集**（数据行，非钩子函数）：`{kind:'bonus',value}`（掷后加值）/ `{kind:'floor',min}`（掷值下界钳）/ `{kind:'advantage'}`（掷两次取高）/ `{kind:'autoWinIfStronger'}`（我方战力≥敌免掷直接胜·仅 opposedRoll 语境）。约束：①纯函数核（`applyRollMods(roll, mods, rng)` + opposedRoll 接 `mods` 参数）·确定性（advantage 的第二掷从同一 RNG 流序取·顺序固定）；②闭集进 registry describe/examples；③逐 kind 点名测试 + 组合序测试（bonus+floor 先 bonus 后 floor·文档钉死）；④不改 DicePool/RolledDice 既有语义（向后兼容）。消费方：game-g 天罡②（鬼手/磐石/灌铅骰/铁骰）· game-d 骰途改掷类 · 英雄专属牌改掷层（未来扩）。门禁全绿直推。
