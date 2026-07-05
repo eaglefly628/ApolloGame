@@ -362,6 +362,7 @@ export function mount(container: HTMLElement, shell?: { exit?: () => void }): ()
     let selHand = -1;                  // 放牌/施法/换牌 选中的手牌
     let notice: string | null = null; let noticeTimer = 0; // 临时提示 toast
     let drained = 0; const perfQueue: ClashEvent[] = []; let perfClash: ClashEvent | null = null; let busy = false; let perfResume: (() => void) | null = null;
+    let perfPending = false; // 有待掷命的对决排队/在演中：此时压掉 move:settle 那次板面重渲——让棋盘「两兵贴身对峙」保持到掷骰特写盖上(否则 ≈1.3s 板面会闪跳到已结算态·败者凭空消失/胜者跳格·owner 2026-07-04 撞见)。
     let coachDid: (on: BattleCoachStep['on']) => void = () => {}; let syncCoach: () => void = () => {}; // 前置声明·真体在挂载后赋（战斗新手引导）
     let justMovedIds = new Set<string>(); let freshIds = new Map<string, number>(); let dealtId: string | null = null; let thinkTimer = 0; let thinkEl: HTMLElement | null = null; let settingsOpen = false;
     // 离场/留场动画（owner 2026-06-29「过程要清晰·谁战败撕裂·谁掷骰留下钉桩/光荣离场」）。
@@ -418,6 +419,28 @@ export function mount(container: HTMLElement, shell?: { exit?: () => void }): ()
       requestAnimationFrame(() => { b.style.opacity = '1'; b.style.transform = 'translate(-50%,-118%)'; }); // 弹现
       window.setTimeout(() => { b.style.transition = 'opacity .5s ease'; b.style.opacity = '0'; }, 3000); // 驻留 3s 后淡出
       window.setTimeout(() => b.remove(), 3600);
+    };
+    // 胜者前进演出（owner 2026-07-04「斩敌后·再播我们移动到他腾出的那个格子上」·REQ-G-碰撞才战斗 §程序B②）。
+    // 数据已把胜者 slot 落到腾出格(resolveClash·掷骰前就结算)——故用**克隆滑动**演可见前进：从 exitCaps 抓的「敌前一格」旧位滑到真兵当前(腾出格)位·滑时暂隐真兵·落定复现。纯表现·不动 tb/rng/turnHash。
+    // 守军「赢守原位」(!hold·旧位=新位)→ 无位移·跳过。onLand 回调供衔接（如落定后钉徽标）。
+    const advanceSlide = (winnerId: string, onLand?: () => void): void => {
+      const from = exitCaps.get(winnerId); const real = document.getElementById('u-' + winnerId);
+      const to = real?.getBoundingClientRect();
+      if (!from || !real || !to || !to.width) { onLand?.(); return; } // 无快照/无头/兵不在场 → 不演·直接落
+      const dx = to.left - from.left, dy = to.top - from.top;
+      if (Math.abs(dx) < 2 && Math.abs(dy) < 2) { onLand?.(); return; } // 守原位·没前进 → 跳过
+      const z = from.zoom || 1;
+      real.style.visibility = 'hidden'; // 真兵暂隐·让克隆演前进（落定复现）
+      const outer = document.createElement('div');
+      outer.style.cssText = `position:fixed;left:${from.left}px;top:${from.top}px;width:${from.w}px;height:${from.h}px;transform:scale(${z});transform-origin:0 0;z-index:239;pointer-events:none;transition:transform .5s cubic-bezier(.34,.7,.3,1),filter .5s ease`;
+      const wrap = document.createElement('div'); wrap.innerHTML = from.html; const clone = wrap.firstElementChild as HTMLElement | null;
+      if (clone) { clone.removeAttribute('id'); clone.style.width = from.w + 'px'; clone.style.height = from.h + 'px'; clone.style.margin = '0'; clone.style.flex = 'none'; outer.appendChild(clone); }
+      document.body.appendChild(outer);
+      requestAnimationFrame(() => { outer.style.transform = `scale(${z}) translate(${dx / z}px,${dy / z}px)`; outer.style.filter = 'drop-shadow(0 8px 14px rgba(0,0,0,.5))'; }); // 滑向敌腾出格
+      let landed = false;
+      const done = (): void => { if (landed) return; landed = true; outer.remove(); if (real) real.style.visibility = ''; onLand?.(); }; // 落定：撤克隆·复现真兵
+      outer.addEventListener('transitionend', done, { once: true });
+      window.setTimeout(done, 650); // 兜底（transitionend 漏发/被重渲打断）
     };
     const tgName = (id: string): string => TIANGANG_BY_ID.get(id)?.name ?? id;
     const tgDesc = (id: string): string => TIANGANG_BY_ID.get(id)?.text ?? '持续战法·打出后整场生效'; // 磨砂浮层：天罡效果文案
@@ -476,17 +499,19 @@ export function mount(container: HTMLElement, shell?: { exit?: () => void }): ()
     let aiManaDisplay: number | null = null; // 敌方决策时源泉「随落牌错峰递减」的展示覆盖值（owner 2026-07-03「别直接跳 0·要看它啪啪啪扣」）·null=显真值
     const clearClashTimers = (): void => { if (clashCdTimer) { clearTimeout(clashCdTimer); clashCdTimer = 0; } if (clashCdInterval) { clearInterval(clashCdInterval); clashCdInterval = 0; } };
     // ── 战后生死演出走引擎 t3-timeline（owner 2026-07-03「用 timeline·不手写排程」）──
-    // timeline 管「何时」发拍（clash:slay 败者阵亡 → clash:survivor 幸存者去留 → clash:resume 续下一场），本订阅管「怎么演」（playGhost·锚真实棋盘 u-id）。
-    // 拍点 tick≈帧（60fps）：0 / 31(≈520ms) / 71(≈1180ms)——逐字对齐旧 setTimeout 两拍窗口，只是时序改由 timeline 数据出。
+    // timeline 管「何时」发拍，本订阅管「怎么演」（playGhost/advanceSlide·锚真实棋盘 u-id）。四拍（owner 2026-07-04 定序）：
+    //   ① clash:slay 斩败者 → ② clash:advance 胜者滑进腾出格 → ③ clash:survivor 幸存者去留(对折/光荣)+驻留徽标 → ④ clash:resume 续下一场。
     let postClashCtx: { e: ClashEvent; loserId: string | undefined; winnerId: string | undefined; cut: number; streak: number } | null = null;
     const battleTl = mountBattleTimeline((sig) => {
-      if (sig.name === 'move:settle') { justMovedIds = new Set(); if (!perfClash) mounted?.update(); return; } // 行军慢放整段播完 → 清标记重渲（时序由 timeline 出·不再手写 setTimeout）
+      if (sig.name === 'move:settle') { justMovedIds = new Set(); if (!perfClash && !perfPending) mounted?.update(); return; } // 行军慢放整段播完 → 清标记重渲（时序由 timeline 出·不再手写 setTimeout）。有对决排队(perfPending)则**不重渲**：保持棋盘在「两兵贴身」态到掷骰特写盖上·闪跳藏到全屏特写背后（owner 2026-07-04「谁打谁提示一半棋盘别跳」）
       const ctx = postClashCtx; if (!ctx) return; const e = ctx.e;
       if (sig.name === 'clash:slay') { // ① 败者阵亡（先死·清楚）
         if (ctx.loserId && !e.lastStand) { playSfx('clashLose'); playGhost(exitCaps.get(ctx.loserId) ?? null, 'tear'); }
         else if (e.lastStand) { log(`🛡 死战不退：敌主将【${aiName}】首负不亡·残喘退守 1 格`); showBanner('🛡 死战不退 · 敌主将首负不亡', 1500); }
-      } else if (sig.name === 'clash:survivor') { // ③ 幸存者去留：连胜满→光荣回库 / 否则头顶「战力对折 −N」
-        if (ctx.winnerId && !e.lastStand) { playSfx('clashWin'); if (e.winStays === false) playGhost(exitCaps.get(ctx.winnerId) ?? null, 'glory'); else { playGhost(exitCaps.get(ctx.winnerId) ?? null, 'fatigue', `连胜${ctx.streak}场 · 战力−${ctx.cut}（对折）`); stampBoard(ctx.winnerId, `⚔ 胜 · 连胜${ctx.streak}`, '#e8cd8a'); } } // 留场胜者：瞬时对折飘字(1s) + 驻留「⚔胜」徽标(3s·可回看谁赢了留场·owner 2026-07-03)
+      } else if (sig.name === 'clash:advance') { // ② 胜者前进：斩敌后滑进敌腾出的格（owner 2026-07-04·留场且真前进者才滑；光荣回库/守原位跳过）
+        if (ctx.winnerId && !e.lastStand && e.winStays !== false) advanceSlide(ctx.winnerId);
+      } else if (sig.name === 'clash:survivor') { // ③ 幸存者去留：连胜满→光荣回库 / 否则头顶「战力对折 −N」（锚**前进后**的真实位·advanceSlide 已落定复现真兵）
+        if (ctx.winnerId && !e.lastStand) { playSfx('clashWin'); if (e.winStays === false) playGhost(exitCaps.get(ctx.winnerId) ?? null, 'glory'); else { playGhost(captureUnit(ctx.winnerId) ?? null, 'fatigue', `连胜${ctx.streak}场 · 战力−${ctx.cut}（对折）`); stampBoard(ctx.winnerId, `⚔ 胜 · 连胜${ctx.streak}`, '#e8cd8a'); } } // 留场胜者：瞬时对折飘字(1s) + 驻留「⚔胜」徽标(3s·可回看·owner 2026-07-03)
       } else if (sig.name === 'clash:resume') { postClashCtx = null; const r = perfResume; if (r) r(); } // ④ 收场续下一场
     });
     const buildClashView = (): TurnClashView | null => { if (!perfClash) return null; const cv = clashToTurnView(perfClash, tgName, save.inlays); cv.revealed = clashRevealed; return cv; };
@@ -527,7 +552,7 @@ export function mount(container: HTMLElement, shell?: { exit?: () => void }): ()
     };
     // 逐场掷命特写：3D 飞入 → 停留 → **玩家点「看明白了」才演下一场/收场**（owner 2026-06-20：不能自动关·要看清为什么胜败）。
     const playPerf = (onDone: () => void): void => {
-      if (perfQueue.length === 0) { perfClash = null; perfResume = null; mounted?.update(); syncCoach(); onDone(); return; }
+      if (perfQueue.length === 0) { perfClash = null; perfResume = null; perfPending = false; mounted?.update(); syncCoach(); onDone(); return; } // 全部对决演完 → 解压·板面同步到已结算态
       const e = perfQueue.shift()!;
       // 战力逐项拆解（owner 2026-07-02「掷骰时把两方的东西都列出来·万一算得不对可回查」）：底点+养成+天罡(逐张)+士气+地煞(固守/气势)+连胜对折 = 有效战力。
       const pBreak = (s: ClashEvent['a']): string => {
@@ -575,6 +600,7 @@ export function mount(container: HTMLElement, shell?: { exit?: () => void }): ()
       for (const li of lanes) { const fa = tb.lanes[li].a[0], fb = tb.lanes[li].b[0]; if (fa) { const s = captureUnit(fa.id); if (s) exitCaps.set(fa.id, s); } if (fb) { const s = captureUnit(fb.id); if (s) exitCaps.set(fb.id, s); } } // 相邻位快照(供离场动画)
       for (const li of lanes) resolveClashAt(tb, li); // 结算(数据)→ clashLog
       drainClashes();
+      perfPending = perfQueue.length > 0; // 有对决排队 → 压住 move:settle 板面重渲（棋盘保持贴身对峙到掷骰特写盖上）
       playPerf(() => { endTurnFinish(tb); justMovedIds = new Set(); mounted?.update(); next(); }); // 特写全演完 → 收尾 + 续流程
     };
     const runAiAct = (): void => { // 敌方行动阶段：敌方兵线推进 + 掷命（与决策分演·owner 过场说明）
@@ -661,9 +687,10 @@ export function mount(container: HTMLElement, shell?: { exit?: () => void }): ()
         const w = e.aWins ? e.a : e.b; const cut = w.pEff - Math.floor(w.pEff / 2); const streak = e.winStreak ?? 1; // 本场胜者：连胜场数 + 战力对折削减量（owner「写清连胜多少场·扣了多少」）
         postClashCtx = { e, loserId, winnerId, cut, streak };
         battleTl.play({ id: 'clash-settle', cues: [
-          { at: 0, do: { kind: 'signal', signal: 'clash:slay' } },     // ① 败者阵亡（先死·清楚）
-          { at: 31, do: { kind: 'signal', signal: 'clash:survivor' } }, // ③ ≈520ms 后幸存者去留
-          { at: 71, do: { kind: 'signal', signal: 'clash:resume' } },   // ④ ≈1180ms 后收场续下一场（给「谁死→再对折」两拍窗口）
+          { at: 0, do: { kind: 'signal', signal: 'clash:slay' } },      // ① 斩败者（≈0.5s 一刀两断·先死·清楚）
+          { at: 34, do: { kind: 'signal', signal: 'clash:advance' } },  // ② ≈570ms 斩定后·胜者滑进腾出格（滑 ≈0.5s）
+          { at: 70, do: { kind: 'signal', signal: 'clash:survivor' } }, // ③ ≈1180ms 前进落定后·幸存者去留(对折/光荣)+驻留徽标
+          { at: 105, do: { kind: 'signal', signal: 'clash:resume' } },  // ④ ≈1750ms 收场续下一场（斩→进→标 三拍看清·owner 2026-07-04）
         ] });
       },
       clashRoll: () => doClashRoll(), // 各自掷战力骰（owner 2026-07-01·两骰同屏各掷自己战力范围）
