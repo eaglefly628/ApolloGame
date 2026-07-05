@@ -793,8 +793,9 @@ export function aiDecide(b: TurnBattle, aggTengang?: (ids: readonly string[]) =>
   const say = dbg ?? ((): void => {});
   const LN = ['上', '中', '下']; const handStr = (): string => sd.hand.map((c) => c.kind === 'poker' ? `${c.rank}${c.suit}(费${c.cost ?? DEPLOY_COST})` : c.kind === 'tengang' ? `罡:${c.id}` : `煞:${c.id}`).join('、') || '空';
   say(`敌AI·决策开始：源泉${sd.mana} · 手牌[${handStr()}] · 库(扑${sd.pokerDeck.length}/罡${sd.tengangDeck.length}) · 场上兵${b.lanes.reduce((n, L) => n + L.b.length, 0)}`);
-  let guard = 0;
+  let guard = 0; let garrisonDeploys = 0; // 开局布防最多铺 3 兵（owner 2026-07-04·「4 张免费布防太多·改 3」）——防廉价牌(费0)白铺满
   while (guard++ < 40) {
+    if (garrison && garrisonDeploys >= 3) break; // 布防满 3 兵即停（免费额外线上限·balance 连带见 design 24 §三附）
     // owner 2026-07-03·对称同规则（REQ-G-退役机关门 + Boss自由混·balance §五）：**Boss 与玩家同一套动作规则·一回合内自由混 抽/打**——
     // 大类互斥基线（旧 `locked = actionTaken` 自锁）已删：每步枚举所有买得起的动作·只被 `mana≥cost` 限制。难度只来自 Boss 明牌 kit（地煞/布防/牌力）·不靠降/升规则。
     // **Boss 无换牌**：swapCard 是玩家专属 QoL（偏向玩家的小不对称·对玩家无损=公平）·Boss 不枚举 swap。
@@ -820,7 +821,7 @@ export function aiDecide(b: TurnBattle, aggTengang?: (ids: readonly string[]) =>
     const pick = mistake ? cands[Math.floor(nextRandom(b.rng) * cands.length)] : cands.reduce((bst, c) => (c.score > bst.score ? c : bst), cands[0]);
     const manaBefore = sd.mana; const card = pick.handIdx >= 0 ? sd.hand[pick.handIdx] : undefined;
     let ok = false;
-    if (pick.kind === 'deploy') ok = deployUnit(b, 'b', pick.handIdx, pick.lane);
+    if (pick.kind === 'deploy') { ok = deployUnit(b, 'b', pick.handIdx, pick.lane); if (ok && garrison) garrisonDeploys++; } // 布防兵计数（上限 3·owner 2026-07-04）
     else if (pick.kind === 'cast') { ok = castTengang(b, 'b', pick.handIdx); if (ok && aggTengang) { sd.tengangA = aggTengang(sd.castIds); sd.castFx = sd.castIds.map((id) => ({ id, fx: aggTengang([id]) })); } } // 施法即重算·当回合推进生效（+逐张 castFx 供溯源）
     else if (pick.kind === 'disha') { const dc = sd.hand[pick.handIdx]; ok = castDisha(b, 'b', pick.handIdx); if (ok && dc?.kind === 'disha') castDishaIds.push(dc.id); } // 打地煞 → 记 id 供 caller 全屏通知
     else ok = drawCard(b, 'b', pick.from);
