@@ -312,13 +312,17 @@ function handCardNode(c: TurnHandCardView, i: number, hiOn: boolean): LayoutNode
     ];
     if (c.cost > 0) children.push(costDropNode(c.cost, `h${i}`));
     if (isGen) children.push({ type: 'Label', id: `h${i}-gen`, props: { text: '⭐ 主将', size: 9, color: 'gold', bold: true }, layout: { y: -13, x: 18 } });
-    card = { type: 'Panel', id: `h${i}`, props: { bg: sideFace(true), edge: sel || isGen ? 'gold' : 'mine' }, layout: { width: 88, height: 112, radius: 12, direction: 'column', justify: 'between', align: 'center', padding: 4, ...(sel || isGen ? { fx: [{ kind: 'glow', color: 'gold', ms: 1200 }] } : {}) }, children };
+    // 主将只用「⭐主将」浮标作身份标（owner 2026-07-04「主将别永远高亮」）——不再给它常驻金边+金光；金边+金光+弹起=**只属选中态**（选中才泛光弹出·非黑框）。
+    card = { type: 'Panel', id: `h${i}`, props: { bg: sideFace(true), edge: sel ? 'gold' : 'mine' }, layout: { width: 88, height: 112, radius: 12, direction: 'column', justify: 'between', align: 'center', padding: 4, ...(sel ? { fx: [{ kind: 'glow', color: 'gold', ms: 900 }] } : {}) }, children };
   }
   return card;
 }
 function handCard(c: TurnHandCardView, i: number, hiOn = false): string {
+  const sel = c.selected || hiOn;
   const aff = c.affordable === false ? ';opacity:.45;filter:grayscale(.6)' : ''; // 买不起=灰显（Label 令牌无 opacity·留在 data-hand 壳上）
-  return `<div data-hand="${i}" style="cursor:pointer${aff}${c.dealt ? ';animation:g-deal .46s cubic-bezier(.2,.85,.3,1.12) both' : ''}">${renderNode(handCardNode(c, i, hiOn), GG_BATTLE_THEME)}</div>`;
+  // 选中弹起 + 金色泛光（owner 2026-07-04「选中要有框·弹出来·泛光·别黑框」）：底座 fx:glow 出框内泛光·壳上再叠「抬起+外扩金晕」把选中牌顶出手牌排——底座无「lift」原语·抬起落在 data-hand 壳（本就带 cursor/灰显/发牌动画的表现壳·非新手写屏）。
+  const pop = sel ? ';transform:translateY(-14px) scale(1.05);box-shadow:0 0 22px rgba(232,205,138,.9),0 14px 30px rgba(0,0,0,.5);border-radius:13px;z-index:20' : '';
+  return `<div data-hand="${i}" style="position:relative;cursor:pointer;transition:transform .16s cubic-bezier(.3,1.5,.5,1),box-shadow .16s ease${aff}${pop}${c.dealt ? ';animation:g-deal .46s cubic-bezier(.2,.85,.3,1.12) both' : ''}">${renderNode(handCardNode(c, i, hiOn), GG_BATTLE_THEME)}</div>`;
 }
 
 
@@ -524,20 +528,29 @@ function topbarNode(view: TurnBattleView): LayoutNode {
 // owner 2026-07-03 三行为自由：顶层三钮（抽/打/换·互不互斥·源泉唯一门）→ 点开哪个 → 右侧子菜单二选一亮出各自源泉开销。
 // 顶钮锚点 combat-draw/play/swap；子钮各带自己锚点（部署扑克=combat-deploy / 打天罡=combat-cast / 抽走 combat-draw-pick 容器）供 battle-coach 高亮。
 function actionMenuNode(view: TurnBattleView): LayoutNode {
+  // 三行为顶钮/子钮的字太小（owner 2026-07-04「要粗一点的艺术字·加个粗底」）→ 用「可点 Panel（容器可点·粗底）+ Label(font:'display' 艺术字·粗·大)」组合，
+  // 替原 Button（Button 控件字号固定小·不收 font/size）。全走底座控件闭集·零手写 CSS；data-action 仍由 Panel.action 出（点击委托同 Button）。
+  const ON_BG = { custom: 'linear-gradient(180deg,rgba(232,205,138,.30),rgba(232,205,138,.10))' };  // 选中：金渐变粗底
+  const NORM_BG = { custom: 'linear-gradient(180deg,rgba(255,255,255,.09),rgba(255,255,255,.02))' }; // 常态：微凸粗底
+  const DIM_BG = { custom: 'rgba(255,255,255,.03)' };                                                // 置灰：极淡
   const actBtn = (a: TurnActionView): LayoutNode => ({
-    type: 'Button', id: `ggt-act-${a.key}`,
-    props: { label: `${a.glyph} ${a.label}`, kind: a.on ? 'primary' : a.dim ? 'quiet' : 'ghost', action: a.key },
-    layout: { anchor: `combat-${a.key}`, chamfer: 8 }, // chamfer=倒角艺术边（owner 2026-06-28「按钮加点设计感/花纹」·复用引擎倒角原语·非手写 CSS）
+    type: 'Panel', id: `ggt-act-${a.key}`,
+    props: { action: a.key, bg: a.on ? ON_BG : a.dim ? DIM_BG : NORM_BG, ...(a.on ? { edge: 'gold' as const } : {}) },
+    layout: { anchor: `combat-${a.key}`, chamfer: 8, height: 46, radius: 9, align: 'center', justify: 'center', padding: 0 }, // chamfer=倒角艺术边（owner 2026-06-28）
+    children: [{ type: 'Label', id: `ggt-act-${a.key}-l`, props: { text: `${a.glyph} ${a.label}`, font: 'display', size: 22, bold: true, color: a.on ? 'gold' : a.dim ? 'dim' : 'text', glow: a.on } }],
   });
   const grid: LayoutNode = {
     type: 'Panel', id: 'ggt-act-grid', props: { bare: true }, layout: { direction: 'grid', cols: 3, gap: 8 },
     children: view.actions.map(actBtn),
   };
   const subBtn = (s: TurnSubBtnView): LayoutNode => ({
-    type: 'Button', id: `ggt-${s.id}`,
-    // 子钮 label 内嵌开销文案（「部署扑克 · 💧按点」）：控件闭集里 Button 一行文本足够·各显开销即写进 label（不手写额外 CSS）。
-    props: { label: `${s.glyph} ${s.label} · ${s.cost}`, kind: s.disabled ? 'quiet' : s.active ? 'primary' : 'ghost', action: s.id },
-    layout: { flex: 1, ...(s.anchor ? { anchor: s.anchor } : {}) },
+    type: 'Panel', id: `ggt-${s.id}`,
+    props: { action: s.id, bg: s.disabled ? DIM_BG : s.active ? ON_BG : NORM_BG, ...(s.active ? { edge: 'gold' as const } : {}) },
+    layout: { flex: 1, chamfer: 7, radius: 8, direction: 'column', align: 'center', justify: 'center', gap: 1, padding: 7, ...(s.anchor ? { anchor: s.anchor } : {}) },
+    children: [
+      { type: 'Label', id: `ggt-${s.id}-l`, props: { text: `${s.glyph} ${s.label}`, font: 'display', size: 15, bold: true, color: s.disabled ? 'dim' : s.active ? 'gold' : 'text' } }, // 艺术字·粗
+      { type: 'Label', id: `ggt-${s.id}-c`, props: { text: s.cost, size: 11, color: s.disabled ? 'dim' : 'sub', bold: true } },                                                 // 各显源泉开销
+    ],
   });
   const subRow: LayoutNode = {
     type: 'Panel', id: 'ggt-sub', props: { bare: true }, layout: { direction: 'row', gap: 7, anchor: 'combat-draw-pick' },

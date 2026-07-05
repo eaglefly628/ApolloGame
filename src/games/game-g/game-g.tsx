@@ -346,6 +346,7 @@ export function mount(container: HTMLElement, shell?: { exit?: () => void }): ()
     const dbg: string[] = [];
     const log = (s: string): void => { if (dbg.length > 1200) dbg.shift(); dbg.push(`[T${tb.turn}|源泉 我${tb.a.mana}/敌${tb.b.mana}] ${s}`); };
     bossOpeningGarrison(tb, BOSS_GARRISON_MANA, aggregateTengang, log); // 开局布防（owner 2026-06-29·敌方开场即设防一线）·记 AI 布防决策日志（owner 2026-07-02）
+    const garrisonIds: string[] = tb.lanes.flatMap((L) => L.b.map((u) => u.id)); // 布防摆下的敌兵 id → 供开场「敌方布防」逐张亮相演出（owner 2026-07-04·别让敌兵凭空预置看着像源泉没扣·布防免费=设计·源泉不减对；演个敌方设防初始拍再轮到我）
     // 敌堡垒 3 地煞明牌（动态·owner 2026-06-29 修「敌人发动斯巴达方阵但右下仍显待发动」）：
     // used 每帧据 tb 重算 → 被动地煞(开局生效·dishaBaseIds) / 可施放地煞已打出(dishaCastIds) → 显「已发动」；可施放未打 → 「待发动」。
     const shaLive = (): TurnShaView[] => campaignFor(save.stage).fiends.map((f, i) => {
@@ -364,7 +365,7 @@ export function mount(container: HTMLElement, shell?: { exit?: () => void }): ()
     let drained = 0; const perfQueue: ClashEvent[] = []; let perfClash: ClashEvent | null = null; let busy = false; let perfResume: (() => void) | null = null;
     let perfPending = false; // 有待掷命的对决排队/在演中：此时压掉 move:settle 那次板面重渲——让棋盘「两兵贴身对峙」保持到掷骰特写盖上(否则 ≈1.3s 板面会闪跳到已结算态·败者凭空消失/胜者跳格·owner 2026-07-04 撞见)。
     let coachDid: (on: BattleCoachStep['on']) => void = () => {}; let syncCoach: () => void = () => {}; // 前置声明·真体在挂载后赋（战斗新手引导）
-    let justMovedIds = new Set<string>(); let freshIds = new Map<string, number>(); let dealtId: string | null = null; let thinkTimer = 0; let thinkEl: HTMLElement | null = null; let settingsOpen = false;
+    let justMovedIds = new Set<string>(); let freshIds = new Map<string, number>(garrisonIds.map((id, k) => [id, k])); let dealtId: string | null = null; let thinkTimer = 0; let thinkEl: HTMLElement | null = null; let settingsOpen = false; // freshIds 预置布防兵 → 首帧就 g-drop 逐张落下（非静态预置）·开场演出随后补部署音 + 横幅
     // 离场/留场动画（owner 2026-06-29「过程要清晰·谁战败撕裂·谁掷骰留下钉桩/光荣离场」）。
     // 正确时序：移动相滑到位 → 捕捉两军前锋相邻位快照(exitCaps) → 弹「谁打谁」→ 掷骰 → 掷币定去留 → 收场后按结果演离场/钉桩。
     type GhostSpec = { html: string; left: number; top: number; w: number; h: number; zoom: number };
@@ -799,6 +800,15 @@ export function mount(container: HTMLElement, shell?: { exit?: () => void }): ()
       });
     };
     root.appendChild(dbgBtn); // 挂 root(非 stage·避免 mountTurnBattle 重渲抹掉)·左下角
+
+    // ── 开局布防亮相（owner 2026-07-04「别让敌兵凭空预置·像源泉没扣；演个敌方布防初始拍·啪啪放兵再轮到我」）──
+    // 敌兵已在场（布防免费·源泉不减=设计）；freshIds 预置已让首帧逐张 g-drop 落下——这里补横幅 + 逐张部署音把「敌方开局设防」演清楚，毕后清 fresh 标交给玩家。
+    if (garrisonIds.length) {
+      showBanner(`敌方开局布防 · 设防 ${garrisonIds.length} 兵`, 1200);
+      garrisonIds.forEach((_, k) => window.setTimeout(() => playSfx('deploy'), 260 + k * 170)); // 啪啪逐张落桌音
+      const dur = 260 + garrisonIds.length * 170 + 520;
+      window.setTimeout(() => { freshIds = new Map(); if (!perfClash) mounted?.update(); log(`◀ 敌方开局布防毕（设防${garrisonIds.length}兵·免费额外线）→ 我方回合`); }, dur); // 亮相毕清 fresh 标·转我方回合
+    }
 
     stopLoop = () => { perfResume = null; postClashCtx = null; battleTl.destroy(); clearClashTimers(); if (noticeTimer) { clearTimeout(noticeTimer); noticeTimer = 0; } if (thinkTimer) { clearTimeout(thinkTimer); thinkTimer = 0; } if (thinkEl) { thinkEl.remove(); thinkEl = null; } if (coach) { window.removeEventListener('resize', onCoachResize); coach.destroy(); } }; // 离场：弃未决特写续演 + 停战斗演出 timeline + 清硬币浮层/倒计时 + 清提示计时 + 清思考蒙层 + 卸引导
 
