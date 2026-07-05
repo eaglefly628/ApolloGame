@@ -49,6 +49,27 @@ describe('storage · SteamCloudStoragePort（经假云桥·与契约一致）', 
     expect((await port.list()).map((m) => m.slot)).toEqual(['y']);
   });
 
+  it('delete 索引写失败 → 回滚被删槽位文件（与 save 回滚对称·防反向脱节）', async () => {
+    // 真机上 Steam Cloud writeFile 可能失败（配额/IO）。旧 delete 先删文件再写索引、不管索引
+    // 写成败 → 索引写失败会留下「文件已删索引还列它」的反向脱节。此测试用会让索引写失败的桥坐实回滚。
+    const mock = createMockSteamCloudBridge({ persist: false });
+    let failIndexWrite = false;
+    const bridge: SteamCloudBridge = {
+      ...mock,
+      async writeFile(name, content) {
+        if (failIndexWrite && name.endsWith('__index__.json')) return false; // 模拟索引写失败
+        return mock.writeFile(name, content);
+      },
+    };
+    const port = new SteamCloudStoragePort(bridge);
+    await port.save('a', game('a', 1, 100));
+    expect((await port.load('a'))?.meta.tick).toBe(1);
+    failIndexWrite = true;
+    await expect(port.delete('a')).rejects.toThrow();     // 索引写失败 → delete 抛（不静默）
+    failIndexWrite = false;
+    expect((await port.load('a'))?.meta.tick).toBe(1);    // 槽位文件被回滚 → 存档没丢
+  });
+
   it('持久化：新端口（读同一假云态）能读回上一端口存的档', async () => {
     await new SteamCloudStoragePort(createMockSteamCloudBridge()).save('p', game('p', 9, 900));
     const port2 = new SteamCloudStoragePort(createMockSteamCloudBridge());

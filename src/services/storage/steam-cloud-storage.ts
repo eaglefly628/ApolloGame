@@ -58,9 +58,17 @@ export class SteamCloudStoragePort implements StoragePort {
   }
 
   async delete(slot: string): Promise<void> {
-    await this.cloud.deleteFile(slotFile(slot)).catch(() => {});
-    const index = (await this.list()).filter((m) => m.slot !== slot);
-    await this.cloud.writeFile(INDEX, JSON.stringify(index));
+    const file = slotFile(slot);
+    const prev = await this.cloud.readFile(file);            // 回滚用（与 save 对称）
+    await this.cloud.deleteFile(file).catch(() => {});
+    try {
+      const index = (await this.list()).filter((m) => m.slot !== slot);
+      if (!(await this.cloud.writeFile(INDEX, JSON.stringify(index)))) throw new Error('索引写失败');
+    } catch (e) {
+      // 索引更新失败 → 恢复被删的槽位文件，保持索引/数据一致（防「文件已删索引还在」反向脱节）
+      if (prev !== null) await this.cloud.writeFile(file, prev).catch(() => {});
+      throw e;
+    }
   }
 
   // 从云文件列表重建索引（每个槽位文件读出 meta）。兜底路径，正常不走。

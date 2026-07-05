@@ -45,7 +45,8 @@
 - **🔴 排行榜哑火 → 可观测降级**：`steamworks.js` **整包无 `leaderboard` 命名空间**（P3 曾标 ✅ 名不副实）。旧 `client.leaderboard.uploadScore` 恒 undefined + `safe()` 静默吞 = 真机永不上传且零日志。改为 `warnMissing` 明确告警一次。**排行榜要真上线须另接 Steamworks Web API**——P3「排行榜」实为**未实现**，成就/富状态/云不受影响。
 - **🔴 云 `listFiles` 类型不符 → 修**：真桥 `client.cloud.listFiles()` 返回 `FileInfo{name,size}[]`，桥契约要 `string[]`；旧实现透传对象 → 真机索引重建时 `f.startsWith` 抛。`steam.cjs cloudList()` 取 `name` 归一化，`SteamCloudStoragePort.rebuildIndex` 加容错 + 回归测试（喂真桥形态对象断言重建不炸）。
 - **🟠 AppID split-brain → 修**：旧 `steam.cjs` 只读 `env/480`、无视发布工具写进 `steam_appid.txt` 的真 AppID → 打包后 `init(480)` 连 SpaceWar。改为 `resolveAppId()` 以同目录 `steam_appid.txt` 为单一真相（env 覆盖 > 文件 > 480 兜底），`status().appIdSource` 自检暴露来源。**打包路径需真机烧版核对**（`resourcesPath/../steam_appid.txt`）。
-- 🟡 待办（未改，behavior-changing/低优先，留真机 bring-up）：`restartAppIfNecessary` 最佳实践、`delete()` 索引回滚对称性。
+- **🟡→✅ `delete()` 索引回滚对称性 → 修**：旧 `delete()` 先删文件再写索引、不管索引写成败 → 索引写失败留下「文件已删索引还列它」反向脱节。改为读 prev→删→索引写失败即恢复槽位文件 + 抛（与 `save()` 回滚纪律对称）。回归测试（会让索引写失败的桥断言回滚·自证旧码红）。调用方仅 `SaveSystem.delete` 转发（当前无生产调用），改抛安全且与 `save()` 一致。
+- 🟡 待办（未改，behavior-changing/不可无头验，留真机 bring-up）：`restartAppIfNecessary` 最佳实践（改启动流程·真机才验得了）。
 
 ## 2026-07-04 · 创作台一键发布·PS 侧地基（REQ-PUBLISH·owner 指派）
 
