@@ -210,6 +210,16 @@ export function swapCard(b: TurnBattle, side: 'a' | 'b', handIdx: number, from: 
   sd.swapsUsed += 1; sd.mana -= SWAP_COST;                        // 记账(免费·不动 actionTaken → 换牌非大类互斥动作)
   return true;
 }
+
+// ── 调试专用（owner 2026-07-04·测天罡/无限操作·非玩法·走调试菜单调用·不进正规流程·未调用时零影响 turnHash）──
+// 授召一张天罡到手牌（by id·不花源泉·不受回合限制）——测新天罡（改掷系/AOE…）效果用。
+export function debugGrantTengang(b: TurnBattle, side: 'a' | 'b', id: string): void {
+  sideOf(b, side).hand.push({ kind: 'tengang', id });
+}
+// 加源泉（无限操作·测复杂连招/满仪式用；夹 ≥0）。
+export function debugAddMana(b: TurnBattle, side: 'a' | 'b', n: number): void {
+  const sd = sideOf(b, side); sd.mana = Math.max(0, sd.mana + n);
+}
 // ④' 旧「免费纯弃牌」（owner 2026-06-21）已**退役**（owner 2026-07-03·被换牌取代·弃了不补没用）——保留导出供 UI 迁移期兼容(程序B 会把弃牌钮改成换牌)。新逻辑/AI/sim 一律走 swapCard。
 export function discardCard(b: TurnBattle, side: 'a' | 'b', handIdx: number): boolean {
   if (b.winner !== 'pending' || b.active !== side) return false;
