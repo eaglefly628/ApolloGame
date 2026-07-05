@@ -52,9 +52,13 @@
 > owner 拍板：创作台 player 模式内做「打包→上传 Steam」一键流水线（承载面=studio 网页·深度=尽量一路到上传）。跨 PS↔PST 域，工单 `requests.md#REQ-PUBLISH-创作台一键发布` 待 Lead 裁域切分+派工。**PS 先起不依赖 UI 形态的管线地基**：
 
 - **稳定编排契约 `plan_pipeline(cfg)`**（`steam-publisher/serve.py`）：单一入口固化 build→生成 VDF→上传 的顺序与命令构造，dry-run 返回三步（不实际 build/upload），缺前置（未填 builder/depot）记 `blocked`+原因不抛（预览友好）。additive `POST /api/plan` 暴露。studio 接入时无论走「直连本地端口/apollo.py 转发/内嵌」都复用此纯函数。
-- **无真账号冒烟 `scripts/steam-publish-smoke.py`**（480·退出码门禁·同 `scripts/*-smoke.py` 约定）：20 断言验 VDF 格式(SteamPipe)/build·publish 命令/错误守卫/`plan_pipeline` 整条 dry-run；副作用重定向 temp 不脏化仓库。自证：破坏 VDF 格式→真红。已登记 `playbooks/testing.md`。
-- **Lead 裁决（2026-07-04）**：接入形态=**经 apollo.py 转发**（薄代理 `/api/publish/*` → serve.py·只透传不塞逻辑），非直连/非内嵌；PS 先行硬化契约（本地基）+ 后续补 `package→genVDF→upload` 三段 + 判词 token 收口；PST 随后接向导页 UI。
-- ⏳ 余：① apollo.py 加 `/api/publish/*` 薄代理（PST/服务面域）；② PST 接 player 模式「发布」向导页（选游戏/平台·填 AppID/DepotID/builder·进度日志·**三步不能自动做成显式向导页**）；③ PS 把 serve.py 契约补全到 Lead 点名的三段命名 + 判词 token。真上传三步（账号+$100 / steamcmd 登录 / 后台 Set Live）向导显式引导。
+- **三段稳定契约 + 判词 token 收口（Lead 派工·2026-07-04 落）**（`serve.py`）：
+  - **三段命名** `PUBLISH_STAGES=('package','genvdf','upload')` + `stage_package/stage_genvdf/stage_upload(cfg)`，各返回统一 `{stage,status,...}`；`plan_pipeline` 由三段组合。
+  - **判词 token 收口**：全管线对外状态只用一套稳定字面——段判词 `ST_OK/ST_BLOCKED`（缺前置记 blocked+reason 不抛），任务判词 `JOB_IDLE/RUNNING/DONE/ERROR`（`job_status()`）。**消费端不再 scrape 日志字符串**，apollo.py 代理/前端认这套。
+  - **进度**：`job_status()` 接进 `/api/state` + `/api/log`（旧 `running`/`action` 字段保留不破 GUI）。
+- **无真账号冒烟 `scripts/steam-publish-smoke.py`**（480·退出码门禁·同 `scripts/*-smoke.py` 约定）：**24 断言**验 VDF 格式(SteamPipe)/build·publish 命令/错误守卫/三段命名/`plan` 判词 token/`stage_*` 单段/`job_status` 空态。副作用重定向 temp 不脏化仓库。自证：破坏 VDF 格式 / 段名 → 真红。已登记 `playbooks/testing.md`。
+- **Lead 裁决（2026-07-04）**：接入形态=**经 apollo.py 转发**（薄代理 `/api/publish/*` → serve.py·只透传不塞逻辑），非直连/非内嵌；PS 先行硬化契约（✅ 三段+token 已落）；PST 随后接向导页 UI。
+- ⏳ 余：① apollo.py 加 `/api/publish/*` 薄代理（PST/服务面域）；② PST 接 player 模式「发布」向导页（选游戏/平台·填 AppID/DepotID/builder·进度日志·**三步不能自动做成显式向导页**）。真上传三步（账号+$100 / steamcmd 登录 / 后台 Set Live）向导显式引导。
 
 ## 依赖 / 待 owner 提供
 

@@ -128,8 +128,23 @@ def gen_vdf(cfg):
     open(os.path.join(REPO, 'steam_appid.txt'), 'w', encoding='utf-8').write(str(cfg['appId']))
     return files
 
+# ── 判词 token 收口（Lead 2026-07-04 派工）─────────────────────────────────
+# 全管线对外状态**只用这套稳定字面**——apollo.py 薄代理 / studio 前端认它，消费端不再 scrape
+# 日志字符串或猜 ad-hoc 键。改字面 = 破契约，勿动。
+PUBLISH_STAGES = ('package', 'genvdf', 'upload')   # 三段命名（Lead 点名·顺序即执行序）
+# 段判词（plan / stage_* 用）：某段是否就绪
+ST_OK = 'ok'            # 就绪（命令已构造 / 文件已生成）
+ST_BLOCKED = 'blocked'  # 缺前置（未填 appId/depot/builder）——可预览可修，非错误
+# 任务判词（真跑的子进程用·= 进度口径）
+JOB_IDLE = 'idle'       # 从没跑过
+JOB_RUNNING = 'running' # 在跑
+JOB_DONE = 'done'       # 结束且 exit==0
+JOB_ERROR = 'error'     # 结束且 exit!=0
+# 动作 → 所属段（进度展示用）
+STAGE_OF_ACTION = {'build': 'package', 'gen-and-publish': 'upload', 'publish': 'upload', 'login': 'login'}
+
 # ── 子进程任务 + 实时日志（轮询拉取）──────────────────────────────────
-_job = {'proc': None, 'running': False, 'action': None}
+_job = {'proc': None, 'running': False, 'action': None, 'stage': None, 'exit': None, 'started': False}
 
 def start_job(action, argv, cwd):
     if _job['running']:
@@ -141,14 +156,26 @@ def start_job(action, argv, cwd):
     except FileNotFoundError as e:
         f.write(f'\n[启动失败] {e}\n'.encode('utf-8')); f.close()
         raise ValueError(f'命令找不到：{argv[0]}')
-    _job.update(proc=p, running=True, action=action, logf=f)
+    _job.update(proc=p, running=True, action=action, stage=STAGE_OF_ACTION.get(action),
+                exit=None, started=True, logf=f)
 
     def _wait():
         code = p.wait()
         try: f.write(f'\n\n[结束] exit={code}\n'.encode('utf-8')); f.flush(); f.close()
         except Exception: pass
+        _job['exit'] = code
         _job['running'] = False
     threading.Thread(target=_wait, daemon=True).start()
+
+def job_status():
+    """任务判词（进度）——单一 token 口径：idle / running / done / error。"""
+    if _job['running']:
+        return {'status': JOB_RUNNING, 'action': _job['action'], 'stage': _job['stage']}
+    if not _job['started']:
+        return {'status': JOB_IDLE}
+    code = _job['exit']
+    return {'status': JOB_DONE if code == 0 else JOB_ERROR,
+            'action': _job['action'], 'stage': _job['stage'], 'exit': code}
 
 def build_argv(cfg):
     plats = [d['plat'] for d in cfg['depots'] if str(d.get('depotId', '')).strip()]
@@ -179,25 +206,34 @@ def login_argv(cfg):
         raise ValueError('未填 Steam builder 账号')
     return [cfg['steamcmd'] or 'steamcmd', '+login', cfg['builder'], '+quit']
 
-# ── 稳定编排契约（供 studio 接入 / 冒烟 dry-run 预览整条流水线）───────────────────
+# ── 三段稳定契约（Lead 2026-07-04 派工：package → genVDF → upload）───────────────
+# 每段返回统一形状 {stage, status, ...}；status 用收口的判词 token。缺前置记 ST_BLOCKED+reason
+# 不抛（预览友好）。这三段 + plan_pipeline = apollo.py 薄代理 / studio 前端消费的稳定面。
+def stage_package(cfg):
+    """① package：构造 electron-builder --dir 裸目录命令（不执行）。"""
+    return {'stage': 'package', 'status': ST_OK, 'cwd': 'REPO', 'argv': build_argv(cfg)}
+
+def stage_genvdf(cfg):
+    """② genVDF：写 SteamPipe app_build/depot VDF + 仓库根 steam_appid.txt（幂等·真写）。"""
+    try:
+        files = gen_vdf(cfg)
+        return {'stage': 'genvdf', 'status': ST_OK, 'out': OUT, 'files': sorted(files.keys())}
+    except ValueError as e:
+        return {'stage': 'genvdf', 'status': ST_BLOCKED, 'reason': str(e)}
+
+def stage_upload(cfg):
+    """③ upload：构造 steamcmd +run_app_build 上传命令（不执行）。"""
+    try:
+        return {'stage': 'upload', 'status': ST_OK, 'cwd': 'OUT', 'argv': publish_argv(cfg)}
+    except ValueError as e:
+        return {'stage': 'upload', 'status': ST_BLOCKED, 'reason': str(e)}
+
 def plan_pipeline(cfg):
-    """返回将依次执行的流水线步骤（build → 生成 VDF → 上传），**不实际 build/upload**。
-    单一入口固化编排顺序与命令构造，供 studio 接入前 dry-run 校验或 GUI 预览；无真账号用
-    480 即可验编排正确。副作用同「生成配置」按钮：真写 out/*.vdf + 仓库根 steam_appid.txt
-    （幂等），只是不触发 electron-builder / steamcmd。真跑仍走 /api/run（build / gen-and-publish）。
-    某步缺前置（如未填 builder / 无 depot）→ 该步记 blocked+原因，不抛（预览友好）。"""
-    steps = []
-
-    def add(step, produce):
-        try:
-            steps.append({'step': step, **produce()})
-        except ValueError as e:
-            steps.append({'step': step, 'blocked': str(e)})
-
-    add('build',   lambda: {'cwd': 'REPO', 'argv': build_argv(cfg)})
-    add('gen-vdf', lambda: {'out': OUT, 'files': sorted(gen_vdf(cfg).keys())})
-    add('publish', lambda: {'cwd': 'OUT', 'argv': publish_argv(cfg)})
-    return steps
+    """dry-run 预览整条三段流水线（package → genVDF → upload），返回稳定判词，**不 build/upload**。
+    单一入口固化编排顺序 + 命令构造，供 studio 接入前校验 / GUI 预览；无真账号用 480 即可验编排。
+    副作用同「生成配置」：genVDF 段真写 out/*.vdf + steam_appid.txt（幂等）；package/upload 只构造命令。
+    真跑仍走 /api/run（build / gen-and-publish）。某段缺前置 → 该段 ST_BLOCKED+reason，不抛。"""
+    return [stage_package(cfg), stage_genvdf(cfg), stage_upload(cfg)]
 
 # ── HTTP ─────────────────────────────────────────────────────────────
 class Handler(http.server.BaseHTTPRequestHandler):
@@ -235,7 +271,8 @@ class Handler(http.server.BaseHTTPRequestHandler):
                 'games': [{'id': g, 'title': t} for g, t in GAME_TITLES.items()],
                 'steamcmd': detect_steamcmd(cfg.get('steamcmd', '')),
                 'builds': find_builds(cfg.get('game', 'game-g')),
-                'running': _job['running'], 'action': _job['action'],
+                'job': job_status(),                              # 收口的进度判词（idle/running/done/error）
+                'running': _job['running'], 'action': _job['action'],  # 旧字段留兼容现有 GUI
             })
         if path == '/api/log':
             qs = urllib.parse.parse_qs(p.query)
@@ -244,7 +281,8 @@ class Handler(http.server.BaseHTTPRequestHandler):
             if os.path.exists(LOG):
                 with open(LOG, 'rb') as f:
                     f.seek(off); data = f.read()
-            return self._json({'offset': off + len(data), 'text': data.decode('utf-8', 'replace'), 'running': _job['running']})
+            return self._json({'offset': off + len(data), 'text': data.decode('utf-8', 'replace'),
+                               'job': job_status(), 'running': _job['running']})
         return self._send(404, 'not found', 'text/plain')
 
     def do_POST(self):

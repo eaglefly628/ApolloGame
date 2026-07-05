@@ -114,20 +114,30 @@ check('publish_argv 未填 builder → 报错', raises_value_error(lambda: serve
 app_path.unlink()
 check('publish_argv 无 app_build.vdf → 报错', raises_value_error(lambda: serve.publish_argv(dict(CFG))))
 
-# 6) plan_pipeline —— 整条流水线 dry-run（build→VDF→模拟上传），无真账号跑通编排
+# 6) 三段稳定契约 + plan_pipeline —— 整条 dry-run（package→genVDF→upload），无真账号跑通编排
+check('契约: 三段命名 = package/genvdf/upload', serve.PUBLISH_STAGES == ('package', 'genvdf', 'upload'),
+      f'{serve.PUBLISH_STAGES}')
 steps = serve.plan_pipeline(dict(CFG))
-by = {s['step']: s for s in steps}
-check('plan: 三步齐 build/gen-vdf/publish 且无 blocked',
-      set(by) == {'build', 'gen-vdf', 'publish'} and not any('blocked' in s for s in steps), f'{steps}')
-check('plan.build 带 argv', 'argv' in by.get('build', {}) and '--dir' in by['build']['argv'])
-check('plan.gen-vdf 真出 VDF 文件', sorted(by.get('gen-vdf', {}).get('files', [])) == ['app_build.vdf', 'depot_4801.vdf'])
-check('plan.publish 带 steamcmd argv', '+run_app_build' in by.get('publish', {}).get('argv', []))
+by = {s['stage']: s for s in steps}
+check('plan: 三段齐 package/genvdf/upload 且全 status=ok',
+      [s['stage'] for s in steps] == ['package', 'genvdf', 'upload']
+      and all(s['status'] == serve.ST_OK for s in steps), f'{steps}')
+check('plan.package 带 argv(--dir)', 'argv' in by.get('package', {}) and '--dir' in by['package']['argv'])
+check('plan.genvdf 真出 VDF 文件', sorted(by.get('genvdf', {}).get('files', [])) == ['app_build.vdf', 'depot_4801.vdf'])
+check('plan.upload 带 steamcmd argv', '+run_app_build' in by.get('upload', {}).get('argv', []))
 
-# 7) plan 预览友好：缺前置（未填 builder）→ 该步 blocked+原因，不抛
+# 7) 判词收口：缺前置（未填 builder）→ upload 段 status=blocked + reason，不抛
 steps2 = serve.plan_pipeline({**CFG, 'builder': ''})
-pub2 = next((s for s in steps2 if s['step'] == 'publish'), {})
-check('plan 未填 builder → publish 步 blocked（不抛·预览友好）',
-      'blocked' in pub2 and 'builder' in pub2['blocked'], f'{pub2}')
+up2 = next((s for s in steps2 if s['stage'] == 'upload'), {})
+check('plan 未填 builder → upload 段 blocked+reason（不抛·预览友好）',
+      up2.get('status') == serve.ST_BLOCKED and 'builder' in up2.get('reason', ''), f'{up2}')
+
+# 7b) 单段契约可独立调（stage_* 稳定命名·apollo.py 代理按需转发）
+check('stage_genvdf 有效 cfg → status=ok', serve.stage_genvdf(dict(CFG))['status'] == serve.ST_OK)
+check('stage_upload 缺 builder → status=blocked', serve.stage_upload({**CFG, 'builder': ''})['status'] == serve.ST_BLOCKED)
+
+# 7c) 进度判词收口：无任务 → job idle（真跑的 running/done/error 需子进程·此处只验空态口径）
+check('job_status 无任务 → idle', serve.job_status()['status'] == serve.JOB_IDLE, f'{serve.job_status()}')
 
 # 8) steamcmd 探测器 sanity（不填 / 假命令 / PATH 上真命令）
 check('detect_steamcmd 空 → found False', serve.detect_steamcmd('')['found'] is False)
