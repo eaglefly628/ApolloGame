@@ -564,9 +564,13 @@ export function mount(container: HTMLElement, shell?: { exit?: () => void }): ()
       };
       const nm = (s: ClashEvent['a']): string => `${SUITNM2[s.suit] ?? ''}${s.rank}${s.general ? '(将)' : ''}`;
       // 逐场对决全量日志（可回查算法）：两方战力拆解各一行 + 掷骰范围/掷值 + 预报胜率 + 掷平裁定 + 胜负 + 战损。
+      // 掷骰系天罡改掷显式化（owner/GD 2026-07-04·G03·否则掷值超 [1~P] 看着像作弊）：鬼手改掷+N/磐石掷下界/灌铅骰多掷取高 都写进读数。
+      const rollStr = (s: ClashEvent['a'], roll?: number): string => { const m = s.rollMod; const mo: string[] = [];
+        if (m?.bonus) mo.push(`鬼手改掷+${m.bonus}`); if (m?.floor) mo.push(`磐石掷下界≥${m.floor}`); if (m?.twice) mo.push(`灌铅骰掷${1 + m.twice}次取高`);
+        return `掷战力骰 [1~${s.pEff}]${mo.length ? ` ${mo.join('·')}` : ''} → 掷 ${roll}`; };
       log(`⚔对决[${LANE_NM[e.lane] ?? e.lane}] ${nm(e.a)}(我) vs ${nm(e.b)}(敌)`);
-      log(`  · 我方战力 = ${pBreak(e.a)}　→ 掷战力骰 [1~${e.a.pEff}] = ${e.rollA}`);
-      log(`  · 敌方战力 = ${pBreak(e.b)}　→ 掷战力骰 [1~${e.b.pEff}] = ${e.rollB}`);
+      log(`  · 我方战力 = ${pBreak(e.a)}　→ ${rollStr(e.a, e.rollA)}`);
+      log(`  · 敌方战力 = ${pBreak(e.b)}　→ ${rollStr(e.b, e.rollB)}`);
       log(`  · 预报我方胜率 ${Math.round(e.winrate * 100)}%${e.tie ? `　掷平裁定:${e.tie}` : ''}　→ ${e.aWins ? '★我胜' : '☠敌胜'}${e.warLoss ? `（胜方连胜${e.winStreak}·战力对折${e.winStays === false ? '·满则光荣回库' : ''}）` : ''}${e.lastStand ? '（敌主将死战不退·首负不亡）' : ''}`);
       // 一行明确战果（owner 2026-07-04「日志要有：掷了几·大于几·谁死了」）：掷值比较 + 胜方 + 阵亡方 + 胜方去留。
       { const rA = e.rollA ?? 0, rB = e.rollB ?? 0; const cmp = rA > rB ? '>' : rA < rB ? '<' : '=（掷平）'; const win = e.aWins ? `我方 ${nm(e.a)}` : `敌方 ${nm(e.b)}`; const lose = e.aWins ? `敌方 ${nm(e.b)}` : `我方 ${nm(e.a)}`;

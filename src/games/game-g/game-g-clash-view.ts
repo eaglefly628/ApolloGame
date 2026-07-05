@@ -45,6 +45,10 @@ export function clashToTurnView(ev: ClashEvent, tgName: (id: string) => string =
   const rows = (c: ClashEvent['a'], isMine: boolean): [string, number][] => powerRows(c, isMine, tgName, inlays);
   // 额外效果（owner 2026-06-21「还有额外的效果」）：非数值、却左右这场胜负的特殊裁定——平局如何裁定 + 战胜硬币（只预告·不剧透）。
   const extras: string[] = [];
+  // 掷骰系天罡改掷显式化（owner/GD 2026-07-04·G03·掷值可超 [1~P] 上界·别看着像作弊）
+  ([['我方', ev.a], ['敌方', ev.b]] as const).forEach(([who, s]) => { const m = s.rollMod; if (!m) return; const mo: string[] = [];
+    if (m.bonus) mo.push(`鬼手改掷+${m.bonus}`); if (m.floor) mo.push(`磐石掷下界≥${m.floor}`); if (m.twice) mo.push(`灌铅骰掷${1 + m.twice}次取高`);
+    if (mo.length) extras.push(`🎲 ${who}掷骰系天罡：${mo.join('·')}（掷值可超 [1~${s.pEff}] 上界）`); });
   if (ev.tie) extras.push(ev.tie === 'power' ? '⚖ 掷平 → 战力高者胜' : ev.tie === 'points' ? '⚖ 掷平·战力相等 → 点数大者胜' : ev.tie === 'stamina' ? '⚖ 掷平·战力点数皆同 → 续航高者胜' : '⚖ 掷平·三者全同 → 先手判 Boss');
   // v2（owner 2026-06-29）：胜者留场续战 + 每胜疲劳战损（累减战力·弱兵车轮能磨强兵）；连胜满则光荣回库 + 全额返还泉水。
   const w = ev.aWins ? ev.a : ev.b; const wn = SUITNAME[lc2(w.suit)] + w.rank;
