@@ -4,7 +4,7 @@ import { armyFromFormation, quartermasterEnergy, battleSpec, RUN_BATTLES, BETWEE
 import { type ClashEvent } from './combat-types.js';
 // 抽出的纯函数模块（Phase 2 拆分·见各文件头注）：存档/出战编排/掷命特写视图。公共 API(buildPickDeck/bossHeroCard/
 // aggregateTengang/tengangFxOf/freshSave)在文件尾从这里再导出，保 deck-wiring/live-combat/turnmatch 测试 import 不变。
-import { freshSave, loadSave, persist, resetFortuneIfNewDay, FORTUNE_MAX, activeDeck, syncTiangangs, newDeckId, rollBoss, TIANGANG_DECK_SIZE, MAX_TIANGANG_DECKS } from './game-g-save.js';
+import { freshSave, loadSave, persist, resetFortuneIfNewDay, FORTUNE_MAX, activeDeck, syncTiangangs, newDeckId, rollBoss, TIANGANG_DECK_SIZE, MAX_TIANGANG_DECKS, DEFAULT_STARTER_TIANGANGS } from './game-g-save.js';
 import { favorToP, cardRank, avg, describeFormation, pick3, buildPickDeck, bossHeroCard, aggregateTengang, seededShuffleArr } from './game-g-build.js';
 import { clashToTurnView } from './game-g-clash-view.js';
 import { initTurnBattle, drawCard, deployUnit, castTengang, swapCard, advanceMovePhase, resolveClashAt, endTurnFinish, aiDecide, bossOpeningGarrison, debugGrantTengang, debugAddMana, BOSS_GARRISON_MANA, OPENING_HAND, DRAW_COST, CAST_COST, SWAP_PER_TURN, type PokerCard, type TengangHandCard, type Card } from './turn-combat.js';
@@ -312,7 +312,8 @@ export function mount(container: HTMLElement, shell?: { exit?: () => void }): ()
     const myPicks = activeDeck(save).pokerPicks.length ? activeDeck(save).pokerPicks : autoBuildPokerPicks({ favors: effFav, isOwned: isHeroOwned });
     const myDeck = buildPickDeck(myPicks, effFav); // 你的 16 张 pick（含逐张地支附魔）→ 战斗牌库
     // loadoutCap（doc27 §四·难度档）：玩家本关天罡上限（新手区 2→3）→ 截断出战天罡。
-    const aTengang: TengangHandCard[] = save.tiangangs.slice(0, lvl.loadoutCap).map((id) => ({ kind: 'tengang', id }));
+    const loadoutIds = save.tiangangs.length ? save.tiangangs : DEFAULT_STARTER_TIANGANGS; // 空 loadout 兜底（老存档没配天罡也给新手引导天罡·owner 2026-07-04「抽不到天罡」）
+    const aTengang: TengangHandCard[] = loadoutIds.slice(0, lvl.loadoutCap).map((id) => ({ kind: 'tengang', id }));
     const bTengang: TengangHandCard[] = lvl.boss.tiangang.map((id) => ({ kind: 'tengang', id })); // Boss 随机 12 天罡(seed=关id·可复现)·待 Boss AI 施放
     // Boss 牌库（owner 2026-06-21 #1：敌方镜像玩家·~16 张·不再 prepareArmies 泛化 61 张全 army）：
     //   关1-5 = design/boss-config-1-5 的 16 牌组（lvl.boss.deck·牌力偏置 favorBias 写卡 buff）；
