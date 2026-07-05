@@ -142,32 +142,33 @@ describe('Game G · 地煞（doc23 §八 关1-5 · 15 张 · 甲实装）', () =
     expect(clashOdds(bF, 0)!).toBeLessThan(clashOdds(bN, 0)!); // 先手 → 掷平判 Boss → 玩家胜率低一截(=pEqual)
   });
 
-  it('🟡 死战不退：Boss 主将首负不亡·残喘退 1 格·战败 3 次才真死（关1 列奥尼达 3 命）', () => {
+  it('🟡 死战不退：Boss 主将首负不亡·退回牌库(不消失·可重部署)·战败 3 次才真死（owner 2026-07-04 改·关1 列奥尼达 3 命）', () => {
     const b = initTurnBattle({ seed: 2, disha: ['laststand'] });
     b.lanes[0].a.push(u('a0', 'A', 4, { buff: 24 })); // 玩家碾压
     b.lanes[0].b.push(u('b0', '3', 5, { general: true })); // Boss 弱主将
     activatePlayable(b); // 死战不退=可施放地煞·打出才生效
-    endTurn(b); // 顺序回合：我方放完即推进→玩家胜→主将本应亡，但死战不退→残喘退格（此刻查·尚未轮到敌方反扑·owner ②）
+    endTurn(b); // 顺序回合：我方放完即推进→玩家胜→主将本应亡，但死战不退→退回牌库（owner 2026-07-04·非残喘退守）
     expect(b.bossGenDefeats).toBe(1); // 消耗第 1 命（3 命·首负不亡）
-    expect(b.lanes[0].b.some((x) => x.id === 'b0')).toBe(true); // 仍在场
+    expect(b.lanes[0].b.some((x) => x.id === 'b0')).toBe(false); // **不在场**（退回牌库·非残喘留场）
+    expect(b.b.pokerDeck.some((c) => c.kind === 'poker' && c.general)).toBe(true); // 主将退回 Boss 牌库(可重抽重部署)
     expect(b.lanes[0].bGenDead).toBe(false); // 未判主将亡
+    expect(b.lastClash?.lastStand).toBe(true); // 标记死战不退发作 → 全屏通知 + 特写改显"退回牌库"
   });
 
-  it('🟢 死战不退·退格不撞兵·仍居最前（BUG#7 修）：整列后挤填空·一格一兵·不"看着退两格"+标记发作', () => {
+  it('🟢 死战不退·退回牌库不撞兵·身后兵不受扰（owner 2026-07-04 改·替旧 BUG#7 退格）', () => {
     const b = initTurnBattle({ seed: 2, disha: ['laststand'] });
     b.lanes[0].a.push(u('a0', 'A', 4, { buff: 24 })); // 玩家碾压必胜
     b.lanes[0].b.push(u('b0', '3', 5, { general: true })); // Boss 弱主将(前锋·slot5)
-    b.lanes[0].b.push(u('b1', '7', 6));                    // 身后紧贴一兵(slot6=主将退入格)
-    activatePlayable(b); // 死战不退=可施放地煞·打出才生效（混合模型 bc1c8625）
-    endTurn(b); // 顺序回合：玩家胜 → 主将首负不亡·退1格(撞 b1) → 整列后挤·主将仍最前（owner ②·我方推进即结算）
+    b.lanes[0].b.push(u('b1', '7', 6));                    // 身后紧贴一兵
+    activatePlayable(b);
+    endTurn(b); // 玩家胜 → 主将首负不亡·退回牌库 → 身后兵原位不受扰
     const B = b.lanes[0].b;
     const slots = B.map((x) => x.slot);
-    expect(new Set(slots).size).toBe(slots.length);            // 无两兵同 slot（不再被渲染 bySlot 覆盖吞牌）
-    expect(B.some((x) => x.id === 'b0')).toBe(true);            // 主将仍在场
-    expect(B.some((x) => x.id === 'b1')).toBe(true);            // 身后兵也没消失
-    const b0 = B.find((x) => x.id === 'b0')!, b1 = B.find((x) => x.id === 'b1')!;
-    expect(b0.slot).toBeLessThan(b1.slot);                     // 主将退后仍居本列最前(整列后挤·非与身后兵换位 → 不"看着退两格")
-    expect(b.lastClash?.lastStand).toBe(true);                 // 标记死战不退发作 → 驱动全屏通知 + 特写改显"死战不退"
+    expect(new Set(slots).size).toBe(slots.length);            // 无两兵同 slot
+    expect(B.some((x) => x.id === 'b0')).toBe(false);          // 主将退回牌库·不在场
+    expect(B.some((x) => x.id === 'b1')).toBe(true);           // 身后兵没消失·不受退库扰动
+    expect(b.b.pokerDeck.some((c) => c.kind === 'poker' && c.general)).toBe(true); // 主将进 Boss 牌库
+    expect(b.lastClash?.lastStand).toBe(true);                 // 标记死战不退发作
   });
 
   it('🟢 大军压境：Boss 回合开始多 +1 召唤源泉(免费多铺)·机动调度§六调 0', () => {

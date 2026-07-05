@@ -491,7 +491,7 @@ export function mount(container: HTMLElement, shell?: { exit?: () => void }): ()
       const ctx = postClashCtx; if (!ctx) return; const e = ctx.e;
       if (sig.name === 'clash:slay') { // ① 败者阵亡（先死·清楚）
         if (ctx.loserId && !e.lastStand) { playSfx('clashLose'); playGhost(exitCaps.get(ctx.loserId) ?? null, 'tear'); }
-        else if (e.lastStand) { log(`🛡 死战不退：敌主将【${aiName}】首负不亡·残喘退守 1 格`); showBanner('🛡 死战不退 · 敌主将首负不亡', 1500); }
+        else if (e.lastStand) { log(`🛡 死战不退：敌主将【${aiName}】首负不亡·退回牌库（可重部署）`); showBanner('🛡 死战不退 · 敌主将首负不亡', 1500); }
       } else if (sig.name === 'clash:survivor') { // ② 幸存者去留：连胜满→光荣回库 / 否则头顶「战力对折 −N」（胜者守原位·锚其真实位）
         if (ctx.winnerId && !e.lastStand) { playSfx('clashWin'); if (e.winStays === false) playGhost(exitCaps.get(ctx.winnerId) ?? null, 'glory'); else { playGhost(captureUnit(ctx.winnerId) ?? null, 'fatigue', `连胜${ctx.streak}场 · 战力−${ctx.cut}（对折）`); stampBoard(ctx.winnerId, `⚔ 胜 · 连胜${ctx.streak}`, '#e8cd8a'); } } // 留场胜者：瞬时对折飘字(1s) + 驻留「⚔胜」徽标(3s·可回看·owner 2026-07-03)
       } else if (sig.name === 'clash:resume') { postClashCtx = null; clashSettling = false; const r = perfResume; if (r) r(); } // ③ 收场续下一场·解闩
@@ -521,7 +521,7 @@ export function mount(container: HTMLElement, shell?: { exit?: () => void }): ()
       const e = perfClash; const tgtA = e.rollA ?? 0, tgtB = e.rollB ?? 0; // 各自掷值（数据已定·动画只是滚到它）
       playSfx('select');
       const mEl = document.getElementById('clash-die-m'); const fEl = document.getElementById('clash-die-f');
-      const reveal = (): void => { clashCdTimer = 0; clashRolling = false; clashRevealed = true; coachDid('roll'); playSfx('clashReveal'); playSfx(e.aWins ? 'clashWin' : 'clashLose'); if (e.lastStand) { log(`🛡 死战不退发作：敌主将【${aiName}】首负不亡·残喘退守 1 格`); showBanner('🛡 死战不退 · 敌主将首负不亡', 1700); } mounted?.update(); syncCoach(); }; // 揭晓：重渲染显最终掷值 + 胜方高亮
+      const reveal = (): void => { clashCdTimer = 0; clashRolling = false; clashRevealed = true; coachDid('roll'); playSfx('clashReveal'); playSfx(e.aWins ? 'clashWin' : 'clashLose'); if (e.lastStand) { log(`🛡 死战不退发作：敌主将【${aiName}】首负不亡·退回牌库（可重部署）`); showBanner('🛡 死战不退 · 敌主将首负不亡', 1700); } mounted?.update(); syncCoach(); }; // 揭晓：重渲染显最终掷值 + 胜方高亮
       if (!mEl || !fEl) { reveal(); return; } // 无骰位（无头/未渲）→ 直接揭晓
       // 掷骰仪式（owner 2026-07-04「骰子要疯狂旋转再停在数字上·别直接出结果」）：掷前那个掷值是骰面上藏着的小 '?'——
       // 掷命时把它顶到 3D 骰画布之上(z>80)·放大狂跳(伪随机·不消费 b.rng)→减速收敛→停在真值+弹一下。setTimeout 驱动(假计时器可冲完)。
@@ -574,7 +574,7 @@ export function mount(container: HTMLElement, shell?: { exit?: () => void }): ()
       log(`  · 预报我方胜率 ${Math.round(e.winrate * 100)}%${e.tie ? `　掷平裁定:${e.tie}` : ''}　→ ${e.aWins ? '★我胜' : '☠敌胜'}${e.warLoss ? `（胜方连胜${e.winStreak}·战力对折${e.winStays === false ? '·满则光荣回库' : ''}）` : ''}${e.lastStand ? '（敌主将死战不退·首负不亡）' : ''}`);
       // 一行明确战果（owner 2026-07-04「日志要有：掷了几·大于几·谁死了」）：掷值比较 + 胜方 + 阵亡方 + 胜方去留。
       { const rA = e.rollA ?? 0, rB = e.rollB ?? 0; const cmp = rA > rB ? '>' : rA < rB ? '<' : '=（掷平）'; const win = e.aWins ? `我方 ${nm(e.a)}` : `敌方 ${nm(e.b)}`; const lose = e.aWins ? `敌方 ${nm(e.b)}` : `我方 ${nm(e.a)}`;
-        const fate = e.lastStand ? '敌主将残喘退守·未亡' : `${lose} 阵亡`; const stay = e.winStays === false ? '胜方满连胜·光荣回库' : `${win} 前进占腾出格`;
+        const fate = e.lastStand ? '敌主将退回牌库·未亡' : `${lose} 阵亡`; const stay = e.winStays === false ? '胜方满连胜·光荣回库' : `${win} 守原位`;
         log(`  ▶战果：掷 ${rA} ${cmp} ${rB} → ${win} 胜；${fate}；${stay}`); }
       // 先演 ~2s「哪两张牌即将交战」前奏 → 再切对决特写（owner 2026-06-21）
       showClashCue(e, () => {

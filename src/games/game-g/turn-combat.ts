@@ -501,20 +501,14 @@ function applyClashOutcome(b: TurnBattle, li: number, ev: ClashEval, aWins: bool
   b.clashLog.push(b.lastClash); // 流水（驱动层逐场抽特写）
   b.clashSeq += 1;
   if (!aWins) b.bossWinStreak += 1; // 九战九捷：Boss 胜累积
-  // 死战不退（地煞·关1 仅 Boss 主将）：命数 N（laststand=3）→ 前 N-1 次战败不亡·残喘退 1 格(向 Boss 家 slot+1)·第 N 次才真死。
+  // 死战不退（地煞·关1 仅 Boss 主将）：命数 N（laststand=3）→ 前 N-1 次战败不亡·**退回牌库·不消失**（owner 2026-07-04 改：不是残喘退守 1 格·是退回牌库可重部署）·第 N 次才真死。
   const genLives = b.dishaB.lastStandGeneral; // 主将命数 N（0=无死战不退）
   if (aWins && fb.general && genLives > 0 && b.bossGenDefeats < genLives - 1) {
     b.bossGenDefeats += 1; const q = lane.b; const u = q.shift();
     if (u) {
-      // BUG#7：退 1 格·主将仍居本列最前（整列后挤填空·不与身后兵换位 → 不会"看着退了两格"）·保一格一兵·确定无 RNG。
-      const target = u.slot + 1;
-      if (target <= SLOTS - 1) {
-        let e = target; while (e <= SLOTS - 1 && q.some((x) => x.slot === e)) e++; // 从退入格起找最近空格
-        if (e <= SLOTS - 1) { for (const s of q) if (s.slot >= target && s.slot < e) s.slot += 1; u.slot = target; } // [target,e) 的兵整体后挤 1 填空 → 主将退 1 格
-        // e 越界=后方全满到 Boss 家·退无可退 → 主将原地残喘（u.slot 不变·仍最前·不撞）
-      }
-      q.push(u); q.sort((x, y) => x.slot - y.slot);
-      if (b.lastClash) b.lastClash.lastStand = true; // 标记本场触发死战不退 → 特写改显"死战不退·残喘退守"(替误导的"阵亡")
+      lane.spentB += 1; // 该格计一次离场(维持满血/spent 记账口径同光荣回库)
+      b.b.pokerDeck.push({ kind: 'poker', id: u.id, rank: u.rank, suit: u.suit, general: true, buff: u.buff, cost: u.cost }); // 主将负伤不退 → 退回 Boss 牌库(不消失·可重抽重部署·满血·owner 2026-07-04)·替旧「残喘退守 1 格」
+      if (b.lastClash) b.lastClash.lastStand = true; // 标记本场触发死战不退 → 特写/横幅改显"死战不退·退回牌库"(替误导的"阵亡")
     }
   } else {
     const loser = aWins ? 'b' : 'a';
