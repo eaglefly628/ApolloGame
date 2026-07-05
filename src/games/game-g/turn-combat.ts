@@ -501,7 +501,6 @@ function applyClashOutcome(b: TurnBattle, li: number, ev: ClashEval, aWins: bool
   b.clashLog.push(b.lastClash); // 流水（驱动层逐场抽特写）
   b.clashSeq += 1;
   if (!aWins) b.bossWinStreak += 1; // 九战九捷：Boss 胜累积
-  let loserVacatedSlot: number | undefined; // 败者前锋腾出的格 → 胜者留场后推进占据（owner 2026-07-03·碰撞胜后前进）
   // 死战不退（地煞·关1 仅 Boss 主将）：命数 N（laststand=3）→ 前 N-1 次战败不亡·残喘退 1 格(向 Boss 家 slot+1)·第 N 次才真死。
   const genLives = b.dishaB.lastStandGeneral; // 主将命数 N（0=无死战不退）
   if (aWins && fb.general && genLives > 0 && b.bossGenDefeats < genLives - 1) {
@@ -520,7 +519,6 @@ function applyClashOutcome(b: TurnBattle, li: number, ev: ClashEval, aWins: bool
   } else {
     const loser = aWins ? 'b' : 'a';
     const loserFront = colOf(lane, loser)[0];
-    loserVacatedSlot = loserFront?.slot; // 敌前锋腾出的格（供胜者碰撞胜后推进占据·owner 2026-07-03）
     const winnerKillsGeneral = !!loserFront?.general; // 本场斩掉的是敌主将？
     killFront(lane, loser); // 输家阵亡
     // 擒王（REQ-G-天罡原生重构 §四.3）：胜方持擒王 + 本场斩掉败方主将 → 败方该路余部全溃（主将已由 killFront 斩·余部清空该列）。
@@ -545,9 +543,9 @@ function applyClashOutcome(b: TurnBattle, li: number, ev: ClashEval, aWins: bool
       wsd.pokerDeck.push({ kind: 'poker', id: wf.id, rank: wf.rank, suit: wf.suit, general: wf.general, buff: wf.buff, cost: wf.cost }); // 回牌库（重抽出场即满血·疲劳清零）
       wsd.mana += (wf.cost ?? 0); // 全额返还召唤源泉
       b.lastClash.winStays = false; // 满 3 离场 → UI 演「光荣回库」（达成 3 连胜的应得退场）
-    } else if (loserVacatedSlot != null && !wf.hold) { // 胜者留场 → 推进占据敌人腾出的格（owner 2026-07-03·碰撞胜后前进·表演层滑入）；守军「赢守原位」不追击
-      wf.slot = loserVacatedSlot;
     }
+    // 胜者**守原位·不追击**（owner 2026-07-04 改：赢了不立即推进占腾出格——赢=守住/敌离场，前进交给下回合正常行军）。
+    // 推翻 REQ-G-碰撞才战斗「赢了推进占据敌腾出格」旧设计：败者离场腾出的格本回合留空，胜者下回合正常推进 1 格补进。
   }
   b.a.mana += b.a.tengangA.clashElixir; b.b.mana += b.b.tengangA.clashElixir; // 战潮：每遭遇返召唤源泉（喂经济）
 }

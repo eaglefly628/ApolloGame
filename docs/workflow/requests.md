@@ -470,7 +470,8 @@
 > **现状可复用**：`game-g.tsx` 已有 `playGhost`(tear/glory/fatigue·锚 `u-<id>`·`g-tear/g-glory/g-pin/g-exitlabel` 关键帧) 雏形 → **升级**：tear→"一刀两断"斩击（可加斩线特效 + 上下两半分离）· 新增胜者 spin+冠 · 飘字上飘。确保**3D 骰/特写收场后**才演或**与场上兵同屏不被盖**。
 > **A/B 数据（程序A 已出·无需程序A 新增）**：`loser/winner id`、`aWins`、`warLoss`、`wins/winStreak`、`lastStand`、`winStays` 全在 `lastClash`。程序B 只读播。
 
-### REQ-G-碰撞才战斗（clash 触发改「落点踩敌」）+ 胜者推进占据 · [2026-07-03] · owner → 程序A(逻辑·已做)+程序B(表现) · Game G · status: **逻辑 done（程序A）/ 表演 表现层克隆版 done（程序B·2026-07-04）· 余：数据驱动真前进待程序A 拆 resolve** · 优先级: P1 · 类型: 战斗核触发规则修正
+### REQ-G-碰撞才战斗（clash 触发改「落点踩敌」）+ 胜者~~推进占据~~守原位 · [2026-07-03] · owner → 程序A(逻辑)+程序B(表现) · Game G · status: **逻辑 done ／ 胜者推进 owner 2026-07-04 推翻→「守原位不追击」done（程序B 授权直改战斗核）** · 优先级: P1 · 类型: 战斗核触发规则修正
+> **owner 2026-07-04 推翻「赢了推进占腾出格」**：改**胜者守原位·不追击**——赢＝守住/敌离场·前进交回下回合正常行军（`resolveClash` 删 `wf.slot=腾出格`）。连带：胜者滑入克隆演出(advanceSlide)退役、clash-settle 四拍→三拍(斩→标→收)、turn-combat.test 改断言「赢守原位停 5·下回合正常补进 6」。tsc+vitest(206·flow-walk 满局 ~5s 收敛)+build 绿。**⚠平衡连带**：胜者不再瞬推 → 破阵变慢(赢了原地磨到 WIN_CAP 回库)·design G 关1 曲线或需复核。
 > **程序B done（2026-07-04·表现层克隆版）**：斩→进→标 三拍定序（`clash-settle` timeline：slay 斩败者 → **advance 胜者克隆从「敌前一格」滑进「敌腾出格」** → survivor 对折/徽标 → resume）。① 顺带修「谁打谁提示演一半棋盘闪跳」：`resolveClash` 掷骰前就把胜负/前进/斩杀全落定 → `move:settle` 那次板面重渲会让败者凭空消失/胜者跳格；加 `perfPending` 门**压掉有对决排队时的板面重渲**，棋盘保持「两兵贴身对峙」到掷骰特写盖上，闪跳藏到全屏特写背后。② 胜者前进=`advanceSlide()` 克隆位移（exitCaps 旧位→真兵腾出格位·滑时暂隐真兵·落定复现·守原位/光荣回库跳过）。纯表现·不动 tb/rng/turnHash·headless 自动 no-op·turnmatch 冒烟测走真对决序列全绿。
 > **余（数据驱动真前进·归「必程序」）**：现在滑的是**克隆**、真兵在全屏特写背后已归位——肉眼无差但非「数据驱动真前进」。要真兵真滑，需**程序A 把 `resolveClash` 拆成「掷骰(消费 rng·定胜负)」+「应用结果(前进+斩杀)」两半**，让结果应用延到掷骰演出之后（碰 rng 消费时序=turnHash·须带确定性回归测护改）。拆完程序B 把 `advanceSlide` 的克隆换成真兵 FLIP + 衔接。
 > **原始记录 ↓**

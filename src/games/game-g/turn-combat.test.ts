@@ -219,17 +219,19 @@ describe('Game G · turn-combat（doc24 单机回合制 · A0 重构）', () => 
     expect(b.lastClash?.winStays).toBe(false);                   // 离场 → UI 演光荣回库
   });
 
-  it('碰撞才战斗 + 胜者推进占据敌腾出格(owner 2026-07-03)：落点空只走位·踩到敌才打·赢了前进', () => {
+  it('碰撞才战斗 + 胜者守原位不追击(owner 2026-07-04 改)：落点空只走位·踩到敌才打·赢了守原位(不推进占腾出格)', () => {
     const b = initTurnBattle({ seed: 1, startFormation: [{ rank: '2', suit: 'S', lane: 0, slot: 6, buff: -1 }] }); // 敌守军 2@6·pEff1(恒掷1·必负)
     b.lanes[0].a.push(unit('p', 'A', 3)); // 玩家 A@3·pEff14·speed1·必胜
     b.active = 'a'; endTurn(b); // 3→落点4(空) → 不打·只走位
     expect(b.clashSeq).toBe(0); expect(b.lanes[0].a[0].slot).toBe(4);
     b.active = 'a'; endTurn(b); // 4→落点5(空) → 不打
     expect(b.clashSeq).toBe(0); expect(b.lanes[0].a[0].slot).toBe(5);
-    b.active = 'a'; endTurn(b); // 5→落点6(敌!) → 碰撞才战 → A 必胜 → 守军亡 → A 推进占 6
+    b.active = 'a'; endTurn(b); // 5→落点6(敌!) → 碰撞才战 → A 必胜 → 守军亡 → A **守原位停 5**(不推进占 6·owner 2026-07-04)
     expect(b.clashSeq).toBe(1); expect(b.lastClash?.aWins).toBe(true);
     expect(b.lanes[0].b.length).toBe(0);   // 守军阵亡
-    expect(b.lanes[0].a[0].slot).toBe(6);  // 胜者推进占据腾出格
+    expect(b.lanes[0].a[0].slot).toBe(5);  // 胜者守原位·不推进（前进交下回合正常行军）
+    b.active = 'a'; endTurn(b);            // 下回合正常行军：5→6(现空) → 补进腾出格
+    expect(b.lanes[0].a[0].slot).toBe(6);  // 下回合正常推进 1 格补进
   });
 
   it('突深边角回归(REQ-G-突深边角)：玩家突深贴敌家·敌新兵落身后 → 敌移动不反向传送/不越界', () => {
