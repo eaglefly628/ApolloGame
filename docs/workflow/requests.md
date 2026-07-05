@@ -629,7 +629,8 @@
 
 ---
 
-### REQ-G-突深边角·敌新兵反向传送+越界 bug（战局 log 实锤）· [2026-07-04] · owner playtest → 程序A(turn-combat 移动逻辑) · Game G · status: open · 优先级: **P1（战斗核正确性·位置腐坏·非纯表现）** · 类型: 逻辑 bug（移动 clamp 边角）
+### REQ-G-突深边角·敌新兵反向传送+越界 bug（战局 log 实锤）· [2026-07-04] · owner playtest → 程序A(turn-combat 移动逻辑) · Game G · status: **✅ done（程序A 2026-07-04）** · 优先级: **P1（战斗核正确性·位置腐坏·非纯表现）** · 类型: 逻辑 bug（移动 clamp 边角）
+> **✅ 修复（程序A 2026-07-04）**：根因=前锋停敌前一格的 clamp `limit=foeFront−dir` 假设「本兵在敌前锋接近侧」，玩家突深后敌兵已被越过→反向顶穿棋盘(6S 6→8、7S 8→9 越界)。修法=**加「接近侧」守卫**（`dir>0? slot<=foeFront : slot>=foeFront`）：仅接近侧才 clamp 停敌前一格，**已突穿则不反向顶·正常朝本方目标推进**。改 3 处——`advanceColumnVsFoe` clamp（②）、`advanceSideMove` 碰撞判据（③·加同守卫防突穿后一律误判碰撞）、`advanceLaneOneStep`(疾行·同 clamp)。**① deploy 落身后**：与 ②③ 修好后位置不再腐坏，突穿侧敌新兵正常奔我家(非无限反弹)——「落身后=无效防」是玩法有效性(design 域)非崩溃，不强改 deploy(GD 「或允许但标记」)，如需避免落身后另立数值单。加突深回归测试(玩家 A@7 贴敌家·敌 6S@6 落身后→敌移动无越界 slot、突穿侧不反向)。全 206 game-g 测绿·turnHash 常规无漂移(仅突深边角行为变·有意)。design G 可 sim 复扫破家路径。
 > **owner 2026-07-04 战局 log 疑「表现 bug」**：第1战 T7 下路末次对决——「6S 从下路最后一格进攻我倒数第二位，显示成第三位打第二位·很奇怪·是不是数值对只是表现错」。**GD 逐行 trace（turn-combat.ts）结论：不是纯表现·底层 slot 真腐坏。** log 里 `移动:[6S:6→8、7S:8→9]` 精确复现（slot 9 越界·敌兵反向增格）。
 > **根因链（"玩家突深"边角·三处叠加）**：
 > 1. **突深**：我 AS 打穿到 slot7（贴敌家8·killed 9H 后占腾出格前进）。

@@ -232,6 +232,16 @@ describe('Game G · turn-combat（doc24 单机回合制 · A0 重构）', () => 
     expect(b.lanes[0].a[0].slot).toBe(6);  // 胜者推进占据腾出格
   });
 
+  it('突深边角回归(REQ-G-突深边角)：玩家突深贴敌家·敌新兵落身后 → 敌移动不反向传送/不越界', () => {
+    const b = initTurnBattle({ seed: 5 });
+    b.lanes[0].a = [unit('as', 'A', 7)];                                 // 玩家突深单兵 @7(贴敌家8)
+    b.lanes[0].b = [unit('6s', '6', 6), unit('7s', '7', 8)];             // 敌(b 升序·前锋=最低格)：6S@6(落我身后·突穿侧) + 7S@8(近家)
+    b.active = 'b'; endTurn(b);                                          // 敌行动一次
+    for (const u of b.lanes[0].b) { expect(u.slot).toBeGreaterThanOrEqual(0); expect(u.slot).toBeLessThan(9); } // 无越界(slot 9 不存在·SLOTS=9)
+    const s6 = b.lanes[0].b.find((u) => u.id === '6s');
+    expect(s6 && s6.slot <= 6).toBe(true);                              // 突穿侧兵不被反向顶回敌家(→8)·应朝敌家0方向推进(≤6)
+  });
+
   it('开局排阵守军(REQ-G-开局排阵)：明牌摆兵 + 静守（不前压/不冲家/接触才战）', () => {
     const b = initTurnBattle({ seed: 1, startFormation: [{ rank: '8', suit: 'S', lane: 0, slot: 8 }, { rank: '9', suit: 'H', lane: 2, slot: 7 }] });
     expect(b.lanes[0].b.some((u) => u.slot === 8 && u.hold)).toBe(true); // 上路 slot8 守军·hold

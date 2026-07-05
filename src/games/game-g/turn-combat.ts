@@ -218,7 +218,7 @@ function advanceLaneOneStep(lane: TurnLane, side: 'a' | 'b'): void {
     if (own[i].hold) continue;
     let t = own[i].slot + dir;
     if (i > 0) { const ahead = own[i - 1].slot; t = dir > 0 ? Math.min(t, ahead - 1) : Math.max(t, ahead + 1); }
-    else if (foeFront != null) { const limit = foeFront - dir; t = dir > 0 ? Math.min(t, limit) : Math.max(t, limit); } // 前锋停敌前一格
+    else if (foeFront != null && (dir > 0 ? own[i].slot <= foeFront : own[i].slot >= foeFront)) { const limit = foeFront - dir; t = dir > 0 ? Math.min(t, limit) : Math.max(t, limit); } // 前锋停敌前一格（仅接近侧·已突穿则不反向顶·修 REQ-G-突深边角）
     own[i].slot = Math.max(0, Math.min(SLOTS - 1, t));
   }
 }
@@ -560,7 +560,7 @@ function advanceColumnVsFoe(own: TurnUnit[], dir: number, foeFrontSlot: number, 
     if (pinGeneral && own[i].general) continue; // Boss 主将死守原地·不前移
     let t = own[i].slot + dir * Math.max(1, (own[i].speed ?? 1) - speedPen); // 铁索：speedPen 减速(下限1格)
     if (i > 0) { const ahead = own[i - 1].slot; t = dir > 0 ? Math.min(t, ahead - 1) : Math.max(t, ahead + 1); }
-    else { const limit = foeFrontSlot - dir; t = dir > 0 ? Math.min(t, limit) : Math.max(t, limit); } // 停在敌前锋前一格
+    else if (dir > 0 ? own[i].slot <= foeFrontSlot : own[i].slot >= foeFrontSlot) { const limit = foeFrontSlot - dir; t = dir > 0 ? Math.min(t, limit) : Math.max(t, limit); } // 停在敌前锋前一格（仅接近侧·已突穿则不反向顶穿棋盘·修 REQ-G-突深边角）
     own[i].slot = t;
   }
 }
@@ -608,7 +608,8 @@ function advanceSideMove(b: TurnBattle, side: 'a' | 'b', dbg?: (m: string) => vo
       const front = own[0];
       const mobile = !front.hold && !(side === 'b' && front.general); // 会移动的前锋才可能撞（守军/主将 不撞）
       const natural = front.slot + dir * Math.max(1, (front.speed ?? 1) - slowPen); // 不封顶的自然落点（含铁索减速）
-      const collides = mobile && (dir > 0 ? natural >= foe[0].slot : natural <= foe[0].slot); // 落点会踩到/越过敌前锋 = 碰撞
+      const approaching = dir > 0 ? front.slot <= foe[0].slot : front.slot >= foe[0].slot; // 前锋仍在敌前锋接近侧（未突穿）才可能撞·修 REQ-G-突深边角(突穿后别一律误判碰撞)
+      const collides = mobile && approaching && (dir > 0 ? natural >= foe[0].slot : natural <= foe[0].slot); // 落点会踩到/越过敌前锋 = 碰撞
       const foeFrontBefore = foe[0].slot;
       advanceColumnVsFoe(own, dir, foe[0].slot, side === 'b', slowPen); // 实际移动仍封顶在敌前一格（停一格·胜后再推进占据）
       if (collides) pending.push(li);
