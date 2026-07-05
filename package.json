@@ -8,6 +8,7 @@
   "main": "electron/main.cjs",
   "scripts": {
     "dev": "vite",
+    "dev:clean": "rm -rf node_modules/.vite && vite --force",
     "build": "tsc && vite build",
     "preview": "vite preview",
     "test": "vitest run",
