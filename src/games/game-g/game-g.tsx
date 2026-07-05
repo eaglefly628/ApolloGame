@@ -497,7 +497,7 @@ export function mount(container: HTMLElement, shell?: { exit?: () => void }): ()
     };
     const flash = (msg: string): void => { notice = msg; mounted?.update(); if (noticeTimer) clearTimeout(noticeTimer); noticeTimer = window.setTimeout(() => { notice = null; if (!perfClash) mounted?.update(); }, 1700); }; // 清提示时若正演掷命特写则不重渲（防飞入重启）
     // 各自掷战力骰对决（owner 2026-07-01）：进特写先藏掷值 → 玩家点「掷命」→ 两骰同屏各掷自己战力范围 → 揭晓胜负 → 点「继续」→ 一步步演结算。
-    let clashRevealed = false; let clashCdTimer = 0; let clashCdInterval = 0; let clashRolling = false;
+    let clashRevealed = false; let clashCdTimer = 0; let clashCdInterval = 0; let clashRolling = false; let clashSettling = false; // clashSettling=结算演出(斩→进→标)进行中 → 忽略「继续」重复点击（owner 2026-07-04·防狂点重播）
     let aiManaDisplay: number | null = null; // 敌方决策时源泉「随落牌错峰递减」的展示覆盖值（owner 2026-07-03「别直接跳 0·要看它啪啪啪扣」）·null=显真值
     const clearClashTimers = (): void => { if (clashCdTimer) { clearTimeout(clashCdTimer); clashCdTimer = 0; } if (clashCdInterval) { clearInterval(clashCdInterval); clashCdInterval = 0; } };
     // ── 战后生死演出走引擎 t3-timeline（owner 2026-07-03「用 timeline·不手写排程」）──
@@ -514,7 +514,7 @@ export function mount(container: HTMLElement, shell?: { exit?: () => void }): ()
         if (ctx.winnerId && !e.lastStand && e.winStays !== false) advanceSlide(ctx.winnerId);
       } else if (sig.name === 'clash:survivor') { // ③ 幸存者去留：连胜满→光荣回库 / 否则头顶「战力对折 −N」（锚**前进后**的真实位·advanceSlide 已落定复现真兵）
         if (ctx.winnerId && !e.lastStand) { playSfx('clashWin'); if (e.winStays === false) playGhost(exitCaps.get(ctx.winnerId) ?? null, 'glory'); else { playGhost(captureUnit(ctx.winnerId) ?? null, 'fatigue', `连胜${ctx.streak}场 · 战力−${ctx.cut}（对折）`); stampBoard(ctx.winnerId, `⚔ 胜 · 连胜${ctx.streak}`, '#e8cd8a'); } } // 留场胜者：瞬时对折飘字(1s) + 驻留「⚔胜」徽标(3s·可回看·owner 2026-07-03)
-      } else if (sig.name === 'clash:resume') { postClashCtx = null; const r = perfResume; if (r) r(); } // ④ 收场续下一场
+      } else if (sig.name === 'clash:resume') { postClashCtx = null; clashSettling = false; const r = perfResume; if (r) r(); } // ④ 收场续下一场·解闩
     });
     const buildClashView = (): TurnClashView | null => { if (!perfClash) return null; const cv = clashToTurnView(perfClash, tgName, save.inlays); cv.revealed = clashRevealed; return cv; };
     const view = (): TurnBattleView => buildTurnBattleView(tb, { theme, tengangName: tgName, tengangDesc: tgDesc, selMode, selHand, playKind, swapFrom, clash: buildClashView(), bossName: aiName, sha: shaLive(), notice, movedIds: justMovedIds, heldIds, moveOrder, moveDist, busy, freshIds, dealtId: dealtId ?? undefined, battleLabel, sfxOn: isSfxOn(), settingsOpen, bgmOn: isBgmOn(), bgmIdx: bgmTrackIdx(), bgmVol: bgmVolume(), bgmNames: BGM_TRACKS.map((t) => t.name), guideOn: !save.skipGuide, inlays: save.inlays, waterBDisplay: aiManaDisplay ?? undefined, enchOf: (rank, suit) => (save.inlays[String(cardFavorIndex(rank + suit))] ?? []).map((e) => [`${e.b}${DIZHI_TIER_NM[e.t]}`, DIZHI_INLAY_FAVOR[e.t]] as [string, number]) });
@@ -595,7 +595,7 @@ export function mount(container: HTMLElement, shell?: { exit?: () => void }): ()
       // 先演 ~2s「哪两张牌即将交战」前奏 → 再切对决特写（owner 2026-06-21）
       showClashCue(e, () => {
         perfClash = e;
-        clashRevealed = false; clashRolling = false; // owner 2026-07-01「各自掷战力骰」：进特写先藏掷值·等玩家点「掷命」→ 两骰同屏各掷自己战力范围 → 揭晓
+        clashRevealed = false; clashRolling = false; clashSettling = false; // owner 2026-07-01「各自掷战力骰」：进特写先藏掷值·等玩家点「掷命」→ 两骰同屏各掷自己战力范围 → 揭晓（新场解闩）
         perfResume = () => { perfResume = null; clearClashTimers(); playPerf(onDone); }; mounted?.update(); syncCoach(); // 引导：特写中隐
       });
     };
@@ -708,9 +708,10 @@ export function mount(container: HTMLElement, shell?: { exit?: () => void }): ()
       setTheme: (t) => { theme = t; },
       clashConfirm: () => { // owner 2026-07-01：未掷→先掷两骰(各掷自己战力范围)；已揭晓→点「继续」一步步演结算（先谁死·再幸存者头顶「战力对折 −N」）→ perfResume
         if (perfClash && !clashRevealed) { doClashRoll(); return; } // 各自掷战力骰（owner 2026-07-01·两骰同屏）
+        if (clashSettling) return; // 结算演出进行中 → 忽略重复「继续」点击（owner 2026-07-04·防狂点不停重播）
         clearClashTimers();
         if (!perfClash) { const r = perfResume; if (r) r(); return; }
-        playSfx('confirm'); const e = perfClash;
+        playSfx('confirm'); const e = perfClash; clashSettling = true; // 上闩·收场(resume)才解
         // 一步步清晰（owner 2026-07-01「先表现谁死·再把幸存者减多少战力写头上」）：演出时序改由**引擎 t3-timeline** 出（owner 2026-07-03「用 timeline·不手写排程」）——
         //   ① clash:slay 败者阵亡 → ③ clash:survivor 幸存者去留（战力对折/光荣回库）→ ④ clash:resume 续下一场。表演在上面的 battleTl 订阅里（playGhost·锚 u-id）。
         const loserId = e.aWins ? e.b.id : e.a.id; const winnerId = e.aWins ? e.a.id : e.b.id;

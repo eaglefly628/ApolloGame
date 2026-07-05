@@ -708,9 +708,14 @@ function waterBarNode(view: TurnBattleView, litCells: number, halfCell: boolean,
   const segs: LayoutNode[] = Array.from({ length: view.waterMax }, (_, i) => waterSegNode(i, i < litCells, !((i < litCells)) && i === litCells && halfCell, drain.count > 0 && i >= drain.from && i < drain.from + drain.count));
   const cap: LayoutNode = { type: 'Panel', id: 'water-cap', props: { bg: { custom: 'radial-gradient(circle at 38% 30%, #7fd8f5, #2a7fb8)' } }, layout: { width: 36, height: 36, radius: 10, align: 'center', justify: 'center', padding: 0 }, children: [{ type: 'Label', id: 'water-cap-g', props: { text: '源', size: 20, color: 'text' } }] };
   const tube: LayoutNode = { type: 'Panel', id: 'water-tube', props: { bg: { custom: 'linear-gradient(180deg, rgba(10,30,46,.9), rgba(6,16,26,.95))' }, edge: 'foe' }, layout: { flex: 1, height: 34, radius: 12, direction: 'row', gap: 4, padding: 4 }, children: segs };
-  const deckCol: LayoutNode = { type: 'Panel', id: 'water-deck', props: { bare: true }, layout: { direction: 'column', align: 'center', gap: 1 }, children: [
-    { type: 'Label', id: 'water-deck-l', props: { text: '我牌库', size: 9, color: 'sub', tracking: 1 } },
-    { type: 'Label', id: 'water-deck-v', props: { text: String(view.deckA), size: 16, color: 'text', mono: true } },
+  // 我方手牌/牌库余量（owner 2026-07-04「看不见还有几张牌·牌库几张」）：做成醒目 stat chip（🎴手牌 N · 🃏牌库 N）。
+  const cntChip = (id: string, ic: string, lb: string, v: number): LayoutNode => ({ type: 'Panel', id: `water-${id}`, props: { bg: { custom: 'rgba(255,255,255,.06)' }, edge: 'mine' }, layout: { direction: 'row', align: 'center', gap: 5, padding: 6, radius: 9 }, children: [
+    { type: 'Label', id: `water-${id}-l`, props: { text: `${ic} ${lb}`, size: 10, color: 'sub', tracking: 1 } },
+    { type: 'Label', id: `water-${id}-v`, props: { text: String(v), size: 20, color: 'text', mono: true, bold: true, glow: true } },
+  ] });
+  const deckCol: LayoutNode = { type: 'Panel', id: 'water-counts', props: { bare: true }, layout: { direction: 'row', align: 'center', gap: 8 }, children: [
+    cntChip('hand', '🎴', '手牌', view.hand.length),
+    cntChip('deck', '🃏', '牌库', view.deckA),
   ] };
   const plus: LayoutNode = { type: 'Panel', id: 'water-plus', props: { bg: { custom: 'rgba(70,209,122,.18)' }, edge: 'ok' }, layout: { radius: 99, padding: 4 }, children: [{ type: 'Label', id: 'water-plus-l', props: { text: `本回合 +${view.waterGain}`, size: 11, color: 'ok', bold: true } }] };
   return { type: 'Panel', id: 'water-bar', props: {}, layout: { direction: 'row', align: 'center', gap: 12, padding: 9, radius: 14 }, children: [
