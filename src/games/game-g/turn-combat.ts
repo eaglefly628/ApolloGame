@@ -205,8 +205,9 @@ export function castDisha(b: TurnBattle, side: 'a' | 'b', handIdx: number): bool
 export function tengangTargetKind(id: string): 'own-lane' | 'enemy-lane' | 'global' | null {
   const p = TIANGANG_BY_ID.get(id)?.params as Record<string, unknown> | undefined; if (!p) return null;
   const op = String(p.op);
-  if (op === 'advance' || op === 'reinforce' || op === 'sacrifice') return 'own-lane';
+  if (op === 'advance' || op === 'reinforce' || op === 'sacrifice' || op === 'jumpToMid') return 'own-lane'; // 疾行/驰援/舍车/抢滩=选我方路
   if (op === 'slow') return p.scope === 'all' ? 'global' : 'enemy-lane'; // 铁索(scope all)=全局 · 泥沼=敌该路
+  if (op === 'aoePower') return 'enemy-lane'; // AOE(火攻/齐射/塌方)=选敌方路·范围削战力
   return null;
 }
 // 疾行：我该路整列即时前进 1 格（镜像 advanceColumnVsFoe·step=1·前锋停敌前一格·守军不动·不触发掷命）。
@@ -242,13 +243,24 @@ function sacrificeLane(b: TurnBattle, side: 'a' | 'b', lane: number, x: number):
 // 应用选路 op 的即时效果（castTengangAt / 铁索全局 共用）。
 function applyTargetedTengang(b: TurnBattle, side: 'a' | 'b', id: string, lane: number): void {
   const p = (TIANGANG_BY_ID.get(id)?.params ?? {}) as Record<string, unknown>;
-  const op = String(p.op); const v = typeof p.value === 'number' ? p.value : 0; const foe: 'a' | 'b' = side === 'a' ? 'b' : 'a';
+  const op = String(p.op); const v = typeof p.value === 'number' ? p.value : 0; const foe: 'a' | 'b' = side === 'a' ? 'b' : 'a'; const dir = side === 'a' ? 1 : -1;
   if (op === 'advance') { for (let s = 0; s < (v || 1); s++) advanceLaneOneStep(b.lanes[lane], side); } // 疾行：+value 格(默认1)
   else if (op === 'slow') {
     if (p.scope === 'all') { const N = v || IRONCHAIN_TURNS; if (foe === 'a') b.slowA = Math.max(b.slowA, N); else b.slowB = Math.max(b.slowB, N); } // 铁索：敌全军减速 N 回合(刷新不叠深)
     else { if (foe === 'a') b.lanes[lane].aSkipAdvance = true; else b.lanes[lane].bSkipAdvance = true; } // 泥沼：敌该路本回合不推进
   } else if (op === 'reinforce') { for (let k = 0; k < (v || RUSH_UNITS); k++) deployReinforcement(b, side, lane); } // 驰援：+N 援兵
   else if (op === 'sacrifice') { sacrificeLane(b, side, lane, v || SACRIFICE_BUFF); } // 舍车：弃该路 + 另两路 +v
+  else if (op === 'jumpToMid') { // 抢滩：我该路整列即时抢到中线（逐格推进到前锋达中线·卡住即停·不越敌/不越界）·⚠"新部署兵"语义→即时现兵版·存疑已提主程
+    const MID = Math.floor(SLOTS / 2); const own = colOf(b.lanes[lane], side);
+    for (let guard = 0; guard < SLOTS && own[0]; guard++) {
+      const front = own[0]; if (dir > 0 ? front.slot >= MID : front.slot <= MID) break; // 前锋已达/过中线
+      const before = front.slot; advanceLaneOneStep(b.lanes[lane], side); if (own[0].slot === before) break; // 卡住(敌挡/界)→停
+    }
+  } else if (op === 'aoePower') { // AOE(火攻/齐射/塌方)：敌该路 span 个兵(前锋起·默认全路) buff += value(负=削战力·快照)；p.slow→兼施泥沼(塌方)
+    const foeCol = colOf(b.lanes[lane], foe); const span = typeof p.span === 'number' ? p.span : foeCol.length;
+    for (const u of foeCol.slice(0, span)) u.buff += v;
+    if (p.slow) { if (foe === 'a') b.lanes[lane].aSkipAdvance = true; else b.lanes[lane].bSkipAdvance = true; } // 塌方：兼本回合不推进
+  }
 }
 // ③''' 施选路天罡：选中手牌第 handIdx 张选路天罡 → 立即对目标 lane 结算（不进 castIds/tengangA·即时一次性）。花 CAST_COST·占 cast 动作。
 //   lane 语义：own-lane/enemy-lane → 该 lane 索引；global(铁索) → lane 忽略。非选路天罡返 false（应走 castTengang）。

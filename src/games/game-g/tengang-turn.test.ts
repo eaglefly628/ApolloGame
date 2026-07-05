@@ -166,4 +166,35 @@ describe('Game G · 选路 op 天罡（castTengangAt·即时一次性）', () =>
     expect(b.lanes[1].a[0].buff).toBe(SACRIFICE_BUFF); // 中路 +8
     expect(b.lanes[2].a[0].buff).toBe(SACRIFICE_BUFF); // 下路 +8
   });
+  it('抢滩 beachhead：我该路整列抢到中线（前锋达 slot 4）', () => {
+    const b = initTurnBattle({ seed: 5 }); b.lanes[1].a = [unit('a0', '5', 1)]; b.a.hand = [tg('beachhead')];
+    expect(tengangTargetKind('beachhead')).toBe('own-lane');
+    expect(castTengangAt(b, 'a', 0, 1)).toBe(true);
+    expect(b.lanes[1].a[0].slot).toBe(4); // 1→中线 4
+  });
+});
+
+// ── AOE 天罡（片E·aoePower·REQ-G-天罡原生重构 §三·数值待 sim）──
+describe('Game G · AOE 天罡（火攻/齐射/塌方·范围削战力）', () => {
+  const tg = (id: string): { kind: 'tengang'; id: string } => ({ kind: 'tengang', id });
+  it('tengangTargetKind：AOE=enemy-lane', () => {
+    expect(tengangTargetKind('firestorm')).toBe('enemy-lane');
+    expect(tengangTargetKind('volley')).toBe('enemy-lane');
+    expect(tengangTargetKind('quagmire')).toBe('enemy-lane');
+  });
+  it('火攻 firestorm：敌该路全体 −4 战力', () => {
+    const b = initTurnBattle({ seed: 5 }); b.lanes[0].b = [unit('b0', '9', 6, 2), unit('b1', '8', 7, 1)]; b.a.hand = [tg('firestorm')];
+    expect(castTengangAt(b, 'a', 0, 0)).toBe(true);
+    expect(b.lanes[0].b[0].buff).toBe(2 - 4); expect(b.lanes[0].b[1].buff).toBe(1 - 4); // 全体 −4
+  });
+  it('齐射 volley：敌该路最前 2 格 −6（第3个不吃）', () => {
+    const b = initTurnBattle({ seed: 5 }); b.lanes[0].b = [unit('b0', '9', 6), unit('b1', '8', 7), unit('b2', '7', 8)]; b.a.hand = [tg('volley')];
+    expect(castTengangAt(b, 'a', 0, 0)).toBe(true);
+    expect(b.lanes[0].b[0].buff).toBe(-6); expect(b.lanes[0].b[1].buff).toBe(-6); expect(b.lanes[0].b[2].buff).toBe(0); // 只前 2
+  });
+  it('塌方 quagmire：敌该路 −3 战力 + 本回合不推进', () => {
+    const b = initTurnBattle({ seed: 5 }); b.lanes[0].b = [unit('b0', '9', 6)]; b.a.hand = [tg('quagmire')];
+    expect(castTengangAt(b, 'a', 0, 0)).toBe(true);
+    expect(b.lanes[0].b[0].buff).toBe(-3); expect(b.lanes[0].bSkipAdvance).toBe(true);
+  });
 });

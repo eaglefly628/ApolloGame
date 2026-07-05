@@ -4,7 +4,7 @@
 export type TiangangRarity = 'common' | 'rare' | 'epic' | 'legendary';
 // 旧 build-时 favor 变换 kinds + 新 contract③ 10 维度 kinds（甲写解释器）
 export type TiangangKind = 'suit-synergy' | 'polarize' | 'lane-pref' | 'diehard' | 'morale' | 'link' | 'economy' | 'revenge'
-  | 'odds' | 'roll' | 'power' | 'combo' | 'tempo' | 'stamina' | 'draw' | 'lane' | 'siege' | 'arcane'; // roll=掷骰系（REQ-G-天罡原生重构 §四.2·原 odds 概率系重设）
+  | 'odds' | 'roll' | 'power' | 'combo' | 'tempo' | 'stamina' | 'draw' | 'lane' | 'siege' | 'arcane' | 'aoe'; // roll=掷骰系（REQ-G-天罡原生重构 §四.2）；aoe=范围削战力（§三·连携对立面）
 export type Archetype = 'decap' | 'cardtype' | 'general' | 'wide' | 'probability' | 'tianji'; // 6 流派 id（design/12 §四）
 export interface TiangangCard {
   id: string; name: string; kind: TiangangKind; cost: number; archetype: Archetype; text: string;
@@ -59,6 +59,10 @@ export const GAME_G_TIANGANGS: TiangangCard[] = [
   // I 攻守系 siege
   { id: 'laststand', name: '死守', kind: 'siege', rarity: 'rare', cost: 16, archetype: 'general', power: 2, params: { op: 'defend', value: 1 }, icon: 'badges/shield', tint: '#a8a29e', text: '我老家首次被破免疫' },
   { id: 'ram', name: '攻城锤', kind: 'siege', rarity: 'epic', cost: 22, archetype: 'decap', power: 3, params: { op: 'chipMore', value: 1 }, icon: 'darkzaitzev/ram', tint: '#a8a29e', text: '破老家多 chip 1 血' },
+  // K AOE 系（REQ-G-天罡原生重构 §三·连携的对立面·范围削战力·**数值待 GD sim 标**·起标占位）
+  { id: 'firestorm', name: '火攻', kind: 'aoe', rarity: 'rare', cost: 18, archetype: 'wide', power: 2, params: { op: 'aoePower', value: -4 }, icon: 'lorc/fire-bomb', tint: '#f97316', text: '指定敌一路 → 全体 −4 战力（范围削·克抱团）' },
+  { id: 'volley', name: '齐射', kind: 'aoe', rarity: 'rare', cost: 16, archetype: 'wide', power: 2, params: { op: 'aoePower', value: -6, span: 2 }, icon: 'lorc/arrows-shield', tint: '#f97316', text: '指定敌一路 → 最前 2 格各 −6 战力' },
+  { id: 'quagmire', name: '塌方', kind: 'aoe', rarity: 'epic', cost: 22, archetype: 'wide', power: 3, params: { op: 'aoePower', value: -3, slow: true }, icon: 'lorc/falling-rocks', tint: '#f97316', text: '指定敌一路 → 全体 −3 战力 + 该路本回合不推进' },
   // J 流派印记(传说) arcane
   { id: 'markdecap', name: '斩首印', kind: 'arcane', rarity: 'legendary', cost: 42, archetype: 'decap', power: 5, params: { mark: 'decap' }, icon: 'lorc/backstab', tint: '#fbbf24', text: '集齐斩首流 → 斩首额外 −溃散·敌主将更脆（招牌质变）' },
   { id: 'markmorale', name: '将魂印', kind: 'arcane', rarity: 'legendary', cost: 42, archetype: 'general', power: 5, params: { mark: 'morale' }, icon: 'lorc/crown', tint: '#fbbf24', text: '集齐将领流 → 主将士气 ×1.3（招牌质变）' },
