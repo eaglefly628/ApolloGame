@@ -544,7 +544,9 @@
 
 ### REQ-G-天罡原生重构 · [2026-07-04] · design G → 程序A(TENGANG_OPS/改掷层)·程序B(AOE演出) · Game G · status: **进行中（程序A）：片A 锋矢修 ✅ / 片B 掷骰系改掷层 ✅ / 片C 零效果op 部分·⚠见目标机制 / 片D 退役 待 / 片E AOE 待** · 优先级: **P1（核心大改后天罡大面积失效·出货前空头卡清零）** · 规格: `design/tiangang-native-redesign.md`
 > **✅ 片A（§四.4·程序A 2026-07-04）**：锋矢 arrowhead `filter:'front'` 旧描述子没认→误落全军+4·修成只前锋。**✅ 片B（§四.1+2·程序A 2026-07-04）**：掷骰系改掷层——鬼手改掷+2/磐石掷下界+2/灌铅骰掷两次取高/铁骰占优必胜；clash-resolve 加 `rollWithMods`+`rollDist`+`rollWinProbMods`(mods 全零逐字等于旧 rollWinProb)；删 logistic 死字段 winFloor/kHard/noUpset·加 rollBonus/rollFloor/rollTwice/autoWinGE；接进 resolveClash(实掷+占优必胜短路)/clashOdds(预报)/resolveClashEV(AI EV)→预报与 AI 都反映改掷；tiangang-data kind 'odds'→'roll'。测试全绿(2261)。
-> **⚠️ 片C 目标机制发现（程序A 2026-07-04·需 GD/owner 裁）**：§四.3 的 6 个 op 里 **4 个需要玩家「选哪一路」目标**——疾行(该路 speed+1)/泥沼(敌该路减速)/驰援(指定路+2兵)/舍车(弃一路补两路)。但**现 `castTengang(b,side,handIdx)` 不支持选路目标**（天罡是全局施法·无 lane 参数）。**擒王(斩将溃散·clash 触发自动)/铁索(敌全军·无需选)** 无此问题、可直接实装。**决策点**：① **加目标机制**（castTengang 带 lane + 玩家点路选中·触 UI=程序B）→ 更贴设计意图但工程大；② **确定性自动目标**（驰援→己最弱路·舍车→己最弱路·疾行→己压力最大路·泥沼→敌最强路）→ 无 UI 依赖·可即上·但非玩家选。**程序A 建议先②自动目标 v1 上线可玩·再按 owner 意图决定是否升①。** 待裁前先实装 擒王+铁索（无目标）。
+> **⚠️ 片C 目标机制（owner 2026-07-04 裁：走玩家选路·否决自动目标）**：§四.3 的 6 个 op 里 **4 个需玩家「选哪一路」**——疾行(该路 speed+1)/泥沼(敌该路减速)/驰援(指定路+2兵)/舍车(弃一路补两路)。**owner 拍板：不能自动选·必须玩家选路。** → 需**选路机制**：程序A 出 `castTengangAt(b,side,handIdx,lane)` + 每路效果应用（即时型驰援/舍车 + 持久每路型疾行/泥沼→需 per-lane 状态）；程序B 出**点路 UI**（选中目标类天罡→高亮可选路→玩家点路→施放）。**A+B 协同·另立选路子任务。**
+> **✅ 擒王 done（程序A 2026-07-04·f0832bcd·无目标 op）**：斩敌主将→该路敌全溃（clash 钩子·TengangFx killGeneralRout·测试绿）。**⬜ 铁索（敌全军减速·无目标·需 slow 机制）+ 4 个目标 op（待选路机制）待续。**
+> **⬜ 待 GD 补细节（选路 op 的机制数值）**：驰援「凭空+2兵」= 什么兵(点数/花色)？舍车「弃一路」= 该路兵回库还是销毁？疾行/泥沼「减速/加速」= speed±1 还是隔回合推进？程序A 施工前需 GD 把这几个钉死（否则又是模糊数据）。
 > **调试功能（owner 2026-07-04·顺带）**：程序A 已交逻辑钩子 `debugGrantTengang`/`debugAddMana` + dev 控制台全局 `__ggDebug`（.grant(id)/.mana(n)/.list()·战斗屏控制台即用·测新天罡/无限操作）。**正规「调试菜单」可视 UI 归程序B**（见 REQ-G-调试菜单）。
 
 ### REQ-G-调试菜单（战斗屏·dev 工具）· [2026-07-04] · owner → 程序B（表现·程序A 供逻辑钩子·已足）· Game G · status: open · 优先级: P2 · 类型: dev 工具 UI
