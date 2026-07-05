@@ -45,7 +45,7 @@ export * from './boss-roster-data.js';
 // 故复用"数据+解释器"范式、**不复用 Game E 运行时**（同 D0 §同花未复用 evaluateHand 之理）。applyTiangangs 在出战编排前跑、**零新能力**。
 // 局外持久：融在玩家牌组上（save.jokers），跨 run 不清零——"牌组身份"养成核(owner 愿景)。
 // 本批 4 张=纯 build 时 favor 变换(同袍/赌徒/先登/不屈)；士气放大族(旗手/枭雄)、结局联动族(死士/连环/督粮/影武者)待后续切片(需 resolve 时钩子)。
-import { GAME_G_TIANGANGS } from './tiangang-data.js'; // 天罡数据拆出·tiangangKeyBuffs 本地引用 + 下方 export* 再导出
+import { GAME_G_TIANGANGS, isRetiredTiangang } from './tiangang-data.js'; // 天罡数据拆出·tiangangKeyBuffs 本地引用 + 下方 export* 再导出
 export * from './tiangang-data.js';
 const QUARTERMASTER_PER_LANE = 1; // 督粮：每胜一路 +1◈（入下场 run 能量池，post-resolve）
 /** 督粮：结算后按胜路数算给下场的 ◈ 增益（拥有才有；run 经济，不破本场揭晓前花能量的相位）。 */
@@ -73,7 +73,7 @@ export * from './deck-data.js';
 
 /** 流派钥匙：把"未拥有的天罡牌"包成场间三选一可白嫖的 RunBuff（design reply#10：场间选择=构筑分叉）。已拥有的不再出。 */
 export function tiangangKeyBuffs(ownedIds: readonly string[]): RunBuff[] {
-  return GAME_G_TIANGANGS.filter((j) => !ownedIds.includes(j.id)).map((j) => ({
+  return GAME_G_TIANGANGS.filter((j) => !ownedIds.includes(j.id) && !isRetiredTiangang(j.id)).map((j) => ({ // 剔除退役/暂缓天罡（片D·不作三选一钥匙奖励）
     id: `key_${j.id}`, name: `🃏钥匙·${j.name}`, desc: `融入天罡【${j.name}】：${j.text}`, kind: 'tiangang', amount: 0, tiangangId: j.id,
   }));
 }

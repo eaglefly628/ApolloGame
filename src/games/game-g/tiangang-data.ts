@@ -73,3 +73,10 @@ export const GAME_G_TIANGANGS: TiangangCard[] = [
 ];
 
 export const TIANGANG_BY_ID: ReadonlyMap<string, TiangangCard> = new Map(GAME_G_TIANGANGS.map((j) => [j.id, j]));
+
+// 退役/暂缓天罡（REQ-G-天罡原生重构 片D·策划定案）：从出货池(商店/牌组构筑/Boss 随机种子)剔除·防玩家买空头卡。
+//   调虎 lurefoe=换路概念随机关门整套退役同源；6 流派印记=待流派体系定稿(mark 未接解释器·零效果)。数据保留(不删·避免破引用)·仅不出货。
+export const RETIRED_TIANGANG_IDS: ReadonlySet<string> = new Set(['lurefoe', 'markdecap', 'markmorale', 'markswarm', 'marktianji', 'marksamerank', 'markodds']);
+export const isRetiredTiangang = (id: string): boolean => RETIRED_TIANGANG_IDS.has(id);
+/** 可出货天罡（剔除退役/暂缓·商店/牌组池/Boss 种子 均用它·非全量 GAME_G_TIANGANGS）。 */
+export const OFFERABLE_TIANGANGS: readonly TiangangCard[] = GAME_G_TIANGANGS.filter((j) => !RETIRED_TIANGANG_IDS.has(j.id));

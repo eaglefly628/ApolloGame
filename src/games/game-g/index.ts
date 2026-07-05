@@ -7,7 +7,7 @@ export { LEVER_CATALOG, LEVER_START, LEVER_CAP, LEVER_REGEN } from './lever-data
 export { BETWEEN_BUFFS, applyBuff } from './buffs-data.js';
 export { BOSS_ROSTER, bossFor } from './boss-roster-data.js';
 export { ARCHETYPES, detectArchetype, archetypeMatchup, activeArchetype } from './archetype-data.js';
-export { quartermasterEnergy, GAME_G_TIANGANGS, TIANGANG_BY_ID, tiangangKeyBuffs, GAME_G_PLANETS, PLANET_BY_ID, effectiveLives, effectiveLeverCap, effectiveLeverRegen } from './blueprint.js';
+export { quartermasterEnergy, GAME_G_TIANGANGS, TIANGANG_BY_ID, OFFERABLE_TIANGANGS, RETIRED_TIANGANG_IDS, isRetiredTiangang, tiangangKeyBuffs, GAME_G_PLANETS, PLANET_BY_ID, effectiveLives, effectiveLeverCap, effectiveLeverRegen } from './blueprint.js';
 export { battleSpec, RUN_BATTLES, RUN_LIVES, GAME_G_FOILS, RECHARGE_PACKS, rechargeTotal, DIAMOND_EXCHANGES, DIZHI_SHARD_PACKS, RECHARGE_PASSWORD, GACHA, gachaCost, DIZHI_MAX_TIER, DIZHI_TIER_NM, DIZHI_TIER_CAP, dizhiMerge, dizhiTotal, dizhiTopTier, DIZHI_ZODIACS, INLAY_MAX, DIZHI_INLAY_FAVOR, inlayBonus, effectiveDeckFavors, POKER_PICK_SIZE, POOL_CARD_IDS, isPoolCardId, cardFavorIndex, deployCost, rankOfCardId, autoBuildPokerPicks, isHeroOwned, heroCardByName, heroNameOf, STAGE_CAMPAIGN, campaignFor, STORY_OPENING, TIANGANG_UNLOCK, unlockStageOf } from './blueprint.js';
 export type { ArmyCard, Formation } from './formation-data.js';
 export type { Intervention, LeverKind } from './lever-data.js';

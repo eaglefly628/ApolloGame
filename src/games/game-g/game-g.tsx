@@ -1,6 +1,6 @@
 import { mountLobby } from './lobby-dd.js'; // 全数据驱动大厅（Step A·owner 2026-06-25 上线）·签名同旧 mountLobby
 import { luckyBattleBuff, luckyFromVal, type LobbyView, type LobbyShopItem } from './lobby-types.js';
-import { armyFromFormation, quartermasterEnergy, battleSpec, RUN_BATTLES, BETWEEN_BUFFS, applyBuff, tiangangKeyBuffs, bossFor, GAME_G_TIANGANGS, TIANGANG_BY_ID, ARCHETYPES, detectArchetype, archetypeMatchup, activeArchetype, pickAiFormation, GAME_G_PLANETS, GAME_G_FOILS, RECHARGE_PACKS, rechargeTotal, DIAMOND_EXCHANGES, DIZHI_SHARD_PACKS, RECHARGE_PASSWORD, GACHA, gachaCost, DIZHI_TIER_NM, DIZHI_TIER_CAP, DIZHI_INLAY_FAVOR, dizhiMerge, dizhiTotal, dizhiTopTier, DIZHI_ZODIACS, INLAY_MAX, effectiveDeckFavors, POKER_PICK_SIZE, isPoolCardId, autoBuildPokerPicks, cardFavorIndex, deployCost, isHeroOwned, heroNameOf, effectiveLives, effectiveLeverCap, effectiveLeverRegen, campaignFor, unlockStageOf, type Formation, type Intervention, type RunBuff, type ArmyCard } from './index.js';
+import { armyFromFormation, quartermasterEnergy, battleSpec, RUN_BATTLES, BETWEEN_BUFFS, applyBuff, tiangangKeyBuffs, bossFor, GAME_G_TIANGANGS, TIANGANG_BY_ID, isRetiredTiangang, ARCHETYPES, detectArchetype, archetypeMatchup, activeArchetype, pickAiFormation, GAME_G_PLANETS, GAME_G_FOILS, RECHARGE_PACKS, rechargeTotal, DIAMOND_EXCHANGES, DIZHI_SHARD_PACKS, RECHARGE_PASSWORD, GACHA, gachaCost, DIZHI_TIER_NM, DIZHI_TIER_CAP, DIZHI_INLAY_FAVOR, dizhiMerge, dizhiTotal, dizhiTopTier, DIZHI_ZODIACS, INLAY_MAX, effectiveDeckFavors, POKER_PICK_SIZE, isPoolCardId, autoBuildPokerPicks, cardFavorIndex, deployCost, isHeroOwned, heroNameOf, effectiveLives, effectiveLeverCap, effectiveLeverRegen, campaignFor, unlockStageOf, type Formation, type Intervention, type RunBuff, type ArmyCard } from './index.js';
 import { type ClashEvent } from './combat-types.js';
 // 抽出的纯函数模块（Phase 2 拆分·见各文件头注）：存档/出战编排/掷命特写视图。公共 API(buildPickDeck/bossHeroCard/
 // aggregateTengang/tengangFxOf/freshSave)在文件尾从这里再导出，保 deck-wiring/live-combat/turnmatch 测试 import 不变。
@@ -92,7 +92,7 @@ export function mount(container: HTMLElement, shell?: { exit?: () => void }): ()
       }
       const cap = effectiveLeverCap(save.planets);
       // B3: owned=已买入(ownedTiangangs)；inDeck=已选入战库(jokers ≤5)；buyable=未买且材料够
-      const tiangangs: LobbyShopItem[] = GAME_G_TIANGANGS.map((j) => { const owned = save.ownedTiangangs.includes(j.id); const us = unlockStageOf(j.id); const locked = us > save.campaignMax; return { id: j.id, name: j.name, sub: j.text, cost: j.cost, owned, inDeck: save.tiangangs.includes(j.id), buyable: !owned && !locked && save.materials >= j.cost, power: j.power, phat: j.phat, kind: j.kind, icon: j.icon, tint: j.tint, unlockStage: us, locked }; });
+      const tiangangs: LobbyShopItem[] = GAME_G_TIANGANGS.filter((j) => !isRetiredTiangang(j.id)).map((j) => { const owned = save.ownedTiangangs.includes(j.id); const us = unlockStageOf(j.id); const locked = us > save.campaignMax; return { id: j.id, name: j.name, sub: j.text, cost: j.cost, owned, inDeck: save.tiangangs.includes(j.id), buyable: !owned && !locked && save.materials >= j.cost, power: j.power, phat: j.phat, kind: j.kind, icon: j.icon, tint: j.tint, unlockStage: us, locked }; }); // 剔除退役/暂缓天罡（片D·防买空头卡）
       const planets: LobbyShopItem[] = GAME_G_PLANETS.map((p) => ({ id: p.id, name: p.name, sub: p.text, cost: p.cost, owned: false, level: save.planets[p.id] ?? 0, buyable: save.materials >= p.cost }));
       const foils: LobbyShopItem[] = GAME_G_FOILS.map((f) => { const owned = save.foils.includes(f.id); return { id: f.id, name: f.name, sub: f.desc, cost: f.cost, owned, buyable: !owned && save.materials >= f.cost }; });
       const heart = save.lives > 0 ? '❤'.repeat(save.lives) : '—';
@@ -137,7 +137,7 @@ export function mount(container: HTMLElement, shell?: { exit?: () => void }): ()
         const c = gachaCost(pool, count, pay);
         if (save.materials < c.gold || save.diamond < c.diamond) return null;
         if (pool === 'tiangang') {
-          const poolCards = GAME_G_TIANGANGS.filter((t) => unlockStageOf(t.id) <= save.campaignMax);
+          const poolCards = GAME_G_TIANGANGS.filter((t) => unlockStageOf(t.id) <= save.campaignMax && !isRetiredTiangang(t.id)); // 剔除退役/暂缓天罡（片D）
           if (poolCards.length === 0) return null;
           save.materials -= c.gold; save.diamond -= c.diamond;
           const res = [];

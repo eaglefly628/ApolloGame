@@ -1,7 +1,7 @@
 // level.ts —— Campaign 关卡加载器（doc27 · owner 2026-06-19「52 关系统化入库·主程逐关加载」）。
 // 数据驱动：一关 = 一条 LevelDef（拼装 doc23 §三/七 英雄战役 + disha.ts 地煞 + doc25 解锁 + doc27 §四/五 难度/背景对白）。
 // 引擎按 id 逐关加载喂 turn-combat（doc24 回合制）：Boss 大本营血/地煞/12 天罡 seed 随机/loadoutCap 上限。
-import { campaignFor, TIANGANG_UNLOCK, type StageCampaign } from './blueprint.js';
+import { campaignFor, TIANGANG_UNLOCK, isRetiredTiangang, type StageCampaign } from './blueprint.js';
 import { stageDisha } from './disha.js';
 import { NEUTRAL_AI, type AiProfile, type PokerCard } from './turn-combat.js';
 import { seededShuffle } from '@atom-skills/index.js'; // 洗牌收敛 atoms 单一真相（零漂移）
@@ -76,7 +76,7 @@ const LEVEL_LORE: Record<number, { intro: string; open: string; mid: string; los
     open: '力拔山兮气盖世！纵八千子弟散尽，此身亦战至最后一人！', mid: '此天亡我，非战之罪也！', lose: '……无颜见江东父老。罢了，就让你来翻这命吧。' },
 };
 
-const ALL_TIANGANG: readonly string[] = TIANGANG_UNLOCK.flatMap((u) => u.ids); // 36 天罡全池（9 关 ×4）
+const ALL_TIANGANG: readonly string[] = TIANGANG_UNLOCK.flatMap((u) => u.ids).filter((id) => !isRetiredTiangang(id)); // Boss 随机天罡池（剔除退役/暂缓·防 Boss 摸空头卡·REQ-G-天罡原生重构 片D）
 
 /** Boss 随机 12 天罡（doc27 §三）：seed=关 id → 同关同 12 张·可复现喂 sim。从 36 池均匀不重复抽。 */
 export function bossTiangang(stage: number, count = 12): string[] {

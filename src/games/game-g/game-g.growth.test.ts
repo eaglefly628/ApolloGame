@@ -1,6 +1,6 @@
 // Game G · 养成数据层测试（天罡/流派克制/AI布阵/星球/流派激活/全栈端到端·拆分自 game-g.test.ts）。
 import { describe, it, expect } from 'vitest';
-import { quartermasterEnergy, pickAiFormation, tiangangKeyBuffs, GAME_G_TIANGANGS, TIANGANG_BY_ID, ARCHETYPES, detectArchetype, archetypeMatchup, activeArchetype, GAME_G_PLANETS, GAME_G_FOILS, effectiveLives, effectiveLeverCap, effectiveLeverRegen, RUN_LIVES, applyBuff, BOSS_ROSTER, LEVER_CAP, LEVER_REGEN, FORMATION_PRESETS, PRESET_NAMES, type BuffTarget } from './blueprint.js';
+import { quartermasterEnergy, pickAiFormation, tiangangKeyBuffs, GAME_G_TIANGANGS, TIANGANG_BY_ID, RETIRED_TIANGANG_IDS, isRetiredTiangang, ARCHETYPES, detectArchetype, archetypeMatchup, activeArchetype, GAME_G_PLANETS, GAME_G_FOILS, effectiveLives, effectiveLeverCap, effectiveLeverRegen, RUN_LIVES, applyBuff, BOSS_ROSTER, LEVER_CAP, LEVER_REGEN, FORMATION_PRESETS, PRESET_NAMES, type BuffTarget } from './blueprint.js';
 
 describe('Game G · T-G6 天罡牌（融牌面 · build 时 favor 变换 · 持久牌组身份）', () => {
   it('天罡目录(定稿·城门令退役 35 + AOE 3 = 38 张)，kind 合法、cost>0、有 text、有 icon；TIANGANG_BY_ID 覆盖全', () => {
@@ -27,13 +27,22 @@ describe('Game G · T-G6 天罡牌（融牌面 · build 时 favor 变换 · 持�
     expect(quartermasterEnergy(['quartermaster'], -1)).toBe(0); // 负数钳 0
   });
 
-  it('流派钥匙：tiangangKeyBuffs 为每张"未拥有"天罡产 kind=joker 的 RunBuff（已拥有不出）', () => {
+  it('流派钥匙：tiangangKeyBuffs 为每张"未拥有且未退役"天罡产 kind=tiangang 的 RunBuff（已拥有/退役不出）', () => {
+    const offerable = GAME_G_TIANGANGS.length - RETIRED_TIANGANG_IDS.size; // 退役/暂缓天罡不作钥匙（片D·防空头）
     const all = tiangangKeyBuffs([]);
-    expect(all).toHaveLength(GAME_G_TIANGANGS.length); // 全未拥有 → 全产
-    for (const k of all) { expect(k.kind).toBe('tiangang'); expect(k.tiangangId).toBeTruthy(); expect(TIANGANG_BY_ID.has(k.tiangangId!)).toBe(true); }
-    const owned = tiangangKeyBuffs(['ghosthand', 'bannerman']);
-    expect(owned).toHaveLength(GAME_G_TIANGANGS.length - 2);
+    expect(all).toHaveLength(offerable); // 全未拥有 → 全可出货天罡产
+    for (const k of all) { expect(k.kind).toBe('tiangang'); expect(k.tiangangId).toBeTruthy(); expect(TIANGANG_BY_ID.has(k.tiangangId!)).toBe(true); expect(isRetiredTiangang(k.tiangangId!)).toBe(false); }
+    const owned = tiangangKeyBuffs(['ghosthand', 'bannerman']); // 均非退役
+    expect(owned).toHaveLength(offerable - 2);
     expect(owned.some((k) => k.tiangangId === 'ghosthand' || k.tiangangId === 'bannerman')).toBe(false);
+  });
+
+  it('退役/暂缓天罡（片D）：调虎 + 6 流派印记 从出货池剔除（不作钥匙）', () => {
+    const retired = ['lurefoe', 'markdecap', 'markmorale', 'markswarm', 'marktianji', 'marksamerank', 'markodds'];
+    expect(RETIRED_TIANGANG_IDS.size).toBe(7);
+    for (const id of retired) { expect(isRetiredTiangang(id)).toBe(true); expect(TIANGANG_BY_ID.has(id)).toBe(true); } // 数据保留·仅不出货
+    const keyIds = new Set(tiangangKeyBuffs([]).map((k) => k.tiangangId));
+    for (const id of retired) expect(keyIds.has(id)).toBe(false); // 不作三选一钥匙奖励（防白嫖空头）
   });
 
   it('applyBuff(joker)：白嫖天罡入 save.jokers，去重幂等', () => {
