@@ -570,7 +570,9 @@
 
 ---
 
-### REQ-G-天罡原生重构 · [2026-07-04] · design G → 程序A(TENGANG_OPS/改掷层)·程序B(AOE演出) · Game G · status: **进行中（程序A）：片A 锋矢修 ✅ / 片B 掷骰系改掷层 ✅ / 片C 零效果op 部分·⚠见目标机制 / 片D 退役 待 / 片E AOE 待** · 优先级: **P1（核心大改后天罡大面积失效·出货前空头卡清零）** · 规格: `design/tiangang-native-redesign.md`
+### REQ-G-天罡原生重构 · [2026-07-04] · design G → 程序A(TENGANG_OPS/改掷层)·程序B(AOE演出+点路UI) · Game G · status: **进行中（程序A）：片A 锋矢 ✅ / 片B 掷骰系改掷层 ✅ / 片C 擒王 ✅ + 选路 5 op ✅(疾行/泥沼/铁索/驰援/舍车·cd08de2c) / 抢滩 待GD细节 / 片D 退役 待 / 片E AOE 待 / 点路UI 待程序B** · 优先级: **P1（核心大改后天罡大面积失效·出货前空头卡清零）** · 规格: `design/tiangang-native-redesign.md`
+> **✅ 片C 选路 op done（程序A 2026-07-04·cd08de2c·策划定案 0bde67dc 落地）**：`castTengangAt(b,side,handIdx,lane)` + `tengangTargetKind(id)`(own-lane/enemy-lane/global/null·供 B 点路 UI)。疾行=我该路整列即时+1格 / 泥沼=敌该路本回合不推进(lane skip) / 铁索=敌全军 speed−1 持2回合(global 倒计时+speedPen) / 驰援=该路+2固定援兵(战力3) / 舍车=弃该路回库+另两路+8战力(快照)。castTengang 拒选路天罡；tiangang-data 文案对齐即时语义+discard2 8。测试 7 例。**⬜ 抢滩(beachhead·jumpToMid) 策划未给细节**(§四·补只定 5 个)·待 GD 补。**点路 UI 归程序B**：选中选路天罡→按 tengangTargetKind 高亮可选路(own/enemy)→点路→调 castTengangAt(global 铁索无需选)。程序A 已挂 dev `__ggDebug.castAt(id,lane)` 供免 UI 测。
+> **✅ 顺带 新手引导天罡（owner 2026-07-04·55a11062）**：freshSave 默认牌组塞虎符+鬼手 + 空 loadout 兜底 → 修「开局没天罡·抽不到」。
 > **✅ 片A（§四.4·程序A 2026-07-04）**：锋矢 arrowhead `filter:'front'` 旧描述子没认→误落全军+4·修成只前锋。**✅ 片B（§四.1+2·程序A 2026-07-04）**：掷骰系改掷层——鬼手改掷+2/磐石掷下界+2/灌铅骰掷两次取高/铁骰占优必胜；clash-resolve 加 `rollWithMods`+`rollDist`+`rollWinProbMods`(mods 全零逐字等于旧 rollWinProb)；删 logistic 死字段 winFloor/kHard/noUpset·加 rollBonus/rollFloor/rollTwice/autoWinGE；接进 resolveClash(实掷+占优必胜短路)/clashOdds(预报)/resolveClashEV(AI EV)→预报与 AI 都反映改掷；tiangang-data kind 'odds'→'roll'。测试全绿(2261)。
 > **⚠️ 片C 目标机制（owner 2026-07-04 裁：走玩家选路·否决自动目标）**：§四.3 的 6 个 op 里 **4 个需玩家「选哪一路」**——疾行(该路 speed+1)/泥沼(敌该路减速)/驰援(指定路+2兵)/舍车(弃一路补两路)。**owner 拍板：不能自动选·必须玩家选路。** → 需**选路机制**：程序A 出 `castTengangAt(b,side,handIdx,lane)` + 每路效果应用（即时型驰援/舍车 + 持久每路型疾行/泥沼→需 per-lane 状态）；程序B 出**点路 UI**（选中目标类天罡→高亮可选路→玩家点路→施放）。**A+B 协同·另立选路子任务。**
 > **✅ 擒王 done（程序A 2026-07-04·f0832bcd·无目标 op）**：斩敌主将→该路敌全溃（clash 钩子·TengangFx killGeneralRout·测试绿）。**⬜ 铁索（敌全军减速·无目标·需 slow 机制）+ 4 个目标 op（待选路机制）待续。**
