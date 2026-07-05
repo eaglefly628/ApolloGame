@@ -58,7 +58,8 @@
   - **进度**：`job_status()` 接进 `/api/state` + `/api/log`（旧 `running`/`action` 字段保留不破 GUI）。
 - **无真账号冒烟 `scripts/steam-publish-smoke.py`**（480·退出码门禁·同 `scripts/*-smoke.py` 约定）：**24 断言**验 VDF 格式(SteamPipe)/build·publish 命令/错误守卫/三段命名/`plan` 判词 token/`stage_*` 单段/`job_status` 空态。副作用重定向 temp 不脏化仓库。自证：破坏 VDF 格式 / 段名 → 真红。已登记 `playbooks/testing.md`。
 - **Lead 裁决（2026-07-04）**：接入形态=**经 apollo.py 转发**（薄代理 `/api/publish/*` → serve.py·只透传不塞逻辑），非直连/非内嵌；PS 先行硬化契约（✅ 三段+token 已落）；PST 随后接向导页 UI。
-- ⏳ 余：① apollo.py 加 `/api/publish/*` 薄代理（PST/服务面域）；② PST 接 player 模式「发布」向导页（选游戏/平台·填 AppID/DepotID/builder·进度日志·**三步不能自动做成显式向导页**）。真上传三步（账号+$100 / steamcmd 登录 / 后台 Set Live）向导显式引导。
+- **交接契约 `steam-publisher/PUBLISH-API.md`**（PS 出·PST/apollo.py 照建）：列全 apollo.py 该透传的端点 + 三段/token 词汇 + 向导页硬要求（三步不能自动）+ 480 联调路径。指针式（机读真相=serve.py）。
+- ⏳ 余（**均 PST/服务面域·非 PS·照 `PUBLISH-API.md` 建**）：① apollo.py 加 `/api/publish/*` 薄代理；② PST 接 player 模式「发布」向导页（选游戏/平台·填 AppID/DepotID/builder·进度日志·**三步不能自动做成显式向导页**）。真上传三步（账号+$100 / steamcmd 登录 / 后台 Set Live）向导显式引导。
 
 ## 依赖 / 待 owner 提供
 
