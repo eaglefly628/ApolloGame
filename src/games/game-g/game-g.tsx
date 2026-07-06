@@ -450,6 +450,7 @@ export function mount(container: HTMLElement, shell?: { exit?: () => void }): ()
       const ov = document.createElement('div'); ov.style.cssText = 'position:fixed;inset:0;z-index:280;pointer-events:none';
       playSfx('cast'); window.setTimeout(() => playSfx('deploy'), 90); // 醒目声（owner「让我重点知道有个声音」）：上行示警 + 一记落桌撞点
       if (!ea || !eb) { // 回退：兵不在场（无头/未渲）→ 居中小 VS + 路名
+        clashOrigin = null; // P24：无棋盘锚 → 特写居中缩放
         ov.style.cssText += ';display:flex;align-items:center;justify-content:center';
         ov.innerHTML = `<div style="animation:gg-cue ${DUR}ms ease both;font-size:24px;font-weight:900;color:#e8cd82;letter-spacing:.2em;text-shadow:0 0 24px rgba(232,205,138,.8);font-family:'Rajdhani',sans-serif;">⚔ ${LANE_NM[e.lane] ?? ''} · 即将交战</div>`;
         document.body.appendChild(ov); battleTl.delay(DUR / 16, () => { ov.remove(); onDone(); }); return;
@@ -463,6 +464,7 @@ export function mount(container: HTMLElement, shell?: { exit?: () => void }): ()
       const lane = `<div style="position:absolute;left:${(cax + cbx) / 2}px;top:${Math.min(cay, cby) - 34}px;transform:translateX(-50%);white-space:nowrap;font-size:15px;font-weight:900;color:#e8cd82;letter-spacing:.12em;text-shadow:0 0 16px rgba(232,205,138,.9),0 2px 6px rgba(0,0,0,.9);font-family:'Rajdhani',sans-serif;animation:gg-cue ${DUR}ms ease both">⚔ ${LANE_NM[e.lane] ?? ''} · 即将交战</div>`;
       // 交战点粒子迸发（owner 2026-07-04「在交战的地方放个粒子·重点知道哪里」）：中点循环喷 10 束火星（DUR 内反复迸发）。
       const mx = (cax + cbx) / 2, my = (cay + cby) / 2, R = 48;
+      clashOrigin = { x: mx, y: my }; // P24：交战中点 → 对决特写开合的缩放原点（引导视野到棋盘交战处）
       const sparks = Array.from({ length: 10 }, (_, i) => { const a = (i / 10) * Math.PI * 2; return `<div style="position:absolute;left:${mx}px;top:${my}px;--sx:${Math.round(Math.cos(a) * R)}px;--sy:${Math.round(Math.sin(a) * R)}px;width:7px;height:7px;border-radius:50%;background:radial-gradient(circle,#fff,#e8cd82 60%,transparent);box-shadow:0 0 8px #e8cd82;animation:gg-cue-spark .95s ease-out ${(i % 5) * 0.12}s infinite"></div>`; }).join('');
       ov.innerHTML = ring(ra, true) + ring(rb, false) + line + vs + lane + sparks;
       document.body.appendChild(ov);
@@ -480,6 +482,34 @@ export function mount(container: HTMLElement, shell?: { exit?: () => void }): ()
     const flash = (msg: string): void => { notice = msg; mounted?.update(); if (noticeTimer) clearTimeout(noticeTimer); noticeTimer = window.setTimeout(() => { notice = null; if (!perfClash) mounted?.update(); }, 1700); }; // 清提示时若正演掷命特写则不重渲（防飞入重启）
     // 各自掷战力骰对决（owner 2026-07-01）：进特写先藏掷值 → 玩家点「掷命」→ 两骰同屏各掷自己战力范围 → 揭晓胜负 → 点「继续」→ 一步步演结算。
     let clashRevealed = false; let clashCdTimer = 0; let clashCdInterval = 0; let clashRolling = false; let clashSettling = false; // clashSettling=结算演出(斩→进→标)进行中 → 忽略「继续」重复点击（owner 2026-07-04·防狂点重播）
+    // P24（owner 2026-07-04「对决 UI 要从战斗发生的地方放缩到全屏·收场再缩回去引导视线」）：本场交战在棋盘上的屏幕坐标(两前锋中点)→ 特写开合的缩放原点。
+    let clashOrigin: { x: number; y: number } | null = null; // showClashCue 量得·null=兵不在场(回退居中缩放)
+    // 对决特写「从战斗位置放缩进/退」（owner 2026-07-04·P24）：transform-origin 指向棋盘交战点(引导视野)·纯表现层(不动 tb/rng)。
+    //   in=露出后从该点缩小态(scale .12·透明)长到满屏；out=缩回该点+淡出·底板同步淡出 → 收场露出棋盘演谁死谁进。
+    const zoomClashPanel = (dir: 'in' | 'out', onDone?: () => void): void => {
+      const panel = document.getElementById('clash-panel'); const overlay = panel?.parentElement;
+      if (!panel || !overlay) { onDone?.(); return; } // 无头/未渲 → 跳过动画直接续
+      const pr = panel.getBoundingClientRect(); const own = (panel as HTMLElement).offsetWidth || pr.width; const scale = pr.width / own || 1; // 外层画框缩放系数（屏幕→本地坐标换算）
+      let ox = own / 2, oy = ((panel as HTMLElement).offsetHeight || pr.height) / 2; // 默认居中缩放
+      if (clashOrigin) { ox = (clashOrigin.x - pr.left) / scale; oy = (clashOrigin.y - pr.top) / scale; } // 缩放原点=棋盘交战点(本地坐标)
+      panel.style.transformOrigin = `${ox}px ${oy}px`;
+      const dice3d = Array.from(document.querySelectorAll<HTMLElement>('.gg-die3d-host')); // 骰盅独立 fixed 覆层·不随面板缩放 → 与底板同步淡（遮住脱节）
+      if (dir === 'in') {
+        panel.style.transition = 'none'; panel.style.transform = 'scale(.12)'; panel.style.opacity = '0'; // 同步落缩小态(update 后即刻·先于绘制·无满屏闪现)
+        overlay.style.transition = 'none'; overlay.style.opacity = '0';
+        dice3d.forEach((d) => { d.style.transition = 'none'; d.style.opacity = '0'; });
+        requestAnimationFrame(() => { requestAnimationFrame(() => {
+          panel.style.transition = 'transform .42s cubic-bezier(.2,.72,.28,1), opacity .3s ease'; panel.style.transform = 'scale(1)'; panel.style.opacity = '1';
+          overlay.style.transition = 'opacity .32s ease'; overlay.style.opacity = '1';
+          dice3d.forEach((d) => { d.style.transition = 'opacity .34s ease .12s'; d.style.opacity = '1'; }); // 稍迟淡入·等面板长开再现骰
+        }); });
+        onDone?.();
+      } else {
+        panel.style.transition = 'transform .38s cubic-bezier(.5,0,.75,.35), opacity .36s ease'; panel.style.transform = 'scale(.12)'; panel.style.opacity = '0';
+        overlay.style.transition = 'opacity .38s ease'; overlay.style.opacity = '0';
+        battleTl.delay(24, () => onDone?.()); // ~384ms 缩回收完(时序=数据·单 cue timeline·非手写 setTimeout)
+      }
+    };
     let aiManaDisplay: number | null = null; // 敌方决策时源泉「随落牌错峰递减」的展示覆盖值（owner 2026-07-03「别直接跳 0·要看它啪啪啪扣」）·null=显真值
     const clearClashTimers = (): void => { if (clashCdTimer) { clearTimeout(clashCdTimer); clashCdTimer = 0; } if (clashCdInterval) { clearInterval(clashCdInterval); clashCdInterval = 0; } };
     // ── 战后生死演出走引擎 t3-timeline（owner 2026-07-03「用 timeline·不手写排程」）──
@@ -581,6 +611,7 @@ export function mount(container: HTMLElement, shell?: { exit?: () => void }): ()
         perfClash = e;
         clashRevealed = false; clashRolling = false; clashSettling = false; // owner 2026-07-01「各自掷战力骰」：进特写先藏掷值·等玩家点「掷命」→ 两骰同屏各掷自己战力范围 → 揭晓（新场解闩）
         perfResume = () => { perfResume = null; clearClashTimers(); playPerf(onDone); }; mounted?.update(); syncCoach(); // 引导：特写中隐
+        zoomClashPanel('in'); // P24：特写从棋盘交战处放缩进场（露出后即刻落缩小态·rAF 长到满屏·引导视野）
       });
     };
     // 我方回合开始日志（owner 2026-07-02「记我的操作等·找 bug」）：附我方手牌 + 三路兵力(我/敌) → 一眼看清局面。
@@ -701,11 +732,15 @@ export function mount(container: HTMLElement, shell?: { exit?: () => void }): ()
         const loserId = e.aWins ? e.b.id : e.a.id; const winnerId = e.aWins ? e.a.id : e.b.id;
         const w = e.aWins ? e.a : e.b; const cut = w.pEff - Math.floor(w.pEff / 2); const streak = e.winStreak ?? 1; // 本场胜者：连胜场数 + 战力对折削减量（owner「写清连胜多少场·扣了多少」）
         postClashCtx = { e, loserId, winnerId, cut, streak };
-        battleTl.play({ id: 'clash-settle', cues: [
-          { at: 0, do: { kind: 'signal', signal: 'clash:slay' } },      // ① 斩败者（≈0.5s 一刀两断·先死·清楚）
-          { at: 40, do: { kind: 'signal', signal: 'clash:survivor' } }, // ② ≈670ms 斩定后·幸存者去留(对折/光荣)+驻留徽标（胜者守原位·不再滑进腾出格·owner 2026-07-04）
-          { at: 80, do: { kind: 'signal', signal: 'clash:resume' } },   // ③ ≈1330ms 收场续下一场
-        ] });
+        // P24（owner 2026-07-04「先把对决 UI 关掉·再显示谁被打死谁前进」）：先把特写缩回棋盘交战处 + 淡出 → 关 UI 露出棋盘 → 才在棋盘上演斩/去留（谁死谁进一目了然·非硬切）。
+        zoomClashPanel('out', () => {
+          perfClash = null; clashRevealed = false; mounted?.update(); // 关特写·露出棋盘（本路已结算·数据态败者已离场）→ 让斩/去留演在可见棋盘上
+          battleTl.play({ id: 'clash-settle', cues: [
+            { at: 0, do: { kind: 'signal', signal: 'clash:slay' } },      // ① 斩败者（≈0.5s 一刀两断·先死·清楚·此刻棋盘可见）
+            { at: 40, do: { kind: 'signal', signal: 'clash:survivor' } }, // ② ≈670ms 斩定后·幸存者去留(对折/光荣)+驻留徽标（胜者守原位·不再滑进腾出格·owner 2026-07-04）
+            { at: 80, do: { kind: 'signal', signal: 'clash:resume' } },   // ③ ≈1330ms 收场续下一场
+          ] });
+        });
       },
       clashRoll: () => doClashRoll(), // 各自掷战力骰（owner 2026-07-01·两骰同屏各掷自己战力范围）
       goBack: () => {

@@ -785,7 +785,7 @@ export function buildTurnFrameHTML(view: TurnBattleView, drain: { from: number; 
       </div>
       ${renderNode(endTurnNode(), GG_BATTLE_THEME)}`}
     </div>
-    ${view.clash ? `<div style="${st({ position: 'absolute', inset: 0, zIndex: 60, display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'rgba(6,9,13,.74)', backdropFilter: 'blur(5px)', animation: 'g-fade .3s ease both' })}">${renderNode(clashNode(view.clash), GG_BATTLE_THEME)}</div>` : ''}
+    ${view.clash ? `<div style="${st({ position: 'absolute', inset: 0, zIndex: 60, display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'rgba(6,9,13,.74)', backdropFilter: 'blur(5px)' })}">${renderNode(clashNode(view.clash), GG_BATTLE_THEME)}</div>` : ''}
   </div>`;
 }
 
@@ -947,7 +947,7 @@ export function mountTurnBattle(host: HTMLElement, getView: () => TurnBattleView
       const anchor = host.querySelector(`#clash-die3d-${side}`) as HTMLElement | null;
       const r = anchor?.getBoundingClientRect();
       if (!anchor || !r || r.width < 2 || r.height < 2) { killDie3DSlot(s); return; } // 无锚点/无头量到 0 → 撤（走 🎲 占位）
-      if (!s.host) { s.host = document.createElement('div'); s.host.style.cssText = 'position:fixed;z-index:80;pointer-events:none;border-radius:12px;overflow:hidden'; document.body.appendChild(s.host); }
+      if (!s.host) { s.host = document.createElement('div'); s.host.className = 'gg-die3d-host'; s.host.style.cssText = 'position:fixed;z-index:80;pointer-events:none;border-radius:12px;overflow:hidden'; document.body.appendChild(s.host); } // .gg-die3d-host：供 P24 特写开合时随底板同步淡入（骰盅是独立 fixed 覆层·不随面板缩放·淡入遮住脱节）
       s.host.style.left = `${r.left}px`; s.host.style.top = `${r.top}px`; s.host.style.width = `${r.width}px`; s.host.style.height = `${r.height}px`;
       const mine = side === 'm'; const power = (mine ? cv.pEffMine : cv.pEffFoe) ?? 1;
       const sig = `${dark ? 'd' : 'l'}|${power}`; // 皮/战力变才重建（免每帧重造 WebGL 上下文）
