@@ -814,8 +814,12 @@ export function aiDecide(b: TurnBattle, aggTengang?: (ids: readonly string[]) =>
       say(`敌AI·决策结束：无更多可行动 —— ${why}；抽牌？${sd.mana >= DRAW_COST ? (sd.pokerDeck.length ? '可但没选' : '库空') : `源泉<${DRAW_COST}`}`);
       break;
     }
+    // 会犯错（低档）：owner bug清单#5 修——旧「全随机」会让 Boss 抽牌(2.8分)压过部署(15.9分)→整局0源泉像弱智。
+    //   改「保守但理性」：误选只在 **top-3 好动作**里随机（多样/不完美·但绝不选最差）→ 弱=打得不最优·非弱智。（ε 频率仍随 aiTier·design G 再定 Boss 强度目标。）
     const rnd = nextRandom(b.rng); const mistake = rnd < mistakeChance;
-    const pick = mistake ? cands[Math.floor(nextRandom(b.rng) * cands.length)] : cands.reduce((bst, c) => (c.score > bst.score ? c : bst), cands[0]);
+    let pick: AiCand;
+    if (mistake) { const ranked = [...cands].sort((x, y) => y.score - x.score); pick = ranked[Math.floor(nextRandom(b.rng) * Math.min(3, ranked.length))]; }
+    else pick = cands.reduce((bst, c) => (c.score > bst.score ? c : bst), cands[0]);
     const manaBefore = sd.mana; const card = pick.handIdx >= 0 ? sd.hand[pick.handIdx] : undefined;
     let ok = false;
     if (pick.kind === 'deploy') { ok = deployUnit(b, 'b', pick.handIdx, pick.lane); if (ok && garrison) garrisonDeploys++; } // 布防兵计数（上限 3·owner 2026-07-04）
