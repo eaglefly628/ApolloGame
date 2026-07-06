@@ -915,6 +915,11 @@ export function mountTurnBattle(host: HTMLElement, getView: () => TurnBattleView
   // 召唤源泉收退动效（owner 2026-06-21）：跨重渲对比上次亮格数 → 本次刚花掉的格走 g-drain「往后退」收退。
   // 重渲极频(选牌也重渲)：只在亮格「减少」时记一次 drain，并用计时器在动画时长后清掉——中途无关重渲不会打断/重放。
   let prevLit = -1; let drain = { from: 0, count: 0 }; let drainTimer = 0;
+  // P19（owner 2026-07-04「敌方多张牌上场要一张一张放·让我看清哪张在放」）：新部署兵(view.slot.fresh=落子序)逐张 g-drop 落下。
+  //   棋盘每帧整片 innerHTML 重建 → CSS 动画会被摧毁；用「批次起点 + 负 animation-delay 续演」抗重建：每次重渲按已逝时间重算延迟
+  //   （delay = start + k·STAGGER − now·负值=从对应进度续播·已落定的兵停在末态），故 mana 递减等高频重渲不打断逐张落桌节奏。
+  let dropBatch: { start: number; ids: Set<string> } | null = null;
+  const perfNow = (): number => (typeof performance !== 'undefined' && performance.now ? performance.now() : 0); // 表现层计时（非确定性·不动 sim/hash）·headless 无 performance → 0
   let localNotice = ''; let localNoticeTimer = 0;
   // contain 缩放（owner 2026-06-28·对齐大厅占满感·消四周留白）：取「宿主宽/1340」与「宿主高/858」较小者，
   // 棋盘整张可见、最大化、居中·只在不匹配的那一轴留对称小白边（替旧「按宽缩放 + 140vh 盖」的四面留白）。
@@ -1006,6 +1011,20 @@ export function mountTurnBattle(host: HTMLElement, getView: () => TurnBattleView
         u.addEventListener('animationend', () => { u.style.animation = ''; u.style.transform = ''; }, { once: true }); // 收尾清动画·还原
       });
     }
+    // ── 新部署兵「逐张落桌」（P19·owner 2026-07-04「一张一张放·看清哪张在放」）──
+    // view.slot.fresh=本批落子序 k；每兵 g-drop 从第 k·STAGGER 开始落 → 一张接一张。整片重建摧毁动画 → 用批次起点+负延迟续演抗重建。
+    const freshK = new Map<string, number>(); // 'u-<id>' → 落子序 k
+    view.lanes.forEach((L) => L.slots.forEach((s) => { if (s.hasUnit && s.unitId != null && s.fresh != null) freshK.set('u-' + s.unitId, s.fresh); }));
+    const freshUnits: { el: HTMLElement; k: number; id: string }[] = [];
+    if (freshK.size) host.querySelectorAll('[id^="u-"]').forEach((el) => { const k = freshK.get(el.id); if (k != null) freshUnits.push({ el: el as HTMLElement, k, id: el.id }); }); // 属性选择器匹配·免 id 特殊字符破坏 querySelector
+    if (freshUnits.length) {
+      const ids = new Set(freshUnits.map((f) => f.id));
+      const sameBatch = dropBatch && freshUnits.some((f) => dropBatch!.ids.has(f.id)); // 与上批有交集=同批延续（保起点·续演）；否则新批（重置起点）
+      const now = perfNow();
+      if (!sameBatch) dropBatch = { start: now, ids }; else dropBatch!.ids = ids;
+      const DROP_DUR = 440, DROP_STAGGER = 150; // ms·每张间隔（对齐部署音 fi·150 节拍·落桌与啪啪同步）
+      freshUnits.forEach((f) => { const delay = (dropBatch!.start + f.k * DROP_STAGGER) - now; f.el.style.animation = `g-drop ${DROP_DUR}ms cubic-bezier(.25,.9,.3,1.15) ${delay}ms both`; }); // 负延迟=从对应进度续播（已落定的兵停末态·未轮到的兵 backwards 隐于 opacity:0）
+    } else dropBatch = null;
     syncDice3D(); // 3D 战力骰覆层随重渲贴合/撤除（clash 在场挂·撤 clash 撤）
   };
   // 坞/格/牌 交互用 pointerdown（同 battle-screen）：rAF/重渲在按下↔抬起间整片重建 DOM，click 会落空 → 用单次离散 pointerdown。
