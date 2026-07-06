@@ -10,6 +10,8 @@ import type { Engine } from '../../runtime/engine.js';
 import type { Component } from '@engine/core/types.js';
 import { upFaceIndex } from '@renderer/three/dice.js';
 import { ELEM_INFO, type Die, type RolledDie, type Elem } from './dice.js';
+import { diceFaceArt } from './art.js';
+import { ARENA_HALF } from './rooms.js';
 
 const hex = (el: Elem): number => parseInt(ELEM_INFO[el].hex.slice(1), 16);
 // 6 面点数排布（对面和为 7·同 Title 骰）·面序 [+X,-X,+Y,-Y,+Z,-Z]（= dieFaces 与 upFaceIndex 面序）。
@@ -37,32 +39,34 @@ export class Throw3D {
     this.clear();
     this.dice = dice; this.done = done; this.active = true;
     this.startMs = nowMs; this.lastMoveMs = nowMs; this.prevQuat = [];
-    // 隐形围栏（4 面静态物理墙·收住骰子不飞出地台）：RigidBody3D 无 Mesh3D → 物理有效但**不渲染**·默认 4³ 静态盒。
-    // 中心离场心 4.4 → 内壁 ~±2.4 的托盘；骰从 y3 落入（墙高 y±2·骰从上方落进围栏）。
-    const WALL = 4.4;
+    // 反弹围栏（4 面静态物理墙·骰子撞它反弹=掷骰盒·owner「四个边都能反弹」）：RigidBody3D 无 Mesh3D → 物理有效但
+    // **不渲染**（默认 4³ 静态盒）·墙位对齐**可见围墙内壁**（离场心 ARENA_HALF+1.8=5.3 → 内壁 ~±3.3≈围墙 ±3.5）→ 骰看着
+    // 就是撞在可见围墙上反弹。墙心抬到 y1（顶 y3·骰从上方落进不越顶）。含 +Z 面 → 挡住门洞·骰不从门逃。反弹力=物理世界默认 restitution 0.4。
+    const WALL = ARENA_HALF + 1.8;
     ([[WALL, 0], [-WALL, 0], [0, WALL], [0, -WALL]] as const).forEach(([dx, dz], k) => {
       const wid = `gd-pdie-wall-${k}`;
       this.wallIds.push(wid);
       this.engine.world.createEntity(wid);
-      this.engine.world.addComponent(wid, { type: 'Transform3D', x: dx, y: 0, z: roomZ + dz } as unknown as Component);
-      this.engine.world.addComponent(wid, { type: 'RigidBody3D', shape: 'box', mass: 0 } as unknown as Component); // 静态·无 Mesh3D→隐形
+      this.engine.world.addComponent(wid, { type: 'Transform3D', x: dx, y: 1, z: roomZ + dz } as unknown as Component);
+      this.engine.world.addComponent(wid, { type: 'RigidBody3D', shape: 'box', mass: 0 } as unknown as Component); // 静态·无 Mesh3D→隐形·对齐可见围墙
     });
     const n = dice.length;
     dice.forEach((d, i) => {
       const id = `gd-pdie-${i}`;
       this.ids.push(id);
-      const el = d.faces[0]!.el; // 元素骰六面同元素 → 取骰元素色
-      const faces = PIPS.map((pip) => ({ color: hex(el), pip, emissive: hex(el) }));
-      const x = (i - (n - 1) / 2) * 1.05; // 横向铺开·居中（收在托盘内）
+      const el = d.faces[0]!.el; // 元素骰六面同元素 → 取骰元素色 + 手绘骰面图
+      // owner「不要特别透明·阿尔法高·看清是什么骰·每颗=选中骰的材质」：六面用**选中骰的手绘骰面图**(diceFaceArt·实底不透明)
+      // → 实体骰、一眼看清是哪种元素骰。edgeTint=元素色 → 圆角面外的棱角不发黑（撤 dieGlass 半透）。
+      const faces = PIPS.map((pip) => ({ color: hex(el), pip, src: diceFaceArt(el, pip) }));
+      const x = (i - (n - 1) / 2) * 0.9; // 中心附近起手·靠横向初速抛向四壁反弹
       this.engine.world.createEntity(id);
-      this.engine.world.addComponent(id, { type: 'Transform3D', x, y: 3 + i * 0.3, z: roomZ + (rand() - 0.5) * 0.6, scale: 1 } as unknown as Component);
-      // dieGlass=玻璃骰（同 Title 骰·owner「四角别黑·要通透半透明·度别太高」）：六面元素色 pip 贴花浮于半透玻璃·棱角通透。
-      this.engine.world.addComponent(id, { type: 'Mesh3D', shape: 'box', width: DIE, height: DIE, depth: DIE, frontTint: 0xeef4ff, dieFaces: faces, dieGlass: true } as unknown as Component);
-      // 强翻滚角速度（落定面随机）+ **很轻**线速度 + 几乎不弹、高摩擦（落定在地台内·不飞散·owner「5 骰掷到场景中」要收得住）。
+      this.engine.world.addComponent(id, { type: 'Transform3D', x, y: 3 + i * 0.25, z: roomZ + (rand() - 0.5) * 0.5, scale: 1 } as unknown as Component);
+      this.engine.world.addComponent(id, { type: 'Mesh3D', shape: 'box', width: DIE, height: DIE, depth: DIE, frontTint: hex(el), edgeTint: hex(el), dieFaces: faces } as unknown as Component);
+      // 强翻滚 + **有力横向初速**（抛向四壁·撞墙反弹=掷骰盒手感·owner「四边反弹·真实模拟」）。反弹靠物理世界默认 restitution。
       this.engine.world.addComponent(id, {
-        type: 'RigidBody3D', shape: 'box', mass: 1, restitution: 0.08, friction: 0.82,
-        vx: (rand() - 0.5) * 0.6, vy: 0.6 + rand() * 0.8, vz: (rand() - 0.5) * 0.6,
-        avx: (rand() - 0.5) * 22, avy: (rand() - 0.5) * 22, avz: (rand() - 0.5) * 22,
+        type: 'RigidBody3D', shape: 'box', mass: 1, restitution: 0.4, friction: 0.5,
+        vx: (rand() - 0.5) * 8, vy: 1 + rand(), vz: (rand() - 0.5) * 8,
+        avx: (rand() - 0.5) * 24, avy: (rand() - 0.5) * 24, avz: (rand() - 0.5) * 24,
       } as unknown as Component);
     });
   }

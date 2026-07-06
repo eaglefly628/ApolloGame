@@ -195,7 +195,7 @@ export function mount(container: HTMLElement): () => void {
     const c = engine.world.getComponent<Camera3D>('cam', 'Camera3D');
     if (c) {
       if (dark) { c.projection = 'perspective'; c.fov = 38; c.yaw = 0; c.pitch = 0.032; c.distance = 6.3; c.pivotX = 0; c.pivotY = 0; c.pivotZ = 0; }
-      else { c.projection = 'ortho'; c.yaw = Math.PI; c.pitch = 0.99; c.orthoSize = 7; c.distance = 200; c.pivotX = 0; c.pivotY = 0.35; c.pivotZ = 0; } // §B: ortho fr7·pos(0,12,7.8) lookAt 原点
+      else { c.projection = 'ortho'; c.yaw = Math.PI; c.pitch = 0.99; c.orthoSize = 5.2; c.distance = 200; c.pivotX = 0; c.pivotY = 0.35; c.pivotZ = 0; } // ortho 拉近(7→5.2·owner「场景太小」)·pos(0,12,7.8) lookAt 原点
     }
   };
   // 一簇淡色浮沉尘埃（Vfx3D·render-only）：sphere 随机方向低速 + 微重力 + 阻尼 = 缓慢浮沉；size=稍粗；

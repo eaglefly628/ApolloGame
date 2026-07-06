@@ -20,6 +20,8 @@ export const ROOM_SPACING = 12;
 /** 普通竞技场半尺寸 = 7×7 地格的一半（§B）；BOSS 间略大。 */
 const HW = 3.5;
 const HD = 3.5;
+/** 竞技场地台半宽（供物理掷骰把「反弹墙」对齐到可见围墙内壁·throw3d 消费）。 */
+export const ARENA_HALF = HW;
 /** 墙高 / 墙厚 / 地台厚（§B：墙 h0.85·地格 0.45 薄板）。 */
 const WALL_H = 0.85;
 const WALL_T = 0.35;
@@ -159,7 +161,7 @@ export function baseBlueprint(): WorldBlueprint {
     capabilities: [],
     entities: {
       // §B：ortho fr7·pos(0,12,7.8) lookAt 原点 → yaw π·pitch 0.99·orthoSize 7·pivot 抬到盒庭中段(y0.35)。
-      cam: { Camera3D: { yaw: Math.PI, pitch: 0.99, projection: 'ortho', orthoSize: 7, distance: 200, near: 1, far: 900, pivotX: 0, pivotY: 0.35, pivotZ: 0 } },
+      cam: { Camera3D: { yaw: Math.PI, pitch: 0.99, projection: 'ortho', orthoSize: 5.2, distance: 200, near: 1, far: 900, pivotX: 0, pivotY: 0.35, pivotZ: 0 } }, // orthoSize 7→5.2：拉近·地台填满更多画面（owner「场景太小」）
       // 光照 = **暖调**（对齐设计稿 02-arena 暖房间·与 setMood(false) 一致）：key 暖白·fill 弱冷蓝·amb 暖白降强度加对比。
       sun: { Light3D: { kind: 'directional', color: 0xfff0d8, intensity: 1.05, dirX: -6, dirY: -11, dirZ: -5, castShadow: true } },
       fillDir: { Light3D: { kind: 'directional', color: 0x6f7cff, intensity: 0.18, dirX: 5, dirY: -4, dirZ: 4 } },
