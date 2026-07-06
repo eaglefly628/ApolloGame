@@ -585,16 +585,13 @@ function advanceColumnVsFoe(own: TurnUnit[], dir: number, foeFrontSlot: number, 
     own[i].slot = t;
   }
 }
-// 单列向敌家推进（本路无敌）：越过敌区末格 → 敌大本营 −1(攻城锤多 chip)·该兵退场（死守可吸我家首破）。
-function advanceColumnToBase(b: TurnBattle, own: TurnUnit[], dir: number, side: 'a' | 'b', speedPen = 0): void {
-  for (let i = 0; i < own.length; i++) {
-    if (own[i].hold) continue; // 开局排阵守军·不自动冲家（REQ-G-开局排阵 #2·守军绝不主动冲锋）
-    if (side === 'b' && own[i].general) continue; // Boss 主将死守原地·不直扑我家（owner 2026-06-29）
-    let t = own[i].slot + dir * Math.max(1, (own[i].speed ?? 1) - speedPen); // 铁索：speedPen 减速(下限1格)
-    if (i > 0) { const ahead = own[i - 1].slot; t = dir > 0 ? Math.min(t, ahead - 1) : Math.max(t, ahead + 1); }
-    own[i].slot = t;
-  }
+// 破家收割（owner 2026-07-06·修「突深兵走出棋盘 / 破家不掉血」）：任何越过敌家末格(goal)的己兵 → 敌大本营 −1·该兵回库返半费。
+//   **两条推进路都调它**：无敌路(advanceColumnToBase)照常；有敌路(advanceColumnVsFoe)里突深过敌前锋、越线到家的兵也必须在这里破家离场——
+//   否则该兵会因「本路仍有敌(在它身后)→不走破家分支」而无限往前走出棋盘(slot 9/10/11…)、既不破家也不掉血(owner 实录：我兵现敌后场 / 敌到我家我不掉血)。
+// 返破家兵数（供日志）。
+function reapPastGoal(b: TurnBattle, own: TurnUnit[], dir: number, side: 'a' | 'b'): number {
   const goal = side === 'a' ? A_GOAL : B_GOAL;
+  let broke = 0;
   for (let i = own.length - 1; i >= 0; i--) {
     const past = dir > 0 ? own[i].slot > goal : own[i].slot < goal;
     if (!past) continue;
@@ -606,7 +603,20 @@ function advanceColumnToBase(b: TurnBattle, own: TurnUnit[], dir: number, side: 
     const wsd = sideOf(b, side);
     wsd.pokerDeck.push({ kind: 'poker', id: u.id, rank: u.rank, suit: u.suit, general: u.general, buff: u.buff, cost: u.cost });
     wsd.mana += (u.cost ?? 0) / 2; // 返半费（sim 显攻城经济过快可单独清零·先按半费）
+    broke += 1;
   }
+  return broke;
+}
+// 单列向敌家推进（本路无敌）：越过敌区末格 → 敌大本营 −1(攻城锤多 chip)·该兵退场（死守可吸我家首破）。
+function advanceColumnToBase(b: TurnBattle, own: TurnUnit[], dir: number, side: 'a' | 'b', speedPen = 0): void {
+  for (let i = 0; i < own.length; i++) {
+    if (own[i].hold) continue; // 开局排阵守军·不自动冲家（REQ-G-开局排阵 #2·守军绝不主动冲锋）
+    if (side === 'b' && own[i].general) continue; // Boss 主将死守原地·不直扑我家（owner 2026-06-29）
+    let t = own[i].slot + dir * Math.max(1, (own[i].speed ?? 1) - speedPen); // 铁索：speedPen 减速(下限1格)
+    if (i > 0) { const ahead = own[i - 1].slot; t = dir > 0 ? Math.min(t, ahead - 1) : Math.max(t, ahead + 1); }
+    own[i].slot = t;
+  }
+  reapPastGoal(b, own, dir, side);
 }
 // 行动阶段（owner 2026-06-29 ②·顺序回合模型·替 2026-06-21 同步推进）：**只推刚结束回合的那一方**——
 // 我放完→我方三路向敌家推进/攻击；敌放完→敌方推进/攻击。两军不再同帧一起动（owner「一起行动看不清谁打谁」）。
@@ -634,11 +644,12 @@ function advanceSideMove(b: TurnBattle, side: 'a' | 'b', dbg?: (m: string) => vo
       const collides = mobile && approaching && (dir > 0 ? natural >= foe[0].slot : natural <= foe[0].slot); // 落点会踩到/越过敌前锋 = 碰撞
       const foeFrontBefore = foe[0].slot;
       advanceColumnVsFoe(own, dir, foe[0].slot, side === 'b', slowPen); // 实际移动仍封顶在敌前一格（停一格·胜后再推进占据）
+      const broke = reapPastGoal(b, own, dir, side); // 突深过敌前锋、越线到敌家的兵 → 破家离场（修：别走出棋盘·别到家不掉血·owner 2026-07-06）
       if (collides) pending.push(li);
       for (const u of own) if (beforeMap.get(u.id) !== u.slot) b.movedNow.push(u.id); // 真前进的兵（供休整回血）
       const moves = own.filter((u) => beforeMap.get(u.id) !== u.slot).map((u) => `${u.rank}${u.suit}:${beforeMap.get(u.id)}→${u.slot}`).join('、') || '无移动';
       const why = collides ? '★碰撞→掷命' : !mobile ? (front.hold ? '守军静守·不撞' : '主将死守·不撞') : `走位不打（前锋落点${natural} 未踩到敌前锋@${foeFrontBefore}）`;
-      say(`[${sideNm}·${LN[li]}路] 前锋 ${front.rank}${front.suit}@${beforeMap.get(front.id)} · 敌前锋@${foeFrontBefore} → ${why}｜移动:[${moves}]`);
+      say(`[${sideNm}·${LN[li]}路] 前锋 ${front.rank}${front.suit}@${beforeMap.get(front.id)} · 敌前锋@${foeFrontBefore} → ${why}${broke ? `｜★突深破家 ${broke} 兵` : ''}｜移动:[${moves}]`);
     } else {
       advanceColumnToBase(b, own, dir, side, slowPen); // 本路无敌 → 直扑对家大本营
       for (const u of own) if (beforeMap.get(u.id) !== u.slot) b.movedNow.push(u.id); // 真前进的兵（破家离场的已 splice 出 own·不计）

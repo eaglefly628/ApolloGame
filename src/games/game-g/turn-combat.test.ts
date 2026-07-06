@@ -118,6 +118,26 @@ describe('Game G · turn-combat（doc24 单机回合制 · A0 重构）', () => 
     expect(def.lanes[0].b[0].slot).toBe(A_DEPLOY_SLOT + 3);       // 守方 b 胜 → 守原位(未前压占格)
   });
 
+  it('突深破家：兵越过敌线到敌家末格·即便身后有敌(非无敌路) → 破家掉血+回库·不走出棋盘（owner 2026-07-06 修）', () => {
+    // 我兵已突到敌家末格 slot8·敌兵在其身后 slot6(foe.length>0→逼走「有敌」推进分支)。旧 bug：该分支不收割越线兵 → 我兵一路走 9/10/11…出棋盘、敌家不掉血。
+    const atk = initTurnBattle({ seed: 1 });
+    atk.lanes[0].a.push(unit('brk', 'A', 8));      // 我突深兵@敌家末格(A_GOAL=8)
+    atk.lanes[0].b.push(unit('foe', '2', 6));      // 敌兵在其身后@6 → 本路非无敌
+    const homeB0 = atk.homeB;
+    atk.active = 'a'; endTurn(atk);                // a 推进：brk 越线到 9 → 破家收割
+    expect(atk.homeB).toBe(homeB0 - 1);            // 敌大本营 −1（不再「到家不掉血」）
+    expect(atk.lanes[0].a.find((u) => u.id === 'brk')).toBeUndefined(); // 破家兵回库离场·不留在 slot9+ 走出棋盘
+
+    // 对称：敌兵突深到我家末格 slot0·我兵在其身后 → 敌破我家掉血。
+    const def = initTurnBattle({ seed: 1 });
+    def.lanes[0].b.push(unit('ebrk', '2', 0));     // 敌突深兵@我家末格(B_GOAL=0)
+    def.lanes[0].a.push(unit('mine', '2', 2));     // 我兵在其身后@2 → 本路非无敌
+    const homeA0 = def.homeA;
+    def.active = 'b'; endTurn(def);                // b 推进：ebrk 越线到 −1 → 破我家
+    expect(def.homeA).toBe(homeA0 - 1);            // 我大本营 −1（「敌到我家我不掉血」修复）
+    expect(def.lanes[0].b.find((u) => u.id === 'ebrk')).toBeUndefined();
+  });
+
   it('无敌路推进到底 → 敌大本营 −1 血、该兵退场', () => {
     const b = initTurnBattle({ seed: 1 });
     b.lanes[0].a.push(unit('a0', '7', A_DEPLOY_SLOT));
