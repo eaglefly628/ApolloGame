@@ -388,10 +388,11 @@ export class ThreeRenderer implements RendererBackend {
   // 掷骰子（游戏层调·render-only 表现物理）：置位 → 下帧 sync 里把所有刚体抬高 + 随机翻滚重掷。
   rollDice(): void { this.rollPending = true; this.invalidate(); }
 
-  // 屏坐标 → 世界坐标（通用 screen→world seam·render-only 输入胶水）：把光标/触点投射到世界平面 z=worldZ 上的点。
+  // 屏坐标 → 世界坐标（通用 screen→world seam·render-only 输入胶水）：把光标/触点投射到世界某**轴平面**上的点。
+  // axis='z'（缺省·平面 z=coord·透视正视场景用）· 'y'（平面 y=coord·**俯视/顶视场景**取地面点用）· 'x'。
   // 用当前激活相机（透视/正交都对·Raycaster.setFromCamera）。给「粒子跟随鼠标（Vfx3D.attractor）」「点世界拾取」等游戏层输入用——
   // 与 WorldUI3D 的世界→屏锚点互逆（路线图「UI↔世界锚」的输入向）。返回 null = 无 canvas / 射线平行目标平面 / 交点在相机后。
-  screenToWorld(clientX: number, clientY: number, worldZ = 0): { x: number; y: number; z: number } | null {
+  screenToWorld(clientX: number, clientY: number, coord = 0, axis: 'x' | 'y' | 'z' = 'z'): { x: number; y: number; z: number } | null {
     if (!this.gl) return null;
     const rect = this.gl.domElement.getBoundingClientRect();
     if (rect.width <= 0 || rect.height <= 0) return null;
@@ -399,8 +400,9 @@ export class ThreeRenderer implements RendererBackend {
     const ndcY = -(((clientY - rect.top) / rect.height) * 2 - 1);
     const ray = new THREE.Raycaster();
     ray.setFromCamera(new THREE.Vector2(ndcX, ndcY), this.cameras.current);
+    const n = axis === 'y' ? new THREE.Vector3(0, 1, 0) : axis === 'x' ? new THREE.Vector3(1, 0, 0) : new THREE.Vector3(0, 0, 1);
     const hit = new THREE.Vector3();
-    return ray.ray.intersectPlane(new THREE.Plane(new THREE.Vector3(0, 0, 1), -worldZ), hit) ? { x: hit.x, y: hit.y, z: hit.z } : null;
+    return ray.ray.intersectPlane(new THREE.Plane(n, -coord), hit) ? { x: hit.x, y: hit.y, z: hit.z } : null;
   }
 
   /**

@@ -209,6 +209,18 @@ export function mount(container: HTMLElement): () => void {
       colorGradient: { stops: [{ t: 0, color, alpha: 0 }, { t: 0.45, color, alpha: 0.62 }, { t: 1, color, alpha: 0 }] },
     } as unknown as Component);
   };
+  // 战场鼠标跟随尘埃（owner 2026-07-03「战场也要 title 那种粒子跟随·但少·五六个够·小一点」）：一簇**极少·小**的淡色浮沉尘埃，
+  // 悬在地台上方 ARENA_DUST_Y·rate×lifetime≈6 颗封顶 max6·随鼠标 attractor 聚拢（onDustMove 战场分支写）。每进房重建（跟房 Z）。
+  const ARENA_DUST = 'gd-arena-dust';
+  const spawnArenaDust = (roomZ: number): void => {
+    try { engine.world.destroyEntity(ARENA_DUST); } catch { /* noop */ }
+    engine.world.createEntity(ARENA_DUST);
+    engine.world.addComponent(ARENA_DUST, { type: 'Vfx3D', x: 0, y: 1.0, z: roomZ, shape: 'sphere', emitRadius: 2.4, rate: 2.5, lifetime: 2.4, lifeVar: 0.7,
+      speed: 0.3, speedVar: 0.2, gravity: 0, drag: 0.7, size: 0.24, max: 6, blend: 'add', // 少（max6）· 小（size .24·比 Title 小很多）· add 发光（暗金属地上才显·萤火感）
+      sizeCurve: { keys: [{ t: 0, v: 0 }, { t: 0.2, v: 1 }, { t: 0.8, v: 1 }, { t: 1, v: 0 }], mode: 'smooth' },
+      colorGradient: { stops: [{ t: 0, color: 0xffe6c0, alpha: 0 }, { t: 0.45, color: 0xffe0b0, alpha: 0.85 }, { t: 1, color: 0xffd090, alpha: 0 }] }, // 暖金萤火·跟金属场一致
+    } as unknown as Component);
+  };
   const showTitleDie = (): void => {
     if (titleDieUp) return;
     // 命运骰（严格 1:1 复刻参考·owner 2026-07-01 上传 TS）：六面各一元素色 MeshStandard
@@ -786,6 +798,7 @@ export function mount(container: HTMLElement): () => void {
     S.foe = newFoe(S.globalRoom); S.thrown = false; S.rolled = []; S.selected.clear(); S.disabled.clear(); S.rerolls = REROLLS;
     throw3d.clear(); // 撤走上一房残留的物理骰
     bgRoom = S.globalRoom - 1; streamTo(bgRoom);
+    spawnArenaDust(bgRoom * ROOM_SPACING); // 战场少量小尘埃（跟鼠标·跟房 Z 重建）
     renderer.setBackgroundTexture(skyArt(Math.floor((S.globalRoom - 1) / 3), 'warm')); // 换层换天空图
   };
   const rewardChoices = (): string[] => {
@@ -882,13 +895,18 @@ export function mount(container: HTMLElement): () => void {
   //   光标经引擎 `renderer.screenToWorld` unproject 到尘埃平面 → 写进各 dust 发射器的 `Vfx3D.attractor`（引擎侧弹簧力 +
   //   现成 drag 阻尼 = 自然加减速·不夸张·owner「不要太夸张」）。能力（attractor）+ 反投影（screenToWorld）皆在引擎/渲染线，
   //   游戏层只做「光标→世界点→写数据」这一层胶水。仅 Title 有 dust 实体 → 非 Title 时 getComponent 为空自动 no-op。
-  const DUST_IDS = ['gd-title-dust1', 'gd-title-dust2', 'gd-title-dust3'];
-  const DUST_PLANE_Z = 2.2, DUST_PULL = 3.5; // 尘埃所在景深 z / 弹簧力强度（温柔聚拢·非吸附）
-  const setDustAttractor = (a: { x: number; y: number; z: number; strength: number } | undefined): void => {
-    for (const id of DUST_IDS) { const v = engine.world.getComponent<{ type: 'Vfx3D'; attractor?: typeof a }>(id, 'Vfx3D'); if (v) v.attractor = a; }
+  const TITLE_DUST_IDS = ['gd-title-dust1', 'gd-title-dust2', 'gd-title-dust3'];
+  const DUST_PLANE_Z = 2.2, DUST_PULL = 3.5; // Title 尘埃景深 z / 弹簧力强度（温柔聚拢·非吸附）
+  const ARENA_DUST_Y = 1.0, ARENA_DUST_PULL = 2.6; // 战场尘埃悬浮高度 / 弹簧力（战场俯视·取地面上方 y 平面点）
+  type Attr = { x: number; y: number; z: number; strength: number } | undefined;
+  const setAttr = (ids: readonly string[], a: Attr): void => {
+    for (const id of ids) { const v = engine.world.getComponent<{ type: 'Vfx3D'; attractor?: Attr }>(id, 'Vfx3D'); if (v) v.attractor = a; }
   };
-  const onDustMove = (ev: MouseEvent): void => { const p = renderer.screenToWorld(ev.clientX, ev.clientY, DUST_PLANE_Z); if (p) setDustAttractor({ ...p, strength: DUST_PULL }); };
-  const onDustLeave = (): void => setDustAttractor(undefined); // 离场 → 撤力·尘埃恢复自然浮沉
+  const onDustMove = (ev: MouseEvent): void => {
+    if (S.phase === 'title') { const p = renderer.screenToWorld(ev.clientX, ev.clientY, DUST_PLANE_Z); if (p) setAttr(TITLE_DUST_IDS, { ...p, strength: DUST_PULL }); }
+    else if (S.phase === 'arena') { const p = renderer.screenToWorld(ev.clientX, ev.clientY, ARENA_DUST_Y, 'y'); if (p) setAttr([ARENA_DUST], { ...p, strength: ARENA_DUST_PULL }); } // 俯视→取 y 平面地面点
+  };
+  const onDustLeave = (): void => { setAttr(TITLE_DUST_IDS, undefined); setAttr([ARENA_DUST], undefined); }; // 离场 → 撤力·尘埃恢复自然浮沉
   uiHost.addEventListener('mousemove', onDustMove);
   uiHost.addEventListener('mouseleave', onDustLeave);
 
@@ -900,5 +918,5 @@ export function mount(container: HTMLElement): () => void {
   });
   engine.start();
 
-  return () => { unsub(); engine.stop(); throw3d.clear(); uiHost.removeEventListener('mousemove', onDustMove); uiHost.removeEventListener('mouseleave', onDustLeave); renderer.destroy(); if (ui) ui(); uiHost.remove(); wrapper.remove(); };
+  return () => { unsub(); engine.stop(); throw3d.clear(); try { engine.world.destroyEntity(ARENA_DUST); } catch { /* noop */ } uiHost.removeEventListener('mousemove', onDustMove); uiHost.removeEventListener('mouseleave', onDustLeave); renderer.destroy(); if (ui) ui(); uiHost.remove(); wrapper.remove(); };
 }

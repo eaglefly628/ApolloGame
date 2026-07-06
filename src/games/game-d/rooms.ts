@@ -77,6 +77,8 @@ const wallTex = (t: ActDef, act: number): VoxelTex => ({ top: t.wall, side: t.wa
 //   Material3D 优先于 voxelTex（渲染器）·都靠 Sky3D.env(IBL) 反射成像。一致=同金属家族·不同=结构哑光 vs 亮件抛光。
 const metalStruct = (color: number) => ({ preset: 'iron' as const, color, surface: { pattern: 'bumps' as const, tiles: 6, normal: 0.3, rough: 0.55 } });
 const metalBright = (color: number) => ({ preset: 'gold' as const, color, surface: { pattern: 'bumps' as const, tiles: 5, normal: 0.32, rough: 0.32 } });
+// 地盘专用金属（owner「地板太丑」→ 换干净的**抛光拉丝钢**·去掉锤打噪点·细腻拉丝纹·低粗糙=反光干净·暖深钢灰跟金环一致）。
+const metalFloor = { preset: 'steel' as const, color: 0x69645d, surface: { pattern: 'scratches' as const, tiles: 3, normal: 0.09, rough: 0.32 } };
 
 /**
  * 即时生成第 index 间竞技场的全部实体（id 以 `r{index}-` 前缀·跨房间唯一·便于流式卸载）。
@@ -137,7 +139,7 @@ export function genRoom(index: number): Record<string, Ent> {
     [`${P}-plinth2`]: { ...block(0, -2.3, baseZ, hw * 2 + 0.3, 0.7, hd * 2 + 0.3, darken(t.floorSide, 0.42), darken(t.floorSide, 0.56)), Material3D: metalStruct(darken(t.floorSide, 0.42)) },
     // 竞技场地台（顶在 y=0·§B 薄地格 0.45）——**金属地盘**（owner 整场金属化）。撤 floorTex（顶面手绘草贴图会盖过 Material3D）→ 纯金属；
     // 色彩微调：地面用暖青铜色 floorSide（非绿 floorTop）→ 明显金属、跟金环一致。
-    [`${P}-floor`]: { ...block(0, -FLOOR_H / 2, baseZ, hw * 2, FLOOR_H, hd * 2, t.floorTop, t.floorSide), Material3D: metalStruct(t.floorSide) },
+    [`${P}-floor`]: { ...block(0, -FLOOR_H / 2, baseZ, hw * 2, FLOOR_H, hd * 2, t.floorTop, t.floorSide), Material3D: metalFloor },
     // 三面围墙（左/右/后=入口侧·§B 墙高 0.85）——墙纹 + 顶饰条
     [`${P}-wall-l`]: { ...block(-hw, wcy, baseZ, WALL_T, WALL_H, hd * 2, t.wall, t.floorSide, undefined, wallTex(t, m.act)), Material3D: metalStruct(t.wall) },
     [`${P}-wall-r`]: { ...block(hw, wcy, baseZ, WALL_T, WALL_H, hd * 2, t.wall, t.floorSide, undefined, wallTex(t, m.act)), Material3D: metalStruct(t.wall) },
