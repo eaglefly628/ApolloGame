@@ -11,7 +11,6 @@
 
 import type { WorldBlueprint } from '../../assembly/demo.assembly.js';
 import type { VoxelTex } from '@engine/protocol/components.js';
-import { tileArt } from './art.js';
 
 type Ent = WorldBlueprint['entities'][string];
 
@@ -70,15 +69,17 @@ function block(x: number, y: number, z: number, w: number, h: number, d: number,
     Mesh3D: { shape: 'box', width: w, height: h, depth: d, frontTint: side, backTint: side, edgeTint: top, ...(vox ? { voxelTex: vox } : {}) },
   };
 }
-/** 围墙体素贴图（tile=每边格数·§B 7×7 → tile 7）。地台改金属 Material3D 后不再用 floorTex（已删）。 */
-const wallTex = (t: ActDef, act: number): VoxelTex => ({ top: t.wall, side: t.wall, side2: t.side2, trim: t.trim, wall: true, tile: 7, sideSrc: tileArt(act, 'wall') });
-// 场馆整体金属化（owner 2026-07-03「所有东西换金属质感·跟金环一致·不完全一样·色彩微调」）：
-//   结构件（墙/地/基座）= 哑光**铁** iron + 主题色 tint（暗·粗糙·稳）；亮件（火盆碗珠/门/环）= 抛光**金** gold（亮·反射强）。
-//   Material3D 优先于 voxelTex（渲染器）·都靠 Sky3D.env(IBL) 反射成像。一致=同金属家族·不同=结构哑光 vs 亮件抛光。
-const metalStruct = (color: number) => ({ preset: 'iron' as const, color, surface: { pattern: 'bumps' as const, tiles: 6, normal: 0.3, rough: 0.55 } });
-const metalBright = (color: number) => ({ preset: 'gold' as const, color, surface: { pattern: 'bumps' as const, tiles: 5, normal: 0.32, rough: 0.32 } });
-// 地盘专用金属（owner「地板太丑」→ 换干净的**抛光拉丝钢**·去掉锤打噪点·细腻拉丝纹·低粗糙=反光干净·暖深钢灰跟金环一致）。
-const metalFloor = { preset: 'steel' as const, color: 0x69645d, surface: { pattern: 'scratches' as const, tiles: 3, normal: 0.09, rough: 0.32 } };
+// 场馆金属化 → owner 2026-07-06「非常不喜欢黄金属风·改纯铁皮·上面不要凹凸贴图」：全场改**平铁皮**——
+//   中性铁灰（grayOf 抽掉主题色相·只留明度层次）、iron/steel 预设、**无 surface**（flat·不加凹凸/拉丝法线贴图）、去金(gold)。
+//   金属成像色主要由 Sky3D env(IBL) 决定 → 盒庭天穹/灯同步改中性冷灰（见 game-d setMood 盒庭支）→ 铁皮才不发黄。
+const grayOf = (c: number, lift = 0): number => {
+  const r = (c >> 16) & 0xff, g = (c >> 8) & 0xff, b = c & 0xff;
+  const l = Math.max(24, Math.min(210, Math.round(0.3 * r + 0.59 * g + 0.11 * b) + lift));
+  return (l << 16) | (l << 8) | Math.min(255, l + 8); // 蓝略高 → 冷调铁灰（去暖黄）
+};
+const metalStruct = (color: number) => ({ preset: 'iron' as const, color: grayOf(color) });     // 墙/基座/走廊/火炬柱=哑光铁皮
+const metalBright = (color: number) => ({ preset: 'steel' as const, color: grayOf(color, 48) }); // 碗/珠/门楣=抛光亮铁皮（去金·只亮一档拉层次）
+const metalFloor = { preset: 'iron' as const, color: 0x84898f };                                 // 地盘=哑光中性铁皮（flat·略暗于墙）
 
 /**
  * 即时生成第 index 间竞技场的全部实体（id 以 `r{index}-` 前缀·跨房间唯一·便于流式卸载）。
@@ -89,12 +90,12 @@ const metalFloor = { preset: 'steel' as const, color: 0x69645d, surface: { patte
 const glow = (x: number, y: number, z: number, color: number, scale: number, opacity = 0.7): Ent =>
   ({ Transform3D: { x, y, z }, Glow3D: { color, scale, opacity } });
 
-/** 竖立的旋转金属环（owner 2026-07-03·借 game-z prim-torus 配方：金 PBR + 表面细节 + 绕 Y 自转）。
+/** 竖立的旋转金属环（owner 2026-07-03·借 game-z prim-torus 配方：**铁** PBR + 绕 Y 自转·owner 2026-07-06 去金改铁皮）。
  *  torus 默认在 XY 平面 = **竖直**环（面朝 ±Z）；spin rotY = 绕竖轴转（面→侧→面·别忘了它旋转）。金属靠 Sky3D.env(IBL) 反射成像。 */
 const metalRing = (x: number, y: number, z: number, dia: number, spin: number): Ent => ({
   Transform3D: { x, y, z },
-  Mesh3D: { shape: 'torus', width: dia, height: dia, frontTint: 0xffd991, tube: 0.32 },
-  Material3D: { preset: 'gold', surface: { pattern: 'bumps', tiles: 6, normal: 0.4, rough: 0.28 } },
+  Mesh3D: { shape: 'torus', width: dia, height: dia, frontTint: 0xc4c7c7, tube: 0.32 },
+  Material3D: { preset: 'steel' }, // 抛光铁环·flat·去金（owner 不喜黄金属风）
   Anim3D: { channels: [{ kind: 'spin', field: 'rotY', rate: spin }] },
 });
 
@@ -141,12 +142,12 @@ export function genRoom(index: number): Record<string, Ent> {
     // 色彩微调：地面用暖青铜色 floorSide（非绿 floorTop）→ 明显金属、跟金环一致。
     [`${P}-floor`]: { ...block(0, -FLOOR_H / 2, baseZ, hw * 2, FLOOR_H, hd * 2, t.floorTop, t.floorSide), Material3D: metalFloor },
     // 三面围墙（左/右/后=入口侧·§B 墙高 0.85）——墙纹 + 顶饰条
-    [`${P}-wall-l`]: { ...block(-hw, wcy, baseZ, WALL_T, WALL_H, hd * 2, t.wall, t.floorSide, undefined, wallTex(t, m.act)), Material3D: metalStruct(t.wall) },
-    [`${P}-wall-r`]: { ...block(hw, wcy, baseZ, WALL_T, WALL_H, hd * 2, t.wall, t.floorSide, undefined, wallTex(t, m.act)), Material3D: metalStruct(t.wall) },
-    [`${P}-wall-back`]: { ...block(0, wcy, baseZ - hd, hw * 2, WALL_H, WALL_T, t.wall, t.floorSide, undefined, wallTex(t, m.act)), Material3D: metalStruct(t.wall) },
+    [`${P}-wall-l`]: { ...block(-hw, wcy, baseZ, WALL_T, WALL_H, hd * 2, t.wall, t.floorSide), Material3D: metalStruct(t.wall) },
+    [`${P}-wall-r`]: { ...block(hw, wcy, baseZ, WALL_T, WALL_H, hd * 2, t.wall, t.floorSide), Material3D: metalStruct(t.wall) },
+    [`${P}-wall-back`]: { ...block(0, wcy, baseZ - hd, hw * 2, WALL_H, WALL_T, t.wall, t.floorSide), Material3D: metalStruct(t.wall) },
     // 前墙留中央门洞（+Z 端·通向上一间·发光门楣 + 门内符文光幕）
-    [`${P}-wall-fl`]: { ...block(-segCx, wcy, baseZ + hd, segW, WALL_H, WALL_T, t.wall, t.floorSide, undefined, wallTex(t, m.act)), Material3D: metalStruct(t.wall) },
-    [`${P}-wall-fr`]: { ...block(segCx, wcy, baseZ + hd, segW, WALL_H, WALL_T, t.wall, t.floorSide, undefined, wallTex(t, m.act)), Material3D: metalStruct(t.wall) },
+    [`${P}-wall-fl`]: { ...block(-segCx, wcy, baseZ + hd, segW, WALL_H, WALL_T, t.wall, t.floorSide), Material3D: metalStruct(t.wall) },
+    [`${P}-wall-fr`]: { ...block(segCx, wcy, baseZ + hd, segW, WALL_H, WALL_T, t.wall, t.floorSide), Material3D: metalStruct(t.wall) },
     [`${P}-door-top`]: { ...block(0, WALL_H + 0.16, baseZ + hd, DOOR, 0.32, WALL_T, t.accent, t.wall), Material3D: metalBright(t.accent) }, // 门楣=金
     [`${P}-portal`]: block(0, 0.5, baseZ + hd - 0.04, DOOR - 0.15, WALL_H + 0.15, 0.08, t.accent, t.accent),
     [`${P}-door-glow`]: glow(0, 0.75, baseZ + hd - 0.2, t.accent, 2.4, 0.6), // 门符文光晕
@@ -184,8 +185,8 @@ export function baseBlueprint(): WorldBlueprint {
       amb: { Light3D: { kind: 'ambient', color: 0xfff1de, intensity: 0.48 } },
       // 移轴景深（收敛·别糊成雾）+ 轻泛光（阈值高·只发光物晕·不洗白全场）——owner「太白·曝光过度」整改。
       post: { Post3D: { tiltShift: { focus: 0.54, intensity: 0.85 }, bloom: { strength: 0.32, radius: 0.72, threshold: 0.78 } } },
-      // 暖调奶油天穹（对齐设计稿暖房·非近白）。
-      sky: { Sky3D: { top: 0xe9dcc2, bottom: 0xd6c2a0, clouds: false, cloudTint: 0xf0e6d0, scroll: 0.3 } },
+      // 中性冷灰天穹（owner 2026-07-06 去黄改铁皮·IBL 决定金属成像色）。运行时由 setMood 盒庭支同步（此值仅首帧前）。
+      sky: { Sky3D: { top: 0xbcc2c9, bottom: 0xa4aab2, clouds: false, cloudTint: 0xdfe3e8, scroll: 0.3 } },
     },
   };
 }
