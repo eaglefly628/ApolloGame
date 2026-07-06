@@ -35,14 +35,51 @@ function ensureDesignKeyframes(): void {
 
 interface ChatMsg { role: 'user' | 'assistant'; content: string }
 
-/** 设计模式默认 provider：优先 mock（测试）→ 云 provider → 任一 available（local 兜底）。 */
+/** 设计模式默认 provider 优先级：① 配了 key 的真云 provider（deepseek/qwen…）→ ② mock（仅
+ *  APOLLO_MOCK_LLM=1 才在列·测试意图明确）→ ③ 本地 Ollama / 其它 available 兜底。
+ *  绝不让 mock 静默顶替用户配置的真 provider——这正是「怪 sample」的根：旧逻辑把 mock 排最前，
+ *  用户明明配了 deepseek 也被 mock 的内置样例（投骰/平台跳）顶掉。注意 `local`(Ollama) 后端恒报
+ *  available=true（未必真在跑），故必须排在 mock 之后，否则测试/无云 key 环境会误连 11434 拒连。 */
 function pickProvider(providers: ProviderInfo[]): ProviderInfo | null {
   return (
-    providers.find((p) => p.id === 'mock' && p.available)
-    ?? providers.find((p) => p.available && !LOCAL_PROVIDER_IDS.has(p.id))
+    providers.find((p) => p.available && p.id !== 'mock' && !LOCAL_PROVIDER_IDS.has(p.id))
+    ?? providers.find((p) => p.available && p.id === 'mock')
     ?? providers.find((p) => p.available)
     ?? null
   );
+}
+
+interface DraftSummary { id: string; slug: string | null; name: string; phase: Phase; updatedAt: string; turns: number; messageCount: number }
+
+/** 草稿 id：优先 crypto.randomUUID；无则时间戳兜底（studio 产品壳·非 sim·无确定性要求）。 */
+function newDraftId(): string {
+  const c = (globalThis as { crypto?: { randomUUID?: () => string } }).crypto;
+  if (c && typeof c.randomUUID === 'function') return c.randomUUID();
+  const perf = typeof performance !== 'undefined' ? Math.floor(performance.now()) : 0;
+  return `d-${Date.now().toString(36)}-${perf.toString(36)}`;
+}
+
+/** 相对时间（草稿列表用·简版）：刚刚 / N 分钟前 / N 小时前 / MM-DD HH:mm。 */
+function fmtDraftTime(iso: string): string {
+  if (!iso) return '';
+  const t = Date.parse(iso.replace(' ', 'T'));
+  if (Number.isNaN(t)) return iso;
+  const diff = Date.now() - t;
+  if (diff < 60_000) return '刚刚';
+  if (diff < 3_600_000) return `${Math.floor(diff / 60_000)} 分钟前`;
+  if (diff < 86_400_000) return `${Math.floor(diff / 3_600_000)} 小时前`;
+  const d = new Date(t);
+  const p = (n: number) => String(n).padStart(2, '0');
+  return `${p(d.getMonth() + 1)}-${p(d.getDate())} ${p(d.getHours())}:${p(d.getMinutes())}`;
+}
+
+const PHASE_LABEL: Record<Phase, string> = { chat: '讨论中', design: '设计稿', preview: '原型预览' };
+
+/** 把 provider 的原始返回体安全序列化成可展开的「原文」（失败态展示·绝不再抛）。 */
+function safeStringify(v: unknown): string | undefined {
+  if (v == null) return undefined;
+  try { return typeof v === 'string' ? v : JSON.stringify(v, null, 2); }
+  catch { return String(v); }
 }
 
 // ── 新建入口双选卡（🗣 设计一个游戏 推荐 / ⚡ 快速生成）──
@@ -52,7 +89,7 @@ export function EntryChoice({ onDesign, onQuick, onClose }: {
   onClose: () => void;
 }) {
   return (
-    <div onClick={onClose} style={overlayStyle}>
+    <div onClick={onClose} onKeyDown={(e) => e.stopPropagation()} style={overlayStyle}>
       <div onClick={(e) => e.stopPropagation()} className="apollo-design-studio" style={{
         width: 'min(680px, 94vw)', background: PANEL_BG, border: `1px solid ${SHELL.lineStrong}`,
         borderRadius: 14, padding: '26px 26px 30px', fontFamily: SHELL.fontUi, color: SHELL.text,
@@ -115,7 +152,7 @@ export function ContinueChoice({ name, onEditDesign, onQuickRevise, onClose }: {
   onClose: () => void;
 }) {
   return (
-    <div onClick={onClose} style={overlayStyle}>
+    <div onClick={onClose} onKeyDown={(e) => e.stopPropagation()} style={overlayStyle}>
       <div onClick={(e) => e.stopPropagation()} className="apollo-design-studio" style={{
         width: 'min(620px, 94vw)', background: PANEL_BG, border: `1px solid ${SHELL.lineStrong}`,
         borderRadius: 14, padding: '26px 26px 30px', fontFamily: SHELL.fontUi, color: SHELL.text,
@@ -175,7 +212,16 @@ export function DesignStudio({
   // 分解 / 原型 / 保存
   const [busy, setBusy] = useState(false);
   const [previewManifest, setPreviewManifest] = useState<unknown>(null);
-  const [err, setErr] = useState<string | null>(null);
+  const [err, setErr] = useState<{ message: string; raw?: string } | null>(null);
+
+  // 草稿持久化 + 相变后对话回看
+  const [drafts, setDrafts] = useState<DraftSummary[]>([]);
+  const [showThread, setShowThread] = useState(false);
+  const draftIdRef = useRef<string>(newDraftId());
+  const latestDraftRef = useRef<Record<string, unknown> | null>(null);
+  const discardedRef = useRef(false);   // 弃置后禁止再落盘/复活（防 flush/unmount 复活已删草稿）
+
+  const showErr = useCallback((message: string, raw?: string) => setErr({ message, raw }), []);
 
   const chatEndRef = useRef<HTMLDivElement>(null);
   useEffect(() => { chatEndRef.current?.scrollIntoView({ block: 'end' }); }, [messages, chatBusy]);
@@ -188,10 +234,10 @@ export function DesignStudio({
       setFiles(f);
       setSelected((prev) => (prev && f[prev] ? prev : Object.keys(f)[0] ?? null));
     } catch (e: unknown) {
-      setErr(e instanceof Error ? e.message : String(e));
+      showErr(e instanceof Error ? e.message : String(e));
       setFiles({});
     }
-  }, [api]);
+  }, [api, showErr]);
 
   useEffect(() => { if (initialSlug) loadDesign(initialSlug); }, [initialSlug, loadDesign]);
 
@@ -213,13 +259,14 @@ export function DesignStudio({
         setMessages((m) => [...m, { role: 'assistant', content: d.reply ?? '' }]);
         setReady((prev) => prev || !!d.ready);
       } else {
-        setErr(d?.error ?? '讨论失败');
+        // 失败不降级：红条报错 + 线程原样保留（用户那条 user 消息已在 next 里，不清空）。
+        showErr(d?.error ?? '讨论失败（provider 返回不可解析）', safeStringify(d));
       }
     } catch (e: unknown) {
-      setErr(e instanceof Error ? e.message : String(e));
+      showErr(e instanceof Error ? e.message : String(e), e instanceof Error ? e.stack : undefined);
     }
     setChatBusy(false);
-  }, [input, chatBusy, provider, messages, post]);
+  }, [input, chatBusy, provider, messages, post, showErr]);
 
   const breakdown = useCallback(async () => {
     if (!name.trim() || !ready || busy || !provider) return;
@@ -245,10 +292,10 @@ export function DesignStudio({
       setPhase('design');
       onDirty?.();   // 游戏此刻已建 + 落了设计稿 → 让上层刷架
     } catch (e: unknown) {
-      setErr(e instanceof Error ? e.message : String(e));
+      showErr(e instanceof Error ? e.message : String(e), e instanceof Error ? e.stack : undefined);
     }
     setBusy(false);
-  }, [name, ready, busy, provider, slug, api, messages, catalog, post, onDirty]);
+  }, [name, ready, busy, provider, slug, api, messages, catalog, post, onDirty, showErr]);
 
   const reviseFile = useCallback(async () => {
     if (!selected || !reviseInput.trim() || revising || !provider || !slug || !files) return;
@@ -271,10 +318,10 @@ export function DesignStudio({
       setReviseInput('');
       onDirty?.();
     } catch (e: unknown) {
-      setErr(e instanceof Error ? e.message : String(e));
+      showErr(e instanceof Error ? e.message : String(e), e instanceof Error ? e.stack : undefined);
     }
     setRevising(false);
-  }, [selected, reviseInput, revising, provider, slug, files, api, post, onDirty]);
+  }, [selected, reviseInput, revising, provider, slug, files, api, post, onDirty, showErr]);
 
   const prototype = useCallback(async () => {
     if (!slug || busy || !provider) return;
@@ -286,10 +333,10 @@ export function DesignStudio({
       setPreviewManifest(d.manifest ?? d.blueprint);
       setPhase('preview');
     } catch (e: unknown) {
-      setErr(e instanceof Error ? e.message : String(e));
+      showErr(e instanceof Error ? e.message : String(e), e instanceof Error ? e.stack : undefined);
     }
     setBusy(false);
-  }, [slug, busy, provider, catalog, post]);
+  }, [slug, busy, provider, catalog, post, showErr]);
 
   const savePrototype = useCallback(async () => {
     if (!slug || previewManifest == null || busy) return;
@@ -302,26 +349,139 @@ export function DesignStudio({
       });
       const pd = await pr.json();
       if (!pd?.success) throw new Error(pd?.error ?? '保存失败');
+      // 入库成功=创作完成 → 弃置草稿（fire-and-forget）+ 禁后续 flush 复活。
+      discardedRef.current = true;
+      fetch(`${api}/api/design-drafts/${draftIdRef.current}`, { method: 'DELETE' }).catch(() => {});
       onSaved(slug);
     } catch (e: unknown) {
-      setErr(e instanceof Error ? e.message : String(e));
+      showErr(e instanceof Error ? e.message : String(e), e instanceof Error ? e.stack : undefined);
       setBusy(false);
     }
-  }, [slug, previewManifest, busy, api, onSaved]);
+  }, [slug, previewManifest, busy, api, onSaved, showErr]);
+
+  // ── 草稿持久化：每轮 chat 往返 / 相变 / 改稿后自动落盘（防抖 400ms）——刷新/相变/换页永不丢 ──
+  // 只在有值得留存的中间态（有对话 或 有设计稿）时落盘，避免开台即空写污染草稿区。
+  const draftBody = useMemo(() => ({
+    id: draftIdRef.current,
+    slug, name, provider: provider?.id ?? null, phase, ready,
+    messages, files: files ?? {}, manifest: previewManifest ?? null,
+  }), [slug, name, provider, phase, ready, messages, files, previewManifest]);
+  useEffect(() => { latestDraftRef.current = draftBody; }, [draftBody]);
+
+  const draftWorthSaving = useCallback((d: Record<string, unknown>): boolean => {
+    const msgs = d.messages as unknown[] | undefined;
+    const f = d.files as Record<string, unknown> | undefined;
+    return (Array.isArray(msgs) && msgs.length > 0) || (!!f && Object.keys(f).length > 0);
+  }, []);
+
+  useEffect(() => {
+    if (discardedRef.current || !draftWorthSaving(draftBody)) return;
+    const t = setTimeout(() => {
+      fetch(`${api}/api/design-drafts/${draftIdRef.current}`, {
+        method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(draftBody),
+      }).catch(() => { /* 落盘失败静默：下一轮/关闭时会再落 */ });
+    }, 400);
+    return () => clearTimeout(t);
+  }, [draftBody, api, draftWorthSaving]);
+
+  // 立即落盘（关闭 / 换页 unload 用·keepalive 保证卸载时也送达）。
+  const flushDraft = useCallback(() => {
+    if (discardedRef.current) return;
+    const d = latestDraftRef.current;
+    if (!d || !draftWorthSaving(d)) return;
+    try {
+      fetch(`${api}/api/design-drafts/${draftIdRef.current}`, {
+        method: 'PUT', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(d), keepalive: true,
+      }).catch(() => {});
+    } catch { /* noop */ }
+  }, [api, draftWorthSaving]);
+
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    const onUnload = () => flushDraft();
+    window.addEventListener('beforeunload', onUnload);
+    return () => window.removeEventListener('beforeunload', onUnload);
+  }, [flushDraft]);
+
+  const handleClose = useCallback(() => { flushDraft(); onClose(); }, [flushDraft, onClose]);
+
+  // 未完成草稿列表（打开设计台时·仅新建流展示·时间倒序由服务端给）。
+  const refreshDrafts = useCallback(async () => {
+    try {
+      const r = await fetch(`${api}/api/design-drafts`);
+      const d = await r.json();
+      setDrafts(Array.isArray(d?.drafts) ? d.drafts : []);
+    } catch { setDrafts([]); }
+  }, [api]);
+  useEffect(() => { if (!initialSlug) refreshDrafts(); }, [initialSlug, refreshDrafts]);
+
+  const resumeDraft = useCallback(async (id: string) => {
+    setErr(null);
+    try {
+      const r = await fetch(`${api}/api/design-drafts/${id}`);
+      const d = await r.json();
+      const draft = d?.draft;
+      if (!d?.success || !draft) throw new Error(d?.error ?? '草稿读取失败');
+      discardedRef.current = false;
+      draftIdRef.current = id;
+      const dFiles = (draft.files && typeof draft.files === 'object') ? draft.files as Record<string, string> : {};
+      const dMsgs = Array.isArray(draft.messages) ? draft.messages : [];
+      setName(typeof draft.name === 'string' ? draft.name : '');
+      setSlug(typeof draft.slug === 'string' ? draft.slug : null);
+      setMessages(dMsgs);
+      setReady(!!draft.ready);
+      setFiles(dFiles);
+      setSelected(Object.keys(dFiles)[0] ?? null);
+      setPreviewManifest(draft.manifest ?? null);
+      const ph: Phase = (draft.phase === 'design' || draft.phase === 'preview') ? draft.phase : 'chat';
+      setPhase(ph);
+      setDrafts([]);
+      // named 草稿若没随身带 files（老数据）→ 从服务端补拉最新设计稿。
+      if (typeof draft.slug === 'string' && Object.keys(dFiles).length === 0) loadDesign(draft.slug);
+    } catch (e: unknown) {
+      showErr(e instanceof Error ? e.message : String(e));
+    }
+  }, [api, loadDesign, showErr]);
+
+  const discardDraft = useCallback(async (id: string, active = false) => {
+    const ok = typeof window === 'undefined' || window.confirm('确认弃置这份草稿？删除后无法恢复。');
+    if (!ok) return;
+    if (active) discardedRef.current = true;   // 阻止 flush/自动落盘复活已删草稿
+    try { await fetch(`${api}/api/design-drafts/${id}`, { method: 'DELETE' }); } catch { /* noop */ }
+    if (active) {
+      setMessages([]); setFiles({}); setPreviewManifest(null); setReady(false);
+      setSelected(null); setPhase('chat'); setSlug(null); setName(initialName ?? '');
+      setShowThread(false); setErr(null);
+      draftIdRef.current = newDraftId();
+      discardedRef.current = false;
+    }
+    refreshDrafts();
+  }, [api, initialName, refreshDrafts]);
+
+  const hasActiveDraft = messages.length > 0 || !!slug;
 
   const providerBar = (
-    <div style={{ fontSize: 12, color: SHELL.sub }}>
-      当前 AI：{provider
+    <div style={{ fontSize: 12, color: SHELL.sub, display: 'flex', alignItems: 'center', gap: 8 }}>
+      <span>当前 AI：{provider
         ? <b style={{ color: SHELL.jade }}>{provider.name}</b>
-        : <b style={{ color: SHELL.warn }}>未配置 API Key（去设置或用本地模型）</b>}
+        : <b style={{ color: SHELL.warn }}>未配置 API Key（去设置或用本地模型）</b>}</span>
+      {provider?.id === 'mock' && (
+        <span title="当前是 Mock 测试后端，输出为内置样例——不是真 AI 生成" style={{
+          fontSize: 10, fontWeight: 800, letterSpacing: 0.6, color: '#0f172a',
+          background: SHELL.warn, padding: '1px 6px', borderRadius: 4,
+        }}>MOCK</span>
+      )}
     </div>
   );
 
   return (
-    <div style={{
-      position: 'fixed', inset: 0, background: SHELL.bg0, color: SHELL.text,
-      display: 'flex', flexDirection: 'column', fontFamily: SHELL.fontUi, zIndex: 400,
-    }} className="apollo-design-studio">
+    <div
+      onKeyDown={(e) => e.stopPropagation()}   // 挡键盘事件冒泡到 launcher 轮播的 window handler（防裸 Enter 启动库卡带）
+      style={{
+        position: 'fixed', inset: 0, background: SHELL.bg0, color: SHELL.text,
+        display: 'flex', flexDirection: 'column', fontFamily: SHELL.fontUi, zIndex: 400,
+      }} className="apollo-design-studio">
       {/* 头栏 */}
       <div style={{
         display: 'flex', alignItems: 'center', gap: 16, padding: '14px 22px',
@@ -330,13 +490,40 @@ export function DesignStudio({
         <span style={{ fontSize: 16, fontWeight: 700, letterSpacing: 0.6 }}>🗣 设计工作台</span>
         <StepDots phase={phase} />
         <span style={{ flex: 1 }} />
+        {/* 相变后（设计稿/原型态）仍可回看讨论线程——绝不销毁对话。 */}
+        {phase !== 'chat' && messages.length > 0 && (
+          <button onClick={() => setShowThread(true)} style={{ ...secondaryBtn, padding: '6px 12px', fontSize: 12 }}>
+            💬 对话记录（{messages.length}）
+          </button>
+        )}
+        {hasActiveDraft && (
+          <button
+            onClick={() => discardDraft(draftIdRef.current, true)}
+            title="弃置当前草稿（需二次确认）"
+            style={{ ...secondaryBtn, padding: '6px 12px', fontSize: 12, color: SHELL.danger, borderColor: `${SHELL.danger}55` }}
+          >弃置草稿</button>
+        )}
         {providerBar}
-        <button onClick={onClose} aria-label="关闭" style={{ ...closeBtn, fontSize: 24 }}>×</button>
+        <button onClick={handleClose} aria-label="关闭" style={{ ...closeBtn, fontSize: 24 }}>×</button>
       </div>
 
       {err && (
-        <div style={{ padding: '8px 22px', color: SHELL.danger, fontSize: 13, background: SHELL.dangerWash, borderBottom: `1px solid ${SHELL.danger}33` }}>
-          {err}
+        <div style={{ padding: '12px 22px', background: SHELL.dangerWash, borderBottom: `1px solid ${SHELL.danger}66` }}>
+          <div style={{ display: 'flex', alignItems: 'baseline', gap: 10 }}>
+            <span style={{ color: SHELL.danger, fontSize: 14, fontWeight: 800 }}>⚠ 出错了</span>
+            <span style={{ color: SHELL.text, fontSize: 13.5, flex: 1, wordBreak: 'break-word' }}>{err.message}</span>
+            <button onClick={() => setErr(null)} style={{ ...secondaryBtn, padding: '4px 10px', fontSize: 12 }}>知道了</button>
+          </div>
+          <div style={{ color: SHELL.sub, fontSize: 12, marginTop: 4 }}>你的对话没有丢——修好后可直接继续（AI 失败不会用样例顶替真输出）。</div>
+          {err.raw && (
+            <details style={{ marginTop: 6 }}>
+              <summary style={{ color: SHELL.danger, fontSize: 12, cursor: 'pointer', fontWeight: 600 }}>查看原始返回（未改动·可复制排查）</summary>
+              <pre style={{
+                color: SHELL.sub, fontSize: 11.5, lineHeight: 1.5, marginTop: 6, maxHeight: 200, overflow: 'auto',
+                whiteSpace: 'pre-wrap', wordBreak: 'break-word', background: SHELL.bg0, border: `1px solid ${SHELL.line}`, borderRadius: 6, padding: 8,
+              }}>{err.raw}</pre>
+            </details>
+          )}
         </div>
       )}
 
@@ -347,11 +534,32 @@ export function DesignStudio({
             <label style={{ fontSize: 12, color: SHELL.dim }}>游戏名</label>
             <input
               value={name} onChange={(e) => setName(e.target.value)}
+              onKeyDown={(e) => { if (e.key === 'Enter') e.preventDefault(); }}  // 裸 Enter 不提交/不触发相变
               placeholder="给你的游戏起个名字（分解前必填）"
               style={{ ...inputStyle, width: 320, maxWidth: '60vw' }}
             />
           </div>
           <div style={{ flex: 1, overflowY: 'auto', padding: '16px 22px', display: 'flex', flexDirection: 'column', gap: 12, minHeight: 0 }}>
+            {/* 未完成草稿一键恢复（时间倒序·仅新建流·开台即见） */}
+            {messages.length === 0 && drafts.length > 0 && (
+              <div style={{ border: `1px solid ${SHELL.jadeLine}`, background: SHELL.jadeWash, borderRadius: 10, padding: '12px 14px', maxWidth: 680 }}>
+                <div style={{ fontSize: 13, fontWeight: 700, color: SHELL.jade, marginBottom: 8 }}>⏮ 未完成的草稿（点「恢复」接着做）</div>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+                  {drafts.map((dr) => (
+                    <div key={dr.id} style={{
+                      display: 'flex', alignItems: 'center', gap: 10, padding: '7px 10px', borderRadius: 8,
+                      background: 'rgba(255,255,255,0.03)', border: `1px solid ${SHELL.line}`,
+                    }}>
+                      <span style={{ fontSize: 13, color: SHELL.text, fontWeight: 600 }}>{dr.name || '（未命名）'}</span>
+                      <span style={{ fontSize: 11.5, color: SHELL.dim }}>{PHASE_LABEL[dr.phase] ?? dr.phase} · {dr.turns} 轮对话 · {fmtDraftTime(dr.updatedAt)}</span>
+                      <span style={{ flex: 1 }} />
+                      <button onClick={() => resumeDraft(dr.id)} style={{ ...primaryBtn, padding: '5px 14px', fontSize: 12 }}>恢复</button>
+                      <button onClick={() => discardDraft(dr.id)} title="弃置这份草稿" style={{ ...closeBtn, fontSize: 18, color: SHELL.dim }}>×</button>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
             {messages.length === 0 && (
               <div style={{ color: SHELL.dim, fontSize: 14, lineHeight: 1.8, maxWidth: 640 }}>
                 先聊清楚你的想法——AI 会引导你把<b style={{ color: SHELL.sub }}> 类型与参照物 / 核心循环 / 胜负与进程 / 内容规模 </b>
@@ -381,9 +589,15 @@ export function DesignStudio({
                 disabled={!provider}
                 style={{ ...inputStyle, flex: 1, resize: 'vertical', minHeight: 48 }}
               />
-              <button onClick={sendChat} disabled={!input.trim() || chatBusy || !provider} style={{ ...secondaryBtn, alignSelf: 'stretch', opacity: (!input.trim() || chatBusy || !provider) ? 0.5 : 1 }}>
-                发送
-              </button>
+              <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'stretch', gap: 4 }}>
+                <button onClick={sendChat} disabled={!input.trim() || chatBusy || !provider} style={{ ...secondaryBtn, flex: 1, opacity: (!input.trim() || chatBusy || !provider) ? 0.5 : 1 }}>
+                  发送
+                </button>
+                <span style={{ fontSize: 11.5, fontWeight: 700, color: SHELL.jade, textAlign: 'center', letterSpacing: 0.3 }}>Ctrl / ⌘ + Enter</span>
+              </div>
+            </div>
+            <div style={{ fontSize: 12, color: SHELL.dim }}>
+              <b style={{ color: SHELL.sub }}>回车换行</b>，<b style={{ color: SHELL.jade }}>Ctrl / ⌘ + Enter 才发送</b>——裸回车不会发送、也不会触发相变。
             </div>
             <button
               onClick={breakdown}
@@ -446,7 +660,8 @@ export function DesignStudio({
                     <label style={{ fontSize: 12, color: SHELL.dim }}>改这里：（对 <b style={{ color: SHELL.sub }}>{selected}</b> 下一句修订指令）</label>
                     <textarea
                       value={reviseInput} onChange={(e) => setReviseInput(e.target.value)}
-                      placeholder="例：把目标分数从 2 改成 3 / 加一句节奏描述 / 补一个音效系统"
+                      onKeyDown={(e) => { if (e.key === 'Enter' && (e.metaKey || e.ctrlKey)) { e.preventDefault(); reviseFile(); } }}
+                      placeholder="例：把目标分数从 2 改成 3 / 加一句节奏描述 / 补一个音效系统（Ctrl/⌘+Enter 应用）"
                       rows={2}
                       disabled={!provider}
                       style={{ ...inputStyle, resize: 'vertical', minHeight: 44 }}
@@ -477,6 +692,32 @@ export function DesignStudio({
           </div>
         </div>
       )}
+
+      {/* 相变后对话线程回看抽屉（右滑·只读·绝不销毁讨论记录） */}
+      {showThread && <ThreadDrawer messages={messages} onClose={() => setShowThread(false)} />}
+    </div>
+  );
+}
+
+function ThreadDrawer({ messages, onClose }: { messages: ChatMsg[]; onClose: () => void }) {
+  return (
+    <div onClick={onClose} style={{ position: 'fixed', inset: 0, background: 'rgba(3,6,12,0.5)', zIndex: 420, display: 'flex', justifyContent: 'flex-end' }}>
+      <div onClick={(e) => e.stopPropagation()} style={{
+        width: 'min(460px, 92vw)', height: '100%', background: SHELL.bg1, borderLeft: `1px solid ${SHELL.lineStrong}`,
+        boxShadow: '-16px 0 48px rgba(0,0,0,0.5)', display: 'flex', flexDirection: 'column', fontFamily: SHELL.fontUi,
+      }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '14px 18px', borderBottom: `1px solid ${SHELL.line}` }}>
+          <span style={{ fontSize: 14, fontWeight: 700, color: SHELL.text }}>💬 讨论记录</span>
+          <span style={{ fontSize: 12, color: SHELL.dim }}>（{messages.length} 条·只读）</span>
+          <span style={{ flex: 1 }} />
+          <button onClick={onClose} aria-label="关闭" style={closeBtn}>×</button>
+        </div>
+        <div style={{ flex: 1, overflowY: 'auto', padding: '14px 18px', display: 'flex', flexDirection: 'column', gap: 10 }}>
+          {messages.length === 0
+            ? <div style={{ color: SHELL.dim, fontSize: 13 }}>（本会话没有讨论记录）</div>
+            : messages.map((m, i) => <Bubble key={i} role={m.role} text={m.content} />)}
+        </div>
+      </div>
     </div>
   );
 }

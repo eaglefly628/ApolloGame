@@ -53,11 +53,13 @@ type Phase =
   | { k: 'error'; message: string; rawErrors: string[] }
   | { k: 'saving' };
 
-/** 向导默认 provider：优先 mock（测试）→ 云 provider → 任一 available（local 兜底）。 */
+/** 向导默认 provider 优先级：① 配了 key 的真云 provider → ② mock（仅 APOLLO_MOCK_LLM=1）→
+ *  ③ 本地 Ollama / 其它 available 兜底。绝不让 mock 静默顶替真 provider；`local` 恒 available
+ *  必须排 mock 之后（否则无云 key 环境误连 Ollama 拒连）。见 DesignStudio 同款注释。 */
 function pickProvider(providers: ProviderInfo[]): ProviderInfo | null {
   return (
-    providers.find((p) => p.id === 'mock' && p.available)
-    ?? providers.find((p) => p.available && !LOCAL_PROVIDER_IDS.has(p.id))
+    providers.find((p) => p.available && p.id !== 'mock' && !LOCAL_PROVIDER_IDS.has(p.id))
+    ?? providers.find((p) => p.available && p.id === 'mock')
     ?? providers.find((p) => p.available)
     ?? null
   );
@@ -173,6 +175,7 @@ export function CreationWizard({
   return (
     <div
       onClick={onClose}
+      onKeyDown={(e) => e.stopPropagation()}   // 挡键盘事件冒泡到 launcher 轮播 window handler（防裸 Enter 启动库卡带）
       style={{ position: 'fixed', inset: 0, background: 'rgba(3,6,12,0.6)', display: 'flex', justifyContent: 'flex-end', zIndex: 300 }}
     >
       <div
@@ -192,11 +195,17 @@ export function CreationWizard({
           <button onClick={onClose} aria-label="关闭" style={{ background: 'none', border: 'none', color: SHELL.dim, cursor: 'pointer', fontSize: 22, lineHeight: 1 }}>×</button>
         </div>
 
-        {/* 当前 provider（纯展示） */}
-        <div style={{ fontSize: 12, color: SHELL.sub }}>
-          当前 AI：{activeProvider
+        {/* 当前 provider（纯展示·mock 带醒目角标·绝不冒充真 AI） */}
+        <div style={{ fontSize: 12, color: SHELL.sub, display: 'flex', alignItems: 'center', gap: 8 }}>
+          <span>当前 AI：{activeProvider
             ? <b style={{ color: SHELL.jade }}>{activeProvider.name}</b>
-            : <b style={{ color: SHELL.warn }}>未配置 API Key（去 .env 配置或用本地模型）</b>}
+            : <b style={{ color: SHELL.warn }}>未配置 API Key（去 .env 配置或用本地模型）</b>}</span>
+          {activeProvider?.id === 'mock' && (
+            <span title="当前是 Mock 测试后端，输出为内置样例——不是真 AI 生成" style={{
+              fontSize: 10, fontWeight: 800, letterSpacing: 0.6, color: '#0f172a',
+              background: SHELL.warn, padding: '1px 6px', borderRadius: 4,
+            }}>MOCK</span>
+          )}
         </div>
 
         {/* ── 输入态 ── */}
@@ -207,6 +216,7 @@ export function CreationWizard({
                 <Field label="游戏名">
                   <input
                     value={name} onChange={(e) => setName(e.target.value)}
+                    onKeyDown={(e) => { if (e.key === 'Enter') e.preventDefault(); }}  // 裸 Enter 不提交/不触发生成
                     placeholder="给你的游戏起个名字"
                     disabled={phase.k === 'generating'}
                     style={inputStyle}
@@ -215,11 +225,13 @@ export function CreationWizard({
                 <Field label="一句话创意">
                   <textarea
                     value={idea} onChange={(e) => setIdea(e.target.value)}
+                    onKeyDown={(e) => { if (e.key === 'Enter' && (e.metaKey || e.ctrlKey) && canGenerate) { e.preventDefault(); generate(); } }}
                     placeholder="例：一个小球在方块间弹跳，有重力和弹跳"
                     disabled={phase.k === 'generating'}
                     rows={3}
                     style={{ ...inputStyle, resize: 'vertical', minHeight: 68 }}
                   />
+                  <span style={{ fontSize: 11.5, color: SHELL.jade, fontWeight: 600 }}>回车换行，Ctrl / ⌘ + Enter 开始生成</span>
                 </Field>
               </>
             ) : (
@@ -231,11 +243,13 @@ export function CreationWizard({
                 <Field label="修改指令">
                   <textarea
                     value={instruction} onChange={(e) => setInstruction(e.target.value)}
+                    onKeyDown={(e) => { if (e.key === 'Enter' && (e.metaKey || e.ctrlKey) && canGenerate) { e.preventDefault(); generate(); } }}
                     placeholder="例：金币掉落改两倍 / 把玩家改成红色 / 加一个会移动的平台"
                     disabled={phase.k === 'generating'}
                     rows={3}
                     style={{ ...inputStyle, resize: 'vertical', minHeight: 68 }}
                   />
+                  <span style={{ fontSize: 11.5, color: SHELL.jade, fontWeight: 600 }}>回车换行，Ctrl / ⌘ + Enter 应用修改</span>
                 </Field>
                 {mode === 'revise' && currentManifest == null && (
                   <div style={{ fontSize: 12, color: SHELL.dim }}>正在读取当前版本…</div>
@@ -244,14 +258,17 @@ export function CreationWizard({
             )}
 
             {phase.k === 'error' && (
-              <div style={{ padding: '10px 12px', background: SHELL.dangerWash, border: `1px solid ${SHELL.danger}44`, borderRadius: 8 }}>
-                <div style={{ color: SHELL.danger, fontSize: 13, fontWeight: 600, marginBottom: 4 }}>没能造出来 😕</div>
-                <div style={{ color: SHELL.sub, fontSize: 12, lineHeight: 1.6 }}>{phase.message}</div>
+              <div style={{ padding: '12px 14px', background: SHELL.dangerWash, border: `1px solid ${SHELL.danger}66`, borderRadius: 8 }}>
+                <div style={{ color: SHELL.danger, fontSize: 14, fontWeight: 800, marginBottom: 4 }}>没能造出来 😕</div>
+                <div style={{ color: SHELL.text, fontSize: 13, lineHeight: 1.6 }}>{phase.message}</div>
                 <div style={{ color: SHELL.dim, fontSize: 12, marginTop: 6 }}>换个说法，或把创意描述得更具体些再试。</div>
                 {phase.rawErrors.length > 0 && (
-                  <details style={{ marginTop: 6 }}>
-                    <summary style={{ color: SHELL.dim, fontSize: 11, cursor: 'pointer' }}>查看原始校验错误（{phase.rawErrors.length}）</summary>
-                    <pre style={{ color: SHELL.dim, fontSize: 11, lineHeight: 1.4, marginTop: 4, maxHeight: 160, overflow: 'auto', whiteSpace: 'pre-wrap' }}>
+                  // 显著区块（非 11px 折叠链接）：默认展开·带边框标题·让弱模型的校验错误一眼可见（REQ-STUDIO 低模 ③ 前端半件）。
+                  <details open style={{ marginTop: 10, background: SHELL.bg0, border: `1px solid ${SHELL.danger}55`, borderRadius: 8, overflow: 'hidden' }}>
+                    <summary style={{ color: SHELL.danger, fontSize: 13, fontWeight: 700, cursor: 'pointer', padding: '8px 12px', background: `${SHELL.danger}18`, listStyle: 'none' }}>
+                      ⚠ 查看原始校验错误（{phase.rawErrors.length} 条·AI 未能满足的硬约束）
+                    </summary>
+                    <pre style={{ color: SHELL.sub, fontSize: 12, lineHeight: 1.55, margin: 0, padding: '10px 12px', maxHeight: 220, overflow: 'auto', whiteSpace: 'pre-wrap', wordBreak: 'break-word' }}>
                       {phase.rawErrors.join('\n\n')}
                     </pre>
                   </details>

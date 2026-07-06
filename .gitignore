@@ -6,6 +6,8 @@ apollo-*-rk3562.tar.gz
 *.log
 .DS_Store
 .apollo/registry.json
+# 设计草稿·未定名（创作中间态持久化·用户数据·随会话产生，不入引擎仓；定名后随卡带落 library/ 亦已 gitignore）
+.apollo/design-drafts/
 .claude/worktrees/
 __pycache__/
 *.pyc

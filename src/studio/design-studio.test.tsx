@@ -54,6 +54,9 @@ function typeInto(el: HTMLInputElement | HTMLTextAreaElement, value: string) {
   setter?.call(el, value);
   el.dispatchEvent(new Event('input', { bubbles: true }));
 }
+function keydown(el: HTMLElement, key: string, opts: Partial<KeyboardEventInit> = {}) {
+  el.dispatchEvent(new KeyboardEvent('keydown', { key, bubbles: true, cancelable: true, ...opts }));
+}
 
 let container: HTMLElement;
 let root: Root;
@@ -159,6 +162,106 @@ describe('DesignStudio · 设计先行流全链路', () => {
     expect(manifestPut).toBeTruthy();
     expect((manifestPut!.body as { note: string }).note).toBe('原型生成 v1');
     expect(saved).toBe('my-game');
+  });
+
+  it('相变纪律：聊天框裸 Enter 不发送、不触发相变（只换行）', async () => {
+    const calls = mockFetch();
+    await act(async () => {
+      root.render(<DesignStudio api="" providers={PROVIDERS} catalog="C" onClose={() => {}} onSaved={() => {}} onDirty={() => {}} />);
+    });
+    await flush();
+    const chatBox = container.querySelector('textarea') as HTMLTextAreaElement;
+    await act(async () => { typeInto(chatBox, '我想做个骰子游戏'); });
+    // 裸 Enter：不触发 sendChat（无 design-chat 请求）、仍在讨论态
+    await act(async () => { keydown(chatBox, 'Enter'); });
+    await flush();
+    expect(calls.some((c) => c.body?.mode === 'design-chat')).toBe(false);
+    expect(container.textContent).toContain('分解成设计稿'); // 仍在 chat 态（讨论态才有此按钮）
+    // Ctrl+Enter：才发送
+    await act(async () => { keydown(chatBox, 'Enter', { ctrlKey: true }); });
+    await flush();
+    expect(calls.some((c) => c.body?.mode === 'design-chat')).toBe(true);
+  });
+
+  it('失败不降级：provider 失败 → 红条报错 + 线程原样保留', async () => {
+    vi.stubGlobal('fetch', vi.fn(async (url: string, opts?: { method?: string; body?: string }) => {
+      const u = String(url);
+      const body = opts?.body ? JSON.parse(opts.body) : undefined;
+      let res: unknown = {};
+      if (u.includes('/api/generate') && body?.mode === 'design-chat') res = { success: false, error: 'deepseek 返回 502 Bad Gateway' };
+      else if (u.endsWith('/api/design-drafts')) res = { drafts: [] };
+      return { ok: true, json: async () => res };
+    }));
+    await act(async () => {
+      root.render(<DesignStudio api="" providers={PROVIDERS} catalog="C" onClose={() => {}} onSaved={() => {}} onDirty={() => {}} />);
+    });
+    await flush();
+    const chatBox = container.querySelector('textarea') as HTMLTextAreaElement;
+    await act(async () => { typeInto(chatBox, '我要做一个塔防游戏'); });
+    await act(async () => { findButton(container, '发送')!.click(); });
+    await flush();
+    // 红条 + 原文可展开
+    expect(container.textContent).toContain('出错了');
+    expect(container.textContent).toContain('deepseek 返回 502');
+    expect(container.textContent).toContain('查看原始返回');
+    // 线程原样保留：用户那条消息还在
+    expect(container.textContent).toContain('我要做一个塔防游戏');
+  });
+
+  it('草稿持久化：每轮往返后有内容 → 关闭时立即落草稿（PUT /api/design-drafts）', async () => {
+    const calls = mockFetch();
+    let closed = false;
+    await act(async () => {
+      root.render(<DesignStudio api="" providers={PROVIDERS} catalog="C" onClose={() => { closed = true; }} onSaved={() => {}} onDirty={() => {}} />);
+    });
+    await flush();
+    const chatBox = container.querySelector('textarea') as HTMLTextAreaElement;
+    await act(async () => { typeInto(chatBox, '我想做个骰子游戏'); });
+    await act(async () => { findButton(container, '发送')!.click(); });
+    await flush();
+    // 关闭 → flush 立即落盘
+    await act(async () => { (container.querySelector('button[aria-label="关闭"]') as HTMLButtonElement).click(); });
+    await flush();
+    const draftPut = calls.find((c) => c.method === 'PUT' && c.url.includes('/api/design-drafts/'));
+    expect(draftPut).toBeTruthy();
+    expect(Array.isArray((draftPut!.body as { messages: unknown[] }).messages)).toBe(true);
+    expect((draftPut!.body as { messages: unknown[] }).messages.length).toBeGreaterThanOrEqual(1);
+    expect(closed).toBe(true);
+  });
+
+  it('草稿恢复：打开设计台列出未完成草稿 → 一键恢复线程回来', async () => {
+    const FULL_DRAFT = {
+      id: 'draft-1', name: '恢复我', slug: null, phase: 'chat', ready: true,
+      messages: [
+        { role: 'user', content: '第一句想法内容' },
+        { role: 'assistant', content: '追问一句' },
+        { role: 'user', content: '第二句补充' },
+        { role: 'assistant', content: '好的' },
+      ],
+      files: {}, manifest: null,
+    };
+    vi.stubGlobal('fetch', vi.fn(async (url: string, opts?: { method?: string }) => {
+      const u = String(url); const method = (opts?.method ?? 'GET').toUpperCase();
+      let res: unknown = {};
+      if (u.endsWith('/api/design-drafts') && method === 'GET') {
+        res = { drafts: [{ id: 'draft-1', slug: null, name: '恢复我', phase: 'chat', updatedAt: '2026-07-06T09:00:00', turns: 2, messageCount: 4 }] };
+      } else if (u.includes('/api/design-drafts/draft-1') && method === 'GET') {
+        res = { success: true, draft: FULL_DRAFT };
+      }
+      return { ok: true, json: async () => res };
+    }));
+    await act(async () => {
+      root.render(<DesignStudio api="" providers={PROVIDERS} catalog="C" onClose={() => {}} onSaved={() => {}} onDirty={() => {}} />);
+    });
+    await flush();
+    // 未完成草稿列表出现
+    expect(container.textContent).toContain('未完成的草稿');
+    expect(container.textContent).toContain('恢复我');
+    // 点「恢复」→ 线程回来
+    await act(async () => { findButton(container, '恢复')!.click(); });
+    await flush();
+    expect(container.textContent).toContain('第一句想法内容');
+    expect(container.textContent).toContain('第二句补充');
   });
 
   it('继续创作已有 design（initialSlug）→ 直接进目录浏览（GET design）', async () => {

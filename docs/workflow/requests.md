@@ -70,7 +70,7 @@
 > **spec（Lead 图纸·四件）**：
 > 1. **模板起步+增量修改（最大杠杆）**：简单请求不再从零生成——按题材选最近的**能跑模板 manifest**（示例卡带库），LLM 只做增量修改（改名/改数值/换实体/换 art 词）——输出小、闭集内、校验通过率数量级提升。生成模式二选一入口：「从模板改」（默认）/「自由生成」（强模型才建议）。
 > 2. **词汇按需裁剪**：catalog 全量≈28k 字符（~8k tokens/轮）——按请求题材注入**子集**（如卡牌请求=卡牌族+基础原子 ~3k tokens），子集选择用关键词映射表（纯数据），漏词汇时校验错误会点名→下轮自动补入该族。
-> 3. **校验错误 LLM 化 + 失败详情显性化**：manifest-check 每条错误改写成「一句可执行修改指令」（指名字段+给合法值示例）；前端「查看原始校验错误」从 11px 折叠链接升级为错误态的**显著区块**（owner 实测没找到它）。
+> 3. **校验错误 LLM 化 + 失败详情显性化**：manifest-check 每条错误改写成「一句可执行修改指令」（指名字段+给合法值示例）；前端「查看原始校验错误」从 11px 折叠链接升级为错误态的**显著区块**（owner 实测没找到它）。**【前端半件 ✅ done·Opus 2026-07-06·随 BUG-STUDIO-设计中间态丢失 顺手做掉】** CreationWizard 的「查看原始校验错误」已从 11px 折叠链接升级为**默认展开 + 带边框标题的显著区块**（danger 色·`⚠ 查看原始校验错误（N 条·AI 未能满足的硬约束）`）；余下服务端半件（错误 LLM 化改写成可执行指令）仍属本单，待接单实现。
 > 4. **token/缓存卫生**：system+catalog 逐轮字节稳定（最大化 provider 前缀缓存——本次 122k 命中证明有效）；autofix 回喂只带「上轮 manifest+本轮错误」，裁掉更早轮次的失败输出（防对话超线性膨胀）。
 > **验收**：mock+真 provider 各过一遍「模板改」路径；弱模型基准=deepseek 同题重测，目标 ≤1 轮修复通过；token/局记录进完工摘要对比 184k 基线。门禁全绿。
 
@@ -85,7 +85,13 @@
 > 5. 二期可选（本单不做）：取消按钮（DELETE job·杀子进程）——先记不实现。
 > 门禁全绿；Lead 验收=真浏览器盯一次真实生成全程（或 mock 延迟档）。
 
-### BUG-STUDIO-设计中间态丢失 · 讨论模式对话一按回车蒸发+蹦出怪 sample（owner 亲测·deepseek） · [2026-07-04] · owner → **指派：Opus（owner 2026-07-06 加急「先修好存盘」·不等 PST session·PST 到岗后接维护）** · status: **施工中（存盘持久化为第一必达项）** · 优先级: **P0（owner 正在用的主流程·设计稿=产出物不许丢）** · 类型: 产品缺陷（状态持久化+相变纪律+降级纪律）
+### BUG-STUDIO-设计中间态丢失 · 讨论模式对话一按回车蒸发+蹦出怪 sample（owner 亲测·deepseek） · [2026-07-04] · owner → **指派：Opus（owner 2026-07-06 加急「先修好存盘」·不等 PST session·PST 到岗后接维护）** · status: **✅ done（Opus 2026-07-06·门禁全绿直推·待 Lead 真浏览器验收）** · 优先级: **P0（owner 正在用的主流程·设计稿=产出物不许丢）** · 类型: 产品缺陷（状态持久化+相变纪律+降级纪律）
+> **✅ 完工回执（Opus·2026-07-06·"怪 sample"触发链已复现定点）**：
+> **★「怪 sample」根因坐实（复现到精确链路·非静默降级）**：`CartridgeCarousel`（`src/launcher.tsx:291`）挂了 **window 级 keydown handler**，Enter→启动当前选中的库卡带。设计台讨论模式按**裸 Enter**时事件冒泡到这个全局 handler → 启动一盘库里的 sample 卡带 → 设计台连同对话一并卸载 = owner 说的「按回车蹦出怪 sample + 此前对话全消失」。**修**：① 该 handler 加护栏——焦点在 input/textarea/contenteditable 或 `e.defaultPrevented` 一律让路；② DesignStudio/CreationWizard 模态根 `onKeyDown` stopPropagation 兜底。e2e 自证：修前裸 Enter 后设计台 count=0（被卸载）、修后仍在。
+> **① 草稿持久化（第一必达·永不丢）**：apollo.py 新端点 `GET/PUT/DELETE /api/design-drafts[/<id>]`——未定名落 `.apollo/design-drafts/<id>.json`（新 gitignore），卡带定名后随卡带迁移 `library/<slug>/design/draft.json`（旧未定名文件清掉·不留双份）；内容白名单 `{id,slug,name,provider,phase,ready,messages,files,manifest,updatedAt}`；路径防护照 `_lib_*`/design 先例（draft-id 白名单 + 归一化断言在 DRAFTS_DIR 内·`../`/斜杠/超长全 4xx·坏 JSON 跳过不炸）。前端 DesignStudio：`messages/phase/files` 变化即防抖(400ms)落盘 + 关闭/换页(beforeunload·keepalive)立即 flush；打开设计台列未完成草稿（服务端时间倒序）一键**恢复**（GET 全量回填）；「弃置草稿」二次确认显式按钮；入库成功即 DELETE 草稿。**刷新/相变/换页永不丢** e2e 验收。
+> **② 相变纪律**：聊天框裸 Enter=换行、Ctrl/⌘+Enter 才发送（原样）；改稿框补 Ctrl/⌘+Enter；游戏名 `<input>` 裸 Enter `preventDefault`；相变后（设计稿/原型态）头栏「💬 对话记录(N)」抽屉可回看讨论线程（只读·绝不销毁）；发送键提示醒目一档。
+> **③ 失败不降级**：provider 失败/不可解析 → **红条**「⚠ 出错了」(原文 `<details>` 可展开) + 线程原样保留；无静默降级路径——`pickProvider` 修好（配 key 的真云 provider 优先·mock 仅 `APOLLO_MOCK_LLM=1` 才在列且排 local 之前·UI 带醒目 **MOCK** 角标）。**这是「怪 sample」的第二嫌疑**：旧 `pickProvider` 把 mock 排最前，owner 环境若开了 mock，配了 deepseek 也被 mock 内置样例顶掉——现云 key 优先。**顺手做掉 REQ-STUDIO-低模 ③ 前端半件**：CreationWizard「查看原始校验错误」11px 折叠链接 → 默认展开·带边框标题的**显著区块**（见该单）。
+> **④ 测试**：新 e2e `scripts/studio-design-draft-e2e.mjs`（**14 断言全绿**·三例）；新 smoke `scripts/studio-design-draft-smoke.py`（**30 断言**·草稿 CRUD 生命周期+路径攻击）；vitest 补 4 例（裸 Enter 不发送/相变·provider 失败保留线程·关闭 flush 落草稿·打开列草稿一键恢复）。原 `studio-design-e2e`(19)/`studio-design-smoke`(41) 零回归。**门禁**：docs-ref-guard PASS · tsc 0 · vitest 2314 pass · build 0。边界：`apollo.py`+`src/studio/{DesignStudio,CreationWizard}.tsx`+`src/launcher.tsx`(轮播键盘护栏)+`.gitignore`+两测试脚本。
 > **owner 现象**：设计工作台·配 deepseek·讨论模式——按回车后蹦出一个"奇怪的 sample"，此前对话全部消失。
 > **Lead 根因诊断（已读码·两个结构病坐实 + 一个触发点待复现）**：
 > ① **中间态零持久化（核心病·坐实）**：`DesignStudio.tsx` 的 `messages/phase/files/name` 全在 React useState（:159-172），无任何草稿落盘、无恢复路径——任何相变/卸载/刷新=对话蒸发。owner 说的"中间态 session 不能这样打断"就是它。

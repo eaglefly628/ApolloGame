@@ -290,6 +290,13 @@ function CartridgeCarousel({ onLaunch, games = GAMES, renderLaunchArea, selectId
 
   useEffect(() => {
     const handler = (e: KeyboardEvent) => {
+      // 焦点在输入控件里（创作台讨论框/游戏名等）或事件已被弹窗消费 → 轮播键盘导航一律让路：
+      // 绝不在用户打字时挪卡带 / 启动游戏。BUG-STUDIO 根因坐实——设计台讨论模式按裸 Enter，
+      // 事件冒泡到这个 window 级 handler，把当前选中的库卡带（sample）启动、设计台连同对话一并卸载，
+      // 表现就是 owner 说的「按回车蹦出怪 sample + 此前对话全消失」。
+      if (e.defaultPrevented) return;
+      const t = e.target as HTMLElement | null;
+      if (t && (t.isContentEditable || t.tagName === 'INPUT' || t.tagName === 'TEXTAREA' || t.tagName === 'SELECT')) return;
       if (e.key === 'ArrowLeft') goLeft();
       else if (e.key === 'ArrowRight') goRight();
       else if (e.key === 'Enter') {
