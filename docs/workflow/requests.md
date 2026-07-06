@@ -65,6 +65,16 @@
 
 > 所有 done/wontfix/作废 条目（含裁决理由与完工摘要）已归档到 `requests-archive.md`；查旧单先 grep 它。本池只留活跃 open/in-progress/排队 条目（防每读付历史 token·owner 2026-07-04 token 底盘优化）。
 
+### REQ-STUDIO-生成进度与心跳 · 长生成过程黑箱→阶段灯+心跳+秒表（不做假百分比） · [2026-07-04] · owner（「一直在工作但没告诉我」）→ **指派：PST（与 P0 中间态单同批做·代码相邻）** · status: open · 优先级: P1 · 类型: 产品体验（长任务可见性）
+> **owner 现象**：生成稿子过程系统一直在工作，但界面无任何进度/心跳——用户不知道是活着还是死了。
+> **spec（Lead 图纸）**：
+> 1. **作业模型（照 steam-publisher serve.py 轮询先例·弃长连接）**：生成类端点（`/api/generate`·design 各段·`/api/assets/generate`）改「提交即回 job-id → 前端轮询 `GET /api/jobs/<id>`」：`{stage, detail, elapsedMs, heartbeatAt, done?, error?}`。轮询短请求天然免疫代理断长连接——这就是"心跳维持"的正解。
+> 2. **阶段闭集（诚实进度·非百分比）**：`submitted → provider 响应中 → 校验中 → 自动修复 k/3 → 落盘 → done|error`。**禁止假百分比进度条**——LLM 无真进度，编造=对用户撒谎；给的是：阶段灯 + 已耗时秒表 + 最后心跳时间（>15s 无心跳显"可能卡住"黄条，超时显式红）。
+> 3. **前端统一件**：一个 BusyIndicator 组件（阶段灯/秒表/心跳/出错红条），DesignStudio、CreationWizard、AssetGenPanel 三处共用——别一处一套。
+> 4. **测试**：mock provider 加人为延迟档 → e2e 断言阶段灯逐段点亮、心跳时间戳在跳、错误路径出红条不丢线程（接 P0 单的"失败不降级"）；smoke 补 job 生命周期（submit→poll→done / submit→error）。
+> 5. 二期可选（本单不做）：取消按钮（DELETE job·杀子进程）——先记不实现。
+> 门禁全绿；Lead 验收=真浏览器盯一次真实生成全程（或 mock 延迟档）。
+
 ### BUG-STUDIO-设计中间态丢失 · 讨论模式对话一按回车蒸发+蹦出怪 sample（owner 亲测·deepseek） · [2026-07-04] · owner → **指派：PST（第一优先·压过 M2.5）** · status: open · 优先级: **P0（owner 正在用的主流程·中间态 session 不许被打断）** · 类型: 产品缺陷（状态持久化+相变纪律+降级纪律）
 > **owner 现象**：设计工作台·配 deepseek·讨论模式——按回车后蹦出一个"奇怪的 sample"，此前对话全部消失。
 > **Lead 根因诊断（已读码·两个结构病坐实 + 一个触发点待复现）**：
