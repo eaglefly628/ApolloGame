@@ -597,3 +597,22 @@
 > **实现建议（程序A）**：删"永久 aGenDead 驱动 live −4"；改为主将阵亡瞬间给**当时在场友军**各盖一个 `moraleShock{until: turn+N}`（per-unit 战场态字段·非卡持久 buff·离场即清·绝不写 pokerDeck）；clash 士气计算：`主将在→+2 / 有活跃shock→−X(可按剩余回合衰减) / 否则→0`。turnHash 回归照绿。
 > **数值**：**X=2~3、N=2~3**（owner 觉 −4 夸张→往 −2/−3 靠）·design G sim 标。
 > **GD 回环**：落地后并入关1 重标 sim（此项是"失将不再滚雪球"的关键·配合疲劳恢复模型一起复核）。
+
+### REQ-G-对决3D骰·掷前静止+投掷后加速减速停定值 · [2026-07-06] · owner R22 → **指派：P3D（3D 骰竞技 clash-dice-3d.ts）** · status: **open** · 类型: 3D 表现修（引擎 ThreeRenderer 骰动画·P3D 独占域）
+> **owner 原话**：「对决旋转的时候，一开始那个你没掷的色子是不该在那里疯狂旋转的，应该是我摁了投掷以后，它有一个线性的加速度开始旋转，然后快结束的时候，线性的加速度停下来到我们已经决定好的那个数字上。」
+> **现状缺陷**：对决弹层一打开、**还没掷**（`revealed===false`）时 3D 骰就在疯狂自转（当前 `clash-die3d-${s}` 锚点上挂了 `fx:[{kind:'pulse',...}]` 常驻脉冲·`turn-battle-screen.ts:427`，加上 clash-dice-3d 的 idle 翻滚）——观感像「骰子自己在乱转」，不符「等我掷」的期待。
+> **要做（P3D·clash-dice-3d.ts + 引擎 Anim3D）**：① **掷前静止**——弹层出现、未按投掷时 3D 骰**保持不转/极缓待机**（去掉/弱化常驻疯转）。② **投掷后加速→减速→停定值**——玩家按「投掷」后：先**线性加速**旋转起来 → 临近结束**线性减速** → **停在已定掷值**（`rollMine`/`rollFoe`·上游 `resolveClash` 早已定死，骰面须最终落在这个数，不得与胜负读数矛盾）。整条动画是**表现**·不改任何 sim/hash（掷值确定性上游已定·骰只演出）。
+> **接线锚点**：驱动侧 `game-g.tsx doClashRoll` 触发掷、`cv.rollMine/rollFoe` 是已定终值；3D 骰锚点 `clash-die3d-m/f`（`turn-battle-screen.ts:416-436`）。**掷前/掷后两相**由 `revealed` 切（现已有），P3D 只需把「掷后」的加速-减速-落面动画做进 clash-dice-3d，并让「掷前」不再疯转。
+> **边界**：pulse 常驻 fx 若要撤/换是 `turn-battle-screen.ts`（程序B 域）一行事——P3D 若需程序B 配合撤 pulse，走下条 REQ-G-对决特写 里知会程序B；3D 骰本体动画 = P3D 独占。
+
+### REQ-G-对决特写三栏布局错位·按设计稿原始比例对齐 · [2026-07-06] · owner R21/R22 → **指派：程序B（turn-battle-screen.ts clashNode·LayoutNode 表现）** · status: **open** · 类型: UI 表现修（三栏对决特写布局·程序B 域·非引擎）
+> **owner 原话**：「那个对决画面完全错位了，我让你按比例去调整，按照我原始比例去调整，你现在搞得都错位了，你再重新仔细地review，自己截图自己看。」+ 复盘：「第二把打开时候好像又对齐了一些」（=首开错位·再开对齐 → **测量时序** bug：首次渲染时牌/锚点还没布局完就量了位置）。
+> **要做（程序B·turn-battle-screen.ts + game-g.tsx 挂载侧）**：① **忠实设计稿原始比例**——三栏（左·我方加成明细 ｜ 中·双牌+战力骰竞技+判定 ｜ 右·敌方加成明细）严格照 `design/UI/Game G 绝命对决.dc.html` 的原始比例/尺寸对齐（牌 118×142 走 `REQ-UI-PlayingCard-xl尺寸` 到货的 xl 档；侧栏 246px 已按稿）。② **修首开错位（测量时序）**——3D 骰锚点覆盖用 `getBoundingClientRect` 量位（`game-g.tsx` clash cue 段），**首帧牌未布局完就量 → 位置偏**；再开因已布局好而对齐。需改成**布局完成后再量**（下一帧/layout-ready 回调/`requestAnimationFrame`）或用稳定的相对定位，令**首开即对齐**。③ 配合上条：撤/弱化掷前 3D 骰锚点上的常驻 `pulse` fx（`turn-battle-screen.ts:427`）——掷前不该脉冲疯闪（改由 P3D 的掷后动画驱动）。
+> **不是程序A/不是逻辑**：掷值/胜负/各自掷战力骰逻辑（`resolveClash`·rollMine/rollFoe）**原封不动**·此条纯表现重排+测量时序修。
+> **协作**：与上条 REQ-G-对决3D骰（P3D）同屏协作——**程序B 管三栏布局 + 锚点测量时序 + 撤 pulse；P3D 管 3D 骰掷后加速减速动画**。二人对齐锚点 id 契约（`clash-die3d-m/f`）勿动。
+
+### REQ-G-FAST_RANKS 速度分档·「敌K走两步我A走一步」不一致 · [2026-07-06] · owner R22 → **指派：design G（数值·哪些牌算快）** · status: **open** · 类型: 数值裁定（哪些军衔=快·speed 分档表·design G 域）
+> **owner 原话**：「我方的老K可以走两步，我方的A为什么只能走一步？」
+> **现状（程序A 核对）**：`turn-combat.ts` `FAST_RANKS = new Set(['★','王','JOKER','K'])`·`unitSpeed(rank)= FAST_RANKS.has(rank) ? 2 : 1`——只有 ★/王/JOKER/**K** 算快走 2 步；**A 不在快表里只走 1 步**。但 A 点数(14) > K(13)——「更强的 A 反而更慢」直觉相悖，owner 觉得不一致。
+> **要 design G 裁**：**speed 分档该怎么定？** 选项举例（design G 拍板·数值口径）：① A 也进快表（★/王/JOKER/A/K 都快）；② 按点数阈值定快（如 ≥13 或 ≥14 算快）；③ 快慢与点数解耦、另立一套「机动性」语义（如只有真·骑兵类牌快）。**要一套自洽、能对玩家解释的规则**（别让「谁快」看着随机）。
+> **落地分工**：design G 定表 → 程序A 把 `FAST_RANKS`/`unitSpeed` 按裁定值改（纯改数据集合·非架构）。**注**：这是**移动步数**语义（`unitSpeed`），与战力/掷骰无关；确认 design G 想动的是「一回合走几步」这条。
