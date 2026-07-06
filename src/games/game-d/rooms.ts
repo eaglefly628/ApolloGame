@@ -94,7 +94,7 @@ function cornerBraziers(P: string, baseZ: number, hw: number, hd: number, pillar
     out[`${k}-pil`] = block(x, 0.55, baseZ + z, 0.28, 1.1, 0.28, pillar, pillarSide);
     out[`${k}-bowl`] = block(x, 1.22, baseZ + z, 0.42, 0.24, 0.42, hot, hotSide);
     out[`${k}-orb`] = block(x, 1.5, baseZ + z, 0.28, 0.28, 0.28, hot, hot);
-    out[`${k}-glow`] = glow(x, 1.62, baseZ + z, 0xffb05a, 2.2, 0.8); // 火盆暖光晕
+    out[`${k}-glow`] = glow(x, 1.62, baseZ + z, 0xffb05a, 1.7, 0.42); // 火盆暖光晕（收敛·owner「颜色怪」=地台上过亮光斑→降透明/尺寸）
   }
   return out;
 }
@@ -140,9 +140,9 @@ export function genRoom(index: number): Record<string, Ent> {
     // ── 四角发光火盆（暖光晕 + 纵向层次·微缩盒庭标志·§B @±4.3）──
     ...cornerBraziers(P, baseZ, hw, hd, t.wall, t.floorSide, BRAZIER, BRAZIER_HOT),
     // ── 上方漂浮灯笼（加性暖光晕·复刻原型 lantern glowSprite）──
-    [`${P}-lan1`]: glow(-2.1, 2.9, baseZ - 1.6, LANTERN, 1.6, 0.5),
-    [`${P}-lan2`]: glow(2.4, 3.1, baseZ + 0.8, LANTERN, 1.6, 0.5),
-    [`${P}-lan3`]: glow(0, 3.3, baseZ - 2.4, LANTERN, 1.6, 0.5),
+    [`${P}-lan1`]: glow(-2.1, 2.9, baseZ - 1.6, LANTERN, 1.4, 0.28),
+    [`${P}-lan2`]: glow(2.4, 3.1, baseZ + 0.8, LANTERN, 1.4, 0.28),
+    [`${P}-lan3`]: glow(0, 3.3, baseZ - 2.4, LANTERN, 1.4, 0.28),
   };
 
   // 中心 furniture 全撤（owner 2026-07-03「场景里的平台 + 旋转骰子都去掉·先要光秃秃的场景」）：

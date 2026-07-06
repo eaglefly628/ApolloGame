@@ -179,9 +179,10 @@ export function mount(container: HTMLElement): () => void {
     // Title 关闭泛光/移轴（参考原型是纯 ACES 渲染·无 composer·骰子靠 emissive .16 自发光）；盒庭用强移轴+泛光。
     const p = engine.world.getComponent<{ type: 'Post3D'; tiltShift?: object; bloom?: object }>('post', 'Post3D');
     if (p) {
-      // 盒庭：**收敛移轴 + 泛光**（owner「太白·曝光过度」→ tiltShift 1.7→0.85 别糊成雾·bloom 0.72/阈0.6→0.32/阈0.78 只让发光物晕、不洗白全场）。
-      p.tiltShift = { focus: 0.54, intensity: dark ? 0 : 0.85 };
-      p.bloom = { strength: dark ? 0 : 0.32, radius: 0.7, threshold: dark ? 0.9 : 0.78 };
+      // 盒庭：**再收敛移轴 + 泛光**（owner「颜色好怪」→ 主因=火盆泛光在地台上的过曝白斑 + 移轴雾。tiltShift 0.85→0.5
+      // 少雾·bloom 0.32/阈0.78→0.16/阈0.88 只留极亮物微晕、去掉地台那些过曝白斑 → 场景干净、绿地不被洗怪）。
+      p.tiltShift = { focus: 0.54, intensity: dark ? 0 : 0.5 };
+      p.bloom = { strength: dark ? 0 : 0.16, radius: 0.7, threshold: dark ? 0.9 : 0.88 };
     }
     // 三点补光（复刻参考）：Title 把基础灯改成 Ambient 白 .5 + Key 平行光 #fff0d8 int1.1（去向 -3,-4,-5），
     // 关掉盒庭的蓝色平行补光（fillDir）——Rim/Fill 由 showTitleDie 的两盏点光顶上。盒庭恢复原值。
@@ -300,6 +301,18 @@ export function mount(container: HTMLElement): () => void {
   };
   const setBurst = (scale: number, opacity: number): void => { const g = engine.world.getComponent<{ type: 'Glow3D'; scale?: number; opacity?: number }>(BURST, 'Glow3D'); if (g) { g.scale = scale; g.opacity = opacity; } };
   const removeBurst = (): void => { try { engine.world.destroyEntity(BURST); } catch { /* noop */ } };
+  // 换场能量迸射粒子（Vfx3D·加性金火花四散·配合光爆让转场更炫·owner 2026-07-03「转场不够炫·配点粒子」）。rate 随展开衰减=迸射后收。
+  const SPARK = 'gd-trans-spark';
+  const spawnSparks = (cz: number): void => {
+    engine.world.createEntity(SPARK);
+    engine.world.addComponent(SPARK, { type: 'Vfx3D', x: 0, y: 0.4, z: cz, shape: 'sphere', emitRadius: 0.15,
+      rate: 340, lifetime: 0.72, lifeVar: 0.24, speed: 15, speedVar: 7, gravity: 3, drag: 1.1, size: 0.34, max: 280, blend: 'add',
+      sizeCurve: { keys: [{ t: 0, v: 0.3 }, { t: 0.14, v: 1 }, { t: 1, v: 0 }], mode: 'smooth' },
+      colorGradient: { stops: [{ t: 0, color: 0xffe6b0, alpha: 0 }, { t: 0.14, color: 0xffd27a, alpha: 0.95 }, { t: 1, color: 0xff9a4a, alpha: 0 }] },
+    } as unknown as Component);
+  };
+  const setSparks = (rate: number): void => { const v = engine.world.getComponent<{ type: 'Vfx3D'; rate?: number }>(SPARK, 'Vfx3D'); if (v) v.rate = Math.max(0, rate); };
+  const removeSparks = (): void => { try { engine.world.destroyEntity(SPARK); } catch { /* noop */ } };
   /** 触发转场（dir·done 在落定后调）。'in' 需 title 玻璃骰在场；'out' 需关卡在场。转场期间 UI 走空屏（tree 里 guard）。 */
   const startTransition = (dir: 'in' | 'out', done: () => void): void => {
     if (transStart !== null) return;
@@ -323,11 +336,13 @@ export function mount(container: HTMLElement): () => void {
           beginRoom();           // 加载关卡（streamTo·不碰 UI）
           wrapRoomInPivot();     // 关卡挂 pivot·下面从点长大
           spawnBurst(bgRoom * ROOM_SPACING); // 换场点光爆（盖住 title↔arena 底色硬切=无缝·兼"放出"）
+          spawnSparks(bgRoom * ROOM_SPACING); // 能量火花迸射（更炫）
         }
         // Phase B：关卡从点回旋展开（pivot scale ~0→1 eOutBack pop·spin 衰减）；光爆放大淡出（前段亮盖切→随关卡长大淡去）。
         const k = (p - 0.45) / 0.55;
         pivotSet(Math.max(0.02, eOutBack(Math.min(1, k * 1.08))), (1 - k) * Math.PI * 3, (1 - k) * Math.PI * 2);
         setBurst(7 + k * 8, Math.max(0, 0.95 * (1 - k * 1.9)));
+        setSparks(320 * Math.max(0, 1 - k * 1.3)); // 迸射后收（随关卡长大衰减）
       }
     } else {
       if (p < 0.5) {
@@ -342,16 +357,18 @@ export function mount(container: HTMLElement): () => void {
           setMood(true);         // 相机 → title 透视清新氛围
           showTitleDie(); titleScale(0.02); sideScale(0.02); titleGlow(0.1, 0); // 从点长出玻璃骰（含两侧小骰·同从点长回）
           spawnBurst(0);         // title 中心光爆（盖切·放出骰）
+          spawnSparks(0);        // 能量火花迸射（更炫）
         }
         // Phase B：玻璃骰从点回旋长大（scale ~0→1 eOutBack·spin 由 Anim3D）；背光随骰长回；光爆淡出。
         const k = (p - 0.5) / 0.5, g = Math.min(1, k * 1.5), gs = eOutBack(Math.min(1, k * 1.08));
         titleScale(gs); sideScale(gs); titleGlow(Math.max(0.1, 4.0 * g), 0.3 * g);
         setBurst(7 + k * 8, Math.max(0, 0.95 * (1 - k * 1.9)));
+        setSparks(320 * Math.max(0, 1 - k * 1.3));
       }
     }
     if (p >= 1) {
       transStart = null;
-      removeBurst();
+      removeBurst(); removeSparks();
       if (transDir === 'in') { pivotSet(1, 0, 0); removePivot(); } // 关卡满格恒等 → 撤 pivot 无缝（子实体位姿本就=满格）
       else { titleScale(1); sideScale(1); titleGlow(4.0, 0.3); } // 骰归位（含两侧小骰）+ 背光恢复
       const done = onTransDone; onTransDone = null;
