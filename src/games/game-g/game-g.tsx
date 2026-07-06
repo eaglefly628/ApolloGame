@@ -624,6 +624,13 @@ export function mount(container: HTMLElement, shell?: { exit?: () => void }): ()
     };
     // 我方回合开始日志（owner 2026-07-02「记我的操作等·找 bug」）：附我方手牌 + 三路兵力(我/敌) → 一眼看清局面。
     const boardSummary = (): string => tb.lanes.map((L, i) => `${['上', '中', '下'][i]}${L.a.length}v${L.b.length}`).join(' ');
+    // 详细位置快照（owner 2026-07-05·围跑日志揪位置偏移）：逐路每兵 rank+suit@slot(战力·将·连胜)·我 vs 敌·让策划从日志看有没有奇怪的位置偏移。
+    const boardDetail = (): string => {
+      const SM: Record<string, string> = { S: '♠', H: '♥', D: '♦', C: '♣' };
+      const fmt = (arr: { rank: string; suit: string; slot: number; points: number; buff: number; general: boolean; wins?: number; hold?: boolean }[]): string =>
+        arr.length ? arr.map((u) => `${u.rank}${SM[u.suit] ?? u.suit}@${u.slot}(战${Math.max(0, u.points + u.buff)}${u.general ? '·将' : ''}${u.wins ? `·连胜${u.wins}` : ''}${u.hold ? '·守' : ''})`).join(',') : '空';
+      return tb.lanes.map((L, i) => `${['上', '中', '下'][i]}[我:${fmt(L.a)} ｜ 敌:${fmt(L.b)}]`).join('　');
+    };
     const myHandStr = (): string => tb.a.hand.map((c) => c.kind === 'poker' ? `${(SUITNM2[c.suit] ?? '') + c.rank}(费${c.cost ?? 0})` : c.kind === 'tengang' ? '罡·' + tgName(c.id) : '煞').join('、') || '空';
     const finishTurnSeq = (): void => { busy = false; selMode = null; selHand = -1; if (tb.winner !== 'pending') settleTurn(); else { log(`◀ T${tb.turn} 我方回合开始 · 源泉 我${tb.a.mana}/敌${tb.b.mana} · 我手牌[${myHandStr()}] · 兵力[${boardSummary()}]`); mounted?.update(); } syncCoach(); };
     // 顺序回合·分相演出（owner 2026-06-29「顺序要对：移动→弹谁打谁→掷骰→才结算离场」）：
@@ -655,7 +662,7 @@ export function mount(container: HTMLElement, shell?: { exit?: () => void }): ()
       drainClashes();
       perfPending = perfQueue.length > 0; // 有对决排队 → 保持棋盘贴身对峙到掷骰特写盖上（下面 walk 末的重渲也据它跳过）
       // 行军全走完 → 清标记（+无对决时同步板面）→ 才演对决（谁打谁→掷骰）：owner「一步步走完·再打」——不再走一半就弹提示。
-      battleTl.delay(walkTicks, () => { justMovedIds = new Set(); moveOrder = new Map(); moveDist = new Map(); if (!perfClash && !perfPending) mounted?.update(); playPerf(() => { endTurnFinish(tb); justMovedIds = new Set(); mounted?.update(); showRestRecovery(fatBefore); next(); }); });
+      battleTl.delay(walkTicks, () => { justMovedIds = new Set(); moveOrder = new Map(); moveDist = new Map(); if (!perfClash && !perfPending) mounted?.update(); playPerf(() => { endTurnFinish(tb); log(`  📍行动毕·全场位置：${boardDetail()}`); justMovedIds = new Set(); mounted?.update(); showRestRecovery(fatBefore); next(); }); }); // 行动+对决全演完 → 打全场位置快照(移动后+战后位置·owner 2026-07-05 揪偏移) + 休整恢复演出
     };
     const runAiAct = (): void => { // 敌方行动阶段：敌方兵线推进 + 掷命（与决策分演·owner 过场说明）
       if (tb.winner !== 'pending') { finishTurnSeq(); return; }
