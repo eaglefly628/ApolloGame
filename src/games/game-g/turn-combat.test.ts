@@ -4,7 +4,7 @@ import { cardPoints } from './clash-resolve.js';
 import { cardStamina } from './combat-types.js';
 import {
   initTurnBattle, drawCard, deployUnit, castTengang, swapCard, endTurn, aiTakeTurn, turnHash, turnActive,
-  unitPowerParts, WIN_CAP, SWAP_PER_TURN,
+  unitPowerParts, REST_RECOVER_PM, SWAP_PER_TURN,
   MANA_START, A_DEPLOY_SLOT, A_GOAL, TURN_HOME_BLOOD,
   type PokerCard, type TengangHandCard, type TurnUnit, type TurnBattle,
 } from './turn-combat.js';
@@ -191,7 +191,7 @@ describe('Game G · turn-combat（doc24 单机回合制 · A0 重构）', () => 
     expect(deployUnit(c, 'a', 0, 0)).toBe(false); // 无空格 → 拒
   });
 
-  it('确定制胜者留场 + 每胜战力对折（owner 2026-07-01·替战胜硬币/掷骰·胜者不回库继续作战·越打越弱）', () => {
+  it('确定制胜者留场 + 每胜累加疲劳（owner 2026-07-06 连续疲劳条·胜者不退场继续作战·有效战力对折）', () => {
     const b = initTurnBattle({ seed: 1 }); b.a.mana = 0;
     const w = unit('w', 'A', A_DEPLOY_SLOT); w.cost = 3; // A=14 点
     b.lanes[0].a.push(w);
@@ -199,24 +199,38 @@ describe('Game G · turn-combat（doc24 单机回合制 · A0 重构）', () => 
     const before = unitPowerParts(b, 'a', 0, w).pEff;           // 对折前有效战力 = 14
     endTurn(b); // 我方推进 → 各自掷战力骰 → w 胜
     expect(b.lastClash?.aWins).toBe(true);
-    expect(b.lanes[0].a.some((c) => c.id === 'w')).toBe(true);   // 胜者留场（不回库·战场不空）
-    expect(w.wins).toBe(1);                                      // 连胜 +1
-    expect(unitPowerParts(b, 'a', 0, w).pEff).toBe(Math.floor(before * 0.5)); // 每胜战力对折（14→7）
-    expect(b.lastClash?.warLoss).toBe(0.5);                      // 本场战损档 = 对折 50%
-    expect(b.lastClash?.winStays).toBe(true);                    // 未满连胜上限 → 留场
+    expect(b.lanes[0].a.some((c) => c.id === 'w')).toBe(true);   // 胜者留场（不退场·战场不空）
+    expect(w.wins).toBe(1);                                      // 累计胜 +1
+    expect(w.fatiguePm).toBe(500);                               // 疲劳 0 → 0+round(1000×0.5)=500
+    expect(unitPowerParts(b, 'a', 0, w).pEff).toBe(Math.floor(before * 0.5)); // 有效战力对折（14→7）·w 本轮参战 → 不休整回血
+    expect(b.lastClash?.warLoss).toBe(0.5);                      // 本场对折率 50%
+    expect(b.lastClash?.fatiguePm).toBe(500);                    // 事件带胜者累计疲劳（供 UI 显/恢复回看）
+    expect(b.lastClash?.winStays).toBe(true);                    // 恒留场（无自动退场·owner 2026-07-06 光荣回库已删）
   });
 
-  it('连胜满 WIN_CAP → 光荣回库 + 全额返还泉水（owner 2026-06-29·防强兵无限霸场）', () => {
+  it('连胜多场无自动退场（owner 2026-07-06「没必要退场·满3光荣回库删掉」）：疲劳累加·始终留场不回库', () => {
     const b = initTurnBattle({ seed: 1 }); b.a.mana = 0;
-    const w = unit('w', 'A', A_DEPLOY_SLOT); w.cost = 3; w.wins = WIN_CAP - 1; // 已差一场满上限·本场达成（已连胜 2 场 → 战力对折两次 14→3）
+    const w = unit('w', 'A', A_DEPLOY_SLOT); w.cost = 3; w.wins = 2; w.fatiguePm = 750; // 已胜 2 场（疲劳 750）·本场达成第 3 胜
     b.lanes[0].a.push(w);
-    b.lanes[0].b.push(unit('lz', '2', A_DEPLOY_SLOT + 1, -1)); // 2−1=pEff1 → 敌恒掷 1；w=3 掷[1,3]≥1·掷平按战力 3>1 判 w → w 必胜 → 达成第 3 连胜
+    b.lanes[0].b.push(unit('lz', '2', A_DEPLOY_SLOT + 1, -1)); // pEff1·恒负 → w 必胜
     endTurn(b);
     expect(b.lastClash?.aWins).toBe(true);
-    expect(b.lanes[0].a.some((c) => c.id === 'w')).toBe(false);  // 满 WIN_CAP → 离场
-    expect(b.a.pokerDeck.some((c) => c.id === 'w')).toBe(true);  // 回牌库
-    expect(b.a.mana).toBe(3);                                    // 全额返还 cost 3（turn 仍 1·我方本轮无新增）
-    expect(b.lastClash?.winStays).toBe(false);                   // 离场 → UI 演光荣回库
+    expect(b.lanes[0].a.some((c) => c.id === 'w')).toBe(true);   // **始终留场**（无 WIN_CAP 退场·连胜 3 场照样在场）
+    expect(b.a.pokerDeck.some((c) => c.id === 'w')).toBe(false); // 不回牌库
+    expect(w.fatiguePm).toBe(875);                              // 750 + round(250×0.5)=875（疲劳继续累加·渐近满）
+    expect(b.lastClash?.winStays).toBe(true);                   // 恒留场
+  });
+
+  it('休整回血（owner 2026-07-06·P20「本轮不战斗恢复10%」）：在场兵本轮无 clash → 疲劳回落 REST_RECOVER_PM，夹≥0', () => {
+    const b = initTurnBattle({ seed: 1 }); b.a.mana = 0;
+    const rest = unit('r', 'A', 3); rest.fatiguePm = 500; // 疲劳兵·本路无敌 → 只推进不战
+    b.lanes[0].a.push(rest);
+    endTurn(b); // 我方行动·rest 推进但无遭遇 → 休整回血
+    expect(b.clashSeq).toBe(0);                                 // 本轮没打
+    expect(rest.fatiguePm).toBe(500 - REST_RECOVER_PM);        // 回落一档（500→400）
+    // 连歇多轮回到满血（夹≥0·回不到负）
+    for (let k = 0; k < 6 && b.winner === 'pending'; k++) { b.active = 'a'; if (b.lanes[0].a[0]) b.lanes[0].a[0].slot = 3; endTurn(b); }
+    expect(b.lanes[0].a[0] ? (b.lanes[0].a[0].fatiguePm ?? 0) : 0).toBe(0); // 多轮休整 → 疲劳清零（满血）
   });
 
   it('碰撞才战斗 + 胜者守原位不追击(owner 2026-07-04 改)：落点空只走位·踩到敌才打·赢了守原位(不推进占腾出格)', () => {

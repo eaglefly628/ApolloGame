@@ -26,9 +26,14 @@ export function cardPoints(rank: string): number {
   return Number.isFinite(n) ? Math.max(2, Math.min(15, n)) : 2;
 }
 
-// 有效战力：基础点数 + Σbuff（各源已自带 ±Δ bounded）→ [×mul·擎天最强单张] → floor(仅 mul 时·防小数) → 夹 [P_min,P_max]。
-// apply 顺序铁律（doc20 §二「实装细则」）：add → mul → floor → clamp。mul 缺省 1 → 与旧行为逐字一致（不引入 floor·不动既有非整 buff）。
-export function pEff(base: number, buffSum: number, mul = 1): number { return clamp(mul === 1 ? base + buffSum : Math.floor((base + buffSum) * mul), P_MIN, P_MAX); }
+// 有效战力：基础点数 + Σbuff（各源已自带 ±Δ bounded）→ [×mul·擎天最强单张] → [×(1000−fatiguePm)/1000·疲劳] → floor → 夹 [P_min,P_max]。
+// apply 顺序铁律（doc20 §二「实装细则」）：add → mul → floor → clamp。mul 缺省 1 + fatiguePm 缺省 0 → 与旧行为逐字一致（不引入 floor·不动既有非整 buff）。
+// fatiguePm=疲劳千分比（战力损失量·owner 2026-07-06 连续疲劳条替离散 0.5^wins）：有效战力 ×(1000−fatiguePm)/1000。**整数运算保确定性**（回放/lockstep·无浮点漂移）。
+export function pEff(base: number, buffSum: number, mul = 1, fatiguePm = 0): number {
+  const raw = mul === 1 ? base + buffSum : Math.floor((base + buffSum) * mul);
+  const fat = fatiguePm > 0 ? Math.floor((raw * (1000 - fatiguePm)) / 1000) : raw; // 整数千分比·再取整
+  return clamp(fat, P_MIN, P_MAX);
+}
 
 // A 对 B 的胜率：clamp( logistic((Pa−Pb)/k), 爆冷缝 )。点数差大 → 趋碾压但永不 0/100%。
 // ⚠ 已退役（owner 2026-07-01「各自掷战力骰」）：对决改为各自掷 [1,战力] 比大小 → rollWinProb。留存供参考/回归。

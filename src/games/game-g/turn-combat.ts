@@ -37,19 +37,24 @@ export const SWAP_PER_TURN = 1, SWAP_COST = 0; // 换牌（owner 2026-07-03·三
 export const OPENING_HAND = 3; // 起手摸 N（doc24 §六/七 待定）
 export const HAND_MAX = 8; // 手牌上限（天罡·广纳 handMaxAdd 抬高）
 const MORALE_PTS = 2, ROUT_PTS = 4; // 同 live-combat/doc06：主将在→下属 +战力 / 主将亡→溃散 −战力
-// 战损疲劳（owner 2026-07-01·定案「战力对折」）：胜者永远留场，但**每胜一场战力对折**（P→P/2→P/4…）。
-// 强兵连胜越打越弱→弱兵车轮能磨死它。对折率 = 每胜 ×0.5（`0.5^wins` 折进 effPower 的 mul）。**可调**（日后天罡可改·节奏/难度旋钮）。
-// 注：旧「三面命运掷（WAR_LOSS_TIERS 随机战损档）」+ 战胜硬币已随「跳过掷骰/掷币」退役（owner 2026-07-01「太繁琐·没意义」）；
-//     未来「各自掷战力骰」向见 docs/design/game-g-clash-fate-roll-vision.md。
-export const WAR_LOSS_PER_WIN = 0.5; // 每胜战力对折（owner 2026-07-01）
-export const WIN_CAP = 3; // 连胜上限（owner 2026-06-29）：一张兵最多打 3 场 → 满 3 必须光荣离场（回牌库 + 全额返还泉水）·防强兵无限霸场
+// 战损疲劳（owner 2026-07-06·连续疲劳条·替离散「0.5^wins 对折」）：胜者永远留场；疲劳 = 连续量 `fatiguePm∈[0,1000]`（战力损失千分比）。
+//   胜一场 → `fatiguePm += (1000−fatiguePm)×0.5`（0→500→750→875…·有效战力仍逐胜对折·首几场与旧 0.5^wins 逐字等价·「数值对了」）；
+//   本轮**不战斗**的在场兵 → `fatiguePm −= REST_RECOVER_PM`（休整回血·夹≥0·回不到负=最多满血）。强兵连战越疲、歇一轮回一成 → 弱兵车轮仍磨得动、但强兵能喘。
+//   **无自动退场**（owner 2026-07-06「这设计过时了·没必要退场·满3光荣回库删掉」）：连胜数不再触发回库·纯由疲劳条治理。
+//   注：旧「满 WIN_CAP=3 光荣回库」「三面命运掷」「战胜硬币」皆已退役。
+export const WAR_LOSS_PER_WIN = 0.5; // 每胜疲劳 += 剩余战力的一半（有效战力对折·owner 2026-07-01 定率·2026-07-06 转连续量口径）
+export const REST_RECOVER_PM = 100; // 本轮不战斗休整 → 疲劳回落 100‰（=恢复 10% 战力·owner 2026-07-06「每走一步/下一轮不战就恢复10%」）
+// 回合上限·保底收敛（owner 2026-07-06 拍板前置默认·可 veto）：删自动退场 + 加疲劳恢复 → 强兵变「不死」·棋盘不再轮替 →
+//   极少数对局（双方龟缩/近赢僵持）会永不分胜负（AI-vs-AI 与脚本活局实测复现）。设回合硬上限：到 MAX_TURNS 未分胜负 → 按大本营血判（高者胜·平则平）。
+//   常规对局 ~20-45 回合即结·永远够不到此线（安全网·非平衡旋钮·不动疲劳手感）。turn 已进 turnHash → 判定确定·回放稳。
+export const MAX_TURNS = 60;
 
 // ── 捷径门/换路整套已退役（owner 2026-07-03·REQ-G-退役机关门）：不给乐趣·高复杂度低价值·旧实时 CR 遗留概念。
 //    Gate/GATES/gatesOpen/gateMove/toggleGate/tryGate + advanceBoth 分流 + deployUnit gateToggle + turnHash g段 + 天罡「城门令」全数删除。
 //    兵天生想直走推底破家·中途换路是跟核心目标对着干；真策略深度在部署那一刻选哪条路（田忌赛马）·不在中途改路。
 
 // 场上兵：占一格 slot；续航 staminaLeft 打光退场（同 live-combat 经济）。speed=每回合推进格数(默认1·缺省视作1·向后兼容旧字面量)。
-export interface TurnUnit { id: string; rank: string; suit: string; points: number; buff: number; general: boolean; stamina: number; staminaLeft: number; slot: number; speed?: number; cost?: number; wins?: number; hold?: boolean } // wins=连胜场数(owner 2026-07-01·每胜战力对折 0.5^wins→弱兵车轮磨死强兵·满 WIN_CAP 光荣回库)；cost=部署所花源泉；hold=开局排阵守军·静态死守(REQ-G-开局排阵·不前压/不冲家/接触才战/赢守原位)
+export interface TurnUnit { id: string; rank: string; suit: string; points: number; buff: number; general: boolean; stamina: number; staminaLeft: number; slot: number; speed?: number; cost?: number; wins?: number; fatiguePm?: number; hold?: boolean } // fatiguePm=疲劳千分比(战力损失量·owner 2026-07-06 连续疲劳条·替离散 0.5^wins)：胜→fatiguePm+=(1000−fatiguePm)×0.5(仍≈对折)；本轮不战→−REST_RECOVER_PM(休整回血·夹≥0)；有效战力×(1000−fatiguePm)/1000。wins=累计胜场(仅日志/画像·不再驱动战力)；cost=部署所花源泉；hold=开局排阵守军·静态死守(REQ-G-开局排阵·不前压/不冲家/接触才战/赢守原位)
 // 行军速度（owner 2026-06-21）：大王/小王(★/王/JOKER) 与 老K 三类高阶兵·疾行 2 格/回合；其余 1 格。纯 rank 派生·确定性。
 const FAST_RANKS = new Set(['★', '王', 'JOKER', 'K']);
 export function unitSpeed(rank: string): number { return FAST_RANKS.has(rank) ? 2 : 1; }
@@ -82,6 +87,7 @@ export interface TurnBattle {
   rng: RandomSeed; winner: 'a' | 'b' | 'draw' | 'pending';
   actionTaken: ActionKind | null;
   lastClash: ClashEvent | null; clashLog: ClashEvent[]; clashSeq: number; // clashLog：逐场掷命流水（驱动层抽特写·不进 hash）
+  foughtNow: string[]; movedNow: string[]; // 本行动相已参战/已前进的兵 id（applyClashOutcome/advanceSideMove 追加·endTurnFinish 休整回血后清）·瞬态·不进 turnHash
   dishaB: DishaFx; bossWinStreak: number; batteryLane: number; bossGenDefeats: number; // 地煞(Boss 招牌战术·doc23 §八)运行态；bossGenDefeats=主将已消耗命数(战败次数·死战不退计数·<N 才残喘退·=N-1 那次真退)
   dishaBaseIds: string[]; dishaCastIds: string[]; // 地煞被动基线 ids(开局聚合) + 已打出的可施放地煞 ids(打一张并进 dishaB 重算)
   aiProfile: AiProfile; aiTier: number; // Boss 通用 utility AI（doc27 §八）：画像 + 难度档(高=更优·低=会犯错)
@@ -109,7 +115,7 @@ export function initTurnBattle(cfg: TurnInit): TurnBattle {
     a: mkSide(cfg.a?.pokerDeck, cfg.a?.tengangDeck),
     b: mkSide(cfg.b?.pokerDeck, cfg.b?.tengangDeck),
     rng: { type: 'RandomSeed', seed: cfg.seed, sequence: 0 },
-    winner: 'pending', actionTaken: null, lastClash: null, clashLog: [], clashSeq: 0,
+    winner: 'pending', actionTaken: null, lastClash: null, clashLog: [], clashSeq: 0, foughtNow: [], movedNow: [],
     dishaB, bossWinStreak: 0, batteryLane: -1, bossGenDefeats: 0,
     dishaBaseIds: passive, dishaCastIds: [],
     aiProfile: cfg.aiProfile ?? NEUTRAL_AI, aiTier: cfg.aiTier ?? 2,
@@ -330,9 +336,9 @@ function effPower(u: TurnUnit, lane: TurnLane, side: 'a' | 'b', fx: TengangFx, c
   if (col.length <= 3) tg += fx.powerLE3;                                     // 寡兵
   if (fx.powerSameSuit && col.filter((x) => x.suit === u.suit).length >= 2) tg += fx.powerSameSuit; // 同花魁
   if (fx.comboPair || fx.comboTrips) { const rc = new Map<string, number>(); for (const x of col) rc.set(x.rank, (rc.get(x.rank) ?? 0) + 1); const vals = [...rc.values()]; if (fx.comboPair && vals.some((n) => n >= 2)) tg += fx.comboPair; if (fx.comboTrips && vals.some((n) => n >= 3)) tg += fx.comboTrips; } // 对子诀/鼎立
-  const champMul = fx.powerMulHighest > 1 && u.id === champId ? fx.powerMulHighest : 1; // 擎天
-  const mul = champMul * Math.pow(WAR_LOSS_PER_WIN, u.wins ?? 0); // 战损疲劳：每胜战力对折（owner 2026-07-01·替原加法 fatigue）→ 折进倍率(add→mul→floor→clamp)
-  if (u.general) return { pEff: pEff(u.points, u.buff + tg + nearDef + phalanx, mul), shift: 0, tg, nearDef, phalanx };
+  const mul = fx.powerMulHighest > 1 && u.id === champId ? fx.powerMulHighest : 1; // 擎天最强单张 ×N（疲劳改走 pEff 的 fatiguePm 整数千分比·不再折进 mul·owner 2026-07-06）
+  const fp = u.fatiguePm ?? 0; // 连续疲劳千分比 → pEff 内 ×(1000−fp)/1000（整数·确定性）
+  if (u.general) return { pEff: pEff(u.points, u.buff + tg + nearDef + phalanx, mul, fp), shift: 0, tg, nearDef, phalanx };
   const genDead = side === 'a' ? lane.aGenDead : lane.bGenDead;
   const genHere = col.some((x) => x.general);
   const moraleBonus = genHere ? fx.moraleLeader : 0; // 令旗(旗手)
@@ -341,7 +347,7 @@ function effPower(u: TurnUnit, lane: TurnLane, side: 'a' | 'b', fx: TengangFx, c
     : fx.revenge > 0 ? fx.revenge // 哀兵：主将亡 → 余部暴怒 +N
     : noRoutEff ? 0               // 督战：主将亡不溃散
     : -ROUT_PTS;                  // 默认：主将亡 → 溃散
-  return { pEff: pEff(u.points, u.buff + tg + shift + nearDef + phalanx, mul), shift, tg, nearDef, phalanx };
+  return { pEff: pEff(u.points, u.buff + tg + shift + nearDef + phalanx, mul, fp), shift, tg, nearDef, phalanx };
 }
 // 斯巴达方阵（owner 2026-07-03 改逻辑为真·每兵加战力）：Boss 侧每兵按**自身**相邻友兵数 → +确定战力
 // （min(封顶, 相邻数×每邻) 折成战力·同 dishaEdge 用 EDGE_TO_POWER 换算·保原量级 + 每兵独立 + 进拆解可见）。
@@ -352,8 +358,8 @@ function phalanxPower(b: TurnBattle, li: number, u: TurnUnit): number {
   return Math.round(Math.min(d.phalanxCap, adj * d.phalanxPerAdj) / EDGE_TO_POWER);
 }
 
-// AI 画像用·近似有效战力（点数+养成后按连胜对折·不含 lane 天罡/士气·够 AI 挑软柿子/占优判断）。
-const halvedEff = (u: TurnUnit): number => Math.round(Math.max(0, u.points + u.buff) * Math.pow(WAR_LOSS_PER_WIN, u.wins ?? 0));
+// AI 画像用·近似有效战力（点数+养成后按连续疲劳折价·不含 lane 天罡/士气·够 AI 挑软柿子/占优判断）。
+const halvedEff = (u: TurnUnit): number => Math.floor((Math.max(0, u.points + u.buff) * (1000 - (u.fatiguePm ?? 0))) / 1000);
 
 // 单张天罡 fx 对该前锋的 tg 贡献（与 effPower 的 tg 门控逐字一致）→ 对决明细逐张溯源（owner 2026-06-21）。
 function tgContribOf(u: TurnUnit, lane: TurnLane, side: 'a' | 'b', fx: TengangFx): number {
@@ -378,7 +384,7 @@ export function unitPowerParts(b: TurnBattle, side: 'a' | 'b', li: number, u: Tu
   const noRout = side === 'b' && dB.noRout;
   const e = effPower(u, lane, side, fx, champ, noRout, nearDef, phalanx);
   const tgBreak = sd.castFx.map(({ id, fx: f }) => [id, Math.round(tgContribOf(u, lane, side, f))] as [string, number]).filter((r) => r[1] !== 0); // 逐张天罡溯源（同 resolveClash）
-  return { rank: u.rank, suit: u.suit, general: u.general, points: u.points, buff: u.buff, morale: e.shift, tengang: e.tg, pEff: e.pEff, tgBreak, nearDef: e.nearDef, phalanx: e.phalanx, wins: u.wins };
+  return { rank: u.rank, suit: u.suit, general: u.general, points: u.points, buff: u.buff, morale: e.shift, tengang: e.tg, pEff: e.pEff, tgBreak, nearDef: e.nearDef, phalanx: e.phalanx, wins: u.wins, fatiguePm: u.fatiguePm };
 }
 
 // ── 地煞 apply（Boss 侧·doc23 §八）：把 dishaB 各效果折成「Boss 掷命胜率 +X 百分点」(玩家 wr 相应减) ──
@@ -464,7 +470,7 @@ export function clashOdds(b: TurnBattle, li: number): number | null {
 }
 
 // 一路前锋相遇 → 各自掷战力骰对决（owner 2026-07-01）：双方各掷 [1,有效战力]（含天罡/士气/地煞/连胜对折）比大小·大者胜；
-//   掷平走 decideTie（战力→点数→续航→先手）。胜者留场·每胜战力对折；连胜满 WIN_CAP 光荣回库。掷硬币已退役为死代码。
+//   掷平走 decideTie（战力→点数→续航→先手）。胜者留场·每胜累加疲劳（有效战力对折·连续疲劳条）；无自动退场。掷硬币已退役为死代码。
 //   TODO（owner 2026-07-01「还可以有额外 Action/Buff 干涉掷骰」）：改掷牌(方片×2·意大利×1.2…)在此处 rollA/rollB 后 applyRollMods —— 见 game-g-clash-fate-roll-vision.md（防数据爆炸护栏）。
 function resolveClash(b: TurnBattle, li: number): void {
   const ev = clashEval(b, li); if (!ev) return;
@@ -480,7 +486,7 @@ function resolveClash(b: TurnBattle, li: number): void {
 
 // 确定性 EV 结算（Player-AI 前向推演专用·**不消费 rng**·owner 2026-07-03「推演敌人未来」）：
 //   遭遇不掷骰——用 rollWinProbMods(ea,eb,改掷) 精确胜率坍缩到「更可能一方」判胜（含平局归属+占优必胜），再走与 resolveClash 逐字相同的善后
-//   （applyClashOutcome：死战不退/阵亡/薪火/连胜对折/满 WIN_CAP 回库/战潮）。仅在克隆局上跑·真局不受影响→turnHash 稳。
+//   （applyClashOutcome：死战不退/阵亡/薪火/胜者累加疲劳/战潮）。仅在克隆局上跑·真局不受影响→turnHash 稳。
 export function resolveClashEV(b: TurnBattle, li: number): void {
   const ev = clashEval(b, li); if (!ev) return;
   const auto = autoWinner(b, ev); // 铁骰·占优必胜（EV 侧同判·确定）
@@ -493,12 +499,12 @@ export function resolveClashEV(b: TurnBattle, li: number): void {
 }
 
 // 掷命善后（resolveClash / resolveClashEV 共用·owner 2026-07-03 抽出防漂移）：给定胜负 aWins → 写 lastClash/流水 +
-//   死战不退（Boss 主将残喘退守）/ 阵亡+薪火 / 胜者连胜对折 / 满 WIN_CAP 光荣回库 / 战潮返泉。**纯状态机·不掷骰**（rng 由 caller 消费）。
+//   死战不退（Boss 主将退回牌库）/ 阵亡+薪火 / 胜者累加疲劳（连续疲劳条·无自动退场）/ 战潮返泉。**纯状态机·不掷骰**（rng 由 caller 消费）。
 function applyClashOutcome(b: TurnBattle, li: number, ev: ClashEval, aWins: boolean, tie: ClashEvent['tie'], rollA: number, rollB: number): void {
   const lane = b.lanes[li]; const { fa, fb, ea, eb, dishaEdge, ba, bb } = ev;
   const wr = clashOdds(b, li) ?? (aWins ? 1 : 0); // 预报胜率(留档·特写显)
   const tgBreakOf = (sd: TurnSide, u: TurnUnit, sk: 'a' | 'b'): [string, number][] => sd.castFx.map(({ id, fx }) => [id, Math.round(tgContribOf(u, lane, sk, fx))] as [string, number]).filter((r) => r[1] !== 0); // 逐张天罡溯源
-  b.lastClash = { tick: b.turn, lane: li, winrate: wr, roll: 0, rollA, rollB, aWins, tie, winStays: true, warLoss: 0, winStreak: 0, a: { id: fa.id, rank: fa.rank, suit: fa.suit, general: fa.general, points: fa.points, buff: fa.buff, morale: ba.shift, tengang: ba.tg, pEff: ea, tgBreak: tgBreakOf(b.a, fa, 'a'), nearDef: ba.nearDef, wins: fa.wins, rollMod: clashMods(b.a.tengangA) }, b: { id: fb.id, rank: fb.rank, suit: fb.suit, general: fb.general, points: fb.points, buff: fb.buff, morale: bb.shift, tengang: bb.tg, pEff: eb, tgBreak: tgBreakOf(b.b, fb, 'b'), nearDef: bb.nearDef, dishaEdge, phalanx: bb.phalanx, wins: fb.wins, rollMod: clashMods(b.b.tengangA) } }; // rollA/rollB=双方掷值·winrate=预报胜率·winStays 恒 true(胜者留场)
+  b.lastClash = { tick: b.turn, lane: li, winrate: wr, roll: 0, rollA, rollB, aWins, tie, winStays: true, warLoss: 0, winStreak: 0, a: { id: fa.id, rank: fa.rank, suit: fa.suit, general: fa.general, points: fa.points, buff: fa.buff, morale: ba.shift, tengang: ba.tg, pEff: ea, tgBreak: tgBreakOf(b.a, fa, 'a'), nearDef: ba.nearDef, wins: fa.wins, fatiguePm: fa.fatiguePm, rollMod: clashMods(b.a.tengangA) }, b: { id: fb.id, rank: fb.rank, suit: fb.suit, general: fb.general, points: fb.points, buff: fb.buff, morale: bb.shift, tengang: bb.tg, pEff: eb, tgBreak: tgBreakOf(b.b, fb, 'b'), nearDef: bb.nearDef, dishaEdge, phalanx: bb.phalanx, wins: fb.wins, fatiguePm: fb.fatiguePm, rollMod: clashMods(b.b.tengangA) } }; // rollA/rollB=双方掷值·winrate=预报胜率·winStays 恒 true(胜者留场)
   b.clashLog.push(b.lastClash); // 流水（驱动层逐场抽特写）
   b.clashSeq += 1;
   if (!aWins) b.bossWinStreak += 1; // 九战九捷：Boss 胜累积
@@ -524,24 +530,19 @@ function applyClashOutcome(b: TurnBattle, li: number, ev: ClashEval, aWins: bool
     const relay = sideOf(b, loser).tengangA.relay; // 薪火：一张阵亡 → 同路下一张接棒续航 +N
     const next = colOf(lane, loser)[0]; if (relay > 0 && next) next.staminaLeft += relay;
   }
-  // 胜者去留（owner 2026-06-29 v2·取消回库/硬币）：**永远留场继续作战**（战场不空·心流不断）；
-  //   改掷「三面命运」(lossRoll)定本场疲劳战损% → 按 (点数+养成)×pct 累加 fatigue·扣战力；连胜 +1。
-  //   强兵连胜越打越疲 → 弱兵车轮能磨死它。（死战不退那场 boss 主将未真败·不计胜方战损。）
+  // 胜者去留（owner 2026-07-06 连续疲劳条·取消离散连胜/自动退场）：**永远留场继续作战**（战场不空·心流不断）；
+  //   胜一场 → 累加疲劳 `fatiguePm += (1000−fatiguePm)×0.5`（有效战力对折·整数千分比·确定性）；**无自动退场**（owner「没必要退场·满3光荣回库删掉」）。
+  //   强兵连战越疲 → 弱兵车轮磨得动；歇一轮（本轮不战）回一成（endTurnFinish 的休整）。（死战不退那场 boss 主将未真败·不计胜方战损。）
   const winSide: 'a' | 'b' = aWins ? 'a' : 'b';
-  const wq = colOf(lane, winSide); const wf = wq[0];
+  const wf = colOf(lane, winSide)[0];
   if (wf && !b.lastClash.lastStand) {
-    wf.wins = (wf.wins ?? 0) + 1; // 连胜 +1 → effPower 里 ×0.5^wins 战力对折（owner 2026-07-01·每胜战力砍半·弱兵车轮磨强兵）
-    b.lastClash.warLoss = WAR_LOSS_PER_WIN; b.lastClash.winStreak = wf.wins; // warLoss 恒 50%(对折)·winStreak 供 UI 显连胜/头顶「−50% 战力」
-    if (wf.wins >= WIN_CAP) { // 连胜满 WIN_CAP → 必须光荣离场：回牌库 + 全额返还泉水（owner 2026-06-29·防强兵无限霸场·疲劳满则换防）
-      wq.shift(); if (aWins) lane.spentA += 1; else lane.spentB += 1;
-      const wsd = sideOf(b, winSide);
-      wsd.pokerDeck.push({ kind: 'poker', id: wf.id, rank: wf.rank, suit: wf.suit, general: wf.general, buff: wf.buff, cost: wf.cost }); // 回牌库（重抽出场即满血·疲劳清零）
-      wsd.mana += (wf.cost ?? 0); // 全额返还召唤源泉
-      b.lastClash.winStays = false; // 满 3 离场 → UI 演「光荣回库」（达成 3 连胜的应得退场）
-    }
-    // 胜者**守原位·不追击**（owner 2026-07-04 改：赢了不立即推进占腾出格——赢=守住/敌离场，前进交给下回合正常行军）。
-    // 推翻 REQ-G-碰撞才战斗「赢了推进占据敌腾出格」旧设计：败者离场腾出的格本回合留空，胜者下回合正常推进 1 格补进。
+    wf.wins = (wf.wins ?? 0) + 1; // 累计胜场（仅日志/AI 画像·不再驱动战力）
+    const fpBefore = wf.fatiguePm ?? 0;
+    wf.fatiguePm = fpBefore + Math.round((1000 - fpBefore) * WAR_LOSS_PER_WIN); // 疲劳 += 剩余战力的一半（0→500→750→875…·有效战力逐胜对折·整数确定）
+    b.lastClash.warLoss = WAR_LOSS_PER_WIN; b.lastClash.winStreak = wf.wins; b.lastClash.fatiguePm = wf.fatiguePm; // warLoss=本场对折率(显「本场−N」)·fatiguePm=胜者累计疲劳(显头顶总疲劳/供恢复回看)
+    // 胜者**守原位·不追击**（owner 2026-07-04：赢了不立即推进占腾出格——赢=守住/敌离场，前进交给下回合正常行军）。
   }
+  b.foughtNow.push(fa.id, fb.id); // 本行动相参战的两前锋 id → endTurnFinish 据此把「本轮没打的在场兵」休整回血（owner 2026-07-06）
   b.a.mana += b.a.tengangA.clashElixir; b.b.mana += b.b.tengangA.clashElixir; // 战潮：每遭遇返召唤源泉（喂经济）
 }
 
@@ -590,6 +591,7 @@ function advanceSideMove(b: TurnBattle, side: 'a' | 'b', dbg?: (m: string) => vo
   const say = dbg ?? ((): void => {}); const LN = ['上', '中', '下']; const sideNm = side === 'a' ? '我' : '敌'; // 行走日志（owner 2026-07-03「看每张牌走向哪·为啥没触发战斗」）
   const slowPen = (side === 'a' ? b.slowA : b.slowB) > 0 ? 1 : 0; // 铁索：本方被敌铁索锁 → 本轮全军 speed−1（下限1）
   const pending: number[] = [];
+  b.movedNow = []; // 本行动相「前进过」的兵 id（供休整回血只回给真前进的兵·owner 2026-07-06「每走一步恢复10%」·驻守不动的堵路兵不自愈→僵局能破）
   for (let li = 0; li < 3; li++) { // 本方兵线向对家推进；前锋相邻 → 记为待掷命路
     const lane = b.lanes[li]; const own = colOf(lane, side); const foe = colOf(lane, side === 'a' ? 'b' : 'a');
     if (!own.length) continue;
@@ -606,11 +608,13 @@ function advanceSideMove(b: TurnBattle, side: 'a' | 'b', dbg?: (m: string) => vo
       const foeFrontBefore = foe[0].slot;
       advanceColumnVsFoe(own, dir, foe[0].slot, side === 'b', slowPen); // 实际移动仍封顶在敌前一格（停一格·胜后再推进占据）
       if (collides) pending.push(li);
+      for (const u of own) if (beforeMap.get(u.id) !== u.slot) b.movedNow.push(u.id); // 真前进的兵（供休整回血）
       const moves = own.filter((u) => beforeMap.get(u.id) !== u.slot).map((u) => `${u.rank}${u.suit}:${beforeMap.get(u.id)}→${u.slot}`).join('、') || '无移动';
       const why = collides ? '★碰撞→掷命' : !mobile ? (front.hold ? '守军静守·不撞' : '主将死守·不撞') : `走位不打（前锋落点${natural} 未踩到敌前锋@${foeFrontBefore}）`;
       say(`[${sideNm}·${LN[li]}路] 前锋 ${front.rank}${front.suit}@${beforeMap.get(front.id)} · 敌前锋@${foeFrontBefore} → ${why}｜移动:[${moves}]`);
     } else {
       advanceColumnToBase(b, own, dir, side, slowPen); // 本路无敌 → 直扑对家大本营
+      for (const u of own) if (beforeMap.get(u.id) !== u.slot) b.movedNow.push(u.id); // 真前进的兵（破家离场的已 splice 出 own·不计）
       const moves = own.filter((u) => beforeMap.get(u.id) !== u.slot).map((u) => `${u.rank}${u.suit}:${beforeMap.get(u.id)}→${u.slot}`).join('、');
       say(`[${sideNm}·${LN[li]}路] 无敌·向对家推进${moves ? `｜移动:[${moves}]` : ''}${own.length < beforeMap.size ? `（有兵破家·剩${own.length}）` : ''}`);
     }
@@ -641,7 +645,21 @@ export function advanceMovePhase(b: TurnBattle, dbg?: (m: string) => void): numb
 // 结算一路掷命（live 在「谁打谁」弹窗 + 掷骰演完后调）→ 写 lastClash/clashLog·应用胜负去留。
 export function resolveClashAt(b: TurnBattle, li: number): void { if (b.winner === 'pending') resolveClash(b, li); }
 // 推进收尾（判负 + 轮转/回合数/源泉）→ live 在本回合所有掷命演完后调。
+// 休整回血（owner 2026-07-06·P20「每走一步/不战斗就恢复10%」）：本行动相结束 → 行动方**本轮真前进了且没参战**的兵疲劳回落 REST_RECOVER_PM（夹≥0=最多满血）。
+//   条件＝在 b.movedNow（真前进·owner「每走一步」）且不在 b.foughtNow（没打·applyClashOutcome 追加的两前锋）。
+//   **只回给前进的兵**（驻守堵路/被挡不动的兵不自愈）→ 既忠「每走一步」原话·又让龟缩僵局能破（强堵路兵不永续满血·终会被磨穿·保对局收敛）。
+//   纯确定性（整数·无 rng）→ 真局/EV 推演/回放逐字一致。收尾清 foughtNow/movedNow。
+function restRecover(b: TurnBattle): void {
+  const side = b.active; const fought = new Set(b.foughtNow); const moved = new Set(b.movedNow);
+  for (const L of b.lanes) for (const u of colOf(L, side)) {
+    if (fought.has(u.id) || !moved.has(u.id)) continue; // 参战过 或 没前进 → 不休整
+    const fp = u.fatiguePm ?? 0;
+    if (fp > 0) u.fatiguePm = Math.max(0, fp - REST_RECOVER_PM); // 前进一步且没打 → 回一成战力（夹≥0·回不到超满）
+  }
+  b.foughtNow = []; b.movedNow = [];
+}
 export function endTurnFinish(b: TurnBattle): void {
+  restRecover(b); // 行动方本轮没打的在场兵休整回血（在轮转前·acting=b.active·owner 2026-07-06）
   checkWinner(b);
   if (b.winner !== 'pending') return;
   if (b.active === 'a') {
@@ -660,6 +678,7 @@ function checkWinner(b: TurnBattle): void {
   if (b.homeB <= 0 && b.homeA <= 0) b.winner = 'draw';
   else if (b.homeB <= 0) b.winner = 'a';
   else if (b.homeA <= 0) b.winner = 'b';
+  else if (b.turn > MAX_TURNS) b.winner = b.homeA > b.homeB ? 'a' : b.homeB > b.homeA ? 'b' : 'draw'; // 回合上限保底收敛（owner 2026-07-06·疲劳恢复+无退场→防僵局·按大本营血判·常规对局够不到）
 }
 
 // 结束当前回合（owner 2026-06-29 ②·顺序回合）：**放完牌→本方立即推进/攻击**（不再等到敌方回合末两军同动）——
@@ -716,8 +735,8 @@ function scoreDeploy(b: TurnBattle, card: PokerCard, lane: number, garrison = fa
   if (p.targetPref === 'weak') s += (foe.length === 0 ? 7 : -foeEff * 0.4) * ag; // 避实击虚（v2：疲劳前锋=软柿子·更想打）
   else if (p.targetPref === 'strong') s += foeEff * 0.4 * ag; // 硬碰强
   else s += (foe.some((u) => u.general) ? 9 : 0) * ag; // 取主将路(斩首)
-  // v2：玩家前锋已连胜疲劳(战力对折) → 这路是「趁虚补刀/车轮消耗」良机·加权（连胜快满 WIN_CAP-1 的强兵尤其值得逼它退场）。
-  if (v2 && foeFront && (foeFront.wins ?? 0) > 0) s += Math.min(7, (foeFront.wins ?? 0) * 2.5 + ((foeFront.wins ?? 0) >= WIN_CAP - 1 ? 2 : 0)) * (0.5 + ag);
+  // v2：玩家前锋已疲劳(战力被折) → 这路是「趁虚补刀/车轮消耗」良机·加权（疲劳越深=战力被折越多·越值得逼它继续挨打·连续疲劳条·owner 2026-07-06）。
+  if (v2 && foeFront && (foeFront.fatiguePm ?? 0) > 0) s += Math.min(7, ((foeFront.fatiguePm ?? 0) / 1000) * 7 + ((foeFront.fatiguePm ?? 0) >= 700 ? 2 : 0)) * (0.5 + ag);
   // 防守威胁响应（owner 2026-06-23·修 sim 实锤「玩家走空路直捣 Boss 家」requests#491）：
   // 玩家(foe)在这路推进、Boss(own)这路空虚 → 通往大本营的高速路·急回防堵漏。仅玩家真有兵才触发
   // （空板=0·不动 ai.test 画像断言）；守性(低 aggression)更看重回防·敌越深(slot→A_GOAL=8)越急。

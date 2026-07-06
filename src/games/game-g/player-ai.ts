@@ -46,7 +46,7 @@ export function cloneBattle(b: TurnBattle): TurnBattle {
     a: cloneSide(b.a), b: cloneSide(b.b),
     rng: { type: b.rng.type, seed: b.rng.seed, sequence: b.rng.sequence }, // ★ 深拷 rng·推演在副本 rng 上·真局序不动
     winner: b.winner, actionTaken: b.actionTaken,
-    lastClash: null, clashLog: [], clashSeq: b.clashSeq,
+    lastClash: null, clashLog: [], clashSeq: b.clashSeq, foughtNow: [], movedNow: [], // foughtNow/movedNow 瞬态·副本独立(EV 推演的休整不碰真局)
     dishaB: { ...b.dishaB }, bossWinStreak: b.bossWinStreak, batteryLane: b.batteryLane, bossGenDefeats: b.bossGenDefeats,
     dishaBaseIds: [...b.dishaBaseIds], dishaCastIds: [...b.dishaCastIds],
     aiProfile: { ...b.aiProfile }, aiTier: b.aiTier,

@@ -28,10 +28,10 @@ export function powerRows(c: ClashCard, isMine: boolean, tgName: (id: string) =>
   if (c.nearDef) r.push(['地煞 · 隘口固守', c.nearDef]); // 温泉关守军贴家 +战力（owner 2026-06-21）
   if (c.phalanx) r.push(['地煞 · 斯巴达方阵（结阵）', c.phalanx]); // 每兵按自身相邻友兵数 +战力（owner 2026-07-03·改逻辑为真·每兵加战力·点谁都看得到）
   if (c.dishaEdge) r.push(['地煞 · 招牌气势', c.dishaEdge]); // owner 2026-07-01 确定制：Boss 招牌战术折成确定战力（明牌·进拆解·不暗改）
-  if (c.wins) { // 连胜对折（owner 2026-07-01）：每胜战力 ×0.5 → 把削减的战力值写清楚（幸存者头顶同款）
-    const preHalve = r.reduce((s, [label, n]) => s + (label.startsWith('　') ? 0 : n), 0);
-    const after = Math.floor(preHalve * Math.pow(0.5, c.wins));
-    r.push([`战损 · 疲劳（连胜 ${c.wins} 场 · 战力对折 −50%）`, after - preHalve]);
+  if (c.fatiguePm) { // 疲劳折价（owner 2026-07-06 连续疲劳条）：有效战力 ×(1000−fatiguePm)/1000 → 写清削减的战力值（幸存者头顶同款·休整可回）
+    const preFat = r.reduce((s, [label, n]) => s + (label.startsWith('　') ? 0 : n), 0);
+    const after = Math.floor((preFat * (1000 - c.fatiguePm)) / 1000);
+    r.push([`战损 · 疲劳 −${Math.round(c.fatiguePm / 10)}% 战力（本轮不战可回 10%）`, after - preFat]);
   }
   const sum = r.reduce((s, [label, n]) => s + (label.startsWith('　') ? 0 : n), 0);
   if (c.pEff !== sum) r.push(c.pEff < sum ? [`　战力上限 · 封顶 ${P_MAX}（超出截断）`, c.pEff - sum] : ['　擎天 · 主将战力倍率', c.pEff - sum]);
@@ -50,12 +50,12 @@ export function clashToTurnView(ev: ClashEvent, tgName: (id: string) => string =
     if (m.bonus) mo.push(`鬼手改掷+${m.bonus}`); if (m.floor) mo.push(`磐石掷下界≥${m.floor}`); if (m.twice) mo.push(`灌铅骰掷${1 + m.twice}次取高`);
     if (mo.length) extras.push(`🎲 ${who}掷骰系天罡：${mo.join('·')}（掷值可超 [1~${s.pEff}] 上界）`); });
   if (ev.tie) extras.push(ev.tie === 'power' ? '⚖ 掷平 → 战力高者胜' : ev.tie === 'points' ? '⚖ 掷平·战力相等 → 点数大者胜' : ev.tie === 'stamina' ? '⚖ 掷平·战力点数皆同 → 续航高者胜' : '⚖ 掷平·三者全同 → 先手判 Boss');
-  // v2（owner 2026-06-29）：胜者留场续战 + 每胜疲劳战损（累减战力·弱兵车轮能磨强兵）；连胜满则光荣回库 + 全额返还泉水。
+  // owner 2026-07-06 连续疲劳条：胜者留场续战 + 每胜累加疲劳（有效战力对折）；无自动退场·本轮不战歇一轮回一成。
   const w = ev.aWins ? ev.a : ev.b; const wn = SUITNAME[lc2(w.suit)] + w.rank;
   if (ev.warLoss != null && ev.warLoss > 0) {
-    const cut = w.pEff - Math.floor(w.pEff * (1 - ev.warLoss)); // 本场对折削减的战力（写清「扣了多少」·owner 2026-07-01）
-    if (ev.winStays === false) extras.push(`⚔ ${wn} 达成 ${ev.winStreak ?? ''} 连胜 → 光荣回库 + 全额返还泉水（重抽出场满血）`);
-    else extras.push(`⚔ ${wn} 战胜（第 ${ev.winStreak ?? 1} 连胜）→ 疲劳战损：战力对折 −${cut}（−${Math.round(ev.warLoss * 100)}%）· 留场续战·越打越弱`);
+    const cut = w.pEff - Math.floor(w.pEff * (1 - ev.warLoss)); // 本场对折削减的战力（写清「本场扣了多少」）
+    const fatPct = ev.fatiguePm != null ? Math.round(ev.fatiguePm / 10) : Math.round(ev.warLoss * 100); // 胜者累计疲劳%（连续疲劳条）
+    extras.push(`⚔ ${wn} 战胜（累计胜 ${ev.winStreak ?? 1} 场·疲劳 ${fatPct}%）→ 本场战力对折 −${cut}· 留场续战·歇一轮回一成（10%）`);
   }
   return {
     laneName: ['上路', '中路', '下路'][ev.lane] ?? '路',

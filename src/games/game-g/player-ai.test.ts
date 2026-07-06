@@ -95,13 +95,15 @@ describe('Game G · Player-AI（终极版前向推演搜索）', () => {
   });
 
   it('终极 AI 能推进到终局（不卡死·会破家或被破）', () => {
+    // 疲劳休整（owner 2026-07-06·P20 连续疲劳条+恢复+删自动退场）→ 强兵变「不死」·棋盘不轮替 → 少数对局本会近赢僵持；
+    // MAX_TURNS 回合上限保底收敛（到线按大本营血判）→ 任何 seed 必在有限回合分出胜负（不再死循环）。此守护测即验之。
     const b = freshBattle(11);
     let guard = 0;
     while (b.winner === 'pending' && turnActive(b) && guard++ < 200) {
       if (b.active === 'a') playerTakeTurnAI(b, 5); else aiTakeTurn(b);
     }
     expect(['a', 'b', 'draw']).toContain(b.winner === 'pending' ? 'draw' : b.winner);
-    expect(guard).toBeLessThan(200); // 收敛·非死循环
+    expect(guard).toBeLessThan(200); // 有限回合内收敛（MAX_TURNS 保底）·非死循环
   });
 });
 
