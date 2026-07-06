@@ -31,10 +31,15 @@ export class Anim3DSystem {
         this.state.set(id, st);
       }
       const tSec = (nowMs - st.start) / 1000;
+      // 同 field 多通道**叠加（compose·非覆盖）**：各通道算相对初值的 delta → 同 field 求和 → 叠回初值一次写回。
+      // 让「稳转 spin + 摆动 bob」叠在同一 rotY = **变速自转（加速→减速·摇骰手感）**，纯数据可表达
+      //   （免游戏层 rAF 逐帧改 rate 的绕基座 bypass·REQ-3D-骰盅 P18 下沉）。异 field 单通道 → 结果与旧一致（向后兼容）。
+      const delta = new Map<Anim3DField, number>();
       for (const ch of anim.channels) {
         const base = st.bases.get(ch.field) ?? 0;
-        setField(t3, ch.field, anim3dField(ch, tSec, base));
+        delta.set(ch.field, (delta.get(ch.field) ?? 0) + (anim3dField(ch, tSec, base) - base));
       }
+      for (const [f, d] of delta) setField(t3, f, (st.bases.get(f) ?? 0) + d);
       live++;
     }
     // 卸载已消失实体的动画态（title 骰销毁 / 房间流式卸载）。

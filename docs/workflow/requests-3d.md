@@ -309,7 +309,13 @@
 
 ---
 
-## REQ-3D-骰盅 · 对决 3D 骰子（各自掷战力骰·两骰在牌下旋转） · [2026-07-02] · game-g（主程/Lead session）→ P3D（3D 渲染线） · status: **game-g 已交游戏层版·待 P3D 评审收编** · 类型: 表现增强（owner 点名要 3D）
+## REQ-3D-骰盅 · 对决 3D 骰子（各自掷战力骰·两骰在牌下旋转） · [2026-07-02] · game-g（主程/Lead session）→ P3D（3D 渲染线） · status: **✅ P3D 评审收编（2026-07-04·裁决见下）** · 类型: 表现增强（owner 点名要 3D）
+
+> **★ P3D 裁决（2026-07-04·评审 `game-g/clash-dice-3d.ts`）**：
+> - **(a) 收编游戏层版为正解 ✅**：`clash-dice-3d.ts` 是**范本级数据驱动**——零渲染器改动、纯 ECS 数据声明（Transform3D/Mesh3D box+dieFaces/Vfx3D/Anim3D/Camera3D/Light3D/Sky3D）由公有 `ThreeRenderer` 解释、用 Anim3D 底座翻滚、headless 回退 emoji、全 render-only 不进 hash。守住了 owner「必须用底座别绕规则」。照用。
+> - **UI↔世界锚 seam：暂不下沉 ⏸**（YAGNI）：game-g 的「量锚点 rect + 覆 fixed canvas」是为**其战斗屏 innerHTML 重建 + zoom 裁剪**这一 game-g 专属约束做的 plumbing，非通用 3D 需求；单一消费者 → 不够格下沉成 P3D 通用件。**有第二个同需求消费者再评**。现游戏层覆层照用。
+> - **P18「摇骰手感」pulse：真缺口·已下沉 ✅**（`baa`→本次）：根因=`Anim3DSystem` 同 field 多通道**相互覆盖(clobber)** → game-g 只能靠**游戏层 rAF 逐帧改 spin.rate**（绕基座 bypass）。修法**照 CORE RULE 首选「重组现有原语」**：让**同 field 通道叠加(compose)** → `spin(rotY)+bob(rotY)` = 变速自转（加速→减速）纯数据可表达。已实现 `renderer/three/anim3d.ts`（异 field 单通道结果不变·向后兼容）+ 测试 + 回填 `playbooks/3d.md`。**→ game-g 可删 `clash-dice-3d.ts` 的 rAF pulse 循环，改在 Anim3D 加 bob(rotX/rotY) 通道达同效**（game-g 域·你改；我不碰你文件）。
+> - **骰面 [1,power]>6 的映射**：game-g 用 `dieFaces[].src` 程序化数字面贴任意点数——**正解**（比 6 面 pip 更忠实战力值）·无异议。
 
 > **⚠ 更新 [2026-07-03·程序B/game-g]**：owner 2026-07-03 当面反复点名要程序B（game-g session）**当场把 3D 骰加进去**（「必须得用我们的底座和 3D 基础去做，不要绕过我的规则」「里面有个 3D 色子旋转的地方，你帮我加进去」）——**晚于本单 07-02 的「转 P3D」路由**，owner 直接指令优先。已交**游戏层数据驱动版**（`src/games/game-g/clash-dice-3d.ts`）：
 > - **零 P3D 文件改动**：只在 game 层声明 ECS 数据（`Transform3D`/`Mesh3D` box+dieFaces 数字骰面/`Vfx3D` 能量注入粒子/`Camera3D`/`Light3D`/`Sky3D`.env），由公有 `ThreeRenderer` 解释渲染——与 `game-d` Title 大骰同一条路子（game 层 new ThreeRenderer + createEntity/addComponent，不碰 three-renderer.ts）。**非 CSS 3D**（守数据驱动铁律 + 避战斗 zoom 画框放大 bug）。

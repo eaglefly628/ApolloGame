@@ -53,6 +53,21 @@ describe('Anim3DSystem（据壁钟改 Transform3D·render-only）', () => {
     expect(t().y).toBeCloseTo(0.78 + 0.13);
   });
 
+  it('同 field 多通道叠加（compose·非覆盖）→ spin+bob 同 rotY = 变速自转（REQ-3D-骰盅 P18 下沉）', () => {
+    const w = new World();
+    w.createEntity('d');
+    w.addComponent('d', { type: 'Transform3D', x: 0, y: 0, z: 0, rotY: 0.5 } as Transform3D);
+    w.addComponent('d', { type: 'Anim3D', channels: [
+      { kind: 'spin', field: 'rotY', rate: 1.0 }, { kind: 'bob', field: 'rotY', amp: 0.4, freq: 2.0 },
+    ] } as Anim3D);
+    const sys = new Anim3DSystem();
+    const rotY = (): number => w.getComponent<Transform3D>('d', 'Transform3D')!.rotY!;
+    sys.sync(w, 1000); // base 捕获·tSec0：spin delta 0 + bob delta 0 → 0.5
+    expect(rotY()).toBeCloseTo(0.5);
+    sys.sync(w, 2000); // tSec1：0.5 + spin(1.0·1) + bob(0.4·sin2) = 0.5 + 1.0 + 0.4·sin(2)
+    expect(rotY()).toBeCloseTo(0.5 + 1.0 + 0.4 * Math.sin(2)); // 叠加·非覆盖（旧行为=后通道覆盖=只 bob）
+  });
+
   it('空场返回 0；实体消失后清理动画态（流式卸载安全）', () => {
     const sys = new Anim3DSystem();
     const empty = new World();
