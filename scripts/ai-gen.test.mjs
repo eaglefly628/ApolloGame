@@ -1,6 +1,7 @@
 // AI 资产生成框架自检（mock 路径·无网络）：两个适配器产合法资产 + buildEntry 带 provenance。
 import { describe, it, expect } from 'vitest';
-import { ADAPTERS, buildEntry, mockImage, encodePng, providerSettings } from './ai-gen.mjs';
+import { existsSync } from 'node:fs';
+import { ADAPTERS, buildEntry, mockImage, encodePng, providerSettings, demo } from './ai-gen.mjs';
 
 describe('ai-gen 框架 · 适配器注册表', () => {
   it('注册了 tripo(3D) + qwen(2D)，各带 kind/envKey/license', () => {
@@ -51,6 +52,18 @@ describe('ai-gen 框架 · 落库条目（连资产索引这个"数据库"）', 
   it('qwen 图 → texture/ai-gen 类', () => {
     const e = buildEntry({ adapter: 'qwen', prompt: 'sword', id: 'ai/qwen/sword', kind: 'texture', spec: { format: 'png', width: 128, height: 128, usage: 'sprite' }, model: 'wanx-mock', license: 'Qwen/DashScope', mock: true, servedPath: 'ai/qwen/sword.png', at: '' });
     expect(e).toMatchObject({ type: 'texture', category: 'ai-gen', source: 'ai:qwen' });
+  });
+});
+
+describe('ai-gen 框架 · 一键自测 demo（临时目录·跑完清理·零仓库污染）', () => {
+  it('demo 两适配器各产一个合法条目（tripo→mesh · qwen→texture），产物字节 > 0', async () => {
+    const out = await demo({ TRIPO_API_KEY: '', DASHSCOPE_API_KEY: '' });
+    expect(out.map((o) => o.entry.type)).toEqual(['mesh', 'texture']);
+    expect(out.every((o) => o.bytes > 0)).toBe(true);
+    expect(out[0].entry.provenance.mock).toBe(true);
+    // 临时文件已被清理（finally rmSync）——不残留、不碰仓库
+    expect(existsSync(out[0].file)).toBe(false);
+    expect(existsSync(out[1].file)).toBe(false);
   });
 });
 

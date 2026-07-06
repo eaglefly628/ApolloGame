@@ -60,6 +60,7 @@ Free Library（共享 `assets/index.json` + `FreeArtLib/`）= **货架·只被 c
 
 文本→资产，落进资产库（带 provenance）。哲学同 `src/services/aigp`：外部**非确定性** AI 走旁路，产物=固定数据，不碰 sim/hash。
 - 用法：`node scripts/ai-gen.mjs <tripo|qwen> "<prompt>" [--game <g>] [--id <id>] [--mock]`；`node scripts/ai-gen.mjs providers` 看设置视图。
+- **想先看 mock 流程长啥样**：`node scripts/ai-gen.mjs demo`——两适配器各 mock 生成一个到临时目录、打印落库条目 shape + 设置视图、跑完自动清理（零仓库污染·零网络），用来一眼确认框架跑通。
 - 适配器（可扩·加一条进 `ADAPTERS`）：**tripo** 文本→3D glb（`TRIPO_API_KEY`）· **qwen** 文本→2D png（DashScope 万相·`DASHSCOPE_API_KEY`）。
 - 密钥走 env、**绝不入库**；缺 key 或 `--mock` → mock（产合法占位·prompt 播种）。**本环境 GitHub-only·真调 API 被挡 → 用 `--mock`**；真调等放宽网络的 session。
 - 落库：`--game` 给了=游戏本地 `art/ai/`；否则共享货架 `assets/ai/`。运行时（软件内输入即生成）+ 设置 UI = 主程/PE 域，见 `requests.md` REQ-AIGEN。

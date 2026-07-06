@@ -8,9 +8,12 @@
 // 用法: node scripts/ai-gen.mjs <tripo|qwen> "<prompt>" [--game <g>] [--id <local-id>] [--mock]
 //   例: node scripts/ai-gen.mjs tripo "a wooden chair" --game game-z --mock
 //       node scripts/ai-gen.mjs qwen "pixel sword icon" --game game-z --mock
+//   自测: node scripts/ai-gen.mjs demo      （两适配器各 mock 一个到临时目录·打印落库条目·跑完自动清理）
+//   设置: node scripts/ai-gen.mjs providers （看各 provider 的 envKey / 是否已配 key·打码）
 
-import { readFileSync, writeFileSync, mkdirSync, existsSync } from 'node:fs';
+import { readFileSync, writeFileSync, mkdirSync, existsSync, rmSync } from 'node:fs';
 import { join, dirname } from 'node:path';
+import { tmpdir } from 'node:os';
 import { fileURLToPath } from 'node:url';
 import { deflateSync } from 'node:zlib';
 
@@ -106,8 +109,35 @@ export function providerSettings(env = process.env) {
   }));
 }
 
+// 一键自测：两个适配器各 mock 生成一个到临时目录 → 打印落库条目 → 跑完自动清理（零仓库污染·零网络）。
+export async function demo(env = process.env) {
+  const dir = join(tmpdir(), 'apollo-ai-gen-demo');
+  rmSync(dir, { recursive: true, force: true }); mkdirSync(dir, { recursive: true });
+  const out = [];
+  try {
+    for (const [name, prompt] of [['tripo', 'a wooden treasure chest'], ['qwen', 'pixel fire sword icon']]) {
+      const A = ADAPTERS[name];
+      const g = await A.generate(prompt, { mock: true, apiKey: env[A.envKey] });
+      const slug = prompt.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '').slice(0, 40);
+      const file = join(dir, `${name}-${slug}.${A.ext}`); writeFileSync(file, g.buffer);
+      const entry = buildEntry({ adapter: name, prompt, id: `ai/${name}/${slug}`, kind: A.kind, spec: g.spec, model: g.model, license: A.license, mock: g.mock, servedPath: `ai/${name}/${slug}.${A.ext}`, at: '' });
+      out.push({ file, bytes: g.buffer.length, entry });
+      console.log(`✓ ${name} mock → ${file} (${g.buffer.length} 字节)  条目 id=${entry.id} type=${entry.type}`);
+    }
+    console.log('\n落库条目（会 upsert 进 index.json 的正是这个 shape）：');
+    console.log(JSON.stringify(out.map((o) => o.entry), null, 2));
+    console.log('\n设置视图 providers（key 打码·绝不回明文）：');
+    console.log(JSON.stringify(providerSettings(env), null, 2));
+  } finally {
+    rmSync(dir, { recursive: true, force: true });
+    console.log(`\n已清理临时目录 ${dir}（自测无副作用·未碰仓库文件）`);
+  }
+  return out;
+}
+
 async function run(argv) {
   const adapterName = argv[0];
+  if (adapterName === 'demo') { await demo(); return; }
   if (adapterName === 'providers') { console.log(JSON.stringify(providerSettings(), null, 2)); return; }
   const A = ADAPTERS[adapterName];
   if (!A) { console.error(`用法: node scripts/ai-gen.mjs <${Object.keys(ADAPTERS).join('|')}|providers> "<prompt>" [--game <g>] [--id <id>] [--mock]`); process.exit(1); }
