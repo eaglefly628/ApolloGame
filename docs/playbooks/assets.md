@@ -63,4 +63,5 @@ Free Library（共享 `assets/index.json` + `FreeArtLib/`）= **货架·只被 c
 - **想先看 mock 流程长啥样**：`node scripts/ai-gen.mjs demo`——两适配器各 mock 生成一个到临时目录、打印落库条目 shape + 设置视图、跑完自动清理（零仓库污染·零网络），用来一眼确认框架跑通。
 - 适配器（可扩·加一条进 `ADAPTERS`）：**tripo** 文本→3D glb（`TRIPO_API_KEY`）· **qwen** 文本→2D png（DashScope 万相·`DASHSCOPE_API_KEY`）。
 - 密钥走 env、**绝不入库**；缺 key 或 `--mock` → mock（产合法占位·prompt 播种）。**本环境 GitHub-only·真调 API 被挡 → 用 `--mock`**；真调等放宽网络的 session。
-- 落库：`--game` 给了=游戏本地 `art/ai/`；否则共享货架 `assets/ai/`。运行时（软件内输入即生成）+ 设置 UI = 主程/PE 域，见 `requests.md` REQ-AIGEN。
+- 落库：`--game` 给了=游戏本地 `art/ai/`；否则共享货架 `assets/ai/`。
+- **软件内直达入口**：Studio 资源库（launcher→🗃 资源库）工具栏 **✨ AI 生成** 按钮 → `AssetGenPanel`（选适配器 + prompt + 落点 → 生成 → 库自动刷新显示）。后端 `POST /api/assets/generate`（apollo.py·薄胶水·shell 调本脚本 `--mock --json`）+ `GET /api/assets/generate/providers`（key 状态·打码）。生成大脑仍全在本脚本，UI/后端零逻辑重复。

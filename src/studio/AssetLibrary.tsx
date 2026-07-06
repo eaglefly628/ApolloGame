@@ -19,6 +19,7 @@ import { GAME_F_ASSETS } from '../games/game-f/assets.js';
 import { JOKER_ART_MANIFEST } from '../games/game-e/assets.js';
 import { SHELL, sBtn, sInput, sSelect, sChip, sLabel, sBadge, sChecker } from '../ui/shell-theme.js';
 import { AssetImportWizard } from './AssetImportWizard.js';
+import { AssetGenPanel } from './AssetGenPanel.js';
 
 // ═══════════════════════════════════════════════════════════════
 //  资源库浏览器 —— 统一资产库的「数据浏览」面（+入口进「数据导入」向导）。
@@ -95,6 +96,7 @@ export function AssetLibrary({ onBack }: { onBack: () => void }) {
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [copied, setCopied] = useState(false);
   const [importing, setImporting] = useState(false);
+  const [generating, setGenerating] = useState(false);
 
   const enabledSources = useMemo(
     () => (Object.keys(sources) as LibrarySource[]).filter((s) => sources[s]),
@@ -143,6 +145,10 @@ export function AssetLibrary({ onBack }: { onBack: () => void }) {
     );
   }
 
+  if (generating) {
+    return <AssetGenPanel onClose={() => setGenerating(false)} onCommitted={reloadProject} />;
+  }
+
   const typeDef = LIBRARY_TAXONOMY.find((t) => t.type === type);
 
   return (
@@ -151,6 +157,7 @@ export function AssetLibrary({ onBack }: { onBack: () => void }) {
       <div style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '10px 16px', borderBottom: `1px solid ${SHELL.line}`, background: 'rgba(10,14,23,0.95)', flexWrap: 'wrap' }}>
         <span style={{ fontSize: 15, fontWeight: 700, color: SHELL.violet, whiteSpace: 'nowrap' }}>🗃 资源库</span>
         <button onClick={() => setImporting(true)} style={sBtn('primary')}>📥 导入资产</button>
+        <button onClick={() => setGenerating(true)} style={{ ...sBtn('primary'), background: SHELL.violetWash, color: SHELL.violet, border: `1px solid ${SHELL.violetLine}` }}>✨ AI 生成</button>
         <input
           value={text}
           onChange={(e) => setText(e.target.value)}

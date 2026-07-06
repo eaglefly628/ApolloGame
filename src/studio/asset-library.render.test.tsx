@@ -3,6 +3,7 @@ import { renderToString } from 'react-dom/server';
 import React from 'react';
 import { AssetLibrary } from './AssetLibrary.js';
 import { AssetImportWizard } from './AssetImportWizard.js';
+import { AssetGenPanel } from './AssetGenPanel.js';
 
 // renderToString 不跑 useEffect（不 fetch/不碰 canvas）→ 渲染初始态，专抓导入/渲染期崩溃（白屏教训）。
 describe('AssetLibrary 渲染回归', () => {
@@ -28,5 +29,21 @@ describe('AssetImportWizard 渲染回归', () => {
     );
     expect(html).toContain('放入文件');
     expect(html).toContain('拖到这里');
+  });
+});
+
+describe('AssetGenPanel 渲染回归（美术库直达的 AI 生成入口）', () => {
+  it('renderToString 不抛异常（两适配器 + prompt + 落点）', () => {
+    const html = renderToString(<AssetGenPanel onClose={() => {}} onCommitted={() => {}} />);
+    expect(html).toContain('AI 生成资产');
+    expect(html).toContain('Tripo');
+    expect(html).toContain('千问万相');
+    expect(html).toContain('描述你要的资产');
+    expect(html).toContain('生成并落库');
+  });
+
+  it('库工具栏挂出「AI 生成」按钮（从美术库可直达）', () => {
+    const html = renderToString(<AssetLibrary onBack={() => {}} />);
+    expect(html).toContain('AI 生成');
   });
 });

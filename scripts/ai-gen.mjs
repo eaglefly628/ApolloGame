@@ -142,6 +142,7 @@ async function run(argv) {
   const A = ADAPTERS[adapterName];
   if (!A) { console.error(`用法: node scripts/ai-gen.mjs <${Object.keys(ADAPTERS).join('|')}|providers> "<prompt>" [--game <g>] [--id <id>] [--mock]`); process.exit(1); }
   const mock = argv.includes('--mock');
+  const asJson = argv.includes('--json'); // 机读：后端/UI 解析用（打印一行 JSON，压过人读行）
   const gi = argv.indexOf('--game'), game = gi >= 0 ? argv[gi + 1] : null;
   const ii = argv.indexOf('--id'), forcedId = ii >= 0 ? argv[ii + 1] : null;
   const prompt = argv.slice(1).filter((a, i) => !a.startsWith('--') && argv[i] !== '--game' && argv[i] !== '--id').join(' ').trim();
@@ -171,6 +172,7 @@ async function run(argv) {
   const byId = new Map(idx.assets.map((a) => [a.id, a])); byId.set(id, entry);
   idx.assets = [...byId.values()].sort((a, b) => (a.id < b.id ? -1 : a.id > b.id ? 1 : 0));
   writeFileSync(indexFile, JSON.stringify(idx, null, 2) + '\n');
+  if (asJson) { console.log(JSON.stringify({ ok: true, id, type: A.kind, servedPath, mock: g.mock, scope: game ? `game:${game}` : 'shelf', entry })); return; }
   console.log(`✓ 生成 ${id}${g.mock ? ' (mock)' : ''} → ${servedPath}（登记进 ${game ? game + ' 本地' : '共享货架'}）`);
 }
 

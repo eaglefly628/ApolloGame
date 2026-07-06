@@ -1025,6 +1025,53 @@ def handle_asset_import(body: dict) -> dict:
         pass
     return {'success': True, 'written': written, 'indexAdded': len(entries)}
 
+# ── AI 文本生成资产（tripo 文本→3D · qwen 文本→2D）──────────────────────────────
+# 生成"大脑"在 PA 车道的 scripts/ai-gen.mjs（它落文件 + upsert index.json）；本端点只是薄胶水：
+# 校验入参 → shell 调脚本（--mock --json）→ 回机读结果给库刷新。真调 API 走脚本内的 env key + 放宽网络。
+
+def handle_asset_generate(body: dict) -> dict:
+    """POST /api/assets/generate。body = { adapter:'tripo'|'qwen', prompt:str, game?:str }。
+    默认 mock（本环境 GitHub-only 真调被挡）；脚本自行按 env key 决定 mock/真调。"""
+    adapter = str(body.get('adapter', '')).strip()
+    prompt = str(body.get('prompt', '')).strip()
+    game = body.get('game')
+    if adapter not in ('tripo', 'qwen'):
+        return {'success': False, 'error': f'未知适配器: {adapter or "(空)"}（支持 tripo/qwen）'}
+    if not prompt:
+        return {'success': False, 'error': 'prompt 不能为空'}
+    if len(prompt) > 500:
+        return {'success': False, 'error': 'prompt 过长（≤500 字）'}
+    cmd = ['node', 'scripts/ai-gen.mjs', adapter, prompt, '--mock', '--json']
+    if game:
+        g = str(game)
+        if not re.fullmatch(r'[a-z0-9][a-z0-9-]*', g):  # 白名单：防注入/路径穿越
+            return {'success': False, 'error': f'非法 game 名: {g}'}
+        cmd += ['--game', g]
+    try:
+        proc = subprocess.run(**_spawn(cmd), cwd=ROOT, capture_output=True, timeout=180)
+    except subprocess.TimeoutExpired:
+        return {'success': False, 'error': '生成超时（>180s）'}
+    out = proc.stdout.decode('utf-8', 'replace').strip()
+    if proc.returncode != 0:
+        err = proc.stderr.decode('utf-8', 'replace').strip() or out
+        return {'success': False, 'error': f'生成失败: {err[:400]}'}
+    line = out.splitlines()[-1] if out else ''  # 末行 JSON（前面可能有 warn）
+    try:
+        res = json.loads(line)
+    except Exception:
+        return {'success': False, 'error': f'解析结果失败: {out[:200]}'}
+    print(c("  [AI-GEN]", 'g'), f"{adapter} → {res.get('id')} ({res.get('scope')}{' ·mock' if res.get('mock') else ''})")
+    return {'success': True, **res}
+
+
+def handle_asset_generate_providers() -> dict:
+    """GET /api/assets/generate/providers。列出各生成 provider 的 envKey / 是否已配 key（脚本打码·绝不回明文）。"""
+    try:
+        proc = subprocess.run(**_spawn(['node', 'scripts/ai-gen.mjs', 'providers']), cwd=ROOT, capture_output=True, timeout=30)
+        return {'providers': json.loads(proc.stdout.decode('utf-8', 'replace'))}
+    except Exception as e:  # 脚本缺失/解析失败不炸端点
+        return {'providers': [], 'error': str(e)}
+
 # ── 资产自动标注（入库主动扫描 / 存量回填共用一条管线；Claude 视觉打语义标签）──
 
 AUTOTAG_SYSTEM = """You tag 2D game sprites for an asset library's search index.
@@ -1581,6 +1628,8 @@ class APIHandler(BaseHTTPRequestHandler):
                 data = {'success': False, 'error': f'Unknown preset: {preset_name}'}
         elif path == '/api/generate/providers':
             data = get_available_providers()
+        elif path == '/api/assets/generate/providers':
+            data = handle_asset_generate_providers()
         elif path == '/api/settings':
             data = handle_settings_get()
         else:
@@ -1645,6 +1694,11 @@ class APIHandler(BaseHTTPRequestHandler):
                 data = handle_asset_autotag(body)
             except Exception as e:
                 data = {'success': False, 'error': f'标注异常: {e}'}
+        elif path == '/api/assets/generate':
+            try:
+                data = handle_asset_generate(body)
+            except Exception as e:  # 防御：单次生成失败不拖死 API 进程
+                data = {'success': False, 'error': f'生成异常: {e}'}
         else:
             data = {'error': 'Unknown POST endpoint'}
 
