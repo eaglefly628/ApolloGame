@@ -65,7 +65,10 @@
 
 > 所有 done/wontfix/作废 条目（含裁决理由与完工摘要）已归档到 `requests-archive.md`；查旧单先 grep 它。本池只留活跃 open/in-progress/排队 条目（防每读付历史 token·owner 2026-07-04 token 底盘优化）。
 
-### REQ-ART-美术工坊愿景 · 美术库改造为「美术编辑器」（货架可视化+AI 加工+接线器）· [2026-07-04] · owner 提出 → Lead 调研出稿 · status: **设计稿·待 owner 审**（`docs/design/art-pipeline-vision-2026-07.md` + 视觉稿已交付） · 优先级: P1（方向级） · 类型: 产品化·资产管线（PA 域为主）
+### REQ-ART-M2.5-人审门 · AI 生成产物改「待审区」·人点入库才登记 · [2026-07-04] · Lead 图纸 → **指派：Opus（PST 域施工·PA 会审登记契约）** · status: **施工中** · 优先级: **P1（宪法级缺口·工坊改造第一刀）** · 类型: 产品化·资产治理（不碰引擎核）
+> **spec（Lead 图纸）**：① **待审区**：`/api/assets/generate` 产物改落 `assets/ai/pending/`（游戏本地则 `public/games/<g>/art/ai/pending/`）+ 独立 `pending.json` 清单（**绝不进 assets/index.json**），返回预览 URL。② **审核端点** `POST /api/assets/review`：`{id, action:'approve'|'reject'}`——approve=移文件出 pending + 登记 index，**provenance 硬校验**（model/prompt/date/license 缺一拒绝登记）；reject=删 pending 文件+清单项。路径防护照 asset-import 先例。③ **UI**（`AssetGenPanel`/`AssetLibrary`）：生成后显示预览 + 「✓ 入库 / ✕ 弃置」双按钮（替换现"已生成并登记"直落文案）；AssetLibrary 加「待审区」入口 + 待审计数 badge。④ **测试**：smoke 走全链（mock 生成→pending 不在 index→approve→在 index 且 provenance 全→reject→pending 清空）+ 渲染测试更新；**grep 自证无任何"生成即登记"残留路径**。⑤ 门禁全绿直推；完工标 ✅ 待 Lead 验收（真浏览器过一遍生成→审→入库旅程）。出处：`docs/design/art-pipeline-vision-2026-07.md §七`。
+
+### REQ-ART-美术工坊愿景 · 美术库改造为「美术编辑器」（货架可视化+AI 加工+接线器）· [2026-07-04] · owner 提出 → Lead 调研出稿 · status: **✅ owner 已批（2026-07-04）·分期开工：M2.5 施工中·M1 排队** · 优先级: P1（方向级） · 类型: 产品化·资产管线（**主责 PST·副责 PA 治理契约·风格锚素材=GD-\<game\>**）
 > 一句话：不做 DCC，做**货架管理器+AI 加工台+游戏接线器**三合一，作创作台第三面板（复用 apollo.py/BYO-key/本地 Git）。AI 铁律：修复/变体/生成全是**闭集操作+数据配方**，产物带 provenance 硬字段、**人审门后才入库**。分期 M1 货架可视化 → M2 导入/接线 UI → M3 AI 2D → M4 3D 外链；M0=REQ-PA-3D（在跑）。owner 拍板后 M1 起单派工。
 
 ### REQ-QA-红旗棘轮 · audit 加基线对比——红旗计数只许降不许升·进门禁 · [2026-07-04] · 主程（owner「有规则为什么还手写了5处·要复查规则」） · status: ✅ **done（Opus 施工 2026-07-06·门禁全绿直推）** · 类型: 质量强制基建（把规则从文字变成机器）
