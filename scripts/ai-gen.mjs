@@ -100,6 +100,116 @@ export function buildEntry({ adapter, prompt, id, kind, spec, model, license, mo
   };
 }
 
+// ── 人审门（M2.5·REQ-ART）：生成产物先落「待审区」（pending.json + assets/ai/pending/），
+//    人点「入库」经 reviewPending(approve) 才移进最终位置 + 登记 index；reject 删文件+清单项。
+//    宪法「无自动入库」——生成路径**绝不**直写 index.json（唯一入 index 的门=approve 且 provenance 硬校验过）。
+// ────────────────────────────────────────────────────────────────
+
+const byIdCmp = (a, b) => (a.id < b.id ? -1 : a.id > b.id ? 1 : 0);
+const readJson = (file, fallback) => (existsSync(file) ? JSON.parse(readFileSync(file, 'utf8')) : fallback);
+function readPendingManifest(file) { const m = readJson(file, { version: 1, pending: [] }); if (!Array.isArray(m.pending)) m.pending = []; return m; }
+function readIndexFile(file) { const i = readJson(file, { version: 1, assets: [] }); if (!Array.isArray(i.assets)) i.assets = []; return i; }
+function writeJsonFile(file, obj) { mkdirSync(dirname(file), { recursive: true }); writeFileSync(file, JSON.stringify(obj, null, 2) + '\n'); }
+
+// 落点解析：game 给了=游戏本地 art/；否则=共享货架 assets/。返回待审区 + 最终位置 + servedPath 构造器。
+// 保留既有非对称：共享 index 条目 path=相对（消费端补 /assets/）；游戏本地 path=站点绝对 /games/<g>/art/…。
+export function locations(root, game) {
+  if (game) {
+    const artDir = join(root, 'public', 'games', game, 'art');
+    return {
+      indexFile: join(artDir, 'index.json'),
+      pendingFile: join(artDir, 'ai', 'pending.json'),
+      pendingDir: join(artDir, 'ai', 'pending'),
+      finalDir: artDir,
+      finalServed: (fileRel) => `/games/${game}/art/${fileRel}`,
+      pendingServed: (base) => `/games/${game}/art/ai/pending/${base}`,
+    };
+  }
+  const assetsDir = join(root, 'assets');
+  return {
+    indexFile: join(assetsDir, 'index.json'),
+    pendingFile: join(assetsDir, 'ai', 'pending.json'),
+    pendingDir: join(assetsDir, 'ai', 'pending'),
+    finalDir: assetsDir,
+    finalServed: (fileRel) => fileRel,
+    pendingServed: (base) => `/assets/ai/pending/${base}`,
+  };
+}
+
+// provenance 硬校验（宪法·§七约束2）：model/prompt/date/license 缺一即拒绝登记。返回缺失字段名数组（空=通过）。
+export function provenanceMissing(entry) {
+  const p = (entry && entry.provenance) || {};
+  const missing = [];
+  if (!p.model) missing.push('model');
+  if (!p.prompt) missing.push('prompt');
+  if (!p.generatedAt) missing.push('date');
+  if (!(entry && entry.license)) missing.push('license');
+  return missing;
+}
+
+// 生成产物 → 待审区（写 pending 文件 + upsert pending.json·绝不碰 index.json）。返回机读结果（含预览 URL）。
+export function writePending({ root = ROOT, adapter, prompt, forcedId, game, buffer, spec, model, mock, at }) {
+  const A = ADAPTERS[adapter];
+  if (!A) return { ok: false, error: `未知适配器: ${adapter}` };
+  const slug = (forcedId ?? prompt).toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '').slice(0, 40) || 'asset';
+  const id = forcedId ?? `ai/${adapter}/${slug}`;
+  const finalRel = `ai/${adapter}/${slug}.${A.ext}`;
+  const base = `${adapter}-${slug}.${A.ext}`;
+  const loc = locations(root, game);
+  const pendingAbs = join(loc.pendingDir, base);
+  mkdirSync(dirname(pendingAbs), { recursive: true });
+  writeFileSync(pendingAbs, buffer);
+  const entry = buildEntry({ adapter, prompt, id, kind: A.kind, spec, model, license: A.license, mock, servedPath: loc.finalServed(finalRel), at });
+  const scope = game ? `game:${game}` : 'shelf';
+  const pendingEntry = { ...entry, previewPath: loc.pendingServed(base), pendingFile: base, finalRel, scope };
+  const man = readPendingManifest(loc.pendingFile);
+  const prev = man.pending.find((e) => e.id === id);
+  if (prev && prev.pendingFile && prev.pendingFile !== base) rmSync(join(loc.pendingDir, prev.pendingFile), { force: true }); // 重生成覆盖旧待审文件
+  const byId = new Map(man.pending.map((e) => [e.id, e]));
+  byId.set(id, pendingEntry);
+  writeJsonFile(loc.pendingFile, { version: 1, pending: [...byId.values()].sort(byIdCmp) });
+  return { ok: true, id, type: A.kind, mock: !!mock, pending: true, previewPath: pendingEntry.previewPath, scope, entry: pendingEntry };
+}
+
+// 列待审项（endpoint/UI/smoke 用）。
+export function listPending({ root = ROOT, game = null } = {}) {
+  return readPendingManifest(locations(root, game).pendingFile).pending;
+}
+
+// 人审：approve=provenance 硬校验过 → 移文件出待审 + 登记 index + 清待审项；reject=删待审文件 + 清项。
+export function reviewPending({ root = ROOT, id, action, game = null }) {
+  const loc = locations(root, game);
+  const man = readPendingManifest(loc.pendingFile);
+  const i = man.pending.findIndex((e) => e.id === id);
+  if (i < 0) return { ok: false, error: `待审项不存在: ${id}` };
+  const pe = man.pending[i];
+  const pendingAbs = join(loc.pendingDir, pe.pendingFile);
+  if (action === 'reject') {
+    rmSync(pendingAbs, { force: true });
+    man.pending.splice(i, 1);
+    writeJsonFile(loc.pendingFile, { version: 1, pending: man.pending });
+    return { ok: true, action: 'reject', id };
+  }
+  if (action === 'approve') {
+    const { previewPath, pendingFile, finalRel, scope, ...entry } = pe; // 剥掉审门机制字段 → 干净 index 条目
+    const missing = provenanceMissing(entry);
+    if (missing.length) return { ok: false, error: `provenance 缺字段，拒绝登记: ${missing.join('/')}（宪法硬校验）` };
+    if (!existsSync(pendingAbs)) return { ok: false, error: `待审文件已丢失: ${pe.pendingFile}` };
+    const finalAbs = join(loc.finalDir, finalRel);
+    mkdirSync(dirname(finalAbs), { recursive: true });
+    writeFileSync(finalAbs, readFileSync(pendingAbs)); // 移：拷进最终位再删待审（同树 rename 亦可·此写法跨 fs 稳）
+    rmSync(pendingAbs, { force: true });
+    const index = readIndexFile(loc.indexFile);
+    const byId = new Map(index.assets.map((a) => [a.id, a]));
+    byId.set(entry.id, entry);
+    writeJsonFile(loc.indexFile, { version: index.version ?? 1, assets: [...byId.values()].sort(byIdCmp) });
+    man.pending.splice(i, 1);
+    writeJsonFile(loc.pendingFile, { version: 1, pending: man.pending });
+    return { ok: true, action: 'approve', id, servedPath: entry.path, type: entry.type, scope };
+  }
+  return { ok: false, error: `未知 action: ${action}（approve|reject）` };
+}
+
 // 设置视图（可被 server /api 或 UI 复用）：列出各生成 provider 的 envKey + 是否已配 key（打码·绝不回明文）。
 export function providerSettings(env = process.env) {
   const mask = (k) => (k ? k.slice(0, 3) + '***' + k.slice(-4) : '');
@@ -124,7 +234,7 @@ export async function demo(env = process.env) {
       out.push({ file, bytes: g.buffer.length, entry });
       console.log(`✓ ${name} mock → ${file} (${g.buffer.length} 字节)  条目 id=${entry.id} type=${entry.type}`);
     }
-    console.log('\n落库条目（会 upsert 进 index.json 的正是这个 shape）：');
+    console.log('\n待审条目（人审 approve 后 upsert 进 index.json 的正是这个 shape）：');
     console.log(JSON.stringify(out.map((o) => o.entry), null, 2));
     console.log('\n设置视图 providers（key 打码·绝不回明文）：');
     console.log(JSON.stringify(providerSettings(env), null, 2));
@@ -139,6 +249,23 @@ async function run(argv) {
   const adapterName = argv[0];
   if (adapterName === 'demo') { await demo(); return; }
   if (adapterName === 'providers') { console.log(JSON.stringify(providerSettings(), null, 2)); return; }
+  // 待审列表：node scripts/ai-gen.mjs pending [--game <g>]
+  if (adapterName === 'pending') {
+    const gi = argv.indexOf('--game'); const game = gi >= 0 ? argv[gi + 1] : null;
+    console.log(JSON.stringify({ pending: listPending({ game }) }));
+    return;
+  }
+  // 人审：node scripts/ai-gen.mjs review <id> <approve|reject> [--game <g>] [--json]
+  if (adapterName === 'review') {
+    const id = argv[1]; const action = argv[2];
+    const gi = argv.indexOf('--game'); const game = gi >= 0 ? argv[gi + 1] : null;
+    const asJson = argv.includes('--json');
+    const res = reviewPending({ id, action, game });
+    if (asJson) console.log(JSON.stringify(res));
+    else console.log(res.ok ? `✓ ${action} ${id}${res.servedPath ? ' → ' + res.servedPath : ''}` : `✕ ${res.error}`);
+    if (!res.ok) process.exit(1);
+    return;
+  }
   const A = ADAPTERS[adapterName];
   if (!A) { console.error(`用法: node scripts/ai-gen.mjs <${Object.keys(ADAPTERS).join('|')}|providers> "<prompt>" [--game <g>] [--id <id>] [--mock]`); process.exit(1); }
   const mock = argv.includes('--mock');
@@ -151,29 +278,10 @@ async function run(argv) {
   if (!mock && !apiKey) console.warn(`⚠ 未设 ${A.envKey}，改走 mock（真调需 key + 放宽网络）`);
 
   const g = await A.generate(prompt, { mock, apiKey });
-  const slug = (forcedId ?? prompt).toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '').slice(0, 40) || 'asset';
-  const id = forcedId ?? `ai/${adapterName}/${slug}`;
-  const fileRel = `ai/${adapterName}/${slug}.${A.ext}`;
-
-  let servedPath, indexFile;
-  if (game) {
-    const abs = join(ROOT, 'public', 'games', game, 'art', fileRel);
-    mkdirSync(dirname(abs), { recursive: true }); writeFileSync(abs, g.buffer);
-    servedPath = `/games/${game}/art/${fileRel}`;
-    indexFile = join(ROOT, 'public', 'games', game, 'art', 'index.json');
-  } else {
-    const abs = join(ROOT, 'assets', fileRel);
-    mkdirSync(dirname(abs), { recursive: true }); writeFileSync(abs, g.buffer);
-    servedPath = fileRel;
-    indexFile = join(ROOT, 'assets', 'index.json');
-  }
-  const entry = buildEntry({ adapter: adapterName, prompt, id, kind: A.kind, spec: g.spec, model: g.model, license: A.license, mock: g.mock, servedPath, at: new Date().toISOString() });
-  const idx = existsSync(indexFile) ? JSON.parse(readFileSync(indexFile, 'utf8')) : { version: 1, assets: [] };
-  const byId = new Map(idx.assets.map((a) => [a.id, a])); byId.set(id, entry);
-  idx.assets = [...byId.values()].sort((a, b) => (a.id < b.id ? -1 : a.id > b.id ? 1 : 0));
-  writeFileSync(indexFile, JSON.stringify(idx, null, 2) + '\n');
-  if (asJson) { console.log(JSON.stringify({ ok: true, id, type: A.kind, servedPath, mock: g.mock, scope: game ? `game:${game}` : 'shelf', entry })); return; }
-  console.log(`✓ 生成 ${id}${g.mock ? ' (mock)' : ''} → ${servedPath}（登记进 ${game ? game + ' 本地' : '共享货架'}）`);
+  // 人审门（M2.5）：生成产物落**待审区**，绝不直写 index.json。人经 /api/assets/review approve 才入库。
+  const res = writePending({ adapter: adapterName, prompt, forcedId, game, buffer: g.buffer, spec: g.spec, model: g.model, mock: g.mock, at: new Date().toISOString() });
+  if (asJson) { console.log(JSON.stringify(res)); return; }
+  console.log(`✓ 生成 ${res.id}${g.mock ? ' (mock)' : ''} → 待审区（人点「入库」才登记）· 预览 ${res.previewPath}`);
 }
 
 if (import.meta.url === `file://${process.argv[1]}`) run(process.argv.slice(2));

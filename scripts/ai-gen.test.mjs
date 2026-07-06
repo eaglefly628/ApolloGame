@@ -1,7 +1,9 @@
 // AI 资产生成框架自检（mock 路径·无网络）：两个适配器产合法资产 + buildEntry 带 provenance。
 import { describe, it, expect } from 'vitest';
-import { existsSync } from 'node:fs';
-import { ADAPTERS, buildEntry, mockImage, encodePng, providerSettings, demo } from './ai-gen.mjs';
+import { existsSync, mkdtempSync, readFileSync, rmSync } from 'node:fs';
+import { tmpdir } from 'node:os';
+import { join } from 'node:path';
+import { ADAPTERS, buildEntry, mockImage, encodePng, providerSettings, demo, writePending, reviewPending, listPending, locations, provenanceMissing } from './ai-gen.mjs';
 
 describe('ai-gen 框架 · 适配器注册表', () => {
   it('注册了 tripo(3D) + qwen(2D)，各带 kind/envKey/license', () => {
@@ -76,4 +78,78 @@ describe('ai-gen 框架 · 设置视图（开放 key 配置·打码不回明文�
     expect(tripo.apiKeyMasked).not.toContain('abcdef');
     expect(s.find((p) => p.id === 'qwen')).toMatchObject({ keyConfigured: false, apiKeyMasked: '' });
   });
+});
+
+// ── 人审门（M2.5·REQ-ART）：生成落待审区 → approve 才登记 index；provenance 硬校验 ──
+describe('ai-gen 框架 · 人审门（待审区 + approve/reject·provenance 硬校验）', () => {
+  const withRoot = (fn) => {
+    const root = mkdtempSync(join(tmpdir(), 'aigen-review-'));
+    try { return fn(root); } finally { rmSync(root, { recursive: true, force: true }); }
+  };
+  const genOne = (root, { adapter = 'qwen', prompt = 'red pixel sword', game, model = 'wanx-mock' } = {}) => {
+    const { buffer } = mockImage(prompt, 32);
+    return writePending({ root, adapter, prompt, game, buffer, spec: { format: 'png' }, model, mock: true, at: '2026-07-06T00:00:00Z' });
+  };
+
+  it('生成落待审区：写 pending.json + 预览 URL，且**绝不**进 index.json', () => withRoot((root) => {
+    const w = genOne(root);
+    expect(w.ok).toBe(true);
+    expect(w.pending).toBe(true);
+    expect(w.previewPath).toBe('/assets/ai/pending/qwen-red-pixel-sword.png');
+    expect(listPending({ root })).toHaveLength(1);
+    // 宪法：生成即登记必须已消灭 —— index 文件此刻还不存在
+    expect(existsSync(locations(root, null).indexFile)).toBe(false);
+  }));
+
+  it('approve：provenance 全 → 移出待审 + 登记 index（干净条目·无审门机制字段泄漏）+ 清待审', () => withRoot((root) => {
+    const w = genOne(root);
+    const r = reviewPending({ root, id: w.id, action: 'approve' });
+    expect(r).toMatchObject({ ok: true, action: 'approve', id: w.id });
+    const idx = JSON.parse(readFileSync(locations(root, null).indexFile, 'utf8'));
+    const e = idx.assets.find((a) => a.id === w.id);
+    expect(e).toBeTruthy();
+    expect(e.provenance).toMatchObject({ generator: 'qwen', prompt: 'red pixel sword', model: 'wanx-mock' });
+    expect(e).not.toHaveProperty('previewPath'); // 机制字段不泄漏进 index
+    expect(e).not.toHaveProperty('pendingFile');
+    expect(e).not.toHaveProperty('finalRel');
+    expect(listPending({ root })).toHaveLength(0); // 待审清空
+  }));
+
+  it('reject：删待审文件 + 清项，且**不**登记 index', () => withRoot((root) => {
+    const w = genOne(root, { prompt: 'discard me' });
+    const r = reviewPending({ root, id: w.id, action: 'reject' });
+    expect(r).toMatchObject({ ok: true, action: 'reject' });
+    expect(listPending({ root })).toHaveLength(0);
+    expect(existsSync(locations(root, null).indexFile)).toBe(false); // 从未入库
+  }));
+
+  it('provenance 硬校验：缺 model → approve 被拒、条目留在待审（不误登记）', () => withRoot((root) => {
+    const w = genOne(root, { prompt: 'no model', model: '' });
+    const r = reviewPending({ root, id: w.id, action: 'approve' });
+    expect(r.ok).toBe(false);
+    expect(r.error).toContain('provenance');
+    expect(r.error).toContain('model');
+    expect(listPending({ root })).toHaveLength(1); // 拒登记后仍在待审，可弃置或修
+  }));
+
+  it('provenanceMissing 逐字段（model/prompt/date/license 缺一即列出）', () => {
+    expect(provenanceMissing({ license: 'x', provenance: { model: 'm', prompt: 'p', generatedAt: 'd' } })).toEqual([]);
+    expect(provenanceMissing({ provenance: {} })).toEqual(['model', 'prompt', 'date', 'license']);
+  });
+
+  it('游戏本地落点：pending/最终位在 public/games/<g>/art 下，approve 后进本地 index（站点绝对 path）', () => withRoot((root) => {
+    const w = genOne(root, { game: 'game-z', prompt: 'local tex' });
+    expect(w.scope).toBe('game:game-z');
+    expect(w.previewPath).toBe('/games/game-z/art/ai/pending/qwen-local-tex.png');
+    const r = reviewPending({ root, id: w.id, action: 'approve', game: 'game-z' });
+    expect(r.ok).toBe(true);
+    const idx = JSON.parse(readFileSync(locations(root, 'game-z').indexFile, 'utf8'));
+    const e = idx.assets.find((a) => a.id === w.id);
+    expect(e.path).toBe('/games/game-z/art/ai/tripo/local-tex.png'.replace('tripo', 'qwen'));
+  }));
+
+  it('未知待审项 approve/reject → ok:false（不炸）', () => withRoot((root) => {
+    expect(reviewPending({ root, id: 'ai/qwen/nope', action: 'approve' }).ok).toBe(false);
+    expect(reviewPending({ root, id: 'ai/qwen/nope', action: 'reject' }).ok).toBe(false);
+  }));
 });

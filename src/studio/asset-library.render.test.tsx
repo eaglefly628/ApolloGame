@@ -4,6 +4,7 @@ import React from 'react';
 import { AssetLibrary } from './AssetLibrary.js';
 import { AssetImportWizard } from './AssetImportWizard.js';
 import { AssetGenPanel } from './AssetGenPanel.js';
+import { AssetPendingReview } from './AssetPendingReview.js';
 
 // renderToString 不跑 useEffect（不 fetch/不碰 canvas）→ 渲染初始态，专抓导入/渲染期崩溃（白屏教训）。
 describe('AssetLibrary 渲染回归', () => {
@@ -39,11 +40,21 @@ describe('AssetGenPanel 渲染回归（美术库直达的 AI 生成入口）', (
     expect(html).toContain('Tripo');
     expect(html).toContain('千问万相');
     expect(html).toContain('描述你要的资产');
-    expect(html).toContain('生成并落库');
+    // 人审门（M2.5）：生成落待审区，不再「生成即登记」。
+    expect(html).toContain('生成到待审区');
   });
 
-  it('库工具栏挂出「AI 生成」按钮（从美术库可直达）', () => {
+  it('库工具栏挂出「AI 生成」+「待审区」按钮（从美术库可直达）', () => {
     const html = renderToString(<AssetLibrary onBack={() => {}} />);
     expect(html).toContain('AI 生成');
+    expect(html).toContain('待审区'); // 人审门入口
+  });
+});
+
+describe('AssetPendingReview 渲染回归（AI 生成人审门·待审区）', () => {
+  it('renderToString 不抛异常（初始加载态）', () => {
+    const html = renderToString(<AssetPendingReview onBack={() => {}} onReviewed={() => {}} />);
+    expect(html).toContain('待审区');
+    expect(html).toContain('人审门'); // 宪法「无自动入库」的落地面
   });
 });

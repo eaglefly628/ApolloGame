@@ -20,6 +20,7 @@ import { JOKER_ART_MANIFEST } from '../games/game-e/assets.js';
 import { SHELL, sBtn, sInput, sSelect, sChip, sLabel, sBadge, sChecker } from '../ui/shell-theme.js';
 import { AssetImportWizard } from './AssetImportWizard.js';
 import { AssetGenPanel } from './AssetGenPanel.js';
+import { AssetPendingReview } from './AssetPendingReview.js';
 
 // ═══════════════════════════════════════════════════════════════
 //  资源库浏览器 —— 统一资产库的「数据浏览」面（+入口进「数据导入」向导）。
@@ -69,6 +70,14 @@ export function AssetLibrary({ onBack }: { onBack: () => void }) {
       .catch(() => setProjIndex(null));
   }, []);
   useEffect(() => reloadProject(), [reloadProject]);
+  // 待审计数（AI 生成人审门）：badge + 待审区入口用。走 apollo.py（CORS *）。
+  const refreshPending = useCallback(() => {
+    fetch('http://localhost:4000/api/assets/pending')
+      .then((r) => r.json())
+      .then((j) => setPendingCount(Number(j?.count ?? j?.pending?.length ?? 0)))
+      .catch(() => setPendingCount(0));
+  }, []);
+  useEffect(() => refreshPending(), [refreshPending]);
   // 别名是运行时并入 tags 的（不入 index.json）→ index 或 aliases 任一就绪/变更都重算记录。
   const projRecords = useMemo(
     () => (projIndex ? projectRecords(projIndex, '/assets/', aliases) : []),
@@ -97,6 +106,8 @@ export function AssetLibrary({ onBack }: { onBack: () => void }) {
   const [copied, setCopied] = useState(false);
   const [importing, setImporting] = useState(false);
   const [generating, setGenerating] = useState(false);
+  const [reviewing, setReviewing] = useState(false); // 待审区（AI 生成人审门·M2.5）
+  const [pendingCount, setPendingCount] = useState(0);
   // 右键 vendor 菜单（copy 到游戏）：游戏列表 + 菜单锚点 + 轻提示。
   const [games, setGames] = useState<ReadonlyArray<{ id: string; hasLocalArt: boolean }>>([]);
   const [menu, setMenu] = useState<{ x: number; y: number; rec: LibraryRecord } | null>(null);
@@ -183,7 +194,21 @@ export function AssetLibrary({ onBack }: { onBack: () => void }) {
   }
 
   if (generating) {
-    return <AssetGenPanel onClose={() => setGenerating(false)} onCommitted={reloadProject} />;
+    return (
+      <AssetGenPanel
+        onClose={() => { setGenerating(false); refreshPending(); }}
+        onCommitted={() => { reloadProject(); refreshPending(); }}
+      />
+    );
+  }
+
+  if (reviewing) {
+    return (
+      <AssetPendingReview
+        onBack={() => { setReviewing(false); refreshPending(); }}
+        onReviewed={() => { reloadProject(); refreshPending(); }}
+      />
+    );
   }
 
   const typeDef = LIBRARY_TAXONOMY.find((t) => t.type === type);
@@ -195,6 +220,16 @@ export function AssetLibrary({ onBack }: { onBack: () => void }) {
         <span style={{ fontSize: 15, fontWeight: 700, color: SHELL.violet, whiteSpace: 'nowrap' }}>🗃 资源库</span>
         <button onClick={() => setImporting(true)} style={sBtn('primary')}>📥 导入资产</button>
         <button onClick={() => setGenerating(true)} style={{ ...sBtn('primary'), background: SHELL.violetWash, color: SHELL.violet, border: `1px solid ${SHELL.violetLine}` }}>✨ AI 生成</button>
+        <button
+          onClick={() => setReviewing(true)}
+          title="AI 生成产物人审门：入库前在此审核（人点入库才登记）"
+          style={{ ...sBtn(pendingCount > 0 ? 'primary' : 'ghost'), ...(pendingCount > 0 ? { background: SHELL.warnWash, color: SHELL.warn, border: `1px solid ${SHELL.warn}` } : {}), display: 'inline-flex', alignItems: 'center', gap: 6 }}
+        >
+          🕒 待审区
+          {pendingCount > 0 && (
+            <span style={{ fontSize: 11, fontWeight: 700, minWidth: 16, height: 16, lineHeight: '16px', textAlign: 'center', borderRadius: 8, padding: '0 5px', background: SHELL.warn, color: SHELL.appBg }}>{pendingCount}</span>
+          )}
+        </button>
         <input
           value={text}
           onChange={(e) => setText(e.target.value)}
