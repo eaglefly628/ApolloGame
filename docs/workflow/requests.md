@@ -65,7 +65,7 @@
 
 > 所有 done/wontfix/作废 条目（含裁决理由与完工摘要）已归档到 `requests-archive.md`；查旧单先 grep 它。本池只留活跃 open/in-progress/排队 条目（防每读付历史 token·owner 2026-07-04 token 底盘优化）。
 
-### REQ-STUDIO-低模生成四件 · owner 用 deepseek 实测暴露「词汇灌注≠弱模友好」 · [2026-07-06] · owner 实测（3 轮校验不过·184k tokens/单局）→ Lead 诊断出图 → **指派：PST（P0/心跳单之后第三顺位）** · status: open · 优先级: P1（创作台核心命题=最弱 LLM 产游戏） · 类型: 产品化·生成管线架构
+### REQ-STUDIO-低模生成四件 · owner 用 deepseek 实测暴露「词汇灌注≠弱模友好」 · [2026-07-06] · owner 实测（3 轮校验不过·184k tokens/单局）→ Lead 诊断出图 → **指派：Opus（owner 2026-07-06「三次尝试失败呢」——提到队首·并做心跳单第0项交互日志）** · status: **施工中** · 优先级: **P0（owner 实际堵点·创作台核心命题）** · 类型: 产品化·生成管线架构
 > **实测证据**：deepseek 做"最简单的游戏"——自动修复 3 轮仍未过校验；单局 184,368 tokens（输入 171k：缓存命中 122k + 未命中 49k；输出 13k）。**流程本身是"读规则"的**（system=manifest 骨架+全量自动 catalog"single source of truth, do not invent"+art 词汇+Rules+最小样例；校验错误逐轮回喂）——但对弱模型仍失败，病根=让弱模型**在 81 项词汇表里从零作曲**。
 > **spec（Lead 图纸·四件）**：
 > 1. **模板起步+增量修改（最大杠杆）**：简单请求不再从零生成——按题材选最近的**能跑模板 manifest**（示例卡带库），LLM 只做增量修改（改名/改数值/换实体/换 art 词）——输出小、闭集内、校验通过率数量级提升。生成模式二选一入口：「从模板改」（默认）/「自由生成」（强模型才建议）。
@@ -74,7 +74,7 @@
 > 4. **token/缓存卫生**：system+catalog 逐轮字节稳定（最大化 provider 前缀缓存——本次 122k 命中证明有效）；autofix 回喂只带「上轮 manifest+本轮错误」，裁掉更早轮次的失败输出（防对话超线性膨胀）。
 > **验收**：mock+真 provider 各过一遍「模板改」路径；弱模型基准=deepseek 同题重测，目标 ≤1 轮修复通过；token/局记录进完工摘要对比 184k 基线。门禁全绿。
 
-### REQ-STUDIO-生成进度与心跳+交互日志 · 长生成黑箱→阶段灯/心跳/秒表 + LLM 往返 JSONL 日志 · [2026-07-04·07-06 扩] · owner → **指派：PST 或 Opus（P0 存盘单完工后立即接·同 apollo.py 防并行冲突）** · status: **排队（顺位第二）** · 优先级: P1 · 类型: 产品体验（长任务可见性）
+### REQ-STUDIO-生成进度与心跳+交互日志 · 长生成黑箱→阶段灯/心跳/秒表 + LLM 往返 JSONL 日志 · [2026-07-04·07-06 扩] · owner → **指派：PST 或 Opus（P0 存盘单完工后立即接·同 apollo.py 防并行冲突）** · status: **排队（第0项交互日志已并入低模四件单先做·其余作业模型/阶段灯随后）** · 优先级: P1 · 类型: 产品体验（长任务可见性）
 > **owner 现象**：生成稿子过程系统一直在工作，但界面无任何进度/心跳——用户不知道是活着还是死了。
 > **spec（Lead 图纸）**：
 > 0. **LLM 交互日志（owner 2026-07-06 追加「辅助诊断」·本单第 0 项·最先做）**：apollo.py 每次 LLM 往返落一行 JSONL 到 `.apollo/llm-logs/YYYY-MM-DD.jsonl`（gitignore）：`{ts, provider, model, mode(chat|generate|autofix-k), promptChars, responseChars, validation:'pass'|'fail', errors[截断], elapsedMs, usage?{provider 回的 token 数}}`——**API key 绝不落盘**；prompt/response 全文默认不落（只落长度），`APOLLO_LOG_VERBOSE=1` 才落全文（本地排障用）。排障口径回填 `docs/playbooks/testing.md` 一行。今天那种"三轮失败是什么"的问题从此 `cat` 一下就有答案。
